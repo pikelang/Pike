@@ -2995,6 +2995,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
     }
 
     /* Get function pointer */
+    ins_debug_instr_prologue(a-F_OFFSET, b, 0);
     amd64_call_c_opcode(Pike_compiler->new_program->constants[b].sval.u.efun->function,
                         I_UPDATE_SP);
     return;
@@ -3158,7 +3159,7 @@ void ins_f_byte_with_2_args(unsigned int a, INT32 b, INT32 c)
   case F_CLEAR_N_LOCAL:
     {
       LABELS();
-      ins_debug_instr_prologue(a-F_OFFSET, b, 0);
+      ins_debug_instr_prologue(a-F_OFFSET, b, c);
       amd64_load_fp_reg();
       mov_mem_reg(fp_reg, OFFSETOF(pike_frame, locals), P_REG_RBX);
       add_reg_imm(P_REG_RBX, b*sizeof(struct svalue));
@@ -3298,13 +3299,14 @@ void ins_f_byte_with_2_args(unsigned int a, INT32 b, INT32 c)
     LABEL_B;
     }
     return;
+
   case F_ASSIGN_PRIVATE_TYPED_GLOBAL_AND_POP:
   case F_ASSIGN_PRIVATE_TYPED_GLOBAL:
   {
     LABELS();
     amd64_load_sp_reg();
 
-    ins_debug_instr_prologue(a-F_OFFSET, b, 0);
+    ins_debug_instr_prologue(a-F_OFFSET, b, c);
 
     amd64_get_storage( P_REG_RBX, b );
 
@@ -3418,7 +3420,7 @@ void ins_f_byte_with_2_args(unsigned int a, INT32 b, INT32 c)
   case F_ADD_LOCAL_INT_AND_POP:
    {
       LABELS();
-      ins_debug_instr_prologue(a-F_OFFSET, b, 0);
+      ins_debug_instr_prologue(a-F_OFFSET, b, c);
       amd64_load_fp_reg();
       mov_mem_reg( fp_reg, OFFSETOF(pike_frame, locals), ARG1_REG);
       add_reg_imm( ARG1_REG, b*sizeof(struct svalue) );
@@ -3456,8 +3458,9 @@ void ins_f_byte_with_2_args(unsigned int a, INT32 b, INT32 c)
      }
 
 #if 0
-   /* this is a: nonworking, and b: not really all that more efficient anyway.. */
+  /* this is a: nonworking, and b: not really all that more efficient anyway.. */
   case F_APPLY_N:
+     ins_debug_instr_prologue(a-F_OFFSET, b, c);
      mov_imm_reg( APPLY_SVALUE_STRICT, ARG1_REG );
      mov_imm_reg( c, ARG2_REG );
      mov_ptr_reg( &((Pike_fp->context->prog->constants + b)->sval), ARG3_REG );
@@ -3466,6 +3469,7 @@ void ins_f_byte_with_2_args(unsigned int a, INT32 b, INT32 c)
     return;
 #endif
   case F_CALL_BUILTIN_N:
+    ins_debug_instr_prologue(a-F_OFFSET, b, c);
     mov_imm_reg( c, ARG1_REG );
     amd64_call_c_opcode(Pike_compiler->new_program->constants[b].sval.u.efun->function,
                         I_UPDATE_SP);
@@ -3533,6 +3537,7 @@ void ins_f_byte_with_2_args(unsigned int a, INT32 b, INT32 c)
   case F_LEXICAL_LOCAL:
     if( c < 5 )
     {
+      ins_debug_instr_prologue(a-F_OFFSET, b, c);
       amd64_load_fp_reg();
       mov_reg_reg( fp_reg, P_REG_RAX );
       while(c--)
@@ -3548,6 +3553,7 @@ void ins_f_byte_with_2_args(unsigned int a, INT32 b, INT32 c)
   case F_LEXICAL_LOCAL_LVALUE:
     if( c < 5 )
     {
+      ins_debug_instr_prologue(a-F_OFFSET, b, c);
       amd64_load_fp_reg();
       amd64_load_sp_reg();
       mov_reg_reg( fp_reg, P_REG_RAX );
