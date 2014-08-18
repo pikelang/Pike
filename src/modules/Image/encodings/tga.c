@@ -64,6 +64,7 @@
 #include "threads.h"
 #include "module_support.h"
 #include "builtin_functions.h"
+#include "pike_types.h"
 
 
 #include "image.h"
@@ -846,7 +847,7 @@ void image_tga__decode( INT32 args )
   push_text( "image" );
   push_object( i.io );
 
-  push_text( "type" );
+  ref_push_string( literal_type_string );
   push_text( "image/x-targa" );
 
   push_text( "xsize" );

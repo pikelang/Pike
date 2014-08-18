@@ -834,7 +834,7 @@ static void do_list_fields (INT32 args)
     
     push_text("name");
 		push_text(field->name);
-		push_text("type");
+		ref_push_string(literal_type_string);
 		push_text(decode_msql_type(field->type));
 		push_text("length");
 		push_int(field->length);

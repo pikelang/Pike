@@ -114,7 +114,7 @@ static void f_substring__sprintf( INT32 args )
      return;
    case 'O':
      push_text("SubString( %O /* [+%d .. %d] */ )" );
-     push_text("string"); f_substring_cast( 1 );
+     ref_push_string(literal_string_string); f_substring_cast( 1 );
 
      push_int64( s->len );
      push_int64( s->offset );

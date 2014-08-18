@@ -17,6 +17,7 @@
 #include "builtin_functions.h"
 #include "operators.h"
 #include "module_support.h"
+#include "pike_types.h"
 
 #include "image.h"
 #include "colortable.h"
@@ -52,7 +53,6 @@ static struct pike_string *param_palette;
 static struct pike_string *param_spalette;
 static struct pike_string *param_image;
 static struct pike_string *param_alpha;
-static struct pike_string *param_type;
 static struct pike_string *param_bpp;
 static struct pike_string *param_background;
 static struct pike_string *param_zlevel;
@@ -1501,7 +1501,7 @@ static void img_png_decode(INT32 args, int mode)
    if ( mode != MODE_IMAGE_ONLY )
    {
      push_int(ihdr.type);
-     mapping_string_insert(m, param_type, sp-1);
+     mapping_string_insert(m, literal_type_string, sp-1);
      pop_stack();
 
      push_int(ihdr.bpp);
@@ -1886,7 +1886,6 @@ void exit_image_png(void)
    free_string(param_alpha);
    free_string(param_bpp);
    free_string(param_background);
-   free_string(param_type);
    free_string(param_zlevel);
    free_string(param_zstrategy);
 }
@@ -1937,7 +1936,6 @@ void init_image_png(void)
    param_image=make_shared_string("image");
    param_alpha=make_shared_string("alpha");
    param_bpp=make_shared_string("bpp");
-   param_type=make_shared_string("type");
    param_background=make_shared_string("background");
    param_zlevel=make_shared_string("zlevel");
    param_zstrategy=make_shared_string("zstrategy");

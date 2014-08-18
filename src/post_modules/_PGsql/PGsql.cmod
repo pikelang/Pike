@@ -17,6 +17,7 @@
 #include "fdlib.h"
 #include "dmalloc.h"
 #include "bignum.h"
+#include "pike_types.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -376,7 +377,7 @@ outofmem: Pike_fatal("Out of memory\n");
 	  msglen-=collen;
 	  array_index_no_free(&drd,datarowdesc,i);
 	  typ = low_mapping_string_lookup(drd.u.mapping,
-	   MK_STRING("type"))->u.integer;
+	   literal_type_string)->u.integer;
 	  free_svalue(&drd);
 	  switch(typ)
 	  { case FLOAT4OID:

@@ -342,9 +342,7 @@ PIKECLASS mpf
   PIKEFUN int(0..1) _is_type(string str)
     flags ID_PROTECTED;
     {
-      struct pike_string *float_t;
-      MAKE_CONST_STRING(float_t,"float");
-      if( str == float_t )
+      if( str == literal_float_string )
           RETURN 1;
       RETURN 0;
     }

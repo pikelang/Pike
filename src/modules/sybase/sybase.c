@@ -1082,7 +1082,7 @@ static void f_fetch_fields(INT32 args) {
     push_text("name");
     push_text(desc->name);
     sybdebug((stderr,"name is %s\n",desc->name));
-    push_text("type");
+    ref_push_string(literal_type_string);
     switch(desc->datatype) {
       desc_type(CS_ILLEGAL_TYPE,illegal);
       desc_type(CS_CHAR_TYPE,char);

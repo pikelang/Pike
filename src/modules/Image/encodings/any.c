@@ -15,6 +15,7 @@
 #include "svalue.h"
 #include "mapping.h"
 #include "pike_error.h"
+#include "pike_types.h"
 
 #include "image.h"
 
@@ -41,12 +42,12 @@ static void fix_png_mapping(void)
 {
   struct svalue *s;
   if(TYPEOF(sp[-1]) != T_MAPPING) return;
-  if((s = simple_mapping_string_lookup(sp[-1].u.mapping, "type"))) {
+  if((s = low_mapping_string_lookup(sp[-1].u.mapping, literal_type_string))) {
     push_text("_type");
     mapping_insert(sp[-2].u.mapping, &sp[-1], s);
     pop_stack();
   }
-  push_text("type");
+  ref_push_string(literal_type_string);
   push_text("image/png");
   mapping_insert(sp[-3].u.mapping, &sp[-2], &sp[-1]);
   pop_n_elems(2);
@@ -207,7 +208,7 @@ simple_image:
    /* on stack: object image,string type */
    f_aggregate(2);
    push_text("image");
-   push_text("type");
+   ref_push_string(literal_type_string);
    f_aggregate(2);
    stack_swap();
    f_mkmapping(2);

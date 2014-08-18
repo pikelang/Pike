@@ -237,7 +237,7 @@ string _sprintf(int flag)
     return;
   }
   push_text( "GDK1.Event(" );
-  push_text( "type" ); pgdk_event__index( 1 );
+  ref_push_string( literal_type_string ); pgdk_event__index( 1 );
   push_text( ")" );
   f_add( 3 );
 }

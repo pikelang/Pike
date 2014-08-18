@@ -2621,7 +2621,7 @@ static void dbnull_eq(INT32 args)
   }
   pop_stack();
   /* Yes - are the types the same? */
-  push_constant_text("type");
+  ref_push_string(literal_type_string);
   o_index();
   push_svalue(&THIS_DBNULL->type);
   f_eq(2);

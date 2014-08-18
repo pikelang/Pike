@@ -870,7 +870,7 @@ double pgtk_get_float( struct svalue *s )
   if( is_bignum_object_in_svalue( s ) )
   {
     FLOAT_TYPE f;
-    push_text( "float" );
+    ref_push_string( literal_float_string );
     apply( s->u.object, "cast", 1 );
     f = Pike_sp[-1].u.float_number;
     pop_stack();

@@ -212,13 +212,13 @@ int new_signal(string name, array types, string return_type)
       }
       if (is_same_string(ret_type_name,_STR("void"))) {
 	return_type=G_TYPE_NONE;
-      } else if (is_same_string(ret_type_name,_STR("int"))) {
+      } else if (ret_type_name == literal_int_string) {
 	return_type=G_TYPE_INT;
-      } else if (is_same_string(ret_type_name,_STR("float"))) {
+      } else if (ret_type_name == literal_float_string) {
 	return_type=G_TYPE_DOUBLE;
-      } else if (is_same_string(ret_type_name,_STR("string"))) {
+      } else if (ret_type_name == literal_string_string) {
 	return_type=G_TYPE_STRING;
-      } else if (is_same_string(ret_type_name,_STR("object"))) {
+      } else if (ret_type_name == literal_object_string) {
 	return_type=G_TYPE_OBJECT;
       } else {
 	return_type=G_TYPE_POINTER;
@@ -233,16 +233,16 @@ int new_signal(string name, array types, string return_type)
       for (i=n_params=0; i<a->size; i++) {
 	if (TYPEOF(ITEM(a)[i]) != PIKE_T_STRING)
 	  continue;
-	if (is_same_string(ITEM(a)[i].u.string,_STR("int"))) {
+	if (ITEM(a)[i].u.string == literal_int_string) {
 	  param_types[n_params]=G_TYPE_INT;
 	  n_params++;
-	} else if (is_same_string(ITEM(a)[i].u.string,_STR("float"))) {
+	} else if (ITEM(a)[i].u.string == literal_float_string) {
 	  param_types[n_params]=G_TYPE_DOUBLE;
 	  n_params++;
-	} else if (is_same_string(ITEM(a)[i].u.string,_STR("string"))) {
+	} else if (ITEM(a)[i].u.string == literal_string_string) {
 	  param_types[n_params]=G_TYPE_STRING;
 	  n_params++;
-	} else if (is_same_string(ITEM(a)[i].u.string,_STR("object"))) {
+	} else if (ITEM(a)[i].u.string == literal_object_string) {
 	  param_types[n_params]=G_TYPE_OBJECT;
 	  n_params++;
 	} else {

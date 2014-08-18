@@ -20,6 +20,7 @@
 #include "stralloc.h"
 #include "builtin_functions.h"
 #include "module_support.h"
+#include "pike_types.h"
 
 #include "image.h"
 
@@ -1063,7 +1064,7 @@ void img_pvr_decode(INT32 args,int header_only)
      len = l+8;
    }
 
-   push_text("type");
+   ref_push_string(literal_type_string);
    push_text("image/x-pvr");
    n++;
 

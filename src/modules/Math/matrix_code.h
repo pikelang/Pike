@@ -957,8 +957,6 @@ static void matrixX(_ysize)(INT32 args)
 void Xmatrix(init_math_)(void)
 {
 #define MKSTR(X) make_shared_binary_string(X,CONSTANT_STRLEN(X))
-  if( !s_array )
-    s_array=MKSTR("array");
   if( !s_rotate )
     s_rotate=MKSTR("rotate");
   if( !s__clr )
@@ -1021,10 +1019,6 @@ void Xmatrix(init_math_)(void)
 
 void Xmatrix(exit_math_)(void)
 {
-  if (s_array) {
-    free_string(s_array);
-    s_array = NULL;
-  }
   if (s_rotate) {
     free_string(s_rotate);
     s_rotate = NULL;

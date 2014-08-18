@@ -229,7 +229,7 @@ static void f_codec_info(INT32 args) {
   pop_n_elems(args);
   if(THIS->codec) {
     push_text("name");		push_text( THIS->codec->name );
-    push_text("type");		push_int( THIS->codec->type );
+    ref_push_string(literal_type_string);		push_int( THIS->codec->type );
     push_text("id");		push_int( THIS->codec->id );
     push_text("encoder_flg");	push_int( encoder_flg(THIS->codec) );
     f_aggregate_mapping( 2*4 );
@@ -314,7 +314,7 @@ static void f_get_codec_status(INT32 args) {
   }
   
   push_text("name");		push_text( THIS->codec->name );
-  push_text("type");		push_int( THIS->codec->type );
+  ref_push_string(literal_type_string);		push_int( THIS->codec->type );
   push_text("id");		push_int( THIS->codec->id );
   push_text("encoder_flg");	push_int( encoder_flg(THIS->codec) );
   push_text("flags");		push_int( THIS->codec_context.flags );
@@ -491,7 +491,7 @@ static void f_list_codecs(INT32 args) {
   while ((codec = av_codec_next(codec))) {
     cnt++;
     push_text("name");		push_text( codec->name );
-    push_text("type");		push_int( codec->type );
+    ref_push_string(literal_type_string);		push_int( codec->type );
     push_text("id");		push_int( codec->id );
     push_text("encoder_flg");	push_int( encoder_flg(codec) );
     f_aggregate_mapping( 2*4 );
@@ -506,7 +506,7 @@ static void f_list_codecs(INT32 args) {
   while(codec != NULL) {
     cnt++;
     push_text("name");		push_text( codec->name );
-    push_text("type");		push_int( codec->type );
+    ref_push_string(literal_type_string);		push_int( codec->type );
     push_text("id");		push_int( codec->id );
     push_text("encoder_flg");	push_int( encoder_flg(codec) );
     codec = codec->next;
