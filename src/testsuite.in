@@ -55,6 +55,57 @@ test_eq([[(string) Int.NATIVE_MIN]], [[Int.NATIVE_MIN + ""]])
 test_eq([[(string) Int.NATIVE_MAX]], [[sprintf ("%d", Int.NATIVE_MAX)]])
 test_eq([[(string) Int.NATIVE_MIN]], [[sprintf ("%d", Int.NATIVE_MIN)]])
 
+test_any_equal([[
+  array res = ({});
+  array ops = ({ `+, `-, `*, `/, `%, `<<, `>>, `&, `|, `^ });
+  array nums_a = ({ 0, 1, -1, 0xffffffff, 0xffffffffffffffff });
+  array nums_b = ({ 0, 1, -1 });
+
+  foreach(ops;; function op)
+    foreach(nums_a;; int a)
+      foreach(nums_b;; int b)
+      {
+        mixed err = catch {
+          res += ({ op(a,b) });
+        };
+        if( err ) res += ({ "E" });
+      }
+
+  return res;
+
+]],[[ ({
+
+// +
+0, 1, -1, 1, 2, 0, -1, 0, -2, 0xffffffff, 0x100000000, 0xfffffffe, 0xffffffffffffffff, 0x10000000000000000, 0xfffffffffffffffe,
+
+// -
+0, -1, 1, 1, 0, 2, -1, -2, 0, 0xffffffff, 0xfffffffe, 0x100000000, 0xffffffffffffffff, 0xfffffffffffffffe, 0x10000000000000000,
+
+// *
+0, 0, 0, 0, 1, -1, 0, -1, 1, 0, 0xffffffff, -0xffffffff, 0, 0xffffffffffffffff, -0xffffffffffffffff,
+
+// /
+"E", 0, 0, "E", 1, -1, "E", -1, 1, "E", 0xffffffff, -0xffffffff, "E", 0xffffffffffffffff, -0xffffffffffffffff,
+
+// %
+"E", 0, 0, "E", 0, 0, "E", 0, 0, "E", 0, 0, "E", 0, 0,
+
+// <<
+0, 0, "E", 1, 2, "E", -1, -2, "E", 0xffffffff, 0x1fffffffe, "E", 0xffffffffffffffff, 0x1fffffffffffffffe, "E",
+
+// >>
+0, 0, "E", 1, 0, "E", -1, -1, "E", 0xffffffff, 0x7fffffff, "E", 0xffffffffffffffff, 0x7fffffffffffffff, "E",
+
+// &
+0, 0, 0, 0, 1, 1, 0, 1, -1, 0, 1, 0xffffffff, 0, 1, 0xffffffffffffffff,
+
+// |
+0, 1, -1, 1, 1, -1, -1, -1, -1, 0xffffffff, 0xffffffff, -1, 0xffffffffffffffff, 0xffffffffffffffff, -1,
+
+// ^
+0, 1, -1, 1, 0, -2, -1, -2, 0, 0xffffffff, 0xfffffffe, -0x100000000, 0xffffffffffffffff, 0xfffffffffffffffe, -0x10000000000000000,
+}) ]])
+
 # __func__
 test_eq(__func__, "a")
 test_eq("b", __func__)
