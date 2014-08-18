@@ -2247,7 +2247,7 @@ int amd64_ins_f_jump(unsigned int op, int backward_jump)
       amd64_add_sp(-1);
 
      LABEL_B; /* Branch or not? */
-      test_reg32( P_REG_RBX );
+      test_reg( P_REG_RBX );
       if( op == F_BRANCH_WHEN_ZERO )
         return jz_imm_rel32(0);
       return jnz_imm_rel32(0);
@@ -2314,7 +2314,7 @@ int amd64_ins_f_jump(unsigned int op, int backward_jump)
      LABEL_A;
       mov_imm_reg( 0, P_REG_RBX );
      LABEL_B;
-      test_reg32(P_REG_RBX);
+      test_reg(P_REG_RBX);
       return jnz_imm_rel32(0);
 
     case F_LOOP:
@@ -3117,7 +3117,8 @@ int amd64_ins_f_jump_with_arg(unsigned int op, INT32 a, int backward_jump)
         checked. That is not nessasarily true.
       */
       mov_sval_type( ARG1_REG, P_REG_RCX );
-      cmp_reg32_imm( P_REG_RCX, PIKE_T_INT );      je( &label_C );
+      cmp_reg32_imm( P_REG_RCX, PIKE_T_INT );
+      je( &label_C );
       mov_imm_reg( 1, P_REG_RAX );
       shl_reg32_reg( P_REG_RAX, P_REG_RCX );
       and_reg32_imm( P_REG_RAX, BIT_FUNCTION|BIT_OBJECT );
