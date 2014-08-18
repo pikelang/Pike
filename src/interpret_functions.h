@@ -2897,15 +2897,6 @@ OPCODE0_PTRJUMP(F_TAIL_RECUR, "tail recursion", I_UPDATE_ALL, {
   JUMP_DONE;
 });
 
-#if 0
-/* This opcode needs mending if it is to work with machine code. */
-OPCODE0_JUMP(F_BREAKPOINT, "breakpoint", 0, {
-  extern void o_breakpoint(void);
-  o_breakpoint();
-  DO_JUMP_TO(PROG_COUNTER-1);
-});
-#endif
-
 OPCODE1(F_THIS_OBJECT, "this_object", I_UPDATE_SP, {
     LOCAL_VAR(int level);
     LOCAL_VAR(struct object *o);
@@ -2929,14 +2920,13 @@ OPCODE0(F_UNDEFINEDP,"undefinedp",0, {
     if(TYPEOF(Pike_sp[-1]) != T_INT)
     {
       pop_stack();
-      push_int(1);
+      push_int(0);
       return;
     }
     undef = SUBTYPEOF(Pike_sp[-1]) == NUMBER_UNDEFINED;
     SET_SVAL(Pike_sp[-1], T_INT, NUMBER_NUMBER, integer,
              undef);
 });
-
 
 OPCODE0(F_DESTRUCTEDP,"destructedp",0, {
     if((TYPEOF(Pike_sp[-1]) == T_OBJECT || TYPEOF(Pike_sp[-1]) == T_FUNCTION)
