@@ -1644,15 +1644,15 @@ struct pike_string *realloc_unlinked_string(struct pike_string *a,
       break;
   case 1: { // old string was short
       size_t obytes = (size_t)(a->len+1) << a->size_shift;
-      a->flags &= ~STRING_IS_SHORT;
       s = xalloc(nbytes);
+      a->flags &= ~STRING_IS_SHORT;
       memcpy(s, a->str, obytes);
       ba_free(&string_allocator, a->str);
       break;
   }
   case 2: // new string is short
-      a->flags |= STRING_IS_SHORT;
       s = ba_alloc(&string_allocator);
+      a->flags |= STRING_IS_SHORT;
       memcpy(s, a->str, nbytes);
       free(a->str);
       break;
