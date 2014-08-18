@@ -85,6 +85,24 @@ protected void unlocked_log_msg_cont (string msg)
   }
 }
 
+// Cut strings to below 4K
+void log_msg_result (string msg, mixed ... args)
+{
+  array a = msg/"%";
+  foreach(a; int pos; string part)
+  {
+    if(pos==0) continue;
+    if(has_prefix(part, "O") && pos-1<=sizeof(args) &&
+       stringp(args[pos-1]) && sizeof(args[pos-1])>4000)
+    {
+      part[0] = 's';
+      a[pos] = part;
+      args[pos-1] = sprintf("%O...", args[pos-1][..4000-1]);
+    }
+  }
+  log_msg(a*"%", @args);
+}
+
 void log_msg (string msg, mixed... args)
 //! Logs a testsuite message to stderr. The message is shown
 //! regardless of the verbosity level. If the previous message was
