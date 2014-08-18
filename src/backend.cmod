@@ -958,7 +958,7 @@ PIKECLASS Backend
 
        c = get_storage(co, Backend_CallOut_program);
 
-       if (!c) Pike_error("low_call_out(): Unexpected object from CallOut.\n");
+       if (!c) Pike_error("Unexpected object from CallOut.\n");
 
        ref_push_array(c->args);
 
@@ -4417,7 +4417,7 @@ static void check_set_timer(struct timeval tmp)
       }
       else
       {
-        Pike_error("ERROR: unable to create run loop timer!\n");
+        Pike_error("Unable to create run loop timer!\n");
       }
     }
   }

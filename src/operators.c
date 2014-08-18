@@ -393,7 +393,7 @@ PMOD_EXPORT void o_cast_to_string(void)
 	  case 2:
 #if SIZEOF_INT_TYPE > 4
 	    if (val < MIN_INT32 || val > MAX_INT32)
-	      Pike_error ("cast: Item %d is too large: %"PRINTPIKEINT"x.\n",
+	      Pike_error ("Item %d is too large: %"PRINTPIKEINT"x.\n",
 			  i, val);
 #endif
 	    break;

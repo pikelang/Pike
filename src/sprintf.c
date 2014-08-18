@@ -1925,7 +1925,7 @@ void low_f_sprintf(INT32 args, int compat_mode, struct string_builder *r)
       o_cast(string_type_string, PIKE_T_STRING);
       if (TYPEOF(Pike_sp[-1]) != T_STRING) {
 	/* We don't accept objects... */
-	Pike_error("sprintf(): Cast to string failed.\n");
+	Pike_error("Cast to string failed.\n");
       }
       /* Replace the original object with the new string. */
       assign_svalue(argp, Pike_sp-1);
