@@ -284,29 +284,30 @@ void matrixX(_cast)(INT32 args)
       push_int(0);
    }
 
-   if (args)
-      if (TYPEOF(Pike_sp[-1]) == T_STRING) {
-	 if (Pike_sp[-1].u.string==s_array)
-	 {
-	    int i,j;
-	    int xs=THIS->xsize,ys=THIS->ysize;
-	    FTYPE *m=THIS->m;
-	    check_stack(DO_NOT_WARN((long)(xs+ys)));
-	    pop_n_elems(args);
-	    for (i=0; i<ys; i++)
-	    {
-	      for (j=0; j<xs; j++)
-		PUSH_ELEM(*(m++));
-	      f_aggregate(xs);
-	    }
-	    f_aggregate(ys);
-	    return;
-	 }
-         else
-           Pike_error("Can only cast to array.\n");
-      }
+   if( !args || TYPEOF(Pike_sp[-1]) != T_STRING )
+     SIMPLE_BAD_ARG_ERROR("cast",1,"string");
 
-   SIMPLE_BAD_ARG_ERROR("cast",1,"string");
+   if( Pike_sp[-1].u.string != literal_array_string )
+   {
+     pop_n_elems(args);
+     push_undefined();
+     return;
+   }
+
+   {
+     int i,j;
+     int xs=THIS->xsize,ys=THIS->ysize;
+     FTYPE *m=THIS->m;
+     check_stack(DO_NOT_WARN((long)(xs+ys)));
+     pop_n_elems(args);
+     for (i=0; i<ys; i++)
+     {
+       for (j=0; j<xs; j++)
+         PUSH_ELEM(*(m++));
+       f_aggregate(xs);
+     }
+     f_aggregate(ys);
+   }
 }
 
 
@@ -977,7 +978,7 @@ void Xmatrix(init_math_)(void)
 		      tFunc(tInt1Plus tInt1Plus tOr4(tInt,tFloat,tString,tVoid), tVoid)), ID_PROTECTED);
 
    ADD_FUNCTION("cast",matrixX(_cast),
-		tFunc(tStr, tArr(tArr(tFloat))), 0);
+		tFunc(tStr, tArr(tArr(tFloat))), ID_PROTECTED);
    ADD_FUNCTION("vect",matrixX(_vect), tFunc(tNone,tArr(PTYPE)), 0);
    ADD_FUNCTION("_sprintf",matrixX(__sprintf), tFunc(tInt tMapping, tStr), 0);
 

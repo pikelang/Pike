@@ -14,6 +14,7 @@
 #include "stralloc.h"
 #include "program.h"
 #include "operators.h"
+#include "pike_types.h"
 
 #include "program_id.h"
 
@@ -429,19 +430,13 @@ PIKECLASS Sequence
  */
 
   PIKEFUN mixed cast(string type)
+    flags ID_PROTECTED;
   {
-    struct pike_string *array_t;
-    MAKE_CONST_STRING( array_t, "array" );
-    
-    if (type == array_t)
-    {
-           push_array(copy_array(THIS->a));
-      
-    }
+    pop_n_elems(args); /* type as at least one more reference. */
+    if (type == literal_array_string)
+      push_array(copy_array(THIS->a));
     else
-    {
-      Pike_error("Cannot cast to %S\n", type);
-    }
+      push_undefined();
   }
 
   /*! @decl void clear()

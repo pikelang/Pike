@@ -1080,67 +1080,17 @@ static void mpzmod_size(INT32 args)
  */
 static void mpzmod_cast(INT32 args)
 {
-  struct pike_string *s;
+  struct pike_string *s = sp[-args].u.string;
+  pop_stack(); /* s have at least one more reference. */
 
-  if(args < 1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("Gmp.mpz->cast", 1);
-  if(TYPEOF(sp[-args]) != T_STRING)
-    SIMPLE_ARG_TYPE_ERROR ("Gmp.mpz->cast", 1, "string");
-
-  s = sp[-args].u.string;
-  add_ref(s);
-
-  pop_n_elems(args);
-
-  switch(s->str[0])
-  {
-  case 'i':
-    if(!strncmp(s->str, "int", 3))
-    {
-      free_string(s);
-      mpzmod_get_int(0);
-      return;
-    }
-    break;
-
-  case 's':
-    if(!strcmp(s->str, "string"))
-    {
-      free_string(s);
-      mpzmod_get_string(0);
-      return;
-    }
-    break;
-
-  case 'f':
-    if(!strcmp(s->str, "float"))
-    {
-      free_string(s);
-      mpzmod_get_float(0);
-      return;
-    }
-    break;
-
-  case 'o':
-    if(!strcmp(s->str, "object"))
-    {
-      push_object(this_object());
-    }
-    break;
-
-  case 'm':
-    if(!strcmp(s->str, "mixed"))
-    {
-      push_object(this_object());
-    }
-    break;
-    
-  }
-
-  push_string(s);	/* To get it freed when Pike_error() pops the stack. */
-
-  SIMPLE_ARG_ERROR ("Gmp.mpz->cast", 1,
-		    "Cannot cast to other type than int, string or float.");
+  if( s == literal_int_string )
+    mpzmod_get_int(0);
+  else if( s == literal_string_string )
+    mpzmod_get_string(0);
+  else if( s == literal_float_string )
+    mpzmod_get_float(0);
+  else
+    push_undefined();
 }
 
 /* Non-reentrant */
@@ -2365,7 +2315,7 @@ static void pike_mp_free (void *ptr, size_t UNUSED(size))
   ADD_FUNCTION("`!",mpzmod_not,tFunc(tNone,tInt01), ID_PROTECTED);	\
 									\
   ADD_FUNCTION("__hash",mpzmod___hash,tFunc(tNone,tInt), ID_PROTECTED);	\
-  ADD_FUNCTION("cast",mpzmod_cast,tFunc(tStr,tMix), ID_PROTECTED);	\
+  ADD_FUNCTION("cast",mpzmod_cast,tFunc(tStr,tMix), ID_PRIVATE);	\
 									\
   ADD_FUNCTION("_is_type", mpzmod__is_type, tFunc(tStr,tInt01),         \
                ID_PROTECTED);                                           \

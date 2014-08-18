@@ -354,59 +354,15 @@ PIKECLASS mpf
   PIKEFUN mixed cast(string s)
     flags ID_PROTECTED;
   {
-    add_ref(s);
-      
-    pop_n_elems(args);
-      
-    if (s->len) {
-      switch(s->str[0])
-      {
-	case 's':
-	  if(!strcmp(s->str, "string"))
-	  {
-	    free_string(s);
-	    f_mpf_get_string(0);
-	    return;
-	  }
-	  break;
-
-	case 'i':
-	  if(!strncmp(s->str, "int", 3))
-	  {
-	    free_string(s);
-	    f_mpf_get_int(0);
-	    return;
-	  }
-	  break;
-
-	case 'f':
-	  if(!strcmp(s->str, "float"))
-	  {
-	    free_string(s);
-	    f_mpf_get_float(0);
-	    return;
-	  }
-	  break;
-	  
-	case 'o':
-	  if(!strcmp(s->str, "object"))
-	  {
-	    push_object(this_object());
-	  }
-	  break;
-	  
-	case 'm':
-	  if(!strcmp(s->str, "mixed"))
-	  {
-	    push_object(this_object());
-	  }
-	  break;	  
-      }
-    }  
-    push_string(s);	/* Free it when the stack unwinds. */
-      
-    Pike_error("Gmp.mpf cast to \"%S\" is other type than int, string or float.\n",
-	       s);
+    pop_stack(); /* s have at least one more reference. */
+    if( s == literal_string_string )
+      f_mpf_get_string(0);
+    else if( s == literal_int_string )
+      f_mpf_get_int(0);
+    else if( s == literal_float_string )
+      f_mpf_get_float(0);
+    else
+      push_undefined();
   }
 
 #ifdef DEBUG_MALLOC

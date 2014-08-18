@@ -2538,9 +2538,10 @@ static void dbdate_sprintf(INT32 args)
 
 static void dbdate_cast(INT32 args)
 {
-  char *s;
-  get_all_args("Oracle.Date->cast",args,"%s",&s);
-  if(!strcmp(s,"int"))
+  struct pike_string *type = Pike_sp[-args].u.string;
+  pop_stack(); /* type have at least one more reference. */
+
+  if(type == literal_int_string)
   {
     ub1 hour, min, sec, month,day;
     sb2 year;
@@ -2557,16 +2558,14 @@ static void dbdate_cast(INT32 args)
     push_int(month);
     push_int(year);
     f_mktime(6);
-    return;
   }
-  if(!strcmp(s,"string"))
+  else if(type == literal_string_string)
   {
-    pop_n_elems(args);
     push_int('s');
     dbdate_sprintf(1);
-    return;
   }
-  Pike_error("Cannot cast Oracle.Date to %s\n",s);
+  else
+    push_undefined();
 }
 
 /*
@@ -2753,7 +2752,7 @@ PIKE_MODULE_INIT
 
   MY_START_CLASS(dbdate); {
     ADD_FUNCTION("create",dbdate_create,tFunc(tOr(tStr,tInt),tVoid),0);
-    ADD_FUNCTION("cast",dbdate_cast,tFunc(tStr, tMix),0);
+    ADD_FUNCTION("cast",dbdate_cast,tFunc(tStr, tMix),ID_PRIVATE);
     ADD_FUNCTION("_sprintf",dbdate_sprintf,tFunc(tInt, tStr),0);
   }
   MY_END_CLASS(Date);

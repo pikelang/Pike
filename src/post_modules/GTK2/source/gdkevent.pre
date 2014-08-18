@@ -279,8 +279,11 @@ mixed cast(string to)
 
   if(!e) Pike_error("No event\n");
 
-  if( !args  || !is_same_string(Pike_sp[-args].u.string,_STR("mapping")) )
-    Pike_error("Can only cast to mapping\n");
+  if( !args  || Pike_sp[-args].u.string != literal_mapping_string )
+  {
+    pop_n_elems( args );
+    push_undefined();
+  }
   pop_n_elems( args );
 
   switch(e->type)

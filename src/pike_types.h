@@ -141,6 +141,19 @@ PMOD_EXPORT extern struct pike_type *weak_type_string;
 extern struct pike_type *sscanf_type_string;
 extern struct pike_type *sscanf_76_type_string;
 
+PMOD_EXPORT extern struct pike_string *literal_string_string;
+PMOD_EXPORT extern struct pike_string *literal_int_string;
+PMOD_EXPORT extern struct pike_string *literal_float_string;
+PMOD_EXPORT extern struct pike_string *literal_function_string;
+PMOD_EXPORT extern struct pike_string *literal_object_string;
+PMOD_EXPORT extern struct pike_string *literal_program_string;
+PMOD_EXPORT extern struct pike_string *literal_array_string;
+PMOD_EXPORT extern struct pike_string *literal_multiset_string;
+PMOD_EXPORT extern struct pike_string *literal_mapping_string;
+PMOD_EXPORT extern struct pike_string *literal_type_string;
+PMOD_EXPORT extern struct pike_string *literal_mixed_string;
+
+
 #define CONSTTYPE(X) make_pike_type(X)
 
 #ifdef DO_PIKE_CLEANUP
