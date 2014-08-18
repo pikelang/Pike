@@ -112,7 +112,7 @@
 DECLARE_ERROR(generic, Generic, EMPTY ,
   ERR_VAR(struct pike_string *,tStr,PIKE_T_STRING,error_message)
   ERR_VAR(struct array *,tArray,PIKE_T_ARRAY,error_backtrace)
-  ERR_FUNC("cast",f_error_cast,tFunc(tString,tArray),ID_PROTECTED)
+  ERR_FUNC("cast",f_error_cast,tFunc(tString,tArray),ID_PRIVATE)
   ERR_FUNC("`[]",f_error_index,tFunc(tInt01,tMixed),ID_PROTECTED)
   ERR_FUNC("_sizeof",f_error__sizeof,tFunc(tNone,tInt2),ID_PROTECTED)
   ERR_FUNC("_indices",f_error__indices,tFunc(tNone,tArr(tInt01)),ID_PROTECTED)

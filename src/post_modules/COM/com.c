@@ -713,17 +713,16 @@ static void f_cval_cast(INT32 args)
   if (TYPEOF(Pike_sp[-args]) != PIKE_T_STRING)
     Pike_error("Bad argument 1 to cast().\n");
 
-  if (!strcmp(Pike_sp[-args].u.string->str, "object")) {
+  if( Pike_sp[-args].u.string == literal_string_string )
+  {
     pop_n_elems(args);
-    push_object(this_object());
+    cval_push_result(0, DISPATCH_PROPERTYGET);
   }
-
-  
-/*   if (strcmp(Pike_sp[-args].u.string->str, "string")) */
-/*     Pike_error("cast() to other type than string.\n"); */
-
-  pop_n_elems(args);
-  cval_push_result(0, DISPATCH_PROPERTYGET);
+  else
+  {
+    pop_n_elems(args);
+    push_undefined();
+  }
 }
 
 /*   pike_add_function("`[]", f_cval_ind, "function(mixed:mixed)", 0); */

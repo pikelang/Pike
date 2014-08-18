@@ -28,6 +28,7 @@
 #include "dmalloc.h"
 #include "operators.h"
 #include "module_support.h"
+#include "pike_types.h"
 
 #include "image.h"
 
@@ -1424,76 +1425,72 @@ static void image_layer_create(INT32 args)
  */
 static void image_layer_cast(INT32 args)
 {
-   if (!args)
-      SIMPLE_TOO_FEW_ARGS_ERROR("Image.Layer->cast",1);
-   if (TYPEOF(Pike_sp[-args]) == T_STRING ||
-       Pike_sp[-args].u.string->size_shift)
-   {
-      if (strncmp(Pike_sp[-args].u.string->str,"mapping",7)==0)
-      {
-	 int n=0;
-	 pop_n_elems(args);
+  struct pike_string *type;
 
-	 push_text("xsize");       push_int(THIS->xsize);         n++;
-	 push_text("ysize");       push_int(THIS->ysize);         n++;
-	 push_text("image");       image_layer_image(0);          n++;
-	 push_text("alpha");       image_layer_alpha(0);          n++;
-	 push_text("xoffset");     push_int(THIS->xoffs);         n++;
-	 push_text("yoffset");     push_int(THIS->yoffs);         n++;
-	 push_text("alpha_value"); push_float(THIS->alpha_value); n++;
-	 push_text("fill");        image_layer_fill(0);           n++;
-	 push_text("fill_alpha");  image_layer_fill_alpha(0);     n++;
-	 push_text("tiled");       push_int(THIS->tiled);         n++;
-	 push_text("mode");        image_layer_mode(0);           n++;
+  if (!args)
+    SIMPLE_TOO_FEW_ARGS_ERROR("Image.Layer->cast",1);
 
-	 f_aggregate_mapping(n*2);
+  type = Pike_sp[-args].u.string;
+  pop_n_elems(args); /* type have at least one more reference. */
 
-	 return;
+  if (type == literal_mapping_string)
+  {
+    int n=0;
+
+    push_text("xsize");       push_int(THIS->xsize);         n++;
+    push_text("ysize");       push_int(THIS->ysize);         n++;
+    push_text("image");       image_layer_image(0);          n++;
+    push_text("alpha");       image_layer_alpha(0);          n++;
+    push_text("xoffset");     push_int(THIS->xoffs);         n++;
+    push_text("yoffset");     push_int(THIS->yoffs);         n++;
+    push_text("alpha_value"); push_float(THIS->alpha_value); n++;
+    push_text("fill");        image_layer_fill(0);           n++;
+    push_text("fill_alpha");  image_layer_fill_alpha(0);     n++;
+    push_text("tiled");       push_int(THIS->tiled);         n++;
+    push_text("mode");        image_layer_mode(0);           n++;
+
+    f_aggregate_mapping(n*2);
+  }
+  else if (type == literal_string_string)
+  {
+    size_t size = THIS->xsize*THIS->ysize, i;
+    struct pike_string *s = begin_shared_string(size*4);
+    rgb_group *img = 0;
+    rgb_group *alp = 0;
+
+    if(THIS->img)
+      img = THIS->img->img;
+    if(THIS->alp)
+      alp = THIS->alp->img;
+
+    if(img && alp)
+      for(i=0; i<size; i++) {
+        s->str[i*4+0] = img[i].r;
+        s->str[i*4+1] = img[i].g;
+        s->str[i*4+2] = img[i].b;
+        s->str[i*4+3] = alp[i].r;
       }
-      else if (strncmp(Pike_sp[-args].u.string->str,"string",6)==0)
-      {
-	size_t size = THIS->xsize*THIS->ysize, i;
-	struct pike_string *s = begin_shared_string(size*4);
-	rgb_group *img = 0;
-	rgb_group *alp = 0;
-
-	pop_n_elems(args);
-	if(THIS->img)
-	  img = THIS->img->img;
-	if(THIS->alp)
-	  alp = THIS->alp->img;
-
-	if(img && alp)
-	  for(i=0; i<size; i++) {
-	    s->str[i*4+0] = img[i].r;
-	    s->str[i*4+1] = img[i].g;
-	    s->str[i*4+2] = img[i].b;
-	    s->str[i*4+3] = alp[i].r;
-	  }
-	else if(img)
-	  for(i=0; i<size; i++) {
-	    s->str[i*4+0] = img[i].r;
-	    s->str[i*4+1] = img[i].g;
-	    s->str[i*4+2] = img[i].b;
-	    s->str[i*4+3] = 255;
-	  }
-	else if(alp)
-	  for(i=0; i<size; i++) {
-	    s->str[i*4+0] = 255;
-	    s->str[i*4+1] = 255;
-	    s->str[i*4+2] = 255;
-	    s->str[i*4+3] = alp[i].r;
-	  }
-	else
-	  memset(s->str, 0, size*4);
-
-	push_string(end_shared_string(s));
-	return;
+    else if(img)
+      for(i=0; i<size; i++) {
+        s->str[i*4+0] = img[i].r;
+        s->str[i*4+1] = img[i].g;
+        s->str[i*4+2] = img[i].b;
+        s->str[i*4+3] = 255;
       }
-   }
-   SIMPLE_BAD_ARG_ERROR("Image.Colortable->cast",1,
-			"string(\"mapping\"|\"string\")");
+    else if(alp)
+      for(i=0; i<size; i++) {
+        s->str[i*4+0] = 255;
+        s->str[i*4+1] = 255;
+        s->str[i*4+2] = 255;
+        s->str[i*4+3] = alp[i].r;
+      }
+    else
+      memset(s->str, 0, size*4);
 
+    push_string(end_shared_string(s));
+  }
+  else
+    push_undefined();
 }
 
 /*** layer mode definitions ***************************/
@@ -3302,7 +3299,7 @@ void init_image_layers(void)
    ADD_FUNCTION("_sprintf",image_layer__sprintf,
                 tFunc(tInt tMapping,tString),0);
    ADD_FUNCTION("cast",image_layer_cast,
-		tFunc(tString,tMapping),0);
+		tFunc(tString,tMapping),ID_PROTECTED);
 
 
    ADD_FUNCTION("clone",image_layer_clone,

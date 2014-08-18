@@ -218,19 +218,15 @@ DOCEND()
      *! behaves as the inverse of create().
      */
     PIKEFUN mixed cast(string type) {
-	struct pike_string *mapping_t;
-	REF_MAKE_CONST_STRING(mapping_t, "mapping");
+      pop_stack(); /* type as at least one more reference. */
 
-	if (type == mapping_t) {
-	    pop_stack();
-	    cmod_CONCAT_EVAL(f_, tree_class, _cq__indices)(0);
-	    cmod_CONCAT_EVAL(f_, tree_class, _cq__values)(0);
-	    f_mkmapping(2);
-	    free_string(mapping_t);
-	    return;
-	}
-	free_string(mapping_t);
-	Pike_error("Cannot cast to %S\n", type);
+      if (type == literal_mapping_string) {
+        cmod_CONCAT_EVAL(f_, tree_class, _cq__indices)(0);
+        cmod_CONCAT_EVAL(f_, tree_class, _cq__values)(0);
+        f_mkmapping(2);
+      }
+      else
+        push_undefined();
     }
 
     /*! @decl mixed nth(int(0..) n)

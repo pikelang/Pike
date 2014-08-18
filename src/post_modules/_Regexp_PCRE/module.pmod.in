@@ -316,16 +316,16 @@ class Plain
                
 /**** "internal" ***********************************************/
 
-   string _sprintf(int t,mapping fum)
+   protected string _sprintf(int t,mapping fum)
    {
       if (t=='t') return "Regexp.PCRE.Plain";
       return ::_sprintf(t,fum);
    }
 
-   string cast(string to)
+   protected string cast(string to)
    {
       if (to=="string") return pattern; 
-      else error("can't cast %t to %O\n",this,to);
+      return UNDEFINED;
    }
 }
 

@@ -291,7 +291,7 @@ protected class jobject {
     return cls->_wrap_result(x);
   }
 
-  protected mixed cast(mixed ... args)
+  mixed cast(mixed ... args)
   {
     return obj->cast(@unwrap_args(args));
   }
@@ -358,7 +358,7 @@ protected class jarray {
   protected object obj;
   mapping(string:mixed) info;
 
-  protected mixed cast(mixed ... args)
+  mixed cast(mixed ... args)
   {
     return obj->cast(@unwrap_args(args));
   }

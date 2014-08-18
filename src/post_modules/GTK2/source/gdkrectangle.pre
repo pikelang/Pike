@@ -42,10 +42,14 @@ mixed cast(string type)
 {
   struct pike_string *type;
   GdkRectangle *r=(GdkRectangle *)THIS->obj;
-  get_all_args("cast",args,"%t",&type);
 
-  if (is_same_string(type,_STR("mapping"))) {
-    pgtk2_pop_n_elems(args);
+  if (args!=1)
+    SIMPLE_TOO_FEW_ARGS_ERROR("cast",1);
+
+  type = Pike_sp[-args].u.string;
+  pgtk2_pop_n_elems(args);
+
+  if (type == literal_mapping_string) {
     ref_push_string(_STR("x"));
     push_int(r->x);
     ref_push_string(_STR("y"));
@@ -55,15 +59,14 @@ mixed cast(string type)
     ref_push_string(_STR("height"));
     push_int(r->height);
     f_aggregate_mapping(8);
-  } else if(is_same_string(type, _STR("array"))) {
-    pgtk2_pop_n_elems(args);
+  } else if(type == literal_array_string) {
     push_int(r->x);
     push_int(r->y);
     push_int(r->width);
     push_int(r->height);
     f_aggregate(4);
   } else {
-    Pike_error("Cannot cast to %S.\n",type);
+    push_undefined();
   }
 }
 

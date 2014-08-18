@@ -39,6 +39,7 @@
 #include "operators.h"
 #include "dmalloc.h"
 #include "bignum.h"
+#include "pike_types.h"
 
 #include "image.h"
 #include "colortable.h"
@@ -2736,31 +2737,22 @@ static void image_colortable__decode( INT32 args )
 
 void image_colortable_cast(INT32 args)
 {
-   if (!args)
-      SIMPLE_TOO_FEW_ARGS_ERROR("Image.Colortable->cast",1);
-   if (TYPEOF(sp[-args]) == T_STRING || sp[-args].u.string->size_shift)
-   {
-      if (!strncmp(sp[-args].u.string->str,"array",5))
-      {
-	 pop_n_elems(args);
-	 image_colortable_cast_to_array(THIS);
-	 return;
-      }
-      if (!strncmp(sp[-args].u.string->str,"string",6))
-      {
-	 pop_n_elems(args);
-	 image_colortable_cast_to_string(THIS);
-	 return;
-      }
-      if (!strncmp(sp[-args].u.string->str,"mapping",7))
-      {
-	 pop_n_elems(args);
-	 image_colortable_cast_to_mapping(THIS);
-	 return;
-      }
-   }
-   SIMPLE_BAD_ARG_ERROR("Image.Colortable->cast",1,
-			"string(\"mapping\"|\"array\"|\"string\")");
+  struct pike_string *type;
+
+  if (!args)
+    SIMPLE_TOO_FEW_ARGS_ERROR("Image.Colortable->cast",1);
+
+  type = Pike_sp[-args].u.string;
+  pop_n_elems(args); /* type have at least one more reference. */
+
+  if (type == literal_array_string)
+    image_colortable_cast_to_array(THIS);
+  else if (type == literal_string_string)
+    image_colortable_cast_to_string(THIS);
+  else if (type == literal_mapping_string)
+    image_colortable_cast_to_mapping(THIS);
+  else
+    push_undefined();
 }
 
 /*
@@ -4516,7 +4508,7 @@ void init_image_colortable(void)
    ADD_FUNCTION("``+",image_colortable_operator_plus,tFunc(tObj,tObj),0);
 
    /* cast to array */
-   ADD_FUNCTION("cast",image_colortable_cast,tFunc(tStr,tArray),0);
+   ADD_FUNCTION("cast",image_colortable_cast,tFunc(tStr,tArray),ID_PROTECTED);
 
    /* info */
    ADD_FUNCTION("_sizeof",image_colortable__sizeof,tFunc(tNone,tInt),0);

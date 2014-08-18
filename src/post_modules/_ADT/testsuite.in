@@ -188,10 +188,7 @@ test_any(_ADT.Sequence a = _ADT.Sequence(({1,2,3,4,1,2,3,4}));
 *************************** test cast **************************************
 
 test_any_equal(_ADT.Sequence a = _ADT.Sequence(({1,2,3,4,1,2,3,4}));
-          	return a->cast("array"), ({1,2,3,4,1,2,3,4}))
-
-test_eval_error(_ADT.Sequence a = _ADT.Sequence(({1,2,3,4,1,2,3,4}));
-          	return a->cast("nisse"))
+          	return (array)a, ({1,2,3,4,1,2,3,4}))
 
 **************************** test clear ************************************
 
@@ -955,16 +952,13 @@ test_eval_error(_ADT.CircularList a = _ADT.CircularList(({1,2,3,4}));
 *************************** test cast **************************************
 
 test_any_equal(_ADT.CircularList a = _ADT.CircularList(({1,2,3,4,1,2,3,4}));
-          	return a->cast("array"), ({1,2,3,4,1,2,3,4}))
+          	return (array)a, ({1,2,3,4,1,2,3,4}))
 
 test_any_equal(_ADT.CircularList a = _ADT.CircularList(5);
 	       a->push_front(2);
 	       a->push_front(1);
 	       a->push_back(3);
-          	return a->cast("array"), ({1,2,3}))
-
-test_eval_error(_ADT.CircularList a = _ADT.CircularList(({1,2,3,4,1,2,3,4}));
-          	return a->cast("nisse"))
+          	return (array)a, ({1,2,3}))
 
 ************************ test allocate *************************************
 

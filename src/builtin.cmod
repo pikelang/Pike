@@ -452,21 +452,20 @@ PIKECLASS TM
     }
 
     PIKEFUN mixed cast( string to )
+      flags ID_PROTECTED;
     {
-        struct pike_string *s_string, *s_int;
-        MAKE_CONST_STRING(s_int, "int");
-        MAKE_CONST_STRING(s_string, "string");
-        if( to == s_int )
+        if( to == literal_int_string )
         {
             f_TM_unix_time(0);
             return;
         }
-        if( to == s_string )
+        if( to == literal_string_string )
         {
             f_TM_asctime(0);
             return;
-       }
-       Pike_error("Does not know how to cast to %s\n", to->str );
+        }
+        pop_stack();
+        push_undefined();
     }
 
     /*! @decl string zone
@@ -3074,15 +3073,11 @@ PIKECLASS Buffer
    *! a @expr{string@} and an @expr{int@}.
    */
   PIKEFUN mixed cast( string type )
+    flags ID_PROTECTED;
   {
-    struct pike_string *string_t;
-    struct pike_string *int_t;
-    MAKE_CONST_STRING( string_t, "string" );
-    MAKE_CONST_STRING( int_t, "int" );
-
-    if( type == string_t )
+    if( type == literal_string_string )
     {
-      pop_n_elems( args );
+      pop_stack();
       if( Pike_fp->current_object->refs != 1 )
 	f_Buffer_get_copy( 0 );
       else
@@ -3090,7 +3085,7 @@ PIKECLASS Buffer
       return;
     }
 
-    if( type == int_t )
+    if( type == literal_int_string )
     {
       struct Buffer_struct *str = THIS;
       pop_stack();
@@ -3101,7 +3096,9 @@ PIKECLASS Buffer
       o_cast_to_int( );
       return;
     }
-    Pike_error("Cannot cast to %S\n", type);
+
+    pop_stack();
+    push_undefined();
   }
   
   /*! @decl String.Buffer `+( string|String.Buffer what )
@@ -5493,15 +5490,13 @@ PIKECLASS List
   PIKEFUN mixed cast(string type)
     flags ID_PROTECTED;
   {
-      if (type == MK_STRING("array")) {
-	pop_n_elems(args);
-	apply_current(f_List_cq__values_fun_num, 0);
-      } else if (type == MK_STRING("object")) {
-	pop_n_elems(args);
-	ref_push_object(Pike_fp->current_object);
-      } else {
-	Pike_error("Cannot cast to %o.\n", Pike_sp-1);
-      }
+    pop_stack(); /* type as at least one more reference. */
+    if (type == literal_array_string)
+      apply_current(f_List_cq__values_fun_num, 0);
+    else if (type == literal_object_string)
+      ref_push_object(Pike_fp->current_object);
+    else
+      push_undefined();
   }
 
 
