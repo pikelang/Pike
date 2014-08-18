@@ -1624,14 +1624,41 @@ PMOD_EXPORT void f_zero_type(INT32 args)
   }
 }
 
-static int generate_zero_type(node *n)
+static int generate_arg_for(node *n)
 {
-  struct compilation *c = THIS_COMPILATION;
-  CHECK_COMPILER();
   if(count_args(CDR(n)) != 1) return 0;
   if(do_docode(CDR(n),DO_NOT_COPY) != 1)
     Pike_fatal("Count args was wrong in generate_zero_type().\n");
-  emit0(F_ZERO_TYPE);
+  return 1;
+}
+
+static int generate_zero_type(node *n)
+{
+  struct compilation *c = THIS_COMPILATION;
+  if( generate_arg_for( n ) )
+      emit0(F_ZERO_TYPE);
+  else
+      return 0;
+  return 1;
+}
+
+static int generate_undefinedp(node *n)
+{
+  struct compilation *c = THIS_COMPILATION;
+  if( generate_arg_for(n) )
+      emit0(F_UNDEFINEDP);
+  else
+      return 0;
+  return 1;
+}
+
+static int generate_destructedp(node *n)
+{
+  struct compilation *c = THIS_COMPILATION;
+  if( generate_arg_for(n) )
+      emit0(F_DESTRUCTEDP);
+  else
+      return 0;
   return 1;
 }
 
@@ -9829,8 +9856,8 @@ void init_builtin_efuns(void)
 		 tFunc(tOr(tObj,tPrg(tObj)),tArr(tStr))),
 	    OPT_TRY_OPTIMIZE,fix_indices_type,0);
 
-  ADD_EFUN("undefinedp", f_undefinedp, tFunc(tMix,tInt01), OPT_TRY_OPTIMIZE);
-  ADD_EFUN("destructedp", f_destructedp, tFunc(tMix,tInt01), OPT_TRY_OPTIMIZE);
+  ADD_EFUN2("undefinedp", f_undefinedp, tFunc(tMix,tInt01), OPT_TRY_OPTIMIZE, 0, generate_undefinedp);
+  ADD_EFUN2("destructedp", f_destructedp, tFunc(tMix,tInt01), OPT_TRY_OPTIMIZE,0, generate_destructedp);
 
 /* function(mixed:int) */
   ADD_EFUN("intp", f_intp,tFunc(tMix,tInt01),OPT_TRY_OPTIMIZE);
