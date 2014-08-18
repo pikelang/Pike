@@ -646,9 +646,21 @@ static void test_reg_reg( enum amd64_reg reg1, enum amd64_reg reg2 )
   modrm(3, reg1, reg2 );
 }
 
+static void test_reg32_reg( enum amd64_reg reg1, enum amd64_reg reg2 )
+{
+  rex(0,reg1,0,reg2);
+  opcode(0x85);
+  modrm(3, reg1, reg2 );
+}
+
 static void test_reg( enum amd64_reg reg1 )
 {
   test_reg_reg( reg1, reg1 );
+}
+
+static void test_reg32( enum amd64_reg reg1 )
+{
+  test_reg32_reg( reg1, reg1 );
 }
 
 static void cmp_reg_imm( enum amd64_reg reg, int imm32 )
@@ -1927,14 +1939,24 @@ void ins_f_byte(unsigned int b)
       LABEL_B;
     }
     return;
+
+  case F_ADD:
+    {
+    addr = f_add;
+    update_arg1(2);
+    amd64_call_c_opcode(addr, flags);
+    amd64_load_sp_reg();
+    }
+    return;
+
   case F_INC:
     {
     LABELS();
     ins_debug_instr_prologue(b, 0, 0);
     amd64_load_sp_reg();
     mov_mem8_reg(sp_reg, -16, P_REG_RAX );
-    cmp_reg32_imm(P_REG_RAX, PIKE_T_INT);
-    jne(&label_A);
+    test_reg32(P_REG_RAX);
+    jnz(&label_A);
     add_imm_mem(1, sp_reg, -8);
     jno(&label_B);
     add_imm_mem(-1, sp_reg, -8);
@@ -1943,37 +1965,24 @@ void ins_f_byte(unsigned int b)
     LABEL_B;
     }
     return;
-#if 0
-  case F_ADD:
+
+  case F_DEC:
     {
     LABELS();
     ins_debug_instr_prologue(b, 0, 0);
     amd64_load_sp_reg();
-    mov_mem8_reg(sp_reg, -1*sizeof(struct svalue), P_REG_RAX );
-    mov_mem8_reg(sp_reg, -2*sizeof(struct svalue), P_REG_RBX );
-    add_reg_reg(P_REG_RAX,P_REG_RBX);
-    test_reg(P_REG_RAX); /* int == 0 */
-#ifdef PIKE_DEBUG
-    if( PIKE_T_INT )
-      Pike_fatal("Assertion failed\n");
-#endif
+    mov_mem8_reg(sp_reg, -16, P_REG_RAX );
+    test_reg32(P_REG_RAX);
     jnz(&label_A);
-    amd64_add_sp(-1);
-    mov_mem_reg(sp_reg, OFFSETOF(svalue,u.integer),
-		P_REG_RAX );
-    add_reg_mem(P_REG_RAX, sp_reg, 
-		-1*sizeof(struct svalue)+OFFSETOF(svalue,u.integer));
+    add_imm_mem(-1, sp_reg, -8);
     jno(&label_B);
-    amd64_add_sp(1);
-    sub_reg_mem(P_REG_RAX, sp_reg, 
-		-1*sizeof(struct svalue)+OFFSETOF(svalue,u.integer));
-  LABEL_A;
-    addr = f_add;
-    update_arg1(2);
+    add_imm_mem(1, sp_reg, -8);
+    LABEL_A;
     amd64_call_c_opcode(addr, flags);
-  LABEL_B;
+    LABEL_B;
     }
     return;
+
 
   case F_SUBTRACT:
     {
@@ -1983,7 +1992,7 @@ void ins_f_byte(unsigned int b)
     mov_mem8_reg(sp_reg, -1*sizeof(struct svalue), P_REG_RAX );
     mov_mem8_reg(sp_reg, -2*sizeof(struct svalue), P_REG_RBX );
     add_reg_reg(P_REG_RAX,P_REG_RBX);
-    test_reg(P_REG_RAX); /* int == 0 */
+    test_reg32(P_REG_RAX); /* int == 0 */
     jnz(&label_A);
 
 #ifdef PIKE_DEBUG
@@ -2007,23 +2016,7 @@ void ins_f_byte(unsigned int b)
   LABEL_C;
     }
     return;
-#endif
-  case F_DEC:
-    {
-    LABELS();
-    ins_debug_instr_prologue(b, 0, 0);
-    amd64_load_sp_reg();
-    mov_mem8_reg(sp_reg, -16, P_REG_RAX );
-    cmp_reg32_imm(P_REG_RAX, PIKE_T_INT);
-    jne(&label_A);
-    add_imm_mem(-1, sp_reg, -8);
-    jno(&label_B);
-    add_imm_mem(1, sp_reg, -8);
-    LABEL_A;
-    amd64_call_c_opcode(addr, flags);
-    LABEL_B;
-    }
-    return;
+
   case F_UNDEFINED:
     ins_debug_instr_prologue(b, 0, 0);
     amd64_push_int(0, 1);
@@ -2204,7 +2197,7 @@ int amd64_ins_f_jump(unsigned int op, int backward_jump)
       amd64_load_sp_reg();
       amd64_add_sp( -1 );
       mov_mem_reg( sp_reg, 8, P_REG_RAX );
-      test_reg(P_REG_RAX);
+      test_reg32(P_REG_RAX);
       if( op == F_QUICK_BRANCH_WHEN_ZERO )
         return jz_imm_rel32(0);
       return jnz_imm_rel32(0);
@@ -2244,7 +2237,7 @@ int amd64_ins_f_jump(unsigned int op, int backward_jump)
       amd64_add_sp(-1);
 
      LABEL_B; /* Branch or not? */
-      test_reg( P_REG_RBX );
+      test_reg32( P_REG_RBX );
       if( op == F_BRANCH_WHEN_ZERO )
         return jz_imm_rel32(0);
       return jnz_imm_rel32(0);
@@ -2311,7 +2304,7 @@ int amd64_ins_f_jump(unsigned int op, int backward_jump)
      LABEL_A;
       mov_imm_reg( 0, P_REG_RBX );
      LABEL_B;
-      test_reg(P_REG_RBX);
+      test_reg32(P_REG_RBX);
       return jnz_imm_rel32(0);
 
     case F_LOOP:
@@ -2608,7 +2601,6 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
 
   case F_ADD_NEG_INT:
     b = -b;
-
   case F_ADD_INT:
     {
       LABELS();
@@ -3237,6 +3229,7 @@ void ins_f_byte_with_2_args(unsigned int a, INT32 b, INT32 c)
       /* done */
     }
     return;
+
    case F_PRIVATE_IF_DIRECT_GLOBAL:
     {
       LABELS();
