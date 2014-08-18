@@ -1127,8 +1127,12 @@ struct pike_string *add_string_status(int verbose)
         bytes_distinct_strings[key] +=
           DO_ALIGN(p->len << p->size_shift, sizeof(void *));
 	alloced_strings[key] += p->refs;
-	alloced_bytes[key] +=
-	  p->refs*DO_ALIGN((p->len+3) << p->size_shift,sizeof(void *));
+        if (string_is_short(p)) {
+          alloced_bytes[key] +=
+            p->refs*DO_ALIGN((p->len+3) << p->size_shift,sizeof(void *));
+        } else {
+          alloced_bytes[key] += p->refs*sizeof(struct pike_string);
+        }
       }
     }
     string_builder_sprintf(&s,
