@@ -435,7 +435,7 @@ mapping get_property(GDK1.Atom atom, int|void offset, int|void delete_when_done)
   {
     struct object *o;
     my_pop_n_elems(args);
-    push_text( "type" );
+    ref_push_string( literal_type_string );
     push_text( gdk_atom_name( actual_property_type ) );
     push_text( "width" );
     push_int( actual_format_type );

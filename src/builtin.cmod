@@ -711,7 +711,7 @@ PIKEFUN string basetype(mixed x)
 	return;
       } else if (UNSAFE_IS_ZERO(Pike_sp-1)) {
 	pop_n_elems(2);
-	push_constant_text("object");
+	ref_push_string(literal_object_string);
 	return;
       } else {
 	Pike_error("Non-string returned from _sprintf()\n");
@@ -721,16 +721,16 @@ PIKEFUN string basetype(mixed x)
   pop_stack();
   switch(t)
   {
-    case T_ARRAY: push_constant_text("array"); break;
-    case T_FLOAT: push_constant_text("float"); break;
-    case T_FUNCTION: push_constant_text("function"); break;
-    case T_INT: push_constant_text("int"); break;
-    case T_MAPPING: push_constant_text("mapping"); break;
-    case T_MULTISET: push_constant_text("multiset"); break;
-    case T_OBJECT: push_constant_text("object"); break;
-    case T_PROGRAM: push_constant_text("program"); break;
-    case T_STRING: push_constant_text("string"); break;
-    case T_TYPE: push_constant_text("type"); break;
+    case T_ARRAY: ref_push_string(literal_array_string); break;
+    case T_FLOAT: ref_push_string(literal_float_string); break;
+    case T_FUNCTION: ref_push_string(literal_function_string); break;
+    case T_INT: ref_push_string(literal_int_string); break;
+    case T_MAPPING: ref_push_string(literal_mapping_string); break;
+    case T_MULTISET: ref_push_string(literal_multiset_string); break;
+    case T_OBJECT: ref_push_string(literal_object_string); break;
+    case T_PROGRAM: ref_push_string(literal_program_string); break;
+    case T_STRING: ref_push_string(literal_string_string); break;
+    case T_TYPE: ref_push_string(literal_type_string); break;
     case T_ZERO: push_constant_text("zero"); break;
     case T_VOID: push_constant_text("void"); break;
       /* The following are internal and shouldn't be applicable in normal use. */

@@ -5020,7 +5020,7 @@ void f_gc(INT32 args)
       {									\
 	int id_level =							\
 	  p->inherits[SUBTYPEOF(Pike_sp[-args])].identifier_level;	\
-	push_constant_text(TYPE_NAME);					\
+	ref_push_string(literal_##TYPE_NAME##_string);			\
 	apply_low(Pike_sp[-args-1].u.object, fun + id_level, 1);	\
 	stack_unlink(args);						\
 	return;								\
@@ -5150,12 +5150,12 @@ PMOD_EXPORT void f_programp(INT32 args)
  */
 
 
-TYPEP(f_intp, "intp", T_INT, "int")
-TYPEP(f_mappingp, "mappingp", T_MAPPING, "mapping")
-TYPEP(f_arrayp, "arrayp", T_ARRAY, "array")
-TYPEP(f_multisetp, "multisetp", T_MULTISET, "multiset")
-TYPEP(f_stringp, "stringp", T_STRING, "string")
-TYPEP(f_floatp, "floatp", T_FLOAT, "float")
+TYPEP(f_intp, "intp", T_INT, int)
+TYPEP(f_mappingp, "mappingp", T_MAPPING, mapping)
+TYPEP(f_arrayp, "arrayp", T_ARRAY, array)
+TYPEP(f_multisetp, "multisetp", T_MULTISET, multiset)
+TYPEP(f_stringp, "stringp", T_STRING, string)
+TYPEP(f_floatp, "floatp", T_FLOAT, float)
 
 /*! @decl array sort(array(mixed) index, array(mixed) ... data)
  *!
@@ -8781,7 +8781,7 @@ PMOD_EXPORT void f_map(INT32 args)
 	 {
 	    pop_stack();
 
-	    push_constant_text("array");
+	    ref_push_string(literal_array_string);
 	    /* FIXME: Object subtype! */
 	    safe_apply(mysp[-3].u.object,"cast",1);
 	    if (TYPEOF(Pike_sp[-1]) == T_ARRAY)
@@ -8794,7 +8794,7 @@ PMOD_EXPORT void f_map(INT32 args)
 	    }
 	    pop_stack();
 
-	    push_constant_text("mapping");
+	    ref_push_string(literal_mapping_string);
 	    /* FIXME: Object subtype! */
 	    safe_apply(mysp[-3].u.object,"cast",1);
 	    if (TYPEOF(Pike_sp[-1]) == T_MAPPING)
@@ -8807,7 +8807,7 @@ PMOD_EXPORT void f_map(INT32 args)
 	    }
 	    pop_stack();
 
-	    push_constant_text("multiset");
+	    ref_push_string(literal_multiset_string);
 	    /* FIXME: Object subtype! */
 	    safe_apply(mysp[-3].u.object,"cast",1);
 	    if (TYPEOF(Pike_sp[-1]) == T_MULTISET)
@@ -9212,7 +9212,7 @@ PMOD_EXPORT void f_filter(INT32 args)
 	 {
 	    pop_stack();
 
-	    push_constant_text("array");
+	    ref_push_string(literal_array_string);
 	    /* FIXME: Object subtype! */
 	    safe_apply(mysp[-3].u.object,"cast",1);
 	    if (TYPEOF(Pike_sp[-1]) == T_ARRAY)
@@ -9225,7 +9225,7 @@ PMOD_EXPORT void f_filter(INT32 args)
 	    }
 	    pop_stack();
 
-	    push_constant_text("mapping");
+	    ref_push_string(literal_mapping_string);
 	    /* FIXME: Object subtype! */
 	    safe_apply(mysp[-3].u.object,"cast",1);
 	    if (TYPEOF(Pike_sp[-1]) == T_MAPPING)
@@ -9238,7 +9238,7 @@ PMOD_EXPORT void f_filter(INT32 args)
 	    }
 	    pop_stack();
 
-	    push_constant_text("multiset");
+	    ref_push_string(literal_multiset_string);
 	    /* FIXME: Object subtype! */
 	    safe_apply(mysp[-3].u.object,"cast",1);
 	    if (TYPEOF(Pike_sp[-1]) == T_MULTISET)

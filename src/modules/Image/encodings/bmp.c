@@ -31,6 +31,7 @@
 #include "mapping.h"
 #include "pike_error.h"
 #include "operators.h"
+#include "pike_types.h"
 
 #include "image.h"
 #include "colortable.h"
@@ -684,7 +685,7 @@ void i_img_bmp__decode(INT32 args,int header_only)
 	       int_from_32bit(s+14));
    }
 
-   push_text("type");
+   ref_push_string(literal_type_string);
    push_text("image/x-MS-bmp");
    n++;
 

@@ -163,7 +163,7 @@ static void low__decode( INT32 args, int header_only )
     
     push_text( "xsize" ); push_int( xs );
     push_text( "ysize" ); push_int( ys );
-    push_text( "type" );  push_text( "image/svg");
+    ref_push_string( literal_type_string );  push_text( "image/svg");
     if( !header_only )
     {
       push_text( "Image.Image" );

@@ -3169,7 +3169,7 @@ static void f_SetNamedSecurityInfo(INT32 args)
   ASSERT_SECURITY_ROOT("SetNamedSecurity");
   get_all_args("SetNamedSecurityInfo",args,"%s%m",&name,&m);
 
-  if((sval=simple_mapping_string_lookup(m, "type")))
+  if((sval=low_mapping_string_lookup(m, literal_type_string)))
   {
     if(TYPEOF(*sval) != T_INT)
       Pike_error("Bad 'type' in SetNamedSecurityInfo.\n");

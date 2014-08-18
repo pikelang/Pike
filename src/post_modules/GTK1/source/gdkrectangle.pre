@@ -34,13 +34,17 @@ void set(int x, int y, int width, int height )
 mixed cast(string type)
 //! Normally used like (mapping)rectangle or (array)rectangle.
 {
-  char *type;
+  struct pike_string *type;
   GdkRectangle *r = (GdkRectangle *)THIS->obj;
-  get_all_args( "cast", args, "%s", &type );
 
-  if(!strcmp(type, "mapping"))
+  if (args!=1)
+    SIMPLE_TOO_FEW_ARGS_ERROR("cast",1);
+
+  type = Pike_sp[-args].u.string;
+  my_pop_n_elems(args);
+
+  if(type == literal_mapping_string)
   {
-    my_pop_n_elems(args);
     push_text( "x" );
     push_int( r->x );
     push_text( "y" );
@@ -50,15 +54,14 @@ mixed cast(string type)
     push_text( "height" );
     push_int( r->height );
     f_aggregate_mapping( 8 );
-  } else if(!strcmp(type, "array")) {
-    my_pop_n_elems(args);
+  } else if(type == literal_array_string) {
     push_int( r->x );
     push_int( r->y );
     push_int( r->width );
     push_int( r->height );
     f_aggregate( 4 );
   } else {
-    Pike_error("Cannot cast to %s.\n", type );
+    push_undefined();
   }
 }
 

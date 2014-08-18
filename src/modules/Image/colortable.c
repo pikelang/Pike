@@ -83,10 +83,6 @@ static INLINE int sq_int(int x) { return x*x; }
 #define THIS ((struct neo_colortable *)(Pike_fp->current_storage))
 #define THISOBJ (Pike_fp->current_object)
 
-static struct pike_string *s_array;
-static struct pike_string *s_string;
-static struct pike_string *s_mapping;
-
 /***************** init & exit *********************************/
 
 
@@ -4473,10 +4469,6 @@ static void image_colortable__sprintf( INT32 args )
 
 void init_image_colortable(void)
 {
-   s_array=make_shared_string("array");
-   s_string=make_shared_string("string");
-   s_mapping=make_shared_string("mapping");
-
    ADD_STORAGE(struct neo_colortable);
 
    set_init_callback(init_colortable_struct);
@@ -4560,7 +4552,4 @@ void init_image_colortable(void)
 
 void exit_image_colortable(void) 
 {
-   free_string(s_array);
-   free_string(s_mapping);
-   free_string(s_string);
 }

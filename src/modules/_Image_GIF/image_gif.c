@@ -47,6 +47,7 @@
 #include "array.h"
 #include "pike_error.h"
 #include "threads.h"
+#include "pike_types.h"
 
 #include "../Image/image.h"
 #include "../Image/colortable.h"
@@ -2257,7 +2258,7 @@ void image_gif_decode_map(INT32 args)
    f_rows(2);
    f_call_function(1);
    f_mkmapping(2);
-   push_text("type");
+   ref_push_string(literal_type_string);
    push_text("image/gif");
    f_aggregate_mapping(2);
    f_add(2);

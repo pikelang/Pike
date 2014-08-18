@@ -15,6 +15,7 @@
 #include "operators.h"
 #include "threads.h"
 #include "module_support.h"
+#include "pike_types.h"
 
 #include "image.h"
 #include "colortable.h"
@@ -101,7 +102,7 @@ static rgba_group decode_color( struct buffer *s )
     push_int(0);
     stack_swap();
   } else {
-    push_constant_text( "array" );
+    ref_push_string( literal_array_string );
     apply( sp[-2].u.object, "cast", 1 );
   }
   if(TYPEOF(sp[-1]) == T_ARRAY && sp[-1].u.array->size == 3)

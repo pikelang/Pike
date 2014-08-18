@@ -17,6 +17,7 @@
 #include "operators.h"
 #include "builtin_functions.h"
 #include "module_support.h"
+#include "pike_types.h"
 
 
 #include "image.h"
@@ -186,7 +187,7 @@ void img_tim_decode(INT32 args, int header_only)
 
   s += 4; len -= 4;
   
-  push_text("type");
+  ref_push_string(literal_type_string);
   push_text("image/x-tim");
   n++;
   

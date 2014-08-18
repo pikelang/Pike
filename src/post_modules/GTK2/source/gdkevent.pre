@@ -41,17 +41,17 @@ mixed _index(string ind)
   switch( e->type )
   {
    case GDK_NOTHING:
-     if( is_same_string(index,_STR("type")) ) REF_RETURN_STRING(_STR("nothing"));
+     if( index == literal_type_string ) REF_RETURN_STRING(_STR("nothing"));
      break;
    case GDK_DELETE:
-     if( is_same_string(index,_STR("type")) ) REF_RETURN_STRING(_STR("delete"));
+     if( index == literal_type_string ) REF_RETURN_STRING(_STR("delete"));
      break;
    case GDK_DESTROY:
-     if( is_same_string(index,_STR("type")) ) REF_RETURN_STRING(_STR("destroy"));
+     if( index == literal_type_string ) REF_RETURN_STRING(_STR("destroy"));
      break;
 
    case GDK_EXPOSE:
-     if( is_same_string(index,_STR("type")) ) REF_RETURN_STRING(_STR("expose"));
+     if( index == literal_type_string ) REF_RETURN_STRING(_STR("expose"));
      if( is_same_string(index,_STR("count")) ) RETURN_INT( e->expose.count );
      if( is_same_string(index,_STR("x")) ) RETURN_INT( e->expose.area.x );
      if( is_same_string(index,_STR("y")) ) RETURN_INT( e->expose.area.y );
@@ -60,7 +60,7 @@ mixed _index(string ind)
      break;
 
    case GDK_MOTION_NOTIFY:
-     if( is_same_string(index,_STR("type")) )    REF_RETURN_STRING(_STR("motion"));
+     if( index == literal_type_string )    REF_RETURN_STRING(_STR("motion"));
      if( is_same_string(index,_STR("x")) )       RETURN_FLOAT( e->motion.x );
      if( is_same_string(index,_STR("y")) )       RETURN_FLOAT( e->motion.y );
      if( is_same_string(index,_STR("x_root")) )  RETURN_FLOAT( e->motion.x_root );
@@ -73,13 +73,13 @@ mixed _index(string ind)
      break;
 
    case GDK_BUTTON_PRESS:
-     if( is_same_string(index,_STR("type")) ) REF_RETURN_STRING(_STR("button_press"));
+     if( index == literal_type_string ) REF_RETURN_STRING(_STR("button_press"));
    case GDK_BUTTON_RELEASE:
-     if( is_same_string(index,_STR("type")) ) REF_RETURN_STRING(_STR("button_release"));
+     if( index == literal_type_string ) REF_RETURN_STRING(_STR("button_release"));
    case GDK_2BUTTON_PRESS:
-     if( is_same_string(index,_STR("type")) ) REF_RETURN_STRING(_STR("2button_press"));
+     if( index == literal_type_string ) REF_RETURN_STRING(_STR("2button_press"));
    case GDK_3BUTTON_PRESS:
-     if( is_same_string(index,_STR("type")) ) REF_RETURN_STRING(_STR("3button_press"));
+     if( index == literal_type_string ) REF_RETURN_STRING(_STR("3button_press"));
      if( is_same_string(index,_STR("x")) ) RETURN_FLOAT(e->button.x);
      if( is_same_string(index,_STR("y")) ) RETURN_FLOAT(e->button.y);
 /*      if( index == s_pressure ) RETURN_FLOAT(e->button.pressure); */
@@ -93,9 +93,9 @@ mixed _index(string ind)
      break;
 
    case GDK_KEY_PRESS:
-     if( is_same_string(index,_STR("type")) ) REF_RETURN_STRING(_STR("key_press"));
+     if( index == literal_type_string ) REF_RETURN_STRING(_STR("key_press"));
    case GDK_KEY_RELEASE:
-     if( is_same_string(index,_STR("type")) ) REF_RETURN_STRING(_STR("key_release"));
+     if( index == literal_type_string ) REF_RETURN_STRING(_STR("key_release"));
      if( is_same_string(index,_STR("state")) ) RETURN_INT(e->key.state);
      if( is_same_string(index,_STR("keyval")) ) RETURN_INT(e->key.keyval);
      if(e->key.string)
@@ -104,9 +104,9 @@ mixed _index(string ind)
      break;
 
    case GDK_ENTER_NOTIFY:
-     if( is_same_string(index,_STR("type")) ) REF_RETURN_STRING(_STR("enter_notify"));
+     if( index == literal_type_string ) REF_RETURN_STRING(_STR("enter_notify"));
    case GDK_LEAVE_NOTIFY:
-     if( is_same_string(index,_STR("type")) ) REF_RETURN_STRING(_STR("leave_notify"));
+     if( index == literal_type_string ) REF_RETURN_STRING(_STR("leave_notify"));
      if( is_same_string(index,_STR("detail")) ) RETURN_INT(e->crossing.detail);
      if( is_same_string(index,_STR("mode")) ) RETURN_INT(e->crossing.mode );
      if( is_same_string(index,_STR("focus")) ) RETURN_INT(e->crossing.focus );
@@ -118,16 +118,16 @@ mixed _index(string ind)
      break;
 
    case GDK_FOCUS_CHANGE:
-     if( is_same_string(index,_STR("type")) ) REF_RETURN_STRING(_STR("focus"));
+     if( index == literal_type_string ) REF_RETURN_STRING(_STR("focus"));
      if( is_same_string(index,_STR("in")) ) RETURN_INT( e->focus_change.in );
      break;
 
    case GDK_CONFIGURE:
-     if( is_same_string(index,_STR("type")) ) REF_RETURN_STRING(_STR("configure"));
+     if( index == literal_type_string ) REF_RETURN_STRING(_STR("configure"));
    case GDK_MAP:
-     if( is_same_string(index,_STR("type")) ) REF_RETURN_STRING(_STR("map"));
+     if( index == literal_type_string ) REF_RETURN_STRING(_STR("map"));
    case GDK_UNMAP:
-     if( is_same_string(index,_STR("type")) ) REF_RETURN_STRING(_STR("unmap"));
+     if( index == literal_type_string ) REF_RETURN_STRING(_STR("unmap"));
      if( is_same_string(index,_STR("x")) ) RETURN_INT(e->configure.x);
      if( is_same_string(index,_STR("y")) ) RETURN_INT(e->configure.y);
      if( is_same_string(index,_STR("width")) ) RETURN_INT(e->configure.width);
@@ -135,17 +135,17 @@ mixed _index(string ind)
      break;
 
    case GDK_PROPERTY_NOTIFY:
-     if( is_same_string(index,_STR("type")) ) REF_RETURN_STRING(_STR("property"));
+     if( index == literal_type_string ) REF_RETURN_STRING(_STR("property"));
      if( is_same_string(index,_STR("atom")) ) RETURN_ATOM( e->property.atom );
      if( is_same_string(index,_STR("state")) ) RETURN_INT( e->property.state );
      break;
 
    case GDK_SELECTION_CLEAR:
-     if( is_same_string(index,_STR("type")) ) REF_RETURN_STRING(_STR("selection_clear"));
+     if( index == literal_type_string ) REF_RETURN_STRING(_STR("selection_clear"));
    case GDK_SELECTION_REQUEST:
-     if( is_same_string(index,_STR("type")) ) REF_RETURN_STRING(_STR("selection_request"));
+     if( index == literal_type_string ) REF_RETURN_STRING(_STR("selection_request"));
    case GDK_SELECTION_NOTIFY:
-     if( is_same_string(index,_STR("type")) ) REF_RETURN_STRING(_STR("selection_notify"));
+     if( index == literal_type_string ) REF_RETURN_STRING(_STR("selection_notify"));
      if( is_same_string(index,_STR("selection")) ) RETURN_ATOM( e->selection.selection );
      if( is_same_string(index,_STR("target")) ) RETURN_ATOM( e->selection.target );
      if( is_same_string(index,_STR("property")) ) RETURN_ATOM( e->selection.property );
@@ -153,17 +153,17 @@ mixed _index(string ind)
      break;
 
    case GDK_PROXIMITY_IN:
-     if( is_same_string(index,_STR("type")) ) REF_RETURN_STRING(_STR("proximity_in"));
+     if( index == literal_type_string ) REF_RETURN_STRING(_STR("proximity_in"));
 /*      if( index == s_deviceid ) RETURN_INT( e->proximity.deviceid ); */
      break;
 
    case GDK_PROXIMITY_OUT:
-     if( is_same_string(index,_STR("type")) ) REF_RETURN_STRING(_STR("proximity_out"));
+     if( index == literal_type_string ) REF_RETURN_STRING(_STR("proximity_out"));
 /*      if( index == s_deviceid ) RETURN_INT( e->proximity.deviceid ); */
      break;
 
    case GDK_CLIENT_EVENT:
-     if( is_same_string(index,_STR("type")) ) REF_RETURN_STRING(_STR("client"));
+     if( index == literal_type_string ) REF_RETURN_STRING(_STR("client"));
      if( is_same_string(index,_STR("message_type")) ) RETURN_ATOM( e->client.message_type );
      if( is_same_string(index,_STR("data_format")) ) RETURN_INT(e->client.data_format);
      if( is_same_string(index,_STR("data")) )
@@ -186,26 +186,26 @@ mixed _index(string ind)
      break;
 
    case GDK_VISIBILITY_NOTIFY:
-     if( is_same_string(index,_STR("type")) ) REF_RETURN_STRING(_STR("visibility"));
+     if( index == literal_type_string ) REF_RETURN_STRING(_STR("visibility"));
      if( is_same_string(index,_STR("state")) ) RETURN_INT( e->visibility.state );
      break;
 
    case GDK_NO_EXPOSE:
-     if( is_same_string(index,_STR("type")) ) REF_RETURN_STRING(_STR("noexpose"));
+     if( index == literal_type_string ) REF_RETURN_STRING(_STR("noexpose"));
      break;
 
    case GDK_DRAG_ENTER:
-     if( is_same_string(index,_STR("type")) ) REF_RETURN_STRING(_STR("drag_enter"));
+     if( index == literal_type_string ) REF_RETURN_STRING(_STR("drag_enter"));
    case GDK_DRAG_LEAVE:
-     if( is_same_string(index,_STR("type")) ) REF_RETURN_STRING(_STR("drag_leave"));
+     if( index == literal_type_string ) REF_RETURN_STRING(_STR("drag_leave"));
    case GDK_DRAG_MOTION:
-     if( is_same_string(index,_STR("type")) ) REF_RETURN_STRING(_STR("drag_motion"));
+     if( index == literal_type_string ) REF_RETURN_STRING(_STR("drag_motion"));
    case GDK_DRAG_STATUS:
-     if( is_same_string(index,_STR("type")) ) REF_RETURN_STRING(_STR("drag_status"));
+     if( index == literal_type_string ) REF_RETURN_STRING(_STR("drag_status"));
    case GDK_DROP_START:
-     if( is_same_string(index,_STR("type")) ) REF_RETURN_STRING(_STR("drop_start"));
+     if( index == literal_type_string ) REF_RETURN_STRING(_STR("drop_start"));
    case GDK_DROP_FINISHED:
-     if( is_same_string(index,_STR("type")) ) REF_RETURN_STRING(_STR("drop_finished"));
+     if( index == literal_type_string ) REF_RETURN_STRING(_STR("drop_finished"));
      if( is_same_string(index,_STR("send_event")) ) RETURN_INT( e->dnd.send_event );
      if( is_same_string(index,_STR("x_root")) ) RETURN_INT( e->dnd.x_root );
      if( is_same_string(index,_STR("y_root")) ) RETURN_INT( e->dnd.y_root );
@@ -217,7 +217,7 @@ mixed _index(string ind)
      }
      break;
    case GDK_SCROLL:
-     if( is_same_string(index,_STR("type")) ) REF_RETURN_STRING(_STR("scroll"));
+     if( index == literal_type_string ) REF_RETURN_STRING(_STR("scroll"));
      if (is_same_string(index,_STR("x"))) RETURN_INT(e->scroll.x);
      if (is_same_string(index,_STR("y"))) RETURN_INT(e->scroll.y);
      if (is_same_string(index,_STR("direction"))) RETURN_INT(e->scroll.direction);
@@ -226,25 +226,25 @@ mixed _index(string ind)
 
      break;
    case GDK_WINDOW_STATE:
-     if( is_same_string(index,_STR("type")) ) REF_RETURN_STRING(_STR("window_state"));
+     if( index == literal_type_string ) REF_RETURN_STRING(_STR("window_state"));
      if( is_same_string(index,_STR("changed")) ) RETURN_INT(e->window_state.changed_mask);
      if( is_same_string(index,_STR("new_state")) ) RETURN_INT(e->window_state.new_window_state);
      break;
    case GDK_SETTING:
-     if( is_same_string(index,_STR("type")) ) REF_RETURN_STRING(_STR("setting"));
+     if( index == literal_type_string ) REF_RETURN_STRING(_STR("setting"));
      if( is_same_string(index,_STR("action")) ) RETURN_INT(e->setting.action);
      if( is_same_string(index,_STR("name")) )
          RETURN_STRING(make_shared_binary_string(e->setting.name,strlen(e->setting.name)));
      break;
 #ifdef HAVE_GTK26
    case GDK_OWNER_CHANGE:
-     if( is_same_string(index,_STR("type")) ) REF_RETURN_STRING(_STR("owner_change"));
+     if( index == literal_type_string ) REF_RETURN_STRING(_STR("owner_change"));
      if( is_same_string(index,_STR("selection")) ) RETURN_ATOM(e->owner_change.selection);
      break;
 #endif
 #ifdef HAVE_GTK28
    case GDK_GRAB_BROKEN:
-     if( is_same_string(index,_STR("type")) ) REF_RETURN_STRING(_STR("setting"));
+     if( index == literal_type_string ) REF_RETURN_STRING(_STR("setting"));
      if( is_same_string(index,_STR("keyboard")) ) RETURN_INT(e->grab_broken.keyboard);
      if( is_same_string(index,_STR("implicit")) ) RETURN_INT(e->grab_broken.implicit);
      break;
@@ -265,7 +265,7 @@ string _sprintf(int flag)
     return;
   }
   ref_push_string( _STR("GDK2.Event(") );
-  ref_push_string( _STR("type") ); pgdk2_event__index( 1 );
+  ref_push_string( literal_type_string ); pgdk2_event__index( 1 );
   ref_push_string( _STR(")") );
   f_add( 3 );
 }
@@ -289,16 +289,16 @@ mixed cast(string to)
   switch(e->type)
   {
    case GDK_NOTHING:
-     ref_push_string(_STR("type"));  ref_push_string(_STR("nothing"));
+     ref_push_string(literal_type_string);  ref_push_string(_STR("nothing"));
      break;
    case GDK_DELETE:
-     ref_push_string(_STR("type"));  ref_push_string(_STR("delete"));
+     ref_push_string(literal_type_string);  ref_push_string(_STR("delete"));
      break;
    case GDK_DESTROY:
-     ref_push_string(_STR("type"));  ref_push_string(_STR("destroy"));
+     ref_push_string(literal_type_string);  ref_push_string(_STR("destroy"));
      break;
    case GDK_EXPOSE:
-     ref_push_string(_STR("type"));    ref_push_string(_STR("expose"));
+     ref_push_string(literal_type_string);    ref_push_string(_STR("expose"));
      ref_push_string(_STR("count"));   push_int(e->expose.count);
      ref_push_string(_STR("x"));       push_int(e->expose.area.x);
      ref_push_string(_STR("y"));       push_int(e->expose.area.y);
@@ -307,7 +307,7 @@ mixed cast(string to)
      break;
 
    case GDK_MOTION_NOTIFY:
-     ref_push_string(_STR("type"));    ref_push_string(_STR("motion"));
+     ref_push_string(literal_type_string);    ref_push_string(_STR("motion"));
      ref_push_string(_STR("x"));       push_float(e->motion.x);
      ref_push_string(_STR("y"));       push_float(e->motion.y);
 /*      ref_push_string(s_pressure);push_float(e->motion.pressure); */
@@ -321,16 +321,16 @@ mixed cast(string to)
      break;
 
    case GDK_BUTTON_PRESS:
-     ref_push_string(_STR("type"));    ref_push_string(_STR("button_press"));
+     ref_push_string(literal_type_string);    ref_push_string(_STR("button_press"));
      goto press_event;
    case GDK_2BUTTON_PRESS:
-     ref_push_string(_STR("type"));    ref_push_string(_STR("2button_press"));
+     ref_push_string(literal_type_string);    ref_push_string(_STR("2button_press"));
      goto press_event;
    case GDK_3BUTTON_PRESS:
-     ref_push_string(_STR("type"));    ref_push_string(_STR("3button_press"));
+     ref_push_string(literal_type_string);    ref_push_string(_STR("3button_press"));
      goto press_event;
    case GDK_BUTTON_RELEASE:
-     ref_push_string(_STR("type"));    ref_push_string(_STR("button_release"));
+     ref_push_string(literal_type_string);    ref_push_string(_STR("button_release"));
 
   press_event:
      ref_push_string(_STR("time"));    push_int(e->button.time);
@@ -347,11 +347,11 @@ mixed cast(string to)
      break;
 
    case GDK_KEY_PRESS:
-     ref_push_string(_STR("type"));   ref_push_string(_STR("key_press"));
+     ref_push_string(literal_type_string);   ref_push_string(_STR("key_press"));
      goto key_event;
 
    case GDK_KEY_RELEASE:
-     ref_push_string(_STR("type"));   ref_push_string(_STR("key_release"));
+     ref_push_string(literal_type_string);   ref_push_string(_STR("key_release"));
   key_event:
      ref_push_string(_STR("time"));   push_int(e->key.time);
      ref_push_string(_STR("state"));   push_int(e->key.state);
@@ -364,11 +364,11 @@ mixed cast(string to)
      break;
 
    case GDK_ENTER_NOTIFY:
-     ref_push_string(_STR("type"));   ref_push_string(_STR("enter_notify"));
+     ref_push_string(literal_type_string);   ref_push_string(_STR("enter_notify"));
      goto enter_event;
 
    case GDK_LEAVE_NOTIFY:
-     ref_push_string(_STR("type"));   ref_push_string(_STR("leave_notify"));
+     ref_push_string(literal_type_string);   ref_push_string(_STR("leave_notify"));
   enter_event:
      ref_push_string(_STR("detail")); push_int(e->crossing.detail);
      ref_push_string(_STR("mode"));   push_int(e->crossing.mode );
@@ -381,20 +381,20 @@ mixed cast(string to)
      break;
 
    case GDK_FOCUS_CHANGE:
-     ref_push_string(_STR("type"));   ref_push_string(_STR("focus"));
+     ref_push_string(literal_type_string);   ref_push_string(_STR("focus"));
      ref_push_string(_STR("in"));     push_int( e->focus_change.in );
      break;
 
    case GDK_CONFIGURE:
-     ref_push_string(_STR("type"));   ref_push_string(_STR("configure"));
+     ref_push_string(literal_type_string);   ref_push_string(_STR("configure"));
      goto configure_event;
 
    case GDK_MAP:
-     ref_push_string(_STR("type"));   ref_push_string(_STR("map"));
+     ref_push_string(literal_type_string);   ref_push_string(_STR("map"));
      goto configure_event;
 
    case GDK_UNMAP:
-     ref_push_string(_STR("type"));   ref_push_string(_STR("unmap"));
+     ref_push_string(literal_type_string);   ref_push_string(_STR("unmap"));
   configure_event:
      ref_push_string(_STR("x"));      push_int(e->configure.x);
      ref_push_string(_STR("y"));      push_int(e->configure.x);
@@ -403,21 +403,21 @@ mixed cast(string to)
      break;
 
    case GDK_PROPERTY_NOTIFY:
-     ref_push_string(_STR("type"));   ref_push_string(_STR("property"));
+     ref_push_string(literal_type_string);   ref_push_string(_STR("property"));
      ref_push_string(_STR("atom"));   push_atom( e->property.atom );
      ref_push_string(_STR("state"));  push_int( e->property.state );
      break;
 
    case GDK_SELECTION_CLEAR:
-     ref_push_string(_STR("type"));   ref_push_string(_STR("selection_clear"));
+     ref_push_string(literal_type_string);   ref_push_string(_STR("selection_clear"));
      goto selection_event;
 
    case GDK_SELECTION_REQUEST:
-     ref_push_string(_STR("type"));   ref_push_string(_STR("selection_request"));
+     ref_push_string(literal_type_string);   ref_push_string(_STR("selection_request"));
      goto selection_event;
 
    case GDK_SELECTION_NOTIFY:
-     ref_push_string(_STR("type"));   ref_push_string(_STR("selection_notify"));
+     ref_push_string(literal_type_string);   ref_push_string(_STR("selection_notify"));
   selection_event:
      ref_push_string(_STR("selection")); push_atom( e->selection.selection );
      ref_push_string(_STR("target"));    push_atom( e->selection.target );
@@ -426,16 +426,16 @@ mixed cast(string to)
      break;
 
    case GDK_PROXIMITY_IN:
-     ref_push_string(_STR("type"));   ref_push_string(_STR("proximity_in"));
+     ref_push_string(literal_type_string);   ref_push_string(_STR("proximity_in"));
 /*      ref_push_string(s_deviceid ); push_int( e->proximity.deviceid ); */
      break;
    case GDK_PROXIMITY_OUT:
-     ref_push_string(_STR("type"));   ref_push_string(_STR("proximity_out"));
+     ref_push_string(literal_type_string);   ref_push_string(_STR("proximity_out"));
 /*      ref_push_string(s_deviceid ); push_int( e->proximity.deviceid ); */
      break;
 
    case GDK_CLIENT_EVENT:
-     ref_push_string(_STR("type")); ref_push_string(_STR("client"));
+     ref_push_string(literal_type_string); ref_push_string(_STR("client"));
      ref_push_string(_STR("message_type"));
      push_atom( e->client.message_type );
      ref_push_string(_STR("data_format")); push_int(e->client.data_format);
@@ -455,32 +455,32 @@ mixed cast(string to)
      break;
 
    case GDK_VISIBILITY_NOTIFY:
-     ref_push_string(_STR("type")); ref_push_string(_STR("visibility"));
+     ref_push_string(literal_type_string); ref_push_string(_STR("visibility"));
      ref_push_string(_STR("state")); push_int( e->visibility.state );
      break;
 
    case GDK_NO_EXPOSE:
-     ref_push_string(_STR("type")); ref_push_string(_STR("noexpose"));
+     ref_push_string(literal_type_string); ref_push_string(_STR("noexpose"));
      break;
 
 
    case GDK_DRAG_ENTER:
-     ref_push_string(_STR("type")); ref_push_string(_STR("drag_enter"));
+     ref_push_string(literal_type_string); ref_push_string(_STR("drag_enter"));
      goto dnd_event;
    case GDK_DRAG_LEAVE:
-     ref_push_string(_STR("type")); ref_push_string(_STR("drag_leave"));
+     ref_push_string(literal_type_string); ref_push_string(_STR("drag_leave"));
      goto dnd_event;
    case GDK_DRAG_MOTION:
-     ref_push_string(_STR("type")); ref_push_string(_STR("drag_motion"));
+     ref_push_string(literal_type_string); ref_push_string(_STR("drag_motion"));
      goto dnd_event;
    case GDK_DRAG_STATUS:
-     ref_push_string(_STR("type")); ref_push_string(_STR("drag_status"));
+     ref_push_string(literal_type_string); ref_push_string(_STR("drag_status"));
      goto dnd_event;
    case GDK_DROP_START:
-     ref_push_string(_STR("type")); ref_push_string(_STR("drop_start"));
+     ref_push_string(literal_type_string); ref_push_string(_STR("drop_start"));
      goto dnd_event;
    case GDK_DROP_FINISHED:
-     ref_push_string(_STR("type")); ref_push_string(_STR("drop_finished"));
+     ref_push_string(literal_type_string); ref_push_string(_STR("drop_finished"));
    dnd_event:
      ref_push_string(_STR("send_event")); push_int( e->dnd.send_event );
      ref_push_string(_STR("x_root")); push_int( e->dnd.x_root );

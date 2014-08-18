@@ -29,7 +29,6 @@
  *! Matrix representation with double precision floating point values.
  */
 
-static struct pike_string *s_array;
 static struct pike_string *s__clr;
 static struct pike_string *s_identity;
 static struct pike_string *s_rotate;

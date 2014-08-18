@@ -1033,10 +1033,8 @@ static void mpzmod__sprintf(INT32 args)
  */
 static void mpzmod__is_type(INT32 UNUSED(args))
 {
-    struct pike_string *int_t;
     int is_int;
-    MAKE_CONST_STRING(int_t,"int");
-    is_int = Pike_sp[-1].u.string == int_t ? 1 : 0;
+    is_int = Pike_sp[-1].u.string == literal_int_string ? 1 : 0;
     pop_stack();
     push_int( is_int );
 }
