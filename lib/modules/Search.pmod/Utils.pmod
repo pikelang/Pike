@@ -149,7 +149,6 @@ class ProfileEntry {
 
     protected mixed cast(string to) {
       switch(to) {
-      case "object": return this_object();
       case "array": return indices(vals);
       case "multiset": return (multiset)indices(vals);
       default:

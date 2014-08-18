@@ -247,9 +247,7 @@ mixed beginning() { return start; }
 mixed end() { return stop; }
 
 protected mixed cast(string type) {
-  switch (type) {
-  case "array":
+  if( type=="array" )
     return ({ start, stop });
-  }
   return UNDEFINED;
 }

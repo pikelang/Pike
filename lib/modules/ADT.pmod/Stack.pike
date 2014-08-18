@@ -141,13 +141,11 @@ this_program `+(this_program s) {
   return ns;
 }
 
-protected mixed cast(string to) {
-  switch(to) {
-  case "array":
-      return _values();
-  default:
-    return UNDEFINED;
-  }
+protected mixed cast(string to)
+{
+  if( to=="array" )
+    return _values();
+  return UNDEFINED;
 }
 
 string _sprintf(int t) {

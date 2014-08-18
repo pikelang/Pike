@@ -248,9 +248,6 @@ protected mixed cast(string to)
 {
   switch(to)
   {
-    case "object":
-      return this;
-
     case "array":
       return indices(set);
 

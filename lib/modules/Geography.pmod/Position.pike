@@ -570,13 +570,14 @@ array(float) ECEF() {
 
 protected string|array cast(string to)
 {
-   if (to[..4]=="array")
-      return ({lat,long});
-
-   if (to[..5]=="string")
-      return latitude()+" "+longitude();
-
-   return UNDEFINED;
+  switch(to)
+  {
+  case "array":
+    return ({lat,long});
+  case "string":
+    return latitude()+" "+longitude();
+  }
+  return UNDEFINED;
 }
 
 //!
