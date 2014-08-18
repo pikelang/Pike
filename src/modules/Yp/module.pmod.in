@@ -126,14 +126,11 @@ class Map {
     return(values(domain->all(ypmap)));
   }
 
-  mixed cast(string type)
+  protected mixed cast(string type)
   {
-    switch(type) {
-    case "mapping":
-      return(cast_to_mapping());
-    default:
-      error( "Cast to " + type + " not supported.\n" );
-    }
+    if( type=="mapping" )
+      return cast_to_mapping();
+    return UNDEFINED;
   }
 }
 

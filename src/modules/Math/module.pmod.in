@@ -233,13 +233,13 @@ class Angle {
   }
 
   //! An angle can be casted to float, int and string.
-  float|int|string cast(string to) {
+  protected float|int|string cast(string to) {
     switch(to) {
     case "float": return (float)angle;
     case "int": return (int)angle;
     case "string": return (string)angle;
     }
-    error( "Could not cast to %s.\n", to );
+    return UNDEFINED;
   }
 
   //! Returns the sum of this angle and what it is added with. If
