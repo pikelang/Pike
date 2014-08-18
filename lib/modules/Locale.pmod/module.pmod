@@ -563,7 +563,6 @@ class DeferredLocale( protected string project,
   protected mixed cast(string to)
   {
     if(to=="string") return lookup();
-    if(to=="mixed" || to=="object") return this;
     return UNDEFINED;
   }
 

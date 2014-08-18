@@ -135,14 +135,9 @@ protected class StringRange
   }
   protected mixed cast(string type)
   {
-    switch(type) {
-    case "string":
+    if( type == "string" )
       return data[start..end-1];
-    case "object":
-      return this_object();
-    default:
-      return UNDEFINED;
-    }
+    return UNDEFINED;
   }
   protected int _search(string frag, int|void pos)
   {

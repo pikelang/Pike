@@ -309,11 +309,9 @@ protected class _get_iterator {
   }
 }
 
-mixed cast(string to) {
-  switch(to) {
-  case "mapping":
+mixed cast(string to)
+{
+  if( to=="mapping" )
     return copy_value(val);
-  default:
-    return UNDEFINED;
-  }
+  return UNDEFINED;
 }

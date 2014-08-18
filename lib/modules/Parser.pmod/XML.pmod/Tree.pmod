@@ -1028,7 +1028,6 @@ protected class VirtualNode {
   //! It is possible to cast a node to a string, which will return
   //! @[render_xml()] for that node.
   protected mixed cast(string to) {
-    if(to=="object") return this;
     if(to=="string") return render_xml();
     return UNDEFINED;
   }

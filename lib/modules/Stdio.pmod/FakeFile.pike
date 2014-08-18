@@ -320,10 +320,8 @@ string _sprintf(int t) {
 
 //! A FakeFile can be casted to a string.
 protected mixed cast(string to) {
-  switch(to) {
-  case "string": return data;
-  case "object": return this;
-  }
+  if( to == "string" )
+    return data;
   return UNDEFINED;
 }
 
