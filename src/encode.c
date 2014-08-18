@@ -845,8 +845,10 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	 */
 	push_int(36);
 	apply(val->u.object,"digits",1);
+#ifdef PIKE_DEBUG
 	if(TYPEOF(Pike_sp[-1]) != T_STRING)
 	  Pike_error("Gmp.mpz->digits did not return a string!\n");
+#endif
 	encode_value2(Pike_sp-1, data, 0);
 	pop_stack();
 	break;
@@ -1838,10 +1840,9 @@ void f_encode_value(INT32 args)
 
   if(args > 1 && TYPEOF(Pike_sp[1-args]) == T_OBJECT)
   {
-    if (SUBTYPEOF(Pike_sp[1-args])) {
-      Pike_error("encode_value: "
-		 "The codec may not be a subtyped object yet.\n");
-    }
+    if (SUBTYPEOF(Pike_sp[1-args]))
+      Pike_error("The codec may not be a subtyped object yet.\n");
+
     data->codec=Pike_sp[1-args].u.object;
     add_ref (data->codec);
   }else{
@@ -1916,10 +1917,9 @@ void f_encode_value_canonic(INT32 args)
 
   if(args > 1 && TYPEOF(Pike_sp[1-args]) == T_OBJECT)
   {
-    if (SUBTYPEOF(Pike_sp[1-args])) {
-      Pike_error("encode_value_canonic: "
-		 "The codec may not be a subtyped object yet.\n");
-    }
+    if (SUBTYPEOF(Pike_sp[1-args]))
+      Pike_error("The codec may not be a subtyped object yet.\n");
+
     data->codec=Pike_sp[1-args].u.object;
     add_ref (data->codec);
   }else{
@@ -2003,7 +2003,7 @@ static void decode_value2(struct decode_data *data);
 static int my_extract_char(struct decode_data *data)
 {
   if(data->ptr >= data->len)
-    Pike_error("Decode error: Not enough data in string.\n");
+    Pike_error("Not enough data in string.\n");
   return data->data [ data->ptr++ ];
 }
 

@@ -1158,7 +1158,7 @@ PMOD_EXPORT void f_has_prefix(INT32 args)
     int inherit_no = SUBTYPEOF(Pike_sp[-args]);
 
     if (!o->prog || FIND_LFUN(o->prog, LFUN__SIZEOF) < 0) {
-      Pike_error("has_prefix(): Object in argument 1 lacks lfun::_sizeof().\n");
+      Pike_error("Object in argument 1 lacks lfun::_sizeof().\n");
     }
 
     apply_lfun(o, LFUN__SIZEOF, 0);
@@ -1232,7 +1232,7 @@ PMOD_EXPORT void f_has_prefix(INT32 args)
     CASE_SHIFT(2,0);
     CASE_SHIFT(2,1);
   default:
-    Pike_error("has_prefix(): Unexpected string shift combination: a:%d, b:%d!\n",
+    Pike_error("Unexpected string shift combination: a:%d, b:%d!\n",
 	  a->size_shift, b->size_shift);
     break;
   }
@@ -1306,7 +1306,7 @@ PMOD_EXPORT void f_has_suffix(INT32 args)
     CASE_SHIFT(2,0);
     CASE_SHIFT(2,1);
   default:
-    Pike_error("has_prefix(): Unexpected string shift combination: a:%d, b:%d!\n",
+    Pike_error("Unexpected string shift combination: a:%d, b:%d!\n",
 	  a->size_shift, b->size_shift);
     break;
   }
@@ -1752,14 +1752,14 @@ PMOD_EXPORT void f_string_to_unicode(INT32 args)
 	    /* 0xfffe: Byte-order detection illegal character.
 	     * 0xffff: Illegal character.
 	     */
-	    Pike_error("string_to_unicode(): Illegal character 0x%04x (index %ld) "
-		  "is not a Unicode character.",
-		  str2[i], PTRDIFF_T_TO_LONG(i));
+	    Pike_error("Illegal character 0x%04x (index %ld) "
+                       "is not a Unicode character.",
+                       str2[i], PTRDIFF_T_TO_LONG(i));
 	  }
 	  if (str2[i] > 0x10ffff) {
-	    Pike_error("string_to_unicode(): Character 0x%08x (index %ld) "
-		  "is out of range (0x00000000..0x0010ffff).",
-		  str2[i], PTRDIFF_T_TO_LONG(i));
+	    Pike_error("Character 0x%08x (index %ld) "
+                       "is out of range (0x00000000..0x0010ffff).",
+                       str2[i], PTRDIFF_T_TO_LONG(i));
 	  }
 	  /* Extra wide characters take two unicode characters in space.
 	   * ie One unicode character extra.
@@ -2509,9 +2509,9 @@ PMOD_EXPORT void f_utf8_to_string(INT32 args)
 
 #ifdef PIKE_DEBUG
   if (j != len) {
-    Pike_fatal("utf8_to_string(): Calculated and actual lengths differ: "
+    Pike_fatal("Calculated and actual lengths differ: "
 	       "%"PRINTPTRDIFFT"d != %"PRINTPTRDIFFT"d\n",
-	  len, j);
+               len, j);
   }
 #endif /* PIKE_DEBUG */
   out = low_end_shared_string(out);
@@ -6342,18 +6342,18 @@ static void f_interleave_array(INT32 args)
     INT_TYPE low = MAX_INT_TYPE;
 #ifdef PIKE_DEBUG
     if (TYPEOF(ITEM(arr)[i]) != T_MAPPING) {
-      Pike_error("interleave_array(): Element %d is not a mapping!\n", i);
+      Pike_error("Element %d is not a mapping!\n", i);
     }
 #endif /* PIKE_DEBUG */
     md = ITEM(arr)[i].u.mapping->data;
     NEW_MAPPING_LOOP(md) {
       if (TYPEOF(k->ind) != T_INT) {
-	Pike_error("interleave_array(): Index not an integer in mapping %d!\n", i);
+	Pike_error("Index not an integer in mapping %d!\n", i);
       }
       if (low > k->ind.u.integer) {
 	low = k->ind.u.integer;
 	if (low < 0) {
-	  Pike_error("interleave_array(): Index %"PRINTPIKEINT"d in mapping %d is negative!\n",
+	  Pike_error("Index %"PRINTPIKEINT"d in mapping %d is negative!\n",
 		low, i);
 	}
       }
@@ -6439,7 +6439,7 @@ static void f_interleave_array(INT32 args)
 	char *newtab = realloc(tab, size*2 + max);
 	if (!newtab) {
 	  free(tab);
-	  Pike_error("interleave_array(): Couldn't extend table!\n");
+	  Pike_error("Couldn't extend table!\n");
 	}
 	tab = newtab;
 	MEMSET(tab + size + max, 0, size);

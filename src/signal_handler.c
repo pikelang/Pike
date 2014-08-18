@@ -4548,7 +4548,7 @@ static void f_pid_status_kill(INT32 args)
   get_all_args("pid->kill", args, "%i", &signum);
 
   if (pid < 0) {
-    Pike_error("pid->kill(): No process\n");
+    Pike_error("No process\n");
   }
 
   PROC_FPRINTF((stderr, "[%d] pid->kill: pid=%d, signum=%d\n",
