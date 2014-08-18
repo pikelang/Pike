@@ -2378,9 +2378,9 @@ static void pike_mp_free (void *ptr, size_t UNUSED(size))
   ADD_FUNCTION("_size_object",mpzmod__size_object, tFunc(tVoid,tInt),0);\
   ADD_FUNCTION("size", mpzmod_size,tFunc(tOr(tVoid,tInt),tIntPos), 0);	\
 									\
-  ADD_FUNCTION("cast_to_int",mpzmod_get_int,tFunc(tNone,tInt),0);	\
-  ADD_FUNCTION("cast_to_string",mpzmod_get_string,tFunc(tNone,tStr7),0);\
-  ADD_FUNCTION("cast_to_float",mpzmod_get_float,tFunc(tNone,tFlt),0);	\
+  ADD_FUNCTION("cast_to_int",mpzmod_get_int,tDeprecated(tFunc(tNone,tInt)),0);        \
+  ADD_FUNCTION("cast_to_string",mpzmod_get_string,tDeprecated(tFunc(tNone,tStr7)),0); \
+  ADD_FUNCTION("cast_to_float",mpzmod_get_float,tDeprecated(tFunc(tNone,tFlt)),0);    \
 									\
   ADD_FUNCTION("probably_prime_p",mpzmod_probably_prime_p,		\
 	       tFunc(tNone,tInt01),0);					\
