@@ -665,6 +665,11 @@ static void test_reg32( enum amd64_reg reg1 )
 
 static void cmp_reg_imm( enum amd64_reg reg, int imm32 )
 {
+  if(!imm32)
+  {
+   test_reg( reg );
+   return;
+  }
   rex(1, 0, 0, reg);
   if( imm32 > 0x7f || imm32 < -0x80 )
   {
@@ -690,6 +695,11 @@ static void cmp_reg_imm( enum amd64_reg reg, int imm32 )
 
 static void cmp_reg32_imm( enum amd64_reg reg, int imm32 )
 {
+  if(!imm32)
+  {
+   test_reg( reg );
+   return;
+  }
   rex(0, 0, 0, reg);
   if( imm32 > 0x7f || imm32 < -0x80 )
   {
