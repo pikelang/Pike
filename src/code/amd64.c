@@ -1943,7 +1943,7 @@ void ins_f_byte(unsigned int b)
     LABEL_B;
     }
     return;
-
+#if 0
   case F_ADD:
     {
     LABELS();
@@ -2007,7 +2007,7 @@ void ins_f_byte(unsigned int b)
   LABEL_C;
     }
     return;
-
+#endif
   case F_DEC:
     {
     LABELS();
