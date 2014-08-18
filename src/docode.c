@@ -703,6 +703,7 @@ static void emit_global( int n )
   struct identifier *id = ID_FROM_PTR(Pike_compiler->new_program, ref);
 
   if(!(id->identifier_flags & IDENTIFIER_NO_THIS_REF)
+     && !ref->inherit_offset
      && !IDENTIFIER_IS_ALIAS(id->identifier_flags)
      && IDENTIFIER_IS_VARIABLE(id->identifier_flags))
   {
@@ -716,21 +717,17 @@ static void emit_global( int n )
       return;
     }
 
-    if( (id->func.offset < 65536) && (n<65536) )
+    if( id->run_time_type == PIKE_T_MIXED )
     {
-
-      if( id->run_time_type == PIKE_T_MIXED )
-      {
-	emit2(F_PRIVATE_IF_DIRECT_GLOBAL, id->func.offset, n);
-	return;
-      }
-/*       else */
-/*       { */
+      emit2(F_PRIVATE_IF_DIRECT_GLOBAL, id->func.offset, n);
+      return;
+    }
+/*  else if( (id->func.offset < 65536) && (n<65536) ) */
+/*  { */
 /* 	INT32 mix = id->func.offset | (n<<16); */
 /* 	emit2(F_PRIVATE_IF_DIRECT_TYPED_GLOBAL, mix, id->run_time_type); */
-    }
+/*  } */
   }
-
   emit1(F_GLOBAL, n);
 }
 
@@ -741,6 +738,7 @@ static void emit_assign_global( int n, int and_pop )
   struct identifier *id = ID_FROM_PTR(Pike_compiler->new_program, ref);
 
   if( !(id->identifier_flags & IDENTIFIER_NO_THIS_REF)
+      && !ref->inherit_offset
       && !IDENTIFIER_IS_ALIAS(id->identifier_flags)
       && IDENTIFIER_IS_VARIABLE(id->identifier_flags))
   {
