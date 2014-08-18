@@ -469,7 +469,7 @@ PIKECLASS Rect {
       push_int(THIS->rect.w);
       push_int(THIS->rect.h);
       f_aggregate(4);
-    } else if( type == literla_mapping_string ) {
+    } else if( type == literal_mapping_string ) {
       push_text("x");
       push_int(THIS->rect.x);
       push_text("y");

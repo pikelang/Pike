@@ -20,6 +20,7 @@
 #include "program.h"
 #include "bignum.h"
 #include "backend.h"
+#include "pike_types.h"
 
 #ifdef HAVE_LIBFUSE
 /* Attempt to use FUSE API version 2.9 (if possible). */
