@@ -40,6 +40,7 @@
 #include "pike_macros.h"
 #include "module_support.h"
 #include "bignum.h"
+#include "pike_types.h"
 
 #include "precompiled_odbc.h"
 
