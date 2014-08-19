@@ -24,6 +24,7 @@
 #include "module_support.h"
 #include "operators.h"
 #include "program.h"
+#include "pike_types.h"
 
 #include "modules/Image/image.h"
 
