@@ -1385,7 +1385,12 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 			       "is inherited.\n", id->name);
 		  }
 		  gs_flags = ref->id_flags & PTR_FROM_INT(p, i)->id_flags;
-		  if (id_dumped[PTR_FROM_INT(p, i)->identifier_offset]) {
+		  if (id_dumped[PTR_FROM_INT(p, i)->identifier_offset] ||
+		      (i < d)) {
+		    /* Either already dumped, or the dispatcher is in
+		     * front of us, which indicates that we are overloading
+		     * an inherited function with a variant.
+		     */
 		    gs_flags |= ID_VARIANT;
 		  } else {
 		    /* First variant. */
