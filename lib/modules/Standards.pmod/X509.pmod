@@ -184,7 +184,7 @@ protected class RSAVerifier
   }
 
   __deprecated__ Crypto.RSA.State `rsa() {
-    return [object(Crypto.RSA.State)]pkc;
+    return pkc;
   }
 }
 
@@ -199,7 +199,7 @@ protected class DSAVerifier
   }
 
   __deprecated__ Crypto.DSA.State `dsa() {
-    return [object(Crypto.DSA.State)]pkc;
+    return pkc;
   }
 }
 
