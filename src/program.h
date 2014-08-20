@@ -808,6 +808,7 @@ PMOD_EXPORT void debug_start_new_program(INT_TYPE line, const char *file);
 void dump_program_desc(struct program *p);
 int sizeof_variable(int run_time_type);
 void check_program(struct program *p);
+int low_is_variant_dispatcher(struct identifier *id);
 int is_variant_dispatcher(struct program *prog, int fun);
 struct program *end_first_pass(int finish);
 PMOD_EXPORT struct program *debug_end_program(void);
