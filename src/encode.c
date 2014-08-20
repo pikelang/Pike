@@ -2129,34 +2129,6 @@ static DECLSPEC(noreturn) void decode_error (
   }									    \
 }while(0)
 
-#define getdata(X) do {				\
-   long length;					\
-   decode_entry(TAG_STRING, length,data);	\
-   if(data->pass == 1)				\
-     get_string_data(X, length, data);		\
-   else						\
-     data->ptr+=length;				\
-  }while(0)
-
-#define getdata3(X) do {						     \
-  INT32 what, e;							\
-  INT64 num;								\
-  DECODE("getdata3");							     \
-  switch(what & TAG_MASK)						     \
-  {									     \
-    case TAG_INT:							     \
-      X=0;								     \
-      break;								     \
-									     \
-    case TAG_STRING:							     \
-      get_string_data(X,num,data);                                           \
-      break;								     \
-									     \
-    default:								     \
-      decode_error (data, NULL, "Tag is wrong: %d\n", what & TAG_MASK);	\
-    }									     \
-}while(0)
-
 #define decode_number(X,data) do {		\
    INT32 what, e;				\
    INT64 num;					\
