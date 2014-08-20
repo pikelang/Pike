@@ -406,33 +406,33 @@ OPCODE2(F_ASSIGN_PRIVATE_IF_DIRECT_GLOBAL,
 
 OPCODE2(F_ASSIGN_PRIVATE_TYPED_GLOBAL_AND_POP, "assign global <private,typed> and pop", I_UPDATE_SP, {
    /* lazy mode. */
-  LOCAL_VAR(union anything  *tmp);
-  LOCAL_VAR(struct object *co);
-  co = Pike_fp->current_object;
-  if(!co->prog) /* note: generate an error. */
-    object_low_set_index(co,0,0);
-  tmp = (union anything *)(Pike_fp->current_object->storage + Pike_fp->context->storage_offset + arg1);
-  assign_to_short_svalue( tmp, arg2, Pike_sp-1 );
+  union anything  *tmp_s;
+  LOCAL_VAR(struct object *o);
+  o = Pike_fp->current_object;
+  if(!o->prog) /* note: generate an error. */
+    object_low_set_index(o,0,0);
+  tmp_s = (union anything *)(o->storage + Pike_fp->context->storage_offset + arg1);
+  assign_to_short_svalue( tmp_s, arg2, Pike_sp-1 );
   pop_stack();
 });
 
 OPCODE2(F_ASSIGN_PRIVATE_TYPED_GLOBAL, "assign global <private,typed>", 0, {
-  LOCAL_VAR(union anything  *tmp);
-  LOCAL_VAR(struct object *co);
-  co = Pike_fp->current_object;
-  if(!co->prog) /* note: generate an error. */
-    object_low_set_index(co,0,0);
-  tmp = (union anything *)(Pike_fp->current_object->storage + Pike_fp->context->storage_offset + arg1);
+  union anything  *tmp;
+  LOCAL_VAR(struct object *o);
+  o = Pike_fp->current_object;
+  if(!o->prog) /* note: generate an error. */
+    object_low_set_index(o,0,0);
+  tmp = (union anything *)(o->storage + Pike_fp->context->storage_offset + arg1);
   assign_to_short_svalue( tmp, arg2, Pike_sp-1);
 });
 
 
 OPCODE2(F_PRIVATE_TYPED_GLOBAL, "global <private,typed>", I_UPDATE_SP, {
-    LOCAL_VAR(struct object *co);
-    LOCAL_VAR(void *ptr);
+    void *ptr;
+    LOCAL_VAR(struct object *o);
 
-    co = Pike_fp->current_object;
-    ptr = (void *)(co->storage + Pike_fp->context->storage_offset + arg1);
+    o = Pike_fp->current_object;
+    ptr = (void *)(o->storage + Pike_fp->context->storage_offset + arg1);
     if( arg2 < MIN_REF_TYPE )
     {
 #if SIZEOF_FLOAT_TYPE != SIZEOF_INT_TYPE
@@ -1196,8 +1196,8 @@ OPCODE1(F_ASSIGN_GLOBAL_AND_POP, "assign global and pop", I_UPDATE_SP, {
 
 OPCODE1(F_ASSIGN_PRIVATE_GLOBAL_AND_POP,
 	"assign private global and pop", I_UPDATE_SP, {
-  LOCAL_VAR(struct svalue *tmp);
-  LOCAL_VAR(struct object *co);
+  struct svalue *tmp;
+  struct object *co;
   co = Pike_fp->current_object;
   if(!co->prog) /* note: generate an error. */
     object_low_set_index(co,0,0);
@@ -1207,8 +1207,8 @@ OPCODE1(F_ASSIGN_PRIVATE_GLOBAL_AND_POP,
 });
 
 OPCODE1(F_ASSIGN_PRIVATE_GLOBAL, "assign private global", I_UPDATE_SP, {
-  LOCAL_VAR(struct svalue *tmp);
-  LOCAL_VAR(struct object *co);
+  struct svalue *tmp;
+  struct object *co;
   co = Pike_fp->current_object;
   if(!co->prog) /* note: generate an error. */
     object_low_set_index(co,0,0);
@@ -1940,7 +1940,6 @@ OPCODE1(F_ADD_NEG_INT, "add -integer", 0, {
 });
 
 OPCODE0(F_PUSH_ARRAY, "@", I_UPDATE_SP, {
-  int i;
   LOCAL_VAR(struct object *o);
   LOCAL_VAR(struct program *p);
 
@@ -1950,6 +1949,8 @@ OPCODE0(F_PUSH_ARRAY, "@", I_UPDATE_SP, {
     PIKE_ERROR("@", "Bad argument.\n", Pike_sp, 1);
     
   case PIKE_T_OBJECT:
+    {
+    int i;
     if(!(p = (o = Pike_sp[-1].u.object)->prog) ||
        (i = FIND_LFUN(p->inherits[SUBTYPEOF(Pike_sp[-1])].prog,
 		      LFUN__VALUES)) == -1)
@@ -1961,6 +1962,7 @@ OPCODE0(F_PUSH_ARRAY, "@", I_UPDATE_SP, {
     free_svalue(Pike_sp-2);
     move_svalue (Pike_sp - 2, Pike_sp - 1);
     Pike_sp--;
+    }
     break;
 
   case PIKE_T_ARRAY: break;
@@ -2898,7 +2900,7 @@ OPCODE0_PTRJUMP(F_TAIL_RECUR, "tail recursion", I_UPDATE_ALL, {
 });
 
 OPCODE1(F_THIS_OBJECT, "this_object", I_UPDATE_SP, {
-    LOCAL_VAR(int level);
+    int level;
     LOCAL_VAR(struct object *o);
     o = Pike_fp->current_object;
     for (level = 0; level < arg1; level++) {
@@ -2916,16 +2918,18 @@ OPCODE1(F_THIS_OBJECT, "this_object", I_UPDATE_SP, {
   });
 
 OPCODE0(F_UNDEFINEDP,"undefinedp",0, {
-    LOCAL_VAR(int undef);
+    int undef;
     if(TYPEOF(Pike_sp[-1]) != T_INT)
     {
       pop_stack();
       push_int(0);
-      return;
     }
-    undef = SUBTYPEOF(Pike_sp[-1]) == NUMBER_UNDEFINED;
-    SET_SVAL(Pike_sp[-1], T_INT, NUMBER_NUMBER, integer,
-             undef);
+    else
+    {
+      undef = SUBTYPEOF(Pike_sp[-1]) == NUMBER_UNDEFINED;
+      SET_SVAL(Pike_sp[-1], T_INT, NUMBER_NUMBER, integer,
+	       undef);
+    }
 });
 
 OPCODE0(F_DESTRUCTEDP,"destructedp",0, {
@@ -2934,10 +2938,12 @@ OPCODE0(F_DESTRUCTEDP,"destructedp",0, {
     {
       pop_stack();
       push_int(1);
-      return;
     }
-    pop_stack();
-    push_int(0);
+    else
+    {
+      pop_stack();
+      push_int(0);
+    }
 });
 
 OPCODE0(F_ZERO_TYPE, "zero_type", 0, {
