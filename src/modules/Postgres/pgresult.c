@@ -76,6 +76,7 @@
 #include "mapping.h"
 #include "builtin_functions.h"
 #include "module_support.h"
+#include "pike_types.h"
 
 /* <server/postgres_fe.h> doesn't suffice to be able to include
  * <server/catalog/pg_type.h>.
