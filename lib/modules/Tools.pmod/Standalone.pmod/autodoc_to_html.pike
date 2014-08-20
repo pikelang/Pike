@@ -1233,7 +1233,7 @@ string parse_not_doc(Node n) {
         ret += ("<b><font color='#000066'>sprintf</font>("
                 "</b><font color='#202020'>string</font> "
                 "<font color='#F000F0'>format</font>, ... <font color='#202020'>"
-                +class_name+"</font><font color='#F000F0'>"
+                +class_name+"</font> <font color='#F000F0'>"
                 "arg</font> ... <b>)</b>");
         break;
 
