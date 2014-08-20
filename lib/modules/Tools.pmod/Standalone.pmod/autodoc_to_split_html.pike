@@ -342,16 +342,14 @@ class Node
 
     method_children = check_uniq(method_children);
 
-    /*
     foreach(method_children, Node m)
       if( (<"create","destroy">)[m->name] ) {
-	method_children -= ({ m });
+/*	method_children -= ({ m });*/
 	string d;
 	sscanf(m->data, "%*s<docgroup%s/docgroup>", d);
 	if(d)
 	  data += "<docgroup" + d + "/docgroup>";
       }
-    */
 
     data = make_faked_wrapper(data);
   }
