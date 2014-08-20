@@ -118,12 +118,14 @@ Thread.Mutex _stealmutex;
 #define USERERROR(msg)	throw(({(msg), backtrace()[..<1]}))
 
 protected string _sprintf(int type, void|mapping flags)
-{ string res=UNDEFINED;
+{
+  string res=UNDEFINED;
   switch(type)
-  { case 'O':
-      res=sprintf(DRIVERNAME"(%s@%s:%d/%s,%d)",
-       user,host,port,database,backendpid);
-      break;
+  {
+  case 'O':
+    res=sprintf(DRIVERNAME"(%s@%s:%d/%s,%d)",
+     user,host,port,database,backendpid);
+    break;
   }
   return res;
 }
