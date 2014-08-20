@@ -1011,7 +1011,9 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	{
 	  int has_local_c_methods = 0;
 	  for (d = 0; d < p->num_identifiers; d++) {
-	    if (IDENTIFIER_IS_C_FUNCTION(p->identifiers[d].identifier_flags)) {
+	    struct identifier *id = p->identifiers + d;
+	    if (IDENTIFIER_IS_C_FUNCTION(id->identifier_flags) &&
+		!low_is_variant_dispatcher(id)) {
 	      has_local_c_methods = 1;
 	      break;
 	    }
