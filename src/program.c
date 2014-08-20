@@ -3927,6 +3927,14 @@ void check_program(struct program *p)
 
 static void f_dispatch_variant(INT32 args);
 
+int low_is_variant_dispatcher(struct identifier *id)
+{
+  if (!id) return 0;
+  return (IDENTIFIER_IS_C_FUNCTION(id->identifier_flags) &&
+	  !IDENTIFIER_IS_ALIAS(id->identifier_flags) &&
+	  (id->func.c_fun == f_dispatch_variant));
+}
+
 int is_variant_dispatcher(struct program *prog, int fun)
 {
   struct reference *ref;
@@ -3934,9 +3942,7 @@ int is_variant_dispatcher(struct program *prog, int fun)
   if (fun < 0) return 0;
   ref = PTR_FROM_INT(prog, fun);
   id = ID_FROM_PTR(prog, ref);
-  return (IDENTIFIER_IS_C_FUNCTION(id->identifier_flags) &&
-	  !IDENTIFIER_IS_ALIAS(id->identifier_flags) &&
-	  (id->func.c_fun == f_dispatch_variant));
+  return low_is_variant_dispatcher(id);
 }
 
 static int add_variant_dispatcher(struct pike_string *name,
