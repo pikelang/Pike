@@ -351,6 +351,7 @@ string parse_module(Node n, void|int noheader) {
   return ret;
 }
 
+ADT.Stack old_class_name = ADT.Stack();
 string parse_class(Node n, void|int noheader) {
   string ret ="";
   if(!noheader)
@@ -362,7 +363,8 @@ string parse_class(Node n, void|int noheader) {
       "</dt><dd>";
 
   Node c = n->get_first_element("doc");
-
+  old_class_name->push(class_name);
+  class_name = n->get_attributes()->class_path+n->get_attributes()->name;
   if(c)
     ret += "<dl>" + parse_doc(c) + "</dl>";
 
@@ -378,6 +380,7 @@ string parse_class(Node n, void|int noheader) {
 
   if(!noheader)
     ret += "</dd></dl>";
+  class_name = old_class_name->pop();
   return ret;
 }
 
@@ -1158,6 +1161,8 @@ string render_class_path(Node n,int|void class_only)
 #endif
 }
 #endif /* 0 */
+string class_name = "";
+
 
 string parse_not_doc(Node n) {
   string ret = "";
@@ -1186,20 +1191,57 @@ string parse_not_doc(Node n) {
       if(!c->get_first_element("returntype"))
 	error( "No returntype element in method element.\n" );
 #endif
-      switch( c->get_attributes()->name )
+      switch( string method = c->get_attributes()->name )
       {
 	case "create":
-	  ret += "<tt>" + parse_type(get_first_element(c->get_first_element("returntype"))); // Check for more children
+	  ret += "<tt>" +class_name; // Check for more children
 	  ret += " ";
-	  ret += c->get_attributes()->class_path+"<b>(</b>";
+	  ret += class_name+"<b>(</b>";
 	  ret += parse_not_doc( c->get_first_element("arguments") );
 	  ret += "<b>)</b></tt>";
 	  break;
+
+    case "__hash":
+        method = method[1..];
+    case "_random":
+    case "_sizeof":
+    case "_indices":
+    case "_values":
+        /* simple overload type lfuns. */
+        ret += "<tt>";
+        ret += parse_type(get_first_element(c->get_first_element("returntype")));
+        ret += " ";
+        ret += "<b><font color='#000066'>"+method[1..]+"</font>(</b> ";
+        ret += "<font color='#202020'>"+class_name+"</font> <font color='#f000f0'>arg</font>";
+        ret += " <b>)</b>";
+        break;
+
+    case "_m_delete":
+    case "_equal":
+    case "_search":
+        ret += "<tt>";
+        ret += parse_type(get_first_element(c->get_first_element("returntype")));
+        ret += " <b><font color='#000066'>"+method[1..];
+        ret += "</font>(</b>"+class_name+" <font color='#F000F0'>from</font>, ";
+        ret += parse_not_doc( c->get_first_element("arguments") );
+        ret += "<b>)</b></tt>";
+        break;
+
+    case "_sprintf":
+        ret += "<tt>";
+        ret += "<font color='#202020'>string</font> ";
+        ret += ("<b><font color='#000066'>sprintf</font>("
+                "</b><font color='#202020'>string</font> "
+                "<font color='#F000F0'>format</font>, ... <font color='#202020'>"
+                +class_name+"</font><font color='#F000F0'>"
+                "arg</font> ... <b>)</b>");
+        break;
+
 	default:
 	  ret += "<tt>";
 	  cc = c->get_first_element("modifiers");
 	  if(cc) ret += map(cc->get_children(), parse_type)*" " + " ";
-	  ret += parse_type(get_first_element(c->get_first_element("returntype"))); // Check for more children
+	  ret += parse_type(get_first_element(c->get_first_element("returntype")));
 	  ret += " ";
 	  ret += c->get_attributes()->class_path;
 	  ret += "<b><font color='#000066'>" + c->get_attributes()->name + "</font>(</b>";
