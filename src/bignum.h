@@ -275,8 +275,8 @@ GEN_OF1(32)
 #endif /* PIKE_CLANG_BUILTIN(__builtin_uadd_overflow) */
 
 GEN_OF2(16, 32, unsigned INT32)
-GEN_OF2(8, 32, unsigned INT32)
-
+/*GEN_OF2(8, 32, unsigned INT32)
+ */
 
 /* NB: GCC 4.1.2 doesn't alias pointers to INT_TYPE and to INT32/INT64,
  *     so the DO_INT_TYPE_*_OVERFLOW variants can't just be cpp-renames
