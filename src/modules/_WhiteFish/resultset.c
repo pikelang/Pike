@@ -139,7 +139,7 @@ void wf_resultset_clear( struct object *o )
   T(o)->d->num_docs = 0;
 }
 
-struct object *wf_resultset_new( )
+struct object *wf_resultset_new(void)
 {
   struct object *o;
   o = clone_object( resultset_program, 0 );
@@ -147,13 +147,13 @@ struct object *wf_resultset_new( )
   return o;
 }
 
-static void init_rs( )
+static void init_rs(struct object *UNUSED(o))
 {
   THIS->d = 0;
   THIS->allocated_size = 0;
 }
 
-static void free_rs()
+static void free_rs(struct object *UNUSED(o))
 {
   THIS->allocated_size = 0;
   if( THIS->d )  free( THIS->d );
