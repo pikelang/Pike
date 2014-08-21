@@ -342,7 +342,7 @@ static void image_ft_face_info( INT32 args )
 /*! @decl void create(string font, int|void face_number)
  *! @param font
  *!   The path of the font file to use
- *! @param font
+ *! @param face_number
  *!   The face number within the font to load, if supported 
  *!   by the font format.
  */
