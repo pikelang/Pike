@@ -280,13 +280,15 @@ static void image_ft_face_select_encoding( INT32 args )
  *!     @member string "style_name"
  *!       The name of the font style, or "unknown"
  *!     @member int "face_flags"
+ *!     @member int "face_count"
+ *!       The number of faces contained within the font file.
  *!     @member int "style_flags"
  *!       The sum of all face/style flags respectively.
  *!   @endmapping
  */
 static void image_ft_face_info( INT32 args )
 {
-  int element_count = 8;
+  int element_count = 10;
 
   pop_n_elems( args );
   push_text( "family" );
@@ -294,6 +296,8 @@ static void image_ft_face_info( INT32 args )
     push_text( TFACE->family_name );
   else
     push_text( "unknown" );
+  push_text( "face_count" );
+  push_int(TFACE->num_faces);
   push_text( "style" );
   if( TFACE->style_name )
     push_text( TFACE->style_name );
@@ -329,23 +333,32 @@ static void image_ft_face_info( INT32 args )
       element_count += 2;
       break;
     }
+
   }
 
   f_aggregate_mapping( element_count );
 }
 
-/*! @decl void create(string font)
+/*! @decl void create(string font, int|void face_number)
  *! @param font
  *!   The path of the font file to use
+ *! @param font
+ *!   The face number within the font to load, if supported 
+ *!   by the font format.
  */
 static void image_ft_face_create( INT32 args )
 {
   int er;
+  int face_number = 0;
   FT_Encoding best_enc = ft_encoding_none;
   int enc_no, enc_score, best_enc_score = -2;
   if( !args || TYPEOF(sp[-args]) != T_STRING )
     Pike_error("Illegal argument 1 to FreeType.Face. Expected string.\n");
-  er = FT_New_Face( library, sp[-args].u.string->str, 0, &TFACE );
+  if(args == 2 && TYPEOF(sp[-args+1]) != T_INT)
+    Pike_error("Illegal argument 2 to FreeType.Face. Expected integer.\n");
+  if(args == 2)
+    face_number = sp[-args+1].u.integer;
+  er = FT_New_Face( library, sp[-args].u.string->str, face_number, &TFACE );
   if( er == FT_Err_Unknown_File_Format )
     Pike_error("Failed to parse the font file %S\n", sp[-args].u.string);
   else if( er )
@@ -430,7 +443,7 @@ PIKE_MODULE_INIT
     start_new_program( );
     ADD_STORAGE( struct face );
 
-    ADD_FUNCTION("create",image_ft_face_create, tFunc(tStr,tVoid), 0 );
+    ADD_FUNCTION("create",image_ft_face_create, tFunc(tStr tOr(tInt,tVoid),tVoid), 0 );
     ADD_FUNCTION("set_size",image_ft_face_set_size,tFunc(tInt tInt,tObj),0);
     ADD_FUNCTION("attach_file",image_ft_face_attach_file,tFunc(tString,tVoid),0);
     ADD_FUNCTION("list_encodings",image_ft_face_list_encodings,tFunc(tNone,tArr(tString)),0);
