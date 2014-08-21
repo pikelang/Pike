@@ -28,7 +28,7 @@
 DECLARATIONS
 #ifdef HAVE_FRAMEWORK_CORESERVICES
 
-void low_stop();
+void low_stop(void);
 struct pike_string * string_from_cfstring(CFStringRef cfString);
 
 struct event_callback_ctx 
@@ -295,7 +295,7 @@ PIKEFUN void stop()
   low_stop();
 }
 
-void low_stop()
+void low_stop(void)
 {
   if(THIS->isRunning)
   {

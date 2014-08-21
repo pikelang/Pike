@@ -558,12 +558,12 @@ static void f_blob__cast( INT32 args )
 /*! @endmodule
  */
 
-static void init_blob_struct( )
+static void init_blob_struct(void)
 {
   MEMSET( THIS, 0, sizeof( struct blob_data ) );
 }
 
-static void exit_blob_struct( )
+static void exit_blob_struct(void)
 {
   int i;
   for( i = 0; i<HSIZE; i++ )
@@ -572,7 +572,7 @@ static void exit_blob_struct( )
   init_blob_struct();
 }
 
-void init_blob_program()
+void init_blob_program(void)
 {
   start_new_program();
   ADD_STORAGE( struct blob_data );
@@ -590,7 +590,7 @@ void init_blob_program()
   add_program_constant( "Blob", blob_program, 0 );
 }
 
-void exit_blob_program()
+void exit_blob_program(void)
 {
   free_program( blob_program );
 }

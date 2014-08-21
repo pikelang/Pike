@@ -167,12 +167,12 @@ static void f_tokenize( INT32 args )
 /*! @endmodule
  */
 
-void init_parser_c()
+void init_parser_c(void)
 {
   ADD_FUNCTION2("tokenize", f_tokenize,
 		tFunc(tStr, tArr(tOr(tArr(tStr),tStr))), 0, 0);
 }
 
-void exit_parser_c()
+void exit_parser_c(void)
 {
 }

@@ -439,7 +439,7 @@ static void image_f_wbf_encode( int args )
 /*! @endmodule
  */
 
-void init_image_wbf()
+void init_image_wbf(void)
 {
   ADD_FUNCTION( "encode", image_f_wbf_encode,
 		tFunc(tObj tOr(tVoid,tMapping),tStr), 0);
@@ -451,6 +451,6 @@ void init_image_wbf()
 		tFunc(tStr,tMapping), 0);
 }
 
-void exit_image_wbf()
+void exit_image_wbf(void)
 {
 }

@@ -129,7 +129,7 @@ static int check_234_args(char *func, INT32 args, int mn, int mx, int ty,
 
 static int img_inited=0;
 
-static void img_init()
+static void img_init(void)
 {
   glPixelStorei(GL_PACK_SWAP_BYTES, 0);
   glPixelStorei(GL_PACK_LSB_FIRST, 0);
@@ -522,7 +522,7 @@ static void my_glDeleteTextures( INT32 args );
 static void my_glGenTextures( INT32 args );
 static void my_glCallLists( INT32 args );
 
-static void pre_init()
+static void pre_init(void)
 {
   add_function_constant("glFrustum", my_glFrustum,
 			"function(float,float,float,float,float,float:void)",
@@ -536,7 +536,7 @@ static void pre_init()
 			"function(int:array(int))", OPT_EXTERNAL_DEPEND);
 }
 
-static void post_init()
+static void post_init(void)
 {
 }
 

@@ -152,7 +152,7 @@ void image_avs_f_encode(INT32 args )
   push_string( end_shared_string(s) );
 }
 
-void init_image_avs()
+void init_image_avs(void)
 {
   ADD_FUNCTION( "decode",  image_avs_f_decode,  tFunc(tStr,tObj), 0);
   ADD_FUNCTION( "_decode", image_avs_f__decode, tFunc(tStr,tMapping), 0);
@@ -160,6 +160,6 @@ void init_image_avs()
 		tFunc(tObj tOr(tObj,tVoid),tStr), 0);
 }
 
-void exit_image_avs()
+void exit_image_avs(void)
 {
 }

@@ -49,7 +49,7 @@ struct scanner
   SANE_Handle h;
 };
 
-static void init_sane()
+static void init_sane(void)
 {
   if( sane_init( NULL, NULL ) )
     Pike_error( "Sane init failed.\n" );
@@ -475,7 +475,7 @@ static void get_comp_frame( SANE_Handle h, SANE_Parameters *p, char *data )
   }
 }
 
-static void assert_image_program()
+static void assert_image_program(void)
 {
   if( !image_program )
   {

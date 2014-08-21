@@ -42,7 +42,7 @@ PIKECLASS Sequence
   
   //if there is more than one reference to this array copy it.
 
-  static inline void should_copy()
+  static inline void should_copy(void)
   {
     if (THIS->a->refs > 1)
     {

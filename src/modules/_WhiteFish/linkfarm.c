@@ -198,12 +198,12 @@ static void f_linkfarm_read( INT32 args )
  */
 
 
-static void init_linkfarm_struct( )
+static void init_linkfarm_struct(void)
 {
   MEMSET( THIS, 0, sizeof( struct linkfarm ) );
 }
 
-static void exit_linkfarm_struct( )
+static void exit_linkfarm_struct(void)
 {
   int i;
 
@@ -218,7 +218,7 @@ static void exit_linkfarm_struct( )
 }
 
 
-void init_linkfarm_program()
+void init_linkfarm_program(void)
 {
   start_new_program();
   ADD_STORAGE(struct linkfarm);
@@ -232,7 +232,7 @@ void init_linkfarm_program()
   add_program_constant( "LinkFarm", linkfarm_program, 0 );
 }
 
-void exit_linkfarm_program()
+void exit_linkfarm_program(void)
 {
   free_program( linkfarm_program );
 }

@@ -947,7 +947,7 @@ void push_stat(PIKE_STAT_T *s)
 
 /* ---------------------------------------------------------------- */
 
-void init_stdio_stat()
+void init_stdio_stat(void)
 {
    unsigned int n=0;
 
@@ -1043,7 +1043,7 @@ void init_stdio_stat()
    add_program_constant("Stat",stat_program,0);
 }
 
-void exit_stdio_stat()
+void exit_stdio_stat(void)
 {
    size_t i;
 

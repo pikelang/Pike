@@ -4,7 +4,7 @@
 || for more information.
 */
 
-void init_sdl_constants() {
+void init_sdl_constants(void) {
   /* Video related flags */
   add_integer_constant("SWSURFACE", SDL_SWSURFACE, 0);
   add_integer_constant("HWSURFACE", SDL_HWSURFACE, 0);

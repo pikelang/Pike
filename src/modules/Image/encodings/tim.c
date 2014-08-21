@@ -336,7 +336,7 @@ void image_tim_f__decode(INT32 args)
    img_tim_decode(args,0);
 }
 
-void init_image_tim()
+void init_image_tim(void)
 {
   ADD_FUNCTION( "decode",  image_tim_f_decode,  tFunc(tStr,tObj), 0);
   ADD_FUNCTION( "decode_alpha",  image_tim_f_decode_alpha,  tFunc(tStr,tObj), 0);
@@ -344,6 +344,6 @@ void init_image_tim()
   ADD_FUNCTION( "decode_header", image_tim_f_decode_header, tFunc(tStr,tMapping), 0);
 }
 
-void exit_image_tim()
+void exit_image_tim(void)
 {
 }

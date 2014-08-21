@@ -75,7 +75,7 @@ static struct canonic_h  *canonic_hash[HSIZE];
 static int hashes_inited = 0;
 #endif
 
-static void init_hashes()
+static void init_hashes(void)
 {
   unsigned int i;
 
@@ -108,7 +108,7 @@ static void init_hashes()
 }
 
 
-void unicode_normalize_init()
+void unicode_normalize_init(void)
 {
   init_hashes();
 }

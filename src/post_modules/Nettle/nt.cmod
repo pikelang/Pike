@@ -138,7 +138,7 @@ PIKECLASS CryptContext
 /*! @endmodule
  */
 
-void nt_init()
+void nt_init(void)
 {
   INIT;
 
@@ -166,7 +166,7 @@ void nt_init()
 
 }
 
-void nt_exit()
+void nt_exit(void)
 {
   EXIT;
 }

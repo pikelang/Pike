@@ -103,13 +103,13 @@ void image_hrz_f_encode(INT32 args )
   push_string( end_shared_string(s) );
 }
 
-void init_image_hrz()
+void init_image_hrz(void)
 {
   ADD_FUNCTION( "decode", image_hrz_f_decode, tFunc(tStr,tObj), 0);
   ADD_FUNCTION( "_decode", image_hrz_f__decode, tFunc(tStr,tMapping), 0);
   ADD_FUNCTION( "encode", image_hrz_f_encode, tFunc(tObj,tStr), 0);
 }
 
-void exit_image_hrz()
+void exit_image_hrz(void)
 {
 }

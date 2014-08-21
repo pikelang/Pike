@@ -1413,7 +1413,7 @@ void image_xcf_f__decode_tiles( INT32 args )
 
 
 static struct program *image_encoding_xcf_program=NULL;
-void init_image_xcf()
+void init_image_xcf(void)
 {
   ADD_FUNCTION( "___decode", image_xcf____decode, tFunc(tStr,tMapping), 0);
 
@@ -1510,7 +1510,7 @@ void init_image_xcf()
 }
 
 
-void exit_image_xcf()
+void exit_image_xcf(void)
 {
 #define STRING(X) free_string(s_##X)
 #include "xcf_constant_strings.h"
