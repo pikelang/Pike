@@ -339,7 +339,7 @@ static void image_ft_face_info( INT32 args )
   f_aggregate_mapping( element_count );
 }
 
-/*! @decl void create(string font, int|void face_number)
+/*! @decl void create(string(8bit) font, int(0..)|void face_number)
  *! @param font
  *!   The path of the font file to use
  *! @param face_number
@@ -349,20 +349,22 @@ static void image_ft_face_info( INT32 args )
 static void image_ft_face_create( INT32 args )
 {
   int er;
+  char *font;
   int face_number = 0;
   FT_Encoding best_enc = ft_encoding_none;
   int enc_no, enc_score, best_enc_score = -2;
-  if( !args || TYPEOF(sp[-args]) != T_STRING )
-    Pike_error("Illegal argument 1 to FreeType.Face. Expected string.\n");
-  if(args == 2 && TYPEOF(sp[-args+1]) != T_INT)
-    Pike_error("Illegal argument 2 to FreeType.Face. Expected integer.\n");
-  if(args == 2)
-    face_number = sp[-args+1].u.integer;
-  er = FT_New_Face( library, sp[-args].u.string->str, face_number, &TFACE );
+
+  get_all_args("FreeType.Face", args, "%s.%d", &font, &face_number);
+
+  if (face_number < 0) {
+    SIMPLE_BAD_ARG_ERROR("FreeType.Face", 2, "int(0..)");
+  }
+
+  er = FT_New_Face( library, font, face_number, &TFACE );
   if( er == FT_Err_Unknown_File_Format )
-    Pike_error("Failed to parse the font file %S\n", sp[-args].u.string);
+    Pike_error("Failed to parse the font file %s\n", font);
   else if( er )
-    Pike_error("Failed to open the font file %S\n", sp[-args].u.string);
+    Pike_error("Failed to open the font file %s\n", font);
   for(enc_no=0; enc_no<TFACE->num_charmaps; enc_no++) {
     switch(TFACE->charmaps[enc_no]->encoding) {
     case ft_encoding_symbol: enc_score = -1; break;
@@ -443,7 +445,7 @@ PIKE_MODULE_INIT
     start_new_program( );
     ADD_STORAGE( struct face );
 
-    ADD_FUNCTION("create",image_ft_face_create, tFunc(tStr tOr(tInt,tVoid),tVoid), 0 );
+    ADD_FUNCTION("create",image_ft_face_create, tFunc(tStr8 tOr(tIntPos,tVoid),tVoid), 0 );
     ADD_FUNCTION("set_size",image_ft_face_set_size,tFunc(tInt tInt,tObj),0);
     ADD_FUNCTION("attach_file",image_ft_face_attach_file,tFunc(tString,tVoid),0);
     ADD_FUNCTION("list_encodings",image_ft_face_list_encodings,tFunc(tNone,tArr(tString)),0);
