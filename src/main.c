@@ -92,7 +92,7 @@
 #endif
 
 static const char _master_location[MAXPATHLEN+CONSTANT_STRLEN(MASTER_COOKIE)] = MASTER_COOKIE;
-static char *master_file_location = _master_location + CONSTANT_STRLEN(MASTER_COOKIE);
+static const char *master_file_location = _master_location + CONSTANT_STRLEN(MASTER_COOKIE);
 
 static void set_master(const char *file)
 {
