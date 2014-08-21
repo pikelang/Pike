@@ -388,8 +388,8 @@ void cleanup_gc(void);
 #ifdef GC_MARK_DEBUG
 
 void gc_mark_enqueue (queue_call fn, void *data);
-void gc_mark_run_queue();
-void gc_mark_discard_queue();
+void gc_mark_run_queue(void);
+void gc_mark_discard_queue(void);
 
 #else  /* !GC_MARK_DEBUG */
 

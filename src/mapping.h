@@ -388,7 +388,7 @@ void simple_describe_mapping(struct mapping *m);
 void debug_dump_mapping(struct mapping *m);
 int mapping_is_constant(struct mapping *m,
 			struct processing *p);
-void free_all_mapping_blocks();
+void free_all_mapping_blocks(void);
 
 /* Prototypes end here */
 

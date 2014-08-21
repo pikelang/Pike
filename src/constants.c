@@ -85,7 +85,7 @@ void really_free_callable(struct callable * c) {
 void count_memory_in_callables(size_t * num, size_t * size) {
     ba_count_all(&callable_allocator, num, size);
 }
-void free_all_callable_blocks() {
+void free_all_callable_blocks(void) {
     ba_destroy(&callable_allocator);
 }
 

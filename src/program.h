@@ -695,10 +695,10 @@ PMOD_EXPORT void gc_check_zapped (void *a, TYPE_T type, const char *file, INT_TY
 #endif
 
 ATTRIBUTE((malloc))
-PMOD_EXPORT struct program * alloc_program();
+PMOD_EXPORT struct program * alloc_program(void);
 PMOD_EXPORT void really_free_program(struct program * p);
 void count_memory_in_programs(size_t *num, size_t *_size);
-void free_all_program_blocks();
+void free_all_program_blocks(void);
 
 
 extern struct program *first_program;

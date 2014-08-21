@@ -2833,7 +2833,7 @@ void f___handle_sprintf_format(INT32 args)
 /*! @endmodule
  */
 
-void init_sprintf()
+void init_sprintf(void)
 {
   struct pike_string *attr;
   struct svalue s;
@@ -2881,6 +2881,6 @@ void init_sprintf()
 	    0);
 }
 
-void exit_sprintf()
+void exit_sprintf(void)
 {
 }

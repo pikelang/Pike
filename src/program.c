@@ -93,7 +93,7 @@ static size_t add_xstorage(size_t size,
 static struct block_allocator program_allocator = BA_INIT_PAGES(sizeof(struct program), 4);
 
 ATTRIBUTE((malloc))
-struct program * alloc_program() {
+struct program * alloc_program(void) {
     return ba_alloc(&program_allocator);
 }
 
@@ -112,7 +112,7 @@ void count_memory_in_programs(size_t *num, size_t *_size) {
     *_size = size;
 }
 
-void free_all_program_blocks() {
+void free_all_program_blocks(void) {
     ba_destroy(&program_allocator);
 }
 

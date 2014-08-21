@@ -5044,7 +5044,7 @@ void count_memory_in_pike_list_nodes(size_t * n, size_t * s) {
     ba_count_all(&pike_list_node_allocator, n, s);
 }
 
-void free_all_pike_list_node_blocks() {
+void free_all_pike_list_node_blocks(void) {
     ba_destroy(&pike_list_node_allocator);
 }
 
@@ -6064,7 +6064,7 @@ PIKECLASS MasterCodec
 
 static struct object *val_module;
 
-static void get_val_module()
+static void get_val_module(void)
 {
   assert (!val_module);
   push_text ("Val");

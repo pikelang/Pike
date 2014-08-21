@@ -152,7 +152,7 @@ PMOD_EXPORT int debug_fd_query_properties(int fd, int guess)
   }
 }
 
-void fd_init()
+void fd_init(void)
 {
   int e;
   WSADATA wsadata;
@@ -179,7 +179,7 @@ void fd_init()
   mt_unlock(&fd_mutex);
 }
 
-void fd_exit()
+void fd_exit(void)
 {
   WSACleanup();
   mt_destroy(&fd_mutex);

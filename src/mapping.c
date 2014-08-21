@@ -70,11 +70,11 @@ void really_free_mapping(struct mapping * m) {
 }
 
 ATTRIBUTE((malloc))
-static struct mapping * alloc_mapping() {
+static struct mapping * alloc_mapping(void) {
     return ba_alloc(&mapping_allocator);
 }
 
-void free_all_mapping_blocks() {
+void free_all_mapping_blocks(void) {
     ba_destroy(&mapping_allocator);
 }
 

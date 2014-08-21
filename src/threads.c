@@ -62,7 +62,7 @@ static struct Pike_interpreter_struct static_pike_interpreter;
 PMOD_EXPORT struct Pike_interpreter_struct *Pike_interpreter_pointer =
   &static_pike_interpreter;
 
-PMOD_EXPORT struct Pike_interpreter_struct * pike_get_interpreter_pointer()
+PMOD_EXPORT struct Pike_interpreter_struct * pike_get_interpreter_pointer(void)
 {
     return Pike_interpreter_pointer;
 }

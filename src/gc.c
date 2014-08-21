@@ -1760,7 +1760,7 @@ struct gc_queue_block *gc_mark_first = NULL, *gc_mark_last = NULL;
 
 #define CHECK_MARK_QUEUE_EMPTY() assert (!gc_mark_first)
 
-void gc_mark_run_queue()
+void gc_mark_run_queue(void)
 {
   struct gc_queue_block *b;
 
@@ -1779,7 +1779,7 @@ void gc_mark_run_queue()
   gc_mark_last=0;
 }
 
-void gc_mark_discard_queue()
+void gc_mark_discard_queue(void)
 {
   struct gc_queue_block *b = gc_mark_first;
   while (b)

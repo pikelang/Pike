@@ -1619,7 +1619,7 @@ size_t rbstack_slice_allocs = 0;
 size_t rb_num_adds = 0, rb_add_rebalance_cnt = 0;
 size_t rb_num_deletes = 0, rb_del_rebalance_cnt = 0;
 
-void reset_rb_stats()
+void reset_rb_stats(void)
 {
   rb_num_sidesteps = rb_num_sidestep_ops = 0;
   rb_num_finds = rb_find_depth = 0;

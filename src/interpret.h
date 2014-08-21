@@ -755,10 +755,10 @@ void count_memory_in_pike_frames(size_t*, size_t*);
 /*BLOCK_ALLOC(pike_frame,128);*/
 
 #ifdef PIKE_USE_MACHINE_CODE
-void call_check_threads_etc();
+void call_check_threads_etc(void);
 #if defined(OPCODE_INLINE_BRANCH) || defined(INS_F_JUMP) || \
     defined(INS_F_JUMP_WITH_ARG) || defined(INS_F_JUMP_WITH_TWO_ARGS)
-void branch_check_threads_etc();
+void branch_check_threads_etc(void);
 #endif
 #ifdef OPCODE_INLINE_RETURN
 PIKE_OPCODE_T *inter_return_opcode_F_CATCH(PIKE_OPCODE_T *addr);

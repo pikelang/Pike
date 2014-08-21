@@ -301,7 +301,7 @@ PMOD_EXPORT void really_free_pike_type(struct pike_type * t) {
 }
 
 ATTRIBUTE((malloc))
-PMOD_EXPORT struct pike_type * alloc_pike_type() {
+PMOD_EXPORT struct pike_type * alloc_pike_type(void) {
     return ba_alloc(&type_allocator);
 }
 
@@ -8469,7 +8469,7 @@ static void low_make_pike_type(unsigned char *type_string,
   }
 }
 
-void type_stack_mark()
+void type_stack_mark(void)
 {
   if(UNLIKELY(Pike_compiler->pike_type_mark_stackp >= pike_type_mark_stack + (PIKE_TYPE_STACK_SIZE>>4)))
     Pike_fatal("Type mark stack overflow.\n");
