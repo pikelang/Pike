@@ -3488,7 +3488,7 @@ PIKECLASS BlockCipher16
   PIKECLASS _CCM8
     program_flags PROGRAM_NEEDS_PARENT|PROGRAM_USES_PARENT;
   {
-    /*! @decl inherit BlockCipher16::CCM
+    /*! @decl inherit CCM
      */
     EXTRA
     {
