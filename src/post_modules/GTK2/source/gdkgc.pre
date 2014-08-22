@@ -104,7 +104,7 @@ mapping(string:mixed) get_values()
     g_object_ref(v.clip_mask);
 
   ref_push_string(_STR("fill"));  push_int(v.fill);
-  ref_push_string(_STR("function"));  push_int(v.function);
+  ref_push_string(literal_function_string);  push_int(v.function);
   {
     GdkColor *f,*b;
     f=g_malloc(sizeof(GdkColor));

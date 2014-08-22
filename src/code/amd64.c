@@ -45,6 +45,15 @@
 #define REG_R14 MISSING_P_
 #define REG_R15 MISSING_P_
 
+struct soff { int off; int type; int value; };
+
+static struct soff SVAL(int i)
+{
+  struct soff res;
+  res.off = res.type = i*sizeof(struct svalue);
+  res.value = res.type + 8;
+  return res;
+}
 
 /* Register encodings */
 enum amd64_reg {P_REG_RAX = 0, P_REG_RBX = 3, P_REG_RCX = 1, P_REG_RDX = 2,
@@ -210,6 +219,13 @@ static void pop(enum amd64_reg reg )
 static void mov_reg_reg(enum amd64_reg from_reg, enum amd64_reg to_reg )
 {
   rex( 1, from_reg, 0, to_reg );
+  opcode( 0x89 );
+  modrm( 3, from_reg, to_reg );
+}
+
+static void mov_reg32_reg(enum amd64_reg from_reg, enum amd64_reg to_reg )
+{
+  rex( 0, from_reg, 0, to_reg );
   opcode( 0x89 );
   modrm( 3, from_reg, to_reg );
 }
@@ -646,13 +662,30 @@ static void test_reg_reg( enum amd64_reg reg1, enum amd64_reg reg2 )
   modrm(3, reg1, reg2 );
 }
 
+static void test_reg32_reg( enum amd64_reg reg1, enum amd64_reg reg2 )
+{
+  rex(0,reg1,0,reg2);
+  opcode(0x85);
+  modrm(3, reg1, reg2 );
+}
+
 static void test_reg( enum amd64_reg reg1 )
 {
   test_reg_reg( reg1, reg1 );
 }
 
+static void test_reg32( enum amd64_reg reg1 )
+{
+  test_reg32_reg( reg1, reg1 );
+}
+
 static void cmp_reg_imm( enum amd64_reg reg, int imm32 )
 {
+  if(!imm32)
+  {
+   test_reg( reg );
+   return;
+  }
   rex(1, 0, 0, reg);
   if( imm32 > 0x7f || imm32 < -0x80 )
   {
@@ -678,6 +711,11 @@ static void cmp_reg_imm( enum amd64_reg reg, int imm32 )
 
 static void cmp_reg32_imm( enum amd64_reg reg, int imm32 )
 {
+  if(!imm32)
+  {
+   test_reg( reg );
+   return;
+  }
   rex(0, 0, 0, reg);
   if( imm32 > 0x7f || imm32 < -0x80 )
   {
@@ -1056,7 +1094,7 @@ static void amd64_load_mark_sp_reg(void)
 
 static void mov_sval_type(enum amd64_reg src, enum amd64_reg dst )
 {
-  mov_mem8_reg( src, OFFSETOF(svalue, tu.t.type), dst);
+  mov_mem8_reg( src, SVAL(0).type, dst);
 /*  and_reg32_imm( dst, 0x1f );*/
 }
 
@@ -1096,7 +1134,7 @@ static void update_arg2(INT32 value)
 static void amd64_add_sp( int num )
 {
   amd64_load_sp_reg();
-  add_reg_imm( sp_reg, sizeof(struct svalue)*num);
+  add_reg_imm( sp_reg, num * sizeof(struct svalue));
   dirty_regs |= 1 << PIKE_SP_REG;
   flush_dirty_regs(); /* FIXME: Need to change LABEL handling to remove this  */
 }
@@ -1104,7 +1142,7 @@ static void amd64_add_sp( int num )
 static void amd64_add_mark_sp( int num )
 {
   amd64_load_mark_sp_reg();
-  add_reg_imm( mark_sp_reg, sizeof(struct svalue*)*num);
+  add_reg_imm( mark_sp_reg, num * sizeof(struct svalue*));
   dirty_regs |= 1 << PIKE_MARK_SP_REG;
   flush_dirty_regs(); /* FIXME: Need to change LABEL handling to remove this */
 }
@@ -1118,10 +1156,8 @@ static void amd64_push_svaluep_to(int reg, int spoff)
   amd64_load_sp_reg();
   mov_mem_reg(reg, OFFSETOF(svalue, tu.t.type), P_REG_RAX);
   mov_mem_reg(reg, OFFSETOF(svalue, u.refs), P_REG_RCX);
-  mov_reg_mem(P_REG_RAX, sp_reg,
-	      spoff*sizeof(struct svalue)+OFFSETOF(svalue, tu.t.type));
-  mov_reg_mem(P_REG_RCX, sp_reg,
-	      spoff*sizeof(struct svalue)+OFFSETOF(svalue, u.refs));
+  mov_reg_mem(P_REG_RAX, sp_reg, SVAL(spoff).type);
+  mov_reg_mem(P_REG_RCX, sp_reg, SVAL(spoff).value);
   and_reg32_imm(P_REG_RAX, MIN_REF_TYPE);
   jz(&label_A);
   add_imm_mem( 1, P_REG_RCX, OFFSETOF(pike_string, refs));
@@ -1137,8 +1173,8 @@ static void amd64_push_svaluep(int reg)
 static void amd64_push_int(INT64 value, int subtype)
 {
   amd64_load_sp_reg();
-  mov_imm_mem((subtype<<16) + PIKE_T_INT, sp_reg, OFFSETOF(svalue, tu.t.type));
-  mov_imm_mem(value, sp_reg, OFFSETOF(svalue, u.integer));
+  mov_imm_mem((subtype<<16) + PIKE_T_INT, sp_reg, SVAL(0).type);
+  mov_imm_mem(value, sp_reg, SVAL(0).value);
   amd64_add_sp( 1 );
 }
 
@@ -1189,19 +1225,18 @@ static void amd64_call_c_function(void *addr)
   call_imm(addr);
 }
 
-static void amd64_free_svalue(enum amd64_reg src, int guaranteed_ref )
+static void amd64_free_svalue_off(enum amd64_reg src, int off, int guaranteed_ref )
 {
   LABELS();
   if( src == P_REG_RAX )
     Pike_fatal("Clobbering RAX for free-svalue\n");
     /* load type -> RAX */
-  mov_sval_type( src, P_REG_RAX );
-
+  mov_mem8_reg( src, off, P_REG_RAX );
   and_reg_imm(P_REG_RAX, MIN_REF_TYPE);
   jz( &label_A );
 
   /* Load pointer to refs -> RAX */
-  mov_mem_reg( src, OFFSETOF(svalue, u.refs), P_REG_RAX);
+  mov_mem_reg( src,off+OFFSETOF(svalue, u.refs), P_REG_RAX);
    /* if( !--*RAX ) */
   add_mem32_imm( P_REG_RAX, OFFSETOF(pike_string,refs),  -1);
   if( !guaranteed_ref )
@@ -1209,11 +1244,15 @@ static void amd64_free_svalue(enum amd64_reg src, int guaranteed_ref )
     /* We need to see if refs got to 0. */
     jnz( &label_A );
     /* if so, call really_free_svalue */
-    if( src != ARG1_REG )
-      mov_reg_reg( src, ARG1_REG );
+    add_reg_imm_reg( src, off, ARG1_REG );
     amd64_call_c_function(really_free_svalue);
   }
   LABEL_A;
+}
+
+static void amd64_free_svalue(enum amd64_reg src, int guaranteed_ref )
+{
+  amd64_free_svalue_off(src,0,guaranteed_ref);
 }
 
 /* Type already in register. Note: Clobbers the type register. */
@@ -1514,6 +1553,16 @@ static void amd64_ins_branch_check_threads_etc(int code_only)
 
 void amd64_init_interpreter_state(void)
 {
+#ifdef PIKE_DEBUG
+  if( PIKE_T_INT != 0 )
+    Pike_fatal("assumption failed: pike_t_int == 0\n");
+  if( sizeof(struct svalue) != 16 )
+    Pike_fatal("assumption failed: sizeof svalue != 16\n");
+  if( OFFSETOF(svalue,tu.t.type) != 0 )
+    Pike_fatal("assumption failed: offsetof(svalue.tu.t.type) != 0\n");
+  if( OFFSETOF(svalue,u.integer) != 8 )
+    Pike_fatal("assumption failed: offsetof(svalue.u.integer) != 8\n");
+#endif
   instrs[F_CATCH - F_OFFSET].address = inter_return_opcode_F_CATCH;
 }
 
@@ -1903,6 +1952,27 @@ void ins_f_byte(unsigned int b)
       rel_addr = PIKE_PC;
     }
     break;
+
+    /* sp-1 = undefinedp(sp-1) */
+  case F_UNDEFINEDP:
+    {
+    LABELS();
+    ins_debug_instr_prologue(b, 0, 0);
+    amd64_load_sp_reg();
+
+    mov_mem32_reg( sp_reg, SVAL(-1).type, P_REG_RAX );
+    cmp_reg32_imm( P_REG_RAX, 1<<16 | PIKE_T_INT );
+    jne( &label_A );
+    mov_imm_mem( 1, sp_reg,SVAL(-1).value);
+    jmp( &label_B );
+  LABEL_A;
+    amd64_free_svalue_off( sp_reg, SVAL(-1).off,0 );
+    mov_imm_mem( 0, sp_reg,SVAL(-1).value);
+  LABEL_B;
+    mov_imm_mem( PIKE_T_INT, sp_reg,SVAL(-1).type);
+    }
+    return;
+
   case F_ZERO_TYPE:
     {
       LABELS();
@@ -1910,8 +1980,8 @@ void ins_f_byte(unsigned int b)
       amd64_load_sp_reg();
       mov_mem32_reg( sp_reg, -sizeof(struct svalue), P_REG_RAX );
       /* Rax now has type + subtype. */
-      mov_reg_reg( P_REG_RAX, P_REG_RBX );
-      and_reg_imm( P_REG_RAX, 0x1f );
+      mov_reg32_reg( P_REG_RAX, P_REG_RBX );
+      and_reg32_imm( P_REG_RAX, 0x1f );
       cmp_reg32_imm( P_REG_RAX, PIKE_T_INT );
       jne( &label_A );
       /* It is an integer. */
@@ -1927,14 +1997,24 @@ void ins_f_byte(unsigned int b)
       LABEL_B;
     }
     return;
+
+  case F_ADD:
+    {
+    addr = f_add;
+    update_arg1(2);
+    amd64_call_c_opcode(addr, flags);
+    amd64_load_sp_reg();
+    }
+    return;
+
   case F_INC:
     {
     LABELS();
     ins_debug_instr_prologue(b, 0, 0);
     amd64_load_sp_reg();
     mov_mem8_reg(sp_reg, -16, P_REG_RAX );
-    cmp_reg32_imm(P_REG_RAX, PIKE_T_INT);
-    jne(&label_A);
+    test_reg32(P_REG_RAX);
+    jnz(&label_A);
     add_imm_mem(1, sp_reg, -8);
     jno(&label_B);
     add_imm_mem(-1, sp_reg, -8);
@@ -1944,36 +2024,23 @@ void ins_f_byte(unsigned int b)
     }
     return;
 
-  case F_ADD:
+  case F_DEC:
     {
     LABELS();
     ins_debug_instr_prologue(b, 0, 0);
     amd64_load_sp_reg();
-    mov_mem8_reg(sp_reg, -1*sizeof(struct svalue), P_REG_RAX );
-    mov_mem8_reg(sp_reg, -2*sizeof(struct svalue), P_REG_RBX );
-    add_reg_reg(P_REG_RAX,P_REG_RBX);
-    test_reg(P_REG_RAX); /* int == 0 */
-#ifdef PIKE_DEBUG
-    if( PIKE_T_INT )
-      Pike_fatal("Assertion failed\n");
-#endif
+    mov_mem8_reg(sp_reg, -16, P_REG_RAX );
+    test_reg32(P_REG_RAX);
     jnz(&label_A);
-    amd64_add_sp(-1);
-    mov_mem_reg(sp_reg, OFFSETOF(svalue,u.integer),
-		P_REG_RAX );
-    add_reg_mem(P_REG_RAX, sp_reg, 
-		-1*sizeof(struct svalue)+OFFSETOF(svalue,u.integer));
+    add_imm_mem(-1, sp_reg, -8);
     jno(&label_B);
-    amd64_add_sp(1);
-    sub_reg_mem(P_REG_RAX, sp_reg, 
-		-1*sizeof(struct svalue)+OFFSETOF(svalue,u.integer));
-  LABEL_A;
-    addr = f_add;
-    update_arg1(2);
+    add_imm_mem(1, sp_reg, -8);
+    LABEL_A;
     amd64_call_c_opcode(addr, flags);
-  LABEL_B;
+    LABEL_B;
     }
     return;
+
 
   case F_SUBTRACT:
     {
@@ -1983,7 +2050,7 @@ void ins_f_byte(unsigned int b)
     mov_mem8_reg(sp_reg, -1*sizeof(struct svalue), P_REG_RAX );
     mov_mem8_reg(sp_reg, -2*sizeof(struct svalue), P_REG_RBX );
     add_reg_reg(P_REG_RAX,P_REG_RBX);
-    test_reg(P_REG_RAX); /* int == 0 */
+    test_reg32(P_REG_RAX); /* int == 0 */
     jnz(&label_A);
 
 #ifdef PIKE_DEBUG
@@ -2008,22 +2075,6 @@ void ins_f_byte(unsigned int b)
     }
     return;
 
-  case F_DEC:
-    {
-    LABELS();
-    ins_debug_instr_prologue(b, 0, 0);
-    amd64_load_sp_reg();
-    mov_mem8_reg(sp_reg, -16, P_REG_RAX );
-    cmp_reg32_imm(P_REG_RAX, PIKE_T_INT);
-    jne(&label_A);
-    add_imm_mem(-1, sp_reg, -8);
-    jno(&label_B);
-    add_imm_mem(1, sp_reg, -8);
-    LABEL_A;
-    amd64_call_c_opcode(addr, flags);
-    LABEL_B;
-    }
-    return;
   case F_UNDEFINED:
     ins_debug_instr_prologue(b, 0, 0);
     amd64_push_int(0, 1);
@@ -2098,7 +2149,7 @@ void ins_f_byte(unsigned int b)
     amd64_load_fp_reg();
     /* Note: really mem16, but we & with PIKE_FRAME_RETURN_INTERNAL anyway */
     mov_mem32_reg( fp_reg, OFFSETOF(pike_frame, flags), P_REG_RAX );
-    and_reg_imm( P_REG_RAX, PIKE_FRAME_RETURN_INTERNAL);
+    and_reg32_imm( P_REG_RAX, PIKE_FRAME_RETURN_INTERNAL);
     jnz( &label_A );
     /* So, it is just a normal return. */
     LABEL_B;
@@ -2109,7 +2160,7 @@ void ins_f_byte(unsigned int b)
     LABEL_A;
     /* We should jump to the given address. */
     mov_mem32_reg( fp_reg, OFFSETOF(pike_frame, flags), P_REG_RAX );
-    and_reg_imm( P_REG_RAX, PIKE_FRAME_RETURN_POP );
+    and_reg32_imm( P_REG_RAX, PIKE_FRAME_RETURN_POP );
     jnz( &label_C );
     amd64_call_c_function( low_return );
     jmp( &label_D );
@@ -2133,7 +2184,7 @@ void ins_f_byte(unsigned int b)
     /* NB: We only care about subtype 1! */
     cmp_reg32_imm(P_REG_RAX, (1<<16)|PIKE_T_STRING);
     jne(&label_A);
-    and_reg_imm(P_REG_RAX, 0x1f);
+    and_reg32_imm(P_REG_RAX, 0x1f);
     mov_reg_mem32(P_REG_RAX,
 		  sp_reg, OFFSETOF(svalue, tu.t.type) - sizeof(struct svalue));
     LABEL_A;
@@ -2204,7 +2255,7 @@ int amd64_ins_f_jump(unsigned int op, int backward_jump)
       amd64_load_sp_reg();
       amd64_add_sp( -1 );
       mov_mem_reg( sp_reg, 8, P_REG_RAX );
-      test_reg(P_REG_RAX);
+      test_reg32(P_REG_RAX);
       if( op == F_QUICK_BRANCH_WHEN_ZERO )
         return jz_imm_rel32(0);
       return jnz_imm_rel32(0);
@@ -2608,7 +2659,6 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
 
   case F_ADD_NEG_INT:
     b = -b;
-
   case F_ADD_INT:
     {
       LABELS();
@@ -2995,6 +3045,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
     }
 
     /* Get function pointer */
+    ins_debug_instr_prologue(a-F_OFFSET, b, 0);
     amd64_call_c_opcode(Pike_compiler->new_program->constants[b].sval.u.efun->function,
                         I_UPDATE_SP);
     return;
@@ -3114,7 +3165,8 @@ int amd64_ins_f_jump_with_arg(unsigned int op, INT32 a, int backward_jump)
         checked. That is not nessasarily true.
       */
       mov_sval_type( ARG1_REG, P_REG_RCX );
-      cmp_reg32_imm( P_REG_RCX, PIKE_T_INT );      je( &label_C );
+      cmp_reg32_imm( P_REG_RCX, PIKE_T_INT );
+      je( &label_C );
       mov_imm_reg( 1, P_REG_RAX );
       shl_reg32_reg( P_REG_RAX, P_REG_RCX );
       and_reg32_imm( P_REG_RAX, BIT_FUNCTION|BIT_OBJECT );
@@ -3158,7 +3210,7 @@ void ins_f_byte_with_2_args(unsigned int a, INT32 b, INT32 c)
   case F_CLEAR_N_LOCAL:
     {
       LABELS();
-      ins_debug_instr_prologue(a-F_OFFSET, b, 0);
+      ins_debug_instr_prologue(a-F_OFFSET, b, c);
       amd64_load_fp_reg();
       mov_mem_reg(fp_reg, OFFSETOF(pike_frame, locals), P_REG_RBX);
       add_reg_imm(P_REG_RBX, b*sizeof(struct svalue));
@@ -3236,6 +3288,7 @@ void ins_f_byte_with_2_args(unsigned int a, INT32 b, INT32 c)
       /* done */
     }
     return;
+
    case F_PRIVATE_IF_DIRECT_GLOBAL:
     {
       LABELS();
@@ -3298,13 +3351,14 @@ void ins_f_byte_with_2_args(unsigned int a, INT32 b, INT32 c)
     LABEL_B;
     }
     return;
+
   case F_ASSIGN_PRIVATE_TYPED_GLOBAL_AND_POP:
   case F_ASSIGN_PRIVATE_TYPED_GLOBAL:
   {
     LABELS();
     amd64_load_sp_reg();
 
-    ins_debug_instr_prologue(a-F_OFFSET, b, 0);
+    ins_debug_instr_prologue(a-F_OFFSET, b, c);
 
     amd64_get_storage( P_REG_RBX, b );
 
@@ -3418,7 +3472,7 @@ void ins_f_byte_with_2_args(unsigned int a, INT32 b, INT32 c)
   case F_ADD_LOCAL_INT_AND_POP:
    {
       LABELS();
-      ins_debug_instr_prologue(a-F_OFFSET, b, 0);
+      ins_debug_instr_prologue(a-F_OFFSET, b, c);
       amd64_load_fp_reg();
       mov_mem_reg( fp_reg, OFFSETOF(pike_frame, locals), ARG1_REG);
       add_reg_imm( ARG1_REG, b*sizeof(struct svalue) );
@@ -3456,8 +3510,9 @@ void ins_f_byte_with_2_args(unsigned int a, INT32 b, INT32 c)
      }
 
 #if 0
-   /* this is a: nonworking, and b: not really all that more efficient anyway.. */
+  /* this is a: nonworking, and b: not really all that more efficient anyway.. */
   case F_APPLY_N:
+     ins_debug_instr_prologue(a-F_OFFSET, b, c);
      mov_imm_reg( APPLY_SVALUE_STRICT, ARG1_REG );
      mov_imm_reg( c, ARG2_REG );
      mov_ptr_reg( &((Pike_fp->context->prog->constants + b)->sval), ARG3_REG );
@@ -3466,6 +3521,7 @@ void ins_f_byte_with_2_args(unsigned int a, INT32 b, INT32 c)
     return;
 #endif
   case F_CALL_BUILTIN_N:
+    ins_debug_instr_prologue(a-F_OFFSET, b, c);
     mov_imm_reg( c, ARG1_REG );
     amd64_call_c_opcode(Pike_compiler->new_program->constants[b].sval.u.efun->function,
                         I_UPDATE_SP);
@@ -3533,6 +3589,7 @@ void ins_f_byte_with_2_args(unsigned int a, INT32 b, INT32 c)
   case F_LEXICAL_LOCAL:
     if( c < 5 )
     {
+      ins_debug_instr_prologue(a-F_OFFSET, b, c);
       amd64_load_fp_reg();
       mov_reg_reg( fp_reg, P_REG_RAX );
       while(c--)
@@ -3548,6 +3605,7 @@ void ins_f_byte_with_2_args(unsigned int a, INT32 b, INT32 c)
   case F_LEXICAL_LOCAL_LVALUE:
     if( c < 5 )
     {
+      ins_debug_instr_prologue(a-F_OFFSET, b, c);
       amd64_load_fp_reg();
       amd64_load_sp_reg();
       mov_reg_reg( fp_reg, P_REG_RAX );

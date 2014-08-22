@@ -459,23 +459,17 @@ PIKECLASS Rect {
    *! associated with the corresponding names.
    */
   PIKEFUN mixed cast( string type )
+    flags ID_PROTECTED;
   {
-    struct pike_string *array_t;
-    struct pike_string *mapping_t;
-    REF_MAKE_CONST_STRING( array_t, "array" );
-    REF_MAKE_CONST_STRING( mapping_t, "mapping" );
-
-    if( type == array_t )
+    pop_stack(); /* type as at least one more reference. */
+    if( type == literal_array_string )
     {
-      pop_n_elems( args );
       push_int(THIS->rect.x);
       push_int(THIS->rect.y);
       push_int(THIS->rect.w);
       push_int(THIS->rect.h);
       f_aggregate(4);
-      return;
-    } else if( type == mapping_t ) {
-      pop_n_elems( args );
+    } else if( type == literal_mapping_string ) {
       push_text("x");
       push_int(THIS->rect.x);
       push_text("y");
@@ -485,10 +479,9 @@ PIKECLASS Rect {
       push_text("h");
       push_int(THIS->rect.h);
       f_aggregate_mapping(8);
-      return;
     }
-
-    Pike_error("Cannot cast to %S\n", type);
+    else
+      push_undefined();
   }
 }
 /*! @endclass Rect */

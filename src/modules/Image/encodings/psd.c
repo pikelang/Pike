@@ -796,7 +796,7 @@ static void f_apply_cmap( INT32 args )
 }
 
 static struct program *image_encoding_psd_program=NULL;
-void init_image_psd()
+void init_image_psd(void)
 {
   ADD_FUNCTION( "___decode", image_f_psd___decode, tFunc(tStr,tMapping), 0);
   ADD_FUNCTION( "___decode_image_channel", f_decode_image_channel,tFunction,0);
@@ -824,7 +824,7 @@ void init_image_psd()
 }
 
 
-void exit_image_psd()
+void exit_image_psd(void)
 {
 #define STRING(X) free_string(PIKE_CONCAT(s_, X))
 #include "psd_constant_strings.h"

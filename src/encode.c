@@ -845,8 +845,10 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	 */
 	push_int(36);
 	apply(val->u.object,"digits",1);
+#ifdef PIKE_DEBUG
 	if(TYPEOF(Pike_sp[-1]) != T_STRING)
 	  Pike_error("Gmp.mpz->digits did not return a string!\n");
+#endif
 	encode_value2(Pike_sp-1, data, 0);
 	pop_stack();
 	break;
@@ -1009,7 +1011,9 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	{
 	  int has_local_c_methods = 0;
 	  for (d = 0; d < p->num_identifiers; d++) {
-	    if (IDENTIFIER_IS_C_FUNCTION(p->identifiers[d].identifier_flags)) {
+	    struct identifier *id = p->identifiers + d;
+	    if (IDENTIFIER_IS_C_FUNCTION(id->identifier_flags) &&
+		!low_is_variant_dispatcher(id)) {
 	      has_local_c_methods = 1;
 	      break;
 	    }
@@ -1381,7 +1385,12 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 			       "is inherited.\n", id->name);
 		  }
 		  gs_flags = ref->id_flags & PTR_FROM_INT(p, i)->id_flags;
-		  if (id_dumped[PTR_FROM_INT(p, i)->identifier_offset]) {
+		  if (id_dumped[PTR_FROM_INT(p, i)->identifier_offset] ||
+		      (i < d)) {
+		    /* Either already dumped, or the dispatcher is in
+		     * front of us, which indicates that we are overloading
+		     * an inherited function with a variant.
+		     */
 		    gs_flags |= ID_VARIANT;
 		  } else {
 		    /* First variant. */
@@ -1838,10 +1847,9 @@ void f_encode_value(INT32 args)
 
   if(args > 1 && TYPEOF(Pike_sp[1-args]) == T_OBJECT)
   {
-    if (SUBTYPEOF(Pike_sp[1-args])) {
-      Pike_error("encode_value: "
-		 "The codec may not be a subtyped object yet.\n");
-    }
+    if (SUBTYPEOF(Pike_sp[1-args]))
+      Pike_error("The codec may not be a subtyped object yet.\n");
+
     data->codec=Pike_sp[1-args].u.object;
     add_ref (data->codec);
   }else{
@@ -1916,10 +1924,9 @@ void f_encode_value_canonic(INT32 args)
 
   if(args > 1 && TYPEOF(Pike_sp[1-args]) == T_OBJECT)
   {
-    if (SUBTYPEOF(Pike_sp[1-args])) {
-      Pike_error("encode_value_canonic: "
-		 "The codec may not be a subtyped object yet.\n");
-    }
+    if (SUBTYPEOF(Pike_sp[1-args]))
+      Pike_error("The codec may not be a subtyped object yet.\n");
+
     data->codec=Pike_sp[1-args].u.object;
     add_ref (data->codec);
   }else{
@@ -2003,7 +2010,7 @@ static void decode_value2(struct decode_data *data);
 static int my_extract_char(struct decode_data *data)
 {
   if(data->ptr >= data->len)
-    Pike_error("Decode error: Not enough data in string.\n");
+    Pike_error("Not enough data in string.\n");
   return data->data [ data->ptr++ ];
 }
 
@@ -2127,34 +2134,6 @@ static DECLSPEC(noreturn) void decode_error (
     STR=make_shared_binary_string((char *)(data->data + data->ptr), sz); \
     data->ptr += sz;							\
   }									    \
-}while(0)
-
-#define getdata(X) do {				\
-   long length;					\
-   decode_entry(TAG_STRING, length,data);	\
-   if(data->pass == 1)				\
-     get_string_data(X, length, data);		\
-   else						\
-     data->ptr+=length;				\
-  }while(0)
-
-#define getdata3(X) do {						     \
-  INT32 what, e;							\
-  INT64 num;								\
-  DECODE("getdata3");							     \
-  switch(what & TAG_MASK)						     \
-  {									     \
-    case TAG_INT:							     \
-      X=0;								     \
-      break;								     \
-									     \
-    case TAG_STRING:							     \
-      get_string_data(X,num,data);                                           \
-      break;								     \
-									     \
-    default:								     \
-      decode_error (data, NULL, "Tag is wrong: %d\n", what & TAG_MASK);	\
-    }									     \
 }while(0)
 
 #define decode_number(X,data) do {		\
@@ -2381,22 +2360,6 @@ static void low_decode_type(struct decode_data *data)
   UNSET_ONERROR(err2);
   UNSET_ONERROR(err1);
 }
-
-
-static void zap_placeholder(struct object *placeholder)
-{
-  /* fprintf(stderr, "Destructing placeholder.\n"); */
-  if (placeholder->storage) {
-    debug_malloc_touch(placeholder);
-    destruct(placeholder);
-  } else {
-    free_program(placeholder->prog);
-    placeholder->prog = NULL;
-    debug_malloc_touch(placeholder);
-  }
-  free_object(placeholder);
-}
-
 
 #define SETUP_DECODE_MEMOBJ(TYPE, U, VAR, ALLOCATE,SCOUR) do {		\
   struct svalue *tmpptr;						\

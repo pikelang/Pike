@@ -40,6 +40,7 @@
 #include "pike_macros.h"
 #include "module_support.h"
 #include "bignum.h"
+#include "pike_types.h"
 
 #include "precompiled_odbc.h"
 
@@ -222,7 +223,7 @@ static void odbc_fix_fields(void)
 #else
     push_string(make_shared_binary_string((char *)buf, name_len));
 #endif
-    push_text("type");
+    ref_push_string(literal_type_string);
 #ifdef SQL_WCHAR
 #ifdef ODBC_DEBUG
     fprintf(stderr, "SQL_C_WCHAR\n");
@@ -240,7 +241,7 @@ static void odbc_fix_fields(void)
 #ifdef SQL_WCHAR
     case SQL_WCHAR:
 #endif
-      push_text("string");
+      ref_push_string(literal_string_string);
       break;
     case SQL_NUMERIC:
       push_text("numeric");
@@ -259,7 +260,7 @@ static void odbc_fix_fields(void)
       odbc_field_types[i] = SQL_C_CHAR;
       break;
     case SQL_FLOAT:
-      push_text("float");
+      ref_push_string(literal_float_string);
       odbc_field_types[i] = SQL_C_CHAR;
       break;
     case SQL_REAL:

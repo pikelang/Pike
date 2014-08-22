@@ -21,6 +21,7 @@
 #include "stralloc.h"
 #include "builtin_functions.h"
 #include "bignum.h"
+#include "pike_types.h"
 
 #include "image.h"
 #include "colortable.h"
@@ -65,11 +66,17 @@ static struct program *substring_program;
 
 static void f_substring_cast( INT32 args )
 {
-  /* FIXME: assumes string */
-  struct substring *s = SS(fp->current_object);
-  pop_n_elems( args );
-  push_string( make_shared_binary_string( (((char *)s->s->str)+s->offset),
-                                          s->len ) );
+  struct pike_string *type = sp[-args].u.string;
+  pop_n_elems(args); /* type have at least one more reference. */
+
+  if( type == literal_string_string )
+  {
+    struct substring *s = SS(fp->current_object);
+    push_string( make_shared_binary_string( (((char *)s->s->str)+s->offset),
+                                            s->len ) );
+  }
+  else
+    push_undefined();
 }
 
 static void f_substring_index( INT32 args )
@@ -107,7 +114,7 @@ static void f_substring__sprintf( INT32 args )
      return;
    case 'O':
      push_text("SubString( %O /* [+%d .. %d] */ )" );
-     push_text("string"); f_substring_cast( 1 );
+     ref_push_string(literal_string_string); f_substring_cast( 1 );
 
      push_int64( s->len );
      push_int64( s->offset );
@@ -1406,7 +1413,7 @@ void image_xcf_f__decode_tiles( INT32 args )
 
 
 static struct program *image_encoding_xcf_program=NULL;
-void init_image_xcf()
+void init_image_xcf(void)
 {
   ADD_FUNCTION( "___decode", image_xcf____decode, tFunc(tStr,tMapping), 0);
 
@@ -1489,7 +1496,7 @@ void init_image_xcf()
 
   start_new_program();
   ADD_STORAGE( struct substring );
-  ADD_FUNCTION("cast", f_substring_cast, tFunc(tStr,tMix), 0);
+  ADD_FUNCTION("cast", f_substring_cast, tFunc(tStr,tMix), ID_PRIVATE);
   ADD_FUNCTION("`[]", f_substring_index, tFunc(tInt,tInt), 0);
   ADD_FUNCTION("get_short", f_substring_get_short, tFunc(tInt,tInt), 0 );
   ADD_FUNCTION("get_ushort", f_substring_get_ushort, tFunc(tInt,tInt), 0 );
@@ -1503,7 +1510,7 @@ void init_image_xcf()
 }
 
 
-void exit_image_xcf()
+void exit_image_xcf(void)
 {
 #define STRING(X) free_string(s_##X)
 #include "xcf_constant_strings.h"

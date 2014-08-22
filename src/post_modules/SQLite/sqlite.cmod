@@ -14,6 +14,7 @@
 #include "mapping.h"
 #include "threads.h"
 #include "bignum.h"
+#include "pike_types.h"
 
 #if defined(HAVE_SQLITE3_H) && defined(HAVE_LIBSQLITE3)
 
@@ -214,7 +215,7 @@ PIKECLASS ResObj
       push_constant_text("name");
       push_text(sqlite3_column_name(THIS->stmt, i));
       f_utf8_to_string(1);
-      push_constant_text("type");
+      ref_push_string(literal_type_string);
       t = sqlite3_column_type(THIS->stmt, i);
       switch(t)
       {
@@ -222,7 +223,7 @@ PIKECLASS ResObj
         push_constant_text("integer");
         break;
       case SQLITE_FLOAT:
-        push_constant_text("float");
+        ref_push_string(literal_float_string);
         break;
       case SQLITE_BLOB:
         push_constant_text("blob");

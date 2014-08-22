@@ -25,6 +25,7 @@
 #include "builtin_functions.h"
 #include "module_support.h"
 #include "operators.h"
+#include "pike_types.h"
 
 
 #include <stdio.h>
@@ -1056,7 +1057,7 @@ static void img_jpeg_decode(INT32 args,int mode)
    {
       /* standard header info */
 
-      push_text("type"); n++;
+      ref_push_string(literal_type_string); n++;
       push_text("image/jpeg");
 
       push_text("xsize"); n++;

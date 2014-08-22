@@ -2026,12 +2026,10 @@ static void f_proc_reg_index(INT32 args)
     Pike_error("Process not stopped.\n");
   }
 
-  get_all_args("`[]", args, "%i", &regno);
+  get_all_args("`[]", args, "%+", &regno);
 
-  if ((regno < 0) ||
-      (regno * sizeof(long) > sizeof(((struct user *)NULL)->regs))) {
+  if (regno * sizeof(long) > sizeof(((struct user *)NULL)->regs))
     SIMPLE_BAD_ARG_ERROR("`[]", 1, "register number");
-  }
 
   if ((val = ptrace(PTRACE_PEEKUSER, proc->pid,
 		    ((long *)(((struct user *)NULL)->regs)) + regno, 0)) == -1) {
@@ -2477,7 +2475,7 @@ static int set_priority( int pid, char *to )
   return 0;
 }
 
-/*! @decl int set_priority(string level, int|void pid)
+/*! @decl int set_priority(string level, int(0..)|void pid)
  */
 void f_set_priority( INT32 args )
 {
@@ -2485,7 +2483,7 @@ void f_set_priority( INT32 args )
   char *plevel;
   ASSERT_SECURITY_ROOT("set_priority");
 
-  get_all_args("set_priority", args, "%s.%i", &plevel, &pid);
+  get_all_args("set_priority", args, "%s.%+", &plevel, &pid);
   pid = set_priority( pid, plevel );
   pop_n_elems(args);
   push_int( pid );
@@ -4545,11 +4543,7 @@ static void f_pid_status_kill(INT32 args)
 
   ASSERT_SECURITY_ROOT("Process->kill");
 
-  get_all_args("pid->kill", args, "%i", &signum);
-
-  if (pid < 0) {
-    Pike_error("pid->kill(): No process\n");
-  }
+  get_all_args("pid->kill", args, "%+", &signum);
 
   PROC_FPRINTF((stderr, "[%d] pid->kill: pid=%d, signum=%d\n",
 		getpid(), pid, signum));
@@ -4995,7 +4989,7 @@ void init_signals(void)
   set_init_callback(init_pid_status);
   set_exit_callback(exit_pid_status);
   /* function(string:int) */
-  ADD_FUNCTION("set_priority",f_pid_status_set_priority,tFunc(tStr,tInt),0);
+  ADD_FUNCTION("set_priority",f_pid_status_set_priority,tFunc(tStr,tIntPos),0);
   /* function(int(0..1)|void:int) */
   ADD_FUNCTION("wait",f_pid_status_wait,tFunc(tNone,tInt),0);
   /* function(:int) */

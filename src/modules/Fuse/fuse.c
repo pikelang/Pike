@@ -20,6 +20,7 @@
 #include "program.h"
 #include "bignum.h"
 #include "backend.h"
+#include "pike_types.h"
 
 #ifdef HAVE_LIBFUSE
 /* Attempt to use FUSE API version 2.9 (if possible). */
@@ -428,7 +429,7 @@ static int pf_lock( const char *path, struct fuse_file_info *fi, int cmd, struct
   push_int( cmd );
 
   push_text("owner"); push_int( fi->lock_owner );
-  push_text("type");  push_int( lck->l_type );
+  ref_push_string(literal_type_string);  push_int( lck->l_type );
   push_text("whence");push_int( lck->l_whence );
   push_text("start");   push_int( lck->l_start );
   push_text("len");   push_int( lck->l_len );

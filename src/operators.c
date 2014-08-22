@@ -229,13 +229,11 @@ PMOD_EXPORT void o_cast_to_int(void)
     else {
       {
 	struct object *o = sp[-1].u.object;
-	struct pike_string *s;
 	struct program *p = o->prog->inherits[SUBTYPEOF(sp[-1])].prog;
 	int f = FIND_LFUN(p, LFUN_CAST);
 	if(f == -1)
 	  Pike_error("No cast method in object.\n");
-	REF_MAKE_CONST_STRING(s, "int");
-	push_string(s);
+	ref_push_string(literal_int_string);
 	apply_low(o, f, 1);
 	stack_pop_keep_top();
       }
@@ -249,9 +247,7 @@ PMOD_EXPORT void o_cast_to_int(void)
 			    LFUN__IS_TYPE);
 	  if( f != -1)
 	  {
-	    struct pike_string *s;
-	    REF_MAKE_CONST_STRING(s, "int");
-	    push_string(s);
+	    ref_push_string(literal_int_string);
 	    apply_low(o, f, 1);
 	    f=!UNSAFE_IS_ZERO(sp-1);
 	    pop_stack();
@@ -337,7 +333,7 @@ PMOD_EXPORT void o_cast_to_string(void)
 	int f = FIND_LFUN(o->prog->inherits[SUBTYPEOF(sp[-1])].prog, LFUN_CAST);
 	if(f == -1)
 	  Pike_error("No cast method in object.\n");
-	push_constant_text("string");
+	ref_push_string(literal_string_string);
 	apply_low(o, f, 1);
 	stack_pop_keep_top();
       }
@@ -353,8 +349,7 @@ PMOD_EXPORT void o_cast_to_string(void)
 			    LFUN__IS_TYPE);
 	  if( f != -1)
 	  {
-	    REF_MAKE_CONST_STRING(s, "string");
-	    push_string(s);
+            ref_push_string(literal_string_string);
 	    apply_low(o, f, 1);
 	    f=!UNSAFE_IS_ZERO(sp-1);
 	    pop_stack();
@@ -398,7 +393,7 @@ PMOD_EXPORT void o_cast_to_string(void)
 	  case 2:
 #if SIZEOF_INT_TYPE > 4
 	    if (val < MIN_INT32 || val > MAX_INT32)
-	      Pike_error ("cast: Item %d is too large: %"PRINTPIKEINT"x.\n",
+	      Pike_error ("Item %d is too large: %"PRINTPIKEINT"x.\n",
 			  i, val);
 #endif
 	    break;
@@ -517,6 +512,11 @@ PMOD_EXPORT void o_cast(struct pike_type *type, INT32 run_time_type)
       }
 
       stack_pop_keep_top();
+
+      if(TYPEOF(sp[-1]) == T_INT &&
+         SUBTYPEOF(sp[-1]) == NUMBER_UNDEFINED)
+        Pike_error("Cannot cast this object to %s.\n",
+                   get_name_of_type(type->type));
 
     } else
 
@@ -728,11 +728,6 @@ PMOD_EXPORT void o_cast(struct pike_type *type, INT32 run_time_type)
       }
     }
   }
-
-  if(TYPEOF(sp[-1]) == T_INT &&
-     SUBTYPEOF(sp[-1]) == NUMBER_UNDEFINED)
-    Pike_error("Cannot cast this object to %s.\n",
-               get_name_of_type(type->type));
 
   if(run_time_type != TYPEOF(sp[-1]))
   {

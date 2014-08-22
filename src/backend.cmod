@@ -138,7 +138,7 @@ struct program * PollDeviceBackend_program;
 
 /* Declarations for the legacy backend interface stuff. */
 
-static struct compat_cb_box * alloc_compat_cb_box();
+static struct compat_cb_box * alloc_compat_cb_box(void);
 static void really_free_compat_cb_box(struct compat_cb_box * b);
 static int compat_box_dispatcher (struct fd_callback_box *box, int event);
 
@@ -208,7 +208,7 @@ static int backend_do_call_outs(struct Backend_struct *me);
 static void backend_verify_call_outs(struct Backend_struct *me);
 #endif
 #ifdef DO_PIKE_CLEANUP
-static void backend_cleanup();
+static void backend_cleanup(void);
 #endif
 
 struct Backend_struct *get_backend_for_fd(int fd)
@@ -958,7 +958,7 @@ PIKECLASS Backend
 
        c = get_storage(co, Backend_CallOut_program);
 
-       if (!c) Pike_error("low_call_out(): Unexpected object from CallOut.\n");
+       if (!c) Pike_error("Unexpected object from CallOut.\n");
 
        ref_push_array(c->args);
 
@@ -4417,7 +4417,7 @@ static void check_set_timer(struct timeval tmp)
       }
       else
       {
-        Pike_error("ERROR: unable to create run loop timer!\n");
+        Pike_error("Unable to create run loop timer!\n");
       }
     }
   }
@@ -5664,7 +5664,7 @@ struct compat_cb_box
 
 static struct block_allocator compat_cb_allocator = BA_INIT_PAGES(sizeof(struct compat_cb_box), 1);
 
-static struct compat_cb_box * alloc_compat_cb_box() {
+static struct compat_cb_box * alloc_compat_cb_box(void) {
     return ba_alloc(&compat_cb_allocator);
 }
 
@@ -5676,7 +5676,7 @@ void count_memory_in_compat_cb_boxs(size_t * n, size_t * s) {
     ba_count_all(&compat_cb_allocator, n, s);
 }
 
-void free_all_compat_cb_box_blocks() {
+void free_all_compat_cb_box_blocks(void) {
     ba_destroy(&compat_cb_allocator);
 }
 
@@ -6001,7 +6001,7 @@ void exit_backend(void)
 
 /* Note: This is called when the last backend object exits, which might be
  * after exit_backend if there's garbage. */
-static void backend_cleanup()
+static void backend_cleanup(void)
 {
 #ifdef OPEN_POLL_DEVICE
   if (pdb_backends) {

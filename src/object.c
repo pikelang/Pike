@@ -106,11 +106,11 @@ void really_free_object(struct object * o) {
 }
 
 ATTRIBUTE((malloc))
-struct object * alloc_object() {
+struct object * alloc_object(void) {
     return ba_alloc(&object_allocator);
 }
 
-void free_all_object_blocks() {
+void free_all_object_blocks(void) {
     ba_destroy(&object_allocator);
 }
 

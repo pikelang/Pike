@@ -1100,16 +1100,16 @@ class PikeType
 		  if (sizeof(tmp) == 1) {
 		    int bits;
 		    /* Support the string(Xbit) syntax too. */
-		    if ((sizeof(q) == 4) && (q[2]->cast("string") == "bit") &&
-			((bits = (int)q[1]->cast("string")) > 0)) {
+		    if ((sizeof(q) == 4) && ((string)q[2] == "bit") &&
+			((bits = (int)(string)q[1]) > 0)) {
 		      low = "0";
 		      high = sprintf("%d", (1 << bits) - 1);
 		    } else {
 		      error("Syntax error in string subtype.\n");
 		    }
 		  } else {
-		    if(sizeof(tmp[0])) low=tmp[0]->cast("string")*"";
-		    if(sizeof(tmp[1])) high=tmp[1]->cast("string")*"";
+		    if(sizeof(tmp[0])) low=(array(string))tmp[0]*"";
+		    if(sizeof(tmp[1])) high=(array(string))tmp[1]*"";
 		  }
 		}
 		args=({PikeType(PC.Token(low)),PikeType(PC.Token(high))});

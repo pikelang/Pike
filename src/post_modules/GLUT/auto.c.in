@@ -28,7 +28,7 @@
 #endif
 
 
-static void pre_init()
+static void pre_init(void)
 {
 }
 
@@ -40,7 +40,7 @@ static void f_glutInit(INT32 args)
   pop_n_elems(args);
 }
 
-static void post_init()
+static void post_init(void)
 {
   add_function_constant("glutInit", f_glutInit,
 			"function(void:void)", OPT_SIDE_EFFECT);

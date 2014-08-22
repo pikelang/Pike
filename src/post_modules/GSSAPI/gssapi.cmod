@@ -178,7 +178,7 @@ DEFINE_STATIC_OID (GSS_KRB5_NT_PRINCIPAL_NAME,
 
 static struct svalue int_pos_inf = SVALUE_INIT_FREE;
 
-static void resolve_syms();
+static void resolve_syms(void);
 
 #define RESOLVE_SYMS() do {						\
     if (TYPEOF(int_pos_inf) == PIKE_T_FREE) resolve_syms();		\
@@ -426,7 +426,7 @@ static void convert_from_oid_set_and_push (gss_OID_set set)
     move_svalue (&SVALUE, --Pike_sp);					\
   } while (0)
 
-static void resolve_syms()
+static void resolve_syms(void)
 {
   RESOLVE_AND_SET ("Int.inf", int_pos_inf);
   RESOLVE_AND_SET ("Standards.ASN1.encode_der_oid", encode_der_oid);

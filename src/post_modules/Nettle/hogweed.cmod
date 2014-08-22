@@ -26,7 +26,7 @@ DECLARATIONS
 /*! @module Nettle
  */
 
-static void random_func_wrapper(void *f, unsigned int num, uint8_t *out)
+static void random_func_wrapper(void *f, size_t num, uint8_t *out)
 {
   push_int(num);
   apply_svalue((struct svalue *)f, 1);
@@ -206,7 +206,7 @@ PIKEFUN int rsa_unpad(string(0..255) data, int type)
      without timing issue. 1 type + 8 padding + 1 delimiter + 1 value
      = 11 bytes. */
   if(data->len < 11 ) RETURN 0;
-  str = data->str + data->len - 1;
+  str = (unsigned char*)data->str + data->len - 1;
 
   for(i=data->len-1; i>0; i--,str--)
   {

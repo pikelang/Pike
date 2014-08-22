@@ -15,6 +15,7 @@
 #include "operators.h"
 #include "program_id.h"
 #include "file_machine.h"
+#include "pike_types.h"
 
 #include <sys/stat.h>
 #ifdef HAVE_SYS_PARAM_H
@@ -790,32 +791,24 @@ static void stat_values(INT32 args);
 
 static void stat_cast(INT32 args)
 {
-   if (!args)
-      SIMPLE_TOO_FEW_ARGS_ERROR("Stat cast",1);
-   if (TYPEOF(sp[-args]) == T_STRING && !sp[-args].u.string->size_shift)
-   {
-      /* NB: We only look at the prefix, and let the main cast function
-       *     handle any subtypes.
-       */
-      if (!strncmp(sp[-args].u.string->str, "array", 5))
-      {
-	 pop_n_elems(args);
-	 push_int(0);
-	 push_int(6);
-	 stat_index(2);
-	 return;
-      }
-      if (!strncmp(sp[-args].u.string->str, "mapping", 7))
-      {
-        stat_indices(0);
-        stat_values(0);
-        push_mapping(mkmapping(Pike_sp[-2].u.array, Pike_sp[-1].u.array));
-        stack_pop_n_elems_keep_top(2);
-        return;
-      }
-   }
-   SIMPLE_BAD_ARG_ERROR("Stat cast",1,
-			"string(\"array\"|\"mapping\")");
+  struct pike_string *type = Pike_sp[-args].u.string;
+  pop_stack(); /* type have at least one more reference. */
+
+  if (type == literal_array_string)
+  {
+    push_int(0);
+    push_int(6);
+    stat_index(2);
+  }
+  else if (type == literal_mapping_string)
+  {
+    stat_indices(0);
+    stat_values(0);
+    push_mapping(mkmapping(Pike_sp[-2].u.array, Pike_sp[-1].u.array));
+    stack_pop_n_elems_keep_top(2);
+  }
+  else
+    push_undefined();
 }
 
 static void stat__sprintf(INT32 args)
@@ -954,7 +947,7 @@ void push_stat(PIKE_STAT_T *s)
 
 /* ---------------------------------------------------------------- */
 
-void init_stdio_stat()
+void init_stdio_stat(void)
 {
    unsigned int n=0;
 
@@ -1036,7 +1029,7 @@ void init_stdio_stat()
 		 tOr(tFunc(tInt06 tSetvar(0,tInt),tVar(0)),
 		     tFunc(tString tSetvar(1,tOr(tInt,tString)),tVar(1))), 0);
 
-   ADD_FUNCTION("cast",stat_cast,tFunc(tStr,tArray),0);
+   ADD_FUNCTION("cast",stat_cast,tFunc(tStr,tArray),ID_PRIVATE);
    ADD_FUNCTION("_sprintf",stat__sprintf,
 		tFunc(tInt tOr(tVoid,tMapping),tString),0);
    ADD_FUNCTION("_indices",stat_indices,
@@ -1050,7 +1043,7 @@ void init_stdio_stat()
    add_program_constant("Stat",stat_program,0);
 }
 
-void exit_stdio_stat()
+void exit_stdio_stat(void)
 {
    size_t i;
 

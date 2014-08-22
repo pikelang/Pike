@@ -49,7 +49,7 @@ void add_pike_string_constant(const char *name, const char *str, int len);
 PMOD_EXPORT void add_global_program(const char *name, struct program *p);
 void really_free_callable(struct callable * c);
 void count_memory_in_callables(size_t * num, size_t * size);
-void free_all_callable_blocks();
+void free_all_callable_blocks(void);
 PMOD_EXPORT struct callable *low_make_callable(c_fun fun,
 				   struct pike_string *name,
 				   struct pike_type *type,

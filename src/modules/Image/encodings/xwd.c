@@ -37,7 +37,7 @@
 #include "builtin_functions.h"
 #include "operators.h"
 #include "encodings.h"
-
+#include "pike_types.h"
 
 #define sp Pike_sp
 
@@ -233,7 +233,7 @@ void img_xwd__decode(INT32 args,int header_only,int skipcmap)
 
    n+=25;
 
-   push_text("type");
+   ref_push_string(literal_type_string);
    push_text("image/x-xwd");
    n++;
 

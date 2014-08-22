@@ -110,7 +110,7 @@
 #include "array.h"
 #include "pike_error.h"
 #include "module_support.h"
-
+#include "pike_types.h"
 
 #include "image.h"
 #include "colortable.h"
@@ -4511,44 +4511,40 @@ void image_read_lsb_grey(INT32 args)
 
 void image_cast(INT32 args)
 {
-   if (!args)
-      SIMPLE_TOO_FEW_ARGS_ERROR("Image.Image->cast",1);
-   if (TYPEOF(sp[-args]) == T_STRING || sp[-args].u.string->size_shift)
-   {
-     if (!THIS->img)
-       Pike_error("Called Image.Image object is not initialized\n");
+  struct pike_string *type;
 
-      if (strncmp(sp[-args].u.string->str,"array",5)==0)
+  if (!args)
+    SIMPLE_TOO_FEW_ARGS_ERROR("Image.Image->cast",1);
+  if (!THIS->img)
+    Pike_error("Called Image.Image object is not initialized\n");
+
+  type = sp[-args].u.string;
+  pop_n_elems(args); /* type have at least one more reference. */
+
+  if (type == literal_array_string)
+  {
+    int i,j;
+    rgb_group *s=THIS->img;
+
+    for (i=0; i<THIS->ysize; i++)
+    {
+      for (j=0; j<THIS->xsize; j++)
       {
-	 int i,j;
-	 rgb_group *s=THIS->img;
-
-	 pop_n_elems(args);
-
-	 for (i=0; i<THIS->ysize; i++)
-	 {
-	    for (j=0; j<THIS->xsize; j++)
-	    {
-	       _image_make_rgb_color(s->r,s->g,s->b);
-	       s++;
-	    }
-	    f_aggregate(THIS->xsize);
-	 }
-	 f_aggregate(THIS->ysize);
-
-	 return;
+        _image_make_rgb_color(s->r,s->g,s->b);
+        s++;
       }
-      if (strncmp(sp[-args].u.string->str,"string",6)==0)
-      {
-	 pop_n_elems(args);
-	 push_string(make_shared_binary_string((char *)THIS->img,
-					       THIS->xsize*THIS->ysize
-					       *sizeof(rgb_group)));
-	 return;
-      }
-      
+      f_aggregate(THIS->xsize);
+    }
+    f_aggregate(THIS->ysize);
    }
-   SIMPLE_BAD_ARG_ERROR("Image.Image->cast",1,"string(\"array\"|\"string\")");
+   else if (type == literal_string_string)
+   {
+     push_string(make_shared_binary_string((char *)THIS->img,
+                                           THIS->xsize*THIS->ysize
+                                           *sizeof(rgb_group)));
+   }
+   else
+     push_undefined();
 }
 
 static void image__sprintf( INT32 args )
@@ -4905,7 +4901,7 @@ void init_image_image(void)
 		tFunc(tRGB,tObj),0);
 
    ADD_FUNCTION("cast",image_cast,
-		tFunc(tStr,tStr),0);
+		tFunc(tStr,tStr),ID_PROTECTED);
    ADD_FUNCTION("tobitmap",image_tobitmap,tFunc(tNone,tStr),0);
 
 

@@ -30,6 +30,7 @@
 #include "dynamic_buffer.h"
 #include "operators.h"
 #include "builtin_functions.h"
+#include "pike_types.h"
 
 #if defined(USE_GMP) || defined(USE_GMP2)
 
@@ -486,7 +487,7 @@ static void image_xface_decode_header(INT32 args)
 
   pop_n_elems(args);
 
-  push_text("type"); 
+  ref_push_string(literal_type_string);
   push_text("image/x-xface");
 
   push_text("xsize");

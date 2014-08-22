@@ -1158,7 +1158,7 @@ PMOD_EXPORT void f_has_prefix(INT32 args)
     int inherit_no = SUBTYPEOF(Pike_sp[-args]);
 
     if (!o->prog || FIND_LFUN(o->prog, LFUN__SIZEOF) < 0) {
-      Pike_error("has_prefix(): Object in argument 1 lacks lfun::_sizeof().\n");
+      Pike_error("Object in argument 1 lacks lfun::_sizeof().\n");
     }
 
     apply_lfun(o, LFUN__SIZEOF, 0);
@@ -1232,7 +1232,7 @@ PMOD_EXPORT void f_has_prefix(INT32 args)
     CASE_SHIFT(2,0);
     CASE_SHIFT(2,1);
   default:
-    Pike_error("has_prefix(): Unexpected string shift combination: a:%d, b:%d!\n",
+    Pike_error("Unexpected string shift combination: a:%d, b:%d!\n",
 	  a->size_shift, b->size_shift);
     break;
   }
@@ -1306,7 +1306,7 @@ PMOD_EXPORT void f_has_suffix(INT32 args)
     CASE_SHIFT(2,0);
     CASE_SHIFT(2,1);
   default:
-    Pike_error("has_prefix(): Unexpected string shift combination: a:%d, b:%d!\n",
+    Pike_error("Unexpected string shift combination: a:%d, b:%d!\n",
 	  a->size_shift, b->size_shift);
     break;
   }
@@ -1624,14 +1624,41 @@ PMOD_EXPORT void f_zero_type(INT32 args)
   }
 }
 
-static int generate_zero_type(node *n)
+static int generate_arg_for(node *n)
 {
-  struct compilation *c = THIS_COMPILATION;
-  CHECK_COMPILER();
   if(count_args(CDR(n)) != 1) return 0;
   if(do_docode(CDR(n),DO_NOT_COPY) != 1)
     Pike_fatal("Count args was wrong in generate_zero_type().\n");
-  emit0(F_ZERO_TYPE);
+  return 1;
+}
+
+static int generate_zero_type(node *n)
+{
+  struct compilation *c = THIS_COMPILATION;
+  if( generate_arg_for( n ) )
+      emit0(F_ZERO_TYPE);
+  else
+      return 0;
+  return 1;
+}
+
+static int generate_undefinedp(node *n)
+{
+  struct compilation *c = THIS_COMPILATION;
+  if( generate_arg_for(n) )
+      emit0(F_UNDEFINEDP);
+  else
+      return 0;
+  return 1;
+}
+
+static int generate_destructedp(node *n)
+{
+  struct compilation *c = THIS_COMPILATION;
+  if( generate_arg_for(n) )
+      emit0(F_DESTRUCTEDP);
+  else
+      return 0;
   return 1;
 }
 
@@ -1725,14 +1752,14 @@ PMOD_EXPORT void f_string_to_unicode(INT32 args)
 	    /* 0xfffe: Byte-order detection illegal character.
 	     * 0xffff: Illegal character.
 	     */
-	    Pike_error("string_to_unicode(): Illegal character 0x%04x (index %ld) "
-		  "is not a Unicode character.",
-		  str2[i], PTRDIFF_T_TO_LONG(i));
+	    Pike_error("Illegal character 0x%04x (index %ld) "
+                       "is not a Unicode character.",
+                       str2[i], PTRDIFF_T_TO_LONG(i));
 	  }
 	  if (str2[i] > 0x10ffff) {
-	    Pike_error("string_to_unicode(): Character 0x%08x (index %ld) "
-		  "is out of range (0x00000000..0x0010ffff).",
-		  str2[i], PTRDIFF_T_TO_LONG(i));
+	    Pike_error("Character 0x%08x (index %ld) "
+                       "is out of range (0x00000000..0x0010ffff).",
+                       str2[i], PTRDIFF_T_TO_LONG(i));
 	  }
 	  /* Extra wide characters take two unicode characters in space.
 	   * ie One unicode character extra.
@@ -1962,7 +1989,6 @@ static void f_string_filter_non_unicode( INT32 args )
 
   get_all_args("filter_non_unicode", args, "%W", &in);
   check_string_range( in, 1, &min, &max );
-
 
   if( !in->len || (min >= 0 && max < 0xd800) )
       return; /* The string is obviously ok. */
@@ -2482,9 +2508,9 @@ PMOD_EXPORT void f_utf8_to_string(INT32 args)
 
 #ifdef PIKE_DEBUG
   if (j != len) {
-    Pike_fatal("utf8_to_string(): Calculated and actual lengths differ: "
+    Pike_fatal("Calculated and actual lengths differ: "
 	       "%"PRINTPTRDIFFT"d != %"PRINTPTRDIFFT"d\n",
-	  len, j);
+               len, j);
   }
 #endif /* PIKE_DEBUG */
   out = low_end_shared_string(out);
@@ -4993,7 +5019,7 @@ void f_gc(INT32 args)
       {									\
 	int id_level =							\
 	  p->inherits[SUBTYPEOF(Pike_sp[-args])].identifier_level;	\
-	push_constant_text(TYPE_NAME);					\
+	ref_push_string(literal_##TYPE_NAME##_string);			\
 	apply_low(Pike_sp[-args-1].u.object, fun + id_level, 1);	\
 	stack_unlink(args);						\
 	return;								\
@@ -5123,12 +5149,12 @@ PMOD_EXPORT void f_programp(INT32 args)
  */
 
 
-TYPEP(f_intp, "intp", T_INT, "int")
-TYPEP(f_mappingp, "mappingp", T_MAPPING, "mapping")
-TYPEP(f_arrayp, "arrayp", T_ARRAY, "array")
-TYPEP(f_multisetp, "multisetp", T_MULTISET, "multiset")
-TYPEP(f_stringp, "stringp", T_STRING, "string")
-TYPEP(f_floatp, "floatp", T_FLOAT, "float")
+TYPEP(f_intp, "intp", T_INT, int)
+TYPEP(f_mappingp, "mappingp", T_MAPPING, mapping)
+TYPEP(f_arrayp, "arrayp", T_ARRAY, array)
+TYPEP(f_multisetp, "multisetp", T_MULTISET, multiset)
+TYPEP(f_stringp, "stringp", T_STRING, string)
+TYPEP(f_floatp, "floatp", T_FLOAT, float)
 
 /*! @decl array sort(array(mixed) index, array(mixed) ... data)
  *!
@@ -5351,7 +5377,7 @@ PMOD_EXPORT void f__verify_internals(INT32 args)
 
 #ifdef PIKE_DEBUG
 
-/*! @decl int debug(int(0..) level)
+/*! @decl int(0..) debug(int(0..) level)
  *! @belongs Debug
  *!
  *!   Set the run-time debug level.
@@ -5369,13 +5395,13 @@ PMOD_EXPORT void f__debug(INT32 args)
 
   ASSERT_SECURITY_ROOT("_debug");
 
-  get_all_args("_debug", args, "%i", &d);
+  get_all_args("_debug", args, "%+", &d);
   pop_n_elems(args);
   push_int(d_flag);
   d_flag = d;
 }
 
-/*! @decl int optimizer_debug(int(0..) level)
+/*! @decl int(0..) optimizer_debug(int(0..) level)
  *! @belongs Debug
  *!
  *!   Set the optimizer debug level.
@@ -5393,14 +5419,14 @@ PMOD_EXPORT void f__optimizer_debug(INT32 args)
 
   ASSERT_SECURITY_ROOT("_optimizer_debug");
 
-  get_all_args("_optimizer_debug", args, "%i", &l);
+  get_all_args("_optimizer_debug", args, "%+", &l);
   pop_n_elems(args);
   push_int(l_flag);
   l_flag = l;
 }
 
 
-/*! @decl int assembler_debug(int(0..) level)
+/*! @decl int(0..) assembler_debug(int(0..) level)
  *! @belongs Debug
  *!
  *!   Set the assembler debug level.
@@ -5418,13 +5444,13 @@ PMOD_EXPORT void f__assembler_debug(INT32 args)
 
   ASSERT_SECURITY_ROOT("_assembler_debug");
 
-  get_all_args("_assembler_debug", args, "%i", &l);
+  get_all_args("_assembler_debug", args, "%+", &l);
   pop_n_elems(args);
   push_int(a_flag);
   a_flag = l;
 }
 
-/*! @decl void dump_program_tables(program p, int|void indent)
+/*! @decl void dump_program_tables(program p, int(0..)|void indent)
  *! @belongs Debug
  *!
  *! Dumps the internal tables for the program @[p] on stderr.
@@ -5444,7 +5470,7 @@ void f__dump_program_tables(INT32 args)
   int indent = 0;
 
   ASSERT_SECURITY_ROOT("_dump_program_tables");	/* FIXME: Might want lower. */
-  get_all_args("_dump_program_tables", args, "%p.%d", &p, &indent);
+  get_all_args("_dump_program_tables", args, "%p.%+", &p, &indent);
 
   dump_program_tables(p, indent);
   pop_n_elems(args);
@@ -5452,7 +5478,7 @@ void f__dump_program_tables(INT32 args)
 
 #ifdef YYDEBUG
 
-/*! @decl int compiler_trace(int(0..) level)
+/*! @decl int(0..) compiler_trace(int(0..) level)
  *! @belongs Debug
  *!
  *!   Set the compiler trace level.
@@ -6315,18 +6341,18 @@ static void f_interleave_array(INT32 args)
     INT_TYPE low = MAX_INT_TYPE;
 #ifdef PIKE_DEBUG
     if (TYPEOF(ITEM(arr)[i]) != T_MAPPING) {
-      Pike_error("interleave_array(): Element %d is not a mapping!\n", i);
+      Pike_error("Element %d is not a mapping!\n", i);
     }
 #endif /* PIKE_DEBUG */
     md = ITEM(arr)[i].u.mapping->data;
     NEW_MAPPING_LOOP(md) {
       if (TYPEOF(k->ind) != T_INT) {
-	Pike_error("interleave_array(): Index not an integer in mapping %d!\n", i);
+	Pike_error("Index not an integer in mapping %d!\n", i);
       }
       if (low > k->ind.u.integer) {
 	low = k->ind.u.integer;
 	if (low < 0) {
-	  Pike_error("interleave_array(): Index %"PRINTPIKEINT"d in mapping %d is negative!\n",
+	  Pike_error("Index %"PRINTPIKEINT"d in mapping %d is negative!\n",
 		low, i);
 	}
       }
@@ -6412,7 +6438,7 @@ static void f_interleave_array(INT32 args)
 	char *newtab = realloc(tab, size*2 + max);
 	if (!newtab) {
 	  free(tab);
-	  Pike_error("interleave_array(): Couldn't extend table!\n");
+	  Pike_error("Couldn't extend table!\n");
 	}
 	tab = newtab;
 	MEMSET(tab + size + max, 0, size);
@@ -8450,7 +8476,7 @@ PMOD_EXPORT void f__reset_dmalloc(INT32 args)
   reset_debug_malloc();
 }
 
-/*! @decl void dmalloc_set_name(string filename, int linenumber)
+/*! @decl void dmalloc_set_name(string filename, int(1..) linenumber)
  *! @belongs Debug
  *!
  *! @note
@@ -8465,7 +8491,7 @@ PMOD_EXPORT void f__dmalloc_set_name(INT32 args)
 
   if(args)
   {
-    get_all_args("_dmalloc_set_name", args, "%s%i", &s, &i);
+    get_all_args("_dmalloc_set_name", args, "%s%+", &s, &i);
     dmalloc_default_location = dynamic_location(s, i);
   }else{
     dmalloc_default_location=0;
@@ -8747,7 +8773,7 @@ PMOD_EXPORT void f_map(INT32 args)
 	 {
 	    pop_stack();
 
-	    push_constant_text("array");
+	    ref_push_string(literal_array_string);
 	    /* FIXME: Object subtype! */
 	    safe_apply(mysp[-3].u.object,"cast",1);
 	    if (TYPEOF(Pike_sp[-1]) == T_ARRAY)
@@ -8760,7 +8786,7 @@ PMOD_EXPORT void f_map(INT32 args)
 	    }
 	    pop_stack();
 
-	    push_constant_text("mapping");
+	    ref_push_string(literal_mapping_string);
 	    /* FIXME: Object subtype! */
 	    safe_apply(mysp[-3].u.object,"cast",1);
 	    if (TYPEOF(Pike_sp[-1]) == T_MAPPING)
@@ -8773,7 +8799,7 @@ PMOD_EXPORT void f_map(INT32 args)
 	    }
 	    pop_stack();
 
-	    push_constant_text("multiset");
+	    ref_push_string(literal_multiset_string);
 	    /* FIXME: Object subtype! */
 	    safe_apply(mysp[-3].u.object,"cast",1);
 	    if (TYPEOF(Pike_sp[-1]) == T_MULTISET)
@@ -9178,7 +9204,7 @@ PMOD_EXPORT void f_filter(INT32 args)
 	 {
 	    pop_stack();
 
-	    push_constant_text("array");
+	    ref_push_string(literal_array_string);
 	    /* FIXME: Object subtype! */
 	    safe_apply(mysp[-3].u.object,"cast",1);
 	    if (TYPEOF(Pike_sp[-1]) == T_ARRAY)
@@ -9191,7 +9217,7 @@ PMOD_EXPORT void f_filter(INT32 args)
 	    }
 	    pop_stack();
 
-	    push_constant_text("mapping");
+	    ref_push_string(literal_mapping_string);
 	    /* FIXME: Object subtype! */
 	    safe_apply(mysp[-3].u.object,"cast",1);
 	    if (TYPEOF(Pike_sp[-1]) == T_MAPPING)
@@ -9204,7 +9230,7 @@ PMOD_EXPORT void f_filter(INT32 args)
 	    }
 	    pop_stack();
 
-	    push_constant_text("multiset");
+	    ref_push_string(literal_multiset_string);
 	    /* FIXME: Object subtype! */
 	    safe_apply(mysp[-3].u.object,"cast",1);
 	    if (TYPEOF(Pike_sp[-1]) == T_MULTISET)
@@ -9319,10 +9345,7 @@ void f_enumerate(INT32 args)
    {
       INT_TYPE step,start;
 
-      get_all_args("enumerate", args, "%i%i%i", &n, &step, &start);
-      if (n<0) 
-	 SIMPLE_BAD_ARG_ERROR("enumerate",1,"int(0..)");
-
+      get_all_args("enumerate", args, "%+%i%i", &n, &step, &start);
       pop_n_elems(args);
       push_array(d=allocate_array(n));
       for (i=0; i<n; i++)
@@ -9352,12 +9375,8 @@ void f_enumerate(INT32 args)
    {
       FLOAT_TYPE step, start;
 
-      get_all_args("enumerate", args, "%i%F%F", &n, &step, &start);
-      if (n<0) 
-	 SIMPLE_BAD_ARG_ERROR("enumerate",1,"int(0..)");
-
+      get_all_args("enumerate", args, "%+%F%F", &n, &step, &start);
       pop_n_elems(args);
-
       push_array(d=allocate_array(n));
       for (i=0; i<n; i++)
       {
@@ -9369,8 +9388,7 @@ void f_enumerate(INT32 args)
    else
    {
       TYPE_FIELD types = 0;
-      get_all_args("enumerate", args, "%i", &n);
-      if (n<0) SIMPLE_BAD_ARG_ERROR("enumerate",1,"int(0..)");
+      get_all_args("enumerate", args, "%+", &n);
       if (args>4) pop_n_elems(args-4);
       push_array(d=allocate_array(n));
       if (args<4)
@@ -9822,8 +9840,8 @@ void init_builtin_efuns(void)
 		 tFunc(tOr(tObj,tPrg(tObj)),tArr(tStr))),
 	    OPT_TRY_OPTIMIZE,fix_indices_type,0);
 
-  ADD_EFUN("undefinedp", f_undefinedp, tFunc(tMix,tInt01), OPT_TRY_OPTIMIZE);
-  ADD_EFUN("destructedp", f_destructedp, tFunc(tMix,tInt01), OPT_TRY_OPTIMIZE);
+  ADD_EFUN2("undefinedp", f_undefinedp, tFunc(tMix,tInt01), OPT_TRY_OPTIMIZE, 0, generate_undefinedp);
+  ADD_EFUN2("destructedp", f_destructedp, tFunc(tMix,tInt01), OPT_TRY_OPTIMIZE,0, generate_destructedp);
 
 /* function(mixed:int) */
   ADD_EFUN("intp", f_intp,tFunc(tMix,tInt01),OPT_TRY_OPTIMIZE);
@@ -10105,24 +10123,24 @@ void init_builtin_efuns(void)
   
 /* function(int:int) */
   ADD_EFUN("_debug",f__debug,
-	   tFunc(tInt,tInt),OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
+	   tFunc(tIntPos,tIntPos),OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
 
 /* function(int:int) */
   ADD_EFUN("_optimizer_debug",f__optimizer_debug,
-	   tFunc(tInt,tInt),OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
+	   tFunc(tIntPos,tIntPos),OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
 
 /* function(int:int) */
   ADD_EFUN("_assembler_debug",f__assembler_debug,
-	   tFunc(tInt,tInt), OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
+	   tFunc(tInt,tIntPos), OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
 
   ADD_EFUN("_dump_program_tables", f__dump_program_tables,
-	   tFunc(tPrg(tObj),tVoid), OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
+	   tFunc(tPrg(tObj) tIntPos,tVoid), OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
 
 #ifdef YYDEBUG
   
 /* function(int:int) */
   ADD_EFUN("_compiler_trace",f__compiler_trace,
-	   tFunc(tInt,tInt),OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
+	   tFunc(tIntPos,tIntPos),OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
 #endif /* YYDEBUG */
 #endif
   
@@ -10289,7 +10307,7 @@ void init_builtin_efuns(void)
   ADD_EFUN("_reset_dmalloc",f__reset_dmalloc,
 	   tFunc(tVoid,tVoid),OPT_SIDE_EFFECT);
   ADD_EFUN("_dmalloc_set_name",f__dmalloc_set_name,
-	   tOr(tFunc(tStr tInt,tVoid), tFunc(tVoid,tVoid)),OPT_SIDE_EFFECT);
+	   tOr(tFunc(tStr tIntPos,tVoid), tFunc(tVoid,tVoid)),OPT_SIDE_EFFECT);
   ADD_EFUN("_list_open_fds",f__list_open_fds,
 	   tFunc(tVoid,tVoid),OPT_SIDE_EFFECT);
   ADD_EFUN("_dump_dmalloc_locations",f__dump_dmalloc_locations,

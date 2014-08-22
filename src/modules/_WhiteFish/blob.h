@@ -69,5 +69,5 @@ void wf_blob_low_add( struct object *o, int docid, int field, int off );
 size_t wf_blob_low_memsize( struct object *o );
 /* Returns the size of the blob */
 
-void init_blob_program();
-void exit_blob_program();
+void init_blob_program(void);
+void exit_blob_program(void);

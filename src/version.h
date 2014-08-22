@@ -13,5 +13,5 @@
 
 /* Prototypes begin here */
 PMOD_EXPORT void f_version(INT32 args);
-void push_compact_version();
+void push_compact_version(void);
 /* Prototypes end here */

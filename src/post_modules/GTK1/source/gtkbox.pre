@@ -52,7 +52,7 @@ mapping(string:int) query_child_packing(GTK1.Widget child)
   push_int( fi );
   push_text( "padding" );
   push_int( pa );
-  push_text( "type" );
+  ref_push_string( literal_type_string );
   push_int( ty );
   f_aggregate_mapping( 8 );
 }

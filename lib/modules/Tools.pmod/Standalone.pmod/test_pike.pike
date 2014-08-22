@@ -5,6 +5,7 @@ constant description = "Executes tests according to testsuite files.";
 
 constant log_msg = Tools.Testsuite.log_msg;
 constant log_msg_cont = Tools.Testsuite.log_msg_cont;
+constant log_msg_result = Tools.Testsuite.log_msg_result;
 constant log_status = Tools.Testsuite.log_status;
 
 protected enum exit_codes {
@@ -1153,7 +1154,7 @@ int main(int argc, array(string) argv)
 	      watchdog_show_last_test();
 	      log_msg(fname + " failed.\n");
 	      print_code(test);
-	      log_msg("o->a(): %O\n",a);
+	      log_msg_result("o->a(): %O\n",a);
 	      errors++;
 	    }
 	    else {
@@ -1167,7 +1168,7 @@ int main(int argc, array(string) argv)
 	      watchdog_show_last_test();
 	      log_msg(fname + " failed.\n");
 	      print_code(test);
-	      log_msg("o->a(): %O\n",a);
+	      log_msg_result("o->a(): %O\n",a);
 	      errors++;
 	    }
 	    else {
@@ -1180,7 +1181,7 @@ int main(int argc, array(string) argv)
 	      watchdog_show_last_test();
 	      log_msg(fname + " failed.\n");
 	      print_code(test);
-	      log_msg("o->a(): %O\n", a);
+	      log_msg_result("o->a(): %O\n", a);
 	    } else {
 	      pushed_warnings[a]++;
 	    }
@@ -1191,7 +1192,7 @@ int main(int argc, array(string) argv)
 	      watchdog_show_last_test();
 	      log_msg(fname + " failed.\n");
 	      print_code(test);
-	      log_msg("o->a(): %O\n", a);
+	      log_msg_result("o->a(): %O\n", a);
 	    } else if (pushed_warnings[a]) {
 	      if (!--pushed_warnings[a]) {
 		m_delete(pushed_warnings, a);
@@ -1200,7 +1201,7 @@ int main(int argc, array(string) argv)
 	      watchdog_show_last_test();
 	      log_msg(fname + " failed.\n");
 	      print_code(test);
-	      log_msg("o->a(): %O not pushed!\n", a);
+	      log_msg_result("o->a(): %O not pushed!\n", a);
 	    }
 	    break;
 		
@@ -1216,7 +1217,7 @@ int main(int argc, array(string) argv)
 	      watchdog_show_last_test();
 	      log_msg(fname + " failed to return proper results.\n");
 	      print_code(test);
-	      log_msg("o->a(): %O\n",a);
+	      log_msg_result("o->a(): %O\n",a);
 	      errors++;
 	    }
 	    else {
@@ -1240,8 +1241,8 @@ int main(int argc, array(string) argv)
 	      watchdog_show_last_test();
 	      log_msg(fname + " failed.\n");
 	      print_code(test);
-	      log_msg("o->a(): %O\n"
-		      "o->b(): %O\n", a, b);
+	      log_msg_result("o->a(): %O\n"
+                             "o->b(): %O\n", a, b);
 	      errors++;
 	      if (stringp(a) && stringp(b) && (sizeof(a) == sizeof(b)) &&
 		  (sizeof(a) > 20)) {
@@ -1268,8 +1269,8 @@ int main(int argc, array(string) argv)
 	      watchdog_show_last_test();
 	      log_msg(fname + " failed.\n");
 	      print_code(test);
-	      log_msg("o->a(): %O\n"
-		      "o->b(): %O\n", a, b);
+	      log_msg_result("o->a(): %O\n"
+                             "o->b(): %O\n", a, b);
 	      errors++;
 	      if (stringp(a) && stringp(b) && (sizeof(a) == sizeof(b)) &&
 		  (sizeof(a) > 20)) {

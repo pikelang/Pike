@@ -76,6 +76,7 @@
 #include "mapping.h"
 #include "builtin_functions.h"
 #include "module_support.h"
+#include "pike_types.h"
 
 /* <server/postgres_fe.h> doesn't suffice to be able to include
  * <server/catalog/pg_type.h>.
@@ -262,7 +263,7 @@ static void f_fetch_fields (INT32 args)
 		push_text(PQfname(res,j));
 		/* no table information is available */
 		/* no default value information is available */
-		push_text("type");
+		ref_push_string(literal_type_string);
 		push_int(PQftype(res,j));
 		/* ARGH! I'd kill 'em! How am I supposed to know how types are
 		 * coded internally!?!?!?!?

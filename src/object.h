@@ -82,7 +82,7 @@ enum object_destruct_reason {
 ATTRIBUTE((malloc)) struct object * alloc_object();
 void really_free_object(struct object * o);
 void count_memory_in_objects(size_t *_num, size_t *_size);
-void free_all_object_blocks();
+void free_all_object_blocks(void);
 PMOD_EXPORT struct object *low_clone(struct program *p);
 PMOD_EXPORT void call_c_initializers(struct object *o);
 PMOD_EXPORT void call_prog_event(struct object *o, int event);

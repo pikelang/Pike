@@ -1622,78 +1622,78 @@ F_LOOP(0 = +[ !depend_p($$, $$)]
 F_ADD_EQ(0,1) :
 {
   struct pike_type *type = $0->type;
-  int oper =  $0->tree_info&(OPT_SIDE_EFFECT|OPT_ASSIGNMENT)
-      ? F_ASSIGN_SELF : F_ASSIGN;
+  int oper = (($0->tree_info&(OPT_SIDE_EFFECT|OPT_ASSIGNMENT)) ||
+	      depend_p($0, $1)) ? F_ASSIGN_SELF : F_ASSIGN;
   $$ = mknode( oper, mksoftcastnode(type,mkopernode( "`+", $0, $1 )), $0 );
 };
 
 F_SUB_EQ(0,1) :
 {
   struct pike_type *type = $0->type;
-  int oper =  $0->tree_info & (OPT_SIDE_EFFECT|OPT_ASSIGNMENT)
-      ? F_ASSIGN_SELF : F_ASSIGN;
+  int oper = (($0->tree_info&(OPT_SIDE_EFFECT|OPT_ASSIGNMENT)) ||
+	      depend_p($0, $1)) ? F_ASSIGN_SELF : F_ASSIGN;
   $$ = mknode( oper, mksoftcastnode(type,mkopernode( "`-", $0, $1 )), $0 );
 };
 
 F_AND_EQ(0,1) :
 {
   struct pike_type *type = $0->type;
-  int oper =  $0->tree_info & (OPT_SIDE_EFFECT|OPT_ASSIGNMENT)
-      ? F_ASSIGN_SELF : F_ASSIGN;
+  int oper = (($0->tree_info&(OPT_SIDE_EFFECT|OPT_ASSIGNMENT)) ||
+	      depend_p($0, $1)) ? F_ASSIGN_SELF : F_ASSIGN;
   $$ = mknode( oper, mksoftcastnode(type,mkopernode( "`&", $0, $1 )), $0 );
 };
 
 F_OR_EQ(0,1)  :
 {
   struct pike_type *type = $0->type;
-  int oper =  $0->tree_info & (OPT_SIDE_EFFECT|OPT_ASSIGNMENT)
-      ? F_ASSIGN_SELF : F_ASSIGN;
+  int oper = (($0->tree_info&(OPT_SIDE_EFFECT|OPT_ASSIGNMENT)) ||
+	      depend_p($0, $1)) ? F_ASSIGN_SELF : F_ASSIGN;
   $$ = mknode( oper, mksoftcastnode(type,mkopernode( "`|", $0, $1 )), $0 );
 };
 
 F_XOR_EQ(0,1) :
 {
   struct pike_type *type = $0->type;
-  int oper =  $0->tree_info & (OPT_SIDE_EFFECT|OPT_ASSIGNMENT)
-      ? F_ASSIGN_SELF : F_ASSIGN;
+  int oper = (($0->tree_info&(OPT_SIDE_EFFECT|OPT_ASSIGNMENT)) ||
+	      depend_p($0, $1)) ? F_ASSIGN_SELF : F_ASSIGN;
   $$ = mknode( oper, mksoftcastnode(type,mkopernode( "`^", $0, $1 )), $0 );
 };
 
 F_LSH_EQ(0,1) :
 {
   struct pike_type *type = $0->type;
-  int oper =  $0->tree_info & (OPT_SIDE_EFFECT|OPT_ASSIGNMENT)
-      ? F_ASSIGN_SELF : F_ASSIGN;
+  int oper = (($0->tree_info&(OPT_SIDE_EFFECT|OPT_ASSIGNMENT)) ||
+	      depend_p($0, $1)) ? F_ASSIGN_SELF : F_ASSIGN;
   $$ = mknode( oper, mksoftcastnode(type,mkopernode( "`<<", $0, $1)), $0 );
 };
 F_RSH_EQ(0,1) :
 {
   struct pike_type *type = $0->type;
-  int oper =  $0->tree_info & (OPT_SIDE_EFFECT|OPT_ASSIGNMENT)
-      ? F_ASSIGN_SELF : F_ASSIGN;
+  int oper = (($0->tree_info&(OPT_SIDE_EFFECT|OPT_ASSIGNMENT)) ||
+	      depend_p($0, $1)) ? F_ASSIGN_SELF : F_ASSIGN;
   $$ = mknode( oper, mksoftcastnode(type,mkopernode( "`>>", $0, $1)), $0 );
 };
 
 F_MULT_EQ(0,1):
 {
   struct pike_type *type = $0->type;
-  int oper =  $0->tree_info & (OPT_SIDE_EFFECT|OPT_ASSIGNMENT)
-      ? F_ASSIGN_SELF : F_ASSIGN;
+  int oper = (($0->tree_info&(OPT_SIDE_EFFECT|OPT_ASSIGNMENT)) ||
+	      depend_p($0, $1)) ? F_ASSIGN_SELF : F_ASSIGN;
   $$ = mknode( oper, mksoftcastnode(type,mkopernode( "`*", $0, $1 )), $0 );
 };
 
 F_MOD_EQ(0,1) :
 {
   struct pike_type *type = $0->type;
-  int oper =  $0->tree_info & (OPT_SIDE_EFFECT|OPT_ASSIGNMENT)
-      ? F_ASSIGN_SELF : F_ASSIGN;
+  int oper = (($0->tree_info&(OPT_SIDE_EFFECT|OPT_ASSIGNMENT)) ||
+	      depend_p($0, $1)) ? F_ASSIGN_SELF : F_ASSIGN;
   $$ = mknode( oper, mksoftcastnode(type,mkopernode( "`%", $0, $1 )), $0 );
 };
 
 F_DIV_EQ(0,1) :
 {
   struct pike_type *type = $0->type;
-  int oper =  $0->tree_info & (OPT_SIDE_EFFECT|OPT_ASSIGNMENT)
-      ? F_ASSIGN_SELF : F_ASSIGN;
+  int oper = (($0->tree_info&(OPT_SIDE_EFFECT|OPT_ASSIGNMENT)) ||
+	      depend_p($0, $1)) ? F_ASSIGN_SELF : F_ASSIGN;
   $$ = mknode( oper, mksoftcastnode(type,mkopernode( "`/", $0, $1 )), $0 );
 };

@@ -60,15 +60,15 @@ START_MARKER
   test_eq(Gmp.mpz(4711)->size(2), 13)
 
   // cast_to_int
-  test_eq(Gmp.mpz(9)->cast_to_int(), 9)
+  test_compile_warning(Gmp.mpz(9)->cast_to_int())
   test_eq((int)Gmp.mpz(17),17)
 
   // cast_to_string
-  test_eq(Gmp.mpz(7)->cast_to_string(), "7")
+  test_compile_warning(Gmp.mpz(7)->cast_to_string())
   test_eq((string)Gmp.mpz(17),"17")
 
   // cast_to_float
-  test_eq(Gmp.mpz(8)->cast_to_float(), 8.0)
+  test_comile_warning(Gmp.mpz(8)->cast_to_float(), 8.0)
   test_eq((float)Gmp.mpz(17),17.0)
 
   // small_factor

@@ -784,7 +784,7 @@ PIKECLASS Shuffler
 
   PIKEVAR array sources;
 
-  static void update_sources()
+  static void update_sources(void)
   {
     push_array( THIS->sources );
     debug_malloc_touch( THIS->sources );

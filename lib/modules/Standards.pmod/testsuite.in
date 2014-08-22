@@ -95,6 +95,7 @@ test_equal((string)Standards.URI("g?y/../x",      "http://a/b/c/d;p?q"), "http:/
 test_equal((string)Standards.URI("g#s/./x",       "http://a/b/c/d;p?q"), "http://a/b/c/g#s/./x")
 test_equal((string)Standards.URI("g#s/../x",      "http://a/b/c/d;p?q"), "http://a/b/c/g#s/../x")
 test_equal((string)Standards.URI("http:g",        "http://a/b/c/d;p?q"), "http:g")
+test_equal((string)Standards.URI("c?d=e", "http://a.b"), "http://a.b/c?d=e")
 test_equal(Standards.URI("http://www.com/")->get_query_variables(),([]))
 test_equal(Standards.URI("http://www.com/?a=b")->get_query_variables(),(["a":"b"]))
 test_equal(Standards.URI("http://www.com/?a=b&a=b")->get_query_variables(),(["a":"b"]))

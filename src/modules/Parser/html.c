@@ -91,7 +91,7 @@ struct piece
 static struct block_allocator piece_allocator
     = BA_INIT_PAGES(sizeof(struct piece), 2);
 
-static INLINE struct piece * alloc_piece() {
+static INLINE struct piece * alloc_piece(void) {
     struct piece * p = ba_alloc(&piece_allocator);
     p->next = NULL;
     return p;
@@ -111,7 +111,7 @@ struct out_piece
 static struct block_allocator out_piece_allocator
     = BA_INIT_PAGES(sizeof(struct out_piece), 2);
 
-static INLINE struct out_piece * alloc_out_piece() {
+static INLINE struct out_piece * alloc_out_piece(void) {
     struct out_piece * p = ba_alloc(&out_piece_allocator);
     p->next = NULL;
     return p;
@@ -143,7 +143,7 @@ struct feed_stack
 
 static struct block_allocator feed_stack_allocator
     = BA_INIT_PAGES(sizeof(struct feed_stack), 1);
-static INLINE struct feed_stack * alloc_feed_stack() {
+static INLINE struct feed_stack * alloc_feed_stack(void) {
     struct feed_stack * p = ba_alloc(&feed_stack_allocator);
     p->local_feed = NULL;
     return p;
@@ -5500,7 +5500,7 @@ void init_parser_html(void)
    init_calc_chars();
 }
 
-void exit_parser_html()
+void exit_parser_html(void)
 {
    ba_destroy(&piece_allocator);
    ba_destroy(&out_piece_allocator);

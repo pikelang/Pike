@@ -33,7 +33,7 @@ PMOD_EXPORT void f_version(INT32 args)
 		      DEFINETOSTR (PIKE_BUILD_VERSION));
 }
 
-void push_compact_version()
+void push_compact_version(void)
 {
   push_constant_string_code (str, {
       str = begin_wide_shared_string (3, 2);

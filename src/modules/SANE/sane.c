@@ -49,7 +49,7 @@ struct scanner
   SANE_Handle h;
 };
 
-static void init_sane()
+static void init_sane(void)
 {
   if( sane_init( NULL, NULL ) )
     Pike_error( "Sane init failed.\n" );
@@ -61,7 +61,7 @@ static void push_device( SANE_Device *d )
   push_text( "name" );    push_text( d->name );
   push_text( "vendor" );  push_text( d->vendor );
   push_text( "model" );   push_text( d->model );
-  push_text( "type" );    push_text( d->type );
+  ref_push_string( literal_type_string );    push_text( d->type );
   f_aggregate_mapping( 8 );
 }
 
@@ -126,13 +126,13 @@ static void push_option_descriptor( const SANE_Option_Descriptor *o )
     push_text( o->desc );
   else
     push_int( 0 );
-  push_text( "type" );
+  ref_push_string( literal_type_string );
   switch( o->type )
   {
    case SANE_TYPE_BOOL:   push_text( "boolean" ); break;
-   case SANE_TYPE_INT:    push_text( "int" );     break;
-   case SANE_TYPE_FIXED:  push_text( "float" );   break;
-   case SANE_TYPE_STRING: push_text( "string" );  break;
+   case SANE_TYPE_INT:    ref_push_string( literal_int_string );     break;
+   case SANE_TYPE_FIXED:  ref_push_string( literal_float_string );   break;
+   case SANE_TYPE_STRING: ref_push_string( literal_string_string );  break;
    case SANE_TYPE_BUTTON: push_text( "button" );  break;
    case SANE_TYPE_GROUP:  push_text( "group" );   break;
   }
@@ -169,14 +169,14 @@ static void push_option_descriptor( const SANE_Option_Descriptor *o )
   {
    case SANE_CONSTRAINT_NONE:  push_int( 0 ); break;
    case SANE_CONSTRAINT_RANGE:
-     push_text( "type" );  push_text( "range" );
+     ref_push_string( literal_type_string );  push_text( "range" );
      push_text( "min" );   push_int( o->constraint.range->min );
      push_text( "max" );   push_int( o->constraint.range->max );
      push_text( "quant" ); push_int( o->constraint.range->quant );
      f_aggregate_mapping( 8 );
      break;
    case SANE_CONSTRAINT_WORD_LIST:
-     push_text( "type" );
+     ref_push_string( literal_type_string );
      push_text( "list" );
      push_text( "list" );
      for( i = 0; i<o->constraint.word_list[0]; i++ )
@@ -188,7 +188,7 @@ static void push_option_descriptor( const SANE_Option_Descriptor *o )
      f_aggregate_mapping( 4 );
      break;
    case SANE_CONSTRAINT_STRING_LIST:
-     push_text( "type" );
+     ref_push_string( literal_type_string );
      push_text( "list" );
      push_text( "list" );
      for( i = 0; o->constraint.string_list[i]; i++ )
@@ -475,7 +475,7 @@ static void get_comp_frame( SANE_Handle h, SANE_Parameters *p, char *data )
   }
 }
 
-static void assert_image_program()
+static void assert_image_program(void)
 {
   if( !image_program )
   {

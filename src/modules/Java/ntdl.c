@@ -158,7 +158,7 @@ static int open_nt_dll(void)
   return 0;
 }
 
-static void close_nt_dll()
+static void close_nt_dll(void)
 {
   if(jvmdll != NULL && FreeLibrary(jvmdll))
     jvmdll = NULL;

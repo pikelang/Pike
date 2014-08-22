@@ -535,39 +535,35 @@ static void memory_writeable(INT32 args)
  */
 static void memory_cast(INT32 args)
 {
-   char *s;
-   get_all_args("Memory.cast",args,"%s",&s);
+  struct pike_string *type = Pike_sp[-args].u.string;
+  pop_stack(); /* type have at least one more reference. */
 
-   MEMORY_VALID(THIS,"Memory.cast");
+  MEMORY_VALID(THIS,"Memory.cast");
    
-   if (strncmp(s,"string",5)==0)
-   {
-      pop_n_elems(args);
-      push_string(make_shared_binary_string((char *)THIS->p, THIS->size));
-      return;
-   }
-   if (strncmp(s,"array",5)==0)
-   {
-      struct array *a;
-      size_t i,sz=THIS->size;
-      struct svalue *sv;
+  if (type == literal_string_string)
+  {
+    push_string(make_shared_binary_string((char *)THIS->p, THIS->size));
+  }
+  else if (type == literal_array_string)
+  {
+    struct array *a;
+    size_t i,sz=THIS->size;
+    struct svalue *sv;
 
-      pop_n_elems(args);
+    a=low_allocate_array(sz,0);
 
-      a=low_allocate_array(sz,0);
+    sv=ITEM(a);
+    for (i=0; i<sz; i++)
+    {
+      sv->u.integer=(((unsigned char*)(THIS->p)))[i];
+      sv++;
+    }
+    a->type_field = BIT_INT;
 
-      sv=ITEM(a);
-      for (i=0; i<sz; i++)
-      {
-	 sv->u.integer=(((unsigned char*)(THIS->p)))[i];
-	 sv++;
-      }
-      a->type_field = BIT_INT;
-
-      push_array(a);
-
-      return;
-   }
+    push_array(a);
+  }
+  else
+    push_undefined();
 }
 
 /*! @decl string pread(int(0..) pos,int(0..) len)
@@ -961,7 +957,7 @@ void init_system_memory(void)
 
    ADD_FUNCTION("_sizeof",memory__sizeof,tFunc(tVoid,tIntPos),0);
    ADD_FUNCTION("cast",memory_cast,
-		tFunc(tStr,tOr(tArr(tInt),tStr)),0);
+		tFunc(tStr,tOr(tArr(tInt),tStr)),ID_PRIVATE);
 
    ADD_FUNCTION("`[]",memory_index,
 		tOr(tFunc(tInt,tInt),

@@ -123,10 +123,7 @@ string combine_uri_path(string base, string rel)
   //    copied to the buffer.  In other words, any characters after the
   //    last (right-most) slash character, if any, are excluded.
   array segments=base/"/";
-  if(has_value(base, "/"))
-    buf=segments[..<1]*"/"+"/";
-  else
-    buf=base;
+  buf=segments[..<1]*"/"+"/";
 
   // b) The reference's path component is appended to the buffer string.
   buf+=rel;

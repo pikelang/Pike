@@ -290,7 +290,7 @@ static void * howl_thread(void *arg)
 }
 
 
-static void init_howl_module()
+static void init_howl_module(void)
 {
   if (sw_discovery_init(&service_session) == SW_OKAY) {
     th_create_small(&service_thread, howl_thread, NULL);
@@ -298,7 +298,7 @@ static void init_howl_module()
 }
 
 
-static void exit_howl_module()
+static void exit_howl_module(void)
 {
   /* Close active session */
   if (service_session)

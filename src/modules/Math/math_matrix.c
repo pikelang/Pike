@@ -16,6 +16,7 @@
 #include "builtin_functions.h"
 #include "module_support.h"
 #include "operators.h"
+#include "pike_types.h"
 
 #include "math_module.h"
 
@@ -28,7 +29,6 @@
  *! Matrix representation with double precision floating point values.
  */
 
-static struct pike_string *s_array;
 static struct pike_string *s__clr;
 static struct pike_string *s_identity;
 static struct pike_string *s_rotate;

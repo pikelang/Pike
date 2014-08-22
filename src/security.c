@@ -112,7 +112,7 @@ static void f_call_with_creds(INT32 args)
       if(!CHECK_SECURITY(SECURITY_BIT_SECURITY) &&
 	 !(Pike_fp->current_object->prot && 
 	   (OBJ2CREDS(Pike_fp->current_object->prot)->may_always & SECURITY_BIT_SECURITY)))
-	Pike_error("call_with_creds: permission denied.\n");
+	Pike_error("Permission denied.\n");
       
       break;
 
@@ -121,7 +121,7 @@ static void f_call_with_creds(INT32 args)
   }
     
   if(!valid_creds_object(o))
-    Pike_error("call_with_creds: Not a valid creds object.\n");
+    Pike_error("Not a valid creds object.\n");
 
   if(CURRENT_CREDS) add_ref(CURRENT_CREDS);
 
@@ -237,7 +237,7 @@ static void creds_create(INT32 args)
   CHECK_SECURITY_OR_ERROR(SECURITY_BIT_SECURITY,
 			  ("creds_create: permission denied.\n"));
 
-  get_all_args("init_creds",args,"%o%i%i",&o,&may,&data);
+  get_all_args("init_creds",args,"%o%d%d",&o,&may,&data);
   if(THIS->user)
     Pike_error("You may only call creds_create once.\n");
   
@@ -303,7 +303,7 @@ static void creds_apply(INT32 args)
       free_object(Pike_sp[-args].u.array->prot);
     add_ref( Pike_sp[-args].u.array->prot=Pike_fp->current_object );
   }else{
-    Pike_error("creds->apply(): permission denied.\n");
+    Pike_error("Permission denied.\n");
   }
   pop_n_elems(args);
 }

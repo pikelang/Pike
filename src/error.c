@@ -22,6 +22,7 @@
 #include "module_support.h"
 #include "threads.h"
 #include "gc.h"
+#include "pike_types.h"
 
 /* __attribute__ only applies to function declarations, not
    definitions, so we disable them here. */
@@ -624,16 +625,17 @@ PMOD_EXPORT DECLSPEC(noreturn) void debug_fatal(const char *fmt, ...) ATTRIBUTE(
  */
 static void f_error_cast(INT32 args)
 {
-  char *s;
-  get_all_args("error->cast",args,"%s",&s);
-  if(!strncmp(s,"array",5))
+  if(Pike_sp[-1].u.string == literal_array_string)
   {
-    pop_n_elems(args);
+    pop_stack();
     apply_current (generic_err_message_fun, 0);
     apply_current (generic_err_backtrace_fun, 0);
     f_aggregate(2);
-  }else{
-    SIMPLE_BAD_ARG_ERROR("error->cast", 1, "the value \"array\"");
+  }
+  else
+  {
+    pop_stack();
+    push_undefined();
   }
 }
 

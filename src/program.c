@@ -93,7 +93,7 @@ static size_t add_xstorage(size_t size,
 static struct block_allocator program_allocator = BA_INIT_PAGES(sizeof(struct program), 4);
 
 ATTRIBUTE((malloc))
-struct program * alloc_program() {
+struct program * alloc_program(void) {
     return ba_alloc(&program_allocator);
 }
 
@@ -112,7 +112,7 @@ void count_memory_in_programs(size_t *num, size_t *_size) {
     *_size = size;
 }
 
-void free_all_program_blocks() {
+void free_all_program_blocks(void) {
     ba_destroy(&program_allocator);
 }
 
@@ -3927,6 +3927,14 @@ void check_program(struct program *p)
 
 static void f_dispatch_variant(INT32 args);
 
+int low_is_variant_dispatcher(struct identifier *id)
+{
+  if (!id) return 0;
+  return (IDENTIFIER_IS_C_FUNCTION(id->identifier_flags) &&
+	  !IDENTIFIER_IS_ALIAS(id->identifier_flags) &&
+	  (id->func.c_fun == f_dispatch_variant));
+}
+
 int is_variant_dispatcher(struct program *prog, int fun)
 {
   struct reference *ref;
@@ -3934,9 +3942,7 @@ int is_variant_dispatcher(struct program *prog, int fun)
   if (fun < 0) return 0;
   ref = PTR_FROM_INT(prog, fun);
   id = ID_FROM_PTR(prog, ref);
-  return (IDENTIFIER_IS_C_FUNCTION(id->identifier_flags) &&
-	  !IDENTIFIER_IS_ALIAS(id->identifier_flags) &&
-	  (id->func.c_fun == f_dispatch_variant));
+  return low_is_variant_dispatcher(id);
 }
 
 static int add_variant_dispatcher(struct pike_string *name,
@@ -8469,7 +8475,7 @@ int report_compiler_dependency(struct program *p)
  */
 
 /*! @decl void report(SeverityLevel severity, @
- *!                   string filename, int linenumber, @
+ *!                   string filename, int(1..) linenumber, @
  *!                   string subsystem, @
  *!                   string message, mixed ... extra_args)
  *!
@@ -8541,7 +8547,7 @@ static void f_reporter_report(INT32 args)
     f_sprintf(args - 4);
     args = 5;
   }
-  get_all_args("report", args, "%d%W%i%W%W",
+  get_all_args("report", args, "%d%W%+%W%W",
 	       &level, &filename, &linenumber, &subsystem, &message);
 
   /* Ignore informational level messages */
@@ -9435,7 +9441,7 @@ static void f_compilation_report(INT32 args)
     f_sprintf(args - 4);
     args = 5;
   }
-  get_all_args("report", args, "%d%W%i%W%W",
+  get_all_args("report", args, "%d%W%+%W%W",
 	       &level, &filename, &linenumber,
 	       &subsystem, &message);
 

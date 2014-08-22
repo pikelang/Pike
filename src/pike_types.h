@@ -141,6 +141,19 @@ PMOD_EXPORT extern struct pike_type *weak_type_string;
 extern struct pike_type *sscanf_type_string;
 extern struct pike_type *sscanf_76_type_string;
 
+PMOD_EXPORT extern struct pike_string *literal_string_string;
+PMOD_EXPORT extern struct pike_string *literal_int_string;
+PMOD_EXPORT extern struct pike_string *literal_float_string;
+PMOD_EXPORT extern struct pike_string *literal_function_string;
+PMOD_EXPORT extern struct pike_string *literal_object_string;
+PMOD_EXPORT extern struct pike_string *literal_program_string;
+PMOD_EXPORT extern struct pike_string *literal_array_string;
+PMOD_EXPORT extern struct pike_string *literal_multiset_string;
+PMOD_EXPORT extern struct pike_string *literal_mapping_string;
+PMOD_EXPORT extern struct pike_string *literal_type_string;
+PMOD_EXPORT extern struct pike_string *literal_mixed_string;
+
+
 #define CONSTTYPE(X) make_pike_type(X)
 
 #ifdef DO_PIKE_CLEANUP
@@ -193,7 +206,7 @@ void debug_push_reverse_type(unsigned int type);
 #define push_reverse_type debug_push_reverse_type
 #endif /* DEBUG_MALLOC */
 
-extern void type_stack_mark();
+extern void type_stack_mark(void);
 
 #define reset_type_stack() do {			\
    type_stack_pop_to_mark();			\
@@ -202,7 +215,7 @@ extern void type_stack_mark();
 
 /* Prototypes begin here */
 PMOD_EXPORT void really_free_pike_type(struct pike_type * t);
-PMOD_EXPORT ATTRIBUTE((malloc)) struct pike_type * alloc_pike_type();
+PMOD_EXPORT ATTRIBUTE((malloc)) struct pike_type * alloc_pike_type(void);
 PMOD_EXPORT void count_memory_in_pike_types(size_t *n, size_t *s);
 void debug_check_type_string(struct pike_type *s);
 void init_types(void);

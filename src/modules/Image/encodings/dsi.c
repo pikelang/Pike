@@ -121,14 +121,14 @@ static void f_decode( INT32 args )
   f_index( 2 );
 }
 
-void init_image_dsi()
+void init_image_dsi(void)
 {
   ADD_FUNCTION("_decode", f__decode, tFunc(tStr,tMapping), 0);
   ADD_FUNCTION("decode", f_decode, tFunc(tStr,tObj), 0);
 }
 
 
-void exit_image_dsi()
+void exit_image_dsi(void)
 {
 }
 /*! @endmodule

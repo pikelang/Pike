@@ -225,7 +225,7 @@ extern size_t rb_num_traverses, rb_num_traverse_ops;
 extern size_t rbstack_slice_allocs;
 extern size_t rb_num_adds, rb_add_rebalance_cnt;
 extern size_t rb_num_deletes, rb_del_rebalance_cnt;
-void reset_rb_stats();
+void reset_rb_stats(void);
 void print_rb_stats (int reset);
 #define DO_IF_RB_STATS(X) X
 #else

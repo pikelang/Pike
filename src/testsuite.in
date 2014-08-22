@@ -27,14 +27,11 @@ test_eq(0xf0000000-0xf0000000, 0);
 test_eq(0x80000001-0x80000000, 1);
 test_eq(0x80000000-0x80000001,-1);
 test_eq(-2147483648*-1, -2147483648/-1);
-cond([[ 0x8000000000000000 ]],
-[[
-  test_eq(0x8000000000000000-0x8000000000000000, 0);
-  test_eq(0xf000000000000000-0xf000000000000000, 0);
-  test_eq(0x8000000000000001-0x8000000000000000, 1);
-  test_eq(0x8000000000000000-0x8000000000000001,-1);
-  test_eq(-9223372036854775808*-1, -9223372036854775808/-1);
-]])
+test_eq(0x8000000000000000-0x8000000000000000, 0);
+test_eq(0xf000000000000000-0xf000000000000000, 0);
+test_eq(0x8000000000000001-0x8000000000000000, 1);
+test_eq(0x8000000000000000-0x8000000000000001,-1);
+test_eq(-9223372036854775808*-1, -9223372036854775808/-1);
 test_true([[1.0e-40]]);
 test_eq([[#"foo
 bar"]],[["foo\nbar"]]);
@@ -47,10 +44,8 @@ test_any([[class Bar { array(int) foo = ({}); };
 
 test_eq([["(" + 0x7fffffff + ")"]], "(2147483647)")
 test_eq([["(" + -0x80000000 + ")"]], "(-2147483648)")
-cond(0x8000000000000000, [[
-  test_eq([["(" + 0x7fffffffffffffff + ")"]], "(9223372036854775807)")
-  test_eq([["(" + -0x8000000000000000 + ")"]], "(-9223372036854775808)")
-]])
+test_eq([["(" + 0x7fffffffffffffff + ")"]], "(9223372036854775807)")
+test_eq([["(" + -0x8000000000000000 + ")"]], "(-9223372036854775808)")
 test_eq([["(" + Int.NATIVE_MAX + ")"]], [[sprintf ("(%d)", Int.NATIVE_MAX)]])
 test_eq([["(" + Int.NATIVE_MIN + ")"]], [[sprintf ("(%d)", Int.NATIVE_MIN)]])
 test_eq([[Int.NATIVE_MAX]], [[(int) (Int.NATIVE_MAX + "")]])
@@ -59,6 +54,57 @@ test_eq([[(string) Int.NATIVE_MAX]], [[Int.NATIVE_MAX + ""]])
 test_eq([[(string) Int.NATIVE_MIN]], [[Int.NATIVE_MIN + ""]])
 test_eq([[(string) Int.NATIVE_MAX]], [[sprintf ("%d", Int.NATIVE_MAX)]])
 test_eq([[(string) Int.NATIVE_MIN]], [[sprintf ("%d", Int.NATIVE_MIN)]])
+
+test_any_equal([[
+  array res = ({});
+  array ops = ({ `+, `-, `*, `/, `%, `<<, `>>, `&, `|, `^ });
+  array nums_a = ({ 0, 1, -1, 0xffffffff, 0xffffffffffffffff });
+  array nums_b = ({ 0, 1, -1 });
+
+  foreach(ops;; function op)
+    foreach(nums_a;; int a)
+      foreach(nums_b;; int b)
+      {
+        mixed err = catch {
+          res += ({ op(a,b) });
+        };
+        if( err ) res += ({ "E" });
+      }
+
+  return res;
+
+]],[[ ({
+
+// +
+0, 1, -1, 1, 2, 0, -1, 0, -2, 0xffffffff, 0x100000000, 0xfffffffe, 0xffffffffffffffff, 0x10000000000000000, 0xfffffffffffffffe,
+
+// -
+0, -1, 1, 1, 0, 2, -1, -2, 0, 0xffffffff, 0xfffffffe, 0x100000000, 0xffffffffffffffff, 0xfffffffffffffffe, 0x10000000000000000,
+
+// *
+0, 0, 0, 0, 1, -1, 0, -1, 1, 0, 0xffffffff, -0xffffffff, 0, 0xffffffffffffffff, -0xffffffffffffffff,
+
+// /
+"E", 0, 0, "E", 1, -1, "E", -1, 1, "E", 0xffffffff, -0xffffffff, "E", 0xffffffffffffffff, -0xffffffffffffffff,
+
+// %
+"E", 0, 0, "E", 0, 0, "E", 0, 0, "E", 0, 0, "E", 0, 0,
+
+// <<
+0, 0, "E", 1, 2, "E", -1, -2, "E", 0xffffffff, 0x1fffffffe, "E", 0xffffffffffffffff, 0x1fffffffffffffffe, "E",
+
+// >>
+0, 0, "E", 1, 0, "E", -1, -1, "E", 0xffffffff, 0x7fffffff, "E", 0xffffffffffffffff, 0x7fffffffffffffff, "E",
+
+// &
+0, 0, 0, 0, 1, 1, 0, 1, -1, 0, 1, 0xffffffff, 0, 1, 0xffffffffffffffff,
+
+// |
+0, 1, -1, 1, 1, -1, -1, -1, -1, 0xffffffff, 0xffffffff, -1, 0xffffffffffffffff, 0xffffffffffffffff, -1,
+
+// ^
+0, 1, -1, 1, 0, -2, -1, -2, 0, 0xffffffff, 0xfffffffe, -0x100000000, 0xffffffffffffffff, 0xfffffffffffffffe, -0x10000000000000000,
+}) ]])
 
 # __func__
 test_eq(__func__, "a")
@@ -3079,10 +3125,7 @@ test_any([[
 ]], [[ Protocols.HTTP.get_url_data ]])
 
 test_compile([[float x=(gauge { return; },1.0);]])
-cond( [[ master()->resolv("Gmp")->mpz ]],
-[[
-  test_compile_error([[object x = Gmp.mpz(17); constant y = x;]])
-]])
+test_compile_error([[object x = Gmp.mpz(17); constant y = x;]])
 test_any([[object(Stdio.File) f; f=Stdio.File(); return 1]],1)
 test_compile([[float t=gauge { string foo; foo; };]])
 test_compile_any([[class { object(Stdio.FILE) f; void create() { f=Stdio.FILE(); }}]])
@@ -7316,7 +7359,7 @@ test_equal([[array_sscanf("foo \12345 bar <fie>","%[^<]")]],
 test_equal(471100000000000000000000000000000000000000000000042,
            (int)(mixed)471100000000000000000000000000000000000000000000042)
 test_eq(6745697846498645967,
-        [[ Gmp.mpz("6745697846498645967")->cast_to_int(); ]])
+        [[ (int)Gmp.mpz("6745697846498645967") ]])
 
 test_eq(0x7fffffff, [[ decode_value(encode_value(0x7fffffff)) ]])
 test_eq(0x7ffffffff, [[ decode_value(encode_value(0x7ffffffff)) ]])

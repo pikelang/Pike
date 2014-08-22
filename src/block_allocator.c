@@ -127,7 +127,8 @@ PMOD_EXPORT void ba_low_init_aligned(struct block_allocator * a) {
 	a->l.doffset = sizeof(struct ba_page);
     }
 
-    a->l.blocks = round_up32(a->l.blocks);
+    if (a->l.blocks & (a->l.blocks - 1))
+        a->l.blocks = round_up32(a->l.blocks);
     a->l.block_size = block_size;
     a->l.offset = block_size * (a->l.blocks-1);
 }

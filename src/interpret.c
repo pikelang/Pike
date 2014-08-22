@@ -1370,7 +1370,7 @@ void *dummy_label = NULL;
 /* Intended to be called from machine code before inlined function
  * calls (primarily the CALL_BUILTIN opcodes), to ensure thread
  * switching. */
-void call_check_threads_etc()
+void call_check_threads_etc(void)
 {
   FAST_CHECK_THREADS_ON_CALL();
 }
@@ -1379,7 +1379,7 @@ void call_check_threads_etc()
     defined(INS_F_JUMP_WITH_ARG) || defined(INS_F_JUMP_WITH_TWO_ARGS)
 /* Intended to be called from machine code on backward branch jumps,
  * to ensure thread switching. */
-void branch_check_threads_etc()
+void branch_check_threads_etc(void)
 {
   FAST_CHECK_THREADS_ON_BRANCH();
 }

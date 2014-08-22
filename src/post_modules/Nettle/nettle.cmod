@@ -270,13 +270,13 @@ program_flags PROGRAM_CLEAR_STORAGE;
 #define AES256_KEY_SIZE	(256>>3)
 #endif
 
-  static void fortuna_generate()
+  static void fortuna_generate(void)
   {
     aes_encrypt(&THIS->aes_ctx, 16, THIS->data, THIS->ctr);
     INCREMENT(16, THIS->ctr);
   }
 
-  static void fortuna_rekey()
+  static void fortuna_rekey(void)
   {
     fortuna_generate();
     MEMCPY(THIS->key, THIS->data, 16);

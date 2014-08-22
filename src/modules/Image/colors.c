@@ -209,6 +209,7 @@
 #include "module_support.h"
 #include "sscanf.h"
 #include "program_id.h"
+#include "pike_types.h"
 
 #include "image.h"
 #include "colortable.h"
@@ -223,9 +224,6 @@ static struct array *colornames=NULL;
 struct program *image_color_program=NULL;
 extern struct program *image_colortable_program;
 
-static struct pike_string *str_array;
-static struct pike_string *str_string;
-static struct pike_string *str_int;
 static struct pike_string *str_r;
 static struct pike_string *str_g;
 static struct pike_string *str_b;
@@ -763,23 +761,24 @@ static void image_color_cast(INT32 args)
       bad_arg_error("Image.Color.Color->cast",sp-args,args,0,"",sp-args,
 		"Bad arguments to Image.Color.Color->cast()\n");
    
-   if (sp[-1].u.string==str_array)
+   if (sp[-1].u.string==literal_array_string)
    {
       image_color_rgb(args);
       return;
    }
-   if (sp[-1].u.string==str_string)
+   if (sp[-1].u.string==literal_string_string)
    {
       image_color_name(args);
       return;
    }
-   if (sp[-1].u.string==str_int)
+   if (sp[-1].u.string==literal_int_string)
    {
      pop_stack();
      push_int( (THIS->rgb.r << 8 | THIS->rgb.g)  << 8 | THIS->rgb.b );
      return;
    }
-   Pike_error("Image.Color.Color->cast(): Can't cast to that\n");
+   pop_stack();
+   push_undefined();
 }
 
 static void image_color__sprintf(INT32 args)
@@ -1721,9 +1720,6 @@ static void image_colors_values(INT32 args)
 
 void init_image_colors(void)
 {
-   str_array=make_shared_string("array");
-   str_string=make_shared_string("string");
-   str_int=make_shared_string("int");
    str_r=make_shared_string("r");
    str_g=make_shared_string("g");
    str_b=make_shared_string("b");
@@ -1743,7 +1739,7 @@ void init_image_colors(void)
 
    /* color info methods */
 
-   ADD_FUNCTION("cast",image_color_cast,tFunc(tStr,tOr(tArray,tStr)),0);
+   ADD_FUNCTION("cast",image_color_cast,tFunc(tStr,tOr(tArray,tStr)),ID_PROTECTED);
    ADD_FUNCTION("_sprintf",image_color__sprintf,
 		tFunc(tInt tMap(tStr,tMix),tStr),0);
    ADD_FUNCTION("`[]",image_color_index,tFunc(tOr(tStr,tInt),tOr(tInt,tFunction)),0);
@@ -1843,9 +1839,6 @@ void exit_image_colors(void)
       for (i=0; (size_t)i<sizeof(html_color)/sizeof(html_color[0]); i++)
 	 free_string(html_color[i].pname);
    }
-   free_string(str_array);
-   free_string(str_string);
-   free_string(str_int);
    free_string(str_r);
    free_string(str_g);
    free_string(str_b);

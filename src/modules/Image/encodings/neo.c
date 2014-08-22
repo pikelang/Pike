@@ -163,13 +163,13 @@ void image_neo_f_decode(INT32 args)
 /*! @endmodule
  */
 
-void init_image_neo()
+void init_image_neo(void)
 {
   ADD_FUNCTION("decode",  image_neo_f_decode,  tFunc(tStr,tObj),  0);
   ADD_FUNCTION("_decode", image_neo_f__decode,
 	       tFunc(tStr,tMap(tStr,tMix)), 0);
 }
 
-void exit_image_neo()
+void exit_image_neo(void)
 {
 }

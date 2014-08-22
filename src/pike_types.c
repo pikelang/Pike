@@ -108,6 +108,19 @@ PMOD_EXPORT struct pike_type *weak_type_string;	/* array|mapping|multiset|functi
 struct pike_type *sscanf_type_string;
 struct pike_type *sscanf_76_type_string;
 
+PMOD_EXPORT struct pike_string *literal_string_string;
+PMOD_EXPORT struct pike_string *literal_int_string;
+PMOD_EXPORT struct pike_string *literal_float_string;
+PMOD_EXPORT struct pike_string *literal_function_string;
+PMOD_EXPORT struct pike_string *literal_object_string;
+PMOD_EXPORT struct pike_string *literal_program_string;
+PMOD_EXPORT struct pike_string *literal_array_string;
+PMOD_EXPORT struct pike_string *literal_multiset_string;
+PMOD_EXPORT struct pike_string *literal_mapping_string;
+PMOD_EXPORT struct pike_string *literal_type_string;
+PMOD_EXPORT struct pike_string *literal_mixed_string;
+
+
 #ifdef DO_PIKE_CLEANUP
 struct pike_type_location *all_pike_type_locations = NULL;
 #endif /* DO_PIKE_CLEANUP */
@@ -288,7 +301,7 @@ PMOD_EXPORT void really_free_pike_type(struct pike_type * t) {
 }
 
 ATTRIBUTE((malloc))
-PMOD_EXPORT struct pike_type * alloc_pike_type() {
+PMOD_EXPORT struct pike_type * alloc_pike_type(void) {
     return ba_alloc(&type_allocator);
 }
 
@@ -8456,7 +8469,7 @@ static void low_make_pike_type(unsigned char *type_string,
   }
 }
 
-void type_stack_mark()
+void type_stack_mark(void)
 {
   if(UNLIKELY(Pike_compiler->pike_type_mark_stackp >= pike_type_mark_stack + (PIKE_TYPE_STACK_SIZE>>4)))
     Pike_fatal("Type mark stack overflow.\n");
@@ -8769,6 +8782,18 @@ void init_types(void)
 					   tAttr("sscanf_args", tMix), tIntPos));
   /* add_ref(weak_type_string);	*//* LEAK */
 
+  literal_string_string = make_shared_string("string");
+  literal_int_string = make_shared_string("int");
+  literal_float_string = make_shared_string("float");
+  literal_function_string = make_shared_string("function");
+  literal_object_string = make_shared_string("object");
+  literal_program_string = make_shared_string("program");
+  literal_array_string = make_shared_string("array");
+  literal_multiset_string = make_shared_string("multiset");
+  literal_mapping_string = make_shared_string("mapping");
+  literal_type_string = make_shared_string("type");
+  literal_mixed_string = make_shared_string("mixed");
+
 #ifdef PIKE_DEBUG
   pike_type_gc_callback = add_gc_callback(gc_mark_external_types, NULL, NULL);
 #endif
@@ -8841,6 +8866,19 @@ void cleanup_pike_types(void)
   sscanf_type_string = NULL;
   free_type(sscanf_76_type_string);
   sscanf_76_type_string = NULL;
+
+  free_string(literal_string_string); literal_string_string = NULL;
+  free_string(literal_int_string); literal_int_string = NULL;
+  free_string(literal_float_string); literal_float_string = NULL;
+  free_string(literal_function_string); literal_function_string = NULL;
+  free_string(literal_object_string); literal_object_string = NULL;
+  free_string(literal_program_string); literal_program_string = NULL;
+  free_string(literal_array_string); literal_array_string = NULL;
+  free_string(literal_multiset_string); literal_multiset_string = NULL;
+  free_string(literal_mapping_string); literal_mapping_string = NULL;
+  free_string(literal_type_string); literal_type_string = NULL;
+  free_string(literal_mixed_string); literal_mixed_string = NULL;
+
 #ifdef PIKE_DEBUG
   remove_callback(pike_type_gc_callback);
 #endif

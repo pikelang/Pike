@@ -77,6 +77,7 @@
 #include "module_support.h"
 #include "builtin_functions.h"
 #include "operators.h"
+#include "pike_types.h"
 
 #include "dvb.h"
 
@@ -401,7 +402,7 @@ static void f_fe_info(INT32 args) {
       push_int(info.maxSymbolRate);
       f_aggregate_mapping(2 * 2);
     push_text("hardware");
-      push_text("type");
+      ref_push_string(literal_type_string);
       push_int(info.hwType);
 #if HAVE_DVB < 30
       push_text("version");
@@ -1061,20 +1062,20 @@ static void f_parse_pmt(INT32 args)
 
     switch(buffer[index]) {
       case 2:
-        push_text("type"); push_int(DMX_PES_VIDEO); cnt++;
+        ref_push_string(literal_type_string); push_int(DMX_PES_VIDEO); cnt++;
         push_text("desc"); push_text("video"); cnt++;
 	break;
       case 3:
       case 4:
-        push_text("type"); push_int(DMX_PES_AUDIO); cnt++;
+        ref_push_string(literal_type_string); push_int(DMX_PES_AUDIO); cnt++;
         push_text("desc"); push_text("audio"); cnt++;
 	break;
       case 6:
-        push_text("type"); push_int(DMX_PES_TELETEXT); cnt++;
+        ref_push_string(literal_type_string); push_int(DMX_PES_TELETEXT); cnt++;
         push_text("desc"); push_text("teletext"); cnt++;
 	break;
       case 129:
-        push_text("type"); push_int(_DMX_PES_RDS); cnt++;
+        ref_push_string(literal_type_string); push_int(_DMX_PES_RDS); cnt++;
         push_text("desc"); push_text("_rds"); cnt++;
 	break;
       default:

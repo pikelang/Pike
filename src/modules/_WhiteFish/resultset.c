@@ -10,6 +10,7 @@
 #include "bignum.h"
 #include "module_support.h"
 #include "fsort.h"
+#include "pike_types.h"
 
 #include "config.h"
 
@@ -138,7 +139,7 @@ void wf_resultset_clear( struct object *o )
   T(o)->d->num_docs = 0;
 }
 
-struct object *wf_resultset_new( )
+struct object *wf_resultset_new(void)
 {
   struct object *o;
   o = clone_object( resultset_program, 0 );
@@ -146,13 +147,13 @@ struct object *wf_resultset_new( )
   return o;
 }
 
-static void init_rs( )
+static void init_rs(struct object *UNUSED(o))
 {
   THIS->d = 0;
   THIS->allocated_size = 0;
 }
 
-static void free_rs()
+static void free_rs(struct object *UNUSED(o))
 {
   THIS->allocated_size = 0;
   if( THIS->d )  free( THIS->d );
@@ -220,10 +221,17 @@ static void f_resultset_cast( INT32 args )
  *! data as a array.
  */
 {
-  pop_n_elems( args );
-  push_int(0);
-  push_int( 0x7fffffff );
-  f_resultset_slice(2);
+  struct pike_string *type = Pike_sp[-args].u.string;
+  pop_stack(); /* type have at least one more reference. */
+
+  if( type==literal_array_string )
+  {
+    push_int(0);
+    push_int( 0x7fffffff );
+    f_resultset_slice(2);
+  }
+  else
+    push_undefined();
 }
 
 static void f_resultset_memsize( INT32 args )
@@ -1012,7 +1020,7 @@ void init_resultset_program(void)
   start_new_program();
   {  
     ADD_STORAGE( struct result_set_p );
-    add_function("cast", f_resultset_cast, "function(string:mixed)", 0 );
+    add_function("cast", f_resultset_cast, "function(string:mixed)", ID_PRIVATE );
     add_function("create",f_resultset_create,
 		 "function(void|array(int|array(int)):void)",0);
 

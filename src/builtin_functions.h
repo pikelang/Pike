@@ -209,7 +209,7 @@ struct pike_list_node
   struct svalue val;
 };
 void count_memory_in_pike_list_nodes(size_t * n, size_t * s);
-void free_all_pike_list_node_blocks();
+void free_all_pike_list_node_blocks(void);
 PMOD_EXPORT void free_list_node(struct pike_list_node *node);
 PMOD_EXPORT void unlink_list_node(struct pike_list_node *n);
 PMOD_EXPORT void prepend_list_node(struct pike_list_node *node,

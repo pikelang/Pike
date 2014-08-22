@@ -75,7 +75,7 @@ class Parameters
   //!
   //! @param dsa
   //!   Copy the parameters from this object.
-  protected variant void create(Crypto.DSA dsa)
+  protected variant void create(Crypto.DSA.State dsa)
   {
     p = dsa->get_p();
     g = dsa->get_g();
