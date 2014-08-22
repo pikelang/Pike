@@ -8782,17 +8782,17 @@ void init_types(void)
 					   tAttr("sscanf_args", tMix), tIntPos));
   /* add_ref(weak_type_string);	*//* LEAK */
 
-  MAKE_CONST_STRING(literal_string_string, "string");
-  MAKE_CONST_STRING(literal_int_string, "int");
-  MAKE_CONST_STRING(literal_float_string, "float");
-  MAKE_CONST_STRING(literal_function_string, "function");
-  MAKE_CONST_STRING(literal_object_string, "object");
-  MAKE_CONST_STRING(literal_program_string, "program");
-  MAKE_CONST_STRING(literal_array_string, "array");
-  MAKE_CONST_STRING(literal_multiset_string, "multiset");
-  MAKE_CONST_STRING(literal_mapping_string, "mapping");
-  MAKE_CONST_STRING(literal_type_string, "type");
-  MAKE_CONST_STRING(literal_mixed_string, "mixed");
+  literal_string_string = make_shared_string("string");
+  literal_int_string = make_shared_string("int");
+  literal_float_string = make_shared_string("float");
+  literal_function_string = make_shared_string("function");
+  literal_object_string = make_shared_string("object");
+  literal_program_string = make_shared_string("program");
+  literal_array_string = make_shared_string("array");
+  literal_multiset_string = make_shared_string("multiset");
+  literal_mapping_string = make_shared_string("mapping");
+  literal_type_string = make_shared_string("type");
+  literal_mixed_string = make_shared_string("mixed");
 
 #ifdef PIKE_DEBUG
   pike_type_gc_callback = add_gc_callback(gc_mark_external_types, NULL, NULL);
@@ -8866,6 +8866,18 @@ void cleanup_pike_types(void)
   sscanf_type_string = NULL;
   free_type(sscanf_76_type_string);
   sscanf_76_type_string = NULL;
+
+  free_string(literal_string_string); literal_string_string = NULL;
+  free_string(literal_int_string); literal_int_string = NULL;
+  free_string(literal_float_string); literal_float_string = NULL;
+  free_string(literal_function_string); literal_function_string = NULL;
+  free_string(literal_object_string); literal_object_string = NULL;
+  free_string(literal_program_string); literal_program_string = NULL;
+  free_string(literal_array_string); literal_array_string = NULL;
+  free_string(literal_multiset_string); literal_multiset_string = NULL;
+  free_string(literal_mapping_string); literal_mapping_string = NULL;
+  free_string(literal_type_string); literal_type_string = NULL;
+  free_string(literal_mixed_string); literal_mixed_string = NULL;
 
 #ifdef PIKE_DEBUG
   remove_callback(pike_type_gc_callback);
