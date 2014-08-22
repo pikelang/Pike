@@ -237,7 +237,7 @@ static void creds_create(INT32 args)
   CHECK_SECURITY_OR_ERROR(SECURITY_BIT_SECURITY,
 			  ("creds_create: permission denied.\n"));
 
-  get_all_args("init_creds",args,"%o%i%i",&o,&may,&data);
+  get_all_args("init_creds",args,"%o%d%d",&o,&may,&data);
   if(THIS->user)
     Pike_error("You may only call creds_create once.\n");
   

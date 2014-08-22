@@ -1990,7 +1990,6 @@ static void f_string_filter_non_unicode( INT32 args )
   get_all_args("filter_non_unicode", args, "%W", &in);
   check_string_range( in, 1, &min, &max );
 
-
   if( !in->len || (min >= 0 && max < 0xd800) )
       return; /* The string is obviously ok. */
 
@@ -5378,7 +5377,7 @@ PMOD_EXPORT void f__verify_internals(INT32 args)
 
 #ifdef PIKE_DEBUG
 
-/*! @decl int debug(int(0..) level)
+/*! @decl int(0..) debug(int(0..) level)
  *! @belongs Debug
  *!
  *!   Set the run-time debug level.
@@ -5396,13 +5395,13 @@ PMOD_EXPORT void f__debug(INT32 args)
 
   ASSERT_SECURITY_ROOT("_debug");
 
-  get_all_args("_debug", args, "%i", &d);
+  get_all_args("_debug", args, "%+", &d);
   pop_n_elems(args);
   push_int(d_flag);
   d_flag = d;
 }
 
-/*! @decl int optimizer_debug(int(0..) level)
+/*! @decl int(0..) optimizer_debug(int(0..) level)
  *! @belongs Debug
  *!
  *!   Set the optimizer debug level.
@@ -5420,14 +5419,14 @@ PMOD_EXPORT void f__optimizer_debug(INT32 args)
 
   ASSERT_SECURITY_ROOT("_optimizer_debug");
 
-  get_all_args("_optimizer_debug", args, "%i", &l);
+  get_all_args("_optimizer_debug", args, "%+", &l);
   pop_n_elems(args);
   push_int(l_flag);
   l_flag = l;
 }
 
 
-/*! @decl int assembler_debug(int(0..) level)
+/*! @decl int(0..) assembler_debug(int(0..) level)
  *! @belongs Debug
  *!
  *!   Set the assembler debug level.
@@ -5445,13 +5444,13 @@ PMOD_EXPORT void f__assembler_debug(INT32 args)
 
   ASSERT_SECURITY_ROOT("_assembler_debug");
 
-  get_all_args("_assembler_debug", args, "%i", &l);
+  get_all_args("_assembler_debug", args, "%+", &l);
   pop_n_elems(args);
   push_int(a_flag);
   a_flag = l;
 }
 
-/*! @decl void dump_program_tables(program p, int|void indent)
+/*! @decl void dump_program_tables(program p, int(0..)|void indent)
  *! @belongs Debug
  *!
  *! Dumps the internal tables for the program @[p] on stderr.
@@ -5471,7 +5470,7 @@ void f__dump_program_tables(INT32 args)
   int indent = 0;
 
   ASSERT_SECURITY_ROOT("_dump_program_tables");	/* FIXME: Might want lower. */
-  get_all_args("_dump_program_tables", args, "%p.%d", &p, &indent);
+  get_all_args("_dump_program_tables", args, "%p.%+", &p, &indent);
 
   dump_program_tables(p, indent);
   pop_n_elems(args);
@@ -5479,7 +5478,7 @@ void f__dump_program_tables(INT32 args)
 
 #ifdef YYDEBUG
 
-/*! @decl int compiler_trace(int(0..) level)
+/*! @decl int(0..) compiler_trace(int(0..) level)
  *! @belongs Debug
  *!
  *!   Set the compiler trace level.
@@ -8484,7 +8483,7 @@ PMOD_EXPORT void f__reset_dmalloc(INT32 args)
   reset_debug_malloc();
 }
 
-/*! @decl void dmalloc_set_name(string filename, int linenumber)
+/*! @decl void dmalloc_set_name(string filename, int(1..) linenumber)
  *! @belongs Debug
  *!
  *! @note
@@ -8499,7 +8498,7 @@ PMOD_EXPORT void f__dmalloc_set_name(INT32 args)
 
   if(args)
   {
-    get_all_args("_dmalloc_set_name", args, "%s%i", &s, &i);
+    get_all_args("_dmalloc_set_name", args, "%s%+", &s, &i);
     dmalloc_default_location = dynamic_location(s, i);
   }else{
     dmalloc_default_location=0;
@@ -9353,10 +9352,7 @@ void f_enumerate(INT32 args)
    {
       INT_TYPE step,start;
 
-      get_all_args("enumerate", args, "%i%i%i", &n, &step, &start);
-      if (n<0) 
-	 SIMPLE_BAD_ARG_ERROR("enumerate",1,"int(0..)");
-
+      get_all_args("enumerate", args, "%+%i%i", &n, &step, &start);
       pop_n_elems(args);
       push_array(d=allocate_array(n));
       for (i=0; i<n; i++)
@@ -9386,12 +9382,8 @@ void f_enumerate(INT32 args)
    {
       FLOAT_TYPE step, start;
 
-      get_all_args("enumerate", args, "%i%F%F", &n, &step, &start);
-      if (n<0) 
-	 SIMPLE_BAD_ARG_ERROR("enumerate",1,"int(0..)");
-
+      get_all_args("enumerate", args, "%+%F%F", &n, &step, &start);
       pop_n_elems(args);
-
       push_array(d=allocate_array(n));
       for (i=0; i<n; i++)
       {
@@ -9403,8 +9395,7 @@ void f_enumerate(INT32 args)
    else
    {
       TYPE_FIELD types = 0;
-      get_all_args("enumerate", args, "%i", &n);
-      if (n<0) SIMPLE_BAD_ARG_ERROR("enumerate",1,"int(0..)");
+      get_all_args("enumerate", args, "%+", &n);
       if (args>4) pop_n_elems(args-4);
       push_array(d=allocate_array(n));
       if (args<4)
@@ -10139,24 +10130,24 @@ void init_builtin_efuns(void)
   
 /* function(int:int) */
   ADD_EFUN("_debug",f__debug,
-	   tFunc(tInt,tInt),OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
+	   tFunc(tIntPos,tIntPos),OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
 
 /* function(int:int) */
   ADD_EFUN("_optimizer_debug",f__optimizer_debug,
-	   tFunc(tInt,tInt),OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
+	   tFunc(tIntPos,tIntPos),OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
 
 /* function(int:int) */
   ADD_EFUN("_assembler_debug",f__assembler_debug,
-	   tFunc(tInt,tInt), OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
+	   tFunc(tInt,tIntPos), OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
 
   ADD_EFUN("_dump_program_tables", f__dump_program_tables,
-	   tFunc(tPrg(tObj),tVoid), OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
+	   tFunc(tPrg(tObj) tIntPos,tVoid), OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
 
 #ifdef YYDEBUG
   
 /* function(int:int) */
   ADD_EFUN("_compiler_trace",f__compiler_trace,
-	   tFunc(tInt,tInt),OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
+	   tFunc(tIntPos,tIntPos),OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
 #endif /* YYDEBUG */
 #endif
   
@@ -10323,7 +10314,7 @@ void init_builtin_efuns(void)
   ADD_EFUN("_reset_dmalloc",f__reset_dmalloc,
 	   tFunc(tVoid,tVoid),OPT_SIDE_EFFECT);
   ADD_EFUN("_dmalloc_set_name",f__dmalloc_set_name,
-	   tOr(tFunc(tStr tInt,tVoid), tFunc(tVoid,tVoid)),OPT_SIDE_EFFECT);
+	   tOr(tFunc(tStr tIntPos,tVoid), tFunc(tVoid,tVoid)),OPT_SIDE_EFFECT);
   ADD_EFUN("_list_open_fds",f__list_open_fds,
 	   tFunc(tVoid,tVoid),OPT_SIDE_EFFECT);
   ADD_EFUN("_dump_dmalloc_locations",f__dump_dmalloc_locations,

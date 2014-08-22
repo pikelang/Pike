@@ -8475,7 +8475,7 @@ int report_compiler_dependency(struct program *p)
  */
 
 /*! @decl void report(SeverityLevel severity, @
- *!                   string filename, int linenumber, @
+ *!                   string filename, int(1..) linenumber, @
  *!                   string subsystem, @
  *!                   string message, mixed ... extra_args)
  *!
@@ -8547,7 +8547,7 @@ static void f_reporter_report(INT32 args)
     f_sprintf(args - 4);
     args = 5;
   }
-  get_all_args("report", args, "%d%W%i%W%W",
+  get_all_args("report", args, "%d%W%+%W%W",
 	       &level, &filename, &linenumber, &subsystem, &message);
 
   /* Ignore informational level messages */
@@ -9441,7 +9441,7 @@ static void f_compilation_report(INT32 args)
     f_sprintf(args - 4);
     args = 5;
   }
-  get_all_args("report", args, "%d%W%i%W%W",
+  get_all_args("report", args, "%d%W%+%W%W",
 	       &level, &filename, &linenumber,
 	       &subsystem, &message);
 
