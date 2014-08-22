@@ -994,11 +994,13 @@ void describe_location(void *real_memblock,
 #endif
 }
 
+#ifdef GC_STACK_DEBUG
 static void describe_link_frame (struct link_frame *f)
 {
   fprintf (stderr, "data=%p prev=%p checkfn=%p weak=%d",
 	   f->data, f->prev, f->checkfn, f->weak);
 }
+#endif
 
 static void describe_marker(struct marker *m)
 {
@@ -1105,7 +1107,7 @@ static void rec_stack_fatal (struct gc_rec_frame *DEBUGUSED(err),
   va_end (args);
 }
 
-static void gdb_gc_stop_here(void *a, int weak)
+static void gdb_gc_stop_here(void *UNUSED(a), int weak)
 {
   found_ref_count++;
   fprintf(stderr,"***One %sref found%s. ",
@@ -4709,7 +4711,7 @@ static struct mc_marker *my_make_mc_marker (void *thing,
   return m;
 }
 
-#if defined (PIKE_DEBUG) || defined (MEMORY_COUNT_DEBUG)
+#ifdef MEMORY_COUNT_DEBUG
 static void describe_mc_marker (struct mc_marker *m)
 {
   fprintf (stderr, "%s %p: refs %d, int %d, la %d, cnt %d",
@@ -5288,11 +5290,11 @@ static void current_only_visit_ref (void *thing, int ref_type,
   }
 }
 
-static void ignore_visit_enter(void *thing, int type, void *extra)
+static void ignore_visit_enter(void *UNUSED(thing), int UNUSED(type), void *UNUSED(extra))
 {
 }
 
-static void ignore_visit_leave(void *thing, int type, void *extra)
+static void ignore_visit_leave(void *UNUSED(thing), int UNUSED(type), void *UNUSED(extra))
 {
 }
 
@@ -6057,7 +6059,7 @@ void f_count_memory (INT32 args)
 
 static struct mapping *identify_loop_reverse = NULL;
 
-void identify_loop_visit_enter(void *thing, int type, void *extra)
+void identify_loop_visit_enter(void *thing, int type, void *UNUSED(extra))
 {
   if (type < T_VOID) {
     /* Valid svalue type. */
@@ -6067,7 +6069,7 @@ void identify_loop_visit_enter(void *thing, int type, void *extra)
   }
 }
 
-void identify_loop_visit_ref(void *dst, int ref_type,
+void identify_loop_visit_ref(void *dst, int UNUSED(ref_type),
 			     visit_thing_fn *visit_dst,
 			     void *extra)
 {
@@ -6098,7 +6100,7 @@ void identify_loop_visit_ref(void *dst, int ref_type,
   }
 }
 
-void identify_loop_visit_leave(void *thing, int type, void *extra)
+void identify_loop_visit_leave(void *UNUSED(thing), int type, void *UNUSED(extra))
 {
   if (type < T_VOID) {
     /* Valid svalue type. */

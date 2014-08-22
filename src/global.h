@@ -569,13 +569,17 @@ typedef struct p_wchar_p
 #  define UNUSED(x)  PIKE_CONCAT(x,_UNUSED)
 # endif
 #endif
-#ifndef DEBUGUSED
-# ifdef PIKE_DEBUG
-#  define DEBUGUSED(x) x
-# else
-#  define DEBUGUSED(x) UNUSED(x)
-# endif
+#ifdef PIKE_DEBUG
+# define DEBUGUSED(x) x
+#else
+# define DEBUGUSED(x) UNUSED(x)
 #endif
+#ifdef DEBUG_MALLOC
+# define DMALLOCUSED(x) x
+#else
+# define DMALLOCUSED(x) UNUSED(x)
+#endif
+
 
 /* PMOD_EXPORT exports a function / variable vfsh. */
 #ifndef PMOD_EXPORT
