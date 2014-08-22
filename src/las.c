@@ -4736,10 +4736,15 @@ static void optimize(node *n)
 
     switch(n->token)
     {
+/* Unfortunately GCC doesn't ignore #pragma clang yet. */
+#ifdef __clang__
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wparentheses-equality"
 #include "treeopt.h"
 #pragma clang diagnostic pop
+#else
+#include "treeopt.h"
+#endif
     use_car:
       ADD_NODE_REF2(CAR(n), tmp1 = CAR(n));
       goto use_tmp1;
