@@ -2984,7 +2984,7 @@ void f_create_process(INT32 args)
 	      {
 		check_stack(3);
 		ref_push_string(ITEM(i)[e].u.string);
-		push_text("=");
+		push_static_text("=");
 		ref_push_string(ITEM(v)[e].u.string);
 		f_add(3);
 		ptr++;
@@ -3386,7 +3386,7 @@ void f_create_process(INT32 args)
 	    {
 	      check_stack(3);
 	      ref_push_string(ITEM(i)[e].u.string);
-	      push_text("=");
+	      push_static_text("=");
 	      ref_push_string(ITEM(v)[e].u.string);
 	      f_add(3);
 	      storage.env[ptr++]=Pike_sp[-1].u.string->str;

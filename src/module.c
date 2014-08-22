@@ -477,7 +477,7 @@ void init_modules(void)
     UNSETJMP(recovery);
   }
   if (p) free_program(end_program());
-  push_text("_static_modules");
+  push_static_text("_static_modules");
   push_object(low_clone(p=end_program()));
   f_add_constant(2);
   free_program(p);

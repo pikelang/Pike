@@ -421,20 +421,20 @@ PIKECLASS TM
         switch( flag )
         {
           case 'O':
-            push_text("System.TM(");
+            push_static_text("System.TM(");
             post_sum = 1;
             /* fallthrough */
           case 's':
             f_TM_asctime(0);
-            push_text("\n");
+            push_static_text("\n");
             if( GET_ZONE(&(THIS->t)) )
             {
-                push_text(" ");
+                push_static_text(" ");
                 push_text( GET_ZONE(&(THIS->t)) );
                 f_add( 2 );
             }
             else
-                push_text("");
+                push_static_text("");
             f_replace( 3 );
             break;
           case 'd':
@@ -445,7 +445,7 @@ PIKECLASS TM
         }
         if( post_sum )
         {
-            push_text(")");
+            push_static_text(")");
             f_add(3);
         }
 
@@ -734,12 +734,12 @@ PIKEFUN string basetype(mixed x)
     case T_ZERO: push_constant_text("zero"); break;
     case T_VOID: push_constant_text("void"); break;
       /* The following are internal and shouldn't be applicable in normal use. */
-    case T_SVALUE_PTR: push_text("svalue_ptr"); break;
-    case T_OBJ_INDEX: push_text("obj_index"); break;
-    case T_MAPPING_DATA: push_text("mapping_data"); break;
-    case T_PIKE_FRAME: push_text("pike_frame"); break;
-    case T_MULTISET_DATA: push_text("multiset_data"); break;
-    default: push_text("unknown"); break;
+    case T_SVALUE_PTR: push_static_text("svalue_ptr"); break;
+    case T_OBJ_INDEX: push_static_text("obj_index"); break;
+    case T_MAPPING_DATA: push_static_text("mapping_data"); break;
+    case T_PIKE_FRAME: push_static_text("pike_frame"); break;
+    case T_MULTISET_DATA: push_static_text("multiset_data"); break;
+    default: push_static_text("unknown"); break;
   }
 }
 
@@ -1715,7 +1715,7 @@ PIKEFUN string program_defined(program p)
     push_string(tmp);
     if(line >= 1)
     {
-      push_text(":");
+      push_static_text(":");
       push_int(line);
       f_add(3);
     }
@@ -2548,18 +2548,18 @@ PIKECLASS backtrace_frame
       return;
     }
 
-    push_text("backtrace_frame(");
+    push_static_text("backtrace_frame(");
 
     if (THIS->lineno == -1) fill_in_file_and_line();
 
     if (THIS->filename) {
       ref_push_string(THIS->filename);
-      push_text(":");
+      push_static_text(":");
       push_int(THIS->lineno);
-      push_text(", ");
+      push_static_text(", ");
       f_add(4);
     } else {
-      push_text("Unknown file, ");
+      push_static_text("Unknown file, ");
     }
     if (TYPEOF(THIS->_fun) == PIKE_T_FUNCTION) {
       if (THIS->_fun.u.object->prog) {
@@ -2574,32 +2574,32 @@ PIKECLASS backtrace_frame
 #endif
 	push_svalue(&THIS->_fun);
 	f_function_name(1);
-	push_text("(), ");
+	push_static_text("(), ");
 	f_add(2);
       } else {
 	free_svalue(&THIS->_fun);
 	SET_SVAL(THIS->_fun, PIKE_T_INT, NUMBER_DESTRUCTED, integer, 0);
-	push_text("destructed_function(), ");	
+	push_static_text("destructed_function(), ");	
       }
     } else if (TYPEOF(THIS->_fun) == PIKE_T_PROGRAM) {
       /* FIXME: Use the master? */
-      push_text("program(), ");
+      push_static_text("program(), ");
     } else if (TYPEOF(THIS->_fun) == PIKE_T_STRING) {
       push_svalue(&THIS->_fun);
-      push_text("(), ");
+      push_static_text("(), ");
       f_add(2);
     } else {
-      push_text("destructed_function(), ");
+      push_static_text("destructed_function(), ");
     }
 
     if (THIS->args) {
-      push_text("Args: ");
+      push_static_text("Args: ");
       push_int(THIS->args->size);
       f_add(2);
     } else {
-      push_text("No args");
+      push_static_text("No args");
     }
-    push_text(")");
+    push_static_text(")");
     f_add(5);
   }
 
@@ -2798,17 +2798,17 @@ PIKEFUN mapping(string:int|string) get_runtime_info()
   optflags OPT_TRY_OPTIMIZE;
 {
   pop_n_elems(args);
-  push_text("bytecode_method");
+  push_static_text("bytecode_method");
   push_text(PIKE_BYTECODE_METHOD_NAME);
-  push_text("abi");
+  push_static_text("abi");
   push_int(sizeof(void *) * 8);
-  push_text("native_byteorder");
+  push_static_text("native_byteorder");
   push_int(PIKE_BYTEORDER);
-  push_text("int_size");
+  push_static_text("int_size");
   push_int(sizeof(INT_TYPE) * 8);
-  push_text("float_size");
+  push_static_text("float_size");
   push_int(sizeof(FLOAT_TYPE) * 8);
-  push_text("auto_bignum");
+  push_static_text("auto_bignum");
   push_int(1);
   f_aggregate_mapping(6*2);
 }
@@ -4289,7 +4289,7 @@ PIKECLASS automap_marker
 	push_undefined ();
 	return;
       }
-      push_text("%O%*'[*]'n");
+      push_static_text("%O%*'[*]'n");
       if(THIS->arg)
 	ref_push_array(THIS->arg);
       else
@@ -4465,14 +4465,14 @@ PIKECLASS Setter
   {
     struct program *prog;
     if (!THIS->o) {
-      push_text("Setter()");
+      push_static_text("Setter()");
     } else if ((prog = THIS->o->prog)) {
-      push_text("%O->`%s=");
+      push_static_text("%O->`%s=");
       ref_push_object(THIS->o);
       ref_push_string(ID_FROM_INT(prog, THIS->f)->name);
       f_sprintf(3);
     } else {
-      push_text("Setter(destructed object)");
+      push_static_text("Setter(destructed object)");
     }
     stack_pop_n_elems_keep_top(args);
   }
@@ -4568,7 +4568,7 @@ PIKECLASS Null
   {
     pop_n_elems(args);
     if (fmt == 'O') {
-      push_text("Val.null");
+      push_static_text("Val.null");
     } else {
       push_undefined();
     }
@@ -5338,33 +5338,33 @@ PIKECLASS List
     flags ID_PROTECTED;
   {
     if (!THIS->num_elems) {
-      push_text("ADT.List(/* empty */)");
+      push_static_text("ADT.List(/* empty */)");
     } else if (c == 'O') {
       struct pike_list_node *node = THIS->head;
       if (THIS->num_elems == 1) {
-	push_text("ADT.List(/* 1 element */\n");
+	push_static_text("ADT.List(/* 1 element */\n");
       } else {
-	push_text("ADT.List(/* %d elements */\n");
+	push_static_text("ADT.List(/* %d elements */\n");
 	push_int(THIS->num_elems);
 	f_sprintf(2);
       }
       while (node->next) {
 	if (node->next->next) {
-	  push_text("    %O,\n");
+	  push_static_text("    %O,\n");
 	} else {
-	  push_text("    %O\n");
+	  push_static_text("    %O\n");
 	}
 	push_svalue(&node->val);
 	f_sprintf(2);
 	node = node->next;
       }
-      push_text(")");
+      push_static_text(")");
       f_add(THIS->num_elems + 2);
     } else {
       if (THIS->num_elems == 1) {
-	push_text("ADT.List(/* 1 element */)");
+	push_static_text("ADT.List(/* 1 element */)");
       } else {
-	push_text("ADT.List(/* %d elements */)");
+	push_static_text("ADT.List(/* %d elements */)");
 	push_int(THIS->num_elems);
 	f_sprintf(2);
       }

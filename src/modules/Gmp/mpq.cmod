@@ -477,7 +477,7 @@ PIKECLASS mpq
 
     else {
       push_string(low_get_mpz_digits(mpq_numref(mpq),10));
-      push_text("/");
+      push_static_text("/");
       push_string(low_get_mpz_digits(mpq_denref(mpq),10));
       f_add(3);
     }

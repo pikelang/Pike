@@ -863,10 +863,10 @@ PIKECLASS Backend
 
   static void backend_count_memory_in_call_outs(struct Backend_struct *me)
   {
-    push_text("num_call_outs");
+    push_static_text("num_call_outs");
     push_int(me->num_pending_calls);
 
-    push_text("call_out_bytes");     
+    push_static_text("call_out_bytes");     
     push_int64(me->call_heap_size * sizeof(struct Backend_CallOut_struct **)+
 	       me->num_pending_calls * sizeof(struct Backend_CallOut_struct));
 

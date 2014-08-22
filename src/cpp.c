@@ -916,12 +916,12 @@ static void cpp_constant(struct cpp *this, int value)
 
   /* FIXME: Protection against errors. */
   /* Remove extra whitespace. */
-  push_text(" ");
+  push_static_text(" ");
   o_subtract();
-  push_text("\t");
+  push_static_text("\t");
   o_subtract();
   /* Split on . */
-  push_text(".");
+  push_static_text(".");
   o_divide();
 #ifdef PIKE_DEBUG
   if (TYPEOF(Pike_sp[-1]) != T_ARRAY) {
@@ -988,7 +988,7 @@ static void cpp_constant(struct cpp *this, int value)
     }
   } else {
     /* Handle constant(.foo) */
-    push_text(".");
+    push_static_text(".");
     ref_push_string(this->current_file);
 
     if (this->handler) {
@@ -1805,7 +1805,7 @@ static struct pike_string *recode_string(struct cpp *this, struct pike_string *d
 
     push_string(end_shared_string(new_str));
 
-    push_text("ebcdic-us");
+    push_static_text("ebcdic-us");
 
     if (safe_apply_handler ("decode_charset", this->handler, this->compat_handler,
 			    2, BIT_STRING)) {

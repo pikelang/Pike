@@ -363,6 +363,7 @@ PMOD_EXPORT extern const char msg_pop_neg[];
   }while(0)
 
 PMOD_EXPORT extern void push_text( const char *x );
+PMOD_EXPORT extern void push_static_text( const char *x );
 
 #define push_constant_text(T) do{					\
     struct svalue *_sp_ = Pike_sp++;					\

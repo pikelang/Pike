@@ -859,7 +859,7 @@ static void mpzmod__sprintf(INT32 args)
     SIMPLE_ARG_TYPE_ERROR ("Gmp.mpz->_sprintf", 2, "mapping");
 
   push_svalue(&sp[1-args]);
-  push_text("precision");
+  push_static_text("precision");
   f_index(2);
   if(TYPEOF(sp[-1]) != T_INT)
     SIMPLE_ARG_ERROR ("Gmp.mpz->_sprintf", 2,
@@ -867,7 +867,7 @@ static void mpzmod__sprintf(INT32 args)
   precision = (--sp)->u.integer;
   
   push_svalue(&sp[1-args]);
-  push_text("width");
+  push_static_text("width");
   f_index(2);
   if(TYPEOF(sp[-1]) != T_INT)
     SIMPLE_ARG_ERROR ("Gmp.mpz->_sprintf", 2,
@@ -876,7 +876,7 @@ static void mpzmod__sprintf(INT32 args)
   width = (--sp)->u.integer;
 
   push_svalue(&sp[1-args]);
-  push_text("flag_left");
+  push_static_text("flag_left");
   f_index(2);
   if(TYPEOF(sp[-1]) != T_INT)
     SIMPLE_ARG_ERROR ("Gmp.mpz->_sprintf", 2,
@@ -891,9 +891,9 @@ static void mpzmod__sprintf(INT32 args)
     case 't':
       pop_n_elems(args);
       if(THIS_PROGRAM == bignum_program)
-	push_text("int");
+	push_static_text("int");
       else
-	push_text("object");
+	push_static_text("object");
       return;
 
   case 'O':

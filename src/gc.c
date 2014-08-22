@@ -3436,8 +3436,8 @@ static void warn_bad_cycles(void)
       p = p->next;
       if (p ? ((unsigned)(p->cycle != cycle)) : cycle) {
 	if ((*obj_arr_)->size >= 2) {
-	  push_text("gc");
-	  push_text("bad_cycle");
+	  push_static_text("gc");
+	  push_static_text("bad_cycle");
 	  push_array(*obj_arr_);
 	  *obj_arr_ = 0;
 	  SAFE_APPLY_MASTER("runtime_warning", 3);
@@ -4232,40 +4232,40 @@ void f__gc_status(INT32 args)
 
   pop_n_elems(args);
 
-  push_text("num_objects");
+  push_static_text("num_objects");
   push_int(num_objects);
   size++;
 
-  push_text("num_allocs");
+  push_static_text("num_allocs");
   push_int64(num_allocs);
   size++;
 
-  push_text("alloc_threshold");
+  push_static_text("alloc_threshold");
   push_int64(alloc_threshold);
   size++;
 
-  push_text("projected_garbage");
+  push_static_text("projected_garbage");
   push_float(DO_NOT_WARN((FLOAT_TYPE)(objects_freed * (double) num_allocs /
 				      (double) alloc_threshold)));
   size++;
 
-  push_text("objects_alloced");
+  push_static_text("objects_alloced");
   push_int64(DO_NOT_WARN((INT64)objects_alloced));
   size++;
 
-  push_text("objects_freed");
+  push_static_text("objects_freed");
   push_int64(DO_NOT_WARN((INT64)objects_freed));
   size++;
 
-  push_text("last_garbage_ratio");
+  push_static_text("last_garbage_ratio");
   push_float(DO_NOT_WARN((FLOAT_TYPE) last_garbage_ratio));
   size++;
 
-  push_text("non_gc_time");
+  push_static_text("non_gc_time");
   push_int64(DO_NOT_WARN((INT64) non_gc_time));
   size++;
 
-  push_text("gc_time");
+  push_static_text("gc_time");
   push_int64(DO_NOT_WARN((INT64) gc_time));
   size++;
 
@@ -4284,7 +4284,7 @@ void f__gc_status(INT32 args)
   }
   size++;
 
-  push_text("last_gc");
+  push_static_text("last_gc");
   push_int64(last_gc);
   size++;
 
