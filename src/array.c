@@ -2291,7 +2291,7 @@ void assign_array_level( struct array *a, struct array *b, int level )
     if( level > 1 )
     {
         /* recurse. */
-        unsigned int i;
+        INT32 i;
         for( i=0; i<a->size; i++ )
         {
             if( TYPEOF(a->item[i]) != PIKE_T_ARRAY )
@@ -2310,7 +2310,7 @@ void assign_array_level( struct array *a, struct array *b, int level )
  */
 void assign_array_level_value( struct array *a, struct svalue *b, int level )
 {
-    unsigned int i;
+    INT32 i;
     if( level > 1 )
     {
         /* recurse. */
