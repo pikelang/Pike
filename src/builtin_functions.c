@@ -5384,25 +5384,25 @@ PMOD_EXPORT void f__verify_internals(INT32 args)
 
 static void encode_struct_tm(struct tm *tm)
 {
-  push_text("sec");
+  push_static_text("sec");
   push_int(tm->tm_sec);
-  push_text("min");
+  push_static_text("min");
   push_int(tm->tm_min);
-  push_text("hour");
+  push_static_text("hour");
   push_int(tm->tm_hour);
 
-  push_text("mday");
+  push_static_text("mday");
   push_int(tm->tm_mday);
-  push_text("mon");
+  push_static_text("mon");
   push_int(tm->tm_mon);
-  push_text("year");
+  push_static_text("year");
   push_int(tm->tm_year);
 
-  push_text("wday");
+  push_static_text("wday");
   push_int(tm->tm_wday);
-  push_text("yday");
+  push_static_text("yday");
   push_int(tm->tm_yday);
-  push_text("isdst");
+  push_static_text("isdst");
   push_int(tm->tm_isdst);
 }
 
@@ -5445,7 +5445,7 @@ PMOD_EXPORT void f_gmtime(INT32 args)
   pop_n_elems(args);
   encode_struct_tm(tm);
 
-  push_text("timezone");
+  push_static_text("timezone");
   push_int(0);
   f_aggregate_mapping(20);
 }
@@ -5510,7 +5510,7 @@ PMOD_EXPORT void f_localtime(INT32 args)
   pop_n_elems(args);
   encode_struct_tm(tm);
 
-  push_text("timezone");
+  push_static_text("timezone");
 #ifdef STRUCT_TM_HAS_GMTOFF
   push_int(-tm->tm_gmtoff);
 #elif defined(STRUCT_TM_HAS___TM_GMTOFF)
@@ -5800,14 +5800,14 @@ PMOD_EXPORT void f_mktime (INT32 args)
   {
     memset(&date, 0, sizeof(date));
 
-    push_text("sec");
-    push_text("min");
-    push_text("hour");
-    push_text("mday");
-    push_text("mon");
-    push_text("year");
-    push_text("isdst");
-    push_text("timezone");
+    push_static_text("sec");
+    push_static_text("min");
+    push_static_text("hour");
+    push_static_text("mday");
+    push_static_text("mon");
+    push_static_text("year");
+    push_static_text("isdst");
+    push_static_text("timezone");
     f_aggregate(8);
     f_rows(2);
     Pike_sp--;
@@ -7293,9 +7293,9 @@ PMOD_EXPORT void f__memory_usage(INT32 args)
 
 #if defined(HAVE_MALLINFO) || defined(USE_DL_MALLOC)
 
-  push_text("num_malloc_blocks");
+  push_static_text("num_malloc_blocks");
   push_ulongest(1 + mi.hblks);	/* 1 for the arena. */
-  push_text("malloc_block_bytes");
+  push_static_text("malloc_block_bytes");
   if (mi.arena < 0) {
     /* Kludge for broken Linux libc, where the fields are ints.
      *
@@ -7322,9 +7322,9 @@ PMOD_EXPORT void f__memory_usage(INT32 args)
   }
   push_ulongest(size);
 
-  push_text("num_malloc");
+  push_static_text("num_malloc");
   push_ulongest(mi.ordblks + mi.smblks);
-  push_text("malloc_bytes");
+  push_static_text("malloc_bytes");
   if (mi.uordblks < 0) {
     size = (unsigned int)mi.uordblks;
   } else {
@@ -7340,9 +7340,9 @@ PMOD_EXPORT void f__memory_usage(INT32 args)
   }
   push_ulongest(size);
 
-  push_text("num_free_blocks");
+  push_static_text("num_free_blocks");
   push_int(1);
-  push_text("free_block_bytes");
+  push_static_text("free_block_bytes");
   if (mi.fsmblks < 0) {
     size = (unsigned int)mi.fsmblks;
   } else {
@@ -7359,7 +7359,7 @@ PMOD_EXPORT void f__memory_usage(INT32 args)
 
 #define COUNT(TYPE) do {					\
     PIKE_CONCAT3(count_memory_in_, TYPE, s)(&num, &size);	\
-    push_text("num_" #TYPE "s");				\
+    push_static_text("num_" #TYPE "s");				\
     push_ulongest(num);						\
     push_text(#TYPE "_bytes");					\
     push_ulongest(size);					\
@@ -8983,7 +8983,7 @@ PMOD_EXPORT void f_program_identifier_defined(INT32 args)
           push_string(tmp);
           if(line >= 1)
           {
-              push_text(":");
+              push_static_text(":");
               push_int(line);
               f_add(3);
           }
@@ -9011,7 +9011,7 @@ PMOD_EXPORT void f_program_identifier_defined(INT32 args)
   {
       if (line) {
           push_string(file);
-          push_text(":");
+          push_static_text(":");
           push_int(line);
           f_add(3);
       }
@@ -9158,7 +9158,7 @@ PMOD_EXPORT void f_function_defined(INT32 args)
     {
       if (line) {
 	push_string(file);
-	push_text(":");
+	push_static_text(":");
 	push_int(line);
 	f_add(3);
       }
