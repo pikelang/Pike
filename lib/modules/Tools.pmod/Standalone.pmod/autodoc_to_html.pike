@@ -377,6 +377,7 @@ string parse_class(Node n, void|int noheader) {
   ret += parse_children(n, "docgroup", parse_docgroup);
   ret += parse_children(n, "enum", parse_enum);
   ret += parse_children(n, "class", parse_class, noheader);
+  ret += parse_children(n, "module", parse_module, noheader);
 
   if(!noheader)
     ret += "</dd></dl>";
