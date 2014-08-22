@@ -49,7 +49,7 @@ mpz_small_factor(mpz_t n, int limit)
 
   for (i = 0;
        (i < limit)
-	 && (SQR(primes[i]) <= stop); /* I think it's not worth the
+	 && (SQR((unsigned long)primes[i]) <= stop); /* I think it's not worth the
 				       * effort to get rid of this
 				       * extra multiplication. */
        i++)
