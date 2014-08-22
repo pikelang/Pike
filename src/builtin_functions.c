@@ -7620,7 +7620,7 @@ unsigned int rec_size_svalue( struct svalue *s, struct mapping **m )
     switch( TYPEOF(*s) )
     {
         case PIKE_T_STRING:
-            if( s->u.string->flags & STRING_IS_SHORT )
+            if(string_is_block_allocated(s))
                 return (2*sizeof(struct pike_string)) / s->u.string->refs;
             return (((s->u.string->len+1) << s->u.string->size_shift) +
                     sizeof(struct pike_string)) / s->u.string->refs;

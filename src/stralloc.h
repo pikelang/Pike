@@ -46,14 +46,22 @@ struct string_builder
 /* Flags used in pike_string->flags. */
 #define STRING_NOT_HASHED	    1	/* Hash value is invalid. */
 #define STRING_NOT_SHARED	    2	/* String not shared. */
-#define STRING_IS_SHORT		    4	/* String is blockalloced. */
-#define STRING_CLEAR_ON_EXIT    8   /* Overwrite before free. */
+#define STRING_CLEAR_ON_EXIT        4   /* Overwrite before free. */
 
-#define STRING_CONTENT_CHECKED 16 /* if true, min and max are valid */
-#define STRING_IS_LOWERCASE    32
-#define STRING_IS_UPPERCASE    64
+#define STRING_CONTENT_CHECKED      8 /* if true, min and max are valid */
+#define STRING_IS_LOWERCASE        16
+#define STRING_IS_UPPERCASE        32
 
-#define CLEAR_STRING_CHECKED(X) do{(X)->flags &= 15;}while(0)
+#define STRING_CHECKED_MASK (STRING_IS_UPPERCASE|STRING_IS_LOWERCASE|STRING_CONTENT_CHECKED)
+
+#define STRING_ALLOC_STATIC         0
+#define STRING_ALLOC_MALLOC        64
+#define STRING_ALLOC_BA	          128 /* String is blockalloced. */
+
+
+#define STRING_ALLOC_MASK          (STRING_ALLOC_BA|STRING_ALLOC_MALLOC|STRING_ALLOC_STATIC)
+
+#define CLEAR_STRING_CHECKED(X) do{(X)->flags &= ~STRING_CHECKED_MASK;}while(0)
 
 /* Flags used by string_builder_append_integer() */
 #define APPEND_SIGNED		1	/* Value is signed */
@@ -196,7 +204,7 @@ PMOD_EXPORT extern struct shared_string_location *all_shared_string_locations;
 #define MAKE_CONST_STRING(var, text) do {		\
   static struct shared_string_location str_;		\
   if(!str_.s) { 					\
-    str_.s=make_shared_binary_string((text),CONSTANT_STRLEN(text)); \
+    str_.s=make_shared_static_string((text),CONSTANT_STRLEN(text), eightbit); \
     str_.next=all_shared_string_locations;		\
     all_shared_string_locations=&str_;			\
   }							\
@@ -223,7 +231,7 @@ PMOD_EXPORT extern struct shared_string_location *all_shared_string_locations;
 
 #define MAKE_CONST_STRING(var, text)						\
  do { static struct pike_string *str_;                                          \
-    if(!str_) str_=make_shared_binary_string((text),CONSTANT_STRLEN(text));     \
+    if(!str_) str_=make_shared_static_string((text),CONSTANT_STRLEN(text), eightbit);     \
     var = str_;									\
  }while(0)
 
@@ -269,11 +277,30 @@ PMOD_EXPORT extern struct shared_string_location *all_shared_string_locations;
 void PIKE_CONCAT4(convert_,FROM,_to_,TO)(PIKE_CONCAT(p_wchar,TO) *to, const PIKE_CONCAT(p_wchar,FROM) *from, ptrdiff_t len); \
 INT32 PIKE_CONCAT4(compare_,FROM,_to_,TO)(const PIKE_CONCAT(p_wchar,TO) *to, const PIKE_CONCAT(p_wchar,FROM) *from, ptrdiff_t len);
 
+static INLINE int __attribute((unused)) string_is_block_allocated(const struct pike_string * s) {
+    return (s->flags & STRING_ALLOC_MASK) == STRING_ALLOC_BA;
+}
+
+static INLINE int __attribute((unused)) string_is_malloced(const struct pike_string * s) {
+    return (s->flags & STRING_ALLOC_MASK) == STRING_ALLOC_MALLOC;
+}
+
+static INLINE int __attribute((unused)) string_is_static(const struct pike_string * s) {
+    return (s->flags & STRING_ALLOC_MASK) == STRING_ALLOC_STATIC;
+}
+
+static INLINE int __attribute((unused)) string_may_modify(const struct pike_string * s) {
+    return !string_is_static(s) && s->refs == 1;
+}
+
+
 PMOD_EXPORT extern struct pike_string *empty_pike_string;
 
 /* Prototypes begin here */
 void low_set_index(struct pike_string *s, ptrdiff_t pos, int value);
-PMOD_EXPORT struct pike_string *debug_check_size_shift(const struct pike_string *a,int shift);
+#ifdef PIKE_DEBUG
+PMOD_EXPORT struct pike_string *debug_check_size_shift(struct pike_string *a,int shift);
+#endif
 CONVERT(0,1)
 CONVERT(0,2)
 CONVERT(1,0)
@@ -302,6 +329,8 @@ PMOD_EXPORT struct pike_string * debug_make_shared_pcharp(const PCHARP str);
 PMOD_EXPORT struct pike_string * debug_make_shared_binary_string0(const p_wchar0 *str,size_t len);
 PMOD_EXPORT struct pike_string * debug_make_shared_binary_string1(const p_wchar1 *str,size_t len);
 PMOD_EXPORT struct pike_string * debug_make_shared_binary_string2(const p_wchar2 *str,size_t len);
+PMOD_EXPORT struct pike_string * make_static_string(const char *str, size_t len, enum size_shift);
+PMOD_EXPORT struct pike_string * make_shared_static_string(const char *str, size_t len, enum size_shift);
 PMOD_EXPORT struct pike_string *debug_make_shared_string(const char *str);
 PMOD_EXPORT struct pike_string *debug_make_shared_string0(const p_wchar0 *str);
 PMOD_EXPORT struct pike_string *debug_make_shared_string1(const p_wchar1 *str);

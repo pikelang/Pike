@@ -268,8 +268,7 @@ void low_set_index(struct pike_string *s, ptrdiff_t pos, int value)
 }
 
 #ifdef PIKE_DEBUG
-PMOD_EXPORT const struct pike_string *debug_check_size_shift(const struct pike_string *a,
-						       int shift)
+PMOD_EXPORT struct pike_string *debug_check_size_shift(struct pike_string *a, int shift)
 {
   if(a->size_shift != shift)
     Pike_fatal("Wrong STRX macro used!\n");
@@ -631,17 +630,15 @@ static void stralloc_rehash(void)
 
 static struct block_allocator string_allocator = BA_INIT(sizeof(struct pike_string), STRING_BLOCK);
 
-static INLINE int string_is_short(const struct pike_string * s) {
-    return !!(s->flags & STRING_IS_SHORT);
-}
-
 static void free_unlinked_pike_string(struct pike_string * s) {
-    size_t bytes = (s->len+1) << s->size_shift;
 
-    if (string_is_short(s)) {
-        ba_free(&string_allocator, s->str);
-    } else {
+    switch (s->flags & STRING_ALLOC_MASK) {
+    case STRING_ALLOC_MALLOC:
         free(s->str);
+        break;
+    case STRING_ALLOC_BA:
+        ba_free(&string_allocator, s->str);
+        break;
     }
 
     ba_free(&string_allocator, s);
@@ -752,14 +749,17 @@ PMOD_EXPORT struct pike_string *debug_begin_wide_shared_string(size_t len, int s
       Pike_fatal("Unsupported string shift: %d\n", shift);
 #endif /* PIKE_DEBUG */
   t=(struct pike_string *)ba_alloc(&string_allocator);
-  t->flags = STRING_NOT_HASHED|STRING_NOT_SHARED;
+  /* we mark the string as static here, to avoid double free if the allocations
+   * fail
+   */
+  t->flags = STRING_NOT_HASHED|STRING_NOT_SHARED|STRING_ALLOC_STATIC;
   if (bytes <= sizeof(struct pike_string)) {
-      t->str = ba_alloc(&string_allocator);
-      t->flags |= STRING_IS_SHORT;
-  } else t->str = xalloc(bytes);
-#ifdef ATOMIC_SVALUE
-  t->ref_type = T_STRING;
-#endif
+    t->str = ba_alloc(&string_allocator);
+    t->flags |= STRING_ALLOC_BA;
+  } else {
+    t->str = xalloc(bytes);
+    t->flags |= STRING_ALLOC_MALLOC;
+  }
   t->refs = 0;
   add_ref(t);	/* For DMALLOC */
   t->len=len;
@@ -767,6 +767,38 @@ PMOD_EXPORT struct pike_string *debug_begin_wide_shared_string(size_t len, int s
   DO_IF_DEBUG(t->next = NULL);
   low_set_index(t,len,0);
   return t;
+}
+
+PMOD_EXPORT struct pike_string * make_static_string(const char * str, size_t len,
+                                                    enum size_shift shift) {
+  struct pike_string * t = ba_alloc(&string_allocator);
+
+  t->flags = STRING_NOT_HASHED|STRING_NOT_SHARED|STRING_ALLOC_STATIC;
+  t->str = str;
+  t->refs = 0;
+  t->len = len;
+  t->size_shift = shift;
+  add_ref(t);	/* For DMALLOC */
+
+  return t;
+}
+
+PMOD_EXPORT struct pike_string * make_shared_static_string(const char *str, size_t len,
+                                                           enum size_shift shift)
+{
+  struct pike_string *s;
+  ptrdiff_t h = StrHash(str, len);
+
+  s = internal_findstring(str,len,shift,h);
+
+  if (!s) {
+    s = make_static_string(str, len, shift);
+    link_pike_string(s, h);
+  } else {
+    add_ref(s);
+  }
+
+  return s;
 }
 
 /*
@@ -1124,14 +1156,14 @@ struct pike_string *add_string_status(int verbose)
       {
 	int key = p->size_shift;
 	num_distinct_strings[key]++;
-        bytes_distinct_strings[key] +=
-          DO_ALIGN(p->len << p->size_shift, sizeof(void *));
+        alloced_bytes[key] += p->refs*sizeof(struct pike_string);
 	alloced_strings[key] += p->refs;
-        if (string_is_short(p)) {
+        if (string_is_block_allocated(p)) {
+          alloced_bytes[key] +=
+            p->refs*sizeof(struct pike_string);
+        } else {
           alloced_bytes[key] +=
             p->refs*DO_ALIGN((p->len+3) << p->size_shift,sizeof(void *));
-        } else {
-          alloced_bytes[key] += p->refs*sizeof(struct pike_string);
         }
       }
     }
@@ -1638,30 +1670,48 @@ struct pike_string *realloc_unlinked_string(struct pike_string *a,
 {
   char * s = NULL;
   size_t nbytes = (size_t)(size+1) << a->size_shift;
+  size_t obytes = (size_t)(a->len+1) << a->size_shift;
 
-  switch (string_is_short(a) | ((nbytes <= sizeof(struct pike_string)) << 1)) {
-  case 0:
+  switch ((a->flags & STRING_ALLOC_MASK) | (nbytes <= sizeof(struct pike_string))) {
+  case STRING_ALLOC_MALLOC:
       s=realloc(a->str, nbytes);
       if (!s) 
         Pike_error("Out of memory in realloc_unlinked_string. Could not allocate %"PRINTSIZET" bytes.\n", 
                    nbytes);
       break;
-  case 1: { // old string was short
-      size_t obytes = (size_t)(a->len+1) << a->size_shift;
+  case STRING_ALLOC_BA: // old string was short
       s = xalloc(nbytes);
-      a->flags &= ~STRING_IS_SHORT;
+      a->flags &= ~STRING_ALLOC_MASK;
+      a->flags |= STRING_ALLOC_MALLOC;
       memcpy(s, a->str, obytes);
       ba_free(&string_allocator, a->str);
       break;
-  }
-  case 2: // new string is short
+  case STRING_ALLOC_MALLOC|1:
       s = ba_alloc(&string_allocator);
-      a->flags |= STRING_IS_SHORT;
+      a->flags &= ~STRING_ALLOC_MASK;
+      a->flags |= STRING_ALLOC_BA;
       memcpy(s, a->str, nbytes);
       free(a->str);
       break;
-  case 3: // both are short
+  case STRING_ALLOC_BA|1: // both are short
       goto done;
+  case STRING_ALLOC_STATIC:
+      s = xalloc(nbytes);
+      a->flags &= ~STRING_ALLOC_MASK;
+      a->flags |= STRING_ALLOC_MALLOC;
+      memcpy(s, a->str, obytes);
+      break;
+  case STRING_ALLOC_STATIC|1:
+      s = ba_alloc(&string_allocator);
+      a->flags &= ~STRING_ALLOC_MASK;
+      a->flags |= STRING_ALLOC_BA;
+      memcpy(s, a->str, obytes);
+      break;
+#ifdef PIKE_DEBUG
+  default:
+      Pike_fatal("encountered string with unknown allocation type %d\n",
+                 a->flags & STRING_ALLOC_MASK);
+#endif
   }
 
   a->str = s;
@@ -1676,14 +1726,14 @@ done:
 static struct pike_string *realloc_shared_string(struct pike_string *a,
                                                  ptrdiff_t size)
 {
-  if(a->refs==1)
+  if(string_may_modify(a))
   {
     unlink_pike_string(a);
     return realloc_unlinked_string(a, size);
   }else{
     struct pike_string *r=begin_wide_shared_string(size,a->size_shift);
     MEMCPY(r->str, a->str, a->len<<a->size_shift);
-    r->flags |= a->flags & ~15;
+    r->flags |= a->flags & STRING_CHECKED_MASK;
     r->min = a->min;
     r->max = a->max;
     free_string(a);
@@ -1698,7 +1748,7 @@ struct pike_string *new_realloc_shared_string(struct pike_string *a, INT32 size,
 
   r=begin_wide_shared_string(size,shift);
   pike_string_cpy(MKPCHARP_STR(r),a);
-  r->flags |= (a->flags & ~15);
+  r->flags |= (a->flags & STRING_CHECKED_MASK);
   r->min = a->min;
   r->max = a->max;
   free_string(a);
@@ -1826,7 +1876,7 @@ struct pike_string *modify_shared_string(struct pike_string *a,
      
 
   /* We now know that the string has the right character size */
-  if(a->refs==1)
+  if(string_may_modify(a))
   {
     /* One ref - destructive mode */
 
@@ -2314,7 +2364,7 @@ PMOD_EXPORT void init_string_builder_copy(struct string_builder *to,
 PMOD_EXPORT int init_string_builder_with_string (struct string_builder *s,
 						 struct pike_string *str)
 {
-  if (str->refs == 1 && !string_is_short(str)) {
+  if (string_may_modify(str)) {
     /* Unlink the string and use it as buffer directly. */
     unlink_pike_string (str);
     str->flags = STRING_NOT_SHARED;
