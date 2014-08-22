@@ -2361,22 +2361,6 @@ static void low_decode_type(struct decode_data *data)
   UNSET_ONERROR(err1);
 }
 
-
-static void zap_placeholder(struct object *placeholder)
-{
-  /* fprintf(stderr, "Destructing placeholder.\n"); */
-  if (placeholder->storage) {
-    debug_malloc_touch(placeholder);
-    destruct(placeholder);
-  } else {
-    free_program(placeholder->prog);
-    placeholder->prog = NULL;
-    debug_malloc_touch(placeholder);
-  }
-  free_object(placeholder);
-}
-
-
 #define SETUP_DECODE_MEMOBJ(TYPE, U, VAR, ALLOCATE,SCOUR) do {		\
   struct svalue *tmpptr;						\
   struct svalue tmp;							\
