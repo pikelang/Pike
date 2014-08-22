@@ -198,12 +198,12 @@ static void f_linkfarm_read( INT32 args )
  */
 
 
-static void init_linkfarm_struct(void)
+static void init_linkfarm_struct(struct object * UNUSED(o))
 {
   MEMSET( THIS, 0, sizeof( struct linkfarm ) );
 }
 
-static void exit_linkfarm_struct(void)
+static void exit_linkfarm_struct(struct object *o)
 {
   int i;
 
@@ -214,7 +214,7 @@ static void exit_linkfarm_struct(void)
 /*   if( THIS->buffer ) */
 /*     wf_buffer_free( THIS->buffer ); */
 
-  init_linkfarm_struct();
+  init_linkfarm_struct(o);
 }
 
 

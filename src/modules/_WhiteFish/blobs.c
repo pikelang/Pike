@@ -232,19 +232,19 @@ static void f_blobs_read_all_sorted( INT32 UNUSED(args) )
 /*! @endmodule
  */
 
-static void init_blobs_struct(void)
+static void init_blobs_struct(struct object *UNUSED(o))
 {
   MEMSET( THIS, 0, sizeof( struct blobs ) );
   THIS->size = sizeof( struct blobs ) + 128;
 }
 
-static void exit_blobs_struct(void)
+static void exit_blobs_struct(struct object *o)
 {
   int i;
   for( i = 0; i<HSIZE; i++ )
     if( THIS->hash[i] )
       free_hash( THIS->hash[i] );
-  init_blobs_struct();
+  init_blobs_struct(o);
 }
 
 static struct program *blobs_program;

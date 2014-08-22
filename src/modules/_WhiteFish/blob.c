@@ -558,18 +558,19 @@ static void f_blob__cast( INT32 args )
 /*! @endmodule
  */
 
-static void init_blob_struct(void)
+static void init_blob_struct(struct object * UNUSED(o))
 {
   MEMSET( THIS, 0, sizeof( struct blob_data ) );
 }
 
-static void exit_blob_struct(void)
+static void exit_blob_struct(struct object * o)
 {
   int i;
   for( i = 0; i<HSIZE; i++ )
     if( THIS->hash[i] )
       free_hash( THIS->hash[i] );
-  init_blob_struct();
+  /* why? */
+  init_blob_struct(o);
 }
 
 void init_blob_program(void)
