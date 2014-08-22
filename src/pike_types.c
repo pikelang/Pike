@@ -8867,18 +8867,6 @@ void cleanup_pike_types(void)
   free_type(sscanf_76_type_string);
   sscanf_76_type_string = NULL;
 
-  free_string(literal_string_string); literal_string_string = NULL;
-  free_string(literal_int_string); literal_int_string = NULL;
-  free_string(literal_float_string); literal_float_string = NULL;
-  free_string(literal_function_string); literal_function_string = NULL;
-  free_string(literal_object_string); literal_object_string = NULL;
-  free_string(literal_program_string); literal_program_string = NULL;
-  free_string(literal_array_string); literal_array_string = NULL;
-  free_string(literal_multiset_string); literal_multiset_string = NULL;
-  free_string(literal_mapping_string); literal_mapping_string = NULL;
-  free_string(literal_type_string); literal_type_string = NULL;
-  free_string(literal_mixed_string); literal_mixed_string = NULL;
-
 #ifdef PIKE_DEBUG
   remove_callback(pike_type_gc_callback);
 #endif
