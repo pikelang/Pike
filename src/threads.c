@@ -432,13 +432,13 @@ static unsigned LONGEST thread_swaps = 0;
 static unsigned LONGEST check_threads_calls = 0;
 static unsigned LONGEST check_threads_yields = 0;
 static unsigned LONGEST check_threads_swaps = 0;
-static void f__thread_swaps (INT32 args)
+static void f__thread_swaps (INT32 UNUSED(args))
   {push_ulongest (thread_swaps);}
-static void f__check_threads_calls (INT32 args)
+static void f__check_threads_calls (INT32 UNUSED(args))
   {push_ulongest (check_threads_calls);}
-static void f__check_threads_yields (INT32 args)
+static void f__check_threads_yields (INT32 UNUSED(args))
   {push_ulongest (check_threads_yields);}
-static void f__check_threads_swaps (INT32 args)
+static void f__check_threads_swaps (INT32 UNUSED(args))
   {push_ulongest (check_threads_swaps);}
 
 #else
