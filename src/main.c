@@ -97,7 +97,7 @@ static const char *master_file_location = _master_location + CONSTANT_STRLEN(MAS
 static void set_master(const char *file)
 {
   if( master_file_location != _master_location+CONSTANT_STRLEN(MASTER_COOKIE))
-    free(master_file_location);
+    free((void*)master_file_location);
 #undef strdup /* We can't use dmalloc strdup before pike_memory is initialized. */
   master_file_location = strdup( file );
 }
