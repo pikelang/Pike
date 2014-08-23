@@ -321,10 +321,6 @@ Module system
     Maintain the entry and exit hooks for the statically compiled
     modules.
 
-  module_magic.h
-    Compatibility header for old modules that don't use
-    PIKE_MODULE_INIT and PIKE_MODULE_EXIT.
-
   module_support.c
   module_support.h
     Tools for importing and exporting symbols between modules. Also

@@ -19,15 +19,6 @@
 #include "blobs.h"
 #include "linkfarm.h"
 
-/* 7.2 compatibility stuff. */
-
-#ifndef PIKE_MODULE_INIT
-/* must be included last */
-#include "module_magic.h"
-#define PIKE_MODULE_INIT void pike_module_init(void)
-#define PIKE_MODULE_EXIT void pike_module_exit(void)
-#endif
-
 struct  tofree
 {
   Blob **blobs;

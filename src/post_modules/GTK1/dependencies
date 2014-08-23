@@ -3,5 +3,4 @@ dummy.o: $(SRCDIR)/dummy.c \
  $(BUILD_BASE)/machine.h \
  $(PIKE_SRC_DIR)/port.h \
  $(PIKE_SRC_DIR)/dmalloc.h \
- pgtk_config.h \
- $(PIKE_SRC_DIR)/module_magic.h
+ pgtk_config.h
