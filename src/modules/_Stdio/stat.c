@@ -791,7 +791,14 @@ static void stat_values(INT32 args);
 
 static void stat_cast(INT32 args)
 {
-  struct pike_string *type = Pike_sp[-args].u.string;
+  struct pike_string *type;
+
+  if (!args)
+    SIMPLE_TOO_FEW_ARGS_ERROR("Stat cast",1);
+  if (TYPEOF(sp[-args]) != T_STRING)
+    SIMPLE_BAD_ARG_ERROR("cast",1,"string");
+
+  type = Pike_sp[-args].u.string;
   pop_stack(); /* type have at least one more reference. */
 
   if (type == literal_array_string)
@@ -1029,7 +1036,7 @@ void init_stdio_stat(void)
 		 tOr(tFunc(tInt06 tSetvar(0,tInt),tVar(0)),
 		     tFunc(tString tSetvar(1,tOr(tInt,tString)),tVar(1))), 0);
 
-   ADD_FUNCTION("cast",stat_cast,tFunc(tStr,tArray),ID_PRIVATE);
+   ADD_FUNCTION("cast",stat_cast,tFunc(tStr,tArray),ID_PROTECTED);
    ADD_FUNCTION("_sprintf",stat__sprintf,
 		tFunc(tInt tOr(tVoid,tMapping),tString),0);
    ADD_FUNCTION("_indices",stat_indices,
