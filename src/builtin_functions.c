@@ -5467,7 +5467,7 @@ PMOD_EXPORT void f__assembler_debug(INT32 args)
 void f__dump_program_tables(INT32 args)
 {
   struct program *p;
-  int indent = 0;
+  INT_TYPE indent = 0;
 
   ASSERT_SECURITY_ROOT("_dump_program_tables");	/* FIXME: Might want lower. */
   get_all_args("_dump_program_tables", args, "%p.%+", &p, &indent);
