@@ -1029,7 +1029,7 @@ void init_stdio_stat(void)
 		 tOr(tFunc(tInt06 tSetvar(0,tInt),tVar(0)),
 		     tFunc(tString tSetvar(1,tOr(tInt,tString)),tVar(1))), 0);
 
-   ADD_FUNCTION("cast",stat_cast,tFunc(tStr,tArray),ID_PRIVATE);
+   ADD_FUNCTION("cast",stat_cast,tFunc(tStr,tArray),ID_PROTECTED);
    ADD_FUNCTION("_sprintf",stat__sprintf,
 		tFunc(tInt tOr(tVoid,tMapping),tString),0);
    ADD_FUNCTION("_indices",stat_indices,
