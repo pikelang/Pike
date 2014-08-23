@@ -791,7 +791,14 @@ static void stat_values(INT32 args);
 
 static void stat_cast(INT32 args)
 {
-  struct pike_string *type = Pike_sp[-args].u.string;
+  struct pike_string *type;
+
+  if (!args)
+    SIMPLE_TOO_FEW_ARGS_ERROR("Stat cast",1);
+  if (TYPEOF(sp[-args]) != T_STRING)
+    SIMPLE_BAD_ARG_ERROR("cast",1,"string");
+
+  type = Pike_sp[-args].u.string;
   pop_stack(); /* type have at least one more reference. */
 
   if (type == literal_array_string)
