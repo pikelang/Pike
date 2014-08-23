@@ -277,23 +277,6 @@ PMOD_EXPORT extern struct shared_string_location *all_shared_string_locations;
 void PIKE_CONCAT4(convert_,FROM,_to_,TO)(PIKE_CONCAT(p_wchar,TO) *to, const PIKE_CONCAT(p_wchar,FROM) *from, ptrdiff_t len); \
 INT32 PIKE_CONCAT4(compare_,FROM,_to_,TO)(const PIKE_CONCAT(p_wchar,TO) *to, const PIKE_CONCAT(p_wchar,FROM) *from, ptrdiff_t len);
 
-static INLINE int __attribute((unused)) string_is_block_allocated(const struct pike_string * s) {
-    return (s->flags & STRING_ALLOC_MASK) == STRING_ALLOC_BA;
-}
-
-static INLINE int __attribute((unused)) string_is_malloced(const struct pike_string * s) {
-    return (s->flags & STRING_ALLOC_MASK) == STRING_ALLOC_MALLOC;
-}
-
-static INLINE int __attribute((unused)) string_is_static(const struct pike_string * s) {
-    return (s->flags & STRING_ALLOC_MASK) == STRING_ALLOC_STATIC;
-}
-
-static INLINE int __attribute((unused)) string_may_modify(const struct pike_string * s) {
-    return !string_is_static(s) && s->refs == 1;
-}
-
-
 PMOD_EXPORT extern struct pike_string *empty_pike_string;
 
 /* Prototypes begin here */
@@ -390,6 +373,7 @@ PMOD_EXPORT struct pike_string *string_replace(struct pike_string *str,
 void init_shared_string_table(void);
 void cleanup_shared_string_table(void);
 void count_memory_in_strings(size_t *num, size_t *size);
+size_t count_memory_in_string(const struct pike_string *s);
 PMOD_EXPORT void visit_string (struct pike_string *s, int action, void *extra);
 void gc_mark_string_as_referenced (struct pike_string *s);
 unsigned gc_touch_all_strings(void);

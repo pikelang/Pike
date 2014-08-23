@@ -60,6 +60,23 @@ PMOD_EXPORT struct pike_string *empty_pike_string = 0;
 #define low_do_hash(STR,LEN,SHIFT) low_hashmem( (STR), (LEN)<<(SHIFT), hash_prefix_len<<(SHIFT), hashkey )
 #define do_hash(STR) low_do_hash(STR->str,STR->len,STR->size_shift)
 
+static INLINE int __attribute((unused)) string_is_block_allocated(const struct pike_string * s) {
+    return (s->flags & STRING_ALLOC_MASK) == STRING_ALLOC_BA;
+}
+
+static INLINE int __attribute((unused)) string_is_malloced(const struct pike_string * s) {
+    return (s->flags & STRING_ALLOC_MASK) == STRING_ALLOC_MALLOC;
+}
+
+static INLINE int __attribute((unused)) string_is_static(const struct pike_string * s) {
+    return (s->flags & STRING_ALLOC_MASK) == STRING_ALLOC_STATIC;
+}
+
+static INLINE int __attribute((unused)) string_may_modify(const struct pike_string * s) {
+    return !string_is_static(s) && s->refs == 1;
+}
+
+
 /* Returns true if str could contain n. */
 PMOD_EXPORT int string_range_contains( struct pike_string *str, int n )
 {
@@ -754,16 +771,23 @@ PMOD_EXPORT struct pike_string *debug_begin_wide_shared_string(size_t len, int s
    */
   t->flags = STRING_NOT_HASHED|STRING_NOT_SHARED|STRING_ALLOC_STATIC;
   if (bytes <= sizeof(struct pike_string)) {
+    /* FIXME: This can fail with an exception, which would leak
+     * the string t. We should have ba_alloc and ba_xalloc, really.
+     */
     t->str = ba_alloc(&string_allocator);
     t->flags |= STRING_ALLOC_BA;
   } else {
-    t->str = xalloc(bytes);
+    t->str = malloc(bytes);
+    if (!t->str) {
+        ba_free(&string_allocator, t);
+        Pike_error("Out of memory.\n");
+    }
     t->flags |= STRING_ALLOC_MALLOC;
   }
   t->refs = 0;
+  t->size_shift=shift;
   add_ref(t);	/* For DMALLOC */
   t->len=len;
-  t->size_shift=shift;
   DO_IF_DEBUG(t->next = NULL);
   low_set_index(t,len,0);
   return t;
@@ -2253,28 +2277,38 @@ void cleanup_shared_string_table(void)
 #endif /* DO_PIKE_CLEANUP */
 }
 
-static INLINE size_t memory_in_string (struct pike_string *s)
-{
-  return sizeof (struct pike_string) + ((s->len + 1) << s->size_shift);
+size_t count_memory_in_string(const struct pike_string * s) {
+  size_t size = sizeof(struct pike_string);
+
+  switch (s->flags & STRING_ALLOC_MASK) {
+  case STRING_ALLOC_BA:
+      size += sizeof(struct pike_string);
+      break;
+  case STRING_ALLOC_MALLOC:
+      size += PIKE_ALIGNTO(((s->len + 1) << s->size_shift), 4);
+      break;
+  }
+
+  return size;
 }
 
-static void cnt_strings(struct ba_iterator * it, void * data) {
-  size_t * size = data;
-  size_t n = 0;
-
-  do {
-    struct pike_string * s = ba_it_val(it);
-    n += memory_in_string(s);
-  } while (ba_it_step(it));
-
-  *size += n;
-}
-
-void count_memory_in_strings(size_t *num, size_t *size)
+void count_memory_in_strings(size_t *num, size_t *_size)
 {
-  ba_count_all(&string_allocator, num, size);
-  ba_walk(&string_allocator, cnt_strings, size);
-  *size+=htable_size * sizeof(struct pike_string *);
+  unsigned INT32 e;
+  size_t size = 0;
+  *num = num_strings;
+
+  size+=htable_size * sizeof(struct pike_string *);
+
+  for (e = 0; e < htable_size; e++) {
+      struct pike_string * s;
+
+      for (s = base_table[e]; s; s = s->next) {
+          size += count_memory_in_string(s);
+      }
+  }
+
+  *_size = size;
 }
 
 PMOD_EXPORT void visit_string (struct pike_string *s, int action, void *extra)
@@ -2289,7 +2323,7 @@ PMOD_EXPORT void visit_string (struct pike_string *s, int action, void *extra)
       break;
 #endif
     case VISIT_COUNT_BYTES:
-      mc_counted_bytes += memory_in_string (s);
+      mc_counted_bytes += count_memory_in_string (s);
       break;
   }
   visit_leave(s, T_STRING, extra);
