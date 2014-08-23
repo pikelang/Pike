@@ -421,23 +421,22 @@ static size_t bv_ctz(struct bitvector * bv, size_t n) {
     bv_int_t V = *_v & (~BV_NIL << bit);
 
     bit = c * BV_LENGTH;
-    while (!(V)) {
-	if (bit >= bv->length) {
-	    bit = (size_t)-1;
-	    goto RET;
-	}
-	V = *(++_v);
-	bit += (BV_WIDTH*8);
-    }
-    bit += BV_CTZ(V);
-    if (bit >= bv->length) bit = (size_t)-1;
 
-RET:
-    return bit;
+    while (1) {
+        if (V) return bit + BV_CTZ(V);
+
+        bit += BV_LENGTH;
+
+        if (bit >= bv->length) break;
+
+        V = *(++_v);
+    }
+
+    return (size_t)-1;
 }
 
-#ifdef BA_DEBUG
-static void bv_print(struct bitvector * bv) {
+#ifdef PIKE_DEBUG
+static void __attribute((unused)) bv_print(struct bitvector * bv) {
     size_t i;
     for (i = 0; i < bv->length; i++) {
 	fprintf(stderr, "%d", bv_get(bv, i));
@@ -446,12 +445,16 @@ static void bv_print(struct bitvector * bv) {
 }
 #endif
 
-struct ba_block_header * ba_sort_list(const struct ba_page * p,
-				      struct ba_block_header * b,
-				      const struct ba_layout * l) {
+static void ba_sort_free_list(const struct block_allocator *a, struct ba_page *p,
+                              const struct ba_layout *l) {
     struct bitvector v;
     size_t i, j;
-    struct ba_block_header ** t = &b;
+    struct ba_block_header * b = p->h.first;
+    struct ba_block_header ** t = &p->h.first;
+
+    if (!b) return;
+
+    j = 0;
 
     v.length = l->blocks;
     i = bv_byte_length(&v);
@@ -466,11 +469,21 @@ struct ba_block_header * ba_sort_list(const struct ba_page * p,
     while (b) {
 	unsigned INT32 n = ba_block_number(l, p, b);
 	bv_set(&v, n, 1);
+        j++;
+        PIKE_MEMPOOL_ALLOC(a, b, l->block_size);
+        PIKE_MEM_RW_RANGE(b, sizeof(struct ba_block_header));
 	if (b->next == BA_ONE) {
 	    v.length = n+1;
+            PIKE_MEMPOOL_FREE(a, b, l->block_size);
 	    break;
-	} else b = b->next;
+	} else {
+            struct ba_block_header * tmp = b->next;
+            PIKE_MEMPOOL_FREE(a, b, l->block_size);
+            b = tmp;
+        }
     }
+
+    b = NULL;
 
     /*
      * Handle consecutive free blocks in the end, those
@@ -478,9 +491,11 @@ struct ba_block_header * ba_sort_list(const struct ba_page * p,
      */
     if (v.length) {
 	i = v.length-1;
-	while (i && bv_get(&v, i)) { i--; }
+	while (i && bv_get(&v, i)) { i--; j--; }
 	v.length = i+1;
     }
+
+    if (!j) goto last;
 
     j = 0;
 
@@ -489,45 +504,32 @@ struct ba_block_header * ba_sort_list(const struct ba_page * p,
      */
     while ((i = bv_ctz(&v, j)) != (size_t)-1) {
 	*t = BA_BLOCKN(*l, p, i);
+        if (b) PIKE_MEMPOOL_FREE(a, b, l->block_size);
+        b = *t;
+        PIKE_MEMPOOL_ALLOC(a, b, l->block_size);
 	t = &((*t)->next);
 	j = i+1;
     }
 
+last:
     /*
      * The last one
      */
 
     if (v.length < l->blocks) {
-	*t = BA_BLOCKN(*l, p, v.length);
+        if (b) PIKE_MEMPOOL_FREE(a, b, l->block_size);
+	*t = b = BA_BLOCKN(*l, p, v.length);
+        PIKE_MEMPOOL_ALLOC(a, b, l->block_size);
 	(*t)->next = BA_ONE;
-    } else *t = NULL;
-
-    return b;
-}
-
-#ifdef USE_VALGRIND
-static void ba_list_defined(struct block_allocator * a, struct ba_block_header * b) {
-    while (b && b != BA_ONE) {
-        PIKE_MEMPOOL_ALLOC(a, b, a->l.block_size);
-        PIKE_MEM_RW_RANGE(b, sizeof(struct ba_block_header));
-        b = b->next;
+        PIKE_MEMPOOL_FREE(a, b, l->block_size);
+    } else {
+        if (b) PIKE_MEMPOOL_FREE(a, b, l->block_size);
+        PIKE_MEMPOOL_ALLOC(a, t, l->block_size);
+        *t = NULL;
+        PIKE_MEMPOOL_FREE(a, t, l->block_size);
     }
-}
-#else
-#define ba_list_defined(a, b)
-#endif
 
-#ifdef USE_VALGRIND
-static void ba_list_undefined(struct block_allocator * a, struct ba_block_header * b) {
-    while (b && b != BA_ONE) {
-        struct ba_block_header * next = b->next;
-        PIKE_MEMPOOL_FREE(a, b, a->l.block_size);
-        b = next;
-    }
 }
-#else
-#define ba_list_undefined(a, b)
-#endif
 
 /*
  * This function allows iteration over all allocated blocks. Some things are not allowed:
@@ -557,19 +559,16 @@ void ba_walk(struct block_allocator * a, ba_walk_callback cb, void * data) {
     for (i = 0; i < a->size; i++) {
         struct ba_page * p = a->pages[i];
         if (p && p->h.used) {
-            struct ba_block_header * free_list, * free_block;
-
-            ba_list_defined(a, p->h.first);
+            struct ba_block_header *free_block;
 
             if (!(p->h.flags & BA_FLAG_SORTED)) {
-                p->h.first = ba_sort_list(p, p->h.first, &it.l);
+                ba_sort_free_list(a, p, &it.l);
                 p->h.flags |= BA_FLAG_SORTED;
             }
             /* we fake an allocation to prevent the page from being freed during iteration */
             p->h.used ++;
 
-            free_list = p->h.first;
-            free_block = free_list;
+            free_block = p->h.first;
 
             it.cur = BA_BLOCKN(it.l, p, 0);
 
@@ -590,20 +589,31 @@ void ba_walk(struct block_allocator * a, ba_walk_callback cb, void * data) {
                 }
 
                 it.end = free_block;
-                free_block = free_block->next;
+
+                PIKE_MEMPOOL_ALLOC(a, free_block, it.l.block_size);
+                PIKE_MEM_RW_RANGE(free_block, sizeof(struct ba_block_header));
+                {
+                    struct ba_block_header *tmp = free_block->next;
+                    PIKE_MEMPOOL_FREE(a, free_block, it.l.block_size);
+                    free_block = tmp;
+                }
 
 #ifdef PIKE_DEBUG
                 if ((char*)it.end < (char*)it.cur)
                     Pike_fatal("Free list not sorted in ba_walk.\n");
 #endif
-                if ((char*)it.end != (char*)it.cur)
+                if ((char*)it.end != (char*)it.cur) {
+#ifdef PIKE_DEBUG
+                    ba_check_ptr(a, i, it.cur, NULL, __LINE__);
+                    ba_check_ptr(a, i, (char*)it.end - it.l.block_size, NULL, __LINE__);
+#endif
                     cb(&it, data);
+                }
 
                 it.cur = (char*)it.end + it.l.block_size;
             }
 
             /* if the callback throws, this will never happen */
-            ba_list_undefined(a, free_list);
             p->h.used--;
         }
         ba_double_layout(&it.l);
