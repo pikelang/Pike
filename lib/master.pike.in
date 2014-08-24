@@ -226,6 +226,7 @@ protected class Pike_7_2_master
   // compat_environment_copy is used to keep track of any changes
   // performed destructively on the compat_environment mapping.
   // Both should be zero if not in use.
+  // Removed in Pike 7.8.
   protected mapping(string:array(string)) compat_environment;
   protected mapping(string:array(string)) compat_environment_copy;
 
