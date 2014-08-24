@@ -2277,6 +2277,30 @@ void cleanup_shared_string_table(void)
 #endif /* DO_PIKE_CLEANUP */
 }
 
+void count_string_types() {
+  unsigned INT32 e;
+  size_t num_static = 0, num_short = 0;
+
+  for (e = 0; e < htable_size; e++) {
+      struct pike_string * s;
+
+      for (s = base_table[e]; s; s = s->next)
+          switch (s->flags & STRING_ALLOC_MASK) {
+          case STRING_ALLOC_BA:
+              num_short ++;
+              break;
+          case STRING_ALLOC_STATIC:
+              num_static ++;
+              break;
+          }
+  }
+
+  push_static_text("num_short_pike_strings");
+  push_ulongest(num_short);
+  push_static_text("num_static_pike_strings");
+  push_ulongest(num_static);
+}
+
 size_t count_memory_in_string(const struct pike_string * s) {
   size_t size = sizeof(struct pike_string);
 
