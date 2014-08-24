@@ -421,7 +421,7 @@ o Locale.Charset
 o The ancient syntax for arrays (string * was an alias for
   array(string)) has now been removed completely.
 
-o Compatibility for pike versions before 7.2 is no longer available.
+o Compatibility for pike versions before 7.4 is no longer available.
 
 o decode_value can no longer decode programs using the 'old style'
   program encoding.

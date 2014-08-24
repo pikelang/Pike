@@ -1,5 +1,5 @@
 #!/usr/local/bin/pike
-#pike 7.2
+#pike 7.4
 
 // Parse BMML (Black Magic Markup Language) to AutoDoc XML.
 // Written by Fredrik Hubinette, dark sourceror and inventor of BMML.
@@ -805,7 +805,7 @@ void traversedir(string path)
   string _prefix=prefix;
 
 
-  tmp=clone(FILE);
+  tmp=FILE();
   if(tmp->open(path+"/.bmmlrc","r"))
   {
     while(tmp2=tmp->gets())

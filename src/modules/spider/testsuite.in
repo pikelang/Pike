@@ -10,10 +10,6 @@ dnl parse_html
 
 define(test_spider,[[
   test_eq([[
-#pike 7.2
-#pragma no_deprecation_warnings
-$1]],$2)
-  test_eq([[
 #pragma no_deprecation_warnings
 spider.$1]],$2)
 ]])

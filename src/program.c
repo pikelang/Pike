@@ -3029,10 +3029,10 @@ void low_start_new_program(struct program *p,
 #endif
 
   if (c->compilation_depth >= 1) {
-    if(TEST_COMPAT(7,2) || (c->lex.pragmas & ID_SAVE_PARENT))
+    if(c->lex.pragmas & ID_SAVE_PARENT)
     {
       p->flags |= PROGRAM_USES_PARENT;
-    }else if (!(c->lex.pragmas & ID_DONT_SAVE_PARENT)) {
+    } else if (!(c->lex.pragmas & ID_DONT_SAVE_PARENT)) {
       struct pike_string *tmp=findstring("__pragma_save_parent__");
       if(tmp)
       {
@@ -5842,8 +5842,7 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
     if(IDENTIFIERP(n)->id_flags & ID_FINAL)
       my_yyerror("Illegal to redefine 'final' identifier %S", name);
 
-    if(!TEST_COMPAT(7,2) &&
-       IDENTIFIER_IS_VARIABLE(ID_FROM_INT(Pike_compiler->new_program,
+    if(IDENTIFIER_IS_VARIABLE(ID_FROM_INT(Pike_compiler->new_program,
 					  n)->identifier_flags))
     {
       my_yyerror("Illegal to redefine variable %S as constant.", name);
