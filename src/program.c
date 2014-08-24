@@ -10681,8 +10681,7 @@ PMOD_EXPORT int pike_add_function2(const char *name, void (*cfun)(INT32),
   return ret;
 }
 
-PMOD_EXPORT int quick_add_function(const char *name,
-				   int name_length,
+PMOD_EXPORT int low_quick_add_function(const struct pike_string * name_tmp,
 				   void (*cfun)(INT32),
 				   const char *type,
 				   int UNUSED(type_length),
@@ -10690,11 +10689,9 @@ PMOD_EXPORT int quick_add_function(const char *name,
 				   unsigned opt_flags)
 {
   int ret;
-  struct pike_string *name_tmp;
   struct pike_type *type_tmp;
   union idptr tmp;
 /*  fprintf(stderr,"ADD_FUNC: %s\n",name); */
-  name_tmp = make_shared_binary_string(name, name_length);
   type_tmp = make_pike_type(type);
 
   if(cfun)
@@ -10885,7 +10882,7 @@ void init_program(void)
   lfun_ids = allocate_mapping(NUM_LFUNS);
   lfun_types = allocate_mapping(NUM_LFUNS);
   for (i=0; i < NELEM(lfun_names); i++) {
-    lfun_strings[i] = make_shared_string(lfun_names[i]);
+    lfun_strings[i] = make_shared_static_string(lfun_names[i], strlen(lfun_names[i]), eightbit);
 
     SET_SVAL(id, T_INT, NUMBER_NUMBER, integer, i);
     SET_SVAL(key, T_STRING, 0, string, lfun_strings[i]);

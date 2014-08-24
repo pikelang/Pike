@@ -524,7 +524,10 @@ static INLINE int __attribute__((unused)) string_has_null( struct pike_string *x
  ((struct pike_string *)debug_malloc_pass(debug_make_shared_binary_pcharp((X),(Y))))
 
 #else
-#define make_shared_string debug_make_shared_string
+#define make_shared_string(s) (__builtin_constant_p(s)                                  \
+                               ? make_shared_static_string(s, strlen(s), eightbit)       \
+                               : debug_make_shared_string(s))
+
 #define make_shared_binary_string debug_make_shared_binary_string
 
 #define make_shared_string0 debug_make_shared_string0

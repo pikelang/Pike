@@ -1019,13 +1019,12 @@ struct program *compile(struct pike_string *aprog,
 PMOD_EXPORT int pike_add_function2(const char *name, void (*cfun)(INT32),
 				   const char *type, unsigned flags,
 				   unsigned opt_flags);
-PMOD_EXPORT int quick_add_function(const char *name,
-				   int name_length,
-				   void (*cfun)(INT32),
-				   const char *type,
-				   int type_length,
-				   unsigned flags,
-				   unsigned opt_flags);
+PMOD_EXPORT int low_quick_add_function(const struct pike_string *name_tmp,
+                                       void (*cfun)(INT32),
+                                       const char *type,
+                                       int type_length,
+                                       unsigned flags,
+                                       unsigned opt_flags);
 void check_all_programs(void);
 void placeholder_index(INT32 args);
 void init_program(void);
@@ -1083,6 +1082,12 @@ static INLINE int __attribute__((unused)) FIND_LFUN(struct program * p, int lfun
     if (p->flags & PROGRAM_FIXED && lfun < NUM_LFUNS) return p->lfuns[lfun];
     return low_find_lfun(p, lfun);
 }
+
+#define quick_add_function(NAME, NLEN, FUNC, TYPE, TLEN, FLAGS, OPT)            \
+    low_quick_add_function(__builtin_constant_p(NAME)                           \
+                           ? make_shared_static_string(NAME, NLEN, eightbit)    \
+                           : make_shared_binary_string(NAME, NLEN),             \
+                           FUNC, TYPE, TLEN, FLAGS, OPT)
 
 
 #ifndef PIKE_USE_MACHINE_CODE

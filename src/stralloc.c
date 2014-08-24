@@ -819,6 +819,18 @@ PMOD_EXPORT struct pike_string * make_shared_static_string(const char *str, size
     s = make_static_string(str, len, shift);
     link_pike_string(s, h);
   } else {
+
+    if (!string_is_static(s)) {
+        if (string_is_block_allocated(s)) {
+            ba_free(&string_allocator, s->str);
+        } else {
+            free(s->str);
+        }
+        s->flags &= ~STRING_ALLOC_MASK;
+        s->flags |= STRING_ALLOC_STATIC;
+        s->str = str;
+    }
+
     add_ref(s);
   }
 
