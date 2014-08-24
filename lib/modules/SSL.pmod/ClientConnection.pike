@@ -233,6 +233,14 @@ protected void create(Context ctx, string(8bit)|void server_name)
   send_packet(client_hello(server_name));
 }
 
+//! Renegotiate the connection (client initiated).
+//!
+//! Sends a @[client_hello] to force a new round of handshaking.
+void send_renegotiate()
+{
+  send_packet(client_hello(), PRI_application);
+}
+
 //! Do handshake processing. Type is one of HANDSHAKE_*, data is the
 //! contents of the packet, and raw is the raw packet received (needed
 //! for supporting SSLv2 hello messages).

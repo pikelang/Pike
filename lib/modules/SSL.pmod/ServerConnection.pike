@@ -151,6 +151,14 @@ Packet certificate_request_packet(Context context)
 				 struct->pop_data());
 }
 
+//! Renegotiate the connection (server initiated).
+//!
+//! Sends a @[hello_request] to force a new round of handshaking.
+void send_renegotiate()
+{
+  send_packet(hello_request(), PRI_application);
+}
+
 int(0..1) not_ecc_suite(int cipher_suite)
 {
   array(int) suite = [array(int)]CIPHER_SUITES[cipher_suite];

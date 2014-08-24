@@ -415,6 +415,22 @@ void send_packet(Packet packet, int|void priority)
 	          PACKET_handshake : PRI_urgent,
 		  PACKET_heartbeat : PRI_urgent,
 		  PACKET_application_data : PRI_application ])[packet->content_type];
+
+  if ((state & CONNECTION_local_closing) && (priority >= PRI_application)) {
+    SSL3_DEBUG_MSG("send_packet: Ignoring application packet during close.\n");
+    return;
+  }
+
+  if ((packet->content_type == PACKET_handshake) &&
+      (priority == PRI_application)) {
+    // Assume the packet is either hello_request or client_hello,
+    // and that we want to renegotiate.
+    expect_change_cipher = 0;
+    certificate_state = 0;
+    state = [int(0..0)|ConnectionState](state | CONNECTION_handshaking);
+    handshake_state = STATE_wait_for_hello;
+  }
+
   SSL3_DEBUG_MSG("SSL.Connection->send_packet: type %d, pri %d, %O\n",
 		 packet->content_type, priority, packet->fragment[..5]);
   switch (priority)
@@ -495,6 +511,9 @@ void send_close()
   send_packet(alert(ALERT_warning, ALERT_close_notify,
                     "Closing connection.\n"), PRI_application);
 }
+
+//! Renegotiate the connection.
+void send_renegotiate();
 
 //! Send an application data packet. If the data block is too large
 //! then as much as possible of the beginning of it is sent. The size
