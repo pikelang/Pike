@@ -4,6 +4,7 @@ START_MARKER
 test_compile_any([[#pike 7.4]])
 test_compile_any([[#pike 7.6]])
 test_compile_any([[#pike 7.8]])
+test_compile_any([[#pike 8.0]])
 
 cond([[all_constants()->_verify_internals]],
 [[
