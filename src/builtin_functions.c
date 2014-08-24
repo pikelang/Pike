@@ -7355,13 +7355,15 @@ PMOD_EXPORT void f__memory_usage(INT32 args)
   }
   push_ulongest(size);
 
+  count_string_types();
+
 #endif
 
 #define COUNT(TYPE) do {					\
     PIKE_CONCAT3(count_memory_in_, TYPE, s)(&num, &size);	\
     push_static_text("num_" #TYPE "s");				\
     push_ulongest(num);						\
-    push_text(#TYPE "_bytes");					\
+    push_static_text(#TYPE "_bytes");				\
     push_ulongest(size);					\
   } while(0)
 
