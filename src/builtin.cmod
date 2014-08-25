@@ -3107,88 +3107,6 @@ PIKECLASS Buffer
     REF_RETURN Pike_fp->current_object;
   }
 
-  /*! @decl int add(string|String.Buffer ... data)
-   *!
-   *!   Adds @[data] to the buffer.
-   *!
-   *! @returns
-   *!   Returns the size of the buffer.
-   *!
-   *! @note
-   *!   Pike 7.8 and earlier did not support adding @[String.Buffer]s
-   *!   directly.
-   *!
-   *! @seealso
-   *!   @[addat()]
-   */
-  PIKEFUN int add( string|Buffer ... arg1 )
-    rawtype tFuncV(tNone, tOr(tString, tObjIs_BUFFER), tIntPos);
-  {
-    struct Buffer_struct *str = THIS;
-    int init_from_arg0 = 0, j;
-
-    for (j=0; j < args; j++) {
-      if (TYPEOF(Pike_sp[j-args]) == PIKE_T_STRING) {
-      } else if ((TYPEOF(Pike_sp[j-args]) != PIKE_T_OBJECT) ||
-		 (Pike_sp[j-args].u.object->prog != Buffer_program)) {
-	SIMPLE_BAD_ARG_ERROR("add", j+1, "string|String.Buffer");
-      }
-    }
-
-    if (!str->str.s && args) {
-      ptrdiff_t sum = 0;
-      int shift = 0;
-      for (j=0; j < args; j++) {
-	struct pike_string *a;
-	if (TYPEOF(Pike_sp[j-args]) == PIKE_T_STRING) {
-	  a = Pike_sp[j-args].u.string;
-	} else {
-	  a = OBJ2_BUFFER(Pike_sp[j-args].u.object)->str.s;
-	  if (!a) continue;
-	}
-	sum += a->len;
-	shift |= a->size_shift;
-      }
-      if (sum < str->initial)
-	sum = str->initial;
-      else if (sum > str->initial)
-	sum <<= 1;
-      shift = shift & ~(shift >> 1);
-
-      if ((TYPEOF(Pike_sp[-args]) == PIKE_T_STRING) &&
-	  (shift == Pike_sp[-args].u.string->size_shift) &&
-	  init_string_builder_with_string (&str->str, Pike_sp[-args].u.string)) {
-	mark_free_svalue (Pike_sp - args);
-	if (sum > str->str.s->len)
-	  string_build_mkspace (&str->str, sum - str->str.s->len, shift);
-	init_from_arg0 = 1;
-      }
-      else
-	init_string_builder_alloc(&str->str, sum, shift);
-
-      /* We know it will be a string that really is this wide. */
-      str->str.known_shift = shift;
-    }
-
-    for( j = init_from_arg0; j<args; j++ )
-    {
-      struct pike_string *a;
-      if (TYPEOF(Pike_sp[j-args]) == PIKE_T_STRING) {
-	a = Pike_sp[j-args].u.string;
-      } else {
-	a = OBJ2_BUFFER(Pike_sp[j-args].u.object)->str.s;
-	if (!a) continue;
-      }
-      string_builder_shared_strcat( &str->str, a );
-    }
-
-    if (str->str.s) {
-      RETURN str->str.s->len;
-    } else {
-      RETURN 0;
-    }
-  }
-
   /*! @decl int addat(int(0..) pos, string|String.Buffer ... data)
    *!
    *!   Adds @[data] to the buffer, starting at position @[pos].
@@ -3280,6 +3198,29 @@ PIKECLASS Buffer
     }
 
     RETURN str->str.s ? str->str.s->len : 0;
+  }
+
+  /*! @decl int add(string|String.Buffer ... data)
+   *!
+   *!   Adds @[data] to the buffer.
+   *!
+   *! @returns
+   *!   Returns the size of the buffer.
+   *!
+   *! @note
+   *!   Pike 7.8 and earlier did not support adding @[String.Buffer]s
+   *!   directly.
+   *!
+   *! @seealso
+   *!   @[addat()]
+   */
+  PIKEFUN int add( string|Buffer ... arg1 )
+    rawtype tFuncV(tNone, tOr(tString, tObjIs_BUFFER), tIntPos);
+  {
+    struct Buffer_struct *str = THIS;
+    push_int(str->str.s ? str->str.s->len : 0);
+    stack_revroll(++args);
+    f_Buffer_addat(args);
   }
 
   /*! @decl void putchar(int c)
