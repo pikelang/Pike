@@ -115,6 +115,10 @@
  *!  with no mmap input.
  *!
  *!  Multiple socket output without regular file output illegal.
+ *!
+ *! @note
+ *! It is preferable to use the @[Shuffler] API, it is significantly
+ *! more flexible.
  */
 
 static struct program *pipe_program, *output_program;
