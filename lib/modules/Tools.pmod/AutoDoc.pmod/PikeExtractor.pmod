@@ -392,8 +392,8 @@ private class Extractor {
           string what = meta->type;
           switch(what) {
             case "module":
-              if (c->objtype == "class" && what == "module")
-                extractorError("@module not allowed in class files");
+              // if (c->objtype == "class" && what == "module")
+              //   extractorError("@module not allowed in class files");
               // fall through
             case "class":
               if (sizeof(decls))

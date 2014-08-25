@@ -346,7 +346,7 @@ string parse_module(Node n, void|int noheader) {
   ret += parse_children(n, "module", parse_module, noheader);
 
   if(header)
-    ret += "</dd></dl>"; 
+    ret += "</dd></dl>";
 
   return ret;
 }
@@ -501,7 +501,9 @@ string range_type( string type, Node min, Node max )
 
     if( low == 0 && high && (high+1)->popcount() == 1 )
     {
-        return type+"("+strlen((high)->digits(2))+"bit)";
+      if( high == 1 && type == "int" )
+        return "bool";
+      return type+"("+strlen((high)->digits(2))+"bit)";
     }
     return type+"("+low+".."+high+")";
 }
@@ -1038,7 +1040,7 @@ void resolve_class_paths(Node n, string|void path, Node|void parent)
   case "":
   case "docgroup":
     break;
-    
+
   case "manual":
   case "dir":
   case "file":
@@ -1192,8 +1194,55 @@ string parse_not_doc(Node n) {
       if(!c->get_first_element("returntype"))
 	error( "No returntype element in method element.\n" );
 #endif
-      switch( string method = c->get_attributes()->name )
+
+      void emit_default_func()
       {
+          ret += "<tt>";
+          cc = c->get_first_element("modifiers");
+          if(cc) ret += map(cc->get_children(), parse_type)*" " + " ";
+          ret += parse_type(get_first_element(c->get_first_element("returntype")));
+          ret += " ";
+          ret += c->get_attributes()->class_path;
+          ret += "<b><font color='#000066'>" + c->get_attributes()->name + "</font>(</b>";
+          ret += parse_not_doc( c->get_first_element("arguments") );
+          ret += "<b>)</b>";
+          ret += "</tt>";
+      };
+      if( class_name == "" )
+      {
+        emit_default_func();
+      }
+      else switch( string method = c->get_attributes()->name )
+      {
+        case "_get_iterator":
+          ret += "<tt><font color='#202020'>"+class_name+"</font> <font color='#000066'>a</font>;<br/>\n";
+          /* NOTE: We could get index and value types from the
+             iterator type here.  Doing so might be somewhat hard,
+             however.
+          */
+          ret += "foreach( a; index; value ) or<br></tt>";
+          emit_default_func();
+          break;
+
+        case "pow":
+          ret += "<tt>"+parse_type(get_first_element(c->get_first_element("returntype")));
+          ret += " res = "+method+"(<font color='#000066'>["+class_name+"]a</font>, b) or <br></tt>";
+          emit_default_func();
+          break;
+
+        case "sqrt":
+          ret += "<tt>"+parse_type(get_first_element(c->get_first_element("returntype")));
+          ret += " res = "+method+"(<font color='#000066'>["+class_name+"]a</font>) or <br></tt>";
+          emit_default_func();
+          break;
+/*
+        case "_is_type":
+          overloads all the TYPEp() functions and cast.
+
+          ret += "<tt>bool stringp(["+class_name+"])a</font>) or <br></tt>";
+          emit_default_func();
+          break;
+*/
 	case "create":
 	  ret += "<tt>" +class_name; // Check for more children
 	  ret += " ";
@@ -1202,53 +1251,149 @@ string parse_not_doc(Node n) {
 	  ret += "<b>)</b></tt>";
 	  break;
 
-    case "__hash":
-        method = method[1..];
-    case "_random":
-    case "_sizeof":
-    case "_indices":
-    case "_values":
-        /* simple overload type lfuns. */
-        ret += "<tt>";
-        ret += parse_type(get_first_element(c->get_first_element("returntype")));
-        ret += " ";
-        ret += "<b><font color='#000066'>"+method[1..]+"</font>(</b> ";
-        ret += "<font color='#202020'>"+class_name+"</font> <font color='#f000f0'>arg</font>";
-        ret += " <b>)</b>";
-        break;
+        case "__hash":
+          method = "_hash_value";
 
-    case "_m_delete":
-    case "_equal":
-    case "_search":
-        ret += "<tt>";
-        ret += parse_type(get_first_element(c->get_first_element("returntype")));
-        ret += " <b><font color='#000066'>"+method[1..];
-        ret += "</font>(</b>"+class_name+" <font color='#F000F0'>from</font>, ";
-        ret += parse_not_doc( c->get_first_element("arguments") );
-        ret += "<b>)</b></tt>";
-        break;
+        case "_random":
+        case "_sqrt":
+        case "_sizeof":
+        case "_indices":
+        case "_values":
+          /* simple overload type lfuns. */
+          ret += "<tt>";
+          ret += parse_type(get_first_element(c->get_first_element("returntype")));
+          ret += " ";
+          ret += "<b><font color='#000066'>"+method[1..]+"</font>(</b> ";
+          ret += "<font color='#202020'>"+class_name+"</font> <font color='#f000f0'>arg</font>";
+          ret += " <b>)</b>";
+          break;
 
-    case "_sprintf":
-        ret += "<tt>";
-        ret += "<font color='#202020'>string</font> ";
-        ret += ("<b><font color='#000066'>sprintf</font>("
-                "</b><font color='#202020'>string</font> "
-                "<font color='#F000F0'>format</font>, ... <font color='#202020'>"
-                +class_name+"</font> <font color='#F000F0'>"
-                "arg</font> ... <b>)</b>");
-        break;
+        case "_m_delete":
+        case "_equal":
+        case "_search":
+          ret += "<tt>";
+          ret += parse_type(get_first_element(c->get_first_element("returntype")));
+          ret += " <b><font color='#000066'>"+method[1..];
+          ret += "</font>(</b>"+class_name+" <font color='#F000F0'>from</font>, ";
+          ret += parse_not_doc( c->get_first_element("arguments") );
+          ret += "<b>)</b></tt>";
+          break;
 
-	default:
-	  ret += "<tt>";
-	  cc = c->get_first_element("modifiers");
-	  if(cc) ret += map(cc->get_children(), parse_type)*" " + " ";
-	  ret += parse_type(get_first_element(c->get_first_element("returntype")));
-	  ret += " ";
-	  ret += c->get_attributes()->class_path;
-	  ret += "<b><font color='#000066'>" + c->get_attributes()->name + "</font>(</b>";
-	  ret += parse_not_doc( c->get_first_element("arguments") );
-	  ret += "<b>)</b></tt>";
-	  break;
+        case "_sprintf":
+          ret += "<tt>";
+          ret += "<font color='#202020'>string</font> ";
+          ret += ("<b><font color='#000066'>sprintf</font>("
+                  "</b><font color='#202020'>string</font> "
+                  "<font color='#F000F0'>format</font>, ... <font color='#202020'>"
+                  +class_name+"</font> <font color='#F000F0'>"
+                  "arg</font> ... <b>)</b>");
+          break;
+
+        case "_decode":
+          ret += "<tt>";
+          ret += "<font color='#202020'>"+class_name+"</font> ";
+          ret += ("<b><font color='#000066'>decode_value</font>("
+                  "</b><font color='#202020'>string(8bit)</font> "
+                  "<font color='#F000F0'>data</font>)</b>");
+          break;
+        case "_encode":
+          ret += "<tt>";
+          ret += "<font color='#202020'>string(8bit)</font> ";
+          ret += ("<b><font color='#000066'>encode_value</font>("
+                  "</b><font color='#202020'>"+class_name+"</font> "
+                  "<font color='#F000F0'>data</font>)</b>");
+          break;
+
+        case "cast":
+          {
+            ret += "<tt>";
+
+            string base =
+              "<b>(</b>_@_TYPE_@_<b>)</b><font color='#202020'>"+class_name+"</font>()";
+
+            multiset seen = (<>);
+            void add_typed( string type )
+            {
+              if( type == "mixed" )
+              {
+                add_typed("int"); ret +="<br>";
+                add_typed("float"); ret +="<br>";
+                add_typed("string"); ret +="<br>";
+                add_typed("array"); ret +="<br>";
+                add_typed("mapping"); ret +="<br>";
+                add_typed("multiset");
+                return;
+              }
+              if( !seen[type]++ )
+                ret += replace(base,"_@_TYPE_@_", type);
+            };
+
+            void output_from_type(Node x, bool toplevel )
+            {
+              if( x->get_node_type() != XML_ELEMENT ) return;
+              switch( x->get_any_name() )
+              {
+                case "object": /*add_typed("object"); */break; /* this is a no-op.. */
+                case "int":
+                case "float":
+                case "array":
+                case "mapping":
+                case "string":
+                case "function":
+                  add_typed(parse_type(x));
+                  if( !toplevel )
+                    ret += "<br>";
+                  break;
+                case "mixed":
+                  add_typed("mixed");
+                  if( !toplevel )
+                    ret += "<br>";
+                break;
+                case "or":
+                  if( toplevel )
+                    map( x->get_children(), output_from_type, false );
+              }
+            };
+            output_from_type(get_first_element(c->get_first_element("returntype")),
+                             true);
+            if( !sizeof(seen) )
+              add_typed("mixed");
+          };
+          break;
+
+        default:
+          if( string pat = Tools.AutoDoc.PikeObjects.lfuns[method] )
+          {
+            Node a = c->get_first_element("arguments") ;
+            array(Node) args = a->get_elements("argument");
+            mapping repl = (["OBJ":"<font color='#000066'>"+class_name+"()</font>"]);
+            /* there are a few cases:  obj OP arg - we do not want types
+               RET func(op,ARG) - we do want types.
+
+               This code should only be triggered for the first case.
+               Hence, no types wanted.
+            */
+            if( sizeof(args) > 0 )
+            {
+              repl->x = "<font color='#005080'>"+args[0]->get_attributes()->name+"</font>";
+            }
+            if( sizeof(args) > 1 )
+            {
+              repl->y = "<font color='#005080'>"+args[1]->get_attributes()->name+"</font>";
+            }
+
+            ret += "<tt>";
+            if( method != "`+=" && method != "`[]=" && method != "`->=")
+            {
+              ret += parse_type(get_first_element(c->get_first_element("returntype")));
+              ret += " res = ";
+            }
+            ret += replace( pat, repl );
+            ret += "</tt>";
+            break;
+          }
+          emit_default_func( );
+          break;
       }
       break;
 

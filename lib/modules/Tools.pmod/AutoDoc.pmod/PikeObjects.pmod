@@ -25,16 +25,15 @@ constant lfuns = ([
   "`==": "OBJ == x",
   "`<": "OBJ < x",
   "`>": "OBJ > x",
-  "__hash":"hash(OBJ)",
+  "__hash":"hash_value(OBJ)",
   "cast":"(cast)OBJ",
   "`!": "!OBJ",
-  "`[]":"OBJ[x]",
-  "`[]=":"OBJ[x]=y",
-  "`->":"OBJ->x",
-  "`->=":"OBJ->x=y",
+  "`[]":"OBJ[ x ]",
+  "`->":"OBJ->X",
   "_sizeof":"sizeof(OBJ)",
   "_indices":"indices(OBJ)",
   "_values":"values(OBJ)",
+  "_size_object":"Debug.size_object(OBJ)",
   "`()":"OBJ()",
   "``+":"x + OBJ",
   "``-":"x - OBJ",
@@ -47,7 +46,9 @@ constant lfuns = ([
   "``/":"x / OBJ",
   "``%":"x % OBJ",
 
-  "`+=":"(OBJ += x)", /* not really implemented... */
+  "`->=":"OBJ->X = y",
+  "`[]=":"OBJ[ x ] = y",
+  "`+=":"OBJ += x", /* not really all that nice looking... */
 
   "`-=":"NOTIMPL",
   "`&=":"NOTIMPL",
@@ -63,12 +64,12 @@ constant lfuns = ([
   "`>=":"NOTIMPL",
   "`!=":"NOTIMPL",
 
-  "_is_type":"is_type(OBJ)",
+  "_is_type":"is_type(OBJ)",/*  requires more work..*/
   "_sprintf":"sprintf(...,OBJ)",
   "_equal":"equal(OBJ,x)",
   "_m_delete":"m_delete(OBJ,x)",
   "_get_iterator":"foreach(OBJ;...)",
-  "`[..]":"OBJ[a..b]",
+  "`[..]":"OBJ[start..end]",
   /* NOTE: After this point there are only fake lfuns. */
   "_search":"search(OBJ,x)",
   "_random":"random(OBJ)",
@@ -78,7 +79,8 @@ constant lfuns = ([
   "_deserialize",
   "_size_object",
 */
-
+  // "sqrt":"sqrt(OBJ)",
+  // "pow":"pow(OBJ)",
   "_decode":"OBJ = decode_value(...)",
   "_encode":"str = encode_value(OBJ)",
 ]);
