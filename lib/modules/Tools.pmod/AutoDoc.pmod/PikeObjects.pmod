@@ -47,7 +47,7 @@ constant lfuns = ([
   "``/":"x / OBJ",
   "``%":"x % OBJ",
 
-  "`+=":"OBJ = OBJ + x", /* not really implemented... */
+  "`+=":"(OBJ += x)", /* not really implemented... */
 
   "`-=":"NOTIMPL",
   "`&=":"NOTIMPL",
@@ -70,13 +70,17 @@ constant lfuns = ([
   "_get_iterator":"foreach(OBJ;...)",
   "`[..]":"OBJ[a..b]",
   /* NOTE: After this point there are only fake lfuns. */
-  "_search":"search(OBJ,..)",
+  "_search":"search(OBJ,x)",
   "_random":"random(OBJ)",
-  /*  "_types",
+  /*
+    "_types",
   "_serialize",
   "_deserialize",
   "_size_object",
 */
+
+  "_decode":"OBJ = decode_value(...)",
+  "_encode":"str = encode_value(OBJ)",
 ]);
 
 //========================================================================
@@ -901,8 +905,10 @@ class _Class_or_Module {
 
 //! Represents a class.
 class Class {
+
   //!
   inherit _Class_or_Module;
+
   //!
   constant objtype = "class";
 }
