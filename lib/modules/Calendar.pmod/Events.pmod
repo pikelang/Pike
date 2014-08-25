@@ -16,6 +16,37 @@ void read_all_data()
       combine_path(__FILE__,"../events/regional"));
 }
 
+
+//! The Event system
+//!
+//! Q:  How do I find out which days are red in a specific region?
+//!
+//! A:  Events.<region>
+//!
+//!     - contains the events for the region, as a SuperEvent.
+//!     You can ask this object to filter out the holidays,
+//!
+//! @code
+//!        Events.se.holidays();
+//! @endcode
+//!
+//!     Which will be a superevent containing only holidays.
+//!
+//!     To use this information, you can for instance use ->scan,
+//!     here in an example to see what red days there were in Sweden
+//!     in 2001
+//!
+//! @code
+//!       > Calendar.Events.se->filter_flag("h")->scan(Calendar.Month());
+//!       Result: ({ /* 6 elements */
+//!      		   Day(Sun 7 Jan 2001),
+//!      		   Day(Sun 14 Jan 2001),
+//!      		   Day(Sun 21 Jan 2001),
+//!      		   Day(Sun 28 Jan 2001),
+//!      		   Day(Sat 6 Jan 2001),
+//!      		   Day(Mon 1 Jan 2001)
+//! @endcode
+
 Event.Event make_event(string source)
 {
    string id;
@@ -200,6 +231,7 @@ string read_all_namedays()
    return master()->master_read_file(
       combine_path(__FILE__,"../events/namedays"));
 }
+
 
 Event.Namedays find_namedays(string region)
 {
@@ -392,6 +424,12 @@ array all_regions()
 }
 
 // -----------------------------------------------------------------------
+
+//! @decl Event.Event `[](string region)
+//! @decl Event.Event `->(string region)
+//!
+//! return the Event object for the specified region or the specified
+//! named event.
 
 program|Event.Event `[](string s)
 {
