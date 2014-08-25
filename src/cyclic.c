@@ -11,19 +11,28 @@
 
 static CYCLIC *cyclic_hash[CYCLIC_HASH_SIZE];
 
+static size_t cyclic_hash_func(CYCLIC *c)
+{
+  size_t h;
+
+  h = PTR_TO_INT(c->id);
+  h *= 33;
+  h ^= PTR_TO_INT(c->a);
+  h *= 33;
+  h ^= PTR_TO_INT(c->b);
+  h *= 33;
+  h ^= PTR_TO_INT(c->th);
+  h *= 33;
+
+  return h % CYCLIC_HASH_SIZE;
+}
+
 static void low_unlink_cyclic(CYCLIC *c)
 {
   size_t h;
   CYCLIC **p;
-  h=PTR_TO_INT(c->id);
-  h*=33;
-  h|=PTR_TO_INT(c->a);
-  h*=33;
-  h|=PTR_TO_INT(c->b);
-  h*=33;
-  h|=PTR_TO_INT(c->th);
-  h*=33;
-  h%=CYCLIC_HASH_SIZE;
+
+  h = cyclic_hash_func(c);
 
   for(p=cyclic_hash+h;*p;p=&(p[0]->next))
   {
@@ -36,7 +45,11 @@ static void low_unlink_cyclic(CYCLIC *c)
       return;
     }
   }
+#ifdef PIKE_DEBUG
+  Pike_fatal("Unlink cyclic on lost cyclic struct (%s).\n", c->id);
+#else
   Pike_fatal("Unlink cyclic on lost cyclic struct.\n");
+#endif
 }
 
 PMOD_EXPORT void unlink_cyclic(CYCLIC *c)
@@ -52,18 +65,16 @@ PMOD_EXPORT void *begin_cyclic(CYCLIC *c,
 			       void *b)
 {
   size_t h;
-  void *ret=0;
+  void *ret = 0;
   CYCLIC *p;
 
-  h=PTR_TO_INT(id);
-  h*=33;
-  h|=PTR_TO_INT(a);
-  h*=33;
-  h|=PTR_TO_INT(b);
-  h*=33;
-  h|=PTR_TO_INT(th);
-  h*=33;
-  h%=CYCLIC_HASH_SIZE;
+  c->ret = (void *)(ptrdiff_t)1;
+  c->a = a;
+  c->b = b;
+  c->id = id;
+  c->th = th;
+
+  h = cyclic_hash_func(c);
 
   for(p=cyclic_hash[h];p;p=p->next)
   {
@@ -72,18 +83,13 @@ PMOD_EXPORT void *begin_cyclic(CYCLIC *c,
 #ifdef CYCLIC_DEBUG
       fprintf (stderr, "%s: BEGIN_CYCLIC a=%p b=%p: found cycle\n", id, a, b);
 #endif
-      ret=p->ret;
+      ret = p->ret;
       break;
     }
   }
 
-  c->ret=(void *)(ptrdiff_t)1;
-  c->a=a;
-  c->b=b;
-  c->id=id;
-  c->th=th;
-  c->next=cyclic_hash[h];
-  cyclic_hash[h]=c;
+  c->next = cyclic_hash[h];
+  cyclic_hash[h] = c;
   SET_ONERROR(c->onerr, low_unlink_cyclic, c);
 #ifdef CYCLIC_DEBUG
   if (!ret) fprintf (stderr, "%s: BEGIN_CYCLIC a=%p b=%p: no cycle\n", id, a, b);
