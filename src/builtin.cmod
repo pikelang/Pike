@@ -3081,6 +3081,81 @@ PIKECLASS Buffer
     push_undefined();
   }
   
+  /*! @decl int|Buffer `[](int index, int|void end_or_none)
+   */
+  PIKEFUN int|Buffer `[](int index, int|void end_or_none)
+  {
+    struct Buffer_struct *str = THIS;
+    struct pike_string *s;
+    unsigned len = 0,shift;
+    void *p;
+
+    if (s = str->str.s)
+      len = s->len, shift = s->size_shift, p = s->str;
+
+    if (args==1) {
+      pop_n_elems(args);
+      if (index<0)
+        index += len;
+      if (index<0 || index>=len)
+	index_error("Buffer->`[]", Pike_sp, args, NULL, Pike_sp,
+		    "Index %"PRINTPIKEINT"d is out of array range 0..%d,\n",
+		    index, len-1);
+      p = (char*)p+(index<<shift);
+      push_int (!shift    ? *(p_wchar0*)p
+               : shift==1 ? *(p_wchar1*)p
+               :            *(p_wchar2*)p);
+    } else {
+      INT_TYPE end = end_or_none->u.integer;
+      struct object *res;
+      struct Buffer_struct *str2;
+
+      pop_n_elems(args);
+      res = fast_clone_object( Buffer_program );
+      str2 = OBJ2_BUFFER( res );
+      if (index < 0)
+        index = 0;
+      if (end >= len)
+        end = len-1;
+      str2->initial = end -= index-1;
+      init_string_builder_alloc (&str2->str, end, shift);
+      memcpy (str2->str.s->str, (char*)p+(index<<shift), end<<shift);
+      str2->str.s->len = end;
+      if( (Pike_fp->current_object->flags & OBJECT_CLEAR_ON_EXIT) )
+          res->flags |= OBJECT_CLEAR_ON_EXIT;
+      push_object (res);
+    }
+  }
+
+  /*! @decl int `[]=(int index, int ch)
+   */
+  PIKEFUN int `[]=(int index, int ch)
+  {
+    struct Buffer_struct *str = THIS;
+    struct pike_string *s;
+    unsigned len = 0,shift;
+    void *p;
+
+    pop_n_elems(args);
+    if (s = str->str.s)
+      len = s->len, shift = s->size_shift, p = s->str;
+
+    if (index<0)
+      index += len;
+    if (index<0 || index>=len)
+      index_error("Buffer->`[]=", Pike_sp, args, NULL, Pike_sp,
+        "Index %"PRINTPIKEINT"d is out of array range 0..%d,\n",
+        index, len-1);
+    p = (char*)p+(index<<shift);
+    if (!shift)
+      *(p_wchar0*)p = ch;
+    else if(shift==1)
+      *(p_wchar1*)p = ch;
+    else
+      *(p_wchar2*)p = ch;
+    push_int(ch);
+  }
+
   /*! @decl String.Buffer `+( string|String.Buffer what )
    */
   PIKEFUN object `+( string|Buffer what )
@@ -3312,6 +3387,58 @@ PIKECLASS Buffer
       push_empty_string();
   }
 
+  /*! @decl Buffer|void cut(int index, int|void end_or_none,void|int discard)
+   *!
+   *!   Cut and delete the range of data from the current buffer.
+   *!   Returns a new buffer with the cut data, unless discard is true.
+   *!
+   *! @seealso
+   *!   @[get()], @[get_copy()], @[clear()]
+   */
+  PIKEFUN Buffer|void cut(int index, int|void end_or_none,void|int discard)
+  {
+    struct Buffer_struct *str = THIS, *str2;
+    struct object *res;
+    struct pike_string *s;
+    unsigned len = 0,shift;
+    void *p;
+    INT_TYPE end,vdiscard;
+
+    if (s = str->str.s)
+      len = s->len, shift = s->size_shift, p = s->str;
+
+    end = args==1 ? len-1 : end_or_none->u.integer;
+    vdiscard = args==3 ? discard->u.integer : 0;
+    pop_n_elems(args);
+
+    if (index < 0)
+      index = 0;
+    if (end >= len)
+      end = len-1;
+
+    p = (char*)p+(index<<shift);
+    end -= index-1;
+    if (!vdiscard)
+    {
+      res = fast_clone_object( Buffer_program );
+      str2 = OBJ2_BUFFER( res );
+      init_string_builder_alloc(&str2->str, str2->initial = end, shift);
+      memcpy(str2->str.s->str, p, shift = end<<shift);
+      str2->str.s->len = end;
+    }
+    memmove(p, (char*)p+shift, shift);
+    s->len -= end;
+
+    if(!vdiscard)
+    {
+      if( (Pike_fp->current_object->flags & OBJECT_CLEAR_ON_EXIT) )
+          res->flags |= OBJECT_CLEAR_ON_EXIT;
+      push_object(res);
+    }
+    else
+      push_undefined();
+  }
+
   /*! @decl void clear()
    *!
    *!   Empty the buffer, and don't care about the old content.
@@ -3320,7 +3447,7 @@ PIKECLASS Buffer
    *!   This function was not available in Pike 7.8 and earlier.
    *!
    *! @seealso
-   *!   @[get()]
+   *!   @[get()], @[cut()]
    */
   PIKEFUN void clear()
   {
