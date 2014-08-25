@@ -28,6 +28,7 @@
 #include "multiset.h"
 #include "backend.h"
 #include "operators.h"
+#include "pike_types.h"
 #include "module_support.h"
 #include "builtin_functions.h"
 
