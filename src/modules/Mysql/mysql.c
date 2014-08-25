@@ -104,9 +104,10 @@
 /*! @module Mysql
  *!
  *! This module enables access to the Mysql database from within Pike.
- *! Use @[Sql.Sql] for general database access.
  *!
- *! Mysql is available from @url{http://www.mysql.com@}.
+ *! @note
+ *!  You typically don't want to access this module directly, instead
+ *!  use @[Sql.Sql()] with an "mysql://" URL.
  *!
  *! @seealso
  *!  @[Mysql.mysql], @[Mysql.mysql_result], @[Sql.Sql]
@@ -114,11 +115,9 @@
 
 /*! @class mysql
  *!
- *! Interface to the Mysql database.
+ *! Low level interface to the Mysql database.
  *!
  *! This class enables access to the Mysql database from within Pike.
- *!
- *! Mysql is available from @url{http://www.mysql.com@}.
  *!
  *! @seealso
  *!   @[Mysql.mysql_result], @[Sql.Sql]
