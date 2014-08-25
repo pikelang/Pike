@@ -2617,29 +2617,21 @@ PIKECLASS backtrace_frame
   PIKEFUN mixed `[](int index, int|void end_or_none)
   {
     INT_TYPE end = index;
-    INT32 numargs = 0;
+    INT32 numargs = 3;
     INT32 i;
 
-    if (THIS->args) {
-      numargs = THIS->args->size;
-    }
-
-    numargs += 3;
+    if (THIS->args)
+      numargs += THIS->args->size;
 
     if (!end_or_none) {
-      if (index < 0) {
+      if (index < 0)
 	index_error("pike_frame->`[]", Pike_sp-args, args, NULL, Pike_sp-args,
 		    "Indexing with negative index (%"PRINTPIKEINT"d)\n", index);
-      } else if (index >= numargs) {
+      else if (index >= numargs)
 	index_error("pike_frame->`[]", Pike_sp-args, args, NULL, Pike_sp-args,
 		    "Indexing with too large index (%"PRINTPIKEINT"d)\n", index);
-      }
-    } else {
-      if (TYPEOF(*end_or_none) != PIKE_T_INT) {
-	SIMPLE_BAD_ARG_ERROR("`[]",2,"int|void");
-      }
+    } else
       end = end_or_none->u.integer;
-    }
 
     pop_n_elems(args);
 
