@@ -249,7 +249,10 @@ class String
 
   //! value of object
   string value;
+
+  //! @ignore
   CODEC(string);
+  //! @endignore
 
   this_program init(string(0..255) s) {
     value = s;
@@ -305,7 +308,10 @@ class Boolean
 
   //! value of object
   int value;
+
+  //! @ignore
   CODEC(int);
+  //! @endignore
 
   this_program init(int x) {
     value = x;
@@ -349,7 +355,10 @@ class Integer
 
   //! value of object
   Gmp.mpz value;
+
+  //! @ignore
   CODEC(Gmp.mpz);
+  //! @endignore
 
   this_object init(int|object n) {
     value = Gmp.mpz(n);
@@ -418,7 +427,10 @@ class Real
   constant type_name = "REAL";
 
   float value;
+
+  //! @ignore
   CODEC(float);
+  //! @endignore
 
   string(0..255) get_der_content()
   {

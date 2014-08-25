@@ -5,7 +5,8 @@
 
 inherit Crypto.HMAC;
 
-protected class Wrapper {
+protected class Wrapper
+{
   protected object h;
   function(void:mixed) asn1_id;
   void create(object _h) {
@@ -18,13 +19,12 @@ protected class Wrapper {
   }
   string hash(string m) { return h()->update(m)->digest(); }
   int digest_size() { return sizeof(hash("")); }
+
   class HMAC
   {
     string ikey; /* ipad XOR:ed with the key */
     string okey; /* opad XOR:ed with the key */
 
-    //! @param passwd
-    //!   The secret password (K).
     void create(string passwd)
     {
       if (sizeof(passwd) > B)
@@ -36,15 +36,11 @@ protected class Wrapper {
       okey = (passwd ^ ("\\" * B));
     }
 
-    //! Hashes the @[text] according to the HMAC algorithm and returns
-    //! the hash value.
     string `()(string text)
     {
       return raw_hash(okey + raw_hash(ikey + text));
     }
 
-    //! Hashes the @[text] according to the HMAC algorithm and returns
-    //! the hash value as a PKCS-1 digestinfo block.
     string digest_info(string text)
     {
       return pkcs_digest(okey + raw_hash(ikey + text));
