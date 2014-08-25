@@ -59,8 +59,11 @@
  */
 static struct Pike_interpreter_struct static_pike_interpreter;
 
-PMOD_EXPORT struct Pike_interpreter_struct *Pike_interpreter_pointer =
-  &static_pike_interpreter;
+PMOD_EXPORT struct Pike_interpreter_struct *
+#if defined(__GNUC__) && __GNUC__ >= 3
+    __restrict
+#endif
+Pike_interpreter_pointer = &static_pike_interpreter;
 
 PMOD_EXPORT struct Pike_interpreter_struct * pike_get_interpreter_pointer(void)
 {
