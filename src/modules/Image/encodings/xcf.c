@@ -101,7 +101,7 @@ static void f_substring__sprintf( INT32 args )
   if (args != 2 )
     SIMPLE_TOO_FEW_ARGS_ERROR("_sprintf",2);
   if (TYPEOF(sp[-2]) != T_INT)
-    SIMPLE_BAD_ARG_ERROR("_sprintf",0,"integer");
+    SIMPLE_BAD_ARG_ERROR("_sprintf",0,"int");
   if (TYPEOF(sp[-1]) != T_MAPPING)
     SIMPLE_BAD_ARG_ERROR("_sprintf",1,"mapping");
   x = sp[-2].u.integer;

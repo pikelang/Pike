@@ -644,11 +644,11 @@ PIKECLASS mpf
 	  MP_FLT *a=get_mpf(sp+e-args, 1, prec);
 	  tmp=mpf_get_prec(a);
 	  if(!mpf_sgn(a))
-	    SIMPLE_DIVISION_BY_ZERO_ERROR ("Gmp.mpf->`/");
+	    SIMPLE_DIVISION_BY_ZERO_ERROR ("`/");
 	}else{
 	  tmp=sizeof(sp[e-args].u.integer)*CHAR_BITS;
 	  if(!sp[e-args].u.integer)
-	    SIMPLE_DIVISION_BY_ZERO_ERROR ("Gmp.mpf->`/");
+	    SIMPLE_DIVISION_BY_ZERO_ERROR ("`/");
 	}
 	if(tmp>prec) prec=tmp;
       }
@@ -677,7 +677,7 @@ PIKECLASS mpf
       MP_FLT *a;
       struct object *res = NULL;
       if(!mpf_sgn(THISMPF))
-	SIMPLE_DIVISION_BY_ZERO_ERROR ("Gmp.mpf->``/");
+	SIMPLE_DIVISION_BY_ZERO_ERROR ("``/");
       
       a=get_mpf(sv,1,0);
 

@@ -758,8 +758,8 @@ static void image_color_cast(INT32 args)
 {
    if (args!=1 ||
        TYPEOF(sp[-1]) != T_STRING)
-      bad_arg_error("Image.Color.Color->cast",sp-args,args,0,"",sp-args,
-		"Bad arguments to Image.Color.Color->cast()\n");
+     bad_arg_error("cast",sp-args,args,0,"",sp-args,
+                   "Bad arguments to cast.\n");
    
    if (sp[-1].u.string==literal_array_string)
    {
@@ -789,7 +789,7 @@ static void image_color__sprintf(INT32 args)
       SIMPLE_TOO_FEW_ARGS_ERROR("_sprintf",2);
 
    if (TYPEOF(sp[-args]) != T_INT)
-      SIMPLE_BAD_ARG_ERROR("_sprintf",0,"integer");
+      SIMPLE_BAD_ARG_ERROR("_sprintf",0,"int");
    if (TYPEOF(sp[1-args]) != T_MAPPING)
       SIMPLE_BAD_ARG_ERROR("_sprintf",1,"mapping");
 
@@ -1225,7 +1225,7 @@ static void image_color_add(INT32 args)
    rgb_group rgb;
 
    if (!image_color_arg(-args,&rgb))
-      SIMPLE_BAD_ARG_ERROR("Image.Color.Color->`+",1,"Color");
+      SIMPLE_BAD_ARG_ERROR("`+",1,"Image.Color");
 
    pop_n_elems(args);
    _image_make_rgb_color((int)(THIS->rgb.r+rgb.r),
@@ -1414,8 +1414,8 @@ static void image_get_color(INT32 args)
 static void image_guess_color(INT32 args)
 {
    if (args!=1 && TYPEOF(sp[-args]) != T_STRING) 
-      bad_arg_error("Image.Color->guess",sp-args,args,0,"",sp-args,
-		"Bad arguments to Image.Color->guess()\n");
+     bad_arg_error("guess",sp-args,args,0,"",sp-args,
+                   "Bad arguments to guess.\n");
    
    f_lower_case(1);
    push_text(" ");
@@ -1664,8 +1664,8 @@ static void image_make_html_color(INT32 args)
    if (args!=1 ||
        TYPEOF(sp[-1]) != T_STRING) 
    {
-      bad_arg_error("Image.Color.html",sp-args,args,0,"",sp-args,
-		"Bad arguments to Image.Color.html()\n");
+     bad_arg_error("html",sp-args,args,0,"",sp-args,
+                   "Bad arguments to html.\n");
       return;
    }
    

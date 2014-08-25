@@ -167,13 +167,13 @@ static MUTEX_T stupid_port_lock;
     if (TYPEOF(sp[ARG-1-args]) != T_STRING ||				\
 	sp[ARG-1-args].u.string->size_shift ||				\
         string_has_null(sp[ARG-1-args].u.string))			\
-      SIMPLE_BAD_ARG_ERROR (FUNC, ARG, "string (nonbinary 8bit)");	\
+      SIMPLE_BAD_ARG_ERROR (FUNC, ARG, "string(1..255)");               \
   } while (0)
 
 #define CHECK_8BIT_STRING(FUNC, ARG) do {				\
     if (TYPEOF(sp[ARG-1-args]) != T_STRING ||				\
 	sp[ARG-1-args].u.string->size_shift)				\
-      SIMPLE_BAD_ARG_ERROR (FUNC, ARG, "string (8bit)");	\
+      SIMPLE_BAD_ARG_ERROR (FUNC, ARG, "string(8bit)");                 \
   } while (0)
 
 
@@ -693,32 +693,32 @@ static void f_create(INT32 args)
 #endif /* HAVE_MYSQL_OPTIONS && HAVE_MYSQL_OPT_LOCAL_INFILE */
 
   if (args >= 1) {
-    CHECK_8BIT_NONBINARY_STRING ("Mysql.mysql->create", 1);
+    CHECK_8BIT_NONBINARY_STRING ("create", 1);
     if (sp[-args].u.string->len) {
       add_ref(PIKE_MYSQL->host = sp[-args].u.string);
     }
 
     if (args >= 2) {
-      CHECK_8BIT_NONBINARY_STRING ("Mysql.mysql->create", 2);
+      CHECK_8BIT_NONBINARY_STRING ("create", 2);
       if (sp[1-args].u.string->len) {
 	add_ref(PIKE_MYSQL->database = sp[1-args].u.string);
       }
       
       if (args >= 3) {
-	CHECK_8BIT_NONBINARY_STRING ("Mysql.mysql->create", 3);
+	CHECK_8BIT_NONBINARY_STRING ("create", 3);
 	if (sp[2-args].u.string->len) {
 	  add_ref(PIKE_MYSQL->user = sp[2-args].u.string);
 	}
 	
 	if (args >= 4) {
-	  CHECK_8BIT_NONBINARY_STRING ("Mysql.mysql->create", 4);
+	  CHECK_8BIT_NONBINARY_STRING ("create", 4);
 	  if (sp[3-args].u.string->len) {
 	    add_ref(PIKE_MYSQL->password = sp[3-args].u.string);
 	  }
 	  if (args >= 5) {
 	    if (TYPEOF(sp[4-args]) != T_MAPPING){
 	      if (!UNSAFE_IS_ZERO(sp + 4 - args)) {
-		SIMPLE_BAD_ARG_ERROR ("Mysql.mysql->create", 5, "mapping(string:mixed)");
+		SIMPLE_BAD_ARG_ERROR ("create", 5, "mapping(string:mixed)");
 	      }
 	    } else {
 	      add_ref(PIKE_MYSQL->options = sp[4-args].u.mapping);
@@ -760,7 +760,7 @@ static void mysql__sprintf(INT32 args)
   if(args < 1)
     SIMPLE_TOO_FEW_ARGS_ERROR("_sprintf",2);
   if(TYPEOF(sp[-args]) != T_INT)
-    SIMPLE_BAD_ARG_ERROR("_sprintf",0,"integer");
+    SIMPLE_BAD_ARG_ERROR("_sprintf",0,"int");
 
   type = sp[-args].u.integer;
   pop_n_elems(args);
@@ -1025,9 +1025,9 @@ static void f_select_db(INT32 args)
   int tmp = -1;
 
   if (!args) {
-    SIMPLE_TOO_FEW_ARGS_ERROR ("Mysql.mysql->select_db", 1);
+    SIMPLE_TOO_FEW_ARGS_ERROR ("select_db", 1);
   }
-  CHECK_8BIT_NONBINARY_STRING ("Mysql.mysql->select_db", 1);
+  CHECK_8BIT_NONBINARY_STRING ("select_db", 1);
 
   database = sp[-args].u.string->str;
 
@@ -1212,9 +1212,9 @@ static void f_create_db(INT32 args)
   int tmp = -1;
 
   if (!args) {
-    SIMPLE_TOO_FEW_ARGS_ERROR ("Mysql.mysql->create_db", 1);
+    SIMPLE_TOO_FEW_ARGS_ERROR ("create_db", 1);
   }
-  CHECK_8BIT_NONBINARY_STRING ("Mysql.mysql->create_db", 1);
+  CHECK_8BIT_NONBINARY_STRING ("create_db", 1);
   if (sp[-args].u.string->len > 127) {
     if (sp[-args].u.string->len < 1024) {
       Pike_error("Database name \"%s\" is too long (max 127 characters)\n",
@@ -1257,9 +1257,9 @@ static void f_drop_db(INT32 args)
   int tmp = -1;
 
   if (!args) {
-    SIMPLE_TOO_FEW_ARGS_ERROR ("Mysql.mysql->drop_db", 1);
+    SIMPLE_TOO_FEW_ARGS_ERROR ("drop_db", 1);
   }
-  CHECK_8BIT_NONBINARY_STRING ("Mysql.mysql->drop_db", 1);
+  CHECK_8BIT_NONBINARY_STRING ("drop_db", 1);
   if (sp[-args].u.string->len > 127) {
     if (sp[-args].u.string->len < 1024) {
       Pike_error("Database name \"%s\" is too long (max 127 characters)\n",
@@ -1700,10 +1700,10 @@ static void f_list_fields(INT32 args)
   char *wild = NULL;
 
   if (!args) {
-    SIMPLE_TOO_FEW_ARGS_ERROR ("Mysql.mysql->list_fields", 1);
+    SIMPLE_TOO_FEW_ARGS_ERROR ("list_fields", 1);
   }
 
-  CHECK_8BIT_NONBINARY_STRING ("Mysql.mysql->list_fields", 1);
+  CHECK_8BIT_NONBINARY_STRING ("list_fields", 1);
   if (sp[-args].u.string->len > 125) {
     if (sp[-args].u.string->len < 1024) {
       Pike_error("Table name \"%s\" is too long (max 125 characters)\n",

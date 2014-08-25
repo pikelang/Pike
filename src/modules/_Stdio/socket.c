@@ -253,12 +253,12 @@ static void port_bind(INT32 args)
   do_close(p);
 
   if(args < 1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("Port->bind", 1);
+    SIMPLE_TOO_FEW_ARGS_ERROR("bind", 1);
 
   if(TYPEOF(Pike_sp[-args]) != PIKE_T_INT &&
      (TYPEOF(Pike_sp[-args]) != PIKE_T_STRING ||
       Pike_sp[-args].u.string->size_shift))
-    SIMPLE_BAD_ARG_ERROR("Port->bind", 1, "int|string (8bit)");
+    SIMPLE_BAD_ARG_ERROR("bind", 1, "int|string(8bit)");
 
   addr_len = get_inet_addr(&addr, (args > 2 && TYPEOF(Pike_sp[2-args])==PIKE_T_STRING?
 				   Pike_sp[2-args].u.string->str : NULL),
@@ -489,7 +489,7 @@ static void port_create(INT32 args)
       struct port *p = THIS;
 
       if(TYPEOF(Pike_sp[-args]) != PIKE_T_STRING)
-	SIMPLE_TOO_FEW_ARGS_ERROR("Port->create", 1);
+	SIMPLE_TOO_FEW_ARGS_ERROR("create", 1);
 
       /* FIXME: Check that the argument is "stdin". */
 
@@ -666,12 +666,12 @@ static void port_set_backend (INT32 args)
   struct Backend_struct *backend;
 
   if (!args)
-    SIMPLE_TOO_FEW_ARGS_ERROR ("Stdio.Port->set_backend", 1);
+    SIMPLE_TOO_FEW_ARGS_ERROR ("set_backend", 1);
   if (TYPEOF(Pike_sp[-args]) != PIKE_T_OBJECT)
-    SIMPLE_BAD_ARG_ERROR ("Stdio.Port->set_backend", 1, "object(Pike.Backend)");
+    SIMPLE_BAD_ARG_ERROR ("set_backend", 1, "object(Pike.Backend)");
   backend = get_storage (Pike_sp[-args].u.object, Backend_program);
   if (!backend)
-    SIMPLE_BAD_ARG_ERROR ("Stdio.Port->set_backend", 1, "object(Pike.Backend)");
+    SIMPLE_BAD_ARG_ERROR ("set_backend", 1, "object(Pike.Backend)");
 
   if (p->box.backend)
     change_backend_for_box (&p->box, backend);

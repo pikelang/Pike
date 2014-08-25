@@ -905,7 +905,6 @@ static const unsigned char hexdecode[256] =
 
 PMOD_EXPORT
     PIKEFUN string(0..255) string2hex(string s)
-  errname String.string2hex;
   optflags OPT_TRY_OPTIMIZE;
 {
   struct pike_string *hex;
@@ -938,7 +937,6 @@ PMOD_EXPORT
  */
 PMOD_EXPORT
 PIKEFUN string(0..255) hex2string(string hex)
-  errname String.hex2string;
   optflags OPT_TRY_OPTIMIZE;
 {
   struct pike_string *s;
@@ -967,7 +965,7 @@ PIKEFUN string(0..255) hex2string(string hex)
  *! strings only character blocks are known.
  */
 PIKEFUN array(int) string_range(string s)
-  errname String.range;
+  errname range;
   optflags OPT_TRY_OPTIMIZE;
 {
   int min, max;
@@ -1186,7 +1184,6 @@ PIKEFUN int trace(int level, void|string facility, void|zero|int all_threads)
  */
 PMOD_EXPORT
 PIKEFUN mapping(string:mixed) gc_parameters (void|mapping(string:mixed) params)
-  errname Pike.gc_parameters;
   optflags OPT_SIDE_EFFECT;
 {
   struct pike_string *str;
@@ -1213,7 +1210,7 @@ PIKEFUN mapping(string:mixed) gc_parameters (void|mapping(string:mixed) params)
   HANDLE_PARAM (NAME, {							\
       if (TYPEOF(*set) != T_FLOAT ||					\
 	  set->u.float_number < 0.0 || set->u.float_number > 1.0)	\
-	SIMPLE_BAD_ARG_ERROR ("Pike.gc_parameters", 1,			\
+	SIMPLE_BAD_ARG_ERROR ("gc_parameters", 1,			\
 			      "float between 0.0 and 1.0 for " NAME);	\
       VAR = DO_NOT_WARN ((double) set->u.float_number);			\
     }, {								\
@@ -1223,7 +1220,7 @@ PIKEFUN mapping(string:mixed) gc_parameters (void|mapping(string:mixed) params)
 
   HANDLE_PARAM ("enabled", {
       if (TYPEOF(*set) != T_INT || set->u.integer < -1 || set->u.integer > 1)
-	SIMPLE_BAD_ARG_ERROR ("Pike.gc_parameters", 1,
+	SIMPLE_BAD_ARG_ERROR ("gc_parameters", 1,
 			      "integer in the range -1..1 for 'enabled'");
       if (gc_enabled != set->u.integer) {
 	if (gc_enabled > 0) {
@@ -1383,7 +1380,7 @@ PIKEFUN object object_secure(object obj)
  */
 PMOD_EXPORT
 PIKEFUN int string_count(string haystack, string needle)
-  errname String.count;
+  errname count;
   optflags OPT_TRY_OPTIMIZE;
 {
    ptrdiff_t c = 0;
@@ -1422,7 +1419,7 @@ PIKEFUN int string_count(string haystack, string needle)
  */
 PMOD_EXPORT
 PIKEFUN string string_trim_whites (string s)
-  errname String.trim_whites;
+  errname trim_whites;
   optflags OPT_TRY_OPTIMIZE;
 {
   ptrdiff_t start = 0, end = s->len;
@@ -1472,7 +1469,7 @@ PIKEFUN string string_trim_whites (string s)
  */
 PMOD_EXPORT
 PIKEFUN string string_normalize_space (string s, string|void whitespace)
-  errname String.normalize_space;
+  errname normalize_space;
   optflags OPT_TRY_OPTIMIZE;
 {
   size_t len = s->len, wlen;
@@ -1603,7 +1600,7 @@ skip##TYPE:;								\
  */
 PMOD_EXPORT
 PIKEFUN string string_trim_all_whites (string s)
-  errname String.trim_all_whites;
+  errname trim_all_whites;
   optflags OPT_TRY_OPTIMIZE;
 {
   ptrdiff_t start = 0, end = s->len;
@@ -1655,7 +1652,7 @@ PIKEFUN string string_trim_all_whites (string s)
  *!   may vary between different versions of Pike.
  */
 PIKEFUN string string_status(int verbose)
-  errname String.status;
+  errname status;
 {
   RETURN add_string_status(verbose);
 }
@@ -1667,7 +1664,7 @@ PIKEFUN string string_status(int verbose)
  */
 PMOD_EXPORT
 PIKEFUN int program_implements(program prog, program api)
-  errname Program.implements;
+  errname implements;
   optflags OPT_TRY_OPTIMIZE;
 {
   RETURN implements(prog, api);
@@ -1680,13 +1677,13 @@ PIKEFUN int program_implements(program prog, program api)
  */
 PMOD_EXPORT
 PIKEFUN int program_inherits(program|object child, program parent)
-  errname Program.inherits;
+  errname inherits;
   optflags OPT_TRY_OPTIMIZE;
 {
   struct program *p = program_from_svalue(child);
 
   if (!p)
-    SIMPLE_ARG_TYPE_ERROR("Program.inherits", 1, "program|object");
+    SIMPLE_ARG_TYPE_ERROR("inherits", 1, "program|object");
   RETURN low_get_storage(p, parent) != -1;
 }
 
@@ -1703,7 +1700,7 @@ PIKEFUN int program_inherits(program|object child, program parent)
  */
 PMOD_EXPORT
 PIKEFUN string program_defined(program p)
-  errname Program.defined;
+  errname defined;
   optflags OPT_TRY_OPTIMIZE;
 {
   INT_TYPE line;
@@ -1747,7 +1744,7 @@ PIKEFUN string program_defined(program p)
  */
 PMOD_EXPORT
 PIKEFUN int(8 .. 8)|int(16 .. 16)|int(32 .. 32) string_width(string s)
-  errname String.width;
+  errname width;
   optflags OPT_TRY_OPTIMIZE;
 {
   RETURN 8 * (1 << s->size_shift);
@@ -2680,7 +2677,7 @@ PIKECLASS backtrace_frame
 	    push_svalue(THIS->args->item + (i - 3));
 	    break;
 	  }
-	  bad_arg_error("backtrace_frame->`[]", Pike_sp-args, args, 1,
+	  bad_arg_error("`[]", Pike_sp-args, args, 1,
 			"int(0..)", Pike_sp-args,
 			"Bad argument 1 to backtrace_frame->`[](): "
 			"Expected int(0..%d)\n",
@@ -2726,8 +2723,7 @@ PIKECLASS backtrace_frame
       if (TYPEOF(*value) != PIKE_T_STRING) {
 	if ((TYPEOF(*value) != PIKE_T_INT) ||
 	    (value->u.integer)) {
-	  SIMPLE_BAD_ARG_ERROR("backtrace_frame->`[]=", 2,
-			       "string|int(0..0)");
+	  SIMPLE_BAD_ARG_ERROR("`[]=", 2, "string|int(0..0)");
 	}
 	if (THIS->filename) {
 	  free_string(THIS->filename);
@@ -2745,7 +2741,7 @@ PIKECLASS backtrace_frame
     case 1:	/* Linenumber */
       if (THIS->lineno == -1) fill_in_file_and_line();
       if (TYPEOF(*value) != PIKE_T_INT) {
-	SIMPLE_BAD_ARG_ERROR("backtrace_frame->`[]=", 2, "int(1..)");
+	SIMPLE_BAD_ARG_ERROR("`[]=", 2, "int(1..)");
       }
       THIS->lineno = value->u.integer;
       break;
@@ -3542,7 +3538,7 @@ PIKECLASS multi_string_replace
       pop_n_elems(args-2);
       args = 2;
       if (TYPEOF(*from_arg) != T_ARRAY) {
-	SIMPLE_BAD_ARG_ERROR("Replace", 1,
+	SIMPLE_BAD_ARG_ERROR("replace", 1,
 			     "array(string)|mapping(string:string)");
       }
       if (TYPEOF(*to_arg) == T_STRING) {
@@ -3551,7 +3547,7 @@ PIKECLASS multi_string_replace
 	f_allocate(2);
       }
       if (TYPEOF(*to_arg) != T_ARRAY) {
-	SIMPLE_BAD_ARG_ERROR("Replace", 2, "array(string)|string");
+	SIMPLE_BAD_ARG_ERROR("replace", 2, "array(string)|string");
       }
       if (from_arg->u.array->size != to_arg->u.array->size) {
 	Pike_error("Replace must have equal-sized from and to arrays.\n");
@@ -3569,12 +3565,12 @@ PIKECLASS multi_string_replace
 
     if( (THIS->from->type_field & ~BIT_STRING) &&
 	(array_fix_type_field(THIS->from) & ~BIT_STRING) )
-      SIMPLE_BAD_ARG_ERROR("Replace", 1,
+      SIMPLE_BAD_ARG_ERROR("replace", 1,
 			   "array(string)|mapping(string:string)");
 
     if( (THIS->to->type_field & ~BIT_STRING) &&
 	(array_fix_type_field(THIS->to) & ~BIT_STRING) )
-      SIMPLE_BAD_ARG_ERROR("Replace", 2, "array(string)|string");
+      SIMPLE_BAD_ARG_ERROR("replace", 2, "array(string)|string");
 
     compile_replace_many(&THIS->ctx, THIS->from, THIS->to, 1);
 
@@ -3683,7 +3679,7 @@ PIKECLASS single_string_replace
     if (!del) return;
 
     if (!to) {
-      SIMPLE_BAD_ARG_ERROR("String.SingleReplace->create", 2, "string");
+      SIMPLE_BAD_ARG_ERROR("replace", 2, "string");
     }
 
     if (del == to) {

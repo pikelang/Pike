@@ -617,14 +617,14 @@ void image_apply_max(INT32 args)
 
    if (args<1 ||
        TYPEOF(sp[-args]) != T_ARRAY)
-      bad_arg_error("Image",sp-args,args,0,"",sp-args,
-		"Bad arguments to Image()\n");
+     bad_arg_error("apply_max",sp-args,args,0,"",sp-args,
+                   "Bad arguments to apply_max.\n");
 
    if (args>3) 
       if (TYPEOF(sp[1-args]) != T_INT ||
 	  TYPEOF(sp[2-args]) != T_INT ||
 	  TYPEOF(sp[3-args]) != T_INT)
-	 Pike_error("Illegal argument(s) (2,3,4) to Image.Image->apply_max()\n");
+	 Pike_error("Illegal argument(s) (2,3,4) to apply_max.\n");
       else
       {
 	 default_rgb.r=sp[1-args].u.integer;

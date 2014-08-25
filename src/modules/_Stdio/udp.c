@@ -205,15 +205,15 @@ static void udp_bind(INT32 args)
 #endif /* !SOL_IP && HAVE_GETPROTOBYNAME */
 
   if(args < 1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("Stdio.UDP->bind", 1);
+    SIMPLE_TOO_FEW_ARGS_ERROR("bind", 1);
 
   if(TYPEOF(Pike_sp[-args]) != PIKE_T_INT &&
      (TYPEOF(Pike_sp[-args]) != PIKE_T_STRING ||
       Pike_sp[-args].u.string->size_shift))
-    SIMPLE_BAD_ARG_ERROR("Stdio.UDP->bind", 1, "int|string (8bit)");
+    SIMPLE_BAD_ARG_ERROR("bind", 1, "int|string(8bit)");
 
   if(args > 2 && TYPEOF(Pike_sp[2-args]) != PIKE_T_INT)
-    SIMPLE_BAD_ARG_ERROR("Stdio.UDP->bind", 3, "int(0..1)");
+    SIMPLE_BAD_ARG_ERROR("bind", 3, "int(0..1)");
 
 #if 0
   f_backtrace(0);
@@ -1045,7 +1045,7 @@ static void udp_set_read_callback(INT32 args)
 {
   struct udp_storage *u = THIS;
   if(args < 1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("Stdio.UDP->set_read_callback", 1);
+    SIMPLE_TOO_FEW_ARGS_ERROR("set_read_callback", 1);
   if(args > 1)
     pop_n_elems(args-1);
 
@@ -1125,7 +1125,7 @@ static void udp_connect(INT32 args)
 
   if(TYPEOF(*dest_port) != PIKE_T_INT &&
      (TYPEOF(*dest_port) != PIKE_T_STRING || dest_port->u.string->size_shift))
-    SIMPLE_BAD_ARG_ERROR("UDP.connect", 2, "int|string (8bit)");
+    SIMPLE_BAD_ARG_ERROR("connect", 2, "int|string(8bit)");
 
   addr_len =  get_inet_addr(&addr, dest_addr->str,
 			    (TYPEOF(*dest_port) == PIKE_T_STRING?
@@ -1248,12 +1248,12 @@ static void udp_set_backend (INT32 args)
   struct Backend_struct *backend;
 
   if (!args)
-    SIMPLE_TOO_FEW_ARGS_ERROR ("Stdio.UDP->set_backend", 1);
+    SIMPLE_TOO_FEW_ARGS_ERROR ("set_backend", 1);
   if (TYPEOF(Pike_sp[-args]) != PIKE_T_OBJECT)
-    SIMPLE_BAD_ARG_ERROR ("Stdio.UDP->set_backend", 1, "object(Pike.Backend)");
+    SIMPLE_BAD_ARG_ERROR ("set_backend", 1, "Pike.Backend");
   backend = get_storage (Pike_sp[-args].u.object, Backend_program);
   if (!backend)
-    SIMPLE_BAD_ARG_ERROR ("Stdio.UDP->set_backend", 1, "object(Pike.Backend)");
+    SIMPLE_BAD_ARG_ERROR ("set_backend", 1, "Pike.Backend");
 
   if (u->box.backend)
     change_backend_for_box (&u->box, backend);

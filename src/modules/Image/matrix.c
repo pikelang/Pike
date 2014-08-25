@@ -407,8 +407,8 @@ void image_scale(INT32 args)
    else
    {
       free_object(o);
-      bad_arg_error("image->scale",sp-args,args,0,"",sp-args,
-		"Bad arguments to image->scale()\n");
+      bad_arg_error("scale",sp-args,args,0,"",sp-args,
+                    "Bad arguments to scale.\n");
    }
    pop_n_elems(args);
    push_object(o);
@@ -905,14 +905,14 @@ void image_skewx(INT32 args)
    struct object *o;
 
    if (args<1)
-      SIMPLE_TOO_FEW_ARGS_ERROR("image->skewx",1);
+      SIMPLE_TOO_FEW_ARGS_ERROR("skewx",1);
    else if (TYPEOF(sp[-args]) == T_FLOAT)
       diff = THIS->ysize*sp[-args].u.float_number;
    else if (TYPEOF(sp[-args])== T_INT)
       diff = (double)sp[-args].u.integer;
    else
-      bad_arg_error("image->skewx",sp-args,args,0,"",sp-args,
-		"Bad arguments to image->skewx()\n");
+      bad_arg_error("skewx",sp-args,args,0,"",sp-args,
+                    "Bad arguments to skewx.\n");
 
    if (!THIS->img) Pike_error("Called Image.Image object is not initialized\n");;
 
@@ -969,14 +969,14 @@ void image_skewy(INT32 args)
    struct object *o;
 
    if (args<1)
-      SIMPLE_TOO_FEW_ARGS_ERROR("image->skewy",1);
+      SIMPLE_TOO_FEW_ARGS_ERROR("skewy",1);
    else if (TYPEOF(sp[-args]) == T_FLOAT)
       diff = THIS->xsize*sp[-args].u.float_number;
    else if (TYPEOF(sp[-args]) == T_INT)
       diff = (double)sp[-args].u.integer;
    else
-      bad_arg_error("image->skewx",sp-args,args,0,"",sp-args,
-		"Bad arguments to image->skewx()\n");
+      bad_arg_error("skewy",sp-args,args,0,"",sp-args,
+                    "Bad arguments to skewy.\n");
 
    if (!THIS->img) Pike_error("Called Image.Image object is not initialized\n");;
 
@@ -997,20 +997,20 @@ void image_skewx_expand(INT32 args)
    struct object *o;
 
    if (args<1)
-      SIMPLE_TOO_FEW_ARGS_ERROR("image->skewx",1);
+      SIMPLE_TOO_FEW_ARGS_ERROR("skewx_expand",1);
    else if (TYPEOF(sp[-args]) == T_FLOAT)
       diff = THIS->ysize*sp[-args].u.float_number;
    else if (TYPEOF(sp[-args]) == T_INT)
       diff = (double)sp[-args].u.integer;
    else
-      bad_arg_error("image->skewx",sp-args,args,0,"",sp-args,
-		"Bad arguments to image->skewx()\n");
+      bad_arg_error("skewx_expand",sp-args,args,0,"",sp-args,
+                    "Bad arguments to skewx_expand.\n");
 
    if (!THIS->img) Pike_error("Called Image.Image object is not initialized\n");;
 
    o=clone_object(image_program,0);
 
-   if (!getrgb((struct image*)(o->storage),1,args,"image->skewx()"))
+   if (!getrgb((struct image*)(o->storage),1,args,"image->skewx_expand()"))
       ((struct image*)(o->storage))->rgb=THIS->rgb;
 
    img_skewx(THIS,(struct image*)(o->storage),diff,1);
@@ -1025,20 +1025,20 @@ void image_skewy_expand(INT32 args)
    struct object *o;
 
    if (args<1)
-      SIMPLE_TOO_FEW_ARGS_ERROR("image->skewy",1);
+      SIMPLE_TOO_FEW_ARGS_ERROR("skewy_expand",1);
    else if (TYPEOF(sp[-args]) == T_FLOAT)
       diff = THIS->xsize*sp[-args].u.float_number;
    else if (TYPEOF(sp[-args]) == T_INT)
       diff = (double)sp[-args].u.integer;
    else
-      bad_arg_error("image->skewx",sp-args,args,0,"",sp-args,
-		"Bad arguments to image->skewx()\n");
+      bad_arg_error("skewx_expand",sp-args,args,0,"",sp-args,
+                    "Bad arguments to skewy_expand.\n");
 
    if (!THIS->img) Pike_error("Called Image.Image object is not initialized\n");;
 
    o=clone_object(image_program,0);
 
-   if (!getrgb((struct image*)(o->storage),1,args,"image->skewy()"))
+   if (!getrgb((struct image*)(o->storage),1,args,"image->skewy_expand()"))
       ((struct image*)(o->storage))->rgb=THIS->rgb;
 
    img_skewy(THIS,(struct image*)(o->storage),diff,1);
@@ -1056,14 +1056,14 @@ void img_rotate(INT32 args,int xpn)
    struct image *dest,d0,dest2;
 
    if (args<1)
-      SIMPLE_TOO_FEW_ARGS_ERROR("image->rotate",1);
+      SIMPLE_TOO_FEW_ARGS_ERROR("rotate",1);
    else if (TYPEOF(sp[-args]) == T_FLOAT)
       angle = sp[-args].u.float_number;
    else if (TYPEOF(sp[-args]) == T_INT)
       angle = (double)sp[-args].u.integer;
    else
-      bad_arg_error("image->rotate",sp-args,args,0,"",sp-args,
-		"Bad arguments to image->rotate()\n");
+      bad_arg_error("rotate",sp-args,args,0,"",sp-args,
+                    "Bad arguments to rotate.\n");
 
    if (!THIS->img) 
       Pike_error("Called Image.Image object is not initialized\n");;
@@ -1165,13 +1165,13 @@ void img_translate(INT32 args,int expand)
 
    if (TYPEOF(sp[-args]) == T_FLOAT) xt=sp[-args].u.float_number;
    else if (TYPEOF(sp[-args]) == T_INT) xt=sp[-args].u.integer;
-   else bad_arg_error("image->translate",sp-args,args,1,"",sp+1-1-args,
-		"Bad argument 1 to image->translate()\n");
+   else bad_arg_error("translate",sp-args,args,1,"",sp+1-1-args,
+                      "Bad argument 1 to translate.\n");
 
    if (TYPEOF(sp[1-args]) == T_FLOAT) yt=sp[1-args].u.float_number;
    else if (TYPEOF(sp[1-args]) == T_INT) yt=sp[1-args].u.integer;
-   else bad_arg_error("image->translate",sp-args,args,2,"",sp+2-1-args,
-		"Bad argument 2 to image->translate()\n");
+   else bad_arg_error("translate",sp-args,args,2,"",sp+2-1-args,
+                      "Bad argument 2 to translate.\n");
 
    getrgb(THIS,2,args,"image->translate()\n");
 

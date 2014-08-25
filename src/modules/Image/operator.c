@@ -547,7 +547,7 @@ void image_operator_equal(INT32 args)
    int res=1;
 
    if (!args)
-     SIMPLE_TOO_FEW_ARGS_ERROR ("Image->`==", 1);
+     SIMPLE_TOO_FEW_ARGS_ERROR ("`==", 1);
 
    if (TYPEOF(sp[-args]) == T_INT)
    {

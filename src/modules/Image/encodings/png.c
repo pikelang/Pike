@@ -218,9 +218,9 @@ static void image_png___decode(INT32 args)
    ONERROR uwp;
 
    if (args<1)
-     SIMPLE_TOO_FEW_ARGS_ERROR("Image.PNG.__decode", 1);
+     SIMPLE_TOO_FEW_ARGS_ERROR("__decode", 1);
    if (TYPEOF(sp[-args]) != T_STRING)
-     SIMPLE_BAD_ARG_ERROR("Image.PNG.__decode", 1, "string");
+     SIMPLE_BAD_ARG_ERROR("__decode", 1, "string");
 
    if (args>1 &&
        (TYPEOF(sp[1-args]) != T_INT ||
@@ -1152,7 +1152,7 @@ static void img_png_decode(INT32 args, int mode)
    ONERROR err;
 
    if (args<1)
-     SIMPLE_TOO_FEW_ARGS_ERROR("Image.PNG._decode", 1);
+     SIMPLE_TOO_FEW_ARGS_ERROR("_decode", 1);
 
    m=allocate_mapping(10);
    push_mapping(m);
@@ -1160,7 +1160,7 @@ static void img_png_decode(INT32 args, int mode)
    if (args>=2)
    {
       if (TYPEOF(sp[1-args-1]) != T_MAPPING)
-	SIMPLE_BAD_ARG_ERROR("Image.PNG._decode", 2, "mapping");
+	SIMPLE_BAD_ARG_ERROR("_decode", 2, "mapping");
 
       push_svalue(sp+1-args-1);
       ref_push_string(param_palette);
@@ -1170,7 +1170,7 @@ static void img_png_decode(INT32 args, int mode)
 	 case T_OBJECT:
 	    push_text("cast");
 	    if (TYPEOF(sp[-1]) == T_INT)
-	       PIKE_ERROR("Image.PNG._decode",
+	       PIKE_ERROR("_decode",
 			  "Illegal value of option \"palette\".\n",
 			  sp, args);
 	    f_index(2);
@@ -1183,7 +1183,7 @@ static void img_png_decode(INT32 args, int mode)
 	    ct=get_storage(sp[-1].u.object,
                            image_colortable_program);
 	    if (!ct)
-	       PIKE_ERROR("Image.PNG._decode",
+	       PIKE_ERROR("_decode",
 			  "Internal error: cloned colortable isn't colortable.\n", sp, args);
 	    mapping_string_insert(m, param_palette, sp-1);
 	    pop_stack();
@@ -1192,7 +1192,7 @@ static void img_png_decode(INT32 args, int mode)
 	    pop_stack();
 	    break;
 	 default:
-	    PIKE_ERROR("Image.PNG._decode",
+	    PIKE_ERROR("_decode",
 		       "Illegal value of option \"palette\".\n",
 		       sp, args);
       }
@@ -1208,10 +1208,10 @@ static void img_png_decode(INT32 args, int mode)
       push_int(1); /* no care crc */
       image_png___decode(2);
       if (TYPEOF(sp[-1]) != T_ARRAY)
-	 PIKE_ERROR("Image.PNG._decode", "Not PNG data.\n", sp ,args);
+	 PIKE_ERROR("_decode", "Not PNG data.\n", sp ,args);
    }
    else if (TYPEOF(sp[-1]) != T_ARRAY)
-     SIMPLE_BAD_ARG_ERROR("Image.PNG._decode", 1, "string");
+     SIMPLE_BAD_ARG_ERROR("_decode", 1, "string");
 
    a=sp[-1].u.array;
 
@@ -1238,7 +1238,7 @@ static void img_png_decode(INT32 args, int mode)
       if (!i &&
 	  int_from_32bit((unsigned char*)b->item[0].u.string->str)
 	  != 0x49484452 )
-	 PIKE_ERROR("Imge.PNG.decode", "First chunk isn't IHDR.\n",
+	 PIKE_ERROR("_decode", "First chunk isn't IHDR.\n",
 		    sp, args);
 
       switch (int_from_32bit((unsigned char*)b->item[0].u.string->str))
@@ -1248,7 +1248,7 @@ static void img_png_decode(INT32 args, int mode)
             size_t bytes;
 	    /* header info */
 	    if (len!=13)
-	       PIKE_ERROR("Image.PNG._decode",
+	       PIKE_ERROR("_decode",
 			  "Illegal header (IHDR chunk).\n", sp, args);
 
 	    ihdr.width=int_from_32bit(data+0);
@@ -1563,21 +1563,21 @@ static void image_png_encode(INT32 args)
    char buf[20];
 
    if (!args)
-     SIMPLE_TOO_FEW_ARGS_ERROR("Image.PNG.encode", 1);
+     SIMPLE_TOO_FEW_ARGS_ERROR("encode", 1);
 
    if (TYPEOF(sp[-args]) != T_OBJECT ||
        !(img=get_storage(sp[-args].u.object,image_program)))
-     SIMPLE_BAD_ARG_ERROR("Image.PNG.encode", 1, "Image.Image");
+     SIMPLE_BAD_ARG_ERROR("encode", 1, "Image.Image");
 
    if (!img->img)
-      PIKE_ERROR("Image.PNG.encode", "No image.\n", sp, args);
+      PIKE_ERROR("encode", "No image.\n", sp, args);
 
    if ((args>1) && !IS_UNDEFINED(sp + 1-args))
    {
      struct svalue *s;
 
      if (TYPEOF(sp[1-args]) != T_MAPPING)
-	SIMPLE_BAD_ARG_ERROR("Image.PNG.encode", 2, "mapping");
+	SIMPLE_BAD_ARG_ERROR("encode", 2, "mapping");
 
       /* Attribute alpha */
       s = low_mapping_string_lookup(sp[1-args].u.mapping, param_alpha);
@@ -1589,17 +1589,17 @@ static void image_png_encode(INT32 args)
         {
           if (alpha->xsize!=img->xsize ||
               alpha->ysize!=img->ysize)
-            PIKE_ERROR("Image.PNG.encode",
+            PIKE_ERROR("encode",
                        "Option (arg 2) \"alpha\"; images differ in size.\n",
                        sp, args);
 
           if (!alpha->img)
-            PIKE_ERROR("Image.PNG.encode",
+            PIKE_ERROR("encode",
                        "Option (arg 2) \"alpha\"; no image\n",
                        sp, args);
         }
         else if( !(TYPEOF(*s) == T_INT && s->u.integer==0) )
-          PIKE_ERROR("Image.PNG.encode",
+          PIKE_ERROR("encode",
                      "Option (arg 2) \"alpha\" has illegal type.\n",
                      sp, args);
       }
@@ -1610,7 +1610,7 @@ static void image_png_encode(INT32 args)
       if (s && !(TYPEOF(*s) == T_INT && s->u.integer==0))
 	 if (TYPEOF(*s) != T_OBJECT ||
 	     !(ct=get_storage(s->u.object,image_colortable_program)))
-	   PIKE_ERROR("Image.PNG.encode",
+	   PIKE_ERROR("encode",
 		      "Option (arg 2) \"palette\" has illegal type.\n",
 		      sp, args);
 
@@ -1620,7 +1620,7 @@ static void image_png_encode(INT32 args)
       if ( s )
       {
         if( TYPEOF(*s) != T_INT )
-          PIKE_ERROR("Image.PNG.encode",
+          PIKE_ERROR("encode",
                      "Option (arg 2) \"zlevel\" has illegal value.\n",
                      sp, args);
         else
@@ -1632,7 +1632,7 @@ static void image_png_encode(INT32 args)
       if( s )
       {
         if ( TYPEOF(*s) != T_INT )
-          PIKE_ERROR("Image.PNG.encode",
+          PIKE_ERROR("encode",
                      "Option (arg 2) \"zstrategy\" has illegal value.\n",
                      sp, args);
         else
@@ -1650,7 +1650,7 @@ static void image_png_encode(INT32 args)
       ptrdiff_t sz;
       sz = image_colortable_size(ct);
       if (sz>256)
-	 PIKE_ERROR("Image.PNG.encode", "Palette size to large; "
+	 PIKE_ERROR("encode", "Palette size to large; "
 		    "PNG doesn't support bigger palettes then 256 colors.\n",
 		    sp, args);
       if (sz>16) bpp=8;
@@ -1692,7 +1692,7 @@ static void image_png_encode(INT32 args)
    if (alpha) sa=alpha->img;
    if (ct) {
       if (alpha) {
-	 PIKE_ERROR("Image.PNG.encode",
+	 PIKE_ERROR("encode",
 		    "Colortable and alpha channel not supported "
 		    "at the same time.\n", sp, args);
       }
@@ -1827,7 +1827,7 @@ static void image_png_decode_header(INT32 args)
 static void image_png_decode(INT32 args)
 {
    if (!args)
-     SIMPLE_TOO_FEW_ARGS_ERROR("Image.PNG.decode", 1);
+     SIMPLE_TOO_FEW_ARGS_ERROR("decode", 1);
 
    img_png_decode(args, MODE_IMAGE_ONLY);
    push_text("image");
@@ -1847,7 +1847,7 @@ static void image_png_decode_alpha(INT32 args)
 {
    struct svalue s;
    if (!args)
-     SIMPLE_TOO_FEW_ARGS_ERROR("Image.PNG.decode_alpha", 1);
+     SIMPLE_TOO_FEW_ARGS_ERROR("decode_alpha", 1);
 
    image_png__decode(args);
    assign_svalue_no_free(&s,sp-1);

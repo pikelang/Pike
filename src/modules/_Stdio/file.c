@@ -1383,7 +1383,7 @@ static void file_read(INT32 args)
   else
   {
     if(TYPEOF(Pike_sp[-args]) != PIKE_T_INT)
-      SIMPLE_BAD_ARG_ERROR("Stdio.File->read()", 1, "int");
+      SIMPLE_BAD_ARG_ERROR("read", 1, "int");
     len=Pike_sp[-args].u.integer;
     if(len<0)
       Pike_error("Cannot read negative number of characters.\n");
@@ -1663,7 +1663,7 @@ static void file_read_oob(INT32 args)
   else
   {
     if(TYPEOF(Pike_sp[-args]) != PIKE_T_INT)
-      SIMPLE_BAD_ARG_ERROR("Stdio.File->read_oob", 1, "int");
+      SIMPLE_BAD_ARG_ERROR("read_oob", 1, "int");
     len=Pike_sp[-args].u.integer;
     if(len<0)
       Pike_error("Cannot read negative number of characters.\n");
@@ -1727,7 +1727,7 @@ static void set_fd_event_cb (struct my_file *f, struct svalue *cb, int event, in
   static void PIKE_CONCAT(file_set_,CB) (INT32 args)			\
   {									\
     if(!args)								\
-      SIMPLE_TOO_FEW_ARGS_ERROR("Stdio.File->set_" #CB, 1);		\
+      SIMPLE_TOO_FEW_ARGS_ERROR("set_" #CB, 1);                         \
     set_fd_event_cb (THIS, Pike_sp-args, EVENT, 0);			\
   }
 
@@ -1735,9 +1735,9 @@ static void set_fd_event_cb (struct my_file *f, struct svalue *cb, int event, in
   static void PIKE_CONCAT(file_set_,CB) (INT32 args)			\
   {									\
     if(args<2)								\
-      SIMPLE_TOO_FEW_ARGS_ERROR("Stdio.File->set_" #CB, 2);		\
+      SIMPLE_TOO_FEW_ARGS_ERROR("set_" #CB, 2);                         \
     if (TYPEOF(Pike_sp[1-args]) != PIKE_T_INT)				\
-      SIMPLE_ARG_TYPE_ERROR("Stdio.File->set_" #CB, 2, "int");		\
+      SIMPLE_ARG_TYPE_ERROR("set_" #CB, 2, "int");                      \
     set_fd_event_cb (THIS, Pike_sp-args, EVENT,				\
 		     Pike_sp[1-args].u.integer);			\
   }
@@ -1881,7 +1881,7 @@ static void file_write(INT32 args)
 
   if(args<1 || ((TYPEOF(Pike_sp[-args]) != PIKE_T_STRING) &&
 		(TYPEOF(Pike_sp[-args]) != PIKE_T_ARRAY)))
-    SIMPLE_BAD_ARG_ERROR("Stdio.File->write()", 1, "string|array(string)");
+    SIMPLE_BAD_ARG_ERROR("write", 1, "string|array(string)");
 
   if(FD < 0)
     Pike_error("File not open for write.\n");
@@ -1891,7 +1891,7 @@ static void file_write(INT32 args)
 
     if( (a->type_field & ~BIT_STRING) &&
 	(array_fix_type_field(a) & ~BIT_STRING) )
-      SIMPLE_BAD_ARG_ERROR("Stdio.File->write()", 1, "string|array(string)");
+      SIMPLE_BAD_ARG_ERROR("write", 1, "string|array(string)");
 
     i = a->size;
     while(i--)
@@ -2197,7 +2197,7 @@ static void file_write_oob(INT32 args)
   struct pike_string *str;
 
   if(args<1 || TYPEOF(Pike_sp[-args]) != PIKE_T_STRING)
-    SIMPLE_BAD_ARG_ERROR("Stdio.File->write_oob()",1,"string");
+    SIMPLE_BAD_ARG_ERROR("write_oob",1,"string");
 
   if(args > 1)
   {
@@ -2307,7 +2307,7 @@ static void file_send_fd(INT32 args)
   if(args<1 || (TYPEOF(Pike_sp[-args]) != PIKE_T_OBJECT) ||
      !(o = Pike_sp[-args].u.object)->prog ||
      (o->prog->inherits[SUBTYPEOF(Pike_sp[-args])].prog != file_program))
-    SIMPLE_BAD_ARG_ERROR("Stdio.File->send_fd()", 1, "object(is Stdio.Fd)");
+    SIMPLE_BAD_ARG_ERROR("send_fd", 1, "Stdio.Fd");
 
   f = (struct my_file *)
     (o->storage + o->prog->inherits[SUBTYPEOF(Pike_sp[-args])].storage_offset);
@@ -2405,7 +2405,7 @@ static void file_linger(INT32 args)
   get_all_args("linger", args, ".%d", &linger);
 
   if ((linger < -1) || (linger > 0xffff)) {
-    SIMPLE_BAD_ARG_ERROR("Stdio.File->linger()", 1, "int(-1..65535)");
+    SIMPLE_BAD_ARG_ERROR("linger", 1, "int(-1..65535)");
   }
 
   if (linger == -1) {
@@ -2687,19 +2687,19 @@ static void file_open(INT32 args)
   close_fd();
 
   if(args < 2)
-    SIMPLE_TOO_FEW_ARGS_ERROR("Stdio.File->open", 2);
+    SIMPLE_TOO_FEW_ARGS_ERROR("open", 2);
 
   if(TYPEOF(Pike_sp[-args]) != PIKE_T_STRING &&
      TYPEOF(Pike_sp[-args]) != PIKE_T_INT)
-    SIMPLE_BAD_ARG_ERROR("Stdio.File->open", 1, "string|int");
+    SIMPLE_BAD_ARG_ERROR("open", 1, "string|int");
 
   if(TYPEOF(Pike_sp[1-args]) != PIKE_T_STRING)
-    SIMPLE_BAD_ARG_ERROR("Stdio.File->open", 2, "string");
+    SIMPLE_BAD_ARG_ERROR("open", 2, "string");
 
   if (args > 2)
   {
     if (TYPEOF(Pike_sp[2-args]) != PIKE_T_INT)
-      SIMPLE_BAD_ARG_ERROR("Stdio.File->open", 3, "int");
+      SIMPLE_BAD_ARG_ERROR("open", 3, "int");
     access = Pike_sp[2-args].u.integer;
   } else
     access = 00666;
@@ -2973,10 +2973,10 @@ static void file_openpt(INT32 args)
   close_fd();
 
   if(args < 1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("Stdio.File->openpt", 2);
+    SIMPLE_TOO_FEW_ARGS_ERROR("openpt", 2);
 
   if(TYPEOF(Pike_sp[-args]) != PIKE_T_STRING)
-    SIMPLE_BAD_ARG_ERROR("Stdio.File->openpt", 1, "string");
+    SIMPLE_BAD_ARG_ERROR("openpt", 1, "string");
 
 #ifdef HAVE_POSIX_OPENPT
   flags = parse((flag_str = Pike_sp[-args].u.string)->str);
@@ -3094,7 +3094,7 @@ static void file_seek(INT32 args)
 #endif
 
   if( args < 1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("Stdio.File->seek", 1);
+    SIMPLE_TOO_FEW_ARGS_ERROR("seek", 1);
 
 #if defined (SEEK64)
   if(is_bignum_object_in_svalue(&Pike_sp[-args])) {
@@ -3104,7 +3104,7 @@ static void file_seek(INT32 args)
   else
 #endif
     if(TYPEOF(Pike_sp[-args]) != PIKE_T_INT)
-      SIMPLE_BAD_ARG_ERROR("Stdio.File->seek", 1, "int");
+      SIMPLE_BAD_ARG_ERROR("seek", 1, "int");
     else
       to=Pike_sp[-args].u.integer;
 
@@ -3114,13 +3114,13 @@ static void file_seek(INT32 args)
   if(args>1)
   {
     if(TYPEOF(Pike_sp[-args+1]) != PIKE_T_INT)
-      SIMPLE_BAD_ARG_ERROR("Stdio.File->seek", 2, "int");
+      SIMPLE_BAD_ARG_ERROR("seek", 2, "int");
     to *= Pike_sp[-args+1].u.integer;
   }
   if(args>2)
   {
     if(TYPEOF(Pike_sp[-args+2]) != PIKE_T_INT)
-      SIMPLE_BAD_ARG_ERROR("Stdio.File->seek", 3, "int");
+      SIMPLE_BAD_ARG_ERROR("seek", 3, "int");
     to += Pike_sp[-args+2].u.integer;
   }
 
@@ -3195,7 +3195,7 @@ static void file_truncate(INT32 args)
   int res;
 
   if(args<1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("Stdio.File->truncate", 1);
+    SIMPLE_TOO_FEW_ARGS_ERROR("truncate", 1);
 
 #if defined (INT64)
 #if defined (HAVE_FTRUNCATE64) || SIZEOF_OFF_T > SIZEOF_INT_TYPE
@@ -3207,7 +3207,7 @@ static void file_truncate(INT32 args)
 #endif
 #endif
     if(TYPEOF(Pike_sp[-args]) != PIKE_T_INT)
-      SIMPLE_BAD_ARG_ERROR("Stdio.File->truncate", 1, "int");
+      SIMPLE_BAD_ARG_ERROR("truncate", 1, "int");
     else
       len = Pike_sp[-args].u.integer;
 
@@ -3784,12 +3784,12 @@ static void file_set_backend (INT32 args)
   struct Backend_struct *backend;
 
   if (!args)
-    SIMPLE_TOO_FEW_ARGS_ERROR ("Stdio.File->set_backend", 1);
+    SIMPLE_TOO_FEW_ARGS_ERROR ("set_backend", 1);
   if (TYPEOF(Pike_sp[-args]) != PIKE_T_OBJECT)
-    SIMPLE_BAD_ARG_ERROR ("Stdio.File->set_backend", 1, "object(Pike.Backend)");
+    SIMPLE_BAD_ARG_ERROR ("set_backend", 1, "Pike.Backend");
   backend = get_storage (Pike_sp[-args].u.object, Backend_program);
   if (!backend)
-    SIMPLE_BAD_ARG_ERROR ("Stdio.File->set_backend", 1, "object(Pike.Backend)");
+    SIMPLE_BAD_ARG_ERROR ("set_backend", 1, "Pike.Backend");
 
   /* FIXME: Only allow set_backend() if the file is open? */
 
@@ -3892,7 +3892,7 @@ static void file_set_blocking(INT32 args)
 static void file_set_close_on_exec(INT32 args)
 {
   if(args < 1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("Stdio.File->set_close_on_exec", 1);
+    SIMPLE_TOO_FEW_ARGS_ERROR("set_close_on_exec", 1);
   if(FD <0)
     Pike_error("File not open.\n");
 
@@ -3969,9 +3969,9 @@ static void file_release_fd(INT32 args)
 static void file_take_fd(INT32 args)
 {
   if (args < 1)
-    SIMPLE_TOO_FEW_ARGS_ERROR ("Stdio.File->take_fd", 1);
+    SIMPLE_TOO_FEW_ARGS_ERROR ("take_fd", 1);
   if (TYPEOF(Pike_sp[-args]) != PIKE_T_INT)
-    SIMPLE_BAD_ARG_ERROR ("Stdio.File->take_fd", 0, "int");
+    SIMPLE_BAD_ARG_ERROR ("take_fd", 0, "int");
   change_fd_for_box(&THIS->box, Pike_sp[-args].u.integer);
   pop_n_elems(args);
 }
@@ -4076,9 +4076,9 @@ static void file_set_buffer(INT32 args)
   if(FD==-1)
     Pike_error("Stdio.File->set_buffer() on closed file.\n");
   if(!args)
-    SIMPLE_TOO_FEW_ARGS_ERROR("Stdio.File->set_buffer", 1);
+    SIMPLE_TOO_FEW_ARGS_ERROR("set_buffer", 1);
   if(TYPEOF(Pike_sp[-args]) != PIKE_T_INT)
-    SIMPLE_BAD_ARG_ERROR("Stdio.File->set_buffer", 1, "int");
+    SIMPLE_BAD_ARG_ERROR("set_buffer", 1, "int");
 
   bufsize=Pike_sp[-args].u.integer;
   if(bufsize < 0)
@@ -4087,7 +4087,7 @@ static void file_set_buffer(INT32 args)
   if(args>1)
   {
     if(TYPEOF(Pike_sp[1-args]) != PIKE_T_STRING)
-      SIMPLE_BAD_ARG_ERROR("Stdio.File->set_buffer", 2, "string");
+      SIMPLE_BAD_ARG_ERROR("set_buffer", 2, "string");
     flags=parse(Pike_sp[1-args].u.string->str);
   }else{
     flags=FILE_READ | FILE_WRITE;
@@ -4612,20 +4612,20 @@ static void file_dup2(INT32 args)
   struct my_file *fd;
 
   if(args < 1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("Stdio.File->dup2", 1);
+    SIMPLE_TOO_FEW_ARGS_ERROR("dup2", 1);
 
   if(FD < 0)
     Pike_error("File not open.\n");
 
   if(TYPEOF(Pike_sp[-args]) != PIKE_T_OBJECT)
-    SIMPLE_BAD_ARG_ERROR("Stdio.File->dup2", 1, "Stdio.File");
+    SIMPLE_BAD_ARG_ERROR("dup2", 1, "Stdio.File");
 
   o=Pike_sp[-args].u.object;
 
   fd=get_file_storage(o);
 
   if(!fd)
-    SIMPLE_BAD_ARG_ERROR("Stdio.File->dup2", 1, "Stdio.File");
+    SIMPLE_BAD_ARG_ERROR("dup2", 1, "Stdio.File");
 
   if(fd->box.fd < 0) {
     int new_fd;
@@ -4731,11 +4731,11 @@ static void file_open_socket(INT32 args)
     if (TYPEOF(Pike_sp[-args]) != PIKE_T_INT &&
 	(TYPEOF(Pike_sp[-args]) != PIKE_T_STRING ||
 	 Pike_sp[-args].u.string->size_shift)) {
-      SIMPLE_BAD_ARG_ERROR("Stdio.File->open_socket", 1, "int|string (8bit)");
+      SIMPLE_BAD_ARG_ERROR("open_socket", 1, "int|string(8bit)");
     }
     if (args > 1 && !UNSAFE_IS_ZERO(&Pike_sp[1-args])) {
       if (TYPEOF(Pike_sp[1-args]) != PIKE_T_STRING) {
-	SIMPLE_BAD_ARG_ERROR("Stdio.File->open_socket", 2, "string");
+	SIMPLE_BAD_ARG_ERROR("open_socket", 2, "string");
       }
 
       name = Pike_sp[1-args].u.string->str;
@@ -4949,7 +4949,7 @@ static void file_connect_unix( INT32 args )
   int tmp;
 
   if( args < 1 )
-    SIMPLE_TOO_FEW_ARGS_ERROR("Stdio.File->connect_unix", 1);
+    SIMPLE_TOO_FEW_ARGS_ERROR("connect_unix", 1);
   if( (TYPEOF(Pike_sp[-args]) != PIKE_T_STRING) ||
       (Pike_sp[-args].u.string->size_shift) )
     Pike_error("Illegal argument. Expected string(8bit)\n");
@@ -5035,11 +5035,11 @@ static void file_connect(INT32 args)
 
   if(TYPEOF(*dest_port) != PIKE_T_INT &&
      (TYPEOF(*dest_port) != PIKE_T_STRING || dest_port->u.string->size_shift))
-    SIMPLE_BAD_ARG_ERROR("Stdio.File->connect", 2, "int|string (8bit)");
+    SIMPLE_BAD_ARG_ERROR("connect", 2, "int|string(8bit)");
 
   if(src_port && TYPEOF(*src_port) != PIKE_T_INT &&
      (TYPEOF(*src_port) != PIKE_T_STRING || src_port->u.string->size_shift))
-    SIMPLE_BAD_ARG_ERROR("Stdio.File->connect", 4, "int|string (8bit)");
+    SIMPLE_BAD_ARG_ERROR("connect", 4, "int|string(8bit)");
 
 /*   fprintf(stderr, "connect: family: %d\n", SOCKADDR_FAMILY(addr)); */
 
@@ -5241,7 +5241,7 @@ static void file_lsh(INT32 args)
 {
   ptrdiff_t len;
   if(args < 1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("Stdio.File->`<<", 1);
+    SIMPLE_TOO_FEW_ARGS_ERROR("`<<", 1);
   if(args > 1)
     pop_n_elems(args-1);
 
@@ -5276,7 +5276,7 @@ static void file_create(INT32 args)
   if(!args) return;
   if(TYPEOF(Pike_sp[-args]) != PIKE_T_STRING &&
      TYPEOF(Pike_sp[-args]) != PIKE_T_INT)
-    SIMPLE_BAD_ARG_ERROR("Stdio.File->create", 1, "int|string");
+    SIMPLE_BAD_ARG_ERROR("create", 1, "int|string");
 
   close_fd();
   file_open(args);
@@ -5354,7 +5354,7 @@ void file_proxy(INT32 args)
   check_all_args("Stdio.File->proxy",args, BIT_OBJECT,0);
   f=get_file_storage(Pike_sp[-args].u.object);
   if(!f)
-    SIMPLE_BAD_ARG_ERROR("Stdio.File->proxy", 1, "Stdio.File");
+    SIMPLE_BAD_ARG_ERROR("proxy", 1, "Stdio.File");
 
   from=fd_dup(f->box.fd);
   if(from<0)

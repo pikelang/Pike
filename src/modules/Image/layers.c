@@ -732,8 +732,7 @@ static void image_layer_set_image(INT32 args)
       {
 	 if (TYPEOF(Pike_sp[-args]) != T_INT ||
 	     Pike_sp[-args].u.integer!=0)
-	    SIMPLE_BAD_ARG_ERROR("Image.Layer->set_image",1,
-				 "object(Image)|int(0)");
+	    SIMPLE_BAD_ARG_ERROR("set_image",1,"Image.Image|int(0..0)");
       }
       else if ((img=get_storage(Pike_sp[-args].u.object,image_program)))
       {
@@ -744,8 +743,7 @@ static void image_layer_set_image(INT32 args)
 	 THIS->ysize=img->ysize;
       }
       else
-	 SIMPLE_BAD_ARG_ERROR("Image.Layer->set_image",1,
-			      "object(Image)|int(0)");
+	 SIMPLE_BAD_ARG_ERROR("set_image",1, "Image.Image|int(0..0)");
    }
 
    if (args>=2) {
@@ -753,16 +751,14 @@ static void image_layer_set_image(INT32 args)
       {
 	 if (TYPEOF(Pike_sp[1-args]) != T_INT ||
 	     Pike_sp[1-args].u.integer!=0)
-	    SIMPLE_BAD_ARG_ERROR("Image.Layer->set_image",2,
-				 "object(Image)|int(0)");
+	    SIMPLE_BAD_ARG_ERROR("set_image",2, "Image.Image|int(0..0)");
       }
       else if ((img=get_storage(Pike_sp[1-args].u.object,image_program)))
       {
 	 if (THIS->img &&
 	     (img->xsize!=THIS->xsize ||
 	      img->ysize!=THIS->ysize))
-	    SIMPLE_BAD_ARG_ERROR("Image.Layer->set_image",2,
-				 "image of same size");
+	    SIMPLE_BAD_ARG_ERROR("set_image",2, "image of same size");
 	 if (!THIS->img)
 	 {
 	    THIS->xsize=img->xsize;
@@ -773,8 +769,7 @@ static void image_layer_set_image(INT32 args)
 	 THIS->alp=img;
       }
       else
-	 SIMPLE_BAD_ARG_ERROR("Image.Layer->set_image",2,
-			      "object(Image)|int(0)");
+	 SIMPLE_BAD_ARG_ERROR("set_image",2,"Image.Image|int(0..0)");
    }
 
    pop_n_elems(args);
@@ -848,7 +843,7 @@ static void image_layer_set_alpha_value(INT32 args)
    FLOAT_TYPE f;
    get_all_args("set_alpha_value",args,"%F",&f);
    if (f<0.0 || f>1.0)
-      SIMPLE_BAD_ARG_ERROR("Image.Layer->set_alpha_value",1,"float(0..1)");
+      SIMPLE_BAD_ARG_ERROR("set_alpha_value",1,"float(0..1)");
    THIS->alpha_value=f;
    pop_n_elems(args);
    ref_push_object(THISOBJ);
@@ -1059,9 +1054,9 @@ static void image_layer_set_mode(INT32 args)
 {
    int i;
    if (args!=1)
-      SIMPLE_TOO_FEW_ARGS_ERROR("Image.Layer->set_mode",1);
+      SIMPLE_TOO_FEW_ARGS_ERROR("set_mode",1);
    if (TYPEOF(Pike_sp[-args]) != T_STRING)
-      SIMPLE_BAD_ARG_ERROR("Image.Layer->set_mode",1,"string");
+      SIMPLE_BAD_ARG_ERROR("set_mode",1,"string");
 
    for (i=0; i<LAYER_MODES; i++)
       if (Pike_sp[-args].u.string==layer_mode[i].ps)
@@ -1075,7 +1070,7 @@ static void image_layer_set_mode(INT32 args)
 	 return;
       }
 
-   SIMPLE_BAD_ARG_ERROR("Image.Layer->set_mode",1,"existing mode");
+   SIMPLE_BAD_ARG_ERROR("set_mode",1,"existing mode");
 }
 
 static void image_layer_mode(INT32 args)
@@ -1132,13 +1127,13 @@ static void image_layer_descriptions(INT32 args)
 static void image_layer_set_fill(INT32 args)
 {
    if (!args)
-      SIMPLE_TOO_FEW_ARGS_ERROR("Image.Layer->set_fill",1);
+      SIMPLE_TOO_FEW_ARGS_ERROR("set_fill",1);
 
    if (TYPEOF(Pike_sp[-args]) == T_INT && !Pike_sp[-args].u.integer)
       THIS->fill=black;
    else
       if (!image_color_arg(-args,&(THIS->fill)))
-	 SIMPLE_BAD_ARG_ERROR("Image.Layer->set_fill",1,"color");
+	 SIMPLE_BAD_ARG_ERROR("set_fill",1,"Image.Color");
 
    smear_color(THIS->sfill,THIS->fill,SNUMPIXS);
 
@@ -1150,7 +1145,7 @@ static void image_layer_set_fill(INT32 args)
 	 if (!image_color_arg(1-args,&(THIS->fill_alpha)))
 	 {
 	    smear_color(THIS->sfill_alpha,THIS->fill_alpha,SNUMPIXS);
-	    SIMPLE_BAD_ARG_ERROR("Image.Layer->set_fill",2,"color");
+	    SIMPLE_BAD_ARG_ERROR("set_fill",2,"Image.Color");
 	 }
    }
    smear_color(THIS->sfill_alpha,THIS->fill_alpha,SNUMPIXS);
@@ -1368,11 +1363,11 @@ static void image_layer_create(INT32 args)
 		   &(THIS->xsize),&(THIS->ysize));
       if (args>2)
 	 if (!image_color_arg(2-args,&col))
-	    SIMPLE_BAD_ARG_ERROR("Image.Layer",3,"Image.Color");
+	    SIMPLE_BAD_ARG_ERROR("create",3,"Image.Color");
 
       if (args>3)
 	 if (!image_color_arg(3-args,&alpha))
-	    SIMPLE_BAD_ARG_ERROR("Image.Layer",4,"Image.Color");
+	    SIMPLE_BAD_ARG_ERROR("create",4,"Image.Color");
 
       push_int(THIS->xsize);
       push_int(THIS->ysize);
@@ -1404,7 +1399,7 @@ static void image_layer_create(INT32 args)
       pop_stack();
    }
    else
-      SIMPLE_BAD_ARG_ERROR("Image.Layer",1,"mapping|int|Image.Image");
+      SIMPLE_BAD_ARG_ERROR("create",1,"mapping|int|Image.Image");
 }
 
 /*** layer object *****************************************/
@@ -1428,7 +1423,7 @@ static void image_layer_cast(INT32 args)
   struct pike_string *type;
 
   if (!args)
-    SIMPLE_TOO_FEW_ARGS_ERROR("Image.Layer->cast",1);
+    SIMPLE_TOO_FEW_ARGS_ERROR("cast",1);
 
   type = Pike_sp[-args].u.string;
   pop_n_elems(args); /* type have at least one more reference. */
@@ -2901,20 +2896,19 @@ void image_lay(INT32 args)
    ONERROR err;
 
    if (!args)
-      SIMPLE_TOO_FEW_ARGS_ERROR("Image.lay",1);
+      SIMPLE_TOO_FEW_ARGS_ERROR("lay",1);
 
    if (TYPEOF(Pike_sp[-args]) != T_ARRAY)
-      SIMPLE_BAD_ARG_ERROR("Image.lay",1,
-			   "array(Image.Layer|mapping)");
+      SIMPLE_BAD_ARG_ERROR("lay",1,"array(Image.Layer|mapping)");
 
    if (args>1)
    {
       get_all_args("lay",args-1,"%i%i%i%i",
 		   &xoffset,&yoffset,&xsize,&ysize);
       if (xsize<1)
-	 SIMPLE_BAD_ARG_ERROR("Image.lay",4,"int(1..)");
+	 SIMPLE_BAD_ARG_ERROR("lay",4,"int(1..)");
       if (ysize<1)
-	 SIMPLE_BAD_ARG_ERROR("Image.lay",5,"int(1..)");
+	 SIMPLE_BAD_ARG_ERROR("lay",5,"int(1..)");
    }
 
    layers=(a=Pike_sp[-args].u.array)->size;
@@ -2936,7 +2930,7 @@ void image_lay(INT32 args)
       {
 	 if (!(l[j]=get_storage(a->item[i].u.object,
 					       image_layer_program)))
-	    SIMPLE_BAD_ARG_ERROR("Image.lay",1,
+	    SIMPLE_BAD_ARG_ERROR("lay",1,
 				 "array(Image.Layer|mapping)");
       }
       else if (TYPEOF(a->item[i]) == T_MAPPING)
@@ -2947,7 +2941,7 @@ void image_lay(INT32 args)
 	 l[j]=get_storage(o,image_layer_program);
       }
       else
-	 SIMPLE_BAD_ARG_ERROR("Image.lay",1,
+	 SIMPLE_BAD_ARG_ERROR("lay",1,
 			      "array(Image.Layer|mapping)");
       if (l[j]->xsize && l[j]->ysize)
 	 j++;
@@ -3247,7 +3241,7 @@ static void image_layer__sprintf( INT32 args )
   if (args != 2 )
     SIMPLE_TOO_FEW_ARGS_ERROR("_sprintf",2);
   if (TYPEOF(Pike_sp[-args]) != T_INT)
-    SIMPLE_BAD_ARG_ERROR("_sprintf",0,"integer");
+    SIMPLE_BAD_ARG_ERROR("_sprintf",0,"int");
   if (TYPEOF(Pike_sp[1-args]) != T_MAPPING)
     SIMPLE_BAD_ARG_ERROR("_sprintf",1,"mapping");
 

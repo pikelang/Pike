@@ -962,8 +962,8 @@ void image_create(INT32 args)
    if (args<2) return;
    if (TYPEOF(sp[-args]) != T_INT||
        TYPEOF(sp[1-args]) != T_INT)
-      bad_arg_error("Image.Image->create",sp-args,args,0,"",sp-args,
-		"Bad arguments to Image.Image->create()\n");
+     bad_arg_error("create",sp-args,args,0,"",sp-args,
+                   "Bad arguments to create.\n");
 
    if (THIS->img) { free(THIS->img); THIS->img=NULL; }
 	
@@ -1042,8 +1042,8 @@ void image_clone(INT32 args)
       if (args<2||
 	  TYPEOF(sp[-args]) != T_INT||
 	  TYPEOF(sp[1-args]) != T_INT)
-	 bad_arg_error("Image",sp-args,args,0,"",sp-args,
-		"Bad arguments to Image()\n");
+	 bad_arg_error("clone",sp-args,args,0,"",sp-args,
+                       "Bad arguments to clone.\n");
 
    o=clone_object(image_program,0);
    SET_ONERROR(err, my_free_object, o);
@@ -1189,8 +1189,8 @@ void image_copy(INT32 args)
        TYPEOF(sp[1-args]) != T_INT||
        TYPEOF(sp[2-args]) != T_INT||
        TYPEOF(sp[3-args]) != T_INT)
-      bad_arg_error("Image",sp-args,args,0,"",sp-args,
-		"Bad arguments to Image()\n");
+      bad_arg_error("copy",sp-args,args,0,"",sp-args,
+                    "Bad arguments to copy.\n");
 
    if (!THIS->img) Pike_error("Called Image.Image object is not initialized\n");;
 
@@ -1378,7 +1378,7 @@ static void image_find_autocrop(INT32 args)
    if (args) {
       if (TYPEOF(sp[-args]) != T_INT)
          bad_arg_error("find_autocrop",sp-args,args,0,"",sp-args,
-		"Bad arguments to find_autocrop()\n");
+                       "Bad arguments to find_autocrop.\n");
       else
          border=sp[-args].u.integer; 
    }
@@ -1454,8 +1454,8 @@ void image_autocrop(INT32 args)
 void image_setcolor(INT32 args)
 {
    if (args<3)
-      bad_arg_error("Image.Image->setcolor",sp-args,args,0,"",sp-args,
-		"Bad arguments to Image.Image->setcolor()\n");
+      bad_arg_error("setcolor",sp-args,args,0,"",sp-args,
+                    "Bad arguments to setcolor.\n");
    getrgb(THIS,0,args,args,"Image.Image->setcolor()");
    pop_n_elems(args);
    ref_push_object(THISOBJ);
@@ -1494,7 +1494,7 @@ void image_setpixel(INT32 args)
        TYPEOF(sp[-args]) != T_INT||
        TYPEOF(sp[1-args]) != T_INT)
       bad_arg_error("setpixel",sp-args,args,0,"",sp-args,
-		"Bad arguments to setpixel()\n");
+                    "Bad arguments to setpixel.\n");
    getrgb(THIS,2,args,args,"Image.Image->setpixel()");   
    if (!THIS->img) return;
    x=sp[-args].u.integer;
@@ -1522,8 +1522,8 @@ void image_getpixel(INT32 args)
    if (args<2||
        TYPEOF(sp[-args]) != T_INT||
        TYPEOF(sp[1-args]) != T_INT)
-      bad_arg_error("Image",sp-args,args,0,"",sp-args,
-		"Bad arguments to Image()\n");
+      bad_arg_error("getpixel",sp-args,args,0,"",sp-args,
+                    "Bad arguments to getpixel.\n");
 
    if (!THIS->img) Pike_error("Called Image.Image object is not initialized\n");;
 
@@ -1577,8 +1577,8 @@ void image_line(INT32 args)
        TYPEOF(sp[1-args]) != T_INT||
        TYPEOF(sp[2-args]) != T_INT||
        TYPEOF(sp[3-args]) != T_INT)
-      bad_arg_error("Image",sp-args,args,0,"",sp-args,
-		"Bad arguments to Image()\n");
+      bad_arg_error("line",sp-args,args,0,"",sp-args,
+                    "Bad arguments to line.\n");
    getrgb(THIS,4,args,args,"Image.Image->line()");
    if (!THIS->img) return;
 
@@ -1627,8 +1627,8 @@ void image_box(INT32 args)
        TYPEOF(sp[1-args]) != T_INT||
        TYPEOF(sp[2-args]) != T_INT||
        TYPEOF(sp[3-args]) != T_INT)
-      bad_arg_error("Image",sp-args,args,0,"",sp-args,
-		"Bad arguments to Image()\n");
+     bad_arg_error("box",sp-args,args,0,"",sp-args,
+                   "Bad arguments to box.\n");
    getrgb(THIS,4,args,args,"Image.Image->box()");
    if (!THIS->img) return;
 
@@ -1679,8 +1679,8 @@ void image_circle(INT32 args)
        TYPEOF(sp[1-args]) != T_INT||
        TYPEOF(sp[2-args]) != T_INT||
        TYPEOF(sp[3-args]) != T_INT)
-      bad_arg_error("Image",sp-args,args,0,"",sp-args,
-		"Bad arguments to Image()\n");
+      bad_arg_error("circle",sp-args,args,0,"",sp-args,
+                    "Bad arguments to circle.\n");
    getrgb(THIS,4,args,args,"Image.Image->circle()");
    if (!THIS->img) return;
 
@@ -1884,7 +1884,7 @@ static void image_tuned_box(INT32 args)
       TYPEOF(sp[1-args]) != T_INT||
       TYPEOF(sp[2-args]) != T_INT||
       TYPEOF(sp[3-args]) != T_INT)
-     SIMPLE_TOO_FEW_ARGS_ERROR("Image.Image->tuned_box",5);
+     SIMPLE_TOO_FEW_ARGS_ERROR("tuned_box",5);
 
   if (!THIS->img)
     Pike_error("Called Image.Image object is not initialized\n");;
@@ -1903,16 +1903,16 @@ static void image_tuned_box(INT32 args)
   }
 
   if (args<8)
-     SIMPLE_TOO_FEW_ARGS_ERROR("Image.Image->tuned_box",8);
+     SIMPLE_TOO_FEW_ARGS_ERROR("tuned_box",8);
 
   if (!image_color_svalue_rgba(sp-4,&topleft))
-     SIMPLE_BAD_ARG_ERROR("Image.Image->tuned_box",5,"color");
+     SIMPLE_BAD_ARG_ERROR("tuned_box",5,"color");
   if (!image_color_svalue_rgba(sp-3,&topright))
-     SIMPLE_BAD_ARG_ERROR("Image.Image->tuned_box",6,"color");
+     SIMPLE_BAD_ARG_ERROR("tuned_box",6,"color");
   if (!image_color_svalue_rgba(sp-2,&bottomleft))
-     SIMPLE_BAD_ARG_ERROR("Image.Image->tuned_box",7,"color");
+     SIMPLE_BAD_ARG_ERROR("tuned_box",7,"color");
   if (!image_color_svalue_rgba(sp-1,&bottomright))
-     SIMPLE_BAD_ARG_ERROR("Image.Image->tuned_box",8,"color");
+     SIMPLE_BAD_ARG_ERROR("tuned_box",8,"color");
 
   if (x1>x2) x1^=x2,x2^=x1,x1^=x2,
 	       sum=topleft,topleft=topright,topright=sum,
@@ -2098,8 +2098,8 @@ static void image_gradients(INT32 args)
 	    (array_fix_type_field(a) & ~BIT_INT) ))
       {
 	 while (first) { c=first; first=c->next; free(c); }
-	 bad_arg_error("Image.Image->gradients",sp-args,args,0,"",sp-args,
-		"Bad arguments to Image.Image->gradients()\n");
+	 bad_arg_error("gradients",sp-args,args,0,"",sp-args,
+                       "Bad arguments to gradients.\n");
       }
       c=malloc(sizeof(struct gr_point));
       if (!c)
@@ -3238,13 +3238,12 @@ void image_select_from(INT32 args)
    if (args<2 
        || TYPEOF(sp[-args]) != T_INT
        || TYPEOF(sp[1-args]) != T_INT)
-      bad_arg_error("Image",sp-args,args,0,"",sp-args,
-		"Bad arguments to Image()\n");
+     bad_arg_error("select_from",sp-args,args,0,"",sp-args,
+                   "Bad arguments to select_from.\n");
 
    if (args>=3) 
       if (TYPEOF(sp[2-args]) != T_INT)
-	 bad_arg_error("Image",sp-args,args,3,"",sp+3-1-args,
-		"Bad argument 3 (edge value) to Image()\n");
+        SIMPLE_BAD_ARG_ERROR("select_from",3,"int");
       else
 	 low_limit=MAXIMUM(0,sp[2-args].u.integer);
    else
@@ -3523,14 +3522,14 @@ CHRONO("apply_matrix");
 
    if (args<1 ||
        TYPEOF(sp[-args]) != T_ARRAY)
-      bad_arg_error("Image",sp-args,args,0,"",sp-args,
-		"Bad arguments to Image()\n");
+      bad_arg_error("apply_matrix",sp-args,args,0,"",sp-args,
+                    "Bad arguments to apply_matrix.\n");
 
-   if (args>3) 
+   if (args>3)
       if (TYPEOF(sp[1-args]) != T_INT ||
 	  TYPEOF(sp[2-args]) != T_INT ||
 	  TYPEOF(sp[3-args]) != T_INT)
-	 Pike_error("Illegal argument(s) (2,3,4) to Image.Image->apply_matrix()\n");
+        Pike_error("Illegal argument(s) (2,3,4) to apply_matrix.\n");
       else
       {
 	 default_rgb.r=sp[1-args].u.integer;
@@ -4098,9 +4097,9 @@ static void image_apply_curve( INT32 args )
        for( i = 0; i<3; i++ )
          if( TYPEOF(sp[-args+i]) != T_ARRAY ||
              sp[-args+i].u.array->size != 256 )
-           bad_arg_error("Image.Image->apply_curve", 
+           bad_arg_error("apply_curve",
                          sp-args, args, 0, "", sp-args,
-                         "Bad arguments to apply_curve()\n");
+                         "Bad arguments to apply_curve.\n");
          else
            for( j = 0; j<256; j++ )
              if( TYPEOF(sp[-args+i].u.array->item[j]) == T_INT )
@@ -4116,12 +4115,10 @@ static void image_apply_curve( INT32 args )
        struct object *o;
 
        if( TYPEOF(sp[-args]) != T_STRING )
-	 SIMPLE_BAD_ARG_ERROR("Image.Image->apply_curve()", 1,
-			      "string");
+	 SIMPLE_BAD_ARG_ERROR("apply_curve", 1, "string");
        if( TYPEOF(sp[-args+1]) != T_ARRAY ||
            sp[-args+1].u.array->size != 256 )
-	 SIMPLE_BAD_ARG_ERROR("Image.Image->apply_curve()", 2,
-			      "256 element array");
+	 SIMPLE_BAD_ARG_ERROR("apply_curve", 2, "256 element array");
 
        for( j = 0; j<256; j++ )
 	 if( TYPEOF(sp[-args+1].u.array->item[j]) == T_INT )
@@ -4196,9 +4193,9 @@ static void image_apply_curve( INT32 args )
        unsigned char curve[256];
        if( TYPEOF(sp[-args]) != T_ARRAY ||
            sp[-args].u.array->size != 256 )
-         bad_arg_error("Image.Image->apply_curve",
+         bad_arg_error("apply_curve",
                        sp-args, args, 0, "", sp-args,
-                       "Bad arguments to apply_curve()\n" );
+                       "Bad arguments to apply_curve.\n" );
        else
          for( j = 0; j<256; j++ )
            if( TYPEOF(sp[-args].u.array->item[j]) == T_INT )
@@ -4278,21 +4275,21 @@ void image_gamma(INT32 args)
       else if (TYPEOF(sp[-args]) == T_FLOAT)
 	 gammar=gammab=gammag=sp[-args].u.float_number;
       else
-	SIMPLE_BAD_ARG_ERROR("Image.Image->gamma",1,"int|float");
+	SIMPLE_BAD_ARG_ERROR("gamma",1,"int|float");
    }
    else if (args==3)
    {
       if (TYPEOF(sp[-args]) == T_INT) gammar=(double)sp[-args].u.integer;
       else if (TYPEOF(sp[-args]) == T_FLOAT) gammar=sp[-args].u.float_number;
-      else SIMPLE_BAD_ARG_ERROR("Image.Image->gamma",1,"int|float");
+      else SIMPLE_BAD_ARG_ERROR("gamma",1,"int|float");
 
       if (TYPEOF(sp[1-args]) == T_INT) gammag=(double)sp[1-args].u.integer;
       else if (TYPEOF(sp[1-args]) == T_FLOAT) gammag=sp[1-args].u.float_number;
-      else SIMPLE_BAD_ARG_ERROR("Image.Image->gamma",2,"int|float");
+      else SIMPLE_BAD_ARG_ERROR("gamma",2,"int|float");
 
       if (TYPEOF(sp[2-args]) == T_INT) gammab=(double)sp[2-args].u.integer;
       else if (TYPEOF(sp[2-args]) == T_FLOAT) gammab=sp[2-args].u.float_number;
-      else SIMPLE_BAD_ARG_ERROR("Image.Image->gamma",3,"int|float");
+      else SIMPLE_BAD_ARG_ERROR("gamma",3,"int|float");
    }
    else
       Pike_error("Image.Image->gamma(): illegal number of arguments\n");
@@ -4370,8 +4367,8 @@ void image_write_lsb_rgb(INT32 args)
 
    if (args<1
        || TYPEOF(sp[-args]) != T_STRING)
-      bad_arg_error("Image",sp-args,args,0,"",sp-args,
-		"Bad arguments to Image()\n");
+      bad_arg_error("write_lsb_rgb",sp-args,args,0,"",sp-args,
+                    "Bad arguments to write_lsb_rgb.\n");
    
    s=sp[-args].u.string->str;
    l=sp[-args].u.string->len;
@@ -4441,8 +4438,8 @@ void image_write_lsb_grey(INT32 args)
 
    if (args<1
        || TYPEOF(sp[-args]) != T_STRING)
-      bad_arg_error("Image",sp-args,args,0,"",sp-args,
-		"Bad arguments to Image()\n");
+     bad_arg_error("write_lsb_grey",sp-args,args,0,"",sp-args,
+                   "Bad arguments to write_lsb_grey.\n");
    
    s=sp[-args].u.string->str;
    l=sp[-args].u.string->len;
@@ -4560,7 +4557,7 @@ static void image__sprintf( INT32 args )
   if (args != 2 )
     SIMPLE_TOO_FEW_ARGS_ERROR("_sprintf",2);
   if (TYPEOF(sp[-args]) != T_INT)
-    SIMPLE_BAD_ARG_ERROR("_sprintf",0,"integer");
+    SIMPLE_BAD_ARG_ERROR("_sprintf",0,"int");
   if (TYPEOF(sp[1-args]) != T_MAPPING)
     SIMPLE_BAD_ARG_ERROR("_sprintf",1,"mapping");
 
@@ -4619,7 +4616,8 @@ static void image_grey_blur( INT32 args )
   if( !rgb )
     Pike_error("This object is not initialized\n");
 
-  if (TYPEOF(sp[-args]) != T_INT)  SIMPLE_BAD_ARG_ERROR("grey_blur",0,"integer");
+  if (TYPEOF(sp[-args]) != T_INT)
+    SIMPLE_BAD_ARG_ERROR("grey_blur", 0, "int");
 
   t = sp[-args].u.integer;  /* times */
 
@@ -4693,7 +4691,8 @@ static void image_blur( INT32 args )
   if( !rgb )
     Pike_error("This object is not initialized\n");
 
-  if (TYPEOF(sp[-args]) != T_INT)  SIMPLE_BAD_ARG_ERROR("blur",0,"integer");
+  if (TYPEOF(sp[-args]) != T_INT)
+    SIMPLE_BAD_ARG_ERROR("blur", 0, "int");
 
   t = sp[-args].u.integer;  /* times */
 
@@ -4847,7 +4846,7 @@ void image__decode( INT32 args )
 	TYPEOF((a=Pike_sp[-1].u.array)->item[2]) != PIKE_T_STRING ||
         TYPEOF(a->item[0]) != PIKE_T_INT ||
         TYPEOF(a->item[1]) != PIKE_T_INT )
-	Pike_error( "Illegal arguments to decode\n");
+      Pike_error( "Illegal arguments to decode\n");
 
     w = a->item[0].u.integer;
     h = a->item[1].u.integer;

@@ -356,9 +356,8 @@ static void image_ft_face_create( INT32 args )
 
   get_all_args("create", args, "%s.%d", &font, &face_number);
 
-  if (face_number < 0) {
-    SIMPLE_BAD_ARG_ERROR("FreeType.Face", 2, "int(0..)");
-  }
+  if (face_number < 0)
+    SIMPLE_BAD_ARG_ERROR("create", 2, "int(0..)");
 
   er = FT_New_Face( library, font, face_number, &TFACE );
   if( er == FT_Err_Unknown_File_Format )

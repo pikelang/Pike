@@ -945,9 +945,9 @@ static struct nct_flat _img_get_flat_from_array(struct array *arr)
 
       if (!image_color_svalue(arr->item+i,
 			      &(flat.entries[n].color)))
-	 bad_arg_error("Colortable", 
+	 bad_arg_error("create",
 		       0,0, 1, "array of colors or 0", 0,
-		       "Colortable(): bad element %d of colorlist\n",i);
+		       "Bad element %d of colorlist.\n",i);
 
 #if DEBUG
       fprintf(stderr,"got %d: %02x%02x%02x\n",n,
@@ -1157,9 +1157,9 @@ static struct nct_cube _img_get_cube_from_args(INT32 args)
       int c;
 
       if (!image_color_arg(-args,&low))
-	 SIMPLE_BAD_ARG_ERROR("colortable",1,"color");
+	 SIMPLE_BAD_ARG_ERROR("create",1,"color");
       if (!image_color_arg(1-args,&high))
-	 SIMPLE_BAD_ARG_ERROR("colortable",2,"color");
+	 SIMPLE_BAD_ARG_ERROR("create",2,"color");
       if (TYPEOF(sp[2+ap-args]) != T_INT)
 	 Pike_error("illegal argument(s) %d, %d or %d\n",ap,ap+1,ap+2);
 
@@ -2266,8 +2266,8 @@ static void image_colortable_add(INT32 args)
 	       }
 	    }
 	    else 
-	       bad_arg_error("Image",sp-args,args,2,"",sp+2-1-args,
-		"Bad argument 2 to Image()\n");
+	       bad_arg_error("add",sp-args,args,2,"",sp+2-1-args,
+                             "Bad argument 2 to add.\n");
 	 else
 	 {
 	    THIS->u.flat=_img_get_flat_from_image(img,256); 
@@ -2277,8 +2277,8 @@ static void image_colortable_add(INT32 args)
 	    THIS->type=NCT_FLAT;
 	 }
       }
-      else bad_arg_error("Image",sp-args,args,1,"",sp+1-1-args,
-		"Bad argument 1 to Image()\n");
+      else bad_arg_error("add",sp-args,args,1,"",sp+1-1-args,
+                         "Bad argument 1 to add.\n");
    }
    else if (TYPEOF(sp[-args]) == T_ARRAY)
    {
@@ -2290,7 +2290,7 @@ static void image_colortable_add(INT32 args)
       if (args>1)
       {
 	 if (TYPEOF(sp[1-args]) != T_INT)
-	    SIMPLE_BAD_ARG_ERROR("Image.Colortable",2,"int");
+	    SIMPLE_BAD_ARG_ERROR("add",2,"int");
 	 switch (sp[1-args].u.integer)
 	 {
 	    case 0: /* rgb */
@@ -2304,7 +2304,7 @@ static void image_colortable_add(INT32 args)
 		  _img_get_flat_from_bgrz_string(sp[-args].u.string); 
 	       break;
 	    default:
-	       SIMPLE_BAD_ARG_ERROR("Image.Colortable",2,"int(0..2)");
+	       SIMPLE_BAD_ARG_ERROR("add",2,"int(0..2)");
 	 }
       }
       else
@@ -2316,8 +2316,8 @@ static void image_colortable_add(INT32 args)
       THIS->u.cube=_img_get_cube_from_args(args);
       THIS->type=NCT_CUBE;
    }
-   else bad_arg_error("Image",sp-args,args,0,"",sp-args,
-		"Bad arguments to Image()\n");
+   else bad_arg_error("add",sp-args,args,0,"",sp-args,
+                      "Bad arguments to add.\n");
    pop_n_elems(args);
    ref_push_object(THISOBJ);
 
@@ -2371,7 +2371,7 @@ void image_colortable_reduce(INT32 args)
 
    if (args) 
      if (TYPEOF(sp[-args]) != T_INT)
-	SIMPLE_BAD_ARG_ERROR("Image.Colortable->reduce",1,"int");
+	SIMPLE_BAD_ARG_ERROR("reduce",1,"int");
      else
 	 numcolors=sp[-args].u.integer;
    else
@@ -2412,13 +2412,13 @@ void image_colortable_reduce_fs(INT32 args)
 
    if (args) {
      if (TYPEOF(sp[-args]) != T_INT)
-	SIMPLE_BAD_ARG_ERROR("Image.Colortable->reduce",1,"int");
+	SIMPLE_BAD_ARG_ERROR("reduce_fs",1,"int");
      else
 	numcolors=sp[-args].u.integer;
    }
 
    if (numcolors<2)
-      SIMPLE_BAD_ARG_ERROR("Image.Colortable->reduce",1,"int(2..)");
+      SIMPLE_BAD_ARG_ERROR("reduce_fs",1,"int(2..)");
 
    pop_n_elems(args);
    image_colortable_corners(0);
@@ -2479,8 +2479,8 @@ void image_colortable_operator_plus(INT32 args)
 	 if (!src) abort();
       }
       else {
-	bad_arg_error("Image-colortable->`+",sp-args,args,0,"",sp-args,
-		"Bad arguments to Image-colortable->`+()\n");
+	bad_arg_error("`+",sp-args,args,0,"",sp-args,
+                      "Bad arguments to `+.\n");
 	/* Not reached, but keeps the compiler happy. */
 	src = NULL;
       }
@@ -2520,16 +2520,16 @@ void image_colortable_operator_minus(INT32 args)
 	 if (!src) 
 	 { 
 	    free_object(o); 
-	    bad_arg_error("Image",sp-args,args,i+2,"",sp+i+2-1-args,
-		"Bad argument %d to Image()\n",i+2); 
+	    bad_arg_error("`-",sp-args,args,i+2,"",sp+i+2-1-args,
+                          "Bad argument %d to `-\n",i+2);
 	 }
 	 _img_sub_colortable(dest,src);
       }
       else 
       { 
 	 free_object(o); 
-	 bad_arg_error("Image",sp-args,args,i+2,"",sp+i+2-1-args,
-		"Bad argument %d to Image()\n",i+2); 
+	 bad_arg_error("`-",sp-args,args,i+2,"",sp+i+2-1-args,
+                       "Bad argument %d to `-.\n",i+2);
       }
    pop_n_elems(args);
    push_object(o);
@@ -2827,9 +2827,9 @@ void image_colortable_rigid(INT32 args)
       colortable_free_lookup_stuff(THIS);
       THIS->lookup_mode=NCT_RIGID;
 
-      if (r<1) SIMPLE_BAD_ARG_ERROR("Image.Colortable->rigid",1,"integer >0");
-      if (g<1) SIMPLE_BAD_ARG_ERROR("Image.Colortable->rigid",2,"integer >0");
-      if (b<1) SIMPLE_BAD_ARG_ERROR("Image.Colortable->rigid",3,"integer >0");
+      if (r<1) SIMPLE_BAD_ARG_ERROR("rigid",1,"int(1..)");
+      if (g<1) SIMPLE_BAD_ARG_ERROR("rigid",2,"int(1..)");
+      if (b<1) SIMPLE_BAD_ARG_ERROR("rigid",3,"int(1..)");
 
       THIS->lu.rigid.r=r;
       THIS->lu.rigid.g=g;
@@ -2936,8 +2936,8 @@ void image_colortable_cubicles(INT32 args)
 	    THIS->lu.cubicles.accur=CUBICLE_DEFAULT_ACCUR;
       }
       else
-	 bad_arg_error("colortable->cubicles",sp-args,args,0,"",sp-args,
-		"Bad arguments to colortable->cubicles()\n");
+	 bad_arg_error("cubicles",sp-args,args,0,"",sp-args,
+                       "Bad arguments to cubicles.\n");
    else
    {
       THIS->lu.cubicles.r=CUBICLE_DEFAULT_R;
@@ -3512,7 +3512,7 @@ void image_colortable_map(INT32 args)
    struct object *o;
 
    if (args<1)
-      SIMPLE_TOO_FEW_ARGS_ERROR("colortable->map",1);
+      SIMPLE_TOO_FEW_ARGS_ERROR("map",1);
 
    if (TYPEOF(sp[-args]) == T_STRING)
    {
@@ -3586,8 +3586,8 @@ void image_colortable_map(INT32 args)
 
    if (TYPEOF(sp[-args]) != T_OBJECT ||
        ! (src=get_storage(sp[-args].u.object,image_program)))
-      bad_arg_error("colortable->map",sp-args,args,1,"",sp+1-1-args,
-		"Bad argument 1 to colortable->map()\n");
+      bad_arg_error("map",sp-args,args,1,"",sp+1-1-args,
+                    "Bad argument 1 to map.\n");
 
    if (!src->img) 
       Pike_error("Called Image.Image object is not initialized\n");;
@@ -3620,17 +3620,19 @@ void image_colortable_index_32bit(INT32 args)
    struct pike_string *ps;
 
    if (args<1)
-      SIMPLE_TOO_FEW_ARGS_ERROR("Colortable.index",1);
+      SIMPLE_TOO_FEW_ARGS_ERROR("index",1);
    if (TYPEOF(sp[-args]) != T_OBJECT ||
        ! (src=get_storage(sp[-args].u.object,image_program)))
-      SIMPLE_BAD_ARG_ERROR("Colortable.index",1,"image object");
+      SIMPLE_BAD_ARG_ERROR("index",1,"Image.Image");
 
    if (!src->img) 
-      SIMPLE_BAD_ARG_ERROR("Colortable.index",1,"non-empty image object");
+      SIMPLE_BAD_ARG_ERROR("index",1,"non-empty image object");
 
+#ifdef PIKE_DEBUG
    if (sizeof(unsigned INT32)!=4)
       Pike_fatal("INT32 isn't 32 bits (sizeof is %ld)\n",
 	    (long)TO_UINT32(sizeof(unsigned INT32)));
+#endif
 
    ps=begin_wide_shared_string(src->xsize*src->ysize,2);
 
@@ -3639,7 +3641,7 @@ void image_colortable_index_32bit(INT32 args)
 					   src->xsize*src->ysize,src->xsize))
    {
       do_free_unlinked_pike_string (ps);
-      SIMPLE_BAD_ARG_ERROR("Colortable.index",1,"non-empty image object");
+      SIMPLE_BAD_ARG_ERROR("index",1,"non-empty image object");
       return;
    }
 
@@ -3670,13 +3672,13 @@ void image_colortable_index_32bit(INT32 args)
 void image_colortable_spacefactors(INT32 args)
 {
    if (args<3)
-      SIMPLE_TOO_FEW_ARGS_ERROR("colortable->spacefactors",1);
+      SIMPLE_TOO_FEW_ARGS_ERROR("spacefactors",1);
 
    if (TYPEOF(sp[0-args]) != T_INT ||
        TYPEOF(sp[1-args]) != T_INT ||
        TYPEOF(sp[2-args]) != T_INT)
-      bad_arg_error("colortable->spacefactors",sp-args,args,0,"",sp-args,
-		"Bad arguments to colortable->spacefactors()\n");
+      bad_arg_error("spacefactors",sp-args,args,0,"",sp-args,
+                    "Bad arguments to spacefactors.\n");
 
    THIS->spacefactor.r=sp[0-args].u.integer;
    THIS->spacefactor.g=sp[1-args].u.integer;
@@ -3730,8 +3732,8 @@ void image_colortable_floyd_steinberg(INT32 args)
 
    if (args>=1) 
       if (TYPEOF(sp[-args]) != T_INT)
-	 bad_arg_error("colortable->spacefactors",sp-args,args,0,"",sp-args,
-		"Bad arguments to colortable->spacefactors()\n");
+	 bad_arg_error("floyd_steinberg",sp-args,args,0,"",sp-args,
+                       "Bad arguments to floyd_steinberg.\n");
       else 
 	 THIS->du.floyd_steinberg.dir=sp[-args].u.integer;
    else 
@@ -3742,8 +3744,8 @@ void image_colortable_floyd_steinberg(INT32 args)
       else if (TYPEOF(sp[5-args]) == T_INT)
 	 factor = (double)sp[5-args].u.integer;
       else
-	 bad_arg_error("colortable->spacefactors",sp-args,args,0,"",sp-args,
-		"Bad arguments to colortable->spacefactors()\n");
+	 bad_arg_error("floyd_steinberg",sp-args,args,0,"",sp-args,
+                       "Bad arguments to floyd_steinberg.\n");
    }
    if (args>=5)
    {
@@ -3752,29 +3754,29 @@ void image_colortable_floyd_steinberg(INT32 args)
       else if (TYPEOF(sp[1-args]) == T_INT)
 	 forward = (double)sp[1-args].u.integer;
       else
-	 bad_arg_error("colortable->spacefactors",sp-args,args,0,"",sp-args,
-		"Bad arguments to colortable->spacefactors()\n");
+	 bad_arg_error("floyd_steinberg",sp-args,args,0,"",sp-args,
+                       "Bad arguments to floyd_steinberg.\n");
       if (TYPEOF(sp[2-args]) == T_FLOAT)
 	 downforward = sp[2-args].u.float_number;
       else if (TYPEOF(sp[2-args]) == T_INT)
 	 downforward = (double)sp[2-args].u.integer;
       else
-	 bad_arg_error("colortable->spacefactors",sp-args,args,0,"",sp-args,
-		"Bad arguments to colortable->spacefactors()\n");
+	 bad_arg_error("floyd_steinberg",sp-args,args,0,"",sp-args,
+                       "Bad arguments to floyd_steinberg.\n");
       if (TYPEOF(sp[3-args]) == T_FLOAT)
 	 down = sp[3-args].u.float_number;
       else if (TYPEOF(sp[3-args]) == T_INT)
 	 down = (double)sp[3-args].u.integer;
       else
-	 bad_arg_error("colortable->spacefactors",sp-args,args,0,"",sp-args,
-		"Bad arguments to colortable->spacefactors()\n");
+	 bad_arg_error("floyd_steinberg",sp-args,args,0,"",sp-args,
+                       "Bad arguments to floyd_steinberg.\n");
       if (TYPEOF(sp[4-args]) == T_FLOAT)
 	 downback = sp[4-args].u.float_number;
       else if (TYPEOF(sp[4-args]) == T_INT)
 	 downback = (double)sp[4-args].u.integer;
       else
-	 bad_arg_error("colortable->spacefactors",sp-args,args,0,"",sp-args,
-		"Bad arguments to colortable->spacefactors()\n");
+	 bad_arg_error("floyd_steinberg",sp-args,args,0,"",sp-args,
+                       "Bad arguments to floyd_steinberg.\n");
    }
 
    sum=forward+downforward+down+downback;
@@ -3887,8 +3889,8 @@ void image_colortable_randomcube(INT32 args)
       if (TYPEOF(sp[-args]) != T_INT||
 	  TYPEOF(sp[1-args]) != T_INT||
 	  TYPEOF(sp[2-args]) != T_INT)
-	 bad_arg_error("Image.Colortable->randomcube",sp-args,args,0,"",sp-args,
-		"Bad arguments to Image.Colortable->randomcube()\n");
+        bad_arg_error("randomcube",sp-args,args,0,"",sp-args,
+                      "Bad arguments to randomcube.\n");
       else
       {
 	 THIS->du.randomcube.r=sp[-args].u.integer;
@@ -3921,8 +3923,8 @@ void image_colortable_randomgrey(INT32 args)
 
    if (args) 
       if (TYPEOF(sp[-args]) != T_INT)
-	 bad_arg_error("Image.Colortable->randomgrey",sp-args,args,0,"",sp-args,
-		"Bad arguments to Image.Colortable->randomgrey()\n");
+        bad_arg_error("randomgrey",sp-args,args,0,"",sp-args,
+                      "Bad arguments to randomgrey.\n");
       else
 	 THIS->du.randomcube.r=sp[-args].u.integer;
    else if (THIS->type==NCT_CUBE && THIS->u.cube.r)
@@ -4152,8 +4154,8 @@ void image_colortable_ordered(INT32 args)
 	  TYPEOF(sp[1-args]) != T_INT ||
 	  TYPEOF(sp[2-args]) != T_INT)
       {
-	 bad_arg_error("Image.Colortable->ordered",sp-args,args,0,"",sp-args,
-		"Bad arguments to Image.Colortable->ordered()\n");
+	 bad_arg_error("ordered",sp-args,args,0,"",sp-args,
+                       "Bad arguments to ordered.\n");
 	 /* Not reached, but keep the compiler happy */
 	 r = 0;
 	 g = 0;
@@ -4192,8 +4194,8 @@ void image_colortable_ordered(INT32 args)
    {
       if (TYPEOF(sp[3-args]) != T_INT ||
 	  TYPEOF(sp[4-args]) != T_INT)
-	 bad_arg_error("Image.Colortable->ordered",sp-args,args,0,"",sp-args,
-		"Bad arguments to Image.Colortable->ordered()\n");
+	 bad_arg_error("ordered",sp-args,args,0,"",sp-args,
+                       "Bad arguments to ordered.\n");
       else
       {
 	 xsize=MAXIMUM(sp[3-args].u.integer,1);
@@ -4209,8 +4211,8 @@ void image_colortable_ordered(INT32 args)
 	  TYPEOF(sp[8-args]) != T_INT ||
           TYPEOF(sp[9-args]) != T_INT ||
 	  TYPEOF(sp[10-args]) != T_INT)
-	 bad_arg_error("Image.Colortable->ordered",sp-args,args,0,"",sp-args,
-		"Bad arguments to Image.Colortable->ordered()\n");
+	 bad_arg_error("ordered",sp-args,args,0,"",sp-args,
+                       "Bad arguments to ordered.\n");
       else
       {
 	 THIS->du.ordered.rx=sp[5-args].u.integer;
@@ -4225,8 +4227,8 @@ void image_colortable_ordered(INT32 args)
    {
       if (TYPEOF(sp[5-args]) != T_INT||
 	  TYPEOF(sp[6-args]) != T_INT)
-	 bad_arg_error("Image.Colortable->ordered",sp-args,args,0,"",sp-args,
-		"Bad arguments to Image.Colortable->ordered()\n");
+	 bad_arg_error("ordered",sp-args,args,0,"",sp-args,
+                       "Bad arguments to ordered.\n");
       else
       {
 	 THIS->du.ordered.rx=
@@ -4428,7 +4430,7 @@ static void image_colortable__sprintf( INT32 args )
   if (args != 2 )
     SIMPLE_TOO_FEW_ARGS_ERROR("_sprintf",2);
   if (TYPEOF(sp[-args]) != T_INT)
-    SIMPLE_BAD_ARG_ERROR("_sprintf",0,"integer");
+    SIMPLE_BAD_ARG_ERROR("_sprintf",0,"int");
   if (TYPEOF(sp[1-args]) != T_MAPPING)
     SIMPLE_BAD_ARG_ERROR("_sprintf",1,"mapping");
 

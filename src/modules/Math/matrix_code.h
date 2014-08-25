@@ -148,9 +148,9 @@ static void matrixX(_create)(INT32 args)
 	 SIMPLE_BAD_ARG_ERROR(PNAME,2,"int");
 
       if ((THIS->xsize=xs=Pike_sp[-args].u.integer)<=0)
-	 SIMPLE_BAD_ARG_ERROR(PNAME,1,"int > 0");
+	 SIMPLE_BAD_ARG_ERROR(PNAME,1,"int(1..)");
       if ((THIS->ysize=ys=Pike_sp[1-args].u.integer)<=0)
-	 SIMPLE_BAD_ARG_ERROR(PNAME,2,"int > 0");
+	 SIMPLE_BAD_ARG_ERROR(PNAME,2,"int(1..)");
 
       THIS->m=m=xcalloc(sizeof(FTYPE),xs*ys);
 

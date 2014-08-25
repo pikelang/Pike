@@ -952,7 +952,7 @@ PIKECLASS Simple
   PIKEFUN void compat_allow_errors(string|void version)
   {
     if (args < 1)
-      SIMPLE_TOO_FEW_ARGS_ERROR ("XML->compat_allow_errors", 1);
+      SIMPLE_TOO_FEW_ARGS_ERROR ("compat_allow_errors", 1);
 
     if (!version) {
       THIS->flags &= ~(COMPAT_ALLOW_7_2_ERRORS|COMPAT_ALLOW_7_6_ERRORS);

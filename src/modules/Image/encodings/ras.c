@@ -122,9 +122,9 @@ void img_ras__decode(INT32 args)
   /* Double check args to give the correct function name in the error
      messages. */
   if(args<1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("Image.RAS._decode", 1);
+    SIMPLE_TOO_FEW_ARGS_ERROR("_decode", 1);
   if(TYPEOF(Pike_sp[-1]) != T_STRING)
-    SIMPLE_BAD_ARG_ERROR("Image.RAS._decode", 1, "string");
+    SIMPLE_BAD_ARG_ERROR("_decode", 1, "string");
   img_ras_decode(args);
   push_text("image");
   stack_swap();

@@ -1149,14 +1149,14 @@ void image_x_encode_bitmap(INT32 args)
    struct image *img = NULL;
 
    if (!args)
-      SIMPLE_TOO_FEW_ARGS_ERROR("Image.X.encode_bitmap",1);
+      SIMPLE_TOO_FEW_ARGS_ERROR("encode_bitmap",1);
 
    if (TYPEOF(sp[-args]) != T_OBJECT ||
        !(img=get_storage(sp[-args].u.object,image_program)))
-      SIMPLE_BAD_ARG_ERROR("Image.X.encode_bitmap",1,"image object");
+      SIMPLE_BAD_ARG_ERROR("encode_bitmap",1,"Image.Image");
 
    if (!img->img)
-      SIMPLE_BAD_ARG_ERROR("Image.X.encode_bitmap",1,"image object with image");
+      SIMPLE_BAD_ARG_ERROR("encode_bitmap",1,"image object with image");
 
    xs=(img->xsize+7)>>3;
 

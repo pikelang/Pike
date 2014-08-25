@@ -2933,7 +2933,7 @@ PIKECLASS Music {
       if(TYPEOF(*_loops) == PIKE_T_INT) {
 	loops = _loops->u.integer;
       } else {
-	SIMPLE_BAD_ARG_ERROR("Music.play", 1, "void|int");
+	SIMPLE_BAD_ARG_ERROR("play", 1, "void|int");
       }
     }
     Mix_PlayMusic(THIS->music, loops);
@@ -2972,7 +2972,7 @@ PIKECLASS Music {
       if(TYPEOF(*_loops) == PIKE_T_INT) {
 	loops = _loops->u.integer;
       } else {
-	SIMPLE_BAD_ARG_ERROR("Music.fade_in", 2, "void|int");
+	SIMPLE_BAD_ARG_ERROR("fade_in", 2, "void|int");
       }
     }
     Mix_FadeInMusic(THIS->music, loops, ms);
