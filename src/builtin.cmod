@@ -2641,20 +2641,18 @@ PIKECLASS backtrace_frame
 	return;
       }
 
-      if (end >= numargs) {
+      if (end >= numargs)
 	end = numargs-1;
-      }
     }
 
     for (i = index; i <= end; i++) {
       switch(i) {
       case 0:	/* Filename */
 	if (THIS->lineno == -1) fill_in_file_and_line();
-	if (THIS->filename) {
+	if (THIS->filename)
 	  ref_push_string(THIS->filename);
-	} else {
+	else
 	  push_int(0);
-	}
 	break;
       case 1:	/* Linenumber */
 	if (THIS->lineno == -1) fill_in_file_and_line();
@@ -2679,30 +2677,25 @@ PIKECLASS backtrace_frame
         break;
       }
     }
-    if (end_or_none) {
+    if (end_or_none)
       f_aggregate(1 + end - index);
-    }
   }
 
   /*! @decl mixed `[]=(int index, mixed value)
    */
   PIKEFUN mixed `[]=(int index, mixed value)
   {
-    INT32 numargs = 0;
+    INT32 numargs = 3;
 
-    if (THIS->args) {
-      numargs = THIS->args->size;
-    }
+    if (THIS->args)
+      numargs += THIS->args->size;
 
-    numargs += 3;
-
-    if ((index < -numargs) || (index >= numargs)) {
+    if ((index < -numargs) || (index >= numargs))
 	index_error("pike_frame->`[]=", Pike_sp-args, args, NULL, Pike_sp-args,
 		    "Index %"PRINTPIKEINT"d is out of array range 0..%d,\n",
 		    index, numargs-1);
-    } else if (index < 0) {
+    else if (index < 0)
       index += numargs;
-    }
 
     if (args > 2) {
       pop_n_elems(args - 2);
@@ -2732,9 +2725,8 @@ PIKECLASS backtrace_frame
 
     case 1:	/* Linenumber */
       if (THIS->lineno == -1) fill_in_file_and_line();
-      if (TYPEOF(*value) != PIKE_T_INT) {
+      if (TYPEOF(*value) != PIKE_T_INT)
 	SIMPLE_BAD_ARG_ERROR("`[]=", 2, "int(1..)");
-      }
       THIS->lineno = value->u.integer;
       break;
 
@@ -3229,12 +3221,12 @@ PIKECLASS Buffer
       int shift = 0;
       for (j=1; j < args; j++) {
 	struct pike_string *a;
-	if (TYPEOF(Pike_sp[j-args]) == PIKE_T_STRING) {
+	if (TYPEOF(Pike_sp[j-args]) == PIKE_T_STRING)
 	  a = Pike_sp[j-args].u.string;
-	} else if ((TYPEOF(Pike_sp[j-args]) != PIKE_T_OBJECT) ||
-		   (Pike_sp[j-args].u.object->prog != Buffer_program)) {
+	else if ((TYPEOF(Pike_sp[j-args]) != PIKE_T_OBJECT) ||
+		   (Pike_sp[j-args].u.object->prog != Buffer_program))
 	  SIMPLE_BAD_ARG_ERROR("addat", j+1, "string|String.Buffer");
-	} else {
+	else {
 	  a = OBJ2_BUFFER(Pike_sp[j-args].u.object)->str.s;
 	  if (!a) continue;
 	}
@@ -3243,12 +3235,10 @@ PIKECLASS Buffer
       }
 
       if (!str->str.s) {
-	if ((sum + pos) <= str->initial) {
+	if ((sum + pos) <= str->initial)
 	  sum = str->initial;
-	} else {
-	  sum <<= 1;
-	  sum += pos;
-	}
+	else
+	  sum <<= 1, sum += pos;
 	shift = shift & ~(shift >> 1);
 
 	init_string_builder_alloc(&str->str, sum, shift);
@@ -3256,11 +3246,10 @@ PIKECLASS Buffer
 	sum += pos;
 	shift |= str->str.known_shift;
 	shift = shift & ~(shift >> 1);
-	if (sum > str->str.s->len) {
+	if (sum > str->str.s->len)
 	  string_build_mkspace(&str->str, sum - str->str.s->len, shift);
-	} else if (shift != str->str.known_shift) {
+	else if (shift != str->str.known_shift)
 	  string_build_mkspace(&str->str, 0, shift);
-	}
       }
       /* We know it will be a string that really is this wide. */
       str->str.known_shift = shift;
@@ -3273,9 +3262,9 @@ PIKECLASS Buffer
 
       for(j = 1; j<args; j++) {
 	struct pike_string *a;
-	if (TYPEOF(Pike_sp[j-args]) == PIKE_T_STRING) {
+	if (TYPEOF(Pike_sp[j-args]) == PIKE_T_STRING)
 	  a = Pike_sp[j-args].u.string;
-	} else {
+	else {
 	  a = OBJ2_BUFFER(Pike_sp[j-args].u.object)->str.s;
 	  if (!a) continue;
 	}
@@ -3290,11 +3279,7 @@ PIKECLASS Buffer
       }
     }
 
-    if (str->str.s) {
-      RETURN str->str.s->len;
-    } else {
-      RETURN 0;
-    }
+    RETURN str->str.s ? str->str.s->len : 0;
   }
 
   /*! @decl void putchar(int c)
@@ -3335,28 +3320,25 @@ PIKECLASS Buffer
   PIKEFUN string get_copy()
   {
     struct pike_string *str = THIS->str.s;
-    if( str )
+    ptrdiff_t len;
+    if( str && (len = str->len) > 0 )
     {
-      ptrdiff_t len = str->len;
-      if( len > 0 )
+      char *d = (char *)str->str;
+      switch( str->size_shift )
       {
-	char *d = (char *)str->str;
-	switch( str->size_shift )
-	{
-	  case 0:
+        case 0:
           str=make_shared_binary_string0((p_wchar0 *)d,len);
-	    break;
-	  case 1:
+          break;
+        case 1:
           str=make_shared_binary_string1((p_wchar1 *)d,len);
-	    break;
-	  case 2:
+          break;
+        default:
           str=make_shared_binary_string2((p_wchar2 *)d,len);
-	    break;
-	}
-        if( Pike_fp->current_object->flags & OBJECT_CLEAR_ON_EXIT )
-            str->flags |= STRING_CLEAR_ON_EXIT;
-        RETURN str;
+          break;
       }
+      if( Pike_fp->current_object->flags & OBJECT_CLEAR_ON_EXIT )
+          str->flags |= STRING_CLEAR_ON_EXIT;
+      RETURN str;
     }
     push_empty_string();
     return;
@@ -3375,6 +3357,7 @@ PIKECLASS Buffer
   PIKEFUN string get( )
   {
     struct Buffer_struct *str = THIS;
+    pop_n_elems(args);
     if( str->str.s )
     {
       struct pike_string *s = finish_string_builder( &str->str );
@@ -3382,11 +3365,10 @@ PIKECLASS Buffer
       str->str.s = NULL;
       if( Pike_fp->current_object->flags & OBJECT_CLEAR_ON_EXIT )
           s->flags |= STRING_CLEAR_ON_EXIT;
-      RETURN s;
+      push_string(s);
     }
-    pop_n_elems(args);
-    push_empty_string();
-    return;
+    else
+      push_empty_string();
   }
 
   /*! @decl void clear()
