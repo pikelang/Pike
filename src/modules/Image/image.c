@@ -6,6 +6,13 @@
 
 /*
 **! module Image
+**! Image processing, decoding/loading and encoding/saving.
+**!
+**! Some starting points:
+**! <ref>Image.Image</ref> - The main image object <br>
+**! <ref>Image.load</ref>, <ref>Image.load_layers</ref>  - Loads and decodes data <br>
+**! <ref>Image.lay</ref> - The base image layer compositing method <br>
+**!
 **! class Image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -14,17 +21,17 @@
 **!	basic: <br>
 **!	<ref>clear</ref>,
 **!	<ref>clone</ref>,
-**!	<ref>create</ref>, 
+**!	<ref>create</ref>,
 **!	<ref>xsize</ref>,
 **!	<ref>ysize</ref>
 **!
 **!	plain drawing: <br>
 **!	<ref>box</ref>,
 **!	<ref>circle</ref>,
-**!	<ref>getpixel</ref>, 
+**!	<ref>getpixel</ref>,
 **!	<ref>line</ref>,
 **!	<ref>setcolor</ref>,
-**!	<ref>setpixel</ref>, 
+**!	<ref>setpixel</ref>,
 **!	<ref>threshold</ref>,
 **!	<ref>polyfill</ref>
 **!
