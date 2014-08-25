@@ -3,7 +3,7 @@
  * by Francesco Chemolli <kinkie@roxen.com>
  */
 
-//! Base storage-object for the cache system.
+//! Base stored object for the cache system.
 
 #pike __REAL_VERSION__
 

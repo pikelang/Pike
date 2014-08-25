@@ -7,6 +7,7 @@
 //!   Thanks to Francesco Chemolli <kinkie@@roxen.com> for the contribution.
 
 #pike __REAL_VERSION__
+inherit Cache.Policy.Base;
 
 //! This is an expire function that does nothing.
 void expire (Cache.Storage.Base storage) {

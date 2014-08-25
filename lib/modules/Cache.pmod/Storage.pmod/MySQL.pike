@@ -17,6 +17,8 @@
 
 #pike __REAL_VERSION__
 
+inherit Cache.Storage.Base;
+
 #define MAX_KEY_SIZE "255"
 #define CREATION_QUERY "create table cache ( \
 cachekey varchar(" MAX_KEY_SIZE ") not null primary key, \

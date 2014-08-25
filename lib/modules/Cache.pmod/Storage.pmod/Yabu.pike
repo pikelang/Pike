@@ -9,6 +9,8 @@
 
 #define CLUTTERED 200
 
+inherit Cache.Storage.Base;
+
 Yabu.Table db, metadb;
 Yabu.DB yabudb;
 

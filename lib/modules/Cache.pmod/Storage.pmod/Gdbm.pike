@@ -15,6 +15,8 @@
 //after this many deletion ops, the databases will be compacted.
 #define CLUTTERED 1000
 
+inherit Cache.Storage.Base;
+
 Gdbm.gdbm db, metadb;
 int deletion_ops=0; //every 1000 deletion ops, we'll reorganize.
 int have_dependants=0;
