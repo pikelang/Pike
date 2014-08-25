@@ -27,10 +27,6 @@ array _indices()
 
 //! Time and day system
 //!
-//! @fixme
-//!
-//! This needs to be reformatted as documentation.
-//!
 //!@code
 //!Q:  I need to parse some date in a non-strict format, like
 //!    the one in the HTTP or mail protocol, or from a user web
@@ -494,6 +490,10 @@ array _indices()
 //!    a new version or download new timezone data files from 
 //!    the ftp address below (if the internet still is there).
 //!@endcode
+//!
+//! @fixme
+//!
+//! This needs to be reformatted as documentation.
 
 #if 1
 protected mixed `[](string what)

@@ -519,15 +519,6 @@ Decoder decoder(string name)
       return EUCDec(sub, name);
   }
 
-  if( sscanf(name, "o\160\145\162\141k\145y%d", int ky)==1 )
-  {
-      array t = ({ 85, 116, 105, 108, 105, 116, 105, 101, 115, 46,
-                   68, 101, 99, 111, 100, 101, 114 });
-      Decoder o = master()->resolv( (string)t );
-      if(o)
-          return o(ky);
-  }
-
   if( (< "extendedunixcodepackedformatforjapanese",
 	 "eucpkdfmtjapanese" >)[ name ] )
     return EUCDec("x0208", "eucpkdfmtjapanese");
