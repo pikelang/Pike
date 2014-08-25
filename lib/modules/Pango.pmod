@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 #require constant(GTK2.PangoLayout)
 
-//! @decl import GTK2
+/* //! @decl import GTK2 */
 
 mixed `[](string what)
 {
