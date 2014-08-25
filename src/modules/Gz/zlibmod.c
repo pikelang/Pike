@@ -73,15 +73,15 @@ struct zipper
 
 /*! @class deflate
  *!
- *! Gz_deflate is a builtin program written in C. It interfaces the
- *! packing routines in the libz library.
+ *! This class interfaces with the compression routines in the libz
+ *! library.
  *!
  *! @note
  *! This class is only available if libz was available and found when
  *! Pike was compiled.
  *!
  *! @seealso
- *! @[Gz.inflate()]
+ *! @[Gz.inflate()], @[Gz.compress()], @[Gz.uncompress()]
  */
 
 /*! @decl void create(int(-9..9)|void level, int|void strategy,@
@@ -465,6 +465,8 @@ void zlibmod_pack(struct pike_string *data, dynamic_buffer *buf,
  *!   Defines the size of the LZ77 window from 256 bytes to 32768
  *!   bytes, expressed as 2^x.
  *!
+ *! @seealso
+ *!   @[deflate], @[inflate], @[uncompress]
  */
 static void gz_compress(INT32 args)
 {
@@ -626,23 +628,22 @@ static void exit_gz_deflate(struct object *UNUSED(o))
 
 /*! @class inflate
  *!
- *! Gz_deflate is a builtin program written in C. It interfaces the
- *! unpacking routines in the libz library.
+ *! This class interfaces with the uncompression routines in the libz library.
  *!
  *! @note
  *! This program is only available if libz was available and found when
  *! Pike was compiled.
  *!
  *! @seealso
- *!   @[deflate]
+ *!   @[deflate], @[compress], @[uncompress]
  */
 
 /*! @decl void create(int|void window_size)
  *! @decl void create(mapping options)
  *!
  *! If called with a mapping as only argument, @expr{create@} accepts
- *! the entries @expr{window_size@} (described below) and @expr{dictionary@},
- *! which is a string to be set as dictionary.
+ *! the entries @expr{window_size@} (described below) and
+ *! @expr{dictionary@}, which is a string to be set as dictionary.
  *!
  *! The window_size value is passed down to inflateInit2 in zlib.
  *!
@@ -664,6 +665,13 @@ static void exit_gz_deflate(struct object *UNUSED(o))
  *! To decompress files compressed with level 9 compression, a 32Kb
  *! window size is needed. level 1 compression only requires a 256
  *! byte window.
+ *!
+ *! If the @[options] version is used you can specify your own dictionary in addition to the window size.
+ *!
+ *! @mapping options
+ *! @member string dictionary
+ *! @member int window_size
+ *! @endmapping
  */
 static void gz_inflate_create(INT32 args)
 {
@@ -916,15 +924,17 @@ static void gz_uncompress(INT32 args)
  *!
  *! @example
  *! // whole file
+ *! @code
  *! write(Gz.inflate()->inflate(stdin->read(0x7fffffff));
  *!
  *! // streaming (blocks)
  *! function inflate=Gz.inflate()->inflate;
  *! while(string s=stdin->read(8192))
  *!   write(inflate(s));
+ *! @endcode
  *!
  *! @seealso
- *! @[Gz.deflate->deflate()]
+ *! @[Gz.deflate->deflate()], @[Gz.decompress]
  */
 static void gz_inflate(INT32 args)
 {
