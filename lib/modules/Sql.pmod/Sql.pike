@@ -203,6 +203,42 @@ protected program find_dbm(string program_name) {
 //!   dbtype, but that has been deprecated, since it never worked well.
 //!
 //! @note
+//!  Exactly which databases are supported by pike depends on the
+//!  installed set of client libraries when pike was compiled.
+//!
+//! The possible ones are
+//! @dl
+//! @item mysql
+//!   libmysql based mysql connection
+//! @item mysqls
+//!   libmysql based mysql connection, using SSL
+//! @item dsn
+//!   @[ODBC] based connection
+//! @item msql
+//!   @[Msql]
+//! @item odbc
+//!   @[ODBC] based connection
+//! @item oracle
+//!  @[Oracle] using oracle libraries
+//! @item pgsql
+//!  PostgreSQL direct network access.
+//!  This module is independent of any external libraries.
+//! @item postgres
+//!  PostgreSQL libray access. Uses the @[Postgres] module.
+//! @item rsql
+//!  Remote SQL api, requires a rsql server running on another host.
+//!  This is an API that uses sockets to communicate with a remote pike
+//!  running pike -x rsqld on another host.
+//! @item sqlite
+//!   In-process SQLite database, uses the @[SQLite] module
+//! @item sybase
+//!   Uses the @[sybase] module to access sybase
+//! @item tds
+//!  Sybase and Microsoft SQL direct network access using the TDS protocol.
+//!  This module is independent of any external libraries.
+//! @enddl
+//!
+//! @note
 //!   Support for @[options] was added in Pike 7.3.
 //!
 void create(string|object host, void|string|mapping(string:int|string) db,
