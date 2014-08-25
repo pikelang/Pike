@@ -75,6 +75,12 @@ dnl see if we can find the include files in any of the standard locations
 
   if test x$pike_cv_pgres_include_dir != xno; then
     CPPFLAGS="$CPPFLAGS -I$pike_cv_pgres_include_dir"
+    if test -d "$pike_cv_pgres_include_dir/server/utils/."; then
+      # NB: postgresql 9.3.3 has a <server/common/fe_memutils.h>
+      #     that expects <server/utils/palloc.h> to be available
+      #     as <utils/palloc.h>.
+      CPPFLAGS="$CPPFLAGS -I$pike_cv_pgres_include_dir/server"
+    fi
   fi
 
 dnl final ckeck, just to be sure we did not mess up
