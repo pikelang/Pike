@@ -733,6 +733,16 @@ class Identifier
     return this;
   }
 
+  protected mixed cast(string t)
+  {
+    switch(t)
+    {
+    case "string": return (array(string))id * ".";
+    case "array" : return id+({});
+    default: return UNDEFINED;
+    }
+  }
+
   protected string _sprintf(int t) {
     if(t!='O') return UNDEFINED;
     if(!id) return sprintf("%O(0)", this_program);
