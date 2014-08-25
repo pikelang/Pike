@@ -801,6 +801,9 @@ PMOD_EXPORT void destruct_object (struct object *o, enum object_destruct_reason 
   int inhibit_mask = ~THREAD_FLAG_INHIBIT |
     (Pike_interpreter.thread_state?
      (Pike_interpreter.thread_state->flags & THREAD_FLAG_INHIBIT):0);
+#ifdef PIKE_DEBUG
+  ONERROR uwp;
+#endif
 
   if (Pike_interpreter.thread_state) {
     /* Make sure we don't exit due to signals before we're done. */
@@ -808,8 +811,6 @@ PMOD_EXPORT void destruct_object (struct object *o, enum object_destruct_reason 
   }
 
 #ifdef PIKE_DEBUG
-  ONERROR uwp;
-
   fatal_check_c_stack(8192);
 
   SET_ONERROR(uwp, fatal_on_error,
