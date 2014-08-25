@@ -1291,22 +1291,22 @@ static void mpzmod_add_eq(INT32 args)
   PUSH_REDUCED(fp->current_object);
 }
 
-/*! @decl Gmp.mpz `+(int|float|Gmp.mpz ... x)
+/*! @decl Gmp.mpz `+(int|float|Gmp.mpz x)
  */
-/*! @decl Gmp.mpz ``+(int|float|Gmp.mpz ... x)
+/*! @decl Gmp.mpz ``+(int|float|Gmp.mpz x)
  */
 BINFUN2(mpzmod_add, "+", mpz_add, +, f_add, ADD)
 
 #undef STRINGCONV
 #define STRINGCONV(X)
 
-/*! @decl Gmp.mpz `*(int|float|Gmp.mpz ... x)
+/*! @decl Gmp.mpz `*(int|float|Gmp.mpz x)
  */
-/*! @decl Gmp.mpz ``*(int|float|Gmp.mpz ... x)
+/*! @decl Gmp.mpz ``*(int|float|Gmp.mpz x)
  */
 BINFUN2(mpzmod_mul, "*", mpz_mul, *, f_multiply, MULTIPLY)
 
-/*! @decl Gmp.mpz gcd(object|int|float|string... arg)
+/*! @decl Gmp.mpz gcd(object|int|float|string ... args)
  *!
  *! Return the greatest common divisor between this mpz object and
  *! all the arguments.
@@ -1330,7 +1330,7 @@ static void mpzmod_gcd(INT32 args)
   PUSH_REDUCED(res);
 }
 
-/*! @decl Gmp.mpz `-(int|float|Gmp.mpz ... x)
+/*! @decl Gmp.mpz `-(int|float|Gmp.mpz x)
  */
 static void mpzmod_sub(INT32 args)
 {
@@ -1356,7 +1356,7 @@ static void mpzmod_sub(INT32 args)
   PUSH_REDUCED(res);
 }
 
-/*! @decl Gmp.mpz ``-(int|float|Gmp.mpz ... x)
+/*! @decl Gmp.mpz ``-(int|float|Gmp.mpz x)
  */
 static void mpzmod_rsub(INT32 args)
 {
@@ -1375,7 +1375,7 @@ static void mpzmod_rsub(INT32 args)
   PUSH_REDUCED(res);
 }
 
-/*! @decl Gmp.mpz `/(int|float|Gmp.mpz ... x)
+/*! @decl Gmp.mpz `/(int|float|Gmp.mpz x)
  */
 static void mpzmod_div(INT32 args)
 {
@@ -1419,7 +1419,7 @@ static void mpzmod_div(INT32 args)
   PUSH_REDUCED(res);
 }
 
-/*! @decl Gmp.mpz ``/(int|float|Gmp.mpz ... x)
+/*! @decl Gmp.mpz ``/(int|float|Gmp.mpz x)
  */
 static void mpzmod_rdiv(INT32 args)
 {
@@ -1440,7 +1440,7 @@ static void mpzmod_rdiv(INT32 args)
   PUSH_REDUCED(res);
 }
 
-/*! @decl Gmp.mpz `%(int|float|Gmp.mpz ... x)
+/*! @decl Gmp.mpz `%(int|float|Gmp.mpz x)
  */
 static void mpzmod_mod(INT32 args)
 {
@@ -1460,7 +1460,7 @@ static void mpzmod_mod(INT32 args)
   PUSH_REDUCED(res);
 }
 
-/*! @decl Gmp.mpz ``%(int|float|Gmp.mpz ... x)
+/*! @decl Gmp.mpz ``%(int|float|Gmp.mpz x)
  */
 static void mpzmod_rmod(INT32 args)
 {
@@ -1662,15 +1662,15 @@ static void name(INT32 args)				\
   PUSH_REDUCED(res);					\
 }
 
-/*! @decl Gmp.mpz `&(int|float|Gmp.mpz ... x)
+/*! @decl Gmp.mpz `&(int|float|Gmp.mpz x)
  */
 BINFUN(mpzmod_and, "Gmp.mpz->`&", mpz_and)
 
-/*! @decl Gmp.mpz `|(int|float|Gmp.mpz ... x)
+/*! @decl Gmp.mpz `|(int|float|Gmp.mpz x)
  */
 BINFUN(mpzmod_or, "Gmp.mpz->`|", mpz_ior)
 
-/*! @decl Gmp.mpz `^(int|float|Gmp.mpz ... x)
+/*! @decl Gmp.mpz `^(int|float|Gmp.mpz x)
  */
 BINFUN(mpzmod_xor, "Gmp.mpz->`^", mpz_xor)
 
@@ -2444,15 +2444,6 @@ PIKE_MODULE_INIT
 #endif
       gmp_push_ulongest, gmp_ulongest_from_bignum,
       gmp_mpz_from_svalue, gmp_push_bignum);
-
-#if 0
-  /* magic /Hubbe
-   * This seems to break more than it fixes though... /Hubbe
-   */
-  free_type(ID_FROM_INT(Pike_compiler->new_program, id)->type);
-  ID_FROM_INT(Pike_compiler->new_program, id)->type=CONSTTYPE(tOr(tFunc(tOr5(tVoid,tStr,tInt,tFlt,tObj),tInt),tFunc(tStr tInt,tInt)));
-#endif
-
 #endif
 
   pike_init_mpq_module();
