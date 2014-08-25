@@ -2402,7 +2402,7 @@ static void file_linger(INT32 args)
   if(fd < 0)
     Pike_error("File not open.\n");
 
-  get_all_args("Stdio.File->linger", args, ".%d", &linger);
+  get_all_args("linger", args, ".%d", &linger);
 
   if ((linger < -1) || (linger > 0xffff)) {
     SIMPLE_BAD_ARG_ERROR("Stdio.File->linger()", 1, "int(-1..65535)");
@@ -2854,8 +2854,7 @@ static void file_openat(INT32 args)
   if((dir_fd = FD) < 0)
     Pike_error("File not open.\n");
 
-  get_all_args("Stdio.File->openat", args, "%S%S.%d",
-	       &str, &flag_str, &access);
+  get_all_args("openat", args, "%S%S.%d", &str, &flag_str, &access);
 
   flags = parse(flag_str->str);
 
@@ -4882,7 +4881,7 @@ static void file_set_keepalive(INT32 args)
   int tmp, i;
   INT_TYPE t;
 
-  get_all_args("Stdio.File->set_keepalive", args, "%i", &t);
+  get_all_args("set_keepalive", args, "%i", &t);
 
   /* In case int and INT_TYPE have different sizes */
   tmp = t;
@@ -5028,9 +5027,9 @@ static void file_connect(INT32 args)
   int tries;
 
   if (args < 4) {
-    get_all_args("Stdio.File->connect", args, "%S%*", &dest_addr, &dest_port);
+    get_all_args("connect", args, "%S%*", &dest_addr, &dest_port);
   } else {
-    get_all_args("Stdio.File->connect", args, "%S%*%S%*",
+    get_all_args("connect", args, "%S%*%S%*",
 		 &dest_addr, &dest_port, &src_addr, &src_port);
   }
 

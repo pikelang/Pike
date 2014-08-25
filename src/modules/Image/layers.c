@@ -846,7 +846,7 @@ static void image_layer_alpha(INT32 args)
 static void image_layer_set_alpha_value(INT32 args)
 {
    FLOAT_TYPE f;
-   get_all_args("Image.Layer->set_alpha_value",args,"%F",&f);
+   get_all_args("set_alpha_value",args,"%F",&f);
    if (f<0.0 || f>1.0)
       SIMPLE_BAD_ARG_ERROR("Image.Layer->set_alpha_value",1,"float(0..1)");
    THIS->alpha_value=f;
@@ -1201,7 +1201,7 @@ static void image_layer_fill_alpha(INT32 args)
 
 static void image_layer_set_offset(INT32 args)
 {
-   get_all_args("Image.Layer->set_offset",args,"%d%d", /* INT32! */
+   get_all_args("set_offset",args,"%d%d", /* INT32! */
 		&(THIS->xoffs),&(THIS->yoffs));
    pop_n_elems(args);
    ref_push_object(THISOBJ);
@@ -1242,7 +1242,7 @@ static void image_layer_ysize(INT32 args)
 static void image_layer_set_tiled(INT32 args)
 {
    INT_TYPE tiled;
-   get_all_args("Image.Layer->set_offset",args,"%i",&tiled);
+   get_all_args("set_tiled",args,"%i",&tiled);
    THIS->tiled=!!tiled;
    THIS->really_optimize_alpha=really_optimize_p(THIS);
    pop_n_elems(args);
@@ -1364,7 +1364,7 @@ static void image_layer_create(INT32 args)
    {
       rgb_group col=black,alpha=white;
 
-      get_all_args("Image.Layer",args,"%d%d", /* watch the type: INT32 */
+      get_all_args("create",args,"%d%d", /* watch the type: INT32 */
 		   &(THIS->xsize),&(THIS->ysize));
       if (args>2)
 	 if (!image_color_arg(2-args,&col))
@@ -2909,7 +2909,7 @@ void image_lay(INT32 args)
 
    if (args>1)
    {
-      get_all_args("Image.lay",args-1,"%i%i%i%i",
+      get_all_args("lay",args-1,"%i%i%i%i",
 		   &xoffset,&yoffset,&xsize,&ysize);
       if (xsize<1)
 	 SIMPLE_BAD_ARG_ERROR("Image.lay",4,"int(1..)");
@@ -3086,7 +3086,7 @@ static void image_layer_crop(INT32 args)
    int zot=0;
    struct image *img = NULL;
 
-   get_all_args("Image.Layer->crop",args,"%i%i%i%i",&x,&y,&xz,&yz);
+   get_all_args("crop",args,"%i%i%i%i",&x,&y,&xz,&yz);
 
    l=clone_this_layer();
    if (x<=l->xoffs) x=l->xoffs; else zot++;

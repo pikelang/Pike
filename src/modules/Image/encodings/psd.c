@@ -743,7 +743,7 @@ static void image_f_psd___decode( INT32 args )
 {
   struct pike_string *s;
   struct buffer b;
-  get_all_args( "Image.PSD.___decode", args, "%S", &s );
+  get_all_args( "___decode", args, "%S", &s );
   if(args > 1)
     pop_n_elems( args-1 );
   if(s->len < 26+4+4+4 ) /* header+color mode+image res+layers */

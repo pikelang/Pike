@@ -906,7 +906,7 @@ static void image_tiff_encode( INT32 args )
   ONERROR onerr;
 
   a.alpha = 0;
-  get_all_args( "Image.TIFF.encode", args, "%o", &a.img );
+  get_all_args( "encode", args, "%o", &a.img );
 
 
   MEMSET(&c, 0, sizeof(c));

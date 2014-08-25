@@ -173,16 +173,16 @@ static void f_read( INT32 args )
   }
   old_sp = sp;
 
-  get_all_args("CommonLog.read", args, "%*%*", &logfun, &file);
+  get_all_args("read", args, "%*%*", &logfun, &file);
   if(TYPEOF(*logfun) != T_FUNCTION)
-    SIMPLE_BAD_ARG_ERROR("CommonLog.read", 1, "function");
+    SIMPLE_BAD_ARG_ERROR("read", 1, "function");
 
   if(TYPEOF(*file) == T_OBJECT)
   {
     f = fd_from_object(file->u.object);
     
     if(f == -1)
-      Pike_error("CommonLog.read: File is not open.\n");
+      Pike_error("File is not open.\n");
     my_fd = 0;
   } else if(TYPEOF(*file) == T_STRING &&
 	    file->u.string->size_shift == 0) {
@@ -205,7 +205,7 @@ static void f_read( INT32 args )
 	  {
 	  case 0: /* return 0 */
 	    errno=EPERM;
-	    Pike_error("CommonLog.read(): Failed to open file for reading (errno=%d).\n",
+	    Pike_error("Failed to open file for reading (errno=%d).\n",
 		       errno);
 
 	  case 2: /* ok */
@@ -213,7 +213,7 @@ static void f_read( INT32 args )
 	    break;
 
 	  case 3: /* permission denied */
-	    Pike_error("CommonLog.read: permission denied.\n");
+	    Pike_error("permission denied.\n");
 
 	  default:
 	    Pike_error("Error in user->valid_open, wrong return value.\n");
@@ -221,8 +221,10 @@ static void f_read( INT32 args )
 	  break;
 
 	default:
+#ifdef PIKE_DEBUG
 	  Pike_error("Error in user->valid_open, wrong return type.\n");
-
+#endif
+          /* Fallthrough */
 	case PIKE_T_STRING:
 	  /*	  if(Pike_sp[-1].u.string->shift_size) */
 	  /*	    file=Pike_sp[-1]; */
@@ -240,10 +242,10 @@ static void f_read( INT32 args )
     } while (1);
 
     if(f < 0)
-      Pike_error("CommonLog.read(): Failed to open file for reading (errno=%d).\n",
-	    errno);
+      Pike_error("Failed to open file for reading (errno=%d).\n",
+                 errno);
   } else
-    SIMPLE_BAD_ARG_ERROR("CommonLog.read", 2, "string|Stdio.File");
+    SIMPLE_BAD_ARG_ERROR("read", 2, "string|Stdio.File");
 
 #ifdef HAVE_LSEEK64
   lseek64(f, offs0, SEEK_SET);

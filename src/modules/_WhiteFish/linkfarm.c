@@ -134,7 +134,7 @@ static void f_linkfarm_add( INT32 args )
   struct pike_string *s;
   struct linkfarm *f = THIS;
   
-  get_all_args("LinkFarm()->add", args, "%W", &s);
+  get_all_args("add", args, "%W", &s);
   low_add(f, s);
   pop_n_elems(args);
 }

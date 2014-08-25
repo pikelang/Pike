@@ -197,7 +197,7 @@ static void port_listen_fd(INT32 args)
   int fd;
   do_close(p);
 
-  get_all_args("Port->listen_fd", args, "%d.%*", &fd, &cb);
+  get_all_args("listen_fd", args, "%d.%*", &fd, &cb);
 
   if(fd<0)
   {
@@ -371,7 +371,7 @@ static void bind_unix(INT32 args)
 
   do_close(p);
 
-  get_all_args("Port->bind_unix", args, "%n.%*", &path, &cb);
+  get_all_args("bind_unix", args, "%n.%*", &path, &cb);
 
   /* NOTE: Some operating systems (eg Linux 2.6) do not support
    *       paths longer than what fits into a plain struct sockaddr_un.

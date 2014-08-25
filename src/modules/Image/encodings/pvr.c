@@ -583,8 +583,8 @@ void image_pvr_f_encode(INT32 args)
   unsigned char *dst;
   struct gla_state *gla_st = NULL;
 
-  get_all_args("Image.PVR.encode", args, (args>1 && !UNSAFE_IS_ZERO(&sp[1-args])?
-					  "%o%m":"%o"), &imgo, &optm);
+  get_all_args("encode", args, (args>1 && !UNSAFE_IS_ZERO(&sp[1-args])?
+                                "%o%m":"%o"), &imgo, &optm);
 
   if((img=get_storage(imgo, image_program))==NULL)
     Pike_error("Image.PVR.encode: illegal argument 1\n");
@@ -1037,7 +1037,7 @@ void img_pvr_decode(INT32 args,int header_only)
    INT32 attr;
    unsigned int h, w, x;
 
-   get_all_args("Image.PVR._decode", args, "%S", &str);
+   get_all_args("_decode", args, "%S", &str);
    s = (unsigned char *)str->str;
    len = str->len;
    pop_n_elems(args-1);

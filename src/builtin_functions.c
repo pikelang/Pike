@@ -6563,7 +6563,7 @@ static void f_longest_ordered_sequence(INT32 args)
   struct array *a = NULL;
   struct array *aa = NULL;
 
-  get_all_args("Array.longest_ordered_sequence", args, "%a", &a);
+  get_all_args("longest_ordered_sequence", args, "%a", &a);
 
   /* THREADS_ALLOW(); */
 
@@ -6572,7 +6572,7 @@ static void f_longest_ordered_sequence(INT32 args)
   /* THREADS_DISALLOW(); */
 
   if (!aa) {
-    SIMPLE_OUT_OF_MEMORY_ERROR("Array.longest_ordered_sequence",
+    SIMPLE_OUT_OF_MEMORY_ERROR("longest_ordered_sequence",
 			       (int)sizeof(int *)*a->size*2);
   }
 

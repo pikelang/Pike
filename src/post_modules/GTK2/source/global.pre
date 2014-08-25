@@ -332,7 +332,7 @@ int main_iteration_do(int block)
 //! event before returning.
 {
   INT_TYPE n;
-  get_all_args( "gtk_main_iteration_do", args, "%i", &n );
+  get_all_args( "main_iteration_do", args, "%i", &n );
   pgtk2_pop_n_elems(args);
   push_int( g_main_iteration( n ) );
 }
@@ -355,7 +355,7 @@ void grab_add(GTK2.Widget widget)
 //! Grab a widget.
 {
   struct object *o;
-  get_all_args("gtk_grab_add",args,"%o",&o);
+  get_all_args("grab_add",args,"%o",&o);
   gtk_grab_add(GTK_WIDGET(get_gobject(o)));
   pgtk2_pop_n_elems(args);
 }
@@ -364,7 +364,7 @@ void grab_remove(GTK2.Widget widget)
 //! Remove the grab.
 {
   struct object *o;
-  get_all_args("gtk_grab_remove",args,"%o",&o);
+  get_all_args("grab_remove",args,"%o",&o);
   gtk_grab_remove(GTK_WIDGET(get_gobject(o)));
   pgtk2_pop_n_elems(args);
 }

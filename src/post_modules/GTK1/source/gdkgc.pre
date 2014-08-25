@@ -16,14 +16,14 @@ void create( GTK1.Widget|GDK1.Drawable context, mapping|void attributes )
   struct mapping *m;
   pgtk_verify_setup();
   pgtk_verify_not_inited();
-  get_all_args("'()", args, "%o", &o);
+  get_all_args("create", args, "%o", &o);
   memset( &values, 0, sizeof(values));
 
   if( args > 1 )
   {
       struct svalue *sv;
       have_values = 1;
-      get_all_args("'()", args, "%o%m", &o, &m);
+      get_all_args("create", args, "%o%m", &o, &m);
 
 #define VALUE(X,Y)						\
     if(sv=simple_mapping_string_lookup(m,#X))			\

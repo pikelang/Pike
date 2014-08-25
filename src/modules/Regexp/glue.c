@@ -91,7 +91,7 @@ static void regexp_create(INT32 args)
   do_free();
   if(args)
   {
-    get_all_args("Regexp.SimpleRegexp->create", args, "%s", &str);
+    get_all_args("create", args, "%s", &str);
     THIS->regexp=pike_regcomp(Pike_sp[-args].u.string->str, 0);
   }
 }
@@ -186,7 +186,7 @@ static void regexp_split(INT32 args)
   struct pike_string *s;
   struct regexp *r;
 
-  get_all_args("Regexp.SimpleRegexp->split", args, "%S", &s);
+  get_all_args("split", args, "%S", &s);
 
   if(pike_regexec(r=THIS->regexp, s->str))
   {

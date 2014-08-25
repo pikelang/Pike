@@ -2101,13 +2101,13 @@ void f_mutex_lock(INT32 args)
   if(!args)
     type=0;
   else
-    get_all_args("mutex->lock",args,"%i",&type);
+    get_all_args("lock",args,"%i",&type);
 
   switch(type)
   {
     default:
-      bad_arg_error("mutex->lock", Pike_sp-args, args, 2, "int(0..2)", Pike_sp+1-args,
-		  "Unknown mutex locking style: %"PRINTPIKEINT"d\n",type);
+      bad_arg_error("lock", Pike_sp-args, args, 2, "int(0..2)", Pike_sp+1-args,
+                    "Unknown mutex locking style: %"PRINTPIKEINT"d\n",type);
       
 
     case 0:
@@ -2203,13 +2203,13 @@ void f_mutex_trylock(INT32 args)
   if(!args)
     type=0;
   else
-    get_all_args("mutex->trylock",args,"%i",&type);
+    get_all_args("trylock",args,"%i",&type);
 
   switch(type)
   {
     default:
-      bad_arg_error("mutex->trylock", Pike_sp-args, args, 2, "int(0..2)", Pike_sp+1-args,
-		  "Unknown mutex locking style: %"PRINTPIKEINT"d\n",type);
+      bad_arg_error("trylock", Pike_sp-args, args, 2, "int(0..2)", Pike_sp+1-args,
+                    "Unknown mutex locking style: %"PRINTPIKEINT"d\n",type);
 
     case 0:
       if(m->key && OB2KEY(m->key)->owner == Pike_interpreter.thread_state)
@@ -2505,18 +2505,18 @@ void f_cond_wait(INT32 args)
 
   if (args <= 2) {
     FLOAT_TYPE fsecs = 0.0;
-    get_all_args("condition->wait", args, "%o.%F", &key, &fsecs);
+    get_all_args("wait", args, "%o.%F", &key, &fsecs);
     seconds = (INT_TYPE) fsecs;
     nanos = (INT_TYPE)((fsecs - seconds)*1000000000);
   } else {
     /* FIXME: Support bignum nanos. */
-    get_all_args("condition->wait", args, "%o%i%i", &key, &seconds, &nanos);
+    get_all_args("wait", args, "%o%i%i", &key, &seconds, &nanos);
   }
       
   if ((key->prog != mutex_key) ||
       (!(OB2KEY(key)->initialized)) ||
       (!(mut = OB2KEY(key)->mut))) {
-    Pike_error("Bad argument 1 to condition->wait()\n");
+    Pike_error("Bad argument 1 to wait()\n");
   }
 
   if(args > 1) {

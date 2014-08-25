@@ -342,7 +342,7 @@ static void memory__mmap(INT32 args,int complain,int private)
    else if (TYPEOF(sp[-args]) == T_STRING)
    {
       char *filename;
-      get_all_args("Memory.mmap",args,"%s",&filename); /* 8 bit! */
+      get_all_args("mmap",args,"%s",&filename); /* 8 bit! */
       
       THREADS_ALLOW();
       fd = fd_open(filename,fd_RDWR,0);
@@ -452,9 +452,9 @@ static void memory_allocate(INT32 args)
    unsigned char *mem;
 
    if (args>=2)
-      get_all_args("Memory.allocate",args,"%+%+",&size,&c);
+      get_all_args("allocate",args,"%+%+",&size,&c);
    else
-      get_all_args("Memory.allocate",args,"%+",&size);
+      get_all_args("allocate",args,"%+",&size);
 
    /* just to be sure */
    if (size<0)
@@ -812,7 +812,7 @@ static void memory_index(INT32 args)
    {
       INT_TYPE pos;
       size_t rpos = 0;
-      get_all_args("Memory.`[]",args,"%i",&pos);
+      get_all_args("`[]",args,"%i",&pos);
       if (pos<0) {
 	 if ((off_t)-pos>=DO_NOT_WARN((off_t)THIS->size))
 	    Pike_error("Memory.`[]: Index is out of range\n");
@@ -838,7 +838,7 @@ static void memory_index(INT32 args)
 	 INT_TYPE pos1,pos2;
 	 size_t rpos1,rpos2;
 
-	 get_all_args("Memory.`[]",args,"%i%i",&pos1,&pos2);
+	 get_all_args("`[]",args,"%i%i",&pos1,&pos2);
 	 if (pos1<0) rpos1=0; else rpos1=(size_t)pos1;
 	 if ((size_t)pos2>=THIS->size) rpos2=THIS->size-1; 
 	 else rpos2=(size_t)pos2;
@@ -867,7 +867,7 @@ static void memory_index_write(INT32 args)
    {
       INT_TYPE pos,ch;
       size_t rpos = 0;
-      get_all_args("Memory.`[]=",args,"%i%i",&pos,&ch);
+      get_all_args("`[]=",args,"%i%i",&pos,&ch);
       if (pos<0) 
 	 if ((off_t)-pos>=DO_NOT_WARN((off_t)THIS->size))
 	    Pike_error("Memory.`[]=: Index is out of range\n");
@@ -890,7 +890,7 @@ static void memory_index_write(INT32 args)
      INT_TYPE pos1, pos2;
      struct pike_string *ps;
 
-     get_all_args("Memory.`[]=", args, "%i%i%S", &pos1, &pos2, &ps);
+     get_all_args("`[]=", args, "%i%i%S", &pos1, &pos2, &ps);
 
      if (pos1 < 0) pos1 = 0;
      if (pos2 < 0) pos2 = 0;

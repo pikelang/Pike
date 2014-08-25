@@ -1952,7 +1952,7 @@ static void f_compile_query_create(INT32 args)
   fprintf(stderr,"%s\n",__FUNCTION__);
 #endif
 
-  get_all_args("Oracle->compile_query", args, "%S", &query);
+  get_all_args("compile_query", args, "%S", &query);
 
 #ifdef ORACLE_DEBUG
   fprintf(stderr,"f_compile_query_create: dbquery: %p\n",dbquery);

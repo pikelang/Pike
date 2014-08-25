@@ -420,7 +420,7 @@ static void f_std_feed(INT32 args, ptrdiff_t (*func)(struct pike_string *,
   struct pike_string *str;
   ptrdiff_t l;
 
-  get_all_args("feed()", args, "%W", &str);
+  get_all_args("feed", args, "%W", &str);
 
   if(str->size_shift>0)
     Pike_error("Can't feed on wide strings!\n");
@@ -929,7 +929,7 @@ static void f_create_multichar(INT32 args)
   const struct multichar_def *def = multichar_map;
   struct multichar_stor *s = (struct multichar_stor *)(fp->current_storage + multichar_stor_offs);
 
-  get_all_args("create()", args, "%s", &name);
+  get_all_args("create", args, "%s", &name);
 
   while(1) {
     if(def->name == 0)
@@ -1177,7 +1177,7 @@ static void f_feed_gb18030e(INT32 args)
   struct pike_string *str;
   struct std_cs_stor *cs = (struct std_cs_stor *)fp->current_storage;
 
-  get_all_args("feed()", args, "%W", &str);
+  get_all_args("feed", args, "%W", &str);
 
   feed_gb18030e(cs, &cs->strbuild, str, cs->replace, MKREPCB(cs->repcb));
 
@@ -1258,7 +1258,7 @@ static void f_feed_gbke(INT32 args)
   struct pike_string *str;
   struct std_cs_stor *cs = (struct std_cs_stor *)fp->current_storage;
 
-  get_all_args("feed()", args, "%W", &str);
+  get_all_args("feed", args, "%W", &str);
 
   feed_gbke(cs, &cs->strbuild, str, cs->replace, MKREPCB(cs->repcb));
 
@@ -1843,7 +1843,7 @@ static void f_feed_utf8e(INT32 args)
   struct pike_string *str;
   struct std_cs_stor *cs = (struct std_cs_stor *)fp->current_storage;
 
-  get_all_args("feed()", args, "%W", &str);
+  get_all_args("feed", args, "%W", &str);
 
   feed_utf8e(cs, &cs->strbuild, str, cs->replace, MKREPCB(cs->repcb));
 
@@ -1979,7 +1979,7 @@ static void f_feed_utf_ebcdice(INT32 args)
   struct pike_string *str;
   struct std_cs_stor *cs = (struct std_cs_stor *)fp->current_storage;
 
-  get_all_args("feed()", args, "%W", &str);
+  get_all_args("feed", args, "%W", &str);
 
   feed_utf_ebcdice(cs, &cs->strbuild, str, cs->replace, MKREPCB(cs->repcb));
 
@@ -2052,7 +2052,7 @@ static void f_feed_utf7_5e(INT32 args)
   struct pike_string *str;
   struct std_cs_stor *cs = (struct std_cs_stor *)fp->current_storage;
 
-  get_all_args("feed()", args, "%W", &str);
+  get_all_args("feed", args, "%W", &str);
 
   feed_utf7_5e(cs, &cs->strbuild, str, cs->replace, MKREPCB(cs->repcb));
 
@@ -2212,7 +2212,7 @@ static void f_feed_utf7e(INT32 args)
   struct pike_string *str;
   struct std_cs_stor *cs = (struct std_cs_stor *)fp->current_storage;
 
-  get_all_args("feed()", args, "%W", &str);
+  get_all_args("feed", args, "%W", &str);
 
   feed_utf7e((struct utf7_stor *)(((char*)fp->current_storage)+utf7_stor_offs),
 	     &cs->strbuild, str, cs->replace, MKREPCB(cs->repcb));
@@ -2325,7 +2325,7 @@ static void f_feed_std8e(INT32 args)
   struct pike_string *str;
   struct std_cs_stor *cs = (struct std_cs_stor *)fp->current_storage;
 
-  get_all_args("feed()", args, "%W", &str);
+  get_all_args("feed", args, "%W", &str);
 
   feed_std8e((struct std8e_stor *)(((char*)fp->current_storage)+
 				   std8e_stor_offs),
@@ -2434,7 +2434,7 @@ static void f_feed_std16e(INT32 args)
   struct pike_string *str;
   struct std_cs_stor *cs = (struct std_cs_stor *)fp->current_storage;
 
-  get_all_args("feed()", args, "%W", &str);
+  get_all_args("feed", args, "%W", &str);
 
   feed_std16e((struct std16e_stor *)(((char*)fp->current_storage)+
 				     std16e_stor_offs),

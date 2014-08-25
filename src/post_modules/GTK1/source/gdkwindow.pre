@@ -19,7 +19,7 @@ void create(GDK1.Window|int parent, mapping|void attributes)
   if(TYPEOF(Pike_sp[-args]) == PIKE_T_INT)
   {
     INT_TYPE id;
-    get_all_args( "GdkWindow", args, "%i", &id );
+    get_all_args( "create", args, "%i", &id );
     THIS->obj = (void *)gdk_window_foreign_new( id );
     if( !THIS->obj )
       Pike_error("The window with id 0x%x does not exist\n", id);
@@ -29,7 +29,7 @@ void create(GDK1.Window|int parent, mapping|void attributes)
     GdkWindowAttr attrs;
     long mask = 0;
     MEMSET(&attrs, 0, sizeof(attrs));
-    get_all_args( "GdkWindow", args, "%o%m", &parent, &m );
+    get_all_args( "create", args, "%o%m", &parent, &m );
 
 #define GET_ARG(x,y,z) pgtk_get_mapping_arg( m, #x, y, z, &attrs.x, &mask, sizeof(attrs.x))
 

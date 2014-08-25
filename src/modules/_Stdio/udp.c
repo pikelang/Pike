@@ -1121,7 +1121,7 @@ static void udp_connect(INT32 args)
 
   int tmp;
 
-  get_all_args("UDP.connect", args, "%S%*", &dest_addr, &dest_port);
+  get_all_args("connect", args, "%S%*", &dest_addr, &dest_port);
 
   if(TYPEOF(*dest_port) != PIKE_T_INT &&
      (TYPEOF(*dest_port) != PIKE_T_STRING || dest_port->u.string->size_shift))
@@ -1298,7 +1298,7 @@ static void udp_set_type(INT32 args)
 {
    int type, proto = 0;
 
-   get_all_args("Stdio.UDP->set_type",args,"%d.%d",&type,&proto);
+   get_all_args("set_type",args,"%d.%d",&type,&proto);
 
    THIS->type=type;
    THIS->protocol=proto;
@@ -1345,7 +1345,7 @@ static void udp_set_buffer(INT32 args)
   if(FD==-1)
     Pike_error("Stdio.UDP->set_buffer() on closed file.\n");
 
-  get_all_args("Stdio.UDP->set_buffer", args, "%+.%s", &bufsize, &c);
+  get_all_args("set_buffer", args, "%+.%s", &bufsize, &c);
 
   if(bufsize < 0)
     Pike_error("Bufsize must be larger than zero.\n");

@@ -16,7 +16,7 @@ void create(?string label)
   if(args)
   {
     char *s;
-    get_all_args("GTK1.Tree_item", args, "%s", &s);
+    get_all_args("create", args, "%s", &s);
     THIS->obj = GTK_OBJECT( gtk_tree_item_new_with_label( s ) );
   } else {
     THIS->obj = GTK_OBJECT( gtk_tree_item_new( ) );

@@ -143,7 +143,7 @@ void get_text(int row, int col)
 {
   INT_TYPE x, y;
   gchar *p = NULL;
-  get_all_args( "get_*", args, "%i%i", &x, &y );
+  get_all_args( "get_text", args, "%i%i", &x, &y );
 
   my_pop_n_elems( args );
   gtk_clist_get_text( GTK_CLIST( THIS->obj ), x, y, &p );
@@ -176,7 +176,7 @@ void get_pixmap(int row, int column)
   INT_TYPE x, y;
   GdkPixmap *p = NULL;
   GdkBitmap *b = NULL;
-  get_all_args( "get_*", args, "%i%i", &x, &y );
+  get_all_args( "get_pixmap", args, "%i%i", &x, &y );
 
   my_pop_n_elems( args );
   gtk_clist_get_pixmap( GTK_CLIST( THIS->obj ), x, y, &p, &b );
@@ -228,7 +228,7 @@ mapping get_pixtext(int row, int col)
   gchar *t = NULL;
   GdkPixmap *p = NULL;
   GdkBitmap *b = NULL;
-  get_all_args( "get_*", args, "%i%i", &x, &y );
+  get_all_args( "get_pixtext", args, "%i%i", &x, &y );
 
   gtk_clist_get_pixtext( GTK_CLIST( THIS->obj ), x, y, &t, &s, &p, &b );
   my_pop_n_elems( args );

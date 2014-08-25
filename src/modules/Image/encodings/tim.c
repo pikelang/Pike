@@ -174,7 +174,7 @@ void img_tim_decode(INT32 args, int header_only)
   INT32 attr;
   unsigned int h=0, w=0;
   
-  get_all_args("Image.TIM._decode", args, "%S", &str);
+  get_all_args("_decode", args, "%S", &str);
   clut=s=(unsigned char *)str->str;
   clut+=20;
   len = str->len;

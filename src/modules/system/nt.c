@@ -3583,7 +3583,7 @@ static void f_sctx_create(INT32 args)
   TimeStamp       Lifetime;
   char *          pkgName;
 
-  get_all_args("system.SecurityContext->create",args,"%s",&pkgName);
+  get_all_args("create",args,"%s",&pkgName);
 
   lstrcpy(sctx->lpPackageName, pkgName);
   ss = querysecuritypackageinfo ( sctx->lpPackageName, &pkgInfo);

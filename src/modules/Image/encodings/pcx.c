@@ -343,7 +343,7 @@ void image_pcx_decode( INT32 args )
 {
   struct pike_string *data;
   struct object *o;
-  get_all_args( "Image.PCX.decode", args, "%S", &data );
+  get_all_args( "decode", args, "%S", &data );
   o = low_pcx_decode( data );
   pop_n_elems(args);
   push_object( o );
@@ -577,7 +577,7 @@ void image_pcx_encode( INT32 args )
   struct object *i;
   struct image *img;
 
-  get_all_args( "Image.PCX.encode", args, "%o", &i );
+  get_all_args( "encode", args, "%o", &i );
 
   if(TYPEOF(Pike_sp[-1]) != PIKE_T_OBJECT)
     Pike_error("Invalid object argument to Image.PCX.encode\n");

@@ -354,7 +354,7 @@ static void image_ft_face_create( INT32 args )
   FT_Encoding best_enc = ft_encoding_none;
   int enc_no, enc_score, best_enc_score = -2;
 
-  get_all_args("FreeType.Face", args, "%s.%d", &font, &face_number);
+  get_all_args("create", args, "%s.%d", &font, &face_number);
 
   if (face_number < 0) {
     SIMPLE_BAD_ARG_ERROR("FreeType.Face", 2, "int(0..)");

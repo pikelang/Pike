@@ -625,7 +625,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void debug_fatal(const char *fmt, ...) ATTRIBUTE(
  */
 static void f_error_cast(INT32 args)
 {
-  if(Pike_sp[-1].u.string == literal_array_string)
+  if(Pike_sp[-args].u.string == literal_array_string)
   {
     pop_stack();
     apply_current (generic_err_message_fun, 0);
@@ -660,7 +660,7 @@ static void f_error_cast(INT32 args)
 static void f_error_index(INT32 args)
 {
   INT_TYPE ind;
-  get_all_args("error->`[]",args,"%i",&ind);
+  get_all_args("`[]",args,"%i",&ind);
 
   switch(ind)
   {
@@ -673,7 +673,7 @@ static void f_error_index(INT32 args)
       apply_current (generic_err_backtrace_fun, 0);
       break;
     default:
-      index_error("error->`[]", Pike_sp-args, args, NULL, Pike_sp-args,
+      index_error("`[]", Pike_sp-args, args, NULL, Pike_sp-args,
 		  "Index %"PRINTPIKEINT"d is out of range 0..1.\n", ind);
       break;
   }

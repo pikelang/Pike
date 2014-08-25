@@ -311,7 +311,7 @@ void font_load(INT32 args)
   size_t size = 0;
   char *filename = NULL;
 
-  get_all_args("Image.Font->load()", args, ".%s", &filename);
+  get_all_args("load", args, ".%s", &filename);
 
   if (!filename)
   {

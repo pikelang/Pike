@@ -18,13 +18,13 @@ void create(object|int color_or_r,int|void g,int|void b)
   if( args == 1)
   {
     struct object *o;
-    get_all_args("GdkColor", args, "%o", &o);
+    get_all_args("create", args, "%o", &o);
     if( !get_color_from_pikecolor( o, &r, &g, &b ) )
       Pike_error("Bad argument 1 to GDK1.Color(). Exptected color object\n");
   }
   else
   {
-    get_all_args("GdkColor", args, "%i%i%i", &r, &g, &b);
+    get_all_args("create", args, "%i%i%i", &r, &g, &b);
     r*=257;
     g*=257;
     b*=257;

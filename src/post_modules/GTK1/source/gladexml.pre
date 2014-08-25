@@ -42,7 +42,7 @@ class GTK1.GladeXML;
 	  "after: %d\n",
 	  handler_name, signal_name, signal_data, after);
 #endif
-  get_all_args("GTK1.GladeXML->_signal_connect",
+  get_all_args("_signal_connect",
 	       *(INT32 *)args, "%m%*", &callbacks, &data);
 
   funname = make_shared_string(handler_name);
@@ -274,7 +274,7 @@ string get_widget_long_name(GTK1.Widget widget)
   GtkWidget *widget = NULL;
   const char *name;
 
-  get_all_args("GladeXML->get_widget_long_name", args, "%o", &obj);
+  get_all_args("get_widget_long_name", args, "%o", &obj);
   widget = GTK_WIDGET(get_gtkobject(obj));
   if(!widget)
     Pike_error("GladeXML->get_widget_long_name: Invalid argument 1, wanted GTK object of type WIDGET.\n");
@@ -299,7 +299,7 @@ string get_widget_name(GTK1.Widget widget)
   GtkWidget *widget = NULL;
   const char *name;
 
-  get_all_args("GladeXML->get_widget_name", args, "%o", &obj);
+  get_all_args("get_widget_name", args, "%o", &obj);
   widget = GTK_WIDGET(get_gtkobject(obj));
   if(!widget)
     Pike_error("GladeXML->get_widget_name: Invalid argument 1, wanted GTK object of type WIDGET.\n");

@@ -4543,9 +4543,9 @@ static void f_pid_status_kill(INT32 args)
 
   ASSERT_SECURITY_ROOT("Process->kill");
 
-  get_all_args("pid->kill", args, "%+", &signum);
+  get_all_args("kill", args, "%+", &signum);
 
-  PROC_FPRINTF((stderr, "[%d] pid->kill: pid=%d, signum=%d\n",
+  PROC_FPRINTF((stderr, "[%d] kill: pid=%d, signum=%d\n",
 		getpid(), pid, signum));
 
   THREADS_ALLOW_UID();
@@ -4644,7 +4644,7 @@ static void f_pid_status_kill(INT32 args)
 
   ASSERT_SECURITY_ROOT("Process->kill");
 
-  get_all_args("pid->kill", args, "%i", &signum);
+  get_all_args("kill", args, "%i", &signum);
 
   pop_n_elems(args);
 
