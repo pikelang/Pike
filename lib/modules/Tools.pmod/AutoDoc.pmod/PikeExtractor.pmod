@@ -40,6 +40,7 @@ private class Extractor {
 	       pos->filename||"-", pos->firstline, msg);
       }
     }
+    msg = (pos->filename||"-")+":"+(pos->firstline)+": "+msg;
     return msg;
   }
 
