@@ -3208,7 +3208,7 @@ PIKECLASS Buffer
    *!   @[add()]
    */
   PIKEFUN int addat(int(0..) pos, string ... arg1 )
-    rawtype tFuncV(tNone, tOr(tString, tObjIs_BUFFER), tIntPos);
+    rawtype tFuncV(tIntPos, tOr(tString, tObjIs_BUFFER), tIntPos);
   {
     struct Buffer_struct *str = THIS;
 
