@@ -11710,7 +11710,10 @@ static int low_implements(struct program *a, struct program *b)
   int ret = 1;
   struct pike_string *s=findstring("__INIT");
 
-  if (BEGIN_CYCLIC(a, b)) return 1;	/* Tentatively ok, */
+  if (BEGIN_CYCLIC(a, b)) {
+    END_CYCLIC();
+    return 1;	/* Tentatively ok, */
+  }
   SET_CYCLIC_RET(1);
 
   for(e=0;e<b->num_identifier_references;e++)
@@ -11793,7 +11796,10 @@ static int low_is_compatible(struct program *a, struct program *b)
   int ret = 1;
   struct pike_string *s=findstring("__INIT");
 
-  if (BEGIN_CYCLIC(a, b)) return 1;
+  if (BEGIN_CYCLIC(a, b)) {
+    END_CYCLIC();
+    return 1;
+  }
   SET_CYCLIC_RET(1);
 
   /* Optimize the loop somewhat */
