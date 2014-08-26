@@ -105,6 +105,7 @@ test_equal(Standards.URI("http://www.com/?")->get_http_path_query(),"/?")
 test_equal(Standards.URI("http://www.com/")->get_http_path_query(),"/")
 test_eval_error(Standards.URI("www.com"))
 test_eq((string)Standards.URI("www.com","http://"),"http://www.com")
+test_eq((string)Standards.URI("www.com/x?a=b#y","http://"),"http://www.com/x?a=b#y")
 test_eq((string)Standards.URI("ftp://www.com/x?a=b#y","http://"),"ftp://www.com/x?a=b#y")
 // Some tests of empty path followed by a query.
 test_eq(Standards.URI("http://user:??@host?query")->query, "query")
