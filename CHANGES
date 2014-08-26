@@ -727,6 +727,14 @@ o Stdio.UDP():
 
   + added set_buffer
 
+o Added client and server support for TCP_FASTCONNECT
+
+    To connect using this TCP extension simply pass the data as the
+    fifth argument to connect.
+
+    The server support is automatically enabled if possible when a
+    Stdio.Port object is bound to a port.
+
 o Stdio.File():
 
   + send_fd and receive_fd
