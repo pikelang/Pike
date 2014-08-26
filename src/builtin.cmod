@@ -3205,75 +3205,67 @@ PIKECLASS Buffer
     rawtype tFuncV(tIntPos, tOr(tString, tObjIs_BUFFER), tIntPos);
   {
     struct Buffer_struct *str = THIS;
+    struct pike_string *s;
+    ptrdiff_t sum = 0;
+    int j,shift = 0;
 
     if (pos < 0)
       SIMPLE_BAD_ARG_ERROR("addat", 1, "int(0..)");
 
-    if (args) {
-      int init_from_arg0 = 0, j;
-      ptrdiff_t sum = 0;
-      int shift = 0;
-      for (j=1; j < args; j++) {
-	struct pike_string *a;
-	if (TYPEOF(Pike_sp[j-args]) == PIKE_T_STRING)
-	  a = Pike_sp[j-args].u.string;
-	else if ((TYPEOF(Pike_sp[j-args]) != PIKE_T_OBJECT) ||
-		   (Pike_sp[j-args].u.object->prog != Buffer_program))
-	  SIMPLE_BAD_ARG_ERROR("addat", j+1, "string|String.Buffer");
-	else {
-	  a = OBJ2_BUFFER(Pike_sp[j-args].u.object)->str.s;
-	  if (!a) continue;
-	}
-	sum += a->len;
-	shift |= a->size_shift;
-      }
-
-      if (!str->str.s) {
-	if ((sum + pos) <= str->initial)
-	  sum = str->initial;
-	else
-	  sum <<= 1, sum += pos;
-	shift = shift & ~(shift >> 1);
-
-	init_string_builder_alloc(&str->str, sum, shift);
-      } else {
-	sum += pos;
-	shift |= str->str.known_shift;
-	shift = shift & ~(shift >> 1);
-	if (sum > str->str.s->len)
-	  string_build_mkspace(&str->str, sum - str->str.s->len, shift);
-	else if (shift != str->str.known_shift)
-	  string_build_mkspace(&str->str, 0, shift);
-      }
-      /* We know it will be a string that really is this wide. */
-      str->str.known_shift = shift;
-
-      if (str->str.s->len < pos) {
-	/* Clear the padding. */
-	MEMSET(str->str.s->str + (str->str.s->len << str->str.s->size_shift),
-	       0, (pos - str->str.s->len) << str->str.s->size_shift);
-      }
-
-      for(j = 1; j<args; j++) {
-	struct pike_string *a;
-	if (TYPEOF(Pike_sp[j-args]) == PIKE_T_STRING)
-	  a = Pike_sp[j-args].u.string;
-	else {
-	  a = OBJ2_BUFFER(Pike_sp[j-args].u.object)->str.s;
-	  if (!a) continue;
-	}
-	pike_string_cpy(MKPCHARP_STR_OFF(str->str.s, pos), a);
-	pos += a->len;
-      }
-
-      if (str->str.s->len < pos) {
-	str->str.s->len = pos;
-	/* Ensure NUL-termination */
-	str->str.s->str[str->str.s->len << str->str.s->size_shift] = 0;
-      }
+    for (j=1; j < args; j++) {
+      struct pike_string *a;
+      if (TYPEOF(Pike_sp[j-args]) == PIKE_T_STRING)
+        a = Pike_sp[j-args].u.string;
+      else if ((TYPEOF(Pike_sp[j-args]) != PIKE_T_OBJECT) ||
+         (Pike_sp[j-args].u.object->prog != Buffer_program))
+        SIMPLE_BAD_ARG_ERROR("addat", j+1, "string|String.Buffer");
+      else if(!(a = OBJ2_BUFFER(Pike_sp[j-args].u.object)->str.s))
+        continue;
+      sum += a->len;
+      shift |= a->size_shift;
     }
 
-    RETURN str->str.s ? str->str.s->len : 0;
+    if (!(s = str->str.s)) {
+      if ((sum + pos) <= str->initial)
+        sum = str->initial;
+      else
+        sum <<= 1, sum += pos;
+      shift = shift & ~(shift >> 1);
+
+      init_string_builder_alloc(&str->str, sum, shift);
+    } else {
+      sum += pos;
+      shift |= str->str.known_shift;
+      shift = shift & ~(shift >> 1);
+      if (sum > s->len)
+        string_build_mkspace(&str->str, sum - s->len, shift);
+      else if (shift != str->str.known_shift)
+        string_build_mkspace(&str->str, 0, shift);
+    }
+    s = str->str.s;
+    /* We know it will be a string that really is this wide. */
+    str->str.known_shift = shift;
+
+    if (s->len < pos)				 // Clear the padding
+      MEMSET(s->str + (s->len << s->size_shift),
+             0, (pos - s->len) << s->size_shift);
+
+    for(j = 1; j<args; j++) {
+      struct pike_string *a;
+      if (TYPEOF(Pike_sp[j-args]) == PIKE_T_STRING)
+        a = Pike_sp[j-args].u.string;
+      else if(!(a = OBJ2_BUFFER(Pike_sp[j-args].u.object)->str.s))
+        continue;
+      pike_string_cpy(MKPCHARP_STR_OFF(s, pos), a);
+      pos += a->len;
+    }
+
+    if (s->len < pos) {
+      s->len = pos;
+      s->str[s->len << s->size_shift] = 0;	// Ensure NUL-termination
+    }
+
+    RETURN s->len;
   }
 
   /*! @decl int add(string|String.Buffer ... data)
