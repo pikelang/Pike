@@ -550,7 +550,7 @@ void i_img_bmp__decode(INT32 args,int header_only)
    int xsize=0,ysize=0,bpp=0,comp=0;
    struct image *img=NULL;
    struct neo_colortable *nct=NULL;
-   struct object *o;
+   struct object *o=NULL;
    rgb_group *d;
    int n=0,y,skip;
    ptrdiff_t i, j=0;
