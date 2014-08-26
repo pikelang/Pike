@@ -129,12 +129,14 @@ static void pgres_destroy (struct object * UNUSED(o))
  *!
  *! This is an interface to the Postgres (Postgres95, PostgreSQL)
  *! database server using libpq.
+ *!
  *! This module may or may not be available on your Pike, depending on
- *! whether or not the appropriate include and library files 
+ *! whether or not the appropriate include and library files
  *! could be found at compile-time. Note that you @b{do not@}
  *! need to have a Postgres server running on your host to use this module:
  *! you can connect to the database over a TCP/IP socket.
  *!
+ *! @note
  *! Please notice that unless you wish to specifically connect to a Postgres
  *! server, you'd better use the @[Sql.Sql], which is a server-independent
  *! sql-server-class. The interfaces to all existing sql-classes
