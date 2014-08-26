@@ -5038,9 +5038,12 @@ static void file_connect(INT32 args)
   int tmp, was_closed = FD < 0;
   int fd, sent = 0;
 
-  if (args < 4) {
+  if (args < 4) 
+  {
     get_all_args("connect", args, "%S%*", &dest_addr, &dest_port);
-  } if( args == 5 ) {
+  }
+  else if( args == 5 )
+  {
     struct svalue *src_sv;
     get_all_args("connect", args, "%S%*%*%*%S",
                  &dest_addr, &dest_port, &src_sv, &src_port, &data);
