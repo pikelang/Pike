@@ -3406,18 +3406,22 @@ PIKECLASS Buffer
       end = len-1;
 
     p = (char*)p+(index<<shift);
-    end -= index-1;
+    index = end-index+1;
+    end = len-end;
+    len = index<<shift;
     if (!vdiscard)
     {
+      struct pike_string *s2;
+
       res = fast_clone_object( Buffer_program );
       str2 = OBJ2_BUFFER( res );
-      init_string_builder_alloc(&str2->str, str2->initial = end, shift);
-      memcpy(str2->str.s->str, p, shift = end<<shift);
-      str2->str.s->str[shift] = 0;		// Ensure NUL-termination
-      str2->str.s->len = end;
+      init_string_builder_alloc(&str2->str, str2->initial = index, shift);
+      memcpy((s2=str2->str.s)->str, p, len);
+      s2->str[len] = 0;				// Ensure NUL-termination
+      s2->len = index;
     }
-    memmove(p, (char*)p+shift, shift+1);	// Copy NUL-termination
-    s->len -= end;
+    memmove(p, (char*)p+len, end<<shift);	// Copy NUL-termination
+    s->len -= index;
 
     if(!vdiscard)
     {
