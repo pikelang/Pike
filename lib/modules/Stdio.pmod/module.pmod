@@ -422,23 +422,9 @@ class File
   }
   variant string connect(string host, int(0..)|string port, string data)
   {
-    return connect(host,port,0,0,data);
+    connect(host,port,0,0,data);
   }
   variant string connect(string host, int(0..)|string port,
-                         int(0..0)|string client, int(0..)|string client_port,
-                         string data)
-  {
-#ifdef __STDIO_DEBUG
-    __closed_backtrace=0;
-#endif
-    is_file = 0;
-    debug_file = "socket";
-    debug_mode = host+":"+port;
-    debug_bits = 0;
-    if( (data = ::connect(host, port, client, client_port, data)) )
-    {
-      register_open_file ("socket", open_file_id, backtrace());
-      fix  variant string connect(string host, int(0..)|string port,
                          int(0..0)|string client, int(0..)|string client_port,
                          string data)
   {
