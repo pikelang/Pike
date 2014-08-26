@@ -2944,12 +2944,8 @@ PIKEFUN array(mixed) backtrace()
 
 /*! @class Buffer
  *!    A buffer, used for building strings. It's
- *!    conceptually similar to a string, but you can only @[add]
- *!    strings to it, and you can only @[get] the value from it once.
- *!
- *!    There is a reason for those seemingly rather odd limitations,
- *!    it makes it possible to do some optimizations that really speed
- *!    things up.
+ *!    conceptually similar to a string, but speed-optimised for growing
+ *!    strings.
  *!
  *!    You do not need to use this class unless you add very many
  *!    strings together, or very large strings.
@@ -3185,17 +3181,15 @@ PIKECLASS Buffer
   /*! @decl int addat(int(0..) pos, string|String.Buffer ... data)
    *!
    *!   Adds @[data] to the buffer, starting at position @[pos].
+   *!   It overwrites existing content at that offset, never truncates the
+   *!   buffer, possibly extends the buffer if the new content does not fit.
    *!
    *! @returns
    *!   Returns the size of the buffer.
    *!
    *! @note
-   *!   If the buffer isn't of the required size, it will be padded
-   *!   with NUL-characters.
-   *!
-   *! @note
-   *!   Pike 7.8 and earlier did not support adding @[String.Buffer]s
-   *!   directly.
+   *!   If the starting position @[pos] extends beyond the end of the current
+   *!   buffer content, the gap will be filled with NUL-characters.
    *!
    *! @seealso
    *!   @[add()]
@@ -3281,10 +3275,6 @@ PIKECLASS Buffer
    *!
    *! @returns
    *!   Returns the size of the buffer.
-   *!
-   *! @note
-   *!   Pike 7.8 and earlier did not support adding @[String.Buffer]s
-   *!   directly.
    *!
    *! @seealso
    *!   @[addat()]
