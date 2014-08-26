@@ -1518,10 +1518,6 @@ ptrdiff_t generic_quick_binary_strcmp(const char *a,
   if(!asize && !bsize)
   {
     int tmp;
-    /* FIXME: Does MEMCMP() guarantee that the characters
-     *        are compared as unsigned?
-     *	/grubba 2006-03-11
-     */
     if(alen > blen)
     {
       tmp=MEMCMP(a, b, blen);
