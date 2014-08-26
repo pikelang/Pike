@@ -3159,7 +3159,7 @@ PIKECLASS Buffer
     push_int(ch);
   }
 
-  /*! @decl String.Buffer `+( string|String.Buffer what )
+  /*! @decl Buffer `+( string|Buffer what )
    */
   PIKEFUN object `+( string|Buffer what )
     rawtype tFunc(tOr(tString, tObjIs_BUFFER), tObjIs_BUFFER);
@@ -3176,7 +3176,7 @@ PIKECLASS Buffer
     RETURN res;
   }
 
-  /*! @decl String.Buffer `+=( string|String.Buffer what )
+  /*! @decl Buffer `+=( string|Buffer what )
    */
   PIKEFUN object `+=( string|Buffer what )
     rawtype tFunc(tOr(tString, tObjIs_BUFFER), tObjIs_BUFFER);
@@ -3185,7 +3185,7 @@ PIKECLASS Buffer
     REF_RETURN Pike_fp->current_object;
   }
 
-  /*! @decl int addat(int(0..) pos, string|String.Buffer ... data)
+  /*! @decl int addat(int(0..) pos, string|Buffer ... data)
    *!
    *!   Adds @[data] to the buffer, starting at position @[pos].
    *!   It overwrites existing content at that offset, never truncates the
@@ -3201,7 +3201,7 @@ PIKECLASS Buffer
    *! @seealso
    *!   @[add()]
    */
-  PIKEFUN int addat(int(0..) pos, string ... arg1 )
+  PIKEFUN int addat(int(0..) pos, string|Buffer ... arg1 )
     rawtype tFuncV(tIntPos, tOr(tString, tObjIs_BUFFER), tIntPos);
   {
     struct Buffer_struct *str = THIS;
@@ -3268,7 +3268,7 @@ PIKECLASS Buffer
     RETURN s->len;
   }
 
-  /*! @decl int add(string|String.Buffer ... data)
+  /*! @decl int add(string|Buffer ... data)
    *!
    *!   Adds @[data] to the buffer.
    *!
