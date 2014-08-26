@@ -413,7 +413,7 @@ PIKECLASS Sequence
   }
 
 
-/*! @decl mixed cast(string type)
+/*! @decl array cast(string type)
  *! Cast operator.
  *!
  *! @param type
@@ -429,7 +429,7 @@ PIKECLASS Sequence
  *!   An array with the contents of this sequence.
  */
 
-  PIKEFUN mixed cast(string type)
+  PIKEFUN array cast(string type)
     flags ID_PROTECTED;
   {
     pop_n_elems(args); /* type as at least one more reference. */

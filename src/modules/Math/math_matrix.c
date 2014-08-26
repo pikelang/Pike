@@ -152,8 +152,8 @@ extern struct program *math_lmatrix_program;
 
 /* ---------------------------------------------------------------- */
 
-/*! @decl array(array) cast(string to_what)
- *! @decl array(array) cast(string to_what)
+/*! @decl array(array(float)) cast(string to_what)
+ *! @decl array(array(float)) cast(string to_what)
  *!
  *! It is possible to cast the matrix to an array and get back a
  *! double array of floats with the matrix values.

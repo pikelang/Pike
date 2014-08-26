@@ -216,7 +216,7 @@ static void f_resultset_create( INT32 args )
 static void f_resultset_slice( INT32 args );
 
 static void f_resultset_cast( INT32 args )
-/*! @decl string cast( string type )
+/*! @decl array cast( string type )
  *! Only works when type == @expr{"array"@}. Returns the resultset
  *! data as a array.
  */

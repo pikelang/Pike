@@ -619,7 +619,7 @@ PIKECLASS mpq
       RETURN 0;
     }
 
-  /*! @decl static int|string|float|object cast(string s)
+  /*! @decl static int|string|float cast(string s)
    *!
    *! Casting to a string returns the number in the decimal fraction
    *! format, where both decimal point and quotient is included only

@@ -2,7 +2,7 @@
 //!
 //!
 
-mixed cast( string type );
+array|mapping cast( string type );
 //! Normally used like (mapping)rectangle or (array)rectangle.
 //!
 //!

@@ -356,8 +356,8 @@ PIKECLASS TM
     PIKEFUN int(0..23) `hour()      { FIX_THIS();RETURN THIS->t.tm_hour; }
     PIKEFUN int(1..31) `mday()      { FIX_THIS();RETURN THIS->t.tm_mday; }
     PIKEFUN int(0..11) `mon()       { FIX_THIS();RETURN THIS->t.tm_mon; }
-    PIKEFUN int `year()             { FIX_THIS();RETURN THIS->t.tm_year+1900; }
 
+    PIKEFUN int `year()             { FIX_THIS();RETURN THIS->t.tm_year+1900; }
     PIKEFUN int `sec=(int a) { MODIFY(tm_sec=a); }
     PIKEFUN int `min=(int a) { MODIFY(tm_min=a); }
     PIKEFUN int `hour=(int a){ MODIFY(tm_hour=a); }
@@ -451,7 +451,13 @@ PIKECLASS TM
 
     }
 
-    PIKEFUN mixed cast( string to )
+    /*! @decl int|string cast(string to)
+     *!
+     *! Casted to an integer @[unix_time] will be returned.
+     *!
+     *! Casting to a string will call @[asctime].
+     */
+    PIKEFUN int|string cast( string to )
       flags ID_PROTECTED;
     {
         if( to == literal_int_string )
@@ -3044,11 +3050,11 @@ PIKECLASS Buffer
     push_undefined();
   }
 
-  /*! @decl mixed cast( string type )
+  /*! @decl string|int cast( string type )
    *! It is possible to cast a String.Buffer object to
    *! a @expr{string@} and an @expr{int@}.
    */
-  PIKEFUN mixed cast( string type )
+  PIKEFUN string|int cast( string type )
     flags ID_PROTECTED;
   {
     if( type == literal_string_string )
@@ -5510,19 +5516,17 @@ PIKECLASS List
       }
     }
 
-  /*! @decl mixed cast(string type)
+  /*! @decl array cast(string type)
    *!
-   *! 	Cast the lists. @expr{array@} and @expr{object@} are the only
-   *! 	supported types.
+   *! 	Cast the lists. @expr{array@} is the only
+   *! 	supported type.
    */
-  PIKEFUN mixed cast(string type)
+  PIKEFUN array cast(string type)
     flags ID_PROTECTED;
   {
     pop_stack(); /* type as at least one more reference. */
     if (type == literal_array_string)
       apply_current(f_List_cq__values_fun_num, 0);
-    else if (type == literal_object_string)
-      ref_push_object(Pike_fp->current_object);
     else
       push_undefined();
   }

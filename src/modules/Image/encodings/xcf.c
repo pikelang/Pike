@@ -1496,7 +1496,7 @@ void init_image_xcf(void)
 
   start_new_program();
   ADD_STORAGE( struct substring );
-  ADD_FUNCTION("cast", f_substring_cast, tFunc(tStr,tMix), ID_PRIVATE);
+  ADD_FUNCTION("cast", f_substring_cast, tFunc(tStr,tStr), ID_PRIVATE);
   ADD_FUNCTION("`[]", f_substring_index, tFunc(tInt,tInt), 0);
   ADD_FUNCTION("get_short", f_substring_get_short, tFunc(tInt,tInt), 0 );
   ADD_FUNCTION("get_ushort", f_substring_get_ushort, tFunc(tInt,tInt), 0 );

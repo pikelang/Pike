@@ -2718,7 +2718,7 @@ static void image_colortable__decode( INT32 args )
 
 
 /*
-**! method object cast(string to)
+**! method array|mapping cast(string to)
 **!	cast the colortable to an array or mapping,
 **!	the array consists of <ref>Image.Color</ref> objects
 **!	and are not in index order. The mapping consists of
@@ -4502,7 +4502,7 @@ void init_image_colortable(void)
    ADD_FUNCTION("``+",image_colortable_operator_plus,tFunc(tObj,tObj),0);
 
    /* cast to array */
-   ADD_FUNCTION("cast",image_colortable_cast,tFunc(tStr,tArray),ID_PROTECTED);
+   ADD_FUNCTION("cast",image_colortable_cast,tFunc(tStr,tOr(tArray,tMapping)),ID_PROTECTED);
 
    /* info */
    ADD_FUNCTION("_sizeof",image_colortable__sizeof,tFunc(tNone,tInt),0);

@@ -3293,7 +3293,7 @@ void init_image_layers(void)
    ADD_FUNCTION("_sprintf",image_layer__sprintf,
                 tFunc(tInt tMapping,tString),0);
    ADD_FUNCTION("cast",image_layer_cast,
-		tFunc(tString,tMapping),ID_PROTECTED);
+                tFunc(tString,tOr(tMapping,tString)),ID_PROTECTED);
 
 
    ADD_FUNCTION("clone",image_layer_clone,

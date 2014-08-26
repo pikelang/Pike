@@ -1068,7 +1068,7 @@ static void mpzmod_size(INT32 args)
     push_int(DO_NOT_WARN((INT32)(mpz_sizeinbase(THIS, base))));
 }
 
-/*! @decl mixed cast(string type)
+/*! @decl string|int|float cast(string type)
  *!
  *! Cast this mpz object to another type. Allowed types are string,
  *! int and float.

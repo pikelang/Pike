@@ -213,11 +213,11 @@ DOCEND()
 	stack_pop_keep_top();
     }
 
-    /*! @decl mixed cast(string type)
+    /*! @decl mapping cast(string type)
      *! Cast callback. Supports only cast to mapping and
      *! behaves as the inverse of create().
      */
-    PIKEFUN mixed cast(string type) {
+    PIKEFUN mapping cast(string type) {
       pop_stack(); /* type as at least one more reference. */
 
       if (type == literal_mapping_string) {

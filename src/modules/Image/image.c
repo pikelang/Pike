@@ -4506,7 +4506,7 @@ void image_read_lsb_grey(INT32 args)
 }
 
 /*
-**! method string cast(string type)
+**! method string|array cast(string type)
 **!	Cast the image to another datatype. Currently supported
 **!	are string ("rgbrgbrgb...") and array (double array 
 **!	of <ref>Image.Color</ref> objects).
@@ -4907,7 +4907,7 @@ void init_image_image(void)
 		tFunc(tRGB,tObj),0);
 
    ADD_FUNCTION("cast",image_cast,
-		tFunc(tStr,tStr),ID_PROTECTED);
+                tFunc(tStr,tOr(tArray,tStr)),ID_PROTECTED);
    ADD_FUNCTION("tobitmap",image_tobitmap,tFunc(tNone,tStr),0);
 
 

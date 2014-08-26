@@ -451,14 +451,14 @@ PIKECLASS Rect {
     THIS->rect.h = value;
   }
 
-  /*! @decl mixed cast(string type)
+  /*! @decl array|mapping cast(string type)
    *!
    *! It is possible to cast a Rect object to an @tt{array@} or
    *! to a @tt{mapping@}. The array will have the values in the
    *! order x, y, w, h and the mapping will have the values
    *! associated with the corresponding names.
    */
-  PIKEFUN mixed cast( string type )
+  PIKEFUN array|mapping cast( string type )
     flags ID_PROTECTED;
   {
     pop_stack(); /* type as at least one more reference. */

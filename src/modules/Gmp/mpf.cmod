@@ -347,9 +347,9 @@ PIKECLASS mpf
       RETURN 0;
     }
 
-  /*! @decl static mixed cast(string to)
+  /*! @decl static string|int|float cast(string to)
    */
-  PIKEFUN mixed cast(string s)
+  PIKEFUN string|int|float cast(string s)
     flags ID_PROTECTED;
   {
     pop_stack(); /* s have at least one more reference. */
