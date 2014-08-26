@@ -237,6 +237,8 @@ static void port_listen_fd(INT32 args)
  *! will bind to all available IPv4 addresses; specifying "::" will
  *! bind to all IPv4 and IPv6 addresses.
  *!
+ *! If the OS supports TCP_FASTOPEN it is enabled automatically.
+ *!
  *! @returns
  *!   1 is returned on success, zero on failure. @[errno] provides
  *!   further details about the error in the latter case.
@@ -307,7 +309,12 @@ static void port_bind(INT32 args)
   my_set_close_on_exec(fd,1);
 
   THREADS_ALLOW_UID();
-  tmp=fd_bind(fd, (struct sockaddr *)&addr, addr_len) < 0 || fd_listen(fd, 16384) < 0;
+  if( !(tmp=fd_bind(fd, (struct sockaddr *)&addr, addr_len) < 0) )
+#ifdef TCP_FASTOPEN
+      tmp = 256,
+      setsockopt(fd,SOL_TCP, TCP_FASTOPEN, &tmp, sizeof(tmp)),
+#endif
+      (tmp =  fd_listen(fd, 16384) < 0);
   THREADS_DISALLOW_UID();
 
   if(!Pike_fp->current_object->prog)

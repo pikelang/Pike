@@ -346,19 +346,38 @@ class File
     return ok;
   }
 
-  //! This function connects a socket previously created with
-  //! @[open_socket()] to a remote socket through TCP/IP. The
-  //! @[host] argument is the hostname or IP number of the remote machine.
-  //! A local IP and port can be explicitly bound by specifying @[client]
-  //! and @[client_port].
+  //! Open a TCP/IP connection to the specified destination.
+  //!
+  //! In nonblocking mode, success is indicated with the write-callback,
+  //! and failure with the close-callback or the read_oob-callback.
+  //!
+  //! The @[host] argument is the hostname or IP number of the remote
+  //! machine.
+  //!
+  //! A local IP and port can be explicitly bound by specifying
+  //! @[client] and @[client_port].
+  //!
+  //! If the @[data] argument is included the socket will use
+  //! TCP_FAST_OPEN if posible. In this mode the the function will
+  //! return the part of the data that has not been sent to the remote
+  //! server yet instead of 1 (you will have to use @[write] to send
+  //! this data).
+  //!
+  //! Note that TCP_FAST_OPEN requires server support, the connection
+  //! might fail even though the remote server exists. It might be
+  //! advicable to retry without TCP_FAST_OPEN (and remember this
+  //! fact)
   //!
   //! @returns
-  //! This function returns 1 for success, 0 otherwise.
+  //! This function returns 1 or the remaining @[data] for success, 0
+  //! otherwise.
   //!
   //! @note
+  //!
   //! In nonblocking mode @expr{0@} (zero) may be returned and
-  //! @[errno()] set to @expr{EWOULDBLOCK@} or
-  //! @expr{WSAEWOULDBLOCK@}. This should not be regarded as a
+  //! @[errno()] set to @expr{EWOULDBLOCK@} or @expr{WSAEWOULDBLOCK@}.
+  //!
+  //! This should not be regarded as a
   //! connection failure. In nonblocking mode you need to wait for a
   //! write or close callback before you know if the connection failed
   //! or not.
@@ -366,8 +385,25 @@ class File
   //! @seealso
   //! @[query_address()], @[async_connect()], @[connect_unix()]
   //!
-  int connect(string host, int|string port,
-	      void|string client, void|int|string client_port)
+  variant int connect(string host, int(0..)|string port)
+  {
+#ifdef __STDIO_DEBUG
+    __closed_backtrace=0;
+#endif
+    is_file = 0;
+    debug_file = "socket";
+    debug_mode = host+":"+port;
+    debug_bits = 0;
+    if(::connect(host, port))
+    {
+      register_open_file ("socket", open_file_id, backtrace());
+      fix_internal_callbacks();
+      return 1;
+    }
+    return 0;
+  }
+  variant int connect(string host, int(0..)|string port,
+                      string client, int(0..)|string client_port)
   {
 #ifdef __STDIO_DEBUG
     __closed_backtrace=0;
@@ -376,19 +412,31 @@ class File
     debug_file = "socket";
     debug_mode = host+":"+port; 
     debug_bits = 0;
-    if(!client) {
-      if (::connect(host, port)) {
-	register_open_file ("socket", open_file_id, backtrace());
-	fix_internal_callbacks();
-	return 1;
-      }
+    if (::connect(host, port, client, client_port))
+    {
+      register_open_file ("socket", open_file_id, backtrace());
+      fix_internal_callbacks();
+      return 1;
     }
-    else
-      if (::connect(host, port, client, client_port)) {
-	register_open_file ("socket", open_file_id, backtrace());
-	fix_internal_callbacks();
-	return 1;
-      }
+    return 0;
+  }
+  variant string connect(string host, int(0..)|string port,
+                         int(0..0)|string client, int(0..)|string client_port,
+                         string data)
+  {
+#ifdef __STDIO_DEBUG
+    __closed_backtrace=0;
+#endif
+    is_file = 0;
+    debug_file = "socket";
+    debug_mode = host+":"+port;
+    debug_bits = 0;
+    if( (data = ::connect(host, port, client, client_port, data)) )
+    {
+      register_open_file ("socket", open_file_id, backtrace());
+      fix_internal_callbacks();
+      return data;
+    }
     return 0;
   }
 

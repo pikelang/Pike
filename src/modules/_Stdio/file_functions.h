@@ -129,7 +129,8 @@ FILE_FUNC("set_buffer",file_set_buffer, tFunc(tInt tOr(tStr,tVoid),tVoid))
 FILE_FUNC("open_socket",file_open_socket,
 	  tFunc(tOr3(tInt,tStr,tVoid) tOr(tStr,tVoid) tOr(tInt,tVoid),tInt))
 /* function(string,int|string:int)|function(string,int|string,string,int|string:int) */
-FILE_FUNC("connect",file_connect, tOr(tFunc(tStr tOr(tInt,tStr),tInt),tFunc(tStr tOr(tInt,tStr) tStr tOr(tInt,tStr),tInt)))
+    FILE_FUNC("connect",file_connect, tOr3(tFunc(tStr tOr(tInt,tStr),tInt),tFunc(tStr tOr(tInt,tStr) tStr tOr(tInt,tStr),tInt),
+                                           tFunc(tStr tOr(tInt,tStr) tStr tOr(tInt,tStr) tStr8,tStr)))
 #ifdef HAVE_SYS_UN_H
 /* function(string:int) */
 FILE_FUNC("connect_unix",file_connect_unix, tFunc(tStr,tInt))

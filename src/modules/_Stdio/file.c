@@ -948,7 +948,7 @@ static int low_fd_query_properties(int fd)
 #ifdef HAVE_PIKE_SEND_FD
 static void receive_fds(int *fds, size_t num_fds)
 {
-  size_t i;
+  volatile size_t i;
 
   for (i = 0; i < num_fds; i++) {
     int fd = fds[i];
@@ -5000,19 +5000,30 @@ static void file_connect_unix( INT32 args )
 /*! @decl int(0..1) connect(string dest_addr, int dest_port)
  *! @decl int(0..1) connect(string dest_addr, int dest_port, @
  *!                         string src_addr, int src_port)
+ *! @decl string(0..255)|int(0..0) connect(string dest_addr, int dest_port, @
+ *!                         string|int(0..0) src_addr, int|int(0..0) src_port, @
+ *!                         string(0..255) data)
  *!
  *!   Open a TCP/IP connection to the specified destination.
  *!
  *!   In nonblocking mode, success is indicated with the write-callback,
  *!   and failure with the close-callback or the read_oob-callback.
  *!
+ *!   If the @[data] argument is included the socket will use
+ *!   TCP_FAST_OPEN if available, if not the data will @i{not be
+ *!   sent@}. In the data case the function either returns the data
+ *!   that has not been sent (only one packet can be sent with this
+ *!   option) or 0 if the connection failed immediately.
+ *!
  *! @returns
- *!   Returns @expr{1@} on success, and @expr{0@} on failure.
+ *!  Returns @expr{1@} or the remaining @expr{data@} on success, and
+ *!  @expr{0@} on failure.
  *!
  *! @note
  *!   In nonblocking mode @expr{0@} (zero) may be returned and @[errno()] set
  *!   to @tt{EWOULDBLOCK@} or @tt{WSAEWOULDBLOCK@}. This should not be regarded
  *!   as a connection failure.
+ *!
  */
 static void file_connect(INT32 args)
 {
@@ -5020,14 +5031,25 @@ static void file_connect(INT32 args)
   int addr_len;
   struct pike_string *dest_addr = NULL;
   struct pike_string *src_addr = NULL;
+  struct pike_string *data = NULL;
   struct svalue *dest_port = NULL;
   struct svalue *src_port = NULL;
 
   int tmp, was_closed = FD < 0;
-  int tries;
+  int fd, sent = 0;
 
   if (args < 4) {
     get_all_args("connect", args, "%S%*", &dest_addr, &dest_port);
+  } if( args == 5 ) {
+    struct svalue *src_sv;
+    get_all_args("connect", args, "%S%*%*%*%S",
+                 &dest_addr, &dest_port, &src_sv, &src_port, &data);
+    if(TYPEOF(*src_sv) != PIKE_T_INT )
+    {
+      if (TYPEOF(*src_sv) != PIKE_T_STRING || src_sv->u.string->size_shift)
+        SIMPLE_BAD_ARG_ERROR("connect", 3, "int|string(8bit)");
+      src_addr = src_sv->u.string;
+    }
   } else {
     get_all_args("connect", args, "%S%*%S%*",
 		 &dest_addr, &dest_port, &src_addr, &src_port);
@@ -5052,7 +5074,7 @@ static void file_connect(INT32 args)
 
   if(was_closed)
   {
-    if (args < 4) {
+    if (!src_addr) {
       push_int(-1);
       push_int(0);
       push_int(SOCKADDR_FAMILY(addr));
@@ -5067,39 +5089,27 @@ static void file_connect(INT32 args)
     pop_stack();
   }
 
-  for(tries = 0;; tries++)
+  fd = FD;
+  THREADS_ALLOW();
+  for(;;)
   {
-    tmp=FD;
-    THREADS_ALLOW();
-    tmp=fd_connect(tmp, (struct sockaddr *)&addr, addr_len);
-    THREADS_DISALLOW();
-    if(tmp<0)
-      switch(errno)
-      {
-#if 0
-	/* Even though this code is robust(er) now,
-	 * it has no business here and should be dealt
-	 * with at the Pike programming level.
-	 */
-#ifdef EADDRINUSE
-	case EADDRINUSE:
+#ifdef MSG_FASTOPEN
+    if( data )
+    {
+      tmp = sendto(fd, data->str, data->len, MSG_FASTOPEN,
+                   (struct sockaddr *)&addr, addr_len );
+    }
+    else
 #endif
-#ifdef WSAEADDRINUSE
-	case WSAEADDRINUSE:
-#endif
-	  if(tries > INUSE_TIMEOUT/INUSE_BUSYWAIT_DELAY)
-	  {
-	    /* errno = EAGAIN; */	/* no ports available */
-	    break;
-	  }
-          sysleep(INUSE_BUSYWAIT_DELAY);
-	  /* FALL_THROUGH */
-#endif
-	case EINTR:
-	  continue;
-      }
+    {
+      tmp=fd_connect(fd, (struct sockaddr *)&addr, addr_len);
+    }
+    if( tmp<0 && (errno==EINTR))
+      continue;
     break;
   }
+  THREADS_DISALLOW();
+
 
   if(tmp < 0
 #ifdef EINPROGRESS
@@ -5123,10 +5133,17 @@ static void file_connect(INT32 args)
     pop_n_elems(args);
     push_int(0);
   }else{
-
     ERRNO=0;
-    pop_n_elems(args);
-    push_int(1);
+    if( data )
+    {
+      push_string( make_shared_binary_string( data->str + tmp, data->len-tmp ) );
+      stack_pop_n_elems_keep_top( args );
+    }
+    else
+    {
+      pop_n_elems(args);
+      push_int(1);
+    }
   }
 }
 
