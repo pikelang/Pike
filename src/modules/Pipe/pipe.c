@@ -1261,7 +1261,7 @@ void close_and_free_everything(struct object *thisobj,struct pipe *p)
    /* p->done=0; */
 }
 
-static void init_pipe_struct(struct object *UNUSED(o))
+static void init_pipe_struct(struct object *DMALLOCUSED(o))
 {
    debug_malloc_touch(o);
 
