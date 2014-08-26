@@ -195,6 +195,10 @@ o Support for the ", ##__VA_ARGS__" cpp feature.
   happen if you pass an empty argument, nor does it happen if the
   token preceding ‘##’ is anything other than a comma.
 
+o The define __COUNTER__ has been added. It is a unique integer
+  value, the first time the macro is expaded it will be 1, the next time
+  2 etc.
+
 o The preprocessor can now be run with a cpp prefix feature.
 
   This is currently used by the precompiler to avoid two levels of

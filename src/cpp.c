@@ -2924,6 +2924,20 @@ static void insert_current_minor(struct cpp *this,
   string_builder_sprintf(tmp, " %d ", this->compat_minor);
 }
 
+/*! @decl int(1..) __COUNTER__
+ *! This define contains a unique counter (unless it has been expanded
+ *! Inte.NATIVE_MAX times) represented as an integer.
+ *!
+ */
+static void insert_current_counter(struct cpp *UNUSED(this),
+				 struct define *UNUSED(def),
+				 struct define_argument *UNUSED(args),
+				 struct string_builder *tmp)
+{
+  static int counter = 0;
+  string_builder_sprintf(tmp, " %d ", ++counter);
+}
+
 /*! @decl constant __MAJOR__
  *!
  *! This define contains the major part of the current Pike version,
@@ -3428,6 +3442,8 @@ void f_cpp(INT32 args)
   /* These are from the 201x C standard. */
   do_magic_define(&this,"_Pragma",insert_pragma)->args = 1;
   simple_add_define(&this, "static_assert", "_Static_assert");
+
+  do_magic_define(&this,"__COUNTER__",insert_current_counter);
 
   /* These are Pike extensions. */
   do_magic_define(&this,"__DIR__",insert_current_dir_as_string);
