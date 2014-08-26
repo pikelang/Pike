@@ -609,6 +609,13 @@ o String.Buffer
   The new method addat() allows for writing into the buffer at any
   position.
 
+  It is possible to address (and update) single characters in a Buffer
+  using [].
+  It is possible to extract a new Buffer (copy) from an existing Buffer
+  using the [..] range operator.
+  A new method cut() allows you to cut and copy, or simply delete and
+  contract data from an existing Buffer.
+
 o String.range(str)
 
    This returns the minimum and maximum character value in the string.
