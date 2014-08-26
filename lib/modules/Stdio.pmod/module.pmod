@@ -422,7 +422,7 @@ class File
   }
   variant string connect(string host, int(0..)|string port, string data)
   {
-    connect(host,port,0,0,data);
+    return connect(host,port,0,0,data);
   }
   variant string connect(string host, int(0..)|string port,
                          int(0..0)|string client, int(0..)|string client_port,
