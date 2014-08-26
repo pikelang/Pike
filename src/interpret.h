@@ -469,6 +469,13 @@ PMOD_EXPORT extern void push_text( const char *x );
     _sp_[-2]=_;								\
   } while(0)
 
+#define stack_revroll(args) do {					\
+    struct svalue *_sp_ = Pike_sp;					\
+    int _args_ = (args); struct svalue _=_sp_[-1];			\
+    memmove(_sp_-_args_+1, _sp_-_args_, (_args_-1)*sizeof(struct svalue)); \
+    _sp_[-_args_]=_;							\
+  } while(0)
+
 #if PIKE_T_INT+NUMBER_NUMBER==0 && defined(HAS___BUILTIN_MEMSET)
 #define push_zeroes(N) do{					\
     ptrdiff_t num_ = (N);					\
