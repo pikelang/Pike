@@ -3185,6 +3185,30 @@ PIKECLASS Buffer
     REF_RETURN Pike_fp->current_object;
   }
 
+  /*! @decl Buffer `==( mixed other )
+   */
+  PIKEFUN int(0..1) `==( mixed other )
+    rawtype tFunc(tMixed, tInt01);
+  {
+    struct Buffer_struct *str = THIS;
+    struct pike_string *s, *a;
+
+    switch(TYPEOF(*other))
+    {
+      case PIKE_T_STRING:
+        a = other->u.string;
+        break;
+      case PIKE_T_OBJECT:
+        if (other->u.object->prog == Buffer_program) {
+          a = OBJ2_BUFFER(other->u.object)->str.s;
+          break;
+        }
+      default:
+        RETURN 0;
+    }
+    RETURN !(s = str->str.s) ? !a->len : !my_quick_strcmp(s, a);
+  }
+
   /*! @decl int addat(int(0..) pos, string|Buffer ... data)
    *!
    *!   Adds @[data] to the buffer, starting at position @[pos].
