@@ -3088,11 +3088,11 @@ PIKECLASS Buffer
   PIKEFUN int|Buffer `[](int index, int|void end_or_none)
   {
     struct Buffer_struct *str = THIS;
-    struct pike_string *s;
-    unsigned len = 0,shift;
-    void *p;
+    struct pike_string *s = str->str.s;
+    unsigned len = 0,shift = 0;
+    void *p = NULL;
 
-    if (s = str->str.s)
+    if (s)
       len = s->len, shift = s->size_shift, p = s->str;
 
     if (args==1) {
@@ -3135,12 +3135,12 @@ PIKECLASS Buffer
   PIKEFUN int `[]=(int index, int ch)
   {
     struct Buffer_struct *str = THIS;
-    struct pike_string *s;
-    unsigned len = 0,shift;
-    void *p;
+    struct pike_string *s = str->str.s;
+    unsigned len = 0,shift = 0;
+    void *p = NULL;
 
     pop_n_elems(args);
-    if (s = str->str.s)
+    if (s)
       len = s->len, shift = s->size_shift, p = s->str;
 
     if (index<0)
@@ -3388,12 +3388,12 @@ PIKECLASS Buffer
   {
     struct Buffer_struct *str = THIS, *str2;
     struct object *res;
-    struct pike_string *s;
-    unsigned len = 0,shift;
-    void *p;
+    struct pike_string *s = str->str.s;
+    unsigned len = 0,shift = 0;
+    void *p = NULL;
     INT_TYPE end,vdiscard;
 
-    if (s = str->str.s)
+    if (s)
       len = s->len, shift = s->size_shift, p = s->str;
 
     end = args==1 ? len-1 : end_or_none->u.integer;
