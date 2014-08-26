@@ -3121,8 +3121,9 @@ PIKECLASS Buffer
         end = len-1;
       str2->initial = end -= index-1;
       init_string_builder_alloc (&str2->str, end, shift);
-      memcpy (str2->str.s->str, (char*)p+(index<<shift), end<<shift);
-      str2->str.s->len = end;
+      memcpy ((s = str2->str.s)->str, (char*)p+(index<<shift), end<<shift);
+      s->str[end<<shift] = 0;			// Ensure NUL-termination
+      s->len = end;
       if( (Pike_fp->current_object->flags & OBJECT_CLEAR_ON_EXIT) )
           res->flags |= OBJECT_CLEAR_ON_EXIT;
       push_object (res);
@@ -3420,9 +3421,10 @@ PIKECLASS Buffer
       str2 = OBJ2_BUFFER( res );
       init_string_builder_alloc(&str2->str, str2->initial = end, shift);
       memcpy(str2->str.s->str, p, shift = end<<shift);
+      str2->str.s->str[shift] = 0;		// Ensure NUL-termination
       str2->str.s->len = end;
     }
-    memmove(p, (char*)p+shift, shift);
+    memmove(p, (char*)p+shift, shift+1);	// Copy NUL-termination
     s->len -= end;
 
     if(!vdiscard)
