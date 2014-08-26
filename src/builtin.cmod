@@ -3437,23 +3437,14 @@ PIKECLASS Buffer
    *!
    *!   Empty the buffer, and don't care about the old content.
    *!
-   *! @note
-   *!   This function was not available in Pike 7.8 and earlier.
-   *!
    *! @seealso
    *!   @[get()], @[cut()]
    */
   PIKEFUN void clear()
   {
-    /* FIXME: Support resetting the initial size? */
     struct Buffer_struct *str = THIS;
-    if (str->str.s) {
-      /* FIXME: There's also the alternative of using
-       *        reset_string_builder() here.
-       */
-      free_string_builder(&str->str);
-      str->str.s = NULL;
-    }
+    if (str->str.s)
+      reset_string_builder(&str->str);
   }
 
   /*! @decl int _sizeof()
