@@ -9931,11 +9931,21 @@ return 1;
 ]],1)
 
 test_any([[
-#if constant(String.Buffer)
-return 1;
-#else
-return 0;
-#endif
+  String.Buffer a=String.Buffer(),b=String.Buffer();
+  a->add("Testing");
+  a->addat(0, "Is that sentence");
+  a->putchar(',');
+  a->add(" the concluding three ", "words");
+  a->add(" `were left out'");
+  a->addat(3,"th","is");
+  a[1]=a[10];
+  b->add("Test me harder");
+  b->add(a);
+  if(b->cut(5,6) != "me")
+    return 0;
+  b->cut(0,11,1);
+  return a[3..6] == "this" && a->get_copy() ==(string)b && a->get()
+    == "In this sentence, the concluding three words `were left out'";
 ]],1)
 
 test_any([[
