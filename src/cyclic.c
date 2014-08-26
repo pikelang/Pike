@@ -78,12 +78,12 @@ PMOD_EXPORT void *begin_cyclic(CYCLIC *c,
 
   for(p=cyclic_hash[h];p;p=p->next)
   {
-    if(a == p->a && b==p->b && id==p->id)
+    if(a == p->a && b==p->b && id==p->id && th==p->th)
     {
 #ifdef CYCLIC_DEBUG
       fprintf (stderr, "%s: BEGIN_CYCLIC a=%p b=%p: found cycle\n", id, a, b);
 #endif
-      ret = p->ret;
+      c->ret = ret = p->ret;
       break;
     }
   }
