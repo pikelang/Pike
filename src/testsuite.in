@@ -9553,6 +9553,20 @@ test_true(intp(__BUILD__))
 test_true(intp(__REAL_BUILD__))
 test_eq(__PIKE__,1)
 
+test_any_equal([[
+  int base = __COUNTER__;
+#define X __COUNTER__
+  return map( ({ __COUNTER__, X, __COUNTER__ }), `-, base);
+]], [[ ({ 1,2,3 }) ]])
+test_any_equal([[
+  int base = __COUNTER__;
+#define X __COUNTER__
+  return map( ({ __COUNTER__, X, __COUNTER__ }), `-, base);
+]], [[ ({ 1,2,3 }) ]])
+test_do(add_constant("COUNTER",__COUNTER__))
+test_eq(__COUNTER__-1,COUNTER)
+test_do(add_constant("COUNTER"))
+
 test_eq( compile_string("string a=#\"a\nb\";")()->a, "a\nb" )
 test_eq( compile_string("string a=#\"a\r\nb\";")()->a, "a\nb" )
 test_eq( compile_string("string a=#\"a\n\rb\";")()->a, "a\nb" )
