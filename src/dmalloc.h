@@ -28,7 +28,7 @@ typedef void *c_stack_frame;
 #else
 #undef DMALLOC_C_STACK_TRACE
 #define DUMP_C_STACK_TRACE() do {} while (0)
-#endif
+#endif /* defined (HAVE_EXECINFO_H) && defined (HAVE_BACKTRACE) */
 
 #define DMALLOC_NAMED_LOCATION(NAME)	\
     (("NS" __FILE__ ":" DEFINETOSTR(__LINE__) NAME )+1)
@@ -61,7 +61,7 @@ extern size_t dmalloc_tracelogptr;
 #ifdef PIKE_DEBUG
 PMOD_EXPORT extern int gc_external_refs_zapped;
 PMOD_EXPORT void gc_check_zapped (void *a, TYPE_T type, const char *file, INT_TYPE line);
-#endif
+#endif /* PIKE_DEBUG */
 
 #ifdef DO_PIKE_CLEANUP
 extern int exit_with_cleanup;
@@ -69,7 +69,7 @@ extern int exit_cleanup_in_progress;
 #define DO_IF_PIKE_CLEANUP(X) X
 #else
 #define DO_IF_PIKE_CLEANUP(X)
-#endif
+#endif /* DO_PIKE_CLEANUP */
 
 typedef void describe_block_fn (void *);
 
@@ -94,9 +94,6 @@ PMOD_EXPORT void debug_free(void *, LOCATION, int);
 PMOD_EXPORT char *debug_strdup(const char *, LOCATION);
 void reset_debug_malloc(void);
 PMOD_EXPORT int dmalloc_check_allocated (void *p, int must_be_freed);
-#if 0
-void dmalloc_check_block_free(void *, LOCATION, char *, describe_block_fn *);
-#endif
 PMOD_EXPORT void dmalloc_free(void *p);
 PMOD_EXPORT int debug_malloc_touch_fd(int, LOCATION);
 PMOD_EXPORT int debug_malloc_register_fd(int, LOCATION);
@@ -141,6 +138,9 @@ char *dmalloc_find_name(void *p);
 
 #define xalloc(X) ((void *)debug_malloc_update_location((void *)debug_xalloc(X), DMALLOC_NAMED_LOCATION(" xalloc")))
 #define xcalloc(N, S) ((void *)debug_malloc_update_location((void *)debug_xcalloc(N, S), DMALLOC_NAMED_LOCATION(" xcalloc")))
+#define xmalloc(X) ((void *)debug_malloc_update_location((void *)debug_xmalloc(X), DMALLOC_NAMED_LOCATION(" xmalloc")))
+#define xrealloc(N, S) ((void *)debug_malloc_update_location((void *)debug_xrealloc(N, S), DMALLOC_NAMED_LOCATION(" xrealloc")))
+#define xstrdup(X) ((void *)debug_malloc_update_location((void *)debug_xstrdup(X), DMALLOC_NAMED_LOCATION(" xstrdup")))
 #define xfree(X) debug_xfree(debug_malloc_update_location((X), DMALLOC_NAMED_LOCATION(" free")))
 PMOD_EXPORT void debug_malloc_dump_references(void *x, int indent, int depth, int flags);
 #define dmalloc_touch(TYPE,X) ((TYPE) debug_malloc_pass (X))
@@ -208,7 +208,8 @@ PMOD_EXPORT struct mallinfo dlmallinfo(void);
 #undef strdup
 #endif
 #define strdup    debug_xstrdup
-#endif
+
+#endif /* USE_DL_MALLOC */
 
 #define dmalloc_touch_fd(X) (X)
 #define dmalloc_register_fd(X) (X)
@@ -234,7 +235,7 @@ PMOD_EXPORT struct mallinfo dlmallinfo(void);
 #define xrealloc realloc
 #define xfree free
 #define xstrdup strdup
-#endif
+#endif /* defined(DYNAMIC_MODULE) && defined(__NT__) && !defined(USE_DLL) */
 
 #define dbm_main main
 #define DO_IF_DMALLOC(X)
