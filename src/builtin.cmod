@@ -3394,7 +3394,7 @@ PIKECLASS Buffer
     init_string_builder_alloc(&str->str, sizeof(struct svalue), 0);
   }
 
-  /*! @decl Buffer|void cut(int index, int|void end_or_none,void|int discard)
+  /*! @decl Buffer|void cut(int start, int|void end, void|int discard)
    *!
    *!   Cut and delete the range of data from the current buffer.
    *!   Returns a new buffer with the cut data, unless discard is true.
