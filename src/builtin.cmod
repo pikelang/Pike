@@ -3237,8 +3237,12 @@ PIKECLASS Buffer
     sum += pos;
     shift |= str->str.known_shift;
     shift = shift & ~(shift >> 1);
-    if (sum > s->len)
-      string_build_mkspace(&str->str, sum - s->len, shift);
+    j = sum - s->len;
+    if (j>0) {
+      if (str->initial > sum)
+        j = str->initial-s->len;
+      string_build_mkspace(&str->str, j, shift);
+    }
     else if (shift != str->str.known_shift)
       string_build_mkspace(&str->str, 0, shift);
     s = str->str.s;
@@ -3360,7 +3364,10 @@ PIKECLASS Buffer
     if( Pike_fp->current_object->flags & OBJECT_CLEAR_ON_EXIT )
       s->flags |= STRING_CLEAR_ON_EXIT;
     push_string(s);
-    init_string_builder_alloc(&str->str, str->initial, 0);
+			// Pick a smaller size to minimise fragmentation
+			// addat() will expand if it notices reuse of
+			// the Buffer
+    init_string_builder_alloc(&str->str, sizeof(struct svalue), 0);
   }
 
   /*! @decl Buffer|void cut(int index, int|void end_or_none,void|int discard)
