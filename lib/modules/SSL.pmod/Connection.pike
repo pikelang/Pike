@@ -416,11 +416,6 @@ void send_packet(Packet packet, int|void priority)
 		  PACKET_heartbeat : PRI_urgent,
 		  PACKET_application_data : PRI_application ])[packet->content_type];
 
-  if ((state & CONNECTION_local_closing) && (priority >= PRI_application)) {
-    SSL3_DEBUG_MSG("send_packet: Ignoring application packet during close.\n");
-    return;
-  }
-
   if ((packet->content_type == PACKET_handshake) &&
       (priority == PRI_application)) {
     // Assume the packet is either hello_request or client_hello,
