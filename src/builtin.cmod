@@ -2983,7 +2983,7 @@ PIKECLASS Buffer
   void f_Buffer_get( INT32 args );
   void f_Buffer_add( INT32 args );
 
-  /*! @decl void create(int initial_size)
+  /*! @decl void create(void|int(1..) initial_size)
    *!
    *!   Initializes a new buffer.
    *!
@@ -2996,7 +2996,7 @@ PIKECLASS Buffer
   {
     struct Buffer_struct *str = THIS;
     init_string_builder_alloc(&str->str,
-     str->initial = size ? MAXIMUM( size->u.integer, 512 ) : 256 , 0);
+     str->initial = size ? MINIMUM(size->u.integer, 1 ) : 256 , 0);
   }
 
   /*! @decl string _sprintf( int flag, mapping flags )
