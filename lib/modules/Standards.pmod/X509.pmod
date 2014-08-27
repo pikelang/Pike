@@ -292,6 +292,12 @@ class TBSCertificate
 {
   inherit Sequence;
 
+  void _decode(array(int|array(Object)) x)
+  {
+    ::_decode(x);
+    init(this);
+  }
+
   protected string internal_der;
 
   //!
@@ -759,17 +765,15 @@ class TBSCertificate
   //! Object. Returns the object on success, otherwise @expr{0@}. You
   //! probably want to call @[decode_certificate] or even
   //! @[verify_certificate].
-  this_program init(array(Object)|Object asn1)
+  this_program init(array|Object asn1)
   {
-    array(Object) a;
-    if (objectp(asn1)) {
-      if (asn1->type_name != "SEQUENCE")
-	return 0;
+    if (!objectp(asn1))
+      return 0;
 
-      a = ([object(Sequence)]asn1)->elements;
-    } else {
-      a = [array(Object)]asn1;
-    }
+    if (asn1->type_name != "SEQUENCE")
+      return 0;
+
+    array(Object) a = ([object(Sequence)]asn1)->elements;
     DBG("TBSCertificate: sizeof(a) = %d\n", sizeof(a));
       
     if (sizeof(a) < 6)

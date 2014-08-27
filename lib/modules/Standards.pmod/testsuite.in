@@ -437,6 +437,16 @@ test_true(mappingp(Standards.X509.load_authorities()))
 
 define(test_cert, ([[
   test_true(Standards.X509.verify_certificate(Standards.PEM.Messages(#"$1")->parts->CERTIFICATE->body, ([])))
+  test_any([[
+    string der = Standards.PEM.Messages(#"$1")->parts->CERTIFICATE->body;
+    object o = decode_value(encode_value(Standards.X509.decode_certificate(der)));
+    /* TBS does not contain the full certificate... */
+    /* if( o->get_der() != der ) return -1; */
+
+    if( o->ext_basicConstraints != 1) return 2;
+    if( !o->public_key->pkc ) return 3;
+    return 1;
+  ]], 1)
 ]]))
 
 dnl openssl req -x509 -nodes -days 365 -subj "/CN=PikeCert" -md5 -newkey rsa:2048 -out certfile.cer
