@@ -617,6 +617,8 @@ o String.Buffer
   using [].
   It is possible to extract a new Buffer (copy) from an existing Buffer
   using the [..] range operator.
+  It is possible to compare two Buffers or a Buffer and a string
+  directly using the == operator.
   A new method cut() allows you to cut and copy, or simply delete and
   contract data from an existing Buffer.
 
