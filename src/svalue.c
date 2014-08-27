@@ -2498,7 +2498,7 @@ void real_gc_free_short_svalue(union anything *u, TYPE_T type)
   free_short_svalue(u, type);
 }
 
-PMOD_EXPORT INT32 pike_sizeof(const struct svalue *s)
+PMOD_EXPORT INT_TYPE pike_sizeof(const struct svalue *s)
 {
   switch(TYPEOF(*s))
   {
