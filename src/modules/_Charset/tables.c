@@ -17,8 +17,8 @@
  * When a character needs to be mapped to multiple UTF-16 characters,
  * this is done by having a set of NUL-terminated UTF-16 strings
  * after the main table, and using a character in the surrogate block
- * (0xd800 - 0xdfff) to encode the offset to the string from the main
- * table. This is currently only used by the JIS X0213 tables.
+ * (0xd800 - 0xdfff) to encode the offset to the string from the end of
+ * the main table. This is currently only used by a few tables.
  *
  * Private characters
  * ------------------
@@ -118,8 +118,19 @@
  *   0301	COMBINING GREEK OXIA
  *   0342	COMBINING GREEK PERISPOMENI
  *
- * There are thus only two private characters left after reordering
- * and filtering.
+ * There are thus only two private characters from RFC1345 left after
+ * reordering and filtering.
+ *
+ * The Mosaic characters from ISO-IR-129 / CCITT T.101 Data Syntax III
+ * are mapped as a bitmap starting at e200, with the 6 pixels numbered
+ * as follows:
+ *
+ *   0 1
+ *   2 3
+ *   4 5
+ *
+ * NB: This encoding is compatible with the encoding used for the mosaic
+ *     characters in the http://galax.xyz/TELETEXT/MODE7GX.TTF font.
  */
 
 static const UNICHAR map_ISO_646_irv_1983[] = {
@@ -12494,6 +12505,20 @@ static const UNICHAR map_CP950[] = {
   0x2565, 0x2556, 0x255f, 0x256b, 0x2562, 0x2559, 0x2568, 0x255c,
   0x2551, 0x2550, 0x256d, 0x256e, 0x2570, 0x256f, 0x2593, };
 
+static const UNICHAR map_CCITT_T_101_III_suppl[] = {
+  0xe200, 0xe201, 0xe202, 0xe203, 0xe204, 0xe205, 0xe206, 0xe207,
+  0xe208, 0xe209, 0xe20a, 0xe20b, 0xe20c, 0xe20d, 0xe20e, 0xe20f,
+  0xe210, 0xe211, 0xe212, 0xe213, 0xe214, 0xe215, 0xe216, 0xe217,
+  0xe218, 0xe219, 0xe21a, 0xe21b, 0xe21c, 0xe21d, 0xe21e, 0xe21f,
+  0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd,
+  0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd,
+  0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd,
+  0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xe23f,
+  0xe220, 0xe221, 0xe222, 0xe223, 0xe224, 0xe225, 0xe226, 0xe227,
+  0xe228, 0xe229, 0xe22a, 0xe22b, 0xe22c, 0xe22d, 0xe22e, 0xe22f,
+  0xe230, 0xe231, 0xe232, 0xe233, 0xe234, 0xe235, 0xe236, 0xe237,
+  0xe238, 0xe239, 0xe23a, 0xe23b, 0xe23c, 0xe23d, 0xe23e, 0xfffd, };
+
 #include "jisx0213_tables.h"
 
 const UNICHAR * const iso2022_94[] = {
@@ -12546,7 +12571,7 @@ const UNICHAR * const iso2022_96[] = {
   NULL, NULL, NULL, NULL, 
   NULL, NULL, NULL, NULL, 
   NULL, NULL, NULL, NULL, 
-  NULL, NULL, NULL };
+  NULL, map_CCITT_T_101_III_suppl, NULL };
 const UNICHAR * const iso2022_9494[] = {
   map_JIS_C6226_1978, map_GB_2312_80, map_JIS_C6226_1983, map_KS_C_5601_1987, 
   map_JIS_X0212_1990, /*ISOIR165*/NULL, /*ISOIR169*/NULL, /*ISOIR171*/NULL, 
@@ -15250,6 +15275,7 @@ const struct charset_def charset_map[] = {
   { "bs4730", map_BS_4730, MODE_94 },                                 /* :: bs_4730 */
   { "bsviewdata", map_BS_viewdata, MODE_94 },                         /* :: bs_viewdata */
   { "ca", map_CSA_Z243_4_1985_1, MODE_94 },                           /* :: ca */
+  { "ccittt101iiisuppl", map_CCITT_T_101_III_suppl, MODE_96 },	      /* :: ccitt-t.101-III_suppl */
   { "celtic", map_ISO_8859_14_1998, MODE_96 },                        /* :: celtic */
   { "chinese", map_GB_2312_80, MODE_9494 },                           /* :: chinese */
   { "cn", map_GB_1988_80, MODE_94 },                                  /* :: cn */
@@ -15459,7 +15485,7 @@ const struct charset_def charset_map[] = {
   { "isoir126", map_ISO_8859_7_1987, MODE_96 },                       /* :: iso-ir-126 */
   { "isoir127", map_ISO_8859_6_1999, MODE_96 },                       /* :: iso-ir-127 */
   /* :: iso-ir-128: Defined in misc.c. */
-  /* :: iso-ir-129: CCITT T101-III Mosaic drawing. */
+  { "isoir129", map_CCITT_T_101_III_suppl, MODE_96 },		      /* :: iso-ir-129 */
   { "isoir13", map_JIS_C6220_1969_jp, MODE_94 },                      /* :: iso-ir-13 */
   /* :: iso-ir-130: Only control characters. */
   /* :: iso-ir-131: CCITT T.101 Data Syntax I */
@@ -15720,6 +15746,7 @@ const struct charset_def charset_map[] = {
   { "sr14111", map_SR_14111_1998, MODE_96 },                          /* :: sr 14111 */
   { "sr141111998", map_SR_14111_1998, MODE_96 },                      /* :: sr 14111:1998 */
   { "stsev35888", map_GOST_19768_74, MODE_96 },                       /* :: st_sev_358-88 */
+  { "t101iiisuppl", map_CCITT_T_101_III_suppl, MODE_96 },	      /* :: t.101-III_suppl */
   { "t617bit", map_T_61_7bit, MODE_94 },                              /* :: t.61-7bit */
   { "tds565", map_TDS_565, MODE_94 },                                 /* :: tds 565 */
   { "tds616", map_TDS_616_2003, MODE_94 },                            /* :: tds 616 */
