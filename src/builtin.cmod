@@ -3355,10 +3355,10 @@ PIKECLASS Buffer
   {
     struct Buffer_struct *str = THIS;
     struct pike_string *s = finish_string_builder( &str->str );
-    init_string_builder_alloc(&str->str, str->initial, 0);
     if( Pike_fp->current_object->flags & OBJECT_CLEAR_ON_EXIT )
       s->flags |= STRING_CLEAR_ON_EXIT;
     push_string(s);
+    init_string_builder_alloc(&str->str, str->initial, 0);
   }
 
   /*! @decl Buffer|void cut(int index, int|void end_or_none,void|int discard)
