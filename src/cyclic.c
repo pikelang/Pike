@@ -7,7 +7,7 @@
 #include "global.h"
 #include "cyclic.h"
 
-#define CYCLIC_HASH_SIZE 4711
+#define CYCLIC_HASH_SIZE 0x1000
 
 static CYCLIC *cyclic_hash[CYCLIC_HASH_SIZE];
 
@@ -22,9 +22,25 @@ static size_t cyclic_hash_func(CYCLIC *c)
   h ^= PTR_TO_INT(c->b);
   h *= 33;
   h ^= PTR_TO_INT(c->th);
-  h *= 33;
 
-  return h % CYCLIC_HASH_SIZE;
+#if SIZEOF_CHAR_P > 4
+  h ^= h>>8;
+#endif
+  /* Fold h. This is to retain as many bits of h as possible.
+   *
+   * NB: The "magic" constant below has a 1 bit every 10 bits
+   *     starting at the least significant, and is == 1 when
+   *     shifted right 20 bits. Note also that 32 - 20 == 12
+   *     and 1<<12 == 0x1000 == CYCLIC_HASH_SIZE.
+   *
+   *     The multiplication has the effect of accumulating
+   *     the segments of 10 bits of h in the most significant
+   *     segment, which is then shifted down.
+   */
+  h *= 0x100401;
+  h >>= 20;
+
+  return h & (CYCLIC_HASH_SIZE-1);
 }
 
 static void low_unlink_cyclic(CYCLIC *c)
