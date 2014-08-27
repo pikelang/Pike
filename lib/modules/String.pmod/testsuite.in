@@ -221,6 +221,67 @@ test_any([[
 ]], "\u0100\u0101\U00010000\U00010001_abcd")
 
 test_any([[
+  String.Buffer b = String.Buffer(), a = String.Buffer();
+  b->add("abcd");a->add("abcd");
+  return b=="abcd" && b==a;
+]], 1)
+test_any([[
+  String.Buffer b = String.Buffer(), a = String.Buffer();
+  b->add("abcd");a->add("abcd");
+  return b>="abcd" && b>=a;
+]], 1)
+test_any([[
+  String.Buffer b = String.Buffer(), a = String.Buffer();
+  b->add("abcd");a->add("abcd");
+  return b<="abcd" && b<=a;
+]], 1)
+test_any([[
+  String.Buffer b = String.Buffer(), a = String.Buffer();
+  b->add("abce");a->add("abcd");
+  return b>="abcd" && b>=a;
+]], 1)
+test_any([[
+  String.Buffer b = String.Buffer(), a = String.Buffer();
+  b->add("abce");a->add("abcd");
+  return b<="abcd" || b<=a;
+]], 0)
+test_any([[
+  String.Buffer b = String.Buffer(), a = String.Buffer();
+  b->add("abce");a->add("abcd");
+  return b>"abcd" && b>a;
+]], 1)
+test_any([[
+  String.Buffer b = String.Buffer(), a = String.Buffer();
+  b->add("abce");a->add("abcd");
+  return b<"abcd" || b<a;
+]], 0)
+test_any([[
+  String.Buffer b = String.Buffer(), a = String.Buffer();
+  b->add("abcb");a->add("abcd");
+  return b=="abcd" || b==a;
+]], 0)
+test_any([[
+  String.Buffer b = String.Buffer(), a = String.Buffer();
+  b->add("abcb");a->add("abcd");
+  return b>="abcd" || b>=a;
+]], 0)
+test_any([[
+  String.Buffer b = String.Buffer(), a = String.Buffer();
+  b->add("abcb");a->add("abcd");
+  return b<="abcd" && b<=a;
+]], 1)
+test_any([[
+  String.Buffer b = String.Buffer(), a = String.Buffer();
+  b->add("abcb");a->add("abcd");
+  return b>"abcd" || b>a;
+]], 0)
+test_any([[
+  String.Buffer b = String.Buffer(), a = String.Buffer();
+  b->add("abcb");a->add("abcd");
+  return b<"abcd" || b<a;
+]], 1)
+
+test_any([[
   String.Buffer a=String.Buffer(),b=String.Buffer();
   a->add("Testing");
   a->addat(0, "Is that sentence");

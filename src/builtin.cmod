@@ -3171,6 +3171,21 @@ PIKECLASS Buffer
     REF_RETURN Pike_fp->current_object;
   }
 
+  static struct pike_string*getotherstr(struct svalue*other,unsigned stricttype)
+  {
+    switch(TYPEOF(*other))
+    {
+      case PIKE_T_STRING:
+        return other->u.string;
+      case PIKE_T_OBJECT:
+        if (other->u.object->prog == Buffer_program)
+          return OBJ2_BUFFER(other->u.object)->str.s;
+    }
+    if(stricttype)
+      Pike_error("Unsupported types in comparison.\n");
+    return 0;
+  }
+
   /*! @decl Buffer `==( mixed other )
    *!
    *!   Is able to compare directly with strings and other Buffers.
@@ -3178,23 +3193,28 @@ PIKECLASS Buffer
   PIKEFUN int(0..1) `==( mixed other )
     rawtype tFunc(tMixed, tInt01);
   {
-    struct Buffer_struct *str = THIS;
     struct pike_string *a;
+    RETURN ((a = getotherstr(other,0)) ? !my_quick_strcmp(THIS->str.s, a) : 0);
+  }
 
-    switch(TYPEOF(*other))
-    {
-      case PIKE_T_STRING:
-        a = other->u.string;
-        break;
-      case PIKE_T_OBJECT:
-        if (other->u.object->prog == Buffer_program) {
-          a = OBJ2_BUFFER(other->u.object)->str.s;
-          break;
-        }
-      default:
-        RETURN 0;
-    }
-    RETURN !my_quick_strcmp(str->str.s, a);
+  /*! @decl Buffer `<( mixed other )
+   *!
+   *!   Is able to compare directly with strings and other Buffers.
+   */
+  PIKEFUN int(0..1) `<( mixed other )
+    rawtype tFunc(tMixed, tInt01);
+  {
+    RETURN my_quick_strcmp(THIS->str.s, getotherstr(other,1))<0;
+  }
+
+  /*! @decl Buffer `>( mixed other )
+   *!
+   *!   Is able to compare directly with strings and other Buffers.
+   */
+  PIKEFUN int(0..1) `>( mixed other )
+    rawtype tFunc(tMixed, tInt01);
+  {
+    RETURN my_quick_strcmp(THIS->str.s, getotherstr(other,1))>0;
   }
 
   /*! @decl int addat(int(0..) pos, string|Buffer ... data)
