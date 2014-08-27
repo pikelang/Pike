@@ -3168,6 +3168,8 @@ PIKECLASS Buffer
   }
 
   /*! @decl Buffer `==( mixed other )
+   *!
+   *!   Is able to compare directly with strings and other Buffers.
    */
   PIKEFUN int(0..1) `==( mixed other )
     rawtype tFunc(tMixed, tInt01);
