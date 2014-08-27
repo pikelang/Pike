@@ -3071,45 +3071,54 @@ PIKECLASS Buffer
     push_undefined();
   }
   
-  /*! @decl int|Buffer `[](int index, int|void end_or_none)
+  /*! @decl int `[](int index)
    */
-  PIKEFUN int|Buffer `[](int index, int|void end_or_none)
+  PIKEFUN int `[](int index)
+  {
+    struct pike_string *s = THIS->str.s;
+    unsigned len = s->len;
+
+    if (index<0)
+      index += len;
+    if (index<0 || index>=len)
+      index_error("Buffer->`[]", Pike_sp, args, NULL, Pike_sp,
+          "Index %"PRINTPIKEINT"d is out of array range 0..%d,\n",
+          index, len-1);
+    RETURN generic_extract(s->str, s->size_shift, index);
+  }
+
+  /*! @decl Buffer `[..](int start, int start_type, int end, int end_type)
+   */
+  PIKEFUN Buffer `[..](int start, int start_type, int end, int end_type)
   {
     struct Buffer_struct *str = THIS;
     struct pike_string *s = str->str.s;
     unsigned len = s->len, shift = s->size_shift;
-    void *p = s->str;
+    void *p;
 
-    if (args==1) {
-      pop_n_elems(args);
-      if (index<0)
-        index += len;
-      if (index<0 || index>=len)
-	index_error("Buffer->`[]", Pike_sp, args, NULL, Pike_sp,
-		    "Index %"PRINTPIKEINT"d is out of array range 0..%d,\n",
-		    index, len-1);
-      push_int (generic_extract(p, shift, index));
-    } else {
-      INT_TYPE end = end_or_none->u.integer;
-      struct object *res;
-      struct Buffer_struct *str2;
+    struct object *res;
+    struct Buffer_struct *str2;
 
-      pop_n_elems(args);
-      res = fast_clone_object( Buffer_program );
-      str2 = OBJ2_BUFFER( res );
-      if (index < 0)
-        index = 0;
-      if (end >= len)
-        end = len-1;
-      str2->initial = end -= index-1;
-      init_string_builder_alloc (&str2->str, end, shift);
-      memcpy ((s = str2->str.s)->str, (char*)p+(index<<shift), end<<shift);
-      s->str[end<<shift] = 0;			// Ensure NUL-termination
-      s->len = end;
-      if( (Pike_fp->current_object->flags & OBJECT_CLEAR_ON_EXIT) )
-          res->flags |= OBJECT_CLEAR_ON_EXIT;
-      push_object (res);
-    }
+    pop_n_elems(args);
+    if (start_type == INDEX_FROM_END)
+      start = len-1-start;
+    if (end_type != INDEX_FROM_BEG)
+      end = len-1-end;
+    res = fast_clone_object( Buffer_program );
+    str2 = OBJ2_BUFFER( res );
+    if (start < 0)
+      start = 0;
+    if (end >= len)
+      end = len-1;
+    str2->initial = end -= start-1;
+    init_string_builder_alloc (&str2->str, end, shift);
+    p = s->str;
+    memcpy ((s = str2->str.s)->str, (char*)p+(start<<shift), end<<shift);
+    s->str[end<<shift] = 0;			// Ensure NUL-termination
+    s->len = end;
+    if( (Pike_fp->current_object->flags & OBJECT_CLEAR_ON_EXIT) )
+        res->flags |= OBJECT_CLEAR_ON_EXIT;
+    push_object (res);
   }
 
   /*! @decl int `[]=(int index, int ch)
