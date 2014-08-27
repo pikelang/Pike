@@ -2976,9 +2976,7 @@ PIKECLASS Buffer
 
   PIKEFUN int _size_object()
   {
-      if( THIS->str.s )
-          RETURN THIS->str.malloced;
-      RETURN 0;
+    RETURN THIS->str.malloced;
   }
 
   void f_Buffer_get_copy( INT32 args );
@@ -2997,10 +2995,8 @@ PIKECLASS Buffer
   PIKEFUN void create( int|void size )
   {
     struct Buffer_struct *str = THIS;
-    if( size )
-      str->initial = MAXIMUM( size->u.integer, 512 );
-    else
-      str->initial = 256;
+    init_string_builder_alloc(&str->str,
+     str->initial = size ? MAXIMUM( size->u.integer, 512 ) : 256 , 0);
   }
 
   /*! @decl string _sprintf( int flag, mapping flags )
@@ -3016,16 +3012,8 @@ PIKECLASS Buffer
 	  struct pike_string *res;
 	  struct Buffer_struct *str = THIS;
 	  push_text( "Buffer(%d /* %d */)" );
-	  if( str->str.s )
-	  {
-	    push_int(str->str.s->len);
-	    push_int(str->str.malloced);
-	  }
-	  else
-	  {
-	    push_int( 0 );
-	    push_int( 0 );
-	  }
+	  push_int(str->str.s->len);
+	  push_int(str->str.malloced);
 	  f_sprintf( 3 );
 	  dmalloc_touch_svalue(Pike_sp-1);
 	  res = Pike_sp[-1].u.string;
@@ -3089,11 +3077,8 @@ PIKECLASS Buffer
   {
     struct Buffer_struct *str = THIS;
     struct pike_string *s = str->str.s;
-    unsigned len = 0,shift = 0;
-    void *p = NULL;
-
-    if (s)
-      len = s->len, shift = s->size_shift, p = s->str;
+    unsigned len = s->len, shift = s->size_shift;
+    void *p = s->str;
 
     if (args==1) {
       pop_n_elems(args);
@@ -3136,12 +3121,10 @@ PIKECLASS Buffer
   {
     struct Buffer_struct *str = THIS;
     struct pike_string *s = str->str.s;
-    unsigned len = 0,shift = 0;
-    void *p = NULL;
+    unsigned len = s->len, shift = s->size_shift;
+    void *p = s->str;
 
     pop_n_elems(args);
-    if (s)
-      len = s->len, shift = s->size_shift, p = s->str;
 
     if (index<0)
       index += len;
@@ -3168,8 +3151,7 @@ PIKECLASS Buffer
     struct object *res = fast_clone_object( Buffer_program );
     str2 = OBJ2_BUFFER( res );
     str2->initial = str->initial;
-    if( str->str.s )
-      init_string_builder_copy (&str2->str, &str->str);
+    init_string_builder_copy (&str2->str, &str->str);
     if( (Pike_fp->current_object->flags & OBJECT_CLEAR_ON_EXIT) )
         res->flags |= OBJECT_CLEAR_ON_EXIT;
     apply( res, "add", 1 );
@@ -3191,7 +3173,7 @@ PIKECLASS Buffer
     rawtype tFunc(tMixed, tInt01);
   {
     struct Buffer_struct *str = THIS;
-    struct pike_string *s, *a;
+    struct pike_string *a;
 
     switch(TYPEOF(*other))
     {
@@ -3206,7 +3188,7 @@ PIKECLASS Buffer
       default:
         RETURN 0;
     }
-    RETURN !(s = str->str.s) ? !a->len : !my_quick_strcmp(s, a);
+    RETURN !my_quick_strcmp(str->str.s, a);
   }
 
   /*! @decl int addat(int(0..) pos, string|Buffer ... data)
@@ -3249,23 +3231,14 @@ PIKECLASS Buffer
       shift |= a->size_shift;
     }
 
-    if (!(s = str->str.s)) {
-      if ((sum + pos) <= str->initial)
-        sum = str->initial;
-      else
-        sum <<= 1, sum += pos;
-      shift = shift & ~(shift >> 1);
-
-      init_string_builder_alloc(&str->str, sum, shift);
-    } else {
-      sum += pos;
-      shift |= str->str.known_shift;
-      shift = shift & ~(shift >> 1);
-      if (sum > s->len)
-        string_build_mkspace(&str->str, sum - s->len, shift);
-      else if (shift != str->str.known_shift)
-        string_build_mkspace(&str->str, 0, shift);
-    }
+    s = str->str.s;
+    sum += pos;
+    shift |= str->str.known_shift;
+    shift = shift & ~(shift >> 1);
+    if (sum > s->len)
+      string_build_mkspace(&str->str, sum - s->len, shift);
+    else if (shift != str->str.known_shift)
+      string_build_mkspace(&str->str, 0, shift);
     s = str->str.s;
     /* We know it will be a string that really is this wide. */
     str->str.known_shift = shift;
@@ -3306,7 +3279,7 @@ PIKECLASS Buffer
     rawtype tFuncV(tNone, tOr(tString, tObjIs_BUFFER), tIntPos);
   {
     struct Buffer_struct *str = THIS;
-    push_int(str->str.s ? str->str.s->len : 0);
+    push_int(str->str.s->len);
     stack_revroll(++args);
     f_Buffer_addat(args);
   }
@@ -3316,8 +3289,6 @@ PIKECLASS Buffer
    */
   PIKEFUN void putchar(int c) {
     struct Buffer_struct *str = THIS;
-    if(!str->str.s)
-      init_string_builder_alloc(&str->str, str->initial, 0);
     string_builder_putchar(&str->str, c);
   }
 
@@ -3332,8 +3303,6 @@ PIKECLASS Buffer
   {
     // FIXME: Reset length on exception?
     struct Buffer_struct *str = THIS;
-    if(!str->str.s)
-      init_string_builder_alloc(&str->str, str->initial, 0);
     low_f_sprintf(args, 0, &str->str);
     RETURN str->str.s->len;
   }
@@ -3350,7 +3319,7 @@ PIKECLASS Buffer
   {
     struct pike_string *str = THIS->str.s;
     ptrdiff_t len;
-    if( str && (len = str->len) > 0 )
+    if((len = str->len) > 0 )
     {
       char *d = (char *)str->str;
       switch( str->size_shift )
@@ -3370,7 +3339,6 @@ PIKECLASS Buffer
       RETURN str;
     }
     push_empty_string();
-    return;
   }
 
   /*! @decl string get()
@@ -3386,18 +3354,12 @@ PIKECLASS Buffer
   PIKEFUN string get( )
   {
     struct Buffer_struct *str = THIS;
-    pop_n_elems(args);
-    if( str->str.s )
-    {
-      struct pike_string *s = finish_string_builder( &str->str );
-      str->str.malloced = 0;
-      str->str.s = NULL;
-      if( Pike_fp->current_object->flags & OBJECT_CLEAR_ON_EXIT )
-          s->flags |= STRING_CLEAR_ON_EXIT;
-      push_string(s);
-    }
-    else
-      push_empty_string();
+    struct pike_string *s = finish_string_builder( &str->str );
+    str->str.malloced = 0;
+    str->str.s = NULL;
+    if( Pike_fp->current_object->flags & OBJECT_CLEAR_ON_EXIT )
+      s->flags |= STRING_CLEAR_ON_EXIT;
+    push_string(s);
   }
 
   /*! @decl Buffer|void cut(int index, int|void end_or_none,void|int discard)
@@ -3413,12 +3375,9 @@ PIKECLASS Buffer
     struct Buffer_struct *str = THIS, *str2;
     struct object *res;
     struct pike_string *s = str->str.s;
-    unsigned len = 0,shift = 0;
-    void *p = NULL;
+    unsigned len = s->len,shift = s->size_shift;
+    void *p = s->str;
     INT_TYPE end,vdiscard;
-
-    if (s)
-      len = s->len, shift = s->size_shift, p = s->str;
 
     end = args==1 ? len-1 : end_or_none->u.integer;
     vdiscard = args==3 ? discard->u.integer : 0;
@@ -3452,7 +3411,7 @@ PIKECLASS Buffer
     if(!vdiscard)
     {
       if( (Pike_fp->current_object->flags & OBJECT_CLEAR_ON_EXIT) )
-          res->flags |= OBJECT_CLEAR_ON_EXIT;
+        res->flags |= OBJECT_CLEAR_ON_EXIT;
       push_object(res);
     }
     else
@@ -3469,8 +3428,7 @@ PIKECLASS Buffer
   PIKEFUN void clear()
   {
     struct Buffer_struct *str = THIS;
-    if (str->str.s)
-      reset_string_builder(&str->str);
+    reset_string_builder(&str->str);
   }
 
   /*! @decl int _sizeof()
@@ -3480,7 +3438,7 @@ PIKECLASS Buffer
   PIKEFUN int _sizeof()
   {
     struct Buffer_struct *str = THIS;
-    RETURN str->str.s ? str->str.s->len : 0;
+    RETURN str->str.s->len;
   }
 
   INIT
@@ -3493,17 +3451,14 @@ PIKECLASS Buffer
     gc_trivial;
     {
       struct Buffer_struct *str = THIS;
-      if( str->str.s )
-      {
-          if( Pike_fp->flags & OBJECT_CLEAR_ON_EXIT )
-              guaranteed_memset( str->str.s->str, 0, str->str.s->len );
-          free_string_builder( &str->str );
-      }
+      if( Pike_fp->flags & OBJECT_CLEAR_ON_EXIT )
+          guaranteed_memset( str->str.s->str, 0, str->str.s->len );
+      free_string_builder( &str->str );
     }
 
   GC_RECURSE
   {
-    if (mc_count_bytes (Pike_fp->current_object) && THIS->str.s)
+    if (mc_count_bytes (Pike_fp->current_object))
       mc_counted_bytes += THIS->str.malloced;
   }
 }
