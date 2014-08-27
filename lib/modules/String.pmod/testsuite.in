@@ -26,6 +26,10 @@ test_any([[
 ]], "abcdefghij")
 test_any([[
   String.Buffer s=String.Buffer();
+  return s->get() + s->get();
+]], "")
+test_any([[
+  String.Buffer s=String.Buffer();
   s->add("xxx");
   string t=s->get();
   s->add("yyy");
