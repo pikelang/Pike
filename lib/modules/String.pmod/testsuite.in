@@ -216,6 +216,24 @@ test_any([[
   return (string)b->cut(2,5) + "_" + (string)b;
 ]], "\u0100\u0101\U00010000\U00010001_abcd")
 
+test_any([[
+  String.Buffer a=String.Buffer(),b=String.Buffer();
+  a->add("Testing");
+  a->addat(0, "Is that sentence");
+  a->putchar(',');
+  a->add(" the concluding three ", "words");
+  a->add(" `were left out'");
+  a->addat(3,"th","is");
+  a[1]=a[10];
+  b->add("Test me harder");
+  b->add(a);
+  if(b->cut(5,6) != "me")
+    return 0;
+  b->cut(0,11,1);
+  return a[3..6] == "this" && a->get_copy() ==(string)b && a->get()
+    == "In this sentence, the concluding three words `were left out'";
+]],1)
+
 
 test_eq([[ String.count( "", "a" ) ]], 0)
 test_eq([[ String.count( "aaa", "a" ) ]], 3)
