@@ -284,7 +284,7 @@ static ptrdiff_t PIKE_CONCAT(read_set,SIZE) (			\
   MATCH_IS_WIDE( int set_size=0; )				\
 								\
   if(cnt>=match_len)						\
-    Pike_error("Error in sscanf format string.\n");		\
+    Pike_error("Unterminated sscanf set.\n");			\
 								\
   MEMSET(set->c, 0, sizeof(set->c));				\
   set->a=0;							\
@@ -296,7 +296,7 @@ static ptrdiff_t PIKE_CONCAT(read_set,SIZE) (			\
     set->neg=1;							\
     cnt++;							\
     if(cnt>=match_len)						\
-      Pike_error("Error in sscanf format string.\n");		\
+      Pike_error("Unterminated negated sscanf set.\n");	\
   }else{							\
     set->neg=0;							\
   }								\
@@ -306,7 +306,7 @@ static ptrdiff_t PIKE_CONCAT(read_set,SIZE) (			\
     set->c[last=match[cnt]]=1;					\
     cnt++;							\
     if(cnt>=match_len)						\
-      Pike_error("Error in sscanf format string.\n");		\
+      Pike_error("Empty sscanf range.\n");			\
   }								\
 								\
   for(;match[cnt]!=']';)					\
@@ -315,7 +315,7 @@ static ptrdiff_t PIKE_CONCAT(read_set,SIZE) (			\
     {								\
       cnt++;							\
       if(cnt>=match_len)					\
-	Pike_error("Error in sscanf format string.\n");		\
+	Pike_error("Unterminated sscanf range.\n");		\
 								\
       if(match[cnt]==']')					\
       {								\
@@ -324,7 +324,8 @@ static ptrdiff_t PIKE_CONCAT(read_set,SIZE) (			\
       }								\
 								\
       if(last > match[cnt])					\
-	Pike_error("Error in sscanf format string.\n");		\
+	Pike_error("Inverted sscanf range [%c-%c].\n",		\
+		   last, match[cnt]);				\
 								\
 MATCH_IS_WIDE(							\
       if(last < (p_wchar2)sizeof(set->c) && last >= 0)		\
@@ -372,7 +373,7 @@ MATCH_IS_WIDE(							\
     }								\
     cnt++;							\
     if(cnt>=match_len)						\
-      Pike_error("Error in sscanf format string.\n");		\
+      Pike_error("Unterminated sscanf set.\n");			\
   }								\
 								\
 MATCH_IS_WIDE(							\
@@ -637,7 +638,7 @@ static INT32 PIKE_CONCAT4(very_low_sscanf_,INPUT_SHIFT,_,MATCH_SHIFT)(	 \
     DO_IF_DEBUG(							 \
     if(match[cnt]!='%' || match[cnt+1]=='%')				 \
     {									 \
-      Pike_fatal("Error in sscanf.\n");					 \
+      Pike_fatal("Failed to escape in sscanf.\n");			 \
     }									 \
     );									 \
 									 \
@@ -650,7 +651,7 @@ static INT32 PIKE_CONCAT4(very_low_sscanf_,INPUT_SHIFT,_,MATCH_SHIFT)(	 \
 									 \
     cnt++;								 \
     if(cnt>=match_len)							 \
-      Pike_error("Error in sscanf format string.\n");			 \
+      Pike_error("Missing format specifier in sscanf format string.\n"); \
 									 \
     while(1)								 \
     {									 \
@@ -660,7 +661,8 @@ static INT32 PIKE_CONCAT4(very_low_sscanf_,INPUT_SHIFT,_,MATCH_SHIFT)(	 \
 	  no_assign=1;							 \
 	  cnt++;							 \
 	  if(cnt>=match_len)						 \
-	    Pike_error("Error in sscanf format string.\n");		 \
+	    Pike_error("Missing format specifier in ignored sscanf "	 \
+		       "format string.\n");				 \
 	  continue;							 \
 									 \
 	case '0': case '1': case '2': case '3': case '4':		 \
