@@ -3001,7 +3001,7 @@ PIKECLASS Buffer
 
   /*! @decl string _sprintf( int flag, mapping flags )
    *! It is possible to @[sprintf] a String.Buffer object
-   *! as @tt{%s@} just as if it was a string.
+   *! as @tt{%s@} just as if it were a string.
    */
   PIKEFUN string _sprintf( int flag, mapping flags )
   {
@@ -3148,7 +3148,7 @@ PIKECLASS Buffer
 
   /*! @decl Buffer `+( string|Buffer what )
    */
-  PIKEFUN object `+( string|Buffer what )
+  PIKEFUN Buffer `+( string|Buffer what )
     rawtype tFunc(tOr(tString, tObjIs_BUFFER), tObjIs_BUFFER);
   {
     struct Buffer_struct *str = THIS, *str2;
@@ -3164,7 +3164,7 @@ PIKECLASS Buffer
 
   /*! @decl Buffer `+=( string|Buffer what )
    */
-  PIKEFUN object `+=( string|Buffer what )
+  PIKEFUN Buffer `+=( string|Buffer what )
     rawtype tFunc(tOr(tString, tObjIs_BUFFER), tObjIs_BUFFER);
   {
     f_Buffer_add( 1 );
@@ -3186,7 +3186,7 @@ PIKECLASS Buffer
     return 0;
   }
 
-  /*! @decl Buffer `==( mixed other )
+  /*! @decl int(0..1) `==( mixed other )
    *!
    *!   Is able to compare directly with strings and other Buffers.
    */
@@ -3197,7 +3197,7 @@ PIKECLASS Buffer
     RETURN ((a = getotherstr(other,0)) ? !my_quick_strcmp(THIS->str.s, a) : 0);
   }
 
-  /*! @decl Buffer `<( mixed other )
+  /*! @decl int(0..1) `<( mixed other )
    *!
    *!   Is able to compare directly with strings and other Buffers.
    */
@@ -3207,7 +3207,7 @@ PIKECLASS Buffer
     RETURN my_quick_strcmp(THIS->str.s, getotherstr(other,1))<0;
   }
 
-  /*! @decl Buffer `>( mixed other )
+  /*! @decl int(0..1) `>( mixed other )
    *!
    *!   Is able to compare directly with strings and other Buffers.
    */
@@ -3314,12 +3314,12 @@ PIKECLASS Buffer
     f_Buffer_addat(args);
   }
 
-  /*! @decl void putchar(int c)
-   *! Appends the character @[c] at the end of the string.
+  /*! @decl void putchar(int ch)
+   *! Appends the character @[ch] at the end of the string.
    */
-  PIKEFUN void putchar(int c) {
+  PIKEFUN void putchar(int ch) {
     struct Buffer_struct *str = THIS;
-    string_builder_putchar(&str->str, c);
+    string_builder_putchar(&str->str, ch);
   }
 
   /*! @decl int sprintf(strict_sprintf_format format, sprintf_args ... args)
@@ -3452,7 +3452,7 @@ PIKECLASS Buffer
 
   /*! @decl void clear()
    *!
-   *!   Empty the buffer, and don't care about the old content.
+   *!   Empty the buffer, and discard the old content.
    *!
    *! @seealso
    *!   @[get()], @[cut()]
