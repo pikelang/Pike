@@ -115,6 +115,11 @@
 #include <net/netdb.h>
 #endif /* HAVE_NET_NETDB_H */
 
+#ifdef HAVE_NETINET_TCP_H
+#include <netinet/tcp.h>
+#endif
+
+
 #undef THIS
 #define THIS ((struct my_file *)(Pike_fp->current_storage))
 #define FD (THIS->box.fd)
@@ -4905,6 +4910,39 @@ static void file_set_keepalive(INT32 args)
   push_int(!i);
 }
 
+/*! @decl int(0..1) setsockopt(int opt,int(0..1) on_off)
+ *!
+ *! Set socket options like Stdio.SO_KEEPALIVE. This function is always
+ *! available; the presence or absence of the option constants indicates
+ *! availability of those features.
+ *!
+ *! @returns
+ *!   1 if successful, 0 if not (and sets errno())
+ *!
+ *! @seealso
+ *!   @[set_keepalive()]
+ */
+static void file_setsockopt(INT32 args)
+{
+  int tmp, i, opt;
+  INT_TYPE o, t;
+
+  get_all_args("setsockopt", args, "%i%i", &o, &t);
+
+  /* In case int and INT_TYPE have different sizes */
+  tmp = t; opt = o;
+
+  i = fd_setsockopt(FD, SOL_SOCKET, opt, (char *)&tmp, sizeof(tmp));
+  if(i)
+  {
+    ERRNO=errno;
+  }else{
+    ERRNO=0;
+  }
+  pop_n_elems(args);
+  push_int(!i);
+}
+
 #ifdef HAVE_SYS_UN_H
 #include <sys/un.h>
 
@@ -6239,6 +6277,20 @@ PIKE_MODULE_INIT
     add_string_constant( "SEEK_HOLE", seek_how+8, 0 );
 #endif
   };
+
+#ifdef TCP_NODELAY
+  /*! @decl constant TCP_NODELAY
+   *! Used in @[File.setsockopt()] to control Nagle's Algorithm.
+   */
+  add_integer_constant("TCP_NODELAY", TCP_NODELAY, 0);
+#endif
+
+#ifdef SO_KEEPALIVE
+  /*! @decl constant SO_KEEPALIVE
+   *! Used in @[File.setsockopt()] to control TCP/IP keep-alive packets.
+   */
+  add_integer_constant("SO_KEEPALIVE", SO_KEEPALIVE, 0);
+#endif
 
   add_integer_constant("__HAVE_OOB__",1,0);
 #ifdef PIKE_OOB_WORKS

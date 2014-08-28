@@ -184,6 +184,9 @@ FILE_FUNC("tcflush",file_tcflush, tFunc(tNone,tStr))
 FILE_FUNC("set_keepalive",file_set_keepalive, tFunc(tInt,tInt))
 #endif
 
+/* function(int,int:int) */
+FILE_FUNC("setsockopt",file_setsockopt, tFunc(tInt tInt,tInt))
+
 #if defined(HAVE_FSETXATTR) && defined(HAVE_FGETXATTR) && defined(HAVE_FLISTXATTR)
 FILE_FUNC( "listxattr", file_listxattr, tFunc(tVoid,tArr(tStr)))
 FILE_FUNC( "setxattr", file_setxattr, tFunc(tStr tStr tInt,tInt))
