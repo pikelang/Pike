@@ -3351,16 +3351,17 @@ PIKECLASS IOBuffer
         push_int(0);
     }
 
-    /*! @decl string(8bit) read_hbuffer( int n )
-     *! @decl string(8bit) read_hbuffer( int n, bool copy )
+    /*! @decl IOBuffer read_hbuffer( int n )
+     *! @decl IOBuffer read_hbuffer( int n, bool copy )
      *!
      *! Same as @[read_hstring], but returns the result as an IOBuffer.
      *!
-     *! No data is copied unless @[copy] is specified and true, the new buffer
-     *! points into the old one.
+     *! No data is copied unless @[copy] is specified and true, the
+     *! new buffer points into the old one.
      *!
      *! @note
-     *!  As long as the subbuffer exists no data can be added to the main buffer.
+     *!  As long as the subbuffer exists no data can be added to the
+     *!  main buffer.
      *!
      *!  Usually this is OK, since it often represents something that
      *!  should be parsed before the next whatever is extracted from
@@ -3382,16 +3383,17 @@ PIKECLASS IOBuffer
         push_int(0);
     }
 
-    /*! @decl string(8bit) read_buffer( int n )
-     *! @decl string(8bit) read_buffer( int n, bool copy )
+    /*! @decl IOBuffer read_buffer( int n )
+     *! @decl IOBuffer read_buffer( int n, bool copy )
      *!
      *! Same as @[read], but returns the result as an IOBuffer.
      *!
-     *! No data is copied unless @[copy] is specified and true, the new buffer
-     *! points into the old one.
+     *! No data is copied unless @[copy] is specified and true, the
+     *! new buffer points into the old one.
      *!
      *! @note
-     *!  As long as the subbuffer exists no data can be added to the main buffer.
+     *!  As long as the subbuffer exists no data can be added to the
+     *!  main buffer.
      *!
      *!  Usually this is OK, since it often represents something that
      *!  should be parsed before the next whatever is extracted from
@@ -3421,10 +3423,12 @@ PIKECLASS IOBuffer
       struct string_builder tmp;
       init_string_builder(&tmp,0);
       SET_ONERROR(_e, free_string_builder, &tmp);
-      low_f_sprintf(args,0, &tmp );
+      low_f_sprintf(args, 0, &tmp );
       if( tmp.s->size_shift )
         Pike_error("IOBuffer only handles 8bit data\n");
       io_append( THIS, tmp.s->str, tmp.s->len );
+      pop_n_elems(args);
+      push_int(tmp.s->len);
       CALL_AND_UNSET_ONERROR(_e);
     }
 
@@ -3432,7 +3436,7 @@ PIKECLASS IOBuffer
      *!
      *! Clear the buffer.
      */
-    PIKEFUN int(0..) clear(  )
+    PIKEFUN void clear()
     {
       IOBuffer *io = THIS;
       io->offset = io->len = 0;
@@ -3621,7 +3625,6 @@ PIKECLASS IOBuffer
         this->allocated = 4096-32;
         this->malloced = 1;
     }
-
 
     INIT {
         IOBuffer *this = THIS;
