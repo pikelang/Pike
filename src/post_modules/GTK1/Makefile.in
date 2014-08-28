@@ -43,7 +43,7 @@ compile0:
 	@$(MAKE) all
 
 compile1:
-	$(RUNPIKE) $(SRCDIR)/new_build_pgtk.pike --source='$(SRCDIR)/source/' \
+	@$(RUNPIKE) $(SRCDIR)/new_build_pgtk.pike --source='$(SRCDIR)/source/' \
 		   $(SRCDIR)/output/few.pike
 #	if $(RUNPIKE) $(SRCDIR)/new_build_pgtk.pike --source='$(SRCDIR)/source/' \
 #	              $(SRCDIR)/output/few.pike; then :; else \
