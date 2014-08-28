@@ -9,6 +9,8 @@
 #include "whitespace.h"
 #include "pike_types.h"
 #include "iobuffer.h"
+#include "module_support.h"
+
 #include <arpa/inet.h>
 
 #define DEFAULT_CMOD_STORAGE static
@@ -65,6 +67,18 @@ PIKECLASS IOBuffer
   static unsigned char *io_read_pointer(IOBuffer *io)
   {
     return io->buffer + io->offset;
+  }
+
+  static int io_is_whitespace( IOBuffer *io, size_t pos )
+  {
+   if( pos > io_len( io ) )
+      return -1;
+    switch( io->buffer[io->offset+pos] )
+    {
+      SPACECASE8
+        return 1;
+    }
+    return 0;
   }
 
   static unsigned char *io_add_space( IOBuffer *io, int bytes, int force )
@@ -714,6 +728,81 @@ PIKECLASS IOBuffer
     {
       io_consume( THIS, num_used );
       f_aggregate(Pike_sp-start);
+    }
+  }
+
+
+  /*! @decl mixed read_json(int|void require_whitespace_separator)
+   *!
+   *! Read a single JSON expression from the buffer and return it.
+   *! 
+   *! If @[require_whitespace_separator] is true there must be a whitespace
+   *! after each json value (as an example, newline or space).
+   *!
+   *! The JSON is assumed to be utf-8 encoded.
+   *!
+   *! @returns
+   *! UNDEFINED if no data is available to read.
+   *! The read value otherwise.
+   *!
+   *! @note
+   *! Unless whitespaces are required this function only really work correctly
+   *! with objects, arrays and strings.
+   *!
+   *! There is really no  way to see where one value starts and the other ends
+   *! for most other cases
+   */
+  PIKEFUN mixed read_json(int|void require_whitespace)
+  {
+    int stop, whites = 0;
+    static ptrdiff_t(*parse_json_pcharp)(PCHARP,size_t,int,char**);
+    char *err = NULL;
+    if( require_whitespace )
+      whites = require_whitespace->u.integer;
+
+    if( !parse_json_pcharp )
+      parse_json_pcharp = PIKE_MODULE_IMPORT(Standards.JSON, parse_json_pcharp );
+
+    stop = parse_json_pcharp( MKPCHARP(io_read_pointer(THIS),0),
+                              io_len(THIS), 1|8, &err ); /* json_utf8 */
+
+    if( stop < 0 )
+    {
+      if( -stop == (ptrdiff_t)io_len(THIS) || (err && !strncmp(err,"Unterminated",12)))
+      {
+        io_range_error(THIS,-stop+1);
+        push_undefined();
+      }
+      else
+      {
+        /* FIXME: Use real json error? */
+        if( err )
+          Pike_error("Syntax error in json at offset %d: %s\n", -stop, err );
+        else
+          Pike_error("Syntax error in json at offset %d\n", -stop );
+      }
+    }
+    else
+    {
+      if( whites &&
+          (io_is_whitespace(THIS,stop)<=0 && io_is_whitespace(THIS,stop-1)<=0))
+      {
+        if( stop == (ptrdiff_t)io_len(THIS) )
+        {
+          io_range_error(THIS,stop);
+          pop_stack();
+          push_undefined();
+        }
+        else
+          Pike_error("Missing whitespace between json values at offset %d\n", stop );
+      }
+      else
+      {
+        if( whites )
+          while( io_is_whitespace( THIS, stop ) )
+            stop++;
+        io_consume( THIS, stop );
+      }
     }
   }
 
