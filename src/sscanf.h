@@ -9,6 +9,10 @@
 
 #define SSCANF_FLAG_76_COMPAT 0x1
 
+INT32 low_sscanf_pcharp(PCHARP input, ptrdiff_t len,
+                        PCHARP format, ptrdiff_t format_len,
+                        ptrdiff_t *chars_matched, int flags);
+
 INT32 low_sscanf(struct pike_string *data, struct pike_string *format, INT32 flags);
 void o_sscanf(INT32 args, INT32 flags);
 PMOD_EXPORT void f_sscanf(INT32 args);

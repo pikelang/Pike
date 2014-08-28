@@ -585,8 +585,8 @@ static INLINE INT32 TO_INT32(ptrdiff_t x)
  *   Pushes non-ignored matches on the Pike stack in the order they
  *   were matched.
  *
- * FIXME: chars_matched and success are only used internally, and
- *        should probably be gotten rid of.
+ * FIXME: success is only used internally, and should probably be
+ * gotten rid of.
  */
 #define MK_VERY_LOW_SSCANF(INPUT_SHIFT, MATCH_SHIFT)			 \
 static INT32 PIKE_CONCAT4(very_low_sscanf_,INPUT_SHIFT,_,MATCH_SHIFT)(	 \
@@ -1318,6 +1318,49 @@ MK_VERY_LOW_SSCANF(1,1)
 MK_VERY_LOW_SSCANF(2,1)
 MK_VERY_LOW_SSCANF(1,2)
 MK_VERY_LOW_SSCANF(2,2)
+
+
+/* */
+INT32 low_sscanf_pcharp(PCHARP input, ptrdiff_t len,
+                        PCHARP format, ptrdiff_t format_len,
+                        ptrdiff_t *chars_matched,
+                        int flags )
+{
+  int ok;
+  check_c_stack(sizeof(struct sscanf_set)*2 + 512);
+  switch( input.shift*3 + format.shift )
+  {
+    case 0:
+      return very_low_sscanf_0_0(input.ptr, len,format.ptr, format_len,
+                                 chars_matched, &ok, flags  );
+    case 1:
+      return very_low_sscanf_0_1(input.ptr, len, format.ptr, format_len,
+                                 chars_matched, &ok, flags  );
+    case 2:
+      return very_low_sscanf_0_2(input.ptr, len, format.ptr, format_len,
+                                 chars_matched, &ok, flags  );
+    case 3:
+      return very_low_sscanf_1_0(input.ptr, len, format.ptr, format_len,
+                                 chars_matched, &ok, flags  );
+    case 4:
+      return very_low_sscanf_1_1(input.ptr, len, format.ptr, format_len,
+                                 chars_matched, &ok, flags  );
+    case 5:
+      return very_low_sscanf_1_2(input.ptr, len, format.ptr, format_len,
+                                 chars_matched, &ok, flags  );
+    case 6:
+      return very_low_sscanf_2_0(input.ptr, len, format.ptr, format_len,
+                                 chars_matched, &ok, flags  );
+    case 7:
+      return very_low_sscanf_2_1(input.ptr, len, format.ptr, format_len,
+                                 chars_matched, &ok, flags  );
+    case 8:
+      return very_low_sscanf_2_2(input.ptr, len, format.ptr, format_len,
+                                 chars_matched, &ok, flags );
+    default:
+      Pike_error("impossible");
+  }
+}
 
 /* Simplified interface to very_low_sscanf_{0,1,2}_{0,1,2}(). */
 INT32 low_sscanf(struct pike_string *data, struct pike_string *format, INT32 flags)
