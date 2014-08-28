@@ -8783,7 +8783,6 @@ PMOD_EXPORT void f_map(INT32 args)
 
              ref_push_string(literal_array_string);
              apply_low(o, f, 1);
-
              if (TYPEOF(Pike_sp[-1]) == T_ARRAY)
              {
 	       free_svalue(mysp-3);
@@ -9160,53 +9159,50 @@ PMOD_EXPORT void f_filter(INT32 args)
       case T_OBJECT:
 	 mysp=Pike_sp+3-args;
 
-	 push_svalue(mysp-3);
-	 push_constant_text("cast");
-	 f_arrow(2);
-	 if (!UNSAFE_IS_ZERO(Pike_sp-1))
 	 {
-	    pop_stack();
+            struct object *o = mysp[-3].u.object;
+            int f = FIND_LFUN(o->prog->inherits[SUBTYPEOF(mysp[-3])].prog,
+                              LFUN_CAST);
 
-	    ref_push_string(literal_array_string);
-	    /* FIXME: Object subtype! */
-	    safe_apply(mysp[-3].u.object,"cast",1);
-	    if (TYPEOF(Pike_sp[-1]) == T_ARRAY)
-	    {
-	       free_svalue(mysp-3);
-	       mysp[-3]=*(--Pike_sp);
-	       dmalloc_touch_svalue(Pike_sp);
-	       f_filter(args);
-	       return;
-	    }
-	    pop_stack();
+            if( f!=-1 )
+            {
+              ref_push_string(literal_array_string);
+              apply_low(o, f, 1);
+              if (TYPEOF(Pike_sp[-1]) == T_ARRAY)
+              {
+                free_svalue(mysp-3);
+                mysp[-3]=*(--Pike_sp);
+                dmalloc_touch_svalue(Pike_sp);
+                f_filter(args);
+                return;
+              }
+              pop_stack();
 
-	    ref_push_string(literal_mapping_string);
-	    /* FIXME: Object subtype! */
-	    safe_apply(mysp[-3].u.object,"cast",1);
-	    if (TYPEOF(Pike_sp[-1]) == T_MAPPING)
-	    {
-	       free_svalue(mysp-3);
-	       mysp[-3]=*(--Pike_sp);
-	       dmalloc_touch_svalue(Pike_sp);
-	       f_filter(args);
-	       return;
-	    }
-	    pop_stack();
+              ref_push_string(literal_mapping_string);
+              apply_low(o, f, 1);
+              if (TYPEOF(Pike_sp[-1]) == T_MAPPING)
+              {
+                free_svalue(mysp-3);
+                mysp[-3]=*(--Pike_sp);
+                dmalloc_touch_svalue(Pike_sp);
+                f_filter(args);
+                return;
+              }
+              pop_stack();
 
-	    ref_push_string(literal_multiset_string);
-	    /* FIXME: Object subtype! */
-	    safe_apply(mysp[-3].u.object,"cast",1);
-	    if (TYPEOF(Pike_sp[-1]) == T_MULTISET)
-	    {
-	       free_svalue(mysp-3);
-	       mysp[-3]=*(--Pike_sp);
-	       dmalloc_touch_svalue(Pike_sp);
-	       f_filter(args);
-	       return;
-	    }
-	    pop_stack();
+              ref_push_string(literal_multiset_string);
+              apply_low(o, f, 1);
+              if (TYPEOF(Pike_sp[-1]) == T_MULTISET)
+              {
+                free_svalue(mysp-3);
+                mysp[-3]=*(--Pike_sp);
+                dmalloc_touch_svalue(Pike_sp);
+                f_filter(args);
+                return;
+              }
+              pop_stack();
+            }
 	 }
-	 pop_stack();
 
 	 SIMPLE_BAD_ARG_ERROR("filter",1,
 			      "...|object that can be cast to array, multiset or mapping");
