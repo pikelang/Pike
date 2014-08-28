@@ -251,6 +251,20 @@ static void xor_reg_reg( enum amd64_reg reg1,  enum amd64_reg reg2 )
   modrm(3,reg1,reg2);
 }
 
+static void and_reg_reg( enum amd64_reg reg1,  enum amd64_reg reg2 )
+{
+  rex(1,reg1,0,reg2);
+  opcode( 0x23 );
+  modrm(3,reg1,reg2);
+}
+
+static void or_reg_reg( enum amd64_reg reg1,  enum amd64_reg reg2 )
+{
+  rex(1,reg1,0,reg2);
+  opcode( 0x09 );
+  modrm(3,reg1,reg2);
+}
+
 static void and_reg_imm( enum amd64_reg reg, int imm32 )
 {
   rex( 1, 0, 0, reg );
@@ -385,6 +399,17 @@ static void shl_reg_mem( enum amd64_reg reg, enum amd64_reg mem, int offset)
   shl_reg_reg( reg, P_REG_RCX );
 }
 #endif
+
+static void shr_mem_reg( enum amd64_reg reg, int off, enum amd64_reg sreg)
+{
+  if( sreg != P_REG_RCX )
+    Pike_fatal("Not supported\n");
+
+  rex( 1, 0, 0, reg );
+  opcode( 0xd3 ); /* SAR r/m64,CL */
+  offset_modrm_sib(off, 7, reg );
+/*   modrm( 3, 7, reg ); */
+}
 
 static void shr_reg_imm( enum amd64_reg from_reg, int shift )
 {
@@ -811,6 +836,14 @@ static void call_imm( void *ptr )
 static void add_reg_reg( enum amd64_reg reg, enum amd64_reg reg2 )
 {
   rex(1,reg2,0,reg);
+  opcode( 0x1 );
+  modrm( 3, reg2, reg );
+}
+
+/* reg += reg2 */
+static void add_reg32_reg32( enum amd64_reg reg, enum amd64_reg reg2 )
+{
+  rex(0,reg2,0,reg);
   opcode( 0x1 );
   modrm( 3, reg2, reg );
 }
@@ -1779,7 +1812,81 @@ void ins_f_byte(unsigned int b)
      LABEL_B;
    }
    return;
-   return;
+  case F_AND:
+    {
+    LABELS();
+    ins_debug_instr_prologue(b, 0, 0);
+    amd64_load_sp_reg();
+    mov_mem8_reg(sp_reg, SVAL(-1).type, P_REG_RAX );
+    mov_mem8_reg(sp_reg, SVAL(-2).type, P_REG_RBX );
+    add_reg_reg(P_REG_RAX,P_REG_RBX);
+    /*    test_reg(P_REG_RAX); int == 0 */
+    jnz(&label_A);
+    
+    mov_mem_reg(sp_reg, SVAL(-1).value, P_REG_RAX );
+    mov_mem_reg(sp_reg, SVAL(-2).value, P_REG_RBX );
+    and_reg_reg(P_REG_RBX,P_REG_RAX);
+    mov_reg_mem(P_REG_RBX,sp_reg,SVAL(-2).value);
+    amd64_add_sp(-1);
+    jmp(&label_B);
+   LABEL_A;
+    amd64_call_c_opcode(addr, flags);
+    amd64_load_sp_reg();
+   LABEL_B;
+    }
+    return;
+
+  case F_OR:
+    {
+    LABELS();
+    ins_debug_instr_prologue(b, 0, 0);
+    amd64_load_sp_reg();
+    mov_mem8_reg(sp_reg, SVAL(-1).type, P_REG_RAX );
+    mov_mem8_reg(sp_reg, SVAL(-2).type, P_REG_RBX );
+    add_reg32_reg32(P_REG_RAX,P_REG_RBX);
+    /*    test_reg(P_REG_RAX); int == 0 */
+    jnz(&label_A);
+    
+    mov_mem_reg(sp_reg, SVAL(-1).value, P_REG_RAX );
+    mov_mem_reg(sp_reg, SVAL(-2).value, P_REG_RBX );
+    or_reg_reg(P_REG_RAX,P_REG_RBX);
+    mov_reg_mem(P_REG_RBX,sp_reg,SVAL(-2).value);
+    amd64_add_sp(-1);
+    jmp(&label_B);
+   LABEL_A;
+    amd64_call_c_opcode(addr, flags);
+    amd64_load_sp_reg();
+   LABEL_B;
+    }
+    return;
+
+  case F_RSH:
+    {
+    LABELS();
+    ins_debug_instr_prologue(b, 0, 0);
+    amd64_load_sp_reg();
+    mov_mem8_reg(sp_reg, -1*sizeof(struct svalue), P_REG_RAX );
+    mov_mem8_reg(sp_reg, -2*sizeof(struct svalue), P_REG_RBX );
+    add_reg32_reg32(P_REG_RAX,P_REG_RBX);
+    /* test_reg(P_REG_RAX);  int == 0 */
+    jnz(&label_A);
+
+    mov_mem_reg(sp_reg, SVAL(-1).value, P_REG_RCX );
+    cmp_reg_imm(P_REG_RCX,0);
+    jl( &label_A );
+    amd64_add_sp(-1);
+    cmp_reg_imm(P_REG_RCX,63);
+    jle( &label_B );
+    mov_imm_reg(P_REG_RCX,63);
+  LABEL_B;
+    shr_mem_reg(sp_reg,SVAL(-1).value, P_REG_RCX);
+    jmp(&label_C);
+  LABEL_A;
+    amd64_call_c_opcode(addr, flags);
+    amd64_load_sp_reg();
+  LABEL_C;
+    }
+    return;
   case F_ADD_INTS:
     {
       ins_debug_instr_prologue(b, 0, 0);
@@ -2049,8 +2156,8 @@ void ins_f_byte(unsigned int b)
     amd64_load_sp_reg();
     mov_mem8_reg(sp_reg, -1*sizeof(struct svalue), P_REG_RAX );
     mov_mem8_reg(sp_reg, -2*sizeof(struct svalue), P_REG_RBX );
-    add_reg_reg(P_REG_RAX,P_REG_RBX);
-    test_reg32(P_REG_RAX); /* int == 0 */
+    add_reg32_reg32(P_REG_RAX,P_REG_RBX);
+    /* test_reg32(P_REG_RAX);  int == 0 */
     jnz(&label_A);
 
 #ifdef PIKE_DEBUG
