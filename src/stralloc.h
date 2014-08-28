@@ -155,7 +155,7 @@ PMOD_EXPORT p_wchar2 index_shared_string(const struct pike_string *s, ptrdiff_t 
 #define INDEX_PCHARP(X,Y) INDEX_CHARP((X).ptr,(Y),(X).shift)
 #define SET_INDEX_PCHARP(X,Y,Z) SET_INDEX_CHARP((X).ptr,(Y),(X).shift,(Z))
 #define EXTRACT_PCHARP(X) INDEX_CHARP((X).ptr,(0),(X).shift)
-#define INC_PCHARP(X,Y) (((X).ptr)+= SAL(Y, (X).shift))
+#define INC_PCHARP(X,Y) (((X).ptr) = ((char*)((X).ptr))+SAL(Y, (X).shift))
 
 #define LOW_COMPARE_PCHARP(X,CMP,Y) (((char *)((X).ptr)) CMP ((char *)((Y).ptr)))
 #define LOW_SUBTRACT_PCHARP(X,Y) (LOW_COMPARE_PCHARP((X),-,(Y))>>(X).shift)
@@ -171,7 +171,7 @@ PMOD_EXPORT p_wchar2 index_shared_string(const struct pike_string *s, ptrdiff_t 
 static INLINE PCHARP __attribute__((unused)) MKPCHARP(const void *ptr, int shift)
 {
   PCHARP tmp;
-  tmp.ptr=(p_wchar0 *)ptr;
+  tmp.ptr=(void*)ptr;
   tmp.shift=shift;
   return tmp;
 }
