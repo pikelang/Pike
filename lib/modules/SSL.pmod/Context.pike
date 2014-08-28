@@ -226,7 +226,8 @@ array(array(int)) get_signature_algorithms(array(array(int))|void signature_algo
   constant(Crypto.SHA384) && constant(Crypto.SHA224)
   return signature_algorithms;
 #else
-  return filter(signature_algorithms,
+  return [array(array(int))]
+    filter(signature_algorithms,
 		lambda(array(int) pair) {
 		  [int hash, int sign] = pair;
 #if !constant(Crypto.ECC.Curve)
