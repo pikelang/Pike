@@ -212,6 +212,12 @@ case 11:
 	return p;
     }
 
+    if ( (state->flags & JSON_FIRST_VALUE) && (c==1) )
+    {
+      state->flags &= ~JSON_ERROR;
+      return p-1;
+    }
+
     if (!(state->flags&JSON_VALIDATE) && c > 0) pop_n_elems(c);
 
     state->flags |= JSON_ERROR;
