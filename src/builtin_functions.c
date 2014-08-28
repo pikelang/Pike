@@ -8774,7 +8774,8 @@ PMOD_EXPORT void f_map(INT32 args)
 
 	 {
            struct object *o = mysp[-3].u.object;
-           int f = FIND_LFUN(o->prog->inherits[SUBTYPEOF(mysp[-3])].prog,
+           INT16 osub = SUBTYPEOF(mysp[-3]);
+           int f = FIND_LFUN(o->prog->inherits[osub].prog,
                              LFUN_CAST);
 
            if( f!=-1 )
@@ -8817,41 +8818,38 @@ PMOD_EXPORT void f_map(INT32 args)
              }
              pop_stack();
            }
+
+           /* if arr->_sizeof && arr->`[]
+              array ret; ret[i]=arr[i];
+              ret=map(ret,fun,@extra); */
+
+           f = FIND_LFUN(o->prog->inherits[osub].prog,
+                         LFUN_INDEX) |
+             FIND_LFUN(o->prog->inherits[osub].prog,
+                       LFUN__SIZEOF);
+
+           if( f != -1 )
+           {
+             struct svalue tmp;
+             TYPEOF(tmp) = PIKE_T_INT;
+             SUBTYPEOF(tmp) = 0;
+             n=pike_sizeof(mysp-3);
+             push_array(d=allocate_array(n));
+             types = 0;
+             for (i=0; i<n; i++)
+             {
+               tmp.u.integer = i;
+               object_index_no_free(ITEM(d)+i, o, osub, &tmp );
+               types |= 1 << TYPEOF(ITEM(d)[i]);
+             }
+             d->type_field = types;
+             free_svalue(mysp-3);
+             mysp[-3]=*(--Pike_sp);
+             dmalloc_touch_svalue(Pike_sp);
+             f_map(args);
+             return;
+           }
 	 }
-
-         /* if arr->_sizeof && arr->`[] 
-               array ret; ret[i]=arr[i];
-               ret=map(ret,fun,@extra); */
-
-	 /* class myarray { int a0=1,a1=2; int `[](int what) { return ::`[]("a"+what); } int _sizeof() { return 2; } } 
-	    map(myarray(),lambda(int in){ werror("in=%d\n",in); }); */
-
-	 push_svalue(mysp-3);
-	 push_constant_text("`[]");
-	 f_arrow(2);
-	 if (!UNSAFE_IS_ZERO(Pike_sp-1))
-	 {
-            n=pike_sizeof(mysp-3);
-	    push_array(d=allocate_array(n));
-	    types = 0;
-	    stack_swap();
-	    for (i=0; i<n; i++)
-	    {
-	       stack_dup(); /* `[] */
-	       push_int(i);
-	       f_call_function(2);
-	       stack_pop_to_no_free (ITEM(d) + i);
-	       types |= 1 << TYPEOF(*ITEM(d));
-	    }
-	    d->type_field = types;
-	    pop_stack();
-	    free_svalue(mysp-3);
-	    mysp[-3]=*(--Pike_sp);
-	    dmalloc_touch_svalue(Pike_sp);
-	    f_map(args);
-	    return;
-	 }
-	 pop_stack();
 
 	 SIMPLE_BAD_ARG_ERROR("map",1,
 			      "object that works in map");
