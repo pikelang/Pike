@@ -1167,24 +1167,17 @@ static void img_png_decode(INT32 args, int mode)
       f_index(2);
       switch (TYPEOF(sp[-1]))
       {
-	 case T_OBJECT:
-	    push_text("cast");
-	    if (TYPEOF(sp[-1]) == T_INT)
-	       PIKE_ERROR("_decode",
-			  "Illegal value of option \"palette\".\n",
-			  sp, args);
-	    f_index(2);
-	    push_text("array");
-	    f_call_function(2);
 	 case T_ARRAY:
 	 case T_STRING:
 	    push_object(clone_object(image_colortable_program,1));
 
+            /* Fallthrough */
+	 case T_OBJECT:
 	    ct=get_storage(sp[-1].u.object,
                            image_colortable_program);
 	    if (!ct)
 	       PIKE_ERROR("_decode",
-			  "Internal error: cloned colortable isn't colortable.\n", sp, args);
+			  "Object isn't colortable.\n", sp, args);
 	    mapping_string_insert(m, param_palette, sp-1);
 	    pop_stack();
 	    break;

@@ -889,8 +889,9 @@ double pgtk2_get_float(struct svalue *s) {
 #ifdef AUTO_BIGNUM
   if (is_bignum_object_in_svalue(s)) {
     FLOAT_TYPE f;
-    ref_push_string(literal_float_string);
-    apply(s->u.object,"cast",1);
+    ref_push_type_value(float_type_string);
+    stack_swap();
+    f_cast();
     f=Pike_sp[-1].u.float_number;
     pop_stack();
     return (double)f;
