@@ -203,19 +203,22 @@ spotless: clean_here
 
 
 depend: $(SRC_TARGETS) $(PMOD_TARGETS) Makefile
-	@gcc -MM -MG $(PREFLAGS) $(SRCDIR)/*.c | $(TMP_BINDIR)/fixdepends.sh "$(SRCDIR)" "$(PIKE_SRC_DIR)" "$(BUILD_BASE)"
-	@CONFIG_FILES=Makefile CONFIG_HEADERS="" ./config.status
-	@for a in '' $(MODULE_SUBDIRS) ; do \
-	  if test "x$$a" = "x"; then :; else \
-	    echo Making depend in $$a; \
-	    ( cd $$a && { \
-	      rm -f remake; \
-	      $(MAKE) $(MAKE_FLAGS) depend || \
-		if test -f remake; then $(MAKE) $(MAKE_FLAGS) depend; \
-		else exit $$?; fi; \
-	    }); \
-	  fi; \
-	done
+	@if [ "x$(DO_DEPEND)" = "x" ]; then \
+	  gcc -MM -MG $(PREFLAGS) $(SRCDIR)/*.c | $(TMP_BINDIR)/fixdepends.sh "$(SRCDIR)" "$(PIKE_SRC_DIR)" "$(BUILD_BASE)" ; \
+	  CONFIG_FILES=Makefile CONFIG_HEADERS="" ./config.status ; \
+	  for a in '' $(MODULE_SUBDIRS) ; do \
+	    if test "x$$a" = "x"; then :; else \
+	      echo Making depend in $$a; \
+	      ( cd $$a && { \
+	        rm -f remake; \
+	        $(MAKE) $(MAKE_FLAGS) depend || \
+		  if test -f remake; then $(MAKE) $(MAKE_FLAGS) depend; \
+		  else exit $$?; fi; \
+	      }); \
+	    fi; \
+	  done; \
+	else echo Not regenerating dependencies here.; \
+	fi
 
 pike_external_module: plib/modules
 	@$(MAKE) $(MAKE_FLAGS) LOCAL_MODULE_PATH="./plib/modules" local_install
