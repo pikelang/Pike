@@ -1,8 +1,9 @@
 @make_variables@
 VPATH=@srcdir@
-OBJS=file.o efuns.o socket.o termios.o sendfile.o udp.o stat.o
+OBJS=file.o efuns.o socket.o termios.o sendfile.o udp.o stat.o buffer.o
 MODULE_LDFLAGS=@LIBS@
 MODULE_TESTS=local_tests
+PRECOMPILER_ARGS=--api=3 --base=''
 
 CONFIG_HEADERS=@CONFIG_HEADERS@
 

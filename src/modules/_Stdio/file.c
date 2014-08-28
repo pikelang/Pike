@@ -24,7 +24,7 @@
 #include "builtin_functions.h"
 #include "gc.h"
 #include "time_stuff.h"
-
+#include "iobuffer.h"
 #include "file_machine.h"
 #include "file.h"
 #include "pike_error.h"
@@ -5879,6 +5879,7 @@ PIKE_MODULE_EXIT
 
   exit_stdio_udp();
   exit_stdio_sendfile();
+  exit_stdio_buffer();
 
   if(file_program)
   {
@@ -6087,7 +6088,7 @@ PIKE_MODULE_INIT
 
   init_stdio_efuns();
   init_stdio_stat();
-
+  init_stdio_buffer();
   START_NEW_PROGRAM_ID(STDIO_FD);
   ADD_STORAGE(struct my_file);
 
