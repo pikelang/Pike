@@ -8829,17 +8829,9 @@ PMOD_EXPORT void f_map(INT32 args)
 	 push_svalue(mysp-3);
 	 push_constant_text("`[]");
 	 f_arrow(2);
-	 push_svalue(mysp-3);
-	 push_constant_text("_sizeof");
-	 f_arrow(2);
-	 if (!UNSAFE_IS_ZERO(Pike_sp-2)&&!UNSAFE_IS_ZERO(Pike_sp-1))
+	 if (!UNSAFE_IS_ZERO(Pike_sp-1))
 	 {
-	    f_call_function(1);
-	    if (TYPEOF(Pike_sp[-1]) != T_INT)
-	       SIMPLE_BAD_ARG_ERROR("map", 1, 
-				    "object sizeof() returning integer");
-	    n=Pike_sp[-1].u.integer;
-	    pop_stack();
+            n=pike_sizeof(mysp-3);
 	    push_array(d=allocate_array(n));
 	    types = 0;
 	    stack_swap();
@@ -8859,7 +8851,6 @@ PMOD_EXPORT void f_map(INT32 args)
 	    f_map(args);
 	    return;
 	 }
-	 pop_stack();
 	 pop_stack();
 
 	 SIMPLE_BAD_ARG_ERROR("map",1,
