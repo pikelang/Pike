@@ -865,7 +865,7 @@ PIKECLASS IOBuffer
       push_string(s);
   }
 
-  /*! @decl read_int( int n )
+  /*! @decl int read_int( int n )
    *!
    *! Read a network (if n is positive) or little endian (if n is
    *! negative) byte order unsigned number of size n*8 bits, then
@@ -952,6 +952,8 @@ PIKECLASS IOBuffer
     this->malloced = 1;
   }
 
+/*! @endclass
+ */
 
   INIT {
     IOBuffer *this = THIS;
@@ -971,7 +973,6 @@ PIKECLASS IOBuffer
       free( this->buffer );
   }
 }
-
 void init_stdio_buffer(void)
 {
   INIT
