@@ -4707,7 +4707,6 @@ test_any_equal(class A { constant a=1; constant b=2; }; return map(A, `+ ,1);, (
 test_any_equal(class A { protected mixed cast(string t) { if(t=="mapping") return (["a":1,"b":2]);}}; return map(A(), `+, 1);, (["a":2,"b":3]))
 test_any_equal(class A { protected mixed cast(string t) { if(t=="array") return ({1,2,3});}}; return map(A(), `+, 1);, ({2,3,4}))
 test_any_equal(class A { protected mixed cast(string t) { if(t=="multiset") return (<1,2,3>);}}; return map(A(), `+, 1);, (<2,3,4>))
-test_any_equal([[ class A { int a0=1,a1=2; protected int `[](int what) { return ::`[]("a"+what); } protected int _sizeof() { return 2; } }; return map(A(), `+, 1);]], ({2,3}))
 test_any_equal(array a = ({({1,0,0}),({1,1,0}),({0,1,1})}); return map(a,`[],1);,
                ({0,1,1}))
 test_any_equal(array a = ({({1,0,0}),({1,1,0}),({0,1,1})}); map(a,`[]=,1,0); return a;,

@@ -302,5 +302,6 @@ test_do([[
   class A { static int foo = 1; int bar() { return foo; } }
 ]])
 
+test_any_equal([[ class A { int a0=1,a1=2; protected int `[](int what) { return ::`[]("a"+what); } protected int _sizeof() { return 2; } }; return map(A(), `+, 1);]], ({2,3}))
 
 END_MARKER

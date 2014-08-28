@@ -8818,37 +8818,6 @@ PMOD_EXPORT void f_map(INT32 args)
              }
              pop_stack();
            }
-
-           /* if arr->_sizeof && arr->`[]
-              array ret; ret[i]=arr[i];
-              ret=map(ret,fun,@extra); */
-
-           f = FIND_LFUN(o->prog->inherits[osub].prog,
-                         LFUN_INDEX) |
-             FIND_LFUN(o->prog->inherits[osub].prog,
-                       LFUN__SIZEOF);
-
-           if( f != -1 )
-           {
-             struct svalue tmp;
-             TYPEOF(tmp) = PIKE_T_INT;
-             SUBTYPEOF(tmp) = 0;
-             n=pike_sizeof(mysp-3);
-             push_array(d=allocate_array(n));
-             types = 0;
-             for (i=0; i<n; i++)
-             {
-               tmp.u.integer = i;
-               object_index_no_free(ITEM(d)+i, o, osub, &tmp );
-               types |= 1 << TYPEOF(ITEM(d)[i]);
-             }
-             d->type_field = types;
-             free_svalue(mysp-3);
-             mysp[-3]=*(--Pike_sp);
-             dmalloc_touch_svalue(Pike_sp);
-             f_map(args);
-             return;
-           }
 	 }
 
 	 SIMPLE_BAD_ARG_ERROR("map",1,
