@@ -1812,6 +1812,7 @@ void ins_f_byte(unsigned int b)
      LABEL_B;
    }
    return;
+
   case F_AND:
     {
     LABELS();
@@ -1874,16 +1875,15 @@ void ins_f_byte(unsigned int b)
     mov_mem_reg(sp_reg, SVAL(-1).value, P_REG_RCX );
     cmp_reg_imm(P_REG_RCX,0);
     jl( &label_A );
-    amd64_add_sp(-1);
     cmp_reg_imm(P_REG_RCX,63);
-    jle( &label_B );
-    mov_imm_reg(P_REG_RCX,63);
-  LABEL_B;
-    shr_mem_reg(sp_reg,SVAL(-1).value, P_REG_RCX);
-    jmp(&label_C);
+    jl( &label_B );
   LABEL_A;
     amd64_call_c_opcode(addr, flags);
     amd64_load_sp_reg();
+    jmp(&label_C);
+  LABEL_B;
+    shr_mem_reg( sp_reg, SVAL(-2).value, P_REG_RCX);
+    amd64_add_sp(-1);
   LABEL_C;
     }
     return;
