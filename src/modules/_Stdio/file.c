@@ -4876,6 +4876,10 @@ static void file_open_socket(INT32 args)
 }
 
 /*! @decl int(0..1) set_keepalive(int(0..1) on_off)
+ *!
+ *! Equivalent to setsockopt(Stdio.SO_KEEPALIVE, on_off), but will set errno
+ *! if SO_KEEPALIVE is not supported, rather than issuing a compilation error
+ *! for the missing constant.
  */
 static void file_set_keepalive(INT32 args)
 {
