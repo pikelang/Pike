@@ -286,7 +286,7 @@ void remove_document(string|Standards.URI uri, void|string language)
     return;
   
   db->query("delete from document where id in ("+a->id*","+")");
-  db->query("insert delayed into deleted_document (doc_id) values "+
+  db->query("insert into deleted_document (doc_id) values "+
 	    "("+a->id*"),("+")");
 }
 
@@ -304,7 +304,7 @@ void remove_document_prefix(string|Standards.URI uri)
   docs += sizeof(ids); // DEBUG
   db->query("DELETE FROM document "
 	    " WHERE id IN (" + (ids * ",") + ")");
-  db->query("INSERT DELAYED INTO deleted_document "
+  db->query("INSERT INTO deleted_document "
 	    "(doc_id) VALUES (" + (ids * "),(") + ")");
 }
 
@@ -639,7 +639,7 @@ void set_metadata(Standards.URI|string uri, void|string language,
 				a[0], a[1]);
 	       }) * ", ";
   
-  db->query("replace delayed into metadata (doc_id, name, value) values "+s);
+  db->query("replace into metadata (doc_id, name, value) values "+s);
 }
 
 void set_lastmodified(Standards.URI|string uri,
