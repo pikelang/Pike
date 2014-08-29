@@ -1827,6 +1827,7 @@ void ins_f_byte(unsigned int b)
     mov_mem_reg(sp_reg, SVAL(-1).value, P_REG_RAX );
     mov_mem_reg(sp_reg, SVAL(-2).value, P_REG_RBX );
     and_reg_reg(P_REG_RBX,P_REG_RAX);
+    mov_imm_mem(PIKE_T_INT,sp_reg,SVAL(-2).type);
     mov_reg_mem(P_REG_RBX,sp_reg,SVAL(-2).value);
     amd64_add_sp(-1);
     jmp(&label_B);
@@ -1851,6 +1852,7 @@ void ins_f_byte(unsigned int b)
     mov_mem_reg(sp_reg, SVAL(-1).value, P_REG_RAX );
     mov_mem_reg(sp_reg, SVAL(-2).value, P_REG_RBX );
     or_reg_reg(P_REG_RAX,P_REG_RBX);
+    mov_imm_mem(PIKE_T_INT,sp_reg,SVAL(-2).type);
     mov_reg_mem(P_REG_RBX,sp_reg,SVAL(-2).value);
     amd64_add_sp(-1);
     jmp(&label_B);
@@ -1882,6 +1884,7 @@ void ins_f_byte(unsigned int b)
     amd64_load_sp_reg();
     jmp(&label_C);
   LABEL_B;
+    mov_imm_mem(PIKE_T_INT,sp_reg,SVAL(-2).type);
     shr_mem_reg( sp_reg, SVAL(-2).value, P_REG_RCX);
     amd64_add_sp(-1);
   LABEL_C;
