@@ -326,7 +326,7 @@ class Dialog
     int height = 33;
     int transparent = 1;
     string font = "\\VSI_MS_Sans_Serif16.0_1_0";
-    static void create()
+    protected void create()
     {
       text = banner;
     }
@@ -514,7 +514,7 @@ class Dialog
     return res;
   }
 
-  static void create()
+  protected void create()
   {
     // NOTE: __INIT must have finished before the objects are cloned.
     controls = ({
@@ -578,7 +578,7 @@ class ExitDialog
       "could be installed. You need to restart the installer to try again.";
   }
 
-  static void create()
+  protected void create()
   {
     ::create();
     controls += ({ BodyText() });
@@ -663,7 +663,7 @@ class FolderDialog
     }
   }
 
-  static void create()
+  protected void create()
   {
     ::create();
     controls += ({
@@ -693,7 +693,7 @@ class ProgressDialog
     return res;
   }
 
-  static void create()
+  protected void create()
   {
     ::create();
     controls += ({
