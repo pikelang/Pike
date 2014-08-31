@@ -3401,6 +3401,10 @@ static int generate_xor(node *n)
 
 PMOD_EXPORT void o_lsh(void)
 {
+  if (sp[-1].u.integer < 0) {
+    int args = 2;
+    SIMPLE_BAD_ARG_ERROR("`<<", 2, "int(0..)|object");    
+  }
   if ((TYPEOF(sp[-1]) == T_INT) && (TYPEOF(sp[-2]) == T_INT) &&
       INT_TYPE_LSH_OVERFLOW(sp[-2].u.integer, sp[-1].u.integer))
     convert_stack_top_to_bignum();
@@ -3416,10 +3420,6 @@ PMOD_EXPORT void o_lsh(void)
     SIMPLE_BAD_ARG_ERROR("`<<", 2, "int(0..)|object");
   }
 
-  if (sp[-1].u.integer < 0) {
-    int args = 2;
-    SIMPLE_BAD_ARG_ERROR("`<<", 2, "int(0..)|object");    
-  }
   sp--;
   SET_SVAL(sp[-1], T_INT, NUMBER_NUMBER, integer,
 	   sp[-1].u.integer << sp->u.integer);
