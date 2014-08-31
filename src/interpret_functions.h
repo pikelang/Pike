@@ -1915,6 +1915,51 @@ OPCODE0_ALIAS(F_MULTIPLY, "*", I_UPDATE_SP, o_multiply);
 OPCODE0_ALIAS(F_DIVIDE, "/", I_UPDATE_SP, o_divide);
 OPCODE0_ALIAS(F_MOD, "%", I_UPDATE_SP, o_mod);
 
+OPCODE1(F_SUBTRACT_INT, "- int", 0, {
+    push_int( arg1 );
+    o_subtract();
+});
+
+OPCODE1(F_AND_INT, "& int", 0, {
+    push_int( arg1 );
+    o_and();
+});
+
+OPCODE1(F_OR_INT, "| int", 0, {
+    push_int( arg1 );
+    o_or();
+});
+
+OPCODE1(F_XOR_INT, "^ int", 0, {
+    push_int( arg1 );
+    o_xor();
+});
+
+OPCODE1(F_MULTIPLY_INT, "* int", 0, {
+    push_int( arg1 );
+    o_multiply();
+});
+
+OPCODE1(F_DIVIDE_INT, "/ int", 0, {
+    push_int( arg1 );
+    o_divide();
+});
+
+OPCODE1(F_MOD_INT, "% int", 0, {
+    push_int( arg1 );
+    o_mod();
+});
+
+OPCODE1(F_RSH_INT, ">> int", 0, {
+    push_int( arg1 );
+    o_rsh();
+});
+
+OPCODE1(F_LSH_INT, "<< int", 0, {
+    push_int( arg1 );
+    o_lsh();
+});
+
 OPCODE1(F_ADD_INT, "add integer", 0, {
   if(TYPEOF(Pike_sp[-1]) == T_INT
      && !INT_TYPE_ADD_OVERFLOW(Pike_sp[-1].u.integer, arg1))
