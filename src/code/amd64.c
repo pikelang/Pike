@@ -879,6 +879,31 @@ static void add_reg_reg( enum amd64_reg reg, enum amd64_reg reg2 )
   modrm( 3, reg2, reg );
 }
 
+/* reg *= reg2 */
+static void mul_reg_reg( enum amd64_reg reg, enum amd64_reg reg2 )
+{
+#if 0
+  /* 64b * 64b -> 128b 
+     This would actually not need an overflow check.
+     instead, push high if not zero, push low, genreate gmp.
+     but... Well.
+   */
+  if( reg2 == P_REG_RAX )
+  {
+    rex(1,0,0,reg); /* imul r/m64 */
+    opcode( 0xf7 );
+    modrm( 3,5,reg );
+  }
+  else
+#endif
+  {
+    rex(1,reg,0,reg2);
+    opcode( 0xf );
+    opcode( 0xaf );
+    modrm( 3, reg, reg2 );
+  }
+}
+
 /* reg += reg2 */
 static void add_reg32_reg32( enum amd64_reg reg, enum amd64_reg reg2 )
 {
@@ -1658,6 +1683,21 @@ static void amd64_return_from_function()
   }
 }
 
+static void if_not_two_int(struct label *to, int load)
+{
+    amd64_load_sp_reg();
+    mov_mem8_reg(sp_reg, SVAL(-1).type, P_REG_RAX );
+    mov_mem8_reg(sp_reg, SVAL(-2).type, P_REG_RBX );
+    add_reg_reg(P_REG_RAX,P_REG_RBX);
+    /*    test_reg32(P_REG_RAX); int == 0 */
+    jnz(to);
+    if( load )
+    {
+      mov_mem_reg(sp_reg, SVAL(-1).value, P_REG_RAX );
+      mov_mem_reg(sp_reg, SVAL(-2).value, P_REG_RBX );
+    }
+}
+
 void ins_f_byte(unsigned int b)
 {
   int flags;
@@ -1890,28 +1930,36 @@ void ins_f_byte(unsigned int b)
     }
     return;
 
+  case F_MULTIPLY:
+    {
+      if_not_two_int(&label_A,1);
+      mul_reg_reg(P_REG_RBX,P_REG_RAX);
+      jo(&label_A);
+      mov_imm_mem(PIKE_T_INT, sp_reg, SVAL(-2).type);
+      mov_reg_mem(P_REG_RBX,  sp_reg, SVAL(-2).value);
+      amd64_add_sp(-1);
+      jmp(&label_B);
+   LABEL_A;
+      amd64_call_c_opcode(addr, flags);
+      amd64_load_sp_reg();
+   LABEL_B;
+    }
+    return;
+
   case F_AND:
     {
-    LABELS();
-    ins_debug_instr_prologue(b, 0, 0);
-    amd64_load_sp_reg();
-    mov_mem8_reg(sp_reg, SVAL(-1).type, P_REG_RAX );
-    mov_mem8_reg(sp_reg, SVAL(-2).type, P_REG_RBX );
-    add_reg_reg(P_REG_RAX,P_REG_RBX);
-    /*    test_reg32(P_REG_RAX); int == 0 */
-    jnz(&label_A);
-    
-    mov_mem_reg(sp_reg, SVAL(-1).value, P_REG_RAX );
-    mov_mem_reg(sp_reg, SVAL(-2).value, P_REG_RBX );
-    and_reg_reg(P_REG_RBX,P_REG_RAX);
-    mov_imm_mem(PIKE_T_INT,sp_reg,SVAL(-2).type);
-    mov_reg_mem(P_REG_RBX,sp_reg,SVAL(-2).value);
-    amd64_add_sp(-1);
-    jmp(&label_B);
-   LABEL_A;
-    amd64_call_c_opcode(addr, flags);
-    amd64_load_sp_reg();
-   LABEL_B;
+      LABELS();
+      ins_debug_instr_prologue(b, 0, 0);
+      if_not_two_int(&label_A,1);
+      and_reg_reg(P_REG_RBX,P_REG_RAX);
+      mov_imm_mem(PIKE_T_INT,sp_reg,SVAL(-2).type);
+      mov_reg_mem(P_REG_RBX,sp_reg,SVAL(-2).value);
+      amd64_add_sp(-1);
+      jmp(&label_B);
+     LABEL_A;
+      amd64_call_c_opcode(addr, flags);
+      amd64_load_sp_reg();
+     LABEL_B;
     }
     return;
 
@@ -1919,15 +1967,7 @@ void ins_f_byte(unsigned int b)
     {
     LABELS();
     ins_debug_instr_prologue(b, 0, 0);
-    amd64_load_sp_reg();
-    mov_mem8_reg(sp_reg, SVAL(-1).type, P_REG_RAX );
-    mov_mem8_reg(sp_reg, SVAL(-2).type, P_REG_RBX );
-    add_reg32_reg32(P_REG_RAX,P_REG_RBX);
-    /*    test_reg32(P_REG_RAX); int == 0 */
-    jnz(&label_A);
-    
-    mov_mem_reg(sp_reg, SVAL(-1).value, P_REG_RAX );
-    mov_mem_reg(sp_reg, SVAL(-2).value, P_REG_RBX );
+    if_not_two_int(&label_A,1);
     or_reg_reg(P_REG_RAX,P_REG_RBX);
     mov_imm_mem(PIKE_T_INT,sp_reg,SVAL(-2).type);
     mov_reg_mem(P_REG_RBX,sp_reg,SVAL(-2).value);
@@ -1944,13 +1984,7 @@ void ins_f_byte(unsigned int b)
     {
     LABELS();
     ins_debug_instr_prologue(b, 0, 0);
-    amd64_load_sp_reg();
-    mov_mem8_reg(sp_reg, -1*sizeof(struct svalue), P_REG_RAX );
-    mov_mem8_reg(sp_reg, -2*sizeof(struct svalue), P_REG_RBX );
-    add_reg32_reg32(P_REG_RAX,P_REG_RBX);
-    /* test_reg32(P_REG_RAX);  int == 0 */
-    jnz(&label_A);
-
+    if_not_two_int(&label_A,0);
     mov_mem_reg(sp_reg, SVAL(-1).value, P_REG_RCX );
     cmp_reg_imm(P_REG_RCX,0);
     jl( &label_A );
@@ -1972,13 +2006,7 @@ void ins_f_byte(unsigned int b)
     {
     LABELS();
     ins_debug_instr_prologue(b, 0, 0);
-    amd64_load_sp_reg();
-    mov_mem8_reg(sp_reg, -1*sizeof(struct svalue), P_REG_RAX );
-    mov_mem8_reg(sp_reg, -2*sizeof(struct svalue), P_REG_RBX );
-    add_reg32_reg32(P_REG_RAX,P_REG_RBX);
-    /* test_reg32(P_REG_RAX);  int == 0 */
-    jnz(&label_A);
-
+    if_not_two_int(&label_A,0);
     mov_mem_reg(sp_reg, SVAL(-1).value, P_REG_RCX );
     cmp_reg_imm(P_REG_RCX,0);
     jl( &label_A );
@@ -2012,10 +2040,6 @@ void ins_f_byte(unsigned int b)
       amd64_load_sp_reg();
       mov_mem_reg( sp_reg, -sizeof(struct svalue)*2, P_REG_RAX );
       add_reg_mem( P_REG_RAX, sp_reg, -sizeof(struct svalue ) );
-#if PIKE_T_INT != 0
-#error This code assumes PIKE_T_INT is 0.
-      /* cmp_reg32_imm( P_REG_RAX, 0 ); */
-#endif
       jnz( &label_A );
       /* So. Both are actually integers. */
       mov_mem_reg( sp_reg,
@@ -2170,6 +2194,7 @@ void ins_f_byte(unsigned int b)
       amd64_free_svalue( sp_reg, 0 );
     }
     return;
+
   case F_CATCH:
     {
       /* Special argument for the F_CATCH instruction. */
@@ -2882,10 +2907,36 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
     }
     return;
 
+  case F_MULTIPLY_INT:
+    {
+      LABELS();
+      ins_debug_instr_prologue(a-F_OFFSET, b, 0);
+      amd64_load_sp_reg();
+      mov_mem8_reg(sp_reg, SVAL(-1).type, P_REG_RAX );
+      test_reg(P_REG_RAX);
+      jnz(&label_A);
+
+      /* FIXME: mul_reg_mem_imm actually exists as an instruction. */
+      mov_imm_reg(b, P_REG_RAX);
+      mov_mem_reg(sp_reg, SVAL(-1).value, P_REG_RBX );
+      mul_reg_reg(P_REG_RBX,P_REG_RAX);
+      jo(&label_A);
+
+      mov_imm_mem(PIKE_T_INT, sp_reg, SVAL(-1).type);
+      mov_reg_mem(P_REG_RBX,  sp_reg, SVAL(-1).value);
+      jmp(&label_B);
+   LABEL_A;
+     update_arg1(b);
+     amd64_call_c_opcode(instrs[a-F_OFFSET].address,
+			 instrs[a-F_OFFSET].flags);
+   LABEL_B;
+    }
+    return;
+
   case F_AND_INT:
     {
     LABELS();
-    ins_debug_instr_prologue(b, 0, 0);
+    ins_debug_instr_prologue(a-F_OFFSET,b, 0);
     amd64_load_sp_reg();
     mov_mem8_reg(sp_reg, SVAL(-1).type, P_REG_RAX );
     test_reg(P_REG_RAX);
@@ -2910,7 +2961,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
       return;
    {
     LABELS();
-    ins_debug_instr_prologue(b, 0, 0);
+    ins_debug_instr_prologue(a-F_OFFSET, b, 0);
     amd64_load_sp_reg();
     mov_mem8_reg(sp_reg, SVAL(-1).type, P_REG_RAX );
     test_reg(P_REG_RAX);
@@ -2934,12 +2985,12 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
     if( b > 0 && b <= 63 )
     {
       LABELS();
-      ins_debug_instr_prologue(b, 0, 0);
+      ins_debug_instr_prologue(a-F_OFFSET, b, 0);
       amd64_load_sp_reg();
       mov_mem8_reg(sp_reg, SVAL(-1).type, P_REG_RAX );
       test_reg32(P_REG_RAX);
       jz(&label_B);
-      LABEL_A;
+    LABEL_A;
       update_arg1(b);
       amd64_call_c_opcode(instrs[a-F_OFFSET].address,
 			  instrs[a-F_OFFSET].flags);
@@ -2951,9 +3002,10 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
        bit that stayed set when you shifted out a 1 bit. :)
     */
       mov_reg_reg( P_REG_RBX, P_REG_RAX );
-      shl_reg_imm( P_REG_RBX, P_REG_RCX);
+      shl_reg_imm( P_REG_RBX, b);
+
       mov_reg_reg( P_REG_RBX, P_REG_RDX );
-      shr_reg_imm( P_REG_RDX, P_REG_RCX );
+      shr_reg_imm( P_REG_RDX, b );
       cmp_reg_reg( P_REG_RDX, P_REG_RAX );
       jne( &label_A );
       mov_reg_mem( P_REG_RBX, sp_reg, SVAL(-1).value);
@@ -2968,7 +3020,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
     if( b > 0 && b <= 63 )
     {
       LABELS();
-      ins_debug_instr_prologue(b, 0, 0);
+      ins_debug_instr_prologue(a-F_OFFSET, b, 0);
       amd64_load_sp_reg();
       mov_mem8_reg(sp_reg, SVAL(-1).type, P_REG_RAX );
       test_reg(P_REG_RAX);
