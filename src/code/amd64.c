@@ -904,6 +904,26 @@ static void mul_reg_reg( enum amd64_reg reg, enum amd64_reg reg2 )
   }
 }
 
+/* reg /= reg2 */
+static void div_reg_reg( enum amd64_reg reg, enum amd64_reg reg2 )
+{
+  if( reg != P_REG_RAX )  Pike_error("Not supported, reg1 must be RAX\n");
+  if( reg2 == P_REG_RDX ) Pike_error("Clobbers RAX+RDX\n");
+  rex(1,0,0,0);
+  opcode(0x99); 
+  /* 
+   *cqo:
+   *sign extend 64bit rax -> 128bit in rdx:rax
+  */
+
+  rex(1,0,0,reg2);
+  opcode( 0xf7 );
+  modrm( 3, 7, reg2 );
+  /* idiv, ax = dx:ax / reg2 
+     dx = dx:ax % reg2
+  */
+}
+
 /* reg += reg2 */
 static void add_reg32_reg32( enum amd64_reg reg, enum amd64_reg reg2 )
 {
@@ -1930,8 +1950,43 @@ void ins_f_byte(unsigned int b)
     }
     return;
 
+  case F_DIVIDE:
+    {
+      LABELS();
+      if_not_two_int(&label_A,0);
+      mov_mem_reg(sp_reg, SVAL(-1).value, P_REG_RBX );
+      mov_mem_reg(sp_reg, SVAL(-2).value, P_REG_RAX );
+      cmp_reg_imm(P_REG_RBX,0);
+      je(&label_A); 
+      cmp_reg_imm(P_REG_RBX,-1);
+      jne(&label_C); 
+      cmp_reg_imm(P_REG_RAX,0);
+      jle(&label_A);
+      /* FIXME:
+
+	 Int.native_min / -1 -> exception.
+	 
+	 There is bound to be a better way.
+	 Somehow disable the exception?
+	 
+	 Some SSE alternative?
+      */
+   LABEL_C;
+      div_reg_reg(P_REG_RAX,P_REG_RBX);
+      jo(&label_A);
+      mov_imm_mem(PIKE_T_INT, sp_reg, SVAL(-2).type);
+      mov_reg_mem(P_REG_RAX,  sp_reg, SVAL(-2).value);
+      amd64_add_sp(-1);
+      jmp(&label_B);
+   LABEL_A;
+      amd64_call_c_opcode(addr, flags);
+      amd64_load_sp_reg();
+   LABEL_B;
+    }
+    return;
   case F_MULTIPLY:
     {
+      LABELS();
       if_not_two_int(&label_A,1);
       mul_reg_reg(P_REG_RBX,P_REG_RAX);
       jo(&label_A);
@@ -2906,7 +2961,6 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
       /* done */
     }
     return;
-
   case F_MULTIPLY_INT:
     {
       LABELS();
