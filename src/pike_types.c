@@ -6332,13 +6332,14 @@ struct pike_type *check_call_svalue(struct pike_type *fun_type,
   struct pike_type *tmp;
   struct pike_type *tmp2;
   INT32 array_cnt = 0;
-  int indent = 2;
 
 #ifdef PIKE_DEBUG
-  if (l_flag>2) {
-    fprintf(stderr, "%*scheck_call_svalue(", indent*2, "");
+  if (Pike_interpreter.trace_level > 2) {
+    fprintf(stderr, "    check_call_svalue(");
     simple_describe_type(fun_type);
-    fprintf(stderr, ", 0x%08x, %p)...\n", flags, sval);
+    fprintf(stderr, ", 0x%08x, ", flags);
+    debug_describe_svalue(sval);
+    fprintf(stderr, ")...\n");
   }
 #endif /* PIKE_DEBUG */
 
@@ -6480,12 +6481,12 @@ struct pike_type *check_call_svalue(struct pike_type *fun_type,
 
   if (!array_cnt || !res) {
 #ifdef PIKE_DEBUG
-    if (l_flag>2) {
+    if (Pike_interpreter.trace_level > 2) {
       if (res) {
-	fprintf(stderr, "%*s==> ", indent*2, "");
+	fprintf(stderr, "    ==> ");
 	simple_describe_type(res);
       } else {
-	fprintf(stderr, "%*s==> NULL", indent*2, "");
+	fprintf(stderr, "    ==> NULL");
       }
       fprintf(stderr, "\n");
     }
@@ -6502,8 +6503,8 @@ struct pike_type *check_call_svalue(struct pike_type *fun_type,
   res = pop_type();
 
 #ifdef PIKE_DEBUG
-  if (l_flag>2) {
-    fprintf(stderr, "%*s==> ", indent*2, "");
+  if (Pike_interpreter.trace_level > 2) {
+    fprintf(stderr, "    ==> ");
     simple_describe_type(res);
     fprintf(stderr, "\n");
   }
