@@ -1073,8 +1073,8 @@ static void js( struct label *l )  { return jump_rel8( l, 0x78 ); }
 static void jl( struct label *l )  { return jump_rel8( l, 0x7c ); }
 static void jge( struct label *l ) { return jump_rel8( l, 0x7d ); }
 static void jle( struct label *l ) { return jump_rel8( l, 0x7e ); }
-#if 0
 static void jg( struct label *l )  { return jump_rel8( l, 0x7f ); }
+#if 0
 #endif
 
 #define LABELS()  struct label label_A, label_B, label_C, label_D, label_E;label_A.addr = -1;label_A.n_label_uses = 0;label_B.addr = -1;label_B.n_label_uses = 0;label_C.addr = -1;label_C.n_label_uses = 0;label_D.addr = -1;label_D.n_label_uses = 0;label_E.addr=-1;label_E.n_label_uses=0;
@@ -1982,7 +1982,6 @@ void ins_f_byte(unsigned int b)
       */
    LABEL_C;
       div_reg_reg(P_REG_RAX,P_REG_RBX);
-      jo(&label_A);
       mov_imm_mem(PIKE_T_INT, sp_reg, SVAL(-2).type);
       if( b+F_OFFSET == F_MOD )
 	mov_reg_mem(P_REG_RDX,  sp_reg, SVAL(-2).value);
@@ -2036,6 +2035,23 @@ void ins_f_byte(unsigned int b)
     ins_debug_instr_prologue(b, 0, 0);
     if_not_two_int(&label_A,1);
     or_reg_reg(P_REG_RAX,P_REG_RBX);
+    mov_imm_mem(PIKE_T_INT,sp_reg,SVAL(-2).type);
+    mov_reg_mem(P_REG_RBX,sp_reg,SVAL(-2).value);
+    amd64_add_sp(-1);
+    jmp(&label_B);
+   LABEL_A;
+    amd64_call_c_opcode(addr, flags);
+    amd64_load_sp_reg();
+   LABEL_B;
+    }
+    return;
+
+  case F_XOR:
+    {
+    LABELS();
+    ins_debug_instr_prologue(b, 0, 0);
+    if_not_two_int(&label_A,1);
+    xor_reg_reg(P_REG_RAX,P_REG_RBX);
     mov_imm_mem(PIKE_T_INT,sp_reg,SVAL(-2).type);
     mov_reg_mem(P_REG_RBX,sp_reg,SVAL(-2).value);
     amd64_add_sp(-1);
@@ -2840,6 +2856,32 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
       return;
     }
     break; /* Fallback to C-version. */
+  case F_POP_N_ELEMS:
+    {
+      int i;
+      LABELS();
+
+      ins_debug_instr_prologue(a-F_OFFSET,b, 0);
+      amd64_load_sp_reg();
+      if( b < 3 )
+      {
+	for(i=0;i<b;i++)
+	  amd64_free_svalue_off( sp_reg, SVAL(-1-i).off, 0 );
+	amd64_add_sp( -b );
+	return;
+      }
+      break; /* use c version. */
+
+    /* FIXME: Why does not this work? */
+/*      add_reg_imm_reg( sp_reg, -SVAL(b).off, P_REG_RBX ); */
+
+/*     LABEL_A; */
+/*      amd64_free_svalue_off( sp_reg, SVAL(-1).off,0 ); */
+/*      amd64_add_sp( -1 ); */
+/*      cmp_reg_reg(P_REG_RBX,sp_reg); */
+/*      jne(&label_A); */
+    }
+    return;
   case F_RETURN_LOCAL:
     /* FIXME: The C version has a trick:
        if locals+b < expendibles, pop to there
@@ -2979,7 +3021,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
       ins_debug_instr_prologue(a-F_OFFSET, b, 0);
       amd64_load_sp_reg();
       mov_mem8_reg(sp_reg, SVAL(-1).type, P_REG_RAX );
-      test_reg(P_REG_RAX);
+      test_reg32(P_REG_RAX);
       jnz(&label_A);
 
       /* FIXME: mul_reg_mem_imm actually exists as an instruction. */
@@ -2998,6 +3040,50 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
    LABEL_B;
     }
     return;
+/*   case F_XOR_INT: */
+  case F_DIVIDE_INT:
+    if( b == 0 )
+    {
+      yyerror("Divide by constant 0\n");
+      break; 
+    }
+    {
+      LABELS();
+      ins_debug_instr_prologue(a-F_OFFSET, b, 0);
+      amd64_load_sp_reg();
+
+      mov_mem8_reg(sp_reg,SVAL(-1).type, P_REG_RAX);
+      test_reg32(P_REG_RAX);
+      jnz(&label_A);
+
+      mov_mem_reg(sp_reg, SVAL(-1).value, P_REG_RAX);
+      if( b == -1 )
+      {
+	/* 64bit imm not done. */
+	cmp_reg_imm(P_REG_RAX,-0x80000000);
+	jl(&label_A);
+      }
+      else if( a == F_MOD_INT )
+      {
+	cmp_reg_imm(P_REG_RAX, 0);
+	jl(&label_A);
+      }
+
+      mov_imm_reg(b,P_REG_RBX);
+      div_reg_reg(P_REG_RAX,P_REG_RBX);
+      mov_imm_mem(PIKE_T_INT, sp_reg, SVAL(-1).type);
+      if( a == F_MOD_INT )
+	mov_reg_mem(P_REG_RDX,  sp_reg, SVAL(-1).value);
+      else
+	mov_reg_mem(P_REG_RAX,  sp_reg, SVAL(-1).value);
+      jmp(&label_B);
+   LABEL_A;
+    update_arg1(b);
+    amd64_call_c_opcode(instrs[a-F_OFFSET].address,
+			instrs[a-F_OFFSET].flags);
+   LABEL_B;
+    }
+    return;
 
   case F_AND_INT:
     {
@@ -3005,7 +3091,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
     ins_debug_instr_prologue(a-F_OFFSET,b, 0);
     amd64_load_sp_reg();
     mov_mem8_reg(sp_reg, SVAL(-1).type, P_REG_RAX );
-    test_reg(P_REG_RAX);
+    test_reg32(P_REG_RAX);
     jnz(&label_A);
     
  /* FIXME: and_mem_imm */
@@ -3013,6 +3099,29 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
     and_reg_imm(P_REG_RAX,b);
     mov_imm_mem(PIKE_T_INT,sp_reg,SVAL(-1).type);
     mov_reg_mem(P_REG_RAX,sp_reg,SVAL(-1).value);
+    jmp(&label_B);
+   LABEL_A;
+    update_arg1(b);
+    amd64_call_c_opcode(instrs[a-F_OFFSET].address,
+			instrs[a-F_OFFSET].flags);
+   LABEL_B;
+    }
+    return;
+
+  case F_XOR_INT:
+    {
+    LABELS();
+    amd64_load_sp_reg();
+    ins_debug_instr_prologue(a,b,0);
+    mov_mem8_reg(sp_reg,SVAL(-1).type, P_REG_RAX);
+    test_reg32(P_REG_RAX);
+    jnz(&label_A);
+
+    mov_mem_reg(sp_reg,SVAL(-1).value, P_REG_RAX);
+    mov_imm_reg(b,P_REG_RBX);
+    xor_reg_reg(P_REG_RAX,P_REG_RBX);
+    mov_imm_mem(PIKE_T_INT,sp_reg,SVAL(-1).type);
+    mov_reg_mem(P_REG_RBX,sp_reg,SVAL(-1).value);
     jmp(&label_B);
    LABEL_A;
     update_arg1(b);
@@ -3030,7 +3139,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
     ins_debug_instr_prologue(a-F_OFFSET, b, 0);
     amd64_load_sp_reg();
     mov_mem8_reg(sp_reg, SVAL(-1).type, P_REG_RAX );
-    test_reg(P_REG_RAX);
+    test_reg32(P_REG_RAX);
     jnz(&label_A);
     
  /* FIXME: or_mem_imm */
@@ -3089,7 +3198,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
       ins_debug_instr_prologue(a-F_OFFSET, b, 0);
       amd64_load_sp_reg();
       mov_mem8_reg(sp_reg, SVAL(-1).type, P_REG_RAX );
-      test_reg(P_REG_RAX);
+      test_reg32(P_REG_RAX);
       jnz(&label_A);
       mov_mem_reg( sp_reg, SVAL(-1).value, P_REG_RAX);
     /* FIXME: shr_mem_imm */
@@ -3123,7 +3232,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
       mov_mem_reg(sp_reg,
                   -sizeof(struct svalue)+OFFSETOF(svalue,u.integer),
                   P_REG_RAX );
-      test_reg( P_REG_RAX );
+      test_reg32( P_REG_RAX );
       jz( &label_C );
 
       add_reg_imm( P_REG_RAX, b );
