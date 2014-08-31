@@ -763,6 +763,7 @@ PMOD_EXPORT
 PIKEFUN string int2char(int|object x)
   efun;
   optflags OPT_TRY_OPTIMIZE;
+  rawtype tFunc(tSetvar(0, tOr(tInt,tObj)), tNStr(tVar(0)));
 {
   int c;
   struct program *p;
