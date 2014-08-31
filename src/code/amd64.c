@@ -2906,8 +2906,42 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
     }
     return;
 
+  case F_LSH_INT:
+    if( b > 0 && b <= 63 )
+    {
+      LABELS();
+      ins_debug_instr_prologue(b, 0, 0);
+      amd64_load_sp_reg();
+      mov_mem8_reg(sp_reg, -1*sizeof(struct svalue), P_REG_RAX );
+      test_reg32(P_REG_RAX);
+      jz(&label_B);
+      LABEL_A;
+      update_arg1(b);
+      amd64_call_c_opcode(instrs[a-F_OFFSET].address,
+			  instrs[a-F_OFFSET].flags);
+      jmp(&label_C);
+    LABEL_B;
+      mov_imm_mem(PIKE_T_INT,sp_reg,SVAL(-2).type);
+      mov_mem_reg( sp_reg, SVAL(-2).value, P_REG_RBX);
+    /* ok. It would have been nice is sal set a
+       bit that stayed set when you shifted out a 1 bit. :)
+    */
+      mov_reg_reg( P_REG_RBX, P_REG_RAX );
+      shl_reg_imm( P_REG_RBX, P_REG_RCX);
+      mov_reg_reg( P_REG_RBX, P_REG_RDX );
+      shr_reg_imm( P_REG_RDX, P_REG_RCX );
+      cmp_reg_reg( P_REG_RDX, P_REG_RAX );
+      jne( &label_A );
+      mov_reg_mem( P_REG_RBX, sp_reg, SVAL(-2).value);
+      amd64_add_sp(-1);
+  LABEL_C;
+    }
+    if(!b) return;
+    if( b < 0 )
+      yyerror("<< with negative constant\n");
+    break;
   case F_RSH_INT:
-    if( b >= 0 && b <= 63 )
+    if( b > 0 && b <= 63 )
     {
       LABELS();
       ins_debug_instr_prologue(b, 0, 0);
