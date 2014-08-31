@@ -3210,7 +3210,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
       update_arg1(b);
       amd64_call_c_opcode(instrs[a-F_OFFSET].address,
 			  instrs[a-F_OFFSET].flags);
-    LABEL_C;
+    LABEL_B;
     return;
     }
     if(!b) return;
