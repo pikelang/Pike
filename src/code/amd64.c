@@ -457,14 +457,12 @@ static void clear_reg( enum amd64_reg reg )
   xor_reg_reg( reg, reg );
 }
 
-#if 0
 static void neg_reg( enum amd64_reg reg )
 {
   rex(1,0,0,reg);
   opcode(0xf7);
   modrm(3,3,reg);
 }
-#endif
 
 static void mov_imm_reg( long imm, enum amd64_reg reg )
 {
@@ -1951,11 +1949,18 @@ void ins_f_byte(unsigned int b)
     return;
 
   case F_DIVIDE:
+  case F_MOD:
     {
       LABELS();
       if_not_two_int(&label_A,0);
       mov_mem_reg(sp_reg, SVAL(-1).value, P_REG_RBX );
       mov_mem_reg(sp_reg, SVAL(-2).value, P_REG_RAX );
+      if( b+F_OFFSET == F_MOD )
+      {
+	cmp_reg_imm(P_REG_RAX, 0 );
+	/* FIXME: Emulate pikes % functionality. */
+	jl(&label_A);
+      }
       cmp_reg_imm(P_REG_RBX,0);
       je(&label_A); 
       cmp_reg_imm(P_REG_RBX,-1);
@@ -1966,16 +1971,23 @@ void ins_f_byte(unsigned int b)
 
 	 Int.native_min / -1 -> exception.
 	 
+	 This checks for -<whatever> / -1.
+
 	 There is bound to be a better way.
 	 Somehow disable the exception?
 	 
-	 Some SSE alternative?
+	 Some SSE alternative that does not throw?
+
+	 Perhaps a 64/64->64 instead of the current 128/64->64?
       */
    LABEL_C;
       div_reg_reg(P_REG_RAX,P_REG_RBX);
       jo(&label_A);
       mov_imm_mem(PIKE_T_INT, sp_reg, SVAL(-2).type);
-      mov_reg_mem(P_REG_RAX,  sp_reg, SVAL(-2).value);
+      if( b+F_OFFSET == F_MOD )
+	mov_reg_mem(P_REG_RDX,  sp_reg, SVAL(-2).value);
+      else
+	mov_reg_mem(P_REG_RAX,  sp_reg, SVAL(-2).value);
       amd64_add_sp(-1);
       jmp(&label_B);
    LABEL_A;
