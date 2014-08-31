@@ -80,7 +80,7 @@ static INLINE int __attribute__((unused)) DO_ ## type ## _MOD_OVERFLOW(type a, t
 }                                                                                       \
 static INLINE int __attribute__((unused)) type ## _LSH_OVERFLOW(type a, type b) {                               \
     type size = (type)sizeof(type)*CHAR_BIT;                                            \
-    return (b < 0 || b >= size || a < 0 || (b && (a >> (size - 1 - b))));           \
+    return (b < 0 || b >= size || ((a<<b)>>b)!=a);			\
 }                                                                                       \
  static INLINE int __attribute__((unused)) type ## _RSH_OVERFLOW(type UNUSED(a), type b) { \
    return b>=(type)sizeof(type)*CHAR_BIT;					\
