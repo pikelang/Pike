@@ -1853,11 +1853,11 @@ void ins_f_byte(unsigned int b)
     mov_mem8_reg(sp_reg, SVAL(-1).type, P_REG_RAX );
     test_reg32(P_REG_RAX);
     jz(&label_B);
+    jmp(&label_A);
    LABEL_D;
     neg_mem(sp_reg, SVAL(-1).value );
    LABEL_A;
     amd64_call_c_opcode(addr, flags);
-    amd64_load_sp_reg();
     jmp(&label_C);
    LABEL_B;
      neg_mem(sp_reg, SVAL(-1).value );
