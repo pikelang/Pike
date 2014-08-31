@@ -585,6 +585,13 @@ static void neg_mem( enum amd64_reg reg, int off )
   offset_modrm_sib( off, 3, reg );
 }
 
+static void not_mem( enum amd64_reg reg, int off )
+{
+  rex( 1, 0, 0, reg );
+  opcode(0xf7);
+  offset_modrm_sib( off, 2, reg );
+}
+
 static void add_reg_imm( enum amd64_reg reg, int imm32 )
 {
   if( !imm32 ) return;
@@ -1866,6 +1873,23 @@ void ins_f_byte(unsigned int b)
     }
     return;
 
+  case F_COMPL:
+    {
+    LABELS();
+    ins_debug_instr_prologue(b, 0, 0);
+    amd64_load_sp_reg();
+    mov_mem8_reg(sp_reg, SVAL(-1).type, P_REG_RAX );
+    test_reg32(P_REG_RAX);
+    jz(&label_B);
+   LABEL_A;
+    amd64_call_c_opcode(addr, flags);
+    jmp(&label_C);
+   LABEL_B;
+     not_mem(sp_reg, SVAL(-1).value );
+   LABEL_C;
+    }
+    return;
+
   case F_AND:
     {
     LABELS();
@@ -2871,7 +2895,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
     mov_mem_reg(sp_reg, SVAL(-1).value, P_REG_RAX );
     and_reg_imm(P_REG_RAX,b);
     mov_imm_mem(PIKE_T_INT,sp_reg,SVAL(-1).type);
-    mov_reg_mem(P_REG_RBX,sp_reg,SVAL(-1).value);
+    mov_reg_mem(P_REG_RAX,sp_reg,SVAL(-1).value);
     jmp(&label_B);
    LABEL_A;
     update_arg1(b);
