@@ -567,12 +567,14 @@ test_any([[return sprintf("%O", typeof(sprintf("foo%c", 17))); ]],
 	 "string(17..17 | 102..111)");
 test_any([[return sprintf("%O", typeof(sprintf("%2c\n", 'a'))); ]],
 	 "string(8bit)");
+dnl Note the following tests the return type of int2char().
 test_any([[return sprintf("%O", typeof(sprintf("%c",  1023))); ]],
 	 "string(1023..1023)");
 test_any([[return sprintf("%O", typeof(sprintf("%c\n",  1023))); ]],
 	 "string(10..10 | 1023..1023)");
+dnl The following is due to (string & sprintf_result) == sprintf_result.
 test_any([[return sprintf("%O", typeof(sprintf("%c\n",  Stdio))); ]],
-	 "string");
+	 sprintf("%O", sprintf_result));
 test_any([[return sprintf("%O", typeof(sprintf("%4[1]c", 17))); ]],
 	 "string(8bit)");
 test_any([[return sprintf("%O", typeof(sprintf("%[1]n", 17))); ]],
