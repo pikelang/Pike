@@ -1207,6 +1207,31 @@ PIKECLASS IOBuffer
     push_int(-1);
   }
 
+/*! @decl string _encode()
+ *! @decl void _decode(string x)
+ *!
+ *! Encode and decode Stdio.IOBuffer objects.
+ *! Only the buffer data is kept, no other state is saved.
+ */
+  PIKEFUN string _encode()
+  {
+    struct pike_string * s = io_read_string(THIS, io_len(THIS));
+    push_string(s);
+  }
+
+  PIKEFUN void _decode(string(0..255) x)
+  {
+    IOBuffer *this = THIS;
+    if( this->buffer )
+      Pike_error("Can not initialize twice.\n");
+    if( x->size_shift )
+      Pike_error("Can not handle non-8bit data.\n");
+    this->buffer = (unsigned char*)x->str;
+    this->len = x->len;
+    this->malloced = 0;
+    this->str = x;
+    x->refs++;
+  }
 
   /*! @decl void read_only()
    *!
