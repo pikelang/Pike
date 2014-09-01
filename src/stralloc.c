@@ -3177,10 +3177,8 @@ PMOD_EXPORT void free_string_builder(struct string_builder *s)
 PMOD_EXPORT struct pike_string *finish_string_builder(struct string_builder *s)
 {
   ptrdiff_t len = s->s->len;
-  if (len != s->malloced) {
-    s->s->len = s->malloced;
-    s->s = realloc_unlinked_string(s->s, len);
-  }
+  if (len != s->malloced)
+    s->s = realloc_unlinked_string(s->s, s->malloced = len);
   else
     /* Ensure NUL-termination */
     low_set_index(s->s,s->s->len,0);
