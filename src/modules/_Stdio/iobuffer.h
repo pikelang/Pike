@@ -6,9 +6,10 @@ struct _IOBuffer
   size_t len, allocated; /* writing */
 
   struct object *sub, *source;
+  struct program *error_mode;
   struct pike_string *str;
-  char malloced, error_mode;
   INT32 locked;
+  char malloced;
 };
 typedef struct _IOBuffer IOBuffer;
 

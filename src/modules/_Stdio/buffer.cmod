@@ -90,9 +90,11 @@ PIKECLASS IOBuffer
 {
   CVAR IOBuffer b;
 
-  static void io_set_error_mode( IOBuffer *io, int m )
+  static void io_set_error_mode( IOBuffer *io, struct program *m )
   {
-    io->error_mode = m;
+      if( m ) m->refs++;
+      if( io->error_mode ) free_program( io->error_mode );
+      io->error_mode = m;
   }
 
   static size_t io_len( IOBuffer *io )
@@ -188,7 +190,7 @@ PIKECLASS IOBuffer
         push_text("Trying to read %d outside allowed range\n");
         push_int(howmuch);
         f_sprintf(2);
-        push_object(clone_object(buffer_error_program, 1));
+        push_object(clone_object(io->error_mode, 1));
         f_throw(1);
     }
   }
@@ -348,7 +350,7 @@ PIKECLASS IOBuffer
    *!
    *! Read data from @[f] into this buffer.
    */
-  PIKEFUN int input_from( object f )
+  PIKEFUN int(0..) input_from( object f )
   {
     IOBuffer *io = THIS;
     size_t sz = io_len( io );
@@ -408,7 +410,7 @@ PIKECLASS IOBuffer
    *!
    *! Will return the number of bytes that were successfully written.
    */
-  PIKEFUN int output_to( object f )
+  PIKEFUN int(0..) output_to( object f )
   {
     IOBuffer *io = THIS;
     size_t sz = io_len( io );
@@ -466,7 +468,7 @@ PIKECLASS IOBuffer
     RETURN written;
   }
 
-  PIKEFUN int _size_object( )
+  PIKEFUN int(0..) _size_object( )
   {
       RETURN THIS->malloced ? THIS->allocated : 0;
   }
@@ -481,7 +483,7 @@ PIKECLASS IOBuffer
    *! and
    *! @[add_hstring]
    */
-  PIKEFUN int add( object|string|int ... argp)
+  PIKEFUN int(0..) add( object|string|int ... argp)
   {
     int i;
     IOBuffer *io = THIS;
@@ -531,13 +533,13 @@ PIKECLASS IOBuffer
    *! @decl int add_int8( int(0..255) )
    *! Adds a single byte to the buffer.
    */
-  PIKEFUN int add_byte( int(0..255) i )
+  PIKEFUN int(0..) add_byte( int i )
   {
     unsigned char a = i&255;
     RETURN io_append( THIS, &a, 1 );
   }
 
-  PIKEFUN int add_int8( int(0..255) i )
+  PIKEFUN int(0..) add_int8( int i )
   {
     unsigned char a = i&255;
     RETURN io_append( THIS, &a, 1 );
@@ -548,13 +550,13 @@ PIKECLASS IOBuffer
    *!
    *! Add a 16-bit network byte order value to the buffer
    */
-  PIKEFUN int add_int16( int(0..65535) i )
+  PIKEFUN int(0..) add_int16( int i )
   {
     unsigned short a = htons((i&65535));
     push_int(io_append( THIS, &a, 2 ));
   }
 
-  PIKEFUN int add_short( int(0..65535) i )
+  PIKEFUN int(0..) add_short( int i )
   {
     unsigned short a = htons((i&65535));
     RETURN io_append( THIS, &a, 2 );
@@ -563,7 +565,7 @@ PIKECLASS IOBuffer
   /*! @decl int add_int32( int i )
    *! Adds a 32 bit network byte order value to the buffer
    */
-  PIKEFUN int add_int32( int i )
+  PIKEFUN int(0..) add_int32( int i )
   {
     INT32 a = htonl(i);
     push_int(io_append( THIS, &a, 4 ));
@@ -578,7 +580,7 @@ PIKECLASS IOBuffer
    *!
    *! @[size_size] must be less than Int.NATIVE_MAX.
    */
-  PIKEFUN int add_hstring( string str, int size_size )
+  PIKEFUN int(0..) add_hstring( string str, int size_size )
   {
     if( str->size_shift )
       Pike_error("Only 8bit is supported\n");
@@ -602,12 +604,12 @@ PIKECLASS IOBuffer
    *! @[width] must be less than Int.NATIVE_MAX.
    *!
    */
-  PIKEFUN int add_int( int i, int width )
+  PIKEFUN int(0..) add_int( int i, int width )
   {
     RETURN io_add_int( THIS, i, width );
   }
 
-  PIKEFUN int add_int( object o, int width )
+  PIKEFUN int(0..) add_int( object o, int width )
   {
     char *p;
     int extra, len;
@@ -640,7 +642,7 @@ PIKECLASS IOBuffer
    *!
    *! Return the character at the specified offset.
    */
-  PIKEFUN int `[]( int off )
+  PIKEFUN int(0..255) `[]( int off )
     flags ID_PROTECTED;
   {
     IOBuffer *io = THIS;
@@ -658,7 +660,7 @@ PIKECLASS IOBuffer
    *!
    *! Set the character at the specified offset to @[char].
    */
-  PIKEFUN int `[]=( int off, int val )
+  PIKEFUN int(0..255) `[]=( int off, int val )
     flags ID_PROTECTED;
   {
     IOBuffer *io = THIS;
@@ -683,7 +685,7 @@ PIKECLASS IOBuffer
    *! Returns the buffer size, in bytes.
    *! This is how much you can read from the buffer until it runs out of data.
    */
-  PIKEFUN int _sizeof()
+  PIKEFUN int(0..) _sizeof()
     flags ID_PROTECTED;
   {
     push_int64(io_len(THIS));
@@ -696,7 +698,7 @@ PIKECLASS IOBuffer
    *!@note
    *! This only works for buffers whose length is less than 0x7fffffff.
    */
-  PIKEFUN string cast(string to)
+  PIKEFUN string(0..255) cast(string to)
   {
     if( to != literal_string_string )
     {
@@ -711,11 +713,13 @@ PIKECLASS IOBuffer
 
 
   /*! @decl void set_error_mode(int m)
+   *! @decl void set_error_mode(program m)
    *!
    *! Set the error mode of this buffer to @[m].
    *!
-   *! If true operations that would normally return 0 (like trying to read too much)
-   *! will instead thrown an error.
+   *! If true operations that would normally return 0 (like trying to
+   *! read too much) will instead throw an error. If @[m] is a program
+   *! a clone of it will be thrown on error.
    *!
    *! This is useful when parsing received data, you do not have to
    *! verify that each and every read operation suceeds.
@@ -758,10 +762,15 @@ PIKECLASS IOBuffer
    *! }
    *! @endcode
    */
-  PIKEFUN void set_error_mode( int m )
+  PIKEFUN void set_error_mode( int|program m )
   {
-    io_set_error_mode( THIS, m );
-    pop_stack();
+      if( TYPEOF(*m) == PIKE_T_INT )
+          io_set_error_mode( THIS, m->u.integer ? buffer_error_program : 0 );
+      else
+      {
+          io_set_error_mode( THIS, program_from_svalue(m));
+      }
+      pop_stack();
   }
 
   /*! @decl object lock()
@@ -776,7 +785,7 @@ PIKECLASS IOBuffer
     push_object( io_read_buffer( THIS, 0, 0 ) );
   }
 
-  PIKEFUN string _sprintf(int o, mapping ignore)
+  PIKEFUN string(0..255) _sprintf(int o, mapping ignore)
     flags ID_PROTECTED;
   {
     pop_n_elems(args);
@@ -813,7 +822,7 @@ PIKECLASS IOBuffer
    *!
    *! Note that pike string can not be longer than 0x7fffffff bytes (~2Gb).
    */
-  PIKEFUN string(0..255) read_hstring( int(0..) bytes )
+  PIKEFUN string(0..255) read_hstring( int bytes )
   {
     LONGEST len;
     struct pike_string *s;
@@ -845,7 +854,7 @@ PIKECLASS IOBuffer
    *!  If you need to unlink the new buffer after it has been
    *!  created, call @[trim] in it.
    */
-  PIKEFUN IOBuffer read_hbuffer( int(0..) bytes, int|void copy )
+  PIKEFUN IOBuffer read_hbuffer( int bytes, int|void copy )
   {
     LONGEST len = io_read_number( THIS, bytes );
     int do_copy = 0;
@@ -894,7 +903,7 @@ PIKECLASS IOBuffer
    *! This is somewhat faster than add(sprintf(...)) since no
    *! intermediate string is created.
    */
-  PIKEFUN int sprintf(mixed ... ignored)
+  PIKEFUN int(0..) sprintf(mixed ... ignored)
     rawtype tFuncV(tAttr("strict_sprintf_format", tOr(tStr, tObj)),
                    tAttr("sprintf_args", tMix), tStr);
   {
@@ -1037,7 +1046,7 @@ PIKECLASS IOBuffer
    *!  buffer->match("%*[ \t\r\n]%*[^ \t\r\n]");
    *! @endcode
    */
-  PIKEFUN string|int|float|array match( string format )
+  PIKEFUN string(0..255)|int|float|array match( string format )
   {
     INT32 i;
     ptrdiff_t num_used;
@@ -1128,7 +1137,7 @@ PIKECLASS IOBuffer
    *!
    *! You can call @[undread(0)] to see how much.
    */
-  PIKEFUN int(-1..) unread( int(0..) bytes )
+  PIKEFUN int(-1..) unread( int bytes )
   {
     push_int64( io_rewind( THIS, bytes ) );
   }
@@ -1139,7 +1148,7 @@ PIKECLASS IOBuffer
    *!
    *! If there is not enough data available this returns 0.
    */
-  PIKEFUN string(0..255) read( int(0..) bytes )
+  PIKEFUN string(0..255) read( int bytes )
   {
     struct pike_string * s = io_read_string(THIS, bytes );
     pop_stack();
@@ -1176,7 +1185,7 @@ PIKECLASS IOBuffer
    *! Will return -1 if there is not enough buffer space available
    *! unless error mode is set to throw errors.
    */
-  PIKEFUN int read_int( int len )
+  PIKEFUN int(0..) read_int( int len )
   {
     IOBuffer *io = THIS;
     struct object *o;
@@ -1342,6 +1351,8 @@ PIKECLASS IOBuffer
       free_object( this->source );
     if( this->str )
       free_string( this->str );
+    if( this->error_mode )
+        free_program( this->error_mode );
     if( this->malloced )
       free( this->buffer );
   }
