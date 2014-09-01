@@ -24,6 +24,42 @@
 #define DEFAULT_CMOD_STORAGE static
 DECLARATIONS
 
+
+static struct program *shm_program, *sbuf_program;
+static struct sysmem *system_memory(struct object *o)
+{
+  if( !shm_program )
+  {
+    push_text("System.Memory");
+    SAFE_APPLY_MASTER("resolv", 1);
+    shm_program = program_from_svalue(Pike_sp - 1);
+    if (!shm_program)
+      return 0;
+    Pike_sp--;
+  }
+  return get_storage( o, shm_program );
+};
+
+struct sysmem {
+  unsigned char *p;
+  size_t size;
+};
+
+static struct string_builder *string_buffer(struct object *o)
+{
+  if( !sbuf_program )
+  {
+    push_text("String.Buffer");
+    SAFE_APPLY_MASTER("resolv", 1);
+    sbuf_program = program_from_svalue(Pike_sp - 1);
+    if (!sbuf_program)
+      return 0;
+    Pike_sp--;
+  }
+  return get_storage( o, sbuf_program );
+};
+
+
 /*! @module Stdio
  */
 
@@ -35,8 +71,19 @@ DECLARATIONS
  *! the beginning and adding to the end, and will try to minimize the
  *! amount of data copying that is done.
  *!
- *! It can also directly read from and write to filedescriptors if so
- *! desired. This eliminates at least one memory copy.
+ *! The class maintains two separate offsets, one for reading and one
+ *! for writing. The functions that add data all do so at the write
+ *! offset (the end of the buffer), and reading is done from the read
+ *! offset (the start of the buffer).
+ *!
+ *! The class can also be used to directly read from and write to
+ *! filedescriptors if so desired. This eliminates at least one memory
+ *! copy.
+ *!
+ *! @note
+ *!  The "avoid copy" part means that a IOBuffer will never shrink
+ *!  unless you call the @[trim] function.
+ *!
  */
 PIKECLASS IOBuffer
 {
@@ -106,7 +153,9 @@ PIKECLASS IOBuffer
         io_unlock( get_storage(io->sub,IOBuffer_program ) );
         free_object( io->sub );
       }
+      if( io->source ) free_object( io->source );
       if( io->str ) free_string( io->str );
+      io->source = 0;
       io->sub = 0;
       io->str = 0;
       io->malloced = 1;
@@ -167,7 +216,7 @@ PIKECLASS IOBuffer
   {
     struct pike_string *s;
     if( !io_avail(io,len))
-      return NULL;
+     return NULL;
 
     if( len > 0x7fffffff )
       Pike_error("This region is too large to convert to a string.\n");
@@ -288,13 +337,71 @@ PIKECLASS IOBuffer
 #undef THIS
 #define THIS (&(((struct IOBuffer_struct *)Pike_fp->current_storage)->b))
 
-  /*! @decl void write_to( Stdio.Strem f )
+  /*! @decl int input_from( Stdio.Stream f )
+   *!
+   *! Read data from @[f] into this buffer.
+   */
+  PIKEFUN int input_from( object f )
+  {
+    IOBuffer *io = THIS;
+    size_t sz = io_len( io );
+    size_t bread = 0;
+    struct my_file *fd;
+
+    if( (fd = get_storage( f, file_program )) )
+    {
+      while( 1 )
+      {
+        unsigned char *ptr = io_add_space( io, 4096, 0 );
+        int res;
+
+
+        io_lock(io);
+        {
+            THREADS_ALLOW();
+            res = fd_read( fd->box.fd, ptr, 4096 );
+            THREADS_DISALLOW();
+        }
+        io_unlock(io);
+
+        if( res == -1 && errno == EINTR )
+          continue;
+
+        if( res <= 0 )
+          break;
+
+        io->len += res;
+        bread += res;
+        if( res != 4096 )
+            break;
+      }
+      io_unlock(io);
+    }
+    else
+    {
+      /* some other object. Just call write */
+      while( 1 )
+      {
+        push_int( 4096 );
+        safe_apply( f, "read", 1 );
+        if( TYPEOF(Pike_sp[-1]) != PIKE_T_STRING || Pike_sp[-1].u.string->len == 0 )
+          break;
+        if( Pike_sp[-1].u.string->size_shift )
+            Pike_error("Can not handle non-8bit data\n");
+        io_append( io, Pike_sp[-1].u.string->str, Pike_sp[-1].u.string->len );
+        pop_stack();
+      }
+    }
+    RETURN bread;
+  }
+
+  /*! @decl int output_to( Stdio.Strem f )
    *!
    *! Write data from the buffer to the indicated file.
    *!
    *! Will return the number of bytes that were successfully written.
    */
-  PIKEFUN int write_to( object f )
+  PIKEFUN int output_to( object f )
   {
     IOBuffer *io = THIS;
     size_t sz = io_len( io );
@@ -354,20 +461,20 @@ PIKECLASS IOBuffer
 
   PIKEFUN int _size_object( )
   {
-    RETURN THIS->malloced ? THIS->allocated : 0;
+      RETURN THIS->malloced ? THIS->allocated : 0;
   }
 
-/*  PIKEFUN void add( object(String.IOBuffer) x[, int len[,int start]] )*/
-/*  PIKEFUN void add( object(String.Buffer) x[, int len[,int start]] )  */
-/*  PIKEFUN void add( System.Memory x[, int len[,int start]] ) */
-
-
-  /*! @decl void add( string(8bit)|int(8bit) ... data )
+  /*! @decl void add( System.Memory|Stdio.IOBuffer|String.Buffer|string(8bit)|int(8bit) ... data )
    *!
-   *! Add the items in data one at a time.
+   *! Add the items in data to the end of the buffer.
    *! Integers are assumed to be 8bit numbers (characters)
+   *!
+   *! @see also
+   *! @[sprintf], @[add_int8], @[add_int16], @[add_int32], @[add_int]
+   *! and
+   *! @[add_hstring]
    */
-  PIKEFUN int add( string|int ... argp)
+  PIKEFUN int add( object|string|int ... argp)
   {
     int i;
     IOBuffer *io = THIS;
@@ -378,6 +485,31 @@ PIKECLASS IOBuffer
         struct pike_string *s = argp[i].u.string;
         if( s->size_shift ) Pike_error("IOBuffer only handles 8bit data\n");
         io_append( io, s->str, s->len );
+      }
+      else if( TYPEOF(argp[i]) == PIKE_T_OBJECT )
+      {
+          struct object *x = argp[i].u.object;
+          IOBuffer *src;
+          struct string_builder *b;
+          struct sysmem *s;
+
+          if( (src = get_storage(x, IOBuffer_program)) )
+          {
+              io_append( io, io_read_pointer(src), io_len(src) );
+              io_consume( src, io_len(src) );
+          }
+          else if( (b = string_buffer( x )) )
+          {
+              if( b->s->size_shift )
+                  Pike_error("Only string(0..255) supported\n");
+              io_append( io, b->s->str, b->s->len );
+          }
+          else if( (s = system_memory( x )) )
+          {
+              io_append( io, s->p, s->size );
+          }
+          else
+              Pike_error("Unsupported object type\n");
       }
       else
       {
@@ -651,7 +783,7 @@ PIKECLASS IOBuffer
       push_int(THIS->len-1);
       push_int(THIS->len);
       push_int(THIS->allocated);
-      push_text( (THIS->str ? "string" : THIS->sub ? "subbuffer" : "allocated" ) );
+      push_text( (THIS->str ? "string" : THIS->malloced ? "allocated" : "subbuffer" ) );
       if( THIS->locked )
         push_text(" (read only)");
       else
@@ -881,7 +1013,6 @@ PIKECLASS IOBuffer
     }
   }
 
-
   /*! @decl mixed match(string(8bit) format)
    *!
    *! Reads data from the beginning of the buffer to match the
@@ -1060,16 +1191,45 @@ PIKECLASS IOBuffer
     push_int(-1);
   }
 
-  /*! @decl void create( string(8bit) x )
+
+  /*! @decl void read_only()
    *!
-   *! Create a new buffer with the contents of the given
-   *! string.
+   *! Make the buffer permanently read only.
+   *! @note
+   *! You can use lock() to do this temporarily.
+   */
+  PIKEFUN void read_only()
+  {
+    io_lock( THIS );
+  }
+
+  /*! @decl void create( int|void len )
+   *! @decl void create( string(8bit) contents )
+   *! @decl void create( System.Memory|String.Buffer contents )
+   *!
+   *! If passed an integer or no argument, create a buffer of that
+   *! size, or if no argument is given, 4Kb.
+   *!
+   *! If @[contents] are specified a new buffer with the contents of
+   *! the given string/System.Memory or String.Buffer will be created.
    *!
    *! @note
-   *! This will not copy the string data, instead data will
-   *! be read from the string until it needs to be modified, so the
-   *! buffer creation is fast regardless of the length of the
+   *! In the @[String.Buffer] case the data has to be copied unless
+   *! there is only one reference to the String.Buffer object, since
+   *! modifications of the String.Buffer would cause the IOBuffer to
+   *! point into invalid memory.
+   *!
+   *! In all other cases this will not copy the string data, instead
+   *! data will be read from the source until it needs to be modified,
+   *! so the buffer creation is fast regardless of the length of the
    *! string.
+   *!
+   *! However, as an example, if the buffer is created with a 100Gb
+   *! @[System.Memory] mmap:ed file as the @[contents] and you later on
+   *! try to modify the buffer using one of the @[add] functions (or
+   *! @[sprintf] and similar) the old contents @b{will@} be copied.
+   *!
+   *! You can use @[read_only()] to avoid accidents.
    */
   PIKEFUN void create( string x )
     flags ID_PROTECTED;
@@ -1086,14 +1246,54 @@ PIKECLASS IOBuffer
     x->refs++;
   }
 
-  /*! @decl void create( int|void len )
-   *!
-   *! Create a new buffer of the given size.
-   *! The buffer will grow if needed, so the length is only the
-   *! initial size.
-   *!
-   *! The default initial size is 4K
-   */
+  PIKEFUN void create( object x )
+    flags ID_PROTECTED;
+  {
+    IOBuffer *this = THIS, *io;
+    struct sysmem *s;
+    struct string_builder *b;
+
+    if( this->buffer )
+      Pike_error("Can not initialize twice. Use add to add more data\n");
+
+    this->malloced = 0;
+
+    if( (b = string_buffer( x )) )
+    {
+      if( b->s->size_shift )
+        Pike_error("Only string(0..255) supported\n");
+      if( x->refs == 1 )
+      {
+        this->source = x;
+        this->buffer = (void*)b->s->str;
+        this->len = b->s->len;
+        this->source->refs++;
+      }
+      else
+      {
+        this->buffer = (void*)b->s->str;
+        this->len = b->s->len;
+        io_add_space(this,0,0);
+      }
+    }
+    else if( (s = system_memory( x )) )
+    {
+      this->source = x;
+      this->buffer = s->p;
+      this->len = s->size;
+      this->source->refs++;
+    }
+    else if( (io = get_storage(x,IOBuffer_program)) )
+    {
+      this->buffer = io_read_pointer(io);
+      this->len = io_len(io);
+      this->sub = x;
+      io_lock(io);
+    }
+    else
+      Pike_error("Expected String.Buffer or System.Memory as object argument 1\n");
+  }
+
   PIKEFUN void create( int len )
     flags ID_PROTECTED;
   {
@@ -1131,6 +1331,8 @@ PIKECLASS IOBuffer
       free_object( this->sub );
       io_unlock( get_storage(this->sub,IOBuffer_program ) );
     }
+    if( this->source )
+      free_object( this->source );
     if( this->str )
       free_string( this->str );
     if( this->malloced )
@@ -1145,6 +1347,8 @@ void init_stdio_buffer(void)
 
 void exit_stdio_buffer(void)
 {
+  if( shm_program )  free_program( shm_program );
+  if( sbuf_program ) free_program( sbuf_program );
   EXIT
 }
 /*! @endmodule
