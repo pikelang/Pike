@@ -3040,7 +3040,8 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
    LABEL_B;
     }
     return;
-/*   case F_XOR_INT: */
+
+  case F_MOD_INT:
   case F_DIVIDE_INT:
     if( b == 0 )
     {
@@ -3141,7 +3142,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
     mov_mem8_reg(sp_reg, SVAL(-1).type, P_REG_RAX );
     test_reg32(P_REG_RAX);
     jnz(&label_A);
-    
+
  /* FIXME: or_mem_imm */
     mov_mem_reg(sp_reg, SVAL(-1).value, P_REG_RAX );
     or_reg_imm(P_REG_RAX,b);
@@ -3216,7 +3217,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
     if(!b) return;
     if( b < 0 )
       yyerror(">> with negative constant\n");
-  break;
+    break;
 
   case F_SUBTRACT_INT:
   case F_ADD_NEG_INT:
@@ -3226,19 +3227,14 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
       LABELS();
       ins_debug_instr_prologue(a-F_OFFSET, b, 0);
       amd64_load_sp_reg();
-      mov_mem16_reg( sp_reg, -sizeof(struct svalue), P_REG_RAX );
-      cmp_reg32_imm( P_REG_RAX,PIKE_T_INT );
-      jne( &label_A );
-      mov_mem_reg(sp_reg,
-                  -sizeof(struct svalue)+OFFSETOF(svalue,u.integer),
-                  P_REG_RAX );
-      test_reg32( P_REG_RAX );
-      jz( &label_C );
-
+      mov_mem8_reg( sp_reg,SVAL(-1).type, P_REG_RAX );
+      test_reg32(P_REG_RAX);
+      jnz( &label_A );
+      mov_mem_reg(sp_reg, SVAL(-1).value,P_REG_RAX );
       add_reg_imm( P_REG_RAX, b );
       jo( &label_A ); /* if overflow, use f_add */
-      mov_reg_mem( P_REG_RAX,sp_reg,
-                   -sizeof(struct svalue)+OFFSETOF(svalue,u.integer));
+      mov_imm_mem( PIKE_T_INT, sp_reg, SVAL(-1).type );
+      mov_reg_mem( P_REG_RAX, sp_reg, SVAL(-1).value );
       jmp(&label_B); /* all done. */
 
       LABEL_A;
@@ -3246,12 +3242,6 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
       update_arg1(2);
       amd64_call_c_opcode( f_add, I_UPDATE_SP );
       amd64_load_sp_reg();
-      jmp( &label_B );
-      LABEL_C;
-      // int, and 0, we need to set it to b and clear subtype
-      mov_imm_mem( PIKE_T_INT, sp_reg, -sizeof(struct svalue ) );
-      mov_imm_mem( b, sp_reg,
-                   -sizeof(struct svalue )+OFFSETOF(svalue,u.integer) );
       LABEL_B;
     }
     return;
