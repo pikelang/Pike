@@ -22,40 +22,37 @@ protected class structError
 //! String buffer with the possibility to read and write data
 //! as they would be formatted in structs.
 class struct {
-
-  string(0..255) buffer;
-  int index;
+  inherit Stdio.IOBuffer;
 
   //! Create a new buffer, optionally initialized with the
   //! value @[s].
   void create(void|string(0..255) s)
   {
-    buffer = s || "";
-    index = 0;
+     if( s && strlen(s) )
+         ::create(s);
+     else
+         ::create();
+     set_error_mode(structError);
   }
 
   //! Trims the buffer to only contain the data after the
   //! read pointer and returns the contents of the buffer.
   string(0..255) contents()
   {
-    buffer = buffer[index..];
-    index = 0;
-    return buffer;
+      return (string(8bit))this;
   }
 
   //! Adds the data @[s] verbatim to the end of the buffer.
   this_program add_data(string(0..255) s)
   {
-    buffer += s;
+    add(s);
     return this;
   }
 
   //! Return all the data in the buffer and empties it.
   string(0..255) pop_data()
   {
-    string(0..255) res = buffer;
-    create();
-    return res;
+    return read();
   }
 
   //! Appends an unsigned integer in network order to the buffer.
@@ -66,9 +63,7 @@ class struct {
   //!    Length of integer in bytes.
   this_program put_uint(int i, int(0..) len)
   {
-    if (i<0)
-      throw(structError("Negative argument.\n"));
-    add_data([string(0..255)]sprintf("%*c", len, i));
+    add_int(i,len);
     return this;
   }
 
@@ -77,7 +72,7 @@ class struct {
   //! string @[s] should be 8 bits wide.
   this_program put_var_string(string(0..255) s, int(0..) len_width)
   {
-    add_data([string(0..255)]sprintf("%*H", len_width, s));
+    add_hstring(s,len_width);
     return this;
   }
 
@@ -86,16 +81,14 @@ class struct {
   //! of the string. @[len_width] defaults to 2.
   this_program put_bignum(Gmp.mpz i, int(0..)|void len_width)
   {
-    if (i<0)
-      throw(structError("Negative argument.\n"));
-    put_var_string(i->digits(256), len_width || 2);
+    add_hstring(i->digits(256),len_width||2);
     return this;
   }
 
   //! Appends the fix sized string @[s] to the buffer.
   this_program put_fix_string(string(0..255) s)
   {
-    add_data(s);
+    add(s);
     return this;
   }
 
@@ -104,7 +97,7 @@ class struct {
   this_program put_fix_uint_array(array(int) data, int(0..) item_size)
   {
     foreach(data, int i)
-      put_uint(i, item_size);
+      add_int(i, item_size);
     return this;
   }
 
@@ -113,7 +106,7 @@ class struct {
   //! the size of the array in bytes.
   this_program put_var_uint_array(array(int) data, int(0..) item_size, int(0..) len)
   {
-    put_uint(sizeof(data)*item_size, len);
+    add_int(sizeof(data)*item_size, len );
     put_fix_uint_array(data, item_size);
     return this;
   }
@@ -123,56 +116,42 @@ class struct {
   //! declaring the total size of the array in bytes.
   this_program put_var_string_array(array(string(8bit)) data, int(0..) item_size, int(0..) len)
   {
-    string(8bit) temp = buffer;
-    buffer = "";
+    Stdio.IOBuffer sub = Stdio.IOBuffer();
     foreach(data, string(8bit) s)
-      put_var_string(s, item_size);
-    string(8bit) arr = buffer;
-    buffer = temp;
-    put_var_string(arr, len);
+      sub->add_hstring(s, item_size);
+    add_int(sizeof(sub),len);
+    add(sub);
     return this;
   }
 
   //! Reads an unsigned integer from the buffer.
   int(0..) get_uint(int len)
   {
-    int(0..) i;
-    if ( (sizeof(buffer) - index) < len)
-      throw(structError("No data.\n"));
-    sscanf(buffer, "%*" + (string) index +"s%" + (string) len + "c", i);
-    index += len;
-    return i;
+    return read_int(len);
   }
 
   //! Reads a fixed sized string of length @[len] from the buffer.
   string(0..255) get_fix_string(int len)
   {
-    if ((sizeof(buffer) - index) < len)
-      throw(structError("No data\n"));
-
-    string(0..255) res = buffer[index .. index + len - 1];
-    index += len;
-    return res;
+     return read(len);
   }
 
   //! Reads a string written by @[put_var_string] from the buffer.
   string(0..255) get_var_string(int len)
   {
-    return get_fix_string(get_uint(len));
+     return read_hstring(len);
   }
 
   //! Reads a bignum written by @[put_bignum] from the buffer.
   Gmp.mpz get_bignum(int|void len)
   {
-    return Gmp.mpz(get_var_string(len || 2), 256);
+      return Gmp.mpz(read_hstring(len||2),256);
   }
 
   //! Get the remaining data from the buffer and clears the buffer.
   string(0..255) get_rest()
   {
-    string(0..255) s = buffer[index..];
-    create();
-    return s;
+    return read();
   }
 
   //! Reads an array of integers as written by @[put_fix_uint_array]
@@ -181,7 +160,7 @@ class struct {
   {
     array(int) res = allocate(size);
     for(int i = 0; i<size; i++)
-      res[i] = get_uint(item_size);
+      res[i] = read_int(item_size);
     return res;
   }
 
@@ -189,46 +168,16 @@ class struct {
   //! from the buffer.
   array(int) get_var_uint_array(int item_size, int len)
   {
-    int size = get_uint(len);
+    int size = read_int(len);
     int elems = size/item_size;
     if( elems*item_size != size )
       throw(structError("Impossible uint array length value.\n"));
     return get_fix_uint_array(item_size, elems);
   }
 
-  //! Returns one of there is any more data to read.
+  //! Returns one if there is any more data to read.
   int(0..1) is_empty()
   {
-    return (index == sizeof(buffer));
-  }
-
-  protected int(0..) _sizeof()
-  {
-    return [int(0..)](sizeof(buffer)-index);
-  }
-
-  array _encode()
-  {
-    return ({index, buffer});
-  }
-
-  void _decode(mixed x)
-  {
-    if( !arrayp(x) )
-      error("Illegal object encoding.\n");
-    array a = [array]x;
-    if( !sizeof(a)==2 ||
-        !intp(a[0]) ||
-        !stringp(a[1]) ||
-        String.range([string]a[1])[0]<0 ||
-        String.range([string]a[1])[1]>255 )
-      error("Illegal object encoding.\n");
-    index = [int]a[0];
-    buffer = [string(8bit)]a[1];
-  }
-
-  protected string _sprintf(int t)
-  {
-    return t=='O' && sprintf("%O(%O)", this_program, _sizeof());
+    return !sizeof(this);
   }
 }
