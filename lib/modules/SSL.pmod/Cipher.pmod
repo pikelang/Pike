@@ -711,8 +711,33 @@ class KeyExchangeDHE
     anonymous = 1;
     struct = ADT.struct();
 
-    // Default to using MODP Group 24 (2048/256 bits).
-    dh_state = .Cipher.DHKeyExchange(Crypto.DH.MODPGroup24);
+    // NIST SP800-57 5.6.1
+    // { symmetric key length, p limit, q limit }
+    constant nist_strength = ({
+      ({ 80,   1024, 160 }),
+      ({ 112,  2048, 224 }),
+      ({ 128,  3072, 256 }),
+      ({ 192,  7680, 384 }),
+      ({ 256, 15360, 511 }),
+    });
+    int key_strength = CIPHER_effective_keylengths
+      [ CIPHER_SUITES[ session->cipher_suite ][1] ];
+    int target_p, target_q;
+    foreach(nist_strength, [int key, target_p, target_q])
+      if( key_strength <= key ) break;
+
+    Crypto.DH.Parameters p;
+    foreach( context->dh_groups, Crypto.DH.Parameters o )
+    {
+      if( !p || o->p->size()>p->p->size() ||
+          (o->p->size()==p->p->size() && o->q->size()>p->q->size()) )
+        p = o;
+      if( p->p->size() >= target_p && p->q->size() >= target_q )
+        break;
+    }
+
+    if(!p) error("No suitable DH group in Context.\n");
+    dh_state = DHKeyExchange(p);
     dh_state->new_secret(context->random);
 
     struct->put_bignum(dh_state->parameters->p);

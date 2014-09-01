@@ -164,6 +164,14 @@ array(int) preferred_suites;
 //! Supported elliptical curve cipher curves in order of preference.
 array(int) ecc_curves = reverse(sort(indices(ECC_CURVES)));
 
+//! Supported DH groups for DHE key exchanges, in order of preference.
+//! Defaults to MODP Group 24 (2048/256 bits) from RFC 5114 section
+//! 2.3.
+array(Crypto.DH.Parameters) dh_groups = ({
+  Crypto.DH.MODPGroup24, // MODP Group 24 (2048/256 bits).
+});
+
+
 //! The set of <hash, signature> combinations to use by us.
 //!
 //! Only used with TLS 1.2 and later.
