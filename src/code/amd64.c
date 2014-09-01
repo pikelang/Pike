@@ -1925,6 +1925,7 @@ void ins_f_byte(unsigned int b)
     amd64_call_c_opcode(addr, flags);
     jmp(&label_C);
    LABEL_B;
+     mov_imm_mem(PIKE_T_INT, sp_reg, SVAL(-1).type );
      neg_mem(sp_reg, SVAL(-1).value );
      jo(&label_D);
    LABEL_C;
@@ -1948,23 +1949,23 @@ void ins_f_byte(unsigned int b)
     }
     return;
 
-  case F_DIVIDE:
   case F_MOD:
+  case F_DIVIDE:
     {
       LABELS();
       if_not_two_int(&label_A,0);
       mov_mem_reg(sp_reg, SVAL(-1).value, P_REG_RBX );
       mov_mem_reg(sp_reg, SVAL(-2).value, P_REG_RAX );
+      cmp_reg_imm(P_REG_RAX, 0 );  jl(&label_A);
       if( b+F_OFFSET == F_MOD )
       {
-	cmp_reg_imm(P_REG_RAX, 0 );
-	/* FIXME: Emulate pikes % functionality. */
-	jl(&label_A);
+        /* Emulates pikes % functionality. */
+        cmp_reg_imm(P_REG_RBX, 0 );  jl(&label_A);
       }
       cmp_reg_imm(P_REG_RBX,0);
-      je(&label_A); 
+      je(&label_A);
       cmp_reg_imm(P_REG_RBX,-1);
-      jne(&label_C); 
+      jne(&label_C);
       cmp_reg_imm(P_REG_RAX,0);
       jle(&label_A);
       /* FIXME:
@@ -3042,6 +3043,8 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
     return;
 
   case F_MOD_INT:
+    if( b < 0 )
+      break;
   case F_DIVIDE_INT:
     if( b == 0 )
     {
@@ -3060,14 +3063,14 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
       mov_mem_reg(sp_reg, SVAL(-1).value, P_REG_RAX);
       if( b == -1 )
       {
-	/* 64bit imm not done. */
-	cmp_reg_imm(P_REG_RAX,-0x80000000);
-	jl(&label_A);
+        /* 64bit imm not done. */
+        cmp_reg_imm(P_REG_RAX,-0x80000000);
+        jle(&label_A);
       }
-      else if( a == F_MOD_INT )
+      /*if( a == F_MOD_INT )*/
       {
-	cmp_reg_imm(P_REG_RAX, 0);
-	jl(&label_A);
+        cmp_reg_imm(P_REG_RAX, 0);
+        jl(&label_A);
       }
 
       mov_imm_reg(b,P_REG_RBX);
