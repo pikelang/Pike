@@ -155,7 +155,7 @@ START_MARKER
   test_true(Gmp.mpz(3)->probably_prime_p(), 0)
   test_false(Gmp.mpz(4)->probably_prime_p(), 0)
   test_false(Gmp.mpz("100000000000000000")->probably_prime_p(), 0)
-
+  test_false(Gmp.mpz("100000000000000000")->probably_prime_p(10), 0)
 
   // binops
   test_eq(Gmp.mpz("17") == "foo", 0)

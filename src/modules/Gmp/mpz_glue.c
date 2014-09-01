@@ -1713,10 +1713,16 @@ CMPEQU(mpzmod_lt, "`<", <, RET_UNDEFINED)
  */
 CMPEQU(mpzmod_eq, "`==", ==, RET_UNDEFINED)
 
-/*! @decl int(0..1) probably_prime_p()
+/*! @decl int(0..1) probably_prime_p(int count)
  *!
  *! Return 1 if this mpz object is a prime, and 0 most of the time if
  *! it is not.
+ *!
+ *! @param count
+ *!   The prime number testing is using Donald Knuth's probabilistic
+ *!   primality test. The chance for a false positive is
+ *!   pow(0.25,count). The higher value, the more probable it is that
+ *!   the number is a prime. Default value is 25.
  */
 static void mpzmod_probably_prime_p(INT32 args)
 {
@@ -2329,7 +2335,7 @@ static void pike_mp_free (void *ptr, size_t UNUSED(size))
   ADD_FUNCTION("cast_to_float",mpzmod_get_float,tDeprecated(tFunc(tNone,tFlt)),0);    \
 									\
   ADD_FUNCTION("probably_prime_p",mpzmod_probably_prime_p,		\
-	       tFunc(tNone,tInt01),0);					\
+               tFunc(tOr(tVoid,tIntPos),tInt01),0);                     \
   ADD_FUNCTION("small_factor", mpzmod_small_factor,			\
 	       tFunc(tOr(tInt,tVoid),tInt), 0);				\
   ADD_FUNCTION("next_prime", mpzmod_next_prime,				\
