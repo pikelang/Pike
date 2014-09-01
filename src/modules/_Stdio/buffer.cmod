@@ -1,4 +1,6 @@
 #include "global.h"
+#include "fdlib.h"
+#include "pike_netlib.h"
 #include "object.h"
 #include "interpret.h"
 #include "operators.h"
@@ -6,8 +8,14 @@
 #include "sscanf.h"
 #include "builtin_functions.h"
 #include "port.h"
+#include "interpret.h"
+#include "backend.h"
+#include "fd_control.h"
+#include "file_machine.h"
+#include "file.h"
 #include "whitespace.h"
 #include "pike_types.h"
+#include "pike_threadlib.h"
 #include "iobuffer.h"
 #include "module_support.h"
 
@@ -15,6 +23,9 @@
 
 #define DEFAULT_CMOD_STORAGE static
 DECLARATIONS
+
+/*! @module Stdio
+ */
 
 /*! @class IOBuffer
  *!
@@ -276,6 +287,70 @@ PIKECLASS IOBuffer
 
 #undef THIS
 #define THIS (&(((struct IOBuffer_struct *)Pike_fp->current_storage)->b))
+
+  /*! @decl void write_to( Stdio.Strem f )
+   *!
+   *! Write data from the buffer to the indicated file.
+   *!
+   *! Will return the number of bytes that were successfully written.
+   */
+  PIKEFUN int write_to( object f )
+  {
+    IOBuffer *io = THIS;
+    size_t sz = io_len( io );
+    size_t written = 0;
+    struct my_file *fd;
+    INT_TYPE *wr = &Pike_sp->u.integer;
+
+    if( (fd = get_storage( f, file_program )) )
+    {
+      /* lock this object. */
+      io_lock(io);
+
+      THREADS_ALLOW();
+      while( sz > written )
+      {
+        size_t rd = MIN(sz-written,4096);
+        unsigned char *ptr = io_read_pointer( io );
+        int res;
+
+        res = fd_write( fd->box.fd, ptr, rd );
+        if( res == -1 && errno == EINTR )
+          continue;
+        if( res <= 0 )
+          break;
+        io_consume( io, res );
+        written += res;
+      }
+      THREADS_DISALLOW();
+      io_unlock(io);
+    }
+    else
+    {
+      /* some other object. Just call write */
+      while( sz > written )
+      {
+        size_t rd = MIN(sz-written,4096);
+        struct pike_string *s = io_read_string( io, rd );
+        if( !s )
+          break;
+        push_string(s);
+        /* when this throws we need to rewind the buffer correctly. */
+        safe_apply(f, "write", 1);
+        if( *wr <= 0 ){
+          io_rewind(io, rd );
+          break;
+        }
+        written += *wr;
+        if( *wr < 4096 ) {
+          io_rewind(io, rd-*wr );
+          break;
+        }
+        pop_stack();
+      }
+    }
+    RETURN written;
+  }
 
   PIKEFUN int _size_object( )
   {
@@ -1072,3 +1147,5 @@ void exit_stdio_buffer(void)
 {
   EXIT
 }
+/*! @endmodule
+ */
