@@ -780,10 +780,9 @@ class KeyExchangeDHE
     SSL3_DEBUG_MSG("KE_DHE\n");
     Gmp.mpz p = input->get_bignum();
     Gmp.mpz g = input->get_bignum();
-    Gmp.mpz order = [object(Gmp.mpz)]((p-1)/2); // FIXME: Is this correct?
     temp_struct->put_bignum(p);
     temp_struct->put_bignum(g);
-    dh_state = DHKeyExchange(Crypto.DH.Parameters(p, g, order));
+    dh_state = DHKeyExchange(Crypto.DH.Parameters(p, g));
     dh_state->set_other(input->get_bignum());
     temp_struct->put_bignum(dh_state->other);
 
