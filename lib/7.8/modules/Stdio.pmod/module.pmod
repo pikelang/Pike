@@ -7,7 +7,7 @@
 //! proxy functions defined in @[_Stdio.Fd_ref],
 //! instead of accessing the file descriptors directly.
 
-//! @decl inherit 7.8::Stdio
+//! @decl inherit 7.9::Stdio
 
 //! @ignore
 inherit Stdio.module;
