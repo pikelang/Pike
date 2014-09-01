@@ -594,7 +594,7 @@ class KeyExchangeDH
 {
   inherit KeyExchange;
 
-  .Cipher.DHKeyExchange dh_state; /* For diffie-hellman key exchange */
+  DHKeyExchange dh_state; /* For diffie-hellman key exchange */
 
   ADT.struct server_key_params()
   {
@@ -605,8 +605,7 @@ class KeyExchangeDH
     anonymous = 1;
     struct = ADT.struct();
 
-    dh_state =
-      .Cipher.DHKeyExchange(Crypto.DH.Parameters(session->private_key));
+    dh_state = DHKeyExchange(Crypto.DH.Parameters(session->private_key));
     dh_state->secret = session->private_key->get_x();
 
     // RFC 4346 7.4.3:
@@ -633,7 +632,7 @@ class KeyExchangeDH
     anonymous = 1;
     if (!dh_state) {
       dh_state =
-	.Cipher.DHKeyExchange(Crypto.DH.Parameters(session->peer_public_key));
+	DHKeyExchange(Crypto.DH.Parameters(session->peer_public_key));
       dh_state->other = session->peer_public_key->get_y();
     }
     dh_state->new_secret(context->random);
@@ -784,7 +783,7 @@ class KeyExchangeDHE
     Gmp.mpz order = [object(Gmp.mpz)]((p-1)/2); // FIXME: Is this correct?
     temp_struct->put_bignum(p);
     temp_struct->put_bignum(g);
-    dh_state = .Cipher.DHKeyExchange(Crypto.DH.Parameters(p, g, order));
+    dh_state = DHKeyExchange(Crypto.DH.Parameters(p, g, order));
     dh_state->set_other(input->get_bignum());
     temp_struct->put_bignum(dh_state->other);
 
