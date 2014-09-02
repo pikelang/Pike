@@ -1619,9 +1619,9 @@ cont_2:
 
 	if(fsp->precision<0) {
 	  double m=pow(10.0, (double)fsp->precision);
-	  tf = RINT(tf*m)/m;
+	  tf = rint(tf*m)/m;
 	} else if (fsp->precision==0) {
-	  tf = RINT(tf);
+	  tf = rint(tf);
         }
 
 	debug_malloc_touch(x);
