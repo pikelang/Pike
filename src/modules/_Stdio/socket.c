@@ -223,7 +223,7 @@ static void port_listen_fd(INT32 args)
 }
 
 /*! @decl int bind(int|string port, void|function accept_callback, @
- *!                void|string ip)
+ *!                void|string ip, void|string reuse_port)
  *!
  *! Opens a socket and binds it to port number on the local machine.
  *! If the second argument is present, the socket is set to
@@ -238,6 +238,8 @@ static void port_listen_fd(INT32 args)
  *! bind to all IPv4 and IPv6 addresses.
  *!
  *! If the OS supports TCP_FASTOPEN it is enabled automatically.
+ *!
+ *! If the OS supports SO_REUSEPORT it is enabled if the fourth argument is true.
  *!
  *! @returns
  *!   1 is returned on success, zero on failure. @[errno] provides
@@ -262,10 +264,11 @@ static void port_bind(INT32 args)
       Pike_sp[-args].u.string->size_shift))
     SIMPLE_BAD_ARG_ERROR("bind", 1, "int|string(8bit)");
 
-  addr_len = get_inet_addr(&addr, (args > 2 && TYPEOF(Pike_sp[2-args])==PIKE_T_STRING?
-				   Pike_sp[2-args].u.string->str : NULL),
-			   (TYPEOF(Pike_sp[-args]) == PIKE_T_STRING?
-			    Pike_sp[-args].u.string->str : NULL),
+  addr_len = get_inet_addr(&addr,
+                           (args > 2 && TYPEOF(Pike_sp[2-args])==PIKE_T_STRING?
+                            Pike_sp[2-args].u.string->str : NULL),
+                           (TYPEOF(Pike_sp[-args]) == PIKE_T_STRING?
+                            Pike_sp[-args].u.string->str : NULL),
 			   (TYPEOF(Pike_sp[-args]) == PIKE_T_INT?
 			    Pike_sp[-args].u.integer : -1), 0);
   INVALIDATE_CURRENT_TIME();
@@ -279,7 +282,21 @@ static void port_bind(INT32 args)
     push_int(0);
     return;
   }
-
+#ifdef SO_REUSEPORT
+  if( args > 3 && Pike_sp[3-args].u.integer )
+  {
+    int o=1;
+    if(fd_setsockopt(fd, SOL_SOCKET, SO_REUSEPORT, (char *)&o, sizeof(int)) < 0)
+    {
+      p->my_errno=errno;
+      while (fd_close(fd) && errno == EINTR) {}
+      errno = p->my_errno;
+      pop_n_elems(args);
+      push_int(0);
+      return;
+    }
+  }
+#endif
 #ifndef __NT__
   {
     int o=1;
