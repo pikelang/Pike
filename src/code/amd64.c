@@ -457,12 +457,14 @@ static void clear_reg( enum amd64_reg reg )
   xor_reg_reg( reg, reg );
 }
 
+#if 0
 static void neg_reg( enum amd64_reg reg )
 {
   rex(1,0,0,reg);
   opcode(0xf7);
   modrm(3,3,reg);
 }
+#endif
 
 static void mov_imm_reg( long imm, enum amd64_reg reg )
 {
@@ -1073,8 +1075,8 @@ static void js( struct label *l )  { return jump_rel8( l, 0x78 ); }
 static void jl( struct label *l )  { return jump_rel8( l, 0x7c ); }
 static void jge( struct label *l ) { return jump_rel8( l, 0x7d ); }
 static void jle( struct label *l ) { return jump_rel8( l, 0x7e ); }
-static void jg( struct label *l )  { return jump_rel8( l, 0x7f ); }
 #if 0
+static void jg( struct label *l )  { return jump_rel8( l, 0x7f ); }
 #endif
 
 #define LABELS()  struct label label_A, label_B, label_C, label_D, label_E;label_A.addr = -1;label_A.n_label_uses = 0;label_B.addr = -1;label_B.n_label_uses = 0;label_C.addr = -1;label_C.n_label_uses = 0;label_D.addr = -1;label_D.n_label_uses = 0;label_E.addr=-1;label_E.n_label_uses=0;
