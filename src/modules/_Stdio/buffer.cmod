@@ -252,20 +252,13 @@ PIKECLASS IOBuffer
       }
   }
 
-  static struct pike_string *range_error_s;
   static int io_range_error( IOBuffer *io, int howmuch )
   {
       int res;
       struct svalue *osp = Pike_sp;
 
-      if(!range_error_s)
-          range_error_s = make_shared_string( "range_error" );
-
       push_int( howmuch );
-      apply_low(io->this,
-          really_low_find_shared_string_identifier
-            (range_error_s, io->this->prog, SEE_PROTECTED),
-          1);
+      apply_current( f_IOBuffer_range_error_fun_num, 1 );
       res = Pike_sp[-1].u.integer;
       pop_n_elems( Pike_sp-osp );
       if( !res ) io_range_error_throw( io, howmuch );
@@ -1579,7 +1572,6 @@ void exit_stdio_buffer(void)
   if( shm_program )  free_program( shm_program );
   if( sbuf_program ) free_program( sbuf_program );
   free_program( buffer_error_program );
-  if( range_error_s )  free_string(range_error_s);
   EXIT
 }
 /*! @endmodule
