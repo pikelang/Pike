@@ -4588,7 +4588,6 @@ AC_CHECK_FUNCS( \
  sigvec \
  strcasecmp \
  strnlen \
- strncmp \
  strchr \
  strcspn \
  strerror \

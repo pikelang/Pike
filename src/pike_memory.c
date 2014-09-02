@@ -2924,7 +2924,7 @@ static LOCATION low_dynamic_location(char type, const char *file,
   for(prev = dstrhash + h; (str=*prev); prev = &str->next)
   {
     if(hval == str->hval &&
-       !STRNCMP(str->str+1, file, len) &&
+       !strncmp(str->str+1, file, len) &&
        str->str[len+1]==':' &&
        LOCATION_TYPE (str->str) == type &&
        STRTOL(str->str+len+2, NULL, 10) == line)

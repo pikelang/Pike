@@ -186,11 +186,7 @@ PMOD_EXPORT size_t STRNLEN(const char *a,size_t len);
 #  define STRNLEN strnlen
 #endif
 
-#ifndef HAVE_STRNCMP
-PMOD_EXPORT int STRNCMP(const char *a, const char *b, size_t len);
-#else
-#  define STRNCMP strncmp
-#endif
+#define STRNCMP strncmp
 
 #ifndef HAVE_MEMSET
 void *MEMSET (void *s,int c,size_t n);

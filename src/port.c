@@ -374,17 +374,6 @@ size_t STRNLEN(const char *s, size_t maxlen)
 }
 #endif
 
-#ifndef HAVE_STRNCMP
-int STRNCMP(const char *a, const char *b, size_t maxlen)
-{
-  size_t alen=STRNLEN(a,maxlen);
-  size_t blen=STRNLEN(b,maxlen);
-  int ret=MEMCMP(a,b, alen < blen ? alen : blen);
-  if(ret) return ret;
-  return DO_NOT_WARN((int)(alen - blen));
-}
-#endif
-
 #ifndef HAVE_MEMSET
 void *MEMSET(void *s,int c,size_t n)
 {
