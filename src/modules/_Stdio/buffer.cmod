@@ -132,14 +132,14 @@ PIKECLASS IOBuffer
 
   static int io_is_whitespace( IOBuffer *io, size_t pos )
   {
-   if( pos > io_len( io ) )
-      return -1;
-    switch( io->buffer[io->offset+pos] )
-    {
-      SPACECASE8
-        return 1;
-    }
-    return 0;
+      if( pos > io_len( io ) )
+          return -1;
+      switch( io->buffer[io->offset+pos] )
+      {
+          SPACECASE8
+              return 1;
+      }
+      return 0;
   }
 
   static unsigned char *io_add_space( IOBuffer *io, int bytes, int force )
@@ -203,19 +203,19 @@ PIKECLASS IOBuffer
    *! The argument @[howmuch] indicates how much data is needed:
    *!
    *! @dl
-   *! @dt int(1..) howmuch
+   *! @item int(1..) howmuch
    *! Need @[howmuch] bytes more
-   *! @dt int(0..0) howmuch
+   *! @item int(0..0) howmuch
    *!  The amount of data needed is not certain.
    *!  This most often happens when  @[sscanf] or @[read_json] is used
-   *! @dt int(..-1) howmuch=...
+   *! @item int(..-1) howmuch=...
    *!  Tried to @[unread] X bytes. There is usually no way to satisfy
    *!  the requested range.
    *!
    *! The only supported way is to extract the data from the buffer,
    *! add the requested amount of "go backbuffer", add the data
    *! back, and forward -@[howmuch] bytes.
-   *! @enddt
+   *! @enddl
    *!
    *! @returns
    *!
@@ -425,6 +425,40 @@ PIKECLASS IOBuffer
     return io->offset;
   }
 
+  static void io_append_byte_uc( IOBuffer *io, unsigned char byte )
+  {
+      io->buffer[io->len++] = byte;
+  }
+
+  static void io_append_short_uc( IOBuffer *io, unsigned short shrt )
+  {
+      *((short *)(io->buffer+io->len)) = htons(shrt);
+      io->len+=2;
+  }
+
+  static void io_append_int_uc( IOBuffer *io, unsigned INT32 i )
+  {
+      *((INT32 *)(io->buffer+io->len)) = htonl(i);
+      io->len+=4;
+  }
+
+  static INT_TYPE get_small_int( struct svalue *s )
+  {
+      if( TYPEOF(*s) == PIKE_T_INT )
+          return s->u.integer;
+      if( is_bignum_object_in_svalue( s ) )
+      {
+          INT64 i64;
+          if( int64_from_bignum( &i64, s->u.object ) )
+              return i64;
+          Pike_error("Too big bignum\n");
+      }
+      Pike_error("Non integer in array\n");
+  }
+
+
+
+
   /* pike functions */
 
 #undef THIS
@@ -563,7 +597,7 @@ PIKECLASS IOBuffer
    *! Add the items in data to the end of the buffer.
    *! Integers are assumed to be 8bit numbers (characters)
    *!
-   *! @see also
+   *! @seealso
    *! @[sprintf], @[add_int8], @[add_int16], @[add_int32], @[add_int]
    *! and
    *! @[add_hstring]
@@ -614,8 +648,8 @@ PIKECLASS IOBuffer
     ref_push_object(io->this);
   }
 
-  /*! @decl int add_byte( int(0..255) )
-   *! @decl int add_int8( int(0..255) )
+  /*! @decl IOBuffer add_byte( int(0..255) )
+   *! @decl IOBuffer add_int8( int(0..255) )
    *! Adds a single byte to the buffer.
    */
   PIKEFUN IOBuffer add_byte( int i )
@@ -632,8 +666,8 @@ PIKECLASS IOBuffer
     ref_push_object(Pike_fp->current_object);
   }
 
-  /*! @decl int add_int16( int(0..65535) )
-   *! @decl int add_short( int(0..65535) )
+  /*! @decl IOBuffer add_int16( int(0..65535) )
+   *! @decl IOBuffer add_short( int(0..65535) )
    *!
    *! Add a 16-bit network byte order value to the buffer
    */
@@ -651,7 +685,7 @@ PIKECLASS IOBuffer
     ref_push_object(Pike_fp->current_object);
   }
 
-  /*! @decl int add_int32( int i )
+  /*! @decl IOBuffer add_int32( int i )
    *! Adds a 32 bit network byte order value to the buffer
    */
   PIKEFUN int(0..) add_int32( int i )
@@ -661,7 +695,7 @@ PIKECLASS IOBuffer
     ref_push_object(Pike_fp->current_object);
   }
 
-  /*! @decl void add_hstring( string(0..255) data, int size_size )
+  /*! @decl IOBuffer add_hstring( string(0..255) data, int size_size )
    *!
    *! Adds length/data for @[data] to the buffer.
    *!
@@ -729,6 +763,58 @@ PIKECLASS IOBuffer
     }
     io_append( THIS, p, width );
     ref_push_object(Pike_fp->current_object);
+  }
+
+  /*! @decl IOBuffer add_ints( array(int) integers, int(0..255) len )
+   *!
+   *! Add the integers in the specified array, @[len] bytes per int.
+   *! Equivalent to add_int( integers[*], len ) but faster.
+   */
+  PIKEFUN IOBuffer add_ints( array(int) a, int bpi )
+  {
+      int i,l = a->size;
+      struct svalue *it = a->item;
+      unsigned char *ptr;
+      IOBuffer *io = THIS;
+
+      if( bpi < 0 ) Pike_error("Illegal int width\n");
+      io_add_space( io, bpi*l, 0 );
+
+      switch( bpi )
+      {
+          case 1:
+              for( i=0; i<l; i++ )
+                  io_append_byte_uc( io, get_small_int(it+i) );
+              break;
+          case 2:
+              for( i=0; i<l; i++ )
+                  io_append_short_uc( io, get_small_int(it+i) );
+              break;
+          case 4:
+              for( i=0; i<l; i++ )
+                  io_append_int_uc( io, get_small_int(it+i) );
+              break;
+          case 3:
+#if SIZEOF_INT_TYPE > 4
+          case 5:
+          case 6:
+          case 7:
+#endif
+              for( i=0; i<l; i++ )
+                  io_add_int( io, get_small_int(it+i), bpi );
+              break;
+
+          default:
+              /* bignums. */
+              for( i=0; i<l; i++ ){
+                  push_svalue( it+i );
+                  push_int( bpi );
+                  f_IOBuffer_add_int(2);
+                  pop_stack();
+              }
+      }
+      pop_n_elems(args);
+      ref_push_object(io->this);
   }
 
   /*! @decl protected int `[](int off)
