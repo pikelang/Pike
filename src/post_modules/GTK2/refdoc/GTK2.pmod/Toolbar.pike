@@ -6,14 +6,11 @@
 //! displayed with icons, labels, or both.
 //! 
 //! Examples:
-//!@expr{ lambda(){object t=GTK2.Toolbar( /*GTK2.ORIENTATION_HORIZONTAL, GTK2.TOOLBAR_TEXT*/ );t->append_item( "Button 1", "Tooltip 1", "", GTK2.Frame(), lambda(){},0);t->append_space();t->append_item( "Button 2", "Tooltip 2", "", GTK2.Frame(), lambda(){},0);t->append_item( "Button 3", "Tooltip 3", "", GTK2.Frame(), lambda(){},0);t->append_space();t->append_item( "Button 4", "Tooltip 4", "", GTK2.Frame(), lambda(){},0);t->append_item( "Button 5", "Tooltip 5", "", GTK2.Frame(), lambda(){},0);return t;}()@}
+//!@expr{ GTK2.Toolbar()->insert(GTK2.ToolItem()->add(GTK2.Button("Button #1")),-1)->insert(GTK2.ToolItem()->add(GTK2.Label("     ")),-1)->insert(GTK2.ToolItem()->add(GTK2.Button("Button 2")),-1)->insert(GTK2.ToolItem()->add(GTK2.Button("Button 3")),-1)@}
 //!@xml{<image>../images/gtk2_toolbar.png</image>@}
 //!
-//!@expr{ lambda(){object t=GTK2.Toolbar( /*GTK2.ORIENTATION_VERTICAL, GTK2.TOOLBAR_TEXT*/ );t->append_item( "Button 1", "Tooltip 1", "", GTK2.Frame(), lambda(){},0);t->append_space();t->append_item( "Button 2", "Tooltip 2", "", GTK2.Frame(), lambda(){},0);t->append_item( "Button 3", "Tooltip 3", "", GTK2.Frame(), lambda(){},0);t->append_space();t->append_item( "Button 4", "Tooltip 4", "", GTK2.Frame(), lambda(){},0);t->append_item( "Button 5", "Tooltip 5", "", GTK2.Frame(), lambda(){},0);return t;}()@}
+//!@expr{ GTK2.Toolbar((["orientation":GTK2.ORIENTATION_VERTICAL]))->insert(GTK2.ToolItem()->add(GTK2.Button("Button 1")),-1)->insert(GTK2.ToolItem()->add(GTK2.Label("     ")),-1)->insert(GTK2.ToolItem()->add(GTK2.Button("Button 2")),-1)->insert(GTK2.ToolItem()->add(GTK2.Button("Button 3")),-1)@}
 //!@xml{<image>../images/gtk2_toolbar_2.png</image>@}
-//!
-//!@expr{ lambda(){object i=GTK2.GdkImage()->set(Image.Image(20,20)->test());object t=GTK2.Toolbar( /*GTK2.ORIENTATION_HORIZONTAL, GTK2.TOOLBAR_BOTH*/ );t->append_item( "Button 1", "Tooltip 1", "", GTK2.Image(i), lambda(){},0);t->append_space();t->append_item( "Button 2", "Tooltip 2", "", GTK2.Image(i), lambda(){},0);t->append_item( "Button 3", "Tooltip 3", "", GTK2.Image(i), lambda(){},0);t->append_space();t->append_item( "Button 4", "Tooltip 4", "", GTK2.Image(i), lambda(){},0);t->append_item( "Button 5", "Tooltip 5", "", GTK2.Image(i), lambda(){},0);return t;}()@}
-//!@xml{<image>../images/gtk2_toolbar_3.png</image>@}
 //!
 //! 
 //! Properties:
