@@ -164,6 +164,11 @@ string get_title( );
 //!
 //!
 
+GTK2.Widget get_tree_view( );
+//! Returns the W(TreeView) that this TreeViewColumn has been inserted into.
+//!
+//!
+
 int get_visible( );
 //! Returns true if the column is visible.
 //!

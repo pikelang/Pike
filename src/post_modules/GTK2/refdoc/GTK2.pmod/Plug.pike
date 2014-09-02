@@ -6,6 +6,7 @@
 //! contained in the GTK2.Plug then will appear inside the first
 //! applications window.
 //! Properties
+//! int embedded
 //!
 //!
 //!  Signals:

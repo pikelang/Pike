@@ -17,6 +17,8 @@
 //!
 //! 
 //! Properties:
+//! int icon-size
+//! int icon-size-set
 //! int orientation
 //! int show-arrow
 //! int toolbar-style

@@ -32,6 +32,11 @@ mixed get_property( string property );
 //!
 //!
 
+int is_floating( );
+//! Checks whether this object has a floating reference.
+//!
+//!
+
 int new_signal( string name, array types, string return_type );
 //! Create a new signal.
 //!

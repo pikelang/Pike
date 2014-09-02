@@ -7,11 +7,14 @@
 //! int cursor-position
 //! int editable
 //! int has-frame
+//! int inner-border
 //! int invisible-char
 //! int max-length
 //! int scroll-offset
 //! int selection-bound
+//! int shadow-type
 //! string text
+//! int truncate-multiline
 //! int visibility
 //! int width-chars
 //! float xalign
@@ -67,8 +70,18 @@ GTK2.EntryCompletion get_completion( );
 //!
 //!
 
+GTK2.Adjustment get_cursor_hadjustment( );
+//! Retrieves the horizontal cursor adjustment
+//!
+//!
+
 int get_has_frame( );
 //! Gets the value set by set_has_frame().
+//!
+//!
+
+array get_inner_border( );
+//! This function returns the entry's inner-border property.
 //!
 //!
 
@@ -156,8 +169,32 @@ GTK2.Entry set_completion( GTK2.EntryCompletion completion );
 //!
 //!
 
+GTK2.Entry set_cursor_hadjustment( GTK2.Adjustment adj );
+//! Hooks up an adjustment to the cursor position in an entry, so that when 
+//! the cursor is moved, the adjustment is scrolled to show that position.
+//!
+//!
+
 GTK2.Entry set_has_frame( int setting );
 //! Sets whether the entry has a beveled frame around it.
+//!
+//!
+
+GTK2.Entry set_icon_from_pixbuf( int icon_pos, GTK2.GdkPixbuf b );
+//!
+
+GTK2.Entry set_icon_from_stock( int icon_pos, string id );
+//!
+
+GTK2.Entry set_inner_border( int left, int right, int top, int bottom );
+//! Sets the inner-border property to border, or clears it if 0 is passed.
+//! The inner-border is the area around the entry's text, but inside its
+//! frame.
+//! 
+//! If set, this property overrides the inner-border style property.
+//! Overriding the style-provided border is useful when you want to do
+//! in-place editing of some text in a canvas or list widget, where
+//! pixel-exact positioning of the entry is important.
 //!
 //!
 

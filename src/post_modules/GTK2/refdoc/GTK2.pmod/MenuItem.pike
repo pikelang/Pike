@@ -51,11 +51,6 @@ GTK2.Widget get_submenu( );
 //!
 //!
 
-GTK2.MenuItem remove_submenu( );
-//! Remove the submenu for this menu button.
-//!
-//!
-
 GTK2.MenuItem select( );
 //! Emulate a select signal
 //!

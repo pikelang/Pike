@@ -55,6 +55,13 @@ GTK2.Widget create_icon( int icon_size );
 //!
 //!
 
+GTK2.Widget create_menu( );
+//! If this action provides a W(Menu) widget as a submenu for the menu item 
+//! or the toolbar item it creates, this function returns an instance of 
+//! that menu.
+//!
+//!
+
 GTK2.Widget create_menu_item( );
 //! Creates a menu item widget that proxies for the action.
 //!

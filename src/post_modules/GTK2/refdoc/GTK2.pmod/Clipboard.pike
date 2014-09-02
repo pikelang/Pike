@@ -42,6 +42,11 @@ GTK2.GdkPixbuf wait_for_image( );
 //!
 //!
 
+string wait_for_rich_text( GTK2.TextBuffer buffer );
+//! Requests the contents of the clipboard as rich text.
+//!
+//!
+
 string wait_for_text( );
 //! Requests the contents of the clipboard as text
 //!
@@ -49,6 +54,11 @@ string wait_for_text( );
 
 int wait_is_image_available( );
 //! Test to see if tehre is an image available to be pasted.
+//!
+//!
+
+int wait_is_rich_text_available( GTK2.TextBuffer buffer );
+//! Test to see if there is rich text available to be pasted.
 //!
 //!
 

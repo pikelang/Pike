@@ -6,6 +6,7 @@
 //! int has-frame
 //! GTK2.TreeModel model
 //! int row-span-column
+//! string tearoff-title
 //! int wrap-width
 //! 
 //! Style properties:
@@ -83,6 +84,11 @@ GTK2.TreeModel get_model( );
 
 int get_row_span_column( );
 //! Returns the column with row span information.
+//!
+//!
+
+string get_title( );
+//! Gets the current title of the menu in tearoff mode.
 //!
 //!
 
@@ -171,6 +177,11 @@ GTK2.ComboBox set_row_span_column( int row_span );
 //! Sets the column with row span information.  The row span column
 //! contains integers which indicate how many rows an item
 //! should span.
+//!
+//!
+
+GTK2.ComboBox set_title( string title );
+//! Sets the menu's title in tearoff mode.
 //!
 //!
 

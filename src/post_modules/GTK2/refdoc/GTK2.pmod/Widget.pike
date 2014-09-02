@@ -110,6 +110,8 @@
 //! Called when the drag is finished, on the sending side
 //!
 //!
+//! @b{drag_failed@}
+//!
 //! @b{drag_leave@}
 //! Called when the mouse leaves the widget while the user is dragging something
 //!
@@ -163,6 +165,8 @@
 //! Called when a keyboard key is released
 //!
 //!
+//! @b{keynav_failed@}
+//!
 //! @b{leave_notify_event@}
 //! Called when the mouse leaves the widget
 //!
@@ -197,6 +201,8 @@
 //! @b{proximity_in_event@}
 //!
 //! @b{proximity_out_event@}
+//!
+//! @b{query_tooltip@}
 //!
 //! @b{realize@}
 //! Called when the widget is realized.  Some methods cannot be used until the
@@ -433,9 +439,21 @@ GTK2.Pango.Layout create_pango_layout( string text );
 //!
 //!
 
+GTK2.Widget error_bell( );
+//! Notifies the user about an input-related error on this widget. If the 
+//! "gtk-error-bell" setting is TRUE, it calls gdk_window_beep(), otherwise it 
+//! does nothing
+//!
+//!
+
 GTK2.Widget freeze_child_notify( );
 //! Stops emission of "child-notify" signals.  The signals are queued until
 //! thaw_child_notify() is called on the widget.
+//!
+//!
+
+GTK2.Action get_action( );
+//! Returns the GTK2.Action that this widget is a proxy for.
 //!
 //!
 
@@ -532,8 +550,51 @@ mapping get_size_request( );
 //!
 //!
 
+GTK2.GdkPixmap get_snapshot( GTK2.GdkRectangle clip_rect );
+//! Create a GDK2.Pixmap of the contents of the widget and its children
+//!
+//! Works even if the widget is obscured.  The depth and visual of the
+//! resulting pixmap is dependent on the widget being snapshot and likely
+//! differs from those of a target widget displaying the pixmap.  The function
+//! GDK2.Pixbuf->get_from_drawable() can be used to convert the pixmap to a
+//! visual independent representation.
+//!
+//! The snapshot are used by this function is the widget's allocation plus
+//! any extra space occupied by additional windows belonging to this widget
+//! (such as the arrows of a spin button).  Thus, the resulting snapshot
+//! pixmap is possibly larger than the allocation.
+//!
+//! If clip_rect is non-null, the resulting pixmap is shrunken to match the
+//! specified clip_rect. The (x,y) coordinates of clip_rect are interpreted
+//! widget relative.  If width or height of clip_rect are 0 or negative,
+//! the width or height of the resulting pixmap will be shurnken by the
+//! respective amount.  For instance, a clip_rect (+5,+5,-10,-10) will chop
+//! off 5 pixels at each side of the snapshot pixmap. If non-null, clip_rect
+//! will contain the exact widget-relative snapshot coordinates upon return.
+//! A clip_rect of (-1,-1,0,0) can be used to preserve the auto-grown snapshot
+//! area and use clip_rect as a pure output parameter.
+//!
+//! The return pixmap can be 0, if the resulting clip_area was empty.
+//!
+//!
+
 GTK2.Style get_style( );
 //! Returns the style.
+//!
+//!
+
+string get_tooltip_markup( );
+//! Gets the contents of the tooltip
+//!
+//!
+
+string get_tooltip_text( );
+//! Gets the contents of the tooltip
+//!
+//!
+
+GTK2.Window get_tooltip_window( );
+//! Returns the GtkWindow of the current tooltip
 //!
 //!
 
@@ -545,6 +606,8 @@ GTK2.Widget get_toplevel( );
 //!
 
 GTK2.GdkWindow get_window( );
+//! Returns the widget's window if it is realized, other NULL.
+//!
 //!
 
 GTK2.Widget grab_default( );
@@ -579,8 +642,18 @@ int hide_on_delete( );
 //!
 //!
 
+GTK2.Widget input_shape_combine_mask( GTK2.GdkBitmap shape_mask, int offset_x, int offset_y );
+//! Sets an input shape for this widget's GDK2.Window.
+//!
+//!
+
 int is_ancestor( GTK2.Widget ancestor );
 //! Determines whether this widget is somewhere inside ancestor.
+//!
+//!
+
+int is_composited( );
+//! Whether this widget can rely on having its alpha channel drawn correctly.
 //!
 //!
 
@@ -588,6 +661,31 @@ int is_focus( );
 //! Determines if the widget is the focus widget within its toplevel.
 //! (This does not mean that the HAS_FOCUS flag is necessarily set; HAS_FOCUS
 //! will only be set if the toplevel widget additionally has the input focus.
+//!
+//!
+
+int keynav_failed( int direction );
+//! This function should be called whenever keyboard navigation within a 
+//! single widget hits a boundary. The function emits the "keynav-changed" 
+//! signal on the widget and its return value should be interpreted in a way 
+//! similar to the return value of widget->child_focus():
+//! 
+//! When TRUE is returned, stay in the widget, the failed keyboard navigation 
+//! is Ok and/or there is nowhere we can/should move the focus to.
+//! 
+//! When FALSE is returned, the caller should continue with keyboard 
+//! navigation outside the widget, e.g. by calling widget->child_focus() 
+//! on the widget's toplevel.
+//! 
+//! The default ::keynav-failed handler returns TRUE for GTK_DIR.TAB_FORWARD 
+//! and GTK_DIR.TAB_BACKWARD. For the other values of GtkDirectionType, it 
+//! looks at the "gtk-keynav-cursor-only"" setting and returns FALSE if the 
+//! setting is TRUE. This way the entire user interface becomes 
+//! cursor-navigatable on input devices such as mobile phones which only have 
+//! cursor keys but no tab key.
+//! 
+//! Whenever the default handler returns TRUE, it also calls 
+//! widget->error_bell() to notify the user of the failed keyboard navigation. 
 //!
 //!
 
@@ -616,6 +714,11 @@ GTK2.Widget modify_base( int state, GTK2.GdkColor color );
 GTK2.Widget modify_bg( int state, GTK2.GdkColor color );
 //! Sets the background color of the widget in a particular state.
 //! See modify_fg().
+//!
+//!
+
+GTK2.Widget modify_cursor( GTK2.GdkColor primary, GTK2.GdkColor secondary );
+//! Sets the cursor color to use in a widget.
 //!
 //!
 
@@ -828,6 +931,21 @@ GTK2.Widget set_style( GTK2.Style style );
 //!
 //!
 
+GTK2.Widget set_tooltip_markup( string markup );
+//! Sets markup as the contents of the tooltip
+//!
+//!
+
+GTK2.Widget set_tooltip_text( string text );
+//! Sets text as the contents of the tooltip.
+//!
+//!
+
+GTK2.Widget set_tooltip_window( GTK2.Window window );
+//! Replaces the default, usually yellow, window used for displaying tooltips.
+//!
+//!
+
 GTK2.Widget shape_combine_mask( GTK2.GdkBitmap shape_mask, int offset_x, int offset_y );
 //! Sets a shape for a widget's GDK2.Window.  This allows for transparent
 //! window, etc.
@@ -865,6 +983,11 @@ mixed style_get_property( string name );
 
 GTK2.Widget thaw_child_notify( );
 //! Reverts the effect of a previous call to freeze_child_notify().
+//!
+//!
+
+GTK2.Widget trigger_tooltip_query( );
+//! Triggers a tooltip query
 //!
 //!
 

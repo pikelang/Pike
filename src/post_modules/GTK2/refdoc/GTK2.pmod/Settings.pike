@@ -3,6 +3,7 @@
 //! int gtk-button-images
 //! int gtk-can-change-accels
 //! string gtk-color-palette
+//! string gtk-color-scheme
 //! int gtk-cursor-blink
 //! int gtk-cursor-blink-time
 //! string gtk-cursor-theme-name
@@ -11,6 +12,7 @@
 //! int gtk-double-click-distance
 //! int gtk-double-click-time
 //! int gtk-enable-animations
+//! int gtk-entry-password-hint-timeout
 //! int gtk-entry-select-on-focus
 //! string gtk-font-name
 //! string gtk-icon-sizes
@@ -26,6 +28,7 @@
 //! string gtk-theme-name
 //! int gtk-toolbar-icon-size
 //! int gtk-toolbar-style
+//! int gtk-touchscreen-mode
 //! int gtk-xft-antialias
 //! int gtk-xft-dpi
 //! int gtk-xft-hinting

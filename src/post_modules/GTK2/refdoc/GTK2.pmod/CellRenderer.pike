@@ -53,7 +53,7 @@ GTK2.CellRenderer render( GTK2.GdkWindow window, GTK2.Widget widget, GTK2.GdkRec
 //! blank space around the cell, and also the area containing the tree
 //! expander; so the background_area rectangles for all cells tile to cover the
 //! entire window.  expose_area is a clip rectangle.
-//! flags is one of @[CELL_RENDERER_FOCUSED], @[CELL_RENDERER_INSENSITIVE], @[CELL_RENDERER_MODE_ACTIVATABLE], @[CELL_RENDERER_MODE_EDITABLE], @[CELL_RENDERER_MODE_INERT], @[CELL_RENDERER_PRELIT], @[CELL_RENDERER_SELECTED] and @[CELL_RENDERER_SORTED].
+//! flags is one of @[CELL_RENDERER_ACCEL_MODE_GTK], @[CELL_RENDERER_ACCEL_MODE_OTHER], @[CELL_RENDERER_FOCUSED], @[CELL_RENDERER_INSENSITIVE], @[CELL_RENDERER_MODE_ACTIVATABLE], @[CELL_RENDERER_MODE_EDITABLE], @[CELL_RENDERER_MODE_INERT], @[CELL_RENDERER_PRELIT], @[CELL_RENDERER_SELECTED] and @[CELL_RENDERER_SORTED].
 //!
 //!
 
