@@ -5,7 +5,7 @@ struct _IOBuffer
   size_t offset; /* reading */
   size_t len, allocated; /* writing */
 
-  struct object *sub, *source;
+  struct object *sub, *source, *this;
   struct program *error_mode;
   struct pike_string *str;
   INT32 locked;

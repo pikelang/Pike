@@ -164,12 +164,22 @@ PIKECLASS IOBuffer
       io->malloced = 1;
     }
 
-    if( force || (io->offset > io->len>>1) ) /* more than half used up. */
+    if( io->len == io->offset )
+        io->offset = io->len = 0;
+
+    if( io->len + bytes < io->allocated )
+        return io->buffer+io->len;
+
+    if( (force && io->offset)
+        || (io->offset > io->len>>1)
+        || (io_len(io)+bytes < io->allocated &&
+            (io->len+bytes > io->allocated)) )
     {
-      memmove( io->buffer, io->buffer+io->offset, io->len-io->offset );
+      memmove( io->buffer, io_read_pointer(io), io_len(io) );
       io->len -= io->offset;
       io->offset = 0;
     }
+
     if( io->len + bytes > io->allocated )
     {
       size_t new_len = io->allocated;
@@ -182,25 +192,96 @@ PIKECLASS IOBuffer
     return io->buffer+io->len;
   }
 
-  static void io_range_error( IOBuffer *io, int howmuch )
+
+  /*! @decl protected bool range_error( int howmuch )
+   *!
+   *! This function is called when an attempt is made to read out of bounds.
+   *! The default implementation simply returnns 0.
+   *!
+   *! Override this function to change the behaviour
+   *!
+   *! The argument @[howmuch] indicates how much data is needed:
+   *!
+   *! @dl
+   *! @dt int(1..) howmuch
+   *! Need @[howmuch] bytes more
+   *! @dt int(0..0) howmuch
+   *!  The amount of data needed is not certain.
+   *!  This most often happens when  @[sscanf] or @[read_json] is used
+   *! @dt int(..-1) howmuch=...
+   *!  Tried to @[unread] X bytes. There is usually no way to satisfy
+   *!  the requested range.
+   *!
+   *! The only supported way is to extract the data from the buffer,
+   *! add the requested amount of "go backbuffer", add the data
+   *! back, and forward -@[howmuch] bytes.
+   *! @enddt
+   *!
+   *! @returns
+   *!
+   *! @[true] if the operation should be retried, @[false] otherwise.
+   *!
+   *! Do not return true unless you have added data to the buffer,
+   *! doing so could result in an infinite loop (since no data is
+   *! added, the range_error will be called again immediately).
+   */
+  PIKEFUN int(0..1) range_error( int howmuch )
+      flags ID_PROTECTED;
   {
-    /* throw error if so desired. */
-    if( io->error_mode )
-    {
-        push_text("Trying to read %d outside allowed range\n");
-        push_int(howmuch);
-        f_sprintf(2);
-        push_object(clone_object(io->error_mode, 1));
-        f_throw(1);
-    }
+    /* Default: throw error if so desired, otherwise return 0. */
+    pop_n_elems(args);
+    push_int(0);
+  }
+
+  static void io_range_error_throw( IOBuffer *io, int howmuch )
+  {
+      if( io->error_mode )
+      {
+          if( howmuch )
+          {
+              push_text("Trying to read %d outside allowed range\n");
+              push_int(howmuch);
+              f_sprintf(2);
+          }
+          else
+              push_text("Illegal arguments\n");
+
+          ref_push_object( io->this );
+          push_object(clone_object(io->error_mode, 2));
+          f_throw(1);
+      }
+  }
+
+  static struct pike_string *range_error_s;
+  static int io_range_error( IOBuffer *io, int howmuch )
+  {
+      int res;
+      struct svalue *osp = Pike_sp;
+
+      if(!range_error_s)
+          range_error_s = make_shared_string( "range_error" );
+
+      push_int( howmuch );
+      apply_low(io->this,
+          really_low_find_shared_string_identifier
+            (range_error_s, io->this->prog, SEE_PROTECTED),
+          1);
+      res = Pike_sp[-1].u.integer;
+      pop_n_elems( Pike_sp-osp );
+      if( !res ) io_range_error_throw( io, howmuch );
+
+      return res;
   }
 
   static int io_avail( IOBuffer *io, int len )
   {
     if( len < 0 || len + io->offset > io->len )
     {
-      io_range_error( io, len );
-      return 0;
+        if( len < 0 )
+            io_range_error_throw( io, 0 );
+        else if( io_range_error( io, len+io->len-io->offset ) )
+            return io_avail(io,len);
+        return 0;
     }
     return 1;
   }
@@ -230,7 +311,7 @@ PIKECLASS IOBuffer
     if( len > 0x7fffffff )
       Pike_error("This region is too large to convert to a string.\n");
     s = begin_shared_string( len );
-    io_read( io, s->str, s->len );
+    io_read( io, s->str, len );
     return end_shared_string(s);
   }
 
@@ -334,7 +415,10 @@ PIKECLASS IOBuffer
   {
     if( n < 0 || (io->offset < (unsigned)n) )
     {
-      io_range_error(io,-n);
+        if( n < 0 )
+            io_range_error_throw( io, 0 );
+        else if( io_range_error(io,-(long)(n-io->offset)) )
+          return io_rewind( io, n );
       return -1;
     }
     io->offset -= n;
@@ -346,9 +430,17 @@ PIKECLASS IOBuffer
 #undef THIS
 #define THIS (&(((struct IOBuffer_struct *)Pike_fp->current_storage)->b))
 
-  /*! @decl int input_from( Stdio.Stream f )
+  /*! @decl int(0..) input_from( Stdio.Stream f )
    *!
    *! Read data from @[f] into this buffer.
+   *!
+   *! Returns the amount of data that was read
+   *!
+   *! @note
+   *! Please note that this funcition will read all data from the
+   *! filedescriptor unless it's set to be non-blocking.
+   *!
+   *! It is designed to only be used in non-blocking IO mode.
    */
   PIKEFUN int(0..) input_from( object f )
   {
@@ -364,14 +456,7 @@ PIKECLASS IOBuffer
         unsigned char *ptr = io_add_space( io, 4096, 0 );
         int res;
 
-
-        io_lock(io);
-        {
-            THREADS_ALLOW();
-            res = fd_read( fd->box.fd, ptr, 4096 );
-            THREADS_DISALLOW();
-        }
-        io_unlock(io);
+        res = fd_read( fd->box.fd, ptr, 4096 );
 
         if( res == -1 && errno == EINTR )
           continue;
@@ -404,7 +489,7 @@ PIKECLASS IOBuffer
     RETURN bread;
   }
 
-  /*! @decl int output_to( Stdio.Strem f )
+  /*! @decl int output_to( Stdio.Stream f )
    *!
    *! Write data from the buffer to the indicated file.
    *!
@@ -423,7 +508,7 @@ PIKECLASS IOBuffer
       /* lock this object. */
       io_lock(io);
 
-      THREADS_ALLOW();
+      // THREADS_ALLOW();
       while( sz > written )
       {
         size_t rd = MIN(sz-written,4096);
@@ -438,8 +523,8 @@ PIKECLASS IOBuffer
         io_consume( io, res );
         written += res;
       }
-      THREADS_DISALLOW();
-      io_unlock(io);
+      // THREADS_DISALLOW();
+      // io_unlock(io);
     }
     else
     {
@@ -483,7 +568,7 @@ PIKECLASS IOBuffer
    *! and
    *! @[add_hstring]
    */
-  PIKEFUN int(0..) add( object|string|int ... argp)
+  PIKEFUN IOBuffer add( object|string|int ... argp)
   {
     int i;
     IOBuffer *io = THIS;
@@ -526,23 +611,25 @@ PIKECLASS IOBuffer
         io_append( io, &a, 1 );
       }
     }
-    RETURN io_len(io);
+    ref_push_object(io->this);
   }
 
   /*! @decl int add_byte( int(0..255) )
    *! @decl int add_int8( int(0..255) )
    *! Adds a single byte to the buffer.
    */
-  PIKEFUN int(0..) add_byte( int i )
+  PIKEFUN IOBuffer add_byte( int i )
   {
     unsigned char a = i&255;
-    RETURN io_append( THIS, &a, 1 );
+    io_append( THIS, &a, 1 );
+    ref_push_object(Pike_fp->current_object);
   }
 
-  PIKEFUN int(0..) add_int8( int i )
+  PIKEFUN IOBuffer add_int8( int i )
   {
     unsigned char a = i&255;
-    RETURN io_append( THIS, &a, 1 );
+    io_append( THIS, &a, 1 );
+    ref_push_object(Pike_fp->current_object);
   }
 
   /*! @decl int add_int16( int(0..65535) )
@@ -550,16 +637,18 @@ PIKECLASS IOBuffer
    *!
    *! Add a 16-bit network byte order value to the buffer
    */
-  PIKEFUN int(0..) add_int16( int i )
+  PIKEFUN IOBuffer add_int16( int i )
   {
     unsigned short a = htons((i&65535));
-    push_int(io_append( THIS, &a, 2 ));
+    io_append( THIS, &a, 2 );
+    ref_push_object(Pike_fp->current_object);
   }
 
-  PIKEFUN int(0..) add_short( int i )
+  PIKEFUN IOBuffer add_short( int i )
   {
     unsigned short a = htons((i&65535));
-    RETURN io_append( THIS, &a, 2 );
+    io_append( THIS, &a, 2 );
+    ref_push_object(Pike_fp->current_object);
   }
 
   /*! @decl int add_int32( int i )
@@ -568,7 +657,8 @@ PIKECLASS IOBuffer
   PIKEFUN int(0..) add_int32( int i )
   {
     INT32 a = htonl(i);
-    push_int(io_append( THIS, &a, 4 ));
+    io_append( THIS, &a, 4 );
+    ref_push_object(Pike_fp->current_object);
   }
 
   /*! @decl void add_hstring( string(0..255) data, int size_size )
@@ -580,7 +670,7 @@ PIKECLASS IOBuffer
    *!
    *! @[size_size] must be less than Int.NATIVE_MAX.
    */
-  PIKEFUN int(0..) add_hstring( string str, int size_size )
+  PIKEFUN IOBuffer add_hstring( string str, int size_size )
   {
     if( str->size_shift )
       Pike_error("Only 8bit is supported\n");
@@ -593,10 +683,11 @@ PIKECLASS IOBuffer
       Pike_error("Too long string\n");
 
     io_add_int( THIS, str->len, size_size );
-    push_int(io_append( THIS, str->str, str->len ));
+    io_append( THIS, str->str, str->len );
+    ref_push_object(Pike_fp->current_object);
   }
 
-  /*! @decl int add_int( int i, int(0..) width )
+  /*! @decl IOBuffer add_int( int i, int(0..) width )
    *!
    *! Adds a generic integer to the buffer as an (width*8)bit
    *! network byteorder number.
@@ -604,12 +695,13 @@ PIKECLASS IOBuffer
    *! @[width] must be less than Int.NATIVE_MAX.
    *!
    */
-  PIKEFUN int(0..) add_int( int i, int width )
+  PIKEFUN IOBuffer add_int( int i, int width )
   {
-    RETURN io_add_int( THIS, i, width );
+      io_add_int( THIS, i, width );
+      ref_push_object(Pike_fp->current_object);
   }
 
-  PIKEFUN int(0..) add_int( object o, int width )
+  PIKEFUN IOBuffer add_int( object o, int width )
   {
     char *p;
     int extra, len;
@@ -635,7 +727,8 @@ PIKECLASS IOBuffer
         width-=a;
       }
     }
-    RETURN io_append( THIS, p, width );
+    io_append( THIS, p, width );
+    ref_push_object(Pike_fp->current_object);
   }
 
   /*! @decl protected int `[](int off)
@@ -791,11 +884,13 @@ PIKECLASS IOBuffer
     pop_n_elems(args);
     if( o == 'O' )
     {
-      push_text("IOBuffer(%d bytes, read=[..%d] data=[%d..%d] free=[%d..%d] %s%s)");
+      push_text("%O(%d bytes, read=[..%d] data=[%d..%d] free=[%d..%d] %s%s)");
+      ref_push_program(Pike_fp->current_object->prog);
       /* io_len [..offset] [offset..len] [..allocated] */
       push_int(io_len(THIS));
       push_int(THIS->offset-1);
       push_int(THIS->offset);
+
       push_int(THIS->len-1);
       push_int(THIS->len);
       push_int(THIS->allocated);
@@ -804,7 +899,7 @@ PIKECLASS IOBuffer
         push_text(" (read only)");
       else
         push_text("");
-      f_sprintf(9);
+      f_sprintf(10);
     }
     else
       push_undefined();
@@ -935,7 +1030,7 @@ PIKECLASS IOBuffer
     INT32 i;
     ptrdiff_t num_used;
     struct svalue *start = Pike_sp;
-
+  retry:
     i = low_sscanf_pcharp(
       MKPCHARP(io_read_pointer(THIS), 0), io_len(THIS),
       MKPCHARP(format->str,format->size_shift), format->len,
@@ -943,7 +1038,8 @@ PIKECLASS IOBuffer
 
     if( !num_used )
     {
-      io_range_error(THIS,-1);
+      if( io_range_error(THIS,0) )
+          goto retry;
       pop_n_elems(Pike_sp-start);
       push_int(0);
     }
@@ -958,7 +1054,7 @@ PIKECLASS IOBuffer
   /*! @decl mixed read_json(int|void require_whitespace_separator)
    *!
    *! Read a single JSON expression from the buffer and return it.
-   *! 
+   *!
    *! If @[require_whitespace_separator] is true there must be a whitespace
    *! after each json value (as an example, newline or space).
    *!
@@ -985,7 +1081,7 @@ PIKECLASS IOBuffer
 
     if( !parse_json_pcharp )
       parse_json_pcharp = PIKE_MODULE_IMPORT(Standards.JSON, parse_json_pcharp );
-
+  retry:
     stop = parse_json_pcharp( MKPCHARP(io_read_pointer(THIS),0),
                               io_len(THIS), 1|8, &err ); /* json_utf8 */
 
@@ -993,7 +1089,8 @@ PIKECLASS IOBuffer
     {
       if( -stop == (ptrdiff_t)io_len(THIS) || (err && !strncmp(err,"Unterminated",12)))
       {
-        io_range_error(THIS,-stop+1);
+        if( io_range_error(THIS,0) )
+            goto retry;
         push_undefined();
       }
       else
@@ -1012,7 +1109,8 @@ PIKECLASS IOBuffer
       {
         if( stop == (ptrdiff_t)io_len(THIS) )
         {
-          io_range_error(THIS,stop);
+          if( io_range_error(THIS,0) )
+              goto retry;
           pop_stack();
           push_undefined();
         }
@@ -1051,7 +1149,7 @@ PIKECLASS IOBuffer
     INT32 i;
     ptrdiff_t num_used;
     struct svalue *start = Pike_sp;
-
+  retry:
     i = low_sscanf_pcharp(
       MKPCHARP(io_read_pointer(THIS), 0), io_len(THIS),
       MKPCHARP(format->str,format->size_shift), format->len,
@@ -1060,7 +1158,8 @@ PIKECLASS IOBuffer
 
     if( !num_used )
     {
-      io_range_error(THIS,-1);
+      if( io_range_error(THIS,0) )
+          goto retry;
       pop_n_elems(Pike_sp-start);
       push_int(0);
     }
@@ -1112,10 +1211,7 @@ PIKECLASS IOBuffer
   PIKEFUN int(-1..) consume( int n )
   {
     if( !io_avail( THIS, n ) )
-    {
-      io_range_error( THIS, n );
       push_int(-1);
-    }
     else
       push_int64( io_consume( THIS, n ) );
   }
@@ -1150,12 +1246,11 @@ PIKECLASS IOBuffer
    */
   PIKEFUN string(0..255) read( int bytes )
   {
-    struct pike_string * s = io_read_string(THIS, bytes );
-    pop_stack();
+    struct pike_string *s;
+    s = io_read_string(THIS, bytes );
     if( s )
-      push_string(s);
-    else
-      push_int(0);
+        RETURN s;
+    push_undefined();
   }
 
   /*! @decl string(8bit) read( )
@@ -1170,10 +1265,9 @@ PIKECLASS IOBuffer
   PIKEFUN string(0..255) read()
   {
     struct pike_string * s = io_read_string(THIS, io_len(THIS));
-    if( !s )
-      push_int(0);
-    else
-      push_string(s);
+    if( s )
+        RETURN s;
+    push_undefined();
   }
 
   /*! @decl int read_int( int n )
@@ -1249,7 +1343,7 @@ PIKECLASS IOBuffer
    *! @decl void create( System.Memory|String.Buffer contents )
    *!
    *! If passed an integer or no argument, create a buffer of that
-   *! size, or if no argument is given, 4Kb.
+   *! size, or if no argument is given, 226 bytes.
    *!
    *! If @[contents] are specified a new buffer with the contents of
    *! the given string/System.Memory or String.Buffer will be created.
@@ -1352,8 +1446,8 @@ PIKECLASS IOBuffer
     IOBuffer *this = THIS;
     if( this->buffer )
       Pike_error("Can not initialize twice.\n");
-    this->buffer = xalloc(4096-32);
-    this->allocated = 4096-32;
+    this->buffer = xalloc(256-32);
+    this->allocated = 256-32;
     this->malloced = 1;
   }
 
@@ -1363,6 +1457,7 @@ PIKECLASS IOBuffer
   INIT {
     IOBuffer *this = THIS;
     memset( this, 0, sizeof(IOBuffer));
+    this->this = Pike_fp->current_object;
   }
 
   EXIT {
@@ -1398,6 +1493,7 @@ void exit_stdio_buffer(void)
   if( shm_program )  free_program( shm_program );
   if( sbuf_program ) free_program( sbuf_program );
   free_program( buffer_error_program );
+  if( range_error_s )  free_string(range_error_s);
   EXIT
 }
 /*! @endmodule
