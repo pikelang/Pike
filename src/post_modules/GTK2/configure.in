@@ -27,6 +27,14 @@ AC_SUBST(pgtk2_have_x11)
 pgtk2_have_x11=nox11
 AC_SUBST(pgtk_has_gtk_beta)
 pgtk_has_gtk_beta=nogtk_beta
+AC_SUBST(pgtk_has_gtk224)
+pgtk_has_gtk224=nogtk224
+AC_SUBST(pgtk_has_gtk222)
+pgtk_has_gtk222=nogtk222
+AC_SUBST(pgtk_has_gtk220)
+pgtk_has_gtk220=nogtk220
+AC_SUBST(pgtk_has_gtk218)
+pgtk_has_gtk218=nogtk218
 AC_SUBST(pgtk_has_gtk216)
 pgtk_has_gtk216=nogtk216
 AC_SUBST(pgtk_has_gtk214)
@@ -187,6 +195,22 @@ else
       if test $gtkminorvers -ge 16 ; then
 	pgtk_has_gtk216=gtk216
 	AC_DEFINE(HAVE_GTK216)
+      fi
+      if test $gtkminorvers -ge 18 ; then
+	pgtk_has_gtk218=gtk218
+	AC_DEFINE(HAVE_GTK218)
+      fi
+      if test $gtkminorvers -ge 20 ; then
+	pgtk_has_gtk220=gtk220
+	AC_DEFINE(HAVE_GTK220)
+      fi
+      if test $gtkminorvers -ge 22 ; then
+	pgtk_has_gtk222=gtk222
+	AC_DEFINE(HAVE_GTK222)
+      fi
+      if test $gtkminorvers -ge 24 ; then
+	pgtk_has_gtk224=gtk224
+	AC_DEFINE(HAVE_GTK224)
       fi
     fi
   ],,GTK2)
@@ -391,6 +415,10 @@ LIBS="$OLD_LIBS"
 CFLAGS="$OLD_CFLAGS"
 
 AC_SUBST(pgtk_has_libglade)
+AC_SUBST(pgtk_has_gtk224)
+AC_SUBST(pgtk_has_gtk222)
+AC_SUBST(pgtk_has_gtk220)
+AC_SUBST(pgtk_has_gtk218)
 AC_SUBST(pgtk_has_gtk216)
 AC_SUBST(pgtk_has_gtk214)
 AC_SUBST(pgtk_has_gtk212)
