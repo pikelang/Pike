@@ -45,8 +45,7 @@ class struct {
   //! Adds the data @[s] verbatim to the end of the buffer.
   this_program add_data(string(0..255) s)
   {
-    add(s);
-    return this;
+      return [object(this_program)]add(s);
   }
 
   //! Return all the data in the buffer and empties it.
@@ -63,8 +62,7 @@ class struct {
   //!    Length of integer in bytes.
   this_program put_uint(int i, int(0..) len)
   {
-    add_int(i,len);
-    return this;
+    return [object(this_program)]add_int(i,len);
   }
 
   //! Appends a variable string @[s] preceded with an unsigned integer
@@ -72,8 +70,7 @@ class struct {
   //! string @[s] should be 8 bits wide.
   this_program put_var_string(string(0..255) s, int(0..) len_width)
   {
-    add_hstring(s,len_width);
-    return this;
+    return [object(this_program)]add_hstring(s,len_width);
   }
 
   //! Appends a bignum @[i] as a variable string preceded with an
@@ -81,24 +78,20 @@ class struct {
   //! of the string. @[len_width] defaults to 2.
   this_program put_bignum(Gmp.mpz i, int(0..)|void len_width)
   {
-    add_hstring(i->digits(256),len_width||2);
-    return this;
+    return [object(this_program)]add_hstring(i->digits(256),len_width||2);
   }
 
   //! Appends the fix sized string @[s] to the buffer.
   this_program put_fix_string(string(0..255) s)
   {
-    add(s);
-    return this;
+    return [object(this_program)]add(s);
   }
 
   //! Appends an array of unsigned integers of width @[item_size]
   //! to the buffer.
   this_program put_fix_uint_array(array(int) data, int(0..) item_size)
   {
-    foreach(data, int i)
-      add_int(i, item_size);
-    return this;
+    return [object(this_program)]add_ints(data,item_size);
   }
 
   //! Appends an array of unsigned integers of width @[item_size]
@@ -107,8 +100,7 @@ class struct {
   this_program put_var_uint_array(array(int) data, int(0..) item_size, int(0..) len)
   {
     add_int(sizeof(data)*item_size, len );
-    put_fix_uint_array(data, item_size);
-    return this;
+    return [object(this_program)]add_ints(data,item_size);
   }
 
   //! Appends an array of variable length strings with @[item_size]
@@ -120,8 +112,7 @@ class struct {
     foreach(data, string(8bit) s)
       sub->add_hstring(s, item_size);
     add_int(sizeof(sub),len);
-    add(sub);
-    return this;
+    return [object(this_program)]add(sub);
   }
 
   //! Reads an unsigned integer from the buffer.
