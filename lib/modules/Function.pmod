@@ -98,7 +98,7 @@ function(mixed...:function(mixed...:mixed|void)) curry(function f)
 //!  >  Function.uncurry(`+)(7,2,3)
 //!  Result: 5
 //! @endcode
-function(mixed...:function(mixed...:mixed|void)) uncurry(function f)
+function(mixed...:mixed) uncurry(function f)
 {
   return lambda(mixed ... args1) {
        return f(@args1[1..]);
