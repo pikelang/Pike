@@ -106,17 +106,6 @@ struct timeval;
 #define HAVE_ISSPACE 1
 #define ISSPACE(X) isspace(X)
 
-/* Warning, these run 'C' more than once */
-/* FIXME: Is it that great that every wide char is considered an
- * identifier char? Doesn't strike me as very unicode compliant.
- * isalnum, isdigit and islower also look seriously borken. /mast */
-#define WIDE_ISSPACE(C)	(((C) < 256)?isspace(C):0)
-#define WIDE_ISIDCHAR(C) (((C) < 256)?isidchar(C):1)
-#define WIDE_ISALNUM(C)	(((C) < 256)?isalnum(C):0)
-#define WIDE_ISDIGIT(C)	(((C) < 256)?isdigit(C):0)
-#define WIDE_ISLOWER(C)	(((C) < 256)?islower(C):0)
-
-
 #ifndef HAVE_GETTIMEOFDAY
 void GETTIMEOFDAY(struct timeval *t);
 #else
