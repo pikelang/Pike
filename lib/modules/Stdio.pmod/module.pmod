@@ -1604,11 +1604,11 @@ class Port
       ::create( p );
   }
 
-  int bind(int|string port, void|function accept_callback, void|string ip) {
+  int bind(int|string port, void|function accept_callback, void|string ip, int|void shared) {
     // Needed to fix _sprintf().
     debug_ip = (ip||"ANY");
     debug_port = port;
-    return ::bind(port, accept_callback, ip);
+    return ::bind(port, accept_callback, ip, shared);
   }
 
   //! This function completes a connection made from a remote machine to
