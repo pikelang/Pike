@@ -95,9 +95,8 @@
 /* Now for some functions */
 #define Emulate_GetLongPathName GetLongPathNameA
 
-
-
 #endif /* __MINGW32__ */
+
 
 #ifndef STRUCT_TIMEVAL_DECLARED
 #define STRUCT_TIMEVAL_DECLARED
@@ -186,6 +185,7 @@ PMOD_EXPORT size_t STRNLEN(const char *a,size_t len);
 #  define STRNLEN strnlen
 #endif
 
+#define HAVE_STRNCMP 1
 #define STRNCMP strncmp
 
 #ifndef HAVE_MEMSET
@@ -237,11 +237,8 @@ char *STRCHR(char *s,int c);
 #  endif
 #endif
 
-#ifndef HAVE_VFPRINTF
-PMOD_EXPORT int VFPRINTF(FILE *f,const char *s,va_list args);
-#else
-#  define VFPRINTF vfprintf
-#endif
+#define HAVE_VFPRINTF 1
+#define VFPRINTF vfprintf
 
 #ifndef HAVE_VSPRINTF
 PMOD_EXPORT int VSPRINTF(char *buf,const char *fmt,va_list args);
@@ -421,14 +418,16 @@ long long gethrtime(void);
 double FREXP(double x, int *exp);
 #endif
 
-#if HAVE_LDEXP
+#ifdef HAVE_LDEXP
 #define LDEXP ldexp
 #else
 double LDEXP(double x, int exp);
 #endif
 
 #ifdef __MINGW32__
+#ifndef HAVE__DOSMAPERR
 void _dosmaperr(int x);
+#endif
 #endif
 
 #ifdef __clang__

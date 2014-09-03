@@ -700,15 +700,6 @@ PMOD_EXPORT int SNPRINTF(char *buf, size_t size, const char *fmt, ...)
 }
 #endif
 
-#ifndef HAVE_VFPRINTF
-PMOD_EXPORT int VFPRINTF(FILE *f,const char *s,va_list args)
-{
-  char buffer[10000];
-  int i=VSNPRINTF(buffer,sizeof(buffer),s,args);
-  return fwrite(buffer,i,1,f);
-}
-#endif
-
 #if defined(PIKE_DEBUG) && !defined(HANDLES_UNALIGNED_MEMORY_ACCESS)
 
 PMOD_EXPORT unsigned INT16 EXTRACT_UWORD_(unsigned char *p)

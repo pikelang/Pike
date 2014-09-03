@@ -480,7 +480,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void debug_va_fatal(const char *fmt, va_list args
   /* Prevent double fatal. */
   if (in_fatal)
   {
-    if (fmt) (void)VFPRINTF(stderr, fmt, args);
+    if (fmt) (void)vfprintf(stderr, fmt, args);
     do_abort();
   }
 
@@ -491,7 +491,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void debug_va_fatal(const char *fmt, va_list args
     if (fmt) {
       va_list a;
       va_copy (a, args);
-      (void)VFPRINTF(stderr, fmt, a);
+      (void)vfprintf(stderr, fmt, a);
       va_end (a);
     }
 #endif
@@ -499,7 +499,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void debug_va_fatal(const char *fmt, va_list args
   }
 #endif
 
-  if (fmt) (void)VFPRINTF(stderr, fmt, args);
+  if (fmt) (void)vfprintf(stderr, fmt, args);
 
   if(Pike_in_gc)
     fprintf(stderr,"Pike was in GC stage %d when this fatal occurred.\n",Pike_in_gc);

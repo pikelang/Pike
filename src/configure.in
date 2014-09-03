@@ -4587,7 +4587,6 @@ AC_CHECK_FUNCS( \
  time \
  times \
  tzset \
- vfprintf \
  vsprintf \
  _snprintf \
  snprintf \
@@ -4644,6 +4643,7 @@ AC_CHECK_FUNCS( \
  thread_info \
  host_get_clock_service \
  posix_memalign \
+ _dosmaperr \
 )
 
 # SunOS 4 realloc() returns NULL when reallocing NULL.

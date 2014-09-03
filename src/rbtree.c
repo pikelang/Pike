@@ -1788,7 +1788,7 @@ static void debug_rb_fatal (struct rb_node_hdr *tree, const char *fmt, ...)
 {
   va_list args;
   va_start (args, fmt);
-  (void) VFPRINTF (stderr, fmt, args);
+  (void) vfprintf (stderr, fmt, args);
   fputs ("Dumping tree:\n", stderr);
   debug_dump_rb_tree (tree, NULL, NULL);
   debug_fatal ("\r");
@@ -1799,7 +1799,7 @@ static void debug_custom_rb_fatal (struct rb_node_hdr *tree, dump_data_fn *dump_
 {
   va_list args;
   va_start (args, fmt);
-  (void) VFPRINTF (stderr, fmt, args);
+  (void) vfprintf (stderr, fmt, args);
   fputs ("Dumping tree:\n", stderr);
   debug_dump_rb_tree (tree, dump_data, extra);
   debug_fatal ("\r");
