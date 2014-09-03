@@ -250,9 +250,6 @@
 /* Define if you have fork */
 #undef HAVE_FORK
 
-/* Define if you have isspace */
-#undef HAVE_ISSPACE
-
 /* Define if you have fpsetmask */
 #undef HAVE_FPSETMASK
 
