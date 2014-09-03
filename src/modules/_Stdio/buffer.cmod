@@ -457,24 +457,26 @@ PIKECLASS IOBuffer
 #undef THIS
 #define THIS (&(((struct IOBuffer_struct *)Pike_fp->current_storage)->b))
 
-  /*! @decl int(0..) input_from( Stdio.Stream f )
+  /*! @decl int(0..) input_from( Stdio.Stream f, int|void nbytes )
    *!
-   *! Read data from @[f] into this buffer.
+   *! Read data from @[f] into this buffer. If @[nbytes] is not
+   *! specified, read until there is no more data to read (currently).
    *!
    *! Returns the amount of data that was read
    *!
    *! @note
    *! Please note that this funcition will read all data from the
    *! filedescriptor unless it's set to be non-blocking.
-   *!
-   *! It is designed to only be used in non-blocking IO mode.
    */
-  PIKEFUN int(0..) input_from( object f )
+  PIKEFUN int(0..) input_from( object f, int|void _nbytes )
   {
     IOBuffer *io = THIS;
     size_t sz = io_len( io );
-    size_t bread = 0;
+    size_t bread = 0, nbytes = (size_t)-1;
     struct my_file *fd;
+
+    if( _nbytes )
+        nbytes = _nbytes->u.integer;
 
     if( (fd = get_storage( f, file_program )) )
     {
@@ -483,14 +485,14 @@ PIKECLASS IOBuffer
         unsigned char *ptr = io_add_space( io, 4096, 0 );
         int res;
 
-        res = fd_read( fd->box.fd, ptr, 4096 );
+        res = fd_read( fd->box.fd, ptr, MINIMUM(4096,nbytes) );
 
         if( res == -1 && errno == EINTR )
           continue;
 
         if( res <= 0 )
           break;
-
+        nbytes -= res;
         io->len += res;
         bread += res;
         if( res != 4096 )
@@ -500,48 +502,56 @@ PIKECLASS IOBuffer
     }
     else
     {
-      /* some other object. Just call write */
-      while( 1 )
+      /* some other object. Just call read */
+      while( nbytes )
       {
-        push_int( 4096 );
+        push_int( MINIMUM(4096,nbytes) );
         safe_apply( f, "read", 1 );
         if( TYPEOF(Pike_sp[-1]) != PIKE_T_STRING || Pike_sp[-1].u.string->len == 0 )
           break;
         if( Pike_sp[-1].u.string->size_shift )
             Pike_error("Can not handle non-8bit data\n");
         io_append( io, Pike_sp[-1].u.string->str, Pike_sp[-1].u.string->len );
+        nbytes -= Pike_sp[-1].u.string->len;
         pop_stack();
       }
     }
     RETURN bread;
   }
 
-  /*! @decl int output_to( Stdio.Stream f )
+  /*! @decl int output_to( Stdio.Stream f, int|void nbytes )
    *!
    *! Write data from the buffer to the indicated file.
    *!
    *! Will return the number of bytes that were successfully written.
+   *!
+   *! If @[nbytes] is not specified the whole buffer will be written
+   *! if possible.  Otherwise at most @[nbytes] will be written.
    */
-  PIKEFUN int(0..) output_to( object f )
+  PIKEFUN int(0..) output_to( object f, int|void _nbytes )
   {
     IOBuffer *io = THIS;
     size_t sz = io_len( io );
-    size_t written = 0;
+    size_t written = 0, nbytes = (size_t)-1;
     struct my_file *fd;
     INT_TYPE *wr = &Pike_sp->u.integer;
+
+    if( !sz )
+        io_range_error(io,  sz);
+
+    if( _nbytes )
+        nbytes = _nbytes->u.integer;
 
     if( (fd = get_storage( f, file_program )) )
     {
       /* lock this object. */
       io_lock(io);
 
-      // THREADS_ALLOW();
-      while( sz > written )
+      while( sz > written && nbytes )
       {
-        size_t rd = MIN(sz-written,4096);
+        size_t rd = MINIMUM(MINIMUM(sz-written,4096),nbytes);
         unsigned char *ptr = io_read_pointer( io );
-        int res;
-
+        ssize_t res;
         res = fd_write( fd->box.fd, ptr, rd );
         if( res == -1 && errno == EINTR )
           continue;
@@ -550,15 +560,13 @@ PIKECLASS IOBuffer
         io_consume( io, res );
         written += res;
       }
-      // THREADS_DISALLOW();
-      // io_unlock(io);
     }
     else
     {
       /* some other object. Just call write */
-      while( sz > written )
+      while( sz > written && nbytes)
       {
-        size_t rd = MIN(sz-written,4096);
+        size_t rd = MINIMUM(MINIMUM(sz-written,4096),nbytes);
         struct pike_string *s = io_read_string( io, rd );
         if( !s )
           break;
