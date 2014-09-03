@@ -32,6 +32,7 @@
 #include "stralloc.h"
 #include "operators.h"
 #include "../Image/image.h"
+#inlucde "port.h"
 
 #ifdef INLINE
 #undef INLINE
@@ -946,17 +947,7 @@ void my_tiff_warning_handler(const char *UNUSED(module), const char *UNUSED(fmt)
 /* Complies with the TIFFErrorHandler API */
 void my_tiff_error_handler(const char *UNUSED(module), const char *fmt, va_list x)
 {
-#ifdef HAVE_VSNPRINTF
-  vsnprintf(last_tiff_error, TIFF_ERROR_BUF_SIZE-1, fmt, x);
-#else /* !HAVE_VSNPRINTF */
-  /* Sentinel that will be overwritten on buffer overflow. */
-  last_tiff_error[TIFF_ERROR_BUF_SIZE-1] = '\0';
-
-  VSPRINTF(last_tiff_error, fmt, x);
-
-  if(last_tiff_error[TIFF_ERROR_BUF_SIZE-1])
-    Pike_fatal("Buffer overflow in my_tiff_error_handler()\n");
-#endif /* HAVE_VSNPRINTF */
+  VSNPRINTF(last_tiff_error, TIFF_ERROR_BUF_SIZE-1, fmt, x);
 }
 
 #endif /* HAVE_WORKING_LIBTIFF */
