@@ -2332,13 +2332,15 @@ PMOD_EXPORT void string_build_mkspace(struct string_builder *s,
   if(mag > s->s->size_shift)
   {
     struct pike_string *n;
-    ptrdiff_t l = s->s->len + chars + s->malloced;
+    ptrdiff_t l = s->s->len + chars;
+    if (l < s->malloced)
+      l = s->malloced;
     n=begin_wide_shared_string(l,mag);
     pike_string_cpy(MKPCHARP_STR(n),s->s);
     n->len=s->s->len;
     s->s->len = s->malloced;	/* Restore the real length */
-    free_string(s->s);
     s->malloced=l;
+    free_string(s->s);
     s->s=n;
   }
   else if(s->s->len+chars > s->malloced)
