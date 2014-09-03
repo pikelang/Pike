@@ -60,7 +60,7 @@ Port server_port;
 string buf="";    // content buffer
 
 //! raw unparsed full request (headers and body)
-string raw="";
+string raw = "";
 
 //! raw unparsed body of the request (@[raw] minus request line and headers)
 string body_raw="";
@@ -108,6 +108,8 @@ int connection_timeout_delay=180;
 function(this_program:void) request_callback;
 function(this_program,array:void) error_callback;
 
+System.Timer startt = System.Timer();
+
 void attach_fd(Stdio.NonblockingStream _fd, Port server,
 	       function(this_program:void) _request_callback,
 	       void|string already_data,
@@ -118,12 +120,9 @@ void attach_fd(Stdio.NonblockingStream _fd, Port server,
    headerparser = .HeaderParser();
    request_callback=_request_callback;
    error_callback = _error_callback;
-
    my_fd->set_nonblocking(read_cb,0,close_cb);
-
    call_out(connection_timeout,connection_timeout_delay);
-
-   if (already_data)
+   if (already_data && strlen(already_data))
       read_cb(0,already_data);
 }
 
@@ -146,7 +145,15 @@ constant singular_headers = ({
 constant singular_use_headers = ({
     "cookie",
     "cookie2",
-});    
+});
+
+
+
+private int sent;
+private OutputBuffer send_buf = OutputBuffer();
+private Stdio.File send_fd=0;
+private int send_stop;
+private int keep_alive=0;
 
 protected void flatten_headers()
 {
@@ -166,13 +173,12 @@ protected void flatten_headers()
 // read callback.
 protected void read_cb(mixed dummy,string s)
 {
-    if( !strlen( raw ) )
-    {
-	while( strlen(s) && (<' ','\t','\n','\r'>)[s[0]] )
-	    s = s[1..];
-	if( !strlen( s ) )
-	    return;
-    }
+   if( !sizeof( raw ) )
+   {
+      sscanf(s,"%*[ \t\n\r]%s", s );
+      if( !strlen( s ) )
+         return;
+   }
    raw+=s;
    remove_call_out(connection_timeout);
    array v=headerparser->feed(s);
@@ -187,7 +193,7 @@ protected void read_cb(mixed dummy,string s)
       parse_request();
 
       if (parse_variables())
-	finalize();
+         finalize();
    }
    else
       call_out(connection_timeout,connection_timeout_delay);
@@ -295,7 +301,6 @@ private void read_cb_chunked( mixed dummy, string data )
 	  buf = buf[2..];
 	chunked_state = READ_SIZE;
 	break;
-	
 
       case READ_TRAILER:
 	trailers += buf;
@@ -350,20 +355,20 @@ protected int parse_variables()
 
   flatten_headers();
 
-  if ( request_headers->expect ) 
+  if ( request_headers->expect )
   {
     if ( lower_case(request_headers->expect) == "100-continue" )
 	my_fd->write("HTTP/1.1 100 Continue\r\n\r\n");
   }
 
-  if( request_headers["transfer-encoding"] && 
+  if( request_headers["transfer-encoding"] &&
       has_value(lower_case(request_headers["transfer-encoding"]),"chunked"))
   {
     my_fd->set_read_callback(read_cb_chunked);
     read_cb_chunked(0,"");
     return 0;
   }
-   
+
   int l = (int)request_headers["content-length"];
   if (l<=sizeof(buf))
   {
@@ -484,78 +489,50 @@ protected string _sprintf(int t)
 
 // ----------------------------------------------------------------
 function log_cb;
+
 string make_response_header(mapping m)
 {
+   return (string)low_make_response_header(m,Stdio.IOBuffer());
+}
+
+Stdio.IOBuffer low_make_response_header(mapping m, Stdio.IOBuffer res)
+{
+   void radd( mixed ... args )
+   {
+      res->add(@args,"\r\n");
+   };
+
    if (protocol!="HTTP/1.0")
+   {
       if (protocol=="HTTP/1.1")
       {
    // check for fire and forget here and go back to 1.0 then
       }
       else
 	 protocol="HTTP/1.0";
-
-   array(string) res=({});
-   switch (m->error)
-   {
-      case 0:
-      case 200: 
-         if (undefinedp(m->start))
-	    res+=({protocol+" 200 OK"}); // HTTP/1.1 when supported
-	 else
-	 {
-	    res+=({protocol+" 206 Partial content"});
-	    m->error=206;
-	 }
-	 break;
-      default:
-         if(Protocols.HTTP.response_codes[(int)m->error])
-          res+=({protocol+" " + Protocols.HTTP.response_codes[(int)m->error]});
-         else
-          res+=({protocol+" "+m->error+" ERROR"});	 
-	break;
    }
-
-   if (!m->type)
-      m->type = .filename_to_type(not_query);
-
-   res+=({"Content-Type: "+m->type});
-   
-   res+=({"Server: "+(m->server || .http_serverid)});
-
-   string http_now = .http_date(time(1));
-   res+=({"Date: "+http_now});
-
-   if (!m->stat && m->file)
-      m->stat=m->file->stat();
 
    if (!m->file && !m->data)
       m->data="";
-
-   if (m->modified)
-      res+=({"Last-Modified: " + .http_date(m->modified)});
-   else if (m->stat)
-      res+=({"Last-Modified: " + .http_date(m->stat->mtime)});
-   else
-      res+=({"Last-Modified: " + http_now});
-
-   if (m->extra_heads)
-      foreach (m->extra_heads;string name;array|string arr)
-	 foreach (Array.arrayify(arr);;string value)
-	    res+=({String.capitalize(name)+": "+value});
-
-// FIXME: insert cookies here?
+   else if (!m->stat && m->file)
+      m->stat=m->file->stat();
 
    if (undefinedp(m->size))
+   {
       if (m->data)
 	 m->size=sizeof(m->data);
       else if (m->stat)
+      {
 	 m->size=m->stat->size;
-      else 
+         if( m->file )
+            m->size -= m->file->tell();
+      }
+      else
 	 m->size=-1;
+   }
 
    if (m->size!=-1)
    {
-      res+=({"Content-Length: "+m->size});
       if (undefinedp(m->start) && m->error==206)
       {
 	 if (m->stop==-1) m->stop=m->size-1;
@@ -563,24 +540,73 @@ string make_response_header(mapping m)
 	     m->stop>=m->size ||
 	     m->stop<m->start ||
 	     m->size<0)
-	    res[0]=protocol+" 416 Requested range not satisfiable";
-
-	 res+=({"Content-Range: bytes "+
-		m->start+"-"+m->stop+"/"+m->size});
+	    res->error = 416;
       }
    }
 
+   switch (m->error)
+   {
+      case 0:
+      case 200:
+         if (undefinedp(m->start))
+	    radd(protocol," 200 OK"); // HTTP/1.1 when supported
+	 else
+	 {
+	    radd(protocol," 206 Partial content");
+	    m->error=206;
+	 }
+	 break;
+      default:
+         if(Protocols.HTTP.response_codes[(int)m->error])
+            radd(protocol,' ', Protocols.HTTP.response_codes[(int)m->error]);
+         else
+            radd(protocol,' ',m->error," ERROR");
+         break;
+   }
+
+   if (!m->type)
+      m->type = .filename_to_type(not_query);
+
+   if( m->error == 206 )
+      radd("Content-Range: bytes ", m->start,"-",m->stop,"/",m->size);
+
+   radd("Content-Type: ",m->type);
+
+   if( m->size >= 0 )
+      radd("Content-Length: ",(string)m->size);
+
+   radd("Server: ", m->server || .http_serverid);
+
+   string http_now = .http_date(time(1));
+   radd("Date: ",http_now);
+
+   if (m->modified)
+      radd("Last-Modified: ", .http_date(m->modified));
+   else if (m->stat)
+      radd("Last-Modified: ", .http_date(m->stat->mtime));
+   else
+      radd("Last-Modified: ", http_now);
+
+   if (m->extra_heads)
+      foreach (m->extra_heads;string name;array|string arr)
+	 foreach (Array.arrayify(arr);;string value)
+	    radd(String.capitalize(name),": ",value);
+
+// FIXME: insert cookies here?
    string cc = lower_case(request_headers["connection"]||"");
 
    if( (protocol=="HTTP/1.1" && !has_value(cc,"close")) || cc=="keep-alive" )
    {
-       res+=({"Connection: Keep-Alive"});
+       radd("Connection: keep-alive");
        keep_alive=1;
    }
    else
-       res+=({"Connection: Close"});
+   {
+       radd("Connection: close");
+   }
 
-   return res*"\r\n"+"\r\n\r\n";
+   res->add("\r\n");
+   return res;
 }
 
 //! Return the IP address that originated the request, or 0 if
@@ -588,10 +614,10 @@ string make_response_header(mapping m)
 //! error, @[my_fd]@tt{->errno()@} will be set.
 string get_ip()
 {
-	string addr = my_fd?->query_address();
-	if (!addr) return 0;
-	sscanf(addr,"%s ",addr);
-	return addr;
+   string addr = my_fd?->query_address();
+   if (!addr) return 0;
+   sscanf(addr,"%s ",addr);
+   return addr;
 }
 
 //! return a properly formatted response to the HTTP client
@@ -629,26 +655,26 @@ void response_and_finish(mapping m, function|void _log_cb)
 	 m->start=a,m->stop=b;
       else if (sscanf(request_headers->range,"bytes%*[ =]-%d",b)==2)
       {
-        if( m->size==-1 || m->size < b )
-        {
+         if( m->size==-1 || m->size < b )
+         {
 	    m_delete(m,"file");
 	    m->data="";
 	    m->error=416;
-        }
-        else
-        {
-          m->start=m->size-b;
-          m->stop=-1;
-        }
+         }
+         else
+         {
+            m->start=m->size-b;
+            m->stop=-1;
+         }
       }
       else if (sscanf(request_headers->range,"bytes%*[ =]%d-",a)==2)
 	 m->start=a,m->stop=-1;
       else if (has_value(request_headers->range, ","))
       {
-        // Multiple ranges
-        m_delete(m,"file");
-        m->data="";
-        m->error=416;
+         // Multiple ranges
+         m_delete(m,"file");
+         m->data="";
+         m->error=416;
       }
    }
 
@@ -670,74 +696,52 @@ void response_and_finish(mapping m, function|void _log_cb)
 
    if (request_headers["if-none-match"] && m->extra_heads )
    {
-       string et;
-       if((et = m->extra_heads->ETag) || (et =m->extra_heads->etag))
-       {
-           if( string key = request_headers["if-none-match"] )
-           {
-               if (key == et)
-               {
-                   m_delete(m,"file");
-                   m->data="";
-                   m->error=304;
-               }
-           }
-       }
+      string et;
+      if((et = m->extra_heads->ETag) || (et =m->extra_heads->etag))
+      {
+         if( string key = request_headers["if-none-match"] )
+         {
+            if (key == et)
+            {
+               m_delete(m,"file");
+               m->data="";
+               m->error=304;
+            }
+         }
+      }
    }
 
-   string header=make_response_header(m);
+   low_make_response_header(m,send_buf);
 
    if (m->stop) m->size=1+m->stop-m->start;
-   if (m->file && m->start) m->file->seek(m->start);
-
-   if (m->file && 
-       m->size!=-1 && 
-       m->size+sizeof(header)<4096) // fit in buffer
-   {
-      m->data=m->file->read(m->size);
-      m->file->close();
-      m->file=0;
+   if (m->start) {
+      if( m->file )
+         m->file->seek(m->start+m->tell());
+      else if( m->data )
+         m->data = ((string)m->data)[m->start..];
    }
+
+   send_stop = sizeof(send_buf);
 
    if (request_type=="HEAD")
    {
-      send_buf=header;
-      if (m->file) m->file->close(),m->file=0;
+      m->file=0;
+      m->data=0;
+      m->size=0;
    }
    else if (m->data)
    {
-      if (m->stop)
-	 send_buf=header+m->data[..m->size-1];
-      else
-	 send_buf=header+m->data;
+      send_buf->add(m->data);
    }
-   else
-      send_buf=header;
-
-   if (sizeof(send_buf)<4096 &&
-       !m->file)
-   {
-      sent = my_fd->write(send_buf);
-      send_buf="";
-      finish(1);
-      return;
-   }
-
-   send_pos=0;
-   send_stop=strlen(header)+m->size;
+   if( m->size > 0 )
+      send_stop+=m->size;
 
    if (m->file)
    {
       send_fd=m->file;
-      send_buf+=send_fd->read(8192); // start read-ahead if possible
+      send_buf->range_error(0);
    }
-   else
-      send_fd=0;
 
-   if (strlen(send_buf)>=send_stop)
-      send_buf=send_buf[..send_stop-1];
-
-   call_out(send_timeout,send_timeout_delay);
    my_fd->set_nonblocking(send_read,send_write,send_close);
 }
 
@@ -745,14 +749,10 @@ void finish(int clean)
 {
    if( log_cb )
      log_cb(this);
-   if (send_fd) { 
-       send_fd->close(); 
-       destruct(send_fd); 
-       send_fd=0; 
-   }
+
    remove_call_out(send_timeout);
 
-   if (!clean 
+   if (!clean
        || !my_fd
        || !keep_alive)
    {
@@ -768,12 +768,20 @@ void finish(int clean)
    my_fd=0; // and drop this object
 }
 
-private int sent;
-private string send_buf="";
-private int send_pos;
-private Stdio.File send_fd=0;
-private int send_stop;
-private int keep_alive=0;
+class OutputBuffer
+{
+   inherit Stdio.IOBuffer;
+   int range_error( int n )
+   {
+      if( send_fd )
+      {
+         int n = input_from( send_fd, 8192 );
+         if( n < 8192 )
+            send_fd = 0;
+         return n;
+      }
+   }
+}
 
 //! Returns the amount of data sent.
 int sent_data()
@@ -785,37 +793,10 @@ void send_write()
 {
    remove_call_out(send_timeout);
    call_out(send_timeout,send_timeout_delay);
-
-   if (sizeof(send_buf)-send_pos<8192 &&
-       send_fd)
-   {
-      string q;
-      q=send_fd->read(65536);
-      if (!q || q=="")
-      {
-	 send_fd->close();
-	 send_fd=0;
-      }
-      else
-      {
-	 send_buf=send_buf[send_pos..]+q;
-	 send_pos=0;
-
-	 if (strlen(send_buf)+sent>=send_stop)
-	 {
-	    send_buf=send_buf[..send_stop-1-sent];
-	    send_fd->close();
-	    send_fd=0;
-	 }
-      }
-   }
-
-   int n=my_fd->write(send_buf[send_pos..]);
-
+   /* limit data size (for SSL files) */
+   int n=send_buf->output_to(my_fd,16384);
    sent += n;
-   send_pos+=n;
-
-   if (send_pos==sizeof(send_buf) && !send_fd)
+   if ( (send_stop==sent) || n <= 0 )
       finish(sent==send_stop);
 }
 
