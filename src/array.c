@@ -399,13 +399,10 @@ PMOD_EXPORT struct array *array_insert(struct array *v,struct svalue *s,INT32 in
     if ((v->item != v->real_item) &&
 	(((index<<1) < v->size) ||
 	 ((v->item + v->size) == (v->real_item + v->malloced_size)))) {
-      memmove((char *)(ITEM(v)-1),
-	      (char *)(ITEM(v)),
-	      index * sizeof(struct svalue));
+      memmove(ITEM(v)-1, ITEM(v), index * sizeof(struct svalue));
       v->item--;
     } else {
-      memmove((char *)(ITEM(v)+index+1),
-	      (char *)(ITEM(v)+index),
+      memmove(ITEM(v)+index+1, ITEM(v)+index,
 	      (v->size-index) * sizeof(struct svalue));
     }
     assert_free_svalue (ITEM(v) + index);
@@ -649,8 +646,7 @@ PMOD_EXPORT struct array *array_remove(struct array *v,INT32 index)
   } else {
     if(v->size-index>1)
     {
-      memmove((char *)(ITEM(v)+index),
-	      (char *)(ITEM(v)+index+1),
+      memmove(ITEM(v)+index, ITEM(v)+index+1,
 	      (v->size-index-1)*sizeof(struct svalue));
     }
     v->size--;
@@ -1700,8 +1696,8 @@ PMOD_EXPORT struct array *add_arrays(struct svalue *argp, INT32 args)
     if (v2) {
       debug_malloc_touch(v2);
       mark_free_svalue(argp + e2);
-      memmove((char *)(v2->real_item + tmp2), (char *)ITEM(v2),
-	      v2->size * sizeof(struct svalue));
+      memmove(v2->real_item + tmp2, ITEM(v2),
+              v2->size * sizeof(struct svalue));
       v2->item = v2->real_item + tmp2;
       for(tmp=e2-1;tmp>=0;tmp--)
       {
