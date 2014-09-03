@@ -137,7 +137,7 @@ time_t TIME(time_t *);
 #ifdef HAVE__SNPRINTF
 /* In WIN32 snprintf is known as _snprintf... */
 #define snprintf _snprintf
-#define HAVE_SNPRINTF
+#define HAVE_SNPRINTF 1
 #endif
 #endif
 
