@@ -4545,7 +4545,6 @@ fi
 AC_CHECK_FUNCS( \
  _crypt \
  poll \
- bcopy \
  clock \
  closefrom \
  crypt \

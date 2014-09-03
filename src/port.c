@@ -262,7 +262,7 @@ PMOD_EXPORT int STRCASECMP(const char *a,const char *b)
 }
 #endif
 
-#if !defined(HAVE_MEMCPY) && !defined(HAVE_BCOPY)
+#indef HAVE_MEMCPY
 PMOD_EXPORT void MEMCPY(void *bb,const void *aa,size_t s)
 {
   if(!s) return;

@@ -174,14 +174,9 @@ PMOD_EXPORT int STRCASECMP(const char *a,const char *b);
 #define MEMSET memset
 
 #ifndef HAVE_MEMCPY
-#  ifdef HAVE_BCOPY
-#    define MEMCPY(X,Y,Z) bcopy(Y,X,Z)
-#    define __builtin_memcpy(X,Y,Z) bcopy(Y,X,Z)
-#  else
 void MEMCPY(void *b,const void *a,size_t s);
-#    define __builtin_memcpy MEMCPY
-#  endif
-# else
+#  define __builtin_memcpy MEMCPY
+#else
 #  define MEMCPY(X,Y,Z) memcpy((char*)(X),(char*)(Y),(Z))
 #endif
 
