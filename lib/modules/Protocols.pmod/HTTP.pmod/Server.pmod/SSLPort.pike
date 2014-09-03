@@ -29,10 +29,14 @@ object|function|program request_program=Request;
 //! @param certificate
 //!   An optional SSL certificate or chain of certificates with the host 
 //!   certificate first, provided in binary format.
+//! @param share
+//!   If true, the connection will be shared if possible. See
+//!   @[Stdio.Port.bind] for more information
 void create(function(Request:void) _callback,
 	    void|int _portno,
 	    void|string _interface, void|string key,
-            void|string|array(string) certificate)
+            void|string|array(string) certificate,
+            void|int share)
 {
    portno=_portno;
    if (!portno) portno=443; // default HTTPS port
@@ -45,7 +49,7 @@ void create(function(Request:void) _callback,
    if( key && certificate )
      port->add_cert( key, certificate );
 
-   if (!port->bind(portno,new_connection,[string]interface))
+   if (!port->bind(portno,new_connection,[string]interface,share))
       error("HTTP.Server.SSLPort: failed to bind port %s%d: %s\n",
 	    interface?interface+":":"",
 	    portno,strerror(port->errno()));
