@@ -6024,16 +6024,6 @@ char buf[100];
 
 ########################################################################
 
-MY_CHECK_FUNCTION(isspace,
-[
-#include <ctype.h>
-], [
-  if(isspace(' ')) exit(0);
-  exit(1);
-])
-
-#############################################################################
-
 AC_MSG_CHECKING(if we can declare environ)
 AC_CACHE_VAL(pike_cv_declare_environ,[
 AC_TRY_COMPILE([

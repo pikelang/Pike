@@ -1390,7 +1390,7 @@ static struct pike_string *internal_parse_type_string(const char **_s)
   const unsigned char **s = (const unsigned char **)_s;
   const unsigned char *p;
   struct string_builder tmp;
-  while(ISSPACE(**s)) ++*s;
+  while(isspace(**s)) ++*s;
   if(**s != '\"') yyerror("Expected '\"'.");
   else
     ++*s;
@@ -1429,7 +1429,7 @@ static void internal_parse_typeA(const char **_s)
   unsigned int len;
   const unsigned char **s = (const unsigned char **)_s;
   
-  while(ISSPACE(**s)) ++*s;
+  while(isspace(**s)) ++*s;
 
   for(len=0;isidchar(EXTRACT_UCHAR(s[0]+len));len++)
   {
@@ -1453,15 +1453,15 @@ static void internal_parse_typeA(const char **_s)
     case 'i':
       if(!strcmp(buf,"int"))
       {
-	while(ISSPACE(**s)) ++*s;
+	while(isspace(**s)) ++*s;
 	if(**s=='(')
 	{
 	  INT32 min,max;
 	  ++*s;
-	  while(ISSPACE(**s)) ++*s;
+	  while(isspace(**s)) ++*s;
 	  if (**s != '.') {
 	    min=STRTOL((const char *)*s,(char **)s,0);
-	    while(ISSPACE(**s)) ++*s;
+	    while(isspace(**s)) ++*s;
 	  } else {
 	    min = MIN_INT32;
 	  }
@@ -1471,10 +1471,10 @@ static void internal_parse_typeA(const char **_s)
 	    yyerror("Missing .. in integer type.");
 	  }
 	  
-	  while(ISSPACE(**s)) ++*s;
+	  while(isspace(**s)) ++*s;
 	  if (**s != ')') {
 	    max=STRTOL((const char *)*s,(char **)s,0);
-	    while(ISSPACE(**s)) ++*s;
+	    while(isspace(**s)) ++*s;
 	  } else {
 	    max = MAX_INT32;
 	  }
@@ -1493,12 +1493,12 @@ static void internal_parse_typeA(const char **_s)
     case 'f':
       if(!strcmp(buf,"function"))
       {
-	while(ISSPACE(**s)) ++*s;
+	while(isspace(**s)) ++*s;
 	if(**s == '(')
 	{
 	  int nargs = 0;
 	  ++*s;
-	  while(ISSPACE(**s)) ++*s;
+	  while(isspace(**s)) ++*s;
 	  while(1)
 	  {
 	    if(**s == ':')
@@ -1511,12 +1511,12 @@ static void internal_parse_typeA(const char **_s)
 	    {
 	      nargs++;
 	      ++*s;
-	      while(ISSPACE(**s)) ++*s;
+	      while(isspace(**s)) ++*s;
 	    }
 	    else if(s[0][0]=='.' && s[0][1]=='.' && s[0][2]=='.')
 	    {
 	      *s+=3;
-	      while(ISSPACE(**s)) ++*s;
+	      while(isspace(**s)) ++*s;
 	      if(**s != ':') {
 		yyerror("Missing ':' after ... in function type.");
 		--*s;
@@ -1555,12 +1555,12 @@ static void internal_parse_typeA(const char **_s)
     case 'o':
       if(!strcmp(buf,"object"))
       {
-	while(ISSPACE(**s)) ++*s;
+	while(isspace(**s)) ++*s;
 	if(**s == '(') /* object({,is,implements} {id,this_program}) */
 	{
 	  int is = 0, id;
 	  ++*s;
-	  while(ISSPACE(**s)) ++*s;
+	  while(isspace(**s)) ++*s;
 	  if( **s != 'i' )
 	    goto no_is_implements;
 	  ++*s;
@@ -1577,7 +1577,7 @@ static void internal_parse_typeA(const char **_s)
 	    }
 	    *s += 10;
 	  }
-	  while(ISSPACE(**s)) ++*s;
+	  while(isspace(**s)) ++*s;
 	no_is_implements:
 	  if( !**s )
 	    goto bad_type;
@@ -1589,7 +1589,7 @@ static void internal_parse_typeA(const char **_s)
 	    while( **s >= '0' && **s <= '9' )
 	      ++*s;
 	  }
-	  while(ISSPACE(**s)) ++*s;
+	  while(isspace(**s)) ++*s;
 	  if( !**s || **s != ')' )
 	    goto bad_type;
 	  ++*s;
@@ -1613,15 +1613,15 @@ static void internal_parse_typeA(const char **_s)
 
     case 's':
       if(!strcmp(buf,"string")) {
-	while(ISSPACE(**s)) ++*s;
+	while(isspace(**s)) ++*s;
 	if(**s == '(')
 	{
 	  INT32 min,max;
 	  ++*s;
-	  while(ISSPACE(**s)) ++*s;
+	  while(isspace(**s)) ++*s;
 	  if (**s != '.') {
 	    min=STRTOL((const char *)*s,(char **)s,0);
-	    while(ISSPACE(**s)) ++*s;
+	    while(isspace(**s)) ++*s;
 	  } else {
 	    min = MIN_INT32;
 	  }
@@ -1631,10 +1631,10 @@ static void internal_parse_typeA(const char **_s)
 	    yyerror("Missing .. in integer type.");
 	  }
 	  
-	  while(ISSPACE(**s)) ++*s;
+	  while(isspace(**s)) ++*s;
 	  if (**s != ')') {
 	    max=STRTOL((const char *)*s,(char **)s,0);
-	    while(ISSPACE(**s)) ++*s;
+	    while(isspace(**s)) ++*s;
 	  } else {
 	    max = MAX_INT32;
 	  }
@@ -1657,7 +1657,7 @@ static void internal_parse_typeA(const char **_s)
     case 't':
       if (!strcmp(buf,"tuple"))
       {
-	while(ISSPACE(**s)) ++*s;
+	while(isspace(**s)) ++*s;
 	if(**s == '(')
 	{
 	  ++*s;
@@ -1684,7 +1684,7 @@ static void internal_parse_typeA(const char **_s)
       if(!strcmp(buf,"mixed")) { push_type(T_MIXED); break; }
       if(!strcmp(buf,"mapping"))
       {
-	while(ISSPACE(**s)) ++*s;
+	while(isspace(**s)) ++*s;
 	if(**s == '(')
 	{
 	  ++*s;
@@ -1705,7 +1705,7 @@ static void internal_parse_typeA(const char **_s)
       }
       if(!strcmp(buf,"multiset"))
       {
-	while(ISSPACE(**s)) ++*s;
+	while(isspace(**s)) ++*s;
 	if(**s == '(')
 	{
 	  ++*s;
@@ -1728,7 +1728,7 @@ static void internal_parse_typeA(const char **_s)
     case 'a':
       if(!strcmp(buf,"array"))
       {
-	while(ISSPACE(**s)) ++*s;
+	while(isspace(**s)) ++*s;
 	if(**s == '(')
 	{
 	  ++*s;
@@ -1746,13 +1746,13 @@ static void internal_parse_typeA(const char **_s)
 
     case '_':
       if (!strcmp(buf, "__attribute__")) {
-	while(ISSPACE(**s)) ++*s;
+	while(isspace(**s)) ++*s;
 	if(**s == '(')
 	{
 	  struct pike_string *attr;
 	  ++*s;
 	  attr = internal_parse_type_string(_s);
-	  while(ISSPACE(**s)) ++*s;
+	  while(isspace(**s)) ++*s;
 	  if(**s != ',') yyerror("Expected ','.");
 	  else
 	    ++*s;
@@ -1769,7 +1769,7 @@ static void internal_parse_typeA(const char **_s)
       } else if (!strcmp(buf, "__deprecated__")) {
 	struct pike_string *deprecated_string;
 	MAKE_CONST_STRING(deprecated_string, "deprecated");
-	while(ISSPACE(**s)) ++*s;
+	while(isspace(**s)) ++*s;
 	if(**s == '(')
 	{
 	  ++*s;
@@ -1798,7 +1798,7 @@ static void internal_parse_typeA(const char **_s)
     case '9':
       if(atoi(buf)<10)
       {
-	while(ISSPACE(**s)) ++*s;
+	while(isspace(**s)) ++*s;
 	if(**s=='=')
 	{
 	  ++*s;
@@ -1816,13 +1816,13 @@ static void internal_parse_typeA(const char **_s)
       my_yyerror("Couldn't parse type. (%s).", buf);
   }
 
-  while(ISSPACE(**s)) ++*s;
+  while(isspace(**s)) ++*s;
 }
 
 
 static void internal_parse_typeB(const char **s)
 {
-  while(ISSPACE(EXTRACT_UCHAR(*s))) ++*s;
+  while(isspace(EXTRACT_UCHAR(*s))) ++*s;
   switch(**s)
   {
   case '!':
@@ -1834,7 +1834,7 @@ static void internal_parse_typeB(const char **s)
   case '(':
     ++*s;
     internal_parse_type(s);
-    while(ISSPACE(EXTRACT_UCHAR(*s))) ++*s;
+    while(isspace(EXTRACT_UCHAR(*s))) ++*s;
     if(**s != ')') {
       yyerror("Expected ')' in type.");
     }
@@ -1851,12 +1851,12 @@ static void internal_parse_typeCC(const char **s)
 {
   internal_parse_typeB(s);
 
-  while(ISSPACE(EXTRACT_UCHAR(*s))) ++*s;
+  while(isspace(EXTRACT_UCHAR(*s))) ++*s;
   
   while(**s == '*')
   {
     ++*s;
-    while(ISSPACE(EXTRACT_UCHAR(*s))) ++*s;
+    while(isspace(EXTRACT_UCHAR(*s))) ++*s;
     push_type(T_ARRAY);
   }
 }

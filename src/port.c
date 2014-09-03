@@ -34,18 +34,6 @@
 #include <string.h>
 #include <time.h>
 
-#ifndef HAVE_ISSPACE
-PMOD_EXPORT const char Pike_isspace_vector[] =
-  "0012345678SSSSS456789012345678901"
-   "S3456789012345678901234567890123"
-   "45678901234567890123456789012345"
-   "67890123456789012345678901234567"
-   "89012345678901234567890123456789"
-   "01234567890123456789012345678901"
-   "23456789012345678901234567890123"
-   "45678901234567890123456789000000";
-#endif
-
 #ifdef sun
 time_t time PROT((time_t *));
 #endif
@@ -284,7 +272,7 @@ PMOD_EXPORT long STRTOL(const char *str, char **ptr, int base)
   if (base < 0 || base > MBASE)
     return 0;		/* base is invalid -- should be a fatal error */
   if (!isalnum(c = *str & 0xff)) {
-    while (ISSPACE(c))
+    while (isspace(c))
       c = *++str & 0xff;
     switch (c) {
     case '-':
@@ -472,7 +460,7 @@ PMOD_EXPORT double STRTOD(const char * nptr, char **endptr)
   s = (const unsigned char *)nptr;
 
   /* Eat whitespace.  */
-  while (ISSPACE(*s)) ++s;
+  while (isspace(*s)) ++s;
 
   /* Get the sign.  */
   sign = *s == '-' ? -1 : 1;
@@ -536,7 +524,7 @@ PMOD_EXPORT double STRTOD(const char * nptr, char **endptr)
 	/* NOTE: Don't trust the value returned from STRTOL.
 	 * We need to find the sign of the exponent by hand.
 	 */
-	while(ISSPACE(*s)) {
+	while(isspace(*s)) {
 	  s++;
 	}
 	if (endptr != NULL)

@@ -103,18 +103,14 @@
 struct timeval;
 #endif
 
-#ifdef HAVE_ISSPACE
+#define HAVE_ISSPACE 1
 #define ISSPACE(X) isspace(X)
-#else
-PMOD_EXPORT extern const char Pike_isspace_vector[];
-#define ISSPACE(X) (Pike_isspace_vector[(X)+1] == 'S')
-#endif
 
 /* Warning, these run 'C' more than once */
 /* FIXME: Is it that great that every wide char is considered an
  * identifier char? Doesn't strike me as very unicode compliant.
  * isalnum, isdigit and islower also look seriously borken. /mast */
-#define WIDE_ISSPACE(C)	(((C) < 256)?ISSPACE(C):0)
+#define WIDE_ISSPACE(C)	(((C) < 256)?isspace(C):0)
 #define WIDE_ISIDCHAR(C) (((C) < 256)?isidchar(C):1)
 #define WIDE_ISALNUM(C)	(((C) < 256)?isalnum(C):0)
 #define WIDE_ISDIGIT(C)	(((C) < 256)?isdigit(C):0)

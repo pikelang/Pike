@@ -21,8 +21,8 @@
 
 /* Generic */
 #define GOBBLE(c) (LOOK()==c?(SKIP(),1):0)
-#define SKIPSPACE() do { while(ISSPACE(LOOK()) && LOOK()!='\n') SKIP(); }while(0)
-#define SKIPWHITE() do { while(ISSPACE(LOOK())) SKIP(); }while(0)
+#define SKIPSPACE() do { while(isspace(LOOK()) && LOOK()!='\n') SKIP(); }while(0)
+#define SKIPWHITE() do { while(isspace(LOOK())) SKIP(); }while(0)
 #define SKIPUPTO(X) do { while(LOOK()!=(X) && LOOK()) SKIP(); }while(0)
 
 #if (SHIFT == 0)
@@ -982,7 +982,7 @@ unknown_directive:
 					     SHIFT);
 	  dmalloc_touch_svalue(&sval);
 	  if ((TYPEOF(sval) == PIKE_T_INT) && (p3 > p2)) {
-	    for (l=0; ISSPACE(INDEX_CHARP(p3, l, SHIFT)); l++)
+	    for (l=0; isspace(INDEX_CHARP(p3, l, SHIFT)); l++)
 	      ;
 	    if ((INDEX_CHARP(p3, l, SHIFT) == ':') &&
 		(INDEX_CHARP(p3, l+1, SHIFT) == ':')) {

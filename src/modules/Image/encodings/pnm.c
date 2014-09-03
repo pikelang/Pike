@@ -75,7 +75,7 @@ static INLINE unsigned char getnext(struct pike_string *s,INT32 *pos)
 {
    if (*pos>=s->len) return 0;
    if (s->str[(*pos)]=='#')
-      for (;*pos<s->len && ISSPACE(((unsigned char *)(s->str))[*pos]);(*pos)++);
+      for (;*pos<s->len && isspace(((unsigned char *)(s->str))[*pos]);(*pos)++);
    return s->str[(*pos)++];
 }
 
@@ -95,7 +95,7 @@ static INLINE unsigned char getnext_skip_comment(struct pike_string *s,INT32 *po
 static INLINE void skipwhite(struct pike_string *s,INT32 *pos)
 {
    while (*pos<s->len && 
-	  ( ISSPACE(((unsigned char *)(s->str))[*pos]) ||
+	  ( isspace(((unsigned char *)(s->str))[*pos]) ||
 	    s->str[*pos]=='#'))
       getnext_skip_comment(s,pos);
 }
