@@ -1580,15 +1580,6 @@ PMOD_EXPORT int c_compare_string(struct pike_string *s, char *foo, int len)
   return s->len == len && s->size_shift == 0 && !memcmp(s->str,foo,len);
 }
 
-#ifndef HAVE_STRCOLL
-/* No locale function available */
-static int low_binary_strcmp(char *a, ptrdiff_t alen,
-			     char *b, ptrdiff_t blen)
-{
-  low_quick_binary_strcmp(a,alen,b,blen);
-}
-#else
-
 /* takes locale into account */
 static int low_binary_strcmp(char *a, ptrdiff_t alen,
 			     char *b, ptrdiff_t blen)
@@ -1608,10 +1599,8 @@ static int low_binary_strcmp(char *a, ptrdiff_t alen,
   if(alen > blen) return 1;
   return -1;
 }
-#endif
 
 /* Does not take locale into account */
-
 PMOD_EXPORT ptrdiff_t my_quick_strcmp(struct pike_string *a,
 				      struct pike_string *b)
 {
@@ -1639,7 +1628,6 @@ PMOD_EXPORT ptrdiff_t my_strcmp(struct pike_string *a,struct pike_string *b)
 	INT32 ac=index_shared_string(a,e);
 	INT32 bc=index_shared_string(b,e);
 
-#ifdef HAVE_STRCOLL
 	if(ac < 256 && bc < 256)
 	{
 	  char atmp[2],btmp[2];
@@ -1650,9 +1638,9 @@ PMOD_EXPORT ptrdiff_t my_strcmp(struct pike_string *a,struct pike_string *b)
 	  btmp[1]=0;
 	  if((tmp=strcoll(atmp,btmp)))
 	     return tmp;
-	}else
-#endif
-	  if(ac-bc) return ac-bc;
+	}
+        else if(ac-bc)
+          return ac-bc;
       }
       return a->len - b->len;
     }

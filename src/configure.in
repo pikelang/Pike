@@ -5747,21 +5747,6 @@ MY_CHECK_FUNCTION(gethostname,
   char *x=gethostname(buffer,sizeof(buffer));
   exit(0);
 ])
-#############################################################################
-MY_CHECK_FUNCTION(strcoll,
-[
-#include <string.h>
-#include <locale.h>
-], [
-  setlocale(LC_CTYPE, "ISO-8859-1");
-  exit(strcoll("abc", "def") >= 0 ||
-       strcoll("ABC", "DEF") >= 0 ||
-       strcoll("ABC", "ABCD") >= 0 ||
-       strcoll("ABCD", "ABC") <= 0 ||
-       strcoll("*^#", "*^#") != 0 ||
-       strcoll("123", "456") >= 0);
-])
-
 ########################################################################
 
 AC_MSG_CHECKING(if we can declare environ)
