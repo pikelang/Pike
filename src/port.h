@@ -116,9 +116,6 @@ void GETTIMEOFDAY(struct timeval *t);
 #  endif
 #endif
 
-#define HAVE_TIME 1
-#define TIME time
-
 #ifndef HAVE_SNPRINTF
 #ifdef HAVE__SNPRINTF
 /* In WIN32 snprintf is known as _snprintf... */
@@ -133,58 +130,11 @@ void GETTIMEOFDAY(struct timeval *t);
 #define rintl(X) floorl ((X) + 0.5)
 #endif
 
-/* Compat. */
-#define RINTF rintf
-#define RINT rint
-#define RINTL rintl
-
-#define HAVE_STRTOL 1
-#define STRTOL strtol
-
-#define HAVE_STRTOD 1
-#define STRTOD strtod
-
-#define HAVE_STRCSPN 1
-#define STRCSPN strcspn
-
 #ifndef HAVE_STRCASECMP
 PMOD_EXPORT int STRCASECMP(const char *a,const char *b);
 #else
 #  define STRCASECMP strcasecmp
 #endif
-
-#define HAVE_STRNLEN 1
-#define STRNLEN strnlen
-
-#define HAVE_STRNCMP 1
-#define STRNCMP strncmp
-
-#define HAVE_MEMSET 1
-#define MEMSET memset
-
-#define HAVE_MEMCPY 1
-#define MEMCPY(X,Y,Z) memcpy((X),(Y),(Z))
-
-#define HAVE_MEMMOVE 1
-#define MEMMOVE memmove
-
-#define HAVE_MEMCMP 1
-#define MEMCMP(X,Y,Z) memcmp((X),(Y),(Z))
-
-#define HAVE_MEMCHR 1
-#define MEMCHR(X,Y,Z) memchr(X,Y,Z)
-
-#define HAVE_STRCHR 1
-#define STRCHR strchr
-#ifdef STRCHR_DECL_MISSING
-char *strchr(const char *s,int c);
-#endif
-
-#define HAVE_VFPRINTF 1
-#define VFPRINTF vfprintf
-
-#define HAVE_VSPRINTF 1
-#define VSPRINTF vsprintf
 
 #ifndef HAVE_VSNPRINTF
 PMOD_EXPORT int VSNPRINTF(char *buf, size_t size, const char *fmt, va_list args);
@@ -197,6 +147,62 @@ PMOD_EXPORT int SNPRINTF(char *buf, size_t size, const char *fmt, ...);
 #else
 #  define SNPRINTF snprintf
 #endif
+
+/* Compat. */
+#define RINTF rintf
+#define RINT rint
+#define RINTL rintl
+
+#define HAVE_STRCHR 1
+#define STRCHR strchr
+#ifdef STRCHR_DECL_MISSING
+char *strchr(const char *s,int c);
+#endif
+
+#define HAVE_TIME 1
+#define TIME time
+
+#define HAVE_STRTOL 1
+#define STRTOL strtol
+
+#define HAVE_STRTOD 1
+#define STRTOD strtod
+
+#define HAVE_STRCSPN 1
+#define STRCSPN strcspn
+
+#define HAVE_STRNLEN 1
+#define STRNLEN strnlen
+
+#define HAVE_STRNCMP 1
+#define STRNCMP strncmp
+
+#define HAVE_MEMSET 1
+#define MEMSET memset
+
+#define HAVE_MEMCPY 1
+#define MEMCPY memcpy
+
+#define HAVE_MEMMOVE 1
+#define MEMMOVE memmove
+
+#define HAVE_MEMCMP 1
+#define MEMCMP memcmp
+
+#define HAVE_MEMCHR 1
+#define MEMCHR memchr
+
+#define HAVE_VFPRINTF 1
+#define VFPRINTF vfprintf
+
+#define HAVE_VSPRINTF 1
+#define VSPRINTF vsprintf
+
+#define HAVE_FREXP 1
+#define FREXP frexp
+
+#define HAVE_LDEXP 1
+#define LDEXP ldexp
 
 
 #ifdef EXTRACT_UCHAR_BY_CAST
@@ -351,12 +357,6 @@ long long gethrtime(void);
 #endif /* FLOAT_IS_IEEE_BIG */
 #endif /* DOUBLE_IS_IEEE_LITTLE */
 #endif /* DOUBLE_IS_IEEE_BIG */
-
-#define HAVE_FREXP 1
-#define FREXP frexp
-
-#define HAVE_LDEXP 1
-#define LDEXP ldexp
 
 #ifdef __MINGW32__
 #ifndef HAVE__DOSMAPERR
