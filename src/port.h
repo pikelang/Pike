@@ -185,13 +185,10 @@ PMOD_EXPORT int STRCASECMP(const char *a,const char *b);
 #define HAVE_MEMCHR 1
 #define MEMCHR(X,Y,Z) memchr(X,Y,Z)
 
-#ifndef HAVE_STRCHR
-PMOD_EXPORT char *STRCHR(char *s,int c);
-#else
-#  define STRCHR strchr
-#  ifdef STRCHR_DECL_MISSING
-char *STRCHR(char *s,int c);
-#  endif
+#define HAVE_STRCHR 1
+#define STRCHR strchr
+#ifdef STRCHR_DECL_MISSING
+char *strchr(const char *s,int c);
 #endif
 
 #define HAVE_VFPRINTF 1

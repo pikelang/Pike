@@ -4554,7 +4554,6 @@ AC_CHECK_FUNCS( \
  sigaction \
  sigvec \
  strcasecmp \
- strchr \
  strerror \
  times \
  tzset \

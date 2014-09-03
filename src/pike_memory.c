@@ -2354,16 +2354,16 @@ static void parse_location (struct memloc *l, struct parsed_location *pl)
   const char *p;
   pl->file = LOCATION_NAME (l->location);
 
-  p = STRCHR (pl->file, ' ');
+  p = strchr (pl->file, ' ');
   if (p)
     pl->extra = p;
   else
-    pl->extra = STRCHR (pl->file, 0);
+    pl->extra = strchr (pl->file, 0);
 
-  p = STRCHR (pl->file, ':');
+  p = strchr (pl->file, ':');
   if (p && p < pl->extra) {
     const char *pp;
-    while ((pp = STRCHR (p + 1, ':')) && pp < pl->extra) p = pp;
+    while ((pp = strchr (p + 1, ':')) && pp < pl->extra) p = pp;
     pl->line = strtol (p + 1, NULL, 10);
     pl->file_len = p - pl->file;
   }
@@ -2931,7 +2931,7 @@ static LOCATION low_dynamic_location(char type, const char *file,
     {
 
       if (name) {
-	char *s = STRCHR (str->str + len + 2, ' ');
+	char *s = strchr (str->str + len + 2, ' ');
 	if (!s) continue;
 	s++;
 	if (strcmp (s, name)) continue;

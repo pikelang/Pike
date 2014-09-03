@@ -2419,10 +2419,10 @@ struct pike_string *find_program_name(struct program *p, INT_TYPE *line)
   {
     char *tmp=dmalloc_find_name(p);
     if (tmp) {
-      char *p = STRCHR (tmp, ':');
+      char *p = strchr (tmp, ':');
       if (p) {
 	char *pp;
-	while ((pp = STRCHR (p + 1, ':'))) p = pp;
+	while ((pp = strchr (p + 1, ':'))) p = pp;
 	*line = atoi (p + 1);
 	return make_shared_binary_string (tmp, p - tmp);
       }

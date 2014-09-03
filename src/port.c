@@ -262,14 +262,6 @@ PMOD_EXPORT int STRCASECMP(const char *a,const char *b)
 }
 #endif
 
-#if !defined(HAVE_INDEX) && !defined(HAVE_STRCHR)
-PMOD_EXPORT char *STRCHR(char *s,int c)
-{
-  for(;*s;s++) if(*s==c) return s;
-  return NULL;
-}
-#endif
-
 #ifndef HAVE_VSPRINTF
 PMOD_EXPORT int VSPRINTF(char *buf,const char *fmt,va_list args)
 {
@@ -281,7 +273,7 @@ PMOD_EXPORT int VSPRINTF(char *buf,const char *fmt,va_list args)
   char *fmt2p;
 
   fmt2[0]='%';
-  for(;(s=STRCHR(fmt,'%'));fmt=s)
+  for(;(s=strchr(fmt,'%'));fmt=s)
   {
     memcpy(buf,fmt,s-fmt);
     buf+=s-fmt;

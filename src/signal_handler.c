@@ -2854,8 +2854,8 @@ void f_create_process(INT32 args)
             ITEM(cmd)[e].u.string->str[0] != '"' ||
             ITEM(cmd)[e].u.string->str[ITEM(cmd)[e].u.string->len-1] != '"')
           {
-            quote=STRCHR(ITEM(cmd)[e].u.string->str,'"') ||
-              STRCHR(ITEM(cmd)[e].u.string->str,' ');
+            quote=strchr(ITEM(cmd)[e].u.string->str,'"') ||
+              strchr(ITEM(cmd)[e].u.string->str,' ');
           }
 
 	if(quote)
@@ -3061,7 +3061,7 @@ void f_create_process(INT32 args)
     {
       if(e)
         low_my_putchar(' ', &storage.cmd_buf);
-      if(STRCHR(STR0(ITEM(cmd)[e].u.string),'"') || STRCHR(STR0(ITEM(cmd)[e].u.string),' ')) {
+      if(strchr(STR0(ITEM(cmd)[e].u.string),'"') || strchr(STR0(ITEM(cmd)[e].u.string),' ')) {
         low_my_putchar('"', &storage.cmd_buf);
 	for(d=0;d<ITEM(cmd)[e].u.string->len;d++)
 	{

@@ -2213,7 +2213,7 @@ PIKEFUN string|mapping _getenv (void|string var)
       if (!entry)
 	push_int (0);
       else {
-	char *eq = STRCHR (entry, '=');
+	char *eq = strchr (entry, '=');
 	/* There should always be a '=' in the entry, but you never know.. */
 	push_string (make_shared_string (eq ? eq + 1 : entry));
       }
@@ -2241,7 +2241,7 @@ PIKEFUN string|mapping _getenv (void|string var)
 #endif /* !USE_SETENV */
 
     while (--n >= 0) {
-      char *entry = environ[n], *eq = STRCHR (entry, '=');
+      char *entry = environ[n], *eq = strchr (entry, '=');
       if (eq) { /* gnu libc getenv ignores variables without '='. */
 	struct pike_string *var = make_shared_binary_string (entry, eq - entry);
 	struct pike_string *val = make_shared_string (eq + 1);
@@ -2284,7 +2284,7 @@ PIKEFUN void _putenv (string var, void|string val)
 
   if (var->size_shift)
     SIMPLE_ARG_TYPE_ERROR ("putenv", 1, "string(0..255)");
-  if (string_has_null (var) || STRCHR (var->str, '='))
+  if (string_has_null (var) || strchr (var->str, '='))
     SIMPLE_ARG_ERROR ("putenv", 1, "Variable name cannot contain '=' or NUL.");
 
   if (val) {

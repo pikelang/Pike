@@ -797,7 +797,7 @@ int pike_regexec(regexp *prog, char *string)
     /* If there is a "must appear" string, look for it. */
     if (prog->regmust != (char *)NULL) {
 	s = string;
-	while ((s = STRCHR(s, prog->regmust[0])) != (char *)NULL) {
+	while ((s = strchr(s, prog->regmust[0])) != (char *)NULL) {
 	    if (strncmp(s, prog->regmust, prog->regmlen) == 0)
 		break;		/* Found it. */
 	    s++;
@@ -816,7 +816,7 @@ int pike_regexec(regexp *prog, char *string)
     s = string;
     if (prog->regstart != '\0')
 	/* We know what char it must start with. */
-	while ((s = STRCHR(s, prog->regstart)) != (char *)NULL) {
+	while ((s = strchr(s, prog->regstart)) != (char *)NULL) {
 	    if (regtry(prog, s))
 		return (1);
 	    s++;
@@ -953,13 +953,13 @@ char           *prog;
 	    break;
 	case ANYOF:
 	    if (*reginput == '\0' || 
-		 STRCHR(OPERAND(scan), *reginput) == (char *)NULL)
+		 strchr(OPERAND(scan), *reginput) == (char *)NULL)
 		return (0);
 	    reginput++;
 	    break;
 	case ANYBUT:
 	    if (*reginput == '\0' || 
-		 STRCHR(OPERAND(scan), *reginput) != (char *)NULL)
+		 strchr(OPERAND(scan), *reginput) != (char *)NULL)
 		return (0);
 	    reginput++;
 	    break;
@@ -1106,13 +1106,13 @@ char           *p;
 	}
 	break;
     case ANYOF:
-	while (*scan != '\0' && STRCHR(opnd, *scan) != (char *)NULL) {
+	while (*scan != '\0' && strchr(opnd, *scan) != (char *)NULL) {
 	    count++;
 	    scan++;
 	}
 	break;
     case ANYBUT:
-	while (*scan != '\0' && STRCHR(opnd, *scan) == (char *)NULL) {
+	while (*scan != '\0' && strchr(opnd, *scan) == (char *)NULL) {
 	    count++;
 	    scan++;
 	}

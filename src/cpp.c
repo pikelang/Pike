@@ -3634,7 +3634,7 @@ void init_cpp()
 void add_predefine(const char *s)
 {
   struct pike_predef_s *tmp=ALLOC_STRUCT(pike_predef_s);
-  char * pos=STRCHR(s,'=');
+  char * pos=strchr(s,'=');
   if(pos)
   {
     tmp->name=xalloc(pos-s+1);
