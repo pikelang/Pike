@@ -136,27 +136,19 @@ class File
 
   //! Toggle the file to IOBuffer mode.
   //!
-  //! In this mode reading and writing will be done from IOBuffer objects,
+  //! In this mode reading and writing will be done from IOBuffer
+  //! objects, in the directions you included buffers.
   //!
-  //! It is assumed that the file will be used in non-blocking mode.
-  //!
-  //! If @[in] or @[out] that specific buffer is used for the specified direction.
-  //!
-  //! The default is to create new buffers for both directions when
-  //! this function is called.
   //!
   //! @note
   //!  Normally you call @[write] to re-trigger the write callback if
   //!  you do not output anything in it (which will stop it from
   //!  re-occuring again).
   //!
-  //!  This will work with buffered mode as well, but simply adding more
-  //!  data to the output buffer will work as well.
-  void set_buffer_mode( Stdio.IOBuffer|void in,Stdio.IOBuffer|void out )
+  //!  This will work with buffered output mode as well, but simply
+  //!  adding more data to the output buffer will work as well.
+  void set_buffer_mode( Stdio.IOBuffer|int(0..0) in,Stdio.IOBuffer|int(0..0) out )
   {
-    if( !in )  in = Stdio.IOBuffer();
-    if( !out ) out = Stdio.IOBuffer();
-
     inbuffer = in;
     outbuffer = out;
     outbuffer->__fd_set_output( this );
