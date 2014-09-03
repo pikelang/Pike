@@ -262,78 +262,6 @@ PMOD_EXPORT int STRCASECMP(const char *a,const char *b)
 }
 #endif
 
-#ifndef HAVE_VSPRINTF
-PMOD_EXPORT int VSPRINTF(char *buf,const char *fmt,va_list args)
-{
-  char *b=buf;
-  char *s;
-
-  int tmpA;
-  char fmt2[120];
-  char *fmt2p;
-
-  fmt2[0]='%';
-  for(;(s=strchr(fmt,'%'));fmt=s)
-  {
-    memcpy(buf,fmt,s-fmt);
-    buf+=s-fmt;
-    fmt=s;
-    fmt2p=fmt2+1;
-    s++;
-  unknown_character:
-    switch((*(fmt2p++)=*(s++)))
-    {
-    default:
-      goto unknown_character;
-
-    case '*':
-      fmt2p--;
-      sprintf(fmt2p,"%d",va_arg(args,int));
-      fmt2p+=strlen(fmt2p);
-      goto unknown_character;
-
-    case 0:
-      Pike_fatal("Error in vsprintf format.\n");
-      return 0;
-
-    case '%':
-      *(buf++)='%';
-      break;
-
-    case 'p':
-    case 's':
-      *fmt2p=0;
-      sprintf(buf,fmt2,va_arg(args,char *));
-      buf+=strlen(buf);
-      break;
-
-    case 'd':
-    case 'c':
-    case 'x':
-    case 'X':
-      *fmt2p=0;
-      sprintf(buf,fmt2,va_arg(args,int));
-      buf+=strlen(buf);
-      break;
-
-    case 'f':
-    case 'e':
-    case 'E':
-    case 'g':
-      *fmt2p=0;
-      sprintf(buf,fmt2,va_arg(args,double));
-      buf+=strlen(buf);
-      break;
-    }
-  }
-  tmpA=strlen(fmt);
-  memcpy(buf,fmt,tmpA);
-  buf+=tmpA;
-  *buf=0;
-  return buf-b;
-}
-#endif
-
 #ifndef HAVE_VSNPRINTF
 /* Warning: It's possible to trick this with something like
  * snprintf("...%c...", 0). */
@@ -344,8 +272,8 @@ PMOD_EXPORT int VSNPRINTF(char *buf, size_t size, const char *fmt, va_list args)
     buf = alloca(size=1000);
   }
   buf[size - 1] = 0;
-  res = VSPRINTF (buf, fmt, args);
-  if (buf[size - 1]) Pike_fatal ("Buffer overflow in VSPRINTF.\n");
+  res = vsprintf (buf, fmt, args);
+  if (buf[size - 1]) Pike_fatal ("Buffer overflow in vsprintf.\n");
   return res;
 }
 #endif

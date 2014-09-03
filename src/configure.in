@@ -4557,7 +4557,6 @@ AC_CHECK_FUNCS( \
  strerror \
  times \
  tzset \
- vsprintf \
  _snprintf \
  snprintf \
  vsnprintf \

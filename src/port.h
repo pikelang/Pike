@@ -194,11 +194,8 @@ char *strchr(const char *s,int c);
 #define HAVE_VFPRINTF 1
 #define VFPRINTF vfprintf
 
-#ifndef HAVE_VSPRINTF
-PMOD_EXPORT int VSPRINTF(char *buf,const char *fmt,va_list args);
-#else
-#  define VSPRINTF vsprintf
-#endif
+#define HAVE_VSPRINTF 1
+#define VSPRINTF vsprintf
 
 #ifndef HAVE_VSNPRINTF
 PMOD_EXPORT int VSNPRINTF(char *buf, size_t size, const char *fmt, va_list args);
