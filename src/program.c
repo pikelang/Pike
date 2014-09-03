@@ -6901,7 +6901,7 @@ PMOD_EXPORT int low_find_lfun(struct program *p, ptrdiff_t lfun)
   return i;
 }
 
-PMOD_EXPORT int find_lfun_fatal(struct program *p, ptrdiff_t lfun)
+PMOD_EXPORT int find_lfun_fatal(struct program *UNUSED(p), ptrdiff_t lfun)
 {
   Pike_fatal("Invalid lfun number: %d\n", lfun);
   return -1;
@@ -12195,7 +12195,8 @@ PMOD_EXPORT void *parent_storage(int depth, struct program *expected)
   return loc.o->storage + loc.inherit->storage_offset;
 }
 
-PMOD_EXPORT void *get_inherited_storage(int inh, struct program *expected)
+PMOD_EXPORT void *get_inherited_storage(int inh,
+                                        struct program *DEBUGUSED(expected))
 {
   struct inherit *i = Pike_fp->context + inh;
 
@@ -12230,6 +12231,7 @@ PMOD_EXPORT void change_compiler_compatibility(int major, int minor)
 #include <sys/mman.h>
 #endif
 
+#if defined(HAVE_SYNC_INSTRUCTION_MEMORY) || defined(FLUSH_INSTRUCTION_CACHE) || !defined(USE_MY_MEXEC_ALLOC)
 void make_area_executable (char *start, size_t len)
 {
 #ifndef USE_MY_MEXEC_ALLOC
@@ -12254,6 +12256,11 @@ void make_area_executable (char *start, size_t len)
   FLUSH_INSTRUCTION_CACHE(start, len);
 #endif /* HAVE_SYNC_INSTRUCTION_MEMORY || FLUSH_INSTRUCTION_CACHE */
 }
+#else
+void make_area_executable (char *UNUSED(start), size_t UNUSED(len))
+{
+}
+#endif
 
 void make_program_executable(struct program *p)
 {
