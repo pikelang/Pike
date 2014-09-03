@@ -221,11 +221,7 @@ PMOD_EXPORT void *MEMCHR(const void *p,char c,size_t e);
 #endif
 
 #ifndef HAVE_STRCHR
-#  ifdef HAVE_INDEX
-#    define STRCHR(X,Y) ((char *)index(X,Y))
-#  else
 PMOD_EXPORT char *STRCHR(char *s,int c);
-#  endif
 #else
 #  define STRCHR strchr
 #  ifdef STRCHR_DECL_MISSING

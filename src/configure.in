@@ -4556,7 +4556,6 @@ AC_CHECK_FUNCS( \
  getrlimit \
  getrusage \
  gettimeofday \
- index \
  inet_ntop \
  localtime \
  gmtime \
