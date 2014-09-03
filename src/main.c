@@ -136,11 +136,9 @@ static void get_master_key(HKEY cat)
 static void set_default_master(const char *bin_name)
 {
 #define mp master_file_location
-#ifdef HAVE_GETENV
   if(getenv("PIKE_MASTER")) {
     set_master(getenv("PIKE_MASTER"));
   }
-#endif
 
 #ifdef __NT__
   if(!*mp) get_master_key(HKEY_CURRENT_USER);

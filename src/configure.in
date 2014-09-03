@@ -4515,7 +4515,6 @@ AC_CHECK_FUNCS( \
  fdwalk \
  gethrtime \
  gethrvtime \
- getenv \
  getrlimit \
  getrusage \
  gettimeofday \
