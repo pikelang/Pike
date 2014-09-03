@@ -774,7 +774,7 @@ class OutputBuffer
    {
       if( send_fd )
       {
-         int n = input_from( send_fd, 128*1024 );
+         int n = input_from( send_fd, min(128*1024,send_stop-sent-sizeof(this)) );
          if( n < 128*1024 )
          {
             send_fd = 0;
