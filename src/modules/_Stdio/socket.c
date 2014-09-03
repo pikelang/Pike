@@ -759,7 +759,7 @@ void init_stdio_port(void)
 	       offset + OFFSETOF(port, id), PIKE_T_MIXED);
   /* function(int|string,void|mixed,void|string:int) */
   ADD_FUNCTION("bind", port_bind,
-	       tFunc(tOr(tInt,tStr) tOr(tVoid,tMix) tOr(tVoid,tStr),tInt), 0);
+	       tFunc(tOr(tInt,tStr) tOr(tVoid,tMix) tOr(tVoid,tStr) tOr(tVoid,tInt),tInt), 0);
 #ifdef HAVE_SYS_UN_H
   /* function(int|string,void|mixed,void|string:int) */
   ADD_FUNCTION("bind_unix", bind_unix,
