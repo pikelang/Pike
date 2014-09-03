@@ -741,7 +741,6 @@ void response_and_finish(mapping m, function|void _log_cb)
       send_fd=m->file;
       send_buf->range_error(0);
    }
-
    my_fd->set_nonblocking(send_read,send_write,send_close);
 }
 
@@ -775,10 +774,12 @@ class OutputBuffer
    {
       if( send_fd )
       {
-         int n = input_from( send_fd, 8192 );
-         if( n < 8192 )
+         int n = input_from( send_fd, 128*1024 );
+         if( n < 128*1024 )
+         {
             send_fd = 0;
-         return n;
+         }
+         return !!n;
       }
    }
 }
@@ -786,7 +787,7 @@ class OutputBuffer
 //! Returns the amount of data sent.
 int sent_data()
 {
-  return sent;
+   return sent;
 }
 
 void send_write()
@@ -796,6 +797,7 @@ void send_write()
    /* limit data size (for SSL files) */
    int n=send_buf->output_to(my_fd,16384);
    sent += n;
+
    if ( (send_stop==sent) || n <= 0 )
       finish(sent==send_stop);
 }
@@ -813,5 +815,5 @@ void send_close()
 
 void send_read(mixed dummy,string s)
 {
-  buf+=s; // for HTTP/1.1
+   buf+=s; // for HTTP/1.1
 }
