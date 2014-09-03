@@ -5732,27 +5732,6 @@ MY_CHECK_FUNCTION(rint,
   exit(0);
 ])
 
-########################################################################
-
-MY_CHECK_FUNCTION(frexp,
-[
-#include <math.h>
-], [
-  double x,y;
-  int p,e;
-
-  x=frexp(1.0, &e);
-  if(x * pow(2.0,(double)e) != 1.0) exit(3);
-
-  p=-7;
-  for(x=3.0/4.0*pow(2.0,(double)p);x<50000.0;x*=2.0,p++)
-  {
-    if(frexp(x, &e)!=3.0/4.0) exit(1);
-    if(e!=p) exit(2);
-  }
-  exit(0);
-])
-
 #############################################################################
 MY_CHECK_FUNCTION(GetSystemTimeAsFileTime,
 [

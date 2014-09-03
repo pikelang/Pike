@@ -363,11 +363,8 @@ long long gethrtime(void);
 #endif /* DOUBLE_IS_IEEE_LITTLE */
 #endif /* DOUBLE_IS_IEEE_BIG */
 
-#ifdef HAVE_FREXP
+#define HAVE_FREXP 1
 #define FREXP frexp
-#else
-double FREXP(double x, int *exp);
-#endif
 
 #ifdef HAVE_LDEXP
 #define LDEXP ldexp

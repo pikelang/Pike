@@ -493,7 +493,7 @@ static void low_write_IEEE_float(char *b, double d, int sz)
 #endif
 
   if(e<0) {
-    d = FREXP(d, &e);
+    d = frexp(d, &e);
     if(d == 1.0) {
       d=0.5;
       e++;

@@ -717,7 +717,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	int y;
 	double tmp;
 
-	tmp = FREXP(d, &y);
+	tmp = frexp(d, &y);
 	x = DO_NOT_WARN((INT64)((((INT64)1)<<(sizeof(INT64)*8 - 2))*tmp));
 	y -= sizeof(INT64)*8 - 2;
 

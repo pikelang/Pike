@@ -313,9 +313,6 @@
 /* Define if you have rint.  */
 #undef HAVE_RINT
 
-/* Define if you have frexp.  */
-#undef HAVE_FREXP
-
 /* Define if your signals are one-shot */
 #undef SIGNAL_ONESHOT
 
