@@ -1179,7 +1179,7 @@ static void name(INT32 args)						\
 	return;								\
  STRINGCONV(                                                            \
        case T_STRING:                                                   \
-        MEMMOVE(sp-args+1, sp-args, sizeof(struct svalue)*args);        \
+        memmove(sp-args+1, sp-args, sizeof(struct svalue)*args);        \
         sp++; args++;                                                   \
         SET_SVAL_TYPE(sp[-args], PIKE_T_FREE);				\
         SET_SVAL(sp[-args], T_STRING, 0, string,			\
@@ -1269,7 +1269,7 @@ static void mpzmod_add_eq(INT32 args)
           push_float( (FLOAT_TYPE)ret );
           return;
         case T_STRING:
-          MEMMOVE(sp-args+1, sp-args, sizeof(struct svalue)*args);
+          memmove(sp-args+1, sp-args, sizeof(struct svalue)*args);
           sp++; args++;
           SET_SVAL_TYPE(sp[-args], PIKE_T_FREE);
           SET_SVAL(sp[-args], T_STRING, 0, string,

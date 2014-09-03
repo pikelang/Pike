@@ -262,20 +262,6 @@ PMOD_EXPORT int STRCASECMP(const char *a,const char *b)
 }
 #endif
 
-#ifndef HAVE_MEMMOVE
-PMOD_EXPORT void MEMMOVE(void *b,const void *aa,size_t s)
-{
-  char *t=(char *)b;
-  char *a=(char *)aa;
-  if(a>t)
-    for(;s;s--) *(t++)=*(a++);
-  else
-    if(a<t)
-      for(t+=s,a+=s;s;s--) *(--t)=*(--a);
-}
-#endif
-
-
 #ifndef HAVE_MEMCMP
 PMOD_EXPORT int MEMCMP(const void *bb,const void *aa,size_t s)
 {

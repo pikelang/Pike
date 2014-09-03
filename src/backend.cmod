@@ -1538,7 +1538,7 @@ PIKECLASS Backend
 	   Pike_fatal ("Out of memory in backend::add_fd_box(): "
 		       "Tried to allocate %d fd_callback_box pointers\n",
 		       me->fd_boxes_size);
-	 MEMMOVE (me->fd_boxes + shift, me->fd_boxes,
+	 memmove (me->fd_boxes + shift, me->fd_boxes,
 		  sizeof (me->fd_boxes[0]) * old_size);
 	 memset (me->fd_boxes, 0, sizeof (me->fd_boxes[0]) * shift);
 	 debug_malloc_touch(me->fd_boxes);

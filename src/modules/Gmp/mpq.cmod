@@ -373,7 +373,7 @@ PIKECLASS mpq
 	len-=4;
 	if (len < 1) len = 1;
 	while(s->str[len]) len++;
-	MEMMOVE(s->str, s->str+1, len-prec);
+	memmove(s->str, s->str+1, len-prec);
       }else{
 	/* Shift the fractional part backward to make room for the dot. */
 	mpz_get_str(s->str, 10, num);
@@ -381,7 +381,7 @@ PIKECLASS mpq
 	len-=5;
 	if (len < 0) len = 0;
 	while(s->str[len]) len++;
-	MEMMOVE(s->str+len-prec+1,
+	memmove(s->str+len-prec+1,
 		s->str+len-prec,
 		prec+1);
 	len++;
@@ -405,7 +405,7 @@ PIKECLASS mpq
       for (; prec > len; prec--) *p++ = '0';
       mpz_get_str (p, 10, num);
       if (!p[len - 1]) {
-	MEMMOVE (p + 1, p, len - 1);
+	memmove (p + 1, p, len - 1);
 	*p = '0';
       }
       push_string (end_and_resize_shared_string (s, p - s->str + len));

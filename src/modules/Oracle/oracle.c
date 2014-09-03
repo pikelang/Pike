@@ -1526,7 +1526,7 @@ static void push_inout_value(struct inout *inout,
 
     case SQLT_NUM:
       /* Kluge -- Convert it to a VNU. */
-      MEMMOVE(inout->u.shortstr+1,inout->u.shortstr,inout->xlen);
+      memmove(inout->u.shortstr+1,inout->u.shortstr,inout->xlen);
       inout->u.shortstr[0]=inout->xlen;
 
       /* FALL_THROUGH */

@@ -495,7 +495,7 @@ PIKECLASS CircularList
       THIS->a->size = size;
       if (THIS->size > 0)
       {
-	MEMMOVE((char *)(ITEM(THIS->a)+(size-endpos)),
+	memmove((char *)(ITEM(THIS->a)+(size-endpos)),
 		(char *)(ITEM(THIS->a)+(THIS->pos)),
 		(endpos) * sizeof(struct svalue));
 	THIS->pos = size-endpos;

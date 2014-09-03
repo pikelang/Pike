@@ -5843,24 +5843,6 @@ char *d="gazonk";
 
 ########################################################################
 
-MY_CHECK_FUNCTION(memmove,
-[
-#include <string.h>
-char buf[100];
-], [
-  strcpy(buf,"foo bar gazonk elefantsnabel.");
-  if(strcmp(buf,"foo bar gazonk elefantsnabel.")) exit(1);
-  memmove(buf,buf+1,7);
-  if(strcmp(buf,"oo bar  gazonk elefantsnabel.")) exit(1);
-  memmove(buf+1,buf+1,9);
-  if(strcmp(buf,"oo bar  gazonk elefantsnabel.")) exit(1);
-  memmove(buf+1,buf,11);
-  if(strcmp(buf,"ooo bar  gaznk elefantsnabel.")) exit(1);
-  exit(0);
-])
-
-########################################################################
-
 AC_MSG_CHECKING(if we can declare environ)
 AC_CACHE_VAL(pike_cv_declare_environ,[
 AC_TRY_COMPILE([

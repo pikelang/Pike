@@ -176,11 +176,8 @@ PMOD_EXPORT int STRCASECMP(const char *a,const char *b);
 #define HAVE_MEMCPY 1
 #define MEMCPY(X,Y,Z) memcpy((X),(Y),(Z))
 
-#ifndef HAVE_MEMMOVE
-PMOD_EXPORT void MEMMOVE(void *b,const void *a,size_t s);
-#else
-#  define MEMMOVE memmove
-#endif
+#define HAVE_MEMMOVE 1
+#define MEMMOVE memmove
 
 #ifndef HAVE_MEMCMP
 PMOD_EXPORT int MEMCMP(const void *b,const void *a,size_t s);

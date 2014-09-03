@@ -304,11 +304,6 @@
 /* Define if you have gethostname */
 #undef HAVE_GETHOSTNAME
 
-/* Define if you have memmove.  */
-#ifndef __CHECKER__
-#undef HAVE_MEMMOVE
-#endif
-
 /* Define if you have memmem.  */
 #undef HAVE_MEMMEM
 

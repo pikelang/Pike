@@ -399,12 +399,12 @@ PMOD_EXPORT struct array *array_insert(struct array *v,struct svalue *s,INT32 in
     if ((v->item != v->real_item) &&
 	(((index<<1) < v->size) ||
 	 ((v->item + v->size) == (v->real_item + v->malloced_size)))) {
-      MEMMOVE((char *)(ITEM(v)-1),
+      memmove((char *)(ITEM(v)-1),
 	      (char *)(ITEM(v)),
 	      index * sizeof(struct svalue));
       v->item--;
     } else {
-      MEMMOVE((char *)(ITEM(v)+index+1),
+      memmove((char *)(ITEM(v)+index+1),
 	      (char *)(ITEM(v)+index),
 	      (v->size-index) * sizeof(struct svalue));
     }
@@ -649,7 +649,7 @@ PMOD_EXPORT struct array *array_remove(struct array *v,INT32 index)
   } else {
     if(v->size-index>1)
     {
-      MEMMOVE((char *)(ITEM(v)+index),
+      memmove((char *)(ITEM(v)+index),
 	      (char *)(ITEM(v)+index+1),
 	      (v->size-index-1)*sizeof(struct svalue));
     }
@@ -1687,7 +1687,7 @@ PMOD_EXPORT struct array *add_arrays(struct svalue *argp, INT32 args)
 	if (!v2 || (v->size > v2->size)) {
 	  /* Got a potential candidate.
 	   *
-	   * Optimize for maximum MEMMOVE()
+	   * Optimize for maximum memmove()
 	   * (ie minimum assign_svalues_no_free()).
 	   */
 	  tmp2 = tmp;
@@ -1700,7 +1700,7 @@ PMOD_EXPORT struct array *add_arrays(struct svalue *argp, INT32 args)
     if (v2) {
       debug_malloc_touch(v2);
       mark_free_svalue(argp + e2);
-      MEMMOVE((char *)(v2->real_item + tmp2), (char *)ITEM(v2),
+      memmove((char *)(v2->real_item + tmp2), (char *)ITEM(v2),
 	      v2->size * sizeof(struct svalue));
       v2->item = v2->real_item + tmp2;
       for(tmp=e2-1;tmp>=0;tmp--)

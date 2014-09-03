@@ -9052,7 +9052,7 @@ PMOD_EXPORT void f_filter(INT32 args)
 	   pop_n_elems(args-2);
 	 }
 	 else {
-	   MEMMOVE(Pike_sp-args+1,Pike_sp-args,args*sizeof(*Pike_sp));
+	   memmove(Pike_sp-args+1,Pike_sp-args,args*sizeof(*Pike_sp));
 	   dmalloc_touch_svalue(Pike_sp);
 	   Pike_sp++;
 	   add_ref_svalue(Pike_sp-args);
@@ -9090,7 +9090,7 @@ PMOD_EXPORT void f_filter(INT32 args)
 	 /* mapping ret =                             
 	       mkmapping(indices(arr),                
 	                 map(values(arr),fun,@extra)); */
-	 MEMMOVE(Pike_sp-args+2,Pike_sp-args,args*sizeof(*Pike_sp));
+	 memmove(Pike_sp-args+2,Pike_sp-args,args*sizeof(*Pike_sp));
 	 Pike_sp+=2;
 	 mark_free_svalue (Pike_sp-args-2);
 	 mark_free_svalue (Pike_sp-args-1);

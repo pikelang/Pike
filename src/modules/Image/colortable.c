@@ -611,7 +611,7 @@ static ptrdiff_t reduce_recurse(struct nct_flat_entry *src,
       n=reduce_recurse(src,dest,left,i,level+2,sf,newpos1,space,type);
       if (n!=oldn) {
 	 if (n<oldn) /* i certainly hope so */
-	    MEMMOVE(dest+n,dest+oldn,sizeof(struct nct_flat_entry)*m);
+	    memmove(dest+n,dest+oldn,sizeof(struct nct_flat_entry)*m);
 	 else /* huh? */
 	    /* this is the only case we don't have them already */
 	    m=reduce_recurse(src+left,dest+n,src_size-left,
