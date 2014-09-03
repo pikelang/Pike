@@ -16,15 +16,15 @@ static void LM_FUNC(rgb_group *s,rgb_group *l,rgb_group *d,
    if (alpha==0.0)
    {
 #ifdef LAYER_DUAL
-      MEMCPY(d,s,sizeof(rgb_group)*len);
-      MEMCPY(da,sa,sizeof(rgb_group)*len);
+      memcpy(d,s,sizeof(rgb_group)*len);
+      memcpy(da,sa,sizeof(rgb_group)*len);
 #endif
       return; 
    }
    else if (alpha==1.0)
    {
 #ifdef L_COPY_ALPHA
-      MEMCPY(da,sa,sizeof(rgb_group)*len);
+      memcpy(da,sa,sizeof(rgb_group)*len);
 #define da da da da /* error */
 #endif
       if (!la)  /* no layer alpha => full opaque */
@@ -157,7 +157,7 @@ static void LM_FUNC(rgb_group *s,rgb_group *l,rgb_group *d,
    {
 #ifdef L_COPY_ALPHA
 #undef da
-      MEMCPY(da,sa,sizeof(rgb_group)*len);
+      memcpy(da,sa,sizeof(rgb_group)*len);
 #define da da da
 #endif
       if (!la)  /* no layer alpha => full opaque */

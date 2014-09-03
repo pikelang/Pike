@@ -579,7 +579,7 @@ static INLINE struct pike_string* gimme_some_data(size_t pos)
 	 src = this->firstinput->u.mmap + pos - this->pos;
 /* This thread_allow/deny is at the cost of one extra memory copy */
 	 THREADS_ALLOW();
-	 MEMCPY(tmp->str, src, len);
+	 memcpy(tmp->str, src, len);
 	 THREADS_DISALLOW();
 	 return end_shared_string(tmp);
        }

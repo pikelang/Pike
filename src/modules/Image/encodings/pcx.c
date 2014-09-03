@@ -110,7 +110,7 @@ void get_rle_decoded_from_data( unsigned char *dest, struct buffer * source,
   {
     unsigned char *c = get_chunk( source, nelems );
     if(c)
-      MEMCPY( dest, c, nelems );
+      memcpy( dest, c, nelems );
     else
       memset( dest, 0, nelems );
     return;

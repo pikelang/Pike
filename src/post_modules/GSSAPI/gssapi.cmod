@@ -267,7 +267,7 @@ static void cleanup_oid_set (gss_OID_set *oid_set)
     size_t l_ = src_->length;						\
     dst_->length = l_;							\
     dst_->elements = xalloc (l_);					\
-    MEMCPY (dst_->elements, src_->elements, l_);			\
+    memcpy (dst_->elements, src_->elements, l_);			\
   } while (0)
 
 /* Support code to map between gss_OID's and the dotted-decimal

@@ -257,7 +257,7 @@ void aap_log_append(int sent, struct args *arg, int reply)
   le->sent_bytes = sent;
   le->reply = reply;
   le->received_bytes = arg->res.body_start + arg->res.content_len;
-  MEMCPY(data_to, arg->res.data, arg->res.body_start-4);
+  memcpy(data_to, arg->res.data, arg->res.body_start-4);
   le->raw.str = data_to;
   le->raw.len = arg->res.body_start-4;
   le->url.str = (data_to + (size_t)(arg->res.url-arg->res.data));

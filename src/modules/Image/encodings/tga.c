@@ -171,7 +171,7 @@ static struct image_alpha load_image(struct pike_string *str)
 	  DO_NOT_WARN((long)buffer.len));
 
 
-/*   MEMCPY(&footer, (buffer.str+(buffer.len-sizeof(struct tga_footer))), */
+/*   memcpy(&footer, (buffer.str+(buffer.len-sizeof(struct tga_footer))), */
 /*          sizeof( struct tga_footer) ); */
 
   hdr = *((struct tga_header *)buffer.str);
@@ -196,7 +196,7 @@ static ptrdiff_t std_fread (unsigned char *buf,
 			    size_t datasize, size_t nelems, struct buffer *fp)
 {
   size_t amnt = MINIMUM((nelems*datasize), fp->len);
-  MEMCPY(buf, fp->str, amnt);
+  memcpy(buf, fp->str, amnt);
   fp->len -= amnt;
   fp->str += amnt;
   return amnt / datasize;
@@ -206,7 +206,7 @@ static ptrdiff_t std_fwrite (unsigned char *buf,
 			     size_t datasize, size_t nelems, struct buffer *fp)
 {
   size_t amnt = MINIMUM((nelems*datasize), fp->len);
-  MEMCPY(fp->str, buf, amnt);
+  memcpy(fp->str, buf, amnt);
   fp->len -= amnt;
   fp->str += amnt;
   return amnt / datasize;
@@ -261,7 +261,7 @@ static ptrdiff_t rle_fread (guchar *buf, size_t datasize, size_t nelems,
     {
       /* Copy bytes from our previously decoded buffer. */
       bytes = MINIMUM (buflen - j, statelen - laststate);
-      MEMCPY (buf + j, statebuf + laststate, bytes);
+      memcpy (buf + j, statebuf + laststate, bytes);
       j += bytes;
       laststate += bytes;
 
@@ -317,7 +317,7 @@ static ptrdiff_t rle_fread (guchar *buf, size_t datasize, size_t nelems,
         memset (p + 1, *p, bytes - 1);
       else
         for (k = datasize; k < bytes; k += datasize)
-          MEMCPY (p + k, p, datasize);
+          memcpy (p + k, p, datasize);
     }
     else
     {

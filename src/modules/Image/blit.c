@@ -129,11 +129,11 @@ void img_clear(rgb_group *dest, rgb_group rgb, ptrdiff_t size)
     size -= 1;
     while (size>increment) 
     {
-      MEMCPY(dest,from,increment*sizeof(rgb_group));
+      memcpy(dest,from,increment*sizeof(rgb_group));
       size-=increment,dest+=increment;
       if (increment<1024) increment *= 2;
     }
-    if(size>0) MEMCPY(dest,from,size*sizeof(rgb_group));
+    if(size>0) memcpy(dest,from,size*sizeof(rgb_group));
   }
   THREADS_DISALLOW();
 }
@@ -162,7 +162,7 @@ void img_box_nocheck(INT32 x1,INT32 y1,INT32 x2,INT32 y2)
 	 if(!length)
 	   break;	/* Break to the while(0). */
 	 for(x=0; x<length; x++)  *(foo+x) = rgb;
-	 while(--y)  MEMCPY((foo+=xs), from, length*sizeof(rgb_group)); 
+	 while(--y)  memcpy((foo+=xs), from, length*sizeof(rgb_group)); 
        } while(0);
        THREADS_DISALLOW();
      }
@@ -189,11 +189,11 @@ CHRONO("image_blit begin");
 
    THREADS_ALLOW();
    if(!moddest && !modsrc)
-     MEMCPY(dest,src,sizeof(rgb_group)*width*lines);
+     memcpy(dest,src,sizeof(rgb_group)*width*lines);
    else
      while (lines--)
      {
-       MEMCPY(dest,src,sizeof(rgb_group)*width);
+       memcpy(dest,src,sizeof(rgb_group)*width);
        dest+=moddest;
        src+=modsrc;
      }
@@ -222,7 +222,7 @@ void img_crop(struct image *dest,
    {
       *dest=*img;
       THREADS_ALLOW();
-      MEMCPY(new,img->img,(x2-x1+1)*(y2-y1+1)*sizeof(rgb_group));
+      memcpy(new,img->img,(x2-x1+1)*(y2-y1+1)*sizeof(rgb_group));
       THREADS_DISALLOW();
       dest->img=new;
       return;
@@ -261,7 +261,7 @@ void img_clone(struct image *newimg,struct image *img)
    if (newimg->img) free(newimg->img);
    newimg->img=xalloc(sizeof(rgb_group)*img->xsize*img->ysize+RGB_VEC_PAD);
    THREADS_ALLOW();
-   MEMCPY(newimg->img,img->img,sizeof(rgb_group)*img->xsize*img->ysize);
+   memcpy(newimg->img,img->img,sizeof(rgb_group)*img->xsize*img->ysize);
    THREADS_DISALLOW();
    newimg->xsize=img->xsize;
    newimg->ysize=img->ysize;

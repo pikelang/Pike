@@ -125,7 +125,7 @@ static tsize_t read_buffer( thandle_t bh, tdata_t d, tsize_t len )
 	buffer_handle->offset, buffer_handle->real_len, avail);
   if(!avail) return -1;
   len = MINIMUM(avail, len);
-  MEMCPY(data, buffer_handle->str+buffer_handle->offset, len);
+  memcpy(data, buffer_handle->str+buffer_handle->offset, len);
   buffer_handle->offset += len;
   return len;
 }
@@ -145,7 +145,7 @@ static tsize_t write_buffer(thandle_t bh, tdata_t d, tsize_t len)
           len);
     increase_buffer_size( buffer_handle );
   }
-  MEMCPY( buffer_handle->str+buffer_handle->offset, data, len );
+  memcpy( buffer_handle->str+buffer_handle->offset, data, len );
   buffer_handle->offset += len;
   if(buffer_handle->offset > buffer_handle->real_len)
     buffer_handle->real_len = buffer_handle->offset;

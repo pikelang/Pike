@@ -550,7 +550,7 @@ CHRONO("gif _render_block push of packed data begin");
       {
 	 ps=begin_shared_string(256);
 	 *((unsigned char*)(ps->str))=255;
-	 MEMCPY(ps->str+1,lzw.out+i,255);
+	 memcpy(ps->str+1,lzw.out+i,255);
 	 push_string(end_shared_string(ps));
 	 numstrings++;
 	 if (numstrings>32) /* shrink stack */
@@ -564,7 +564,7 @@ CHRONO("gif _render_block push of packed data begin");
       {
 	 ps=begin_shared_string(lzw.outpos-i+2);
 	 ps->str[0] = DO_NOT_WARN((char)(lzw.outpos-i));
-	 MEMCPY(ps->str+1,lzw.out+i,lzw.outpos-i);
+	 memcpy(ps->str+1,lzw.out+i,lzw.outpos-i);
 	 ps->str[lzw.outpos-i+1]=0;
 	 push_string(end_shared_string(ps));
 	 numstrings++;
@@ -1818,17 +1818,17 @@ static void gif_deinterlace(rgb_group *s,
    tmp=malloc(xsize*ysize*sizeof(rgb_group));
    if (!tmp) return;
 
-   MEMCPY(tmp,s,xsize*ysize*sizeof(rgb_group));
+   memcpy(tmp,s,xsize*ysize*sizeof(rgb_group));
 
    n=0;
    for (y=0; y<ysize; y+=8)
-      MEMCPY(s+y*xsize,tmp+n++*xsize,xsize*sizeof(rgb_group));
+      memcpy(s+y*xsize,tmp+n++*xsize,xsize*sizeof(rgb_group));
    for (y=4; y<ysize; y+=8)		  
-      MEMCPY(s+y*xsize,tmp+n++*xsize,xsize*sizeof(rgb_group));
+      memcpy(s+y*xsize,tmp+n++*xsize,xsize*sizeof(rgb_group));
    for (y=2; y<ysize; y+=4)		  
-      MEMCPY(s+y*xsize,tmp+n++*xsize,xsize*sizeof(rgb_group));
+      memcpy(s+y*xsize,tmp+n++*xsize,xsize*sizeof(rgb_group));
    for (y=1; y<ysize; y+=2)		  
-      MEMCPY(s+y*xsize,tmp+n++*xsize,xsize*sizeof(rgb_group));
+      memcpy(s+y*xsize,tmp+n++*xsize,xsize*sizeof(rgb_group));
    
    free(tmp);
 }
@@ -2386,7 +2386,7 @@ void image_gif__encode_extension(INT32 args)
       {
    	 d=begin_shared_string(256);
 	 *((unsigned char*)(d->str))=255;
-	 MEMCPY(d->str+1,s->str+i,255);
+	 memcpy(d->str+1,s->str+i,255);
 	 push_string(end_shared_string(d));
 	 n++;
 	 if (n>32) /* shrink stack */
@@ -2400,7 +2400,7 @@ void image_gif__encode_extension(INT32 args)
       {
 	 d=begin_shared_string(s->len-i+2);
 	 d->str[0] = DO_NOT_WARN(s->len - i);
-	 MEMCPY(d->str+1, s->str+i, d->len-i);
+	 memcpy(d->str+1, s->str+i, d->len-i);
 	 d->str[d->len-i+1]=0;
 	 push_string(end_shared_string(d));
 	 n++;

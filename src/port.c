@@ -262,18 +262,6 @@ PMOD_EXPORT int STRCASECMP(const char *a,const char *b)
 }
 #endif
 
-#indef HAVE_MEMCPY
-PMOD_EXPORT void MEMCPY(void *bb,const void *aa,size_t s)
-{
-  if(!s) return;
-  {
-	char *b=(char *)bb;
-	char *a=(char *)aa;
-	for(;s;s--) *(b++)=*(a++);
-  }
-}
-#endif
-
 #ifndef HAVE_MEMMOVE
 PMOD_EXPORT void MEMMOVE(void *b,const void *aa,size_t s)
 {
@@ -336,7 +324,7 @@ PMOD_EXPORT int VSPRINTF(char *buf,const char *fmt,va_list args)
   fmt2[0]='%';
   for(;(s=STRCHR(fmt,'%'));fmt=s)
   {
-    MEMCPY(buf,fmt,s-fmt);
+    memcpy(buf,fmt,s-fmt);
     buf+=s-fmt;
     fmt=s;
     fmt2p=fmt2+1;
@@ -388,7 +376,7 @@ PMOD_EXPORT int VSPRINTF(char *buf,const char *fmt,va_list args)
     }
   }
   tmpA=strlen(fmt);
-  MEMCPY(buf,fmt,tmpA);
+  memcpy(buf,fmt,tmpA);
   buf+=tmpA;
   *buf=0;
   return buf-b;
@@ -430,21 +418,21 @@ PMOD_EXPORT int SNPRINTF(char *buf, size_t size, const char *fmt, ...)
 PMOD_EXPORT unsigned INT16 EXTRACT_UWORD_(unsigned char *p)
 {
   unsigned INT16 a;
-  MEMCPY((char *)&a,p,sizeof(a));
+  memcpy((char *)&a,p,sizeof(a));
   return a;
 }
 
 PMOD_EXPORT INT16 EXTRACT_WORD_(unsigned char *p)
 {
   INT16 a;
-  MEMCPY((char *)&a,p,sizeof(a));
+  memcpy((char *)&a,p,sizeof(a));
   return a;
 }
 
 PMOD_EXPORT INT32 EXTRACT_INT_(unsigned char *p)
 {
   INT32 a;
-  MEMCPY((char *)&a,p,sizeof(a));
+  memcpy((char *)&a,p,sizeof(a));
   return a;
 }
 #endif

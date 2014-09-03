@@ -53,7 +53,7 @@ PMOD_EXPORT void low_my_binary_strcat(const char *b, size_t l,
     Pike_fatal("Error in internal buffering.\n");
 #endif
 
-  MEMCPY(low_make_buf_space(l, buf),b, l);
+  memcpy(low_make_buf_space(l, buf),b, l);
 }
 
 PMOD_EXPORT void debug_initialize_buf(dynamic_buffer *buf)

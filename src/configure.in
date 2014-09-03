@@ -5843,20 +5843,6 @@ char *d="gazonk";
 
 ########################################################################
 
-MY_CHECK_FUNCTION(memcpy,
-[
-#include <string.h>
-char *a="foo bar gazonk";
-char foo[23];
-], [
-  memcpy(foo, a, strlen(a)+1);
-  memcpy(foo, a+4, 3);
-  if(strcmp(foo,"bar bar gazonk")) exit(1);
-  exit(0);
-])
-
-########################################################################
-
 MY_CHECK_FUNCTION(memmove,
 [
 #include <string.h>

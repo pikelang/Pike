@@ -71,7 +71,7 @@ static void read_string( struct buffer *from, unsigned int len, char *to )
 {
   if( from->len < len )
     Pike_error("Invalid data format\n");
-  MEMCPY( from->str, to, len );
+  memcpy( from->str, to, len );
   from->str += len;
   from->len -= len;
 }

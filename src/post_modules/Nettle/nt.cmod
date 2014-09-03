@@ -103,7 +103,7 @@ PIKECLASS CryptContext
     }
     res = begin_shared_string(size);
     if(init && size>0)
-      MEMCPY(res->str, init->str, MINIMUM(init->len,size));
+      memcpy(res->str, init->str, MINIMUM(init->len,size));
     if(CryptGenRandom(THIS->handle, size, (BYTE*)res->str)) {
       pop_n_elems(args);
       push_string(end_shared_string(res));

@@ -1574,7 +1574,7 @@ void PIKE_CONCAT(low_add_many_to_,NAME) (struct program_state *state,	\
     state->malloc_size_program->PIKE_CONCAT(num_,NAME)=m;		\
     state->new_program->NAME=tmp;					\
   }									\
-  MEMCPY(state->new_program->NAME +					\
+  memcpy(state->new_program->NAME +					\
 	 state->new_program->PIKE_CONCAT(num_,NAME),			\
 	 ARG, sizeof(TYPE) * cnt);					\
   state->new_program->PIKE_CONCAT(num_,NAME) += cnt;			\
@@ -1606,7 +1606,7 @@ void PIKE_CONCAT(add_to_,NAME) (ARGTYPE ARG) {				\
     state->malloc_size_program->PIKE_CONCAT(num_,NAME)=m;		\
     state->new_program->NAME=tmp;					\
   }									\
-  MEMCPY(state->new_program->NAME +					\
+  memcpy(state->new_program->NAME +					\
 	 state->new_program->PIKE_CONCAT(num_,NAME),			\
 	 ARG, sizeof(TYPE) * cnt);					\
   state->new_program->PIKE_CONCAT(num_,NAME) += cnt;			\
@@ -2375,7 +2375,7 @@ void optimize_program(struct program *p)
 #define FOO(NUMTYPE,TYPE,ARGTYPE,NAME) \
   size=DO_ALIGN(size, ALIGNOF(TYPE)); \
   if (p->PIKE_CONCAT (num_, NAME))					\
-    MEMCPY(data+size,p->NAME,p->PIKE_CONCAT(num_,NAME)*sizeof(p->NAME[0])); \
+    memcpy(data+size,p->NAME,p->PIKE_CONCAT(num_,NAME)*sizeof(p->NAME[0])); \
   PIKE_CONCAT(RELOCATE_,NAME)(p, (TYPE *)(data+size)); \
   dmfree(p->NAME); \
   p->NAME=(TYPE *)(data+size); \
@@ -7702,7 +7702,7 @@ static char *make_plain_file (struct pike_string *filename, int malloced)
       if (len > NELEM (buf) - 1)
 	len = NELEM (buf) - 1;
     }
-    MEMCPY (buffer, file, len);
+    memcpy (buffer, file, len);
     buffer[len] = 0;
     return buffer;
   }

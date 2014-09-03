@@ -441,7 +441,7 @@ int debug_fd_stat(const char *file, PIKE_STAT_T *buf)
       errno=EINVAL;
       return -1;
     }
-    MEMCPY(fname, file, l);
+    memcpy(fname, file, l);
     fname[l]=0;
     file=fname;
   }
@@ -651,7 +651,7 @@ PMOD_EXPORT FD debug_fd_open(const char *file, int open_mode, int create_mode)
       errno=EINVAL;
       return -1;
     }
-    MEMCPY(fname, file, l);
+    memcpy(fname, file, l);
     fname[l]=0;
     file=fname;
   }
@@ -1567,7 +1567,7 @@ PMOD_EXPORT DIR *opendir(char *dir)
     return 0;
   }
   foo=sizeof(DIR) + (char *)ret;
-  MEMCPY(foo, dir, len);
+  memcpy(foo, dir, len);
 
   if(len && foo[len-1]!='/') foo[len++]='/';
   foo[len++]='*';

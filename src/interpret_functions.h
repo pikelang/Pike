@@ -264,9 +264,9 @@ OPCODE1(F_CONSTANT, "constant", I_UPDATE_SP, {
  */
 OPCODE2(F_REARRANGE,"rearrange",0,{
   check_stack(arg2);
-  MEMCPY(Pike_sp,Pike_sp-arg1-arg2,sizeof(struct svalue)*arg2);
+  memcpy(Pike_sp,Pike_sp-arg1-arg2,sizeof(struct svalue)*arg2);
   MEMMOVE(Pike_sp-arg1-arg2,Pike_sp-arg1,sizeof(struct svalue)*arg1);
-  MEMCPY(Pike_sp-arg2,Pike_sp,sizeof(struct svalue)*arg2);
+  memcpy(Pike_sp-arg2,Pike_sp,sizeof(struct svalue)*arg2);
 });
 
 /* The rest of the basic 'push value' instructions */	

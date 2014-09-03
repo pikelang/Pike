@@ -2124,7 +2124,7 @@ static DECLSPEC(noreturn) void decode_error (
       decode_error (data, NULL, "Too large size %td (max is %td).\n",	\
 		    sz, data->len - data->ptr);				\
     STR=begin_wide_shared_string(num, what);				\
-    MEMCPY(STR->str, data->data + data->ptr, sz);			\
+    memcpy(STR->str, data->data + data->ptr, sz);			\
     data->ptr += sz;							\
     BITFLIP(STR);							    \
     STR=end_shared_string(STR);                                             \

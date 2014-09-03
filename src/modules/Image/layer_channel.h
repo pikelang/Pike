@@ -11,13 +11,13 @@ static void LM_FUNC(rgb_group *s,rgb_group *l,rgb_group *d,
 		    int len,double alpha)
 {
   if (da != sa)
-    MEMCPY(da,sa,sizeof(rgb_group)*len); /* always copy alpha channel */
+    memcpy(da,sa,sizeof(rgb_group)*len); /* always copy alpha channel */
 #define da da da /* protect */
    if (alpha==0.0)
    {
 #ifdef LAYER_DUAL
      if (d != s)
-       MEMCPY(d,s,sizeof(rgb_group)*len);
+       memcpy(d,s,sizeof(rgb_group)*len);
 #endif
       return; 
    }

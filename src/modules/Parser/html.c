@@ -650,7 +650,7 @@ found_start:
    n_ws_or_endarg = (ptrdiff_t)(N_WS(this) + n);
    ws_or_endarg=alloca(sizeof(p_wchar2)*n_ws_or_endarg);
    if (!ws_or_endarg) Pike_error ("Out of stack.\n");
-   MEMCPY(ws_or_endarg+n, WS (this), N_WS (this) * sizeof(p_wchar2));
+   memcpy(ws_or_endarg+n, WS (this), N_WS (this) * sizeof(p_wchar2));
    ws_or_endarg[0] = ARG_EQ (this);
    ws_or_endarg[1] = TAG_END (this);
    ws_or_endarg[2] = TAG_START (this);
@@ -677,10 +677,10 @@ found_start:
 #endif
 #endif
 
-   MEMCPY(CC->arg_break_chars, ws_or_endarg,
+   memcpy(CC->arg_break_chars, ws_or_endarg,
 	  n_ws_or_endarg*sizeof(p_wchar2));
 
-   MEMCPY(CC->arg_break_chars+n_ws_or_endarg,
+   memcpy(CC->arg_break_chars+n_ws_or_endarg,
 	  ARGQ_START (this), NARGQ (this) * sizeof(p_wchar2));
 
    CC->arg_break_chars[CC->n_arg_break_chars-1] = ENTITY_START (this);
@@ -749,8 +749,8 @@ static void init_html_struct(struct object *UNUSED(o))
    THIS->entity_start=DEF_ENT_START;
    THIS->entity_end=DEF_ENT_END;
    THIS->nargq=NELEM(argq_start);
-   MEMCPY(THIS->argq_start,argq_start,sizeof(argq_start));
-   MEMCPY(THIS->argq_stop,argq_stop,sizeof(argq_stop));
+   memcpy(THIS->argq_start,argq_start,sizeof(argq_start));
+   memcpy(THIS->argq_stop,argq_stop,sizeof(argq_stop));
    THIS->arg_eq=DEF_EQ;
    
    /* allocated stuff */
@@ -777,11 +777,11 @@ static void init_html_struct(struct object *UNUSED(o))
 
 #ifdef CONFIGURABLE_MARKUP
    THIS->lazy_entity_ends=(p_wchar2*)xalloc(sizeof(lazy_entity_ends));
-   MEMCPY(THIS->lazy_entity_ends,lazy_entity_ends,sizeof(lazy_entity_ends));
+   memcpy(THIS->lazy_entity_ends,lazy_entity_ends,sizeof(lazy_entity_ends));
    THIS->n_lazy_entity_ends=NELEM(lazy_entity_ends);
 
    THIS->ws=(p_wchar2*)xalloc(sizeof(whitespace));
-   MEMCPY(THIS->ws,whitespace,sizeof(whitespace));
+   memcpy(THIS->ws,whitespace,sizeof(whitespace));
    THIS->n_ws=NELEM(whitespace);
 #endif
 
@@ -1167,7 +1167,7 @@ static void html_add_quote_tag(INT32 args)
 	    arr = val->u.array = resize_array (arr, arr->size+3);
 	  MEMMOVE (arr->item+i+3, arr->item+i,
 		  (arr->size-i-3) * sizeof(struct svalue));
-	  MEMCPY (arr->item+i, sp-=3, 3 * sizeof(struct svalue));
+	  memcpy (arr->item+i, sp-=3, 3 * sizeof(struct svalue));
 	  goto done;
 	}
 	else free_string (cmp);
@@ -1183,7 +1183,7 @@ static void html_add_quote_tag(INT32 args)
       }
       else
 	arr = val->u.array = resize_array (arr, arr->size+3);
-      MEMCPY (arr->item+arr->size-3, sp-=3, 3 * sizeof(struct svalue));
+      memcpy (arr->item+arr->size-3, sp-=3, 3 * sizeof(struct svalue));
     }
 
   done:	;
@@ -4861,13 +4861,13 @@ static void html_clone(INT32 args)
 
    p->n_lazy_entity_ends=THIS->n_lazy_entity_ends;
    newstr=(p_wchar2*)xalloc(sizeof(p_wchar2)*p->n_lazy_entity_ends);
-   MEMCPY(newstr,THIS->lazy_entity_ends,sizeof(p_wchar2)*p->n_lazy_entity_ends);
+   memcpy(newstr,THIS->lazy_entity_ends,sizeof(p_wchar2)*p->n_lazy_entity_ends);
    if (p->lazy_entity_ends) free(p->lazy_entity_ends);
    p->lazy_entity_ends=newstr;
 
    p->n_ws=THIS->n_ws;
    newstr=(p_wchar2*)xalloc(sizeof(p_wchar2)*p->n_ws);
-   MEMCPY(newstr,THIS->ws,sizeof(p_wchar2)*p->n_ws);
+   memcpy(newstr,THIS->ws,sizeof(p_wchar2)*p->n_ws);
    if (p->ws) free(p->ws); 
    p->ws=newstr;
 #endif

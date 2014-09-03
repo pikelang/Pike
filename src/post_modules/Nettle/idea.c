@@ -170,7 +170,7 @@ idea_invert(unsigned INT16 *d,
   *--p = t2;
   *--p = t1;
   /* Copy and destroy temp copy */
-  MEMCPY(d, temp, sizeof(temp));
+  memcpy(d, temp, sizeof(temp));
   memset(temp, 0, sizeof(temp));
 } /* idea_invert */
 

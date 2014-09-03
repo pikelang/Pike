@@ -747,7 +747,7 @@ static void pwrite_n(INT32 args,int shift,int reverse,char *func)
 	 case 022: /* 2 -> 2 */
 	    if (reverse)
 	      copy_reverse_string2(d, (unsigned char *)ps->str, ps->len);
-	    else MEMCPY(d,ps->str,ps->len*4);
+	    else memcpy(d,ps->str,ps->len*4);
 	    break;
 	 case 012: /* 1 -> 2 */
 	    if (reverse)
@@ -762,7 +762,7 @@ static void pwrite_n(INT32 args,int shift,int reverse,char *func)
 	 case 011: /* 1 -> 1 */
 	    if (reverse)
 	      copy_reverse_string1(d, (unsigned char *)ps->str,ps->len);
-	    else MEMCPY(d,ps->str,ps->len*2);
+	    else memcpy(d,ps->str,ps->len*2);
 	    break;
 	 case 001: /* 0 -> 1 */
 	    if (reverse)
@@ -770,7 +770,7 @@ static void pwrite_n(INT32 args,int shift,int reverse,char *func)
 	    else convert_0_to_1((p_wchar1*)d, STR0(ps), ps->len);
 	    break;
 	 case 000:
-	    MEMCPY(d,ps->str,ps->len);
+	    memcpy(d,ps->str,ps->len);
 	    break;
 	 default:
 	    Pike_error("Illegal state %d -> %d\n",ps->size_shift,shift);
@@ -900,7 +900,7 @@ static void memory_index_write(INT32 args)
 		  "not equally long (%ld v/s %ld; can't resize memory)\n",
 		  DO_NOT_WARN((long)ps->len), (long)pos2-(long)pos1);
      else
-       MEMCPY(THIS->p+pos1, ps->str, ps->len);
+       memcpy(THIS->p+pos1, ps->str, ps->len);
 
      ref_push_string(ps);
    }

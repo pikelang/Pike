@@ -1069,7 +1069,7 @@ void image_clone(INT32 args)
    {
       if (img->xsize==THIS->xsize
 	  && img->ysize==THIS->ysize)
-	 MEMCPY(img->img,THIS->img,sizeof(rgb_group)*img->xsize*img->ysize);
+	 memcpy(img->img,THIS->img,sizeof(rgb_group)*img->xsize*img->ysize);
       else
 	 img_crop(img,THIS,
 		  0,0,img->xsize-1,img->ysize-1);
@@ -1812,7 +1812,7 @@ image_tuned_box_leftright(const rgba_group left, const rgba_group right,
     (dest+x)->g = DO_NOT_WARN((COLORTYPE)((((long)left.g)*(length-x)+((long)right.g)*(x))/length));
     (dest+x)->b = DO_NOT_WARN((COLORTYPE)((((long)left.b)*(length-x)+((long)right.b)*(x))/length));
   }
-  while(--y)  MEMCPY((dest+=xsize), from, maxlength*sizeof(rgb_group)); 
+  while(--y)  memcpy((dest+=xsize), from, maxlength*sizeof(rgb_group)); 
 }
 
 
@@ -1839,13 +1839,13 @@ image_tuned_box_topbottom(const rgba_group left, const rgba_group right,
       color.b = DO_NOT_WARN((COLORTYPE)((((long)left.b)*(height-y)+((long)right.b)*(y))/height));
       if(y && color_equal(old, color))
       {
-	MEMCPY(dest,dest-xsize,length*sizeof(rgb_group));
+	memcpy(dest,dest-xsize,length*sizeof(rgb_group));
 	dest+=xsize;
       } else {
 	from = dest;
 	for(x=0; x<64; x++) *(dest++) = color;
 	for(;x<length-64;x+=64,dest+=64) 
-	  MEMCPY(dest, from, 64*sizeof(rgb_group));
+	  memcpy(dest, from, 64*sizeof(rgb_group));
 	for(;x<length; x++) *(dest++) = color;
 	dest += xsize-length;
 	old = color;
@@ -1859,7 +1859,7 @@ image_tuned_box_topbottom(const rgba_group left, const rgba_group right,
       color.b = DO_NOT_WARN((COLORTYPE)((((long)left.b)*(height-y)+((long)right.b)*(y))/height));
       if(y && color_equal(old, color))
       {
-	MEMCPY(dest,dest-xsize,length*sizeof(rgb_group));
+	memcpy(dest,dest-xsize,length*sizeof(rgb_group));
 	dest+=xsize;
       } else {
 	for(x=0; x<length; x++) *(dest++) = color;
@@ -4169,7 +4169,7 @@ static void image_apply_curve( INT32 args )
          push_int( THIS->xsize );
          push_int( THIS->ysize );
          o = clone_object( image_program, 2 );
-         MEMCPY( ((struct image*)get_storage(o,image_program))->img, 
+         memcpy( ((struct image*)get_storage(o,image_program))->img, 
                  THIS->img, 
                  THIS->xsize*THIS->ysize*sizeof(rgb_group) );
        }
@@ -4240,7 +4240,7 @@ static void img_make_gammatable(COLORTYPE *d,double gamma)
    static int had_gamma=0;
 
    if (had_gamma && last_gamma==gamma)
-      MEMCPY(d,last_gammatable,sizeof(COLORTYPE)*256);
+      memcpy(d,last_gammatable,sizeof(COLORTYPE)*256);
    else
    {
       int i;
@@ -4251,7 +4251,7 @@ static void img_make_gammatable(COLORTYPE *d,double gamma)
 	 double d=pow(i*q,gamma)*255;
 	 *(dd++)=testrange(d);
       }
-      MEMCPY(last_gammatable,d,sizeof(COLORTYPE)*256);
+      memcpy(last_gammatable,d,sizeof(COLORTYPE)*256);
       last_gamma=gamma;
       had_gamma=1;
    }

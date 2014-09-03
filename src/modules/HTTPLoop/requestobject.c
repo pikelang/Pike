@@ -679,7 +679,7 @@ static void actually_send(struct send_args *a)
 #endif
   if(data)
   {
-    MEMCPY(foo, data+MINIMUM((data_len-4),9), 4);
+    memcpy(foo, data+MINIMUM((data_len-4),9), 4);
     first=1;
 #ifdef TCP_CORK
 #ifdef AAP_DEBUG
@@ -762,7 +762,7 @@ static void actually_send(struct send_args *a)
     if(!first)
     {
       first=1;
-      MEMCPY(foo,a->buffer+9,5);
+      memcpy(foo,a->buffer+9,5);
     }
     if(nread <= 0)
     {

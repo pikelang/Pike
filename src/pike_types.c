@@ -8423,7 +8423,7 @@ static void low_make_pike_type(unsigned char *type_string,
 	break;
       }
       str = begin_wide_shared_string(bytes>>size_shift, size_shift);
-      MEMCPY(str->str, type_string+2, bytes);
+      memcpy(str->str, type_string+2, bytes);
       if (size_shift &&
 #if (PIKE_BYTEORDER == 1234)
 	  /* Little endian */

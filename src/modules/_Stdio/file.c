@@ -1216,7 +1216,7 @@ static int writev_fds(int fd, struct iovec *iov, int iovcnt,
   cmsg->cmsg_level = SOL_SOCKET;
   cmsg->cmsg_type = SCM_RIGHTS;
 
-  MEMCPY(CMSG_DATA(cmsg), fds, num_fds * sizeof(int));
+  memcpy(CMSG_DATA(cmsg), fds, num_fds * sizeof(int));
   msg.msg_flags = 0;
 
 #else

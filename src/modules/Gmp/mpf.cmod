@@ -264,7 +264,7 @@ PIKECLASS mpf
 	/* Copy numbers straight */
 	if(len)
 	{
-	  MEMCPY(out,in,len);
+	  memcpy(out,in,len);
 	  out+=len;
 	}else{
 	  *(out++)='0';
@@ -275,18 +275,18 @@ PIKECLASS mpf
 	  /* N.NNNNNNNeNNN */
 	  *(out++)=*(in++);
 	  *(out++)='.';
-	  MEMCPY(out,in,len-1);
+	  memcpy(out,in,len-1);
 	  out+=len-1;
 	  in+=len+1;
 	  sprintf(out,"e%ld",(long)(expptr-1));
 	  out+=strlen(out);
 	}else{
 	  /* NNNNNNN.NNNNNNN */
-	  MEMCPY(out,in,expptr);
+	  memcpy(out,in,expptr);
 	  out+=expptr;
 	  in+=expptr;
 	  *(out++)='.';
-	  MEMCPY(out,in,len-expptr);
+	  memcpy(out,in,len-expptr);
 	  out += len-expptr;
 	}
       }

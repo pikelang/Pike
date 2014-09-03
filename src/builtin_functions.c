@@ -662,7 +662,7 @@ PMOD_EXPORT void f_lower_case(INT32 args)
 
   ret = begin_wide_shared_string(orig->len, orig->size_shift);
 
-  MEMCPY(ret->str, orig->str, orig->len << orig->size_shift);
+  memcpy(ret->str, orig->str, orig->len << orig->size_shift);
 
   i = orig->len;
 
@@ -738,7 +738,7 @@ PMOD_EXPORT void f_upper_case(INT32 args)
   }
 
   ret=begin_wide_shared_string(orig->len,orig->size_shift);
-  MEMCPY(ret->str, orig->str, orig->len << orig->size_shift);
+  memcpy(ret->str, orig->str, orig->len << orig->size_shift);
 
   i = orig->len;
 
@@ -1725,7 +1725,7 @@ PMOD_EXPORT void f_string_to_unicode(INT32 args)
      * FIXME: Future optimization: Check if refcount is == 1,
      * and perform sufficient magic to be able to convert in place.
      */
-    MEMCPY(out->str, in->str, len);
+    memcpy(out->str, in->str, len);
 #else
     /* Other endianness, may need to do byte-order conversion also. */
     {
@@ -1904,7 +1904,7 @@ PMOD_EXPORT void f_unicode_to_string(INT32 args)
      * FIXME: Future optimization: Perform sufficient magic
      * to do the conversion in place if the ref-count is == 1.
      */
-      MEMCPY(out->str, (char *)(str0-len), len*2);
+      memcpy(out->str, (char *)(str0-len), len*2);
   } else {
     /* Reverse endian */
     

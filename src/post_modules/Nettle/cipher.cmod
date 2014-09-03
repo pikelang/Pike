@@ -75,7 +75,7 @@ static void pike_crypt_func(void *object, pike_nettle_size_t length,
     Pike_error("Bad string length %ld returned from crypt()\n",
 	       DO_NOT_WARN((long)str->len));
   }
-  MEMCPY(dst, str->str, length);
+  memcpy(dst, str->str, length);
   pop_stack();
 }
 
@@ -728,7 +728,7 @@ PIKECLASS BufferedCipher
 
 	if (THIS->backlog_len) {
 	  if (data->len >= (THIS->block_size - THIS->backlog_len)) {
-	    MEMCPY(THIS->backlog + THIS->backlog_len, data->str,
+	    memcpy(THIS->backlog + THIS->backlog_len, data->str,
 		   (THIS->block_size - THIS->backlog_len));
 	    soffset += (THIS->block_size - THIS->backlog_len);
 	    THIS->backlog_len = 0;
@@ -742,7 +742,7 @@ PIKECLASS BufferedCipher
 			 DO_NOT_WARN((long)Pike_sp[-1].u.string->len));
 	    strings++;
 	  } else {
-	    MEMCPY(THIS->backlog + THIS->backlog_len,
+	    memcpy(THIS->backlog + THIS->backlog_len,
 		   data->str, data->len);
 	    THIS->backlog_len += data->len;
 	    pop_n_elems(args);
@@ -770,7 +770,7 @@ PIKECLASS BufferedCipher
 	}
 
 	if (soffset < data->len) {
-	  MEMCPY(THIS->backlog, data->str + soffset, data->len - soffset);
+	  memcpy(THIS->backlog, data->str + soffset, data->len - soffset);
 	  THIS->backlog_len = data->len - soffset;
 	}
 
@@ -1315,7 +1315,7 @@ PIKECLASS BlockCipher
 	NO_WIDE_STRING(iv);
 	if(iv->len != THIS->block_size)
 	  Pike_error("Argument incompatible with cipher block size.\n");
-	MEMCPY(STR0(THIS->iv), STR0(iv), THIS->block_size);
+	memcpy(STR0(THIS->iv), STR0(iv), THIS->block_size);
 	RETURN this_object();
       }
 
@@ -1864,7 +1864,7 @@ PIKECLASS BlockCipher
 	NO_WIDE_STRING(iv);
 	if(iv->len != THIS->block_size)
 	  Pike_error("Argument incompatible with cipher block size.\n");
-	MEMCPY(STR0(THIS->iv), STR0(iv), THIS->block_size);
+	memcpy(STR0(THIS->iv), STR0(iv), THIS->block_size);
 	RETURN this_object();
       }
 
@@ -2375,7 +2375,7 @@ PIKECLASS BlockCipher
 	NO_WIDE_STRING(iv);
 	if(iv->len != THIS->block_size)
 	  Pike_error("Argument incompatible with cipher block size.\n");
-	MEMCPY(STR0(THIS->iv), STR0(iv), THIS->block_size);
+	memcpy(STR0(THIS->iv), STR0(iv), THIS->block_size);
 	RETURN this_object();
       }
 
@@ -2765,7 +2765,7 @@ PIKECLASS BlockCipher
 	NO_WIDE_STRING(iv);
 	if(iv->len != THIS->block_size)
 	  Pike_error("Argument incompatible with cipher block size.\n");
-	MEMCPY(STR0(THIS->iv), STR0(iv), THIS->block_size);
+	memcpy(STR0(THIS->iv), STR0(iv), THIS->block_size);
 	RETURN this_object();
       }
 
@@ -3177,7 +3177,7 @@ PIKECLASS BlockCipher16
 
 	*(ctr_iv++) = 14 - iv_len;
 
-	MEMCPY(ctr_iv, STR0(iv), iv_len);
+	memcpy(ctr_iv, STR0(iv), iv_len);
 	memset(ctr_iv + iv_len, 0, 15 - iv_len);
 
 	RETURN this_object();
@@ -3305,7 +3305,7 @@ PIKECLASS BlockCipher16
 	  ptr[i] = psize & 0xff;
 	}
 	buf[0][0] = flags;
-	MEMCPY(buf[0]+1, STR0(nonce), nonce->len);
+	memcpy(buf[0]+1, STR0(nonce), nonce->len);
 
 	func(ctx, 16, buf[1], buf[0]);
 	bufno = 1;
@@ -5187,7 +5187,7 @@ PIKECLASS DES
       buf[7] = (key->str[6]&127)<<1;
     }
     else
-      MEMCPY(buf, key->str, 8);
+      memcpy(buf, key->str, 8);
 
     des_fix_parity(8, buf, buf);
     RETURN make_shared_binary_string((char *)buf, 8);
@@ -5296,7 +5296,7 @@ pike_des3_set_key(void *c,
     f_add(2);
     f_Nettle_DES3_fix_parity(1);
 
-    MEMCPY(nkotb, Pike_sp[-1].u.string->str, 8+8);
+    memcpy(nkotb, Pike_sp[-1].u.string->str, 8+8);
     pop_stack();
 
     key = nkotb;
@@ -5310,7 +5310,7 @@ pike_des3_set_key(void *c,
     o_range();
     f_add(2);
 
-    MEMCPY(nkotb, Pike_sp[-1].u.string->str, 8+8+8);
+    memcpy(nkotb, Pike_sp[-1].u.string->str, 8+8+8);
     pop_stack();
 
     key = nkotb;
@@ -5320,7 +5320,7 @@ pike_des3_set_key(void *c,
   case 7+7+7:
     push_string(make_shared_binary_string(key, length));
     f_Nettle_DES3_fix_parity(1);
-    MEMCPY(nkotb, Pike_sp[-1].u.string->str, 8+8+8);
+    memcpy(nkotb, Pike_sp[-1].u.string->str, 8+8+8);
     pop_stack();
 
     key = nkotb;

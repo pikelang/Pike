@@ -40,7 +40,7 @@ static void encode_truecolor_24_rgb( rgb_group *s,
                                      unsigned char *d,
                                      int q, int w )
 {
-  MEMCPY(d,(unsigned char *)s,q);
+  memcpy(d,(unsigned char *)s,q);
 }
 
 static void encode_truecolor_24_rgb_al32_swapped( rgb_group *s,
@@ -71,7 +71,7 @@ static void encode_truecolor_24_rgb_al32( rgb_group *s,
   {
     for(l=0; l<(q/w)/3; l++)
     {
-      MEMCPY(d,(unsigned char *)s,w*3);
+      memcpy(d,(unsigned char *)s,w*3);
       d += (w*3+3)&~3;
       q--;
     }

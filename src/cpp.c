@@ -1801,7 +1801,7 @@ static struct pike_string *recode_string(struct cpp *this, struct pike_string *d
 
     new_str = begin_shared_string(len);
 
-    MEMCPY(new_str->str, data->str, len);
+    memcpy(new_str->str, data->str, len);
 
     push_string(end_shared_string(new_str));
 
@@ -1855,7 +1855,7 @@ static struct pike_string *recode_string(struct cpp *this, struct pike_string *d
 
     new_str = begin_shared_string(data->len - len);
 
-    MEMCPY(new_str->str, data->str + len, data->len - len);
+    memcpy(new_str->str, data->str + len, data->len - len);
 
     push_string(end_shared_string(new_str));
 
@@ -1872,7 +1872,7 @@ static struct pike_string *recode_string(struct cpp *this, struct pike_string *d
 
     new_str = begin_shared_string(len);
 
-    MEMCPY(new_str->str, p, len);
+    memcpy(new_str->str, p, len);
 
     pop_stack();
     ref_push_string(new_str = end_shared_string(new_str));
@@ -3638,17 +3638,17 @@ void add_predefine(const char *s)
   if(pos)
   {
     tmp->name=xalloc(pos-s+1);
-    MEMCPY(tmp->name,s,pos-s);
+    memcpy(tmp->name,s,pos-s);
     tmp->name[pos-s]=0;
 
     tmp->value=xalloc(s+strlen(s)-pos);
-    MEMCPY(tmp->value,pos+1,s+strlen(s)-pos);
+    memcpy(tmp->value,pos+1,s+strlen(s)-pos);
   }else{
     tmp->name=xalloc(strlen(s)+1);
-    MEMCPY(tmp->name,s,strlen(s)+1);
+    memcpy(tmp->name,s,strlen(s)+1);
 
     tmp->value=xalloc(4);
-    MEMCPY(tmp->value," 1 ",4);
+    memcpy(tmp->value," 1 ",4);
   }
   tmp->next = NULL;
   if (first_predef) {

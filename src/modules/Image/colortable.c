@@ -2019,11 +2019,11 @@ int image_colortable_initiate_dither(struct neo_colortable *nct,
 	    if (dith->u.ordered.bdiff) free(dith->u.ordered.bdiff);
 	    return 0;
 	 }
-	 MEMCPY(dith->u.ordered.rdiff,nct->du.ordered.rdiff,
+	 memcpy(dith->u.ordered.rdiff,nct->du.ordered.rdiff,
 		sizeof(int)*nct->du.ordered.xs*nct->du.ordered.ys);
-	 MEMCPY(dith->u.ordered.gdiff,nct->du.ordered.gdiff,
+	 memcpy(dith->u.ordered.gdiff,nct->du.ordered.gdiff,
 		sizeof(int)*nct->du.ordered.xs*nct->du.ordered.ys);
-	 MEMCPY(dith->u.ordered.bdiff,nct->du.ordered.bdiff,
+	 memcpy(dith->u.ordered.bdiff,nct->du.ordered.bdiff,
 		sizeof(int)*nct->du.ordered.xs*nct->du.ordered.ys);
 
 	 dith->u.ordered.row=0;

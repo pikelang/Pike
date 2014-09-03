@@ -1193,7 +1193,7 @@ void img_translate(INT32 args,int expand)
 
    if (!xt)
    {
-      MEMCPY(img->img,THIS->img,sizeof(rgb_group)*THIS->xsize*THIS->ysize);
+      memcpy(img->img,THIS->img,sizeof(rgb_group)*THIS->xsize*THIS->ysize);
    }
    else
    {

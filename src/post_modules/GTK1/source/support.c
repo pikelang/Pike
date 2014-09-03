@@ -251,7 +251,7 @@ GdkImage *gdkimage_from_pikeimage( struct object *img, int fast, GdkImage *i )
 	Pike_error("Failed to convert image\n");
       }
       PFTIME("Converting image");
-      MEMCPY(i->mem, Pike_sp[-1].u.string->str, Pike_sp[-1].u.string->len);
+      memcpy(i->mem, Pike_sp[-1].u.string->str, Pike_sp[-1].u.string->len);
       pop_stack(); /* string */
       pop_stack(); /* function */
     }
@@ -357,24 +357,24 @@ void pgtk_get_mapping_arg( struct mapping *map,
          if(len != sizeof(char *))
            Pike_fatal("oddities detected\n");
 #endif
-         MEMCPY(((char **)dest), &s->u.string->str, sizeof(char *));
+         memcpy(((char **)dest), &s->u.string->str, sizeof(char *));
          break;
        case PIKE_T_INT:
          if(len == 2)
          {
            short i = (short)s->u.integer;
-           MEMCPY(((short *)dest), &i, 2);
+           memcpy(((short *)dest), &i, 2);
          }
          else if(len == 4)
-           MEMCPY(((int *)dest), &s->u.integer, len);
+           memcpy(((int *)dest), &s->u.integer, len);
          break;
        case PIKE_T_FLOAT:
          if(len == sizeof(FLOAT_TYPE))
-           MEMCPY(((FLOAT_TYPE *)dest), &s->u.float_number,len);
+           memcpy(((FLOAT_TYPE *)dest), &s->u.float_number,len);
          else if(len == sizeof(double))
          {
            double d = s->u.float_number;
-           MEMCPY(((double *)dest), &d,len);
+           memcpy(((double *)dest), &d,len);
          }
          break;
       }

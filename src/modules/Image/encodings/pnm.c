@@ -188,7 +188,7 @@ void img_pnm_decode(INT32 args)
    if (type=='6' && maxval==255 && sizeof(rgb_group)==3)  /* optimize */
    {
       if (pos<s->len)
-	 MEMCPY(d,s->str+pos,MINIMUM(n*3,s->len-pos));
+	 memcpy(d,s->str+pos,MINIMUM(n*3,s->len-pos));
    }
    else while (n--)
    {

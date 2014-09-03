@@ -41,7 +41,7 @@ char *strdup(const char *str)
     int len = strlen(str)+1;
 
     res = xalloc(len);
-    MEMCPY(res, str, len);
+    memcpy(res, str, len);
   }
   return(res);
 }
@@ -80,9 +80,9 @@ static void swap(char *a, char *b, size_t size)
   while(size)
   {
     tmp = MINIMUM((size_t)sizeof(tmpbuf), size);
-    MEMCPY(tmpbuf,a,tmp);
-    MEMCPY(a,b,tmp);
-    MEMCPY(b,tmpbuf,tmp);
+    memcpy(tmpbuf,a,tmp);
+    memcpy(a,b,tmp);
+    memcpy(b,tmpbuf,tmp);
     size-=tmp;
     a+=tmp;
     b+=tmp;
@@ -180,10 +180,10 @@ void reorder(char *memory, INT32 nitems, INT32 size,INT32 *order)
 #endif
 
   default:
-    for(e=0;e<nitems;e++) MEMCPY(tmp+e*size, memory+order[e]*size, size);
+    for(e=0;e<nitems;e++) memcpy(tmp+e*size, memory+order[e]*size, size);
   }
 
-  MEMCPY(memory, tmp, size * nitems);
+  memcpy(memory, tmp, size * nitems);
   free(tmp);
 }
 
@@ -439,7 +439,7 @@ PMOD_EXPORT char *debug_xstrdup(const char *src)
   if (src) {
     int len = strlen (src) + 1;
     dst = malloc (len);
-    MEMCPY (dst, src, len);
+    memcpy (dst, src, len);
   }
   return dst;
 }
@@ -1287,7 +1287,7 @@ PMOD_EXPORT void *realloc(void *x,size_t y)
     if(old_size >= y) return x;
     ret=malloc(y);
     if(!ret) return 0;
-    MEMCPY(ret, x, old_size);
+    memcpy(ret, x, old_size);
     if(x) free(x);
   }else{
     ret=debug_realloc(x, y, DMALLOC_LOCATION());
@@ -1314,7 +1314,7 @@ void *fake_realloc(void *x,size_t y)
     if(old_size >= y) return x;
     ret=malloc(y);
     if(!ret) return 0;
-    MEMCPY(ret, x, old_size);
+    memcpy(ret, x, old_size);
     if(x) free(x);
   }else{
     ret=real_realloc(x,y);
@@ -1531,8 +1531,8 @@ char *do_pad(char *mem, long size)
     /*  fprintf(stderr,"Padding  %p(%d) %ld\n",mem, size, q); */
 #if 1
     q%=RNDSIZE;
-    MEMCPY(mem - DEBUG_MALLOC_PAD, rndbuf+q, DEBUG_MALLOC_PAD);
-    MEMCPY(mem + size, rndbuf+q, DEBUG_MALLOC_PAD);
+    memcpy(mem - DEBUG_MALLOC_PAD, rndbuf+q, DEBUG_MALLOC_PAD);
+    memcpy(mem + size, rndbuf+q, DEBUG_MALLOC_PAD);
 #else
     for(e=0;e< DEBUG_MALLOC_PAD; e+=4)
     {
@@ -1942,7 +1942,7 @@ static struct memhdr *low_make_memhdr(void *p, int s, LOCATION location
   mh->gc_generation=gc_generation * 1000 + Pike_in_gc;
 #ifdef DMALLOC_C_STACK_TRACE
   if (bt_len > 0) {
-    MEMCPY (mh->alloc_bt, bt, bt_len * sizeof (c_stack_frame));
+    memcpy (mh->alloc_bt, bt, bt_len * sizeof (c_stack_frame));
     mh->alloc_bt_len = bt_len;
   }
   else
@@ -2306,7 +2306,7 @@ PMOD_EXPORT char *debug_strdup(const char *s, LOCATION location)
   long length;
   length=strlen(s);
   m=(char *)debug_malloc(length+1,location);
-  MEMCPY(m,s,length+1);
+  memcpy(m,s,length+1);
 
   if(verbose_debug_malloc)
     fprintf(stderr, "strdup(\"%s\") => %p  (%s)\n", s, m, LOCATION_NAME(location));
@@ -2978,7 +2978,7 @@ static LOCATION low_dynamic_location(char type, const char *file,
 	Pike_fatal ("Too long bin_data blob: %u\n", bin_data_len);
       ((unsigned char *) str->str)[l + 1] = ((unsigned char *) &bl)[0];
       ((unsigned char *) str->str)[l + 2] = ((unsigned char *) &bl)[1];
-      MEMCPY (str->str + l + 3, bin_data, bin_data_len);
+      memcpy (str->str + l + 3, bin_data, bin_data_len);
     }
 
     str->hval=hval;
@@ -3099,7 +3099,7 @@ static void dump_location_bt (LOCATION location, int indent, const char *prefix)
     unsigned char *bin_base =
       (unsigned char *) location + strlen (location) + 1;
     unsigned int bin_len = EXTRACT_UWORD (bin_base);
-    MEMCPY ((unsigned char *) bt, bin_base + 2, bin_len);
+    memcpy ((unsigned char *) bt, bin_base + 2, bin_len);
     frames = bin_len / sizeof (c_stack_frame);
 
     for (i = 0; i < frames; i++) {

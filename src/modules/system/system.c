@@ -1984,7 +1984,7 @@ int get_inet_addr(PIKE_SOCKADDR *addr,char *name,char *service, INT_TYPE port,
     if(found) {
 /*       fprintf(stderr, "Got %d bytes (family: %d (%d))\n", */
 /* 	      addr_len, found->ai_addr->sa_family, found->ai_family); */
-      MEMCPY((char *)addr, (char *)found->ai_addr, addr_len);
+      memcpy((char *)addr, (char *)found->ai_addr, addr_len);
     }
     freeaddrinfo(res);
     if(addr_len) {
@@ -2026,7 +2026,7 @@ int get_inet_addr(PIKE_SOCKADDR *addr,char *name,char *service, INT_TYPE port,
       ipv4.sin_addr.s_addr = inet_addr(name);
       addr->ipv6.sin6_addr.s6_addr[10] = 0xff;
       addr->ipv6.sin6_addr.s6_addr[11] = 0xff;
-      MEMCPY(addr->ipv6.sin6_addr.s6_addr + 12, &ipv4.sin_addr.s_addr, 4);
+      memcpy(addr->ipv6.sin6_addr.s6_addr + 12, &ipv4.sin_addr.s_addr, 4);
     } else
 #endif
       addr->ipv4.sin_addr.s_addr = inet_addr(name);
@@ -2049,11 +2049,11 @@ int get_inet_addr(PIKE_SOCKADDR *addr,char *name,char *service, INT_TYPE port,
     SOCKADDR_FAMILY(*addr) = ret->h_addrtype;
 
 #ifdef HAVE_H_ADDR_LIST
-    MEMCPY((char *)SOCKADDR_IN_ADDR(*addr),
+    memcpy((char *)SOCKADDR_IN_ADDR(*addr),
            (char *)ret->h_addr_list[0],
            ret->h_length);
 #else
-    MEMCPY((char *)SOCKADDR_IN_ADDR(*addr),
+    memcpy((char *)SOCKADDR_IN_ADDR(*addr),
            (char *)ret->h_addr,
            ret->h_length);
 #endif
@@ -2134,7 +2134,7 @@ static void describe_hostent(struct hostent *hp)
 #else
       struct in_addr in;
  
-      MEMCPY(&in.s_addr, *p, sizeof (in.s_addr));
+      memcpy(&in.s_addr, *p, sizeof (in.s_addr));
       push_text(inet_ntoa(in));
 #endif
       nelem++;
@@ -2157,7 +2157,7 @@ static void describe_hostent(struct hostent *hp)
     push_text(fd_inet_ntop(hp->h_addrtype, hp->h_addr, buffer, sizeof(buffer)));
 #else
     struct in_addr in;
-    MEMCPY(&in.s_addr, hp->h_addr, sizeof (in.s_addr));
+    memcpy(&in.s_addr, hp->h_addr, sizeof (in.s_addr));
     push_text(inet_ntoa(in));
 #endif
   }

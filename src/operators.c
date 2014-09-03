@@ -3631,20 +3631,20 @@ PMOD_EXPORT void o_multiply(void)
 	pos = ret->str;
 
 	if (len > delta) {
-	  MEMCPY(pos, src->str, delta);
+	  memcpy(pos, src->str, delta);
 	  pos += delta;
 	  len -= delta;
 	  while (len > delta) {
-	    MEMCPY(pos, ret->str, delta);
+	    memcpy(pos, ret->str, delta);
 	    pos += delta;
 	    len -= delta;
 	    delta <<= 1;
 	  }
 	  if (len) {
-	    MEMCPY(pos, ret->str, len);
+	    memcpy(pos, ret->str, len);
 	  }
 	} else if (len) {
-	  MEMCPY(pos, src->str, len);
+	  memcpy(pos, src->str, len);
 	}
 	pop_n_elems(2);
 	push_string(low_end_shared_string(ret));
@@ -3665,7 +3665,7 @@ PMOD_EXPORT void o_multiply(void)
 	pos=ret->str;
 	len=sp[-2].u.string->len << sp[-2].u.string->size_shift;
 	for(e=0;e<sp[-1].u.integer;e++,pos+=len)
-	  MEMCPY(pos,sp[-2].u.string->str,len);
+	  memcpy(pos,sp[-2].u.string->str,len);
 	pop_n_elems(2);
 	push_string(low_end_shared_string(ret));
 	return;

@@ -1709,7 +1709,7 @@ static void image_png_encode(INT32 args)
 	    *(d++)=0; /* filter */
 	    if (bpp==8)
 	    {
-	       MEMCPY(d,ts,x);
+	       memcpy(d,ts,x);
 	       ts += x;
                d += x;
 	    }

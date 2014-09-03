@@ -173,12 +173,8 @@ PMOD_EXPORT int STRCASECMP(const char *a,const char *b);
 #define HAVE_MEMSET 1
 #define MEMSET memset
 
-#ifndef HAVE_MEMCPY
-void MEMCPY(void *b,const void *a,size_t s);
-#  define __builtin_memcpy MEMCPY
-#else
-#  define MEMCPY(X,Y,Z) memcpy((char*)(X),(char*)(Y),(Z))
-#endif
+#define HAVE_MEMCPY 1
+#define MEMCPY(X,Y,Z) memcpy((char*)(X),(char*)(Y),(Z))
 
 #ifndef HAVE_MEMMOVE
 PMOD_EXPORT void MEMMOVE(void *b,const void *a,size_t s);
@@ -254,21 +250,21 @@ PMOD_EXPORT INT32 EXTRACT_INT_(unsigned char *p);
 /*@unused@*/ static INLINE unsigned EXTRACT_UWORD_(unsigned char *p)
 {
   unsigned INT16 a;
-  MEMCPY((char *)&a,p,sizeof(a));
+  memcpy((char *)&a,p,sizeof(a));
   return a;
 }
 
 /*@unused@*/ static INLINE int EXTRACT_WORD_(unsigned char *p)
 {
   INT16 a;
-  MEMCPY((char *)&a,p,sizeof(a));
+  memcpy((char *)&a,p,sizeof(a));
   return a;
 }
 
 /*@unused@*/ static INLINE INT32 EXTRACT_INT_(unsigned char *p)
 {
   INT32 a;
-  MEMCPY((char *)&a,p,sizeof(a));
+  memcpy((char *)&a,p,sizeof(a));
   return a;
 }
 #endif

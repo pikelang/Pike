@@ -1671,7 +1671,7 @@ cont_2:
 	    if ((f != 0.0) || (tf == 0.0)) {
 #endif
 #ifdef FLOAT_IS_IEEE_BIG
-	      MEMCPY(x, &f, 4);
+	      memcpy(x, &f, 4);
 #elif defined(FLOAT_IS_IEEE_LITTLE)
 	      x[0] = ((char *)&f)[3];
 	      x[1] = ((char *)&f)[2];
@@ -1689,7 +1689,7 @@ cont_2:
 	  break;
 	case 8:
 #ifdef DOUBLE_IS_IEEE_BIG
-	  MEMCPY(x, &tf, 8);
+	  memcpy(x, &tf, 8);
 #elif defined(DOUBLE_IS_IEEE_LITTLE)
 	  x[0] = ((char *)&tf)[7];
 	  x[1] = ((char *)&tf)[6];

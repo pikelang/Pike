@@ -71,7 +71,7 @@ void wf_buffer_wint( struct buffer *b,
 {
   s = htonl(s);
   wf_buffer_make_space( b, 4 );
-  MEMCPY( b->data+b->size, &s, 4 );
+  memcpy( b->data+b->size, &s, 4 );
   b->size += 4;
 }
 
@@ -119,7 +119,7 @@ int wf_buffer_memcpy( struct buffer *d,
   if( nelems <= 0 )
     return 0;
   wf_buffer_make_space( d, nelems );
-  MEMCPY( d->data+d->size, s->data+s->rpos, nelems );
+  memcpy( d->data+d->size, s->data+s->rpos, nelems );
   s->rpos += nelems;
   d->size += nelems;
   return nelems;
@@ -195,7 +195,7 @@ void wf_buffer_set_pike_string( struct buffer *b,
     b->size = data->len;
     b->data = malloc( b->size );
     b->allocated_size = b->size;
-    MEMCPY( b->data, data->str, b->size );
+    memcpy( b->data, data->str, b->size );
   }
 }
 
@@ -209,6 +209,6 @@ void wf_buffer_append( struct buffer *b,
 		       int size )
 {
   wf_buffer_make_space( b, size );
-  MEMCPY( b->data+b->size, data, size );
+  memcpy( b->data+b->size, data, size );
   b->size+=size;
 }

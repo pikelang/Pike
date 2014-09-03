@@ -309,7 +309,7 @@ void aap_handle_connection(struct args *arg)
       return;
     }
     buffer_len = arg->res.leftovers_len;
-    MEMCPY(buffer, arg->res.leftovers, arg->res.leftovers_len);
+    memcpy(buffer, arg->res.leftovers, arg->res.leftovers_len);
     pos = arg->res.leftovers_len;
     arg->res.leftovers=0;
     if((tmp = my_memmem("\r\n\r\n", 4, buffer, pos)))
@@ -446,7 +446,7 @@ static void low_accept_loop(struct args *arg)
   ACCEPT_SIZE_T len = sizeof(arg->from);
   while(1)
   {
-    MEMCPY(arg2, arg, sizeof(struct args));
+    memcpy(arg2, arg, sizeof(struct args));
     arg2->fd = fd_accept(arg->fd, (struct sockaddr *)&arg2->from, &len);
     if(arg2->fd != -1)
     {

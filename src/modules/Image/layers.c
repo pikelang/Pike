@@ -1499,8 +1499,8 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
    if (alpha==0.0) /* optimized */
    {
 #ifdef LAYERS_DUAL
-      MEMCPY(d,s,sizeof(rgb_group)*len);
-      MEMCPY(da,sa,sizeof(rgb_group)*len);
+      memcpy(d,s,sizeof(rgb_group)*len);
+      memcpy(da,sa,sizeof(rgb_group)*len);
 #endif
       return;
    }
@@ -1508,7 +1508,7 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
    {
       if (!la)  /* no layer alpha => full opaque */
       {
-	 MEMCPY(d,l,sizeof(rgb_group)*len);
+	 memcpy(d,l,sizeof(rgb_group)*len);
 	 smear_color(da,white,len);
       }
       else
@@ -2208,8 +2208,8 @@ static void lm_dissolve(rgb_group *s,rgb_group *l,rgb_group *d,
    if (alpha==0.0)
    {
 #ifdef LAYERS_DUAL
-      MEMCPY(d,s,sizeof(rgb_group)*len);
-      MEMCPY(da,sa,sizeof(rgb_group)*len);
+      memcpy(d,s,sizeof(rgb_group)*len);
+      memcpy(da,sa,sizeof(rgb_group)*len);
 #endif
       return;
    }
@@ -2217,7 +2217,7 @@ static void lm_dissolve(rgb_group *s,rgb_group *l,rgb_group *d,
    {
       if (!la)  /* no layer alpha => full opaque */
       {
-	 MEMCPY(d,l,sizeof(rgb_group)*len);
+	 memcpy(d,l,sizeof(rgb_group)*len);
 	 smear_color(da,white,len);
       }
       else
@@ -2267,8 +2267,8 @@ static void lm_behind(rgb_group *s,rgb_group *l,rgb_group *d,
    if (alpha==0.0) /* optimized */
    {
 #ifdef LAYERS_DUAL
-      MEMCPY(d,s,sizeof(rgb_group)*len);
-      MEMCPY(da,sa,sizeof(rgb_group)*len);
+      memcpy(d,s,sizeof(rgb_group)*len);
+      memcpy(da,sa,sizeof(rgb_group)*len);
 #endif
       return;
    }
@@ -2337,7 +2337,7 @@ static void lm_erase(rgb_group *UNUSED(s),rgb_group *UNUSED(l),rgb_group *UNUSED
    /* la may be NULL, no other */
 
 #ifdef LAYERS_DUAL
-   MEMCPY(d,s,sizeof(rgb_group)*len);
+   memcpy(d,s,sizeof(rgb_group)*len);
 #endif
 
    if (alpha==1.0)
@@ -2381,8 +2381,8 @@ static void lm_spec_burn_alpha(struct layer *ly,
    if (!la)
    {
 #ifdef LAYERS_DUAL
-      MEMCPY(d,s,len*sizeof(rgb_group));
-      MEMCPY(da,sa,len*sizeof(rgb_group));
+      memcpy(d,s,len*sizeof(rgb_group));
+      memcpy(da,sa,len*sizeof(rgb_group));
 #endif
       return;
    }
@@ -2407,7 +2407,7 @@ static void lm_spec_burn_alpha(struct layer *ly,
 	 else
 	 {
 #ifdef LAYERS_DUAL
-	    MEMCPY(d,s,len*sizeof(rgb_group));
+	    memcpy(d,s,len*sizeof(rgb_group));
 #endif
 	    while (len--)
 	    {
@@ -2512,9 +2512,9 @@ static INLINE void img_lay_first_line(struct layer *l,
       }
       if (len<xsize) /* copy bit, fill right */
       {
-	 if (s) MEMCPY(d,s,len*sizeof(rgb_group));
+	 if (s) memcpy(d,s,len*sizeof(rgb_group));
 	 else smear_color(d,l->fill,len);
-	 if (sa) MEMCPY(da,sa,len*sizeof(rgb_group));
+	 if (sa) memcpy(da,sa,len*sizeof(rgb_group));
 	 else smear_color(da,white,len);
 
 	 smear_color(d+len,l->fill,xsize-len);
@@ -2522,9 +2522,9 @@ static INLINE void img_lay_first_line(struct layer *l,
       }
       else /* copy rest */
       {
-	 if (s) MEMCPY(d,s,xsize*sizeof(rgb_group));
+	 if (s) memcpy(d,s,xsize*sizeof(rgb_group));
 	 else smear_color(d,l->fill,xsize);
-	 if (sa) MEMCPY(da,sa,xsize*sizeof(rgb_group));
+	 if (sa) memcpy(da,sa,xsize*sizeof(rgb_group));
 	 else smear_color(da,white,xsize);
       }
       return;
@@ -2549,22 +2549,22 @@ static INLINE void img_lay_first_line(struct layer *l,
       {
 	 int len=l->xsize-xoffs;
 	 if (len>l->xsize) len=l->xsize;
-	 if (s) MEMCPY(d,s+xoffs,len*sizeof(rgb_group));
-	 if (sa) MEMCPY(da,sa+xoffs,len*sizeof(rgb_group));
+	 if (s) memcpy(d,s+xoffs,len*sizeof(rgb_group));
+	 if (sa) memcpy(da,sa+xoffs,len*sizeof(rgb_group));
 	 da+=len;
 	 d+=len;
 	 xsize-=len;
       }
       while (xsize>l->xsize)
       {
-	 if (s) MEMCPY(d,s,l->xsize*sizeof(rgb_group));
-	 if (sa) MEMCPY(d,sa,l->xsize*sizeof(rgb_group));
+	 if (s) memcpy(d,s,l->xsize*sizeof(rgb_group));
+	 if (sa) memcpy(d,sa,l->xsize*sizeof(rgb_group));
 	 da+=l->xsize;
 	 d+=l->xsize;
 	 xsize-=l->xsize;
       }
-      if (s) MEMCPY(d,s,xsize*sizeof(rgb_group));
-      if (sa) MEMCPY(d,sa,xsize*sizeof(rgb_group));
+      if (s) memcpy(d,s,xsize*sizeof(rgb_group));
+      if (sa) memcpy(d,sa,xsize*sizeof(rgb_group));
    }
 }
 
@@ -2595,8 +2595,8 @@ static INLINE void img_lay_stroke(struct layer *ly,
    {
 /*       fprintf(stderr,"fast skip ly->yoffs=%d\n",ly->yoffs); */
 #ifdef LAYERS_DUAL
-      MEMCPY(d,s,len*sizeof(rgb_group));
-      MEMCPY(da,sa,len*sizeof(rgb_group));
+      memcpy(d,s,len*sizeof(rgb_group));
+      memcpy(da,sa,len*sizeof(rgb_group));
 #endif
       return;
    }
@@ -3033,8 +3033,8 @@ static INLINE struct layer *clone_this_layer(void)
    l->alpha_value=THIS->alpha_value;
    l->fill=THIS->fill;
    l->fill_alpha=THIS->fill_alpha;
-   MEMCPY(l->sfill,THIS->sfill,sizeof(rgb_group)*SNUMPIXS);
-   MEMCPY(l->sfill_alpha,THIS->sfill_alpha,sizeof(rgb_group)*SNUMPIXS);
+   memcpy(l->sfill,THIS->sfill,sizeof(rgb_group)*SNUMPIXS);
+   memcpy(l->sfill_alpha,THIS->sfill_alpha,sizeof(rgb_group)*SNUMPIXS);
    l->tiled=THIS->tiled;
    l->row_func=THIS->row_func;
    l->optimize_alpha=THIS->optimize_alpha;

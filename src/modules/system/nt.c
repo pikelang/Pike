@@ -1198,7 +1198,7 @@ static void low_encode_localgroup_members_info_0(LOCALGROUP_MEMBERS_INFO_0 *tmp)
     int lentmp=getlengthsid( (X) );		\
     PSID psidtmp=xalloc(lentmp);		\
     struct object *o=low_clone(sid_program);	\
-    MEMCPY( psidtmp, (X), lentmp);		\
+    memcpy( psidtmp, (X), lentmp);		\
     (*(PSID *)(o->storage))=psidtmp;		\
     push_object(o);				\
   } else {					\
@@ -2768,7 +2768,7 @@ static void f_normalize_path(INT32 args)
      * e.g. "c:\\". */
     file = xalloc(str->len + 2);
     SET_ONERROR (file_uwp, free, file);
-    MEMCPY(file, str->str, str->len);
+    memcpy(file, str->str, str->len);
     file[str->len] = '.';
     file[str->len + 1] = 0;
   }

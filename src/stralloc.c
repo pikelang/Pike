@@ -943,7 +943,7 @@ PMOD_EXPORT struct pike_string * debug_make_shared_binary_string(const char *str
   if (!s) 
   {
     s=begin_shared_string(len);
-    MEMCPY(s->str, str, len);
+    memcpy(s->str, str, len);
     link_pike_string(s, h);
   } else {
     add_ref(s);
@@ -1000,7 +1000,7 @@ PMOD_EXPORT struct pike_string * debug_make_shared_binary_string1(const p_wchar1
   if (!s) 
   {
     s=begin_wide_shared_string(len,1);
-    MEMCPY(s->str, str, len<<1);
+    memcpy(s->str, str, len<<1);
     link_pike_string(s, h);
   } else {
     add_ref(s);
@@ -1035,7 +1035,7 @@ PMOD_EXPORT struct pike_string * debug_make_shared_binary_string2(const p_wchar2
   if (!s) 
   {
     s=begin_wide_shared_string(len,2);
-    MEMCPY(s->str, str, len<<2);
+    memcpy(s->str, str, len<<2);
     link_pike_string(s, h);
   } else {
     add_ref(s);
@@ -1698,9 +1698,9 @@ struct pike_string *realloc_unlinked_string(struct pike_string *a,
     r->min = a->min;
     r->max = a->max;
     if (a->len <= size) {
-      MEMCPY(r->str, a->str, a->len<<a->size_shift);
+      memcpy(r->str, a->str, a->len<<a->size_shift);
     } else {
-      MEMCPY(r->str, a->str, size<<a->size_shift);
+      memcpy(r->str, a->str, size<<a->size_shift);
     }
     free_string(a);
   }
@@ -1721,7 +1721,7 @@ static struct pike_string *realloc_shared_string(struct pike_string *a,
     return realloc_unlinked_string(a, size);
   }else{
     r=begin_wide_shared_string(size,a->size_shift);
-    MEMCPY(r->str, a->str, a->len<<a->size_shift);
+    memcpy(r->str, a->str, a->len<<a->size_shift);
     r->flags |= a->flags & ~15;
     r->min = a->min;
     r->max = a->max;
@@ -1896,7 +1896,7 @@ struct pike_string *modify_shared_string(struct pike_string *a,
   }else{
     struct pike_string *r;
     r=begin_wide_shared_string(a->len,a->size_shift);
-    MEMCPY(r->str, a->str, a->len << a->size_shift);
+    memcpy(r->str, a->str, a->len << a->size_shift);
     low_set_index(r,index,c);
     free_string(a);
     return end_shared_string(r);
@@ -1970,7 +1970,7 @@ PMOD_EXPORT struct pike_string *add_and_free_shared_strings(struct pike_string *
   {
     a = realloc_shared_string(a, alen + b->len);
     update_flags_for_add( a, b );
-    MEMCPY(a->str+(alen<<a->size_shift),b->str,b->len<<b->size_shift);
+    memcpy(a->str+(alen<<a->size_shift),b->str,b->len<<b->size_shift);
     free_string(b);
     a->flags |= STRING_NOT_HASHED;
     return end_shared_string(a);
@@ -2359,7 +2359,7 @@ PMOD_EXPORT void init_string_builder_copy(struct string_builder *to,
   to->malloced = from->malloced;
   to->s = begin_wide_shared_string (from->malloced, from->s->size_shift);
   to->s->len = from->s->len;
-  MEMCPY (to->s->str, from->s->str, (from->s->len + 1) << from->s->size_shift);
+  memcpy (to->s->str, from->s->str, (from->s->len + 1) << from->s->size_shift);
   to->known_shift = from->known_shift;
 }
 
@@ -2646,7 +2646,7 @@ PMOD_EXPORT void string_builder_fill(struct string_builder *s,
     while(howmany > 0)
     {
       tmp = MINIMUM(len, howmany);
-      MEMCPY(s->s->str + (s->s->len << s->s->size_shift),
+      memcpy(s->s->str + (s->s->len << s->s->size_shift),
 	     to.ptr,
 	     tmp << s->s->size_shift);
       len+=tmp;

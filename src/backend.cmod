@@ -2937,7 +2937,7 @@ static void pb_copy_selectors(struct pb_selectors *to,
     }
   }
   
-  MEMCPY(to->poll_fds,
+  memcpy(to->poll_fds,
 	 from->poll_fds,
 	 sizeof(struct pollfd)*from->num_in_poll);
   to->num_in_poll=from->num_in_poll;

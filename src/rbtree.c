@@ -828,7 +828,7 @@ struct rb_node_hdr *low_rb_unlink_with_move (struct rb_node_hdr **root,
     }
 
     keep_flags (node,
-		MEMCPY ((char *) node + OFFSETOF (rb_node_hdr, flags),
+		memcpy ((char *) node + OFFSETOF (rb_node_hdr, flags),
 			(char *) unlink + OFFSETOF (rb_node_hdr, flags),
 			node_size - OFFSETOF (rb_node_hdr, flags)));
 

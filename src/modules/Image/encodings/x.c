@@ -527,7 +527,7 @@ static void image_x_encode_pseudocolor_1byte_exact(INT32 args,
       {
 	 if (translate) 
 	    { x=img->xsize; while (x--) *(d++)=translate[(*(s++))&mask]; }
-	 else MEMCPY(d,s,img->xsize),d+=img->xsize,s+=img->xsize;
+	 else memcpy(d,s,img->xsize),d+=img->xsize,s+=img->xsize;
 	 m=linemod;
 	 while (m--) *(d++)=0;
       }

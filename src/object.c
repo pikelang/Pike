@@ -555,7 +555,7 @@ PMOD_EXPORT struct object *get_master(void)
 
     tmp=xalloc(strlen(master_file)+3);
 
-    MEMCPY(tmp, master_file, strlen(master_file)+1);
+    memcpy(tmp, master_file, strlen(master_file)+1);
     strcat(tmp,".o");
 
     s = NULL;

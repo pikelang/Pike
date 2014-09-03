@@ -65,9 +65,9 @@
 #define XARGS , cmpfun, tmp_area, size
 
 #define SWAP(X,Y) do { \
-    MEMCPY(tmp_area,X,size); \
-    MEMCPY(X,Y,size); \
-    MEMCPY(Y,tmp_area,size); \
+    memcpy(tmp_area,X,size); \
+    memcpy(X,Y,size); \
+    memcpy(Y,tmp_area,size); \
  } while(0)
 
 #define STEP(X,Y) ((X)+(Y)*size)

@@ -417,8 +417,8 @@ PMOD_EXPORT struct array *array_insert(struct array *v,struct svalue *s,INT32 in
 			  v->flags);
     ret->type_field = v->type_field;
 
-    MEMCPY(ITEM(ret), ITEM(v), sizeof(struct svalue) * index);
-    MEMCPY(ITEM(ret)+index+1, ITEM(v)+index,
+    memcpy(ITEM(ret), ITEM(v), sizeof(struct svalue) * index);
+    memcpy(ITEM(ret)+index+1, ITEM(v)+index,
 	   sizeof(struct svalue) * (v->size-index));
     assert_free_svalue (ITEM(ret) + index);
     if (v->refs == 1) {
@@ -556,7 +556,7 @@ PMOD_EXPORT struct array *array_shrink(struct array *v, ptrdiff_t size)
       a->type_field = v->type_field;
     }
 
-    MEMCPY(ITEM(a), ITEM(v), size*sizeof(struct svalue));
+    memcpy(ITEM(a), ITEM(v), size*sizeof(struct svalue));
     v->size=0;
     free_array(v);
     return a;
@@ -595,7 +595,7 @@ PMOD_EXPORT struct array *resize_array(struct array *a, INT32 size)
     } else {
       struct array *ret;
       ret = array_set_flags(low_allocate_array(size, size + 1), a->flags);
-      MEMCPY(ITEM(ret), ITEM(a), sizeof(struct svalue)*a->size);
+      memcpy(ITEM(ret), ITEM(a), sizeof(struct svalue)*a->size);
       ret->type_field = DO_NOT_WARN((TYPE_FIELD)(a->type_field | BIT_INT));
       a->size=0;
       free_array(a);
@@ -638,9 +638,9 @@ PMOD_EXPORT struct array *array_remove(struct array *v,INT32 index)
     a->type_field = v->type_field;
 
     if(index>0)
-      MEMCPY(ITEM(a), ITEM(v), index*sizeof(struct svalue));
+      memcpy(ITEM(a), ITEM(v), index*sizeof(struct svalue));
     if(v->size-index>1)
-      MEMCPY(ITEM(a)+index,
+      memcpy(ITEM(a)+index,
 	     ITEM(v)+index+1,
 	     (v->size-index-1)*sizeof(struct svalue));
     v->size=0;
@@ -2158,7 +2158,7 @@ PMOD_EXPORT void push_array_items(struct array *a)
   check_array_for_destruct(a);
   if(a->refs == 1)
   {
-    MEMCPY(Pike_sp,ITEM(a),sizeof(struct svalue)*a->size);
+    memcpy(Pike_sp,ITEM(a),sizeof(struct svalue)*a->size);
     Pike_sp += a->size;
     a->size=0;
     free_array(a);
@@ -2255,7 +2255,7 @@ PMOD_EXPORT struct array *aggregate_array(INT32 args)
 
   a=allocate_array_no_init(args,0);
   if (args) {
-    MEMCPY((char *)ITEM(a),(char *)(Pike_sp-args),args*sizeof(struct svalue));
+    memcpy((char *)ITEM(a),(char *)(Pike_sp-args),args*sizeof(struct svalue));
     array_fix_type_field (a);
     Pike_sp-=args;
     DO_IF_DMALLOC(while(args--) dmalloc_touch_svalue(Pike_sp + args));

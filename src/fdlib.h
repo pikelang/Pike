@@ -422,7 +422,7 @@ typedef struct my_fd_set_s my_fd_set;
 #define my_FD_ZERO(S) FD_ZERO(& (S)->tmp)
 
 #define fd_copy_my_fd_set_to_fd_set(TO,FROM,max) \
-   MEMCPY((TO),&(FROM)->tmp,sizeof(*(TO)))
+   memcpy((TO),&(FROM)->tmp,sizeof(*(TO)))
 
 #define FILE_CAPABILITIES (fd_INTERPROCESSABLE | fd_CAN_NONBLOCK)
 #ifndef __amigaos__
