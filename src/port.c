@@ -418,21 +418,21 @@ PMOD_EXPORT int SNPRINTF(char *buf, size_t size, const char *fmt, ...)
 PMOD_EXPORT unsigned INT16 EXTRACT_UWORD_(unsigned char *p)
 {
   unsigned INT16 a;
-  memcpy((char *)&a,p,sizeof(a));
+  memcpy(&a,p,sizeof(a));
   return a;
 }
 
 PMOD_EXPORT INT16 EXTRACT_WORD_(unsigned char *p)
 {
   INT16 a;
-  memcpy((char *)&a,p,sizeof(a));
+  memcpy(&a,p,sizeof(a));
   return a;
 }
 
 PMOD_EXPORT INT32 EXTRACT_INT_(unsigned char *p)
 {
   INT32 a;
-  memcpy((char *)&a,p,sizeof(a));
+  memcpy(&a,p,sizeof(a));
   return a;
 }
 #endif

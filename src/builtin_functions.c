@@ -1904,7 +1904,7 @@ PMOD_EXPORT void f_unicode_to_string(INT32 args)
      * FIXME: Future optimization: Perform sufficient magic
      * to do the conversion in place if the ref-count is == 1.
      */
-      memcpy(out->str, (char *)(str0-len), len*2);
+      memcpy(out->str, str0-len, len*2);
   } else {
     /* Reverse endian */
     

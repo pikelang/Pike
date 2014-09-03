@@ -3115,7 +3115,7 @@ PIKECLASS Buffer
     str2->initial = end -= start-1;
     init_string_builder_alloc (&str2->str, end, shift);
     p = s->str;
-    memcpy ((s = str2->str.s)->str, (char*)p+(start<<shift), end<<shift);
+    memcpy ((s = str2->str.s)->str, p+(start<<shift), end<<shift);
     s->str[end<<shift] = 0;			// Ensure NUL-termination
     s->len = end;
     if( (Pike_fp->current_object->flags & OBJECT_CLEAR_ON_EXIT) )

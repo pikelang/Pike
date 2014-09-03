@@ -259,9 +259,9 @@ PMOD_EXPORT extern struct shared_string_location *all_shared_string_locations;
 #define MAKE_CONSTANT_SHARED_STRING(var, text)				\
   REF_MAKE_CONST_STRING(var, text)
 
-#define convert_0_to_0(X,Y,Z) memcpy((char *)(X),(char *)(Y),(Z))
-#define convert_1_to_1(X,Y,Z) memcpy((char *)(X),(char *)(Y),(Z)<<1)
-#define convert_2_to_2(X,Y,Z) memcpy((char *)(X),(char *)(Y),(Z)<<2)
+#define convert_0_to_0(X,Y,Z) memcpy((X),(Y),(Z))
+#define convert_1_to_1(X,Y,Z) memcpy((X),(Y),(Z)<<1)
+#define convert_2_to_2(X,Y,Z) memcpy((X),(Y),(Z)<<2)
 
 #define compare_0_to_0(X,Y,Z) MEMCMP((char *)(X),(char *)(Y),(Z))
 #define compare_1_to_1(X,Y,Z) MEMCMP((char *)(X),(char *)(Y),(Z)<<1)

@@ -651,7 +651,7 @@ static void nonblocking_row_scan_callback( int fd, void *_c )
            }
            break;
          case SANE_FRAME_RGB:
-           memcpy( (char *)c->r, c->buffer, c->p.bytes_per_line );
+           memcpy( c->r, c->buffer, c->p.bytes_per_line );
            break;
          default:break;
         }

@@ -3099,7 +3099,7 @@ static void dump_location_bt (LOCATION location, int indent, const char *prefix)
     unsigned char *bin_base =
       (unsigned char *) location + strlen (location) + 1;
     unsigned int bin_len = EXTRACT_UWORD (bin_base);
-    memcpy ((unsigned char *) bt, bin_base + 2, bin_len);
+    memcpy (bt, bin_base + 2, bin_len);
     frames = bin_len / sizeof (c_stack_frame);
 
     for (i = 0; i < frames; i++) {

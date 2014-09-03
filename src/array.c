@@ -2255,7 +2255,7 @@ PMOD_EXPORT struct array *aggregate_array(INT32 args)
 
   a=allocate_array_no_init(args,0);
   if (args) {
-    memcpy((char *)ITEM(a),(char *)(Pike_sp-args),args*sizeof(struct svalue));
+    memcpy(ITEM(a),Pike_sp-args,args*sizeof(struct svalue));
     array_fix_type_field (a);
     Pike_sp-=args;
     DO_IF_DMALLOC(while(args--) dmalloc_touch_svalue(Pike_sp + args));

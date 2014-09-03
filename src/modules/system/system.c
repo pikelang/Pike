@@ -1984,7 +1984,7 @@ int get_inet_addr(PIKE_SOCKADDR *addr,char *name,char *service, INT_TYPE port,
     if(found) {
 /*       fprintf(stderr, "Got %d bytes (family: %d (%d))\n", */
 /* 	      addr_len, found->ai_addr->sa_family, found->ai_family); */
-      memcpy((char *)addr, (char *)found->ai_addr, addr_len);
+      memcpy(addr, found->ai_addr, addr_len);
     }
     freeaddrinfo(res);
     if(addr_len) {
@@ -2049,12 +2049,12 @@ int get_inet_addr(PIKE_SOCKADDR *addr,char *name,char *service, INT_TYPE port,
     SOCKADDR_FAMILY(*addr) = ret->h_addrtype;
 
 #ifdef HAVE_H_ADDR_LIST
-    memcpy((char *)SOCKADDR_IN_ADDR(*addr),
-           (char *)ret->h_addr_list[0],
+    memcpy(SOCKADDR_IN_ADDR(*addr),
+           ret->h_addr_list[0],
            ret->h_length);
 #else
-    memcpy((char *)SOCKADDR_IN_ADDR(*addr),
-           (char *)ret->h_addr,
+    memcpy(SOCKADDR_IN_ADDR(*addr),
+           ret->h_addr,
            ret->h_length);
 #endif
 #else

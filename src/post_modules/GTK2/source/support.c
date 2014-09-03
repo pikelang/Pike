@@ -348,21 +348,21 @@ void pgtk2_get_mapping_arg(struct mapping *map,
          if (len!=sizeof(char *))
            Pike_fatal("oddities detected\n");
 #endif
-         memcpy(((char **)dest),&s->u.string->str,sizeof(char *));
+         memcpy(dest,&s->u.string->str,sizeof(char *));
          break;
        case PIKE_T_INT:
          if (len==2) {
            short i=(short)s->u.integer;
-           memcpy(((short *)dest),&i,2);
+           memcpy(dest,&i,2);
          } else if (len==4)
-           memcpy(((int *)dest),&s->u.integer,len);
+           memcpy(dest,&s->u.integer,len);
          break;
        case PIKE_T_FLOAT:
          if (len==sizeof(FLOAT_TYPE))
-           memcpy(((FLOAT_TYPE *)dest),&s->u.float_number,len);
+           memcpy(dest,&s->u.float_number,len);
          else if (len==sizeof(double)) {
            double d=s->u.float_number;
-           memcpy(((double *)dest),&d,len);
+           memcpy(dest,&d,len);
          }
          break;
       }

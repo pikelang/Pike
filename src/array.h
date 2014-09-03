@@ -259,8 +259,8 @@ void assign_array_level( struct array *a, struct array *b, int level );
       } END_ACCEPT_UNFINISHED_TYPE_FIELDS;				\
       /* Unless the user does something, the type field will contain */	\
       /* BIT_MIXED|BIT_UNFINISHED from the allocation above. */		\
-      memcpy((char *) (ITEM(base_sval[-1].u.array) + oldsize__),	\
-	     (char *) base_sval, diff__ * sizeof(struct svalue));	\
+      memcpy(ITEM(base_sval[-1].u.array) + oldsize__,                   \
+	     base_sval, diff__ * sizeof(struct svalue));                \
       Pike_sp = base_sval;						\
     }									\
   } while (0)

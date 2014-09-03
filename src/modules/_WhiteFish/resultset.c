@@ -434,7 +434,7 @@ static void duplicate_resultset( struct object *dest,
     int size = 4+4*T(src)->allocated_size*2;
     T(dest)->allocated_size = T(src)->allocated_size;
     T(dest)->d              = malloc( size );
-    memcpy( (char *)T(dest)->d, (char *)T(src)->d, size );
+    memcpy( T(dest)->d, T(src)->d, size );
   }
 }
 
