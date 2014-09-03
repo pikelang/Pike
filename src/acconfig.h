@@ -295,9 +295,6 @@
 /* ... by using the RDTSC instruction? */
 #undef OWN_GETHRTIME_RDTSC
 
-/* Define if you have a working, 8-bit-clean memcmp */
-#undef HAVE_MEMCMP
-
 /* Define if it is possible to allocate PROT_EXEC memory with mmap */
 #undef MEXEC_USES_MMAP
 

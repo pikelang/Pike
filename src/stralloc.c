@@ -470,7 +470,7 @@ static struct pike_string *internal_findstring(const char *s,
         size_shift == curr->size_shift &&
          hval == curr->hval &&
         ( curr->str == s ||
-          !MEMCMP(curr->str, s,len<<size_shift))) /* found it */
+          !memcmp(curr->str, s,len<<size_shift))) /* found it */
     {
       /* *prev = curr->next; */
       /* curr->next = *base; */
@@ -1496,15 +1496,15 @@ int low_quick_binary_strcmp(const char *a, ptrdiff_t alen,
   int tmp;
   if(alen > blen)
   {
-    tmp=MEMCMP(a, b, blen);
+    tmp=memcmp(a, b, blen);
     if(tmp) return tmp;
     return 1;
   }else if(alen < blen){
-    tmp=MEMCMP(a, b, alen);
+    tmp=memcmp(a, b, alen);
     if(tmp) return tmp;
     return -1;
   }else{
-    return MEMCMP(a, b, alen);
+    return memcmp(a, b, alen);
   }
 }
 
@@ -1520,15 +1520,15 @@ ptrdiff_t generic_quick_binary_strcmp(const char *a,
     int tmp;
     if(alen > blen)
     {
-      tmp=MEMCMP(a, b, blen);
+      tmp=memcmp(a, b, blen);
       if(tmp) return tmp;
       return 1;
     }else if(alen < blen){
-      tmp=MEMCMP(a, b, alen);
+      tmp=memcmp(a, b, alen);
       if(tmp) return tmp;
       return -1;
     }else{
-      return MEMCMP(a, b, alen);
+      return memcmp(a, b, alen);
     }
   }else{
     ptrdiff_t pos;
@@ -1592,7 +1592,7 @@ ptrdiff_t generic_find_binary_prefix(const char *a,
 
 PMOD_EXPORT int c_compare_string(struct pike_string *s, char *foo, int len)
 {
-  return s->len == len && s->size_shift == 0 && !MEMCMP(s->str,foo,len);
+  return s->len == len && s->size_shift == 0 && !memcmp(s->str,foo,len);
 }
 
 #ifndef HAVE_STRCOLL

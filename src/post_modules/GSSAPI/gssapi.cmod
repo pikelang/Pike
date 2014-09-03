@@ -260,7 +260,7 @@ static void cleanup_oid_set (gss_OID_set *oid_set)
 
 #define IS_SAME_OID(A, B)						\
   (A == B || (A->length == B->length &&					\
-	      !MEMCMP (A->elements, B->elements, A->length)))
+	      !memcmp (A->elements, B->elements, A->length)))
 
 #define COPY_OID(DST, SRC) do {						\
     gss_OID dst_ = (DST), src_ = (SRC);					\

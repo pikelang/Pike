@@ -4399,27 +4399,6 @@ PIKE_CHECK_CONSTANTS(recursive mutex flag,
 
 ########################################################################
 
-# NOTE: The following test is hardcoded to fail when crosscompiling
-# It also clobbers $LIBOBJS.
-
-ifdef([m4_pattern_allow], [
-  # Handle the latest autoconf incompatibility...
-  m4_pattern_allow(LIBOBJS)
-])
-OLD_LIBOBJS="${LIBOBJS}"
-
-AC_FUNC_MEMCMP
-
-# Old Autoconf set memcmp_clean while newer define memcmp_working
-if test "x$ac_cv_func_memcmp_clean" = "xyes" -o \
-        "x$ac_cv_func_memcmp_working" = "xyes"; then
-  AC_DEFINE(HAVE_MEMCMP)
-fi
-
-LIBOBJS="${OLD_LIBOBJS}"
-
-########################################################################
-
 AC_FUNC_MMAP
 
 if test "x$ac_cv_func_mmap_fixed_mapped" = "xyes"; then

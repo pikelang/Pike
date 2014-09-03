@@ -262,23 +262,6 @@ PMOD_EXPORT int STRCASECMP(const char *a,const char *b)
 }
 #endif
 
-#ifndef HAVE_MEMCMP
-PMOD_EXPORT int MEMCMP(const void *bb,const void *aa,size_t s)
-{
-  unsigned char *a=(unsigned char *)aa;
-  unsigned char *b=(unsigned char *)bb;
-  for(;s;s--,b++,a++)
-  {
-    if(*b!=*a)
-    {
-      if(*b<*a) return -1;
-      return 1;
-    }
-  }
-  return 0;
-}
-#endif
-
 #ifndef HAVE_MEMCHR
 PMOD_EXPORT void *MEMCHR(const void *p,char c,size_t e)
 {

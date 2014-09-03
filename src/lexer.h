@@ -43,7 +43,7 @@
 } while(0)
 
 #define TWO_CHAR(X,Y) ((X)<<8)+(Y)
-#define ISWORD(X) ((len == strlen(X)) && !MEMCMP(buf,X,strlen(X)))
+#define ISWORD(X) ((len == strlen(X)) && !memcmp(buf,X,strlen(X)))
 
 /*
  * Function renaming

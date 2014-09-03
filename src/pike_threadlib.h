@@ -408,7 +408,7 @@ PMOD_EXPORT int co_destroy(COND_T *c);
 #endif
 
 #ifndef th_equal
-#define th_equal(X,Y) (!MEMCMP(&(X),&(Y),sizeof(THREAD_T)))
+#define th_equal(X,Y) (!memcmp(&(X),&(Y),sizeof(THREAD_T)))
 #endif
 
 #ifndef th_hash

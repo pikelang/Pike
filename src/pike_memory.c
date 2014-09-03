@@ -1585,12 +1585,12 @@ void check_pad(struct memhdr *mh, int freeok)
 /*  fprintf(stderr,"Checking %p(%d) %ld\n",mem, size, q);  */
 #if 1
   /* optimization? */
-  if(MEMCMP(mem - DEBUG_MALLOC_PAD, mem+size, DEBUG_MALLOC_PAD))
+  if(memcmp(mem - DEBUG_MALLOC_PAD, mem+size, DEBUG_MALLOC_PAD))
   {
     q= (((long)mem) ^ 0x555555) + (size * 9248339);
     
     q%=RNDSIZE;
-    if(MEMCMP(mem - DEBUG_MALLOC_PAD, rndbuf+q, DEBUG_MALLOC_PAD))
+    if(memcmp(mem - DEBUG_MALLOC_PAD, rndbuf+q, DEBUG_MALLOC_PAD))
     {
       out_biking=1;
       fprintf(stderr,"Pre-padding overwritten for "
@@ -1599,7 +1599,7 @@ void check_pad(struct memhdr *mh, int freeok)
       abort();
     }
     
-    if(MEMCMP(mem + size, rndbuf+q, DEBUG_MALLOC_PAD))
+    if(memcmp(mem + size, rndbuf+q, DEBUG_MALLOC_PAD))
     {
       out_biking=1;
       fprintf(stderr,"Post-padding overwritten for "
@@ -2945,7 +2945,7 @@ static LOCATION low_dynamic_location(char type, const char *file,
 	unsigned int str_bin_len = EXTRACT_UWORD (str_bin_base);
 	str_bin_base += 2;
 	if (str_bin_len != bin_data_len ||
-	    MEMCMP (bin_data, str_bin_base, str_bin_len))
+	    memcmp (bin_data, str_bin_base, str_bin_len))
 	  continue;
       }
 

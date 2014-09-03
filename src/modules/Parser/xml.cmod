@@ -3387,7 +3387,7 @@ PIKEFUN string autoconvert(string s)
 	  while(isSpace(STR0(s)[pos])) pos++;
 
 	  /* "autoconvert: <?xml .version */
-	  if(MEMCMP(STR0(s)+pos,"version",7)) break;
+	  if(memcmp(STR0(s)+pos,"version",7)) break;
 	  pos+=7;
 
 	  /* <?xml version.  = "1.0" */
@@ -3420,7 +3420,7 @@ PIKEFUN string autoconvert(string s)
 	  while(isSpace(STR0(s)[pos])) pos++;
 	  
 	  /* <?xml version = "1.0" .encoding="encname" */
-	  if(MEMCMP("encoding",STR0(s)+pos,8)) break;
+	  if(memcmp("encoding",STR0(s)+pos,8)) break;
 	  pos+=8;
 	  
 	  /* <?xml version = "1.0" encoding. ="encname" */

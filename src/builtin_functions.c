@@ -1205,7 +1205,7 @@ PMOD_EXPORT void f_has_prefix(INT32 args)
   }
 
   if (a->size_shift == b->size_shift) {
-    int res = !MEMCMP(a->str, b->str, b->len << b->size_shift);
+    int res = !memcmp(a->str, b->str, b->len << b->size_shift);
     pop_n_elems(args);
     push_int(res);
     return;
@@ -1278,7 +1278,7 @@ PMOD_EXPORT void f_has_suffix(INT32 args)
   }
 
   if (a->size_shift == b->size_shift) {
-    int res = !MEMCMP(a->str + ((a->len - b->len)<<b->size_shift), b->str,
+    int res = !memcmp(a->str + ((a->len - b->len)<<b->size_shift), b->str,
 		      b->len << b->size_shift);
     pop_n_elems(args);
     push_int(res);
