@@ -498,7 +498,7 @@ PIKECLASS IOBuffer
         if( res != 4096 )
             break;
       }
-      io_unlock(io);
+      fd->box.revents &= ~(PIKE_BIT_FD_READ|PIKE_BIT_FD_READ_OOB);
     }
     else
     {
@@ -537,16 +537,16 @@ PIKECLASS IOBuffer
     INT_TYPE *wr = &Pike_sp->u.integer;
 
     if( !sz )
+    {
         io_range_error(io,  sz);
-
+        sz = io_len(io);
+    }
     if( _nbytes )
         nbytes = _nbytes->u.integer;
 
     if( (fd = get_storage( f, file_program )) )
     {
       /* lock this object. */
-      io_lock(io);
-
       while( sz > written && nbytes )
       {
         size_t rd = MINIMUM(MINIMUM(sz-written,4096),nbytes);
@@ -559,7 +559,12 @@ PIKECLASS IOBuffer
           break;
         io_consume( io, res );
         written += res;
+        nbytes-=res;
       }
+      fd->box.revents &= ~(PIKE_BIT_FD_WRITE|PIKE_BIT_FD_WRITE_OOB);
+      if(!SAFE_IS_ZERO(&fd->event_cbs[PIKE_FD_WRITE])
+         && fd->box.backend)
+         set_fd_callback_events(&fd->box, fd->box.events|PIKE_BIT_FD_WRITE, 0);
     }
     else
     {
