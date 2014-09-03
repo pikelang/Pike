@@ -7,7 +7,6 @@
 #include "bignum.h"
 #include "sscanf.h"
 #include "builtin_functions.h"
-#include "port.h"
 #include "interpret.h"
 #include "backend.h"
 #include "fd_control.h"

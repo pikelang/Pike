@@ -40,7 +40,6 @@
 #include "module_support.h"
 #include "builtin_functions.h"
 #include "dmalloc.h"
-#include "port.h"
 #include "multiset.h"
 #include "mapping.h"
 

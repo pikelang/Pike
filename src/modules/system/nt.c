@@ -14,7 +14,6 @@
 
 #include "system_machine.h"
 #include "system.h"
-#include "port.h"
 
 #include <errno.h>
 

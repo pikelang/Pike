@@ -18,7 +18,6 @@
 #include "operators.h"
 #include "pike_float.h"
 #include "block_allocator.h"
-#include "port.h"
 
 #include <errno.h>
 #include <float.h>

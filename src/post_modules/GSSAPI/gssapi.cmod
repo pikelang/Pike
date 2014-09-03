@@ -46,7 +46,6 @@
 #include "operators.h"
 #include "pike_error.h"
 #include "pike_threadlib.h"
-#include "port.h"
 #include "threads.h"
 #include "version.h"
 

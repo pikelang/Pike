@@ -125,7 +125,6 @@
 #include <memory.h>
 #endif
 
-#include "port.h"
 #include "interpret.h"
 #include "array.h"
 #include "object.h"

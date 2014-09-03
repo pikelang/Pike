@@ -32,7 +32,6 @@
 #include "stralloc.h"
 #include "operators.h"
 #include "../Image/image.h"
-#inlucde "port.h"
 
 #ifdef INLINE
 #undef INLINE

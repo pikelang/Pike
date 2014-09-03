@@ -26,7 +26,6 @@
 #include "operators.h"
 #include "builtin_functions.h"
 #include "fsort.h"
-#include "port.h"
 #include "gc.h"
 #include "block_allocator.h"
 #include "pikecode.h"

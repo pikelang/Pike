@@ -59,7 +59,6 @@
 #include "pike_error.h"
 #include "builtin_functions.h"
 #include "las.h"
-#include "port.h"
 #include "threads.h"
 #include "multiset.h"
 #include "bignum.h"

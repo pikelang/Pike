@@ -67,7 +67,6 @@
 #include "object.h"
 #include "stralloc.h"
 #include "interpret.h"
-#include "port.h"
 #include "pike_error.h"
 #include "threads.h"
 #include "program.h"
