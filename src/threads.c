@@ -360,10 +360,9 @@ static void cleanup_thread_state (struct thread_state *th);
 
 #ifndef CONFIGURE_TEST
 
-#if defined(HAVE_CLOCK) &&						\
-    (defined (RDTSC) ||							\
+#if defined (RDTSC) ||							\
      (!defined(HAVE_GETHRTIME) &&					\
-      !(defined(HAVE_MACH_TASK_INFO_H) && defined(TASK_THREAD_TIMES_INFO))))
+      !(defined(HAVE_MACH_TASK_INFO_H) && defined(TASK_THREAD_TIMES_INFO)))
 static clock_t thread_start_clock = 0;
 static THREAD_T last_clocked_thread = 0;
 #define USE_CLOCK_FOR_SLICES

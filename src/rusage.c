@@ -305,7 +305,6 @@ PMOD_EXPORT int pike_get_rusage(pike_rusage_t rusage_values)
 }
 
 #else /*HAVE_TIMES */
-#if defined(HAVE_CLOCK)
 
 #ifndef CLOCKS_PER_SEC
 #define CLOCKS_PER_SEC	1000000
@@ -318,23 +317,6 @@ PMOD_EXPORT int pike_get_rusage(pike_rusage_t rusage_values)
   return 1;
 }
 
-#else /* HAVE_CLOCK */
-
-PMOD_EXPORT int pike_get_rusage(pike_rusage_t rusage_values)
-{
-  /* This is totally wrong, but hey, if you can't do it _right_... */
-  struct timeval tm;
-  memset(rusage_values, 0, sizeof(pike_rusage_t));
-#ifndef CONFIGURE_TEST
-  ACCURATE_GETTIMEOFDAY(&tm);
-#else
-  GETTIMEOFDAY(&tm);
-#endif
-  rusage_values[0]=tm.tv_sec*1000L + tm.tv_usec/1000;
-  return 1;
-}
-
-#endif /* HAVE_CLOCK */
 #endif /* HAVE_TIMES */
 #endif /* HAVE_GETRUSAGE */
 #endif /* GETRUSAGE_THROUGH_PROCFS */

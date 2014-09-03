@@ -4524,7 +4524,6 @@ fi
 AC_CHECK_FUNCS( \
  _crypt \
  poll \
- clock \
  closefrom \
  crypt \
  fdwalk \
