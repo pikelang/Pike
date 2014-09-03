@@ -505,7 +505,7 @@ static void low_write_IEEE_float(char *b, double d, int sz)
       e += 126;
       d *= 16777216.0;
       if(e<=0) {
-	d = LDEXP(d, e-1);
+	d = ldexp(d, e-1);
 	e = 0;
       }
       f = ((INT32)floor(d))&maxf;
@@ -514,7 +514,7 @@ static void low_write_IEEE_float(char *b, double d, int sz)
       e += 1022;
       d *= 2097152.0;
       if(e<=0) {
-	d = LDEXP(d, e-1);
+	d = ldexp(d, e-1);
 	e = 0;
       }
       d2 = floor(d);

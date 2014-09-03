@@ -597,13 +597,6 @@ long long gethrtime()
 
 #endif	/* OWN_GETHRTIME */
 
-#ifndef HAVE_LDEXP
-double LDEXP(double x, int exp)
-{
-  return x * pow(2.0,(double)exp);
-}
-#endif
-
 #ifdef __MINGW32__
 struct errmapping {
         const int winerr;

@@ -307,9 +307,6 @@
 /* Define this if you have dlopen */
 #undef HAVE_DLOPEN
 
-/* Define if you have ldexp.  */
-#undef HAVE_LDEXP
-
 /* Define if you have rint.  */
 #undef HAVE_RINT
 

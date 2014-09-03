@@ -460,7 +460,7 @@ static INLINE FLOAT_TYPE low_parse_IEEE_float(char *b, int sz)
   r = (double)f;
   if(extra_f)
     r += ((double)extra_f)/4294967296.0;
-  return (FLOAT_TYPE)(s? -LDEXP(r, e):LDEXP(r, e));
+  return (FLOAT_TYPE)(s? -ldexp(r, e):ldexp(r, e));
 }
 
 #endif

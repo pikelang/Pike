@@ -366,11 +366,8 @@ long long gethrtime(void);
 #define HAVE_FREXP 1
 #define FREXP frexp
 
-#ifdef HAVE_LDEXP
+#define HAVE_LDEXP 1
 #define LDEXP ldexp
-#else
-double LDEXP(double x, int exp);
-#endif
 
 #ifdef __MINGW32__
 #ifndef HAVE__DOSMAPERR

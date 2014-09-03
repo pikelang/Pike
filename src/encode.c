@@ -2631,13 +2631,13 @@ static void decode_value2(struct decode_data *data)
 	    break;
 
 	  default:
-	    push_float(DO_NOT_WARN((FLOAT_TYPE)LDEXP(res, num)));
+	    push_float(DO_NOT_WARN((FLOAT_TYPE)ldexp(res, num)));
 	    break;
 	}
 	break;
       }
 
-      push_float(DO_NOT_WARN((FLOAT_TYPE)LDEXP(res, num)));
+      push_float(DO_NOT_WARN((FLOAT_TYPE)ldexp(res, num)));
       break;
     }
 
