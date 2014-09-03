@@ -4577,7 +4577,6 @@ AC_CHECK_FUNCS( \
  sigaction \
  sigvec \
  strcasecmp \
- strnlen \
  strchr \
  strerror \
  times \

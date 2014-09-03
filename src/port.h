@@ -164,11 +164,8 @@ PMOD_EXPORT int STRCASECMP(const char *a,const char *b);
 #  define STRCASECMP strcasecmp
 #endif
 
-#ifndef HAVE_STRNLEN
-PMOD_EXPORT size_t STRNLEN(const char *a,size_t len);
-#else
-#  define STRNLEN strnlen
-#endif
+#define HAVE_STRNLEN 1
+#define STRNLEN strnlen
 
 #define HAVE_STRNCMP 1
 #define STRNCMP strncmp

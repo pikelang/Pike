@@ -262,15 +262,6 @@ PMOD_EXPORT int STRCASECMP(const char *a,const char *b)
 }
 #endif
 
-#ifndef HAVE_STRNLEN
-size_t STRNLEN(const char *s, size_t maxlen)
-{
-  char *tmp=MEMCHR(s,0,maxlen);
-  if(tmp) return tmp-s;
-  return maxlen;
-}
-#endif
-
 #ifndef HAVE_MEMSET
 void *MEMSET(void *s,int c,size_t n)
 {
