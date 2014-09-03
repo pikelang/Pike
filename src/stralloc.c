@@ -1652,34 +1652,23 @@ struct pike_string *realloc_unlinked_string(struct pike_string *a,
 {
   struct pike_string *r = NULL;
 
-  if (a->flags & STRING_IS_SHORT )
-  {
-    if (size <= SHORT_STRING_THRESHOLD/(1<<a->size_shift)) {
-      /* There's already space enough. */
-      a->len = size;
-      low_set_index(a, size, 0);
-      return a;
-    }
-  } else {
+  if (a->flags & STRING_IS_SHORT ) {
+    if (size <= SHORT_STRING_THRESHOLD/(1<<a->size_shift))
+      r = a;				/* There's already space enough. */
+  } else
     r=realloc(a, sizeof(struct pike_string_hdr)+((size+1)<<a->size_shift));
-  }
 
-  if(!r)
-  {
+  if(!r) {
     r=begin_wide_shared_string(size, a->size_shift);
     r->flags |= a->flags & ~15;
     r->min = a->min;
     r->max = a->max;
-    if (a->len <= size) {
-      memcpy(r->str, a->str, a->len<<a->size_shift);
-    } else {
-      memcpy(r->str, a->str, size<<a->size_shift);
-    }
+    memcpy(r->str, a->str, (a->len <= size ? a->len : size)<<a->size_shift);
     free_string(a);
   }
 
   r->len=size;
-  low_set_index(r,size,0);
+  low_set_index(r,size,0);		/* Enforce \0 termination */
   return r;
 }
 
@@ -2386,8 +2375,6 @@ PMOD_EXPORT void string_builder_putchar(struct string_builder *s, int ch)
   }
   i = s->s->len++;
   low_set_index(s->s,i,ch);
-  /* Ensure NUL-termination */
-  s->s->str[s->s->len << s->s->size_shift] = 0;
 }
 
 PMOD_EXPORT void string_builder_putchars(struct string_builder *s, int ch,
@@ -2426,8 +2413,6 @@ PMOD_EXPORT void string_builder_putchars(struct string_builder *s, int ch,
   }
 
   s->s->len += count;
-  /* Ensure NUL-termination */
-  s->s->str[s->s->len << s->s->size_shift] = 0;
 }
 
 
@@ -2446,8 +2431,6 @@ PMOD_EXPORT void string_builder_binary_strcat0(struct string_builder *s,
 #endif
   }
   s->s->len+=len;
-  /* Ensure NUL-termination */
-  s->s->str[s->s->len << s->s->size_shift] = 0;
 }
 
 PMOD_EXPORT void string_builder_binary_strcat1(struct string_builder *s,
@@ -2458,8 +2441,6 @@ PMOD_EXPORT void string_builder_binary_strcat1(struct string_builder *s,
       string_build_mkspace (s, len, 0);
       convert_1_to_0 (STR0(s->s) + s->s->len, str, len);
       s->s->len += len;
-      /* Ensure NUL-termination */
-      s->s->str[s->s->len] = 0;
       return;
     }
     s->known_shift = 1;
@@ -2477,8 +2458,6 @@ PMOD_EXPORT void string_builder_binary_strcat1(struct string_builder *s,
     convert_1_to_2 (STR2(s->s)+s->s->len, str, len);
   }
   s->s->len += len;
-  /* Ensure NUL-termination */
-  s->s->str[s->s->len << s->s->size_shift] = 0;
 }
 
 PMOD_EXPORT void string_builder_binary_strcat2(struct string_builder *s,
@@ -2520,8 +2499,6 @@ PMOD_EXPORT void string_builder_binary_strcat2(struct string_builder *s,
   }
 
   s->s->len += len;
-  /* Ensure NUL-termination */
-  s->s->str[s->s->len << s->s->size_shift] = 0;
 }
 
 PMOD_EXPORT void string_builder_append(struct string_builder *s,
@@ -2541,8 +2518,6 @@ PMOD_EXPORT void string_builder_append(struct string_builder *s,
   string_build_mkspace(s, len, shift);
   generic_memcpy(MKPCHARP_STR_OFF(s->s,s->s->len), from, len);
   s->s->len+=len;
-  /* Ensure NUL-termination */
-  s->s->str[s->s->len << s->s->size_shift] = 0;
 }
 
 PMOD_EXPORT void string_builder_fill(struct string_builder *s,
@@ -2567,8 +2542,6 @@ PMOD_EXPORT void string_builder_fill(struct string_builder *s,
     memset(string_builder_allocate(s,howmany,0),
 	   EXTRACT_PCHARP(from),
 	   howmany);
-    /* Ensure NUL-termination */
-    s->s->str[s->s->len << s->s->size_shift] = 0;
     return;
   }
 
@@ -2610,8 +2583,6 @@ PMOD_EXPORT void string_builder_fill(struct string_builder *s,
       s->s->len+=tmp;
     }
   }
-  /* Ensure NUL-termination */
-  s->s->str[s->s->len << s->s->size_shift] = 0;
 }
 
 /* Append a NUL-terminated UTF16 string possibly containing surrogates. */
@@ -2654,8 +2625,6 @@ PMOD_EXPORT void string_builder_shared_strcat(struct string_builder *s, struct p
   pike_string_cpy(MKPCHARP_STR_OFF(s->s,s->s->len), str);
   s->known_shift=MAXIMUM(s->known_shift,str->size_shift);
   s->s->len+=str->len;
-  /* Ensure NUL-termination */
-  s->s->str[s->s->len << s->s->size_shift] = 0;
 }
 
 PMOD_EXPORT ptrdiff_t string_builder_quote_string(struct string_builder *buf,
@@ -3164,8 +3133,6 @@ PMOD_EXPORT void reset_string_builder(struct string_builder *s)
 {
   s->known_shift=0;
   s->s->len=0;
-  /* Ensure NUL-termination */
-  low_set_index (s->s, 0, 0);
 }
 
 PMOD_EXPORT void free_string_builder(struct string_builder *s)
@@ -3179,9 +3146,6 @@ PMOD_EXPORT struct pike_string *finish_string_builder(struct string_builder *s)
   ptrdiff_t len = s->s->len;
   if (len != s->malloced)
     s->s = realloc_unlinked_string(s->s, s->malloced = len);
-  else
-    /* Ensure NUL-termination */
-    low_set_index(s->s,s->s->len,0);
   if(s->known_shift == s->s->size_shift)
     return low_end_shared_string(s->s);
   return end_shared_string(s->s);
