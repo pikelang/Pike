@@ -1514,10 +1514,10 @@ ptrdiff_t generic_quick_binary_strcmp(const char *a,
                                       const char *b,
                                       ptrdiff_t blen, int bsize)
 {
+  ptrdiff_t pos;
   if(!asize && !bsize)
     return low_quick_binary_strcmp(a, alen, b, blen);
 
-  ptrdiff_t pos;
   for(pos=0;pos< MINIMUM(alen,blen) ;pos++)
   {
     p_wchar2 ac=generic_extract(a,asize,pos);

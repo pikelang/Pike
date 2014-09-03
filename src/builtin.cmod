@@ -3095,7 +3095,7 @@ PIKECLASS Buffer
     struct Buffer_struct *str = THIS;
     struct pike_string *s = str->str.s;
     unsigned len = s->len, shift = s->size_shift;
-    void *p;
+    char *p;
 
     struct object *res;
     struct Buffer_struct *str2;
@@ -3418,7 +3418,7 @@ PIKECLASS Buffer
     struct object *res;
     struct pike_string *s = str->str.s;
     unsigned len = s->len,shift = s->size_shift;
-    void *p = s->str;
+    char *p = s->str;
     INT_TYPE end,vdiscard;
 
     end = args==1 ? len-1 : end_or_none->u.integer;
