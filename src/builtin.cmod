@@ -3448,7 +3448,7 @@ PIKECLASS Buffer
     }
     memmove(p, (char*)p+len, end<<shift); // Copy NUL-termination
     if( s->flags & STRING_CLEAR_ON_EXIT)
-      guaranteed_memset((char*)p+len+(end<<shift) , 0, len );
+      guaranteed_memset(p+len+(end<<shift) , 0, len );
     s->len -= index;
 
     if(!vdiscard)

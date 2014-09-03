@@ -6972,7 +6972,7 @@ int my_socketpair(int family, int type, int protocol, int sv[2])
   int retries=0;
   ACCEPT_SIZE_T len;
 
-  memset((char *)&addr,0,sizeof(struct sockaddr_in));
+  memset(&addr,0,sizeof(struct sockaddr_in));
 
   if(socketpair_fd==-1)
   {
@@ -6982,7 +6982,7 @@ int my_socketpair(int family, int type, int protocol, int sv[2])
       return -1;
     }
 
-    memset((char *)&my_addr,0,sizeof(struct sockaddr_in));
+    memset(&my_addr,0,sizeof(struct sockaddr_in));
     my_addr.sin_family=AF_INET;
     my_addr.sin_addr.s_addr=htonl(INADDR_ANY);
     my_addr.sin_port=htons(0);
