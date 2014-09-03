@@ -53,7 +53,7 @@
 #define yylex yylex0
 #define low_yylex low_yylex0
 #define lex_atoi atoi
-#define lex_strtol STRTOL
+#define lex_strtol strtol
 #define lex_strtod my_strtod
 #define lex_isidchar isidchar
 

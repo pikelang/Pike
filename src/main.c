@@ -434,13 +434,13 @@ int main(int argc, char **argv)
 		p++;
 	      }
 #ifdef _REENTRANT
-	      thread_stack_size=STRTOL(p,&p,0);
+	      thread_stack_size=strtol(p,&p,0);
 #endif
 	      p+=strlen(p);
 	      break;
 	    }
 	  }
-	  Pike_stack_size=STRTOL(p,&p,0);
+	  Pike_stack_size=strtol(p,&p,0);
 	  p+=strlen(p);
 
 	  if(Pike_stack_size < 256)
@@ -463,7 +463,7 @@ int main(int argc, char **argv)
 	  }else{
 	    p++;
 	  }
-	  set_pike_evaluator_limit(STRTOL(p, &p, 0));
+	  set_pike_evaluator_limit(strtol(p, &p, 0));
 	  p+=strlen(p);
 	  break;
 
@@ -473,7 +473,7 @@ int main(int argc, char **argv)
 	  {
 	    case '0': case '1': case '2': case '3': case '4':
 	    case '5': case '6': case '7': case '8': case '9':
-	      d_flag+=STRTOL(p+1,&p,10);
+	      d_flag+=strtol(p+1,&p,10);
 	      break;
 
 	    case 'c':
@@ -543,7 +543,7 @@ int main(int argc, char **argv)
 
 	case 'a':
 	  if(p[1]>='0' && p[1]<='9')
-	    a_flag+=STRTOL(p+1,&p,10);
+	    a_flag+=strtol(p+1,&p,10);
 	  else
 	    a_flag++,p++;
 	  break;
@@ -553,7 +553,7 @@ int main(int argc, char **argv)
 	  switch (p[1]) {
 	    case '0': case '1': case '2': case '3': case '4':
 	    case '5': case '6': case '7': case '8': case '9':
-	      Pike_interpreter.trace_level+=STRTOL(p+1,&p,10);
+	      Pike_interpreter.trace_level+=strtol(p+1,&p,10);
 	      break;
 
 	    case 'g':
@@ -576,7 +576,7 @@ int main(int argc, char **argv)
 	    p+=strlen(p);
 	  }else{
 	    if(p[1]>='0' && p[1]<='9')
-	      p_flag+=STRTOL(p+1,&p,10);
+	      p_flag+=strtol(p+1,&p,10);
 	    else
 	      p_flag++,p++;
 	  }
@@ -584,7 +584,7 @@ int main(int argc, char **argv)
 
 	case 'l':
 	  if(p[1]>='0' && p[1]<='9')
-	    l_flag+=STRTOL(p+1,&p,10);
+	    l_flag+=strtol(p+1,&p,10);
 	  else
 	    l_flag++,p++;
 	  break;

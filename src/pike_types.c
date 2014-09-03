@@ -1460,7 +1460,7 @@ static void internal_parse_typeA(const char **_s)
 	  ++*s;
 	  while(isspace(**s)) ++*s;
 	  if (**s != '.') {
-	    min=STRTOL((const char *)*s,(char **)s,0);
+	    min=strtol((const char *)*s,(char **)s,0);
 	    while(isspace(**s)) ++*s;
 	  } else {
 	    min = MIN_INT32;
@@ -1473,7 +1473,7 @@ static void internal_parse_typeA(const char **_s)
 	  
 	  while(isspace(**s)) ++*s;
 	  if (**s != ')') {
-	    max=STRTOL((const char *)*s,(char **)s,0);
+	    max=strtol((const char *)*s,(char **)s,0);
 	    while(isspace(**s)) ++*s;
 	  } else {
 	    max = MAX_INT32;
@@ -1620,7 +1620,7 @@ static void internal_parse_typeA(const char **_s)
 	  ++*s;
 	  while(isspace(**s)) ++*s;
 	  if (**s != '.') {
-	    min=STRTOL((const char *)*s,(char **)s,0);
+	    min=strtol((const char *)*s,(char **)s,0);
 	    while(isspace(**s)) ++*s;
 	  } else {
 	    min = MIN_INT32;
@@ -1633,7 +1633,7 @@ static void internal_parse_typeA(const char **_s)
 	  
 	  while(isspace(**s)) ++*s;
 	  if (**s != ')') {
-	    max=STRTOL((const char *)*s,(char **)s,0);
+	    max=strtol((const char *)*s,(char **)s,0);
 	    while(isspace(**s)) ++*s;
 	  } else {
 	    max = MAX_INT32;

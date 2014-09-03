@@ -615,7 +615,7 @@ static void f_fetch_row(INT32 args)
 	  case FIELD_TYPE_SHORT:
 	  case FIELD_TYPE_LONG:
 	  case FIELD_TYPE_INT24:
-	    push_int(STRTOL(row[i], 0, 10));
+	    push_int(strtol(row[i], 0, 10));
 	    break;
 
 #if defined (HAVE_MYSQL_FETCH_LENGTHS)
@@ -661,7 +661,7 @@ static void f_fetch_row(INT32 args)
 		convert_stack_top_string_to_inumber(10);
 		break;
 	      }
-	      push_int(STRTOL(row[i], 0, 10));
+	      push_int(strtol(row[i], 0, 10));
 	      break;
 	    }
 

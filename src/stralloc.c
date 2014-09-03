@@ -3253,7 +3253,7 @@ PMOD_EXPORT PCHARP MEMCHR_PCHARP(PCHARP ptr, int chr, ptrdiff_t len)
 
 PMOD_EXPORT long STRTOL_PCHARP(PCHARP str, PCHARP *ptr, int base)
 {
-  /* Note: Code duplication in STRTOL and pcharp_to_svalue_inumber. */
+  /* Note: Code duplication in strtol and pcharp_to_svalue_inumber. */
 
   unsigned long val, mul_limit;
   int c;
@@ -3405,7 +3405,7 @@ PMOD_EXPORT int pcharp_to_svalue_inumber(struct svalue *r,
 					 int base,
 					 ptrdiff_t maxlength)
 {
-  /* Note: Code duplication in STRTOL and STRTOL_PCHARP. */
+  /* Note: Code duplication in strtol and STRTOL_PCHARP. */
 
   PCHARP str_start;
   
@@ -3630,7 +3630,7 @@ PMOD_EXPORT double STRTOD_PCHARP(PCHARP nptr, PCHARP *endptr)
 	/* The exponent overflowed a `long int'.  It is probably a safe
 	   assumption that an exponent that cannot be represented by
 	   a `long int' exceeds the limits of a `double'.  */
-	/* NOTE: Don't trust the value returned from STRTOL.
+	/* NOTE: Don't trust the value returned from strtol.
 	 * We need to find the sign of the exponent by hand.
 	 */
 	p_wchar2 c;

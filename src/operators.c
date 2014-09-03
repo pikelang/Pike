@@ -301,7 +301,7 @@ PMOD_EXPORT void o_cast_to_int(void)
       convert_stack_top_string_to_inumber(10);
     else
     {
-      INT_TYPE i = STRTOL(sp[-1].u.string->str, 0, 10);
+      INT_TYPE i = strtol(sp[-1].u.string->str, 0, 10);
       free_string(sp[-1].u.string);
       SET_SVAL(sp[-1], T_INT, NUMBER_NUMBER, integer, i);
     }

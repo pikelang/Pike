@@ -2364,7 +2364,7 @@ static void parse_location (struct memloc *l, struct parsed_location *pl)
   if (p && p < pl->extra) {
     const char *pp;
     while ((pp = STRCHR (p + 1, ':')) && pp < pl->extra) p = pp;
-    pl->line = STRTOL (p + 1, NULL, 10);
+    pl->line = strtol (p + 1, NULL, 10);
     pl->file_len = p - pl->file;
   }
   else {
@@ -2927,7 +2927,7 @@ static LOCATION low_dynamic_location(char type, const char *file,
        !strncmp(str->str+1, file, len) &&
        str->str[len+1]==':' &&
        LOCATION_TYPE (str->str) == type &&
-       STRTOL(str->str+len+2, NULL, 10) == line)
+       strtol(str->str+len+2, NULL, 10) == line)
     {
 
       if (name) {

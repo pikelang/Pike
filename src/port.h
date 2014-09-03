@@ -149,11 +149,9 @@ void GETTIMEOFDAY(struct timeval *t);
 #define RINT rint
 #define RINTL rintl
 
-#ifndef HAVE_STRTOL
-PMOD_EXPORT long STRTOL(const char *str,char **ptr,int base);
-#else
-# define STRTOL strtol
-#endif
+#define HAVE_STRTOL 1
+#define STRTOL strtol
+
 #ifndef HAVE_STRTOD
 PMOD_EXPORT double STRTOD(const char * nptr, char **endptr);
 #else

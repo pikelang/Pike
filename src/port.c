@@ -244,87 +244,6 @@ PMOD_EXPORT /*@null@*/ void *pike_realloc(void *ptr, size_t sz)
 
 #endif	/* !CONFIGURE_TEST */
 
-#define DIGIT(x)	(isdigit(x) ? (x) - '0' : \
-			islower(x) ? (x) + 10 - 'a' : (x) + 10 - 'A')
-#define MBASE	('z' - 'a' + 1 + 10)
-
-#ifndef HAVE_STRTOL
-PMOD_EXPORT long STRTOL(const char *str, char **ptr, int base)
-{
-  /* Note: Code duplication in STRTOL_PCHARP and pcharp_to_svalue_inumber. */
-
-  unsigned long val, mul_limit;
-  int c;
-  int xx, neg = 0, add_limit, overflow = 0;
-
-  if (ptr != (char **)NULL)
-    *ptr = (char *)str;		/* in case no number is formed */
-  if (base < 0 || base > MBASE)
-    return 0;		/* base is invalid -- should be a fatal error */
-  if (!isalnum(c = *str & 0xff)) {
-    while (isspace(c))
-      c = *++str & 0xff;
-    switch (c) {
-    case '-':
-      neg++;
-      /*@fallthrough@*/
-    case '+':
-      c = *++str & 0xff;
-    }
-  }
-
-  if (base == 0) {
-    if (c != '0')
-      base = 10;
-    else if (str[1] == 'x' || str[1] == 'X')
-      base = 16;
-    else
-      base = 8;
-  }
-
-  /*
-   * for any base > 10, the digits incrementally following
-   *	9 are assumed to be "abc...z" or "ABC...Z"
-   */
-  if (!isalnum(c) || (xx = DIGIT(c)) >= base)
-    return (0);			/* no number formed */
-  if (base == 16 && c == '0' && isxdigit(str[2] & 0xff) &&
-      (str[1] == 'x' || str[1] == 'X'))
-    c = *(str += 2) & 0xff;		/* skip over leading "0x" or "0X" */
-
-  mul_limit = LONG_MAX / base;
-  add_limit = (int) (LONG_MAX % base);
-  
-  if (neg) {
-    if (++add_limit == base) {
-      mul_limit++;
-      add_limit = 0;
-    }
-  }
-
-  for (val = (unsigned long)DIGIT(c);
-       isalnum(c = *++str & 0xff) && (xx = DIGIT(c)) < base; ) {
-    if (val > mul_limit || (val == mul_limit && xx > add_limit))
-      overflow = 1;
-    else
-      val = base * val + xx;
-  }
-
-  if (ptr != (char **)NULL)
-    *ptr = (char *)str;
-  if (overflow) {
-    errno = ERANGE;
-    return neg ? LONG_MIN : LONG_MAX;
-  }
-  else {
-    if (neg)
-      return (long)(~val + 1);
-    else
-      return (long) val;
-  }
-}
-#endif
-
 #ifndef HAVE_STRCASECMP
 PMOD_EXPORT int STRCASECMP(const char *a,const char *b)
 {
@@ -505,13 +424,13 @@ PMOD_EXPORT double STRTOD(const char * nptr, char **endptr)
 
       errno = 0;
       ++s;
-      exp = STRTOL((const char *)s, &end, 10);
+      exp = strtol((const char *)s, &end, 10);
       if (errno == ERANGE)
       {
 	/* The exponent overflowed a `long int'.  It is probably a safe
 	   assumption that an exponent that cannot be represented by
 	   a `long int' exceeds the limits of a `double'.  */
-	/* NOTE: Don't trust the value returned from STRTOL.
+	/* NOTE: Don't trust the value returned from strtol.
 	 * We need to find the sign of the exponent by hand.
 	 */
 	while(isspace(*s)) {
