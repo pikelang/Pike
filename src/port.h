@@ -152,11 +152,8 @@ void GETTIMEOFDAY(struct timeval *t);
 #define HAVE_STRTOL 1
 #define STRTOL strtol
 
-#ifndef HAVE_STRTOD
-PMOD_EXPORT double STRTOD(const char * nptr, char **endptr);
-#else
-# define STRTOD strtod
-#endif
+#define HAVE_STRTOD 1
+#define STRTOD strtod
 
 #ifndef HAVE_STRCSPN
 int STRCSPN(const char *s,const char * set);

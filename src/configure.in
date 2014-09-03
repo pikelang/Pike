@@ -4581,7 +4581,6 @@ AC_CHECK_FUNCS( \
  strchr \
  strcspn \
  strerror \
- strtod \
  times \
  tzset \
  vsprintf \
