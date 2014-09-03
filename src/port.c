@@ -262,16 +262,6 @@ PMOD_EXPORT int STRCASECMP(const char *a,const char *b)
 }
 #endif
 
-#ifndef HAVE_MEMCHR
-PMOD_EXPORT void *MEMCHR(const void *p,char c,size_t e)
-{
-  const char *t = p;
-  while(e--) if(*(t++)==c) return t-1;
-  return (char *)NULL;
-}
-#endif
-
-
 #if !defined(HAVE_INDEX) && !defined(HAVE_STRCHR)
 PMOD_EXPORT char *STRCHR(char *s,int c)
 {

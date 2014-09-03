@@ -3223,7 +3223,7 @@ PMOD_EXPORT PCHARP MEMCHR_PCHARP(PCHARP ptr, int chr, ptrdiff_t len)
 {
   switch(ptr.shift)
   {
-    case 0: return MKPCHARP(MEMCHR(ptr.ptr,chr,len),0);
+    case 0: return MKPCHARP(memchr(ptr.ptr,chr,len),0);
     case 1: return MKPCHARP(MEMCHR1((p_wchar1 *)ptr.ptr,chr,len),1);
     case 2: return MKPCHARP(MEMCHR2((p_wchar2 *)ptr.ptr,chr,len),2);
   }
