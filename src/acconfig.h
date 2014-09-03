@@ -481,9 +481,6 @@
 /* Define if your OS has the union wait. */
 #undef HAVE_UNION_WAIT
 
-/* Define if you have isgraph */
-#undef HAVE_ISGRAPH
-
 /* Define if your cpp supports the ANSI concatenation operator ## */
 #undef HAVE_ANSI_CONCAT
 
