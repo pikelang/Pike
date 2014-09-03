@@ -5824,25 +5824,6 @@ MY_CHECK_FUNCTION(strcoll,
 
 ########################################################################
 
-MY_CHECK_FUNCTION(memmem,
-[
-#include <string.h>
-char *a="foo bar gazonk";
-char *b="foo";
-char *c="bar";
-char *d="gazonk";
-], [
-  if(((char *)memmem(b,strlen(b),a,strlen(a)))!=a ||
-     ((char *)memmem(c,strlen(c),a,strlen(a)))!=(a+4) ||
-     ((char *)memmem(d,strlen(d),a,strlen(a)))!=(a+8) ||
-     ((char *)memmem(d,0,a,strlen(a)))!=a ||
-     memmem(d,strlen(d)+1,a,strlen(a))!=0)
-    exit(1);
-  exit(0);
-])
-
-########################################################################
-
 AC_MSG_CHECKING(if we can declare environ)
 AC_CACHE_VAL(pike_cv_declare_environ,[
 AC_TRY_COMPILE([

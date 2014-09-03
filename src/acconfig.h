@@ -304,9 +304,6 @@
 /* Define if you have gethostname */
 #undef HAVE_GETHOSTNAME
 
-/* Define if you have memmem.  */
-#undef HAVE_MEMMEM
-
 /* Define if you have strcoll */
 #undef HAVE_STRCOLL
 
