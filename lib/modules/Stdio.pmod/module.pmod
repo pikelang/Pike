@@ -134,6 +134,34 @@ class File
 {
   optional inherit Fd;
 
+  //! Toggle the file to IOBuffer mode.
+  //!
+  //! In this mode reading and writing will be done from IOBuffer objects,
+  //!
+  //! It is assumed that the file will be used in non-blocking mode.
+  //!
+  //! If @[in] or @[out] that specific buffer is used for the specified direction.
+  //!
+  //! The default is to create new buffers for both directions when
+  //! this function is called.
+  //!
+  //! @note
+  //!  Normally you call @[write] to re-trigger the write callback if
+  //!  you do not output anything in it (which will stop it from
+  //!  re-occuring again).
+  //!
+  //!  This will work with buffered mode as well, but simply adding more
+  //!  data to the output buffer will work as well.
+  void set_buffer_mode( Stdio.IOBuffer|void in,Stdio.IOBuffer|void out )
+  {
+    if( !in )  in = Stdio.IOBuffer();
+    if( !out ) out = Stdio.IOBuffer();
+
+    inbuffer = in;
+    outbuffer = out;
+    outbuffer->__fd_set_output( this );
+  }
+
   // This is needed in case we get overloaded by strange code
   // (socktest.pike).
   protected Fd fd_factory()
@@ -141,14 +169,15 @@ class File
     return File()->_fd;
   }
 
+  Stdio.IOBuffer inbuffer, outbuffer;
 #ifdef TRACK_OPEN_FILES
   /*protected*/ int open_file_id = next_open_file_id++;
 #endif
 
   int is_file;
 
-  function(mixed|void,string|void:int) ___read_callback;
-  function(mixed|void:int) ___write_callback;
+  function(mixed|void,string|IOBuffer|void:int) ___read_callback;
+  function(mixed|void,void|IOBuffer:int) ___write_callback;
   function(mixed|void:int) ___close_callback;
   function(mixed|void,string|void:int) ___read_oob_callback;
   function(mixed|void:int) ___write_oob_callback;
@@ -200,7 +229,7 @@ class File
 		   _fd && is_open() ? query_fd() : -1 );
   }
 
-  //  @decl int open(int fd, string mode)
+  // @decl int open(int fd, string mode)
   //! @decl int open(string filename, string mode)
   //! @decl int open(string filename, string mode, int mask)
   //!
@@ -880,26 +909,22 @@ class File
 
     if (!___read_callback) {
       if (___close_callback) {
-#if 0
-	/* This code only works for the POLL case! */
-	if ((peek(0, 1) == -1) && (errno() == System.EPIPE))
-#endif /* 0 */
 	  return __stdio_close_callback();
       }
       return 0;
     }
 
     if (!errno()) {
-#if 0
-      if (!(::mode() & PROP_IS_NONBLOCKING))
-	error ("Read callback called on blocking socket!\n"
-	       "Callbacks: %O, %O\n"
-	       "Id: %O\n",
-	       ___read_callback,
-	       ___close_callback,
-	       ___id);
-#endif /* 0 */
-
+      if( inbuffer )
+      {
+        if( inbuffer->input_from( this ) )
+          return ___read_callback( ___id, inbuffer );
+        else
+        {
+	  ::set_read_callback(__stdio_read_callback);
+	  return 0;
+        }
+      }
       string s;
 #ifdef STDIO_CALLBACK_TEST_MODE
       s = ::read (1, 1);
@@ -996,7 +1021,22 @@ class File
       if (!___write_callback) return 0;
 
       BE_WERR ("  calling write callback");
-      return ___write_callback(___id);
+      if( outbuffer )
+      {
+        int res;
+        if( sizeof( outbuffer ) )
+          res = outbuffer->output_to( this );
+        else
+        {
+          outbuffer->__fd_set_output( 0 );
+          res = ___write_callback(___id,outbuffer);
+          if( sizeof( outbuffer ) )
+            outbuffer->output_to( this );
+          outbuffer->__fd_set_output( this );
+        }
+        return res;
+      }
+      return ___write_callback(___id,);
     }
 
     BE_WERR ("  got error " + strerror (errno()) + " from backend");
@@ -1073,8 +1113,10 @@ class File
     return ___write_oob_callback(___id);
   }
 
-  //! @decl void set_read_callback(function(mixed, string:int) read_cb)
+  //! @decl void set_read_callback(function(mixed,string:int) read_cb)
+  //! @decl void set_read_callback(function(mixed,IOBuffer:int) read_cb)
   //! @decl void set_write_callback(function(mixed:int) write_cb)
+  //! @decl void set_write_callback(function(mixed,IOBuffer:int) write_cb)
   //! @decl void set_read_oob_callback(function(mixed, string:int) read_oob_cb)
   //! @decl void set_write_oob_callback(function(mixed:int) write_oob_cb)
   //! @decl void set_close_callback(function(mixed:int) close_cb)
@@ -1099,6 +1141,13 @@ class File
   //!   When data arrives on the stream, @[read_cb] will be called with
   //!   some or all of that data as the second argument.
   //!
+  //!   If the file is in buffer mode, the second argument will be an IOBuffer.
+  //!
+  //!   This will always be the same buffer, so data you do not use in
+  //!   one read callback can be simply left in the buffer, when new
+  //!   data arrives it will be appended
+  //!
+  //!
   //! @item
   //!   When the stream has buffer space over for writing, @[write_cb]
   //!   will be called so that you can write more data to it.
@@ -1110,6 +1159,9 @@ class File
   //!   (the usual case), Pike will first attempt to call @[close_cb],
   //!   then this callback (unless @[close_cb] has closed the stream).
   //!
+  //!   If the file is in buffer mode, the second argument will be an IOBuffer.
+  //!
+  //!   You should add data to write to this buffer.
   //! @item
   //!   When out-of-band data arrives on the stream, @[read_oob_cb]
   //!   will be called with some or all of that data as the second
@@ -1228,8 +1280,8 @@ class File
 #define SET(X,Y) ::set_##X ((___##X = (Y)) && __stdio_##X)
 #define _SET(X,Y) _fd->_##X=(___##X = (Y)) && __stdio_##X
 
-  void set_callbacks (void|function(mixed, string:int) read_cb,
-		      void|function(mixed:int) write_cb,
+  void set_callbacks (void|function(mixed,string|IOBuffer:int) read_cb,
+		      void|function(mixed,void|IOBuffer:int) write_cb,
 		      void|function(mixed:int) close_cb,
 		      void|function(mixed, string:int) read_oob_cb,
 		      void|function(mixed:int) write_oob_cb)
@@ -1288,7 +1340,7 @@ class File
 
   //! @ignore
 
-  void set_read_callback(function(mixed|void,string|void:int) read_cb)
+  void set_read_callback(function(mixed|void,IOBuffer|string|void:int) read_cb)
   {
     BE_WERR(sprintf("setting read_callback to %O\n", read_cb));
     ::set_read_callback(((___read_callback = read_cb) &&
@@ -1296,7 +1348,7 @@ class File
 			(___close_callback && __stdio_close_callback));
   }
 
-  function(mixed|void,string|void:int) query_read_callback()
+  function(mixed|void,string|void|IOBuffer:int) query_read_callback()
   {
     return ___read_callback;
   }
@@ -1313,7 +1365,7 @@ class File
     return ___##X;					\
   }
 
-  CBFUNC(function(mixed|void:int), write_callback)
+  CBFUNC(function(mixed|void,void|IOBuffer:int), write_callback)
   CBFUNC(function(mixed|void,string|void:int), read_oob_callback)
   CBFUNC(function(mixed|void:int), write_oob_callback)
 
@@ -1326,7 +1378,7 @@ class File
     }
     else
     {
-      ::set_fs_event_callback(0, 0);      
+      ::set_fs_event_callback(0, 0);
     }
   }
 
@@ -1340,7 +1392,6 @@ class File
       }
     }
   }
-  
 
   function(mixed|void:int) query_close_callback() { return ___close_callback; }
 
@@ -1353,7 +1404,7 @@ class File
   // this getter is provided by Stdio.Fd.
   // function(mixed|void:int) query_fs_event_callback() { return ___fs_event_callback; }
 
-  array(function(mixed,void|string:int)) query_callbacks()
+  array(function(mixed,void|string|IOBuffer:int)) query_callbacks()
   {
     return ({
       ___read_callback,
@@ -1394,11 +1445,11 @@ class File
   //!
   mixed query_id() { return ___id; }
 
-  //! @decl void set_nonblocking(function(mixed, string:int) read_callback, @
-  //!                            function(mixed:int) write_callback, @
+  //! @decl void set_nonblocking(function(mixed, string|IOBuffer:int) read_callback, @
+  //!                            function(mixed,void|IOBuffer:int) write_callback, @
   //!                            function(mixed:int) close_callback)
-  //! @decl void set_nonblocking(function(mixed, string:int) read_callback, @
-  //!                            function(mixed:int) write_callback, @
+  //! @decl void set_nonblocking(function(mixed, string|IOBuffer:int) read_callback, @
+  //!                            function(mixed,void|IOBuffer:int) write_callback, @
   //!                            function(mixed:int) close_callback, @
   //!                            function(mixed, string:int) read_oob_callback, @
   //!                            function(mixed:int) write_oob_callback)
@@ -1506,43 +1557,21 @@ class File
   //!
   //! @seealso
   //!   @[set_nonblocking()], @[set_blocking()]
-
   void set_blocking_keep_callbacks()
   {
      CHECK_OPEN();
-#if 0
-     ::_disable_callbacks(); // Thread safing // Unnecessary. /mast
-#endif
      ::set_blocking();
-#if 0
-     ::_enable_callbacks();
-#endif
   }
 
   void set_nonblocking_keep_callbacks()
   {
      CHECK_OPEN();
-#if 0
-     ::_disable_callbacks(); // Thread safing // Unnecessary. /mast
-#endif
      ::set_nonblocking();
-#if 0
-     ::_enable_callbacks();
-#endif
   }
-   
+
   protected void destroy()
   {
     BE_WERR("destroy()");
-    // Avoid cyclic refs.
-    // Not a good idea; the fd may have been
-    // given to another object (assign() or dup()).
-    //	/grubba 2004-04-07
-    // FREE_CB(read_callback);
-    // FREE_CB(write_callback);
-    // FREE_CB(read_oob_callback);
-    // FREE_CB(write_oob_callback);
-
     register_close_file (open_file_id);
   }
 }

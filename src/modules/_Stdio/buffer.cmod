@@ -252,6 +252,45 @@ PIKECLASS IOBuffer
       }
   }
 
+  static struct pike_string *io_read_string( IOBuffer *io, size_t len );
+  static size_t io_rewind( IOBuffer *io, INT_TYPE n );
+
+  static void io_trigger_output( IOBuffer *io )
+  {
+      if( io->output && !io->output_triggered )
+      {
+          struct my_file *fd;
+          if( (fd = get_storage( io->output, file_program )) )
+          {
+              /* actual fd? Just register the callback. */
+              fd->box.revents &= ~(PIKE_BIT_FD_WRITE|PIKE_BIT_FD_WRITE_OOB);
+              if(!SAFE_IS_ZERO(&fd->event_cbs[PIKE_FD_WRITE])
+                 && fd->box.backend)
+                  set_fd_callback_events(&fd->box, fd->box.events|PIKE_BIT_FD_WRITE, 0);
+              io->output_triggered = 1;
+          }
+          else
+          {
+              size_t bytes = MINIMUM(io_len(io),100);
+              INT_TYPE l;
+              struct pike_string *s = io_read_string( io,bytes );
+              if( s )
+              {
+                  /* Call write to triggger. */
+                  io->output_triggered = 1;
+                  push_string( s );
+                  apply( io->output, "write", 1 );
+                  l = Pike_sp[-1].u.integer;
+                  pop_stack();
+                  if( l <  0 )
+                      l = 0;
+                  if( bytes > (unsigned)l )
+                      io_rewind( io, bytes-l );
+              }
+          }
+      }
+  }
+
   static int io_range_error( IOBuffer *io, int howmuch )
   {
       int res;
@@ -283,6 +322,7 @@ PIKECLASS IOBuffer
   {
     memcpy( io_add_space( io, bytes, 0 ), p, bytes );
     io->len += bytes;
+    io_trigger_output( io );
     return io_len(io);
   }
 
@@ -401,6 +441,7 @@ PIKECLASS IOBuffer
       x[bytes] = i&255;
       i>>=8;
     }
+    io_trigger_output( io );
     return io_len( io );
   }
 
@@ -415,6 +456,7 @@ PIKECLASS IOBuffer
       return -1;
     }
     io->offset -= n;
+    io_trigger_output( io );
     return io->offset;
   }
 
@@ -499,6 +541,9 @@ PIKECLASS IOBuffer
             break;
       }
       fd->box.revents &= ~(PIKE_BIT_FD_READ|PIKE_BIT_FD_READ_OOB);
+      if(!SAFE_IS_ZERO(&fd->event_cbs[PIKE_FD_READ])
+         && fd->box.backend)
+         set_fd_callback_events(&fd->box, fd->box.events|PIKE_BIT_FD_READ, 0);
     }
     else
     {
@@ -517,6 +562,34 @@ PIKECLASS IOBuffer
       }
     }
     RETURN bread;
+  }
+
+  /*! @decl int __fd_set_output( object f )
+   *!
+   *! This tells the buffer to trigger the write callback for the
+   *! specified filedescriptor when data is added to the buffer.
+   *!
+   *! This is used internally by Stdio.File to handle nonblocking
+   *! buffered mode, and is not really intended to be used directly.
+   *! 
+   *! If f is 0 the state is cleared.
+   */
+
+  PIKEFUN void __fd_set_output( object f )
+  {
+    IOBuffer *io = THIS;
+    if( io->output ) free_object(io->output);
+    io->output_triggered = 0;
+    io->output = f;
+    io->output->refs++;
+  }
+
+  PIKEFUN void __fd_set_output( int(0..0) f )
+  {
+    IOBuffer *io = THIS;
+    if( io->output ) free_object(io->output);
+    io->output = 0;
+    io->output_triggered = 0;
   }
 
   /*! @decl int output_to( Stdio.Stream f, int|void nbytes )
@@ -1559,6 +1632,8 @@ PIKECLASS IOBuffer
       free_object( this->sub );
       io_unlock( get_storage(this->sub,IOBuffer_program ) );
     }
+    if( this->output )
+        free_object(this->output);
     if( this->source )
       free_object( this->source );
     if( this->str )

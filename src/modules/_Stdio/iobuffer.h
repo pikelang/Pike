@@ -7,9 +7,10 @@ struct _IOBuffer
 
   struct object *sub, *source, *this;
   struct program *error_mode;
+  struct object *output;
   struct pike_string *str;
   INT32 locked;
-  char malloced;
+  char malloced, output_triggered;
 };
 typedef struct _IOBuffer IOBuffer;
 
