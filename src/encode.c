@@ -1385,8 +1385,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 			       "is inherited.\n", id->name);
 		  }
 		  gs_flags = ref->id_flags & PTR_FROM_INT(p, i)->id_flags;
-		  if (id_dumped[PTR_FROM_INT(p, i)->identifier_offset] ||
-		      (i < d)) {
+		  if (id_dumped[PTR_FROM_INT(p, i)->identifier_offset]) {
 		    /* Either already dumped, or the dispatcher is in
 		     * front of us, which indicates that we are overloading
 		     * an inherited function with a variant.
@@ -1535,9 +1534,14 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 		     *     for it gets set by the variant functions,
 		     *     if it is overriding an old definition.
 		     *
-		     * We thus need to make sure id_dumped stays cleared.
+		     * Note that this means that even the first local
+		     * function must have the variant modifier (since
+		     * otherwise it would have overridden the old def
+		     * and not the dispatcher). This is handled
+		     * automatically by the use of id_dumped for the
+		     * dispatcher as marker for whether the first
+		     * variant has been added or not.
 		     */
-		    id_dumped[ref->identifier_offset] = 0;
 		    continue;
 		  }
 		  /* Not supported. */
