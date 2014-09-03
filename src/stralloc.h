@@ -263,9 +263,9 @@ PMOD_EXPORT extern struct shared_string_location *all_shared_string_locations;
 #define convert_1_to_1(X,Y,Z) memcpy((X),(Y),(Z)<<1)
 #define convert_2_to_2(X,Y,Z) memcpy((X),(Y),(Z)<<2)
 
-#define compare_0_to_0(X,Y,Z) memcmp((char *)(X),(char *)(Y),(Z))
-#define compare_1_to_1(X,Y,Z) memcmp((char *)(X),(char *)(Y),(Z)<<1)
-#define compare_2_to_2(X,Y,Z) memcmp((char *)(X),(char *)(Y),(Z)<<2)
+#define compare_0_to_0(X,Y,Z) memcmp((X),(Y),(Z))
+#define compare_1_to_1(X,Y,Z) memcmp((X),(Y),(Z)<<1)
+#define compare_2_to_2(X,Y,Z) memcmp((X),(Y),(Z)<<2)
 
 #define CONVERT(FROM,TO) \
 void PIKE_CONCAT4(convert_,FROM,_to_,TO)(PIKE_CONCAT(p_wchar,TO) *to, const PIKE_CONCAT(p_wchar,FROM) *from, ptrdiff_t len); \
