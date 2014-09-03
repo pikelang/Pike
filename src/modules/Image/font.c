@@ -611,7 +611,7 @@ void font_write(INT32 args)
 				img->xsize*img->ysize*sizeof(rgb_group)+1);
    }
 
-   MEMSET(img->img,0,img->xsize*img->ysize*sizeof(rgb_group));
+   memset(img->img,0,img->xsize*img->ysize*sizeof(rgb_group));
 
    for (j=0; j<args; j++)
    {

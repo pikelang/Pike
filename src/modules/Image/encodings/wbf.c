@@ -126,7 +126,7 @@ static struct wbf_header decode_header( struct buffer *data )
 {
   struct wbf_header res;
   ONERROR err;
-  MEMSET( &res, 0, sizeof(res) );
+  memset( &res, 0, sizeof(res) );
   res.type = wbf_read_int( data );
   res.fix_header_field = read_uchar( data );
   SET_ONERROR(err, free_wbf_header_contents, &res);

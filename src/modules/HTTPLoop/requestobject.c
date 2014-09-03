@@ -923,7 +923,7 @@ void f_aap_reply_with_cache(INT32 args)
       }
     }
     ce = new_cache_entry();
-    MEMSET(ce, 0, sizeof(struct cache_entry));
+    memset(ce, 0, sizeof(struct cache_entry));
     ce->stale_at = t+time_to_keep;
 
     ce->data = reply;
@@ -953,7 +953,7 @@ void f_low_aap_reqo__init(struct c_request_object *o)
 
 void aap_init_request_object(struct object *UNUSED(o))
 {
-  MEMSET(THIS, 0, sizeof(*THIS));
+  memset(THIS, 0, sizeof(*THIS));
 }
 
 void aap_exit_request_object(struct object *UNUSED(o))

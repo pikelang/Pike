@@ -60,7 +60,7 @@ PIKE_MODULE_INIT
 {
   int i;
 
-  MEMSET(char_class, CLS_TOKEN, sizeof(char_class));
+  memset(char_class, CLS_TOKEN, sizeof(char_class));
   for(i='\0'; i<=' '; i++)
     char_class[i] = CLS_WSPACE;
   for(i='0'; i<='9'; i++)

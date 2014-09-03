@@ -120,7 +120,7 @@ void img_clear(rgb_group *dest, rgb_group rgb, ptrdiff_t size)
   if(!size) return;
   THREADS_ALLOW();
   if( ( rgb.r == rgb.g && rgb.r == rgb.b ) )
-    MEMSET(dest, rgb.r, size*sizeof(rgb_group) );
+    memset(dest, rgb.r, size*sizeof(rgb_group) );
   else if(size)
   {
     int increment = 1;

@@ -2843,7 +2843,7 @@ static void f_thread_id_kill(INT32 args)
 
 void init_thread_obj(struct object *UNUSED(o))
 {
-  MEMSET(&THIS_THREAD->state, 0, sizeof(struct Pike_interpreter_struct));
+  memset(&THIS_THREAD->state, 0, sizeof(struct Pike_interpreter_struct));
   THIS_THREAD->thread_obj = Pike_fp->current_object;
   THIS_THREAD->swapped = 0;
   THIS_THREAD->status=THREAD_NOT_STARTED;

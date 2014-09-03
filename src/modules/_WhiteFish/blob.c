@@ -560,7 +560,7 @@ static void f_blob__cast( INT32 args )
 
 static void init_blob_struct(struct object * UNUSED(o))
 {
-  MEMSET( THIS, 0, sizeof( struct blob_data ) );
+  memset( THIS, 0, sizeof( struct blob_data ) );
 }
 
 static void exit_blob_struct(struct object * o)

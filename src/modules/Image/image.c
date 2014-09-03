@@ -648,7 +648,7 @@ void img_read_grey(INT32 args)
    d=THIS->img=xalloc(sizeof(rgb_group)*n+RGB_VEC_PAD);
    switch (m1)
    {
-      case 0: MEMSET(d,c1,n*sizeof(rgb_group)); break;
+      case 0: memset(d,c1,n*sizeof(rgb_group)); break;
       case 1: while (n--) { d->r=d->g=d->b=*(s1++); d++; } break;
       default: while (n--) { d->r=d->g=d->b=*s1; s1+=m1; d++; }
    }
@@ -3259,7 +3259,7 @@ void image_select_from(INT32 args)
       SIMPLE_OUT_OF_MEMORY_ERROR("select_from",
 				 sizeof(rgb_group)*THIS->xsize*THIS->ysize+RGB_VEC_PAD);
    }
-   MEMSET(img->img,0,sizeof(rgb_group)*img->xsize*img->ysize);
+   memset(img->img,0,sizeof(rgb_group)*img->xsize*img->ysize);
 
    if (sp[-args].u.integer>=0 && sp[-args].u.integer<img->xsize 
        && sp[1-args].u.integer>=0 && sp[1-args].u.integer<img->ysize)
@@ -4411,7 +4411,7 @@ void image_read_lsb_rgb(INT32 args)
 
    b=128;
 
-   MEMSET(d,0,(THIS->xsize*THIS->ysize*sizeof(rgb_group)+7)>>3);
+   memset(d,0,(THIS->xsize*THIS->ysize*sizeof(rgb_group)+7)>>3);
 
    if (s)
    while (n--)
@@ -4490,7 +4490,7 @@ void image_read_lsb_grey(INT32 args)
 
    b=128;
 
-   MEMSET(d,0,(THIS->xsize*THIS->ysize+7)>>3);
+   memset(d,0,(THIS->xsize*THIS->ysize+7)>>3);
 
    if (s)
    while (n--)

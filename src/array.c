@@ -183,7 +183,7 @@ PMOD_EXPORT void clear_array(struct array *a)
   if (!a->size) return;
   free_svalues(ITEM(a), a->size, a->type_field);
   /* NB: We know that INT_T == 0. */
-  MEMSET(ITEM(a), 0, a->size * sizeof(struct svalue));
+  memset(ITEM(a), 0, a->size * sizeof(struct svalue));
   a->type_field = BIT_INT;
 }
 

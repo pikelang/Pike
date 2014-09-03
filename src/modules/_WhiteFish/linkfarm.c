@@ -200,7 +200,7 @@ static void f_linkfarm_read( INT32 args )
 
 static void init_linkfarm_struct(struct object * UNUSED(o))
 {
-  MEMSET( THIS, 0, sizeof( struct linkfarm ) );
+  memset( THIS, 0, sizeof( struct linkfarm ) );
 }
 
 static void exit_linkfarm_struct(struct object *o)

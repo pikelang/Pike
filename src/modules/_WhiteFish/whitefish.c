@@ -74,7 +74,7 @@ static void handle_hit( Blob **blobs,
 
   int matrix[65][8];
 
-  MEMSET(matrix, 0, sizeof(matrix) );
+  memset(matrix, 0, sizeof(matrix) );
 
   for( i = 0; i<nblobs; i++ )
     nhits[i] = wf_blob_nhits( blobs[i] );
@@ -82,7 +82,7 @@ static void handle_hit( Blob **blobs,
 
   for( i = 0; i<nblobs; i++ )
   {
-    MEMSET( pos, 0, nblobs );
+    memset( pos, 0, nblobs );
     for( j = 0; j<nhits[i]; j++ )
     {
       hits[i] = wf_blob_hit( blobs[i], j );
@@ -201,7 +201,7 @@ static void handle_phrase_hit( Blob **blobs,
   int matrix[65];
   double accum = 0.0;
   
-  MEMSET(matrix, 0, sizeof(matrix) );
+  memset(matrix, 0, sizeof(matrix) );
 
 
   for( i = 0; i<nblobs; i++ )

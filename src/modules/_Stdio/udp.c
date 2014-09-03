@@ -529,7 +529,7 @@ void udp_add_membership(INT32 args)
     /* NB: This sets imr_interface to IN6ADDR_ANY,
      *     and clears imr_ifindex if it exists.
      */
-    MEMSET(&sock, 0, sizeof(sock));
+    memset(&sock, 0, sizeof(sock));
 
     if(SOCKADDR_FAMILY(addr) != AF_INET6)
       Pike_error("Mixing IPv6 and other multicast is not supported.\n");
@@ -546,7 +546,7 @@ void udp_add_membership(INT32 args)
   /* NB: This sets imr_interface to INADDR_ANY,
    *     and clears imr_ifindex if it exists.
    */
-  MEMSET(&sock, 0, sizeof(sock));
+  memset(&sock, 0, sizeof(sock));
 
   if(SOCKADDR_FAMILY(addr) != AF_INET)
     Pike_error("Mixing IPv6 and IPv4 multicast is not supported.\n");
@@ -615,7 +615,7 @@ void udp_drop_membership(INT32 args)
     /* NB: This sets imr_interface to IN6ADDR_ANY,
      *     and clears imr_ifindex if it exists.
      */
-    MEMSET(&sock, 0, sizeof(sock));
+    memset(&sock, 0, sizeof(sock));
 
     if(SOCKADDR_FAMILY(addr) != AF_INET6)
       Pike_error("Mixing IPv6 and other multicast is not supported.\n");
@@ -632,7 +632,7 @@ void udp_drop_membership(INT32 args)
   /* NB: This sets imr_interface to INADDR_ANY,
    *     and clears imr_ifindex if it exists.
    */
-  MEMSET(&sock, 0, sizeof(sock));
+  memset(&sock, 0, sizeof(sock));
 
   if(SOCKADDR_FAMILY(addr) != AF_INET)
     Pike_error("Mixing IPv6 and IPv4 multicast is not supported.\n");

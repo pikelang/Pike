@@ -499,7 +499,7 @@ static struct psd_image low_psd_decode( struct buffer *b )
   int *s = (int *)b->str;
   struct psd_image i;
   ONERROR err;
-  MEMSET(&i, 0, sizeof(i));
+  memset(&i, 0, sizeof(i));
   SET_ONERROR( err, free_image, &i );
   i.num_channels = psd_read_ushort( b );
   i.rows = psd_read_uint( b );

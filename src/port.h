@@ -170,11 +170,8 @@ PMOD_EXPORT int STRCASECMP(const char *a,const char *b);
 #define HAVE_STRNCMP 1
 #define STRNCMP strncmp
 
-#ifndef HAVE_MEMSET
-void *MEMSET (void *s,int c,size_t n);
-#else
-#  define MEMSET memset
-#endif
+#define HAVE_MEMSET 1
+#define MEMSET memset
 
 #ifndef HAVE_MEMCPY
 #  ifdef HAVE_BCOPY

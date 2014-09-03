@@ -679,7 +679,7 @@ static node *debug_mkemptynode(void)
   CHECK_COMPILER();
 
 #ifdef __CHECKER__
-  MEMSET(res, 0, sizeof(node));
+  memset(res, 0, sizeof(node));
 #endif /* __CHECKER__ */
 
   res->refs = 0;
@@ -2514,7 +2514,7 @@ char *find_q(struct scope_info **a, int num, int scope_id)
   }
 #endif /* PIKE_DEBUG */
   new = (struct scope_info *)xalloc(sizeof(struct scope_info));
-  MEMSET(new, VAR_UNUSED, sizeof(struct scope_info));
+  memset(new, VAR_UNUSED, sizeof(struct scope_info));
   new->next = *a;
   new->scope_id = scope_id;
   *a = new;
@@ -4044,7 +4044,7 @@ static void find_usage(node *n, unsigned char *usage,
       unsigned char switch_usage[MAX_LOCAL];
       int i;
 
-      MEMSET(switch_usage, 0, MAX_LOCAL);
+      memset(switch_usage, 0, MAX_LOCAL);
       MEMCPY(break_usage, usage, MAX_LOCAL);
 
       find_usage(CDR(n), usage, switch_usage, cont_u, break_usage, catch_u);
@@ -4058,7 +4058,7 @@ static void find_usage(node *n, unsigned char *usage,
     }
 
   case F_RETURN:
-    MEMSET(usage, 0, MAX_LOCAL);
+    memset(usage, 0, MAX_LOCAL);
     /* FIXME: The function arguments should be marked "used", since
      * they are seen in backtraces.
      */
@@ -4131,7 +4131,7 @@ static void find_usage(node *n, unsigned char *usage,
        * if (a) { do { c; b; } while(a); }
        */
 
-      MEMSET(loop_usage, 0, MAX_LOCAL);
+      memset(loop_usage, 0, MAX_LOCAL);
 
       find_usage(CAR(n), loop_usage, switch_u, cont_u, break_u, catch_u);
       if (CDR(n)) {
@@ -4163,7 +4163,7 @@ static void find_usage(node *n, unsigned char *usage,
 
       /* Find the usage from the loop */
 
-      MEMSET(loop_usage, 0, MAX_LOCAL);
+      memset(loop_usage, 0, MAX_LOCAL);
 
       MEMCPY(continue_usage, usage, MAX_LOCAL);
 
@@ -4357,7 +4357,7 @@ static node *low_localopt(node *n,
       unsigned char switch_usage[MAX_LOCAL];
       int i;
 
-      MEMSET(switch_usage, 0, MAX_LOCAL);
+      memset(switch_usage, 0, MAX_LOCAL);
       MEMCPY(break_usage, usage, MAX_LOCAL);
 
       cdr = low_localopt(CDR(n), usage, switch_usage, cont_u, break_usage,
@@ -4372,7 +4372,7 @@ static node *low_localopt(node *n,
     }
 
   case F_RETURN:
-    MEMSET(usage, 0, MAX_LOCAL);
+    memset(usage, 0, MAX_LOCAL);
     /* FIXME: The function arguments should be marked "used", since
      * they are seen in backtraces.
      */
@@ -4479,7 +4479,7 @@ static node *low_localopt(node *n,
 
       /* Find the usage from the loop. */
 
-      MEMSET(loop_usage, 0, MAX_LOCAL);
+      memset(loop_usage, 0, MAX_LOCAL);
 
       find_usage(CAR(n), loop_usage, switch_u, cont_u, break_u, catch_u);
       if (CDR(n)) {
@@ -4553,7 +4553,7 @@ static node *low_localopt(node *n,
        */
 
       /* Find the usage from the loop */
-      MEMSET(loop_usage, 0, MAX_LOCAL);
+      memset(loop_usage, 0, MAX_LOCAL);
 
       MEMCPY(continue_usage, usage, MAX_LOCAL);
 
@@ -4627,11 +4627,11 @@ static node *localopt(node *n)
   unsigned char catch_usage[MAX_LOCAL];
   node *n2;
 
-  MEMSET(usage, 0, MAX_LOCAL);
-  MEMSET(b_usage, 0, MAX_LOCAL);
-  MEMSET(c_usage, 0, MAX_LOCAL);
-  MEMSET(s_usage, 0, MAX_LOCAL);
-  MEMSET(catch_usage, 0, MAX_LOCAL);
+  memset(usage, 0, MAX_LOCAL);
+  memset(b_usage, 0, MAX_LOCAL);
+  memset(c_usage, 0, MAX_LOCAL);
+  memset(s_usage, 0, MAX_LOCAL);
+  memset(catch_usage, 0, MAX_LOCAL);
 
   n2 = low_localopt(n, usage, s_usage, c_usage, b_usage, catch_usage);
 

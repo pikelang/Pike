@@ -1159,7 +1159,7 @@ static void image_ttf_faceinstance_write(INT32 args)
 	    if ((res=TT_Get_Glyph_Metrics(glyph,&metrics)))
 	       { errs="TT_Get_Glyph_Metrics: "; break; }
 
-	    MEMSET(pixmap,0,rastermap.size);
+	    memset(pixmap,0,rastermap.size);
 
 	    if ((res=TT_Get_Glyph_Pixmap(glyph,
 					 &rastermap,

@@ -465,13 +465,13 @@ static void memory_allocate(INT32 args)
    {
       THREADS_ALLOW();
       mem = xalloc(size);
-      MEMSET(mem,c,size);
+      memset(mem,c,size);
       THREADS_DISALLOW();
    }
    else
    {
       mem = xalloc(size);
-      MEMSET(mem,c,size);
+      memset(mem,c,size);
    }
 
    MEMORY_FREE(THIS);

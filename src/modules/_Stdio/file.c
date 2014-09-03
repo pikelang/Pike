@@ -4164,7 +4164,7 @@ int my_socketpair(int family, int type, int protocol, int sv[2])
    */
   ACCEPT_SIZE_T len;
 
-  MEMSET(&addr,0,sizeof(struct sockaddr_in));
+  memset(&addr,0,sizeof(struct sockaddr_in));
 
   /* We lie, we actually create an AF_INET socket... */
   if(family != AF_UNIX || type != SOCK_STREAM)
@@ -4196,7 +4196,7 @@ int my_socketpair(int family, int type, int protocol, int sv[2])
      * Let's hope those few people who don't have socketpair have
      * a loopback on 127.0.0.1
      */
-    MEMSET(&my_addr,0,sizeof(struct sockaddr_in));
+    memset(&my_addr,0,sizeof(struct sockaddr_in));
     my_addr.sin_family=AF_INET;
     my_addr.sin_addr.s_addr=htonl(INADDR_ANY);
     my_addr.sin_port=htons(0);

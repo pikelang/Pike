@@ -2860,7 +2860,7 @@ void fixate_program(void)
 struct program *low_allocate_program(void)
 {
   struct program *p=alloc_program();
-  MEMSET(p, 0, sizeof(struct program));
+  memset(p, 0, sizeof(struct program));
   p->flags|=PROGRAM_VIRGIN;
   p->alignment_needed=1;
 
@@ -2966,7 +2966,7 @@ void low_start_new_program(struct program *p,
   Pike_compiler->fake_object->storage=(char *)malloc(256 * sizeof(struct svalue));
   if (Pike_compiler->fake_object->storage) {
     /* Stipple to find illegal accesses */
-    MEMSET(Pike_compiler->fake_object->storage,0x55,256*sizeof(struct svalue));
+    memset(Pike_compiler->fake_object->storage,0x55,256*sizeof(struct svalue));
     PIKE_MEM_WO_RANGE (Pike_compiler->fake_object->storage,
 		       256 * sizeof (struct svalue));
   }
@@ -9315,7 +9315,7 @@ static void compilation_event_handler(int e)
   case PROG_EVENT_INIT:
     CDFPRINTF((stderr, "th(%ld) compilation: INIT(%p).\n",
 	       (long) th_self(), c));
-    MEMSET(c, 0, sizeof(*c));
+    memset(c, 0, sizeof(*c));
     c->supporter.self = Pike_fp->current_object; /* NOTE: Not ref-counted! */
     c->compilation_inherit =
       Pike_fp->context - Pike_fp->current_object->prog->inherits;

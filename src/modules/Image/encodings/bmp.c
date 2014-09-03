@@ -311,7 +311,7 @@ void img_bmp_encode(INT32 args)
    {
       /* FIXME: What if we don't have a nct? */
       ps=begin_shared_string((1<<bpp)*4);
-      MEMSET(ps->str,0,(1<<bpp)*4);
+      memset(ps->str,0,(1<<bpp)*4);
       image_colortable_write_bgrz(nct,(unsigned char *)ps->str);
       push_string(end_shared_string(ps));
       n++;
@@ -468,7 +468,7 @@ void img_bmp_encode(INT32 args)
 	 if (!l--)
 	 {
 #ifdef USE_VALGRIND
-	    MEMSET(c, 0, skip);
+	    memset(c, 0, skip);
 #endif
 	    c+=skip;
 	    l=img->xsize-1;

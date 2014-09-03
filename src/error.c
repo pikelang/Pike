@@ -519,7 +519,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void debug_va_fatal(const char *fmt, va_list args
 #ifdef PIKE_THREADS
     threads_disabled++;
 #endif
-    MEMSET (&evaluator_callbacks, 0, sizeof (evaluator_callbacks));
+    memset (&evaluator_callbacks, 0, sizeof (evaluator_callbacks));
     if (SETJMP (jmp))
       fprintf(stderr,"Got exception when trying to describe backtrace.\n");
     else {

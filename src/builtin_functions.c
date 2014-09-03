@@ -1696,12 +1696,12 @@ PMOD_EXPORT void f_string_to_unicode(INT32 args)
     len = in->len * 2;
     out = begin_shared_string(len);
     if (len) {
-      MEMSET(out->str, 0, len);	/* Clear the upper (and lower) byte */
+      memset(out->str, 0, len);	/* Clear the upper (and lower) byte */
 #ifdef PIKE_DEBUG
       if (d_flag) {
 	for(i = len; i--;) {
 	  if (out->str[i]) {
-	    Pike_fatal("MEMSET didn't clear byte %ld of %ld\n",
+	    Pike_fatal("memset didn't clear byte %ld of %ld\n",
 		  PTRDIFF_T_TO_LONG(i+1),
 		  PTRDIFF_T_TO_LONG(len));
 	  }
@@ -4178,8 +4178,8 @@ void compile_replace_many(struct replace_many_context *ctx,
   fsort((char *)ctx->v, num, sizeof(struct replace_many_tupel),
 	(fsortfun)replace_sortfun);
 
-  MEMSET(ctx->set_start, 0, sizeof(ctx->set_start));
-  MEMSET(ctx->set_end, 0, sizeof(ctx->set_end));
+  memset(ctx->set_start, 0, sizeof(ctx->set_start));
+  memset(ctx->set_end, 0, sizeof(ctx->set_end));
   ctx->other_start = num;
 
   for(e=0;e<num;e++)
@@ -5931,7 +5931,7 @@ PMOD_EXPORT void f_mktime (INT32 args)
 
   if(args == 1)
   {
-    MEMSET(&date, 0, sizeof(date));
+    memset(&date, 0, sizeof(date));
 
     push_text("sec");
     push_text("min");
@@ -5953,7 +5953,7 @@ PMOD_EXPORT void f_mktime (INT32 args)
   get_all_args("mktime",args, "%i%i%i%i%i%i.%i%i",
 	       &sec, &min, &hour, &mday, &mon, &year, &isdst, &tz);
 
-  MEMSET(&date, 0, sizeof(date));
+  memset(&date, 0, sizeof(date));
   date.tm_sec=sec;
   date.tm_min=min;
   date.tm_hour=hour;
@@ -6389,7 +6389,7 @@ static void f_interleave_array(INT32 args)
     if (!(tab = malloc(size + max))) {
       SIMPLE_OUT_OF_MEMORY_ERROR("interleave_array", size+max);
     }
-    MEMSET(tab, 0, size + max);
+    memset(tab, 0, size + max);
 
     for (i = 0; i < order->size; i++) {
       int low = ITEM(min)[i].u.integer;
@@ -6441,7 +6441,7 @@ static void f_interleave_array(INT32 args)
 	  Pike_error("Couldn't extend table!\n");
 	}
 	tab = newtab;
-	MEMSET(tab + size + max, 0, size);
+	memset(tab + size + max, 0, size);
 	size = size * 2;
       }
     }

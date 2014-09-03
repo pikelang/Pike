@@ -286,7 +286,7 @@ static ptrdiff_t PIKE_CONCAT(read_set,SIZE) (			\
   if(cnt>=match_len)						\
     Pike_error("Unterminated sscanf set.\n");			\
 								\
-  MEMSET(set->c, 0, sizeof(set->c));				\
+  memset(set->c, 0, sizeof(set->c));				\
   set->a=0;							\
 								\
   if(match[cnt]=='^' &&						\
@@ -1048,30 +1048,30 @@ INPUT_IS_WIDE(								 \
 									 \
 	  /* sscanf("foo-bar","%s%d",a,b) might not work as expected */	 \
 		case 'd':						 \
-		  MEMSET(set.c, 1, sizeof(set.c));			 \
+		  memset(set.c, 1, sizeof(set.c));			 \
 		  for(e='0';e<='9';e++) set.c[e]=0;			 \
 		  set.c['-']=0;						 \
 		  goto match_set;					 \
 									 \
 		case 'o':						 \
-		  MEMSET(set.c, 1, sizeof(set.c));			 \
+		  memset(set.c, 1, sizeof(set.c));			 \
 		  for(e='0';e<='7';e++) set.c[e]=0;			 \
 		  goto match_set;					 \
 									 \
 		case 'x':						 \
-		  MEMSET(set.c, 1, sizeof(set.c));			 \
+		  memset(set.c, 1, sizeof(set.c));			 \
 		  for(e='0';e<='9';e++) set.c[e]=0;			 \
 		  for(e='a';e<='f';e++) set.c[e]=0;			 \
 		  goto match_set;					 \
 									 \
 		case 'D':						 \
-		  MEMSET(set.c, 1, sizeof(set.c));			 \
+		  memset(set.c, 1, sizeof(set.c));			 \
 		  for(e='0';e<='9';e++) set.c[e]=0;			 \
 		  set.c['-']=0;						 \
 		  goto match_set;					 \
 									 \
 		case 'f':						 \
-		  MEMSET(set.c, 1, sizeof(set.c));			 \
+		  memset(set.c, 1, sizeof(set.c));			 \
 		  for(e='0';e<='9';e++) set.c[e]=0;			 \
 		  set.c['.']=set.c['-']=0;				 \
 		  goto match_set;					 \

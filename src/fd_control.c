@@ -156,7 +156,7 @@ static void grow_fds_to_close(void)
   if(!fds_to_close)
     Pike_fatal("Out of memory in fd_control::grow_fds_to_close()\n"
           "Tried to allocate %d fd_datum structs\n", fds_to_close_size);
-  MEMSET( fds_to_close+(fds_to_close_size/2), 0, fds_to_close_size*sizeof(int)/2 );
+  memset( fds_to_close+(fds_to_close_size/2), 0, fds_to_close_size*sizeof(int)/2 );
 }
 
 void do_close_on_exec(void)

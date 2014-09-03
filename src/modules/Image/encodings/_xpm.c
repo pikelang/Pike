@@ -335,7 +335,7 @@ void f__xpm_write_rows( INT32 args )
        if(ind > 127) 
        {
          p_colors[id] = realloc(p_colors[id],sizeof(rgba_group)*256);
-         MEMSET(p_colors[id]+128, 0, sizeof(rgba_group)*128);
+         memset(p_colors[id]+128, 0, sizeof(rgba_group)*128);
        }
        p_colors[id][ind]=parse_color_line( c, bpc );
      }

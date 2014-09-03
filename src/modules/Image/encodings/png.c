@@ -1673,7 +1673,7 @@ static void image_png_encode(INT32 args)
    {
       struct pike_string *ps;
       ps=begin_shared_string(3<<bpp);
-      MEMSET(ps->str,0,3<<bpp);
+      memset(ps->str,0,3<<bpp);
       image_colortable_write_rgb(ct,(unsigned char*)ps->str);
       push_string(end_shared_string(ps));
       push_png_chunk("PLTE",NULL);

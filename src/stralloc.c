@@ -2453,7 +2453,7 @@ PMOD_EXPORT void string_builder_putchars(struct string_builder *s, int ch,
 
   switch (s->s->size_shift) {
     case 0:
-      MEMSET (STR0 (s->s) + s->s->len, ch, count);
+      memset (STR0 (s->s) + s->s->len, ch, count);
       break;
     case 1: {
       int i;
@@ -2608,7 +2608,7 @@ PMOD_EXPORT void string_builder_fill(struct string_builder *s,
      len == 1 &&
      (!from.shift || !min_magnitude(EXTRACT_PCHARP(from))))
   {
-    MEMSET(string_builder_allocate(s,howmany,0),
+    memset(string_builder_allocate(s,howmany,0),
 	   EXTRACT_PCHARP(from),
 	   howmany);
     /* Ensure NUL-termination */
@@ -3546,7 +3546,7 @@ PMOD_EXPORT int convert_stack_top_string_to_inumber(int base)
    character after the last one used in the number is put in *ENDPTR.  */
 PMOD_EXPORT double STRTOD_PCHARP(PCHARP nptr, PCHARP *endptr)
 {
-  /* Note: Code duplication in STRTOD. */
+  /* Note: Code duplication in strtod. */
 
   register PCHARP s;
   short int sign;

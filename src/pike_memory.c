@@ -1332,7 +1332,7 @@ void *calloc(size_t x, size_t y)
   LOWDEBUG3("calloc x",x);
   LOWDEBUG3("calloc y",y);
   ret=malloc(x*y);
-  if(ret) MEMSET(ret,0,x*y);
+  if(ret) memset(ret,0,x*y);
 #ifndef REPORT_ENCAPSULATED_MALLOC
   dmalloc_accept_leak(ret);
 #endif
@@ -1344,7 +1344,7 @@ void *fake_calloc(size_t x, size_t y)
 {
   void *ret;
   ret=fake_malloc(x*y);
-  if(ret) MEMSET(ret,0,x*y);
+  if(ret) memset(ret,0,x*y);
 #ifndef REPORT_ENCAPSULATED_MALLOC
   dmalloc_accept_leak(ret);
 #endif
@@ -2164,7 +2164,7 @@ PMOD_EXPORT void *debug_calloc(size_t a, size_t b, LOCATION location)
 {
   void *m=debug_malloc(a*b,location);
   if(m)
-    MEMSET(m, 0, a*b);
+    memset(m, 0, a*b);
 
   if(verbose_debug_malloc)
     fprintf(stderr, "calloc(%ld, %ld) => %p  (%s)\n",
@@ -2237,7 +2237,7 @@ PMOD_EXPORT void debug_free(void *p, LOCATION location, int mustfind)
     if (PIKE_MEM_CHECKER())
       PIKE_MEM_NA_RANGE(p, mh->size);
     else
-      MEMSET(p, 0x55, mh->size);
+      memset(p, 0x55, mh->size);
     if(mh->size < MAX_UNFREE_MEM/FREE_DELAY)
     {
       add_location(mh, location);
@@ -2834,7 +2834,7 @@ static void initialize_dmalloc(void)
     th_key_create(&dmalloc_last_seen_location, 0);
 #endif
     init_memhdr_hash();
-    MEMSET(mlhash, 0, sizeof(mlhash));
+    memset(mlhash, 0, sizeof(mlhash));
 
     for(e=0;e<(long)NELEM(rndbuf);e++) rndbuf[e]= (rand() % 511) | 1;
     

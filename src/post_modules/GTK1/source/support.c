@@ -163,7 +163,7 @@ GdkImage *gdkimage_from_pikeimage( struct object *img, int fast, GdkImage *i )
       int j, i, r, g, b;
       PFTIME("Creating colormap");
       colors_allocated=1;
-      MEMSET(allocated, 0, sizeof(allocated));
+      memset(allocated, 0, sizeof(allocated));
       for(r=0; r<3; r++) for(g=0; g<4; g++) for(b=0; b<3; b++)
       {
 	GdkColor color;
@@ -834,7 +834,7 @@ void pgtk_default__sprintf( int args, int offset, int len )
 
 void pgtk_clear_obj_struct(struct object *o)
 {
-  MEMSET(Pike_fp->current_storage, 0, sizeof(struct object_wrapper));
+  memset(Pike_fp->current_storage, 0, sizeof(struct object_wrapper));
 }
 
 

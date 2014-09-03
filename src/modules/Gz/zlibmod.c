@@ -360,7 +360,7 @@ void zlibmod_pack(struct pike_string *data, dynamic_buffer *buf,
   if( wbits<0 ? (wbits<-15 || wbits>-8) : (wbits<8 || wbits>15 ) )
     Pike_error("Invalid window size value %d for pack.\n", wbits);
 
-  MEMSET(&z, 0, sizeof(z));
+  memset(&z, 0, sizeof(z));
   z.gz.zalloc = Z_NULL;
   z.gz.zfree = Z_NULL;
 
@@ -601,7 +601,7 @@ static void gz_deflate(INT32 args)
 static void init_gz_deflate(struct object *UNUSED(o))
 {
   mt_init(& THIS->lock);
-  MEMSET(& THIS->gz, 0, sizeof(THIS->gz));
+  memset(& THIS->gz, 0, sizeof(THIS->gz));
   THIS->gz.zalloc=Z_NULL;
   THIS->gz.zfree=Z_NULL;
   THIS->gz.opaque=(void *)THIS;
@@ -830,7 +830,7 @@ void zlibmod_unpack(struct pike_string *data, dynamic_buffer *buf, int raw)
   struct zipper z;
   int ret;
 
-  MEMSET(&z, 0, sizeof(z));
+  memset(&z, 0, sizeof(z));
   z.gz.zalloc = Z_NULL;
   z.gz.zfree = Z_NULL;
 
@@ -1024,7 +1024,7 @@ static void gz_end_of_stream(INT32 args)
 static void init_gz_inflate(struct object *UNUSED(o))
 {
   mt_init(& THIS->lock);
-  MEMSET(& THIS->gz, 0, sizeof(THIS->gz));
+  memset(& THIS->gz, 0, sizeof(THIS->gz));
   THIS->gz.zalloc=Z_NULL;
   THIS->gz.zfree=Z_NULL;
   THIS->gz.opaque=(void *)THIS;
@@ -1135,7 +1135,7 @@ PIKE_MODULE_INIT
   add_integer_constant("FILTERED", Z_FILTERED,0);
   add_integer_constant("HUFFMAN_ONLY", Z_HUFFMAN_ONLY,0);
 
-  MEMSET(&z, 0, sizeof(z));
+  memset(&z, 0, sizeof(z));
 #ifdef Z_RLE
   if (deflateInit2(&z, 8, Z_DEFLATED, 9, 9, Z_RLE) == Z_OK) {
     have_rle = 1;

@@ -459,7 +459,7 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
   char *buf;
 
 #ifdef __CHECKER__
-  MEMSET(yylval,0,sizeof(YYSTYPE));
+  memset(yylval,0,sizeof(YYSTYPE));
 #endif
 #ifdef MALLOC_DEBUG
   check_sfltable();

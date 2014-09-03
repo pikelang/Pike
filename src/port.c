@@ -262,15 +262,6 @@ PMOD_EXPORT int STRCASECMP(const char *a,const char *b)
 }
 #endif
 
-#ifndef HAVE_MEMSET
-void *MEMSET(void *s,int c,size_t n)
-{
-  char *t;
-  for(t=s;n;n--) *(t++)=c;
-  return s;
-}
-#endif
-
 #if !defined(HAVE_MEMCPY) && !defined(HAVE_BCOPY)
 PMOD_EXPORT void MEMCPY(void *bb,const void *aa,size_t s)
 {

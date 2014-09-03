@@ -314,7 +314,7 @@ static ptrdiff_t rle_fread (guchar *buf, size_t datasize, size_t nelems,
 
       /* Optimized case for single-byte encoded data. */
       if (datasize == 1)
-        MEMSET (p + 1, *p, bytes - 1);
+        memset (p + 1, *p, bytes - 1);
       else
         for (k = datasize; k < bytes; k += datasize)
           MEMCPY (p + k, p, datasize);
@@ -583,7 +583,7 @@ static struct image_alpha ReadImage(struct buffer *fp, struct tga_header *hdr)
   read_so_far += pels;
   npels -= pels;
   if(npels)
-    MEMSET( data+(read_so_far*bypp), 0, npels*bypp );
+    memset( data+(read_so_far*bypp), 0, npels*bypp );
 
   /* Now convert the data to two image objects.  */
   {

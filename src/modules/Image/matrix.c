@@ -247,7 +247,7 @@ void img_scale2(struct image *dest, struct image *source)
    new=xalloc(newx*newy*sizeof(rgb_group)+RGB_VEC_PAD);
 
    THREADS_ALLOW();
-   MEMSET(new,0,newx*newy*sizeof(rgb_group));
+   memset(new,0,newx*newy*sizeof(rgb_group));
 
    dest->img=new;
    dest->xsize=newx;

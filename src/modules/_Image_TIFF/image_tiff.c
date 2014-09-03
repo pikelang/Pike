@@ -106,7 +106,7 @@ static void increase_buffer_size( struct buffer * buffer )
   if(!new_d) Pike_error("Realloc (%ld->%ld) failed!\n",
 		   DO_NOT_WARN((long)buffer->len),
 		   DO_NOT_WARN((long)buffer->len*2));
-  MEMSET(new_d+buffer->len, 0, buffer->len);
+  memset(new_d+buffer->len, 0, buffer->len);
   buffer->str = new_d;
   buffer->len *= 2;
 }
@@ -812,7 +812,7 @@ static void image_tiff__decode( INT32 args )
   if(TYPEOF(sp[-args]) != T_STRING)
     Pike_error("Invalid argument 1 to Image.TIFF.decode()\n");
 
-  MEMSET(&res, 0, sizeof(res));
+  memset(&res, 0, sizeof(res));
   buffer.str = sp[-args].u.string->str;
   buffer.len = buffer.real_len = sp[-args].u.string->len;
   buffer.extendable = 0;
@@ -910,7 +910,7 @@ static void image_tiff_encode( INT32 args )
   get_all_args( "encode", args, "%o", &a.img );
 
 
-  MEMSET(&c, 0, sizeof(c));
+  memset(&c, 0, sizeof(c));
   c.xdpy = 150.0;
   c.ydpy = 150.0;
   c.compression = 0;	/* Not a defined value. */

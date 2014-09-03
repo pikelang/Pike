@@ -280,7 +280,7 @@ void image_gif_header_block(INT32 args)
    {
       ps=begin_shared_string((1<<bpp)*3);
       image_colortable_write_rgb(nct,(unsigned char *)ps->str);
-      MEMSET(ps->str + (numcolors + alphaentry) * 3, 0,
+      memset(ps->str + (numcolors + alphaentry) * 3, 0,
 	     ((1 << bpp) - numcolors - alphaentry) * 3);
 
       if (alphaentry) 
@@ -913,7 +913,7 @@ CHRONO("render_block index end");
 CHRONO("gif render_block write local colortable begin");
       ps=begin_shared_string((1<<bpp)*3);
       image_colortable_write_rgb(nct,(unsigned char *)ps->str);
-      MEMSET(ps->str+(numcolors+alphaentry)*3,0,((1<<bpp)-numcolors)*3);
+      memset(ps->str+(numcolors+alphaentry)*3,0,((1<<bpp)-numcolors)*3);
       if (alphaentry) 
       {
 	 ps->str[3*alphaidx+0]=alphacolor.r;

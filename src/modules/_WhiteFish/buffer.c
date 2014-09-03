@@ -150,7 +150,7 @@ void wf_buffer_seek_w( struct buffer *b, unsigned int pos )
   if( pos > b->size )
   {
     wf_buffer_make_space( b, (unsigned int)(pos-b->size) );
-    MEMSET( b->data+b->size, 0, (unsigned int)(pos-b->size) );
+    memset( b->data+b->size, 0, (unsigned int)(pos-b->size) );
   }
   b->size = pos;
 }
@@ -160,7 +160,7 @@ void wf_buffer_clear( struct buffer *b )
   if( !b->read_only && b->data )
     free( b->data );
   if( b->read_only && b->str )    free_string( b->str );
-  MEMSET(b, 0, sizeof(struct buffer));
+  memset(b, 0, sizeof(struct buffer));
 }
 
 void wf_buffer_free( struct buffer *b )

@@ -1210,7 +1210,7 @@ PIKECLASS BlockCipher
 	THIS->block_size = block_size;
 
 	THIS->iv = begin_shared_string(block_size);
-	MEMSET(STR0(THIS->iv), 0, block_size);
+	memset(STR0(THIS->iv), 0, block_size);
 	THIS->iv->flags |= STRING_CLEAR_ON_EXIT;
 
 	if (THIS->object) free_object(THIS->object);
@@ -1740,7 +1740,7 @@ PIKECLASS BlockCipher
 	}
 
 	THIS->iv = begin_shared_string(block_size);
-	MEMSET(STR0(THIS->iv), 0, block_size);
+	memset(STR0(THIS->iv), 0, block_size);
 	THIS->iv->flags |= STRING_CLEAR_ON_EXIT;
 
 	THIS->block_size = block_size;
@@ -2254,7 +2254,7 @@ PIKECLASS BlockCipher
 	}
 
 	THIS->iv = begin_shared_string(block_size);
-	MEMSET(STR0(THIS->iv), 0, block_size);
+	memset(STR0(THIS->iv), 0, block_size);
 	THIS->iv->flags |= STRING_CLEAR_ON_EXIT;
 
 	THIS->block_size = block_size;
@@ -2646,7 +2646,7 @@ PIKECLASS BlockCipher
 	}
 
 	THIS->iv = begin_shared_string(block_size);
-	MEMSET(STR0(THIS->iv), 0, block_size);
+	memset(STR0(THIS->iv), 0, block_size);
 	THIS->iv->flags |= STRING_CLEAR_ON_EXIT;
 
 	THIS->block_size = block_size;
@@ -3178,7 +3178,7 @@ PIKECLASS BlockCipher16
 	*(ctr_iv++) = 14 - iv_len;
 
 	MEMCPY(ctr_iv, STR0(iv), iv_len);
-	MEMSET(ctr_iv + iv_len, 0, 15 - iv_len);
+	memset(ctr_iv + iv_len, 0, 15 - iv_len);
 
 	RETURN this_object();
       }
@@ -5760,10 +5760,10 @@ void
 cipher_init(void)
 {
   nul13_string = begin_shared_string(13);
-  MEMSET(STR0(nul13_string), 0, 13);
+  memset(STR0(nul13_string), 0, 13);
   nul13_string = end_shared_string(nul13_string);
   nul16_string = begin_shared_string(16);
-  MEMSET(STR0(nul16_string), 0, 16);
+  memset(STR0(nul16_string), 0, 16);
   nul16_string = end_shared_string(nul16_string);
 
   INIT;

@@ -513,7 +513,7 @@ static struct level read_level( struct buffer *buff,
   int offset;
   struct tile *last_tile = NULL;
 /*   int all_tiles_eq = 0; */
-  MEMSET(&res, 0, sizeof(res));
+  memset(&res, 0, sizeof(res));
   res.width = read_uint( buff );
   res.height = read_uint( buff );
 
@@ -545,7 +545,7 @@ static struct hierarchy read_hierarchy( struct buffer *buff,
   unsigned int offset;
   struct buffer ob;
 
-  MEMSET(&res, 0, sizeof(res));
+  memset(&res, 0, sizeof(res));
   res.width = read_uint( buff );
   res.height = read_uint( buff );
   res.bpp = read_uint( buff );
@@ -564,7 +564,7 @@ static struct layer_mask read_layer_mask( struct buffer *buff,
   int offset;
   struct property tmp;
 
-  MEMSET(&res, 0, sizeof(res));
+  memset(&res, 0, sizeof(res));
   res.width = read_uint( buff );
   res.height = read_uint( buff );
   res.name = read_string( buff );
@@ -601,7 +601,7 @@ static struct channel read_channel( struct buffer *buff,
   int offset;
   struct property tmp;
 
-  MEMSET(&res, 0, sizeof(res));
+  memset(&res, 0, sizeof(res));
   res.width = read_uint( buff );
   res.height = read_uint( buff );
   res.name = read_string( buff );
@@ -638,7 +638,7 @@ static struct layer read_layer( struct buffer *buff, struct buffer *initial )
   int h_offset;
   ONERROR err;
 
-  MEMSET(&res, 0, sizeof(res));
+  memset(&res, 0, sizeof(res));
   SET_ONERROR( err, free_layer, &res );
   res.width = read_uint( buff );
   res.height = read_uint( buff );
@@ -667,7 +667,7 @@ static struct layer read_layer( struct buffer *buff, struct buffer *initial )
     struct layer_mask *m=xalloc(sizeof(struct layer_mask));
     res.mask = m;
     read_data( &loffset, lm_offset );
-    MEMSET(m, 0, sizeof( struct layer_mask ));
+    memset(m, 0, sizeof( struct layer_mask ));
     *m = read_layer_mask( &loffset, initial );
   }
 
@@ -691,7 +691,7 @@ static struct gimp_image read_image( struct buffer * data )
   unsigned int offset;
   ONERROR err;
 
-  MEMSET(&res, 0, sizeof(res));
+  memset(&res, 0, sizeof(res));
   initial = *data;
   if(data->len < 34)
     Pike_error("This is not an xcf file (to little data)\n");

@@ -1201,7 +1201,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	  struct svalue str_sval;
 	  char *id_dumped = alloca(p->num_identifiers);
 	  int d_min = 0;
-	  MEMSET(id_dumped,0,p->num_identifiers);
+	  memset(id_dumped,0,p->num_identifiers);
 	  SET_SVAL(str_sval, T_STRING, 0, string, NULL);
 
 	  EDB(2,
@@ -4650,7 +4650,7 @@ void f_decode_value(INT32 args)
       if (TYPEOF(Pike_sp[1-args]) == T_OBJECT) {
 	if (SUBTYPEOF(Pike_sp[1-args])) {
 	  struct decode_data data;
-	  MEMSET (&data, 0, sizeof (data));
+	  memset (&data, 0, sizeof (data));
 	  data.data_str = s;	/* Not refcounted. */
 	  decode_error(&data, NULL,
 		       "The codec may not be a subtyped object yet.\n");
@@ -4680,7 +4680,7 @@ void f_decode_value(INT32 args)
     ptrdiff_t l=s->len;
     struct decode_data data;
     ONERROR uwp;
-    MEMSET (&data, 0, sizeof (data));
+    memset (&data, 0, sizeof (data));
     data.data_str = s;		/* Not refcounted. */
     SET_ONERROR (uwp, restore_current_decode, current_decode);
     current_decode = &data;

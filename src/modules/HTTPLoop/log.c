@@ -169,7 +169,7 @@ void f_aap_log_as_commonlog_to_file(INT32 args)
   l->log_head = l->log_tail = 0;
   mt_unlock( &l->log_lock );
 
-  MEMSET(&tm, 0, sizeof(tm));
+  memset(&tm, 0, sizeof(tm));
 
   while(le)
   {

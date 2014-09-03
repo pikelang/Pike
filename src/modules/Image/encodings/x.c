@@ -257,7 +257,7 @@ static void image_x_encode_truecolor(INT32 args)
       }
       else
       {
-	 MEMSET(d,0,( ( (img->xsize*bpp+alignbits-1) / alignbits )
+	 memset(d,0,( ( (img->xsize*bpp+alignbits-1) / alignbits )
 		      * alignbits*img->ysize  +7 ) / 8);
 	 while (y--)
 	 {
