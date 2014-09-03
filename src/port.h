@@ -103,9 +103,6 @@
 struct timeval;
 #endif
 
-#define HAVE_ISSPACE 1
-#define ISSPACE(X) isspace(X)
-
 #ifndef HAVE_GETTIMEOFDAY
 void GETTIMEOFDAY(struct timeval *t);
 #else
@@ -159,50 +156,53 @@ PMOD_EXPORT int SNPRINTF(char *buf, size_t size, const char *fmt, ...);
 char *strchr(const char *s,int c);
 #endif
 
+#define HAVE_ISSPACE 1
+#define ISSPACE(X) isspace(X)
+
 #define HAVE_TIME 1
-#define TIME time
+#define TIME(X) time(X)
 
 #define HAVE_STRTOL 1
-#define STRTOL strtol
+#define STRTOL(X,Y,Z) strtol(X,Y,Z)
 
 #define HAVE_STRTOD 1
-#define STRTOD strtod
+#define STRTOD(X,Y) strtod(X,Y)
 
 #define HAVE_STRCSPN 1
-#define STRCSPN strcspn
+#define STRCSPN(X,Y) strcspn(X,Y)
 
 #define HAVE_STRNLEN 1
-#define STRNLEN strnlen
+#define STRNLEN(X,Y) strnlen(X,Y)
 
 #define HAVE_STRNCMP 1
-#define STRNCMP strncmp
+#define STRNCMP(X,Y,Z) strncmp(X,Y,Z)
 
 #define HAVE_MEMSET 1
-#define MEMSET memset
+#define MEMSET(X,Y,Z) memset(X,Y,Z)
 
 #define HAVE_MEMCPY 1
-#define MEMCPY memcpy
+#define MEMCPY(X,Y,Z) memcpy(X,Y,Z)
 
 #define HAVE_MEMMOVE 1
-#define MEMMOVE memmove
+#define MEMMOVE(X,Y,Z) memmove(X,Y,Z)
 
 #define HAVE_MEMCMP 1
-#define MEMCMP memcmp
+#define MEMCMP(X,Y,Z) memcmp(X,Y,Z)
 
 #define HAVE_MEMCHR 1
-#define MEMCHR memchr
+#define MEMCHR(X,Y,Z) memchr(X,Y,Z)
 
 #define HAVE_VFPRINTF 1
-#define VFPRINTF vfprintf
+#define VFPRINTF(X,Y,Z) vfprintf(X,Y,Z)
 
 #define HAVE_VSPRINTF 1
-#define VSPRINTF vsprintf
+#define VSPRINTF(X,Y,Z) vsprintf(X,Y,Z)
 
 #define HAVE_FREXP 1
-#define FREXP frexp
+#define FREXP(X,Y) frexp(X,Y)
 
 #define HAVE_LDEXP 1
-#define LDEXP ldexp
+#define LDEXP(X,Y) ldexp(X,Y)
 
 
 #ifdef EXTRACT_UCHAR_BY_CAST

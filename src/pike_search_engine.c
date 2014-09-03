@@ -8,8 +8,6 @@
  * Written by Fredrik Hubinette (hubbe@lysator.liu.se)
  */
 
-#undef MEMCHR
-
 #define HSHIFT 0
 #include "pike_search_engine2.c"
 #undef HSHIFT
