@@ -155,11 +155,8 @@ void GETTIMEOFDAY(struct timeval *t);
 #define HAVE_STRTOD 1
 #define STRTOD strtod
 
-#ifndef HAVE_STRCSPN
-int STRCSPN(const char *s,const char * set);
-#else
-#  define STRCSPN strcspn
-#endif
+#define HAVE_STRCSPN 1
+#define STRCSPN strcspn
 
 #ifndef HAVE_STRCASECMP
 PMOD_EXPORT int STRCASECMP(const char *a,const char *b);

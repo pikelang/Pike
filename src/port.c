@@ -560,7 +560,7 @@ void own_gethrtime_init()
        p = STRSTR(buf, "\ncpu MHz");
        if (p) {
 	 p += sizeof("\ncpu MHz");
-	 p += STRCSPN(p, "0123456789\n");
+	 p += strcspn(p, "0123456789\n");
 	 if (*p != '\n') {
 	   long long hz = 0;
 

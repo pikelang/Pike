@@ -4579,7 +4579,6 @@ AC_CHECK_FUNCS( \
  strcasecmp \
  strnlen \
  strchr \
- strcspn \
  strerror \
  times \
  tzset \
