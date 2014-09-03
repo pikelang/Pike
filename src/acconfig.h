@@ -382,9 +382,6 @@
 #undef DOUBLE_IS_IEEE_BIG
 #undef DOUBLE_IS_IEEE_LITTLE
 
-/* Define this if strtol exists, and doesn't cut at 0x7fffffff */
-#undef HAVE_WORKING_STRTOL
-
 /* The rest of this file is just to eliminate warnings */
 
 /* define if declaration of strchr is missing */

@@ -4970,28 +4970,6 @@ fi
 
 #############################################################################
 
-if test "x$ac_cv_func_strtol" = "xyes"; then
-  AC_MSG_CHECKING(if strtol works for large hexadecimal constants)
-  AC_CACHE_VAL(pike_cv_func_strtol_works, [
-    AC_TRY_RUN([
-#include <stdlib.h>
-int main(int argc, char **argv)
-{
-  /* On some OS:s strtol() rounds this to 0x7fffffff. */
-  return(strtol("0xffffffff", NULL, 0) != 0xffffffff);
-}
-    ], pike_cv_func_strtol_works=yes,
-       pike_cv_func_strtol_works=no,
-       pike_cv_func_strtol_works=no)
-  ])
-  AC_MSG_RESULT($pike_cv_func_strtol_works)
-  if test "x$pike_cv_func_strtol_works" = "xyes"; then
-    AC_DEFINE(HAVE_WORKING_STRTOL)
-  else :; fi
-else :; fi
-
-#############################################################################
-
 #   if test "x$ac_cv_func_gethrtime" != "xyes"; then
 #     AC_MSG_CHECKING(if we can make gethrtime by the RDTSC instruction)
 #     AC_CACHE_VAL(pike_cv_own_gethrtime_rdtsc, [
