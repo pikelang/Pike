@@ -3538,7 +3538,7 @@ size_t do_gc(void *UNUSED(ignored), int explicit_call)
     Pike_fatal("Panic, less than zero objects!\n");
 #endif
 
-  last_gc=TIME(0);
+  last_gc=time(0);
   start_num_objs = num_objects;
   start_allocs = num_allocs;
   num_allocs = 0;

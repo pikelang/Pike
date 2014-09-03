@@ -127,11 +127,8 @@ void GETTIMEOFDAY(struct timeval *t);
 #  endif
 #endif
 
-#ifndef HAVE_TIME
-time_t TIME(time_t *);
-#else
-#  define TIME time
-#endif
+#define HAVE_TIME 1
+#define TIME time
 
 #ifndef HAVE_SNPRINTF
 #ifdef HAVE__SNPRINTF

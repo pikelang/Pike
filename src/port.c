@@ -105,16 +105,6 @@ void GETTIMEOFDAY(struct timeval *t)
 #endif
 #endif
 
-#ifndef HAVE_TIME
-time_t TIME(time_t *t)
-{
-  struct timeval tv;
-  ACCURATE_GETTIMEOFDAY(&tv);
-  if(t) *t=tv.tv_sec;
-  return tv.tv_sec;
-}
-#endif
-
 static unsigned INT32 RandSeed1 = 0x5c2582a4;
 static unsigned INT32 RandSeed2 = 0x64dff8ca;
 

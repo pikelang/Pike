@@ -4583,7 +4583,6 @@ AC_CHECK_FUNCS( \
  strerror \
  strtod \
  strtol \
- time \
  times \
  tzset \
  vsprintf \
