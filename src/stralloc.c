@@ -1511,38 +1511,24 @@ int low_quick_binary_strcmp(const char *a, ptrdiff_t alen,
 
 /* does not take locale into account */
 ptrdiff_t generic_quick_binary_strcmp(const char *a,
-						  ptrdiff_t alen, int asize,
-						  const char *b,
-						  ptrdiff_t blen, int bsize)
+                                      ptrdiff_t alen, int asize,
+                                      const char *b,
+                                      ptrdiff_t blen, int bsize)
 {
   if(!asize && !bsize)
+    return low_quick_binary_strcmp(a, alen, b, blen);
+
+  ptrdiff_t pos;
+  for(pos=0;pos< MINIMUM(alen,blen) ;pos++)
   {
-    int tmp;
-    if(alen > blen)
-    {
-      tmp=memcmp(a, b, blen);
-      if(tmp) return tmp;
+    p_wchar2 ac=generic_extract(a,asize,pos);
+    p_wchar2 bc=generic_extract(b,bsize,pos);
+    if(ac != bc) {
+      if (ac < bc) return -1;
       return 1;
-    }else if(alen < blen){
-      tmp=memcmp(a, b, alen);
-      if(tmp) return tmp;
-      return -1;
-    }else{
-      return memcmp(a, b, alen);
     }
-  }else{
-    ptrdiff_t pos;
-    for(pos=0;pos< MINIMUM(alen,blen) ;pos++)
-    {
-      p_wchar2 ac=generic_extract(a,asize,pos);
-      p_wchar2 bc=generic_extract(b,bsize,pos);
-      if(ac != bc) {
-	if (ac < bc) return -1;
-	return 1;
-      }
-    }
-    return alen-blen;
   }
+  return alen-blen;
 }
 
 /* Does not take locale into account
