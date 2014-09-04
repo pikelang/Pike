@@ -5686,7 +5686,7 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
   if(name!=debug_findstring(name))
     Pike_fatal("define_constant on nonshared string.\n");
   if (c) {
-    check_svalue (c);
+    check_svalue ((struct svalue*)c);
     if (TYPEOF(*c) > MAX_TYPE)
       /* check_svalue allows some things like T_SVALUE_PTR. */
       Pike_fatal ("Invalid type in svalue: %d\n", TYPEOF(*c));

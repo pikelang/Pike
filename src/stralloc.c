@@ -269,7 +269,7 @@ PMOD_EXPORT struct pike_string *debug_check_size_shift(const struct pike_string 
 {
   if(a->size_shift != shift)
     Pike_fatal("Wrong STRX macro used!\n");
-  return a;
+  return (struct pike_string*)a;
 }
 #endif
 
