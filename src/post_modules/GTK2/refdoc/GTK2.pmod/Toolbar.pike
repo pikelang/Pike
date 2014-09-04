@@ -6,7 +6,7 @@
 //! displayed with icons, labels, or both.
 //! 
 //! Examples:
-//!@expr{ GTK2.Toolbar()->insert(GTK2.ToolItem()->add(GTK2.Button("Button #1")),-1)->insert(GTK2.ToolItem()->add(GTK2.Label("     ")),-1)->insert(GTK2.ToolItem()->add(GTK2.Button("Button 2")),-1)->insert(GTK2.ToolItem()->add(GTK2.Button("Button 3")),-1)@}
+//!@expr{ GTK2.Toolbar()->insert(GTK2.ToolItem()->add(GTK2.Button("Button 1")),-1)->insert(GTK2.ToolItem()->add(GTK2.Label("     ")),-1)->insert(GTK2.ToolItem()->add(GTK2.Button("Button 2")),-1)->insert(GTK2.ToolItem()->add(GTK2.Button("Button 3")),-1)@}
 //!@xml{<image>../images/gtk2_toolbar.png</image>@}
 //!
 //!@expr{ GTK2.Toolbar((["orientation":GTK2.ORIENTATION_VERTICAL]))->insert(GTK2.ToolItem()->add(GTK2.Button("Button 1")),-1)->insert(GTK2.ToolItem()->add(GTK2.Label("     ")),-1)->insert(GTK2.ToolItem()->add(GTK2.Button("Button 2")),-1)->insert(GTK2.ToolItem()->add(GTK2.Button("Button 3")),-1)@}
