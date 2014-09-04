@@ -4530,7 +4530,6 @@ AC_CHECK_FUNCS( \
  sigaction \
  sigvec \
  strcasecmp \
- strerror \
  times \
  tzset \
  _snprintf \

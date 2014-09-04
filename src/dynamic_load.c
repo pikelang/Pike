@@ -241,11 +241,7 @@ static void *dlopen(const char *libname, int how)
 
 static char *dlerror(void)
 {
-#ifdef HAVE_STRERROR
   return strerror(errno);
-#else
-  return ""; /* I hope it's better than null..*/
-#endif
 }
 
 static void *dlsym(void *module, char *function)
