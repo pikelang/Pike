@@ -19,7 +19,7 @@ AC_HEADER_STDC
 # Must be before AC_CHECK_FUNCS for PIKE_FUNCS_NEED_DECLS to work.
 AC_CHECK_HEADERS( signal.h netinet/in.h arpa/inet.h sys/types.h sys/stat.h fcntl.h )
 
-AC_CHECK_FUNCS( gethrtime signal sigaction )
+AC_CHECK_FUNCS( gethrtime sigaction )
 
 AC_PATH_PROG(PKG_CONFIG,${ac_tool_prefix}pkg-config,no)
 

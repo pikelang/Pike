@@ -3881,7 +3881,6 @@ void f_create_process(INT32 args)
       {
 	int i;
 	/* Restore the signals to the defaults. */
-#ifdef HAVE_SIGNAL
 #ifdef _sys_nsig
         for(i=0; i<_sys_nsig; i++)
           signal(i, SIG_DFL);
@@ -3889,7 +3888,6 @@ void f_create_process(INT32 args)
         for(i=0; i<NSIG; i++)
           signal(i, SIG_DFL);
 #endif /* _sys_nsig */
-#endif /* HAVE_SIGNAL */
       }
 
       if(mchroot)

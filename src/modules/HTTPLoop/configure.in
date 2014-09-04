@@ -18,7 +18,7 @@ if test "$ac_cv_header_winsock2_h" = "yes"; then :; else
   AC_CHECK_HEADERS(winsock.h)
 fi
 
-AC_CHECK_FUNCS(poll gmtime_r gmtime sendfile signal inet_ntoa inet_ntop)
+AC_CHECK_FUNCS(poll gmtime_r gmtime sendfile inet_ntoa inet_ntop)
 
 AC_SUBST(RANLIB)
 

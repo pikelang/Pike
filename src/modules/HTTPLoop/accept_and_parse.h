@@ -8,9 +8,7 @@
 #define CACHE_HTABLE_SIZE 40951
 
 #if !defined(__NT__) && !defined(__WIN32__)
-#ifdef HAVE_SIGNAL
-# define HAVE_TIMEOUTS
-#endif
+#define HAVE_TIMEOUTS
 #endif
 
 struct res

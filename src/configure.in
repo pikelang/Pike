@@ -4527,7 +4527,6 @@ AC_CHECK_FUNCS( \
  ptrace \
  setrlimit \
  setresuid \
- signal \
  sigaction \
  sigvec \
  strcasecmp \
