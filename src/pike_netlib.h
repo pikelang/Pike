@@ -18,6 +18,7 @@
 #endif /* HAVE_SYS_SOCKET_H */
 #ifdef HAVE_NETINET_IN_H
 #include <netinet/in.h>
+#include <netinet/tcp.h>
 #endif /* HAVE_NETINET_IN_H */
 
 #ifdef HAVE_WINSOCK2_H

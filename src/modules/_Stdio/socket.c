@@ -63,7 +63,6 @@
 #ifdef HAVE_SYS_UN_H
 #include <sys/un.h>
 #endif
-
 #include "dmalloc.h"
 
 /*! @module Stdio
@@ -735,6 +734,17 @@ static void exit_port_struct(struct object *UNUSED(o))
   /* map_variable takes care of id and accept_callback. */
 }
 
+int fd_from_portobject( struct object *p )
+{
+  struct port *po = get_storage( p, port_program );
+  if(!po) return -1;
+  return po->box.fd;
+}
+
+static void port_query_fd(INT32 UNUSED(args))
+{
+    push_int(fd_from_portobject(Pike_fp->current_object));
+} 
 /*! @endclass
  */
 
@@ -787,17 +797,19 @@ void init_stdio_port(void)
 		     tVoid), 0);
   ADD_FUNCTION ("set_backend", port_set_backend, tFunc(tObj,tVoid), 0);
   ADD_FUNCTION ("query_backend", port_query_backend, tFunc(tVoid,tObj), 0);
+  ADD_FUNCTION ("query_fd", port_query_fd, tFunc(tVoid,tInt), 0);
 
+#ifdef SO_REUSEPORT
+  ADD_INT_CONSTANT( "SO_REUSEPORT_SUPPORT", SO_REUSEPORT, 0 );
+#endif
+#ifdef TCP_FASTOPEN
+  ADD_INT_CONSTANT( "TCP_FASTOPEN_SUPPORT", TCP_FASTOPEN, 0 );
+#endif
   set_init_callback(init_port_struct);
   set_exit_callback(exit_port_struct);
 
   port_program = end_program();
   add_program_constant( "_port", port_program, 0 );
+
 }
 
-int fd_from_portobject( struct object *p )
-{
-  struct port *po = get_storage( p, port_program );
-  if(!po) return -1;
-  return po->box.fd;
-}
