@@ -257,7 +257,7 @@ static void image_x_encode_truecolor(INT32 args)
       }
       else
       {
-	 MEMSET(d,0,( ( (img->xsize*bpp+alignbits-1) / alignbits )
+	 memset(d,0,( ( (img->xsize*bpp+alignbits-1) / alignbits )
 		      * alignbits*img->ysize  +7 ) / 8);
 	 while (y--)
 	 {
@@ -527,7 +527,7 @@ static void image_x_encode_pseudocolor_1byte_exact(INT32 args,
       {
 	 if (translate) 
 	    { x=img->xsize; while (x--) *(d++)=translate[(*(s++))&mask]; }
-	 else MEMCPY(d,s,img->xsize),d+=img->xsize,s+=img->xsize;
+	 else memcpy(d,s,img->xsize),d+=img->xsize,s+=img->xsize;
 	 m=linemod;
 	 while (m--) *(d++)=0;
       }
@@ -1149,14 +1149,14 @@ void image_x_encode_bitmap(INT32 args)
    struct image *img = NULL;
 
    if (!args)
-      SIMPLE_TOO_FEW_ARGS_ERROR("Image.X.encode_bitmap",1);
+      SIMPLE_TOO_FEW_ARGS_ERROR("encode_bitmap",1);
 
    if (TYPEOF(sp[-args]) != T_OBJECT ||
        !(img=get_storage(sp[-args].u.object,image_program)))
-      SIMPLE_BAD_ARG_ERROR("Image.X.encode_bitmap",1,"image object");
+      SIMPLE_BAD_ARG_ERROR("encode_bitmap",1,"Image.Image");
 
    if (!img->img)
-      SIMPLE_BAD_ARG_ERROR("Image.X.encode_bitmap",1,"image object with image");
+      SIMPLE_BAD_ARG_ERROR("encode_bitmap",1,"image object with image");
 
    xs=(img->xsize+7)>>3;
 

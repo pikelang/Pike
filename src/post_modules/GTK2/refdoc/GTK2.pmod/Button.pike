@@ -12,6 +12,7 @@
 //! Properties:
 //! int focus-on-click
 //! GTK2.Widget image
+//! int image-position
 //! string label
 //! int relief
 //! int use-stock
@@ -26,6 +27,7 @@
 //! GTK2.Border default-outside-border
 //! int displace-focus
 //! int image-spacing
+//! int inner-border
 //!
 //!
 //!  Signals:
@@ -86,6 +88,11 @@ GTK2.Widget get_image( );
 //!
 //!
 
+int get_image_position( );
+//! Gets the position of the image relative to the text inside the button.
+//!
+//!
+
 string get_label( );
 //! Get the text from the label of the button.
 //!
@@ -135,6 +142,11 @@ GTK2.Button set_focus_on_click( int focus_on_click );
 GTK2.Button set_image( GTK2.Widget widget );
 //! Set the image of the button to the given widget.  Note that it depends on
 //! the gtk-button-images setting whether the image will be displayed or not.
+//!
+//!
+
+GTK2.Button set_image_position( int position );
+//! Sets the position of the image relative to the text inside the button.
 //!
 //!
 

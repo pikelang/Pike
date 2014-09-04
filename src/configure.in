@@ -3266,20 +3266,6 @@ fi
 
 #############################################################################
 
-AC_MSG_CHECKING(for isgraph)
-AC_CACHE_VAL(pike_cv_func_isgraph, [ AC_TRY_LINK([
-#include <ctype.h>
-  ], [
-    return(!isgraph('A'));
-  ], pike_cv_func_isgraph=yes, pike_cv_func_isgraph=no)
-])
-AC_MSG_RESULT($pike_cv_func_isgraph)
-if test "x$pike_cv_func_isgraph" = "xyes" ; then
-  AC_DEFINE(HAVE_ISGRAPH)
-else :; fi
-
-#############################################################################
-
 PIKE_AC_DEBUG
 
 # Note: For function detection to work correctly with
@@ -3376,7 +3362,7 @@ AC_CHECK_HEADERS(winsock2.h sys/rusage.h time.h sys/time.h sys/types.h \
 # BSD defines both _setjmp() and setjmp(), where setjmp()
 # saves the signal mask.
 # SVID explicitly defines setjmp() not to save the signal mask.
-AC_CHECK_FUNCS(sigsetjmp setjmp _setjmp siglongjmp longjmp _longjmp)
+AC_CHECK_FUNCS(sigsetjmp _setjmp siglongjmp _longjmp)
 
 # Make it possible to disable use of /dev/poll.
 if test "x$with_devpoll" = "xno"; then :; else
@@ -4399,27 +4385,6 @@ PIKE_CHECK_CONSTANTS(recursive mutex flag,
 
 ########################################################################
 
-# NOTE: The following test is hardcoded to fail when crosscompiling
-# It also clobbers $LIBOBJS.
-
-ifdef([m4_pattern_allow], [
-  # Handle the latest autoconf incompatibility...
-  m4_pattern_allow(LIBOBJS)
-])
-OLD_LIBOBJS="${LIBOBJS}"
-
-AC_FUNC_MEMCMP
-
-# Old Autoconf set memcmp_clean while newer define memcmp_working
-if test "x$ac_cv_func_memcmp_clean" = "xyes" -o \
-        "x$ac_cv_func_memcmp_working" = "xyes"; then
-  AC_DEFINE(HAVE_MEMCMP)
-fi
-
-LIBOBJS="${OLD_LIBOBJS}"
-
-########################################################################
-
 AC_FUNC_MMAP
 
 if test "x$ac_cv_func_mmap_fixed_mapped" = "xyes"; then
@@ -4543,62 +4508,30 @@ if test "x$ac_cv_func_mmap_fixed_mapped" = "xyes"; then
 fi
 
 AC_CHECK_FUNCS( \
- _alldiv \
- _aullshr \
  _crypt \
  poll \
- bcopy \
- bzero \
- clock \
  closefrom \
  crypt \
- fchmod \
  fdwalk \
  gethrtime \
  gethrvtime \
- getenv \
  getrlimit \
  getrusage \
  gettimeofday \
- index \
  inet_ntop \
- localtime \
- gmtime \
  gmtime_r \
  gmtime_s \
  strptime \
  mallinfo \
  mallopt \
- memchr \
- mktime \
- perror \
  ptrace \
- recvmsg \
- rindex \
- sendmsg \
- setbuf \
- setlocale \
  setrlimit \
  setresuid \
- setvbuf \
- signal \
  sigaction \
- sigblock \
- sigprocmask \
  sigvec \
  strcasecmp \
- strnlen \
- strncmp \
- strchr \
- strcspn \
- strerror \
- strtod \
- strtol \
- time \
  times \
  tzset \
- vfprintf \
- vsprintf \
  _snprintf \
  snprintf \
  vsnprintf \
@@ -4617,10 +4550,10 @@ AC_CHECK_FUNCS( \
  flock \
  lockf \
  setuid getuid seteuid geteuid \
- setgid getgid setegid getegid \
+ setgid getgid getegid \
  getpwent getpwnam getpwuid \
  getgrent getgrnam \
- setsid setpgrp getpgrp setpgid getpgid \
+ setsid \
  initgroups setgroups \
  socketpair \
  fpclass \
@@ -4635,7 +4568,6 @@ AC_CHECK_FUNCS( \
  __priocntl \
  sched_setscheduler \
  setpriority \
- usleep \
  nanosleep \
  sched_yield \
  thr_yield \
@@ -4655,6 +4587,7 @@ AC_CHECK_FUNCS( \
  thread_info \
  host_get_clock_service \
  posix_memalign \
+ _dosmaperr \
 )
 
 # SunOS 4 realloc() returns NULL when reallocing NULL.
@@ -4980,28 +4913,6 @@ if test $ac_cv_header_malloc_h = yes; then
   fi
   AC_MSG_RESULT($pike_cv_struct_mallinfo)
 fi
-
-#############################################################################
-
-if test "x$ac_cv_func_strtol" = "xyes"; then
-  AC_MSG_CHECKING(if strtol works for large hexadecimal constants)
-  AC_CACHE_VAL(pike_cv_func_strtol_works, [
-    AC_TRY_RUN([
-#include <stdlib.h>
-int main(int argc, char **argv)
-{
-  /* On some OS:s strtol() rounds this to 0x7fffffff. */
-  return(strtol("0xffffffff", NULL, 0) != 0xffffffff);
-}
-    ], pike_cv_func_strtol_works=yes,
-       pike_cv_func_strtol_works=no,
-       pike_cv_func_strtol_works=no)
-  ])
-  AC_MSG_RESULT($pike_cv_func_strtol_works)
-  if test "x$pike_cv_func_strtol_works" = "xyes"; then
-    AC_DEFINE(HAVE_WORKING_STRTOL)
-  else :; fi
-else :; fi
 
 #############################################################################
 
@@ -5748,6 +5659,7 @@ MY_CHECK_FUNCTION(isunordered,
   int t = isunordered(0.0, 0.0);
   exit(0);
 ])
+
 ########################################################################
 MY_CHECK_FUNCTION(dlopen,
 [
@@ -5755,21 +5667,6 @@ MY_CHECK_FUNCTION(dlopen,
 ], [
   dlopen(0, 0);
   exit(0);
-])
-########################################################################
-
-MY_CHECK_FUNCTION(ldexp,
-[
-#include <math.h>
-], [
-  double x;
-  int p;
-
-  for(x=0.0;x<2.0;x+=1.0/64.0)
-    for(p=-6;p<7;p++)
-      if(ldexp(x,p) != x*pow(2.0, (double)p))
-	exit(1);
-    exit(0);
 ])
 
 ########################################################################
@@ -5793,27 +5690,6 @@ MY_CHECK_FUNCTION(rint,
 #endif /* HAVE_FPSETROUND */
   if(rint(0.1) != 0.0 ||
      rint(0.6) != 1.0) exit(1);
-  exit(0);
-])
-
-########################################################################
-
-MY_CHECK_FUNCTION(frexp,
-[
-#include <math.h>
-], [
-  double x,y;
-  int p,e;
-
-  x=frexp(1.0, &e);
-  if(x * pow(2.0,(double)e) != 1.0) exit(3);
-
-  p=-7;
-  for(x=3.0/4.0*pow(2.0,(double)p);x<50000.0;x*=2.0,p++)
-  {
-    if(frexp(x, &e)!=3.0/4.0) exit(1);
-    if(e!=p) exit(2);
-  }
   exit(0);
 ])
 
@@ -5847,203 +5723,7 @@ MY_CHECK_FUNCTION(gethostname,
   char *x=gethostname(buffer,sizeof(buffer));
   exit(0);
 ])
-#############################################################################
-MY_CHECK_FUNCTION(strcoll,
-[
-#include <string.h>
-#include <locale.h>
-], [
-  setlocale(LC_CTYPE, "ISO-8859-1");
-  exit(strcoll("abc", "def") >= 0 ||
-       strcoll("ABC", "DEF") >= 0 ||
-       strcoll("ABC", "ABCD") >= 0 ||
-       strcoll("ABCD", "ABC") <= 0 ||
-       strcoll("*^#", "*^#") != 0 ||
-       strcoll("123", "456") >= 0);
-])
-
 ########################################################################
-
-MY_CHECK_FUNCTION(memmem,
-[
-#include <string.h>
-char *a="foo bar gazonk";
-char *b="foo";
-char *c="bar";
-char *d="gazonk";
-], [
-  if(((char *)memmem(b,strlen(b),a,strlen(a)))!=a ||
-     ((char *)memmem(c,strlen(c),a,strlen(a)))!=(a+4) ||
-     ((char *)memmem(d,strlen(d),a,strlen(a)))!=(a+8) ||
-     ((char *)memmem(d,0,a,strlen(a)))!=a ||
-     memmem(d,strlen(d)+1,a,strlen(a))!=0)
-    exit(1);
-  exit(0);
-])
-
-########################################################################
-
-MY_CHECK_FUNCTION(memcpy,
-[
-#include <string.h>
-char *a="foo bar gazonk";
-char foo[23];
-], [
-  memcpy(foo, a, strlen(a)+1);
-  memcpy(foo, a+4, 3);
-  if(strcmp(foo,"bar bar gazonk")) exit(1);
-  exit(0);
-])
-
-########################################################################
-
-MY_CHECK_FUNCTION(memset,
-[
-#ifdef HAVE_STDDEF_H
-#include <stddef.h>
-#endif /* HAVE_STDDEF_H */
-#ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif /* HAVE_SYS_TYPES_H */
-#ifdef HAVE_STDLIB_H
-#include <stdlib.h>
-#endif /* HAVE_STDLIB_H */
-#include <stdio.h>
-#include <string.h>
-char foo[23];
-
-struct pike_string {
-  int refs;
-  int size_shift;
-  ptrdiff_t len;
-  size_t hval;
-  struct pike_string *next;
-  char str[1];
-};
-
-struct pike_string *begin_shared_string(int len)
-{
-  return (struct pike_string *)malloc(sizeof(struct pike_string) + len);
-}
-
-], [
-  int i;
-  struct pike_string *str;
-  ptrdiff_t len;
-
-  memset(foo, 0, 11);
-  memset(foo, 'a', 10);
-  memset(foo, 'b', 5);
-  fprintf(stderr, "1\n");
-  if(strcmp(foo,"bbbbbaaaaa")) {
-    exit(1);
-  }
-  memset(foo, 0, 6);
-  fprintf(stderr, "2\n");
-  for (i=6; i--;) {
-    if (foo[i]) {
-      exit(1);
-    }
-  }
-  memset(foo+1, 1, 6);
-  fprintf(stderr, "3\n");
-  for (i=6; i--;) {
-    if (foo[i+1] != 1) {
-      exit(1);
-    }
-  }
-  memset(foo+2, 0, 6);
-  fprintf(stderr, "4\n");
-  for (i=6; i--;) {
-    if (foo[i+2]) {
-      exit(1);
-    }
-  }
-  memset(foo+3, 1, 6);
-  fprintf(stderr, "5\n");
-  for (i=6; i--;) {
-    if (foo[i+3] != 1) {
-      exit(1);
-    }
-  }
-  memset(foo+4, 0, 6);
-  fprintf(stderr, "6\n");
-  for (i=6; i--;) {
-    if (foo[i+4]) {
-      exit(1);
-    }
-  }
-  memset(foo+5, 1, 6);
-  fprintf(stderr, "7\n");
-  for (i=6; i--;) {
-    if (foo[i+5] != 1) {
-      exit(1);
-    }
-  }
-  memset(foo+6, 0, 6);
-  fprintf(stderr, "8\n");
-  for (i=6; i--;) {
-    if (foo[i+6]) {
-      exit(1);
-    }
-  }
-  memset(foo+7, 1, 6);
-  fprintf(stderr, "9\n");
-  for (i=6; i--;) {
-    if (foo[i+7] != 1) {
-      exit(1);
-    }
-  }
-
-  len = 6;
-  str = begin_shared_string(len);
-
-  fprintf(stderr, "string start\n");
-  if (!str) exit(1);
-
-  for (i=len; i--;) {
-    str->str[i] = ~0;
-  }
-  memset(str->str, 0, len);
-  fprintf(stderr, "string end\n");
-  for (i = len; i--;) {
-    if (str->str[i]) {
-      exit(1);
-    }
-  }
-  free(str);
-  exit(0);
-])
-
-########################################################################
-
-MY_CHECK_FUNCTION(memmove,
-[
-#include <string.h>
-char buf[100];
-], [
-  strcpy(buf,"foo bar gazonk elefantsnabel.");
-  if(strcmp(buf,"foo bar gazonk elefantsnabel.")) exit(1);
-  memmove(buf,buf+1,7);
-  if(strcmp(buf,"oo bar  gazonk elefantsnabel.")) exit(1);
-  memmove(buf+1,buf+1,9);
-  if(strcmp(buf,"oo bar  gazonk elefantsnabel.")) exit(1);
-  memmove(buf+1,buf,11);
-  if(strcmp(buf,"ooo bar  gaznk elefantsnabel.")) exit(1);
-  exit(0);
-])
-
-########################################################################
-
-MY_CHECK_FUNCTION(isspace,
-[
-#include <ctype.h>
-], [
-  if(isspace(' ')) exit(0);
-  exit(1);
-])
-
-#############################################################################
 
 AC_MSG_CHECKING(if we can declare environ)
 AC_CACHE_VAL(pike_cv_declare_environ,[
@@ -7156,7 +6836,7 @@ int my_socketpair(int family, int type, int protocol, int sv[2])
   int retries=0;
   ACCEPT_SIZE_T len;
 
-  memset((char *)&addr,0,sizeof(struct sockaddr_in));
+  memset(&addr,0,sizeof(struct sockaddr_in));
 
   if(socketpair_fd==-1)
   {
@@ -7166,7 +6846,7 @@ int my_socketpair(int family, int type, int protocol, int sv[2])
       return -1;
     }
 
-    memset((char *)&my_addr,0,sizeof(struct sockaddr_in));
+    memset(&my_addr,0,sizeof(struct sockaddr_in));
     my_addr.sin_family=AF_INET;
     my_addr.sin_addr.s_addr=htonl(INADDR_ANY);
     my_addr.sin_port=htons(0);

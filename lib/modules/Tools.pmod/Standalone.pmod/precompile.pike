@@ -2226,11 +2226,17 @@ static struct %s *%s_gdb_dummy_ptr;
 	      args_tmp[-1] = last_arg[..sizeof(last_arg)-3] + ({last_arg[-1]});
 	    }
 	  }
-	  else
+	  else if( sizeof(last_arg))
+      {
 	    if (!arrayp(last_arg[0]) && "..." == (string)last_arg[0]) {
 	      ignore_more_args = 1;
 	      args_tmp = args_tmp[..sizeof (args_tmp) - 2];
 	    }
+      }
+      else
+      {
+          warn("%s:%s Failed to parse types\n", location,name);
+      }
 	}
 	array(Argument) args=map(args_tmp,Argument);
 	// werror("%O %O\n",proto,args);

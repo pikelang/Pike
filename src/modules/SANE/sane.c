@@ -28,6 +28,7 @@
 #include "multiset.h"
 #include "backend.h"
 #include "operators.h"
+#include "pike_types.h"
 #include "module_support.h"
 #include "builtin_functions.h"
 
@@ -650,7 +651,7 @@ static void nonblocking_row_scan_callback( int fd, void *_c )
            }
            break;
          case SANE_FRAME_RGB:
-           MEMCPY( (char *)c->r, c->buffer, c->p.bytes_per_line );
+           memcpy( c->r, c->buffer, c->p.bytes_per_line );
            break;
          default:break;
         }

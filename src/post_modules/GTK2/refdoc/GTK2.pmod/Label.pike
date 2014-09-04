@@ -89,6 +89,11 @@ int get_line_wrap( );
 //!
 //!
 
+int get_line_wrap_mode( );
+//! Returns line wrap mode used by the label.
+//!
+//!
+
 int get_max_width_chars( );
 //! Retrieves the desired maximum width, in characters.
 //!
@@ -188,6 +193,12 @@ GTK2.Label set_line_wrap( int wrap );
 //! Toggles line wrapping within the widget.  True makes it break lines if
 //! text exceeds the widget's size.  False lets the text get cut off by the
 //! edge of the widget if it exceeds the widget size.
+//!
+//!
+
+GTK2.Label set_line_wrap_mode( int wrap_mode );
+//! If line wrapping is on, this controls how the line wrapping is done.  The
+//! Default is Pango.WRAP_WORD, which means wrap on word boundaries.
 //!
 //!
 

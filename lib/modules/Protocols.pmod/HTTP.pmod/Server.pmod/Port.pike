@@ -15,17 +15,17 @@ object|function|program request_program=.Request;
 //! @decl void create(function(.Request:void) callback,@
 //!                   int portno, void|string interface)
 void create(function(.Request:void) _callback,
-	    void|int _portno,
-	    void|string _interface)
+            void|int _portno,
+            void|string _interface,
+            void|int share)
 {
    portno=_portno;
    if (!portno) portno=80; // default HTTP port
 
    callback=_callback;
    interface=_interface;
-
    port=Stdio.Port();
-   if (!port->bind(portno,new_connection,interface))
+   if (!port->bind(portno,new_connection,interface,share))
       error("HTTP.Server.Port: failed to bind port %s%d: %s\n",
 	    interface?interface+":":"",
 	    portno,strerror(port->errno()));
@@ -45,8 +45,5 @@ void destroy() { close(); }
 protected void new_connection()
 {
     while( Stdio.File fd=port->accept() )
-    {
-	.Request r=request_program();
-	r->attach_fd(fd,this,callback);
-    }
+      request_program()->attach_fd(fd,this,callback);
 }

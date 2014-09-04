@@ -110,9 +110,9 @@ void get_rle_decoded_from_data( unsigned char *dest, struct buffer * source,
   {
     unsigned char *c = get_chunk( source, nelems );
     if(c)
-      MEMCPY( dest, c, nelems );
+      memcpy( dest, c, nelems );
     else
-      MEMSET( dest, 0, nelems );
+      memset( dest, 0, nelems );
     return;
   }
 
@@ -343,7 +343,7 @@ void image_pcx_decode( INT32 args )
 {
   struct pike_string *data;
   struct object *o;
-  get_all_args( "Image.PCX.decode", args, "%S", &data );
+  get_all_args( "decode", args, "%S", &data );
   o = low_pcx_decode( data );
   pop_n_elems(args);
   push_object( o );
@@ -504,7 +504,7 @@ static struct pike_string *encode_pcx_8( struct pcx_header *pcx_header,
 
   {
     char data[256*3+1];
-    MEMSET(data, 0x0c, 256*3+1);
+    memset(data, 0x0c, 256*3+1);
     image_colortable_write_rgb(opts->colortable, (unsigned char *)data+1);
     push_string(make_shared_binary_string(data,256*3+1));
   }
@@ -530,8 +530,8 @@ static struct pike_string *low_pcx_encode(struct image *data,struct options *opt
   pcx_header.version = 5;
   pcx_header.reserved = 0;
   pcx_header.bpp = 8;
-  MEMSET(pcx_header.palette, 0, 48);
-  MEMSET(pcx_header.filler, 0, 58);
+  memset(pcx_header.palette, 0, 48);
+  memset(pcx_header.filler, 0, 58);
   pcx_header.color = 1;
 #if PIKE_BYTEORDER == 1234
   pcx_header.hdpi = SWAP_S(pcx_header.hdpi);
@@ -577,14 +577,14 @@ void image_pcx_encode( INT32 args )
   struct object *i;
   struct image *img;
 
-  get_all_args( "Image.PCX.encode", args, "%o", &i );
+  get_all_args( "encode", args, "%o", &i );
 
   if(TYPEOF(Pike_sp[-1]) != PIKE_T_OBJECT)
     Pike_error("Invalid object argument to Image.PCX.encode\n");
 
   img = get_storage( i, image_program );
 
-  MEMSET(&c, 0, sizeof(c));
+  memset(&c, 0, sizeof(c));
   c.hdpi = 150;
   c.vdpi = 150;
   c.raw = 0;

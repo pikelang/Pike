@@ -279,9 +279,9 @@ program_flags PROGRAM_CLEAR_STORAGE;
   static void fortuna_rekey(void)
   {
     fortuna_generate();
-    MEMCPY(THIS->key, THIS->data, 16);
+    memcpy(THIS->key, THIS->data, 16);
     fortuna_generate();
-    MEMCPY(THIS->key+16, THIS->data, 16);
+    memcpy(THIS->key+16, THIS->data, 16);
     aes_set_encrypt_key(&THIS->aes_ctx, AES256_KEY_SIZE, THIS->key);
   }
 

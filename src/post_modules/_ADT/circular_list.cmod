@@ -495,8 +495,8 @@ PIKECLASS CircularList
       THIS->a->size = size;
       if (THIS->size > 0)
       {
-	MEMMOVE((char *)(ITEM(THIS->a)+(size-endpos)),
-		(char *)(ITEM(THIS->a)+(THIS->pos)),
+	memmove(ITEM(THIS->a)+(size-endpos),
+		ITEM(THIS->a)+(THIS->pos),
 		(endpos) * sizeof(struct svalue));
 	THIS->pos = size-endpos;
       }
@@ -532,7 +532,7 @@ PIKECLASS CircularList
     pop_n_elems(args);
   }
 
-/*! @decl mixed cast(string type)
+/*! @decl array cast(string type)
  *! Cast operator.
  *!
  *! @param type
@@ -548,7 +548,7 @@ PIKECLASS CircularList
  *!   An array with the contents of this list.
  */
 
-  PIKEFUN mixed cast(string type)
+  PIKEFUN array cast(string type)
     flags ID_PROTECTED;
   {
     pop_n_elems(args); /* type as at least one more reference. */

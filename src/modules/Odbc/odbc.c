@@ -401,7 +401,7 @@ static void f_create_dsn(INT32 args)
   SQLCHAR outconnectionstring[1024]; /* Smallest allowed buffer = 1024 */
   SQLSMALLINT stringlength2;
 
-  get_all_args("odbc->create_dsn", args, "%S", &connectstring);
+  get_all_args("create_dsn", args, "%S", &connectstring);
 
   if (!connectstring->len) {
     Pike_error("odbc->create_dsn connection string empty.\n");
@@ -465,7 +465,7 @@ static void f_big_query(INT32 args)
   struct svalue *save_sp = sp + 1 - args;
 #endif /* PIKE_DEBUG */
 
-  get_all_args("odbc->big_query", args, "%W", &q);
+  get_all_args("big_query", args, "%W", &q);
 
   add_ref(q);
   SET_ONERROR(ebuf, odbc_free_string, q);

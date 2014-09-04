@@ -79,6 +79,7 @@ class Map {
   {
     return(domain->all(ypmap));
   }
+
   mapping(string:string) cast_to_mapping()
   {
     return(domain->all(ypmap));
@@ -126,7 +127,8 @@ class Map {
     return(values(domain->all(ypmap)));
   }
 
-  protected mixed cast(string type)
+  //! Convert the map to a mapping
+  protected mapping cast(string type)
   {
     if( type=="mapping" )
       return cast_to_mapping();

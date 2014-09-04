@@ -101,7 +101,7 @@ static void f_substring__sprintf( INT32 args )
   if (args != 2 )
     SIMPLE_TOO_FEW_ARGS_ERROR("_sprintf",2);
   if (TYPEOF(sp[-2]) != T_INT)
-    SIMPLE_BAD_ARG_ERROR("_sprintf",0,"integer");
+    SIMPLE_BAD_ARG_ERROR("_sprintf",0,"int");
   if (TYPEOF(sp[-1]) != T_MAPPING)
     SIMPLE_BAD_ARG_ERROR("_sprintf",1,"mapping");
   x = sp[-2].u.integer;
@@ -513,7 +513,7 @@ static struct level read_level( struct buffer *buff,
   int offset;
   struct tile *last_tile = NULL;
 /*   int all_tiles_eq = 0; */
-  MEMSET(&res, 0, sizeof(res));
+  memset(&res, 0, sizeof(res));
   res.width = read_uint( buff );
   res.height = read_uint( buff );
 
@@ -545,7 +545,7 @@ static struct hierarchy read_hierarchy( struct buffer *buff,
   unsigned int offset;
   struct buffer ob;
 
-  MEMSET(&res, 0, sizeof(res));
+  memset(&res, 0, sizeof(res));
   res.width = read_uint( buff );
   res.height = read_uint( buff );
   res.bpp = read_uint( buff );
@@ -564,7 +564,7 @@ static struct layer_mask read_layer_mask( struct buffer *buff,
   int offset;
   struct property tmp;
 
-  MEMSET(&res, 0, sizeof(res));
+  memset(&res, 0, sizeof(res));
   res.width = read_uint( buff );
   res.height = read_uint( buff );
   res.name = read_string( buff );
@@ -601,7 +601,7 @@ static struct channel read_channel( struct buffer *buff,
   int offset;
   struct property tmp;
 
-  MEMSET(&res, 0, sizeof(res));
+  memset(&res, 0, sizeof(res));
   res.width = read_uint( buff );
   res.height = read_uint( buff );
   res.name = read_string( buff );
@@ -638,7 +638,7 @@ static struct layer read_layer( struct buffer *buff, struct buffer *initial )
   int h_offset;
   ONERROR err;
 
-  MEMSET(&res, 0, sizeof(res));
+  memset(&res, 0, sizeof(res));
   SET_ONERROR( err, free_layer, &res );
   res.width = read_uint( buff );
   res.height = read_uint( buff );
@@ -667,7 +667,7 @@ static struct layer read_layer( struct buffer *buff, struct buffer *initial )
     struct layer_mask *m=xalloc(sizeof(struct layer_mask));
     res.mask = m;
     read_data( &loffset, lm_offset );
-    MEMSET(m, 0, sizeof( struct layer_mask ));
+    memset(m, 0, sizeof( struct layer_mask ));
     *m = read_layer_mask( &loffset, initial );
   }
 
@@ -691,7 +691,7 @@ static struct gimp_image read_image( struct buffer * data )
   unsigned int offset;
   ONERROR err;
 
-  MEMSET(&res, 0, sizeof(res));
+  memset(&res, 0, sizeof(res));
   initial = *data;
   if(data->len < 34)
     Pike_error("This is not an xcf file (to little data)\n");
@@ -1496,7 +1496,7 @@ void init_image_xcf(void)
 
   start_new_program();
   ADD_STORAGE( struct substring );
-  ADD_FUNCTION("cast", f_substring_cast, tFunc(tStr,tMix), ID_PRIVATE);
+  ADD_FUNCTION("cast", f_substring_cast, tFunc(tStr,tStr), ID_PRIVATE);
   ADD_FUNCTION("`[]", f_substring_index, tFunc(tInt,tInt), 0);
   ADD_FUNCTION("get_short", f_substring_get_short, tFunc(tInt,tInt), 0 );
   ADD_FUNCTION("get_ushort", f_substring_get_ushort, tFunc(tInt,tInt), 0 );

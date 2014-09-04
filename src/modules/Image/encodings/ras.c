@@ -122,9 +122,9 @@ void img_ras__decode(INT32 args)
   /* Double check args to give the correct function name in the error
      messages. */
   if(args<1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("Image.RAS._decode", 1);
+    SIMPLE_TOO_FEW_ARGS_ERROR("_decode", 1);
   if(TYPEOF(Pike_sp[-1]) != T_STRING)
-    SIMPLE_BAD_ARG_ERROR("Image.RAS._decode", 1, "string");
+    SIMPLE_BAD_ARG_ERROR("_decode", 1, "string");
   img_ras_decode(args);
   push_text("image");
   stack_swap();
@@ -146,7 +146,7 @@ void img_ras_decode(INT32 args)
    size_t numcolors = 0;
    struct nct_flat_entry *entries = NULL;
 
-   get_all_args("Image.RAS.decode", args, "%S", &str);
+   get_all_args("decode", args, "%S", &str);
 
    if(str->len < 32)
      Pike_error("Image.RAS.decode: header too small\n");
@@ -441,7 +441,7 @@ static void img_ras_encode(INT32 args)
   void (*ctfunc)(rgb_group *, unsigned char *, int,
 		 struct neo_colortable *, struct nct_dither *, int) = NULL;
 
-  get_all_args("Image.RAS.decode", args,
+  get_all_args("decode", args,
 	       (args>1 && !UNSAFE_IS_ZERO(&sp[1-args])? "%o%m":"%o"),
 	       &imgo, &optm);
 

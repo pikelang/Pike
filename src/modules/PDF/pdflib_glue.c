@@ -40,6 +40,8 @@
  */
 
 /*! @class PDFgen
+ *! Interface to the pdflib pdf generator.
+ *! For more information see http://www.pdflib.com
  */
 
 /*** PDF callabcks ******************************************************/
@@ -76,6 +78,10 @@ static void exit_pdf(struct object *o)
    }
 }
 
+/*! @decl void create();
+ *
+ * Create a new PDF generation context.
+ */
 static void pdf_create(INT32 args)
 {
    PDF *pdf;

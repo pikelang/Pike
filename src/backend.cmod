@@ -244,7 +244,7 @@ static void low_set_backend_for_fd(int fd, struct Backend_struct *b)
 		 "Tried to allocate %"PRINTSIZET"d bytes.\n",
 		 sizeof(struct Backend_struct *) * fd_map_size);
     
-    MEMSET(fd_map+old,0,sizeof(struct Backend_struct *) * (fd_map_size-old));
+    memset(fd_map+old,0,sizeof(struct Backend_struct *) * (fd_map_size-old));
   }
   fd_map[fd]=b;
 }
@@ -746,7 +746,7 @@ PIKECLASS Backend
 	    sizeof(struct Backend_CallOut_struct *)*me->call_heap_size*2);
 	  if(!new_heap)
 	    Pike_error("Not enough memory for another call_out\n");
-	  MEMSET(new_heap + me->call_heap_size, 0,
+	  memset(new_heap + me->call_heap_size, 0,
 		 sizeof(struct Backend_CallOut_struct *)*me->call_heap_size);
 	  me->call_heap_size *= 2;
 	  me->call_heap = new_heap;
@@ -1538,9 +1538,9 @@ PIKECLASS Backend
 	   Pike_fatal ("Out of memory in backend::add_fd_box(): "
 		       "Tried to allocate %d fd_callback_box pointers\n",
 		       me->fd_boxes_size);
-	 MEMMOVE (me->fd_boxes + shift, me->fd_boxes,
+	 memmove (me->fd_boxes + shift, me->fd_boxes,
 		  sizeof (me->fd_boxes[0]) * old_size);
-	 MEMSET (me->fd_boxes, 0, sizeof (me->fd_boxes[0]) * shift);
+	 memset (me->fd_boxes, 0, sizeof (me->fd_boxes[0]) * shift);
 	 debug_malloc_touch(me->fd_boxes);
 	 fd -= me->fd_boxes_start;
        }
@@ -1557,7 +1557,7 @@ PIKECLASS Backend
 	     Pike_fatal("Out of memory in backend::add_fd_box(): "
 			"Tried to allocate %d fd_callback_box pointers\n",
 			me->fd_boxes_size);
-	   MEMSET(me->fd_boxes+old_size,
+	   memset(me->fd_boxes+old_size,
 		  0,
 		  (me->fd_boxes_size-old_size)*sizeof(me->fd_boxes[0]));
 	   debug_malloc_touch(me->fd_boxes);
@@ -2787,7 +2787,7 @@ int POLL_DEVICE_SET_EVENTS(struct Backend_struct *UNUSED(me),
   if (events) {
     struct epoll_event ev;
 #ifdef __CHECKER__
-    MEMSET(&ev, 0, sizeof(ev));
+    memset(&ev, 0, sizeof(ev));
 #endif
     ev.events = events;
     ev.data.fd = fd;
@@ -2937,7 +2937,7 @@ static void pb_copy_selectors(struct pb_selectors *to,
     }
   }
   
-  MEMCPY(to->poll_fds,
+  memcpy(to->poll_fds,
 	 from->poll_fds,
 	 sizeof(struct pollfd)*from->num_in_poll);
   to->num_in_poll=from->num_in_poll;

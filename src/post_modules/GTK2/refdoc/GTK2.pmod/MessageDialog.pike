@@ -4,7 +4,9 @@
 //! much effort, but GTK2.MessageDialog saves typing.
 //! Properties:
 //! int buttons
+//! GTK2.Widget image
 //! int message-type
+//! string secondary-text
 //! 
 //! Style properties:
 //! int message-border
@@ -37,6 +39,11 @@ GTK2.MessageDialog format_secondary_text( string text );
 //! 
 //! Note that setting a secondary text makes the primary text become bold,
 //! unless you have provided explicit markup.
+//!
+//!
+
+GTK2.MessageDialog set_image( GTK2.Widget image );
+//! Sets the dialog's image to image.
 //!
 //!
 

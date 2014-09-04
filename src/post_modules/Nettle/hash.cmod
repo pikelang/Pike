@@ -437,8 +437,8 @@ PIKECLASS Hash
     push_string(end_shared_string(res));		/* 22e */
 
     /* Clean intermediate values. */
-    MEMSET(ctx, 0, meta->context_size);
-    MEMSET(abcbuf, 0, 3*dsz);
+    memset(ctx, 0, meta->context_size);
+    memset(abcbuf, 0, 3*dsz);
   }
 
   INIT

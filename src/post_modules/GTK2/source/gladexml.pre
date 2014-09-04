@@ -32,8 +32,7 @@ static void pgtk2__signal_connect(const gchar *handler_name,
 		 "after: %d\n",
 		 handler_name,signal_name,signal_data,after);
 #endif
-  get_all_args("GTK2.GladeXML->_signal_connect",*(INT32 *)args,
-	       "%m%*",&callbacks,&data);
+  get_all_args("_signal_connect",*(INT32 *)args,"%m%*",&callbacks,&data);
 /*
   funname=make_shared_string(handler_name);
   cb=low_mapping_string_lookup(callbacks,funname);

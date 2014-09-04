@@ -41,7 +41,7 @@ char *strdup(const char *str)
     int len = strlen(str)+1;
 
     res = xalloc(len);
-    MEMCPY(res, str, len);
+    memcpy(res, str, len);
   }
   return(res);
 }
@@ -80,9 +80,9 @@ static void swap(char *a, char *b, size_t size)
   while(size)
   {
     tmp = MINIMUM((size_t)sizeof(tmpbuf), size);
-    MEMCPY(tmpbuf,a,tmp);
-    MEMCPY(a,b,tmp);
-    MEMCPY(b,tmpbuf,tmp);
+    memcpy(tmpbuf,a,tmp);
+    memcpy(a,b,tmp);
+    memcpy(b,tmpbuf,tmp);
     size-=tmp;
     a+=tmp;
     b+=tmp;
@@ -180,10 +180,10 @@ void reorder(char *memory, INT32 nitems, INT32 size,INT32 *order)
 #endif
 
   default:
-    for(e=0;e<nitems;e++) MEMCPY(tmp+e*size, memory+order[e]*size, size);
+    for(e=0;e<nitems;e++) memcpy(tmp+e*size, memory+order[e]*size, size);
   }
 
-  MEMCPY(memory, tmp, size * nitems);
+  memcpy(memory, tmp, size * nitems);
   free(tmp);
 }
 
@@ -439,7 +439,7 @@ PMOD_EXPORT char *debug_xstrdup(const char *src)
   if (src) {
     int len = strlen (src) + 1;
     dst = malloc (len);
-    MEMCPY (dst, src, len);
+    memcpy (dst, src, len);
   }
   return dst;
 }
@@ -1287,7 +1287,7 @@ PMOD_EXPORT void *realloc(void *x,size_t y)
     if(old_size >= y) return x;
     ret=malloc(y);
     if(!ret) return 0;
-    MEMCPY(ret, x, old_size);
+    memcpy(ret, x, old_size);
     if(x) free(x);
   }else{
     ret=debug_realloc(x, y, DMALLOC_LOCATION());
@@ -1314,7 +1314,7 @@ void *fake_realloc(void *x,size_t y)
     if(old_size >= y) return x;
     ret=malloc(y);
     if(!ret) return 0;
-    MEMCPY(ret, x, old_size);
+    memcpy(ret, x, old_size);
     if(x) free(x);
   }else{
     ret=real_realloc(x,y);
@@ -1332,7 +1332,7 @@ void *calloc(size_t x, size_t y)
   LOWDEBUG3("calloc x",x);
   LOWDEBUG3("calloc y",y);
   ret=malloc(x*y);
-  if(ret) MEMSET(ret,0,x*y);
+  if(ret) memset(ret,0,x*y);
 #ifndef REPORT_ENCAPSULATED_MALLOC
   dmalloc_accept_leak(ret);
 #endif
@@ -1344,7 +1344,7 @@ void *fake_calloc(size_t x, size_t y)
 {
   void *ret;
   ret=fake_malloc(x*y);
-  if(ret) MEMSET(ret,0,x*y);
+  if(ret) memset(ret,0,x*y);
 #ifndef REPORT_ENCAPSULATED_MALLOC
   dmalloc_accept_leak(ret);
 #endif
@@ -1531,8 +1531,8 @@ char *do_pad(char *mem, long size)
     /*  fprintf(stderr,"Padding  %p(%d) %ld\n",mem, size, q); */
 #if 1
     q%=RNDSIZE;
-    MEMCPY(mem - DEBUG_MALLOC_PAD, rndbuf+q, DEBUG_MALLOC_PAD);
-    MEMCPY(mem + size, rndbuf+q, DEBUG_MALLOC_PAD);
+    memcpy(mem - DEBUG_MALLOC_PAD, rndbuf+q, DEBUG_MALLOC_PAD);
+    memcpy(mem + size, rndbuf+q, DEBUG_MALLOC_PAD);
 #else
     for(e=0;e< DEBUG_MALLOC_PAD; e+=4)
     {
@@ -1585,12 +1585,12 @@ void check_pad(struct memhdr *mh, int freeok)
 /*  fprintf(stderr,"Checking %p(%d) %ld\n",mem, size, q);  */
 #if 1
   /* optimization? */
-  if(MEMCMP(mem - DEBUG_MALLOC_PAD, mem+size, DEBUG_MALLOC_PAD))
+  if(memcmp(mem - DEBUG_MALLOC_PAD, mem+size, DEBUG_MALLOC_PAD))
   {
     q= (((long)mem) ^ 0x555555) + (size * 9248339);
     
     q%=RNDSIZE;
-    if(MEMCMP(mem - DEBUG_MALLOC_PAD, rndbuf+q, DEBUG_MALLOC_PAD))
+    if(memcmp(mem - DEBUG_MALLOC_PAD, rndbuf+q, DEBUG_MALLOC_PAD))
     {
       out_biking=1;
       fprintf(stderr,"Pre-padding overwritten for "
@@ -1599,7 +1599,7 @@ void check_pad(struct memhdr *mh, int freeok)
       abort();
     }
     
-    if(MEMCMP(mem + size, rndbuf+q, DEBUG_MALLOC_PAD))
+    if(memcmp(mem + size, rndbuf+q, DEBUG_MALLOC_PAD))
     {
       out_biking=1;
       fprintf(stderr,"Post-padding overwritten for "
@@ -1942,7 +1942,7 @@ static struct memhdr *low_make_memhdr(void *p, int s, LOCATION location
   mh->gc_generation=gc_generation * 1000 + Pike_in_gc;
 #ifdef DMALLOC_C_STACK_TRACE
   if (bt_len > 0) {
-    MEMCPY (mh->alloc_bt, bt, bt_len * sizeof (c_stack_frame));
+    memcpy (mh->alloc_bt, bt, bt_len * sizeof (c_stack_frame));
     mh->alloc_bt_len = bt_len;
   }
   else
@@ -2164,7 +2164,7 @@ PMOD_EXPORT void *debug_calloc(size_t a, size_t b, LOCATION location)
 {
   void *m=debug_malloc(a*b,location);
   if(m)
-    MEMSET(m, 0, a*b);
+    memset(m, 0, a*b);
 
   if(verbose_debug_malloc)
     fprintf(stderr, "calloc(%ld, %ld) => %p  (%s)\n",
@@ -2237,7 +2237,7 @@ PMOD_EXPORT void debug_free(void *p, LOCATION location, int mustfind)
     if (PIKE_MEM_CHECKER())
       PIKE_MEM_NA_RANGE(p, mh->size);
     else
-      MEMSET(p, 0x55, mh->size);
+      memset(p, 0x55, mh->size);
     if(mh->size < MAX_UNFREE_MEM/FREE_DELAY)
     {
       add_location(mh, location);
@@ -2306,7 +2306,7 @@ PMOD_EXPORT char *debug_strdup(const char *s, LOCATION location)
   long length;
   length=strlen(s);
   m=(char *)debug_malloc(length+1,location);
-  MEMCPY(m,s,length+1);
+  memcpy(m,s,length+1);
 
   if(verbose_debug_malloc)
     fprintf(stderr, "strdup(\"%s\") => %p  (%s)\n", s, m, LOCATION_NAME(location));
@@ -2354,17 +2354,17 @@ static void parse_location (struct memloc *l, struct parsed_location *pl)
   const char *p;
   pl->file = LOCATION_NAME (l->location);
 
-  p = STRCHR (pl->file, ' ');
+  p = strchr (pl->file, ' ');
   if (p)
     pl->extra = p;
   else
-    pl->extra = STRCHR (pl->file, 0);
+    pl->extra = strchr (pl->file, 0);
 
-  p = STRCHR (pl->file, ':');
+  p = strchr (pl->file, ':');
   if (p && p < pl->extra) {
     const char *pp;
-    while ((pp = STRCHR (p + 1, ':')) && pp < pl->extra) p = pp;
-    pl->line = STRTOL (p + 1, NULL, 10);
+    while ((pp = strchr (p + 1, ':')) && pp < pl->extra) p = pp;
+    pl->line = strtol (p + 1, NULL, 10);
     pl->file_len = p - pl->file;
   }
   else {
@@ -2834,7 +2834,7 @@ static void initialize_dmalloc(void)
     th_key_create(&dmalloc_last_seen_location, 0);
 #endif
     init_memhdr_hash();
-    MEMSET(mlhash, 0, sizeof(mlhash));
+    memset(mlhash, 0, sizeof(mlhash));
 
     for(e=0;e<(long)NELEM(rndbuf);e++) rndbuf[e]= (rand() % 511) | 1;
     
@@ -2924,14 +2924,14 @@ static LOCATION low_dynamic_location(char type, const char *file,
   for(prev = dstrhash + h; (str=*prev); prev = &str->next)
   {
     if(hval == str->hval &&
-       !STRNCMP(str->str+1, file, len) &&
+       !strncmp(str->str+1, file, len) &&
        str->str[len+1]==':' &&
        LOCATION_TYPE (str->str) == type &&
-       STRTOL(str->str+len+2, NULL, 10) == line)
+       strtol(str->str+len+2, NULL, 10) == line)
     {
 
       if (name) {
-	char *s = STRCHR (str->str + len + 2, ' ');
+	char *s = strchr (str->str + len + 2, ' ');
 	if (!s) continue;
 	s++;
 	if (strcmp (s, name)) continue;
@@ -2945,7 +2945,7 @@ static LOCATION low_dynamic_location(char type, const char *file,
 	unsigned int str_bin_len = EXTRACT_UWORD (str_bin_base);
 	str_bin_base += 2;
 	if (str_bin_len != bin_data_len ||
-	    MEMCMP (bin_data, str_bin_base, str_bin_len))
+	    memcmp (bin_data, str_bin_base, str_bin_len))
 	  continue;
       }
 
@@ -2978,7 +2978,7 @@ static LOCATION low_dynamic_location(char type, const char *file,
 	Pike_fatal ("Too long bin_data blob: %u\n", bin_data_len);
       ((unsigned char *) str->str)[l + 1] = ((unsigned char *) &bl)[0];
       ((unsigned char *) str->str)[l + 2] = ((unsigned char *) &bl)[1];
-      MEMCPY (str->str + l + 3, bin_data, bin_data_len);
+      memcpy (str->str + l + 3, bin_data, bin_data_len);
     }
 
     str->hval=hval;
@@ -3099,7 +3099,7 @@ static void dump_location_bt (LOCATION location, int indent, const char *prefix)
     unsigned char *bin_base =
       (unsigned char *) location + strlen (location) + 1;
     unsigned int bin_len = EXTRACT_UWORD (bin_base);
-    MEMCPY ((unsigned char *) bt, bin_base + 2, bin_len);
+    memcpy (bt, bin_base + 2, bin_len);
     frames = bin_len / sizeof (c_stack_frame);
 
     for (i = 0; i < frames; i++) {

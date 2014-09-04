@@ -527,9 +527,9 @@ PMOD_EXPORT void get_all_args(const char *fname, INT32 args,
       bad_arg_error(
 	fname, sp-args, args,
 	ret+1,
-	"string (8bit)",
+	"string(1..255)",
 	sp+ret-args,
-	"Bad argument %d to %s(). NUL char in string not allowed.\n",
+	"Bad argument %d to %s().\n",
 	ret+1, fname);
       /* NOT REACHED */
 
@@ -549,9 +549,14 @@ PMOD_EXPORT void get_all_args(const char *fname, INT32 args,
 	case 'd': case 'i': case 'l': expected_type = "int"; break;
 	case 'D': case 'I': expected_type = "int|float"; break;
 	case '+': expected_type = "int(0..)"; break;
-	case 'c': case 's': case 'n': case 'S':
-	  expected_type = "string (8bit)"; break;
-	case 'C': case 'N': expected_type = "string (8bit) or zero"; break;
+        case 'c': case 's':
+          expected_type = "string(1..255)"; break;
+        case 'n': case 'S':
+	  expected_type = "string(8bit)"; break;
+	case 'C':
+          expected_type = "string(1..255) or zero"; break;
+        case 'N':
+          expected_type = "string(8bit) or zero"; break;
 	case 't': case 'W': expected_type = "string"; break;
 	case 'T': expected_type = "string or zero"; break;
 	case 'a': expected_type = "array"; break;

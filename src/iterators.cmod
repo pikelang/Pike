@@ -364,7 +364,7 @@ PIKECLASS mapping_iterator
     {
       struct object *o=low_clone(mapping_iterator_program);
       if (steps < 0)
-	SIMPLE_ARG_ERROR ("Mapping.Iterator.`+", 1,
+	SIMPLE_ARG_ERROR ("`+", 1,
 			  "This iterator doesn't support going backwards.\n");
       OBJ2_MAPPING_ITERATOR(o)[0] = *THIS;
       if (THIS->m)
@@ -380,7 +380,7 @@ PIKECLASS mapping_iterator
   PIKEFUN object `+=(int(0..) steps)
     {
       if (steps < 0)
-	SIMPLE_ARG_ERROR ("Mapping.Iterator.`+=", 1,
+	SIMPLE_ARG_ERROR ("`+=", 1,
 			  "This iterator doesn't support going backwards.\n");
       while(--steps>=0 && mi_step(THIS));
       REF_RETURN Pike_fp->current_object;
@@ -1082,7 +1082,7 @@ PIKECLASS file_line_iterator
       struct object *o=low_clone(file_line_iterator_program);
       struct file_line_iterator_struct *ssi;
       if (steps < 0)
-	SIMPLE_ARG_ERROR ("Stdio.File.LineIterator.`+", 1,
+	SIMPLE_ARG_ERROR ("`+", 1,
 			  "This iterator doesn't support going backwards.\n");
       (ssi = OBJ2_FILE_LINE_ITERATOR(o))[0]=*THIS;
       if (THIS->buffer) {
@@ -1100,7 +1100,7 @@ PIKECLASS file_line_iterator
   PIKEFUN object `+=(int(0..) steps)
     {
       if (steps < 0)
-	SIMPLE_ARG_ERROR ("Stdio.File.LineIterator.`+=", 1,
+	SIMPLE_ARG_ERROR ("`+=", 1,
 			  "This iterator doesn't support going backwards.\n");
       while( steps-- )
 	fl_find_next(THIS);
@@ -1445,7 +1445,7 @@ PIKECLASS string_split_iterator
       int i;
       struct string_split_iterator_struct *ssi;
       if (steps < 0)
-	SIMPLE_ARG_ERROR ("String.SplitIterator.`+", 1,
+	SIMPLE_ARG_ERROR ("`+", 1,
 			  "This iterator doesn't support going backwards.\n");
       (ssi = OBJ2_STRING_SPLIT_ITERATOR(o))[0]=*THIS;
       if (THIS->buffer) {
@@ -1465,7 +1465,7 @@ PIKECLASS string_split_iterator
   {
     int i;
     if (steps < 0)
-      SIMPLE_ARG_ERROR ("String.SplitIterator.`+=", 1,
+      SIMPLE_ARG_ERROR ("`+=", 1,
 			"This iterator doesn't support going backwards.\n");
     for(i = 0; i < steps; i++) {
       find_next(THIS);
@@ -1606,16 +1606,16 @@ PIKECLASS string_split_iterator
 	  a = multiset_indices (split_set->u.multiset);
 	  push_array (a);
 	} else {
-	  SIMPLE_BAD_ARG_ERROR("String.split", 2,
+	  SIMPLE_BAD_ARG_ERROR("create", 2,
 			       "int|array(int)|multiset(int)");
 	}
 	if (!a->size) {
-	  SIMPLE_BAD_ARG_ERROR("String.split", 2,
+	  SIMPLE_BAD_ARG_ERROR("create", 2,
 			       "int|array(int)|multiset(int)");
 	}
 	for (i=0; i < a->size; i++) {
 	  if (TYPEOF(a->item[i]) != T_INT) {
-	    SIMPLE_BAD_ARG_ERROR("String.split", 2,
+	    SIMPLE_BAD_ARG_ERROR("create", 2,
 				 "int|array(int)|multiset(int)");
 	  }
 	}

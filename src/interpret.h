@@ -470,6 +470,13 @@ PMOD_EXPORT extern void push_static_text( const char *x );
     _sp_[-2]=_;								\
   } while(0)
 
+#define stack_revroll(args) do {					\
+    struct svalue *_sp_ = Pike_sp;					\
+    int _args_ = (args); struct svalue _=_sp_[-1];			\
+    memmove(_sp_-_args_+1, _sp_-_args_, (_args_-1)*sizeof(struct svalue)); \
+    _sp_[-_args_]=_;							\
+  } while(0)
+
 #if PIKE_T_INT+NUMBER_NUMBER==0 && defined(HAS___BUILTIN_MEMSET)
 #define push_zeroes(N) do{					\
     ptrdiff_t num_ = (N);					\
@@ -863,8 +870,8 @@ struct callback;
 PMOD_EXPORT extern struct callback_list evaluator_callbacks;
 
 PMOD_EXPORT extern struct Pike_interpreter_struct *
-#ifndef IN_THREAD_CODE
-    const
+#if defined(__GNUC__) && __GNUC__ >= 3
+    __restrict
 #endif
     Pike_interpreter_pointer;
 #define Pike_interpreter (*Pike_interpreter_pointer)

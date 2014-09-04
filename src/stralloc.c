@@ -18,7 +18,6 @@
 #include "operators.h"
 #include "pike_float.h"
 #include "block_allocator.h"
-#include "port.h"
 
 #include <errno.h>
 #include <float.h>
@@ -486,7 +485,7 @@ static struct pike_string *internal_findstring(const char *s,
         size_shift == curr->size_shift &&
          hval == curr->hval &&
         ( curr->str == s ||
-          !MEMCMP(curr->str, s,len<<size_shift))) /* found it */
+          !memcmp(curr->str, s,len<<size_shift))) /* found it */
     {
       /* *prev = curr->next; */
       /* curr->next = *base; */
@@ -968,7 +967,7 @@ PMOD_EXPORT struct pike_string * debug_make_shared_binary_string(const char *str
   if (!s) 
   {
     s=begin_shared_string(len);
-    MEMCPY(s->str, str, len);
+    memcpy(s->str, str, len);
     link_pike_string(s, h);
   } else {
     add_ref(s);
@@ -1025,7 +1024,7 @@ PMOD_EXPORT struct pike_string * debug_make_shared_binary_string1(const p_wchar1
   if (!s) 
   {
     s=begin_wide_shared_string(len,1);
-    MEMCPY(s->str, str, len<<1);
+    memcpy(s->str, str, len<<1);
     link_pike_string(s, h);
   } else {
     add_ref(s);
@@ -1060,7 +1059,7 @@ PMOD_EXPORT struct pike_string * debug_make_shared_binary_string2(const p_wchar2
   if (!s) 
   {
     s=begin_wide_shared_string(len,2);
-    MEMCPY(s->str, str, len<<2);
+    memcpy(s->str, str, len<<2);
     link_pike_string(s, h);
   } else {
     add_ref(s);
@@ -1519,57 +1518,39 @@ int low_quick_binary_strcmp(const char *a, ptrdiff_t alen,
   int tmp;
   if(alen > blen)
   {
-    tmp=MEMCMP(a, b, blen);
+    tmp=memcmp(a, b, blen);
     if(tmp) return tmp;
     return 1;
   }else if(alen < blen){
-    tmp=MEMCMP(a, b, alen);
+    tmp=memcmp(a, b, alen);
     if(tmp) return tmp;
     return -1;
   }else{
-    return MEMCMP(a, b, alen);
+    return memcmp(a, b, alen);
   }
 }
 
 
 /* does not take locale into account */
 ptrdiff_t generic_quick_binary_strcmp(const char *a,
-						  ptrdiff_t alen, int asize,
-						  const char *b,
-						  ptrdiff_t blen, int bsize)
+                                      ptrdiff_t alen, int asize,
+                                      const char *b,
+                                      ptrdiff_t blen, int bsize)
 {
+  ptrdiff_t pos;
   if(!asize && !bsize)
+    return low_quick_binary_strcmp(a, alen, b, blen);
+
+  for(pos=0;pos< MINIMUM(alen,blen) ;pos++)
   {
-    int tmp;
-    /* FIXME: Does MEMCMP() guarantee that the characters
-     *        are compared as unsigned?
-     *	/grubba 2006-03-11
-     */
-    if(alen > blen)
-    {
-      tmp=MEMCMP(a, b, blen);
-      if(tmp) return tmp;
+    p_wchar2 ac=generic_extract(a,asize,pos);
+    p_wchar2 bc=generic_extract(b,bsize,pos);
+    if(ac != bc) {
+      if (ac < bc) return -1;
       return 1;
-    }else if(alen < blen){
-      tmp=MEMCMP(a, b, alen);
-      if(tmp) return tmp;
-      return -1;
-    }else{
-      return MEMCMP(a, b, alen);
     }
-  }else{
-    ptrdiff_t pos;
-    for(pos=0;pos< MINIMUM(alen,blen) ;pos++)
-    {
-      p_wchar2 ac=generic_extract(a,asize,pos);
-      p_wchar2 bc=generic_extract(b,bsize,pos);
-      if(ac != bc) {
-	if (ac < bc) return -1;
-	return 1;
-      }
-    }
-    return alen-blen;
   }
+  return alen-blen;
 }
 
 /* Does not take locale into account
@@ -1619,17 +1600,8 @@ ptrdiff_t generic_find_binary_prefix(const char *a,
 
 PMOD_EXPORT int c_compare_string(struct pike_string *s, char *foo, int len)
 {
-  return s->len == len && s->size_shift == 0 && !MEMCMP(s->str,foo,len);
+  return s->len == len && s->size_shift == 0 && !memcmp(s->str,foo,len);
 }
-
-#ifndef HAVE_STRCOLL
-/* No locale function available */
-static int low_binary_strcmp(char *a, ptrdiff_t alen,
-			     char *b, ptrdiff_t blen)
-{
-  low_quick_binary_strcmp(a,alen,b,blen);
-}
-#else
 
 /* takes locale into account */
 static int low_binary_strcmp(char *a, ptrdiff_t alen,
@@ -1650,10 +1622,8 @@ static int low_binary_strcmp(char *a, ptrdiff_t alen,
   if(alen > blen) return 1;
   return -1;
 }
-#endif
 
 /* Does not take locale into account */
-
 PMOD_EXPORT ptrdiff_t my_quick_strcmp(struct pike_string *a,
 				      struct pike_string *b)
 {
@@ -1681,7 +1651,6 @@ PMOD_EXPORT ptrdiff_t my_strcmp(struct pike_string *a,struct pike_string *b)
 	INT32 ac=index_shared_string(a,e);
 	INT32 bc=index_shared_string(b,e);
 
-#ifdef HAVE_STRCOLL
 	if(ac < 256 && bc < 256)
 	{
 	  char atmp[2],btmp[2];
@@ -1692,9 +1661,9 @@ PMOD_EXPORT ptrdiff_t my_strcmp(struct pike_string *a,struct pike_string *b)
 	  btmp[1]=0;
 	  if((tmp=strcoll(atmp,btmp)))
 	     return tmp;
-	}else
-#endif
-	  if(ac-bc) return ac-bc;
+	}
+        else if(ac-bc)
+          return ac-bc;
       }
       return a->len - b->len;
     }
@@ -1768,7 +1737,7 @@ static struct pike_string *realloc_shared_string(struct pike_string *a,
     return realloc_unlinked_string(a, size);
   }else{
     struct pike_string *r=begin_wide_shared_string(size,a->size_shift);
-    MEMCPY(r->str, a->str, a->len<<a->size_shift);
+    memcpy(r->str, a->str, a->len<<a->size_shift);
     r->flags |= a->flags & STRING_CHECKED_MASK;
     r->min = a->min;
     r->max = a->max;
@@ -1944,7 +1913,7 @@ struct pike_string *modify_shared_string(struct pike_string *a,
   }else{
     struct pike_string *r;
     r=begin_wide_shared_string(a->len,a->size_shift);
-    MEMCPY(r->str, a->str, a->len << a->size_shift);
+    memcpy(r->str, a->str, a->len << a->size_shift);
     low_set_index(r,index,c);
     free_string(a);
     return end_shared_string(r);
@@ -2018,7 +1987,7 @@ PMOD_EXPORT struct pike_string *add_and_free_shared_strings(struct pike_string *
   {
     a = realloc_shared_string(a, alen + b->len);
     update_flags_for_add( a, b );
-    MEMCPY(a->str+(alen<<a->size_shift),b->str,b->len<<b->size_shift);
+    memcpy(a->str+(alen<<a->size_shift),b->str,b->len<<b->size_shift);
     free_string(b);
     a->flags |= STRING_NOT_HASHED;
     return end_shared_string(a);
@@ -2425,7 +2394,7 @@ PMOD_EXPORT void init_string_builder_copy(struct string_builder *to,
   to->malloced = from->malloced;
   to->s = begin_wide_shared_string (from->malloced, from->s->size_shift);
   to->s->len = from->s->len;
-  MEMCPY (to->s->str, from->s->str, (from->s->len + 1) << from->s->size_shift);
+  memcpy (to->s->str, from->s->str, (from->s->len + 1) << from->s->size_shift);
   to->known_shift = from->known_shift;
 }
 
@@ -2519,7 +2488,7 @@ PMOD_EXPORT void string_builder_putchars(struct string_builder *s, int ch,
 
   switch (s->s->size_shift) {
     case 0:
-      MEMSET (STR0 (s->s) + s->s->len, ch, count);
+      memset (STR0 (s->s) + s->s->len, ch, count);
       break;
     case 1: {
       int i;
@@ -2674,7 +2643,7 @@ PMOD_EXPORT void string_builder_fill(struct string_builder *s,
      len == 1 &&
      (!from.shift || !min_magnitude(EXTRACT_PCHARP(from))))
   {
-    MEMSET(string_builder_allocate(s,howmany,0),
+    memset(string_builder_allocate(s,howmany,0),
 	   EXTRACT_PCHARP(from),
 	   howmany);
     /* Ensure NUL-termination */
@@ -2712,7 +2681,7 @@ PMOD_EXPORT void string_builder_fill(struct string_builder *s,
     while(howmany > 0)
     {
       tmp = MINIMUM(len, howmany);
-      MEMCPY(s->s->str + (s->s->len << s->s->size_shift),
+      memcpy(s->s->str + (s->s->len << s->s->size_shift),
 	     to.ptr,
 	     tmp << s->s->size_shift);
       len+=tmp;
@@ -3303,7 +3272,7 @@ PMOD_EXPORT PCHARP MEMCHR_PCHARP(PCHARP ptr, int chr, ptrdiff_t len)
 {
   switch(ptr.shift)
   {
-    case 0: return MKPCHARP(MEMCHR(ptr.ptr,chr,len),0);
+    case 0: return MKPCHARP(memchr(ptr.ptr,chr,len),0);
     case 1: return MKPCHARP(MEMCHR1((p_wchar1 *)ptr.ptr,chr,len),1);
     case 2: return MKPCHARP(MEMCHR2((p_wchar2 *)ptr.ptr,chr,len),2);
   }
@@ -3319,7 +3288,7 @@ PMOD_EXPORT PCHARP MEMCHR_PCHARP(PCHARP ptr, int chr, ptrdiff_t len)
 
 PMOD_EXPORT long STRTOL_PCHARP(PCHARP str, PCHARP *ptr, int base)
 {
-  /* Note: Code duplication in STRTOL and pcharp_to_svalue_inumber. */
+  /* Note: Code duplication in strtol and pcharp_to_svalue_inumber. */
 
   unsigned long val, mul_limit;
   int c;
@@ -3471,7 +3440,7 @@ PMOD_EXPORT int pcharp_to_svalue_inumber(struct svalue *r,
 					 int base,
 					 ptrdiff_t maxlength)
 {
-  /* Note: Code duplication in STRTOL and STRTOL_PCHARP. */
+  /* Note: Code duplication in strtol and STRTOL_PCHARP. */
 
   PCHARP str_start;
   
@@ -3612,7 +3581,7 @@ PMOD_EXPORT int convert_stack_top_string_to_inumber(int base)
    character after the last one used in the number is put in *ENDPTR.  */
 PMOD_EXPORT double STRTOD_PCHARP(PCHARP nptr, PCHARP *endptr)
 {
-  /* Note: Code duplication in STRTOD. */
+  /* Note: Code duplication in strtod. */
 
   register PCHARP s;
   short int sign;
@@ -3696,7 +3665,7 @@ PMOD_EXPORT double STRTOD_PCHARP(PCHARP nptr, PCHARP *endptr)
 	/* The exponent overflowed a `long int'.  It is probably a safe
 	   assumption that an exponent that cannot be represented by
 	   a `long int' exceeds the limits of a `double'.  */
-	/* NOTE: Don't trust the value returned from STRTOL.
+	/* NOTE: Don't trust the value returned from strtol.
 	 * We need to find the sign of the exponent by hand.
 	 */
 	p_wchar2 c;

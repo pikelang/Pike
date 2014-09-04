@@ -662,7 +662,7 @@ PMOD_EXPORT void f_lower_case(INT32 args)
 
   ret = begin_wide_shared_string(orig->len, orig->size_shift);
 
-  MEMCPY(ret->str, orig->str, orig->len << orig->size_shift);
+  memcpy(ret->str, orig->str, orig->len << orig->size_shift);
 
   i = orig->len;
 
@@ -738,7 +738,7 @@ PMOD_EXPORT void f_upper_case(INT32 args)
   }
 
   ret=begin_wide_shared_string(orig->len,orig->size_shift);
-  MEMCPY(ret->str, orig->str, orig->len << orig->size_shift);
+  memcpy(ret->str, orig->str, orig->len << orig->size_shift);
 
   i = orig->len;
 
@@ -1205,7 +1205,7 @@ PMOD_EXPORT void f_has_prefix(INT32 args)
   }
 
   if (a->size_shift == b->size_shift) {
-    int res = !MEMCMP(a->str, b->str, b->len << b->size_shift);
+    int res = !memcmp(a->str, b->str, b->len << b->size_shift);
     pop_n_elems(args);
     push_int(res);
     return;
@@ -1278,7 +1278,7 @@ PMOD_EXPORT void f_has_suffix(INT32 args)
   }
 
   if (a->size_shift == b->size_shift) {
-    int res = !MEMCMP(a->str + ((a->len - b->len)<<b->size_shift), b->str,
+    int res = !memcmp(a->str + ((a->len - b->len)<<b->size_shift), b->str,
 		      b->len << b->size_shift);
     pop_n_elems(args);
     push_int(res);
@@ -1696,12 +1696,12 @@ PMOD_EXPORT void f_string_to_unicode(INT32 args)
     len = in->len * 2;
     out = begin_shared_string(len);
     if (len) {
-      MEMSET(out->str, 0, len);	/* Clear the upper (and lower) byte */
+      memset(out->str, 0, len);	/* Clear the upper (and lower) byte */
 #ifdef PIKE_DEBUG
       if (d_flag) {
 	for(i = len; i--;) {
 	  if (out->str[i]) {
-	    Pike_fatal("MEMSET didn't clear byte %ld of %ld\n",
+	    Pike_fatal("memset didn't clear byte %ld of %ld\n",
 		  PTRDIFF_T_TO_LONG(i+1),
 		  PTRDIFF_T_TO_LONG(len));
 	  }
@@ -1725,7 +1725,7 @@ PMOD_EXPORT void f_string_to_unicode(INT32 args)
      * FIXME: Future optimization: Check if refcount is == 1,
      * and perform sufficient magic to be able to convert in place.
      */
-    MEMCPY(out->str, in->str, len);
+    memcpy(out->str, in->str, len);
 #else
     /* Other endianness, may need to do byte-order conversion also. */
     {
@@ -1904,7 +1904,7 @@ PMOD_EXPORT void f_unicode_to_string(INT32 args)
      * FIXME: Future optimization: Perform sufficient magic
      * to do the conversion in place if the ref-count is == 1.
      */
-      MEMCPY(out->str, (char *)(str0-len), len*2);
+      memcpy(out->str, str0-len, len*2);
   } else {
     /* Reverse endian */
     
@@ -4178,8 +4178,8 @@ void compile_replace_many(struct replace_many_context *ctx,
   fsort((char *)ctx->v, num, sizeof(struct replace_many_tupel),
 	(fsortfun)replace_sortfun);
 
-  MEMSET(ctx->set_start, 0, sizeof(ctx->set_start));
-  MEMSET(ctx->set_end, 0, sizeof(ctx->set_end));
+  memset(ctx->set_start, 0, sizeof(ctx->set_start));
+  memset(ctx->set_end, 0, sizeof(ctx->set_end));
   ctx->other_start = num;
 
   for(e=0;e<num;e++)
@@ -5505,7 +5505,6 @@ PMOD_EXPORT void f__compiler_trace(INT32 args)
 #endif /* YYDEBUG */
 #endif
 
-#if defined(HAVE_LOCALTIME) || defined(HAVE_GMTIME)
 static void encode_struct_tm(struct tm *tm)
 {
   push_static_text("sec");
@@ -5529,9 +5528,7 @@ static void encode_struct_tm(struct tm *tm)
   push_static_text("isdst");
   push_int(tm->tm_isdst);
 }
-#endif
 
-#if defined (HAVE_GMTIME) || defined (HAVE_GMTIME_R) || defined (HAVE_GMTIME_S)
 /*! @decl mapping(string:int) gmtime(int timestamp)
  *!
  *!   Convert seconds since 00:00:00 UTC, Jan 1, 1970 into components.
@@ -5575,9 +5572,7 @@ PMOD_EXPORT void f_gmtime(INT32 args)
   push_int(0);
   f_aggregate_mapping(20);
 }
-#endif
 
-#ifdef HAVE_LOCALTIME
 /*! @decl mapping(string:int) localtime(int timestamp)
  *!
  *!   Convert seconds since 00:00:00 UTC, 1 Jan 1970 into components.
@@ -5652,9 +5647,6 @@ PMOD_EXPORT void f_localtime(INT32 args)
 #endif
   f_aggregate_mapping(20);
 }
-#endif
-
-#if defined (HAVE_GMTIME) || defined (HAVE_LOCALTIME)
 
 #define isleap(y) ((((y) % 4) == 0 && ((y) % 100) != 0) || ((y) % 400) == 0)
 
@@ -5875,9 +5867,7 @@ static int my_time_inverse (struct tm *target_tm, time_t *result, time_fn timefn
   *result = current_ts;
   return 1;
 }
-#endif /* HAVE_GMTIME || HAVE_LOCALTIME */
 
-#if defined (HAVE_MKTIME) || defined (HAVE_LOCALTIME)
 /*! @decl int mktime(mapping(string:int) tm)
  *! @decl int mktime(int sec, int min, int hour, int mday, int mon, int year, @
  *!                  int|void isdst, int|void tz)
@@ -5931,7 +5921,7 @@ PMOD_EXPORT void f_mktime (INT32 args)
 
   if(args == 1)
   {
-    MEMSET(&date, 0, sizeof(date));
+    memset(&date, 0, sizeof(date));
 
     push_static_text("sec");
     push_static_text("min");
@@ -5953,7 +5943,7 @@ PMOD_EXPORT void f_mktime (INT32 args)
   get_all_args("mktime",args, "%i%i%i%i%i%i.%i%i",
 	       &sec, &min, &hour, &mday, &mon, &year, &isdst, &tz);
 
-  MEMSET(&date, 0, sizeof(date));
+  memset(&date, 0, sizeof(date));
   date.tm_sec=sec;
   date.tm_min=min;
   date.tm_hour=hour;
@@ -5964,7 +5954,6 @@ PMOD_EXPORT void f_mktime (INT32 args)
 
   /* date.tm_zone = NULL; */
 
-#ifdef HAVE_GMTIME
   if((args > 7) && (SUBTYPEOF(Pike_sp[7-args]) == NUMBER_NUMBER))
   {
     /* UTC-relative time. Use gmtime. */
@@ -5972,70 +5961,19 @@ PMOD_EXPORT void f_mktime (INT32 args)
       PIKE_ERROR("mktime", "Time conversion failed.\n", Pike_sp, args);
     retval += tz;
   } else
-#endif /* HAVE_GMTIME */
 
   {
-#ifndef HAVE_GMTIME
-#ifdef STRUCT_TM_HAS_GMTOFF
-    /* BSD-style */
-    date.tm_gmtoff = 0;
-#else
-#ifdef STRUCT_TM_HAS___TM_GMTOFF
-    /* (Old) Linux-style */
-    date.__tm_gmtoff = 0;
-#else
-    if((args > 7) && (SUBTYPEOF(Pike_sp[7-args]) == NUMBER_NUMBER))
-    {
-      /* Pre-adjust for the timezone.
-       *
-       * Note that pre-adjustment must be done on AIX for dates
-       * near Jan 1, 1970, since AIX mktime(3) doesn't support
-       * negative time.
-       */
-      date.tm_sec += tz
-#ifdef HAVE_EXTERNAL_TIMEZONE
-	- timezone
-#endif /* HAVE_EXTERNAL_TIMEZONE */
-	;
-    }
-#endif /* STRUCT_TM_HAS___TM_GMTOFF */
-#endif /* STRUCT_TM_HAS_GMTOFF */
-#endif  /* !HAVE_GMTIME */
-
-#ifdef HAVE_MKTIME
     retval = mktime(&date);
     if (retval == -1)
-#endif
     {
-#ifdef HAVE_LOCALTIME
       /* mktime might fail on dates before 1970 (e.g. GNU libc 2.3.2),
        * so try our own inverse function with localtime.
        *
        * Note that localtime on Win32 will also fail for dates before 1970.
        */
       if (!my_time_inverse (&date, &retval, localtime))
-#endif
 	PIKE_ERROR("mktime", "Time conversion unsuccessful.\n", Pike_sp, args);
     }
-
-#if !defined (HAVE_GMTIME) && (defined(STRUCT_TM_HAS_GMTOFF) || defined(STRUCT_TM_HAS___TM_GMTOFF))
-    if((args > 7) && (SUBTYPEOF(Pike_sp[7-args]) == NUMBER_NUMBER))
-    {
-      /* Post-adjust for the timezone.
-       *
-       * Note that tm_gmtoff has the opposite sign of timezone.
-       *
-       * Note also that it must be post-adjusted, since the gmtoff
-       * field is set by mktime(3).
-       */
-#ifdef STRUCT_TM_HAS_GMTOFF
-      retval += tz + date.tm_gmtoff;
-#else
-      retval += tz + date.__tm_gmtoff;
-#endif /* STRUCT_TM_HAS_GMTOFF */
-    }
-#endif /* !HAVE_GMTIME && (STRUCT_TM_HAS_GMTOFF || STRUCT_TM_HAS___TM_GMTOFF) */
-
   }
 
   pop_n_elems(args);
@@ -6045,8 +5983,6 @@ PMOD_EXPORT void f_mktime (INT32 args)
   push_int(retval);
 #endif
 }
-#define GOT_F_MKTIME
-#endif	/* HAVE_MKTIME || HAVE_LOCALTIME */
 
 /* Common case: both strings are 8bit. */
 static int does_match_8_8( const unsigned char *s, int j, int sl,
@@ -6389,7 +6325,7 @@ static void f_interleave_array(INT32 args)
     if (!(tab = malloc(size + max))) {
       SIMPLE_OUT_OF_MEMORY_ERROR("interleave_array", size+max);
     }
-    MEMSET(tab, 0, size + max);
+    memset(tab, 0, size + max);
 
     for (i = 0; i < order->size; i++) {
       int low = ITEM(min)[i].u.integer;
@@ -6441,7 +6377,7 @@ static void f_interleave_array(INT32 args)
 	  Pike_error("Couldn't extend table!\n");
 	}
 	tab = newtab;
-	MEMSET(tab + size + max, 0, size);
+	memset(tab + size + max, 0, size);
 	size = size * 2;
       }
     }
@@ -6563,7 +6499,7 @@ static void f_longest_ordered_sequence(INT32 args)
   struct array *a = NULL;
   struct array *aa = NULL;
 
-  get_all_args("Array.longest_ordered_sequence", args, "%a", &a);
+  get_all_args("longest_ordered_sequence", args, "%a", &a);
 
   /* THREADS_ALLOW(); */
 
@@ -6572,7 +6508,7 @@ static void f_longest_ordered_sequence(INT32 args)
   /* THREADS_DISALLOW(); */
 
   if (!aa) {
-    SIMPLE_OUT_OF_MEMORY_ERROR("Array.longest_ordered_sequence",
+    SIMPLE_OUT_OF_MEMORY_ERROR("longest_ordered_sequence",
 			       (int)sizeof(int *)*a->size*2);
   }
 
@@ -8638,10 +8574,9 @@ PMOD_EXPORT void f__dump_backlog(INT32 args)
  *!
  *!     @item object
  *!       If there is a @[lfun::cast] method in the object, it's
- *!       called
- *!       to try to cast the object to an array, a mapping, or a
- *!       multiset, in that order, which is then handled as described
- *!       above.
+ *!       called to try to cast the object to an array, a mapping, or
+ *!       a multiset, in that order, which is then handled as
+ *!       described above.
  *!   @enddl
  *!
  *!   @[fun] is applied in different ways depending on its type:
@@ -8765,96 +8700,52 @@ PMOD_EXPORT void f_map(INT32 args)
 
 	 mysp=Pike_sp+3-args;
 
-	 push_svalue(mysp-3);
-	 push_constant_text("cast");
-	 f_arrow(2);
-	 if (!UNSAFE_IS_ZERO(Pike_sp-1))
 	 {
-	    pop_stack();
+           struct object *o = mysp[-3].u.object;
+           INT16 osub = SUBTYPEOF(mysp[-3]);
+           int f = FIND_LFUN(o->prog->inherits[osub].prog,
+                             LFUN_CAST);
 
-	    ref_push_string(literal_array_string);
-	    /* FIXME: Object subtype! */
-	    safe_apply(mysp[-3].u.object,"cast",1);
-	    if (TYPEOF(Pike_sp[-1]) == T_ARRAY)
-	    {
+           if( f!=-1 )
+           {
+
+             ref_push_string(literal_array_string);
+             apply_low(o, f, 1);
+             if (TYPEOF(Pike_sp[-1]) == T_ARRAY)
+             {
 	       free_svalue(mysp-3);
 	       mysp[-3]=*(--Pike_sp);
 	       dmalloc_touch_svalue(Pike_sp);
 	       f_map(args);
 	       return;
-	    }
-	    pop_stack();
+             }
+             pop_stack();
 
-	    ref_push_string(literal_mapping_string);
-	    /* FIXME: Object subtype! */
-	    safe_apply(mysp[-3].u.object,"cast",1);
-	    if (TYPEOF(Pike_sp[-1]) == T_MAPPING)
-	    {
+             ref_push_string(literal_mapping_string);
+             apply_low(o, f, 1);
+             if (TYPEOF(Pike_sp[-1]) == T_MAPPING)
+             {
 	       free_svalue(mysp-3);
 	       mysp[-3]=*(--Pike_sp);
 	       dmalloc_touch_svalue(Pike_sp);
 	       f_map(args);
 	       return;
-	    }
-	    pop_stack();
+             }
+             pop_stack();
 
-	    ref_push_string(literal_multiset_string);
-	    /* FIXME: Object subtype! */
-	    safe_apply(mysp[-3].u.object,"cast",1);
-	    if (TYPEOF(Pike_sp[-1]) == T_MULTISET)
-	    {
+             ref_push_string(literal_multiset_string);
+             apply_low(o, f, 1);
+             if (TYPEOF(Pike_sp[-1]) == T_MULTISET)
+             {
 	       free_svalue(mysp-3);
 	       mysp[-3]=*(--Pike_sp);
 	       dmalloc_touch_svalue(Pike_sp);
 	       f_map(args);
 	       return;
-	    }
-	    pop_stack();
+             }
+             pop_stack();
+           }
 	 }
-	 pop_stack();
-
-         /* if arr->_sizeof && arr->`[] 
-               array ret; ret[i]=arr[i];
-               ret=map(ret,fun,@extra); */
-
-	 /* class myarray { int a0=1,a1=2; int `[](int what) { return ::`[]("a"+what); } int _sizeof() { return 2; } } 
-	    map(myarray(),lambda(int in){ werror("in=%d\n",in); }); */
-
-	 push_svalue(mysp-3);
-	 push_constant_text("`[]");
-	 f_arrow(2);
-	 push_svalue(mysp-3);
-	 push_constant_text("_sizeof");
-	 f_arrow(2);
-	 if (!UNSAFE_IS_ZERO(Pike_sp-2)&&!UNSAFE_IS_ZERO(Pike_sp-1))
-	 {
-	    f_call_function(1);
-	    if (TYPEOF(Pike_sp[-1]) != T_INT)
-	       SIMPLE_BAD_ARG_ERROR("map", 1, 
-				    "object sizeof() returning integer");
-	    n=Pike_sp[-1].u.integer;
-	    pop_stack();
-	    push_array(d=allocate_array(n));
-	    types = 0;
-	    stack_swap();
-	    for (i=0; i<n; i++)
-	    {
-	       stack_dup(); /* `[] */
-	       push_int(i);
-	       f_call_function(2);
-	       stack_pop_to_no_free (ITEM(d) + i);
-	       types |= 1 << TYPEOF(*ITEM(d));
-	    }
-	    d->type_field = types;
-	    pop_stack();
-	    free_svalue(mysp-3);
-	    mysp[-3]=*(--Pike_sp);
-	    dmalloc_touch_svalue(Pike_sp);
-	    f_map(args);
-	    return;
-	 }
-	 pop_stack();
-	 pop_stack();
 
 	 SIMPLE_BAD_ARG_ERROR("map",1,
 			      "object that works in map");
@@ -9089,7 +8980,7 @@ PMOD_EXPORT void f_filter(INT32 args)
 	   pop_n_elems(args-2);
 	 }
 	 else {
-	   MEMMOVE(Pike_sp-args+1,Pike_sp-args,args*sizeof(*Pike_sp));
+	   memmove(Pike_sp-args+1,Pike_sp-args,args*sizeof(*Pike_sp));
 	   dmalloc_touch_svalue(Pike_sp);
 	   Pike_sp++;
 	   add_ref_svalue(Pike_sp-args);
@@ -9127,7 +9018,7 @@ PMOD_EXPORT void f_filter(INT32 args)
 	 /* mapping ret =                             
 	       mkmapping(indices(arr),                
 	                 map(values(arr),fun,@extra)); */
-	 MEMMOVE(Pike_sp-args+2,Pike_sp-args,args*sizeof(*Pike_sp));
+	 memmove(Pike_sp-args+2,Pike_sp-args,args*sizeof(*Pike_sp));
 	 Pike_sp+=2;
 	 mark_free_svalue (Pike_sp-args-2);
 	 mark_free_svalue (Pike_sp-args-1);
@@ -9196,53 +9087,50 @@ PMOD_EXPORT void f_filter(INT32 args)
       case T_OBJECT:
 	 mysp=Pike_sp+3-args;
 
-	 push_svalue(mysp-3);
-	 push_constant_text("cast");
-	 f_arrow(2);
-	 if (!UNSAFE_IS_ZERO(Pike_sp-1))
 	 {
-	    pop_stack();
+            struct object *o = mysp[-3].u.object;
+            int f = FIND_LFUN(o->prog->inherits[SUBTYPEOF(mysp[-3])].prog,
+                              LFUN_CAST);
 
-	    ref_push_string(literal_array_string);
-	    /* FIXME: Object subtype! */
-	    safe_apply(mysp[-3].u.object,"cast",1);
-	    if (TYPEOF(Pike_sp[-1]) == T_ARRAY)
-	    {
-	       free_svalue(mysp-3);
-	       mysp[-3]=*(--Pike_sp);
-	       dmalloc_touch_svalue(Pike_sp);
-	       f_filter(args);
-	       return;
-	    }
-	    pop_stack();
+            if( f!=-1 )
+            {
+              ref_push_string(literal_array_string);
+              apply_low(o, f, 1);
+              if (TYPEOF(Pike_sp[-1]) == T_ARRAY)
+              {
+                free_svalue(mysp-3);
+                mysp[-3]=*(--Pike_sp);
+                dmalloc_touch_svalue(Pike_sp);
+                f_filter(args);
+                return;
+              }
+              pop_stack();
 
-	    ref_push_string(literal_mapping_string);
-	    /* FIXME: Object subtype! */
-	    safe_apply(mysp[-3].u.object,"cast",1);
-	    if (TYPEOF(Pike_sp[-1]) == T_MAPPING)
-	    {
-	       free_svalue(mysp-3);
-	       mysp[-3]=*(--Pike_sp);
-	       dmalloc_touch_svalue(Pike_sp);
-	       f_filter(args);
-	       return;
-	    }
-	    pop_stack();
+              ref_push_string(literal_mapping_string);
+              apply_low(o, f, 1);
+              if (TYPEOF(Pike_sp[-1]) == T_MAPPING)
+              {
+                free_svalue(mysp-3);
+                mysp[-3]=*(--Pike_sp);
+                dmalloc_touch_svalue(Pike_sp);
+                f_filter(args);
+                return;
+              }
+              pop_stack();
 
-	    ref_push_string(literal_multiset_string);
-	    /* FIXME: Object subtype! */
-	    safe_apply(mysp[-3].u.object,"cast",1);
-	    if (TYPEOF(Pike_sp[-1]) == T_MULTISET)
-	    {
-	       free_svalue(mysp-3);
-	       mysp[-3]=*(--Pike_sp);
-	       dmalloc_touch_svalue(Pike_sp);
-	       f_filter(args);
-	       return;
-	    }
-	    pop_stack();
+              ref_push_string(literal_multiset_string);
+              apply_low(o, f, 1);
+              if (TYPEOF(Pike_sp[-1]) == T_MULTISET)
+              {
+                free_svalue(mysp-3);
+                mysp[-3]=*(--Pike_sp);
+                dmalloc_touch_svalue(Pike_sp);
+                f_filter(args);
+                return;
+              }
+              pop_stack();
+            }
 	 }
-	 pop_stack();
 
 	 SIMPLE_BAD_ARG_ERROR("filter",1,
 			      "...|object that can be cast to array, multiset or mapping");
@@ -10093,26 +9981,18 @@ void init_builtin_efuns(void)
 	   tFunc(tType(tMix), tArr(tString)),
 	   OPT_TRY_OPTIMIZE);
 
-#ifdef HAVE_LOCALTIME
-  
 /* function(int:mapping(string:int)) */
   ADD_EFUN("localtime",f_localtime,
 	   tFunc(tInt,tMap(tStr,tInt)),OPT_EXTERNAL_DEPEND);
-#endif
-#ifdef HAVE_GMTIME
-  
+
 /* function(int:mapping(string:int)) */
   ADD_EFUN("gmtime",f_gmtime,tFunc(tInt,tMap(tStr,tInt)),OPT_TRY_OPTIMIZE);
-#endif
 
-#ifdef GOT_F_MKTIME
-  
 /* function(int,int,int,int,int,int,int,void|int:int)|function(object|mapping:int) */
   ADD_EFUN("mktime",f_mktime,
 	   tOr(tFunc(tInt tInt tInt tInt tInt tInt
 		     tOr(tVoid,tInt) tOr(tVoid,tInt),tInt),
 	       tFunc(tOr(tObj,tMapping),tInt)),OPT_TRY_OPTIMIZE);
-#endif
 
 /* function(:void) */
   ADD_EFUN("_verify_internals",f__verify_internals,

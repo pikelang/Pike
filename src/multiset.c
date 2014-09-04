@@ -4457,7 +4457,7 @@ static void debug_multiset_fatal (struct multiset *l, const char *fmt, ...)
   struct multiset_data *msd = l->msd;
   va_list args;
   va_start (args, fmt);
-  (void) VFPRINTF (stderr, fmt, args);
+  (void) vfprintf (stderr, fmt, args);
   fprintf (stderr, "Dumping multiset @ %p: ", l);
   debug_dump_multiset (l);
   debug_fatal ("\r");
@@ -4539,7 +4539,7 @@ static void debug_merge_fatal (struct multiset *a, struct multiset *b,
 {
   va_list args;
   va_start (args, fmt);
-  (void) VFPRINTF (stderr, fmt, args);
+  (void) vfprintf (stderr, fmt, args);
   fputs ("Dumping a: ", stderr);
   debug_dump_multiset (a);
   fputs ("Dumping b: ", stderr);

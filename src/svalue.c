@@ -255,7 +255,7 @@ PMOD_EXPORT TYPE_FIELD assign_svalues_no_free(struct svalue *to,
   TYPE_FIELD masked_type;
 
   check_type_hint (from, num, type_hint);
-  MEMCPY((char *)to, (char *)from, sizeof(struct svalue) * num);
+  memcpy(to, from, sizeof(struct svalue) * num);
 
   if (!(masked_type = (type_hint & BIT_REF_TYPES)))
     return type_hint;
@@ -2498,7 +2498,7 @@ void real_gc_free_short_svalue(union anything *u, TYPE_T type)
   free_short_svalue(u, type);
 }
 
-PMOD_EXPORT INT32 pike_sizeof(const struct svalue *s)
+PMOD_EXPORT INT_TYPE pike_sizeof(const struct svalue *s)
 {
   switch(TYPEOF(*s))
   {

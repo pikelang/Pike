@@ -26,6 +26,10 @@ test_any([[
 ]], "abcdefghij")
 test_any([[
   String.Buffer s=String.Buffer();
+  return s->get() + s->get();
+]], "")
+test_any([[
+  String.Buffer s=String.Buffer();
   s->add("xxx");
   string t=s->get();
   s->add("yyy");
@@ -104,6 +108,197 @@ test_do([[
   b->add ("x\12345678");
   return (string) b;
 ]])
+
+test_any([[
+  String.Buffer b = String.Buffer();
+  b->add("abc");
+  return b[1];
+]], 98)
+test_any([[
+  String.Buffer b = String.Buffer();
+  b->add("abc");
+  return b[-1];
+]], 99)
+test_runtime_error([[
+  String.Buffer b = String.Buffer();
+  b->add("abc");
+  return b[3];
+]])
+test_any([[
+  String.Buffer b = String.Buffer();
+  b->add("a\u0100a");
+  return b[1];
+]], 256)
+test_any([[
+  String.Buffer b = String.Buffer();
+  b->add("a\U00010000a");
+  return b[1];
+]], 65536)
+
+test_any([[
+  String.Buffer b = String.Buffer();
+  b->add("aaa");
+  return b[1]='b';
+]], 98)
+test_any([[
+  String.Buffer b = String.Buffer();
+  b->add("aaa");
+  b[1]='b';
+  return (string)b;
+]], "aba")
+test_any([[
+  String.Buffer b = String.Buffer();
+  b->add("aaa");
+  b[1]=256;
+  return (string)b;
+]], "a\u0100a")
+test_any([[
+  String.Buffer b = String.Buffer();
+  b->add("aaa");
+  b[1]=65536;
+  return (string)b;
+]], "a\U00010000a")
+
+test_any([[
+  String.Buffer b = String.Buffer();
+  b->add("1234");
+  b = b[..1];
+  b->add("x");
+  return (string)b;
+]], "12x")
+test_any([[
+  String.Buffer b = String.Buffer();
+  b->add("1234");
+  return (string)b[1..];
+]], "234")
+test_any([[
+  String.Buffer b = String.Buffer();
+  b->add("1234");
+  return (string)b[1..2];
+]], "23")
+test_any([[
+  String.Buffer b = String.Buffer();
+  b->add("1234");
+  return (string)b[..<1];
+]], "123")
+test_any([[
+  String.Buffer b = String.Buffer();
+  b->add("ab\u0100\u0101\U00010000\U00010001");
+  return (string)b[0..1];
+]], "ab")
+test_any([[
+  String.Buffer b = String.Buffer();
+  b->add("ab\u0100\u0101\U00010000\U00010001");
+  return (string)b[2..3];
+]], "\u0100\u0101")
+test_any([[
+  String.Buffer b = String.Buffer();
+  b->add("ab\u0100\u0101\U00010000\U00010001");
+  return (string)b[4..5];
+]], "\U00010000\U00010001")
+
+test_any([[
+  String.Buffer b = String.Buffer();
+  b->add("ab\u0100\u0101\U00010000\U00010001cd");
+  b->cut(4,5,1);
+  return (string)b;
+]], "ab\u0100\u0101cd")
+test_any([[
+  String.Buffer b = String.Buffer();
+  b->add("ab\u0100\u0101\U00010000\U00010001cd");
+  b->cut(2,5,1);
+  return (string)b;
+]], "abcd")
+test_any([[
+  String.Buffer b = String.Buffer();
+  b->add("ab\u0100\u0101\U00010000\U00010001cd");
+  return (string)b->cut(4,5) + "_" + (string)b;
+]], "\U00010000\U00010001_ab\u0100\u0101cd")
+test_any([[
+  String.Buffer b = String.Buffer();
+  b->add("ab\u0100\u0101\U00010000\U00010001cd");
+  return (string)b->cut(2,5) + "_" + (string)b;
+]], "\u0100\u0101\U00010000\U00010001_abcd")
+
+test_any([[
+  String.Buffer b = String.Buffer(), a = String.Buffer();
+  b->add("abcd");a->add("abcd");
+  return b=="abcd" && b==a;
+]], 1)
+test_any([[
+  String.Buffer b = String.Buffer(), a = String.Buffer();
+  b->add("abcd");a->add("abcd");
+  return b>="abcd" && b>=a;
+]], 1)
+test_any([[
+  String.Buffer b = String.Buffer(), a = String.Buffer();
+  b->add("abcd");a->add("abcd");
+  return b<="abcd" && b<=a;
+]], 1)
+test_any([[
+  String.Buffer b = String.Buffer(), a = String.Buffer();
+  b->add("abce");a->add("abcd");
+  return b>="abcd" && b>=a;
+]], 1)
+test_any([[
+  String.Buffer b = String.Buffer(), a = String.Buffer();
+  b->add("abce");a->add("abcd");
+  return b<="abcd" || b<=a;
+]], 0)
+test_any([[
+  String.Buffer b = String.Buffer(), a = String.Buffer();
+  b->add("abce");a->add("abcd");
+  return b>"abcd" && b>a;
+]], 1)
+test_any([[
+  String.Buffer b = String.Buffer(), a = String.Buffer();
+  b->add("abce");a->add("abcd");
+  return b<"abcd" || b<a;
+]], 0)
+test_any([[
+  String.Buffer b = String.Buffer(), a = String.Buffer();
+  b->add("abcb");a->add("abcd");
+  return b=="abcd" || b==a;
+]], 0)
+test_any([[
+  String.Buffer b = String.Buffer(), a = String.Buffer();
+  b->add("abcb");a->add("abcd");
+  return b>="abcd" || b>=a;
+]], 0)
+test_any([[
+  String.Buffer b = String.Buffer(), a = String.Buffer();
+  b->add("abcb");a->add("abcd");
+  return b<="abcd" && b<=a;
+]], 1)
+test_any([[
+  String.Buffer b = String.Buffer(), a = String.Buffer();
+  b->add("abcb");a->add("abcd");
+  return b>"abcd" || b>a;
+]], 0)
+test_any([[
+  String.Buffer b = String.Buffer(), a = String.Buffer();
+  b->add("abcb");a->add("abcd");
+  return b<"abcd" || b<a;
+]], 1)
+
+test_any([[
+  String.Buffer a=String.Buffer(),b=String.Buffer();
+  a->add("Testing");
+  a->addat(0, "Is that sentence");
+  a->putchar(',');
+  a->add(" the concluding three ", "words");
+  a->add(" `were left out'");
+  a->addat(3,"th","is");
+  a[1]=a[10];
+  b->add("Test me harder");
+  b->add(a);
+  if(b->cut(5,6) != "me")
+    return 0;
+  b->cut(0,11,1);
+  return a[3..6] == "this" && a->get_copy() ==(string)b && a->get()
+    == "In this sentence, the concluding three words `were left out'";
+]],1)
+
 
 test_eq([[ String.count( "", "a" ) ]], 0)
 test_eq([[ String.count( "aaa", "a" ) ]], 3)

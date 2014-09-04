@@ -155,7 +155,7 @@ START_MARKER
   test_true(Gmp.mpz(3)->probably_prime_p(), 0)
   test_false(Gmp.mpz(4)->probably_prime_p(), 0)
   test_false(Gmp.mpz("100000000000000000")->probably_prime_p(), 0)
-
+  test_false(Gmp.mpz("100000000000000000")->probably_prime_p(10), 0)
 
   // binops
   test_eq(Gmp.mpz("17") == "foo", 0)
@@ -187,8 +187,10 @@ START_MARKER
 
   test_eval_error(Gmp.mpz(17) + 18 + "19")
   test_eval_error(Gmp.mpz(17) - 18 - "19")
-  test_eval_error(Gmp.mpz(17) / 0)
-  test_eval_error(Gmp.mpz(49) % 0)
+  test_compile_error(return Gmp.mpz(17) / 0)
+  test_eval_error([[ int i; return Gmp.mpz(17)/i; ]])
+  test_compile_error(return Gmp.mpz(49) % 0)
+  test_eval_error([[ int i; return Gmp.mpz(17)%i; ]])
   test_eval_error(1<<Gmp.mpz("100000000000000000000"))
   test_eval_error(-1<<Gmp.mpz("100000000000000000000"))
   test_eq(0<<Gmp.mpz("100000000000000000000"), 0)

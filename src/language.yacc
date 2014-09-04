@@ -125,7 +125,6 @@
 #include <memory.h>
 #endif
 
-#include "port.h"
 #include "interpret.h"
 #include "array.h"
 #include "object.h"
@@ -3787,8 +3786,7 @@ idents2: idents
 						       SEE_PROTECTED|
 						       SEE_PRIVATE)) >= 0)) {
       struct reference *ref = Pike_compiler->new_program->identifier_references + i;
-      if (!TEST_COMPAT (7, 2) &&
-	  IDENTIFIER_IS_VARIABLE (
+      if (IDENTIFIER_IS_VARIABLE (
 	    ID_FROM_PTR (Pike_compiler->new_program, ref)->identifier_flags)) {
 	/* Allowing local:: on variables would lead to pathological
 	 * behavior: If a non-local variable in a class is referenced
@@ -3923,8 +3921,7 @@ inherit_specifier: string_or_identifier TOK_COLON_COLON
       }
       /* The top-level class does not have a name, so break here. */
       if (depth == c->compilation_depth) break;
-      if (!TEST_COMPAT (7, 2) &&
-	  ID_FROM_INT (state->previous->new_program,
+      if (ID_FROM_INT (state->previous->new_program,
 		       state->parent_identifier)->name ==
 	  $1->u.sval.u.string) {
 	/* Name of surrounding class ==> Done. */
@@ -3937,18 +3934,14 @@ inherit_specifier: string_or_identifier TOK_COLON_COLON
     if (e == -1) {
       inherit_state = state;
       inherit_depth = depth;
-      if (TEST_COMPAT (7, 2)) {
-	my_yyerror("No such inherit %S.", $1->u.sval.u.string);
-      } else {
-	if ($1->u.sval.u.string == this_program_string) {
-	  inherit_state = Pike_compiler;
-	  inherit_depth = 0;
-	  e = 0;
-	}
-	else
-	  my_yyerror("No inherit or surrounding class %S.",
-		     $1->u.sval.u.string);
+      if ($1->u.sval.u.string == this_program_string) {
+        inherit_state = Pike_compiler;
+        inherit_depth = 0;
+        e = 0;
       }
+      else
+        my_yyerror("No inherit or surrounding class %S.",
+                   $1->u.sval.u.string);
     }
     free_node($1);
     $$ = e;
@@ -4207,11 +4200,7 @@ low_idents: TOK_IDENTIFIER
 					   $2->u.sval.u.string, 1)))
       {
 	if (Pike_compiler->compiler_pass == 2) {
-	  if (TEST_COMPAT(7,2)) {
-	    yywarning("Undefined identifier ::%S.", $2->u.sval.u.string);
-	  } else {
-	    my_yyerror("Undefined identifier ::%S.", $2->u.sval.u.string);
-	  }
+          my_yyerror("Undefined identifier ::%S.", $2->u.sval.u.string);
 	}
 	$$=mkintnode(0);
       }

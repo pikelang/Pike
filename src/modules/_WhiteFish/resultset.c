@@ -216,7 +216,7 @@ static void f_resultset_create( INT32 args )
 static void f_resultset_slice( INT32 args );
 
 static void f_resultset_cast( INT32 args )
-/*! @decl string cast( string type )
+/*! @decl array cast( string type )
  *! Only works when type == @expr{"array"@}. Returns the resultset
  *! data as a array.
  */
@@ -378,7 +378,7 @@ static void f_resultset_dup( INT32 args )
   if(THIS->d)
   {
     ResultSet *d = malloc( THIS->d->num_docs * 8 + 4 );
-    MEMCPY( d, THIS->d, THIS->d->num_docs * 8 + 4 );
+    memcpy( d, THIS->d, THIS->d->num_docs * 8 + 4 );
     T(o)->d = d;
     T(o)->allocated_size = T(o)->d->num_docs;
   }
@@ -434,7 +434,7 @@ static void duplicate_resultset( struct object *dest,
     int size = 4+4*T(src)->allocated_size*2;
     T(dest)->allocated_size = T(src)->allocated_size;
     T(dest)->d              = malloc( size );
-    MEMCPY( (char *)T(dest)->d, (char *)T(src)->d, size );
+    memcpy( T(dest)->d, T(src)->d, size );
   }
 }
 

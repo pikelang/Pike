@@ -184,18 +184,18 @@ void img_bmp_encode(INT32 args)
    int rle=0;
 
    if (!args)
-      SIMPLE_TOO_FEW_ARGS_ERROR("Image.BMP.encode",1);
+      SIMPLE_TOO_FEW_ARGS_ERROR("encode",1);
 
    if (TYPEOF(sp[-args]) != T_OBJECT ||
        !(img=get_storage(o=sp[-args].u.object,image_program)))
-      SIMPLE_BAD_ARG_ERROR("Image.BMP.encode",1,"image object");
+      SIMPLE_BAD_ARG_ERROR("encode",1,"Image.Image");
 
    if (args>1) {
       if (TYPEOF(sp[1-args]) == T_OBJECT)
       {
 	 if (!(nct=
 	       get_storage(oc=sp[1-args].u.object,image_colortable_program)))
-	    SIMPLE_BAD_ARG_ERROR("Image.BMP.encode",2,"colortable object");
+	    SIMPLE_BAD_ARG_ERROR("encode",2,"Image.Colortable");
 	 add_ref(oc);
       }
       else if (TYPEOF(sp[1-args]) == T_MAPPING)
@@ -212,7 +212,7 @@ void img_bmp_encode(INT32 args)
 	    if (TYPEOF(*v) != T_OBJECT  ||
 		!(nct=
 		  get_storage(oc=v->u.object,image_colortable_program)))
-	       SIMPLE_BAD_ARG_ERROR("Image.BMP.encode",2,"colortable object at index \"colortable\"\n");
+	       SIMPLE_BAD_ARG_ERROR("encode",2,"colortable object at index \"colortable\"");
 	    add_ref(oc);
 	 }
       } 
@@ -221,7 +221,7 @@ void img_bmp_encode(INT32 args)
 	 bpp=sp[1-args].u.integer;
       }
       else
-	 SIMPLE_BAD_ARG_ERROR("Image.BMP.encode",2,"mapping|object|int\n");
+	 SIMPLE_BAD_ARG_ERROR("encode",2,"mapping|object|int");
    }
 
    if (bpp==0) {
@@ -239,7 +239,7 @@ void img_bmp_encode(INT32 args)
    {
       case 1:
 	 if (rle) 
-	    bad_arg_error("Image.BMP.encode", sp-args, args, 2, "mapping",
+	    bad_arg_error("encode", sp-args, args, 2, "mapping",
 			  sp+2-1-args,
 			  "run-length encoding can only be done on a "
 			  "palette-based image with 4 or 8 bits per pixel");
@@ -258,7 +258,7 @@ void img_bmp_encode(INT32 args)
 	    }
 	 }
 	 else if (image_colortable_size(nct)>(1<<bpp))
-	    bad_arg_error("Image.BMP.encode", sp-args, args, 2, "mapping",
+	    bad_arg_error("encode", sp-args, args, 2, "mapping",
 			  sp+2-1-args,
 			  "colortable must have at most %d colors "
 			  "(has %ld colors)\n",
@@ -267,7 +267,7 @@ void img_bmp_encode(INT32 args)
       case 24:
 	 break;
       default:
-	 bad_arg_error("Image.BMP.encode", sp-args, args, 2, "mapping",
+	 bad_arg_error("encode", sp-args, args, 2, "mapping",
 		       sp+2-1-args,
 		       "illegal bits per pixel: %d "
 		       "(1, 4, 8 and 24 are valid)\n",
@@ -282,7 +282,7 @@ void img_bmp_encode(INT32 args)
    if (TYPEOF(sp[-1]) != T_OBJECT ||
        !(img=get_storage(o=sp[-1].u.object,image_program))) {
       free_object(oc);
-      Pike_error("Image.BMP.encode: weird result from ->mirrory()\n");
+      Pike_error("Weird result from ->mirrory()\n");
    }
    if (nct) push_object(oc);
 
@@ -311,7 +311,7 @@ void img_bmp_encode(INT32 args)
    {
       /* FIXME: What if we don't have a nct? */
       ps=begin_shared_string((1<<bpp)*4);
-      MEMSET(ps->str,0,(1<<bpp)*4);
+      memset(ps->str,0,(1<<bpp)*4);
       image_colortable_write_bgrz(nct,(unsigned char *)ps->str);
       push_string(end_shared_string(ps));
       n++;
@@ -468,7 +468,7 @@ void img_bmp_encode(INT32 args)
 	 if (!l--)
 	 {
 #ifdef USE_VALGRIND
-	    MEMSET(c, 0, skip);
+	    memset(c, 0, skip);
 #endif
 	    c+=skip;
 	    l=img->xsize-1;
@@ -550,7 +550,7 @@ void i_img_bmp__decode(INT32 args,int header_only)
    int xsize=0,ysize=0,bpp=0,comp=0;
    struct image *img=NULL;
    struct neo_colortable *nct=NULL;
-   struct object *o;
+   struct object *o=NULL;
    rgb_group *d;
    int n=0,y,skip;
    ptrdiff_t i, j=0;
@@ -558,16 +558,14 @@ void i_img_bmp__decode(INT32 args,int header_only)
    int quality=50; /* for JPEG decoding */
 
    if (args<1)
-      SIMPLE_TOO_FEW_ARGS_ERROR("Image.BMP.decode",1);
+      SIMPLE_TOO_FEW_ARGS_ERROR("decode",1);
 
-   if (TYPEOF(sp[-args]) != T_STRING)
-      SIMPLE_BAD_ARG_ERROR("Image.BMP.decode",1,"string");
-   if (sp[-args].u.string->size_shift)
-      SIMPLE_BAD_ARG_ERROR("Image.BMP.decode",1,"8 bit string");
+   if (TYPEOF(sp[-args]) != T_STRING || sp[-args].u.string->size_shift)
+      SIMPLE_BAD_ARG_ERROR("decode",1,"string(8bit)");
 
    if (args>1) {
       if (TYPEOF(sp[1-args]) != T_MAPPING)
-	 SIMPLE_BAD_ARG_ERROR("Image.BMP.decode",2,"mapping");
+	 SIMPLE_BAD_ARG_ERROR("decode",2,"mapping");
       else
       {
 	 struct pike_string *qs;
@@ -1128,7 +1126,7 @@ void init_image_bmp(void)
    colortable_string = make_shared_string("colortable");
 
    ADD_FUNCTION("encode",img_bmp_encode,
-		tFunc(tObj tOr4(tVoid,tObj,tInt,tMapping),tStr), 0);
+		tFunc(tObj tOr4(tVoid,tObj,tInt,tMapping),tStr8), 0);
    ADD_FUNCTION("_decode",img_bmp__decode,
 		tFunc(tStr tOr(tVoid,tMapping),tMapping),0);
    ADD_FUNCTION("decode",img_bmp_decode,

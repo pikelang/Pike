@@ -441,7 +441,7 @@ int debug_fd_stat(const char *file, PIKE_STAT_T *buf)
       errno=EINVAL;
       return -1;
     }
-    MEMCPY(fname, file, l);
+    memcpy(fname, file, l);
     fname[l]=0;
     file=fname;
   }
@@ -651,7 +651,7 @@ PMOD_EXPORT FD debug_fd_open(const char *file, int open_mode, int create_mode)
       errno=EINVAL;
       return -1;
     }
-    MEMCPY(fname, file, l);
+    memcpy(fname, file, l);
     fname[l]=0;
     file=fname;
   }
@@ -1241,7 +1241,7 @@ PMOD_EXPORT int debug_fd_flock(FD fd, int oper)
   }else{
     DWORD flags = 0;
     OVERLAPPED tmp;
-    MEMSET(&tmp, 0, sizeof(tmp));
+    memset(&tmp, 0, sizeof(tmp));
     tmp.Offset=0;
     tmp.OffsetHigh=0;
 
@@ -1285,7 +1285,7 @@ PMOD_EXPORT int debug_fd_fstat(FD fd, PIKE_STAT_T *s)
     return -1;
   }
 
-  MEMSET(s, 0, sizeof(PIKE_STAT_T));
+  memset(s, 0, sizeof(PIKE_STAT_T));
   s->st_nlink=1;
 
   switch(fd_type[fd])
@@ -1567,7 +1567,7 @@ PMOD_EXPORT DIR *opendir(char *dir)
     return 0;
   }
   foo=sizeof(DIR) + (char *)ret;
-  MEMCPY(foo, dir, len);
+  memcpy(foo, dir, len);
 
   if(len && foo[len-1]!='/') foo[len++]='/';
   foo[len++]='*';

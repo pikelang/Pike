@@ -63,7 +63,7 @@ AC_CHECK_LIB(nsl, gethostbyname)
 AC_CHECK_LIB(net, __get_socket_descriptor)
 dnl AC_CHECK_LIB(zfs, libzfs_init)
 
-AC_HAVE_FUNCS(getwd perror readdir_r statvfs statfs ustat lseek64 lstat fsync \
+AC_HAVE_FUNCS(getwd readdir_r statvfs statfs ustat lseek64 lstat fsync \
  grantpt unlockpt ptsname posix_openpt socketpair writev sendfile munmap \
  madvise poll setsockopt getprotobyname truncate64 ftruncate64 inet_ntoa \
  inet_ntop execve listxattr flistxattr getxattr fgetxattr setxattr fsetxattr \

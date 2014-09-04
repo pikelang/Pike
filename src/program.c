@@ -1574,7 +1574,7 @@ void PIKE_CONCAT(low_add_many_to_,NAME) (struct program_state *state,	\
     state->malloc_size_program->PIKE_CONCAT(num_,NAME)=m;		\
     state->new_program->NAME=tmp;					\
   }									\
-  MEMCPY(state->new_program->NAME +					\
+  memcpy(state->new_program->NAME +					\
 	 state->new_program->PIKE_CONCAT(num_,NAME),			\
 	 ARG, sizeof(TYPE) * cnt);					\
   state->new_program->PIKE_CONCAT(num_,NAME) += cnt;			\
@@ -1606,7 +1606,7 @@ void PIKE_CONCAT(add_to_,NAME) (ARGTYPE ARG) {				\
     state->malloc_size_program->PIKE_CONCAT(num_,NAME)=m;		\
     state->new_program->NAME=tmp;					\
   }									\
-  MEMCPY(state->new_program->NAME +					\
+  memcpy(state->new_program->NAME +					\
 	 state->new_program->PIKE_CONCAT(num_,NAME),			\
 	 ARG, sizeof(TYPE) * cnt);					\
   state->new_program->PIKE_CONCAT(num_,NAME) += cnt;			\
@@ -2375,7 +2375,7 @@ void optimize_program(struct program *p)
 #define FOO(NUMTYPE,TYPE,ARGTYPE,NAME) \
   size=DO_ALIGN(size, ALIGNOF(TYPE)); \
   if (p->PIKE_CONCAT (num_, NAME))					\
-    MEMCPY(data+size,p->NAME,p->PIKE_CONCAT(num_,NAME)*sizeof(p->NAME[0])); \
+    memcpy(data+size,p->NAME,p->PIKE_CONCAT(num_,NAME)*sizeof(p->NAME[0])); \
   PIKE_CONCAT(RELOCATE_,NAME)(p, (TYPE *)(data+size)); \
   dmfree(p->NAME); \
   p->NAME=(TYPE *)(data+size); \
@@ -2419,10 +2419,10 @@ struct pike_string *find_program_name(struct program *p, INT_TYPE *line)
   {
     char *tmp=dmalloc_find_name(p);
     if (tmp) {
-      char *p = STRCHR (tmp, ':');
+      char *p = strchr (tmp, ':');
       if (p) {
 	char *pp;
-	while ((pp = STRCHR (p + 1, ':'))) p = pp;
+	while ((pp = strchr (p + 1, ':'))) p = pp;
 	*line = atoi (p + 1);
 	return make_shared_binary_string (tmp, p - tmp);
       }
@@ -2860,7 +2860,7 @@ void fixate_program(void)
 struct program *low_allocate_program(void)
 {
   struct program *p=alloc_program();
-  MEMSET(p, 0, sizeof(struct program));
+  memset(p, 0, sizeof(struct program));
   p->flags|=PROGRAM_VIRGIN;
   p->alignment_needed=1;
 
@@ -2966,7 +2966,7 @@ void low_start_new_program(struct program *p,
   Pike_compiler->fake_object->storage=(char *)malloc(256 * sizeof(struct svalue));
   if (Pike_compiler->fake_object->storage) {
     /* Stipple to find illegal accesses */
-    MEMSET(Pike_compiler->fake_object->storage,0x55,256*sizeof(struct svalue));
+    memset(Pike_compiler->fake_object->storage,0x55,256*sizeof(struct svalue));
     PIKE_MEM_WO_RANGE (Pike_compiler->fake_object->storage,
 		       256 * sizeof (struct svalue));
   }
@@ -3029,10 +3029,10 @@ void low_start_new_program(struct program *p,
 #endif
 
   if (c->compilation_depth >= 1) {
-    if(TEST_COMPAT(7,2) || (c->lex.pragmas & ID_SAVE_PARENT))
+    if(c->lex.pragmas & ID_SAVE_PARENT)
     {
       p->flags |= PROGRAM_USES_PARENT;
-    }else if (!(c->lex.pragmas & ID_DONT_SAVE_PARENT)) {
+    } else if (!(c->lex.pragmas & ID_DONT_SAVE_PARENT)) {
       struct pike_string *tmp=findstring("__pragma_save_parent__");
       if(tmp)
       {
@@ -5842,8 +5842,7 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
     if(IDENTIFIERP(n)->id_flags & ID_FINAL)
       my_yyerror("Illegal to redefine 'final' identifier %S", name);
 
-    if(!TEST_COMPAT(7,2) &&
-       IDENTIFIER_IS_VARIABLE(ID_FROM_INT(Pike_compiler->new_program,
+    if(IDENTIFIER_IS_VARIABLE(ID_FROM_INT(Pike_compiler->new_program,
 					  n)->identifier_flags))
     {
       my_yyerror("Illegal to redefine variable %S as constant.", name);
@@ -6902,7 +6901,7 @@ PMOD_EXPORT int low_find_lfun(struct program *p, ptrdiff_t lfun)
   return i;
 }
 
-PMOD_EXPORT int find_lfun_fatal(struct program *p, ptrdiff_t lfun)
+PMOD_EXPORT int find_lfun_fatal(struct program *UNUSED(p), ptrdiff_t lfun)
 {
   Pike_fatal("Invalid lfun number: %d\n", lfun);
   return -1;
@@ -7703,7 +7702,7 @@ static char *make_plain_file (struct pike_string *filename, int malloced)
       if (len > NELEM (buf) - 1)
 	len = NELEM (buf) - 1;
     }
-    MEMCPY (buffer, file, len);
+    memcpy (buffer, file, len);
     buffer[len] = 0;
     return buffer;
   }
@@ -9316,7 +9315,7 @@ static void compilation_event_handler(int e)
   case PROG_EVENT_INIT:
     CDFPRINTF((stderr, "th(%ld) compilation: INIT(%p).\n",
 	       (long) th_self(), c));
-    MEMSET(c, 0, sizeof(*c));
+    memset(c, 0, sizeof(*c));
     c->supporter.self = Pike_fp->current_object; /* NOTE: Not ref-counted! */
     c->compilation_inherit =
       Pike_fp->context - Pike_fp->current_object->prog->inherits;
@@ -11708,7 +11707,10 @@ static int low_implements(struct program *a, struct program *b)
   int ret = 1;
   struct pike_string *s=findstring("__INIT");
 
-  if (BEGIN_CYCLIC(a, b)) return 1;	/* Tentatively ok, */
+  if (BEGIN_CYCLIC(a, b)) {
+    END_CYCLIC();
+    return 1;	/* Tentatively ok, */
+  }
   SET_CYCLIC_RET(1);
 
   for(e=0;e<b->num_identifier_references;e++)
@@ -11791,7 +11793,10 @@ static int low_is_compatible(struct program *a, struct program *b)
   int ret = 1;
   struct pike_string *s=findstring("__INIT");
 
-  if (BEGIN_CYCLIC(a, b)) return 1;
+  if (BEGIN_CYCLIC(a, b)) {
+    END_CYCLIC();
+    return 1;
+  }
   SET_CYCLIC_RET(1);
 
   /* Optimize the loop somewhat */
@@ -12187,7 +12192,8 @@ PMOD_EXPORT void *parent_storage(int depth, struct program *expected)
   return loc.o->storage + loc.inherit->storage_offset;
 }
 
-PMOD_EXPORT void *get_inherited_storage(int inh, struct program *expected)
+PMOD_EXPORT void *get_inherited_storage(int inh,
+                                        struct program *DEBUGUSED(expected))
 {
   struct inherit *i = Pike_fp->context + inh;
 
@@ -12222,6 +12228,7 @@ PMOD_EXPORT void change_compiler_compatibility(int major, int minor)
 #include <sys/mman.h>
 #endif
 
+#if defined(HAVE_SYNC_INSTRUCTION_MEMORY) || defined(FLUSH_INSTRUCTION_CACHE) || !defined(USE_MY_MEXEC_ALLOC)
 void make_area_executable (char *start, size_t len)
 {
 #ifndef USE_MY_MEXEC_ALLOC
@@ -12246,6 +12253,11 @@ void make_area_executable (char *start, size_t len)
   FLUSH_INSTRUCTION_CACHE(start, len);
 #endif /* HAVE_SYNC_INSTRUCTION_MEMORY || FLUSH_INSTRUCTION_CACHE */
 }
+#else
+void make_area_executable (char *UNUSED(start), size_t UNUSED(len))
+{
+}
+#endif
 
 void make_program_executable(struct program *p)
 {

@@ -43,7 +43,10 @@
 //! 
 //! Properties:
 //! GTK2.Adjustment adjustment
+//! float fill-level
 //! int inverted
+//! int restrict-to-fill-level
+//! int show-fill-level
 //! int update-policy
 //! 
 //! Style properties:
@@ -53,6 +56,8 @@
 //! int stepper-size
 //! int stepper-spacing
 //! int trough-border
+//! int trough-side-details
+//! int trough-under-steppers
 //!
 //!
 //!  Signals:
@@ -72,13 +77,40 @@ GTK2.Adjustment get_adjustment( );
 //!
 //!
 
+float get_fill_level( );
+//! Gets the current position of the fill level indicator.
+//!
+//!
+
 int get_inverted( );
 //! Gets the value set by set_inverted().
 //!
 //!
 
+GTK2.Range get_lower_stepper_sensitivity( );
+//! Gets the sensitivity policy for the stepper that points to the 'lower' end
+//! of the GTK2.Range's adjustment.
+//!
+//!
+
+int get_restrict_to_fill_level( );
+//! Gets whether the range is restricted to the fill level.
+//!
+//!
+
+int get_show_fill_level( );
+//! Gets whether the range displays the fill level graphically.
+//!
+//!
+
 int get_update_policy( );
 //! Gets the update policy.
+//!
+//!
+
+GTK2.Range get_upper_stepper_sensitivity( );
+//! Gets the sensitivity policy for the stepper that points to the 'upper' end
+//! of the GTK2.Range's adjustment.
 //!
 //!
 
@@ -99,6 +131,11 @@ GTK2.Range set_adjustment( GTK2.Adjustment pos );
 //!
 //!
 
+GTK2.Range set_fill_level( float fill );
+//! Set the new position of the fill level indicator.
+//!
+//!
+
 GTK2.Range set_increments( float step, float page );
 //! Sets the step and page sizes.  The step size is used when the user clicks
 //! the W(Scrollbar) arrows or moves W(Scale) via arrow keys.  The page size
@@ -113,9 +150,25 @@ GTK2.Range set_inverted( int setting );
 //!
 //!
 
+GTK2.Range set_lower_stepper_sensitivity( int sensitivity );
+//! Sets the sensitivity policy for the stepper that points to the 'lower' end
+//! of the GTK2.Range's adjustment.
+//!
+//!
+
 GTK2.Range set_range( float min, float max );
 //! Sets the allowable values, and clamps the range value to be between min
 //! and max.
+//!
+//!
+
+GTK2.Range set_restrict_to_fill_level( int rest );
+//! Sets whether the slider is restricted to the fill level
+//!
+//!
+
+GTK2.Range set_show_fill_level( int show );
+//! Sets whether a graphical fill level is show on the trough.
 //!
 //!
 
@@ -138,6 +191,12 @@ GTK2.Range set_update_policy( int when );
 //! of time.
 //! @enddl
 //!
+//!
+//!
+
+GTK2.Range set_upper_stepper_sensitivity( int sensitivity );
+//! Sets the sensitivity policy for the stepper that points to the 'upper' end
+//! of the GTK2.Range's adjustment.
 //!
 //!
 

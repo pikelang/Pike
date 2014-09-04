@@ -1,4 +1,5 @@
 //! Properties
+//! int active
 //! int draw-as-radio
 //!
 //!

@@ -39,6 +39,10 @@ int(0..3) extract_cls(int i) { return [int(0..3)](i & 3); }
 
 // Class definitions
 
+#define CODEC(X) \
+  array _encode() { return ({ cls, tag, value }); } \
+  void _decode(array(X) x) { [ cls, tag, value ] = x; }
+
 //! Generic, abstract base class for ASN1 data types.
 class Object
 {
@@ -150,7 +154,6 @@ class Object
     der = build_der(s);
   }
 
-
   //! Get the DER encoded version of this object.
   //!
   //! @returns
@@ -222,6 +225,16 @@ class Compound
     return t=='O' && sprintf("%O(%*O)", this_program, params, elements);
   }
 
+  array _encode()
+  {
+    return ({ cls, tag, elements });
+  }
+
+  void _decode(array(int|array(Object)) x)
+  {
+    [ cls, tag, elements ] = x;
+  }
+
   __deprecated__ string debug_string() {
     WERROR("asn1_compound[%s]->debug_string(), elements = %O\n",
 	   type_name, elements);
@@ -236,6 +249,10 @@ class String
 
   //! value of object
   string value;
+
+  //! @ignore
+  CODEC(string);
+  //! @endignore
 
   this_program init(string(0..255) s) {
     value = s;
@@ -285,11 +302,16 @@ class String
 class Boolean
 {
   inherit Object;
+
   int tag = 1;
   constant type_name = "BOOLEAN";
 
   //! value of object
   int value;
+
+  //! @ignore
+  CODEC(int);
+  //! @endignore
 
   this_program init(int x) {
     value = x;
@@ -327,11 +349,16 @@ class Boolean
 class Integer
 {
   inherit Object;
+
   int tag = 2;
   constant type_name = "INTEGER";
 
   //! value of object
   Gmp.mpz value;
+
+  //! @ignore
+  CODEC(Gmp.mpz);
+  //! @endignore
 
   this_object init(int|object n) {
     value = Gmp.mpz(n);
@@ -395,10 +422,15 @@ class Enumerated
 class Real
 {
   inherit Object;
+
   int tag = 9;
   constant type_name = "REAL";
 
   float value;
+
+  //! @ignore
+  CODEC(float);
+  //! @endignore
 
   string(0..255) get_der_content()
   {
@@ -589,6 +621,16 @@ class BitString
                    ->digits(2));
   }
 
+  array _encode()
+  {
+    return ({ cls, tag, value, unused });
+  }
+
+  void _decode(array(int|string(8bit)) x)
+  {
+    [ cls, tag, value, unused ] = x;
+  }
+
   __deprecated__ string debug_string() {
     return sprintf("BIT STRING (%d) %s",
 		   sizeof(value) * 8 - unused,
@@ -623,6 +665,16 @@ class Null
     return !sizeof(contents) && this;
   }
 
+  array _encode()
+  {
+    return ({ cls, tag });
+  }
+
+  void _decode(array(int) x)
+  {
+    [ cls, tag ] = x;
+  }
+
   __deprecated__ string debug_string() { return "NULL"; }
 }
 
@@ -644,9 +696,6 @@ class Identifier
     id = args;
     return this;
   }
-
-  mixed _encode() { return id; }
-  void _decode(array(int) data) { id=data; }
 
   //! Returns a new @[Identifier] object with @[args] appended to the
   //! ID path.
@@ -684,10 +733,33 @@ class Identifier
     return this;
   }
 
+  protected mixed cast(string t)
+  {
+    switch(t)
+    {
+    case "string": return (array(string))id * ".";
+    case "array" : return id+({});
+    default: return UNDEFINED;
+    }
+  }
+
   protected string _sprintf(int t) {
     if(t!='O') return UNDEFINED;
     if(!id) return sprintf("%O(0)", this_program);
     return sprintf("%O(%s)", this_program, (array(string))id*".");
+  }
+
+  array _encode()
+  {
+    return ({ cls, tag, id });
+  }
+
+  void _decode(array(int|array(int)) x)
+  {
+    if( sizeof(x)!=3 || intp(x[2]) )
+      id = [array(int)]x; // Compat with old codec that didn't save cls/tag.
+    else
+      [ cls, tag, id ] = x;
   }
 
   __deprecated__ string debug_string() {
@@ -1096,6 +1168,15 @@ class MetaExplicit
 		     real_tag, contents);
     }
 
+    array _encode()
+    {
+      return ({ real_cls, real_tag, contents });
+    }
+
+    void _decode(array(int|Object) x)
+    {
+      [ real_cls, real_tag, contents ] = x;
+    }
     __deprecated__ string debug_string() {
       return type_name + "[" + (int) real_tag + "]";
     }
@@ -1107,6 +1188,16 @@ class MetaExplicit
     real_cls = cls;
     real_tag = tag;
     valid_types = types;
+  }
+
+  array _encode()
+  {
+    return ({ real_cls, real_tag, valid_types });
+  }
+
+  void _decode(array(int|mapping(int:program(Object))) x)
+  {
+    [ real_cls, real_tag, valid_types ] = x;
   }
 }
 

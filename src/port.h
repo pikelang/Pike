@@ -95,32 +95,13 @@
 /* Now for some functions */
 #define Emulate_GetLongPathName GetLongPathNameA
 
-
-
 #endif /* __MINGW32__ */
+
 
 #ifndef STRUCT_TIMEVAL_DECLARED
 #define STRUCT_TIMEVAL_DECLARED
 struct timeval;
 #endif
-
-#ifdef HAVE_ISSPACE
-#define ISSPACE(X) isspace(X)
-#else
-PMOD_EXPORT extern const char Pike_isspace_vector[];
-#define ISSPACE(X) (Pike_isspace_vector[(X)+1] == 'S')
-#endif
-
-/* Warning, these run 'C' more than once */
-/* FIXME: Is it that great that every wide char is considered an
- * identifier char? Doesn't strike me as very unicode compliant.
- * isalnum, isdigit and islower also look seriously borken. /mast */
-#define WIDE_ISSPACE(C)	(((C) < 256)?ISSPACE(C):0)
-#define WIDE_ISIDCHAR(C) (((C) < 256)?isidchar(C):1)
-#define WIDE_ISALNUM(C)	(((C) < 256)?isalnum(C):0)
-#define WIDE_ISDIGIT(C)	(((C) < 256)?isdigit(C):0)
-#define WIDE_ISLOWER(C)	(((C) < 256)?islower(C):0)
-
 
 #ifndef HAVE_GETTIMEOFDAY
 void GETTIMEOFDAY(struct timeval *t);
@@ -132,17 +113,11 @@ void GETTIMEOFDAY(struct timeval *t);
 #  endif
 #endif
 
-#ifndef HAVE_TIME
-time_t TIME(time_t *);
-#else
-#  define TIME time
-#endif
-
 #ifndef HAVE_SNPRINTF
 #ifdef HAVE__SNPRINTF
 /* In WIN32 snprintf is known as _snprintf... */
 #define snprintf _snprintf
-#define HAVE_SNPRINTF
+#define HAVE_SNPRINTF 1
 #endif
 #endif
 
@@ -152,105 +127,10 @@ time_t TIME(time_t *);
 #define rintl(X) floorl ((X) + 0.5)
 #endif
 
-/* Compat. */
-#define RINTF rintf
-#define RINT rint
-#define RINTL rintl
-
-#ifndef HAVE_STRTOL
-PMOD_EXPORT long STRTOL(const char *str,char **ptr,int base);
-#else
-# define STRTOL strtol
-#endif
-#ifndef HAVE_STRTOD
-PMOD_EXPORT double STRTOD(const char * nptr, char **endptr);
-#else
-# define STRTOD strtod
-#endif
-
-#ifndef HAVE_STRCSPN
-int STRCSPN(const char *s,const char * set);
-#else
-#  define STRCSPN strcspn
-#endif
-
 #ifndef HAVE_STRCASECMP
 PMOD_EXPORT int STRCASECMP(const char *a,const char *b);
 #else
 #  define STRCASECMP strcasecmp
-#endif
-
-#ifndef HAVE_STRNLEN
-PMOD_EXPORT size_t STRNLEN(const char *a,size_t len);
-#else
-#  define STRNLEN strnlen
-#endif
-
-#ifndef HAVE_STRNCMP
-PMOD_EXPORT int STRNCMP(const char *a, const char *b, size_t len);
-#else
-#  define STRNCMP strncmp
-#endif
-
-#ifndef HAVE_MEMSET
-void *MEMSET (void *s,int c,size_t n);
-#else
-#  define MEMSET memset
-#endif
-
-#ifndef HAVE_MEMCPY
-#  ifdef HAVE_BCOPY
-#    define MEMCPY(X,Y,Z) bcopy(Y,X,Z)
-#    define __builtin_memcpy(X,Y,Z) bcopy(Y,X,Z)
-#  else
-void MEMCPY(void *b,const void *a,size_t s);
-#    define __builtin_memcpy MEMCPY
-#  endif
-# else
-#  define MEMCPY(X,Y,Z) memcpy((char*)(X),(char*)(Y),(Z))
-#endif
-
-#ifndef HAVE_MEMMOVE
-PMOD_EXPORT void MEMMOVE(void *b,const void *a,size_t s);
-#else
-#  define MEMMOVE memmove
-#endif
-
-#ifndef HAVE_MEMCMP
-PMOD_EXPORT int MEMCMP(const void *b,const void *a,size_t s);
-#else
-#  define MEMCMP(X,Y,Z) memcmp((char*)(X),(char*)(Y),(Z))
-#endif
-
-#ifndef HAVE_MEMCHR
-PMOD_EXPORT void *MEMCHR(const void *p,char c,size_t e);
-#else
-#  define MEMCHR(X,Y,Z) ((void *)memchr(X,Y,Z))
-#endif
-
-#ifndef HAVE_STRCHR
-#  ifdef HAVE_INDEX
-#    define STRCHR(X,Y) ((char *)index(X,Y))
-#  else
-PMOD_EXPORT char *STRCHR(char *s,int c);
-#  endif
-#else
-#  define STRCHR strchr
-#  ifdef STRCHR_DECL_MISSING
-char *STRCHR(char *s,int c);
-#  endif
-#endif
-
-#ifndef HAVE_VFPRINTF
-PMOD_EXPORT int VFPRINTF(FILE *f,const char *s,va_list args);
-#else
-#  define VFPRINTF vfprintf
-#endif
-
-#ifndef HAVE_VSPRINTF
-PMOD_EXPORT int VSPRINTF(char *buf,const char *fmt,va_list args);
-#else
-#  define VSPRINTF vsprintf
 #endif
 
 #ifndef HAVE_VSNPRINTF
@@ -264,6 +144,65 @@ PMOD_EXPORT int SNPRINTF(char *buf, size_t size, const char *fmt, ...);
 #else
 #  define SNPRINTF snprintf
 #endif
+
+/* Compat. */
+#define RINTF rintf
+#define RINT rint
+#define RINTL rintl
+
+#define HAVE_STRCHR 1
+#define STRCHR strchr
+#ifdef STRCHR_DECL_MISSING
+char *strchr(const char *s,int c);
+#endif
+
+#define HAVE_ISSPACE 1
+#define ISSPACE(X) isspace(X)
+
+#define HAVE_TIME 1
+#define TIME(X) time(X)
+
+#define HAVE_STRTOL 1
+#define STRTOL(X,Y,Z) strtol(X,Y,Z)
+
+#define HAVE_STRTOD 1
+#define STRTOD(X,Y) strtod(X,Y)
+
+#define HAVE_STRCSPN 1
+#define STRCSPN(X,Y) strcspn(X,Y)
+
+#define HAVE_STRNLEN 1
+#define STRNLEN(X,Y) strnlen(X,Y)
+
+#define HAVE_STRNCMP 1
+#define STRNCMP(X,Y,Z) strncmp(X,Y,Z)
+
+#define HAVE_MEMSET 1
+#define MEMSET(X,Y,Z) memset(X,Y,Z)
+
+#define HAVE_MEMCPY 1
+#define MEMCPY(X,Y,Z) memcpy(X,Y,Z)
+
+#define HAVE_MEMMOVE 1
+#define MEMMOVE(X,Y,Z) memmove(X,Y,Z)
+
+#define HAVE_MEMCMP 1
+#define MEMCMP(X,Y,Z) memcmp(X,Y,Z)
+
+#define HAVE_MEMCHR 1
+#define MEMCHR(X,Y,Z) memchr(X,Y,Z)
+
+#define HAVE_VFPRINTF 1
+#define VFPRINTF(X,Y,Z) vfprintf(X,Y,Z)
+
+#define HAVE_VSPRINTF 1
+#define VSPRINTF(X,Y,Z) vsprintf(X,Y,Z)
+
+#define HAVE_FREXP 1
+#define FREXP(X,Y) frexp(X,Y)
+
+#define HAVE_LDEXP 1
+#define LDEXP(X,Y) ldexp(X,Y)
 
 
 #ifdef EXTRACT_UCHAR_BY_CAST
@@ -291,21 +230,21 @@ PMOD_EXPORT INT32 EXTRACT_INT_(unsigned char *p);
 /*@unused@*/ static INLINE unsigned EXTRACT_UWORD_(unsigned char *p)
 {
   unsigned INT16 a;
-  MEMCPY((char *)&a,p,sizeof(a));
+  memcpy(&a,p,sizeof(a));
   return a;
 }
 
 /*@unused@*/ static INLINE int EXTRACT_WORD_(unsigned char *p)
 {
   INT16 a;
-  MEMCPY((char *)&a,p,sizeof(a));
+  memcpy(&a,p,sizeof(a));
   return a;
 }
 
 /*@unused@*/ static INLINE INT32 EXTRACT_INT_(unsigned char *p)
 {
   INT32 a;
-  MEMCPY((char *)&a,p,sizeof(a));
+  memcpy(&a,p,sizeof(a));
   return a;
 }
 #endif
@@ -419,20 +358,10 @@ long long gethrtime(void);
 #endif /* DOUBLE_IS_IEEE_LITTLE */
 #endif /* DOUBLE_IS_IEEE_BIG */
 
-#ifdef HAVE_FREXP
-#define FREXP frexp
-#else
-double FREXP(double x, int *exp);
-#endif
-
-#if HAVE_LDEXP
-#define LDEXP ldexp
-#else
-double LDEXP(double x, int exp);
-#endif
-
 #ifdef __MINGW32__
+#ifndef HAVE__DOSMAPERR
 void _dosmaperr(int x);
+#endif
 #endif
 
 #ifdef __clang__

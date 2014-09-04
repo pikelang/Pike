@@ -75,7 +75,8 @@ mixed query_id()
 
 //! @decl int bind(int port, @
 //!                function(SSL.File|void, mixed|void: int) callback, @
-//!                string|void ip)
+//!                string|void ip,@
+//!                int|void share)
 //!
 //! Bind an SSL port.
 //!
@@ -94,6 +95,9 @@ mixed query_id()
 //! @param ip
 //!   Optional IP-number to bind.
 //!
+//! @param share
+//!   If true, share the port with other processes
+//!
 //! @returns
 //!   Returns @expr{1@} if binding of the port succeeded,
 //!   and @expr{0@} (zero) on failure.
@@ -101,10 +105,10 @@ mixed query_id()
 //! @seealso
 //!   @[Stdio.Port()->bind()], @[File()->set_accept_callback()],
 //!   @[listen_fd()]
-int bind(int port, function callback, string|void ip)
+int bind(int port, function callback, string|void ip, int|void share)
 {
   accept_callback = callback;
-  return socket::bind(port, ssl_callback, ip);
+  return socket::bind(port, ssl_callback, ip, share);
 }
 
 //! @decl int listen_fd(int fd, @

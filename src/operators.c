@@ -301,7 +301,7 @@ PMOD_EXPORT void o_cast_to_int(void)
       convert_stack_top_string_to_inumber(10);
     else
     {
-      INT_TYPE i = STRTOL(sp[-1].u.string->str, 0, 10);
+      INT_TYPE i = strtol(sp[-1].u.string->str, 0, 10);
       free_string(sp[-1].u.string);
       SET_SVAL(sp[-1], T_INT, NUMBER_NUMBER, integer, i);
     }
@@ -3401,6 +3401,10 @@ static int generate_xor(node *n)
 
 PMOD_EXPORT void o_lsh(void)
 {
+  if (sp[-1].u.integer < 0) {
+    int args = 2;
+    SIMPLE_BAD_ARG_ERROR("`<<", 2, "int(0..)|object");    
+  }
   if ((TYPEOF(sp[-1]) == T_INT) && (TYPEOF(sp[-2]) == T_INT) &&
       INT_TYPE_LSH_OVERFLOW(sp[-2].u.integer, sp[-1].u.integer))
     convert_stack_top_to_bignum();
@@ -3416,10 +3420,6 @@ PMOD_EXPORT void o_lsh(void)
     SIMPLE_BAD_ARG_ERROR("`<<", 2, "int(0..)|object");
   }
 
-  if (sp[-1].u.integer < 0) {
-    int args = 2;
-    SIMPLE_BAD_ARG_ERROR("`<<", 2, "int(0..)|object");    
-  }
   sp--;
   SET_SVAL(sp[-1], T_INT, NUMBER_NUMBER, integer,
 	   sp[-1].u.integer << sp->u.integer);
@@ -3631,20 +3631,20 @@ PMOD_EXPORT void o_multiply(void)
 	pos = ret->str;
 
 	if (len > delta) {
-	  MEMCPY(pos, src->str, delta);
+	  memcpy(pos, src->str, delta);
 	  pos += delta;
 	  len -= delta;
 	  while (len > delta) {
-	    MEMCPY(pos, ret->str, delta);
+	    memcpy(pos, ret->str, delta);
 	    pos += delta;
 	    len -= delta;
 	    delta <<= 1;
 	  }
 	  if (len) {
-	    MEMCPY(pos, ret->str, len);
+	    memcpy(pos, ret->str, len);
 	  }
 	} else if (len) {
-	  MEMCPY(pos, src->str, len);
+	  memcpy(pos, src->str, len);
 	}
 	pop_n_elems(2);
 	push_string(low_end_shared_string(ret));
@@ -3665,7 +3665,7 @@ PMOD_EXPORT void o_multiply(void)
 	pos=ret->str;
 	len=sp[-2].u.string->len << sp[-2].u.string->size_shift;
 	for(e=0;e<sp[-1].u.integer;e++,pos+=len)
-	  MEMCPY(pos,sp[-2].u.string->str,len);
+	  memcpy(pos,sp[-2].u.string->str,len);
 	pop_n_elems(2);
 	push_string(low_end_shared_string(ret));
 	return;

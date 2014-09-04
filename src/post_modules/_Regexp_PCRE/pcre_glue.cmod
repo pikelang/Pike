@@ -94,17 +94,17 @@ PIKECLASS _pcre
 	    default:
 	       if (TYPEOF(Pike_sp[2-args]) != T_INT) /* allow NULL table */
 	       {
-		  get_all_args("pcre->create",args,"%S%d%o",
+		  get_all_args("create",args,"%S%d%o",
 			       &(THIS->pattern),&options,&table);
 		  break;
 	       }
 	    case 2:
-	       get_all_args("pcre->create",args,"%S%d",
+	       get_all_args("create",args,"%S%d",
 			    &(THIS->pattern),&options);
 	       break;
 	    case 1:
 	    case 0:
-	       get_all_args("pcre->create",args,"%S",&(THIS->pattern));
+	       get_all_args("create",args,"%S",&(THIS->pattern));
 	       break;
 	 }
 	 add_ref(THIS->pattern);

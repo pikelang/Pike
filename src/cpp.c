@@ -1801,7 +1801,7 @@ static struct pike_string *recode_string(struct cpp *this, struct pike_string *d
 
     new_str = begin_shared_string(len);
 
-    MEMCPY(new_str->str, data->str, len);
+    memcpy(new_str->str, data->str, len);
 
     push_string(end_shared_string(new_str));
 
@@ -1855,7 +1855,7 @@ static struct pike_string *recode_string(struct cpp *this, struct pike_string *d
 
     new_str = begin_shared_string(data->len - len);
 
-    MEMCPY(new_str->str, data->str + len, data->len - len);
+    memcpy(new_str->str, data->str + len, data->len - len);
 
     push_string(end_shared_string(new_str));
 
@@ -1872,7 +1872,7 @@ static struct pike_string *recode_string(struct cpp *this, struct pike_string *d
 
     new_str = begin_shared_string(len);
 
-    MEMCPY(new_str->str, p, len);
+    memcpy(new_str->str, p, len);
 
     pop_stack();
     ref_push_string(new_str = end_shared_string(new_str));
@@ -2924,6 +2924,20 @@ static void insert_current_minor(struct cpp *this,
   string_builder_sprintf(tmp, " %d ", this->compat_minor);
 }
 
+/*! @decl int(1..) __COUNTER__
+ *! This define contains a unique counter (unless it has been expanded
+ *! Inte.NATIVE_MAX times) represented as an integer.
+ *!
+ */
+static void insert_current_counter(struct cpp *UNUSED(this),
+				 struct define *UNUSED(def),
+				 struct define_argument *UNUSED(args),
+				 struct string_builder *tmp)
+{
+  static int counter = 0;
+  string_builder_sprintf(tmp, " %d ", ++counter);
+}
+
 /*! @decl constant __MAJOR__
  *!
  *! This define contains the major part of the current Pike version,
@@ -3429,6 +3443,8 @@ void f_cpp(INT32 args)
   do_magic_define(&this,"_Pragma",insert_pragma)->args = 1;
   simple_add_define(&this, "static_assert", "_Static_assert");
 
+  do_magic_define(&this,"__COUNTER__",insert_current_counter);
+
   /* These are Pike extensions. */
   do_magic_define(&this,"__DIR__",insert_current_dir_as_string);
   do_magic_define(&this,"__VERSION__",insert_current_version);
@@ -3618,21 +3634,21 @@ void init_cpp()
 void add_predefine(const char *s)
 {
   struct pike_predef_s *tmp=ALLOC_STRUCT(pike_predef_s);
-  char * pos=STRCHR(s,'=');
+  char * pos=strchr(s,'=');
   if(pos)
   {
     tmp->name=xalloc(pos-s+1);
-    MEMCPY(tmp->name,s,pos-s);
+    memcpy(tmp->name,s,pos-s);
     tmp->name[pos-s]=0;
 
     tmp->value=xalloc(s+strlen(s)-pos);
-    MEMCPY(tmp->value,pos+1,s+strlen(s)-pos);
+    memcpy(tmp->value,pos+1,s+strlen(s)-pos);
   }else{
     tmp->name=xalloc(strlen(s)+1);
-    MEMCPY(tmp->name,s,strlen(s)+1);
+    memcpy(tmp->name,s,strlen(s)+1);
 
     tmp->value=xalloc(4);
-    MEMCPY(tmp->value," 1 ",4);
+    memcpy(tmp->value," 1 ",4);
   }
   tmp->next = NULL;
   if (first_predef) {

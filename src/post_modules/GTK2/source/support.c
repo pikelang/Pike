@@ -162,7 +162,7 @@ GdkImage *gdkimage_from_pikeimage(struct object *img, int fast, GObject **pi) {
       int j,i,r,g,b;
       PFTIME("Creating colormap");
       colors_allocated=1;
-      MEMSET(allocated,0,sizeof(allocated));
+      memset(allocated,0,sizeof(allocated));
       for (r=0; r<3; r++) for (g=0; g<4; g++) for (b=0; b<3; b++) {
 	GdkColor color;
 	color.red = (guint16)(r * (65535/2.0));
@@ -247,7 +247,7 @@ GdkImage *gdkimage_from_pikeimage(struct object *img, int fast, GObject **pi) {
 	Pike_error("Failed to convert image\n");
       }
       PFTIME("Converting image");
-      MEMCPY(i->mem,Pike_sp[-1].u.string->str,Pike_sp[-1].u.string->len);
+      memcpy(i->mem,Pike_sp[-1].u.string->str,Pike_sp[-1].u.string->len);
       pop_stack(); /* string */
       pop_stack(); /* function */
     }
@@ -348,21 +348,21 @@ void pgtk2_get_mapping_arg(struct mapping *map,
          if (len!=sizeof(char *))
            Pike_fatal("oddities detected\n");
 #endif
-         MEMCPY(((char **)dest),&s->u.string->str,sizeof(char *));
+         memcpy(dest,&s->u.string->str,sizeof(char *));
          break;
        case PIKE_T_INT:
          if (len==2) {
            short i=(short)s->u.integer;
-           MEMCPY(((short *)dest),&i,2);
+           memcpy(dest,&i,2);
          } else if (len==4)
-           MEMCPY(((int *)dest),&s->u.integer,len);
+           memcpy(dest,&s->u.integer,len);
          break;
        case PIKE_T_FLOAT:
          if (len==sizeof(FLOAT_TYPE))
-           MEMCPY(((FLOAT_TYPE *)dest),&s->u.float_number,len);
+           memcpy(dest,&s->u.float_number,len);
          else if (len==sizeof(double)) {
            double d=s->u.float_number;
-           MEMCPY(((double *)dest),&d,len);
+           memcpy(dest,&d,len);
          }
          break;
       }
@@ -588,6 +588,9 @@ static int pgtk2_push_object_param(const GValue *a) {
       push_gdkobject(gp,rectangle,0);
     } else if (G_VALUE_HOLDS(a,g_type_from_name("GdkRegion"))) {
       push_gdkobject(gp,region,0);
+    } else {
+      /* Don't know how to push this sort of object, so push its name */
+      PGTK_PUSH_GCHAR(G_VALUE_TYPE_NAME(a));
     }
   } else {
     obj=g_value_get_object(a);
@@ -598,9 +601,7 @@ static int pgtk2_push_object_param(const GValue *a) {
 }
 
 static int pgtk2_push_pike_object_param(const GValue *a) {
-  struct object *o=g_value_get_pointer(a);
-  if (o)
-    ref_push_object(o);
+  push_int64((LONGEST)g_value_get_pointer(a));
   return PUSHED_VALUE;
 }
 
@@ -845,7 +846,7 @@ void pgtk2_default__sprintf(int args, int offset, int len) {
 }
 
 void pgtk2_clear_obj_struct(struct object *o) {
-  MEMSET(Pike_fp->current_storage,0,sizeof(struct object_wrapper));
+  memset(Pike_fp->current_storage,0,sizeof(struct object_wrapper));
 }
 
 void pgtk2_setup_mixin(struct object *o, struct program *p) {
@@ -889,8 +890,9 @@ double pgtk2_get_float(struct svalue *s) {
 #ifdef AUTO_BIGNUM
   if (is_bignum_object_in_svalue(s)) {
     FLOAT_TYPE f;
-    ref_push_string(literal_float_string);
-    apply(s->u.object,"cast",1);
+    ref_push_type_value(float_type_string);
+    stack_swap();
+    f_cast();
     f=Pike_sp[-1].u.float_number;
     pop_stack();
     return (double)f;

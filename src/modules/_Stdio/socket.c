@@ -63,7 +63,6 @@
 #ifdef HAVE_SYS_UN_H
 #include <sys/un.h>
 #endif
-
 #include "dmalloc.h"
 
 /*! @module Stdio
@@ -197,7 +196,7 @@ static void port_listen_fd(INT32 args)
   int fd;
   do_close(p);
 
-  get_all_args("Port->listen_fd", args, "%d.%*", &fd, &cb);
+  get_all_args("listen_fd", args, "%d.%*", &fd, &cb);
 
   if(fd<0)
   {
@@ -223,7 +222,7 @@ static void port_listen_fd(INT32 args)
 }
 
 /*! @decl int bind(int|string port, void|function accept_callback, @
- *!                void|string ip)
+ *!                void|string ip, void|string reuse_port)
  *!
  *! Opens a socket and binds it to port number on the local machine.
  *! If the second argument is present, the socket is set to
@@ -236,6 +235,10 @@ static void port_listen_fd(INT32 args)
  *! to an interface with that host name or IP number. Omitting this
  *! will bind to all available IPv4 addresses; specifying "::" will
  *! bind to all IPv4 and IPv6 addresses.
+ *!
+ *! If the OS supports TCP_FASTOPEN it is enabled automatically.
+ *!
+ *! If the OS supports SO_REUSEPORT it is enabled if the fourth argument is true.
  *!
  *! @returns
  *!   1 is returned on success, zero on failure. @[errno] provides
@@ -253,17 +256,18 @@ static void port_bind(INT32 args)
   do_close(p);
 
   if(args < 1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("Port->bind", 1);
+    SIMPLE_TOO_FEW_ARGS_ERROR("bind", 1);
 
   if(TYPEOF(Pike_sp[-args]) != PIKE_T_INT &&
      (TYPEOF(Pike_sp[-args]) != PIKE_T_STRING ||
       Pike_sp[-args].u.string->size_shift))
-    SIMPLE_BAD_ARG_ERROR("Port->bind", 1, "int|string (8bit)");
+    SIMPLE_BAD_ARG_ERROR("bind", 1, "int|string(8bit)");
 
-  addr_len = get_inet_addr(&addr, (args > 2 && TYPEOF(Pike_sp[2-args])==PIKE_T_STRING?
-				   Pike_sp[2-args].u.string->str : NULL),
-			   (TYPEOF(Pike_sp[-args]) == PIKE_T_STRING?
-			    Pike_sp[-args].u.string->str : NULL),
+  addr_len = get_inet_addr(&addr,
+                           (args > 2 && TYPEOF(Pike_sp[2-args])==PIKE_T_STRING?
+                            Pike_sp[2-args].u.string->str : NULL),
+                           (TYPEOF(Pike_sp[-args]) == PIKE_T_STRING?
+                            Pike_sp[-args].u.string->str : NULL),
 			   (TYPEOF(Pike_sp[-args]) == PIKE_T_INT?
 			    Pike_sp[-args].u.integer : -1), 0);
   INVALIDATE_CURRENT_TIME();
@@ -277,7 +281,21 @@ static void port_bind(INT32 args)
     push_int(0);
     return;
   }
-
+#ifdef SO_REUSEPORT
+  if( args > 3 && Pike_sp[3-args].u.integer )
+  {
+    int o=1;
+    if(fd_setsockopt(fd, SOL_SOCKET, SO_REUSEPORT, (char *)&o, sizeof(int)) < 0)
+    {
+      p->my_errno=errno;
+      while (fd_close(fd) && errno == EINTR) {}
+      errno = p->my_errno;
+      pop_n_elems(args);
+      push_int(0);
+      return;
+    }
+  }
+#endif
 #ifndef __NT__
   {
     int o=1;
@@ -307,7 +325,12 @@ static void port_bind(INT32 args)
   my_set_close_on_exec(fd,1);
 
   THREADS_ALLOW_UID();
-  tmp=fd_bind(fd, (struct sockaddr *)&addr, addr_len) < 0 || fd_listen(fd, 16384) < 0;
+  if( !(tmp=fd_bind(fd, (struct sockaddr *)&addr, addr_len) < 0) )
+#ifdef TCP_FASTOPEN
+      tmp = 256,
+      setsockopt(fd,SOL_TCP, TCP_FASTOPEN, &tmp, sizeof(tmp)),
+#endif
+      (tmp =  fd_listen(fd, 16384) < 0);
   THREADS_DISALLOW_UID();
 
   if(!Pike_fp->current_object->prog)
@@ -371,7 +394,7 @@ static void bind_unix(INT32 args)
 
   do_close(p);
 
-  get_all_args("Port->bind_unix", args, "%n.%*", &path, &cb);
+  get_all_args("bind_unix", args, "%n.%*", &path, &cb);
 
   /* NOTE: Some operating systems (eg Linux 2.6) do not support
    *       paths longer than what fits into a plain struct sockaddr_un.
@@ -489,7 +512,7 @@ static void port_create(INT32 args)
       struct port *p = THIS;
 
       if(TYPEOF(Pike_sp[-args]) != PIKE_T_STRING)
-	SIMPLE_TOO_FEW_ARGS_ERROR("Port->create", 1);
+	SIMPLE_TOO_FEW_ARGS_ERROR("create", 1);
 
       /* FIXME: Check that the argument is "stdin". */
 
@@ -666,12 +689,12 @@ static void port_set_backend (INT32 args)
   struct Backend_struct *backend;
 
   if (!args)
-    SIMPLE_TOO_FEW_ARGS_ERROR ("Stdio.Port->set_backend", 1);
+    SIMPLE_TOO_FEW_ARGS_ERROR ("set_backend", 1);
   if (TYPEOF(Pike_sp[-args]) != PIKE_T_OBJECT)
-    SIMPLE_BAD_ARG_ERROR ("Stdio.Port->set_backend", 1, "object(Pike.Backend)");
+    SIMPLE_BAD_ARG_ERROR ("set_backend", 1, "object(Pike.Backend)");
   backend = get_storage (Pike_sp[-args].u.object, Backend_program);
   if (!backend)
-    SIMPLE_BAD_ARG_ERROR ("Stdio.Port->set_backend", 1, "object(Pike.Backend)");
+    SIMPLE_BAD_ARG_ERROR ("set_backend", 1, "object(Pike.Backend)");
 
   if (p->box.backend)
     change_backend_for_box (&p->box, backend);
@@ -711,6 +734,17 @@ static void exit_port_struct(struct object *UNUSED(o))
   /* map_variable takes care of id and accept_callback. */
 }
 
+int fd_from_portobject( struct object *p )
+{
+  struct port *po = get_storage( p, port_program );
+  if(!po) return -1;
+  return po->box.fd;
+}
+
+static void port_query_fd(INT32 UNUSED(args))
+{
+    push_int(fd_from_portobject(Pike_fp->current_object));
+} 
 /*! @endclass
  */
 
@@ -735,7 +769,7 @@ void init_stdio_port(void)
 	       offset + OFFSETOF(port, id), PIKE_T_MIXED);
   /* function(int|string,void|mixed,void|string:int) */
   ADD_FUNCTION("bind", port_bind,
-	       tFunc(tOr(tInt,tStr) tOr(tVoid,tMix) tOr(tVoid,tStr),tInt), 0);
+	       tFunc(tOr(tInt,tStr) tOr(tVoid,tMix) tOr(tVoid,tStr) tOr(tVoid,tInt),tInt), 0);
 #ifdef HAVE_SYS_UN_H
   /* function(int|string,void|mixed,void|string:int) */
   ADD_FUNCTION("bind_unix", bind_unix,
@@ -763,17 +797,19 @@ void init_stdio_port(void)
 		     tVoid), 0);
   ADD_FUNCTION ("set_backend", port_set_backend, tFunc(tObj,tVoid), 0);
   ADD_FUNCTION ("query_backend", port_query_backend, tFunc(tVoid,tObj), 0);
+  ADD_FUNCTION ("query_fd", port_query_fd, tFunc(tVoid,tInt), 0);
 
+#ifdef SO_REUSEPORT
+  ADD_INT_CONSTANT( "SO_REUSEPORT_SUPPORT", SO_REUSEPORT, 0 );
+#endif
+#ifdef TCP_FASTOPEN
+  ADD_INT_CONSTANT( "TCP_FASTOPEN_SUPPORT", TCP_FASTOPEN, 0 );
+#endif
   set_init_callback(init_port_struct);
   set_exit_callback(exit_port_struct);
 
   port_program = end_program();
   add_program_constant( "_port", port_program, 0 );
+
 }
 
-int fd_from_portobject( struct object *p )
-{
-  struct port *po = get_storage( p, port_program );
-  if(!po) return -1;
-  return po->box.fd;
-}

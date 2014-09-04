@@ -513,8 +513,8 @@ void set_cursor(?int cursor_type, ?GDK1.Color fg, ?GDK1.Color bg)
   if( c && fg && bg )
   {
     XColor fgp, bgp;
-    MEMSET(&fgp, 0, sizeof(fg) );
-    MEMSET(&bgp, 0, sizeof(bg) );
+    memset(&fgp, 0, sizeof(fg) );
+    memset(&bgp, 0, sizeof(bg) );
 
     if( get_gdkobject( fg, color ) )
       fgp.pixel = ((GdkColor *)get_gdkobject( fg, color ))->pixel;

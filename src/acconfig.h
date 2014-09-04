@@ -250,9 +250,6 @@
 /* Define if you have fork */
 #undef HAVE_FORK
 
-/* Define if you have isspace */
-#undef HAVE_ISSPACE
-
 /* Define if you have fpsetmask */
 #undef HAVE_FPSETMASK
 
@@ -298,43 +295,17 @@
 /* ... by using the RDTSC instruction? */
 #undef OWN_GETHRTIME_RDTSC
 
-/* Define if you have a working, 8-bit-clean memcmp */
-#undef HAVE_MEMCMP
-
 /* Define if it is possible to allocate PROT_EXEC memory with mmap */
 #undef MEXEC_USES_MMAP
 
 /* Define if you have gethostname */
 #undef HAVE_GETHOSTNAME
 
-/* Define if you have memmove.  */
-#ifndef __CHECKER__
-#undef HAVE_MEMMOVE
-#endif
-
-/* Define if you have memmem.  */
-#undef HAVE_MEMMEM
-
-/* Define if you have memset.  */
-#undef HAVE_MEMSET
-
-/* Define if you have memcpy.  */
-#undef HAVE_MEMCPY
-
-/* Define if you have strcoll */
-#undef HAVE_STRCOLL
-
 /* Define this if you have dlopen */
 #undef HAVE_DLOPEN
 
-/* Define if you have ldexp.  */
-#undef HAVE_LDEXP
-
 /* Define if you have rint.  */
 #undef HAVE_RINT
-
-/* Define if you have frexp.  */
-#undef HAVE_FREXP
 
 /* Define if your signals are one-shot */
 #undef SIGNAL_ONESHOT
@@ -384,9 +355,6 @@
 #undef FLOAT_IS_IEEE_LITTLE
 #undef DOUBLE_IS_IEEE_BIG
 #undef DOUBLE_IS_IEEE_LITTLE
-
-/* Define this if strtol exists, and doesn't cut at 0x7fffffff */
-#undef HAVE_WORKING_STRTOL
 
 /* The rest of this file is just to eliminate warnings */
 
@@ -512,9 +480,6 @@
 
 /* Define if your OS has the union wait. */
 #undef HAVE_UNION_WAIT
-
-/* Define if you have isgraph */
-#undef HAVE_ISGRAPH
 
 /* Define if your cpp supports the ANSI concatenation operator ## */
 #undef HAVE_ANSI_CONCAT

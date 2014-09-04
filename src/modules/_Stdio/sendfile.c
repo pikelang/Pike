@@ -159,7 +159,7 @@ static struct program *pike_sendfile_prog = NULL;
 
 static void init_pike_sendfile(struct object *UNUSED(o))
 {
-  MEMSET(THIS, 0, sizeof(struct pike_sendfile));
+  memset(THIS, 0, sizeof(struct pike_sendfile));
 
   /* callback doesn't actually need to be initialized since it is a
    * mapped variable, but since we just zapped it with zeroes we need
@@ -892,7 +892,7 @@ static void sf_create(INT32 args)
    * This means that we can throw errors without needing to clean up.
    */
 
-  MEMSET(&sf, 0, sizeof(struct pike_sendfile));
+  memset(&sf, 0, sizeof(struct pike_sendfile));
   SET_SVAL(sf.callback, T_INT, NUMBER_NUMBER, integer, 0);
 
   get_all_args("sendfile", args, "%A%O%l%l%A%o%*",

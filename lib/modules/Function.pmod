@@ -89,13 +89,29 @@ function(mixed...:function(mixed...:mixed|void)) curry(function f)
 }
 
 
+//! This function, given a function taking N parameters, returns a new
+//! function taking N+1 parameters. The first argument will be
+//! ignored.
+//!
+//! @example
+//! @code
+//!  >  Function.uncurry(`+)(7,2,3)
+//!  Result: 5
+//! @endcode
+function(mixed...:mixed) uncurry(function f)
+{
+  return lambda(mixed ... args1) {
+       return f(@args1[1..]);
+   };
+}
+
 //! Call a callback function, but send throws from the callback
 //! function (ie, errors) to master()->handle_error.
 //! Also accepts if f is zero (0) without error.
 //!
 //! @example
 //! @code
-//!   Functions.call_callback(the_callback,some,arguments);   
+//!   Functions.call_callback(the_callback,some,arguments);
 //! @endcode
 //! equals 
 //! @code
@@ -113,4 +129,4 @@ void call_callback(function f,mixed ... args)
    handle_error(err);
 }
 
-function handle_error = master()->handle_error;
+private function handle_error = master()->handle_error;

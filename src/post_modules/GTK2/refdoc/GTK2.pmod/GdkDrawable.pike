@@ -121,6 +121,11 @@ GDK2.Drawable set_background( GTK2.GdkColor to );
 //!
 //!
 
+int xid( );
+//! Return the xwindow id.
+//!
+//!
+
 int xsize( );
 //! Returns the width of the drawable specified in pixels
 //!

@@ -165,8 +165,7 @@ void image_orient(INT32 args)
     else if (TYPEOF(sp[-args]) == T_FLOAT)
       mag=sp[-args].u.float_number;
     else {
-      bad_arg_error("image->orient\\n",sp-args,args,1,"",sp+1-1-args,
-		"Bad argument 1 to image->orient\n()\n");
+      SIMPLE_BAD_ARG_ERROR("orient",1,"int|float");
       /* Not reached, but keeps the compiler happy. */
       mag = 0.0;
     }
@@ -179,15 +178,14 @@ void image_orient(INT32 args)
   if (args>1)
   {
     if (TYPEOF(sp[1-args]) != T_ARRAY)
-      bad_arg_error("image->orient\\n",sp-args,args,2,"",sp+2-1-args,
-		"Bad argument 2 to image->orient\n()\n");
+      SIMPLE_BAD_ARG_ERROR("orient",2,"array");
     if (sp[1-args].u.array->size!=4)
-      Pike_error("The array given as argument 2 to image->orient do not have size 4\n");
+      Pike_error("The array given as argument 2 to orient do not have size 4\n");
     for(i=0; i<4; i++)
       if ((TYPEOF(sp[1-args].u.array->item[i]) != T_OBJECT) ||
 	  (!(sp[1-args].u.array->item[i].u.object)) ||
 	  (sp[1-args].u.array->item[i].u.object->prog!=image_program))
-	Pike_error("The array given as argument 2 to image->orient do not contain images\n");
+	Pike_error("The array given as argument 2 to orient do not contain images\n");
     img1=(struct image*)sp[1-args].u.array->item[0].u.object->storage;
 
     w=this->xsize;
@@ -198,7 +196,7 @@ void image_orient(INT32 args)
       img1=(struct image*)sp[1-args].u.array->item[i].u.object->storage;
       if ((img1->xsize!=w)||
 	  (img1->ysize!=h))
-	Pike_error("The images in the array given as argument 2 to image->orient have different sizes\n");
+	Pike_error("The images in the array given as argument 2 to orient have different sizes\n");
     }
     for(i=0; i<4; i++) 
         img[i]=get_storage(sp[1-args].u.array->item[i].u.object,image_program);

@@ -212,6 +212,7 @@ test_do([[ Stdio.write_file("hash_me", "foo"*1000) ]])
 dnl hash, empty-digest, foo1000-digest, block-size
 define(test_hash, [[
 cond_resolv( Crypto.$1, [[
+  test_eq(decode_value(encode_value(Crypto.$1)),Crypto.$1)
   test_eq(S(Crypto.$1()->update("")->digest()), "$2")
   test_eq(S(Crypto.$1.hash("")), "$2")
   test_eq(S(Crypto.$1.hash("foo"*1000)), "$3")
@@ -611,8 +612,7 @@ define(test_curve,[[
 cond_resolv(Crypto.ECC.$1, [[
   test_eq(Crypto.ECC.$1->name(),"$1")
   test_eq(Crypto.ECC.$1->size(),(int)"$1"[5..])
-  test_eq((array(string))Crypto.ECC.$1->pkcs_named_curve_id()->_encode()*".",
-          $2)
+  test_eq((string)Crypto.ECC.$1->pkcs_named_curve_id(),$2)
   test_do(add_constant("ecdsa", Crypto.ECC.$1.ECDSA()))
   test_true(ecdsa->set_random(random_string))
   test_true(ecdsa->generate_key())

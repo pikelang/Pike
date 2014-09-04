@@ -41,7 +41,8 @@ Cipher.CipherSpec cipher_spec;
 //! deriving the actual keys.
 string(8bit) master_secret;
 
-//! information about the certificate in use by the peer, such as issuing authority, and verification status.
+//! Information about the certificate in use by the peer, such as
+//! issuing authority, and verification status.
 mapping cert_data;
 
 //! Negotiated protocol version.
@@ -265,9 +266,16 @@ int select_cipher_suite(array(CertificatePair) certs,
 {
   if (!sizeof(cipher_suites)) return 0;
 
+  if (!certs || !sizeof(certs))
+  {
+    SSL3_DEBUG_MSG("No certificates.\n");
+    return 0;
+  }
+
   SSL3_DEBUG_MSG("Candidate certificates: %O\n", certs);
 
-  // Find the set of key exchange and hash algorithms supported by the client.
+  // Find the set of key exchange and hash algorithms supported by the
+  // client.
   int ke_mask = 0;
   int h_max = 0;
   foreach(cipher_suites, int suite) {

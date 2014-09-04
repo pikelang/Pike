@@ -494,7 +494,7 @@ typedef signed INT32 p_wchar2;
 
 typedef struct p_wchar_p
 {
-  p_wchar0 *ptr;
+  void *ptr;
   int shift;
 } PCHARP;
 

@@ -263,6 +263,14 @@ void reparse_uri(this_program|string|void base_uri)
   }
   DEBUG("Found scheme %O", scheme);
 
+  // DWIM for "www.cnn.com" style input, when parsed in the context of
+  // base "http://".
+  if( !scheme && this_program::base_uri?->scheme &&
+      !sizeof(this_program::base_uri->authority) )
+  {
+    uri = "//"+uri;
+  }
+
   // Parse authority/login
   //
   // hier-part    = "//" authority path-abempty / path-absolute

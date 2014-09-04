@@ -40,7 +40,6 @@
 #include "module_support.h"
 #include "builtin_functions.h"
 #include "dmalloc.h"
-#include "port.h"
 #include "multiset.h"
 #include "mapping.h"
 
@@ -260,7 +259,7 @@ static int handle_errors (pike_sybase_connection *this) {
     show_severity(severity);
   }
 
-  MEMCPY(this->error,message.sqlerrm.sqlerrmc,
+  memcpy(this->error,message.sqlerrm.sqlerrmc,
          message.sqlerrm.sqlerrml+1);
 
   this->had_error=1;

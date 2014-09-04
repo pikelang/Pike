@@ -87,7 +87,7 @@ void image_hrz_f_encode(INT32 args )
   
   s = begin_shared_string( 256*240*3 );
   
-  MEMSET(s->str, 0, s->len );
+  memset(s->str, 0, s->len );
   for(y=0; y<240; y++)
     if(y < i->ysize)
       for(x=0; x<256; x++)

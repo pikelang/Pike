@@ -1,6 +1,15 @@
 
+x11
 libglade
 gnome
+gtk224
+gtk222
+gtk220
+gtk218
+gtk216
+gtk214
+gtk212
+gtk210
 gtk28
 gtk26
 gtk24
@@ -18,4 +27,5 @@ gnomecanvas
 gtkdatabox
 gtksourceview
 gtksourceview11
+gtksourceview20
 gnomeui

@@ -451,14 +451,14 @@ PIKECLASS Rect {
     THIS->rect.h = value;
   }
 
-  /*! @decl mixed cast(string type)
+  /*! @decl array|mapping cast(string type)
    *!
    *! It is possible to cast a Rect object to an @tt{array@} or
    *! to a @tt{mapping@}. The array will have the values in the
    *! order x, y, w, h and the mapping will have the values
    *! associated with the corresponding names.
    */
-  PIKEFUN mixed cast( string type )
+  PIKEFUN array|mapping cast( string type )
     flags ID_PROTECTED;
   {
     pop_stack(); /* type as at least one more reference. */
@@ -2933,7 +2933,7 @@ PIKECLASS Music {
       if(TYPEOF(*_loops) == PIKE_T_INT) {
 	loops = _loops->u.integer;
       } else {
-	SIMPLE_BAD_ARG_ERROR("Music.play", 1, "void|int");
+	SIMPLE_BAD_ARG_ERROR("play", 1, "void|int");
       }
     }
     Mix_PlayMusic(THIS->music, loops);
@@ -2972,7 +2972,7 @@ PIKECLASS Music {
       if(TYPEOF(*_loops) == PIKE_T_INT) {
 	loops = _loops->u.integer;
       } else {
-	SIMPLE_BAD_ARG_ERROR("Music.fade_in", 2, "void|int");
+	SIMPLE_BAD_ARG_ERROR("fade_in", 2, "void|int");
       }
     }
     Mix_FadeInMusic(THIS->music, loops, ms);

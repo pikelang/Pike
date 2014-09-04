@@ -61,6 +61,11 @@ int get_mode( );
 //!
 //!
 
+array get_widgets( );
+//! Returns the list of widgets associated with this size group.
+//!
+//!
+
 GTK2.SizeGroup remove_widget( GTK2.Widget widget );
 //! Removes a widget.
 //!

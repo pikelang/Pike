@@ -4,7 +4,7 @@ protected mixed _index( string ind );
 //!
 
 
-mixed cast( string to );
+mapping cast( string to );
 //!
 
 GDK1.Event destroy( );

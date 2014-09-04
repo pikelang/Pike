@@ -44,6 +44,8 @@ var class_children = [];
 var enum_children = [];
 var directive_children = [];
 var method_children = [];
+var member_children = [];
+var operator_children = [];
 var namespace_children = [];
 var appendix_children = [];
 var children = [];
@@ -56,6 +58,8 @@ function clear_children()
   enum_children = [];
   directive_children = [];
   method_children = [];
+  operator_children = [];
+  member_children = [];
   namespace_children = [];
   appendix_children = [];
   children = [];
@@ -113,6 +117,11 @@ function add_method_children(/* array(node) */children)
   method_children = merge_node_lists(method_children, children);
 }
 
+function add_operator_children(/* array(node) */children)
+{
+  operator_children = merge_node_lists(operator_children, children);
+}
+
 function add_namespace_children(/* array(node) */children)
 {
   namespace_children = merge_node_lists(namespace_children, children);
@@ -121,6 +130,11 @@ function add_namespace_children(/* array(node) */children)
 function add_appendix_children(/* array(node) */children)
 {
   appendix_children = merge_node_lists(appendix_children, children);
+}
+
+function add_member_children(/* array(node) */children)
+{
+  member_children = merge_node_lists(member_children, children);
 }
 
 function low_end_inherit(/* array(node) */nodes)
@@ -138,6 +152,8 @@ function end_inherit()
   low_end_inherit(enum_children);
   low_end_inherit(directive_children);
   low_end_inherit(method_children);
+  low_end_inherit(operator_children);
+  low_end_inherit(member_children);
   low_end_inherit(namespace_children);
   low_end_inherit(appendix_children);
 }
@@ -222,6 +238,8 @@ function navbar(/* Document */document)
   low_navbar(document, 'Enums', enum_children, '');
   low_navbar(document, 'Directives', directive_children, '');
   low_navbar(document, 'Methods', method_children, '()');
+  low_navbar(document, 'Operators', operator_children, '()');
+  low_navbar(document, 'Members', member_children, '()');
   low_navbar(document, 'Namespaces', namespace_children, '::');
   low_navbar(document, 'Appendices', appendix_children, '');
   document.write('</div>\\n');
@@ -314,6 +332,8 @@ class Node
   array(Node) enum_children = ({ });
   array(Node) directive_children = ({ });
   array(Node) method_children = ({ });
+  array(Node) member_children = ({ });
+  array(Node) operator_children = ({ });
   array(array(string|Node)) inherits = ({});
   array(Node) children = ({});
 
@@ -339,17 +359,28 @@ class Node
     sort(enum_children->name, enum_children);
     sort(directive_children->name, directive_children);
     sort(method_children->name, method_children);
+    sort(member_children->name, member_children);
 
     method_children = check_uniq(method_children);
 
-    foreach(method_children, Node m)
-      if( (<"create","destroy">)[m->name] ) {
-/*	method_children -= ({ m });*/
+    foreach(method_children;int i; Node m)
+    {
+      if( Tools.AutoDoc.PikeObjects.lfuns[m->name] )
+      {
+        method_children[i] = 0;
+        operator_children += ({ m });
+      }
+      else if( (<"create","destroy">)[m->name] )
+      {
+        /*if( m->name == "create" )
+          _children -= ({ m });*/
 	string d;
 	sscanf(m->data, "%*s<docgroup%s/docgroup>", d);
 	if(d)
 	  data += "<docgroup" + d + "/docgroup>";
       }
+    }
+    method_children -= ({0});
 
     data = make_faked_wrapper(data);
   }
@@ -846,12 +877,16 @@ class Node
     LOW_MAKE_INDEX_JS(enum_children);
     LOW_MAKE_INDEX_JS(directive_children);
     LOW_MAKE_INDEX_JS(method_children);
+    LOW_MAKE_INDEX_JS(operator_children);
+    LOW_MAKE_INDEX_JS(member_children);
 
     return res +
       "children = module_children.concat(class_children,\n"
       "                                  enum_children,\n"
       "                                  directive_children,\n"
-      "                                  method_children);\n";
+      "                                  method_children,\n"
+      "                                  operator_children,\n"
+      "                                  member_children);\n";
   }
 
   string make_load_index_js()
@@ -899,7 +934,9 @@ class Node
       module_children+
       enum_children+
       directive_children+
-      method_children;
+      method_children+
+      operator_children+
+      member_children;
   }
 
   Node find_prev_node()
@@ -1335,6 +1372,8 @@ class Node
     enum_children->make_html(template, path, exporter);
     directive_children->make_html(template, path, exporter);
     method_children->make_html(template, path, exporter);
+    operator_children->make_html(template, path, exporter);
+    member_children->make_html(template, path, exporter);
 
     int num_segments = sizeof(make_filename()/"/")-1;
     string style = ("../"*num_segments)+"style.css";
@@ -1463,6 +1502,8 @@ class TopNode {
 	enum_children += x->enum_children;
 	directive_children += x->directive_children;
 	method_children += x->method_children;
+	operator_children += x->operator_children;
+	member_children += x->member_children;
       }
 
     array(string|Node) inh;
@@ -1490,7 +1531,7 @@ class TopNode {
   int(0..0) find_prev_node() { return 0; }
   int(0..0) find_next_node() { return 0; }
   string make_class_path(void|int(0..1) header) {
-    if(header && (sizeof(method_children) + sizeof(directive_children))) {
+    if(header && (sizeof(method_children) + sizeof(directive_children) + sizeof(operator_children))) {
       if(default_namespace)
 	return "namespace "+default_namespace;
       else

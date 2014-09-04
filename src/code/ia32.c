@@ -621,7 +621,7 @@ static void ia32_local_lvalue(INT32 arg)
   struct svalue tmp[2];
   enum ia32_reg addr_reg = ia32_get_local_addr(arg);
 
-  MEMSET(tmp, 0, sizeof(tmp));
+  memset(tmp, 0, sizeof(tmp));
   SET_SVAL_TYPE(tmp[0], T_SVALUE_PTR);
   SET_SVAL_TYPE(tmp[1], T_VOID);
 

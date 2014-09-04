@@ -12,7 +12,7 @@ fi
 
 AC_CHECK_HEADERS(math.h ieeefp.h fp_class.h floatingpoint.h)
 
-AC_CHECK_FUNCS(fpsetmask fpsetround fpsetfastmode expf expl floorf floorl)
+AC_CHECK_FUNCS(fpsetmask fpsetround fpsetfastmode)
 
 # fpsetmask() is Broken on OpenBSD 3.2/alpha
 if test "x$ac_cv_func_fpsetmask" = "xyes"; then

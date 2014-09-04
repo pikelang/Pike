@@ -61,11 +61,11 @@
 #ifdef PUSH
 #define IMEMBER(X,Y,Z) (nEw->Y=Pike_compiler->Y);
 #define STACKMEMBER(X,Y,Z) (nEw->Y=Pike_compiler->Y);
-#define ZMEMBER(X,Y,Z) /* Zapped by the MEMSET in SNAME() below. */;
+#define ZMEMBER(X,Y,Z) /* Zapped by the memset in SNAME() below. */;
 #define SNAME(X,Y) { \
       struct X *nEw; \
       nEw=ALLOC_STRUCT(X); \
-      MEMSET((char *)nEw, 0, sizeof(struct X)); \
+      memset((char *)nEw, 0, sizeof(struct X)); \
       nEw->previous=Pike_compiler;
 #define SEND \
       Pike_compiler=nEw; \
@@ -100,9 +100,9 @@
 #ifdef INIT
 #define IMEMBER(X,Y,Z) (c->Y=Pike_compiler->Y);
 #define STACKMEMBER(X,Y,Z) (c->Y=Pike_compiler->Y);
-#define ZMEMBER(X,Y,Z) /* Zapped by the MEMSET in SNAME() below. */;
+#define ZMEMBER(X,Y,Z) /* Zapped by the memset in SNAME() below. */;
 #define SNAME(X,Y) { \
-      MEMSET(c, 0, sizeof(struct X));		\
+      memset(c, 0, sizeof(struct X));		\
       c->previous = Pike_compiler;
 #define SEND \
       Pike_compiler = c; \

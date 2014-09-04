@@ -157,19 +157,19 @@ constant NoValue = typeof (no_value);
 
 // Some API compatibility stuff.
 
-//! Pike 7.2 master compatibility interface.
+//! Pike 7.4 master compatibility interface.
 //!
 //! Most of the interface is implemented via mixin,
 //! or overloading by more recent masters.
 //!
 //! This interface is used for compatibility with
-//! Pike 7.2.
+//! Pike 7.4.
 //!
 //! @deprecated predef::MasterObject
 //!
 //! @seealso
 //!   @[get_compat_master()], @[master()], @[predef::MasterObject]
-protected class Pike_7_2_master
+protected class Pike_7_4_master
 {
   extern array(string) pike_include_path;
   extern array(string) pike_module_path;
@@ -226,6 +226,7 @@ protected class Pike_7_2_master
   // compat_environment_copy is used to keep track of any changes
   // performed destructively on the compat_environment mapping.
   // Both should be zero if not in use.
+  // Removed in Pike 7.8.
   protected mapping(string:array(string)) compat_environment;
   protected mapping(string:array(string)) compat_environment_copy;
 
@@ -267,18 +268,6 @@ protected class Pike_7_2_master
   void remove_program_path(string tmp);
   mapping(string:program|NoValue) programs;
 
-  //! Make a new instance of a class.
-  //!
-  //! @note
-  //!   This function should not be used. It is here for
-  //!   compatibility reasons only.
-  local __deprecated__ object new(mixed prog, mixed ... args)
-  {
-    if(stringp(prog))
-      prog=cast_to_program(prog,backtrace()[-2][0]);
-    return prog(@args);
-  }
-
   void create();
   extern mapping(program:object) objects;
   object cast_to_object(string oname, string current_file);
@@ -304,7 +293,6 @@ protected class Pike_7_2_master
   extern object compilation_mutex;
 #endif
 
-  local __deprecated__(function) clone = new;
   constant master_efuns = ({});
   class joinnode {};
   extern mapping(string:mixed) fc;
@@ -312,7 +300,6 @@ protected class Pike_7_2_master
   void compile_warning(string file,int line,string err);
   string read_include(string f);
 
-  string describe_program(program p);
   class Codec {};
 
   constant bt_max_string_len = 1;
@@ -360,14 +347,6 @@ protected class Pike_7_2_master
   extern multiset no_resolv;
   extern string ver;
   mapping get_default_module();
-  local protected object Pike_7_2_compat_handler;
-  local mixed resolv(string identifier, string|void current_file)
-  {
-    if (!Pike_7_2_compat_handler) {
-      Pike_7_2_compat_handler = global::get_compilation_handler(7, 2);
-    }
-    return Pike_7_2_compat_handler->resolv(identifier, current_file);
-  }
   void runtime_warning(string where, string what, mixed ... args);
   protected int clipped;
   protected int canclip;
@@ -381,48 +360,18 @@ protected class Pike_7_2_master
   extern object currentversion;
   extern mapping(object:object) compat_handler_cache;
   object get_compilation_handler(int major, int minor);
-  string _sprintf(int|void t);
-  object get_compat_master(int major, int minor)
-  {
-    // 0.0 .. 7.2
-    if ((major < 7) || (major == 7) && (minor < 3))
-      return this_program::this;
-    return get_compat_master(major, minor);
-  }
 
-  /* No missing symbols. */
-}
+  // ---
 
-//! Pike 7.4 master compatibility interface.
-//!
-//! Most of the interface is implemented via mixin,
-//! or overloading by more recent masters.
-//!
-//! This interface is used for compatibility with
-//! Pike 7.3 and 7.4.
-//!
-//! @deprecated predef::MasterObject
-//!
-//! @seealso
-//!   @[get_compat_master()], @[master()], @[predef::MasterObject]
-protected class Pike_7_4_master
-{
-  inherit Pike_7_2_master;
 #ifdef RESOLV_DEBUG
   void resolv_debug (sprintf_format fmt, sprintf_args... args);
 #endif
   void error(sprintf_format f, sprintf_args ... args);
-#ifdef GETCWD_CACHE
-  protected extern string current_path;
-#endif
   constant no_value = (<>);
   constant NoValue = typeof (no_value);
   string programs_reverse_lookup (program prog);
   program objects_reverse_lookup (object obj);
   string fc_reverse_lookup (object obj);
-  // Hide clone() and new().
-  private local __deprecated__ object new(mixed prog, mixed ... args){}
-  private local __deprecated__(function) clone = new;
   void unregister(program p);
   program low_cast_to_program(string pname,
 			      string current_file,
@@ -476,12 +425,11 @@ protected class Pike_7_4_master
   }
   object get_compat_master(int major, int minor)
   {
-    if ((major < 7) || ((major == 7) && (minor < 3)))
-      return Pike_7_2_master::get_compat_master(major, minor);
-    // 7.3 & 7.4
-    if ((major == 7) && (minor < 5))
+    // 0.0 .. 7.4
+    if ((major < 7) || (major == 7) && (minor < 5))
       return this_program::this;
     return get_compat_master(major, minor);
+
   }
 
   /* No missing symbols. */

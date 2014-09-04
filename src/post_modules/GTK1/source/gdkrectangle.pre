@@ -10,7 +10,7 @@ void create(int x, int y, int width, int height)
   pgtk_verify_setup();
   pgtk_verify_not_inited();
   THIS->obj = (void *)(r=g_malloc(sizeof(GdkRectangle)));
-  get_all_args( "GDK1.Rectangle", args, "%i%i%i%i", &x, &y, &w, &h );
+  get_all_args( "create", args, "%i%i%i%i", &x, &y, &w, &h );
   r->x = x;
   r->y = y;
   r->width = w;
@@ -23,7 +23,7 @@ void set(int x, int y, int width, int height )
 {
   GdkRectangle *r = (GdkRectangle *)THIS->obj;
   INT_TYPE x, y, w, h;
-  get_all_args( "GDK1.Rectangle", args, "%i%i%i%i", &x, &y, &w, &h );
+  get_all_args( "set", args, "%i%i%i%i", &x, &y, &w, &h );
   r->x = x;
   r->y = y;
   r->width = w;

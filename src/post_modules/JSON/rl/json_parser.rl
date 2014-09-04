@@ -53,6 +53,8 @@ static ptrdiff_t _parse_JSON(PCHARP str, ptrdiff_t p, ptrdiff_t pe, struct parse
     if (cs >= JSON_first_final) {
 	return p;
     }
+    if (state->flags & JSON_FIRST_VALUE && (c==1) )
+      return p-1;
 
     if (!(state->flags&JSON_VALIDATE) && c > 0) pop_n_elems(c);
 

@@ -480,7 +480,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void debug_va_fatal(const char *fmt, va_list args
   /* Prevent double fatal. */
   if (in_fatal)
   {
-    if (fmt) (void)VFPRINTF(stderr, fmt, args);
+    if (fmt) (void)vfprintf(stderr, fmt, args);
     do_abort();
   }
 
@@ -491,7 +491,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void debug_va_fatal(const char *fmt, va_list args
     if (fmt) {
       va_list a;
       va_copy (a, args);
-      (void)VFPRINTF(stderr, fmt, a);
+      (void)vfprintf(stderr, fmt, a);
       va_end (a);
     }
 #endif
@@ -499,7 +499,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void debug_va_fatal(const char *fmt, va_list args
   }
 #endif
 
-  if (fmt) (void)VFPRINTF(stderr, fmt, args);
+  if (fmt) (void)vfprintf(stderr, fmt, args);
 
   if(Pike_in_gc)
     fprintf(stderr,"Pike was in GC stage %d when this fatal occurred.\n",Pike_in_gc);
@@ -519,7 +519,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void debug_va_fatal(const char *fmt, va_list args
 #ifdef PIKE_THREADS
     threads_disabled++;
 #endif
-    MEMSET (&evaluator_callbacks, 0, sizeof (evaluator_callbacks));
+    memset (&evaluator_callbacks, 0, sizeof (evaluator_callbacks));
     if (SETJMP (jmp))
       fprintf(stderr,"Got exception when trying to describe backtrace.\n");
     else {
@@ -625,7 +625,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void debug_fatal(const char *fmt, ...) ATTRIBUTE(
  */
 static void f_error_cast(INT32 args)
 {
-  if(Pike_sp[-1].u.string == literal_array_string)
+  if(Pike_sp[-args].u.string == literal_array_string)
   {
     pop_stack();
     apply_current (generic_err_message_fun, 0);
@@ -660,7 +660,7 @@ static void f_error_cast(INT32 args)
 static void f_error_index(INT32 args)
 {
   INT_TYPE ind;
-  get_all_args("error->`[]",args,"%i",&ind);
+  get_all_args("`[]",args,"%i",&ind);
 
   switch(ind)
   {
@@ -673,7 +673,7 @@ static void f_error_index(INT32 args)
       apply_current (generic_err_backtrace_fun, 0);
       break;
     default:
-      index_error("error->`[]", Pike_sp-args, args, NULL, Pike_sp-args,
+      index_error("`[]", Pike_sp-args, args, NULL, Pike_sp-args,
 		  "Index %"PRINTPIKEINT"d is out of range 0..1.\n", ind);
       break;
   }

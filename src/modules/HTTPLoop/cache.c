@@ -229,8 +229,8 @@ void aap_cache_insert(struct cache_entry *ce, struct cache *c)
   } else {
     c->entries++;
     t = malloc( ce->url_len + ce->host_len );
-    MEMCPY(t,ce->url,ce->url_len);   ce->url = t;   t+=ce->url_len;
-    MEMCPY(t,ce->host,ce->host_len); ce->host = t;
+    memcpy(t,ce->url,ce->url_len);   ce->url = t;   t+=ce->url_len;
+    memcpy(t,ce->host,ce->host_len); ce->host = t;
     ce->next = c->htable[hv];
     ce->refs = 1;
     c->htable[hv] = ce;

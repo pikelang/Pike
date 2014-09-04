@@ -164,6 +164,14 @@ array(int) preferred_suites;
 //! Supported elliptical curve cipher curves in order of preference.
 array(int) ecc_curves = reverse(sort(indices(ECC_CURVES)));
 
+//! Supported DH groups for DHE key exchanges, in order of preference.
+//! Defaults to MODP Group 24 (2048/256 bits) from RFC 5114 section
+//! 2.3.
+array(Crypto.DH.Parameters) dh_groups = ({
+  Crypto.DH.MODPGroup24, // MODP Group 24 (2048/256 bits).
+});
+
+
 //! The set of <hash, signature> combinations to use by us.
 //!
 //! Only used with TLS 1.2 and later.
@@ -226,7 +234,8 @@ array(array(int)) get_signature_algorithms(array(array(int))|void signature_algo
   constant(Crypto.SHA384) && constant(Crypto.SHA224)
   return signature_algorithms;
 #else
-  return filter(signature_algorithms,
+  return [array(array(int))]
+    filter(signature_algorithms,
 		lambda(array(int) pair) {
 		  [int hash, int sign] = pair;
 #if !constant(Crypto.ECC.Curve)
@@ -749,6 +758,17 @@ void add_cert(Crypto.Sign.State key, array(string(8bit)) certs,
 {
   CertificatePair cp = CertificatePair(key, certs, extra_name_globs);
   add_cert(cp);
+}
+variant void add_cert(string(8bit) key, array(string(8bit)) certs,
+                      array(string(8bit))|void extra_name_globs)
+{
+  Crypto.Sign.State _key = Standards.PKCS.RSA.parse_private_key(key) ||
+    Standards.PKCS.DSA.parse_private_key(key) ||
+#if constant(Crypto.ECC.Curve)
+    Standards.PKCS.ECDSA.parse_private_key(key) ||
+#endif
+    0;
+  add_cert(_key, certs, extra_name_globs);
 }
 variant void add_cert(CertificatePair cp)
 {

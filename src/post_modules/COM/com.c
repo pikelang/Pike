@@ -927,7 +927,7 @@ static void f_cobj_create(INT32 args)
 
   if (args > 0)
   {
-    get_all_args("Com.obj->create()", args, "%W", &progID);
+    get_all_args("create", args, "%W", &progID);
     progID2 = MKPCHARP(malloc(progID->len * 2 + 2), 1);
     pike_string_cpy(progID2, progID);
     SET_INDEX_PCHARP(progID2, progID->len, 0);
@@ -993,7 +993,7 @@ static void f_cobj_getprop(INT32 args)
   struct pike_string *prop;
   PCHARP propU;
 
-  get_all_args("Com.obj->get_prop()", args, "%W", &prop);
+  get_all_args("get_prop", args, "%W", &prop);
   propU = MKPCHARP(malloc(prop->len * 2 + 2), 1);
   pike_string_cpy(propU, prop);
   SET_INDEX_PCHARP(propU, prop->len, 0);
@@ -1411,8 +1411,7 @@ static void f_create_object(INT32 args)
   PCHARP progID2;
   IDispatch *pDispatch;
 
-  get_all_args("Com->create_object()", args, "%W", &progID);
-  //check_all_args("create_object", args, BIT_STRING, 0);
+  get_all_args("create_object", args, "%W", &progID);
 
   progID2 = MKPCHARP(malloc(progID->len * 2 + 2), 1);
   pike_string_cpy(progID2, progID);

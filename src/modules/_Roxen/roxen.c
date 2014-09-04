@@ -126,7 +126,7 @@ static void f_hp_feed( INT32 args )
     hp->pnt = (hp->headers + hp->hsize - hp->left);
   }
 
-  MEMCPY( hp->pnt, str->str, str_len );
+  memcpy( hp->pnt, str->str, str_len );
   pop_n_elems( args );
 
   /* FIXME: The below does not support lines terminated with just \r. */

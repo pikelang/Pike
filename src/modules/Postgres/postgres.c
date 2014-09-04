@@ -129,12 +129,14 @@ static void pgres_destroy (struct object * UNUSED(o))
  *!
  *! This is an interface to the Postgres (Postgres95, PostgreSQL)
  *! database server using libpq.
+ *!
  *! This module may or may not be available on your Pike, depending on
- *! whether or not the appropriate include and library files 
+ *! whether or not the appropriate include and library files
  *! could be found at compile-time. Note that you @b{do not@}
  *! need to have a Postgres server running on your host to use this module:
  *! you can connect to the database over a TCP/IP socket.
  *!
+ *! @note
  *! Please notice that unless you wish to specifically connect to a Postgres
  *! server, you'd better use the @[Sql.Sql], which is a server-independent
  *! sql-server-class. The interfaces to all existing sql-classes
@@ -258,7 +260,7 @@ static void f_create (INT32 args)
 	PGconn * conn;
 	PQ_FETCH();
 
-	get_all_args("postgres->create",args,
+	get_all_args("create",args,
 		     ".%s%s%s%s%d%G",
 		     &host,
 		     &db,
@@ -332,7 +334,7 @@ static void f_select_db (INT32 args)
 	PGconn * conn, *newconn;
 	PQ_FETCH();
 
-	get_all_args("Postgres->select_db",args,"%s", &db);
+	get_all_args("select_db",args,"%s", &db);
 	
 	if (!THIS->dblink)
 	  Pike_error ("Driver error. How can you possibly not be linked to a "
@@ -817,7 +819,7 @@ static void f_quote(INT32 args)
 	struct pike_string *s;
 	char *err_msg;
 
-	get_all_args("Postgres->_quote", args, "%S", &s);
+	get_all_args("_quote", args, "%S", &s);
 
 	ret = begin_shared_string(s->len * 2 + 1);
 #ifdef HAVE_PQESCAPESTRINGCONN

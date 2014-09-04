@@ -887,7 +887,7 @@ static INLINE void low_debug_instr_prologue (PIKE_INSTR_T instr)
     filep = get_line(Pike_fp->pc,Pike_fp->context->prog,&linep);
     if (filep && !filep->size_shift) {
       file = filep->str;
-      while((f=STRCHR(file,'/')))
+      while((f=strchr(file,'/')))
 	file=f+1;
     }
     fprintf(stderr,"- %s:%4ld:%p(%"PRINTPTRDIFFT"d): "
@@ -1823,9 +1823,9 @@ static void do_trace_call(INT32 args, dynamic_buffer *old_buf)
       file = "...";
     else {
       file = filep->str;
-      while((f = STRCHR(file, '/'))
+      while((f = strchr(file, '/'))
 #ifdef __NT__
-	    || (f = STRCHR(file, '\\'))
+	    || (f = strchr(file, '\\'))
 #endif /* __NT__ */
 	    )
 	file=f+1;
@@ -1908,7 +1908,7 @@ static void do_trace_return (int got_retval, dynamic_buffer *old_buf)
       file = "...";
     else {
       file = filep->str;
-      while((f=STRCHR(file,'/')))
+      while((f=strchr(file,'/')))
 	file=f+1;
     }
   }else{

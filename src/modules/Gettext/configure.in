@@ -13,7 +13,7 @@ AC_CHECK_LIB(iconv, libiconv)
 AC_SEARCH_LIBS(iconv, iconv)
 AC_CHECK_LIB(intl, gettext)
 AC_SEARCH_LIBS(gettext, intl libintl)
-AC_CHECK_FUNCS(setlocale gettext iconv)
+AC_CHECK_FUNCS(gettext iconv)
 
 AC_ARG_WITH(nlsdir, 
 	[  --with-nlsdir=PATH      specify where the locale stuff should go ])

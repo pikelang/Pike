@@ -29,24 +29,9 @@ int get_auto_indent( );
 //!
 //!
 
-GTK2.SourceStyleScheme get_default( );
-//! Gets the default style scheme.
-//!
-//!
-
 int get_insert_spaces_instead_of_tabs( );
 //! Returns whether when inserting a tabulator character it should be replaced
 //! by a group of space characters.
-//!
-//!
-
-int get_margin( );
-//! Gets the position of the right margin.
-//!
-//!
-
-GTK2.GdkPixbuf get_marker_pixbuf( string type );
-//! Gets the pixbuf which is associated with the given type.
 //!
 //!
 
@@ -55,19 +40,9 @@ int get_show_line_numbers( );
 //!
 //!
 
-int get_show_margin( );
-//! Returns whether a margin is displayed.
-//!
-//!
-
 int get_smart_home_end( );
 //! Returns whether HOME and END keys will move to the first/last non-space
 //! character of the line before moving to the start/end.
-//!
-//!
-
-int get_tabs_width( );
-//! Returns the width of tabulation in characters.
 //!
 //!
 
@@ -82,38 +57,13 @@ GTK2.SourceView set_insert_spaces_instead_of_tabs( int setting );
 //!
 //!
 
-GTK2.SourceView set_margin( int setting );
-//! Sets the position of the right margin in the given view.
-//!
-//!
-
-GTK2.SourceView set_marker_pixbuf( string type, GTK2.GdkPixbuf pixbuf );
-//! Associates a given pixbuf with a given marker type.
-//!
-//!
-
-GTK2.SourceView set_show_line_markers( int setting );
-//! If true, line makers will be displayed beside the text.
-//!
-//!
-
 GTK2.SourceView set_show_line_numbers( int setting );
 //! If true, line numbers will be displayed beside the text.
-//!
-//!
-
-GTK2.SourceView set_show_margin( int setting );
-//! If true, a margin is displayed.
 //!
 //!
 
 GTK2.SourceView set_smart_home_end( int setting );
 //! If true, HOME and END keys will move to the first/last non-space character
 //! of the line before moving to the start/end.
-//!
-//!
-
-GTK2.SourceView set_tabs_width( int width );
-//! Sets the width of tabulation in characters.
 //!
 //!

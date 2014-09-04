@@ -2,6 +2,46 @@
 // By Martin Nilsson
 //
 
+//! Argument parsing module
+//! This module supports two rather different methods of argument parsing.
+//! The first is suitable quick argument parsing without much in the way of checking:
+//!
+//! @code
+//! int main( int c, array(string) argv )
+//! {
+//!   mapping arguments = Arg.parse(argv);
+//!   array files = arguments[Arg.REST];
+//!   if( arguments->help ) print_help();
+//!   ...
+//! }
+//! @endcode
+//!
+//! The @[Arg.parse] method will return a mapping from argument name
+//! to the argument value, if any.
+//!
+//! Non-option arguments will be placed in the index Arg.REST
+//!
+//! The second way to use this module is to inherit the LowOptions
+//! class and then start adding supported arguments:
+//!
+//! @code
+//! class MyArguments {
+//!    inherit Arg.LowOptions;
+//!    Opt verbose = NoOpt("-v")|NoOpt("--verbose");
+//!    Opt help = MaybeOpt("--help");
+//!    Opt output = HasOpt("--output")|HasOpt("-o");
+//! };
+//! @endcode
+//!
+//! Then, in main:
+//!
+//! @code
+//! MyArguments args = MyArguments(argv);
+//! @endcode
+//!
+//! See the documentation for @[OptLibrary] for details about the various
+//! Opt classes.
+
 #pike __REAL_VERSION__
 
 class OptLibrary

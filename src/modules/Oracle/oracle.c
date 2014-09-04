@@ -960,7 +960,7 @@ static sb4 output_callback(struct inout *inout,
 #endif
       *piecep = OCI_NEXT_PIECE;
 #ifdef ORACLE_DEBUG
-      MEMSET(*bufpp, '#', inout->xlen);
+      memset(*bufpp, '#', inout->xlen);
       ((char *)*bufpp)[inout->xlen-1]=0;
 #endif
       return OCI_CONTINUE;
@@ -1170,7 +1170,7 @@ static void f_fetch_fields(INT32 args)
 	    data_size=sizeof(info->data.u.num);
 #ifdef ORACLE_DEBUG
 /* 	    OCINumberSetZero(dbcon->error_handle, &info->data.u.num); */
-	    MEMSET(&info->data.u.num, 0, data_size);
+	    memset(&info->data.u.num, 0, data_size);
 #endif
 	    type=SQLT_VNU;
 #endif
@@ -1526,7 +1526,7 @@ static void push_inout_value(struct inout *inout,
 
     case SQLT_NUM:
       /* Kluge -- Convert it to a VNU. */
-      MEMMOVE(inout->u.shortstr+1,inout->u.shortstr,inout->xlen);
+      memmove(inout->u.shortstr+1,inout->u.shortstr,inout->xlen);
       inout->u.shortstr[0]=inout->xlen;
 
       /* FALL_THROUGH */
@@ -1802,7 +1802,7 @@ static void f_fetch_row(INT32 args)
 #endif
       /* piece = OCI_NEXT_PIECE; */
 #ifdef ORACLE_DEBUG
-      MEMSET(buf, '#', inout->xlen);
+      memset(buf, '#', inout->xlen);
       buf[inout->xlen-1]=0;
 #endif
       ret = OCIStmtSetPieceInfo(define, htype, dbcon->error_handle,
@@ -1952,7 +1952,7 @@ static void f_compile_query_create(INT32 args)
   fprintf(stderr,"%s\n",__FUNCTION__);
 #endif
 
-  get_all_args("Oracle->compile_query", args, "%S", &query);
+  get_all_args("compile_query", args, "%S", &query);
 
 #ifdef ORACLE_DEBUG
   fprintf(stderr,"f_compile_query_create: dbquery: %p\n",dbquery);

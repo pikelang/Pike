@@ -163,7 +163,7 @@ GdkImage *gdkimage_from_pikeimage( struct object *img, int fast, GdkImage *i )
       int j, i, r, g, b;
       PFTIME("Creating colormap");
       colors_allocated=1;
-      MEMSET(allocated, 0, sizeof(allocated));
+      memset(allocated, 0, sizeof(allocated));
       for(r=0; r<3; r++) for(g=0; g<4; g++) for(b=0; b<3; b++)
       {
 	GdkColor color;
@@ -251,7 +251,7 @@ GdkImage *gdkimage_from_pikeimage( struct object *img, int fast, GdkImage *i )
 	Pike_error("Failed to convert image\n");
       }
       PFTIME("Converting image");
-      MEMCPY(i->mem, Pike_sp[-1].u.string->str, Pike_sp[-1].u.string->len);
+      memcpy(i->mem, Pike_sp[-1].u.string->str, Pike_sp[-1].u.string->len);
       pop_stack(); /* string */
       pop_stack(); /* function */
     }
@@ -357,24 +357,24 @@ void pgtk_get_mapping_arg( struct mapping *map,
          if(len != sizeof(char *))
            Pike_fatal("oddities detected\n");
 #endif
-         MEMCPY(((char **)dest), &s->u.string->str, sizeof(char *));
+         memcpy(dest, &s->u.string->str, sizeof(char *));
          break;
        case PIKE_T_INT:
          if(len == 2)
          {
            short i = (short)s->u.integer;
-           MEMCPY(((short *)dest), &i, 2);
+           memcpy(dest, &i, 2);
          }
          else if(len == 4)
-           MEMCPY(((int *)dest), &s->u.integer, len);
+           memcpy(dest, &s->u.integer, len);
          break;
        case PIKE_T_FLOAT:
          if(len == sizeof(FLOAT_TYPE))
-           MEMCPY(((FLOAT_TYPE *)dest), &s->u.float_number,len);
+           memcpy(dest, &s->u.float_number,len);
          else if(len == sizeof(double))
          {
            double d = s->u.float_number;
-           MEMCPY(((double *)dest), &d,len);
+           memcpy(dest, &d,len);
          }
          break;
       }
@@ -834,7 +834,7 @@ void pgtk_default__sprintf( int args, int offset, int len )
 
 void pgtk_clear_obj_struct(struct object *o)
 {
-  MEMSET(Pike_fp->current_storage, 0, sizeof(struct object_wrapper));
+  memset(Pike_fp->current_storage, 0, sizeof(struct object_wrapper));
 }
 
 
@@ -870,8 +870,9 @@ double pgtk_get_float( struct svalue *s )
   if( is_bignum_object_in_svalue( s ) )
   {
     FLOAT_TYPE f;
-    ref_push_string( literal_float_string );
-    apply( s->u.object, "cast", 1 );
+    ref_push_type_value(float_type_string);
+    stack_swap();
+    f_cast();
     f = Pike_sp[-1].u.float_number;
     pop_stack();
     return (double)f;

@@ -105,7 +105,7 @@ static void increase_buffer_size( struct buffer * buffer )
   if(!new_d) Pike_error("Realloc (%ld->%ld) failed!\n",
 		   DO_NOT_WARN((long)buffer->len),
 		   DO_NOT_WARN((long)buffer->len*2));
-  MEMSET(new_d+buffer->len, 0, buffer->len);
+  memset(new_d+buffer->len, 0, buffer->len);
   buffer->str = new_d;
   buffer->len *= 2;
 }
@@ -124,7 +124,7 @@ static tsize_t read_buffer( thandle_t bh, tdata_t d, tsize_t len )
 	buffer_handle->offset, buffer_handle->real_len, avail);
   if(!avail) return -1;
   len = MINIMUM(avail, len);
-  MEMCPY(data, buffer_handle->str+buffer_handle->offset, len);
+  memcpy(data, buffer_handle->str+buffer_handle->offset, len);
   buffer_handle->offset += len;
   return len;
 }
@@ -144,7 +144,7 @@ static tsize_t write_buffer(thandle_t bh, tdata_t d, tsize_t len)
           len);
     increase_buffer_size( buffer_handle );
   }
-  MEMCPY( buffer_handle->str+buffer_handle->offset, data, len );
+  memcpy( buffer_handle->str+buffer_handle->offset, data, len );
   buffer_handle->offset += len;
   if(buffer_handle->offset > buffer_handle->real_len)
     buffer_handle->real_len = buffer_handle->offset;
@@ -811,7 +811,7 @@ static void image_tiff__decode( INT32 args )
   if(TYPEOF(sp[-args]) != T_STRING)
     Pike_error("Invalid argument 1 to Image.TIFF.decode()\n");
 
-  MEMSET(&res, 0, sizeof(res));
+  memset(&res, 0, sizeof(res));
   buffer.str = sp[-args].u.string->str;
   buffer.len = buffer.real_len = sp[-args].u.string->len;
   buffer.extendable = 0;
@@ -906,10 +906,10 @@ static void image_tiff_encode( INT32 args )
   ONERROR onerr;
 
   a.alpha = 0;
-  get_all_args( "Image.TIFF.encode", args, "%o", &a.img );
+  get_all_args( "encode", args, "%o", &a.img );
 
 
-  MEMSET(&c, 0, sizeof(c));
+  memset(&c, 0, sizeof(c));
   c.xdpy = 150.0;
   c.ydpy = 150.0;
   c.compression = 0;	/* Not a defined value. */
@@ -946,17 +946,7 @@ void my_tiff_warning_handler(const char *UNUSED(module), const char *UNUSED(fmt)
 /* Complies with the TIFFErrorHandler API */
 void my_tiff_error_handler(const char *UNUSED(module), const char *fmt, va_list x)
 {
-#ifdef HAVE_VSNPRINTF
-  vsnprintf(last_tiff_error, TIFF_ERROR_BUF_SIZE-1, fmt, x);
-#else /* !HAVE_VSNPRINTF */
-  /* Sentinel that will be overwritten on buffer overflow. */
-  last_tiff_error[TIFF_ERROR_BUF_SIZE-1] = '\0';
-
-  VSPRINTF(last_tiff_error, fmt, x);
-
-  if(last_tiff_error[TIFF_ERROR_BUF_SIZE-1])
-    Pike_fatal("Buffer overflow in my_tiff_error_handler()\n");
-#endif /* HAVE_VSNPRINTF */
+  VSNPRINTF(last_tiff_error, TIFF_ERROR_BUF_SIZE-1, fmt, x);
 }
 
 #endif /* HAVE_WORKING_LIBTIFF */

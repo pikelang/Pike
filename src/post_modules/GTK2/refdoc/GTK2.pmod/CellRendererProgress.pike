@@ -1,5 +1,9 @@
 //! Properties:
+//! int orientation
+//! int pulse
 //! string text
+//! float text-xalign
+//! float text-yalign
 //! int value
 //!
 //!

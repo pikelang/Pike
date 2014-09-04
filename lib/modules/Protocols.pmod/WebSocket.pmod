@@ -279,6 +279,7 @@ class Connection {
     //! callbacks.
     void set_id(mixed id) {
         this_program::id = id;
+	if (stream) stream->set_id(id);
     }
 
     protected void create(Stdio.File f) {

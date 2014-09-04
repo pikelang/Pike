@@ -23,6 +23,7 @@
 #include "pike_types.h"
 #include "stralloc.h"
 #include "svalue.h"
+#include "module_support.h"
 
 #define DEFAULT_CMOD_STORAGE static
 
@@ -39,6 +40,7 @@ DECLARATIONS
 #define JSON_UTF8	1
 #define JSON_ERROR	2
 #define JSON_VALIDATE	4
+#define JSON_FIRST_VALUE 8
 
 static char *err_msg;
 
@@ -528,6 +530,24 @@ void low_validate(struct pike_string *data, int flags) {
     return;
 }
 
+ptrdiff_t parse_json_pcharp( PCHARP data, size_t len, int flags, char **err_out )
+{
+    ptrdiff_t stop;
+    struct parser_state state;
+
+    err_msg = NULL;
+    state.flags = flags;
+    state.level = 0;
+    stop = _parse_JSON(data, 0, len, &state );
+    if (state.flags & JSON_ERROR )
+    {
+        if( err_out )
+            *err_out = err_msg;
+        return -stop;
+    }
+    return stop;
+}
+
 void low_decode(struct pike_string *data, int flags) {
     ptrdiff_t stop;
     struct parser_state state;
@@ -631,6 +651,8 @@ PIKE_MODULE_INIT
   add_integer_constant ("PIKE_CANONICAL", PIKE_CANONICAL, 0);
 
   INIT;
+
+  PIKE_MODULE_EXPORT(Standards.JSON, parse_json_pcharp );
 }
 
 PIKE_MODULE_EXIT

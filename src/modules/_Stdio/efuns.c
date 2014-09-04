@@ -1292,7 +1292,7 @@ void low_get_dir(DIR *dir, ptrdiff_t name_max)
 	if(num_files >= FPR) break;
 	lens[num_files]=NAMLEN(d);
 	if(bufptr+lens[num_files] >= buffer+sizeof(buffer)) break;
-	MEMCPY(bufptr, d->d_name, lens[num_files]);
+	memcpy(bufptr, d->d_name, lens[num_files]);
 	ptrs[num_files]=bufptr;
 	bufptr+=lens[num_files];
 	num_files++;

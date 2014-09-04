@@ -218,7 +218,7 @@ static void PIKE_CONCAT3(low_init_,DATA,_hash)(size_t size)			     \
     fprintf(stderr,"Fatal: out of memory.\n");				     \
     exit(17);								     \
   }									     \
-  MEMSET(PIKE_CONCAT(DATA,_hash_table),0,				     \
+  memset(PIKE_CONCAT(DATA,_hash_table),0,				     \
 	 sizeof(struct DATA *)*PIKE_CONCAT(DATA,_hash_table_size));	     \
 }									     \
 									     \
@@ -277,7 +277,7 @@ static void PIKE_CONCAT(DATA,_rehash)(void)				     \
       malloc(PIKE_CONCAT(DATA,_hash_table_size)*			     \
 	     sizeof(struct DATA *))))					     \
   {									     \
-    MEMSET(PIKE_CONCAT(DATA,_hash_table),0,				     \
+    memset(PIKE_CONCAT(DATA,_hash_table),0,				     \
 	   sizeof(struct DATA *)*PIKE_CONCAT(DATA,_hash_table_size));	     \
     while(e-- > 0)							     \
     {									     \

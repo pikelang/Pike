@@ -33,7 +33,7 @@ void create(GDK2.Window|int parent, mapping|void attributes)
     GdkWindowAttr attrs;
     GdkWindow *w;
     long mask=0;
-    MEMSET(&attrs,0,sizeof(attrs));
+    memset(&attrs,0,sizeof(attrs));
     get_all_args("create",args,"%o%m",&parent,&m);
 
 #define GET_ARG(x,y,z) pgtk2_get_mapping_arg( m, #x, y, z, &attrs.x, &mask, sizeof(attrs.x))

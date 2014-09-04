@@ -416,7 +416,7 @@ static void f_execute(INT32 args)
 #ifdef SQL_WCHAR
   char *to_free = NULL;
   SQLWCHAR *wq = NULL;
-  get_all_args("odbc_result->execute", args, "%W", &q);
+  get_all_args("execute", args, "%W", &q);
   if ((q->size_shift > 1) && (sizeof(SQLWCHAR) == 2)) {
     SIMPLE_ARG_TYPE_ERROR("execute", 1, "string(16bit)");
   }
@@ -428,7 +428,7 @@ static void f_execute(INT32 args)
     }
   }
 #else
-  get_all_args("odbc_result->execute", args, "%S", &q);
+  get_all_args("execute", args, "%S", &q);
 #endif
 
   ODBC_ALLOW();

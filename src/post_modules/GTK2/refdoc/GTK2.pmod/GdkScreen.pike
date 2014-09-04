@@ -16,6 +16,11 @@ protected GDK2.Screen create( );
 //!
 //!
 
+GTK2.GdkWindow get_active_window( );
+//! Returns the currently active window.
+//!
+//!
+
 GTK2.GdkColormap get_default_colormap( );
 //! Gets the default colormap.
 //!
@@ -61,6 +66,11 @@ int get_n_monitors( );
 int get_number( );
 //! Gets the index of this screen among the screens in the display to which
 //! it belongs.
+//!
+//!
+
+float get_resolution( );
+//! Gets the resolution for font handling.
 //!
 //!
 
@@ -116,6 +126,12 @@ int get_width_mm( );
 //!
 //!
 
+int is_composited( );
+//! Returns whether windows with an RGBA visual can reasonable be expected
+//! to have their alpha channel drawn correctly on the screen.
+//!
+//!
+
 array list_visuals( int|void def );
 //! List the available visuals.  If def is true, return the available visuals
 //! for the default screen.
@@ -130,5 +146,10 @@ string make_display_name( );
 
 GDK2.Screen set_default_colormap( GTK2.GdkColormap colormap );
 //! Sets the default colormap.
+//!
+//!
+
+GDK2.Screen set_resolution( float dpi );
+//! Sets the resolution for font handling.
 //!
 //!

@@ -175,7 +175,7 @@ static void memory_create(INT32 args)
 	      TYPEOF(sp[-args+1]) == T_INT && args==2 )
 	memory_shm( args );
       else
-	 SIMPLE_BAD_ARG_ERROR("Memory",1,"int or string");
+	 SIMPLE_BAD_ARG_ERROR("create",1,"int|string");
    }
    else
    {
@@ -219,11 +219,11 @@ static void memory_shm( INT32 args )
   MEMORY_FREE(THIS);
 
   if( args < 2 )
-    SIMPLE_TOO_FEW_ARGS_ERROR("Memory.shmat",2);
+    SIMPLE_TOO_FEW_ARGS_ERROR("shmat",2);
   if (TYPEOF(Pike_sp[1-args]) != T_INT )
-    SIMPLE_BAD_ARG_ERROR("Memory.shmat",1,"int(0..)");
+    SIMPLE_BAD_ARG_ERROR("shmat",1,"int(0..)");
   if (TYPEOF(Pike_sp[-args]) != T_INT )
-    SIMPLE_BAD_ARG_ERROR("Memory.shmat",0,"int(0..)");
+    SIMPLE_BAD_ARG_ERROR("shmat",0,"int(0..)");
 
   if( (id = shmget( Pike_sp[0-args].u.integer,
 		    Pike_sp[1-args].u.integer,
@@ -294,12 +294,12 @@ static void memory__mmap(INT32 args,int complain,int private)
    MEMORY_FREE(THIS); /* we expect this even on error */
 
    if (args<1) 
-      SIMPLE_TOO_FEW_ARGS_ERROR("Memory.mmap",1);
+      SIMPLE_TOO_FEW_ARGS_ERROR("mmap",1);
 
    if (args>=2) {
       if (TYPEOF(sp[1-args]) != T_INT ||
 	  sp[1-args].u.integer<0)
-	 SIMPLE_BAD_ARG_ERROR("Memory.mmap",2,"int(0..)");
+	 SIMPLE_BAD_ARG_ERROR("mmap",2,"int(0..)");
       else
 	 offset=sp[1-args].u.integer;
    }
@@ -307,7 +307,7 @@ static void memory__mmap(INT32 args,int complain,int private)
    if (args>=3) {
       if (TYPEOF(sp[2-args]) != T_INT ||
 	  sp[2-args].u.integer<0)
-	 SIMPLE_BAD_ARG_ERROR("Memory.mmap",3,"int(0..)");
+	 SIMPLE_BAD_ARG_ERROR("mmap",3,"int(0..)");
       else
 	 size=sp[2-args].u.integer;
    }
@@ -319,17 +319,17 @@ static void memory__mmap(INT32 args,int complain,int private)
       push_text("query_fd");
       f_index(2);
       if (TYPEOF(sp[-1]) == T_INT)
-	 SIMPLE_BAD_ARG_ERROR("Memory.mmap",1,
+	 SIMPLE_BAD_ARG_ERROR("mmap",1,
 			      "(string or) Stdio.File (missing query_fd)");
       f_call_function(1);
       if (TYPEOF(sp[-1]) != T_INT)
-	 SIMPLE_BAD_ARG_ERROR("Memory.mmap",1,
+	 SIMPLE_BAD_ARG_ERROR("mmap",1,
 			      "(string or) Stdio.File (weird query_fd)");
       fd=sp[-1].u.integer;
       sp--;
       if (fd<0) {
 	 if (complain)
-	    SIMPLE_BAD_ARG_ERROR("Memory.mmap",1,
+	    SIMPLE_BAD_ARG_ERROR("mmap",1,
 				 "(string or) Stdio.File (file not open)");
 	 else 
 	    RETURN(0);
@@ -342,7 +342,7 @@ static void memory__mmap(INT32 args,int complain,int private)
    else if (TYPEOF(sp[-args]) == T_STRING)
    {
       char *filename;
-      get_all_args("Memory.mmap",args,"%s",&filename); /* 8 bit! */
+      get_all_args("mmap",args,"%s",&filename); /* 8 bit! */
       
       THREADS_ALLOW();
       fd = fd_open(filename,fd_RDWR,0);
@@ -452,26 +452,26 @@ static void memory_allocate(INT32 args)
    unsigned char *mem;
 
    if (args>=2)
-      get_all_args("Memory.allocate",args,"%+%+",&size,&c);
+      get_all_args("allocate",args,"%+%+",&size,&c);
    else
-      get_all_args("Memory.allocate",args,"%+",&size);
+      get_all_args("allocate",args,"%+",&size);
 
    /* just to be sure */
    if (size<0)
-      SIMPLE_BAD_ARG_ERROR("Memory.allocate",1,"int(0..)");
+      SIMPLE_BAD_ARG_ERROR("allocate",1,"int(0..)");
    
    pop_n_elems(args);
    if (size>1024*1024) /* threshold */
    {
       THREADS_ALLOW();
       mem = xalloc(size);
-      MEMSET(mem,c,size);
+      memset(mem,c,size);
       THREADS_DISALLOW();
    }
    else
    {
       mem = xalloc(size);
-      MEMSET(mem,c,size);
+      memset(mem,c,size);
    }
 
    MEMORY_FREE(THIS);
@@ -747,7 +747,7 @@ static void pwrite_n(INT32 args,int shift,int reverse,char *func)
 	 case 022: /* 2 -> 2 */
 	    if (reverse)
 	      copy_reverse_string2(d, (unsigned char *)ps->str, ps->len);
-	    else MEMCPY(d,ps->str,ps->len*4);
+	    else memcpy(d,ps->str,ps->len*4);
 	    break;
 	 case 012: /* 1 -> 2 */
 	    if (reverse)
@@ -762,7 +762,7 @@ static void pwrite_n(INT32 args,int shift,int reverse,char *func)
 	 case 011: /* 1 -> 1 */
 	    if (reverse)
 	      copy_reverse_string1(d, (unsigned char *)ps->str,ps->len);
-	    else MEMCPY(d,ps->str,ps->len*2);
+	    else memcpy(d,ps->str,ps->len*2);
 	    break;
 	 case 001: /* 0 -> 1 */
 	    if (reverse)
@@ -770,7 +770,7 @@ static void pwrite_n(INT32 args,int shift,int reverse,char *func)
 	    else convert_0_to_1((p_wchar1*)d, STR0(ps), ps->len);
 	    break;
 	 case 000:
-	    MEMCPY(d,ps->str,ps->len);
+	    memcpy(d,ps->str,ps->len);
 	    break;
 	 default:
 	    Pike_error("Illegal state %d -> %d\n",ps->size_shift,shift);
@@ -812,7 +812,7 @@ static void memory_index(INT32 args)
    {
       INT_TYPE pos;
       size_t rpos = 0;
-      get_all_args("Memory.`[]",args,"%i",&pos);
+      get_all_args("`[]",args,"%i",&pos);
       if (pos<0) {
 	 if ((off_t)-pos>=DO_NOT_WARN((off_t)THIS->size))
 	    Pike_error("Memory.`[]: Index is out of range\n");
@@ -838,7 +838,7 @@ static void memory_index(INT32 args)
 	 INT_TYPE pos1,pos2;
 	 size_t rpos1,rpos2;
 
-	 get_all_args("Memory.`[]",args,"%i%i",&pos1,&pos2);
+	 get_all_args("`[]",args,"%i%i",&pos1,&pos2);
 	 if (pos1<0) rpos1=0; else rpos1=(size_t)pos1;
 	 if ((size_t)pos2>=THIS->size) rpos2=THIS->size-1; 
 	 else rpos2=(size_t)pos2;
@@ -867,7 +867,7 @@ static void memory_index_write(INT32 args)
    {
       INT_TYPE pos,ch;
       size_t rpos = 0;
-      get_all_args("Memory.`[]=",args,"%i%i",&pos,&ch);
+      get_all_args("`[]=",args,"%i%i",&pos,&ch);
       if (pos<0) 
 	 if ((off_t)-pos>=DO_NOT_WARN((off_t)THIS->size))
 	    Pike_error("Memory.`[]=: Index is out of range\n");
@@ -890,7 +890,7 @@ static void memory_index_write(INT32 args)
      INT_TYPE pos1, pos2;
      struct pike_string *ps;
 
-     get_all_args("Memory.`[]=", args, "%i%i%S", &pos1, &pos2, &ps);
+     get_all_args("`[]=", args, "%i%i%S", &pos1, &pos2, &ps);
 
      if (pos1 < 0) pos1 = 0;
      if (pos2 < 0) pos2 = 0;
@@ -900,7 +900,7 @@ static void memory_index_write(INT32 args)
 		  "not equally long (%ld v/s %ld; can't resize memory)\n",
 		  DO_NOT_WARN((long)ps->len), (long)pos2-(long)pos1);
      else
-       MEMCPY(THIS->p+pos1, ps->str, ps->len);
+       memcpy(THIS->p+pos1, ps->str, ps->len);
 
      ref_push_string(ps);
    }

@@ -22,6 +22,16 @@ class Primitive (int cls, int tag, string(8bit) raw)
     return t=='O' && sprintf("%O(%d)", this_program, get_combined_tag());
   }
 
+  array _encode()
+  {
+    return ({ cls, tag, raw });
+  }
+
+  void _decode(array(int|string(8bit)) x)
+  {
+    [ cls, tag, raw ] = x;
+  }
+
   __deprecated__ string debug_string() {
     return sprintf("primitive(%d)", get_combined_tag());
   }

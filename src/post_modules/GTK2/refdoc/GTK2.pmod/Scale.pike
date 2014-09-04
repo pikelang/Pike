@@ -15,9 +15,25 @@
 //!
 //!  Signals:
 //! @b{format_value@}
+//! Adds a mark at @@[value].
+//!
+//! A mark is indicated visually by drawing a tick mark next to the
+//! scale, and GTK+ makes it easy for the user to position the scale
+//! exactly at the marks value.
+//!
+//! If @@[markup] is specified, text is shown next to the tick mark.
+//!
 //!
 
 inherit GTK2.Range;
+
+GTK2.Scale add_mark( float value, int pos, string|void markup );
+//! Removes any marks that have been added with add_mark().
+//!
+//!
+
+GTK2.Scale clear_marks( );
+//!
 
 int get_digits( );
 //! Gets the number of decimal places that are displayed.

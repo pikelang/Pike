@@ -530,9 +530,9 @@ static void f_blob__cast( INT32 args )
       fsort( zipp[i].b->data+5, nh, 2, (void *)cmp_hit );
 #else
       short *data = malloc( nh * 2 );
-      MEMCPY( data,  zipp[i].b->data+5, nh * 2 );
+      memcpy( data,  zipp[i].b->data+5, nh * 2 );
       fsort( data, nh, 2, (void *)cmp_hit );
-      MEMCPY( zipp[i].b->data+5, data, nh * 2 );
+      memcpy( zipp[i].b->data+5, data, nh * 2 );
       free( data );
 #endif
     }
@@ -560,7 +560,7 @@ static void f_blob__cast( INT32 args )
 
 static void init_blob_struct(struct object * UNUSED(o))
 {
-  MEMSET( THIS, 0, sizeof( struct blob_data ) );
+  memset( THIS, 0, sizeof( struct blob_data ) );
 }
 
 static void exit_blob_struct(struct object * o)

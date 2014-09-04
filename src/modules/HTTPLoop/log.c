@@ -169,7 +169,7 @@ void f_aap_log_as_commonlog_to_file(INT32 args)
   l->log_head = l->log_tail = 0;
   mt_unlock( &l->log_lock );
 
-  MEMSET(&tm, 0, sizeof(tm));
+  memset(&tm, 0, sizeof(tm));
 
   while(le)
   {
@@ -183,16 +183,8 @@ void f_aap_log_as_commonlog_to_file(INT32 args)
       gmtime_r( &t, &tm );
 #else
       struct tm *tm_p;
-#ifdef HAVE_GMTIME
       tm_p = gmtime( &t ); /* This will break if two threads run
 			    gmtime() at once. */
-
-#else
-#ifdef HAVE_LOCALTIME
-      tm_p = localtime( &t ); /* This will break if two threads run
-			       localtime() at once. */
-#endif
-#endif
       if (tm_p) tm = *tm_p;
 #endif
       ot = le->t;
@@ -257,7 +249,7 @@ void aap_log_append(int sent, struct args *arg, int reply)
   le->sent_bytes = sent;
   le->reply = reply;
   le->received_bytes = arg->res.body_start + arg->res.content_len;
-  MEMCPY(data_to, arg->res.data, arg->res.body_start-4);
+  memcpy(data_to, arg->res.data, arg->res.body_start-4);
   le->raw.str = data_to;
   le->raw.len = arg->res.body_start-4;
   le->url.str = (data_to + (size_t)(arg->res.url-arg->res.data));

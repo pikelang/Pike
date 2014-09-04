@@ -458,7 +458,7 @@ static void f_jobj_instance(INT32 args)
   struct object *cls;
   int n=0;
 
-  get_all_args("Java.obj->is_instance_of()", args, "%o", &cls);
+  get_all_args("is_instance_of", args, "%o", &cls);
 
   if((c = get_storage(cls, jclass_program)) == NULL)
     Pike_error("Bad argument 1 to is_instance_of().\n");
@@ -554,7 +554,7 @@ static void f_method_create(INT32 args)
   JNIEnv *env;
   char *p;
 
-  get_all_args("Java.method->create()", args, "%S%S%o", &name, &sig, &class);
+  get_all_args("create", args, "%S%S%o", &name, &sig, &class);
 
   if((c = get_storage(class, jclass_program)) == NULL)
     Pike_error("Bad argument 3 to create().\n");
@@ -1179,11 +1179,11 @@ static void f_field_create(INT32 args)
   JNIEnv *env;
 
   if(args==1) {
-    get_all_args("Java.field->create()", args, "%o", &class);
+    get_all_args("create", args, "%o", &class);
     name = NULL;
     sig = NULL;
   } else
-    get_all_args("Java.field->create()", args, "%S%S%o", &name, &sig, &class);
+    get_all_args("create", args, "%S%S%o", &name, &sig, &class);
 
   if((c = get_storage(class, jclass_program)) == NULL)
     Pike_error("Bad argument 3 to create().\n");
@@ -2581,7 +2581,7 @@ static void f_natives_create(INT32 args)
   int i, rc=-1;
   JNIEnv *env;
 
-  get_all_args("Java.natives->create()", args, "%a%o", &arr, &cls);
+  get_all_args("create", args, "%a%o", &arr, &cls);
 
   if((c = get_storage(cls, jclass_program)) == NULL)
     Pike_error("Bad argument 2 to create().\n");
@@ -3278,7 +3278,7 @@ static void f_att_create(INT32 args)
   struct jvm_storage *jvm;
   struct att_storage *att = THIS_ATT;
 
-  get_all_args("Java.attachment->create()", args, "%o", &j);
+  get_all_args("create", args, "%o", &j);
 
   if((jvm = get_storage(j, jvm_program))==NULL)
     Pike_error("Bad argument 1 to create().\n");
@@ -3352,7 +3352,7 @@ static void f_monitor_create(INT32 args)
   struct monitor_storage *m=THIS_MONITOR;
   struct object *obj;
 
-  get_all_args("Java.monitor->create()", args, "%o", &obj);
+  get_all_args("create", args, "%o", &obj);
 
   if(get_storage(obj, jobj_program) == NULL)
     Pike_error("Bad argument 1 to create().\n");
@@ -3446,7 +3446,6 @@ static void f_create(INT32 args)
   }
 
   /* Java tries to be a wiseguy with the locale... */
-#ifdef HAVE_SETLOCALE
 #ifdef LC_NUMERIC
   setlocale(LC_NUMERIC, "C");
 #endif
@@ -3461,7 +3460,6 @@ static void f_create(INT32 args)
 #endif
 #ifdef LC_MESSAGES
   setlocale(LC_MESSAGES, "");
-#endif
 #endif
 
   cls = (*j->env)->FindClass(j->env, "java/lang/Object");

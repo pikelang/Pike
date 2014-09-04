@@ -1265,7 +1265,7 @@ static void f_feed(INT32 args)
 {
   struct pike_string *str;
 
-  get_all_args(PRGM_NAME"Dec->feed()", args, "%S", &str);
+  get_all_args("feed", args, "%S", &str);
 
   eat_string(str, (struct iso2022_stor *)fp->current_storage);
 
@@ -1371,7 +1371,7 @@ static void f_enc_feed(INT32 args)
 {
   struct pike_string *str;
 
-  get_all_args(PRGM_NAME"Enc->feed()", args, "%W", &str);
+  get_all_args("feed", args, "%W", &str);
   if( str->len )
     eat_enc_string(str, (struct iso2022enc_stor *)fp->current_storage,
 		   ((struct iso2022enc_stor *)fp->current_storage)->replace,

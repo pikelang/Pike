@@ -33,6 +33,25 @@
 //!    write(LOCALE(0, "This is another one.\n");
 //!    return 0;
 //!  }
+//!
+//! @note
+//!   In order to update your code to actually use the locale strings
+//!   you need to run the locale extractor.
+//!
+//!   This is available as pike -x extract_locale
+//!
+//! @code
+//!   Syntax: pike -x extract_locale [arguments] infile(s)
+//!    Arguments: --project=name  default: first found in infile
+//!               --config=file   default: [project].xml
+//!               --out=file      default: [project]_eng.xml
+//!               --nocopy        update infile instead of infile.new
+//!               --notime        don't include dump time in xml files
+//!               --wipe          remove unused ids from xml
+//!               --sync          synchronize all locale projects
+//!               --encoding=enc  default: ISO-8859-1
+//!               --verbose       more informative text in xml
+//! @endcode
 
 #define CLEAN_CYCLE 60*60
 //#define LOCALE_DEBUG

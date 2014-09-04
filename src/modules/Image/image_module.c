@@ -182,7 +182,7 @@ static void init_cpuidflags( )
 {
   unsigned int a, b, c, d;
   char *data = alloca(20);
-  MEMSET( data, 0, 20 );
+  memset( data, 0, 20 );
 
   image_get_cpuid( 0, &a, &b, &c, &d );
 

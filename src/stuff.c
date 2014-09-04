@@ -132,7 +132,7 @@ PMOD_EXPORT int my_log2(size_t x)
 
 PMOD_EXPORT double my_strtod(char *nptr, char **endptr)
 {
-  double tmp=STRTOD(nptr,endptr);
+  double tmp=strtod(nptr,endptr);
   if(*endptr>nptr)
   {
     if(endptr[0][-1]=='.')

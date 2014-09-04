@@ -21,8 +21,8 @@
 
 /* Generic */
 #define GOBBLE(c) (LOOK()==c?(SKIP(),1):0)
-#define SKIPSPACE() do { while(ISSPACE(LOOK()) && LOOK()!='\n') SKIP(); }while(0)
-#define SKIPWHITE() do { while(ISSPACE(LOOK())) SKIP(); }while(0)
+#define SKIPSPACE() do { while(isspace(LOOK()) && LOOK()!='\n') SKIP(); }while(0)
+#define SKIPWHITE() do { while(isspace(LOOK())) SKIP(); }while(0)
 #define SKIPUPTO(X) do { while(LOOK()!=(X) && LOOK()) SKIP(); }while(0)
 
 #if (SHIFT == 0)
@@ -43,7 +43,7 @@
 } while(0)
 
 #define TWO_CHAR(X,Y) ((X)<<8)+(Y)
-#define ISWORD(X) ((len == strlen(X)) && !MEMCMP(buf,X,strlen(X)))
+#define ISWORD(X) ((len == strlen(X)) && !memcmp(buf,X,len))
 
 /*
  * Function renaming
@@ -53,7 +53,7 @@
 #define yylex yylex0
 #define low_yylex low_yylex0
 #define lex_atoi atoi
-#define lex_strtol STRTOL
+#define lex_strtol strtol
 #define lex_strtod my_strtod
 #define lex_isidchar isidchar
 
@@ -74,7 +74,7 @@
 
 #define TWO_CHAR(X,Y) ((X)<<8)+(Y)
 
-#define ISWORD(X) ((len == strlen(X)) && low_isword(buf, X, strlen(X)))
+#define ISWORD(X) ((len == strlen(X)) && low_isword(buf, X, len))
 
 #if (SHIFT == 1)
 
@@ -459,7 +459,7 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
   char *buf;
 
 #ifdef __CHECKER__
-  MEMSET(yylval,0,sizeof(YYSTYPE));
+  memset(yylval,0,sizeof(YYSTYPE));
 #endif
 #ifdef MALLOC_DEBUG
   check_sfltable();
@@ -533,7 +533,7 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 	  if(ISWORD("gauge")) return TOK_GAUGE;
 	  break;
 	case TWO_CHAR('g','l'):
-	  if (ISWORD("global") && !TEST_COMPAT(7,2)) return TOK_GLOBAL;
+	  if (ISWORD("global")) return TOK_GLOBAL;
 	  break;
 	case TWO_CHAR('i','f'):
 	  if(ISWORD("if")) return TOK_IF;
@@ -982,7 +982,7 @@ unknown_directive:
 					     SHIFT);
 	  dmalloc_touch_svalue(&sval);
 	  if ((TYPEOF(sval) == PIKE_T_INT) && (p3 > p2)) {
-	    for (l=0; ISSPACE(INDEX_CHARP(p3, l, SHIFT)); l++)
+	    for (l=0; isspace(INDEX_CHARP(p3, l, SHIFT)); l++)
 	      ;
 	    if ((INDEX_CHARP(p3, l, SHIFT) == ':') &&
 		(INDEX_CHARP(p3, l+1, SHIFT) == ':')) {

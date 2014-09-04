@@ -8,7 +8,7 @@ CONFIG_HEADERS=@CONFIG_HEADERS@
 PRECOMPILER_ARGS="--base="
 
 override:
-	$(RUNPIKE) $(SRCDIR)/make_sources.pike $(SRCDIR) sources.h sources_to_compile
+	@$(RUNPIKE) $(SRCDIR)/make_sources.pike $(SRCDIR) sources.h sources_to_compile
 	@$(MAKE) SOURCE_OBJS="`cat sources_to_compile`" all
 
 @dynamic_module_makefile@

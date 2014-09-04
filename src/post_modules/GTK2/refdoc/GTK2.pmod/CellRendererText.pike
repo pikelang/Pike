@@ -1,4 +1,5 @@
 //! Properties:
+//! int alignment
 //! Pango.AttrList attributes
 //! string background
 //! GDK2.Color background-gdk

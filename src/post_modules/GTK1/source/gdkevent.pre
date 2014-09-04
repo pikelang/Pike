@@ -242,7 +242,7 @@ string _sprintf(int flag)
   f_add( 3 );
 }
 
-mixed cast(string to)
+mapping cast(string to)
 {
   struct svalue *osp = Pike_sp-args;
   char *a;

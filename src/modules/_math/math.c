@@ -43,35 +43,21 @@
 
 #if defined (WITH_LONG_DOUBLE_PRECISION_SVALUE)
 
-/* Assume that if these two l-suffixed functions exist, they all do. */
-# if defined (HAVE_EXPL) && defined (HAVE_FLOORL)
-#  define FL1(FN, ARG1) PIKE_CONCAT(FN,l) (ARG1)
-#  define FL2(FN, ARG1, ARG2) PIKE_CONCAT(FN,l) (ARG1, ARG2)
-# else
-/* Will lose precision. :\ */
-#  define FL1(FN, ARG1) FN (DO_NOT_WARN ((double) (ARG1)))
-#  define FL2(FN, ARG1, ARG2) FN (DO_NOT_WARN ((double) (ARG1)),	\
-				  DO_NOT_WARN ((double) (ARG2)))
-# endif
+#define FL1(FN, ARG1) PIKE_CONCAT(FN,l) (ARG1)
+#define FL2(FN, ARG1, ARG2) PIKE_CONCAT(FN,l) (ARG1, ARG2)
 
 #elif defined (WITH_DOUBLE_PRECISION_SVALUE)
 
-# define FL1(FN, ARG1) FN (ARG1)
-# define FL2(FN, ARG1, ARG2) FN (ARG1, ARG2)
+#define FL1(FN, ARG1) FN (ARG1)
+#define FL2(FN, ARG1, ARG2) FN (ARG1, ARG2)
 
 #else
 
-/* Assume that if these two f-suffixed functions exist, they all do. */
-# if defined (HAVE_EXPF) && defined (HAVE_FLOORF)
-#  define FL1(FN, ARG1) PIKE_CONCAT(FN,f) (ARG1)
-#  define FL2(FN, ARG1, ARG2) PIKE_CONCAT(FN,f) (ARG1, ARG2)
-# else
-#  define FL1(FN, ARG1) DO_NOT_WARN ((FLOAT_TYPE) FN (ARG1))
-#  define FL2(FN, ARG1, ARG2) DO_NOT_WARN ((FLOAT_TYPE) FN ((ARG1), (ARG2)))
-# endif
+#define FL1(FN, ARG1) PIKE_CONCAT(FN,f) (ARG1)
+#define FL2(FN, ARG1, ARG2) PIKE_CONCAT(FN,f) (ARG1, ARG2)
 
-# define FA1(FN, ARG1) FN (ARG1)
-# define FA2(FN, ARG1, ARG2) FN (ARG1, ARG2)
+#define FA1(FN, ARG1) FN (ARG1)
+#define FA2(FN, ARG1, ARG2) FN (ARG1, ARG2)
 
 #endif
 

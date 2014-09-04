@@ -215,7 +215,7 @@ typedef struct my_fd_set_s my_fd_set;
 #define my_FD_CLR(FD,S) ((S)->bits[(FD)>>3]&=~ (1<<(FD&7)))
 #define my_FD_SET(FD,S) do{ fd_check_fd(FD); ((S)->bits[(FD)>>3]|= (1<<(FD&7))); }while(0)
 #define my_FD_ISSET(FD,S) ((S)->bits[(FD)>>3]&(1<<(FD&7)))
-#define my_FD_ZERO(S) MEMSET(& (S)->bits, 0, sizeof(my_fd_set))
+#define my_FD_ZERO(S) memset(& (S)->bits, 0, sizeof(my_fd_set))
 
 #define fd_copy_my_fd_set_to_fd_set(TO,FROM,max) do {			\
    int e_,d_,max_=MINIMUM(MAX_OPEN_FILEDESCRIPTORS>>3,(max+7)>>3);	\
@@ -422,7 +422,7 @@ typedef struct my_fd_set_s my_fd_set;
 #define my_FD_ZERO(S) FD_ZERO(& (S)->tmp)
 
 #define fd_copy_my_fd_set_to_fd_set(TO,FROM,max) \
-   MEMCPY((TO),&(FROM)->tmp,sizeof(*(TO)))
+   memcpy((TO),&(FROM)->tmp,sizeof(*(TO)))
 
 #define FILE_CAPABILITIES (fd_INTERPROCESSABLE | fd_CAN_NONBLOCK)
 #ifndef __amigaos__

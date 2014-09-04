@@ -118,12 +118,14 @@ Thread.Mutex _stealmutex;
 #define USERERROR(msg)	throw(({(msg), backtrace()[..<1]}))
 
 protected string _sprintf(int type, void|mapping flags)
-{ string res=UNDEFINED;
+{
+  string res=UNDEFINED;
   switch(type)
-  { case 'O':
-      res=sprintf(DRIVERNAME"(%s@%s:%d/%s,%d)",
-       user,host,port,database,backendpid);
-      break;
+  {
+  case 'O':
+    res=sprintf(DRIVERNAME"(%s@%s:%d/%s,%d)",
+     user,host,port,database,backendpid);
+    break;
   }
   return res;
 }
@@ -1517,7 +1519,7 @@ string quotebinary(string s)
 //!   @[drop_db()]
 void create_db(string db)
 {
-  big_query("CREATE DATABASE :db",([":db":db]));
+  big_query(sprintf("CREATE DATABASE %s",db));
 }
 
 //! This function destroys a database and all the data it contains (assuming
@@ -1532,7 +1534,7 @@ void create_db(string db)
 //!   @[create_db()]
 void drop_db(string db)
 {
-  big_query("DROP DATABASE :db",([":db":db]));
+  big_query(sprintf("DROP DATABASE %s",db));
 }
 
 //! @returns

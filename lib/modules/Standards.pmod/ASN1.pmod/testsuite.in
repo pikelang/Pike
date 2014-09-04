@@ -6,6 +6,8 @@ define(test_decode,[[
   test_eq(sprintf("%O",Standards.ASN1.Decode.simple_der_decode(String.hex2string($1-" ")))-"Standards.ASN1.",$2)
   test_eq(Standards.ASN1.Decode.simple_der_decode(String.hex2string($1-" "))->get_der(),
           String.hex2string($1-" "))
+  test_eq(decode_value(encode_value(Standards.ASN1.Decode.simple_der_decode(String.hex2string($1-" "))))->get_der(),
+          String.hex2string($1-" "))
 ]])
 
 test_decode("1f 7f 00", "Decode.Primitive(508)")
@@ -24,7 +26,7 @@ test_eq(Standards.ASN1.Decode.simple_der_decode(Types.OctetString("A"*128)->get_
   "A"*128)
 
 test_decode("010100","Types.Boolean(FALSE)")
-test_decode("010101","Types.Boolean(TRUE)")
+test_decode("0101ff","Types.Boolean(TRUE)")
 test_eval_error(Standards.ASN1.Decode.simple_der_decode("\1\0"))
 
 test_eq(sprintf("%O",Standards.ASN1.Decode.simple_der_decode(String.hex2string("090380fb05"-" "))),"Types.Real(0.15625)")

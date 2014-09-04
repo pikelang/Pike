@@ -935,7 +935,7 @@ constant ANY = 8;
 constant ANY_CAR = 9;
 constant ANY_CDR = 10;
 
-static int label_cnt;
+protected int label_cnt;
 
 int debug;
 

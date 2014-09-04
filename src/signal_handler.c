@@ -770,7 +770,7 @@ void my_signal(int sig, sigfunctype fun)
      *   where _funcptr is a union. ie sa_handler and
      *   sa_sigaction overlap.
      */
-    MEMSET(&action, 0, sizeof(action));
+    memset(&action, 0, sizeof(action));
     action.sa_handler = fun;
     sigfillset(&action.sa_mask);
     action.sa_flags = 0;
@@ -784,7 +784,7 @@ void my_signal(int sig, sigfunctype fun)
 #ifdef HAVE_SIGVEC
   {
     struct sigvec action;
-    MEMSET(&action, 0, sizeof(action));
+    memset(&action, 0, sizeof(action));
     action.sv_handler= fun;
     action.sv_mask=-1;
 #ifdef SV_INTERRUPT
@@ -1208,7 +1208,7 @@ static RETSIGTYPE receive_sigchild(int UNUSED(signum))
 
 #ifdef __CHECKER__
     /* Clear potential padding. */
-    MEMSET(&wd, 0, sizeof(wd));
+    memset(&wd, 0, sizeof(wd));
 #endif
 
     PROC_FPRINTF((stderr, "[%d] receive_sigchild got pid %d\n",
@@ -2383,8 +2383,8 @@ static int set_priority( int pid, char *to )
       long pad2[10];
     } foo;
 
-    MEMSET(&params, 0, sizeof(params));
-    MEMSET(&foo, 0, sizeof(foo));
+    memset(&params, 0, sizeof(params));
+    memset(&foo, 0, sizeof(foo));
 
     strcpy(foo.pc_clname, "RT");
     if( priocntl((idtype_t)0, (id_t)0, PC_GETCID, (void *)(&foo)) == -1)
@@ -2409,8 +2409,8 @@ static int set_priority( int pid, char *to )
       long pad2[10];
     } foo;
 
-    MEMSET(&params, 0, sizeof(params));
-    MEMSET(&foo, 0, sizeof(foo));
+    memset(&params, 0, sizeof(params));
+    memset(&foo, 0, sizeof(foo));
     strcpy(foo.pc_clname, "TS");
     if( priocntl((idtype_t)0, (id_t)0, PC_GETCID, (void *)(&foo)) == -1)
       return 0;
@@ -2424,14 +2424,14 @@ static int set_priority( int pid, char *to )
   if( prilevel == 3 )
   {
     struct sched_param param;
-    MEMSET(&param, 0, sizeof(param));
+    memset(&param, 0, sizeof(param));
     param.sched_priority = sched_get_priority_max( SCHED_FIFO );
     return !sched_setscheduler( pid, SCHED_FIFO, &param );
   } else {
 #ifdef SCHED_RR
     struct sched_param param;
     int class = SCHED_OTHER;
-    MEMSET(&param, 0, sizeof(param));
+    memset(&param, 0, sizeof(param));
     if(prilevel == 2)
     {
       class = SCHED_RR;
@@ -2854,8 +2854,8 @@ void f_create_process(INT32 args)
             ITEM(cmd)[e].u.string->str[0] != '"' ||
             ITEM(cmd)[e].u.string->str[ITEM(cmd)[e].u.string->len-1] != '"')
           {
-            quote=STRCHR(ITEM(cmd)[e].u.string->str,'"') ||
-              STRCHR(ITEM(cmd)[e].u.string->str,' ');
+            quote=strchr(ITEM(cmd)[e].u.string->str,'"') ||
+              strchr(ITEM(cmd)[e].u.string->str,' ');
           }
 
 	if(quote)
@@ -2925,7 +2925,7 @@ void f_create_process(INT32 args)
     /* FIXME: Ought to set filename properly.
      */
 
-    MEMSET(&info,0,sizeof(info));
+    memset(&info,0,sizeof(info));
     info.cb=sizeof(info);
     
     GetStartupInfo(&info);
@@ -3061,7 +3061,7 @@ void f_create_process(INT32 args)
     {
       if(e)
         low_my_putchar(' ', &storage.cmd_buf);
-      if(STRCHR(STR0(ITEM(cmd)[e].u.string),'"') || STRCHR(STR0(ITEM(cmd)[e].u.string),' ')) {
+      if(strchr(STR0(ITEM(cmd)[e].u.string),'"') || strchr(STR0(ITEM(cmd)[e].u.string),' ')) {
         low_my_putchar('"', &storage.cmd_buf);
 	for(d=0;d<ITEM(cmd)[e].u.string->len;d++)
 	{
@@ -3881,7 +3881,6 @@ void f_create_process(INT32 args)
       {
 	int i;
 	/* Restore the signals to the defaults. */
-#ifdef HAVE_SIGNAL
 #ifdef _sys_nsig
         for(i=0; i<_sys_nsig; i++)
           signal(i, SIG_DFL);
@@ -3889,7 +3888,6 @@ void f_create_process(INT32 args)
         for(i=0; i<NSIG; i++)
           signal(i, SIG_DFL);
 #endif /* _sys_nsig */
-#endif /* HAVE_SIGNAL */
       }
 
       if(mchroot)
@@ -4543,9 +4541,9 @@ static void f_pid_status_kill(INT32 args)
 
   ASSERT_SECURITY_ROOT("Process->kill");
 
-  get_all_args("pid->kill", args, "%+", &signum);
+  get_all_args("kill", args, "%+", &signum);
 
-  PROC_FPRINTF((stderr, "[%d] pid->kill: pid=%d, signum=%d\n",
+  PROC_FPRINTF((stderr, "[%d] kill: pid=%d, signum=%d\n",
 		getpid(), pid, signum));
 
   THREADS_ALLOW_UID();
@@ -4644,7 +4642,7 @@ static void f_pid_status_kill(INT32 args)
 
   ASSERT_SECURITY_ROOT("Process->kill");
 
-  get_all_args("pid->kill", args, "%i", &signum);
+  get_all_args("kill", args, "%i", &signum);
 
   pop_n_elems(args);
 

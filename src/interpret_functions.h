@@ -264,9 +264,9 @@ OPCODE1(F_CONSTANT, "constant", I_UPDATE_SP, {
  */
 OPCODE2(F_REARRANGE,"rearrange",0,{
   check_stack(arg2);
-  MEMCPY(Pike_sp,Pike_sp-arg1-arg2,sizeof(struct svalue)*arg2);
-  MEMMOVE(Pike_sp-arg1-arg2,Pike_sp-arg1,sizeof(struct svalue)*arg1);
-  MEMCPY(Pike_sp-arg2,Pike_sp,sizeof(struct svalue)*arg2);
+  memcpy(Pike_sp,Pike_sp-arg1-arg2,sizeof(struct svalue)*arg2);
+  memmove(Pike_sp-arg1-arg2,Pike_sp-arg1,sizeof(struct svalue)*arg1);
+  memcpy(Pike_sp-arg2,Pike_sp,sizeof(struct svalue)*arg2);
 });
 
 /* The rest of the basic 'push value' instructions */	
@@ -1914,6 +1914,51 @@ OPCODE0_ALIAS(F_XOR, "^", I_UPDATE_SP, o_xor);
 OPCODE0_ALIAS(F_MULTIPLY, "*", I_UPDATE_SP, o_multiply);
 OPCODE0_ALIAS(F_DIVIDE, "/", I_UPDATE_SP, o_divide);
 OPCODE0_ALIAS(F_MOD, "%", I_UPDATE_SP, o_mod);
+
+OPCODE1(F_SUBTRACT_INT, "- int", 0, {
+    push_int( arg1 );
+    o_subtract();
+});
+
+OPCODE1(F_AND_INT, "& int", 0, {
+    push_int( arg1 );
+    o_and();
+});
+
+OPCODE1(F_OR_INT, "| int", 0, {
+    push_int( arg1 );
+    o_or();
+});
+
+OPCODE1(F_XOR_INT, "^ int", 0, {
+    push_int( arg1 );
+    o_xor();
+});
+
+OPCODE1(F_MULTIPLY_INT, "* int", 0, {
+    push_int( arg1 );
+    o_multiply();
+});
+
+OPCODE1(F_DIVIDE_INT, "/ int", 0, {
+    push_int( arg1 );
+    o_divide();
+});
+
+OPCODE1(F_MOD_INT, "% int", 0, {
+    push_int( arg1 );
+    o_mod();
+});
+
+OPCODE1(F_RSH_INT, ">> int", 0, {
+    push_int( arg1 );
+    o_rsh();
+});
+
+OPCODE1(F_LSH_INT, "<< int", 0, {
+    push_int( arg1 );
+    o_lsh();
+});
 
 OPCODE1(F_ADD_INT, "add integer", 0, {
   if(TYPEOF(Pike_sp[-1]) == T_INT

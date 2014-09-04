@@ -117,7 +117,7 @@ PMOD_EXPORT int pike_get_rusage(pike_rusage_t rusage_values)
     unsigned __int64 ft_scalar;
     FILETIME ft_struct;
   } creationTime, exitTime, kernelTime, userTime;
-  MEMSET(rusage_values, 0, sizeof(pike_rusage_t));
+  memset(rusage_values, 0, sizeof(pike_rusage_t));
   if (GetProcessTimes(GetCurrentProcess(),
                       &creationTime.ft_struct,
                       &exitTime.ft_struct,
@@ -173,7 +173,7 @@ PMOD_EXPORT int pike_get_rusage(pike_rusage_t rusage_values)
 #ifdef GETRUSAGE_THROUGH_PROCFS_PRS
   prstatus_t prs;
 #endif
-  MEMSET(rusage_values, 0, sizeof(pike_rusage_t));
+  memset(rusage_values, 0, sizeof(pike_rusage_t));
 
   if (proc_fd < 0 && !open_proc_fd()) return 0;
   while(ioctl(proc_fd, PIOCUSAGE, &pru) < 0)
@@ -241,7 +241,7 @@ PMOD_EXPORT int pike_get_rusage(pike_rusage_t rusage_values)
   struct rusage rus;
   long utime, stime;
   int maxrss;
-  MEMSET(rusage_values, 0, sizeof(pike_rusage_t));
+  memset(rusage_values, 0, sizeof(pike_rusage_t));
 
   if (getrusage(RUSAGE_SELF, &rus) < 0) return 0;
 
@@ -288,7 +288,7 @@ PMOD_EXPORT int pike_get_rusage(pike_rusage_t rusage_values)
   if (!pike_clk_tck) error ("Called before init_pike.\n");
 #endif
 
-  MEMSET(rusage_values, 0, sizeof(pike_rusage_t));
+  memset(rusage_values, 0, sizeof(pike_rusage_t));
   if (ret == (clock_t) -1) return 0;
 
   rusage_values[0] = CONVERT_TIME (tms.tms_utime, pike_clk_tck, 1000);
@@ -305,7 +305,6 @@ PMOD_EXPORT int pike_get_rusage(pike_rusage_t rusage_values)
 }
 
 #else /*HAVE_TIMES */
-#if defined(HAVE_CLOCK)
 
 #ifndef CLOCKS_PER_SEC
 #define CLOCKS_PER_SEC	1000000
@@ -313,28 +312,11 @@ PMOD_EXPORT int pike_get_rusage(pike_rusage_t rusage_values)
 
 PMOD_EXPORT int pike_get_rusage(pike_rusage_t rusage_values)
 {
-  MEMSET(rusage_values, 0, sizeof(pike_rusage_t));
+  memset(rusage_values, 0, sizeof(pike_rusage_t));
   rusage_values[0]= CONVERT_TIME (clock(), CLOCKS_PER_SEC, 1000);
   return 1;
 }
 
-#else /* HAVE_CLOCK */
-
-PMOD_EXPORT int pike_get_rusage(pike_rusage_t rusage_values)
-{
-  /* This is totally wrong, but hey, if you can't do it _right_... */
-  struct timeval tm;
-  MEMSET(rusage_values, 0, sizeof(pike_rusage_t));
-#ifndef CONFIGURE_TEST
-  ACCURATE_GETTIMEOFDAY(&tm);
-#else
-  GETTIMEOFDAY(&tm);
-#endif
-  rusage_values[0]=tm.tv_sec*1000L + tm.tv_usec/1000;
-  return 1;
-}
-
-#endif /* HAVE_CLOCK */
 #endif /* HAVE_TIMES */
 #endif /* HAVE_GETRUSAGE */
 #endif /* GETRUSAGE_THROUGH_PROCFS */

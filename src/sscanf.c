@@ -284,9 +284,9 @@ static ptrdiff_t PIKE_CONCAT(read_set,SIZE) (			\
   MATCH_IS_WIDE( int set_size=0; )				\
 								\
   if(cnt>=match_len)						\
-    Pike_error("Error in sscanf format string.\n");		\
+    Pike_error("Unterminated sscanf set.\n");			\
 								\
-  MEMSET(set->c, 0, sizeof(set->c));				\
+  memset(set->c, 0, sizeof(set->c));				\
   set->a=0;							\
 								\
   if(match[cnt]=='^' &&						\
@@ -296,7 +296,7 @@ static ptrdiff_t PIKE_CONCAT(read_set,SIZE) (			\
     set->neg=1;							\
     cnt++;							\
     if(cnt>=match_len)						\
-      Pike_error("Error in sscanf format string.\n");		\
+      Pike_error("Unterminated negated sscanf set.\n");	\
   }else{							\
     set->neg=0;							\
   }								\
@@ -306,7 +306,7 @@ static ptrdiff_t PIKE_CONCAT(read_set,SIZE) (			\
     set->c[last=match[cnt]]=1;					\
     cnt++;							\
     if(cnt>=match_len)						\
-      Pike_error("Error in sscanf format string.\n");		\
+      Pike_error("Empty sscanf range.\n");			\
   }								\
 								\
   for(;match[cnt]!=']';)					\
@@ -315,7 +315,7 @@ static ptrdiff_t PIKE_CONCAT(read_set,SIZE) (			\
     {								\
       cnt++;							\
       if(cnt>=match_len)					\
-	Pike_error("Error in sscanf format string.\n");		\
+	Pike_error("Unterminated sscanf range.\n");		\
 								\
       if(match[cnt]==']')					\
       {								\
@@ -324,7 +324,8 @@ static ptrdiff_t PIKE_CONCAT(read_set,SIZE) (			\
       }								\
 								\
       if(last > match[cnt])					\
-	Pike_error("Error in sscanf format string.\n");		\
+	Pike_error("Inverted sscanf range [%c-%c].\n",		\
+		   last, match[cnt]);				\
 								\
 MATCH_IS_WIDE(							\
       if(last < (p_wchar2)sizeof(set->c) && last >= 0)		\
@@ -372,7 +373,7 @@ MATCH_IS_WIDE(							\
     }								\
     cnt++;							\
     if(cnt>=match_len)						\
-      Pike_error("Error in sscanf format string.\n");		\
+      Pike_error("Unterminated sscanf set.\n");			\
   }								\
 								\
 MATCH_IS_WIDE(							\
@@ -459,7 +460,7 @@ static INLINE FLOAT_TYPE low_parse_IEEE_float(char *b, int sz)
   r = (double)f;
   if(extra_f)
     r += ((double)extra_f)/4294967296.0;
-  return (FLOAT_TYPE)(s? -LDEXP(r, e):LDEXP(r, e));
+  return (FLOAT_TYPE)(s? -ldexp(r, e):ldexp(r, e));
 }
 
 #endif
@@ -584,8 +585,8 @@ static INLINE INT32 TO_INT32(ptrdiff_t x)
  *   Pushes non-ignored matches on the Pike stack in the order they
  *   were matched.
  *
- * FIXME: chars_matched and success are only used internally, and
- *        should probably be gotten rid of.
+ * FIXME: success is only used internally, and should probably be
+ * gotten rid of.
  */
 #define MK_VERY_LOW_SSCANF(INPUT_SHIFT, MATCH_SHIFT)			 \
 static INT32 PIKE_CONCAT4(very_low_sscanf_,INPUT_SHIFT,_,MATCH_SHIFT)(	 \
@@ -637,7 +638,7 @@ static INT32 PIKE_CONCAT4(very_low_sscanf_,INPUT_SHIFT,_,MATCH_SHIFT)(	 \
     DO_IF_DEBUG(							 \
     if(match[cnt]!='%' || match[cnt+1]=='%')				 \
     {									 \
-      Pike_fatal("Error in sscanf.\n");					 \
+      Pike_fatal("Failed to escape in sscanf.\n");			 \
     }									 \
     );									 \
 									 \
@@ -650,7 +651,7 @@ static INT32 PIKE_CONCAT4(very_low_sscanf_,INPUT_SHIFT,_,MATCH_SHIFT)(	 \
 									 \
     cnt++;								 \
     if(cnt>=match_len)							 \
-      Pike_error("Error in sscanf format string.\n");			 \
+      Pike_error("Missing format specifier in sscanf format string.\n"); \
 									 \
     while(1)								 \
     {									 \
@@ -660,7 +661,8 @@ static INT32 PIKE_CONCAT4(very_low_sscanf_,INPUT_SHIFT,_,MATCH_SHIFT)(	 \
 	  no_assign=1;							 \
 	  cnt++;							 \
 	  if(cnt>=match_len)						 \
-	    Pike_error("Error in sscanf format string.\n");		 \
+	    Pike_error("Missing format specifier in ignored sscanf "	 \
+		       "format string.\n");				 \
 	  continue;							 \
 									 \
 	case '0': case '1': case '2': case '3': case '4':		 \
@@ -1046,30 +1048,30 @@ INPUT_IS_WIDE(								 \
 									 \
 	  /* sscanf("foo-bar","%s%d",a,b) might not work as expected */	 \
 		case 'd':						 \
-		  MEMSET(set.c, 1, sizeof(set.c));			 \
+		  memset(set.c, 1, sizeof(set.c));			 \
 		  for(e='0';e<='9';e++) set.c[e]=0;			 \
 		  set.c['-']=0;						 \
 		  goto match_set;					 \
 									 \
 		case 'o':						 \
-		  MEMSET(set.c, 1, sizeof(set.c));			 \
+		  memset(set.c, 1, sizeof(set.c));			 \
 		  for(e='0';e<='7';e++) set.c[e]=0;			 \
 		  goto match_set;					 \
 									 \
 		case 'x':						 \
-		  MEMSET(set.c, 1, sizeof(set.c));			 \
+		  memset(set.c, 1, sizeof(set.c));			 \
 		  for(e='0';e<='9';e++) set.c[e]=0;			 \
 		  for(e='a';e<='f';e++) set.c[e]=0;			 \
 		  goto match_set;					 \
 									 \
 		case 'D':						 \
-		  MEMSET(set.c, 1, sizeof(set.c));			 \
+		  memset(set.c, 1, sizeof(set.c));			 \
 		  for(e='0';e<='9';e++) set.c[e]=0;			 \
 		  set.c['-']=0;						 \
 		  goto match_set;					 \
 									 \
 		case 'f':						 \
-		  MEMSET(set.c, 1, sizeof(set.c));			 \
+		  memset(set.c, 1, sizeof(set.c));			 \
 		  for(e='0';e<='9';e++) set.c[e]=0;			 \
 		  set.c['.']=set.c['-']=0;				 \
 		  goto match_set;					 \
@@ -1316,6 +1318,49 @@ MK_VERY_LOW_SSCANF(1,1)
 MK_VERY_LOW_SSCANF(2,1)
 MK_VERY_LOW_SSCANF(1,2)
 MK_VERY_LOW_SSCANF(2,2)
+
+
+/* */
+INT32 low_sscanf_pcharp(PCHARP input, ptrdiff_t len,
+                        PCHARP format, ptrdiff_t format_len,
+                        ptrdiff_t *chars_matched,
+                        int flags )
+{
+  int ok;
+  check_c_stack(sizeof(struct sscanf_set)*2 + 512);
+  switch( input.shift*3 + format.shift )
+  {
+    case 0:
+      return very_low_sscanf_0_0(input.ptr, len,format.ptr, format_len,
+                                 chars_matched, &ok, flags  );
+    case 1:
+      return very_low_sscanf_0_1(input.ptr, len, format.ptr, format_len,
+                                 chars_matched, &ok, flags  );
+    case 2:
+      return very_low_sscanf_0_2(input.ptr, len, format.ptr, format_len,
+                                 chars_matched, &ok, flags  );
+    case 3:
+      return very_low_sscanf_1_0(input.ptr, len, format.ptr, format_len,
+                                 chars_matched, &ok, flags  );
+    case 4:
+      return very_low_sscanf_1_1(input.ptr, len, format.ptr, format_len,
+                                 chars_matched, &ok, flags  );
+    case 5:
+      return very_low_sscanf_1_2(input.ptr, len, format.ptr, format_len,
+                                 chars_matched, &ok, flags  );
+    case 6:
+      return very_low_sscanf_2_0(input.ptr, len, format.ptr, format_len,
+                                 chars_matched, &ok, flags  );
+    case 7:
+      return very_low_sscanf_2_1(input.ptr, len, format.ptr, format_len,
+                                 chars_matched, &ok, flags  );
+    case 8:
+      return very_low_sscanf_2_2(input.ptr, len, format.ptr, format_len,
+                                 chars_matched, &ok, flags );
+    default:
+      Pike_error("impossible");
+  }
+}
 
 /* Simplified interface to very_low_sscanf_{0,1,2}_{0,1,2}(). */
 INT32 low_sscanf(struct pike_string *data, struct pike_string *format, INT32 flags)

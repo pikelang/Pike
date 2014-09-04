@@ -309,7 +309,7 @@ void aap_handle_connection(struct args *arg)
       return;
     }
     buffer_len = arg->res.leftovers_len;
-    MEMCPY(buffer, arg->res.leftovers, arg->res.leftovers_len);
+    memcpy(buffer, arg->res.leftovers, arg->res.leftovers_len);
     pos = arg->res.leftovers_len;
     arg->res.leftovers=0;
     if((tmp = my_memmem("\r\n\r\n", 4, buffer, pos)))
@@ -446,7 +446,7 @@ static void low_accept_loop(struct args *arg)
   ACCEPT_SIZE_T len = sizeof(arg->from);
   while(1)
   {
-    MEMCPY(arg2, arg, sizeof(struct args));
+    memcpy(arg2, arg, sizeof(struct args));
     arg2->fd = fd_accept(arg->fd, (struct sockaddr *)&arg2->from, &len);
     if(arg2->fd != -1)
     {
@@ -530,7 +530,7 @@ static void finished_p(struct callback *UNUSED(foo), void *UNUSED(b), void *UNUS
 
     o = clone_object( request_program, 0 ); /* see requestobject.c */
     obj = (struct c_request_object *)get_storage(o, c_request_program );
-    MEMSET(obj, 0, sizeof(struct c_request_object));
+    memset(obj, 0, sizeof(struct c_request_object));
     obj->request = arg;
     obj->done_headers   = allocate_mapping( 20 );
     obj->misc_variables = allocate_mapping( 40 );
@@ -581,7 +581,7 @@ static void f_accept_with_http_parse(INT32 nargs)
   struct args *args = LTHIS; 
   get_all_args("accept_http_loop", nargs, "%o%*%*%*%i%i%i", &port, &program,
 	       &fun, &cb, &ms, &dolog, &to);
-  MEMSET(args, 0, sizeof(struct args));
+  memset(args, 0, sizeof(struct args));
   if(dolog)
   {
     struct log *log = calloc(1, sizeof(struct log));

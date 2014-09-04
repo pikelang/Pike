@@ -234,7 +234,7 @@ static void f_blobs_read_all_sorted( INT32 UNUSED(args) )
 
 static void init_blobs_struct(struct object *UNUSED(o))
 {
-  MEMSET( THIS, 0, sizeof( struct blobs ) );
+  memset( THIS, 0, sizeof( struct blobs ) );
   THIS->size = sizeof( struct blobs ) + 128;
 }
 

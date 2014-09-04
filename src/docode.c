@@ -173,7 +173,7 @@ static struct switch_data current_switch = {0, 0, 0, 0, 0, NULL, NULL};
 
 void upd_int(int offset, INT32 tmp)
 {
-  MEMCPY(Pike_compiler->new_program->program+offset, (char *)&tmp,sizeof(tmp));
+  memcpy(Pike_compiler->new_program->program+offset, &tmp, sizeof(tmp));
 }
 
 INT32 read_int(int offset)

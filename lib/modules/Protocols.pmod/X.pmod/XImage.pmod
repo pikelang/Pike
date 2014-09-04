@@ -27,7 +27,7 @@
 // Needs: Pike 0.6
 
 //! Handles Image.Image to XImage conversions.
-
+//!
 //! The @[XImage] class behaves more or less exactly like an
 //! Image.Image, but it keeps itself synchronized with the server if
 //! so needed.

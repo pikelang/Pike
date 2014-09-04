@@ -1,6 +1,6 @@
 //!
 
-mixed cast( string type );
+mapping|array cast( string type );
 //! Normally used like (mapping)rectangle or (array)rectangle.
 //!
 //!

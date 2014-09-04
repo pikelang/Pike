@@ -40,10 +40,6 @@ PMOD_EXPORT extern const char Pike_is8bitalnum_vector[];
   
 #define isidchar(X) is8bitalnum(X)
 
-#ifndef HAVE_ISGRAPH
-#define isgraph(X)	(ispunct(X) || isupper(X) || islower(X) || isdigit(X))
-#endif /* !HAVE_ISGRAPH */
-
 
 
 #define DO_ALIGN(X,Y) (((size_t)(X)+((Y)-1)) & ~((Y)-1))

@@ -1395,7 +1395,7 @@ class CertificatePair
     if (has_value(tbss, 0)) error("Invalid cert\n");
 
     // Validate that the key matches the cert.
-    if (!key->public_key_equal(tbss[0]->public_key->pkc)) {
+    if (!key || !key->public_key_equal(tbss[0]->public_key->pkc)) {
       error("Private key doesn't match certificate.\n");
     }
 

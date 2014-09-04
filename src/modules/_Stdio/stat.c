@@ -299,14 +299,14 @@ static void stat_push_compat(INT_TYPE n)
       default:
       {
 	 INT32 args=1;
-	 SIMPLE_BAD_ARG_ERROR("Stat `[]",1,"int(0..6)");
+	 SIMPLE_BAD_ARG_ERROR("`[]",1,"int(0..6)");
       }
    }
 }
 
 static void stat_init (struct object *UNUSED(o))
 {
-  MEMSET (&THIS_STAT->s, 0, sizeof (THIS_STAT->s));
+  memset (&THIS_STAT->s, 0, sizeof (THIS_STAT->s));
 }
 
 /*! @decl void create (void|object|array stat);
@@ -515,7 +515,7 @@ static void stat_index(INT32 args)
       _stat_index( tmp ? tmp->u.integer : 0 );
     }
     else
-      SIMPLE_BAD_ARG_ERROR("Stat `[]",1,"int(0..6)|string");
+      SIMPLE_BAD_ARG_ERROR("`[]",1,"int(0..6)|string");
   }
   else if (args>=2) /* range */
   {
@@ -528,11 +528,11 @@ static void stat_index(INT32 args)
 
     if (TYPEOF(sp[-2]) != T_INT &&
         !(TYPEOF(sp[-2]) == T_OBJECT && is_bignum_object (sp[-2].u.object)))
-      SIMPLE_BAD_ARG_ERROR("Stat `[..]",1,"int");
+      SIMPLE_BAD_ARG_ERROR("`[..]",1,"int");
 
     if (TYPEOF(sp[-1]) != T_INT &&
         !(TYPEOF(sp[-1]) == T_OBJECT && is_bignum_object (sp[-1].u.object)))
-      SIMPLE_BAD_ARG_ERROR("Stat `[..]",2,"int");
+      SIMPLE_BAD_ARG_ERROR("`[..]",2,"int");
 
     /* make in range 0..6 */
     push_int(6);
@@ -559,7 +559,7 @@ static void stat_index(INT32 args)
 
 static void _stat_index_set (INT_TYPE code, struct svalue *val, int got_int_val, INT64 int_val )
 {
-#define BAD_ARG_2(X) bad_arg_error("Stat.`[]=", Pike_sp-2,2,2,X,val,msg_bad_arg,2,"Stat.`[]=",X)
+#define BAD_ARG_2(X) bad_arg_error("`[]=", Pike_sp-2,2,2,X,val,msg_bad_arg,2,"`[]=",X)
 
   if( got_int_val == -1 )
   {
@@ -568,7 +568,7 @@ static void _stat_index_set (INT_TYPE code, struct svalue *val, int got_int_val,
     else if (TYPEOF(*val) == T_OBJECT && is_bignum_object (val->u.object))
     {
       if (!int64_from_bignum (&int_val, val->u.object))
-        Pike_error ("Stat `[]=: Too big integer as value.\n");
+        Pike_error ("`[]=: Too big integer as value.\n");
       else
         got_int_val = 1;
     }
@@ -759,10 +759,10 @@ static void stat_index_set (INT32 args)
 
   if (TYPEOF(sp[-2]) == T_INT) {
     if (!got_int_val)
-      SIMPLE_BAD_ARG_ERROR ("Stat `[]=", 2,
+      SIMPLE_BAD_ARG_ERROR ("`[]=", 2,
 			    "integer when the first argument is an integer");
     if (!stat_compat_set (sp[-2].u.integer, int_val))
-      SIMPLE_BAD_ARG_ERROR ("Stat `[]=", 1, "int(0..6)|string");
+      SIMPLE_BAD_ARG_ERROR ("`[]=", 1, "int(0..6)|string");
   }
   else if (TYPEOF(sp[-2]) == T_STRING) {
     INT_TYPE code;
@@ -780,7 +780,7 @@ static void stat_index_set (INT32 args)
     _stat_index_set( tmp->u.integer, sp-1, got_int_val, int_val);
   }
 
-  else SIMPLE_BAD_ARG_ERROR ("Stat `[]=", 1, "int(0..6)|string");
+  else SIMPLE_BAD_ARG_ERROR ("`[]=", 1, "int(0..6)|string");
 
   stack_swap();
   pop_stack();
@@ -789,6 +789,10 @@ static void stat_index_set (INT32 args)
 static void stat_indices(INT32 args);
 static void stat_values(INT32 args);
 
+/*! @decl mapping(string:int)|array cast (string to);
+ *!
+ *! Convert the stat object to a mapping or array.
+ */
 static void stat_cast(INT32 args)
 {
   struct pike_string *type;
@@ -912,7 +916,7 @@ static void stat_create (INT32 args)
       struct array *a = sp[-1].u.array;
       int i;
       if (a->size != 7)
-	SIMPLE_BAD_ARG_ERROR ("Stat create", 1, "stat array with 7 elements");
+	SIMPLE_BAD_ARG_ERROR ("create", 1, "stat array with 7 elements");
       for (i = 0; i < 7; i++) {
 	INT64 val;
 	if (TYPEOF(ITEM(a)[i]) == T_INT)
@@ -920,16 +924,16 @@ static void stat_create (INT32 args)
 	else if (TYPEOF(ITEM(a)[i]) == T_OBJECT &&
 		 is_bignum_object (ITEM(a)[i].u.object)) {
 	  if (!int64_from_bignum (&val, ITEM(a)[i].u.object))
-	    Pike_error ("Stat create: Too big integer in stat array.\n");
+	    Pike_error ("create: Too big integer in stat array.\n");
 	}
 	else
-	  SIMPLE_BAD_ARG_ERROR ("Stat create", 1, "array(int)");
+	  SIMPLE_BAD_ARG_ERROR ("create", 1, "array(int)");
 	stat_compat_set (i, val);
       }
     }
 
     else
-      SIMPLE_BAD_ARG_ERROR ("Stat create", 1, "void|Stdio.Stat|array(int)");
+      SIMPLE_BAD_ARG_ERROR ("create", 1, "void|Stdio.Stat|array(int)");
   }
 
   pop_n_elems (args);
@@ -1036,7 +1040,7 @@ void init_stdio_stat(void)
 		 tOr(tFunc(tInt06 tSetvar(0,tInt),tVar(0)),
 		     tFunc(tString tSetvar(1,tOr(tInt,tString)),tVar(1))), 0);
 
-   ADD_FUNCTION("cast",stat_cast,tFunc(tStr,tArray),ID_PROTECTED);
+   ADD_FUNCTION("cast",stat_cast,tFunc(tStr,tOr(tMapping,tArray)),ID_PROTECTED);
    ADD_FUNCTION("_sprintf",stat__sprintf,
 		tFunc(tInt tOr(tVoid,tMapping),tString),0);
    ADD_FUNCTION("_indices",stat_indices,

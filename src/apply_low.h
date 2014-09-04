@@ -252,7 +252,7 @@
 	{
 	  /* Create an extra svalue for tail recursion style call */
 	  Pike_sp++;
-	  MEMMOVE(Pike_sp-args,Pike_sp-args-1,sizeof(struct svalue)*args);
+	  memmove(Pike_sp-args,Pike_sp-args-1,sizeof(struct svalue)*args);
 #ifdef DEBUG_MALLOC
 	  if (args) {
 	    int i;

@@ -197,7 +197,7 @@ extern int page_size;
 PMOD_EXPORT ptrdiff_t pcharp_memcmp(PCHARP a, PCHARP b, int sz) ATTRIBUTE((pure));
 PMOD_EXPORT long pcharp_strlen(PCHARP a)  ATTRIBUTE((pure));
 
-#define MEMCHR0 MEMCHR
+#define MEMCHR0 memchr
 p_wchar1 *MEMCHR1(p_wchar1 *p, p_wchar2 c, ptrdiff_t e)  ATTRIBUTE((pure));
 p_wchar2 *MEMCHR2(p_wchar2 *p, p_wchar2 c, ptrdiff_t e)  ATTRIBUTE((pure));
 

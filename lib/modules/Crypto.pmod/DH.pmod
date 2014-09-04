@@ -321,7 +321,7 @@ Parameters MODPGroup22 =
 //! MODP Group 23 (2048-bit with 224-bit Subgroup).
 //!
 //! RFC 5114 2.2
-Parameters MODPGroup =
+Parameters MODPGroup23 =
   Parameters(Gmp.mpz("AD107E1E 9123A9D0 D660FAA7 9559C51F A20D64E5 683B9FD1"
                      "B54B1597 B61D0A75 E6FA141D F95A56DB AF9A3C40 7BA1DF15"
                      "EB3D688A 309C180E 1DE6B85A 1274A0A6 6D3F8152 AD6AC212"

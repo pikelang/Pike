@@ -1710,6 +1710,26 @@ constant ARROW_UP;
 //!
 
 
+constant ASSISTANT_PAGE_CONFIRM;
+//!
+
+
+constant ASSISTANT_PAGE_CONTENT;
+//!
+
+
+constant ASSISTANT_PAGE_INTRO;
+//!
+
+
+constant ASSISTANT_PAGE_PROGRESS;
+//!
+
+
+constant ASSISTANT_PAGE_SUMMARY;
+//!
+
+
 constant BUTTONBOX_DEFAULT_STYLE;
 //!
 
@@ -1779,6 +1799,14 @@ constant CAN_DEFAULT;
 
 
 constant CAN_FOCUS;
+//!
+
+
+constant CELL_RENDERER_ACCEL_MODE_GTK;
+//!
+
+
+constant CELL_RENDERER_ACCEL_MODE_OTHER;
 //!
 
 
@@ -1959,6 +1987,14 @@ constant DIR_UP;
 
 
 constant DOUBLE_BUFFERED;
+//!
+
+
+constant ENTRY_ICON_PRIMARY;
+//!
+
+
+constant ENTRY_ICON_SECONDARY;
 //!
 
 
@@ -2286,6 +2322,34 @@ constant PACK_START;
 //!
 
 
+constant PAGE_ORIENTATION_LANDSCAPE;
+//!
+
+
+constant PAGE_ORIENTATION_PORTRAIT;
+//!
+
+
+constant PAGE_ORIENTATION_REVERSE_LANDSCAPE;
+//!
+
+
+constant PAGE_ORIENTATION_REVERSE_PORTRAIT;
+//!
+
+
+constant PAGE_SET_ALL;
+//!
+
+
+constant PAGE_SET_EVEN;
+//!
+
+
+constant PAGE_SET_ODD;
+//!
+
+
 constant PARENT_SENSITIVE;
 //!
 
@@ -2355,6 +2419,226 @@ constant POS_RIGHT;
 
 
 constant POS_TOP;
+//!
+
+
+constant PRINT_DUPLEX_HORIZONTAL;
+//!
+
+
+constant PRINT_DUPLEX_SIMPLEX;
+//!
+
+
+constant PRINT_DUPLEX_VERTICAL;
+//!
+
+
+constant PRINT_ERROR_GENERAL;
+//!
+
+
+constant PRINT_ERROR_INTERNAL_ERROR;
+//!
+
+
+constant PRINT_ERROR_NOMEM;
+//!
+
+
+constant PRINT_OPERATION_ACTION_EXPORT;
+//!
+
+
+constant PRINT_OPERATION_ACTION_PREVIEW;
+//!
+
+
+constant PRINT_OPERATION_ACTION_PRINT;
+//!
+
+
+constant PRINT_OPERATION_ACTION_PRINT_DIALOG;
+//!
+
+
+constant PRINT_OPERATION_RESULT_APPLY;
+//!
+
+
+constant PRINT_OPERATION_RESULT_CANCEL;
+//!
+
+
+constant PRINT_OPERATION_RESULT_ERROR;
+//!
+
+
+constant PRINT_OPERATION_RESULT_IN_PROGRESS;
+//!
+
+
+constant PRINT_PAGES_ALL;
+//!
+
+
+constant PRINT_PAGES_CURRENT;
+//!
+
+
+constant PRINT_PAGES_RANGES;
+//!
+
+
+constant PRINT_QUALITY_DRAFT;
+//!
+
+
+constant PRINT_QUALITY_HIGH;
+//!
+
+
+constant PRINT_QUALITY_LOW;
+//!
+
+
+constant PRINT_QUALITY_NORMAL;
+//!
+
+
+constant PRINT_SETTINGS_COLLATE;
+//!
+
+
+constant PRINT_SETTINGS_DEFAULT_SOURCE;
+//!
+
+
+constant PRINT_SETTINGS_DITHER;
+//!
+
+
+constant PRINT_SETTINGS_DUPLEX;
+//!
+
+
+constant PRINT_SETTINGS_FINISHINGS;
+//!
+
+
+constant PRINT_SETTINGS_MEDIA_TYPE;
+//!
+
+
+constant PRINT_SETTINGS_NUMBER_UP;
+//!
+
+
+constant PRINT_SETTINGS_N_COPIES;
+//!
+
+
+constant PRINT_SETTINGS_ORIENTATION;
+//!
+
+
+constant PRINT_SETTINGS_OUTPUT_BIN;
+//!
+
+
+constant PRINT_SETTINGS_OUTPUT_FILE_FORMAT;
+//!
+
+
+constant PRINT_SETTINGS_OUTPUT_URI;
+//!
+
+
+constant PRINT_SETTINGS_PAGE_RANGES;
+//!
+
+
+constant PRINT_SETTINGS_PAGE_SET;
+//!
+
+
+constant PRINT_SETTINGS_PAPER_FORMAT;
+//!
+
+
+constant PRINT_SETTINGS_PAPER_HEIGHT;
+//!
+
+
+constant PRINT_SETTINGS_PAPER_WIDTH;
+//!
+
+
+constant PRINT_SETTINGS_PRINT_PAGES;
+//!
+
+
+constant PRINT_SETTINGS_QUALITY;
+//!
+
+
+constant PRINT_SETTINGS_RESOLUTION;
+//!
+
+
+constant PRINT_SETTINGS_REVERSE;
+//!
+
+
+constant PRINT_SETTINGS_SCALE;
+//!
+
+
+constant PRINT_SETTINGS_USE_COLOR;
+//!
+
+
+constant PRINT_SETTINGS_WIN32_DRIVER_EXTRA;
+//!
+
+
+constant PRINT_SETTINGS_WIN32_DRIVER_VERSION;
+//!
+
+
+constant PRINT_STATUS_FINISHED;
+//!
+
+
+constant PRINT_STATUS_FINISHED_ABORTED;
+//!
+
+
+constant PRINT_STATUS_GENERATING_DATA;
+//!
+
+
+constant PRINT_STATUS_INITIAL;
+//!
+
+
+constant PRINT_STATUS_PENDING;
+//!
+
+
+constant PRINT_STATUS_PENDING_ISSUE;
+//!
+
+
+constant PRINT_STATUS_PREPARING;
+//!
+
+
+constant PRINT_STATUS_PRINTING;
+//!
+
+
+constant PRINT_STATUS_SENDING_DATA;
 //!
 
 
@@ -2562,6 +2846,82 @@ constant RECEIVES_DEFAULT;
 //!
 
 
+constant RECENT_CHOOSER_ERROR_INVALID_URI;
+//!
+
+
+constant RECENT_CHOOSER_ERROR_NOT_FOUND;
+//!
+
+
+constant RECENT_FILTER_AGE;
+//!
+
+
+constant RECENT_FILTER_APPLICATION;
+//!
+
+
+constant RECENT_FILTER_DISPLAY_NAME;
+//!
+
+
+constant RECENT_FILTER_GROUP;
+//!
+
+
+constant RECENT_FILTER_MIME_TYPE;
+//!
+
+
+constant RECENT_FILTER_URI;
+//!
+
+
+constant RECENT_MANAGER_ERROR_INVALID_ENCODING;
+//!
+
+
+constant RECENT_MANAGER_ERROR_INVALID_URI;
+//!
+
+
+constant RECENT_MANAGER_ERROR_NOT_FOUND;
+//!
+
+
+constant RECENT_MANAGER_ERROR_NOT_REGISTERED;
+//!
+
+
+constant RECENT_MANAGER_ERROR_READ;
+//!
+
+
+constant RECENT_MANAGER_ERROR_UNKNOWN;
+//!
+
+
+constant RECENT_MANAGER_ERROR_WRITE;
+//!
+
+
+constant RECENT_SORT_CUSTOM;
+//!
+
+
+constant RECENT_SORT_LRU;
+//!
+
+
+constant RECENT_SORT_MRU;
+//!
+
+
+constant RECENT_SORT_NONE;
+//!
+
+
 constant RELIEF_HALF;
 //!
 
@@ -2743,6 +3103,18 @@ constant SELECTION_SINGLE;
 
 
 constant SENSITIVE;
+//!
+
+
+constant SENSITIVITY_AUTO;
+//!
+
+
+constant SENSITIVITY_OFF;
+//!
+
+
+constant SENSITIVITY_ON;
 //!
 
 
@@ -3346,6 +3718,22 @@ constant TREE_VIEW_DROP_INTO_OR_BEFORE;
 //!
 
 
+constant TREE_VIEW_GRID_LINES_BOTH;
+//!
+
+
+constant TREE_VIEW_GRID_LINES_HORIZONTAL;
+//!
+
+
+constant TREE_VIEW_GRID_LINES_NONE;
+//!
+
+
+constant TREE_VIEW_GRID_LINES_VERTICAL;
+//!
+
+
 constant UI_MANAGER_ACCELERATOR;
 //!
 
@@ -3383,6 +3771,22 @@ constant UI_MANAGER_TOOLBAR;
 
 
 constant UI_MANAGER_TOOLITEM;
+//!
+
+
+constant UNIT_INCH;
+//!
+
+
+constant UNIT_MM;
+//!
+
+
+constant UNIT_PIXEL;
+//!
+
+
+constant UNIT_POINTS;
 //!
 
 
@@ -3816,6 +4220,24 @@ void main_quit( );
 //!
 //!
 
+void move_cursor( int dx, int dy );
+//! Move the mouse-cursor dx,dy pixels, relative to it's current position.
+//! This will generate a normal motion event.
+//!
+//! Note that this is a low-level X11 function, and thus only works
+//! when GDK uses X11.
+//!
+//!
+
+void move_cursor_abs( GTK2.GdkWindow w, int dx, int dy );
+//! Move the mouse-cursor to x,y, relative to the upper left corner of
+//! the specified window. This will generate a normal motion event.
+//!
+//! Note that this is a low-level X11 function, and thus only works
+//! when GDK uses X11.
+//!
+//!
+
 void parse_rc( string rc );
 //! Takes a string and reads it as a gtkrc file.
 //!
@@ -3825,6 +4247,17 @@ GTK2.GdkWindow root_window( );
 //! Returns the root window of the current display
 //!
 //!
+
+void saver_disable( );
+//! Disable the screensaver.
+//! This is a low-level X11 function, and thus only works when GDK uses X11
+//!
+//!
+
+void saver_enable( );
+//! Enable the screensaver again after @[saver_disable] has been called.
+//! This is a low-level X11 function, and thus only works when GDK uses X11.
+//
 
 void set_auto_startup_notification( int setting );
 //! By default, after showing the first GTK2.Window for each GDK2.Screen,

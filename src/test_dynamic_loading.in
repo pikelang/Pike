@@ -165,7 +165,7 @@ DECLSPEC(noreturn) void debug_fatal(const char *fmt, ...) ATTRIBUTE((noreturn,fo
 {
   va_list args;
   va_start(args,fmt);
-  (void)VFPRINTF(stderr, fmt, args);
+  (void)vfprintf(stderr, fmt, args);
   fflush(stderr);
   abort();
 }

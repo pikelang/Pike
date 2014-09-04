@@ -493,7 +493,7 @@ static void low_write_IEEE_float(char *b, double d, int sz)
 #endif
 
   if(e<0) {
-    d = FREXP(d, &e);
+    d = frexp(d, &e);
     if(d == 1.0) {
       d=0.5;
       e++;
@@ -505,7 +505,7 @@ static void low_write_IEEE_float(char *b, double d, int sz)
       e += 126;
       d *= 16777216.0;
       if(e<=0) {
-	d = LDEXP(d, e-1);
+	d = ldexp(d, e-1);
 	e = 0;
       }
       f = ((INT32)floor(d))&maxf;
@@ -514,7 +514,7 @@ static void low_write_IEEE_float(char *b, double d, int sz)
       e += 1022;
       d *= 2097152.0;
       if(e<=0) {
-	d = LDEXP(d, e-1);
+	d = ldexp(d, e-1);
 	e = 0;
       }
       d2 = floor(d);
@@ -1619,9 +1619,9 @@ cont_2:
 
 	if(fsp->precision<0) {
 	  double m=pow(10.0, (double)fsp->precision);
-	  tf = RINT(tf*m)/m;
+	  tf = rint(tf*m)/m;
 	} else if (fsp->precision==0) {
-	  tf = RINT(tf);
+	  tf = rint(tf);
         }
 
 	debug_malloc_touch(x);
@@ -1671,7 +1671,7 @@ cont_2:
 	    if ((f != 0.0) || (tf == 0.0)) {
 #endif
 #ifdef FLOAT_IS_IEEE_BIG
-	      MEMCPY(x, &f, 4);
+	      memcpy(x, &f, 4);
 #elif defined(FLOAT_IS_IEEE_LITTLE)
 	      x[0] = ((char *)&f)[3];
 	      x[1] = ((char *)&f)[2];
@@ -1689,7 +1689,7 @@ cont_2:
 	  break;
 	case 8:
 #ifdef DOUBLE_IS_IEEE_BIG
-	  MEMCPY(x, &tf, 8);
+	  memcpy(x, &tf, 8);
 #elif defined(DOUBLE_IS_IEEE_LITTLE)
 	  x[0] = ((char *)&tf)[7];
 	  x[1] = ((char *)&tf)[6];

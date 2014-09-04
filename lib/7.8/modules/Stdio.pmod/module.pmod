@@ -7,7 +7,7 @@
 //! proxy functions defined in @[_Stdio.Fd_ref],
 //! instead of accessing the file descriptors directly.
 
-//! @decl inherit 7.8::Stdio
+//! @decl inherit 7.9::Stdio
 
 //! @ignore
 inherit Stdio.module;
@@ -1992,33 +1992,3 @@ class FILE
     return b[bpos++];
   }
 }
-
-//! An instance of @tt{FILE("stderr")@}, the standard error stream. Use this
-//! when you want to output error messages.
-//!
-//! @seealso
-//!   @[predef::werror()]
-FILE stderr=FILE("stderr");
-
-//! An instance of @tt{FILE("stdout")@}, the standatd output stream. Use this
-//! when you want to write anything to the standard output.
-//!
-//! @seealso
-//!   @[predef::write()]
-FILE stdout=FILE("stdout");
-
-//! An instance of @tt{FILE("stdin")@}, the standard input stream. Use this
-//! when you want to read anything from the standard input.
-//! This example will read lines from standard input for as long as there
-//! are more lines to read. Each line will then be written to stdout together
-//! with the line number. We could use @[Stdio.stdout.write()] instead
-//! of just @[write()], since they are the same function.
-//!
-//! @example
-//!  int main()
-//!  {
-//!    int line;
-//!    while(string s=Stdio.stdin.gets())
-//! 	 write("%5d: %s\n", line++, s);
-//!  }
-FILE stdin=FILE("stdin");

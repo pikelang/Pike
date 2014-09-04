@@ -1,4 +1,6 @@
 //! Properties:
+//! int cursor-position
+//! int has-selection
 //! GTK2.TextTagTable tag_table
 //! string text
 //!
@@ -189,6 +191,11 @@ GTK2.TextIter get_end_iter( );
 //! buffer.  If dereferenced with W(TextIter)->get_char(), the end iterator
 //! has a character value of 0.  The entire buffer lies in the range from
 //! the first position in the buffer to the end iterator.
+//!
+//!
+
+int get_has_selection( );
+//! Indicates whether some text is currently selected.
 //!
 //!
 

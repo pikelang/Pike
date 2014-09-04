@@ -3257,7 +3257,9 @@ TimeofDay dwim_time(string what,void|TimeRange cx)
 		   "%*[a-zA-Z.] %h"COLON"%m %z",
 		   "%*[a-zA-Z.] %h"COLON"%m%z",
 		   "%*[a-zA-Z.] %h"COLON"%m",
- 		   "%*[a-zA-Z.] %h%*[ ]%p", }),
+		   "%*[a-zA-Z.] %h%*[ ]%p",
+		   "%t",
+		}),
 		string todformat )
       {
 //  	 werror("try: %O\n     %O\n",
@@ -3269,7 +3271,7 @@ TimeofDay dwim_time(string what,void|TimeRange cx)
 	 }
 	 else
 	 {
-	    if ( (t=parse(dayformat+"%*[ ,:T]"+todformat,what,cx)) ) return t;
+	    if ( (t=parse(dayformat+"%*[ ,:]"+todformat,what,cx)) ) return t;
 	    if ( (t=parse(todformat+"%*[ ,:]"+dayformat,what,cx)) ) return t;
 	 }
       }

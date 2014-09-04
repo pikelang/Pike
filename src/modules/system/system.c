@@ -1843,7 +1843,7 @@ int my_isipv6nr(char *s)
 
 #define CALL_GETHOSTBYNAME(X) \
     THREADS_ALLOW(); \
-    MEMSET(&data,0,sizeof(data)); \
+    memset(&data,0,sizeof(data)); \
     if(gethostbyname_r((X), &result, &data) < 0) { \
       ret=0; \
     }else{ \
@@ -1853,7 +1853,7 @@ int my_isipv6nr(char *s)
 
 #define CALL_GETHOSTBYADDR(X,Y,Z) \
     THREADS_ALLOW(); \
-    MEMSET(&data,0,sizeof(data)); \
+    memset(&data,0,sizeof(data)); \
     if(gethostbyaddr_r((X),(Y),(Z), &result, &data) < 0) { \
       ret=0; \
     }else{ \
@@ -1886,7 +1886,7 @@ int my_isipv6nr(char *s)
 
 #define CALL_GETSERVBYNAME(X,Y) \
     THREADS_ALLOW(); \
-    MEMSET(&data,0,sizeof(data)); \
+    memset(&data,0,sizeof(data)); \
     if(getservbyname_r((X), (Y), &result, &data) < 0) { \
       ret=0; \
     }else{ \
@@ -1925,7 +1925,7 @@ int get_inet_addr(PIKE_SOCKADDR *addr,char *name,char *service, INT_TYPE port,
   int err;
   int udp = inet_flags & 1;
 
-  MEMSET(addr,0,sizeof(PIKE_SOCKADDR));
+  memset(addr,0,sizeof(PIKE_SOCKADDR));
   if(name && !strcmp(name,"*"))
     name = NULL;
 
@@ -1984,7 +1984,7 @@ int get_inet_addr(PIKE_SOCKADDR *addr,char *name,char *service, INT_TYPE port,
     if(found) {
 /*       fprintf(stderr, "Got %d bytes (family: %d (%d))\n", */
 /* 	      addr_len, found->ai_addr->sa_family, found->ai_family); */
-      MEMCPY((char *)addr, (char *)found->ai_addr, addr_len);
+      memcpy(addr, found->ai_addr, addr_len);
     }
     freeaddrinfo(res);
     if(addr_len) {
@@ -1999,7 +1999,7 @@ int get_inet_addr(PIKE_SOCKADDR *addr,char *name,char *service, INT_TYPE port,
   if (inet_flags & 2) {
     SOCKADDR_FAMILY(*addr) = AF_INET6;
     /* Note: This is equvivalent to :: (aka IPv6 ANY). */
-    MEMSET(&addr->ipv6.sin6_addr, 0, sizeof(addr->ipv6.sin6_addr));
+    memset(&addr->ipv6.sin6_addr, 0, sizeof(addr->ipv6.sin6_addr));
   }
 #endif
 
@@ -2026,7 +2026,7 @@ int get_inet_addr(PIKE_SOCKADDR *addr,char *name,char *service, INT_TYPE port,
       ipv4.sin_addr.s_addr = inet_addr(name);
       addr->ipv6.sin6_addr.s6_addr[10] = 0xff;
       addr->ipv6.sin6_addr.s6_addr[11] = 0xff;
-      MEMCPY(addr->ipv6.sin6_addr.s6_addr + 12, &ipv4.sin_addr.s_addr, 4);
+      memcpy(addr->ipv6.sin6_addr.s6_addr + 12, &ipv4.sin_addr.s_addr, 4);
     } else
 #endif
       addr->ipv4.sin_addr.s_addr = inet_addr(name);
@@ -2049,12 +2049,12 @@ int get_inet_addr(PIKE_SOCKADDR *addr,char *name,char *service, INT_TYPE port,
     SOCKADDR_FAMILY(*addr) = ret->h_addrtype;
 
 #ifdef HAVE_H_ADDR_LIST
-    MEMCPY((char *)SOCKADDR_IN_ADDR(*addr),
-           (char *)ret->h_addr_list[0],
+    memcpy(SOCKADDR_IN_ADDR(*addr),
+           ret->h_addr_list[0],
            ret->h_length);
 #else
-    MEMCPY((char *)SOCKADDR_IN_ADDR(*addr),
-           (char *)ret->h_addr,
+    memcpy(SOCKADDR_IN_ADDR(*addr),
+           ret->h_addr,
            ret->h_length);
 #endif
 #else
@@ -2134,7 +2134,7 @@ static void describe_hostent(struct hostent *hp)
 #else
       struct in_addr in;
  
-      MEMCPY(&in.s_addr, *p, sizeof (in.s_addr));
+      memcpy(&in.s_addr, *p, sizeof (in.s_addr));
       push_text(inet_ntoa(in));
 #endif
       nelem++;
@@ -2157,7 +2157,7 @@ static void describe_hostent(struct hostent *hp)
     push_text(fd_inet_ntop(hp->h_addrtype, hp->h_addr, buffer, sizeof(buffer)));
 #else
     struct in_addr in;
-    MEMCPY(&in.s_addr, hp->h_addr, sizeof (in.s_addr));
+    memcpy(&in.s_addr, hp->h_addr, sizeof (in.s_addr));
     push_text(inet_ntoa(in));
 #endif
   }

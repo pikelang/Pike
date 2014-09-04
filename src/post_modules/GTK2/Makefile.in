@@ -20,7 +20,8 @@ MODULE_CLEAN_EXTRA=p*.c
 #   override -> compile0 -> all
 #
 
-MYRUNPIKE=../../pike -DNOT_INSTALLED -m../../master.pike
+# Do not re-generate the 'dependencies' file in this directory.
+DO_DEPEND=no
 
 override:  compile@WITH_GTK@
 	@:
@@ -39,11 +40,11 @@ doc1: options
 doc2: doc1
 
 compile0:
-	@echo "Pike-GTK2 disabled."
-	$(MAKE) all
+#	@echo "Pike-GTK2 disabled."
+	@$(MAKE) all
 
 compile1: options
-	$(RUNPIKE) $(SRCDIR)/build_pgtk.pike --source='$(SRCDIR)/source/' \
+	@$(RUNPIKE) $(SRCDIR)/build_pgtk.pike --source='$(SRCDIR)/source/' \
 		   $(SRCDIR)/output/few.pike
 #	if $(RUNPIKE) $(SRCDIR)/build_pgtk.pike --source='$(SRCDIR)/source/' \
 #	              $(SRCDIR)/output/few.pike; then :; else \
@@ -73,10 +74,6 @@ options: config.status
 #	$(TMP_BINDIR)/install_module GDK2.pmod $(SYSTEM_MODULE_PATH)/$(MODDIR)GDK2.pmod
 #	$(TMP_BINDIR)/install_module Gnome2.pmod $(SYSTEM_MODULE_PATH)/$(MODDIR)Gnome2.pmod
 #	$(TMP_BINDIR)/install_module Pango.pmod $(SYSTEM_MODULE_PATH)/$(MODDIR)Pango.pmod
-
-# Do not re-generate the 'dependencies' file in this directory.
-depend: 
-	@:
 
 # Some hand-made dependencies:
 

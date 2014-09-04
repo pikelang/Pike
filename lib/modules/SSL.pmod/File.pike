@@ -1027,18 +1027,12 @@ int renegotiate()
 
     local_errno = 0;
 
-    // FIXME: Change this state with a packet instead so that things
-    // currently in the queue aren't affect by it.
-    conn->expect_change_cipher = 0;
-    conn->certificate_state = 0;
-    conn->state |= CONNECTION_handshaking;
+    conn->send_renegotiate();
 
     SSL3_DEBUG_MSG("renegotiate: Installing read/close callbacks.\n");
 
     stream->set_read_callback(ssl_read_callback);
     stream->set_close_callback(ssl_close_callback);
-
-    conn->send_packet(conn->hello_request());
 
     RETURN (direct_write());
   } LEAVE;

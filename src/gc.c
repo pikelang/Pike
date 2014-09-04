@@ -1027,7 +1027,7 @@ static void debug_gc_fatal_va (void *DEBUGUSED(a), int DEBUGUSED(type), int DEBU
 {
   int orig_gc_pass = Pike_in_gc;
 
-  (void) VFPRINTF(stderr, fmt, args);
+  (void) vfprintf(stderr, fmt, args);
 
 #ifdef PIKE_DEBUG
   if (a) {
@@ -1092,7 +1092,7 @@ static void rec_stack_fatal (struct gc_rec_frame *DEBUGUSED(err),
   va_list args;
   va_start (args, fmt);
   fprintf (stderr, msg_fatal_error, file, line);
-  (void) VFPRINTF (stderr, fmt, args);
+  (void) vfprintf (stderr, fmt, args);
 #if defined (PIKE_DEBUG) || defined (GC_CYCLE_DEBUG)
   fputs ("Recursion stack:\n", stderr);
   describe_rec_stack (err, err_name, p1, p1n, p2, p2n);
@@ -3538,7 +3538,7 @@ size_t do_gc(void *UNUSED(ignored), int explicit_call)
     Pike_fatal("Panic, less than zero objects!\n");
 #endif
 
-  last_gc=TIME(0);
+  last_gc=time(0);
   start_num_objs = num_objects;
   start_allocs = num_allocs;
   num_allocs = 0;

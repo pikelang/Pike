@@ -161,7 +161,7 @@ PMOD_EXPORT p_wchar2 index_shared_string(const struct pike_string *s, ptrdiff_t 
 #define INDEX_PCHARP(X,Y) INDEX_CHARP((X).ptr,(Y),(X).shift)
 #define SET_INDEX_PCHARP(X,Y,Z) SET_INDEX_CHARP((X).ptr,(Y),(X).shift,(Z))
 #define EXTRACT_PCHARP(X) INDEX_CHARP((X).ptr,(0),(X).shift)
-#define INC_PCHARP(X,Y) (((X).ptr)+= SAL(Y, (X).shift))
+#define INC_PCHARP(X,Y) (((X).ptr) = ((char*)((X).ptr))+SAL(Y, (X).shift))
 
 #define LOW_COMPARE_PCHARP(X,CMP,Y) (((char *)((X).ptr)) CMP ((char *)((Y).ptr)))
 #define LOW_SUBTRACT_PCHARP(X,Y) (LOW_COMPARE_PCHARP((X),-,(Y))>>(X).shift)
@@ -177,7 +177,7 @@ PMOD_EXPORT p_wchar2 index_shared_string(const struct pike_string *s, ptrdiff_t 
 static INLINE PCHARP __attribute__((unused)) MKPCHARP(const void *ptr, int shift)
 {
   PCHARP tmp;
-  tmp.ptr=(p_wchar0 *)ptr;
+  tmp.ptr=(void*)ptr;
   tmp.shift=shift;
   return tmp;
 }
@@ -265,13 +265,13 @@ PMOD_EXPORT extern struct shared_string_location *all_shared_string_locations;
 #define MAKE_CONSTANT_SHARED_STRING(var, text)				\
   REF_MAKE_CONST_STRING(var, text)
 
-#define convert_0_to_0(X,Y,Z) MEMCPY((char *)(X),(char *)(Y),(Z))
-#define convert_1_to_1(X,Y,Z) MEMCPY((char *)(X),(char *)(Y),(Z)<<1)
-#define convert_2_to_2(X,Y,Z) MEMCPY((char *)(X),(char *)(Y),(Z)<<2)
+#define convert_0_to_0(X,Y,Z) memcpy((X),(Y),(Z))
+#define convert_1_to_1(X,Y,Z) memcpy((X),(Y),(Z)<<1)
+#define convert_2_to_2(X,Y,Z) memcpy((X),(Y),(Z)<<2)
 
-#define compare_0_to_0(X,Y,Z) MEMCMP((char *)(X),(char *)(Y),(Z))
-#define compare_1_to_1(X,Y,Z) MEMCMP((char *)(X),(char *)(Y),(Z)<<1)
-#define compare_2_to_2(X,Y,Z) MEMCMP((char *)(X),(char *)(Y),(Z)<<2)
+#define compare_0_to_0(X,Y,Z) memcmp((X),(Y),(Z))
+#define compare_1_to_1(X,Y,Z) memcmp((X),(Y),(Z)<<1)
+#define compare_2_to_2(X,Y,Z) memcmp((X),(Y),(Z)<<2)
 
 #define CONVERT(FROM,TO) \
 void PIKE_CONCAT4(convert_,FROM,_to_,TO)(PIKE_CONCAT(p_wchar,TO) *to, const PIKE_CONCAT(p_wchar,FROM) *from, ptrdiff_t len); \
@@ -552,5 +552,15 @@ void f___handle_sprintf_format(INT32 args);
 void low_f_sprintf(INT32 args, int compat_mode, struct string_builder *r);
 void init_sprintf(void);
 void exit_sprintf(void);
+
+/* Warning, these run 'C' more than once */
+/* FIXME: Is it that great that every wide char is considered an
+ * identifier char? Doesn't strike me as very unicode compliant.
+ * isalnum, isdigit and islower also look seriously borken. /mast */
+#define WIDE_ISSPACE(C)	(((C) < 256)?isspace(C):0)
+#define WIDE_ISIDCHAR(C) (((C) < 256)?isidchar(C):1)
+#define WIDE_ISALNUM(C)	(((C) < 256)?isalnum(C):0)
+#define WIDE_ISDIGIT(C)	(((C) < 256)?isdigit(C):0)
+#define WIDE_ISLOWER(C)	(((C) < 256)?islower(C):0)
 
 #endif /* STRALLOC_H */

@@ -679,7 +679,7 @@ static node *debug_mkemptynode(void)
   CHECK_COMPILER();
 
 #ifdef __CHECKER__
-  MEMSET(res, 0, sizeof(node));
+  memset(res, 0, sizeof(node));
 #endif /* __CHECKER__ */
 
   res->refs = 0;
@@ -2446,7 +2446,7 @@ static struct used_vars *copy_vars(struct used_vars *a)
       Pike_error("Out of memory in copy_vars.\n");
       return NULL;	/* Make sure that the optimizer knows we exit here. */
     }
-    MEMCPY(*dst, src, sizeof(struct scope_info));
+    memcpy(*dst, src, sizeof(struct scope_info));
     src = src->next;
     dst = &((*dst)->next);
     *dst = NULL;
@@ -2473,7 +2473,7 @@ static struct used_vars *copy_vars(struct used_vars *a)
       Pike_error("Out of memory in copy_vars.\n");
       return NULL;	/* Make sure that the optimizer knows we exit here. */
     }
-    MEMCPY(*dst, src, sizeof(struct scope_info));
+    memcpy(*dst, src, sizeof(struct scope_info));
     src = src->next;
     dst = &((*dst)->next);
     *dst = NULL;
@@ -2514,7 +2514,7 @@ char *find_q(struct scope_info **a, int num, int scope_id)
   }
 #endif /* PIKE_DEBUG */
   new = (struct scope_info *)xalloc(sizeof(struct scope_info));
-  MEMSET(new, VAR_UNUSED, sizeof(struct scope_info));
+  memset(new, VAR_UNUSED, sizeof(struct scope_info));
   new->next = *a;
   new->scope_id = scope_id;
   *a = new;
@@ -3981,7 +3981,7 @@ static void find_usage(node *n, unsigned char *usage,
       unsigned char catch_usage[MAX_LOCAL];
       int i;
 
-      MEMCPY(catch_usage, usage, MAX_LOCAL);
+      memcpy(catch_usage, usage, MAX_LOCAL);
       find_usage(CAR(n), usage, switch_u, cont_u, catch_usage, catch_usage);
       for(i=0; i < MAX_LOCAL; i++) {
 	usage[i] |= catch_usage[i];
@@ -4017,11 +4017,11 @@ static void find_usage(node *n, unsigned char *usage,
     return;
 
   case F_CONTINUE:
-    MEMCPY(usage, cont_u, MAX_LOCAL);
+    memcpy(usage, cont_u, MAX_LOCAL);
     return;
 
   case F_BREAK:
-    MEMCPY(usage, break_u, MAX_LOCAL);
+    memcpy(usage, break_u, MAX_LOCAL);
     return;
 
   case F_DEFAULT:
@@ -4044,8 +4044,8 @@ static void find_usage(node *n, unsigned char *usage,
       unsigned char switch_usage[MAX_LOCAL];
       int i;
 
-      MEMSET(switch_usage, 0, MAX_LOCAL);
-      MEMCPY(break_usage, usage, MAX_LOCAL);
+      memset(switch_usage, 0, MAX_LOCAL);
+      memcpy(break_usage, usage, MAX_LOCAL);
 
       find_usage(CDR(n), usage, switch_usage, cont_u, break_usage, catch_u);
 
@@ -4058,7 +4058,7 @@ static void find_usage(node *n, unsigned char *usage,
     }
 
   case F_RETURN:
-    MEMSET(usage, 0, MAX_LOCAL);
+    memset(usage, 0, MAX_LOCAL);
     /* FIXME: The function arguments should be marked "used", since
      * they are seen in backtraces.
      */
@@ -4070,7 +4070,7 @@ static void find_usage(node *n, unsigned char *usage,
       unsigned char trail_usage[MAX_LOCAL];
       int i;
 
-      MEMCPY(trail_usage, usage, MAX_LOCAL);
+      memcpy(trail_usage, usage, MAX_LOCAL);
 
       find_usage(CDR(n), usage, switch_u, cont_u, break_u, catch_u);
 
@@ -4088,8 +4088,8 @@ static void find_usage(node *n, unsigned char *usage,
       unsigned char cddr_usage[MAX_LOCAL];
       int i;
 
-      MEMCPY(cadr_usage, usage, MAX_LOCAL);
-      MEMCPY(cddr_usage, usage, MAX_LOCAL);
+      memcpy(cadr_usage, usage, MAX_LOCAL);
+      memcpy(cddr_usage, usage, MAX_LOCAL);
 
       find_usage(CADR(n), cadr_usage, switch_u, cont_u, break_u, catch_u);
       find_usage(CDDR(n), cddr_usage, switch_u, cont_u, break_u, catch_u);
@@ -4106,11 +4106,11 @@ static void find_usage(node *n, unsigned char *usage,
       unsigned char break_usage[MAX_LOCAL];
       unsigned char continue_usage[MAX_LOCAL];
 
-      MEMCPY(break_usage, usage, MAX_LOCAL);
+      memcpy(break_usage, usage, MAX_LOCAL);
 
       find_usage(CDR(n), usage, switch_u, cont_u, break_usage, catch_u);
 
-      MEMCPY(continue_usage, usage, MAX_LOCAL);
+      memcpy(continue_usage, usage, MAX_LOCAL);
 
       find_usage(CAR(n), usage, switch_u, break_usage, continue_usage,
 		 catch_u);
@@ -4124,21 +4124,21 @@ static void find_usage(node *n, unsigned char *usage,
       unsigned char continue_usage[MAX_LOCAL];
       int i;
 
-      MEMCPY(break_usage, usage, MAX_LOCAL);
+      memcpy(break_usage, usage, MAX_LOCAL);
 
       /* for(;a;b) c; is handled like:
        *
        * if (a) { do { c; b; } while(a); }
        */
 
-      MEMSET(loop_usage, 0, MAX_LOCAL);
+      memset(loop_usage, 0, MAX_LOCAL);
 
       find_usage(CAR(n), loop_usage, switch_u, cont_u, break_u, catch_u);
       if (CDR(n)) {
 	find_usage(CDDR(n), loop_usage, switch_u, cont_u, break_usage,
 		   catch_u);
 
-	MEMCPY(continue_usage, loop_usage, MAX_LOCAL);
+	memcpy(continue_usage, loop_usage, MAX_LOCAL);
 
 	find_usage(CADR(n), loop_usage, switch_u, continue_usage, break_usage,
 		   catch_u);
@@ -4159,13 +4159,13 @@ static void find_usage(node *n, unsigned char *usage,
       unsigned char continue_usage[MAX_LOCAL];
       int i;
       
-      MEMCPY(break_usage, usage, MAX_LOCAL);
+      memcpy(break_usage, usage, MAX_LOCAL);
 
       /* Find the usage from the loop */
 
-      MEMSET(loop_usage, 0, MAX_LOCAL);
+      memset(loop_usage, 0, MAX_LOCAL);
 
-      MEMCPY(continue_usage, usage, MAX_LOCAL);
+      memcpy(continue_usage, usage, MAX_LOCAL);
 
       find_usage(CDR(n), loop_usage, switch_u, continue_usage, break_usage,
 		 catch_u);
@@ -4274,7 +4274,7 @@ static node *low_localopt(node *n,
       unsigned char catch_usage[MAX_LOCAL];
       int i;
 
-      MEMCPY(catch_usage, usage, MAX_LOCAL);
+      memcpy(catch_usage, usage, MAX_LOCAL);
       car = low_localopt(CAR(n), usage, switch_u, cont_u, catch_usage,
 			 catch_usage);
       for(i=0; i < MAX_LOCAL; i++) {
@@ -4328,12 +4328,12 @@ static node *low_localopt(node *n,
 						cont_u, break_u, catch_u));
 
   case F_CONTINUE:
-    MEMCPY(usage, cont_u, MAX_LOCAL);
+    memcpy(usage, cont_u, MAX_LOCAL);
     ADD_NODE_REF(n);
     return n;
 
   case F_BREAK:
-    MEMCPY(usage, break_u, MAX_LOCAL);
+    memcpy(usage, break_u, MAX_LOCAL);
     ADD_NODE_REF(n);
     return n;
 
@@ -4357,8 +4357,8 @@ static node *low_localopt(node *n,
       unsigned char switch_usage[MAX_LOCAL];
       int i;
 
-      MEMSET(switch_usage, 0, MAX_LOCAL);
-      MEMCPY(break_usage, usage, MAX_LOCAL);
+      memset(switch_usage, 0, MAX_LOCAL);
+      memcpy(break_usage, usage, MAX_LOCAL);
 
       cdr = low_localopt(CDR(n), usage, switch_usage, cont_u, break_usage,
 			 catch_u);
@@ -4372,7 +4372,7 @@ static node *low_localopt(node *n,
     }
 
   case F_RETURN:
-    MEMSET(usage, 0, MAX_LOCAL);
+    memset(usage, 0, MAX_LOCAL);
     /* FIXME: The function arguments should be marked "used", since
      * they are seen in backtraces.
      */
@@ -4385,7 +4385,7 @@ static node *low_localopt(node *n,
       unsigned char trail_usage[MAX_LOCAL];
       int i;
 
-      MEMCPY(trail_usage, usage, MAX_LOCAL);
+      memcpy(trail_usage, usage, MAX_LOCAL);
 
       cdr = low_localopt(CDR(n), usage, switch_u, cont_u, break_u, catch_u);
 
@@ -4404,8 +4404,8 @@ static node *low_localopt(node *n,
       unsigned char cddr_usage[MAX_LOCAL];
       int i;
 
-      MEMCPY(cadr_usage, usage, MAX_LOCAL);
-      MEMCPY(cddr_usage, usage, MAX_LOCAL);
+      memcpy(cadr_usage, usage, MAX_LOCAL);
+      memcpy(cddr_usage, usage, MAX_LOCAL);
 
       car = low_localopt(CADR(n), cadr_usage, switch_u, cont_u, break_u,
 			 catch_u);
@@ -4426,12 +4426,12 @@ static node *low_localopt(node *n,
       unsigned char continue_usage[MAX_LOCAL];
       int i;
 
-      MEMCPY(break_usage, usage, MAX_LOCAL);
+      memcpy(break_usage, usage, MAX_LOCAL);
 
       /* Find the usage from the loop */
       find_usage(CDR(n), usage, switch_u, cont_u, break_u, catch_u);
 
-      MEMCPY(continue_usage, usage, MAX_LOCAL);
+      memcpy(continue_usage, usage, MAX_LOCAL);
 
       find_usage(CAR(n), usage, switch_u, continue_usage, break_usage,
 		 catch_u);
@@ -4443,7 +4443,7 @@ static node *low_localopt(node *n,
       cdr = low_localopt(CDR(n), usage, switch_u, cont_u, break_usage,
 			 catch_u);
 
-      MEMCPY(continue_usage, usage, MAX_LOCAL);
+      memcpy(continue_usage, usage, MAX_LOCAL);
 
       car = low_localopt(CAR(n), usage, switch_u, continue_usage, break_usage,
 			 catch_u);
@@ -4458,7 +4458,7 @@ static node *low_localopt(node *n,
       unsigned char continue_usage[MAX_LOCAL];
       int i;
 
-      MEMCPY(break_usage, usage, MAX_LOCAL);
+      memcpy(break_usage, usage, MAX_LOCAL);
 
       /*
        * if (a A|B) {
@@ -4479,14 +4479,14 @@ static node *low_localopt(node *n,
 
       /* Find the usage from the loop. */
 
-      MEMSET(loop_usage, 0, MAX_LOCAL);
+      memset(loop_usage, 0, MAX_LOCAL);
 
       find_usage(CAR(n), loop_usage, switch_u, cont_u, break_u, catch_u);
       if (CDR(n)) {
 	find_usage(CDDR(n), loop_usage, switch_u, cont_u, break_usage,
 		   catch_u);
 
-	MEMCPY(continue_usage, loop_usage, MAX_LOCAL);
+	memcpy(continue_usage, loop_usage, MAX_LOCAL);
 
 	find_usage(CADR(n), loop_usage, switch_u, continue_usage, break_usage,
 		   catch_u);
@@ -4506,7 +4506,7 @@ static node *low_localopt(node *n,
 	cddr = low_localopt(CDDR(n), usage, switch_u, cont_u, break_usage,
 			    catch_u);
 
-	MEMCPY(continue_usage, usage, MAX_LOCAL);
+	memcpy(continue_usage, usage, MAX_LOCAL);
 
 	/* The body */
 	cadr = low_localopt(CADR(n), usage, switch_u, continue_usage,
@@ -4533,7 +4533,7 @@ static node *low_localopt(node *n,
       unsigned char continue_usage[MAX_LOCAL];
       int i;
 
-      MEMCPY(break_usage, usage, MAX_LOCAL);
+      memcpy(break_usage, usage, MAX_LOCAL);
 
       /*
        *   D
@@ -4553,9 +4553,9 @@ static node *low_localopt(node *n,
        */
 
       /* Find the usage from the loop */
-      MEMSET(loop_usage, 0, MAX_LOCAL);
+      memset(loop_usage, 0, MAX_LOCAL);
 
-      MEMCPY(continue_usage, usage, MAX_LOCAL);
+      memcpy(continue_usage, usage, MAX_LOCAL);
 
       find_usage(CDR(n), loop_usage, switch_u, continue_usage, break_usage,
 		 catch_u);
@@ -4571,7 +4571,7 @@ static node *low_localopt(node *n,
 	usage[i] |= loop_usage[i];
       }
 
-      MEMCPY(continue_usage, usage, MAX_LOCAL);
+      memcpy(continue_usage, usage, MAX_LOCAL);
       cdr = low_localopt(CDR(n), usage, switch_u, continue_usage, break_usage,
 			 catch_u);
       if (CDAR(n)->token == F_LOCAL) {
@@ -4627,11 +4627,11 @@ static node *localopt(node *n)
   unsigned char catch_usage[MAX_LOCAL];
   node *n2;
 
-  MEMSET(usage, 0, MAX_LOCAL);
-  MEMSET(b_usage, 0, MAX_LOCAL);
-  MEMSET(c_usage, 0, MAX_LOCAL);
-  MEMSET(s_usage, 0, MAX_LOCAL);
-  MEMSET(catch_usage, 0, MAX_LOCAL);
+  memset(usage, 0, MAX_LOCAL);
+  memset(b_usage, 0, MAX_LOCAL);
+  memset(c_usage, 0, MAX_LOCAL);
+  memset(s_usage, 0, MAX_LOCAL);
+  memset(catch_usage, 0, MAX_LOCAL);
 
   n2 = low_localopt(n, usage, s_usage, c_usage, b_usage, catch_usage);
 

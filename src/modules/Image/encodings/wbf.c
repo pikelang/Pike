@@ -71,7 +71,7 @@ static void read_string( struct buffer *from, unsigned int len, char *to )
 {
   if( from->len < len )
     Pike_error("Invalid data format\n");
-  MEMCPY( from->str, to, len );
+  memcpy( from->str, to, len );
   from->str += len;
   from->len -= len;
 }
@@ -126,7 +126,7 @@ static struct wbf_header decode_header( struct buffer *data )
 {
   struct wbf_header res;
   ONERROR err;
-  MEMSET( &res, 0, sizeof(res) );
+  memset( &res, 0, sizeof(res) );
   res.type = wbf_read_int( data );
   res.fix_header_field = read_uchar( data );
   SET_ONERROR(err, free_wbf_header_contents, &res);

@@ -103,7 +103,7 @@ protected string trim_xml( string what )
         what += " @item " + (n->get_children()->render_xml()*"" - "\n") + "\n";
       else if(n->get_any_name()=="dd")
 	what += " " + n->get_children()->render_xml()*"" + "\n";
-      else if(!sizeof(String.trim_all_whites(n->get_text())))
+      else if(sizeof(String.trim_all_whites(n->get_text())))
 	werror("Warning: Discarding HTML subtree: %O\n", n->render_xml());
     }
     what += " @enddl\n" + c;

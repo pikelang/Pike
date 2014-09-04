@@ -195,6 +195,10 @@ o Support for the ", ##__VA_ARGS__" cpp feature.
   happen if you pass an empty argument, nor does it happen if the
   token preceding ‘##’ is anything other than a comma.
 
+o The define __COUNTER__ has been added. It is a unique integer
+  value, the first time the macro is expaded it will be 1, the next time
+  2 etc.
+
 o The preprocessor can now be run with a cpp prefix feature.
 
   This is currently used by the precompiler to avoid two levels of
@@ -421,7 +425,7 @@ o Locale.Charset
 o The ancient syntax for arrays (string * was an alias for
   array(string)) has now been removed completely.
 
-o Compatibility for pike versions before 7.2 is no longer available.
+o Compatibility for pike versions before 7.4 is no longer available.
 
 o decode_value can no longer decode programs using the 'old style'
   program encoding.
@@ -609,6 +613,15 @@ o String.Buffer
   The new method addat() allows for writing into the buffer at any
   position.
 
+  It is possible to address (and update) single characters in a Buffer
+  using [].
+  It is possible to extract a new Buffer (copy) from an existing Buffer
+  using the [..] range operator.
+  It is possible to compare two Buffers or a Buffer and a string
+  directly using the ==, <, >, >= and <= operators.
+  A new method cut() allows you to cut and copy, or simply delete and
+  contract data from an existing Buffer.
+
 o String.range(str)
 
    This returns the minimum and maximum character value in the string.
@@ -719,6 +732,14 @@ o Stdio.UDP():
   + added IPv6 multicast support
 
   + added set_buffer
+
+o Added client and server support for TCP_FASTCONNECT
+
+    To connect using this TCP extension simply pass the data as the
+    fifth argument to connect.
+
+    The server support is automatically enabled if possible when a
+    Stdio.Port object is bound to a port.
 
 o Stdio.File():
 

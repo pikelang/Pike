@@ -115,6 +115,10 @@
  *!  with no mmap input.
  *!
  *!  Multiple socket output without regular file output illegal.
+ *!
+ *! @note
+ *! It is preferable to use the @[Shuffler] API, it is significantly
+ *! more flexible.
  */
 
 static struct program *pipe_program, *output_program;
@@ -575,7 +579,7 @@ static INLINE struct pike_string* gimme_some_data(size_t pos)
 	 src = this->firstinput->u.mmap + pos - this->pos;
 /* This thread_allow/deny is at the cost of one extra memory copy */
 	 THREADS_ALLOW();
-	 MEMCPY(tmp->str, src, len);
+	 memcpy(tmp->str, src, len);
 	 THREADS_DISALLOW();
 	 return end_shared_string(tmp);
        }
@@ -1257,7 +1261,7 @@ void close_and_free_everything(struct object *thisobj,struct pipe *p)
    /* p->done=0; */
 }
 
-static void init_pipe_struct(struct object *UNUSED(o))
+static void init_pipe_struct(struct object *DMALLOCUSED(o))
 {
    debug_malloc_touch(o);
 

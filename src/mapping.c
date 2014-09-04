@@ -590,7 +590,7 @@ struct mapping_data *copy_mapping_data(struct mapping_data *md)
   size=MAPPING_DATA_SIZE(md->hashsize, md->num_keypairs);
 
   nmd=(struct mapping_data *)xalloc(size);
-  MEMCPY(nmd, md, size);
+  memcpy(nmd, md, size);
   off=((char *)nmd) - ((char *)md);
 
   RELOC(nmd->free_list);

@@ -87,7 +87,7 @@ static struct data get_data( struct source *src, off_t len )
       }
       len -= s->skip;
       buffer = malloc( len );
-      MEMCPY( buffer, s->str->str+s->skip, len);
+      memcpy( buffer, s->str->str+s->skip, len);
     }
     else
     {
@@ -100,7 +100,7 @@ static struct data get_data( struct source *src, off_t len )
 	  s->s.eof = 1;
       }
       buffer = malloc( len );
-      MEMCPY( buffer, s->str->str, len );
+      memcpy( buffer, s->str->str, len );
     }
     res.data = buffer;
     res.len = len;

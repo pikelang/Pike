@@ -97,7 +97,7 @@ static const char *master_file_location = _master_location + CONSTANT_STRLEN(MAS
 static void set_master(const char *file)
 {
   if( master_file_location != _master_location+CONSTANT_STRLEN(MASTER_COOKIE))
-    free(master_file_location);
+    free((void*)master_file_location);
 #undef strdup /* We can't use dmalloc strdup before pike_memory is initialized. */
   master_file_location = strdup( file );
 }
@@ -136,11 +136,9 @@ static void get_master_key(HKEY cat)
 static void set_default_master(const char *bin_name)
 {
 #define mp master_file_location
-#ifdef HAVE_GETENV
   if(getenv("PIKE_MASTER")) {
     set_master(getenv("PIKE_MASTER"));
   }
-#endif
 
 #ifdef __NT__
   if(!*mp) get_master_key(HKEY_CURRENT_USER);
@@ -299,14 +297,12 @@ int main(int argc, char **argv)
   char *p;
 
 #ifdef PIKE_EXTRA_DEBUG
-#ifdef HAVE_SIGNAL
   if (sizeof(void *) == 8) {
     /* 64-bit Solaris 10 in Xenofarm fails with SIGPIPE.
      * Force a core dump.
      */
     signal(SIGPIPE, abort);
   }
-#endif
 #endif
 
 #ifdef HAVE_MALLOPT
@@ -434,13 +430,13 @@ int main(int argc, char **argv)
 		p++;
 	      }
 #ifdef _REENTRANT
-	      thread_stack_size=STRTOL(p,&p,0);
+	      thread_stack_size=strtol(p,&p,0);
 #endif
 	      p+=strlen(p);
 	      break;
 	    }
 	  }
-	  Pike_stack_size=STRTOL(p,&p,0);
+	  Pike_stack_size=strtol(p,&p,0);
 	  p+=strlen(p);
 
 	  if(Pike_stack_size < 256)
@@ -463,7 +459,7 @@ int main(int argc, char **argv)
 	  }else{
 	    p++;
 	  }
-	  set_pike_evaluator_limit(STRTOL(p, &p, 0));
+	  set_pike_evaluator_limit(strtol(p, &p, 0));
 	  p+=strlen(p);
 	  break;
 
@@ -473,7 +469,7 @@ int main(int argc, char **argv)
 	  {
 	    case '0': case '1': case '2': case '3': case '4':
 	    case '5': case '6': case '7': case '8': case '9':
-	      d_flag+=STRTOL(p+1,&p,10);
+	      d_flag+=strtol(p+1,&p,10);
 	      break;
 
 	    case 'c':
@@ -543,7 +539,7 @@ int main(int argc, char **argv)
 
 	case 'a':
 	  if(p[1]>='0' && p[1]<='9')
-	    a_flag+=STRTOL(p+1,&p,10);
+	    a_flag+=strtol(p+1,&p,10);
 	  else
 	    a_flag++,p++;
 	  break;
@@ -553,7 +549,7 @@ int main(int argc, char **argv)
 	  switch (p[1]) {
 	    case '0': case '1': case '2': case '3': case '4':
 	    case '5': case '6': case '7': case '8': case '9':
-	      Pike_interpreter.trace_level+=STRTOL(p+1,&p,10);
+	      Pike_interpreter.trace_level+=strtol(p+1,&p,10);
 	      break;
 
 	    case 'g':
@@ -576,7 +572,7 @@ int main(int argc, char **argv)
 	    p+=strlen(p);
 	  }else{
 	    if(p[1]>='0' && p[1]<='9')
-	      p_flag+=STRTOL(p+1,&p,10);
+	      p_flag+=strtol(p+1,&p,10);
 	    else
 	      p_flag++,p++;
 	  }
@@ -584,7 +580,7 @@ int main(int argc, char **argv)
 
 	case 'l':
 	  if(p[1]>='0' && p[1]<='9')
-	    l_flag+=STRTOL(p+1,&p,10);
+	    l_flag+=strtol(p+1,&p,10);
 	  else
 	    l_flag++,p++;
 	  break;

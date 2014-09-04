@@ -717,7 +717,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	int y;
 	double tmp;
 
-	tmp = FREXP(d, &y);
+	tmp = frexp(d, &y);
 	x = DO_NOT_WARN((INT64)((((INT64)1)<<(sizeof(INT64)*8 - 2))*tmp));
 	y -= sizeof(INT64)*8 - 2;
 
@@ -1201,7 +1201,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	  struct svalue str_sval;
 	  char *id_dumped = alloca(p->num_identifiers);
 	  int d_min = 0;
-	  MEMSET(id_dumped,0,p->num_identifiers);
+	  memset(id_dumped,0,p->num_identifiers);
 	  SET_SVAL(str_sval, T_STRING, 0, string, NULL);
 
 	  EDB(2,
@@ -1385,8 +1385,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 			       "is inherited.\n", id->name);
 		  }
 		  gs_flags = ref->id_flags & PTR_FROM_INT(p, i)->id_flags;
-		  if (id_dumped[PTR_FROM_INT(p, i)->identifier_offset] ||
-		      (i < d)) {
+		  if (id_dumped[PTR_FROM_INT(p, i)->identifier_offset]) {
 		    /* Either already dumped, or the dispatcher is in
 		     * front of us, which indicates that we are overloading
 		     * an inherited function with a variant.
@@ -1535,9 +1534,14 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 		     *     for it gets set by the variant functions,
 		     *     if it is overriding an old definition.
 		     *
-		     * We thus need to make sure id_dumped stays cleared.
+		     * Note that this means that even the first local
+		     * function must have the variant modifier (since
+		     * otherwise it would have overridden the old def
+		     * and not the dispatcher). This is handled
+		     * automatically by the use of id_dumped for the
+		     * dispatcher as marker for whether the first
+		     * variant has been added or not.
 		     */
-		    id_dumped[ref->identifier_offset] = 0;
 		    continue;
 		  }
 		  /* Not supported. */
@@ -2120,7 +2124,7 @@ static DECLSPEC(noreturn) void decode_error (
       decode_error (data, NULL, "Too large size %td (max is %td).\n",	\
 		    sz, data->len - data->ptr);				\
     STR=begin_wide_shared_string(num, what);				\
-    MEMCPY(STR->str, data->data + data->ptr, sz);			\
+    memcpy(STR->str, data->data + data->ptr, sz);			\
     data->ptr += sz;							\
     BITFLIP(STR);							    \
     STR=end_shared_string(STR);                                             \
@@ -2627,13 +2631,13 @@ static void decode_value2(struct decode_data *data)
 	    break;
 
 	  default:
-	    push_float(DO_NOT_WARN((FLOAT_TYPE)LDEXP(res, num)));
+	    push_float(DO_NOT_WARN((FLOAT_TYPE)ldexp(res, num)));
 	    break;
 	}
 	break;
       }
 
-      push_float(DO_NOT_WARN((FLOAT_TYPE)LDEXP(res, num)));
+      push_float(DO_NOT_WARN((FLOAT_TYPE)ldexp(res, num)));
       break;
     }
 
@@ -4646,7 +4650,7 @@ void f_decode_value(INT32 args)
       if (TYPEOF(Pike_sp[1-args]) == T_OBJECT) {
 	if (SUBTYPEOF(Pike_sp[1-args])) {
 	  struct decode_data data;
-	  MEMSET (&data, 0, sizeof (data));
+	  memset (&data, 0, sizeof (data));
 	  data.data_str = s;	/* Not refcounted. */
 	  decode_error(&data, NULL,
 		       "The codec may not be a subtyped object yet.\n");
@@ -4676,7 +4680,7 @@ void f_decode_value(INT32 args)
     ptrdiff_t l=s->len;
     struct decode_data data;
     ONERROR uwp;
-    MEMSET (&data, 0, sizeof (data));
+    memset (&data, 0, sizeof (data));
     data.data_str = s;		/* Not refcounted. */
     SET_ONERROR (uwp, restore_current_decode, current_decode);
     current_decode = &data;

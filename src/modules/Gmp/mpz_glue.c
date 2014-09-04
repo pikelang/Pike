@@ -638,10 +638,10 @@ static void mpzmod_create(INT32 args)
 
   case 2: /* Args are string of digits and integer base */
     if(TYPEOF(sp[-args]) != T_STRING)
-      SIMPLE_ARG_TYPE_ERROR ("Gmp.mpz", 1, "string");
+      SIMPLE_ARG_TYPE_ERROR ("create", 1, "string");
 
     if (TYPEOF(sp[1-args]) != T_INT)
-      SIMPLE_ARG_TYPE_ERROR ("Gmp.mpz", 2, "int");
+      SIMPLE_ARG_TYPE_ERROR ("create", 2, "int");
 
     if (sp[-args].u.string->flags & STRING_CLEAR_ON_EXIT) {
       Pike_fp->current_object->flags |= OBJECT_CLEAR_ON_EXIT;
@@ -831,7 +831,7 @@ static void mpzmod_digits(INT32 args)
   else
   {
     if (TYPEOF(sp[-args]) != T_INT)
-      SIMPLE_ARG_TYPE_ERROR ("Gmp.mpz->digits", 1, "int");
+      SIMPLE_ARG_TYPE_ERROR ("digits", 1, "int");
     base = sp[-args].u.integer;
   }
 
@@ -852,17 +852,17 @@ static void mpzmod__sprintf(INT32 args)
   debug_malloc_touch(Pike_fp->current_object);
   
   if(args < 2)
-    SIMPLE_TOO_FEW_ARGS_ERROR("Gmp.mpz->_sprintf", 2);
+    SIMPLE_TOO_FEW_ARGS_ERROR("_sprintf", 2);
   if(TYPEOF(sp[-args]) != T_INT)
-    SIMPLE_ARG_TYPE_ERROR ("Gmp.mpz->_sprintf", 1, "int");
+    SIMPLE_ARG_TYPE_ERROR ("_sprintf", 1, "int");
   if(TYPEOF(sp[1-args]) != T_MAPPING)
-    SIMPLE_ARG_TYPE_ERROR ("Gmp.mpz->_sprintf", 2, "mapping");
+    SIMPLE_ARG_TYPE_ERROR ("_sprintf", 2, "mapping");
 
   push_svalue(&sp[1-args]);
   push_static_text("precision");
   f_index(2);
   if(TYPEOF(sp[-1]) != T_INT)
-    SIMPLE_ARG_ERROR ("Gmp.mpz->_sprintf", 2,
+    SIMPLE_ARG_ERROR ("_sprintf", 2,
 		      "The field \"precision\" doesn't hold an integer.");
   precision = (--sp)->u.integer;
   
@@ -870,7 +870,7 @@ static void mpzmod__sprintf(INT32 args)
   push_static_text("width");
   f_index(2);
   if(TYPEOF(sp[-1]) != T_INT)
-    SIMPLE_ARG_ERROR ("Gmp.mpz->_sprintf", 2,
+    SIMPLE_ARG_ERROR ("_sprintf", 2,
 		      "The field \"width\" doesn't hold an integer.");
   width_undecided = (SUBTYPEOF(sp[-1]) != NUMBER_NUMBER);
   width = (--sp)->u.integer;
@@ -879,7 +879,7 @@ static void mpzmod__sprintf(INT32 args)
   push_static_text("flag_left");
   f_index(2);
   if(TYPEOF(sp[-1]) != T_INT)
-    SIMPLE_ARG_ERROR ("Gmp.mpz->_sprintf", 2,
+    SIMPLE_ARG_ERROR ("_sprintf", 2,
 		      "The field \"flag_left\" doesn't hold an integer.");
   flag_left=sp[-1].u.integer;
   pop_stack();
@@ -1055,10 +1055,10 @@ static void mpzmod_size(INT32 args)
   else
   {
     if (TYPEOF(sp[-args]) != T_INT)
-      SIMPLE_ARG_TYPE_ERROR ("Gmp.mpz->size", 1, "int");
+      SIMPLE_ARG_TYPE_ERROR ("size", 1, "int");
     base = sp[-args].u.integer;
     if ((base != 256) && ((base < 2) || (base > 36)))
-      SIMPLE_ARG_ERROR ("Gmp.mpz->size", 1, "Invalid base.");
+      SIMPLE_ARG_ERROR ("size", 1, "Invalid base.");
   }
   pop_n_elems(args);
 
@@ -1068,7 +1068,7 @@ static void mpzmod_size(INT32 args)
     push_int(DO_NOT_WARN((INT32)(mpz_sizeinbase(THIS, base))));
 }
 
-/*! @decl mixed cast(string type)
+/*! @decl string|int|float cast(string type)
  *!
  *! Cast this mpz object to another type. Allowed types are string,
  *! int and float.
@@ -1179,7 +1179,7 @@ static void name(INT32 args)						\
 	return;								\
  STRINGCONV(                                                            \
        case T_STRING:                                                   \
-        MEMMOVE(sp-args+1, sp-args, sizeof(struct svalue)*args);        \
+        memmove(sp-args+1, sp-args, sizeof(struct svalue)*args);        \
         sp++; args++;                                                   \
         SET_SVAL_TYPE(sp[-args], PIKE_T_FREE);				\
         SET_SVAL(sp[-args], T_STRING, 0, string,			\
@@ -1191,7 +1191,7 @@ static void name(INT32 args)						\
   }									\
   for(e=0; e<args; e++)							\
     if(TYPEOF(sp[e-args]) != T_INT || !FITS_ULONG (sp[e-args].u.integer)) \
-      get_mpz(sp+e-args, 1, "Gmp.mpz->`" errmsg_op, e + 1, args);	\
+      get_mpz(sp+e-args, 1, "`" errmsg_op, e + 1, args);	\
   res = fast_clone_object(THIS_PROGRAM);				\
   mpz_set(OBTOMPZ(res), THIS);						\
   for(e=0;e<args;e++)							\
@@ -1234,7 +1234,7 @@ static void PIKE_CONCAT(name,_rhs)(INT32 args)				\
   }									\
   for(e=0; e<args; e++)							\
     if(TYPEOF(sp[e-args]) != T_INT || !FITS_ULONG (sp[e-args].u.integer)) \
-      get_mpz(sp+e-args, 1, "Gmp.mpz->``" errmsg_op, e + 1, args);	\
+      get_mpz(sp+e-args, 1, "``" errmsg_op, e + 1, args);	\
   res = fast_clone_object(THIS_PROGRAM);				\
   mpz_set(OBTOMPZ(res), THIS);						\
   for(e=0;e<args;e++)							\
@@ -1269,7 +1269,7 @@ static void mpzmod_add_eq(INT32 args)
           push_float( (FLOAT_TYPE)ret );
           return;
         case T_STRING:
-          MEMMOVE(sp-args+1, sp-args, sizeof(struct svalue)*args);
+          memmove(sp-args+1, sp-args, sizeof(struct svalue)*args);
           sp++; args++;
           SET_SVAL_TYPE(sp[-args], PIKE_T_FREE);
           SET_SVAL(sp[-args], T_STRING, 0, string,
@@ -1281,7 +1281,7 @@ static void mpzmod_add_eq(INT32 args)
   }
   for(e=0; e<args; e++)
     if(TYPEOF(sp[e-args]) != T_INT || !FITS_ULONG (sp[e-args].u.integer))
-      get_mpz(sp+e-args, 1, "Gmp.mpz->`+", e + 1, args);
+      get_mpz(sp+e-args, 1, "`+", e + 1, args);
   for(e=0;e<args;e++)
     if(TYPEOF(sp[e-args]) != T_INT)
       mpz_add(THIS, THIS, OBTOMPZ(sp[e-args].u.object));
@@ -1291,22 +1291,22 @@ static void mpzmod_add_eq(INT32 args)
   PUSH_REDUCED(fp->current_object);
 }
 
-/*! @decl Gmp.mpz `+(int|float|Gmp.mpz ... x)
+/*! @decl Gmp.mpz `+(int|float|Gmp.mpz x)
  */
-/*! @decl Gmp.mpz ``+(int|float|Gmp.mpz ... x)
+/*! @decl Gmp.mpz ``+(int|float|Gmp.mpz x)
  */
 BINFUN2(mpzmod_add, "+", mpz_add, +, f_add, ADD)
 
 #undef STRINGCONV
 #define STRINGCONV(X)
 
-/*! @decl Gmp.mpz `*(int|float|Gmp.mpz ... x)
+/*! @decl Gmp.mpz `*(int|float|Gmp.mpz x)
  */
-/*! @decl Gmp.mpz ``*(int|float|Gmp.mpz ... x)
+/*! @decl Gmp.mpz ``*(int|float|Gmp.mpz x)
  */
 BINFUN2(mpzmod_mul, "*", mpz_mul, *, f_multiply, MULTIPLY)
 
-/*! @decl Gmp.mpz gcd(object|int|float|string... arg)
+/*! @decl Gmp.mpz gcd(object|int|float|string ... args)
  *!
  *! Return the greatest common divisor between this mpz object and
  *! all the arguments.
@@ -1317,7 +1317,7 @@ static void mpzmod_gcd(INT32 args)
   struct object *res;
   for(e=0; e<args; e++)
     if(TYPEOF(sp[e-args]) != T_INT || sp[e-args].u.integer<=0)
-      get_mpz(sp+e-args, 1, "Gmp.mpz->gcd", e + 1, args);
+      get_mpz(sp+e-args, 1, "gcd", e + 1, args);
   res = fast_clone_object(THIS_PROGRAM);
   mpz_set(OBTOMPZ(res), THIS);
   for(e=0;e<args;e++)
@@ -1330,7 +1330,7 @@ static void mpzmod_gcd(INT32 args)
   PUSH_REDUCED(res);
 }
 
-/*! @decl Gmp.mpz `-(int|float|Gmp.mpz ... x)
+/*! @decl Gmp.mpz `-(int|float|Gmp.mpz x)
  */
 static void mpzmod_sub(INT32 args)
 {
@@ -1339,7 +1339,7 @@ static void mpzmod_sub(INT32 args)
 
   if (args)
     for (e = 0; e<args; e++)
-      get_mpz(sp + e - args, 1, "Gmp.mpz->`-", e + 1, args);
+      get_mpz(sp + e - args, 1, "`-", e + 1, args);
   
   res = fast_clone_object(THIS_PROGRAM);
   mpz_set(OBTOMPZ(res), THIS);
@@ -1356,7 +1356,7 @@ static void mpzmod_sub(INT32 args)
   PUSH_REDUCED(res);
 }
 
-/*! @decl Gmp.mpz ``-(int|float|Gmp.mpz ... x)
+/*! @decl Gmp.mpz ``-(int|float|Gmp.mpz x)
  */
 static void mpzmod_rsub(INT32 args)
 {
@@ -1364,9 +1364,9 @@ static void mpzmod_rsub(INT32 args)
   MP_INT *a;
   
   if(args!=1)
-    SIMPLE_WRONG_NUM_ARGS_ERROR ("Gmp.mpz->``-", 1);
+    SIMPLE_WRONG_NUM_ARGS_ERROR ("``-", 1);
 
-  a=get_mpz(sp-1, 1, "Gmp.mpz->``-", 1, 1);
+  a=get_mpz(sp-1, 1, "``-", 1, 1);
   
   res = fast_clone_object(THIS_PROGRAM);
 
@@ -1375,7 +1375,7 @@ static void mpzmod_rsub(INT32 args)
   PUSH_REDUCED(res);
 }
 
-/*! @decl Gmp.mpz `/(int|float|Gmp.mpz ... x)
+/*! @decl Gmp.mpz `/(int|float|Gmp.mpz x)
  */
 static void mpzmod_div(INT32 args)
 {
@@ -1385,8 +1385,8 @@ static void mpzmod_div(INT32 args)
   for(e=0;e<args;e++)
   {
     if(TYPEOF(sp[e-args]) != T_INT || sp[e-args].u.integer<=0)
-      if (!mpz_sgn(get_mpz(sp+e-args, 1, "Gmp.mpz->`/", e + 1, args)))
-	SIMPLE_DIVISION_BY_ZERO_ERROR ("Gmp.mpz->`/");
+      if (!mpz_sgn(get_mpz(sp+e-args, 1, "`/", e + 1, args)))
+	SIMPLE_DIVISION_BY_ZERO_ERROR ("`/");
   }
   
   res = fast_clone_object(THIS_PROGRAM);
@@ -1403,7 +1403,7 @@ static void mpzmod_div(INT32 args)
        }
        else
        {
-	  MP_INT *tmp=get_mpz(sp+e-args,1,"Gmp.mpz->`/",e,e);
+	  MP_INT *tmp=get_mpz(sp+e-args,1,"`/",e,e);
 	  mpz_fdiv_q(OBTOMPZ(res), OBTOMPZ(res), tmp);
 /* will this leak? there is no simple way of poking at the references to tmp */
        }
@@ -1419,7 +1419,7 @@ static void mpzmod_div(INT32 args)
   PUSH_REDUCED(res);
 }
 
-/*! @decl Gmp.mpz ``/(int|float|Gmp.mpz ... x)
+/*! @decl Gmp.mpz ``/(int|float|Gmp.mpz x)
  */
 static void mpzmod_rdiv(INT32 args)
 {
@@ -1427,12 +1427,12 @@ static void mpzmod_rdiv(INT32 args)
   struct object *res = NULL;
 
   if(args!=1)
-    SIMPLE_WRONG_NUM_ARGS_ERROR ("Gmp.mpz->``/", 1);
+    SIMPLE_WRONG_NUM_ARGS_ERROR ("``/", 1);
 
   if(!mpz_sgn(THIS))
-    SIMPLE_DIVISION_BY_ZERO_ERROR ("Gmp.mpz->``/");
+    SIMPLE_DIVISION_BY_ZERO_ERROR ("``/");
 
-  a=get_mpz(sp-1, 1, "Gmp.mpz->``/", 1, 1);
+  a=get_mpz(sp-1, 1, "``/", 1, 1);
   
   res=fast_clone_object(THIS_PROGRAM);
   mpz_fdiv_q(OBTOMPZ(res), a, THIS);
@@ -1440,7 +1440,7 @@ static void mpzmod_rdiv(INT32 args)
   PUSH_REDUCED(res);
 }
 
-/*! @decl Gmp.mpz `%(int|float|Gmp.mpz ... x)
+/*! @decl Gmp.mpz `%(int|float|Gmp.mpz x)
  */
 static void mpzmod_mod(INT32 args)
 {
@@ -1448,8 +1448,8 @@ static void mpzmod_mod(INT32 args)
   struct object *res;
   
   for(e=0;e<args;e++)
-    if (!mpz_sgn(get_mpz(sp+e-args, 1, "Gmp.mpz->`%", e + 1, args)))
-      SIMPLE_DIVISION_BY_ZERO_ERROR ("Gmp.mpz->`%");
+    if (!mpz_sgn(get_mpz(sp+e-args, 1, "`%", e + 1, args)))
+      SIMPLE_DIVISION_BY_ZERO_ERROR ("`%");
 
   res = fast_clone_object(THIS_PROGRAM);
   mpz_set(OBTOMPZ(res), THIS);
@@ -1460,7 +1460,7 @@ static void mpzmod_mod(INT32 args)
   PUSH_REDUCED(res);
 }
 
-/*! @decl Gmp.mpz ``%(int|float|Gmp.mpz ... x)
+/*! @decl Gmp.mpz ``%(int|float|Gmp.mpz x)
  */
 static void mpzmod_rmod(INT32 args)
 {
@@ -1468,12 +1468,12 @@ static void mpzmod_rmod(INT32 args)
   struct object *res = NULL;
 
   if(args!=1)
-    SIMPLE_WRONG_NUM_ARGS_ERROR ("Gmp.mpz->``%", 1);
+    SIMPLE_WRONG_NUM_ARGS_ERROR ("``%", 1);
 
   if(!mpz_sgn(THIS))
-    SIMPLE_DIVISION_BY_ZERO_ERROR ("Gmp.mpz->``%");
+    SIMPLE_DIVISION_BY_ZERO_ERROR ("``%");
 
-  a=get_mpz(sp-1, 1, "Gmp.mpz->``%", 1, 1);
+  a=get_mpz(sp-1, 1, "``%", 1, 1);
   
   res=fast_clone_object(THIS_PROGRAM);
   mpz_fdiv_r(OBTOMPZ(res), a, THIS);
@@ -1501,9 +1501,9 @@ static void mpzmod_gcdext(INT32 args)
   MP_INT *a;
 
   if (args != 1)
-    SIMPLE_WRONG_NUM_ARGS_ERROR ("Gmp.mpz->gcdext", 1);
+    SIMPLE_WRONG_NUM_ARGS_ERROR ("gcdext", 1);
 
-  a = get_mpz(sp-1, 1, "Gmp.mpz->gcdext", 1, 1);
+  a = get_mpz(sp-1, 1, "gcdext", 1, 1);
   
   g = fast_clone_object(THIS_PROGRAM);
   s = fast_clone_object(THIS_PROGRAM);
@@ -1537,9 +1537,9 @@ static void mpzmod_gcdext2(INT32 args)
   MP_INT *a;
 
   if (args != 1)
-    SIMPLE_WRONG_NUM_ARGS_ERROR ("Gmp.mpz->gcdext2", 1);
+    SIMPLE_WRONG_NUM_ARGS_ERROR ("gcdext2", 1);
 
-  a = get_mpz(sp-args, 1, "Gmp.mpz->gcdext2", 1, 1);
+  a = get_mpz(sp-args, 1, "gcdext2", 1, 1);
   
   g = fast_clone_object(THIS_PROGRAM);
   s = fast_clone_object(THIS_PROGRAM);
@@ -1564,11 +1564,11 @@ static void mpzmod_invert(INT32 args)
   struct object *res;
 
   if (args != 1)
-    SIMPLE_WRONG_NUM_ARGS_ERROR ("Gmp.mpz->invert", 1);
-  modulo = get_mpz(sp-1, 1, "Gmp.mpz->invert", 1, 1);
+    SIMPLE_WRONG_NUM_ARGS_ERROR ("invert", 1);
+  modulo = get_mpz(sp-1, 1, "invert", 1, 1);
 
   if (!mpz_sgn(modulo))
-    SIMPLE_DIVISION_BY_ZERO_ERROR ("Gmp.mpz->invert");
+    SIMPLE_DIVISION_BY_ZERO_ERROR ("invert");
   res = fast_clone_object(THIS_PROGRAM);
   if (mpz_invert(OBTOMPZ(res), THIS, modulo) == 0)
   {
@@ -1628,12 +1628,12 @@ static void mpzmod_bin(INT32 args)
   struct object *res;
 
   if (args != 1)
-    SIMPLE_WRONG_NUM_ARGS_ERROR ("Gmp.mpz->bin", 1);
-  k = get_mpz (sp-1, 1, "Gmp.mpz->bin", 1, 1);
+    SIMPLE_WRONG_NUM_ARGS_ERROR ("bin", 1);
+  k = get_mpz (sp-1, 1, "bin", 1, 1);
   if (mpz_sgn (k) < 0)
     Pike_error ("Cannot calculate binomial with negative k value.\n");
   if (!mpz_fits_ulong_p (k))
-    SIMPLE_ARG_ERROR ("Gmp.mpz->bin", 1, "Argument too large.\n");
+    SIMPLE_ARG_ERROR ("bin", 1, "Argument too large.\n");
 
   res = fast_clone_object(THIS_PROGRAM);
   mpz_bin_ui (OBTOMPZ (res), THIS, mpz_get_ui (k));
@@ -1662,17 +1662,17 @@ static void name(INT32 args)				\
   PUSH_REDUCED(res);					\
 }
 
-/*! @decl Gmp.mpz `&(int|float|Gmp.mpz ... x)
+/*! @decl Gmp.mpz `&(int|float|Gmp.mpz x)
  */
-BINFUN(mpzmod_and, "Gmp.mpz->`&", mpz_and)
+BINFUN(mpzmod_and, "`&", mpz_and)
 
-/*! @decl Gmp.mpz `|(int|float|Gmp.mpz ... x)
+/*! @decl Gmp.mpz `|(int|float|Gmp.mpz x)
  */
-BINFUN(mpzmod_or, "Gmp.mpz->`|", mpz_ior)
+BINFUN(mpzmod_or, "`|", mpz_ior)
 
-/*! @decl Gmp.mpz `^(int|float|Gmp.mpz ... x)
+/*! @decl Gmp.mpz `^(int|float|Gmp.mpz x)
  */
-BINFUN(mpzmod_xor, "Gmp.mpz->`^", mpz_xor)
+BINFUN(mpzmod_xor, "`^", mpz_xor)
 
 /*! @decl Gmp.mpz `~()
  */
@@ -1703,20 +1703,26 @@ static void name(INT32 args)				\
 
 /*! @decl int(0..1) `>(mixed with)
  */
-CMPEQU(mpzmod_gt, "Gmp.mpz->`>", >, RET_UNDEFINED)
+CMPEQU(mpzmod_gt, "`>", >, RET_UNDEFINED)
 
 /*! @decl int(0..1) `<(mixed with)
  */
-CMPEQU(mpzmod_lt, "Gmp.mpz->`<", <, RET_UNDEFINED)
+CMPEQU(mpzmod_lt, "`<", <, RET_UNDEFINED)
 
 /*! @decl int(0..1) `==(mixed with)
  */
-CMPEQU(mpzmod_eq, "Gmp.mpz->`==", ==, RET_UNDEFINED)
+CMPEQU(mpzmod_eq, "`==", ==, RET_UNDEFINED)
 
-/*! @decl int(0..1) probably_prime_p()
+/*! @decl int(0..1) probably_prime_p(int count)
  *!
  *! Return 1 if this mpz object is a prime, and 0 most of the time if
  *! it is not.
+ *!
+ *! @param count
+ *!   The prime number testing is using Donald Knuth's probabilistic
+ *!   primality test. The chance for a false positive is
+ *!   pow(0.25,count). The higher value, the more probable it is that
+ *!   the number is a prime. Default value is 25.
  */
 static void mpzmod_probably_prime_p(INT32 args)
 {
@@ -1724,11 +1730,10 @@ static void mpzmod_probably_prime_p(INT32 args)
   if (args)
   {
     if (TYPEOF(sp[-args]) != T_INT)
-      SIMPLE_ARG_TYPE_ERROR ("Gmp.mpz->probably_prime_p", 1, "int");
+      SIMPLE_ARG_TYPE_ERROR ("probably_prime_p", 1, "int(1..)");
     count = sp[-args].u.integer;
     if (count <= 0)
-      SIMPLE_ARG_ERROR ("Gmp.mpz->probably_prime_p", 1,
-			"The count must be positive.");
+      SIMPLE_ARG_TYPE_ERROR ("probably_prime_p", 1, "int(1..)");
   } else
     count = 25;
   pop_n_elems(args);
@@ -1744,11 +1749,10 @@ static void mpzmod_small_factor(INT32 args)
   if (args)
     {
       if (TYPEOF(sp[-args]) != T_INT)
-	SIMPLE_ARG_TYPE_ERROR ("Gmp.mpz->small_factor", 1, "int");
+	SIMPLE_ARG_TYPE_ERROR ("small_factor", 1, "int(1..)");
       limit = sp[-args].u.integer;
       if (limit < 1)
-	SIMPLE_ARG_ERROR ("Gmp.mpz->small_factor", 1,
-			  "The limit must be at least 1.");
+	SIMPLE_ARG_TYPE_ERROR ("small_factor", 1, "int(1..)");
     }
   else
     limit = INT_MAX;
@@ -1823,26 +1827,26 @@ static void mpzmod_lsh(INT32 args)
   MP_INT *mi;
 
   if (args != 1)
-    SIMPLE_WRONG_NUM_ARGS_ERROR ("Gmp.mpz->`<<", 1);
+    SIMPLE_WRONG_NUM_ARGS_ERROR ("`<<", 1);
 
   if(TYPEOF(sp[-1]) == T_INT) {
     if(sp[-1].u.integer < 0)
-      SIMPLE_ARG_ERROR ("Gmp.mpz->`<<", 1, "Got negative shift count.");
+      SIMPLE_ARG_ERROR ("`<<", 1, "Got negative shift count.");
 #ifdef BIG_PIKE_INT
     if (!FITS_ULONG (sp[-1].u.integer) && mpz_sgn (THIS))
-      SIMPLE_ARG_ERROR ("Gmp.mpz->`<<", 1, "Shift count too large.");
+      SIMPLE_ARG_ERROR ("`<<", 1, "Shift count too large.");
 #endif
     res = fast_clone_object(THIS_PROGRAM);
     mpz_mul_2exp(OBTOMPZ(res), THIS, sp[-1].u.integer);
   } else {
-    mi = get_mpz(sp-1, 1, "Gmp.mpz->`<<", 1, 1);
+    mi = get_mpz(sp-1, 1, "`<<", 1, 1);
     if(mpz_sgn(mi)<0)
-      SIMPLE_ARG_ERROR ("Gmp.mpz->`<<", 1, "Got negative shift count.");
+      SIMPLE_ARG_ERROR ("`<<", 1, "Got negative shift count.");
     /* Cut off at 1MB ie 0x800000 bits. */
     if(!mpz_fits_ulong_p(mi) || (mpz_get_ui(THIS) > 0x800000))
     {
        if(mpz_sgn(THIS))
-	 SIMPLE_ARG_ERROR ("Gmp.mpz->`<<", 1, "Shift count too large.");
+	 SIMPLE_ARG_ERROR ("`<<", 1, "Shift count too large.");
        else {
     /* Special case: shifting 0 left any number of bits still yields 0 */
 	  res = fast_clone_object(THIS_PROGRAM);
@@ -1865,12 +1869,12 @@ static void mpzmod_rsh(INT32 args)
   struct object *res = NULL;
 
   if (args != 1)
-    SIMPLE_WRONG_NUM_ARGS_ERROR ("Gmp.mpz->`>>", 1);
+    SIMPLE_WRONG_NUM_ARGS_ERROR ("`>>", 1);
 
   if(TYPEOF(sp[-1]) == T_INT)
   {
      if (sp[-1].u.integer < 0)
-       SIMPLE_ARG_ERROR ("Gmp.mpz->`>>", 1, "Got negative shift count.");
+       SIMPLE_ARG_ERROR ("`>>", 1, "Got negative shift count.");
 #ifdef BIG_PIKE_INT
      if (!FITS_ULONG (sp[-1].u.integer))
      {
@@ -1886,10 +1890,10 @@ static void mpzmod_rsh(INT32 args)
   }
   else
   {
-     MP_INT *mi = get_mpz(sp-1, 1, "Gmp.mpz->`>>", 1, 1);
+     MP_INT *mi = get_mpz(sp-1, 1, "`>>", 1, 1);
      if(!mpz_fits_ulong_p (mi)) {
        if(mpz_sgn(mi)<0)
-	 SIMPLE_ARG_ERROR ("Gmp.mpz->`>>", 1, "Got negative shift count.");
+	 SIMPLE_ARG_ERROR ("`>>", 1, "Got negative shift count.");
        res = fast_clone_object(THIS_PROGRAM);
        mpz_set_si(OBTOMPZ(res), mpz_sgn(THIS)<0? -1:0);
      }
@@ -1911,11 +1915,11 @@ static void mpzmod_rlsh(INT32 args)
   MP_INT *mi;
 
   if (args != 1)
-    SIMPLE_WRONG_NUM_ARGS_ERROR ("Gmp.mpz->``<<", 1);
+    SIMPLE_WRONG_NUM_ARGS_ERROR ("``<<", 1);
   if(mpz_sgn(THIS) < 0)
     Pike_error ("Gmp.mpz->``<<(): Got negative shift count.\n");
 
-  mi = get_mpz(sp-1, 1, "Gmp.mpz->``<<", 1, 1);
+  mi = get_mpz(sp-1, 1, "``<<", 1, 1);
 
   /* Cut off at 1MB ie 0x800000 bits. */
   if(!mpz_fits_ulong_p(THIS) || (mpz_get_ui(THIS) > 0x800000)) {
@@ -1943,8 +1947,8 @@ static void mpzmod_rrsh(INT32 args)
   MP_INT *mi;
 
   if (args != 1)
-    SIMPLE_WRONG_NUM_ARGS_ERROR ("Gmp.mpz->``>>", 1);
-  mi = get_mpz(sp-1, 1, "Gmp.mpz->``>>", 1, 1);
+    SIMPLE_WRONG_NUM_ARGS_ERROR ("``>>", 1);
+  mi = get_mpz(sp-1, 1, "``>>", 1, 1);
 
   if (!mpz_fits_ulong_p (THIS)) {
     if(mpz_sgn(THIS) < 0)
@@ -1975,13 +1979,13 @@ static void mpzmod_powm(INT32 args)
   MP_INT *n, *e;
   
   if(args != 2)
-    SIMPLE_WRONG_NUM_ARGS_ERROR ("Gmp.mpz->powm", 2);
+    SIMPLE_WRONG_NUM_ARGS_ERROR ("powm", 2);
 
-  e = get_mpz(sp - 2, 1, "Gmp.mpz->powm", 1, 2);
-  n = get_mpz(sp - 1, 1, "Gmp.mpz->powm", 2, 2);
+  e = get_mpz(sp - 2, 1, "powm", 1, 2);
+  n = get_mpz(sp - 1, 1, "powm", 2, 2);
 
   if (!mpz_sgn(n))
-    SIMPLE_DIVISION_BY_ZERO_ERROR ("Gmp.mpz->powm");
+    SIMPLE_DIVISION_BY_ZERO_ERROR ("powm");
   res = fast_clone_object(THIS_PROGRAM);
   mpz_powm(OBTOMPZ(res), THIS, e, n);
   pop_n_elems(args);
@@ -2004,11 +2008,11 @@ static void mpzmod_pow(INT32 args)
   INT_TYPE size = (INT_TYPE)mpz_size(THIS);
   
   if (args != 1)
-    SIMPLE_WRONG_NUM_ARGS_ERROR ("Gmp.mpz->pow", 1);
+    SIMPLE_WRONG_NUM_ARGS_ERROR ("pow", 1);
   if (TYPEOF(sp[-1]) == T_INT) {
     INT_TYPE e = sp[-1].u.integer;
     if (e < 0)
-      SIMPLE_ARG_ERROR ("Gmp.mpz->pow", 1, "Negative exponent.");
+      SIMPLE_ARG_ERROR ("pow", 1, "Negative exponent.");
     /* Cut off at 1 MB. */
     if (INT_TYPE_MUL_OVERFLOW(e, size) || size * e > (INT_TYPE)(0x100000/sizeof(mp_limb_t))) {
       if(mpz_cmp_si(THIS, -1)<0 || mpz_cmp_si(THIS, 1)>0)
@@ -2018,15 +2022,15 @@ static void mpzmod_pow(INT32 args)
     mpz_pow_ui(OBTOMPZ(res), THIS, sp[-1].u.integer);
   } else {
 too_large:
-    mi = get_mpz(sp-1, 1, "Gmp.mpz->pow", 1, 1);
+    mi = get_mpz(sp-1, 1, "pow", 1, 1);
     if(mpz_sgn(mi)<0)
-      SIMPLE_ARG_ERROR ("Gmp.mpz->pow", 1, "Negative exponent.");
+      SIMPLE_ARG_ERROR ("pow", 1, "Negative exponent.");
     i=mpz_get_si(mi);
     /* Cut off at 1 MB. */
     if(mpz_cmp_si(mi, i) || INT_TYPE_MUL_OVERFLOW(size, i) || (size*i>(INT_TYPE)(0x100000/sizeof(mp_limb_t))))
     {
        if(mpz_cmp_si(THIS, -1)<0 || mpz_cmp_si(THIS, 1)>0)
-	 SIMPLE_ARG_ERROR ("Gmp.mpz->pow", 1, "Exponent too large.");
+	 SIMPLE_ARG_ERROR ("pow", 1, "Exponent too large.");
        else {
     /* Special case: these three integers can be raised to any power
        without overflowing.						 */
@@ -2161,9 +2165,9 @@ static void gmp_fac(INT32 args)
   if (args != 1)
     Pike_error("Gmp.fac: Wrong number of arguments.\n");
   if (TYPEOF(sp[-1]) != T_INT)
-    SIMPLE_ARG_TYPE_ERROR ("Gmp.fac", 1, "int");
+    SIMPLE_ARG_TYPE_ERROR ("fac", 1, "int");
   if (sp[-1].u.integer < 0)
-    SIMPLE_ARG_ERROR ("Gmp.fac", 1, "Got negative exponent.");
+    SIMPLE_ARG_ERROR ("fac", 1, "Got negative exponent.");
   res = fast_clone_object(mpzmod_program);
   mpz_fac_ui(OBTOMPZ(res), sp[-1].u.integer);
   pop_n_elems(args);
@@ -2331,7 +2335,7 @@ static void pike_mp_free (void *ptr, size_t UNUSED(size))
   ADD_FUNCTION("cast_to_float",mpzmod_get_float,tDeprecated(tFunc(tNone,tFlt)),0);    \
 									\
   ADD_FUNCTION("probably_prime_p",mpzmod_probably_prime_p,		\
-	       tFunc(tNone,tInt01),0);					\
+               tFunc(tOr(tVoid,tIntPos),tInt01),0);                     \
   ADD_FUNCTION("small_factor", mpzmod_small_factor,			\
 	       tFunc(tOr(tInt,tVoid),tInt), 0);				\
   ADD_FUNCTION("next_prime", mpzmod_next_prime,				\
@@ -2444,15 +2448,6 @@ PIKE_MODULE_INIT
 #endif
       gmp_push_ulongest, gmp_ulongest_from_bignum,
       gmp_mpz_from_svalue, gmp_push_bignum);
-
-#if 0
-  /* magic /Hubbe
-   * This seems to break more than it fixes though... /Hubbe
-   */
-  free_type(ID_FROM_INT(Pike_compiler->new_program, id)->type);
-  ID_FROM_INT(Pike_compiler->new_program, id)->type=CONSTTYPE(tOr(tFunc(tOr5(tVoid,tStr,tInt,tFlt,tObj),tInt),tFunc(tStr tInt,tInt)));
-#endif
-
 #endif
 
   pike_init_mpq_module();

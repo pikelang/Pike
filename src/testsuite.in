@@ -1,10 +1,10 @@
 START_MARKER
 
 // This triggered a bug only if run sufficiently early.
-test_compile_any([[#pike 7.2]])
 test_compile_any([[#pike 7.4]])
 test_compile_any([[#pike 7.6]])
 test_compile_any([[#pike 7.8]])
+test_compile_any([[#pike 8.0]])
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -567,12 +567,14 @@ test_any([[return sprintf("%O", typeof(sprintf("foo%c", 17))); ]],
 	 "string(17..17 | 102..111)");
 test_any([[return sprintf("%O", typeof(sprintf("%2c\n", 'a'))); ]],
 	 "string(8bit)");
+dnl Note the following tests the return type of int2char().
 test_any([[return sprintf("%O", typeof(sprintf("%c",  1023))); ]],
 	 "string(1023..1023)");
 test_any([[return sprintf("%O", typeof(sprintf("%c\n",  1023))); ]],
 	 "string(10..10 | 1023..1023)");
+dnl The following is due to (string & sprintf_result) == sprintf_result.
 test_any([[return sprintf("%O", typeof(sprintf("%c\n",  Stdio))); ]],
-	 "string");
+	 sprintf("%O", sprintf_result));
 test_any([[return sprintf("%O", typeof(sprintf("%4[1]c", 17))); ]],
 	 "string(8bit)");
 test_any([[return sprintf("%O", typeof(sprintf("%[1]n", 17))); ]],
@@ -4700,6 +4702,13 @@ test_equal([[ ({ ({1,2}), ({3,4}), ({5,6}) })[*][ ({0,1,1})[*] ] ]],
            [[ ({ 1,4,6 }) ]])
 
 // map tests
+test_eq(map("abc", `+, 1), "bcd")
+test_equal(map((["a":1,"b":2]), `+, 1), (["a":2,"b":3]))
+test_equal(map((<1,2,3>), `+, 1), (<2,3,4>))
+test_any_equal(class A { constant a=1; constant b=2; }; return map(A, `+ ,1);, (["a":2,"b":3]))
+test_any_equal(class A { protected mixed cast(string t) { if(t=="mapping") return (["a":1,"b":2]);}}; return map(A(), `+, 1);, (["a":2,"b":3]))
+test_any_equal(class A { protected mixed cast(string t) { if(t=="array") return ({1,2,3});}}; return map(A(), `+, 1);, ({2,3,4}))
+test_any_equal(class A { protected mixed cast(string t) { if(t=="multiset") return (<1,2,3>);}}; return map(A(), `+, 1);, (<2,3,4>))
 test_any_equal(array a = ({({1,0,0}),({1,1,0}),({0,1,1})}); return map(a,`[],1);,
                ({0,1,1}))
 test_any_equal(array a = ({({1,0,0}),({1,1,0}),({0,1,1})}); map(a,`[]=,1,0); return a;,
@@ -4758,6 +4767,7 @@ test_any_equal([[
 ]], ({({(["a":1]),(["a":1]),(["a":1,"c":17])}),
       ({(["a":1]),(["a":1])}),
       (["a":1,"b":"d"])}))
+
 
 test_any_equal([[
   /* This test tests a wild program pointer in the object o. The bug can trig
@@ -9552,6 +9562,20 @@ test_true(intp(__REAL_MINOR__))
 test_true(intp(__BUILD__))
 test_true(intp(__REAL_BUILD__))
 test_eq(__PIKE__,1)
+
+test_any_equal([[
+  int base = __COUNTER__;
+#define X __COUNTER__
+  return map( ({ __COUNTER__, X, __COUNTER__ }), `-, base);
+]], [[ ({ 1,2,3 }) ]])
+test_any_equal([[
+  int base = __COUNTER__;
+#define X __COUNTER__
+  return map( ({ __COUNTER__, X, __COUNTER__ }), `-, base);
+]], [[ ({ 1,2,3 }) ]])
+test_do(add_constant("COUNTER",__COUNTER__))
+test_eq(__COUNTER__-1,COUNTER)
+test_do(add_constant("COUNTER"))
 
 test_eq( compile_string("string a=#\"a\nb\";")()->a, "a\nb" )
 test_eq( compile_string("string a=#\"a\r\nb\";")()->a, "a\nb" )
