@@ -373,8 +373,6 @@ PMOD_EXPORT void init_string_builder(struct string_builder *s, int mag);
 PMOD_EXPORT void init_string_builder_alloc(struct string_builder *s, ptrdiff_t length, int mag);
 PMOD_EXPORT void init_string_builder_copy(struct string_builder *to,
 					  struct string_builder *from);
-PMOD_EXPORT int init_string_builder_with_string (struct string_builder *s,
-						 struct pike_string *str);
 PMOD_EXPORT void string_build_mkspace(struct string_builder *s,
 				      ptrdiff_t chars, int mag);
 PMOD_EXPORT void *string_builder_allocate(struct string_builder *s, ptrdiff_t chars, int mag);

@@ -2336,23 +2336,6 @@ PMOD_EXPORT void init_string_builder_copy(struct string_builder *to,
   to->known_shift = from->known_shift;
 }
 
-/* str becomes invalid if successful (i.e. nonzero returned),
- * otherwise nothing happens. */
-PMOD_EXPORT int init_string_builder_with_string (struct string_builder *s,
-						 struct pike_string *str)
-{
-  if (str->refs == 1 && str->len > SHORT_STRING_THRESHOLD) {
-    /* Unlink the string and use it as buffer directly. */
-    unlink_pike_string (str);
-    str->flags = STRING_NOT_SHARED;
-    s->s = str;
-    s->malloced = str->len;
-    s->known_shift = str->size_shift;
-    return 1;
-  }
-  return 0;
-}
-
 PMOD_EXPORT void string_build_mkspace(struct string_builder *s,
 				      ptrdiff_t chars, int mag)
 /* Doesn't touch or sanity check s->known_shift. */
