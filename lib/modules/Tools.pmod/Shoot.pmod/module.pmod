@@ -29,6 +29,8 @@ void run_sub( Test test, int maximum_seconds, float overhead)
     int testntot=0;
     int nloops = 0;
     int norm;
+
+    Pike.gc_parameters(([ "enabled" : 0 ]));
     for (;;nloops++)
     {
         int start_cpu = gethrvtime();
@@ -36,6 +38,8 @@ void run_sub( Test test, int maximum_seconds, float overhead)
         tg += (gethrvtime()-start_cpu) / 1000000.0;
         if (tg >= maximum_seconds) break;
     }
+    Pike.gc_parameters(([ "enabled" : 1 ]));
+    gc();
 
     norm = (int)(testntot/tg);
 
