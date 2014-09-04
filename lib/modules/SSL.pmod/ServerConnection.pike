@@ -563,8 +563,8 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 
 	    default:
               SSL3_DEBUG_MSG("Unhandled extension %O (%d bytes)\n",
-                             extension_data->buffer,
-                             sizeof(extension_data->buffer));
+                             (string)extension_data,
+                             sizeof(extension_data));
 	      break;
 	    }
 	  }
