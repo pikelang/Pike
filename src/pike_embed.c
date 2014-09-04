@@ -160,7 +160,6 @@ void init_pike(char **argv, const char *file)
   tzset();
 #endif /* HAVE_TZSET */
 
-#ifdef HAVE_SETLOCALE
 #ifdef LC_NUMERIC
   setlocale(LC_NUMERIC, "C");
 #endif
@@ -175,7 +174,6 @@ void init_pike(char **argv, const char *file)
 #endif
 #ifdef LC_MESSAGES
   setlocale(LC_MESSAGES, "");
-#endif
 #endif
 }
 

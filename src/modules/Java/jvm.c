@@ -3446,7 +3446,6 @@ static void f_create(INT32 args)
   }
 
   /* Java tries to be a wiseguy with the locale... */
-#ifdef HAVE_SETLOCALE
 #ifdef LC_NUMERIC
   setlocale(LC_NUMERIC, "C");
 #endif
@@ -3461,7 +3460,6 @@ static void f_create(INT32 args)
 #endif
 #ifdef LC_MESSAGES
   setlocale(LC_MESSAGES, "");
-#endif
 #endif
 
   cls = (*j->env)->FindClass(j->env, "java/lang/Object");

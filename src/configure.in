@@ -4525,7 +4525,6 @@ AC_CHECK_FUNCS( \
  mallinfo \
  mallopt \
  ptrace \
- setlocale \
  setrlimit \
  setresuid \
  signal \
