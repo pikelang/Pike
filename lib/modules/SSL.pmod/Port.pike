@@ -75,7 +75,7 @@ mixed query_id()
 
 //! @decl int bind(int port, @
 //!                function(SSL.File|void, mixed|void: int) callback, @
-//!                string|void ip,
+//!                string|void ip,@
 //!                int|void share)
 //!
 //! Bind an SSL port.
