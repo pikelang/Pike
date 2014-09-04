@@ -5505,7 +5505,6 @@ PMOD_EXPORT void f__compiler_trace(INT32 args)
 #endif /* YYDEBUG */
 #endif
 
-#if defined(HAVE_LOCALTIME) || defined(HAVE_GMTIME)
 static void encode_struct_tm(struct tm *tm)
 {
   push_text("sec");
@@ -5529,9 +5528,7 @@ static void encode_struct_tm(struct tm *tm)
   push_text("isdst");
   push_int(tm->tm_isdst);
 }
-#endif
 
-#if defined (HAVE_GMTIME) || defined (HAVE_GMTIME_R) || defined (HAVE_GMTIME_S)
 /*! @decl mapping(string:int) gmtime(int timestamp)
  *!
  *!   Convert seconds since 00:00:00 UTC, Jan 1, 1970 into components.
@@ -5575,9 +5572,7 @@ PMOD_EXPORT void f_gmtime(INT32 args)
   push_int(0);
   f_aggregate_mapping(20);
 }
-#endif
 
-#ifdef HAVE_LOCALTIME
 /*! @decl mapping(string:int) localtime(int timestamp)
  *!
  *!   Convert seconds since 00:00:00 UTC, 1 Jan 1970 into components.
@@ -5652,9 +5647,6 @@ PMOD_EXPORT void f_localtime(INT32 args)
 #endif
   f_aggregate_mapping(20);
 }
-#endif
-
-#if defined (HAVE_GMTIME) || defined (HAVE_LOCALTIME)
 
 #define isleap(y) ((((y) % 4) == 0 && ((y) % 100) != 0) || ((y) % 400) == 0)
 
@@ -5875,9 +5867,7 @@ static int my_time_inverse (struct tm *target_tm, time_t *result, time_fn timefn
   *result = current_ts;
   return 1;
 }
-#endif /* HAVE_GMTIME || HAVE_LOCALTIME */
 
-#if defined (HAVE_MKTIME) || defined (HAVE_LOCALTIME)
 /*! @decl int mktime(mapping(string:int) tm)
  *! @decl int mktime(int sec, int min, int hour, int mday, int mon, int year, @
  *!                  int|void isdst, int|void tz)
@@ -5964,7 +5954,6 @@ PMOD_EXPORT void f_mktime (INT32 args)
 
   /* date.tm_zone = NULL; */
 
-#ifdef HAVE_GMTIME
   if((args > 7) && (SUBTYPEOF(Pike_sp[7-args]) == NUMBER_NUMBER))
   {
     /* UTC-relative time. Use gmtime. */
@@ -5972,70 +5961,19 @@ PMOD_EXPORT void f_mktime (INT32 args)
       PIKE_ERROR("mktime", "Time conversion failed.\n", Pike_sp, args);
     retval += tz;
   } else
-#endif /* HAVE_GMTIME */
 
   {
-#ifndef HAVE_GMTIME
-#ifdef STRUCT_TM_HAS_GMTOFF
-    /* BSD-style */
-    date.tm_gmtoff = 0;
-#else
-#ifdef STRUCT_TM_HAS___TM_GMTOFF
-    /* (Old) Linux-style */
-    date.__tm_gmtoff = 0;
-#else
-    if((args > 7) && (SUBTYPEOF(Pike_sp[7-args]) == NUMBER_NUMBER))
-    {
-      /* Pre-adjust for the timezone.
-       *
-       * Note that pre-adjustment must be done on AIX for dates
-       * near Jan 1, 1970, since AIX mktime(3) doesn't support
-       * negative time.
-       */
-      date.tm_sec += tz
-#ifdef HAVE_EXTERNAL_TIMEZONE
-	- timezone
-#endif /* HAVE_EXTERNAL_TIMEZONE */
-	;
-    }
-#endif /* STRUCT_TM_HAS___TM_GMTOFF */
-#endif /* STRUCT_TM_HAS_GMTOFF */
-#endif  /* !HAVE_GMTIME */
-
-#ifdef HAVE_MKTIME
     retval = mktime(&date);
     if (retval == -1)
-#endif
     {
-#ifdef HAVE_LOCALTIME
       /* mktime might fail on dates before 1970 (e.g. GNU libc 2.3.2),
        * so try our own inverse function with localtime.
        *
        * Note that localtime on Win32 will also fail for dates before 1970.
        */
       if (!my_time_inverse (&date, &retval, localtime))
-#endif
 	PIKE_ERROR("mktime", "Time conversion unsuccessful.\n", Pike_sp, args);
     }
-
-#if !defined (HAVE_GMTIME) && (defined(STRUCT_TM_HAS_GMTOFF) || defined(STRUCT_TM_HAS___TM_GMTOFF))
-    if((args > 7) && (SUBTYPEOF(Pike_sp[7-args]) == NUMBER_NUMBER))
-    {
-      /* Post-adjust for the timezone.
-       *
-       * Note that tm_gmtoff has the opposite sign of timezone.
-       *
-       * Note also that it must be post-adjusted, since the gmtoff
-       * field is set by mktime(3).
-       */
-#ifdef STRUCT_TM_HAS_GMTOFF
-      retval += tz + date.tm_gmtoff;
-#else
-      retval += tz + date.__tm_gmtoff;
-#endif /* STRUCT_TM_HAS_GMTOFF */
-    }
-#endif /* !HAVE_GMTIME && (STRUCT_TM_HAS_GMTOFF || STRUCT_TM_HAS___TM_GMTOFF) */
-
   }
 
   pop_n_elems(args);
@@ -6045,8 +5983,6 @@ PMOD_EXPORT void f_mktime (INT32 args)
   push_int(retval);
 #endif
 }
-#define GOT_F_MKTIME
-#endif	/* HAVE_MKTIME || HAVE_LOCALTIME */
 
 /* Common case: both strings are 8bit. */
 static int does_match_8_8( const unsigned char *s, int j, int sl,
@@ -10053,26 +9989,18 @@ void init_builtin_efuns(void)
 	   tFunc(tType(tMix), tArr(tString)),
 	   OPT_TRY_OPTIMIZE);
 
-#ifdef HAVE_LOCALTIME
-  
 /* function(int:mapping(string:int)) */
   ADD_EFUN("localtime",f_localtime,
 	   tFunc(tInt,tMap(tStr,tInt)),OPT_EXTERNAL_DEPEND);
-#endif
-#ifdef HAVE_GMTIME
-  
+
 /* function(int:mapping(string:int)) */
   ADD_EFUN("gmtime",f_gmtime,tFunc(tInt,tMap(tStr,tInt)),OPT_TRY_OPTIMIZE);
-#endif
 
-#ifdef GOT_F_MKTIME
-  
 /* function(int,int,int,int,int,int,int,void|int:int)|function(object|mapping:int) */
   ADD_EFUN("mktime",f_mktime,
 	   tOr(tFunc(tInt tInt tInt tInt tInt tInt
 		     tOr(tVoid,tInt) tOr(tVoid,tInt),tInt),
 	       tFunc(tOr(tObj,tMapping),tInt)),OPT_TRY_OPTIMIZE);
-#endif
 
 /* function(:void) */
   ADD_EFUN("_verify_internals",f__verify_internals,

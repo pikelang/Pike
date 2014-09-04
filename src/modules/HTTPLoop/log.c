@@ -183,16 +183,8 @@ void f_aap_log_as_commonlog_to_file(INT32 args)
       gmtime_r( &t, &tm );
 #else
       struct tm *tm_p;
-#ifdef HAVE_GMTIME
       tm_p = gmtime( &t ); /* This will break if two threads run
 			    gmtime() at once. */
-
-#else
-#ifdef HAVE_LOCALTIME
-      tm_p = localtime( &t ); /* This will break if two threads run
-			       localtime() at once. */
-#endif
-#endif
       if (tm_p) tm = *tm_p;
 #endif
       ot = le->t;

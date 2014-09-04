@@ -43,7 +43,6 @@ DECLARATIONS
 /*! @module System
  */
 
-#if defined(HAVE_MKTIME) && defined(HAVE_GMTIME) && defined(HAVE_LOCALTIME)
 /*! @class TM
  *! A wrapper for the system struct tm time keeping structure.
  *! This can be used as a (very) lightweight alternative to Calendar.
@@ -189,7 +188,7 @@ PIKECLASS TM
             RETURN 0;
         RETURN 1;
     }
-#endif
+#endif /* HAVE_STRPTIME */
     /*! @decl string(1..255) strftime( string(1..255) format )
      *! See also @[Gettext.setlocale]
      *!
@@ -614,7 +613,7 @@ PIKECLASS TM
 #undef tm_zone
 #undef tm_gmtoff
 #endif
-#endif
+
 /*! @endmodule
  */
 

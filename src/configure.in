@@ -4519,14 +4519,11 @@ AC_CHECK_FUNCS( \
  getrusage \
  gettimeofday \
  inet_ntop \
- localtime \
- gmtime \
  gmtime_r \
  gmtime_s \
  strptime \
  mallinfo \
  mallopt \
- mktime \
  perror \
  ptrace \
  setbuf \
