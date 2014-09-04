@@ -34,7 +34,8 @@ object|function|program request_program=Request;
 //!   @[Stdio.Port.bind] for more information
 void create(function(Request:void) _callback,
 	    void|int _portno,
-	    void|string _interface, void|string key,
+	    void|string _interface,
+            void|string|Crypto.Sign.State key,
             void|string|array(string) certificate,
             void|int share)
 {
@@ -47,7 +48,11 @@ void create(function(Request:void) _callback,
    port=MySSLPort();
    port->set_default_keycert();
    if( key && certificate )
+   {
+     if( stringp(certificate) )
+       certificate = ({ certificate });
      port->add_cert( key, certificate );
+   }
 
    if (!port->bind(portno,new_connection,[string]interface,share))
       error("HTTP.Server.SSLPort: failed to bind port %s%d: %s\n",
@@ -115,18 +120,13 @@ class MySSLPort
 
   // ---- Remove this?
 
-  private Crypto.Sign tmp_key;
+  private string tmp_key;
   private array(string) tmp_cert;
 
   //! @deprecated add_cert
   __deprecated__ void set_key(string skey)
   {
-    tmp_key = Standards.PKCS.RSA.parse_private_key(skey) ||
-      Standards.PKCS.DSA.parse_private_key(skey) ||
-#if constant(Crypto.ECC.Curve)
-      Standards.PKCS.ECDSA.parse_private_key(skey) ||
-#endif
-      0;
+    tmp_key = skey;
     if( tmp_key && tmp_cert )
       ctx->add_cert( tmp_key, tmp_cert );
   }
