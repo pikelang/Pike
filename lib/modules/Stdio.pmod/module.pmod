@@ -150,8 +150,8 @@ class File
   void set_buffer_mode( Stdio.IOBuffer|int(0..0) in,Stdio.IOBuffer|int(0..0) out )
   {
     inbuffer = in;
-    outbuffer = out;
-    outbuffer->__fd_set_output( this );
+    if( outbuffer = out )
+      outbuffer->__fd_set_output( this );
   }
 
   // This is needed in case we get overloaded by strange code
@@ -520,7 +520,16 @@ class File
   //! functions, eg for the fourth argument to
   //! @[String.SplitIterator].
   {
-    return lambda(){ return read(nbytes); };
+    return lambda()
+    {
+      if( inbuffer )
+      {
+        if(sizeof(inbuffer)<nbytes)
+          inbuffer->input_from(this,nbytes);
+        return inbuffer->read(nbytes);
+      }
+      return read(nbytes);
+    };
   }
 
   String.SplitIterator|LineIterator line_iterator( int|void trim )
@@ -909,8 +918,8 @@ class File
     if (!errno()) {
       if( inbuffer )
       {
-        if( inbuffer->input_from( this ) )
-          return ___read_callback( ___id, inbuffer );
+        if( inbuffer->input_from( this,0,1 ) )
+          return ___read_callback( ___id||this, inbuffer );
         else
         {
 	  ::set_read_callback(__stdio_read_callback);
@@ -927,7 +936,7 @@ class File
 	if(sizeof(s))
 	{
 	  BE_WERR(sprintf("  calling read callback with %O", s));
-	  return ___read_callback(___id, s);
+	  return ___read_callback(___id||this, s);
 	}
 	BE_WERR ("  got eof");
       }
@@ -951,7 +960,7 @@ class File
     ::set_read_callback(0);
     if (___close_callback) {
       BE_WERR ("  calling close callback");
-      return ___close_callback(___id);
+      return ___close_callback(___id||this);
     }
 
     return 0;
@@ -959,14 +968,14 @@ class File
 
   protected int __stdio_fs_event_callback(int event_mask)
   {
-    BE_WERR ("__stdio_fs_event_callback()");    
-    
+    BE_WERR ("__stdio_fs_event_callback()");
+
     if (!___fs_event_callback) return 0;
 
   	if(errno())
     	BE_WERR ("  got error " + strerror (errno()) + " from read()");
-    
-    return ___fs_event_callback(___id, event_mask);
+
+    return ___fs_event_callback(___id||this, event_mask);
   }
 
   protected int __stdio_close_callback()
@@ -999,7 +1008,7 @@ class File
 #endif
       ::set_read_callback(0);
       BE_WERR ("  calling close callback");
-      return ___close_callback(___id);
+      return ___close_callback(___id||this);
     }
 
     return 0;
@@ -1021,14 +1030,14 @@ class File
         else
         {
           outbuffer->__fd_set_output( 0 );
-          res = ___write_callback(___id,outbuffer);
+          res = ___write_callback(___id||this,outbuffer);
           if( sizeof( outbuffer ) )
             outbuffer->output_to( this );
           outbuffer->__fd_set_output( this );
         }
         return res;
       }
-      return ___write_callback(___id,);
+      return ___write_callback(___id||this);
     }
 
     BE_WERR ("  got error " + strerror (errno()) + " from backend");
@@ -1060,7 +1069,7 @@ class File
     {
       if (sizeof(s)) {
 	BE_WERR (sprintf ("  calling read oob callback with %O", s));
-	return ___read_oob_callback(___id, s);
+	return ___read_oob_callback(___id||this, s);
       }
 
       // If the backend doesn't support separate read oob events then
@@ -1089,7 +1098,7 @@ class File
       ::set_read_oob_callback(0);
       if (___close_callback) {
 	BE_WERR ("  calling close callback");
-	return ___close_callback(___id);
+	return ___close_callback(___id||this);
       }
     }
 
@@ -1102,7 +1111,7 @@ class File
     if (!___write_oob_callback) return 0;
 
     BE_WERR ("  calling write oob callback");
-    return ___write_oob_callback(___id);
+    return ___write_oob_callback(___id||this);
   }
 
   //! @decl void set_read_callback(function(mixed,string:int) read_cb)
@@ -2012,7 +2021,9 @@ class FILE
 
   function(:string) read_function(int nbytes)
   {
-    return lambda(){ return read( nbytes); };
+    return lambda(){
+             return read( nbytes);
+           };
   }
     
   //! Returns an iterator that will loop over the lines in this file. 
