@@ -886,9 +886,6 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
 PMOD_EXPORT int simple_add_constant(const char *name,
 			struct svalue *c,
 			INT32 flags);
-PMOD_EXPORT int add_integer_constant(const char *name,
-				     INT_ARG_TYPE i,
-				     INT32 flags);
 PMOD_EXPORT int low_add_integer_constant(struct pike_string *name,
 					   INT_ARG_TYPE i,
 					   INT32 flags);
@@ -1085,9 +1082,11 @@ static INLINE int __attribute__((unused)) FIND_LFUN(struct program * p, int lfun
 
 #define quick_add_function(NAME, NLEN, FUNC, TYPE, TLEN, FLAGS, OPT)            \
     low_quick_add_function(__builtin_constant_p(NAME)                           \
-                           ? make_shared_static_string(NAME, NLEN, eightbit)    \
-                           : make_shared_binary_string(NAME, NLEN),             \
+                           ? (make_shared_static_string(NAME, NLEN, eightbit))  \
+                           : (fprintf(stderr, "creating non-static string %*s\n", (int)NLEN, NAME), make_shared_binary_string(NAME, NLEN)),             \
                            FUNC, TYPE, TLEN, FLAGS, OPT)
+
+#define add_integer_constant(NAME, VAL, FLAGS) low_add_integer_constant(make_shared_string(NAME), VAL, FLAGS)
 
 
 #ifndef PIKE_USE_MACHINE_CODE
@@ -1110,7 +1109,7 @@ static INLINE int __attribute__((unused)) FIND_LFUN(struct program * p, int lfun
   ADD_FUNCTION2(NAME, 0, TYPE, FLAGS, OPT_FLAGS)
 
 #define ADD_INT_CONSTANT(NAME, CONST, FLAGS) \
-  quick_add_integer_constant(NAME, CONSTANT_STRLEN(NAME), CONST, FLAGS)
+  low_add_integer_constant(make_shared_string(NAME), CONST, FLAGS)
 
 #define ADD_FLOAT_CONSTANT(NAME, CONST, FLAGS) \
   quick_add_float_constant(NAME, CONSTANT_STRLEN(NAME), CONST, FLAGS)

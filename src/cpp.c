@@ -1634,7 +1634,7 @@ static struct define *do_magic_define(struct cpp *this,
     string_builder_binary_strcat(&s, name, len);
     def = alloc_empty_define(finish_string_builder(&s),0);
   } else
-    def = alloc_empty_define(make_shared_string(name),0);
+    def = alloc_empty_define(make_shared_static_string(name, strlen(name), eightbit),0);
   def->magic=fun;
   this->defines=hash_insert(this->defines, & def->link);
 
@@ -1669,9 +1669,9 @@ static void simple_add_define(struct cpp *this,
     string_builder_binary_strcat(&s, name, len);
     def = alloc_empty_define(finish_string_builder(&s),0);
   } else
-    def = alloc_empty_define(make_shared_string(name),0);
+    def = alloc_empty_define(make_shared_static_string(name, strlen(name), eightbit),0);
 
-  def->first=make_shared_string(what);
+  def->first=make_shared_static_string(what, strlen(what), eightbit);
   this->defines=hash_insert(this->defines, & def->link);
 }
 

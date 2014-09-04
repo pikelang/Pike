@@ -289,10 +289,9 @@ string allocate_string(string orig_str)
   int str_id = last_str_id++;
   stradd += ({
     sprintf("module_strings[%d] = \n"
-	    "  make_shared_binary_string(%s,\n"
-	    "                            CONSTANT_STRLEN(%s));\n",
+	    "  make_shared_string(%s);\n",
 	    str_id,
-	    orig_str, orig_str),
+	    orig_str),
   });
   str_sym = strings[str] = sprintf("module_strings[%d] /* %s */",
 				   str_id, orig_str);

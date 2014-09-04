@@ -1011,7 +1011,7 @@ void init_stdio_stat(void)
    push_int(0);
    for( n=0; n<sizeof(__indices)/sizeof(__indices[0]); n++ )
    {
-     struct pike_string *s = make_shared_string(__indices[n].name);
+     struct pike_string *s = make_shared_static_string(__indices[n].name, strlen(__indices[n].name), eightbit);
      stat_index_strs[__indices[n].id]=s;
      sp[-1].u.integer = __indices[n].id;
      mapping_string_insert( stat_map, s, sp-1);

@@ -115,6 +115,9 @@ int data_offset( string what )
 
   gbl_data += what;
 
+  if (!has_suffix(what, "\0")) gbl_data += "\0";
+
+
   return data_offset( what );
 }
 
@@ -210,7 +213,7 @@ class Function(Class parent,
     string res="";
     void low_do_emit( string name )
     {
-      res += sprintf("    quick_add_function(%s,%d,%s,%s,%d,\n                          "
+      res += sprintf("    low_quick_add_function(make_shared_static_string(%s,%d,eightbit),%s,%s,%d,\n                          "
                      "%s,OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);\n",
                      S(name,0,1,27), sizeof(name),
 		     glue_c_name(c_name()), S(type,0,2,27),
@@ -428,11 +431,11 @@ class Member( string name, Type type, int set,
   {
     string tp = function_type( pike_type( ) );
     if( set || classes[ type->name ] )
-      return sprintf("    quick_add_function(%s,%d,%s,\n                       %s,%d,"
+      return sprintf("    low_quick_add_function(make_shared_static_string(%s,%d,eightbit),%s,\n                       %s,%d,"
                      "0,OPT_EXTERNAL_DEPEND);\n",
                      S(name,0,1,27), sizeof(name),
 		     glue_c_name(c_name()), S(tp,0,2,27), sizeof(tp));
-    return sprintf("    quick_add_function(%s,%d,%s,\n                       %s,%d,"
+    return sprintf("    low_quick_add_function(make_shared_static_string(%s,%d,eightbit),%s,\n                       %s,%d,"
                    "0,OPT_EXTERNAL_DEPEND);\n",
                    S("get_"+name,0,1,27), sizeof("get_"+name),
 		   glue_c_name(c_name()), S(tp,0,2,27), sizeof(tp));

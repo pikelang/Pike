@@ -173,7 +173,7 @@ void file_tcgetattr(INT32 args)
 
    for( n=0; n<NELEM(termiosflags); n++ )
    {
-      push_text( termiosflags[n].name );
+      push_static_text( termiosflags[n].name );
       switch( termiosflags[n].var )
       {
         case 0: push_int( ti.c_cc[termiosflags[n].val] );  break;
