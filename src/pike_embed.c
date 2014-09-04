@@ -125,13 +125,7 @@ void init_pike(char **argv, const char *file)
   init_rusage();
 
   /* Attempt to make sure stderr is unbuffered. */
-#ifdef HAVE_SETVBUF
   setvbuf(stderr, NULL, _IONBF, 0);
-#else /* !HAVE_SETVBUF */
-#ifdef HAVE_SETBUF
-  setbuf(stderr, NULL);
-#endif /* HAVE_SETBUF */
-#endif /* HAVE_SETVBUF */
 
   TRACE((stderr, "Init CPU lib...\n"));
   

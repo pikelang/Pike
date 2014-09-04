@@ -4525,11 +4525,9 @@ AC_CHECK_FUNCS( \
  mallinfo \
  mallopt \
  ptrace \
- setbuf \
  setlocale \
  setrlimit \
  setresuid \
- setvbuf \
  signal \
  sigaction \
  sigvec \
