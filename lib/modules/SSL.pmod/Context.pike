@@ -759,6 +759,17 @@ void add_cert(Crypto.Sign.State key, array(string(8bit)) certs,
   CertificatePair cp = CertificatePair(key, certs, extra_name_globs);
   add_cert(cp);
 }
+variant void add_cert(string(8bit) key, array(string(8bit)) certs,
+                      array(string(8bit))|void extra_name_globs)
+{
+  Crypto.Sign.State _key = Standards.PKCS.RSA.parse_private_key(key) ||
+    Standards.PKCS.DSA.parse_private_key(key) ||
+#if constant(Crypto.ECC.Curve)
+    Standards.PKCS.ECDSA.parse_private_key(key) ||
+#endif
+    0;
+  add_cert(_key, certs, extra_name_globs);
+}
 variant void add_cert(CertificatePair cp)
 {
   void add(string what, mapping(string:array(CertificatePair)) to)
