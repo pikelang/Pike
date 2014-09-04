@@ -95,7 +95,7 @@ static struct ba_page * ba_alloc_page(struct block_allocator * a, int i) {
 }
 
 static void ba_free_empty_pages(struct block_allocator * a) {
-    int i = a->size - 1;
+    int i;
 
     for (i = a->size - 1; i >= 0; i--) {
         struct ba_page * p = a->pages[i];
@@ -108,8 +108,10 @@ static void ba_free_empty_pages(struct block_allocator * a) {
         a->pages[i] = NULL;
     }
 
-    a->size = i+1;
-    a->alloc = a->last_free = MAXIMUM(0, i);
+    if (a->size != i+1) {
+        a->size = i+1;
+        a->alloc = a->last_free = MAXIMUM(0, i);
+    }
 }
 
 PMOD_EXPORT void ba_low_init_aligned(struct block_allocator * a) {
@@ -164,18 +166,15 @@ PMOD_EXPORT void ba_destroy(struct block_allocator * a) {
 
 PMOD_EXPORT void ba_free_all(struct block_allocator * a) {
     int i;
-    struct ba_layout l;
 
     if (!a->l.offset) return;
     if (!a->size) return;
 
-    l = ba_get_layout(a, 0);
-
     for (i = 0; i < a->size; i++) {
-        struct ba_page * page = a->pages[i];
-        ba_clear_page(a, page, &l);
-        ba_double_layout(&l);
+        free(a->pages[i]);
+        a->pages[i] = NULL;
     }
+    a->size = 0;
     a->alloc = 0;
     a->last_free = 0;
 }
