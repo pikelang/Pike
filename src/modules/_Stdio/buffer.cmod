@@ -509,15 +509,20 @@ PIKECLASS IOBuffer
    *! Please note that this funcition will read all data from the
    *! filedescriptor unless it's set to be non-blocking.
    */
-  PIKEFUN int(0..) input_from( object f, int|void _nbytes )
+  PIKEFUN int(0..) input_from( object f, int|void _nbytes, int|void _once )
   {
     IOBuffer *io = THIS;
     size_t sz = io_len( io );
     size_t bread = 0, nbytes = (size_t)-1;
     struct my_file *fd;
+    int once = 0;
 
     if( _nbytes )
         nbytes = _nbytes->u.integer;
+
+    if( _once )
+        once = _once->u.integer;
+
 
     if( (fd = get_storage( f, file_program )) )
     {
@@ -533,10 +538,11 @@ PIKECLASS IOBuffer
 
         if( res <= 0 )
           break;
+
         nbytes -= res;
         io->len += res;
         bread += res;
-        if( res != 4096 )
+        if( res != 4096 || once)
             break;
       }
       fd->box.revents &= ~(PIKE_BIT_FD_READ|PIKE_BIT_FD_READ_OOB);
