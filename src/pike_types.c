@@ -737,8 +737,8 @@ void debug_push_int_type(INT_TYPE min, INT_TYPE max)
   else if (max>MAX_INT32) max=MAX_INT32;
 #endif
 
-#ifdef PIKE_DEBUG
-  if (min > max)
+#ifdef PIKE_DEBUG	/* FIXME: Kludge to support 2^32-1 */
+  if ((min>0 && max>0 || min<0 && max<0) && min > max)
     Pike_fatal("push_int_type(): Bad integer range:"
 	       " min:%"PRINTPIKEINT"d, max:%"PRINTPIKEINT"d.\n",
 	       min, max);
