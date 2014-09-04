@@ -1979,7 +1979,6 @@ static void file_write(INT32 args)
 
 	if(i<0)
 	{
-	  /* perror("writev"); */
 #ifdef HAVE_PIKE_SEND_FD
 	  if (fd_info) {
 	    restore_fd_info(fd_info);
