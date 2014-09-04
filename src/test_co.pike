@@ -57,15 +57,14 @@ mixed co(mixed func, mixed ... args)
 
 mixed rco(mixed func)
 {
-  mixed ret;
+  mixed ret, fp;
+  if( arrayp( func ) )
+      fp = func[0];
+  else
+      fp = func;
   if(zero_type(ret=remove_call_out(func))!=1)
   {
-    if(arrayp(func))
-    {
-      fc[func[0]]--;
-    }else{
-      fc[func]--;
-    }
+      fc[fp]--;
   }
   return ret;
 }
@@ -122,6 +121,7 @@ int main()
 
   verify();
 
+  log_status("Testing beginning of heap [2]");
   for(int e=0;e<sizeof(tmp);e++) tmp[e]=co(f0,-50.0);
 
   verify();
