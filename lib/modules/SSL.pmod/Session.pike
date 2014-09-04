@@ -266,6 +266,12 @@ int select_cipher_suite(array(CertificatePair) certs,
 {
   if (!sizeof(cipher_suites)) return 0;
 
+  if (!certs || !sizeof(certs))
+  {
+    SSL3_DEBUG_MSG("No certificates.\n");
+    return 0;
+  }
+
   SSL3_DEBUG_MSG("Candidate certificates: %O\n", certs);
 
   // Find the set of key exchange and hash algorithms supported by the
