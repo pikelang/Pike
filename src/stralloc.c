@@ -1066,7 +1066,7 @@ PMOD_EXPORT struct pike_string *debug_make_shared_string2(const p_wchar2 *str)
 
 /*** Free strings ***/
 
-static void unlink_pike_string(struct pike_string *s)
+PMOD_EXPORT void unlink_pike_string(struct pike_string *s)
 {
   size_t h;
   h= HMODULO(s->hval);

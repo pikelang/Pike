@@ -308,6 +308,8 @@ PMOD_EXPORT struct pike_string *debug_make_shared_string(const char *str);
 PMOD_EXPORT struct pike_string *debug_make_shared_string0(const p_wchar0 *str);
 PMOD_EXPORT struct pike_string *debug_make_shared_string1(const p_wchar1 *str);
 PMOD_EXPORT struct pike_string *debug_make_shared_string2(const p_wchar2 *str);
+PMOD_EXPORT void unlink_pike_string(struct pike_string *s);
+
 PMOD_EXPORT void check_string_range( struct pike_string *str, int loose,
                                      INT32 *min, INT32 *max );
 /* Returns true if str1 could contain str2. */
