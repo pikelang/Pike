@@ -4524,7 +4524,6 @@ AC_CHECK_FUNCS( \
  strptime \
  mallinfo \
  mallopt \
- perror \
  ptrace \
  setbuf \
  setlocale \
