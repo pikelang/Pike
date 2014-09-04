@@ -46,13 +46,14 @@ void create(function(Request:void) _callback,
    interface=_interface;
 
    port=MySSLPort();
-   port->set_default_keycert();
    if( key && certificate )
    {
      if( stringp(certificate) )
        certificate = ({ certificate });
-     port->add_cert( key, certificate );
+     port->ctx->add_cert( key, certificate );
    }
+   else
+     port->set_default_keycert();
 
    if (!port->bind(portno,new_connection,[string]interface,share))
       error("HTTP.Server.SSLPort: failed to bind port %s%d: %s\n",
