@@ -1,3 +1,8 @@
+//! Properties:
+//! int digits
+//! GTK2.Adjustment adjustment
+//! float climb-rate
+//!
 //!
 
 inherit GTK2.CellRendererText;

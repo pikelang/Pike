@@ -3,6 +3,11 @@ require gtk210;
 class GTK2.CellRendererSpin;
 inherit GTK2.CellRendererText;
 
+//! Properties:
+//! int digits
+//! GTK2.Adjustment adjustment
+//! float climb-rate
+
 void create(?mapping(string:mixed) props)
 //! Create a new GTK2.CellRendererSpin.
 {
