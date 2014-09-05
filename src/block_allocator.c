@@ -60,7 +60,7 @@ struct ba_block_header {
     struct ba_block_header * next;
 };
 
-static INLINE void ba_clear_page(struct block_allocator * a, struct ba_page * p, struct ba_layout * l) {
+static INLINE void ba_clear_page(struct block_allocator * VALGRINDUSED(a), struct ba_page * p, struct ba_layout * l) {
     p->h.used = 0;
     p->h.flags = BA_FLAG_SORTED;
     p->h.first = BA_BLOCKN(*l, p, 0);
