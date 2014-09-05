@@ -92,11 +92,13 @@
 # define PIKE_MEMPOOL_DESTROY(a)        VALGRIND_DESTROY_MEMPOOL(a)
 #else
 /* somewhat functional alternatives to mempool macros */
-# define PIKE_MEMPOOL_CREATE(a)
+# define PIKE_MEMPOOL_CREATE(a)         do {} while (0)
 # define PIKE_MEMPOOL_ALLOC(a, p, l)    PIKE_MEM_WO_RANGE(p, l)
 # define PIKE_MEMPOOL_FREE(a, p, l)     PIKE_MEM_NA_RANGE(p, l)
-# define PIKE_MEMPOOL_DESTROY(a)
+# define PIKE_MEMPOOL_DESTROY(a)        do {} while (0)
 #endif
+
+#define VALGRINDUSED(x)       x
 
 #else  /* !HAVE_VALGRIND_MACROS */
 
@@ -113,10 +115,12 @@
 #define PIKE_MEM_NOT_ADDR_RANGE(addr, bytes) 0
 #define PIKE_MEM_NOT_DEF(lvalue)	0
 #define PIKE_MEM_NOT_DEF_RANGE(addr, bytes) 0
-#define PIKE_MEMPOOL_CREATE(a)
-#define PIKE_MEMPOOL_ALLOC(a, p, l)
-#define PIKE_MEMPOOL_FREE(a, p, l)
-#define PIKE_MEMPOOL_DESTROY(a)
+#define PIKE_MEMPOOL_CREATE(a)          do {} while (0)
+#define PIKE_MEMPOOL_ALLOC(a, p, l)     do {} while (0)
+#define PIKE_MEMPOOL_FREE(a, p, l)      do {} while (0)
+#define PIKE_MEMPOOL_DESTROY(a)         do {} while (0)
+
+#define VALGRINDUSED(x)       UNUSED(x)
 
 #endif	/* !HAVE_VALGRIND_MACROS */
 
