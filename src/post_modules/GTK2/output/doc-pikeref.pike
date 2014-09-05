@@ -239,7 +239,7 @@ protected string make_function_doc( Function f, Class c )
   imgfile=imgfilename(c->name+"_"+f->name);
   if( !f->doc || !sizeof( f->doc ) )
   {
-    werror("Warning:"+f->file+":"+f->line+": "
+    werror("Warning: "+f->file+":"+f->line+": "
 	   +c->name+"->"+f->name+" not documented\n" );
     res += "//!\n";
   }
@@ -263,7 +263,7 @@ protected void output_class( Class cls, int lvl )
   array functions = ({});
   imgfile=imgfilename(cls->name);
   if( cls->name!="_global" && (!cls->doc || !sizeof( cls->doc )) )
-    werror("Warning:"+cls->file+":"+cls->line+": "
+    werror("Warning: "+cls->file+":"+cls->line+": "
 	   +cls->name+" not documented\n" );
 
   result =  make_pike_refdoc( cls->doc, cls->signals );
