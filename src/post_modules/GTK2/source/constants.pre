@@ -1580,6 +1580,7 @@ constant int GNOME_DATE_EDIT_24_HR;
 constant int GNOME_DATE_EDIT_WEEK_STARTS_ON_MONDAY;
 endrequire;
 
+require these_do_not_exist_in_gnome2;
 constant int GNOME_DOCK_ITEM_BEH_NORMAL;
 constant int GNOME_DOCK_ITEM_BEH_EXCLUSIVE;
 constant int GNOME_DOCK_ITEM_BEH_NEVER_FLOATING;
@@ -1770,6 +1771,7 @@ constant string GNOME_STOCK_MENU_TEXT_UNDERLINE;
 constant string GNOME_STOCK_MENU_TEXT_STRIKEOUT;
 constant string GNOME_STOCK_MENU_EXIT;
 constant string GNOME_STOCK_MENU_JUMP_TO;
+endrequire;
 endrequire;
 
 require gtk210;
