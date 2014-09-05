@@ -5881,7 +5881,7 @@ PMOD_EXPORT int simple_add_constant(const char *name,
 {
   INT32 ret;
   struct pike_string *id;
-  id=make_shared_string(name);
+  id=make_shared_static_string(name, strlen(name), eightbit);
   ret=add_constant(id, c, flags);
   free_string(id);
   return ret;
