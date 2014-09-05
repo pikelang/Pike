@@ -1093,11 +1093,22 @@ PIKECLASS IOBuffer
     struct pike_string *s;
 
     len = io_read_number( THIS, bytes );
-    s = io_read_string( THIS, len );
-    if( s )
-      push_string(s);
-    else
+
+    if (len < 0) {
+      /* io_avail() in io_read_number() failed. */
       push_int(0);
+      return;
+    }
+
+    /* NB: We assume that io_avail() in io_read_string() doesn't throw. */
+    s = io_read_string( THIS, len );
+
+    if( s ) {
+      push_string(s);
+    } else {
+      io_rewind( THIS, bytes );
+      push_int(0);
+    }
   }
 
   /*! @decl IOBuffer read_hbuffer( int n )
@@ -1121,16 +1132,29 @@ PIKECLASS IOBuffer
    */
   PIKEFUN IOBuffer read_hbuffer( int bytes, int|void copy )
   {
-    LONGEST len = io_read_number( THIS, bytes );
+    LONGEST len;
     int do_copy = 0;
     struct object *o;
+
     if( copy )  do_copy = copy->u.integer;
     pop_n_elems(args);
 
-    if( (o = io_read_buffer( THIS, len, do_copy )) )
-      push_object(o);
-    else
+    if (!io_avail( THIS, bytes )) {
       push_int(0);
+      return;
+    }
+
+    len = io_read_number( THIS, bytes );
+
+    /* NB: We assume that io_avail() in io_read_buffer() doesn't throw. */
+    o = io_read_buffer( THIS, len, do_copy );
+
+    if( o ) {
+      push_object(o);
+    } else {
+      io_rewind( THIS, bytes );
+      push_int(0);
+    }
   }
 
   /*! @decl IOBuffer read_buffer( int n )
