@@ -1,3 +1,5 @@
+//! An icon listing/chooser display.
+//!
 //!
 
 inherit GTK2.Vbox;

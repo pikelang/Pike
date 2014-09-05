@@ -40,6 +40,6 @@ GTK2.MenuBar set_child_pack_direction( int setting );
 
 GTK2.MenuBar set_pack_direction( int setting );
 //! Sets how items should be packed inside a menubar.  One of
-//! .
+//! @[PACK_DIRECTION_BTT], @[PACK_DIRECTION_LTR], @[PACK_DIRECTION_RTL] and @[PACK_DIRECTION_TTB].
 //!
 //!

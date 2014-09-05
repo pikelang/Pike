@@ -1542,6 +1542,46 @@ constant GNOME_DIALOG_NORMAL;
 //!
 
 
+constant GNOME_DOCK_BOTTOM;
+//!
+
+
+constant GNOME_DOCK_ITEM_BEH_EXCLUSIVE;
+//!
+
+
+constant GNOME_DOCK_ITEM_BEH_LOCKED;
+//!
+
+
+constant GNOME_DOCK_ITEM_BEH_NEVER_FLOATING;
+//!
+
+
+constant GNOME_DOCK_ITEM_BEH_NEVER_HORIZONTAL;
+//!
+
+
+constant GNOME_DOCK_ITEM_BEH_NEVER_VERTICAL;
+//!
+
+
+constant GNOME_DOCK_ITEM_BEH_NORMAL;
+//!
+
+
+constant GNOME_DOCK_LEFT;
+//!
+
+
+constant GNOME_DOCK_RIGHT;
+//!
+
+
+constant GNOME_DOCK_TOP;
+//!
+
+
 constant GNOME_EDGE_FINISH;
 //!
 
@@ -1555,6 +1595,22 @@ constant GNOME_EDGE_OTHER;
 
 
 constant GNOME_EDGE_START;
+//!
+
+
+constant GNOME_FONT_PICKER_MODE_FONT_INFO;
+//!
+
+
+constant GNOME_FONT_PICKER_MODE_PIXMAP;
+//!
+
+
+constant GNOME_FONT_PICKER_MODE_UNKNOWN;
+//!
+
+
+constant GNOME_FONT_PICKER_MODE_USER_WIDGET;
 //!
 
 
@@ -1607,6 +1663,690 @@ constant GNOME_SAVE_GLOBAL;
 
 
 constant GNOME_SAVE_LOCAL;
+//!
+
+
+constant GNOME_STOCK_BUTTON_APPLY;
+//!
+
+
+constant GNOME_STOCK_BUTTON_CANCEL;
+//!
+
+
+constant GNOME_STOCK_BUTTON_CLOSE;
+//!
+
+
+constant GNOME_STOCK_BUTTON_DOWN;
+//!
+
+
+constant GNOME_STOCK_BUTTON_FONT;
+//!
+
+
+constant GNOME_STOCK_BUTTON_HELP;
+//!
+
+
+constant GNOME_STOCK_BUTTON_NEXT;
+//!
+
+
+constant GNOME_STOCK_BUTTON_NO;
+//!
+
+
+constant GNOME_STOCK_BUTTON_OK;
+//!
+
+
+constant GNOME_STOCK_BUTTON_PREV;
+//!
+
+
+constant GNOME_STOCK_BUTTON_UP;
+//!
+
+
+constant GNOME_STOCK_BUTTON_YES;
+//!
+
+
+constant GNOME_STOCK_MENU_ABOUT;
+//!
+
+
+constant GNOME_STOCK_MENU_ALIGN_CENTER;
+//!
+
+
+constant GNOME_STOCK_MENU_ALIGN_JUSTIFY;
+//!
+
+
+constant GNOME_STOCK_MENU_ALIGN_LEFT;
+//!
+
+
+constant GNOME_STOCK_MENU_ALIGN_RIGHT;
+//!
+
+
+constant GNOME_STOCK_MENU_ATTACH;
+//!
+
+
+constant GNOME_STOCK_MENU_BACK;
+//!
+
+
+constant GNOME_STOCK_MENU_BLANK;
+//!
+
+
+constant GNOME_STOCK_MENU_BOOK_BLUE;
+//!
+
+
+constant GNOME_STOCK_MENU_BOOK_GREEN;
+//!
+
+
+constant GNOME_STOCK_MENU_BOOK_OPEN;
+//!
+
+
+constant GNOME_STOCK_MENU_BOOK_RED;
+//!
+
+
+constant GNOME_STOCK_MENU_BOOK_YELLOW;
+//!
+
+
+constant GNOME_STOCK_MENU_BOTTOM;
+//!
+
+
+constant GNOME_STOCK_MENU_CDROM;
+//!
+
+
+constant GNOME_STOCK_MENU_CLOSE;
+//!
+
+
+constant GNOME_STOCK_MENU_CONVERT;
+//!
+
+
+constant GNOME_STOCK_MENU_COPY;
+//!
+
+
+constant GNOME_STOCK_MENU_CUT;
+//!
+
+
+constant GNOME_STOCK_MENU_DOWN;
+//!
+
+
+constant GNOME_STOCK_MENU_EXEC;
+//!
+
+
+constant GNOME_STOCK_MENU_EXIT;
+//!
+
+
+constant GNOME_STOCK_MENU_FIRST;
+//!
+
+
+constant GNOME_STOCK_MENU_FONT;
+//!
+
+
+constant GNOME_STOCK_MENU_FORWARD;
+//!
+
+
+constant GNOME_STOCK_MENU_HOME;
+//!
+
+
+constant GNOME_STOCK_MENU_INDEX;
+//!
+
+
+constant GNOME_STOCK_MENU_JUMP_TO;
+//!
+
+
+constant GNOME_STOCK_MENU_LAST;
+//!
+
+
+constant GNOME_STOCK_MENU_LINE_IN;
+//!
+
+
+constant GNOME_STOCK_MENU_MAIL;
+//!
+
+
+constant GNOME_STOCK_MENU_MAIL_FWD;
+//!
+
+
+constant GNOME_STOCK_MENU_MAIL_NEW;
+//!
+
+
+constant GNOME_STOCK_MENU_MAIL_RCV;
+//!
+
+
+constant GNOME_STOCK_MENU_MAIL_RPL;
+//!
+
+
+constant GNOME_STOCK_MENU_MAIL_SND;
+//!
+
+
+constant GNOME_STOCK_MENU_MIC;
+//!
+
+
+constant GNOME_STOCK_MENU_MIDI;
+//!
+
+
+constant GNOME_STOCK_MENU_NEW;
+//!
+
+
+constant GNOME_STOCK_MENU_OPEN;
+//!
+
+
+constant GNOME_STOCK_MENU_PASTE;
+//!
+
+
+constant GNOME_STOCK_MENU_PREF;
+//!
+
+
+constant GNOME_STOCK_MENU_PRINT;
+//!
+
+
+constant GNOME_STOCK_MENU_PROP;
+//!
+
+
+constant GNOME_STOCK_MENU_QUIT;
+//!
+
+
+constant GNOME_STOCK_MENU_REDO;
+//!
+
+
+constant GNOME_STOCK_MENU_REFRESH;
+//!
+
+
+constant GNOME_STOCK_MENU_REVERT;
+//!
+
+
+constant GNOME_STOCK_MENU_SAVE;
+//!
+
+
+constant GNOME_STOCK_MENU_SAVE_AS;
+//!
+
+
+constant GNOME_STOCK_MENU_SCORES;
+//!
+
+
+constant GNOME_STOCK_MENU_SEARCH;
+//!
+
+
+constant GNOME_STOCK_MENU_SPELLCHECK;
+//!
+
+
+constant GNOME_STOCK_MENU_SRCHRPL;
+//!
+
+
+constant GNOME_STOCK_MENU_STOP;
+//!
+
+
+constant GNOME_STOCK_MENU_TEXT_BOLD;
+//!
+
+
+constant GNOME_STOCK_MENU_TEXT_ITALIC;
+//!
+
+
+constant GNOME_STOCK_MENU_TEXT_STRIKEOUT;
+//!
+
+
+constant GNOME_STOCK_MENU_TEXT_UNDERLINE;
+//!
+
+
+constant GNOME_STOCK_MENU_TIMER;
+//!
+
+
+constant GNOME_STOCK_MENU_TIMER_STOP;
+//!
+
+
+constant GNOME_STOCK_MENU_TOP;
+//!
+
+
+constant GNOME_STOCK_MENU_TRASH;
+//!
+
+
+constant GNOME_STOCK_MENU_TRASH_FULL;
+//!
+
+
+constant GNOME_STOCK_MENU_UNDELETE;
+//!
+
+
+constant GNOME_STOCK_MENU_UNDO;
+//!
+
+
+constant GNOME_STOCK_MENU_UP;
+//!
+
+
+constant GNOME_STOCK_MENU_VOLUME;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_ABOUT;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_ADD;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_ALIGN_CENTER;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_ALIGN_JUSTIFY;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_ALIGN_LEFT;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_ALIGN_RIGHT;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_ATTACH;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_BACK;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_BOOK_BLUE;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_BOOK_GREEN;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_BOOK_OPEN;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_BOOK_RED;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_BOOK_YELLOW;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_BOTTOM;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_CDROM;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_CLEAR;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_CLOSE;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_COLORSELECTOR;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_CONVERT;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_COPY;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_CUT;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_DISABLED;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_DOWN;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_EXEC;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_EXIT;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_FIRST;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_FOCUSED;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_FONT;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_FORWARD;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_HELP;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_HOME;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_INDEX;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_JUMP_TO;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_LAST;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_LINE_IN;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_MAIL;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_MAIL_FWD;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_MAIL_NEW;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_MAIL_RCV;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_MAIL_RPL;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_MAIL_SND;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_MIC;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_MIDI;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_MULTIPLE;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_NEW;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_NOT;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_OPEN;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_PASTE;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_PREFERENCES;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_PRINT;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_PROPERTIES;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_QUIT;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_REDO;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_REFRESH;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_REGULAR;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_REMOVE;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_REVERT;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_SAVE;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_SAVE_AS;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_SCORES;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_SEARCH;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_SPELLCHECK;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_SRCHRPL;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_STOP;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_TABLE_BORDERS;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_TABLE_FILL;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_TEXT_BOLD;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_TEXT_BULLETED_LIST;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_TEXT_INDENT;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_TEXT_ITALIC;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_TEXT_NUMBERED_LIST;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_TEXT_STRIKEOUT;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_TEXT_UNDERLINE;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_TEXT_UNINDENT;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_TIMER;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_TIMER_STOP;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_TOP;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_TRASH;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_TRASH_FULL;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_TYPE_DATA;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_TYPE_FILE;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_TYPE_GPIXMAP;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_TYPE_IMLIB;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_TYPE_IMLIB_SCALED;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_TYPE_NONE;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_TYPE_PATH;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_TYPE_WIDGET;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_UNDELETE;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_UNDO;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_UP;
+//!
+
+
+constant GNOME_STOCK_PIXMAP_VOLUME;
 //!
 
 
@@ -2311,6 +3051,22 @@ constant ORIENTATION_HORIZONTAL;
 
 
 constant ORIENTATION_VERTICAL;
+//!
+
+
+constant PACK_DIRECTION_BTT;
+//!
+
+
+constant PACK_DIRECTION_LTR;
+//!
+
+
+constant PACK_DIRECTION_RTL;
+//!
+
+
+constant PACK_DIRECTION_TTB;
 //!
 
 
@@ -3878,6 +4634,18 @@ constant WRAP_WORD_CHAR;
 //!
 
 
+constant PANGO_ALIGN_CENTER;
+//!
+
+
+constant PANGO_ALIGN_LEFT;
+//!
+
+
+constant PANGO_ALIGN_RIGHT;
+//!
+
+
 constant PANGO_ATTR_BACKGROUND;
 //!
 
@@ -3947,6 +4715,22 @@ constant PANGO_ATTR_VARIANT;
 
 
 constant PANGO_ATTR_WEIGHT;
+//!
+
+
+constant PANGO_ELLIPSIZE_END;
+//!
+
+
+constant PANGO_ELLIPSIZE_MIDDLE;
+//!
+
+
+constant PANGO_ELLIPSIZE_NONE;
+//!
+
+
+constant PANGO_ELLIPSIZE_START;
 //!
 
 
@@ -4107,6 +4891,18 @@ constant PANGO_WEIGHT_ULTRABOLD;
 
 
 constant PANGO_WEIGHT_ULTRALIGHT;
+//!
+
+
+constant PANGO_WRAP_CHAR;
+//!
+
+
+constant PANGO_WRAP_WORD;
+//!
+
+
+constant PANGO_WRAP_WORD_CHAR;
 //!
 
 

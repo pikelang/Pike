@@ -14,7 +14,7 @@
 //!
 //! Properties:
 //! int discrete-blocks
-//! int ellipsize 
+//! int ellipsize @[PANGO_ELLIPSIZE_END], @[PANGO_ELLIPSIZE_MIDDLE], @[PANGO_ELLIPSIZE_NONE] and @[PANGO_ELLIPSIZE_START]
 //! float fraction
 //! int orientation @[PROGRESS_BOTTOM_TO_TOP], @[PROGRESS_CONTINUOUS], @[PROGRESS_DISCRETE], @[PROGRESS_LEFT_TO_RIGHT], @[PROGRESS_RIGHT_TO_LEFT] and @[PROGRESS_TOP_TO_BOTTOM]
 //! float pulse-step
@@ -67,7 +67,7 @@ GTK2.ProgressBar pulse( );
 GTK2.ProgressBar set_ellipsize( int mode );
 //! Sets the mode used to ellipsize (add an ellipsis: "...") the text if there
 //! is not enough space to render the entire string.  One of 
-//! .
+//! @[PANGO_ELLIPSIZE_END], @[PANGO_ELLIPSIZE_MIDDLE], @[PANGO_ELLIPSIZE_NONE] and @[PANGO_ELLIPSIZE_START].
 //!
 //!
 

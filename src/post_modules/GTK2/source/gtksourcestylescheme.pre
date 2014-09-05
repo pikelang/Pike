@@ -2,6 +2,7 @@
 require gtksourceview;
 
 class GTK2.SourceStyleScheme;
+//!
 
 %{
 #include "gtksourceview/gtksourceview.h"

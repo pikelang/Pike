@@ -1,3 +1,10 @@
+//! Interface for widgets which are used for editing cells.
+//!
+//!
+//!  Signals:
+//! @b{editing_done@}
+//!
+//! @b{remove_widget@}
 //!
 
 GTK2.CellEditable editing_done( );

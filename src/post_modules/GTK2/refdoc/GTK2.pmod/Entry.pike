@@ -181,9 +181,13 @@ GTK2.Entry set_has_frame( int setting );
 //!
 
 GTK2.Entry set_icon_from_pixbuf( int icon_pos, GTK2.GdkPixbuf b );
+//! Set the icon from the given in-memory image.
+//!
 //!
 
 GTK2.Entry set_icon_from_stock( int icon_pos, string id );
+//! Set the icon using a stock icon.
+//!
 //!
 
 GTK2.Entry set_inner_border( int left, int right, int top, int bottom );

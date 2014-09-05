@@ -20,6 +20,7 @@ inherit GTK2.Range;
 signal format_value;
 
 require gtk22;
+void add_mark(float value, int pos, ?string markup );
 //! Adds a mark at @[value].
 //!
 //! A mark is indicated visually by drawing a tick mark next to the
@@ -27,10 +28,9 @@ require gtk22;
 //! exactly at the marks value.
 //!
 //! If @[markup] is specified, text is shown next to the tick mark.
-void add_mark(float value, int pos, ?string markup );
 
-//! Removes any marks that have been added with add_mark().
 void clear_marks();
+//! Removes any marks that have been added with add_mark().
 endrequire;
 
 void set_digits(int precision);

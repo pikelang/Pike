@@ -15,7 +15,7 @@
 //! float angle
 //! Pango.AttrList attributes
 //! int cursor-position
-//! int ellipsize 
+//! int ellipsize @[PANGO_ELLIPSIZE_END], @[PANGO_ELLIPSIZE_MIDDLE], @[PANGO_ELLIPSIZE_NONE] and @[PANGO_ELLIPSIZE_START]
 //! int justfy @[JUSTIFY_CENTER], @[JUSTIFY_FILL], @[JUSTIFY_LEFT] and @[JUSTIFY_RIGHT]
 //! string label
 //! int max-width-chars
@@ -169,7 +169,7 @@ GTK2.Label set_angle( int|float angle );
 GTK2.Label set_ellipsize( int mode );
 //! Sets the mode used to ellipsize (add an ellipsis: "...") to the text if
 //! there is not enough space to render the entire string.
-//! One of .
+//! One of @[PANGO_ELLIPSIZE_END], @[PANGO_ELLIPSIZE_MIDDLE], @[PANGO_ELLIPSIZE_NONE] and @[PANGO_ELLIPSIZE_START].
 //!
 //!
 

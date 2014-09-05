@@ -1,4 +1,6 @@
 //!
+//!
+//!
 
 GTK2.RecentChooser add_filter( GTK2.RecentFilter filter );
 //! Adds filter to the list of GTK2.RecentFilter objects held by chooser.

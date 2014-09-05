@@ -1,4 +1,6 @@
 //!
+//!
+//!
 
 GTK2.RecentInfo destroy( );
 //! Destructor.

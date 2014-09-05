@@ -1,4 +1,46 @@
 //!
+//!
+//!
+//!  Signals:
+//! @b{connect@}
+//! Called once the client has been connected to the signal manager.
+//!  int arg1, mixed user_data
+//!
+//!
+//! @b{die@}
+//! Called when the session manager wants the client to shut down.
+//!  mixed user_data
+//!
+//!
+//! @b{disconnect@}
+//! Called when the client is disconnected from the session manager.
+//!  mixed user_data
+//!
+//!
+//! @b{save_complete@}
+//! Called when the session manager has finished checkpointing all of the
+//! clients.  Clients are then free to change their state.
+//!  mixed user_data
+//!
+//!
+//! @b{save_yourself@}
+//! Called when either a "SaveYourself" or a "SaveYourselfPhase2" call is made
+//! by the session manager.
+//!  int arg1: the phase of the "SaveYourself" command ('1' or '2').
+//!  int arg2: the data which should be saved (local, global, or both).
+//!  int arg3: true if the session manager is shutting down.
+//!  int arg4: how the client is allowed to interact with the user while saving.
+//!  int arg5: true if this is to be a "fast" shutdown.
+//!  mixed user_data
+//!
+//!
+//! @b{shutdown_cancelled@}
+//! Called if the session manager had sent a "SaveYourself" to all clients in
+//! preparation for shutting down and the shutdown was then cancelled.  A
+//! client can then continue running and change its state.
+//!  mixed user_data
+//!
+//!
 
 inherit GTK2.Object;
 

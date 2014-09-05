@@ -33,7 +33,7 @@ Gnome2.App add_docked( GTK2.Widget widget, string name, int behavior, int placem
 //!
 //! widget : Widget to be added to app's dock
 //! name : Name for the dock item that will contain toolbar
-//! behavior : Behavior for the new dock item. One of 
+//! behavior : Behavior for the new dock item. One of @[GNOME_DOCK_ITEM_BEH_EXCLUSIVE], @[GNOME_DOCK_ITEM_BEH_LOCKED], @[GNOME_DOCK_ITEM_BEH_NEVER_FLOATING], @[GNOME_DOCK_ITEM_BEH_NEVER_HORIZONTAL], @[GNOME_DOCK_ITEM_BEH_NEVER_VERTICAL] and @[GNOME_DOCK_ITEM_BEH_NORMAL]
 //! placement :  Placement for the new dock item, one of Gnome2.DockTop,  Gnome2.DockRight,  Gnome2.DockBottom,  Gnome2.DockLeft and  Gnome2.DockFloating 
 //! band_num : Number of the band where the dock item should be placed 
 //! band_position : Position of the new dock item in band band_num 
@@ -51,7 +51,7 @@ Gnome2.App add_toolbar( GTK2.Toolbar toolbar, string name, int behavior, int pla
 //!
 //! toolbar : Toolbar to be added to app's dock
 //! name : Name for the dock item that will contain toolbar
-//! behavior : Behavior for the new dock item. One or more of 
+//! behavior : Behavior for the new dock item. One or more of @[GNOME_DOCK_ITEM_BEH_EXCLUSIVE], @[GNOME_DOCK_ITEM_BEH_LOCKED], @[GNOME_DOCK_ITEM_BEH_NEVER_FLOATING], @[GNOME_DOCK_ITEM_BEH_NEVER_HORIZONTAL], @[GNOME_DOCK_ITEM_BEH_NEVER_VERTICAL] and @[GNOME_DOCK_ITEM_BEH_NORMAL]
 //! placement :  Placement for the new dock item, one of Gnome2.DockTop,  Gnome2.DockRight,  Gnome2.DockBottom,  Gnome2.DockLeft and  Gnome2.DockFloating 
 //! band_num : Number of the band where the dock item should be placed
 //! band_position : Position of the new dock item in band band_num

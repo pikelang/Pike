@@ -41,6 +41,8 @@ int can_undo( );
 //!
 
 protected GTK2.SourceBuffer create( GTK2.TextTagTable table_or_lang );
+//! Create a new SourceBuffer.
+//!
 //!
 
 GTK2.SourceBuffer end_not_undoable_action( );

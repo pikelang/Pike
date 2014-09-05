@@ -13,13 +13,13 @@ inherit GTK2.DrawingArea;
 //! Properties:
 //! int active
 
-//!
 void create();
+//!
 
-//! Start the spinner
 void start();
+//! Start the spinner
 
-//! Stop the spinner
 void stop();
+//! Stop the spinner
 
 endrequire;

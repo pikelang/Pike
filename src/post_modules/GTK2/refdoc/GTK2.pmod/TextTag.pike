@@ -7,7 +7,7 @@
 //! GDK2.Pixmap background-stipple
 //! int background-stipple-set
 //! int direction
-//!   One of 
+//!   One of @[TEXT_DIR_LTR], @[TEXT_DIR_NONE] and @[TEXT_DIR_RTL]
 //! int editable
 //! int editable-set
 //! string family
@@ -24,7 +24,7 @@
 //! int invisible
 //! int invisible_set
 //! int justification
-//!   One of 
+//!   One of @[JUSTIFY_CENTER], @[JUSTIFY_FILL], @[JUSTIFY_LEFT] and @[JUSTIFY_RIGHT]
 //! int justification-set
 //! string language;
 //! int language-set;
@@ -65,7 +65,7 @@
 //! int weight;
 //! int weight-set;
 //! int wrap-mode;
-//!   One of 
+//!   One of @[WRAP_CHAR], @[WRAP_NONE], @[WRAP_WORD] and @[WRAP_WORD_CHAR]
 //! int wrap-mode-set;
 //!
 //!

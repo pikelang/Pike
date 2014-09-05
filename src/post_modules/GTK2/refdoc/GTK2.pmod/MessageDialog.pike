@@ -20,7 +20,7 @@ protected GTK2.MessageDialog create( mapping|int flags, int|void type, int|void 
 //! Creates a new message dialog, which is a simple dialog with an icon
 //! indicating the dialog type (error, warning, etc) and some text the user
 //! may want to see.  When the user clicks a button a "response" signal is
-//! emitted with response IDs from .  See
+//! emitted with response IDs from @[RESPONSE_ACCEPT], @[RESPONSE_APPLY], @[RESPONSE_CANCEL], @[RESPONSE_CLOSE], @[RESPONSE_DELETE_EVENT], @[RESPONSE_HELP], @[RESPONSE_NO], @[RESPONSE_NONE], @[RESPONSE_OK], @[RESPONSE_REJECT] and @[RESPONSE_YES].  See
 //! GTK2.Dialog for more details.
 //!
 //!

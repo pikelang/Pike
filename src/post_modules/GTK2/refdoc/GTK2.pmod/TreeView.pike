@@ -85,21 +85,34 @@ GTK2.TreeView columns_autosize( );
 //!
 
 mapping convert_bin_window_to_tree_coords( int bx, int by );
+//! Convert bin_window coordinates to tree coordinates.
+//!
 //!
 
 mapping convert_bin_window_to_widget_coords( int bx, int by );
+//! Convert bin_window coordinates to widget coordinates.
+//!
 //!
 
 mapping convert_tree_to_bin_window_coords( int tx, int ty );
+//! Converts tree coordinates (coordinates in full scrollable area of the tree) to
+//! bin_window coordinates.
+//!
 //!
 
 mapping convert_tree_to_widget_coords( int tx, int ty );
+//! Convert tree coordinates to widget coordinates.
+//!
 //!
 
 mapping convert_widget_to_bin_window_coords( int wx, int wy );
+//! Convert widget coordinates to bin_window coordinates.
+//!
 //!
 
 mapping convert_widget_to_tree_coords( int wx, int wy );
+//! Convert widget coordinates to tree coordinates.
+//!
 //!
 
 protected GTK2.TreeView create( GTK2.TreeModel model_or_props );

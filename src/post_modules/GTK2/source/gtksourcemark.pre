@@ -2,6 +2,7 @@
 require gtksourceview;
 
 class GTK2.SourceMark;
+//!
 not gtksourceview20;
 /* Backward compat. */
 inherit GTK2.SourceMarker;

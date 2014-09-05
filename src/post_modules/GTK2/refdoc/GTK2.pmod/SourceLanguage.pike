@@ -1,4 +1,9 @@
 //!
+//!
+//!
+//!  Signals:
+//! @b{tag_style_changed@}
+//!
 
 inherit G.Object;
 

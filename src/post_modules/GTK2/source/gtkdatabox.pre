@@ -171,6 +171,7 @@ static void push_value(GtkDataboxValue v) {
 %}
 
 mapping(string:float) data_get_value(int x, int y)
+//! Get the value at the given coordinates.
 {
   GtkDataboxValue v;
   gtk_databox_data_get_value(GTK_DATABOX(THIS->obj),get_coord(0,args),&v);
@@ -179,6 +180,7 @@ mapping(string:float) data_get_value(int x, int y)
 }
 
 array(mapping(string:float)) data_get_visible_extrema()
+//! Get the positions of the edges of the display.
 {
   GtkDataboxValue v1,v2;
   pgtk2_pop_n_elems(args);
@@ -189,6 +191,7 @@ array(mapping(string:float)) data_get_visible_extrema()
 }
 
 array(mapping(string:float)) data_get_extrema()
+//! Get the bounds of the data set (?)
 {
   GtkDataboxValue v1,v2;
   pgtk2_pop_n_elems(args);
@@ -199,8 +202,10 @@ array(mapping(string:float)) data_get_extrema()
 }
 
 void rescale();
+//! Rescale with automatically-calculated extrema.
 
 void rescale_with_values(float minx, float miny, float maxx, float maxy)
+//! Rescale with specific data extrema.
 {
   gtk_databox_rescale_with_values(GTK_DATABOX(THIS->obj),
                                   get_value(0,args),
@@ -212,6 +217,7 @@ void rescale_inverted(int invertX, int invertY);
 //! Rescale with an inverted x and/or y direction.
 
 int data_set_color(int index, *GDK2.Color color);
+//! Set the color at index.
 
 void set_background_color(*GDK2.Color color);
 //! Set the background color.

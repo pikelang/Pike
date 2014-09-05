@@ -142,7 +142,7 @@ mapping move_cursor_visually( int strong, int old_index, int old_trailing, int d
 
 Pango.Layout set_alignment( int alignment );
 //! Sets the alignment for the layout (how partial lines are positioned within
-//! the horizontal space available.)  One of .
+//! the horizontal space available.)  One of @[PANGO_ALIGN_CENTER], @[PANGO_ALIGN_LEFT] and @[PANGO_ALIGN_RIGHT].
 //!
 //!
 
@@ -234,7 +234,7 @@ Pango.Layout set_width( int width );
 Pango.Layout set_wrap( int wrap );
 //! Sets the wrap mode; the wrap mode only has an effect if a width is set on
 //! the layout with set_width().  To turn off wrapping, set the width to -1.
-//! One of .
+//! One of @[PANGO_WRAP_CHAR], @[PANGO_WRAP_WORD] and @[PANGO_WRAP_WORD_CHAR].
 //!
 //!
 

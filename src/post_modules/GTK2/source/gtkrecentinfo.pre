@@ -1,6 +1,7 @@
 /* -*- C -*- */
 require gtk210;
 class GTK2.RecentInfo;
+//!
 
 void destroy()
 //! Destructor.

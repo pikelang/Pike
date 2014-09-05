@@ -1,3 +1,5 @@
+//! A filter for selecting a subset of recently used files.
+//!
 //!
 
 inherit GTK2.Object;

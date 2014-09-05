@@ -7,19 +7,20 @@
 //! int active
 //!
 //!
-//!
 
 inherit GTK2.DrawingArea;
 
 protected GTK2.Spinner create( );
-//! Start the spinner
+//!
 //!
 //!
 
 GTK2.Spinner start( );
-//! Stop the spinner
+//! Start the spinner
 //!
 //!
 
 GTK2.Spinner stop( );
+//! Stop the spinner
+//!
 //!

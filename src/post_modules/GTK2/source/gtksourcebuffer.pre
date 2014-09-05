@@ -57,6 +57,7 @@ void create(GTK2.SourceTagTable|GTK2.SourceLanguage|void table_or_lang)
 endnot;
 require gtksourceview20;
 void create(GTK2.TextTagTable|GTK2.SourceLanguage|void table_or_lang)
+//! Create a new SourceBuffer.
 {
   pgtk2_verify_not_inited();
   pgtk2_verify_setup();

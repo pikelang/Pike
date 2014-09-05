@@ -1,5 +1,6 @@
 /* -*- C -*- */
 require gtk210;
 class G.InitiallyUnowned;
+//! Abstract class - do not instantiate
 inherit G.Object;
 endrequire;

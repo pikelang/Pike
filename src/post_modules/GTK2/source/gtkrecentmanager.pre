@@ -1,6 +1,7 @@
 /* -*- C -*- */
 require gtk210;
 class GTK2.RecentManager;
+//!
 inherit G.Object;
 
 void create(mapping(string:mixed)|int|GDK2.Screen|void props_or_def)

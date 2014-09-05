@@ -11,7 +11,7 @@ inherit G.Object;
 //! GDK2.Pixmap background-stipple
 //! int background-stipple-set
 //! int direction
-//!   One of CONST(GTK_TEXT_DIRECTION)
+//!   One of CONST(GTK_TEXT_DIR_)
 //! int editable
 //! int editable-set
 //! string family
@@ -30,7 +30,7 @@ endrequire;
 //! int invisible
 //! int invisible_set
 //! int justification
-//!   One of CONST(GTK_JUSTIFICATION_)
+//!   One of CONST(GTK_JUSTIFY_)
 //! int justification-set
 //! string language;
 //! int language-set;
@@ -75,7 +75,7 @@ endrequire;
 //! int weight;
 //! int weight-set;
 //! int wrap-mode;
-//!   One of CONST(GTK_WRAP_MODE_)
+//!   One of CONST(GTK_WRAP_)
 //! int wrap-mode-set;
 
 signal event;

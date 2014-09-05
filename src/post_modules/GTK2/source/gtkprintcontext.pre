@@ -1,6 +1,7 @@
 /* -*- C -*- */
 require gtk210;
 class GTK2.PrintContext;
+//!
 inherit G.Object;
 
 %{

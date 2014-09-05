@@ -2,6 +2,7 @@
 require gtksourceview;
 
 class GTK2.SourceIter;
+//!
 inherit GTK2.TextIter;
 
 %{
