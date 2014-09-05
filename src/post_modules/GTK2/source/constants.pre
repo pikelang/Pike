@@ -1189,6 +1189,12 @@ constant int GTK_MENU_DIR_CHILD;
 constant int GTK_MENU_DIR_NEXT;
 constant int GTK_MENU_DIR_PREV;
 
+/* GTK: GtkMenuBar: GtkPackDirection */
+constant int GTK_PACK_DIRECTION_LTR;
+constant int GTK_PACK_DIRECTION_RTL;
+constant int GTK_PACK_DIRECTION_TTB;
+constant int GTK_PACK_DIRECTION_BTT;
+
 /* GTK: GtkToolbar: GtkToolbarChildType
  deprecated
 constant int GTK_TOOLBAR_CHILD_SPACE;
@@ -1508,6 +1514,22 @@ require pango14;
 constant int PANGO_UNDERLINE_ERROR;
 endrequire;
 
+/* Pango: Text Attributes: PangoWrapMode */
+constant int PANGO_WRAP_WORD;
+constant int PANGO_WRAP_CHAR;
+constant int PANGO_WRAP_WORD_CHAR;
+
+/* Pango: Text Attributes: PangoEllipsizeMode */
+constant int PANGO_ELLIPSIZE_NONE;
+constant int PANGO_ELLIPSIZE_START;
+constant int PANGO_ELLIPSIZE_MIDDLE;
+constant int PANGO_ELLIPSIZE_END;
+
+/* Pango: Text Attributes: PangoAlignMode */
+constant int PANGO_ALIGN_LEFT;
+constant int PANGO_ALIGN_CENTER;
+constant int PANGO_ALIGN_RIGHT;
+
 endrequire;
 
 require gnome;
@@ -1558,7 +1580,6 @@ constant int GNOME_DATE_EDIT_24_HR;
 constant int GNOME_DATE_EDIT_WEEK_STARTS_ON_MONDAY;
 endrequire;
 
-/*
 constant int GNOME_DOCK_ITEM_BEH_NORMAL;
 constant int GNOME_DOCK_ITEM_BEH_EXCLUSIVE;
 constant int GNOME_DOCK_ITEM_BEH_NEVER_FLOATING;
@@ -1749,7 +1770,6 @@ constant string GNOME_STOCK_MENU_TEXT_UNDERLINE;
 constant string GNOME_STOCK_MENU_TEXT_STRIKEOUT;
 constant string GNOME_STOCK_MENU_EXIT;
 constant string GNOME_STOCK_MENU_JUMP_TO;
-*/
 endrequire;
 
 require gtk210;
