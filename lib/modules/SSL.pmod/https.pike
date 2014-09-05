@@ -218,7 +218,7 @@ int main()
   SSL3_DEBUG_MSG("Cipher suites:\n%s",
                  .Constants.fmt_cipher_suites(ctx->preferred_suites));
 
-  SSL3_DEBUG_MSG("Certs:\n%O\n", ctx->cert_pairs);
+  SSL3_DEBUG_MSG("Certs:\n%O\n", ctx->get_certificates());
 
   port = SSL.Port(ctx);
 

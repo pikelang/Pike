@@ -707,6 +707,16 @@ array(CertificatePair) find_cert_domain(string(8bit) domain)
   return cert_chains_domain["*"];
 }
 
+//! Returns a list of all server certificates added with @[add_cert].
+array(CertificatePair) get_certificates()
+{
+  mapping(CertificatePair:int) c = ([]);
+  foreach(cert_chains_domain;; array(CertificatePair) chains)
+    foreach(chains, CertificatePair p)
+      c[p]++;
+  return indices(c);
+}
+
 //! Add a certificate.
 //!
 //! This function is used on both servers and clients to add
