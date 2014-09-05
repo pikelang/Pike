@@ -1,7 +1,7 @@
 /* -*- C -*- */
 require gtk210;
 class GTK2.CellRendererSpin;
-inherit GTK2.CellRenderer;
+inherit GTK2.CellRendererText;
 
 void create(?mapping(string:mixed) props)
 //! Create a new GTK2.CellRendererSpin.
