@@ -34,17 +34,27 @@ final constant DATA_CHUNK_SIZE = 64 * 1024;
 //!
 //! This class exists purely for typing reasons.
 //!
-//! Use in types in place of @[Stdio.File] where only blocking stream-oriented
-//! I/O is done with the object.
+//! Use in types in place of @[Stdio.File] where only blocking
+//! stream-oriented I/O is done with the object.
+//!
+//! This class lists the minimum functionality guaranteed to exist in
+//! all Stream objects.
 //!
 //! @seealso
 //! @[NonblockingStream], @[BlockFile], @[File], @[FILE]
 //!
 class Stream
 {
+  //!
   string read(int nbytes);
+
+  //!
   int write(string data);
+
+  //!
   void close();
+
+  //!
   optional string read_oob(int nbytes);
   optional int write_oob(string data);
   optional mapping(string:int) tcgetattr();
@@ -71,20 +81,23 @@ constant TCSAFLUSH = "TCSAFLUSH";
 //!
 //! This class exists purely for typing reasons.
 //!
-//! Use in types in place of @[Stdio.File] where nonblocking and/or blocking
-//! stream-oriented I/O is done with the object.
-//! 
+//! Use in types in place of @[Stdio.File] where nonblocking and/or
+//! blocking stream-oriented I/O is done with the object.
+//!
 //! @seealso
 //! @[Stream], @[BlockFile], @[File], @[FILE]
 //!
 class NonblockingStream
 {
   inherit Stream;
+
+  //!
   NonblockingStream set_read_callback( function f, mixed ... rest );
   NonblockingStream set_write_callback( function f, mixed ... rest );
   NonblockingStream set_close_callback( function f, mixed ... rest );
   NonblockingStream set_fs_event_callback( function f, int event_mask, mixed ... rest );
 
+  //!
   optional NonblockingStream set_read_oob_callback(function f, mixed ... rest)
   {
     error("OOB not implemented for this stream type\n");
@@ -94,8 +107,11 @@ class NonblockingStream
     error("OOB not implemented for this stream type\n");
   }
 
+  //!
   void set_nonblocking( function a, function b, function c,
                         function|void d, function|void e);
+
+  //!
   void set_blocking();
 }
 
@@ -105,14 +121,18 @@ class NonblockingStream
 //!
 //! Use in types in place of @[Stdio.File] where only blocking
 //! I/O is done with the object.
-//! 
+//!
 //! @seealso
 //! @[Stream], @[NonblockingStream], @[File], @[FILE]
 //!
 class BlockFile
 {
   inherit Stream;
-  int seek(int to);
+
+  //!
+  int seek(int to, int|void how);
+
+  //!
   int tell();
 }
 
@@ -1558,6 +1578,7 @@ class File
   //!
   //! @seealso
   //!   @[set_nonblocking()], @[set_blocking()]
+
   void set_blocking_keep_callbacks()
   {
      CHECK_OPEN();
