@@ -152,7 +152,7 @@ PMOD_EXPORT void add_efun2(const char *name,
   struct svalue s;
   struct pike_string *n;
 
-  n=make_shared_string(name);
+  n=make_shared_static_string(name, strlen(name), eightbit);
   SET_SVAL(s, T_FUNCTION, FUNCTION_BUILTIN, efun,
 	   make_callable(fun, name, type, flags, optimize, docode));
   low_add_efun(n, &s);
@@ -181,7 +181,7 @@ PMOD_EXPORT void quick_add_efun(const char *name, ptrdiff_t name_length,
     Pike_fatal("%s added as efun more than once.\n", name);
 #endif
 
-  n = make_shared_binary_string(name, name_length);
+  n = make_shared_static_string(name, name_length, eightbit);
   t = make_pike_type(type);
 #ifdef DEBUG
   check_type_string(t);
