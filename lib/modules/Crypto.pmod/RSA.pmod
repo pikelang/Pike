@@ -292,7 +292,10 @@ class State {
   string(8bit) pkcs_sign(string(8bit) message, .Hash h)
   {
     string(8bit) di = Standards.PKCS.Signature.build_digestinfo(message, h);
-    return raw_sign(di)->digits(256);
+    string(8bit) sign = raw_sign(di)->digits(256);
+    while( sizeof(sign) < size )
+      sign = "\0"+sign;
+    return sign;
   }
 
   //! Verify PKCS-1 signature @[sign] of message @[message] using hash
