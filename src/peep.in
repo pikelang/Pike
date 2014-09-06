@@ -319,18 +319,22 @@ OPER_INT(CONST_1,-1)
 OPER_INT(BIGNUM,0x7fffffff)
 
 // Some noops related to the above opcodes.
-// MOD_INT [$1a == 1]: POP_VALUE CONST0	// cf string % int ==> string
-LSH_INT [!$1a]:
-RSH_INT [!$1a]:
-SUBTRACT_INT [!$1a]:
-// ADD_INT [!$1a]:			// cf string + int ==> string
-AND_INT [!$1a]: POP_VALUE CONST0
-OR_INT [!$1a]:
-XOR_INT [!$1a]:
-//DIVIDE_INT [$1a == 1]:		// cf string / int ==> array(string)
-//MULTIPLY_INT [!$1a]: POP_VALUE CONST0	// cf string * int ==> string
-MULTIPLY_INT [$1a == 1]:
-MULTIPLY_INT [$1a == -1]: NEGATE
+// MOD_INT(1): POP_VALUE CONST0		// cf string % int ==> string
+LSH_INT(0):
+RSH_INT(0):
+SUBTRACT_INT(0):
+// ADD_INT(0):				// cf string + int ==> string
+AND_INT(0): POP_VALUE CONST0
+AND_INT(-1):
+OR_INT(0):
+OR_INT(-1): POP_VALUE CONST_1
+XOR_INT(0):
+XOR_INT(-1): COMPL
+// DIVIDE_INT(1):			// cf string / int ==> array(string)
+DIVIDE_INT(-1): NEGATE
+// MULTIPLY_INT(0): POP_VALUE CONST0	// cf string * int ==> string
+MULTIPLY_INT(1):
+MULTIPLY_INT(-1): NEGATE
 
 // this should be automatically const optimized, right?
 // ADD_INTS ADD_INTS: ADD_INTS ($1a+$2a)
