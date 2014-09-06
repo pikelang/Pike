@@ -50,7 +50,7 @@ void create(function(Request:void) _callback,
    {
      if( stringp(certificate) )
        certificate = ({ certificate });
-     port->ctx->add_cert( key, certificate );
+     port->ctx->add_cert( key, certificate, ({"*"}) );
    }
    else
      port->set_default_keycert();
