@@ -287,8 +287,10 @@ class State {
 
 #undef Sequence
 
-  //! Signs the @[message] with a PKCS-1 signature using hash algorithm
-  //! @[h].
+  //! Signs the @[message] with a PKCS-1 signature using hash
+  //! algorithm @[h]. This is equivalent to
+  //! I2OSP(RSASP1(OS2IP(RSAES-PKCS1-V1_5-ENCODE(message)))) in PKCS#1
+  //! v2.2.
   string(8bit) pkcs_sign(string(8bit) message, .Hash h)
   {
     string(8bit) di = Standards.PKCS.Signature.build_digestinfo(message, h);
@@ -377,9 +379,9 @@ class State {
   //
 
 
-  //! Pads the @[message] to the current block size with method @[type]
-  //! and returns the result as an integer. This is equvivalent to
-  //! OS2IP(RSAES-PKCS1-V1_5-ENCODE(message)) in PKCS#1 v2.2.
+  //! Pads the @[message] to the current block size with method
+  //! @[type] and returns the result as an integer. This is equivalent
+  //! to OS2IP(RSAES-PKCS1-V1_5-ENCODE(message)) in PKCS#1 v2.2.
   //! @param type
   //!   @int
   //!     @value 1
@@ -433,7 +435,9 @@ class State {
     return s[i..];
   }
 
-  //! Pads the @[digest] with @[rsa_pad] type 1 and signs it.
+  //! Pads the @[digest] with @[rsa_pad] type 1 and signs it. This is
+  //! equivalent to RSASP1(OS2IP(RSAES-PKCS1-V1_5-ENCODE(message))) in
+  //! PKCS#1 v2.2.
   Gmp.mpz raw_sign(string(8bit) digest)
   {
     return rsa_pad(digest, 1, 0)->powm(d, n);
