@@ -195,26 +195,28 @@ PIKECLASS IOBuffer
   /*! @decl protected bool range_error( int howmuch )
    *!
    *! This function is called when an attempt is made to read out of bounds.
-   *! The default implementation simply returnns 0.
    *!
-   *! Override this function to change the behaviour
+   *! The default implementation simply returns @expr{0@} (zero).
    *!
+   *! Override this function to change the behavior.
+   *!
+   *! @param howmuch
    *! The argument @[howmuch] indicates how much data is needed:
    *!
-   *! @dl
-   *! @item int(1..) howmuch
-   *! Need @[howmuch] bytes more
-   *! @item int(0..0) howmuch
-   *!  The amount of data needed is not certain.
-   *!  This most often happens when  @[sscanf] or @[read_json] is used
-   *! @item int(..-1) howmuch=...
-   *!  Tried to @[unread] X bytes. There is usually no way to satisfy
-   *!  the requested range.
+   *! @int
+   *!  @value 1..
+   *!   Need @[howmuch] bytes more
+   *!  @value 0 howmuch
+   *!   The amount of data needed is not certain.
+   *!   This most often happens when  @[sscanf] or @[read_json] is used
+   *!  @value ..-1
+   *!   Tried to @[unread] -@[howmuch] bytes. There is usually no way to satisfy
+   *!   the requested range.
    *!
-   *! The only supported way is to extract the data from the buffer,
-   *! add the requested amount of "go backbuffer", add the data
-   *! back, and forward -@[howmuch] bytes.
-   *! @enddl
+   *!   The only supported way is to extract the data from the buffer,
+   *!   add the requested amount of "go backbuffer", add the data
+   *!   back, and forward -@[howmuch] bytes.
+   *! @endint
    *!
    *! @returns
    *!
@@ -236,9 +238,9 @@ PIKECLASS IOBuffer
   {
       if( io->error_mode )
       {
-          if( howmuch )
+          if( howmuch > 0 )
           {
-              push_text("Trying to read %d outside allowed range\n");
+              push_text("Trying to read %d bytes outside allowed range\n");
               push_int(howmuch);
               f_sprintf(2);
           }
