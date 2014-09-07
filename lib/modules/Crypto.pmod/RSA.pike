@@ -182,7 +182,10 @@ Gmp.mpz raw_sign(string digest)
 //! string.
 string cooked_sign(string digest)
 {
-  return raw_sign(digest)->digits(256);
+  string sign = raw_sign(digest)->digits(256);
+  while( sizeof(sign) < size )
+    sign  = "\0"+sign;
+  return sign;
 }
 
 //! Verifies the @[digest] against the signature @[s], assuming pad
