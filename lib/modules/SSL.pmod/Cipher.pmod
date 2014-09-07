@@ -173,6 +173,8 @@ class CipherSpec {
     if( signature_alg == SIGNATURE_anonymous )
       return 1;
 
+    Crypto.Sign.State pkc = session->peer_public_key;
+
     // RFC 5246 4.7
     if( session->version >= PROTOCOL_TLS_1_2 )
     {
@@ -185,9 +187,7 @@ class CipherSpec {
 
       // FIXME: Validate that the sign_id is correct.
 
-      return session->peer_public_key &&
-        session->peer_public_key->pkcs_verify(cookie + struct->contents(),
-                                              hash, sign);
+      return pkc && pkc->pkcs_verify(cookie + struct->contents(), hash, sign);
     }
 
     // RFC 4346 7.4.3 (struct Signature)
@@ -198,14 +198,14 @@ class CipherSpec {
       {
         string digest = Crypto.MD5->hash(data) + Crypto.SHA1->hash(data);
         Gmp.mpz signature = input->get_bignum();
-        return session->peer_public_key->raw_verify(digest, signature);
+        return pkc && pkc->raw_verify(digest, signature);
       }
 
     case SIGNATURE_dsa:
     case SIGNATURE_ecdsa:
       {
-        return session->peer_public_key->
-          pkcs_verify(data, Crypto.SHA1, input->get_var_string(2));
+        return pkc && pkc->pkcs_verify(data, Crypto.SHA1,
+                                       input->get_var_string(2));
       }
     }
 
