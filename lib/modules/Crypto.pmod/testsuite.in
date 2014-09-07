@@ -526,6 +526,8 @@ test_true( RSA->set_private_key(
   ({ 0xae01268cb370af44cb05e9618ea6681dae1186bd746d3aa6122b8bf6c2290619,
      0xc1884f35667fb5ea3e8e7cfa052bb34894c2970b3da6a0650182fe514b23c835 })) )
 test_eq( RSA->block_size(), 61 )
+test_eq( S(RSA->pkcs_sign("\0", Crypto.SHA1)), "06e10d3bffa8a8f84f0fe1425453a553ac00f429771814c97eb649acd27bd50b89a31a8aa40aceebfb681b9337fc6c863ae544a46d480882c11639b6fd123dd5" )
+test_eq( S(RSA->pkcs_sign(Gmp.mpz(331)->digits(256), Crypto.SHA1)), "00fd12bb2966d3059f74c3ce9da8a4430f7597dc96d137222bce32cf74cd0a05edd5eaccf92c607b75a4920444d8747de22bd04905267664dee7408c421d0056" )
 test_true( RSA->raw_verify("fl\0rpzprutt",RSA->raw_sign("fl\0rpzprutt")) )
 test_false( RSA->raw_verify("fl\0rpzputt",RSA->raw_sign("fl\0rpzprutt")) )
 test_eq( RSA->decrypt(RSA->encrypt("fl\0rpzprutt")), "fl\0rpzprutt" )
