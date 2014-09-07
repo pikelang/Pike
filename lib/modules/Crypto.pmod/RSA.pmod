@@ -304,6 +304,7 @@ class State {
   //! algorithm @[h].
   int(0..1) pkcs_verify(string(8bit) message, .Hash h, string(8bit) sign)
   {
+    if( sizeof(sign)!=size ) return 0;
     string(8bit) s = Standards.PKCS.Signature.build_digestinfo(message, h);
     return raw_verify(s, Gmp.mpz(sign, 256));
   }
