@@ -1004,21 +1004,21 @@ PIKECLASS IOBuffer
    *!
    *! The supported argument types are:
    *!
-   *! @ul
-   *! @item string(0.255)
-   *!  An eight bit string.
-   *! @item int(0..255)
-   *!  A single byte
-   *! @item System.Memory
-   *!  A chunk of memory. The whole memory area is added.
-   *! @item Stdio.IOBuffer
-   *!  A chunk of memory. The whole memory area is added.
-   *! @item String.Buffer
-   *!  A chunk of memory. The whole memory area is added.
-   *! @item array(AddArgument)
-   *!  Add all elements in the array individually. Each element can be
-   *!  one of the types listed here.
-   *! @endul
+   *! @mixed
+   *!  @type string(0..255)
+   *!   An eight bit string.
+   *!  @type int(0..255)
+   *!   A single byte
+   *!  @type System.Memory
+   *!   A chunk of memory. The whole memory area is added.
+   *!  @type Stdio.IOBuffer
+   *!   A chunk of memory. The whole memory area is added.
+   *!  @type String.Buffer
+   *!   A chunk of memory. The whole memory area is added.
+   *!  @type array(AddArgument)
+   *!   Add all elements in the array individually. Each element may be
+   *!   any one of the types listed here.
+   *! @endmixed
    *!
    *! @seealso
    *! @[sprintf], @[add_int8], @[add_int16], @[add_int32], @[add_int]
