@@ -623,7 +623,7 @@ PIKECLASS IOBuffer
 
   static void io_add_int_uc( IOBuffer *io, INT_TYPE i, size_t bytes )
   {
-    unsigned char *x = io->buffer+io->offset;
+    unsigned char *x = io->buffer+io->len;
     io->len += bytes;
     while(bytes--)
     {
