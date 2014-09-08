@@ -362,13 +362,16 @@ PIKECLASS IOBuffer
 
   static void io_unset_rewind_on_error( IOBuffer *io, ONERROR *x )
   {
+    struct rewind_to *rew = x->arg;
+
     UNSET_ONERROR( (*x) );
     io->locked_move--;
 #if defined(PIKE_DEBUG)
-    if( io->locked_move != ((struct rewind*)x)->old_locked_mode )
+    if( io->locked_move != rew->old_locked_move )
       Pike_fatal( "Invalid io_rewind_on_error nesting\n");
 #endif
-    free( x->arg );
+
+    free( rew );
   }
 
 
