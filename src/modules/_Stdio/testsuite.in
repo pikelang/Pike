@@ -378,5 +378,262 @@ cond_begin([[ Pike["PollDeviceBackend"] && Pike["PollDeviceBackend"]["HAVE_KQUEU
   run_sub_test(({"SRCDIR/kqueuetest.pike"}))
 cond_end
 
+dnl IOBuffer
+
+test_equal([[Stdio.IOBuffer("hej")->read(1)]], "h");
+
+dnl sscanf
+
+test_equal([[Stdio.IOBuffer("hej")->sscanf("%3c")]], ({6841706}));
+test_equal([[Stdio.IOBuffer("hej")->match("%3c")]], 6841706);
+
+test_any([[
+  int i;
+  Stdio.IOBuffer b=Stdio.IOBuffer("hej hej hej");
+
+  while( array a = b->sscanf( "%*[ ]%[^ ]") )
+     i+= sizeof(a);
+  return i;
+]], 3);
+
+dnl range_error
+
+
+dnl output_to()
+dnl input_from
+dnl __fd_set_output?
+
+dnl _size_object()
+dnl also tests that size is doubled when adding..
+test_equal( Stdio.IOBuffer("hej hej")->_size_object(), 0 );
+test_equal( Stdio.IOBuffer("hej hej")->add("hej")->_size_object(),
+            Stdio.IOBuffer("hej hej")->add("foo")->add("bar")->_size_object() );
+
+
+dnl sizeof()
+test_equal( sizeof(Stdio.IOBuffer("hej")), sizeof("hej"));
+test_equal( sizeof(Stdio.IOBuffer("ej")->add("alpha")), 7);
+test_equal( sizeof(Stdio.IOBuffer()->sprintf("%4H","hej")), 7);
+
+dnl create(int)
+test_any([[
+    Stdio.IOBuffer b = Stdio.IOBuffer(1024*1024);
+    if( b->_size_object() != 1024*1024 )
+      return -1;
+   for( int i = 0; i<1024/4*1024; i++ )
+     b->add("test");
+   if( b->_size_object() != 1024*1024 )
+      return -2;
+   if( b->num_malloc ) return -3;
+   if( b->num_move )   return -4;
+
+   return 1;
+]], 1 )
+
+dnl create/add( system.memory )
+test_any(([[
+  System.Memory a = System.Memory(__FILE__);
+  System.Memory b = System.Memory(100);
+
+  Stdio.IOBuffer buf = Stdio.IOBuffer(a);
+
+  if( buf->_size_object() != 0 )
+    return -1;
+
+  buf->add( b );
+
+  if( buf->_size_object() < sizeof(a)+sizeof(b) )
+    return -2;
+ if( (string)buf != "buffer 1buffer 2")
+    return -3;
+ return 1;
+]], 1);
+
+dnl create/add( iobuffer )
+test_any(([[
+  Stdio.IObuffer a = Stdio.IOBuffer("buffer 1");
+  Stdio.IObuffer b = Stdio.IOBuffer("buffer 2");
+
+  Stdio.IOBuffer buf = Stdio.IOBuffer(a);
+
+  if( buf->_size_object() < sizeof(a) )
+    return -1;
+
+  buf->add( b );
+
+  if( buf->_size_object() < sizeof(a)+sizeof(b) )
+    return -2;
+ if( (string)buf != "buffer 1buffer 2")
+    return -3;
+ return 1;
+]], 1);
+
+dnl add( string.buffer )
+test_any(([[
+  String.Buffer a = String.Buffer("buffer 1");
+  String.Buffer b = String.Buffer("buffer 2");
+
+  Stdio.IOBuffer buf = Stdio.IOBuffer(a);
+
+  if( buf->_size_object() < sizeof(a) )
+    return -1;
+
+  buf->add( b );
+
+  if( buf->_size_object() < sizeof(a)+sizeof(b) )
+    return -2;
+ if( (string)buf != "buffer 1buffer 2")
+    return -3;
+ return 1;
+]], 1);
+
+dnl add( string )
+test_any(([[
+  string a = ("buffer 1");
+  string b = ("buffer 2");
+
+  Stdio.IOBuffer buf = Stdio.IOBuffer(a);
+
+  if( buf->_size_object() > 0 )
+    return -1;
+
+  buf->add( b );
+
+  if( buf->_size_object() < sizeof(a)+sizeof(b) )
+    return -2;
+ if( (string)buf != "buffer 1buffer 2")
+    return -3;
+ return 1;
+]], 1);
+
+dnl add( char )
+test_any(([[
+  string a = ("buffer 1");
+
+  Stdio.IOBuffer buf = Stdio.IOBuffer(a);
+
+  if( buf->_size_object() > 0 )
+    return -1;
+
+  buf->add( 'b','u','f','f','e','r',' ','2' );
+
+  if( buf->_size_object() < sizeof(a)+8 )
+    return -2;
+ if( (string)buf != "buffer 1buffer 2")
+    return -3;
+ return 1;
+]], 1);
+
+dnl create(array( mix ))
+test_any(([[
+  System.Memory tst  = System.Memory(2);
+  tst[0] = ' ';
+  tst[1] = '2';
+  Stdio.IOBuffer buf = Stdio.IOBuffer(({
+             "buffer 1",
+             'b','u','f',Stdio.IOBuffer("f"),
+             String.Buffer("er"),
+             tst
+    }));
+
+  if( buf->_size_object() > 0 )
+    return -1;
+
+  buf->add( 'b','u','f','f','e','r',' ','2' );
+
+  if( buf->_size_object() < 16 )
+    return -2;
+  if( (string)buf != "buffer 1buffer 2")
+     return -3;
+
+ return 1;
+]], 1);
+
+dnl multi add( combo, also sort of a speed test )
+dnl will use on average 3Mb RAM
+test_any(([[
+   array tst = ({
+    System.Memory(1),
+    String.Buffer("2");
+    '3',
+    "4",
+    Stdio.IOBuffer("5"),
+    ({ "6", '7' }),
+  });
+
+  tst[0][0] = '2';
+
+  int l = 0;
+  Stdio.IOBuffer res = Stdio.IOBuffer();
+  for( int i = 10; i<1024*1024; i++ )
+  {
+     array args = allocate( random(5) );
+     for( int j=0; j<sizeof( args ); j++ )
+     {
+       args[j] = random( tst );
+       l+= sizeof( args[j] );
+     }
+     res->add(@args);
+  }
+  if( buf->_size_object() < l )
+    return -1;
+
+  if( sizeof(buf) != l )
+    return -2;
+ return 1;
+]], 1);
+
+
+dnl basic zero-copy check
+
+test_any( [[
+  Stdio.IOBuffer i = Stdio.IOBuffer("zero copy");
+  if( i->num_malloc ) return -1;
+  if( i->_size_object() != 0 )  return -2;
+
+  i->add(" data goes here");
+  if( i->num_malloc!= 1 ) return -3;
+  if( i->_size_object() == 0 )  return -4;
+
+  i->read();
+  if( i->_size_object() == 0 )  return -5;
+
+  i->add("zero copy");
+  if( i->_size_object() != 0 )  return -6;
+
+  i->add(" indeed"); /* note: shorter than first string. */
+  if( i->_size_object() != 0 )  return -7;
+
+  if( i->num_malloc != 1 ) return -8;
+  if( i->num_move ) return -9;
+]], 1);
+
+
+dnl add_byte() add_int8()
+
+dnl add_short() add_int16()
+
+dnl add_int32()
+
+dnl add_int( x, bits);
+
+dnl add_int( bignum, bits);
+
+dnl add_hstring( str, bits )
+
+dnl add_hstring( obj*, bits )
+
+dnl add_ints
+
+dnl lock
+
+dnl cast
+
+dnl indexing
+
+dnl set_error_mode
+
+dnl _sprintf
+
 
 END_MARKER
