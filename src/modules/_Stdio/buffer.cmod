@@ -8,6 +8,7 @@
 #include "sscanf.h"
 #include "builtin_functions.h"
 #include "interpret.h"
+#include "cyclic.h"
 #include "backend.h"
 #include "fd_control.h"
 #include "file_machine.h"
@@ -750,8 +751,15 @@ PIKECLASS IOBuffer
         {
           struct array *argp = p->u.array;
           INT_TYPE i;
+	  DECLARE_CYCLIC();
+
+	  if (BEGIN_CYCLIC(io, argp))
+	    Pike_error("Attempt to append a cyclic array to a buffer.\n");
+
           for(i=0; i<argp->size; i++ )
             io_append_svalue( io, argp->item+i );
+
+	  END_CYCLIC();
         }
         break;
       case PIKE_T_OBJECT:
