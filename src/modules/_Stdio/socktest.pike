@@ -505,7 +505,11 @@ void finish()
 #ifdef IPV6
     // Linux 2.6.x seems to hang when running out of IPV6 ports
     // on the loopback. Give it some time to clean up its act...
-    sleep(!(_tests&3));
+#if constant(uname)
+    mapping u = uname();
+    if( u->sysname == "Linux" && has_prefix(u->release,"2.6"))
+        sleep(!(_tests&3));
+#endif
 #endif
     switch(_tests)
     {
