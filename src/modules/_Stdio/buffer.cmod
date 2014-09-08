@@ -615,7 +615,7 @@ PIKECLASS IOBuffer
       INT_TYPE null = 0;
       while( len < width )
       {
-        int a = MIN(width-len,sizeof(INT_TYPE));
+        int a = MIN(width-len, (int)sizeof(INT_TYPE));
         io_append( io, &null, a );
         width-=a;
       }
