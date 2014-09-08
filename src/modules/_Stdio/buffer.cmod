@@ -141,14 +141,20 @@ PIKECLASS IOBuffer
     return 0;
   }
 
-  static void io_unstash_malloc( IOBuffer *io )
+  static int io_unstash_malloc( IOBuffer *io )
   {
-    if( LIKELY(io->malloced || !io->stash.ptr) )
-      return;
+    if( LIKELY(!io->stash.ptr) )
+      return 0;
 
     if( io->stash.len >= io_len( io ) )
     {
-      memcpy( io->stash.ptr, io_read_pointer( io ), io_len(io) );
+      if( io_len(io) )
+      {
+          /* do not count this one, since it comes from add and would
+           * have been a copy normally.
+           */
+          memcpy( io->stash.ptr, io_read_pointer( io ), io_len(io) );
+      }
       io->buffer = io->stash.ptr;
       io->len = io_len(io);
       io->offset = 0;
@@ -159,6 +165,7 @@ PIKECLASS IOBuffer
       free( io->stash.ptr );
     io->stash.ptr = 0;
     io->stash.len = 0;
+    return io->malloced;
   }
 
   static void io_stash_malloc( IOBuffer *io )
@@ -179,28 +186,29 @@ PIKECLASS IOBuffer
     {
       /* convert to malloced buffer from a shared one. */
       unsigned char *old = io->buffer;
-      io->buffer = xalloc( io->len + bytes + 100 );
-      io->allocated = io->len + bytes + 100;
-      io->num_malloc++;
-      io->num_move++;
-      memcpy( io->buffer, old, io->len );
-      if( io->sub ) {
-        io_unlock( get_storage(io->sub,IOBuffer_program ) );
-        free_object( io->sub );
+      if( !io_unstash_malloc(io) )
+      {
+          io->buffer = xalloc( io->len + bytes + 100 );
+          io->allocated = io->len + bytes + 100;
+          io->num_malloc++;
+          memcpy( io->buffer, old, io->len );
+          if( io->sub ) {
+              io_unlock( get_storage(io->sub,IOBuffer_program ) );
+              free_object( io->sub );
+          }
+          if( io->source ) free_object( io->source );
+          if( io->str ) free_string( io->str );
+          io->source = 0;
+          io->sub = 0;
+          io->str = 0;
+          io->malloced = 1;
       }
-      if( io->source ) free_object( io->source );
-      if( io->str ) free_string( io->str );
-      io->source = 0;
-      io->sub = 0;
-      io->str = 0;
-      io->malloced = 1;
     }
   }
 
   static unsigned char *io_add_space( IOBuffer *io, int bytes, int force )
   {
     io_ensure_unlocked(io);
-    io_unstash_malloc(io);
     io_ensure_malloced(io, bytes);
 
     /*
@@ -240,7 +248,7 @@ PIKECLASS IOBuffer
     {
       if( io->len == io->offset )
         io->offset = io->len = 0;
-      if( UNLIKELY((force && io->offset) || (io->offset > io->len>>1)) )
+      else if( UNLIKELY((force && io->offset) || (io->offset > io->len>>1)) )
       {
         memmove( io->buffer, io_read_pointer(io), io_len(io) );
         io->num_move++;
@@ -379,7 +387,7 @@ PIKECLASS IOBuffer
     SET_ONERROR( (*x), io_do_unwrite_on_error, rew );
   }
 
-  static void io_unset_unwrite_on_error( IOBuffer *io, ONERROR *x )
+  static void io_unset_unwrite_on_error( IOBuffer *UNUSED(io), ONERROR *x )
   {
     UNSET_ONERROR( (*x) );
     free( x->arg );
@@ -755,7 +763,7 @@ PIKECLASS IOBuffer
           if( (src.io = get_storage(x, IOBuffer_program)) )
           {
             io_append( io, io_read_pointer(src.io), io_len(src.io) );
-            io_consume( src.io, io_len(src.io) );
+            /* io_consume( src.io, io_len(src.io) );*/
           }
           else if( (src.b = string_buffer( x )) )
           {
