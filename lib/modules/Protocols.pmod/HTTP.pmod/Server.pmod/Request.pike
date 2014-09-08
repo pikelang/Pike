@@ -648,6 +648,9 @@ void response_and_finish(mapping m, function|void _log_cb)
    m += ([ ]);
    log_cb = _log_cb;
 
+   if( !my_fd )
+       return;
+
    if (request_headers->range && !m->start && undefinedp(m->error))
    {
       int a,b;
