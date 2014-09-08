@@ -380,12 +380,12 @@ cond_end
 
 dnl IOBuffer
 
-test_equal([[Stdio.IOBuffer("hej")->read(1)]], "h");
+test_equal([[Stdio.IOBuffer("hej")->read(1)]], "h")
 
 dnl sscanf
 
-test_equal([[Stdio.IOBuffer("hej")->sscanf("%3c")]], ({6841706}));
-test_equal([[Stdio.IOBuffer("hej")->match("%3c")]], 6841706);
+test_equal([[Stdio.IOBuffer("hej")->sscanf("%3c")]], ({6841706}))
+test_equal([[Stdio.IOBuffer("hej")->match("%3c")]], 6841706)
 
 test_any([[
   int i;
@@ -394,7 +394,7 @@ test_any([[
   while( array a = b->sscanf( "%*[ ]%[^ ]") )
      i+= sizeof(a);
   return i;
-]], 3);
+]], 3)
 
 dnl range_error
 
@@ -407,13 +407,13 @@ dnl _size_object()
 dnl also tests that size is doubled when adding..
 test_equal( Stdio.IOBuffer("hej hej")->_size_object(), 0 );
 test_equal( Stdio.IOBuffer("hej hej")->add("hej")->_size_object(),
-            Stdio.IOBuffer("hej hej")->add("foo")->add("bar")->_size_object() );
+            Stdio.IOBuffer("hej hej")->add("foo")->add("bar")->_size_object() )
 
 
 dnl sizeof()
-test_equal( sizeof(Stdio.IOBuffer("hej")), sizeof("hej"));
-test_equal( sizeof(Stdio.IOBuffer("ej")->add("alpha")), 7);
-test_equal( sizeof(Stdio.IOBuffer()->sprintf("%4H","hej")), 7);
+test_equal( sizeof(Stdio.IOBuffer("hej")), sizeof("hej"))
+test_equal( sizeof(Stdio.IOBuffer("ej")->add("alpha")), 7)
+test_equal( sizeof(Stdio.IOBuffer()->sprintf("%4H","hej")), 7)
 
 dnl create(int)
 test_any([[
@@ -431,7 +431,7 @@ test_any([[
 ]], 1 )
 
 dnl create/add( system.memory )
-test_any(([[
+test_any([[
   System.Memory a = System.Memory(__FILE__);
   System.Memory b = System.Memory(100);
 
@@ -444,15 +444,15 @@ test_any(([[
 
   if( buf->_size_object() < sizeof(a)+sizeof(b) )
     return -2;
- if( (string)buf != "buffer 1buffer 2")
+ if( !has_suffix((string)buf,"\0"*100) )
     return -3;
  return 1;
-]], 1);
+]], 1)
 
 dnl create/add( iobuffer )
-test_any(([[
-  Stdio.IObuffer a = Stdio.IOBuffer("buffer 1");
-  Stdio.IObuffer b = Stdio.IOBuffer("buffer 2");
+test_any([[
+  Stdio.IOBuffer a = Stdio.IOBuffer("buffer 1");
+  Stdio.IOBuffer b = Stdio.IOBuffer("buffer 2");
 
   Stdio.IOBuffer buf = Stdio.IOBuffer(a);
 
@@ -466,12 +466,14 @@ test_any(([[
  if( (string)buf != "buffer 1buffer 2")
     return -3;
  return 1;
-]], 1);
+]], 1)
 
 dnl add( string.buffer )
-test_any(([[
-  String.Buffer a = String.Buffer("buffer 1");
-  String.Buffer b = String.Buffer("buffer 2");
+test_any([[
+  String.Buffer a = String.Buffer();
+  String.Buffer b = String.Buffer();
+  a->add("buffer 1");
+  b->add("buffer 2");
 
   Stdio.IOBuffer buf = Stdio.IOBuffer(a);
 
@@ -485,10 +487,10 @@ test_any(([[
  if( (string)buf != "buffer 1buffer 2")
     return -3;
  return 1;
-]], 1);
+]], 1)
 
 dnl add( string )
-test_any(([[
+test_any([[
   string a = ("buffer 1");
   string b = ("buffer 2");
 
@@ -504,10 +506,10 @@ test_any(([[
  if( (string)buf != "buffer 1buffer 2")
     return -3;
  return 1;
-]], 1);
+]], 1)
 
 dnl add( char )
-test_any(([[
+test_any([[
   string a = ("buffer 1");
 
   Stdio.IOBuffer buf = Stdio.IOBuffer(a);
@@ -522,66 +524,71 @@ test_any(([[
  if( (string)buf != "buffer 1buffer 2")
     return -3;
  return 1;
-]], 1);
+]], 1)
 
-dnl create(array( mix ))
-test_any(([[
+dnl add(array( mix ))
+test_any([[
   System.Memory tst  = System.Memory(2);
   tst[0] = ' ';
   tst[1] = '2';
-  Stdio.IOBuffer buf = Stdio.IOBuffer(({
-             "buffer 1",
+  String.Buffer er = String.Buffer();
+  mixed z = ({
              'b','u','f',Stdio.IOBuffer("f"),
-             String.Buffer("er"),
+             er,
              tst
-    }));
+   });
+  er->add("er");
 
+  Stdio.IOBuffer buf = Stdio.IOBuffer("buffer 1");
   if( buf->_size_object() > 0 )
     return -1;
 
-  buf->add( 'b','u','f','f','e','r',' ','2' );
+  buf->add( z, 'b','u','f','f',({'e','r',({' '}),'3'}) );
 
-  if( buf->_size_object() < 16 )
+  if( buf->_size_object() < 24 )
     return -2;
-  if( (string)buf != "buffer 1buffer 2")
+  if( (string)buf != "buffer 1buffer 2buffer 3")
      return -3;
 
  return 1;
-]], 1);
+]], 1)
 
 dnl multi add( combo, also sort of a speed test )
 dnl will use on average 3Mb RAM
-test_any(([[
+test_any([[
+   String.Buffer two = String.Buffer();
    array tst = ({
     System.Memory(1),
-    String.Buffer("2");
+    two,
     '3',
     "4",
     Stdio.IOBuffer("5"),
-    ({ "6", '7' }),
+    ({ "6", ({'7',"","",""}) }),
   });
 
-  tst[0][0] = '2';
+  two->add("2");
 
   int l = 0;
   Stdio.IOBuffer res = Stdio.IOBuffer();
-  for( int i = 10; i<1024*1024; i++ )
+  for( int i = 0; i<102*1024; i++ )
   {
-     array args = allocate( random(5) );
+     array args = allocate( random(50) );
      for( int j=0; j<sizeof( args ); j++ )
      {
-       args[j] = random( tst );
-       l+= sizeof( args[j] );
+       mixed e = random( tst );
+       if( intp( e ) )
+         l +=1;
+       else
+         l += sizeof( e );
+       args[j] = e;
      }
      res->add(@args);
+     if( sizeof( res ) != l )
+       return ([i:args, "l":l,"sizeof":sizeof(res)]);
   }
-  if( buf->_size_object() < l )
-    return -1;
 
-  if( sizeof(buf) != l )
-    return -2;
  return 1;
-]], 1);
+]], 1)
 
 
 dnl basic zero-copy check
@@ -602,16 +609,40 @@ test_any( [[
   if( i->_size_object() != 0 )  return -6;
 
   i->add(" indeed"); /* note: shorter than first string. */
-  if( i->_size_object() != 0 )  return -7;
+  if( i->_size_object() == 0 )  return -7;
 
   if( i->num_malloc != 1 ) return -8;
-  if( i->num_move ) return -9;
-]], 1);
+  /*
+  crete - no move
+  add - realloc + move
+  read - no move (buffer now empty)
+  add - point to str
+  add -  move to malloc arena
+  add - no move
+  */
+  return i->num_move <= 2;
+]], 1)
 
 
 dnl add_byte() add_int8()
 
+test_any( [[
+ Stdio.IOBuffer b = Stdio.IOBuffer();
+
+ for( int i=0; i<255; i++ )
+   b->add_byte( i )->add_int8(~i);
+
+  for( int i=0; i<255; i++ )
+     if( b[i*2] != i || b[i*2+1] != (~i&255))
+       return -i;
+  return 1;
+]], 1 )
+
 dnl add_short() add_int16()
+
+dnl test_any( [[
+dnl  return 1;
+dnl ]], 1 )
 
 dnl add_int32()
 
