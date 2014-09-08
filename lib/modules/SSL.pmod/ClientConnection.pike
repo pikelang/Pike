@@ -650,7 +650,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 
 
       // FIXME: The certificate code has changed, so this no longer
-      // works, if it every did.
+      // works, if it ever did.
 #if 0
       // FIXME: Certificate verify; we should redo this so it makes more sense
       if(certificate_state == CERT_received &&
