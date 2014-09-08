@@ -1092,14 +1092,15 @@ PIKECLASS IOBuffer
   PIKEFUN IOBuffer add_hstring( object str, int size_size )
   {
     IOBuffer *io = THIS;
-    size_t len = io_svalue_len(io, Pike_sp-1);
+    size_t len = io_svalue_len(io, Pike_sp-2);
 
     if( size_size < (int)sizeof(INT_TYPE) &&
         len > (((size_t)1)<<(8*size_size))-1 )
       Pike_error("Too long string, need larger size field\n");
 
     io_add_int( io, len, size_size );
-    io_append_svalue( io, Pike_sp-1 );
+    io_append_svalue( io, Pike_sp-2 );
+    pop_n_elems(args);
     ref_push_object(io->this);
   }
 

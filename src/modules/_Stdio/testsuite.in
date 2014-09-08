@@ -640,21 +640,198 @@ test_any( [[
 
 dnl add_short() add_int16()
 
-dnl test_any( [[
-dnl  return 1;
-dnl ]], 1 )
+ test_any( [[
+ string ref = "";
+ Stdio.IOBuffer b = Stdio.IOBuffer();
+
+ for( int i=0; i<255; i++ )
+ {
+   ref += sprintf("%2c%2c", i, (~i)&0xffff );
+   b->add_short( i )->add_int16(~i);
+   if( (string)b != ref ) return ([
+     "i":i,
+     "ref":ref,
+     "b":(string)b
+  ]);
+  }
+  return 1;
+ ]], 1 )
 
 dnl add_int32()
+ test_any( [[
+ string ref = "";
+ Stdio.IOBuffer b = Stdio.IOBuffer();
+
+ for( int i=0; i<255; i++ )
+ {
+   ref += sprintf("%4c%4c", i, (~i)&0xffffffff );
+   b->add_int32( i )->add_int32(~i);
+   if( (string)b != ref ) return ([
+     "i":i,
+     "ref":ref,
+     "b":(string)b
+    ]);
+  }
+  return 1;
+ ]], 1 )
+
 
 dnl add_int( x, bits);
 
+ test_any( [[
+ string ref = "";
+ Stdio.IOBuffer b = Stdio.IOBuffer();
+
+ for( int j=1; j<255; j++ )
+ {
+   string fmt = "%"+j+"c";
+   for( int i=0; i<255; i+=random(10) )
+   {
+     ref += sprintf(fmt, i );
+     b->add_int( i, j );
+    }
+    if( (string)b != ref ) return ([
+      "width":j,
+      "ref":ref,
+      "b":(string)b
+     ]);
+    b->clear();
+    ref = "";
+  }
+  return 1;
+ ]], 1 )
+
+
 dnl add_int( bignum, bits);
 
-dnl add_hstring( str, bits )
+test_any( [[
+ string ref = "";
+ Stdio.IOBuffer b = Stdio.IOBuffer();
+
+ for( int j=1; j<255; j++ )
+ {
+   int i = random((1<<(j*8))-1);
+   ref += sprintf("%"+j+"c", i );
+   b->add_int( i, j );
+   if( (string)b != ref ) return ([
+     "i":i,  "j":j,
+     "ref":ref,
+     "b":(string)b
+    ]);
+  }
+  return 1;
+ ]], 1 )
+
+
+dnl add_hstring( str, bytes )
+
+test_error( [[
+ Stdio.IOBuffer b = Stdio.IOBuffer();
+  b->add_hstring("testing", 0 );
+ ]], 1 )
+
+test_error( [[
+ Stdio.IOBuffer b = Stdio.IOBuffer();
+ b->add_hstring(" "*256, 1 );
+]], 1 )
+
+test_any( [[
+ array(Stdio.IOBuffer) b = allocate(10,Stdio.IOBuffer)();
+ for( int i = 0; i<1000; i++ )
+ {
+   string chunk = " "*random(255);
+
+   for( int w = 0; w<9; w++ )
+     b[w]->add_hstring( chunk, w+1 );
+  }
+
+ for( int i = 0; i<1000; i++ )
+ {
+   string chunk = b[0]->read_hstring(1);
+   for( int w = 1; w<9; w++ )
+   {
+     if( b[w]->read_hstring( w+1 ) != chunk )
+        return ({w+1,strlen(chunk)});
+   }
+ }
+ return 1;
+]], 1);
+
+test_any( [[
+   Stdio.IOBuffer b = Stdio.IOBuffer();
+   b->add( "\0\1" );
+   if( b->read_hstring( 2 ) )
+     return -1;
+   if( sizeof(b) != 2 )
+     return -2;
+   b->add("x");
+   if( b->read_hstring( 2 ) != "x" )
+     return -3;
+   return 1;
+]], 1);
 
 dnl add_hstring( obj*, bits )
 
+test_any( [[
+ array(Stdio.IOBuffer) b = allocate(10,Stdio.IOBuffer)();
+ System.Memory chunk = System.Memory(255);
+ for( int i = 0; i<1000; i++ )
+ {
+   for( int w = 0; w<9; w++ )
+     b[w]->add_hstring( chunk, w+1 );
+  }
+
+ for( int i = 0; i<1000; i++ )
+ {
+   string chunk = b[0]->read_hstring(1);
+   for( int w = 1; w<9; w++ )
+   {
+     if( b[w]->read_hstring( w+1 ) != chunk )
+        return ({w+1,strlen(chunk)});
+   }
+ }
+ return 1;
+]], 1);
+
 dnl add_ints
+
+test_any( [[
+ array q = allocate(100000,random)(8438439834983948938439849834983498349834983498);
+ Stdio.IOBuffer i = Stdio.IOBuffer();
+ i->add_ints( q, 20 );
+ return 1;
+]], 1);
+
+test_error( [[
+ array q = ({8438439834983948938439849834983498349834983498});
+ Stdio.IOBuffer i = Stdio.IOBuffer();
+ i->add_ints( q, 7 );
+ return 1;
+]], 1);
+
+
+test_any( [[
+ array q = ({10,20,30});
+ Stdio.IOBuffer i = Stdio.IOBuffer();
+ i->add_ints( q, 7 );
+ return 1;
+]], 1);
+
+test_error( [[
+ array q = ({10,"20",30});
+ Stdio.IOBuffer i = Stdio.IOBuffer();
+ i->add_ints( q, 7 );
+ return 1;
+]], 1);
+
+test_any( [[
+ array q = ({10,"20",30});
+ Stdio.IOBuffer i = Stdio.IOBuffer();
+ catch{i->add_ints( q, 7 );};
+ if( sizeof(i) )
+   return -1;
+ return 1;
+]], 1);
 
 dnl lock
 
