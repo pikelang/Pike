@@ -2975,13 +2975,13 @@ PIKEFUN array(mixed) backtrace()
  */
 PIKECLASS Buffer
 {
-  CVAR char* buffer;
-  CVAR size_t offset;
-  CVAR size_t len;
-  CVAR unsigned shift;
-  CVAR struct string_builder str;
-  CVAR unsigned readonly;
-  CVAR size_t initial;
+  CVAR struct string_builder str;			     /* Can be empty */
+  CVAR char* buffer;			      /* Current start of the buffer */
+  CVAR size_t offset;	      /* Characters consumed but still in the buffer */
+  CVAR size_t len;		/* Number of characters available to be read */
+  CVAR unsigned shift;			 /* Current size_shift of the buffer */
+  CVAR unsigned readonly;		 /* If the buffer is marked readonly */
+  CVAR size_t initial;		   /* Initial reserved (unfilled) buffersize */
 
   CVAR struct object *source;
   /* CVAR program *error_mode; */
