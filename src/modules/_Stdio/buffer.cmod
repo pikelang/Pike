@@ -914,23 +914,28 @@ PIKECLASS IOBuffer
     io->output_triggered = 0;
   }
 
-  /*! @decl int output_to( Stdio.Stream f, int|void nbytes )
+  /*! @decl int(-1..) output_to( Stdio.Stream f, int(0..)|void nbytes )
    *!
    *! Write data from the buffer to the indicated file.
    *!
-   *! Will return the number of bytes that were successfully written.
-   *!
+   *! @param nbytes
    *! If @[nbytes] is not specified the whole buffer will be written
    *! if possible.  Otherwise at most @[nbytes] will be written.
+   *!
+   *! @returns
+   *! Will return the number of bytes that were successfully written.
+   *!
+   *! If no bytes were successfully written and @expr{f->write()@} failed
+   *! with an error @expr{-1@} will be returned.
    */
-  PIKEFUN int(0..) output_to( object f, int|void _nbytes )
+  PIKEFUN int(-1..) output_to( object f, int|void _nbytes )
   {
     IOBuffer *io = THIS;
-    size_t written = 0, nbytes = (size_t)-1;
+    ssize_t written = 0, nbytes = (ssize_t)(((size_t)~0)>>1);
     struct my_file *fd;
     INT_TYPE *wr = &Pike_sp->u.integer;
 
-    size_t sz = io_len( io );
+    ssize_t sz = io_len( io );
 
     if( !sz )
     {
@@ -945,14 +950,16 @@ PIKECLASS IOBuffer
       /* lock this object. */
       while( sz > written && nbytes )
       {
-        size_t rd = MINIMUM(MINIMUM(sz-written,4096),nbytes);
+        ssize_t rd = MINIMUM(MINIMUM(sz-written,4096),nbytes);
         unsigned char *ptr = io_read_pointer( io );
         ssize_t res;
         res = fd_write( fd->box.fd, ptr, rd );
         if( res == -1 && errno == EINTR )
           continue;
-        if( res <= 0 )
+        if( res <= 0 ) {
+	  if (!written) written = -1;
           break;
+	}
         io_consume( io, res );
         written += res;
         nbytes-=res;
@@ -976,6 +983,7 @@ PIKECLASS IOBuffer
         safe_apply(f, "write", 1);
         if( *wr <= 0 ){
           io_rewind(io, rd );
+	  if (!written) written = -1;
           break;
         }
         written += *wr;
