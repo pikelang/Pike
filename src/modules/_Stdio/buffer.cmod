@@ -957,6 +957,7 @@ PIKECLASS IOBuffer
         if( res == -1 && errno == EINTR )
           continue;
         if( res <= 0 ) {
+	  fd->my_errno = errno;
 	  if (!written) written = -1;
           break;
 	}
