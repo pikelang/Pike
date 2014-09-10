@@ -1835,6 +1835,54 @@ PIKECLASS IOBuffer
     push_undefined();
   }
 
+  /*! @decl int(8bit) read_int8()
+   */
+  PIKEFUN int(8bit) read_int8( )
+  {
+    IOBuffer *io = THIS;
+    if( LIKELY(io_avail( io, 1 )) )
+      push_int( io_read_byte_uc(io) );
+    else
+      push_int(-1);
+  }
+
+  /*! @decl int(16bit) read_int16()
+   */
+  PIKEFUN int(0..65535) read_int16( )
+  {
+    IOBuffer *io = THIS;
+    if( LIKELY(io_avail( io, 2 )) )
+      push_int( io_read_number_uc(io,2) );
+    else
+      push_int(-1);
+  }
+
+  /*! @decl int(24bit) read_int24()
+   */
+  PIKEFUN int(0..16777215) read_int24( )
+  {
+    IOBuffer *io = THIS;
+    if( LIKELY(io_avail( io, 3 )) )
+      push_int( io_read_number_uc(io,3) );
+    else
+      push_int(-1);
+  }
+
+  /*! @decl int(24bit) read_int32()
+   */
+  PIKEFUN int(0..16777215) read_int32( )
+  {
+#if SIZEOF_INT_TYPE > 4
+    IOBuffer *io = THIS;
+    if( LIKELY(io_avail( io, 4 )) )
+      push_int( io_read_number_uc(io,4) );
+    else
+      push_int(-1);
+#else
+    push_int( io_read_number( 4 ) );
+#endif
+  }
+
   /*! @decl int read_int( int n )
    *!
    *! Read a network byte order unsigned number of size n*8 bits, then
