@@ -90,6 +90,11 @@ PIKECLASS IOBuffer
 {
   CVAR IOBuffer b;
 
+#if PRECOMPILE_API_VERSION > 5
+  PIKEVAR int b.num_malloc;
+  PIKEVAR int b.num_move;
+#endif
+
   static void io_set_error_mode( IOBuffer *io, struct program *m )
   {
     if( m ) m->refs++;
@@ -142,6 +147,22 @@ PIKECLASS IOBuffer
     return 0;
   }
 
+  static void io_unlink_external_storage( IOBuffer *io )
+    ATTRIBUTE((noclone,noinline));
+
+  static void io_unlink_external_storage( IOBuffer *io )
+  {
+      if( io->sub ) {
+          io_unlock( get_storage(io->sub,IOBuffer_program ) );
+          free_object( io->sub );
+      }
+      if( io->source ) free_object( io->source );
+      if( io->str ) free_string( io->str );
+      io->source = 0;
+      io->sub = 0;
+      io->str = 0;
+  }
+
   static int io_unstash_malloc( IOBuffer *io )
   {
     if( LIKELY(!io->stash.ptr) )
@@ -157,19 +178,11 @@ PIKECLASS IOBuffer
           memcpy( io->stash.ptr, io_read_pointer( io ), io_len(io) );
       }
       io->buffer = io->stash.ptr;
+      io->malloced = 1;
       io->len = io_len(io);
       io->offset = 0;
       io->allocated = io->stash.len;
-      if( io->sub ) {
-	io_unlock( get_storage(io->sub,IOBuffer_program ) );
-	free_object( io->sub );
-      }
-      if( io->source ) free_object( io->source );
-      if( io->str ) free_string( io->str );
-      io->source = 0;
-      io->sub = 0;
-      io->str = 0;
-      io->malloced = 1;
+      io_unlink_external_storage(io);
     }
     else
       free( io->stash.ptr );
@@ -195,23 +208,15 @@ PIKECLASS IOBuffer
     if( UNLIKELY(!io->malloced) )
     {
       /* convert to malloced buffer from a shared one. */
-      unsigned char *old = io->buffer;
       if( !io_unstash_malloc(io) )
       {
+          unsigned char *old = io->buffer;
           io->buffer = xalloc( io->len + bytes + 100 );
+          io->malloced = 1;
           io->allocated = io->len + bytes + 100;
           io->num_malloc++;
           memcpy( io->buffer, old, io->len );
-          if( io->sub ) {
-              io_unlock( get_storage(io->sub,IOBuffer_program ) );
-              free_object( io->sub );
-          }
-          if( io->source ) free_object( io->source );
-          if( io->str ) free_string( io->str );
-          io->source = 0;
-          io->sub = 0;
-          io->str = 0;
-          io->malloced = 1;
+          io_unlink_external_storage(io);
       }
     }
   }
@@ -372,19 +377,15 @@ PIKECLASS IOBuffer
 
   static void io_unset_rewind_on_error( IOBuffer *io, ONERROR *x )
   {
-    struct rewind_to *rew = x->arg;
-
-    UNSET_ONERROR( (*x) );
-    io->locked_move--;
 #if defined(PIKE_DEBUG)
+    struct rewind_to *rew = x->arg;
     if( io->locked_move != rew->old_locked_move )
       Pike_fatal( "Invalid io_rewind_on_error nesting\n");
-#endif
-
     free( rew );
+#endif
+    UNSET_ONERROR( (*x) );
+    io->locked_move--;
   }
-
-
 
   static void io_do_unwrite_on_error( struct rewind_to *e )
   {
@@ -406,40 +407,59 @@ PIKECLASS IOBuffer
     free( x->arg );
   }
 
+  static ssize_t io_call_write( IOBuffer *io, struct object *o, ssize_t nbytes )
+    ATTRIBUTE((noclone,noinline));
+
+  static void io_set_events( IOBuffer *io, struct my_file *fd, int extra, int set )
+    ATTRIBUTE((noclone,noinline));
+
+  static void io_set_events( IOBuffer *UNUSED(io), struct my_file *fd, int extra, int set )
+  {
+    fd->box.revents &= ~((1<<set)|extra);
+    if(!SAFE_IS_ZERO(&fd->event_cbs[set]) && fd->box.backend)
+      set_fd_callback_events(&fd->box, fd->box.events|(1<<set), 0);
+  }
+
+  static ssize_t io_call_write( IOBuffer *io, struct object *o, ssize_t bytes )
+  {
+    if( bytes > 0 )
+    {
+      ssize_t l = 0;
+      struct pike_string *s = io_read_string( io,bytes );
+
+      if( s )
+      {
+        io->output_triggered = 1;
+        push_string( s );
+        apply( o, "write", 1 );
+        l = Pike_sp[-1].u.integer;
+        pop_stack();
+        if( l <  0 )
+        {
+          io_rewind( io, bytes );
+          return -1;
+        }
+        if( bytes > (unsigned)l )
+          io_rewind( io, bytes-l );
+      }
+      return l;
+    }
+    return -1;
+  }
+
   static void io_trigger_output( IOBuffer *io )
   {
-      if( io->output && !io->output_triggered )
+    if( io->output && !io->output_triggered )
+    {
+      struct my_file *fd;
+      if( (fd = get_storage( io->output, file_program )) )
       {
-          struct my_file *fd;
-          if( (fd = get_storage( io->output, file_program )) )
-          {
-              /* actual fd? Just register the callback. */
-              fd->box.revents &= ~(PIKE_BIT_FD_WRITE|PIKE_BIT_FD_WRITE_OOB);
-              if(!SAFE_IS_ZERO(&fd->event_cbs[PIKE_FD_WRITE])
-                 && fd->box.backend)
-                  set_fd_callback_events(&fd->box, fd->box.events|PIKE_BIT_FD_WRITE, 0);
-              io->output_triggered = 1;
-          }
-          else
-          {
-              size_t bytes = MINIMUM(io_len(io),100);
-              INT_TYPE l;
-              struct pike_string *s = io_read_string( io,bytes );
-              if( s )
-              {
-                  /* Call write to triggger. */
-                  io->output_triggered = 1;
-                  push_string( s );
-                  apply( io->output, "write", 1 );
-                  l = Pike_sp[-1].u.integer;
-                  pop_stack();
-                  if( l <  0 )
-                      l = 0;
-                  if( bytes > (unsigned)l )
-                      io_rewind( io, bytes-l );
-              }
-          }
+        io_set_events( io, fd, PIKE_BIT_FD_WRITE_OOB, PIKE_FD_WRITE );
+        io->output_triggered = 1;
       }
+      else
+        io_call_write( io, io->output, MINIMUM( io_len(io), 100 ) );
+    }
   }
 
   static int io_range_error( IOBuffer *io, ssize_t howmuch )
@@ -688,53 +708,57 @@ PIKECLASS IOBuffer
 
   static size_t io_svalue_len( IOBuffer *UNUSED(io), struct svalue *p )
   {
-      union {
-          struct string_builder *b;
-          struct sysmem *s;
-          IOBuffer *io;
-      } src;
+    union {
+      struct string_builder *b;
+      struct sysmem *s;
+      IOBuffer *io;
+    } src;
 
-      if( TYPEOF(*p) == PIKE_T_STRING )
+    if( TYPEOF(*p) == PIKE_T_STRING )
+    {
+      if( p->u.string->size_shift )
+        Pike_error("Only string(0..255) supported\n");
+      return p->u.string->len;
+    }
+
+    if( TYPEOF(*p) == PIKE_T_OBJECT )
+    {
+      struct object *x = p->u.object;
+
+      if( (src.io = get_storage(x, IOBuffer_program)) )
+        return io_len(src.io);
+
+      if( (src.b = string_buffer( x )) )
       {
-          if( p->u.string->size_shift )
-              Pike_error("Only string(0..255) supported\n");
-          return p->u.string->len;
+        if( src.b->s->size_shift )
+          Pike_error("Only string(0..255) supported\n");
+        else
+          return src.b->s->len;
       }
 
-      if( TYPEOF(*p) == PIKE_T_OBJECT )
-      {
-          struct object *x = p->u.object;
-
-          if( (src.io = get_storage(x, IOBuffer_program)) )
-              return io_len(src.io);
-
-          if( (src.b = string_buffer( x )) )
-          {
-              if( src.b->s->size_shift )
-                  Pike_error("Only string(0..255) supported\n");
-              else
-                  return src.b->s->len;
-          }
-
-          if( (src.s = system_memory( x )) )
-              return src.s->size;
-      }
-      Pike_error("Illegal argument (not a string or buffer object)\n");
+      if( (src.s = system_memory( x )) )
+        return src.s->size;
+    }
+    Pike_error("Illegal argument (not a string or buffer object)\n");
   }
 
   /* NOTE: Can return negative integers. */
   static INT_TYPE get_small_int( struct svalue *s )
+    ATTRIBUTE((noclone,noinline));
+
+  static INT_TYPE get_small_int( struct svalue *s )
   {
-      if( TYPEOF(*s) == PIKE_T_INT )
-          return s->u.integer;
-      if( is_bignum_object_in_svalue( s ) )
-      {
-          INT64 i64;
-          if( int64_from_bignum( &i64, s->u.object ) )
-              return i64;
-          Pike_error("Too big bignum, can not fit in indicated width\n");
-      }
-      Pike_error("Non integer argument\n");
+    if( LIKELY(TYPEOF(*s) == PIKE_T_INT) )
+      return s->u.integer;
+
+    if( is_bignum_object_in_svalue( s ) )
+    {
+      INT64 i64;
+      if( int64_from_bignum( &i64, s->u.object ) )
+        return i64;
+      Pike_error("Too big bignum, can not fit in indicated width\n");
+    }
+    Pike_error("Non integer argument\n");
   }
 
   static void io_append_svalue( IOBuffer *io, struct svalue *p )
@@ -875,10 +899,7 @@ PIKECLASS IOBuffer
         if( res != 4096 || once)
             break;
       }
-      fd->box.revents &= ~(PIKE_BIT_FD_READ|PIKE_BIT_FD_READ_OOB);
-      if(!SAFE_IS_ZERO(&fd->event_cbs[PIKE_FD_READ])
-         && fd->box.backend)
-         set_fd_callback_events(&fd->box, fd->box.events|PIKE_BIT_FD_READ, 0);
+      io_set_events( io, fd, PIKE_BIT_FD_READ_OOB, PIKE_FD_READ );
     }
     else
     {
@@ -910,21 +931,18 @@ PIKECLASS IOBuffer
    *! If f is 0 the state is cleared.
    */
 
-  PIKEFUN void __fd_set_output( object f )
+  PIKEFUN void __fd_set_output( int(0..0)|object f )
   {
     IOBuffer *io = THIS;
     if( io->output ) free_object(io->output);
     io->output_triggered = 0;
-    io->output = f;
-    io->output->refs++;
-  }
-
-  PIKEFUN void __fd_set_output( int(0..0) f )
-  {
-    IOBuffer *io = THIS;
-    if( io->output ) free_object(io->output);
-    io->output = 0;
-    io->output_triggered = 0;
+    if( TYPEOF(*f) != PIKE_T_OBJECT )
+      io->output = 0;
+    else
+    {
+      io->output = f->u.object;
+      io->output->refs++;
+    }
   }
 
   /*! @decl int(-1..) output_to( Stdio.Stream f, int(0..)|void nbytes )
@@ -946,17 +964,15 @@ PIKECLASS IOBuffer
     IOBuffer *io = THIS;
     ssize_t written = 0, nbytes = (ssize_t)(((size_t)~0)>>1);
     struct my_file *fd;
-    INT_TYPE *wr = &Pike_sp->u.integer;
-
     ssize_t sz = io_len( io );
 
     if( !sz )
     {
-        io_range_error(io,  sz);
-        sz = io_len(io);
+      io_range_error(io,  sz);
+      sz = io_len(io);
     }
     if( _nbytes )
-        nbytes = _nbytes->u.integer;
+      nbytes = _nbytes->u.integer;
 
     if( (fd = get_storage( f, file_program )) )
     {
@@ -970,18 +986,15 @@ PIKECLASS IOBuffer
         if( res == -1 && errno == EINTR )
           continue;
         if( res <= 0 ) {
-	  fd->my_errno = errno;
-	  if (!written) written = -1;
+          fd->my_errno = errno;
+          if (!written) written = -1;
           break;
-	}
+        }
         io_consume( io, res );
         written += res;
         nbytes-=res;
       }
-      fd->box.revents &= ~(PIKE_BIT_FD_WRITE|PIKE_BIT_FD_WRITE_OOB);
-      if(!SAFE_IS_ZERO(&fd->event_cbs[PIKE_FD_WRITE])
-         && fd->box.backend)
-         set_fd_callback_events(&fd->box, fd->box.events|PIKE_BIT_FD_WRITE, 0);
+      io_set_events( io, fd, PIKE_BIT_FD_WRITE_OOB, PIKE_FD_WRITE);
     }
     else
     {
@@ -989,23 +1002,18 @@ PIKECLASS IOBuffer
       while( sz > written && nbytes)
       {
         size_t rd = MINIMUM(MINIMUM(sz-written,4096),nbytes);
-        struct pike_string *s = io_read_string( io, rd );
-        if( !s )
-          break;
-        push_string(s);
-        /* when this throws we need to rewind the buffer correctly. */
-        safe_apply(f, "write", 1);
-        if( *wr <= 0 ){
+        ssize_t wr = io_call_write( io, f, rd );
+        if( wr <= 0 )
+        {
           io_rewind(io, rd );
-	  if (!written) written = -1;
+          if (!written) written = -1;
           break;
         }
-        written += *wr;
-        if( *wr < 4096 ) {
-          io_rewind(io, rd-*wr );
+        written += wr;
+        if( wr < 4096 ) {
+          io_rewind(io, rd-wr );
           break;
         }
-        pop_stack();
       }
     }
     RETURN written;
@@ -1113,44 +1121,46 @@ PIKECLASS IOBuffer
    *! @decl IOBuffer add_hstring( Stdio.IOBuffer data, int size_size )
    *! @decl IOBuffer add_hstring( System.Memory data, int size_size )
    *! @decl IOBuffer add_hstring( String.Buffer data, int size_size )
+   *! @decl IOBuffer add_hstring( array data, int size_size )
    *!
-   *! Adds length/data for @[data] to the buffer.
+   *! Adds length of data followed by @[data] to the buffer.
    *!
-   *! This is identical to @[sprintf("%"+size_size+"H",(string)data)] but
-   *! can be significantly faster.
+   *! This is identical to
+   *! @code{sprintf("%"+size_size+"H",(string)Stdio.IObuffer(data))@} but
+   *! significantly faster.
    *!
-   *! @[size_size] must be less than Int.NATIVE_MAX.
+   *! @[size_size] is the number of bytes used to represent the length of the data.
+   *! It must be less than Int.NATIVE_MAX.
+   *!
+   *! The supported @[data] argument types are
+   *!
+   *! @mixed
+   *!  @type string(0..255)
+   *!   An eight bit string.
+   *!  @type System.Memory
+   *!   A chunk of memory. The whole memory area is added.
+   *!  @type Stdio.IOBuffer
+   *!   A chunk of memory. The whole memory area is added.
+   *!  @type String.Buffer
+   *!   A chunk of memory. The whole memory area is added.
+   *!  @type array
+   *!   Add all elements in the array individually. Each element may be
+   *!   any one of the types listed here.
+   *! @endmixed
    */
 
-  PIKEFUN IOBuffer add_hstring( object str, int size_size )
+  PIKEFUN IOBuffer add_hstring( string|object|array str, int size_size )
   {
     IOBuffer *io = THIS;
-    size_t len = io_svalue_len(io, Pike_sp-2);
+    size_t len = io_svalue_len(io, str);
 
-    if( size_size < (int)sizeof(INT_TYPE) &&
+    if( size_size < (int)sizeof(size_t) &&
         len > (((size_t)1)<<(8*size_size))-1 )
       Pike_error("Too long string, need larger size field\n");
 
     io_add_int( io, len, size_size );
-    io_append_svalue( io, Pike_sp-2 );
+    io_append_svalue( io, str );
     pop_n_elems(args);
-    ref_push_object(io->this);
-  }
-
-
-  PIKEFUN IOBuffer add_hstring( string str, int size_size )
-  {
-    IOBuffer *io = THIS;
-    if( str->size_shift )
-      Pike_error("Only 8bit is supported\n");
-
-    /* We know this is safe for len>=4, since pike strings are at
-     * most 0x7ffffff bytes long.
-     */
-    if( size_size < 4 && str->len > ((INT_TYPE)1<<(8*size_size))-1 )
-        Pike_error("Too long string, need larger size field\n");
-    io_add_int( io, str->len, size_size );
-    io_append( io, str->str, str->len );
     ref_push_object(io->this);
   }
 
@@ -1207,32 +1217,32 @@ PIKECLASS IOBuffer
 #if SIZEOF_SIZE_T == 4
     if( DO_INT32_MUL_OVERFLOW( l, bpi, &n ) )
 #else
-    if( DO_INT64_MUL_OVERFLOW( l, bpi, &n ) )
+      if( DO_INT64_MUL_OVERFLOW( l, bpi, &n ) )
 #endif
-      Pike_error("Result size exceeds ssize_t size\n");
+        Pike_error("Result size exceeds ssize_t size\n");
 
     io_add_space( io, n, 0 );
     switch( bpi )
     {
-    case 1:
-      for( i=0; i<l; i++ )
-        io_append_byte_uc( io, get_small_int(it+i) );
-      break;
-    case 2:
-      for( i=0; i<l; i++ )
-        io_append_short_uc( io, get_small_int(it+i) );
-      break;
-    case 4:
-      for( i=0; i<l; i++ )
-        io_append_int_uc( io, get_small_int(it+i) );
-      break;
-    case 3:
+      case 1:
+        for( i=0; i<l; i++ )
+          io_append_byte_uc( io, get_small_int(it+i) );
+        break;
+      case 2:
+        for( i=0; i<l; i++ )
+          io_append_short_uc( io, get_small_int(it+i) );
+        break;
+      case 4:
+        for( i=0; i<l; i++ )
+          io_append_int_uc( io, get_small_int(it+i) );
+        break;
+      case 3:
 #if SIZEOF_INT_TYPE > 4
-    case 5:
-    case 6:
-    case 7:
+      case 5:
+      case 6:
+      case 7:
 #endif
-      for( i=0; i<l; i++ )
+        for( i=0; i<l; i++ )
           io_add_int_uc( io, get_small_int(it+i), bpi );
         break;
 
@@ -1240,17 +1250,18 @@ PIKECLASS IOBuffer
         /* bignums. */
         for( i=0; i<l; i++ )
         {
-           if( LIKELY(TYPEOF(it[i]) == PIKE_T_INT) )
-              io_add_int_uc( io, it[i].u.integer, bpi);
-           else if( LIKELY(TYPEOF(it[i]) == PIKE_T_OBJECT) )
-              io_add_bignum( io, it[i].u.object, bpi );
-           else
-               Pike_error("Illegal argument.\n");
+          if( LIKELY(TYPEOF(it[i]) == PIKE_T_INT) )
+            io_add_int_uc( io, it[i].u.integer, bpi);
+          else if( LIKELY(TYPEOF(it[i]) == PIKE_T_OBJECT) )
+            io_add_bignum( io, it[i].u.object, bpi );
+          else
+            Pike_error("Illegal argument.\n");
         }
     }
     io_unset_unwrite_on_error( io, &e );
     io_trigger_output( io );
-    pop_n_elems(args);
+    Pike_sp--;
+    pop_stack();
     ref_push_object(io->this);
   }
 
@@ -1723,15 +1734,6 @@ PIKECLASS IOBuffer
     }
   }
 
-
-  /* Used in the testsuite.
-
-     It would be convenient with a 'PIKEVAR int struct.X' or something.
-  */
-  PIKEFUN int(0..) `num_malloc() { RETURN THIS->num_malloc; }
-  PIKEFUN int(0..) `num_move() {   RETURN THIS->num_move;   }
-
-
   /*! @decl void clear()
    *!
    *! Clear the buffer.
@@ -2008,23 +2010,14 @@ PIKECLASS IOBuffer
 
   EXIT {
     IOBuffer *this = THIS;
-    if( this->sub )
-    {
-      free_object( this->sub );
-      io_unlock( get_storage(this->sub,IOBuffer_program ) );
-    }
+    io_unlink_external_storage( this );
     if( this->output )
         free_object(this->output);
-    if( this->source )
-      free_object( this->source );
-    if( this->str )
-      free_string( this->str );
     if( this->error_mode )
         free_program( this->error_mode );
     if( this->malloced )
       free( this->buffer );
-    if( this->stash.ptr )
-        free(this->stash.ptr);
+    free(this->stash.ptr);
   }
 }
 
