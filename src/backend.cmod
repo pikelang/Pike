@@ -177,8 +177,6 @@ struct hash_ent
 
 
 
-#define DEFAULT_CMOD_STORAGE
-
 DECLARATIONS
 
 
@@ -275,6 +273,7 @@ struct Backend_struct *really_get_backend_for_fd(int fd)
  *!   main backend APIs.
  */
 PIKECLASS Backend
+nonstatic;
 {
   /* Provide a unique count to be able to tell backends apart with _sprintf. */
   static int unused_id = 0;
@@ -3188,6 +3187,7 @@ static void sb_copy_selectors(struct sb_active_selectors *to,
  *!   @[Backend]
  */
 PIKECLASS PollDeviceBackend
+nonstatic;
 {
   INHERIT Backend;
 
@@ -4437,6 +4437,7 @@ static void check_set_timer(struct timeval tmp)
  *!   @[Backend]
  */
 PIKECLASS PollBackend
+nonstatic;
 {
   INHERIT Backend;
 
@@ -5040,6 +5041,7 @@ PIKECLASS PollBackend
  *! Backend based on the classic @tt{select(2)@} system call from BSD.
  */
 PIKECLASS SelectBackend
+nonstatic;
 {
   INHERIT Backend;
 

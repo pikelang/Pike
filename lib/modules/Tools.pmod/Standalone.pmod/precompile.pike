@@ -141,6 +141,7 @@ string usage = #"[options] <from> > <to>
 
  Currently, the following attributes are understood:
    efun;          makes this function a global constant (no value)
+   nonstatic;     makes PIKECLASSes and PIKEFUNs that are not static
    flags;         ID_STATIC | ID_NOMASK etc.
    optflags;      OPT_TRY_OPTIMIZE | OPT_SIDE_EFFECT etc.
    optfunc;       Optimization function.
@@ -1307,6 +1308,7 @@ array recursive(mixed func, array data, mixed ... args)
 // where.
 constant valid_attributes = (<
   "efun",
+  "nonstatic",
   "flags",
   "optflags",
   "optfunc",
@@ -1874,8 +1876,9 @@ sprintf("        } else {\n"
 	    string define = make_unique_name("class", base, name, "defined");
 
 	    ret+=DEFINE(define);
-	    ret+=({sprintf("DEFAULT_CMOD_STORAGE struct program *%s=NULL;\n"
+	    ret+=({sprintf("%sstruct program *%s=NULL;\n"
 			   "static int %s_fun_num=-1;\n",
+                           attributes->nonstatic ? "" : "DEFAULT_CMOD_STORAGE ",
 			   program_var, program_var)});
 	    ret+=subclass->declarations;
 	    ret+=subclass->code;
@@ -2304,7 +2307,9 @@ static struct %s *%s_gdb_dummy_ptr;
 	  funcname = "NULL";
 	} else {
 	  ret+=({
-	    sprintf("DEFAULT_CMOD_STORAGE void %s(INT32 args) ",funcname),
+	    sprintf("%svoid %s(INT32 args) ",
+                    attributes->nonstatic ? "" : "DEFAULT_CMOD_STORAGE ",
+                    funcname),
 	    "{","\n",
 	  });
 
@@ -2660,7 +2665,9 @@ static struct %s *%s_gdb_dummy_ptr;
 	    ret+=IFDEF(tmp->define, ({
 	      sprintf("#define %s\n",define),
 	      sprintf("DEFAULT_CMOD_STORAGE ptrdiff_t %s = 0;\n", func_num),
-	      sprintf("DEFAULT_CMOD_STORAGE void %s(INT32 args) ",funcname),
+	      sprintf("%svoid %s(INT32 args) ",
+                      attributes->nonstatic ? "" : "DEFAULT_CMOD_STORAGE ",
+                      funcname),
 	      "{\n",
 	    })+out+({
 	      "}\n",

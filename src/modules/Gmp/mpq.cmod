@@ -44,8 +44,6 @@
 #define sp Pike_sp
 #define fp Pike_fp
 
-#define DEFAULT_CMOD_STORAGE
-
 DECLARATIONS
 
 #define THISMPQ (&(THIS->n))
@@ -62,6 +60,7 @@ DECLARATIONS
 
 /*  id PROG_GMP_MPQ_ID; */
 PIKECLASS mpq
+nonstatic;
 {
   CVAR MP_RAT n;
 
