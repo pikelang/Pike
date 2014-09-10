@@ -603,24 +603,9 @@ o Image.BMP now supports some more BMP:s.
 
 o String.Buffer
 
-  String.Buffer can now add the storage from a different String.Buffer
-  object with the add() method.
-
   It is possible to add sprintf-formatted data to a String.Buffer
   object by calling the sprintf() method. This function works just as
   the normal sprintf(), but writes to the buffer instead.
-
-  The new method addat() allows for writing into the buffer at any
-  position.
-
-  It is possible to address (and update) single characters in a Buffer
-  using [].
-  It is possible to extract a new Buffer (copy) from an existing Buffer
-  using the [..] range operator.
-  It is possible to compare two Buffers or a Buffer and a string
-  directly using the ==, <, >, >= and <= operators.
-  A new method cut() allows you to cut and copy, or simply delete and
-  contract data from an existing Buffer.
 
 o String.range(str)
 

@@ -3,25 +3,25 @@ START_MARKER
 test_eq([[ String.Buffer()->add("xxx") ]], 3)
 test_any([[
   String.Buffer s=String.Buffer();
-  s->append("xxx");
-  s->append("a", "b");
+  s->add("xxx");
+  s->add("a", "b");
   s->putchar(65);
-  s->append("B");
+  s->add("B");
   s->putchar(67);
   return (string)s;
 ]], "xxxabABC")
 test_any([[
   String.Buffer s=String.Buffer(2);
-  s->append("a");
-  s->append("b");
-  s->append("c");
+  s->add("a");
+  s->add("b");
+  s->add("c");
   return (string)s;
 ]], "abc")
 test_any([[
   String.Buffer s=String.Buffer(2);
-  s->append("abcdefg");
-  s->append("");
-  s->append("hij");
+  s->add("abcdefg");
+  s->add("");
+  s->add("hij");
   return s->get();
 ]], "abcdefghij")
 test_any([[
@@ -30,23 +30,23 @@ test_any([[
 ]], "")
 test_any([[
   String.Buffer s=String.Buffer();
-  s->append("xxx");
+  s->add("xxx");
   string t=s->get();
-  s->append("yyy");
+  s->add("yyy");
   string u=(string)s;
-  s->append("zzz");
+  s->add("zzz");
   return t+u+(string)s;
 ]], "xxxyyyyyyzzz")
 test_any([[
   String.Buffer s=String.Buffer();
-  s->append("xxx");
+  s->add("xxx");
   string t=s->get_copy();
-  s->append("yyy");
+  s->add("yyy");
   return t+(string)s;
 ]], "xxxxxxyyy")
 test_any([[
   String.Buffer s=String.Buffer();
-  s->append("abcde");
+  s->add("abcde");
   return sizeof(s);
 ]], 5)
 test_any([[
@@ -61,34 +61,14 @@ test_any([[
 ]], 1)
 test_any([[
   String.Buffer b = String.Buffer();
-  b->append("abc");
-  b->append("\400\500");
+  b->add("abc");
+  b->add("\400\500");
   b->putchar(256);
-  b->append("x");
+  b->add("x");
   return (string)b;
 ]], "abc\400\500\400x")
-test_any([[
-  String.Buffer b = String.Buffer();
-  b->append("x");
-  b->sprintf("%x",1178);
-  b->append("y");
-  return (string)b;
-]], "x49ay")
-test_any([[
-  String.Buffer b = String.Buffer();
-  b->sprintf("%x", 10);
-  b->sprintf("%x", 11);
-  return (string)b;
-]], "ab")
-test_any([[
-  String.Buffer b = String.Buffer();
-  b->sprintf("");
-  return (string)b;
-]], "")
 
-test_compile_error([[ String.Buffer()->sprintf("%d"); ]])
-test_eval_error([[ function f=String.Buffer()->sprintf; f("%d"); ]])
-test_eval_error([[ String.Buffer()->append("x",([])); ]])
+test_eval_error([[ String.Buffer()->add("x",([])); ]])
 
 test_do([[
   String.Buffer b = String.Buffer();
@@ -108,596 +88,6 @@ test_do([[
   b->add ("x\12345678");
   return (string) b;
 ]])
-
-test_any([[
-  String.Buffer b = String.Buffer();
-  b->append("abc");
-  return b[1];
-]], 98)
-test_any([[
-  String.Buffer b = String.Buffer();
-  b->append("abc");
-  return b[-1];
-]], 99)
-test_runtime_error([[
-  String.Buffer b = String.Buffer();
-  b->append("abc");
-  return b[3];
-]])
-test_any([[
-  String.Buffer b = String.Buffer();
-  b->append("a\u0100a");
-  return b[1];
-]], 256)
-test_any([[
-  String.Buffer b = String.Buffer();
-  b->append("a\U00010000a");
-  return b[1];
-]], 65536)
-
-test_any([[
-  String.Buffer b = String.Buffer();
-  b->append("aaa");
-  return b[1]='b';
-]], 98)
-test_any([[
-  String.Buffer b = String.Buffer();
-  b->append("aaa");
-  b[1]='b';
-  return (string)b;
-]], "aba")
-test_any([[
-  String.Buffer b = String.Buffer();
-  b->append("aaa");
-  b[1]=256;
-  return (string)b;
-]], "a\u0100a")
-test_any([[
-  String.Buffer b = String.Buffer();
-  b->append("aaa");
-  b[1]=65536;
-  return (string)b;
-]], "a\U00010000a")
-
-test_any([[
-  String.Buffer b = String.Buffer();
-  b->append("1234");
-  b = b[..1];
-  b->append("x");
-  return (string)b;
-]], "12x")
-test_any([[
-  String.Buffer b = String.Buffer();
-  b->append("1234");
-  return (string)b[1..];
-]], "234")
-test_any([[
-  String.Buffer b = String.Buffer();
-  b->append("1234");
-  return (string)b[1..2];
-]], "23")
-test_any([[
-  String.Buffer b = String.Buffer();
-  b->append("1234");
-  return (string)b[..<1];
-]], "123")
-test_any([[
-  String.Buffer b = String.Buffer();
-  b->append("ab\u0100\u0101\U00010000\U00010001");
-  return (string)b[0..1];
-]], "ab")
-test_any([[
-  String.Buffer b = String.Buffer();
-  b->append("ab\u0100\u0101\U00010000\U00010001");
-  return (string)b[2..3];
-]], "\u0100\u0101")
-test_any([[
-  String.Buffer b = String.Buffer();
-  b->append("ab\u0100\u0101\U00010000\U00010001");
-  return (string)b[4..5];
-]], "\U00010000\U00010001")
-
-test_any([[
-  String.Buffer b = String.Buffer();
-  b->append("ab\u0100\u0101\U00010000\U00010001cd");
-  b->cut(4,5,1);
-  return (string)b;
-]], "ab\u0100\u0101cd")
-test_any([[
-  String.Buffer b = String.Buffer();
-  b->append("ab\u0100\u0101\U00010000\U00010001cd");
-  b->cut(2,5,1);
-  return (string)b;
-]], "abcd")
-test_any([[
-  String.Buffer b = String.Buffer(),c;
-  b->append("ab\u0100\u0101\U00010000\U00010001cd");
-  c=b->cut(4,5);
-  return (string)(c + "_" + b);
-]], "\U00010000\U00010001_ab\u0100\u0101cd")
-test_any([[
-  String.Buffer b = String.Buffer(),c;
-  b->append("ab\u0100\u0101\U00010000\U00010001cd");
-  c=b->cut(2,5);
-  return (string)c + "_" + (string)b;
-]], "\u0100\u0101\U00010000\U00010001_abcd")
-
-test_any([[
-  String.Buffer b = String.Buffer(), a = String.Buffer();
-  b->append("abcd");a->append("abcd");
-  return b=="abcd" && b==a;
-]], 1)
-test_any([[
-  String.Buffer b = String.Buffer(), a = String.Buffer();
-  b->append("abcd");a->append("abcd");
-  return b>="abcd" && b>=a;
-]], 1)
-test_any([[
-  String.Buffer b = String.Buffer(), a = String.Buffer();
-  b->append("abcd");a->append("abcd");
-  return b<="abcd" && b<=a;
-]], 1)
-test_any([[
-  String.Buffer b = String.Buffer(), a = String.Buffer();
-  b->append("abce");a->append("abcd");
-  return b>="abcd" && b>=a;
-]], 1)
-test_any([[
-  String.Buffer b = String.Buffer(), a = String.Buffer();
-  b->append("abce");a->append("abcd");
-  return b<="abcd" || b<=a;
-]], 0)
-test_any([[
-  String.Buffer b = String.Buffer(), a = String.Buffer();
-  b->append("abce");a->append("abcd");
-  return b>"abcd" && b>a;
-]], 1)
-test_any([[
-  String.Buffer b = String.Buffer(), a = String.Buffer();
-  b->append("abce");a->append("abcd");
-  return b<"abcd" || b<a;
-]], 0)
-test_any([[
-  String.Buffer b = String.Buffer(), a = String.Buffer();
-  b->append("abcb");a->append("abcd");
-  return b=="abcd" || b==a;
-]], 0)
-test_any([[
-  String.Buffer b = String.Buffer(), a = String.Buffer();
-  b->append("abcb");a->append("abcd");
-  return b>="abcd" || b>=a;
-]], 0)
-test_any([[
-  String.Buffer b = String.Buffer(), a = String.Buffer();
-  b->append("abcb");a->append("abcd");
-  return b<="abcd" && b<=a;
-]], 1)
-test_any([[
-  String.Buffer b = String.Buffer(), a = String.Buffer();
-  b->append("abcb");a->append("abcd");
-  return b>"abcd" || b>a;
-]], 0)
-test_any([[
-  String.Buffer b = String.Buffer(), a = String.Buffer();
-  b->append("abcb");a->append("abcd");
-  return b<"abcd" || b<a;
-]], 1)
-
-test_any([[
-  String.Buffer a=String.Buffer(),b=String.Buffer();
-  a->append("Testing");
-  a->appendat(0, "Is that sentence");
-  a->putchar(',');
-  a->append(" the concluding three ", "words");
-  a->append(" `were left out'");
-  a->appendat(3,"th","is");
-  a[1]=a[10];
-  b->append("Test me harder");
-  b->append(a);
-  if(b->cut(5,6) != "me")
-    return 0;
-  b->cut(0,11,1);
-  if(a[3..6] != "this" || a->get_copy() !=b)
-    return "X"+(string)b;
-  if(a->get()!="In this sentence, the concluding three words `were left out'")
-    return "X"+a->get();
-  return 1;
-]],1)
-
-test_equal([[String.Buffer("hej")->read(1)]], "h")
-
-dnl sscanf
-
-test_equal([[String.Buffer("hej")->sscanf("%3c")]], ({6841706}))
-test_equal([[String.Buffer("hej")->match("%3c")]], 6841706)
-
-test_any([[
-  int i;
-  String.Buffer b=String.Buffer("hej hej hej");
-
-  while( array a = b->sscanf( "%*[ ]%[^ ]") )
-     i+= sizeof(a);
-  return i;
-]], 3)
-
-dnl sizeof()
-test_equal( sizeof(String.Buffer("hej")), sizeof("hej"))
-test_equal( sizeof(String.Buffer("ej")->append("alpha")), 7)
-test_equal( sizeof(String.Buffer()->sprintf("%4H","hej")), 7)
-
-dnl create(int)
-test_any([[
-    String.Buffer b = String.Buffer(1024*1024);
-    if( b->_size_object() != 1024*1024 )
-      return -1;
-   for( int i = 0; i<1024/4*1024; i++ )
-     b->append("test");
-   if( b->_size_object() != 1024*1024 )
-      return -2;
-
-   return 1;
-]], 1 )
-
-dnl create/add( system.memory )
-test_any([[
-  System.Memory a = System.Memory(__FILE__);
-  System.Memory b = System.Memory(100);
-
-  String.Buffer buf = String.Buffer(a);
-
-  if( buf->_size_object() != 0 )
-    return -1;
-
-  buf->append( b );
-
-  if( buf->_size_object() < sizeof(a)+sizeof(b) )
-    return -2;
- if( !has_suffix((string)buf,"\0"*100) )
-    return -3;
- return 1;
-]], 1)
-
-dnl create/add( iobuffer )
-test_any([[
-  String.Buffer a = String.Buffer("buffer 1");
-  String.Buffer b = String.Buffer("buffer 2");
-
-  String.Buffer buf = String.Buffer(a);
-
-  buf->append( b );
-
-  if( buf->_size_object() < sizeof(a)+sizeof(b) )
-    return -2;
- if( (string)buf != "buffer 1buffer 2")
-    return -3;
- return 1;
-]], 1)
-
-dnl add( char )
-test_any([[
-  string a = ("buffer 1");
-
-  String.Buffer buf = String.Buffer(a);
-
-  if( buf->_size_object() >= sizeof(a) )
-    return -1;
-
-  buf->append( 'b','u','f','f','e','r',' ','2' );
-
-  if( buf->_size_object() < sizeof(a)+8 )
-    return -2;
- if( (string)buf != "buffer 1buffer 2")
-    return -3;
- return 1;
-]], 1)
-
-dnl add(array( mix ))
-test_any([[
-  System.Memory tst  = System.Memory(2);
-  tst[0] = ' ';
-  tst[1] = '2';
-  String.Buffer er = String.Buffer();
-  mixed z = ({
-             'b','u','f',String.Buffer("f"),
-             er,
-             tst
-   });
-  er->append("er");
-
-  String.Buffer buf = String.Buffer("buffer 1");
-
-  buf->append( z, 'b','u','f','f',({'e','r',({' '}),'3'}) );
-
-  if( buf->_size_object() < 24 )
-    return -2;
-  if( (string)buf != "buffer 1buffer 2buffer 3")
-     return -3;
-
- return 1;
-]], 1)
-
-dnl multi add( combo, also sort of a speed test )
-dnl will use on average 3Mb RAM
-test_any([[
-   String.Buffer two = String.Buffer();
-   array tst = ({
-    System.Memory(1),
-    two,
-    '3',
-    "4",
-    String.Buffer("5"),
-    ({ "6", ({'7',"","",""}) }),
-  });
-
-  two->append("2");
-
-  int l = 0;
-  String.Buffer res = String.Buffer();
-  for( int i = 0; i<102*1024; i++ )
-  {
-     array args = allocate( random(50) );
-     for( int j=0; j<sizeof( args ); j++ )
-     {
-       mixed e = random( tst );
-       if( intp( e ) )
-         l +=1;
-       else
-         l += sizeof( e );
-       args[j] = e;
-     }
-     res->append(@args);
-     if( sizeof( res ) != l )
-       return ([i:args, "l":l,"sizeof":sizeof(res)]);
-  }
-
- return 1;
-]], 1)
-
-dnl basic zero-copy check
-
-test_any( [[
-  String.Buffer i = String.Buffer("zero copy");
-
-  i->append(" data goes here");
-  if( i->_size_object() == 0 )  return -4;
-
-  i->read();
-  if( i->_size_object() != 0 )  return -5;
-
-  i->append("zero copy");
-  if( i->_size_object() == 0 )  return -6;
-
-  i->append(" indeed"); /* note: shorter than first string. */
-  if( i->_size_object() == 0 )  return -7;
-
-  /*
-  crete - no move
-  add - realloc + move
-  read - no move (buffer now empty)
-  add - point to str
-  add -  move to malloc arena
-  add - no move
-  */
-  return 1;
-]], 1)
-
-dnl add_byte() add_int8()
-
-test_any( [[
- String.Buffer b = String.Buffer();
-
- for( int i=0; i<255; i++ )
-   b->add_byte( i )->add_int8(~i);
-
-  for( int i=0; i<255; i++ )
-     if( b[i*2] != i || b[i*2+1] != (~i&255))
-       return -i;
-  return 1;
-]], 1 )
-
-dnl add_short() add_int16()
-
- test_any( [[
- string ref = "";
- String.Buffer b = String.Buffer();
-
- for( int i=0; i<255; i++ )
- {
-   ref += sprintf("%2c%2c", i, (~i)&0xffff );
-   b->add_short( i )->add_int16(~i);
-   if( (string)b != ref ) return ([
-     "i":i,
-     "ref":ref,
-     "b":(string)b
-  ]);
-  }
-  return 1;
- ]], 1 )
-
-dnl add_int32()
- test_any( [[
- string ref = "";
- String.Buffer b = String.Buffer();
-
- for( int i=0; i<255; i++ )
- {
-   ref += sprintf("%4c%4c", i, (~i)&0xffffffff );
-   b->add_int32( i )->add_int32(~i);
-   if( (string)b != ref ) return ([
-     "i":i,
-     "ref":ref,
-     "b":(string)b
-    ]);
-  }
-  return 1;
- ]], 1 )
-
-
-dnl add_int( x, bits);
-
- test_any( [[
- string ref = "";
- String.Buffer b = String.Buffer();
-
- for( int j=1; j<255; j++ )
- {
-   string fmt = "%"+j+"c";
-   for( int i=0; i<255; i+=random(10) )
-   {
-     ref += sprintf(fmt, i );
-     b->add_int( i, j );
-    }
-    if( (string)b != ref ) return ([
-      "width":j,
-      "ref":ref,
-      "b":(string)b
-     ]);
-    b->clear();
-    ref = "";
-  }
-  return 1;
- ]], 1 )
-
-
-dnl add_int( bignum, bits);
-
-test_any( [[
- string ref = "";
- String.Buffer b = String.Buffer();
-
- for( int j=1; j<255; j++ )
- {
-   int i = random((1<<(j*8))-1);
-   ref += sprintf("%"+j+"c", i );
-   b->add_int( i, j );
-   if( (string)b != ref ) return ([
-     "i":i,  "j":j,
-     "ref":ref,
-     "b":(string)b
-    ]);
-  }
-  return 1;
- ]], 1 )
-
-
-dnl add_hstring( str, bytes )
-
-test_error( [[
- String.Buffer b = String.Buffer();
-  b->add_hstring("testing", 0 );
- ]], 1 )
-
-test_error( [[
- String.Buffer b = String.Buffer();
- b->add_hstring(" "*256, 1 );
-]], 1 )
-
-test_any( [[
- array(String.Buffer) b = allocate(10,String.Buffer)();
- for( int i = 0; i<1000; i++ )
- {
-   string chunk = " "*random(255);
-
-   for( int w = 0; w<9; w++ )
-     b[w]->add_hstring( chunk, w+1 );
-  }
-
- for( int i = 0; i<1000; i++ )
- {
-   string chunk = b[0]->read_hstring(1);
-   for( int w = 1; w<9; w++ )
-   {
-     if( b[w]->read_hstring( w+1 ) != chunk )
-        return ({w+1,strlen(chunk)});
-   }
- }
- return 1;
-]], 1);
-
-test_any( [[
-   String.Buffer b = String.Buffer();
-   b->append( "\0\1" );
-   if( b->read_hstring( 2 ) )
-     return -1;
-   if( sizeof(b) != 2 )
-     return -2;
-   b->append("x");
-   if( b->read_hstring( 2 ) != "x" )
-     return -3;
-   return 1;
-]], 1);
-
-dnl add_hstring( obj*, bits )
-
-test_any( [[
- array(String.Buffer) b = allocate(10,String.Buffer)();
- System.Memory chunk = System.Memory(255);
- for( int i = 0; i<1000; i++ )
- {
-   for( int w = 0; w<9; w++ )
-     b[w]->add_hstring( chunk, w+1 );
-  }
-
- for( int i = 0; i<1000; i++ )
- {
-   string chunk = b[0]->read_hstring(1);
-   for( int w = 1; w<9; w++ )
-   {
-     if( b[w]->read_hstring( w+1 ) != chunk )
-        return ({w+1,strlen(chunk)});
-   }
- }
- return 1;
-]], 1);
-
-dnl add_ints
-
-test_any( [[
- array q = allocate(100000,random)(8438439834983948938439849834983498349834983498);
- String.Buffer i = String.Buffer();
- i->add_ints( q, 20 );
- return 1;
-]], 1);
-
-test_error( [[
- array q = ({8438439834983948938439849834983498349834983498});
- String.Buffer i = String.Buffer();
- i->add_ints( q, 7 );
- return 1;
-]], 1);
-
-
-test_any( [[
- array q = ({10,20,30});
- String.Buffer i = String.Buffer();
- i->add_ints( q, 7 );
- return 1;
-]], 1);
-test_error( [[
- array q = ({10,"20",30});
- String.Buffer i = String.Buffer();
- i->add_ints( q, 7 );
- return 1;
-]], 1);
-
-test_any( [[
- array q = ({10,"20",30});
- String.Buffer i = String.Buffer();
- catch{i->add_ints( q, 7 );};
- if( sizeof(i) )
-   return -1;
- return 1;
-]], 1);
-
-dnl lock
-
-dnl cast
-
-dnl indexing
-
-dnl set_error_mode
-
-dnl _sprintf
 
 test_eq([[ String.count( "", "a" ) ]], 0)
 test_eq([[ String.count( "aaa", "a" ) ]], 3)

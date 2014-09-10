@@ -26,15 +26,12 @@
 #include "operators.h"
 #include "builtin_functions.h"
 #include "fsort.h"
+#include "port.h"
 #include "gc.h"
 #include "block_allocator.h"
 #include "pikecode.h"
 #include "opcodes.h"
 #include "whitespace.h"
-#include "fdlib.h"
-
-#include "modules/_Stdio/file_machine.h"
-#include "modules/_Stdio/file.h"
 
 #include <ctype.h>
 #include <errno.h>
@@ -2956,8 +2953,12 @@ PIKEFUN array(mixed) backtrace()
 
 /*! @class Buffer
  *!    A buffer, used for building strings. It's
- *!    conceptually similar to a string, but speed-optimised for growing
- *!    strings.
+ *!    conceptually similar to a string, but you can only @[add]
+ *!    strings to it, and you can only @[get] the value from it once.
+ *!
+ *!    There is a reason for those seemingly rather odd limitations,
+ *!    it makes it possible to do some optimizations that really speed
+ *!    things up.
  *!
  *!    You do not need to use this class unless you add very many
  *!    strings together, or very large strings.
@@ -2977,409 +2978,282 @@ PIKEFUN array(mixed) backtrace()
  */
 PIKECLASS Buffer
 {
-  CVAR struct string_builder str;			     /* Can be empty */
-  CVAR char* buffer;			      /* Current start of the buffer */
-  CVAR size_t offset;	      /* Characters consumed but still in the buffer */
-  CVAR size_t len;		/* Number of characters available to be read */
-  CVAR unsigned shift;			 /* Current size_shift of the buffer */
-  CVAR unsigned readonly;		 /* If the buffer is marked readonly */
-  CVAR size_t initial;		   /* Initial reserved (unfilled) buffersize */
-
-  CVAR struct object *source;
-  /* CVAR program *error_mode; */
-  CVAR unsigned error_mode;
-
-  static INLINE unsigned min_magnitude(const unsigned c)
-  { 
-    return c<256 ? 0 : c<65536 ? 1 : 2;
-  }
-
-  static int buffer_range_error(int howmuch)
-  {
-    if( THIS->error_mode )
-      Pike_error("Trying to read %d outside allowed range\n", howmuch);
-    return 0;
-  }
-
-  static struct pike_string*buffer_mkspace(ptrdiff_t diff, unsigned shift)
-  {
-    struct Buffer_struct *str = THIS;
-    struct pike_string *s = str->str.s;
-
-    if (str->readonly)
-      Pike_error("Attempt to modify readonly buffer.\n");
-
-    if (!s || s->refs!=1) {
-      shift |= str->shift;
-      shift = shift & ~(shift >> 1);
-      init_string_builder_alloc(&str->str, str->len+diff, shift);
-      generic_memcpy(MKPCHARP(str->str.s->str, shift),
-       MKPCHARP(str->buffer, str->shift), str->len);
-      if (s)
-        sub_ref(s);
-      str->offset = 0;
-      goto fixptr;
-    } else {
-      if (!(s->flags & STRING_NOT_SHARED))
-        unlink_pike_string (s);
-      string_build_mkspace(&str->str, diff, shift);
-fixptr:
-      s = str->str.s;
-      str->buffer = s->str + (str->offset << (str->shift = s->size_shift));
-    }
-
-    if( str->source ) {
-      free_object( str->source );
-      str->source = 0;
-    }
-
-    return s;
-  }
-
-  static void buffer_lock()
-  {
-    THIS->readonly++;
-  }
-
-  static void buffer_release()
-  {
-    THIS->readonly--;
-  }
+  CVAR struct string_builder str;
+  CVAR int initial;
 
   PIKEFUN int _size_object()
   {
+      if( THIS->str.s )
+          RETURN THIS->str.malloced;
+      RETURN 0;
+  }
+
+  void f_Buffer_get_copy( INT32 args );
+  void f_Buffer_get( INT32 args );
+  void f_Buffer_add( INT32 args );
+
+  /*! @decl void create(int initial_size)
+   *!
+   *!   Initializes a new buffer.
+   *!
+   *!   If no @[initial_size] is specified, 256 is used. If you
+   *!   know approximately how big the buffer will be, you can optimize
+   *!   the operation of @[add()] (slightly) by passing the size to this
+   *!   function.
+   */
+  PIKEFUN void create( int|void size )
+  {
     struct Buffer_struct *str = THIS;
-    unsigned retval = 0;
-
-    if (str->str.s) {
-      retval = str->str.s->refs;
-      retval = (str->str.malloced+retval-1)/retval;
-    }
-    push_int( retval );
+    if( size )
+      str->initial = MAXIMUM( size->u.integer, 512 );
+    else
+      str->initial = 256;
   }
 
-  /*! @decl void set_error_mode(int m)
-   *!
-   *! Set the error mode of this buffer to @[m].
-   *!
-   *! If true operations that would normally return 0
-   *! (like trying to read too much) will instead thrown an error.
-   *!
-   *! This is useful when parsing received data, you do not have to
-   *! verify that each and every read operation suceeds.
-   *!
-   *! However, the non-error mode is more useful when checking to see
-   *! if a packet/segment/whatever has arrived.
-   *!
-   *! The thrown error object will have the constant buffer_error set
-   *! to a non-false value.
-   *!
-   *! @example
-   *! @code
-   *! void read_callback(int i, string new_data)
-   *! {
-   *!   inbuffer->add( new_data );
-   *!
-   *!   while( String.Buffer packet = inbuffer->read_hbuffer(2) )
-   *!   {
-   *!     packet->set_error_mode(Buffer.THROW_ERROR);
-   *!     if( mixed e = catch( handle_packet( packet ) ) )
-   *!       if( e->buffer_error )
-   *!         protocol_error(); // illegal data in packet
-   *!       else
-   *!         throw(e); // the other code did something bad
-   *!    }
-   *! }
-   *!
-   *!
-   *! void handle_packet( String.Buffer pack )
-   *! {
-   *!   switch( pack->read_int8() )
-   *!   {
-   *!     ...
-   *!   case HEADER_FRAME:
-   *!     int num_headers = pack->read_int32();
-   *!     for( int i = 0; i<num_headers; i++ )
-   *!      headers[pack->read_hstring(2)] = pack->read_hstring(2);
-   *!     ...
-   *!   }
-   *! }
-   *! @endcode
+  /*! @decl string _sprintf( int flag, mapping flags )
+   *! It is possible to @[sprintf] a String.Buffer object
+   *! as @tt{%s@} just as if it was a string.
    */
-  PIKEFUN void set_error_mode(int m)
+  PIKEFUN string _sprintf( int flag, mapping flags )
   {
-    /* FIXME: buffer_error and Buffer.THROW_ERROR still need to
-       be implemented */
-    THIS->error_mode = m;
+    switch( flag )
+    {
+      case 'O':
+	{
+	  struct pike_string *res;
+	  struct Buffer_struct *str = THIS;
+	  push_text( "Buffer(%d /* %d */)" );
+	  if( str->str.s )
+	  {
+	    push_int(str->str.s->len);
+	    push_int(str->str.malloced);
+	  }
+	  else
+	  {
+	    push_int( 0 );
+	    push_int( 0 );
+	  }
+	  f_sprintf( 3 );
+	  dmalloc_touch_svalue(Pike_sp-1);
+	  res = Pike_sp[-1].u.string;
+	  Pike_sp--;
+	  RETURN res;
+	}
+
+      case 's':
+	{
+	  pop_n_elems( args );
+	  if( Pike_fp->current_object->refs != 1 )
+	    f_Buffer_get_copy( 0 );
+	  else
+	    f_Buffer_get( 0 );
+	}
+	return;
+	
+      case 't':
+	RETURN make_shared_binary_string("Buffer",6);
+    }
+    pop_n_elems( args );
+    push_undefined();
+  }
+
+  /*! @decl mixed cast( string type )
+   *! It is possible to cast a String.Buffer object to
+   *! a @expr{string@} and an @expr{int@}.
+   */
+  PIKEFUN mixed cast( string type )
+    flags ID_PROTECTED;
+  {
+    if( type == literal_string_string )
+    {
+      pop_stack();
+      if( Pike_fp->current_object->refs != 1 )
+	f_Buffer_get_copy( 0 );
+      else
+	f_Buffer_get( 0 );
+      return;
+    }
+
+    if( type == literal_int_string )
+    {
+      struct Buffer_struct *str = THIS;
+      pop_stack();
+      if( Pike_fp->current_object->refs != 1 )
+	f_Buffer_get_copy( 0 );
+      else
+	f_Buffer_get( 0 );
+      o_cast_to_int( );
+      return;
+    }
+
     pop_stack();
+    push_undefined();
   }
-
-  /*! @decl protected bool range_error( int howmuch )
-   *!
-   *! This function is called when an attempt is made to read out of bounds.
-   *! The default implementation simply returnns 0.
-   *!
-   *! Override this function to change the behaviour
-   *!
-   *! The argument @[howmuch] indicates how much data is needed:
-   *!
-   *! @dl
-   *! @item int(1..) howmuch
-   *! Need @[howmuch] bytes more
-   *! @item int(0..0) howmuch
-   *!  The amount of data needed is not certain.
-   *!  This most often happens when  @[sscanf] or @[read_json] is used
-   *! @item int(..-1) howmuch=...
-   *!  Tried to @[unread] X bytes. There is usually no way to satisfy
-   *!  the requested range.
-   *!
-   *! Fill the @[unread()] buffer by passing data to it, then
-   *! @[consume()] it again.
-   *! @enddl
-   *!
-   *! @returns
-   *!
-   *! @[true] if the operation should be retried, @[false] otherwise.
-   *!
-   *! Do not return true unless you have added data to the buffer,
-   *! doing so could result in an infinite loop (since no data is
-   *! added, the range_error will be called again immediately).
+  
+  /*! @decl String.Buffer `+( string|String.Buffer what )
    */
-  PIKEFUN int(0..1) range_error( int howmuch )
-      flags ID_PROTECTED;
+  PIKEFUN object `+( string|Buffer what )
+    rawtype tFunc(tOr(tString, tObjIs_BUFFER), tObjIs_BUFFER);
   {
-    /* Default: throw error if so desired, otherwise return 0. */
-    pop_n_elems(args);
-    push_int(0);
+    struct Buffer_struct *str = THIS, *str2;
+    struct object *res = fast_clone_object( Buffer_program );
+    str2 = OBJ2_BUFFER( res );
+    str2->initial = str->initial;
+    if( str->str.s )
+      init_string_builder_copy (&str2->str, &str->str);
+    if( (Pike_fp->current_object->flags & OBJECT_CLEAR_ON_EXIT) )
+        res->flags |= OBJECT_CLEAR_ON_EXIT;
+    apply( res, "add", 1 );
+    RETURN res;
   }
 
-  struct sysmem {
-    unsigned char *p;
-    size_t size;
-  };
-
-  static struct program *shm_program;
-  static struct sysmem *system_memory(struct object *o)
+  /*! @decl String.Buffer `+=( string|String.Buffer what )
+   */
+  PIKEFUN object `+=( string|Buffer what )
+    rawtype tFunc(tOr(tString, tObjIs_BUFFER), tObjIs_BUFFER);
   {
-    if( !shm_program ) {
-      push_text("System.Memory");
-      SAFE_APPLY_MASTER("resolv", 1);
-      shm_program = program_from_svalue(Pike_sp - 1);
-      Pike_sp--;
-      if (!shm_program)
-        return 0;
-    }
-    return o->prog == shm_program ? get_storage( o, shm_program ) : 0;
-  };
-
-  static size_t buffer_findsize(unsigned args, struct svalue*pargs,
-    unsigned *pshift)
-  {
-    unsigned j,shift = 0;
-    size_t sum = 0;
-
-    for( j=args ; j-- ; ++pargs)
-      switch(TYPEOF(*pargs)) {
-        case PIKE_T_STRING:
-        {
-          struct pike_string *a = pargs->u.string;
-          sum += a->len;
-          shift |= a->size_shift;
-          break;
-        }
-        case PIKE_T_INT:
-          sum++;
-          shift |= min_magnitude(pargs->u.integer);
-          break;
-        case PIKE_T_ARRAY:
-        {
-          struct array *arp = pargs->u.array;
-	  DECLARE_CYCLIC();
-
-	  if (BEGIN_CYCLIC(Pike_fp->current_object, arp))
-	    Pike_error("Attempt to append a cyclic array to a buffer.\n");
-
-          sum += buffer_findsize(arp->size, arp->item, &shift);
-
-	  END_CYCLIC();
-          break;
-        }
-        case PIKE_T_OBJECT:
-        {
-          struct sysmem *sm;
-          if(pargs->u.object->prog == Buffer_program) {
-            struct Buffer_struct *bstr = OBJ2_BUFFER(pargs->u.object);
-            sum += bstr->len;
-            shift |= bstr->shift;
-            break;
-          } else if (sm = system_memory(pargs->u.object)) {
-            sum += sm->size;
-            break;
-          }
-        }
-        default:
-          SIMPLE_BAD_ARG_ERROR("append", args-j,
-           "string|int|String.Buffer|System.Memory"
-           "|array(string|int|String.Buffer|System.Memory)");
-      }
-    *pshift |= shift;
-    return sum;
+    f_Buffer_add( 1 );
+    REF_RETURN Pike_fp->current_object;
   }
 
-  static char* buffer_memcpy(char*dest, unsigned shift,
-    unsigned args, struct svalue*pargs)
-  {
-    unsigned j;
-
-    for( j=args ; j-- ; ++pargs) {
-      PCHARP b;
-      size_t blen;
-
-      switch(TYPEOF(*pargs)) {
-        case PIKE_T_STRING:
-        {
-          struct pike_string *bs;
-          b = MKPCHARP_STR(bs = pargs->u.string);
-          blen = bs->len;
-          break;
-        }
-        case PIKE_T_INT:
-        {
-          unsigned ch = pargs->u.integer;
-          switch( shift ) {
-            case 0:  *(p_wchar0*)dest = ch; break;
-            case 1:  *(p_wchar1*)dest = ch; break;
-            default: *(p_wchar2*)dest = ch; break;
-          }
-          blen = 1;
-          goto inc;
-        }
-        case PIKE_T_ARRAY:
-        {
-          struct array *arp = pargs->u.array;
-          dest = buffer_memcpy(dest, shift, arp->size, arp->item);
-          continue;
-        }
-        default:
-        {
-          struct sysmem *sm;
-          if(pargs->u.object->prog == Buffer_program) {
-            struct Buffer_struct *bstr = OBJ2_BUFFER(pargs->u.object);
-            b = MKPCHARP(bstr->buffer, bstr->shift);
-            blen = bstr->len;
-            break;
-          } else if (sm = system_memory(pargs->u.object)) {
-            b = MKPCHARP(sm->p, 0);
-            blen = sm->size;
-            break;
-          }
-        }
-      }
-      generic_memcpy(MKPCHARP(dest, shift), b, blen);
-inc:  dest += blen<<shift;
-    }
-    return dest;
-  }
-
-  /*! @decl Buffer appendat(int(0..) pos,
-   *!    string|int|Buffer|object|array(string|int|Buffer|object) ... data)
+  /*! @decl int addat(int(0..) pos, string|String.Buffer ... data)
    *!
    *!   Adds @[data] to the buffer, starting at position @[pos].
-   *!   It overwrites existing content at that offset, never truncates the
-   *!   buffer, possibly extends the buffer if the new content does not fit.
    *!
    *! @returns
-   *!   Returns the buffer itself.
+   *!   Returns the size of the buffer.
    *!
    *! @note
-   *!   If the starting position @[pos] extends beyond the end of the
-   *!   current buffer content, the gap will be filled with NUL-characters.
+   *!   If the buffer isn't of the required size, it will be padded
+   *!   with NUL-characters.
+   *!
+   *! @note
+   *!   Pike 7.8 and earlier did not support adding @[String.Buffer]s
+   *!   directly.
    *!
    *! @seealso
-   *!   @[append()], @[add()]
+   *!   @[add()]
    */
-  PIKEFUN Buffer appendat(int(0..) pos,
-   string|int|Buffer|object|array(string|int|Buffer|object) ... data )
+  PIKEFUN int addat(int(0..) pos, string ... arg1 )
+    rawtype tFuncV(tIntPos, tOr(tString, tObjIs_BUFFER), tIntPos);
   {
     struct Buffer_struct *str = THIS;
-    struct svalue*pargs;
-    struct pike_string *s;
-    ptrdiff_t sum;
-    int j;
-    unsigned shift = 0;
 
     if (pos < 0)
-      SIMPLE_BAD_ARG_ERROR("appendat", 1, "int(0..)");
+      SIMPLE_BAD_ARG_ERROR("addat", 1, "int(0..)");
 
-    args--;
-    sum = pos + buffer_findsize(args, Pike_sp-args, &shift);
+    if (args) {
+      int init_from_arg0 = 0, j;
+      ptrdiff_t sum = 0;
+      int shift = 0;
+      for (j=1; j < args; j++) {
+	struct pike_string *a;
+	if (TYPEOF(Pike_sp[j-args]) == PIKE_T_STRING)
+	  a = Pike_sp[j-args].u.string;
+	else if ((TYPEOF(Pike_sp[j-args]) != PIKE_T_OBJECT) ||
+		   (Pike_sp[j-args].u.object->prog != Buffer_program))
+	  SIMPLE_BAD_ARG_ERROR("addat", j+1, "string|String.Buffer");
+	else {
+	  a = OBJ2_BUFFER(Pike_sp[j-args].u.object)->str.s;
+	  if (!a) continue;
+	}
+	sum += a->len;
+	shift |= a->size_shift;
+      }
 
-    shift |= str->shift;
-    shift = shift & ~(shift >> 1);
-    j = sum - str->len;
-    if (j>0) {
-      if (str->initial > j && str->initial > str->str.malloced)
-        j = str->initial;
-      s = buffer_mkspace(j, shift);
+      if (!str->str.s) {
+	if ((sum + pos) <= str->initial)
+	  sum = str->initial;
+	else
+	  sum <<= 1, sum += pos;
+	shift = shift & ~(shift >> 1);
+
+	init_string_builder_alloc(&str->str, sum, shift);
+      } else {
+	sum += pos;
+	shift |= str->str.known_shift;
+	shift = shift & ~(shift >> 1);
+	if (sum > str->str.s->len)
+	  string_build_mkspace(&str->str, sum - str->str.s->len, shift);
+	else if (shift != str->str.known_shift)
+	  string_build_mkspace(&str->str, 0, shift);
+      }
+      /* We know it will be a string that really is this wide. */
+      str->str.known_shift = shift;
+
+      if (str->str.s->len < pos) {
+	/* Clear the padding. */
+	MEMSET(str->str.s->str + (str->str.s->len << str->str.s->size_shift),
+	       0, (pos - str->str.s->len) << str->str.s->size_shift);
+      }
+
+      for(j = 1; j<args; j++) {
+	struct pike_string *a;
+	if (TYPEOF(Pike_sp[j-args]) == PIKE_T_STRING)
+	  a = Pike_sp[j-args].u.string;
+	else {
+	  a = OBJ2_BUFFER(Pike_sp[j-args].u.object)->str.s;
+	  if (!a) continue;
+	}
+	pike_string_cpy(MKPCHARP_STR_OFF(str->str.s, pos), a);
+	pos += a->len;
+      }
+
+      if (str->str.s->len < pos)
+	str->str.s->len = pos;
     }
-    else
-      s = buffer_mkspace(0, shift);
-    /* We know it will be a string that really is this wide. */
-    str->str.known_shift = shift;
 
-    if (str->len < pos)				 /* Clear the padding */
-      MEMSET(str->buffer + (str->len << shift), 0, (pos - str->len) << shift);
-
-    {
-      char*dest = buffer_memcpy(s->str+((pos+str->offset)<<shift), shift,
-       args, Pike_sp-args);
-
-      if (s->len < (pos = (dest - s->str)>>shift))
-        s->len = pos;
-      if (str->len < (pos -= str->offset))
-        str->len = pos;
-    }
-
-    pop_n_elems( args+1 );
-    ref_push_object(Pike_fp->current_object);
+    RETURN str->str.s ? str->str.s->len : 0;
   }
 
-  /*! @decl Buffer append(
-   *!   string|int|Buffer|object|array(string|int|Buffer|object) ... data )
-   *!
-   *!   Adds @[data] to the buffer.
-   *!
-   *! @returns
-   *!   Returns the buffer itself.
-   *!
-   *! @seealso
-   *!   @[appendat()], @[add()]
-   */
-  PIKEFUN Buffer append(
-   string|int|Buffer|object|array(string|int|Buffer|object) ... data )
-  {
-    push_int(THIS->len);
-    stack_revroll(++args);
-    f_Buffer_appendat(args);
-  }
-
-  /*! @decl int add(
-   *!   string|int|Buffer|object|array(string|int|Buffer|object) ... data )
+  /*! @decl int add(string|String.Buffer ... data)
    *!
    *!   Adds @[data] to the buffer.
    *!
    *! @returns
    *!   Returns the size of the buffer.
    *!
+   *! @note
+   *!   Pike 7.8 and earlier did not support adding @[String.Buffer]s
+   *!   directly.
+   *!
    *! @seealso
-   *!   @[appendat()]
+   *!   @[addat()]
    */
-  PIKEFUN int add(
-   string|int|Buffer|object|array(string|int|Buffer|object) ... data )
+  PIKEFUN int add( string|Buffer ... arg1 )
+    rawtype tFuncV(tNone, tOr(tString, tObjIs_BUFFER), tIntPos);
   {
-    f_Buffer_append(args);
-    pop_stack();
-    push_int(THIS->len);
+    struct Buffer_struct *str = THIS;
+    push_int(str->str.s ? str->str.s->len : 0);
+    stack_revroll(++args);
+    f_Buffer_addat(args);
+  }
+
+  /*! @decl void putchar(int c)
+   *! Appends the character @[c] at the end of the string.
+   */
+  PIKEFUN void putchar(int c) {
+    struct Buffer_struct *str = THIS;
+    if(!str->str.s)
+      init_string_builder_alloc(&str->str, str->initial, 0);
+    string_builder_putchar(&str->str, c);
+  }
+
+  /*! @decl int sprintf(strict_sprintf_format format, sprintf_args ... args)
+   *! Appends the output from @[sprintf] at the end of the string.
+   *! Returns the resulting size of the String.Buffer.
+   */
+  PIKEFUN int sprintf(mixed ... arguments)
+    rawtype tFuncV(tAttr("strict_sprintf_format", tOr(tStr, tObj)),
+		   tAttr("sprintf_args", tMix), tStr);
+
+  {
+    // FIXME: Reset length on exception?
+    struct Buffer_struct *str = THIS;
+    if(!str->str.s)
+      init_string_builder_alloc(&str->str, str->initial, 0);
+    low_f_sprintf(args, 0, &str->str);
+    RETURN str->str.s->len;
   }
 
   /*! @decl string get_copy()
@@ -3392,63 +3266,29 @@ inc:  dest += blen<<shift;
    */
   PIKEFUN string get_copy()
   {
-    struct Buffer_struct *str = THIS;
-
-    if(str->len) {
-      struct pike_string *s;
-      s = make_shared_binary_pcharp(MKPCHARP(str->buffer, str->shift),
-           str->len);
-      if( Pike_fp->current_object->flags & OBJECT_CLEAR_ON_EXIT )
-          s->flags |= STRING_CLEAR_ON_EXIT;
-      push_string(s);
-    } else 
-      push_empty_string();
-  }
-
-  /*! @decl string|void read(void|int n)
-   *!
-   *!   Read and remove @[n] characters of data from the beginning
-   *!   of the buffer.
-   *!   If there are less than @[n] characters available, nothing
-   *!   will be removed and the function will return 0.
-   *!
-   *!   When called without arguments, this is equivalent to @[get()].
-   *!
-   *! @seealso
-   *!   @[get()], @[clear()]
-   */
-  PIKEFUN string|void read( void|int(0..) n )
-  {
-    struct Buffer_struct *str = THIS;
-    struct pike_string *s;
-    if (args) {
-      int want = n->u.integer;
-      pop_stack();
-      while (want<0 || want>str->len)
-        if (!buffer_range_error( want )) {
-          push_undefined();
-          return;
-        }
-      if (want != str->len) {
-        push_string(make_shared_binary_pcharp(
-         MKPCHARP(str->buffer, str->shift), want));
-        str->buffer += want<<=str->shift;
-        str->offset += want;
-        str->len -= want;
-        return;
+    struct pike_string *str = THIS->str.s;
+    ptrdiff_t len;
+    if( str && (len = str->len) > 0 )
+    {
+      char *d = (char *)str->str;
+      switch( str->size_shift )
+      {
+        case 0:
+          str=make_shared_binary_string0((p_wchar0 *)d,len);
+          break;
+        case 1:
+          str=make_shared_binary_string1((p_wchar1 *)d,len);
+          break;
+        default:
+          str=make_shared_binary_string2((p_wchar2 *)d,len);
+          break;
       }
+      if( Pike_fp->current_object->flags & OBJECT_CLEAR_ON_EXIT )
+          str->flags |= STRING_CLEAR_ON_EXIT;
+      RETURN str;
     }
-    buffer_mkspace(0, 0);
-    if (str->offset) {
-      memmove( str->str.s->str, str->buffer, str->len<<str->shift);
-      str->str.s->len = str->len;
-    }
-    s = finish_string_builder( &str->str );
-    if( Pike_fp->current_object->flags & OBJECT_CLEAR_ON_EXIT )
-      s->flags |= STRING_CLEAR_ON_EXIT;
-    push_string(s);
-    str->str.s = 0;
-    str->len = 0;
+    push_empty_string();
+    return;
   }
 
   /*! @decl string get()
@@ -3463,1192 +3303,42 @@ inc:  dest += blen<<shift;
    */
   PIKEFUN string get( )
   {
-    f_Buffer_read(0);
-  }
-
-  /*! @decl void create(void|int(1..) initial_size)
-   *! @decl void create(string|Buffer|System.Memory value)
-   *!
-   *!   Initializes a new buffer.
-   *!
-   *!   If no @[initial_size] is specified, 256 is used. If you
-   *!   know approximately how big the buffer will be, you can optimize
-   *!   the operation of @[add()] (slightly) by passing the size to this
-   *!   function.
-   */
-  PIKEFUN void create( string|object|int|void value )
-  {
     struct Buffer_struct *str = THIS;
-    struct pike_string *s;
-    struct sysmem *sm;
-
-    if( str->buffer )
-      Pike_error("Can not initialise twice.\n");
-    str->initial = 256;
-    if (!args)
-      goto definit;
-    switch(TYPEOF(*value)) {
-      default:
-        Pike_error("Unsupported object type\n");
-      case PIKE_T_INT:
-        str->initial = MAX(value->u.integer, 1 );
-definit:
-        init_string_builder_alloc(&str->str, str->initial, 0);
-        str->buffer = str->str.s->str;
-        break;
-      case PIKE_T_STRING:
-        s = value->u.string;
-        if (s->refs == 1)
-          /* Unlink the string and use it as buffer directly. */
-          unlink_pike_string (s);
-        else
-          add_ref(s);
-        str->str.s = s;
-        str->len = str->str.malloced = s->len;
-        str->shift = str->str.known_shift = s->size_shift;
-        str->buffer = s->str;
-        break;
-      case PIKE_T_OBJECT:
-        if (value->u.object->prog == Buffer_program) {
-          struct Buffer_struct *str2 = OBJ2_BUFFER(value->u.object);
-          str->buffer = str2->buffer;
-          str->offset = str2->offset;
-          str->len = str2->len;
-          str->shift = str2->shift;
-          if (str->source = str2->source)
-            add_ref(str->source);
-          str->str = str2->str;
-          if (str->str.s)
-            add_ref(str->str.s);
-        }
-        else if (sm = system_memory(value->u.object)) {
-          add_ref(str->source = value->u.object);
-          str->buffer = sm->p;
-          str->len = sm->size;
-        }
-        break;
-    }
-  }
-
-  /*! @decl string _sprintf( int flag, mapping flags )
-   *! It is possible to @[sprintf] a String.Buffer object
-   *! as @tt{%s@} just as if it were a string.
-   */
-  PIKEFUN string _sprintf( int flag, mapping flags )
-  {
-    pop_n_elems( args );
-    switch( flag )
+    pop_n_elems(args);
+    if( str->str.s )
     {
-      case 'O':
-        {
-	  struct Buffer_struct *str = THIS;
-	  push_text( "Buffer(%d-%d /* %d */)" );
-	  push_int(str->len);
-	  push_int(str->offset);
-	  push_int(str->str.malloced);
-	  f_sprintf( 4 );
-	  break;
-        }
-      case 's':
-	if( Pike_fp->current_object->refs != 1
-         || THIS->str.s->refs != 1)
-	  f_Buffer_get_copy( 0 );
-	else
-	  f_Buffer_read( 0 );
-	break;
-
-      case 't':
-	push_string(make_shared_binary_string("Buffer",6));
-	break;
-
-      default:
-        push_undefined();
-    }
-  }
-
-  /*! @decl string _encode()
-   *! @decl void _decode(string x)
-   *!
-   *! Encode and decode @[String.Buffer] objects.
-   *! Only the buffer data is kept, no other state is saved.
-   */
-  PIKEFUN string _encode()
-  {
-    f_Buffer_read( 0 );
-  }
-
-  PIKEFUN void _decode(string x)
-  {
-    if( THIS->str.s->len )
-      Pike_error("Cannot initialise twice.\n");
-    f_Buffer_add( 1 );
-  }
-
-  /*! @decl string|int cast( string type )
-   *! It is possible to cast a String.Buffer object to
-   *! a @expr{string@} and an @expr{int@}.
-   */
-  PIKEFUN string|int cast( string type )
-    flags ID_PROTECTED;
-  {
-    if( type == literal_string_string )
-    {
-      pop_stack();
-      if( Pike_fp->current_object->refs != 1
-       || THIS->str.s->refs != 1)
-	f_Buffer_get_copy( 0 );
-      else
-	f_Buffer_read( 0 );
-      return;
-    }
-
-    if( type == literal_int_string )
-    {
-      struct Buffer_struct *str = THIS;
-      pop_stack();
-      if( Pike_fp->current_object->refs != 1
-       || THIS->str.s->refs != 1)
-	f_Buffer_get_copy( 0 );
-      else
-	f_Buffer_read( 0 );
-      o_cast_to_int( );
-      return;
-    }
-
-    pop_stack();
-    push_undefined();
-  }
-
-  /*! @decl int `[](int index)
-   */
-  PIKEFUN int `[](int index)
-  {
-    struct Buffer_struct *str = THIS;
-    unsigned len = str->len;
-
-    if (index<0)
-      index += len;
-    if (index<0 || index>=len)
-      index_error("Buffer->`[]", Pike_sp, args, NULL, Pike_sp,
-          "Index %"PRINTPIKEINT"d is out of array range 0..%d,\n",
-          index, len-1);
-    RETURN generic_extract(str->buffer, str->shift, index);
-  }
-
-  /*! @decl Buffer `[..](int start, int start_type, int end, int end_type)
-   */
-  PIKEFUN Buffer `[..](int start, int start_type, int end, int end_type)
-  {
-    struct Buffer_struct *str = THIS;
-    size_t len = str->len;
-    unsigned shift = str->shift;
-    struct pike_string *s;
-    struct object *res;
-    struct Buffer_struct *str2;
-
-    pop_n_elems(args);
-    if (start_type == INDEX_FROM_END)
-      start = len-1-start;
-    if (end_type != INDEX_FROM_BEG)
-      end = len-1-end;
-    res = fast_clone_object( Buffer_program );
-    str2 = OBJ2_BUFFER( res );
-    if (start < 0)
-      start = 0;
-    if (end >= len)
-      end = len-1;
-
-    if (str->str.s) {
-      add_ref(str->str.s);
-      str2->str = str->str;
-    }
-    str2->offset = str->offset+start;
-    str2->len = end-start+1;
-    str2->buffer = str->buffer+(start<<shift);
-    str2->shift = str->shift;
-    str2->initial = str->initial;
-    if( (Pike_fp->current_object->flags & OBJECT_CLEAR_ON_EXIT) )
-      res->flags |= OBJECT_CLEAR_ON_EXIT;
-    push_object(res);
-  }
-
-  /*! @decl int `[]=(int index, int ch)
-   */
-  PIKEFUN int `[]=(int index, int ch)
-  {
-    struct Buffer_struct *str = THIS;
-    struct pike_string *s;
-    size_t len = str->len;
-
-    pop_n_elems(args);
-
-    if (index<0)
-      index += len;
-    if (index<0 || index>=len)
-      index_error("Buffer->`[]=", Pike_sp, args, NULL, Pike_sp,
-        "Index %"PRINTPIKEINT"d is out of array range 0..%d,\n",
-        index, len-1);
-    len = 0;
-    if ((unsigned)ch >= 256)
-      switch(str->shift) {
-        case 0:
-          if ((unsigned)ch < 65536)
-            len = 1;
-          else {
-        case 1:
-            if((unsigned)ch >= 65536)
-              len = 2;
-            else
-              break;
-          }
-          str->str.known_shift = len;
-      }
-    s = buffer_mkspace(0, len);
-    low_set_index(s, index+str->offset, ch);
-    push_int(ch);
-  }
-
-  /*! @decl Buffer `+=( string|Buffer ... what )
-   */
-  PIKEFUN Buffer `+=( string|Buffer ... what )
-    rawtype tFunc(tOr(tString, tObjIs_BUFFER), tObjIs_BUFFER);
-  {
-    f_Buffer_add( args );
-    pop_stack();
-    ref_push_object(Pike_fp->current_object);
-  }
-
-  /*! @decl Buffer `+( string|Buffer ... what )
-   */
-  PIKEFUN Buffer `+( string|Buffer ... what )
-    rawtype tFunc(tOr(tString, tObjIs_BUFFER), tObjIs_BUFFER);
-  {
-    struct Buffer_struct *str = THIS, *str2;
-    struct pike_string *s = str->str.s;
-
-    if( Pike_fp->current_object->refs != 1
-     || s->refs != 1) {
-      struct Buffer_struct *str2;
-      unsigned shift = str->shift;
-      size_t len = str->len;
-      struct object *res = fast_clone_object( Buffer_program );
-      str2 = OBJ2_BUFFER( res );
-      str2->initial = str->initial;
-      str2->shift = shift;
-      init_string_builder_alloc (&str2->str, MAX(len, str2->initial), shift);
-      str2->str.s->len = str2->len = len;
-      memcpy(str2->buffer = str2->str.s->str, str->buffer, len<<shift);
-      if( (Pike_fp->current_object->flags & OBJECT_CLEAR_ON_EXIT) )
-        res->flags |= OBJECT_CLEAR_ON_EXIT;
-      apply( res, "add", args );
-      pop_stack();
-      ref_push_object(res);
-    } else
-      f_Buffer_cq__backtick_add_eq(args);
-  }
-
-  /*! @decl Buffer ``+( string ... what )
-   */
-  PIKEFUN Buffer ``+( string ... what )
-    rawtype tFunc(tString, tObjIs_BUFFER);
-  {
-    struct Buffer_struct *str = THIS, *str2;
-
-    if( Pike_fp->current_object->refs != 1
-     || str->str.s->refs != 1) {
-      struct Buffer_struct *str2;
-      struct object *res = fast_clone_object( Buffer_program );
-      str2 = OBJ2_BUFFER( res );
-      str2->initial = str->initial;
-      if( (Pike_fp->current_object->flags & OBJECT_CLEAR_ON_EXIT) )
-        res->flags |= OBJECT_CLEAR_ON_EXIT;
-      ref_push_object(Pike_fp->current_object);
-      apply( res, "add", args+1 );
-    } else {
-      char*dest;
-      struct svalue*pargs = Pike_sp-args;
-      int j,shift = 0;
-      size_t sum = 0, len;
-
-      pargs = Pike_sp;
-      j = args;
-      do {
-        struct pike_string *a = --pargs->u.string;
-        sum += a->len;
-        shift |= a->size_shift;
-      } while(--j);
-
-      shift |= str->shift;
-      shift = shift & ~(shift >> 1);
-      buffer_mkspace(sum - str->str.s->len + (len = str->len),  shift);
-      memmove(str->str.s->str+(sum<<shift), str->buffer, len<<shift);
-
-      str->buffer = dest = str->str.s->str;
-      str->offset = 0;
-      str->str.s->len = str->len = len + sum;
-
-      do {
-          struct pike_string *bs = pargs++->u.string;
-          size_t blen = bs->len;
-          generic_memcpy(MKPCHARP(dest, shift), MKPCHARP_STR( bs ), blen);
-          dest += blen<<shift;
-      } while(--args);
-
-      ref_push_object(Pike_fp->current_object);
-    }
-  }
-
-  static int buffer_cmp(struct svalue*other, unsigned stricttype)
-  {
-    struct Buffer_struct *str = THIS;
-    struct pike_string *s2;
-    PCHARP b;
-    ptrdiff_t blen;
-
-    switch(TYPEOF(*other)) {
-      case PIKE_T_STRING:
-        b = MKPCHARP_STR(s2 = other->u.string);
-        blen = s2->len;
-        goto runcmp;
-      case PIKE_T_OBJECT:
-        if (other->u.object->prog == Buffer_program) {
-          struct Buffer_struct *str2 = OBJ2_BUFFER(other->u.object);
-          b = MKPCHARP(str2->buffer, str2->shift);
-          blen = str2->len;
-runcmp:   return my_quick_pcharpcmp(
-             MKPCHARP(str->buffer, str->shift), str->len, b, blen);
-        }
-    }
-    if(stricttype)
-      Pike_error("Unsupported types in comparison.\n");
-    return 1;
-  }
-
-  /*! @decl int(0..1) `==( mixed other )
-   *!
-   *!   Is able to compare directly with strings and other Buffers.
-   */
-  PIKEFUN int(0..1) `==( mixed other )
-    rawtype tFunc(tMixed, tInt01);
-  {
-    RETURN !buffer_cmp(other, 0);
-  }
-
-  /*! @decl int(0..1) `<( mixed other )
-   *!
-   *!   Is able to compare directly with strings and other Buffers.
-   */
-  PIKEFUN int(0..1) `<( mixed other )
-    rawtype tFunc(tMixed, tInt01);
-  {
-    RETURN buffer_cmp(other, 1)<0;
-  }
-
-  /*! @decl int(0..1) `>( mixed other )
-   *!
-   *!   Is able to compare directly with strings and other Buffers.
-   */
-  PIKEFUN int(0..1) `>( mixed other )
-    rawtype tFunc(tMixed, tInt01);
-  {
-    RETURN buffer_cmp(other, 1)>0;
-  }
-
-  static void buffer_putchar(int ch, unsigned mag) {
-    struct Buffer_struct *str = THIS;
-    void*dest;
-    unsigned shift;
-    pop_stack();
-    buffer_mkspace(1, mag);
-    shift = str->shift;
-    dest = str->buffer+(str->len++<<shift);
-    switch( shift ) {
-      case 0:  *(p_wchar0*)dest = ch; break;
-      case 1:  *(p_wchar1*)dest = ch; break;
-      default: *(p_wchar2*)dest = ch; break;
-    }
-    str->str.s->len = str->offset+str->len;
-    ref_push_object(Pike_fp->current_object);
-  }
-
-  /*! @decl Buffer putchar( int char )
-   *! @decl Buffer add_byte( int(0..255) i )
-   *! @decl Buffer add_int8( int(-128..127) i )
-   *!
-   *! Appends a single character at the end of the string.
-   *!
-   *! @returns
-   *!   Returns the buffer itself.
-   *!
-   *! @seealso
-   *!   @[add()]
-   */
-  PIKEFUN Buffer putchar(int ch) {
-    buffer_putchar(ch, min_magnitude(ch));
-  }
-
-  PIKEFUN int add_byte( int(0..255) i ) {
-    buffer_putchar(i&255, 0);
-  }
-
-  PIKEFUN int add_int8( int(-128..127) i ) {
-    buffer_putchar(i&255, 0);
-  }
-
-  /*! @decl Buffer add_int( int i, int(0..) width )
-   *!
-   *! Appends a generic integer to the buffer as an (width*8)bit
-   *! network byteorder number.
-   *!
-   *! @returns
-   *!   Returns the buffer itself.
-   *!
-   *! @seealso
-   *!   @[add_int32()]
-   */
-  PIKEFUN Buffer add_int( int i, int width ) {
-    struct Buffer_struct *str = THIS;
-    struct pike_string *s;
-    ptrdiff_t len;
-
-    s = buffer_mkspace(width, 0);
-    len = str->offset+str->len;
-    if(width>=0)
-      for(str->len += width, s->len = len+=width; width--; i>>=8)
-        low_set_index(s, --len, i&0xff);
-    else
-      for(str->len -= width, s->len = len-width; width++; i>>=8)
-        low_set_index(s, len++, i&0xff);
-
-    pop_n_elems(args);
-    ref_push_object(Pike_fp->current_object);
-  }
-
-  static void buffer_add_bignum( struct object *i, int width )
-  {
-    struct Buffer_struct *str = THIS;
-    struct pike_string *snum;
-
-    push_int(256);
-    apply( i, "digits", 1 );
-
-    snum = Pike_sp[-1].u.string;
-
-    /* FIXME: little endian */
-
-    if( snum->len > width )
-      Pike_error("Number too large to store in %d bits\n", width*8);
-
-    push_int (str->len + width-snum->len);
-    stack_swap();
-    f_Buffer_appendat( 2 );
-  }
-
-  PIKEFUN Buffer add_int( object i, int width ) {
-    pop_stack(); /* width */
-    convert_stack_top_to_bignum();
-    buffer_add_bignum ( Pike_sp[-1].u.object, width);
-    stack_pop_keep_top(); /* i */
-  }
-
-  static void buffer_do_rewind_on_error( void*arg )
-  {
-    struct Buffer_struct *str = THIS;
-    str->str.s->len = str->offset+(str->len = arg-(void*)str->buffer);
-  }
-
-  static void buffer_begin_rewind_on_error( ONERROR *x )
-  {
-    struct Buffer_struct *str = THIS;
-    SET_ONERROR( (*x), buffer_do_rewind_on_error, str->buffer+str->len );
-  }
-
-  static void buffer_end_rewind_on_error( ONERROR *x )
-  {
-    UNSET_ONERROR( (*x) );
-  }
-
-  /*! @decl Buffer add_ints( array(int) integers, int(0..255) len )
-   *!
-   *! Add the integers in the specified array, @[len] bytes per int.
-   *! Equivalent to add_int( integers[*], len ) but faster.
-   */
-  PIKEFUN Buffer add_ints( array(int) a, int bpi )
-  {
-    struct Buffer_struct *str = THIS;
-    size_t i,l = a->size;
-    struct svalue *it = a->item;
-
-    if( bpi < 0 )
-      Pike_error("Invalid int width\n");  /* FIXME: little endian? */
-
-    if (bpi <= SIZEOF_INT_TYPE) {
-      struct pike_string *s = buffer_mkspace(bpi*l, 0);
-      size_t len = str->offset+str->len - bpi;
-      for (i=l; i--; it++) {
-        INT_TYPE si;
-        unsigned j;
-
-        if( TYPEOF(*it) == PIKE_T_INT )
-          si = it->u.integer;
-        else if( is_bignum_object_in_svalue( it ) ) {
-          INT64 i64;
-          if( int64_from_bignum( &i64, it->u.object ) )
-            si = i64;
-          else
-            Pike_error("Too big bignum\n");  /* FIXME: support these anyway? */
-        } else
-          Pike_error("Non integer in array\n");
-
-        for(len+=(j=bpi)<<1; j--; si>>=8)
-          low_set_index(s, --len, si&0xff);
-      }
-      str->len = (s->len = len + bpi) - str->offset;
-    } else {						/* bignums. */
-      ONERROR e;
-      buffer_begin_rewind_on_error( &e );
-      for (i=l; i--;) {
-        push_svalue( it++ );
-        push_int( bpi );
-        f_Buffer_add_int(2);
-        pop_stack();
-      }
-      buffer_end_rewind_on_error( &e );
-    }
-    pop_n_elems(args);
-    ref_push_object(Pike_fp->current_object);
-  }
-
-  /*! @decl Buffer add_int16( int(-32768..32767) i )
-   *! @decl Buffer add_short( int(0..65535) i )
-   *!
-   *! Appends an int16 at the end of the string.
-   *!
-   *! @returns
-   *!   Returns the buffer itself.
-   *!
-   *! @seealso
-   *!   @[add()],@[add_byte()],@[add_int8()]
-   */
-  PIKEFUN Buffer add_int16( int(-32768..32767) i ) {
-    push_int(2);
-    f_Buffer_add_int(2);
-  }
-
-  PIKEFUN Buffer add_short( int(0..65535) i ) {
-    f_Buffer_add_int16(1);
-  }
-
-  /*! @decl Buffer add_int32( int(-2147483648..2147483647) i )
-   *! @decl Buffer add_long( int(0..4294967295) i )
-   *!
-   *! Appends an int32 at the end of the string.
-   *!
-   *! @returns
-   *!   Returns the buffer itself.
-   *!
-   *! @seealso
-   *!   @[add()],@[add_byte()],@[add_int8()]
-   */
-  PIKEFUN Buffer add_int32( int(-2147483648..2147483647) i ) {
-    push_int(4);
-    f_Buffer_add_int(2);
-  }
-
-  PIKEFUN Buffer add_long( int(0..4294967295) i ) {
-    f_Buffer_add_int32(1);
-  }
-
-  /*! @decl Buffer add_hstring( string|Buffer|System.Memory data, int size_size )
-   *!
-   *! Adds length/data for @[data] to the buffer.
-   *!
-   *! This is identical to @[sprintf("%"+size_size+"H",data)] but
-   *! significantly faster.
-   *!
-   *! @[size_size] must be less than Int.NATIVE_MAX.
-   *!
-   *! @returns
-   *!   Returns the buffer itself.
-   *!
-   *! @seealso
-   *!   @[add()],@[sprintf()]
-   */
-  PIKEFUN Buffer add_hstring( string|Buffer|object str, int size_size ) {
-    size_t len;
-
-    switch(TYPEOF(*str)) {
-      case PIKE_T_STRING:
-        len = str->u.string->len;
-        break;
-      case PIKE_T_OBJECT:
-      {
-        struct sysmem *sm;
-        if (str->u.object->prog == Buffer_program) {
-          len = OBJ2_BUFFER(str->u.object)->len;
-          break;
-        }
-        if (sm = system_memory(str->u.object)) {
-          len = sm->size;
-          break;
-        }
-      }
-      default:
-        Pike_error("Bad argument 1 to add_hstring(),"
-                   " expected string|Buffer|System.Memory.\n");
-    }
-    /* We know this is safe for size_size>=4, since pike strings are at
-     * most 0x7ffffff bytes long.
-     */
-    if( size_size < 4 &&
-        len > (1<<(8*(size_size<0?-size_size:size_size)))-1 )
-      Pike_error("String too long\n");
-    pop_stack();
-    push_int(len);
-    push_int(size_size);
-    f_Buffer_add_int( 2 );
-    pop_stack();
-    f_Buffer_append( 1 );
-  }
-
-  /*! @decl int sprintf(strict_sprintf_format format, sprintf_args ... args)
-   *! Appends the output from @[sprintf] at the end of the string.
-   *! Returns the buffer itself.
-   */
-  PIKEFUN Buffer sprintf(mixed ... arguments)
-    rawtype tFuncV(tAttr("strict_sprintf_format", tOr(tStr, tObj)),
-		   tAttr("sprintf_args", tMix), tStr);
-
-  {
-    struct Buffer_struct *str = THIS;
-    struct pike_string *s;
-    size_t oldlen;
-    ONERROR e;
-    buffer_mkspace(0, 0);
-    oldlen = str->str.s->len;
-    buffer_begin_rewind_on_error( &e );
-    low_f_sprintf(args, 0, &str->str);
-    buffer_end_rewind_on_error( &e );
-    pop_n_elems(args);
-    s = str->str.s;
-    str->buffer = s->str + (str->offset<<(str->shift = s->size_shift));
-    str->len += s->len-oldlen;
-    ref_push_object(Pike_fp->current_object);
-  }
-
-  /*! @decl Buffer|void cut(int start, int|void end, void|int(0..1) discard)
-   *!
-   *!   Cut and delete the range of data from the current buffer.
-   *!   Returns a new buffer with the cut data, unless discard is true.
-   *!
-   *! @seealso
-   *!   @[get()], @[get_copy()], @[clear()]
-   */
-  PIKEFUN Buffer|void cut(int index, int|void end_or_none,
-     void|int(0..1) discard)
-  {
-    struct Buffer_struct *str = THIS, *str2;
-    struct object *res;
-    unsigned shift;
-    size_t len;
-    INT_TYPE end, vdiscard;
-
-    len = str->len; shift = str->str.s->size_shift;
-    end = args==1 ? len-1 : end_or_none->u.integer;
-    vdiscard = args==3 ? discard->u.integer : 0;
-    pop_n_elems(args);
-
-    if (index < 0)
-      index = 0;
-    if (++end > len)
-      end = len;
-
-    str->len -= len = end-index;
-    if (index)
-      index += str->offset, end+=str->offset;
-    if (!vdiscard) {
-      res = fast_clone_object( Buffer_program );
-      str2 = OBJ2_BUFFER( res );
-      str2->shift = str->shift;
-      str2->len = len;
-      if (index) {
-        init_string_builder_alloc(&str2->str, str2->initial = len, 0);
-        string_builder_append(&str2->str,
-         MKPCHARP_OFF(str->buffer, str->shift, index), len);
-        str2->buffer = str2->str.s->str;
-      } else {
-        str2->offset = str->offset;
-        str2->initial = str->initial;
-        str2->buffer = str->buffer;
-        if (str->str.s) {
-          add_ref(str->str.s);
-          str2->str = str->str;
-        }
-      }
-    }
-    if(index) {
-      struct pike_string *s = buffer_mkspace(0, 0);
-      memmove(s->str+(index<<shift), s->str+(end<<shift), (s->len-end)<<shift);
-      s->len -= len;
-    } else
-      str->offset += end, str->buffer += end<<shift;
-
-    if(!vdiscard) {
-      if( (Pike_fp->current_object->flags & OBJECT_CLEAR_ON_EXIT) )
-        res->flags |= OBJECT_CLEAR_ON_EXIT;
-      push_object(res);
+      struct pike_string *s = finish_string_builder( &str->str );
+      str->str.malloced = 0;
+      str->str.s = NULL;
+      if( Pike_fp->current_object->flags & OBJECT_CLEAR_ON_EXIT )
+          s->flags |= STRING_CLEAR_ON_EXIT;
+      push_string(s);
     }
     else
-      push_undefined();
-  }
-
-  /*! @decl Buffer read_buffer(int n)
-   *!
-   *!   Same as @[read()], but returns the result as a @[Buffer].
-   *!
-   *! @seealso
-   *!   @[read()], @[get()], @[trim()]
-   */
-  PIKEFUN Buffer|void read_buffer(int n)
-  {
-    struct Buffer_struct *str = THIS, *str2;
-    struct pike_string *s = str->str.s;
-    size_t len = str->len;
-    struct object *res;
-
-    while (n<0 || n>len)
-      if (!buffer_range_error( n )) {
-        pop_n_elems(args);
-        push_undefined();
-        return;
-      }
-    pop_n_elems(args);
-    res = fast_clone_object( Buffer_program );
-    str2 = OBJ2_BUFFER( res );
-    if (s)
-      add_ref(s);
-    str2->str = str->str;
-    str2->buffer = str->buffer;
-    str2->offset = str->offset;
-    str2->shift = str->shift;
-    str2->len = n;
-    if( (Pike_fp->current_object->flags & OBJECT_CLEAR_ON_EXIT) )
-      res->flags |= OBJECT_CLEAR_ON_EXIT;
-    push_object(res);
-  }
-
-#define LONGEST_HIGH_BYTE (~(MAX_ULONGEST>>8))
-
-  static LONGEST buffer_read_number(size_t n)
-  {
-    struct Buffer_struct *str = THIS;
-    unsigned shift = str->shift;
-    unsigned char*buf = str->buffer;
-    LONGEST res = 0;
-
-    if (n>=0)
-      while (n--) {
-        if (LONGEST_HIGH_BYTE&res)
-          goto overflow;
-        res<<=8; res|=*buf; buf+=1<<shift;
-      }
-    else
-      for (buf+=n<<shift; n++; ) {
-        if (LONGEST_HIGH_BYTE&res)
-          goto overflow;
-        res<<=8; buf-=1<<shift; res|=*buf;
-      }
-    if (res<0)
-overflow:
-      Pike_error("Integer (%dbit) overflow.\n", SIZEOF_LONGEST*8);
-    return res;
-  }
-
-  static int buffer_rc_number(size_t n)
-  {
-    struct Buffer_struct *str = THIS;
-
-    pop_stack();
-    for(;;) {
-      LONGEST slen;
-      ptrdiff_t len = str->len;
-
-      if ((len -= n)<0)
-        goto rangeerror;
-      slen = buffer_read_number(n);
-      if ((len -= slen)<0) {
-rangeerror:
-        if( buffer_range_error( -len ) )
-          continue;
-        push_undefined();
-        return 0;
-      }
-      str->len -= n;
-      str->offset += n;
-      str->buffer += n<<str->shift;
-      push_int(slen);
-      return 1;
-    }
-  }
-
-  static int buffer_presscanf(const struct pike_string*format)
-  {
-    struct Buffer_struct *str = THIS;
-    ptrdiff_t num_used;
-
-    goto jin;
-    do {
-      if (!buffer_range_error(0))
-        return 0;
-jin:  low_sscanf_pcharp( MKPCHARP(str->buffer, str->shift), str->len,
-         MKPCHARP_STR(format), format->len, &num_used, 0);
-    } while (!num_used);
-
-    str->len -= num_used;
-    str->offset += num_used;
-    str->buffer += num_used<<str->shift;
-    return 1;
-  }
-
-  /*! @decl int read_int( int n )
-   *!
-   *! Read a network (if n is positive) or little endian (if n is
-   *! negative) byte order unsigned number of size n*8 bits, then
-   *! return it.
-   *!
-   *! @returns
-   *!   Will return -1 if there is not enough buffer space available
-   *!   unless error mode is set to throw errors.
-   */
-  PIKEFUN int(0..)|int(-1..-1) read_int( int n )
-  {
-    struct Buffer_struct *str = THIS;
-
-    while (str->len < n)
-      if (!buffer_range_error( (int)str->len-n )) {
-        Pike_sp[-1].u.integer = -1;
-        return;
-      }
-
-    if( n < SIZEOF_INT_TYPE ) {            /* will for sure fit. */
-      pop_stack();
-      push_int(buffer_read_number(n));
-      str->len -= n;
-      str->offset += n;
-    } else {
-      f_Buffer_read( 1 );
-      push_int(256);
-      push_object(clone_object( get_auto_bignum_program(), 2 ));
-      reduce_stack_top_bignum();
-    }
-  }
-
-  /*! @decl string read_hstring( int(0..) n )
-   *!
-   *! Identical in functionality to @[read](@[read_int](@[n])) but
-   *! faster.
-   *!
-   *! Read a network byte order number of size n*8 bits, then return the
-   *! indicated number of bytes as a string.
-   *! @returns
-   *! If there is not enough data available return 0.
-   *!
-   *! Note that a pike string can not be longer than 0x7fffffff bytes (~2Gb).
-   */
-  PIKEFUN string|void read_hstring( int n )
-  {
-    if(buffer_rc_number(n))
-      f_Buffer_read( 1 );
-  }
-
-  /*! @decl Buffer read_hbuffer( int n )
-   *!
-   *! Same as @[read_hstring], but returns the result as a Buffer.
-   *!
-   */
-  PIKEFUN Buffer|void read_hbuffer( int n )
-  {
-    if(buffer_rc_number(n))
-      f_Buffer_read_buffer( 1 );
-  }
-
-  /*! @decl array|void sscanf(string format)
-   *!
-   *! Reads data from the beginning of the buffer to match the
-   *! specifed format, then return an array with the matches.
-   *!
-   *! The non-matching data will be left in the buffer.
-   *!
-   *! See @[array_sscanf] for more information.
-   */
-  PIKEFUN array|void sscanf( string format )
-  {
-    struct svalue *start = Pike_sp;
-    unsigned matched, results;
-
-    matched = buffer_presscanf(format);
-    results = Pike_sp - start;
-
-    if(matched)
-      f_aggregate(results);
-    else {
-      pop_n_elems(results);
-      push_undefined();
-    }
-  }
-
-  /*! @decl mixed|void match(string format)
-   *!
-   *! Reads data from the beginning of the buffer to match the
-   *! specifed format, then return the match.
-   *!
-   *! The non-matching data will be left in the buffer.
-   *!
-   *! This function is very similar to @[sscanf], but the
-   *! result is the sum of the matches. Most useful to match
-   *! a single value.
-   *!
-   *! @example
-   *! @code
-   *!  // get the next whitespace separated word from the buffer.
-   *!  buffer->match("%*[ \t\r\n]%*[^ \t\r\n]");
-   *! @endcode
-   */
-  PIKEFUN string|int|float|array|void match( string format )
-  {
-    struct svalue *start = Pike_sp;
-    unsigned matched, results;
-
-    matched = buffer_presscanf(format);
-    results = Pike_sp - start;
-
-    if(matched)
-      f_add(results);
-    else {
-      pop_n_elems(results);
-      push_undefined();
-    }
-  }
-
-  /*! @decl int(0..)|int(-1..-1) consume(int(0..) n)
-   *!
-   *!   Discard the next @[n] bytes from the beginning of the buffer.
-   *!
-   *! @returns
-   *!   Returns the remaining size of the buffer, or -1 if you attempted
-   *!   to consume more than was available.
-   *!
-   *! @seealso
-   *!   @[cut()], @[unread()]
-   */
-  PIKEFUN int(-1..) consume( int(0..) n )
-  {
-    struct Buffer_struct *str = THIS;
-    int left;
-
-    while (n<0 || (left = str->len-n) < 0)
-      if (!buffer_range_error( -left )) {
-        left = -1;
-        goto ret;
-      }
-
-    str->len -= n;
-    str->offset += n;
-    str->buffer += n<<str->shift;
-ret:
-    Pike_sp[-1].u.integer = left;
-  }
-
-  /*! @decl int(0..)|int(-1..-1) unread(int(0..)|string|Buffer n)
-   *!
-   *!   Rewind the buffer @[n] bytes.  If passed a string of Buffer
-   *!   argument, it will push back that string at the front of the buffer.
-   *!
-   *! @returns
-   *!   Returns how many characters of buffer is available to rewind,
-   *!   or -1 if you attempted to rewind more than is available.
-   *!
-   *! @seealso
-   *!   @[consume()]
-   */
-  PIKEFUN int(-1..) unread( int(0..)|string|Buffer n )
-  {
-    struct Buffer_struct *str = THIS;
-    int ret = Pike_sp[-1].u.integer;
-    struct pike_string *s2;
-    PCHARP b;
-    ptrdiff_t blen;
-
-    switch (TYPEOF(Pike_sp[-1])) {
-      case PIKE_T_INT:
-        ret = Pike_sp[-1].u.integer;
-        while (ret<0 || ret>str->offset)
-          if (!buffer_range_error( ret-str->offset )) {
-            ret = -1;
-            goto rangx1;
-          }
-        str->buffer -= ret<<str->shift;
-        str->len += ret;
-        ret = str->offset -= ret;
-rangx1: break;
-      case PIKE_T_STRING:
-        s2 = Pike_sp[-1].u.string;
-        b = MKPCHARP_STR(s2);
-        blen = s2->len;
-        goto pastein;
-      case PIKE_T_OBJECT:
-        if (Pike_sp[-1].u.object->prog == Buffer_program)
-        { struct Buffer_struct *str2 = OBJ2_BUFFER(Pike_sp[-1].u.object);
-          ptrdiff_t dif;
-
-          b = MKPCHARP(str2->buffer, str2->shift);
-          blen = str2->len;
-pastein:  if ((dif = (ptrdiff_t)str->offset-blen) < 0) {
-            struct pike_string *s = buffer_mkspace(-dif, b.shift);
-            unsigned shift = s->size_shift;
-            memmove(s->str+(blen<<shift), str->buffer, str->len<<shift);
-            str->buffer = s->str;
-            s->len = str->len += blen;
-            ret = str->offset = 0;
-          }
-          else {
-            buffer_mkspace(0, 0);
-            str->buffer -= blen<<str->shift;
-            str->len += blen;
-            ret = str->offset = dif;
-          }
-          generic_memcpy(MKPCHARP(str->buffer, str->shift), b, blen);
-          break;
-        }
-      default:
-        SIMPLE_BAD_ARG_ERROR("unread", 1, "int(0..)|string|String.Buffer");
-    }
-    pop_stack();
-    push_int(ret);
-  }
-
-  static int buffer_is_whitespace(struct Buffer_struct *str, size_t pos)
-  {
-    switch( generic_extract(str->buffer, str->shift, pos) ) {
-      SPACECASE8
-        return 1;
-    }
-    return 0;
-  }
-
-  /*! @decl mixed read_json(int|void require_whitespace_separator)
-   *!
-   *! Read a single JSON expression from the buffer and return it.
-   *!
-   *! If @[require_whitespace_separator] is true there must be a whitespace
-   *! after each json value (as an example, newline or space).
-   *!
-   *! The JSON is assumed to be utf-8 encoded.
-   *!
-   *! @returns
-   *! UNDEFINED if no data is available to read.
-   *! The read value otherwise.
-   *!
-   *! @note
-   *! Unless strwhitespaces are required this function only really work correctly
-   *! with objects, arrays and strings.
-   *!
-   *! There is really no  way to see where one value starts and the other ends
-   *! for most other cases
-   */
-  PIKEFUN mixed read_json(int|void require_whitespace)
-  {
-    struct Buffer_struct *str = THIS;
-    unsigned whites = 0;
-    static ptrdiff_t(*parse_json_pcharp)(PCHARP,size_t,int,char**);
-    if( require_whitespace ) {
-      whites = require_whitespace->u.integer;
-      pop_stack();
-    }
-
-    if( !parse_json_pcharp )
-      parse_json_pcharp
-       = PIKE_MODULE_IMPORT(Standards.JSON, parse_json_pcharp );
-    for(;;) {
-      char *err = NULL;
-      ptrdiff_t stop = parse_json_pcharp( MKPCHARP(str->buffer,str->shift),
-                                str->len, 1|8, &err ); /* json_utf8 */
-      if( stop < 0 )
-        if( -stop == str->len || (err && !strncmp(err,"Unterminated",12))) {
-          if (buffer_range_error( 0 ))
-            continue;
-          push_undefined();
-        } else				 /* FIXME: Use real json error? */
-          if( err )
-            Pike_error("Syntax error in json at offset %d: %s\n", -stop, err );
-          else
-            Pike_error("Syntax error in json at offset %d\n", -stop );
-      else if( whites &&
-          (stop == str->len || !buffer_is_whitespace(str,stop))
-          && !buffer_is_whitespace(str,stop-1))
-        if( stop == str->len ) {
-          if (buffer_range_error( 0 ))
-            continue;
-          pop_stack();
-          push_undefined();
-        } else
-          Pike_error("Missing whitespace between json values at offset %d\n",
-           stop );
-      else {
-        if( whites )
-          while( buffer_is_whitespace( str, stop ) )
-            stop++;
-        push_int( stop );
-        f_Buffer_consume( 1 );
-        pop_stack();
-      }
-      break;
-    }
-  }
-
-  /*! @decl void trim()
-   *!
-   *!   Compact buffer, free unused memory.
-   *!   When called on a subbuffer, it clears the subbuffer and releases
-   *!   the parent buffer to be modified again.
-   *!
-   *! @note
-   *!   Calling this function excessively might slow things down,
-   *!   since the data often has to be copied.
-   *!
-   *! @seealso
-   *!   @[clear()]]
-   */
-  PIKEFUN void trim()
-  {
-    struct Buffer_struct *str = THIS;
-    struct pike_string *s = str->str.s;
-    unsigned offset = str->offset, shift = s->size_shift;
-
-    if (str->readonly || !s || s->refs!=1)
-      buffer_mkspace(0, 0);
-    else {
-      if (str->offset)
-        memmove(s->str, str->buffer, str->len<<str->shift);
-      if (s = realloc_unlinked_string(s, str->len))
-        str->str.s = s, str->str.malloced = str->len;
-      str->buffer = s->str;
-      str->offset = 0;
-    }
+      push_empty_string();
   }
 
   /*! @decl void clear()
    *!
-   *!   Empty the buffer, and discard the old content.
+   *!   Empty the buffer, and don't care about the old content.
+   *!
+   *! @note
+   *!   This function was not available in Pike 7.8 and earlier.
    *!
    *! @seealso
-   *!   @[get()], @[cut()], @[trim()]
+   *!   @[get()]
    */
   PIKEFUN void clear()
   {
+    /* FIXME: Support resetting the initial size? */
     struct Buffer_struct *str = THIS;
-    str->len = str->offset = 0;
-    reset_string_builder(&str->str);
+    if (str->str.s) {
+      /* FIXME: There's also the alternative of using
+       *        reset_string_builder() here.
+       */
+      free_string_builder(&str->str);
+      str->str.s = NULL;
+    }
   }
 
   /*! @decl int _sizeof()
@@ -4657,169 +3347,32 @@ pastein:  if ((dif = (ptrdiff_t)str->offset-blen) < 0) {
    */
   PIKEFUN int _sizeof()
   {
-    RETURN THIS->len;
+    struct Buffer_struct *str = THIS;
+    RETURN str->str.s ? str->str.s->len : 0;
   }
 
   INIT
     {
       struct Buffer_struct *str = THIS;
-      memset( str, 0, sizeof( *str ) );
+      MEMSET( str, 0, sizeof( *str ) );
     }
 
   EXIT
     gc_trivial;
     {
       struct Buffer_struct *str = THIS;
-      struct pike_string *s;
-      if (s = str->str.s) {
-        if( Pike_fp->flags & OBJECT_CLEAR_ON_EXIT )
-          guaranteed_memset( s->str, 0, str->str.malloced );
-        free_string( s );
+      if( str->str.s )
+      {
+          if( Pike_fp->flags & OBJECT_CLEAR_ON_EXIT )
+              guaranteed_memset( str->str.s->str, 0, str->str.s->len );
+          free_string_builder( &str->str );
       }
-      if( str->source )
-        free_object( str->source );
     }
 
   GC_RECURSE
   {
-    if (mc_count_bytes (Pike_fp->current_object))
+    if (mc_count_bytes (Pike_fp->current_object) && THIS->str.s)
       mc_counted_bytes += THIS->str.malloced;
-  }
-
-#define BUFFER_BLOCK_SIZE	4096
-
-  /*! @decl int input_from( Stdio.Stream f, void|int n )
-   *!
-   *!   Read data from @[f] into this buffer.
-   */
-  PIKEFUN int(0..) input_from( object f, void|int _n )
-  {
-    struct Buffer_struct *str = THIS;
-    size_t bread = 0, n = (size_t)-1;
-    struct my_file *fd;
-
-    if( _n )
-      n = _n->u.integer;
-
-    buffer_mkspace(0, 0);
-    if( (fd = get_storage( f, file_program )) ) {
-      struct pike_string *s;
-      void *tbuf = 0;
-
-      if (str->shift) {
-        tbuf = malloc(MIN(n,BUFFER_BLOCK_SIZE));
-        if (!tbuf)
-          Pike_error("Out of memory allocating %d buffer space.\n",
-           BUFFER_BLOCK_SIZE);
-      }
-      do {
-        int res;
-        void *ptr;
-        size_t getnow = n-bread;
-        if (getnow < BUFFER_BLOCK_SIZE)
-          getnow = BUFFER_BLOCK_SIZE;
-        s = buffer_mkspace(getnow, 0);
-        ptr = tbuf? tbuf: s->str+s->len;  /* shift is 0 when no tbuf */
-
-        buffer_lock();
-        {
-            THREADS_ALLOW();
-            res = fd_read( fd->box.fd, ptr, getnow );
-            THREADS_DISALLOW();
-        }
-        buffer_release();
-
-        if( res == -1 && errno == EINTR )
-          continue;
-
-        if( res <= 0 )
-          break;
-
-	if (tbuf)
-          generic_memcpy(MKPCHARP_STR_OFF(s, s->len), MKPCHARP(tbuf,0), res);
-        s->len += res;
-        bread += res;
-        if( res != getnow )
-            break;
-      } while (n>bread);
-
-      if (tbuf)
-        free(tbuf);
-      str->buffer = s->str + (str->offset<<str->shift);
-      str->len += bread;
-    } else			/* some other object. Just call read */
-      for(;;) {
-        push_int( BUFFER_BLOCK_SIZE );
-        safe_apply( f, "read", 1 );
-        if( TYPEOF(Pike_sp[-1]) != PIKE_T_STRING 
-         || Pike_sp[-1].u.string->len == 0 )
-          break;
-        bread += Pike_sp[-1].u.string->len;
-        f_Buffer_add( 1 );
-        pop_stack();
-      }
-    RETURN bread;
-  }
-
-  /*! @decl int output_to( Stdio.Stream f, void|int n )
-   *!
-   *! Write data from the buffer to the indicated file.
-   *!
-   *! Will return the number of bytes that were successfully written.
-   */
-  PIKEFUN int(0..) output_to( object f, void|int _n )
-  {
-    struct Buffer_struct *str = THIS;
-    size_t sz = str->len;
-    size_t written = 0;
-    struct my_file *fd;
-    INT_TYPE *wr = &Pike_sp->u.integer;
-
-    if( _n )
-      sz = MIN(_n->u.integer, sz);
-
-    if( !str->shift && (fd = get_storage( f, file_program )) )
-    {
-      buffer_lock();
-
-      THREADS_ALLOW();
-      while( sz > written ) {
-        int res = fd_write( fd->box.fd, str->buffer, sz-written );
-        if( res == -1 && errno == EINTR )
-          continue;
-        if( res <= 0 )
-          break;
-        str->buffer += res;
-        written += res;
-      }
-      THREADS_DISALLOW();
-      str->len -= written;
-      str->offset += written;
-      buffer_release();
-    } else {
-      /* some other object. Just call write */
-      while( sz > written ) {
-        size_t rd = MIN(sz-written,BUFFER_BLOCK_SIZE);
-	push_int(rd);
-	f_Buffer_read( 1 );
-        if( TYPEOF(Pike_sp[-1]) != PIKE_T_STRING 
-         || Pike_sp[-1].u.string->len == 0 )
-          break;
-        /* when this throws we need to rewind the buffer correctly. */
-        safe_apply(f, "write", 1);
-        if( *wr <= 0 )
-          goto rewind;
-        written += *wr;
-        if( 0 < (rd-=*wr) ) {
-rewind:   str->buffer -= rd<<str->shift;
-          str->offset -= rd;
-          str->len += rd;
-          break;
-        }
-        pop_stack();
-      }
-    }
-    RETURN written;
   }
 }
 
@@ -4991,7 +3544,7 @@ PIKECLASS multi_string_replace
 
   INIT
   {
-    memset(&THIS->ctx, 0, sizeof(struct replace_many_context));
+    MEMSET(&THIS->ctx, 0, sizeof(struct replace_many_context));
   }
 
   EXIT
@@ -7498,5 +6051,4 @@ void exit_builtin(void)
 #ifndef USE_SETENV
   if (env_allocs) free_mapping (env_allocs);
 #endif
-  if( shm_program ) free_program( shm_program );
 }
