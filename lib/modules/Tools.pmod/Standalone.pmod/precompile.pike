@@ -11,7 +11,7 @@
 #define DEFINETOSTR(X) TOSTR(X)
 
 #if constant(Pike.__HAVE_CPP_PREFIX_SUPPORT__)
-constant precompile_api_version = "5";
+constant precompile_api_version = "6";
 #else
 constant precompile_api_version = "3";
 #endif
@@ -1937,19 +1937,31 @@ sprintf("        } else {\n"
 	    mixed name = x[pos2];
 	    PikeType type = PikeType(x[e+1..pos2-1]);
 	    string define = make_unique_name("var",name,base,"defined");
+        while( x[pos2+1] == "." )
+        {
+            name = (string)name + (string)x[pos2+1]+ (string)x[pos2+2];
+            pos2+=2;
+        }
 	    mapping attributes = parse_attributes(x[pos2+1..pos]);
-
 //    werror("type: %O\n",type);
+        if( !has_value( name, "." ) )
+        {
+            thestruct+=
+                IFDEF(define,
+                      ({ sprintf("  %s %s;\n",type->c_storage_type(1),name) }));
+        }
+        else
+        {
+            if( name[0] == "." )
+                name = name[1..];
+        }
 
-	    thestruct+=
-	      IFDEF(define,
-		    ({ sprintf("  %s %s;\n",type->c_storage_type(1),name) }));
 	    addfuncs+=
 	      IFDEF(define,
 		    ({
 		      sprintf("  PIKE_MAP_VARIABLE(%O, %s_storage_offset + OFFSETOF(%s_struct, %s),\n"
 			      "                    %s, %s, %s);",
-			      (string)name, base, base, name,
+                              ((string)name/".")[-1], base, base, name,
 			      type->output_c_type(), type->type_number(),
 			      attributes->flags || "0"),
 		    }));
@@ -2747,6 +2759,10 @@ array(PC.Token) allocate_strings(array(PC.Token|array(PC.Token)) tokens)
   return tokens;
 }
 
+class ArgCheckFunction(array tokens)
+{
+}
+
 class Handler {
     inherit "/master";
 
@@ -2943,7 +2959,7 @@ int main(int argc, array(string) argv)
     "\n\n",
     // FIXME: Ought to default to static in 7.9.
     "#ifndef DEFAULT_CMOD_STORAGE\n"
-    "#define DEFAULT_CMOD_STORAGE\n"
+    "#define DEFAULT_CMOD_STORAGE static\n"
     "#endif\n"
   });
 
