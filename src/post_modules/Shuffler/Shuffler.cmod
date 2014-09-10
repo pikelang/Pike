@@ -46,7 +46,7 @@ static void free_source( struct source *s )
   free( s );
 }
 
-extern struct program *Shuffler_program;
+DEFAULT_CMOD_STORAGE struct program *Shuffler_program;
 
 /*! @module Shuffler
  *!

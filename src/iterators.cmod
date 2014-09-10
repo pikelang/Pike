@@ -29,6 +29,8 @@
 
 #define sp Pike_sp
 
+#define DEFAULT_CMOD_STORAGE
+
 DECLARATIONS
 
 /*! @class Iterator

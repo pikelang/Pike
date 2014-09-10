@@ -41,6 +41,8 @@
 #include <math.h>
 #include <arpa/inet.h>
 
+#define DEFAULT_CMOD_STORAGE
+
 DECLARATIONS
 
 

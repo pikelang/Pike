@@ -177,6 +177,8 @@ struct hash_ent
 
 
 
+#define DEFAULT_CMOD_STORAGE
+
 DECLARATIONS
 
 

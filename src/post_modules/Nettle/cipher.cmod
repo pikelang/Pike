@@ -5278,7 +5278,7 @@ PIKECLASS DES
 }
 /*! @endclass DES */
 
-void f_Nettle_DES3_fix_parity(INT32);
+DEFAULT_CMOD_STORAGE void f_Nettle_DES3_fix_parity(INT32);
 
 static void
 pike_des3_set_key(void *c,
