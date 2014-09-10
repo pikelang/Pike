@@ -29,6 +29,8 @@
 
 #define sp Pike_sp
 
+#define DEFAULT_CMOD_STORAGE
+
 DECLARATIONS
 
 /*! @class Iterator
@@ -1182,7 +1184,6 @@ PIKECLASS file_line_iterator
  *!   @endcode
  */
 PIKECLASS string_split_iterator
-nonstatic;
 {
   CVAR struct pike_string *buffer;
   CVAR struct pike_string *current;
@@ -1871,7 +1872,6 @@ nonstatic;
  */
 PIKEFUN object(Iterator) get_iterator(object|array|mapping|multiset|string data)
   efun;
-  nonstatic;
 {
   switch(TYPEOF(*data))
   {

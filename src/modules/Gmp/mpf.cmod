@@ -43,6 +43,8 @@
 #define sp Pike_sp
 #define fp Pike_fp
 
+#define DEFAULT_CMOD_STORAGE
+
 DECLARATIONS
 
 #define THISMPF (&(THIS->n))
@@ -106,7 +108,6 @@ DECLARATIONS
 
 /*  id PROG_GMP_MPF_ID; */
 PIKECLASS mpf
-nonstatic;
 {
   CVAR MP_FLT n;
 
