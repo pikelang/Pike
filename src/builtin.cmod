@@ -3116,96 +3116,6 @@ PIKECLASS Buffer
     REF_RETURN Pike_fp->current_object;
   }
 
-  /*! @decl int addat(int(0..) pos, string|String.Buffer ... data)
-   *!
-   *!   Adds @[data] to the buffer, starting at position @[pos].
-   *!
-   *! @returns
-   *!   Returns the size of the buffer.
-   *!
-   *! @note
-   *!   If the buffer isn't of the required size, it will be padded
-   *!   with NUL-characters.
-   *!
-   *! @note
-   *!   Pike 7.8 and earlier did not support adding @[String.Buffer]s
-   *!   directly.
-   *!
-   *! @seealso
-   *!   @[add()]
-   */
-  PIKEFUN int addat(int(0..) pos, string ... arg1 )
-    rawtype tFuncV(tIntPos, tOr(tString, tObjIs_BUFFER), tIntPos);
-  {
-    struct Buffer_struct *str = THIS;
-
-    if (pos < 0)
-      SIMPLE_BAD_ARG_ERROR("addat", 1, "int(0..)");
-
-    if (args) {
-      int init_from_arg0 = 0, j;
-      ptrdiff_t sum = 0;
-      int shift = 0;
-      for (j=1; j < args; j++) {
-	struct pike_string *a;
-	if (TYPEOF(Pike_sp[j-args]) == PIKE_T_STRING)
-	  a = Pike_sp[j-args].u.string;
-	else if ((TYPEOF(Pike_sp[j-args]) != PIKE_T_OBJECT) ||
-		   (Pike_sp[j-args].u.object->prog != Buffer_program))
-	  SIMPLE_BAD_ARG_ERROR("addat", j+1, "string|String.Buffer");
-	else {
-	  a = OBJ2_BUFFER(Pike_sp[j-args].u.object)->str.s;
-	  if (!a) continue;
-	}
-	sum += a->len;
-	shift |= a->size_shift;
-      }
-
-      if (!str->str.s) {
-	if ((sum + pos) <= str->initial)
-	  sum = str->initial;
-	else
-	  sum <<= 1, sum += pos;
-	shift = shift & ~(shift >> 1);
-
-	init_string_builder_alloc(&str->str, sum, shift);
-      } else {
-	sum += pos;
-	shift |= str->str.known_shift;
-	shift = shift & ~(shift >> 1);
-	if (sum > str->str.s->len)
-	  string_build_mkspace(&str->str, sum - str->str.s->len, shift);
-	else if (shift != str->str.known_shift)
-	  string_build_mkspace(&str->str, 0, shift);
-      }
-      /* We know it will be a string that really is this wide. */
-      str->str.known_shift = shift;
-
-      if (str->str.s->len < pos) {
-	/* Clear the padding. */
-	MEMSET(str->str.s->str + (str->str.s->len << str->str.s->size_shift),
-	       0, (pos - str->str.s->len) << str->str.s->size_shift);
-      }
-
-      for(j = 1; j<args; j++) {
-	struct pike_string *a;
-	if (TYPEOF(Pike_sp[j-args]) == PIKE_T_STRING)
-	  a = Pike_sp[j-args].u.string;
-	else {
-	  a = OBJ2_BUFFER(Pike_sp[j-args].u.object)->str.s;
-	  if (!a) continue;
-	}
-	pike_string_cpy(MKPCHARP_STR_OFF(str->str.s, pos), a);
-	pos += a->len;
-      }
-
-      if (str->str.s->len < pos)
-	str->str.s->len = pos;
-    }
-
-    RETURN str->str.s ? str->str.s->len : 0;
-  }
-
   /*! @decl int add(string|String.Buffer ... data)
    *!
    *!   Adds @[data] to the buffer.
@@ -3224,9 +3134,56 @@ PIKECLASS Buffer
     rawtype tFuncV(tNone, tOr(tString, tObjIs_BUFFER), tIntPos);
   {
     struct Buffer_struct *str = THIS;
-    push_int(str->str.s ? str->str.s->len : 0);
-    stack_revroll(++args);
-    f_Buffer_addat(args);
+
+    if (args) {
+      int init_from_arg0 = 0, j;
+      ptrdiff_t sum = 0;
+      int shift = 0;
+      for (j=0; j < args; j++) {
+	struct pike_string *a;
+	if (TYPEOF(Pike_sp[j-args]) == PIKE_T_STRING)
+	  a = Pike_sp[j-args].u.string;
+	else if ((TYPEOF(Pike_sp[j-args]) != PIKE_T_OBJECT) ||
+		   (Pike_sp[j-args].u.object->prog != Buffer_program))
+	  SIMPLE_BAD_ARG_ERROR("addat", j+1, "string|String.Buffer");
+	else {
+	  a = OBJ2_BUFFER(Pike_sp[j-args].u.object)->str.s;
+	  if (!a) continue;
+	}
+	sum += a->len;
+	shift |= a->size_shift;
+      }
+      shift |= str->str.known_shift;
+      shift = shift & ~(shift >> 1);
+      /* We know it will be a string that really is this wide. */
+      str->str.known_shift = shift;
+
+      if (!str->str.s) {
+	if (sum <= str->initial)
+	  sum = str->initial;
+	else
+	  sum <<= 1;
+
+	init_string_builder_alloc(&str->str, sum, shift);
+      } else
+	string_build_mkspace(&str->str, sum, shift);
+
+      for(sum = str->str.s->len, j = 0; j<args; j++) {
+	struct pike_string *a;
+	if (TYPEOF(Pike_sp[j-args]) == PIKE_T_STRING)
+	  a = Pike_sp[j-args].u.string;
+	else {
+	  a = OBJ2_BUFFER(Pike_sp[j-args].u.object)->str.s;
+	  if (!a) continue;
+	}
+	pike_string_cpy(MKPCHARP_STR_OFF(str->str.s, sum), a);
+	sum += a->len;
+      }
+
+      str->str.s->len = sum;
+    }
+
+    RETURN str->str.s ? str->str.s->len : 0;
   }
 
   /*! @decl void putchar(int c)
