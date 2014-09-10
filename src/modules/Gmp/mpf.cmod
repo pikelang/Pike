@@ -43,6 +43,8 @@
 #define sp Pike_sp
 #define fp Pike_fp
 
+#define DEFAULT_CMOD_STORAGE
+
 DECLARATIONS
 
 #define THISMPF (&(THIS->n))
