@@ -160,6 +160,15 @@ PIKECLASS IOBuffer
       io->len = io_len(io);
       io->offset = 0;
       io->allocated = io->stash.len;
+      if( io->sub ) {
+	io_unlock( get_storage(io->sub,IOBuffer_program ) );
+	free_object( io->sub );
+      }
+      if( io->source ) free_object( io->source );
+      if( io->str ) free_string( io->str );
+      io->source = 0;
+      io->sub = 0;
+      io->str = 0;
       io->malloced = 1;
     }
     else
@@ -735,9 +744,13 @@ PIKECLASS IOBuffer
       case PIKE_T_STRING:
         {
           struct pike_string *s = p->u.string;
+	  if( !s->len ) return;
           if( s->size_shift ) Pike_error("IOBuffer only handles 8bit data\n");
           if( !io->buffer )
           {
+#ifdef PIKE_DEBUG
+	    if (io->str) Pike_fatal("IOBuffer with string but NULL buffer.\n");
+#endif
             io->str = s;
             io->buffer = (unsigned char*)s->str;
             io->len = s->len;
