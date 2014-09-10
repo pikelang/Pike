@@ -407,7 +407,7 @@ PIKECLASS IOBuffer
     free( x->arg );
   }
 
-  static ssize_t io_call_write( IOBuffer *io, struct object *o, ssize_t nbytes )
+  static ptrdiff_t io_call_write( IOBuffer *io, struct object *o, ptrdiff_t nbytes )
     ATTRIBUTE((noclone,noinline));
 
   static void io_set_events( IOBuffer *io, struct my_file *fd, int extra, int set )
@@ -420,11 +420,11 @@ PIKECLASS IOBuffer
       set_fd_callback_events(&fd->box, fd->box.events|(1<<set), 0);
   }
 
-  static ssize_t io_call_write( IOBuffer *io, struct object *o, ssize_t bytes )
+  static ptrdiff_t io_call_write( IOBuffer *io, struct object *o, ptrdiff_t bytes )
   {
     if( bytes > 0 )
     {
-      ssize_t l = 0;
+      ptrdiff_t l = 0;
       struct pike_string *s = io_read_string( io,bytes );
 
       if( s )
@@ -462,10 +462,10 @@ PIKECLASS IOBuffer
     }
   }
 
-  static int io_range_error( IOBuffer *io, ssize_t howmuch )
+  static int io_range_error( IOBuffer *io, ptrdiff_t howmuch )
     ATTRIBUTE((noclone,noinline));
 
-  static int io_range_error( IOBuffer *io, ssize_t howmuch )
+  static int io_range_error( IOBuffer *io, ptrdiff_t howmuch )
   {
       int res;
       struct svalue *osp = Pike_sp;
@@ -479,7 +479,7 @@ PIKECLASS IOBuffer
       return res;
   }
 
-  static int io_avail( IOBuffer *io, ssize_t len )
+  static int io_avail( IOBuffer *io, ptrdiff_t len )
   {
     if( len < 0 || len + io->offset > io->len )
     {
@@ -492,7 +492,7 @@ PIKECLASS IOBuffer
     return 1;
   }
 
-  static int io_avail_mul( IOBuffer *io, ssize_t len, ssize_t each  )
+  static int io_avail_mul( IOBuffer *io, ptrdiff_t len, ptrdiff_t each  )
   {
     /* safely check if len*each is available. */
     size_t total = io_len(io);
@@ -962,9 +962,9 @@ PIKECLASS IOBuffer
   PIKEFUN int(-1..) output_to( object f, int|void _nbytes )
   {
     IOBuffer *io = THIS;
-    ssize_t written = 0, nbytes = (ssize_t)(((size_t)~0)>>1);
+    ptrdiff_t written = 0, nbytes = (ptrdiff_t)(((size_t)~0)>>1);
     struct my_file *fd;
-    ssize_t sz = io_len( io );
+    ptrdiff_t sz = io_len( io );
 
     if( !sz )
     {
@@ -979,9 +979,9 @@ PIKECLASS IOBuffer
       /* lock this object. */
       while( sz > written && nbytes )
       {
-        ssize_t rd = MINIMUM(MINIMUM(sz-written,4096),nbytes);
+        ptrdiff_t rd = MINIMUM(MINIMUM(sz-written,4096),nbytes);
         unsigned char *ptr = io_read_pointer( io );
-        ssize_t res;
+        ptrdiff_t res;
         res = fd_write( fd->box.fd, ptr, rd );
         if( res == -1 && errno == EINTR )
           continue;
@@ -1002,7 +1002,7 @@ PIKECLASS IOBuffer
       while( sz > written && nbytes)
       {
         size_t rd = MINIMUM(MINIMUM(sz-written,4096),nbytes);
-        ssize_t wr = io_call_write( io, f, rd );
+        ptrdiff_t wr = io_call_write( io, f, rd );
         if( wr <= 0 )
         {
           io_rewind(io, rd );
@@ -1205,7 +1205,7 @@ PIKECLASS IOBuffer
     int i,l = a->size;
     struct svalue *it = a->item;
     unsigned char *ptr;
-    ssize_t n;
+    ptrdiff_t n;
     ONERROR e;
     IOBuffer *io = THIS;
 
@@ -1219,7 +1219,7 @@ PIKECLASS IOBuffer
 #else
       if( DO_INT64_MUL_OVERFLOW( l, bpi, &n ) )
 #endif
-        Pike_error("Result size exceeds ssize_t size\n");
+        Pike_error("Result size exceeds ptrdiff_t size\n");
 
     io_add_space( io, n, 0 );
     switch( bpi )
