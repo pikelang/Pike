@@ -233,7 +233,7 @@ static INLINE int find_magnitude2(const p_wchar2 *s, ptrdiff_t len)
 
 static INLINE unsigned min_magnitude(const unsigned c)
 {
-  return c<256 ? 0 : c<65536 ? 1 : 2;
+  return LIKELY(c<256) ? 0 : LIKELY(c<65536) ? 1 : 2;
 }
 
 void low_set_index(struct pike_string *s, ptrdiff_t pos, int value)
