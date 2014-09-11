@@ -954,10 +954,10 @@ PIKECLASS IOBuffer
    *! if possible.  Otherwise at most @[nbytes] will be written.
    *!
    *! @returns
-   *! Will return the number of bytes that were successfully written.
+   *! Will return the number of bytes that have been written successfully.
    *!
-   *! If no bytes were successfully written and @expr{f->write()@} failed
-   *! with an error @expr{-1@} will be returned.
+   *! If no bytes have been written successfully and @expr{f->write()@} failed
+   *! with an error, @expr{-1@} will be returned.
    */
   PIKEFUN int(-1..) output_to( object f, int|void _nbytes )
   {
@@ -1796,7 +1796,7 @@ PIKECLASS IOBuffer
    *! Unless you add new data to the buffer using any of the add
    *! functions you can always rewind.
    *!
-   *! You can call @[undread(0)] to see how much.
+   *! You can call @[unread(0)] to see how much.
    */
   PIKEFUN int(-1..) unread( int bytes )
   {
