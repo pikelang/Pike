@@ -336,16 +336,6 @@ ptrdiff_t generic_quick_binary_strcmp(const char *a,
                                       const char *b,
                                       ptrdiff_t blen, int bsize) ATTRIBUTE((pure));
 
-/* Does not take locale into account */
-
-static INLINE ptrdiff_t __attribute__((unused))
-                      my_quick_pcharpcmp(const PCHARP a, ptrdiff_t alen,
-                                         const PCHARP b, ptrdiff_t blen)
-{
-  return generic_quick_binary_strcmp(a.ptr, alen, a.shift,
-                                     b.ptr, blen, b.shift);
-}
-
 ptrdiff_t generic_find_binary_prefix(const char *a,
                                      ptrdiff_t alen, int asize,
                                      const char *b,
