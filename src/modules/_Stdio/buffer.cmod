@@ -1878,9 +1878,9 @@ PIKECLASS IOBuffer
       push_int(-1);
   }
 
-  /*! @decl int(24bit) read_int32()
+  /*! @decl int(32bit) read_int32()
    */
-  PIKEFUN int(0..16777215) read_int32( )
+  PIKEFUN int(0..4294967295) read_int32( )
   {
 #if SIZEOF_INT_TYPE > 4
     IOBuffer *io = THIS;
