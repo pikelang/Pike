@@ -375,10 +375,6 @@ badresult:
 	    char *value = PQgetvalue(THIS->result, THIS->cursor, j);
 	    int len = PQgetlength(THIS->result, THIS->cursor, j);
 	    switch(PQftype(THIS->result, j)) {
-	      /* FIXME: This code is questionable, and BPCHAROID
-	       *        and BYTEAOID are usually not available
-	       *        to Postgres frontends.
-	       */
 #if defined(CUT_TRAILING_SPACES) && defined(BPCHAROID)
 	    case BPCHAROID:
 	      for(;len>0 && value[len]==' ';len--);
