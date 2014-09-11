@@ -437,19 +437,25 @@ PIKECLASS IOBuffer
     return -1;
   }
 
+  static void io_actually_trigger_output( IOBuffer *io )
+    ATTRIBUTE((noclone,noinline));
+
+  static void io_actually_trigger_output( IOBuffer *io )
+  {
+    struct my_file *fd;
+    if( (fd = get_storage( io->output, file_program )) )
+    {
+      io_set_events( io, fd, PIKE_BIT_FD_WRITE_OOB, PIKE_FD_WRITE );
+      io->output_triggered = 1;
+    }
+    else
+      io_call_write( io, io->output, MINIMUM( io_len(io), 100 ) );
+  }
+
   static void io_trigger_output( IOBuffer *io )
   {
-    if( io->output && !io->output_triggered )
-    {
-      struct my_file *fd;
-      if( (fd = get_storage( io->output, file_program )) )
-      {
-        io_set_events( io, fd, PIKE_BIT_FD_WRITE_OOB, PIKE_FD_WRITE );
-        io->output_triggered = 1;
-      }
-      else
-        io_call_write( io, io->output, MINIMUM( io_len(io), 100 ) );
-    }
+    if( UNLIKELY(io->output) && UNLIKELY(!io->output_triggered) )
+      io_actually_trigger_output(io);
   }
 
   static int io_range_error( IOBuffer *io, ptrdiff_t howmuch )
@@ -501,12 +507,11 @@ PIKECLASS IOBuffer
     return 1;
   }
 
-  static size_t io_append( IOBuffer *io, const void *p, int bytes )
+  static void io_append( IOBuffer *io, const void *p, int bytes )
   {
     memcpy( io_add_space( io, bytes, 0 ), p, bytes );
     io->len += bytes;
     io_trigger_output( io );
-    return io_len(io);
   }
 
   static size_t io_read( IOBuffer *io, void *to, size_t len  )
@@ -1539,13 +1544,12 @@ PIKECLASS IOBuffer
   {
     ONERROR _e;
     struct string_builder tmp;
-    INT_TYPE sz;
     init_string_builder(&tmp,0);
     SET_ONERROR(_e, free_string_builder, &tmp);
     low_f_sprintf(args, 0, &tmp );
     if( tmp.s->size_shift )
       Pike_error("IOBuffer only handles 8bit data\n");
-    sz = io_append( THIS, tmp.s->str, tmp.s->len );
+    io_append( THIS, tmp.s->str, tmp.s->len );
     pop_n_elems(args);
     CALL_AND_UNSET_ONERROR(_e);
     ref_push_object(Pike_fp->current_object);
