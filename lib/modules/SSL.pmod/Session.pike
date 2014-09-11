@@ -171,14 +171,8 @@ protected int(0..1) is_supported_cert(CertificatePair cp,
       }
       if (!found) return 0;
     }
-  } else {
-    if (!(ke_mask & cp->ke_mask)) return 0;
-
-    // GNU-TLS doesn't like eg SHA being used with SHA256 certs.
-    Crypto.Hash hash = [object(Crypto.Hash)]HASH_lookup[cp->sign_algs[0][0]];
-    if (!hash) return 0;
-    if (hash->digest_size() > h_max) return 0;
-  }
+  } else if (!(ke_mask & cp->ke_mask))
+    return 0;
 
 #if constant(Crypto.ECC.Curve)
   if (cp->key->curve) {
@@ -292,6 +286,23 @@ int select_cipher_suite(array(CertificatePair) certs,
   // Filter any certs that the client doesn't support.
   certs = [array(CertificatePair)]
     filter(certs, is_supported_cert, ke_mask, h_max, version, ecc_curves);
+
+  if( version<PROTOCOL_TLS_1_2 && sizeof(certs)>1 )
+  {
+    // GNU-TLS doesn't like eg SHA being used with SHA256 certs.
+    // FIXME: Can this be made more narrow?
+    array(CertificatePair) c = [array(CertificatePair)]
+      filter(certs, lambda(CertificatePair cp)
+        {
+          Crypto.Hash hash = [object(Crypto.Hash)]
+            HASH_lookup[cp->sign_algs[0][0]];
+          return hash->digest_size() <= h_max;
+        });
+    // Don't clear out the entire list though, as that makes all peers
+    // fail.
+    if( sizeof(c) )
+      certs = c;
+  }
 
   SSL3_DEBUG_MSG("Client supported certificates: %O\n", certs);
 
