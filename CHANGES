@@ -1266,8 +1266,11 @@ o foreach( arr[-two()..], string x), where two() returns 2 will no
   longer iterate over the first element in the array three times or
   crash.
 
+o Postgres.postgres_result now properly decodes binary blobs and
+  strips trailing spaces from CHAR columns.
+
 o Fixed a typo from 2001-05-05 that caused a lot of countries to
-  recide on the continent ',Europa' instead of "Europa" in
+  reside on the continent ',Europa' instead of "Europa" in
   Geography.Countries.
 
   Obviously the continent is not that often checked.

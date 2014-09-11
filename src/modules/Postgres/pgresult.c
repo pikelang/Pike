@@ -115,7 +115,10 @@ extern PIKE_MUTEX_T pike_postgres_mutex;
 
 #include "pg_types.h"
 
-
+#ifndef BYTEAOID
+#define BYTEAOID        17
+#define BPCHAROID       1042
+#endif
 
 #define THIS ((struct postgres_result_object_data *) Pike_fp->current_storage)
 
