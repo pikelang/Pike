@@ -660,7 +660,7 @@ PIKECLASS IOBuffer
     io->len += bytes;
     while(bytes--)
     {
-      x[bytes] = i&255;
+      x[bytes] = i;
       i>>=8;
     }
   }
