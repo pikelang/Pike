@@ -142,6 +142,17 @@ PMOD_EXPORT void visit_function (const struct svalue *s, int ref_type,
 				 void *extra);
 PMOD_EXPORT void gc_mark_object_as_referenced(struct object *o);
 PMOD_EXPORT void real_gc_cycle_check_object(struct object *o, int weak);
+
+enum memobj_type{
+    MEMOBJ_NONE,
+    MEMOBJ_SYSTEM_MEMORY,
+    MEMOBJ_STRING_BUFFER,
+    MEMOBJ_STDIO_IOBUFFER,
+};
+
+PMOD_EXPORT enum memobj_type get_memory_object_memory( struct object *o, void **ptr, size_t *len, int *shift );
+
+
 unsigned gc_touch_all_objects(void);
 void gc_check_all_objects(void);
 void gc_mark_all_objects(void);

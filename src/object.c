@@ -3259,6 +3259,97 @@ void init_object(void)
   exit_compiler();
 }
 
+static struct program *shm_program, *sbuf_program, *iobuf_program;
+
+struct sysmem {
+  unsigned char *p;
+  size_t size;
+};
+
+static struct sysmem *system_memory(struct object *o)
+{
+  if( !shm_program )
+  {
+    push_text("System.Memory");
+    SAFE_APPLY_MASTER("resolv", 1);
+    shm_program = program_from_svalue(Pike_sp - 1);
+    if (!shm_program)
+      return 0;
+    Pike_sp--;
+  }
+  return get_storage( o, shm_program );
+}
+
+static struct string_builder *string_buffer(struct object *o)
+{
+  if( !sbuf_program )
+  {
+    push_text("String.Buffer");
+    SAFE_APPLY_MASTER("resolv", 1);
+    sbuf_program = program_from_svalue(Pike_sp - 1);
+    if (!sbuf_program)
+      return 0;
+    Pike_sp--;
+  }
+  return get_storage( o, sbuf_program );
+}
+
+#include "modules/_Stdio/iobuffer.h"
+
+static IOBuffer *io_buffer(struct object *o)
+{
+  if( !iobuf_program )
+  {
+    push_text("Stdio.IOBuffer");
+    SAFE_APPLY_MASTER("resolv", 1);
+    iobuf_program = program_from_svalue(Pike_sp - 1);
+    if (!iobuf_program)
+      return 0;
+    Pike_sp--;
+  }
+  return get_storage( o, iobuf_program );
+}
+
+PMOD_EXPORT enum memobj_type get_memory_object_memory( struct object *o, void **ptr, size_t *len, int *shift )
+{
+  union {
+    struct string_builder *b;
+    struct sysmem *s;
+    IOBuffer *io;
+  } src;
+
+  if( (src.b = string_buffer(o)) )
+  {
+    if( src.b->s->size_shift )
+    {
+      if( shift )
+        *shift = src.b->s->size_shift;
+      else
+        return MEMOBJ_NONE;
+    }
+    if( len ) *len = src.b->s->len;
+    if( ptr ) *ptr = src.b->s->str;
+    return MEMOBJ_STRING_BUFFER;
+  }
+
+  if( (src.io = io_buffer( o )) )
+  {
+    if( shift ) *shift=0;
+    if( len ) *len = src.io->len-src.io->offset;
+    if( ptr ) *ptr=src.io->buffer+src.io->offset;
+    return MEMOBJ_STDIO_IOBUFFER;
+  }
+
+  if( (src.s = system_memory(o)) )
+  {
+    if( shift ) *shift=0;
+    if( len ) *len = src.s->size;
+    if( ptr ) *ptr= src.s->p;
+    return MEMOBJ_SYSTEM_MEMORY;
+  }
+  return MEMOBJ_NONE;
+}
+
 void exit_object(void)
 {
   if (destruct_object_evaluator_callback) {
@@ -3280,6 +3371,23 @@ void exit_object(void)
   }
 
   destruct_objects_to_destruct();
+
+  if( shm_program )
+  {
+      free_program( shm_program );
+      shm_program = 0;
+  }
+  if( sbuf_program )
+  {
+      free_program( sbuf_program );
+      sbuf_program = 0;
+  }
+
+  if( iobuf_program )
+  {
+      free_program( iobuf_program );
+      iobuf_program = 0;
+  }
 
   if(magic_index_program)
   {
