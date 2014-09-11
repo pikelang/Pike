@@ -965,6 +965,8 @@ PIKECLASS IOBuffer
     ptrdiff_t written = 0, nbytes = (ptrdiff_t)(((size_t)~0)>>1);
     struct my_file *fd;
     ptrdiff_t sz = io_len( io );
+    int write_fun_num;
+    struct inherit *inh;
 
     if( !sz )
     {
@@ -974,8 +976,16 @@ PIKECLASS IOBuffer
     if( _nbytes )
       nbytes = _nbytes->u.integer;
 
-    if( (fd = get_storage( f, file_program )) )
+    if ((write_fun_num = find_identifier("write", f->prog)) == -1) {
+      Pike_error("Cannot call unknown function \"write\".\n");
+    }
+
+    inh = INHERIT_FROM_INT(f->prog, write_fun_num);
+
+    if( inh->prog == file_program )
     {
+      fd = get_inherit_storage( f, inh - f->prog->inherits );
+
       /* lock this object. */
       while( sz > written && nbytes )
       {
