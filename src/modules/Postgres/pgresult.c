@@ -115,7 +115,10 @@ extern PIKE_MUTEX_T pike_postgres_mutex STATIC_MUTEX_INIT;
 
 #include "pg_types.h"
 
-
+#ifndef BYTEAOID
+#define BYTEAOID        17
+#define BPCHAROID       1042
+#endif
 
 #define THIS ((struct postgres_result_object_data *) Pike_fp->current_storage)
 
@@ -372,10 +375,6 @@ badresult:
 	    char *value = PQgetvalue(THIS->result, THIS->cursor, j);
 	    int len = PQgetlength(THIS->result, THIS->cursor, j);
 	    switch(PQftype(THIS->result, j)) {
-	      /* FIXME: This code is questionable, and BPCHAROID
-	       *        and BYTEAOID are usually not available
-	       *        to Postgres frontends.
-	       */
 #if defined(CUT_TRAILING_SPACES) && defined(BPCHAROID)
 	    case BPCHAROID:
 	      for(;len>0 && value[len]==' ';len--);

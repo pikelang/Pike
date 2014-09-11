@@ -284,6 +284,10 @@ Protocols.SNMP: Fixed error in GetRequest variable bindings.
         The variable value should be ASN1 "Null" rather than a bogus integer.
         C.f. RFC 1905 section #3.
 
+Postgres.postgres_result:
+        Now properly decodes binary blobs and strips trailing spaces
+        from CHAR columns.
+
 Sql.rsql: 
 
     - Implemented generic proxy of functions.
