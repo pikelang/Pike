@@ -24,40 +24,11 @@
 #define DEFAULT_CMOD_STORAGE static
 DECLARATIONS
 
+
 struct sysmem {
   unsigned char *p;
   size_t size;
 };
-
-static struct program *shm_program, *sbuf_program;
-static struct sysmem *system_memory(struct object *o)
-{
-  if( !shm_program )
-  {
-    push_text("System.Memory");
-    SAFE_APPLY_MASTER("resolv", 1);
-    shm_program = program_from_svalue(Pike_sp - 1);
-    if (!shm_program)
-      return 0;
-    Pike_sp--;
-  }
-  return get_storage( o, shm_program );
-}
-
-static struct string_builder *string_buffer(struct object *o)
-{
-  if( !sbuf_program )
-  {
-    push_text("String.Buffer");
-    SAFE_APPLY_MASTER("resolv", 1);
-    sbuf_program = program_from_svalue(Pike_sp - 1);
-    if (!sbuf_program)
-      return 0;
-    Pike_sp--;
-  }
-  return get_storage( o, sbuf_program );
-}
-
 
 static struct program *buffer_error_program;
 
@@ -117,11 +88,19 @@ PIKECLASS IOBuffer
     io->locked++;
   }
 
+  static void io_was_locked( )
+    ATTRIBUTE((noclone,noinline));
+
+  static void io_was_locked( )
+  {
+      Pike_error("Can not modify the buffer right now, "
+                 " there are active subbuffers.\n");
+  }
+
   static void io_ensure_unlocked(IOBuffer *io)
   {
     if( io->locked )
-      Pike_error("Can not modify the buffer right now, "
-                 " there are active subbuffers.\n");
+      io_was_locked( );
   }
 
   static INT_TYPE io_consume( IOBuffer *io, int num )
@@ -162,6 +141,9 @@ PIKECLASS IOBuffer
       io->sub = 0;
       io->str = 0;
   }
+
+  static int io_unstash_malloc( IOBuffer *io )
+    ATTRIBUTE((noclone,noinline));
 
   static int io_unstash_malloc( IOBuffer *io )
   {
@@ -221,7 +203,9 @@ PIKECLASS IOBuffer
     }
   }
 
-  static unsigned char *io_add_space( IOBuffer *io, int bytes, int force )
+  static unsigned char *io_add_space_do_something( IOBuffer *io, int bytes, int force )
+    ATTRIBUTE((noclone,noinline));
+  static unsigned char *io_add_space_do_something( IOBuffer *io, int bytes, int force )
   {
     io_ensure_unlocked(io);
     io_ensure_malloced(io, bytes);
@@ -261,9 +245,7 @@ PIKECLASS IOBuffer
 
     if( LIKELY(!io->locked_move) )
     {
-      if( io->len == io->offset )
-        io->offset = io->len = 0;
-      else if( UNLIKELY((force && io->offset) || (io->offset > io->len>>1)) )
+      if( UNLIKELY((force && io->offset) || (io->offset > io->len>>1)) )
       {
         memmove( io->buffer, io_read_pointer(io), io_len(io) );
         io->num_move++;
@@ -287,6 +269,14 @@ PIKECLASS IOBuffer
     return io->buffer+io->len;
   }
 
+  static unsigned char *io_add_space( IOBuffer *io, int bytes, int force )
+  {
+    if( io->len == io->offset )
+      io->offset = io->len = 0;
+    if( !force && io->malloced && !io->locked && io->len+bytes < io->allocated )
+      return io->buffer+io->len;
+    return io_add_space_do_something( io, bytes, force );
+  }
 
   /*! @decl protected bool range_error( int howmuch )
    *!
@@ -511,7 +501,7 @@ PIKECLASS IOBuffer
     return 1;
   }
 
-  static size_t io_append( IOBuffer *io, void *p, int bytes )
+  static size_t io_append( IOBuffer *io, const void *p, int bytes )
   {
     memcpy( io_add_space( io, bytes, 0 ), p, bytes );
     io->len += bytes;
@@ -603,13 +593,9 @@ PIKECLASS IOBuffer
     }
     if( len == SIZEOF_INT_TYPE )
     {
-      res = io_read_byte_uc(io);
-      if( res > 127 )
+      if( *io_read_pointer(io) > 127 )
         Pike_error("Signed (%dbit) overflow.\n", SIZEOF_INT_TYPE*8);
-      len--;
     }
-    else
-      res = 0;
     return io_read_number_uc( io, len );
   }
 
@@ -631,8 +617,7 @@ PIKECLASS IOBuffer
     INT_TYPE len;
 
     push_int(256);
-    apply( o, "digits", 1 )
-;
+    apply( o, "digits", 1 );
 
     p = Pike_sp[-1].u.string->str;
     len = Pike_sp[-1].u.string->len;
@@ -654,7 +639,7 @@ PIKECLASS IOBuffer
     pop_stack();
   }
 
-  static void io_add_int_uc( IOBuffer *io, INT_TYPE i, size_t bytes )
+  static void io_add_int_uc( IOBuffer *io, ptrdiff_t i, size_t bytes )
   {
     unsigned char *x = io->buffer+io->len;
     io->len += bytes;
@@ -665,7 +650,7 @@ PIKECLASS IOBuffer
     }
   }
 
-  static size_t io_add_int( IOBuffer *io, INT_TYPE i, size_t bytes )
+  static size_t io_add_int( IOBuffer *io, ptrdiff_t i, size_t bytes )
   {
     unsigned char *x = io_add_space(io, bytes, 0);
     io_add_int_uc( io, i, bytes );
@@ -708,38 +693,18 @@ PIKECLASS IOBuffer
 
   static size_t io_svalue_len( IOBuffer *UNUSED(io), struct svalue *p )
   {
-    union {
-      struct string_builder *b;
-      struct sysmem *s;
-      IOBuffer *io;
-    } src;
-
     if( TYPEOF(*p) == PIKE_T_STRING )
     {
-      if( p->u.string->size_shift )
-        Pike_error("Only string(0..255) supported\n");
-      return p->u.string->len;
+      if( !p->u.string->size_shift )
+        return p->u.string->len;
     }
-
     if( TYPEOF(*p) == PIKE_T_OBJECT )
     {
-      struct object *x = p->u.object;
-
-      if( (src.io = get_storage(x, IOBuffer_program)) )
-        return io_len(src.io);
-
-      if( (src.b = string_buffer( x )) )
-      {
-        if( src.b->s->size_shift )
-          Pike_error("Only string(0..255) supported\n");
-        else
-          return src.b->s->len;
-      }
-
-      if( (src.s = system_memory( x )) )
-        return src.s->size;
+      size_t len;
+      if( get_memory_object_memory( p->u.object, NULL, &len, NULL ) )
+        return len;
     }
-    Pike_error("Illegal argument (not a string or buffer object)\n");
+    Pike_error("Illegal argument (not an 8bit string or 8bit buffer object)\n");
   }
 
   /* NOTE: Can return negative integers. */
@@ -760,6 +725,9 @@ PIKECLASS IOBuffer
     }
     Pike_error("Non integer argument\n");
   }
+
+  static void io_append_svalue( IOBuffer *io, struct svalue *p )
+    ATTRIBUTE((noinline));
 
   static void io_append_svalue( IOBuffer *io, struct svalue *p )
   {
@@ -801,41 +769,24 @@ PIKECLASS IOBuffer
         break;
       case PIKE_T_OBJECT:
         {
-          struct object *x = p->u.object;
-          union {
-            IOBuffer *io;
-            struct string_builder *b;
-            struct sysmem *s;
-          } src;
+          size_t len;
+          void *ptr;
+          struct sysmem *s;
+          enum memobj_type t = get_memory_object_memory( p->u.object, &ptr, &len, NULL );
 
-          if( (src.io = get_storage(x, IOBuffer_program)) )
+          if( !io->buffer && t==MEMOBJ_SYSTEM_MEMORY )
           {
-            io_append( io, io_read_pointer(src.io), io_len(src.io) );
-            /* io_consume( src.io, io_len(src.io) );*/
+            io->buffer = ptr;
+            io->len = len;
+
+            io->source = p->u.object;
+            io->source->refs++;
+            return;
           }
-          else if( (src.b = string_buffer( x )) )
-          {
-            if( src.b->s->size_shift )
-              Pike_error("Only string(0..255) supported\n");
-            io_append( io, src.b->s->str, src.b->s->len );
-          }
-          else if( (src.s = system_memory( x )) )
-          {
-            if( !io->buffer )
-            {
-              io->source = x;
-              io->buffer = src.s->p;
-              io->len = src.s->size;
-              io->source->refs++;
-            }
-            else
-              io_append( io, src.s->p, src.s->size );
-          }
+          if( t != MEMOBJ_NONE )
+            io_append( io, ptr, len );
           else
-          {
-            default:
-              Pike_error("Unsupported argument type\n");
-          }
+            Pike_error("Unsupported argument type\n");
         }
         break;
       case PIKE_T_INT:
@@ -930,7 +881,6 @@ PIKECLASS IOBuffer
    *!
    *! If f is 0 the state is cleared.
    */
-
   PIKEFUN void __fd_set_output( int(0..0)|object f )
   {
     IOBuffer *io = THIS;
@@ -1086,15 +1036,19 @@ PIKECLASS IOBuffer
    */
   PIKEFUN IOBuffer add_byte( int i )
   {
-    unsigned char a = i&255;
-    io_append( THIS, &a, 1 );
+    IOBuffer *io = THIS;
+    *io_add_space(io,1,0)=i;
+    io->len++;
+    Pike_sp--;
     ref_push_object(Pike_fp->current_object);
   }
 
   PIKEFUN IOBuffer add_int8( int i )
   {
-    unsigned char a = i&255;
-    io_append( THIS, &a, 1 );
+    IOBuffer *io = THIS;
+    *io_add_space(io,1,0)=i;
+    io->len++;
+    Pike_sp--;
     ref_push_object(Pike_fp->current_object);
   }
 
@@ -1105,15 +1059,21 @@ PIKECLASS IOBuffer
    */
   PIKEFUN IOBuffer add_int16( int i )
   {
-    unsigned short a = htons((i&65535));
-    io_append( THIS, &a, 2 );
+    IOBuffer *io = THIS;
+    unsigned char *p = io_add_space(io,2,0);
+    p[0] = i>>8;
+    p[1] = i;
+    io->len += 2;
     ref_push_object(Pike_fp->current_object);
   }
 
   PIKEFUN IOBuffer add_short( int i )
   {
-    unsigned short a = htons((i&65535));
-    io_append( THIS, &a, 2 );
+    IOBuffer *io = THIS;
+    unsigned char *p = io_add_space(io,2,0);
+    p[0] = i>>8;
+    p[1] = i;
+    io->len += 2;
     ref_push_object(Pike_fp->current_object);
   }
 
@@ -1122,8 +1082,13 @@ PIKECLASS IOBuffer
    */
   PIKEFUN int(0..) add_int32( int i )
   {
-    INT32 a = htonl(i);
-    io_append( THIS, &a, 4 );
+    IOBuffer *io = THIS;
+    unsigned char *p = io_add_space(io,4,0);
+    p[0] = i>>24;
+    p[1] = i>>16;
+    p[2] = i>>8;
+    p[3] = i;
+    io->len += 4;
     ref_push_object(Pike_fp->current_object);
   }
 
@@ -1182,19 +1147,20 @@ PIKECLASS IOBuffer
    *! @[width] must be less than Int.NATIVE_MAX.
    *!
    */
-  PIKEFUN IOBuffer add_int( int i, int width )
-  {
-      io_add_int( THIS, i, width );
-      Pike_sp--;
-      ref_push_object(Pike_fp->current_object);
-  }
-
-  PIKEFUN IOBuffer add_int( object o, int width )
+  PIKEFUN IOBuffer add_int( object|int i, int width )
   {
     pop_stack(); /* width */
-    convert_stack_top_to_bignum();
-    io_add_bignum( THIS, Pike_sp[-1].u.object, width );
-    pop_stack(); /* o. */
+    if( TYPEOF(*i) == PIKE_T_INT )
+    {
+      io_add_int( THIS, i->u.integer, width );
+      Pike_sp--;
+    }
+    else
+    {
+      convert_stack_top_to_bignum();
+      io_add_bignum( THIS, i->u.object, width );
+      pop_stack(); /* o. */
+    }
     ref_push_object(Pike_fp->current_object);
   }
 
@@ -2026,35 +1992,30 @@ PIKECLASS IOBuffer
    *!
    *! You can use @[read_only()] to avoid accidents.
    */
-  PIKEFUN void create( string|object x )
-    flags ID_PROTECTED;
-  {
-    io_append_svalue( THIS, Pike_sp-1 );
-  }
-
-  PIKEFUN void create( int len )
+  PIKEFUN void create( int|void|string|object|array x )
     flags ID_PROTECTED;
   {
     IOBuffer *this = THIS;
     if( this->buffer )
       Pike_error("Can not initialize twice.\n");
-    if( len <= 0 )
+    if( args == 0 )
+    {
+      this->buffer = xalloc(256-32);
+      this->allocated = 256-32;
+      this->malloced = 1;
+    }
+    else if( TYPEOF(*x) == PIKE_T_INT )
+    {
+      INT_TYPE len = x->u.integer;
+      if(  len <= 0 )
         this->buffer = xalloc(1);
-    else
+      else
         this->buffer = xalloc(len);
-    this->allocated = MAX(len,1);
-    this->malloced = 1;
-  }
-
-  PIKEFUN void create( )
-    flags ID_PROTECTED;
-  {
-    IOBuffer *this = THIS;
-    if( this->buffer )
-      Pike_error("Can not initialize twice.\n");
-    this->buffer = xalloc(256-32);
-    this->allocated = 256-32;
-    this->malloced = 1;
+      this->allocated = MAX(len,1);
+      this->malloced = 1;
+    }
+    else
+      io_append_svalue( THIS, x );
   }
 
 /*! @endclass
@@ -2091,8 +2052,6 @@ void init_stdio_buffer(void)
 
 void exit_stdio_buffer(void)
 {
-  if( shm_program )  free_program( shm_program );
-  if( sbuf_program ) free_program( sbuf_program );
   free_program( buffer_error_program );
   EXIT
 }
