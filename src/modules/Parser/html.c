@@ -2055,7 +2055,7 @@ retryloop:
       for (i=0; i < NARGQ (this); i++)
 	 if (ch == ARGQ_START (this)[i]) break;
       if (i == NARGQ (this))
-      {  
+      {
 	 if (ch == TAG_FIN (this)) {
 	    FORWARD_CHAR (*destp, *d_p, feed, c);
 	    if (((this->flags & FLAG_MATCH_TAG) && q) ||
@@ -2095,7 +2095,7 @@ in_quote_cont:
 	  else
 	  {
 	    DEBUG_MARK_SPOT("scan_forward_arg: forced end (quote)",destp[0],*d_p);
-	    break;
+	    goto end;
 	  }
 	}
 
@@ -2108,11 +2108,13 @@ in_quote_cont:
 	  }
 	  else {
 	    if (what == SCAN_ARG_PUSH) push_feed_range(*destp,*d_p,*destp,*d_p+1),n++;
-	    continue;
+            continue;
 	  }
 	}
-
-	goto next;
+        FORWARD_CHAR (*destp, *d_p, *destp, *d_p);
+        DEBUG_MARK_SPOT("scan_forward_arg: End of quoted string",
+                        destp[0],*d_p);
+	goto end;
       }
 
 next:
@@ -2124,7 +2126,7 @@ next:
       feed=*destp;
       c=d_p[0]+1;
    }
-
+end:
    if (what == SCAN_ARG_PUSH)
    {
       if (n>1) f_add(n);
