@@ -612,30 +612,30 @@ PIKECLASS IOBuffer
   }
 
   static void io_add_bignum( IOBuffer *io, struct object *o, int width )
+    ATTRIBUTE((noclone,noinline));
+
+  static void io_add_bignum( IOBuffer *io, struct object *o, int width )
   {
-    char *p;
-    INT_TYPE len;
+    unsigned char*d;
+    struct pike_string *s;
 
     push_int(256);
     apply( o, "digits", 1 );
 
-    p = Pike_sp[-1].u.string->str;
-    len = Pike_sp[-1].u.string->len;
+    s = Pike_sp[-1].u.string;
 
-    if( len > width )
+    if( s->len > width )
       Pike_error("Number too large to store in %d bits\n", width*8);
 
-    if( len < width )
+    d = io_add_space( io, width, 0 );
+    io->len += width;
+
+    if( width-s->len )
     {
-      INT_TYPE null = 0;
-      while( len < width )
-      {
-        int a = MIN(width-len, (int)sizeof(INT_TYPE));
-        io_append( io, &null, a );
-        width-=a;
-      }
+      memset( d, 0, width-s->len );
+      d += width-s->len;
     }
-    io_append( io, p, width );
+    memcpy(d,s->str,s->len);
     pop_stack();
   }
 
@@ -1485,7 +1485,7 @@ PIKECLASS IOBuffer
     io_rewind_on_error( io, &e );
 
     if( copy )  do_copy = copy->u.integer;
-    pop_n_elems(args);
+    Pike_sp-=args;
 
     len = io_read_number( io, bytes );
     if( len >= 0 && io_avail( io, len ) )
@@ -1496,10 +1496,6 @@ PIKECLASS IOBuffer
     }
     CALL_AND_UNSET_ONERROR(e);
     push_int(0);
-    return;
-    /*
-      io_read_buffer will not throw here, since io_avail is true.
-    */
   }
 
   /*! @decl IOBuffer read_buffer( int n )
@@ -1523,7 +1519,7 @@ PIKECLASS IOBuffer
     struct object *o;
     if( copy )
       do_copy = copy->u.integer;
-    pop_n_elems(args);
+    Pike_sp-=args;
     if( (o = io_read_buffer( THIS, bytes, do_copy )) )
       push_object(o);
     else
