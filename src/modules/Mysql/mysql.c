@@ -1673,12 +1673,28 @@ static void f_list_tables(INT32 args)
  *! @multiset
  *!   @index "primary_key"
  *!     This field is part of the primary key for this table.
+ *!   @index "unique"
+ *!     This field is part of a unique key for this table.
+ *!   @index "multiple_key"
+ *!     This field is part of a nonunique key for this table.
  *!   @index "not_null"
- *!     This field may not be NULL.
+ *!     This field cannot be NULL.
  *!   @index "blob"
- *!     This field is a blob field.
+ *!     This field is a BLOB or TEXT.
  *!   @index "auto_increment"
- *!     This field has the auto_increment flag.
+ *!     This field has the AUTO_INCREMENT attribute.
+ *!   @index "zerofill"
+ *!     This Field has the ZEROFILL attribute.
+ *!   @index "binary"
+ *!     This Field has the BINARY attribute.
+ *!   @index "enum"
+ *!     This Field is an ENUM.
+ *!   @index "set"
+ *!     This Field is a SET.
+ *!   @index "unsigned"
+ *!     This Field has the UNSIGNED attribute.
+ *!   @index "numeric"
+ *!     This Field is numeric.
  *! @endmultiset
  *!
  *! @note

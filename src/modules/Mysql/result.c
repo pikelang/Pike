@@ -248,9 +248,12 @@ void mysqlmod_parse_field(MYSQL_FIELD *field, int support_default)
       nbits++;
       push_text("primary_key");
     }
-    if (field->flags & UNIQUE_KEY_FLAG)
-    {
+    if (field->flags & UNIQUE_KEY_FLAG) {
       push_text("unique");
+      nbits++;
+    }
+    if (field->flags & MULTIPLE_KEY_FLAG) {
+      push_text("multiple_key");
       nbits++;
     }
     if (IS_NOT_NULL(field->flags)) {
@@ -272,6 +275,22 @@ void mysqlmod_parse_field(MYSQL_FIELD *field, int support_default)
     if (field->flags & AUTO_INCREMENT_FLAG) {
       nbits++;
       push_text("auto_increment");
+    }
+    if (field->flags & ENUM_FLAG) {
+      nbits++;
+      push_text("enum");
+    }
+    if (field->flags & SET_FLAG) {
+      nbits++;
+      push_text("set");
+    }
+    if (field->flags & UNSIGNED_FLAG) {
+      nbits++;
+      push_text("unsigned");
+    }
+    if (field->flags & NUM_FLAG) {
+      nbits++;
+      push_text("numeric");
     }
     f_aggregate_multiset(nbits);
 
