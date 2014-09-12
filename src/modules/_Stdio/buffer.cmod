@@ -59,12 +59,12 @@ static struct program *buffer_error_program;
  */
 PIKECLASS IOBuffer
 {
-  CVAR IOBuffer b;
-
 #if PRECOMPILE_API_VERSION > 5
   PIKEVAR int b.num_malloc;
   PIKEVAR int b.num_move;
 #endif
+
+  CVAR IOBuffer b;
 
   static void io_set_error_mode( IOBuffer *io, struct program *m )
   {
