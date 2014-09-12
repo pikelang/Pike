@@ -941,7 +941,8 @@ PIKECLASS IOBuffer
     {
       fd = get_inherit_storage( f, inh - f->prog->inherits );
 
-      /* lock this object. */
+      /* FIXME: lock this object and the fd. */
+      THREADS_ALLOW();
       while( sz > written && nbytes )
       {
         ptrdiff_t rd = MINIMUM(MINIMUM(sz-written,4096),nbytes);
@@ -959,6 +960,8 @@ PIKECLASS IOBuffer
         written += res;
         nbytes-=res;
       }
+      THREADS_DISALLOW();
+
       io_set_events( io, fd, PIKE_BIT_FD_WRITE_OOB, PIKE_FD_WRITE);
     }
     else
