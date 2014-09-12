@@ -2326,11 +2326,18 @@ static struct %s *%s_gdb_dummy_ptr;
 	    min_args--;
 
 	  foreach(args, Argument arg)
-          if( arg->name() != "UNUSED" )
+	    if( arg->name() != "UNUSED" ) {
               ret+=({
                   PC.Token(sprintf("%s %s;\n",arg->c_type(), arg->name()),
                            arg->line()),
               });
+	      if (arg->c_type() == "struct object *") {
+		ret += ({
+                  PC.Token(sprintf("int %s_inh_num;\n", arg->name()),
+                           arg->line()),
+		});
+	      }
+	    }
 
 
 	  int argnum;
@@ -2586,6 +2593,13 @@ static struct %s *%s_gdb_dummy_ptr;
 				       argnum,argbase,
 				       arg->basetype()),arg->line())
 		    });
+		    if (arg->c_type() == "struct object *") {
+		      ret += ({
+			PC.Token(sprintf("%s_inh_num = SUBTYPEOF(Pike_sp[%d%s]);\n",
+					 arg->name(),
+					 argnum,argbase),arg->line())
+		      });
+		    }
 		  }
 
 		case "program":
