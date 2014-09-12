@@ -358,6 +358,49 @@ program_flags PROGRAM_CLEAR_STORAGE;
 /*! @endclass
  */
 
+/*! @decl int(0..) rsa_unpad(string(0..255) data, int type)
+ *!
+ *! Unpads a message that has been padded according to
+ *! RSAES-PKCS1-V1_5-ENCODE(message) in PKCS#1 v2.2. The padding
+ *! method used on the original message must be provided in the
+ *! @[type] parameter. All content dependent processing is done in
+ *! constant time for the same padding type and @[data] length.
+ */
+PIKEFUN int rsa_unpad(string(0..255) data, int type)
+{
+  int i, pad=0, nonpad=0, pos=0;
+  unsigned char *str;
+
+  NO_WIDE_STRING(data);
+
+  /* Indata is smaller than minimum size, so we can exit immediately
+     without timing issue. 1 type + 8 padding + 1 delimiter + 1 value
+     = 11 bytes. */
+  if(data->len < 11 ) RETURN 0;
+  str = (unsigned char*)data->str + data->len - 1;
+
+  for(i=data->len-1; i>0; i--,str--)
+  {
+    switch(*str)
+    {
+    case 0:     pos=i; break;
+    case 0xff:  pad=i; break;
+    default: nonpad=i; break;
+    }
+  }
+
+  if( type==2 )
+  {
+    nonpad=pos+1;
+    pad=1;
+  }
+
+  if( (pad==1) + (nonpad>pos) + (*str==type) + (pos>8) == 4 )
+    RETURN pos+1;
+  RETURN 0;
+}
+
+
 /*! @decl string(0..127) crypt_md5(string(0..255) password, @
  *!                                string(0..255) salt,@
  *!                                void|string(0..255) magic)
