@@ -5,12 +5,11 @@
  * any precompiled pgsql.o or pgsql_utils.o
  */
 
-//#define DEBUG  1
-//#define DEBUGMORE  1
+//#define PG_DEBUG  1
+//#define PG_DEBUGMORE  1
 
-//#define NO_LOCKING 1		    // This breaks the driver, do not enable,
-				    // only for benchmarking mutex performance
-#define USEPGsql     1		    // Doesn't use Stdio.FILE, but _PGsql
+//#define USEPGsql	1	    // Doesn't use Stdio.FILE, but _PGsql
+//#define PG_STATS	1	    // Collect extra usage statistics
 
 #define FETCHLIMIT	     1024   // Initial upper limit on the
 				    // number of rows to fetch across the
@@ -31,6 +30,7 @@
 #define PGSQL_DEFAULT_PORT   5432
 #define PGSQL_DEFAULT_HOST   "localhost"
 #define PREPSTMTPREFIX	     "pike_prep_"
+#define PTSTMTPREFIX	     "pike_tprep_"
 #define PORTALPREFIX	     "pike_portal_"
 #define RECONNECTDELAY	     1	    // Initial delay for reconnects
 #define RECONNECTBACKOFF     4	    // Secondary delay for reconnect
@@ -41,22 +41,22 @@
 #define MARKSTART	     "{""{\n"	      // split string to avoid
 #define MARKERROR	     ">"">"">"">"     // foldeditors from recognising
 #define MARKEND		     "\n}""}"	      // it as a fold
+#define MAGICTERMINATE       42
+#define PG_PROTOCOL(m,n)     (((m)<<16)|(n))
+#define PGFLUSH		     "H\0\0\0\4"
+#define PGSYNC		     "S\0\0\0\4"
 
 #ifdef PG_DEBUG
-#define PD(X ...)     werror(X)
-#define UNBUFFEREDIO  1		    // Make all IO unbuffered
+#define PD(X ...)            werror(X)
 #else
-#undef DEBUGMORE
+#undef PG_DEBUGMORE
 #define PD(X ...)
 #endif
 
-#ifdef USEPGsql
-#define UNBUFFEREDIO 1
-#endif
+protected enum portalstate {
+  portalinit=0,bound,copyinprogress,closed
+};
 
-protected enum state
-{ unauthenticated,authenticated,readyforquery,
-  parsecomplete,bindcomplete,commandcomplete,gotrowdescription,
-  gotparameterdescription,dataready,dataprocessed,portalsuspended,
-  copyinresponse
+protected enum sctype {
+  keep=0,flushsend,sendout
 };
