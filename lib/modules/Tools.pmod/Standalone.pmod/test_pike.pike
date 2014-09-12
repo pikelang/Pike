@@ -105,6 +105,13 @@ array(string|array(string)) read_tests( string fn ) {
 
 mapping(string:int) pushed_warnings = ([]);
 
+class adjust_line( int amount )
+{
+  void compile_error(string file, int line, string text) {
+    log_msg("%s:%d: %s\n", file,line+amount-1,text);
+  }
+}
+
 class WarningFlag {
   int(0..1) warning;
   array(string) warnings = ({});
@@ -759,7 +766,7 @@ int main(int argc, array(string) argv)
 	}
 
 	string test = tests[e];
-
+#define COMPILE(X) compile_string((X),testsuite,adjust_line(testline))
 	// Is there a condition for this test?
 	string condition;
 	if( sscanf(test, "COND %s\n%s", condition, test)==2 )
@@ -768,8 +775,7 @@ int main(int argc, array(string) argv)
 	  if(!(tmp=cond_cache[condition]))
 	  {
 	    mixed err = catch {
-	      tmp=!!(compile_string("mixed c() { return "+condition+"; }",
-				    "Cond "+(e+1))()->c());
+               tmp=!!(COMPILE("mixed c() { return "+condition+"; }")()->c());
 	    };
 
 	    if(err) {
@@ -964,7 +970,7 @@ int main(int argc, array(string) argv)
 	  wf = WarningFlag();
 	  master()->set_inhibit_compile_errors(wf);
 	  _dmalloc_set_name(fname,0);
-	  if(mixed err = catch(compile_string(to_compile, testsuite)))
+	  if(mixed err = catch(COMPILE(to_compile)))
 	  {
 	    _dmalloc_set_name();
 	    master()->set_inhibit_compile_errors(0);
@@ -994,7 +1000,7 @@ int main(int argc, array(string) argv)
 	case "COMPILE_ERROR":
 	  master()->set_inhibit_compile_errors(1);
 	  _dmalloc_set_name(fname,0);
-	  if(mixed err = catch(compile_string(to_compile, testsuite)))
+	  if(mixed err = catch(COMPILE(to_compile)))
 	  {
 	    if (objectp (err) && err->is_cpp_or_compilation_error) {
 	      _dmalloc_set_name();
@@ -1022,7 +1028,7 @@ int main(int argc, array(string) argv)
 	  wf = WarningFlag();
 	  master()->set_inhibit_compile_errors(wf);
 	  _dmalloc_set_name(fname,0);
-	  if(mixed err = catch(compile_string(to_compile, testsuite)))
+	  if(mixed err = catch(COMPILE(to_compile)))
 	  {
 	    _dmalloc_set_name();
 	    if (objectp (err) && err->is_cpp_or_compilation_error)
@@ -1056,7 +1062,7 @@ int main(int argc, array(string) argv)
 	      // Yes, apparently it is. There are tests that don't
 	      // care whether the error is caught during compilation
 	      // or evaluation. /mast
-	      a = compile_string(to_compile, testsuite)()->a();
+	      a = COMPILE(to_compile)()->a();
 	    };
 	  };
 	  if(err)
@@ -1082,7 +1088,7 @@ int main(int argc, array(string) argv)
 	    wf = WarningFlag();
 	    master()->set_inhibit_compile_errors(wf);
 	    _dmalloc_set_name(fname,0);
-	    o=compile_string(to_compile,testsuite)();
+	    o=COMPILE(to_compile)();
 	    _dmalloc_set_name();
 
 	    if(check > 1) _verify_internals();
