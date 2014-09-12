@@ -606,7 +606,7 @@ test_any( [[
   if( i->_size_object() == 0 )  return -5;
 
   i->add("zero copy");
-  if( i->_size_object() != 0 )  return -6;
+  if( !has_value(sprintf("%O",i), "string") )  return -6;
 
   i->add(" indeed"); /* note: shorter than first string. */
   if( i->_size_object() == 0 )  return -7;
