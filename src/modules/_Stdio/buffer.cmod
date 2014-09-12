@@ -604,7 +604,6 @@ PIKECLASS IOBuffer
 
   static struct object *io_read_bignum( IOBuffer *io, size_t len )
   {
-    int i;
     struct pike_string *num;
     LONGEST res;
     num = io_read_string( io, len );
