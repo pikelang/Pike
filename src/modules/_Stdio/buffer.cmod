@@ -312,12 +312,10 @@ PIKECLASS IOBuffer
    *! doing so could result in an infinite loop (since no data is
    *! added, the range_error will be called again immediately).
    */
-  PIKEFUN int(0..1) range_error( int howmuch )
+  PIKEFUN int(0..1) range_error( int range )
       flags ID_PROTECTED;
   {
-    /* Default: throw error if so desired, otherwise return 0. */
-    pop_n_elems(args);
-    push_int(0);
+    Pike_sp[-1].u.integer = 0;
   }
 
   static void io_range_error_throw( IOBuffer *io, int howmuch )
@@ -989,7 +987,7 @@ PIKECLASS IOBuffer
 
   PIKEFUN int(0..) _size_object( )
   {
-      RETURN THIS->malloced ? THIS->allocated : 0;
+      RETURN THIS->malloced ? THIS->allocated : THIS->stash.len;
   }
 
   /*! @decl IOBuffer add( AddArgument ... data )
@@ -1257,14 +1255,13 @@ PIKECLASS IOBuffer
     flags ID_PROTECTED;
   {
     IOBuffer *io = THIS;
-    pop_stack();
     if( off < 0 )
       off = io_len(io)-off;
 
     if( io_avail( io, off ) )
-      push_int( io_read_pointer(io)[off] );
+      Pike_sp[-1].u.integer = io_read_pointer(io)[off];
     else
-      push_int(-1);
+      Pike_sp[-1].u.integer = -1;
   }
 
   /*! @decl protected int `[]=(int off, int char)
@@ -1275,18 +1272,21 @@ PIKECLASS IOBuffer
     flags ID_PROTECTED;
   {
     IOBuffer *io = THIS;
+
     io_ensure_malloced( io, 0 );
 
     if( off < 0 )  off = io_len(io)-off;
-
+  again:
     if( io_avail( io, off ) )
     {
       io_read_pointer(io)[off]=(val&0xff);
     }
     else
     {
-      /* hm, well. We could extend the buffer? */
-      push_int(-1);
+      /* hm, well. We could extend the buffer. Should we? */
+      if( io_range_error(io, off ) )
+        goto again;
+      Pike_error("Writing outside buffer\n");
     }
   }
 
@@ -1374,13 +1374,12 @@ PIKECLASS IOBuffer
    */
   PIKEFUN IOBuffer set_error_mode( int|program m )
   {
-      if( TYPEOF(*m) == PIKE_T_INT )
-          io_set_error_mode( THIS, m->u.integer ? buffer_error_program : 0 );
-      else
-      {
-          io_set_error_mode( THIS, program_from_svalue(m));
-      }
-      pop_stack();
+    if( TYPEOF(*m) == PIKE_T_INT )
+      io_set_error_mode( THIS, m->u.integer ? buffer_error_program : 0 );
+    else
+      io_set_error_mode( THIS, program_from_svalue(m));
+
+    pop_stack();
     ref_push_object(Pike_fp->current_object);
   }
 
@@ -1396,31 +1395,46 @@ PIKECLASS IOBuffer
     push_object( io_read_buffer( THIS, 0, 0 ) );
   }
 
-  PIKEFUN string(0..255) _sprintf(int o, mapping ignore)
+  PIKEFUN string(0..255) _sprintf(int o, mapping UNUSED)
     flags ID_PROTECTED;
   {
-    pop_n_elems(args);
-    if( o == 'O' )
+    pop_n_elems(args-1);
+    Pike_sp--;
+    switch( o )
     {
-      push_text("%O(%d bytes, read=[..%d] data=[%d..%d] free=[%d..%d] %s%s)");
-      ref_push_program(Pike_fp->current_object->prog);
-      /* io_len [..offset] [offset..len] [..allocated] */
-      push_int(io_len(THIS));
-      push_int(THIS->offset-1);
-      push_int(THIS->offset);
+      case 'O':
+        {
+          push_text("%O(%d bytes, read=[..%d] data=[%d..%d] free=[%d..%d] %s%s)");
+          ref_push_program(Pike_fp->current_object->prog);
+          /* io_len [..offset] [offset..len] [..allocated] */
+          push_int(io_len(THIS));
+          push_int(THIS->offset-1);
+          push_int(THIS->offset);
 
-      push_int(THIS->len-1);
-      push_int(THIS->len);
-      push_int(THIS->allocated);
-      push_text( (THIS->str ? "string" : THIS->malloced ? "allocated" : "subbuffer" ) );
-      if( THIS->locked )
-        push_text(" (read only)");
-      else
-        push_text("");
-      f_sprintf(10);
+          push_int(THIS->len-1);
+          push_int(THIS->len);
+          push_int(THIS->allocated);
+          push_text( (THIS->str ? "string" : THIS->malloced ? "allocated" : "subbuffer" ) );
+          if( THIS->locked )
+            push_text(" (read only)");
+          else
+            push_text("");
+          f_sprintf(10);
+        }
+        break;
+
+      case 's':
+        push_string( io_read_string( THIS, io_len(THIS)) );
+        break;
+
+      case 'q':
+        push_text("%q");
+        push_string( io_read_string( THIS, io_len(THIS)) );
+        f_sprintf(2);
+        break;
+      default:
+        push_undefined();
     }
-    else
-      push_undefined();
   }
 
   /*! @decl string(8bit) read_hstring( int(0..) n )
@@ -1448,7 +1462,7 @@ PIKECLASS IOBuffer
     if (len < 0) {
       /* io_avail() in io_read_number() failed. */
       CALL_AND_UNSET_ONERROR(e);
-      push_int(0);
+      Pike_sp[-1].u.integer = 0;
       return;
     }
 
@@ -1457,10 +1471,11 @@ PIKECLASS IOBuffer
 
     if( s ) {
       io_unset_rewind_on_error( io, &e );
+      Pike_sp--;
       push_string(s);
     } else {
       CALL_AND_UNSET_ONERROR(e);
-      push_int(0);
+      Pike_sp[-1].u.integer = 0;
     }
   }
 
@@ -1621,6 +1636,7 @@ PIKECLASS IOBuffer
     if( require_whitespace )
       whites = require_whitespace->u.integer;
 
+    Pike_sp-=args;
     if( !parse_json_pcharp )
       parse_json_pcharp = PIKE_MODULE_IMPORT(Standards.JSON, parse_json_pcharp );
   retry:
@@ -1683,7 +1699,7 @@ PIKECLASS IOBuffer
    *! @example
    *! @code
    *!  // get the next whitespace separated word from the buffer.
-   *!  buffer->match("%*[ \t\r\n]%*[^ \t\r\n]");
+   *!  buffer->match("%*[ \t\r\n]%[^ \t\r\n]");
    *! @endcode
    */
   PIKEFUN string(0..255)|int|float|array match( string format )
@@ -1708,7 +1724,7 @@ PIKECLASS IOBuffer
     else
     {
       io_consume( THIS, num_used );
-      if( Pike_sp-start > 1 ) 
+      if( Pike_sp-start > 1 )
         f_add(Pike_sp-start);
     }
   }
@@ -1754,6 +1770,7 @@ PIKECLASS IOBuffer
    */
   PIKEFUN int(-1..) consume( int n )
   {
+    Pike_sp--;
     if( !io_avail( THIS, n ) )
       push_int(-1);
     else
@@ -1779,6 +1796,7 @@ PIKECLASS IOBuffer
    */
   PIKEFUN int(-1..) unread( int bytes )
   {
+    Pike_sp--;
     push_int64( io_rewind( THIS, bytes ) );
   }
 
@@ -1791,10 +1809,12 @@ PIKECLASS IOBuffer
   PIKEFUN string(0..255) read( int bytes )
   {
     struct pike_string *s;
+    Pike_sp--;
     s = io_read_string(THIS, bytes );
     if( s )
-        RETURN s;
-    push_undefined();
+      push_string( s );
+    else
+      push_undefined();
   }
 
   /*! @decl string(8bit) read( )
@@ -1810,8 +1830,9 @@ PIKECLASS IOBuffer
   {
     struct pike_string * s = io_read_string(THIS, io_len(THIS));
     if( s )
-        RETURN s;
-    push_undefined();
+      push_string( s );
+    else
+      push_undefined();
   }
 
   /*! @decl int(8bit) read_int8()
@@ -1875,7 +1896,7 @@ PIKECLASS IOBuffer
     IOBuffer *io = THIS;
     struct object *o;
 
-    pop_stack();
+    Pike_sp--;
 
     if( len < SIZEOF_INT_TYPE-1 ) /* will for sure fit. */
     {
@@ -1907,7 +1928,7 @@ PIKECLASS IOBuffer
     struct object *o;
     struct array *a;
 
-    pop_n_elems(2);
+    Pike_sp-=2;
 
     if( !io_avail_mul( io, num, len ) )
     {
