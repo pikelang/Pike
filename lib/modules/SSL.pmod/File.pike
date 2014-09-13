@@ -80,7 +80,7 @@ protected .Connection conn;
 // Always set when stream is. Destructed with destroy() at shutdown
 // since it contains cyclic references. Noone else gets to it, though.
 
-protected array(string) write_buffer; // Encrypted data to be written.
+protected Stdio.IOBuffer write_buffer;	// Encrypted data to be written.
 protected String.Buffer read_buffer; // Decrypted data that has been read.
 
 protected int read_buffer_threshold;	// Max number of bytes to read.
@@ -350,7 +350,7 @@ protected void create (Stdio.File stream, SSL.Context ctx)
     else
       stream_descr = replace (sprintf ("%O", stream), "%", "%%");
 #endif
-    write_buffer = ({});
+    write_buffer = Stdio.IOBuffer();
     read_buffer = String.Buffer();
     read_buffer_threshold = Stdio.DATA_CHUNK_SIZE;
     real_backend = stream->query_backend();
@@ -692,7 +692,7 @@ Stdio.File shutdown()
     .Constants.ConnectionState conn_state = conn->state;
     destruct (conn);		// Necessary to avoid garbage.
 
-    write_buffer = ({});
+    write_buffer->clear();
 
     if (user_cb_co) {
       real_backend->remove_call_out(user_cb_co);
@@ -1714,8 +1714,7 @@ protected int queue_write()
   if (!conn) return -1;
 
   // Estimate how much data there is in the write_buffer.
-  int got = sizeof(write_buffer) &&
-    (sizeof(write_buffer[-1]) * sizeof(write_buffer));
+  int got = sizeof(write_buffer);
 
   int buffer_limit = 16384;
   if (conn->state & CONNECTION_closing) buffer_limit = 1;
@@ -1735,17 +1734,17 @@ protected int queue_write()
     }
 
     if (res == "") {
-      SSL3_DEBUG_MSG ("queue_write: Got nothing to write (%d strings buffered)\n",
+      SSL3_DEBUG_MSG ("queue_write: Got nothing to write (%d bytes buffered)\n",
 		      sizeof (write_buffer));
       res = 0;
       break;
     }
 
     int was_empty = !sizeof (write_buffer);
-    write_buffer += ({ res });
+    write_buffer->add(res);
     got += sizeof(res);
 
-    SSL3_DEBUG_MSG ("queue_write: Got %d bytes to write (%d strings buffered)\n",
+    SSL3_DEBUG_MSG ("queue_write: Got %d bytes to write (%d bytes buffered)\n",
 		    sizeof (res), sizeof (write_buffer));
     res = 0;
   }
@@ -1761,7 +1760,7 @@ protected int queue_write()
     stream->set_write_callback(ssl_write_callback);
   }
 
-  SSL3_DEBUG_MSG ("queue_write: Returning %O (%d strings buffered)\n",
+  SSL3_DEBUG_MSG ("queue_write: Returning %O (%d bytes buffered)\n",
 		  res, sizeof(write_buffer));
 
   return res;
@@ -1925,7 +1924,7 @@ protected int ssl_write_callback (int ignored)
 	  written = -1;
 	else
 #endif
-	  written = stream->write (write_buffer);
+	  written = write_buffer->output_to(stream);
 
 	if (written < 0 ) {
 #ifdef SIMULATE_CLOSE_PACKET_WRITE_FAILURE
@@ -1946,7 +1945,7 @@ protected int ssl_write_callback (int ignored)
 	      epipe_errnos[write_errno]) {
 	    // See if it's an error from writing a close packet that
 	    // should be ignored.
-	    write_buffer = ({}); // No use trying to write the close again.
+	    write_buffer->clear(); // No use trying to write the close again.
 	    close_errno = write_errno;
 
 	    if (close_state == CLEAN_CLOSE) {
@@ -1978,18 +1977,7 @@ protected int ssl_write_callback (int ignored)
 	  break write_to_stream;
 	}
 
-	for (int bytes = written; bytes > 0;) {
-	  if (bytes >= sizeof(write_buffer[0])) {
-	    bytes -= sizeof(write_buffer[0]);
-	    write_buffer = write_buffer[1..];
-	  } else {
-	    write_buffer[0] = write_buffer[0][bytes..];
-	    bytes = 0;
-	    break;
-	  }
-	}
-
-	SSL3_DEBUG_MSG ("ssl_write_callback: Wrote %d bytes (%d strings left)\n",
+	SSL3_DEBUG_MSG ("ssl_write_callback: Wrote %d bytes (%d bytes left)\n",
 			written, sizeof (write_buffer));
 	if (sizeof (write_buffer)) {
 	  RESTORE;
