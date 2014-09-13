@@ -93,8 +93,6 @@ protected array(int) read_identifier(Stdio.IOBuffer data)
                          mapping(int:program(.Types.Object)) types)
 {
   [int cls, int const, int tag] = read_identifier(data);
-  DBG("class %O, construced %d, tag %d\n",
-      ({"universal","application","context","private"})[cls], const, tag);
 
   int len = data->read_int8();
   if( !cls && !const && !tag && !len )
@@ -107,8 +105,8 @@ protected array(int) read_identifier(Stdio.IOBuffer data)
       error("Indefinite length form not supported.\n");
     len = data->read_int(len & 0x7f);
   }
-  DBG("len : %d\n", len);
-
+  DBG("class %O, construced=%d, tag=%d, length=%d\n",
+      ({"universal","application","context","private"})[cls], const, tag, len);
 
   data = [object(Stdio.IOBuffer)]data->read_buffer(len);
 
@@ -116,7 +114,7 @@ protected array(int) read_identifier(Stdio.IOBuffer data)
 
   if (const)
   {
-    DBG("Decoding constructed\n");
+    DBG("Decoding constructed %O\n", p);
 
     if (!p)
     {
