@@ -1124,8 +1124,6 @@ class MetaExplicit
     this_program decode_constructed_element(int i, Object e) {
       if (i)
 	error("Unexpected index!\n");
-      if (contents)
-        error("length != 1!\n");
       contents = e;
       return this;
     }
