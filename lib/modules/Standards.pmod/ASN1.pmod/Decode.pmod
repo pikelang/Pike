@@ -47,20 +47,20 @@ class Constructed (int cls, int tag, string(8bit) raw, array(.Types.Object) elem
   string(8bit) get_der_content() { return raw; }
 }
 
-protected int read_varint(ADT.struct data)
+protected int read_varint(Stdio.IOBuffer data)
 {
   int ret, byte;
   do {
     ret <<= 7;
-    byte = data->get_uint(1);
+    byte = data->read_int8();
     ret |= (byte & 0x7f);
   } while (byte & 0x80);
   return ret;
 }
 
-protected array(int) read_identifier(ADT.struct data)
+protected array(int) read_identifier(Stdio.IOBuffer data)
 {
-  int byte = data->get_uint(1);
+  int byte = data->read_int8();
 
   int cls = byte >> 6;
   int const = (byte >> 5) & 1;
@@ -73,7 +73,7 @@ protected array(int) read_identifier(ADT.struct data)
 }
 
 //! @param data
-//!   An instance of ADT.struct containing the DER encoded data.
+//!   An instance of Stdio.IOBuffer containing the DER encoded data.
 //!
 //! @param types
 //!   A mapping from combined tag numbers to classes from or derived
@@ -89,14 +89,14 @@ protected array(int) read_identifier(ADT.struct data)
 //! @fixme
 //!   Handling of implicit and explicit ASN.1 tagging, as well as
 //!   other context dependence, is next to non_existant.
-.Types.Object der_decode(ADT.struct data,
+.Types.Object der_decode(Stdio.IOBuffer data,
                          mapping(int:program(.Types.Object)) types)
 {
   [int cls, int const, int tag] = read_identifier(data);
   DBG("class %O, construced %d, tag %d\n",
       ({"universal","application","context","private"})[cls], const, tag);
 
-  int len = data->get_uint(1);
+  int len = data->read_int8();
   if( !cls && !const && !tag && !len )
     error("End-of-contents not supported.\n");
   if (len & 0x80)
@@ -105,27 +105,25 @@ protected array(int) read_identifier(ADT.struct data)
       error("Illegal size.\n");
     if (len == 0x80)
       error("Indefinite length form not supported.\n");
-    len = data->get_uint(len & 0x7f);
+    len = data->read_int(len & 0x7f);
   }
   DBG("len : %d\n", len);
 
 
-  string(0..255) contents = data->get_fix_string(len);
-  DBG("contents: %O\n", contents);
+  data = [object(Stdio.IOBuffer)]data->read_buffer(len);
 
   program(.Types.Object) p = types[ .Types.make_combined_tag(cls, tag) ];
 
   if (const)
   {
     DBG("Decoding constructed\n");
-    ADT.struct struct = ADT.struct(contents);
 
     if (!p)
     {
       array(.Types.Object) elements = ({ });
 
-      while (!struct->is_empty())
-	elements += ({ der_decode(struct, types) });
+      while (sizeof(data))
+	elements += ({ der_decode(data, types) });
 
       if (cls==2 && sizeof(elements)==1)
       {
@@ -136,23 +134,23 @@ protected array(int) read_identifier(ADT.struct data)
       }
 
       DBG("Unknown constructed type.\n");
-      return Constructed(cls, tag, contents, elements);
+      return Constructed(cls, tag, (string(8bit))data, elements);
     }
 
     .Types.Object res = p();
     res->cls = cls;
     res->tag = tag;
-    res->begin_decode_constructed(contents);
+    res->begin_decode_constructed((string(8bit))data);
 
     int i;
 
     // Ask object which types it expects for field i, decode it, and
     // record the decoded object
-    for(i = 0; !struct->is_empty(); i++)
+    for(i = 0; sizeof(data); i++)
     {
       DBG("Element %d\n", i);
       res->decode_constructed_element
-	(i, der_decode(struct,
+	(i, der_decode(data,
 		       res->element_types(i, types)));
     }
     return res->end_decode_constructed(i);
@@ -165,10 +163,10 @@ protected array(int) read_identifier(ADT.struct data)
     .Types.Object res = p();
     res->cls = cls;
     res->tag = tag;
-    return res->decode_primitive(contents, this_object(), types);
+    return res->decode_primitive((string(8bit))data, this_object(), types);
   }
 
-  return Primitive(cls, tag, contents);
+  return Primitive(cls, tag, (string(8bit))data);
 }
 
 #define U(x) .Types.make_combined_tag(0, (x))
@@ -209,10 +207,8 @@ mapping(int:program(.Types.Object)) universal_types =
 .Types.Object simple_der_decode(string(0..255) data,
 				mapping(int:program(.Types.Object))|void types)
 {
-  if (types) {
-    return der_decode(ADT.struct(data), universal_types + types);
-  }
-  return der_decode(ADT.struct(data), universal_types);
+  types = types ? universal_types+types : universal_types;
+  return der_decode(Stdio.IOBuffer(data), types);
 }
 
 // Compat
