@@ -142,18 +142,16 @@ protected array(int) read_identifier(Stdio.IOBuffer data)
     res->tag = tag;
     res->begin_decode_constructed((string(8bit))data);
 
-    int i;
-
     // Ask object which types it expects for field i, decode it, and
     // record the decoded object
-    for(i = 0; sizeof(data); i++)
+    for(int i = 0; sizeof(data); i++)
     {
       DBG("Element %d\n", i);
       res->decode_constructed_element
 	(i, der_decode(data,
 		       res->element_types(i, types)));
     }
-    return res->end_decode_constructed(i);
+    return res;
   }
 
   DBG("Decoding Primitive\n");

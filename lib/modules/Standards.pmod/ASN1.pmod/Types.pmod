@@ -93,7 +93,7 @@ class Object
 				mapping(int:program(Object)) types);
   void begin_decode_constructed(string raw);
   void decode_constructed_element(int i, object e);
-  this_program end_decode_constructed(int length);
+  __deprecated__ void end_decode_constructed(int length) { }
 
   mapping(int:program(Object)) element_types(int i,
       mapping(int:program(Object)) types) {
@@ -202,12 +202,6 @@ class Compound
     elements += ({ e });
   }
 
-  this_program end_decode_constructed(int length) {
-    if (length != sizeof(elements))
-      error("Invalid length!\n");
-    return this;
-  }
-
   protected mixed `[](mixed index)
   {
     if( intp(index) )
@@ -281,11 +275,6 @@ class String
   void decode_constructed_element(int i, object(this_program) e)
   {
     value += e->value;
-  }
-
-  this_program end_decode_constructed(int length)
-  {
-    return this;
   }
 
   protected string _sprintf(int t) {
@@ -604,11 +593,6 @@ class BitString
     if( unused ) error("Adding to a non-aligned bit stream.\n");
     value += e->value;
     unused = e->unused;
-  }
-
-  this_program end_decode_constructed(int length)
-  {
-    return this;
   }
 
   protected string _sprintf(int t) {
@@ -1140,13 +1124,9 @@ class MetaExplicit
     this_program decode_constructed_element(int i, Object e) {
       if (i)
 	error("Unexpected index!\n");
+      if (contents)
+        error("length != 1!\n");
       contents = e;
-      return this;
-    }
-
-    this_program end_decode_constructed(int length) {
-      if (length != 1)
-	error("length != 1!\n");
       return this;
     }
 
