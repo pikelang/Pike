@@ -213,7 +213,7 @@ mapping(int:program(.Types.Object)) universal_types =
 class constructed
 {
   inherit Constructed;
-  protected void create(int tag_n_cls, string(8bit) raw,
+  protected __deprecated__ void create(int tag_n_cls, string(8bit) raw,
                         array(.Types.Object) elements)
   {
     ::create(tag_n_cls >> 6, tag_n_cls & 0x1f, raw, elements);
@@ -224,7 +224,7 @@ class primitive
 {
   inherit Primitive;
 
-  protected void create(int tag_n_cls, string(8bit) raw)
+  protected __deprecated__ void create(int tag_n_cls, string(8bit) raw)
   {
     ::create(tag_n_cls >> 6, tag_n_cls & 0x1f, raw);
   }
