@@ -1045,21 +1045,10 @@ PIKECLASS IOBuffer
   }
 
   /*! @decl IOBuffer add_int16( int(0..65535) )
-   *! @decl IOBuffer add_short( int(0..65535) )
    *!
    *! Add a 16-bit network byte order value to the buffer
    */
   PIKEFUN IOBuffer add_int16( int i )
-  {
-    IOBuffer *io = THIS;
-    unsigned char *p = io_add_space(io,2,0);
-    p[0] = i>>8;
-    p[1] = i;
-    io->len += 2;
-    ref_push_object(Pike_fp->current_object);
-  }
-
-  PIKEFUN IOBuffer add_short( int i )
   {
     IOBuffer *io = THIS;
     unsigned char *p = io_add_space(io,2,0);
