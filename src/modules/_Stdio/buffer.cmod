@@ -1464,6 +1464,43 @@ fai2: push_undefined();
     }
   }
 
+  /*! @decl string(8bit) read_cstring( )
+   *!
+   *! Reads a \0 terminated C-string and returns the
+   *! string excluding the terminating \0.
+   *!
+   *! If there is not enough data available return UNDEFINED.
+   *!
+   *! Note that pike string can not be longer than 0x7fffffff bytes (~2Gb).
+   */
+  PIKEFUN string(0..255) read_cstring( )
+  {
+    LONGEST len;
+    IOBuffer *io = THIS;
+    struct pike_string *s;
+    ONERROR e;
+
+    io_rewind_on_error( io, &e );
+
+    len = -1;
+    do
+      if ( UNLIKELY(!io_avail(io, 1)) )
+        goto fail;
+    while ( len++, LIKELY(io_read_byte_uc(io)) );
+
+    io_rewind( io, len );
+    s = io_read_string( io, len );
+
+    if( LIKELY(s) ) {
+      io_read_byte_uc(io);		  /* consume the terminating \0 byte */
+      io_unset_rewind_on_error( io, &e );
+      push_string(s);
+    } else {
+fail: CALL_AND_UNSET_ONERROR(e);
+      push_undefined();
+    }
+  }
+
   /*! @decl IOBuffer read_hbuffer( int n )
    *! @decl IOBuffer read_hbuffer( int n, bool copy )
    *!
