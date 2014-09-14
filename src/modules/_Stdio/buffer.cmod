@@ -1032,19 +1032,9 @@ PIKECLASS IOBuffer
     ref_push_object(io->this);
   }
 
-  /*! @decl IOBuffer add_byte( int(0..255) )
-   *! @decl IOBuffer add_int8( int(0..255) )
+  /*! @decl IOBuffer add_int8( int(0..255) )
    *! Adds a single byte to the buffer.
    */
-  PIKEFUN IOBuffer add_byte( int i )
-  {
-    IOBuffer *io = THIS;
-    *io_add_space(io,1,0)=i;
-    io->len++;
-    Pike_sp--;
-    ref_push_object(Pike_fp->current_object);
-  }
-
   PIKEFUN IOBuffer add_int8( int i )
   {
     IOBuffer *io = THIS;
