@@ -638,7 +638,7 @@ test_any( [[
   return 1;
 ]], 1 )
 
-dnl add_short() add_int16()
+dnl add_int16()
 
  test_any( [[
  string ref = "";
@@ -647,7 +647,7 @@ dnl add_short() add_int16()
  for( int i=0; i<255; i++ )
  {
    ref += sprintf("%2c%2c", i, (~i)&0xffff );
-   b->add_short( i )->add_int16(~i);
+   b->add_int16( i )->add_int16(~i);
    if( (string)b != ref ) return ([
      "i":i,
      "ref":ref,
