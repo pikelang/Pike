@@ -579,27 +579,19 @@ PIKECLASS IOBuffer
 
   static LONGEST io_read_number( IOBuffer *io, size_t len )
   {
-    size_t i;
     LONGEST res;
     if( !io_avail(io, len) )
       return -1;
-    if( len > SIZEOF_INT_TYPE )
-    {
-      unsigned int extra = len-SIZEOF_INT_TYPE;
-      /* ensure only 0:s */
-      for( i=0; i<extra; i++ )
-      {
-        if( io_read_byte_uc(io) )
-          Pike_error("Integer (%dbit) overflow.\n", SIZEOF_INT_TYPE*8);
-      }
-      len=SIZEOF_INT_TYPE;
-    }
-    if( len == SIZEOF_INT_TYPE )
-    {
-      if( *io_read_pointer(io) > 127 )
-        Pike_error("Signed (%dbit) overflow.\n", SIZEOF_INT_TYPE*8);
-    }
-    return io_read_number_uc( io, len );
+						  /* ensure only leading 0:s */
+    for (; UNLIKELY(len > SIZEOF_INT_TYPE); len--)
+      if( UNLIKELY(io_read_byte_uc(io)) )
+        Pike_error("Integer (%dbit) overflow.\n", SIZEOF_INT_TYPE*8);
+
+    res = io_read_number_uc( io, len );
+
+    if ( UNLIKELY(res < 0) )
+      Pike_error("Signed (%dbit) overflow.\n", SIZEOF_INT_TYPE*8);
+    return res;
   }
 
   static struct object *io_read_bignum( IOBuffer *io, size_t len )
