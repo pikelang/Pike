@@ -518,6 +518,87 @@ static void mov_reg_mem128( enum amd64_reg from_reg, enum amd64_reg to_reg, int 
   offset_modrm_sib( offset, from_reg, to_reg );
 }
 
+static void low_set_if_cond(unsigned char subop, enum amd64_reg reg)
+{
+  rex( 0, 0, 0, reg );
+  opcode( 0xf );
+  opcode( subop );
+  modrm( 3, 0, reg );
+}
+
+static void set_if_lt(enum amd64_reg reg)
+{
+  low_set_if_cond( 0x9c, reg );
+}
+
+static void set_if_lte(enum amd64_reg reg)
+{
+  low_set_if_cond( 0x9e, reg );
+}
+
+static void set_if_gt(enum amd64_reg reg)
+{
+  low_set_if_cond( 0x9f, reg );
+}
+
+static void set_if_gte(enum amd64_reg reg)
+{
+  low_set_if_cond( 0x9d, reg );
+}
+
+static void set_if_eq(enum amd64_reg reg)
+{
+  low_set_if_cond( 0x94, reg );
+}
+
+static void set_if_neq(enum amd64_reg reg)
+{
+  low_set_if_cond( 0x95, reg );
+}
+
+
+
+#if 0
+static void low_mov_if_cond_reg(unsigned char subop,
+				enum amd64_reg to_reg, 
+				enum amd64_reg from_reg )
+{
+  rex(0, from_reg, 0, to_reg );
+  opcode( 0xf );
+  opcode( subop );
+  modrm_sib( 3, from_reg, to_reg );
+}
+
+static void mov_if_lte_reg( enum amd64_reg from_reg, enum amd64_reg to_reg )
+{
+  low_mov_if_cond_reg( 0x4e, from_reg, to_reg);
+}
+
+static void mov_if_gte_reg( enum amd64_reg from_reg, enum amd64_reg to_reg )
+{
+  low_mov_if_cond_reg( 0x4d, from_reg, to_reg );
+}
+
+static void mov_if_lt_reg( enum amd64_reg from_reg, enum amd64_reg to_reg )
+{
+  low_mov_if_cond_reg( 0x4c, from_reg, to_reg );
+}
+static void mov_if_gt_reg( enum amd64_reg from_reg, enum amd64_reg to_reg )
+{
+  low_mov_if_cond_reg( 0x4f, from_reg, to_reg );
+}
+
+static void mov_if_neq_reg( enum amd64_reg from_reg, enum amd64_reg to_reg )
+{
+  low_mov_if_cond_reg( 0x45, from_reg, to_reg );
+}
+
+static void mov_if_eq_reg( enum amd64_reg from_reg, enum amd64_reg to_reg )
+{
+  low_mov_if_cond_reg( 0x44, from_reg, to_reg );
+}
+#endif
+
 static void low_mov_reg_mem(enum amd64_reg from_reg, enum amd64_reg to_reg, ptrdiff_t offset )
 {
   opcode( 0x89 );
@@ -1065,10 +1146,6 @@ static int jz_imm_rel32( int rel )
 static void jmp( struct label *l ) { return jump_rel8( l, 0xeb ); }
 static void jo( struct label *l )  { return jump_rel8( l, 0x70 ); }
 static void jno( struct label *l ) { return jump_rel8( l, 0x71 ); }
-#if 0
-static void jc( struct label *l )  { return jump_rel8( l, 0x72 ); }
-static void jnc( struct label *l ) { return jump_rel8( l, 0x73 ); }
-#endif
 static void jz( struct label *l )  { return jump_rel8( l, 0x74 ); }
 static void jnz( struct label *l ) { return jump_rel8( l, 0x75 ); }
 static void js( struct label *l )  { return jump_rel8( l, 0x78 ); }
@@ -1076,6 +1153,8 @@ static void jl( struct label *l )  { return jump_rel8( l, 0x7c ); }
 static void jge( struct label *l ) { return jump_rel8( l, 0x7d ); }
 static void jle( struct label *l ) { return jump_rel8( l, 0x7e ); }
 #if 0
+static void jc( struct label *l )  { return jump_rel8( l, 0x72 ); }
+static void jnc( struct label *l ) { return jump_rel8( l, 0x73 ); }
 static void jg( struct label *l )  { return jump_rel8( l, 0x7f ); }
 #endif
 
@@ -2335,6 +2414,44 @@ void ins_f_byte(unsigned int b)
     }
     return;
 
+  case F_EQ:
+  case F_NE:
+    /* Note: We can do better when doing equality comparison
+       without much work. */
+  case F_LE:
+  case F_GE:
+  case F_LT:
+  case F_GT:
+    {
+      LABELS();
+      ins_debug_instr_prologue(b, 0, 0);
+      if_not_two_int(&label_A,1);
+      amd64_add_sp(-1);
+
+      clear_reg(P_REG_RCX);
+      cmp_reg_reg(P_REG_RBX, P_REG_RAX);
+
+      switch(b+F_OFFSET)
+      {
+      case F_GT: set_if_gt( P_REG_RCX);	break;
+      case F_LT: set_if_lt( P_REG_RCX);	break;
+      case F_LE: set_if_lte(P_REG_RCX );break;
+      case F_GE: set_if_gte(P_REG_RCX ); break;
+      case F_EQ: set_if_eq( P_REG_RCX ); break;
+      case F_NE: set_if_neq(P_REG_RCX ); break;
+      }
+
+      mov_imm_mem(PIKE_T_INT, sp_reg, SVAL(-1).type );
+      mov_reg_mem(P_REG_RCX, sp_reg, SVAL(-1).value );
+      jmp(&label_D);
+
+      LABEL_A;
+      /* not an integer. Use C version for simplicitly.. */
+      amd64_call_c_opcode( addr, flags );
+      amd64_load_sp_reg();
+      LABEL_D;
+    }
+    return;
   case F_ADD:
     {
     addr = f_add;
