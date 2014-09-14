@@ -473,41 +473,35 @@ PIKECLASS IOBuffer
       return res;
   }
 
-  static int io_avail_rewind( IOBuffer *io, ptrdiff_t len )
-  {
-    ptrdiff_t left;
-#ifdef PIKE_DEBUG
-    if (len < 0) Pike_fatal("IOBuffer.io_avail_rewind: len<0.\n");
-#endif
-    while( UNLIKELY((left = io->offset - len) < 0) )
-      if( !io_range_error( io, left ) )
-        return 0;
-    return 1;
-  }
-
   static int io_avail( IOBuffer *io, ptrdiff_t len )
   {
-    ptrdiff_t left;
-#ifdef PIKE_DEBUG
-    if (len < 0) Pike_fatal("IOBuffer.io_avail: len<0.\n");
-#endif
-    while( UNLIKELY((left = len - io->len + io->offset) > 0) )
-      if( !io_range_error( io, left ) )
+    if( len < 0 || len + io->offset > io->len )
+    {
+        if( len < 0 )
+            io_range_error_throw( io, 0 );
+        else if( io_range_error( io, len+io->len-io->offset ) )
+            return io_avail(io,len);
         return 0;
+    }
     return 1;
   }
 
   static int io_avail_mul( IOBuffer *io, ptrdiff_t len, ptrdiff_t each  )
   {
     /* safely check if len*each is available. */
-    ptrdiff_t left;
-#ifdef PIKE_DEBUG
-    if (len < 0 ) Pike_fatal("IOBuffer.io_avail_mul: len<0.\n");
-    if (each <= 0 ) Pike_fatal("IOBuffer.io_avail_mul: each<=0.\n");
-#endif
-    while( UNLIKELY((left = len*each -io->len+io->offset) > 0) )
-      if( !io_range_error( io, left ) )
+    size_t total = io_len(io);
+    if( len < 0 || each <= 0 )
+    {
+      io_range_error_throw( io, 0 );
+      return 0;
+    }
+
+    if( (total/(size_t)each) < (size_t)len )
+    {
+        if( io_range_error( io, len+io->len-io->offset ) )
+          return io_avail_mul(io,len,each);
         return 0;
+    }
     return 1;
   }
 
@@ -574,12 +568,8 @@ PIKECLASS IOBuffer
   static INT_TYPE io_read_number_uc( IOBuffer *io, size_t len )
   {
     size_t i;
-    LONGEST res;
-#ifdef PIKE_DEBUG
-    if (len < 1 ) Pike_fatal("IOBuffer.io_read_number_uc: len<1.\n");
-#endif
-    res = io_read_byte_uc(io);
-    for( i=0; ++i<len; )
+    LONGEST res = 0;
+    for( i=0; i<len; i++ )
     {
       res <<= 8;
       res |= io_read_byte_uc(io);
@@ -591,10 +581,8 @@ PIKECLASS IOBuffer
   {
     size_t i;
     LONGEST res;
-#ifdef PIKE_DEBUG
-    if (len < 1 ) Pike_fatal("IOBuffer.io_read_number: len<1.\n");
-#endif
-
+    if( !io_avail(io, len) )
+      return -1;
     if( len > SIZEOF_INT_TYPE )
     {
       unsigned int extra = len-SIZEOF_INT_TYPE;
@@ -674,6 +662,14 @@ PIKECLASS IOBuffer
 
   static size_t io_rewind( IOBuffer *io, INT_TYPE n )
   {
+    if( n < 0 || (io->offset < (unsigned)n) )
+    {
+        if( n < 0 )
+            io_range_error_throw( io, 0 );
+        else if( io_range_error(io,-(long)(n-io->offset)) )
+          return io_rewind( io, n );
+      return -1;
+    }
     io->offset -= n;
     io_trigger_output( io );
     return io->offset;
@@ -1435,32 +1431,26 @@ PIKECLASS IOBuffer
     struct pike_string *s;
     ONERROR e;
 
-    Pike_sp--;
+    io_rewind_on_error( io, &e );
+    len = io_read_number( io, bytes );
 
-    if (UNLIKELY(bytes<=0)) {
-      if (UNLIKELY(bytes))
-        goto fai2;
-      push_empty_string();
+    if (len < 0) {
+      /* io_avail() in io_read_number() failed. */
+      CALL_AND_UNSET_ONERROR(e);
+      Pike_sp[-1].u.integer = 0;
       return;
     }
 
-    io_rewind_on_error( io, &e );
-
-    if ( LIKELY(io_avail(io, bytes)) )
-      len = io_read_number( io, bytes );
-    else
-      goto fail;
-
+    /* NB: We assume that io_avail() in io_read_string() doesn't throw. */
     s = io_read_string( io, len );
 
     if( s ) {
-
       io_unset_rewind_on_error( io, &e );
+      Pike_sp--;
       push_string(s);
-
     } else {
-fail: CALL_AND_UNSET_ONERROR(e);
-fai2: push_undefined();
+      CALL_AND_UNSET_ONERROR(e);
+      Pike_sp[-1].u.integer = 0;
     }
   }
 
@@ -1793,7 +1783,7 @@ fail: CALL_AND_UNSET_ONERROR(e);
   PIKEFUN int(-1..) consume( int n )
   {
     Pike_sp--;
-    if( n<0 || !io_avail( THIS, n ) )
+    if( !io_avail( THIS, n ) )
       push_int(-1);
     else
       push_int64( io_consume( THIS, n ) );
@@ -1818,16 +1808,8 @@ fail: CALL_AND_UNSET_ONERROR(e);
    */
   PIKEFUN int(-1..) unread( int bytes )
   {
-    IOBuffer *io = THIS;
     Pike_sp--;
-
-    if( UNLIKELY(bytes < 0) )
-      io_range_error_throw( io, 0 );
-
-    if( LIKELY(io_avail_rewind( io, bytes )) )
-      push_int64( io_rewind( io, bytes ) );
-    else
-      push_int( -1 );
+    push_int64( io_rewind( THIS, bytes ) );
   }
 
   /*! @decl string(8bit) read( int n )
@@ -1960,7 +1942,7 @@ fail: CALL_AND_UNSET_ONERROR(e);
 
     Pike_sp-=2;
 
-    if( num<=0 || len<=0 || !io_avail_mul( io, num, len ) )
+    if( !io_avail_mul( io, num, len ) )
     {
       push_int(0);
       return;
