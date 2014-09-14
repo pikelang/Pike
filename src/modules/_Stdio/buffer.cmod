@@ -354,10 +354,10 @@ PIKECLASS IOBuffer
   static void io_rewind_on_error( IOBuffer *io, ONERROR *x )
   {
     struct rewind_to *rew = xalloc( sizeof( struct rewind_to ) );
+    io->locked_move++;
 #if defined(PIKE_DEBUG)
     rew->old_locked_move = io->locked_move;
 #endif
-    io->locked_move++;
     rew->io = io;
     rew->rewind_to = io->offset;
     SET_ONERROR( (*x), io_do_rewind_on_error, rew );
