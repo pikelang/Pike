@@ -266,7 +266,7 @@ cond_begin([[Stdio.File()->lock]])
   test_true(Stdio.File(testfile,"wr")->trylock()&&1)
   test_eval_error([[
     mixed o=Stdio.File(testfile,"wr");
-    objekt k=o->lock();
+    object k=o->lock();
     o->lock();
   ]])
   test_any([[
