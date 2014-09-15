@@ -367,7 +367,7 @@ class Breakable {
     foreach(lines, string|array(string) line)
       if(stringp(line)) {
 	if(String.trim_all_whites([string]line)=="")
-	  ret += line;
+	  ret += [string]line;
 	else
 	  ret += sprintf("%*n%s\n", ind, [string]line);
       }
