@@ -766,7 +766,11 @@ int main(int argc, array(string) argv)
 	}
 
 	string test = tests[e];
-#define COMPILE(X) compile_string((X),testsuite,adjust_line(testline))
+#define COMPILE(X) \
+        (master()->get_inhibit_compile_errors()                               \
+         ? compile_string((X),testsuite)                                      \
+         : compile_string((X),testsuite,adjust_line(testline)))
+
 	// Is there a condition for this test?
 	string condition;
 	if( sscanf(test, "COND %s\n%s", condition, test)==2 )
