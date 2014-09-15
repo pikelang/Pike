@@ -1837,11 +1837,7 @@ fail: CALL_AND_UNSET_ONERROR(e);
    */
   PIKEFUN string(0..255) read()
   {
-    struct pike_string * s = io_read_string(THIS, io_len(THIS));
-    if( s )
-      push_string( s );
-    else
-      push_undefined();		/* FIXME: Is this ever reached? */
+    push_string( io_read_string(THIS, io_len(THIS)) );
   }
 
   /*! @decl string(8bit) try_read(int len)
@@ -1863,14 +1859,9 @@ fail: CALL_AND_UNSET_ONERROR(e);
   {
     struct pike_string *s;
     Pike_sp--;
-
     if (bytes > io_len(THIS))
       bytes = io_len(THIS);
-    s = io_read_string(THIS, bytes );
-    if( s )
-      push_string( s );
-    else
-      push_undefined();		/* FIXME: Is this ever reached? */
+    push_string( io_read_string(THIS, bytes ));
   }
 
   /*! @decl int(8bit) read_int8()
