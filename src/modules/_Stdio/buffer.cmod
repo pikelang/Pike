@@ -1870,7 +1870,7 @@ fail: CALL_AND_UNSET_ONERROR(e);
     struct pike_string *s;
     Pike_sp--;
     /* Hm. signed/unsigned comparisons abound. */
-    if( bytes > 0 && bytes > io_len(this) )
+    if( bytes > 0 && (size_t)bytes > io_len(this) )
       bytes = io_len(this);
     push_string( io_read_string(this, bytes ) );
   }
