@@ -65,6 +65,9 @@ PMOD_EXPORT void set_errno_from_win32_error (unsigned long err)
       case ERROR_INVALID_HANDLE: /* 124 */
       case ERROR_NEGATIVE_SEEK:	/* 131 */
 	return;
+      case ERROR_DIRECTORY: /* 267 */
+	errno = ENOTDIR; /* [Bug 7271] */
+	return;
     }
 
     /* FIXME: This lets most winsock codes through as-is, e.g.
