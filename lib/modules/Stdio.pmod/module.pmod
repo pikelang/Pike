@@ -188,8 +188,35 @@ class File
 
   int is_file;
 
-  function(mixed|void,string|IOBuffer|void:int) ___read_callback;
-  function(mixed|void,void|IOBuffer:int) ___write_callback;
+  //! The various read_callback signatures.
+  //!
+  //! The string (or void) version is used when buffer mode (see
+  //! @[set_buffer_mode]) has not been enabled for reading.
+  //!
+  //! The IOBuffer version is used when an IOBuffer has been enabled
+  //! for reading
+  //!
+  //! In both cases the data is the newly arrived data, but in buffered
+  //! mode data you did not fully read in the last read callback is
+  //! kept in the buffer.
+  typedef
+    function(mixed|void,string:int|void)|
+    function(mixed|void,IOBuffer:int|void)|
+    function(mixed|void:int|void) read_callback_t;
+
+  //! The various read_callback signatures.
+  //!
+  //! The void version is used when buffer mode (see
+  //! @[set_buffer_mode]) has not been enabled for writing.
+  //!
+  //! The IOBuffer version is used when an IOBuffer has been enabled
+  //! for reading, add data to that buffer to send it.
+  typedef
+    function(mixed|void:int|void) |
+    function(mixed|void,IOBuffer:int|void) write_callback_t;
+
+  read_callback_t ___read_callback;
+  write_callback_t ___write_callback;
   function(mixed|void:int) ___close_callback;
   function(mixed|void,string|void:int) ___read_oob_callback;
   function(mixed|void:int) ___write_oob_callback;
@@ -1301,11 +1328,11 @@ class File
 #define SET(X,Y) ::set_##X ((___##X = (Y)) && __stdio_##X)
 #define _SET(X,Y) _fd->_##X=(___##X = (Y)) && __stdio_##X
 
-  void set_callbacks (void|function(mixed,string|IOBuffer:int) read_cb,
-		      void|function(mixed,void|IOBuffer:int) write_cb,
-		      void|function(mixed:int) close_cb,
-		      void|function(mixed, string:int) read_oob_cb,
-		      void|function(mixed:int) write_oob_cb)
+   void set_callbacks (read_callback_t|void read_cb,
+                       write_callback_t|void write_cb,
+                       void|function(mixed:int) close_cb,
+                       void|function(mixed, string:int) read_oob_cb,
+                       void|function(mixed:int) write_oob_cb)
   //! Installs all the specified callbacks at once. Use @[UNDEFINED]
   //! to keep the current setting for a callback.
   //!
@@ -1340,8 +1367,8 @@ class File
     ::_enable_callbacks();
   }
 
-  //! @decl function(mixed, string:int) query_read_callback()
-  //! @decl function(mixed:int) query_write_callback()
+  //! @decl read_callback_t query_read_callback()
+  //! @decl write_callback_t query_write_callback()
   //! @decl function(mixed, string:int) query_read_oob_callback()
   //! @decl function(mixed:int) query_write_oob_callback()
   //! @decl function(mixed:int) query_close_callback()
@@ -1361,7 +1388,7 @@ class File
 
   //! @ignore
 
-  void set_read_callback(function(mixed|void,IOBuffer|string|void:int) read_cb)
+  void set_read_callback(read_callback_t read_cb)
   {
     BE_WERR(sprintf("setting read_callback to %O\n", read_cb));
     ::set_read_callback(((___read_callback = read_cb) &&
@@ -1369,7 +1396,7 @@ class File
 			(___close_callback && __stdio_close_callback));
   }
 
-  function(mixed|void,string|void|IOBuffer:int) query_read_callback()
+  read_callback_t query_read_callback()
   {
     return ___read_callback;
   }
@@ -1386,7 +1413,7 @@ class File
     return ___##X;					\
   }
 
-  CBFUNC(function(mixed|void,void|IOBuffer:int), write_callback)
+  CBFUNC(write_callback_t, write_callback)
   CBFUNC(function(mixed|void,string|void:int), read_oob_callback)
   CBFUNC(function(mixed|void:int), write_oob_callback)
 
@@ -1466,11 +1493,11 @@ class File
   //!
   mixed query_id() { return ___id; }
 
-  //! @decl void set_nonblocking(function(mixed, string|IOBuffer:int) read_callback, @
-  //!                            function(mixed,void|IOBuffer:int) write_callback, @
+  //! @decl void set_nonblocking(read_callback_t read_callback, @
+  //!                            write_callback_t write_callback, @
   //!                            function(mixed:int) close_callback)
-  //! @decl void set_nonblocking(function(mixed, string|IOBuffer:int) read_callback, @
-  //!                            function(mixed,void|IOBuffer:int) write_callback, @
+  //! @decl void set_nonblocking(read_callback_t read_callback, @
+  //!                            write_callback_t write_callback, @
   //!                            function(mixed:int) close_callback, @
   //!                            function(mixed, string:int) read_oob_callback, @
   //!                            function(mixed:int) write_oob_callback)
