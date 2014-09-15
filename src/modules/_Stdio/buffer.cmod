@@ -946,9 +946,8 @@ PIKECLASS IOBuffer
         io_consume( io, res );
         written += res;
         nbytes-=res;
+        io_set_events( io, fd, PIKE_BIT_FD_WRITE_OOB, PIKE_FD_WRITE);
       }
-
-      io_set_events( io, fd, PIKE_BIT_FD_WRITE_OOB, PIKE_FD_WRITE);
     }
     else
     {
