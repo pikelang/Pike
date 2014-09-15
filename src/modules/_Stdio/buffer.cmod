@@ -203,10 +203,15 @@ PIKECLASS IOBuffer
     }
   }
 
-  static unsigned char *io_add_space_do_something( IOBuffer *io, int bytes, int force )
+  static unsigned char *io_add_space_do_something( IOBuffer *io, size_t bytes, int force )
     ATTRIBUTE((noclone,noinline));
-  static unsigned char *io_add_space_do_something( IOBuffer *io, int bytes, int force )
+  static unsigned char *io_add_space_do_something( IOBuffer *io, size_t bytes, int force )
   {
+    if( bytes && io->len+bytes < io->len )
+      Pike_error("Too large buffer, can not have more than %lu bytes",
+                 (size_t)-1);
+
+
     io_ensure_unlocked(io);
     io_ensure_malloced(io, bytes);
 
@@ -269,11 +274,12 @@ PIKECLASS IOBuffer
     return io->buffer+io->len;
   }
 
-  static unsigned char *io_add_space( IOBuffer *io, int bytes, int force )
+  static unsigned char *io_add_space( IOBuffer *io, size_t bytes, int force )
   {
     if( io->len == io->offset )
       io->offset = io->len = 0;
-    if( !force && io->malloced && !io->locked && io->len+bytes < io->allocated )
+    if( !force && io->malloced && !io->locked && io->len+bytes < io->allocated &&
+        (!bytes || io->len+bytes > io->len))
       return io->buffer+io->len;
     return io_add_space_do_something( io, bytes, force );
   }
@@ -340,7 +346,7 @@ PIKECLASS IOBuffer
       }
   }
 
-  static struct pike_string *io_read_string( IOBuffer *io, size_t len )
+  static struct pike_string *io_read_string( IOBuffer *io, ssize_t len )
     ATTRIBUTE((noclone,noinline));
   static size_t io_rewind( IOBuffer *io, INT_TYPE n );
 
@@ -505,7 +511,7 @@ PIKECLASS IOBuffer
     return 1;
   }
 
-  static void io_append( IOBuffer *io, const void *p, int bytes )
+  static void io_append( IOBuffer *io, const void *p, size_t bytes )
   {
     memcpy( io_add_space( io, bytes, 0 ), p, bytes );
     io->len += bytes;
@@ -521,12 +527,15 @@ PIKECLASS IOBuffer
     return len;
   }
 
-  static struct pike_string *io_read_string( IOBuffer *io, size_t len )
+  static struct pike_string *io_read_string( IOBuffer *io, ssize_t len )
   {
     struct pike_string *s;
 
     if( len > 0x7fffffff )
       Pike_error("This region is too large to convert to a string.\n");
+
+    if( len < 0 )
+      return make_shared_binary_string(NULL,0);
 
     if( !io_avail(io,len))
      return NULL;
@@ -1073,7 +1082,7 @@ PIKECLASS IOBuffer
    *! Adds length of data followed by @[data] to the buffer.
    *!
    *! This is identical to
-   *! @code{sprintf("%"+size_size+"H",(string)Stdio.IObuffer(data))@} but
+   *! @tt{sprintf("%"+size_size+"H",(string)Stdio.IObuffer(data))@} but
    *! significantly faster.
    *!
    *! @[size_size] is the number of bytes used to represent the length of the data.
@@ -1857,11 +1866,13 @@ fail: CALL_AND_UNSET_ONERROR(e);
    */
   PIKEFUN string(0..255) try_read( int bytes )
   {
+    IOBuffer *this = THIS;
     struct pike_string *s;
     Pike_sp--;
-    if (bytes > io_len(THIS))
-      bytes = io_len(THIS);
-    push_string( io_read_string(THIS, bytes ));
+    /* Hm. signed/unsigned comparisons abound. */
+    if( bytes > 0 && bytes > io_len(this) )
+      bytes = io_len(this);
+    push_string( io_read_string(this, bytes ) );
   }
 
   /*! @decl int(8bit) read_int8()
