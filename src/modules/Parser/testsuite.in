@@ -257,12 +257,12 @@ test_parser([[
   object p = Parser.HTML();
   p->add_tag ("t", lambda (object p, mapping a) {return ({a->a});});
   return p->finish("<t a='f'\"'\"'o'>" WIDENER)->read();
-]], "f'o" WIDENER);
+]], "f" WIDENER);
 test_parser([[
   object p = Parser.HTML();
   p->add_tag ("t", lambda (object p, mapping a) {return ({a->a});});
   return p->finish("<t a=\"f\"'\"'\"o\">" WIDENER)->read();
-]], "f\"o" WIDENER);
+]], "f" WIDENER);
 test_parser([[
   object p = Parser.HTML();
   p->add_tag ("t", lambda (object p, mapping a) {return ({"(", a->a, ")"});});
@@ -277,12 +277,12 @@ test_parser([[
   object p = Parser.HTML();
   p->add_tag ("t", lambda (object p, mapping a) {return ({a->a});});
   return p->finish("<t a=b=\"c=d\"='e'=f=g>" WIDENER)->read();
-]], "b=c=d=e=f=g" WIDENER);
+]], "b=c=d" WIDENER);
 test_parser([[
   object p = Parser.HTML();
   p->add_tag ("t", lambda (object p, mapping a) {return ({a->a + " " + a[""]});});
   return p->finish("<t a=b =\"c=d\"='e'=f=g>" WIDENER)->read();
-]], "b c=d=e=f=g" WIDENER);
+]], "b f=g" WIDENER);
 test_parser([[{
   object p = Parser.HTML();
   p->add_tag ("t", lambda (object p, mapping a)
@@ -821,7 +821,7 @@ test_parser([[
   object p = Parser.HTML();
   p->add_entity ("e", "x");
   return p->finish("<t a='&e;&e' \"&e;'&e; >\" &e; >" WIDENER)->read();
-]], "<t a='x&e' \"&e;'x >\" x >" WIDENER);
+]], "<t a='x&e' \"&e;'&e; >\" x >" WIDENER);
 test_parser([[
   object p = Parser.HTML();
   p->lazy_entity_end (1);
@@ -832,7 +832,7 @@ test_parser([[
   object p = Parser.HTML();
   p->add_entity ("e", "x");
   return p->finish("<t a='&e;&e' \"&e;'&e; >\" &e; " WIDENER)->read();
-]], "<t a='x&e' \"&e;'x >\" x " WIDENER);
+]], "<t a='x&e' \"&e;'&e; >\" x " WIDENER);
 test_parser([[
   object p = Parser.HTML();
   p->lazy_entity_end (1);
@@ -898,13 +898,13 @@ test_parser([[
 test_parser([[
   object p = Parser.HTML();
   p->add_entity ("e", "x");
-  return p->finish("<t a='f\"o'&e;>" WIDENER)->read();
-]], "<t a='f\"o'x>" WIDENER);
+  return p->finish("<t 'a=f\"o'=&e;>" WIDENER)->read();
+]], "<t 'a=f\"o'=x>" WIDENER);
 test_parser([[
   object p = Parser.HTML();
   p->add_entity ("e", "x");
-  return p->finish("<t a='f\"o'&e;/>" WIDENER)->read();
-]], "<t a='f\"o'x/>" WIDENER);
+  return p->finish("<t a='f\"o'&e;'/>" WIDENER)->read();
+]], "<t a='f\"o'&e;'/>" WIDENER);
 test_parser([[
   object p = Parser.HTML();
   p->add_entity ("e", "x");
@@ -913,23 +913,23 @@ test_parser([[
 test_parser([[
   object p = Parser.HTML();
   p->add_entity ("e", "x");
-  return p->finish("<t a='&e;'\"&e;\"&e;>" WIDENER)->read();
-]], "<t a='x'\"x\"x>" WIDENER);
+  return p->finish("<t a='&e;&e;&e;'>" WIDENER)->read();
+]], "<t a='xxx'>" WIDENER);
 test_parser([[
   object p = Parser.HTML();
   p->add_entity ("e", "x");
-  return p->finish("<t a='&e;'\" &e;\"&e;>" WIDENER)->read();
-]], "<t a='x'\" x\"x>" WIDENER);
+  return p->finish("<t a='&e;'\" &e;=\"&e;>" WIDENER)->read();
+]], "<t a='x'\" &e;=\"&e;>" WIDENER);
 test_parser([[
   object p = Parser.HTML();
   p->add_entity ("e", "x");
-  return p->finish("<t a='&e;'\"&e;\" &e;>" WIDENER)->read();
-]], "<t a='x'\"x\" &e;>" WIDENER);
+  return p->finish("<t a='&e;'\"&e;\"=&e;>" WIDENER)->read();
+]], "<t a='x'\"&e;\"=x>" WIDENER);
 test_parser([[
   object p = Parser.HTML();
   p->add_entity ("e", "x");
-  return p->finish("<t a='&e;'\"&e ;\"&e;>" WIDENER)->read();
-]], "<t a='x'\"&e ;\"x>" WIDENER);
+  return p->finish("<t a='&e;'\"&e ;\"=&e;>" WIDENER)->read();
+]], "<t a='x'\"&e ;\"=x>" WIDENER);
 test_parser([[
   object p = Parser.HTML();
   p->add_tag ("t", "T");
@@ -946,16 +946,16 @@ test_parser([[{
   return p->finish ("<x ::  = \"foo bar='gnu' &e;\"&e; a='&e;' &e;:: "
 		    "::=&e; :::=\"&e;y\" ::  ::  =  ''&e;\"\" :/: ::/>"
 		    WIDENER)->read();
-}]], "<x foo bar='gnu' xx a='x' &e;:: x :::=\"xy\"   x :/: />" WIDENER);
+}]], "<x foo bar='gnu' x&e; a='x' &e;:: x :::=\"xy\"   &e;\"\" :/: />" WIDENER);
 test_parser([[{
   object p = Parser.HTML();
   p->xml_tag_syntax (0);
   p->splice_arg ("::");
   p->add_entity ("e", "x");
-  return p->finish ("<x ::  = \"foo bar='gnu' &e;\"&e; a='&e;' &e;:: "
-		    "::=&e; :::=\"&e;y\" ::  ::  =  ''&e;\"\" :/: ::/>"
+  return p->finish ("<x ::  = \"foo bar='gnu' &e;\" &e; a='&e;' &e;:: "
+		    "::=&e; :::=\"&e;y\" ::  ::  =  '&e;\"\"' :/: ::/>"
 		    WIDENER)->read();
-}]], "<x foo bar='gnu' xx a='x' &e;:: x :::=\"xy\"   x :/: ::/>" WIDENER);
+}]], "<x foo bar='gnu' x &e; a='x' &e;:: x :::=\"xy\"   x\"\" :/: ::/>" WIDENER);
 test_parser([[{
   object p = Parser.HTML();
   p->splice_arg (":/:");
