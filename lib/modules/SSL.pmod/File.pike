@@ -356,10 +356,8 @@ protected void create (Stdio.File stream, SSL.Context ctx)
     real_backend = stream->query_backend();
     close_state = STREAM_OPEN;
 
-    stream->set_read_callback (0);
-    stream->set_write_callback (0);
-    stream->set_close_callback (0);
     stream->set_id (0);
+    stream->set_nonblocking(0, 0, 0);
 
     fragment_max_size =
       limit(1, ctx->packet_max_size, PACKET_MAX_SIZE);
@@ -713,6 +711,7 @@ Stdio.File shutdown()
 	  SSL3_DEBUG_MSG ("SSL.File->shutdown(): Clean close - "
 			  "leaving stream\n");
 	  local_errno = 0;
+	  if (!nonblocking_mode) stream->set_blocking();
 	  RETURN (stream);
 	}
 	else {
@@ -1254,7 +1253,6 @@ void set_nonblocking (void|function(void|mixed,void|string:int) read,
 
     if (stream) {
       stream->set_backend(real_backend);
-      stream->set_nonblocking_keep_callbacks();
 
       schedule_poll();
 
@@ -1284,7 +1282,6 @@ void set_nonblocking_keep_callbacks()
 
     if (stream) {
       stream->set_backend(real_backend);
-      stream->set_nonblocking_keep_callbacks();
       // Has to restore here since a backend waiting in another thread
       // might be woken immediately when callbacks are registered.
       RESTORE;
@@ -1336,7 +1333,6 @@ void set_blocking()
 
     if (stream) {
       stream->set_backend(local_backend);
-      stream->set_blocking_keep_callbacks();
     }
   } LEAVE;
 }
@@ -1359,7 +1355,6 @@ void set_blocking_keep_callbacks()
 
     if (stream) {
       stream->set_backend(local_backend);
-      stream->set_blocking_keep_callbacks();
     }
   } LEAVE;
 }
