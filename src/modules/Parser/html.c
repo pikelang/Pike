@@ -1484,10 +1484,10 @@ static void put_out_feed_range(struct parser_html_storage *this,
 /* ------------------------ */
 /* push feed range on stack */
 
-static INLINE void push_feed_range(struct piece *head,
-				   ptrdiff_t c_head,
-				   struct piece *tail,
-				   ptrdiff_t c_tail)
+static INLINE int low_push_feed_range(struct piece *head,
+				      ptrdiff_t c_head,
+				      struct piece *tail,
+				      ptrdiff_t c_tail)
 {
    int n=0;
    /* fit it in range (this allows other code to ignore eof stuff) */
@@ -1526,11 +1526,22 @@ static INLINE void push_feed_range(struct piece *head,
       head=head->next;
    }
 
-   if (!n)
-      ref_push_string(empty_pike_string);
-   else if (n>1)
+   if (!n) {
+      DEBUG((stderr,"push empty\n"));
+      return 0;
+   } else if (n>1)
       f_add(n);
    DEBUG((stderr,"push len=%"PRINTPTRDIFFT"d\n",sp[-1].u.string->len));
+   return 1;
+}
+
+static INLINE void push_feed_range(struct piece *head,
+				   ptrdiff_t c_head,
+				   struct piece *tail,
+				   ptrdiff_t c_tail)
+{
+  if (!low_push_feed_range(head, c_head, tail, c_tail))
+    ref_push_string(empty_pike_string);
 }
 
 /* -------------------------------------------------------- */
@@ -1931,7 +1942,7 @@ retryloop:
 	       static const p_wchar2 minus='-';
 
 	       if (what == SCAN_ARG_PUSH) 
-		  push_feed_range(feed,c,*destp,*d_p),n++;
+		  n += low_push_feed_range(feed,c,*destp,*d_p);
 
 	 /* skip to next -- */
 
@@ -1981,7 +1992,7 @@ retryloop:
 	 }
       }
 	 
-      if (what == SCAN_ARG_PUSH) push_feed_range(feed,c,*destp,*d_p),n++;
+      if (what == SCAN_ARG_PUSH) n += low_push_feed_range(feed,c,*destp,*d_p);
 
       if (!res) {
 	 if (!finished) 
@@ -2007,7 +2018,7 @@ retryloop:
 	else {
 	  DEBUG_MARK_SPOT("scan_forward_arg: = ignored in arg val",
 			  destp[0],*d_p);
-	  if (what == SCAN_ARG_PUSH) push_feed_range(*destp,*d_p,*destp,*d_p+1),n++;
+	  if (what == SCAN_ARG_PUSH) n += low_push_feed_range(*destp,*d_p,*destp,*d_p+1);
 	  goto next;
 	}
       }
@@ -2017,7 +2028,7 @@ retryloop:
 	 {
 	    DEBUG_MARK_SPOT("scan_forward_arg: inner tag end",
 			    destp[0],*d_p);
-	    if (what == SCAN_ARG_PUSH) push_feed_range(*destp,*d_p,*destp,*d_p+1),n++;
+	    if (what == SCAN_ARG_PUSH) n += low_push_feed_range(*destp,*d_p,*destp,*d_p+1);
 	    goto next;
 	 }
 	 else
@@ -2033,7 +2044,7 @@ retryloop:
 	 DEBUG_MARK_SPOT("scan_forward_arg: inner tag start",
 			 destp[0],*d_p);
 	 q++;
-	 if (what == SCAN_ARG_PUSH) push_feed_range(*destp,*d_p,*destp,*d_p+1),n++;
+	 if (what == SCAN_ARG_PUSH) n += low_push_feed_range(*destp,*d_p,*destp,*d_p+1);
 	 goto next;
       }
 
@@ -2045,7 +2056,7 @@ retryloop:
 	  return 2;
 	}
 	else {
-	  if (what == SCAN_ARG_PUSH) push_feed_range(*destp,*d_p,*destp,*d_p+1),n++;
+	  if (what == SCAN_ARG_PUSH) n += low_push_feed_range(*destp,*d_p,*destp,*d_p+1);
 	  goto next;
 	}
       }
@@ -2062,7 +2073,7 @@ retryloop:
 		index_shared_string (feed->s, c) != TAG_END (this)) {
 	       DEBUG_MARK_SPOT("scan_forward_arg: tag fin char",
 			       destp[0],*d_p);
-	       if (what == SCAN_ARG_PUSH) push_feed_range (*destp, *d_p, feed, c), n++;
+	       if (what == SCAN_ARG_PUSH) n += low_push_feed_range (*destp, *d_p, feed, c);
 	       goto next;
 	    }
 	    else {
@@ -2083,7 +2094,7 @@ in_quote_cont:
       while (1) {
 	res=scan_forward(feed=*destp,c=d_p[0]+1,destp,d_p,
 			 LOOK_FOR_END (this)[i], NUM_LOOK_FOR_END (this)[i]);
-	if (what == SCAN_ARG_PUSH) push_feed_range(feed,c,*destp,*d_p),n++;
+	if (what == SCAN_ARG_PUSH) n += low_push_feed_range(feed,c,*destp,*d_p);
 
 	if (!res) {
 	  if (!finished) 
@@ -2107,7 +2118,7 @@ in_quote_cont:
 	    return 2;
 	  }
 	  else {
-	    if (what == SCAN_ARG_PUSH) push_feed_range(*destp,*d_p,*destp,*d_p+1),n++;
+	    if (what == SCAN_ARG_PUSH) n += low_push_feed_range(*destp,*d_p,*destp,*d_p+1);
             continue;
 	  }
 	}
