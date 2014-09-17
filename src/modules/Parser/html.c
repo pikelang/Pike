@@ -214,6 +214,9 @@ enum contexts {
 /* flag: reparse plain strings used as tag/container/entity callbacks */
 #define FLAG_REPARSE_STRINGS		0x00002000
 
+/* flag: attribute quote stapling. (q=f"o'o"'b"a'r == q="fo'ob&quot;ar") */
+#define FLAG_QUOTE_STAPLING		0x00004000
+
 /* default characters */
 #define DEF_WS		' ', '\n', '\r', '\t', '\v'
 #define DEF_TAG_START	'<'
@@ -2105,7 +2108,9 @@ in_quote_cont:
 	  }
 	  else
 	  {
-	    DEBUG_MARK_SPOT("scan_forward_arg: forced end (quote)",destp[0],*d_p);
+	    DEBUG_MARK_SPOT("scan_forward_arg: forced end (quote)",
+			    destp[0], *d_p);
+	    if (this->flags & FLAG_QUOTE_STAPLING) break;
 	    goto end;
 	  }
 	}
@@ -2122,6 +2127,7 @@ in_quote_cont:
             continue;
 	  }
 	}
+	if (this->flags & FLAG_QUOTE_STAPLING) break;
         FORWARD_CHAR (*destp, *d_p, *destp, *d_p);
         DEBUG_MARK_SPOT("scan_forward_arg: End of quoted string",
                         destp[0],*d_p);
@@ -2130,6 +2136,9 @@ in_quote_cont:
 
 next:
       if (n > 20) {
+	if (this->flags & FLAG_QUOTE_STAPLING) {
+	  fprintf(stderr, "Parser.HTML: Warning: Old-style attribute stapling.\n");
+	}
 	f_add(n);
 	n = 1;
       }
@@ -2140,8 +2149,13 @@ next:
 end:
    if (what == SCAN_ARG_PUSH)
    {
-      if (n>1) f_add(n);
-      else if (!n) ref_push_string(empty_pike_string);
+      if (n>1) {
+	if (this->flags & FLAG_QUOTE_STAPLING) {
+	  fprintf(stderr,
+		  "Parser.HTML: Warning: Old-style attribute stapling.\n");
+	}
+	f_add(n);
+      } else if (!n) ref_push_string(empty_pike_string);
    }
    return 1;
 }
@@ -5318,6 +5332,40 @@ static void html_ignore_comments(INT32 args)
    push_int(o);
 }
 
+/*! @decl int quote_stapling(int|void enable)
+ *!
+ *! Enable old-style attribute quoting by stapling.
+ *!
+ *! @param enable
+ *!   Enable/disable the mode. Defaults to
+ *!   keeping the old setting.
+ *!
+ *! @returns
+ *!   Returns the prior setting.
+ *!
+ *! @note
+ *!   Any use of this mode is discouraged, and is
+ *!   only provided for compatibility with versions
+ *!   of Pike prior to 8.0.
+ *!
+ *! @note
+ *!   Note also that this mode will output runtime
+ *!   warnings whenever the mode has had an effect
+ *!   on the parsing.
+ */
+static void html_quote_stapling(INT32 args)
+{
+  int of = !!(THIS->flags & FLAG_QUOTE_STAPLING);
+  int f = of;
+  get_all_args("quote_stapling", args, ".%d", &f);
+  if (f) {
+    THIS->flags |= FLAG_QUOTE_STAPLING;
+  } else {
+    THIS->flags &= ~FLAG_QUOTE_STAPLING;
+  }
+  push_int(of);
+}
+
 /*! @endclass
  */
 
@@ -5485,6 +5533,8 @@ void init_parser_html(void)
 		tFunc(tOr(tVoid,tInt),tInt),0);
 #endif
    ADD_FUNCTION("ignore_comments",html_ignore_comments,
+		tFunc(tOr(tVoid,tInt),tInt),0);
+   ADD_FUNCTION("quote_stapling",html_quote_stapling,
 		tFunc(tOr(tVoid,tInt),tInt),0);
 
    /* special callbacks */
