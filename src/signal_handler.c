@@ -1156,6 +1156,7 @@ static RETSIGTYPE receive_sigchild(int signum)
 {
   pid_t pid;
   WAITSTATUSTYPE status;
+  int masked_errno = errno;
 
   PROC_FPRINTF((stderr, "[%d] receive_sigchild\n", getpid()));
 
@@ -1190,6 +1191,10 @@ static RETSIGTYPE receive_sigchild(int signum)
   my_signal(signum, receive_sigchild);
 #endif
 
+  /* The wait and possibly the signal stuff can obfuscate errno here,
+   * while outside of the signal handler we might be in, say, the backend,
+   * and cause a bit of trouble there. Let's leave errno as we found it. */
+  errno = masked_errno;
 }
 #endif
 
