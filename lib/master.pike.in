@@ -157,19 +157,19 @@ constant NoValue = typeof (no_value);
 
 // Some API compatibility stuff.
 
-//! Pike 7.4 master compatibility interface.
+//! Pike 7.6 master compatibility interface.
 //!
 //! Most of the interface is implemented via mixin,
 //! or overloading by more recent masters.
 //!
 //! This interface is used for compatibility with
-//! Pike 7.4.
+//! Pike 7.6.
 //!
 //! @deprecated predef::MasterObject
 //!
 //! @seealso
 //!   @[get_compat_master()], @[master()], @[predef::MasterObject]
-protected class Pike_7_4_master
+protected class Pike_7_6_master
 {
   extern array(string) pike_include_path;
   extern array(string) pike_module_path;
@@ -268,7 +268,6 @@ protected class Pike_7_4_master
   void remove_program_path(string tmp);
   mapping(string:program|NoValue) programs;
 
-  void create();
   extern mapping(program:object) objects;
   object cast_to_object(string oname, string current_file);
   class dirnode {};
@@ -323,8 +322,6 @@ protected class Pike_7_4_master
   mixed handle_import(string what, string|void current_file, object|void handler);
   mixed resolv_base(string identifier, string|void current_file);
 
-  // FIXME: Not in 7.7!
-  extern mapping resolv_cache;
   mixed get_inhibit_compile_errors();
   string decode_charset(string data, string charset);
 
@@ -379,8 +376,7 @@ protected class Pike_7_4_master
 			      void|int mkobj);
   extern string include_prefix;
   extern mapping(string:string) predefines;
-  // FIXME: Not in 7.7!
-  extern CompatResolver parent_resolver;
+
   void add_predefine (string name, string value);
   void remove_predefine (string name);
   mapping get_predefines();
@@ -415,53 +411,16 @@ protected class Pike_7_4_master
   void decode_object(object o, mixed data);
 
   string _sprintf(int t);
-  local protected object Pike_7_4_compat_handler;
-  local mixed resolv(string identifier, string|void current_file)
-  {
-    if (!Pike_7_4_compat_handler) {
-      Pike_7_4_compat_handler = global::get_compilation_handler(7, 4);
-    }
-    return Pike_7_4_compat_handler->resolv(identifier, current_file);
-  }
-  object get_compat_master(int major, int minor)
-  {
-    // 0.0 .. 7.4
-    if ((major < 7) || (major == 7) && (minor < 5))
-      return this_program::this;
-    return get_compat_master(major, minor);
 
-  }
-
-  /* No missing symbols. */
-}
-
-//! Pike 7.6 master compatibility interface.
-//!
-//! Most of the interface is implemented via mixin,
-//! or overloading by more recent masters.
-//!
-//! This interface is used for compatibility with
-//! Pike 7.5 and 7.6.
-//!
-//! @deprecated predef::MasterObject
-//!
-//! @seealso
-//!   @[get_compat_master()], @[master()], @[predef::MasterObject]
-protected class Pike_7_6_master
-{
-  inherit Pike_7_4_master;
+  // ---
 
   extern int show_if_constant_errors;
-  protected void create();
   extern mapping(string:string) initial_predefines;
   extern joinnode root_module;
   extern mapping(object:joinnode) handler_root_modules;
   extern array(string) system_module_path;
-  protected extern CompatResolver parent_resolver;
-  protected extern mapping resolv_cache;
   extern CompatResolver fallback_resolver;
   joinnode get_root_module(object|void current_handler);
-  class Pike06Resolver {}
   local protected object Pike_7_6_compat_handler;
   local mixed resolv_or_error(string identifier, string|void current_file,
 			      void|object current_handler)
@@ -482,10 +441,8 @@ protected class Pike_7_6_master
   array get_backtrace (object|array err);
   object get_compat_master(int major, int minor)
   {
-    if ((major < 7) || ((major == 7) && (minor < 5)))
-      return Pike_7_4_master::get_compat_master(major, minor);
-    // 7.5 & 7.6
-    if ((major == 7) && (minor < 7))
+    // 0.0 .. 7.6
+    if ((major < 7) || ((major == 7) && (minor < 7)))
       return this_program::this;
     return get_compat_master(major, minor);
   }
@@ -3126,24 +3083,6 @@ class CompatResolver
 
 inherit CompatResolver;
 
-//!
-class Pike06Resolver
-{
-  inherit CompatResolver;
-
-  //! In Pike 0.6 the current directory was implicitly searched.
-  mixed resolv_base(string identifier, string|void current_file,
-		    object|void current_handler)
-  {
-    if (current_file) {
-      joinnode node = handle_import(".", current_file, current_handler);
-      return node[identifier] ||
-	::resolv_base(identifier, current_file, current_handler);
-    }
-    return ::resolv_base(identifier, current_file, current_handler);
-  }
-}
-
 //! These are useful if you want to start other Pike processes
 //! with the same options as this one was started with.
 string _pike_file_name;
@@ -5582,11 +5521,7 @@ CompatResolver get_compilation_handler(int major, int minor)
       if (!compat_handler) {
 	// Create a new compat handler, that
 	// falls back to the successor version.
-	if (tmp <= Version(0, 6)) {
-	  compat_handler = Pike06Resolver(tmp, ret);
-	} else {
-	  compat_handler = CompatResolver(tmp, ret);
-	}
+        compat_handler = CompatResolver(tmp, ret);
 
 	string base;
 #if "#lib_prefix#"[0]!='#'

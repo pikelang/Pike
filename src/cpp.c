@@ -880,13 +880,8 @@ static int do_safe_index_call(struct cpp *this, struct pike_string *s)
   if(!s) return 0;
 
   if (SETJMP_SP(recovery, 1)) {
-    if (CPP_TEST_COMPAT (this, 7, 4)) {
-      free_svalue (&throw_value);
-      mark_free_svalue (&throw_value);
-    }
-    else if(this->picky_cpp) {
+    if(this->picky_cpp)
       cpp_warning (this, "Error indexing module with %S.", s);
-    }
     res = 0;
     push_undefined();
   } else {

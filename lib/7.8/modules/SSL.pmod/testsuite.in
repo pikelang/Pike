@@ -3,16 +3,7 @@ START_MARKER(7.8)
 dnl Note: This module has some tests with an external test script in
 dnl src/modules/_Stdio
 
-test_any([[
-#pike 7.4
-return SSL.constants && 1;
-]], 1)
-
 cond_resolv(Crypto.Hash, [[
-test_any([[
-#pike 7.4
-return SSL.cipher && 1;
-]], 1)
 
 test_do([[
 #define ASSERT(X) if(!(X)) error("Assertion failed.\n")

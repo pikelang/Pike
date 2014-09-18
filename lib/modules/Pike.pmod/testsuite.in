@@ -3,15 +3,6 @@ START_MARKER
 dnl --- Security
 
 cond([[ __builtin["security"] ]],[[
-test_true([[
-#pike 7.4
-functionp(call_with_creds)]])
-test_true([[
-#pike 7.4
-functionp(get_current_creds)]])
-test_true([[
-#pike 7.4
-functionp(get_object_creds)]])
 
 test_do([[ rm("security"); ]])
 test_do([[

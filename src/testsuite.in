@@ -1,7 +1,6 @@
 START_MARKER
 
 // This triggered a bug only if run sufficiently early.
-test_compile_any([[#pike 7.4]])
 test_compile_any([[#pike 7.6]])
 test_compile_any([[#pike 7.8]])
 test_compile_any([[#pike 8.0]])
@@ -10980,19 +10979,6 @@ test_eval_error( return hash("foo",-1) )
 define(test_hash_7_4, [[
   test_any([[
     int i = hash_7_4($1);
-    return ]]dnl
-ifelse([[$3]],,, [[((i==$2)||(i==$3))?$2:]])dnl
-[[i;
-  ]], $2)
-  test_any([[
-    int i = 7.4::hash($1);
-    return ]]dnl
-ifelse([[$3]],,, [[((i==$2)||(i==$3))?$2:]])dnl
-[[i;
-  ]], $2)
-  test_any([[
-#pike 7.4
-    int i = hash($1);
     return ]]dnl
 ifelse([[$3]],,, [[((i==$2)||(i==$3))?$2:]])dnl
 [[i;

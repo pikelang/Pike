@@ -1381,9 +1381,8 @@ identifier_type: idents
 	    SET_SVAL_TYPE(Pike_sp[-1], T_FUNCTION);
 	  }else{
 	    extern void f_object_program(INT32);
-	    if (Pike_compiler->compiler_pass == 2 && !TEST_COMPAT (7, 4)) {
+	    if (Pike_compiler->compiler_pass == 2)
 	      yywarning("Using object as program identifier.");
-	    }
 	    f_object_program(1);
 	  }
 	}

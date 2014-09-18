@@ -3809,20 +3809,6 @@ static struct pike_type *low_match_types2(struct pike_type *a,
     /* object(* x) =? object(* x) */
     if (a->cdr == b->cdr) break;
 
-    /* object(x *) =? object(x *) */
-    if(TEST_COMPAT(7,4) && a->car == b->car)
-    {
-      /* x? */
-      if(a->car)
-      {
-	/* object(1 x) =? object(1 x) */
-	return 0;
-      }else{
-	/* object(0 *) =? object(0 *) */
-	break;
-      }
-    }
-
     /* Note: In Pike 7.4 and earlier the following was only done
      *       when a->car != b->car.
      */
@@ -4579,19 +4565,8 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
      *	/grubba 2003-11-11
      */
 
-    if (TEST_COMPAT(7,4)) {
-      if ((a->car || !b->car) &&
-	  (a->cdr == b->cdr))
-	return 1;
-
-      if (b->car) {
-	return 0;
-      }
-    }
-    else {
-      if (a->cdr == b->cdr)
-	return 1;
-    }
+    if (a->cdr == b->cdr)
+      return 1;
 
     {
       struct program *ap = id_to_program(CDR_TO_INT(a));
@@ -4610,8 +4585,7 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
 	/* fprintf(stderr, "ap:%p bp:%p\n", ap, bp); */
 	return 0;
       }
-      if ((flags & LE_WEAK_OBJECTS) &&
-	  (!TEST_COMPAT(7,4) || (!a->car))) {
+      if ((flags & LE_WEAK_OBJECTS) && !a->car) {
 	implements_mode = 0;
 #if 0
 	fprintf(stderr, "  is_compat(%p(%d), %p(%d))\n",

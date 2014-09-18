@@ -1,5 +1,5 @@
 #!/usr/local/bin/pike
-#pike 7.4
+#pike 7.6
 
 // Parse BMML (Black Magic Markup Language) to AutoDoc XML.
 // Written by Fredrik Hubinette, dark sourceror and inventor of BMML.
@@ -147,8 +147,8 @@ string magic(string s, int quote)
 /*
  * Magic to convert SYNTAX sections
  */
-protected inherit Regexp : lastident;
-protected inherit Regexp : megamagic;
+protected inherit Regexp.SimpleRegexp : lastident;
+protected inherit Regexp.SimpleRegexp : megamagic;
 
 string syntax_magic(string s)
 {
@@ -241,7 +241,7 @@ string short(string s)
 }
 
 
-inherit Regexp:is_example;
+inherit Regexp.SimpleRegexp:is_example;
 
 multiset(string) indexes_done=(<>);
 multiset(string) pages_done=(<>);
