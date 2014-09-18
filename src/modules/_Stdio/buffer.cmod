@@ -68,7 +68,7 @@ PIKECLASS IOBuffer
 
   static void io_set_error_mode( IOBuffer *io, struct program *m )
   {
-    if( m ) m->refs++;
+    if( m ) add_ref(m);
     if( io->error_mode ) free_program( io->error_mode );
     io->error_mode = m;
   }
@@ -560,7 +560,7 @@ PIKECLASS IOBuffer
     to->buffer = io_read_pointer(io);
     to->len = len;
     to->sub = Pike_fp->current_object;
-    to->sub->refs++;
+    add_ref(to->sub);
     io_consume( io, len );
 
     if( do_copy )
@@ -749,7 +749,7 @@ PIKECLASS IOBuffer
             io->str = s;
             io->buffer = (unsigned char*)s->str;
             io->len = s->len;
-            s->refs++;
+            add_ref(s);
           }
           else
             io_append( io, s->str, s->len );
@@ -783,7 +783,7 @@ PIKECLASS IOBuffer
             io->len = len;
 
             io->source = p->u.object;
-            io->source->refs++;
+            add_ref(io->source);
             return;
           }
           if( t != MEMOBJ_NONE )
@@ -894,7 +894,7 @@ PIKECLASS IOBuffer
     else
     {
       io->output = f->u.object;
-      io->output->refs++;
+      add_ref(io->output);
     }
   }
 
@@ -2014,7 +2014,7 @@ fail: CALL_AND_UNSET_ONERROR(e);
     this->len = x->len;
     this->malloced = 0;
     this->str = x;
-    x->refs++;
+    add_ref(x);
   }
 
   /*! @decl void read_only()
