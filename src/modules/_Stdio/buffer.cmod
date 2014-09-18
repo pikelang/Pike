@@ -20,6 +20,8 @@
 #include "module_support.h"
 
 #include <arpa/inet.h>
+#undef MP_INT
+#include <gmp.h>
 
 #define DEFAULT_CMOD_STORAGE static
 DECLARATIONS
@@ -586,6 +588,23 @@ PIKECLASS IOBuffer
     return res;
   }
 
+  static INT_TYPE io_read_signed_number_uc( IOBuffer *io, size_t len )
+  {
+    size_t i;
+    INT_TYPE res = 0;
+    if( !len ) return 0;
+    len--;
+    res = io_read_byte_uc(io);
+    if( res & 0x80 )
+      res = (-1<<8)|res;
+    for( i=0; i<len; i++ )
+    {
+      res <<= 8;
+      res |= io_read_byte_uc(io);
+    }
+    return res;
+  }
+
   static LONGEST io_read_number( IOBuffer *io, size_t len )
   {
     LONGEST res;
@@ -605,13 +624,17 @@ PIKECLASS IOBuffer
 
   static struct object *io_read_bignum( IOBuffer *io, size_t len )
   {
-    struct pike_string *num;
+    struct object *o;
+    MP_INT *i;
+    unsigned char *p;
     LONGEST res;
-    num = io_read_string( io, len );
-    if( !num ) return NULL;
-    push_string( num );
-    push_int( 256 );
-    return clone_object( get_auto_bignum_program(), 2 );
+
+    if( !io_avail(io,len) ) return NULL;
+    o = fast_clone_object(get_auto_bignum_program());
+    i = (void*)o->storage;
+    mpz_import( i, len, 1, 1, 0, 0, io_read_pointer(io) );
+    io_consume(io,len);
+    return o;
   }
 
   static void io_add_bignum( IOBuffer *io, struct object *o, int width )
@@ -619,27 +642,56 @@ PIKECLASS IOBuffer
 
   static void io_add_bignum( IOBuffer *io, struct object *o, int width )
   {
+    MP_INT *i = (void*)o->storage;
+    MP_INT tmp;
+    int free;
     unsigned char*d;
     struct pike_string *s;
+    int pad = 0;
+    ssize_t bytes;
+    size_t exp;
 
-    push_int(256);
-    apply( o, "digits", 1 );
+    if( mpz_sgn( i ) < 0 )
+    {
+      mpz_init( &tmp );
+      mpz_add_ui( &tmp, i, 1);
+      pad = 0xff;
+      i = &tmp;
+    }
 
-    s = Pike_sp[-1].u.string;
+    bytes = (mpz_sizeinbase( i, 2 )+7) / 8;
 
-    if( s->len > width )
+    if( bytes > width )
       Pike_error("Number too large to store in %d bits\n", width*8);
 
     d = io_add_space( io, width, 0 );
     io->len += width;
 
-    if( width-s->len )
+    if( width > bytes )
     {
-      memset( d, 0, width-s->len );
-      d += width-s->len;
+      memset( d, pad, width-bytes );
+      d += width-bytes;
     }
-    memcpy(d,s->str,s->len);
-    pop_stack();
+
+    mpz_export( d, &exp, 1, 1, 1, 0, i );
+    if( !exp )
+    {
+      /* if i is 0 mpz_export will not write anything.
+         Handle that by zeroing the byte that should have been written.
+      */
+#ifdef PIKE_DEBUG
+      if( bytes != 1 )
+        Pike_fatal("Oddities abound\n");
+#endif
+      *d = pad;
+    }
+    fprintf( stderr, "exported %d bytes, %d bytes expected, %d bytes total\n", exp, bytes, width );
+    if( pad )
+    {
+      while(exp--)
+        *d++ ^= 0xff; /* pad, but that is 0xff */
+      mpz_clear(&tmp);
+    }
   }
 
   static void io_add_int_uc( IOBuffer *io, ptrdiff_t i, size_t bytes )
@@ -655,7 +707,7 @@ PIKECLASS IOBuffer
 
   static size_t io_add_int( IOBuffer *io, ptrdiff_t i, size_t bytes )
   {
-    unsigned char *x = io_add_space(io, bytes, 0);
+    io_add_space(io, bytes, 0);
     io_add_int_uc( io, i, bytes );
     io_trigger_output( io );
     return io_len( io );
@@ -981,9 +1033,66 @@ PIKECLASS IOBuffer
     RETURN written;
   }
 
+  /*! @decl int read_sint( int size )
+   *!
+   *! Read a network byte order two:s complement signed number of size n*8 bits, then
+   *! return it.
+   *!
+   *! Will return UNDEFINED if there is not enough buffer space
+   *! available unless error mode is set to throw errors.
+   */
+  PIKEFUN int read_sint( int nbytes )
+  {
+    IOBuffer *io = THIS;
+    struct pike_string *tmp;
+    Pike_sp--;
+    if( !io_avail( io, nbytes ) )
+    {
+      push_undefined();
+      return;
+    }
+    if( nbytes <= SIZEOF_INT_TYPE )
+    {
+      push_int( io_read_signed_number_uc( io,nbytes ) );
+      return;
+    }
+
+    // It's a bignum.
+    // We should probably optimize this. :)
+    tmp = io_read_string( io, nbytes );
+    if( tmp->str[0]&0x80 )
+    {
+      push_int(-1);
+      push_int( nbytes * 8 );
+      o_lsh();
+    }
+    ref_push_string( tmp );
+    push_int( 256 );
+    push_object( clone_object( get_auto_bignum_program(), 2 ) );
+    if( tmp->str[0]&0x80 )
+      o_xor();
+    free_string( tmp );
+  }
+
   PIKEFUN int(0..) _size_object( )
   {
       RETURN THIS->malloced ? THIS->allocated : THIS->stash.len;
+  }
+
+  /*! @decl IOBuffer add_padding( int nbytes, int(0..255)|void byte )
+   *!
+   *! Add @[nbytes] bytes of padding, if @[byte] is not specified the
+   *! area will be filled with 0's, otherwise the specified byte will
+   *! be repeated.
+   */
+  PIKEFUN IOBuffer add_padding( int nbytes, int|void _byte )
+  {
+    IOBuffer *io = THIS;
+    int byte = 0;
+    if( _byte ) byte = _byte->u.integer;
+    memset( io_add_space( io, nbytes,0), byte, nbytes );
+    Pike_sp -= args;
+    ref_push_object( io->this );
   }
 
   /*! @decl IOBuffer add( AddArgument ... data )
