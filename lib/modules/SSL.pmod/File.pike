@@ -81,7 +81,7 @@ protected .Connection conn;
 // since it contains cyclic references. Noone else gets to it, though.
 
 protected Stdio.IOBuffer write_buffer;	// Encrypted data to be written.
-protected String.Buffer read_buffer; // Decrypted data that has been read.
+protected Stdio.IOBuffer read_buffer;	// Decrypted data that has been read.
 
 protected int read_buffer_threshold;	// Max number of bytes to read.
 
@@ -351,7 +351,7 @@ protected void create (Stdio.File stream, SSL.Context ctx)
       stream_descr = replace (sprintf ("%O", stream), "%", "%%");
 #endif
     write_buffer = Stdio.IOBuffer();
-    read_buffer = String.Buffer();
+    read_buffer = Stdio.IOBuffer();
     read_buffer_threshold = Stdio.DATA_CHUNK_SIZE;
     real_backend = stream->query_backend();
     close_state = STREAM_OPEN;
@@ -675,8 +675,7 @@ Stdio.File shutdown()
       werror ("Warning: Got buffered data after close in %O: %O%s\n", this,
 	      conn->left_over[..99], sizeof (conn->left_over) > 100 ? "..." : "");
 #endif
-      read_buffer = String.Buffer (sizeof (conn->left_over));
-      read_buffer->add (conn->left_over);
+      read_buffer->add(conn->left_over);
       close_state = STREAM_OPEN;
     }
 
@@ -829,9 +828,7 @@ string read (void|int length, void|int(0..1) not_all)
       }
     }
 
-    string res = read_buffer->get();
-    read_buffer->add (res[length..]);
-    res = res[..length-1];
+    string res = read_buffer->try_read(length);
 
     read_buffer_threshold = Stdio.DATA_CHUNK_SIZE;
 
@@ -1085,7 +1082,7 @@ protected void internal_poll()
   //
   if (sizeof(read_buffer)) {
     if (read_callback) {
-      string received = read_buffer->get();
+      string received = read_buffer->read();
       SSL3_DEBUG_MSG ("call_read_callback: Calling read callback %O "
 		      "with %d bytes\n", read_callback, sizeof (received));
       // Never called if there's an error - no need to propagate errno.
