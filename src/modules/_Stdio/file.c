@@ -4428,7 +4428,7 @@ static void file_pipe(INT32 args)
 #if defined(HAVE_SOCKETPAIR)
     if(!(type & ~(UNIX_SOCKET_CAPABILITIES)))
     {
-      i=fd_socketpair(AF_UNIX, SOCK_STREAM, 0, &inout[0]);
+      i=fd_socketpair(AF_UNIX, SOCK_STREAM, 0, inout);
       if (i >= 0) {
 	type=UNIX_SOCKET_CAPABILITIES;
 	break;
@@ -4439,7 +4439,7 @@ static void file_pipe(INT32 args)
 #ifndef UNIX_SOCKETS_WORKS_WITH_SHUTDOWN
     if(!(type & ~(SOCKET_CAPABILITIES)))
     {
-      i=socketpair_ultra(AF_UNIX, SOCK_STREAM, 0, &inout[0]);
+      i=socketpair_ultra(AF_UNIX, SOCK_STREAM, 0, inout);
       if (i >= 0) {
 	type=SOCKET_CAPABILITIES;
 	break;
