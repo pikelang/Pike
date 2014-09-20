@@ -611,10 +611,8 @@ PIKECLASS Buffer
 
   static INT_TYPE io_read_number_uc( Buffer *io, size_t len )
   {
-    size_t i;
     LONGEST res = 0;
-    for( i=0; i<len; i++ )
-    {
+    while( LIKELY(len--) ) {
       res <<= 8;
       res |= io_read_byte_uc(io);
     }
