@@ -621,17 +621,13 @@ PIKECLASS Buffer
 
   static INT_TYPE io_read_signed_number_uc( Buffer *io, size_t len )
   {
-    size_t i;
     INT_TYPE res = 0;
-    if( !len ) return 0;
-    len--;
-    res = io_read_byte_uc(io);
-    if( res & 0x80 )
-      res = (-1<<8)|res;
-    for( i=0; i<len; i++ )
-    {
-      res <<= 8;
-      res |= io_read_byte_uc(io);
+    if( LIKELY(len--) ) {
+      res = (INT8)io_read_byte_uc(io);
+      while( LIKELY(len--) ) {
+        res <<= 8;
+        res |= io_read_byte_uc(io);
+      }
     }
     return res;
   }
