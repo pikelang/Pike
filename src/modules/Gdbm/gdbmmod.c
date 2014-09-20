@@ -119,7 +119,7 @@ void gdbmmod_fatal(const char *err)
 
 /*! @module Gdbm
  *!
- *! This module provides an interface to the GNU ddm databae.
+ *! This module provides an interface to the GNU dbm database.
  *!
  *! The basic use of GDBM is to store key/data pairs in a data
  *! file. Each key must be unique and each key is paired with only one
@@ -131,7 +131,7 @@ void gdbmmod_fatal(const char *err)
  *! key/data pairs in a database.
  *!
  *! The @[DB] class also overloads enough operators to make it behave
- *! a lot like a @[mapping(string(8bit):string(8bit))], you can index it,
+ *! a lot like a @tt{mapping(string(8bit):string(8bit))@}, you can index it,
  *! assign indices and loop over it using foreach.
  *!
  */
