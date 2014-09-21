@@ -3,75 +3,77 @@
 /*
  * The SSL 2.0 protocol was specified in the following document:
  *
- *   SSL 2.0			draft-hickman-netscape-ssl-00.txt
+ *  [-] SSL 2.0				draft-hickman-netscape-ssl-00.txt
  *
  * The SSL 3.0 Protocol was specified in the following draft (later an RFC):
  *
- *   SSL 3.0			draft-freier-ssl-version3-02.txt
- *   SSL 3.0			RFC 6101
+ *  [X] SSL 3.0				draft-freier-ssl-version3-02.txt
+ *  [X] SSL 3.0				RFC 6101
  *
  * The TLS Protocol is specified in the following RFCs:
  *
- *   SSL 3.1/TLS 1.0		RFC 2246
- *   Kerberos for TLS 1.0	RFC 2712
- *   AES Ciphers for TLS 1.0	RFC 3268
- *   Extensions for TLS 1.0	RFC 3546
- *   LZS Compression for TLS	RFC 3943
- *   Camellia Cipher for TLS	RFC 4132
- *   SEED Cipher for TLS 1.0	RFC 4162
- *   Pre-Shared Keys for TLS	RFC 4279
+ *  [X] SSL 3.1/TLS 1.0			RFC 2246
+ *  [ ] Kerberos for TLS 1.0		RFC 2712
+ *  [X] AES Ciphers for TLS 1.0		RFC 3268
+ *  [/] Extensions for TLS 1.0		RFC 3546
+ *  [X] TLS Compression Methods		RFC 3749
+ *  [ ] LZS Compression for TLS		RFC 3943
+ *  [X] Camellia Cipher for TLS		RFC 4132
+ *  [ ] SEED Cipher for TLS 1.0		RFC 4162
+ *  [ ] Pre-Shared Keys for TLS		RFC 4279
  *
- *   SSL 3.2/TLS 1.1		RFC 4346
- *   Extensions for TLS 1.1	RFC 4366
- *   ECC Ciphers for TLS 1.1	RFC 4492
- *   Session Resumption		RFC 4507
- *   TLS Handshake Message	RFC 4680
- *   User Mapping Extension	RFC 4681
- *   PSK with NULL for TLS 1.1	RFC 4785
- *   SRP with TLS 1.1		RFC 5054
- *   Session Resumption		RFC 5077
- *   OpenPGP Authentication	RFC 5081
- *   Authenticated Encryption	RFC 5116
+ *  [X] SSL 3.2/TLS 1.1			RFC 4346
+ *  [/] Extensions for TLS 1.1		RFC 4366
+ *  [X] ECC Ciphers for TLS 1.1		RFC 4492
+ *  [ ] Session Resumption		RFC 4507
+ *  [ ] TLS Handshake Message		RFC 4680
+ *  [ ] User Mapping Extension		RFC 4681
+ *  [ ] PSK with NULL for TLS 1.1	RFC 4785
+ *  [ ] SRP with TLS 1.1		RFC 5054
+ *  [ ] Session Resumption		RFC 5077
+ *  [ ] OpenPGP Authentication		RFC 5081
+ *  [X] Authenticated Encryption	RFC 5116
  *
- *   DTLS over DCCP		RFC 5238
+ *  [ ] DTLS over DCCP			RFC 5238
  *
- *   SSL 3.3/TLS 1.2		RFC 5246
- *   AES GCM Cipher for TLS	RFC 5288
- *   ECC with SHA256/384 & GCM	RFC 5289
- *   Suite B Profile for TLS	RFC 5430
- *   DES and IDEA for TLS	RFC 5469
- *   Pre-Shared Keys with GCM	RFC 5487
- *   ECDHA_PSK Cipher for TLS	RFC 5489
- *   Renegotiation Extension	RFC 5746
- *   Authorization Extensions	RFC 5878
- *   Camellia Cipher for TLS	RFC 5932
- *   KeyNote Auth for TLS	RFC 6042
- *   TLS Extension Defintions	RFC 6066
- *   OpenPGP Authentication	RFC 6091
- *   ARIA Cipher for TLS	RFC 6209
- *   Additional Master Secrets	RFC 6358
- *   Camellia Cipher for TLS	RFC 6367
- *   Suite B Profile for TLS	RFC 6460
- *   Heartbeat Extension	RFC 6520
- *   AES-CCM Cipher for TLS	RFC 6655
- *   Multiple Certificates	RFC 6961
- *   Certificate Transparency	RFC 6962
- *   ECC Brainpool Curves	RFC 7027
- *   Raw Public Keys in (D)TLS	RFC 7250
- *   AES-CCM ECC Suites for TLS	RFC 7251
- *   TLS ALPN Extension		RFC 7301
- *   TLS Encrypt-then-MAC	RFC 7366
+ *  [X] SSL 3.3/TLS 1.2			RFC 5246
+ *  [X] AES GCM Cipher for TLS		RFC 5288
+ *  [X] ECC with SHA256/384 & GCM	RFC 5289
+ *  [/] Suite B Profile for TLS		RFC 5430
+ *  [ ] DES and IDEA for TLS		RFC 5469
+ *  [ ] Pre-Shared Keys with GCM	RFC 5487
+ *  [ ] ECDHA_PSK Cipher for TLS	RFC 5489
+ *  [ ] Renegotiation Extension		RFC 5746
+ *  [ ] Authorization Extensions	RFC 5878
+ *  [X] Camellia Cipher for TLS		RFC 5932
+ *  [ ] KeyNote Auth for TLS		RFC 6042
+ *  [ ] TLS Extension Definitions	RFC 6066
+ *  [ ] OpenPGP Authentication		RFC 6091
+ *  [ ] ARIA Cipher for TLS		RFC 6209
+ *  [ ] Additional Master Secrets	RFC 6358
+ *  [X] Camellia Cipher for TLS		RFC 6367
+ *  [/] Suite B Profile for TLS		RFC 6460
+ *  [X] Heartbeat Extension		RFC 6520
+ *  [X] AES-CCM Cipher for TLS		RFC 6655
+ *  [ ] Multiple Certificates		RFC 6961
+ *  [ ] Certificate Transparency	RFC 6962
+ *  [ ] ECC Brainpool Curves		RFC 7027
+ *  [ ] Raw Public Keys in (D)TLS	RFC 7250
+ *  [X] AES-CCM ECC Suites for TLS	RFC 7251
+ *  [ ] TLS ALPN Extension		RFC 7301
+ *  [X] TLS Encrypt-then-MAC		RFC 7366
  *
  * Drafts (in order of age, oldest first):
- *   56-bit Export Cipher	draft-ietf-tls-56-bit-ciphersuites-01.txt
- *   Chacha20Poly1305		draft-agl-tls-chacha20poly1305-02.txt
- *   TLS Padding		draft-agl-tls-padding
- *   TLS Fallback SCSV		draft-ietf-tls-downgrade-scsv-00.txt
- *   SSL 3.4/TLS 1.3		draft-ietf-tls-tls13-02.txt
- *   Prohibit RC4		draft-ietf-tls-prohibiting-rc4
+ *  [/] 56-bit Export Cipher	draft-ietf-tls-56-bit-ciphersuites-01.txt
+ *  [/] Next Protocol Negotiation  	draft-agl-tls-nextprotoneg
+ *  [ ] Chacha20Poly1305	draft-agl-tls-chacha20poly1305-02.txt
+ *  [ ] TLS Padding		draft-agl-tls-padding
+ *  [X] TLS Fallback SCSV	draft-ietf-tls-downgrade-scsv-00.txt
+ *  [ ] SSL 3.4/TLS 1.3		draft-ietf-tls-tls13-02.txt
+ *  [ ] Prohibit RC4		draft-ietf-tls-prohibiting-rc4
  *
  * Other:
- *   Next Protocol Negotiation  Google technical note: nextprotoneg
+ *  [/] Next Protocol Negotiation  	Google technical note: nextprotoneg
  *
  * The TLS parameters registry:
  *   http://www.iana.org/assignments/tls-parameters/tls-parameters.xhtml
