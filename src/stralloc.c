@@ -3144,7 +3144,7 @@ PMOD_EXPORT struct pike_string *finish_string_builder(struct string_builder *s)
 {
   ptrdiff_t len = s->s->len;
   if (len != s->malloced) {
-    s->s->len = s->malloced;
+    s->s->len = s->malloced;	/* Restore the allocated length. */
     s->s = realloc_unlinked_string(s->s, len);
   }
   if(s->known_shift == s->s->size_shift)
