@@ -561,6 +561,13 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	      }
 	      break;
 
+            case EXTENSION_padding:
+              if( !equal(String.range((string)extension_data), ({0,0})) )
+                send_packet(alert(ALERT_fatal, ALERT_illegal_parameter,
+                                  "Possible covert side channel in padding.\n"
+                                  ));
+              break;
+
 	    default:
               SSL3_DEBUG_MSG("Unhandled extension %O (%d bytes)\n",
                              (string)extension_data,
