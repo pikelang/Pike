@@ -3593,9 +3593,11 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
       je( &label_B );
       /* It's something else, svalue already in ARG1. */
       amd64_call_c_function( pike_sizeof );
+      jmp( label_A );
       LABEL_B;
       mov_mem32_reg( P_REG_RBX,OFFSETOF(pike_string, len ), P_REG_RAX );
       /* Store result on stack */
+      LABEL_A;
       amd64_push_int_reg( P_REG_RAX );
     }
     return;
