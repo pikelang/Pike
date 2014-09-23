@@ -243,21 +243,6 @@ class State {
 
 #endif
 
-  //! Compatibility with Pike 7.8.
-  variant __deprecated__ this_program generate_key(int(128..) bits,
-						   function(int(0..):string(8bit)) rnd)
-  {
-    function(int(0..):string(8bit)) old_rnd = random;
-    random = rnd;
-    this_program res;
-    mixed err = catch {
-	res = generate_key(bits);
-      };
-    random = old_rnd;
-    if (err) throw(err);
-    return res;
-  }
-
   //
   // --- PKCS methods
   //
@@ -456,6 +441,21 @@ class State {
   //
   // --- Deprecated stuff
   //
+
+  //! Compatibility with Pike 7.8.
+  variant __deprecated__ this_program generate_key(int(128..) bits,
+						   function(int(0..):string(8bit)) rnd)
+  {
+    function(int(0..):string(8bit)) old_rnd = random;
+    random = rnd;
+    this_program res;
+    mixed err = catch {
+	res = generate_key(bits);
+      };
+    random = old_rnd;
+    if (err) throw(err);
+    return res;
+  }
 
   //! Returns the RSA modulo (n) as a binary string.
   __deprecated__ string(8bit) cooked_get_n()
