@@ -390,7 +390,7 @@ protected int parse_variables()
 
 protected void update_mime_var(string name, string new)
 {
-  stirng|array val = variables[name];
+  string|array val = variables[name];
   if( !val )
   {
     variables[name] = new;
