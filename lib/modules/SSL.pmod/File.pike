@@ -80,8 +80,9 @@ protected .Connection conn;
 // Always set when stream is. Destructed with destroy() at shutdown
 // since it contains cyclic references. Noone else gets to it, though.
 
-protected Stdio.IOBuffer write_buffer;	// Encrypted data to be written.
-protected Stdio.IOBuffer read_buffer;	// Decrypted data that has been read.
+protected Stdio.IOBuffer write_buffer;		// Encrypted data to write.
+protected Stdio.IOBuffer user_read_buffer;	// Decrypted data to read.
+protected Stdio.IOBuffer user_write_buffer;	// Unencrypted data to write.
 
 protected int read_buffer_threshold;	// Max number of bytes to read.
 
@@ -351,7 +352,7 @@ protected void create (Stdio.File stream, SSL.Context ctx)
       stream_descr = replace (sprintf ("%O", stream), "%", "%%");
 #endif
     write_buffer = Stdio.IOBuffer();
-    read_buffer = Stdio.IOBuffer();
+    user_read_buffer = Stdio.IOBuffer();
     read_buffer_threshold = Stdio.DATA_CHUNK_SIZE;
     real_backend = stream->query_backend();
     close_state = STREAM_OPEN;
@@ -675,7 +676,7 @@ Stdio.File shutdown()
       werror ("Warning: Got buffered data after close in %O: %O%s\n", this,
 	      conn->left_over[..99], sizeof (conn->left_over) > 100 ? "..." : "");
 #endif
-      read_buffer->add(conn->left_over);
+      user_read_buffer->add(conn->left_over);
       close_state = STREAM_OPEN;
     }
 
@@ -795,7 +796,7 @@ string read (void|int length, void|int(0..1) not_all)
   ENTER (0) {
     if (close_state > STREAM_OPEN) error ("Not open.\n");
 
-    if (read_errno && !sizeof(read_buffer)) {
+    if (read_errno && !sizeof(user_read_buffer)) {
       local_errno = read_errno;
       SSL3_DEBUG_MSG ("SSL.File->read: Propagating old callback error: %s\n",
 		      strerror (local_errno));
@@ -816,19 +817,19 @@ string read (void|int length, void|int(0..1) not_all)
       stream->set_read_callback(ssl_read_callback);
 
       if (not_all) {
-	if (!sizeof (read_buffer))
-	  RUN_MAYBE_BLOCKING (!sizeof (read_buffer) &&
+	if (!sizeof (user_read_buffer))
+	  RUN_MAYBE_BLOCKING (!sizeof (user_read_buffer) &&
 			      !(conn->state & CONNECTION_peer_down), 0);
       }
       else {
-	if (sizeof (read_buffer) < length)
-	  RUN_MAYBE_BLOCKING ((sizeof (read_buffer) < length) &&
+	if (sizeof (user_read_buffer) < length)
+	  RUN_MAYBE_BLOCKING ((sizeof (user_read_buffer) < length) &&
 			      !(conn->state & CONNECTION_peer_down),
 			      nonblocking_mode);
       }
     }
 
-    string res = read_buffer->try_read(length);
+    string res = user_read_buffer->try_read(length);
 
     read_buffer_threshold = Stdio.DATA_CHUNK_SIZE;
 
@@ -838,10 +839,10 @@ string read (void|int length, void|int(0..1) not_all)
 
     SSL3_DEBUG_MSG ("SSL.File->read: Read done, returning %d bytes "
 		    "(%d/%d still in buffer)\n",
-		    sizeof (res), sizeof (read_buffer), read_buffer_threshold);
+		    sizeof (res), sizeof (user_read_buffer), read_buffer_threshold);
 
     if (stream) {
-      if ((sizeof(read_buffer) >= read_buffer_threshold) ||
+      if ((sizeof(user_read_buffer) >= read_buffer_threshold) ||
 	  (conn->state & CONNECTION_peer_down)) {
 	SSL3_DEBUG_MSG("SSL.File->read: Removing read_callback.\n");
 	stream->set_read_callback(0);
@@ -1080,9 +1081,9 @@ protected void internal_poll()
   //
   // read_callback
   //
-  if (sizeof(read_buffer)) {
+  if (sizeof(user_read_buffer)) {
     if (read_callback) {
-      string received = read_buffer->read();
+      string received = user_read_buffer->read();
       SSL3_DEBUG_MSG ("call_read_callback: Calling read callback %O "
 		      "with %d bytes\n", read_callback, sizeof (received));
       // Never called if there's an error - no need to propagate errno.
@@ -1093,8 +1094,8 @@ protected void internal_poll()
   //
   // close_callback
   //
-  // NB: Don't call the close_callback before the read_buffer is empty.
-  if (!sizeof(read_buffer) &&
+  // NB: Don't call the close_callback before the user_read_buffer is empty.
+  if (!sizeof(user_read_buffer) &&
       (conn->state &
        (CONNECTION_peer_closed | CONNECTION_local_closing)) ==
       CONNECTION_peer_closed) {
@@ -1842,8 +1843,8 @@ protected int ssl_read_callback (int ignored, string input)
 
 	  SSL3_DEBUG_MSG ("ssl_read_callback: "
 			  "Got %d bytes of application data\n", sizeof (data));
-	  read_buffer->add (data);
-	  if (sizeof(read_buffer) >= read_buffer_threshold) {
+	  user_read_buffer->add (data);
+	  if (sizeof(user_read_buffer) >= read_buffer_threshold) {
 	    SSL3_DEBUG_MSG("SSL.File->rcb: Removing read_callback.\n");
 	    stream->set_read_callback(0);
 	  }
