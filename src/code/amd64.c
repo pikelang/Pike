@@ -2082,12 +2082,12 @@ void ins_f_byte(unsigned int b)
       /* FIXME:
 
 	 Int.native_min / -1 -> exception.
-	 
+
 	 This checks for -<whatever> / -1.
 
 	 There is bound to be a better way.
 	 Somehow disable the exception?
-	 
+
 	 Some SSE alternative that does not throw?
 
 	 Perhaps a 64/64->64 instead of the current 128/64->64?
@@ -2274,19 +2274,6 @@ void ins_f_byte(unsigned int b)
     mov_mem128_reg( P_REG_RCX, 16, P_REG_XMM1 );
     mov_reg_mem128( P_REG_XMM1, P_REG_RCX, 0 );
     mov_reg_mem128( P_REG_XMM0, P_REG_RCX, 16 );
-#if 0
-    add_reg_imm_reg( sp_reg, -2*sizeof(struct svalue), P_REG_R10);
-    mov_mem_reg( P_REG_R10, 0, P_REG_RAX );
-    mov_mem_reg( P_REG_R10, 8, P_REG_RCX );
-    mov_mem_reg( P_REG_R10,16, P_REG_R8 );
-    mov_mem_reg( P_REG_R10,24, P_REG_R9 );
-    /* load done. */
-    mov_reg_mem(P_REG_R8,  P_REG_R10,0);
-    mov_reg_mem(P_REG_R9,  P_REG_R10,8);
-    mov_reg_mem(P_REG_RAX, P_REG_R10,sizeof(struct svalue));
-    mov_reg_mem(P_REG_RCX, P_REG_R10,8+sizeof(struct svalue));
-    /* save done. */
-#endif
     return;
 
   case F_INDEX:
@@ -2306,7 +2293,7 @@ void ins_f_byte(unsigned int b)
 
     /* Array and int index. */
     mov_mem32_reg( P_REG_RCX, OFFSETOF(array,size), P_REG_RDX );
-    cmp_reg32_imm( P_REG_RBX, 0 ); jge( &label_D );
+    cmp_reg_imm( P_REG_RBX, 0 ); jge( &label_D );
     /* less than 0, add size */
     add_reg_reg( P_REG_RBX, P_REG_RDX );
 
@@ -2344,6 +2331,34 @@ void ins_f_byte(unsigned int b)
     /* done */
     return;
 
+    case F_SIZEOF_STRING:
+      {
+      LABELS();
+      ins_debug_instr_prologue(b, 0, 0);
+      amd64_load_sp_reg();
+      mov_mem8_reg( sp_reg, SVAL(-1).type, P_REG_RAX );
+      cmp_reg32_imm( P_REG_RAX, PIKE_T_STRING );
+      jne( &label_A );
+      mov_mem_reg( sp_reg, SVAL(-1).value, P_REG_RAX);
+      mov_mem_reg( P_REG_RAX, OFFSETOF(pike_string,len), P_REG_RBX );
+      /* dec refs */
+      add_mem32_imm( P_REG_RAX, OFFSETOF(pike_string,refs),  -1);
+      jnz( &label_B );
+      /* no refs, call really_free_svalue */
+      add_reg_imm_reg( sp_reg, SVAL(-1).off, ARG1_REG );
+      amd64_call_c_function(really_free_svalue);
+      jmp(&label_B);
+     LABEL_A;
+        /* not a string. */
+       amd64_call_c_opcode( addr, flags );
+       jmp(&label_C);
+     LABEL_B;
+      /* save size on stack. */
+       mov_imm_mem( PIKE_T_INT, sp_reg, SVAL(-1).type );
+       mov_reg_mem( P_REG_RBX, sp_reg, SVAL(-1).value );
+     LABEL_C;
+      }
+      return;
   case F_SIZEOF:
     {
       LABELS();
@@ -3557,6 +3572,29 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
       /* It's something else, svalue already in ARG1. */
       amd64_call_c_function( pike_sizeof );
       LABEL_C;/* all done, res in RAX */
+      /* Store result on stack */
+      amd64_push_int_reg( P_REG_RAX );
+    }
+    return;
+
+  case F_SIZEOF_LOCAL_STRING:
+    {
+      LABELS();
+      ins_debug_instr_prologue(a-F_OFFSET, b, 0);
+      amd64_load_fp_reg();
+      amd64_load_sp_reg();
+
+      mov_mem_reg( fp_reg, OFFSETOF(pike_frame,locals), ARG1_REG);
+      add_reg_imm( ARG1_REG, b*sizeof(struct svalue));
+      mov_sval_type( ARG1_REG, P_REG_RAX );
+      mov_mem_reg( ARG1_REG, OFFSETOF(svalue, u.string ), P_REG_RBX);
+      /* type in RAX, svalue in ARG1 */
+      cmp_reg32_imm( P_REG_RAX, PIKE_T_STRING );
+      je( &label_B );
+      /* It's something else, svalue already in ARG1. */
+      amd64_call_c_function( pike_sizeof );
+      LABEL_B;
+      mov_mem32_reg( P_REG_RBX,OFFSETOF(pike_string, len ), P_REG_RAX );
       /* Store result on stack */
       amd64_push_int_reg( P_REG_RAX );
     }

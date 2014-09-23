@@ -5506,7 +5506,12 @@ static int generate_sizeof(node *n)
   if(count_args(CDR(n)) != 1) return 0;
   if(do_docode(CDR(n),DO_NOT_COPY) != 1)
     Pike_fatal("Count args was wrong in sizeof().\n");
-  emit0(F_SIZEOF);
+  if( pike_types_le( my_get_arg(&CDR(n), 0)[0]->type, string_type_string ) )
+      emit0(F_SIZEOF_STRING);
+  /* else if( pike_types_le( my_get_arg(&CDR(n), 0)[0]->type, array_type_string ) ) */
+  /*     emit0(F_SIZEOF_ARRAY); */
+  else
+      emit0(F_SIZEOF);
   return 1;
 }
 

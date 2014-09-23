@@ -2179,7 +2179,17 @@ OPCODE0(F_SIZEOF, "sizeof", 0, {
   push_int(val);
 });
 
+OPCODE0(F_SIZEOF_STRING, "sizeof(string)", 0, {
+  INT_TYPE val = pike_sizeof(Pike_sp-1);
+  pop_stack();
+  push_int(val);
+});
+
 OPCODE1(F_SIZEOF_LOCAL, "sizeof local", I_UPDATE_SP, {
+  push_int(pike_sizeof(Pike_fp->locals+arg1));
+});
+
+OPCODE1(F_SIZEOF_LOCAL_STRING, "sizeof local string", I_UPDATE_SP, {
   push_int(pike_sizeof(Pike_fp->locals+arg1));
 });
 
