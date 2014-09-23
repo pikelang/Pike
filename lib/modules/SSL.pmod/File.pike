@@ -1088,6 +1088,8 @@ protected void internal_poll()
 		      "with %d bytes\n", read_callback, sizeof (received));
       // Never called if there's an error - no need to propagate errno.
       read_callback (callback_id, received);
+      if(stream)
+        stream->set_read_callback(ssl_read_callback);
     }
   }
 
