@@ -50,7 +50,9 @@ FILE_FUNC("sync", file_sync, tFunc(tNone,tInt))
 #endif /* HAVE_FSYNC */
 
 /* function(int,int|void,int|void:int) */
-FILE_FUNC("seek",file_seek, tFunc(tInt tOr(tInt,tVoid) tOr(tInt,tVoid),tInt))
+FILE_FUNC("seek",file_seek,
+          tOr(tFunc(tInt tOr(tNStr(tInt05),tVoid),tInt),
+              tAttr("deprecated",tFunc(tInt tInt tOr(tInt,tVoid),tInt))))
 /* function(:int) */
 FILE_FUNC("tell",file_tell, tFunc(tNone,tInt))
 /* function(int:int) */

@@ -130,7 +130,7 @@ class BlockFile
   inherit Stream;
 
   //!
-  int seek(int to, int|void how);
+  int seek(int to, string|void how);
 
   //!
   int tell();
@@ -1891,9 +1891,11 @@ class FILE
     return r;
   }
 
-  int seek(int pos)
+  int seek(int pos, string|void how)
   {
     bpos=0;  b=""; cached_lines = ({}); lp=0;
+    if( how )
+        return file::seek(pos,[string]how);
     return file::seek(pos);
   }
 

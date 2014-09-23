@@ -186,18 +186,36 @@ void unread(string s) {
 
 //! @seealso
 //!   @[Stdio.File()->seek()]
-int seek(int pos, void|int mult, void|int add) {
-  if(mult)
-    pos = pos*mult+add;
-  if(pos<0)
+int seek(int pos, string|void how) {
+  if( !how )
   {
-    pos = sizeof(data)+pos;
-    if( pos < 0 )
-	pos = 0;
+      how = Stdio.SEEK_SET;
+      if( pos < 0 )
+          how = Stdio.SEEK_END;
   }
-  ptr = pos;
-  if( ptr > strlen( data ) )
-      ptr = strlen(data);
+  switch( how )
+  {
+      case Stdio.SEEK_SET:
+          ptr = pos;
+          if( ptr > strlen( data ) )
+              ptr = strlen(data);
+          break;
+      case Stdio.SEEK_END:
+          pos = sizeof(data)+pos;
+          if( pos < 0 )
+              pos = 0;
+          break;
+      case Stdio.SEEK_CUR:
+          ptr += pos;
+          if( ptr > strlen( data ) )
+              ptr = strlen(data);
+          break;
+#if Stdio.SEEK_HOLE
+      case Stdio.SEEK_HOLE:
+      case Stdio.SEEK_DATA:
+          return -1;
+#endif
+  }
   return ptr;
 }
 

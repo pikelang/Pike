@@ -3062,27 +3062,104 @@ void file_sync(INT32 args)
 #define SEEK64
 #endif
 
-/*! @decl int seek(int pos)
- *! @decl int seek(int unit, int mult)
- *! @decl int seek(int unit, int mult, int add)
+
+/*! @decl int seek(int offset)
+ *! @decl int seek(int offset, string whence)
  *!
- *! Seek to a specified offset in a file.
+ *! The seek() function repositions the offset of the open file
+ *! associated with the file descriptor fd to the argument @[offset]
+ *! according to the directive @[whence] as follows:
  *!
- *! If @[mult] or @[add] are specified, @[pos] is calculated as
- *! @expr{@[pos] = @[unit]*@[mult] + @[add]@}.
+ *! @string
+ *! @value Stdio.SEEK_SET
+ *! The offset is set to @[offset] bytes.
+ *! @value Stdio.SEEK_CUR
+ *! The offset is set to its current location plus @[offset] bytes.
+ *! @value Stdio.SEEK_END
+ *! The offset is set to the size of the file plus @[offset] bytes.
+ *! @endstring
  *!
- *! If @[pos] is negative then it is relative to the end of the file,
- *! otherwise it's an absolute offset from the start of the file.
+ *! If @[whence] is not specified it is SEEK_SET if @[offset] is
+ *! positive, and if @[offset] is negative SEEK_END.
+ *!
+ *! The seek() function on most operating systems allows the file
+ *! offset to be set beyond the end of the file (but this does not
+ *! change the size of the file).  If data is later written at this
+ *! point, subsequent reads of the data in the gap (a "hole") return
+ *! null bytes ('\0') until data is actually written into the gap.
+ *!
+ *! Seeking file data and holes
+ *!
+ *! Stdio.SEEK_DATA and Stdio.SEEK_HOLE are nonstandard extensions
+ *! present in Linux, Solaris, FreeBSD, and DragonFly BSD; they are
+ *! proposed for inclusion in the next POSIX revision.
+ *! @string
+ *! @value Stdio.SEEK_DATA
+ *!  Adjust the file offset to the next location in the file greater
+ *!  than or equal to offset containing data.  If offset points to
+ *!  data, then the file offset is set to offset.
+ *!
+ *! @value Stdio.SEEK_HOLE
+ *! Adjust the file offset to the next hole in the file greater than
+ *! or equal to offset.  If offset points into the middle of a hole,
+ *! then the file offset is set to offset.  If there is no hole past
+ *! offset, then the file offset is adjusted to the end of the file
+ *! (i.e., there is an implicit hole at the end of any file).
+ *! @endstring
+ *!
+ *! In both of the above cases, seek() fails if offset points past the
+ *! end of the file.
+ *!
+ *! These operations allow applications to map holes in a sparsely
+ *! allocated file.  This can be useful for applications such as file
+ *! backup tools, which can save space when creating backups and
+ *! preserve holes, if they have a mechanism for discovering holes.
+ *!
+ *! For the purposes of these operations, a hole is a sequence of
+ *! zeros that (normally) has not been allocated in the underlying
+ *! file storage.  However, a filesystem is not obliged to report
+ *! holes, so these operations are not a guaranteed mechanism for
+ *! mapping the storage space actually allocated to a file.
+ *! (Furthermore, a sequence of zeros that actually has been written
+ *! to the underlying storage may or may not be reported as a hole.)
+ *!
+ *! In the simplest implementation, a filesystem can support the
+ *! operations by making SEEK_HOLE always return the offset of the end
+ *! of the file, and making SEEK_DATA always return offset (i.e., even
+ *! if the location referred to by offset is a hole, it can be
+ *! considered to consist of data that is a sequence of zeros).
  *!
  *! @returns
- *!   Returns the new offset, or @expr{-1@} on failure.
- *!
- *! @note
- *!   The arguments @[mult] and @[add] are considered obsolete, and
- *!   should not be used.
+ *! Upon successful completion, seek() returns the resulting offset
+ *! location as measured in bytes from the beginning of the file.  On
+ *! error, the value (off_t) -1 is returned and @[errno] is set to
+ *! indicate the error.
  *!
  *! @seealso
  *!   @[tell()]
+ */
+
+/*
+ * @decl deprecated variant int seek(int unit, int mult)
+ * @decl deprecated variant int seek(int unit, int mult, int add)
+ *
+ * Seek to a specified offset in a file.
+ *
+ * If @[mult] or @[add] are specified, @[pos] is calculated as
+ * @expr{@[pos] = @[unit]*@[mult] + @[add]@}.
+ *
+ * If @[pos] is negative then it is relative to the end of the file,
+ * otherwise it's an absolute offset from the start of the file.
+ *
+ * @returns
+ *   Returns the new offset, or @expr{-1@} on failure.
+ *
+ * @note
+ *   The arguments @[mult] and @[add] are considered obsolete, and
+ *   should not be used.
+ *
+ * @seealso
+ *   @[tell()]
  */
 static void file_seek(INT32 args)
 {
@@ -3091,6 +3168,7 @@ static void file_seek(INT32 args)
 #else
   off_t to = 0;
 #endif
+  int how = SEEK_SET;
 
   if( args < 1)
     SIMPLE_TOO_FEW_ARGS_ERROR("seek", 1);
@@ -3110,25 +3188,35 @@ static void file_seek(INT32 args)
   if(FD < 0)
     Pike_error("File not open.\n");
 
-  if(args>1)
-  {
-    if(TYPEOF(Pike_sp[-args+1]) != PIKE_T_INT)
-      SIMPLE_BAD_ARG_ERROR("seek", 2, "int");
-    to *= Pike_sp[-args+1].u.integer;
-  }
-  if(args>2)
-  {
-    if(TYPEOF(Pike_sp[-args+2]) != PIKE_T_INT)
-      SIMPLE_BAD_ARG_ERROR("seek", 3, "int");
-    to += Pike_sp[-args+2].u.integer;
-  }
 
+  if( args == 2 && TYPEOF(Pike_sp[-args+1]) == PIKE_T_STRING )
+  {
+    how = Pike_sp[-args+1].u.string->str[0];
+  }
+  else
+  {
+    if(args>1)
+    {
+      if(TYPEOF(Pike_sp[-args+1]) != PIKE_T_INT)
+        SIMPLE_BAD_ARG_ERROR("seek", 2, "int");
+      to *= Pike_sp[-args+1].u.integer;
+    }
+    if(args>2)
+    {
+      if(TYPEOF(Pike_sp[-args+2]) != PIKE_T_INT)
+        SIMPLE_BAD_ARG_ERROR("seek", 3, "int");
+      to += Pike_sp[-args+2].u.integer;
+    }
+
+    if( to < 0 )
+      how = SEEK_END;
+  }
   ERRNO=0;
 
 #if defined(HAVE_LSEEK64) && !defined(__NT__)
-  to = lseek64(FD,to,to<0 ? SEEK_END : SEEK_SET);
+  to = lseek64(FD,to,how);
 #else
-  to = fd_lseek(FD,to,to<0 ? SEEK_END : SEEK_SET);
+  to = fd_lseek(FD,to,how);
 #endif
   if(to<0) ERRNO=errno;
 
@@ -6190,6 +6278,26 @@ PIKE_MODULE_INIT
   add_integer_constant("PROP_REVERSE",fd_REVERSE,0);
 
   add_integer_constant("PROP_IS_NONBLOCKING", FILE_NONBLOCKING, 0);
+
+  /* seek modes. These are strings to keep compatibility in seek(). */
+  {
+    static char seek_how[] = {
+      SEEK_CUR,0,
+      SEEK_SET,0,
+      SEEK_END,0
+#ifdef SEEK_DATA
+      ,SEEK_DATA,0,
+      SEEK_HOLE,0
+#endif
+    };
+    add_string_constant( "SEEK_CUR", seek_how+0, 0 );
+    add_string_constant( "SEEK_SET", seek_how+2, 0 );
+    add_string_constant( "SEEK_END", seek_how+4, 0 );
+#ifdef SEEK_DATA
+    add_string_constant( "SEEK_DATA", seek_how+6, 0 );
+    add_string_constant( "SEEK_HOLE", seek_how+8, 0 );
+#endif
+  };
 
 #ifdef DN_ACCESS
   /*! @decl constant DN_ACCESS
