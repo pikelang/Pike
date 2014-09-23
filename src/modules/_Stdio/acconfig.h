@@ -104,9 +104,6 @@
 /* With termios */
 #undef WITH_TERMIOS 
 
-/* Filesystem notifications */
-#undef HAVE_NOTIFICATIONS
-
 /* Define to path of pseudo terminal master device if available */
 #undef PTY_MASTER_PATHNAME
 

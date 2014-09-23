@@ -5741,71 +5741,6 @@ static void f_get_all_active_fd(INT32 args)
   f_aggregate(fds);
 }
 
-#ifdef HAVE_NOTIFICATIONS
-
-/*! @class File
- */
-
-/*! @decl void notify(void|int notification, function(void:void) callback)
- *! Receive notification when change occur within the fd.
- *! To use, create a Stdio.File object of a directory like
- *! Stdio.File(".") and then call notify() with the appropriate
- *! parameters.
- *!
- *! @note
- *! When a program registers for some notification, only the first notification
- *! will be received unless DN_MULTISHOT is specified as part of the
- *! notification argument.
- *!
- *! @note
- *! At present, this function is Linux-specific and requires a kernel which
- *! supports the F_NOTIFY fcntl() call.
- *!
- *! @param notification
- *! What to notify the callback of. See the Stdio.DN_* constants for more
- *! information about possible notifications.
- *!
- *! @param callback
- *! Function which should be called when notification is received. The
- *! function gets the signal used to indicate the notification as its
- *! argument and shouldn't return anyting.
- */
-void file_set_notify(INT32 args) {
-  int notifications = 0;
-
-  if (args == 1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("notify",2);
-
-  if (args > 2)
-    SIMPLE_TOO_FEW_ARGS_ERROR("notify", 2);
-
-  if (args && TYPEOF(Pike_sp[-args]) != PIKE_T_INT)
-    SIMPLE_BAD_ARG_ERROR("notify", 0, "int");
-
-  if (args && TYPEOF(Pike_sp[1-args]) != PIKE_T_FUNCTION)
-    SIMPLE_BAD_ARG_ERROR("notify", 1, "function(void:void)");
-
-  if (args) {
-    notifications = Pike_sp[1-args].u.integer;
-  }
-
-#ifdef __linux__
-  if (args) {
-    pop_n_elems(1);
-    push_int(SIGIO);
-
-  }
-  fcntl(FD, F_NOTIFY, notifications);
-#endif /* __linux__ */
-
-  pop_n_elems(args);
-}
-
-/*! @endclass
- */
-
-#endif /* HAVE_NOTIFICATIONS */
-
 /*! @decl constant NOTE_ATTRIB = 8
  *
  *  Used with @[Stdio.File()->set_fs_event_callback()] to monitor for attribute changes on a file.
@@ -6298,64 +6233,6 @@ PIKE_MODULE_INIT
     add_string_constant( "SEEK_HOLE", seek_how+8, 0 );
 #endif
   };
-
-#ifdef DN_ACCESS
-  /*! @decl constant DN_ACCESS
-   *! Used in @[File.notify()] to get a callback when files
-   *! within a directory are accessed.
-   */
-  add_integer_constant("DN_ACCESS", DN_ACCESS, 0);
-#endif
-
-#ifdef DN_MODIFY
-  /*! @decl constant DN_MODIFY
-   *! Used in @[File.notify()] to get a callback when files
-   *! within a directory are modified.
-   */
-  add_integer_constant("DN_MODIFY", DN_MODIFY, 0);
-#endif
-
-#ifdef DN_CREATE
-  /*! @decl constant DN_CREATE
-   *! Used in @[File.notify()] to get a callback when new
-   *! files are created within a directory.
-   */
-  add_integer_constant("DN_CREATE", DN_CREATE, 0);
-#endif
-
-#ifdef DN_DELETE
-  /*! @decl constant DN_DELETE
-   *! Used in @[File.notify()] to get a callback when files
-   *! are deleted within a directory.
-   */
-  add_integer_constant("DN_DELETE", DN_DELETE, 0);
-#endif
-
-#ifdef DN_RENAME
-  /*! @decl constant DN_RENAME
-   *! Used in @[File.notify()] to get a callback when files
-   *! within a directory are renamed.
-   */
-  add_integer_constant("DN_RENAME", DN_RENAME, 0);
-#endif
-
-#ifdef DN_ATTRIB
-  /*! @decl constant DN_ATTRIB
-   *! Used in @[File.notify()] to get a callback when attributes
-   *! of files within a directory are changed.
-   */
-  add_integer_constant("DN_ATTRIB", DN_ATTRIB, 0);
-#endif
-
-#ifdef DN_MULTISHOT
-  /*! @decl constant DN_MULTISHOT
-   *! Used in @[File.notify()]. If DN_MULTISHOT is used, signals will
-   *! be sent for all notifications the program has registred for. Otherwise
-   *! only the first event the program is listening for will be received and
-   *! then the program must reregister for the events to receive futher events.
-   */
-  add_integer_constant("DN_MULTISHOT", DN_MULTISHOT, 0);
-#endif
 
   add_integer_constant("__HAVE_OOB__",1,0);
 #ifdef PIKE_OOB_WORKS

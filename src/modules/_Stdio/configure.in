@@ -1374,28 +1374,6 @@ else
   AC_MSG_RESULT(no)
 fi
 
-AC_MSG_CHECKING(if filesystem notifications exists)
-AC_CACHE_VAL(pike_cv_have_notifications, [
-  AC_TRY_COMPILE([
-  #ifdef __linux__
-  #define _GNU_SOURCE
-  #include <fcntl.h>
-  #endif
-  ],[
-       #ifdef __linux__
-         int test = F_NOTIFY;
-       #endif
-  ], [ pike_cv_have_notifications=yes ], [ pike_cv_have_notifications=no ])
-])
-if test "$pike_cv_have_notifications" = "yes"; then
-  AC_MSG_RESULT(yes)
-  AC_DEFINE(HAVE_NOTIFICATIONS)
-else
-  AC_MSG_RESULT(no)
-fi
-
-AC_MSG_CHECKING(if filesystem notifications exists)
-
 AC_MSG_CHECKING(for pty master device)
 AC_CACHE_VAL(pike_cv_pty_master_pathname, [
   pike_cv_pty_master_pathname=no
