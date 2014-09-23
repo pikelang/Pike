@@ -138,8 +138,8 @@ class BlockFile
 
 //! This is the basic I/O object, it provides socket and pipe
 //! communication as well as file access. It does not buffer reads and
-//! writes or provide line-by-line reading, that is done with
-//! @[Stdio.FILE] object.
+//! writes by default, and provides no line-by-line reading, that is done
+//! with @[Stdio.FILE] object.
 //!
 //! @note
 //! The file or stream will normally be closed when this object is
@@ -156,9 +156,14 @@ class File
 
   //! Toggle the file to IOBuffer mode.
   //!
-  //! In this mode reading and writing will be done from IOBuffer
+  //! In this mode reading and writing will be done via IOBuffer
   //! objects, in the directions you included buffers.
   //!
+  //! @param in
+  //!   Input buffer.
+  //!
+  //! @param out
+  //!   Output buffer.
   //!
   //! @note
   //!  Normally you call @[write] to re-trigger the write callback if
@@ -169,6 +174,7 @@ class File
   //!  adding more data to the output buffer will work as well.
   void set_buffer_mode( Stdio.IOBuffer|int(0..0) in,Stdio.IOBuffer|int(0..0) out )
   {
+    // FIXME: Document the semantics for non-empty buffers above.
     inbuffer = in;
     if( outbuffer = out )
       outbuffer->__fd_set_output( this );
