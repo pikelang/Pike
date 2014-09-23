@@ -685,7 +685,6 @@ PIKECLASS IOBuffer
 #endif
       *d = pad;
     }
-    fprintf( stderr, "exported %d bytes, %d bytes expected, %d bytes total\n", exp, bytes, width );
     if( pad )
     {
       while(exp--)
