@@ -2013,6 +2013,36 @@ void ins_f_byte(unsigned int b)
     }
     return;
 
+  case F_NOT:
+    {
+    LABELS();
+    amd64_load_sp_reg();
+    mov_mem8_reg(sp_reg, SVAL(-1).type, P_REG_RCX );
+    test_reg32(P_REG_RCX);
+    jz(&label_B); /* integer. */
+    mov_imm_reg( 1, P_REG_RAX );
+    shl_reg32_reg( P_REG_RAX, P_REG_RCX );
+    and_reg32_imm( P_REG_RAX, (BIT_FLOAT|BIT_ARRAY|BIT_MULTISET|BIT_MAPPING|BIT_STRING|BIT_PROGRAM));
+    jnz( &label_A );
+    /* object or function */
+    amd64_call_c_opcode(addr, flags);
+    jmp(&label_C);
+    /* int. */
+   LABEL_B;
+    mov_mem_reg( sp_reg, SVAL(-1).value, P_REG_RAX );
+    clear_reg( P_REG_RCX );
+    cmp_reg_imm( P_REG_RAX, 0 );
+    set_if_eq(P_REG_RCX);
+    mov_imm_mem( PIKE_T_INT, sp_reg, SVAL(-1).type );
+    mov_reg_mem( P_REG_RCX, sp_reg, SVAL(-1).value );
+    jmp(&label_C);
+  LABEL_A; /* array etc, !x is always false */
+    amd64_free_svalue_off( sp_reg, SVAL(-1).off, 0 );
+    mov_imm_mem( PIKE_T_INT, sp_reg, SVAL(-1).type );
+    mov_imm_mem( 0, sp_reg, SVAL(-1).value );
+  LABEL_C;
+    }
+    return;
   case F_COMPL:
     {
     LABELS();
