@@ -6,6 +6,7 @@
 //! is that @[Stdio.File] and @[Stdio.FILE] use
 //! proxy functions defined in @[_Stdio.Fd_ref],
 //! instead of accessing the file descriptors directly.
+#pragma no_deprecation_warnings
 
 //! @decl inherit 7.9::Stdio
 
