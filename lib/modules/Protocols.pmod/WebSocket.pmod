@@ -74,11 +74,11 @@ string describe_opcode(FRAME op) {
 //! Parses WebSocket frames.
 class Parser {
     //! Unparsed data.
-    string buf = "";
+    Stdio.IOBuffer buf = Stdio.IOBuffer();
 
     //! Add more data to the internal parsing buffer.
     void feed(string data) {
-	buf += data;
+        buf->add(data);
     }
 
     //! Parses and returns one WebSocket frame from the internal buffer. If
@@ -86,37 +86,48 @@ class Parser {
     Frame parse() {
 	if (sizeof(buf) < 2) return 0;
 
-	int opcode, len, hlen = 2;
+	int opcode, len, hlen;
 	int(0..1) masked;
 	string mask, data;
 
-	sscanf(buf, "%c%c", opcode, len);
+        opcode = buf->read_int8();
+        len = buf->read_int8();
 
 	masked = len >> 7;
 	len &= 127;
 
 	if (len == 126) {
-	    if (2 != sscanf(buf, "%2*s%2c", len)) return 0;
+            len = buf->read_int16();
+            if (len == -1) {
+                buf->unread(2);
+                return 0;
+            }
             hlen = 4;
 	}  else if (len == 127) {
-	    if (2 != sscanf(buf, "%2*s%8c", len)) return 0;
+            len = buf->read_int(8);
+            if (len == -1) {
+                buf->unread(2);
+                return 0;
+            }
             hlen = 10;
 	}
 
 	if (masked) {
-            hlen += 4;
-            if (sizeof(buf) < hlen) return 0;
-	    mask = buf[hlen-4..hlen-1];
-	}
-
-        if (sizeof(buf) < len+hlen) return 0;
+            if (sizeof(buf) < 4 + len) {
+                buf->unread(hlen);
+                return 0;
+            }
+            mask = buf->read(4);
+	} else if (sizeof(buf) < len) {
+            buf->unread(hlen);
+            return 0;
+        }
 
         Frame f = Frame(opcode & 15);
         f->fin = opcode >> 7;
         f->mask = mask;
 
-        data = buf[hlen..hlen+len-1];
-        buf = buf[hlen+len..];
+        data = buf->read(len);
 
         if (masked) {
             data = MASK(data, mask);
@@ -211,30 +222,31 @@ class Frame {
     }
 
     //!
-    string encode() {
-        String.Buffer b = String.Buffer();
-
-        b->putchar(fin << 7 | opcode);
+    void encode(Stdio.IOBuffer buf) {
+        buf->add_int8(fin << 7 | opcode);
 
         if (sizeof(data) > 0xffff) {
-            b->sprintf("%c%8c", !!mask << 7 | 127, sizeof(data));
+            buf->add_int8(!!mask << 7 | 127);
+            buf->add_int(sizeof(data), 8);
         } else if (sizeof(data) > 125) {
-            b->sprintf("%c%2c", !!mask << 7 | 126, sizeof(data));
-        } else b->putchar(!!mask << 7 | sizeof(data));
+            buf->add_int8(!!mask << 7 | 126);
+            buf->add_int16(sizeof(data));
+        } else buf->add_int8(!!mask << 7 | sizeof(data));
 
         if (mask) {
-            b->add(mask, MASK(data, mask));
+            buf->add(mask, MASK(data, mask));
         } else {
-            b->add(data);
+            buf->add(data);
         }
-
-        return b->get();
     }
 
     protected string cast(string to)
     {
-      if (to == "string")
-        return encode();
+      if (to == "string") {
+        Stdio.IOBuffer buf = Stdio.IOBuffer();
+        encode(buf);
+        return buf->read();
+      }
       return UNDEFINED;
     }
 }
@@ -247,7 +259,8 @@ class Connection {
     //! The actual client connection.
     Stdio.File stream;
 
-    protected array(string) stream_buf = ({ });
+    Stdio.IOBuffer buf = Stdio.IOBuffer();
+
     protected int(0..1) will_write = 1;
     protected mixed id;
 
@@ -279,7 +292,6 @@ class Connection {
     //! callbacks.
     void set_id(mixed id) {
         this_program::id = id;
-	if (stream) stream->set_id(id);
     }
 
     protected void create(Stdio.File f) {
@@ -310,45 +322,29 @@ class Connection {
     //! Number of bytes in the send buffer.
 
     int `bufferdAmount() {
-        return `+(@map(stream_buf, sizeof));
+        return sizeof(buf);
     }
 
     void send_raw(string s) {
-        stream_buf += ({ s });
+        buf->add(s);
     }
 
     protected void websocket_write() {
-        if (sizeof(stream_buf)) {
-            int n = stream->write(stream_buf);
-            int i;
+        if (sizeof(buf)) {
+            int n = buf->output_to(stream);
 
-            if (n == -1) {
+            if (n < 0) {
                 int e = errno();
                 if (e) {
                     websocket_closed();
                 }
                 will_write = 0;
-                return;
-            }
+            } else will_write = 1;
 
-            foreach (stream_buf; i; string s) {
-                n -= sizeof(s);
-
-                if (!n) break;
-                if (n < 0) {
-                    stream_buf[i] = s[sizeof(s)+n..];
-                    i--;
-                    break;
-                }
-            }
-            stream_buf = stream_buf[i+1..];
-            will_write = 1;
-        } else {
-            will_write = 0;
-        }
+        } else will_write = 0;
     }
 
-    protected void websocket_in(mixed id, string data) {
+    protected void websocket_in(mixed _id, string data) {
 
         // it would be nicer to set the read callback to zero
         // once a close handshake has been received. however,
@@ -420,7 +416,7 @@ class Connection {
         if (state != OPEN) error("WebSocket connection is not open: %O.\n", this);
         if (masking && sizeof(frame->data))
             frame->mask = Crypto.Random.random_string(4);
-        stream_buf += ({ (string) frame });
+        frame->encode(buf);
         if (frame->opcode == FRAME_CLOSE) {
             state = CLOSING;
             close_reason = frame->reason;
