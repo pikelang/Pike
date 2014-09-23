@@ -388,6 +388,19 @@ protected int parse_variables()
   return 0; // delay
 }
 
+protected void update_mime_var(string name, string new)
+{
+  stirng|array val = variables[name];
+  if( !val )
+  {
+    variables[name] = new;
+    return;
+  }
+  if( !arrayp(val) )
+    variables[name] = ({ val });
+  variables += ({ new });
+}
+
 protected void parse_post()
 {
   if ( request_headers["content-type"] && 
@@ -396,35 +409,17 @@ protected void parse_post()
     MIME.Message messg = MIME.Message(body_raw, request_headers, 0, 1);
     if(!messg->body_parts) return;
 
-    foreach(messg->body_parts, object part) {
-      if(!part->disp_params->name) continue;
+    foreach(messg->body_parts, object part)
+    {
+      string name = part->disp_params->name;
+      if(!name) continue;
       if(part->disp_params->filename) {
-	if(variables[part->disp_params->name] && !arrayp(variables[part->disp_params->name]))
-	  variables[part->disp_params->name] = ({ variables[part->disp_params->name] });
-
-	if(variables[part->disp_params->name] && arrayp(variables[part->disp_params->name]))
-	  variables[part->disp_params->name] += ({ part->getdata() });
-	else variables[part->disp_params->name] = part->getdata();
-
-	if(variables[part->disp_params->name+".filename"] && !arrayp(variables[part->disp_params->name+".filename"]))
-	  variables[part->disp_params->name+".filename"] = ({ variables[part->disp_params->name+".filename"] });
-
-	if(variables[part->disp_params->name+".filename"] && arrayp(variables[part->disp_params->name+".filename"]))
-	  variables[part->disp_params->name+".filename"] += ({ part->disp_params->filename });
-	else
-	  variables[part->disp_params->name+".filename"] = part->disp_params->filename;
-
-	if(variables[part->disp_params->name+".mimetype"] && !arrayp(variables[part->disp_params->name+".mimetype"]))
-	  variables[part->disp_params->name+".mimetype"] = ({ variables[part->disp_params->name+".mimetype"] });
-
-	if(variables[part->disp_params->name+".mimetype"] && arrayp(variables[part->disp_params->name+".mimetype"]))
-	  variables[part->disp_params->name+".mimetype"] += ({ part->disp_params->filename });
-	else
-	  variables[part->disp_params->name+".mimetype"] = part->disp_params->filename;
-
+        update_mime_var(name, part->getdata());
+        update_mime_var(name+".filename", part->disp_params->filename);
+        update_mime_var(name+".mimetype", part->disp_params->filename);
       }
       else
-	variables[part->disp_params->name] = part->getdata();
+	variables[name] = part->getdata();
     }
   }
   else if( request_headers["content-type"] &&
