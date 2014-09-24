@@ -42,7 +42,7 @@ class MyContext
 			  SSL.Constants.ProtocolVersion version,
 			  string|void message)
   {
-    if (message) {
+    if (message && description) {
       werror("ALERT [%s: %d:%d]: %s",
 	     SSL.Constants.fmt_version(version),
 	     level, description, message);
