@@ -90,6 +90,7 @@ typedef off_t PIKE_OFF_T;
 #define fd_socket(X,Y,Z) dmalloc_register_fd(debug_fd_socket((X),(Y),(Z)))
 #define fd_pipe(X) debug_fd_pipe( (X) DMALLOC_POS )
 #define fd_accept(X,Y,Z) dmalloc_register_fd(debug_fd_accept((X),(Y),(Z)))
+#define fd_accept4(X,Y,Z,F) dmalloc_register_fd(accept4((X),(Y),(Z),(F)))
 
 #define fd_bind(fd,X,Y) debug_fd_bind(dmalloc_touch_fd(fd), (X), (Y))
 #define fd_getsockopt(fd,X,Y,Z,Q) debug_fd_getsockopt(dmalloc_touch_fd(fd), (X),(Y),(Z),(Q))
@@ -340,6 +341,7 @@ typedef off_t PIKE_OFF_T;
 #define fd_socket(X,Y,Z) dmalloc_register_fd(socket((X),(Y),(Z)))
 #define fd_pipe pipe /* FIXME */
 #define fd_accept(X,Y,Z) dmalloc_register_fd(accept((X),(Y),(Z)))
+#define fd_accept4(X,Y,Z,F) dmalloc_register_fd(accept4((X),(Y),(Z),(F)))
 
 #define fd_bind(fd,X,Y) bind(dmalloc_touch_fd(fd), (X), (Y))
 #define fd_getsockopt(fd,X,Y,Z,Q) getsockopt(dmalloc_touch_fd(fd), (X),(Y),(Z),(Q))

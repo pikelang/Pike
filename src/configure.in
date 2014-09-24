@@ -4510,6 +4510,7 @@ fi
 AC_CHECK_FUNCS( \
  _crypt \
  poll \
+ accept4 \
  closefrom \
  crypt \
  fdwalk \
