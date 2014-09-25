@@ -1580,7 +1580,9 @@ constant int GNOME_DATE_EDIT_24_HR;
 constant int GNOME_DATE_EDIT_WEEK_STARTS_ON_MONDAY;
 endrequire;
 
-require these_do_not_exist_in_gnome2;
+require docs_build;
+/* These constants do not exist in Gnome2, but to ensure the docs
+build correctly, they're enabled for docs only. */
 constant int GNOME_DOCK_ITEM_BEH_NORMAL;
 constant int GNOME_DOCK_ITEM_BEH_EXCLUSIVE;
 constant int GNOME_DOCK_ITEM_BEH_NEVER_FLOATING;
