@@ -1169,7 +1169,7 @@ PIKECLASS IOBuffer
   /*! @decl IOBuffer add_int32( int i )
    *! Adds a 32 bit network byte order value to the buffer
    */
-  PIKEFUN int(0..) add_int32( int i )
+  PIKEFUN IOBuffer add_int32( int i )
   {
     IOBuffer *io = THIS;
     unsigned char *p = io_add_space(io,4,0);
