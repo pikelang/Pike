@@ -2136,6 +2136,57 @@ fail: CALL_AND_UNSET_ONERROR(e);
     io_lock( THIS );
   }
 
+
+  static struct object* io_create_rewind_key( IOBuffer *io );
+
+  /*! @decl UnwindKey rewind_on_error()
+   *!
+   *! Create an object that, when it goes out of scope without having
+   *! been destructed explicitly, will cause the buffer to rewind to
+   *! the location it had when this function is called.
+   *!
+   *! This will happen if you throw an error or otherwise let the
+   *! object fall out of scope.
+   *!
+   *! Take some care with these objects, if you create multiple ones
+   *! at once the results might be somewhat confusing if you do not
+   *! release them in the reverse order they were created in (then
+   *! again, you almost certainly really only need one)
+   *!
+   *! Use @[destruct] or @[UnwindKey.release] to stop the buffer from being rewound.
+   *!
+   *! You can call @[update] in the generated object to change where
+   *! it will be rewound to.
+   *!
+   *! The typical usecase of this object is when pasing a packet
+   *! protocol with variable length packets where the lenght is not
+   *! immediately known. It saves you from keeping track of how much
+   *! to rewind if you had not actually gotten the whole packet yet.
+   *!
+   *! @example
+   *! @code
+   *! void parse_packet( Stdio.IOBuffer b )
+   *! {
+   *!   Stdio.IOBuffer.UnwindKey rewind = b->rewind_on_error();
+   *!   b->set_error_mode(1);
+   *!
+   *!   switch( b->read_int8() ) // packet type
+   *!   {
+   *!     case DATA:
+   *!       int channel = b->read_int8();
+   *!       Stdio.IOBuffer data = b->read_hbuffer( 4 );
+   *!       // we have read the whole packet, so no longer rewind on error.
+   *!       rewind->release();
+   *!       return handle_data_packet( chennel, data );
+   *!   }
+   *! }
+   *! @endcode
+   */
+  PIKEFUN object rewind_on_error()
+  {
+    push_object( io_create_rewind_key( THIS ) );
+  }
+
   /*! @decl void create( int|void len )
    *! @decl void create( string(8bit) contents )
    *! @decl void create( System.Memory|String.Buffer contents )
@@ -2190,9 +2241,6 @@ fail: CALL_AND_UNSET_ONERROR(e);
       io_append_svalue( THIS, x );
   }
 
-/*! @endclass
- */
-
   INIT {
     IOBuffer *this = THIS;
     memset( this, 0, sizeof(IOBuffer));
@@ -2210,7 +2258,98 @@ fail: CALL_AND_UNSET_ONERROR(e);
       free( this->buffer );
     free(this->stash.ptr);
   }
+
+
+/*! @class UnwindKey
+ *!
+ *! The return value of unwind_when_released()
+ *!
+ *! This object will cause the buffer to unwind to the position it
+ *! was at when the object was created when it is released
+ *! (when it falls out of scope, explicit destruct does not count).
+ */
+
+  PIKECLASS UnwindKey
+    flags PROGRAM_DESTRUCT_IMMEDIATE;
+  {
+    CVAR IOBuffer *io;
+    CVAR struct object *obj;
+    CVAR size_t rewind_to;
+
+    /*! @decl void release()
+     *! Do not rewind if the object is released.
+     *!
+     *! This is equivalent to calling destruct() on the object.
+     */
+    PIKEFUN void release()
+    {
+      destruct_object(Pike_fp->current_object, DESTRUCT_EXPLICIT);
+    }
+
+    /*! @decl void update()
+     *!
+     *! Update the location the buffer will be rewound to to the current
+     *! position of the buffer.
+     */
+    PIKEFUN void update()
+    {
+      if( THIS->obj->prog && THIS->io )
+        THIS->rewind_to = THIS->io->offset;
+    }
+
+    EXIT {
+      if( THIS->io && THIS->obj->prog )
+        THIS->io->locked_move--;
+      free_object( THIS->obj );
+    }
+
+    PIKEFUN void destroy( int reason )
+      flags ID_PRIVATE;
+    {
+      if( reason > 1 ) /* no refs or gc */
+      {
+        if( THIS->io && THIS->obj->prog )
+          THIS->io->offset = THIS->rewind_to;
+      }
+    }
+
+    PIKEFUN void create()
+      flags ID_PRIVATE;
+    {
+      THIS->obj = 0;
+      THIS->io = 0;
+      Pike_error("Not supported\n");
+    }
+  }
 }
+
+
+
+static struct object* io_create_rewind_key( IOBuffer *io )
+{
+  struct object *o = fast_clone_object( IOBuffer_UnwindKey_program );
+  struct IOBuffer_UnwindKey_struct *s = (void*)o->storage;
+  add_ref(io->this);
+  s->obj = io->this;
+  s->rewind_to = io->offset;
+  s->io = io;
+  io->locked_move++;
+  return o;
+}
+
+/*! @endclass
+ * UnwindKey
+ */
+
+/*! @endclass
+ * IOBuffer
+ */
+
+
+/*! @endmodule
+ * Stdio
+ */
+
 
 void init_stdio_buffer(void)
 {
@@ -2227,5 +2366,4 @@ void exit_stdio_buffer(void)
   free_program( buffer_error_program );
   EXIT
 }
-/*! @endmodule
- */
+
