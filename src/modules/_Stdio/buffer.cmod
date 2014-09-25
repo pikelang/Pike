@@ -2313,6 +2313,15 @@ fail: CALL_AND_UNSET_ONERROR(e);
       }
     }
 
+    /*! @decl void rewind()
+     *! Rewinds the buffer explicitly.
+     *! @note
+     *!    Destructs this @[UnwindKey]
+     */
+    PIKEFUN void rewind() {
+      destruct_object(Pike_fp->current_object, DESTRUCT_GC);
+    }
+
     PIKEFUN void create()
       flags ID_PRIVATE;
     {
