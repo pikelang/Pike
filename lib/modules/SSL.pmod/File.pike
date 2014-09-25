@@ -1043,7 +1043,7 @@ int renegotiate()
 //!   @[schedule_poll()]
 protected void internal_poll()
 {
-  if (!this_object() || !conn) return;
+  if (!this || !conn) return;
   user_cb_co = UNDEFINED;
   SSL3_DEBUG_MSG("poll: %s\n", conn->describe_state());
 
@@ -1091,7 +1091,9 @@ protected void internal_poll()
       if(stream)
         stream->set_read_callback(ssl_read_callback);
     }
+    if (!this || !conn) return;
   }
+
 
   //
   // close_callback
