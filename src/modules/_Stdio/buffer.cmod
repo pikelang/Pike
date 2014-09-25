@@ -184,6 +184,7 @@ PIKECLASS IOBuffer
       io->malloced = 0;
       io->buffer = 0;
       io->offset = 0;
+      io->len = 0;
     }
   }
 
@@ -1253,6 +1254,40 @@ PIKECLASS IOBuffer
     ref_push_object(Pike_fp->current_object);
   }
 
+  /*! @decl IOBuffer add_hint( int i, int(0..) size_width )
+   *!
+   *! First add the size of the integer when encoded to base 256 as a
+   *! @[size_width] integer, then add the integer to the buffer, both
+   *! in network byte order.
+   *!
+   *! @[size_width] must be less than Int.NATIVE_MAX.
+   *!
+   */
+  PIKEFUN IOBuffer add_hint( object|int i, int len_width )
+  {
+    int width;
+    pop_stack(); /* width */
+    if( TYPEOF(*i) == PIKE_T_INT )
+    {
+      INT_TYPE ui = i->u.integer;
+      for( width=0; width<SIZEOF_INT_TYPE; width++ )
+        if( ui < (1<<(width*8)) && ui >= -(1<<(width*8-1)) )
+            break;
+      io_add_int( THIS, width, len_width );
+      io_add_int( THIS, i->u.integer, width );
+      Pike_sp--;
+    }
+    else
+    {
+      convert_stack_top_to_bignum();
+      width = (mpz_sizeinbase( (void*)i->u.object->storage, 2)+7)/8;
+      io_add_int( THIS, width, len_width );
+      io_add_bignum( THIS, i->u.object, width );
+      pop_stack(); /* o. */
+    }
+    ref_push_object(Pike_fp->current_object);
+  }
+
   /*! @decl IOBuffer add_ints( array(int) integers, int(0..255) len )
    *!
    *! Add the integers in the specified array, @[len] bytes per int.
@@ -2059,6 +2094,48 @@ fail: CALL_AND_UNSET_ONERROR(e);
       return;
     }
     push_int(-1);
+  }
+
+  /*! @decl int read_hint( int n )
+   *!
+   *! Read a network byte order unsigned number of size n*8 bits, then
+   *! read another network byte order number of the size indicated by
+   *! the first size.
+   *!
+   *! Will return -1 if there is not enough buffer space available
+   *! unless error mode is set to throw errors.
+   */
+  PIKEFUN int(0..) read_hint( int size_len )
+  {
+    IOBuffer *io = THIS;
+    ONERROR e;
+    INT_TYPE len;
+    struct object *o;
+
+    io_rewind_on_error( io, &e );
+
+    len = io_read_number( io, size_len );
+    if( len >= 0 )
+    {
+      if( len < SIZEOF_INT_TYPE )
+      {
+        if( (Pike_sp[-1].u.integer = io_read_number( io, len )) == -1 )
+          goto neg_one;
+      }
+      else if( (o = io_read_bignum( io, len )) )
+      {
+        Pike_sp--;
+        push_object(o);
+        reduce_stack_top_bignum();
+      }
+      else
+        goto neg_one;
+      io_unset_rewind_on_error( io, &e );
+      return;
+    }
+  neg_one:
+    Pike_sp[-1].u.integer = -1;
+    CALL_AND_UNSET_ONERROR(e);
   }
 
   /*! @decl array(int) read_ints( int n, int width )
