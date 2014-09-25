@@ -1028,7 +1028,7 @@ class KeyExchangeECDHE
     }
     session->curve = ECC_CURVES[c];
 
-    SSL3_DEBUG_MSG("Curve: %O (%O)\n", session->curve, c);
+    SSL3_DEBUG_MSG("Curve: %s: %O\n", fmt_constant(c, "CURVE"), session->curve);
 
     secret = session->curve->new_scalar(context->random);
     [Gmp.mpz x, Gmp.mpz y] = session->curve * secret;
