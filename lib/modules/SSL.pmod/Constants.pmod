@@ -60,20 +60,17 @@
  *  [ ] ECC Brainpool Curves		RFC 7027
  *  [ ] Raw Public Keys in (D)TLS	RFC 7250
  *  [X] AES-CCM ECC Suites for TLS	RFC 7251
- *  [ ] TLS ALPN Extension		RFC 7301
+ *  [X] TLS ALPN Extension		RFC 7301
  *  [X] TLS Encrypt-then-MAC		RFC 7366
  *
  * Drafts (in order of age, oldest first):
  *  [/] 56-bit Export Cipher	draft-ietf-tls-56-bit-ciphersuites-01.txt
- *  [/] Next Protocol Negotiation  	draft-agl-tls-nextprotoneg
+ *  [ ] Next Protocol Negotiation  	draft-agl-tls-nextprotoneg
  *  [ ] Chacha20Poly1305	draft-agl-tls-chacha20poly1305-02.txt
  *  [/] TLS Padding		draft-agl-tls-padding
  *  [X] TLS Fallback SCSV	draft-ietf-tls-downgrade-scsv-00.txt
  *  [ ] SSL 3.4/TLS 1.3		draft-ietf-tls-tls13-02.txt
  *  [ ] Prohibit RC4		draft-ietf-tls-prohibiting-rc4
- *
- * Other:
- *  [/] Next Protocol Negotiation  	Google technical note: nextprotoneg
  *
  * The TLS parameters registry:
  *   http://www.iana.org/assignments/tls-parameters/tls-parameters.xhtml
