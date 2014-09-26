@@ -6445,7 +6445,8 @@ INT32 define_function(struct pike_string *name,
 
 #ifdef PIKE_DEBUG
     if(Pike_compiler->compiler_pass==2)
-      Pike_fatal("Internal error: Not allowed to add more identifiers during second compiler pass.\n");
+      Pike_fatal("Internal error: Not allowed to add more identifiers during second compiler pass.\n"
+		 "Added identifier: \"%s\"\n", name->str);
 #endif
 
     /* Define a new function */
