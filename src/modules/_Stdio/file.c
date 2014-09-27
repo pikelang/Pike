@@ -1387,6 +1387,9 @@ static void file_read(INT32 args)
     len=Pike_sp[-args].u.integer;
     if(len<0)
       Pike_error("Cannot read negative number of characters.\n");
+    if (!len && SUBTYPEOF(Pike_sp[-args])) {
+      len = 0x7fffffff;
+    }
   }
 
   if(args > 1 && !UNSAFE_IS_ZERO(Pike_sp+1-args))
