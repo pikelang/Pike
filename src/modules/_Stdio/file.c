@@ -236,14 +236,21 @@ static void fd_backtick__fd(INT32 args)
 			  Pike_fp->current_program->inherits);
 }
 
-/*! @endclass
+/*! @decl protected int(0..) _errno
+ *!
+ *! Variable containing the internal value returned by @[errno()].
+ *!
+ *! @seealso
+ *!   @[errno()]
  */
 
-/* The class below is not accurate, but it's the lowest exposed API
- * interface, which make the functions appear where users actually
- * look for them. /mast */
-
-/*! @class File
+/*! @decl mixed _read_callback
+ *! @decl mixed _write_callback
+ *! @decl mixed _read_oob_callback
+ *! @decl mixed _write_oob_callback
+ *! @decl mixed _fs_event_callback
+ *!
+ *! Callback functions installed by @[Stdio.File()->set_callbacks()] et al.
  */
 
 static struct my_file *get_file_storage(struct object *o)
@@ -673,7 +680,7 @@ static void free_dynamic_buffer(dynamic_buffer *b) { free(b->s.str); }
 static struct pike_string *do_read(int fd,
 				   INT32 r,
 				   int all,
-				   int *err)
+				   INT_TYPE *err)
 {
   ONERROR ebuf;
   ptrdiff_t bytes_read, i;
@@ -1242,7 +1249,7 @@ static int writev_fds(int fd, struct iovec *iov, int iovcnt,
 static struct pike_string *do_read_oob(int UNUSED(fd),
 				       INT32 r,
 				       int all,
-				       int *err)
+				       INT_TYPE *err)
 {
   ONERROR ebuf;
   INT32 bytes_read,i;
@@ -6122,6 +6129,8 @@ PIKE_MODULE_INIT
 #define FILE_OBJ tObjImpl_STDIO_FD
 #include "file_functions.h"
 
+  MAP_VARIABLE("_errno", tIntPos, ID_PROTECTED,
+	       OFFSETOF(my_file, my_errno), PIKE_T_INT);
   MAP_VARIABLE("_read_callback",tMix,0,
 	       OFFSETOF(my_file, event_cbs[PIKE_FD_READ]),PIKE_T_MIXED);
   MAP_VARIABLE("_write_callback",tMix,0,

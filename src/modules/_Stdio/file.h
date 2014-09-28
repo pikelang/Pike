@@ -71,7 +71,7 @@ struct my_file
 
   short open_mode;
   short flags;
-  int my_errno;
+  INT_TYPE my_errno;
 
 #ifdef HAVE_PIKE_SEND_FD
   int *fd_info;
