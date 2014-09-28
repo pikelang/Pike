@@ -44,6 +44,27 @@ class Parameters
   }
 #endif
 
+  //! Validate that the DH Parameters doesn't have obvious security
+  //! weaknesses. It will first attempt to verify the prime @[p] using
+  //! Donald Knuth's probabilistic primality test with provided
+  //! @[effort]. This has a chance of pow(0.25,effort) to produce a
+  //! false positive. An @[effort] of 0 skipps this step. The second
+  //! test verifies that @[g] is of high order.
+  bool validate(int(0..) effort)
+  {
+    if( effort && !p->probably_prime_p(effort) )
+      return 0;
+
+    Gmp.mpz qq = [object(Gmp.mpz)]((p-1)/2);
+    while( int f = qq->small_factor() )
+      qq /= f;
+
+    if( g->powm( [object(Gmp.mpz)]((p-1)/qq), p )==1 )
+      return 0;
+
+    return 1;
+  }
+
   //! Alias for @[q].
   //!
   //! @deprecated q
@@ -98,6 +119,16 @@ class Parameters
     this_program::p = Gmp.mpz(p);
     this_program::g = g && Gmp.mpz(g) || Gmp.mpz(2);
     this_program::q = q && Gmp.mpz(q) || Gmp.mpz( [int](p-1)/2 );
+  }
+
+  protected string _sprintf(int t)
+  {
+    if( t!='O' ) return UNDEFINED;
+    mapping(string:mixed) m = mkmapping([array(string)]indices(Crypto.DH),
+                                        values(Crypto.DH));
+    foreach(m; string id; mixed val)
+      if( val==this ) return sprintf("Crypto.DH.%s", id);
+    return sprintf("%O(%O, %O, %O)", this_program, p, g, q);
   }
 }
 
