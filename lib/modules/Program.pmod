@@ -14,13 +14,11 @@ string defined(program x,string|void y)
 }
 
 
-//! @fixme
-//!   Document this function.
+//! Recursively enumerate all programs this program inherits.
+//! Similar to inherit_tree() but returns a flat array.
 array(program) all_inherits(program p)
 {
-  array(program) ret = inherit_list(p);
-  for(int e=0;e<sizeof(ret);e++) ret+=inherit_list(ret[e]);
-  return ret;
+    return inherit_list(p) + all_inherits(inherit_list(p)[*]) * ({});
 }
 
 //! Recursively builds a inheritance tree by
