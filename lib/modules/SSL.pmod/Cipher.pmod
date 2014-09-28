@@ -11,6 +11,57 @@ import .Constants;
 #define SSL3_DEBUG_MSG(X ...)
 #endif /* SSL3_DEBUG */
 
+
+// A mapping from DH p to DH q to effort verification level to
+// indicate if a DH group with a specific p and q is valid or not. -1
+// means failed validation.
+protected mapping(Gmp.mpz:mapping(Gmp.mpz:int)) valid_dh;
+protected int valid_dh_count;
+
+protected mapping(Gmp.mpz:mapping(Gmp.mpz:int)) make_valid_dh()
+{
+  mapping dh = ([]);
+  foreach(values(Crypto.DH), mixed m)
+  {
+    if(!objectp(m)) continue;
+    object o = [object]m;
+    if(m->p && m->q)
+      dh[m->p] = ([ m->q : Int.NATIVE_MAX ]);
+  }
+  return dh;
+}
+
+protected bool validate_dh(Crypto.DH.Parameters dh, object session)
+{
+  if( !valid_dh || valid_dh_count > 1000 )
+  {
+    valid_dh = make_valid_dh();
+    valid_dh_count = 0;
+  }
+
+  // Spend more effort validating q when in anonymous KE. These two
+  // effort values should possibly be part of the context.
+  int effort = 0;
+  if( session->cipher_spec->signature_alg == SIGNATURE_anonymous )
+    effort = 8; // Misses bad prime with 0.0015% probability.
+
+  mapping pmap = valid_dh[dh->p];
+  if( pmap )
+  {
+    if( has_value(pmap, dh->q) )
+      return pmap[dh->q] > effort;
+  }
+  else
+    valid_dh[dh->p] = ([]);
+
+  if( !dh->validate(effort) )
+    effort = -1;
+
+  valid_dh[dh->p][dh->q] = effort;
+  valid_dh_count++;
+  return effort > -1;
+}
+
 //! Cipher algorithm interface.
 class CipherAlgorithm {
   this_program set_encrypt_key(string);
@@ -356,18 +407,21 @@ class KeyExchange(object context, object session, object connection,
     SSL3_DEBUG_MSG("SSL.Session: SERVER_KEY_EXCHANGE\n");
 
     ADT.struct temp_struct = parse_server_key_exchange(input);
-
     int verification_ok;
-    mixed err = catch {
-	verification_ok = session->cipher_spec->verify(
-          session, client_random + server_random, temp_struct, input);
-      };
+
+    if(temp_struct)
+    {
+      mixed err = catch {
+          verification_ok = session->cipher_spec->verify(
+            session, client_random + server_random, temp_struct, input);
+        };
 #ifdef SSL3_DEBUG
-    if( err ) {
-      master()->handle_error(err);
-    }
+      if( err ) {
+        master()->handle_error(err);
+      }
 #endif
-    err = UNDEFINED;
+    }
+
     if (!verification_ok)
     {
       connection->ke = UNDEFINED;
@@ -633,8 +687,13 @@ class KeyExchangeDH
     SSL3_DEBUG_MSG("KE_DH\n");
     anonymous = 1;
     if (!dh_state) {
-      dh_state =
-	DHKeyExchange(Crypto.DH.Parameters(session->peer_public_key));
+      Crypto.DH.Parameters p = Crypto.DH.Parameters(session->peer_public_key);
+      if( !validate_dh(p, session) )
+      {
+        SSL3_DEBUG_MSG("DH parameters not correct or not secure.\n");
+        return 0;
+      }
+      dh_state = DHKeyExchange(p);
       dh_state->other = session->peer_public_key->get_y();
     }
     dh_state->new_secret(context->random);
@@ -782,9 +841,15 @@ class KeyExchangeDHE
     SSL3_DEBUG_MSG("KE_DHE\n");
     Gmp.mpz p = input->get_bignum();
     Gmp.mpz g = input->get_bignum();
+    Crypto.DH.Parameters params = Crypto.DH.Parameters(p, g);
+    if( !validate_dh(params, session) )
+    {
+      SSL3_DEBUG_MSG("DH parameters not correct or not secure.\n");
+      return 0;
+    }
     temp_struct->put_bignum(p);
     temp_struct->put_bignum(g);
-    dh_state = DHKeyExchange(Crypto.DH.Parameters(p, g));
+    dh_state = DHKeyExchange(params);
     dh_state->set_other(input->get_bignum());
     temp_struct->put_bignum(dh_state->other);
 
