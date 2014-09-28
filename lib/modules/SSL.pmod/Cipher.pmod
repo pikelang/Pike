@@ -43,7 +43,7 @@ protected bool validate_dh(Crypto.DH.Parameters dh, object session)
   // effort values should possibly be part of the context.
   int effort = 0;
   if( session->cipher_spec->signature_alg == SIGNATURE_anonymous )
-    effort = 8; // Misses bad prime with 0.0015% probability.
+    effort = 8; // Misses non-prime with 0.0015% probability.
 
   mapping pmap = valid_dh[dh->p];
   if( pmap )
