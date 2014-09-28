@@ -1243,7 +1243,7 @@ Sequence make_extension(Identifier id, Object ext, void|int critical)
   return Sequence( seq+({ OctetString(ext->get_der()) }) );
 }
 
-int make_key_usage_flags(Crypto.Sign.State c)
+protected int make_key_usage_flags(Crypto.Sign.State c)
 {
   int flags = KU_digitalSignature|KU_keyEncipherment;
 
