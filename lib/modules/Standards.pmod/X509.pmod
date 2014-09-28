@@ -52,7 +52,7 @@ enum CertFailure
 // Bit 0 is the first bit in the BitString.
 enum keyUsage {
   KU_digitalSignature  = 1<<0,
-  KU_nonRepudiation    = 1<<1,
+  KU_nonRepudiation    = 1<<1, // contentCommitment
   KU_keyEncipherment   = 1<<2,
   KU_dataEncipherment  = 1<<3,
   KU_keyAgreement      = 1<<4,
@@ -1243,6 +1243,19 @@ Sequence make_extension(Identifier id, Object ext, void|int critical)
   return Sequence( seq+({ OctetString(ext->get_der()) }) );
 }
 
+int make_key_usage_flags(Crypto.Sign.State c)
+{
+  int flags = KU_digitalSignature|KU_keyEncipherment;
+
+  // ECDSA certificates can be used for ECDH exchanges, which requires
+  // keyAgreement. Potentially we should make a nicer API than name
+  // prefix.
+  if( has_prefix(c->name(), "ECDSA") )
+    flags |= KU_keyAgreement;
+
+  return flags;
+}
+
 //! Creates a selfsigned certificate, i.e. where issuer and subject
 //! are the same entity. This entity is derived from the list of pairs
 //! in @[name], which is encoded into an distinguished_name by
@@ -1302,7 +1315,9 @@ string make_selfsigned_certificate(Crypto.Sign.State c, int ttl,
   // STRING part of the subjectPublicKey, it is only a suggestion.
   add("subjectKeyIdentifier",
       OctetString( Crypto.SHA1.hash(c->pkcs_public_key()->get_der()) ));
-  add("keyUsage", build_keyUsage(KU_digitalSignature|KU_keyEncipherment), 1);
+
+  add("keyUsage", build_keyUsage(make_key_usage_flags(c)), 1);
+
   add("basicConstraints", Sequence(({})), 1);
 
   return sign_key(dn, c, c, h||Crypto.SHA256, dn, serial, ttl, extensions);
@@ -1327,7 +1342,8 @@ string make_site_certificate(TBSCertificate ca, Crypto.Sign.State ca_key,
 
   if(!extensions) extensions = ([]);
   // FIXME: authorityKeyIdentifier
-  add("keyUsage", build_keyUsage(KU_digitalSignature|KU_keyEncipherment), 1);
+  add("keyUsage", build_keyUsage(make_key_usage_flags(c)), 1);
+
   add("basicConstraints", Sequence(({})), 1);
   return sign_key(ca->subject, c, ca_key, h||Crypto.SHA256, dn, serial, ttl, extensions);
 }
