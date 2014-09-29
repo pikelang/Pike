@@ -1011,6 +1011,40 @@ class UTC
   }
 }
 
+class GeneralizedTime
+{
+  inherit UTC;
+  int tag = 24;
+  constant type_name = "GeneralizedTime";
+
+  // We are currently not doing any management of fractions. X690
+  // states that fractions shouldn't have trailing zeroes, and should
+  // be completely removed int the ".0" case.
+
+  //!
+  this_program set_posix(int t)
+  {
+    object second = Calendar.ISO_UTC.Second(t);
+    value = sprintf("%04d%02d%02d%02d%02d%02dZ",
+                    [int]second->year_no(),
+                    [int]second->month_no(),
+                    [int]second->month_day(),
+                    [int]second->hour_no(),
+                    [int]second->minute_no(),
+                    [int]second->second_no());
+    return this;
+  }
+
+  //!
+  int get_posix()
+  {
+    if( !value || sizeof(value) < 15 )
+      error("Data not GeneralizedTime date string.\n");
+    array(int) t = array_sscanf(value, "%4d%2d%2d%2d%2d%2d");
+    return [int]Calendar.ISO_UTC.Second(@t)->unix_time();
+  }
+}
+
 //!
 int(0..0) asn1_universal_valid (string s)
 {

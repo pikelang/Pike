@@ -174,17 +174,31 @@ mapping(int:program(.Types.Object)) universal_types =
    U(4) : .Types.OctetString,
    U(5) : .Types.Null,
    U(6) : .Types.Identifier,
+   // 7 : Object descriptor type
+   // 8 : External type / instance-of
    U(9) : .Types.Real,
    U(10) : .Types.Enumerated,
+   // 11 : Embedded-pdv
    U(12) : .Types.UTF8String,
+   // 13 : Relative object identifier
+   // 14 : Time
+   // 15 : reserved
    U(16) : .Types.Sequence,
    U(17) : .Types.Set,
    U(19) : .Types.PrintableString,
    U(20) : .Types.BrokenTeletexString,
    U(22) : .Types.IA5String,
    U(23) : .Types.UTC,
+   U(24) : .Types.GeneralizedTime,
    U(28) : .Types.UniversalString,
+   // 29 : UnrestrictedCharacterString
    U(30) : .Types.BMPString,
+   // 31 : DATE
+   // 32 : TIME-OF-DAY
+   // 33 : DATE-TIME
+   // 34 : DURATION
+   // 35 : OID internationalized resource identifier
+   // 36 : Relative OID internationalized resource identifier
   ]);
 
 //! decode a DER encoded object using universal data types

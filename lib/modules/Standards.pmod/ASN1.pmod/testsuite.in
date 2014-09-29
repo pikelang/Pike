@@ -33,6 +33,10 @@ test_eq(sprintf("%O",Standards.ASN1.Decode.simple_der_decode(String.hex2string("
 test_eq(sprintf("%O",Standards.ASN1.Decode.simple_der_decode(String.hex2string("090390fe0a"-" "))),"Types.Real(0.15625)")
 test_eq(sprintf("%O",Standards.ASN1.Decode.simple_der_decode(String.hex2string("0903acfe05"-" "))),"Types.Real(0.15625)")
 
+test_decode("180f31393932303532313030303030305a", "Types.GeneralizedTime(\"19920521000000Z\")")
+test_decode("180f31393932303632323132333432315a", "Types.GeneralizedTime(\"19920622123421Z\")")
+test_decode("181131393932303732323133323130302e335a", "Types.GeneralizedTime(\"19920722132100.3Z\")")
+
 dnl
 dnl --- START tests from
 dnl A Layman's Guide to a Subset of ASN.1, BER, and DER)
