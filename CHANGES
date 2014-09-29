@@ -1237,6 +1237,10 @@ o Removed bundles
 
 o Several OS/2 and windows compilation fixes
 
+o C89 assumed
+
+  The configure tests will not check for functions defined in C89
+  anymore.
 
 Lots of bug fixes
 -----------------
