@@ -1776,7 +1776,7 @@ struct pike_string *modify_shared_string(struct pike_string *a,
   {
     /* We *might* need to shrink the string */
     struct pike_string *b;
-    int size,tmp;
+    unsigned int size,tmp;
 
     switch(a->size_shift)
     {
