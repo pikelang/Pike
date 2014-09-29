@@ -567,6 +567,32 @@ class File
     }
   }
 
+  //! Read (optionally buffered) data from a file or a stream.
+  //!
+  //! Proxy function for @[Fd::read()], that adds support for
+  //! the buffering configured by @[set_buffer_mode()]
+  //!
+  //! @seealso
+  //!   @[read_function()], @[write()], @[Fd::read()]
+  string(8bit) read(int|void nbytes, int(0..1)|void not_all)
+  {
+    if (inbuffer) {
+      if (!nbytes) return "";
+      if (!sizeof(inbuffer) || (!not_all && sizeof(inbuffer) < nbytes)) {
+	// Try filling the buffer with the remaining wanted bytes.
+	if ((inbuffer->input_from(this, nbytes - sizeof(inbuffer)) < 0) &&
+	    !sizeof(inbuffer)) {
+	  // Read error and no data in the buffer.
+	  // Propagate errno.
+	  _errno = predef::errno();
+	  return 0;
+	}
+      }
+      return inbuffer->try_read(nbytes);
+    }
+    return ::read(nbytes, not_all);
+  }
+
   function(:string) read_function(int nbytes)
   //! Returns a function that when called will call @[read] with
   //! nbytes as argument. Can be used to get various callback
@@ -575,12 +601,6 @@ class File
   {
     return lambda()
     {
-      if( inbuffer )
-      {
-        if(sizeof(inbuffer)<nbytes)
-          inbuffer->input_from(this,nbytes);
-        return inbuffer->read(nbytes);
-      }
       return read(nbytes);
     };
   }
