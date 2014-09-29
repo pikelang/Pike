@@ -578,7 +578,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
         {
           string(8bit) der = s->get_var_string(2);
           Standards.ASN1.Types.Object o =
-            Standards.ASN1.Decode.simple_der_decode(der);
+            Standards.ASN1.Decode.secure_der_decode(der);
           if( o->type_name != "SEQUENCE" )
           {
             send_packet(alert(ALERT_fatal, ALERT_unexpected_message,

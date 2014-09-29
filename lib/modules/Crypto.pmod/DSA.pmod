@@ -307,7 +307,7 @@ class State {
   //! algorithm @[h].
   int(0..1) pkcs_verify(string(8bit) message, .Hash h, string(8bit) sign)
   {
-    Object a = Standards.ASN1.Decode.simple_der_decode(sign);
+    Object a = Standards.ASN1.Decode.secure_der_decode(sign);
 
     // The signature is the DER-encoded ASN.1 sequence Dss-Sig-Value
     // with the two integers r and s. See RFC 3279 section 2.2.2.

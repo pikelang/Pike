@@ -308,7 +308,7 @@ class TBSCertificate
   void `der=(string asn1)
   {
     internal_der = UNDEFINED;
-    if (init(Standards.ASN1.Decode.simple_der_decode(asn1, x509_types))) {
+    if (init(Standards.ASN1.Decode.secure_der_decode(asn1, x509_types))) {
       internal_der = asn1;
     }
   }
@@ -655,7 +655,7 @@ class TBSCertificate
       }
 
       extensions[ id ] =
-        Standards.ASN1.Decode.simple_der_decode(ext->elements[-1]->value,
+        Standards.ASN1.Decode.secure_der_decode(ext->elements[-1]->value,
                                                 extension_types[id]);
       if(sizeof(ext)==3)
       {
@@ -1399,7 +1399,7 @@ string make_root_certificate(Crypto.Sign.State c, int ttl, mapping|array name,
 TBSCertificate decode_certificate(string|object cert)
 {
   if (stringp (cert)) {
-    cert = Standards.ASN1.Decode.simple_der_decode(cert, x509_types);
+    cert = Standards.ASN1.Decode.secure_der_decode(cert, x509_types);
   }
 
   if (!cert
@@ -1439,7 +1439,7 @@ TBSCertificate decode_certificate(string|object cert)
 TBSCertificate verify_certificate(string s,
 				  mapping(string:Verifier|array(Verifier)) authorities)
 {
-  object cert = Standards.ASN1.Decode.simple_der_decode(s);
+  object cert = Standards.ASN1.Decode.secure_der_decode(s);
 
   TBSCertificate tbs = decode_certificate(cert);
   if (!tbs) return 0;
@@ -1724,7 +1724,7 @@ mapping verify_certificate_chain(array(string) cert_chain,
 
   foreach(cert_chain; int idx; string c)
   {
-     object cert = Standards.ASN1.Decode.simple_der_decode(c);
+     object cert = Standards.ASN1.Decode.secure_der_decode(c);
      TBSCertificate tbs = decode_certificate(cert);
      if(!tbs)
        FATAL(CERT_INVALID);
@@ -1863,7 +1863,7 @@ Crypto.Sign.State parse_private_key(Sequence seq)
 //! DWIM-parse the DER-sequence for a private key.
 variant Crypto.Sign.State parse_private_key(string private_key)
 {
-  Object seq = Standards.ASN1.Decode.simple_der_decode(private_key);
+  Object seq = Standards.ASN1.Decode.secure_der_decode(private_key);
   if (!seq || (seq->type_name != "SEQUENCE")) return UNDEFINED;
   return parse_private_key([object(Sequence)]seq);
 }

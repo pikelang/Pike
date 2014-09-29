@@ -221,6 +221,22 @@ mapping(int:program(.Types.Object)) universal_types =
   return der_decode(Stdio.IOBuffer(data), types);
 }
 
+//! Works just like @[simple_der_decode], except it will return
+//! @expr{0@} if there is trailing data in the provided ASN.1 @[data].
+//!
+//! @seealso
+//!   @[simple_der_decode]
+.Types.Object secure_der_decode(string(0..255) data,
+				mapping(int:program(.Types.Object))|void types)
+{
+  types = types ? universal_types+types : universal_types;
+  Stdio.IOBuffer buf = Stdio.IOBuffer(data);
+  .Types.Object ret = der_decode(buf, types);
+  if( sizeof(buf) ) return 0;
+  return ret;
+}
+
+
 // Compat
 class constructed
 {
