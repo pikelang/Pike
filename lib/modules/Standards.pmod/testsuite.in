@@ -281,7 +281,7 @@ test_any_equal([[
   "issuer" : "Test",
   "subject" : "Test",
   "extensions" : ([
-      Standards.ASN1.Types.Identifier(2,5,29,14): "\4\24\214\366\177.l>\273\345\317\361z\262""4\366.\264\346B|K",
+      Standards.ASN1.Types.Identifier(2,5,29,14): "\4\24\355\261,n\350\224\364g\240\32\177D\324\323\26\245NB\203R",
       Standards.ASN1.Types.Identifier(2,5,29,15): "\3\2\5\240",
       Standards.ASN1.Types.Identifier(2,5,29,19): "0\0"
   ]),
@@ -289,7 +289,7 @@ test_any_equal([[
   "ext_bc" : 1,
   "ext_bc_ca" : 0,
   "ext_bc_len" : 0,
-  "ext_subkey" : "\214\366\177.l>\273\345\317\361z\262""4\366.\264\346B|K",
+  "ext_subkey" : "\355\261,n\350\224\364g\240\32\177D\324\323\26\245NB\203R",
   "ext_ku" : Standards.X509.KU_digitalSignature|Standards.X509.KU_keyEncipherment,
 ]) ]])
 
