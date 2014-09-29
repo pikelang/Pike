@@ -103,8 +103,11 @@ protected void set_default_keycert()
   }
 }
 
+protected string _sprintf(int t) {
+  return t=='O' && sprintf("%O(%O:%d)", this_program, interface, portno);
+}
 
-// ---- Remove this?
+// ---- Deprecated
 
 private string tmp_key;
 private array(string) tmp_cert;
@@ -131,8 +134,4 @@ __deprecated__ void set_certificate(string|array(string) certificate)
     tmp_cert = ({ [string]certificate });
   if( tmp_key && tmp_cert )
     ctx->add_cert( tmp_key, tmp_cert );
-}
-
-protected string _sprintf(int t) {
-  return t=='O' && sprintf("%O(%O:%d)", this_program, interface, portno);
 }
