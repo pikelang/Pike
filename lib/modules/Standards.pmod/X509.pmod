@@ -245,8 +245,12 @@ protected Verifier make_verifier(Object _keyinfo)
 
   if (seq[0]->get_der() == Identifiers.rsa_id->get_der())
   {
-    if ( (sizeof(seq) != 2)
-	 || (seq[1]->get_der() != Null()->get_der()) )
+    if ( (sizeof(seq) < 1) || (sizeof(seq) > 2) ||
+         // Strictly there shouldn't be a parameters member here, but
+         // there has been a lot of confusion about 1 element sequence
+         // vs. 2 element sequence with Null. Allow both for
+         // compatibility.
+         (sizeof(seq)==2 && seq[1]->get_der() != Null()->get_der()) )
       return 0;
 
     return RSAVerifier(str->value);
