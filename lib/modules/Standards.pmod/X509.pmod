@@ -417,11 +417,24 @@ class TBSCertificate
     return low_get_sequence(3);
   }
 
+  protected UTC time_object(int t)
+  {
+    if( !t )
+    {
+      // This is the "no well-known expiration date".
+      return GeneralizedTime("99991231235959Z");
+    }
+    Calendar.ISO_UTC.Second s = Calendar.ISO_UTC.Second(t);
+    if( s->year_no()<1950 || s->year_no()>=2050 )
+      return GeneralizedTime(s);
+    return UTC(s);
+  }
+
   //!
   void `not_before=(int t)
   {
     Sequence validity = low_get_sequence(3);
-    validity->elements[0] = UTC(t);
+    validity->elements[0] = time_object(t);
     internal_der = UNDEFINED;
   }
   int `not_before()
@@ -434,7 +447,7 @@ class TBSCertificate
   void `not_after=(int t)
   {
     Sequence validity = low_get_sequence(3);
-    validity->elements[1] = UTC(t);
+    validity->elements[1] = time_object(t);
     internal_der = UNDEFINED;
   }
   int `not_after()
