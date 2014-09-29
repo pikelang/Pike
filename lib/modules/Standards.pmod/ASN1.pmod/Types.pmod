@@ -962,18 +962,24 @@ class UTC
   int tag = 23;
   constant type_name = "UTCTime";
 
-  this_program init(int|string t)
+  this_program init(int|string|Calendar.ISO_UTC.Second t)
   {
     if(intp(t))
       set_posix([int]t);
+    else if(objectp(t))
+      set_posix([object(Calendar.ISO_UTC.Second)]t);
     else
       value = [string]t;
   }
 
-  //!
   this_program set_posix(int t)
   {
-    object second = Calendar.ISO_UTC.Second(t);
+    return set_posix(Calendar.ISO_UTC.Second(t));
+  }
+
+  //!
+  variant this_program set_posix(Calendar.ISO_UTC.Second second)
+  {
 
     // RFC 2459 4.1.2.5.1:
     //
@@ -1021,10 +1027,14 @@ class GeneralizedTime
   // states that fractions shouldn't have trailing zeroes, and should
   // be completely removed int the ".0" case.
 
-  //!
   this_program set_posix(int t)
   {
-    object second = Calendar.ISO_UTC.Second(t);
+    return set_posix(Calendar.ISO_UTC.Second(t));
+  }
+
+  //!
+  variant this_program set_posix(Calendar.ISO_UTC.Second second)
+  {
     value = sprintf("%04d%02d%02d%02d%02d%02dZ",
                     [int]second->year_no(),
                     [int]second->month_no(),
