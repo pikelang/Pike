@@ -41,6 +41,7 @@
 #include <locale.h>
 
 #ifdef HAVE_JNI_H
+#undef UNUSED
 #include <jni.h>
 #endif /* HAVE_JNI_H */
 
