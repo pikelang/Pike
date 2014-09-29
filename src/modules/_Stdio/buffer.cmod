@@ -1274,7 +1274,11 @@ PIKECLASS Buffer
    *! @decl Buffer add_hstring( Stdio.Buffer data, int size_size )
    *! @decl Buffer add_hstring( System.Memory data, int size_size )
    *! @decl Buffer add_hstring( String.Buffer data, int size_size )
+   *! @decl Buffer add_hstring( int(0..255) data, int size_size )
    *! @decl Buffer add_hstring( array data, int size_size )
+   *! @decl Buffer add_hstring(
+   *!              int|string(0..255)|Stdio.Buffer|System.Memory|array data,
+   *!              int size_size, int offset )
    *!
    *! Adds length of data followed by @[data] to the buffer.
    *!
@@ -1285,9 +1289,15 @@ PIKECLASS Buffer
    *! @[size_size] is the number of bytes used to represent the length of the data.
    *! It must be less than Int.NATIVE_MAX.
    *!
+   *! @[offset] is added to the length of the data prior to writing out
+   *! the length.  Typical usage involves adding @[size_size] to account
+   *! for the room used by the size.
+   *!
    *! The supported @[data] argument types are
    *!
    *! @mixed
+   *!  @type int(0..255)
+   *!   An eight bit character.
    *!  @type string(0..255)
    *!   An eight bit string.
    *!  @type System.Memory
@@ -1308,10 +1318,15 @@ PIKECLASS Buffer
      we cannot possibly use things that require the master (such as
      resolving things.)
   */
-  PIKEFUN Buffer add_hstring( string|object|array(string|Buffer|array) str, int size_size )
+  PIKEFUN Buffer add_hstring(
+   int|string|object|array(int|string|Buffer|array) str,
+   int size_size, void|int offset )
   {
     Buffer *io = THIS;
     size_t len = io_svalue_len(io, str);
+
+    if( offset )
+      len += offset->u.integer;
 
     if( size_size < (int)sizeof(size_t) &&
         len > (((size_t)1)<<(8*size_size))-1 )
@@ -1649,7 +1664,7 @@ PIKECLASS Buffer
     }
   }
 
-  /*! @decl string(8bit) read_hstring( int(0..) n )
+  /*! @decl string(8bit) read_hstring( int(0..) n, void|int offset )
    *!
    *! Identical in functionality to @[read](@[read_number](@[n])) but
    *! faster.
@@ -1657,11 +1672,15 @@ PIKECLASS Buffer
    *! Read a network byte order number of size n*8 bits, then return the
    *! indicated number of bytes as a string.
    *!
+   *! @[offset] is substracted from the specified length prior to reading the
+   *! string.  Typical usage involves substracting @[n] to account
+   *! for the room used by the size.
+   *!
    *! If there is not enough data available return 0.
    *!
    *! Note that pike string can not be longer than 0x7fffffff bytes (~2Gb).
    */
-  PIKEFUN string(0..255) read_hstring( int bytes )
+  PIKEFUN string(0..255) read_hstring( int bytes, void|int offset )
   {
     LONGEST len;
     Buffer *io = THIS;
@@ -1670,6 +1689,9 @@ PIKECLASS Buffer
 
     io_rewind_on_error( io, &e );
     len = io_read_number( io, bytes );
+
+    if (offset)
+      len -= offset->u.integer;
 
     if (len < 0) {
       /* io_avail() in io_read_number() failed. */
