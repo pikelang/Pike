@@ -122,7 +122,7 @@ extern struct program *bignum_program;
 #define OBTOMPQ(o) ((MP_RAT *)(o->storage))
 #define OBTOMPF(o) ((MP_FLT *)(o->storage))
 
-#define IS_MPZ_OBJ(O) ((O)->prog == bignum_program || (O)->prog == mpzmod_program)
+#define IS_MPZ_OBJ(O) ((O)->prog == bignum_program || (O)->prog == mpzmod_program || get_storage((O),mpzmod_program)==(O)->storage)
 #define IS_MPZ_OBJ2(O, INH) ((O->prog) && (((O)->inherits[INH].prog->id & ~1) == PROG_GMP_MPZ_ID))
 
 #ifndef GMP_NUMB_BITS
