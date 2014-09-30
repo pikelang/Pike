@@ -3933,7 +3933,7 @@ inherit_specifier: string_or_identifier TOK_COLON_COLON
     if (e == -1) {
       inherit_state = state;
       inherit_depth = depth;
-      if ($1->u.sval.u.string == this_program_string) {
+      if ($1->u.sval.u.string == this_program_string || $1->u.sval.u.string == this_string) {
         inherit_state = Pike_compiler;
         inherit_depth = 0;
         e = 0;

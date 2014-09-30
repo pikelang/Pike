@@ -50,6 +50,7 @@ PMOD_EXPORT extern struct program_state * Pike_compiler;
   } while(0)
 
 extern struct pike_string *this_program_string;
+extern struct pike_string *this_string;
 
 /* Common compiler subsystems */
 extern struct pike_string *parser_system_string;
