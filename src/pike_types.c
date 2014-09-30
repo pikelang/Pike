@@ -755,8 +755,17 @@ void debug_push_int_type(INT_TYPE min, INT_TYPE max)
   TYPE_STACK_DEBUG("push_int_type");
 }
 
+static int (*program_id_to_id)(int) = NULL;
+
+PMOD_EXPORT void set_program_id_to_id( int (*to)(int) )
+{
+    program_id_to_id = to;
+}
+
 void debug_push_object_type(int flag, INT32 id)
 {
+  if( program_id_to_id )
+      id = program_id_to_id(id);
   *(++Pike_compiler->type_stackp) = mk_type(T_OBJECT,
                                             (void *)(ptrdiff_t)flag,
                                             (void *)(ptrdiff_t)id, 0);

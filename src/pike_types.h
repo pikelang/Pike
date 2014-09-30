@@ -324,6 +324,10 @@ struct pike_string *type_to_string(struct pike_type *t);
 int pike_type_allow_premature_toss(struct pike_type *type);
 void register_attribute_handler(struct pike_string *attr,
 				struct svalue *handler);
+
+/* used by the precompiler to get the correct object types */
+PMOD_EXPORT void set_program_id_to_id( int (*to)(int) );
+
 /* Prototypes end here */
 
 #define visit_type_ref(T, REF_TYPE, EXTRA)			\
