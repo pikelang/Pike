@@ -127,10 +127,9 @@ class Messages
   array(string|Message) fragments = ({});
 
   //! This is a mapping from encapsulation boundary string to Message
-  //! object. If several messages with the same boundary string are
-  //! decoded, only the latest will be in this mapping. All message
-  //! objects will be listed, in order, in @[fragments].
-  mapping(string:Message) parts = ([]);
+  //! objects. All message objects and surrounding text will be
+  //! listed, in order, in @[fragments].
+  mapping(string:array(Message)) parts = ([]);
 
   //! A Messages object is created with the file or stream data.
   protected void create(string data)
@@ -160,7 +159,7 @@ class Messages
       if(objectp(part))
       {
         Message msg = [object(Message)]part;
-        parts[msg->pre]=msg;
+        parts[msg->pre] += ({ msg });
       }
   }
 
@@ -183,7 +182,9 @@ class Messages
 string simple_decode(string pem)
 {
   Messages m = Messages(pem);
-  return sizeof(m->parts)==1 && values(m->parts)[0]->body;
+  return sizeof(m->parts)==1 &&
+    sizeof(values(m->parts)[0])==1 &&
+    values(m->parts)[0][0]->body;
 }
 
 //! Creates a PEM message, wrapped to 64 character lines.
