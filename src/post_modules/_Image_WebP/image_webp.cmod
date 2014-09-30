@@ -236,7 +236,7 @@ static size_t Encode(const uint8_t* rgba, int width, int height, int stride,
  *! The decoded image or an error
  */
 
-PIKEFUN mapping(string:object) _decode( string data )
+PIKEFUN mapping(string:object(Image.Image)|string) _decode( string data )
 {
   int width, height, npix;
   uint8_t *ip, *rp, *ap;
@@ -293,7 +293,7 @@ PIKEFUN mapping(string:object) _decode( string data )
   f_aggregate_mapping( 12 );
 }
 
-PIKEFUN object decode( string data )
+PIKEFUN object(Image.Image) decode( string data )
 {
   struct mapping *m;
   struct svalue *p;
@@ -421,8 +421,8 @@ static object *parameter_obj(struct mapping *map, const char *what )
  *! Always returns the encoded image as a string or throws an error.
  *!
  */
-PIKEFUN string encode( object i,
-		       mapping(string:int|float|object)|void options )
+PIKEFUN string(0..255) encode( object(Image.Image) i,
+                               mapping(string:int|float|object(Image.Image))|void options )
 {
     unsigned char *result = NULL;
     size_t size;
