@@ -11,7 +11,7 @@ import Standards.ASN1.Types;
 //! 4.1.1.2.
 Sequence algorithm_identifier()
 {
-  return Sequence( ({ .Identifiers.rsa_id }) );
+  return Sequence( ({ .Identifiers.rsa_id, Null() }) );
 }
 
 //! Create a DER-coded RSAPublicKey structure

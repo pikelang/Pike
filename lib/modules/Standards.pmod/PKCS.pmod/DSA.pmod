@@ -16,7 +16,7 @@ Sequence algorithm_identifier(Crypto.DSA|void dsa)
 {
   return
     dsa ? dsa->pkcs_algorithm_identifier()
-    : Sequence( ({ .Identifiers.dsa_id }) );
+    : Sequence( ({ .Identifiers.dsa_id, Null() }) );
 }
 
 //! Generates the DSAPublicKey value, as specified in RFC2459.
