@@ -194,6 +194,10 @@ test_equal([[ sort( ({
   Types.Identifier(1,3),
 }) ]])
 
+test_eq(Standards.ASN1.Decode.secure_der_decode("\1\1\0")->get_der(),
+"\1\1\0")
+test_eq(Standards.ASN1.Decode.secure_der_decode("\1\1\0\0"), 0)
+
 test_do( add_constant("Types"); )
 
 END_MARKER
