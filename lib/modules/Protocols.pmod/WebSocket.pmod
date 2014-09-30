@@ -160,7 +160,7 @@ class Frame {
     //! @decl void create(FRAME_PING, string(0..255) data)
     //! @decl void create(FRAME_PONG, string(0..255) data)
     protected void create(FRAME opcode, void|string|CLOSE_STATUS data) {
-        this_program::opcode = opcode;
+        this::opcode = opcode;
         if (data) switch (opcode) {
         case FRAME_TEXT:
             data = string_to_utf8(data);
@@ -172,12 +172,12 @@ class Frame {
             if (String.width(data) != 8)
                 error("%s frames cannot hold widestring data.\n",
                       describe_opcode(opcode));
-            this_program::data = data;
+            this::data = data;
             break;
         case FRAME_CLOSE:
             if (!intp(data))
                 error("Bad argument. Expected CLOSE_STATUS.\n");
-            this_program::data = sprintf("%2c", data);
+            this::data = sprintf("%2c", data);
             break;
         }
     }
@@ -291,7 +291,7 @@ class Connection {
     //! Set the @expr{id@}. It will be passed as last argument to all
     //! callbacks.
     void set_id(mixed id) {
-        this_program::id = id;
+        this::id = id;
     }
 
     protected void create(Stdio.File f) {
@@ -438,15 +438,8 @@ class Connection {
 }
 
 //!
-class Request {
+class Request(function(array(string), Request:void) cb) {
     inherit Protocols.HTTP.Server.Request;
-
-    function(array(string), Request:void) cb;
-
-    //!
-    protected void create(function(array(string), Request:void) cb) {
-	this_program::cb = cb;
-    }
 
     protected void parse_request() {
 	if (!cb || !has_index(request_headers, "sec-websocket-key")) {

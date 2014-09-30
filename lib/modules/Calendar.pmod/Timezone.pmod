@@ -1465,7 +1465,7 @@ class Runtime_timezone_compiler
       protected void create(int offset,string name)
       { 
 	 offset_to_utc=offset; 
-	 this_program::name=name;
+	 this::name=name;
 	 if (has_value(name, "/"))
 	 {
 	    names=name/"/";

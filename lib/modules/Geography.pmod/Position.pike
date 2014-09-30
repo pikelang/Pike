@@ -60,9 +60,9 @@ protected variant void create(string lat, string long)
 protected variant void create(int|float lat, int|float long,
                               void|int|float alt)
 {
-  this_program::lat=(float)lat;
-  this_program::long=(float)long;
-  this_program::alt=(float)alt;
+  this::lat=(float)lat;
+  this::long=(float)long;
+  this::alt=(float)alt;
   set_ellipsoid("WGS 84");
 }
 

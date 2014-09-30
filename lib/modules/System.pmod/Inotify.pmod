@@ -35,10 +35,10 @@ class Watch {
     void create(string name, int mask,
 		function(int, int, string, mixed ...:void) callback,
 		array extra) {
-	this_program::name = name;
-	this_program::mask = mask;
-	this_program::callback = callback;
-	this_program::extra = extra;
+	this::name = name;
+	this::mask = mask;
+	this::callback = callback;
+	this::extra = extra;
     }
 }
 
@@ -48,11 +48,10 @@ class DirWatch {
     void handle_event(int wd, int mask, int cookie,
 		      int|string name) {
 	if (name) {
-	    name = (has_suffix(this_program::name, "/")
-		    ? this_program::name
-		    : (this_program::name+"/")) + name;
+	    name = (has_suffix(this::name, "/")
+		    ? this::name : (this::name+"/")) + name;
 	} else {
-	    name = this_program::name;
+	    name = this::name;
 	}
 
 	callback(mask, cookie, name, @extra);
@@ -64,7 +63,7 @@ class FileWatch {
 
     void handle_event(int wd, int mask, int cookie,
 		      int|string name) {
-	callback(mask, cookie, this_program::name, @extra);
+	callback(mask, cookie, this::name, @extra);
     }
 }
 

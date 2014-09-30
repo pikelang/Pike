@@ -1211,9 +1211,9 @@ class DecodeError
   protected void create (string err_str, int err_pos, string charset,
 		      void|string reason, void|array bt)
   {
-    this_program::err_str = err_str;
-    this_program::err_pos = err_pos;
-    this_program::charset = charset;
+    this::err_str = err_str;
+    this::err_pos = err_pos;
+    this::charset = charset;
     ::create (format_err_msg ("Error decoding",
 			      err_str, err_pos, charset, reason),
 	      bt);
@@ -1264,9 +1264,9 @@ class EncodeError
   protected void create (string err_str, int err_pos, string charset,
 		      void|string reason, void|array bt)
   {
-    this_program::err_str = err_str;
-    this_program::err_pos = err_pos;
-    this_program::charset = charset;
+    this::err_str = err_str;
+    this::err_pos = err_pos;
+    this::charset = charset;
     ::create (format_err_msg ("Error encoding",
 			      err_str, err_pos, charset, reason),
 	      bt);

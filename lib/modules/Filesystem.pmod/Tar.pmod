@@ -280,16 +280,16 @@ class _Tar
 
   void create(object fd, string filename, object parent)
   {
-    this_program::filename = filename;
+    this::filename = filename;
     // read all entries
 
-    this_program::fd = fd;
+    this::fd = fd;
     int pos = 0; // fd is at position 0 here
     string next_name;
     for(;;)
     {
       Record r;
-      string s = this_program::fd->read(512);
+      string s = this::fd->read(512);
 
       if(s=="" || sizeof(s)<512 || sscanf(s, "%*[\0]%*2s")==1)
 	break;
@@ -311,7 +311,7 @@ class _Tar
       pos += 512 + r->size;
       if(pos%512)
 	pos += 512 - (pos%512);
-      if (this_program::fd->seek(pos) < 0)
+      if (this::fd->seek(pos) < 0)
 	error ("Failed to seek to position %d in %O.\n", pos, fd);
     }
 

@@ -26,8 +26,8 @@ void create(int(1..2) level, int(8bit) description,
     // offer a way to indicate a refusal to renegotiate at a "warning"
     // level). SSLv3 clients that refuse renegotiation SHOULD use a
     // fatal handshake_failure alert.
-    this_program::description = ALERT_handshake_failure;
-    this_program::level = ALERT_fatal;
+    this::description = ALERT_handshake_failure;
+    this::level = ALERT_fatal;
   }
 
   if (! ALERT_levels[level])
@@ -35,9 +35,9 @@ void create(int(1..2) level, int(8bit) description,
   if (! ALERT_descriptions[description])
     error( "Invalid description\n" );
 
-  this_program::level = level;
-  this_program::description = description;
-  this_program::message = message;
+  this::level = level;
+  this::description = description;
+  this::message = message;
 
 #ifdef SSL3_DEBUG
   if(message)

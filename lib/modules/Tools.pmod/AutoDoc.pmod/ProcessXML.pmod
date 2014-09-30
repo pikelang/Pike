@@ -1292,7 +1292,7 @@ class NScope
       error("Unsupported node type: %O, name: %O, path: %O\n",
 	    type, name, path);
     }
-    this_program::path = path;
+    this::path = path;
     enterNode(tree);
   }
 
@@ -1500,10 +1500,10 @@ class NScopeStack
 
   protected void create(NScope scopes, string|void logfile, .Flags|void flags)
   {
-    this_program::scopes = scopes;
-    this_program::logfile = logfile;
+    this::scopes = scopes;
+    this::logfile = logfile;
     if (undefinedp(flags)) flags = .FLAG_NORMAL;
-    this_program::flags = flags;
+    this::flags = flags;
   }
 
   protected void destroy()
@@ -1606,6 +1606,7 @@ class NScopeStack
       // Inherit or namespace.
       switch(ref[0]) {
       case "this_program::":
+      case "this::":
 	while (pos) {
 	  if ((<"class", "module", "namespace">)[current->type]) {
 	    return current->lookup(ref[1..]);

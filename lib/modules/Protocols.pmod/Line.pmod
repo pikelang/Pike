@@ -289,8 +289,8 @@ class simple
   //!
   void create(object(Stdio.File) con, int|void timeout)
   {
-    this_program::con = con;
-    this_program::timeout = timeout;
+    this::con = con;
+    this::timeout = timeout;
 
     // Start the timeout handler.
     touch_time();

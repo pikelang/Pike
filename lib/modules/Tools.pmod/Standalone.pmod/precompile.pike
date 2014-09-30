@@ -2792,7 +2792,7 @@ class Handler {
 
     void create(mapping|void predefines) {
 	::create();
-	if (predefines) this_program::predefines = predefines;
+	if (predefines) this::predefines = predefines;
     }
 }
 

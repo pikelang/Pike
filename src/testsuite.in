@@ -1007,7 +1007,7 @@ test_any_equal([[
   };
   class D {
     inherit C;
-    this_program get_d() { return this_program::this; }
+    this_program get_d() { return this::this; }
   };
   object(D) d = D();
   return ({ "A", sort(indices(d->get_a())),
@@ -11877,13 +11877,13 @@ test_program_eq([[
     class B {
       string _sprintf() {return "B";}
       mixed f() {
-	return sprintf ("%O%O%O%O%O",
-			global::this, A::this, B::this, this_program::this, this);
+	return sprintf ("%O%O%O%O%O%O",
+			global::this, A::this, B::this, this_program::this, this::this, this);
       }
     }
   }
   string a() {return A()->B()->f();}
-]], "gABBB")
+]], "gABBBB")
 
 test_program_eq([[
   string _sprintf() {return "g";}
@@ -11923,14 +11923,14 @@ test_program_eq([[
     class B {
       string _sprintf() {return "B";}
       mixed f() {
-	return sprintf ("%O%O%O%O%O",
-			global::this, A::this, B::this, this_program::this, this);
+	return sprintf ("%O%O%O%O%O%O",
+			global::this, A::this, B::this, this_program::this, this::this, this);
       }
     }
     constant this = 7;
   }
   string a() {return A()->B()->f();}
-]], "g7BB7")
+]], "g7BBB7")
 
 test_compile_error([[
   this = 17;

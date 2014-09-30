@@ -1173,7 +1173,7 @@ protected class Low_Readline
 		// work.
 		int secret_mode = (local_options[TELOPT_ECHO] == YES);
 		set_secret(0);
-		readline=Stdio.Readline(this_program::this, lower_case(term));
+		readline=Stdio.Readline(this::this, lower_case(term));
 		set_secret(secret_mode);
 		readline->get_input_controller()->set_close_callback(readline_close_callback);
 		DWRITE("TELNET.Readline: calling readline->set_nonblocking()\n");

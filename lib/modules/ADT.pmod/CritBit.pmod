@@ -161,7 +161,7 @@ class RangeSet {
 
     //! Create a RangeSet from a given tree program.
     void create(function|object|program tree) {
-	this_program::tree = objectp(tree) ? tree : tree();
+	this::tree = objectp(tree) ? tree : tree();
     }
 
     mixed `[](mixed key) {
@@ -271,7 +271,7 @@ class MultiRangeSet {
     int|float max_len;
 
     void create(function|program|object tree) {
-	this_program::tree = objectp(tree) ? tree : tree();
+	this::tree = objectp(tree) ? tree : tree();
     }
 
     mixed `[](mixed key) {
@@ -616,8 +616,8 @@ class MultiTree {
 		t[-1] = t[-1]->_get_iterator(step, start);
 	    }
 
-	    this_program::oit = t;
-	    this_program::it = t + ({ });
+	    this::oit = t;
+	    this::it = t + ({ });
 	}
 
 	int(0..1) `!() {

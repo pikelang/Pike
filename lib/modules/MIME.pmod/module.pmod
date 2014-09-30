@@ -72,7 +72,7 @@ protected class StringRange
   {
     if (start == end) {
       data = "";
-      this_program::start = this_program::end = 0;
+      this::start = this::end = 0;
       return;
     }
     if (start < 0) start = 0;
@@ -90,8 +90,8 @@ protected class StringRange
       start = 0;
     }
     data = s;
-    this_program::start = start;
-    this_program::end = end;
+    this::start = start;
+    this::end = end;
   }
   protected int _sizeof()
   {

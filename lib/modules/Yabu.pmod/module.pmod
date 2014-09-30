@@ -58,7 +58,7 @@ protected private class ProcessLock {
 
   protected void create(string lock_file, string mode)
   {
-    this_program::lock_file = lock_file;
+    this::lock_file = lock_file;
 
     for(int tryout = 0; tryout < 3; tryout++) {
       Stdio.File f = Stdio.File();
@@ -157,7 +157,7 @@ protected private class FileIO {
 
   void file_open(string filename)
   {
-    this_program::filename = filename;
+    this::filename = filename;
     if(!file::open(filename, filemode))
       ERR(strerror(file::errno()));
   }
@@ -166,8 +166,8 @@ protected private class FileIO {
   {
     file::create();
 
-    this_program::filename = filename;
-    this_program::filemode = filemode;
+    this::filename = filename;
+    this::filemode = filemode;
     file_open(filename);
   }
 }
@@ -473,8 +473,8 @@ class Chunk {
                         Table|void parent, mapping|void m)
   {
     magic = 0;
-    this_program::filename = filename;
-    this_program::parent = parent;
+    this::filename = filename;
+    this::parent = parent;
     start_time = encode_num(time());
 
     if(has_value(mode, "C"))
@@ -616,9 +616,9 @@ class Transaction
 
   protected void create(Table table, int id, _Table keep_ref)
   {
-    this_program::table = table;
-    this_program::id = id;
-    this_program::keep_ref = keep_ref;
+    this::table = table;
+    this::id = id;
+    this::keep_ref = keep_ref;
   }
 }
 
@@ -1023,9 +1023,9 @@ class Table
 
   protected void create(string filename, string mode, ProcessLock lock_file)
   {
-    this_program::filename = filename;
-    this_program::mode = mode;
-    this_program::lock_file = lock_file;
+    this::filename = filename;
+    this::mode = mode;
+    this::lock_file = lock_file;
 
     if(search(mode, "w")+1)
       write = 1;
@@ -1182,9 +1182,9 @@ class _Table
 
   protected void create(string handle, Table table, function table_destroyed)
   {
-    this_program::handle = handle;
-    this_program::table = table;
-    this_program::table_destroyed = table_destroyed;
+    this::handle = handle;
+    this::table = table;
+    this::table_destroyed = table_destroyed;
   }
 }
 
@@ -1352,8 +1352,8 @@ class DB
   {
     atexit(close);
 
-    this_program::dir = dir;
-    this_program::mode = mode;
+    this::dir = dir;
+    this::mode = mode;
 
     if(search(mode, "w")+1) {
       write = 1;
@@ -1453,7 +1453,7 @@ class LookupTable
 
   protected void create(string filename, string mode, int minx)
   {
-    this_program::minx = minx;
+    this::minx = minx;
     table = Table(filename, mode, 0);
   }
 }

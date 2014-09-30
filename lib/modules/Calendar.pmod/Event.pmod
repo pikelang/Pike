@@ -567,8 +567,8 @@ class Gregorian_Fixed
                          int(1..31) month_day, int(1..12) month,
                          int ... extra)
    {
-     this_program::id=id;
-     this_program::name=name;
+     this::id=id;
+     this::name=name;
      md=month_day;
      mn=month;
 

@@ -496,9 +496,9 @@ class AsyncClient
 	if (!cb) cb = server->cb;
 	if (!args) args = server->args;
 	object t = server->server;
-	this_program::port = port;
-	this_program::args = args;
-	this_program::cb = cb;
+	this::port = port;
+	this::args = args;
+	this::cb = cb;
 
 	// fetch queue
 	foreach(server->error_cbs; function f; array args)
@@ -511,16 +511,16 @@ class AsyncClient
 	sequences = substitute_callback_rec(server->sequences, server);
 
 	destruct(server);
-	this_program::server = server = t;
+	this::server = server = t;
 	initiate_connection(server, port, cb, @args);
 	return;
       }
     }
 
-    this_program::server = server;
-    this_program::port = port;
-    this_program::cb = cb;
-    this_program::args = args;
+    this::server = server;
+    this::port = port;
+    this::cb = cb;
+    this::args = args;
 
     if(!error_cbs[cb]) error_cbs[cb] = ({ });
     error_cbs[cb] += ({ args });

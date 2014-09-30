@@ -112,9 +112,9 @@ class SourcePosition {
       werror("**********************************************************\n");
       werror("**********************************************************\n");
     }
-    this_program::filename = filename;
-    this_program::firstline = firstline;
-    this_program::lastline = lastline; 
+    this::filename = filename;
+    this::firstline = firstline;
+    this::lastline = lastline; 
   }
 
   //! @returns

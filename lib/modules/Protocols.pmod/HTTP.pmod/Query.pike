@@ -170,9 +170,9 @@ protected int ponder_answer( int|void start_position )
 
 protected void close_connection()
 {
-  Stdio.File con = this_program::con;
+  Stdio.File con = this::con;
   if (!con) return;
-  this_program::con = 0;
+  this::con = 0;
   con->set_callbacks(0, 0, 0, 0, 0);	// Clear any remaining callbacks.
   con->close();
 }
@@ -308,7 +308,7 @@ protected void low_async_failed(int errno)
 {
    DBG("** calling failed cb %O\n", request_fail);
    if (errno)
-     this_program::errno = errno;
+     this::errno = errno;
    ok=0;
    if (request_fail) request_fail(this,@extra_args);
    remove_call_out(async_timeout);
@@ -643,7 +643,7 @@ this_program thread_request(string server, int port, string query,
 
    // prepare the request
 
-   errno = ok = protocol = this_program::headers = status_desc = status =
+   errno = ok = protocol = this::headers = status_desc = status =
      discarded_bytes = datapos = 0;
    buf = "";
    headerbuf = "";
@@ -676,18 +676,18 @@ this_program sync_request(string server, int port, string query,
 {
   int kept_alive;
 
-  this_program::real_host = server;
+  this::real_host = server;
   // start open the connection
   if(con && con->is_open() &&
-     this_program::host == server &&
-     this_program::port == port &&
+     this::host == server &&
+     this::port == port &&
      headers && headers->connection &&
      lower_case( headers->connection ) != "close")
   {
     DBG("** Connection kept alive!\n");
     kept_alive = 1;
     // Remove unread data from the connection.
-    this_program::data();
+    this::data();
   }
   else
   {
@@ -695,7 +695,7 @@ this_program sync_request(string server, int port, string query,
         "   con: %O (%d)\n"
         "   Previously connected to %O:%d\n",
         server, port, con, con && con->is_open(),
-        this_program::host, this_program::port);
+        this::host, this::port);
     close_connection();	// Close any old connection.
 
     string ip = dns_lookup( server );
@@ -710,8 +710,8 @@ this_program sync_request(string server, int port, string query,
     }
     con = new_con;
 
-    this_program::host = server;
-    this_program::port = port;
+    this::host = server;
+    this::port = port;
   }
 
   // prepare the request
@@ -778,11 +778,11 @@ this_program async_request(string server,int port,string query,
 {
    DBG("async_request %s:%d %q\n", server, port, query);
 
-  this_program::real_host = server;
+  this::real_host = server;
 
-   int keep_alive = con && con->is_open() && (this_program::host == server) &&
-     (this_program::port == port) && this_program::headers &&
-     (lower_case(this_program::headers->connection||"close") != "close");
+   int keep_alive = con && con->is_open() && (this::host == server) &&
+     (this::port == port) && this::headers &&
+     (lower_case(this::headers->connection||"close") != "close");
 
    // start open the connection
 
@@ -803,15 +803,15 @@ this_program async_request(string server,int port,string query,
 
    send_buffer = request = query+"\r\n"+headers+"\r\n"+(data||"");
 
-   errno = ok = protocol = this_program::headers = status_desc = status =
+   errno = ok = protocol = this::headers = status_desc = status =
      discarded_bytes = datapos = 0;
    buf = "";
    headerbuf = "";
 
    if (!keep_alive) {
       close_connection();
-      this_program::host = server;
-      this_program::port = port;
+      this::host = server;
+      this::port = port;
       dns_lookup_async(server,async_got_host,port);
    }
    else

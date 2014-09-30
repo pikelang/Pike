@@ -52,8 +52,8 @@ protected int last_line_inplace =
 
 void log_start (int verbosity, int on_tty)
 {
-  this_program::verbosity = verbosity;
-  this_program::on_tty = on_tty;
+  this::verbosity = verbosity;
+  this::on_tty = on_tty;
   last_line_inplace = 0;
 }
 

@@ -353,7 +353,7 @@ protected {
 
       protected void create(int|void flags)
       {
-	this_program::flags = flags;
+	this::flags = flags;
       }
 
       void put_int8(int i)
@@ -1433,12 +1433,12 @@ protected {
 	username = tmp[1..]*"\\";
       }
 
-      this_program::server = server;
-      this_program::port = port;
-      this_program::database = database;
-      this_program::username = username;
-      this_program::password = auth;
-      this_program::domain = domain;
+      this::server = server;
+      this::port = port;
+      this::database = database;
+      this::username = username;
+      this::password = auth;
+      this::domain = domain;
 
       TDS_WERROR("Connecting to %s:%d with TDS version %d.%d\n",
 		 server, port, major_version, minor_version);

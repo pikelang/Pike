@@ -43,8 +43,8 @@ protected void create(function(Request:void) callback,
   ::create();
 
   portno = port || 443;
-  this_program::callback=callback;
-  this_program::interface=interface;
+  this::callback=callback;
+  this::interface=interface;
 
   if( key && certificate )
   {
@@ -55,7 +55,7 @@ protected void create(function(Request:void) callback,
   else
     set_default_keycert();
 
-  if (!bind(portno, new_connection, this_program::interface, share))
+  if (!bind(portno, new_connection, this::interface, share))
     error("Failed to bind port %s%d: %s\n",
           interface?interface+":":"", portno, strerror(errno()));
 }

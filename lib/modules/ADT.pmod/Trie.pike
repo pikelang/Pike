@@ -17,8 +17,8 @@ protected array(int) index;
 protected void create(string|array(int)|void key, int|void offset)
 {
   path = key || ({});
-  this_program::offset = offset || sizeof(path);
-  path = path[..this_program::offset-1];
+  this::offset = offset || sizeof(path);
+  path = path[..this::offset-1];
 }
 
 protected void low_merge(int key, this_program o)

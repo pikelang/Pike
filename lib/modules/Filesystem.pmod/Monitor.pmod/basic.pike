@@ -455,7 +455,7 @@ protected class Monitor(string path,
   protected void update(Stdio.Stat st)
   {
     int delta = max_dir_check_interval || global::max_dir_check_interval;
-    this_program::st = st;
+    this::st = st;
     
     if (st) {
       //  Start with a delta proportional to the time since mtime/ctime,
@@ -489,7 +489,7 @@ protected class Monitor(string path,
   //! Check if this monitor should be removed automatically.
   void check_for_release(int mask, int flags)
   {
-    if ((this_program::flags & mask) == flags) {
+    if ((this::flags & mask) == flags) {
       m_delete(monitors, path);
       release_monitor(this);
     }
@@ -512,11 +512,11 @@ protected class Monitor(string path,
       array(string) files = get_dir(path) || ({});
       array(string) new_files = files;
       array(string) deleted_files = ({});
-      if (this_program::files) {
-	new_files -= this_program::files;
-	deleted_files = this_program::files - files;
+      if (this::files) {
+	new_files -= this::files;
+	deleted_files = this::files - files;
       }
-      this_program::files = files;
+      this::files = files;
       foreach(new_files, string file) {
 	res = 1;
 	file = canonic_path(Stdio.append_path(path, file));
@@ -529,7 +529,7 @@ protected class Monitor(string path,
 	      m2->check(flags);
 	    }
 	  };
-	if (this_program::flags & MF_RECURSE) {
+	if (this::flags & MF_RECURSE) {
 	  monitor(file, orig_flags | MF_AUTO | MF_HARD,
 		  max_dir_check_interval,
 		  file_interval_factor,
@@ -551,7 +551,7 @@ protected class Monitor(string path,
 	      m2->check(flags);
 	    }
 	  };
-	if (this_program::flags & MF_RECURSE) {
+	if (this::flags & MF_RECURSE) {
 	  // The monitor for the file has probably removed itself,
 	  // or the user has done it by hand, in either case we
 	  // don't need to do anything more here.
@@ -625,16 +625,16 @@ protected class Monitor(string path,
   int(0..1) check(MonitorFlags|void flags)
   {
     Stdio.Stat st = file_stat(path, 1);
-    Stdio.Stat old_st = this_program::st;
-    int orig_flags = this_program::flags;
-    this_program::flags |= MF_INITED;
+    Stdio.Stat old_st = this::st;
+    int orig_flags = this::flags;
+    this::flags |= MF_INITED;
     update(st);
     if (!(orig_flags & MF_INITED)) {
       // Initialize.
       if (st) {
 	if (st->isdir) {
 	  array(string) files = get_dir(path) || ({});
-	  this_program::files = files;
+	  this::files = files;
 	  foreach(files, string file) {
 	    file = canonic_path(Stdio.append_path(path, file));
 	    if(filter_file(file)) continue;
@@ -643,7 +643,7 @@ protected class Monitor(string path,
 	      // Assume it has already notified about existance.
 	      continue;
 	    }
-	    if (this_program::flags & MF_RECURSE) {
+	    if (this::flags & MF_RECURSE) {
 	      monitor(file, orig_flags | MF_AUTO | MF_HARD,
 		      max_dir_check_interval,
 		      file_interval_factor,
@@ -692,7 +692,7 @@ protected class Monitor(string path,
 	    monitor_queue->adjust(this);
 	  } else {
 	    // The monitor no longer has a link from its parent directory.
-	    this_program::flags &= ~MF_HARD;
+	    this::flags &= ~MF_HARD;
 
 	    // Check if we should remove the monitor.
 	    check_for_release(MF_AUTO, MF_AUTO);
@@ -710,7 +710,7 @@ protected class Monitor(string path,
       file_created(path, st);
       if (st->isdir) {
 	array(string) files = get_dir(path) || ({});
-	this_program::files = files;
+	this::files = files;
 	foreach(files, string file) {
 	  file = canonic_path(Stdio.append_path(path, file));
 	  if (monitors[file]) {
@@ -718,7 +718,7 @@ protected class Monitor(string path,
 	    // Assume it has already notified about existance.
 	    continue;
 	  }
-	  if (this_program::flags & MF_RECURSE) {
+	  if (this::flags & MF_RECURSE) {
 	    monitor(file, orig_flags | MF_AUTO | MF_HARD,
 		    max_dir_check_interval,
 		    file_interval_factor,
@@ -761,7 +761,7 @@ protected class Monitor(string path,
       // so we have to scan for it. 
       int caught;
       array(string) files = get_dir(path) || ({});
-      this_program::files = files;
+      this::files = files;
       foreach(files, string file) {
         file = canonic_path(Stdio.append_path(path, file));
  	if (monitors[file]) {
@@ -828,13 +828,13 @@ protected void create(int|void max_dir_check_interval,
 #endif
   
   if (max_dir_check_interval > 0) {
-    this_program::max_dir_check_interval = max_dir_check_interval;
+    this::max_dir_check_interval = max_dir_check_interval;
   }
   if (file_interval_factor > 0) {
-    this_program::file_interval_factor = file_interval_factor;
+    this::file_interval_factor = file_interval_factor;
   }
   if (stable_time > 0) {
-    this_program::stable_time = stable_time;
+    this::stable_time = stable_time;
   }
   clear();
 }
@@ -1172,7 +1172,7 @@ void set_backend(Pike.Backend|void backend)
 {
   int was_nonblocking = !!co_id;
   set_blocking();
-  this_program::backend = backend;
+  this::backend = backend;
   if (was_nonblocking) {
     set_nonblocking();
   }
@@ -1252,9 +1252,9 @@ void set_nonblocking(int|void t)
 void set_max_dir_check_interval(int max_dir_check_interval)
 {
   if (max_dir_check_interval > 0) {
-    this_program::max_dir_check_interval = max_dir_check_interval;
+    this::max_dir_check_interval = max_dir_check_interval;
   } else {
-    this_program::max_dir_check_interval = default_max_dir_check_interval;
+    this::max_dir_check_interval = default_max_dir_check_interval;
   }
 }
 
@@ -1262,9 +1262,9 @@ void set_max_dir_check_interval(int max_dir_check_interval)
 void set_file_interval_factor(int file_interval_factor)
 {
   if (file_interval_factor > 0) {
-    this_program::file_interval_factor = file_interval_factor;
+    this::file_interval_factor = file_interval_factor;
   } else {
-    this_program::file_interval_factor = default_file_interval_factor;
+    this::file_interval_factor = default_file_interval_factor;
   }
 }
 

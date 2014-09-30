@@ -360,7 +360,7 @@ class Watchdog
   void create (int pid, int verbose)
   {
     parent_pid = watched_pid = pid;
-    this_program::verbose = verbose;
+    this::verbose = verbose;
     WATCHDOG_DEBUG_MSG ("Watchdog started.\n");
     stdin = Stdio.File ("stdin");
 #ifdef __NT__

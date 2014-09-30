@@ -34,7 +34,7 @@ protected private class Extractor {
   protected array(.DocParser.Parse) tokens = ({});
 
   protected void create(string s, string filename) {
-    this_program::filename = filename;
+    this::filename = filename;
 
     array(string) ctokens = Parser.C.split(s);
     array(array(SourcePosition|string)) a = ({});

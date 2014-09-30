@@ -849,7 +849,7 @@ protected class DocParserClass {
   {
     if (undefinedp(flags)) flags = .FLAG_NORMAL;
 
-    this_program::flags = flags;
+    this::flags = flags;
 
     if (arrayp(s)) {
       tokenArr = s;

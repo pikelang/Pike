@@ -1399,8 +1399,8 @@ class CertificatePair
       error("Private key doesn't match certificate.\n");
     }
 
-    this_program::key = key;
-    this_program::certs = certs;
+    this::key = key;
+    this::certs = certs;
 
     issuers = tbss->issuer->get_der();
 
@@ -1410,7 +1410,7 @@ class CertificatePair
     if (has_value(sign_algs, 0)) error("Unknown signature algorithm.\n");
 
     // FIXME: This probably needs to look at the leaf cert extensions!
-    this_program::cert_type = ([
+    this::cert_type = ([
       SIGNATURE_rsa: AUTH_rsa_sign,
       SIGNATURE_dsa: AUTH_dss_sign,
       SIGNATURE_ecdsa: AUTH_ecdsa_sign,

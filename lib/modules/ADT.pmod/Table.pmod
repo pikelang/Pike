@@ -117,7 +117,7 @@ class table {
   {
     return (equal(Array.map(fields, lower_case),
 		  Array.map(indices(table), lower_case)) &&
-	    equal(this_program::table, values(table)));
+	    equal(this::table, values(table)));
   }
 
   //! This method appends two tables. The table given as an argument will be
@@ -128,7 +128,7 @@ class table {
     if(!equal(Array.map(indices(table), lower_case),
 	      Array.map(fields, lower_case)))
       TABLE_ERR("Table fields are not equal.");
-    return copy(this_program::table+values(table), fields, types);
+    return copy(this::table+values(table), fields, types);
   }
 
   //! This method appends two tables. The table given as an argument will be
@@ -136,11 +136,11 @@ class table {
   //! rows in both tables must be equal.
   object append_right(object table)
   {
-    if(sizeof(table) != sizeof(this_program::table))
+    if(sizeof(table) != sizeof(this::table))
       TABLE_ERR("Table sizes are not equal.");
     array v = values(table);
-    for(int r = 0; r < sizeof(this_program::table); r++)
-      v[r] = this_program::table[r] + v[r];
+    for(int r = 0; r < sizeof(this::table); r++)
+      v[r] = this::table[r] + v[r];
     return copy(v, fields+indices(table), types+table->all_types());
   }
 
@@ -401,7 +401,7 @@ class table {
       if(!stringp(s))
 	TABLE_ERR("Field name not string");
 
-    this_program::table = copy_value(table);
+    this::table = copy_value(table);
     fields = copy_value(column_names);
     types = allocate(sizeof(column_names));
 

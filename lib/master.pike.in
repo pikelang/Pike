@@ -443,7 +443,7 @@ protected class Pike_7_6_master
   {
     // 0.0 .. 7.6
     if ((major < 7) || ((major == 7) && (minor < 7)))
-      return this_program::this;
+      return this::this;
     return get_compat_master(major, minor);
   }
 
@@ -489,7 +489,7 @@ protected class Pike_7_8_master
       return Pike_7_6_master::get_compat_master(major, minor);
     // 7.5 & 7.6
     if ((major == 7) && (minor < 9))
-      return this_program::this;
+      return this::this;
     return get_compat_master(major, minor);
   }
 }
@@ -2510,7 +2510,7 @@ class joinnode (array(object|mapping) joined_modules,
 
   void _decode (array(object) joined_modules)
   {
-    this_program::joined_modules = joined_modules;
+    this::joined_modules = joined_modules;
   }
 }
 
@@ -5113,7 +5113,7 @@ class Encoder
   //! encoded instead of being reverse resolved to a name. That's
   //! necessary to encode programs.
   {
-    this_program::encoded = encoded;
+    this::encoded = encoded;
 
     foreach (all_constants(); string var; mixed val)
       rev_constants[val] = "c" + var;

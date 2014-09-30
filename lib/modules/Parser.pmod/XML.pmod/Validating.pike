@@ -105,17 +105,17 @@ protected class Element {
       array spec = attributes[name];
       if(spec) {
 	if(!islegalattribute(c_attrs[name], spec)) {
-	  xmlerror(this_program::name,
+	  xmlerror(this::name,
 		   "Invalid value for attribute %s: %O.", name, c_attrs[name]);
 	}
 	if(spec[1][0]=="#FIXED" && c_attrs[name]!=spec[1][1]) {
-	  xmlerror(this_program::name,
+	  xmlerror(this::name,
 		   "Attribute %s must have the value %s.", name, spec[1][1]);
 	}
 	switch(spec[0][0]) {
 	 case "ID":
 	   if(__ids_used[c_attrs[name]]) {
-	     xmlerror(this_program::name,
+	     xmlerror(this::name,
 		      "Id %O (sttribute %s) has already been used.",
 		      c_attrs[name], name);
 	   }
@@ -132,7 +132,7 @@ protected class Element {
 	   break;
 	 case "ENTITY":
 	   if(!__entity_ndata[c_attrs[name]]) {
-	     xmlerror(this_program::name,
+	     xmlerror(this::name,
 		      "Invalid value for attribute %s: %O.",
 		      name, c_attrs[name]);
 	   }
@@ -142,7 +142,7 @@ protected class Element {
 						  ({"\t", "\r", "\n"}),
 						  ({" ", " ", " "}) )/" "-
 			  ({""})), 0)>=0) {
-	     xmlerror(this_program::name,
+	     xmlerror(this::name,
 		      "Invalid value for attribute %s: %O.",
 		      name, c_attrs[name]);
 	   }
@@ -152,7 +152,7 @@ protected class Element {
 	   break;
 	}
       } else if(name[..3]!="xml:") {
-	xmlerror(this_program::name, "Undeclared attribute: %s.", name);
+	xmlerror(this::name, "Undeclared attribute: %s.", name);
       }
     }
     foreach (filter(indices(attributes)-indices(c_attrs),
@@ -160,7 +160,7 @@ protected class Element {
 		      return attributes[a][1][0] ==
 			"#REQUIRED";
 		    }), string attr) {
-      xmlerror(this_program::name,
+      xmlerror(this::name,
 	       "Node %s is missing required attribute: %s.", name, attr);
     };
   }

@@ -814,7 +814,7 @@ class TBSCertificate
     }
     DBG("TBSCertificate: version = %d\n", version);
 
-    this_program::version = version;
+    this::version = version;
 
     if (a[0]->type_name != "INTEGER")
       return 0;

@@ -800,10 +800,10 @@ class MetaTerminfoDB {
 	db = TerminfoDB(db);
       }
       if (!db) continue;
-      this_program::dbs += ({ db });
+      this::dbs += ({ db });
     }
-    // werror("TerminfoDBs: %O\n", this_program::dbs);
-    if (!sizeof(this_program::dbs)) {
+    // werror("TerminfoDBs: %O\n", this::dbs);
+    if (!sizeof(this::dbs)) {
       destruct(this);
     }
   }

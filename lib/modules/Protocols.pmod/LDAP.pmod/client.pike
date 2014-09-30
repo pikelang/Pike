@@ -346,7 +346,7 @@ typedef mapping(string:ResultAttributeValue) ResultEntry;
     // entries: array of der decoded entries, but WITHOUT LDAP PDU !!!
     // stuff: 1=bind result; ...
 
-      this_program::flags = flags;
+      this::flags = flags;
 
       // Note: Might do additional schema queries to the server while
       // decoding the result. That means possible interleaving problem

@@ -593,7 +593,7 @@ void assemble_autodoc(mapping(string:array(string)) src_commit)
 
 void export_refdoc(mapping(string:array(string)) src_commit)
 {
-  string refdocdir = "build/refdoc"; //this_program::refdocdir;
+  string refdocdir = "build/refdoc"; //this::refdocdir;
   if (Stdio.exist("refdoc/structure/modref.html")) {
     // After modref.xml was added, we can use the refdoc files
     // from the repository for html.

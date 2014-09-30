@@ -33,8 +33,8 @@ class ShadowedMapping(protected mapping|ShadowedMapping parent)
 
   protected void create(mapping|void shadow, int(0..1)|void modify_parent)
   {
-    if (shadow) this_program::shadow = shadow + ([]);
-    this_program::modify_parent = modify_parent;
+    if (shadow) this::shadow = shadow + ([]);
+    this::modify_parent = modify_parent;
   }
 
   // Updates the cached joined mapping if needed.

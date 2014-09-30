@@ -196,8 +196,8 @@ protected void create (function(void:Sql.Sql) get_db,
 //! "properties" then it is used for this purpose. Set to @expr{"-"@}
 //! to force this feature to be disabled.
 {
-  this_program::get_db = get_db;
-  this_program::table = table;
+  this::get_db = get_db;
+  this::table = table;
 
   Sql.Sql conn = get_db();
 
@@ -239,8 +239,8 @@ protected void create (function(void:Sql.Sql) get_db,
 	if (!prop_col_info->length)
 	  error ("Unable to determine maximum length of the property "
 		 "column %O. Got column info: %O\n", prop_col, prop_col_info);
-	this_program::prop_col = prop_col_info->name;
-	this_program::prop_col_max_length = prop_col_info->length;
+	this::prop_col = prop_col_info->name;
+	this::prop_col_max_length = prop_col_info->length;
       }
     }
   }

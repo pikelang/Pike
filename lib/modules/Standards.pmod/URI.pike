@@ -202,10 +202,10 @@ void reparse_uri(this_program|string|void base_uri)
   if(stringp(base_uri))
   {
     DEBUG("cloning base URI %O", base_uri);
-    this_program::base_uri = this_program(base_uri); // create a new URI object
+    this::base_uri = this_program(base_uri); // create a new URI object
   }
   else
-    this_program::base_uri = [object(this_program)]base_uri;
+    this::base_uri = [object(this_program)]base_uri;
 
   // RFC 2396, §5.2:
   // 1) The URI reference is parsed into the potential four components and
@@ -218,11 +218,11 @@ void reparse_uri(this_program|string|void base_uri)
   //    query and fragment components are defined as found (or not found)
   //    within the URI reference and not inherited from the base URI.
   //    (Doing this at once saves us some useless parsing efforts.)
-  if((!uri || uri == "") && this_program::base_uri)
+  if((!uri || uri == "") && this::base_uri)
   {
     DEBUG("Path is empty -- Inherit entire base URI "
 	  "as per RFC 2396, §5.2 step 2. Done!");
-    inherit_properties(this_program::base_uri);
+    inherit_properties(this::base_uri);
     return;
   }
 
@@ -235,10 +235,10 @@ void reparse_uri(this_program|string|void base_uri)
     if( !sizeof(uri) )
     {
       DEBUG("Fragment only. Using entire base URI, except fragment.");
-      if( !this_program::base_uri )
+      if( !this::base_uri )
         error("fragment only URI lacking base URI.\n");
       string f = fragment;
-      inherit_properties(this_program::base_uri);
+      inherit_properties(this::base_uri);
       fragment = f;
       return;
     }
@@ -249,7 +249,7 @@ void reparse_uri(this_program|string|void base_uri)
   if(sscanf(uri, "%[A-Za-z0-9+.-]:%s", scheme, uri) < 2)
   {
     scheme = 0;
-    if(!this_program::base_uri)
+    if(!this::base_uri)
 	error("Standards.URI: got a relative URI (no scheme) lacking a base_uri!\n");
   } else {
     /* RFC 3986 §3.1
@@ -265,8 +265,8 @@ void reparse_uri(this_program|string|void base_uri)
 
   // DWIM for "www.cnn.com" style input, when parsed in the context of
   // base "http://".
-  if( !scheme && this_program::base_uri?->scheme &&
-      !sizeof(this_program::base_uri->authority) )
+  if( !scheme && this::base_uri?->scheme &&
+      !sizeof(this::base_uri->authority) )
   {
     uri = "//"+uri;
   }
@@ -298,9 +298,9 @@ void reparse_uri(this_program|string|void base_uri)
 
   // Parse path:
   // pchar       = unreserved / pct-encoded / sub-delims / ":" / "@"
-  if ((uri == "") && !scheme && !authority && (this_program::base_uri)) {
+  if ((uri == "") && !scheme && !authority && (this::base_uri)) {
     // Empty path.
-    path = this_program::base_uri->path;
+    path = this::base_uri->path;
   } else {
     path = uri;
   }
@@ -320,7 +320,7 @@ void reparse_uri(this_program|string|void base_uri)
     sprintf_cache['s'] = raw_uri;
     return;
   }
-  scheme = this_program::base_uri->scheme;
+  scheme = this::base_uri->scheme;
   DEBUG("Inherited scheme %O from base URI", scheme);
 
   if(authority)
@@ -334,7 +334,7 @@ void reparse_uri(this_program|string|void base_uri)
   //	use an authority component.
   if(!authority || !sizeof(authority))
   {
-    authority = this_program::base_uri->authority;
+    authority = this::base_uri->authority;
     DEBUG("Inherited authority %O from base URI", authority);
     if (authority)
       parse_authority();
@@ -350,9 +350,9 @@ void reparse_uri(this_program|string|void base_uri)
       //    describe a simple method using a separate string buffer.
 
       DEBUG("Combining base path %O with path %O => %O",
-	    this_program::base_uri->path, path,
-	    combine_uri_path(this_program::base_uri->path, path));
-      path = combine_uri_path(this_program::base_uri->path, path);
+	    this::base_uri->path, path,
+	    combine_uri_path(this::base_uri->path, path));
+      path = combine_uri_path(this::base_uri->path, path);
 
     }
   }

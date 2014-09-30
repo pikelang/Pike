@@ -116,9 +116,9 @@ class Parameters
   protected variant void create(Gmp.mpz|int p, Gmp.mpz|int|void g,
 				Gmp.mpz|int|void q)
   {
-    this_program::p = Gmp.mpz(p);
-    this_program::g = g && Gmp.mpz(g) || Gmp.mpz(2);
-    this_program::q = q && Gmp.mpz(q) || Gmp.mpz( [int](p-1)/2 );
+    this::p = Gmp.mpz(p);
+    this::g = g && Gmp.mpz(g) || Gmp.mpz(2);
+    this::q = q && Gmp.mpz(q) || Gmp.mpz( [int](p-1)/2 );
   }
 
   protected string _sprintf(int t)

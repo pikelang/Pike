@@ -151,7 +151,7 @@ class State {
     array(Gmp.mpz) key = Nettle.rsa_generate_keypair(bits, e, random);
     if(!key) error("Error generating key.\n");
     [ n, d, p, q ] = key;
-    this_program::e = Gmp.mpz(e);
+    this::e = Gmp.mpz(e);
     size = n->size(256);
     return this;
   }
@@ -396,7 +396,7 @@ class State {
       padding = sprintf("%@c", allocate(len, 0xff));
       break;
     case 2:
-      if( !random ) random = this_program::random;
+      if( !random ) random = this::random;
       do {
 	padding += random([int(0..)](len-sizeof(padding))) - "\0";
       }  while( sizeof(padding)<len );

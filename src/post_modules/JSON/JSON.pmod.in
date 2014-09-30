@@ -43,8 +43,8 @@ class DecodeError {
     int err_pos;
 
     protected void create(string err_str, int err_pos, void|string reason, void|array bt) {
-	this_program::err_str = err_str;
-	this_program::err_pos = err_pos;
+	this::err_str = err_str;
+	this::err_pos = err_pos;
 
 	string pre_context = err_pos > 13 ?
 	    sprintf ("...%O", err_str[err_pos - 10..err_pos - 1]) :

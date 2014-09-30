@@ -135,8 +135,8 @@ class ParseError
   protected void create (string filename, int pos, string message,
 			 void|array bt)
   {
-    this_program::filename = filename;
-    this_program::pos = pos;
+    this::filename = filename;
+    this::pos = pos;
     parse_message = message;
     ::create (sprintf ("PikeParser: %s:%d: %s\n", filename, pos, message), bt);
   }

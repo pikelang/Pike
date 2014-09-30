@@ -54,7 +54,7 @@ private class Extractor {
   }
 
   protected void create(string s, string filename, .Flags flags) {
-    this_program::flags = flags;
+    this::flags = flags;
     verbosity = flags & .FLAG_VERB_MASK;
 
     parser = .PikeParser(0, filename, flags);

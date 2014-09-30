@@ -18,7 +18,7 @@ class Timezone
   protected void create(int offset, string name)
   {
     offset_to_utc=offset;
-    this_program::name=name;
+    this::name=name;
   }
 
    // seconds to UTC, counting DST

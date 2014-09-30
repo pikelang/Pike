@@ -150,8 +150,8 @@ void create(mixed a, mixed b) {
 	b = Closed(b);
     }
     if (!b->overlaps(a)) error("Trying to create empty interval.\n");
-    this_program::a = a;
-    this_program::b = b;
+    this::a = a;
+    this::b = b;
 }
 
 int(0..1) `==(mixed i) {

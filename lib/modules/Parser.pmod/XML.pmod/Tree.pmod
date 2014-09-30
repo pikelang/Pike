@@ -2055,7 +2055,7 @@ class SimpleDTDElementNode
   //!
   protected void create(string name, array expression)
   {
-    this_program::expression = expression;
+    this::expression = expression;
     ::create(DTD_ELEMENT, name, 0, "");
   }
 }
@@ -2316,7 +2316,7 @@ class DTDElementNode
   //!
   protected void create(string name, array expression)
   {
-    this_program::expression = expression;
+    this::expression = expression;
     ::create(DTD_ELEMENT, name, 0, "");
   }
 }

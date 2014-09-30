@@ -42,16 +42,16 @@ class Map {
   void create(string map, string|void domain)
   {
     if (domain) {
-      this_program::domain = Domain(domain);
+      this::domain = Domain(domain);
     } else {
-      this_program::domain = Domain();
+      this::domain = Domain();
     }
     ypmap = map;
     array err;
     do {
       // Force an error if the map does not exist.
       err = catch{
-	this_program::domain->match(ypmap, "foo");
+	this::domain->match(ypmap, "foo");
 	return;
       };
     } while (ypmap = nicknames[ypmap]);

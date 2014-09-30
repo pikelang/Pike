@@ -232,20 +232,20 @@ protected void create(void|string host, void|string database,
                       void|string user, void|string pass,
                       void|mapping(string:mixed) options)
 {
-  this_program::pass = pass;
+  this::pass = pass;
   if(pass)
   {
     String.secure(pass);
     pass = "CENSORED";
   }
-  this_program::user = user;
-  this_program::database = database;
-  this_program::options = options || ([]);
+  this::user = user;
+  this::database = database;
+  this::options = options || ([]);
 
   if(!host) host = PGSQL_DEFAULT_HOST;
   if(has_value(host,":") && sscanf(host,"%s:%d",host,port)!=2)
     ERROR("Error in parsing the hostname argument\n");
-  this_program::host = host;
+  this::host = host;
 
   if(!port)
     port = PGSQL_DEFAULT_PORT;

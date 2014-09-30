@@ -1338,7 +1338,7 @@ array(string) make_illustration(array(string) templates,
 void create(string image_dir, void|.Flags flags)
 {
   verbosity = (flags & .FLAG_VERB_MASK);
-  this_program::flags = flags;
+  this::flags = flags;
 
   IMAGE_DIR = image_dir;
 

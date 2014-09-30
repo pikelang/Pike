@@ -172,5 +172,5 @@ void create(Context|void ctx)
   werror("SSL.Port->create\n");
 #endif
   if (!ctx) ctx = Context();
-  this_program::ctx = ctx;
+  this::ctx = ctx;
 }

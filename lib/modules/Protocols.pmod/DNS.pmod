@@ -1104,7 +1104,7 @@ class tcp_server
     Stdio.File con;
 
     protected void create(Stdio.File con) {
-      this_program::con = con;
+      this::con = con;
       con->set_nonblocking(rcb, wcb, ccb);
       c_id = call_out(destruct, 120, this);
     }
