@@ -12,8 +12,10 @@ import Standards.PKCS;
 
 #ifdef X509_DEBUG
 #define DBG(X ...) werror(X)
+#define NULL(X ...) werror(X) && 0
 #else
 #define DBG(X ...)
+#define NULL(X ...) 0
 #endif
 
 enum CertFailure
@@ -228,7 +230,7 @@ protected class ECDSAVerifier
 protected Verifier make_verifier(Object _keyinfo)
 {
   if( _keyinfo->type_name != "SEQUENCE" )
-    return 0;
+    return NULL("keyinfo isn't a SEQUENCE.\n");
   Sequence keyinfo = [object(Sequence)]_keyinfo;
 
   if ( (keyinfo->type_name != "SEQUENCE")
@@ -237,21 +239,21 @@ protected Verifier make_verifier(Object _keyinfo)
        || !sizeof( [object(Sequence)]keyinfo[0] )
        || (keyinfo[1]->type_name != "BIT STRING")
        || keyinfo[1]->unused)
-    return 0;
+    return NULL("Illegal keyinfo ASN.1\n");
   Sequence seq = [object(Sequence)]keyinfo[0];
   String str = [object(String)]keyinfo[1];
 
-  if(sizeof(seq)==0) return 0;
+  if(sizeof(seq)==0) return NULL("Empty keyinfo algorithm identifier.\n");
 
   if (seq[0]->get_der() == Identifiers.rsa_id->get_der())
   {
-    if ( (sizeof(seq) < 1) || (sizeof(seq) > 2) ||
+    if ( (sizeof(seq) > 2) ||
          // Strictly there should always be a Null parameter member
          // here, but there has been a lot of confusion about 1
          // element sequence vs. 2 element sequence with Null. Allow
          // both for compatibility.
          (sizeof(seq)==2 && seq[1]->get_der() != Null()->get_der()) )
-      return 0;
+      return NULL("Illegal RSA ASN.1\n");
 
     return RSAVerifier(str->value);
   }
@@ -261,7 +263,7 @@ protected Verifier make_verifier(Object _keyinfo)
     if( sizeof(seq)!=2 || seq[1]->type_name!="SEQUENCE" ||
         sizeof(seq[1])!=3 || seq[1][0]->type_name!="INTEGER" ||
         seq[1][1]->type_name!="INTEGER" || seq[1][2]->type_name!="INTEGER" )
-      return 0;
+      return NULL("Illegal DSA ASN.1\n");
 
     Sequence params = seq[1];
     return DSAVerifier(str->value, params[0]->value,
@@ -272,14 +274,14 @@ protected Verifier make_verifier(Object _keyinfo)
   if(seq[0]->get_der() == Identifiers.ec_id->get_der())
   {
     if( sizeof(seq)!=2 || seq[1]->type_name!="OBJECT IDENTIFIER" )
-      return 0;
+      return NULL("Illegal ECDSA ASN.1\n");
 
     Identifier params = seq[1];
     return ECDSAVerifier(str->value, params);
   }
 #endif
 
-  DBG("make_verifier: Unknown algorithm identifier: %O\n", seq[0]);
+  return NULL("make_verifier: Unknown algorithm identifier: %O\n", seq[0]);
 }
 
 protected mapping(int:program(Object)) x509_types = ([
@@ -635,23 +637,25 @@ class TBSCertificate
       if( _ext->type_name != "SEQUENCE" ||
 	  sizeof(_ext)<2 || sizeof(_ext)>3 )
       {
-	DBG("TBSCertificate: Bad extensions structure.\n");
-	return 0;
+	DBG("TBSCertificate: Bad extensions ASN1.\n");
+        return;
       }
+
       Sequence ext = [object(Sequence)]_ext;
       if( ext[0]->type_name != "OBJECT IDENTIFIER" ||
 	  ext[-1]->type_name != "OCTET STRING" )
       {
 	DBG("TBSCertificate: Bad extensions structure.\n");
-	return 0;
+        return;
       }
-      DBG("TBSCertificate: extension: %O\n", ext[0]);
+
+      DBG("TBSCertificate: Extension: %O\n", ext[0]);
       Identifier id = ext[0];
 
       if( extensions[id] )
       {
-	DBG("TBSCertificate: extension %O sent twice.\n");
-	return 0;
+	DBG("TBSCertificate: Extension %O sent twice.\n");
+        return;
       }
 
       extensions[ id ] =
@@ -659,7 +663,11 @@ class TBSCertificate
                                                 extension_types[id]);
       if(sizeof(ext)==3)
       {
-	if( ext[1]->type_name != "BOOLEAN" ) return 0;
+	if( ext[1]->type_name != "BOOLEAN" )
+        {
+          DBG("Illegal extension critical ASN.1\n");
+          return;
+        }
 	if( ext[1]->value ) critical[id]=1;
       }
     }
@@ -784,17 +792,12 @@ class TBSCertificate
   //! @[verify_certificate].
   this_program init(array|Object asn1)
   {
-    if (!objectp(asn1))
-      return 0;
-
-    if (asn1->type_name != "SEQUENCE")
-      return 0;
+    if (!objectp(asn1) || asn1->type_name != "SEQUENCE")
+      return NULL("init: Argument not an Sequence object. %O\n", asn1);
 
     array(Object) a = ([object(Sequence)]asn1)->elements;
-    DBG("TBSCertificate: sizeof(a) = %d\n", sizeof(a));
-      
     if (sizeof(a) < 6)
-      return 0;
+      return NULL("init: Incorrect ASN.1. %O\n", a);
 
     int version = 1;
 
@@ -805,64 +808,57 @@ class TBSCertificate
 	  || (a[0]->get_combined_tag() != make_combined_tag(2, 0))
 	  || (sizeof(a[0]) != 1)
 	  || (a[0][0]->type_name != "INTEGER"))
-	return 0;
+	return NULL("init: Incorrect ASN.1. %O\n", a);
 
       version = (int) a[0][0]->value + 1;
       if ( (version < 2) || (version > 3))
-	return 0;
+	return NULL("init: Unsupported version %O.\n", version);
       a = a[1..];
     }
-    DBG("TBSCertificate: version = %d\n", version);
-
     this::version = version;
 
     if (a[0]->type_name != "INTEGER")
-      return 0;
+      return NULL("init: Illegal serial ASN.1. %O\n", a[0]);
     serial = a[0]->value;
-    DBG("TBSCertificate: serial = %s\n", (string) serial);
-      
+
     if ((a[1]->type_name != "SEQUENCE")
 	|| !sizeof(a[1])
 	|| (a[1][0]->type_name != "OBJECT IDENTIFIER"))
-      return 0;
+      return NULL("init: Illegal algorithm ASN.1. %O\n", a[1]);
 
     algorithm = a[1];
-    DBG("TBSCertificate: algorithm = %O\n", algorithm);
 
+    // FIXME: Verify this more strictly.
     if (a[2]->type_name != "SEQUENCE")
-      return 0;
+      return NULL("init: Illegal issuer ASN.1. %O\n", a[2]);
     issuer = a[2];
-    DBG("TBSCertificate: issuer = %O\n", issuer);
 
     if ((a[3]->type_name != "SEQUENCE")
 	|| (sizeof(a[3]) != 2))
-      return 0;
+      return NULL("init: Illegal validity ASN.1. %O\n", a[3]);
     array validity = a[3]->elements;
 
-    if (catch {
+    if (mixed err = catch {
 	not_before = validity[0]->get_posix();
       })
-      return 0;
-    DBG("TBSCertificate: not_before = %O\n", not_before);
+      return NULL("init: Failed to decode not_before. %O\n%s\n",
+                  validity[0], describe_backtrace(err));
 
-    if (catch {
+    if (mixed err = catch {
 	not_after = validity[1]->get_posix();
       })
-      return 0;
-    DBG("TBSCertificate: not_after = %O\n", not_after);
+      return NULL("init: Failed to decode not_after. %O\n%s\n",
+                  validity[1], describe_backtrace(err));
 
+    // FIXME: Verify this more strictly.
     if (a[4]->type_name != "SEQUENCE")
-      return 0;
+      return NULL("init: Illegal subject ASN.1. %O\n", a[4]);
     subject = a[4];
 
-    DBG("TBSCertificate: keyinfo = %O\n", a[5]);
     public_key = make_verifier(a[5]);
 
     if (!public_key)
-      return 0;
-
-    DBG("TBSCertificate: parsed public key. type = %s\n",
-        public_key->type);
+      return NULL("init: Failed to decode public key. %O\n", a[5]);
 
     int i = 6;
 
@@ -876,7 +872,6 @@ class TBSCertificate
 	} else {
 	  issuer_id = a[i];
 	}
-	DBG("TBSCertificate: issuer_id = %O\n", issuer_id);
 	i++;
       }
       if ((i < sizeof(a)) && !a[i]->constructed &&
@@ -887,7 +882,6 @@ class TBSCertificate
 	} else {
 	  subject_id = a[i];
 	}
-	DBG("TBSCertificate: subject_id = %O\n", subject_id);
 	i++;
       }
     }
@@ -916,8 +910,8 @@ class TBSCertificate
     internal_der = asn1->get_der();
     if (i == sizeof(a))
       return this;
-    /* Too many fields */
-    return 0;
+
+    return NULL("init: Too many fields. %O\n", sizeof(a));
   }
 
   //
@@ -1411,18 +1405,12 @@ TBSCertificate decode_certificate(string|object cert)
       || (cert[1][0]->type_name != "OBJECT IDENTIFIER")
       || (cert[2]->type_name != "BIT STRING")
       || cert[2]->unused)
-  {
-    DBG("Certificate has the wrong ASN.1 structure.\n");
-    return 0;
-  }
+    return NULL("Certificate has the wrong ASN.1 structure.\n");
 
   TBSCertificate tbs = TBSCertificate()->init(cert[0]);
 
   if (!tbs || (cert[1]->get_der() != tbs->algorithm->get_der()))
-  {
-    DBG("Failed to generate TBSCertificate.\n");
-    return 0;
-  }
+    return NULL("Failed to generate TBSCertificate.\n");
 
   return tbs;
 }
@@ -1471,8 +1459,8 @@ TBSCertificate verify_ca_certificate(string|TBSCertificate tbs)
   if(!tbs) return 0;
 
   int t = time();
-  if( tbs->not_after < t ) return 0;
-  if( tbs->not_before > t ) return 0;
+  if( tbs->not_after < t ) return NULL("verify ca: not after check failed\n");
+  if( tbs->not_before > t ) return NULL("verify ca: not before check failed\n");
 
   multiset crit = tbs->critical + (<>);
   int self_signed = (tbs->issuer->get_der() == tbs->subject->get_der());
@@ -1483,42 +1471,28 @@ TBSCertificate verify_ca_certificate(string|TBSCertificate tbs)
   if( tbs->ext_basicConstraints )
   {
     if( !tbs->ext_basicConstraints_cA )
-    {
-      DBG("vertify ca: id-ce-basicContraints-cA is false.\n");
-      return 0;
-    }
+      return NULL("vertify ca: id-ce-basicContraints-cA is false.\n");
   }
   else
-  {
-    DBG("verify ca: Bad or missing id-ce-basicConstraints.\n");
-    return 0;
-  }
+    return NULL("verify ca: Bad or missing id-ce-basicConstraints.\n");
 
   // id-ce-authorityKeyIdentifier is required by RFC 5759, unless self
   // signed. Defined in RFC 3280 4.2.1.1, but there only as
   // recommended.
   crit[.PKCS.Identifiers.ce_ids.authorityKeyIdentifier]=0;
   if( !tbs->ext_authorityKeyIdentifier && !self_signed )
-  {
-    DBG("verify ca: Missing id-ce-authorityKeyIdentifier.\n");
-    return 0;
-  }
+    return NULL("verify ca: Missing id-ce-authorityKeyIdentifier.\n");
 
   // id-ce-keyUsage is required.
   crit[.PKCS.Identifiers.ce_ids.keyUsage]=0;
   if( !(tbs->ext_keyUsage & KU_keyCertSign) )
-  {
-    DBG("verify ca: id-ce-keyUsage doesn't allow keyCertSign.\n");
-    return 0;
-  }
+    return NULL("verify ca: id-ce-keyUsage doesn't allow keyCertSign.\n");
+
   // FIXME: RFC 5759 also requires CRLSign set.
   if( tbs->ext_keyUsage &
       (~(KU_keyCertSign | KU_cRLSign | KU_digitalSignature |
          KU_nonRepudiation)&(KU_last_keyUsage-1)) )
-  {
-    DBG("verify ca: illegal CA uses in id-ce-keyUsage.\n");
-    return 0;
-  }
+    return NULL("verify ca: illegal CA uses in id-ce-keyUsage.\n");
 
   // FIXME: In addition RFC 5759 requires policyMappings,
   // policyConstraints and inhibitAnyPolicy to be processed in
@@ -1526,10 +1500,7 @@ TBSCertificate verify_ca_certificate(string|TBSCertificate tbs)
 
   // One or more critical extensions have not been processed.
   if( sizeof(crit) )
-  {
-    DBG("verify ca: Critical unknown extensions %O.\n", crit);
-    return 0;
-  }
+    return NULL("verify ca: Critical unknown extensions %O.\n", crit);
 
   return tbs;
 }
