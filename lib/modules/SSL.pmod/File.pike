@@ -264,9 +264,9 @@ protected int(0..0)|float backend_once()
     return real_backend(0.0);
   } else {
 #if constant(thread_create)
-    if (local_backend->executing_thread() == this_thread()) return 0;
+    if (!local_backend || local_backend->executing_thread() == this_thread()) return 0;
 #else
-    if (local_backend->executing_thread()) return 0;
+    if (!local_backend || local_backend->executing_thread()) return 0;
 #endif
     SSL3_DEBUG_MSG("Running local backend [r:%O w:%O], infinite timeout\n",
 		   !!stream->query_read_callback(),
