@@ -921,6 +921,7 @@ node *debug_mknode(int token, node *a, node *b)
   case F_APPEND_ARRAY:
   case F_MULTI_ASSIGN:
   case F_ASSIGN:
+  case F_ASSIGN_SELF:
     res->node_info |= OPT_ASSIGNMENT;
     if (a) {
       res->tree_info |= a->tree_info;
@@ -2187,6 +2188,13 @@ static void low_print_tree(node *foo,int needlval)
     low_print_tree(_CAR(foo),0);
     break;
 
+  case F_ASSIGN_SELF:
+    low_print_tree(_CDR(foo),1);
+    fputc(':', stderr);
+    fputc('=', stderr);
+    low_print_tree(_CAR(foo),0);
+    break;
+
   case F_POP_VALUE:
     fputc('{', stderr);
     low_print_tree(_CAR(foo), 0);
@@ -2603,6 +2611,7 @@ static int find_used_variables(node *n,
     break;
 
   case F_ASSIGN:
+  case F_ASSIGN_SELF:
     find_used_variables(CAR(n),p,noblock,0);
     find_used_variables(CDR(n),p,noblock,1);
     break;
@@ -2727,6 +2736,7 @@ static void find_written_vars(node *n,
     break;
 
   case F_ASSIGN:
+  case F_ASSIGN_SELF:
   case F_MULTI_ASSIGN:
     find_written_vars(CAR(n), p, 0);
     find_written_vars(CDR(n), p, 1);
@@ -3209,6 +3219,7 @@ void fix_type_field(node *n)
     break;
 
   case F_ASSIGN:
+  case F_ASSIGN_SELF:
     if (!CAR(n) || (CAR(n)->type == void_type_string)) {
       yyerror("Assigning a void expression.");
       copy_pike_type(n->type, void_type_string);
@@ -3952,6 +3963,7 @@ static void find_usage(node *n, unsigned char *usage,
 
   switch(n->token) {
   case F_ASSIGN:
+  case F_ASSIGN_SELF:
     if ((CDR(n)->token == F_LOCAL) && (!CDR(n)->u.integer.b)) {
       usage[CDR(n)->u.integer.a] = 0;
     } else if (CDR(n)->token == F_ARRAY_LVALUE) {
@@ -4220,6 +4232,7 @@ static node *low_localopt(node *n,
   switch(n->token) {
     /* FIXME: Does not support F_LOOP yet. */
   case F_ASSIGN:
+  case F_ASSIGN_SELF:
     if ((CDR(n)->token == F_LOCAL) && (!CDR(n)->u.integer.b)) {
       /* Assignment of local variable */
       if (!(usage[CDR(n)->u.integer.a] & 1)) {
@@ -4243,7 +4256,7 @@ static node *low_localopt(node *n,
       cdr = CDR(n);
       ADD_NODE_REF(cdr);
     }
-    return mknode(F_ASSIGN, low_localopt(CAR(n), usage, switch_u, cont_u,
+    return mknode(n->token, low_localopt(CAR(n), usage, switch_u, cont_u,
 					 break_u, catch_u), cdr);
 
   case F_SSCANF:

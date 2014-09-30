@@ -8681,6 +8681,17 @@ test_any_equal([[
 
 // testing -=
 test_any(int a=1; a-=10; return a,-9)
+test_do([[ add_constant("FOO", class {
+				 array(string) arr = ({ "a", "b", "c" });
+			       }()); ]])
+test_any_equal([[
+  // LysLysKOM 20983743.
+  compile_string("void x() {string z=\"a\"; FOO->arr-=({z});}")()->x();
+  compile_string("void x() {string z=\"b\"; FOO->arr=FOO->arr-({z});}")()->x();
+  compile_string("void x() {FOO->arr-=({\"c\"});}")()->x();
+  return FOO->arr;
+]], ({}))
+test_do([[ add_constant("FOO"); ]])
 // testing &=
 test_any(int a=3; a&=10; return a,2)
 // testing |=
