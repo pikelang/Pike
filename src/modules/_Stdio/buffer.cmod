@@ -26,7 +26,6 @@
 #define DEFAULT_CMOD_STORAGE static
 DECLARATIONS
 
-
 struct sysmem {
   unsigned char *p;
   size_t size;
@@ -1214,7 +1213,13 @@ PIKECLASS IOBuffer
    *! @endmixed
    */
 
-  PIKEFUN IOBuffer add_hstring( string|object|array str, int size_size )
+  /* we can not use the actual type here.
+
+     the reason is that this class is loaded before the master is, so
+     we cannot possibly use things that require the master (such as
+     resolving things.)
+  */
+  PIKEFUN IOBuffer add_hstring( string|object|array(string|IOBuffer|array) str, int size_size )
   {
     IOBuffer *io = THIS;
     size_t len = io_svalue_len(io, str);
@@ -2281,12 +2286,12 @@ fail: CALL_AND_UNSET_ONERROR(e);
    *! inside itself, this means that it can only grow. So do not keep
    *! the rewind key when it is not needed.
    */
-  PIKEFUN object rewind_on_error()
+  PIKEFUN IOBuffer.RewindKey rewind_on_error()
   {
     push_object( io_create_rewind_key( THIS, 1 ) );
   }
 
-  PIKEFUN object rewind_key()
+  PIKEFUN IOBuffer.RewindKey rewind_key()
   {
     push_object( io_create_rewind_key( THIS, 0 ) );
   }
