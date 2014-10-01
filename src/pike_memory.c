@@ -2808,7 +2808,6 @@ static void cleanup_memhdrs(void)
 
   }
   mt_unlock(&debug_malloc_mutex);
-  mt_destroy(&debug_malloc_mutex);
 }
 
 #ifdef _REENTRANT
@@ -3370,6 +3369,8 @@ static void cleanup_debug_malloc(void)
       str = next;
     }
   }
+
+  mt_destroy(&debug_malloc_mutex);
 }
 
 #endif	/* DEBUG_MALLOC */
