@@ -16,7 +16,7 @@
 #include "whitespace.h"
 #include "pike_types.h"
 #include "pike_threadlib.h"
-#include "iobuffer.h"
+#include "buffer.h"
 #include "module_support.h"
 
 #include <arpa/inet.h>

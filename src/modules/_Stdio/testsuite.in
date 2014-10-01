@@ -449,7 +449,7 @@ test_any([[
  return 1;
 ]], 1)
 
-dnl create/add( iobuffer )
+dnl create/add( buffer )
 test_any([[
   Stdio.Buffer a = Stdio.Buffer("buffer 1");
   Stdio.Buffer b = Stdio.Buffer("buffer 2");

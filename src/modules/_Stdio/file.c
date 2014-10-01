@@ -24,7 +24,7 @@
 #include "builtin_functions.h"
 #include "gc.h"
 #include "time_stuff.h"
-#include "iobuffer.h"
+#include "buffer.h"
 #include "file_machine.h"
 #include "file.h"
 #include "pike_error.h"

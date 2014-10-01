@@ -3294,7 +3294,7 @@ static struct string_builder *string_buffer(struct object *o)
   return get_storage( o, sbuf_program );
 }
 
-#include "modules/_Stdio/iobuffer.h"
+#include "modules/_Stdio/buffer.h"
 
 static Buffer *io_buffer(struct object *o)
 {
