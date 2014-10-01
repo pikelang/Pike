@@ -2851,8 +2851,6 @@ array resolve_obj_defines()
   if( sizeof( need_obj_defines ) )
   {
     res += ({ "{ int i=0;\n"});
-    res += ({ "  ___cmod_ext_used=xalloc(sizeof(___cmod_ext_used[0]) * " +
-              (sizeof(need_obj_defines)||1) + ");\n" });
     foreach( need_obj_defines; string key; string id )
     {
       int local_id = ++gid;
@@ -2872,7 +2870,7 @@ array resolve_obj_defines()
                 allocate_string(sprintf("%O",id)), local_id)
       });
     }
-    res += ({ " ___cmod_ext_used[i].from = 0;\n}\n" });
+    res += ({"}\n"});
   }
   return res;
 }
@@ -3095,6 +3093,7 @@ int main(int argc, array(string) argv)
 	      "#endif\n",
 	      last_str_id),
     });
+
     tmp->declarations += ({
       sprintf("#define module_strings_declared\n"
 	      "static struct pike_string *module_strings[%d] = {\n"
@@ -3144,7 +3143,8 @@ int main(int argc, array(string) argv)
   if( sizeof( need_obj_defines ) )
   {
     tmp->declarations += ({
-      "static struct ext_used { INT32 from;INT32 to; } *___cmod_ext_used;\n"
+      "static struct { INT32 from;INT32 to; } ___cmod_ext_used[" +
+      sizeof( need_obj_defines ) + "];\n"
     });
 
     x += ({
