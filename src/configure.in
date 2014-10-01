@@ -7083,7 +7083,7 @@ int main(int argc, char **argv)
 
   while(1)
   {
-    if(!poll(pollset, 2, 10000))
+    if(!poll(pollset, 2, 500))
     {
       fprintf(output,sent>1 ? "WORKS_A_LITTLE\n" : "TIMEOUT\n");
       exit(0);
