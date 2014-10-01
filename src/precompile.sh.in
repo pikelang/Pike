@@ -95,8 +95,7 @@ case $method in
      fi
      done
    fi
-    for p in pike pike79 pike78 pike77 pike76 pike75 pike74 \
-             pike73 pike72 pike71 pike70
+    for p in pike80 pike pike79 pike78 pike77 pike76 pike7
     do
       for dir in $UNIQPATH
       do
@@ -125,14 +124,22 @@ case $method in
   ;;
 esac
 
+
+
 if test "x${RUNPIKE-}" != x ; then
   echo "precompile: $RUNPIKE $SCRIPT $@ (method=$method)"
 
-    $RUNPIKE $SCRIPT "$@" >&5
+# Do not output directly, if this generates data but thge command
+# fails we have an issue. So, first output to a temporary file.
+
+  $RUNPIKE $SCRIPT "$@" >${TMPDIR-/tmp}/precompile-$$.out
 
   if [ $? = 0 ]; then
+    cat ${TMPDIR-/tmp}/precompile-$$.out >&5
+    rm -f ${TMPDIR-/tmp}/precompile-$$.out
     exit 0
   fi
+  rm -f ${TMPDIR-/tmp}/precompile-$$.out
 fi
 
 method="Q$method"
