@@ -5980,7 +5980,8 @@ static inline long TO_LONG(ptrdiff_t x)
 #endif /* __ECL */
 
 #ifdef PIKE_DEBUG
-void check_static_file_data(struct callback *a, void *b, void *c)
+void check_static_file_data(struct callback *UNUSED(a), void *UNUSED(b),
+                            void *UNUSED(c))
 {
   if(file_program)
   {

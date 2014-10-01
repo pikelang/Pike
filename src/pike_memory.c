@@ -1861,58 +1861,6 @@ static void add_location(struct memhdr *mh,
   return;
 }
 
-static void remove_location(struct memhdr *mh, LOCATION location)
-{
-  struct memloc *ml,**prev;
-  unsigned long l;
-
-#if defined(DMALLOC_VERIFY_INTERNALS) && !defined(__NT__) && defined(PIKE_THREADS)
-  if(!mt_trylock(& debug_malloc_mutex))
-    Pike_fatal("remove_location running unlocked!\n");
-#endif
-  
-#if DEBUG_MALLOC - 0 < 2
-  if(find_location(&no_leak_memlocs, location)) return;
-#endif
-
-  if (!(ml = find_location(mh, location))) {
-    return;
-  }
-
-  /* Unlink from the hashtable. */
-  if ((ml->hash_prev[0] = ml->hash_next)) {
-    ml->hash_next->hash_prev = ml->hash_prev;
-  }
-
-  prev=&mh->locations;
-  while((ml=*prev))
-  {
-#ifdef DMALLOC_VERIFY_INTERNALS
-    if (ml->mh != mh) {
-      Pike_fatal("Non-owned memloc in location list!\n");
-    }
-#endif
-
-    if(ml->location==location)
-    {
-      *prev=ml->next;
-#ifdef DMALLOC_VERIFY_INTERNALS
-      mh->times -= ml->times;
-#endif
-#ifdef DMALLOC_TRACE_MEMLOC
-      if (ml == DMALLOC_TRACE_MEMLOC) {
-        fprintf(stderr, "rem_loc: Freeing memloc %p location %s memhdr: %p data: %p\n",
-		ml, ml->location, ml->mh, ml->mh->data);
-      }
-#endif /* DMALLOC_TRACE_MEMLOC */
-      really_free_memloc(ml);
-      return;
-    }else{
-      prev=&ml->next;
-    }
-  }
-}
-
 LOCATION dmalloc_default_location=0;
 
 static struct memhdr *low_make_memhdr(void *p, int s, LOCATION location
@@ -2058,7 +2006,7 @@ PMOD_EXPORT int dmalloc_unregister(void *p, int already_gone)
   return ret;
 }
 
-static int low_dmalloc_mark_as_free(void *p, int already_gone)
+static int low_dmalloc_mark_as_free(void *p, int UNUSED(already_gone))
 {
   struct memhdr *mh=find_memhdr(p);
   if(mh)
@@ -3044,9 +2992,9 @@ PMOD_EXPORT int debug_malloc_copy_names(void *p, void *p2)
   return names;
 }
 
-char *dmalloc_find_name(void *p)
+const char *dmalloc_find_name(void *p)
 {
-  char *name=0;
+  const char *name=0;
   if(p)
   {
     struct memhdr *mh;
@@ -3089,9 +3037,9 @@ PMOD_EXPORT void *debug_malloc_update_location_bt (void *p, const char *file,
   return debug_malloc_update_location (p, l);
 }
 
+#ifdef DMALLOC_C_STACK_TRACE
 static void dump_location_bt (LOCATION location, int indent, const char *prefix)
 {
-#ifdef DMALLOC_C_STACK_TRACE
   if (LOCATION_TYPE (location) == 'B') {
     c_stack_frame bt[BT_MAX_FRAMES];
     int i, frames;
@@ -3106,8 +3054,12 @@ static void dump_location_bt (LOCATION location, int indent, const char *prefix)
       backtrace_symbols_fd (bt + i, 1, 2);
     }
   }
-#endif
 }
+#else
+static void dump_location_bt (LOCATION UNUSED(location), int UNUSED(indent),
+                              const char *UNUSED(prefix))
+{ }
+#endif
 
 PMOD_EXPORT int debug_malloc_touch_fd(int fd, LOCATION location)
 {
@@ -3129,7 +3081,7 @@ PMOD_EXPORT void debug_malloc_accept_leak_fd(int fd)
   dmalloc_accept_leak(FD2PTR(fd));
 }
 
-PMOD_EXPORT int debug_malloc_close_fd(int fd, LOCATION location)
+PMOD_EXPORT int debug_malloc_close_fd(int fd, LOCATION UNUSED(location))
 {
   if(fd==-1) return fd;
 #ifdef DMALLOC_TRACK_FREE
@@ -3189,10 +3141,6 @@ static struct memory_map * alloc_memory_map() {
     return ba_alloc(&memory_map_allocator);
 }
 
-static void really_free_memory_map(struct memory_map * m) {
-    ba_free(&memory_map_allocator, m);
-}
-
 void count_memory_in_memory_maps(size_t * n, size_t * s) {
     ba_count_all(&memory_map_allocator, n, s);
 }
@@ -3202,10 +3150,6 @@ static struct block_allocator memory_map_entry_allocator
 
 static struct memory_map_entry * alloc_memory_map_entry() {
     return ba_alloc(&memory_map_entry_allocator);
-}
-
-static void really_free_memory_map_entry(struct memory_map_entry * m) {
-    ba_free(&memory_map_entry_allocator, m);
 }
 
 void count_memory_in_memory_map_entrys(size_t * n, size_t * s) {

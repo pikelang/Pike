@@ -42,7 +42,7 @@ typedef void *c_stack_frame;
  * 'T': memory map template
  * 'M': memory map
  */
-typedef char *LOCATION;
+typedef const char *LOCATION;
 #define LOCATION_TYPE(X) ((X)[0])
 #define LOCATION_NAME(X) ((X)+1)
 #define LOCATION_IS_DYNAMIC(X)						\
@@ -110,7 +110,7 @@ void search_all_memheaders_for_references(void);
 /* Beware! names of named memory regions are never ever freed!! /Hubbe */
 PMOD_EXPORT void *debug_malloc_name(void *p, const char *fn, INT_TYPE line);
 PMOD_EXPORT int debug_malloc_copy_names(void *p, void *p2);
-char *dmalloc_find_name(void *p);
+const char *dmalloc_find_name(void *p);
 
 /* glibc 2.1 defines this as a macro. */
 #ifdef strdup

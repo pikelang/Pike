@@ -132,7 +132,7 @@ static struct program *implements_b;
 static int implements_mode;
 
 #ifdef PIKE_DEBUG
-void TYPE_STACK_DEBUG(const char *fun)
+void TYPE_STACK_DEBUG(const char *UNUSED(fun))
 {
 #if 0
   fprintf(stderr, "%25s(): stack_depth:%ld   mark_stack_depth:%ld\n",
@@ -738,7 +738,7 @@ void debug_push_int_type(INT_TYPE min, INT_TYPE max)
 #endif
 
 #ifdef PIKE_DEBUG	/* FIXME: Kludge to support 2^32-1 */
-  if ((min>0 && max>0 || min<0 && max<0) && min > max)
+  if (((min>0 && max>0) || (min<0 && max<0)) && min > max)
     Pike_fatal("push_int_type(): Bad integer range:"
 	       " min:%"PRINTPIKEINT"d, max:%"PRINTPIKEINT"d.\n",
 	       min, max);
@@ -9064,7 +9064,8 @@ void gc_mark_type_as_referenced(struct pike_type *t)
 }
 
 #ifdef PIKE_DEBUG
-static void gc_mark_external_types(struct callback *cb, void *a, void *b)
+static void gc_mark_external_types(struct callback *UNUSED(cb),
+                                   void *UNUSED(a), void *UNUSED(b))
 {
   unsigned int e;
   for (e = 0; e < NELEM (a_markers); e++) {

@@ -4785,16 +4785,6 @@ static void f_ualarm(INT32 args)
 }
 #endif /* HAVE_UALARM || HAVE_SETITIMER */
 
-#ifdef PIKE_DEBUG
-static RETSIGTYPE fatal_signal(int signum)
-{
-  my_signal(signum,SIG_DFL);
-  Pike_fatal("Fatal signal (%s) recived.\n",signame(signum));
-}
-#endif
-
-
-
 static struct array *atexit_functions;
 
 static void run_atexit_functions(struct callback *UNUSED(cb), void *UNUSED(arg),void *UNUSED(arg2))

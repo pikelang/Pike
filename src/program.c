@@ -2417,7 +2417,7 @@ struct pike_string *find_program_name(struct program *p, INT_TYPE *line)
 
 #ifdef DEBUG_MALLOC
   {
-    char *tmp=dmalloc_find_name(p);
+    const char *tmp=dmalloc_find_name(p);
     if (tmp) {
       char *p = strchr (tmp, ':');
       if (p) {
