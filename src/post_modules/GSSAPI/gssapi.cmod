@@ -783,7 +783,7 @@ static struct pike_string *make_gss_err_message (
   return finish_string_builder (&sb);
 }
 
-/*! @decl static void create (void|int major, @
+/*! @decl protected void create (void|int major, @
  *!                           void|int minor, void|string mech, @
  *!                           void|string message, void|array backtrace)
  *!
@@ -1087,7 +1087,7 @@ static struct pike_string *make_missing_err_message (OM_uint32 missing)
   return (--Pike_sp)->u.string;
 }
 
-/*! @decl static void create (void|int missing_services)
+/*! @decl protected void create (void|int missing_services)
  *!
  *! @param missing_services
  *!   Initial value for @[services].
@@ -1238,7 +1238,7 @@ PIKECLASS Name
     CHECK_ERROR (gss_import_name, maj, min);
   }
 
-  /*! @decl static void create (string name, void|string name_type)
+  /*! @decl protected void create (string name, void|string name_type)
    *!
    *! This wraps @tt{GSS_Import_name@} according to RFC 2743 section
    *! 2.4.5.
@@ -1519,7 +1519,7 @@ PIKECLASS Name
 #undef mech
   }
 
-  /*! @decl static int `== (mixed other)
+  /*! @decl protected int `== (mixed other)
    *!
    *! Returns true if @[other] is a @[GSSAPI.Name] which contains a
    *! name that refers to the same identity as this one.
@@ -1557,7 +1557,7 @@ PIKECLASS Name
     RETURN 0;
   }
 
-  /*! @decl static int __hash()
+  /*! @decl protected int __hash()
    *!
    *! Tries to export the name (see @[export]) and if that succeeds
    *! returns a hash made from the exported name string. Otherwise a
@@ -2552,7 +2552,7 @@ PIKECLASS Context
       cleanup_context (&THIS->ctx);
   }
 
-  /*! @decl static void create (string interprocess_token, @
+  /*! @decl protected void create (string interprocess_token, @
    *!                           void|int required_services)
    *!
    *! Creates a context by importing an inter-process token.
@@ -3669,7 +3669,7 @@ PIKECLASS InitContext
       free (THIS->mech.elements);
   }
 
-  /*! @decl static void create (void|Cred cred, @
+  /*! @decl protected void create (void|Cred cred, @
    *!				void|Name|string target_name, @
    *!				void|string mech, @
    *!				void|int required_services, @
@@ -4062,7 +4062,7 @@ PIKECLASS AcceptContext
       free_object (THIS->cred);
   }
 
-  /*! @decl static void create (void|Cred cred, @
+  /*! @decl protected void create (void|Cred cred, @
    *!				void|int required_services)
    *!
    *! Creates a context for acceptor use. This function only accepts

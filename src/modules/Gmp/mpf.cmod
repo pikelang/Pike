@@ -160,9 +160,9 @@ PIKECLASS mpf
   }
 
   /* FIXME: */
-  /*! @decl static void create(void|int|string|float|object x, @
+  /*! @decl protected void create(void|int|string|float|object x, @
    *!                          void|int(0..) precision)
-   *! @decl static void create(string x, int(0..) precision, int(2..36) base)
+   *! @decl protected void create(string x, int(0..) precision, int(2..36) base)
    */
   PIKEFUN void create(void|string|int|float|object x, void|int UNUSED,
 		      void|int UNUSED)
@@ -205,7 +205,7 @@ PIKECLASS mpf
     }
   }
 
-  /*! @decl static int __hash()
+  /*! @decl protected int __hash()
    */
   PIKEFUN int __hash()
     flags ID_PROTECTED;
@@ -297,7 +297,7 @@ PIKECLASS mpf
       RETURN end_and_resize_shared_string(ret, out - outbase);
     }
 
-  /*! @decl static string _sprintf(int c, mapping flags)
+  /*! @decl protected string _sprintf(int c, mapping flags)
    */
   PIKEFUN string _sprintf(int c, mapping UNUSED)
     flags ID_PROTECTED;
@@ -336,7 +336,7 @@ PIKECLASS mpf
       }
     }
   
-  /*! @decl static int(0..1) _is_type(string arg)
+  /*! @decl protected int(0..1) _is_type(string arg)
    *!   The Gmp.mpf object will claim to be a @expr{"float"@}.
    *! @fixme
    *!   Perhaps it should also return true for @expr{"object"@}?
@@ -349,7 +349,7 @@ PIKECLASS mpf
       RETURN 0;
     }
 
-  /*! @decl static string|int|float cast(string to)
+  /*! @decl protected string|int|float cast(string to)
    */
   PIKEFUN string|int|float cast(string s)
     flags ID_PROTECTED;
@@ -474,9 +474,9 @@ PIKECLASS mpf
       }
     }
 
-  /*! @decl static Gmp.mpf `+(int|float|object ... a)
+  /*! @decl protected Gmp.mpf `+(int|float|object ... a)
    */
-  PIKEFUN object `+(int|float|object ... UNUSED)
+  PIKEFUN mpf `+(int|float|object ... UNUSED)
     flags ID_PROTECTED;
     {
       struct object *res;
@@ -488,9 +488,9 @@ PIKECLASS mpf
       RETURN res;
     }
 
-  /* @decl static Gmp.mpf ``+(int|float|object ... a)
+  /* @decl protected Gmp.mpf ``+(int|float|object ... a)
    */
-  PIKEFUN object ``+(int|float|object ... UNUSED)
+  PIKEFUN mpf ``+(int|float|object ... UNUSED)
     flags ID_PROTECTED;
     {
       struct object *res = NULL;
@@ -504,9 +504,9 @@ PIKECLASS mpf
       RETURN res;
     }
 
-  /*! @decl static Gmp.mpf `+=(int|float|object ... a)
+  /*! @decl protected Gmp.mpf `+=(int|float|object ... a)
    */
-  PIKEFUN object `+=(int|float|object ... UNUSED)
+  PIKEFUN mpf `+=(int|float|object ... UNUSED)
     flags ID_PROTECTED;
   {
     unsigned long int prec;
@@ -524,7 +524,7 @@ PIKECLASS mpf
    *! least @[prec] bits. The precision is limited to 128Kb.
    *! The current object will be returned.
    */
-  PIKEFUN object set_precision(int(0..) prec)
+  PIKEFUN mpf set_precision(int(0..) prec)
     {
       if(prec<0) {
 	Pike_error("Precision must be positive.\n");
@@ -555,9 +555,9 @@ PIKECLASS mpf
       }
     }
 
-  /*! @decl static Gmp.mpf `*(int|float|object ... a)
+  /*! @decl protected Gmp.mpf `*(int|float|object ... a)
    */
-  PIKEFUN object `*(int|float|object ... UNUSED)
+  PIKEFUN mpf `*(int|float|object ... UNUSED)
     flags ID_PROTECTED;
     {
       struct object *res;
@@ -568,9 +568,9 @@ PIKECLASS mpf
       RETURN res;
     }
 
-  /*! @decl static Gmp.mpf ``*(int|float|object ... a)
+  /*! @decl protected Gmp.mpf ``*(int|float|object ... a)
    */
-  PIKEFUN object ``*(int|float|object ... UNUSED)
+  PIKEFUN mpf ``*(int|float|object ... UNUSED)
     flags ID_PROTECTED;
     {
       struct object *res;
@@ -596,9 +596,9 @@ PIKECLASS mpf
       }
     }
 
-  /*! @decl static Gmp.mpf `-(int|float|object ... a)
+  /*! @decl protected Gmp.mpf `-(int|float|object ... a)
    */
-  PIKEFUN object `-(int|float|object ... UNUSED)
+  PIKEFUN mpf `-(int|float|object ... UNUSED)
     flags ID_PROTECTED;
     {
       struct object *res;
@@ -616,9 +616,9 @@ PIKECLASS mpf
       RETURN res;
     }
 
-  /*! @decl static Gmp.mpf ``-(int|float|object sv)
+  /*! @decl protected Gmp.mpf ``-(int|float|object sv)
    */
-  PIKEFUN object ``-(int|float|object sv)
+  PIKEFUN mpf ``-(int|float|object sv)
     flags ID_PROTECTED;
     {
       struct object *res;
@@ -629,9 +629,9 @@ PIKECLASS mpf
       RETURN res;
     }
 
-  /*! @decl static Gmp.mpf `/(int|float|object ... a)
+  /*! @decl protected Gmp.mpf `/(int|float|object ... a)
    */
-  PIKEFUN object `/(int|float|object ... UNUSED)
+  PIKEFUN mpf `/(int|float|object ... UNUSED)
     flags ID_PROTECTED;
     {
       INT32 e;
@@ -671,9 +671,9 @@ PIKECLASS mpf
     }
 
   /* Working here */
-  /*! @decl static Gmp.mpf ``/(int|float|object sv)
+  /*! @decl protected Gmp.mpf ``/(int|float|object sv)
    */
-  PIKEFUN object ``/(int|float|object sv)
+  PIKEFUN mpf ``/(int|float|object sv)
     flags ID_PROTECTED;
     {
       MP_FLT *a;
@@ -697,9 +697,9 @@ PIKECLASS mpf
 
   
   /* defined as -1-x */
-  /*! @decl static Gmp.mpf `~()
+  /*! @decl protected Gmp.mpf `~()
    */
-  PIKEFUN object `~()
+  PIKEFUN mpf `~()
     flags ID_PROTECTED;
     {
       struct object *o;
@@ -715,7 +715,7 @@ PIKECLASS mpf
        mpf_cmp(THISMPF, get_mpf(q, 1, 0)) OP 0 :	\
        mpf_cmp_ui(THISMPF, q->u.integer) OP 0)
 	
-  /*! @decl static int(0..1) `>(mixed q)
+  /*! @decl protected int(0..1) `>(mixed q)
    */
   PIKEFUN int(0..1) `>(mixed q)
     flags ID_PROTECTED;
@@ -723,7 +723,7 @@ PIKECLASS mpf
       RETURN CMPOP(>);
     }
 
-  /*! @decl static int(0..1) `<(mixed q)
+  /*! @decl protected int(0..1) `<(mixed q)
    */
   PIKEFUN int(0..1) `<(mixed q)
     flags ID_PROTECTED;
@@ -732,7 +732,7 @@ PIKECLASS mpf
     }
 
 
-  /*! @decl static int(0..1) `==(mixed q)
+  /*! @decl protected int(0..1) `==(mixed q)
    */
   PIKEFUN int(0..1) `==(mixed q)
     flags ID_PROTECTED;
@@ -752,7 +752,7 @@ PIKECLASS mpf
       RETURN mpf_sgn(THISMPF);
     }
 
-  /*! @decl static int(0..1) `!()
+  /*! @decl protected int(0..1) `!()
    */
   PIKEFUN int `!()
     flags ID_PROTECTED;

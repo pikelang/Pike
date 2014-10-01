@@ -475,7 +475,7 @@ PIKECLASS Backend
     CVAR struct Backend_CallOut_struct **prev_fun;
     CVAR struct Backend_CallOut_struct *next_arr;
     CVAR struct Backend_CallOut_struct **prev_arr;
-    /*! @decl static array args
+    /*! @decl protected array args
      *!
      *! The array containing the function and arguments.
      */
