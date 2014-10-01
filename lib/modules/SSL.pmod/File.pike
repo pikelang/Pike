@@ -80,9 +80,9 @@ protected .Connection conn;
 // Always set when stream is. Destructed with destroy() at shutdown
 // since it contains cyclic references. Noone else gets to it, though.
 
-protected Stdio.IOBuffer write_buffer;		// Encrypted data to write.
-protected Stdio.IOBuffer user_read_buffer;	// Decrypted data to read.
-protected Stdio.IOBuffer user_write_buffer;	// Unencrypted data to write.
+protected Stdio.Buffer write_buffer;		// Encrypted data to write.
+protected Stdio.Buffer user_read_buffer;	// Decrypted data to read.
+protected Stdio.Buffer user_write_buffer;	// Unencrypted data to write.
 
 protected int read_buffer_threshold;	// Max number of bytes to read.
 
@@ -351,8 +351,8 @@ protected void create (Stdio.File stream, SSL.Context ctx)
     else
       stream_descr = replace (sprintf ("%O", stream), "%", "%%");
 #endif
-    write_buffer = Stdio.IOBuffer();
-    user_read_buffer = Stdio.IOBuffer();
+    write_buffer = Stdio.Buffer();
+    user_read_buffer = Stdio.Buffer();
     read_buffer_threshold = Stdio.DATA_CHUNK_SIZE;
     real_backend = stream->query_backend();
     close_state = STREAM_OPEN;

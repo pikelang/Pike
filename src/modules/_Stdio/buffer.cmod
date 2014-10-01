@@ -36,7 +36,7 @@ static struct program *buffer_error_program;
 /*! @module Stdio
  */
 
-/*! @class IOBuffer
+/*! @class Buffer
  *!
  *! A buffer to use as input or buffering when doing I/O. It is
  *! similar to @[String.Buffer], but can only contain 8bit data and is
@@ -54,37 +54,37 @@ static struct program *buffer_error_program;
  *! copy.
  *!
  *! @note
- *!  The "avoid copy" part means that a IOBuffer will never shrink
+ *!  The "avoid copy" part means that a Buffer will never shrink
  *!  unless you call the @[trim] function.
  *!
  */
-PIKECLASS IOBuffer
+PIKECLASS Buffer
 {
 #if PRECOMPILE_API_VERSION > 5
   PIKEVAR int b.num_malloc;
   PIKEVAR int b.num_move;
 #endif
 
-  CVAR IOBuffer b;
+  CVAR Buffer b;
 
-  static void io_set_error_mode( IOBuffer *io, struct program *m )
+  static void io_set_error_mode( Buffer *io, struct program *m )
   {
     if( m ) add_ref(m);
     if( io->error_mode ) free_program( io->error_mode );
     io->error_mode = m;
   }
 
-  static size_t io_len( IOBuffer *io )
+  static size_t io_len( Buffer *io )
   {
     return io->len-io->offset;
   }
 
-  static void io_unlock( IOBuffer *io )
+  static void io_unlock( Buffer *io )
   {
     io->locked--;
   }
 
-  static void io_lock( IOBuffer *io )
+  static void io_lock( Buffer *io )
   {
     io->locked++;
   }
@@ -98,24 +98,24 @@ PIKECLASS IOBuffer
                  " there are active subbuffers.\n");
   }
 
-  static void io_ensure_unlocked(IOBuffer *io)
+  static void io_ensure_unlocked(Buffer *io)
   {
     if( io->locked )
       io_was_locked( );
   }
 
-  static INT_TYPE io_consume( IOBuffer *io, int num )
+  static INT_TYPE io_consume( Buffer *io, int num )
   {
     io->offset += num;
     return io_len(io);
   }
 
-  static unsigned char *io_read_pointer(IOBuffer *io)
+  static unsigned char *io_read_pointer(Buffer *io)
   {
     return io->buffer + io->offset;
   }
 
-  static int io_is_whitespace( IOBuffer *io, size_t pos )
+  static int io_is_whitespace( Buffer *io, size_t pos )
   {
     if( pos > io_len( io ) )
       return -1;
@@ -127,13 +127,13 @@ PIKECLASS IOBuffer
     return 0;
   }
 
-  static void io_unlink_external_storage( IOBuffer *io )
+  static void io_unlink_external_storage( Buffer *io )
     ATTRIBUTE((noclone,noinline));
 
-  static void io_unlink_external_storage( IOBuffer *io )
+  static void io_unlink_external_storage( Buffer *io )
   {
       if( io->sub ) {
-          io_unlock( get_storage(io->sub,IOBuffer_program ) );
+          io_unlock( get_storage(io->sub,Buffer_program ) );
           free_object( io->sub );
       }
       if( io->source ) free_object( io->source );
@@ -143,10 +143,10 @@ PIKECLASS IOBuffer
       io->str = 0;
   }
 
-  static int io_unstash_malloc( IOBuffer *io )
+  static int io_unstash_malloc( Buffer *io )
     ATTRIBUTE((noclone,noinline));
 
-  static int io_unstash_malloc( IOBuffer *io )
+  static int io_unstash_malloc( Buffer *io )
   {
     if( LIKELY(!io->stash.ptr) )
       return 0;
@@ -174,7 +174,7 @@ PIKECLASS IOBuffer
     return io->malloced;
   }
 
-  static void io_stash_malloc( IOBuffer *io )
+  static void io_stash_malloc( Buffer *io )
   {
     if( io->malloced )
     {
@@ -187,7 +187,7 @@ PIKECLASS IOBuffer
     }
   }
 
-  static void io_ensure_malloced( IOBuffer *io, int bytes )
+  static void io_ensure_malloced( Buffer *io, int bytes )
   {
     if( UNLIKELY(!io->malloced) )
     {
@@ -205,9 +205,9 @@ PIKECLASS IOBuffer
     }
   }
 
-  static unsigned char *io_add_space_do_something( IOBuffer *io, size_t bytes, int force )
+  static unsigned char *io_add_space_do_something( Buffer *io, size_t bytes, int force )
     ATTRIBUTE((noclone,noinline));
-  static unsigned char *io_add_space_do_something( IOBuffer *io, size_t bytes, int force )
+  static unsigned char *io_add_space_do_something( Buffer *io, size_t bytes, int force )
   {
     if( bytes && io->len+bytes < io->len )
       Pike_error("Too large buffer, can not have more than %lu bytes",
@@ -276,7 +276,7 @@ PIKECLASS IOBuffer
     return io->buffer+io->len;
   }
 
-  static unsigned char *io_add_space( IOBuffer *io, size_t bytes, int force )
+  static unsigned char *io_add_space( Buffer *io, size_t bytes, int force )
   {
     if( io->len == io->offset )
       io->offset = io->len = 0;
@@ -326,10 +326,10 @@ PIKECLASS IOBuffer
     Pike_sp[-1].u.integer = 0;
   }
 
-  static void io_range_error_throw( IOBuffer *io, int howmuch )
+  static void io_range_error_throw( Buffer *io, int howmuch )
     ATTRIBUTE((noclone,noinline));
 
-  static void io_range_error_throw( IOBuffer *io, int howmuch )
+  static void io_range_error_throw( Buffer *io, int howmuch )
   {
       if( io->error_mode )
       {
@@ -348,9 +348,9 @@ PIKECLASS IOBuffer
       }
   }
 
-  static struct pike_string *io_read_string( IOBuffer *io, ssize_t len )
+  static struct pike_string *io_read_string( Buffer *io, ssize_t len )
     ATTRIBUTE((noclone,noinline));
-  static size_t io_rewind( IOBuffer *io, INT_TYPE n );
+  static size_t io_rewind( Buffer *io, INT_TYPE n );
 
   static void io_do_rewind_on_error( struct rewind_to *e )
   {
@@ -359,7 +359,7 @@ PIKECLASS IOBuffer
     free( e );
   }
 
-  static void io_rewind_on_error( IOBuffer *io, ONERROR *x )
+  static void io_rewind_on_error( Buffer *io, ONERROR *x )
   {
     struct rewind_to *rew = xalloc( sizeof( struct rewind_to ) );
     io->locked_move++;
@@ -371,7 +371,7 @@ PIKECLASS IOBuffer
     SET_ONERROR( (*x), io_do_rewind_on_error, rew );
   }
 
-  static void io_unset_rewind_on_error( IOBuffer *io, ONERROR *x )
+  static void io_unset_rewind_on_error( Buffer *io, ONERROR *x )
   {
 #if defined(PIKE_DEBUG)
     struct rewind_to *rew = x->arg;
@@ -389,7 +389,7 @@ PIKECLASS IOBuffer
     free( e );
   }
 
-  static void io_unwrite_on_error( IOBuffer *io, ONERROR *x )
+  static void io_unwrite_on_error( Buffer *io, ONERROR *x )
   {
     struct rewind_to *rew = xalloc( sizeof( struct rewind_to ) );
     rew->io = io;
@@ -397,26 +397,26 @@ PIKECLASS IOBuffer
     SET_ONERROR( (*x), io_do_unwrite_on_error, rew );
   }
 
-  static void io_unset_unwrite_on_error( IOBuffer *UNUSED(io), ONERROR *x )
+  static void io_unset_unwrite_on_error( Buffer *UNUSED(io), ONERROR *x )
   {
     UNSET_ONERROR( (*x) );
     free( x->arg );
   }
 
-  static ptrdiff_t io_call_write( IOBuffer *io, struct object *o, ptrdiff_t nbytes )
+  static ptrdiff_t io_call_write( Buffer *io, struct object *o, ptrdiff_t nbytes )
     ATTRIBUTE((noclone,noinline));
 
-  static void io_set_events( IOBuffer *io, struct my_file *fd, int extra, int set )
+  static void io_set_events( Buffer *io, struct my_file *fd, int extra, int set )
     ATTRIBUTE((noclone,noinline));
 
-  static void io_set_events( IOBuffer *UNUSED(io), struct my_file *fd, int extra, int set )
+  static void io_set_events( Buffer *UNUSED(io), struct my_file *fd, int extra, int set )
   {
     fd->box.revents &= ~((1<<set)|extra);
     if(!SAFE_IS_ZERO(&fd->event_cbs[set]) && fd->box.backend)
       set_fd_callback_events(&fd->box, fd->box.events|(1<<set), 0);
   }
 
-  static ptrdiff_t io_call_write( IOBuffer *io, struct object *o, ptrdiff_t bytes )
+  static ptrdiff_t io_call_write( Buffer *io, struct object *o, ptrdiff_t bytes )
   {
     if( bytes > 0 )
     {
@@ -443,10 +443,10 @@ PIKECLASS IOBuffer
     return -1;
   }
 
-  static void io_actually_trigger_output( IOBuffer *io )
+  static void io_actually_trigger_output( Buffer *io )
     ATTRIBUTE((noclone,noinline));
 
-  static void io_actually_trigger_output( IOBuffer *io )
+  static void io_actually_trigger_output( Buffer *io )
   {
     struct my_file *fd;
     if( (fd = get_storage( io->output, file_program )) )
@@ -458,22 +458,22 @@ PIKECLASS IOBuffer
       io_call_write( io, io->output, MINIMUM( io_len(io), 100 ) );
   }
 
-  static void io_trigger_output( IOBuffer *io )
+  static void io_trigger_output( Buffer *io )
   {
     if( UNLIKELY(io->output) && UNLIKELY(!io->output_triggered) )
       io_actually_trigger_output(io);
   }
 
-  static int io_range_error( IOBuffer *io, ptrdiff_t howmuch )
+  static int io_range_error( Buffer *io, ptrdiff_t howmuch )
     ATTRIBUTE((noclone,noinline));
 
-  static int io_range_error( IOBuffer *io, ptrdiff_t howmuch )
+  static int io_range_error( Buffer *io, ptrdiff_t howmuch )
   {
       int res;
       struct svalue *osp = Pike_sp;
 
       push_int64( howmuch );
-      apply_current( f_IOBuffer_range_error_fun_num, 1 );
+      apply_current( f_Buffer_range_error_fun_num, 1 );
       res = Pike_sp[-1].u.integer;
       pop_n_elems( Pike_sp-osp );
       if( !res ) io_range_error_throw( io, howmuch );
@@ -481,7 +481,7 @@ PIKECLASS IOBuffer
       return res;
   }
 
-  static int io_avail( IOBuffer *io, ptrdiff_t len )
+  static int io_avail( Buffer *io, ptrdiff_t len )
   {
     if( len < 0 || len + io->offset > io->len )
     {
@@ -494,7 +494,7 @@ PIKECLASS IOBuffer
     return 1;
   }
 
-  static int io_avail_mul( IOBuffer *io, ptrdiff_t len, ptrdiff_t each  )
+  static int io_avail_mul( Buffer *io, ptrdiff_t len, ptrdiff_t each  )
   {
     /* safely check if len*each is available. */
     size_t total = io_len(io);
@@ -513,14 +513,14 @@ PIKECLASS IOBuffer
     return 1;
   }
 
-  static void io_append( IOBuffer *io, const void *p, size_t bytes )
+  static void io_append( Buffer *io, const void *p, size_t bytes )
   {
     memcpy( io_add_space( io, bytes, 0 ), p, bytes );
     io->len += bytes;
     io_trigger_output( io );
   }
 
-  static size_t io_read( IOBuffer *io, void *to, size_t len  )
+  static size_t io_read( Buffer *io, void *to, size_t len  )
   {
     if( !io_avail(io,len))
       return 0;
@@ -529,7 +529,7 @@ PIKECLASS IOBuffer
     return len;
   }
 
-  static struct pike_string *io_read_string( IOBuffer *io, ssize_t len )
+  static struct pike_string *io_read_string( Buffer *io, ssize_t len )
   {
     struct pike_string *s;
 
@@ -547,15 +547,15 @@ PIKECLASS IOBuffer
     return end_shared_string(s);
   }
 
-  static struct object *io_read_buffer( IOBuffer *io, size_t len, int do_copy )
+  static struct object *io_read_buffer( Buffer *io, size_t len, int do_copy )
   {
     struct object *b;
-    IOBuffer *to;
+    Buffer *to;
     if( !io_avail(io,len))
       return NULL;
 
-    b = low_clone( IOBuffer_program );
-    to = get_storage(b,IOBuffer_program);
+    b = low_clone( Buffer_program );
+    to = get_storage(b,Buffer_program);
 
     io_lock( io );
 
@@ -571,12 +571,12 @@ PIKECLASS IOBuffer
     return b;
   }
 
-  static int io_read_byte_uc( IOBuffer *io )
+  static int io_read_byte_uc( Buffer *io )
   {
     return io->buffer[io->offset++];
   }
 
-  static INT_TYPE io_read_number_uc( IOBuffer *io, size_t len )
+  static INT_TYPE io_read_number_uc( Buffer *io, size_t len )
   {
     size_t i;
     LONGEST res = 0;
@@ -588,7 +588,7 @@ PIKECLASS IOBuffer
     return res;
   }
 
-  static INT_TYPE io_read_signed_number_uc( IOBuffer *io, size_t len )
+  static INT_TYPE io_read_signed_number_uc( Buffer *io, size_t len )
   {
     size_t i;
     INT_TYPE res = 0;
@@ -605,7 +605,7 @@ PIKECLASS IOBuffer
     return res;
   }
 
-  static LONGEST io_read_number( IOBuffer *io, size_t len )
+  static LONGEST io_read_number( Buffer *io, size_t len )
   {
     LONGEST res;
     if( !io_avail(io, len) )
@@ -622,7 +622,7 @@ PIKECLASS IOBuffer
     return res;
   }
 
-  static struct object *io_read_bignum( IOBuffer *io, size_t len )
+  static struct object *io_read_bignum( Buffer *io, size_t len )
   {
     struct object *o;
     MP_INT *i;
@@ -637,10 +637,10 @@ PIKECLASS IOBuffer
     return o;
   }
 
-  static void io_add_bignum( IOBuffer *io, struct object *o, int width )
+  static void io_add_bignum( Buffer *io, struct object *o, int width )
     ATTRIBUTE((noclone,noinline));
 
-  static void io_add_bignum( IOBuffer *io, struct object *o, int width )
+  static void io_add_bignum( Buffer *io, struct object *o, int width )
   {
     MP_INT *i = (void*)o->storage;
     MP_INT tmp;
@@ -693,7 +693,7 @@ PIKECLASS IOBuffer
     }
   }
 
-  static void io_add_int_uc( IOBuffer *io, ptrdiff_t i, size_t bytes )
+  static void io_add_int_uc( Buffer *io, ptrdiff_t i, size_t bytes )
   {
     unsigned char *x = io->buffer+io->len;
     io->len += bytes;
@@ -704,7 +704,7 @@ PIKECLASS IOBuffer
     }
   }
 
-  static size_t io_add_int( IOBuffer *io, ptrdiff_t i, size_t bytes )
+  static size_t io_add_int( Buffer *io, ptrdiff_t i, size_t bytes )
   {
     io_add_space(io, bytes, 0);
     io_add_int_uc( io, i, bytes );
@@ -712,7 +712,7 @@ PIKECLASS IOBuffer
     return io_len( io );
   }
 
-  static size_t io_rewind( IOBuffer *io, INT_TYPE n )
+  static size_t io_rewind( Buffer *io, INT_TYPE n )
   {
     if( n < 0 || (io->offset < (unsigned)n) )
     {
@@ -727,25 +727,25 @@ PIKECLASS IOBuffer
     return io->offset;
   }
 
-  static void io_append_byte_uc( IOBuffer *io, unsigned char byte )
+  static void io_append_byte_uc( Buffer *io, unsigned char byte )
   {
       io->buffer[io->len++] = byte;
   }
 
-  static void io_append_short_uc( IOBuffer *io, unsigned short shrt )
+  static void io_append_short_uc( Buffer *io, unsigned short shrt )
   {
       *((short *)(io->buffer+io->len)) = htons(shrt);
       io->len+=2;
   }
 
-  static void io_append_int_uc( IOBuffer *io, unsigned INT32 i )
+  static void io_append_int_uc( Buffer *io, unsigned INT32 i )
   {
       *((INT32 *)(io->buffer+io->len)) = htonl(i);
       io->len+=4;
   }
 
 
-  static size_t io_svalue_len( IOBuffer *UNUSED(io), struct svalue *p )
+  static size_t io_svalue_len( Buffer *UNUSED(io), struct svalue *p )
   {
     if( TYPEOF(*p) == PIKE_T_STRING )
     {
@@ -780,10 +780,10 @@ PIKECLASS IOBuffer
     Pike_error("Non integer argument\n");
   }
 
-  static void io_append_svalue( IOBuffer *io, struct svalue *p )
+  static void io_append_svalue( Buffer *io, struct svalue *p )
     ATTRIBUTE((noinline));
 
-  static void io_append_svalue( IOBuffer *io, struct svalue *p )
+  static void io_append_svalue( Buffer *io, struct svalue *p )
   {
     switch( TYPEOF(*p) )
     {
@@ -791,11 +791,11 @@ PIKECLASS IOBuffer
         {
           struct pike_string *s = p->u.string;
 	  if( !s->len ) return;
-          if( s->size_shift ) Pike_error("IOBuffer only handles 8bit data\n");
+          if( s->size_shift ) Pike_error("Buffer only handles 8bit data\n");
           if( !io->buffer )
           {
 #ifdef PIKE_DEBUG
-	    if (io->str) Pike_fatal("IOBuffer with string but NULL buffer.\n");
+	    if (io->str) Pike_fatal("Buffer with string but NULL buffer.\n");
 #endif
             io->str = s;
             io->buffer = (unsigned char*)s->str;
@@ -852,7 +852,7 @@ PIKECLASS IOBuffer
   }
 
 #undef THIS
-#define THIS (&(((struct IOBuffer_struct *)Pike_fp->current_storage)->b))
+#define THIS (&(((struct Buffer_struct *)Pike_fp->current_storage)->b))
 
 
   /* pike functions */
@@ -871,7 +871,7 @@ PIKECLASS IOBuffer
    */
   PIKEFUN int(-1..) input_from( object f, int|void _nbytes, int|void _once )
   {
-    IOBuffer *io = THIS;
+    Buffer *io = THIS;
     size_t sz = io_len( io );
     size_t bread = 0, nbytes = (size_t)-1;
     struct my_file *fd;
@@ -943,7 +943,7 @@ PIKECLASS IOBuffer
    */
   PIKEFUN void __fd_set_output( int(0..0)|object f )
   {
-    IOBuffer *io = THIS;
+    Buffer *io = THIS;
     if( io->output ) free_object(io->output);
     io->output_triggered = 0;
     if( TYPEOF(*f) != PIKE_T_OBJECT )
@@ -971,7 +971,7 @@ PIKECLASS IOBuffer
    */
   PIKEFUN int(-1..) output_to( object f, int|void _nbytes )
   {
-    IOBuffer *io = THIS;
+    Buffer *io = THIS;
     ptrdiff_t written = 0, nbytes = (ptrdiff_t)(((size_t)~0)>>1);
     struct my_file *fd;
     ptrdiff_t sz = io_len( io );
@@ -1048,7 +1048,7 @@ PIKECLASS IOBuffer
    */
   PIKEFUN int read_sint( int nbytes )
   {
-    IOBuffer *io = THIS;
+    Buffer *io = THIS;
     struct pike_string *tmp;
     Pike_sp--;
     if( !io_avail( io, nbytes ) )
@@ -1084,15 +1084,15 @@ PIKECLASS IOBuffer
       RETURN THIS->malloced ? THIS->allocated : THIS->stash.len;
   }
 
-  /*! @decl IOBuffer add_padding( int nbytes, int(0..255)|void byte )
+  /*! @decl Buffer add_padding( int nbytes, int(0..255)|void byte )
    *!
    *! Add @[nbytes] bytes of padding, if @[byte] is not specified the
    *! area will be filled with 0's, otherwise the specified byte will
    *! be repeated.
    */
-  PIKEFUN IOBuffer add_padding( int nbytes, int|void _byte )
+  PIKEFUN Buffer add_padding( int nbytes, int|void _byte )
   {
-    IOBuffer *io = THIS;
+    Buffer *io = THIS;
     int byte = 0;
     if( _byte ) byte = _byte->u.integer;
     memset( io_add_space( io, nbytes,0), byte, nbytes );
@@ -1100,9 +1100,9 @@ PIKECLASS IOBuffer
     ref_push_object( io->this );
   }
 
-  /*! @decl IOBuffer add( AddArgument ... data )
+  /*! @decl Buffer add( AddArgument ... data )
    *! @code
-   *!  private typedef @[System.Memory]|@[Stdio.IOBuffer]|@[String.Buffer] BufferObject;
+   *!  private typedef @[System.Memory]|@[Stdio.Buffer]|@[String.Buffer] BufferObject;
    *!  private typedef BufferObject|string(8bit)|int(8bit)|array(AddArgument) AddArgument;
    *! @endcode
    *!
@@ -1117,7 +1117,7 @@ PIKECLASS IOBuffer
    *!   A single byte
    *!  @type System.Memory
    *!   A chunk of memory. The whole memory area is added.
-   *!  @type Stdio.IOBuffer
+   *!  @type Stdio.Buffer
    *!   A chunk of memory. The whole memory area is added.
    *!  @type String.Buffer
    *!   A chunk of memory. The whole memory area is added.
@@ -1131,10 +1131,10 @@ PIKECLASS IOBuffer
    *! and
    *! @[add_hstring]
    */
-  PIKEFUN IOBuffer add( object|string|int|array(object|string|int) ... argp)
+  PIKEFUN Buffer add( object|string|int|array(object|string|int) ... argp)
   {
     int i;
-    IOBuffer *io = THIS;
+    Buffer *io = THIS;
 
     if( args == 1 && !io_len( io ) )
       io_stash_malloc( io );
@@ -1146,25 +1146,25 @@ PIKECLASS IOBuffer
     ref_push_object(io->this);
   }
 
-  /*! @decl IOBuffer add_int8( int(0..255) )
+  /*! @decl Buffer add_int8( int(0..255) )
    *! Adds a single byte to the buffer.
    */
-  PIKEFUN IOBuffer add_int8( int i )
+  PIKEFUN Buffer add_int8( int i )
   {
-    IOBuffer *io = THIS;
+    Buffer *io = THIS;
     *io_add_space(io,1,0)=i;
     io->len++;
     Pike_sp--;
     ref_push_object(Pike_fp->current_object);
   }
 
-  /*! @decl IOBuffer add_int16( int(0..65535) )
+  /*! @decl Buffer add_int16( int(0..65535) )
    *!
    *! Add a 16-bit network byte order value to the buffer
    */
-  PIKEFUN IOBuffer add_int16( int i )
+  PIKEFUN Buffer add_int16( int i )
   {
-    IOBuffer *io = THIS;
+    Buffer *io = THIS;
     unsigned char *p = io_add_space(io,2,0);
     p[0] = i>>8;
     p[1] = i;
@@ -1172,12 +1172,12 @@ PIKECLASS IOBuffer
     ref_push_object(Pike_fp->current_object);
   }
 
-  /*! @decl IOBuffer add_int32( int i )
+  /*! @decl Buffer add_int32( int i )
    *! Adds a 32 bit network byte order value to the buffer
    */
-  PIKEFUN IOBuffer add_int32( int i )
+  PIKEFUN Buffer add_int32( int i )
   {
-    IOBuffer *io = THIS;
+    Buffer *io = THIS;
     unsigned char *p = io_add_space(io,4,0);
     p[0] = i>>24;
     p[1] = i>>16;
@@ -1187,11 +1187,11 @@ PIKECLASS IOBuffer
     ref_push_object(Pike_fp->current_object);
   }
 
-  /*! @decl IOBuffer add_hstring( string(0..255) data, int size_size )
-   *! @decl IOBuffer add_hstring( Stdio.IOBuffer data, int size_size )
-   *! @decl IOBuffer add_hstring( System.Memory data, int size_size )
-   *! @decl IOBuffer add_hstring( String.Buffer data, int size_size )
-   *! @decl IOBuffer add_hstring( array data, int size_size )
+  /*! @decl Buffer add_hstring( string(0..255) data, int size_size )
+   *! @decl Buffer add_hstring( Stdio.Buffer data, int size_size )
+   *! @decl Buffer add_hstring( System.Memory data, int size_size )
+   *! @decl Buffer add_hstring( String.Buffer data, int size_size )
+   *! @decl Buffer add_hstring( array data, int size_size )
    *!
    *! Adds length of data followed by @[data] to the buffer.
    *!
@@ -1209,7 +1209,7 @@ PIKECLASS IOBuffer
    *!   An eight bit string.
    *!  @type System.Memory
    *!   A chunk of memory. The whole memory area is added.
-   *!  @type Stdio.IOBuffer
+   *!  @type Stdio.Buffer
    *!   A chunk of memory. The whole memory area is added.
    *!  @type String.Buffer
    *!   A chunk of memory. The whole memory area is added.
@@ -1225,9 +1225,9 @@ PIKECLASS IOBuffer
      we cannot possibly use things that require the master (such as
      resolving things.)
   */
-  PIKEFUN IOBuffer add_hstring( string|object|array(string|IOBuffer|array) str, int size_size )
+  PIKEFUN Buffer add_hstring( string|object|array(string|Buffer|array) str, int size_size )
   {
-    IOBuffer *io = THIS;
+    Buffer *io = THIS;
     size_t len = io_svalue_len(io, str);
 
     if( size_size < (int)sizeof(size_t) &&
@@ -1240,7 +1240,7 @@ PIKECLASS IOBuffer
     ref_push_object(io->this);
   }
 
-  /*! @decl IOBuffer add_int( int i, int(0..) width )
+  /*! @decl Buffer add_int( int i, int(0..) width )
    *!
    *! Adds a generic integer to the buffer as an (width*8)bit
    *! network byteorder number.
@@ -1248,7 +1248,7 @@ PIKECLASS IOBuffer
    *! @[width] must be less than Int.NATIVE_MAX.
    *!
    */
-  PIKEFUN IOBuffer add_int( object|int i, int width )
+  PIKEFUN Buffer add_int( object|int i, int width )
   {
     pop_stack(); /* width */
     if( TYPEOF(*i) == PIKE_T_INT )
@@ -1265,7 +1265,7 @@ PIKECLASS IOBuffer
     ref_push_object(Pike_fp->current_object);
   }
 
-  /*! @decl IOBuffer add_hint( int i, int(0..) size_width )
+  /*! @decl Buffer add_hint( int i, int(0..) size_width )
    *!
    *! First add the size of the integer when encoded to base 256 as a
    *! @[size_width] integer, then add the integer to the buffer, both
@@ -1274,7 +1274,7 @@ PIKECLASS IOBuffer
    *! @[size_width] must be less than Int.NATIVE_MAX.
    *!
    */
-  PIKEFUN IOBuffer add_hint( object|int i, int len_width )
+  PIKEFUN Buffer add_hint( object|int i, int len_width )
   {
     int width;
     pop_stack(); /* width */
@@ -1299,7 +1299,7 @@ PIKECLASS IOBuffer
     ref_push_object(Pike_fp->current_object);
   }
 
-  /*! @decl IOBuffer add_ints( array(int) integers, int(0..255) len )
+  /*! @decl Buffer add_ints( array(int) integers, int(0..255) len )
    *!
    *! Add the integers in the specified array, @[len] bytes per int.
    *! Equivalent to calling @[add_int] for each integer, but faster,
@@ -1311,14 +1311,14 @@ PIKECLASS IOBuffer
    *! be represented in a size_t, or if the buffer cannot grow due to
    *! an out of memory condition.
    */
-  PIKEFUN IOBuffer add_ints( array(int) a, int bpi )
+  PIKEFUN Buffer add_ints( array(int) a, int bpi )
   {
     int i,l = a->size;
     struct svalue *it = a->item;
     unsigned char *ptr;
     ptrdiff_t n;
     ONERROR e;
-    IOBuffer *io = THIS;
+    Buffer *io = THIS;
 
     io_unwrite_on_error(io, &e);
 
@@ -1383,7 +1383,7 @@ PIKECLASS IOBuffer
   PIKEFUN int(0..255) `[]( int off )
     flags ID_PROTECTED;
   {
-    IOBuffer *io = THIS;
+    Buffer *io = THIS;
     if( off < 0 )
       off = io_len(io)-off;
 
@@ -1400,7 +1400,7 @@ PIKECLASS IOBuffer
   PIKEFUN int(0..255) `[]=( int off, int val )
     flags ID_PROTECTED;
   {
-    IOBuffer *io = THIS;
+    Buffer *io = THIS;
 
     io_ensure_malloced( io, 0 );
 
@@ -1451,8 +1451,8 @@ PIKECLASS IOBuffer
   }
 
 
-  /*! @decl IOBuffer set_error_mode(int m)
-   *! @decl IOBuffer set_error_mode(program m)
+  /*! @decl Buffer set_error_mode(int m)
+   *! @decl Buffer set_error_mode(program m)
    *!
    *! Set the error mode of this buffer to @[m].
    *!
@@ -1475,7 +1475,7 @@ PIKECLASS IOBuffer
    *! {
    *!   inbuffer->add( new_data );
    *!
-   *!   while( IOBuffer packet = inbuffer->read_hbuffer(2) )
+   *!   while( Buffer packet = inbuffer->read_hbuffer(2) )
    *!   {
    *!     packet->set_error_mode(Buffer.THROW_ERROR);
    *!     if( mixed e = catch( handle_packet( packet ) ) )
@@ -1487,7 +1487,7 @@ PIKECLASS IOBuffer
    *! }
    *!
    *!
-   *! void handle_packet( IOBuffer pack )
+   *! void handle_packet( Buffer pack )
    *! {
    *!   switch( pack->read_int8() )
    *!   {
@@ -1501,7 +1501,7 @@ PIKECLASS IOBuffer
    *! }
    *! @endcode
    */
-  PIKEFUN IOBuffer set_error_mode( int|program m )
+  PIKEFUN Buffer set_error_mode( int|program m )
   {
     if( TYPEOF(*m) == PIKE_T_INT )
       io_set_error_mode( THIS, m->u.integer ? buffer_error_program : 0 );
@@ -1519,7 +1519,7 @@ PIKECLASS IOBuffer
    *! @note
    *!  This currently simply returns a 0-length subbuffer.
    */
-  PIKEFUN IOBuffer lock()
+  PIKEFUN Buffer lock()
   {
     push_object( io_read_buffer( THIS, 0, 0 ) );
   }
@@ -1581,7 +1581,7 @@ PIKECLASS IOBuffer
   PIKEFUN string(0..255) read_hstring( int bytes )
   {
     LONGEST len;
-    IOBuffer *io = THIS;
+    Buffer *io = THIS;
     struct pike_string *s;
     ONERROR e;
 
@@ -1620,7 +1620,7 @@ PIKECLASS IOBuffer
   PIKEFUN string(0..255) read_cstring( )
   {
     LONGEST len;
-    IOBuffer *io = THIS;
+    Buffer *io = THIS;
     struct pike_string *s;
     ONERROR e;
 
@@ -1652,10 +1652,10 @@ fail: CALL_AND_UNSET_ONERROR(e);
     }
   }
 
-  /*! @decl IOBuffer read_hbuffer( int n )
-   *! @decl IOBuffer read_hbuffer( int n, bool copy )
+  /*! @decl Buffer read_hbuffer( int n )
+   *! @decl Buffer read_hbuffer( int n, bool copy )
    *!
-   *! Same as @[read_hstring], but returns the result as an IOBuffer.
+   *! Same as @[read_hstring], but returns the result as an Buffer.
    *!
    *! No data is copied unless @[copy] is specified and true, the new
    *! buffer points into the old one.
@@ -1671,11 +1671,11 @@ fail: CALL_AND_UNSET_ONERROR(e);
    *!  If you need to unlink the new buffer after it has been
    *!  created, call @[trim] in it.
    */
-  PIKEFUN IOBuffer read_hbuffer( int bytes, int|void copy )
+  PIKEFUN Buffer read_hbuffer( int bytes, int|void copy )
   {
     LONGEST len;
     int do_copy = 0;
-    IOBuffer *io = THIS;
+    Buffer *io = THIS;
     ONERROR e;
 
     io_rewind_on_error( io, &e );
@@ -1694,10 +1694,10 @@ fail: CALL_AND_UNSET_ONERROR(e);
     push_int(0);
   }
 
-  /*! @decl IOBuffer read_buffer( int n )
-   *! @decl IOBuffer read_buffer( int n, bool copy )
+  /*! @decl Buffer read_buffer( int n )
+   *! @decl Buffer read_buffer( int n, bool copy )
    *!
-   *! Same as @[read], but returns the result as an IOBuffer.
+   *! Same as @[read], but returns the result as an Buffer.
    *!
    *! No data is copied unless @[copy] is specified and true, the new buffer
    *! points into the old one.
@@ -1709,7 +1709,7 @@ fail: CALL_AND_UNSET_ONERROR(e);
    *!  should be parsed before the next whatever is extracted from
    *!  the buffer, but do take care.
    */
-  PIKEFUN IOBuffer read_buffer( int bytes, int|void copy )
+  PIKEFUN Buffer read_buffer( int bytes, int|void copy )
   {
     int do_copy = 0;
     struct object *o;
@@ -1722,7 +1722,7 @@ fail: CALL_AND_UNSET_ONERROR(e);
       push_int(0);
   }
 
-  /*! @decl IOBuffer sprintf(strict_sprintf_format format, sprintf_args ... args)
+  /*! @decl Buffer sprintf(strict_sprintf_format format, sprintf_args ... args)
    *!
    *! Appends the output from @[sprintf] at the end of the buffer.
    *!
@@ -1739,7 +1739,7 @@ fail: CALL_AND_UNSET_ONERROR(e);
     SET_ONERROR(_e, free_string_builder, &tmp);
     low_f_sprintf(args, 0, &tmp );
     if( tmp.s->size_shift )
-      Pike_error("IOBuffer only handles 8bit data\n");
+      Pike_error("Buffer only handles 8bit data\n");
     io_append( THIS, tmp.s->str, tmp.s->len );
     pop_n_elems(args);
     CALL_AND_UNSET_ONERROR(_e);
@@ -1908,7 +1908,7 @@ fail: CALL_AND_UNSET_ONERROR(e);
    */
   PIKEFUN void clear(  )
   {
-    IOBuffer *io = THIS;
+    Buffer *io = THIS;
     io->offset = io->len = 0;
   }
 
@@ -1925,7 +1925,7 @@ fail: CALL_AND_UNSET_ONERROR(e);
    */
   PIKEFUN void trim(  )
   {
-    IOBuffer *io = THIS;
+    Buffer *io = THIS;
     io_add_space( io, 0, 1 );
     if( io->allocated > io->len+32 )
     {
@@ -2027,7 +2027,7 @@ fail: CALL_AND_UNSET_ONERROR(e);
    */
   PIKEFUN string(0..255) try_read( int bytes )
   {
-    IOBuffer *this = THIS;
+    Buffer *this = THIS;
     struct pike_string *s;
     Pike_sp--;
     /* Hm. signed/unsigned comparisons abound. */
@@ -2040,7 +2040,7 @@ fail: CALL_AND_UNSET_ONERROR(e);
    */
   PIKEFUN int(8bit) read_int8( )
   {
-    IOBuffer *io = THIS;
+    Buffer *io = THIS;
     if( LIKELY(io_avail( io, 1 )) )
       push_int( io_read_byte_uc(io) );
     else
@@ -2051,7 +2051,7 @@ fail: CALL_AND_UNSET_ONERROR(e);
    */
   PIKEFUN int(0..65535) read_int16( )
   {
-    IOBuffer *io = THIS;
+    Buffer *io = THIS;
     if( LIKELY(io_avail( io, 2 )) )
       push_int( io_read_number_uc(io,2) );
     else
@@ -2062,7 +2062,7 @@ fail: CALL_AND_UNSET_ONERROR(e);
    */
   PIKEFUN int(0..16777215) read_int24( )
   {
-    IOBuffer *io = THIS;
+    Buffer *io = THIS;
     if( LIKELY(io_avail( io, 3 )) )
       push_int( io_read_number_uc(io,3) );
     else
@@ -2074,7 +2074,7 @@ fail: CALL_AND_UNSET_ONERROR(e);
   PIKEFUN int(0..4294967295) read_int32( )
   {
 #if SIZEOF_INT_TYPE > 4
-    IOBuffer *io = THIS;
+    Buffer *io = THIS;
     if( LIKELY(io_avail( io, 4 )) )
       push_int( io_read_number_uc(io,4) );
     else
@@ -2094,7 +2094,7 @@ fail: CALL_AND_UNSET_ONERROR(e);
    */
   PIKEFUN int(0..) read_int( int len )
   {
-    IOBuffer *io = THIS;
+    Buffer *io = THIS;
     struct object *o;
 
     Pike_sp--;
@@ -2125,7 +2125,7 @@ fail: CALL_AND_UNSET_ONERROR(e);
    */
   PIKEFUN int(0..) read_hint( int size_len )
   {
-    IOBuffer *io = THIS;
+    Buffer *io = THIS;
     ONERROR e;
     INT_TYPE len;
     struct object *o;
@@ -2166,7 +2166,7 @@ fail: CALL_AND_UNSET_ONERROR(e);
    */
   PIKEFUN array(int(0..)) read_ints( int num, int len )
   {
-    IOBuffer *io = THIS;
+    Buffer *io = THIS;
     INT_TYPE i;
     struct object *o;
     struct array *a;
@@ -2198,7 +2198,7 @@ fail: CALL_AND_UNSET_ONERROR(e);
 /*! @decl string _encode()
  *! @decl void _decode(string x)
  *!
- *! Encode and decode Stdio.IOBuffer objects.
+ *! Encode and decode Stdio.Buffer objects.
  *! Only the buffer data is kept, no other state is saved.
  */
   PIKEFUN string _encode()
@@ -2208,7 +2208,7 @@ fail: CALL_AND_UNSET_ONERROR(e);
 
   PIKEFUN void _decode(string(0..255) x)
   {
-    IOBuffer *this = THIS;
+    Buffer *this = THIS;
     if( this->buffer )
       Pike_error("Can not initialize twice.\n");
     if( x->size_shift )
@@ -2232,7 +2232,7 @@ fail: CALL_AND_UNSET_ONERROR(e);
   }
 
 
-  static struct object* io_create_rewind_key( IOBuffer *io, int how );
+  static struct object* io_create_rewind_key( Buffer *io, int how );
 
   /*! @decl RewindKey rewind_on_error()
    *! @decl RewindKey rewind_key()
@@ -2267,16 +2267,16 @@ fail: CALL_AND_UNSET_ONERROR(e);
    *!
    *! @example
    *! @code
-   *! void parse_packet( Stdio.IOBuffer b )
+   *! void parse_packet( Stdio.Buffer b )
    *! {
-   *!   Stdio.IOBuffer.RewindKey rewind = b->rewind_on_error();
+   *!   Stdio.Buffer.RewindKey rewind = b->rewind_on_error();
    *!   b->set_error_mode(1);
    *!
    *!   switch( b->read_int8() ) // packet type
    *!   {
    *!     case DATA:
    *!       int channel = b->read_int8();
-   *!       Stdio.IOBuffer data = b->read_hbuffer( 4 );
+   *!       Stdio.Buffer data = b->read_hbuffer( 4 );
    *!       // we have read the whole packet, so no longer rewind on error.
    *!       rewind->release();
    *!       return handle_data_packet( chennel, data );
@@ -2292,12 +2292,12 @@ fail: CALL_AND_UNSET_ONERROR(e);
    *! inside itself, this means that it can only grow. So do not keep
    *! the rewind key when it is not needed.
    */
-  PIKEFUN IOBuffer.RewindKey rewind_on_error()
+  PIKEFUN Buffer.RewindKey rewind_on_error()
   {
     push_object( io_create_rewind_key( THIS, 1 ) );
   }
 
-  PIKEFUN IOBuffer.RewindKey rewind_key()
+  PIKEFUN Buffer.RewindKey rewind_key()
   {
     push_object( io_create_rewind_key( THIS, 0 ) );
   }
@@ -2315,7 +2315,7 @@ fail: CALL_AND_UNSET_ONERROR(e);
    *! @note
    *! In the @[String.Buffer] case the data has to be copied unless
    *! there is only one reference to the String.Buffer object, since
-   *! modifications of the String.Buffer would cause the IOBuffer to
+   *! modifications of the String.Buffer would cause the Buffer to
    *! point into invalid memory.
    *!
    *! In all other cases this will not copy the string data, instead
@@ -2333,7 +2333,7 @@ fail: CALL_AND_UNSET_ONERROR(e);
   PIKEFUN void create( int|void|string|object|array x )
     flags ID_PROTECTED;
   {
-    IOBuffer *this = THIS;
+    Buffer *this = THIS;
     if( this->buffer )
       Pike_error("Can not initialize twice.\n");
     if( args == 0 )
@@ -2357,13 +2357,13 @@ fail: CALL_AND_UNSET_ONERROR(e);
   }
 
   INIT {
-    IOBuffer *this = THIS;
-    memset( this, 0, sizeof(IOBuffer));
+    Buffer *this = THIS;
+    memset( this, 0, sizeof(Buffer));
     this->this = Pike_fp->current_object;
   }
 
   EXIT {
-    IOBuffer *this = THIS;
+    Buffer *this = THIS;
     io_unlink_external_storage( this );
     if( this->output )
         free_object(this->output);
@@ -2377,8 +2377,8 @@ fail: CALL_AND_UNSET_ONERROR(e);
 
 /*! @class RewindKey
  *!
- *! The return value of @[IOBuffer.rewind_on_error()] and
- *! @[IOBuffer.rewind_key()]
+ *! The return value of @[Buffer.rewind_on_error()] and
+ *! @[Buffer.rewind_key()]
  *!
  *! This object will cause the buffer to unwind to the position it was
  *! at when the object was created either when it is released (when it
@@ -2390,7 +2390,7 @@ fail: CALL_AND_UNSET_ONERROR(e);
   PIKECLASS RewindKey
     flags PROGRAM_DESTRUCT_IMMEDIATE;
   {
-    CVAR IOBuffer *io;
+    CVAR Buffer *io;
     CVAR struct object *obj;
     CVAR size_t rewind_to;
     CVAR int auto_mode;
@@ -2454,10 +2454,10 @@ fail: CALL_AND_UNSET_ONERROR(e);
 
 
 
-static struct object* io_create_rewind_key( IOBuffer *io, int auto_mode )
+static struct object* io_create_rewind_key( Buffer *io, int auto_mode )
 {
-  struct object *o = fast_clone_object( IOBuffer_RewindKey_program );
-  struct IOBuffer_RewindKey_struct *s = (void*)o->storage;
+  struct object *o = fast_clone_object( Buffer_RewindKey_program );
+  struct Buffer_RewindKey_struct *s = (void*)o->storage;
   add_ref(io->this);
   s->obj = io->this;
   s->rewind_to = io->offset;
@@ -2472,7 +2472,7 @@ static struct object* io_create_rewind_key( IOBuffer *io, int auto_mode )
  */
 
 /*! @endclass
- * IOBuffer
+ * Buffer
  */
 
 

@@ -487,10 +487,10 @@ function log_cb;
 
 string make_response_header(mapping m)
 {
-   return (string)low_make_response_header(m,Stdio.IOBuffer());
+   return (string)low_make_response_header(m,Stdio.Buffer());
 }
 
-Stdio.IOBuffer low_make_response_header(mapping m, Stdio.IOBuffer res)
+Stdio.Buffer low_make_response_header(mapping m, Stdio.Buffer res)
 {
    void radd( mixed ... args )
    {
@@ -767,7 +767,7 @@ void finish(int clean)
 
 class OutputBuffer
 {
-   inherit Stdio.IOBuffer;
+   inherit Stdio.Buffer;
    int range_error( int n )
    {
       if( send_fd )

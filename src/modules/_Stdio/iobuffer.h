@@ -1,4 +1,4 @@
-struct _IOBuffer
+struct _Buffer
 {
   unsigned char *buffer;
 
@@ -21,14 +21,14 @@ struct _IOBuffer
 };
 
 struct rewind_to {
-    struct _IOBuffer *io;
+    struct _Buffer *io;
     size_t rewind_to;
 #ifdef PIKE_DEBUG
     int old_locked_move;
 #endif
 };
 
-typedef struct _IOBuffer IOBuffer;
+typedef struct _Buffer Buffer;
 
 extern void init_stdio_buffer(void);
 extern void exit_stdio_buffer(void);

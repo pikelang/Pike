@@ -378,18 +378,18 @@ cond_begin([[ Pike["PollDeviceBackend"] && Pike["PollDeviceBackend"]["HAVE_KQUEU
   run_sub_test(({"SRCDIR/kqueuetest.pike"}))
 cond_end
 
-dnl IOBuffer
+dnl Buffer
 
-test_equal([[Stdio.IOBuffer("hej")->read(1)]], "h")
+test_equal([[Stdio.Buffer("hej")->read(1)]], "h")
 
 dnl sscanf
 
-test_equal([[Stdio.IOBuffer("hej")->sscanf("%3c")]], ({6841706}))
-test_equal([[Stdio.IOBuffer("hej")->match("%3c")]], 6841706)
+test_equal([[Stdio.Buffer("hej")->sscanf("%3c")]], ({6841706}))
+test_equal([[Stdio.Buffer("hej")->match("%3c")]], 6841706)
 
 test_any([[
   int i;
-  Stdio.IOBuffer b=Stdio.IOBuffer("hej hej hej");
+  Stdio.Buffer b=Stdio.Buffer("hej hej hej");
 
   while( array a = b->sscanf( "%*[ ]%[^ ]") )
      i+= sizeof(a);
@@ -405,19 +405,19 @@ dnl __fd_set_output?
 
 dnl _size_object()
 dnl also tests that size is doubled when adding..
-test_equal( Stdio.IOBuffer("hej hej")->_size_object(), 0 );
-test_equal( Stdio.IOBuffer("hej hej")->add("hej")->_size_object(),
-            Stdio.IOBuffer("hej hej")->add("foo")->add("bar")->_size_object() )
+test_equal( Stdio.Buffer("hej hej")->_size_object(), 0 );
+test_equal( Stdio.Buffer("hej hej")->add("hej")->_size_object(),
+            Stdio.Buffer("hej hej")->add("foo")->add("bar")->_size_object() )
 
 
 dnl sizeof()
-test_equal( sizeof(Stdio.IOBuffer("hej")), sizeof("hej"))
-test_equal( sizeof(Stdio.IOBuffer("ej")->add("alpha")), 7)
-test_equal( sizeof(Stdio.IOBuffer()->sprintf("%4H","hej")), 7)
+test_equal( sizeof(Stdio.Buffer("hej")), sizeof("hej"))
+test_equal( sizeof(Stdio.Buffer("ej")->add("alpha")), 7)
+test_equal( sizeof(Stdio.Buffer()->sprintf("%4H","hej")), 7)
 
 dnl create(int)
 test_any([[
-    Stdio.IOBuffer b = Stdio.IOBuffer(1024*1024);
+    Stdio.Buffer b = Stdio.Buffer(1024*1024);
     if( b->_size_object() != 1024*1024 )
       return -1;
    for( int i = 0; i<1024/4*1024; i++ )
@@ -435,7 +435,7 @@ test_any([[
   System.Memory a = System.Memory(__FILE__);
   System.Memory b = System.Memory(100);
 
-  Stdio.IOBuffer buf = Stdio.IOBuffer(a);
+  Stdio.Buffer buf = Stdio.Buffer(a);
 
   if( buf->_size_object() != 0 )
     return -1;
@@ -451,10 +451,10 @@ test_any([[
 
 dnl create/add( iobuffer )
 test_any([[
-  Stdio.IOBuffer a = Stdio.IOBuffer("buffer 1");
-  Stdio.IOBuffer b = Stdio.IOBuffer("buffer 2");
+  Stdio.Buffer a = Stdio.Buffer("buffer 1");
+  Stdio.Buffer b = Stdio.Buffer("buffer 2");
 
-  Stdio.IOBuffer buf = Stdio.IOBuffer(a);
+  Stdio.Buffer buf = Stdio.Buffer(a);
 
   if( buf->_size_object() < sizeof(a) )
     return -1;
@@ -475,7 +475,7 @@ test_any([[
   a->add("buffer 1");
   b->add("buffer 2");
 
-  Stdio.IOBuffer buf = Stdio.IOBuffer(a);
+  Stdio.Buffer buf = Stdio.Buffer(a);
 
   if( buf->_size_object() < sizeof(a) )
     return -1;
@@ -494,7 +494,7 @@ test_any([[
   string a = ("buffer 1");
   string b = ("buffer 2");
 
-  Stdio.IOBuffer buf = Stdio.IOBuffer(a);
+  Stdio.Buffer buf = Stdio.Buffer(a);
 
   if( buf->_size_object() > 0 )
     return -1;
@@ -512,7 +512,7 @@ dnl add( char )
 test_any([[
   string a = ("buffer 1");
 
-  Stdio.IOBuffer buf = Stdio.IOBuffer(a);
+  Stdio.Buffer buf = Stdio.Buffer(a);
 
   if( buf->_size_object() > 0 )
     return -1;
@@ -533,13 +533,13 @@ test_any([[
   tst[1] = '2';
   String.Buffer er = String.Buffer();
   mixed z = ({
-             'b','u','f',Stdio.IOBuffer("f"),
+             'b','u','f',Stdio.Buffer("f"),
              er,
              tst
    });
   er->add("er");
 
-  Stdio.IOBuffer buf = Stdio.IOBuffer("buffer 1");
+  Stdio.Buffer buf = Stdio.Buffer("buffer 1");
   if( buf->_size_object() > 0 )
     return -1;
 
@@ -562,14 +562,14 @@ test_any([[
     two,
     '3',
     "4",
-    Stdio.IOBuffer("5"),
+    Stdio.Buffer("5"),
     ({ "6", ({'7',"","",""}) }),
   });
 
   two->add("2");
 
   int l = 0;
-  Stdio.IOBuffer res = Stdio.IOBuffer();
+  Stdio.Buffer res = Stdio.Buffer();
   for( int i = 0; i<102*1024; i++ )
   {
      array args = allocate( random(50) );
@@ -594,7 +594,7 @@ test_any([[
 dnl basic zero-copy check
 
 test_any( [[
-  Stdio.IOBuffer i = Stdio.IOBuffer("zero copy");
+  Stdio.Buffer i = Stdio.Buffer("zero copy");
   if( i->num_malloc ) return -1;
   if( i->_size_object() != 0 )  return -2;
 
@@ -627,7 +627,7 @@ test_any( [[
 dnl add_int8()
 
 test_any( [[
- Stdio.IOBuffer b = Stdio.IOBuffer();
+ Stdio.Buffer b = Stdio.Buffer();
 
  for( int i=0; i<255; i++ )
    b->add_int8( i )->add_int8(~i);
@@ -642,7 +642,7 @@ dnl add_int16()
 
  test_any( [[
  string ref = "";
- Stdio.IOBuffer b = Stdio.IOBuffer();
+ Stdio.Buffer b = Stdio.Buffer();
 
  for( int i=0; i<255; i++ )
  {
@@ -660,7 +660,7 @@ dnl add_int16()
 dnl add_int32()
  test_any( [[
  string ref = "";
- Stdio.IOBuffer b = Stdio.IOBuffer();
+ Stdio.Buffer b = Stdio.Buffer();
 
  for( int i=0; i<255; i++ )
  {
@@ -680,7 +680,7 @@ dnl add_int( x, bits);
 
  test_any( [[
  string ref = "";
- Stdio.IOBuffer b = Stdio.IOBuffer();
+ Stdio.Buffer b = Stdio.Buffer();
 
  for( int j=1; j<255; j++ )
  {
@@ -706,7 +706,7 @@ dnl add_int( bignum, bits);
 
 test_any( [[
  string ref = "";
- Stdio.IOBuffer b = Stdio.IOBuffer();
+ Stdio.Buffer b = Stdio.Buffer();
 
  for( int j=1; j<255; j++ )
  {
@@ -726,17 +726,17 @@ test_any( [[
 dnl add_hstring( str, bytes )
 
 test_error( [[
- Stdio.IOBuffer b = Stdio.IOBuffer();
+ Stdio.Buffer b = Stdio.Buffer();
   b->add_hstring("testing", 0 );
  ]], 1 )
 
 test_error( [[
- Stdio.IOBuffer b = Stdio.IOBuffer();
+ Stdio.Buffer b = Stdio.Buffer();
  b->add_hstring(" "*256, 1 );
 ]], 1 )
 
 test_any( [[
- array(Stdio.IOBuffer) b = allocate(10,Stdio.IOBuffer)();
+ array(Stdio.Buffer) b = allocate(10,Stdio.Buffer)();
  for( int i = 0; i<1000; i++ )
  {
    string chunk = " "*random(255);
@@ -758,7 +758,7 @@ test_any( [[
 ]], 1);
 
 test_any( [[
-   Stdio.IOBuffer b = Stdio.IOBuffer();
+   Stdio.Buffer b = Stdio.Buffer();
    b->add( "\0\1" );
    if( b->read_hstring( 2 ) )
      return -1;
@@ -773,7 +773,7 @@ test_any( [[
 dnl add_hstring( obj*, bits )
 
 test_any( [[
- array(Stdio.IOBuffer) b = allocate(10,Stdio.IOBuffer)();
+ array(Stdio.Buffer) b = allocate(10,Stdio.Buffer)();
  System.Memory chunk = System.Memory(255);
  for( int i = 0; i<1000; i++ )
  {
@@ -797,14 +797,14 @@ dnl add_ints
 
 test_any( [[
  array q = allocate(100000,random)(8438439834983948938439849834983498349834983498);
- Stdio.IOBuffer i = Stdio.IOBuffer();
+ Stdio.Buffer i = Stdio.Buffer();
  i->add_ints( q, 20 );
  return 1;
 ]], 1);
 
 test_error( [[
  array q = ({8438439834983948938439849834983498349834983498});
- Stdio.IOBuffer i = Stdio.IOBuffer();
+ Stdio.Buffer i = Stdio.Buffer();
  i->add_ints( q, 7 );
  return 1;
 ]], 1);
@@ -812,21 +812,21 @@ test_error( [[
 
 test_any( [[
  array q = ({10,20,30});
- Stdio.IOBuffer i = Stdio.IOBuffer();
+ Stdio.Buffer i = Stdio.Buffer();
  i->add_ints( q, 7 );
  return 1;
 ]], 1);
 
 test_error( [[
  array q = ({10,"20",30});
- Stdio.IOBuffer i = Stdio.IOBuffer();
+ Stdio.Buffer i = Stdio.Buffer();
  i->add_ints( q, 7 );
  return 1;
 ]], 1);
 
 test_any( [[
  array q = ({10,"20",30});
- Stdio.IOBuffer i = Stdio.IOBuffer();
+ Stdio.Buffer i = Stdio.Buffer();
  catch{i->add_ints( q, 7 );};
  if( sizeof(i) )
    return -1;

@@ -22,7 +22,7 @@ protected class structError
 //! String buffer with the possibility to read and write data
 //! as they would be formatted in structs.
 class struct {
-  inherit Stdio.IOBuffer;
+  inherit Stdio.Buffer;
 
   //! Create a new buffer, optionally initialized with the
   //! value @[s].
@@ -108,7 +108,7 @@ class struct {
   //! declaring the total size of the array in bytes.
   this_program put_var_string_array(array(string(8bit)) data, int(0..) item_size, int(0..) len)
   {
-    Stdio.IOBuffer sub = Stdio.IOBuffer();
+    Stdio.Buffer sub = Stdio.Buffer();
     foreach(data, string(8bit) s)
       sub->add_hstring(s, item_size);
     add_int(sizeof(sub),len);

@@ -87,7 +87,7 @@ class Object
 
   // Should be overridden by subclasses
   this_program decode_primitive(string contents,
-				function(Stdio.IOBuffer,
+				function(Stdio.Buffer,
 					 mapping(int:program(Object)):
 					 Object) decoder,
 				mapping(int:program(Object)) types);
@@ -258,7 +258,7 @@ class String
   }
 
   this_program decode_primitive(string(0..255) contents,
-				function(Stdio.IOBuffer,
+				function(Stdio.Buffer,
 					 mapping(int:program(Object)):
 					 Object)|void decoder,
 				mapping(int:program(Object))|void types) {
@@ -314,7 +314,7 @@ class Boolean
   }
 
   this_program decode_primitive(string(0..255) contents,
-				function(Stdio.IOBuffer,
+				function(Stdio.Buffer,
 					 mapping(int:program(Object)):
 					 Object)|void decoder,
 				mapping(int:program(Object))|void types) {
@@ -377,7 +377,7 @@ class Integer
   }
 
   this_object decode_primitive(string(0..255) contents,
-				function(Stdio.IOBuffer,
+				function(Stdio.Buffer,
 					 mapping(int:program(Object)):
 					 Object)|void decoder,
 				mapping(int:program(Object))|void types) {
@@ -440,7 +440,7 @@ class Real
   }
 
   this_object decode_primitive(string(0..255) contents,
-                               function(Stdio.IOBuffer,
+                               function(Stdio.Buffer,
                                         mapping(int:program(Object)):
                                         Object) decoder,
                                mapping(int:program(Object))|void types) {
@@ -567,7 +567,7 @@ class BitString
   }
 
   this_program decode_primitive(string(0..255) contents,
-				function(Stdio.IOBuffer,
+				function(Stdio.Buffer,
 					 mapping(int:program(Object)):
 					 Object)|void decoder,
 				mapping(int:program(Object))|void types) {
@@ -641,7 +641,7 @@ class Null
   string(0..255) get_der_content() { return ""; }
 
   this_program decode_primitive(string(0..255) contents,
-				function(Stdio.IOBuffer,
+				function(Stdio.Buffer,
 					 mapping(int:program(Object)):
 					 Object)|void decoder,
 				mapping(int:program(Object))|void types) {
@@ -695,7 +695,7 @@ class Identifier
   }
 
   this_program decode_primitive(string(0..255) contents,
-				function(Stdio.IOBuffer,
+				function(Stdio.Buffer,
 					 mapping(int:program(Object)):
 					 Object)|void decoder,
 				mapping(int:program(Object))|void types) {
@@ -799,7 +799,7 @@ class UTF8String
   }
 
   this_program decode_primitive(string(0..255) contents,
-				function(Stdio.IOBuffer,
+				function(Stdio.Buffer,
 					 mapping(int:program(Object)):
 					 Object)|void decoder,
 				mapping(int:program(Object))|void types) {
@@ -829,13 +829,13 @@ class Sequence
   }
 
   this_program decode_primitive(string(0..255) contents,
-				function(Stdio.IOBuffer,
+				function(Stdio.Buffer,
 					 mapping(int:program(Object)):
 					 Object) decoder,
 				mapping(int:program(Object)) types) {
     der = contents;
     elements = ({});
-    Stdio.IOBuffer data = Stdio.IOBuffer(contents);
+    Stdio.Buffer data = Stdio.Buffer(contents);
     while (sizeof(data)) {
       elements += ({ decoder(data, types) });
     }
@@ -1079,7 +1079,7 @@ class UniversalString
   }
 
   this_program decode_primitive (string contents,
-				function(Stdio.IOBuffer,
+				function(Stdio.Buffer,
 					 mapping(int:program(Object)):
 					 Object)|void decoder,
 				mapping(int:program(Object))|void types) {
@@ -1110,7 +1110,7 @@ class BMPString
   }
 
   this_program decode_primitive (string(0..255) contents,
-				function(Stdio.IOBuffer,
+				function(Stdio.Buffer,
 					 mapping(int:program(Object)):
 					 Object)|void decoder,
 				mapping(int:program(Object))|void types) {

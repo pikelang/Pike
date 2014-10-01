@@ -154,9 +154,9 @@ class File
 {
   optional inherit Fd;
 
-  //! Toggle the file to IOBuffer mode.
+  //! Toggle the file to Buffer mode.
   //!
-  //! In this mode reading and writing will be done via IOBuffer
+  //! In this mode reading and writing will be done via Buffer
   //! objects, in the directions you included buffers.
   //!
   //! @param in
@@ -172,7 +172,7 @@ class File
   //!
   //!  This will work with buffered output mode as well, but simply
   //!  adding more data to the output buffer will work as well.
-  void set_buffer_mode( Stdio.IOBuffer|int(0..0) in,Stdio.IOBuffer|int(0..0) out )
+  void set_buffer_mode( Stdio.Buffer|int(0..0) in,Stdio.Buffer|int(0..0) out )
   {
     // FIXME: Document the semantics for non-empty buffers above.
     inbuffer = in;
@@ -187,7 +187,7 @@ class File
     return File()->_fd;
   }
 
-  Stdio.IOBuffer inbuffer, outbuffer;
+  Stdio.Buffer inbuffer, outbuffer;
 #ifdef TRACK_OPEN_FILES
   /*protected*/ int open_file_id = next_open_file_id++;
 #endif
@@ -199,7 +199,7 @@ class File
   //! The string (or void) version is used when buffer mode (see
   //! @[set_buffer_mode]) has not been enabled for reading.
   //!
-  //! The IOBuffer version is used when an IOBuffer has been enabled
+  //! The Buffer version is used when an Buffer has been enabled
   //! for reading
   //!
   //! In both cases the data is the newly arrived data, but in buffered
@@ -207,7 +207,7 @@ class File
   //! kept in the buffer.
   typedef
     function(mixed|void,string:int|void)|
-    function(mixed|void,IOBuffer:int|void)|
+    function(mixed|void,Buffer:int|void)|
     function(mixed|void:int|void) read_callback_t;
 
   //! The various read_callback signatures.
@@ -215,11 +215,11 @@ class File
   //! The void version is used when buffer mode (see
   //! @[set_buffer_mode]) has not been enabled for writing.
   //!
-  //! The IOBuffer version is used when an IOBuffer has been enabled
+  //! The Buffer version is used when an Buffer has been enabled
   //! for reading, add data to that buffer to send it.
   typedef
     function(mixed|void:int|void) |
-    function(mixed|void,IOBuffer:int|void) write_callback_t;
+    function(mixed|void,Buffer:int|void) write_callback_t;
 
   read_callback_t ___read_callback;
   write_callback_t ___write_callback;
@@ -1188,9 +1188,9 @@ class File
   }
 
   //! @decl void set_read_callback(function(mixed,string:int) read_cb)
-  //! @decl void set_read_callback(function(mixed,IOBuffer:int) read_cb)
+  //! @decl void set_read_callback(function(mixed,Buffer:int) read_cb)
   //! @decl void set_write_callback(function(mixed:int) write_cb)
-  //! @decl void set_write_callback(function(mixed,IOBuffer:int) write_cb)
+  //! @decl void set_write_callback(function(mixed,Buffer:int) write_cb)
   //! @decl void set_read_oob_callback(function(mixed, string:int) read_oob_cb)
   //! @decl void set_write_oob_callback(function(mixed:int) write_oob_cb)
   //! @decl void set_close_callback(function(mixed:int) close_cb)
@@ -1215,7 +1215,7 @@ class File
   //!   When data arrives on the stream, @[read_cb] will be called with
   //!   some or all of that data as the second argument.
   //!
-  //!   If the file is in buffer mode, the second argument will be an IOBuffer.
+  //!   If the file is in buffer mode, the second argument will be an Buffer.
   //!
   //!   This will always be the same buffer, so data you do not use in
   //!   one read callback can be simply left in the buffer, when new
@@ -1233,7 +1233,7 @@ class File
   //!   (the usual case), Pike will first attempt to call @[close_cb],
   //!   then this callback (unless @[close_cb] has closed the stream).
   //!
-  //!   If the file is in buffer mode, the second argument will be an IOBuffer.
+  //!   If the file is in buffer mode, the second argument will be an Buffer.
   //!
   //!   You should add data to write to this buffer.
   //! @item
@@ -1478,7 +1478,7 @@ class File
   // this getter is provided by Stdio.Fd.
   // function(mixed|void:int) query_fs_event_callback() { return ___fs_event_callback; }
 
-  array(function(mixed,void|string|IOBuffer:int)) query_callbacks()
+  array(function(mixed,void|string|Buffer:int)) query_callbacks()
   {
     return ({
       ___read_callback,

@@ -3296,11 +3296,11 @@ static struct string_builder *string_buffer(struct object *o)
 
 #include "modules/_Stdio/iobuffer.h"
 
-static IOBuffer *io_buffer(struct object *o)
+static Buffer *io_buffer(struct object *o)
 {
   if( !iobuf_program )
   {
-    push_text("Stdio.IOBuffer");
+    push_text("Stdio.Buffer");
     SAFE_APPLY_MASTER("resolv", 1);
     iobuf_program = program_from_svalue(Pike_sp - 1);
     if (!iobuf_program)
@@ -3315,7 +3315,7 @@ PMOD_EXPORT enum memobj_type get_memory_object_memory( struct object *o, void **
   union {
     struct string_builder *b;
     struct sysmem *s;
-    IOBuffer *io;
+    Buffer *io;
   } src;
 
   if( (src.b = string_buffer(o)) )

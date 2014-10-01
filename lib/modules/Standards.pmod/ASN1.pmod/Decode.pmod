@@ -47,7 +47,7 @@ class Constructed (int cls, int tag, string(8bit) raw, array(.Types.Object) elem
   string(8bit) get_der_content() { return raw; }
 }
 
-protected int read_varint(Stdio.IOBuffer data)
+protected int read_varint(Stdio.Buffer data)
 {
   int ret, byte;
   do {
@@ -58,7 +58,7 @@ protected int read_varint(Stdio.IOBuffer data)
   return ret;
 }
 
-protected array(int) read_identifier(Stdio.IOBuffer data)
+protected array(int) read_identifier(Stdio.Buffer data)
 {
   int byte = data->read_int8();
 
@@ -73,7 +73,7 @@ protected array(int) read_identifier(Stdio.IOBuffer data)
 }
 
 //! @param data
-//!   An instance of Stdio.IOBuffer containing the DER encoded data.
+//!   An instance of Stdio.Buffer containing the DER encoded data.
 //!
 //! @param types
 //!   A mapping from combined tag numbers to classes from or derived
@@ -89,7 +89,7 @@ protected array(int) read_identifier(Stdio.IOBuffer data)
 //! @fixme
 //!   Handling of implicit and explicit ASN.1 tagging, as well as
 //!   other context dependence, is next to non_existant.
-.Types.Object der_decode(Stdio.IOBuffer data,
+.Types.Object der_decode(Stdio.Buffer data,
                          mapping(int:program(.Types.Object)) types)
 {
   [int cls, int const, int tag] = read_identifier(data);
@@ -108,7 +108,7 @@ protected array(int) read_identifier(Stdio.IOBuffer data)
   DBG("class %O, construced=%d, tag=%d, length=%d\n",
       ({"universal","application","context","private"})[cls], const, tag, len);
 
-  data = [object(Stdio.IOBuffer)]data->read_buffer(len);
+  data = [object(Stdio.Buffer)]data->read_buffer(len);
 
   program(.Types.Object) p = types[ .Types.make_combined_tag(cls, tag) ];
 
@@ -218,7 +218,7 @@ mapping(int:program(.Types.Object)) universal_types =
 				mapping(int:program(.Types.Object))|void types)
 {
   types = types ? universal_types+types : universal_types;
-  return der_decode(Stdio.IOBuffer(data), types);
+  return der_decode(Stdio.Buffer(data), types);
 }
 
 //! Works just like @[simple_der_decode], except it will return
@@ -230,7 +230,7 @@ mapping(int:program(.Types.Object)) universal_types =
 				mapping(int:program(.Types.Object))|void types)
 {
   types = types ? universal_types+types : universal_types;
-  Stdio.IOBuffer buf = Stdio.IOBuffer(data);
+  Stdio.Buffer buf = Stdio.Buffer(data);
   .Types.Object ret = der_decode(buf, types);
   if( sizeof(buf) ) return 0;
   return ret;

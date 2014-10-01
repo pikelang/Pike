@@ -74,7 +74,7 @@ string describe_opcode(FRAME op) {
 //! Parses WebSocket frames.
 class Parser {
     //! Unparsed data.
-    Stdio.IOBuffer buf = Stdio.IOBuffer();
+    Stdio.Buffer buf = Stdio.Buffer();
 
     //! Add more data to the internal parsing buffer.
     void feed(string data) {
@@ -222,7 +222,7 @@ class Frame {
     }
 
     //!
-    void encode(Stdio.IOBuffer buf) {
+    void encode(Stdio.Buffer buf) {
         buf->add_int8(fin << 7 | opcode);
 
         if (sizeof(data) > 0xffff) {
@@ -243,7 +243,7 @@ class Frame {
     protected string cast(string to)
     {
       if (to == "string") {
-        Stdio.IOBuffer buf = Stdio.IOBuffer();
+        Stdio.Buffer buf = Stdio.Buffer();
         encode(buf);
         return buf->read();
       }
@@ -259,7 +259,7 @@ class Connection {
     //! The actual client connection.
     Stdio.File stream;
 
-    Stdio.IOBuffer buf = Stdio.IOBuffer();
+    Stdio.Buffer buf = Stdio.Buffer();
 
     protected int(0..1) will_write = 1;
     protected mixed id;
