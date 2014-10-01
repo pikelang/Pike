@@ -1885,15 +1885,17 @@ sprintf("        } else {\n"
 	    string define = make_unique_name("class", base, name, "defined");
 
 	    ret+=DEFINE(define);
-	    ret+=({sprintf("DEFAULT_CMOD_STORAGE struct program *%s=NULL;\n"
-			   "static int %s_fun_num=-1;\n",
-			   program_var, program_var)});
+	    ret+=({sprintf("DEFAULT_CMOD_STORAGE struct program *%s=NULL;\n",
+			   program_var)});
+	    ret+=IFDEF(program_var+"_fun_num_used",
+                       ({sprintf("static int %s_fun_num=-1;", program_var)}));
 	    ret+=subclass->declarations;
 	    ret+=subclass->code;
 
             need_obj_defines["tObjImpl_"+upper_case(lname)] = 1;
             map_types[subclass->local_id] = ({ define, "return "+program_var+"->id;" });
 
+            check_used[program_var+"_fun_num"]=1;
 	    addfuncs+=
 	      IFDEF(define,
 		    ({
@@ -2729,6 +2731,7 @@ static struct %s *%s_gdb_dummy_ptr;
 			       ), proto[0]->line),
 	    }));
 	} else {
+          check_used[func_num] = 1;
 	  addfuncs+=IFDEF(define, ({
                IFDEF(func_num+"_used",
                     ({PC.Token(sprintf("  %s =", func_num))})),
@@ -3068,8 +3071,8 @@ int main(int argc, array(string) argv)
 
   tmp->addfuncs =
     IFDEF("CMOD_MAP_PROGRAM_IDS_DEFINED",
-          ({ "set_program_id_to_id( ___cmod_map_program_ids );\n" })
-          + resolve_obj_defines())
+          resolve_obj_defines() +
+          ({ "set_program_id_to_id( ___cmod_map_program_ids );\n" }))
     + tmp->addfuncs
     + IFDEF("CMOD_MAP_PROGRAM_IDS_DEFINED",
             ({ "set_program_id_to_id( 0 );" }));
