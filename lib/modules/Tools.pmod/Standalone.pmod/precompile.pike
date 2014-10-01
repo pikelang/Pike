@@ -1912,9 +1912,11 @@ sprintf("        } else {\n"
 		      IFDEF("tObjImpl_"+upper_case(lname),
 			    0,
 			    DEFINE("tObjIs_"+upper_case(lname),
-                       sprintf("%O",sprintf("\3\1\x7f%3c", subclass->local_id)))+
+                                   sprintf("%O", sprintf("\3\1\x7f%3c",
+                                                         subclass->local_id)))+
 			    DEFINE("tObjImpl_"+upper_case(lname),
-                       sprintf("%O",sprintf("\3\0\x7f%3c", subclass->local_id)))),
+                                   sprintf("%O", sprintf("\3\0\x7f%3c",
+                                                         subclass->local_id)))),
 		    })+
 		    subclass->addfuncs+
 		    ({
@@ -2243,9 +2245,10 @@ static struct %s *%s_gdb_dummy_ptr;
 	if (!attributes->efun) {
           check_used[func_num] = 1;
 	  ret += ({
-              IFDEF(func_num+"_used",
-                    ({sprintf("DEFAULT_CMOD_STORAGE ptrdiff_t %s = 0;\n", func_num)}),
-                    0)
+            IFDEF(func_num+"_used",
+                  ({ sprintf("DEFAULT_CMOD_STORAGE ptrdiff_t %s = 0;\n",
+                             func_num) }),
+                  0)
 	  });
 	}
 
@@ -2819,9 +2822,8 @@ int find_identifier( array in, string ident )
   {
     if( objectp(q) )
     {
-      if( q == ident ) {
+      if( q == ident )
         return 1;
-      }
     }
     else if( arrayp( q ) )
     {
@@ -2846,7 +2848,8 @@ array resolve_obj_defines()
   if( sizeof( need_obj_defines ) )
   {
     res += ({ "{ int i=0;\n"});
-    res += ({ "  ___cmod_ext_used=xalloc(sizeof(___cmod_ext_used[0]) * "+(sizeof(need_obj_defines)||1)+");\n" });
+    res += ({ "  ___cmod_ext_used=xalloc(sizeof(___cmod_ext_used[0]) * " +
+              (sizeof(need_obj_defines)||1) + ");\n" });
     foreach( need_obj_defines; string key; string id )
     {
       int local_id = ++gid;
@@ -2854,18 +2857,19 @@ array resolve_obj_defines()
         sprintf("#ifndef %s\n"
                 "# define %[0]s %s\n"
                 "{\n"
-                "   struct program *tmp = resolve_program(" + allocate_string(sprintf("%O",id)) + ");\n"
+                "   struct program *tmp = resolve_program(%s);\n"
                 "   if( tmp ) {\n"
                 "      ___cmod_ext_used[i].from = %d;\n"
                 "      ___cmod_ext_used[i].to = tmp->id;\n"
                 "      i++;\n"
                 "   }\n"
                 "}\n"
-                "#endif\n"
-                ,key,sprintf("%O",sprintf("\3\0\x7f%3c", local_id)),local_id)
+                "#endif /* %[0]s */\n",
+                key, sprintf("%O", sprintf("\3\0\x7f%3c", local_id)),
+                allocate_string(sprintf("%O",id)), local_id)
       });
     }
-    res += ({ " ___cmod_ext_used[i].from = 0;\n}\n"});
+    res += ({ " ___cmod_ext_used[i].from = 0;\n}\n" });
   }
   return res;
 }
@@ -3064,11 +3068,11 @@ int main(int argc, array(string) argv)
 
   tmp->addfuncs =
     IFDEF("CMOD_MAP_PROGRAM_IDS_DEFINED",
-          ({"set_program_id_to_id( ___cmod_map_program_ids );"}))
-      + resolve_obj_defines()
-      +  tmp->addfuncs
+          ({ "set_program_id_to_id( ___cmod_map_program_ids );\n" })
+          + resolve_obj_defines())
+    + tmp->addfuncs
     + IFDEF("CMOD_MAP_PROGRAM_IDS_DEFINED",
-          ({"set_program_id_to_id( 0 );"}));
+            ({ "set_program_id_to_id( 0 );" }));
 
   if (last_str_id) {
     // Add code for allocation and deallocation of the strings.
@@ -3115,7 +3119,7 @@ int main(int argc, array(string) argv)
 
   x = tmp->code;
 
-  x +=({
+  x += ({
     "\n"
     "#ifdef CMOD_MAP_PROGRAM_IDS_DEFINED\n"
     "static int ___cmod_map_program_ids(int id)\n"
