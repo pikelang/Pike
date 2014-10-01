@@ -857,18 +857,19 @@ PIKECLASS IOBuffer
 
   /* pike functions */
 
-  /*! @decl int(0..) input_from( Stdio.Stream f, int|void nbytes )
+  /*! @decl int(-1..) input_from( Stdio.Stream f, int|void nbytes )
    *!
    *! Read data from @[f] into this buffer. If @[nbytes] is not
    *! specified, read until there is no more data to read (currently).
    *!
-   *! Returns the amount of data that was read
+   *! Returns the amount of data that was read, or @expr{-1@} on
+   *! read error.
    *!
    *! @note
    *! Please note that this funcition will read all data from the
    *! filedescriptor unless it's set to be non-blocking.
    */
-  PIKEFUN int(0..) input_from( object f, int|void _nbytes, int|void _once )
+  PIKEFUN int(-1..) input_from( object f, int|void _nbytes, int|void _once )
   {
     IOBuffer *io = THIS;
     size_t sz = io_len( io );
@@ -876,8 +877,10 @@ PIKECLASS IOBuffer
     struct my_file *fd;
     int once = 0;
 
-    if( _nbytes )
+    if( _nbytes ) {
         nbytes = _nbytes->u.integer;
+	if (!nbytes) RETURN 0;
+    }
 
     if( _once )
         once = _once->u.integer;
@@ -901,7 +904,7 @@ PIKECLASS IOBuffer
         nbytes -= res;
         io->len += res;
         bread += res;
-        if( res != 4096 || once)
+        if( res != 4096 || once || !nbytes )
             break;
       }
       io_set_events( io, fd, PIKE_BIT_FD_READ_OOB, PIKE_FD_READ );
@@ -922,6 +925,9 @@ PIKECLASS IOBuffer
         pop_stack();
       }
     }
+
+    if (!bread) RETURN -1;
+
     RETURN bread;
   }
 
