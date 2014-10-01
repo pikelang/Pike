@@ -562,22 +562,25 @@ typedef struct p_wchar_p
 /* Suppress compiler warnings for unused parameters if possible. The mangling of
    argument name is required to catch when an unused argument later is used without
    removing the annotation. */
-#ifndef UNUSED
+#ifndef PIKE_UNUSED
 # ifdef __GNUC__
-#  define UNUSED(x)  PIKE_CONCAT(x,_UNUSED) __attribute__((unused))
+#  define PIKE_UNUSED(x)  PIKE_CONCAT(x,_UNUSED) __attribute__((unused))
 # else
-#  define UNUSED(x)  PIKE_CONCAT(x,_UNUSED)
+#  define PIKE_UNUSED(x)  PIKE_CONCAT(x,_UNUSED)
 # endif
+#endif
+#ifndef UNUSED
+#  define UNUSED(x)  PIKE_UNUSED(x)
 #endif
 #ifdef PIKE_DEBUG
 # define DEBUGUSED(x) x
 #else
-# define DEBUGUSED(x) UNUSED(x)
+# define DEBUGUSED(x) PIKE_UNUSED(x)
 #endif
 #ifdef DEBUG_MALLOC
 # define DMALLOCUSED(x) x
 #else
-# define DMALLOCUSED(x) UNUSED(x)
+# define DMALLOCUSED(x) PIKE_UNUSED(x)
 #endif
 
 
