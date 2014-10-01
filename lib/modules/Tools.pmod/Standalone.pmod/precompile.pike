@@ -46,7 +46,7 @@ string usage = #"[options] <from> > <to>
 
  DECLARATIONS
 
- PIKECLASS fnord 
+ PIKECLASS fnord
   attributes;
  {
    INHERIT bar
@@ -208,13 +208,14 @@ void warn(string s, mixed ... args)
 
 multiset check_used = (<>); 
 
-/* Strings declared with MK_STRING. */
+/* Strings declared with MK_STRIN. */
 mapping(string:string) strings = ([
   // From stralloc.h:
   "":"empty_pike_string",
 
   // From program.h:
   "this_program":"this_program_string",
+  "this":"this_string",
   // lfuns:
   "__INIT":"lfun_strings[LFUN___INIT]",
   "create":"lfun_strings[LFUN_CREATE]",
