@@ -485,20 +485,9 @@ undump_modules: delete_dumped_modules
 	rm -f $@.fail >/dev/null 2>&1; \
 	if $(CC) $(CFLAGS) $$EXTRAFLAGS -c $< -o $@ ; then : ; else \
 	  status=$$?; \
-	  if test x"@noopt_retry@" = xyes ; then \
-	    echo "WARNING: Compiler failure! Trying without optimization!" >&2;\
-	    echo "$(CC) $(PREFLAGS) $(CFLAGS) $$EXTRAFLAGS -c $< -o $@" >$@.fail ;\
-	    if NO_ULIMIT=yes $(CC) $(PREFLAGS) $(NOOPTFLAGS) $$EXTRAFLAGS -c $< -o $@ ; then : ; else \
-	      status=$$?; \
-	      echo "Compilation command was:" >&2;\
-	      echo "$(CC) $(PREFLAGS) $(NOOPTFLAGS) $$EXTRAFLAGS -c $< -o $@" >&2 ;\
-	      exit $$status; \
-	    fi; \
-	  else \
-	    echo "Compilation command was:" >&2;\
-	    echo "$(CC) $(PREFLAGS) $(CFLAGS) $$EXTRAFLAGS -c $< -o $@" >&2 ;\
-	    exit $$status; \
-	  fi; \
+	  echo "Compilation command was:" >&2;\
+	  echo "$(CC) $(PREFLAGS) $(CFLAGS) $$EXTRAFLAGS -c $< -o $@" >&2 ;\
+	  exit $$status; \
 	fi
 
 .m.o:
@@ -506,20 +495,9 @@ undump_modules: delete_dumped_modules
 	rm -f $@.fail >/dev/null 2>&1; \
 	if $(CC) $(CFLAGS) $$EXTRAFLAGS -fobjc-exceptions -fobjc-gc -c $< -o $@ ; then : ; else \
 	  status=$$?; \
-	  if test x"@noopt_retry@" = xyes ; then \
-	    echo "WARNING: Compiler failure! Trying without optimization!" >&2;\
-	    echo "$(CC) $(PREFLAGS) $(CFLAGS) $$EXTRAFLAGS -fobjc-exceptions -c $< -o $@" >$@.fail ;\
-	    if NO_ULIMIT=yes $(CC) $(PREFLAGS) $(NOOPTFLAGS) $$EXTRAFLAGS -c $< -o $@ ; then : ; else \
-	      status=$$?; \
-	      echo "Compilation command was:" >&2;\
-	      echo "$(CC) $(PREFLAGS) $(NOOPTFLAGS) $$EXTRAFLAGS -fobjc-exceptions -c $< -o $@" >&2 ;\
-	      exit $$status; \
-	    fi; \
-	  else \
-	    echo "Compilation command was:" >&2;\
-	    echo "$(CC) $(PREFLAGS) $(CFLAGS) $$EXTRAFLAGS -fobjc-exceptions -c $< -o $@" >&2 ;\
-	    exit $$status; \
-	  fi; \
+	  echo "Compilation command was:" >&2;\
+	  echo "$(CC) $(PREFLAGS) $(CFLAGS) $$EXTRAFLAGS -fobjc-exceptions -c $< -o $@" >&2 ;\
+	  exit $$status; \
 	fi
 
 #

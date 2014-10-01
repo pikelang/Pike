@@ -58,20 +58,9 @@ $(MODULE_ARCHIVES) ThisIsAPhonyTargetBlaBlaBla: force
 	rm -f $@.fail >/dev/null 2>&1; \
 	if $(CC) $(PREFLAGS) $(CFLAGS) -c $< -o $@ ; then : ; else \
 	  status=$$?; \
-	  if test x"@noopt_retry@" = xyes ; then \
-	    echo "WARNING: Compiler failure! Trying without optimization!" >&2;\
-	    echo "$(CC) $(PREFLAGS) $(CFLAGS) -c $< -o $@" >$@.fail ;\
-	    if NO_ULIMIT=yes $(CC) $(PREFLAGS) $(NOOPT_CFLAGS) -c $< -o $@ ; then : ; else \
-	      status=$$?; \
-	      echo "Compilation command was:" >&2;\
-	      echo "$(CC) $(PREFLAGS) $(NOOPT_CFLAGS) -c $< -o $@" >&2 ;\
-	      exit $$status; \
-	    fi; \
-	  else \
-	    echo "Compilation command was:" >&2;\
-	    echo "$(CC) $(PREFLAGS) $(CFLAGS) -c $< -o $@" >&2 ;\
-	    exit $$status; \
-	  fi; \
+	  echo "Compilation command was:" >&2;\
+	  echo "$(CC) $(PREFLAGS) $(CFLAGS) -c $< -o $@" >&2 ;\
+	  exit $$status; \
 	fi
 
 .c.protos: $(BUILD_BASE)/precompile.sh-stamp
@@ -84,20 +73,9 @@ $(MODULE_ARCHIVES) ThisIsAPhonyTargetBlaBlaBla: force
 	rm -f $@.fail >/dev/null 2>&1; \
 	if $(CC) $(PREFLAGS) $(CFLAGS) -c $< -o $@ ; then : ; else \
 	  status=$$?; \
-	  if test x"@noopt_retry@" = xyes ; then \
-	    echo "WARNING: Compiler failure! Trying without optimization!" >&2;\
-	    echo "$(CC) $(PREFLAGS) $(CFLAGS) -c $< -o $@" >$@.fail ;\
-	    if NO_ULIMIT=yes $(CC) $(PREFLAGS) $(NOOPT_CFLAGS) -c $< -o $@ ; then : ; else \
-	      status=$$?; \
-	      echo "Compilation command was:" >&2;\
-	      echo "$(CC) $(PREFLAGS) $(NOOPT_CFLAGS) -c $< -o $@" >&2 ;\
-	      exit $$status; \
-	    fi; \
-	  else \
-	    echo "Compilation command was:" >&2;\
-	    echo "$(CC) $(PREFLAGS) $(CFLAGS) -c $< -o $@" >&2 ;\
-	    exit $$status; \
-	  fi; \
+	  echo "Compilation command was:" >&2;\
+	  echo "$(CC) $(PREFLAGS) $(CFLAGS) -c $< -o $@" >&2 ;\
+	  exit $$status; \
 	fi
 
 .m.protos: $(BUILD_BASE)/precompile.sh-stamp
@@ -111,20 +89,9 @@ $(MODULE_ARCHIVES) ThisIsAPhonyTargetBlaBlaBla: force
 	rm -f $@.fail >/dev/null 2>&1; \
 	if $(CXX) $(PREFLAGS) $(CFLAGS) -c $< -o $@ ; then : ; else \
 	  status=$$?; \
-	  if test x"@noopt_retry@" = xyes ; then \
-	    echo "WARNING: Compiler failure! Trying without optimization!" >&2;\
-	    echo "$(CXX) $(PREFLAGS) $(CFLAGS) -c $< -o $@" >$@.fail ;\
-	    if NO_ULIMIT=yes $(CXX) $(PREFLAGS) $(NOOPT_CFLAGS) -c $< -o $@ ; then : ; else \
-	      status=$$?; \
-	      echo "Compilation command was:" >&2;\
-	      echo "$(CXX) $(PREFLAGS) $(NOOPT_CFLAGS) -c $< -o $@" >&2 ;\
-	      exit $$status; \
-	    fi; \
-	  else \
-	    echo "Compilation command was:" >&2;\
-	    echo "$(CXX) $(PREFLAGS) $(CFLAGS) -c $< -o $@" >&2 ;\
-	    exit $$status; \
-	  fi; \
+	  echo "Compilation command was:" >&2;\
+	  echo "$(CXX) $(PREFLAGS) $(CFLAGS) -c $< -o $@" >&2 ;\
+	  exit $$status; \
 	fi
 
 .cc.protos: $(BUILD_BASE)/precompile.sh-stamp

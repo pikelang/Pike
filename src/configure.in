@@ -213,10 +213,6 @@ It is probably best to delete ./config.cache before proceeding.])
 
 fi
 
-AC_ARG_ENABLE(noopt-retry, MY_DESCR([--disable-noopty-retry],
-    [do not retry compilation without optimizations if it fails]),
-	      [], [noopt_retry=yes])
-
 # Do the below even when --disable-binary is used, since we need a
 # real $CPP, and AC_PROG_CPP wants AC_PROG_CC to be called earlier.
 # $CC will be overridden with a dummy later on.
@@ -8288,7 +8284,6 @@ echo
 export LDFLAGS CFLAGS CPPFLAGS LIBS
 export prefix exec_prefix OTHERFLAGS
 export DEFINES INSTALL
-export noopt_retry
 
 PIKE_SRC_DIR=$srcdir
 export PIKE_SRC_DIR
@@ -8312,7 +8307,6 @@ AC_SUBST(RANLIB)
 AC_SUBST(DEBUGDEF)
 AC_SUBST(EXTRA_MODULE_REQUIREMENTS)
 AC_SUBST(DTRACE_REQUIREMENTS)
-AC_SUBST(noopt_retry)
 
 pike_cv_prog_CC="${CC}"
 
