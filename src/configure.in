@@ -1,8 +1,6 @@
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
-
-
 rm -f config.warnings 2>/dev/null
 
 if_autoconf(2,50,, [
@@ -39,45 +37,6 @@ Failed to write in source directory.
 Fix your permissions.
 ])
 fi
-
-# Attempt to use bash instead of /bin/sh to run configure
-# since bash is usually several orders of magnitude faster
-# on machines that have a real /bin/sh.
-# Some OS's also have a seriously broken /bin/sh (eg NetBSD).
-if test "x$CONFIG_SHELL" = "x" -a "x$BASH" = x; then
-  AC_PATH_PROG(bash_prog, bash, no)
-  if test "x$ac_cv_path_bash_prog" = "xno"; then :; else
-    AC_MSG_CHECKING([if $ac_cv_path_bash_prog works])
-    if "$ac_cv_path_bash_prog" --norc -c : 2>&AC_FD_CC; then
-      AC_MSG_RESULT(yes)
-    else
-      AC_MSG_RESULT(no)
-      ac_cv_path_bash_prog=no
-    fi
-  fi
-  if test "x$ac_cv_path_bash_prog" = "xno"; then :; else
-    AC_MSG_WARN([Found bash as $ac_cv_path_bash_prog.
-Will attempt to restart configure with bash for performance.
-If this fails, please set CONFIG_SHELL to /bin/sh before starting configure.])
-    if_autoconf(2,63,[
-      # Autoconf 2.63 and later don't like CONFIG_SHELL containing args...
-      # It will break the generated config.status.
-      CONFIG_SHELL="$ac_cv_path_bash_prog"
-      export CONFIG_SHELL
-      echo $CONFIG_SHELL --norc "$srcdir/configure" $ac_configure_args
-      eval exec $CONFIG_SHELL --norc "$srcdir/configure" $ac_configure_args
-    ], [
-      # Autoconf 2.61 and earlier support CONFIG_SHELL containing args.
-      # Make sure the users config files aren't used. We don't want
-      # strange aliases and stuff confusing things...
-      CONFIG_SHELL="$ac_cv_path_bash_prog --norc"
-      export CONFIG_SHELL
-      echo $CONFIG_SHELL "$srcdir/configure" $ac_configure_args
-      eval exec $CONFIG_SHELL "$srcdir/configure" $ac_configure_args
-    ])
-    exit 17
-  fi
-else :; fi
 
 AC_PROG_MAKE_SET
 

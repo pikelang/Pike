@@ -119,15 +119,15 @@ configure: src/configure builddir
 	  if test -f Makefile -a -f config.status -a -f .configureargs -a \
 		  "x$$oldconfigureargs" = "x$$configureargs"; then :; \
 	  else \
-	    echo Running $$srcdir/configure $$configureargs in $$builddir; \
 	    if test "x$${CONFIG_SHELL}" = "x" && \
 	      /bin/bash -norc -c : 2>/dev/null; then \
 	      CONFIG_SHELL="/bin/bash -norc" ; \
 	    fi ;\
 	    runconfigure () { \
-	      CONFIG_SITE=x $${CONFIG_SHELL-/bin/sh} \
+	      CONFIG_SITE=x CONFIG_SHELL=$${CONFIG_SHELL-/bin/sh} $${CONFIG_SHELL-/bin/sh} \
 		"$$srcdir"/configure "$$@" || exit $$?; \
 	    }; \
+	    echo Running $$CONFIG_SHELL $$srcdir/configure $$configureargs in $$builddir; \
 	    eval runconfigure $$configureargs; \
 	    echo "$$configureargs" > .configureargs; \
 	    if test "x$$oldconfigureargs" = "x$$configureargs"; then :; \
