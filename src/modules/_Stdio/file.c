@@ -5134,6 +5134,7 @@ static void file_connect(INT32 args)
 
   int tmp, was_closed = FD < 0;
   int fd, sent = 0;
+  int nb_mode;
 
   if (args < 4) 
   {
@@ -5189,6 +5190,8 @@ static void file_connect(INT32 args)
     pop_stack();
   }
 
+  nb_mode = !!(THIS->open_mode & FILE_NONBLOCKING);
+
   fd = FD;
   THREADS_ALLOW();
   for(;;)
@@ -5210,16 +5213,22 @@ static void file_connect(INT32 args)
   }
   THREADS_DISALLOW();
 
+  /* NB: On success in threaded callback-mode, a suitable callback may
+   *     already have been called before THREADS_DISALLOW() has finished.
+   *
+   *     We thus mustn't look at the current settings of ourselves, as
+   *     they may have been changed since before the fd_connect() call.
+   */
 
   if(tmp < 0
 #ifdef EINPROGRESS
-     && !(errno==EINPROGRESS && (THIS->open_mode & FILE_NONBLOCKING))
+     && !(errno == EINPROGRESS && nb_mode)
 #endif
 #ifdef WSAEWOULDBLOCK
-     && !(errno==WSAEWOULDBLOCK && (THIS->open_mode & FILE_NONBLOCKING))
+     && !(errno == WSAEWOULDBLOCK && nb_mode)
 #endif
 #ifdef EWOULDBLOCK
-     && !(errno==EWOULDBLOCK && (THIS->open_mode & FILE_NONBLOCKING))
+     && !(errno == EWOULDBLOCK && nb_mode)
 #endif
     )
   {
