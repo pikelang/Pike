@@ -180,6 +180,10 @@ o Added a shorthand syntax for integer rages: xbit, where x is a
   the same as int(0..4095).
 
 
+o 'this::x' is not equivalent to 'this_program::x' -- access the
+  identifier x in the current object.
+
+
 New preprocessor features
 -------------------------
 
