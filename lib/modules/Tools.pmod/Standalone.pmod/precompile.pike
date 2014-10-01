@@ -208,7 +208,7 @@ void warn(string s, mixed ... args)
 
 multiset check_used = (<>); 
 
-/* Strings declared with MK_STRIN. */
+/* Strings declared with MK_STRING. */
 mapping(string:string) strings = ([
   // From stralloc.h:
   "":"empty_pike_string",

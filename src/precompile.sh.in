@@ -129,7 +129,7 @@ esac
 if test "x${RUNPIKE-}" != x ; then
   echo "precompile: $RUNPIKE $SCRIPT $@ (method=$method)"
 
-# Do not output directly, if this generates data but thge command
+# Do not output directly, if this generates data but the command
 # fails we have an issue. So, first output to a temporary file.
 
   $RUNPIKE $SCRIPT "$@" >${TMPDIR-/tmp}/precompile-$$.out
