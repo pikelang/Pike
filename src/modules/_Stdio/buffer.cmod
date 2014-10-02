@@ -610,7 +610,7 @@ PIKECLASS Buffer
     LONGEST res;
     if( !io_avail(io, len) )
       return -1;
-						  /* ensure only leading 0:s */
+    /* ensure only leading 0:s */
     for (; UNLIKELY(len > SIZEOF_INT_TYPE); len--)
       if( UNLIKELY(io_read_byte_uc(io)) )
         Pike_error("Integer (%dbit) overflow.\n", SIZEOF_INT_TYPE*8);
@@ -1018,7 +1018,7 @@ PIKECLASS Buffer
     else
     {
       /* some other object. Just call write */
-      while( sz > written && nbytes)
+      while( sz > written && nbytes )
       {
         size_t rd = MINIMUM(MINIMUM(sz-written,4096),nbytes);
         ptrdiff_t wr = io_call_write( io, f, rd );
