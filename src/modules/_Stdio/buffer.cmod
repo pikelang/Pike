@@ -435,7 +435,7 @@ PIKECLASS Buffer
           io_rewind( io, bytes );
           return -1;
         }
-        if( bytes > (unsigned)l )
+        if( bytes > l )
           io_rewind( io, bytes-l );
       }
       return l;
@@ -1316,7 +1316,7 @@ PIKECLASS Buffer
     int i,l = a->size;
     struct svalue *it = a->item;
     unsigned char *ptr;
-    ptrdiff_t n;
+    ptrdiff_t n=0;
     ONERROR e;
     Buffer *io = THIS;
 
@@ -1325,8 +1325,8 @@ PIKECLASS Buffer
     if( bpi < 0 )
       Pike_error("Illegal int width\n");
 
-#if SIZEOF_SIZE_T == 4
-    if( DO_INT32_MUL_OVERFLOW( l, bpi, &n ) )
+#if SIZEOF_LONG == 4
+      if( DO_INT32_MUL_OVERFLOW( l, bpi, &n ) )
 #else
       if( DO_INT64_MUL_OVERFLOW( l, bpi, &n ) )
 #endif
@@ -2073,15 +2073,21 @@ fail: CALL_AND_UNSET_ONERROR(e);
    */
   PIKEFUN int(0..4294967295) read_int32( )
   {
-#if SIZEOF_INT_TYPE > 4
     Buffer *io = THIS;
     if( LIKELY(io_avail( io, 4 )) )
+    {
       push_int( io_read_number_uc(io,4) );
+#if SIZEOF_INT_TYPE < 5
+      if( UNLIKELY(Pike_sp[-1].u.integer < 0) )
+      {
+	io_rewind( io, 4 );
+	pop_stack();
+	push_object( io_read_bignum(io, 4) );
+      }
+#endif
+    }
     else
       push_int(-1);
-#else
-    push_int( io_read_number( 4 ) );
-#endif
   }
 
   /*! @decl int read_int( int n )
