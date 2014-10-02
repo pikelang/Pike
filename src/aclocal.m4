@@ -1532,7 +1532,13 @@ AC_DEFUN(PIKE_CHECK_ABI_DIR,
       for f in "$d"/* no; do
         if test -f "$f"; then
 	  empty=no
-          filetype=`file "$f" 2>/dev/null | sed -e 's/.*://'`
+          if test "$abi_dir_dynamic:$abi_64:$pike_cv_abi" = "yes:yes:64" ; then
+             break
+          elif test "$abi_dir_dynamic:$abi_32:$pike_cv_abi" = "yes:yes:32" ; then
+             break
+          fi
+          filetype="`file $f`"
+
 	  case "$filetype" in
             *32-bit*)
   	      abi_32=yes
