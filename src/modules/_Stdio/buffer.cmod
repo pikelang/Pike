@@ -975,10 +975,10 @@ PIKECLASS Buffer
    *! If no bytes have been written successfully and @expr{f->write()@} failed
    *! with an error, @expr{-1@} will be returned.
    */
-  PIKEFUN int(-1..) output_to( object f, int|void _nbytes )
+  PIKEFUN int(-1..) output_to( object f, int|void nbytes )
   {
     Buffer *io = THIS;
-    ptrdiff_t written = 0, nbytes = (ptrdiff_t)(((size_t)~0)>>1);
+    ptrdiff_t written = 0;
     struct my_file *fd;
     ptrdiff_t sz = io_len( io );
     int write_fun_num;
@@ -989,8 +989,8 @@ PIKECLASS Buffer
       io_range_error(io,  sz);
       sz = io_len(io);
     }
-    if( _nbytes )
-      nbytes = _nbytes->u.integer;
+    if( nbytes )
+      sz = MINIMUM(nbytes->u.integer, sz);
 
     if ((write_fun_num = find_identifier("write", f->prog)) == -1) {
       Pike_error("Cannot call unknown function \"write\".\n");
@@ -1002,9 +1002,9 @@ PIKECLASS Buffer
     {
       fd = get_inherit_storage( f, inh - f->prog->inherits );
 
-      while( sz > written && nbytes )
+      while( sz > written )
       {
-        ptrdiff_t rd = MINIMUM(MINIMUM(sz-written,4096),nbytes);
+        ptrdiff_t rd = MINIMUM(sz-written,4096);
         unsigned char *ptr = io_read_pointer( io );
         ptrdiff_t res;
         res = fd_write( fd->box.fd, ptr, rd );
@@ -1017,16 +1017,15 @@ PIKECLASS Buffer
         }
         io_consume( io, res );
         written += res;
-        nbytes-=res;
         io_set_events( io, fd, PIKE_BIT_FD_WRITE_OOB, PIKE_FD_WRITE);
       }
     }
     else
     {
       /* some other object. Just call write */
-      while( sz > written && nbytes )
+      while( sz > written )
       {
-        size_t rd = MINIMUM(MINIMUM(sz-written,4096),nbytes);
+        size_t rd = MINIMUM(sz-written,4096);
         ptrdiff_t wr = io_call_write( io, f, rd );
         if( wr <= 0 )
         {
