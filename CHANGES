@@ -146,7 +146,7 @@ o Added multi-character character constants.
   Unlike how it works in some C compilers the native byte order is
   never relevant.
 
-o Added new syntax for literal-string constats
+o Added new syntax for literal-string constants
 
   #{, #( and #[ starts a literal string, and it is ended by the
   corresponding end marker: #}, #) and #] respectively.
@@ -156,7 +156,7 @@ o Added new syntax for literal-string constats
 
   So, the string #["\n\'##] will be equivalent to "\"\\n\\'#".
 
-  The main usecase is to write code in code:
+  The main use-case is to write code in code:
 
   | string code = #[
   |  void main(int c, array v) {
@@ -176,12 +176,12 @@ o Added a shorthand syntax for integer rages: xbit, where x is a
 
   This is equivalent to the range (0..255) but can be easier to parse.
 
-  Similarily int(1bit) is an alias for 'bool', and int(12bit) is
+  Similarly int(1bit) is an alias for 'bool', and int(12bit) is
   the same as int(0..4095).
 
 
-o 'this::x' is not equivalent to 'this_program::x' -- access the
-  identifier x in the current object.
+o 'this::x' is now equivalent to 'this_program::x' -- access the
+   identifier x in the current object.
 
 
 New preprocessor features
@@ -200,7 +200,7 @@ o Support for the ", ##__VA_ARGS__" cpp feature.
   token preceding ‘##’ is anything other than a comma.
 
 o The define __COUNTER__ has been added. It is a unique integer
-  value, the first time the macro is expaded it will be 1, the next time
+  value, the first time the macro is expanded it will be 1, the next time
   2 etc.
 
 o The preprocessor can now be run with a cpp prefix feature.
@@ -210,7 +210,7 @@ o The preprocessor can now be run with a cpp prefix feature.
 
 o Dynamic macros
 
-  You can now add programatic macros. There is currently no syntax
+  You can now add programmatic macros. There is currently no syntax
   that can be used to define these while compiling code, but you can
   add them from one program before compiling plug-ins/modules.
 
