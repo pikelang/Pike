@@ -5135,6 +5135,8 @@ static void file_connect(INT32 args)
   int tmp, was_closed = FD < 0;
   int fd, sent = 0;
   int nb_mode;
+  int old_events;
+  int e;
 
   if (args < 4) 
   {
@@ -5192,6 +5194,11 @@ static void file_connect(INT32 args)
 
   nb_mode = !!(THIS->open_mode & FILE_NONBLOCKING);
 
+  /* Inhibit the backend for this fd while connect(2) is running. */
+  if ((old_events = THIS->box.events)) {
+    set_fd_callback_events(&(THIS->box), 0, THIS->box.flags);
+  }
+
   fd = FD;
   THREADS_ALLOW();
   for(;;)
@@ -5213,8 +5220,17 @@ static void file_connect(INT32 args)
   }
   THREADS_DISALLOW();
 
-  /* NB: On success in threaded callback-mode, a suitable callback may
-   *     already have been called before THREADS_DISALLOW() has finished.
+  e = errno;
+
+  if (old_events) {
+    /* Reenable the backend. */
+    set_fd_callback_events(&(THIS->box), old_events, THIS->box.flags);
+  }
+
+  errno = e;
+
+  /* NB: On success in threaded callback-mode, some other thread may
+   *     have messed with us before THREADS_DISALLOW() has finished.
    *
    *     We thus mustn't look at the current settings of ourselves, as
    *     they may have been changed since before the fd_connect() call.
