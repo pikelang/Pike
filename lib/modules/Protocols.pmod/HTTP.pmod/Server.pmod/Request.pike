@@ -793,10 +793,9 @@ void send_write()
    remove_call_out(send_timeout);
    call_out(send_timeout,send_timeout_delay);
    /* limit data size (for SSL files) */
-   int n=send_buf->output_to(my_fd,16384);
-   sent += n;
+   int n = send_buf->output_to(my_fd,16384);
 
-   if ( (send_stop==sent) || n <= 0 )
+   if ( n <= 0 || (send_stop==(sent+=n)) )
       finish(sent==send_stop);
 }
 
