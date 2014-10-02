@@ -1856,6 +1856,39 @@ PMOD_EXPORT struct mapping *merge_mapping_array_unordered(struct mapping *a,
   return m;
 }
 
+void o_append_mapping( INT32 args )
+{
+  struct svalue *lval = Pike_sp - args;
+  struct svalue *val = lval + 2;
+#ifdef PIKE_DEBUG
+  if (args < 3) {
+    Pike_fatal("Too few arguments to o_append_mapping(): %d\n", args);
+  }
+#endif
+  args -= 3;
+  /* Note: val should always be a zero here! */
+  lvalue_to_svalue_no_free(val, lval);
+
+  if (TYPEOF(*val) == T_MAPPING)
+  {
+    struct mapping *m = val->u.mapping;
+    if( m->refs == 2 )
+    {
+      int i;
+      /* fprintf( stderr, "map_refs==2\n" ); */
+      for( i=0; i<args; i+=2 )
+        low_mapping_insert( m, Pike_sp-(i+2), Pike_sp-(i+1), 0 );
+      stack_pop_n_elems_keep_top(2+args);
+      return;
+    }
+  }
+
+  f_aggregate_mapping(args);
+  f_add(2);
+  assign_lvalue(lval, val);
+  stack_pop_2_elems_keep_top();
+}
+
 /* NOTE: May perform destructive operations on either of the arguments
  *       if it has only a single reference.
  */

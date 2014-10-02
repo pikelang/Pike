@@ -995,6 +995,21 @@ F_ADD_EQ(0, F_APPLY(F_CONSTANT
 		    [$$->u.sval.u.efun->function == debug_f_aggregate], 1)):
   F_APPEND_ARRAY($0, $1);
 
+
+// a += ([ args... ])  ->  F_APPEND_MAPPING(a, args...)
+F_ADD_EQ(0, F_APPLY(F_CONSTANT
+		    [TYPEOF($$->u.sval) == T_FUNCTION]
+		    [SUBTYPEOF($$->u.sval) == FUNCTION_BUILTIN]
+		    [$$->u.sval.u.efun->function == f_aggregate_mapping], 1)):
+  F_APPEND_MAPPING($0, $1);
+
+// a += ([ args... ])  ->  F_APPEND_MAPPING(a, args...)
+F_OR_EQ(0, F_APPLY(F_CONSTANT
+                   [TYPEOF($$->u.sval) == T_FUNCTION]
+                   [SUBTYPEOF($$->u.sval) == FUNCTION_BUILTIN]
+                   [$$->u.sval.u.efun->function == f_aggregate_mapping], 1)):
+  F_APPEND_MAPPING($0, $1);
+
 F_INDEX(-, 0 = *):
   F_COMMA_EXPR(F_POP_VALUE($0, -), 0);
 

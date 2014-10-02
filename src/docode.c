@@ -1149,6 +1149,17 @@ static int do_docode2(node *n, int flags)
     return 1;
   }
 
+  case F_APPEND_MAPPING: {
+    emit0(F_MARK);
+    PUSH_CLEANUP_FRAME(do_pop_mark, 0);
+    do_docode(CAR(n),DO_LVALUE);
+    emit0(F_CONST0);	/* Reserved for svalue. */
+    do_docode(CDR(n),0);
+    emit0(F_APPEND_MAPPING);
+    POP_AND_DONT_CLEANUP;
+    return 1;
+  }
+
   case '?':
   {
     INT32 *prev_switch_jumptable = current_switch.jumptable;

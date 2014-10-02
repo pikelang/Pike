@@ -390,6 +390,7 @@ int mapping_is_constant(struct mapping *m,
 			struct processing *p);
 void free_all_mapping_blocks(void);
 
+void o_append_mapping( INT32 args );
 /* Prototypes end here */
 
 #define allocate_mapping(X) dmalloc_touch(struct mapping *,debug_allocate_mapping(X))

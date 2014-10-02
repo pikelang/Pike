@@ -919,6 +919,7 @@ node *debug_mknode(int token, node *a, node *b)
     break;
 
   case F_APPEND_ARRAY:
+  case F_APPEND_MAPPING:
   case F_MULTI_ASSIGN:
   case F_ASSIGN:
   case F_ASSIGN_SELF:
@@ -2742,7 +2743,8 @@ static void find_written_vars(node *n,
     find_written_vars(CDR(n), p, 1);
     break;
 
-    case F_APPEND_ARRAY:
+  case F_APPEND_MAPPING:
+  case F_APPEND_ARRAY:
       find_written_vars(CAR(n), p, 1);
       find_written_vars(CDR(n), p, 0);
       break;
@@ -3198,6 +3200,16 @@ void fix_type_field(node *n)
       n->type = or_pike_types(CAR(n)->type, CDR(n)->type, 0);
     }
     break;
+
+  case F_APPEND_MAPPING:
+    if (!CAR(n) || (CAR(n)->type == void_type_string)) {
+      yyerror("Assigning a void expression.");
+      copy_pike_type(n->type, void_type_string);
+    }
+    else
+      /* FIXME: Not really correct, should calculate type of RHS. */
+      copy_pike_type(n->type, CAR(n)->type);
+   break;
 
   case F_APPEND_ARRAY:
     if (!CAR(n) || (CAR(n)->type == void_type_string)) {
