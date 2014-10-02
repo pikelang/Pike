@@ -1033,6 +1033,8 @@ PIKECLASS Buffer
           break;
         }
         written += wr;
+        if( wr < 4096 )
+          break;
       }
     }
     RETURN written;
