@@ -978,8 +978,8 @@ int write (string|array(string) data, mixed... args)
       if (!direct_write()) RETURN (written);
     }
 
-    SSL3_DEBUG_MSG ("SSL.File->write: Write %t done, accepted %d bytes\n",
-		    data, written);
+    SSL3_DEBUG_MSG ("SSL.File->write: Write done, accepted %d bytes\n",
+		    written);
     RETURN (written);
   } LEAVE;
 }
