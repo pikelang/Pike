@@ -1,3 +1,5 @@
+#pike __REAL_VERSION__
+
 //! Common Caching implementation
 //!
 //! This module serves as a front-end to different kinds of caching
