@@ -2417,7 +2417,7 @@ void make_master(string dest, string master, string lib_prefix,
   status("Finalizing",master,"done");
 }
 
-// Install file while fixing CC= w.r.t. smartlink
+// Install file while fixing CC= and CXX= w.r.t. smartlink
 void fix_smartlink(string src, string dest, string include_prefix)
 {
   status("Finalizing",src);
@@ -2426,6 +2426,8 @@ void fix_smartlink(string src, string dest, string include_prefix)
 			  string cc;
 			  if(2==sscanf(s, "CC=%*s/smartlink %s", cc))
 			    return "CC="+include_prefix+"/smartlink "+cc;
+			  else if(2==sscanf(s, "CXX=%*s/smartlink %s", string cxx))
+			    return "CXX="+include_prefix+"/smartlink "+cxx;
 			  else
 			    return s;
 			})*"\n";
