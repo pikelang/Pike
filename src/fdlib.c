@@ -27,8 +27,8 @@
 
 static MUTEX_T fd_mutex;
 
-HANDLE da_handle[MAX_OPEN_FILEDESCRIPTORS];
-int fd_type[MAX_OPEN_FILEDESCRIPTORS];
+HANDLE da_handle[FD_SETSIZE];
+int fd_type[FD_SETSIZE];
 int first_free_handle;
 
 /* #define FD_DEBUG */
@@ -123,7 +123,7 @@ PMOD_EXPORT char *debug_fd_info(int fd)
   if(fd<0)
     return "BAD";
 
-  if(fd > MAX_OPEN_FILEDESCRIPTORS)
+  if(fd > FD_SETSIZE)
     return "OUT OF RANGE";
 
   switch(fd_type[fd])
@@ -176,7 +176,7 @@ void fd_init(void)
   da_handle[2] = GetStdHandle(STD_ERROR_HANDLE);
 
   first_free_handle=3;
-  for(e=3;e<MAX_OPEN_FILEDESCRIPTORS-1;e++)
+  for(e=3;e<FD_SETSIZE-1;e++)
     fd_type[e]=e+1;
   fd_type[e]=FD_NO_MORE_FREE;
   mt_unlock(&fd_mutex);

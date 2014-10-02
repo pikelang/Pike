@@ -5755,23 +5755,77 @@ static void exit_file_locking(void)
  */
 static void f_get_all_active_fd(INT32 args)
 {
-  int i,fds,ne;
+  int i,fds=0;
   PIKE_STAT_T foo;
-
-  ne = MAX_OPEN_FILEDESCRIPTORS;
+  struct svalue *sp;
 
   pop_n_elems(args);
-  for (i=fds=0; i<ne; i++)
+  sp = Pike_sp;
   {
-    int q;
+    DIR *tmp;
     THREADS_ALLOW();
-    q = fd_fstat(i,&foo);
-    THREADS_DISALLOW();
-    if(!q)
+#ifndef __NT__
+    if( (tmp = opendir(
+#ifdef HAVE_DARWIN_XATTR
+           "/dev/fd"
+#else
+           "/proc/self/fd"
+#endif
+           )) )
     {
-      push_int(i);
-      fds++;
+      INT_TYPE dfd = dirfd(tmp);
+
+      while(1)
+      {
+        INT_TYPE fd;
+        char *ep;
+        struct dirent ent, *res;
+        /* solaris, linux, cygwin, darwin, netbsd et.al. */
+        res = NULL;
+        while( UNLIKELY(readdir_r( tmp, &ent, &res ))
+               && UNLIKELY(errno==EINTR))
+          ;
+        if( !res )
+          break;
+
+        fd = strtol(res->d_name, &ep, 10);
+
+        if( LIKELY(ep != res->d_name) && (fd != dfd) )
+        {
+          SET_SVAL_TYPE_SUBTYPE(*sp,PIKE_T_INT,0);
+          sp++->u.integer = fd;
+          fds++;
+        }
+      }
+      closedir(tmp);
     }
+    else
+#endif /* __NT__ */
+    {
+#ifdef HAVE_SYSCONF
+      int max = sysconf(_SC_OPEN_MAX);
+      /* NOTE: This might have been lowered, so we might not actually
+       * get all FD:s.  It is usually good, however.
+       *
+       * Also, this is not used on many systems
+       */
+#else
+      int max = 65535;
+#endif
+      for (i=0; i<max; i++)
+      {
+        int q;
+        q = fd_fstat(i,&foo);
+        if(!q)
+        {
+          SET_SVAL_TYPE_SUBTYPE(*sp,PIKE_T_INT,0);
+          sp++->u.integer = i;
+          fds++;
+        }
+      }
+    }
+    THREADS_DISALLOW();
+    Pike_sp = sp;
   }
   f_aggregate(fds);
 }

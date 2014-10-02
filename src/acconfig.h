@@ -391,9 +391,6 @@
 /* Assembler prefix for general purpose registers */
 #undef PIKE_CPU_REG_PREFIX
 
-/* Number of possible filedesriptors */
-#define MAX_OPEN_FILEDESCRIPTORS 1024
-
 /* define this if #include <time.h> provides an external int timezone */
 #undef HAVE_EXTERNAL_TIMEZONE
 

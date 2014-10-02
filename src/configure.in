@@ -20,7 +20,6 @@ If this does not work, please use an absolute path to the configure script.])
 esac
 
 # Check that we can write to the source directory.
-sleep 1
 if touch "$srcdir/configure~"; then
   # Check that the system time is reasonably correct.
   if test `cd "$srcdir" && ls -1t configure configure~ | head -n 1` = "configure"; then
@@ -6177,81 +6176,6 @@ else
 fi
 
 ########################################################################
-
-AC_MSG_CHECKING(available file descriptors)
-AC_CACHE_VAL(pike_cv_max_open_fd,
-[
-  if test "x$enable_binary" = "xno"; then
-    pike_cv_max_open_fd=256
-  else
-    AC_TRY_RUN([
-#include <stdio.h>
-#ifdef HAVE_SYS_TIME_H
-#include <sys/time.h>
-#endif
-#ifdef HAVE_SYS_RESOURCE_H
-#include <sys/resource.h>
-#endif
-#ifdef HAVE_LIMITS_H
-#include <limits.h>
-#endif
-
-#ifndef MAX_FD
-#define MAX_FD 65536
-#endif
-
-int main()
-{
-  FILE *f;
-  long limit;
-
-#if !defined(RLIMIT_NOFILE) && defined(RLIMIT_OFILE)
-#define RLIMIT_NOFILE RLIMIT_OFILE
-#endif
-
-#if defined(HAVE_SETRLIMIT) && defined(RLIMIT_NOFILE)
-  struct rlimit lim;
-
-  if(getrlimit(RLIMIT_NOFILE,&lim))
-  {
-    limit = MAX_FD;
-  }else{
-    if(lim.rlim_max == RLIM_INFINITY)
-    {
-      limit = 1024 * 1024 * 2; /* Noone needs more :-) */
-      
-#if defined(OPEN_MAX)
-      /* On Darwin we can find a reasonable limit in OPEN_MAX which limits.h
-         will include from sys/syslimits.h. */
-      limit = (OPEN_MAX < limit) ? OPEN_MAX : limit;
-#endif	 
-    }else{
-      limit=lim.rlim_max;
-      if(limit > 1024 * 1024 * 2) limit= 1024 * 1024 * 2;
-    }
-  }
-#else
-  limit = MAX_FD;
-#endif
-
-  f=fopen("conftest.out.2","w");
-  fprintf(f,"%ld\n",(long)limit);
-  fclose(f);
-
-  return 0;
-}
-    ],
-    pike_cv_max_open_fd=`cat conftest.out.2`
-    ,
-    pike_cv_max_open_fd=256
-    ,
-    pike_cv_max_open_fd=256
-  )
-  fi
-])
-AC_MSG_RESULT($pike_cv_max_open_fd)
-AC_DEFINE_UNQUOTED(MAX_OPEN_FILEDESCRIPTORS,$pike_cv_max_open_fd)
-
 AC_MSG_CHECKING(full availability of struct rusage members)
 AC_CACHE_VAL(pike_cv_func_getrusage_full,
 [

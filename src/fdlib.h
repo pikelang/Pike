@@ -57,7 +57,10 @@
 #define SOCKET_CAPABILITIES (fd_BIDIRECTIONAL | fd_CAN_NONBLOCK | fd_CAN_SHUTDOWN)
 
 #ifndef FD_SETSIZE
-#define FD_SETSIZE MAX_OPEN_FILEDESCRIPTORS
+/*
+ * in reality: almost unlimited actually.
+ */
+#define FD_SETSIZE 65536
 #endif
 
 #include <winbase.h>
@@ -203,7 +206,7 @@ PMOD_EXPORT const char *debug_fd_inet_ntop(int af, const void *addr,
 
 struct my_fd_set_s
 {
-  char bits[MAX_OPEN_FILEDESCRIPTORS/8];
+  char bits[FD_SETSIZE/8];
 };
 
 typedef struct my_fd_set_s my_fd_set;
@@ -218,29 +221,29 @@ typedef struct my_fd_set_s my_fd_set;
 #define my_FD_ISSET(FD,S) ((S)->bits[(FD)>>3]&(1<<(FD&7)))
 #define my_FD_ZERO(S) memset(& (S)->bits, 0, sizeof(my_fd_set))
 
-#define fd_copy_my_fd_set_to_fd_set(TO,FROM,max) do {			\
-   int e_,d_,max_=MINIMUM(MAX_OPEN_FILEDESCRIPTORS>>3,(max+7)>>3);	\
-   (TO)->fd_count=0;							\
-   for(e_=0;e_<max_;e_++)						\
-   {									\
-     int b_=(FROM)->bits[e_];						\
-     if(b_)								\
-     {									\
-       for(d_=0;d_<8;d_++)						\
-       {								\
-         if(b_ & (1<<d_))						\
-         {								\
-           int fd_=(e_<<3)+d_;						\
-           fd_check_fd(fd_);						\
-           (TO)->fd_array[(TO)->fd_count++]=(SOCKET)da_handle[fd_];	\
-         }								\
-       }								\
-     }									\
-   }									\
-}while(0)
+#define fd_copy_my_fd_set_to_fd_set(TO,FROM,max) do {                   \
+    int e_,d_,max_=MINIMUM(FD_SETSIZE>>3,(max+7)>>3);                   \
+    (TO)->fd_count=0;							\
+    for(e_=0;e_<max_;e_++)						\
+    {									\
+      int b_=(FROM)->bits[e_];						\
+      if(b_)								\
+      {									\
+        for(d_=0;d_<8;d_++)						\
+        {								\
+          if(b_ & (1<<d_))						\
+          {								\
+            int fd_=(e_<<3)+d_;						\
+            fd_check_fd(fd_);						\
+            (TO)->fd_array[(TO)->fd_count++]=(SOCKET)da_handle[fd_];	\
+          }								\
+        }								\
+      }									\
+    }									\
+  }while(0)
 
-extern HANDLE da_handle[MAX_OPEN_FILEDESCRIPTORS];
-extern int fd_type[MAX_OPEN_FILEDESCRIPTORS];
+extern HANDLE da_handle[FD_SETSIZE];
+extern int fd_type[FD_SETSIZE];
 
 #define fd_FD_CLR(X,Y) FD_CLR((SOCKET)da_handle[X],Y)
 #define fd_FD_SET(X,Y) \

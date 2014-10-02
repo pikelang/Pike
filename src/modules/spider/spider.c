@@ -986,31 +986,6 @@ void do_html_parse_lines(struct pike_string *ss,
   }
 }
 
-/*! @decl array(int) get_all_active_fds()
- */
-void f_get_all_active_fd(INT32 args)
-{
-  int i,fds,ne;
-  PIKE_STAT_T foo;
-
-  ne = MAX_OPEN_FILEDESCRIPTORS;
-
-  pop_n_elems(args);
-  for (i=fds=0; i<ne; i++)
-  {
-    int q;
-    THREADS_ALLOW();
-    q = fd_fstat(i,&foo);
-    THREADS_DISALLOW();
-    if(!q)
-    {
-      push_int(i);
-      fds++;
-    }
-  }
-  f_aggregate(fds);
-}
-
 /*! @decl string fd_info(int fd)
  */
 void f_fd_info(INT32 args)
@@ -1166,10 +1141,6 @@ PIKE_MODULE_INIT
 
   /* function(int,void|int:int) */
   ADD_FUNCTION("stardate", f_stardate, tDeprecated(tFunc(tInt tInt,tInt)), 0);
-
-  /* function(:array(int)) */
-  ADD_FUNCTION("get_all_active_fd", f_get_all_active_fd,
-	       tDeprecated(tFunc(tNone,tArr(tInt))), OPT_EXTERNAL_DEPEND);
 
   /* function(int:string) */
   ADD_FUNCTION("fd_info", f_fd_info, tDeprecated(tFunc(tInt,tStr)),

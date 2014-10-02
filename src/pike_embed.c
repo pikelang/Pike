@@ -306,29 +306,6 @@ void init_pike_runtime(void (*exit_cb)(int))
 #endif /* STACK_DEBUG */
 #endif /* HAVE_GETRLIMIT && RLIMIT_STACK */
 
-#if 0
-#if !defined(RLIMIT_NOFILE) && defined(RLIMIT_OFILE)
-#define RLIMIT_NOFILE RLIMIT_OFILE
-#endif
-
-#if defined(HAVE_SETRLIMIT) && defined(RLIMIT_NOFILE)
-  {
-    struct rlimit lim;
-    long tmp;
-    if(!getrlimit(RLIMIT_NOFILE, &lim))
-    {
-#ifdef RLIM_INFINITY
-      if(lim.rlim_max == RLIM_INFINITY)
-	lim.rlim_max=MAX_OPEN_FILEDESCRIPTORS;
-#endif
-      tmp=MINIMUM(lim.rlim_max, MAX_OPEN_FILEDESCRIPTORS);
-      lim.rlim_cur=tmp;
-      setrlimit(RLIMIT_NOFILE, &lim);
-    }
-  }
-#endif
-#endif
-  
   TRACE((stderr, "Init time...\n"));
   
   UPDATE_CURRENT_TIME();

@@ -2143,27 +2143,6 @@ static HANDLE get_inheritable_handle(struct mapping *optional,
       if(fd == -1)
 	Pike_error("File for %s is not open.\n",name);
 
-#if 0
-      {
-	int q;
-	for(q=0;q<MAX_OPEN_FILEDESCRIPTORS;q++)
-	{
-	  if(fd_type[q]<-1)
-	  {
-	    DWORD flags;
-	    fprintf(stderr,"%3d: %d %08x",q,fd_type[q],da_handle[q],flags);
-	    GetHandleInformation((HANDLE)da_handle[q],&flags);
-	    if(flags & HANDLE_FLAG_INHERIT)
-	      fprintf(stderr," inheritable");
-	    if(flags & HANDLE_FLAG_PROTECT_FROM_CLOSE)
-	      fprintf(stderr," non-closable");
-	    fprintf(stderr,"\n");
-	  }
-	}
-      }
-#endif
-
-
       if(!(fd_query_properties(fd, 0) & fd_INTERPROCESSABLE))
       {
 	void create_proxy_pipe(struct object *o, int for_reading);
