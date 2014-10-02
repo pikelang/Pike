@@ -1,3 +1,9 @@
+/* -*- c -*-
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
 #include "global.h"
 #include "fdlib.h"
 #include "pike_netlib.h"
@@ -1024,13 +1030,11 @@ PIKECLASS Buffer
         ptrdiff_t wr = io_call_write( io, f, rd );
         if( wr <= 0 )
         {
-          io_rewind(io, rd );
           if (!written) written = -1;
           break;
         }
         written += wr;
         if( wr < 4096 ) {
-          io_rewind(io, rd-wr );
           break;
         }
       }
