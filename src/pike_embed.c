@@ -128,18 +128,16 @@ void init_pike(char **argv, const char *file)
   setvbuf(stderr, NULL, _IONBF, 0);
 
   TRACE((stderr, "Init CPU lib...\n"));
-  
   init_pike_cpulib();
 
 #ifdef TRY_USE_MMX
   TRACE((stderr, "Init MMX...\n"));
-  
   try_use_mmx=mmx_ok();
 #endif
+
 #ifdef OWN_GETHRTIME
 /* initialize our own gethrtime conversion /Mirar */
   TRACE((stderr, "Init gethrtime...\n"));
-  
   own_gethrtime_init();
 #endif
 
@@ -147,7 +145,6 @@ void init_pike(char **argv, const char *file)
   master_file = file;
 
   TRACE((stderr, "Main init...\n"));
-  
   fd_init();
   {
     extern void init_node_s_blocks(void);
@@ -187,7 +184,7 @@ void init_pike_runtime(void (*exit_cb)(int))
   pike_exit_cb = exit_cb;
 
   TRACE((stderr, "Init C stack...\n"));
-  
+
   Pike_interpreter.stack_top = (char *)&exit_cb;
 
   /* Adjust for anything already pushed on the stack.
@@ -307,39 +304,30 @@ void init_pike_runtime(void (*exit_cb)(int))
 #endif /* HAVE_GETRLIMIT && RLIMIT_STACK */
 
   TRACE((stderr, "Init time...\n"));
-  
   UPDATE_CURRENT_TIME();
 
   TRACE((stderr, "Init threads...\n"));
-
   low_th_init();
 
   TRACE((stderr, "Init strings...\n"));
-  
   init_shared_string_table();
 
   TRACE((stderr, "Init interpreter...\n"));
-
   init_interpreter();
 
   TRACE((stderr, "Init types...\n"));
-
   init_types();
 
   TRACE((stderr, "Init opcodes...\n"));
-
   init_opcodes();
 
   TRACE((stderr, "Init destruct...\n"));
-
   low_init_object();
 
   TRACE((stderr, "Init programs...\n"));
-
   init_program();
 
   TRACE((stderr, "Init objects...\n"));
-
   init_object();
 
   if(SETJMP(back))
@@ -358,7 +346,6 @@ void init_pike_runtime(void (*exit_cb)(int))
     back.severity=THROW_EXIT;
 
     TRACE((stderr, "Init modules...\n"));
-
     init_modules();
 
 #ifdef TEST_MULTISET
