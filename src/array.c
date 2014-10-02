@@ -460,6 +460,26 @@ void o_append_array(INT32 args)
   if (TYPEOF(*val) == T_ARRAY) {
     struct svalue tmp;
     struct array *v = val->u.array;
+    /* simple case: if refs == 2 and there is space, just add the
+       element and do not do the assign.  This can be done because the
+       lvalue already has the array as it's value.
+    */
+    if( v->refs == 2 )
+    {
+      if( v->real_item+v->malloced_size >= v->item+v->size+args )
+      {
+        struct svalue *from = val+1;
+        int i;
+        for( i = 0; i<args; i++,from++ )
+        {
+          v->item[v->size++] = *from;
+          v->type_field |= 1<<TYPEOF(*from);
+        }
+        Pike_sp -= args;
+        stack_pop_2_elems_keep_top();
+        return;
+      }
+    }
     /* This is so that we can minimize the number of references
      * to the array, and be able to use destructive operations.
      * It's done by freeing the old reference to foo after it has been
