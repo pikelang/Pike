@@ -227,7 +227,7 @@ PMOD_EXPORT int set_close_on_exec(int fd, int which)
 #ifndef HAVE_ACCEPT4
 int accept4(int fd, struct sockaddr *addr, ACCEPT_SIZE_T *addrlen, int flags)
 {
-  int fd = fd_accept(fd, addr, addrlen);
+  fd = fd_accept(fd, addr, addrlen);
   if (!flags || (fd < 0)) return fd;
   if (((flags & SOCK_NONBLOCK) && (set_nonblocking(fd, 1) < 0)) ||
       ((flags & SOCK_CLOEXEC) && (set_close_on_exec(fd, 1) < 0))) {
