@@ -948,10 +948,38 @@ class File
   // writes write more than one byte. Useful to test that the callback
   // stuff really handles packets cut at odd positions.
 
-  int write (string|array(string) s, mixed... args)
+  int write (sprintf_format|array(string) s, sprintf_args... args)
   {
-    if (!(::mode() & PROP_IS_NONBLOCKING))
+    if (!(::mode() & PROP_IS_NONBLOCKING)) {
+      if (outbuffer && sizeof(outbuffer)) {
+	outbuffer->__fd_set_output(0);
+
+	int actual_bytes = outbuffer->output_to(this);
+
+	outbuffer->__fd_set_output(this);
+	if (actual_bytes <= 0) {
+	  if (actual_bytes) _errno = predef::errno();
+	  return actual_bytes;
+	}
+	if (sizeof(outbuffer)) return 0;
+      }
       return ::write (s, @args);
+    }
+
+    if (outbuffer && sizeof(outbuffer)) {
+      outbuffer->__fd_set_output(0);
+
+      string byte = outbuffer->read(1);
+
+      int actual_bytes = ::write(byte);
+      outbuffer->__fd_set_output(this);
+
+      if (actual_bytes <= 0) {
+	outbuffer->unread(sizeof(byte));
+	return actual_bytes;
+      }
+      if (sizeof(outbuffer)) return 0;
+    }
 
     if (arrayp (s)) s *= "";
     if (sizeof (args)) s = sprintf (s, @args);
@@ -966,7 +994,61 @@ class File
     if (sizeof (args)) s = sprintf (s, @args);
     return ::write_oob (s[..0]);
   }
-#endif
+
+#else /* !STDIO_CALLBACK_TEST_MODE */
+
+  int write(sprintf_format|array(string) data_or_format,
+	    sprintf_args ... args)
+  {
+    if (outbuffer) {
+      outbuffer->__fd_set_output(0);
+
+      if (sizeof(outbuffer)) {
+	// The write buffer isn't empty, so try to empty it. */
+	int bytes = outbuffer->output_to( this );
+	if (sizeof(outbuffer) && (bytes > 0)) {
+	  // Not all was written. Probably EWOULDBLOCK.
+	  // We propagate errno below.
+	  bytes = 0;
+	}
+	if (bytes <= 0) {
+	  if (bytes) {
+	    // EWOULDBLOCK or other error.
+	    _errno = predef::errno();
+	  }
+	  outbuffer->__fd_set_output(this);
+	  return 0;
+	}
+      }
+
+      // NB: Invariant: outbuffer is empty here.
+
+      if (sizeof(args)) {
+	if (arrayp(data_or_format)) {
+	  data_or_format = data_or_format * "";
+	}
+	outbuffer->sprintf(data_or_format, args);
+      } else {
+	outbuffer->add(data_or_format);
+      }
+      int bytes = sizeof(outbuffer);
+
+      int actual_bytes = outbuffer->output_to( this );
+      if (actual_bytes <= 0) {
+	// Write failure. Unwrite the outbuffer.
+	_errno = predef::errno();
+	outbuffer->clear();
+	return actual_bytes;
+      }
+
+      outbuffer->__fd_set_output(this);
+
+      return bytes;
+    }
+    return ::write(data_or_format, @args);
+  }
+
+#endif /* !STDIO_CALLBACK_TEST_MODE */
 
   __deprecated__ this_program set_peek_file_before_read_callback(int(0..1) ignored)
   {
