@@ -5,11 +5,11 @@
 */
 
 #define PIKE_MAJOR_VERSION 8
-#define PIKE_MINOR_VERSION 0
-#define PIKE_BUILD_VERSION 5
+#define PIKE_MINOR_VERSION 1
+#define PIKE_BUILD_VERSION 0
 
 #define LOWEST_COMPAT_MAJOR 7
-#define LOWEST_COMPAT_MINOR 6
+#define LOWEST_COMPAT_MINOR 8
 
 /* Prototypes begin here */
 PMOD_EXPORT void f_version(INT32 args);
