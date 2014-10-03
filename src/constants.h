@@ -18,7 +18,7 @@ typedef node *(*optimize_fun)(node *n);
 
 struct callable
 {
-  PIKE_MEMORY_OBJECT_MEMBERS;
+  INT32 refs;
   c_fun function;
   struct pike_type *type;
   struct pike_string *name;

@@ -2947,9 +2947,6 @@ static void decode_value2(struct decode_data *data)
 	    if (f >= 0) {
 	      struct svalue func;
 	      low_object_index_no_free(&func, Pike_sp[-2].u.object, f);
-#ifdef PIKE_SECURITY
-	      /* FIXME: Check access to the function. */
-#endif
 	      debug_malloc_touch(p);
 	      pop_n_elems(2);
 	      *Pike_sp++ = func;

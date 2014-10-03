@@ -22,7 +22,6 @@
 #include "cpp.h"
 #include "builtin_functions.h"
 #include "cyclic.h"
-#include "pike_security.h"
 #include "module_support.h"
 #include "fdlib.h"
 #include "mapping.h"
@@ -170,7 +169,7 @@ PMOD_EXPORT struct object *low_clone(struct program *p)
 
   DOUBLELINK(first_object,o);
 
-  INIT_PIKE_MEMOBJ(o, T_OBJECT);
+  o->refs=1;
 
 #ifdef PIKE_DEBUG
   o->program_id=p->id;
@@ -1133,8 +1132,6 @@ PMOD_EXPORT void schedule_really_free_object(struct object *o)
     if (o->next != o)
       /* As far as the gc is concerned, the fake objects doesn't exist. */
       GC_FREE(o);
-
-    EXIT_PIKE_MEMOBJ(o);
 
     if(o->storage)
     {

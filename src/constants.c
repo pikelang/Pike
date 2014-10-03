@@ -14,7 +14,6 @@
 #include "interpret.h"
 #include "mapping.h"
 #include "pike_error.h"
-#include "pike_security.h"
 #include "gc.h"
 #include "block_allocator.h"
 
@@ -78,7 +77,6 @@ void really_free_callable(struct callable * c) {
     free_type(c->type);
     free_string(c->name);
     c->name=0;
-    EXIT_PIKE_MEMOBJ(c);
     ba_free(&callable_allocator, c);
 }
 
@@ -103,7 +101,7 @@ PMOD_EXPORT struct callable *low_make_callable(c_fun fun,
 #ifdef PIKE_DEBUG
   DOUBLELINK(first_callable, f);
 #endif
-  INIT_PIKE_MEMOBJ(f, T_STRUCT_CALLABLE);
+  f->refs=1;
   f->function=fun;
   f->name=name;
   f->type=type;

@@ -25,7 +25,7 @@ struct keypair
 
 struct mapping_data
 {
-  PIKE_MEMORY_OBJECT_MEMBERS;
+  INT32 refs;
   INT32 valrefs; /* lock values too */
   INT32 hardlinks;
   INT32 size, hashsize;
@@ -42,7 +42,7 @@ struct mapping_data
 
 struct mapping
 {
-  PIKE_MEMORY_OBJECT_MEMBERS;
+  INT32 refs;
 #ifdef MAPPING_SIZE_DEBUG
   INT32 debug_size;
 #endif

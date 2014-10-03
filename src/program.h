@@ -606,7 +606,7 @@ struct identifier_lookup_cache
 
 struct program
 {
-  PIKE_MEMORY_OBJECT_MEMBERS; /* Must be first */
+  INT32 refs; /* Must be first */
 
   INT32 id;             /* used to identify program in caches */
   /* storage_needed - storage needed in object struct

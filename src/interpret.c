@@ -27,7 +27,6 @@
 #include "threads.h"
 #include "callback.h"
 #include "fd_control.h"
-#include "pike_security.h"
 #include "bignum.h"
 #include "pike_types.h"
 #include "pikecode.h"
@@ -360,11 +359,6 @@ PMOD_EXPORT void init_interpreter(void)
 
 void lvalue_to_svalue_no_free(struct svalue *to,struct svalue *lval)
 {
-#ifdef PIKE_SECURITY
-  if(TYPEOF(*lval) <= MAX_COMPLEX)
-    if(!CHECK_DATA_SECURITY(lval->u.array, SECURITY_BIT_INDEX))
-      Pike_error("Index permission denied.\n");
-#endif
   switch(TYPEOF(*lval))
   {
    case T_ARRAY_LVALUE:
@@ -425,12 +419,6 @@ void lvalue_to_svalue_no_free(struct svalue *to,struct svalue *lval)
 
 PMOD_EXPORT void assign_lvalue(struct svalue *lval,struct svalue *from)
 {
-#ifdef PIKE_SECURITY
-  if(TYPEOF(*lval) <= MAX_COMPLEX)
-    if(!CHECK_DATA_SECURITY(lval->u.array, SECURITY_BIT_SET_INDEX))
-      Pike_error("Assign index permission denied.\n");
-#endif
-
   switch(TYPEOF(*lval))
   {
     case T_ARRAY_LVALUE:
@@ -495,12 +483,6 @@ static void o_assign_lvalue(struct svalue *lvalue)
 
 union anything *get_pointer_if_this_type(struct svalue *lval, TYPE_T t)
 {
-#ifdef PIKE_SECURITY
-  if(TYPEOF(*lval) <= MAX_COMPLEX)
-    if(!CHECK_DATA_SECURITY(lval->u.array, SECURITY_BIT_SET_INDEX))
-      Pike_error("Assign index permission denied.\n");
-#endif
-
   switch(TYPEOF(*lval))
   {
     case T_ARRAY_LVALUE:
@@ -1944,7 +1926,6 @@ PMOD_EXPORT void really_free_pike_frame( struct pike_frame *X )
         free_program(X->current_program);
     if(X->scope)
         free_pike_scope(X->scope);
-    DO_IF_SECURITY( if(X->current_creds) free_object(X->current_creds) );
     DO_IF_DEBUG(
         if(X->flags & PIKE_FRAME_MALLOCED_LOCALS)
             Pike_fatal("Pike frame is not supposed to have malloced locals here!\n"));
@@ -1956,7 +1937,6 @@ PMOD_EXPORT void really_free_pike_frame( struct pike_frame *X )
     X->flags=0;
     X->expendible=0;
     X->locals=0;
-    DO_IF_SECURITY( X->current_creds=0; )
   );
   X->next = free_pike_frame;
   PIKE_MEMPOOL_FREE(&free_pike_frame, X, sizeof(struct pike_frame));
@@ -1978,13 +1958,6 @@ struct pike_frame *alloc_pike_frame(void)
       res->flags=0;
       res->next=0;
       res->scope=0;
-
-      DO_IF_SECURITY(
-        if(CURRENT_CREDS) {
-          add_ref(res->current_creds=CURRENT_CREDS);
-        } else {
-          res->current_creds = 0;
-        });
 
       return res;
     }

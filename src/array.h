@@ -22,12 +22,12 @@
  */
 struct array
 {
-  PIKE_MEMORY_OBJECT_MEMBERS;
+  INT32 refs;
+  INT32 size;		/**< number of svalues in this array */
 
   struct array *next;	/**< we need to keep track of all arrays */
   struct array *prev;	/**< Another pointer, so we don't have to search
 			 * when freeing arrays */
-  INT32 size;		/**< number of svalues in this array */
   INT32 malloced_size;	/**< number of svalues that can fit in this array */
   TYPE_FIELD type_field;/**< A bitfield with one bit for each type of
 			  * data in this array.

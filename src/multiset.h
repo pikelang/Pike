@@ -63,7 +63,7 @@ struct multiset_data
 
 struct multiset
 {
-  PIKE_MEMORY_OBJECT_MEMBERS;
+  INT32 refs;
   struct multiset_data *msd;
   struct multiset *next, *prev;
   INT32 node_refs;

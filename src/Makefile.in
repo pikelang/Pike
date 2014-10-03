@@ -134,7 +134,6 @@ MAKE_FLAGS=
 #
 CORE_OBJ= \
  language.o \
- security.o \
  bignum.o \
  pike_cpulib.o \
  interpret.o \

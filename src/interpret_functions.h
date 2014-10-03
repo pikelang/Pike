@@ -2808,10 +2808,6 @@ OPCODE1(F_LTOSVAL_CALL_BUILTIN_AND_ASSIGN_POP,
   register struct pike_frame *new_frame;				   \
   INT32 args = DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp));		   \
 									   \
-  DO_IF_SECURITY(CHECK_DATA_SECURITY_OR_ERROR(Pike_fp->current_object,	   \
-					      SECURITY_BIT_CALL,	   \
-				("Function call permission denied.\n")));  \
-									   \
   FAST_CHECK_THREADS_ON_CALL();						   \
   check_stack(256);							   \
 									   \
@@ -2857,11 +2853,6 @@ OPCODE1(F_LTOSVAL_CALL_BUILTIN_AND_ASSIGN_POP,
   Pike_fp=new_frame;							   \
   new_frame->flags=PIKE_FRAME_RETURN_INTERNAL | XFLAGS;			   \
 									   \
-  DO_IF_SECURITY(if(!CHECK_DATA_SECURITY(Pike_fp->current_object,	   \
-					 SECURITY_BIT_NOT_SETUID))	   \
-		   SET_CURRENT_CREDS(Pike_fp->current_object->prot));	   \
-									   \
-									\
   if (UNLIKELY(Pike_interpreter.trace_level > 3)) {                     \
     fprintf(stderr, "-    Addr = 0x%lx\n", (unsigned long) addr);	\
   }									\

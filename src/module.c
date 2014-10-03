@@ -17,7 +17,6 @@
 #include "mapping.h"
 #include "program_id.h"
 #include "lex.h"
-#include "pike_security.h"
 #include "cpp.h"
 #include "backend.h"
 #include "threads.h"
@@ -86,10 +85,6 @@ static void init_builtin_modules(void)
 
   init_error();
 
-  TRACE((stderr, "Init security system...\n"));
-
-  init_pike_security();
-
   TRACE((stderr, "Init threads...\n"));
 
   th_init();
@@ -155,7 +150,6 @@ static void exit_builtin_modules(void)
 #endif
   free_all_pike_list_node_blocks();
 
-  exit_pike_security();
   free_svalue(& throw_value);
   mark_free_svalue (&throw_value);
 

@@ -19,7 +19,6 @@
 #include "backend.h"
 #include "operators.h"
 #include "builtin_functions.h"
-#include "pike_security.h"
 #include "bignum.h"
 
 #include "file_machine.h"
@@ -409,8 +408,6 @@ void f_file_stat(INT32 args)
   int i, l;
   struct pike_string *str;
   
-  VALID_FILE_IO("file_stat","read");
-
   if(args<1)
     SIMPLE_TOO_FEW_ARGS_ERROR("file_stat", 1);
   if((TYPEOF(sp[-args]) != T_STRING) || sp[-args].u.string->size_shift)
@@ -463,8 +460,6 @@ void f_file_truncate(INT32 args)
 #endif
   struct pike_string *str;
   int res;
-
-  VALID_FILE_IO("file_truncate","write");
 
   if(args < 2)
     SIMPLE_TOO_FEW_ARGS_ERROR("file_truncate", 2);
@@ -596,8 +591,6 @@ void f_filesystem_stat( INT32 args )
   char *p = _p;
   unsigned int free_sectors;
   unsigned int total_sectors;
-
-  VALID_FILE_IO("filesystem_stat","read");
 
   get_all_args( "filesystem_stat", args, "%s", &path );
 
@@ -832,8 +825,6 @@ void f_rm(INT32 args)
 
   destruct_objects_to_destruct();
 
-  VALID_FILE_IO("rm","write");
-
   if(!args)
     SIMPLE_TOO_FEW_ARGS_ERROR("rm", 1);
 
@@ -916,8 +907,6 @@ void f_mkdir(INT32 args)
   int mode;
   int i;
   char *s, *s_dup;
-  
-  VALID_FILE_IO("mkdir","write");
 
   if(!args)
     SIMPLE_TOO_FEW_ARGS_ERROR("mkdir", 1);
@@ -1066,8 +1055,6 @@ void f_get_dir(INT32 args)
   WIN32_FIND_DATAW d;
   struct string_builder sb;
   struct pike_string *str=0;
-
-  VALID_FILE_IO("get_dir","read");
 
   get_all_args("get_dir",args,".%T",&str);
 
@@ -1353,8 +1340,6 @@ void f_get_dir(INT32 args)
 #endif
   struct pike_string *str=0;
 
-  VALID_FILE_IO("get_dir","read");
-
   get_all_args("get_dir",args,".%N",&str);
 
   if(!str) {
@@ -1418,8 +1403,6 @@ void f_cd(INT32 args)
 {
   INT32 i;
   struct pike_string *str;
-
-  VALID_FILE_IO("cd","status");
 
   if(!args)
     SIMPLE_TOO_FEW_ARGS_ERROR("cd", 1);
@@ -1524,12 +1507,6 @@ void f_exece(INT32 args)
 
   if(args < 2)
     SIMPLE_TOO_FEW_ARGS_ERROR("exece", 2);
-
-#ifdef PIKE_SECURITY
-  if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
-    Pike_error("exece: permission denied.\n");
-#endif
-
 
   e=0;
   en=0;
@@ -1651,8 +1628,6 @@ void f_mv(INT32 args)
   int err;
   PIKE_STAT_T st;
 #endif
-
-  VALID_FILE_IO("mv","write");
 
   if(args<2)
     SIMPLE_TOO_FEW_ARGS_ERROR("mv", 2);

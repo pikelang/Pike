@@ -27,7 +27,6 @@
 #include "threads.h"
 #include "module_support.h"
 #include "builtin_functions.h"
-#include "pike_security.h"
 
 #ifdef HAVE_SYSLOG_H
 #include <syslog.h>
@@ -184,8 +183,6 @@ void f_openlog(INT32 args)
   INT_TYPE p_option, p_facility;
   INT_TYPE option=0, facility=0;
 
-  ASSERT_SECURITY_ROOT("System.openlog");
-
   get_all_args("openlog", args, "%s%i%i", &ident, &p_option, &p_facility);
 
   if(p_option & (1<<0)) option |= LOG_CONS;
@@ -259,14 +256,8 @@ void f_syslog(INT32 args)
   struct pike_string *s;
   INT_TYPE pri=0, i;
 
-#ifdef PIKE_SECURITY
-  int errno;
-#define EPERM 0
-#endif
-  VALID_FILE_IO("System.syslog","write");
-
   get_all_args("syslog", args, "%i%S", &i, &s);
- 
+
   if(i & (1<<0)) pri |= LOG_EMERG;
   if(i & (1<<1)) pri |= LOG_ALERT;
   if(i & (1<<2)) pri |= LOG_CRIT;
@@ -306,7 +297,6 @@ void f_syslog(INT32 args)
  */
 void f_closelog(INT32 args)
 {
-  ASSERT_SECURITY_ROOT("System.closelog");
   closelog();
   pop_n_elems(args);
 }

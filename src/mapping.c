@@ -19,7 +19,6 @@
 #include "las.h"
 #include "gc.h"
 #include "stralloc.h"
-#include "pike_security.h"
 #include "block_allocator.h"
 #include "opcodes.h"
 #include "stuff.h"
@@ -62,7 +61,6 @@ void really_free_mapping(struct mapping * m) {
     Pike_fatal("really free mapping on mapping with %d refs.\n", m->refs);
   }
 #endif
-  FREE_PROT(m);
   unlink_mapping_data(m->data);
   DOUBLEUNLINK(first_mapping, m);
   GC_FREE(m);
@@ -163,16 +161,16 @@ static void check_mapping_type_fields(const struct mapping *m)
 #endif
 
 static struct mapping_data empty_data =
-  { PIKE_CONSTANT_MEMOBJ_INIT(1, T_MAPPING_DATA), 1, 0,0,0,0,0,0, 0,
+  { 1, 1, 0,0,0,0,0,0, 0,
     IF_ELSE_KEYPAIR_LOOP((struct keypair *)&empty_data.hash, 0), {0}};
 static struct mapping_data weak_ind_empty_data =
-  { PIKE_CONSTANT_MEMOBJ_INIT(1, T_MAPPING_DATA), 1, 0,0,0,0,0,0, MAPPING_WEAK_INDICES,
+  { 1, 1, 0,0,0,0,0,0, MAPPING_WEAK_INDICES,
     IF_ELSE_KEYPAIR_LOOP((struct keypair *)&weak_ind_empty_data.hash, 0), {0}};
 static struct mapping_data weak_val_empty_data =
-  { PIKE_CONSTANT_MEMOBJ_INIT(1, T_MAPPING_DATA), 1, 0,0,0,0,0,0, MAPPING_WEAK_VALUES,
+  { 1, 1, 0,0,0,0,0,0, MAPPING_WEAK_VALUES,
     IF_ELSE_KEYPAIR_LOOP((struct keypair *)&weak_val_empty_data.hash, 0), {0}};
 static struct mapping_data weak_both_empty_data =
-  { PIKE_CONSTANT_MEMOBJ_INIT(1, T_MAPPING_DATA), 1, 0,0,0,0,0,0, MAPPING_WEAK,
+  { 1, 1, 0,0,0,0,0,0, MAPPING_WEAK,
     IF_ELSE_KEYPAIR_LOOP((struct keypair *)&weak_both_empty_data.hash, 0), {0}};
 
 /** This function allocates the hash table and svalue space for a mapping
@@ -257,7 +255,6 @@ PMOD_EXPORT struct mapping *debug_allocate_mapping(int size)
 
   GC_ALLOC(m);
 
-  INITIALIZE_PROT(m);
   init_mapping(m,size,0);
 
   m->refs = 0;

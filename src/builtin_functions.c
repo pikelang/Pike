@@ -36,7 +36,6 @@
 #include "opcodes.h"
 #include "cyclic.h"
 #include "signal_handler.h"
-#include "pike_security.h"
 #include "builtin_functions.h"
 #include "bignum.h"
 #include "peep.h"
@@ -1516,8 +1515,6 @@ PMOD_EXPORT void f_has_value(INT32 args)
  */
 PMOD_EXPORT void f_add_constant(INT32 args)
 {
-  ASSERT_SECURITY_ROOT("add_constant");
-
   if(args<1)
     SIMPLE_TOO_FEW_ARGS_ERROR("add_constant", 1);
 
@@ -3013,8 +3010,6 @@ int in_forked_child = 0;
 PMOD_EXPORT void f_exit(INT32 args)
 {
   static int in_exit=0;
-  ASSERT_SECURITY_ROOT("exit");
-
   if(args < 1)
     SIMPLE_TOO_FEW_ARGS_ERROR("exit", 1);
 
@@ -3062,8 +3057,6 @@ PMOD_EXPORT void f_exit(INT32 args)
 void f__exit(INT32 args)
 {
   int code;
-  ASSERT_SECURITY_ROOT("_exit");
-
   get_all_args("_exit", args, "%d", &code);
 
 #ifdef PIKE_DEBUG
@@ -3247,10 +3240,6 @@ PMOD_EXPORT void f_destruct(INT32 args)
   if (o->prog && o->prog->flags & PROGRAM_NO_EXPLICIT_DESTRUCT)
     PIKE_ERROR("destruct", "Object can't be destructed explicitly.\n",
 	       Pike_sp, args);
-#ifdef PIKE_SECURITY
-  if(!CHECK_DATA_SECURITY(o, SECURITY_BIT_DESTRUCT))
-    Pike_error("Destruct permission denied.\n");
-#endif
   debug_malloc_touch(o);
   destruct_object (o, DESTRUCT_EXPLICIT);
   pop_n_elems(args);
@@ -3748,8 +3737,6 @@ PMOD_EXPORT void f_types(INT32 args)
 PMOD_EXPORT void f_next_object(INT32 args)
 {
   struct object *o;
-
-  ASSERT_SECURITY_ROOT("next_object");
 
   if(args < 1)
   {
@@ -5327,7 +5314,6 @@ static void f_map_all_objects( INT32 UNUSED(args) )
 {
     struct object *o = first_object;
     INT32 total = 0;
-    ASSERT_SECURITY_ROOT("_map_all_objects");
     while( o )
     {
         struct object *next = o->next;
@@ -5360,8 +5346,6 @@ static void f_map_all_objects( INT32 UNUSED(args) )
 PMOD_EXPORT void f__verify_internals(INT32 args)
 {
   INT32 tmp=d_flag;
-  ASSERT_SECURITY_ROOT("_verify_internals");
-
   /* Keep below calls to low_thorough_check_short_svalue, or else we
    * get O(n!) or so, where n is the number of allocated things. */
   d_flag = 49;
@@ -5393,8 +5377,6 @@ PMOD_EXPORT void f__debug(INT32 args)
 {
   INT_TYPE d;
 
-  ASSERT_SECURITY_ROOT("_debug");
-
   get_all_args("_debug", args, "%+", &d);
   pop_n_elems(args);
   push_int(d_flag);
@@ -5416,9 +5398,6 @@ PMOD_EXPORT void f__debug(INT32 args)
 PMOD_EXPORT void f__optimizer_debug(INT32 args)
 {
   INT_TYPE l;
-
-  ASSERT_SECURITY_ROOT("_optimizer_debug");
-
   get_all_args("_optimizer_debug", args, "%+", &l);
   pop_n_elems(args);
   push_int(l_flag);
@@ -5441,9 +5420,6 @@ PMOD_EXPORT void f__optimizer_debug(INT32 args)
 PMOD_EXPORT void f__assembler_debug(INT32 args)
 {
   INT_TYPE l;
-
-  ASSERT_SECURITY_ROOT("_assembler_debug");
-
   get_all_args("_assembler_debug", args, "%+", &l);
   pop_n_elems(args);
   push_int(a_flag);
@@ -5468,8 +5444,6 @@ void f__dump_program_tables(INT32 args)
 {
   struct program *p;
   INT_TYPE indent = 0;
-
-  ASSERT_SECURITY_ROOT("_dump_program_tables");	/* FIXME: Might want lower. */
   get_all_args("_dump_program_tables", args, "%p.%+", &p, &indent);
 
   dump_program_tables(p, indent);
@@ -5494,8 +5468,6 @@ PMOD_EXPORT void f__compiler_trace(INT32 args)
 {
   extern int yydebug;
   INT_TYPE yyd;
-  ASSERT_SECURITY_ROOT("_compiler_trace");
-
   get_all_args("_compiler_trace", args, "%i", &yyd);
   pop_n_elems(args);
   push_int(yydebug);
@@ -7727,11 +7699,9 @@ PMOD_EXPORT void f__next(INT32 args)
 {
   struct svalue tmp;
 
-  ASSERT_SECURITY_ROOT("_next");
-
   if(!args)
     SIMPLE_TOO_FEW_ARGS_ERROR("_next", 1);
-  
+
   pop_n_elems(args-1);
   args = 1;
   tmp=Pike_sp[-1];
@@ -7775,11 +7745,9 @@ PMOD_EXPORT void f__prev(INT32 args)
 {
   struct svalue tmp;
 
-  ASSERT_SECURITY_ROOT("_prev");
-
   if(!args)
     SIMPLE_TOO_FEW_ARGS_ERROR("_prev", 1);
-  
+
   pop_n_elems(args-1);
   args = 1;
   tmp=Pike_sp[-1];
@@ -7893,7 +7861,6 @@ PMOD_EXPORT void f__typeof(INT32 args)
 PMOD_EXPORT void f_replace_master(INT32 args)
 {
   struct object *new_master;
-  ASSERT_SECURITY_ROOT("replace_master");
 
   if(!args)
     SIMPLE_TOO_FEW_ARGS_ERROR("replace_master", 1);
@@ -8414,7 +8381,6 @@ PMOD_EXPORT void f_transpose(INT32 args)
  */
 PMOD_EXPORT void f__reset_dmalloc(INT32 args)
 {
-  ASSERT_SECURITY_ROOT("_reset_dmalloc");
   pop_n_elems(args);
   reset_debug_malloc();
 }
@@ -8464,7 +8430,6 @@ PMOD_EXPORT void f__list_open_fds(INT32 args)
  */
 PMOD_EXPORT void f__dump_dmalloc_locations(INT32 args)
 {
-  ASSERT_SECURITY_ROOT("_dump_dmalloc_locations");
   if(args)
     debug_malloc_dump_references (Pike_sp[-args].u.refs, 2, 1, 0);
   pop_n_elems(args-1);
@@ -8488,7 +8453,6 @@ PMOD_EXPORT void f__dump_dmalloc_locations(INT32 args)
  */
 PMOD_EXPORT void f__locate_references(INT32 args)
 {
-  ASSERT_SECURITY_ROOT("_locate_references");
   if(args)
     locate_references(Pike_sp[-args].u.refs);
   pop_n_elems(args-1);
@@ -8508,7 +8472,6 @@ PMOD_EXPORT void f__locate_references(INT32 args)
 PMOD_EXPORT void f__describe(INT32 args)
 {
   struct svalue *s;
-  ASSERT_SECURITY_ROOT("_describe");
   get_all_args("_describe", args, "%*", &s);
   debug_describe_svalue(debug_malloc_pass(s));
   pop_n_elems(args-1);
@@ -8527,8 +8490,6 @@ PMOD_EXPORT void f__describe(INT32 args)
  */
 PMOD_EXPORT void f__gc_set_watch(INT32 args)
 {
-  ASSERT_SECURITY_ROOT("_gc_set_watch");
-
   if (args < 1)
     SIMPLE_TOO_FEW_ARGS_ERROR("_gc_set_watch", 1);
   if (!REFCOUNTED_TYPE(TYPEOF(Pike_sp[-args])))
@@ -8551,7 +8512,6 @@ PMOD_EXPORT void f__gc_set_watch(INT32 args)
  */
 PMOD_EXPORT void f__dump_backlog(INT32 args)
 {
-  ASSERT_SECURITY_ROOT("_dump_backlog");
   pop_n_elems(args);
   dump_backlog();
 }

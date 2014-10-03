@@ -28,7 +28,6 @@
 #include "stuff.h"
 #include "mapping.h"
 #include "cyclic.h"
-#include "pike_security.h"
 #include "pike_types.h"
 #include "opcodes.h"
 #include "version.h"
@@ -2866,7 +2865,7 @@ struct program *low_allocate_program(void)
 
   GC_ALLOC(p);
   p->id=++current_program_id;
-  INIT_PIKE_MEMOBJ(p, T_PROGRAM);
+  p->refs=1;
 
   DOUBLELINK(first_program, p);
   ACCURATE_GETTIMEOFDAY(& p->timestamp);
@@ -2989,10 +2988,6 @@ void low_start_new_program(struct program *p,
 
 #ifdef PIKE_DEBUG
   Pike_compiler->fake_object->program_id=p->id;
-#endif
-
-#ifdef PIKE_SECURITY
-  Pike_compiler->fake_object->prot=0;
 #endif
 
   debug_malloc_touch(Pike_compiler->fake_object);
@@ -3299,8 +3294,6 @@ static void exit_program_struct(struct program *p)
     }
 #include "program_areas.h"
   }
-
-  EXIT_PIKE_MEMOBJ(p);
 
   GC_FREE(p);
 }

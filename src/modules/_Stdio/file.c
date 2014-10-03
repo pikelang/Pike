@@ -19,7 +19,6 @@
 #include "fd_control.h"
 #include "module_support.h"
 #include "operators.h"
-#include "pike_security.h"
 #include "bignum.h"
 #include "builtin_functions.h"
 #include "gc.h"
@@ -2727,63 +2726,6 @@ static void file_open(INT32 args)
        return;
      }
 
-#ifdef PIKE_SECURITY
-     if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
-     {
-	if(!CHECK_SECURITY(SECURITY_BIT_CONDITIONAL_IO))
-	   Pike_error("Permission denied.\n");
-
-	if(flags & (FILE_APPEND | FILE_TRUNC | FILE_CREATE | FILE_WRITE))
-	{
-	   push_text("write");
-	}else{
-	   push_text("read");
-	}
-
-	ref_push_object(Pike_fp->current_object);
-	ref_push_string(str);
-	ref_push_string(flag_str);
-	push_int(access);
-
-	safe_apply(OBJ2CREDS(CURRENT_CREDS)->user,"valid_open",5);
-	switch(TYPEOF(Pike_sp[-1]))
-	{
-	   case PIKE_T_INT:
-	      switch(Pike_sp[-1].u.integer)
-	      {
-		 case 0: /* return 0 */
-		    ERRNO=errno=EPERM;
-		    pop_n_elems(args+1);
-		    push_int(0);
-		    return;
-
-		 case 1: /* return 1 */
-		    pop_n_elems(args+1);
-		    push_int(1);
-		    return;
-
-		 case 2: /* ok */
-		    pop_stack();
-		    break;
-
-		 case 3: /* permission denied */
-		    Pike_error("Stdio.file->open: permission denied.\n");
-
-		 default:
-		    Pike_error("Error in user->valid_open, wrong return value.\n");
-	      }
-	      break;
-
-	   default:
-	      Pike_error("Error in user->valid_open, wrong return type.\n");
-
-	   case PIKE_T_STRING:
-	      str=Pike_sp[-1].u.string;
-	      args++;
-	}
-     }
-#endif
-
      if(!( flags &  (FILE_READ | FILE_WRITE)))
 	Pike_error("Must open file for at least one of read and write.\n");
 
@@ -2815,15 +2757,6 @@ static void file_open(INT32 args)
   }
   else
   {
-#ifdef PIKE_SECURITY
-     if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
-     {
-	if(!CHECK_SECURITY(SECURITY_BIT_CONDITIONAL_IO))
-	   Pike_error("Permission denied.\n");
-	Pike_error("Permission denied.\n");
-	/* FIXME!! Insert better security here */
-     }
-#endif
      fd=Pike_sp[-args].u.integer;
      if (fd<0)
 	Pike_error("Not a valid FD.\n");
@@ -2874,66 +2807,6 @@ static void file_openat(INT32 args)
     push_int(0);
     return;
   }
-
-#ifdef PIKE_SECURITY
-  if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
-  {
-    if(!CHECK_SECURITY(SECURITY_BIT_CONDITIONAL_IO))
-      Pike_error("Permission denied.\n");
-
-    if(flags & (FILE_APPEND | FILE_TRUNC | FILE_CREATE | FILE_WRITE))
-    {
-      push_text("write");
-    }else{
-      push_text("read");
-    }
-
-    ref_push_object(Pike_fp->current_object);
-    ref_push_string(str);
-    ref_push_string(flag_str);
-    push_int(access);
-
-    safe_apply(OBJ2CREDS(CURRENT_CREDS)->user,"valid_openat",5);
-    switch(TYPEOF(Pike_sp[-1]))
-    {
-    case PIKE_T_INT:
-      switch(Pike_sp[-1].u.integer)
-      {
-      case 0: /* return 0 */
-	ERRNO=errno=EPERM;
-	pop_n_elems(args+1);
-	push_int(0);
-	return;
-
-#if 0
-      case 1: /* return 1 */
-	pop_n_elems(args+1);
-	push_int(1);
-	return;
-#endif
-
-      case 2: /* ok */
-	pop_stack();
-	break;
-
-      case 3: /* permission denied */
-	Pike_error("Stdio.file->openat: permission denied.\n");
-
-      default:
-	Pike_error("Error in user->valid_openat, wrong return value.\n");
-      }
-      break;
-
-    default:
-      Pike_error("Error in user->valid_openat, wrong return type.\n");
-
-    case PIKE_T_STRING:
-      /* Alternate path. */
-      str=Pike_sp[-1].u.string;
-      args++;
-    }
-  }
-#endif
 
   if(!(flags & (FILE_READ | FILE_WRITE)))
     Pike_error("Must open file for at least one of read and write.\n");
@@ -3458,8 +3331,6 @@ static void file_unlinkat(INT32 args)
   INT32 i;
 
   destruct_objects_to_destruct();
-
-  VALID_FILE_IO("rm","write");
 
   if((dir_fd = FD) < 0)
     Pike_error("File not open.\n");

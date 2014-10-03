@@ -21,7 +21,6 @@
 #include "module_support.h"
 #include "operators.h"
 #include "builtin_functions.h"
-#include "pike_security.h"
 #include "main.h"
 #include "time_stuff.h"
 #include <signal.h>
@@ -928,8 +927,6 @@ static void f_signal(int args)
 {
   int signum;
   sigfunctype func;
-
-  ASSERT_SECURITY_ROOT("signal");
 
   PROC_FPRINTF((stderr, "[%d] f_signal(%d)\n", getpid(), args));
 
@@ -1843,8 +1840,6 @@ static void f_pid_status_set_priority(INT32 args)
 {
   char *to;
   int r;
-  ASSERT_SECURITY_ROOT("Process->set_priority");
-
   get_all_args("set_priority", args, "%s", &to);
   r = set_priority( THIS->pid, to );
   pop_n_elems(args);
@@ -1918,8 +1913,6 @@ static void exit_trace_process(struct object *UNUSED(o))
 static void f_trace_process_cont(INT32 args)
 {
   int cont_signal = 0;
-  ASSERT_SECURITY_ROOT("TraceProcess->cont");
-
   if(THIS->pid == -1)
     Pike_error("This process object has no process associated with it.\n");
 
@@ -1976,8 +1969,6 @@ static void f_trace_process_cont(INT32 args)
  */
 static void f_trace_process_exit(INT32 args)
 {
-  ASSERT_SECURITY_ROOT("TraceProcess->exit");
-
   if(THIS->pid == -1)
     Pike_error("This process object has no process associated with it.\n");
 
@@ -2019,8 +2010,6 @@ static void f_proc_reg_index(INT32 args)
   struct pid_status *proc = THIS_PROC_REG_PROC_ID;
   INT_TYPE regno = 0;
   long val;
-
-  ASSERT_SECURITY_ROOT("Registers->`[]()");
 
   if(proc->pid == -1)
     Pike_error("This process object has no process associated with it.\n");
@@ -2466,8 +2455,6 @@ void f_set_priority( INT32 args )
 {
   INT_TYPE pid = 0;
   char *plevel;
-  ASSERT_SECURITY_ROOT("set_priority");
-
   get_all_args("set_priority", args, "%s.%+", &plevel, &pid);
   pid = set_priority( pid, plevel );
   pop_n_elems(args);
@@ -2775,8 +2762,6 @@ void f_create_process(INT32 args)
   struct mapping *optional=0;
   struct svalue *tmp;
   int e;
-
-  ASSERT_SECURITY_ROOT("Process->create");
 
   check_all_args("create_process",args, BIT_ARRAY, BIT_MAPPING | BIT_VOID, 0);
 
@@ -4258,8 +4243,6 @@ void Pike_f_fork(INT32 args)
   if(num_threads >1)
     Pike_error("You cannot use fork in a multithreaded application.\n");
 #endif
-  ASSERT_SECURITY_ROOT("fork");
-
   th_atfork_prepare();
 /*   THREADS_ALLOW_UID(); */
 #if defined(HAVE_FORK1) && defined(_REENTRANT)
@@ -4457,8 +4440,6 @@ static void f_kill(INT32 args)
   int pid = 0;
   int res, save_errno;
 
-  ASSERT_SECURITY_ROOT("kill");
-
   if(args < 2)
     SIMPLE_TOO_FEW_ARGS_ERROR("kill", 2);
 
@@ -4524,8 +4505,6 @@ static void f_pid_status_kill(INT32 args)
   INT_TYPE signum;
   int res, save_errno;
 
-  ASSERT_SECURITY_ROOT("Process->kill");
-
   get_all_args("kill", args, "%+", &signum);
 
   PROC_FPRINTF((stderr, "[%d] kill: pid=%d, signum=%d\n",
@@ -4555,8 +4534,6 @@ static void f_kill(INT32 args)
 {
   HANDLE proc = DO_NOT_WARN(INVALID_HANDLE_VALUE);
   HANDLE tofree = DO_NOT_WARN(INVALID_HANDLE_VALUE);
-
-  ASSERT_SECURITY_ROOT("kill");
 
   if(args < 2)
     SIMPLE_TOO_FEW_ARGS_ERROR("kill", 2);
@@ -4625,8 +4602,6 @@ static void f_pid_status_kill(INT32 args)
 {
   INT_TYPE signum;
 
-  ASSERT_SECURITY_ROOT("Process->kill");
-
   get_all_args("kill", args, "%i", &signum);
 
   pop_n_elems(args);
@@ -4682,8 +4657,6 @@ static void f_alarm(INT32 args)
 {
   long seconds;
 
-  ASSERT_SECURITY_ROOT("alarm");
-
   if(args < 1)
     SIMPLE_TOO_FEW_ARGS_ERROR("alarm", 1);
 
@@ -4727,8 +4700,6 @@ static void f_ualarm(INT32 args)
   struct itimerval new, old;
 #endif /* !HAVE_UALARM */
   long useconds;
-
-  ASSERT_SECURITY_ROOT("ualarm");
 
   if(args < 1)
     SIMPLE_TOO_FEW_ARGS_ERROR("ualarm", 1);

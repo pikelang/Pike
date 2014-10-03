@@ -38,7 +38,6 @@
 #include "constants.h"
 #include "time_stuff.h"
 #include "pike_memory.h"
-#include "pike_security.h"
 #include "bignum.h"
 #include "pike_rusage.h"
 #include "pike_netlib.h"
@@ -250,8 +249,6 @@ void f_hardlink(INT32 args)
   char *to;
   int err;
 
-  VALID_FILE_IO("hardlink","write");
-
   get_all_args("hardlink",args, "%s%s", &from, &to);
 
   do {
@@ -285,8 +282,6 @@ void f_symlink(INT32 args)
   char *from;
   char *to;
   int err;
-
-  VALID_FILE_IO("symlink","write");
 
   get_all_args("symlink",args, "%s%s", &from, &to);
 
@@ -322,8 +317,6 @@ void f_readlink(INT32 args)
   int buflen;
   char *buf;
   int err;
-
-  VALID_FILE_IO("readlink","read");
 
   get_all_args("readlink",args, "%s", &path);
 
@@ -386,8 +379,6 @@ void f_resolvepath(INT32 args)
   char *buf;
   int len = -1;
 
-  VALID_FILE_IO("resolvepath","read");
-
   get_all_args("resolvepath", args, "%s", &path);
 
 #ifdef HAVE_RESOLVEPATH
@@ -446,8 +437,6 @@ void f_umask(INT32 args)
 {
   int oldmask;
 
-  VALID_FILE_IO("umask","status");
-
   if (args) {
     INT_TYPE setmask;
     get_all_args("umask", args, "%i", &setmask);
@@ -477,8 +466,6 @@ void f_chmod(INT32 args)
   char *path;
   INT_TYPE mode;
   int err;
-
-  VALID_FILE_IO("chmod","chmod");
 
   get_all_args("chmod", args, "%s%i", &path, &mode);
   do {
@@ -517,11 +504,6 @@ void f_chown(INT32 args)
   INT_TYPE gid;
   int symlink = 0;
   int err;
-
-#ifdef PIKE_SECURITY
-  if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
-    Pike_error("chown: permission denied.\n");
-#endif
 
   get_all_args("chown", args, "%s%i%i.%d", &path, &uid, &gid, &symlink);
 
@@ -604,11 +586,6 @@ void f_utime(INT32 args)
   INT_TYPE atime, mtime;
   int symlink = 0;
   int err;
-
-#ifdef PIKE_SECURITY
-  if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
-    Pike_error("utime: permission denied.\n");
-#endif
 
   get_all_args("utime", args, "%s%i%i.%d", &path, &atime, &mtime, &symlink);
 
@@ -770,11 +747,6 @@ void f_initgroups(INT32 args)
   int err;
   INT_TYPE group;
 
-#ifdef PIKE_SECURITY
-  if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
-    Pike_error("initgroups: permission denied.\n");
-#endif
-
   get_all_args("initgroups", args, "%s%i", &user, &group);
   err = initgroups(user, group);
   if (err < 0) {
@@ -801,11 +773,6 @@ void f_cleargroups(INT32 args)
 {
   static const gid_t gids[1]={ 65534 }; /* To safeguard against stupid OS's */
   int err;
-
-#ifdef PIKE_SECURITY
-  if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
-    Pike_error("cleargroups: permission denied.\n");
-#endif
 
   pop_n_elems(args);
   err = setgroups(0, (gid_t *)gids);
@@ -835,11 +802,6 @@ void f_setgroups(INT32 args)
   INT32 i;
   INT32 size;
   int err;
-
-#ifdef PIKE_SECURITY
-  if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
-    Pike_error("setgroups: permission denied.\n");
-#endif
 
   get_all_args("setgroups", args, "%a", &arr);
   if ((size = arr->size)) {
@@ -970,13 +932,8 @@ void f_setuid(INT32 args)
   int err;
   INT_TYPE id;
 
-#ifdef PIKE_SECURITY
-  if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
-    Pike_error("setuid: permission denied.\n");
-#endif
-
   get_all_args("setuid", args, "%i", &id);
- 
+
   if(id == -1) {
     struct passwd *pw = getpwnam("nobody");
     if(pw==0)
@@ -1016,10 +973,6 @@ void f_setgid(INT32 args)
   int err;
   INT_TYPE id;
 
-#ifdef PIKE_SECURITY
-  if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
-    Pike_error("setgid: permission denied.\n");
-#endif
   get_all_args("setgid", args, "%i", &id);
  
   if(id == -1) {
@@ -1058,10 +1011,6 @@ void f_seteuid(INT32 args)
   INT_TYPE id;
   int err;
 
-#ifdef PIKE_SECURITY
-  if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
-    Pike_error("seteuid: permission denied.\n");
-#endif
   get_all_args("seteuid", args, "%i", &id);
  
   if(id == -1) {
@@ -1105,11 +1054,6 @@ void f_setegid(INT32 args)
 {
   INT_TYPE id;
   int err;
-
-#ifdef PIKE_SECURITY
-  if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
-    Pike_error("setegid: permission denied.\n");
-#endif
 
   get_all_args("setegid", args, "%i", &id);
 
@@ -1313,10 +1257,6 @@ void f_setresuid(INT32 args)
   INT_TYPE ruid, euid,suid;
   int err;
 
-#ifdef PIKE_SECURITY
-  if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
-    Pike_error("setresuid: permission denied.\n");
-#endif
   get_all_args("setresuid", args, "%i%i%i", &ruid,&euid,&suid);
  
   err = setresuid(ruid,euid,suid);
@@ -1340,10 +1280,6 @@ void f_setresgid(INT32 args)
   INT_TYPE rgid, egid,sgid;
   int err;
 
-#ifdef PIKE_SECURITY
-  if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
-    Pike_error("setresgid: permission denied.\n");
-#endif
   get_all_args("setresgid", args, "%i%i%i", &rgid,&egid,&sgid);
  
   err = setresgid(rgid,egid,sgid);
@@ -1444,11 +1380,6 @@ f_get(f_getppid, getppid)
 void f_chroot(INT32 args)
 {
   int res;
-
-#ifdef PIKE_SECURITY
-  if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
-    Pike_error("chroot: permission denied.\n");
-#endif
 
 #ifdef HAVE_FCHROOT
   check_all_args("chroot", args, BIT_STRING|BIT_OBJECT, 0);

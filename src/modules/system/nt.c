@@ -65,7 +65,6 @@
 #include "interpret.h"
 #include "operators.h"
 #include "stuff.h"
-#include "pike_security.h"
 #include "fdlib.h"
 
 #define sp Pike_sp
@@ -187,7 +186,6 @@ static void f_cp(INT32 args)
 {
   char *from, *to;
   int ret;
-  VALID_FILE_IO("cp","write");
   get_all_args("cp",args,"%s%s",&from,&to);
   ret=CopyFile(from, to, 0);
   if(!ret) set_errno_from_win32_error (GetLastError());
@@ -890,9 +888,6 @@ void f_LogonUser(INT32 args)
   DWORD logontype, logonprovider;
   HANDLE x;
   BOOL ret;
-
-  ASSERT_SECURITY_ROOT("System.LogonUser");
-
   check_all_args("System.LogonUser",args,
 		 BIT_STRING, BIT_INT | BIT_STRING, BIT_STRING,
 		 BIT_INT | BIT_VOID, BIT_INT | BIT_VOID,0);
@@ -2906,7 +2901,6 @@ static void f_GetFileAttributes(INT32 args)
 {
   char *file;
   DWORD ret;
-  VALID_FILE_IO("GetFileAttributes","read");
   get_all_args("GetFileAttributes",args,"%s",&file);
   ret=GetFileAttributes( (LPCTSTR) file);
   pop_stack();
@@ -2929,7 +2923,6 @@ static void f_SetFileAttributes(INT32 args)
   char *file;
   INT_TYPE attr, ret;
   DWORD tmp;
-  VALID_FILE_IO("SetFileAttributes","write");
   get_all_args("SetFileAttributes", args, "%s%i", &file, &attr);
   tmp=attr;
   ret=SetFileAttributes( (LPCTSTR) file, tmp);
@@ -3165,7 +3158,6 @@ static void f_SetNamedSecurityInfo(INT32 args)
   DWORD ret;
   SE_OBJECT_TYPE type=SE_FILE_OBJECT;
 
-  ASSERT_SECURITY_ROOT("SetNamedSecurity");
   get_all_args("SetNamedSecurityInfo",args,"%s%m",&name,&m);
 
   if((sval=low_mapping_string_lookup(m, literal_type_string)))

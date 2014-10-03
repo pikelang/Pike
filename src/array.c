@@ -19,7 +19,6 @@
 #include "pike_memory.h"
 #include "gc.h"
 #include "main.h"
-#include "pike_security.h"
 #include "stuff.h"
 #include "bignum.h"
 #include "cyclic.h"
@@ -29,10 +28,10 @@
 /** The empty array. */
 PMOD_EXPORT struct array empty_array=
 {
-  PIKE_CONSTANT_MEMOBJ_INIT(1, PIKE_T_ARRAY), /* Never free */
+  1,                     /* refs, Never free */
+  0,                     /* Size = 0 */
   &weak_empty_array,     /* Next */
   0,			 /* previous */
-  0,                     /* Size = 0 */
   0,                     /* malloced Size = 0 */
   0,                     /* no types */
   0,			 /* no flags */
@@ -43,8 +42,13 @@ PMOD_EXPORT struct array empty_array=
 /** The empty weak array. */
 PMOD_EXPORT struct array weak_empty_array=
 {
-  PIKE_CONSTANT_MEMOBJ_INIT(1, PIKE_T_ARRAY),
-  0, &empty_array, 0, 0, 0, ARRAY_WEAK_FLAG,
+  1, /* refs */
+  0, /* size */
+  0, /* next */
+  &empty_array, /* prev */
+  0, /*malloced */
+  0, /* types */
+  ARRAY_WEAK_FLAG, /* flags */
   weak_empty_array.real_item,
   {SVALUE_INIT_FREE},
 };
@@ -111,7 +115,7 @@ PMOD_EXPORT struct array *real_allocate_array(ptrdiff_t size,
   v->malloced_size = DO_NOT_WARN((INT32)(size + extra_space));
   v->item=v->real_item;
   v->size = DO_NOT_WARN((INT32)size);
-  INIT_PIKE_MEMOBJ(v, T_ARRAY);
+  v->refs = 1;
   DOUBLELINK (first_array, v);
   
   {
@@ -160,7 +164,6 @@ PMOD_EXPORT void really_free_array(struct array *v)
 #endif
 
   add_ref(v);
-  EXIT_PIKE_MEMOBJ(v);
   free_svalues(ITEM(v), v->size, v->type_field);
   sub_ref(v);
   array_free_no_free(v);

@@ -120,8 +120,8 @@ configure: src/configure builddir
 		  "x$$oldconfigureargs" = "x$$configureargs"; then :; \
 	  else \
 	    if test "x$${CONFIG_SHELL}" = "x" && \
-	      /bin/bash -norc -c : 2>/dev/null; then \
-	      CONFIG_SHELL="/bin/bash -norc" ; \
+	      /bin/bash --norc -c : 2>/dev/null; then \
+	      CONFIG_SHELL="/bin/bash --norc" ; \
 	    fi ;\
 	    runconfigure () { \
 	      CONFIG_SITE=x CONFIG_SHELL=$${CONFIG_SHELL-/bin/sh} $${CONFIG_SHELL-/bin/sh} \
