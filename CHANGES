@@ -785,7 +785,7 @@ o Stdio.Buffer():
 
    The main intent of the class is buffering for binary and non-binary
    protocol parsing and output, and also buffering when using
-   non-blockign I/O.
+   non-blocking I/O.
 
 o Stdio.File():
 
