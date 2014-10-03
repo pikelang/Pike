@@ -209,6 +209,8 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
            addstr( (char *)&s, sizeof(s));	\
         }					\
         break;					\
+       case 0: /* Silence clang warning */	\
+        break;					\
     }
 #endif
 
