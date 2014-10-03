@@ -1,7 +1,6 @@
 Pike 8: Changes since Pike 7.8 (scratch area for future release notes)
 ----------------------------------------------------------------------
 
-
 New language features
 ---------------------
 
@@ -58,7 +57,7 @@ o Added new syntax for referring to and naming inherits.
     |   "foo.pike"::foo();
     |   "foo/bar"::baz();
 
-o Lookup of named inherits now also looks in indirect inherits.
+o Look up of named inherits now also looks in indirect inherits.
 
     | class A { int fun() {} }
     | class B { inherit A; }
@@ -179,7 +178,6 @@ o Added a shorthand syntax for integer rages: xbit, where x is a
   Similarly int(1bit) is an alias for 'bool', and int(12bit) is
   the same as int(0..4095).
 
-
 o 'this::x' is now equivalent to 'this_program::x' -- access the
    identifier x in the current object.
 
@@ -205,7 +203,7 @@ o The define __COUNTER__ has been added. It is a unique integer
 
 o The preprocessor can now be run with a cpp prefix feature.
 
-  This is currently used by the precompiler to avoid two levels of
+  This is currently used by the precompiler to run two levels of
   preprocessing, one using "#cmod_" as the prefix and the other "#".
 
 o Dynamic macros
@@ -237,8 +235,8 @@ o Dynamic macros
     |      });
 
 
-  That is, a macro that needs does some calculations, and rewrite the
-  code more than is possible in normal macros..
+  That is, a macro that needs to do some calculations, and rewrite the
+  code more than is possible in normal macros.
 
   This one expands something along the lines of
 
@@ -339,12 +337,12 @@ o string(x..y) (constant) types
     | > typeof("foo");
     | (1) Result: string(102..111)
 
-  This is used to optimize certain operations,
-  lower_case, upper_case, search and string_has_null for now.
-  It could be added to other places in the future as well.
+  This is used to optimize certain operations, lower_case, upper_case,
+  search and string_has_null for now.  It could be added to other
+  places in the future as well.
 
-  The fairly common case where you are doing lower_case or upper_case
-  on an already lower or uppercase strings is now significantly
+  A fairly common case is where you are doing lower_case or upper_case
+  on an already lower or uppercased string. This is now significantly
   faster.
 
 o Several other optimizations to execution speed has been done
@@ -352,6 +350,7 @@ o Several other optimizations to execution speed has been done
   + object indexing (cache, generic speedups)
 
   + lower_apply, changes to apply in general
+
     Taken together these individually small optimizations speeds up at
     least pike -x benchmark more than 5%.
 
@@ -375,8 +374,13 @@ o Several other optimizations to execution speed has been done
 
 o Faster hash-function for strings
 
-  + Also siphash24 was added and is used in case the string hash table
-    becomes inefficient
+  If your CPU has the crc32 instruction (modern x86 mainly) the
+  hashing is now an order of magnitude faster, albeit the risk of
+  attacks using known crc:s in things like http request headers (to
+  force long hashtable chains and slow things down) is greater, but:
+
+  + Also added siphash24, and use that when the string hash table
+    becomes inefficient.
 
 
 Deprecated features and modules
@@ -386,7 +390,7 @@ o Tools.PEM and Tools.X409 deprecated
 
   Use the corresponding modules in Standards.
 
-o The built in sandbox is now deprecated
+o The built in security sandbox is now deprecated
 
   Unless somebody wants to take ownership of the feature and keep it
   up to date the security system will be removed in the next stable
@@ -503,6 +507,8 @@ o Image.WebP
   More information about the format can be found on
   https://developers.google.com/speed/webp/
 
+  Requires libwebp.
+
 o Serializer
 
   APIs useful to simplify serialization and deserialization of
@@ -510,10 +516,11 @@ o Serializer
   variables, including the private ones.
 
   + Serializer.Encodable
-    A class that can be inherit to make an object easily serializable
-    using encode_value.
+    A class that can be inherited to make an object easily
+    serializable using encode_value.
 
-o Filesystem.Monitor and the low level System.Inotify + System.FSEvents
+o Filesystem.Monitor (and the low level System.Inotify +
+   System.FSEvents)
 
   Basic filesystem monitoring.
 
@@ -528,9 +535,9 @@ o Mysql.SqlTable
 
   This class provides some abstractions on top of an SQL table.
 
-  At the core it is generic for any SQL database, but the current
-  implementation is MySQL specific on some points, notably the
-  semantics of AUTO_INCREMENT, the quoting method, knowledge about
+  At the core it is generic and could work with any SQL database, but
+  the current implementation is MySQL specific on some points, notably
+  the semantics of AUTO_INCREMENT, the quoting method, knowledge about
   column types, and some conversion functions. Hence the location in
   the Mysql module.
 
@@ -540,9 +547,9 @@ o Mysql.SqlTable
 o Parser.CSV
 
   This is a parser for line oriented data that is either comma,
-  semi-colon or tab separated.  It extends the functionality
-  of the Parser.Tabular with some specific functionality related
-  to a header and record oriented parsing of huge datasets.
+  semi-colon or tab separated.  It extends the functionality of the
+  Parser.Tabular with some specific functionality related to a header
+  and record oriented parsing of huge datasets.
 
 o ZXID
 
@@ -559,21 +566,21 @@ o Git
 
 o Val
 
-  This module contains special values used by various modules, e.g.
-  a Val.null value used both by Sql and Standards.JSON.
+  This module contains special values used by various modules, e.g.  a
+  Val.null value used both by Sql and Standards.JSON.
 
   In many ways these values should be considered constant, but it is
   possible for a program to replace them with extended versions,
   provided they don't break the behavior of the base classes defined
   here. Since there is no good mechanism to handle such extending in
-  several steps, pike libraries should preferably ensure that the
-  base classes defined here provide required functionality directly.
+  several steps, pike libraries should preferably ensure that the base
+  classes defined here provide required functionality directly.
 
 o __builtin
 
-  The __builtin module is now a directory module, so that it can provide
-  a suitable namespace for code written in Pike intended for being
-  inherited from modules written in C (cf precompile).
+  The __builtin module is now a directory module, so that it can
+  provide a suitable namespace for code written in Pike intended for
+  being inherited from modules written in C (cf precompile).
 
 
 Extensions and new functions
@@ -676,11 +683,33 @@ o Thread no longer inherits Thread.Thread (aka thread_create)
 
 o Thread.Farm now might work
 
-o Cmod precompiler.
+o Cmod precompiler:
+
+  + You can now use #cmod_{define,if,ifdef,include} etc to do
+    preprocessing using CPP before the .cmod file is processed by the
+    precompiler.
+
+    This preprocessing is done with the pike precompiler, while the
+    C-compiler preprocessor will then be used on the generated file
+    (like before)
 
   + inherit "identifier"
     -- inherit the program returned by calling master()->resolve() on
        the specified identifier. Useful to inherit code written in pike.
+
+  + Object types on return and argument types are now resolved
+    dynamically when needed.
+
+    This means that the typing information is sifnificantly more strict.
+
+    If you use classes that are not defined in the file (or
+    src/program_id.h) they will be resolved when your .so-file is
+    loaded.
+
+    Note: Circular dependencies does not work (currently, at least).
+
+    Also, the parser still often have problems with types containing
+    '.'. You can use object(X.Y) instead of X.Y.
 
 o String.levenshtein_distance()
 
@@ -722,13 +751,41 @@ o Stdio.UDP():
 
   + added set_buffer
 
-o Added client and server support for TCP_FASTCONNECT
+o Stdio.Port(): 
+  + Added client and server support for TCP_FASTCONNECT
 
     To connect using this TCP extension simply pass the data as the
     fifth argument to connect.
 
     The server support is automatically enabled if possible when a
     Stdio.Port object is bound to a port.
+
+  + Added support for SO_REUSEPORT. In this mode multiple Stdio.Port
+    instances can bind to the same port (mainly used with the ports
+    being opened in different processes).
+
+    This allows automatic load sharing between the processes, incoming
+    connections will only be sent to one of them by the OS.
+
+  The presence of these features are indicated by constants in
+    Stdio.Port: Stdio.Port.SO_REUSEPORT_SUPPORT and
+    Stdio.Port.TCP_FASTOPEN_SUPPORT (although the same code should
+    work regardless of the existence of TCP fast open in both server
+    and client mode, it can be useful to know if support is available)
+
+  + Added a query_fd() method
+
+
+o Stdio.Buffer():
+
+   This is a byte buffer (unlike String.Buffer which is a string
+   buffer, and thus contains unicode characters and not bytes) that is
+   optimized for both reading from it and adding data to it at the
+   same time.
+
+   The main intent of the class is buffering for binary and non-binary
+   protocol parsing and output, and also buffering when using
+   non-blockign I/O.
 
 o Stdio.File():
 
@@ -745,7 +802,24 @@ o Stdio.File():
 
     _fd is still available for compatibility, but internally it is gone.
 
+  + The callbacks now get the file object as the first object if no
+    other id has been set.
+
+  + Added support for buffering via Stdio.Buffer.
+
+    This can be used to greatly simplify the writing of non-blocking code.
+
+    - When read and/or write buffer is enabled the corresponding
+      callbacks get a buffer object as the second argument
+
+    - The only thing the callback has to do is add data to the buffer or read from it, depending on what callback it is.
+
+    - The write callback will now only be called when the buffer
+      contains no more output, and data that is not read in one read
+      callback is kept for the next time data arrives.
+
   + Fixed grantpt() on Solaris failing with EPERM.
+
 
 o Unicode databases updated to 7.0.0 from 5.1.0
 
@@ -941,6 +1015,7 @@ o Several fixes to Protocols.HTTP
       reply mapping as read-only.
     - Support if-none-match (etag:s)
     - Ignore errors in close when destroying the object
+    - Fixed ordo of sending large chunks of data without using files
 
 o Multiple threads can now call the Backend `() function (the function
   that waits for events).
@@ -954,8 +1029,6 @@ o dtrace support (on MacOSX)
   Pike now supports dtrace events on function enter and leaving (and
   when stack frames are notionally popped, for functions doing
   tailrecursion).
-
-o sizeof() now supports ADT.struct.
 
 o Standards.JSON.encode can now get the initial indentation level
   specified.
