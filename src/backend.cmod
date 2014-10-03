@@ -389,7 +389,8 @@ PIKECLASS Backend
   static int wakeup_callback(struct fd_callback_box *box, int UNUSED(event))
   {
     char buffer[1024];
-    while( (fd_read(box->fd, buffer, sizeof(buffer)) < 0) && (errno==EINTR)); /* Clear 'flag' */
+    while( (fd_read(box->fd, buffer, sizeof(buffer)) < 0) && (errno==EINTR))
+      ; /* Clear 'flag' */
 #ifdef _REENTRANT
     while (box->backend->set_busy) {
       co_wait_interpreter(&box->backend->set_change);
