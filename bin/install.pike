@@ -1690,8 +1690,11 @@ done
 
   status("Creating", export_base_name);
 
+  //  Setting COPYFILE_DISABLE avoids a "._PtmP..." resource file to be added
+  //  on OS X which otherwise would hinder self-extraction from bootstrapping.
   Process.create_process( ({ "tar","cf", export_base_name,
-			     script, tmpname+".x", tmpname+".tar.gz" }))
+			     script, tmpname+".x", tmpname+".tar.gz" }),
+			  ([ "env" : ([ "COPYFILE_DISABLE" : "true" ]) ]) )
     ->wait();
 
   status("Filtering to root/root ownership", export_base_name);
