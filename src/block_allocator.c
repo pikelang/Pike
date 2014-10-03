@@ -444,7 +444,8 @@ static void __attribute((unused)) bv_print(struct bitvector * bv) {
 }
 #endif
 
-static void ba_sort_free_list(const struct block_allocator *a, struct ba_page *p,
+static void ba_sort_free_list(const struct block_allocator *VALGRINDUSED(a),
+			      struct ba_page *p,
                               const struct ba_layout *l) {
     struct bitvector v;
     size_t i, j;

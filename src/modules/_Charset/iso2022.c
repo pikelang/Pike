@@ -1320,6 +1320,8 @@ static void f_drain(INT32 args)
 	}
       }
       break;
+    case 0: /* Dummy case to silence clang warning */
+      break;
     }
   }
 

@@ -353,6 +353,8 @@ static void f_drain_rfc1345(INT32 args)
 	}
       }
       break;
+    case 0: /* Dummy case to silence clang warning */
+      break;
     }
   }
   f_drain(args);

@@ -223,7 +223,7 @@ static int map_buffer(thandle_t bh, tdata_t *r, toff_t *len )
 }
 
 /* Complies with the TIFFUnmapFileProc API. */
-static void unmap_buffer(thandle_t bh, tdata_t p, toff_t len)
+static void unmap_buffer(thandle_t bh, tdata_t p, toff_t UNUSED(len))
 {
   struct buffer *buffer_handle = (struct buffer *)bh;
   void *ptr = (void *)p;

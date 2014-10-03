@@ -3325,7 +3325,7 @@ PIKECLASS PollDeviceBackend
   }
 
   /* arg i is the kqueue. */
-  int init_external_cfrl(struct PollDeviceBackend_struct *me, int i)
+  int init_external_cfrl(struct PollDeviceBackend_struct *me, int UNUSED(i))
   {
     /* we assume that init_cf() has already been called. */
     
@@ -4104,7 +4104,7 @@ else
   }
 
 #ifdef BACKEND_USES_CFRUNLOOP
-  void cfTimerCallback(CFRunLoopTimerRef timer, void * info)
+  void cfTimerCallback(CFRunLoopTimerRef UNUSED(timer), void * info)
   {
     struct PollDeviceBackend_struct *me;
     struct timeval timeout;
@@ -4118,7 +4118,7 @@ else
 
   /* our external CFRunLoop has received events or timed out. We should
      do a once-through the runloop to find out if there's anything to do. */
-  void cfObserverCallback(CFRunLoopObserverRef observer,
+  void cfObserverCallback(CFRunLoopObserverRef UNUSED(observer),
       CFRunLoopActivity activity, void* info)
   {
     struct timeval timeout;
