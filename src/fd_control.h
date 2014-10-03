@@ -8,6 +8,10 @@
 #define FD_CONTROL_H
 
 #ifndef HAVE_ACCEPT4
+#ifdef HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif
+
 /* NB: The default values are compatible with Linux,
  *     but should work on other OSs as well, since
  *     accept4(2) is emulated by us anyway.
@@ -44,7 +48,7 @@ void do_close_on_exec(void);
 void cleanup_close_on_exec(void);
 #endif /* HAVE_BROKEN_F_SETFD */
 #ifndef HAVE_ACCEPT4
-int accept4(int fd, struct sockaddr *addr, ACCEPT_SIZE_T *addrlen, int flags)
+int accept4(int fd, struct sockaddr *addr, ACCEPT_SIZE_T *addrlen, int flags);
 #endif /* !HAVE_ACCEPT4 */
 /* Prototypes end here */
 
