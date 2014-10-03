@@ -18,18 +18,6 @@ test_eq(Image.colortable,Image.Colortable)
 test_true(functionp(Standards.UUID.new))
 test_true(functionp(Standards.UUID.new_string))
 
-test_true(objectp(spider.XML()))
-test_true(functionp(spider.isbasechar))
-test_true(functionp(spider.iscombiningchar))
-test_true(functionp(spider.isdigit))
-test_true(functionp(spider.isextender))
-test_true(functionp(spider.isfirstnamechar))
-test_true(functionp(spider.ishexchar))
-test_true(functionp(spider.isidographic))
-test_true(functionp(spider.isletter))
-test_true(functionp(spider.isnamechar))
-test_true(functionp(spider.isspace))
-
 test_do([[
   catch {
     add_constant( "db", Sql.Sql("mysql://localhost") );

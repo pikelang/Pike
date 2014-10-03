@@ -1104,7 +1104,7 @@ class Expression {
 
     // Well, we did find a type declaration, but it
     // wasn't used for anything except perhaps loading
-    // a module into pike, e.g. "spider;"
+    // a module into pike, e.g. "_Roxen;"
     return -1;
   }
 
