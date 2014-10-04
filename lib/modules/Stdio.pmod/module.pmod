@@ -182,6 +182,15 @@ class File
 {
   optional inherit Fd;
 
+  // This is needed in case we get overloaded by strange code
+  // (socktest.pike).
+  protected Fd fd_factory()
+  {
+    return File()->_fd;
+  }
+
+  protected Stdio.Buffer inbuffer, outbuffer;
+
   //! Toggle the file to Buffer mode.
   //!
   //! In this mode reading and writing will be done via Buffer
@@ -200,6 +209,9 @@ class File
   //!
   //!  This will work with buffered output mode as well, but simply
   //!  adding more data to the output buffer will work as well.
+  //!
+  //! @seealso
+  //!  @[get_buffer_mode()]
   void set_buffer_mode( Stdio.Buffer|int(0..0) in,Stdio.Buffer|int(0..0) out )
   {
     // FIXME: Document the semantics for non-empty buffers above.
@@ -208,14 +220,25 @@ class File
       outbuffer->__fd_set_output( this );
   }
 
-  // This is needed in case we get overloaded by strange code
-  // (socktest.pike).
-  protected Fd fd_factory()
+  //! Get the active input and output buffers that have been
+  //! set with @[set_buffer_mode()] (if any).
+  //!
+  //! @returns
+  //!   Returns an array with two elements:
+  //!   @array
+  //!     @elem 0
+  //!       The current input buffer.
+  //!     @elem 1
+  //!       The current output buffer.
+  //!   @endarray
+  //!
+  //! @seealso
+  //!   @[set_buffer_mode()]
+  array(Stdio.Buffer|int(0..0)) query_buffer_mode()
   {
-    return File()->_fd;
+    return ({ inbuffer, outbuffer });
   }
 
-  protected Stdio.Buffer inbuffer, outbuffer;
 #ifdef TRACK_OPEN_FILES
   /*protected*/ int open_file_id = next_open_file_id++;
 #endif
