@@ -136,6 +136,34 @@ class BlockFile
   int tell();
 }
 
+//! The various read_callback signatures.
+//!
+//! The string (or void) version is used when buffer mode (see
+//! @[set_buffer_mode]) has not been enabled for reading.
+//!
+//! The Buffer version is used when an Buffer has been enabled
+//! for reading
+//!
+//! In both cases the data is the newly arrived data, but in buffered
+//! mode data you did not fully read in the last read callback is
+//! kept in the buffer.
+local typedef
+  function(mixed|void,string:int|void)|
+  function(mixed|void,Buffer:int|void)|
+  function(mixed|void:int|void) read_callback_t;
+
+//! The various write_callback signatures.
+//!
+//! The void version is used when buffer mode (see
+//! @[set_buffer_mode]) has not been enabled for writing.
+//!
+//! The Buffer version is used when an Buffer has been enabled
+//! for reading, add data to that buffer to send it.
+local typedef
+  function(mixed|void:int|void) |
+  function(mixed|void,Buffer:int|void) write_callback_t;
+
+
 //! This is the basic I/O object, it provides socket and pipe
 //! communication as well as file access. It does not buffer reads and
 //! writes by default, and provides no line-by-line reading, that is done
@@ -187,60 +215,35 @@ class File
     return File()->_fd;
   }
 
-  Stdio.Buffer inbuffer, outbuffer;
+  protected Stdio.Buffer inbuffer, outbuffer;
 #ifdef TRACK_OPEN_FILES
   /*protected*/ int open_file_id = next_open_file_id++;
 #endif
 
+  // FIXME: Is this variable used for anything?
   int is_file;
 
-  //! The various read_callback signatures.
-  //!
-  //! The string (or void) version is used when buffer mode (see
-  //! @[set_buffer_mode]) has not been enabled for reading.
-  //!
-  //! The Buffer version is used when an Buffer has been enabled
-  //! for reading
-  //!
-  //! In both cases the data is the newly arrived data, but in buffered
-  //! mode data you did not fully read in the last read callback is
-  //! kept in the buffer.
-  typedef
-    function(mixed|void,string:int|void)|
-    function(mixed|void,Buffer:int|void)|
-    function(mixed|void:int|void) read_callback_t;
-
-  //! The various read_callback signatures.
-  //!
-  //! The void version is used when buffer mode (see
-  //! @[set_buffer_mode]) has not been enabled for writing.
-  //!
-  //! The Buffer version is used when an Buffer has been enabled
-  //! for reading, add data to that buffer to send it.
-  typedef
-    function(mixed|void:int|void) |
-    function(mixed|void,Buffer:int|void) write_callback_t;
-
-  read_callback_t ___read_callback;
-  write_callback_t ___write_callback;
-  function(mixed|void:int) ___close_callback;
-  function(mixed|void,string|void:int) ___read_oob_callback;
-  function(mixed|void:int) ___write_oob_callback;
-  function(mixed|void,int:int) ___fs_event_callback;
-  mixed ___id;
+  protected read_callback_t ___read_callback;
+  protected write_callback_t ___write_callback;
+  protected function(mixed|void:int) ___close_callback;
+  protected function(mixed|void,string|void:int) ___read_oob_callback;
+  protected function(mixed|void:int) ___write_oob_callback;
+  protected function(mixed|void,int:int) ___fs_event_callback;
+  protected mixed ___id;
 
 #ifdef __STDIO_DEBUG
-  string __closed_backtrace;
-#define CHECK_OPEN()							\
-  if(!is_open())							\
-  {									\
-    error( "Stdio.File(): line "+__LINE__+" on closed file.\n" +	\
-	   (__closed_backtrace ?					\
-	    sprintf("File was closed from:\n"				\
-		    "    %-=200s\n",					\
-		    __closed_backtrace) :				\
-	    "This file has never been open.\n" ) );			\
-  }
+  protected string __closed_backtrace;
+#define CHECK_OPEN()	do {						\
+    if(!is_open())							\
+    {									\
+      error( "Stdio.File(): line "+__LINE__+" on closed file.\n" +	\
+	     (__closed_backtrace ?					\
+	      sprintf("File was closed from:\n"				\
+		      "    %-=200s\n",					\
+		      __closed_backtrace) :				\
+	      "This file has never been open.\n" ) );			\
+    }									\
+  } while(0)
 #else
 #define CHECK_OPEN()
 #endif
