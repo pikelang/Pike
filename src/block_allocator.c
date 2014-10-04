@@ -468,6 +468,15 @@ static void ba_sort_free_list(const struct block_allocator *VALGRINDUSED(a),
      */
     while (b) {
 	unsigned INT32 n = ba_block_number(l, p, b);
+#ifdef PIKE_DEBUG
+        if (bv_get(&v, n)) {
+            fprintf(stderr, "Double free detected.");
+            /* Printing an error to stderr here and continuing makes probably more sense
+             * than throwing an error. This sort algorithm will "correct" the corrupted free
+             * list.
+             */
+        }
+#endif
 	bv_set(&v, n, 1);
         j++;
         PIKE_MEMPOOL_ALLOC(a, b, l->block_size);
@@ -503,11 +512,11 @@ static void ba_sort_free_list(const struct block_allocator *VALGRINDUSED(a),
      * We now rechain all blocks.
      */
     while ((i = bv_ctz(&v, j)) != (size_t)-1) {
-	*t = BA_BLOCKN(*l, p, i);
-        if (b) PIKE_MEMPOOL_FREE(a, b, l->block_size);
-        b = *t;
+        struct ba_block_header * tmp = b;
+	*t = b = BA_BLOCKN(*l, p, i);
+        if (tmp) PIKE_MEMPOOL_FREE(a, tmp, l->block_size);
         PIKE_MEMPOOL_ALLOC(a, b, l->block_size);
-	t = &((*t)->next);
+	t = &(b->next);
 	j = i+1;
     }
 
@@ -517,10 +526,11 @@ last:
      */
 
     if (v.length < l->blocks) {
-        if (b) PIKE_MEMPOOL_FREE(a, b, l->block_size);
-	*t = b = BA_BLOCKN(*l, p, v.length);
+        struct ba_block_header * tmp = b;
+        *t = b = BA_BLOCKN(*l, p, v.length);
+        if (tmp) PIKE_MEMPOOL_FREE(a, tmp, l->block_size);
         PIKE_MEMPOOL_ALLOC(a, b, l->block_size);
-	(*t)->next = BA_ONE;
+	b->next = BA_ONE;
         PIKE_MEMPOOL_FREE(a, b, l->block_size);
     } else {
         if (b) PIKE_MEMPOOL_FREE(a, b, l->block_size);
