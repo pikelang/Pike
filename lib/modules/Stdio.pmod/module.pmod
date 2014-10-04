@@ -216,6 +216,8 @@ class File
   {
     // FIXME: Document the semantics for non-empty buffers above.
     inbuffer = in;
+    if (outbuffer)
+      outbuffer->__fd_set_output( 0 );
     if( outbuffer = out )
       outbuffer->__fd_set_output( this );
   }
