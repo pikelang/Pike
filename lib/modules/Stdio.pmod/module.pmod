@@ -228,9 +228,9 @@ class File
   //! @returns
   //!   Returns an array with two elements:
   //!   @array
-  //!     @elem 0
+  //!     @elem Stdio.Buffer|int(0..0) inbuffer
   //!       The current input buffer.
-  //!     @elem 1
+  //!     @elem Stdio.Buffer|int(0..0) outbuffer
   //!       The current output buffer.
   //!   @endarray
   //!
