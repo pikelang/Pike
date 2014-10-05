@@ -473,7 +473,7 @@ PIKECLASS Buffer
       /* Destructed object. */
       free_svalue(&io->output);
       SET_SVAL(io->output, PIKE_T_INT, NUMBER_NUMBER, integer, 0);
-      return 0;
+      return;
     }
     ref = PTR_FROM_INT(prog, SUBTYPEOF(io->output));
     inh = INHERIT_FROM_PTR(prog, ref);
