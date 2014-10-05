@@ -15,7 +15,7 @@
  class_def            ::=   modifiers+ class ";"?
 <!-- Is it arguments or arguments? in class? -->
  class                ::=   "class" identifier? ( "(" arguments ")" )? "{" program "}"
- modifiers            ::=   ( "extern" | "final" | "inline" | "local" | "nomask" | "optional" | "private" |
+ modifiers            ::=   ( "extern" | "final" | "inline" | "local" | "optional" | "private" |
                               "protected" | "public" | "static" | "variant" )
  block                ::=   "{" statement* "}"
  statement            ::=   expression ";" | cond | while | do_while | for | switch | return | block | foreach | ";" 

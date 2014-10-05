@@ -92,7 +92,7 @@ It's overlaid over the `font-lock-builtin-face'."
 
 (defconst pike-font-lock-modifier-regexp
   (concat "\\<\\(public\\|inline\\|final\\|static\\|protected\\|"
-	  "local\\|optional\\|private\\|nomask\\|variant\\)\\>")
+	  "local\\|optional\\|private\\|variant\\)\\>")
   "Regexp for modifiers. Must have exactly one submatch.")
 
 ; Problems: We really should allow all unicode characters...

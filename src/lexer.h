@@ -561,9 +561,6 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 	case TWO_CHAR('m','u'):
 	  if(ISWORD("multiset")) return TOK_MULTISET_ID;
 	  break;
-	case TWO_CHAR('n','o'):
-	  if(ISWORD("nomask")) return TOK_NO_MASK;
-	  break;
 	case TWO_CHAR('o','b'):
 	  if(ISWORD("object")) return TOK_OBJECT_ID;
 	  break;
@@ -757,7 +754,7 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 	  {
 	    lex->pragmas |= ID_INLINE;
 	  }
-	  else if (ISWORD("all_final") || ISWORD("all_nomask"))
+	  else if (ISWORD("all_final"))
 	  {
 	    lex->pragmas |= ID_FINAL;
 	  }

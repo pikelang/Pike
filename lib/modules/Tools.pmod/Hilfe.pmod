@@ -872,7 +872,7 @@ protected constant whitespace = (< ' ', '\n' ,'\r', '\t' >);
 protected constant termblock = (< "catch", "do", "gauge", "lambda",
                                   "class stop" >);
 protected constant modifier = (< "extern", "final", "inline", "local",
-                                 "nomask", "optional", "private", "protected",
+                                 "optional", "private", "protected",
                                  "public", "static", "variant", "deprecated" >);
 
 protected constant types = (< "string", "int", "float", "array", "mapping",

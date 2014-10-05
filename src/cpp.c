@@ -828,8 +828,6 @@ void cpp_change_compat(struct cpp *this, int major, int minor)
  *!       to all functions that follow.
  *!     @value "all_final"
  *!       Instructs the compiler to mark all symbols as @tt{final@}.
- *!     @value "all_nomask"
- *!       Deprecated version of @tt{"all_final"@}.
  *!     @value "save_parent"
  *!       Cause nested classes to save a reference to their
  *!       surrounding class even if not strictly needed.

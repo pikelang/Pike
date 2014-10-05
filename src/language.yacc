@@ -76,7 +76,6 @@
 %token TOK_MIXED_ID
 %token TOK_MOD_EQ
 %token TOK_MULT_EQ
-%token TOK_NO_MASK
 %token TOK_OBJECT_ID
 %token TOK_OR_EQ
 %token TOK_PRIVATE
@@ -234,7 +233,6 @@ int yylex(YYSTYPE *yylval);
 %type <number> TOK_MAPPING_ID
 %type <number> TOK_MIXED_ID
 %type <number> TOK_MULTISET_ID
-%type <number> TOK_NO_MASK
 %type <number> TOK_OBJECT_ID
 %type <number> TOK_PREDEF
 %type <number> TOK_PRIVATE
@@ -1083,14 +1081,7 @@ arguments2: new_arg_name { $$ = 1; }
   ;
 
 modifier:
-    TOK_NO_MASK
-    {
-      $$ = ID_FINAL | ID_INLINE;
-      if( !(THIS_COMPILATION->lex.pragmas & ID_NO_DEPRECATION_WARNINGS) &&
-          !TEST_COMPAT(7, 6) && Pike_compiler->compiler_pass==1 )
-        yywarning("Keyword nomask is deprecated in favor for 'final'.");
-    }
-  | TOK_FINAL_ID   { $$ = ID_FINAL | ID_INLINE; }
+    TOK_FINAL_ID   { $$ = ID_FINAL | ID_INLINE; }
   | TOK_STATIC     {
     $$ = ID_PROTECTED;
     if( !(THIS_COMPILATION->lex.pragmas & ID_NO_DEPRECATION_WARNINGS) &&
@@ -1108,8 +1099,7 @@ modifier:
   ;
 
 magic_identifiers1:
-    TOK_NO_MASK    { $$ = "nomask"; }
-  | TOK_FINAL_ID   { $$ = "final"; }
+    TOK_FINAL_ID   { $$ = "final"; }
   | TOK_STATIC     { $$ = "static"; }
   | TOK_EXTERN	   { $$ = "extern"; }
   | TOK_PRIVATE    { $$ = "private"; }
@@ -4545,8 +4535,6 @@ bad_expr_ident:
   { yyerror_reserved("inline"); }
   | TOK_LOCAL_ID
   { yyerror_reserved("local"); }
-  | TOK_NO_MASK
-  { yyerror_reserved("nomask"); }
   | TOK_PREDEF
   { yyerror_reserved("predef"); }
   | TOK_PRIVATE
