@@ -135,6 +135,8 @@ struct pike_sendfile
 extern struct program *file_program;
 extern struct program *file_ref_program;
 
+extern int fd_write_identifier_offset;
+
 /* Note: Implemented in ../system/system.c! */
 extern int get_inet_addr(PIKE_SOCKADDR *addr,char *name,char *service,
 			 INT_TYPE port, int inet_flags);

@@ -7,7 +7,7 @@ struct _Buffer
 
   struct object *sub, *source, *this;
   struct program *error_mode;
-  struct object *output;
+  struct svalue output;
   struct pike_string *str;
 
   struct {
