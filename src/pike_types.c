@@ -106,7 +106,6 @@ PMOD_EXPORT struct pike_type *enumerable_type_string;
 PMOD_EXPORT struct pike_type *any_type_string;
 PMOD_EXPORT struct pike_type *weak_type_string;	/* array|mapping|multiset|function */
 struct pike_type *sscanf_type_string;
-struct pike_type *sscanf_76_type_string;
 
 PMOD_EXPORT struct pike_string *literal_string_string;
 PMOD_EXPORT struct pike_string *literal_int_string;
@@ -8762,8 +8761,7 @@ void init_types(void)
 				    tFuncV(tNone,tZero,tOr(tMix,tVoid))));
   sscanf_type_string = CONSTTYPE(tFuncV(tStr tAttr("sscanf_format", tStr),
 					tAttr("sscanf_args", tMix), tIntPos));
-  sscanf_76_type_string = CONSTTYPE(tFuncV(tStr tAttr("sscanf_76_format", tStr),
-					   tAttr("sscanf_args", tMix), tIntPos));
+
   /* add_ref(weak_type_string);	*//* LEAK */
 
   literal_string_string = make_shared_string("string");
@@ -8848,8 +8846,6 @@ void cleanup_pike_types(void)
   weak_type_string = NULL;
   free_type(sscanf_type_string);
   sscanf_type_string = NULL;
-  free_type(sscanf_76_type_string);
-  sscanf_76_type_string = NULL;
 
   free_string(literal_string_string); literal_string_string = NULL;
   free_string(literal_int_string); literal_int_string = NULL;
