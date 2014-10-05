@@ -984,7 +984,7 @@ class File
 
 	int actual_bytes = outbuffer->output_to(this);
 
-	outbuffer->__fd_set_output(this);
+	outbuffer->__fd_set_output(::write);
 	if (actual_bytes <= 0) {
 	  if (actual_bytes) _errno = predef::errno();
 	  return actual_bytes;
@@ -1000,7 +1000,7 @@ class File
       string byte = outbuffer->read(1);
 
       int actual_bytes = ::write(byte);
-      outbuffer->__fd_set_output(this);
+      outbuffer->__fd_set_output(::write);
 
       if (actual_bytes <= 0) {
 	outbuffer->unread(sizeof(byte));
@@ -1044,7 +1044,7 @@ class File
 	    // EWOULDBLOCK or other error.
 	    _errno = predef::errno();
 	  }
-	  outbuffer->__fd_set_output(this);
+	  outbuffer->__fd_set_output(::write);
 	  return 0;
 	}
       }
@@ -1061,7 +1061,7 @@ class File
       }
       int bytes = sizeof(outbuffer);
 
-      int actual_bytes = outbuffer->output_to( this );
+      int actual_bytes = outbuffer->output_to( ::write );
       if (actual_bytes <= 0) {
 	// Write failure. Unwrite the outbuffer.
 	_errno = predef::errno();
@@ -1069,7 +1069,7 @@ class File
 	return actual_bytes;
       }
 
-      outbuffer->__fd_set_output(this);
+      outbuffer->__fd_set_output(::write);
 
       return bytes;
     }
@@ -1216,7 +1216,7 @@ class File
           res = ___write_callback(___id||this,outbuffer);
           if( sizeof( outbuffer ) )
             outbuffer->output_to( this );
-          outbuffer->__fd_set_output( this );
+          outbuffer->__fd_set_output( ::write );
         }
         return res;
       }
