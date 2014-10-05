@@ -185,80 +185,8 @@ protected class Pike_7_8_master
   extern mapping(string:multiset(string)) dir_cache;
 #endif
 
-  //! @decl mapping(string:array(string)) environment
-  //!
-  //! Mapping containing the environment variables.
-  //!
-  //! The mapping currently has the following structure:
-  //! @mapping
-  //!   @member array(string) index
-  //!      Note that the index is @[lower_case()]'d on NT.
-  //!      @array
-  //!         @elem string varname
-  //!            Variable name with case intact.
-  //!         @elem string value
-  //!            Variable value.
-  //!      @endarray
-  //! @endmapping
-  //!
-  //! @note
-  //!   This mapping should not be accessed directly; use @[getenv()]
-  //!   and @[putenv()] instead. This mapping is not publicly
-  //!   accessible in pikes newer than 7.6.
-  //!
-  //! @note
-  //!   This mapping is not compatible with @[Process.create_process()];
-  //!   use the mapping returned from calling @[getenv()] without arguments
-  //!   instead.
-  //!
-  //! @bugs
-  //!   This mapping is not the real environment; it is just a copy of
-  //!   the environment made at startup. Pike does attempt to keep
-  //!   track of changes in the mapping and to reflect them in the
-  //!   real environment, but avoid accessing this mapping if at all
-  //!   possible.
-
   string|mapping(string:string) getenv(string|void s);
   void putenv(string|void varname, string|void value);
-
-  // compat_environment is the mapping returned by `environment
-  // (if any).
-  // compat_environment_copy is used to keep track of any changes
-  // performed destructively on the compat_environment mapping.
-  // Both should be zero if not in use.
-  // Removed in Pike 7.8.
-  protected mapping(string:array(string)) compat_environment;
-  protected mapping(string:array(string)) compat_environment_copy;
-
-#pragma no_deprecation_warnings
-  local __deprecated__(mapping(string:array(string))) `environment()
-  {
-    if (compat_environment) return compat_environment;
-    compat_environment_copy = ([]);
-#ifdef __NT__
-    // Can't use the cached environment returned by getenv(), since
-    // variable names have been lowercased there.
-    foreach((array(array(string)))Builtin._getenv(), array(string) pair) {
-      compat_environment_copy[lower_case(pair[0])] = pair;
-    }
-#else
-    foreach((array(array(string)))getenv(), array(string) pair) {
-      compat_environment_copy[pair[0]] = pair;
-    }
-#endif
-    return compat_environment = copy_value(compat_environment_copy);
-  }
-
-  local void `environment=(__deprecated__(mapping(string:array(string)))
-			   new_env)
-  {
-    compat_environment = new_env;
-    if (!new_env)
-      compat_environment_copy = 0;
-    else if (!compat_environment_copy)
-      compat_environment_copy = ([]);
-  }
-#pragma deprecation_warnings
 
   void add_include_path(string tmp);
   void remove_include_path(string tmp);
@@ -887,24 +815,8 @@ mapping(string:string) getenv (void|int force_update)
 #else
     environment = res + ([]);
 #endif
-    // Kill the compat environment if forced.
-    compat_environment = compat_environment_copy = 0;
   }
-
   else {
-    if (compat_environment &&
-	!equal(compat_environment, compat_environment_copy)) {
-      foreach(compat_environment; string varname; array(string) pair) {
-	if (!equal(pair, compat_environment_copy[varname])) {
-	  putenv(pair[0], pair[1]);
-	}
-      }
-      foreach(compat_environment_copy; string varname; array(string) pair) {
-	if (!compat_environment[varname]) {
-	  putenv(pair[0]);
-	}
-      }
-    }
 #ifdef __NT__
     // Can't use the cached environment since variable names have been
     // lowercased there.
@@ -954,22 +866,11 @@ variant string getenv (string varname, void|int force_update)
 #else
     environment = Builtin._getenv();
 #endif
-    // Kill the compat environment if forced.
-    compat_environment = compat_environment_copy = 0;
   }
 
 #ifdef __NT__
   varname = lower_case(varname);
 #endif
-
-  if (compat_environment) {
-    array(string) res;
-    if (!equal(res = compat_environment[varname],
-	       compat_environment_copy[varname])) {
-      // Something has messed with the compat environment mapping.
-      putenv(varname, res[?1]);
-    }
-  }
 
   return environment[varname];
 }
@@ -992,19 +893,6 @@ void putenv (string varname, void|string value)
 //!
 {
   Builtin._putenv (varname, value);
-  if (compat_environment) {
-    string lvarname = varname;
-#ifdef __NT__
-    lvarname = lower_case(varname);
-#endif
-    if (value) {
-      compat_environment[lvarname] =
-	(compat_environment_copy[lvarname] = ({ varname, value })) + ({});
-    } else {
-      m_delete(compat_environment, lvarname);
-      m_delete(compat_environment_copy, lvarname);
-    }
-  }
   if (environment) {
 #ifdef __NT__
     varname = lower_case (varname);
@@ -3320,18 +3208,6 @@ void _main(array(string(0..255)) orig_argv)
     }
     if (compat_major != -1) {
       object compat_master = get_compat_master (compat_major, compat_minor);
-
-      if (cur_compat_ver <= Version (7, 6)) {
-	mapping(string:array(string)) compat_env = ([]);
-	foreach (Builtin._getenv(); string var; string val) {
-#ifdef __NT__
-	  compat_env[lower_case (var)] = ({var, val});
-#else
-	  compat_env[var] = ({var, val});
-#endif
-	}
-	compat_master->environment = compat_env;
-      }
     }
 
     foreach(q, array opts)
@@ -3395,24 +3271,13 @@ void _main(array(string(0..255)) orig_argv)
 
 	program prog;
 	mixed compile_err = catch {;
-	  if(cur_compat_ver <= Version(7,4))
-	    prog = compile_string(
-	      "mixed create(int argc, array(string) argv,array(string) env){"+
-	      opts[1]+";}");
-	  else if (intp (opts[1]))
+	  if (intp (opts[1]))
 	    prog = compile_string ("mixed run() {}");
 	  else {
 	    string code = opts[1];
 	    while(sscanf(code, "%sCHAR(%1s)%s", code, string c, string rest)==3)
 	      code += c[0] + rest;
-	    if (cur_compat_ver <= Version (7, 6))
-	      prog = compile_string(
-		"#define NOT(X) !(X)\n"
-		"mixed run(int argc, array(string) argv,"
-		"mapping(string:string) env){"+
-		code+";}");
-	    else
-	      prog = compile_string(
+            prog = compile_string(
 		"#define NOT(X) !(X)\n"
 		"mixed run(int argc, array(string) argv){" + code + ";}");
 	  }
@@ -3437,12 +3302,7 @@ void _main(array(string(0..255)) orig_argv)
 	    // eval_instruction in interpret.c so that the debug and
 	    // trace levels set above take effect in the bytecode
 	    // evaluator.
-	    if(cur_compat_ver <= Version(7,4))
-	      prog (sizeof(argv),argv,getenv());
-	    else if (cur_compat_ver <= Version (7, 6))
-	      ret = prog()->run(sizeof(argv),argv,getenv());
-	    else
-	      ret = prog()->run(sizeof(argv),argv);
+            ret = prog()->run(sizeof(argv),argv);
 	  };
 	predef::trace(trace);
 	if (err) {
@@ -3587,17 +3447,11 @@ void _main(array(string(0..255)) orig_argv)
       // Note that it won't work if there's another catch surrounding
       // this one.
       object script;
-      if(cur_compat_ver <= Version(7,4)) {
-	script=prog();
-      }
-      else {
-	script=prog(argv);
-      }
+      script=prog(argv);
+
       if(!script->main)
 	error("Error: %s has no main().\n", argv[0]);
-      if (cur_compat_ver <= Version (7, 6))
-	ret=script->main(sizeof(argv),argv,getenv());
-      else if (cur_compat_ver <= Version (8, 0))
+      if (cur_compat_ver <= Version (8, 0))
 	ret = script->main(sizeof(argv),argv);
       else
       {
