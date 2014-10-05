@@ -3395,11 +3395,7 @@ void _main(array(string(0..255)) orig_argv)
 
 	program prog;
 	mixed compile_err = catch {;
-	  if(cur_compat_ver <= Version(7,4))
-	    prog = compile_string(
-	      "mixed create(int argc, array(string) argv,array(string) env){"+
-	      opts[1]+";}");
-	  else if (intp (opts[1]))
+	  if (intp (opts[1]))
 	    prog = compile_string ("mixed run() {}");
 	  else {
 	    string code = opts[1];
@@ -3437,9 +3433,7 @@ void _main(array(string(0..255)) orig_argv)
 	    // eval_instruction in interpret.c so that the debug and
 	    // trace levels set above take effect in the bytecode
 	    // evaluator.
-	    if(cur_compat_ver <= Version(7,4))
-	      prog (sizeof(argv),argv,getenv());
-	    else if (cur_compat_ver <= Version (7, 6))
+	    if (cur_compat_ver <= Version (7, 6))
 	      ret = prog()->run(sizeof(argv),argv,getenv());
 	    else
 	      ret = prog()->run(sizeof(argv),argv);
@@ -3587,12 +3581,7 @@ void _main(array(string(0..255)) orig_argv)
       // Note that it won't work if there's another catch surrounding
       // this one.
       object script;
-      if(cur_compat_ver <= Version(7,4)) {
-	script=prog();
-      }
-      else {
-	script=prog(argv);
-      }
+      script=prog(argv);
       if(!script->main)
 	error("Error: %s has no main().\n", argv[0]);
       if (cur_compat_ver <= Version (7, 6))
