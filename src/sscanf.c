@@ -1660,21 +1660,6 @@ PMOD_EXPORT void f_sscanf(INT32 args)
   push_array(a);
 }
 
-void f_sscanf_76(INT32 args)
-{
-  INT32 i;
-  struct svalue *save_sp=sp;
-  struct array *a;
-
-  check_all_args("array_sscanf",args,BIT_STRING, BIT_STRING,0);
-
-  i = low_sscanf(sp[-args].u.string, sp[1-args].u.string, 0);
-
-  a = aggregate_array(DO_NOT_WARN(sp - save_sp));
-  pop_n_elems(args);
-  push_array(a);
-}
-
 static void push_sscanf_argument_types(PCHARP format, ptrdiff_t format_len,
 				       int cnt, int flags)
 {

@@ -9931,11 +9931,6 @@ void init_builtin_efuns(void)
 	   tFunc(tStr tAttr("sscanf_format", tStr),
 		 tArr(tAttr("sscanf_args", tMix))), OPT_TRY_OPTIMIZE);
 
-/* function(string,string:array) */
-  ADD_EFUN("array_sscanf_76", f_sscanf_76,
-	   tFunc(tStr tAttr("sscanf_76_format", tStr),
-		 tArr(tAttr("sscanf_args", tMix))), OPT_TRY_OPTIMIZE);
-
   ADD_EFUN("__handle_sscanf_format", f___handle_sscanf_format,
 	   tFunc(tStr tStr tType(tMix) tType(tMix), tType(tMix)),
 	   0);

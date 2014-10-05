@@ -1978,18 +1978,6 @@ void f_sprintf(INT32 args)
  * Quoting of '\e' was added in Pike 7.7.
  */
 
-static void f_sprintf_76(INT32 args)
-{
-  ONERROR uwp;
-  struct string_builder r;
-  SET_ONERROR(uwp, free_string_builder, &r);
-  init_string_builder(&r,0);
-  low_f_sprintf(args, 76, &r);
-  UNSET_ONERROR(uwp);
-  pop_n_elems(args);
-  push_string(finish_string_builder(&r));
-}
-
 #define PSAT_INVALID	1
 #define PSAT_MARKER	2
 
@@ -2869,13 +2857,6 @@ void init_sprintf(void)
 	    f_sprintf,
 	    tFuncV(tAttr("strict_sprintf_format", tOr(tStr, tObj)),
 		   tAttr("sprintf_args", tMix), tAttr("sprintf_result", tStr)),
-	    OPT_TRY_OPTIMIZE,
-	    optimize_sprintf,
-	    0);
-
-  ADD_EFUN2("sprintf_76", 
-	    f_sprintf_76,
-	    tFuncV(tOr(tStr, tObj), tMix, tStr),
 	    OPT_TRY_OPTIMIZE,
 	    optimize_sprintf,
 	    0);
