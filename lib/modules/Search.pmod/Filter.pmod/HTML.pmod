@@ -42,16 +42,6 @@ protected void create() {
   parser->add_containers(mkmapping(ignore_tags, ({""})*sizeof(ignore_tags)));
 
   cleaner = Parser.html_entity_parser(1);
-  cleaner = Parser.html_entity_parser();
-  cleaner->_set_entity_callback(
-	   lambda(Parser.HTML p,string ent)
-	   {
-	     string chr = Parser.decode_numeric_xml_entity(p->tag_name());
-	     if (!chr)
-	       return 0;
-	     return ({chr});
-	   });
-#endif
   cleaner->case_insensitive_tag(1);
   cleaner->lazy_entity_end(1);
   cleaner->ignore_unknown(1);
