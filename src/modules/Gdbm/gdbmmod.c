@@ -834,7 +834,6 @@ PIKE_MODULE_INIT
   add_program_constant( "gdbm", db, 0 ); /* compat (...-7.8). */
   free_program(db);
 #else
-  if(!TEST_COMPAT(7,6))
-    HIDE_MODULE();
+  HIDE_MODULE();
 #endif
 }

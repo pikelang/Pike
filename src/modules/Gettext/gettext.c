@@ -508,8 +508,7 @@ PIKE_MODULE_EXIT
 #include "program.h"
 
 PIKE_MODULE_INIT {
-  if(!TEST_COMPAT(7,6))
-    HIDE_MODULE();
+  HIDE_MODULE();
 }
 
 PIKE_MODULE_EXIT {}

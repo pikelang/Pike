@@ -1074,8 +1074,7 @@ PIKE_MODULE_INIT
 
 #else /*HAVE_MSQL*/
 PIKE_MODULE_INIT {
-  if(!TEST_COMPAT(7,6))
-    HIDE_MODULE();
+  HIDE_MODULE();
 }
 #endif /*HAVE_MSQL*/
 
