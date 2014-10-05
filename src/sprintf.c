@@ -1004,8 +1004,7 @@ static void low_pike_sprintf(struct format_stack *fs,
 			     ptrdiff_t format_len,
 			     struct svalue *argp,
 			     ptrdiff_t num_arg,
-			     int nosnurkel,
-			     int compat_mode)
+			     int nosnurkel)
 {
   int argument=0;
   int tmp,setwhat,d,e,indent;
@@ -1106,7 +1105,7 @@ static void low_pike_sprintf(struct format_stack *fs,
             array_index_no_free(Pike_sp,_v,tmp);
             Pike_sp++;
             low_pike_sprintf(fs, &_b,begin,SUBTRACT_PCHARP(a,begin)+1,
-                             Pike_sp-1,1,nosnurkel+1, compat_mode);
+                             Pike_sp-1,1,nosnurkel+1);
             fsp = fs->fsp;
             if(save_sp < Pike_sp) pop_stack();
           }
@@ -1363,8 +1362,7 @@ cont_2:
 	      array_index_no_free(Pike_sp,w,tmp);
 	      Pike_sp++;
 	    }
-	    low_pike_sprintf(fs, &b,ADD_PCHARP(a,1),e-2,s,Pike_sp-s,0,
-			     compat_mode);
+	    low_pike_sprintf(fs, &b,ADD_PCHARP(a,1),e-2,s,Pike_sp-s,0);
             fsp = fs->fsp;
 	    pop_n_elems(Pike_sp-s);
 	  }
@@ -1721,26 +1719,6 @@ cont_2:
       {
 	struct svalue *t;
 	GET_SVALUE(t);
-	if (compat_mode && (compat_mode <= 76)) {
-	  /* We don't care about the nested case, since it
-	   * contains line feeds and comments and stuff anyway.
-	   */
-	  if (TYPEOF(*t) == T_STRING) {
-	    struct string_builder buf;
-	    init_string_builder_alloc(&buf, t->u.string->len+2, 0);
-	    string_builder_putchar(&buf, '"');
-	    string_builder_quote_string(&buf, t->u.string, 0, 0x7fffffff, 0);
-	    string_builder_putchar(&buf, '"');
-	    
-	    fsp->b = MKPCHARP_STR(buf.s);
-	    fsp->len = buf.s->len;
-	    /* NOTE: We need to do this since we're not
-	     *       using free_string_builder(). */
-	    buf.s->len = buf.malloced;
-	    fsp->to_free_string = buf.s;
-	    break;
-	  }
-	}
 	{
 	  dynamic_buffer save_buf;
 	  dynbuf_string s;
@@ -1909,7 +1887,7 @@ static void free_f_sprintf_data (struct format_stack *fs)
 }
 
 /* The efun */
-void low_f_sprintf(INT32 args, int compat_mode, struct string_builder *r)
+void low_f_sprintf(INT32 args, struct string_builder *r)
 {
   ONERROR uwp;
   struct pike_string *ret;
@@ -1948,7 +1926,7 @@ void low_f_sprintf(INT32 args, int compat_mode, struct string_builder *r)
 		   argp->u.string->len,
 		   argp+1,
 		   args-1,
-		   0, compat_mode);
+		   0);
   UNSET_ONERROR(uwp);
   stack_alloc_destroy(&fs.a);
   free (fs.format_info_stack);
@@ -1960,7 +1938,7 @@ void f_sprintf(INT32 args)
   struct string_builder r;
   SET_ONERROR(uwp, free_string_builder, &r);
   init_string_builder(&r,0);
-  low_f_sprintf(args, 0, &r);
+  low_f_sprintf(args, &r);
   UNSET_ONERROR(uwp);
   pop_n_elems(args);
   push_string(finish_string_builder(&r));

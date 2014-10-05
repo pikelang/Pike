@@ -278,7 +278,7 @@ static ptrdiff_t PIKE_CONCAT(read_set,SIZE) (			\
   PIKE_CONCAT(p_wchar,SIZE) *match,				\
   ptrdiff_t cnt,						\
   struct sscanf_set *set,					\
-  ptrdiff_t match_len, INT32 UNUSED(flags))                     \
+  ptrdiff_t match_len)                                          \
 {								\
   p_wchar2 e, last = 0;						\
   MATCH_IS_WIDE( int set_size=0; )				\
@@ -595,7 +595,7 @@ static INT32 PIKE_CONCAT4(very_low_sscanf_,INPUT_SHIFT,_,MATCH_SHIFT)(	 \
 			 PIKE_CONCAT(p_wchar, MATCH_SHIFT) *match,	 \
 			 ptrdiff_t match_len,				 \
 			 ptrdiff_t *chars_matched,			 \
-			 int *success, INT32 flags)			 \
+			 int *success)                                  \
 {									 \
   struct svalue sval;							 \
   INT32 matches, arg;							 \
@@ -724,7 +724,7 @@ static INT32 PIKE_CONCAT4(very_low_sscanf_,INPUT_SHIFT,_,MATCH_SHIFT)(	 \
 			 match+cnt+1,					 \
 			 e-cnt-2,					 \
 			 &tmp,						 \
-			 &yes, flags);					 \
+			 &yes);                                         \
 	    if(yes && tmp)						 \
 	    {								 \
 	      f_aggregate(TO_INT32(sp-save_sp));			 \
@@ -1080,7 +1080,7 @@ INPUT_IS_WIDE(								 \
 		  PIKE_CONCAT(read_set,MATCH_SHIFT)(match,		 \
 						    s-match+1,		 \
 						    &set,		 \
-						    match_len, flags);	 \
+						    match_len);         \
 		  set.neg=!set.neg;					 \
 		  goto match_set;					 \
 	      }								 \
@@ -1169,7 +1169,7 @@ INPUT_IS_WIDE(								 \
 									 \
 	case '[':							 \
 	  cnt=PIKE_CONCAT(read_set,MATCH_SHIFT)(match,cnt+1,		 \
-						&set,match_len, flags);	 \
+						&set,match_len);         \
 									 \
 	match_set:							 \
 	  {								 \
@@ -1185,7 +1185,7 @@ INPUT_IS_WIDE(								 \
 	    for(e=eye;eye<len;eye++)					 \
 	    {								 \
 INPUT_IS_WIDE(								 \
-	      if((unsigned INT32) input[eye] < sizeof(set.c))		\
+	      if((unsigned INT32) input[eye] < sizeof(set.c))		 \
 	      {								 \
 )									 \
 	        if(set.c[input[eye]] == set.neg)			 \
@@ -1323,8 +1323,7 @@ MK_VERY_LOW_SSCANF(2,2)
 /* */
 INT32 low_sscanf_pcharp(PCHARP input, ptrdiff_t len,
                         PCHARP format, ptrdiff_t format_len,
-                        ptrdiff_t *chars_matched,
-                        int flags )
+                        ptrdiff_t *chars_matched)
 {
   int ok;
   check_c_stack(sizeof(struct sscanf_set)*2 + 512);
@@ -1332,38 +1331,38 @@ INT32 low_sscanf_pcharp(PCHARP input, ptrdiff_t len,
   {
     case 0:
       return very_low_sscanf_0_0(input.ptr, len,format.ptr, format_len,
-                                 chars_matched, &ok, flags  );
+                                 chars_matched, &ok);
     case 1:
       return very_low_sscanf_0_1(input.ptr, len, format.ptr, format_len,
-                                 chars_matched, &ok, flags  );
+                                 chars_matched, &ok);
     case 2:
       return very_low_sscanf_0_2(input.ptr, len, format.ptr, format_len,
-                                 chars_matched, &ok, flags  );
+                                 chars_matched, &ok);
     case 3:
       return very_low_sscanf_1_0(input.ptr, len, format.ptr, format_len,
-                                 chars_matched, &ok, flags  );
+                                 chars_matched, &ok);
     case 4:
       return very_low_sscanf_1_1(input.ptr, len, format.ptr, format_len,
-                                 chars_matched, &ok, flags  );
+                                 chars_matched, &ok);
     case 5:
       return very_low_sscanf_1_2(input.ptr, len, format.ptr, format_len,
-                                 chars_matched, &ok, flags  );
+                                 chars_matched, &ok);
     case 6:
       return very_low_sscanf_2_0(input.ptr, len, format.ptr, format_len,
-                                 chars_matched, &ok, flags  );
+                                 chars_matched, &ok);
     case 7:
       return very_low_sscanf_2_1(input.ptr, len, format.ptr, format_len,
-                                 chars_matched, &ok, flags  );
+                                 chars_matched, &ok);
     case 8:
       return very_low_sscanf_2_2(input.ptr, len, format.ptr, format_len,
-                                 chars_matched, &ok, flags );
+                                 chars_matched, &ok);
     default:
       Pike_error("impossible");
   }
 }
 
 /* Simplified interface to very_low_sscanf_{0,1,2}_{0,1,2}(). */
-INT32 low_sscanf(struct pike_string *data, struct pike_string *format, INT32 flags)
+INT32 low_sscanf(struct pike_string *data, struct pike_string *format)
 {
   ptrdiff_t matched_chars;
   int x;
@@ -1383,55 +1382,55 @@ INT32 low_sscanf(struct pike_string *data, struct pike_string *format, INT32 fla
     /*      0      :      0 */
     i = very_low_sscanf_0_0(STR0(data), data->len,
 			    STR0(format), format->len,
-			    &matched_chars, &x, flags);
+			    &matched_chars, &x);
     break;
   case 1:
     /*      0      :      1 */
     i = very_low_sscanf_0_1(STR0(data), data->len,
 			    STR1(format), format->len,
-			    &matched_chars, &x, flags);
+			    &matched_chars, &x);
     break;
   case 2:
     /*      0      :      2 */
     i = very_low_sscanf_0_2(STR0(data), data->len,
 			    STR2(format), format->len,
-			    &matched_chars, &x, flags);
+			    &matched_chars, &x);
     break;
   case 3:
     /*      1      :      0 */
     i = very_low_sscanf_1_0(STR1(data), data->len,
 			    STR0(format), format->len,
-			    &matched_chars, &x, flags);
+			    &matched_chars, &x);
     break;
   case 4:
     /*      1      :      1 */
     i = very_low_sscanf_1_1(STR1(data), data->len,
 			    STR1(format), format->len,
-			    &matched_chars, &x, flags);
+			    &matched_chars, &x);
     break;
   case 5:
     /*      1      :      2 */
     i = very_low_sscanf_1_2(STR1(data), data->len,
 			    STR2(format), format->len,
-			    &matched_chars, &x, flags);
+			    &matched_chars, &x);
     break;
   case 6:
     /*      2      :      0 */
     i = very_low_sscanf_2_0(STR2(data), data->len,
 			    STR0(format), format->len,
-			    &matched_chars, &x, flags);
+			    &matched_chars, &x);
     break;
   case 7:
     /*      2      :      1 */
     i = very_low_sscanf_2_1(STR2(data), data->len,
 			    STR1(format), format->len,
-			    &matched_chars, &x, flags);
+			    &matched_chars, &x);
     break;
   case 8:
     /*      2      :      2 */
     i = very_low_sscanf_2_2(STR2(data), data->len,
 			    STR2(format), format->len,
-			    &matched_chars, &x, flags);
+			    &matched_chars, &x);
     break;
   }
   return i;
@@ -1600,7 +1599,7 @@ INT32 low_sscanf(struct pike_string *data, struct pike_string *format, INT32 fla
  *!   @[sprintf], @[array_sscanf]
  *    @[parse_format]
  */
-void o_sscanf(INT32 args, INT32 flags)
+void o_sscanf(INT32 args, INT32 UNUSED(flags))
 {
   INT32 i=0;
   int x;
@@ -1612,7 +1611,7 @@ void o_sscanf(INT32 args, INT32 flags)
   if(TYPEOF(sp[1-args]) != T_STRING)
     SIMPLE_BAD_ARG_ERROR("sscanf", 2, "string");
 
-  i = low_sscanf(sp[-args].u.string, sp[1-args].u.string, flags);
+  i = low_sscanf(sp[-args].u.string, sp[1-args].u.string);
 
   if(sp-save_sp > args/2-1)
     Pike_error("Too few arguments for sscanf format.\n");
@@ -1653,7 +1652,7 @@ PMOD_EXPORT void f_sscanf(INT32 args)
 
   check_all_args("array_sscanf",args,BIT_STRING, BIT_STRING,0);
 
-  i = low_sscanf(sp[-args].u.string, sp[1-args].u.string, 0);
+  i = low_sscanf(sp[-args].u.string, sp[1-args].u.string);
 
   a = aggregate_array(DO_NOT_WARN(sp - save_sp));
   pop_n_elems(args);
@@ -1661,7 +1660,7 @@ PMOD_EXPORT void f_sscanf(INT32 args)
 }
 
 static void push_sscanf_argument_types(PCHARP format, ptrdiff_t format_len,
-				       int cnt, int flags)
+				       int cnt)
 {
   for(; cnt < format_len; cnt++)
   {
@@ -1720,7 +1719,7 @@ static void push_sscanf_argument_types(PCHARP format, ptrdiff_t format_len,
 	  }
 	  if (!no_assign) {
 	    type_stack_mark();
-	    push_sscanf_argument_types(format, e, cnt+1, flags);
+	    push_sscanf_argument_types(format, e, cnt+1);
 	    if (!(depth = pop_stack_mark())) {
 	      push_type(PIKE_T_ZERO);
 	    } else {
@@ -1847,7 +1846,6 @@ void f___handle_sscanf_format(INT32 args)
   struct pike_string *fmt;
   struct pike_string *sscanf_format_string;
   struct pike_string *sscanf_76_format_string;
-  int flags = 0;
   int found = 0;
   int fmt_count;
 
@@ -1917,7 +1915,7 @@ void f___handle_sscanf_format(INT32 args)
     if (arg) {
       type_stack_mark();
       push_sscanf_argument_types(MKPCHARP(fmt->str, fmt->size_shift),
-				 fmt->len, 0, flags);
+				 fmt->len, 0);
       if (!array_cnt) {
 	pop_stack_mark();
 	push_type(T_VOID);	/* No more args */
@@ -2010,7 +2008,7 @@ void f___handle_sscanf_format(INT32 args)
     if (arg) {
       type_stack_mark();
       push_sscanf_argument_types(MKPCHARP(fmt->str, fmt->size_shift),
-				 fmt->len, 0, flags);
+				 fmt->len, 0);
       /* Join the argument types. */
       if (!(fmt_count = pop_stack_mark())) {
 	push_type(PIKE_T_ZERO);

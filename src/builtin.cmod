@@ -3209,7 +3209,7 @@ PIKECLASS Buffer
     struct Buffer_struct *str = THIS;
     if(!str->str.s)
       init_string_builder_alloc(&str->str, str->initial, 0);
-    low_f_sprintf(args, 0, &str->str);
+    low_f_sprintf(args, &str->str);
     RETURN str->str.s->len;
   }
 

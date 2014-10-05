@@ -1801,7 +1801,7 @@ fail: CALL_AND_UNSET_ONERROR(e);
     struct string_builder tmp;
     init_string_builder(&tmp,0);
     SET_ONERROR(_e, free_string_builder, &tmp);
-    low_f_sprintf(args, 0, &tmp );
+    low_f_sprintf(args, &tmp);
     if( tmp.s->size_shift )
       Pike_error("Buffer only handles 8bit data\n");
     io_append( THIS, tmp.s->str, tmp.s->len );
@@ -1828,7 +1828,7 @@ fail: CALL_AND_UNSET_ONERROR(e);
     i = low_sscanf_pcharp(
       MKPCHARP(io_read_pointer(THIS), 0), io_len(THIS),
       MKPCHARP(format->str,format->size_shift), format->len,
-      &num_used, 0);
+      &num_used);
 
     if( !num_used )
     {
@@ -1948,8 +1948,7 @@ fail: CALL_AND_UNSET_ONERROR(e);
     i = low_sscanf_pcharp(
       MKPCHARP(io_read_pointer(THIS), 0), io_len(THIS),
       MKPCHARP(format->str,format->size_shift), format->len,
-      &num_used,
-      0);
+      &num_used);
 
     if( !num_used )
     {
