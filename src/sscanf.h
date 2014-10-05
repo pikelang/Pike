@@ -7,8 +7,6 @@
 #ifndef SSCANF_H
 #define SSCANF_H
 
-#define SSCANF_FLAG_76_COMPAT 0x1
-
 INT32 low_sscanf_pcharp(PCHARP input, ptrdiff_t len,
                         PCHARP format, ptrdiff_t format_len,
                         ptrdiff_t *chars_matched, int flags);

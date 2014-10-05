@@ -3801,13 +3801,8 @@ void fix_type_field(node *n)
       struct pike_type *sscanf_type;
       node *args;
       INT32 argno = 0;
-      if (CAAR(n)->u.sval.u.integer & SSCANF_FLAG_76_COMPAT) {
-	MAKE_CONST_STRING(sscanf_name, "sscanf_76");
-	add_ref(sscanf_type = sscanf_76_type_string);
-      } else {
-	MAKE_CONST_STRING(sscanf_name, "sscanf");
-	add_ref(sscanf_type = sscanf_type_string);
-      }	
+      MAKE_CONST_STRING(sscanf_name, "sscanf");
+      add_ref(sscanf_type = sscanf_type_string);
       args = mknode(F_ARG_LIST, CDAR(n), CDR(n));
       add_ref(CDAR(n));
       if (CDR(n)) add_ref(CDR(n));

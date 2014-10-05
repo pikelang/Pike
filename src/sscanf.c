@@ -278,7 +278,7 @@ static ptrdiff_t PIKE_CONCAT(read_set,SIZE) (			\
   PIKE_CONCAT(p_wchar,SIZE) *match,				\
   ptrdiff_t cnt,						\
   struct sscanf_set *set,					\
-  ptrdiff_t match_len, INT32 flags)				\
+  ptrdiff_t match_len, INT32 UNUSED(flags))                     \
 {								\
   p_wchar2 e, last = 0;						\
   MATCH_IS_WIDE( int set_size=0; )				\
@@ -291,7 +291,7 @@ static ptrdiff_t PIKE_CONCAT(read_set,SIZE) (			\
 								\
   if(match[cnt]=='^' &&						\
      (cnt+2>=match_len || match[cnt+1]!='-' ||			\
-      match[cnt+2]==']' || (flags & SSCANF_FLAG_76_COMPAT)))	\
+      match[cnt+2]==']'))                                       \
   {								\
     set->neg=1;							\
     cnt++;							\
@@ -1668,7 +1668,7 @@ void f_sscanf_76(INT32 args)
 
   check_all_args("array_sscanf",args,BIT_STRING, BIT_STRING,0);
 
-  i = low_sscanf(sp[-args].u.string, sp[1-args].u.string, SSCANF_FLAG_76_COMPAT);
+  i = low_sscanf(sp[-args].u.string, sp[1-args].u.string, 0);
 
   a = aggregate_array(DO_NOT_WARN(sp - save_sp));
   pop_n_elems(args);
@@ -1776,8 +1776,7 @@ static void push_sscanf_argument_types(PCHARP format, ptrdiff_t format_len,
 	    if((INDEX_PCHARP(format, cnt)=='^') &&
 	       (cnt+2>=format_len ||
 		(INDEX_PCHARP(format, cnt+1)!='-') ||
-		(INDEX_PCHARP(format, cnt+2)==']') ||
-		(flags & SSCANF_FLAG_76_COMPAT)))
+		(INDEX_PCHARP(format, cnt+2)==']') ))
 	    {
 	      cnt++;
 	      if(cnt >= format_len) {
@@ -1895,7 +1894,6 @@ void f___handle_sscanf_format(INT32 args)
       push_undefined();
       return;
     }
-    flags = SSCANF_FLAG_76_COMPAT;
   }
 
   fmt = Pike_sp[-3].u.string;
