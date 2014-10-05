@@ -41,9 +41,7 @@ protected void create() {
   constant ignore_tags = ({ "script", "style", });
   parser->add_containers(mkmapping(ignore_tags, ({""})*sizeof(ignore_tags)));
 
-#if __VERSION__ > 7.4
   cleaner = Parser.html_entity_parser(1);
-#else
   cleaner = Parser.html_entity_parser();
   cleaner->_set_entity_callback(
 	   lambda(Parser.HTML p,string ent)

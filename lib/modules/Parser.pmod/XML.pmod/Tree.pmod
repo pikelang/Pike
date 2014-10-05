@@ -1453,9 +1453,6 @@ class WrappedSimple
 {
   inherit .Simple;
 
-#if (__REAL_VERSION__ > 7.65)
-  // CMOD-based xml parser ==> we can overload internal functions.
-
   string lookup_entity(string entity)
   {
     string ret = ::lookup_entity(entity);
@@ -1468,7 +1465,6 @@ class WrappedSimple
     werror("define_entity_raw(%O, %O)\n", entity, raw);
     ::define_entity_raw(entity, raw);
   }
-#endif
 }
 
 //! Mixin for parsing XML.

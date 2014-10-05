@@ -873,13 +873,8 @@ protected void release_monitor(Monitor m)
 {
   m->next_poll = -1000;
   monitor_queue->adjust(m);
-  while (monitor_queue->peek() < 0) {
-#if __VERSION__ < 7.8
-    monitor_queue->top();
-#else
+  while (monitor_queue->peek() < 0)
     monitor_queue->pop();
-#endif
-  }
 }
 
 //! Create a new @[Monitor] for a @[path].
