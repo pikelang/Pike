@@ -74,7 +74,6 @@ extern size_t pike_type_hash_size;
  */
 #define CALL_STRICT		0x0001	/* Strict checking. */
 #define CALL_NOT_LAST_ARG	0x0002	/* This is not the last argument. */
-#define CALL_7_6		0x0004	/* Pike 7.6 compatibility mode. */
 #define CALL_WEAK_VOID		0x0008	/* Allow promotion of void to zero. */
 #define CALL_ARG_LVALUE		0x0010	/* Argument is lvalue (sscanf). */
 #define CALL_INHIBIT_WARNINGS	0x0020	/* Inhibit warnings. */

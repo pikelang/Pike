@@ -623,12 +623,10 @@ static ptrdiff_t low_cpp(struct cpp *this,
                         pos--;
                         READSTRING(nf);
                         push_string(finish_string_builder(&nf));
-                        if (!TEST_COMPAT(7,6)) {
-                          /* In Pike 7.7 and later filenames belonging to Pike
-                           * are assumed to be encoded according to UTF-8.
-                           */
-                          f_string_to_utf8(1);
-                        }
+                        /* In Pike 7.7 and later filenames belonging to Pike
+                         * are assumed to be encoded according to UTF-8.
+                         */
+                        f_string_to_utf8(1);
                         ref_push_string(this->current_file);
                         push_int(1);
                         break;
@@ -647,12 +645,10 @@ static ptrdiff_t low_cpp(struct cpp *this,
                           pos++;
                         }
                         push_string(make_shared_binary_pcharp(ADD_PCHARP(data,tmp), pos-tmp));
-                        if (!TEST_COMPAT(7,6)) {
-                          /* In Pike 7.7 and later filenames belonging to Pike
-                           * are assumed to be encoded according to UTF-8.
-                           */
-                          f_string_to_utf8(1);
-                        }
+                        /* In Pike 7.7 and later filenames belonging to Pike
+                         * are assumed to be encoded according to UTF-8.
+                         */
+                        f_string_to_utf8(1);
                         ref_push_string(this->current_file);
                         pos++;
                         push_int(0);

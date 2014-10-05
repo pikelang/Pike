@@ -1588,7 +1588,7 @@ node *index_node(node *n, char *node_name, struct pike_string *id)
 
   check_tree(n,0);
 
-  if (!is_const(n) && !TEST_COMPAT(7, 6)) {
+  if (!is_const(n)) {
     /* Index dynamically. */
     return mknode(F_INDEX, copy_node(n), mkstrnode(id));
   }
@@ -3257,9 +3257,7 @@ void fix_type_field(node *n)
 	 *	/grubba 2007-04-27
 	 */
 	if (((CDR(n)->token != F_INDEX && CDR(n)->token != F_ARROW) ||
-	     !((TEST_COMPAT (7, 6) && /* Bug compatibility. */
-		match_types(array_type_string, CDR(n)->type)) ||
-	       match_types(array_type_string, CADR(n)->type))) &&
+	     !(match_types(array_type_string, CADR(n)->type))) &&
 	    !match_types(CDR(n)->type,CAR(n)->type)) {
 	  yytype_report(REPORT_ERROR, NULL, 0, CDR(n)->type,
 			NULL, 0, CAR(n)->type,

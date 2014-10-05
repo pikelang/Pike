@@ -6753,11 +6753,6 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
 #endif /* PIKE_DEBUG */
     /* No need to perform advanced checking in the trivial case... */
     if (arg_type != (tmp2 = fun_type->car)) {
-      if ((flags & CALL_7_6) && (arg_type == void_type_string)) {
-	/* Compat with Pike 7.6 and earlier. */
-	arg_type = zero_type_string;
-      }
-
       if (!((flags & CALL_INVERTED_TYPES)?
 	    low_pike_types_le(tmp2, arg_type, 0,
 			      LE_A_B_SWAPPED|LE_EXPLICIT_ZERO):
@@ -6961,13 +6956,11 @@ struct pike_type *low_new_check_call(struct pike_type *fun_type,
     return res;
 
   case T_VOID:
-    if (!(flags & CALL_7_6)) {
-      if ((flags & (CALL_WEAK_VOID|CALL_STRICT)) == CALL_STRICT) {
-	return NULL;
-      }
-      /* Promote void arguments to zero. */
-      arg_type = zero_type_string;
+    if ((flags & (CALL_WEAK_VOID|CALL_STRICT)) == CALL_STRICT) {
+      return NULL;
     }
+    /* Promote void arguments to zero. */
+    arg_type = zero_type_string;
     break;
   }
 
@@ -7557,11 +7550,6 @@ static struct pike_type *new_check_call_arg(struct pike_string *fun_name,
     simple_describe_type(fun_type);
   }
 #endif /* PIKE_DEBUG */
-
-  if (TEST_COMPAT(7, 6)) {
-    /* Attempt to reduce strictness to Pike 7.6 levels. */
-    flags |= CALL_7_6;
-  }
 
   if (args->token == F_PUSH_ARRAY) {
 #ifdef PIKE_DEBUG

@@ -603,7 +603,6 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 	  if(ISWORD("while")) return TOK_WHILE;
 	  break;
 	case TWO_CHAR('_','_'):
-	  if (TEST_COMPAT(7,6)) break;
 	  if(len < 5) break;
 	  if(ISWORD("__attribute__"))
 	    return TOK_ATTRIBUTE_ID;

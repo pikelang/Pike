@@ -2051,12 +2051,8 @@ struct node_s *program_magic_identifier (struct program_state *state,
 	   state_depth, inherit_num, ident->str, colon_colon_ref);
 #endif
 
-  if (!inherit_num && TEST_COMPAT(7,6)) {
-    /* Pike 7.6 and earlier couldn't refer to the current inherit. */
-    inherit_num = -1;
-  }
-
-  if ((inherit_num == -1) || (!TEST_COMPAT(7,6) && (inherit_num >= 0))) {
+  /* FIXME: Is this expression always true? */
+  if ((inherit_num == -1) || (inherit_num >= 0)) {
     if (ident == this_string) {
       /* Handle this. */
       return mkthisnode(state->new_program, inherit_num);
@@ -5131,12 +5127,7 @@ int call_handle_inherit(struct pike_string *s)
   CHECK_COMPILER();
 
   ref_push_string(s);
-  if (!TEST_COMPAT(7,6)) {
-    /* In Pike 7.7 and later filenames belonging to Pike are assumed
-     * to be encoded according to UTF-8.
-     */
-    f_string_to_utf8(1);
-  }
+  f_string_to_utf8(1);
 
   if (safe_apply_current2(PC_HANDLE_INHERIT_FUN_NUM, 1, NULL))
     if (TYPEOF(Pike_sp[-1]) != T_INT)
@@ -7069,8 +7060,7 @@ int store_constant(const struct svalue *foo,
 	} else if (TYPEOF(*foo) == T_INT) {
 	  if (foo->u.integer == c->sval.u.integer) {
 	    /* Make sure UNDEFINED is kept (but not in compat mode). */
-	    if (foo->u.integer || (SUBTYPEOF(*foo) == SUBTYPEOF(c->sval)) ||
-		TEST_COMPAT(7, 6)) {
+	    if (foo->u.integer || (SUBTYPEOF(*foo) == SUBTYPEOF(c->sval))){
 	      UNSETJMP(jmp);
 	      return e;
 	    }

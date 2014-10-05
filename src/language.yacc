@@ -543,7 +543,7 @@ constant_name: TOK_IDENTIFIER '=' safe_expr0
       Pike_compiler->compiler_pass=tmp;
     }
 
-    if (!TEST_COMPAT(7, 6) && (Pike_compiler->current_modifiers & ID_EXTERN)) {
+    if (Pike_compiler->current_modifiers & ID_EXTERN) {
       int depth = 0;
       struct program_state *state = Pike_compiler;
       node *n = $3;
@@ -571,11 +571,6 @@ constant_name: TOK_IDENTIFIER '=' safe_expr0
 		     Pike_compiler->current_modifiers & ~ID_EXTERN);
       }
     } else {
-      if (TEST_COMPAT(7, 6) &&
-	  (Pike_compiler->current_modifiers & ID_EXTERN) &&
-	  (Pike_compiler->compiler_pass == 1)) {
-	yywarning("Extern declared constant.");
-      }
       if(!is_const($3)) {
 	if (Pike_compiler->compiler_pass == 2) {
 	  yyerror("Constant definition is not constant.");
@@ -735,10 +730,6 @@ def: modifiers optional_attributes type_or_error optional_constant optional_star
       int e;
       MAKE_CONST_STRING(create_string, "create");
       if ($6->u.sval.u.string == create_string) {
-	if (TEST_COMPAT(7, 6)) {
-	  yywarning("Having both an implicit and an explicit create() "
-		    "was not supported in Pike 7.6 and before.");
-	}
 	/* Prepend the create arguments. */
 	if (Pike_compiler->num_create_args < 0) {
 	  Pike_compiler->varargs = 1;
@@ -3533,13 +3524,8 @@ apply:
 
 implicit_modifiers:
   {
-    if (TEST_COMPAT(7, 6)) {
-      $$ = Pike_compiler->current_modifiers =
-	(THIS_COMPILATION->lex.pragmas & ID_MODIFIER_MASK);
-    } else {
-      $$ = Pike_compiler->current_modifiers = ID_PROTECTED|ID_INLINE|ID_PRIVATE |
-	(THIS_COMPILATION->lex.pragmas & ID_MODIFIER_MASK);
-    }
+    $$ = Pike_compiler->current_modifiers = ID_PROTECTED|ID_INLINE|ID_PRIVATE |
+      (THIS_COMPILATION->lex.pragmas & ID_MODIFIER_MASK);
   }
   ;
 
