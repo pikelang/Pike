@@ -6192,9 +6192,12 @@ static void f_gethostip(INT32 args) {
 #include <pty.h>
 #endif
 
+int fd_write_identifier_offset;
+
 PIKE_MODULE_INIT
 {
   struct object *o;
+  int write_fun_num;
 
   Pike_compiler->new_program->id = PROG_MODULE_STDIO_ID;
 
@@ -6241,6 +6244,10 @@ PIKE_MODULE_INIT
 
   file_program=end_program();
   add_program_constant("Fd",file_program,0);
+
+  write_fun_num = find_identifier("write", file_program);
+  fd_write_identifier_offset =
+    file_program->identifier_references[write_fun_num].identifier_offset;
 
   o=file_make_object_from_fd(0, low_fd_query_properties(0)|FILE_READ,
 			     fd_CAN_NONBLOCK);
