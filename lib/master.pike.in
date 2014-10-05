@@ -157,19 +157,19 @@ constant NoValue = typeof (no_value);
 
 // Some API compatibility stuff.
 
-//! Pike 7.6 master compatibility interface.
+//! Pike 7.8 master compatibility interface.
 //!
 //! Most of the interface is implemented via mixin,
 //! or overloading by more recent masters.
 //!
 //! This interface is used for compatibility with
-//! Pike 7.6.
+//! Pike 7.8.
 //!
 //! @deprecated predef::MasterObject
 //!
 //! @seealso
 //!   @[get_compat_master()], @[master()], @[predef::MasterObject]
-protected class Pike_7_6_master
+protected class Pike_7_8_master
 {
   extern array(string) pike_include_path;
   extern array(string) pike_module_path;
@@ -421,51 +421,6 @@ protected class Pike_7_6_master
   extern array(string) system_module_path;
   extern CompatResolver fallback_resolver;
   joinnode get_root_module(object|void current_handler);
-  local protected object Pike_7_6_compat_handler;
-  local mixed resolv_or_error(string identifier, string|void current_file,
-			      void|object current_handler)
-  {
-    if (!Pike_7_6_compat_handler) {
-      Pike_7_6_compat_handler = global::get_compilation_handler(7, 6);
-    }
-    return Pike_7_6_compat_handler->resolv_or_error(identifier, current_file,
-						    current_handler);
-  }
-  local mixed resolv(string identifier, string|void current_file)
-  {
-    if (!Pike_7_6_compat_handler) {
-      Pike_7_6_compat_handler = global::get_compilation_handler(7, 6);
-    }
-    return Pike_7_6_compat_handler->resolv(identifier, current_file);
-  }
-  array get_backtrace (object|array err);
-  object get_compat_master(int major, int minor)
-  {
-    // 0.0 .. 7.6
-    if ((major < 7) || ((major == 7) && (minor < 7)))
-      return this::this;
-    return get_compat_master(major, minor);
-  }
-
-  /* No missing symbols. */
-}
-
-//! Pike 7.8 master compatibility interface.
-//!
-//! Most of the interface is implemented via mixin,
-//! or overloading by more recent masters.
-//!
-//! This interface is used for compatibility with
-//! Pike 7.7 and 7.8.
-//!
-//! @deprecated predef::MasterObject
-//!
-//! @seealso
-//!   @[get_compat_master()], @[master()], @[predef::MasterObject]
-protected class Pike_7_8_master
-{
-  inherit Pike_7_6_master;
-
   local protected object Pike_7_8_compat_handler;
   local mixed resolv_or_error(string identifier, string|void current_file,
 			      void|object current_handler)
@@ -483,12 +438,57 @@ protected class Pike_7_8_master
     }
     return Pike_7_8_compat_handler->resolv(identifier, current_file);
   }
+  array get_backtrace (object|array err);
   object get_compat_master(int major, int minor)
   {
-    if ((major < 7) || ((major == 7) && (minor < 7)))
-      return Pike_7_6_master::get_compat_master(major, minor);
-    // 7.5 & 7.6
-    if ((major == 7) && (minor < 9))
+    // 0.0 .. 7.8
+    if (major < 8)
+      return this::this;
+    return get_compat_master(major, minor);
+  }
+
+  /* No missing symbols. */
+}
+
+//! Pike 8.0 master compatibility interface.
+//!
+//! Most of the interface is implemented via mixin,
+//! or overloading by more recent masters.
+//!
+//! This interface is used for compatibility with
+//! Pike 8.0.
+//!
+//! @deprecated predef::MasterObject
+//!
+//! @seealso
+//!   @[get_compat_master()], @[master()], @[predef::MasterObject]
+protected class Pike_8_0_master
+{
+  inherit Pike_7_8_master;
+
+  local protected object Pike_8_0_compat_handler;
+  local mixed resolv_or_error(string identifier, string|void current_file,
+			      void|object current_handler)
+  {
+    if (!Pike_8_0_compat_handler) {
+      Pike_8_0_compat_handler = global::get_compilation_handler(8, 0);
+    }
+    return Pike_8_0_compat_handler->resolv_or_error(identifier, current_file,
+						    current_handler);
+  }
+  local mixed resolv(string identifier, string|void current_file)
+  {
+    if (!Pike_8_0_compat_handler) {
+      Pike_8_0_compat_handler = global::get_compilation_handler(8, 0);
+    }
+    return Pike_8_0_compat_handler->resolv(identifier, current_file);
+  }
+  object get_compat_master(int major, int minor)
+  {
+    if (major < 8)
+      return Pike_7_8_master::get_compat_master(major, minor);
+    // 8.0
+    if ((major == 8) && (minor < 1))
       return this::this;
     return get_compat_master(major, minor);
   }
@@ -501,7 +501,7 @@ protected class Pike_7_8_master
 //!
 //! @seealso
 //!   @[get_compat_master()]
-protected inherit Pike_7_8_master;
+protected inherit Pike_8_0_master;
 
 //! @appears error
 //! Throws an error. A more readable version of the code
@@ -5580,8 +5580,8 @@ string _sprintf(int t)
 //!   @[get_compilation_handler()], @[master()]
 object get_compat_master(int major, int minor)
 {
-  if ((major < 7) || ((major == 7) && (minor < 9)))
-    return Pike_7_8_master::get_compat_master(major, minor);
-  // 7.9 and later.
+  if ((major < 8) || ((major == 8) && (minor < 1)))
+    return Pike_8_0_master::get_compat_master(major, minor);
+  // 8.1 and later.
   return this;
 }
