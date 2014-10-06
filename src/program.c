@@ -11709,7 +11709,7 @@ static int low_implements(struct program *a, struct program *b)
 
   for(e=0;e<b->num_identifier_references;e++)
   {
-    struct identifier *bid;
+    struct identifier *bid, *aid;
     int i;
     if (b->identifier_references[e].id_flags & (ID_PROTECTED|ID_HIDDEN|ID_VARIANT))
       continue;		/* Skip protected & hidden */
@@ -11725,9 +11725,18 @@ static int low_implements(struct program *a, struct program *b)
       ret = 0;
       break;
     }
-
-    if (!pike_types_le(bid->type, ID_FROM_INT(a, i)->type)) {
-      if(!match_types(ID_FROM_INT(a,i)->type, bid->type)) {
+    aid = ID_FROM_INT(a, i);
+    if( IDENTIFIER_IS_FUNCTION(aid->identifier_flags) && aid->func.offset == -1 )
+    {
+#if 0
+      fprintf(stderr, "Identifier \"%s\" is not implemented, only prototype available\n",
+              bid->name->str);
+#endif /* 0 */
+      ret = 0;
+      break;
+    }
+    if (!pike_types_le(bid->type, aid->type)) {
+      if(!match_types(aid->type, bid->type)) {
 #if 0
 	fprintf(stderr, "Identifier \"%s\" is incompatible.\n",
 		bid->name->str);
@@ -11756,28 +11765,49 @@ static int implements_hval( INT32 aid, INT32 bid )
     return ((aid<<4) ^ bid ^ (aid>>4)) & (IMPLEMENTS_CACHE_SIZE-1);
 }
 
+static int no_prototypes( struct program *a )
+{
+  int e;
+  for(e=0;e<a->num_identifier_references;e++)
+  {
+    struct identifier *aid;
+    if(a->identifier_references[e].id_flags & (ID_PROTECTED|ID_HIDDEN|ID_VARIANT|ID_OPTIONAL))
+      continue;		/* Skip protected & hidden */
+
+    /* FIXME: Extern declared variables? */
+    aid = ID_FROM_INT(a,e);
+    if( IDENTIFIER_IS_FUNCTION(aid->identifier_flags) && aid->func.offset == -1 )
+      return 0;
+  }
+  return 1;
+}
+
 /* returns 1 if a implements b, but faster */
 PMOD_EXPORT int implements(struct program *a, struct program *b)
 {
   unsigned long hval;
   if(!a || !b) return -1;
-  if(a==b) return 1;
 
   hval = implements_hval(a->id,b->id);
   if(implements_cache[hval].aid==a->id && implements_cache[hval].bid==b->id)
   {
     return implements_cache[hval].ret;
   }
+
   /* Do it the tedious way */
   implements_cache[hval].aid=a->id;
   implements_cache[hval].bid=b->id;
   implements_cache[hval].ret = 1;	/* Tentatively compatible. */
-  implements_cache[hval].ret = low_implements(a,b);
+  if(a==b)
+    implements_cache[hval].ret = no_prototypes(a);
+  else
+    implements_cache[hval].ret = low_implements(a,b);
   /* NOTE: If low_implements() returns 0, the cache may have received
    *       some false positives. Those should be cleared.
    */
   return implements_cache[hval].ret;
 }
+
 
 /* Returns 1 if a is compatible with b */
 static int low_is_compatible(struct program *a, struct program *b)
@@ -11968,6 +11998,26 @@ void yyexplain_not_implements(int severity_level,
   struct pike_string *b_file;
   DECLARE_CYCLIC();
 
+  if( a == b )
+  {
+    /* Only happens if there are prototype-only functions. */
+    for( e=0; e<b->num_identifier_references;e++ )
+    {
+      struct identifier *bid;
+      if (b->identifier_references[e].id_flags & (ID_PROTECTED|ID_HIDDEN|ID_VARIANT|ID_OPTIONAL))
+        continue;
+
+      bid = ID_FROM_INT(b,e);
+      if( IDENTIFIER_IS_FUNCTION(bid->identifier_flags) && bid->func.offset == -1 )
+      {
+        a_file = get_identifier_line(b, e, &a_line);
+        yytype_report(severity_level, a_file, a_line, bid->type, a_file, a_line, NULL,
+                      0, "Missing implementation of %S. Only prototype available.", bid->name);
+        continue;
+      }
+    }
+    return;
+  }
   if (BEGIN_CYCLIC(a, b)) {
     END_CYCLIC();
     return;
@@ -11979,7 +12029,7 @@ void yyexplain_not_implements(int severity_level,
 
   for(e=0;e<b->num_identifier_references;e++)
   {
-    struct identifier *bid;
+    struct identifier *bid, *aid;
     int i;
     if (b->identifier_references[e].id_flags & (ID_PROTECTED|ID_HIDDEN|ID_VARIANT))
       continue;		/* Skip protected & hidden */
@@ -11990,37 +12040,49 @@ void yyexplain_not_implements(int severity_level,
       INT_TYPE bid_line = b_line;
       struct pike_string *bid_file;
       if (b->identifier_references[e].id_flags & (ID_OPTIONAL))
-	continue;		/* It's ok... */
+        continue;		/* It's ok... */
       bid_file = get_identifier_line(b, e, &bid_line);
       if (!bid_file) bid_file = b_file;
       yytype_report(severity_level,
-		    bid_file, bid_line, bid->type,
-		    a_file, a_line, NULL,
-		    0, "Missing identifier %S.", bid->name);
+                    bid_file, bid_line, bid->type,
+                    a_file, a_line, NULL,
+                    0, "Missing identifier %S.", bid->name);
       continue;
     }
-
-    if (!pike_types_le(bid->type, ID_FROM_INT(a, i)->type)) {
+    {
       INT_TYPE aid_line = a_line;
       INT_TYPE bid_line = b_line;
       struct pike_string *aid_file = get_identifier_line(a, i, &aid_line);
       struct pike_string *bid_file = get_identifier_line(b, e, &bid_line);
       if (!aid_file) aid_file = a_file;
       if (!bid_file) bid_file = b_file;
-      if(!match_types(ID_FROM_INT(a,i)->type, bid->type)) {
-	yytype_report(severity_level,
-		      bid_file, bid_line, bid->type,
-		      aid_file, aid_line, ID_FROM_INT(a, i)->type,
-		      0, "Type of identifier %S does not match.", bid->name);
-      } else {
-	yytype_report((severity_level < REPORT_WARNING)?
-		      severity_level : REPORT_WARNING,
-		      bid_file, bid_line, bid->type,
-		      aid_file, aid_line, ID_FROM_INT(a, i)->type,
-		      0, "Type of identifier %S is not strictly compatible.",
-		      bid->name);
+
+      aid = ID_FROM_INT(a, i);
+
+      if( IDENTIFIER_IS_FUNCTION(aid->identifier_flags) && aid->func.offset == -1 )
+      {
+        yytype_report(severity_level, bid_file,bid_line,bid->type,
+                      aid_file,aid_line, NULL,
+                      0, "Missing implementation of %S. Only has a prototype.", bid->name);
+        continue;
       }
-      continue;
+
+      if (!pike_types_le(bid->type, aid->type)) {
+        if(!match_types(aid->type, bid->type)) {
+          yytype_report(severity_level,
+                        bid_file, bid_line, bid->type,
+                        aid_file, aid_line, aid->type,
+                        0, "Type of identifier %S does not match.", bid->name);
+        } else {
+          yytype_report((severity_level < REPORT_WARNING)?
+                        severity_level : REPORT_WARNING,
+                        bid_file, bid_line, bid->type,
+                        aid_file, aid_line, aid->type,
+                        0, "Type of identifier %S is not strictly compatible.",
+                        bid->name);
+        }
+        continue;
+      }
     }
   }
   free_string(b_file);
