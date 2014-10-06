@@ -283,8 +283,8 @@ struct identifier
 {
   struct pike_string *name;
   struct pike_type *type;
-  unsigned INT32 filename_strno;	/* Index in strings. */
   INT_TYPE linenumber;
+  unsigned INT32 filename_strno;	/* Index in strings. */
   unsigned INT8 identifier_flags;	/* IDENTIFIER_??? */
   unsigned INT8 run_time_type;		/* PIKE_T_??? */
   unsigned INT16 opt_flags;		/* OPT_??? */
