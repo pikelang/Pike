@@ -205,6 +205,9 @@ PIKECLASS Cipher
 	struct program *parent_State_prog =
 	  low_program_from_function(parent_obj, parent_State_fun_num);
 	if (parent_State_prog) {
+	  parent_State_fun_num =
+	    really_low_reference_inherited_identifier(Pike_compiler->previous,
+						      0, parent_State_fun_num);
 	  low_inherit(parent_State_prog, 0,
 		      parent_State_fun_num,
 		      1 + 42, 0, NULL);
@@ -1119,6 +1122,9 @@ PIKECLASS BlockCipher
 	  struct program *parent_State_prog =
 	    low_program_from_function(parent_obj, parent_State_fun_num);
 	  if (parent_State_prog) {
+	    parent_State_fun_num =
+	      really_low_reference_inherited_identifier(Pike_compiler->previous,
+							0, parent_State_fun_num);
 	    low_inherit(parent_State_prog, 0,
 			parent_State_fun_num,
 			1 + 42, 0, NULL);
@@ -1625,6 +1631,9 @@ PIKECLASS BlockCipher
 	  struct program *parent_State_prog =
 	    low_program_from_function(parent_obj, parent_State_fun_num);
 	  if (parent_State_prog) {
+	    parent_State_fun_num =
+	      really_low_reference_inherited_identifier(Pike_compiler->previous,
+							0, parent_State_fun_num);
 	    low_inherit(parent_State_prog, 0,
 			parent_State_fun_num,
 			1 + 42, 0, NULL);
@@ -2140,6 +2149,9 @@ PIKECLASS BlockCipher
 	  struct program *parent_State_prog =
 	    low_program_from_function(parent_obj, parent_State_fun_num);
 	  if (parent_State_prog) {
+	    parent_State_fun_num =
+	      really_low_reference_inherited_identifier(Pike_compiler->previous,
+							0, parent_State_fun_num);
 	    low_inherit(parent_State_prog, 0,
 			parent_State_fun_num,
 			1 + 42, 0, NULL);
@@ -2532,6 +2544,9 @@ PIKECLASS BlockCipher
 	  struct program *parent_State_prog =
 	    low_program_from_function(parent_obj, parent_State_fun_num);
 	  if (parent_State_prog) {
+	    parent_State_fun_num =
+	      really_low_reference_inherited_identifier(Pike_compiler->previous,
+							0, parent_State_fun_num);
 	    low_inherit(parent_State_prog, 0,
 			parent_State_fun_num,
 			1 + 42, 0, NULL);
@@ -2980,6 +2995,9 @@ PIKECLASS BlockCipher16
 	struct program *parent__CTR_prog =
 	  low_program_from_function(parent_obj, parent__CTR_fun_num);
 	if (parent__CTR_prog) {
+	  parent__CTR_fun_num =
+	    really_low_reference_inherited_identifier(Pike_compiler->previous,
+						      0, parent__CTR_fun_num);
 	  low_inherit(parent__CTR_prog, 0,
 		      parent__CTR_fun_num,
 		      1 + 42, 0, NULL);
@@ -3057,6 +3075,9 @@ PIKECLASS BlockCipher16
 	  struct program *parent_State_prog =
 	    low_program_from_function(parent_obj, parent_State_fun_num);
 	  if (parent_State_prog) {
+	    parent_State_fun_num =
+	      really_low_reference_inherited_identifier(Pike_compiler->previous,
+							0, parent_State_fun_num);
 	    low_inherit(parent_State_prog, 0,
 			parent_State_fun_num,
 			1 + 42, 0, NULL);
@@ -3492,8 +3513,9 @@ PIKECLASS BlockCipher16
      */
     EXTRA
     {
-      /* Perform an inherit if the _CCM class that our parent contains.
+      /* Perform an inherit of the _CCM class that our parent contains.
        */
+      /* FIXME: */
       low_inherit(Nettle_BlockCipher16_cq__CCM_program, 0,
 		  Nettle_BlockCipher16_cq__CCM_program_fun_num,
 		  1 + 42, 0, NULL);
@@ -3628,6 +3650,9 @@ PIKECLASS BlockCipher16
 	  struct program *parent_State_prog =
 	    low_program_from_function(parent_obj, parent_State_fun_num);
 	  if (parent_State_prog) {
+	    parent_State_fun_num =
+	      really_low_reference_inherited_identifier(Pike_compiler->previous,
+							0, parent_State_fun_num);
 	    low_inherit(parent_State_prog, 0,
 			parent_State_fun_num,
 			1 + 42, 0, NULL);
@@ -4081,6 +4106,9 @@ PIKECLASS BlockCipher16
 	  struct program *parent_State_prog =
 	    low_program_from_function(parent_obj, parent_State_fun_num);
 	  if (parent_State_prog) {
+	    parent_State_fun_num =
+	      really_low_reference_inherited_identifier(Pike_compiler->previous,
+							0, parent_State_fun_num);
 	    low_inherit(parent_State_prog, 0,
 			parent_State_fun_num,
 			1 + 42, 0, NULL);
@@ -4636,6 +4664,9 @@ PIKECLASS ARCTWO
 	struct program *parent_State_prog =
 	  low_program_from_function(parent_obj, parent_State_fun_num);
 	if (parent_State_prog) {
+	  parent_State_fun_num =
+	    really_low_reference_inherited_identifier(Pike_compiler->previous,
+						      0, parent_State_fun_num);
 	  low_inherit(parent_State_prog, 0,
 		      parent_State_fun_num,
 		      1 + 42, 0, NULL);
@@ -5008,6 +5039,9 @@ PIKECLASS CHACHA
 	struct program *parent_State_prog =
 	  low_program_from_function(parent_obj, parent_State_fun_num);
 	if (parent_State_prog) {
+	  parent_State_fun_num =
+	    really_low_reference_inherited_identifier(Pike_compiler->previous,
+						      0, parent_State_fun_num);
 	  low_inherit(parent_State_prog, 0,
 		      parent_State_fun_num,
 		      1 + 42, 0, NULL);
@@ -5218,6 +5252,9 @@ PIKECLASS DES
 	struct program *parent_State_prog =
 	  low_program_from_function(parent_obj, parent_State_fun_num);
 	if (parent_State_prog) {
+	  parent_State_fun_num =
+	    really_low_reference_inherited_identifier(Pike_compiler->previous,
+						      0, parent_State_fun_num);
 	  low_inherit(parent_State_prog, 0,
 		      parent_State_fun_num,
 		      1 + 42, 0, NULL);
@@ -5455,6 +5492,9 @@ PIKECLASS DES3
 	struct program *parent_State_prog =
 	  low_program_from_function(parent_obj, parent_State_fun_num);
 	if (parent_State_prog) {
+	  parent_State_fun_num =
+	    really_low_reference_inherited_identifier(Pike_compiler->previous,
+						      0, parent_State_fun_num);
 	  low_inherit(parent_State_prog, 0,
 		      parent_State_fun_num,
 		      1 + 42, 0, NULL);
@@ -5572,6 +5612,9 @@ PIKECLASS SALSA20
 	struct program *parent_State_prog =
 	  low_program_from_function(parent_obj, parent_State_fun_num);
 	if (parent_State_prog) {
+	  parent_State_fun_num =
+	    really_low_reference_inherited_identifier(Pike_compiler->previous,
+						      0, parent_State_fun_num);
 	  low_inherit(parent_State_prog, 0,
 		      parent_State_fun_num,
 		      1 + 42, 0, NULL);

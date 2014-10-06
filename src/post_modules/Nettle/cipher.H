@@ -77,6 +77,9 @@ PIKECLASS PIKE_NAME
 	struct program *parent_State_prog =
 	  low_program_from_function(parent_obj, parent_State_fun_num);
 	if (parent_State_prog) {
+	  parent_State_fun_num =
+	    really_low_reference_inherited_identifier(Pike_compiler->previous,
+						      0, parent_State_fun_num);
 	  low_inherit(parent_State_prog, 0, parent_State_fun_num,
 		      1 + 42, 0, NULL);
 	}
