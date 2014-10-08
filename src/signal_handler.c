@@ -2390,50 +2390,56 @@ static int set_priority( int pid, char *to )
   }
 # else
 #  ifdef HAVE_SCHED_SETSCHEDULER
-  if( prilevel == 3 )
   {
+    int class;
     struct sched_param param;
     MEMSET(&param, 0, sizeof(param));
-    param.sched_priority = sched_get_priority_max( SCHED_FIFO );
-    return !sched_setscheduler( pid, SCHED_FIFO, &param );
-  } else {
+    int maxprio = 2;
+    int minprio = -2;
+    if( prilevel == 3 )
+    {
+      class = SCHED_FIFO;
+      param.sched_priority = sched_get_priority_max( class );
+      return !sched_setscheduler( pid, class, &param );
+    }
 #   ifdef SCHED_RR
-    struct sched_param param;
-    int class = SCHED_OTHER;
-    MEMSET(&param, 0, sizeof(param));
     if(prilevel == 2)
     {
       class = SCHED_RR;
       param.sched_priority = sched_get_priority_min( class );
       return !sched_setscheduler( pid, class, &param );
     }
+    maxprio = 1;
 #   endif
-#   ifdef HAVE_SETPRIORITY
-    errno = 0;
-    return setpriority( PRIO_PROCESS, pid, -prilevel*10 )!=-1 || errno==0;
-#   else
+
+    class = SCHED_OTHER;
     param.sched_priority = sched_get_priority_min( class )+
       (sched_get_priority_max( class )-
-       sched_get_priority_min( class ))/3 * (prilevel+2);
-    return !sched_setscheduler( pid, class, &param );
-#   endif
+       sched_get_priority_min( class ))/(maxprio-minprio) * (prilevel-minprio);
+    if (sched_setscheduler( pid, class, &param ) < 0)
+      return 0;
+
+    /* When using SCHED_OTHER, we also want to use setpriority, so we
+       don't return in here in that case.  Instead, we fall through to
+       the HAVE_SETPRIORITY (or even HAVE_NICE) code blocks, if
+       available. */
   }
-#  else
-#   ifdef HAVE_SETPRIORITY
+
+#  endif
+#  ifdef HAVE_SETPRIORITY
   {
     if(prilevel == 3) 
       prilevel = 2;
     errno = 0;
     return setpriority( PRIO_PROCESS, pid, -prilevel*10 )!=-1 || errno==0;
   }
-#   else
-#    ifdef HAVE_NICE
+#  else
+#   ifdef HAVE_NICE
   if(!pid || pid == getpid())
   {
     errno=0;
     return !(nice( -prilevel*10 - nice(0) ) != -1) || errno!=EPERM;
   }
-#    endif
 #   endif
 #  endif
 # endif
