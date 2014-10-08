@@ -2432,6 +2432,15 @@ static int set_priority( int pid, char *to )
     }
     maxprio = 1;
 #   endif
+#   ifdef SCHED_IDLE
+    if(prilevel == -2)
+    {
+      class = SCHED_IDLE;
+      param.sched_priority = sched_get_priority_min( class );
+      return !sched_setscheduler( pid, class, &param );
+    }
+    minprio = -1;
+#   endif
 
     class = SCHED_OTHER;
     param.sched_priority = sched_get_priority_min( class )+
