@@ -2322,18 +2322,18 @@ static int set_priority( int pid, char *to )
     switch( prilevel )
     {
     case -1:
-#ifdef BELOW_NORMAL_PRIORITY_CLASS
+# ifdef BELOW_NORMAL_PRIORITY_CLASS
       how = BELOW_NORMAL_PRIORITY_CLASS;
       break;
-#endif
+# endif
       /* Fallthrough */
     case -2:           how = IDLE_PRIORITY_CLASS;     break;
     case 0:            how = NORMAL_PRIORITY_CLASS;   break;
     case 1:
-#ifdef ABOVE_NORMAL_PRIORITY_CLASS
+# ifdef ABOVE_NORMAL_PRIORITY_CLASS
       how = ABOVE_NORMAL_PRIORITY_CLASS;
       break;
-#endif
+# endif
       /* Fallthrough */
     case 2:            how = HIGH_PRIORITY_CLASS;     break;
     case 3:            how = REALTIME_PRIORITY_CLASS; break;
@@ -2347,7 +2347,7 @@ static int set_priority( int pid, char *to )
     return how;
   }
 #else
-#ifdef HAVE___PRIOCNTL
+# ifdef HAVE___PRIOCNTL
   if(!pid) pid = getpid();
   if( prilevel > 1 )
   {
@@ -2404,8 +2404,8 @@ static int set_priority( int pid, char *to )
     params.ts_uprilim = prilevel*foo.ts_maxupri/2;
     return priocntl(P_PID, (id_t)pid, PC_SETPARMS, (void *)(&params)) != -1;
   }
-#else
-#ifdef HAVE_SCHED_SETSCHEDULER
+# else
+#  ifdef HAVE_SCHED_SETSCHEDULER
   if( prilevel == 3 )
   {
     struct sched_param param;
@@ -2413,7 +2413,7 @@ static int set_priority( int pid, char *to )
     param.sched_priority = sched_get_priority_max( SCHED_FIFO );
     return !sched_setscheduler( pid, SCHED_FIFO, &param );
   } else {
-#ifdef SCHED_RR
+#   ifdef SCHED_RR
     struct sched_param param;
     int class = SCHED_OTHER;
     memset(&param, 0, sizeof(param));
@@ -2426,36 +2426,36 @@ static int set_priority( int pid, char *to )
          sched_get_priority_min( class ))/3 * (prilevel+2);
       return !sched_setscheduler( pid, class, &param );
     } 
-#endif
-#ifdef HAVE_SETPRIORITY
+#   endif
+#   ifdef HAVE_SETPRIORITY
     errno = 0;
     return setpriority( PRIO_PROCESS, pid, -prilevel*10 )!=-1 || errno==0;
-#else
+#   else
     param.sched_priority = sched_get_priority_min( class )+
       (sched_get_priority_max( class )-
        sched_get_priority_min( class ))/3 * (prilevel+2);
     return !sched_setscheduler( pid, class, &param );
-#endif
+#   endif
   }
-#else
-#ifdef HAVE_SETPRIORITY
+#  else
+#   ifdef HAVE_SETPRIORITY
   {
     if(prilevel == 3) 
       prilevel = 2;
     errno = 0;
     return setpriority( PRIO_PROCESS, pid, -prilevel*10 )!=-1 || errno==0;
   }
-#else
-#ifdef HAVE_NICE
+#   else
+#    ifdef HAVE_NICE
   if(!pid || pid == getpid())
   {
     errno=0;
     return !(nice( -prilevel*10 - nice(0) ) != -1) || errno!=EPERM;
   }
-#endif
-#endif
-#endif
-#endif
+#    endif
+#   endif
+#  endif
+# endif
 #endif
   return 0;
 }
