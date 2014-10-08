@@ -18,9 +18,6 @@
 #include "dmalloc.h"
 #include "rbtree.h"
 
-/* Keep this defined so that code can test which multiset API is in use. */
-#define PIKE_NEW_MULTISETS
-
 /* Note: Don't access the ind svalue (or at least not its type field)
  * in the following directly, since the rbtree flags overlay that. Use
  * assign_multiset_index_no_free() or similar instead. */
