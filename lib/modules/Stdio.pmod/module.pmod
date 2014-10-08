@@ -141,7 +141,7 @@ class BlockFile
 //! The string (or void) version is used when buffer mode (see
 //! @[set_buffer_mode]) has not been enabled for reading.
 //!
-//! The Buffer version is used when an Buffer has been enabled
+//! The Buffer version is used when a Buffer has been enabled
 //! for reading
 //!
 //! In both cases the data is the newly arrived data, but in buffered
@@ -157,7 +157,7 @@ local typedef
 //! The void version is used when buffer mode (see
 //! @[set_buffer_mode]) has not been enabled for writing.
 //!
-//! The Buffer version is used when an Buffer has been enabled
+//! The Buffer version is used when a Buffer has been enabled
 //! for reading, add data to that buffer to send it.
 local typedef
   function(mixed|void:int|void) |
@@ -1325,7 +1325,7 @@ class File
   //!   When data arrives on the stream, @[read_cb] will be called with
   //!   some or all of that data as the second argument.
   //!
-  //!   If the file is in buffer mode, the second argument will be an Buffer.
+  //!   If the file is in buffer mode, the second argument will be a Buffer.
   //!
   //!   This will always be the same buffer, so data you do not use in
   //!   one read callback can be simply left in the buffer, when new
@@ -1343,7 +1343,7 @@ class File
   //!   (the usual case), Pike will first attempt to call @[close_cb],
   //!   then this callback (unless @[close_cb] has closed the stream).
   //!
-  //!   If the file is in buffer mode, the second argument will be an Buffer.
+  //!   If the file is in buffer mode, the second argument will be a Buffer.
   //!
   //!   You should add data to write to this buffer.
   //! @item
