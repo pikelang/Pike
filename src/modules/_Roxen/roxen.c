@@ -388,7 +388,7 @@ static void f_http_decode_string(INT32 args)
    PCHARP foo, end;
    struct string_builder newstr;
 
-   if (!args || Pike_sp[-args].type != PIKE_T_STRING)
+   if (!args || TYPEOF(Pike_sp[-args]) != PIKE_T_STRING)
      Pike_error("Invalid argument to http_decode_string(string).\n");
 
    foo = MKPCHARP_STR(Pike_sp[-args].u.string);
