@@ -295,6 +295,7 @@ struct instr instrs[F_MAX_INSTR - F_OFFSET];
 size_t instrs_checksum;
 #endif /* PIKE_USE_MACHINE_CODE */
 
+#ifdef PIKE_DEBUG
 const char *low_get_f_name(int n, struct program *p)
 {
   static char buf[30];
@@ -365,6 +366,7 @@ const char *get_token_name(int n)
     return buf;
   }
 }
+#endif /* PIKE_DEBUG */
 
 void init_opcodes(void)
 {
@@ -392,7 +394,9 @@ void init_opcodes(void)
     }
 #endif
 
+#ifdef PIKE_DEBUG
     instrs[instr_names[i].token - F_OFFSET].name = instr_names[i].word;
+#endif
     instrs[instr_names[i].token - F_OFFSET].flags=instr_names[i].flags;
 #ifdef PIKE_USE_MACHINE_CODE
     instrs[instr_names[i].token - F_OFFSET].address=instr_names[i].address;

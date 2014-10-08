@@ -93,8 +93,10 @@ struct instr
 #ifdef PIKE_DEBUG
   long compiles;
 #endif
-  int flags;
+#ifdef PIKE_DEBUG
   const char *name;
+#endif
+  int flags;
 #ifdef PIKE_USE_MACHINE_CODE
   void *address;
 #endif
@@ -293,6 +295,7 @@ enum Pike_opcodes
 #undef OPCODE1_ALIAS
 #undef OPCODE2_ALIAS
 
+#ifdef PIKE_DEBUG
 const char *low_get_f_name(int n,struct program *p);
 const char *get_f_name(int n);
 #ifdef HAVE_COMPUTED_GOTO
@@ -301,6 +304,7 @@ const char *get_opcode_name(PIKE_INSTR_T n);
 #define get_opcode_name(n) get_f_name(n + F_OFFSET)
 #endif /* HAVE_COMPUTED_GOTO */
 const char *get_token_name(int n);
+#endif
 void init_opcodes(void);
 void exit_opcodes(void);
 
