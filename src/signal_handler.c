@@ -2278,7 +2278,7 @@ static int set_priority( int pid, char *to )
   if(!strcmp( to, "realtime" ) ||
      !strcmp( to, "highest" ))
     prilevel = 3;
-  if(!strcmp( to, "higher" ))
+  else if(!strcmp( to, "higher" ))
     prilevel = 2;
   else if(!strcmp( to, "high" ))
     prilevel = 1;
@@ -2288,6 +2288,8 @@ static int set_priority( int pid, char *to )
     prilevel = -1;
   else if(!strcmp( to, "lowest" ))
     prilevel = -2;
+  else
+      Pike_error("bad priority %s", to);
 #ifdef __NT__
   {
     HANDLE process;
