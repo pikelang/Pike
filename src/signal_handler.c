@@ -2423,12 +2423,9 @@ static int set_priority( int pid, char *to )
     if(prilevel == 2)
     {
       class = SCHED_RR;
-      prilevel = -2; /* lowest RR priority... */
-      param.sched_priority = sched_get_priority_min( class )+
-        (sched_get_priority_max( class )-
-         sched_get_priority_min( class ))/3 * (prilevel+2);
+      param.sched_priority = sched_get_priority_min( class );
       return !sched_setscheduler( pid, class, &param );
-    } 
+    }
 #   endif
 #   ifdef HAVE_SETPRIORITY
     errno = 0;
