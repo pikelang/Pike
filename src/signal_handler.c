@@ -1793,6 +1793,7 @@ static void f_pid_status_pid(INT32 args)
  *!   @item "highest"
  *!   @item "higher"
  *!   @item "high"
+ *!   @item "normal"
  *!   @item "low"
  *!   @item "lowest"
  *! @enddl
@@ -2281,6 +2282,8 @@ static int set_priority( int pid, char *to )
     prilevel = 2;
   else if(!strcmp( to, "high" ))
     prilevel = 1;
+  else if(!strcmp( to, "normal" ))
+    prilevel = 0;
   else if(!strcmp( to, "low" ))
     prilevel = -1;
   else if(!strcmp( to, "lowest" ))
