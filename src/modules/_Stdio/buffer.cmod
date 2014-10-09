@@ -908,7 +908,7 @@ PIKECLASS Buffer
     struct my_file *fd;
     int once = 0;
 
-    if( _nbytes ) {
+    if( _nbytes && (SUBTYPEOF(*_nbytes) == NUMBER_NUMBER) ) {
         nbytes = _nbytes->u.integer;
 	if (!nbytes) RETURN 0;
     }
@@ -1034,7 +1034,7 @@ PIKECLASS Buffer
       io_range_error(io,  sz);
       sz = io_len(io);
     }
-    if( nbytes )
+    if( nbytes && (SUBTYPEOF(*nbytes) == NUMBER_NUMBER) )
       sz = MINIMUM(nbytes->u.integer, sz);
 
     if( TYPEOF(*f) == PIKE_T_OBJECT ) {
