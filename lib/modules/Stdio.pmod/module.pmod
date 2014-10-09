@@ -1101,7 +1101,7 @@ class File
     if (!errno()) {
       if( inbuffer )
       {
-        if( inbuffer->input_from( this,0,1 ) )
+        if( inbuffer->input_from( this,UNDEFINED,1 ) )
           return ___read_callback( ___id||this, inbuffer );
         else
         {
