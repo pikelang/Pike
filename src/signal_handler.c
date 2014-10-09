@@ -2394,10 +2394,11 @@ static int set_priority( int pid, char *to )
 #  ifdef HAVE_SCHED_SETSCHEDULER
   {
     int class;
-    struct sched_param param;
-    MEMSET(&param, 0, sizeof(param));
     int maxprio = 2;
     int minprio = -2;
+    struct sched_param param;
+    MEMSET(&param, 0, sizeof(param));
+
     if( prilevel == 3 )
     {
       class = SCHED_FIFO;
