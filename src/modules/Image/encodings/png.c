@@ -216,8 +216,8 @@ static void image_png___decode(INT32 args)
    struct pike_string *str;
    ONERROR uwp;
    struct svalue tmp;
-   TYPEOF(tmp) = PIKE_T_ARRAY;
-   SUBTYPEOF(tmp) = 0;
+
+   SET_SVAL_TYPE_DC(tmp, PIKE_T_ARRAY);
 
    if (args<1)
      SIMPLE_TOO_FEW_ARGS_ERROR("Image.PNG.__decode", 1);
