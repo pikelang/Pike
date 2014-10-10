@@ -11,6 +11,7 @@
 #include "interpret.h"
 #include "svalue.h"
 #include "threads.h"
+#include "array.h"
 #include "mapping.h"
 #include "pike_error.h"
 #include "stralloc.h"
@@ -212,10 +213,13 @@ static void image_png___decode(INT32 args)
 {
    int nocrc=0;
    unsigned char *data;
+   struct array *res;
    size_t len;
    struct pike_string *str;
-   int n=0;
    ONERROR uwp;
+   struct svalue tmp;
+   TYPEOF(tmp) = PIKE_T_ARRAY;
+   SUBTYPEOF(tmp) = 0;
 
    if (args<1)
      SIMPLE_TOO_FEW_ARGS_ERROR("__decode", 1);
@@ -251,37 +255,46 @@ static void image_png___decode(INT32 args)
    SET_ONERROR(uwp,do_free_string,str);
    len-=8; data+=8;
 
+   res = allocate_array(0);
+   res->type_field = BIT_ARRAY;
+   push_array(res);
+
    while (len>8)
    {
       unsigned long x;
+      tmp.u.array = allocate_array_no_init(3,3);
+      tmp.u.array->type_field = BIT_INT | BIT_STRING;
+      res = append_array( res, &tmp );
+      Pike_sp[-1].u.array = res;
       x=int_from_32bit(data);
-      push_string(make_shared_binary_string((char*)data+4,4));
+      SET_SVAL(tmp.u.array->item[0], PIKE_T_STRING, 0, string,
+               make_shared_binary_string((char*)data+4,4));
       len-=8;
       data+=8;
       if (x>len)
       {
-	 push_string(make_shared_binary_string((char*)data,len));
-	 push_int(0);
-	 f_aggregate(3);
-	 n++;
-	 break;
+        SET_SVAL(tmp.u.array->item[1], PIKE_T_STRING,0,string,
+                 make_shared_binary_string((char*)data,len));
+        SET_SVAL(tmp.u.array->item[2], PIKE_T_INT, 0, integer, 0 );
+        break;
       }
-      push_string(make_shared_binary_string((char*)data,x));
+      SET_SVAL(tmp.u.array->item[1], PIKE_T_STRING, 0, string,
+               make_shared_binary_string((char*)data,x));
       if (!nocrc && x+4<=len)
-	 push_int( crc32(crc32(0,NULL,0),data-4,x+4) ==
-		   int_from_32bit(data+x) );
+        SET_SVAL(tmp.u.array->item[2], PIKE_T_INT, 0, integer,
+                 crc32(crc32(0,NULL,0),data-4,x+4) == int_from_32bit(data+x) );
       else
-	 push_int(0);
-      f_aggregate(3);
-      n++;
+        SET_SVAL(tmp.u.array->item[2], PIKE_T_INT, 0, integer, 0 );
+
+      if( int_from_32bit((unsigned char *)tmp.u.array->item[0].u.string->str) 
+          == 0x49454e44 ) /* IEND */
+        break;
+
       if (x+4>len) break;
       len-=x+4;
       data+=x+4;
    }
-
-   UNSET_ONERROR(uwp);
-   free_string(str);
-   f_aggregate(n);
+   CALL_AND_UNSET_ONERROR(uwp);
 }
 
 /*! @decl mapping _decode(string|array data)
