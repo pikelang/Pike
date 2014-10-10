@@ -141,6 +141,9 @@ else
 	  -lmaria*)
 	    # We handle the client library itself later.
 	    ;;
+	  -lmysql*)
+	    # We handle the client library itself later.
+	    ;;
 	  *)
 	    # NB: We need to buffer libs to get them in the correct order.
 	    echo "Adding $2 to LIBS."
@@ -338,39 +341,58 @@ else
 fi
 ])
 
-  if test "x${MARIADB_CONFIG}" = "xno"; then
-  # libmysql.lib is the name for the libmysql.dll wrapper in the
-  # windows releases. There's also a mysqlclient.lib which contain the
-  # static version. We prefer the dynamic one so check libmysql first.
-  AC_CHECK_SQLLIB(libmysql, [
-    LIBS="-llibmysql $LIBS"
-  ], [
-    AC_CHECK_SQLLIB(mysqlclient, [
-      LIBS="-lmysqlclient $LIBS"
+  TRY_MYSQLCLIENT="yes"
+  if test "x${MARIADB_CONFIG}" = "xno"; then :; else
+    # Try the MariaDB client libraries.
+    # NB: These are distributed separately from the MariaDB server.
+    TRY_MYSQLCLIENT="no"
+    AC_CHECK_SQLLIB(mariadbclient_r, [
+      LIBS="-lmariadbclient_r $LIBS"
     ], [
-      AC_CHECK_SQLLIB(mysqllib, [
-	LIBS="-lmysqllib $LIBS"
-      ], [
-	AC_CHECK_SQLLIB(mysql, [
-	  LIBS="-lmysql $LIBS"
-	], [
-	  PIKE_FEATURE_NODEP(Mysql)
-	  pike_cv_mysql="no" 
-	  ])
-      ])
-    ])
-  ])
-  else
       AC_CHECK_SQLLIB(mariadbclient, [
 	LIBS="-lmariadbclient $LIBS"
       ], [
-	AC_CHECK_SQLLIB(mariadb, [
-	  LIBS="-lmariadb $LIBS"
+	AC_CHECK_SQLLIB(mariadb_r, [
+	  LIBS="-lmariadb_r $LIBS"
 	], [
-	  PIKE_FEATURE_NODEP(Mysql)
-	  pike_cv_mysql="no"
+	  AC_CHECK_SQLLIB(mariadb, [
+	    LIBS="-lmariadb $LIBS"
+	  ], [
+	    # Fallback to using the MySQL client libraries.
+	    # NB: These are distributed together with the MariaDB server.
+	    TRY_MYSQLCLIENT="yes"
+	  ])
 	])
       ])
+    ])
+  fi
+
+  if test "x${TRY_MYSQLCLIENT}" = "xyes"; then
+    # libmysql.lib is the name of the libmysql.dll wrapper in the
+    # windows releases. There's also a mysqlclient.lib which contains the
+    # static version. We prefer the dynamic one so check libmysql first.
+    AC_CHECK_SQLLIB(libmysql, [
+      LIBS="-llibmysql $LIBS"
+    ], [
+      AC_CHECK_SQLLIB(mysqlclient_r, [
+	LIBS="-lmysqlclient_r $LIBS"
+      ], [
+	AC_CHECK_SQLLIB(mysqlclient, [
+	  LIBS="-lmysqlclient $LIBS"
+	], [
+	  AC_CHECK_SQLLIB(mysqllib, [
+	    LIBS="-lmysqllib $LIBS"
+	  ], [
+	    AC_CHECK_SQLLIB(mysql, [
+	      LIBS="-lmysql $LIBS"
+	    ], [
+	      PIKE_FEATURE_NODEP(Mysql)
+	      pike_cv_mysql="no"
+	    ])
+	  ])
+	])
+      ])
+    ])
   fi
 
   if test x$pike_cv_mysql = xno; then :; else
