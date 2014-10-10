@@ -29,11 +29,11 @@
 #endif /* HAVE_FILEAPI_H */
 
 #ifdef HAVE_WINDOWS_H
-#include <windows.h>
+#include <Windows.h>
 #endif /* HAVE_WINDOWS_H */
 
 #ifdef HAVE_WINBASE_H
-#include <winbase.h>
+#include <WinBase.h>
 #endif /* HAVE_WINBASE_H */
 
 #ifndef MAX_LEN
