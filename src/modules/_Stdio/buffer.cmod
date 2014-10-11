@@ -460,10 +460,10 @@ PIKECLASS Buffer
     return -1;
   }
 
-  static void io_actually_trigger_output( Buffer *io )
+  static ptrdiff_t io_actually_trigger_output( Buffer *io )
     ATTRIBUTE((noclone,noinline));
 
-  static void io_actually_trigger_output( Buffer *io )
+  static ptrdiff_t io_actually_trigger_output( Buffer *io )
   {
     struct program *prog;
     struct reference *ref;
@@ -473,7 +473,7 @@ PIKECLASS Buffer
       /* Destructed object. */
       free_svalue(&io->output);
       SET_SVAL(io->output, PIKE_T_INT, NUMBER_NUMBER, integer, 0);
-      return;
+      return 0;
     }
     ref = PTR_FROM_INT(prog, SUBTYPEOF(io->output));
     inh = INHERIT_FROM_PTR(prog, ref);
@@ -484,15 +484,17 @@ PIKECLASS Buffer
 	get_inherit_storage( io->output.u.object, ref->inherit_offset );
       io_set_events( io, fd, PIKE_BIT_FD_WRITE_OOB, PIKE_FD_WRITE );
       io->output_triggered = 1;
+      return 0;
     }
     else
-      io_call_write( io, &io->output, MINIMUM( io_len(io), 100 ) );
+      return io_call_write( io, &io->output, MINIMUM( io_len(io), 100 ) );
   }
 
-  static void io_trigger_output( Buffer *io )
+  static ptrdiff_t io_trigger_output( Buffer *io )
   {
     if( UNLIKELY(io->output.u.object) && UNLIKELY(!io->output_triggered) )
-      io_actually_trigger_output(io);
+      return io_actually_trigger_output(io);
+    return 0;
   }
 
   static int io_range_error( Buffer *io, ptrdiff_t howmuch )
@@ -1100,6 +1102,29 @@ PIKECLASS Buffer
 	break;
     }
     RETURN written;
+  }
+
+  /*! @decl int(-1..) try_output()
+   *!
+   *! Try to write some data from the buffer to the file
+   *! registered with @[__fd_set_output()].
+   *!
+   *! This is typically called from backend callbacks when it
+   *! seems that it is possible to write some data to the file.
+   *!
+   *! @returns
+   *!   Returns @expr{-1@} on write error, and otherwise
+   *!   the number of bytes written to the file.
+   *!
+   *! @seealso
+   *!   @[__fd_set_output()]
+   */
+  PIKEFUN int(-1..) try_output()
+  {
+    Buffer *io = THIS;
+    if (LIKELY(io->output.u.object) && LIKELY(!io->output_triggered))
+      RETURN io_actually_trigger_output(io);
+    RETURN 0;
   }
 
   /*! @decl int read_sint( int size )
