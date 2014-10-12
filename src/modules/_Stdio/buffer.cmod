@@ -1818,9 +1818,9 @@ fail: CALL_AND_UNSET_ONERROR(e);
    *! This is somewhat faster than add(sprintf(...)) since no
    *! intermediate string is created.
    */
-  PIKEFUN int(0..) sprintf(mixed ... ignored)
+  PIKEFUN Buffer sprintf(mixed ... ignored)
     rawtype tFuncV(tAttr("strict_sprintf_format", tOr(tStr, tObj)),
-                   tAttr("sprintf_args", tMix), tStr);
+                   tAttr("sprintf_args", tMix), tObjIs_BUFFER);
   {
     ONERROR _e;
     struct string_builder tmp;
