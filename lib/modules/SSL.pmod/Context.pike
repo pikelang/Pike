@@ -52,11 +52,11 @@ protected void create()
 
 //! The minimum supported protocol version.
 //!
-//! Defaults to @[PROTOCOL_SSL_3_0].
+//! Defaults to @[PROTOCOL_TLS_1_0].
 //!
 //! @note
 //!   This value should not be greater than @[max_version].
-ProtocolVersion min_version = PROTOCOL_SSL_3_0;
+ProtocolVersion min_version = PROTOCOL_TLS_1_0;
 
 //! The maximum supported protocol version.
 //!
