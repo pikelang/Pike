@@ -1075,12 +1075,6 @@ static void gz_crc32(INT32 args)
    push_int((INT32)crc);
 }
 
-/*! @endmodule
- */
-#endif
-
-PIKE_MODULE_EXIT {}
-
 static void gz_deflate_size( INT32 args )
 {
 #define L_CODES (256 + 29 + 1)
@@ -1110,6 +1104,10 @@ static void gz_inflate_size( INT32 args )
         /* window, really 1<<wbits, max wbits is 16. */
         65536);
 }
+
+/*! @endmodule
+ */
+#endif
 
 PIKE_MODULE_INIT
 {
@@ -1211,6 +1209,8 @@ PIKE_MODULE_INIT
   HIDE_MODULE();
 #endif
 }
+
+PIKE_MODULE_EXIT {}
 
 #if defined(HAVE___VTBL__9TYPE_INFO) || defined(HAVE___T_9__NOTHROW)
 /* Super-special kluge for IRIX 6.3 */
