@@ -8,35 +8,14 @@ PIKE_FEATURE_WITHOUT(Gz)
 
 define([AC_CHECK_GZ],
 [
-  done=no
-  AC_MSG_CHECKING(working lib$1)
-  AC_CACHE_VAL(pike_cv_working_$1,[
-    OLDLIBS="${LIBS-}"
-    LIBS="${LIBS-} -l$1"
-    AC_TRY_RUN([
-`cat $srcdir/gz_test.c`
-    ],pike_cv_working_$1=yes,pike_cv_working_$1=no,
-      AC_TRY_LINK([
-`cat $srcdir/gz_test.c`
-#define main notmain
-      ],[],pike_cv_working_$1=yes,pike_cv_working_$1=no)
-    )
-  ])
-  LIBS="$OLDLIBS"
+  AC_CHECK_LIB($1, deflateSetDictionary)
 
-  if test "x$pike_cv_working_$1" = xyes; then
+  if test "x$ac_cv_lib_$1_deflateSetDictionary" = xyes; then
     PIKE_FEATURE(Gz,[yes (lib$1)])
-    AC_MSG_RESULT(yes)
     AC_DEFINE(HAVE_LIBZ)
     LIBS="${LIBS-} -l$1"
-    done=yes
   else
-    AC_MSG_RESULT(no)
-  fi
-
-  if test $done = no; then
     $2
-    :
   fi
 ])
 
