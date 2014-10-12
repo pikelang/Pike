@@ -8,7 +8,6 @@
 constant dont_dump_module = 1;
 
 import Standards.ASN1.Types;
-import Standards.PKCS;
 
 #ifdef X509_DEBUG
 #define DBG(X ...) werror(X)
@@ -116,34 +115,34 @@ protected {
 
   mapping algorithms = ([
 #if constant(Crypto.MD2)
-    Identifiers.rsa_md2_id : Crypto.MD2,
+    .PKCS.Identifiers.rsa_md2_id : Crypto.MD2,
 #endif
-    Identifiers.rsa_md5_id : Crypto.MD5,
-    Identifiers.rsa_sha1_id : Crypto.SHA1,
-    Identifiers.rsa_sha256_id : Crypto.SHA256,
+    .PKCS.Identifiers.rsa_md5_id : Crypto.MD5,
+    .PKCS.Identifiers.rsa_sha1_id : Crypto.SHA1,
+    .PKCS.Identifiers.rsa_sha256_id : Crypto.SHA256,
 #if constant(Crypto.SHA384)
-    Identifiers.rsa_sha384_id : Crypto.SHA384,
+    .PKCS.Identifiers.rsa_sha384_id : Crypto.SHA384,
 #endif
 #if constant(Crypto.SHA512)
-    Identifiers.rsa_sha512_id : Crypto.SHA512,
+    .PKCS.Identifiers.rsa_sha512_id : Crypto.SHA512,
 #endif
 
-    Identifiers.dsa_sha_id : Crypto.SHA1,
+    .PKCS.Identifiers.dsa_sha_id : Crypto.SHA1,
 #if constant(Crypto.SHA224)
-    Identifiers.dsa_sha224_id : Crypto.SHA224,
+    .PKCS.Identifiers.dsa_sha224_id : Crypto.SHA224,
 #endif
-    Identifiers.dsa_sha256_id : Crypto.SHA256,
+    .PKCS.Identifiers.dsa_sha256_id : Crypto.SHA256,
 
-    Identifiers.ecdsa_sha1_id : Crypto.SHA1,
+    .PKCS.Identifiers.ecdsa_sha1_id : Crypto.SHA1,
 #if constant(Crypto.SHA224)
-    Identifiers.ecdsa_sha224_id : Crypto.SHA224,
+    .PKCS.Identifiers.ecdsa_sha224_id : Crypto.SHA224,
 #endif
-    Identifiers.ecdsa_sha256_id : Crypto.SHA256,
+    .PKCS.Identifiers.ecdsa_sha256_id : Crypto.SHA256,
 #if constant(Crypto.SHA384)
-    Identifiers.ecdsa_sha384_id : Crypto.SHA384,
+    .PKCS.Identifiers.ecdsa_sha384_id : Crypto.SHA384,
 #endif
 #if constant(Crypto.SHA512)
-    Identifiers.ecdsa_sha512_id : Crypto.SHA512,
+    .PKCS.Identifiers.ecdsa_sha512_id : Crypto.SHA512,
 #endif
   ]);
 }
@@ -182,7 +181,7 @@ protected class RSAVerifier
   constant type = "rsa";
 
   protected void create(string key) {
-    pkc = RSA.parse_public_key(key);
+    pkc = .PKCS.RSA.parse_public_key(key);
   }
 
   __deprecated__ Crypto.RSA.State `rsa() {
@@ -197,7 +196,7 @@ protected class DSAVerifier
 
   protected void create(string key, Gmp.mpz p, Gmp.mpz q, Gmp.mpz g)
   {
-    pkc = DSA.parse_public_key(key, p, q, g);
+    pkc = .PKCS.DSA.parse_public_key(key, p, q, g);
   }
 
   __deprecated__ Crypto.DSA.State `dsa() {
@@ -245,7 +244,7 @@ protected Verifier make_verifier(Object _keyinfo)
 
   if(sizeof(seq)==0) return NULL("Empty keyinfo algorithm identifier.\n");
 
-  if (seq[0]->get_der() == Identifiers.rsa_id->get_der())
+  if (seq[0]->get_der() == .PKCS.Identifiers.rsa_id->get_der())
   {
     if ( (sizeof(seq) > 2) ||
          // Strictly there should always be a Null parameter member
@@ -258,7 +257,7 @@ protected Verifier make_verifier(Object _keyinfo)
     return RSAVerifier(str->value);
   }
 
-  if(seq[0]->get_der() == Identifiers.dsa_id->get_der())
+  if(seq[0]->get_der() == .PKCS.Identifiers.dsa_id->get_der())
   {
     if( sizeof(seq)!=2 || seq[1]->type_name!="SEQUENCE" ||
         sizeof(seq[1])!=3 || seq[1][0]->type_name!="INTEGER" ||
@@ -271,7 +270,7 @@ protected Verifier make_verifier(Object _keyinfo)
   }
 
 #if constant(Crypto.ECC.Curve)
-  if(seq[0]->get_der() == Identifiers.ec_id->get_der())
+  if(seq[0]->get_der() == .PKCS.Identifiers.ec_id->get_der())
   {
     if( sizeof(seq)!=2 || seq[1]->type_name!="OBJECT IDENTIFIER" )
       return NULL("Illegal ECDSA ASN.1\n");
@@ -1311,11 +1310,11 @@ string make_selfsigned_certificate(Crypto.Sign.State c, int ttl,
   if(!serial)
     serial = (int)Gmp.mpz(Standards.UUID.make_version1(-1)->encode(), 256);
 
-  Sequence dn = Certificate.build_distinguished_name(name);
+  Sequence dn = .PKCS.Certificate.build_distinguished_name(name);
 
   void add(string name, Object data, void|int critical)
   {
-    Identifier id = Identifiers.ce_ids[name];
+    Identifier id = .PKCS.Identifiers.ce_ids[name];
     if(!extensions[id])
       extensions[id] = make_extension(id, data, critical);
   };
@@ -1342,11 +1341,11 @@ string make_site_certificate(TBSCertificate ca, Crypto.Sign.State ca_key,
   if(!serial)
     serial = (int)Gmp.mpz(Standards.UUID.make_version1(-1)->encode(), 256);
 
-  Sequence dn = Certificate.build_distinguished_name(name);
+  Sequence dn = .PKCS.Certificate.build_distinguished_name(name);
 
   void add(string name, Object data, void|int critical)
   {
-    Identifier id = Identifiers.ce_ids[name];
+    Identifier id = .PKCS.Identifiers.ce_ids[name];
     if(!extensions[id])
       extensions[id] = make_extension(id, data, critical);
   };
@@ -1366,11 +1365,11 @@ string make_root_certificate(Crypto.Sign.State c, int ttl, mapping|array name,
   if(!serial)
     serial = (int)Gmp.mpz(Standards.UUID.make_version1(-1)->encode(), 256);
 
-  Sequence dn = Certificate.build_distinguished_name(name);
+  Sequence dn = .PKCS.Certificate.build_distinguished_name(name);
 
   void add(string name, Object data, void|int critical)
   {
-    Identifier id = Identifiers.ce_ids[name];
+    Identifier id = .PKCS.Identifiers.ce_ids[name];
     if(!extensions[id])
       extensions[id] = make_extension(id, data, critical);
   };
