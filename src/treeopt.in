@@ -175,13 +175,12 @@ F_GE(F_APPLY(F_CONSTANT
 //   =>
 //
 // (sscanf(s, "%*!" + A + "s" + "xxxx", ...) || 1) - 1
-F_SSCANF(':'(4 = +,
-	     F_ARG_LIST(F_RANGE(0 = +[ pike_types_le($$->type,
-						     string_type_string)],
-				':'(F_RANGE_FROM_BEG(1 = +[ pike_types_le($$->type,
-									  int_type_string)], -),
-				    F_RANGE_OPEN)),
-			2 = +)), 3):
+F_SSCANF(F_ARG_LIST(F_RANGE(0 = +[ pike_types_le($$->type,
+                                                 string_type_string)],
+                            ':'(F_RANGE_FROM_BEG(1 = +[ pike_types_le($$->type,
+                                                                      int_type_string)], -),
+                                F_RANGE_OPEN)),
+                    2 = +), 3):
 {
   struct pike_string *percent_star_string;
   struct pike_string *s_string;
@@ -190,7 +189,6 @@ F_SSCANF(':'(4 = +,
   $$ = mkopernode("`-",
 		  mknode(F_LOR,
 			 mknode(F_SSCANF,
-				mknode(':', $4,
 				mknode(F_ARG_LIST, $0,
 				       mkopernode("`+",
 						  mknode(F_ARG_LIST,
@@ -198,7 +196,7 @@ F_SSCANF(':'(4 = +,
 							 $1),
 						  mknode(F_ARG_LIST,
 							 mkstrnode(s_string),
-							 $2)))),
+							 $2))),
 				$3),
 			 mkintnode(1)),
 		  mkintnode(1));

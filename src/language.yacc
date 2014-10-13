@@ -4279,7 +4279,7 @@ sscanf: TOK_SSCANF '(' expr0 ',' expr0 lvalue_list ')'
     if ($6 && !(THIS_COMPILATION->lex.pragmas & ID_STRICT_TYPES)) {
       mark_lvalues_as_used($6);
     }
-    $$=mknode(F_SSCANF,mknode(':', mkintnode(0), mknode(F_ARG_LIST,$3,$5)),$6);
+    $$=mknode(F_SSCANF,mknode(F_ARG_LIST,$3,$5),$6);
   }
   | TOK_SSCANF '(' expr0 ',' expr0 error ')'
   {

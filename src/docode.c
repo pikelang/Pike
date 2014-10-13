@@ -2445,9 +2445,9 @@ static int do_docode2(node *n, int flags)
   }
 
   case F_SSCANF:
-    tmp1=do_docode(CDAR(n),DO_NOT_COPY);
+    tmp1=do_docode(CAR(n),DO_NOT_COPY);
     tmp2=do_docode(CDR(n),DO_NOT_COPY | DO_LVALUE);
-    emit2(F_SSCANF, DO_NOT_WARN((INT32)(tmp1+tmp2)), CAAR(n)->u.sval.u.integer);
+    emit1(F_SSCANF, DO_NOT_WARN((INT32)(tmp1+tmp2)));
     return 1;
 
   case F_CATCH: {

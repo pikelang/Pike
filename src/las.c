@@ -3789,9 +3789,8 @@ void fix_type_field(node *n)
     break;
 
   case F_SSCANF:
-    if (!CAR(n) || (CAR(n)->token != ':') ||
-	!CDAR(n) || (CDAR(n)->token != F_ARG_LIST) ||
-	!CADAR(n) || !CDDAR(n)) {
+    if (!CAR(n) || (CAR(n)->token != F_ARG_LIST) || !CAAR(n))
+    {
       yyerror("Too few arguments to sscanf().");
       MAKE_CONSTANT_TYPE(n->type, tIntPos);
     } else {
@@ -3801,8 +3800,8 @@ void fix_type_field(node *n)
       INT32 argno = 0;
       MAKE_CONST_STRING(sscanf_name, "sscanf");
       add_ref(sscanf_type = sscanf_type_string);
-      args = mknode(F_ARG_LIST, CDAR(n), CDR(n));
-      add_ref(CDAR(n));
+      args = mknode(F_ARG_LIST, CAR(n), CDR(n));
+      add_ref(CAR(n));
       if (CDR(n)) add_ref(CDR(n));
       sscanf_type = new_check_call(sscanf_name, sscanf_type, args, &argno, 0);
       free_node(args);
@@ -3813,16 +3812,15 @@ void fix_type_field(node *n)
 	    yytype_report(REPORT_ERROR,
 			  NULL, 0, expected,
 			  NULL, 0, NULL,
-			  0, "Too few arguments to %S (got %d).",
-			  sscanf_name, argno);
+			  0, "Too few arguments to sscanf (got %d).",
+			  argno);
 	    free_type(expected);
 	  } else {
 	    /* Most likely not reached. */
 	    yytype_report(REPORT_ERROR,
 			  NULL, 0, function_type_string,
 			  NULL, 0, sscanf_type,
-			  0, "Attempt to call a non function value %S.",
-			  sscanf_name);
+			  0, "Attempt to call a non function value sscanf.");
 	  }
 	}
 	free_type(sscanf_type);
@@ -3986,9 +3984,9 @@ static void find_usage(node *n, unsigned char *usage,
 	usage[i] |= catch_u[i];
       }
       /* Only the first two arguments are evaluated. */
-      if (CAR(n) && CDAR(n)) {
-	find_usage(CDDAR(n), usage, switch_u, cont_u, break_u, catch_u);
-	find_usage(CADAR(n), usage, switch_u, cont_u, break_u, catch_u);
+      if (CAR(n)) {
+	find_usage(CDAR(n), usage, switch_u, cont_u, break_u, catch_u);
+	find_usage(CAAR(n), usage, switch_u, cont_u, break_u, catch_u);
       }
       return;
     }
@@ -4273,15 +4271,14 @@ static node *low_localopt(node *n,
 	usage[i] |= catch_u[i];
       }
       /* Only the first two arguments are evaluated. */
-      if (CAR(n) && CDAR(n)) {
-	cdr = low_localopt(CDDAR(n), usage, switch_u, cont_u, break_u, catch_u);
-	car = low_localopt(CADAR(n), usage, switch_u, cont_u, break_u, catch_u);
+      if (CAR(n)) {
+	cdr = low_localopt(CDAR(n), usage, switch_u, cont_u, break_u, catch_u);
+	car = low_localopt(CAAR(n), usage, switch_u, cont_u, break_u, catch_u);
 	
 	if (CDR(n)) {
 	  ADD_NODE_REF(CDR(n));
 	}
-	return mknode(F_SSCANF, mknode(':', CAAR(n),
-				       mknode(F_ARG_LIST, car, cdr)), CDR(n));
+	return mknode(F_SSCANF, mknode(F_ARG_LIST, car, cdr), CDR(n));
       }
       ADD_NODE_REF(n);
       return n;
