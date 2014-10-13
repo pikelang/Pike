@@ -358,13 +358,14 @@ program_flags PROGRAM_CLEAR_STORAGE;
 /*! @endclass
  */
 
-/*! @decl int(0..) rsa_unpad(string(0..255) data, int type)
+/*! @decl int(0..) rsa_unpad(string(0..255) data, int(1..2) type)
  *!
  *! Unpads a message that has been padded according to
- *! RSAES-PKCS1-V1_5-ENCODE(message) in PKCS#1 v2.2. The padding
- *! method used on the original message must be provided in the
- *! @[type] parameter. All content dependent processing is done in
- *! constant time for the same padding type and @[data] length.
+ *! RSAES-PKCS1-V1_5-ENCODE(message) in PKCS#1 v2.2, but without the
+ *! null byte prefix. The padding method used on the original message
+ *! must be provided in the @[type] parameter. All content dependent
+ *! processing is done in constant time for the same padding type and
+ *! @[data] length.
  */
 PIKEFUN int rsa_unpad(string(0..255) data, int type)
 {
