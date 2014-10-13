@@ -1079,15 +1079,15 @@ class KeyExchangeECDHE
     int c;
     switch(session->cipher_spec->key_bits) {
     case 257..:
-      c = CURVE_secp521r1;
+      c = GROUP_secp521r1;
       break;
     case 129..256:
       // Suite B requires SECP384r1/SHA256 for AES-256
-      c = CURVE_secp384r1;
+      c = GROUP_secp384r1;
       break;
     case ..128:
       // Suite B requires SECP256r1/SHA256 for AES-128
-      c = CURVE_secp256r1;
+      c = GROUP_secp256r1;
       break;
     }
 

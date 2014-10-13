@@ -1025,48 +1025,54 @@ enum ECBasisType {
 }
 
 /* ECC named curves from RFC 4492 5.1.1. */
-enum NamedCurve {
-  CURVE_sect163k1			= 1,	// RFC 4492
-  CURVE_sect163r1			= 2,	// RFC 4492
-  CURVE_sect163r2			= 3,	// RFC 4492
-  CURVE_sect193r1			= 4,	// RFC 4492
-  CURVE_sect193r2			= 5,	// RFC 4492
-  CURVE_sect233k1			= 6,	// RFC 4492
-  CURVE_sect233r1			= 7,	// RFC 4492
-  CURVE_sect239k1			= 8,	// RFC 4492
-  CURVE_sect283k1			= 9,	// RFC 4492
-  CURVE_sect283r1			= 10,	// RFC 4492
-  CURVE_sect409k1			= 11,	// RFC 4492
-  CURVE_sect409r1			= 12,	// RFC 4492
-  CURVE_sect571k1			= 13,	// RFC 4492
-  CURVE_sect571r1			= 14,	// RFC 4492
-  CURVE_secp160k1			= 15,	// RFC 4492
-  CURVE_secp160r1			= 16,	// RFC 4492
-  CURVE_secp160r2			= 17,	// RFC 4492
-  CURVE_secp192k1			= 18,	// RFC 4492
-  CURVE_secp192r1			= 19,	// RFC 4492
-  CURVE_secp224k1			= 20,	// RFC 4492
-  CURVE_secp224r1			= 21,	// RFC 4492
-  CURVE_secp256k1			= 22,	// RFC 4492
-  CURVE_secp256r1			= 23,	// RFC 4492
-  CURVE_secp384r1			= 24,	// RFC 4492
-  CURVE_secp521r1			= 25,	// RFC 4492
+enum NamedGroup {
+  GROUP_sect163k1			= 1,	// RFC 4492
+  GROUP_sect163r1			= 2,	// RFC 4492
+  GROUP_sect163r2			= 3,	// RFC 4492
+  GROUP_sect193r1			= 4,	// RFC 4492
+  GROUP_sect193r2			= 5,	// RFC 4492
+  GROUP_sect233k1			= 6,	// RFC 4492
+  GROUP_sect233r1			= 7,	// RFC 4492
+  GROUP_sect239k1			= 8,	// RFC 4492
+  GROUP_sect283k1			= 9,	// RFC 4492
+  GROUP_sect283r1			= 10,	// RFC 4492
+  GROUP_sect409k1			= 11,	// RFC 4492
+  GROUP_sect409r1			= 12,	// RFC 4492
+  GROUP_sect571k1			= 13,	// RFC 4492
+  GROUP_sect571r1			= 14,	// RFC 4492
+  GROUP_secp160k1			= 15,	// RFC 4492
+  GROUP_secp160r1			= 16,	// RFC 4492
+  GROUP_secp160r2			= 17,	// RFC 4492
+  GROUP_secp192k1			= 18,	// RFC 4492
+  GROUP_secp192r1			= 19,	// RFC 4492
+  GROUP_secp224k1			= 20,	// RFC 4492
+  GROUP_secp224r1			= 21,	// RFC 4492
+  GROUP_secp256k1			= 22,	// RFC 4492
+  GROUP_secp256r1			= 23,	// RFC 4492
+  GROUP_secp384r1			= 24,	// RFC 4492
+  GROUP_secp521r1			= 25,	// RFC 4492
 
-  CURVE_brainpoolP256r1			= 26,	// RFC 7027
-  CURVE_brainpoolP384r1			= 27,	// RFC 7027
-  CURVE_brainpoolP512r1			= 28,	// RFC 7027
+  GROUP_brainpoolP256r1			= 26,	// RFC 7027
+  GROUP_brainpoolP384r1			= 27,	// RFC 7027
+  GROUP_brainpoolP512r1			= 28,	// RFC 7027
 
-  CURVE_arbitrary_explicit_prime_curves	= 0xFF01,
-  CURVE_arbitrary_explicit_char2_curves	= 0xFF02,
+  GROUP_ffdhe2432                       = 256,  // draft-ietf-tls-negotiated-ff-dhe-02
+  GROUP_ffdhe3072                       = 257,  // draft-ietf-tls-negotiated-ff-dhe-02
+  GROUP_ffdhe4096                       = 258,  // draft-ietf-tls-negotiated-ff-dhe-02
+  GROUP_ffdhe6144                       = 259,  // draft-ietf-tls-negotiated-ff-dhe-02
+  GROUP_ffdhe8192                       = 260,  // draft-ietf-tls-negotiated-ff-dhe-02
+
+  GROUP_arbitrary_explicit_prime_curves	= 0xFF01,
+  GROUP_arbitrary_explicit_char2_curves	= 0xFF02,
 }
 
-//! Lookup for Pike ECC name to @[NamedCurve].
+//! Lookup for Pike ECC name to @[NamedGroup].
 constant ECC_NAME_TO_CURVE = ([
-  "SECP_192R1": CURVE_secp192r1,
-  "SECP_224R1": CURVE_secp224r1,
-  "SECP_256R1": CURVE_secp256r1,
-  "SECP_384R1": CURVE_secp384r1,
-  "SECP_521R1": CURVE_secp521r1,
+  "SECP_192R1": GROUP_secp192r1,
+  "SECP_224R1": GROUP_secp224r1,
+  "SECP_256R1": GROUP_secp256r1,
+  "SECP_384R1": GROUP_secp384r1,
+  "SECP_521R1": GROUP_secp521r1,
 ]);
 
 /* ECC point formats from RFC 4492 5.1.2. */
@@ -1126,11 +1132,11 @@ constant EXTENSION_renegotiation_info		= 0xff01;	// RFC 5746
 
 constant ECC_CURVES = ([
 #if constant(Crypto.ECC.Curve)
-  CURVE_secp192r1: Crypto.ECC.SECP_192R1,
-  CURVE_secp224r1: Crypto.ECC.SECP_224R1,
-  CURVE_secp256r1: Crypto.ECC.SECP_256R1,
-  CURVE_secp384r1: Crypto.ECC.SECP_384R1,
-  CURVE_secp521r1: Crypto.ECC.SECP_521R1,
+  GROUP_secp192r1: Crypto.ECC.SECP_192R1,
+  GROUP_secp224r1: Crypto.ECC.SECP_224R1,
+  GROUP_secp256r1: Crypto.ECC.SECP_256R1,
+  GROUP_secp384r1: Crypto.ECC.SECP_384R1,
+  GROUP_secp521r1: Crypto.ECC.SECP_521R1,
 #endif
 ]);
 
