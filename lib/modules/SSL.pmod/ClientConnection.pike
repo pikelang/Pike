@@ -326,7 +326,15 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 			  "Unsupported or obsolete cipher suite.\n"));
 	return -1;
       }
+
+      if (version >= PROTOCOL_TLS_1_3 && compression_method!=COMPRESSION_null)
+      {
+	send_packet(alert(ALERT_fatal, ALERT_insufficient_security,
+			  "Compression not supported in TLS 1.3 and later.\n"));
+	return -1;
+      }
       session->set_compression_method(compression_method);
+
       SSL3_DEBUG_MSG("STATE_wait_for_hello: received hello\n"
 		     "version = %s\n"
 		     "id=%O\n"

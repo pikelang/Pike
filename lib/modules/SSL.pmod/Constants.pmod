@@ -14,6 +14,7 @@ enum ProtocolVersion {
   PROTOCOL_TLS_1_1	= 0x302, //! TLS 1.1 - The RFC 4346 version of TLS.
   PROTOCOL_SSL_3_3	= 0x303, //! SSL 3.3 - The RFC 5246 version of SSL.
   PROTOCOL_TLS_1_2	= 0x303, //! TLS 1.2 - The RFC 5246 version of TLS.
+  PROTOCOL_TLS_1_3      = 0x304, //! TLS 1.3 - draft
 }
 
 //! Max supported SSL version.
@@ -1024,7 +1025,8 @@ enum ECBasisType {
   ECBASIS_pentanomial = 2,
 }
 
-/* ECC named curves from RFC 4492 5.1.1. */
+/* Groups used for elliptic curves DHE (ECDHE) and finite field DH
+   (FFDHE). RFC 4492 5.1.1. / TLS 1.3 7.4.2.5.2. */
 enum NamedGroup {
   GROUP_sect163k1			= 1,	// RFC 4492
   GROUP_sect163r1			= 2,	// RFC 4492

@@ -1871,7 +1871,14 @@ CipherSpec lookup(int suite, ProtocolVersion|int version,
     return 0;
   }
 
-  if (version >= PROTOCOL_TLS_1_2) {
+  if (version >= PROTOCOL_TLS_1_3) {
+    if (res->cipher_type != CIPHER_aead) {
+      // TLS1.3 6.1 RecordProtAlgorithm
+      SSL3_DEBUG_MSG("Suite not supported in TLS 1.3 and later.\n");
+      return 0;
+    }
+  }
+  else if (version == PROTOCOL_TLS_1_2) {
     if (res->bulk_cipher_algorithm == DES) {
       // RFC 5246 1.2:
       // Removed IDEA and DES cipher suites.  They are now deprecated and

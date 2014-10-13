@@ -683,8 +683,11 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	  return -1;
 	}
 
-	compression_methods =
-	  context->preferred_compressors & compression_methods;
+        if( version >= PROTOCOL_TLS_1_3 )
+          compression_methods = ({ COMPRESSION_null }) & compression_methods;
+        else
+          compression_methods =
+            context->preferred_compressors & compression_methods;
 	if (sizeof(compression_methods))
 	  session->set_compression_method(compression_methods[0]);
 	else
