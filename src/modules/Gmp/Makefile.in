@@ -1,7 +1,7 @@
 @make_variables@
 VPATH=@srcdir@
 MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
-OBJS=mpz_glue.o next_prime.o my_mpz_xor.o mpq.o mpf.o
+OBJS=mpz_glue.o my_mpz_xor.o mpq.o mpf.o
 SRC_TARGETS=$(SRCDIR)/prime_table.out
 
 PRIME_LIMIT=1024
@@ -19,7 +19,7 @@ mpq.o: $(SRCDIR)/mpq.c
 # UnixWare make needs help to find the source file...
 mpf.o: $(SRCDIR)/mpf.c
 
-next_prime.o: $(SRCDIR)/prime_table.out
+mpz_glue.o: $(SRCDIR)/prime_table.out
 
 $(SRCDIR)/prime_table.out: $(SRCDIR)/prime_table.pike
 	$(BUILD_BASE)/precompile.sh $(SRCDIR)/prime_table.pike $(PRIME_LIMIT) >$(SRCDIR)/prime_table.out || { rm $(SRCDIR)/prime_table.out; exit 1; }

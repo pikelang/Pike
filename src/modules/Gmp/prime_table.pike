@@ -1,5 +1,5 @@
 #!/usr/bin/env pike
-#pragma strict_types
+
 /*
  * Generates a table of primes.
  * Used when cross-compiling.
@@ -20,12 +20,13 @@ int main(int argc, array(string) argv)
 		"\n"
 		"#define NUMBER_OF_PRIMES %d\n"
 		"\n"
-		"const unsigned short primes[NUMBER_OF_PRIMES] = {",
+		"const unsigned short primes[NUMBER_OF_PRIMES] = {\n"
+                "   2, 3,",
 		argv, count));
 
-  Gmp.mpz prime = Gmp.mpz(1);
-  for (int i=0; i < count; i++) {
-    prime = ([object(Gmp.mpz)](prime+1))->next_prime();
+  Gmp.mpz prime = Gmp.mpz(3);
+  for (int i=2; i < count; i++) {
+    prime = (prime+1)->next_prime();
     if (!(i%10)) {
       write(sprintf("\n   %d,", prime));
     } else {

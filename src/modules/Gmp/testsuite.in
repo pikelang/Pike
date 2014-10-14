@@ -75,11 +75,15 @@ START_MARKER
   test_eq(Gmp.mpz(0)->small_factor(),0)
   test_eq(Gmp.mpz(1)->small_factor(),0)
   test_eq(Gmp.mpz(2)->small_factor(),0)
+  test_eq(Gmp.mpz(3)->small_factor(),0)
+  test_eq(Gmp.mpz(5)->small_factor(),0)
   test_eq(Gmp.mpz(10)->small_factor(),2)
   test_eq(Gmp.mpz(15)->small_factor(),3)
   test_eq(Gmp.mpz(10403)->small_factor(),101)
 
   // next_prime
+  test_eq(Gmp.mpz(1)->next_prime(), 2);
+  test_eq(Gmp.mpz(2)->next_prime(), 3);
   test_eq(Gmp.mpz("100000000000000000")->next_prime(), 100000000000000003);
 
   // gcd

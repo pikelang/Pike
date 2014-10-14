@@ -1740,6 +1740,31 @@ static void mpzmod_probably_prime_p(INT32 args)
   push_int(mpz_probab_prime_p(THIS, count));
 }
 
+/* Define NUMBER_OF_PRIMES and primes[] */
+#include "prime_table.out"
+
+/* Returns a small factor of n, or 0 if none is found.*/
+static unsigned long mpz_small_factor(mpz_t n, int limit)
+{
+  int i;
+  unsigned long stop;
+
+  if (limit > NUMBER_OF_PRIMES)
+    limit = NUMBER_OF_PRIMES;
+
+  stop = mpz_get_ui(n);
+
+  if (mpz_cmp_ui(n, stop) != 0)
+    stop = ULONG_MAX;
+  stop = (long)sqrt(stop)+1;
+
+  for (i = 0; (i < limit) && primes[i] < stop; i++)
+    if (mpz_fdiv_ui(n, primes[i]) == 0)
+      return primes[i];
+
+  return 0;
+}
+
 /*! @decl int small_factor(void|int(1..) limit)
  */
 static void mpzmod_small_factor(INT32 args)

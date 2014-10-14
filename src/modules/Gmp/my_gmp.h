@@ -48,8 +48,6 @@ struct pike_string;
 
 /* MPZ protos */
 
-unsigned long mpz_small_factor(mpz_t n, int limit);
-
 void my_mpz_xor _PROTO ((mpz_ptr, mpz_srcptr, mpz_srcptr));
 void get_mpz_from_digits(MP_INT *tmp,
 			 struct pike_string *digits,
