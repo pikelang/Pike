@@ -366,8 +366,12 @@ program_flags PROGRAM_CLEAR_STORAGE;
  *! must be provided in the @[type] parameter. All content dependent
  *! processing is done in constant time for the same padding type and
  *! @[data] length.
+ *!
+ *! @returns
+ *!   Returns the position in the string where the first non-padding
+ *!   character is, or 0.
  */
-PIKEFUN int rsa_unpad(string(0..255) data, int type)
+PIKEFUN int(0..) rsa_unpad(string(0..255) data, int type)
 {
   int i, pad=0, nonpad=0, pos=0;
   unsigned char *str;
