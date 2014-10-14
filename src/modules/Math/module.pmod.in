@@ -372,10 +372,6 @@ float logn(int|float n, int|float x) { return log(x)/log(n); }
 //! be sorted biggest to smallest factor.
 //!
 //! @note
-//!   This function is only available when Pike has been compiled with
-//!   bignums.
-//!
-//! @note
 //!   In Pike versions prior to v8.0, only primes @expr{<= 8161@} were
 //!   considered.
 array(int) factor(int x) {
@@ -391,7 +387,7 @@ array(int) factor(int x) {
     array(int) ret = ({});
     int p = 8161;	/* The largest prime known by small_factor(). */
     while (x > p) {
-      p = (p+1)->next_prime();
+      p = p->next_prime();
       if (!(x % p)) {
 	while (!(x % p)) {
 	  ret = ({ p }) + ret;
