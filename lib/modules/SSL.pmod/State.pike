@@ -173,11 +173,17 @@ Alert|Packet decrypt_packet(Packet packet)
       int digest_size = crypt->digest_size();
       string digest = msg[<digest_size-1..];
       crypt->set_iv(iv);
-      string auth_data = sprintf("%8c%c%2c%2c",
-                                 seq_num, packet->content_type, version,
-                                 sizeof(msg) -
-                                 (session->cipher_spec->explicit_iv_size +
-                                  digest_size));
+      string auth_data;
+      if (version >= PROTOCOL_TLS_1_3) {
+	auth_data = sprintf("%8c%c%2c",
+			    seq_num, packet->content_type, version);
+      } else {
+	auth_data = sprintf("%8c%c%2c%2c",
+			    seq_num, packet->content_type, version,
+			    sizeof(msg) -
+			    (session->cipher_spec->explicit_iv_size +
+			     digest_size));
+      }
       crypt->update(auth_data);
       msg = crypt->crypt(msg[session->cipher_spec->explicit_iv_size..
                              <digest_size]);
@@ -356,9 +362,15 @@ Alert|Packet encrypt_packet(Packet packet)
 	iv = sprintf("%s%*c", salt, crypt->iv_size() - sizeof(salt), seq_num);
       }
       crypt->set_iv(iv);
-      string auth_data = sprintf("%8c%c%2c%2c",
-				 seq_num, packet->content_type,
-				 version, sizeof(data));
+      string auth_data;
+      if (version >= PROTOCOL_TLS_1_3) {
+	auth_data = sprintf("%8c%c%2c",
+			    seq_num, packet->content_type, version);
+      } else {
+	auth_data = sprintf("%8c%c%2c%2c",
+			    seq_num, packet->content_type,
+			    version, sizeof(data));
+      }
       crypt->update(auth_data);
       data = explicit_iv + crypt->crypt(data) + crypt->digest();
       break;
