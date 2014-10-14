@@ -4,8 +4,6 @@ MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
 OBJS=mpz_glue.o mpq.o mpf.o
 SRC_TARGETS=$(SRCDIR)/prime_table.out
 
-PRIME_LIMIT=1024
-
 CONFIG_HEADERS=@CONFIG_HEADERS@
 
 # Reset the symbol prefix base to the empty string.
@@ -22,6 +20,6 @@ mpf.o: $(SRCDIR)/mpf.c
 mpz_glue.o: $(SRCDIR)/prime_table.out
 
 $(SRCDIR)/prime_table.out: $(SRCDIR)/prime_table.pike
-	$(BUILD_BASE)/precompile.sh $(SRCDIR)/prime_table.pike $(PRIME_LIMIT) >$(SRCDIR)/prime_table.out || { rm $(SRCDIR)/prime_table.out; exit 1; }
+	$(BUILD_BASE)/precompile.sh $(SRCDIR)/prime_table.pike >$(SRCDIR)/prime_table.out || { rm $(SRCDIR)/prime_table.out; exit 1; }
 
 @dependencies@

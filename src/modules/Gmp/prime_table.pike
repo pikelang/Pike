@@ -8,11 +8,9 @@
  */
 int main(int argc, array(string) argv)
 {
-  if (argc != 2) {
-    werror("Bad number of arguments!\n");
-    exit(1);
-  }
-  int count = (int)argv[1];
+  // The size of the prime table is assumed in other parts of Pike.
+  int count = 1024;
+
   write(sprintf("/* Automatically generated.\n"
 		" *%{ %s%}\n"
 		" * Do not edit.\n"
@@ -26,7 +24,7 @@ int main(int argc, array(string) argv)
 
   Gmp.mpz prime = Gmp.mpz(3);
   for (int i=2; i < count; i++) {
-    prime = (prime+1)->next_prime();
+    prime = prime->next_prime();
     if (!(i%10)) {
       write(sprintf("\n   %d,", prime));
     } else {
