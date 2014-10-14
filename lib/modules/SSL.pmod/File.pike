@@ -1047,6 +1047,19 @@ protected void internal_poll()
   user_cb_co = UNDEFINED;
   SSL3_DEBUG_MSG("poll: %s\n", conn->describe_state());
 
+  if (conn->state & CONNECTION_failing) {
+    // Fatal alert received from or sent to the peer.
+    if (conn->state & CONNECTION_local_fatal) {
+      // Propagate it as ECONNABORTED on close and write callbacks.
+      if (!close_errno) close_errno = System.ECONNABORTED;
+      if (!write_errno) write_errno = System.ECONNABORTED;
+    } else {
+      // Propagate it as ECONNRESET on close and write callbacks.
+      if (!close_errno) close_errno = System.ECONNRESET;
+      if (!write_errno) write_errno = System.ECONNRESET;
+    }
+  }
+
   //
   // Close error ==> close_callback
   //
@@ -1103,7 +1116,7 @@ protected void internal_poll()
       (conn->state &
        (CONNECTION_peer_closed | CONNECTION_local_closing)) ==
       CONNECTION_peer_closed) {
-    // Remote close.
+    // Remote close or failure.
 
     function(void|mixed:int) close_cb;
     if (close_cb = close_callback) {

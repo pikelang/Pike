@@ -480,7 +480,8 @@ string|int to_write()
   if (packet->content_type == PACKET_alert)
   {
     if (packet->level == ALERT_fatal) {
-      state = [int(0..0)|ConnectionState](state | CONNECTION_local_fatal);
+      state = [int(0..0)|ConnectionState](state | CONNECTION_local_fatal |
+					  CONNECTION_peer_closed);
       // SSL3 5.4:
       // Alert messages with a level of fatal result in the immediate
       // termination of the connection. In this case, other
@@ -559,7 +560,8 @@ protected int handle_alert(string s)
   {
     SSL3_DEBUG_MSG("SSL.Connection: Fatal alert %O\n",
                    ALERT_descriptions[description]);
-    state = [int(0..0)|ConnectionState](state | CONNECTION_peer_fatal);
+    state = [int(0..0)|ConnectionState](state | CONNECTION_peer_fatal |
+					CONNECTION_peer_closed);
     return -1;
   }
   if (description == ALERT_close_notify)
