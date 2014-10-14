@@ -9,22 +9,9 @@
 #include "pike_float.h"
 #include "module.h"
 
-/* Disable this for now to check that the fallbacks work correctly. */
-#undef HAVE_MPZ_IMPORT
-
-#if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
-#define USE_GMP2
-#else /* !HAVE_GMP2_GMP_H || !HAVE_LIBGMP2 */
-#if defined(HAVE_GMP_H) && defined(HAVE_LIBGMP)
-#define USE_GMP
-#endif /* HAVE_GMP_H && HAVE_LIBGMP */
-#endif /* HAVE_GMP2_GMP_H && HAVE_LIBGMP2 */
-
-#if !defined(USE_GMP) && !defined(USE_GMP2)
-
+#if !defined(HAVE_GMP_H)
 #error "Gmp is required to build Pike!"
-
-#else
+#endif
 
 #include "my_gmp.h"
 
@@ -1601,7 +1588,6 @@ static void mpzmod_fac(INT32 args)
   PUSH_REDUCED (res);
 }
 
-#ifdef HAVE_MPZ_BIN_UI
 /*! @decl Gmp.mpz bin(int k)
  *!
  *! Return the binomial coefficient @expr{n@} over @[k], where
@@ -1641,10 +1627,6 @@ static void mpzmod_bin(INT32 args)
   pop_n_elems(args);
   PUSH_REDUCED(res);
 }
-#else
-/* FIXME: Implement mpz_bin_ui() using primitives. */
-/* Note: When fixing; note IF_MPZ_BIN_UI further below. */
-#endif /* HAVE_MPZ_BIN_UI */
 
 #define BINFUN(name, errmsg_name, fun)			\
 static void name(INT32 args)				\
@@ -2098,34 +2080,11 @@ static void mpzmod_not(INT32 args)
 static void mpzmod_popcount(INT32 args)
 {
   pop_n_elems(args);
-#ifdef HAVE_MPZ_POPCOUNT
-  push_int(mpz_popcount(THIS));  
+  push_int(mpz_popcount(THIS));
 #ifdef BIG_PIKE_INT
 /* need conversion from MAXUINT32 to -1 (otherwise it's done already) */
   if (Pike_sp[-1].u.integer==0xffffffffLL)
      Pike_sp[-1].u.integer=-1;
-#endif
-#else
-  switch (mpz_sgn(THIS))
-  {
-  case 0:
-    push_int(0);
-    break;
-  case -1:
-    push_int(-1);
-    break;
-  case 1:
-    push_int(mpn_popcount(THIS->_mp_d, THIS->_mp_size));
-#ifdef BIG_PIKE_INT
-    if (Pike_sp[-1].u.integer==0xffffffffLL)
-       Pike_sp[-1].u.integer=-1;
-#endif
-    break;
-  default:;
-#ifdef PIKE_DEBUG
-    Pike_fatal("Gmp.mpz->popcount: Unexpected sign!\n");
-#endif
-  }
 #endif
 }
 
@@ -2199,12 +2158,7 @@ static void gmp_fac(INT32 args)
   PUSH_REDUCED(res);
 }
 
-#ifdef MPZ_T_HAS__MP_ALLOC
 #define LIMBS(X) THIS->_mp_alloc
-#else
-#define LIMBS(X) mpz_size(THIS)
-#endif
-
 
 static void mpzmod__size_object(INT32 UNUSED(args))
 {
@@ -2228,14 +2182,12 @@ static void gc_recurse_mpz (struct object *o)
   if (mc_count_bytes (o))
     mc_counted_bytes += LIMBS(THIS)*sizeof (mp_limb_t) + sizeof (mpz_t);
 }
-#endif /* USE_GMP || defined(USE_GMP2) */
 
 PIKE_MODULE_EXIT
 {
   extern struct svalue auto_bignum_program;
   pike_exit_mpf_module();
   pike_exit_mpq_module();
-#if defined(USE_GMP) || defined(USE_GMP2)
   if(mpzmod_program)
   {
     free_program(mpzmod_program);
@@ -2258,7 +2210,6 @@ PIKE_MODULE_EXIT
       NULL, NULL, NULL,
 #endif
       NULL, NULL, NULL, NULL);
-#endif
 }
 
 static void *pike_mp_alloc (size_t alloc_size)
@@ -2295,11 +2246,6 @@ static void pike_mp_free (void *ptr, size_t UNUSED(size))
 #define tMpz_binop_type tFuncV(tNone, tMpz_arg, tMpz_ret)
 #define tMpz_cmpop_type tFunc(tMixed, tInt01)
 
-#ifdef HAVE_MPZ_BIN_UI
-#define IF_MPZ_BIN_UI(X) X
-#else
-#define IF_MPZ_BIN_UI(X)
-#endif
 #define MPZ_DEFS()							\
   ADD_STORAGE(MP_INT);							\
   									\
@@ -2372,13 +2318,11 @@ static void pike_mp_free (void *ptr, size_t UNUSED(size))
   ADD_FUNCTION("invert", mpzmod_invert,tFunc(tMpz_arg,tMpz_ret),0);	\
 									\
   ADD_FUNCTION("fac", mpzmod_fac, tFunc(tNone,tMpz_ret), 0);		\
-  IF_MPZ_BIN_UI(ADD_FUNCTION("bin", mpzmod_bin,				\
-			     tFunc(tMpz_arg,tMpz_ret), 0));		\
-									\
+  ADD_FUNCTION("bin", mpzmod_bin, tFunc(tMpz_arg,tMpz_ret), 0);         \
   ADD_FUNCTION("sgn", mpzmod_sgn, tFunc(tNone,tInt), 0);		\
   ADD_FUNCTION("sqrt", mpzmod_sqrt,tFunc(tNone,tMpz_ret),0);		\
   ADD_FUNCTION("_sqrt", mpzmod_sqrt,tFunc(tNone,tMpz_ret),0);		\
-  ADD_FUNCTION("sqrtrem",mpzmod_sqrtrem,tFunc(tNone,tArr(tMpz_ret)),0);\
+  ADD_FUNCTION("sqrtrem",mpzmod_sqrtrem,tFunc(tNone,tArr(tMpz_ret)),0); \
   ADD_FUNCTION("powm",mpzmod_powm,tFunc(tMpz_arg tMpz_arg,tMpz_ret),0);	\
   ADD_FUNCTION("pow", mpzmod_pow,tMpz_shift_type, 0);			\
 									\
@@ -2398,7 +2342,6 @@ static void pike_mp_free (void *ptr, size_t UNUSED(size))
 PIKE_MODULE_INIT
 {
   extern struct svalue auto_bignum_program;
-#if defined(USE_GMP) || defined(USE_GMP2)
   init_crc_table();
 
   /* Make sure that gmp uses the same malloc functions as we do since
@@ -2473,7 +2416,6 @@ PIKE_MODULE_INIT
 #endif
       gmp_push_ulongest, gmp_ulongest_from_bignum,
       gmp_mpz_from_svalue, gmp_push_bignum);
-#endif
 
   pike_init_mpq_module();
   pike_init_mpf_module();

@@ -7,16 +7,6 @@
 #include "global.h"
 #include "gmp_machine.h"
 
-#if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
-#define USE_GMP2
-#else /* !HAVE_GMP2_GMP_H || !HAVE_LIBGMP2 */
-#if defined(HAVE_GMP_H) && defined(HAVE_LIBGMP)
-#define USE_GMP
-#endif /* HAVE_GMP_H && HAVE_LIBGMP */
-#endif /* HAVE_GMP2_GMP_H && HAVE_LIBGMP2 */
-
-#if defined(USE_GMP) || defined(USE_GMP2)
-
 #include "my_gmp.h"
 
 #include "interpret.h"
@@ -784,9 +774,6 @@ PIKECLASS mpf
 
 /*! @endmodule
  */
-
-#endif /* USE_GMP */
-
 
 void pike_init_mpf_module(void)
 {

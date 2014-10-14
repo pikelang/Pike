@@ -4,31 +4,10 @@
 || for more information.
 */
 
-/*
- * These functions or something similar will hopefully be included
- * with Gmp-2.1 .
- */
-
 #ifndef MY_GMP_H_INCLUDED
 #define MY_GMP_H_INCLUDED
 
-/* Kludge for some compilers only defining __STDC__ in strict mode,
- * which leads to <gmp.h> using the wrong token concat method.
- */
-#if !defined(__STDC__) && defined(HAVE_ANSI_CONCAT) && defined(PIKE_MPN_PREFIX)
-#define PIKE_LOW_MPN_CONCAT(x,y)	x##y
-#define PIKE_MPN_CONCAT(x,y)	PIKE_LOW_MPN_CONCAT(x,y)
-#define __MPN(x)	PIKE_MPN_CONCAT(PIKE_MPN_PREFIX,x)
-#endif /* !__STDC__ && HAVE_ANSI_CONCAT && PIKE_MPN_PREFIX */
-
-#undef _PROTO
-#define _PROTO(x) x
-
-#ifdef USE_GMP2
-#include <gmp2/gmp.h>
-#else /* !USE_GMP2 */
 #include <gmp.h>
-#endif /* USE_GMP2 */
 
 #ifdef PIKE_GMP_LIMB_BITS_INVALID
 /* Attempt to repair the header file... */
@@ -40,15 +19,10 @@
 #endif /* PIKE_GMP_NUMB_BITS */
 #endif /* PIKE_GMP_LIMB_BITS_INVALID */
 
-#ifndef mpz_odd_p
-#define mpz_odd_p(z)   ((int) ((z)->_mp_size != 0) & (int) (z)->_mp_d[0])
-#endif
-
 struct pike_string;
 
 /* MPZ protos */
 
-void my_mpz_xor _PROTO ((mpz_ptr, mpz_srcptr, mpz_srcptr));
 void get_mpz_from_digits(MP_INT *tmp,
 			 struct pike_string *digits,
 			 int base);
@@ -58,14 +32,6 @@ MP_INT *debug_get_mpz(struct svalue *s,
 		      int throw_error, const char *arg_func, int arg, int args);
 void mpzmod_reduce(struct object *o);
 struct pike_string *low_get_mpz_digits(MP_INT *mpz, int base);
-
-#ifndef HAVE_MPZ_XOR
-#define mpz_xor my_mpz_xor
-#endif
-
-#ifndef HAVE_MPZ_FITS_ULONG_P
-#define mpz_fits_ulong_p(n) (!mpz_cmp_ui ((n), mpz_get_ui (n)))
-#endif
 
 #ifdef MPZ_GETLIMBN_WORKS
 #define MPZ_GETLIMBN(MPZ, N) mpz_getlimbn(MPZ, N)

@@ -6,17 +6,6 @@
 
 #include "global.h"
 #include "gmp_machine.h"
-
-#if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
-#define USE_GMP2
-#else /* !HAVE_GMP2_GMP_H || !HAVE_LIBGMP2 */
-#if defined(HAVE_GMP_H) && defined(HAVE_LIBGMP)
-#define USE_GMP
-#endif /* HAVE_GMP_H && HAVE_LIBGMP */
-#endif /* HAVE_GMP2_GMP_H && HAVE_LIBGMP2 */
-
-#if defined(USE_GMP) || defined(USE_GMP2)
-
 #include "my_gmp.h"
 
 #include "interpret.h"
@@ -446,7 +435,7 @@ PIKECLASS mpq
 	  mpz_tdiv_q_2exp (num, num, twos);
 	if (fives) {
 	  mpz_pow_ui (f, f, fives);
-#ifdef HAVE_MPZ_DIVISIBLE_P
+#ifdef PIKE_DEBUG
 	  assert (mpz_divisible_p (num, f));
 #endif
 	  mpz_tdiv_q (num, num, f);
@@ -1016,13 +1005,8 @@ PIKECLASS mpq
   {
     if (mc_count_bytes (Pike_fp->current_object))
       mc_counted_bytes +=
-#ifdef MPZ_T_HAS__MP_ALLOC
 	mpq_numref (THISMPQ)[0]._mp_alloc * sizeof (mp_limb_t) +
 	mpq_denref (THISMPQ)[0]._mp_alloc * sizeof (mp_limb_t) +
-#else
-	mpz_size (mpq_numref (THISMPQ)) * sizeof (mp_limb_t) +
-	mpz_size (mpq_denref (THISMPQ)) * sizeof (mp_limb_t) +
-#endif
 	sizeof (mpq_t);
   }
 }
@@ -1032,9 +1016,6 @@ PIKECLASS mpq
 
 /*! @endmodule
  */
-
-#endif /* USE_GMP */
-
 
 void pike_init_mpq_module(void)
 {
