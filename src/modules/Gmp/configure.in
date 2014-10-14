@@ -21,16 +21,19 @@ define(CHECK_GMP_FUNC,
 
 PIKE_FEATURE_NODEP([Gmp (bignums)])
 
-ORIG_CHECK_HEADERS(gmp.h, [break])
+ORIG_CHECK_HEADERS(gmp.h)
 AC_CHECK_LIB(gmp, main)
 AC_TRY_LINK([
 #include <gmp.h>
 ], [mpz_xor], [], [
-  AC_MSG_ERROR([Cannot compile bignums without the GMP library.
+  AC_MSG_ERROR([
+
+Cannot compile bignums without the GMP library.
 Your GMP library is too old (<4.0) or does not work.
 
 To compile Pike you are required to install a working GMP
-library on your system.])
+library on your system.
+])
 ])
 
 if test "$ac_cv_header_gmp_h" = "yes" ; then
@@ -151,9 +154,12 @@ int main()
     AC_DEFINE(MPZ_SET_SI_WORKS)
   fi
 else
-  AC_MSG_ERROR([Cannot compile bignums without the GMP library. To
+  AC_MSG_ERROR([
+
+Cannot compile bignums without the GMP library. To
 compile Pike you are required to install a working GMP
-library on your system.])
+library on your system.
+])
 fi
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )
