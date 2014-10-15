@@ -391,7 +391,7 @@ array(int) factor(int x) {
     array(int) ret = ({});
     int p = 8161;	/* The largest prime known by small_factor(). */
     while (x > p) {
-      p = (p+1)->next_prime();
+      p = p->next_prime();
       if (!(x % p)) {
 	while (!(x % p)) {
 	  ret = ({ p }) + ret;
