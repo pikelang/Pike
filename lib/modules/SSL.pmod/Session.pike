@@ -283,6 +283,14 @@ int select_cipher_suite(array(CertificatePair) certs,
     }
   }
 
+#if constant(Crypto.ECC.Curve)
+  if (!sizeof(ecc_curves)) {
+    // The client may claim to support ECC, but hasn't sent the
+    // required extension, so don't believe it.
+    ke_mask &= ~((1<<KE_ecdh_ecdsa)|(1<<KE_ecdhe_ecdsa));
+  }
+#endif
+
   // Filter any certs that the client doesn't support.
   certs = [array(CertificatePair)]
     filter(certs, is_supported_cert, ke_mask, h_max, version, ecc_curves);
@@ -318,6 +326,15 @@ int select_cipher_suite(array(CertificatePair) certs,
   } else {
     ke_mask = `|(ke_mask, @certs->ke_mask);
   }
+
+#if constant(Crypto.ECC.Curve)
+  if (!sizeof(ecc_curves)) {
+    // The client may claim to support ECC, but hasn't sent the
+    // required extension, so don't believe it.
+    ke_mask &= ~((1<<KE_ecdh_rsa)|(1<<KE_ecdhe_rsa)|
+		 (1<<KE_ecdh_anon));
+  }
+#endif
 
   // Given the set of certs, filter the set of client_suites,
   // to find the best.
