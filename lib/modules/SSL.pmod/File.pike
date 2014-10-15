@@ -752,23 +752,14 @@ protected void destroy()
   // We don't know which thread this will be called in if the refcount
   // garb or the gc got here. That's not a race problem since it won't
   // be registered in a backend in that case.
-  if (stream) {
-    // Make sure not to fail in ENTER below due to bad backend thread.
-    // [bug 6958].
-    stream->set_callbacks(0, 0, 0);
-  }
   ENTER (0) {
     if (stream) {
       if (close_state == STREAM_OPEN &&
 	  // Don't bother with closing nicely if there's an error from
 	  // an earlier operation. close() will throw an error for it.
 	  !close_errno) {
-	// We can't use our set_nonblocking() et al here, since we
-	// might be associated with a backend in a different thread,
-	// and update_internal_state() will install callbacks, which
-	// in turn might trigger the tests in CHECK_CB_MODE().
-	stream->set_nonblocking();	// Make sure not to to block.
-	nonblocking_mode = 0;	// Make sure not to install any callbacks.
+	// Clear the user callbacks, and make sure not to block.
+	set_nonblocking();
 	close (0, 0, 1);
       }
       else
@@ -1101,7 +1092,7 @@ protected void internal_poll()
 		      "with %d bytes\n", read_callback, sizeof (received));
       // Never called if there's an error - no need to propagate errno.
       read_callback (callback_id, received);
-      if(stream)
+      if(this && stream)
         stream->set_read_callback(ssl_read_callback);
     }
     if (!this || !conn) return;
