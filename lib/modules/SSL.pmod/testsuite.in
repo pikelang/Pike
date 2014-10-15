@@ -614,14 +614,21 @@ test_do([[
     if (((client_max < PROTOCOL_TLS_1_2) ||
          (server_max < PROTOCOL_TLS_1_2)) &
         (sizeof(suites) == 1)) {
-      if ((CIPHER_SUITES[suites[0] ][0] == KE_ecdh_rsa) ||
-          (CIPHER_SUITES[suites[0] ][0] == KE_dh_rsa)) {
+      int ke = CIPHER_SUITES[suites[0] ][0];
+      if ((ke == KE_ecdh_rsa) || (ke == KE_dh_rsa)) {
         expected_data = 0;
       }
       if (sizeof(CIPHER_SUITES[suites[0] ]) == 4) {
         // AEAD ciphers and cipher specific prfs not supported prior
 	// to TLS 1.2.
 	expected_data = 0;
+      }
+      if (client_max < PROTOCOL_TLS_1_0) {
+        // SSL 3.0 doesn't support extensions, so it can't support ECC.
+	if ((ke == KE_ecdh_ecdsa) || (ke == KE_ecdhe_ecdsa) ||
+	    (ke == KE_ecdhe_rsa) || (ke == KE_ecdh_anon)) {
+	  expected_data = 0;
+	}
       }
     }
 
@@ -756,14 +763,21 @@ test_do([[
     if (((client_max < PROTOCOL_TLS_1_2) ||
          (server_max < PROTOCOL_TLS_1_2)) &
         (sizeof(suites) == 1)) {
-      if ((CIPHER_SUITES[suites[0] ][0] == KE_ecdh_rsa) ||
-          (CIPHER_SUITES[suites[0] ][0] == KE_dh_rsa)) {
+      int ke = CIPHER_SUITES[suites[0] ][0];
+      if ((ke == KE_ecdh_rsa) || (ke == KE_dh_rsa)) {
         expected_data = 0;
       }
       if (sizeof(CIPHER_SUITES[suites[0] ]) == 4) {
         // AEAD ciphers and cipher specific prfs not supported prior
 	// to TLS 1.2.
 	expected_data = 0;
+      }
+      if (client_max < PROTOCOL_TLS_1_0) {
+        // SSL 3.0 doesn't support extensions, so it can't support ECC.
+	if ((ke == KE_ecdh_ecdsa) || (ke == KE_ecdhe_ecdsa) ||
+	    (ke == KE_ecdhe_rsa) || (ke == KE_ecdh_anon)) {
+	  expected_data = 0;
+	}
       }
     }
 
