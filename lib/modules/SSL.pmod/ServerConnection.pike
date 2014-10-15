@@ -121,6 +121,8 @@ Packet server_hello_packet()
 
   if (fail) return fail;
 
+  // NB: Assume that the client understands extensions
+  //     if it has sent extensions...
   if (sizeof(extensions))
       struct->put_var_string(extensions->pop_data(), 2);
 

@@ -170,7 +170,7 @@ Packet client_hello(string(8bit)|void server_name)
     return ADT.struct()->add_data("\0"*padding);
   };
 
-  if(sizeof(extensions))
+  if(sizeof(extensions) && (version >= PROTOCOL_TLS_1_0))
     struct->put_var_string(extensions->pop_data(), 2);
 
   string data = struct->pop_data();
