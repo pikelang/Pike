@@ -1,0 +1,247 @@
+subject: Pike 7.8: Multiple fixes:
+from: 0cdab7d984919dde228cf17b25b6398633a73551
+to: 6bf2251fdc7669fd61cd20227537391b443200c6
+originator: wellhardh@roxen.com
+depends: 2014-06-17T093911
+restart: true
+
+Multiple fixes:
+
+  * packaging: updates for 7.8.866.
+
+  * packaging: correct source location.
+
+  * packaging: rpms actually build now
+
+  * GC: Bugfix in visit_short_svalue to avoid fatal.
+    
+    Fixes a fatal that was triggered if Pike.count_memory or Pike.identify_cycle
+    was performed on a backend object having either pending call_outs or any
+    active or inactive fd:s (it seems that's the only call site of
+    gc_recurse_short_svalue, which in turn is the only call site of
+    visit_short_svalue).
+
+  * Optimizer: Fixed bug in foreach with ranges.
+    
+    The foreach range optimizer didn't handle negative start ranges,
+    which would cause foreach to index the array out of bounds.
+    
+    Fixes [bug 7216].
+
+  * Stdio.sendfile: Fixed use before set.
+    
+    Fixes "Indexing the NULL value with \"call_out\".", when
+    Stdio.sendfile(({""}), 0, -1, -1, 0, simulated_file, cb, ...).
+    
+    Also fixes issue where the trailers weren't sent if there was no
+    source file, no headers and a non-empty file length.
+    
+    Fixes [bug 7230].
+
+  * Updated to tzdata2014f.
+    
+    Also removed some obsolete files (solar8[789]) and added zone1970.tab.
+    
+    Also adds some further files.
+    
+    The tzdata directory should now be fully in sync with the tzdata2014f dist.
+
+  * Database creation doesn't work with bound parameters.
+
+  * Revert "dwim_time() should know how to parse ISO 8601 timestamps."
+    
+    This patch had the opposite effect of the intended...
+    
+    This reverts commit 962105c4c0eaa08aaba357343845b3046b6741b9.
+
+  * Represent G_TYPE_POINTER as an integer to prevent segfaults
+
+  * Ensure something's pushed for every argument to a GTK2 signal callback
+
+  * GTK2: Update Scale docs based on source file
+
+  * GTK2 docs formatting fix
+
+  * release number bumped to 872 by export.pike
+
+  * release number bumped to 873 by export.pike
+
+  * Search.Database.MySQL: Don't used DELAYED queries.
+    
+    The DELAYED query modifier is:
+    
+      * Not supported with InnoDB tables. This causes failures with
+        MySQL versions (eg 5.5) where InnoDB (and not MyISAM) is default.
+    
+      * Ignored in MySQL 5.6.
+    
+      * Deprecated in MySQL 5.6.6.
+    
+    Fixes [bug 7255].
+
+  * release number bumped to 874 by export.pike
+
+  * release number bumped to 875 by export.pike
+
+  * Updated to tzdata2014g.
+
+  * Removed stray '1' from the get_all_args format
+    (cherry picked from commit eee075e0b10187bef49a72bec04e1de0048ed66b)
+
+  * release number bumped to 876 by export.pike
+
+  * release number bumped to 877 by export.pike
+
+  * Improve glue with libpq.
+
+  * release number bumped to 878 by export.pike
+
+  * release number bumped to 879 by export.pike
+
+  * signal_handler: don't "randomly" change errno in receive_sigchild()
+
+  * release number bumped to 880 by export.pike
+
+  * release number bumped to 881 by export.pike
+
+  * Stdio.File: Fixed race condition in nonblocking connect().
+    
+    Potential fix for [bug 7293].
+
+  * release number bumped to 882 by export.pike
+
+  * release number bumped to 883 by export.pike
+
+  * install.pike: Update CXX smartlink path to installed path as well.
+
+  * release number bumped to 884 by export.pike
+
+  * release number bumped to 885 by export.pike
+
+  * Stdio.File: More race fixes in connect() [bug 7293].
+    
+    It seems the backend on Linux sometimes may trigger before the connect(2)
+    is done with POLLIN and a state where read(2) fails with ENOTCONN.
+    
+    Reduce the race condition by inhibiting backend callbacks on the
+    fd during connect(2).
+
+  * release number bumped to 886 by export.pike
+
+  * release number bumped to 887 by export.pike
+
+  * _Roxen: http_decode_string() now supports wide strings.
+    
+    Wide strings may show up in URLs in eg tag attributes.
+    
+    Fixes [bug 7318].
+
+  * release number bumped to 888 by export.pike
+
+  * release number bumped to 889 by export.pike
+
+  * Two somewhat related fixes to the PNG decoder
+    
+    1: Handle any number of PNG chunks (up to the available memory)
+    
+    2: Stop decoding once the IEND chunk has been processed.
+    
+    This fixes opera bug TURBO2-767:
+       Crash when decoding http://extrafahaz.hu/fotok/image052e.png
+    
+    The image in the bug has a lot of data appended after the IEND chunk,
+    and in total after decoding there was 339017 chunks.
+    
+    Since the decoder used the stack to build the array this meant that it
+    had a tendency ran out of stack space, and caused fairly random
+    crashes.
+    
+    Fixed by simply avoiding the stack, instead an array is built
+    directly.
+    
+    Also, the PNG format says that the file ends after the IEND chunk, the
+    decoder now enforces that, which makes the file decode significantly
+    faster (now ~60 chunks instead of 339k).
+
+  * Mysql: Improved library detection.
+    
+    MariaDB is often installed without the mariadb client library
+    (but with the mysql client library), so search for the mysql
+    client library if the mariadb client library can't be found.
+    
+    Also adds searching for reentrant versions of the client libraries.
+    
+    Fixes compilation issues on machines with MariaDB server but
+    not MariaDB client.
+
+  * Indent preprocessor directives in set_priority().
+    
+    (cherry picked from commit 56a199cd3f0d7b2866e59e4562c23d8c4449b6e4)
+
+  * set_priority(): add "normal" as a priority.
+    
+    This makes it possible to return to the default priority in a
+    documented way.
+    
+    (cherry picked from commit 2d3e79777cd88b5c708447fba1b68783136539a0)
+
+  * set_priority(): simplify code.
+    
+    Simplify an expression by removing a multiply-by-0 part of an
+    expression.
+    
+    (cherry picked from commit f91b7e2e5519ca66700fee7ddc56f3e7b2c764a9)
+
+  * set_priority(): Fix going from realtime to normal priorities.
+    
+    The following code sequence (and many others) used to fail on systems
+    that have both the sched_setscheduler() and setpriority() syscalls:
+    
+        set_priority("realtime");
+        set_priority("lower");
+    
+    The first call would set the policy to SCHED_FIFO.  The second call
+    would not touch the policy, but just use setpriority().  The result is
+    that the process continues to run with realtime priority.
+    
+    Fix by ensuring that the code calls both sched_setscheduler() and
+    setpriority() when SCHED_OTHER is in effect.
+    
+    At the same time, reorganize the code somewhat to be more readable.
+    
+    (cherry picked from commit 48aa6ad98e390fb68e2055fa67f951e5fb32159f)
+    
+    Conflicts:
+    	src/signal_handler.c (trivial memset/MEMSET conflict)
+
+  * set_priority(): Raise an error on unsupported priorities.
+    
+    Previously, the were handled as "normal".
+    
+    (cherry picked from commit 1f8eb4566cc6b5e23e1d7084ec3d4f30f739145a)
+
+  * set_priority(): Use SCHED_IDLE for priority "lowest".
+    
+    On systems with sched_setscheduler and where SCHED_IDLE is defined,
+    use it when setting the priority to "lowest".
+    
+    (cherry picked from commit 23e8e5699409887476005611ec6e6ce341a87f00)
+
+  * Fixed warning.
+    
+    (cherry picked from commit 0994f941f38b9b5361a653bf01b9453bd3500e7c)
+    
+    Conflicts:
+    	src/signal_handler.c (trivial memset/MEMSET issue)
+
+  * release number bumped to 890 by export.pike
+
+  * release number bumped to 891 by export.pike
+
+  * SSL: Added server-side support for TLS_fallback_scsv.
+    
+    This implements some protection against TLS 1.0 ==> SSL 3.0
+    downgrade attacks. cf "This POODLE Bites: Exploiting The
+    SSL 3.0 Fallback": https://www.openssl.org/~bodo/ssl-poodle.pdf
+
+  * SSL: Support TLS_fallback_scsv in SSLv2 handshake too.
