@@ -8,9 +8,9 @@ AC_MODULE_INIT()
 if test "$with_nettle" = "no"; then
   PIKE_FEATURE_WITHOUT(Nettle)
 else
-  AC_CHECK_LIB(gmp, mpz_init)
-  AC_CHECK_LIB(gmp, __mpz_init)
-  AC_CHECK_LIB(gmp, __gmpz_init)
+  dnl GMP is required and tested for in Gmp module. We just want LIBS
+  dnl updated here.
+  AC_CHECK_LIB(gmp, main)
   AC_MSG_CHECKING(CryptAcquireContext in -ladvapi32)
   AC_CACHE_VAL(pike_cv_nettle_advapi32_CryptAcquireContext,
   [
@@ -52,7 +52,7 @@ else
     if test "x$pike_cv_nettle_hogweed_keypair_args" = "xyes"; then
       AC_DEFINE(HAVE_DSA_QBITS_KEYPAIR_ARG, [], [Define if generate_dsa_keypair takes the qbits argument])
     fi
- fi
+  fi
 
   AC_SUBST(IDEA_OBJ)
 
