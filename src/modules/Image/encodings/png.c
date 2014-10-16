@@ -217,9 +217,6 @@ static void image_png___decode(INT32 args)
    size_t len;
    struct pike_string *str;
    ONERROR uwp;
-   struct svalue tmp;
-
-   SET_SVAL_TYPE_DC(tmp, PIKE_T_ARRAY);
 
    if (args<1)
      SIMPLE_TOO_FEW_ARGS_ERROR("__decode", 1);
@@ -255,39 +252,36 @@ static void image_png___decode(INT32 args)
    SET_ONERROR(uwp,do_free_string,str);
    len-=8; data+=8;
 
-   res = allocate_array(0);
-   res->type_field = BIT_ARRAY;
-   push_array(res);
+   check_stack(20);
+   BEGIN_AGGREGATE_ARRAY(10);
 
    while (len>8)
    {
       unsigned long x;
-      tmp.u.array = allocate_array_no_init(3,3);
-      tmp.u.array->type_field = BIT_INT | BIT_STRING;
-      res = append_array( res, &tmp );
-      Pike_sp[-1].u.array = res;
       x=int_from_32bit(data);
-      SET_SVAL(tmp.u.array->item[0], PIKE_T_STRING, 0, string,
-               make_shared_binary_string((char*)data+4,4));
+      push_string(make_shared_binary_string((char*)data+4,4));
       len-=8;
       data+=8;
+
       if (x>len)
       {
-        SET_SVAL(tmp.u.array->item[1], PIKE_T_STRING,0,string,
-                 make_shared_binary_string((char*)data,len));
-        SET_SVAL(tmp.u.array->item[2], PIKE_T_INT, 0, integer, 0 );
+	push_string(make_shared_binary_string((char*)data,len));
+	push_int(0);
+	f_aggregate(3);
+	DO_AGGREGATE_ARRAY(20);
         break;
       }
-      SET_SVAL(tmp.u.array->item[1], PIKE_T_STRING, 0, string,
-               make_shared_binary_string((char*)data,x));
-      if (!nocrc && x+4<=len)
-        SET_SVAL(tmp.u.array->item[2], PIKE_T_INT, 0, integer,
-                 crc32(crc32(0,NULL,0),data-4,x+4) == int_from_32bit(data+x) );
-      else
-        SET_SVAL(tmp.u.array->item[2], PIKE_T_INT, 0, integer, 0 );
 
-      if( int_from_32bit((unsigned char *)tmp.u.array->item[0].u.string->str) 
-          == 0x49454e44 ) /* IEND */
+      push_string(make_shared_binary_string((char*)data,x));
+      if (!nocrc && x+4<=len)
+	push_int( crc32(crc32(0,NULL,0),data-4,x+4) ==
+                  int_from_32bit(data+x) );
+      else
+	push_int(0);
+      f_aggregate(3);
+      DO_AGGREGATE_ARRAY(20);
+
+      if( int_from_32bit((unsigned char *)data) == 0x49454e44 ) /* IEND */
         break;
 
       if (x+4>len) break;
@@ -295,6 +289,8 @@ static void image_png___decode(INT32 args)
       data+=x+4;
    }
    CALL_AND_UNSET_ONERROR(uwp);
+
+   END_AGGREGATE_ARRAY;
 }
 
 /*! @decl mapping _decode(string|array data)
