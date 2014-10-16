@@ -400,21 +400,26 @@ static void f_http_decode_string(INT32 args)
     *
     * proc counts the number of characters that are to be removed.
     */
-   for (; COMPARE_PCHARP(foo, <, end); INC_PCHARP(foo, 1)) {
-     p_wchar2 c = INDEX_PCHARP(foo, 0);
-     if (c == '%') {
-       c = INDEX_PCHARP(foo, 1);
-       if (c == 'u' || c == 'U') {
-	 /* %uXXXX */
-	 if (INDEX_PCHARP(foo, 2) != '0' || INDEX_PCHARP(foo, 3) != '0') {
-	   if (!size_shift) size_shift = 1;
-	 }
-	 proc += 5;
-	 INC_PCHARP(foo, 5);
-       } else {
-	 proc += 2;
-	 INC_PCHARP(foo, 2);
+   for (; COMPARE_PCHARP(foo, <, end);) {
+     p_wchar2 c = EXTRACT_PCHARP(foo);
+     INC_PCHARP(foo, 1);
+     if (c != '%') continue;
+     /* there are at least 2 more characters */
+     if (SUBTRACT_PCHARP(end, foo) <= 1)
+       Pike_error("Truncated http transport encoded string.\n");
+     c = EXTRACT_PCHARP(foo);
+     if (c == 'u' || c == 'U') {
+       if (SUBTRACT_PCHARP(end, foo) <= 4)
+         Pike_error("Truncated unicode sequence.\n");
+       /* %uXXXX */
+       if (EXTRACT_PCHARP(foo) != '0' || INDEX_PCHARP(foo, 1) != '0') {
+         if (!size_shift) size_shift = 1;
        }
+       proc += 5;
+       INC_PCHARP(foo, 5);
+     } else {
+       proc += 2;
+       INC_PCHARP(foo, 2);
      }
    }
 
