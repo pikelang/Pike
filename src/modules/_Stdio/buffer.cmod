@@ -772,18 +772,36 @@ PIKECLASS Buffer
   }
 
 
-  static size_t io_svalue_len( Buffer *UNUSED(io), struct svalue *p )
+  static size_t io_svalue_len( Buffer *io, struct svalue *p )
   {
-    if( TYPEOF(*p) == PIKE_T_STRING )
-    {
-      if( !p->u.string->size_shift )
-        return p->u.string->len;
-    }
-    if( TYPEOF(*p) == PIKE_T_OBJECT )
-    {
-      size_t len;
-      if( get_memory_object_memory( p->u.object, NULL, &len, NULL ) )
+    switch( TYPEOF(*p) ) {
+      case PIKE_T_INT:
+        return 1;
+      case PIKE_T_STRING:
+        if( !p->u.string->size_shift )
+          return p->u.string->len;
+        break;
+      case PIKE_T_ARRAY: {
+        size_t len;
+        struct array *argp = p->u.array;
+        INT_TYPE i;
+        DECLARE_CYCLIC();
+
+        if (BEGIN_CYCLIC(io, argp))
+          Pike_error("Attempt to append a cyclic array to a buffer.\n");
+
+        for(len=i=0; i<argp->size; i++ )
+          len += io_svalue_len( io, argp->item+i );
+
+        END_CYCLIC();
         return len;
+      }
+      case PIKE_T_OBJECT: {
+        size_t len;
+        if( get_memory_object_memory( p->u.object, NULL, &len, NULL ) )
+          return len;
+        break;
+      }
     }
     Pike_error("Illegal argument (not an 8bit string or 8bit buffer object)\n");
   }
