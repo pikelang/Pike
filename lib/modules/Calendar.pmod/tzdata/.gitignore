@@ -1,8 +1,0 @@
-# These files are included in the tzdata????.tar.gz distribution,
-# but are not used by Pike.
-/Makefile
-/README
-/*.awk
-
-# FIXME: The leap-seconds.list file might be useful for deltat().
-/*.list
