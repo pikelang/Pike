@@ -4302,8 +4302,6 @@ static INT32 my_decode(struct pike_string *tmp,
 
   low_do_decode (data);
 
-  UNSET_ONERROR(err);
-
   {
     int delay;
 #if TWO_PASS_DECODE_WORKS
@@ -4314,6 +4312,8 @@ static INT32 my_decode(struct pike_string *tmp,
 #endif
     free_decode_data (data, delay, 0);
   }
+
+  UNSET_ONERROR(err);
 
   return 1;
 }
