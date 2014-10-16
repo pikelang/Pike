@@ -10,7 +10,7 @@ test_eq(_Roxen.http_decode_string("abc+d%20e%41"), "abc+d eA")
 test_eq(_Roxen.http_decode_string(""), "")
 test_eq(_Roxen.http_decode_string("+"), "+")
 
-# the following inputs are all illegal
+// the following inputs are all illegal
 test_eval_error(_Roxen.http_decode_string("%"))
 test_eval_error(_Roxen.http_decode_string("%0"))
 test_eval_error(_Roxen.http_decode_string("%%"))
