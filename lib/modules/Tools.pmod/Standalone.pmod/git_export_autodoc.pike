@@ -721,7 +721,8 @@ void export_autodoc_for_ref(string ref)
     string prev_autodoc_sha1;
     string prev_refdoc_sha1 = "";
     if (src_commit->parent) {
-      doc_parents = Array.uniq(map(src_commit->parent, src_to_doc));
+      doc_parents = Array.uniq(map(src_commit->parent, src_to_doc)) -
+	({ UNDEFINED });
       prev_refdoc_sha1 = get_refdoc_sha1(src_commit->parent[0]);
     }
 
