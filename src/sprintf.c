@@ -943,7 +943,9 @@ static int do_one(struct format_stack *fs,
 
 #define POP_ARGUMENT() do { \
     if (arg) arg = NULL;      \
-    else if (argument < num_arg) argument++; \
+    else if (argument < num_arg) {\
+        lastarg=argp+(argument++); \
+    } \
     else sprintf_error(fs, "Too few arguments to sprintf.\n"); \
 } while (0)
 
