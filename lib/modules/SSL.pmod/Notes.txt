@@ -162,6 +162,11 @@ close():
 	ssl_read_callback and rotate the local backend until
 	connection closed from other end, or linger time expires.
 
+destroy()
+	Clear user callbacks and switch to nonblocking mode.
+	Attempt to send a close packet. Terminate the
+	internal_poll() call_out-loop.
+
 ssl_read_callback():
 	Decode received data and add it to user_read_buffer.
 	Schedule read_callback with real_backend call_out.
