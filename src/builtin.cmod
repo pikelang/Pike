@@ -3126,9 +3126,6 @@ PIKECLASS Buffer
    *! @note
    *!   Pike 7.8 and earlier did not support adding @[String.Buffer]s
    *!   directly.
-   *!
-   *! @seealso
-   *!   @[addat()]
    */
   PIKEFUN int add( string|Buffer ... arg1 )
     rawtype tFuncV(tNone, tOr(tString, tObjIs_BUFFER), tIntPos);
@@ -3145,7 +3142,7 @@ PIKECLASS Buffer
 	  a = Pike_sp[j-args].u.string;
 	else if ((TYPEOF(Pike_sp[j-args]) != PIKE_T_OBJECT) ||
 		   (Pike_sp[j-args].u.object->prog != Buffer_program))
-	  SIMPLE_BAD_ARG_ERROR("addat", j+1, "string|String.Buffer");
+	  SIMPLE_BAD_ARG_ERROR("add", j+1, "string|String.Buffer");
 	else {
 	  a = OBJ2_BUFFER(Pike_sp[j-args].u.object)->str.s;
 	  if (!a) continue;
