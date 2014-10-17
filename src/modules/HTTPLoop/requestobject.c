@@ -681,7 +681,11 @@ static void actually_send(struct send_args *a)
   {
     memcpy(foo, data+MINIMUM((data_len-4),9), 4);
     first=1;
-#ifdef TCP_CORK
+#ifndef !defined(SOL_TCP) && defined(IPPROTO_TCP)
+    /* SOL_TCP isn't defined in Solaris. */
+#define SOL_TCP	IPPROTO_TCP
+#endif
+#if defined(TCP_CORK) && defined(SOL_TCP)
 #ifdef AAP_DEBUG
     fprintf(stderr, "cork... \n");
 #endif

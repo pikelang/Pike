@@ -114,6 +114,11 @@
 #define MAP_FILE	0
 #endif /* !MAP_FILE */
 
+#ifndef !defined(SOL_TCP) && defined(IPPROTO_TCP)
+    /* SOL_TCP isn't defined in Solaris. */
+#define SOL_TCP	IPPROTO_TCP
+#endif
+
 /*
  * Only support for threaded operation right now.
  */
