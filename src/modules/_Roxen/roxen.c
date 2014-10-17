@@ -379,11 +379,16 @@ static void f_http_decode_string(INT32 args)
  *!
  *! Decodes an http transport-encoded string. Knows about %XX and
  *! %uXXXX syntax. Treats %UXXXX as %uXXXX. It will treat '+' as '+'
- *! and not ' ', so form decoding needs to replace that in a second
+ *! and not ' ', so form decoding needs to replace that in a prior
  *! step.
+ *!
+ *! @note
+ *!   Performs a best-effort decoding. Invalid and truncated escapes
+ *!   will still be decoded.
  */
 {
    int proc = 0;
+   int trunc = 0;
    int size_shift;
    PCHARP foo, end;
    struct string_builder newstr;
@@ -398,35 +403,45 @@ static void f_http_decode_string(INT32 args)
 
    /* Count '%' and wide characters.
     *
-    * proc counts the number of characters that are to be removed.
+    * trunc counts the number of characters that are to be removed.
     */
-   for (; COMPARE_PCHARP(foo, <, end); INC_PCHARP(foo, 1)) {
-     p_wchar2 c = INDEX_PCHARP(foo, 0);
-     if (c == '%') {
-       c = INDEX_PCHARP(foo, 1);
-       if (c == 'u' || c == 'U') {
-	 /* %uXXXX */
-	 if (INDEX_PCHARP(foo, 2) != '0' || INDEX_PCHARP(foo, 3) != '0') {
-	   if (!size_shift) size_shift = 1;
-	 }
-	 proc += 5;
-	 INC_PCHARP(foo, 5);
-       } else {
-	 proc += 2;
-	 INC_PCHARP(foo, 2);
+   for (; COMPARE_PCHARP(foo, <, end);) {
+     p_wchar2 c = EXTRACT_PCHARP(foo);
+     INC_PCHARP(foo, 1);
+     if (c != '%') continue;
+     proc++;
+     /* there are at least 2 more characters */
+     if (SUBTRACT_PCHARP(end, foo) < 2) {
+       trunc += SUBTRACT_PCHARP(end, foo);
+       break;
+     }
+     c = EXTRACT_PCHARP(foo);
+     if (c == 'u' || c == 'U') {
+       if (SUBTRACT_PCHARP(end, foo) < 5) {
+	 trunc += SUBTRACT_PCHARP(end, foo);
+         break;
        }
+       /* %uXXXX */
+       if (EXTRACT_PCHARP(foo) != '0' || INDEX_PCHARP(foo, 1) != '0') {
+         if (!size_shift) size_shift = 1;
+       }
+       trunc += 5;
+       INC_PCHARP(foo, 5);
+     } else {
+       trunc += 2;
+       INC_PCHARP(foo, 2);
      }
    }
 
    if (!proc) { pop_n_elems(args-1); return; }
 
-   init_string_builder_alloc(&newstr, Pike_sp[-args].u.string->len - proc,
+   init_string_builder_alloc(&newstr, Pike_sp[-args].u.string->len - trunc,
 			     size_shift);
 
    foo = MKPCHARP_STR(Pike_sp[-args].u.string);
 
    for (; COMPARE_PCHARP(foo, <, end); INC_PCHARP(foo, 1)) {
-     p_wchar2 c = INDEX_PCHARP(foo, 0);
+     p_wchar2 c = EXTRACT_PCHARP(foo);
      if (c == '%') {
        c = INDEX_PCHARP(foo, 1);
        if (c == 'u' || c == 'U') {
