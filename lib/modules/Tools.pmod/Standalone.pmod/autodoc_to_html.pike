@@ -1330,7 +1330,7 @@ string parse_not_doc(Node n) {
 
             void output_from_type(Node x, bool toplevel )
             {
-              if( x->get_node_type() != XML_ELEMENT ) return;
+              if( !x || x->get_node_type() != XML_ELEMENT ) return;
               switch( x->get_any_name() )
               {
                 case "object": /*add_typed("object"); */break; /* this is a no-op.. */
