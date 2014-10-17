@@ -672,7 +672,7 @@ bool has_doc_commits( string commit )
         if( x[0] == '+' || x[0] == '-' )
         {
             if( (has_value( x, "*!" ) || has_value(x,"//!" )) &&
-                !has_value(x, "$Id: ") )
+                !has_value(x, "$""Id: ") )
                 return true;
 	    if (has_value(x, "inherit")) return true;
         }
@@ -712,26 +712,9 @@ void export_autodoc_for_ref(string ref)
       continue;
     }
 
+    string doc_mark;
     // Not previously converted.
     mapping(string:array(string)) src_commit = get_commit(work_git, src_rev);
-    if( doc_refs[ref] && src_commit->parent &&
-	!has_doc_commits(git("diff", "--pretty=raw",
-			     src_commit->parent[0] + ".." + src_rev)) )
-    {
-        // Not relevant for autodoc.
-        src_to_doc[src_rev] = doc_refs[ref];
-	if (verbose) {
-            progress("No documentation... ");
-	}
-        continue;
-    }
-
-    // Check out the source.
-    if (verbose) {
-      progress("Checkout... ");
-    }
-    git("checkout", "-f", src_rev);
-    git("clean", "-f", "-d", "-q", "src", "lib");
 
     // Create a corresponding commit in the documentation.
     array(string) doc_parents = ({});
@@ -772,76 +755,100 @@ void export_autodoc_for_ref(string ref)
       prev_autodoc_sha1 = get_autodoc_hash(doc_parents[0]);
     }
 
-    string doc_mark;
-    mixed err = catch {
-      // Create the autodoc.xml blob.
-      extract_autodoc(src_commit);
-
-      if (!Stdio.exist(work_dir + "/build/autodoc.xml")) {
+    mixed err;
+    do {
+      if( doc_refs[ref] && src_commit->parent &&
+	  !has_doc_commits(git("diff", "--pretty=raw",
+			       src_commit->parent[0] + ".." + src_rev)) )
+      {
+        // Not relevant for autodoc.
 	if (verbose) {
-	  progress("Fail!");
+	  progress("No documentation... ");
 	}
-	break;
+	// Skip extraction, and just create the commit if needed,
+	// and update the persistent state.
+        continue;
       }
 
-      string autodoc_xml = Stdio.read_bytes(work_dir + "/build/autodoc.xml");
-      string new_autodoc_sha1 = Git.hash_blob(autodoc_xml);
-
-      // If it hasn't changed, we don't need to do anything.
-      if (new_autodoc_sha1 == prev_autodoc_sha1) {
-
-	// Except if the /refdoc directory has changed...
-	string refdoc_sha1 = get_refdoc_sha1(src_rev);
-	if (refdoc_sha1 == prev_refdoc_sha1)
-	  break;
+      // Check out the source.
+      if (verbose) {
+	progress("Checkout... ");
       }
+      git("checkout", "-f", src_rev);
+      git("clean", "-f", "-d", "-q", "src", "lib");
 
-      if (!sizeof(doc_parents)) {
-	// Force the commit to not have any parents.
-	exporter->reset(ref);
-      }
-      doc_mark = new_mark();
-      doc_refs[ref] = doc_mark;
-      exporter->commit(ref, doc_mark, src_commit->author[0],
-		       src_commit->committer[0],
-		       src_commit->message*"\n",
-		       @doc_parents);
+      err = catch {
+	  // Create the autodoc.xml blob.
+	  extract_autodoc(src_commit);
 
-      doc_to_parents[doc_mark] = doc_parents;
+	  if (!Stdio.exist(work_dir + "/build/autodoc.xml")) {
+	    if (verbose) {
+	      progress("Fail!");
+	    }
+	    break;
+	  }
 
-      // Start from a clean tree.
-      exporter->filedeleteall();
+	  string autodoc_xml =
+	    Stdio.read_bytes(work_dir + "/build/autodoc.xml");
+	  string new_autodoc_sha1 = Git.hash_blob(autodoc_xml);
 
-      // Turn off Jekyll processing at GitHub.
-      exporter->filemodify(Git.MODE_FILE, ".nojekyll");
-      exporter->data("");
+	  // If it hasn't changed, we don't need to do anything.
+	  if (new_autodoc_sha1 == prev_autodoc_sha1) {
 
-      // Export the autodoc.xml blob.
-      exporter->filemodify(Git.MODE_FILE, "autodoc.xml");
-      exporter->data(autodoc_xml);
+	    // Except if the /refdoc directory has changed...
+	    string refdoc_sha1 = get_refdoc_sha1(src_rev);
+	    if (refdoc_sha1 == prev_refdoc_sha1)
+	      break;
+	  }
 
-      if (Stdio.exist("build/resolution.log")) {
-	exporter->export("build/resolution.log", "resolution.log.txt");
-      }
+	  if (!sizeof(doc_parents)) {
+	    // Force the commit to not have any parents.
+	    exporter->reset(ref);
+	  }
+	  doc_mark = new_mark();
+	  doc_refs[ref] = doc_mark;
+	  exporter->commit(ref, doc_mark, src_commit->author[0],
+			   src_commit->committer[0],
+			   src_commit->message*"\n",
+			   @doc_parents);
 
-      autodoc_hash[doc_mark] = prev_autodoc_sha1 = new_autodoc_sha1;
+	  doc_to_parents[doc_mark] = doc_parents;
 
-      // Assemble the autodoc.
-      assemble_autodoc(src_commit);
+	  // Start from a clean tree.
+	  exporter->filedeleteall();
 
-      if (Stdio.exist("build/onepage.xml")) {
-	exporter->export("build/onepage.xml", "onepage.xml");
-      }
-      if (Stdio.exist("build/traditional.xml")) {
-	exporter->export("build/traditional.xml", "traditional.xml");
-      }
-      if (Stdio.exist("build/modref.xml")) {
-	exporter->export("build/modref.xml", "modref.xml");
-      }
+	  // Turn off Jekyll processing at GitHub.
+	  exporter->filemodify(Git.MODE_FILE, ".nojekyll");
+	  exporter->data("");
 
-      // Generate and export the html files.
-      export_refdoc(src_commit);
-    };
+	  // Export the autodoc.xml blob.
+	  exporter->filemodify(Git.MODE_FILE, "autodoc.xml");
+	  exporter->data(autodoc_xml);
+
+	  if (Stdio.exist("build/resolution.log")) {
+	    exporter->export("build/resolution.log", "resolution.log.txt");
+	  }
+
+	  autodoc_hash[doc_mark] = prev_autodoc_sha1 = new_autodoc_sha1;
+
+	  // Assemble the autodoc.
+	  assemble_autodoc(src_commit);
+
+	  if (Stdio.exist("build/onepage.xml")) {
+	    exporter->export("build/onepage.xml", "onepage.xml");
+	  }
+	  if (Stdio.exist("build/traditional.xml")) {
+	    exporter->export("build/traditional.xml", "traditional.xml");
+	  }
+	  if (Stdio.exist("build/modref.xml")) {
+	    exporter->export("build/modref.xml", "modref.xml");
+	  }
+
+	  // Generate and export the html files.
+	  export_refdoc(src_commit);
+	};
+    } while(0);
+
     if(!doc_mark) {
       // No change since last commit.
       if (sizeof(doc_parents) != 1) {
