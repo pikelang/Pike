@@ -2444,7 +2444,7 @@ fail: CALL_AND_UNSET_ONERROR(e);
         this->buffer = xalloc(1);
       else
         this->buffer = xalloc(len);
-      this->allocated = MAX(len,1);
+      this->allocated = MAXIMUM(len,1);
       this->malloced = 1;
     }
     else
