@@ -1985,7 +1985,8 @@ struct node_s *resolve_identifier(struct pike_string *ident)
   return ret;
 }
 
-/* This function is intended to simplify resolving of
+/**
+ * This function is intended to simplify resolving of
  * program symbols during compile-time for C-modules.
  *
  * A typical use-case is for a C-module inheriting
@@ -2025,14 +2026,17 @@ PMOD_EXPORT struct program *resolve_program(struct pike_string *ident)
  *!   @[this], @[this_object()]
  */
 
-/* If the identifier is recognized as one of the magic identifiers,
+/**
+ * If the identifier is recognized as one of the magic identifiers,
  * like "this", "this_program" or "`->" when preceded by ::, then a
  * suitable node is returned, NULL otherwise.
  *
- * inherit_num is -1 when no specific inherit has been specified; ie
- * either when the identifier has no prefix (colon_colon_ref == 0) or
- * when the identifier has the prefix :: without any preceding identifier
- * (colon_colon_ref == 1).
+ * @param inherit_num
+ *   Inherit number in state->new_program that the identifier has been
+ *   qualified with. -1 when no specific inherit has been specified; ie
+ *   either when the identifier has no prefix (colon_colon_ref == 0) or
+ *   when the identifier has the prefix :: without any preceding identifier
+ *   (colon_colon_ref == 1).
  *
  * New in Pike 7.9.5 and later:
  *
@@ -2331,10 +2335,11 @@ struct program *id_to_program(INT32 id)
  * end_first_pass(1) ==> PROGRAM_FINISHED
  */
 
-/* Re-allocate all the memory in the program in one chunk. because:
- * 1) The individual blocks are much bigger than they need to be
- * 2) cuts down on malloc overhead (maybe)
- * 3) localizes memory access (decreases paging)
+/**
+ * Re-allocate all the memory in the program in one chunk. because:
+ * @b 1) The individual blocks are much bigger than they need to be
+ * @b 2) cuts down on malloc overhead (maybe)
+ * @b 3) localizes memory access (decreases paging)
  */
 void optimize_program(struct program *p)
 {
@@ -2869,7 +2874,7 @@ struct program *low_allocate_program(void)
   return p;
 }
 
-/*
+/**
  * Start building a new program
  */
 void low_start_new_program(struct program *p,
@@ -3951,12 +3956,17 @@ static int add_variant_dispatcher(struct pike_string *name,
 			 IDENTIFIER_C_FUNCTION, &dispatch_fun, 0);
 }
 
-/* Note: This function is misnamed, since it's run after both passes. /mast */
-/* finish-states:
+/**
+ * End the current compilation pass.
+ *
+ * @param finish
+ *   finish-state:
  *
  *   0: First pass.
  *   1: Last pass.
  *   2: Called from decode_value().
+ *
+ * Note: This function is misnamed, since it's run after all passes.
  */
 struct program *end_first_pass(int finish)
 {
@@ -4217,7 +4227,7 @@ struct program *end_first_pass(int finish)
   return prog;
 }
 
-/*
+/**
  * Finish this program, returning the newly built program
  */
 PMOD_EXPORT struct program *debug_end_program(void)
@@ -4226,7 +4236,7 @@ PMOD_EXPORT struct program *debug_end_program(void)
 }
 
 
-/*
+/**
  * Allocate space needed for this program in the object structure.
  * An offset to the data is returned.
  */
@@ -4359,7 +4369,7 @@ static void add_compat_event_handler(void)
   }
 }
 
-/*
+/**
  * Set a callback to be called when this program is cloned.
  *
  * This function is obsolete; see pike_set_prog_event_callback for
@@ -4371,7 +4381,7 @@ PMOD_EXPORT void set_init_callback(void (*init)(struct object *))
   ((oldhandlertype *)Pike_compiler->new_program->program)[PROG_EVENT_INIT]=init;
 }
 
-/*
+/**
  * Set a callback to be called when clones of this program are
  * destructed.
  *
@@ -4395,7 +4405,7 @@ PMOD_EXPORT void set_exit_callback(void (*exit)(struct object *))
   Pike_compiler->new_program->flags |= PROGRAM_LIVE_OBJ;
 }
 
-/*
+/**
  * This callback is used by the gc to traverse all references to
  * things in memory. It should call some gc_recurse_* function exactly
  * once for each reference that the pike internals doesn't know about.
@@ -4430,7 +4440,7 @@ PMOD_EXPORT void set_gc_recurse_callback(void (*m)(struct object *))
   ((oldhandlertype *)Pike_compiler->new_program->program)[PROG_EVENT_GC_RECURSE]=m;
 }
 
-/*
+/**
  * This callback is used by the gc to count all references to things
  * in memory. It should call gc_check, gc_check_(weak_)svalues or
  * gc_check_(weak_)short_svalue exactly once for each reference that
@@ -4452,7 +4462,7 @@ PMOD_EXPORT void set_gc_check_callback(void (*m)(struct object *))
   ((oldhandlertype *)Pike_compiler->new_program->program)[PROG_EVENT_GC_CHECK]=m;
 }
 
-/*
+/**
  * Set a callback to be called when any of the special program events
  * occur. The event type is sent as an integer argument. The events
  * include, but might not be limited to, the following:
@@ -4501,6 +4511,22 @@ PMOD_EXPORT void pike_set_prog_optimize_callback(node *(*opt)(node *))
   Pike_compiler->new_program->optimize = opt;
 }
 
+/**
+ * Reference an inherited identifier.
+ *
+ * @param q
+ *   Program state for the program being compiled that will have
+ *   the reference added. May be NULL to indicate Pike_compiler.
+ *
+ * @param i
+ *   Inherit number in q->new_program.
+ *
+ * @param f
+ *   Reference number in q->new_program->inherit[i].prog.
+ *
+ * @return
+ *   Returns an equivalent reference that is INLINE|HIDDEN.
+ */
 PMOD_EXPORT int really_low_reference_inherited_identifier(struct program_state *q,
 							  int i,
 							  int f)
@@ -4605,10 +4631,11 @@ int find_inherit(struct program *p, struct pike_string *name)
   return res;
 }
 
-/* Reference the symbol inherit::name in the lexical context
+/**
+ * Reference the symbol inherit::name in the lexical context
  * specified by state.
  *
- * Returns the reference in state->new_program if found.
+ * @return Returns the reference in state->new_program if found.
  */
 PMOD_EXPORT int reference_inherited_identifier(struct program_state *state,
 					       struct pike_string *inherit,
@@ -4978,20 +5005,39 @@ void lower_inherit(struct program *p,
       Pike_compiler->flags |= COMPILATION_CHECK_FINAL;
     }
     
+    if (flags & ID_PUBLIC)
+      fun.id_flags &= ~(ID_PRIVATE|ID_PUBLIC);
+
     if(fun.id_flags & ID_PRIVATE) fun.id_flags|=ID_HIDDEN;
 
-    if (fun.id_flags & ID_PUBLIC)
-      fun.id_flags |= flags & ~ID_PRIVATE;
-    else
-      fun.id_flags |= flags;
+    fun.id_flags |= flags & ~ID_PUBLIC;
 
     fun.id_flags |= ID_INHERITED;
     add_to_identifier_references(fun);
   }
 }
 
-/*
- * make this program inherit another program
+/**
+ * Make the program being compiled inherit another program.
+ *
+ * @param p
+ *   Program to inherit.
+ *
+ * @param parent
+ *   Object containing p (if applicable).
+ *
+ * @param parent_identifier
+ *   Identifier reference in parent->prog that is p.
+ *
+ * @param parent_offset
+ *   Lexical scope to parent from the program being compiled
+ *   offsetted by 42, or OBJECT_PARENT or INHERIT_PARENT.
+ *
+ * @param flags
+ *   Modifier flags for the inherit.
+ *
+ * @param name
+ *   Optional rename of the inherit.
  */
 PMOD_EXPORT void low_inherit(struct program *p,
 			     struct object *parent,
@@ -5159,8 +5205,10 @@ void simple_do_inherit(struct pike_string *s,
   pop_stack();
 }
 
-/*
- * Return the index of the identifier found, otherwise -1.
+/**
+ * Find an identifier relative to the program being compiled.
+ *
+ * @return Return the index of the identifier found, otherwise -1.
  */
 int isidentifier(struct pike_string *s)
 {
@@ -5183,7 +5231,8 @@ int isidentifier(struct pike_string *s)
  */
 
 
-/* Define an alias for a (possibly extern) identifier.
+/**
+ * Define an alias for a (possibly extern) identifier.
  *
  * Note that both type and name may be NULL. If they are NULL
  * they will be defaulted to the values from the aliased identifier.
@@ -6007,8 +6056,9 @@ PMOD_EXPORT int debug_end_class(const char *name, ptrdiff_t namelen, INT32 flags
   return ret;
 }
 
-/*
- * define a new function
+/**
+ * Define a new function.
+ *
  * if func isn't given, it is supposed to be a prototype.
  */
 INT32 define_function(struct pike_string *name,
@@ -6532,7 +6582,8 @@ int add_ext_ref(struct program_state *state, struct program *target, int i)
 
 #endif /* 0 */
 
-/* Identifier lookup
+/**
+ * Identifier lookup
  *
  * The search algorithm has changed several times during Pike 7.3.
  *
@@ -6908,8 +6959,8 @@ int lfun_lookup_id(struct pike_string *lfun_name)
   return -1;
 }
 
-/*
- * lookup the number of a function in a program given the name in
+/**
+ * Lookup the number of a function in a program given the name in
  * a shared_string
  */
 int low_find_shared_string_identifier(struct pike_string *name,
@@ -7699,7 +7750,8 @@ static char *make_plain_file (struct pike_string *filename, int malloced)
   }
 }
 
-/* Same as low_get_program_line but returns a plain char *. It's
+/**
+ * Same as low_get_program_line but returns a plain char *. It's
  * malloced if the malloced flag is set, otherwise it's a pointer to a
  * static buffer which might be clobbered by later calls.
  *
@@ -7724,9 +7776,11 @@ PMOD_EXPORT char *low_get_program_line_plain(struct program *prog,
   return NULL;
 }
 
-/* Returns the file where the program is defined. The line of the
+/**
+ * Returns the file where the program is defined. The line of the
  * class start is written to linep, or 0 if the program is the top
- * level of the file. */
+ * level of the file.
+ */
 PMOD_EXPORT struct pike_string *get_program_line(struct program *prog,
 						 INT_TYPE *linep)
 {
@@ -7802,8 +7856,10 @@ PMOD_EXPORT struct pike_string *low_get_line (PIKE_OPCODE_T *pc,
   return NULL;
 }
 
-/* This is to low_get_line as low_get_program_line_plain is to
- * low_get_program_line. */
+/**
+ * This is to low_get_line as low_get_program_line_plain is to
+ * low_get_program_line.
+ */
 PMOD_EXPORT char *low_get_line_plain (PIKE_OPCODE_T *pc, struct program *prog,
 				      INT_TYPE *linep, int malloced)
 {
@@ -7861,8 +7917,8 @@ void gdb_get_line (PIKE_OPCODE_T *pc, struct program *prog)
 
 #endif
 
-/*
- * return the file in which we were executing. pc should be the
+/**
+ * Return the file in which we were executing. pc should be the
  * program counter (i.e. the address in prog->program), prog the
  * current program, and line will be initialized to the line in that
  * file.
@@ -7923,7 +7979,8 @@ PMOD_EXPORT struct pike_string *low_get_function_line (struct object *o,
   return NULL;
 }
 
-/* Return the file and line where the identifier with reference number
+/**
+ * Return the file and line where the identifier with reference number
  * fun was defined.
  *
  * Note: Unlike the other get*line() functions, this one does not
@@ -7941,8 +7998,8 @@ PMOD_EXPORT struct pike_string *get_identifier_line(struct program *p,
   return p->strings[id->filename_strno];
 }
 
-/* Main entry point for compiler messages originating from
- * C-code.
+/**
+ * Main entry point for compiler messages originating from C-code.
  *
  * Sends the message along to PikeCompiler()->report().
  *
@@ -8076,7 +8133,8 @@ PMOD_EXPORT void yyerror(const char *str)
   my_yyerror("%s", str);
 }
 
-/* Main entry point for errors from the type-checking subsystems.
+/**
+ * Main entry point for errors from the type-checking subsystems.
  *
  * The message (if any) will be formatted for the same source
  * position as the got_t.
@@ -10153,7 +10211,8 @@ static void f_compilation__sprintf(INT32 args)
   push_string(finish_string_builder(&buf));
 }
 
-/* Fake being called via PikeCompiler()->compile()
+/**
+ * Fake being called via PikeCompiler()->compile()
  *
  * This function is used to set up the environment for
  * compiling C efuns and modules.
@@ -10222,7 +10281,8 @@ PMOD_EXPORT void enter_compiler(struct pike_string *filename,
   }
 }
 
-/* Reverse the effect of enter_compiler().
+/**
+ * Reverse the effect of enter_compiler().
  */
 PMOD_EXPORT void exit_compiler(void)
 {
@@ -10271,7 +10331,9 @@ static void program_state_event_handler(int UNUSED(event))
 /*! @endclass
  */
 
-/* Strap the compiler by creating the compilation program by hand. */
+/**
+ * Strap the compiler by creating the compilation program by hand.
+ */
 static void compile_compiler(void)
 {
   struct program *p = low_allocate_program();
@@ -11693,7 +11755,9 @@ int find_child(struct program *parent, struct program *child)
 
 
 
-/* returns 1 if a implements b */
+/**
+ * @return Returns 1 if a implements b.
+ */
 static int low_implements(struct program *a, struct program *b)
 {
   DECLARE_CYCLIC();
@@ -11756,7 +11820,9 @@ static int implements_hval( INT32 aid, INT32 bid )
     return ((aid<<4) ^ bid ^ (aid>>4)) & (IMPLEMENTS_CACHE_SIZE-1);
 }
 
-/* returns 1 if a implements b, but faster */
+/**
+ * @return Returns 1 if a implements b, but faster.
+ */
 PMOD_EXPORT int implements(struct program *a, struct program *b)
 {
   unsigned long hval;
@@ -11779,7 +11845,9 @@ PMOD_EXPORT int implements(struct program *a, struct program *b)
   return implements_cache[hval].ret;
 }
 
-/* Returns 1 if a is compatible with b */
+/**
+ * @return Returns 1 if a is compatible with b.
+ */
 static int low_is_compatible(struct program *a, struct program *b)
 {
   DECLARE_CYCLIC();
@@ -11834,7 +11902,9 @@ static int low_is_compatible(struct program *a, struct program *b)
 }
 
 static struct implements_cache_s is_compatible_cache[IMPLEMENTS_CACHE_SIZE];
-/* Returns 1 if a is compatible with b
+/**
+ * Returns 1 if a is compatible with b.
+ *
  * ie it's possible to write a hypothetical c that implements both.
  */
 PMOD_EXPORT int is_compatible(struct program *a, struct program *b)
@@ -11886,7 +11956,9 @@ PMOD_EXPORT int is_compatible(struct program *a, struct program *b)
   return is_compatible_cache[hval].ret;
 }
 
-/* Explains why a is not compatible with b */
+/**
+ * Explains why a is not compatible with b.
+ */
 void yyexplain_not_compatible(int severity_level,
 			      struct program *a, struct program *b)
 {
@@ -11956,7 +12028,9 @@ void yyexplain_not_compatible(int severity_level,
   return;
 }
 
-/* Explains why a does not implement b */
+/**
+ * Explains why a does not implement b.
+ */
 void yyexplain_not_implements(int severity_level,
 			      struct program *a, struct program *b)
 {
@@ -12029,7 +12103,9 @@ void yyexplain_not_implements(int severity_level,
 }
 
 /* FIXME: Code duplication of yyexplain_not_compatible() above! */
-/* Explains why a is not compatible with b */
+/**
+ * Explains why a is not compatible with b.
+ */
 void string_builder_explain_not_compatible(struct string_builder *s,
 					   struct program *a,
 					   struct program *b)
@@ -12093,7 +12169,9 @@ void string_builder_explain_not_compatible(struct string_builder *s,
 }
 
 /* FIXME: code duplication of yyexplain_not_implements() above! */
-/* Explains why a does not implement b */
+/**
+ * Explains why a does not implement b.
+ */
 void string_builder_explain_not_implements(struct string_builder *s,
 					   struct program *a,
 					   struct program *b)
