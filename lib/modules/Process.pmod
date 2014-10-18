@@ -496,8 +496,10 @@ Process spawn_pike(array(string) argv, void|mapping(string:mixed) options)
 //!   system dependant mode.
 //! @param modifiers
 //!   It takes all the modifiers @[Process.Process] accepts, with 
-//!   the exception of stdout and stderr. Since the point of this 
-//!   function is to handle those you can not supply your own.
+//!   the exception of stdout and stderr. Each must be either absent, or
+//!   a function accepting a string; if present, the functions will be called
+//!   whenever output is made on the corresponding stream, otherwise the data
+//!   will be collected and returned in the result mapping.
 //!
 //!   If @expr{modifiers->stdin@} is set to a string it will automatically be
 //!   converted to a pipe that is fed to stdin of the started process.
@@ -508,9 +510,10 @@ Process spawn_pike(array(string) argv, void|mapping(string:mixed) options)
 //! @returns
 //!   @mapping
 //!     @member string "stdout"
-//!       Everything the process wrote on stdout.
+//!       Everything the process wrote on stdout, unless a stdout function was
+//!       provided.
 //!     @member string "stderr"
-//!       Everything the process wrote on stderr.
+//!       Everything the process wrote on stderr, similarly.
 //!     @member int "exitcode"
 //!       The process' exitcode.
 //!   @endmapping
@@ -519,7 +522,8 @@ Process spawn_pike(array(string) argv, void|mapping(string:mixed) options)
 //!   As the entire output of stderr and stdout is stored in the 
 //!   returned mapping it could potentially grow until memory runs out. 
 //!   It is therefore advisable to set up rlimits if the output has a
-//!   potential to be very large.
+//!   potential to be very large, or else provide functions to handle
+//!   partial data.
 //!
 //! @example
 //!   Process.run( ({ "ls", "-l" }) );
@@ -534,7 +538,8 @@ mapping run(string|array(string) cmd, void|mapping modifiers)
   if(!modifiers)
     modifiers = ([]);
 
-  if(modifiers->stdout || modifiers->stderr)
+  if((modifiers->stdout && !functionp(modifiers->stdout))
+    || (modifiers->stderr && !functionp(modifiers->stderr)))
     throw( ({ "Can not redirect stdout or stderr in Process.run, "
               "please use Process.Process instead.", backtrace() }) );
 
@@ -583,10 +588,12 @@ mapping run(string|array(string) cmd, void|mapping modifiers)
   mystderr->set_backend (backend);
 
   mystdout->set_read_callback( lambda( mixed i, string data) { 
-                                 gotstdout += data; 
+                                 if (modifiers->stdout) modifiers->stdout(data);
+                                 else gotstdout += data; 
                                } );
   mystderr->set_read_callback( lambda( mixed i, string data) {
-                                 gotstderr += data;
+                                 if (modifiers->stderr) modifiers->stderr(data);
+                                 else gotstderr += data;
                                } );
   mystdout->set_close_callback( lambda () {
 				  mystdout->set_read_callback(0);
