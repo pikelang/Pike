@@ -97,9 +97,21 @@ endrequire;
 +GTK2.TreeModel get_model();
 //! Returns the model this TreeView is based on.
 
-void set_model(GTK2.TreeModel model);
++GTK2.TreeView set_model(GTK2.TreeModel model)
 //! Sets the model.  If this TreeView already has a model set, it will remove
 //! it before setting the new model.
+{
+  pgtk2_verify_inited();
+  if (args) {
+    struct object *o1;
+    get_all_args("set_model",args,"%o",&o1);
+    gtk_tree_view_set_model(GTK_TREE_VIEW(THIS->obj),
+		GTK_TREE_MODEL(get_gobject(o1)));
+  } else {
+    gtk_tree_view_set_model(GTK_TREE_VIEW(THIS->obj),NULL);
+  }
+  RETURN_THIS();
+}
 
 +GTK2.TreeSelection get_selection();
 //! Gets the W(TreeSelection) associated with this TreeView.
