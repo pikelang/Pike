@@ -499,7 +499,7 @@ Process spawn_pike(array(string) argv, void|mapping(string:mixed) options)
 //!   the exception of stdout and stderr. Since the point of this 
 //!   function is to handle those you can not supply your own.
 //!
-//!   If @expr{modifiers->stdin@} is set to a string it will automaticly be
+//!   If @expr{modifiers->stdin@} is set to a string it will automatically be
 //!   converted to a pipe that is fed to stdin of the started process.
 //!
 //! @seealso
@@ -518,7 +518,7 @@ Process spawn_pike(array(string) argv, void|mapping(string:mixed) options)
 //! @note 
 //!   As the entire output of stderr and stdout is stored in the 
 //!   returned mapping it could potentially grow until memory runs out. 
-//!   It is therefor adviceable to set up rlimits if the output has a
+//!   It is therefore advisable to set up rlimits if the output has a
 //!   potential to be very large.
 //!
 //! @example
