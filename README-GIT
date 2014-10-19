@@ -118,9 +118,6 @@ Some options for the configure script are:
 --prefix=/foo/bar         if you want to install Pike in /foo/bar,
                           default is /usr/local.
 --without-gdbm            compile without gdbm support
---without-bignums         disable support for large integers
---without-gmp             compile without gmp support (implies
-                          --without-bignums)
 --with-rtldebug           compile with runtime debug checks
 --without-cdebug          compile without debug symbols (-g)
 --with-debug              same as --with-rtldebug --with-cdebug
