@@ -2005,6 +2005,8 @@ static void file_write(INT32 args)
 	    } else {
 	      push_int(written);
 	    }
+	    /* Minor race - see below. */
+	    THIS->box.revents &= ~(PIKE_BIT_FD_WRITE|PIKE_BIT_FD_WRITE_OOB);
 	    return;
 
 	  case EINTR: continue;
@@ -2050,6 +2052,9 @@ static void file_write(INT32 args)
       }
 
       free(iovbase);
+
+      /* Minor race - see below. */
+      THIS->box.revents &= ~(PIKE_BIT_FD_WRITE|PIKE_BIT_FD_WRITE_OOB);
 
       if(!SAFE_IS_ZERO(& THIS->event_cbs[PIKE_FD_WRITE]))
 	ADD_FD_EVENTS (THIS, PIKE_BIT_FD_WRITE);
