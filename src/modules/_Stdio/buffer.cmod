@@ -1285,7 +1285,7 @@ PIKECLASS Buffer
    *! Adds length of data followed by @[data] to the buffer.
    *!
    *! This is identical to
-   *! @tt{sprintf("%"+size_size+"H",(string)Stdio.IObuffer(data))@} but
+   *! @tt{sprintf("%"+size_size+"H",(string)Stdio.Buffer(data))@} but
    *! significantly faster.
    *!
    *! @[size_size] is the number of bytes used to represent the length of the data.
@@ -2355,7 +2355,7 @@ fail: CALL_AND_UNSET_ONERROR(e);
    *! change where it will be rewound to.
    *!
    *! The typical use-case of this functionality is when parsing a
-   *! packet protocol with variable length packets where the lenght is
+   *! packet protocol with variable length packets where the length is
    *! not immediately known. It saves you from keeping track of how
    *! much to rewind if you had not actually gotten the whole packet
    *! yet.
@@ -2374,7 +2374,7 @@ fail: CALL_AND_UNSET_ONERROR(e);
    *!       Stdio.Buffer data = b->read_hbuffer( 4 );
    *!       // we have read the whole packet, so no longer rewind on error.
    *!       rewind->release();
-   *!       return handle_data_packet( chennel, data );
+   *!       return handle_data_packet( channel, data );
    *!   }
    *! }
    *! @endcode
