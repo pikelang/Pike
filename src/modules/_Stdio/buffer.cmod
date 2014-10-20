@@ -66,18 +66,22 @@ static struct program *buffer_error_program;
  */
 PIKECLASS Buffer
 {
-#if PRECOMPILE_API_VERSION > 5
+#ifdef PRECOMPILE_SUB_PIKEVARS
   PIKEVAR int b.num_malloc;
   PIKEVAR int b.num_move;
+#else
+#warning Stdio.Buffer should be compiled with a newer precompiler
+#warning for full functionality. You can achieve this by touching
+#warning src/modules/_Stdio/buffer.cmod and recompiling once the
+#warning compilation is done.
 #endif
-
-  CVAR Buffer b;
 
   EXTRA
   {
-    PIKE_MAP_VARIABLE("__output", OFFSETOF(Buffer_struct, b.output),
+    PIKE_MAP_VARIABLE("__output", OFFSETOF(Buffer_struct,b.output),
 		      tMix, PIKE_T_MIXED, ID_PRIVATE|ID_HIDDEN|ID_PROTECTED);
   }
+  CVAR Buffer b;
 
   static void io_set_error_mode( Buffer *io, struct program *m )
   {
