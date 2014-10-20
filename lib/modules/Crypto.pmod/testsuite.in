@@ -542,13 +542,15 @@ test_eval_error( RSA->generate_key(489, 6); )
 test_eval_error( RSA->generate_key(489, 1); )
 test_eval_error( RSA->generate_key(489, (1<<128)+1); )
 test_do( RSA->generate_key(489, 5); )
-test_do( RSA->rsa_pad("12345",1); )
-test_eval_error( RSA->rsa_pad("123456",1); )
-test_eq( RSA->rsa_unpad(Gmp.mpz(12359702718159374001924484143133492),2),
+test_do( RSA->rsa_pad("x"*51,1); )
+test_eval_error( RSA->rsa_pad("x"*52,1); )
+dnl This is rsa->pad("x"*51,2)
+test_eq( RSA->rsa_unpad(Gmp.mpz(8653122978089085258180412110456916522630219813380302393826135590094230922558301290311148252831586181145986834552965198025012975236458341391807284),2),
  " 1234" )
-test_eq( RSA->rsa_unpad(Gmp.mpz(10387159156041734788858020411618100),2), 0 )
-test_eq( RSA->rsa_unpad(Gmp.mpz(3164083895848799744492667940642174005),2), 0 )
-test_eq( RSA->rsa_unpad(Gmp.mpz(12359702718159374001924484143133492),1), 0 )
+dnl Same as above, but use the wrong type when unpadding.
+test_eq( RSA->rsa_unpad(Gmp.mpz(8653122978089085258180412110456916522630219813380302393826135590094230922558301290311148252831586181145986834552965198025012975236458341391807284),1), 0 )
+dnl Same as above, but one digit to few.
+test_eq( RSA->rsa_unpad(Gmp.mpz(865312297808908525818041211045691652263021981338030239382613559009423092255830129031114825283158618114598683455296519802501297523645834139180728),2), 0 )
 test_do( add_constant("RSA") )
 
 // Crypto.DSA
