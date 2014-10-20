@@ -1,12 +1,12 @@
 
 START_MARKER
 
-test_eq( Geography.Position()->UTM(), "31N 166021.443 0.000" )
-test_eq( Geography.Position("17\260""42.19'N 42\260""22.2'W")->UTM(),
- "23Q 778961.191 1959293.428" )
-test_eq( Geography.Position("17\260""42.19'N", "42\260""22.2'W")->UTM(),
- "23Q 778961.191 1959293.428" )
-test_eq( Geography.Position(17.70316667, -42.37)->UTM(),
- "23Q 778961.191 1959293.428" )
+test_eq( Geography.Position()->UTM(0), "31N 166021 0" )
+test_eq( Geography.Position("17\260""42.19'N 42\260""22.2'W")->UTM(0),
+ "23Q 778961 1959293" )
+test_eq( Geography.Position("17\260""42.19'N", "42\260""22.2'W")->UTM(0),
+ "23Q 778961 1959293" )
+test_eq( Geography.Position(17.70316667, -42.37)->UTM(0),
+ "23Q 778961 1959293" )
 
 END_MARKER
