@@ -5283,9 +5283,9 @@ PIKECLASS DES
 #ifndef DES_WEAK_KEY
       do {
         low_make_key(info->meta->key_size);
+	f_Nettle_DES_fix_parity(1);
       } while( !des_set_key(state->ctx,
                             (const uint8_t *)Pike_sp[-1].u.string->str) );
-      f_Nettle_DES_fix_parity(1);
 #else
       low_make_key(info->meta->key_size);
       f_Nettle_DES_fix_parity(1);
@@ -5523,9 +5523,9 @@ PIKECLASS DES3
 #ifndef DES_WEAK_KEY
       do {
         low_make_key(info->meta->key_size);
+	f_Nettle_DES3_fix_parity(1);
       } while( !des3_set_key(state->ctx,
                              (const uint8_t *)Pike_sp[-1].u.string->str) );
-      f_Nettle_DES3_fix_parity(1);
 #else
       low_make_key(info->meta->key_size);
       f_Nettle_DES3_fix_parity(1);
