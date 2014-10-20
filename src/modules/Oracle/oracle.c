@@ -250,10 +250,10 @@ void *low_check_storage(void *storage, unsigned long magic, char *prog)
 #define DBDATE_MAGIC	0xdbda4711UL
 #define DBTS_MAGIC	0xdb754711UL
 #define THIS_DBCON ((struct dbcon *)check_storage(CURRENT_STORAGE,DBCON_MAGIC,"dbcon"))
-#define THIS_QUERY_DBCON ((struct dbcon *)check_storage(parent_storage(1),DBCON_MAGIC,"dbcon"))
-#define THIS_RESULT_DBCON ((struct dbcon *)check_storage(parent_storage(2),DBCON_MAGIC,"dbcon"))
+#define THIS_QUERY_DBCON ((struct dbcon *)check_storage(parent_storage(1, oracle_program),DBCON_MAGIC,"dbcon"))
+#define THIS_RESULT_DBCON ((struct dbcon *)check_storage(parent_storage(2, oracle_program),DBCON_MAGIC,"dbcon"))
 #define THIS_QUERY ((struct dbquery *)check_storage(CURRENT_STORAGE,DBQUERY_MAGIC,"dbquery"))
-#define THIS_RESULT_QUERY ((struct dbquery *)check_storage(parent_storage(1),DBQUERY_MAGIC,"dbquery"))
+#define THIS_RESULT_QUERY ((struct dbquery *)check_storage(parent_storage(1, compile_query_program),DBQUERY_MAGIC,"dbquery"))
 #define THIS_RESULT ((struct dbresult *)check_storage(CURRENT_STORAGE,DBRESULT_MAGIC,"dbresult"))
 #define THIS_RESULTINFO ((struct dbresultinfo *)check_storage(CURRENT_STORAGE,DBRESINFO_MAGIC,"dbresultinfo"))
 #define THIS_DBDATE ((struct dbdate *)check_storage(CURRENT_STORAGE,DBDATE_MAGIC,"dbdate"))
