@@ -1253,6 +1253,12 @@ o Crypto.Hash
 
   Added support for pbkdf1 from PKCS#5v1.5 and pbkdf2 from PKCS#5v2.0.
 
+o Crypto.Random
+
+  The underlying algorithm for Crypto.Random has changed from a overly
+  cautious Yarrow implementation to Fortuna on top of system random
+  sources. About 7000x faster than before.
+
 o Standards.PEM
 
   + Added some support for encrypted PEM files
