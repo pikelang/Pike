@@ -109,7 +109,7 @@ int NameN(init_hubbe_search)(struct hubbe_searcher *s,
   if(max > MEMSEARCH_LINKS) max=MEMSEARCH_LINKS;
   
   /* This assumes 512 buckets - Hubbe */
-  maxlinklength = my_sqrt(DO_NOT_WARN((unsigned int)max/2))+1;
+  maxlinklength = (INT32)sqrt((double)max/2)+1;
   
   ptr=& s->links[0];
   
