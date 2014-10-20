@@ -424,9 +424,11 @@ test_any([[
      b->add("test");
    if( b->_size_object() != 1024*1024 )
       return -2;
-   if( b->num_malloc ) return -3;
-   if( b->num_move )   return -4;
-
+   if( has_index(b,"num_malloc" ) )
+   {
+     if( b->num_malloc ) return -3;
+     if( b->num_move )   return -4;
+   }
    return 1;
 ]], 1 )
 
@@ -595,11 +597,13 @@ dnl basic zero-copy check
 
 test_any( [[
   Stdio.Buffer i = Stdio.Buffer("zero copy");
-  if( i->num_malloc ) return -1;
+   if( has_index(i,"num_malloc" ) )
+     if( i->num_malloc ) return -1;
   if( i->_size_object() != 0 )  return -2;
 
   i->add(" data goes here");
-  if( i->num_malloc!= 1 ) return -3;
+  if( has_index(i,"num_malloc" ) )
+    if( i->num_malloc!= 1 ) return -3;
   if( i->_size_object() == 0 )  return -4;
 
   i->read();
@@ -611,7 +615,8 @@ test_any( [[
   i->add(" indeed"); /* note: shorter than first string. */
   if( i->_size_object() == 0 )  return -7;
 
-  if( i->num_malloc != 1 ) return -8;
+  if( has_index(i,"num_malloc" ) )
+    if( i->num_malloc != 1 ) return -8;
   /*
   crete - no move
   add - realloc + move
@@ -620,7 +625,9 @@ test_any( [[
   add -  move to malloc arena
   add - no move
   */
-  return i->num_move <= 2;
+  if( has_index(i,"num_malloc" ) )
+    return i->num_move <= 2;
+  return 1;
 ]], 1)
 
 
