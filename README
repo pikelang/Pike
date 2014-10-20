@@ -18,7 +18,7 @@ The top-level makefile (in this directory, not the src directory) has
 all the magic you need to build Pike. Just type 'make'.
 To install type "make install" or "make install_interactive".
 
-You will need C compiler and libgmp. You probably also want to have
+You will need a C compiler and libgmp. You probably also want to have
 GNU make and libnettle.
 
 If that doesn't work, refer to README-GIT, in particular the sections
