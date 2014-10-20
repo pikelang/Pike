@@ -37,8 +37,8 @@ o Added a way to easily inherit the implementation of a subclass in an
 
     | inherit ::this_program
 
-  The syntax refers to the previous definition of the current class
-  in the inherited class, and is typically used with inherit like:
+  The syntax refers to the previous definition of the current class in
+  the inherited class, and is typically used with inherit like:
 
     | inherit Foo;
     |
@@ -175,8 +175,8 @@ o Added a shorthand syntax for integer rages: xbit, where x is a
 
   This is equivalent to the range (0..255) but can be easier to parse.
 
-  Similarly int(1bit) is an alias for 'bool', and int(12bit) is
-  the same as int(0..4095).
+  Similarly int(1bit) is an alias for 'bool', and int(12bit) is the
+  same as int(0..4095).
 
 o 'this::x' is now equivalent to 'this_program::x' -- access the
    identifier x in the current object.
@@ -187,19 +187,19 @@ New preprocessor features
 
 o Support for the ", ##__VA_ARGS__" cpp feature.
 
-  This makes the ‘##’ token paste operator have a special meaning
-  when placed between a comma and a variable argument. If you write
+  This makes the ‘##’ token paste operator have a special meaning when
+  placed between a comma and a variable argument. If you write
 
     | #define err(format, ...) f(debug)werror("ERROR: "+format, ##__VA_ARGS__)
 
   and the variable argument is left out when the err macro is used,
-  then the comma before the ‘##’ will be deleted. This does not
-  happen if you pass an empty argument, nor does it happen if the
-  token preceding ‘##’ is anything other than a comma.
+  then the comma before the ‘##’ will be deleted. This does not happen
+  if you pass an empty argument, nor does it happen if the token
+  preceding ‘##’ is anything other than a comma.
 
-o The define __COUNTER__ has been added. It is a unique integer
-  value, the first time the macro is expanded it will be 1, the next time
-  2 etc.
+o The define __COUNTER__ has been added. It is a unique integer value,
+  the first time the macro is expanded it will be 1, the next time 2
+  etc.
 
 o The preprocessor can now be run with a cpp prefix feature.
 
@@ -214,8 +214,8 @@ o Dynamic macros
 
   The main use is macros like DEBUG(...) and IFDEBUG() that would
   expand to something if a debug setting is enabled in the module but
-  nothing otherwise, or, to take an actual example from the Opera
-  Mini source code:
+  nothing otherwise, or, to take an actual example from the Opera Mini
+  source code:
 
     | add_predefine( "METRIC()",
     |     lambda( string name, string ... code )
@@ -338,7 +338,7 @@ o string(x..y) (constant) types
     | (1) Result: string(102..111)
 
   This is used to optimize certain operations, lower_case, upper_case,
-  search and string_has_null for now.  It could be added to other
+  search and string_has_null for now. It could be added to other
   places in the future as well.
 
   A fairly common case is where you are doing lower_case or upper_case
@@ -355,10 +355,12 @@ o Several other optimizations to execution speed has been done
     least pike -x benchmark more than 5%.
 
   + A lot of opcodes implemented in machine-code for x86-64
+
     This speed up the loop benchmarks close to a factor of 3. But then
     again, most real code is nothing like that benchmark.
 
   + Several new opcodes added
+
     As an example an observation was that most branch_if_zero is
     followed by an is_eq, is_lt or is_gt or similar. Those opcodes
     always return 1 or 0. So, two new opcodes, quick_branch_if_zero
@@ -397,8 +399,8 @@ o The built in security sandbox is now deprecated
   release.
 
 o The compiler now warns about switch statements where the cases
-  aren't enumerable, since these will generate random failures
-  if the code is read from a dump.
+  aren't enumerable, since these will generate random failures if the
+  code is read from a dump.
 
 o strlen() now only accepts strings
 
@@ -488,13 +490,13 @@ o Added ADT.CritBit module
 
 o Standards.BSON
 
-  A new module for working with BSON serialized data.
-  See http://bsonspec.org/
+  A new module for working with BSON serialized data. See
+  http://bsonspec.org/
 
 o Geography.GeoIP
 
-  Does geolocation of IPv4-numbers using databases from maxmind.com
-  or software77.net
+  Does geolocation of IPv4-numbers using databases from maxmind.com or
+  software77.net
 
 o Protocols.WebSocket
 
@@ -511,9 +513,9 @@ o Image.WebP
 
 o Serializer
 
-  APIs useful to simplify serialization and deserialization of
-  objects Mainly it allows you to easily iterate over the object
-  variables, including the private ones.
+  APIs useful to simplify serialization and deserialization of objects
+  Mainly it allows you to easily iterate over the object variables,
+  including the private ones.
 
   + Serializer.Encodable
     A class that can be inherited to make an object easily
@@ -547,7 +549,7 @@ o Mysql.SqlTable
 o Parser.CSV
 
   This is a parser for line oriented data that is either comma,
-  semi-colon or tab separated.  It extends the functionality of the
+  semi-colon or tab separated. It extends the functionality of the
   Parser.Tabular with some specific functionality related to a header
   and record oriented parsing of huge datasets.
 
@@ -566,7 +568,7 @@ o Git
 
 o Val
 
-  This module contains special values used by various modules, e.g.  a
+  This module contains special values used by various modules, e.g. a
   Val.null value used both by Sql and Standards.JSON.
 
   In many ways these values should be considered constant, but it is
@@ -594,16 +596,18 @@ o Bz2.File added
 
     | foreach( Bz2.File("log.bz2")->line_iterator(); int n; string line )
 
-o Both sscanf and sprintf can now handle binary floats in little endian format
+o Both sscanf and sprintf can now handle binary floats in little
+  endian format
 
-  %-8F would be a 64 bit IEEE float binary value in little endian order.
+  %-8F would be a 64 bit IEEE float binary value in little endian
+  order.
 
 o Image.JPEG
 
   + decode now supports basic CMYK/YCCK support
 
-  + exif_decode is a new function that will rotate the image
-    according to exif information
+  + exif_decode is a new function that will rotate the image according
+    to exif information
 
 o Image.BMP now supports some more BMP:s.
 
@@ -620,10 +624,10 @@ o String.Buffer
 
 o String.range(str)
 
-   This returns the minimum and maximum character value in the string.
+  This returns the minimum and maximum character value in the string.
 
-   The precision is only 8 bits, so for wide strings only character
-   blocks are known.
+  The precision is only 8 bits, so for wide strings only character
+  blocks are known.
 
 o String.filter_non_unicode(str)
 
@@ -639,10 +643,10 @@ o System.TM
 
   Low-level wrapper for struct tm.
 
-  This can be used to do (very) simple calendar operations. It is,
-  as it stands, not 100% correct unless the local time is set to
-  GMT, and does mirror functionality already available in gmtime()
-  and localtime() and friends, but in a (perhaps) easier to use API.
+  This can be used to do (very) simple calendar operations. It is, as
+  it stands, not 100% correct unless the local time is set to GMT, and
+  does mirror functionality already available in gmtime() and
+  localtime() and friends, but in a (perhaps) easier to use API.
 
 o decode_value now throws the error object Error.DecodeError.
 
@@ -700,7 +704,8 @@ o Cmod precompiler:
   + Object types on return and argument types are now resolved
     dynamically when needed.
 
-    This means that the typing information is sifnificantly more strict.
+    This means that the typing information is sifnificantly more
+    strict.
 
     If you use classes that are not defined in the file (or
     src/program_id.h) they will be resolved when your .so-file is
@@ -729,7 +734,8 @@ o System.sync()
 
 o System.getloadavg()
 
-  Return the current 1, 5 and 15 minute system load averages as an array.
+  Return the current 1, 5 and 15 minute system load averages as an
+  array.
 
 o access()
 
@@ -767,7 +773,7 @@ o Stdio.Port():
     This allows automatic load sharing between the processes, incoming
     connections will only be sent to one of them by the OS.
 
-  The presence of these features are indicated by constants in
+    The presence of these features are indicated by constants in
     Stdio.Port: Stdio.Port.SO_REUSEPORT_SUPPORT and
     Stdio.Port.TCP_FASTOPEN_SUPPORT (although the same code should
     work regardless of the existence of TCP fast open in both server
@@ -790,13 +796,15 @@ o Stdio.Buffer():
 o Stdio.File():
 
   + send_fd and receive_fd
+
     These functions can be used to send and receive an open
     file-descriptor over another file-descriptor. The functions are
-    only available on some systems, and they generally only work
-    when the file the descriptors are sent over is a UNIX domain
-    socket or a pipe.
+    only available on some systems, and they generally only work when
+    the file the descriptors are sent over is a UNIX domain socket or
+    a pipe.
 
   + Changed internally to remove one level of indirection.
+
     The Stdio.File object no longer has a _Stdio.Fd_ref in _fd. They
     are instead directly inheriting _Stdio.FD.
 
@@ -807,12 +815,14 @@ o Stdio.File():
 
   + Added support for buffering via Stdio.Buffer.
 
-    This can be used to greatly simplify the writing of non-blocking code.
+    This can be used to greatly simplify the writing of non-blocking
+    code.
 
     - When read and/or write buffer is enabled the corresponding
       callbacks get a buffer object as the second argument
 
-    - The only thing the callback has to do is add data to the buffer or read from it, depending on what callback it is.
+    - The only thing the callback has to do is add data to the buffer
+      or read from it, depending on what callback it is.
 
     - The write callback will now only be called when the buffer
       contains no more output, and data that is not read in one read
@@ -866,14 +876,15 @@ o New stand-alone tools added to make it possible to build
 
 o Readline tries to set the charset to the terminal charset
 
-  This makes it possible to write non-7bit characters on a terminal
-  if the terminal supports it.
+  This makes it possible to write non-7bit characters on a terminal if
+  the terminal supports it.
 
 o Fixed units in pike --help=kladdkaka
 
 o Several changes has been done to the GTK2 module
 
-  + GTK2.DrawingArea no longer crash in draw_text if you pass odd parameters.
+  + GTK2.DrawingArea no longer crash in draw_text if you pass odd
+    parameters.
 
   + draw_pixbuf can now be passed width and height -1, which makes it
     take the size from the passed image.
@@ -896,17 +907,19 @@ o A few issues were fixed that were found by Coverity
 
   + Fixed memory leak in Math.Transform
 
-  + Fixed two compares that were written as assignments (errno
-    checks for EINTR for sockets)
+  + Fixed two compares that were written as assignments (errno checks
+    for EINTR for sockets)
 
 o System.get_home + System.get_user
 
-  (mostly) Cross-platform ways to get the user name and home directory.
+  (mostly) Cross-platform ways to get the user name and home
+  directory.
 
-o System.AllocConsole, System.FreeConsole and System.AttachConsole for NT
+o System.AllocConsole, System.FreeConsole and System.AttachConsole for
+  Windows NT
 
-  These are useful to create or close the console window that is
-  shown for pike programs.
+  These are useful to create or close the console window that is shown
+  for pike programs.
 
 o Process - forkd
 
@@ -929,8 +942,7 @@ o MacOSX CoreFoundation support in the backend
 o Better IPv6 support.
 
   This includes detection of IPV6 mapped IPV4 addresses
-  (::FFFF:i.p.v.4) and full support for IPv6 in the UDP
-  code.
+  (::FFFF:i.p.v.4) and full support for IPv6 in the UDP code.
 
 o Asynchronous Protocols.SNMP client
 
@@ -962,8 +974,8 @@ o predef::types
 
 o Builtin._get_setter
 
-  This function returns a setter for a variable in an object.
-  The setter, when called, will set the variable value to the passed
+  This function returns a setter for a variable in an object. The
+  setter, when called, will set the variable value to the passed
   argument.
 
 o Parser.XML.Tree fixes
@@ -1082,8 +1094,8 @@ o Several identifiers have changed names:
 o SSL.File: Changed client/server selection API.
 
   Client and server operation is now selected by calling either
-  connect() (client-side) or accept() (server-side) after creating
-  the SSL.File object.
+  connect() (client-side) or accept() (server-side) after creating the
+  SSL.File object.
 
   Blocking handshaking mode is selected by calling set_blocking()
   before either of the above.
@@ -1118,8 +1130,9 @@ o SSL support for lots of new cipher suites added:
 
     - ECDH and ECDHE
 
-  + All suites currently defined consisting of combinations of the above
-    (and earlier existing) have been added (~190 suites in total).
+  + All suites currently defined consisting of combinations of the
+    above (and earlier existing) have been added (~190 suites in
+    total).
 
 o TLS Extensions added:
 
@@ -1151,14 +1164,15 @@ o Improved protection against various SSL/TLS attacks:
 
   + BEAST protection (aka 1/(n-1)).
 
-    Improve resilience against the BEAST client-side attack,
-    by splitting the first data packet into two, where the
-    first only contains a single byte of payload.
+    Improve resilience against the BEAST client-side attack, by
+    splitting the first data packet into two, where the first only
+    contains a single byte of payload.
 
   + Heartbleed protection.
 
-    The protocol code now probes the peer for the Heartbleed vulnerability,
-    and aborts the connection with ALERT_insufficient_protection if so.
+    The protocol code can probe the peer for the Heartbleed
+    vulnerability, and aborts the connection with
+    ALERT_insufficient_protection if so.
 
   + Lucky 13 protection.
 
@@ -1173,7 +1187,8 @@ o SSL.Context: Improved cipher suite selection:
 
 o SSL.Context: Support multiple concurrent certificates.
 
-  This allows a server to eg have both an RSA and an ECDSA certificate.
+  This allows a server to eg have both an RSA and an ECDSA
+  certificate.
 
 
 Crypto and Nettle
