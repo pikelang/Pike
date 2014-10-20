@@ -854,10 +854,10 @@ class TBSCertificate
       return NULL("init: Illegal subject ASN.1. %O\n", a[4]);
     subject = a[4];
 
-    public_key = make_verifier(a[5]);
-
-    if (!public_key)
+    Verifier key = make_verifier(a[5]);
+    if (!key)
       return NULL("init: Failed to decode public key. %O\n", a[5]);
+    public_key = key;
 
     int i = 6;
 
