@@ -368,8 +368,9 @@ array(float) UTM_offset() {
 //! "32T 442063.562 5247479.500"
 //! where the parts are zone number + zone designator,
 //! easting and northing.
-string UTM() {
-  return sprintf("%d%s %f %f", UTM_zone_number(), UTM_zone_designator(),
+string UTM(int precision) {
+  return sprintf("%d%s %."+precision+"f %."+precision+"f",
+                 UTM_zone_number(), UTM_zone_designator(),
 		 @UTM_offset());
 }
 
