@@ -19,7 +19,7 @@ inherit GTK2.Range;
 
 signal format_value;
 
-require gtk22;
+require gtk216;
 void add_mark(float value, int pos, ?string markup );
 //! Adds a mark at @[value].
 //!
