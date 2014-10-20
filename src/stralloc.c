@@ -24,7 +24,7 @@
 #include <ctype.h>
 #include <math.h>
 
-#define SET_HSIZE(X) htable_mask=(htable_size=(1<<(X)))-1
+#define SET_HSIZE(X) htable_mask=(htable_size=(X))-1
 #define HMODULO(X) ((X) & (htable_mask))
 
 static unsigned INT32 htable_mask;
@@ -48,7 +48,6 @@ static unsigned int need_new_hashkey_depth=0;
 static size_t hashkey = 0;
 
 static unsigned INT32 htable_size=0;
-static unsigned int hashprimes_entry=0;
 static struct pike_string **base_table=0;
 static unsigned INT32 num_strings=0;
 PMOD_EXPORT struct pike_string *empty_pike_string = 0;
@@ -608,7 +607,7 @@ static void stralloc_rehash(void)
   old=htable_size;
   old_base=base_table;
 
-  SET_HSIZE( ++hashprimes_entry );
+  SET_HSIZE(htable_size<<1);
 
   base_table=xcalloc(sizeof(struct pike_string *), htable_size);
 
@@ -2134,8 +2133,7 @@ PMOD_EXPORT struct pike_string *string_replace(struct pike_string *str,
 /*** init/exit memory ***/
 void init_shared_string_table(void)
 {
-  for(hashprimes_entry=0;hashprimes[hashprimes_entry]<BEGIN_HASH_SIZE;hashprimes_entry++);
-  SET_HSIZE(hashprimes_entry);
+  SET_HSIZE(BEGIN_HASH_SIZE);
   base_table=xcalloc(sizeof(struct pike_string *), htable_size);
 
   empty_pike_string = make_shared_string("");
