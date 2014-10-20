@@ -18,10 +18,14 @@ test_eq( S(SSL.Cipher.MAChmac_md5("foo")->hash("bar")),
          "0c7a250281315ab863549f66cd8a3a53" )
 test_eq( S(SSL.Cipher.MAChmac_sha256("foo")->hash("bar")),
          "f9320baf0249169e73850cd6156ded0106e2bb6ad8cab01b7bbbebe6d1065317" )
+cond_resolv(Crypto.SHA384, [[
 test_eq( S(SSL.Cipher.MAChmac_sha384("foo")->hash("bar")),
          "3d10d391bee2364df2c55cf605759373e1b5a4ca9355d8f3fe42970471eca2e422a79271a0e857a69923839015877fc6" )
+]])
+cond_resolv(Crypto.SHA512, [[
 test_eq( S(SSL.Cipher.MAChmac_sha512("foo")->hash("bar")),
          "114682914c5d017dfe59fdc804118b56a3a652a0b8870759cf9e792ed7426b08197076bf7d01640b1b0684df79e4b67e37485669e8ce98dbab60445f0db94fce" )
+]])
 
 test_do([[
   array(int) parse_fields(array(string) fields, int fno,
