@@ -313,11 +313,25 @@ ADD_NEG_INT [$1a < 0 && !INT32_NEG_OVERFLOW($1a)]: ADD_INT(-$1a)
 OPER_INT(NUMBER,$1a)
 OPER_INT(NEG_NUMBER [!INT32_NEG_OVERFLOW($1a)], -$1a)
 
-OPER_INT(CONST0,0)
 OPER_INT(CONST1,1)
 OPER_INT(CONST_1,-1)
 
 OPER_INT(BIGNUM,0x7fffffff)
+
+#undef OPER_INT
+
+CONST0 MOD [ yyerror("Divide by constant 0"),1 ] :
+CONST0 DIVIDE [ yyerror("Divide by constant 0"),1 ] :
+
+CONST0 LSH      : LSH_INT(0);
+CONST0 RSH      : RSH_INT(0);
+CONST0 SUBTRACT : SUBTRACT_INT(0);
+CONST0 ADD      : ADD_INT(0);
+CONST0 AND      : AND_INT(0);
+CONST0 OR       : OR_INT(0); 
+CONST0 XOR      : XOR_INT(0);
+CONST0 MULTIPLY : MULTIPLY_INT(0);
+
 
 // Some noops related to the above opcodes.
 // MOD_INT(1): POP_VALUE CONST0		// cf string % int ==> string
