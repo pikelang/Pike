@@ -1826,9 +1826,11 @@ test_eq(Nettle.rsa_unpad(H("01fffeffffffffffff0064"),1),0)
 test_eq(Nettle.rsa_unpad(H("02fffeffffffffffff0064"),1),0)
 test_eq(Nettle.rsa_unpad(H("02fffeffffffffffff0064"),2),10)
 test_eq(Nettle.rsa_unpad(H("01ffffffffffffff000064"),1),0)
-test_eval_error(Nettle.ECC_Curve(0,0,0))
-test_eval_error(Nettle.ECC_Curve(1,192,0))
-test_eval_error(Nettle.ECC_Curve(1,0,1))
+cond_resolv(Nettle.ECC_Curve, [[
+  test_eval_error(Nettle.ECC_Curve(0,0,0))
+  test_eval_error(Nettle.ECC_Curve(1,192,0))
+  test_eval_error(Nettle.ECC_Curve(1,0,1))
+]])
 
 test_do([[
   add_constant("T",
@@ -1872,6 +1874,8 @@ test_any([[
 ]], 1)
 test_do([[ add_constant("C"); ]])
 ]])
+
+cond_resolv(Nettle.ECC_Curve, [[
 
 // RFC 4754
 test_ecdsa(256,
@@ -1920,6 +1924,8 @@ DDAF35A1 93617ABA CC417349 AE204131 12E6FA4E 89A97EA2 0A9EEEE6 4B55D39A
 017705A7 030290D1 CEB605A9 A1BB03FF 9CDD521E 87A696EC 926C8C10 C8362DF4
  97536710 1F67D1CF 9BCCBF2F 3D239534 FA509E70 AAC851AE 01AAC68D 62F86647
  2660)
+
+]]) dnl Nettle.ECC_Curve
 
 test_do( add_constant( "test_adata" ) )
 test_do( add_constant( "test_data" ) )
