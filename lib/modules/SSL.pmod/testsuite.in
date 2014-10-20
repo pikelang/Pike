@@ -1006,6 +1006,8 @@ test_ssl(0x303,0x303,0x301,0x303,client_msg)
 test_ssl(0x303,0x303,0x302,0x303,client_msg)
 test_ssl(0x303,0x303,0x303,0x303,client_msg)
 
+cond_resolv(Crypto.ECC, [[
+
 test_tests([[
 object make_context(Crypto.ECC.Curve curve) {
   SSL.Context ctx = TestContext();
@@ -1101,6 +1103,8 @@ test_suite_b(0x302, 128, 1, 0x302, 192, 1,
 	     TLS_ecdhe_ecdsa_with_aes_256_cbc_sha)
 test_suite_b(0x302, 128, 1, 0x302, 128, 1,
 	     TLS_ecdhe_ecdsa_with_aes_128_cbc_sha)
+
+]]) dnl Crypto.ECC
 
 test_do([[
   add_constant("invalid_suites");
