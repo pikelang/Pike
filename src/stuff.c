@@ -6,7 +6,6 @@
 
 #include "global.h"
 #include "stuff.h"
-#include "stralloc.h"
 
 /* Used by is8bitalnum in pike_macros.h. */
 PMOD_EXPORT const char Pike_is8bitalnum_vector[] =
