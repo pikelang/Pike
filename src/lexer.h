@@ -860,7 +860,7 @@ unknown_directive:
             default:
               res <<= 8;
               res |= tmp;
-              if( ++l > 8 )
+              if( ++l > 4 )
               {
                 yyerror("Too large character constant.");
                 /* skip the rest of the characters. */
