@@ -148,7 +148,7 @@ static void set_default_master(const char *bin_name)
   if(!*mp && strncmp(DEFAULT_MASTER, "NONE/", 5))
   {
     char tmp[CONSTANT_STRLEN( DEFAULT_MASTER ) + 10 + 10 + 10];
-    SNPRINTF (tmp, sizeof(tmp)-1,
+    snprintf (tmp, sizeof(tmp)-1,
 	      DEFAULT_MASTER,
 	      PIKE_MAJOR_VERSION,
 	      PIKE_MINOR_VERSION,
@@ -166,7 +166,7 @@ static void set_default_master(const char *bin_name)
       char tmp[MAXPATHLEN * 2];
       char *p = strrchr (exepath, '\\');
       if (p) *p = 0;
-      SNPRINTF (tmp, sizeof (tmp), "%s/%s", exepath, mp);
+      snprintf (tmp, sizeof (tmp), "%s/%s", exepath, mp);
       set_master( tmp );
     }
   }

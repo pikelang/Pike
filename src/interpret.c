@@ -1840,9 +1840,9 @@ static void do_trace_call(INT32 args, dynamic_buffer *old_buf)
   {
     char buf[40];
     if (linep)
-      SNPRINTF(buf, sizeof (buf), "%s:%ld:", file, (long)linep);
+      snprintf(buf, sizeof (buf), "%s:%ld:", file, (long)linep);
     else
-      SNPRINTF(buf, sizeof (buf), "%s:", file);
+      snprintf(buf, sizeof (buf), "%s:", file);
     fprintf(stderr, "- %-20s %s\n",buf,s);
   } else if (linep) {
     fprintf(stderr, "- %s:%ld: %s\n", file, (long)linep, s);
@@ -1919,9 +1919,9 @@ static void do_trace_return (int got_retval, dynamic_buffer *old_buf)
   {
     char buf[40];
     if (linep)
-      SNPRINTF(buf, sizeof (buf), "%s:%ld:", file, (long)linep);
+      snprintf(buf, sizeof (buf), "%s:%ld:", file, (long)linep);
     else
-      SNPRINTF(buf, sizeof (buf), "%s:", file);
+      snprintf(buf, sizeof (buf), "%s:", file);
     fprintf(stderr,"- %-20s %s\n",buf,s);
   }
 

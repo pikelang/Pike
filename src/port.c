@@ -265,7 +265,7 @@ PMOD_EXPORT int STRCASECMP(const char *a,const char *b)
 #ifndef HAVE_VSNPRINTF
 /* Warning: It's possible to trick this with something like
  * snprintf("...%c...", 0). */
-PMOD_EXPORT int VSNPRINTF(char *buf, size_t size, const char *fmt, va_list args)
+PMOD_EXPORT int vsnprintf(char *buf, size_t size, const char *fmt, va_list args)
 {
   int res;
   if (!size) {
@@ -281,12 +281,12 @@ PMOD_EXPORT int VSNPRINTF(char *buf, size_t size, const char *fmt, va_list args)
 #ifndef HAVE_SNPRINTF
 /* Warning: It's possible to trick this with something like
  * snprintf("...%c...", 0). */
-PMOD_EXPORT int SNPRINTF(char *buf, size_t size, const char *fmt, ...)
+PMOD_EXPORT int snprintf(char *buf, size_t size, const char *fmt, ...)
 {
   int res;
   va_list args;
   va_start (args, fmt);
-  res = VSNPRINTF (buf, size, fmt, args);
+  res = vsnprintf (buf, size, fmt, args);
   va_end (args);
   return res;
 }

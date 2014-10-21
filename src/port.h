@@ -134,21 +134,19 @@ PMOD_EXPORT int STRCASECMP(const char *a,const char *b);
 #endif
 
 #ifndef HAVE_VSNPRINTF
-PMOD_EXPORT int VSNPRINTF(char *buf, size_t size, const char *fmt, va_list args);
-#else
-#  define VSNPRINTF(A,B,C,D) vsnprintf(A,B,C,D)
+PMOD_EXPORT int vsnprintf(char *buf, size_t size, const char *fmt, va_list args);
 #endif
+#define VSNPRINTF(A,B,C,D) vsnprintf(A,B,C,D)
 
 #ifndef HAVE_SNPRINTF
-PMOD_EXPORT int SNPRINTF(char *buf, size_t size, const char *fmt, ...);
-#else
-#  define SNPRINTF snprintf
+PMOD_EXPORT int snprintf(char *buf, size_t size, const char *fmt, ...);
 #endif
+#define SNPRINTF snprintf
 
 /* Compat. */
-#define RINTF rintf
-#define RINT rint
-#define RINTL rintl
+#define RINTF(X) rintf(X)
+#define RINT(X) rint(X)
+#define RINTL(X) rintl(X)
 
 #define HAVE_STRCHR 1
 #define STRCHR strchr
