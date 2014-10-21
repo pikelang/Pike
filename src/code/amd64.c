@@ -3210,11 +3210,6 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
     if( b < 0 )
       break;
   case F_DIVIDE_INT:
-    if( b == 0 )
-    {
-      yyerror("Divide by constant 0\n");
-      break; 
-    }
     {
       LABELS();
       ins_debug_instr_prologue(a-F_OFFSET, b, 0);
