@@ -130,13 +130,13 @@ void GETTIMEOFDAY(struct timeval *t);
 #ifndef HAVE_STRCASECMP
 PMOD_EXPORT int STRCASECMP(const char *a,const char *b);
 #else
-#  define STRCASECMP strcasecmp
+#  define STRCASECMP(A,B) strcasecmp(A,B)
 #endif
 
 #ifndef HAVE_VSNPRINTF
 PMOD_EXPORT int VSNPRINTF(char *buf, size_t size, const char *fmt, va_list args);
 #else
-#  define VSNPRINTF vsnprintf
+#  define VSNPRINTF(A,B,C,D) vsnprintf(A,B,C,D)
 #endif
 
 #ifndef HAVE_SNPRINTF
