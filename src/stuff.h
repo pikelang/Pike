@@ -12,7 +12,6 @@
 /* Prototypes begin here */
 PMOD_EXPORT int my_log2(size_t x) ATTRIBUTE((const));
 PMOD_EXPORT double my_strtod(char *nptr, char **endptr);
-/* unsigned long find_good_hash_size(unsigned long x) ATTRIBUTE((const)); */
 unsigned INT32 find_next_power(unsigned INT32 x) ATTRIBUTE((const));
 /* Prototypes end here */
 
