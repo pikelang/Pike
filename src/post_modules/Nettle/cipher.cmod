@@ -5281,6 +5281,10 @@ PIKECLASS DES
       assert(info);
 
 #ifndef DES_WEAK_KEY
+      /* NB: This loop temporarily leaks strings on the stack,
+       *     but we don't care, as it is a low probability,
+       *     and they will be cleaned up on return.
+       */
       do {
         low_make_key(info->meta->key_size);
 	f_Nettle_DES_fix_parity(1);
@@ -5521,6 +5525,10 @@ PIKECLASS DES3
       assert(info);
 
 #ifndef DES_WEAK_KEY
+      /* NB: This loop temporarily leaks strings on the stack,
+       *     but we don't care, as it is a low probability,
+       *     and they will be cleaned up on return.
+       */
       do {
         low_make_key(info->meta->key_size);
 	f_Nettle_DES3_fix_parity(1);
