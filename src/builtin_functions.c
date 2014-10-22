@@ -4516,7 +4516,11 @@ node *optimize_replace(node *n)
      */
     node **arg1 = my_get_arg(&_CDR(n), 1);
     node **arg2 = my_get_arg(&_CDR(n), 2);
-    struct program *replace_compiler = NULL;
+
+    /* This variable is modified in between setjmp and longjmp,
+     * so it needs to be volatile to prevent it from being globbered.
+     */
+    struct program * volatile replace_compiler = NULL;
 
     if (arg1 && ((pike_types_le((*arg1)->type, array_type_string) &&
 		  arg2 &&
