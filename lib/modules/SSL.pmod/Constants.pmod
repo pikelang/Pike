@@ -157,6 +157,8 @@ constant ALERT_descriptions = (< ALERT_close_notify,
  				 ALERT_certificate_expired,
  				 ALERT_certificate_unknown,
 				 ALERT_illegal_parameter,
+				 ALERT_inappropriate_fallback,
+				 ALERT_protocol_version,
 				 ALERT_no_renegotiation,
 			      >);
  			      
