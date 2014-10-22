@@ -786,7 +786,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 			 "SSL 3.1 (aka TLS 1.0).\n",
 			 version[1]);
 	  version[1] = 1;
-	} else if (version[1] < context->min_version) {
+	} else if ((version[1] + 0x0300) < context->min_version) {
 	  send_packet(Alert(ALERT_fatal, ALERT_protocol_version, version[1],
 			    "SSL.session->handle_handshake: Too old version.\n",
 			    backtrace()));
@@ -970,7 +970,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 			 "SSL 3.1 (aka TLS 1.0).\n",
 			 version[1]);
 	  version[1] = 1;
-	} else if (version[1] < context->min_version) {
+	} else if ((version[1] + 0x0300) < context->min_version) {
 	  send_packet(Alert(ALERT_fatal, ALERT_protocol_version, version[1],
 			    "SSL.session->handle_handshake: Too old version.\n",
 			    backtrace()));
@@ -1280,7 +1280,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 		       "SSL 3.1 (aka TLS 1.0).\n",
 		       version[1]);
 	version[1] = 1;
-      } else if (version[1] < context->min_version) {
+      } else if ((version[1] + 0x0300) < context->min_version) {
 	send_packet(Alert(ALERT_fatal, ALERT_protocol_version, version[1],
 			  "SSL.session->handle_handshake: Too old version.\n",
 			  backtrace()));

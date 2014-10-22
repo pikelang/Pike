@@ -27,9 +27,9 @@
 //! @seealso
 //!   @[context]
 enum ProtocolVersion {
-  PROTOCOL_SSL_3_0	= 0x00,
-  PROTOCOL_SSL_3_1	= 0x01,
-  PROTOCOL_TLS_1_0	= 0x01,
+  PROTOCOL_SSL_3_0	= 0x0300,
+  PROTOCOL_SSL_3_1	= 0x0301,
+  PROTOCOL_TLS_1_0	= 0x0301,
 }
 
 //! Max supported SSL version.
