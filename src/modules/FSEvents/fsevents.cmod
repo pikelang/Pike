@@ -400,8 +400,6 @@ struct pike_string * string_from_cfstring(CFStringRef cfString)
   return str;
 }
 
-#endif /* HAVE_FRAMEWORK_CORESERVICES */
-
   INIT
   {
   }
@@ -415,6 +413,8 @@ struct pike_string * string_from_cfstring(CFStringRef cfString)
   }
 
 }
+
+#endif /* HAVE_FRAMEWORK_CORESERVICES */
 
 PIKE_MODULE_INIT
 {
