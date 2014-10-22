@@ -838,8 +838,10 @@ unknown_directive:
 
     case '\'':
       {
-        int l = 0;
-        INT_TYPE res = 0;
+        unsigned int l = 0;
+        struct svalue res = svalue_int_zero;
+        MP_INT bigint;
+
         while(1)
         {
           INT32 tmp;
@@ -854,16 +856,24 @@ unknown_directive:
               tmp = char_const(lex);
               /* fallthrough. */
             default:
-              res <<= 8;
-              res |= tmp;
-              if( ++l > 4 )
+              l++;
+              if( l == sizeof(INT_TYPE)-1 )
               {
-                yyerror("Too large character constant.");
-                /* skip the rest of the characters. */
-                do
-                  tmp = GETC();
-                while( tmp && (tmp != '\'') );
-                goto return_char;
+                /* overflow possible. Switch to bignums. */
+                mpz_init(&bigint);
+                mpz_set_ui(&bigint,res.u.integer);
+                TYPEOF(res) = PIKE_T_OBJECT;
+              }
+
+              if( l >= sizeof(INT_TYPE)-1 )
+              {
+                mpz_mul_2exp(&bigint,&bigint,8);
+                mpz_add_ui(&bigint,&bigint,tmp);
+              }
+              else
+              {
+                res.u.integer <<= 8;
+                res.u.integer |= tmp;
               }
               break;
 
@@ -874,7 +884,15 @@ unknown_directive:
           }
         }
       return_char:
-        debug_malloc_pass( yylval->n=mkintnode(res) );
+        if( TYPEOF(res) == PIKE_T_OBJECT )
+        {
+          push_bignum( &bigint );
+          mpz_clear(&bigint);
+          reduce_stack_top_bignum();
+          res = *--Pike_sp;
+        }
+        debug_malloc_pass( yylval->n=mksvaluenode(&res) );
+        free_svalue( &res );
         return TOK_NUMBER;
       }
       /* notreached. */
