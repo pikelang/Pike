@@ -1,4 +1,4 @@
-subject: Pike 7.8: Multiple fixes:
+subject: Pike 7.8: SSL: Fix Invalid description
 from: a0fc688448022cfb25da47631c61ae9a9d102187
 to: 2276c506505380ccf9f395d8d10c07b819a7dc46
 originator: wellhardh@roxen.com
@@ -10,9 +10,5 @@ Multiple fixes:
   * SSL: Fix "Invalid description".
     
     Some alerts were missing from ALERT_description.
-
-  * release number bumped to 896 by export.pike
-
-  * release number bumped to 897 by export.pike
 
   * SSL: Added some more Autodoc.
