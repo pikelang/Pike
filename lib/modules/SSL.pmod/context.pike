@@ -13,6 +13,22 @@
 
 import .Constants;
 
+//! The minimum supported protocol version.
+//!
+//! Defaults to @[PROTOCOL_SSL_3_0].
+//!
+//! @note
+//!   This value should not be greater than @[max_version].
+ProtocolVersion min_version = PROTOCOL_SSL_3_0;
+
+//! The maximum supported protocol version.
+//!
+//! Defaults to @[PROTOCOL_TLS_MAX].
+//!
+//! @note
+//!   This value should not be less than @[min_version].
+ProtocolVersion max_version = PROTOCOL_TLS_MAX;
+
 //! The server's private key
 Crypto.RSA rsa;
 

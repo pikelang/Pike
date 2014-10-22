@@ -22,6 +22,20 @@
 
 //! Protocol constants
 
+//! Constants for specifying the versions of SSL to use.
+//!
+//! @seealso
+//!   @[context]
+enum ProtocolVersion {
+  PROTOCOL_SSL_3_0	= 0x00,
+  PROTOCOL_SSL_3_1	= 0x01,
+  PROTOCOL_TLS_1_0	= 0x01,
+}
+
+//! Max supported SSL version.
+constant PROTOCOL_SSL_MAX = PROTOCOL_TLS_1_0;
+constant PROTOCOL_TLS_MAX = PROTOCOL_TLS_1_0;
+
 /* Packet types */
 constant PACKET_change_cipher_spec = 20;
 constant PACKET_alert              = 21;
