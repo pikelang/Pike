@@ -1,0 +1,16 @@
+Modified files:
+  pike/lib/modules/Calendar.pmod/TZnames.pmod
+  pike/lib/modules/Calendar.pmod/mkrules.pike
+  pike/lib/modules/Calendar.pmod/tzdata/Makefile
+  pike/lib/modules/Calendar.pmod/tzdata/NEWS
+  pike/lib/modules/Calendar.pmod/tzdata/Theory
+  pike/lib/modules/Calendar.pmod/tzdata/africa
+  pike/lib/modules/Calendar.pmod/tzdata/asia
+  pike/lib/modules/Calendar.pmod/tzdata/backzone
+  pike/lib/modules/Calendar.pmod/tzdata/checktab.awk
+  pike/lib/modules/Calendar.pmod/tzdata/europe
+  pike/lib/modules/Calendar.pmod/tzdata/northamerica
+  pike/lib/modules/Calendar.pmod/tzdata/zone1970.tab
+  pike/lib/modules/SSL.pmod/Constants.pmod
+  pike/lib/modules/SSL.pmod/context.pike
+  pike/lib/modules/SSL.pmod/handshake.pike
