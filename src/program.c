@@ -1781,8 +1781,11 @@ int low_find_shared_string_identifier(struct pike_string *name,
 
 static struct node_s *index_modules(struct pike_string *ident,
 				    struct mapping **module_index_cache,
-				    int num_used_modules,
+				    const int num_used_modules,
 				    struct svalue *modules)
+  /* num_used_modules is declared const here to convince the compiler that it is not
+   * modified in between setjmp() and longjmp(). This prevents -Wglobbered warnings.
+   */
 {
   if(*module_index_cache)
   {
