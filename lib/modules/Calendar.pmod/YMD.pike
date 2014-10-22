@@ -848,7 +848,13 @@ class YMD
 
 // days
 
+//! method int number_of_days()
+//!	Get the number of days in the current range.
+
    int number_of_days();
+
+//! method array(Day) days(int|void from, int|void to)
+//!	Get the days in the current range.
 
    array(cDay) days(void|int from, void|int to)
    {
@@ -895,6 +901,12 @@ class YMD
       }
       return res;
    }
+
+//! method Day day()
+//! method Day day(int n)
+//!	Get day number n in the current range.
+//!
+//!     If n is negative, it is counted from the end of the range.
 
    cDay day(void|int m, mixed... ignored)
    {
