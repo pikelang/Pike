@@ -7,6 +7,7 @@
 #ifndef BIGNUM_H
 #define BIGNUM_H
 
+#include <gmp.h>
 #include "global.h"
 #include "pike_int_types.h"
 
@@ -367,9 +368,6 @@ PMOD_EXPORT extern void (*reduce_stack_top_bignum) (void);
 PMOD_EXPORT extern void (*push_ulongest) (unsigned LONGEST i);
 PMOD_EXPORT extern int (*ulongest_from_bignum) (unsigned LONGEST *i,
 						struct object *bignum);
-#ifndef __MPN
-#define MP_INT void
-#endif
 
 PMOD_EXPORT extern int (*mpz_from_svalue)(MP_INT *, struct svalue *);
 PMOD_EXPORT extern void (*push_bignum)(MP_INT *);
