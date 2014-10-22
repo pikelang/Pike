@@ -6,6 +6,8 @@
 //! Alert package.
 
 import .Constants;
+
+//! Based on the base @[packet].
 inherit .packet : packet;
 
 int level;
