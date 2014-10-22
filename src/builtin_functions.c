@@ -809,19 +809,26 @@ PMOD_EXPORT void f_upper_case(INT32 args)
 PMOD_EXPORT void f_random_string(INT32 args)
 {
   struct pike_string *ret;
-  INT_TYPE len, e;
+  INT_TYPE len, e = 0;
+  unsigned INT32 *str;
   get_all_args("random_string",args,"%+",&len);
   ret = begin_shared_string(len);
 
   /* Note: Assumes pike_string->str is aligned on a 4 byte boundary
    * (it is, currently)
    */
-  len -= sizeof(INT32)-1;
-  for(e=0;e<len;e+=sizeof(INT32))
-      ((unsigned INT32 *)(ret->str+e))[0] = DO_NOT_WARN(my_rand());
-  len += sizeof(INT32)-1;
-  for(;e<len;e++)
-      ret->str[e] = DO_NOT_WARN((char)my_rand());
+  str = (unsigned INT32 *)ret->str;
+
+  while( (e+=sizeof(INT32)) <= len )
+  {
+    str[0] = DO_NOT_WARN(my_rand());
+    str++;
+  }
+
+  for(e-=sizeof(INT32);e<len;e++)
+  {
+    ret->str[e] = DO_NOT_WARN((char)my_rand());
+  }
 
   pop_n_elems(args);
   push_string(end_shared_string(ret));
