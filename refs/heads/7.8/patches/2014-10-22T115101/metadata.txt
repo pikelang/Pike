@@ -1,0 +1,43 @@
+subject: Pike 7.8: Multiple fixes:
+from: 6bf2251fdc7669fd61cd20227537391b443200c6
+to: a0fc688448022cfb25da47631c61ae9a9d102187
+originator: wellhardh@roxen.com
+depends: 2014-10-15T152453
+restart: true
+
+Multiple fixes:
+
+  * Image.PNG: Minor change.
+    
+    Use the proper SET_SVALUE_ macro instead of accessing the fields directly.
+
+  * Image.PNG: Fixed leak of arrays in __decode().
+
+  * Calendar.mkrules: Added some more files to ignore.
+
+  * Updated to tzdata2014h.
+
+  * release number bumped to 892 by export.pike
+
+  * release number bumped to 893 by export.pike
+
+  * _Roxen: Fixed buffer overrun in http_decode_string().
+    
+    Also increases the strictness of a few related testsuite tests.
+
+  * release number bumped to 894 by export.pike
+
+  * release number bumped to 895 by export.pike
+
+  * SSL.handshake: Support setting the minimum required version.
+    
+    The SSL 3.0 protocol can now be disabled by setting min_version in
+    the context to SSL.Constants.PROTOCOL_TLS_1_0.
+    
+    Backported API from Pike 8.0. Note that the constants differ
+    from Pike 8.0 and later, so use the provided symbolic values.
+
+  * SSL.Constants: Make the PROTOCOL_* constants forward compatible.
+    
+    As these values have a tendency to get stuck in configuration files
+    and the like, make sure that they are forward-compatible with Pike 8.0.
