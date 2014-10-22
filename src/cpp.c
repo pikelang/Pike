@@ -1314,13 +1314,6 @@ static ptrdiff_t find_end_of_char( struct cpp *this, const PCHARP data, ptrdiff_
       cpp_error(this,"End of file in character constant.");
       break;
     }
-
-    if(e++>32)
-    {
-      cpp_error(this,"Too long character constant.");
-      break;
-    }
-
     switch(INDEX_PCHARP(data,pos++))
     {
     case '\n':
