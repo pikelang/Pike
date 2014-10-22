@@ -129,10 +129,15 @@ test_true(1e10000<=1e10000000000000000000000000000000000000000000000000000000000
 test_compile_error('\3434523423423523423423423423')
 test_compile_error("\3434523423423523423423423423")
 test_compile_error("\d109827346981234561823743412654")
+test_compile_error('\d109827346981234561823743412654')
 test_compile_error("\x109a27bc69e256c83deaa34c26b4")
+test_compile_error('\x109a27bc69e256c83deaa34c26b4')
 test_compile_error('\u17fo')
 test_compile_error("\u17fo")
-test_compile_error('\uu117f', 0x5c7531313766)
+
+test_eq('012456789abcdefghijklmnopqrstuvwxyz'->digits(256),
+        "012456789abcdefghijklmnopqrstuvwxyz")
+test_eq('\uu117f', 0x5c7531313766)
 test_eq("\uuuu17fo", "\\uuu17fo")
 test_eq('\u117f', 0x117f)
 test_eq("\u117foo", "\10577oo")
@@ -145,8 +150,6 @@ test_eq("\UUdEaDbEaT", "\\UdEaDbEaT")
 test_eq('\UDeaDBeEF', -559038737)
 test_eq("\UDeaDBeEFFF", "\33653337357FF")
 test_eq("\UUDeaDBeEFFF", "\\UDeaDBeEFFF")
-test_compile_error("\3434523423423523423423423423")
-test_compile_error('\3434523423423523423423423423')
 
 test_do([[
   // bug 2677
