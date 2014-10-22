@@ -1,0 +1,2 @@
+Modified files:
+  pike/lib/modules/SSL.pmod/Constants.pmod
