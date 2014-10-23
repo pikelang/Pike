@@ -2,7 +2,7 @@
 
 //! Protocol constants
 
-//! Constants for specifying the versions of SSL to use.
+//! Constants for specifying the versions of SSL/TLS to use.
 //!
 //! @seealso
 //!   @[Context]
