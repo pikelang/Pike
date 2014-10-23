@@ -1,10 +1,11 @@
 
 #line 1 "rl/json_string.rl"
-/* vim:syntax=ragel */
+/* vim:syntax=ragel
+ */
 #define HEX2DEC(x) ((x) <= '9' ? (x) - '0' : ((x) < 'G') ? (x) - 'A' + 10 : (x) - 'a' + 10)
 
 
-#line 96 "rl/json_string.rl"
+#line 97 "rl/json_string.rl"
 
 
 static ptrdiff_t _parse_JSON_string(PCHARP str, ptrdiff_t p, ptrdiff_t pe, struct parser_state *state) {
@@ -13,9 +14,10 @@ static ptrdiff_t _parse_JSON_string(PCHARP str, ptrdiff_t p, ptrdiff_t pe, struc
     struct string_builder s;
     int cs;
     ONERROR handle;
+    const int validate = !(state->flags&JSON_VALIDATE);
 
     
-#line 19 "json_string.c"
+#line 21 "json_string.c"
 static const int JSON_string_start = 1;
 static const int JSON_string_first_final = 15;
 static const int JSON_string_error = 0;
@@ -24,22 +26,22 @@ static const int JSON_string_en_main = 1;
 static const int JSON_string_en_main_hex1 = 9;
 
 
-#line 106 "rl/json_string.rl"
+#line 108 "rl/json_string.rl"
 
-    if (!(state->flags&JSON_VALIDATE)) {
+    if (validate) {
 	init_string_builder(&s, 0);
 	SET_ONERROR (handle, free_string_builder, &s);
     }
 
     
-#line 36 "json_string.c"
+#line 38 "json_string.c"
 	{
 	cs = JSON_string_start;
 	}
 
-#line 113 "rl/json_string.rl"
+#line 115 "rl/json_string.rl"
     
-#line 43 "json_string.c"
+#line 45 "json_string.c"
 	{
 	if ( p == pe )
 		goto _test_eof;
@@ -96,15 +98,15 @@ case 2:
 		goto tr2;
 	goto st0;
 tr2:
-#line 69 "rl/json_string.rl"
+#line 70 "rl/json_string.rl"
 	{
 	mark = p;
     }
 	goto st3;
 tr8:
-#line 56 "rl/json_string.rl"
+#line 57 "rl/json_string.rl"
 	{
-	if (!(state->flags&JSON_VALIDATE)) switch(( ((int)INDEX_PCHARP(str, p)))) {
+	if (validate) switch(( ((int)INDEX_PCHARP(str, p)))) {
 	    case '"':
 	    case '/':
 	    case '\\':      string_builder_putchar(&s, ( ((int)INDEX_PCHARP(str, p)))); break;
@@ -115,17 +117,17 @@ tr8:
 	    case 't':       string_builder_putchar(&s, '\t'); break;
 	}
     }
-#line 73 "rl/json_string.rl"
+#line 74 "rl/json_string.rl"
 	{ mark = p + 1; }
 	goto st3;
 tr13:
 	cs = 3;
-#line 14 "rl/json_string.rl"
+#line 15 "rl/json_string.rl"
 	{
 	hexchr0 *= 16;
 	hexchr0 += HEX2DEC(( ((int)INDEX_PCHARP(str, p))));
     }
-#line 19 "rl/json_string.rl"
+#line 20 "rl/json_string.rl"
 	{
 	if (IS_HIGH_SURROGATE (hexchr0)) {
 	    /* Chars outside the BMP can be expressed as two hex
@@ -137,39 +139,39 @@ tr13:
 	    if (IS_NUNICODE(hexchr0)) {
 		p--; {p++; goto _out;}
 	    }
-	    if (!(state->flags&JSON_VALIDATE)) {
+	    if (validate) {
 		string_builder_putchar(&s, hexchr0);
 	    }
 	}
     }
-#line 73 "rl/json_string.rl"
+#line 74 "rl/json_string.rl"
 	{ mark = p + 1; }
 	goto _again;
 tr19:
-#line 40 "rl/json_string.rl"
+#line 41 "rl/json_string.rl"
 	{
 	hexchr1 *= 16;
 	hexchr1 += HEX2DEC(( ((int)INDEX_PCHARP(str, p))));
     }
-#line 45 "rl/json_string.rl"
+#line 46 "rl/json_string.rl"
 	{
 	if (!IS_LOW_SURROGATE (hexchr1)) {
 	    p--; {p++; cs = 3; goto _out;}
 	}
-	if (!(state->flags&JSON_VALIDATE)) {
+	if (validate) {
 	    int cp = (((hexchr0 - 0xd800) << 10) | (hexchr1 - 0xdc00)) +
 		0x10000;
 	    string_builder_putchar(&s, cp);
 	}
     }
-#line 73 "rl/json_string.rl"
+#line 74 "rl/json_string.rl"
 	{ mark = p + 1; }
 	goto st3;
 st3:
 	if ( ++p == pe )
 		goto _test_eof3;
 case 3:
-#line 173 "json_string.c"
+#line 175 "json_string.c"
 	switch( ( ((int)INDEX_PCHARP(str, p))) ) {
 		case 34: goto tr6;
 		case 92: goto tr7;
@@ -181,23 +183,23 @@ case 3:
 		goto st3;
 	goto st0;
 tr3:
-#line 69 "rl/json_string.rl"
+#line 70 "rl/json_string.rl"
 	{
 	mark = p;
     }
-#line 75 "rl/json_string.rl"
+#line 76 "rl/json_string.rl"
 	{
 	if (p - mark > 0) {
-	    if (!(state->flags&JSON_VALIDATE))
+	    if (validate)
 		    string_builder_append(&s, ADD_PCHARP(str, mark), p - mark);
         }
     }
 	goto st15;
 tr6:
-#line 75 "rl/json_string.rl"
+#line 76 "rl/json_string.rl"
 	{
 	if (p - mark > 0) {
-	    if (!(state->flags&JSON_VALIDATE))
+	    if (validate)
 		    string_builder_append(&s, ADD_PCHARP(str, mark), p - mark);
         }
     }
@@ -206,28 +208,28 @@ st15:
 	if ( ++p == pe )
 		goto _test_eof15;
 case 15:
-#line 95 "rl/json_string.rl"
+#line 96 "rl/json_string.rl"
 	{ p--; {p++; cs = 15; goto _out;} }
-#line 212 "json_string.c"
+#line 214 "json_string.c"
 	goto st0;
 tr4:
-#line 69 "rl/json_string.rl"
+#line 70 "rl/json_string.rl"
 	{
 	mark = p;
     }
-#line 75 "rl/json_string.rl"
+#line 76 "rl/json_string.rl"
 	{
 	if (p - mark > 0) {
-	    if (!(state->flags&JSON_VALIDATE))
+	    if (validate)
 		    string_builder_append(&s, ADD_PCHARP(str, mark), p - mark);
         }
     }
 	goto st4;
 tr7:
-#line 75 "rl/json_string.rl"
+#line 76 "rl/json_string.rl"
 	{
 	if (p - mark > 0) {
-	    if (!(state->flags&JSON_VALIDATE))
+	    if (validate)
 		    string_builder_append(&s, ADD_PCHARP(str, mark), p - mark);
         }
     }
@@ -236,7 +238,7 @@ st4:
 	if ( ++p == pe )
 		goto _test_eof4;
 case 4:
-#line 240 "json_string.c"
+#line 242 "json_string.c"
 	switch( ( ((int)INDEX_PCHARP(str, p))) ) {
 		case 34: goto tr8;
 		case 47: goto tr8;
@@ -263,7 +265,7 @@ case 5:
 		goto tr10;
 	goto st0;
 tr10:
-#line 10 "rl/json_string.rl"
+#line 11 "rl/json_string.rl"
 	{
 	hexchr0 = HEX2DEC(( ((int)INDEX_PCHARP(str, p))));
     }
@@ -272,7 +274,7 @@ st6:
 	if ( ++p == pe )
 		goto _test_eof6;
 case 6:
-#line 276 "json_string.c"
+#line 278 "json_string.c"
 	if ( ( ((int)INDEX_PCHARP(str, p))) < 65 ) {
 		if ( 48 <= ( ((int)INDEX_PCHARP(str, p))) && ( ((int)INDEX_PCHARP(str, p))) <= 57 )
 			goto tr11;
@@ -283,7 +285,7 @@ case 6:
 		goto tr11;
 	goto st0;
 tr11:
-#line 14 "rl/json_string.rl"
+#line 15 "rl/json_string.rl"
 	{
 	hexchr0 *= 16;
 	hexchr0 += HEX2DEC(( ((int)INDEX_PCHARP(str, p))));
@@ -293,7 +295,7 @@ st7:
 	if ( ++p == pe )
 		goto _test_eof7;
 case 7:
-#line 297 "json_string.c"
+#line 299 "json_string.c"
 	if ( ( ((int)INDEX_PCHARP(str, p))) < 65 ) {
 		if ( 48 <= ( ((int)INDEX_PCHARP(str, p))) && ( ((int)INDEX_PCHARP(str, p))) <= 57 )
 			goto tr12;
@@ -304,7 +306,7 @@ case 7:
 		goto tr12;
 	goto st0;
 tr12:
-#line 14 "rl/json_string.rl"
+#line 15 "rl/json_string.rl"
 	{
 	hexchr0 *= 16;
 	hexchr0 += HEX2DEC(( ((int)INDEX_PCHARP(str, p))));
@@ -314,7 +316,7 @@ st8:
 	if ( ++p == pe )
 		goto _test_eof8;
 case 8:
-#line 318 "json_string.c"
+#line 320 "json_string.c"
 	if ( ( ((int)INDEX_PCHARP(str, p))) < 65 ) {
 		if ( 48 <= ( ((int)INDEX_PCHARP(str, p))) && ( ((int)INDEX_PCHARP(str, p))) <= 57 )
 			goto tr13;
@@ -352,7 +354,7 @@ case 11:
 		goto tr16;
 	goto st0;
 tr16:
-#line 36 "rl/json_string.rl"
+#line 37 "rl/json_string.rl"
 	{
 	hexchr1 = HEX2DEC(( ((int)INDEX_PCHARP(str, p))));
     }
@@ -361,7 +363,7 @@ st12:
 	if ( ++p == pe )
 		goto _test_eof12;
 case 12:
-#line 365 "json_string.c"
+#line 367 "json_string.c"
 	if ( ( ((int)INDEX_PCHARP(str, p))) < 65 ) {
 		if ( 48 <= ( ((int)INDEX_PCHARP(str, p))) && ( ((int)INDEX_PCHARP(str, p))) <= 57 )
 			goto tr17;
@@ -372,7 +374,7 @@ case 12:
 		goto tr17;
 	goto st0;
 tr17:
-#line 40 "rl/json_string.rl"
+#line 41 "rl/json_string.rl"
 	{
 	hexchr1 *= 16;
 	hexchr1 += HEX2DEC(( ((int)INDEX_PCHARP(str, p))));
@@ -382,7 +384,7 @@ st13:
 	if ( ++p == pe )
 		goto _test_eof13;
 case 13:
-#line 386 "json_string.c"
+#line 388 "json_string.c"
 	if ( ( ((int)INDEX_PCHARP(str, p))) < 65 ) {
 		if ( 48 <= ( ((int)INDEX_PCHARP(str, p))) && ( ((int)INDEX_PCHARP(str, p))) <= 57 )
 			goto tr18;
@@ -393,7 +395,7 @@ case 13:
 		goto tr18;
 	goto st0;
 tr18:
-#line 40 "rl/json_string.rl"
+#line 41 "rl/json_string.rl"
 	{
 	hexchr1 *= 16;
 	hexchr1 += HEX2DEC(( ((int)INDEX_PCHARP(str, p))));
@@ -403,7 +405,7 @@ st14:
 	if ( ++p == pe )
 		goto _test_eof14;
 case 14:
-#line 407 "json_string.c"
+#line 409 "json_string.c"
 	if ( ( ((int)INDEX_PCHARP(str, p))) < 65 ) {
 		if ( 48 <= ( ((int)INDEX_PCHARP(str, p))) && ( ((int)INDEX_PCHARP(str, p))) <= 57 )
 			goto tr19;
@@ -434,10 +436,10 @@ case 14:
 	_out: {}
 	}
 
-#line 114 "rl/json_string.rl"
+#line 116 "rl/json_string.rl"
 
     if (cs < JSON_string_first_final) {
-	if (!(state->flags&JSON_VALIDATE)) {
+	if (validate) {
 	    UNSET_ONERROR(handle);
 	    free_string_builder(&s);
 	}
@@ -450,7 +452,7 @@ case 14:
 	return p;
     }
 
-    if (!(state->flags&JSON_VALIDATE)) {
+    if (validate) {
 	push_string(finish_string_builder(&s));
 	UNSET_ONERROR(handle);
     }

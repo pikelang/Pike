@@ -1,18 +1,20 @@
 
 #line 1 "rl/json_array.rl"
-/* vim:syntax=ragel */
+/* vim:syntax=ragel
+ */
 
 
-#line 39 "rl/json_array.rl"
+#line 41 "rl/json_array.rl"
 
 
 static ptrdiff_t _parse_JSON_array(PCHARP str, ptrdiff_t p, ptrdiff_t pe, struct parser_state *state) {
     struct array *a;
     int cs;
     int c = 0;
+    const int validate = !(state->flags&JSON_VALIDATE);
 
     
-#line 16 "json_array.c"
+#line 18 "json_array.c"
 static const int JSON_array_start = 1;
 static const int JSON_array_first_final = 4;
 static const int JSON_array_error = 0;
@@ -20,26 +22,26 @@ static const int JSON_array_error = 0;
 static const int JSON_array_en_main = 1;
 
 
-#line 47 "rl/json_array.rl"
+#line 50 "rl/json_array.rl"
 
     /* Check stacks since we have uncontrolled recursion here. */
     check_stack (10);
     check_c_stack (1024);
 
-    if (!(state->flags&JSON_VALIDATE)) {
+    if (validate) {
 	a = low_allocate_array(0,5);
 	push_array(a);
     }
 
     
-#line 36 "json_array.c"
+#line 38 "json_array.c"
 	{
 	cs = JSON_array_start;
 	}
 
-#line 58 "rl/json_array.rl"
+#line 61 "rl/json_array.rl"
     
-#line 43 "json_array.c"
+#line 45 "json_array.c"
 	{
 	if ( p == pe )
 		goto _test_eof;
@@ -78,7 +80,7 @@ case 2:
 		goto tr2;
 	goto st0;
 tr2:
-#line 9 "rl/json_array.rl"
+#line 10 "rl/json_array.rl"
 	{
 
 	state->level++;
@@ -86,11 +88,12 @@ tr2:
 	state->level--;
 
 	if (state->flags&JSON_ERROR) {
-	    if (!(state->flags&JSON_VALIDATE)) { 
+	    if (validate) { 
 		pop_stack();
 	    }
 	    return p;
-	} else if (!(state->flags&JSON_VALIDATE)) {
+	} 
+        if (validate) {
 	    Pike_sp[-2].u.array = a = array_insert(a, &(Pike_sp[-1]), c);
 	    pop_stack();
 	}
@@ -103,7 +106,7 @@ st3:
 	if ( ++p == pe )
 		goto _test_eof3;
 case 3:
-#line 107 "json_array.c"
+#line 110 "json_array.c"
 	switch( ( ((int)INDEX_PCHARP(str, p))) ) {
 		case 13: goto st3;
 		case 32: goto st3;
@@ -117,9 +120,9 @@ st4:
 	if ( ++p == pe )
 		goto _test_eof4;
 case 4:
-#line 38 "rl/json_array.rl"
+#line 40 "rl/json_array.rl"
 	{ p--; {p++; cs = 4; goto _out;} }
-#line 123 "json_array.c"
+#line 126 "json_array.c"
 	goto st0;
 	}
 	_test_eof2: cs = 2; goto _test_eof; 
@@ -130,7 +133,7 @@ case 4:
 	_out: {}
 	}
 
-#line 59 "rl/json_array.rl"
+#line 62 "rl/json_array.rl"
 
     if (cs >= JSON_array_first_final) {
 	return p;
@@ -138,7 +141,7 @@ case 4:
 
     state->flags |= JSON_ERROR;
 
-    if (!(state->flags&JSON_VALIDATE)) {
+    if (validate) {
 	pop_stack();
     }
 

@@ -1,7 +1,7 @@
 
 #line 1 "rl/json_mapping.rl"
-/* vim:syntax=ragel */
-
+/* vim:syntax=ragel
+ */
 
 
 #line 61 "rl/json_mapping.rl"
@@ -11,9 +11,10 @@ static ptrdiff_t _parse_JSON_mapping(PCHARP str, ptrdiff_t p, ptrdiff_t pe, stru
     struct mapping *m;
     int cs;
     int c = 0;
+    const int validate = !(state->flags&JSON_VALIDATE);
 
     
-#line 17 "json_mapping.c"
+#line 18 "json_mapping.c"
 static const int JSON_mapping_start = 1;
 static const int JSON_mapping_first_final = 6;
 static const int JSON_mapping_error = 0;
@@ -21,26 +22,26 @@ static const int JSON_mapping_error = 0;
 static const int JSON_mapping_en_main = 1;
 
 
-#line 69 "rl/json_mapping.rl"
+#line 70 "rl/json_mapping.rl"
 
     /* Check stacks since we have uncontrolled recursion here. */
     check_stack (10);
     check_c_stack (1024);
 
-    if (!(state->flags&JSON_VALIDATE)) {
+    if (validate) {
 	m = debug_allocate_mapping(5);
 	push_mapping(m);
     }
 
     
-#line 37 "json_mapping.c"
+#line 38 "json_mapping.c"
 	{
 	cs = JSON_mapping_start;
 	}
 
-#line 80 "rl/json_mapping.rl"
+#line 81 "rl/json_mapping.rl"
     
-#line 44 "json_mapping.c"
+#line 45 "json_mapping.c"
 	{
 	if ( p == pe )
 		goto _test_eof;
@@ -77,7 +78,7 @@ tr2:
 	state->level--;
 
 	if (state->flags&JSON_ERROR) {
-	    if (!(state->flags&JSON_VALIDATE)) {
+	    if (validate) {
 		pop_stack(); /* pop mapping */
 	    }
 	    return p;
@@ -91,7 +92,7 @@ st3:
 	if ( ++p == pe )
 		goto _test_eof3;
 case 3:
-#line 95 "json_mapping.c"
+#line 96 "json_mapping.c"
 	switch( ( ((int)INDEX_PCHARP(str, p))) ) {
 		case 13: goto st3;
 		case 32: goto st3;
@@ -132,11 +133,11 @@ tr6:
 	state->level--;
 
 	if (state->flags&JSON_ERROR) {
-	    if (!(state->flags&JSON_VALIDATE)) {
+	    if (validate) {
 		pop_2_elems(); /* pop mapping and key */
 	    }
 	    return p;
-	} else if (!(state->flags&JSON_VALIDATE)) {
+	} else if (validate) {
 	    mapping_insert(m, &(Pike_sp[-2]), &(Pike_sp[-1]));
 	    pop_2_elems();
 	}
@@ -149,7 +150,7 @@ st5:
 	if ( ++p == pe )
 		goto _test_eof5;
 case 5:
-#line 153 "json_mapping.c"
+#line 154 "json_mapping.c"
 	switch( ( ((int)INDEX_PCHARP(str, p))) ) {
 		case 13: goto st5;
 		case 32: goto st5;
@@ -165,7 +166,7 @@ st6:
 case 6:
 #line 60 "rl/json_mapping.rl"
 	{ p--; {p++; cs = 6; goto _out;} }
-#line 169 "json_mapping.c"
+#line 170 "json_mapping.c"
 	goto st0;
 	}
 	_test_eof2: cs = 2; goto _test_eof; 
@@ -178,14 +179,14 @@ case 6:
 	_out: {}
 	}
 
-#line 81 "rl/json_mapping.rl"
+#line 82 "rl/json_mapping.rl"
 
     if (cs >= JSON_mapping_first_final) {
 	return p;
     }
 
     state->flags |= JSON_ERROR;
-    if (!(state->flags&JSON_VALIDATE)) {
+    if (validate) {
 	if (c & 1) pop_2_elems(); /* pop key and mapping */
 	else pop_stack();
     }

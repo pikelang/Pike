@@ -1,5 +1,5 @@
-/* vim:syntax=ragel */
-
+/* vim:syntax=ragel
+ */
 
 %%{
     machine JSON_mapping;
@@ -13,11 +13,11 @@
 	state->level--;
 
 	if (state->flags&JSON_ERROR) {
-	    if (!(state->flags&JSON_VALIDATE)) {
+	    if (validate) {
 		pop_2_elems(); /* pop mapping and key */
 	    }
 	    return p;
-	} else if (!(state->flags&JSON_VALIDATE)) {
+	} else if (validate) {
 	    mapping_insert(m, &(Pike_sp[-2]), &(Pike_sp[-1]));
 	    pop_2_elems();
 	}
@@ -35,7 +35,7 @@
 	state->level--;
 
 	if (state->flags&JSON_ERROR) {
-	    if (!(state->flags&JSON_VALIDATE)) {
+	    if (validate) {
 		pop_stack(); /* pop mapping */
 	    }
 	    return p;
@@ -64,6 +64,7 @@ static ptrdiff_t _parse_JSON_mapping(PCHARP str, ptrdiff_t p, ptrdiff_t pe, stru
     struct mapping *m;
     int cs;
     int c = 0;
+    const int validate = !(state->flags&JSON_VALIDATE);
 
     %% write data;
 
@@ -71,7 +72,7 @@ static ptrdiff_t _parse_JSON_mapping(PCHARP str, ptrdiff_t p, ptrdiff_t pe, stru
     check_stack (10);
     check_c_stack (1024);
 
-    if (!(state->flags&JSON_VALIDATE)) {
+    if (validate) {
 	m = debug_allocate_mapping(5);
 	push_mapping(m);
     }
@@ -84,7 +85,7 @@ static ptrdiff_t _parse_JSON_mapping(PCHARP str, ptrdiff_t p, ptrdiff_t pe, stru
     }
 
     state->flags |= JSON_ERROR;
-    if (!(state->flags&JSON_VALIDATE)) {
+    if (validate) {
 	if (c & 1) pop_2_elems(); /* pop key and mapping */
 	else pop_stack();
     }
