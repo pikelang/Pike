@@ -1731,7 +1731,7 @@ PIKECLASS BlockCipher
 
 	block_size = Pike_sp[-1].u.integer;
 
-	if ((!block_size) || (block_size > 4096))
+	if ((block_size <= 0) || (block_size > 4096))
 	  Pike_error("Bad block size %d.\n", block_size);
 
 	inh = INHERIT_FROM_INT(o->prog, f);
