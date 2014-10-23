@@ -1,4 +1,5 @@
-/* vim: syntax=ragel */
+/* vim: syntax=ragel
+ */
 
 #include "mapping.h"
 #include "operators.h"

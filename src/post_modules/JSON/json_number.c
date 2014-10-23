@@ -1,9 +1,10 @@
 
 #line 1 "rl/json_number.rl"
-/* vim:syntax=ragel */
+/* vim:syntax=ragel
+ */
 
 
-#line 19 "rl/json_number.rl"
+#line 20 "rl/json_number.rl"
 
 
 static ptrdiff_t _parse_JSON_number(PCHARP str, ptrdiff_t p, ptrdiff_t pe, struct parser_state *state) {
@@ -12,7 +13,7 @@ static ptrdiff_t _parse_JSON_number(PCHARP str, ptrdiff_t p, ptrdiff_t pe, struc
     int d = 0;
 
     
-#line 16 "json_number.c"
+#line 17 "json_number.c"
 static const int JSON_number_start = 1;
 static const int JSON_number_first_final = 6;
 static const int JSON_number_error = 0;
@@ -20,17 +21,17 @@ static const int JSON_number_error = 0;
 static const int JSON_number_en_main = 1;
 
 
-#line 27 "rl/json_number.rl"
+#line 28 "rl/json_number.rl"
 
     
-#line 27 "json_number.c"
+#line 28 "json_number.c"
 	{
 	cs = JSON_number_start;
 	}
 
-#line 29 "rl/json_number.rl"
+#line 30 "rl/json_number.rl"
     
-#line 34 "json_number.c"
+#line 35 "json_number.c"
 	{
 	if ( p == pe )
 		goto _test_eof;
@@ -76,7 +77,7 @@ case 6:
 		goto tr8;
 	goto st0;
 tr8:
-#line 10 "rl/json_number.rl"
+#line 11 "rl/json_number.rl"
 	{
 	p--; {p++; cs = 7; goto _out;}
     }
@@ -85,17 +86,17 @@ st7:
 	if ( ++p == pe )
 		goto _test_eof7;
 case 7:
-#line 89 "json_number.c"
+#line 90 "json_number.c"
 	goto st0;
 tr2:
-#line 17 "rl/json_number.rl"
+#line 18 "rl/json_number.rl"
 	{d = 1;}
 	goto st3;
 st3:
 	if ( ++p == pe )
 		goto _test_eof3;
 case 3:
-#line 99 "json_number.c"
+#line 100 "json_number.c"
 	if ( 48 <= ( ((int)INDEX_PCHARP(str, p))) && ( ((int)INDEX_PCHARP(str, p))) <= 57 )
 		goto st8;
 	goto st0;
@@ -120,14 +121,14 @@ case 8:
 		goto tr8;
 	goto st0;
 tr9:
-#line 16 "rl/json_number.rl"
+#line 17 "rl/json_number.rl"
 	{d = 1;}
 	goto st4;
 st4:
 	if ( ++p == pe )
 		goto _test_eof4;
 case 4:
-#line 131 "json_number.c"
+#line 132 "json_number.c"
 	switch( ( ((int)INDEX_PCHARP(str, p))) ) {
 		case 43: goto st5;
 		case 45: goto st5;
@@ -196,7 +197,7 @@ case 10:
 	_out: {}
 	}
 
-#line 30 "rl/json_number.rl"
+#line 31 "rl/json_number.rl"
 
     if (cs >= JSON_number_first_final) {
 	if (!(state->flags&JSON_VALIDATE)) {

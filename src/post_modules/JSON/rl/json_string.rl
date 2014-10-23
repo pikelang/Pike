@@ -1,4 +1,5 @@
-/* vim:syntax=ragel */
+/* vim:syntax=ragel
+ */
 #define HEX2DEC(x) ((x) <= '9' ? (x) - '0' : ((x) < 'G') ? (x) - 'A' + 10 : (x) - 'a' + 10)
 
 %%{
@@ -27,7 +28,7 @@
 	    if (IS_NUNICODE(hexchr0)) {
 		fpc--; fbreak;
 	    }
-	    if (!(state->flags&JSON_VALIDATE)) {
+	    if (validate) {
 		string_builder_putchar(&s, hexchr0);
 	    }
 	}
@@ -46,7 +47,7 @@
 	if (!IS_LOW_SURROGATE (hexchr1)) {
 	    fpc--; fbreak;
 	}
-	if (!(state->flags&JSON_VALIDATE)) {
+	if (validate) {
 	    int cp = (((hexchr0 - 0xd800) << 10) | (hexchr1 - 0xdc00)) +
 		0x10000;
 	    string_builder_putchar(&s, cp);
@@ -54,7 +55,7 @@
     }
 
     action add_unquote {
-	if (!(state->flags&JSON_VALIDATE)) switch(fc) {
+	if (validate) switch(fc) {
 	    case '"':
 	    case '/':
 	    case '\\':      string_builder_putchar(&s, fc); break;
@@ -74,7 +75,7 @@
 
     action string_append {
 	if (fpc - mark > 0) {
-	    if (!(state->flags&JSON_VALIDATE))
+	    if (validate)
 		    string_builder_append(&s, ADD_PCHARP(str, mark), fpc - mark);
         }
     }
@@ -101,10 +102,11 @@ static ptrdiff_t _parse_JSON_string(PCHARP str, ptrdiff_t p, ptrdiff_t pe, struc
     struct string_builder s;
     int cs;
     ONERROR handle;
+    const int validate = !(state->flags&JSON_VALIDATE);
 
     %% write data;
 
-    if (!(state->flags&JSON_VALIDATE)) {
+    if (validate) {
 	init_string_builder(&s, 0);
 	SET_ONERROR (handle, free_string_builder, &s);
     }
@@ -113,7 +115,7 @@ static ptrdiff_t _parse_JSON_string(PCHARP str, ptrdiff_t p, ptrdiff_t pe, struc
     %% write exec;
 
     if (cs < JSON_string_first_final) {
-	if (!(state->flags&JSON_VALIDATE)) {
+	if (validate) {
 	    UNSET_ONERROR(handle);
 	    free_string_builder(&s);
 	}
@@ -126,7 +128,7 @@ static ptrdiff_t _parse_JSON_string(PCHARP str, ptrdiff_t p, ptrdiff_t pe, struc
 	return p;
     }
 
-    if (!(state->flags&JSON_VALIDATE)) {
+    if (validate) {
 	push_string(finish_string_builder(&s));
 	UNSET_ONERROR(handle);
     }
