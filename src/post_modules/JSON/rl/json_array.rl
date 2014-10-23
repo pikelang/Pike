@@ -41,7 +41,9 @@
 }%%
 
 static ptrdiff_t _parse_JSON_array(PCHARP str, ptrdiff_t p, ptrdiff_t pe, struct parser_state *state) {
-    struct array *a;
+    /* GCC complains about a being used uninitialized. This is clearly wrong, so
+     * lets silence this warning */
+    struct array *a = a;
     int cs;
     int c = 0;
     const int validate = !(state->flags&JSON_VALIDATE);

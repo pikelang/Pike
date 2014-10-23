@@ -61,7 +61,9 @@
 }%%
 
 static ptrdiff_t _parse_JSON_mapping(PCHARP str, ptrdiff_t p, ptrdiff_t pe, struct parser_state *state) {
-    struct mapping *m;
+    /* GCC complains about a being used uninitialized. This is clearly wrong, so
+     * lets silence this warning */
+    struct mapping *m = m;
     int cs;
     int c = 0;
     const int validate = !(state->flags&JSON_VALIDATE);

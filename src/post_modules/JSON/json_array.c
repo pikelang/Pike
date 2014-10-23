@@ -8,13 +8,15 @@
 
 
 static ptrdiff_t _parse_JSON_array(PCHARP str, ptrdiff_t p, ptrdiff_t pe, struct parser_state *state) {
-    struct array *a;
+    /* GCC complains about a being used uninitialized. This is clearly wrong, so
+     * lets silence this warning */
+    struct array *a = a;
     int cs;
     int c = 0;
     const int validate = !(state->flags&JSON_VALIDATE);
 
     
-#line 18 "json_array.c"
+#line 20 "json_array.c"
 static const int JSON_array_start = 1;
 static const int JSON_array_first_final = 4;
 static const int JSON_array_error = 0;
@@ -22,7 +24,7 @@ static const int JSON_array_error = 0;
 static const int JSON_array_en_main = 1;
 
 
-#line 50 "rl/json_array.rl"
+#line 52 "rl/json_array.rl"
 
     /* Check stacks since we have uncontrolled recursion here. */
     check_stack (10);
@@ -34,14 +36,14 @@ static const int JSON_array_en_main = 1;
     }
 
     
-#line 38 "json_array.c"
+#line 40 "json_array.c"
 	{
 	cs = JSON_array_start;
 	}
 
-#line 61 "rl/json_array.rl"
+#line 63 "rl/json_array.rl"
     
-#line 45 "json_array.c"
+#line 47 "json_array.c"
 	{
 	if ( p == pe )
 		goto _test_eof;
@@ -106,7 +108,7 @@ st3:
 	if ( ++p == pe )
 		goto _test_eof3;
 case 3:
-#line 110 "json_array.c"
+#line 112 "json_array.c"
 	switch( ( ((int)INDEX_PCHARP(str, p))) ) {
 		case 13: goto st3;
 		case 32: goto st3;
@@ -122,7 +124,7 @@ st4:
 case 4:
 #line 40 "rl/json_array.rl"
 	{ p--; {p++; cs = 4; goto _out;} }
-#line 126 "json_array.c"
+#line 128 "json_array.c"
 	goto st0;
 	}
 	_test_eof2: cs = 2; goto _test_eof; 
@@ -133,7 +135,7 @@ case 4:
 	_out: {}
 	}
 
-#line 62 "rl/json_array.rl"
+#line 64 "rl/json_array.rl"
 
     if (cs >= JSON_array_first_final) {
 	return p;
