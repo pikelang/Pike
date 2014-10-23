@@ -8,13 +8,15 @@
 
 
 static ptrdiff_t _parse_JSON_mapping(PCHARP str, ptrdiff_t p, ptrdiff_t pe, struct parser_state *state) {
-    struct mapping *m;
+    /* GCC complains about a being used uninitialized. This is clearly wrong, so
+     * lets silence this warning */
+    struct mapping *m = m;
     int cs;
     int c = 0;
     const int validate = !(state->flags&JSON_VALIDATE);
 
     
-#line 18 "json_mapping.c"
+#line 20 "json_mapping.c"
 static const int JSON_mapping_start = 1;
 static const int JSON_mapping_first_final = 6;
 static const int JSON_mapping_error = 0;
@@ -22,7 +24,7 @@ static const int JSON_mapping_error = 0;
 static const int JSON_mapping_en_main = 1;
 
 
-#line 70 "rl/json_mapping.rl"
+#line 72 "rl/json_mapping.rl"
 
     /* Check stacks since we have uncontrolled recursion here. */
     check_stack (10);
@@ -34,14 +36,14 @@ static const int JSON_mapping_en_main = 1;
     }
 
     
-#line 38 "json_mapping.c"
+#line 40 "json_mapping.c"
 	{
 	cs = JSON_mapping_start;
 	}
 
-#line 81 "rl/json_mapping.rl"
+#line 83 "rl/json_mapping.rl"
     
-#line 45 "json_mapping.c"
+#line 47 "json_mapping.c"
 	{
 	if ( p == pe )
 		goto _test_eof;
@@ -92,7 +94,7 @@ st3:
 	if ( ++p == pe )
 		goto _test_eof3;
 case 3:
-#line 96 "json_mapping.c"
+#line 98 "json_mapping.c"
 	switch( ( ((int)INDEX_PCHARP(str, p))) ) {
 		case 13: goto st3;
 		case 32: goto st3;
@@ -150,7 +152,7 @@ st5:
 	if ( ++p == pe )
 		goto _test_eof5;
 case 5:
-#line 154 "json_mapping.c"
+#line 156 "json_mapping.c"
 	switch( ( ((int)INDEX_PCHARP(str, p))) ) {
 		case 13: goto st5;
 		case 32: goto st5;
@@ -166,7 +168,7 @@ st6:
 case 6:
 #line 60 "rl/json_mapping.rl"
 	{ p--; {p++; cs = 6; goto _out;} }
-#line 170 "json_mapping.c"
+#line 172 "json_mapping.c"
 	goto st0;
 	}
 	_test_eof2: cs = 2; goto _test_eof; 
@@ -179,7 +181,7 @@ case 6:
 	_out: {}
 	}
 
-#line 82 "rl/json_mapping.rl"
+#line 84 "rl/json_mapping.rl"
 
     if (cs >= JSON_mapping_first_final) {
 	return p;
