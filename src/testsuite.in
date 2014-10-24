@@ -11035,6 +11035,23 @@ test_hash_value(time)
 test_hash_value(ADT.Stack)
 dnl test_hash_value(String)
 test_hash_value(typeof(true))
+test_any([[
+    int v = 0;
+
+    void trampoline() {
+        v = 1;
+    };
+
+    int(0..1) check_hash()
+    {
+        function f1 = trampoline;
+        function f2 = trampoline;
+        return hash_value(f1) == hash_value(f2);
+    };
+
+    return check_hash();
+]], 1)
+
 
 // - indices
 test_equal(indices("foo"),({0,1,2}))
