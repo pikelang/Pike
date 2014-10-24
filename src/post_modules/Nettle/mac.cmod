@@ -61,18 +61,18 @@ struct pike_mac
   pike_nettle_hash_digest_func digest;
 };
 
-#define _PIKE_MAC(name, NAME) {			\
-  #name,					\
-  sizeof(struct name##_ctx),			\
-  NAME##_DIGEST_SIZE,				\
-  NAME##_BLOCK_SIZE,				\
-  NAME##_KEY_SIZE,				\
-  NAME##_IV_SIZE,				\
-  pike_##name##_set_key,			\
-  pike_##name##_set_iv,				\
-  name##_update,				\
-  name##_digest,				\
-}
+#define _PIKE_MAC(name, NAME) {					\
+    #name,							\
+    sizeof(struct name##_ctx),					\
+    NAME##_DIGEST_SIZE,						\
+    NAME##_BLOCK_SIZE,						\
+    NAME##_KEY_SIZE,						\
+    NAME##_IV_SIZE,						\
+    (pike_nettle_hash_update_func)pike_##name##_set_key,	\
+    (pike_nettle_hash_update_func)pike_##name##_set_iv,		\
+    (pike_nettle_hash_update_func)name##_update,		\
+    (pike_nettle_hash_digest_func)name##_digest,		\
+  }
 
 /*! @class MAC
  *!
