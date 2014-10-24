@@ -408,6 +408,14 @@ PMOD_EXPORT void assign_short_svalue(union anything *to,
   }
 }
 
+static INLINE unsigned INT32 hash_ptr(void * ptr) {
+#if SIZEOF_CHAR_P > 4
+  return DO_NOT_WARN((unsigned INT32)(PTR_TO_INT(ptr) >> 2));
+#else
+  return DO_NOT_WARN((unsigned INT32)(PTR_TO_INT(ptr)));
+#endif
+}
+
 PMOD_EXPORT unsigned INT32 hash_svalue(const struct svalue *s)
 {
   unsigned INT32 q;
@@ -450,11 +458,19 @@ PMOD_EXPORT unsigned INT32 hash_svalue(const struct svalue *s)
     }
     /* FALL THROUGH */
   default:
-#if SIZEOF_CHAR_P > 4
-    q=DO_NOT_WARN((unsigned INT32)(PTR_TO_INT(s->u.ptr) >> 2));
-#else
-    q=DO_NOT_WARN((unsigned INT32)(PTR_TO_INT(s->u.ptr)));
-#endif
+    q = hash_ptr(s->u.ptr);
+    break;
+  case T_FUNCTION:
+    if ((SUBTYPEOF(*s) != FUNCTION_BUILTIN) && s->u.object
+        && s->u.object->prog == pike_trampoline_program) {
+
+      struct pike_trampoline *tramp = get_storage(s->u.object, pike_trampoline_program);
+      if (tramp) {
+        q = (unsigned INT32)tramp->func ^ hash_ptr(tramp->frame);
+        break;
+      }
+    }
+    q = hash_ptr(s->u.ptr);
     break;
   case T_INT:
     q=(unsigned INT32) s->u.integer;
