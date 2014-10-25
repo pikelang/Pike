@@ -3344,11 +3344,11 @@ PIKECLASS PollDeviceBackend
   /* We place these declarations here rather than at the top
    * in order to avoid struct-y unpleasantness
    */
-  int init_cf(struct PollDeviceBackend_struct *me, int i);
-  int init_external_cfrl(struct PollDeviceBackend_struct *me, int i);
-  int low_my_kqueue(struct PollDeviceBackend_struct *me);
+  static int init_cf(struct PollDeviceBackend_struct *me, int i);
+  static int init_external_cfrl(struct PollDeviceBackend_struct *me, int i);
+  static int low_my_kqueue(struct PollDeviceBackend_struct *me);
 
-  int my_kqueue(struct PollDeviceBackend_struct *me)
+  static int my_kqueue(struct PollDeviceBackend_struct *me)
   {
      int i;
      
@@ -3357,7 +3357,7 @@ PIKECLASS PollDeviceBackend
      return i;
   }
   
-  int low_my_kqueue(struct PollDeviceBackend_struct *me)
+  static int low_my_kqueue(struct PollDeviceBackend_struct *me)
   {
     int i;
 
@@ -3368,7 +3368,8 @@ PIKECLASS PollDeviceBackend
   }
 
   /* arg i is the kqueue. */
-  int init_external_cfrl(struct PollDeviceBackend_struct *me, int UNUSED(i))
+  static int init_external_cfrl(struct PollDeviceBackend_struct *me,
+				int UNUSED(i))
   {
     /* we assume that init_cf() has already been called. */
     
@@ -3393,7 +3394,7 @@ PIKECLASS PollDeviceBackend
   }
 
   /* arg i is the kqueue. */
-  int exit_external_cfrl(struct PollDeviceBackend_struct *me)
+  static int exit_external_cfrl(struct PollDeviceBackend_struct *me)
   {
     /* we assume that init_cf() has already been called. */
     CFRunLoopObserverRef beObserver = me->beObserver;
@@ -3413,7 +3414,7 @@ PIKECLASS PollDeviceBackend
   }
 
   /* arg i is the kqueue. */
-  int init_cf(struct PollDeviceBackend_struct *me, int i)
+  static int init_cf(struct PollDeviceBackend_struct *me, int i)
   {
     CFFileDescriptorContext context = {0, me, NULL, NULL, NULL};
 
@@ -3429,7 +3430,7 @@ PIKECLASS PollDeviceBackend
     return i;
   }
 
-  void exit_cf(struct PollDeviceBackend_struct *me)
+  static void exit_cf(struct PollDeviceBackend_struct *me)
   {
     if(me->source)
     {
