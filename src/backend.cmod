@@ -194,6 +194,10 @@ int current_time_invalid = 1;
 static struct Backend_struct **fd_map=0;
 static int fd_map_size=0;
 static struct object *default_backend_obj = NULL;
+
+/**
+ * The default backend object.
+ */
 PMOD_EXPORT struct Backend_struct *default_backend = NULL;
 
 #ifdef DO_PIKE_CLEANUP
@@ -386,6 +390,9 @@ PIKECLASS Backend
 
   DECLARE_STORAGE
 
+  /**
+   * Get the backend object containing the provided Backend_struct.
+   */
   PMOD_EXPORT struct object *get_backend_obj (struct Backend_struct *b)
   {
     return b->backend_obj;
@@ -404,7 +411,10 @@ PIKECLASS Backend
     return 0;
   }
 
-  /* This is used by threaded programs and signals to wake up the
+  /**
+   * Wake up the provided backend.
+   *
+   * This is used by threaded programs and signals to wake up the
    * master 'thread'.
    *
    * It's called from the signal handler so it must not lock any mutex
@@ -429,7 +439,8 @@ PIKECLASS Backend
     }
   }
 
-  /* Lower the timeout
+  /**
+   * Lower the timeout
    *
    * Typically used from backend callbacks.
    */
@@ -1440,6 +1451,9 @@ PIKECLASS Backend
      return NULL;
    }
 
+   /**
+    * Get the fd_callback_box corresponding to an fd.
+    */
    PMOD_EXPORT struct fd_callback_box
      *get_fd_callback_box_for_fd( struct Backend_struct *me, int fd )
    {
@@ -1677,6 +1691,10 @@ PIKECLASS Backend
      }
    }
 
+   /**
+    * Update the backend that the box is associated with to
+    * a new set of events to notify for.
+    */
   PMOD_EXPORT void hook_fd_callback_box (struct fd_callback_box *box)
   {
     struct Backend_struct *me = box->backend;
@@ -1722,6 +1740,10 @@ PIKECLASS Backend
     return 0;
   }
 
+  /**
+   * Unhook a box from its associated backend (if any),
+   * and clear any events.
+   */
   PMOD_EXPORT void unhook_fd_callback_box (struct fd_callback_box *box)
   {
     /* Accept an unhooked box; can happen when we're called from an
@@ -1771,6 +1793,9 @@ PIKECLASS Backend
     }
   }
 
+  /**
+   * Set the event mask for a hooked box.
+   */
   PMOD_EXPORT void set_fd_callback_events (struct fd_callback_box *box,
 					   int events, int flags)
   {
@@ -1802,6 +1827,9 @@ PIKECLASS Backend
     }
   }
 
+  /**
+   * Change the backend that a box is to be associated with.
+   */
   PMOD_EXPORT void change_backend_for_box (struct fd_callback_box *box,
 					   struct Backend_struct *new)
   {
@@ -1838,6 +1866,9 @@ PIKECLASS Backend
     }
   }
 
+  /**
+   * Change the fd that a box refers to.
+   */
   PMOD_EXPORT void change_fd_for_box (struct fd_callback_box *box, int new_fd)
   {
     int old_fd = box->fd;
@@ -5637,6 +5668,9 @@ PIKECLASS SelectBackend
  */
 
 /* This doesn't need to be here */
+/**
+ * Fail-safe/paranoid function to write a block of data to stderr (aka fd 2).
+ */
 PMOD_EXPORT int write_to_stderr(char *a, size_t len)
 {
 #ifdef __NT__
@@ -5680,6 +5714,9 @@ PMOD_EXPORT int write_to_stderr(char *a, size_t len)
   return 1;
 }
 
+/**
+ * Get the backend (if any) that an fd is associated with.
+ */
 PMOD_EXPORT struct object *get_backend_obj_for_fd (int fd)
 {
   struct Backend_struct *b = really_get_backend_for_fd (fd);
@@ -5687,6 +5724,9 @@ PMOD_EXPORT struct object *get_backend_obj_for_fd (int fd)
   return b->backend_obj;
 }
 
+/**
+ * Associate an fd with a backend.
+ */
 PMOD_EXPORT void set_backend_for_fd (int fd, struct Backend_struct *new)
 {
   struct Backend_struct *old = get_backend_for_fd (fd);
@@ -5961,6 +6001,9 @@ WRAP(read_oob, PIKE_BIT_FD_READ_OOB)
 WRAP(write_oob, PIKE_BIT_FD_WRITE_OOB)
 WRAP2(fs_event, PIKE_BIT_FD_FS_EVENT)
 
+/**
+ * Add a callback to be called by the default backend.
+ */
 PMOD_EXPORT struct callback *debug_add_backend_callback(callback_func call,
 							void *arg,
 							callback_func free_func)
@@ -6019,6 +6062,9 @@ void do_debug(void)
   current_do_debug_cycle=0;
 }
 
+/**
+ * Assert that an fd is valid and not already in use by any backend.
+ */
 PMOD_EXPORT void debug_check_fd_not_in_use (int fd)
 {
   if (fd < 0) Pike_fatal ("Invalid fd: %d\n", fd);
