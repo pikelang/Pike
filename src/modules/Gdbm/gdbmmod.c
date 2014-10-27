@@ -818,6 +818,10 @@ PIKE_MODULE_INIT
   set_init_callback(init_gdbm_glue);
   set_exit_callback(exit_gdbm_glue);
   db = end_program();
+  add_program_constant( "DB", db, 0 );
+  add_program_constant( "gdbm", db, 0 ); /* compat (...-7.8). */
+  free_program(db);
+
   start_new_program();
   ADD_STORAGE(struct gdbm_glue);
   ADD_FUNCTION("first", gdbmmod_iter_first,tFunc(tNone,tInt01),0);
@@ -829,10 +833,7 @@ PIKE_MODULE_INIT
   set_exit_callback(exit_gdbm_iterator);
   iterator = end_program();
   add_program_constant( "Iterator", iterator, 0 );
-
-  add_program_constant( "DB", db, 0 );
-  add_program_constant( "gdbm", db, 0 ); /* compat (...-7.8). */
-  free_program(db);
+  free_program(iterator);
 #else
   if(!TEST_COMPAT(7,6))
     HIDE_MODULE();
