@@ -231,13 +231,20 @@
  */
 
 constant header =
-"/* Tree transformation code.\n"
-" *\n"
-" * This file was generated from %O.\n"
-" *\n"
-" * Do NOT edit!\n"
-" */\n"
-"\n";
+#"/* Tree transformation code.
+ *
+ * This file was generated from %O.
+ *
+ * Do NOT edit!
+ */
+
+#ifdef PIKE_DEBUG
+#define DBG(X) if (l_flag>4) { fprintf(stderr, (X)); }
+#else
+#define DBG(X)
+#endif
+
+";
 
 mapping(string: array(object(node))) rules = ([]);
 
@@ -854,11 +861,7 @@ void parse_data()
 			 post_fix_refs);
 	break;
       }
-      action = sprintf("#ifdef PIKE_DEBUG\n"
-		       "  if (l_flag > 4) {\n"
-		       "    fprintf(stderr, \"=> \"%O\"\\n\");\n"
-		       "  }\n"
-		       "#endif /* PIKE_DEBUG */\n", sprintf("%s", n2)) +
+      action = sprintf("DBG(\"=> \"%O\"\\n\");\n", sprintf("%s", n2)) +
 	action;
     } else {
       // Null action.
@@ -883,11 +886,7 @@ void parse_data()
 	action;
     }
 
-    action = sprintf("#ifdef PIKE_DEBUG\n"
-		     "  if (l_flag > 4) {\n"
-		     "    fprintf(stderr, \"Match: \"%O\"\\n\");\n"
-		     "  }\n"
-		     "#endif /* PIKE_DEBUG */\n", sprintf("%s", n)) +
+    action = sprintf("DBG(\"Match: \"%O\"\\n\");\n", sprintf("%s", n)) +
       action;
 
     n->action = action;
