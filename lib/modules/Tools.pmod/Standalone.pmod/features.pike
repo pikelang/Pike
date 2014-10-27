@@ -132,6 +132,13 @@ int main(int num, array(string) args) {
   M(COM.com);
 
   write("\nCrypto\n");
+  F(Crypto.AES.GCM);
+  F(Crypto.Arctwo);
+  F(Crypto.Blowfish);
+  F(Crypto.Camellia);
+  F(Crypto.ChaCha20);
+  F(Crypto.ECC.Curve);
+  F(Crypto.GOST94);
   F(Crypto.IDEA);
 
   write("\nDebug\n");
