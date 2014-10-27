@@ -264,6 +264,11 @@ test_any([[
 ]], 17)
 
 test_any([[
+  for(int i; i<10; i++) ;
+  return 1;
+]], 1)
+
+test_any([[
   // Another over-optimization test.
   string x(string i) { return i; };
   return x("")+1+1;
