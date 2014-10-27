@@ -663,7 +663,7 @@ string fix_action(string s)
     if (sizeof(used_nodes)) {
       pre_cleanup = "\n";
       post_cleanup = "\n  ";
-      foreach(indices(used_nodes), string used_node) {
+      foreach(sort(indices(used_nodes)), string used_node) {
 	pre_cleanup += ("  ADD_NODE_REF2(" + used_node + ",\n")*
 	  used_nodes[used_node];
 	post_cleanup += ")" * used_nodes[used_node];
@@ -1126,7 +1126,7 @@ string generate_match(array(object(node)) rule_set, string indent)
       exacts[n->cdr] += ({ n });
     }
     zap_cdr(node_classes[EXACT_CDR]);
-    foreach(indices(exacts), string expr) {
+    foreach(sort(indices(exacts)), string expr) {
       if (last_was_if) {
 	res += " else ";
       } else {
@@ -1332,7 +1332,8 @@ int main(int argc, array(string) argv)
 
   parse_data();
 
-  foreach(values(rules), array(object(node)) nodes) {
+  foreach(indices(rules), string rule) {
+    array(object(node)) nodes = rules[rule];
     foreach(nodes, object(node) n) {
       generate_parent(n , 0, "");
     }
