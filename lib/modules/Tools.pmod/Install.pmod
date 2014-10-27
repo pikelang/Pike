@@ -59,7 +59,8 @@ array(string) features()
   m += ({ "PostgresNative" });
 #endif
 
-  foreach(({ "Nettle", "Dbm", "DVB", "_Ffmpeg", "GL", "GLUT", "GTK1", "Gdbm",
+  foreach(({ "Nettle", "Crypto.AES.GCM", "Crypto.ECC.Curve", "Dbm", "DVB",
+	     "_Ffmpeg", "GL", "GLUT", "GTK1", "Gdbm",
 	     "Gmp", "Gz", "_Image_FreeType", "_Image_GIF", "_Image_JPEG",
              "_Image_TIFF", "_Image_TTF", "_Image_XFace", "Image.PNG",
 	     "Java.machine", "Mird", "Msql", "Mysql", "Odbc", "Oracle",
