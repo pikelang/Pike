@@ -63,6 +63,11 @@ AC_CHECK_LIB(nsl, gethostbyname)
 AC_CHECK_LIB(net, __get_socket_descriptor)
 dnl AC_CHECK_LIB(zfs, libzfs_init)
 
+dnl GMP is required and tested for in Gmp module. We just want LIBS
+dnl updated here. This is needed in case the gmp library is not a
+dnl shared library.
+AC_CHECK_LIB(gmp, main)
+
 AC_HAVE_FUNCS(getwd readdir_r statvfs statfs ustat lseek64 lstat fsync \
  grantpt unlockpt ptsname posix_openpt socketpair writev sendfile munmap \
  madvise poll setsockopt getprotobyname truncate64 ftruncate64 inet_ntoa \
