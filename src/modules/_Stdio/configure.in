@@ -134,6 +134,47 @@ dnl PIKE_CHECK_ZFS_ENUM(zfs_prop_t, ZFS_PROP_UTF8ONLY)
 
 AC_FUNC_MMAP
 
+if test "x$ac_cv_func_dirfd" = "xyes"; then :; else
+  # DIR.dd_fd is POSIX and X/OPEN.
+  # DIR.d_fd is old Solaris.
+
+  AC_MSG_CHECKING(if DIR has a dd_fd member)
+  AC_CACHE_VAL(pike_cv_DIR_dd_fd, [
+    AC_TRY_COMPILE([
+#include <sys/types.h>
+#include <dirent.h>
+    ], [
+      DIR dir;
+      dir.dd_fd = 0;
+    ], [pike_cv_DIR_dd_fd=yes],[pike_cv_DIR_dd_fd=no])
+  ])
+
+  if test "$pike_cv_DIR_dd_fd" = "yes"; then
+    AC_MSG_RESULT(yes)
+    AC_DEFINE(HAVE_DIR_DD_FD)
+  else
+    AC_MSG_RESULT(no)
+
+    AC_MSG_CHECKING(if DIR has a d_fd member)
+    AC_CACHE_VAL(pike_cv_DIR_d_fd, [
+      AC_TRY_COMPILE([
+#include <sys/types.h>
+#include <dirent.h>
+      ], [
+        DIR dir;
+        dir.d_fd = 0;
+      ], [pike_cv_DIR_d_fd=yes],[pike_cv_DIR_d_fd=no])
+    ])
+
+    if test "$pike_cv_DIR_d_fd" = "yes"; then
+      AC_MSG_RESULT(yes)
+      AC_DEFINE(HAVE_DIR_D_FD)
+    else
+      AC_MSG_RESULT(no)
+    fi
+  fi
+fi
+
 AC_MSG_CHECKING(if struct stat has a blocks member)
 AC_CACHE_VAL(pike_cv_struct_stat_blocks, [
 	AC_TRY_COMPILE([

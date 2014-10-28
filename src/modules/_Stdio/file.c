@@ -145,6 +145,16 @@
 #define UNIX_SOCKET_CAPABILITIES (fd_INTERPROCESSABLE | fd_BIDIRECTIONAL | fd_CAN_NONBLOCK | fd_CAN_SHUTDOWN | fd_SEND_FD)
 #endif
 
+#ifndef HAVE_DIRFD
+#ifdef HAVE_DIR_DD_FD
+#define dirfd(dir__)	(((DIR*)dir__)->dd_fd)
+#define HAVE_DIRFD
+#elif defined(HAVE_DIR_D_FD)
+#define dirfd(dir__)	(((DIR*)dir__)->d_fd)
+#define HAVE_DIRFD
+#endif
+#endif
+
 /*
  * gcc with -O3 generates very bloated code for the functions in this file. One rather extreme example
  * is file_open, which ends up having 32 call sites of open(2).
@@ -5778,7 +5788,9 @@ static void f_get_all_active_fd(INT32 args)
 #endif
            )) )
     {
+#ifdef HAVE_DIRFD
       INT_TYPE dfd = dirfd(tmp);
+#endif
 
       while(1)
       {
@@ -5795,7 +5807,11 @@ static void f_get_all_active_fd(INT32 args)
 
         fd = strtol(res->d_name, &ep, 10);
 
-        if( LIKELY(ep != res->d_name) && (fd != dfd) )
+        if( LIKELY(ep != res->d_name)
+#ifdef HAVE_DIRFD
+	    && (fd != dfd)
+#endif
+	    )
         {
           SET_SVAL_TYPE_SUBTYPE(*sp,PIKE_T_INT,0);
           sp++->u.integer = fd;
