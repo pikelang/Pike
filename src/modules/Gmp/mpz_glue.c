@@ -2288,7 +2288,7 @@ static void pike_mp_free (void *ptr, size_t UNUSED(size))
   ADD_FUNCTION("`!",mpzmod_not,tFunc(tNone,tInt01), ID_PROTECTED);	\
 									\
   ADD_FUNCTION("__hash",mpzmod___hash,tFunc(tNone,tInt), ID_PROTECTED);	\
-  ADD_FUNCTION("cast",mpzmod_cast,tFunc(tStr,tMix), ID_PRIVATE);	\
+  ADD_FUNCTION("cast",mpzmod_cast,tFunc(tStr,tMix), ID_PROTECTED);	\
 									\
   ADD_FUNCTION("_is_type", mpzmod__is_type, tFunc(tStr,tInt01),         \
                ID_PROTECTED);                                           \
