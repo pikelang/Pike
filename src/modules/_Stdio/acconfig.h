@@ -38,6 +38,12 @@
 /* Define this if you want to disable the use of sendfile(2). */
 #undef HAVE_BROKEN_SENDFILE
 
+/* Define this if your DIR has the field dd_fd (POSIX or X/OPEN). */
+#undef HAVE_DIR_DD_FD
+
+/* Define this if your DIR has the field d_fd (old Solaris). */
+#undef HAVE_DIR_D_FD
+
 /* Define this if you have a struct stat with 'blocks' member. */
 #undef HAVE_STRUCT_STAT_BLOCKS
 
