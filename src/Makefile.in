@@ -1335,7 +1335,7 @@ precompile.sh: $(SRCDIR)/precompile.sh.in ./config.status
 # recursive use of make.
 precompile.sh-stamp:
 	@if [ -f precompile.sh ]; then :; else $(MAKE) precompile.sh; fi
-	@touch 0101010185 precompile.sh-stamp 2>/dev/null
+	@touch -t 198501010101 precompile.sh-stamp 2>/dev/null
 
 $(SRCDIR)/machine.h.in: $(SRCDIR)/stamp-h.in
 	@if test -f $(SRCDIR)/machine.h.in; then :; else \
