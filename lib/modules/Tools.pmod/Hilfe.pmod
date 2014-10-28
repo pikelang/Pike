@@ -1300,7 +1300,7 @@ protected class ParserState {
   //! @[push_string] was executed. The error will be
   //! printed with the print function @[w].
   void show_error(function(array(string)|string, mixed ... : int) w) {
-    if(!error) return;
+    if(!caught_error) return;
     w("Hilfe Error: %s", caught_error);
     caught_error = 0;
   }
