@@ -1079,7 +1079,7 @@ static void mpzmod_size(INT32 args)
 static void mpzmod_cast(INT32 args)
 {
   struct pike_string *s = sp[-args].u.string;
-  pop_stack(); /* s have at least one more reference. */
+  if( args ) pop_stack(); /* s have at least one more reference. */
 
   if( s == literal_int_string )
     mpzmod_get_int(0);
