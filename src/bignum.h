@@ -7,7 +7,13 @@
 #ifndef BIGNUM_H
 #define BIGNUM_H
 
+#ifdef __cplusplus
+extern "C++" {
+#endif
 #include <gmp.h>
+#ifdef __cplusplus
+};
+#endif
 #include "global.h"
 #include "pike_int_types.h"
 
