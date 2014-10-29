@@ -24,11 +24,6 @@ PMOD_EXPORT void convert_stack_top_with_base_to_bignum(void)
   push_object(clone_object(bignum_program, 2));
 }
 
-int is_bignum_object(struct object *o)
-{
-  return o->prog == bignum_program;
-}
-
 PMOD_EXPORT int is_bignum_object_in_svalue(struct svalue *sv)
 {
   /* FIXME: object subtype? */

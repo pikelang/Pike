@@ -361,6 +361,8 @@ PMOD_EXPORT void reduce_stack_top_bignum(void);
 #define reduce_stack_top_bignum()
 #endif /* INT64 */
 
+#define is_bignum_object(O) ((O)->prog == bignum_program)
+
 PMOD_EXPORT void push_ulongest(unsigned LONGEST i);
 PMOD_EXPORT int ulongest_from_bignum(unsigned LONGEST *i,
                                      struct object *bignum);
