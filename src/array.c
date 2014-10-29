@@ -21,7 +21,6 @@
 #include "main.h"
 #include "pike_security.h"
 #include "stuff.h"
-#include "bignum.h"
 #include "cyclic.h"
 #include "multiset.h"
 #include "mapping.h"

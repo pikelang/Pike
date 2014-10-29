@@ -17,7 +17,6 @@
 #include "module_support.h"
 #include "pike_macros.h"
 #include "pike_search.h"
-#include "bignum.h"
 
 ptrdiff_t pike_search_struct_offset;
 #define OB2MSEARCH(O) ((struct pike_mem_searcher *)((O)->storage+pike_search_struct_offset))

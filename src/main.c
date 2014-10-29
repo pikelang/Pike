@@ -35,7 +35,6 @@
 #include "pike_rusage.h"
 #include "module_support.h"
 #include "opcodes.h"
-#include "bignum.h"
 
 #include "pike_embed.h"
 

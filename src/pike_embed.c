@@ -38,7 +38,6 @@
 #include "pike_memory.h"
 #include "pike_cpulib.h"
 #include "pike_embed.h"
-#include "bignum.h"
 
 #if defined(__linux__) && defined(HAVE_DLOPEN) && defined(HAVE_DLFCN_H)
 #include <dlfcn.h>
