@@ -25,36 +25,21 @@ PMOD_EXPORT struct program *get_auto_bignum_program(void)
 
 PMOD_EXPORT struct program *get_auto_bignum_program_or_zero(void)
 {
-  if (TYPEOF(auto_bignum_program) == PIKE_T_FREE)
-    return 0;
   return program_from_svalue(&auto_bignum_program);
 }
 
 PMOD_EXPORT void convert_stack_top_to_bignum(void)
 {
-  if (TYPEOF(auto_bignum_program) != T_PROGRAM)
-    Pike_error("Gmp.mpz conversion failed (Gmp.bignum not loaded).\n");
   apply_svalue(&auto_bignum_program, 1);
 }
 
 PMOD_EXPORT void convert_stack_top_with_base_to_bignum(void)
 {
-  if (TYPEOF(auto_bignum_program) != T_PROGRAM)
-    Pike_error("Gmp.mpz conversion failed (Gmp.bignum not loaded).\n");
   apply_svalue(&auto_bignum_program, 2);
 }
 
 int is_bignum_object(struct object *o)
 {
-  /* Note:
-   * This function should *NOT* try to resolv Gmp.mpz unless
-   * it is already loaded into memory.
-   * /Hubbe
-   */
-
-  if (TYPEOF(auto_bignum_program) == T_INT)
-    return 0; /* not possible */
- 
   return o->prog == program_from_svalue(&auto_bignum_program);
 }
 
