@@ -13,4 +13,7 @@
 /* Define this if you want the ZXID module. */
 #undef HAVE_ZXID
 
+/* Define this if your struct zxid_conf has the burl member. */
+#undef HAVE_STRUCT_ZXID_CONF_BURL
+
 #endif

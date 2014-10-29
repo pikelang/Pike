@@ -75,6 +75,16 @@ void free_wrapper(void *ptr)
 }
 #endif
 
+#ifdef HAVE_STRUCT_ZXID_CONF_BURL
+#define BURL(CONF)	((CONF).burl)
+#define CPATH(CONF)	((CONF).cpath)
+#define CPATH_LEN(CONF)	((CONF).cpath_len)
+#else
+#define BURL(CONF)	((CONF).url)
+#define CPATH(CONF)	((CONF).path)
+#define CPATH_LEN(CONF)	((CONF).path_len)
+#endif
+
 /*! @class Configuration
  *!
  *! A set of configuration parameters for a ZXID context.
@@ -321,11 +331,11 @@ PIKECLASS Configuration {
 		  ((TYPEOF(*s) == PIKE_T_STRING) &&
 		   !s->u.string->size_shift),
 		  do {
-		    if (THIS->conf.path) {
-		      ZX_FREE(THIS->conf.ctx, THIS->conf.path);
+		    if (CPATH(THIS->conf)) {
+		      ZX_FREE(THIS->conf.ctx, CPATH(THIS->conf));
 		    }
-		    THIS->conf.path = strdup(s->u.string->str);
-		    THIS->conf.path_len = s->u.string->len;
+		    CPATH(THIS->conf) = strdup(s->u.string->str);
+		    CPATH_LEN(THIS->conf) = s->u.string->len;
 		  } while(0));
 
     CHECK_ARG_INT(MK_STRING("PDP_ENA"), THIS->conf.pdp_ena);
@@ -386,7 +396,7 @@ PIKECLASS Configuration {
     CHECK_ARG_STRING(MK_STRING("TRUSTPDP_URL"), THIS->conf.trustpdp_url);
     CHECK_ARG_KEEP(MK_STRING("URL"), ((TYPEOF(*s) == PIKE_T_STRING) &&
 				      !s->u.string->size_shift), do {
-		     THIS->conf.url = s->u.string->str;
+		     BURL(THIS->conf) = s->u.string->str;
 		     if (THIS->conf.fedusername_suffix) {
 		       ZX_FREE(THIS->conf.ctx, THIS->conf.fedusername_suffix);
 		       THIS->conf.fedusername_suffix = NULL;

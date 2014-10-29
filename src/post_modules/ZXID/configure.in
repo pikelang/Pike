@@ -30,6 +30,28 @@ if test x"$ac_cv_lib_zxid_zxid_simple:$ac_cv_header_zxid_zxid_h" = "xyes:yes";
 then
     PIKE_FEATURE_OK(ZXID)
     AC_DEFINE(HAVE_ZXID)
+
+    AC_MSG_CHECKING(if struct zxid_conf has a burl member)
+    AC_CACHE_VAL(pike_cv_struct_zxid_conf_burl, [
+	AC_TRY_COMPILE([
+#include <zx/zx.h>
+#include <zxid/zxid.h>
+	], [
+	    struct zxid_conf conf;
+	    conf.burl = "BURL";
+	], [
+	    pike_cv_struct_zxid_conf_burl="yes"
+	], [
+	    pike_cv_struct_zxid_conf_burl="no"
+	])
+    ])
+    if test "x$pike_cv_struct_zxid_conf_burl" = "xyes"; then
+	# ZXID 1.19:2013-12-04 or later.
+	AC_MSG_RESULT(yes)
+	AC_DEFINE(HAVE_STRUCT_ZXID_CONF_BURL)
+    else
+	AC_MSG_RESULT(no)
+    fi
 else
     LIBS="$ORIG_LIBS"
 fi
