@@ -67,57 +67,42 @@ static void init_builtin_modules(void)
 #endif
 
   TRACE((stderr, "Init cpp...\n"));
-
   init_cpp();
 
   TRACE((stderr, "Init backend...\n"));
-
   init_backend();
 
   TRACE((stderr, "Init iterators...\n"));
-
   init_iterators();
 
   TRACE((stderr, "Init searching...\n"));
-
   init_pike_searching();
 
   TRACE((stderr, "Init error handling...\n"));
-
   init_error();
 
   TRACE((stderr, "Init security system...\n"));
-
   init_pike_security();
 
   TRACE((stderr, "Init threads...\n"));
-
   th_init();
 
   TRACE((stderr, "Init operators...\n"));
-
   init_operators();
 
-
   TRACE((stderr, "Init builtin...\n"));
-
   init_builtin();
 
-
   TRACE((stderr, "Init efuns...\n"));
-
   init_builtin_efuns();
 
   TRACE((stderr, "Init signal handling...\n"));
-
   init_signals();
 
   TRACE((stderr, "Init dynamic loading...\n"));
-
   init_dynamic_load();
 
   TRACE((stderr, "Init sprintf...\n"));
-
   init_sprintf();
 }
 
