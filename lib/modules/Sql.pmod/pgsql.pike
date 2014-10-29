@@ -78,7 +78,9 @@ protected enum querystate {
 protected querystate qstate;
 protected mapping(string:mapping(string:mixed)) prepareds=([]);
 protected int pstmtcount;
-protected int ptstmtcount;
+protected int ptstmtcount;	// Periodically one would like to reset this
+				// but checking when this is safe to do
+				// probably is more costly than the gain
 int _pportalcount;
 protected int totalhits;
 protected int cachedepth=STATEMENTCACHEDEPTH;
@@ -89,11 +91,11 @@ protected int reconnectdelay;	// Time to next reconnect
 #ifdef PG_STATS
 protected int skippeddescribe; // Number of times we skipped Describe phase
 protected int portalsopened;   // Number of portals opened
+protected int prepstmtused;    // Number of times prepared statements were used
 #endif
 int _msgsreceived;	     // Number of protocol messages received
 int _bytesreceived;	     // Number of bytes received
 protected int warningsdropcount; // Number of uncollected warnings
-protected int prepstmtused;    // Number of times prepared statements were used
 protected int warningscollected;
 protected int invalidatecache;
 protected Thread.Queue qportals;
@@ -114,6 +116,7 @@ protected object execfetchlimit
 [ \t\f\r\n][Ll][Ii][Mm][Ii][Tt][ \t\f\r\n]+[12][; \t\f\r\n]*$");
 protected Thread.Mutex waitforauth;
 protected Thread.Condition waitforauthready;
+int _readyforquerycount;
 
 #define DERROR(msg ...)		({sprintf(msg),backtrace()})
 #define SERROR(msg ...)		(sprintf(msg))
@@ -428,10 +431,10 @@ mapping(string:string) getruntimeparameters() {
 //!  @member int "skipped_describe_count"
 //!    Number of times the driver skipped asking the database to
 //!    describe the statement parameters because it was already cached.
-#endif
 //!  @member int "used_prepared_statements"
 //!    Numer of times prepared statements were used from cache instead of
 //!    reparsing in the current session.
+#endif
 //!  @member int "current_prepared_statements"
 //!    Cache size of currently prepared statements.
 //!  @member int "current_prepared_statement_hits"
@@ -460,11 +463,11 @@ mapping(string:string) getruntimeparameters() {
 mapping(string:mixed) getstatistics() {
   mapping(string:mixed) stats=([
     "warnings_dropped":warningsdropcount,
-    "used_prepared_statements":prepstmtused,
     "current_prepared_statements":sizeof(prepareds),
     "current_prepared_statement_hits":totalhits,
     "prepared_statement_count":pstmtcount,
 #ifdef PG_STATS
+    "used_prepared_statements":prepstmtused,
     "skipped_describe_count":skippeddescribe,
     "portals_opened_count":portalsopened,
 #endif
@@ -613,7 +616,7 @@ protected void storetiming(object portal) {
 
 final void _processloop(object ci) {
   int die=0,terminating=0;
-  .pgsql_util.pgsql_result portal;
+  int|.pgsql_util.pgsql_result portal;
   mixed err;
   {
     object plugbuffer=Stdio.Buffer()->add_int32(PG_PROTOCOL(3,0));
@@ -633,10 +636,18 @@ final void _processloop(object ci) {
     ci->start()->add_hstring(plugbuffer,4,4)->sendcmd(flushsend);
   }
   cancelsecret=0;
-  PD("Processloop\n");
 #ifdef PG_DEBUG
+  PD("Processloop\n");
   string datarowdebug;
   int datarowdebugcount;
+
+  void showportal(int msgtype) {
+    if(objectp(portal))
+      PD("<%O %d %c switch portal\n",
+       portal._portalname,++ci->queueinidx,msgtype);
+    else if(portal>0)
+      PD("<Sync %d %d %c portal\n",++ci->queueinidx,portal,msgtype);
+  };
 #endif
   for(;;) {
     err=catch {
@@ -649,9 +660,9 @@ final void _processloop(object ci) {
       int msgtype=ci->read_int8();
       if(!portal) {
         portal=qportals->try_read();
-        if(portal)
-          PD("<%O %d %c switch portal ===================\n",
-           portal._portalname,++ci->queueinidx,msgtype);
+#ifdef PG_DEBUG
+        showportal(msgtype);
+#endif
       }
       if(qstate==cancelpending)
         qstate=canceled,sendclose();
@@ -753,12 +764,10 @@ final void _processloop(object ci) {
             case 8:
               PD("GSSContinue\n");
               errtype=protocolunsupported;
+              cancelsecret=ci->read(msglen);		// Actually SSauthdata
 #ifdef PG_DEBUG
               if(msglen<1)
                 errtype=protocolerror;
-#endif
-              cancelsecret=ci->read(msglen);		// Actually SSauthdata
-#ifdef PG_DEBUG
               msglen=0;
 #endif
               break;
@@ -783,8 +792,8 @@ final void _processloop(object ci) {
         case 'K':
           msglen-=4+4;backendpid=ci->read_int32();
           cancelsecret=ci->read(msglen);
-          PD("<BackendKeyData %O\n",cancelsecret);
 #ifdef PG_DEBUG
+          PD("<BackendKeyData %O\n",cancelsecret);
           msglen=0;
 #endif
           break;
@@ -796,25 +805,39 @@ final void _processloop(object ci) {
           if(sizeof(ts)==2) {
 #endif
             _runtimeparameter[ts[0]]=ts[1];
-            PD("%O=%O\n",ts[0],ts[1]);
 #ifdef PG_DEBUG
+            PD("%O=%O\n",ts[0],ts[1]);
           } else
             errtype=protocolerror;
 #endif
           break;
         }
         case '3':
-          PD("<CloseComplete\n");
 #ifdef PG_DEBUG
+          PD("<CloseComplete\n");
           msglen-=4;
 #endif
           break;
         case 'Z':
+          backendstatus=ci->read_int8();
 #ifdef PG_DEBUG
           msglen-=4+1;
-#endif
-          backendstatus=ci->read_int8();
           PD("<ReadyForQuery %c\n",backendstatus);
+#endif
+          for(;objectp(portal);portal->read()) {
+#ifdef PG_DEBUG
+            showportal(msgtype);
+#endif
+            portal->_closeportal();
+          }
+          foreach(qportals->peek_array();;.pgsql_util.pgsql_result qp) {
+            PD("Checking portal %O %d<=%d\n",
+             qp._portalname,qp._synctransact,portal);
+            if(qp._synctransact && qp._synctransact<=portal)
+              qp->_closeportal();
+          }
+          portal=0;
+          _readyforquerycount--;
           if(readyforquery_cb)
             readyforquery_cb(),readyforquery_cb=0;
           qstate=queryidle;
@@ -826,16 +849,16 @@ final void _processloop(object ci) {
           }
           break;
         case '1':
-          PD("<ParseComplete\n");
 #ifdef PG_DEBUG
+          PD("<ParseComplete\n");
           msglen-=4;
 #endif
           break;
         case 't': {
           array a;
           int cols=ci->read_int16();
-          PD("<%O ParameterDescription %d values\n",portal._query,cols);
 #ifdef PG_DEBUG
+          PD("<%O ParameterDescription %d values\n",portal._query,cols);
           msglen-=4+2+4*cols;
 #endif
           foreach(a=allocate(cols);int i;)
@@ -895,8 +918,8 @@ final void _processloop(object ci) {
         case 'n': {
 #ifdef PG_DEBUG
           msglen-=4;
-#endif
           PD("<NoData %O\n",portal._query);
+#endif
           portal._datarowdesc=({});
           portal._fetchlimit=0;			// disables subsequent Executes
           processrowdescription(portal);
@@ -913,8 +936,8 @@ final void _processloop(object ci) {
           mapping tp;
 #ifdef PG_DEBUG
           msglen-=4;
-#endif
           PD("<%O BindComplete\n",portal._portalname);
+#endif
           if(tp=portal._tprepared) {
             int tend=gethrtime();
             int tstart=tp.trun;
@@ -940,9 +963,6 @@ final void _processloop(object ci) {
           string serror;
           if(portal._tprepared)
             storetiming(portal);
-#ifdef USEPGsql
-          ci->decodedatarow(msglen);msglen=0;
-#else
           array a, datarowdesc;
           portal._bytesreceived+=msglen;
           datarowdesc=portal._datarowdesc;
@@ -1025,16 +1045,12 @@ final void _processloop(object ci) {
           portal._datarows->write(a);
           if(serror)
             ERROR(serror);
-#endif // USEPGsql
           portal->_processdataready(fetchlimit);
           break;
         }
         case 's':
-          PD("<%O PortalSuspended\n",portal._portalname);
-#if !STREAMEXECUTES
-          portal->_sendexecute(portal._fetchlimit);
-#endif
 #ifdef PG_DEBUG
+          PD("<%O PortalSuspended\n",portal._portalname);
           msglen-=4;
 #endif
           portal=0;
@@ -1063,8 +1079,8 @@ final void _processloop(object ci) {
           break;
         }
         case 'I':
-          PD("<EmptyQueryResponse %O\n",portal._portalname);
 #ifdef PG_DEBUG
+          PD("<EmptyQueryResponse %O\n",portal._portalname);
           msglen-=4;
 #endif
           portal->_releasesession();
@@ -1105,10 +1121,11 @@ final void _processloop(object ci) {
           portal=0;
           break;
         case 'E': {
-          if(portal)
-            portal->_releasesession();
+          if(!_readyforquerycount)
+            sendsync();
           PD("<%O ErrorResponse %O\n",
-           portal&&portal._portalname,portal&&portal._query);
+           portal&&(portal._portalname||portal._preparedname),
+           portal&&portal._query);
           mapping(string:string) msgresponse;
           msgresponse=getresponse();
           warningsdropcount+=warningscollected;
@@ -1143,6 +1160,8 @@ final void _processloop(object ci) {
               }
               USERERROR(a2nls(lastmessage));
           }
+          if(portal)
+            portal->_releasesession();
           break;
         }
         case 'N': {
@@ -1229,9 +1248,14 @@ final void _processloop(object ci) {
         break;
     }
     if(stringp(err)) {
-      object to=portal?portal:this;
-      if(!to._delayederror)
-        to._delayederror=err;
+      .pgsql_util.pgsql_result or;
+      if(!(or=portal))
+        or=this;
+      if(!or._delayederror)
+        or._delayederror=err;
+      if(portal)
+        portal->_releasesession();
+      portal=0;
       continue;
     }
     break;
@@ -1294,7 +1318,9 @@ protected int reconnect(void|int force,void|object tt) {
   }
   if(c) {
     reconnected++;
+#ifdef PG_STATS
     prepstmtused=0;
+#endif
     if(!force)
       c->sendterminate();
     else
@@ -1306,6 +1332,8 @@ protected int reconnect(void|int force,void|object tt) {
       return 0;
   }
   qportals=Thread.Queue();
+  _readyforquerycount=1;
+  qportals->write(1);
   if(!(c=getsocket())) {
     string msg=sprintf("Couldn't connect to database on %s:%d",_host,_port);
     if(force) {
@@ -1348,6 +1376,11 @@ protected void resync_cb() {
   }
 }
 
+protected void sendsync() {
+  _readyforquerycount++;
+  c->start()->sendcmd(syncsend);
+}
+
 //! @decl void resync()
 //!
 //! Resyncs the database session; typically used to make sure the session is
@@ -1374,7 +1407,7 @@ void resync(void|int|object portal) {
   err = catch {
     PD("Portalsinflight: %d\n",_portalsinflight);
     readyforquery_cb=resync_cb;
-    c->start()->add(PGSYNC)->sendcmd(sendout);
+    sendsync();
     return;
   };
   PD("%O\n",err);
@@ -1889,9 +1922,12 @@ object big_query(string q,void|mapping(string|int:mixed) bindings,
         || forcecache!=0 && (sizeof(q)>=MINPREPARELENGTH || cachealways[q])) {
     object plugbuffer=c->start();
     if(tp=prepareds[q]) {
-      if(tp.preparedname)
-	prepstmtused++, preparedname=tp.preparedname;
-      else if((tstart=tp.trun)
+      if(tp.preparedname) {
+#ifdef PG_STATS
+	prepstmtused++;
+#endif
+        preparedname=tp.preparedname;
+      } else if((tstart=tp.trun)
               && tp.tparse*FACTORPLAN>=tstart
               && (undefinedp(options.cache_autoprepared_statements)
              || options.cache_autoprepared_statements))
@@ -1937,11 +1973,14 @@ object big_query(string q,void|mapping(string|int:mixed) bindings,
 #endif
   clearmessage=1;
   object plugbuffer=c;
-  if(forcetext) {
+  if(forcetext) {	// FIXME What happens if portals are still open?
     portal._unnamedportalkey=unnamedportalmux->lock(1);
     portal->_openportal();
-    plugbuffer->start()->add_int8('Q')->add_hstring(q,4,4+1)->add_int8(0)
-     ->sendcmd(flushsend,portal);
+    _readyforquerycount++;
+    Thread.MutexKey lock=unnamedstatement->lock(1);
+    plugbuffer->start(1)->add_int8('Q')->add_hstring(q,4,4+1)->add_int8(0)
+     ->sendcmd(flushlogsend,portal);
+    lock=0;
     PD("Simple query: %O\n",q);
   } else {
     object parsebuffer;
