@@ -376,4 +376,7 @@ PMOD_EXPORT void push_bignum(MP_INT *);
  * int if INT64 isn't available. */
 #define push_longest push_int64
 
+/* Deprecated */
+#define get_auto_bignum_program_or_zero() get_auto_bignum_program()
+
 #endif /* BIGNUM_H */

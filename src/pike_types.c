@@ -4918,20 +4918,16 @@ static struct pike_type *debug_low_index_type(struct pike_type *t,
     add_ref(mixed_type_string);
     return mixed_type_string;    
 
-    case T_INT:
-      /* Don't force Gmp.mpz to be loaded here since this function
-       * is called long before the master object is compiled...
-       * /Hubbe
-       */
-      p=get_auto_bignum_program_or_zero();
-      goto comefrom_int_index;
+  case T_INT:
+    p=get_auto_bignum_program();
+    goto comefrom_int_index;
 
-    case T_ZERO:
-    case T_TYPE:
-    case PIKE_T_RING:
-    case T_VOID:
-    case T_FLOAT:
-      return 0;
+  case T_ZERO:
+  case T_TYPE:
+  case PIKE_T_RING:
+  case T_VOID:
+  case T_FLOAT:
+    return 0;
 
   case T_OR:
   {
