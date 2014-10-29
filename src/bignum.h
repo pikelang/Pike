@@ -354,35 +354,23 @@ PMOD_EXPORT struct pike_string *string_from_bignum(struct object *o, int base);
 PMOD_EXPORT void convert_svalue_to_bignum(struct svalue *s);
 
 #ifdef INT64
-PMOD_EXPORT extern void (*push_int64)(INT64 i);
+PMOD_EXPORT void push_int64(INT64 i);
 
 /* Returns nonzero iff conversion is successful. */
-PMOD_EXPORT extern int (*int64_from_bignum) (INT64 *i, struct object *bignum);
+PMOD_EXPORT int int64_from_bignum(INT64 *i, struct object *bignum);
 
-PMOD_EXPORT extern void (*reduce_stack_top_bignum) (void);
+PMOD_EXPORT void reduce_stack_top_bignum(void);
 #else
 #define push_int64(i) push_int((INT_TYPE)(i))
 #define int64_from_bignum(I,BIGNUM)	0
 #endif /* INT64 */
 
-PMOD_EXPORT extern void (*push_ulongest) (unsigned LONGEST i);
-PMOD_EXPORT extern int (*ulongest_from_bignum) (unsigned LONGEST *i,
-						struct object *bignum);
+PMOD_EXPORT void push_ulongest(unsigned LONGEST i);
+PMOD_EXPORT int ulongest_from_bignum(unsigned LONGEST *i,
+                                     struct object *bignum);
 
-PMOD_EXPORT extern int (*mpz_from_svalue)(MP_INT *, struct svalue *);
-PMOD_EXPORT extern void (*push_bignum)(MP_INT *);
-
-PMOD_EXPORT void hook_in_gmp_funcs (
-#ifdef INT64
-  void (*push_int64_val)(INT64),
-  int (*int64_from_bignum_val) (INT64 *, struct object *),
-  void (*reduce_stack_top_bignum_val) (void),
-#endif
-  void (*push_ulongest_val) (unsigned LONGEST),
-  int (*ulongest_from_bignum_val) (unsigned LONGEST *, struct object *),
-  int (*mpz_from_svalue_val)(MP_INT *, struct svalue *),
-  void (*push_bignum_val)(MP_INT *));
-/* Prototypes end here */
+PMOD_EXPORT int mpz_from_svalue(MP_INT *, struct svalue *);
+PMOD_EXPORT void push_bignum(MP_INT *);
 
 /* Less confusing name, considering that push_int64 pushes a 32 bit
  * int if INT64 isn't available. */

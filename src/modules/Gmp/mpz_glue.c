@@ -56,7 +56,7 @@ struct program *bignum_program = NULL;
 
 static mpz_t mpz_int_type_min;
 
-static int gmp_mpz_from_svalue(MP_INT *dest, struct svalue *s)
+PMOD_EXPORT int mpz_from_svalue(MP_INT *dest, struct svalue *s)
 {
   if (!s) return 0;
   if (TYPEOF(*s) == T_INT) {
@@ -92,7 +92,7 @@ static int gmp_mpz_from_svalue(MP_INT *dest, struct svalue *s)
   return 1;
 }
 
-static void gmp_push_bignum(MP_INT *mpz)
+PMOD_EXPORT void push_bignum(MP_INT *mpz)
 {
   push_object(fast_clone_object(bignum_program));
   mpz_set(OBTOMPZ(Pike_sp[-1].u.object), mpz);
@@ -104,7 +104,7 @@ void mpzmod_reduce(struct object *o)
   int neg = mpz_sgn (mpz) < 0;
   INT_TYPE res = 0;
 
-  /* Note: Similar code in gmp_int64_from_bignum. */
+  /* Note: Similar code in int64_from_bignum. */
 
   /* Get the index of the highest limb that has bits within the range
    * of the INT_TYPE. */
@@ -156,7 +156,7 @@ overflow:
 
 #ifdef INT64
 
-static void gmp_reduce_stack_top_bignum (void)
+PMOD_EXPORT void reduce_stack_top_bignum (void)
 {
   struct object *o;
 #ifdef PIKE_DEBUG
@@ -168,7 +168,7 @@ static void gmp_reduce_stack_top_bignum (void)
   mpzmod_reduce (o);
 }
 
-static void gmp_push_int64 (INT64 i)
+PMOD_EXPORT void push_int64 (INT64 i)
 {
   if(i == DO_NOT_WARN((INT_TYPE)i))
   {
@@ -213,7 +213,7 @@ static void gmp_push_int64 (INT64 i)
 
 static mpz_t mpz_int64_min;
 
-static int gmp_int64_from_bignum (INT64 *i, struct object *bignum)
+PMOD_EXPORT int int64_from_bignum (INT64 *i, struct object *bignum)
 {
   MP_INT *mpz = OBTOMPZ (bignum);
   int neg = mpz_sgn (mpz) < 0;
@@ -267,7 +267,7 @@ overflow:
 
 #endif /* INT64 */
 
-static void gmp_push_ulongest (unsigned LONGEST i)
+PMOD_EXPORT void push_ulongest (unsigned LONGEST i)
 {
   if (i <= MAX_INT_TYPE) {
     push_int(DO_NOT_WARN((INT_TYPE)i));
@@ -303,11 +303,11 @@ static void gmp_push_ulongest (unsigned LONGEST i)
   }
 }
 
-static int gmp_ulongest_from_bignum (unsigned LONGEST *i, struct object *bignum)
+PMOD_EXPORT int ulongest_from_bignum (unsigned LONGEST *i, struct object *bignum)
 {
   MP_INT *mpz = OBTOMPZ (bignum);
 
-  /* Note: Similar code in gmp_int64_from_bignum. */
+  /* Note: Similar code in int64_from_bignum. */
 
   /* Get the index of the highest limb that have bits within the range
    * of LONGEST. */
@@ -2205,11 +2205,6 @@ PIKE_MODULE_EXIT
 #ifdef INT64
   mpz_clear (mpz_int64_min);
 #endif
-  hook_in_gmp_funcs (
-#ifdef INT64
-      NULL, NULL, NULL,
-#endif
-      NULL, NULL, NULL, NULL);
 }
 
 static void *pike_mp_alloc (size_t alloc_size)
@@ -2403,13 +2398,6 @@ PIKE_MODULE_INIT
   mpz_setbit (mpz_int64_min, INT64_BITS);
   mpz_neg (mpz_int64_min, mpz_int64_min);
 #endif
-  hook_in_gmp_funcs (
-#ifdef INT64
-      gmp_push_int64, gmp_int64_from_bignum,
-      gmp_reduce_stack_top_bignum,
-#endif
-      gmp_push_ulongest, gmp_ulongest_from_bignum,
-      gmp_mpz_from_svalue, gmp_push_bignum);
 
   pike_init_mpq_module();
   pike_init_mpf_module();
