@@ -291,9 +291,14 @@ protected void async_write()
 #ifdef HTTP_QUERY_DEBUG
        werror ("-> (write error: %s)\n", strerror (errno));
 #endif
-     } else if (bytes) {
+     } else {
+       // Note that "bytes" can be 0 here.
        send_buffer = send_buffer[bytes..];
-       return;
+       if (sizeof (send_buffer))
+	 return;
+
+       // send_buffer is empty at this point. We'll clear the write
+       // callback below.
      }
    }
    con->set_nonblocking(async_read,0,async_close);
