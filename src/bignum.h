@@ -369,10 +369,6 @@ PMOD_EXPORT int ulongest_from_bignum(unsigned LONGEST *i,
 PMOD_EXPORT int mpz_from_svalue(MP_INT *, struct svalue *);
 PMOD_EXPORT void push_bignum(MP_INT *);
 
-/* Less confusing name, considering that push_int64 pushes a 32 bit
- * int if INT64 isn't available. */
-#define push_longest push_int64
-
 /* Deprecated */
 #define get_auto_bignum_program_or_zero() bignum_program
 #define get_auto_bignum_program() bignum_program

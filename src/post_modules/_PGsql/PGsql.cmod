@@ -444,7 +444,7 @@ outofmem: Pike_fatal("Out of memory\n");
 	          case INT8OID:
 	          { LONGEST firstword = low_getint32();
 #if SIZEOF_LONGEST>=8
-	            push_longest((firstword<<32)|(low_getint32()&0xffffffffU));
+	            push_int64((firstword<<32)|(low_getint32()&0xffffffffU));
 #else             
 	            int nextword = low_getint32();
 	            switch(firstword)

@@ -536,7 +536,7 @@ PIKECLASS ResObj
   PIKEFUN int insert_id()
     optflags OPT_EXTERNAL_DEPEND;
   {
-    push_longest (sqlite3_last_insert_rowid(THIS->db));
+    push_int64 (sqlite3_last_insert_rowid(THIS->db));
   }
 
   /*! @decl string error()
