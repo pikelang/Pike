@@ -663,7 +663,7 @@ PIKECLASS Buffer
     LONGEST res;
 
     if( !io_avail(io,len) ) return NULL;
-    o = fast_clone_object(get_auto_bignum_program());
+    o = fast_clone_object(bignum_program);
     i = (void*)o->storage;
     mpz_import( i, len, 1, 1, 0, 0, io_read_pointer(io) );
     io_consume(io,len);
@@ -1162,7 +1162,7 @@ PIKECLASS Buffer
     }
     ref_push_string( tmp );
     push_int( 256 );
-    push_object( clone_object( get_auto_bignum_program(), 2 ) );
+    push_object( clone_object( bignum_program, 2 ) );
     if( tmp->str[0]&0x80 )
       o_xor();
     free_string( tmp );

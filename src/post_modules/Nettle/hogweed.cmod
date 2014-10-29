@@ -437,7 +437,7 @@ PIKECLASS ECC_Curve
 
     ecc_scalar_random(&s, rnd, random_func_wrapper);
 
-    push_object(ret = fast_clone_object(get_auto_bignum_program()));
+    push_object(ret = fast_clone_object(bignum_program));
     ecc_scalar_get(&s, (mpz_ptr)ret->storage);
 
     ecc_scalar_clear(&s);
@@ -473,8 +473,8 @@ PIKECLASS ECC_Curve
     }
 
     ecc_point_mul_g(&r, &s);
-    push_object(x = fast_clone_object(get_auto_bignum_program()));
-    push_object(y = fast_clone_object(get_auto_bignum_program()));
+    push_object(x = fast_clone_object(bignum_program));
+    push_object(y = fast_clone_object(bignum_program));
     ecc_point_get(&r, (mpz_ptr)x->storage, (mpz_ptr)y->storage);
 
     ecc_scalar_clear(&s);
@@ -530,8 +530,8 @@ PIKECLASS ECC_Curve
 
     ecc_point_mul(&r, &s, &p);
 
-    push_object(rx = fast_clone_object(get_auto_bignum_program()));
-    push_object(ry = fast_clone_object(get_auto_bignum_program()));
+    push_object(rx = fast_clone_object(bignum_program));
+    push_object(ry = fast_clone_object(bignum_program));
     ecc_point_get(&r, (mpz_ptr)rx->storage, (mpz_ptr)ry->storage);
 
     ecc_point_clear(&r);
@@ -614,7 +614,7 @@ PIKECLASS ECC_Curve
     PIKEFUN object(Gmp.mpz) get_private_key()
     {
       struct object *ret;
-      push_object(ret = fast_clone_object(get_auto_bignum_program()));
+      push_object(ret = fast_clone_object(bignum_program));
       ecc_scalar_get(&THIS->key, (mpz_ptr)ret->storage);
     }
 
@@ -645,7 +645,7 @@ PIKECLASS ECC_Curve
     PIKEFUN object(Gmp.mpz) get_x()
     {
       struct object *ret;
-      push_object(ret = fast_clone_object(get_auto_bignum_program()));
+      push_object(ret = fast_clone_object(bignum_program));
       ecc_point_get(&THIS->pub, (mpz_ptr)ret->storage, NULL);
     }
 
@@ -659,7 +659,7 @@ PIKECLASS ECC_Curve
     PIKEFUN object(Gmp.mpz) get_y()
     {
       struct object *ret;
-      push_object(ret = fast_clone_object(get_auto_bignum_program()));
+      push_object(ret = fast_clone_object(bignum_program));
       ecc_point_get(&THIS->pub, NULL, (mpz_ptr)ret->storage);
     }
 

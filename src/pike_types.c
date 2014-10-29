@@ -4919,7 +4919,7 @@ static struct pike_type *debug_low_index_type(struct pike_type *t,
     return mixed_type_string;    
 
   case T_INT:
-    p=get_auto_bignum_program();
+    p=bignum_program;
     goto comefrom_int_index;
 
   case T_ZERO:

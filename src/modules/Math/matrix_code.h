@@ -108,7 +108,7 @@ static void matrixX(_create)(INT32 args)
 	      case T_OBJECT:
 		{
 		  INT64 x;
-		  if (a->item[j].u.object->prog != get_auto_bignum_program()) {
+		  if (is_bignum_object_in_svalue(&a->item[j])) {
 		    /* Use push_svalue() so that we support subtypes... */
 		    push_svalue(a->item+j);
 		    o_cast_to_int();
@@ -116,9 +116,7 @@ static void matrixX(_create)(INT32 args)
 		      *(m++) = (FTYPE)Pike_sp[-1].u.integer;
 		      pop_stack();
 		      break;
-		    } else if ((TYPEOF(Pike_sp[-1]) == T_OBJECT) &&
-			       (Pike_sp[-1].u.object->prog ==
-				get_auto_bignum_program()) &&
+		    } else if (is_bignum_object_in_svalue(&Pike_sp[-1]) &&
 			       int64_from_bignum(&x, Pike_sp[-1].u.object)) {
 		      *(m++) = (FTYPE)x;
 		      pop_stack();
