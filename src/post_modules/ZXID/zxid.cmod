@@ -431,7 +431,7 @@ PIKECLASS Configuration {
     program_flags PROGRAM_USES_PARENT;	/* Shouldn't this be automatic? */
   {
     CVAR zxid_ses ses;
-    CVAR struct Configuration_struct *config;
+    CVAR struct ZXID_Configuration_struct *config;
     CVAR PIKE_MUTEX_T session_lock;	/* ZXID isn't fully thread-safe yet. */
 
     /*! @decl string(0..255) session_id
@@ -467,7 +467,7 @@ PIKECLASS Configuration {
       flags ID_PROTECTED;
     {
       if (session_id && !session_id->size_shift) {
-	struct Configuration_Session_struct *this = THIS;
+	struct ZXID_Configuration_Session_struct *this = THIS;
 	if (this->session_id) {
 	  free_string(this->session_id);
 	}
@@ -500,7 +500,7 @@ PIKECLASS Configuration {
       struct string_builder mutable_query;
       char *res;
       int res_len = 0;
-      struct Configuration_struct *config =
+      struct ZXID_Configuration_struct *config =
 	parent_storage(1, ZXID_Configuration_program);
       zxid_ses *ses = &THIS->ses;
       int extra = 0;
