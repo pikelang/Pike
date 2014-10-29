@@ -2195,7 +2195,7 @@ PIKE_MODULE_EXIT
   }
 
   free_svalue(&auto_bignum_program);
-  SET_SVAL_TYPE(auto_bignum_program, PIKE_T_FREE);
+  mark_free_svalue(&auto_bignum_program);
   if(bignum_program)
   {
     free_program(bignum_program);
@@ -2395,12 +2395,6 @@ PIKE_MODULE_INIT
   mpz_neg (mpz_int_type_min, mpz_int_type_min);
 
   /* Magic hook in... */
-#ifdef PIKE_DEBUG
-  if (REFCOUNTED_TYPE(TYPEOF(auto_bignum_program))) {
-    Pike_fatal("Strange initial value for auto_bignum_program\n");
-  }
-#endif /* PIKE_DEBUG */
-  free_svalue(&auto_bignum_program);
   SET_SVAL(auto_bignum_program, PIKE_T_PROGRAM, 0, program, bignum_program);
   add_ref(bignum_program);
 
