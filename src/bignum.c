@@ -30,12 +30,6 @@ PMOD_EXPORT struct program *get_auto_bignum_program_or_zero(void)
   return program_from_svalue(&auto_bignum_program);
 }
 
-void exit_auto_bignum(void)
-{
-  free_svalue(&auto_bignum_program);
-  mark_free_svalue (&auto_bignum_program);
-}
-
 PMOD_EXPORT void convert_stack_top_to_bignum(void)
 {
   if (TYPEOF(auto_bignum_program) != T_PROGRAM)

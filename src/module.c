@@ -114,7 +114,6 @@ static void exit_builtin_modules(void)
   /* Clear various global references. */
 
   exit_sprintf();
-  exit_auto_bignum();
   exit_pike_searching();
   exit_object();
   exit_signals();
