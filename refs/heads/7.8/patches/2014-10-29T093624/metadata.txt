@@ -1,0 +1,8 @@
+subject: Pike 7.8: Updated to tzdata2014i.
+from: 2276c506505380ccf9f395d8d10c07b819a7dc46
+to: 346699b0ad3f6a14323113c6382a661e56f3e097
+originator: wellhardh@roxen.com
+depends: 2014-10-22T154034
+restart: true
+
+Updated to tzdata2014i.
