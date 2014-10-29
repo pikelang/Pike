@@ -442,7 +442,7 @@ PIKECLASS Configuration {
 
     INIT
     {
-      THIS->config = parent_storage(1, Configuration_program);
+      THIS->config = parent_storage(1, ZXID_Configuration_program);
       mt_init(&THIS->session_lock);
     }
 
@@ -500,7 +500,8 @@ PIKECLASS Configuration {
       struct string_builder mutable_query;
       char *res;
       int res_len = 0;
-      struct Configuration_struct *config = parent_storage(1);
+      struct Configuration_struct *config =
+	parent_storage(1, ZXID_Configuration_program);
       zxid_ses *ses = &THIS->ses;
       int extra = 0;
       PIKE_MUTEX_T *session_lock = &THIS->session_lock;
@@ -539,7 +540,7 @@ PIKECLASS Configuration {
   /*! @endclass
    */
 #undef THIS
-#define THIS THIS_CONFIGURATION
+#define THIS THIS_ZXID_CONFIGURATION
 
   /*! @decl mapping(string(0..255):mapping(string(0..255):string(0..255))) idp_list()
    *!
