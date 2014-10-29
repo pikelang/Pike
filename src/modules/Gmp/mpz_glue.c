@@ -52,7 +52,7 @@ long random(void)
 #define THIS_PROGRAM (fp->context->prog)
 
 struct program *mpzmod_program = NULL;
-struct program *bignum_program = NULL;
+PMOD_EXPORT struct program *bignum_program = NULL;
 
 static mpz_t mpz_int_type_min;
 
@@ -653,7 +653,7 @@ static void mpzmod_get_int(INT32 args)
   if( TYPEOF(Pike_sp[-1]) == T_OBJECT &&
       Pike_sp[-1].u.object->prog != bignum_program )
   {
-    apply_svalue(&auto_bignum_program, 1);
+    push_object(clone_object(bignum_program, 1));
   }
 }
 
@@ -2185,7 +2185,6 @@ static void gc_recurse_mpz (struct object *o)
 
 PIKE_MODULE_EXIT
 {
-  extern struct svalue auto_bignum_program;
   pike_exit_mpf_module();
   pike_exit_mpq_module();
   if(mpzmod_program)
@@ -2194,8 +2193,6 @@ PIKE_MODULE_EXIT
     mpzmod_program=0;
   }
 
-  free_svalue(&auto_bignum_program);
-  mark_free_svalue(&auto_bignum_program);
   if(bignum_program)
   {
     free_program(bignum_program);
@@ -2336,7 +2333,6 @@ static void pike_mp_free (void *ptr, size_t UNUSED(size))
 
 PIKE_MODULE_INIT
 {
-  extern struct svalue auto_bignum_program;
   init_crc_table();
 
   /* Make sure that gmp uses the same malloc functions as we do since
@@ -2388,10 +2384,6 @@ PIKE_MODULE_INIT
   mpz_init (mpz_int_type_min);
   mpz_setbit (mpz_int_type_min, INT_TYPE_BITS);
   mpz_neg (mpz_int_type_min, mpz_int_type_min);
-
-  /* Magic hook in... */
-  SET_SVAL(auto_bignum_program, PIKE_T_PROGRAM, 0, program, bignum_program);
-  add_ref(bignum_program);
 
 #ifdef INT64
   mpz_init (mpz_int64_min);

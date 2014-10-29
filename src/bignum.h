@@ -339,7 +339,7 @@ _GEN_BINOP(MUL, unsigned INT32, UINT32, size_t, SIZE_T)
 #endif
 
 /* Prototypes begin here */
-PMOD_EXPORT extern struct svalue auto_bignum_program;
+PMOD_EXPORT extern struct program *bignum_program;
 PMOD_EXPORT struct program *get_auto_bignum_program(void);
 PMOD_EXPORT void convert_stack_top_to_bignum(void);
 PMOD_EXPORT void convert_stack_top_with_base_to_bignum(void);

@@ -16,26 +16,24 @@
 
 #define sp Pike_sp
 
-PMOD_EXPORT struct svalue auto_bignum_program = SVALUE_INIT_FREE;
-
 PMOD_EXPORT struct program *get_auto_bignum_program(void)
 {
-  return program_from_svalue(&auto_bignum_program);
+  return bignum_program;
 }
 
 PMOD_EXPORT void convert_stack_top_to_bignum(void)
 {
-  apply_svalue(&auto_bignum_program, 1);
+  push_object(clone_object(bignum_program, 1));
 }
 
 PMOD_EXPORT void convert_stack_top_with_base_to_bignum(void)
 {
-  apply_svalue(&auto_bignum_program, 2);
+  push_object(clone_object(bignum_program, 2));
 }
 
 int is_bignum_object(struct object *o)
 {
-  return o->prog == program_from_svalue(&auto_bignum_program);
+  return o->prog == bignum_program;
 }
 
 PMOD_EXPORT int is_bignum_object_in_svalue(struct svalue *sv)
@@ -46,17 +44,13 @@ PMOD_EXPORT int is_bignum_object_in_svalue(struct svalue *sv)
 
 PMOD_EXPORT struct object *make_bignum_object(void)
 {
-  convert_stack_top_to_bignum();
-  dmalloc_touch_svalue(sp-1);
-  return (--sp)->u.object;
+  return clone_object(bignum_program, 1);
 }
 
 PMOD_EXPORT struct object *bignum_from_svalue(struct svalue *s)
 {
   push_svalue(s);
-  convert_stack_top_to_bignum();
-  dmalloc_touch_svalue(sp-1);
-  return (--sp)->u.object;
+  return make_bignum_object();
 }
 
 PMOD_EXPORT struct pike_string *string_from_bignum(struct object *o, int base)
