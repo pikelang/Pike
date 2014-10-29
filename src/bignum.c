@@ -46,18 +46,6 @@ PMOD_EXPORT struct object *bignum_from_svalue(struct svalue *s)
   return make_bignum_object();
 }
 
-PMOD_EXPORT struct pike_string *string_from_bignum(struct object *o, int base)
-{
-  push_int(base);
-  safe_apply(o, "digits", 1);
-  
-  if(TYPEOF(Pike_sp[-1]) != T_STRING)
-    Pike_error("Gmp.mpz string conversion failed.\n");
-  
-  dmalloc_touch_svalue(Pike_sp-1);
-  return (--Pike_sp)->u.string;
-}
-
 PMOD_EXPORT void convert_svalue_to_bignum(struct svalue *s)
 {
   push_svalue(s);

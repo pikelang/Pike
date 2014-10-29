@@ -346,7 +346,6 @@ int is_bignum_object(struct object *o);
 PMOD_EXPORT int is_bignum_object_in_svalue(struct svalue *sv);
 PMOD_EXPORT struct object *make_bignum_object(void);
 PMOD_EXPORT struct object *bignum_from_svalue(struct svalue *s);
-PMOD_EXPORT struct pike_string *string_from_bignum(struct object *o, int base);
 PMOD_EXPORT void convert_svalue_to_bignum(struct svalue *s);
 
 #ifdef INT64
