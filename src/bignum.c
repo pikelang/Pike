@@ -14,13 +14,6 @@
 
 #include "bignum.h"
 
-#define sp Pike_sp
-
-PMOD_EXPORT struct program *get_auto_bignum_program(void)
-{
-  return bignum_program;
-}
-
 PMOD_EXPORT void convert_stack_top_to_bignum(void)
 {
   push_object(clone_object(bignum_program, 1));
@@ -58,11 +51,11 @@ PMOD_EXPORT struct pike_string *string_from_bignum(struct object *o, int base)
   push_int(base);
   safe_apply(o, "digits", 1);
   
-  if(TYPEOF(sp[-1]) != T_STRING)
+  if(TYPEOF(Pike_sp[-1]) != T_STRING)
     Pike_error("Gmp.mpz string conversion failed.\n");
   
-  dmalloc_touch_svalue(sp-1);
-  return (--sp)->u.string;
+  dmalloc_touch_svalue(Pike_sp-1);
+  return (--Pike_sp)->u.string;
 }
 
 PMOD_EXPORT void convert_svalue_to_bignum(struct svalue *s)
@@ -70,7 +63,7 @@ PMOD_EXPORT void convert_svalue_to_bignum(struct svalue *s)
   push_svalue(s);
   convert_stack_top_to_bignum();
   free_svalue(s);
-  *s=sp[-1];
-  sp--;
-  dmalloc_touch_svalue(sp);
+  *s=Pike_sp[-1];
+  Pike_sp--;
+  dmalloc_touch_svalue(Pike_sp);
 }
