@@ -359,6 +359,7 @@ PMOD_EXPORT void reduce_stack_top_bignum(void);
 #else
 #define push_int64(i) push_int((INT_TYPE)(i))
 #define int64_from_bignum(I,BIGNUM)	0
+#define reduce_stack_top_bignum()
 #endif /* INT64 */
 
 PMOD_EXPORT void push_ulongest(unsigned LONGEST i);

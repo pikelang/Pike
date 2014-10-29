@@ -2868,9 +2868,7 @@ static void decode_value2(struct decode_data *data)
 	   */
 	  push_int(36);
 	  convert_stack_top_with_base_to_bignum();
-#if SIZEOF_INT_TYPE > 4
 	  reduce_stack_top_bignum();
-#endif
 	  break;
 	}
 
