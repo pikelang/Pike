@@ -341,9 +341,6 @@ _GEN_BINOP(MUL, unsigned INT32, UINT32, size_t, SIZE_T)
 /* Prototypes begin here */
 PMOD_EXPORT extern struct svalue auto_bignum_program;
 PMOD_EXPORT struct program *get_auto_bignum_program(void);
-PMOD_EXPORT struct program *get_auto_bignum_program_or_zero(void);
-void init_auto_bignum(void);
-void exit_auto_bignum(void);
 PMOD_EXPORT void convert_stack_top_to_bignum(void);
 PMOD_EXPORT void convert_stack_top_with_base_to_bignum(void);
 int is_bignum_object(struct object *o);
