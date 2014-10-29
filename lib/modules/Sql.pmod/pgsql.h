@@ -8,7 +8,6 @@
 //#define PG_DEBUG  1
 //#define PG_DEBUGMORE  1
 
-//#define USEPGsql	1	    // Doesn't use Stdio.FILE, but _PGsql
 //#define PG_STATS	1	    // Collect extra usage statistics
 
 #define FETCHLIMIT	     1024   // Initial upper limit on the
@@ -18,7 +17,6 @@
 				    // Needs to be >0 for interleaved
 				    // portals
 #define FETCHLIMITLONGRUN    1	    // for long running background queries
-#define STREAMEXECUTES	     1	    // streams executes if defined
 #define MINPREPARELENGTH     16	    // statements shorter than this will not
 				    // be cached
 #define STATEMENTCACHEDEPTH  1024   // Initial maximum cachecountsum for
@@ -50,7 +48,7 @@
 #define PD(X ...)            werror(X)
 #else
 #undef PG_DEBUGMORE
-#define PD(X ...)
+#define PD(X ...)	     0
 #endif
 
 protected enum portalstate {
@@ -58,5 +56,5 @@ protected enum portalstate {
 };
 
 protected enum sctype {
-  keep=0,flushsend,sendout
+  keep=0,sendout,flushsend,flushlogsend,syncsend
 };
