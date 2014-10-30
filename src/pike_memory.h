@@ -156,39 +156,39 @@ struct mem_searcher
  * The purpose of this function is to avoid dead store elimination in cases when
  * sensitive data has to be cleared from memory.
  */
-static INLINE void __attribute__((unused)) * guaranteed_memset(void * p, int c, size_t n) {
+static INLINE void ATTRIBUTE((unused)) * guaranteed_memset(void * p, int c, size_t n) {
     volatile char * _p = (char *)p;
     while (n--) *_p++ = c;
     return (void *)p;
 }
 
-static INLINE unsigned INT64 __attribute__((unused)) get_unaligned64(const void * ptr) {
+static INLINE unsigned INT64 ATTRIBUTE((unused)) get_unaligned64(const void * ptr) {
     unsigned INT64 v;
     memcpy(&v, ptr, 8);
     return v;
 }
 
-static INLINE void __attribute__((unused)) set_unaligned64(void * ptr, unsigned INT64 v) {
+static INLINE void ATTRIBUTE((unused)) set_unaligned64(void * ptr, unsigned INT64 v) {
     memcpy(ptr, &v, 8);
 }
 
-static INLINE unsigned INT64 __attribute__((unused)) get_unaligned32(const void * ptr) {
+static INLINE unsigned INT64 ATTRIBUTE((unused)) get_unaligned32(const void * ptr) {
     unsigned INT32 v;
     memcpy(&v, ptr, 4);
     return v;
 }
 
-static INLINE void __attribute__((unused)) set_unaligned32(void * ptr, unsigned INT32 v) {
+static INLINE void ATTRIBUTE((unused)) set_unaligned32(void * ptr, unsigned INT32 v) {
     memcpy(ptr, &v, 4);
 }
 
-static INLINE unsigned INT16 __attribute__((unused)) get_unaligned16(const void * ptr) {
+static INLINE unsigned INT16 ATTRIBUTE((unused)) get_unaligned16(const void * ptr) {
     unsigned INT16 v;
     memcpy(&v, ptr, 2);
     return v;
 }
 
-static INLINE void __attribute__((unused)) set_unaligned16(void * ptr, unsigned INT16 v) {
+static INLINE void ATTRIBUTE((unused)) set_unaligned16(void * ptr, unsigned INT16 v) {
     memcpy(ptr, &v, 2);
 }
 
@@ -212,7 +212,7 @@ PMOD_EXPORT void reorder(char *memory, INT32 nitems, INT32 size,INT32 *order);
 #if (defined(__i386__) || defined(__amd64__)) && defined(__GNUC__)
 extern PMOD_EXPORT
 #ifdef __i386__
-__attribute__((fastcall)) 
+ATTRIBUTE((fastcall))
 #endif
 size_t (*low_hashmem)(const void *, size_t, size_t, size_t);
 #else
