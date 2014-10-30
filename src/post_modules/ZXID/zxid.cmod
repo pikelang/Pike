@@ -95,6 +95,7 @@ void free_wrapper(void *ptr)
 #endif
 
 #ifdef HAVE_STRUCT_ZXID_CONF_BURL
+/* These fields were renamed 2013-12-05. */
 #define BURL(CONF)	((CONF).burl)
 #define CPATH(CONF)	((CONF).cpath)
 #define CPATH_LEN(CONF)	((CONF).cpath_len)
@@ -102,6 +103,12 @@ void free_wrapper(void *ptr)
 #define BURL(CONF)	((CONF).url)
 #define CPATH(CONF)	((CONF).path)
 #define CPATH_LEN(CONF)	((CONF).path_len)
+#endif
+
+#ifndef ERRMAC_INOUT
+/* These were renamed 2013-11-13. */
+#define errmac_debug	zx_debug
+#define ERRMAC_INOUT	ZXID_INOUT
 #endif
 
 /*! @class Configuration
@@ -269,7 +276,7 @@ PIKECLASS Configuration {
     CHECK_ARG_CHAR(MK_STRING("DI_ALLOW_CREATE"), THIS->conf.di_allow_create);
     CHECK_ARG_INT(MK_STRING("DI_NID_FMT"), THIS->conf.di_nid_fmt);
     CHECK_ARG_INT(MK_STRING("DI_A7N_ENC"), THIS->conf.di_a7n_enc);
-    CHECK_ARG_INT(MK_STRING("DEBUG"), zx_debug);
+    CHECK_ARG_INT(MK_STRING("DEBUG"), errmac_debug);
     LOW_CHECK_ARG(MK_STRING("DEBUG_LOG"),
 		  ((TYPEOF(*s) == PIKE_T_STRING) && !s->u.string->size_shift),
 		  zxid_set_opt_cstr(&THIS->conf, 6, s->u.string->str));
@@ -436,12 +443,16 @@ PIKECLASS Configuration {
     CHECK_ARG_INT(MK_STRING("WSP_NOSIG_FATAL"), THIS->conf.wsp_nosig_fatal);
     CHECK_ARG_STRING(MK_STRING("WSC_LOCALPDP_OBL_PLEDGE"),
 		     THIS->conf.wsc_localpdp_obl_pledge);
+#if 0
     CHECK_ARG_STRING(MK_STRING("WSP_LOCALPDP_OBL_REQ"),
-		     THIS->conf.wsp_localpdp_obl_req   );
+		     THIS->conf.wsp_localpdp_obl_req);
+#endif
     CHECK_ARG_STRING(MK_STRING("WSP_LOCALPDP_OBL_EMIT"),
-		     THIS->conf.wsp_localpdp_obl_emit  );
+		     THIS->conf.wsp_localpdp_obl_emit);
+#if 0
     CHECK_ARG_STRING(MK_STRING("WSC_LOCALPDP_OBL_ACCEPT"),
 		     THIS->conf.wsc_localpdp_obl_accept);
+#endif
     CHECK_ARG_STRING(MK_STRING("XASP_VERS"), THIS->conf.xasp_vers);
 
     /* The above does approximately the same as
