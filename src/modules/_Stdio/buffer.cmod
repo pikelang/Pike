@@ -29,7 +29,6 @@
 #include "bignum.h"
 
 #include <arpa/inet.h>
-#undef MP_INT
 
 #define DEFAULT_CMOD_STORAGE static
 DECLARATIONS
