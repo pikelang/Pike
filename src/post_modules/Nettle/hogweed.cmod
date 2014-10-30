@@ -19,8 +19,8 @@ DECLARATIONS
 #include "nettle.h"
 #include <nettle/dsa.h>
 #include <nettle/rsa.h>
-#include <gmp.h>
 
+/* Includes <gmp.h> */
 #include "bignum.h"
 
 /*! @module Nettle

@@ -23,13 +23,13 @@
 #include "builtin_functions.h"
 #include "pike_types.h"
 
+/* Includes <gmp.h> */
+#include "bignum.h"
+
 #include "../Image/image.h"
 
 #undef _PROTO
 #define _PROTO(x) x
-
-#include <gmp.h>
-
 
 #define sp Pike_sp
 

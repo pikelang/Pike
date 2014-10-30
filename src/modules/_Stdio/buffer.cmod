@@ -25,9 +25,11 @@
 #include "buffer.h"
 #include "module_support.h"
 
+/* Includes <gmp.h> */
+#include "bignum.h"
+
 #include <arpa/inet.h>
 #undef MP_INT
-#include <gmp.h>
 
 #define DEFAULT_CMOD_STORAGE static
 DECLARATIONS

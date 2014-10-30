@@ -2,7 +2,6 @@
 #define CB_KEY_PIKEINT_H
 #include "bitvector.h"
 #include "pike_int_types.h"
-#include <gmp.h>
 #include "bignum.h"
 
 typedef struct object * CB_NAME(string);
