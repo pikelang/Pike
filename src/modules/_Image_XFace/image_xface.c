@@ -8,15 +8,6 @@
 #include "module.h"
 #include "config.h"
 
-
-#if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
-#define USE_GMP2
-#else /* !HAVE_GMP2_GMP_H || !HAVE_LIBGMP2 */
-#if defined(HAVE_GMP_H) && defined(HAVE_LIBGMP)
-#define USE_GMP
-#endif /* HAVE_GMP_H && HAVE_LIBGMP */
-#endif /* HAVE_GMP2_GMP_H && HAVE_LIBGMP2 */
-
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -32,29 +23,12 @@
 #include "builtin_functions.h"
 #include "pike_types.h"
 
-#if defined(USE_GMP) || defined(USE_GMP2)
-
 #include "../Image/image.h"
-
-/* Kludge for some compilers only defining __STDC__ in strict mode,
- * which leads to <gmp.h> using the wrong token concat method.
- */
-#if !defined(__STDC__) && defined(HAVE_ANSI_CONCAT) && defined(PIKE_MPN_PREFIX)
-#define PIKE_LOW_MPN_CONCAT(x,y)	x##y
-#define PIKE_MPN_CONCAT(x,y)	PIKE_LOW_MPN_CONCAT(x,y)
-#define __MPN(x)	PIKE_MPN_CONCAT(PIKE_MPN_PREFIX,x)
-#endif /* !__STDC__ && HAVE_ANSI_CONCAT && PIKE_MPN_PREFIX */
 
 #undef _PROTO
 #define _PROTO(x) x
 
-#ifdef USE_GMP2
-#include <gmp2/gmp.h>
-#else /* !USE_GMP2 */
 #include <gmp.h>
-#endif /* USE_GMP2 */
-
-#endif /* USE_GMP || USE_GMP2 */
 
 
 #define sp Pike_sp
@@ -66,8 +40,6 @@ extern struct program *image_program;
 /* Image module is probably linked static too. */
 #endif
 
-
-#if defined(USE_GMP) || defined(USE_GMP2)
 
 /*
 **! module Image
@@ -500,9 +472,6 @@ static void image_xface_decode_header(INT32 args)
 }
 
 
-#endif /* USE_GMP || USE_GMP2 */
-
-
 /*** module init & exit & stuff *****************************************/
 
 PIKE_MODULE_EXIT
@@ -511,7 +480,6 @@ PIKE_MODULE_EXIT
 
 PIKE_MODULE_INIT
 {
-#if defined(USE_GMP) || defined(USE_GMP2)
 #ifdef DYNAMIC_MODULE
    push_text("Image.Image");
    SAFE_APPLY_MASTER("resolv",1);
@@ -529,7 +497,4 @@ PIKE_MODULE_INIT
       /* function(object,void|mapping(string:int):string) */
   ADD_FUNCTION("encode",image_xface_encode,tFunc(tObj tOr(tVoid,tMap(tStr,tInt)),tStr),0);
    }
-
-#endif /* USE_GMP || USE_GMP2 */
-
 }
