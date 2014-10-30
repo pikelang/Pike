@@ -758,6 +758,30 @@ node *debug_mknode(int token, node *a, node *b)
     case F_GET_SET:
       Pike_fatal("Attempt to create an F_GET_SET-node with mknode()!\n");
 #endif /* PIKE_DEBUG */
+
+#define OPERNODE(X,Y) case X: return mkopernode(("`" #Y), a, b )
+      OPERNODE(F_LT,<);
+      OPERNODE(F_GT,>);
+      OPERNODE(F_LE,<=);
+      OPERNODE(F_GE,>=);
+      OPERNODE(F_EQ,==);
+      OPERNODE(F_NE,!=);
+      OPERNODE(F_ADD,+);
+      OPERNODE(F_SUBTRACT,-);
+      OPERNODE(F_DIVIDE,/);
+      OPERNODE(F_MULTIPLY,*);
+      OPERNODE(F_MOD,%);
+      OPERNODE(F_LSH,<<);
+      OPERNODE(F_RSH,>>);
+      OPERNODE(F_OR,|);
+      OPERNODE(F_AND,&);
+      OPERNODE(F_XOR,^);
+      OPERNODE(F_NOT,!);
+      OPERNODE(F_COMPL,~);
+#if 0
+      OPERNODE(F_NEGATE,-);
+#endif
+#undef OPERNODE
   }
 
   check_tree(a,0);
