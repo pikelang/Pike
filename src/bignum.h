@@ -373,6 +373,6 @@ PMOD_EXPORT void push_bignum(MP_INT *);
 /* Deprecated */
 #define get_auto_bignum_program_or_zero() bignum_program
 #define get_auto_bignum_program() bignum_program
-
+#define AUTO_BIGNUM 1
 
 #endif /* BIGNUM_H */

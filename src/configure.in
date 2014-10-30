@@ -1572,7 +1572,6 @@ if test "x$with_pike_type" = "xno"; then
   PIKE_MSG_WARN([Disabling of USE_PIKE_TYPE is no longer supported.])
 fi
 
-AC_DEFINE(AUTO_BIGNUM)
 if test "x$with_gmp" = xno; then
   AC_MSG_ERROR([The GMP library is required to compile Pike.])
 fi
