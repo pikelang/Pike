@@ -28,9 +28,6 @@
 
 #include "../Image/image.h"
 
-#undef _PROTO
-#define _PROTO(x) x
-
 #define sp Pike_sp
 
 #ifdef DYNAMIC_MODULE
