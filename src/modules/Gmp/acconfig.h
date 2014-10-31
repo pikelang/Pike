@@ -10,9 +10,6 @@
 @TOP@
 @BOTTOM@
 
-/* Define this if you have mpz_import */
-#undef HAVE_MPZ_IMPORT
-
 /* Define if GMP_LIMB_BITS lies. */
 #undef PIKE_GMP_LIMB_BITS_INVALID
 

@@ -5,31 +5,17 @@ AC_MODULE_INIT()
 
 #############################################################################
 
-define(CHECK_GMP_FUNC,
-[
-  AC_MSG_CHECKING([for $1])
-  AC_CACHE_VAL([pike_cv_have_gmp_$1], [
-    AC_TRY_LINK([
-        #include <gmp.h>
-      ], [$2], [pike_cv_have_gmp_$1=yes], [pike_cv_have_gmp_$1=no])
-  ])
-  AC_MSG_RESULT([$pike_cv_have_gmp_$1])
-  if test x"$pike_cv_have_gmp_$1" = xyes; then
-    AC_DEFINE(HAVE_[]translit($1,[a-z],[A-Z]))
-  fi
-])
-
 PIKE_FEATURE_NODEP([Gmp (bignums)])
 
 ORIG_CHECK_HEADERS(gmp.h)
 AC_CHECK_LIB(gmp, main)
 AC_TRY_LINK([
 #include <gmp.h>
-], [mpz_init2], [], [
+], [mpz_import], [], [
   AC_MSG_ERROR([
 
 Cannot compile bignums without the GMP library.
-Your GMP library is too old (<4.0) or does not work.
+Your GMP library is too old (<4.1) or does not work.
 
 To compile Pike you are required to install a working GMP
 library on your system.
@@ -37,7 +23,6 @@ library on your system.
 ])
 
 if test "$ac_cv_header_gmp_h" = "yes" ; then
-  CHECK_GMP_FUNC(mpz_import, [mpz_t a; mpz_import(a, 1, 1, 1, 0, 0, 0)])
 
   echo >>confdefs.h '
 #include <gmp.h>'

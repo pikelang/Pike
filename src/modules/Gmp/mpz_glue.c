@@ -71,21 +71,7 @@ PMOD_EXPORT int mpz_from_svalue(MP_INT *dest, struct svalue *s)
     int neg = i < 0;
     unsigned INT64 bits = (unsigned INT64) (neg ? -i : i);
 
-#ifdef HAVE_MPZ_IMPORT
     mpz_import(dest, 1, 1, SIZEOF_INT64, 0, 0, &bits);
-#else
-    size_t n =
-      ((SIZEOF_INT64 + SIZEOF_LONG - 1) / SIZEOF_LONG - 1)
-      /* The above is the position of the top unsigned long in the INT64. */
-      * ULONG_BITS;
-    mpz_set_ui(dest, (unsigned long) (bits >> n));
-    while (n) {
-      n -= ULONG_BITS;
-      mpz_mul_2exp(dest, dest, ULONG_BITS);
-      mpz_add_ui(dest, dest, (unsigned long) (bits >> n));
-    }
-#endif	/* !HAVE_MPZ_IMPORT */
-
     if (neg) mpz_neg(dest, dest);
 #endif	/* SIZEOF_LONG < SIZEOF_INT64 */
     return 1;
@@ -192,23 +178,7 @@ PMOD_EXPORT void push_int64 (INT64 i)
       int neg = i < 0;
       unsigned INT64 bits = (unsigned INT64) (neg ? -i : i);
 
-#ifdef HAVE_MPZ_IMPORT
       mpz_import (mpz, 1, 1, SIZEOF_INT64, 0, 0, &bits);
-#else
-      {
-	size_t n =
-	  ((SIZEOF_INT64 + SIZEOF_LONG - 1) / SIZEOF_LONG - 1)
-	  /* The above is the position of the top unsigned long in the INT64. */
-	  * ULONG_BITS;
-	mpz_set_ui (mpz, (unsigned long) (bits >> n));
-	while (n) {
-	  n -= ULONG_BITS;
-	  mpz_mul_2exp (mpz, mpz, ULONG_BITS);
-	  mpz_add_ui (mpz, mpz, (unsigned long) (bits >> n));
-	}
-      }
-#endif	/* !HAVE_MPZ_IMPORT */
-
       if (neg) mpz_neg (mpz, mpz);
     }
 #endif	/* SIZEOF_LONG < SIZEOF_INT64 */
@@ -285,24 +255,7 @@ PMOD_EXPORT void push_ulongest (unsigned LONGEST i)
 #if SIZEOF_LONG >= SIZEOF_LONGEST
     mpz_set_ui (mpz, i);
 #else
-    {
-#ifdef HAVE_MPZ_IMPORT
-      mpz_import (mpz, 1, 1, SIZEOF_LONGEST, 0, 0, &i);
-#else
-      {
-	size_t n =
-	  ((SIZEOF_LONGEST + SIZEOF_LONG - 1) / SIZEOF_LONG - 1)
-	  /* The above is the position of the top unsigned long in the INT64. */
-	  * ULONG_BITS;
-	mpz_set_ui (mpz, (unsigned long) (i >> n));
-	while (n) {
-	  n -= ULONG_BITS;
-	  mpz_mul_2exp (mpz, mpz, ULONG_BITS);
-	  mpz_add_ui (mpz, mpz, (unsigned long) (i >> n));
-	}
-      }
-#endif	/* !HAVE_MPZ_IMPORT */
-    }
+    mpz_import (mpz, 1, 1, SIZEOF_LONGEST, 0, 0, &i);
 #endif	/* SIZEOF_LONG < SIZEOF_LONGEST */
   }
 }
@@ -436,25 +389,7 @@ void get_mpz_from_digits(MP_INT *tmp,
   }
   else if(base == 256)
   {
-#ifdef HAVE_MPZ_IMPORT
     mpz_import (tmp, digits->len, 1, 1, 0, 0, digits->str);
-#else
-    {
-      int i;
-      mpz_t digit;
-    
-      mpz_init(digit);
-      mpz_set_ui(tmp, 0);
-      for (i = 0; i < digits->len; i++)
-      {
-	mpz_set_ui(digit, EXTRACT_UCHAR(digits->str + i));
-	mpz_mul_2exp(digit, digit,
-		     DO_NOT_WARN((unsigned long)(digits->len - i - 1) * 8));
-	mpz_ior(tmp, tmp, digit);
-      }
-      mpz_clear(digit);
-    }
-#endif
   }
   else
   {
@@ -474,25 +409,9 @@ int get_new_mpz(MP_INT *tmp, struct svalue *s,
     {
       INT_TYPE i = s->u.integer;
       int neg = i < 0;
+
       if (neg) i = -i;
-
-#ifdef HAVE_MPZ_IMPORT
       mpz_import (tmp, 1, 1, SIZEOF_INT_TYPE, 0, 0, &i);
-#else
-      {
-	size_t n =
-	  ((SIZEOF_INT_TYPE + SIZEOF_LONG - 1) / SIZEOF_LONG - 1)
-	  /* The above is the position of the top unsigned long in the INT_TYPE. */
-	  * ULONG_BITS;
-	mpz_set_ui (tmp, (unsigned long) (i >> n));
-	while (n) {
-	  n -= ULONG_BITS;
-	  mpz_mul_2exp (tmp, tmp, ULONG_BITS);
-	  mpz_add_ui (tmp, tmp, (unsigned long) (i >> n));
-	}
-      }
-#endif
-
       if (neg) mpz_neg (tmp, tmp);
     }
 #endif
