@@ -371,7 +371,7 @@ static void image_xface_decode(INT32 args)
   struct image *img;
 
   if(args<1 || TYPEOF(sp[-args]) != T_STRING)
-    Pike_error("Image.XFace.decode: Illegal arguments\n");
+    Pike_error("Illegal arguments\n");
 
   o=clone_object(image_program,0);
   img=get_storage(o,image_program);
@@ -379,7 +379,7 @@ static void image_xface_decode(INT32 args)
   img->img=malloc(sizeof(rgb_group)*48*48);
   if (!img->img) {
     free_object(o);
-    Pike_error("Image.XFace.decode: out of memory\n");
+    Pike_error("Out of memory\n");
   }
   img->xsize=48;
   img->ysize=48;
@@ -411,13 +411,13 @@ static void image_xface_encode(INT32 args)
       || TYPEOF(sp[-args]) != T_OBJECT
       || !(img=get_storage(sp[-args].u.object,image_program))
       || (args>1 && TYPEOF(sp[1-args]) != T_MAPPING))
-    Pike_error("Image.XFace.encode: Illegal arguments\n");
+    Pike_error("Illegal arguments\n");
   
   if (!img->img)
-    Pike_error("Image.XFace.encode: Given image is empty.\n");
+    Pike_error("Given image is empty.\n");
   
   if (img->xsize != 48 || img->ysize != 48)
-    Pike_error("Image.XFace.encode: Wrong image dimensions (must be 48 by 48).\n");
+    Pike_error("Wrong image dimensions (must be 48 by 48).\n");
 
   res = encodeface(img->img);
 
@@ -455,7 +455,7 @@ static void image_xface_encode(INT32 args)
 static void image_xface_decode_header(INT32 args)
 {
   if(args<1 || TYPEOF(sp[-args]) != T_STRING)
-    Pike_error("Image.XFace.decode: Illegal arguments\n");
+    Pike_error("Illegal arguments\n");
 
   pop_n_elems(args);
 
