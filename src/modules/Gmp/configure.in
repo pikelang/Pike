@@ -128,31 +128,6 @@ int main()
     AC_DEFINE(MPZ_GETLIMBN_WORKS)
   fi
 
-  AC_MSG_CHECKING([if mpz_set_si works])
-  AC_CACHE_VAL([pike_cv_mpz_set_si_works], [
-    rm -f confdefs.out.2 2>/dev/null
-    AC_TRY_RUN([
-#include <gmp.h>
-#include <stdio.h>
-#include <limits.h>
-
-int main()
-{
-  mpz_t mpz;
-  mpz_init (mpz);
-  mpz_set_si (mpz, LONG_MIN);
-  /* mpz_set_si in e.g. gmp 2.0 stores LONG_MIN with sign extension in the limb,
-   * which breaks if the mp_limb_t is bigger than long. */
-  return mpz->_mp_d[0] != (mp_limb_t) (unsigned long) LONG_MIN;
-}],
-      [pike_cv_mpz_set_si_works=yes],
-      [pike_cv_mpz_set_si_works=no],
-      [pike_cv_mpz_set_si_works=no])
-  ])
-  AC_MSG_RESULT([$pike_cv_mpz_set_si_works])
-  if test "$pike_cv_mpz_set_si_works" = yes; then
-    AC_DEFINE(MPZ_SET_SI_WORKS)
-  fi
 else
   AC_MSG_ERROR([
 

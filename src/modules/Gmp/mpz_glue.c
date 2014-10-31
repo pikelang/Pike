@@ -65,7 +65,7 @@ PMOD_EXPORT int mpz_from_svalue(MP_INT *dest, struct svalue *s)
   if (!s) return 0;
   if (TYPEOF(*s) == T_INT) {
 #if SIZEOF_LONG >= SIZEOF_INT64
-    PIKE_MPZ_SET_SI(dest, s->u.integer);
+    mpz_set_si(dest, s->u.integer);
 #else
     INT_TYPE i = s->u.integer;
     int neg = i < 0;
@@ -186,7 +186,7 @@ PMOD_EXPORT void push_int64 (INT64 i)
     mpz = OBTOMPZ (sp[-1].u.object);
 
 #if SIZEOF_LONG >= SIZEOF_INT64
-    PIKE_MPZ_SET_SI (mpz, i);
+    mpz_set_si (mpz, i);
 #else
     {
       int neg = i < 0;
@@ -469,7 +469,7 @@ int get_new_mpz(MP_INT *tmp, struct svalue *s,
   {
   case T_INT:
 #ifndef BIG_PIKE_INT
-    PIKE_MPZ_SET_SI(tmp, (signed long int) s->u.integer);
+    mpz_set_si(tmp, (signed long int) s->u.integer);
 #else
     {
       INT_TYPE i = s->u.integer;
