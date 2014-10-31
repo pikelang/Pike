@@ -743,10 +743,6 @@ struct pike_string *low_get_mpz_digits(MP_INT *mpz, int base)
     if (mpz_sgn(mpz) < 0)
       Pike_error("Only non-negative numbers can be converted to base 256.\n");
 
-    /* lets optimize this /Mirar & Per */
-
-    /* len = mpz_size(mpz)*sizeof(mp_limb_t); */
-    /* This function should not return any leading zeros. /Nisse */
     len = (mpz_sizeinbase(mpz, 2) + 7) / 8;
     s = begin_shared_string(len);
 
@@ -754,28 +750,16 @@ struct pike_string *low_get_mpz_digits(MP_INT *mpz, int base)
     {
       /* Zero is a special case. There are no limbs at all, but
        * the size is still 1 bit, and one digit should be produced. */
+#ifdef PIKE_DEBUG
       if (len != 1)
 	Pike_fatal("mpz->low_get_mpz_digits: strange mpz state!\n");
+#endif
       s->str[0] = 0;
     } else {
 #if GMP_NUMB_BITS != SIZEOF_MP_LIMB_T * CHAR_BIT
 #error Cannot cope with GMP using nail bits.
 #endif
-      size_t pos = 0;
-      unsigned char *dst = (unsigned char *)s->str+s->len;
-
-      while (len > 0)
-      {
-	mp_limb_t x = MPZ_GETLIMBN (mpz, pos++);
-	for (i=0; i<sizeof(mp_limb_t); i++)
-	{
-	  *(--dst) = DO_NOT_WARN((unsigned char)(x & 0xff));
-	  x >>= 8;
-	  if (!--len)
-	    break;
-	  
-	}
-      }
+      mpz_export(s->str, NULL, 1, 1, 1, 0, mpz);
     }
     s = end_shared_string(s);
   }

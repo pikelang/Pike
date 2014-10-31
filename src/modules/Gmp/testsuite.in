@@ -45,6 +45,8 @@ START_MARKER
   test_eq(Gmp.mpz(17)->digits(36), "h");
   test_eval_error(Gmp.mpz(17)->digits(37))
   test_eq(Gmp.mpz(17)->digits(256), "\021");
+  test_eq(Gmp.mpz(63382396627932698323045648224275)->digits(256),
+          "\3\37\377\221\252\363 \211\231\346\330D\320\23")
 
   // _random
   test_do(random(Gmp.mpz(17)))
