@@ -483,7 +483,7 @@ static void image_xface_encode(INT32 args)
 static void image_xface_decode_header(INT32 args)
 {
   if(args<1 || TYPEOF(sp[-args]) != T_STRING)
-    Pike_error("Image.XFace.decode: Illegal arguments\n");
+    Pike_error("Image.XFace.decode_header: Illegal arguments\n");
 
   pop_n_elems(args);
 
