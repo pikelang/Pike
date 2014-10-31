@@ -53,6 +53,28 @@ then
     else
 	AC_MSG_RESULT(no)
     fi
+
+    AC_MSG_CHECKING(if struct zxid_cgi has an uri_path member)
+    AC_CACHE_VAL(pike_cv_struct_zxid_cgi_uri_path, [
+	AC_TRY_COMPILE([
+#include <zx/zx.h>
+#include <zxid/zxid.h>
+	], [
+	    struct zxid_cgi cgi;
+	    cgi.uri_path = "URI_PATH";
+	], [
+	    pike_cv_struct_zxid_cgi_uri_path="yes"
+	], [
+	    pike_cv_struct_zxid_cgit_uri_path="no"
+	])
+    ])
+    if test "x$pike_cv_struct_zxid_cgi_uri_path" = "xyes"; then
+	# ZXID 1.18:2013-11-17 or later.
+	AC_MSG_RESULT(yes)
+	AC_DEFINE(HAVE_STRUCT_ZXID_CGI_URI_PATH)
+    else
+	AC_MSG_RESULT(no)
+    fi
 else
     LIBS="$ORIG_LIBS"
 fi

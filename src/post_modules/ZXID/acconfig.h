@@ -17,4 +17,7 @@
 /* Define this if your struct zxid_conf has the burl member. */
 #undef HAVE_STRUCT_ZXID_CONF_BURL
 
+/* Define this if your struct zxid_cgi has the uri_path member. */
+#undef HAVE_STRUCT_ZXID_CGI_URI_PATH
+
 #endif
