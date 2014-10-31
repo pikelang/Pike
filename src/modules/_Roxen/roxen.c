@@ -374,6 +374,16 @@ static void f_make_http_headers( INT32 args )
   push_string( end_shared_string( res ) );
 }
 
+static p_wchar2 parse_hexchar(p_wchar2 hex)
+{
+  if(hex>='0' && hex<='9')
+    return hex-'0';
+  hex |= 32;
+  if(hex>='a' && hex<='f')
+    return hex-'W';
+  Pike_error("Illegal transport encoding.\n");
+}
+
 static void f_http_decode_string(INT32 args)
 /*! @decl string http_decode_string(string encoded)
  *!
@@ -438,22 +448,22 @@ static void f_http_decode_string(INT32 args)
 	 c = 0;
 	 if (SUBTRACT_PCHARP(end, foo) > 5) {
 	   p_wchar2 hex = INDEX_PCHARP(foo, 2);
-	   c = (((hex<'A')?hex:(hex + 9)) & 15)<<12;
+	   c = parse_hexchar(hex)<<12;
 	   hex = INDEX_PCHARP(foo, 3);
-	   c |= (((hex<'A')?hex:(hex + 9)) & 15)<<8;
+	   c |= parse_hexchar(hex)<<8;
 	   hex = INDEX_PCHARP(foo, 4);
-	   c |= (((hex<'A')?hex:(hex + 9)) & 15)<<4;
+	   c |= parse_hexchar(hex)<<4;
 	   hex = INDEX_PCHARP(foo, 5);
-	   c |= ((hex<'A')?hex:(hex + 9)) & 15;
+	   c |= parse_hexchar(hex);
 	 }
 	 INC_PCHARP(foo, 5);
        } else {
 	 c = 0;
 	 if (SUBTRACT_PCHARP(end, foo) > 2) {
 	   p_wchar2 hex = INDEX_PCHARP(foo, 1);
-	   c = (((hex<'A')?hex:(hex + 9)) & 15)<<4;
+	   c = parse_hexchar(hex)<<4;
 	   hex = INDEX_PCHARP(foo, 2);
-	   c |= ((hex<'A')?hex:(hex + 9)) & 15;
+	   c |= parse_hexchar(hex);
 	 }
 	 INC_PCHARP(foo, 2);
        }
