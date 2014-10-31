@@ -3597,17 +3597,14 @@ void f_create_process(INT32 args)
       free_perishables(&storage);
 
       if (UNLIKELY(errnum == EAGAIN)) {
-	Pike_error("Process.create_process(): fork() failed with EAGAIN.\n"
-		   "Process table full?\n");
+	Pike_error("fork() failed with EAGAIN. Process table full?\n");
       }
 #ifdef ENOMEM
       if (UNLIKELY(errnum == ENOMEM)) {
-	Pike_error("Process.create_process(): fork() failed with ENOMEM.\n"
-		   "Out of memory?\n");
+	Pike_error("fork() failed with ENOMEM. Out of memory?\n");
       }
 #endif /* ENOMEM */
-      Pike_error("Process.create_process(): fork() failed. errno:%d\n",
-		 errnum);
+      Pike_error("fork() failed. errno:%d\n", errnum);
     } else if(pid) {
       int olderrno;
       int cnt = 0;
@@ -3697,108 +3694,91 @@ void f_create_process(INT32 args)
 #ifdef ENODEV
 	if (olderrno == ENODEV) {
 	  /* This occurrs sometimes on FreeBSD... */
-	  Pike_error("Process.create_process(): read(2) failed with ENODEV!\n"
-		     "Probable operating system bug.\n");
+	  Pike_error("read(2) failed with ENODEV. Probable operating system bug.\n");
 	}
 #endif /* ENODEV */
-	Pike_error("Process.create_process(): read(2) failed with errno %d\n",
-		   olderrno);
+	Pike_error("read(2) failed with errno %d.\n", olderrno);
       } else {
 	/* Something went wrong in the child. */
 	switch(buf[0]) {
 	case PROCE_CHDIR:
 	  if (buf[2]) {
-	    Pike_error("Process.create_process(): chdir(\"/\") in chroot failed. errno:%d\n",
-		       buf[1]);
+	    Pike_error("chdir(\"/\") in chroot failed. errno:%d.\n", buf[1]);
 	  }
-	  Pike_error("Process.create_process(): chdir() failed. errno:%d\n",
-		     buf[1]);
+	  Pike_error("chdir() failed. errno:%d.\n", buf[1]);
 	  break;
 	case PROCE_DUP:
-	  Pike_error("Process.create_process(): dup() failed. errno:%d\n",
-		     buf[1]);
+	  Pike_error("dup() failed. errno:%d.\n", buf[1]);
 	  break;
 	case PROCE_DUP2:
 	  if (buf[1] == EINVAL) {
-	    Pike_error("Process.create_process(): dup2(x, %d) failed with EINVAL.\n",
-		       buf[2]);
+	    Pike_error("dup2(x, %d) failed with EINVAL.\n", buf[2]);
 	  }
-	  Pike_error("Process.create_process(): dup2(x, %d) failed. errno:%d\n",
-		     buf[2], buf[1]);
+	  Pike_error("dup2(x, %d) failed. errno:%d.\n", buf[2], buf[1]);
 	  break;
 	case PROCE_SETGID:
-	  Pike_error("Process.create_process(): setgid(%d) failed. errno:%d\n",
-		     buf[2], buf[1]);
+	  Pike_error("setgid(%d) failed. errno:%d\n", buf[2], buf[1]);
 	  break;
 #ifdef HAVE_SETGROUPS
 	case PROCE_SETGROUPS:
 	  if (buf[1] == EINVAL) {
-	    Pike_error("Process.create_process(): setgroups() failed with EINVAL.\n"
+	    Pike_error("setgroups() failed with EINVAL.\n"
 		       "Too many supplementary groups (%d)?\n",
 		       storage.num_wanted_gids);
 	  }
-	  Pike_error("Process.create_process(): setgroups() failed. errno:%d\n",
-		     buf[1]);
+	  Pike_error("setgroups() failed. errno:%d.\n", buf[1]);
 	  break;
 #endif
 	case PROCE_GETPWUID:
-	  Pike_error("Process.create_process(): getpwuid(%d) failed. errno:%d\n",
-		     buf[2], buf[1]);
+	  Pike_error("getpwuid(%d) failed. errno:%d.\n", buf[2], buf[1]);
 	  break;
 	case PROCE_INITGROUPS:
-	  Pike_error("Process.create_process(): initgroups() failed. errno:%d\n",
-		     buf[1]);
+	  Pike_error("initgroups() failed. errno:%d.\n", buf[1]);
 	  break;
 	case PROCE_SETUID:
 	  if (buf[1] == EINVAL) {
-	    Pike_error("Process.create_process(): Invalid uid: %d.\n",
-		       (int)wanted_uid);
+	    Pike_error("Invalid uid: %d.\n", (int)wanted_uid);
 	  }
-	  Pike_error("Process.create_process(): setuid(%d) failed. errno:%d\n",
-		     buf[2], buf[1]);
+	  Pike_error("setuid(%d) failed. errno:%d.\n", buf[2], buf[1]);
 	  break;
 	case PROCE_SETSID:
-          Pike_error("Process.create_process(): setsid() failed.\n");
+          Pike_error("setsid() failed.\n");
 	  break;
 	case PROCE_SETCTTY:
-          Pike_error("Process.create_process(): failed to set controlling TTY. errno:%d\n", buf[1]);
+          Pike_error("Failed to set controlling TTY. errno:%d.\n", buf[1]);
 	  break;
 	case PROCE_EXEC:
 	  switch(buf[1]) {
 	  case ENOENT:
-	    Pike_error("Process.create_process(): "
-		       "Executable file not found.\n");
+	    Pike_error("Executable file not found.\n");
 	    break;
 	  case EACCES:
-	    Pike_error("Process.create_process(): Access denied.\n");
+	    Pike_error("Access denied.\n");
 	    break;
 #ifdef E2BIG
 	  case E2BIG:
-	    Pike_error("Process.create_process(): Arglist too long.\n");
+	    Pike_error("Arglist too long.\n");
 	    break;
 #endif /* E2BIG */
 	  }
 
-	  Pike_error("Process.create_process(): exec() failed. errno:%d\n"
-		     "File not found?\n", buf[1]);
+	  Pike_error("exec() failed. errno:%d. File not found?\n", buf[1]);
 	  break;
 	case PROCE_CLOEXEC:
-	  Pike_error("Process.create_process(): set_close_on_exec(%d, 1) failed. errno:%d\n",
+	  Pike_error("set_close_on_exec(%d, 1) failed. errno:%d.\n",
 		     buf[2], buf[1]);
 	  break;
 	case PROCE_CLRCLOEXEC:
-	  Pike_error("Process.create_process(): set_close_on_exec(%d, 0) failed. errno:%d\n",
+	  Pike_error("set_close_on_exec(%d, 0) failed. errno:%d.\n",
 		     buf[2], buf[1]);
 	  break;
 	case PROCE_CHROOT:
-	  Pike_error("Process.create_process(): chroot() failed. errno:%d\n",
-		     buf[1]);
+	  Pike_error("chroot() failed. errno:%d.\n", buf[1]);
 	  break;
 	case 0:
 	  /* read() probably failed. */
 	default:
-	  Pike_error("Process.create_process(): "
-		     "Child failed: %d, %d, %d, %d, %d!\n",
+	  Pike_error("Child failed: %d, %d, %d, %d, %d!\n",
 		     buf[0], buf[1], buf[2], e, olderrno);
 	  break;
 	}
@@ -4304,8 +4284,7 @@ void Pike_f_fork(INT32 args)
        */
       THREAD_T foo;
       if (th_create_small(&foo, wait_thread, 0)) {
-	Pike_error("Failed to create wait thread!\n"
-		   "errno: %d\n", errno);
+	Pike_error("Failed to create wait thread. errno: %d.\n", errno);
       }
       wait_thread_running = 1;
     }
@@ -4330,8 +4309,7 @@ void Pike_f_fork(INT32 args)
   }
   
   if(pid==-1) {
-    Pike_error("Fork failed\n"
-	  "errno: %d\n", errno);
+    Pike_error("Fork failed. errno:%d.\n", errno);
   }
 
   if(pid)
