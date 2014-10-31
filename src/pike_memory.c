@@ -444,47 +444,6 @@ PMOD_EXPORT char *debug_xstrdup(const char *src)
   return dst;
 }
 
-char *debug_qalloc(size_t size)
-{
-  char *ret;
-  if(!size) return 0;
-
-  ret=(char *)malloc(size);
-  if(ret) return ret;
-
-#ifdef SOFTLIM
-  {
-    struct rlim lim;
-    if(getrlimit(RLIMIT_DATA,&lim)>= 0)
-    {
-      if(lim.rlim_cur < lim.rlim_max)
-      {
-	lim.rlim_cur+=size;
-	while(1)
-	{
-	  softlim_should_be=lim.rlim_cur;
-	  if(lim.rlim_cur > lim.rlim_max)
-	    lim.rlim_cur=lim.rlim_max;
-	  
-	  if(setrlimit(RLIM_DATA, &lim)>=0)
-	  {
-	    ret=(char *)malloc(size);
-	    if(ret) return ret;
-	  }
-	  if(lim.rlim_cur >= lim.rlim_max) break;
-	  lim.rlim_cur+=4096;
-	}
-      }
-    }
-  }
-#endif
-
-  Pike_fatal("Completely out of memory - "
-	     "failed to allocate %"PRINTSIZET"d bytes!\n", size);
-  /* NOT_REACHED */
-  return NULL;	/* Keep the compiler happy. */
-}
-
 /*
  * mexec_*()
  *
