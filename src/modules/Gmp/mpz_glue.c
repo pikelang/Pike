@@ -33,6 +33,10 @@
 
 #include <limits.h>
 
+#if GMP_NUMB_BITS != SIZEOF_MP_LIMB_T * CHAR_BIT
+#error Cannot cope with GMP using nail bits.
+#endif
+
 #define sp Pike_sp
 #define fp Pike_fp
 
@@ -756,9 +760,6 @@ struct pike_string *low_get_mpz_digits(MP_INT *mpz, int base)
 #endif
       s->str[0] = 0;
     } else {
-#if GMP_NUMB_BITS != SIZEOF_MP_LIMB_T * CHAR_BIT
-#error Cannot cope with GMP using nail bits.
-#endif
       mpz_export(s->str, NULL, 1, 1, 1, 0, mpz);
     }
     s = end_shared_string(s);
@@ -952,10 +953,6 @@ static void mpzmod__sprintf(INT32 args)
     pos = 0;
     while(width > 0)
     {
-#if GMP_NUMB_BITS != SIZEOF_MP_LIMB_T * CHAR_BIT
-#error Cannot cope with GMP using nail bits.
-#endif
-
       mp_limb_t x = (length-->0? MPZ_GETLIMBN(n, pos++) : 0);
 
       if (!flag_left)
