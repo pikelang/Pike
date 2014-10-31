@@ -44,6 +44,32 @@
 #define PGFLUSH		     "H\0\0\0\4"
 #define PGSYNC		     "S\0\0\0\4"
 
+#define BOOLOID		16
+#define BYTEAOID	17
+#define CHAROID		18
+#define INT8OID		20
+#define INT2OID		21
+#define INT4OID		23
+#define TEXTOID		25
+#define OIDOID		26
+#define XMLOID		142
+#define FLOAT4OID	700
+#define FLOAT8OID	701
+#define MACADDROID	829
+#define INETOID		869	    /* Force textmode */
+#define BPCHAROID	1042
+#define VARCHAROID	1043
+#define CTIDOID		1247
+#define UUIDOID		2950
+
+#define UTF8CHARSET	"UTF8"
+#define CLIENT_ENCODING	"client_encoding"
+
+#define DERROR(msg ...)		({sprintf(msg),backtrace()})
+#define SERROR(msg ...)		(sprintf(msg))
+#define USERERROR(msg)		throw(msg)
+#define SUSERERROR(msg ...)	USERERROR(SERROR(msg))
+
 #ifdef PG_DEBUG
 #define PD(X ...)            werror(X)
 #else
