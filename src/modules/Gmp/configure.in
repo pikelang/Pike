@@ -25,7 +25,7 @@ ORIG_CHECK_HEADERS(gmp.h)
 AC_CHECK_LIB(gmp, main)
 AC_TRY_LINK([
 #include <gmp.h>
-], [mpz_xor], [], [
+], [mpz_init2], [], [
   AC_MSG_ERROR([
 
 Cannot compile bignums without the GMP library.
