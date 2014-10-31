@@ -1239,6 +1239,7 @@ class Runtime_timezone_compiler
       "asia",
       "australasia",
       "backward",
+      "backzone",
       "etcetera",
       "europe",
       "northamerica",
