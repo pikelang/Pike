@@ -186,8 +186,8 @@ test_eq(H.percent_encode("a\u0100a"), "a\u0100a")
 
 test_eq(H.percent_decode("%00x%3bbbb%3B"), "\0x;bbb;")
 test_eq(H.percent_decode(""), "")
-test_eq(H.percent_decode("%"), "\0") dnl Change?
-test_eq(H.percent_decode("%1"), "\0") dnl Change?
+test_eval_error(H.percent_decode("%"), "\0")
+test_eval_error(H.percent_decode("%1"), "\0")
 
 test_eq(H.uri_encode(":/a\u0100a+"), "%3A%2Fa%C4%80a%2B")
 test_eq(H.uri_encode_invalids(":/a\u0100a+"), ":/a%C4%80a+")
