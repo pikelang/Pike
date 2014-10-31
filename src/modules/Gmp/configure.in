@@ -103,31 +103,6 @@ if test "$ac_cv_header_gmp_h" = "yes" ; then
     fi
   fi
 
-  AC_MSG_CHECKING([if mpz_getlimbn works])
-  AC_CACHE_VAL([pike_cv_mpz_getlimbn_works], [
-    rm -f confdefs.out.2 2>/dev/null
-    AC_TRY_RUN([
-#include <gmp.h>
-#include <stdio.h>
-
-int main()
-{
-  mpz_t mpz;
-  mpz_init (mpz);
-  mpz_set_si (mpz, -1);
-  /* mpz_getlimbn in e.g. gmp 2.0 does not understand that negative numbers
-   * have negative size fields. */
-  return mpz_getlimbn (mpz, 0) == 0;
-}],
-      [pike_cv_mpz_getlimbn_works=yes],
-      [pike_cv_mpz_getlimbn_works=no],
-      [pike_cv_mpz_getlimbn_works=no])
-  ])
-  AC_MSG_RESULT([$pike_cv_mpz_getlimbn_works])
-  if test "$pike_cv_mpz_getlimbn_works" = yes; then
-    AC_DEFINE(MPZ_GETLIMBN_WORKS)
-  fi
-
 else
   AC_MSG_ERROR([
 

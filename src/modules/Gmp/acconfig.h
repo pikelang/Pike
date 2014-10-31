@@ -13,9 +13,6 @@
 /* Define this if you have mpz_import */
 #undef HAVE_MPZ_IMPORT
 
-/* Define if mpz_getlimbn works on negative numbers. */
-#undef MPZ_GETLIMBN_WORKS
-
 /* Define if GMP_LIMB_BITS lies. */
 #undef PIKE_GMP_LIMB_BITS_INVALID
 

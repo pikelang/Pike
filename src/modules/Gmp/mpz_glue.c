@@ -120,14 +120,14 @@ void mpzmod_reduce(struct object *o)
      */
 #if INT_TYPE_BITS == GMP_NUMB_BITS
     /* NOTE: Overflow is not possible. */
-    res = MPZ_GETLIMBN (mpz, 0) & GMP_NUMB_MASK;
+    res = mpz_getlimbn (mpz, 0) & GMP_NUMB_MASK;
 #elif INT_TYPE_BITS < GMP_NUMB_BITS
-    mp_limb_t val = MPZ_GETLIMBN (mpz, 0) & GMP_NUMB_MASK;
+    mp_limb_t val = mpz_getlimbn (mpz, 0) & GMP_NUMB_MASK;
     if (val >= (mp_limb_t) 1 << INT_TYPE_BITS) goto overflow;
     res = val;
 #else
     for (;; pos--) {
-      res |= MPZ_GETLIMBN (mpz, pos) & GMP_NUMB_MASK;
+      res |= mpz_getlimbn (mpz, pos) & GMP_NUMB_MASK;
       if (pos == 0) break;
       if (res >= (INT_TYPE) 1 << (INT_TYPE_BITS - GMP_NUMB_BITS)) goto overflow;
       res <<= GMP_NUMB_BITS;
@@ -238,15 +238,15 @@ PMOD_EXPORT int int64_from_bignum (INT64 *i, struct object *bignum)
   if (mpz_size (mpz) <= pos + 1) {
     INT64 res;
 #if INT64_BITS == GMP_NUMB_BITS
-    res = MPZ_GETLIMBN (mpz, 0) & GMP_NUMB_MASK;
+    res = mpz_getlimbn (mpz, 0) & GMP_NUMB_MASK;
 #elif INT64_BITS < GMP_NUMB_BITS
-    mp_limb_t val = MPZ_GETLIMBN (mpz, 0) & GMP_NUMB_MASK;
+    mp_limb_t val = mpz_getlimbn (mpz, 0) & GMP_NUMB_MASK;
     if (val >= (mp_limb_t) 1 << INT64_BITS) goto overflow;
     res = DO_NOT_WARN ((INT64) val);
 #else
     res = 0;
     for (;; pos--) {
-      res |= MPZ_GETLIMBN (mpz, pos) & GMP_NUMB_MASK;
+      res |= mpz_getlimbn (mpz, pos) & GMP_NUMB_MASK;
       if (pos == 0) break;
       if (res >= (INT64) 1 << (INT64_BITS - GMP_NUMB_BITS)) goto overflow;
       res <<= GMP_NUMB_BITS;
@@ -329,15 +329,15 @@ PMOD_EXPORT int ulongest_from_bignum (unsigned LONGEST *i, struct object *bignum
   if (mpz_size (mpz) <= pos + 1) {
     unsigned LONGEST res;
 #if ULONGEST_BITS == GMP_NUMB_BITS
-    res = MPZ_GETLIMBN (mpz, 0) & GMP_NUMB_MASK;
+    res = mpz_getlimbn (mpz, 0) & GMP_NUMB_MASK;
 #elif ULONGEST_BITS < GMP_NUMB_BITS
-    mp_limb_t val = MPZ_GETLIMBN (mpz, 0) & GMP_NUMB_MASK;
+    mp_limb_t val = mpz_getlimbn (mpz, 0) & GMP_NUMB_MASK;
     res = DO_NOT_WARN ((unsigned LONGEST) val);
     if (val != res) return 0;
 #else
     res = 0;
     for (;; pos--) {
-      res |= MPZ_GETLIMBN (mpz, pos) & GMP_NUMB_MASK;
+      res |= mpz_getlimbn (mpz, pos) & GMP_NUMB_MASK;
       if (pos == 0) break;
       if (res >= (unsigned LONGEST) 1 << (ULONGEST_BITS - GMP_NUMB_BITS))
 	return 0;
@@ -702,7 +702,7 @@ static void mpzmod___hash(INT32 args)
   INT32 crc = 0;
   size_t pos;
   for (pos = 0; pos < mpz_size(mpz); pos++) {
-    mp_limb_t x = MPZ_GETLIMBN (mpz, pos);
+    mp_limb_t x = mpz_getlimbn (mpz, pos);
     size_t i;
     for (i=0; i<sizeof(mp_limb_t); i++) {
       crc = (crc >> 8) ^ crc_table[((crc >> 24) ^ x) & 0xff];
@@ -953,7 +953,7 @@ static void mpzmod__sprintf(INT32 args)
     pos = 0;
     while(width > 0)
     {
-      mp_limb_t x = (length-->0? MPZ_GETLIMBN(n, pos++) : 0);
+      mp_limb_t x = (length-->0? mpz_getlimbn(n, pos++) : 0);
 
       if (!flag_left)
 	 for(i = 0; i < (INT_TYPE)sizeof(mp_limb_t); i++)

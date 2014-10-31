@@ -33,21 +33,6 @@ MP_INT *debug_get_mpz(struct svalue *s,
 void mpzmod_reduce(struct object *o);
 struct pike_string *low_get_mpz_digits(MP_INT *mpz, int base);
 
-#ifdef MPZ_GETLIMBN_WORKS
-#define MPZ_GETLIMBN(MPZ, N) mpz_getlimbn(MPZ, N)
-#else  /* !MPZ_GETLIMBN_WORKS */
-/* In old gmp versions (at least 2.0) mpz_getlimbn doesn't understand
- * that negative numbers are stored with negative sizes, so it regards
- * all N to be outside the mantissa then. */
-static inline mp_limb_t MPZ_GETLIMBN (mpz_srcptr gmp_z, mp_size_t gmp_n)
-{
-  if (mpz_size (gmp_z) <= gmp_n || gmp_n < 0)
-    return 0;
-  else
-    return gmp_z->_mp_d[gmp_n];
-}
-#endif	/* !MPZ_GETLIMBN_WORKS */
-
 extern struct program *mpzmod_program;
 extern struct program *mpq_program;
 extern struct program *mpf_program;
