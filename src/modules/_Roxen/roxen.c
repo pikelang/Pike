@@ -379,9 +379,7 @@ static p_wchar2 parse_hexchar(p_wchar2 hex)
   if(hex>='0' && hex<='9')
     return hex-'0';
   hex |= 32;
-  if(hex>='a' && hex<='f')
-    return hex-'W';
-  Pike_error("Illegal transport encoding.\n");
+  return hex-'W';
 }
 
 static void f_http_decode_string(INT32 args)
@@ -421,13 +419,22 @@ static void f_http_decode_string(INT32 args)
      if (c == 'u' || c == 'U') {
        if (SUBTRACT_PCHARP(end, foo) <= 4)
          Pike_error("Truncated unicode sequence.\n");
+       INC_PCHARP(foo, 1);
+       if (!isxdigit(INDEX_PCHARP(foo, 0)) ||
+           !isxdigit(INDEX_PCHARP(foo, 1)) ||
+           !isxdigit(INDEX_PCHARP(foo, 2)) ||
+           !isxdigit(INDEX_PCHARP(foo, 3)))
+           Pike_error("Illegal transport encoding.\n");
        /* %uXXXX */
        if (EXTRACT_PCHARP(foo) != '0' || INDEX_PCHARP(foo, 1) != '0') {
          if (!size_shift) size_shift = 1;
        }
        proc += 5;
-       INC_PCHARP(foo, 5);
+       INC_PCHARP(foo, 4);
      } else {
+       if (!isxdigit(INDEX_PCHARP(foo, 0)) ||
+           !isxdigit(INDEX_PCHARP(foo, 1)))
+           Pike_error("Illegal transport encoding.\n");
        proc += 2;
        INC_PCHARP(foo, 2);
      }
@@ -444,27 +451,25 @@ static void f_http_decode_string(INT32 args)
      p_wchar2 c = INDEX_PCHARP(foo, 0);
      if (c == '%') {
        c = INDEX_PCHARP(foo, 1);
+       /* The above loop checks that the following sequences
+        * are correct, i.e. that they are not truncated and consist
+        * of hexadecimal chars.
+        */
        if (c == 'u' || c == 'U') {
-	 c = 0;
-	 if (SUBTRACT_PCHARP(end, foo) > 5) {
-	   p_wchar2 hex = INDEX_PCHARP(foo, 2);
-	   c = parse_hexchar(hex)<<12;
-	   hex = INDEX_PCHARP(foo, 3);
-	   c |= parse_hexchar(hex)<<8;
-	   hex = INDEX_PCHARP(foo, 4);
-	   c |= parse_hexchar(hex)<<4;
-	   hex = INDEX_PCHARP(foo, 5);
-	   c |= parse_hexchar(hex);
-	 }
+         p_wchar2 hex = INDEX_PCHARP(foo, 2);
+         c = parse_hexchar(hex)<<12;
+         hex = INDEX_PCHARP(foo, 3);
+         c |= parse_hexchar(hex)<<8;
+         hex = INDEX_PCHARP(foo, 4);
+         c |= parse_hexchar(hex)<<4;
+         hex = INDEX_PCHARP(foo, 5);
+         c |= parse_hexchar(hex);
 	 INC_PCHARP(foo, 5);
        } else {
-	 c = 0;
-	 if (SUBTRACT_PCHARP(end, foo) > 2) {
-	   p_wchar2 hex = INDEX_PCHARP(foo, 1);
-	   c = parse_hexchar(hex)<<4;
-	   hex = INDEX_PCHARP(foo, 2);
-	   c |= parse_hexchar(hex);
-	 }
+         p_wchar2 hex = INDEX_PCHARP(foo, 1);
+         c = parse_hexchar(hex)<<4;
+         hex = INDEX_PCHARP(foo, 2);
+         c |= parse_hexchar(hex);
 	 INC_PCHARP(foo, 2);
        }
      }
