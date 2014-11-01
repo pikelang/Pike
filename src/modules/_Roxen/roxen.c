@@ -488,6 +488,7 @@ static void f_html_encode_string( INT32 args )
 {
   struct pike_string *str;
   int newlen;
+  INT32 min;
 
   if( args != 1 )
     Pike_error("Wrong number of arguments to html_encode_string\n" );
@@ -512,6 +513,10 @@ static void f_html_encode_string( INT32 args )
 
   str = Pike_sp[-1].u.string;
   newlen = str->len;
+
+  check_string_range(str, 1, &min, NULL);
+
+  if (min > '>') return;
 
 #define COUNT(T) {							\
     T *s = (T *)str->str;						\
