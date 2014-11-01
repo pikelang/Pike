@@ -463,6 +463,72 @@ string fix_extras(string s)
   return a * "";
 }
 
+void read_car_cdr(object(node) res, array(string) linepos)
+{
+  int c = data[pos];
+
+  if (c == '(') {
+    string otpos = tpos;
+    pos++;
+
+    tpos = "A"+otpos;
+
+    if (data[pos] == '$') {
+      // FIXME: Support for recurring nodes.
+      // Useful for common subexpression elimination.
+      pos++;
+      int tag = read_int();
+      string ntpos;
+      if (!(ntpos = marks[tag])) {
+	fail("%s:%d: Tag $%d used before being defined.\n",
+	     fname, line, tag);
+      } else if (ntpos == "") {
+	fail("%s:%d: Tag $%d is the root, and can't be used for "
+	     "exact matching.\n",
+	     fname, line, tag);
+      } else {
+	// FIXME: Ought to check that the tag isn't for one of our parents.
+	res->car = res->real_car = sprintf("C%sR(n)", ntpos);
+      }
+      eat_whitespace();
+    } else {
+      res->car = res->real_car = read_node(linepos);
+    }
+
+    expect(',');
+    eat_whitespace();
+
+    tpos = "D"+otpos;
+
+    if (data[pos] == '$') {
+      // FIXME: Support for recurring nodes.
+      // Useful for common subexpression elimination.
+      pos++;
+      int tag = read_int();
+      string ntpos;
+      if (!(ntpos = marks[tag])) {
+	fail("%s:%d: Tag $%d used before being defined.\n",
+	     fname, line, tag);
+      } else if (ntpos == "") {
+	fail("%s:%d: Tag $%d is the root, and can't be used for "
+	     "exact matching.\n",
+	     fname, line, tag);
+      } else {
+	// FIXME: Ought to check that the tag isn't for one of our parents.
+	res->cdr = res->real_cdr = sprintf("C%sR(n)", ntpos);
+      }
+      eat_whitespace();
+    } else {
+      res->cdr = res->real_cdr = read_node(linepos);
+    }
+
+    tpos = otpos;
+    expect(')');
+
+    eat_whitespace();
+  }
+}
+
 object(node) read_node(array(string) linepos)
 {
   object(node) res = node();
@@ -545,66 +611,8 @@ object(node) read_node(array(string) linepos)
       eat_whitespace();
       c = data[pos];
     }
-    if (c == '(') {
-      string otpos = tpos;
-      pos++;
 
-      tpos = "A"+otpos;
-
-      if (data[pos] == '$') {
-	// FIXME: Support for recurring nodes.
-	// Useful for common subexpression elimination.
-	pos++;
-	int tag = read_int();
-	string ntpos;
-	if (!(ntpos = marks[tag])) {
-	  fail("%s:%d: Tag $%d used before being defined.\n",
-	       fname, line, tag);
-	} else if (ntpos == "") {
-	  fail("%s:%d: Tag $%d is the root, and can't be used for "
-	       "exact matching.\n",
-	       fname, line, tag);
-	} else {	
-	  // FIXME: Ought to check that the tag isn't for one of our parents.
-	  res->car = res->real_car = sprintf("C%sR(n)", ntpos);
-	}
-	eat_whitespace();
-      } else {
-	res->car = res->real_car = read_node(linepos);
-      }
-
-      expect(',');
-      eat_whitespace();
-
-      tpos = "D"+otpos;
-
-      if (data[pos] == '$') {
-	// FIXME: Support for recurring nodes.
-	// Useful for common subexpression elimination.
-	pos++;
-	int tag = read_int();
-	string ntpos;
-	if (!(ntpos = marks[tag])) {
-	  fail("%s:%d: Tag $%d used before being defined.\n",
-	       fname, line, tag);
-	} else if (ntpos == "") {
-	  fail("%s:%d: Tag $%d is the root, and can't be used for "
-	       "exact matching.\n",
-	       fname, line, tag);
-	} else {	
-	  // FIXME: Ought to check that the tag isn't for one of our parents.
-	  res->cdr = res->real_cdr = sprintf("C%sR(n)", ntpos);
-	}
-	eat_whitespace();
-      } else {
-	res->cdr = res->real_cdr = read_node(linepos);
-      }
-
-      tpos = otpos;
-      expect(')');
-
-      eat_whitespace();
-    }
+    read_car_cdr(res, linepos);
 
     if ((res->token == "*") && !sizeof(res->extras) &&
 	!res->car && !res->cdr) {
