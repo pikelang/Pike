@@ -2116,3 +2116,9 @@ int query_suite()
 {
   return conn?->session?->cipher_suite;
 }
+
+//! Return the currently active SSL/TLS version.
+ProtocolVersion query_version()
+{
+  return conn?->version;
+}
