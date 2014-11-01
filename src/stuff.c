@@ -105,7 +105,7 @@ PMOD_EXPORT int my_log2(size_t x)
      7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
      7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
   };
-  register size_t tmp;
+  size_t tmp;
   if( x == 0 ) return 0;
 #if SIZEOF_CHAR_P > 4
   if((tmp=(x>>32)))

@@ -447,8 +447,8 @@ PMOD_EXPORT void o_cast_to_string(void)
     {
       INT_TYPE org;
       char buf[MAX_INT_SPRINTF_LEN];
-      register char*b = buf+sizeof buf-1;
-      register unsigned INT_TYPE i;
+      char *b = buf+sizeof buf-1;
+      unsigned INT_TYPE i;
       org = sp[-1].u.integer;
       *b-- = '\0';
       i = org;

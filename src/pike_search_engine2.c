@@ -167,7 +167,7 @@ HCHAR *NameNH(hubbe_search)(struct hubbe_searcher *s,
 
   INT32 tmp, h;
   HCHAR *q, *end;
-  register struct hubbe_search_link *ptr;
+  struct hubbe_search_link *ptr;
   
   end=haystack+haystacklen;
   q=haystack + max - 4;

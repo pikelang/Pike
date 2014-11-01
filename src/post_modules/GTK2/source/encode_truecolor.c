@@ -292,7 +292,7 @@ static void encode_truecolor_generic(int rbits, int rshift, int gbits,
        x=img->xsize;
        while (x--)
        {
-         register unsigned long b =
+         unsigned long b =
            ((((s->r&rfmask)>>rzshift)<<rfshift)|
             (((s->g&gfmask)>>gzshift)<<gfshift)|
             (((s->b&bfmask)>>bzshift)<<bfshift))<<bpshift;

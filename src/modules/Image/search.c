@@ -505,7 +505,7 @@ void img_apply_max(struct image *dest,
    int widthheight;
    double sumr,sumg,sumb;
    double qr,qg,qb;
-   register double r=0,g=0,b=0;
+   double r=0,g=0,b=0;
 
    d=xalloc(sizeof(rgb_group)*img->xsize*img->ysize+RGB_VEC_PAD);
 

@@ -35,7 +35,7 @@
 #define SKIPN(N) (lex->pos += (N))
 
 #define READBUF(X) do {				\
-  register int C;				\
+  int C;				\
   buf = lex->pos;				\
   while((C = LOOK()) && (X))			\
     lex->pos++;					\
@@ -65,7 +65,7 @@
 #define GETC() (SKIP(),INDEX_CHARP(lex->pos-(1<<SHIFT),0,SHIFT))
 
 #define READBUF(X) do {				\
-  register int C;				\
+  int C;                                        \
   buf = lex->pos;				\
   while((C = LOOK()) && (X))			\
     SKIP();					\

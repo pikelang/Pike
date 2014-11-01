@@ -296,7 +296,7 @@ static void image_x_encode_truecolor(INT32 args)
 	 x=img->xsize;
 	 while (x--) /* write bits from this line */
 	 {
-	    register unsigned long b =
+	    unsigned long b =
 	       ((((s->r&rfmask)>>rzshift)<<rfshift)|
 		(((s->g&gfmask)>>gzshift)<<gfshift)|
 		(((s->b&bfmask)>>bzshift)<<bfshift))<<bpshift;

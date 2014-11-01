@@ -42,19 +42,19 @@
 #define MKNAME(X) MKNAME2(ID,X)
 #define MKNAME2(X,Y) PIKE_CONCAT(X,Y)
 
-static void MKNAME(_do_sort)(register PTYPE bas,
-			       register PTYPE last,
-			       int max_recursion
+static void MKNAME(_do_sort)(PTYPE bas,
+                             PTYPE last,
+                             int max_recursion
 #ifdef EXTRA_ARGS
-			       EXTRA_ARGS
+                             EXTRA_ARGS
 #else
 #define UNDEF_XARGS
 #define XARGS
 #endif
   )
 {
-  register PTYPE a;
-  register PTYPE b;
+  PTYPE a;
+  PTYPE b;
 #ifdef EXTRA_LOCALS
   EXTRA_LOCALS
 #endif
@@ -177,8 +177,8 @@ static void MKNAME(_do_sort)(register PTYPE bas,
   }
 }
 
-void ID(register PTYPE bas,
-	register PTYPE last
+void ID(PTYPE bas,
+	PTYPE last
 #ifdef EXTRA_ARGS
 	EXTRA_ARGS
 #endif

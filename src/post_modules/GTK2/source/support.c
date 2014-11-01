@@ -1327,10 +1327,9 @@ void pgtk2_marshaller(GClosure *closure,
 				     guint n_params, 
 				     const GValue *param_values,
 				     GValue *return_value);
-  register pgtk2_marshal_func callback;
-  register GCClosure *cc=(GCClosure *)closure;
-  register gpointer data1,data2;
-
+  pgtk2_marshal_func callback;
+  GCClosure *cc=(GCClosure *)closure;
+  gpointer data1,data2;
 
   if (G_CCLOSURE_SWAP_DATA(closure)) {
     data1=closure->data;

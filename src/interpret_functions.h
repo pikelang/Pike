@@ -2805,7 +2805,7 @@ OPCODE1(F_LTOSVAL_CALL_BUILTIN_AND_ASSIGN_POP,
 
 #define DO_RECUR(XFLAGS) do{						   \
   PIKE_OPCODE_T *addr;							   \
-  register struct pike_frame *new_frame;				   \
+  struct pike_frame *new_frame;                                            \
   INT32 args = DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp));		   \
 									   \
   DO_IF_SECURITY(CHECK_DATA_SECURITY_OR_ERROR(Pike_fp->current_object,	   \

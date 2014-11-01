@@ -3465,7 +3465,7 @@ PMOD_EXPORT double STRTOD_PCHARP(PCHARP nptr, PCHARP *endptr)
 {
   /* Note: Code duplication in strtod. */
 
-  register PCHARP s;
+  PCHARP s;
   short int sign;
 
   /* The number so far.  */

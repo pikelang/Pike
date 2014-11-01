@@ -396,7 +396,7 @@ static void img_apply_matrix(struct image *dest,
    int widthheight;
    double sumr,sumg,sumb;
    double qr,qg,qb;
-   register double r=0,g=0,b=0;
+   double r=0,g=0,b=0;
 
 THREADS_ALLOW();
 
@@ -569,7 +569,7 @@ THREADS_DISALLOW();
 
 int image_too_big(INT_TYPE xsize,INT_TYPE ysize)
 {
-   register INT_TYPE a,b,c,d;
+   INT_TYPE a,b,c,d;
 
    if (xsize<0 || ysize<0) return 1;
 
@@ -2783,9 +2783,9 @@ void image_rgb_to_hsv(INT32 args)
    i=img->xsize*img->ysize;
    while (i--)
    {
-      register int r,g,b;
-      register int v, delta;
-      register int h;
+      int r,g,b;
+      int v, delta;
+      int h;
 
       r = s->r; g = s->g; b = s->b;
       v = MAX3(r,g,b);
