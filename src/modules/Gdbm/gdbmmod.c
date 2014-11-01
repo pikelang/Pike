@@ -220,7 +220,7 @@ static void gdbmmod_create(INT32 args)
     if(!Pike_fp->current_object->prog)
     {
       if(tmp) gdbm_close(tmp);
-      Pike_error("Object destructed in gdbm->open()n");
+      Pike_error("Object destructed in gdbm->create()\n");
     }
     this->dbf=tmp;
 
