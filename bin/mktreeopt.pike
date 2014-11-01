@@ -529,6 +529,27 @@ void read_car_cdr(object(node) res, array(string) linepos)
   }
 }
 
+constant f_op_name_lookup = ([
+  "F_LT":	"f_lt",
+  "F_GT":	"f_gt",
+  "F_LE":	"f_le",
+  "F_GE":	"f_ge",
+  "F_EQ":	"f_eq",
+  "F_NE":	"f_ne",
+  "F_ADD":	"f_add",
+  "F_SUBTRACT":	"f_subtract",
+  "F_DIVIDE":	"f_divide",
+  "F_MULTIPLY":	"f_multiply",
+  "F_MOD":	"f_mod",
+  "F_LSH":	"f_lsh",
+  "F_RSH":	"f_rsh",
+  "F_OR":	"f_or",
+  "F_AND":	"f_and",
+  "F_XOR":	"f_xor",
+  "F_NOT":	"f_not",
+  "F_COMPL":	"f_compl",
+]);
+
 object(node) read_node(array(string) linepos)
 {
   object(node) res = node();
@@ -612,7 +633,43 @@ object(node) read_node(array(string) linepos)
       c = data[pos];
     }
 
-    read_car_cdr(res, linepos);
+    string f_op_name = f_op_name_lookup[token];
+    if (f_op_name) {
+      // We need to convert the short-hand notation to
+      // an actual operator call node.
+
+      res->token = "F_APPLY";
+
+      // Match the corresponding constant efun value.
+      node match = node();
+      match->token = "F_CONSTANT";
+      res->car = res->real_car = match;
+      string otpos = tpos;
+      tpos = "A" + tpos;
+      match->extras =
+	map(({
+	      "TYPEOF($$->u.sval) == T_FUNCTION",
+	      "SUBTYPEOF($$->u.sval) == FUNCTION_BUILTIN",
+	      "$$->u.sval.u.efun->function == " + f_op_name,
+	    }), fix_extras);
+      tpos = "D" + otpos;
+
+      // Read the arguments (if any) into an F_ARG_LIST node.
+      node args = node();
+      args->token = "F_ARG_LIST";
+      res->cdr = res->real_cdr = args;
+
+      read_car_cdr(args, linepos);
+
+      tpos = otpos;
+
+      if (!args->car && !args->cdr) {
+	// No argument matching needed.
+	res->cdr = 0;
+      }
+    } else {
+      read_car_cdr(res, linepos);
+    }
 
     if ((res->token == "*") && !sizeof(res->extras) &&
 	!res->car && !res->cdr) {
