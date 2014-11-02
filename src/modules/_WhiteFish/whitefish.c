@@ -135,7 +135,7 @@ static struct object *low_do_query_or( Blob **blobs,
   ONERROR e;
   int i, j;
   Blob **tmp;
-  tmp = malloc( nblobs * sizeof( Blob *) );
+  tmp = calloc( nblobs, sizeof( Blob *) );
 
   __f->res = res;
   __f->blobs = blobs;
@@ -425,7 +425,7 @@ static void f_do_query_phrase( INT32 args )
     return;
   }
 
-  blobs = malloc( sizeof(Blob *) * numblobs );
+  blobs = calloc( numblobs, sizeof(Blob *) );
 
   for( i = 0; i<numblobs; i++ )
     blobs[i] = wf_blob_new( cb, _words->item[i].u.string );
@@ -519,7 +519,7 @@ static void f_do_query_and( INT32 args )
     return;
   }
 
-  blobs = malloc( sizeof(Blob *) * numblobs );
+  blobs = calloc( numblobs, sizeof(Blob *) );
 
   for( i = 0; i<numblobs; i++ )
     blobs[i] = wf_blob_new( cb, _words->item[i].u.string );
@@ -620,7 +620,7 @@ static void f_do_query_or( INT32 args )
     return;
   }
 
-  blobs = malloc( sizeof(Blob *) * numblobs );
+  blobs = calloc( numblobs, sizeof(Blob *) );
 
   for( i = 0; i<numblobs; i++ )
     blobs[i] = wf_blob_new( cb, _words->item[i].u.string );
