@@ -40,17 +40,6 @@
 #define sp Pike_sp
 #define fp Pike_fp
 
-#ifdef _MSC_VER
-/* No random()... provide one for gmp
- * This should possibly be a configure test
- * /Hubbe
- */
-long random(void)
-{
-  return my_rand();
-}
-#endif
-
 #undef THIS
 #define THIS ((MP_INT *)(fp->current_storage))
 #define THIS_PROGRAM (fp->context->prog)
