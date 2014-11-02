@@ -193,6 +193,8 @@ hash character and the rest of the directive to create indentation in code.</p>
 
 <insert-move entity="cpp::.#pragma"/>
 
+<insert-move entity="cpp::.#require"/>
+
 <insert-move entity="cpp::.#warning"/>
 
 </section>
