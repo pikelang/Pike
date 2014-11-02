@@ -674,10 +674,40 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	  cipher_suites = filter(cipher_suites, not_ecc_suite);
 	}
 
-	if (!sizeof(cipher_suites) ||
-	    !session->select_cipher_suite(context->
-					  find_cert_domain(session->server_name),
-					  cipher_suites, version)) {
+	if (sizeof(cipher_suites)) {
+	  array(CertificatePair) certs =
+	    context->find_cert_domain(session->server_name);
+
+	  ProtocolVersion orig_version = version;
+
+	  while (!session->select_cipher_suite(certs, cipher_suites, version)) {
+	    if (version > context->min_version) {
+	      // Try falling back to an older version of SSL/TLS.
+	      version--;
+	    } else {
+#if 0
+	      werror("FAIL: %s (%s, client: %s)\n"
+		     "Client suites:\n"
+		     "%s\n",
+		     fmt_version(version), fmt_version(orig_version),
+		     fmt_version(client_version),
+		     fmt_cipher_suites(cipher_suites));
+#endif
+	      // No compatible suite.
+	      version = orig_version;
+	      cipher_suites = ({});
+	      break;
+	    }
+	  }
+
+	  if (version != orig_version) {
+	    SSL3_DEBUG_MSG("Fallback from %s to %s to select suite %s.\n",
+			   fmt_version(orig_version), fmt_version(version),
+			   fmt_cipher_suite(session->cipher_suite));
+	  }
+	}
+
+	if (!sizeof(cipher_suites)) {
 	  // No overlapping cipher suites, or obsolete cipher suite selected,
 	  // or incompatible certificates.
 	  send_packet(alert(ALERT_fatal, ALERT_handshake_failure,
