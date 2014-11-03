@@ -8082,6 +8082,15 @@ test_equal(([0:1,3:6])+([5:2,3:6]),([0:1,3:6,3:6,5:2]))
 test_eval_error(return this_object() + this_object())
 test_any(return((1+2+3)-(1+2-3)), 6)
 
+// testing F_APPEND_MAPPING
+test_any([[
+    // F_APPEND_MAPPING is not used when adding constant mappings
+    string index = "foo";
+    mapping m = ([ "foo" : 1 ]);
+    m += ([ index : 2 ]);
+    return m->foo;
+]], 2)
+
 
 // testing -
 test_eq(10-3,7)
