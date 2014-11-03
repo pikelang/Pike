@@ -1,3 +1,20 @@
 Pike 8.1: Changes since Pike 8.0 (scratch area for future release notes)
 ----------------------------------------------------------------------
 
+New language features
+---------------------
+
+o Unlimited character constant size.
+
+  There is no longer any limit to the size of character constants,
+  e.g. 'acdefghijk' creates the bignum 0x61636465666768696a6b.
+
+Removed features and modules
+----------------------------
+
+o Compatibility for Pike versions before 7.8 is no longer available.
+
+Building and installing
+-----------------------
+
+o GMP 4.1 or later is now required.
