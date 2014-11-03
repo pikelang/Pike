@@ -107,4 +107,27 @@ test_eq( Standards.ASN1.Decode.constructed(1,0,0)->record_der("hi"), "hi")
 test_do( Standards.ASN1.Decode.constructed(1,0,0)->end_decode_constructed(7); )
 test_true( stringp(Standards.ASN1.Decode.constructed(1,0,0)->debug_string()) )
 
+test_any([[
+  object ctx = SSL.Context();
+  object rsa = Crypto.RSA();
+  rsa->set_random(random_string);
+  rsa->generate_key( 1024 );
+
+  array attrs = ({
+    (["organizationName":Standards.ASN1.Types.PrintableString("Test")]),
+    (["commonName":Standards.ASN1.Types.PrintableString("*")]),
+  });
+
+  string cert =
+    Standards.X509.make_selfsigned_certificate(rsa, 3600*24, attrs);
+
+  ctx->certificates = ({ cert });
+  ctx->rsa = rsa;
+
+  if( ctx->rsa != rsa ) return 1;
+  if( ctx->certificates[0] != cert) return 2;
+  ctx->rsa_mode();
+  return -1;
+]], -1)
+
 END_MARKER
