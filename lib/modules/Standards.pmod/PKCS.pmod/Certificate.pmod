@@ -231,24 +231,6 @@ array(mapping(string(7bit):string)) decode_distinguished_name(Sequence dn)
   return ret;
 }
 
-//! Return the certificate issuer RDN from a certificate string.
-//!
-//! @param cert
-//! A string containing an X509 certificate.
-//!
-//! Note that the certificate usually must be decoded using
-//! @[Standards.PEM.simple_decode()].
-//!
-//! @returns
-//!  An Standards.ASN1.Sequence object containing the certificate issuer
-//!  Distinguished Name (DN).
-//!
-//! @deprecated Standards.X509.decode_certificate
-__deprecated__ Sequence get_certificate_issuer(string cert)
-{
-  return X509.decode_certificate(cert)->issuer;
-}
-
 //! Converts an RDN (relative distinguished name) Seqeunce object to a
 //! human readable string in X500 format.
 //!
@@ -291,24 +273,6 @@ string get_dn_string(Sequence dnsequence)
   
   dn = rdns * ",";
   return dn;  
-}
-
-//! Return the certificate subject RDN from a certificate string.
-//!
-//! @param cert
-//! A string containing an X509 certificate.
-//!
-//! Note that the certificate usually must be decoded using
-//! @[PEM.simpe_decode()].
-//!
-//! @returns
-//!  An Standards.ASN1.Sequence object containing the certificate subject
-//!  Distinguished Name (DN).
-//!
-//! @deprecated Standards.X509.decode_certificate
-__deprecated__ Sequence get_certificate_subject(string cert)
-{
-  return X509.decode_certificate(cert)->subject;
 }
 
 class Attribute

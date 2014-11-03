@@ -65,4 +65,7 @@ HRMEBTADAQH/MAkGByqGSM44BAMDMQAwLgIVALDFfQRihjOCqi1vFUi5rnYig/zk
 AhUAijRxsj+Q6LEF43H8Wq4quhnZ5wQ=
 -----END CERTIFICATE-----)
 
+test_true( Standards.PKCS.Certificate.get_certificate_issuer )
+test_true( Standards.PKCS.Certificate.get_certificate_subject )
+
 END_MARKER
