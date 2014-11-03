@@ -49,9 +49,6 @@ protected void run_local_backend() {
   } while(looponce);
 }
 
-protected void create() {
-}
-
 final void register_backend() {
   if(!clientsregistered++)
     Thread.Thread(run_local_backend);
@@ -104,7 +101,7 @@ class PGplugbuffer {
 
   protected PGassist realbuffer;
 
-  final void create(PGassist _realbuffer) {
+  protected void create(PGassist _realbuffer) {
     realbuffer=_realbuffer;
   }
 
@@ -144,22 +141,23 @@ class PGassist {
   protected Thread.Mutex fillreadmux;
   protected Thread.Queue qportals;
   final Stdio.File socket;
+  protected object pgsqlsess;
   protected int towrite;
 
   final function(:void) gottimeout;
   final int timeout;
-  Thread.Mutex nostash;
-  Thread.MutexKey started;
-  Thread.Mutex stashupdate;
-  Thread.Queue stashqueue;
-  Thread.Condition stashavail;
-  Stdio.Buffer stash;
-  int stashflushmode;
-  int stashcount;
-  int synctransact;
+  final Thread.Mutex nostash;
+  final Thread.MutexKey started;
+  final Thread.Mutex stashupdate;
+  final Thread.Queue stashqueue;
+  final Thread.Condition stashavail;
+  final Stdio.Buffer stash;
+  final int stashflushmode;
+  final int stashcount;
+  final int synctransact;
 #ifdef PG_DEBUG
-  int queueoutidx;
-  int queueinidx;
+  final int queueoutidx;
+  final int queueinidx;
 #endif
 
   inline void queueup(pgsql_result portal) {
@@ -248,26 +246,30 @@ class PGassist {
       stashflushmode=keep;
       lock=0;
     }
+    catch {
 outer:
-    do {
-      switch(mode) {
-        default:
-          break outer;
-        case syncsend:
-          PD(">Sync %d %d Queue\n",synctransact,++queueoutidx);
-          qportals->write(synctransact++); add(PGSYNC);
-          break;
-        case flushsend:
-          PD("Flush\n");
-          add(PGFLUSH);
-        case sendout:;
-      }
-      if(towrite=sizeof(this)) {
-        PD(">Sendcmd %O\n",((string)this)[..towrite-1]);
-        towrite-=output_to(socket,towrite);
-      }
-    } while(0);
-    started=0;
+      do {
+        switch(mode) {
+          default:
+            break outer;
+          case syncsend:
+            PD(">Sync %d %d Queue\n",synctransact,++queueoutidx);
+            qportals->write(synctransact++); add(PGSYNC);
+            break;
+          case flushsend:
+            PD("Flush\n");
+            add(PGFLUSH);
+          case sendout:;
+        }
+        if(towrite=sizeof(this)) {
+          PD(">Sendcmd %O\n",((string)this)[..towrite-1]);
+          towrite-=output_to(socket,towrite);
+        }
+      } while(0);
+      started=0;
+      return;
+    };
+    pgsqlsess->_connectfail();
   }
 
   final void sendterminate() {
@@ -280,9 +282,10 @@ outer:
 
   final void destroy() {
     catch(close());		// Exceptions don't work inside destructors
+    pgsqlsess=0;
   }
 
-  final void connectloop(object pgsqlsess,int nossl) {
+  final void connectloop(int nossl) {
     mixed err=catch {
       for(;;clear()) {
         socket->connect(pgsqlsess._host,pgsqlsess._port);
@@ -316,6 +319,8 @@ outer:
 #endif
         break;
       }
+      if(!socket->is_open())
+        error(strerror(socket->errno()));
       socket->set_backend(local_backend);
       socket->set_buffer_mode(i::this,0);
       socket->set_nonblocking(read_cb,write_cb,0);
@@ -325,7 +330,7 @@ outer:
     pgsqlsess->_connectfail(err);
   }
 
-  void create(object pgsqlsess,Thread.Queue _qportals,int nossl) {
+  protected void create(object _pgsqlsess,Thread.Queue _qportals,int nossl) {
     i::create(); o::create();
     qportals = _qportals;
     synctransact = 1;
@@ -339,7 +344,8 @@ outer:
     stashqueue=Thread.Queue();
     stashavail=Thread.Condition();
     stash=Stdio.Buffer();
-    Thread.Thread(connectloop,pgsqlsess,nossl);
+    pgsqlsess=_pgsqlsess;
+    Thread.Thread(connectloop,nossl);
   }
 }
 
@@ -350,36 +356,38 @@ outer:
 //!   @[Sql.sql_result], @[Sql.pgsql], @[Sql.Sql], @[Sql.pgsql()->big_query()]
 class pgsql_result {
 
-  object _pgsqlsess;
+  protected object pgsqlsess;
   protected int numrows;
   protected int eoffound;
   protected PGassist c;
-  mixed _delayederror;
-  portalstate _state;
-  int _fetchlimit;
-  int _alltext;
-  int _forcetext;
+  final mixed _delayederror;
+  final portalstate _state;
+  final int _fetchlimit;
+  final int _alltext;
+  final int _forcetext;
 
-  string _portalname;
+  final string _portalname;
 
-  int _bytesreceived;
-  int _rowsreceived;
-  int _inflight;
-  int _portalbuffersize;
-  int _synctransact;
-  Thread.Condition _ddescribe;
-  Thread.Mutex _ddescribemux;
-  Thread.MutexKey _unnamedportalkey,_unnamedstatementkey;
+  final int _bytesreceived;
+  final int _rowsreceived;
+  final int _inflight;
+  final int _portalbuffersize;
+  final int _synctransact;
+  final Thread.Condition _ddescribe;
+  final Thread.Mutex _ddescribemux;
+  final Thread.MutexKey _unnamedportalkey,_unnamedstatementkey;
   protected Thread.Mutex closemux;
-  array _params;
-  string _statuscmdcomplete;
-  string _query;
-  Thread.Queue _datarows;
-  array(mapping(string:mixed)) _datarowdesc;
-  int _oldpbpos;
-  object _plugbuffer;
-  string _preparedname;
-  mapping(string:mixed) _tprepared;
+  final array _params;
+  final string _statuscmdcomplete;
+  final string _query;
+  final Thread.Queue _datarows;
+  final array(mapping(string:mixed)) _datarowdesc;
+  final int _oldpbpos;
+  protected object prepbuffer;
+  protected Thread.Condition prepbufferready;
+  protected Thread.Mutex prepbuffermux;
+  final string _preparedname;
+  final mapping(string:mixed) _tprepared;
 
   protected string _sprintf(int type, void|mapping flags) {
     string res=UNDEFINED;
@@ -402,15 +410,17 @@ class pgsql_result {
     return res;
   }
 
-  void create(object pgsqlsess,PGassist _c,string query,
+  protected void create(object _pgsqlsess,PGassist _c,string query,
               int portalbuffersize,int alltyped,array params,int forcetext) {
-    _pgsqlsess = pgsqlsess;
+    pgsqlsess = _pgsqlsess;
     c = _c;
     _query = query;
     _datarows = Thread.Queue(); numrows = UNDEFINED;
     _ddescribe=Thread.Condition();
     _ddescribemux=Thread.Mutex();
     closemux=Thread.Mutex();
+    prepbufferready=Thread.Condition();
+    prepbuffermux=Thread.Mutex();
     _portalbuffersize=portalbuffersize;
     _alltext = !alltyped;
     _params = params;
@@ -506,13 +516,13 @@ class pgsql_result {
 #endif
     object plugbuffer=Stdio.Buffer();
     plugbuffer->add(_portalname=
-      (_unnamedportalkey=_pgsqlsess._unnamedportalmux->trylock(1))
-       ? "" : PORTALPREFIX+int2hex(_pgsqlsess._pportalcount++) )->add_int8(0)
+      (_unnamedportalkey=pgsqlsess._unnamedportalmux->trylock(1))
+       ? "" : PORTALPREFIX+int2hex(pgsqlsess._pportalcount++) )->add_int8(0)
      ->add(_preparedname)->add_int8(0)->add_int16(sizeof(paramValues));
     foreach(dtoid;;int textbin)
       plugbuffer->add_int16(oidformat(textbin));
     plugbuffer->add_int16(sizeof(paramValues));
-    string cenc=_pgsqlsess._runtimeparameter[CLIENT_ENCODING];
+    string cenc=pgsqlsess._runtimeparameter[CLIENT_ENCODING];
     foreach(paramValues;int i;mixed value) {
       if(undefinedp(value))
         plugbuffer->add_int32(-1);				// NULL
@@ -625,38 +635,49 @@ class pgsql_result {
             break;
         }
     }
-    _plugbuffer=plugbuffer;
+    prepbuffer=plugbuffer;
+    int skipsignal=0;
     if(_tprepared)
       if(_tprepared.datarowdesc)
-        _dodatarows();
+        skipsignal=1, gotdatarowdesc();
       else if(dontcacheprefix->match(_query))	// Don't cache FETCH/COPY
-        m_delete(_pgsqlsess->_prepareds,_query),_tprepared=0;
+        m_delete(pgsqlsess->_prepareds,_query),_tprepared=0;
+    if(!skipsignal) {
+      Thread.MutexKey lock=prepbuffermux->lock();
+      prepbufferready->signal();
+      lock=0;
+    }
   }
 
   final void _processrowdesc(array(mapping(string:mixed)) datarowdesc) {
     _setrowdesc(datarowdesc);
     mapping(string:mixed) tp=_tprepared;   // FIXME Is caching this worthwhile?
     if(!tp || !tp.datarowdesc)
-      Thread.Thread(_dodatarows,this);
+      Thread.Thread(gotdatarowdesc);
     if(tp)
       tp.datarowdesc=datarowdesc;
   }
 
-  final void _dodatarows() {
-    object plugbuffer=_plugbuffer;
-    _plugbuffer=0;
+  protected void gotdatarowdesc() {
+    if(!prepbuffer) {
+      Thread.MutexKey lock=prepbuffermux->lock();
+      prepbufferready->wait(lock);
+      lock=0;
+    }
+    object plugbuffer=prepbuffer;
+    prepbuffer=0;
     plugbuffer->add_int16(sizeof(_datarowdesc));
     foreach(_datarowdesc;;mapping col)
       plugbuffer->add_int16(oidformat(col.type));
     PD("Bind portal %O statement %O\n",_portalname,_preparedname);
-    _fetchlimit=_pgsqlsess->_fetchlimit;
+    _fetchlimit=pgsqlsess->_fetchlimit;
     _openportal();
     object bindbuffer=c->start(1);
     _unnamedstatementkey=0;
     bindbuffer->add_int8('B')->add_hstring(plugbuffer,4,4);
     if(!_tprepared)
       closestatement(bindbuffer,_preparedname);
-    _sendexecute(_pgsqlsess->_fetchlimit
+    _sendexecute(pgsqlsess->_fetchlimit
                          && !(cachealways[_query]
                               || sizeof(_query)>=MINPREPARELENGTH &&
                               execfetchlimit->match(_query))
@@ -664,7 +685,7 @@ class pgsql_result {
   }
 
   final void _openportal() {
-    _pgsqlsess->_portalsinflight++;
+    pgsqlsess->_portalsinflight++;
     Thread.MutexKey lock=closemux->lock();
     _state=bound;
     lock=0;
@@ -678,7 +699,7 @@ class pgsql_result {
     switch(_state) {
       case copyinprogress:
       case bound:
-        --_pgsqlsess->_portalsinflight;
+        --pgsqlsess->_portalsinflight;
     }
     _state=closed;
     lock=0;
@@ -705,9 +726,9 @@ class pgsql_result {
           retval=flushsend;
         } else
           _unnamedportalkey=0;
-        if(!--_pgsqlsess->_portalsinflight) {
-          _pgsqlsess->_readyforquerycount++;
-          _pgsqlsess->_pportalcount=0;
+        if(!--pgsqlsess->_portalsinflight) {
+          pgsqlsess->_readyforquerycount++;
+          pgsqlsess->_pportalcount=0;
           retval=syncsend;
         }
     }
@@ -720,11 +741,11 @@ class pgsql_result {
     if(_rowsreceived==1)
       PD("<%O _fetchlimit %d=min(%d||1,%d), _inflight %d\n",_portalname,
        _fetchlimit,(_portalbuffersize>>1)*_rowsreceived/_bytesreceived,
-       _pgsqlsess._fetchlimit,_inflight);
+       pgsqlsess._fetchlimit,_inflight);
     if(_fetchlimit) {
       _fetchlimit=
        min((_portalbuffersize>>1)*_rowsreceived/_bytesreceived||1,
-        _pgsqlsess._fetchlimit);
+        pgsqlsess._fetchlimit);
       Thread.MutexKey lock=closemux->lock();
       if(_fetchlimit && _inflight<=_fetchlimit-1)
         _sendexecute(_fetchlimit);
@@ -740,7 +761,7 @@ class pgsql_result {
     _datarows->write(1);			// Signal EOF
     object plugbuffer=c->start(1);
     plugbuffer->sendcmd(_closeportal(plugbuffer));
-    _pgsqlsess=UNDEFINED;
+    pgsqlsess=UNDEFINED;
   }
 
   protected void destroy() {
@@ -800,11 +821,12 @@ class pgsql_result {
       return 0;
     array(array|int) datarow=_datarows->try_read_array();
     if(!datarow)
-       datarow=_datarows->read_array();
+      datarow=_datarows->read_array();
     if(arrayp(datarow[-1]))
       return datarow;
     trydelayederror();
     eoffound=1;
+    _datarows->write(1);			// Signal EOF for other threads
     return (datarow=datarow[..<1]);
   }
 

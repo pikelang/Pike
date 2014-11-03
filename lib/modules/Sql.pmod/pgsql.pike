@@ -269,7 +269,7 @@ string host_info() {
 //!   @[ping()]
 int is_open() {
   catch {
-    return c->socket->query_fd()>=0;
+    return c->socket->is_open();
   };
   return 0;
 }
@@ -319,7 +319,8 @@ void cancelquery() {
 #endif
   object plugbuffer=c->start(1);
   foreach(qportals->peek_array();;object portal)
-    portal->_closeportal(plugbuffer);
+    if(objectp(portal))
+      portal->_closeportal(plugbuffer);
   plugbuffer->sendcmd(sendout);
 }
 
@@ -576,7 +577,7 @@ protected void storetiming(object portal) {
 }
 
 final void _processloop(object ci) {
-  int die=0,terminating=0;
+  int terminating=0;
   int|.pgsql_util.pgsql_result portal;
   mixed err;
   {
@@ -790,10 +791,11 @@ final void _processloop(object ci) {
             portal->_purgeportal();
           }
           foreach(qportals->peek_array();;.pgsql_util.pgsql_result qp) {
-            PD("Checking portal %O %d<=%d\n",
-             qp._portalname,qp._synctransact,portal);
-            if(qp._synctransact && qp._synctransact<=portal)
+            if(objectp(qp) && qp._synctransact && qp._synctransact<=portal) {
+              PD("Checking portal %O %d<=%d\n",
+               qp._portalname,qp._synctransact,portal);
               qp->_purgeportal();
+            }
           }
           portal=0;
           _readyforquerycount--;
@@ -822,7 +824,7 @@ final void _processloop(object ci) {
 #endif
           if(portal._tprepared)
             portal._tprepared.datatypeoid=a;
-          portal->_preparebind(a);
+          Thread.Thread(portal->_preparebind,a);
           break;
         }
         case 'T': {
@@ -865,8 +867,12 @@ final void _processloop(object ci) {
 #ifdef PG_DEBUGMORE
           PD("%O\n",a);
 #endif
-          portal->_processrowdesc(a);
-          portal=0;
+          if(portal._forcetext)
+            portal->_setrowdesc(a);		// Do not consume queued portal
+          else {
+            portal->_processrowdesc(a);
+            portal=0;
+          }
           break;
         }
         case 'n': {
@@ -915,9 +921,8 @@ final void _processloop(object ci) {
           string serror;
           if(portal._tprepared)
             storetiming(portal);
-          array a, datarowdesc;
           portal._bytesreceived+=msglen;
-          datarowdesc=portal._datarowdesc;
+          array datarowdesc=portal._datarowdesc;
           int cols=ci->read_int16();
 #ifdef PG_DEBUG
 #ifdef PG_DEBUGMORE
@@ -931,7 +936,7 @@ final void _processloop(object ci) {
           int atext = portal._alltext;		     // cache locally for speed
           int forcetext = portal._forcetext;	     // cache locally for speed
           string cenc=_runtimeparameter[CLIENT_ENCODING];
-          a=allocate(cols,UNDEFINED);
+          array a=allocate(cols,UNDEFINED);
           msglen-=2+4*cols;
           foreach(datarowdesc;int i;mapping m) {
             int collen=ci->read_sint(4);
@@ -1088,9 +1093,9 @@ final void _processloop(object ci) {
               USERERROR(a2nls(lastmessage
                               +({pinpointerror(portal._query,msgresponse.P)})
                               +showbindings(portal)));
-            case "57P01":case "57P02":case "57P03":die=1;
+            case "57P01":case "57P02":case "57P03":
               preplastmessage(msgresponse);
-              PD(a2nls(lastmessage));USERERROR(a2nls(lastmessage));
+              PD(a2nls(lastmessage));throw(0);
             case "08P01":case "42P05":
               errtype=protocolerror;
             case "XX000":case "42883":case "42P01":
@@ -1165,11 +1170,11 @@ final void _processloop(object ci) {
 #endif
             errtype=protocolunsupported;
           } else {
-            if(!waitforauthready)
-              die=1;
             lastmessage+=({
              sprintf("Connection lost to database %s@%s:%d/%s %d\n",
                   user,_host,_port,database,backendpid)});
+            if(!waitforauthready)
+              throw(0);
             USERERROR(a2nls(lastmessage));
           }
           break;
@@ -1201,11 +1206,11 @@ final void _processloop(object ci) {
     }
     if(stringp(err)) {
       .pgsql_util.pgsql_result or;
-      if(!(or=portal))
+      if(!objectp(or=portal))
         or=this;
       if(!or._delayederror)
         or._delayederror=err;
-      if(portal)
+      if(objectp(portal))
         portal->_releasesession();
       portal=0;
       continue;
@@ -1215,7 +1220,8 @@ final void _processloop(object ci) {
   _delayederror=err;
   if(!ci->close() && !terminating && options.reconnect)
     _connectfail();
-  throw(err);
+  if(err)
+    throw(err);
 }
 
 //! Closes the connection to the database, any running queries are
@@ -1237,8 +1243,7 @@ void destroy() {
 }
 
 void _connectfail(void|mixed err) {
-  if(err)
-    _delayederror=err;
+  PD("Connect failed %O reconnectdelay %d\n",err,reconnectdelay);
   if(!err || reconnectdelay) {
     int tdelay;
     switch(tdelay=reconnectdelay) {
@@ -1246,6 +1251,8 @@ void _connectfail(void|mixed err) {
         reconnectdelay=RECONNECTDELAY;
         break;
       default:
+        if(err)
+          _delayederror=err;
         if(options.reconnect!=-1)
           return;
         reconnectdelay=RECONNECTBACKOFF;
@@ -1255,11 +1262,15 @@ void _connectfail(void|mixed err) {
     if(!waitforauthready)
       waitforauthready=Thread.Condition();
     lock=0;
+    PD("Schedule reconnect in %ds\n",tdelay);
+    _delayederror=0;
     .pgsql_util.local_backend->call_out(reconnect,tdelay,1);
-  }
+  } else if(err)
+    _delayederror=err;
 }
 
 protected int reconnect(void|int force,void|object tt) {
+  PD("(Re)connect\n");
   if(!force) {
     Thread.MutexKey lock=waitforauth->lock();
     if(waitforauthready) {
@@ -1270,6 +1281,7 @@ protected int reconnect(void|int force,void|object tt) {
     lock=0;
   }
   if(c) {
+    PD("Close old connection\n");
     reconnected++;
 #ifdef PG_STATS
     prepstmtused=0;
@@ -1279,11 +1291,13 @@ protected int reconnect(void|int force,void|object tt) {
     else
       c->close();
     c=0;
+    PD("Flushing old cache\n");
     foreach(_prepareds;;mapping tp)
       m_delete(tp,"preparedname");
     if(!options.reconnect)
       return 0;
   }
+  PD("Actually start to connect\n");
   qportals=Thread.Queue();
   _readyforquerycount=1;
   qportals->write(1);
@@ -1714,7 +1728,7 @@ protected inline string int2hex(int i) {
   return String.int2hex(i);
 }
 
-final void throwdelayederror(object parent) {
+final inline void throwdelayederror(object parent) {
   .pgsql_util.throwdelayederror(parent);
 }
 
@@ -1784,44 +1798,48 @@ object big_query(string q,void|mapping(string|int:mixed) bindings,
   array(string|int) paramValues;
   array from;
   if(bindings) {
-    int pi=0,rep=0;
-    paramValues=allocate(sizeof(bindings));
-    from=allocate(sizeof(bindings));
-    array(string) to=allocate(sizeof(bindings));
-    foreach(bindings; mixed name; mixed value) {
-      if(stringp(name)) {	       // Throws if mapping key is empty string
-        if(name[0]!=':')
-	  name=":"+name;
-	if(name[1]=='_') {	       // Special option parameter
-          switch(name) {
-            case ":_cache":
-              forcecache=(int)value;
-              break;
-            case ":_text":
-              forcetext=(int)value;
-              break;
-	  }
-	  continue;
-	}
-	if(!has_value(q,name))
-	  continue;
+    if(forcetext)
+      q = .sql_util.emulate_bindings(q, bindings, this), paramValues=({});
+    else {
+      int pi=0,rep=0;
+      paramValues=allocate(sizeof(bindings));
+      from=allocate(sizeof(bindings));
+      array(string) to=allocate(sizeof(bindings));
+      foreach(bindings; mixed name; mixed value) {
+        if(stringp(name)) {	       // Throws if mapping key is empty string
+          if(name[0]!=':')
+            name=":"+name;
+          if(name[1]=='_') {	       // Special option parameter
+            switch(name) {
+              case ":_cache":
+                forcecache=(int)value;
+                break;
+              case ":_text":
+                forcetext=(int)value;
+                break;
+            }
+            continue;
+          }
+          if(!has_value(q,name))
+            continue;
+        }
+        from[rep]=name;
+        string rval;
+        if(multisetp(value))		// multisets are taken literally
+          rval=indices(value)*",";	// and bypass the encoding logic
+        else {
+          paramValues[pi++]=value;
+          rval=sprintf("$%d",pi);
+        }
+        to[rep++]=rval;
       }
-      from[rep]=name;
-      string rval;
-      if(multisetp(value))		// multisets are taken literally
-	rval=indices(value)*",";	// and bypass the encoding logic
-      else {
-        paramValues[pi++]=value;
-	rval=sprintf("$%d",pi);
-      }
-      to[rep++]=rval;
+      if(rep--)
+        q=replace(q,from=from[..rep],to=to[..rep]);
+      paramValues= pi ? paramValues[..pi-1] : ({});
+      from=({from,to,paramValues});
     }
-    if(rep--)
-      q=replace(q,from=from[..rep],to=to[..rep]);
-    paramValues= pi ? paramValues[..pi-1] : ({});
-    from=({from,to,paramValues});
   } else
-    paramValues = ({});
+    paramValues=({});
   if(String.width(q)>8)
     ERROR("Wide string literals in %O not supported\n",q);
   if(has_value(q,"\0"))
@@ -1833,10 +1851,7 @@ object big_query(string q,void|mapping(string|int:mixed) bindings,
     lock=0;
   }
   int tstart;
-  if(forcetext) {
-    if(bindings)
-      q = .sql_util.emulate_bindings(q, bindings, this);
-  } else if(forcecache==1
+  if(!forcetext && forcecache==1
         || forcecache!=0
          && (sizeof(q)>=MINPREPARELENGTH || .pgsql_util.cachealways[q])) {
     object plugbuffer=c->start();
@@ -1862,7 +1877,7 @@ object big_query(string q,void|mapping(string|int:mixed) bindings,
 	  }
 	}
       if(forcecache!=1 && .pgsql_util.createprefix->match(q)) {
-	invalidatecache=1;				// Flush cache on CREATE
+	invalidatecache=1;			// Flush cache on CREATE
         tp=UNDEFINED;
       } else
 	_prepareds[q]=tp=([]);
@@ -1890,18 +1905,18 @@ object big_query(string q,void|mapping(string|int:mixed) bindings,
   portalsopened++;
 #endif
   clearmessage=1;
-  object plugbuffer=c;
   if(forcetext) {	// FIXME What happens if portals are still open?
     portal._unnamedportalkey=_unnamedportalmux->lock(1);
+    portal._portalname="";
     portal->_openportal();
     _readyforquerycount++;
     Thread.MutexKey lock=unnamedstatement->lock(1);
-    plugbuffer->start(1)->add_int8('Q')->add_hstring(q,4,4+1)->add_int8(0)
+    c->start(1)->add_int8('Q')->add_hstring(q,4,4+1)->add_int8(0)
      ->sendcmd(flushlogsend,portal);
     lock=0;
     PD("Simple query: %O\n",q);
   } else {
-    object parsebuffer;
+    object plugbuffer;
     if(!sizeof(preparedname) || !tp || !tp.preparedname) {
       if(!sizeof(preparedname))
         preparedname=
@@ -1912,16 +1927,16 @@ object big_query(string q,void|mapping(string|int:mixed) bindings,
       // performance if it is omitted; seems like a flaw in the PostgreSQL
       // server v8.3.3
       PD("Parse statement %O=%O\n",preparedname,q);
-      parsebuffer=plugbuffer->start()->add_int8('P')
+      plugbuffer=c->start()->add_int8('P')
        ->add_hstring(({preparedname,0,q,"\0\0\0"}),4,4)->add(PGFLUSH);
     }
     if(!tp || !tp.datatypeoid) {
       PD("Describe statement %O\n",preparedname);
-      (parsebuffer||plugbuffer->start())->add_int8('D')
+      (plugbuffer||c->start())->add_int8('D')
        ->add_hstring(({'S',preparedname,0}),4,4)->sendcmd(flushsend,portal);
     } else {
-      if(parsebuffer)
-        parsebuffer->sendcmd();
+      if(plugbuffer)
+        plugbuffer->sendcmd();
 #ifdef PG_STATS
       skippeddescribe++;
 #endif
@@ -1930,11 +1945,8 @@ object big_query(string q,void|mapping(string|int:mixed) bindings,
     portal._preparedname=preparedname;
     if((portal._tprepared=tp) && tp.datatypeoid) {
       mixed e=catch(portal->_preparebind(tp.datatypeoid));
-      if(e && !portal._delayederror) {
-        if(!stringp(e))
-          throw(e);
-        portal._delayederror=e;
-      }
+      if(e && !portal._delayederror)
+        throw(e);
     }
   }
   throwdelayederror(portal);
