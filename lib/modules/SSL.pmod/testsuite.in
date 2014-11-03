@@ -597,7 +597,8 @@ test_do([[
     // DH_RSA suites will fail prior to TLS 1.2, since they require
     // the certificate to be signed with RSA.
     if (((client_max < PROTOCOL_TLS_1_2) ||
-         (server_max < PROTOCOL_TLS_1_2)) &
+         (server_max < PROTOCOL_TLS_1_2) ||
+	 (obsoleted_suites[suites[0] ] < PROTOCOL_TLS_1_2)) &
         (sizeof(suites) == 1)) {
       int ke = CIPHER_SUITES[suites[0] ][0];
       if ((ke == KE_ecdh_rsa) || (ke == KE_dh_rsa)) {
