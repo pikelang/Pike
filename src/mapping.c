@@ -1877,7 +1877,7 @@ void o_append_mapping( INT32 args )
       int i;
       /* fprintf( stderr, "map_refs==2\n" ); */
       for( i=0; i<args; i+=2 )
-        low_mapping_insert( m, Pike_sp-(i+2), Pike_sp-(i+1), 0 );
+        low_mapping_insert( m, Pike_sp-(i+2), Pike_sp-(i+1), 2 );
       stack_pop_n_elems_keep_top(2+args);
       return;
     }
