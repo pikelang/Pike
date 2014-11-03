@@ -81,7 +81,7 @@ PIKECLASS FFT
 	{
 	  struct array *a = Pike_sp[-args].u.array;
 	  int n = a->size;
-	  THIS->r_in = malloc(sizeof(fftw_real)*n);
+	  THIS->r_in = calloc(n, sizeof(fftw_real));
 
 	  for(i=0; i<n; i++)
 	    {
@@ -92,7 +92,7 @@ PIKECLASS FFT
 		THIS->r_in[i] = (fftw_real)a->item[i].u.float_number;
 	    };
 
-	  THIS->r_out = malloc(sizeof(fftw_real)*n);
+	  THIS->r_out = calloc(n, sizeof(fftw_real));
 
 	  if (THIS->r_rc_plan_size != n)
 	    {

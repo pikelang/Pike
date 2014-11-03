@@ -84,7 +84,7 @@ static void matrixX(_create)(INT32 args)
 	 if (i==0) 
 	 {
 	    xs=Pike_sp[-args].u.array->item[i].u.array->size;
-	    THIS->m=m=malloc(sizeof(FTYPE)*xs*ys);
+	    THIS->m=m=calloc(xs*ys, sizeof(FTYPE));
 	    if (!m)
 	       SIMPLE_OUT_OF_MEMORY_ERROR(PNAME,
 					  sizeof(FTYPE)*xs*ys);
@@ -201,7 +201,7 @@ done_made:
 	 get_all_args(PNAME,args,"%s%i",&dummy,&side);
 
 	 THIS->xsize=THIS->ysize=side;
-	 THIS->m=m=malloc(sizeof(FTYPE)*side*side);
+	 THIS->m=m=calloc(side*side, sizeof(FTYPE));
 	 if (!m) SIMPLE_OUT_OF_MEMORY_ERROR(PNAME,sizeof(FTYPE)*side*side);
 
   	 n=side*side;
@@ -239,7 +239,7 @@ done_made:
 	    SIMPLE_BAD_ARG_ERROR(PNAME,2,"int(2..)");
 
 	 THIS->xsize=THIS->ysize=side;
-	 THIS->m=m=malloc(sizeof(FTYPE)*side*side);
+	 THIS->m=m=calloc(side*side, sizeof(FTYPE));
 	 if (!m) SIMPLE_OUT_OF_MEMORY_ERROR(PNAME,sizeof(FTYPE)*side*side);
 
 	 n=side*side;

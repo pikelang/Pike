@@ -458,7 +458,7 @@ static void restore_fd_info(int *fd_info)
       free(fd_info);
       fd_info = other_fd_info;
     } else {
-      int *new_fd_info = malloc(num_fds * sizeof(int));
+      int *new_fd_info = calloc(num_fds, sizeof(int));
       if (!new_fd_info) {
 	/* FIXME: Huston, we have a problem... */
 	Pike_fatal("Out of memory in send_fd().\n");

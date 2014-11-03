@@ -740,9 +740,9 @@ static void f_big_query(INT32 args) {
       sybdebug((stderr,"I have %d columns' worth of data\n",numcols));
       sybdebug((stderr,"Allocating results**\n"));
       /* it looks like xalloc can't be used here. Hubbe? */
-      results=malloc(numcols*sizeof(char*));
-      results_lengths=malloc(numcols*sizeof(CS_INT));
-      nulls=malloc(numcols*sizeof(CS_SMALLINT));
+      results=calloc(numcols, sizeof(char*));
+      results_lengths=calloc(numcols, sizeof(CS_INT));
+      nulls=calloc(numcols, sizeof(CS_SMALLINT));
       this->results=results;
       this->results_lengths=results_lengths;
       this->nulls=nulls;
@@ -764,7 +764,7 @@ static void f_big_query(INT32 args) {
         sybdebug((stderr,"Allocating %ld+%d+1 bytes\n",
                  length,EXTRA_COLUMN_SPACE));
         /* it looks like xalloc can't be used here. Hubbe? */
-        results[j]=malloc((length+EXTRA_COLUMN_SPACE+1)*
+        results[j]=calloc(length+EXTRA_COLUMN_SPACE+1,
                           sizeof(char));
         if (results[j]==NULL) {
           sybdebug((stderr,"PANIC! COULDN'T ALLOCATE MEMORY!"));
@@ -798,7 +798,7 @@ static void f_big_query(INT32 args) {
         length=guess_column_length(cmd,1);
 
         sybdebug((stderr,"Guessed length of %d\n",length));
-        function_result=malloc((length+EXTRA_COLUMN_SPACE+1)*
+        function_result=calloc(length+EXTRA_COLUMN_SPACE+1,
                                sizeof(char));
 
         description.datatype=CS_CHAR_TYPE;

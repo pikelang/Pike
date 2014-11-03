@@ -1576,7 +1576,7 @@ void f_exece(INT32 args)
     INT32 e, i = 0;
     struct keypair *k;
 
-    env=malloc((1+m_sizeof(en)) * sizeof(char *));
+    env=calloc(1+m_sizeof(en), sizeof(char *));
     if(!env) {
       free(argv);
       SIMPLE_OUT_OF_MEMORY_ERROR("exece", (1+m_sizeof(en)*sizeof(char *)));
