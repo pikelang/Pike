@@ -136,4 +136,6 @@ test_true( DSA->verify_rsaref("hej", DSA->sign_rsaref("hej")) )
 test_true( DSA->verify_ssl( "hej", DSA->sign_ssl("hej")) )
 test_do( add_constant("DSA") )
 
+test_eq( Crypto.DH.MODPGroup1->order, Crypto.DH.MODPGroup1->q )
+
 END_MARKER

@@ -65,22 +65,6 @@ class Parameters
     return 1;
   }
 
-  //! Alias for @[q].
-  //!
-  //! @deprecated q
-  __deprecated__ Gmp.mpz `order()
-  {
-    return q;
-  }
-
-  //! Alias for @[q].
-  //!
-  //! @deprecated q
-  __deprecated__ void `order=(Gmp.mpz val)
-  {
-    q = val;
-  }
-
   //! Initialize the set of Diffie-Hellman parameters.
   //!
   //! @param other
