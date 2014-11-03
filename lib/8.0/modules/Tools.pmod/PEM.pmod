@@ -57,7 +57,7 @@ class EncapsulatedMsg {
 
   // The encapsulated message object is created from components
   // parsed in the RFC934 decoder loop.
-  protected __deprecated__ void create(string eb, string contents)
+  protected void create(string eb, string contents)
   {
     boundary = eb;
 
@@ -149,7 +149,7 @@ class RFC934 {
   }
 
   //! Decodes an RFC 934 encoded message.
-  __deprecated__ void create(string data)
+  void create(string data)
   {
     array(string) parts = dash_split(data);
 
@@ -256,7 +256,7 @@ class Msg
   //!
   //! @param s
   //!   A string containing a PEM encoded message to be decoded.
-  protected __deprecated__ void create(string s)
+  protected void create(string s)
    {
 #ifdef PEM_DEBUG
       werror("Msg->create(%O)\n", s);
@@ -308,7 +308,7 @@ class Msg
 }
 
 // Doesn't use general rfc934 headers and boundaries
-__deprecated__ string simple_build_pem(string tag, string data)
+string simple_build_pem(string tag, string data)
 {
   return sprintf("-----BEGIN %s-----\n"
 		 "%s\n"
