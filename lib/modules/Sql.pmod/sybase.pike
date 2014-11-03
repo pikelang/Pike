@@ -14,29 +14,6 @@ constant dont_dump_program = 1;
 inherit sybase.sybase:mo;
 #define THROW(X) throw(({X+"\n",backtrace()}))
 
-
-/*
- * Deprecated. Use connect(host,db,user,pass) instead.
- */
-__deprecated__ void select_db(string db)
-{
-  mo::big_query("use "+db);
-}
-
-/*
- * Deprecated. Use an SQL command instead.
- */
-__deprecated__ void create_db (string dbname) {
-  mo::big_query("create database "+dbname);
-}
-
-/*
- * Deprecated. Use an SQL command instead.
- */
-__deprecated__ void drop_db (string dbname) {
-  mo::big_query("drop database "+dbname);
-}
-
 void shutdown() {
   catch { //there _will_ be an error. It's just that we don't care about it.
     mo::big_query("shutdown");
