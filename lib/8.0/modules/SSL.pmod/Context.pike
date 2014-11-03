@@ -23,7 +23,7 @@ protected array(string(8bit)) compat_certificates;
 //!
 //! @seealso
 //!   @[`certificates], @[find_cert()]
-__deprecated__ Crypto.RSA.State `rsa()
+Crypto.RSA.State `rsa()
 {
   return compat_rsa;
 }
@@ -36,7 +36,7 @@ __deprecated__ Crypto.RSA.State `rsa()
 //!
 //! @seealso
 //!   @[`certificates=], @[add_cert()]
-__deprecated__ void `rsa=(Crypto.RSA.State k)
+void `rsa=(Crypto.RSA.State k)
 {
   compat_rsa = k;
   if (k && compat_certificates) {
@@ -55,7 +55,7 @@ __deprecated__ void `rsa=(Crypto.RSA.State k)
 //!
 //! @seealso
 //!   @[`rsa], @[find_cert()]
-__deprecated__ array(string(8bit)) `certificates()
+array(string(8bit)) `certificates()
 {
   return compat_certificates;
 }
@@ -69,7 +69,7 @@ __deprecated__ array(string(8bit)) `certificates()
 //!
 //! @seealso
 //!   @[`rsa=], @[add_cert()]
-__deprecated__ void `certificates=(array(string(8bit)) certs)
+void `certificates=(array(string(8bit)) certs)
 {
   compat_certificates = certs;
 
@@ -88,7 +88,7 @@ __deprecated__ void `certificates=(array(string(8bit)) certs)
 //!
 //! @seealso
 //!   @[`certificates], @[find_cert()]
-__deprecated__ Crypto.RSA.State `client_rsa()
+Crypto.RSA.State `client_rsa()
 {
   return compat_rsa;
 }
@@ -101,7 +101,7 @@ __deprecated__ Crypto.RSA.State `client_rsa()
 //!
 //! @seealso
 //!   @[`client_certificates=], @[add_cert()]
-__deprecated__ void `client_rsa=(Crypto.RSA.State k)
+void `client_rsa=(Crypto.RSA.State k)
 {
   compat_rsa = k;
   if (k && compat_certificates) {
@@ -120,7 +120,7 @@ __deprecated__ void `client_rsa=(Crypto.RSA.State k)
 //!
 //! @seealso
 //!   @[`rsa], @[find_cert()]
-__deprecated__ array(array(string(8bit))) `client_certificates()
+array(array(string(8bit))) `client_certificates()
 {
   return compat_certificates && ({ compat_certificates });
 }
@@ -134,7 +134,7 @@ __deprecated__ array(array(string(8bit))) `client_certificates()
 //!
 //! @seealso
 //!   @[`rsa=], @[add_cert()]
-__deprecated__ void `client_certificates=(array(array(string(8bit))) certs)
+void `client_certificates=(array(array(string(8bit))) certs)
 {
   compat_certificates = certs && (sizeof(certs)?certs[0]:({}));
 
@@ -149,14 +149,14 @@ __deprecated__ void `client_certificates=(array(array(string(8bit))) certs)
 
 //! Compatibility.
 //! @deprecated find_cert
-__deprecated__ Crypto.DSA.State `dsa()
+Crypto.DSA.State `dsa()
 {
   return UNDEFINED;
 }
 
 //! Compatibility.
 //! @deprecated add_cert
-__deprecated__ void `dsa=(Crypto.DSA.State k)
+void `dsa=(Crypto.DSA.State k)
 {
   error("The old DSA API is not supported anymore.\n");
 }
@@ -170,7 +170,7 @@ __deprecated__ void `dsa=(Crypto.DSA.State k)
 //!   @[dhe_dss_mode()], @[filter_weak_suites()]
 //!
 //! @deprecated get_suites
-__deprecated__ void rsa_mode(int(0..)|void min_keylength)
+void rsa_mode(int(0..)|void min_keylength)
 {
   SSL3_DEBUG_MSG("SSL.Context: rsa_mode()\n");
   preferred_suites = get_suites(min_keylength, 1);
@@ -185,7 +185,7 @@ __deprecated__ void rsa_mode(int(0..)|void min_keylength)
 //!   @[rsa_mode()], @[filter_weak_suites()]
 //!
 //! @deprecated get_suites
-__deprecated__ void dhe_dss_mode(int(0..)|void min_keylength)
+void dhe_dss_mode(int(0..)|void min_keylength)
 {
   SSL3_DEBUG_MSG("SSL.Context: dhe_dss_mode()\n");
   preferred_suites = get_suites(min_keylength, 1);
