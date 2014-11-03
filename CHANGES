@@ -1,4 +1,4 @@
-Pike 8: Changes since Pike 7.8 (scratch area for future release notes)
+Pike 8: Changes since Pike 7.8
 ----------------------------------------------------------------------
 
 New language features
@@ -128,7 +128,7 @@ o "Safe" index
     |  && request_id->user->misc->x
 
 o Added the '?:' operator for compatibility with other C-like
-  languages. It is identical to '||' in pike.
+  languages. It is identical to '||' in Pike.
 
 o The && operator changed, when doing A && B, and A is false, keep A
   instead of returning 0.
@@ -296,7 +296,7 @@ o Significantly changed x86-32 and an entirely new AMD64/x86-64
   modern GCC:s.
 
   The x86-64 backends has been rewritten so that it is easier to add
-  new instructions (x86-64) and opcodes (pike) to it, and it is
+  new instructions (x86-64) and opcodes (Pike) to it, and it is
   significantly more complete than the x86-32 one.
 
 o Svalue type renumbering
@@ -420,7 +420,7 @@ o Removed facets
   has been removed, since it was only partially done and not really
   used.
 
-o It is no longer possible to compile pike without libgmp.
+o It is no longer possible to compile Pike without libgmp.
 
   Bignums are now a required language feature
 
@@ -435,7 +435,7 @@ o Locale.Charset
 o The ancient syntax for arrays (string * was an alias for
   array(string)) has now been removed completely.
 
-o Compatibility for pike versions before 7.6 is no longer available.
+o Compatibility for Pike versions before 7.6 is no longer available.
 
 o decode_value can no longer decode programs using the 'old style'
   program encoding.
@@ -461,7 +461,7 @@ o Pike.Watchdog
 
   An important and useful side-effect of this class is that the
   process will start to respond to kill -QUIT by printing a lot of
-  debug information to stderr, including memory usage, and if pike is
+  debug information to stderr, including memory usage, and if Pike is
   compiled with profiling, the CPU used since the last time kill -QUIT
   was called.
 
@@ -475,7 +475,7 @@ o Crypto.Password
 o Debug.Profiling
 
   Tools useful for collecting and format for output the profiling
-  information generated when pike is compiled --with-profiling.
+  information generated when Pike is compiled --with-profiling.
 
 o NetUtils
 
@@ -544,7 +544,7 @@ o Mysql.SqlTable
   the Mysql module.
 
   Among other things, this class handles some convenient conversions
-  between SQL and pike data types
+  between SQL and Pike data types
 
 o Parser.CSV
 
@@ -575,7 +575,7 @@ o Val
   possible for a program to replace them with extended versions,
   provided they don't break the behavior of the base classes defined
   here. Since there is no good mechanism to handle such extending in
-  several steps, pike libraries should preferably ensure that the base
+  several steps, Pike libraries should preferably ensure that the base
   classes defined here provide required functionality directly.
 
 o __builtin
@@ -631,7 +631,7 @@ o String.range(str)
 
 o String.filter_non_unicode(str)
 
-  This function replaces all non-unicode characters in a pike string
+  This function replaces all non-unicode characters in a Pike string
   with 0xfffd.
 
 o SDL.Music added to SDL.
@@ -661,7 +661,7 @@ o Process.daemon
 o Debug.pp_object_usage()
 
   Pretty-print debug information, useful to get debug information
-  about object counts and memory usage in pike applications.
+  about object counts and memory usage in Pike applications.
 
   Uses the new _object_size lfun, if present in objects, to account
   for RAM-usage in C-objects that allocate their own memory.
@@ -693,13 +693,13 @@ o Cmod precompiler:
     preprocessing using CPP before the .cmod file is processed by the
     precompiler.
 
-    This preprocessing is done with the pike precompiler, while the
+    This preprocessing is done with the Pike precompiler, while the
     C-compiler preprocessor will then be used on the generated file
     (like before)
 
   + inherit "identifier"
     -- inherit the program returned by calling master()->resolve() on
-       the specified identifier. Useful to inherit code written in pike.
+       the specified identifier. Useful to inherit code written in Pike.
 
   + Object types on return and argument types are now resolved
     dynamically when needed.
@@ -862,7 +862,7 @@ o pike -x benchmark
   + Added options to allow comparison with a previous run.
 
 o New stand-alone tools added to make it possible to build
-  documentation without the pike build tree
+  documentation without the Pike build tree
 
   + autodoc_to_html
     AutoDoc XML to HTML converter.
@@ -919,7 +919,7 @@ o System.AllocConsole, System.FreeConsole and System.AttachConsole for
   Windows NT
 
   These are useful to create or close the console window that is shown
-  for pike programs.
+  for Pike programs.
 
 o Process - forkd
 
@@ -937,7 +937,7 @@ o Process - forkd
 o MacOSX CoreFoundation support in the backend
 
   This makes it somewhat more likely that native libraries can work
-  with pike.
+  with Pike.
 
 o Better IPv6 support.
 
@@ -957,7 +957,7 @@ o Fixes to Process.run, Process.spawn_pike and friends.
     - spawn_pike() now uses search_path()
 
   + You can now optionally have System.spawn_pike pass predefines,
-    program and include path to the spawned pike, in addition to the
+    program and include path to the spawned Pike, in addition to the
     module path.
 
 o Lots of autodoc fixes
@@ -1326,7 +1326,7 @@ o -fvisibility=hidden is now the default
 
 o clang compilation fixes (bignum overflow checks, misc)
 
-  It is now possible to compile pike using a modern clang compiler.
+  It is now possible to compile Pike using a modern clang compiler.
 
 o Removed bundles
 
