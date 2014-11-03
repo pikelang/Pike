@@ -170,6 +170,51 @@ class Messages
     return ({ Message(lines) });
   }
 
+  //! Returns an array of the string bodies of all fragments with any
+  //! of the given @[labels] in the boundy preamble.
+  array(string) get_fragment_bodies(multiset labels)
+  {
+    array(string) ret = ({});
+    foreach(fragments, string|Message m)
+    {
+      if(objectp(m) && labels[m->pre])
+        ret += ({ m->body });
+    }
+    return ret;
+  }
+
+  //! Returns an array of all the bodies of @expr{"CERTIFICATE"@} and
+  //! @expr{"X509 CERTIFICATE"@} fragments.
+  array(string) get_certificates()
+  {
+    // FIXME: Support "TRUSTED CERTIFICATE" that contains additional
+    // information (trusted uses, rejected uses, alias and key id).
+    return get_fragment_bodies( (< "CERTIFICATE", "X509 CERTIFICATE" >) );
+  }
+
+  //! Convenience wrapper for @[get_certificates] that returns the
+  //! first available certificate, or @expr{0@}.
+  string get_certificate()
+  {
+    return get_certificates()[?0];
+  }
+
+  //! Returns an array of all the bodies of @expr{"RSA PRIVATE KEY"@},
+  //! @expr{"DSA PRIVATE KEY"@}, @expr{"EC PRIVATE KEY"@} and
+  //! @expr{"ANY PRIVATE KEY"@} fragments.
+  array(string) get_private_keys()
+  {
+    return get_fragment_bodies( (< "RSA PRIVATE KEY", "DSA PRIVATE KEY",
+                                   "EC PRIVATE KEY", "ANY PRIVATE KEY" >) );
+  }
+
+  //! Convenience wrapper for @[get_private_key] that returns the
+  //! first available key, or @expr{0@}.
+  string get_private_key()
+  {
+    return get_private_keys()[?0];
+  }
+
   protected string _sprintf(int t)
   {
     return t=='O' && sprintf("Standards.PEM.Message%O", parts);
