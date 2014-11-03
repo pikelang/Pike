@@ -496,8 +496,7 @@ class pgsql_result {
     lock=0;
   }
 
-  final void _preparebind() {
-    array dtoid=_tprepared.datatypeoid;
+  final void _preparebind(array dtoid) {
     array(string|int) paramValues=_params?_params[2]:({});
     if(sizeof(dtoid)!=sizeof(paramValues))
       SUSERERROR("Invalid number of bindings, expected %d, got %d\n",
