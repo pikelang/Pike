@@ -592,8 +592,8 @@ final void _processloop(object ci) {
       plugbuffer->add(name)->add_int8(0)->add((string)value)->add_int8(0);
     plugbuffer->add_int8(0);
     PD("%O\n",(string)plugbuffer);
-    ci->start()->add_hstring(plugbuffer,4,4)->sendcmd(flushsend);
-  }
+    ci->start()->add_hstring(plugbuffer,4,4)->sendcmd(sendout);
+  }		// Do not flush at this point, PostgreSQL 9.4 disapproves
   cancelsecret=0;
 #ifdef PG_DEBUG
   PD("Processloop\n");
@@ -737,8 +737,8 @@ final void _processloop(object ci) {
             case noerror:
               if(cancelsecret!="")
                 ci->start()->add_int8('p')->add_hstring(sendpass,4,5)
-                 ->add_int8(0)->sendcmd(flushsend);
-              break;
+                 ->add_int8(0)->sendcmd(sendout);
+              break;	// No flushing here, PostgreSQL 9.4 disapproves
             default:
             case protocolunsupported:
               ERROR("Unsupported authenticationmethod %c\n",authtype);
@@ -820,7 +820,7 @@ final void _processloop(object ci) {
 #endif
           if(portal._tprepared)
             portal._tprepared.datatypeoid=a;
-          portal->_preparebind();
+          portal->_preparebind(a);
           break;
         }
         case 'T': {
@@ -1074,8 +1074,8 @@ final void _processloop(object ci) {
           if(!_readyforquerycount)
             sendsync();
           PD("<%O ErrorResponse %O\n",
-           portal&&(portal._portalname||portal._preparedname),
-           portal&&portal._query);
+           objectp(portal)&&(portal._portalname||portal._preparedname),
+           objectp(portal)&&portal._query);
           mapping(string:string) msgresponse;
           msgresponse=getresponse();
           warningsdropcount+=warningscollected;
@@ -1100,7 +1100,7 @@ final void _processloop(object ci) {
               if(msgresponse.H)
                 lastmessage+=({msgresponse.H});
               lastmessage+=({
-                pinpointerror(portal&&portal._query,msgresponse.P)+
+                pinpointerror(objectp(portal)&&portal._query,msgresponse.P)+
                 pinpointerror(msgresponse.q,msgresponse.p)});
               if(msgresponse.W)
                 lastmessage+=({msgresponse.W});
@@ -1110,7 +1110,7 @@ final void _processloop(object ci) {
               }
               USERERROR(a2nls(lastmessage));
           }
-          if(portal)
+          if(objectp(portal))
             portal->_releasesession();
           break;
         }
@@ -1927,7 +1927,7 @@ object big_query(string q,void|mapping(string|int:mixed) bindings,
     }
     portal._preparedname=preparedname;
     if((portal._tprepared=tp) && tp.datatypeoid) {
-      mixed e=catch(portal->_preparebind());
+      mixed e=catch(portal->_preparebind(tp.datatypeoid));
       if(e && !portal._delayederror) {
         if(!stringp(e))
           throw(e);
