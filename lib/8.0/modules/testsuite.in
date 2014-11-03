@@ -1,0 +1,68 @@
+START_MARKER(8.0)
+
+test_any([[
+  ADT.Heap h = ADT.Heap();
+  h->push(4);
+  h->push(7);
+  h->push(1);
+  h->push(1);
+  if( h->size()!=4 ) return 1;
+  if( h->top()!=1 ) return 2;
+  if( h->size()!=3 ) return 3;
+  if( h->top()!=1 ) return 4;
+  if( h->size()!=2 ) return 5;
+  if( h->top()!=4 ) return 6;
+  if( h->size()!=1 ) return 7;
+  if( h->top()!=7 ) return 8;
+  if( h->size()!=0 ) return 9;
+  return -1;
+]], -1)
+
+define(test_cert, ([[
+  test_any([[
+    string der = Standards.PEM.Messages(#"$1")->get_certificate();
+    object o = decode_value(encode_value(Standards.X509.decode_certificate(der)));
+    return (o->public_key->rsa || o->public_key->dsa) && 1;
+  ]], 1)
+]]))
+
+dnl openssl req -x509 -nodes -days 365 -subj "/CN=PikeCert" -md5 -newkey rsa:2048 -out certfile.cer
+test_cert(-----BEGIN CERTIFICATE-----
+MIIC+TCCAeGgAwIBAgIJAK9S+nXAkU+DMA0GCSqGSIb3DQEBBAUAMBMxETAPBgNV
+BAMMCFBpa2VDZXJ0MB4XDTEzMTEyMTIxMjM1MFoXDTE0MTEyMTIxMjM1MFowEzER
+MA8GA1UEAwwIUGlrZUNlcnQwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIB
+AQDacxSu60OEhmtfBd+p9oaQ+4w13Cwp70dwRrjPb/y33sFWKN3YZ+rq/8aNXPUO
+GLOyVF6z/BlOBS8t6KBI6lNvozVFqp5cwjA6vncbwMODqB8ZZffgA/dbSTM/xtbb
+CSno4ylr4wLVk1tnwZIOS4F2mIR/po1QzwIqTAGdkMEvUkmknqEM2Ifqdb6pNjWh
+Icma7MqtYnv7/UBib8Gt8j7hk6Yrv5tj3vOHFTs2MogfIfvRnBkhSR5nMbLorLpc
+JqfVr9ZNHX66RzSKl8KHDL8/MvI96lM9eFp0utdjIUU2ApSy94U5BqhrCCzBZxHa
+dBQEvUkeX8gYHwmVudSHR5O1AgMBAAGjUDBOMB0GA1UdDgQWBBTvujHuucSU+THc
+h188CYrgV2vghjAfBgNVHSMEGDAWgBTvujHuucSU+THch188CYrgV2vghjAMBgNV
+HRMEBTADAQH/MA0GCSqGSIb3DQEBBAUAA4IBAQCY8Ix17qoiAEDqV9HdyBzNRaPW
+/b7iN5bKjy7Vq1AP0RWIc9Wjcn5cKhk/4d7e7KRYT+Pq3ayLgppoYySA6dXERGj/
+fu5ocOR5ZAjNLJG48dV2HzOe3mjFEbfw+SPR8AnNRH4qm0yNhds0e0K8MhrX7uNB
+6eZ58rt6uIUVTOKTO1HHlxX7AasgQuiT5CajLReYM6DH/F2YXLF5I4iwTRa2p5Zi
+GDAm2I6N+Txm/adCVLjpFtV2b2Mu73yzqjEVm5ruknYPfT/HPnqbmNYJySi8mCd+
+Nwq6nXBlwd7hqkELVjumX7/xyRcLY2S9wW2rTwcsQ443KGFYQqJv0/pqGC2g
+-----END CERTIFICATE-----)
+
+dnl openssl req -x509 -nodes -days 365 -subj "/CN=PikeCert" -sha1 -newkey dsa:dsaparam.txt -out certfile.cer
+test_cert(-----BEGIN CERTIFICATE-----
+MIICszCCAnGgAwIBAgIJAOthAQ79O7mMMAkGByqGSM44BAMwEzERMA8GA1UEAwwI
+UGlrZUNlcnQwHhcNMTMxMTE5MTc0MDIwWhcNMTQxMTE5MTc0MDIwWjATMREwDwYD
+VQQDDAhQaWtlQ2VydDCCAbYwggErBgcqhkjOOAQBMIIBHgKBgQC6vqxjXhAMZSEV
+P4pzp0KY+qYnTjM9ieZ27myet+M5qXIjcEg2/XLwLPmPIYOGTm6OlPXADdaEZzOf
+j6RLB2PJD6GghC5NbdrewsgGMAuVM7h5uEXRswsbpwxFm2MuPqKtA699cs6fa5hZ
+pNZUQPSlrFfkb6/95s/EofMGMQgQmwIVAPUBXOFLS/MYisyLR0Yw/poPC3HlAoGA
+EqdyVSDZRLMCONHc7UXNYMecOVgpcy8W9DEg4YfTx6SMp/Ey1mXG/cvvH47NbINS
+f88QXrBuJJEzhnQir+AUh31Mj2q/Uy2WKP8IP+kJGNjtFuxyO6YZx2OAc9lHrdvb
+AtOD//jnVOjijOG6fnAfBxMkkKWKYojMcDYWsijI6nYDgYQAAoGAWocMqiSNXmuc
+wIfYetPQitrmZRDTWizuit/sIcmvIPM0OnqFcxp50QWOaiZmAuL3pEB4CiV2HpIS
+Rer5N3/Vp+zMQGgRM1zFKD2qbdmMTOMWUGc3g1AjGGFvDuTYGOIY4RmftR0gt8Y4
+E2Dqqk0XbF3CeCrVhmVfa7ej0ByVYhmjUDBOMB0GA1UdDgQWBBRjbUSrAPUt1p8i
+8PfVzFv4Dl03LjAfBgNVHSMEGDAWgBRjbUSrAPUt1p8i8PfVzFv4Dl03LjAMBgNV
+HRMEBTADAQH/MAkGByqGSM44BAMDMQAwLgIVALDFfQRihjOCqi1vFUi5rnYig/zk
+AhUAijRxsj+Q6LEF43H8Wq4quhnZ5wQ=
+-----END CERTIFICATE-----)
+
+END_MARKER

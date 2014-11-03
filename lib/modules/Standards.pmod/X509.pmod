@@ -150,8 +150,6 @@ protected {
 class Verifier {
   constant type = "none";
   Crypto.Sign.State pkc;
-  optional __deprecated__(Crypto.RSA) rsa;
-  optional __deprecated__(Crypto.DSA) dsa;
 
   //! Verifies the @[signature] of the certificate @[msg] using the
   //! indicated hash @[algorithm].
@@ -183,10 +181,6 @@ protected class RSAVerifier
   protected void create(string key) {
     pkc = .PKCS.RSA.parse_public_key(key);
   }
-
-  __deprecated__ Crypto.RSA.State `rsa() {
-    return pkc;
-  }
 }
 
 protected class DSAVerifier
@@ -197,10 +191,6 @@ protected class DSAVerifier
   protected void create(string key, Gmp.mpz p, Gmp.mpz q, Gmp.mpz g)
   {
     pkc = .PKCS.DSA.parse_public_key(key, p, q, g);
-  }
-
-  __deprecated__ Crypto.DSA.State `dsa() {
-    return pkc;
   }
 }
 
