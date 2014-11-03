@@ -211,8 +211,8 @@ test_tests([[
 	  log_msg("Unimplemented cipher suite: %s\n", sym);
 	} else {
 	  log_msg("Cipher suite lookup table error for suite %s.\n"
-		  "Got:      ({ %{%d, %}}).\n"
-		  "Expected: ({ %{%d, %})).\n",
+		  "Got: ({ %{%d, %}}).\n"
+		  "Exp: ({ %{%d, %})).\n",
 		  sym, SSL.Constants.CIPHER_SUITES[SSL.Constants[sym] ],
 		  expected);
 	}
@@ -396,65 +396,50 @@ test_do([[
 ]])
 
 test_do([[
-  add_constant("invalid_suites", ([
-    SSL.Constants.PROTOCOL_TLS_1_1: ({
-      SSL.Constants.SSL_dhe_dss_export_with_des40_cbc_sha,
-      SSL.Constants.SSL_dhe_rsa_export_with_des40_cbc_sha,
-      SSL.Constants.SSL_dh_dss_export_with_des40_cbc_sha,
-      SSL.Constants.SSL_dh_rsa_export_with_des40_cbc_sha,
-      SSL.Constants.SSL_dh_anon_export_with_des40_cbc_sha,
-      SSL.Constants.SSL_dh_anon_export_with_rc4_40_md5,
-      SSL.Constants.SSL_rsa_export_with_rc4_40_md5,
-      SSL.Constants.SSL_rsa_export_with_rc2_cbc_40_md5,
-      SSL.Constants.SSL_rsa_export_with_des40_cbc_sha,
-      SSL.Constants.TLS_ecdhe_rsa_with_null_sha,
-      SSL.Constants.TLS_ecdhe_ecdsa_with_null_sha,
-      SSL.Constants.TLS_ecdh_rsa_with_null_sha,
-      SSL.Constants.TLS_ecdh_ecdsa_with_null_sha,
-      SSL.Constants.TLS_ecdh_anon_with_null_sha,
-      SSL.Constants.TLS_rsa_with_null_sha256,
-      SSL.Constants.SSL_rsa_with_null_sha,
-      SSL.Constants.SSL_rsa_with_null_md5,
-      SSL.Constants.SSL_null_with_null_null,
-    }),
-    SSL.Constants.PROTOCOL_TLS_1_2: ({
-      SSL.Constants.SSL_rsa_with_idea_cbc_md5,
-      SSL.Constants.SSL_rsa_with_idea_cbc_sha,
-      SSL.Constants.SSL_dhe_rsa_with_des_cbc_sha,
-      SSL.Constants.SSL_dh_anon_with_des_cbc_sha,
-      SSL.Constants.SSL_rsa_with_des_cbc_md5,
-      SSL.Constants.SSL_rsa_with_des_cbc_sha,
-      SSL.Constants.SSL_dh_rsa_with_des_cbc_sha,
-      SSL.Constants.SSL_dh_dss_with_des_cbc_sha,
-      SSL.Constants.SSL_dhe_dss_with_des_cbc_sha,
-      SSL.Constants.SSL_dhe_dss_export_with_des40_cbc_sha,
-      SSL.Constants.SSL_dhe_rsa_export_with_des40_cbc_sha,
-      SSL.Constants.SSL_dh_dss_export_with_des40_cbc_sha,
-      SSL.Constants.SSL_dh_rsa_export_with_des40_cbc_sha,
-      SSL.Constants.SSL_dh_anon_export_with_des40_cbc_sha,
-      SSL.Constants.SSL_dh_anon_export_with_rc4_40_md5,
-      SSL.Constants.SSL_rsa_export_with_rc4_40_md5,
-      SSL.Constants.SSL_rsa_export_with_rc2_cbc_40_md5,
-      SSL.Constants.SSL_rsa_export_with_des40_cbc_sha,
-      SSL.Constants.TLS_ecdhe_rsa_with_null_sha,
-      SSL.Constants.TLS_ecdhe_ecdsa_with_null_sha,
-      SSL.Constants.TLS_ecdh_rsa_with_null_sha,
-      SSL.Constants.TLS_ecdh_ecdsa_with_null_sha,
-      SSL.Constants.TLS_ecdh_anon_with_null_sha,
-      SSL.Constants.TLS_rsa_with_null_sha256,
-      SSL.Constants.SSL_rsa_with_null_sha,
-      SSL.Constants.SSL_rsa_with_null_md5,
-      SSL.Constants.SSL_null_with_null_null,
-      SSL.Constants.SSL_rsa_fips_with_des_cbc_sha,
-      SSL.Constants.SSL_rsa_oldfips_with_des_cbc_sha,
-    }),
+  int TLS_1_0 = SSL.Constants.PROTOCOL_TLS_1_0;
+  int TLS_1_1 = SSL.Constants.PROTOCOL_TLS_1_1;
+
+  // Mapping from suite to the last TLS version it was valid in (if any).
+  add_constant("obsoleted_suites", ([
+    // Obsoleted in TLS 1.1:
+    SSL.Constants.SSL_dhe_dss_export_with_des40_cbc_sha: TLS_1_0,
+    SSL.Constants.SSL_dhe_rsa_export_with_des40_cbc_sha: TLS_1_0,
+    SSL.Constants.SSL_dh_dss_export_with_des40_cbc_sha: TLS_1_0,
+    SSL.Constants.SSL_dh_rsa_export_with_des40_cbc_sha: TLS_1_0,
+    SSL.Constants.SSL_dh_anon_export_with_des40_cbc_sha: TLS_1_0,
+    SSL.Constants.SSL_dh_anon_export_with_rc4_40_md5: TLS_1_0,
+    SSL.Constants.SSL_rsa_export_with_rc4_40_md5: TLS_1_0,
+    SSL.Constants.SSL_rsa_export_with_rc2_cbc_40_md5: TLS_1_0,
+    SSL.Constants.SSL_rsa_export_with_des40_cbc_sha: TLS_1_0,
+    SSL.Constants.TLS_ecdhe_rsa_with_null_sha: TLS_1_0,
+    SSL.Constants.TLS_ecdhe_ecdsa_with_null_sha: TLS_1_0,
+    SSL.Constants.TLS_ecdh_rsa_with_null_sha: TLS_1_0,
+    SSL.Constants.TLS_ecdh_ecdsa_with_null_sha: TLS_1_0,
+    SSL.Constants.TLS_ecdh_anon_with_null_sha: TLS_1_0,
+    SSL.Constants.TLS_rsa_with_null_sha256: TLS_1_0,
+    SSL.Constants.SSL_rsa_with_null_sha: TLS_1_0,
+    SSL.Constants.SSL_rsa_with_null_md5: TLS_1_0,
+    SSL.Constants.SSL_null_with_null_null: TLS_1_0,
+
+    // Obsoleted in TLS 1.2:
+    SSL.Constants.SSL_rsa_with_idea_cbc_md5: TLS_1_1,
+    SSL.Constants.SSL_rsa_with_idea_cbc_sha: TLS_1_1,
+    SSL.Constants.SSL_dhe_rsa_with_des_cbc_sha: TLS_1_1,
+    SSL.Constants.SSL_dh_anon_with_des_cbc_sha: TLS_1_1,
+    SSL.Constants.SSL_rsa_with_des_cbc_md5: TLS_1_1,
+    SSL.Constants.SSL_rsa_with_des_cbc_sha: TLS_1_1,
+    SSL.Constants.SSL_dh_rsa_with_des_cbc_sha: TLS_1_1,
+    SSL.Constants.SSL_dh_dss_with_des_cbc_sha: TLS_1_1,
+    SSL.Constants.SSL_dhe_dss_with_des_cbc_sha: TLS_1_1,
+    SSL.Constants.SSL_rsa_fips_with_des_cbc_sha: TLS_1_1,
+    SSL.Constants.SSL_rsa_oldfips_with_des_cbc_sha: TLS_1_1,
   ]));
 ]])
 
 test_do([[
   import SSL.Constants;
   string f(SSL.Context server_ctx, SSL.Context client_ctx,
-           string expected_data, int expected_suite)
+           string exp_data, int exp_suite, int exp_version)
   {
     Stdio.File client_con = Stdio.File();
     Stdio.File server_con =
@@ -474,8 +459,7 @@ test_do([[
     string fail;
 
     string server_buf = "";
-    void server_send_data()
-    {
+    void server_send_data() {
       trigged = 2;
       int bytes = server->write(server_buf);
       server_buf = server_buf[bytes..];
@@ -487,31 +471,30 @@ test_do([[
 	}
       }
     };
-    void server_got_data(mixed ignored, string data)
-    {
+    void server_got_data(mixed ignored, string data) {
       trigged = 2;
       if (!sizeof(server_buf)) server->set_write_callback(server_send_data);
       server_buf += data;
     };
-    void server_got_close()
-    {
+    void server_got_close() {
       trigged = 2;
     };
-    void server_alert()
-    {
+    void server_alert() {
       trigged = 0;
       // server->close();
     };
 
-    void server_check_suite()
-    {
-      if (server->query_suite() != expected_suite) {
+    void server_check_suite() {
+      if ((server->query_version() != exp_version) ||
+	  (server->query_suite() != exp_suite)) {
         fail =
 	  sprintf("Unexpected cipher suite (server):\n"
-		  "Got:      %s\n"
-		  "Expected: %s\n",
+		  "Got: %s [%s]\n"
+		  "Exp: %s [%s]\n",
 		  fmt_cipher_suite(server->query_suite()),
-		  fmt_cipher_suite(expected_suite));
+		  fmt_version(server->query_version()),
+		  fmt_cipher_suite(exp_suite),
+		  fmt_version(exp_version));
 	return;
       }
       server->set_write_callback(sizeof(server_buf) && server_send_data);
@@ -519,13 +502,11 @@ test_do([[
 
     string client_recv_buf = "";
     string client_send_buf = client_msg;
-    void client_got_data(mixed ignored, string data)
-    {
+    void client_got_data(mixed ignored, string data) {
       trigged = 2;
       client_recv_buf += data;
     };
-    void client_send_data()
-    {
+    void client_send_data() {
       trigged = 2;
       int bytes = client->write(client_send_buf[..4095]);
       client_send_buf = client_send_buf[bytes..];
@@ -534,27 +515,27 @@ test_do([[
 	state = 1;
       }
     };
-    void client_got_close()
-    {
+    void client_got_close() {
       trigged = 2;
       if (state == 2) state = 3;
       client->close();
     };
-    void client_alert()
-    {
+    void client_alert() {
       trigged = 0;
       // client->close();
     };
 
-    void client_check_suite()
-    {
-      if (client->query_suite() != expected_suite) {
+    void client_check_suite() {
+      if ((client->query_version() != exp_version) ||
+	  (client->query_suite() != exp_suite)) {
         fail =
 	  sprintf("Unexpected cipher suite (client):\n"
-		  "Got:      %s\n"
-		  "Expected: %s\n",
+		  "Got: %s [%s]\n"
+		  "Exp: %s [%s]\n",
 		  fmt_cipher_suite(client->query_suite()),
-		  fmt_cipher_suite(expected_suite));
+		  fmt_version(client->query_version()),
+		  fmt_cipher_suite(exp_suite),
+		  fmt_version(exp_version));
 	return;
       }
       client->set_write_callback(client_send_data);
@@ -581,18 +562,18 @@ test_do([[
     }
 
     if (fail) {
-    } else if (!expected_data ||
-        ((state == 3) && (client_recv_buf == expected_data))) {
-      // log_status("OK: %s\n", fmt_cipher_suites(suites));
+    } else if (!exp_data ||
+        ((state == 3) && (client_recv_buf == exp_data))) {
+      // if (exp_data) log_status("OK: %s\n", fmt_cipher_suite(exp_suite));
     } else {
       if (state != 3) {
 	fail = sprintf("Unexpected exit state: %d.\n", state);
       } else {
 	fail =
 	  sprintf("Unexpected result:\n"
-		  "Got:      %O\n"
-		  "Expected: %O\n",
-		  client_recv_buf, expected_data);
+		  "Got: %O\n"
+		  "Exp: %O\n",
+		  client_recv_buf, exp_data);
       }
     }
     client->close();
@@ -607,7 +588,7 @@ test_do([[
 test_do([[
   import SSL.Constants;
   int f(int client_min, int client_max, int server_min, int server_max,
-        string expected_data, object server_ctx, array(int) suites)
+        string exp_data, object server_ctx, array(int) suites)
   {
     server_ctx->min_version = server_min;
     server_ctx->max_version = server_max;
@@ -620,18 +601,18 @@ test_do([[
         (sizeof(suites) == 1)) {
       int ke = CIPHER_SUITES[suites[0] ][0];
       if ((ke == KE_ecdh_rsa) || (ke == KE_dh_rsa)) {
-        expected_data = 0;
+        exp_data = 0;
       }
       if (sizeof(CIPHER_SUITES[suites[0] ]) == 4) {
         // AEAD ciphers and cipher specific prfs not supported prior
 	// to TLS 1.2.
-	expected_data = 0;
+	exp_data = 0;
       }
       if (client_max < PROTOCOL_TLS_1_0) {
         // SSL 3.0 doesn't support extensions, so it can't support ECC.
 	if ((ke == KE_ecdh_ecdsa) || (ke == KE_ecdhe_ecdsa) ||
 	    (ke == KE_ecdhe_rsa) || (ke == KE_ecdh_anon)) {
-	  expected_data = 0;
+	  exp_data = 0;
 	}
       }
     }
@@ -642,10 +623,26 @@ test_do([[
     client_ctx->preferred_suites = suites;
     client_ctx->min_version = client_min;
     client_ctx->max_version = client_max;
-    server_ctx->expect_fail = client_ctx->expect_fail = !expected_data;
+    server_ctx->expect_fail = client_ctx->expect_fail = !exp_data;
+
+    int exp_version = server_ctx->max_version;
+    if (exp_version > client_ctx->max_version) {
+      exp_version = client_ctx->max_version;
+    }
+    if (obsoleted_suites[suites[0] ] &&
+        (exp_version > obsoleted_suites[suites[0] ])) {
+      exp_version = obsoleted_suites[suites[0] ];
+    }
+
+    if ((exp_version < server_ctx->min_version) ||
+	(exp_version < client_ctx->min_version)) {
+      exp_version = 0;
+      exp_data = 0;
+    }
 
     string fail =
-      low_test_ssl_connection(server_ctx, client_ctx, expected_data, suites[0]);
+      low_test_ssl_connection(server_ctx, client_ctx, exp_data, suites[0],
+			      exp_version);
 
     if (!fail) return 1;
 
@@ -660,7 +657,7 @@ test_do([[
 test_do([[
   import SSL.Constants;
   array(string) f(SSL.Context server_ctx, SSL.Context client_ctx,
-		  string expected_data, int expected_suite)
+		  string exp_data, int exp_suite)
   {
 #if constant(thread_create)
     Stdio.File client_con = Stdio.File();
@@ -674,23 +671,23 @@ test_do([[
         server = SSL.sslfile(server_con, server_ctx);
         server->set_blocking();
 	if (!server->accept()) {
-	  return expected_data && "Server accept failed.\n";
+	  return exp_data && "Server accept failed.\n";
         }
 
-        if (expected_data && (server->query_suite() != expected_suite)) {
+        if (exp_data && (server->query_suite() != exp_suite)) {
 	  return
 	    sprintf("Unexpected cipher suite (server):\n"
-		    "Got:      %s\n"
-		    "Expected: %s\n",
+		    "Got: %s\n"
+		    "Exp: %s\n",
 		    fmt_cipher_suite(server->query_suite()),
-		    fmt_cipher_suite(expected_suite));
+		    fmt_cipher_suite(exp_suite));
         }
 	while (bytes) {
 	  // NB: Client doesn't close connection before all data has
 	  //     been returned, so we can't just use read(1024) here.
 	  string data = server->read(min(1024, bytes));
 	  if (!data) {
-	    return expected_data && "Server failed to receive all data.\n";
+	    return exp_data && "Server failed to receive all data.\n";
           }
 	  bytes -= sizeof(data);
 	  int sent_bytes = server->write(data);
@@ -704,22 +701,22 @@ test_do([[
     client->set_blocking();
     if (!client->connect()) {
       server_thread->wait();
-      return expected_data && ({ "Client failed to connect.\n" });
+      return exp_data && ({ "Client failed to connect.\n" });
     }
-    if (expected_data && (client->query_suite() != expected_suite)) {
+    if (exp_data && (client->query_suite() != exp_suite)) {
       return ({
 	sprintf("Unexpected cipher suite (client):\n"
-		"Got:      %s\n"
-		"Expected: %s\n",
+		"Got: %s\n"
+		"Exp: %s\n",
 		fmt_cipher_suite(client->query_suite()),
-		fmt_cipher_suite(expected_suite)),
+		fmt_cipher_suite(exp_suite)),
       });
     }
     Thread.Thread sender_thread =
       Thread.Thread(lambda() {
         int bytes = client->write(client_msg);
 	if (bytes == sizeof(client_msg)) return 0;
-	return expected_data && "Client failed to write all data.\n";
+	return exp_data && "Client failed to write all data.\n";
       });
 
     Thread.Thread reader_thread =
@@ -727,10 +724,10 @@ test_do([[
         string recv = client->read(sizeof(client_msg));
 	client->close();
 	if (recv == client_msg) {
-	  if (expected_data) return 0;
+	  if (exp_data) return 0;
 	  return "Succeeded where failure expected.\n";
 	}
-	return expected_data && "Failed to read all data.\n";
+	return exp_data && "Failed to read all data.\n";
       });
 
     array(string) failures = ({
@@ -755,7 +752,7 @@ test_do([[
 test_do([[
   import SSL.Constants;
   int f(int client_min, int client_max, int server_min, int server_max,
-        string expected_data, object server_ctx, array(int) suites,
+        string exp_data, object server_ctx, array(int) suites,
         array(CertificatePair)|void client_certs)
   {
     server_ctx->min_version = server_min;
@@ -769,18 +766,18 @@ test_do([[
         (sizeof(suites) == 1)) {
       int ke = CIPHER_SUITES[suites[0] ][0];
       if ((ke == KE_ecdh_rsa) || (ke == KE_dh_rsa)) {
-        expected_data = 0;
+        exp_data = 0;
       }
       if (sizeof(CIPHER_SUITES[suites[0] ]) == 4) {
         // AEAD ciphers and cipher specific prfs not supported prior
 	// to TLS 1.2.
-	expected_data = 0;
+	exp_data = 0;
       }
       if (client_max < PROTOCOL_TLS_1_0) {
         // SSL 3.0 doesn't support extensions, so it can't support ECC.
 	if ((ke == KE_ecdh_ecdsa) || (ke == KE_ecdhe_ecdsa) ||
 	    (ke == KE_ecdhe_rsa) || (ke == KE_ecdh_anon)) {
-	  expected_data = 0;
+	  exp_data = 0;
 	}
       }
     }
@@ -791,7 +788,7 @@ test_do([[
     client_ctx->preferred_suites = suites;
     client_ctx->min_version = client_min;
     client_ctx->max_version = client_max;
-    server_ctx->expect_fail = client_ctx->expect_fail = !expected_data;
+    server_ctx->expect_fail = client_ctx->expect_fail = !exp_data;
 
     if (client_certs) {
       // Add the certificates.
@@ -802,7 +799,7 @@ test_do([[
 
     array(string) failures =
       threaded_low_test_ssl_connection(server_ctx, client_ctx,
-				       expected_data, suites[0]);
+				       exp_data, suites[0]);
 
     if (!sizeof(failures)) return 1;
 
@@ -813,10 +810,10 @@ test_do([[
   add_constant("threaded_test_ssl_connection", f);
 ]])
 
-dnl client_min, client_max, server_min, server_max, expected
+dnl client_min, client_max, server_min, server_max, exp
 define(test_ssl, [[
   test_tests([[array(int) a() {
-    int expected_protocol = min($2, $4);
+    int exp_protocol = min($2, $4);
 
     // Default to just testing all key exchanges with a
     // cipher suite that is valid in all versions of SSL.
@@ -837,10 +834,9 @@ define(test_ssl, [[
     });
 
 #if 0
-    if( `==($1,$2,$3,$4) ) {
+    if( `==($1,$3, SSL.Constants.PROTOCOL_SSL_3_0) && ($2 == $4) ) {
       // Test all known cipher suites.
-      suites = server_ctx->get_suites(-1, 2) -
-	(invalid_suites[expected_protocol] || ({}));
+      suites = server_ctx->get_suites(-1, 2);
     }
 #endif
 
@@ -863,7 +859,7 @@ define(test_ssl, [[
 
   test_tests([[array(int) a() {
 
-    int expected_protocol = min($2, $4);
+    int exp_protocol = min($2, $4);
     int successes;
     int tests;
 
@@ -888,10 +884,9 @@ define(test_ssl, [[
 #endif
     });
 
-    if( `==($1,$2,$3,$4) ) {
+    if( `==($1,$3, SSL.Constants.PROTOCOL_SSL_3_0) && ($2 == $4) ) {
       // Test all known cipher suites.
-      suites = server_ctx->get_suites(-1, 2) -
-  	    (invalid_suites[expected_protocol] || ({}));
+      suites = server_ctx->get_suites(-1, 2);
     }
 
     foreach(suites, int suite) {
@@ -1051,13 +1046,13 @@ array(int) a() {
 ]])
 
 dnl client_ver, client_bits, client_strict,
-dnl server_ver, server_bits, server_strict, expected_suite
+dnl server_ver, server_bits, server_strict, exp_suite
 define(test_suite_b, [[
   test_program([[
     import SSL.Constants;
 
     int a() {
-      int expected_protocol = min($2, $5);
+      int exp_protocol = min($2, $5);
 
       log_status("Testing Suite B with %d bit %s client and %d bit %s server...",
 		 $2, fmt_version($1), $5, fmt_version($4));
@@ -1070,13 +1065,28 @@ define(test_suite_b, [[
       client_ctx->configure_suite_b($2, $3);
       client_ctx->max_version = $1;
 
-      int expected_suite = $7;
-      server_ctx->expect_fail = client_ctx->expect_fail = !expected_suite;
+      int exp_suite = $7;
+      server_ctx->expect_fail = client_ctx->expect_fail = !exp_suite;
+
+      int exp_version = server_ctx->max_version;
+      if (exp_version > client_ctx->max_version) {
+        exp_version = client_ctx->max_version;
+      }
+      if (obsoleted_suites[exp_suite] &&
+          (exp_version > obsoleted_suites[exp_suite])) {
+        exp_version = obsoleted_suites[exp_suite];
+      }
+
+      if ((exp_version < server_ctx->min_version) ||
+	  (exp_version < client_ctx->min_version)) {
+	exp_version = 0;
+	exp_suite = 0;
+      }
 
       string fail =
-	low_test_ssl_connection(server_ctx, client_ctx,
-				client_msg, expected_suite);
-      if (fail && expected_suite) {
+	low_test_ssl_connection(server_ctx, client_ctx, exp_suite && client_msg,
+				exp_suite, exp_version);
+      if (fail && exp_suite) {
 	log_ssl_failure(client_ctx->min_version, client_ctx->max_version,
 			server_ctx->min_version, server_ctx->max_version,
 			fail, server_ctx->preferred_suites);
@@ -1107,7 +1117,7 @@ test_suite_b(0x302, 128, 1, 0x302, 128, 1,
 ]]) dnl Crypto.ECC
 
 test_do([[
-  add_constant("invalid_suites");
+  add_constant("obsoleted_suites");
   add_constant("log_ssl_failure");
   add_constant("client_msg");
   add_constant("server_ctx");
