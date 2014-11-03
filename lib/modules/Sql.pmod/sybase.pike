@@ -12,7 +12,6 @@
 constant dont_dump_program = 1;
 
 inherit sybase.sybase:mo;
-#define THROW(X) throw(({X+"\n",backtrace()}))
 
 void shutdown() {
   catch { //there _will_ be an error. It's just that we don't care about it.
@@ -36,7 +35,7 @@ string host_info() {
  * Unimplemented. Anyone knows Transact-SQL well enough?
  */
 array(string) list_dbs(string|void wild) {
-  THROW("Unsupported");
+  error("Unsupported.\n");
 }
 
 /*
@@ -44,23 +43,23 @@ array(string) list_dbs(string|void wild) {
  * There MUST be some system stored procedure...
  */
 array(string) list_tables(string|void wild) {
-  THROW("Unsupported");
+  error("Unsupported.\n");
 }
 
 /*
  * Unimplemented.
  */
 array(string) list_fields(string|void wild) {
-  THROW("Unsupported");
+  error("Unsupported.\n");
 }
 
 int num_rows() {
-  THROW("Unsupported by the DB server");
+  error("Unsupported by the DB server.\n");
 }
 
 void seek(int skipthismany) {
   if (skipthismany<0)
-    THROW("Negative skips are not supported");
+    error("Negative skips are not supported.\n");
   if (!skipthismany)
     return;
   while (skipthismany && fetch_row()){
