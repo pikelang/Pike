@@ -569,25 +569,6 @@ static void mpzmod_get_int(INT32 args)
   }
 }
 
-static INT32 crc_table[256];
-
-static void init_crc_table(void)
-{
-  unsigned INT32 i;
-  for (i = 0; i < 256; i++) {
-    int j;
-    INT32 crc = i << 24;
-    for (j = 0; j < 8; j++) {
-      if (crc < 0) {
-	crc = (((unsigned INT32)crc) << 1)^0x04c11db7L;
-      } else {
-	crc = ((unsigned INT32)crc) << 1;
-      }
-    }
-    crc_table[i] = crc;
-  }
-}
-
 /*! @decl int __hash()
  *!
  *!   Calculate a hash of the value.
@@ -603,25 +584,15 @@ static void init_crc_table(void)
 static void mpzmod___hash(INT32 args)
 {
   MP_INT *mpz = THIS;
+  size_t len = mpz_size(mpz) * sizeof(mp_limb_t);
+  size_t h = hashmem(mpz->_mp_d, len, len);
 
-  /* Calculate the CRC32 of the limbs.
-   * NOTE: LSB first!
-   */
-  INT32 crc = 0;
-  size_t pos;
-  for (pos = 0; pos < mpz_size(mpz); pos++) {
-    mp_limb_t x = mpz_getlimbn (mpz, pos);
-    size_t i;
-    for (i=0; i<sizeof(mp_limb_t); i++) {
-      crc = (crc >> 8) ^ crc_table[((crc >> 24) ^ x) & 0xff];
-      x >>= 8;
-    }
-  }
   pop_n_elems(args);
   if (mpz_sgn(mpz) < 0)
-    push_int(-crc);
+    push_int(-h);
   else
-    push_int(crc);
+    push_int(h);
+  return;
 }
 
 /*! @decl float cast_to_float()
@@ -2222,8 +2193,6 @@ static void pike_mp_free (void *ptr, size_t UNUSED(size))
 
 PIKE_MODULE_INIT
 {
-  init_crc_table();
-
   /* Make sure that gmp uses the same malloc functions as we do since
    * we got code that frees blocks allocated inside gmp (e.g.
    * mpf.get_string). This also ensures that gmp uses dlmalloc if we
