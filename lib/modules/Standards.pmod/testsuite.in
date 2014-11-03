@@ -441,7 +441,7 @@ test_true(mappingp(Standards.X509.load_authorities()))
 define(test_cert, ([[
   test_true(Standards.X509.verify_certificate(Standards.PEM.Messages(#"$1")->parts->CERTIFICATE[0]->body, ([])))
   test_any([[
-    string der = Standards.PEM.Messages(#"$1")->parts->CERTIFICATE[0]->body;
+    string der = Standards.PEM.Messages(#"$1")->get_certificate();
     object o = decode_value(encode_value(Standards.X509.decode_certificate(der)));
     /* TBS does not contain the full certificate... */
     /* if( o->get_der() != der ) return -1; */

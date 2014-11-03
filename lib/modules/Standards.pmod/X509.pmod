@@ -1599,9 +1599,8 @@ mapping(string:array(Verifier)) load_authorities(string|array(string)|void root_
     string pem = Stdio.read_bytes(combine_path(dir, "ca-certificates.crt"));
     if (pem) {
       Standards.PEM.Messages messages = Standards.PEM.Messages(pem);
-      foreach(messages->fragments, string|Standards.PEM.Message m) {
-	if (!objectp(m) || m->pre!="CERTIFICATE" || !m->body) continue;
-	TBSCertificate tbs = verify_ca_certificate(m->body);
+      foreach(messages->get_certificates(), string m) {
+	TBSCertificate tbs = verify_ca_certificate(m);
 	if (!tbs) continue;
         string subj = tbs->subject->get_der();
         if( !res[subj] || !has_value(res[subj], tbs->public_key ) )

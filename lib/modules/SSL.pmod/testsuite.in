@@ -249,9 +249,8 @@ test_do([[
   string _key = Standards.PEM.build("RSA PRIVATE KEY",
     Standards.PKCS.RSA.private_key(rsa));
 
-  object msg = Standards.PEM.Messages(_key);
-  object part = msg->parts["RSA PRIVATE KEY"][0];
-  object rsa_again=Standards.PKCS.RSA.parse_private_key(part->body);
+  string key = Standards.PEM.Messages(_key)->get_private_key();
+  object rsa_again=Standards.PKCS.RSA.parse_private_key(key);
 
   ASSERT(rsa->public_key_equal(rsa_again));
 
@@ -306,14 +305,10 @@ test_do([[
 
 #define ASSERT(X) if(!(X)) error("Assertion failed.\n")
 
-  object msg = Standards.PEM.Messages( pem_cert );
-  object part = msg->parts["CERTIFICATE"][0];
-  string cert = part->body;
+  string cert = Standards.PEM.Messages( pem_cert )->get_certificate();
   ASSERT(cert);
 
-  msg = Standards.PEM.Messages( pem_key );
-  part = msg->parts["RSA PRIVATE KEY"][0];
-  string key = part->body;
+  string key = Standards.PEM.Messages( pem_key )->get_private_key();
   ASSERT(key);
 
   object rsa = Standards.PKCS.RSA.parse_private_key(key);
