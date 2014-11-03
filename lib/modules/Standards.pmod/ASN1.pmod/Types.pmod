@@ -93,7 +93,6 @@ class Object
 				mapping(int:program(Object)) types);
   void begin_decode_constructed(string raw);
   void decode_constructed_element(int i, object e);
-  __deprecated__ void end_decode_constructed(int length) { }
 
   mapping(int:program(Object)) element_types(int i,
       mapping(int:program(Object)) types) {
@@ -142,11 +141,6 @@ class Object
       encode_tag() + encode_length(sizeof(contents)) + contents;
     WERROR("build_der: %O\n", data);
     return data;
-  }
-
-  __deprecated__ string(0..255) record_der(string(0..255) s)
-  {
-    return (der = s);
   }
 
   void record_der_contents(string(0..255) s)
@@ -228,12 +222,6 @@ class Compound
   {
     [ cls, tag, elements ] = x;
   }
-
-  __deprecated__ string debug_string() {
-    WERROR("asn1_compound[%s]->debug_string(), elements = %O\n",
-	   type_name, elements);
-    return _sprintf('O');
-  }
 }
 
 //! string object primitive
@@ -280,11 +268,6 @@ class String
   protected string _sprintf(int t) {
     return t=='O' && sprintf("%O(%O)", this_program, value);
   }
-
-  __deprecated__ string debug_string() {
-    WERROR("asn1_string[%s]->debug_string(), value = %O\n", type_name, value);
-    return _sprintf('O');
-  }
 }
 
 //! boolean object
@@ -326,10 +309,6 @@ class Boolean
 
   protected string _sprintf(int t) {
     return t=='O' && sprintf("%O(%s)", this_program, (value?"TRUE":"FALSE"));
-  }
-
-  __deprecated__ string debug_string() {
-    return value ? "TRUE" : "FALSE";
   }
 }
 
@@ -393,10 +372,6 @@ class Integer
     if(!value) return sprintf("%O(0)", this_program);
     return sprintf("%O(%d %s)", this_program,
                    value->size(), value->digits());
-  }
-
-  __deprecated__ string debug_string() {
-    return sprintf("INTEGER (%d) %s", value->size(), value->digits());
   }
 }
 
@@ -510,11 +485,6 @@ class Real
   {
     return t=='O' && sprintf("%O(%O)", this_program, value);
   }
-
-  __deprecated__ string debug_string()
-  {
-    return sprintf("REAL %O", value);
-  }
 }
 
 //! Bit string object
@@ -614,13 +584,6 @@ class BitString
   {
     [ cls, tag, value, unused ] = x;
   }
-
-  __deprecated__ string debug_string() {
-    return sprintf("BIT STRING (%d) %s",
-		   sizeof(value) * 8 - unused,
-		   ([object(Gmp.mpz)](Gmp.mpz(value, 256) >> unused))
-		   ->digits(2));
-  }
 }
 
 //! Octet string object
@@ -658,8 +621,6 @@ class Null
   {
     [ cls, tag ] = x;
   }
-
-  __deprecated__ string debug_string() { return "NULL"; }
 }
 
 //! Object identifier object
@@ -744,10 +705,6 @@ class Identifier
       id = [array(int)]x; // Compat with old codec that didn't save cls/tag.
     else
       [ cls, tag, id ] = x;
-  }
-
-  __deprecated__ string debug_string() {
-    return "IDENTIFIER " + (array(string)) id * ".";
   }
 
   protected int __hash()
@@ -908,23 +865,6 @@ class BrokenTeletexString
   int(0..) tag = 20;
   constant type_name = "TeletexString";	// Alias: T61String
 }
-
-//! @class TeletexString
-//!
-//! This used to be a string encoded with the T.61 character coding,
-//! and has been obsolete since the early 1990:s.
-//!
-//! @seealso
-//!   @[BrokenTeletexString]
-
-//! @decl inherit BrokenTeletexString
-
-//! @ignore
-__deprecated__(program(BrokenTeletexString)) TeletexString =
-  (__deprecated__(program(BrokenTeletexString))) BrokenTeletexString;
-//! @endignore
-
-//! @endclass
 
 protected Regexp asn1_IA5_invalid_chars = Regexp ("([\200-\377])");
 
@@ -1198,9 +1138,6 @@ class MetaExplicit
     void _decode(array(int|Object) x)
     {
       [ real_cls, real_tag, contents ] = x;
-    }
-    __deprecated__ string debug_string() {
-      return type_name + "[" + (int) real_tag + "]";
     }
   }
 
