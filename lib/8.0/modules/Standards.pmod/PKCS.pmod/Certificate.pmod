@@ -17,7 +17,7 @@ inherit Standards.PKCS.Certificate;
 //!  Distinguished Name (DN).
 //!
 //! @deprecated Standards.X509.decode_certificate
-__deprecated__ Sequence get_certificate_issuer(string cert)
+Sequence get_certificate_issuer(string cert)
 {
   return Standards.X509.decode_certificate(cert)->issuer;
 }
@@ -35,7 +35,7 @@ __deprecated__ Sequence get_certificate_issuer(string cert)
 //!  Distinguished Name (DN).
 //!
 //! @deprecated Standards.X509.decode_certificate
-__deprecated__ Sequence get_certificate_subject(string cert)
+Sequence get_certificate_subject(string cert)
 {
   return Standards.X509.decode_certificate(cert)->subject;
 }
