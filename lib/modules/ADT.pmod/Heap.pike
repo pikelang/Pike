@@ -118,15 +118,6 @@ mixed pop()
 //! Returns the number of elements in the heap.
 int _sizeof() { return num_values; }
 
-//! Removes and returns the item on top of the heap,
-//! which also is the smallest value in the heap.
-//! @deprecated pop
-__deprecated__ mixed top() { return pop(); }
-
-//! Returns the number of elements in the heap.
-//! @deprecated lfun::_sizeof
-__deprecated__ int size() { return _sizeof(); }
-
 //! Returns the item on top of the heap (which is also the smallest value
 //! in the heap) without removing it.
 mixed peek()
