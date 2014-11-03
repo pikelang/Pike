@@ -573,7 +573,7 @@ test_do([[
 	  sprintf("Unexpected result:\n"
 		  "Got: %O\n"
 		  "Exp: %O\n",
-		  client_recv_buf, exp_data);
+		  client_recv_buf[..32], exp_data[..32]);
       }
     }
     client->close();
