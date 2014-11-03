@@ -31,10 +31,6 @@ class Primitive (int cls, int tag, string(8bit) raw)
   {
     [ cls, tag, raw ] = x;
   }
-
-  __deprecated__ string debug_string() {
-    return sprintf("primitive(%d)", get_combined_tag());
-  }
 }
 
 //! Constructed type
@@ -234,26 +230,4 @@ mapping(int:program(.Types.Object)) universal_types =
   .Types.Object ret = der_decode(buf, types);
   if( sizeof(buf) ) return 0;
   return ret;
-}
-
-
-// Compat
-class constructed
-{
-  inherit Constructed;
-  protected __deprecated__ void create(int tag_n_cls, string(8bit) raw,
-                        array(.Types.Object) elements)
-  {
-    ::create(tag_n_cls >> 6, tag_n_cls & 0x1f, raw, elements);
-  }
-}
-
-class primitive
-{
-  inherit Primitive;
-
-  protected __deprecated__ void create(int tag_n_cls, string(8bit) raw)
-  {
-    ::create(tag_n_cls >> 6, tag_n_cls & 0x1f, raw);
-  }
 }

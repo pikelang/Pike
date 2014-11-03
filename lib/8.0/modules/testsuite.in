@@ -99,4 +99,12 @@ test_asn1(UniversalString)
 test_asn1(BMPString)
 test_asn1(MetaExplicit(1,1,0))
 
+test_eq( Standards.ASN1.Decode.primitive(1,0)->record_der("hi"), "hi")
+test_do( Standards.ASN1.Decode.primitive(1,0)->end_decode_constructed(7); )
+test_true( stringp(Standards.ASN1.Decode.primitive(1,0)->debug_string()) )
+
+test_eq( Standards.ASN1.Decode.constructed(1,0,0)->record_der("hi"), "hi")
+test_do( Standards.ASN1.Decode.constructed(1,0,0)->end_decode_constructed(7); )
+test_true( stringp(Standards.ASN1.Decode.constructed(1,0,0)->debug_string()) )
+
 END_MARKER
