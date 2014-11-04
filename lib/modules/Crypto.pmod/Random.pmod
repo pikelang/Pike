@@ -63,11 +63,6 @@ string(8bit) random_string(int len) {
   return rnd_func(len);
 }
 
-__deprecated__ string(8bit) blocking_random_string(int len)
-{
-  return rnd_func(len);
-}
-
 //! Returns a @[Gmp.mpz] object with a random value between @expr{0@}
 //! and @[top]. Uses @[random_string].
 Gmp.mpz random(int top) {

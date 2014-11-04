@@ -138,4 +138,9 @@ test_do( add_constant("DSA") )
 
 test_eq( Crypto.DH.MODPGroup1->order, Crypto.DH.MODPGroup1->q )
 
+test_true( Tools.X509.make_time )
+test_true( Tools.PEM.simple_build_pem )
+
+test_eq( sizeof(Crypto.Random.blocking_random_string(10)), 10 )
+
 END_MARKER
