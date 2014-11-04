@@ -1575,6 +1575,8 @@ void resolv_class(node *n)
 /* This one always leaves a program if possible */
 void resolv_program(node *n)
 {
+  if (!n) return;
+
   check_tree(n,0);
 
   fix_type_field(n);
