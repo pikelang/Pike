@@ -1575,7 +1575,10 @@ void resolv_class(node *n)
 /* This one always leaves a program if possible */
 void resolv_program(node *n)
 {
-  if (!n) return;
+  if (!n) {
+    push_int(0);
+    return;
+  }
 
   check_tree(n,0);
 
