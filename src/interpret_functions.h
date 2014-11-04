@@ -437,7 +437,7 @@ OPCODE2(F_PRIVATE_TYPED_GLOBAL, "global <private,typed>", I_UPDATE_SP, {
     {
 #if SIZEOF_FLOAT_TYPE != SIZEOF_INT_TYPE
       if( UNLIKELY(arg2)==PIKE_T_INT )
-	push_integer( *(INT_TYPE*)ptr );
+	push_int( *(INT_TYPE*)ptr );
       else
 	push_float( *(FLOAT_TYPE*)ptr );
 #else
