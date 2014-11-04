@@ -314,6 +314,7 @@ PIKECLASS Configuration {
     CHECK_ARG_INT(MK_STRING("IDPATOPT"), THIS->conf.idpatopt);
     CHECK_ARG_INT(MK_STRING("IDP_LIST_METH"), THIS->conf.idp_list_meth);
     CHECK_ARG_MAP(MK_STRING("INMAP"), THIS->conf.inmap);
+    CHECK_ARG_STRING(MK_STRING("IPPORT"), THIS->conf.ipport);
     CHECK_ARG_INT(MK_STRING("LEVEL"), THIS->conf.log_level);
     CHECK_ARG_INT(MK_STRING("LOGUSER"), THIS->conf.loguser);
     CHECK_ARG_CSTR_LIST(MK_STRING("LOCALPDP_ROLE_PERMIT"),
