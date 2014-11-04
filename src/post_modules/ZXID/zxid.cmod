@@ -675,6 +675,15 @@ PIKECLASS Configuration {
 }
 /*! @endclass Configuration */
 
+/*! @decl int version()
+ *!
+ *! Return the numeric version of the zxid library.
+ */
+PIKEFUN int version()
+{
+  RETURN zxid_version();
+}
+
 PIKE_MODULE_INIT
 {
   INIT;
