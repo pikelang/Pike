@@ -1078,14 +1078,6 @@ class File
 
 #endif /* !STDIO_CALLBACK_TEST_MODE */
 
-  __deprecated__ this_program set_peek_file_before_read_callback(int(0..1) ignored)
-  {
-    // This hack is not necessary anymore - the backend now properly
-    // ignores events if other callbacks/threads have managed to read
-    // the data before the read callback.
-    return this;
-  }
-
   // FIXME: No way to specify the maximum to read.
   protected int __stdio_read_callback()
   {
