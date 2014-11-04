@@ -209,7 +209,7 @@ protected private string __root_element_name;
 //! @seealso
 //!   @[parse()], @[parse_dtd()]
 string get_external_entity(string sysid, string|void pubid,
-			   mapping|__deprecated__(int)|void info,
+			   mapping|void info,
 			   mixed ... extra)
 {
   // Override this function
