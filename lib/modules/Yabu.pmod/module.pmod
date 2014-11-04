@@ -1364,10 +1364,6 @@ class DB
   }
 }
 
-__deprecated__ DB db(string a,string b) {
-  return DB(a,b);
-}
-
 /*
  * Special extra bonus. This database is optimized for lots of very small
  * data records.
@@ -1456,11 +1452,6 @@ class LookupTable
     this::minx = minx;
     table = Table(filename, mode, 0);
   }
-}
-
-
-__deprecated__ LookupDB lookup(string a,string b,mapping|void c) {
-  return LookupDB(a,b,c);
 }
 
 class LookupDB 
