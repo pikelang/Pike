@@ -24,16 +24,6 @@ protected class structError
 class struct {
   inherit Stdio.Buffer;
 
-  __deprecated__ string `buffer()
-  {
-    return contents();
-  }
-
-  __deprecated__ int `index()
-  {
-    return 0;
-  }
-
   //! Create a new buffer, optionally initialized with the
   //! value @[s].
   void create(void|string(0..255) s)
