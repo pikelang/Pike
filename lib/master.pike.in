@@ -2889,7 +2889,7 @@ class CompatResolver
 	  ret = get_compilation_handler(major, minor);
 	  if (ret) {
 	    mixed mod = ret->get_default_module();
-	    if (!undefinedp(mod = mod[tmp[0]])) {
+	    if (mod && !undefinedp(mod = mod[tmp[0]])) {
 	      ret = mod;
 	    } else {
 	      ret = ret->resolv(tmp[0]);

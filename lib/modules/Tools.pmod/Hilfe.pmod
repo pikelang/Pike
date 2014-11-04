@@ -2171,7 +2171,7 @@ class Evaluator {
       object compat = get_active_compilation_handler();
       if (compat?->get_default_module) {
 	// Support things like @expr{7.4::rusage}.
-	return compat->get_default_module() + hilfe_symbols;
+	return (compat->get_default_module()||all_constants()) + hilfe_symbols;
       }
       return all_constants() + hilfe_symbols;
     }
