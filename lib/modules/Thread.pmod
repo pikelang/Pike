@@ -3,14 +3,6 @@
 #if constant(thread_create)
 constant Thread=__builtin.thread_id;
 
-//! Create a new thread.
-//!
-//! @deprecated predef::Thread.Thread
-optional __deprecated__ Thread `()( mixed f, mixed ... args )
-{
-  return thread_create( f, @args );
-}
-
 optional constant MutexKey=__builtin.mutex_key;
 optional constant Mutex=__builtin.mutex;
 optional constant Condition=__builtin.condition;
