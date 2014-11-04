@@ -312,7 +312,7 @@ test_do([[
   ASSERT(key);
 
   object rsa = Standards.PKCS.RSA.parse_private_key(key);
-  ASSERT(rsa->rsa_size()>512);
+  ASSERT(rsa->key_size()>512);
 
   object tbs = Standards.X509.decode_certificate(cert);
   ASSERT(tbs->public_key->pkc->public_key_equal(rsa));

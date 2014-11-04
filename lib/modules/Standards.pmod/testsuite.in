@@ -270,7 +270,7 @@ test_any_equal([[
     "issuer":t->issuer[0][0][1]->value,
     "subject":t->subject[0][0][1]->value,
     "extensions":ext,
-    "public_key":(int)t->public_key->rsa->public_key_equal(rsa),
+    "public_key":(int)t->public_key->pkc->public_key_equal(rsa),
     "ext_bc" : t->ext_basicConstraints,
     "ext_bc_ca" : t->ext_basicConstraints_cA,
     "ext_bc_len" : t->ext_basicComnstraints_pathLenConstraint,
