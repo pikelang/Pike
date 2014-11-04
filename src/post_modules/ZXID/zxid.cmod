@@ -527,15 +527,68 @@ PIKECLASS Configuration {
       }
     }
 
-    /*! @decl string authenticate(string query)
+    /* Same as zxid_simple_cf_ses(), but without environment variables,
+     * and uri_path passed as an argument instead.
+     */
+    static char* my_cf_ses(zxid_conf* cf, char *uri_path, int qs_len, char* qs,
+			   zxid_ses* ses, int* res_len, int auto_flags)
+    {
+      int got, ret;
+      char* res = 0;
+      char *sid;
+      zxid_cgi cgi;
+      memset(&cgi, 0, sizeof(cgi));
+
+      if (auto_flags & ZXID_AUTO_DEBUG) zxid_set_opt(cf, 1, 3);
+
+      zxid_parse_cgi(cf, &cgi, qs);
+
+      if (!cgi.op && !cf->bare_url_entityid) {
+	cgi.op = 'M';  /* By default, if no ses, check CDC and offer SSO */
+      }
+
+#ifdef HAVE_STRUCT_ZXID_CGI_URI_PATH
+      cgi.uri_path = uri_path;
+      cgi.qs = qs;
+#endif
+
+      if (cgi.sid) {
+	if (!zxid_get_ses(cf, ses, cgi.sid)) {
+	  D("No session(%s) active op(%c)", cgi.sid, cgi.op);
+	} else if ((res = zxid_simple_ses_active_cf(cf, &cgi, ses, res_len,
+						    auto_flags)))
+	  return res;
+      }
+
+      if (ses->sesbuf) {
+	ZX_FREE(cf->ctx, ses->sesbuf);
+      }
+      sid = ses->sid;	/* Keep the sid (if any), since it might be
+			 * used as an object identifier by the caller. */
+      memset(ses, 0, sizeof(zxid_ses));   /* No session yet! Process login form */
+      ses->sid = sid;
+      res = zxid_simple_no_ses_cf(cf, &cgi, ses, res_len, auto_flags);
+
+      return res;
+    }
+
+    /*! @decl string(0..255) authenticate(string(0..255) uri_path, @
+     *!					  string(0..255) query)
      *!
      *!   Authenticate via SAML given the query-string @[query].
+     *!
+     *! @param uri_path
+     *!   Current URI path (before '?').
+     *!
+     *! @param query
+     *!   Query variables (after '?').
      *!
      *! @returns
      *!   Returns JSON-encoded data on success, and various other
      *!   strings otherwise.
      */
-    PIKEFUN string authenticate(string query)
+    PIKEFUN string(0..255) authenticate(string uri_path,
+					string query)
     {
       struct string_builder mutable_query;
       char *res;
@@ -560,9 +613,9 @@ PIKECLASS Configuration {
       mt_lock(session_lock);
 
       /* Let the library handle metadata. */
-      res = zxid_simple_cf_ses(&config->conf, mutable_query.s->len,
-			       mutable_query.s->str, ses, &res_len,
-			       ZXID_AUTO_METAC|ZXID_AUTO_FMTJ);
+      res = my_cf_ses(&config->conf, uri_path->str, mutable_query.s->len,
+		      mutable_query.s->str, ses, &res_len,
+		      ZXID_AUTO_METAC|ZXID_AUTO_FMTJ);
 
       mt_unlock(session_lock);
       THREADS_DISALLOW();

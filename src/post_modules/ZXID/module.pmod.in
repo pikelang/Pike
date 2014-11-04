@@ -92,10 +92,11 @@ class Configuration
     //!
     //! @throws
     //!   Throws errors on most error conditions.
-    mixed authenticate(string(0..255)|mapping(string(0..255):string(0..255)) query)
+    mixed authenticate(string(0..255) uri_path,
+		       string(0..255)|mapping(string(0..255):string(0..255)) query)
     {
       if (mappingp(query)) query = mapping_to_query(query);
-      string raw_res = ::authenticate(query);
+      string raw_res = ::authenticate(uri_path, query);
 
       switch(sizeof(raw_res) && raw_res[0]) {
       case '*':	// Error.
