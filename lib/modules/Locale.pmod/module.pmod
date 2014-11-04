@@ -589,17 +589,3 @@ class DeferredLocale( protected string project,
     return type=="string";
   }
 }
-
-//! @module Charset
-//!
-//!   This is the old location for the @[predef::Charset] module.
-//!
-//! @deprecated predef::Charset
-
-//! @decl inherit predef::Charset
-
-#pragma no_deprecation_warnings
-__deprecated__ object Charset = [__deprecated__(object)]global.Charset;
-#pragma deprecation_warnings
-
-//! @endmodule
