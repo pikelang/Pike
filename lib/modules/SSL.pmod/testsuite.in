@@ -588,13 +588,24 @@ test_do([[
     server_ctx->min_version = server_min;
     server_ctx->max_version = server_max;
 
+    int exp_version = server_max;
+    if (exp_version > client_max) {
+      exp_version = client_max;
+    }
+    if (obsoleted_suites[suites[0] ] &&
+        (exp_version > obsoleted_suites[suites[0] ])) {
+      exp_version = obsoleted_suites[suites[0] ];
+    }
+
+    if ((exp_version < server_min) ||
+	(exp_version < client_min)) {
+      exp_data = 0;
+    }
+
     // We only have self-signed certificates, so all ECDH_RSA and
     // DH_RSA suites will fail prior to TLS 1.2, since they require
     // the certificate to be signed with RSA.
-    if (((client_max < PROTOCOL_TLS_1_2) ||
-         (server_max < PROTOCOL_TLS_1_2) ||
-	 (obsoleted_suites[suites[0] ] < PROTOCOL_TLS_1_2)) &
-        (sizeof(suites) == 1)) {
+    if ((exp_version < PROTOCOL_TLS_1_2) && (sizeof(suites) == 1)) {
       int ke = CIPHER_SUITES[suites[0] ][0];
       if ((ke == KE_ecdh_rsa) || (ke == KE_dh_rsa)) {
         exp_data = 0;
@@ -621,24 +632,9 @@ test_do([[
     client_ctx->max_version = client_max;
     server_ctx->expect_fail = client_ctx->expect_fail = !exp_data;
 
-    int exp_version = server_ctx->max_version;
-    if (exp_version > client_ctx->max_version) {
-      exp_version = client_ctx->max_version;
-    }
-    if (obsoleted_suites[suites[0] ] &&
-        (exp_version > obsoleted_suites[suites[0] ])) {
-      exp_version = obsoleted_suites[suites[0] ];
-    }
-
-    if ((exp_version < server_ctx->min_version) ||
-	(exp_version < client_ctx->min_version)) {
-      exp_version = 0;
-      exp_data = 0;
-    }
-
     string fail =
-      low_test_ssl_connection(server_ctx, client_ctx, exp_data, suites[0],
-			      exp_version);
+      low_test_ssl_connection(server_ctx, client_ctx,
+			      exp_data, suites[0], exp_version);
 
     if (!fail) return 1;
 
@@ -653,7 +649,7 @@ test_do([[
 test_do([[
   import SSL.Constants;
   array(string) f(SSL.Context server_ctx, SSL.Context client_ctx,
-		  string exp_data, int exp_suite)
+		  string exp_data, int exp_suite, ProtocolVersion exp_version)
   {
 #if constant(thread_create)
     Stdio.File client_con = Stdio.File();
@@ -670,13 +666,17 @@ test_do([[
 	  return exp_data && "Server accept failed.\n";
         }
 
-        if (exp_data && (server->query_suite() != exp_suite)) {
+        if (exp_data &&
+	    ((server->query_version() != exp_version) ||
+	     (server->query_suite() != exp_suite))) {
 	  return
 	    sprintf("Unexpected cipher suite (server):\n"
-		    "Got: %s\n"
-		    "Exp: %s\n",
+		    "Got: %s [%s]\n"
+		    "Exp: %s [%s]\n",
 		    fmt_cipher_suite(server->query_suite()),
-		    fmt_cipher_suite(exp_suite));
+		    fmt_version(server->query_version()),
+		    fmt_cipher_suite(exp_suite),
+		    fmt_version(exp_version));
         }
 	while (bytes) {
 	  // NB: Client doesn't close connection before all data has
@@ -699,13 +699,17 @@ test_do([[
       server_thread->wait();
       return exp_data && ({ "Client failed to connect.\n" });
     }
-    if (exp_data && (client->query_suite() != exp_suite)) {
+    if (exp_data &&
+	((client->query_version() != exp_version) ||
+	 (client->query_suite() != exp_suite))) {
       return ({
 	sprintf("Unexpected cipher suite (client):\n"
-		"Got: %s\n"
-		"Exp: %s\n",
+		"Got: %s [%s]\n"
+		"Exp: %s [%s]\n",
 		fmt_cipher_suite(client->query_suite()),
-		fmt_cipher_suite(exp_suite)),
+		fmt_version(client->query_version()),
+		fmt_cipher_suite(exp_suite),
+		fmt_version(exp_version)),
       });
     }
     Thread.Thread sender_thread =
@@ -754,12 +758,24 @@ test_do([[
     server_ctx->min_version = server_min;
     server_ctx->max_version = server_max;
 
+    int exp_version = server_max;
+    if (exp_version > client_max) {
+      exp_version = client_max;
+    }
+    if (obsoleted_suites[suites[0] ] &&
+        (exp_version > obsoleted_suites[suites[0] ])) {
+      exp_version = obsoleted_suites[suites[0] ];
+    }
+
+    if ((exp_version < server_min) ||
+	(exp_version < client_min)) {
+      exp_data = 0;
+    }
+
     // We only have self-signed certificates, so all ECDH_RSA and
     // DH_RSA suites will fail prior to TLS 1.2, since they require
     // the certificate to be signed with RSA.
-    if (((client_max < PROTOCOL_TLS_1_2) ||
-         (server_max < PROTOCOL_TLS_1_2)) &
-        (sizeof(suites) == 1)) {
+    if ((exp_version < PROTOCOL_TLS_1_2) && (sizeof(suites) == 1)) {
       int ke = CIPHER_SUITES[suites[0] ][0];
       if ((ke == KE_ecdh_rsa) || (ke == KE_dh_rsa)) {
         exp_data = 0;
@@ -795,7 +811,7 @@ test_do([[
 
     array(string) failures =
       threaded_low_test_ssl_connection(server_ctx, client_ctx,
-				       exp_data, suites[0]);
+				       exp_data, suites[0], exp_version);
 
     if (!sizeof(failures)) return 1;
 
@@ -811,9 +827,13 @@ define(test_ssl, [[
   test_tests([[array(int) a() {
     int exp_protocol = min($2, $4);
 
-    // Default to just testing all key exchanges with a
-    // cipher suite that is valid in all versions of SSL.
+    // Default to just testing all key exchanges with a cipher
+    // suite that is mostly valid in all versions of SSL.
     array(int) suites = ({
+      // These two are used to test cipher suite protocol downgrade.
+      SSL.Constants.SSL_rsa_export_with_des40_cbc_sha,	// <= TLS 1.0.
+      SSL.Constants.SSL_rsa_with_des_cbc_md5,		// <= TLS 1.1.
+
       SSL.Constants.SSL_dh_anon_with_3des_ede_cbc_sha,
       SSL.Constants.SSL_rsa_with_3des_ede_cbc_sha,
       SSL.Constants.SSL_dhe_rsa_with_3des_ede_cbc_sha,
@@ -862,9 +882,13 @@ define(test_ssl, [[
     log_status("Testing SSL 3.%d..3.%d client with SSL 3.%d..3.%d server...",
 	       $1 & 0xff, $2 & 0xff, $3 & 0xff, $4 & 0xff);
 
-    // Default to just testing all key exchanges with a
-    // cipher suite that is valid in all versions of SSL.
+    // Default to just testing all key exchanges with a cipher
+    // suite that is mostly valid in all versions of SSL.
     array(int) suites = ({
+      // These two are used to test cipher suite protocol downgrade.
+      SSL.Constants.SSL_rsa_export_with_des40_cbc_sha,	// <= TLS 1.0.
+      SSL.Constants.SSL_rsa_with_des_cbc_md5,		// <= TLS 1.1.
+
       SSL.Constants.SSL_dh_anon_with_3des_ede_cbc_sha,
       SSL.Constants.SSL_rsa_with_3des_ede_cbc_sha,
       SSL.Constants.SSL_dhe_rsa_with_3des_ede_cbc_sha,
