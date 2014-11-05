@@ -307,7 +307,7 @@ program_flags PROGRAM_CLEAR_STORAGE;
    */
   PIKEFUN string(8bit) random_string(int len)
   {
-    unsigned stored = 0;
+    int stored = 0;
     struct string_builder s;
 
     if(len<0) Pike_error("Length has to be positive.\n");

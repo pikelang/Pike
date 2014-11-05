@@ -253,7 +253,11 @@ INT32 assemble(int store_linenumbers)
       if (c[e].line != previous_line) {
 	current_tripple[0] = F_LINE;
 	current_tripple[1] = c[e].line;
+#if SIZEOF_INT_TYPE > 4
 	current_tripple[2] = c[e].line>>32;
+#else
+        current_tripple[2] = 0;
+#endif
 	current_tripple += 3;
 	previous_line = c[e].line;
       }

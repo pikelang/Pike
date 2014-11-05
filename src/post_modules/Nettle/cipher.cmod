@@ -1898,7 +1898,7 @@ PIKECLASS BlockCipher
 	pike_nettle_crypt_func func = pike_crypt_func;
 	void *ctx = THIS->object;
 	struct pike_string *iv = THIS->iv;
-	int block_size = THIS->block_size;
+	unsigned block_size = (unsigned)THIS->block_size;
 
 	NO_WIDE_STRING(data);
 
@@ -1966,8 +1966,8 @@ PIKECLASS BlockCipher
 	  }
 	} else {
 	  /* Decryption. */
-	  int trailer_len = data->len % block_size;
-	  int blocked_len = data->len - trailer_len;
+	  unsigned trailer_len = data->len % block_size;
+	  unsigned blocked_len = data->len - trailer_len;
 	  if ((data->len >= CIPHER_THREADS_ALLOW_THRESHOLD) &&
 	      (func != pike_crypt_func)) {
 	    /* Protect the iv from being freed by a different thread. */
@@ -2805,7 +2805,7 @@ PIKECLASS BlockCipher
 	pike_nettle_crypt_func func = pike_crypt_func;
 	void *ctx = THIS->object;
 	struct pike_string *iv = THIS->iv;
-	int block_size = THIS->block_size;
+	unsigned block_size = (unsigned)THIS->block_size;
 	uint8_t *src;
 	uint8_t *dst;
 	pike_nettle_size_t bytes;

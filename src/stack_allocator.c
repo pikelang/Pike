@@ -23,7 +23,9 @@ void stack_alloc_enlarge(struct stack_allocator * a, size_t len) {
         len |= len >> 4;
         len |= len >> 8;
         len |= len >> 16;
+#if SIZEOF_INT_TYPE > 4
         len |= len >> 32;
+#endif
         len ++;
     }
     a->cur = alloc_chunk(len);
