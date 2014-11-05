@@ -3345,17 +3345,8 @@ PIKECLASS BlockCipher16
 	      ptr += 14;
 	      asize -= 14;
 	    }
-	  } else if (asize <= 0xffffffffUL) {
-	    buf[1][0] ^= 0xff;
-	    buf[1][1] ^= 0xfe;
-	    buf[1][2] ^= (asize >> 24) & 0xff;
-	    buf[1][3] ^= (asize >> 16) & 0xff;
-	    buf[1][4] ^= (asize >> 8) & 0xff;
-	    buf[1][5] ^= asize & 0xff;
-	    memxor(buf[1]+6, ptr, 10);
-	    ptr += 10;
-	    asize -= 10;
-	  } else {
+#if (SIZEOF_CHARP > 4)
+	  } else if (asize > 0xffffffffUL) {
 	    buf[1][0] ^= 0xff;
 	    buf[1][1] ^= 0xff;
 	    buf[1][2] ^= (asize >> 56) & 0xff;
@@ -3369,6 +3360,17 @@ PIKECLASS BlockCipher16
 	    memxor(buf[1]+10, ptr, 6);
 	    ptr += 6;
 	    asize -= 6;
+#endif
+	  } else {
+	    buf[1][0] ^= 0xff;
+	    buf[1][1] ^= 0xfe;
+	    buf[1][2] ^= (asize >> 24) & 0xff;
+	    buf[1][3] ^= (asize >> 16) & 0xff;
+	    buf[1][4] ^= (asize >> 8) & 0xff;
+	    buf[1][5] ^= asize & 0xff;
+	    memxor(buf[1]+6, ptr, 10);
+	    ptr += 10;
+	    asize -= 10;
 	  }
 
 	  func(ctx, 16, buf[0], buf[1]);
