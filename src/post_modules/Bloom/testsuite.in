@@ -1,0 +1,112 @@
+test_true(programp(ADT.Bloom.Filter))
+test_true(programp(ADT.Bloom.Simple))
+test_true(programp(ADT.Bloom.String))
+test_true(programp(ADT.Bloom.SValue))
+
+define(test_add, [[
+    test_do([[
+        program fp = $1;
+        array set = $2;
+
+        object o = fp(sizeof(set), 0.01);
+        object o2 = fp(sizeof(set), 0.01);
+
+        float f = o->false_positives();
+
+        if (f != 0.0)
+            error("Empty filter should have no false positives.\n");
+
+        o2->append(set);
+
+        foreach (set;; mixed k) {
+            if (!o2[k]) error("appending set failed for element %O.\n", k);
+        }
+
+        foreach (set;; mixed k) {
+            o[k] = 1;
+            if (!o[k]) error("adding value %O failed.\n", k);
+            if (!o->subset_of(o2))
+                error("->subset_of seems broken for %O\n", o);
+            if (!o2->superset_of(o))
+                error("->subset_of seems broken for %O\n", o2);
+        }
+
+        if (!equal(decode_value(encode_value(o)), o))
+            error("encoding filter %O failed.\n", o);
+
+        f = o->false_positives();
+
+        if (f <= 0.0 || f > 1.0) {
+            error("False positives out of range: %O\n", f);
+        }
+
+        if (!equal(decode_value(encode_value(o)), o))
+            error("encoding filter %O failed.\n");
+
+        if (!equal(o2, o)) {
+            error("append and `[] dont seem compatible.\n");
+        }
+
+        o->clear();
+
+        foreach (set;; mixed k) {
+            if (o[k]) error("clear() failed for element %O.\n", k);
+        }
+    ]])
+]])
+define(test_setops, [[
+    test_do([[
+        program fp = $1;
+        array set = $2;
+
+        object o1 = fp(sizeof(set), 0.01);
+        object o2 = fp(sizeof(set), 0.01);
+
+        object res;
+
+        foreach (set; int i; mixed v) {
+            if (i % 2) {
+                o2[v] = 1;
+            } else {
+                o1[v] = 1;
+            }
+        }
+
+        res = o2 | o1;
+
+        foreach (set; int i; mixed v) {
+            if (!res[v]) error("`| failed for element %O\n", v);
+        }
+
+        o1->clear();
+        o2->clear();
+
+        foreach (set; int i; mixed v) {
+            if (i % 2) o2[v] = 1;
+            o1[v] = 1;
+        }
+
+        res = o1 & o2;
+
+        foreach (set; int i; mixed v) {
+            if (i % 2 && !res[v]) error("`& failed for element %O\n", v);
+        }
+    ]])
+]])
+
+define(test_filter, [[
+       test_add([[$1]], [[$2]])
+       test_setops([[$1]], [[$2]])
+]])
+
+test_filter(ADT.Bloom.Simple, allocate(100000, random_string)(8))
+test_filter(ADT.Bloom.String, allocate(100000, random_string)(10))
+test_filter(ADT.Bloom.Simple, allocate(10000, random_string)(8))
+test_filter(ADT.Bloom.String, allocate(10000, random_string)(10))
+test_filter(ADT.Bloom.Simple, allocate(1000, random_string)(8))
+test_filter(ADT.Bloom.String, allocate(1000, random_string)(10))
+test_filter(ADT.Bloom.Simple, allocate(500, random_string)(8))
+test_filter(ADT.Bloom.String, allocate(500, random_string)(10))
+test_filter(ADT.Bloom.Simple, allocate(2, random_string)(8))
+test_filter(ADT.Bloom.String, allocate(2, random_string)(10))
+test_filter(ADT.Bloom.SValue, values(all_constants()))

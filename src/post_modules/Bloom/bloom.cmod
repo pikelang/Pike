@@ -1,0 +1,698 @@
+/* -*- c -*-
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
+#include "global.h"
+
+#include "object.h"
+#include "svalue.h"
+#include "array.h"
+#include "pike_error.h"
+#include "interpret.h"
+#include "stralloc.h"
+#include "program.h"
+#include "pike_types.h"
+#include "bitvector.h"
+#include "mapping.h"
+
+#include "builtin_functions.h"
+#include "module_support.h"
+
+#include "siphash24.c"
+
+/*! @module ADT
+ */
+
+/*! @module Bloom
+ *! 
+ *! This module contains several different Bloom filter implementations. They differ in
+ *! how the hash functions are constructed. They are meant to cover different use cases and
+ *! should be chosen carefully.
+ *! All filters use double hashing to construct an infinite series of hash values from two
+ *! initial hash values.
+ *! All bloom filters can be serialized (using @[encode_value]) and transferred over the network.
+ *! However, only the hash values of @[String] and @[Simple] are independent of the current pike
+ *! process.
+ */
+
+DECLARATIONS
+
+//#define BLOCKED
+
+#ifdef BLOCKED
+/* These parameters are used for choosing the size of blocks. They are supposed to fit into
+ * one L1 cache line, which is assumed to be 64 bytes.
+ */
+#define CACHE_LINE      64
+#define CACHE_MASK      (CACHE_LINE * CHAR_BIT - 1)
+#define CACHE_SHIFT     9
+#endif
+
+#define BLOOM_COMPAT_ERROR(fun, arg) SIMPLE_ARG_ERROR(fun, arg, \
+    "Bloom filter not compatible (hash function or size differs)")
+
+struct hash_data {
+    unsigned INT32 h1, h2;
+    unsigned INT32 ch;
+    unsigned INT32 left;
+};
+
+static INLINE unsigned INT32 get_hash_fast(struct hash_data *d, unsigned INT32 bits) {
+    unsigned INT32 mask = (1U << bits) - 1;
+    unsigned INT32 ret;
+
+    ret = d->ch & mask;
+    d->ch >>= bits;
+    d->left -= bits;
+
+    return ret;
+}
+
+static INLINE unsigned INT32 get_hash(struct hash_data *d, unsigned INT32 bits) {
+    if (UNLIKELY(bits > d->left)) {
+        d->h1 += d->h2;
+        d->ch = d->h1;
+        d->left = sizeof(d->ch)*CHAR_BIT;
+    }
+
+    return get_hash_fast(d, bits);
+}
+
+static void memcpy_be64(void * _dst, const void * _src, size_t len) {
+    size_t i;
+    char *dst = _dst;
+    const char *src = _src;
+
+    len /= 8;
+
+    for (i = 0; i < len; i++) {
+        set_unaligned64(dst, get_unaligned_be64(src));
+        src += 8;
+        dst += 8;
+    }
+}
+
+/*! @class Filter
+ *!
+ *! Bloom filter base class.
+ */
+PIKECLASS Filter {
+    CVAR unsigned INT64 *vector;
+    CVAR int shift;
+    CVAR int hashes;
+
+    INIT {
+        THIS->vector = NULL;
+    }
+
+    EXIT {
+        free(THIS->vector);
+    }
+
+    static INLINE size_t bloom_length_bits(const struct Filter_struct *this) {
+        return (size_t)1 << this->shift;
+    }
+
+    static INLINE size_t bloom_length_bytes(const struct Filter_struct *this) {
+        return (size_t)1 << (this->shift - 3);
+    }
+
+    static INLINE size_t bloom_length_limbs(const struct Filter_struct *this) {
+        return (size_t)1 << (this->shift - 6);
+    }
+
+#ifdef BLOCKED
+    static INLINE size_t bloom_length_blocks(const struct Filter_struct *this) {
+        return (size_t)1 << (this->shift - 9);
+    }
+#endif
+
+    static INLINE void bv_set(unsigned INT64 *v, size_t n) {
+        size_t bits = CHAR_BIT * sizeof(*v);
+        v[n / bits] |= (unsigned INT64)1 << (n % bits);
+    }
+
+    static INLINE int bv_get(unsigned INT64 *v, size_t n) {
+        size_t bits = CHAR_BIT * sizeof(*v);
+        return !!(v[n / bits] & ((unsigned INT64)1 << (n % bits)));
+    }
+
+    static void set_hashes(const struct Filter_struct *this, struct hash_data *d) {
+        unsigned INT64 *v = this->vector;
+        unsigned INT32 shift = this->shift;
+        unsigned INT32 hashes = this->hashes;
+
+#ifdef BLOCKED
+        hashes --;
+        shift -= CACHE_SHIFT;
+        v += get_hash_fast(d, shift) * CACHE_LINE / sizeof(*v);
+
+        while (hashes--) {
+            bv_set(v, get_hash(d, CACHE_SHIFT));
+        }
+#else
+        while (hashes--) {
+            bv_set(v, get_hash(d, shift));
+        }
+#endif
+    }
+
+    static int test_hashes(const struct Filter_struct *this, struct hash_data *d) {
+        unsigned INT64 *v = this->vector;
+        unsigned INT32 shift = this->shift;
+        unsigned INT32 hashes = this->hashes;
+
+#ifdef BLOCKED
+        hashes --;
+        shift -= CACHE_SHIFT;
+        v += get_hash(d, shift) * CACHE_LINE / sizeof(*v);
+
+        while (hashes--) {
+            if (!bv_get(v, get_hash(d, CACHE_SHIFT))) return 0;
+        }
+#else
+        while (hashes--) {
+            if (!bv_get(v, get_hash(d, shift))) return 0;
+        }
+
+#endif
+
+        return 1;
+    }
+
+    static int bloom_compatiblep(const struct object *a, const struct Filter_struct *this,
+                                 const struct object *b, const struct Filter_struct *that) {
+        return a->prog == b->prog && this->shift == that->shift && this->hashes == that->hashes;
+    }
+
+    static void bloom_init_low(struct Filter_struct *this, unsigned INT32 shift, unsigned INT32 hashes) {
+        /* length in bytes */
+        size_t len = ((size_t)1 << (shift - 3));
+        this->shift = shift;
+        this->hashes = hashes;
+        if (this->vector) {
+            free(this->vector);
+        }
+#ifdef BLOCKED
+        this->vector = xalloc_aligned(len, CACHE_LINE);
+#else
+        this->vector = xalloc(len);
+#endif
+    }
+
+    static void bloom_init(struct Filter_struct *this, size_t len, unsigned INT32 hashes) {
+#if SIZEOF_CHAR_P == 8
+        this->shift = ctz64(len);
+#else
+        this->shift = ctz32(len);
+#endif
+        len /= CHAR_BIT;
+        this->hashes = hashes;
+        if (this->vector) {
+            free(this->vector);
+        }
+#ifdef BLOCKED
+        this->vector = xalloc_aligned(len, CACHE_LINE);
+#else
+        this->vector = xalloc(len);
+#endif
+        memset(this->vector, 0, len);
+    }
+
+    /*! @decl array(int(0..64)) popcount()
+     *! 
+     *! Calculated the popcount of all 64 bit blocks which make up the bitvector.
+     */
+    PIKEFUN array popcount() {
+        unsigned INT64 *v = THIS->vector;
+        size_t i;
+        size_t n = bloom_length_limbs(THIS);
+        struct array *a = allocate_array(n);
+
+        for (i = 0; i < n; i++) {
+            ITEM(a)[i].u.integer = popcount64(v[i]);
+        }
+
+        RETURN a;
+    }
+
+    /*! @decl void create(int(1..) n, float p)
+     *! 
+     *! Create a bloom filter for @expr{n@} elements with
+     *! false positive probability @expr{p@}. Adding less
+     *! then @expr{n@} elements to the bloom filter will
+     *! result in a lower false positive probability while
+     *! adding more will result in a higher false positive
+     *! probability.
+     */
+    PIKEFUN void create(int n, float p) {
+        size_t len;
+        unsigned INT32 hashes;
+
+        if (n <= 0)
+            SIMPLE_ARG_TYPE_ERROR("create", 1, "int(1..)");
+        if (p <= 0.0 || p >= 1.0)
+            SIMPLE_ARG_ERROR("create", 2, "Probabilities are in (0.0, 1.0)");
+
+        /* the formulas below are not very correct for small values of n (and len),
+         * so lets assume at least 32 here. */
+        if (n <= 32) n = 32;
+
+        /* FIXME: overflow */
+        len = (size_t)(- n * log(p)/(log(2.0)*log(2.0)));
+
+        len = round_up64(len);
+
+#ifdef BLOCKED
+        if (len < CACHE_LINE * CHAR_BIT)
+            len = CACHE_LINE * CHAR_BIT;
+#else
+        if ((size_t)len < sizeof(unsigned INT64) * CHAR_BIT)
+            len = sizeof(unsigned INT64) * CHAR_BIT;
+#endif
+
+        hashes = (unsigned INT32)floor((double)len / n * log(2.0));
+
+        bloom_init(THIS, len, hashes);
+    }
+
+    /*! @decl void create(int(1..) len, int(1..) k)
+     *! 
+     *! Create a bloom filter of length @expr{len@} bits and
+     *! @expr{k@} hash functions.
+     */
+    PIKEFUN void create(int len, int hashes) {
+        if (len <= 0)
+            SIMPLE_ARG_TYPE_ERROR("create", 1, "int(1..)");
+        if (hashes <= 0)
+            SIMPLE_ARG_TYPE_ERROR("create", 2, "int(1..)");
+
+        len = round_up64((size_t)len);
+
+#ifdef BLOCKED
+        if (len < CACHE_LINE * CHAR_BIT)
+            len = CACHE_LINE * CHAR_BIT;
+#else
+        if ((size_t)len < sizeof(unsigned INT64) * CHAR_BIT)
+            len = sizeof(unsigned INT64) * CHAR_BIT;
+#endif
+
+        bloom_init(THIS, len, hashes);
+    }
+
+    /*! @decl int _sizeof()
+     *! 
+     *! Returns the length of the bloom filter in bits.
+     */
+    PIKEFUN int _sizeof() {
+        RETURN bloom_length_bits(THIS);
+    }
+
+    /*! @decl int `hashes()
+     *! 
+     *! The number of hash functions used.
+     */
+    PIKEFUN int `hashes() {
+        RETURN THIS->hashes;
+    }
+
+    /*! @decl float false_positives()
+     *!
+     *! Calculates the false positive probability. This is done by counting the number
+     *! of set bits, which makes this function rather expensive.
+     *! 
+     *! @note
+     *!         If the number of distinct elements which have been added to a bloom filter
+     *!         @expr{o@} is known to be @expr{n@}, the false positive probability can be
+     *!         approximated by @expr{1 - pow(1.0 - 1/sizeof(o), n * o->hashes)@}.
+     */
+    PIKEFUN float false_positives() {
+        struct Filter_struct *this = THIS;
+        unsigned INT64 *v = this->vector;
+        size_t i;
+        size_t n = bloom_length_limbs(this);
+        size_t cnt = 0;
+
+        for (i = 0; i < n; i++) {
+            cnt += popcount64(v[i]);
+        }
+
+        n = bloom_length_bits(this);
+
+        RETURN pow((double)cnt / n, (double)this->hashes);
+    }
+
+    /*! @decl string _sprintf(int type, void|mapping m)
+     */
+    PIKEFUN string _sprintf(int type, void|mapping m) {
+        pop_n_elems(args);
+        if (type == 'O') {
+            if (THIS->vector) {
+                push_text("%O(%d bytes, %d hashes, %f false positives)");
+                ref_push_program(Pike_fp->current_object->prog);
+                push_int(bloom_length_bytes(THIS));
+                push_int(THIS->hashes);
+                f_Filter_false_positives(0);
+                f_sprintf(5);
+            } else {
+                push_text("%O(unintialized)");
+                ref_push_program(Pike_fp->current_object->prog);
+                f_sprintf(2);
+            }
+        } else {
+            push_undefined();
+        }
+    }
+
+    /*! @decl string cast(string type)
+     */
+    PIKEFUN string cast(string type) {
+        pop_stack();
+
+        if (type == literal_string_string) {
+            push_string(make_shared_binary_string((char*)THIS->vector, bloom_length_bytes(THIS)));
+        } else push_undefined();
+    }
+
+    /*! @decl void clear()
+     *!
+     *! Clears all bits in the bloom filter.
+     */
+    PIKEFUN void clear() {
+        memset(THIS->vector, 0, bloom_length_bytes(THIS));
+    }
+
+    /*! @decl int _size_object()
+     *! 
+     *! Returns the size of the bloom filter in bytes.
+     */
+    PIKEFUN int _size_object() {
+        RETURN bloom_length_bytes(THIS);
+    }
+
+    /*! @decl string(8bit) _encode()
+     */
+    PIKEFUN string _encode() {
+        struct pike_string *s = begin_shared_string(bloom_length_bytes(THIS) + 4);
+        unsigned char *dst = STR0(s);
+        set_unaligned_be32(dst, THIS->hashes);
+        memcpy_be64(dst + 4, THIS->vector, bloom_length_bytes(THIS));
+        push_string(end_shared_string(s));
+    }
+
+    /*! @decl void _decode(string(8bit) s)
+     */
+    PIKEFUN void _decode(string s) {
+        size_t len;
+        unsigned char *src;
+        if (s->size_shift)
+            SIMPLE_ARG_TYPE_ERROR("_decode", 1, "string(8bit)");
+        len = s->len;
+        src = STR0(s);
+
+#ifdef BLOCKED
+        if (len < 4 + CACHE_LINE || (len - 4) & (len - 5))
+            Pike_error("Truncated data.\n");
+#endif
+        len -= 4;
+        bloom_init_low(THIS, ctz64(len)+3, get_unaligned_be32(src));
+        memcpy_be64(THIS->vector, src + 4, len);
+    }
+
+    /*! @decl object(Filter) `&(object(Filter) o)
+     *! 
+     *! Logical AND of two bloom filters. It returns a new bloom filter object
+     *! of the same type, which represents the intersection of the two sets. This
+     *! operation does not result in the same bloom filter as if the elements of
+     *! the intersection had been added to a new object, i.e. the false positive
+     *! probability can be bigger.
+     *! 
+     *! @note
+     *!         This operations is only permitted on bloom filters with the same
+     *!         length and number of hash functions.
+     */
+    PIKEFUN object(Filter) `&(object(Filter) o) {
+        const struct Filter_struct *this = THIS;
+        const struct Filter_struct *that = OBJ2_FILTER(o);
+        struct object *n;
+        struct Filter_struct *res;
+        unsigned INT64 * __restrict dst, *src1, *src2;
+        size_t i, len;
+
+        if (!bloom_compatiblep(Pike_fp->current_object, this, o, that))
+            BLOOM_COMPAT_ERROR("`&", 1);
+
+        n = fast_clone_object(o->prog);
+        res = OBJ2_FILTER(n);
+        bloom_init_low(res, this->shift, this->hashes);
+
+        dst = res->vector;
+        src1 = this->vector;
+        src2 = that->vector;
+        len = bloom_length_limbs(this);
+
+        for (i = 0; i < len; i++) {
+            *(dst++) = *(src1++) & *(src2++);
+        }
+
+        RETURN n;
+    }
+
+    /*! @decl object(Filter) `|(object(Filter) o)
+     *! 
+     *! Logical OR of two bloom filters. It returns a new bloom filter object
+     *! of the same type, which represents the union of the two sets. This operation
+     *! results in the same bloom filter as if all elements of the two operands had been
+     *! added to it.
+     *! 
+     *! @note
+     *!         This operations is only permitted on bloom filters with the same
+     *!         length and number of hash functions.
+     */
+    PIKEFUN object(Filter) `|(object(Filter) o) {
+        const struct Filter_struct *this = THIS;
+        const struct Filter_struct *that = OBJ2_FILTER(o);
+        struct object *n;
+        struct Filter_struct *res;
+        unsigned INT64 *dst, *src1, *src2;
+        size_t i, len;
+
+        if (!bloom_compatiblep(Pike_fp->current_object, this, o, that))
+            BLOOM_COMPAT_ERROR("`|", 1);
+
+        n = fast_clone_object(o->prog);
+        res = OBJ2_FILTER(n);
+        bloom_init_low(res, this->shift, this->hashes);
+
+        dst = res->vector;
+        src1 = this->vector;
+        src2 = that->vector;
+        len = bloom_length_limbs(this);
+
+        for (i = 0; i < len; i++) {
+            *(dst++) = *(src1++) | *(src2++);
+        }
+
+        RETURN n;
+    }
+
+    /*! @decl int(0..1) _equal(mixed v)
+     *!
+     *! Equality callback for bloom filter objects. It can be used to determine if two bloom
+     *! filters represent the same sets, i.e. have same lenght, hashing method, number of
+     *! hash functions and the same bits set.
+     */
+    PIKEFUN int _equal(mixed v) {
+        if (TYPEOF(*v) == PIKE_T_OBJECT) {
+            const struct object *o = v->u.object;
+            const struct Filter_struct *this = THIS;
+            const struct Filter_struct *that = OBJ2_FILTER(o);
+
+            if (bloom_compatiblep(Pike_fp->current_object, this, o, that)
+                && !memcmp(this->vector, that->vector, bloom_length_bytes(this)))
+                RETURN 1;
+        }
+
+        RETURN 0;
+    }
+
+    /*! @decl int(0..1) superset_of(object(Filter) o)
+     *!
+     *! Returns true if @expr{o@} represents a superset of this bloom filter.
+     */
+    PIKEFUN int superset_of(object(Filter) o) {
+        const struct Filter_struct *this = THIS;
+        const struct Filter_struct *that = OBJ2_FILTER(o);
+        unsigned INT64 *src1, *src2;
+        size_t i, len;
+        INT_TYPE ret = 1;
+
+        if (!bloom_compatiblep(Pike_fp->current_object, this, o, that))
+            BLOOM_COMPAT_ERROR("superset_of", 1);
+
+        src1 = this->vector;
+        src2 = that->vector;
+        len = bloom_length_limbs(this);
+
+        for (i = 0; i < len; i++) {
+            unsigned INT64 a = *(src1++);
+            unsigned INT64 b = *(src2++);
+
+            if (b != (b & a)) {
+                /* there is elements in b, which are not in a */
+                ret = 0;
+                break;
+            }
+        }
+
+        RETURN ret;
+    }
+
+    /*! @decl int(0..1) subset_of(object(Filter) v)
+     *!
+     *! Returns true if @expr{o@} represents a subset of this bloom filter.
+     */
+    PIKEFUN int subset_of(object(Filter) o) {
+        const struct Filter_struct *this = THIS;
+        const struct Filter_struct *that = OBJ2_FILTER(o);
+        unsigned INT64 *src1, *src2;
+        size_t i, len;
+        INT_TYPE ret = 1;
+
+        if (!bloom_compatiblep(Pike_fp->current_object, this, o, that))
+            BLOOM_COMPAT_ERROR("subset_of", 1);
+
+        src1 = this->vector;
+        src2 = that->vector;
+        len = bloom_length_limbs(this);
+
+        for (i = 0; i < len; i++) {
+            unsigned INT64 a = *(src2++);
+            unsigned INT64 b = *(src1++);
+
+            if (b != (b & a)) {
+                /* there is elements in b, which are not in a */
+                ret = 0;
+                break;
+            }
+        }
+
+        RETURN ret;
+    }
+}
+/*! @endclass
+  */
+
+/*! @class SValue
+ *!
+ *! This bloom filter accepts any value as an index. It is not completely compatible with the
+ *! usual equality in pike, in particular it does not respect the @[lfun::__hash] lfun and 
+ *! hashing of trampolines. Compatibility can be achieved by using the return value of @[hash_value]
+ *! as index, albeit with higher false positive probability.
+ *! 
+ *! @note
+ *!     Except when using only non-bignum integer elements, the hash values are only valid within the
+ *!     same pike process. Therefore encoding and decoding objects of this type does not work reliably.
+ */
+
+PIKECLASS SValue {
+    static void siphash_svalue(const struct svalue *sv, struct hash_data *hash) {
+        unsigned INT64 hval;
+
+        unsigned INT64 key = TYPEOF(*sv);
+
+        if (key == PIKE_T_FUNCTION)
+            key += SUBTYPEOF(*sv);
+
+        hval = low_hashmem_siphash24(&sv->u, sizeof(union anything), sizeof(union anything), key);
+
+        hash->h1 = hval;
+        hash->h2 = hval >> (sizeof(hash->h1)*CHAR_BIT);
+        hash->ch = hash->h1;
+        hash->left = (sizeof(hash->h1)*CHAR_BIT);
+    }
+#cmod_define SVALUE_IS_KEY(sv)  (1)
+#cmod_define SVALUE_TO_KEY(sv)  (sv)
+#cmod_define HASH_FUNCTION siphash_svalue
+#cmod_define INDEX_TYPE mixed
+#cmod_include "filter.H"
+}
+/*! @endclass
+ */
+
+/*! @class String
+ *!
+ *! This bloom filter only accepts strings as indices. It uses SipHash 2-4 as hash function.
+ */
+PIKECLASS String {
+    static void siphash_string(const struct pike_string *s, struct hash_data *hash) {
+        struct svalue tmp;
+        unsigned INT64 hval;
+
+        size_t len = s->len << s->size_shift;
+
+        hval = low_hashmem_siphash24(STR0(s), len, len, s->size_shift);
+
+        hash->h1 = hval;
+        hash->h2 = hval >> (sizeof(hash->h1)*CHAR_BIT);
+        hash->ch = hash->h1;
+        hash->left = (sizeof(hash->h1)*CHAR_BIT);
+    }
+#cmod_define SVALUE_IS_KEY(sv)  (TYPEOF(*(sv)) == PIKE_T_STRING)
+#cmod_define SVALUE_TO_KEY(sv)  (sv)->u.string
+#cmod_define HASH_FUNCTION siphash_string
+#cmod_define INDEX_TYPE string
+#cmod_include "filter.H"
+}
+
+/*! @endclass
+ */
+
+/*! @class Simple
+ *!
+ *! This bloom filter only accepts strings as indices and uses the first 8 bytes as the hash value.
+ *! It is intended to be used in cases where a strong hash value is already available, e.g. the output
+ *! of a cryptographic hash function.
+ */
+PIKECLASS Simple {
+    static void hash_string(const struct pike_string *s, struct hash_data *hash) {
+        struct svalue tmp;
+        size_t hval;
+        size_t len = s->len << s->size_shift;
+
+        if (len < 8)
+            Pike_error("String too short.\n");
+
+        hash->h1 = get_unaligned32(STR0(s));
+        hash->h2 = get_unaligned32(STR0(s)+4);
+        hash->ch = hash->h1;
+        hash->left = (sizeof(hash->h1)*CHAR_BIT);
+    }
+#cmod_define SVALUE_IS_KEY(sv)  (TYPEOF(*(sv)) == PIKE_T_STRING)
+#cmod_define SVALUE_TO_KEY(sv)  (sv)->u.string
+#cmod_define HASH_FUNCTION hash_string
+#cmod_define INDEX_TYPE string
+#cmod_include "filter.H"
+}
+
+/*! @endclass
+ */
+
+/*! @endmodule
+ */
+
+/*! @endmodule
+ */
+
+PIKE_MODULE_INIT
+{
+  INIT;
+}
+
+PIKE_MODULE_EXIT
+{
+  EXIT;
+}
+

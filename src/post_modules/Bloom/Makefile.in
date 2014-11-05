@@ -1,0 +1,20 @@
+
+@make_variables@
+
+VPATH=@srcdir@
+MODNAME=Bloom
+MODDIR=ADT.pmod/
+MODULE_PMOD_IN=
+MODULE_WRAPPER_PREFIX=
+AUTODOC_SRC_IN=$(SRCDIR)/bloom.c
+OBJS=bloom.o
+
+# Reset the symbol prefix base to the empty string.
+PRECOMPILER_ARGS="--base="
+
+@dynamic_module_makefile@
+
+bloom.o: $(SRCDIR)/bloom.c
+$(SRCDIR)/bloom.c: $(SRCDIR)/filter.H
+
+@dependencies@
