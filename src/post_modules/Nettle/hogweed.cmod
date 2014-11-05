@@ -32,7 +32,7 @@ static void random_func_wrapper(void *f, pike_nettle_size_t num, uint8_t *out)
   apply_svalue((struct svalue *)f, 1);
   if(TYPEOF(Pike_sp[-1])!=T_STRING)
     Pike_error("Random function did not return string value.\n");
-  if(Pike_sp[-1].u.string->len != (unsigned int)num)
+  if((unsigned)Pike_sp[-1].u.string->len != (unsigned)num)
     Pike_error("Random function did not return correct number of bytes.\n");
   memcpy(out, Pike_sp[-1].u.string->str, num);
   pop_stack();

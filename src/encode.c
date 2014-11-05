@@ -2443,6 +2443,12 @@ static INT32 decode_portable_bytecode(struct decode_data *data, INT32 string_no)
   switch(bytecode->size_shift) {
 #define SIGNED_CHAR(X)	X
 
+#if SIZEOF_INT_TYPE > 4
+#define DO_HIGH(X) (X)
+#else
+#define DO_HIGH(X) 0
+#endif
+
     /* The EMIT_BYTECODE2 macro will generate the warning
      * "comparison is always false due to limited range of data type"
      * if used on STR0. Thus, the need to have two macros here.
@@ -2460,7 +2466,7 @@ static INT32 decode_portable_bytecode(struct decode_data *data, INT32 string_no)
       } else if (STR(bytecode)[e] == F_LINE) {		\
 	current_line =					\
 	  ((unsigned INT32)STR(bytecode)[e+1]) |	\
-	  ((INT_TYPE)STR(bytecode)[e+2])<<32;		\
+	  DO_HIGH(((INT_TYPE)STR(bytecode)[e+2])<<32);  \
       } else if (!current_file) {			\
 	decode_error(data, NULL, "Missing filename directive in "	\
 		     "byte code.\n");			\

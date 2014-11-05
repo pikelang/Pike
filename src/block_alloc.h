@@ -62,7 +62,9 @@ static INLINE size_t ptr_hash_find_hashsize(size_t size) {
         size |= size >> 4;
         size |= size >> 8;
         size |= size >> 16;
+#if SIZEOF_INT_TYPE > 4
         size |= size >> 32;
+#endif
         size++;
     }
     return size;

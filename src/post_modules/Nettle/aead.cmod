@@ -436,7 +436,7 @@ PIKECLASS AEAD
       /* NB: Check iv length here so that we can use the
        *     Nettle implementation straight in meta->set_iv.
        */
-      if (iv->len != meta->iv_size || !meta->iv_size) {
+      if ((unsigned)iv->len != meta->iv_size || !meta->iv_size) {
 	Pike_error("Invalid iv/nonce.\n");
       }
 
