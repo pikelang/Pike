@@ -1,4 +1,5 @@
 #include "stack_allocator.h"
+#include "block_alloc.h"
 
 MALLOC_FUNCTION
 static struct chunk * alloc_chunk(size_t size) {
@@ -15,19 +16,11 @@ void stack_alloc_enlarge(struct stack_allocator * a, size_t len) {
 
     size = c ? c->size * 2 : a->initial;
 
-    if (len <= size) {
+    if (len <= size)
         len = size;
-    } else if (len & (len-1)) {
-        len |= len >> 1;
-        len |= len >> 2;
-        len |= len >> 4;
-        len |= len >> 8;
-        len |= len >> 16;
-#if SIZEOF_INT_TYPE > 4
-        len |= len >> 32;
-#endif
-        len ++;
-    }
+    else
+        len = ptr_hash_find_hashsize(len);
+
     a->cur = alloc_chunk(len);
     a->cur->prev = c;
 }
