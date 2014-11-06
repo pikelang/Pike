@@ -64,7 +64,7 @@ static struct pike_string *nul16_string = NULL;
 /* Generic callback function for Nettle in case the crypt()
  * function in the object isn't a Nettle function.
  */
-static void pike_crypt_func(void *object, pike_nettle_size_t length,
+static void pike_crypt_func(const void *object, pike_nettle_size_t length,
 			    uint8_t *dst, const uint8_t *src)
 {
   struct pike_string *str;
