@@ -64,8 +64,14 @@ static struct pike_string *nul16_string = NULL;
 /* Generic callback function for Nettle in case the crypt()
  * function in the object isn't a Nettle function.
  */
+#ifdef dsa_params_init
+/* Nettle 3.0 */
 static void pike_crypt_func(const void *object, pike_nettle_size_t length,
 			    uint8_t *dst, const uint8_t *src)
+#else
+static void pike_crypt_func(void *object, pike_nettle_size_t length,
+			    uint8_t *dst, const uint8_t *src)
+#endif
 {
   struct pike_string *str;
   push_string(make_shared_binary_string((const char *)src, length));
