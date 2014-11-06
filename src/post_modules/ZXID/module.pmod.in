@@ -76,6 +76,12 @@ class Configuration
     //!
     mapping(string:mixed) auth_info;
 
+    //!
+    mapping(string:mixed) get_auth_info()
+    {
+      return auth_info;
+    }
+
     //! Authenticate via SAML given the query-string @[query].
     //!
     //! @returns
