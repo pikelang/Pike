@@ -1774,11 +1774,6 @@ void unuse_modules(INT32 howmany)
   }
 }
 
-int low_find_shared_string_identifier(struct pike_string *name,
-				      struct program *prog);
-
-
-
 static struct node_s *index_modules(struct pike_string *ident,
 				    struct mapping **module_index_cache,
 				    const int num_used_modules,
@@ -6660,7 +6655,7 @@ int add_ext_ref(struct program_state *state, struct program *target, int i)
  *   +-E---foo		Pike 7.7.34 ---
  */
 PMOD_EXPORT int really_low_find_shared_string_identifier(struct pike_string *name,
-							 struct program *prog,
+							 const struct program *prog,
 							 int flags)
 {
   struct reference *funp;
@@ -6967,7 +6962,7 @@ int lfun_lookup_id(struct pike_string *lfun_name)
  * a shared_string
  */
 int low_find_shared_string_identifier(struct pike_string *name,
-				      struct program *prog)
+				      const struct program *prog)
 {
   int max,min,tst;
   struct identifier *fun;
@@ -7022,7 +7017,7 @@ static struct ff_hash cache[FIND_FUNCTION_HASHSIZE];
 #endif
 
 int find_shared_string_identifier(struct pike_string *name,
-				  struct program *prog)
+				  const struct program *prog)
 {
 #ifdef PIKE_DEBUG
   if (!prog) {
@@ -7056,7 +7051,7 @@ int find_shared_string_identifier(struct pike_string *name,
   return low_find_shared_string_identifier(name,prog);
 }
 
-PMOD_EXPORT int find_identifier(const char *name,struct program *prog)
+PMOD_EXPORT int find_identifier(const char *name,const struct program *prog)
 {
   struct pike_string *n;
   if(!prog) {

@@ -814,7 +814,7 @@ PMOD_EXPORT void apply_lfun(struct object *o, int fun, int args);
 PMOD_EXPORT void apply_shared(struct object *o,
 		  struct pike_string *fun,
 		  int args);
-PMOD_EXPORT void apply(struct object *o, const char *fun, int args);
+PMOD_EXPORT void apply(const struct object *o, const char *fun, int args);
 PMOD_EXPORT void apply_svalue(struct svalue *s, INT32 args);
 PMOD_EXPORT void safe_apply_svalue (struct svalue *s, INT32 args, int handle_errors);
 PMOD_EXPORT void apply_external(int depth, int fun, INT32 args);

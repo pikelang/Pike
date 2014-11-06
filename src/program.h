@@ -922,7 +922,7 @@ INT32 define_function(struct pike_string *name,
 		      union idptr *func,
 		      unsigned opt_flags);
 PMOD_EXPORT int really_low_find_shared_string_identifier(struct pike_string *name,
-							 struct program *prog,
+							 const struct program *prog,
 							 int flags);
 int really_low_find_variant_identifier(struct pike_string *name,
 				       struct program *prog,
@@ -933,11 +933,11 @@ PMOD_EXPORT int low_find_lfun(struct program *p, ptrdiff_t lfun);
 PMOD_EXPORT int find_lfun_fatal(struct program *p, ptrdiff_t lfun);
 int lfun_lookup_id(struct pike_string *lfun_name);
 int low_find_shared_string_identifier(struct pike_string *name,
-				      struct program *prog);
+				      const struct program *prog);
 struct ff_hash;
 int find_shared_string_identifier(struct pike_string *name,
-				  struct program *prog);
-PMOD_EXPORT int find_identifier(const char *name,struct program *prog);
+				  const struct program *prog);
+PMOD_EXPORT int find_identifier(const char *name,const struct program *prog);
 int store_prog_string(struct pike_string *str);
 int store_constant(const struct svalue *foo,
 		   int equal,
