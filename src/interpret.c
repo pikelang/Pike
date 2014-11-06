@@ -3129,7 +3129,7 @@ PMOD_EXPORT void apply_shared(struct object *o,
     Pike_error("Cannot call unknown function \"%S\".\n", fun);
 }
 
-PMOD_EXPORT void apply(const struct object *o, const char *fun, int args)
+PMOD_EXPORT void apply(struct object *o, const char *fun, int args)
 {
   int id = find_identifier(fun, o->prog);
   if (id >= 0)

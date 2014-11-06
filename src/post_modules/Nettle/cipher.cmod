@@ -69,7 +69,7 @@ static void pike_crypt_func(const void *object, pike_nettle_size_t length,
 {
   struct pike_string *str;
   push_string(make_shared_binary_string((const char *)src, length));
-  apply(object, "crypt", 1);
+  apply((struct object *)object, "crypt", 1);
   get_all_args("crypt", 1, "%n", &str);
   if (str->len != (ptrdiff_t)length) {
     Pike_error("Bad string length %ld returned from crypt()\n",
