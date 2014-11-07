@@ -5,7 +5,7 @@
 #define HEX2DEC(x) ((x) <= '9' ? (x) - '0' : ((x) < 'G') ? (x) - 'A' + 10 : (x) - 'a' + 10)
 
 
-#line 128 "rl/json_string_utf8.rl"
+#line 129 "rl/json_string_utf8.rl"
 
 
 static ptrdiff_t _parse_JSON_string_utf8(PCHARP str, ptrdiff_t pos, ptrdiff_t end, struct parser_state *state) {
@@ -30,7 +30,7 @@ static const int JSON_string_en_main = 1;
 static const int JSON_string_en_main_hex1 = 15;
 
 
-#line 143 "rl/json_string_utf8.rl"
+#line 144 "rl/json_string_utf8.rl"
 
     if (validate) {
 	init_string_builder(&s, 0);
@@ -43,7 +43,7 @@ static const int JSON_string_en_main_hex1 = 15;
 	cs = JSON_string_start;
 	}
 
-#line 150 "rl/json_string_utf8.rl"
+#line 151 "rl/json_string_utf8.rl"
     
 #line 49 "json_string_utf8.c"
 	{
@@ -114,7 +114,7 @@ case 2:
 		goto tr5;
 	goto st0;
 tr2:
-#line 69 "rl/json_string_utf8.rl"
+#line 70 "rl/json_string_utf8.rl"
 	{
 	mark = p;
     }
@@ -123,6 +123,7 @@ tr14:
 #line 56 "rl/json_string_utf8.rl"
 	{
 	if (validate) switch((*p)) {
+	    case '\'':
 	    case '"':
 	    case '/':
 	    case '\\':      string_builder_putchar(&s, (*p)); break;
@@ -133,7 +134,7 @@ tr14:
 	    case 't':       string_builder_putchar(&s, '\t'); break;
 	}
     }
-#line 73 "rl/json_string_utf8.rl"
+#line 74 "rl/json_string_utf8.rl"
 	{ mark = p + 1; }
 	goto st3;
 tr19:
@@ -160,53 +161,53 @@ tr19:
 	    }
 	}
     }
-#line 73 "rl/json_string_utf8.rl"
+#line 74 "rl/json_string_utf8.rl"
 	{ mark = p + 1; }
 	goto _again;
 tr20:
-#line 83 "rl/json_string_utf8.rl"
+#line 84 "rl/json_string_utf8.rl"
 	{ unicode |= (p_wchar2)((*p) & (0xbf-0x80)); }
-#line 105 "rl/json_string_utf8.rl"
+#line 106 "rl/json_string_utf8.rl"
 	{
 	if (validate) { 
 	    string_builder_putchar(&s, unicode); 
 	}
     }
-#line 73 "rl/json_string_utf8.rl"
+#line 74 "rl/json_string_utf8.rl"
 	{ mark = p + 1; }
 	goto st3;
 tr22:
-#line 87 "rl/json_string_utf8.rl"
+#line 88 "rl/json_string_utf8.rl"
 	{ 
 	unicode |= (p_wchar2)((*p) & (0xbf-0x80));
 	if ((unicode < 0x0800 || unicode > 0xd7ff) && (unicode < 0xe000 || unicode > 0xffff)) {
 	    goto failure;	
 	}
     }
-#line 105 "rl/json_string_utf8.rl"
+#line 106 "rl/json_string_utf8.rl"
 	{
 	if (validate) { 
 	    string_builder_putchar(&s, unicode); 
 	}
     }
-#line 73 "rl/json_string_utf8.rl"
+#line 74 "rl/json_string_utf8.rl"
 	{ mark = p + 1; }
 	goto st3;
 tr25:
-#line 98 "rl/json_string_utf8.rl"
+#line 99 "rl/json_string_utf8.rl"
 	{ 
 	unicode |= (p_wchar2)((*p) & (0xbf-0x80));
 	if (unicode < 0x010000 || unicode > 0x10ffff) {
 	    goto failure;
 	}
     }
-#line 105 "rl/json_string_utf8.rl"
+#line 106 "rl/json_string_utf8.rl"
 	{
 	if (validate) { 
 	    string_builder_putchar(&s, unicode); 
 	}
     }
-#line 73 "rl/json_string_utf8.rl"
+#line 74 "rl/json_string_utf8.rl"
 	{ mark = p + 1; }
 	goto st3;
 tr31:
@@ -226,14 +227,14 @@ tr31:
 	    string_builder_putchar(&s, cp);
 	}
     }
-#line 73 "rl/json_string_utf8.rl"
+#line 74 "rl/json_string_utf8.rl"
 	{ mark = p + 1; }
 	goto st3;
 st3:
 	if ( ++p == pe )
 		goto _test_eof3;
 case 3:
-#line 237 "json_string_utf8.c"
+#line 238 "json_string_utf8.c"
 	switch( (*p) ) {
 		case 34u: goto tr9;
 		case 92u: goto tr10;
@@ -251,11 +252,11 @@ case 3:
 		goto tr11;
 	goto st0;
 tr3:
-#line 69 "rl/json_string_utf8.rl"
+#line 70 "rl/json_string_utf8.rl"
 	{
 	mark = p;
     }
-#line 75 "rl/json_string_utf8.rl"
+#line 76 "rl/json_string_utf8.rl"
 	{
 	if (p - mark > 0) {
 	    if (validate)
@@ -264,7 +265,7 @@ tr3:
     }
 	goto st21;
 tr9:
-#line 75 "rl/json_string_utf8.rl"
+#line 76 "rl/json_string_utf8.rl"
 	{
 	if (p - mark > 0) {
 	    if (validate)
@@ -276,16 +277,16 @@ st21:
 	if ( ++p == pe )
 		goto _test_eof21;
 case 21:
-#line 127 "rl/json_string_utf8.rl"
+#line 128 "rl/json_string_utf8.rl"
 	{ p--; {p++; cs = 21; goto _out;} }
-#line 282 "json_string_utf8.c"
+#line 283 "json_string_utf8.c"
 	goto st0;
 tr4:
-#line 69 "rl/json_string_utf8.rl"
+#line 70 "rl/json_string_utf8.rl"
 	{
 	mark = p;
     }
-#line 75 "rl/json_string_utf8.rl"
+#line 76 "rl/json_string_utf8.rl"
 	{
 	if (p - mark > 0) {
 	    if (validate)
@@ -294,7 +295,7 @@ tr4:
     }
 	goto st4;
 tr10:
-#line 75 "rl/json_string_utf8.rl"
+#line 76 "rl/json_string_utf8.rl"
 	{
 	if (p - mark > 0) {
 	    if (validate)
@@ -306,9 +307,10 @@ st4:
 	if ( ++p == pe )
 		goto _test_eof4;
 case 4:
-#line 310 "json_string_utf8.c"
+#line 311 "json_string_utf8.c"
 	switch( (*p) ) {
 		case 34u: goto tr14;
+		case 39u: goto tr14;
 		case 47u: goto tr14;
 		case 92u: goto tr14;
 		case 98u: goto tr14;
@@ -342,7 +344,7 @@ st6:
 	if ( ++p == pe )
 		goto _test_eof6;
 case 6:
-#line 346 "json_string_utf8.c"
+#line 348 "json_string_utf8.c"
 	if ( (*p) < 65u ) {
 		if ( 48u <= (*p) && (*p) <= 57u )
 			goto tr17;
@@ -363,7 +365,7 @@ st7:
 	if ( ++p == pe )
 		goto _test_eof7;
 case 7:
-#line 367 "json_string_utf8.c"
+#line 369 "json_string_utf8.c"
 	if ( (*p) < 65u ) {
 		if ( 48u <= (*p) && (*p) <= 57u )
 			goto tr18;
@@ -384,7 +386,7 @@ st8:
 	if ( ++p == pe )
 		goto _test_eof8;
 case 8:
-#line 388 "json_string_utf8.c"
+#line 390 "json_string_utf8.c"
 	if ( (*p) < 65u ) {
 		if ( 48u <= (*p) && (*p) <= 57u )
 			goto tr19;
@@ -395,140 +397,140 @@ case 8:
 		goto tr19;
 	goto st0;
 tr5:
-#line 69 "rl/json_string_utf8.rl"
+#line 70 "rl/json_string_utf8.rl"
 	{
 	mark = p;
     }
-#line 75 "rl/json_string_utf8.rl"
+#line 76 "rl/json_string_utf8.rl"
 	{
 	if (p - mark > 0) {
 	    if (validate)
 		string_builder_binary_strcat(&s, (char *)mark, (ptrdiff_t)(p - mark));
         }
     }
-#line 82 "rl/json_string_utf8.rl"
+#line 83 "rl/json_string_utf8.rl"
 	{ unicode = ((p_wchar2)((*p) & (0xdf-0xc0))) << 6; }
 	goto st9;
 tr11:
-#line 75 "rl/json_string_utf8.rl"
+#line 76 "rl/json_string_utf8.rl"
 	{
 	if (p - mark > 0) {
 	    if (validate)
 		string_builder_binary_strcat(&s, (char *)mark, (ptrdiff_t)(p - mark));
         }
     }
-#line 82 "rl/json_string_utf8.rl"
+#line 83 "rl/json_string_utf8.rl"
 	{ unicode = ((p_wchar2)((*p) & (0xdf-0xc0))) << 6; }
 	goto st9;
 st9:
 	if ( ++p == pe )
 		goto _test_eof9;
 case 9:
-#line 428 "json_string_utf8.c"
+#line 430 "json_string_utf8.c"
 	if ( 128u <= (*p) && (*p) <= 191u )
 		goto tr20;
 	goto st0;
 tr6:
-#line 69 "rl/json_string_utf8.rl"
+#line 70 "rl/json_string_utf8.rl"
 	{
 	mark = p;
     }
-#line 75 "rl/json_string_utf8.rl"
+#line 76 "rl/json_string_utf8.rl"
 	{
 	if (p - mark > 0) {
 	    if (validate)
 		string_builder_binary_strcat(&s, (char *)mark, (ptrdiff_t)(p - mark));
         }
     }
-#line 85 "rl/json_string_utf8.rl"
+#line 86 "rl/json_string_utf8.rl"
 	{ unicode = ((p_wchar2)((*p) & 0x0f)) << 12; }
 	goto st10;
 tr12:
-#line 75 "rl/json_string_utf8.rl"
+#line 76 "rl/json_string_utf8.rl"
 	{
 	if (p - mark > 0) {
 	    if (validate)
 		string_builder_binary_strcat(&s, (char *)mark, (ptrdiff_t)(p - mark));
         }
     }
-#line 85 "rl/json_string_utf8.rl"
+#line 86 "rl/json_string_utf8.rl"
 	{ unicode = ((p_wchar2)((*p) & 0x0f)) << 12; }
 	goto st10;
 st10:
 	if ( ++p == pe )
 		goto _test_eof10;
 case 10:
-#line 462 "json_string_utf8.c"
+#line 464 "json_string_utf8.c"
 	if ( 128u <= (*p) && (*p) <= 191u )
 		goto tr21;
 	goto st0;
 tr21:
-#line 86 "rl/json_string_utf8.rl"
+#line 87 "rl/json_string_utf8.rl"
 	{ unicode |= ((p_wchar2)((*p) & (0xbf-0x80))) << 6; }
 	goto st11;
 st11:
 	if ( ++p == pe )
 		goto _test_eof11;
 case 11:
-#line 474 "json_string_utf8.c"
+#line 476 "json_string_utf8.c"
 	if ( 128u <= (*p) && (*p) <= 191u )
 		goto tr22;
 	goto st0;
 tr7:
-#line 69 "rl/json_string_utf8.rl"
+#line 70 "rl/json_string_utf8.rl"
 	{
 	mark = p;
     }
-#line 75 "rl/json_string_utf8.rl"
+#line 76 "rl/json_string_utf8.rl"
 	{
 	if (p - mark > 0) {
 	    if (validate)
 		string_builder_binary_strcat(&s, (char *)mark, (ptrdiff_t)(p - mark));
         }
     }
-#line 94 "rl/json_string_utf8.rl"
+#line 95 "rl/json_string_utf8.rl"
 	{ unicode = ((p_wchar2)((*p) & 0x07)) << 18; }
 	goto st12;
 tr13:
-#line 75 "rl/json_string_utf8.rl"
+#line 76 "rl/json_string_utf8.rl"
 	{
 	if (p - mark > 0) {
 	    if (validate)
 		string_builder_binary_strcat(&s, (char *)mark, (ptrdiff_t)(p - mark));
         }
     }
-#line 94 "rl/json_string_utf8.rl"
+#line 95 "rl/json_string_utf8.rl"
 	{ unicode = ((p_wchar2)((*p) & 0x07)) << 18; }
 	goto st12;
 st12:
 	if ( ++p == pe )
 		goto _test_eof12;
 case 12:
-#line 508 "json_string_utf8.c"
+#line 510 "json_string_utf8.c"
 	if ( 128u <= (*p) && (*p) <= 191u )
 		goto tr23;
 	goto st0;
 tr23:
-#line 95 "rl/json_string_utf8.rl"
+#line 96 "rl/json_string_utf8.rl"
 	{ unicode |= ((p_wchar2)((*p) & (0xbf-0x80))) << 12; }
 	goto st13;
 st13:
 	if ( ++p == pe )
 		goto _test_eof13;
 case 13:
-#line 520 "json_string_utf8.c"
+#line 522 "json_string_utf8.c"
 	if ( 128u <= (*p) && (*p) <= 191u )
 		goto tr24;
 	goto st0;
 tr24:
-#line 86 "rl/json_string_utf8.rl"
+#line 87 "rl/json_string_utf8.rl"
 	{ unicode |= ((p_wchar2)((*p) & (0xbf-0x80))) << 6; }
 	goto st14;
 st14:
 	if ( ++p == pe )
 		goto _test_eof14;
 case 14:
-#line 532 "json_string_utf8.c"
+#line 534 "json_string_utf8.c"
 	if ( 128u <= (*p) && (*p) <= 191u )
 		goto tr25;
 	goto st0;
@@ -569,7 +571,7 @@ st18:
 	if ( ++p == pe )
 		goto _test_eof18;
 case 18:
-#line 573 "json_string_utf8.c"
+#line 575 "json_string_utf8.c"
 	if ( (*p) < 65u ) {
 		if ( 48u <= (*p) && (*p) <= 57u )
 			goto tr29;
@@ -590,7 +592,7 @@ st19:
 	if ( ++p == pe )
 		goto _test_eof19;
 case 19:
-#line 594 "json_string_utf8.c"
+#line 596 "json_string_utf8.c"
 	if ( (*p) < 65u ) {
 		if ( 48u <= (*p) && (*p) <= 57u )
 			goto tr30;
@@ -611,7 +613,7 @@ st20:
 	if ( ++p == pe )
 		goto _test_eof20;
 case 20:
-#line 615 "json_string_utf8.c"
+#line 617 "json_string_utf8.c"
 	if ( (*p) < 65u ) {
 		if ( 48u <= (*p) && (*p) <= 57u )
 			goto tr31;
@@ -648,7 +650,7 @@ case 20:
 	_out: {}
 	}
 
-#line 151 "rl/json_string_utf8.rl"
+#line 152 "rl/json_string_utf8.rl"
 
     if (cs >= JSON_string_first_final) {
 	if (validate) {

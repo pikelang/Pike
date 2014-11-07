@@ -55,6 +55,7 @@
 
     action add_unquote {
 	if (validate) switch(fc) {
+	    case '\'':
 	    case '"':
 	    case '/':
 	    case '\\':      string_builder_putchar(&s, fc); break;
@@ -118,7 +119,7 @@
 		       0xf0..0xf4 >string_append >utf_4_1 . 0x80..0xbf >utf_4_2 . 0x80..0xbf >utf_3_2 . 0x80..0xbf >utf_4_4 >finish @mark_next -> start
 		   ),
 		   unquote: (
-		       ["\\/bfnrt] >add_unquote -> start |
+		       ['"\\/bfnrt] >add_unquote -> start |
 		       'u' . xdigit >hex0beg . (xdigit{3} $hex0mid) @hex0end -> start
 		   ) @mark_next,
 		   hex1: (
