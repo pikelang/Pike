@@ -5,7 +5,7 @@
 #define HEX2DEC(x) ((x) <= '9' ? (x) - '0' : ((x) < 'G') ? (x) - 'A' + 10 : (x) - 'a' + 10)
 
 
-#line 97 "rl/json_string.rl"
+#line 98 "rl/json_string.rl"
 
 
 static ptrdiff_t _parse_JSON_string(PCHARP str, ptrdiff_t p, ptrdiff_t pe, struct parser_state *state) {
@@ -26,7 +26,7 @@ static const int JSON_string_en_main = 1;
 static const int JSON_string_en_main_hex1 = 9;
 
 
-#line 108 "rl/json_string.rl"
+#line 109 "rl/json_string.rl"
 
     if (validate) {
 	init_string_builder(&s, 0);
@@ -39,7 +39,7 @@ static const int JSON_string_en_main_hex1 = 9;
 	cs = JSON_string_start;
 	}
 
-#line 115 "rl/json_string.rl"
+#line 116 "rl/json_string.rl"
     
 #line 45 "json_string.c"
 	{
@@ -98,7 +98,7 @@ case 2:
 		goto tr2;
 	goto st0;
 tr2:
-#line 70 "rl/json_string.rl"
+#line 71 "rl/json_string.rl"
 	{
 	mark = p;
     }
@@ -107,6 +107,7 @@ tr8:
 #line 57 "rl/json_string.rl"
 	{
 	if (validate) switch(( ((int)INDEX_PCHARP(str, p)))) {
+	    case '\'':
 	    case '"':
 	    case '/':
 	    case '\\':      string_builder_putchar(&s, ( ((int)INDEX_PCHARP(str, p)))); break;
@@ -117,7 +118,7 @@ tr8:
 	    case 't':       string_builder_putchar(&s, '\t'); break;
 	}
     }
-#line 74 "rl/json_string.rl"
+#line 75 "rl/json_string.rl"
 	{ mark = p + 1; }
 	goto st3;
 tr13:
@@ -144,7 +145,7 @@ tr13:
 	    }
 	}
     }
-#line 74 "rl/json_string.rl"
+#line 75 "rl/json_string.rl"
 	{ mark = p + 1; }
 	goto _again;
 tr19:
@@ -164,14 +165,14 @@ tr19:
 	    string_builder_putchar(&s, cp);
 	}
     }
-#line 74 "rl/json_string.rl"
+#line 75 "rl/json_string.rl"
 	{ mark = p + 1; }
 	goto st3;
 st3:
 	if ( ++p == pe )
 		goto _test_eof3;
 case 3:
-#line 175 "json_string.c"
+#line 176 "json_string.c"
 	switch( ( ((int)INDEX_PCHARP(str, p))) ) {
 		case 34: goto tr6;
 		case 92: goto tr7;
@@ -183,11 +184,11 @@ case 3:
 		goto st3;
 	goto st0;
 tr3:
-#line 70 "rl/json_string.rl"
+#line 71 "rl/json_string.rl"
 	{
 	mark = p;
     }
-#line 76 "rl/json_string.rl"
+#line 77 "rl/json_string.rl"
 	{
 	if (p - mark > 0) {
 	    if (validate)
@@ -196,7 +197,7 @@ tr3:
     }
 	goto st15;
 tr6:
-#line 76 "rl/json_string.rl"
+#line 77 "rl/json_string.rl"
 	{
 	if (p - mark > 0) {
 	    if (validate)
@@ -208,16 +209,16 @@ st15:
 	if ( ++p == pe )
 		goto _test_eof15;
 case 15:
-#line 96 "rl/json_string.rl"
+#line 97 "rl/json_string.rl"
 	{ p--; {p++; cs = 15; goto _out;} }
-#line 214 "json_string.c"
+#line 215 "json_string.c"
 	goto st0;
 tr4:
-#line 70 "rl/json_string.rl"
+#line 71 "rl/json_string.rl"
 	{
 	mark = p;
     }
-#line 76 "rl/json_string.rl"
+#line 77 "rl/json_string.rl"
 	{
 	if (p - mark > 0) {
 	    if (validate)
@@ -226,7 +227,7 @@ tr4:
     }
 	goto st4;
 tr7:
-#line 76 "rl/json_string.rl"
+#line 77 "rl/json_string.rl"
 	{
 	if (p - mark > 0) {
 	    if (validate)
@@ -238,9 +239,10 @@ st4:
 	if ( ++p == pe )
 		goto _test_eof4;
 case 4:
-#line 242 "json_string.c"
+#line 243 "json_string.c"
 	switch( ( ((int)INDEX_PCHARP(str, p))) ) {
 		case 34: goto tr8;
+		case 39: goto tr8;
 		case 47: goto tr8;
 		case 92: goto tr8;
 		case 98: goto tr8;
@@ -274,7 +276,7 @@ st6:
 	if ( ++p == pe )
 		goto _test_eof6;
 case 6:
-#line 278 "json_string.c"
+#line 280 "json_string.c"
 	if ( ( ((int)INDEX_PCHARP(str, p))) < 65 ) {
 		if ( 48 <= ( ((int)INDEX_PCHARP(str, p))) && ( ((int)INDEX_PCHARP(str, p))) <= 57 )
 			goto tr11;
@@ -295,7 +297,7 @@ st7:
 	if ( ++p == pe )
 		goto _test_eof7;
 case 7:
-#line 299 "json_string.c"
+#line 301 "json_string.c"
 	if ( ( ((int)INDEX_PCHARP(str, p))) < 65 ) {
 		if ( 48 <= ( ((int)INDEX_PCHARP(str, p))) && ( ((int)INDEX_PCHARP(str, p))) <= 57 )
 			goto tr12;
@@ -316,7 +318,7 @@ st8:
 	if ( ++p == pe )
 		goto _test_eof8;
 case 8:
-#line 320 "json_string.c"
+#line 322 "json_string.c"
 	if ( ( ((int)INDEX_PCHARP(str, p))) < 65 ) {
 		if ( 48 <= ( ((int)INDEX_PCHARP(str, p))) && ( ((int)INDEX_PCHARP(str, p))) <= 57 )
 			goto tr13;
@@ -363,7 +365,7 @@ st12:
 	if ( ++p == pe )
 		goto _test_eof12;
 case 12:
-#line 367 "json_string.c"
+#line 369 "json_string.c"
 	if ( ( ((int)INDEX_PCHARP(str, p))) < 65 ) {
 		if ( 48 <= ( ((int)INDEX_PCHARP(str, p))) && ( ((int)INDEX_PCHARP(str, p))) <= 57 )
 			goto tr17;
@@ -384,7 +386,7 @@ st13:
 	if ( ++p == pe )
 		goto _test_eof13;
 case 13:
-#line 388 "json_string.c"
+#line 390 "json_string.c"
 	if ( ( ((int)INDEX_PCHARP(str, p))) < 65 ) {
 		if ( 48 <= ( ((int)INDEX_PCHARP(str, p))) && ( ((int)INDEX_PCHARP(str, p))) <= 57 )
 			goto tr18;
@@ -405,7 +407,7 @@ st14:
 	if ( ++p == pe )
 		goto _test_eof14;
 case 14:
-#line 409 "json_string.c"
+#line 411 "json_string.c"
 	if ( ( ((int)INDEX_PCHARP(str, p))) < 65 ) {
 		if ( 48 <= ( ((int)INDEX_PCHARP(str, p))) && ( ((int)INDEX_PCHARP(str, p))) <= 57 )
 			goto tr19;
@@ -436,7 +438,7 @@ case 14:
 	_out: {}
 	}
 
-#line 116 "rl/json_string.rl"
+#line 117 "rl/json_string.rl"
 
     if (cs < JSON_string_first_final) {
 	if (validate) {
