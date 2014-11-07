@@ -55,6 +55,7 @@
 
     action add_unquote {
 	if (!(state->flags&JSON_VALIDATE)) switch(fc) {
+	    case '\'':
 	    case '"':
 	    case '/':
 	    case '\\':      string_builder_putchar(&s, fc); break;
@@ -86,7 +87,7 @@
 		       (unicode - [\\"]) -> start
 		   ),
 		   unquote: (
-		       ["\\/bfnrt] >add_unquote -> start |
+		       ['"\\/bfnrt] >add_unquote -> start |
 		       'u' . xdigit >hex0beg . (xdigit{3} $hex0mid) @hex0end -> start
 		   ) @mark_next,
 		   hex1: (
