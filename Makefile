@@ -314,7 +314,6 @@ snapshot: snapshot_export
 xenofarm_export:
 	@echo Begin export
 	@rm -f export_result.txt
-	done >>export_result.txt
 	@PIKE_BUILD_OS=source $(DO_MAKE) \
 	  "CONFIGUREARGS=--disable-binary $(CONFIGUREARGS)" \
 	  "LIMITED_TARGETS=yes" "METATARGET=snapshot_export" \
