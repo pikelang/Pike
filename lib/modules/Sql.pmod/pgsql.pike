@@ -1111,7 +1111,8 @@ final void _processloop(object ci) {
                 pinpointerror(msgresponse.q,msgresponse.p)});
               if(msgresponse.W)
                 lastmessage+=({msgresponse.W});
-              lastmessage+=showbindings(portal);
+              if(objectp(portal))
+                lastmessage+=showbindings(portal);
               switch(msgresponse.S) {
                 case "PANIC":werror(a2nls(lastmessage));
               }
