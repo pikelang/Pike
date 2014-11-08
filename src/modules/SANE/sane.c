@@ -89,7 +89,7 @@ static void push_device( SANE_Device *d )
  *!            ])
  *!        })
  */
-static void f_list_scanners( INT32 args )
+static void f_list_scanners( INT32 UNUSED(args) )
 {
   SANE_Device **devices;
   int i = 0;
@@ -425,15 +425,15 @@ static void f_scanner_get_parameters( INT32 args )
 
 static struct program *image_program;
 
-static void get_grey_frame( SANE_Handle h, SANE_Parameters *p, char *data )
+static void get_grey_frame( SANE_Handle h, SANE_Parameters *p,
+			    SANE_Byte *data )
 {
-  char buffer[8000];
+  SANE_Byte buffer[8000];
   int nbytes = p->lines * p->bytes_per_line, amnt_read;
   while( nbytes )
   {
-    char *pp = buffer;
-    if( sane_read( h, (unsigned char *)buffer, MINIMUM(8000,nbytes),
-		   &amnt_read ) )
+    SANE_Byte *pp = buffer;
+    if( sane_read( h, buffer, MINIMUM(8000,nbytes), &amnt_read ) )
       return;
     while( amnt_read-- && nbytes--)
     {
@@ -444,28 +444,29 @@ static void get_grey_frame( SANE_Handle h, SANE_Parameters *p, char *data )
   }
 }
 
-static void get_rgb_frame( SANE_Handle h, SANE_Parameters *p, char *data )
+static void get_rgb_frame( SANE_Handle h, SANE_Parameters *p,
+			   SANE_Byte *data )
 {
-  char buffer[8000];
+  SANE_Byte buffer[8000];
   int nbytes = p->lines * p->bytes_per_line, amnt_read;
   while( nbytes )
   {
-    char *pp = buffer;
-    if( sane_read( h, (unsigned char *)buffer, MINIMUM(8000,nbytes),
-		   &amnt_read ) )
+    SANE_Byte *pp = buffer;
+    if( sane_read( h, buffer, MINIMUM(8000,nbytes), &amnt_read ) )
       return;
     while( amnt_read-- && nbytes--)
       *(data++) = *(pp++);
   }
 }
 
-static void get_comp_frame( SANE_Handle h, SANE_Parameters *p, char *data )
+static void get_comp_frame( SANE_Handle h, SANE_Parameters *p,
+			    SANE_Byte *data )
 {
-  char buffer[8000];
+  SANE_Byte buffer[8000];
   int nbytes = p->lines * p->bytes_per_line, amnt_read;
   while( nbytes )
   {
-    char *pp = buffer;
+    SANE_Byte *pp = buffer;
     if( sane_read( h, buffer, MINIMUM(8000,nbytes), &amnt_read ) )
       return;
     while( amnt_read-- && nbytes--)
@@ -496,8 +497,7 @@ static void f_scanner_simple_scan( INT32 args )
   SANE_Parameters p;
   SANE_Handle h = THIS->h;
   struct object *o;
-  rgb_group *r;
-
+  SANE_Byte *r;	/* Actually an rgb_group *. */
 
   assert_image_program();
 
@@ -511,7 +511,7 @@ static void f_scanner_simple_scan( INT32 args )
   push_int( p.pixels_per_line );
   push_int( p.lines );
   o = clone_object( image_program, 2 );
-  r = ((struct image *)o->storage)->img;
+  r = (SANE_Byte *)((struct image *)o->storage)->img;
 
   THREADS_ALLOW();
   do
@@ -519,21 +519,21 @@ static void f_scanner_simple_scan( INT32 args )
     switch( p.format )
     {
      case SANE_FRAME_GRAY:
-       get_grey_frame( h, &p, (char *)r );
+       get_grey_frame( h, &p, r );
        p.last_frame = 1;
        break;
      case SANE_FRAME_RGB:
-       get_rgb_frame(  h, &p, (char *)r );
+       get_rgb_frame( h, &p, r );
        p.last_frame = 1;
        break;
      case SANE_FRAME_RED:
-       get_comp_frame( h, &p, ((char *)r) );
+       get_comp_frame( h, &p, r );
        break;
      case SANE_FRAME_GREEN:
-       get_comp_frame( h, &p, ((char *)r)+1 );
+       get_comp_frame( h, &p, r + 1 );
        break;
      case SANE_FRAME_BLUE:
-       get_comp_frame( h, &p, ((char *)r)+2 );
+       get_comp_frame( h, &p, r + 2 );
        break;
     }
   }
@@ -551,7 +551,7 @@ static void f_scanner_row_scan( INT32 args )
   SANE_Handle h = THIS->h;
   struct svalue *s;
   struct object *o;
-  rgb_group *r, or;
+  SANE_Byte *r; /* Actually an rgb_group *. */
   int i, nr;
 
   if( sane_start( THIS->h ) )               Pike_error("Start failed\n");
@@ -573,7 +573,7 @@ static void f_scanner_row_scan( INT32 args )
   push_int( p.pixels_per_line );
   push_int( 1 );
   o = clone_object( image_program, 2 );
-  r = ((struct image *)o->storage)->img;
+  r = (SANE_Byte *)((struct image *)o->storage)->img;
 
   nr = p.lines;
   p.lines=1;
@@ -584,10 +584,10 @@ static void f_scanner_row_scan( INT32 args )
     switch( p.format )
     {
      case SANE_FRAME_GRAY:
-       get_grey_frame( h, &p, (char *)r );
+       get_grey_frame( h, &p, r );
        break;
      case SANE_FRAME_RGB:
-       get_rgb_frame(  h, &p, (char *)r );
+       get_rgb_frame( h, &p, r );
        break;
      case SANE_FRAME_RED:
      case SANE_FRAME_GREEN:
@@ -614,7 +614,7 @@ struct row_scan_struct
   struct object *o;
   struct object *t;
   int current_row;
-  char *buffer;
+  SANE_Byte *buffer;
   int bufferpos, nonblocking;
   struct svalue callback;
 };
@@ -689,7 +689,7 @@ static void nonblocking_row_scan_callback( int fd, void *_c )
 
 /*! @decl void nonblocking_row_scan(function(Image.Image,int,Scanner,int:void) callback)
  */
-static void f_scanner_nonblocking_row_scan( INT32 args )
+static void f_scanner_nonblocking_row_scan( INT32 UNUSED(args) )
 {
   SANE_Parameters p;
   SANE_Handle h = THIS->h;
@@ -746,7 +746,7 @@ static void f_scanner_nonblocking_row_scan( INT32 args )
 
 /*! @decl void cancel_scan()
  */
-static void f_scanner_cancel_scan( INT32 args )
+static void f_scanner_cancel_scan( INT32 UNUSED(args) )
 {
   sane_cancel( THIS->h );
 }
@@ -764,12 +764,12 @@ static void f_scanner_cancel_scan( INT32 args )
 /*! @endmodule
  */
 
-static void init_scanner_struct( struct object *p )
+static void init_scanner_struct( struct object *UNUSED(p) )
 {
   THIS->h = 0;
 }
 
-static void exit_scanner_struct( struct object *p )
+static void exit_scanner_struct( struct object *UNUSED(p) )
 {
   if( THIS->h )
     sane_close( THIS->h );
