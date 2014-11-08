@@ -34,7 +34,7 @@ The SSL 3.0 Protocol was specified in the following draft (later an RFC):
 The TLS 1.0 Protocol is specified in the following RFCs:
 
  [X] SSL 3.1/TLS 1.0			RFC 2246
- [ ] Kerberos for TLS 1.0		RFC 2712
+ [/] Kerberos for TLS 1.0		RFC 2712
  [X] AES Ciphers for TLS 1.0		RFC 3268
  [/] Extensions for TLS 1.0		RFC 3546
  [X] TLS Compression Methods		RFC 3749

@@ -1170,6 +1170,151 @@ class KeyExchangeECDHE
 
 #endif /* Crypto.ECC.Curve */
 
+#if constant(GSSAPI)
+
+//! Key exchange for @[KE_krb].
+//!
+//! @[KeyExchange] that uses Kerberos.
+class KeyExchangeKRB
+{
+  inherit KeyExchange;
+
+  GSSAPI.Context gss_context;
+
+  ADT.struct server_key_params()
+  {
+    SSL3_DEBUG_MSG("KE_KRB\n");
+
+    // RFC 2712 3:
+    //
+    // The server's certificate, the client CertificateRequest, and
+    // the ServerKeyExchange shown in Figure 1 will be omitted since
+    // authentication and the establishment of a master secret will be
+    // done using the client's Kerberos credentials for the TLS server.
+
+    return 0;
+  }
+
+  string client_key_exchange_packet(string client_random,
+				    string server_random,
+				    ProtocolVersion version)
+  {
+    SSL3_DEBUG_MSG("client_key_exchange_packet(%O, %O, %d.%d)\n",
+		   client_random, server_random, version>>8, version & 0xff);
+
+    SSL3_DEBUG_MSG("KE_KRB\n");
+
+    // FIXME: The second argument to InitContext is required,
+    //        and should be host/MachineName@Realm.
+    gss_context = GSSAPI.InitContext();
+
+    string(8bit) token = gss_context->init();
+
+    ADT.struct struct = ADT.struct();
+
+    // NOTE: To protect against version roll-back attacks,
+    //       the version sent here MUST be the same as the
+    //       one in the initial handshake!
+    struct->put_uint(client_version, 2);
+    struct->put_fix_string(context->random(46));
+    string(8bit) premaster_secret = struct->pop_data();
+
+    string(8bit) encrypted_premaster_secret =
+      gss_context->wrap(premaster_secret, 1);
+
+    struct = ADT.struct();
+
+    struct->put_string(token, 2);
+
+    struct->put_string("", 2);	// Authenticator.
+
+    struct->put_string(encrypted_premaster_secret, 2);
+
+    session->master_secret = derive_master_secret(premaster_secret,
+						  client_random,
+						  server_random,
+						  version);
+    return struct->pop_data();
+  }
+
+  //! @returns
+  //!   Master secret or alert number.
+  string(0..255)|int server_derive_master_secret(string(0..255) data,
+						 string(0..255) client_random,
+						 string(0..255) server_random,
+						 ProtocolVersion version)
+  {
+    SSL3_DEBUG_MSG("server_derive_master_secret: ke_method %d\n",
+		   session->ke_method);
+
+    SSL3_DEBUG_MSG("KE_KRB\n");
+
+    ADT.struct struct = ADT.struct(data);
+
+    string ticket = struct->get_var_string(2);
+    string authenticator = struct->get_var_string(2);
+    string encrypted_premaster_secret = struct->get_var_string(2);
+
+    gss_context = GSSAPI.AcceptContext();
+    gss_context->accept(ticket);
+
+    /* Decrypt the premaster_secret */
+    SSL3_DEBUG_MSG("encrypted premaster_secret: %O\n", data);
+
+    string(8bit) premaster_secret =
+      gss_context->unwrap(encrypted_premaster_secret, 1);
+
+    SSL3_DEBUG_MSG("premaster_secret: %O\n", premaster_secret);
+
+    // We want both branches to execute in equal time (ignoring
+    // SSL3_DEBUG in the hope it is never on in production).
+    // Workaround documented in RFC 2246.
+    if ( `+( !premaster_secret,
+             (sizeof(premaster_secret) != 48),
+             (premaster_secret[0] != 3),
+             (premaster_secret[1] != (client_version & 0xff)) ))
+    {
+      /* To avoid the chosen ciphertext attack discovered by Daniel
+       * Bleichenbacher, it is essential not to send any error
+       * messages back to the client until after the client's
+       * Finished-message (or some other invalid message) has been
+       * received.
+       */
+      /* Also checks for version roll-back attacks.
+       */
+#ifdef SSL3_DEBUG
+      werror("SSL.handshake: Invalid premaster_secret! "
+	     "A chosen ciphertext attack?\n");
+      if (premaster_secret && sizeof(premaster_secret) > 2) {
+	werror("SSL.handshake: Strange version (%d.%d) detected in "
+	       "key exchange message (expected %d.%d).\n",
+	       premaster_secret[0], premaster_secret[1],
+	       client_version>>8, client_version & 0xff);
+      }
+#endif
+
+      premaster_secret = context->random(48);
+      message_was_bad = 1;
+      connection->ke = UNDEFINED;
+
+    } else {
+      string timing_attack_mitigation = context->random(48);
+      message_was_bad = 0;
+      connection->ke = this;
+    }
+
+    return derive_master_secret(premaster_secret, client_random, server_random,
+				version);
+  }
+
+  ADT.struct parse_server_key_exchange(ADT.struct input)
+  {
+    SSL3_DEBUG_MSG("KE_RSA\n");
+    error("Invalid message.\n");
+  }
+}
+#endif /* GSSAPI */
+
 //! MAC using SHA.
 //!
 //! @note
