@@ -344,6 +344,7 @@ void set_charset(string charset) {
 //!   @[set_charset()], @[getruntimeparameters()],
 //!   @url{http://www.postgresql.org/search/?u=%2Fdocs%2Fcurrent%2F&q=character+sets@}
 string get_charset() {
+  waitauthready();
   return _runtimeparameter[CLIENT_ENCODING];
 }
 
@@ -387,6 +388,7 @@ string get_charset() {
 //! This function is PostgreSQL-specific, and thus it is not available
 //! through the generic SQL-interface.
 mapping(string:string) getruntimeparameters() {
+  waitauthready();
   return _runtimeparameter+([]);
 }
 
@@ -572,6 +574,14 @@ protected void storetiming(object portal) {
   tp.trun=gethrtime()-tp.trunstart;
   m_delete(tp,"trunstart");
   portal._tprepared = UNDEFINED;
+}
+
+protected void waitauthready() {
+  if(waitforauthready) {
+    Thread.MutexKey lock=waitforauth->lock();
+    catch(waitforauthready->wait(lock));
+    lock=0;
+  }
 }
 
 final void _processloop(object ci) {
@@ -1466,6 +1476,7 @@ final protected void runcallback(int pid,string condition,string extrainfo) {
 //! @seealso
 //!   @[big_query()], @[quotebinary()], @[create()]
 string quote(string s) {
+  waitauthready();
   string r=_runtimeparameter.standard_conforming_strings;
   if(r && r=="on")
     return replace(s, "'", "''");
@@ -1524,6 +1535,7 @@ void drop_db(string db) {
 //! @seealso
 //!   @[host_info()]
 string server_info () {
+  waitauthready();
   return DRIVERNAME"/"+(_runtimeparameter.server_version||"unknown");
 }
 
@@ -1785,6 +1797,8 @@ object big_query(string q,void|mapping(string|int:mixed) bindings,
   string preparedname="";
   int forcecache=-1;
   int forcetext=options.text_query;
+  if(waitforauthready)
+    waitauthready();
   string cenc=_runtimeparameter[CLIENT_ENCODING];
   switch(cenc) {
     case UTF8CHARSET:
@@ -1844,11 +1858,6 @@ object big_query(string q,void|mapping(string|int:mixed) bindings,
   if(has_value(q,"\0"))
     ERROR("Querystring %O contains invalid literal nul-characters\n",q);
   mapping(string:mixed) tp;
-  if(waitforauthready) {
-    Thread.MutexKey lock=waitforauth->lock();
-    catch(waitforauthready->wait(lock));
-    lock=0;
-  }
   int tstart;
   if(!forcetext && forcecache==1
         || forcecache!=0
