@@ -1367,7 +1367,7 @@ protected void sendsync() {
 //! @note
 //! This function is PostgreSQL-specific, and thus it is not available
 //! through the generic SQL-interface.
-void resync(void|int|object portal) {
+void resync() {
   mixed err;
   if(!is_open()&&!reconnect())
     ERROR(a2nls(lastmessage));
