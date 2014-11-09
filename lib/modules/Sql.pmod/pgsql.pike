@@ -934,7 +934,7 @@ final void _processloop(object ci) {
           int atext = portal._alltext;		     // cache locally for speed
           int forcetext = portal._forcetext;	     // cache locally for speed
           string cenc=_runtimeparameter[CLIENT_ENCODING];
-          array a=allocate(cols,UNDEFINED);
+          array a=allocate(cols,!atext&&Val.null);
           msglen-=2+4*cols;
           foreach(datarowdesc;int i;mapping m) {
             int collen=ci->read_sint(4);

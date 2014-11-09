@@ -524,7 +524,7 @@ class pgsql_result {
     plugbuffer->add_int16(sizeof(paramValues));
     string cenc=pgsqlsess._runtimeparameter[CLIENT_ENCODING];
     foreach(paramValues;int i;mixed value) {
-      if(undefinedp(value))
+      if(undefinedp(value) || objectp(value)&&value->is_val_null)
         plugbuffer->add_int32(-1);				// NULL
       else if(stringp(value) && !sizeof(value)) {
         int k=0;
