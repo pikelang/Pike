@@ -165,6 +165,8 @@ int low_add_local_name(struct compiler_frame *,
 static void mark_lvalues_as_used(node *n);
 static node *lexical_islocal(struct pike_string *);
 static node *safe_inc_enum(node *n);
+static node *find_versioned_identifier(struct pike_string *identifier,
+				       int major, int minor);
 static int call_handle_import(struct pike_string *s);
 
 static int inherit_depth;
@@ -4065,58 +4067,8 @@ low_idents: TOK_IDENTIFIER
   }
   | TOK_VERSION TOK_COLON_COLON TOK_IDENTIFIER
   {
-    struct compilation *c = THIS_COMPILATION;
-    int old_major = Pike_compiler->compat_major;
-    int old_minor = Pike_compiler->compat_minor;
-    struct svalue *efun = NULL;
-
-    change_compiler_compatibility($1->u.integer.a, $1->u.integer.b);
-
-    if(Pike_compiler->last_identifier)
-      free_string(Pike_compiler->last_identifier);
-    copy_shared_string(Pike_compiler->last_identifier, $3->u.sval.u.string);
-
-    /* Check predef:: first, and then the modules. */
-
-    $$ = 0;
-
-    if (TYPEOF(c->default_module) == T_MAPPING) {
-      if ((efun = low_mapping_lookup(c->default_module.u.mapping,
-				     &($3->u.sval))))
-	$$ = mkconstantsvaluenode(efun);
-    }
-
-    else if (TYPEOF(c->default_module) != T_INT) {
-      JMP_BUF tmp;
-      if (SETJMP (tmp))
-	handle_compile_exception ("Couldn't index %d.%d "
-				  "default module with %O.",
-				  $1->u.integer.a, $1->u.integer.b,
-				  &$3->u.sval);
-      else {
-	push_svalue (&c->default_module);
-	push_svalue (&$3->u.sval);
-	f_index (2);
-	if (!IS_UNDEFINED (Pike_sp - 1))
-	  $$ = mkconstantsvaluenode (Pike_sp - 1);
-	pop_stack();
-      }
-      UNSETJMP(tmp);
-    }
-
-    if (!$$ && !($$ = resolve_identifier(Pike_compiler->last_identifier))) {
-      if((Pike_compiler->flags & COMPILATION_FORCE_RESOLVE) ||
-	 (Pike_compiler->compiler_pass==2)) {
-	my_yyerror("Undefined identifier %d.%d::%S.",
-		   $1->u.integer.a, $1->u.integer.b,
-		   Pike_compiler->last_identifier);
-	$$=0;
-      }else{
-	$$=mknode(F_UNDEFINED,0,0);
-      }
-    }
-
-    change_compiler_compatibility(old_major, old_minor);
+    $$ = find_versioned_identifier($3->u.sval.u.string,
+				   $1->u.integer.a, $1->u.integer.b);
     free_node($1);
     free_node($3);
   }
@@ -4912,6 +4864,59 @@ static node *safe_inc_enum(node *n)
   return n;
 }
 
+static node *find_versioned_identifier(struct pike_string *identifier,
+				       int major, int minor)
+{
+  struct compilation *c = THIS_COMPILATION;
+  int old_major = Pike_compiler->compat_major;
+  int old_minor = Pike_compiler->compat_minor;
+  struct svalue *efun = NULL;
+  node *res = NULL;
+
+  change_compiler_compatibility(major, minor);
+
+  if(Pike_compiler->last_identifier)
+    free_string(Pike_compiler->last_identifier);
+  copy_shared_string(Pike_compiler->last_identifier, identifier);
+
+  /* Check predef:: first, and then the modules. */
+
+  if (TYPEOF(c->default_module) == T_MAPPING) {
+    if ((efun = low_mapping_string_lookup(c->default_module.u.mapping,
+					  identifier)))
+      res = mkconstantsvaluenode(efun);
+  }
+  else if (TYPEOF(c->default_module) != T_INT) {
+    JMP_BUF tmp;
+    if (SETJMP (tmp)) {
+      handle_compile_exception ("Couldn't index %d.%d "
+				"default module with \"%S\".",
+				major, minor, identifier);
+    } else {
+      push_svalue(&c->default_module);
+      ref_push_string(identifier);
+      f_index (2);
+      if (!IS_UNDEFINED(Pike_sp - 1))
+	res = mkconstantsvaluenode(Pike_sp - 1);
+      pop_stack();
+    }
+    UNSETJMP(tmp);
+  }
+
+  if (!res && !(res = resolve_identifier(identifier))) {
+    if((Pike_compiler->flags & COMPILATION_FORCE_RESOLVE) ||
+       (Pike_compiler->compiler_pass==2)) {
+      my_yyerror("Undefined identifier %d.%d::%S.",
+		 major, minor, identifier);
+    }else{
+      res = mknode(F_UNDEFINED, 0, 0);
+    }
+  }
+
+  change_compiler_compatibility(old_major, old_minor);
+
+  return res;
+}
 
 static int call_handle_import(struct pike_string *s)
 {
