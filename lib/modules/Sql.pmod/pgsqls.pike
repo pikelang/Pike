@@ -11,6 +11,7 @@
 //!   @[Sql.pgsql], @[Sql.Sql]
 
 #pike __REAL_VERSION__
+#require constant(Sql.pgsql)
 
 inherit Sql.pgsql;
 
