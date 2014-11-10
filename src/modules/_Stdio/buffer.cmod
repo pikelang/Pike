@@ -1295,9 +1295,7 @@ PIKECLASS Buffer
    *! @decl Buffer add_hstring( String.Buffer data, int size_size )
    *! @decl Buffer add_hstring( int(0..255) data, int size_size )
    *! @decl Buffer add_hstring( array data, int size_size )
-   *! @decl Buffer add_hstring(
-   *!              int|string(0..255)|Stdio.Buffer|System.Memory|array data,
-   *!              int size_size, int offset )
+   *! @decl Buffer add_hstring( int|string(0..255)|Stdio.Buffer|System.Memory|array data, int size_size, int offset )
    *!
    *! Adds length of data followed by @[data] to the buffer.
    *!
