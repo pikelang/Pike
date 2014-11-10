@@ -1842,7 +1842,7 @@ final inline void throwdelayederror(object parent) {
               case ":_text":
                 forcetext=(int)value;
                 break;
-              case ":_syncparse":
+              case ":_sync":
                 syncparse=(int)value;
                 break;
             }
