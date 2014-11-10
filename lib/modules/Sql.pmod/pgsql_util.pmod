@@ -3,15 +3,13 @@
  * They are kept here to avoid circular references.
  */
 
+//! The pgsql backend, shared between all connection instances.
+//! It even runs in non-callback mode.
+
 #pike __REAL_VERSION__
 #require constant(Thread.Thread)
 
 #include "pgsql.h"
-
-//!
-//! The pgsql backend, shared between all connection instances.
-//! It even runs in non-callback mode.
-//!
 
 protected Thread.Mutex backendmux = Thread.Mutex();
 final Pike.Backend local_backend = Pike.SmallBackend();
@@ -95,7 +93,7 @@ protected sctype mergemode(PGassist realbuffer,sctype mode) {
   return realbuffer->stashflushmode;
 }
 
-//! Some pgsql utility functions
+// Some pgsql utility functions
 
 class PGplugbuffer {
   inherit Stdio.Buffer;
@@ -831,7 +829,7 @@ class pgsql_result {
     return (datarow=datarow[..<1]);
   }
 
-  //! @param copydatasend
+  //! @param copydata
   //! When using COPY FROM STDIN, this method accepts a string or an
   //! array of strings to be processed by the COPY command; when sending
   //! the amount of data sent per call does not have to hit row or column
