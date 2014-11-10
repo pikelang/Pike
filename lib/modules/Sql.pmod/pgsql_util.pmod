@@ -4,15 +4,22 @@
  */
 
 //! The pgsql backend, shared between all connection instances.
-//! It even runs in non-callback mode.
+//! It runs even in non-callback mode in a separate thread.
+//!
+//! @note
+//! Callbacks running from this backend directly determine the latency
+//! in reacting to communication with the database server; so it
+//! would be prudent not to block in these callbacks.
 
 #pike __REAL_VERSION__
 #require constant(Thread.Thread)
 
 #include "pgsql.h"
 
-protected Thread.Mutex backendmux = Thread.Mutex();
+//! The instance of the pgsql dedicated backend.
 final Pike.Backend local_backend = Pike.SmallBackend();
+
+protected Thread.Mutex backendmux = Thread.Mutex();
 protected int clientsregistered;
 
 multiset cachealways=(<"BEGIN","begin","END","end","COMMIT","commit">);
@@ -48,11 +55,15 @@ protected void run_local_backend() {
   } while(looponce);
 }
 
+//! Registers yourself as a user of this backend.  If the backend
+//! has not been started yet, it will be spawned automatically.
 final void register_backend() {
   if(!clientsregistered++)
     Thread.Thread(run_local_backend);
 }
 
+//! Unregisters yourself as a user of this backend.  If there are
+//! no longer any registered users, the backend will be terminated.
 final void unregister_backend() {
   --clientsregistered;
 }
