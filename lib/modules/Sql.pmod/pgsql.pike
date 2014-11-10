@@ -302,7 +302,7 @@ int ping() {
    ? !!reconnected : -1;
 }
 
-final protected .pgsql_util.PGassist getsocket(void|int nossl) {
+protected .pgsql_util.PGassist getsocket(void|int nossl) {
   return .pgsql_util.PGassist(this,qportals,(int)nossl);
 }
 
@@ -523,17 +523,17 @@ int setfetchlimit(void|int newfetchlimit) {
   return oldfetchlimit;
 }
 
-final protected string glob2reg(string glob) {
+protected string glob2reg(string glob) {
   if(!glob||!sizeof(glob))
     return "%";
   return replace(glob,({"*","?","\\","%","_"}),({"%","_","\\\\","\\%","\\_"}));
 }
 
-final protected string a2nls(array(string) msg) {
+protected string a2nls(array(string) msg) {
   return msg*"\n"+"\n";
 }
 
-final protected string pinpointerror(void|string query,void|string offset) {
+protected string pinpointerror(void|string query,void|string offset) {
   if(!query)
     return "";
   int k=(int)offset;
@@ -1464,11 +1464,11 @@ void set_notify_callback(string condition,
   }
 }
 
-final protected void runcallback(int pid,string condition,string extrainfo) {
+protected void runcallback(int pid,string condition,string extrainfo) {
   array cb;
   if((cb=notifylist[condition]||notifylist[""])
      && (pid!=backendpid || sizeof(cb)>1 && cb[1]))
-    cb[0](pid,condition,extrainfo,@cb[2..]);
+    Thread.Thread(cb[0],pid,condition,extrainfo,@cb[2..]);
 }
 
 //! @returns
@@ -1713,7 +1713,7 @@ array(mapping(string:mixed)) list_fields(void|string table, void|string glob) {
   return ret;
 }
 
-final protected string trbackendst(int c) {
+protected string trbackendst(int c) {
   switch(c) {
     case 'I': return "idle";
     case 'T': return "intransaction";
