@@ -17,16 +17,16 @@ final Pike.Backend local_backend = Pike.SmallBackend();
 protected int clientsregistered;
 
 multiset cachealways=(<"BEGIN","begin","END","end","COMMIT","commit">);
-object createprefix
+Regexp createprefix
  =Regexp("^[ \t\f\r\n]*[Cc][Rr][Ee][Aa][Tt][Ee][ \t\f\r\n]");
-protected object dontcacheprefix
+protected Regexp dontcacheprefix
  =Regexp("^[ \t\f\r\n]*([Ff][Ee][Tt][Cc][Hh]|[Cc][Oo][Pp][Yy])[ \t\f\r\n]");
-protected object execfetchlimit
+protected Regexp execfetchlimit
  =Regexp("^[ \t\f\r\n]*(([Uu][Pp][Dd][Aa]|[Dd][Ee][Ll][Ee])[Tt][Ee]|\
 [Ii][Nn][Ss][Ee][Rr][Tt])[ \t\f\r\n]|\
 [ \t\f\r\n][Ll][Ii][Mm][Ii][Tt][ \t\f\r\n]+[12][; \t\f\r\n]*$");
 
-final void closestatement(object plugbuffer,string oldprep) {
+final void closestatement(PGplugbuffer|PGassist plugbuffer,string oldprep) {
   if(oldprep) {
     PD("Close statement %s\n",oldprep);
     plugbuffer->add_int8('C')->add_hstring(({'S',oldprep,0}),4,4);
@@ -115,7 +115,7 @@ class PGplugbuffer {
   }
 
   final
-   void sendcmd(void|sctype mode,void|object portal) {
+   void sendcmd(void|sctype mode,void|pgsql_result portal) {
     Thread.MutexKey lock=realbuffer->stashupdate->lock();
     if(portal)
       realbuffer->stashqueue->write(portal);
@@ -383,7 +383,7 @@ class pgsql_result {
   final Thread.Queue _datarows;
   final array(mapping(string:mixed)) _datarowdesc;
   final int _oldpbpos;
-  protected object prepbuffer;
+  protected Stdio.Buffer prepbuffer;
   protected Thread.Condition prepbufferready;
   protected Thread.Mutex prepbuffermux;
   final string _preparedname;
@@ -514,7 +514,7 @@ class pgsql_result {
 #ifdef PG_DEBUGMORE
     PD("ParamValues to bind: %O\n",paramValues);
 #endif
-    object plugbuffer=Stdio.Buffer();
+    Stdio.Buffer plugbuffer=Stdio.Buffer();
     plugbuffer->add(_portalname=
       (_unnamedportalkey=pgsqlsess._unnamedportalmux->trylock(1))
        ? "" : PORTALPREFIX+int2hex(pgsqlsess._pportalcount++) )->add_int8(0)
@@ -664,7 +664,7 @@ class pgsql_result {
       prepbufferready->wait(lock);
       lock=0;
     }
-    object plugbuffer=prepbuffer;
+    Stdio.Buffer plugbuffer=prepbuffer;
     prepbuffer=0;
     plugbuffer->add_int16(sizeof(_datarowdesc));
     foreach(_datarowdesc;;mapping col)
@@ -672,7 +672,7 @@ class pgsql_result {
     PD("Bind portal %O statement %O\n",_portalname,_preparedname);
     _fetchlimit=pgsqlsess->_fetchlimit;
     _openportal();
-    object bindbuffer=c->start(1);
+    PGassist bindbuffer=c->start(1);
     _unnamedstatementkey=0;
     bindbuffer->add_int8('B')->add_hstring(plugbuffer,4,4);
     if(!_tprepared)
@@ -759,7 +759,7 @@ class pgsql_result {
   final void _releasesession() {
     _inflight=0;
     _datarows->write(1);			// Signal EOF
-    object plugbuffer=c->start(1);
+    PGassist plugbuffer=c->start(1);
     plugbuffer->sendcmd(_closeportal(plugbuffer));
     pgsqlsess=UNDEFINED;
   }
