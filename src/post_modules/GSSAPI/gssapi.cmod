@@ -48,6 +48,7 @@
 #include "pike_threadlib.h"
 #include "threads.h"
 #include "version.h"
+#include "module_support.h"
 
 #define DEFAULT_CMOD_STORAGE static
 
@@ -4476,6 +4477,8 @@ PIKE_MODULE_INIT
     low_get_storage (InitContext_program, Context_program);
   AcceptContext_Context_storage_offset =
     low_get_storage (AcceptContext_program, Context_program);
+#else
+  HIDE_MODULE();
 #endif
 }
 
