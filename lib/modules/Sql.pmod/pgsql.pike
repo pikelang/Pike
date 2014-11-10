@@ -164,6 +164,11 @@ protected string _sprintf(int type, void|mapping flags) {
 //!     instead of the, generally more efficient, default native binary method.
 //!     Turning this on will allow multiple statements per query separated
 //!     by semicolons.
+//!   @member int "sync_parse"
+//!     Set it to zero to turn synchronous parsing off for statements.
+//!     Setting this to off can cause surprises because statements could
+//!     be parsed before the previous statements have been executed.
+//!     This can speed up parsing by increased parallelism.
 //!   @member int "cache_autoprepared_statements"
 //!	If set to zero, it disables the automatic statement prepare and
 //!	cache logic; caching prepared statements can be problematic
@@ -794,7 +799,7 @@ final void _processloop(.pgsql_util.PGassist ci) {
           msglen-=4+1;
           PD("<ReadyForQuery %c\n",backendstatus);
 #endif
-          for(;objectp(portal);portal->read()) {
+          for(;objectp(portal);portal=qportals->read()) {
 #ifdef PG_DEBUG
             showportal(msgtype);
 #endif
@@ -1763,6 +1768,11 @@ final inline void throwdelayederror(object parent) {
 //!   binary method for simple queries with small or no result sets.
 //!   Note that this mode causes all but the first query result of a list
 //!   of semicolon separated statements to be discarded.
+//!  @member int ":_sync"
+//!   Forces synchronous parsing on or off for statements.
+//!   Setting this to off can cause surprises because statements could
+//!   be parsed before the previous statements have been executed.
+//!   This can speed up parsing by increased parallelism.
 //! @endmapping
 //!
 //! @returns
@@ -1798,8 +1808,8 @@ final inline void throwdelayederror(object parent) {
                                    void|int _alltyped) {
   throwdelayederror(this);
   string preparedname="";
-  int forcecache=-1;
-  int forcetext=options.text_query;
+  int forcecache=-1, forcetext=options.text_query;
+  int syncparse=zero_type(options.sync_parse)?-1:options.sync_parse;
   if(waitforauthready)
     waitauthready();
   string cenc=_runtimeparameter[CLIENT_ENCODING];
@@ -1832,6 +1842,9 @@ final inline void throwdelayederror(object parent) {
                 break;
               case ":_text":
                 forcetext=(int)value;
+                break;
+              case ":_syncparse":
+                syncparse=(int)value;
                 break;
             }
             continue;
@@ -1931,7 +1944,8 @@ final inline void throwdelayederror(object parent) {
     if(!sizeof(preparedname) || !tp || !tp.preparedname) {
       if(!sizeof(preparedname))
         preparedname=
-          (portal._unnamedstatementkey=unnamedstatement->trylock(1))
+          (portal._unnamedstatementkey=
+           (syncparse?unnamedstatement->lock:unnamedstatement->trylock)(1))
            ? "" : PTSTMTPREFIX+int2hex(ptstmtcount++);
       // Even though the protocol doesn't require the Parse command to be
       // followed by a flush, it makes a VERY noticeable difference in
