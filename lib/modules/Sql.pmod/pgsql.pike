@@ -591,6 +591,11 @@ protected void waitauthready() {
   }
 }
 
+protected inline mixed callout(function(mixed ...:void) f,
+ float|int delay,mixed ... args) {
+  return .pgsql_util.local_backend->call_out(f,delay,@args);
+}
+
 final void _processloop(.pgsql_util.PGassist ci) {
   int terminating=0;
   int|.pgsql_util.pgsql_result portal;
@@ -839,7 +844,7 @@ final void _processloop(.pgsql_util.PGassist ci) {
 #endif
           if(portal._tprepared)
             portal._tprepared.datatypeoid=a;
-          Thread.Thread(portal->_preparebind,a);
+          callout(portal->_preparebind,0,a);
           break;
         }
         case 'T': {
@@ -1280,7 +1285,7 @@ void _connectfail(void|mixed err) {
     lock=0;
     PD("Schedule reconnect in %ds\n",tdelay);
     _delayederror=0;
-    .pgsql_util.local_backend->call_out(reconnect,tdelay,1);
+    callout(reconnect,tdelay,1);
   } else if(err)
     _delayederror=err;
 }
@@ -1469,7 +1474,7 @@ protected void runcallback(int pid,string condition,string extrainfo) {
   array cb;
   if((cb=notifylist[condition]||notifylist[""])
      && (pid!=backendpid || sizeof(cb)>1 && cb[1]))
-    Thread.Thread(cb[0],pid,condition,extrainfo,@cb[2..]);
+    callout(cb[0],0,pid,condition,extrainfo,@cb[2..]);
 }
 
 //! @returns
