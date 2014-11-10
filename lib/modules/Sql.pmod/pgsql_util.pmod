@@ -93,6 +93,11 @@ protected sctype mergemode(PGassist realbuffer,sctype mode) {
   return realbuffer->stashflushmode;
 }
 
+protected inline mixed callout(function(mixed ...:void) f,
+ float|int delay,mixed ... args) {
+  return local_backend->call_out(f,delay,@args);
+}
+
 // Some pgsql utility functions
 
 class PGplugbuffer {
@@ -190,7 +195,7 @@ class PGassist {
       error("Out of range %d\n",howmuch);
 #endif
     if(fillread) {
-      array cid=local_backend->call_out(gottimeout,timeout);
+      array cid=callout(gottimeout,timeout);
       Thread.MutexKey lock=fillreadmux->lock();
       fillread.wait(lock);
       lock=0;
@@ -652,7 +657,7 @@ class pgsql_result {
     _setrowdesc(datarowdesc);
     mapping(string:mixed) tp=_tprepared;   // FIXME Is caching this worthwhile?
     if(!tp || !tp.datarowdesc)
-      Thread.Thread(gotdatarowdesc);
+      Thread.Thread(gotdatarowdesc);	    // Do not use callout, it deadlocks
     if(tp)
       tp.datarowdesc=datarowdesc;
   }
@@ -855,10 +860,10 @@ class pgsql_result {
    array(mixed) args) {
     int|array datarow;
     while(arrayp(datarow=_datarows->read_array()))
-      callback(this, datarow, @args);
+      callout(callback, 0, this, datarow, @args);
     trydelayederror();
     eoffound=1;
-    callback(this, 0, @args);
+    callout(callback, 0, this, 0, @args);
   }
 
   //! Sets up a callback for every row returned from the database.
@@ -879,12 +884,12 @@ class pgsql_result {
    array(mixed) args) {
     array(array|int) datarow;
     while((datarow=_datarows->read_array()) && arrayp(datarow[-1]))
-      callback(this, datarow, @args);
+      callout(callback, 0, this, datarow, @args);
     trydelayederror();
     eoffound=1;
     if(sizeof(datarow)>1)
-      callback(this, datarow=datarow[..<1], @args);
-    callback(this, 0, @args);
+      callout(callback, 0, this, datarow=datarow[..<1], @args);
+    callout(callback, 0, this, 0, @args);
   }
 
   //! Sets up a callback for sets of rows returned from the database.
