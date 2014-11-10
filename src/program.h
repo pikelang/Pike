@@ -777,7 +777,6 @@ PMOD_EXPORT void lock_pike_compiler(void);
 PMOD_EXPORT void unlock_pike_compiler(void);
 PMOD_EXPORT void do_free_program (struct program *p);
 void ins_int(INT32 i, void (*func)(char tmp));
-void ins_short(int i, void (*func)(char tmp));
 void add_relocated_int_to_program(INT32 i);
 void use_module(struct svalue *s);
 void unuse_modules(INT32 howmany);

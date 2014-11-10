@@ -1689,14 +1689,6 @@ void ins_int(INT32 i, void (*func)(char tmp))
   }
 }
 
-void ins_short(int i, void (*func)(char tmp))
-{
-  int e;
-  unsigned char *p = (unsigned char *)&i;
-  for(e=0;e<(long)sizeof(i);e++) {
-    func(p[e]);
-  }
-}
 
 #if 0
 /* This check is not possible to do since the identifier is added
