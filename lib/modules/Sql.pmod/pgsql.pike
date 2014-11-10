@@ -407,12 +407,12 @@ mapping(string:string) getruntimeparameters() {
 //!    that generated them.
 //!  @member int "skipped_describe_count"
 //!    Number of times the driver skipped asking the database to
-//!    describe the statement parameters because it was already
-//!    cached. Depends on the PG_STATS define being set.
+//!    describe the statement parameters because it was already cached.
+//!    Only available if PG_STATS is compile-time enabled.
 //!  @member int "used_prepared_statements"
-//!    Numer of times prepared statements were used from cache instead
-//!    of reparsing in the current session. Depends on the PG_STATS
-//!    define being set.
+//!    Numer of times prepared statements were used from cache instead of
+//!    reparsing in the current session.
+//!    Only available if PG_STATS is compile-time enabled.
 //!  @member int "current_prepared_statements"
 //!    Cache size of currently prepared statements.
 //!  @member int "current_prepared_statement_hits"
@@ -421,7 +421,8 @@ mapping(string:string) getruntimeparameters() {
 //!    Total number of prepared statements generated.
 //!  @member int "portals_opened_count"
 //!    Total number of portals opened, i.e. number of statements issued
-//!    to the database. Depends on the PG_STATS define being set.
+//!    to the database.
+//!    Only available if PG_STATS is compile-time enabled.
 //!  @member int "bytes_received"
 //!    Total number of bytes received from the database so far.
 //!  @member int "messages_received"
