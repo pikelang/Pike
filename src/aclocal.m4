@@ -1532,11 +1532,6 @@ AC_DEFUN(PIKE_CHECK_ABI_DIR,
       for f in "$d"/* no; do
         if test -f "$f"; then
 	  empty=no
-          if test "$abi_dir_dynamic:$abi_64:$pike_cv_abi" = "yes:yes:64" ; then
-             break
-          elif test "$abi_dir_dynamic:$abi_32:$pike_cv_abi" = "yes:yes:32" ; then
-             break
-          fi
           filetype="`file $f`"
 
 	  case "$filetype" in
@@ -1571,10 +1566,15 @@ AC_DEFUN(PIKE_CHECK_ABI_DIR,
 	      abi_dir_dynamic=yes
 	      ;;
 	  esac
-	  if echo "$abi_32:$abi_64:$abi_dir_dynamic" | \
-	       grep "unknown" >/dev/null; then :; else
-	    break
-	  fi
+	  if test "$abi_dir_dynamic" = "unknown"; then
+	     continue;
+	  elif test "$abi_64:$pike_cv_abi" = "yes:64" ; then
+             break
+          elif test "$abi_32:$pike_cv_abi" = "yes:32" ; then
+             break
+          fi
+	elif test "x$empty" = "xyes"; then
+	  empty=other
         fi
       done
       if test "$abi_32" = "yes"; then
