@@ -1248,7 +1248,8 @@ final void _processloop(.pgsql_util.PGassist ci) {
 //! through the generic SQL-interface.
 void close() {
   cancelquery();
-  c?->sendterminate();
+  if(c)
+    c->sendterminate();
   c=0;
 }
 
