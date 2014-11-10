@@ -182,7 +182,7 @@ class PGassist {
     return PGplugbuffer(this);
   }
 
-  protected final bool range_error(int howmuch) {
+  protected bool range_error(int howmuch) {
     if(!howmuch)
       return false;
 #ifdef PG_DEBUG
