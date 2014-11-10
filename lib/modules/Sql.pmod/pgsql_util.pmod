@@ -4,6 +4,7 @@
  */
 
 #pike __REAL_VERSION__
+#require constant(Thread.Thread)
 
 #include "pgsql.h"
 
