@@ -55,6 +55,7 @@
 //!  @[Sql.Sql], @[Sql.postgres], @url{http://www.postgresql.org/docs/@}
 
 #pike __REAL_VERSION__
+#require constant(Thread.Thread)
 
 #include "pgsql.h"
 
