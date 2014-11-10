@@ -426,6 +426,8 @@ o It is no longer possible to compile Pike without libgmp.
 
 o The old low-level 'files' module has been renamed to _Stdio
 
+o The old _PGsql helper module has been removed.
+
 o 'GTK' is now GTK2, not GTK1 unless the system has no GTK2 support.
 
 o Locale.Charset
@@ -672,6 +674,16 @@ o Mysql
 
   + Mysql.mysql now has methods to query the id or SQLSTATE of the
     last error.
+
+o pgsql
+
+  A complete rewrite of the existing driver. Changes in random order:
+  + Eliminates an obscure and rare Pike-internals corruption bug.
+  + Drops the _PGsql CMOD in favour of pure Pike using Stdio.Buffer.
+  + Fully threaded, event and callback driven operation.
+  + Maximum parallelism over a single filedescriptor (better than before).
+  + New interface: fetch_row_array() and callback driven.
+  + Less filling and faster than the existing driver.
 
 o Protocols.DNS
 
