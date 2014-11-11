@@ -278,7 +278,23 @@ PMOD_EXPORT void really_free_mapping_data(struct mapping_data *md)
 #ifdef PIKE_DEBUG
   if (md->refs) {
     Pike_fatal("really_free_mapping_data(): md has non-zero refs: %d\n",
-	  md->refs);
+	       md->refs);
+  }
+
+  if (!md->size) {
+    /* Paranoia and keep gcc happy. */
+    if (md == &empty_data) {
+      Pike_fatal("really_free_mapping_data(): md is empty_data!\n");
+    }
+    if (md == &weak_ind_empty_data) {
+      Pike_fatal("really_free_mapping_data(): md is weak_ind_empty_data!\n");
+    }
+    if (md == &weak_val_empty_data) {
+      Pike_fatal("really_free_mapping_data(): md is weak_val_empty_data!\n");
+    }
+    if (md == &weak_both_empty_data) {
+      Pike_fatal("really_free_mapping_data(): md is weak_both_empty_data!\n");
+    }
   }
 #endif /* PIKE_DEBUG */
 
