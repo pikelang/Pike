@@ -450,8 +450,8 @@ PIKECLASS _pcre
 
 	 switch (args) /* get ints and check 8 bit compliancy */
 	 {
-	    case 2: get_all_args("exec",args,"%s%d",&dummy_s,&off); break;
-	    case 1: get_all_args("exec",args,"%s",&dummy_s); break;
+	    case 2: get_all_args("exec",args,"%c.%d",&dummy_s,&off); break;
+	    case 1: get_all_args("exec",args,"%c",&dummy_s); break;
 	 }
 
 	 if (off > subject->len) {
