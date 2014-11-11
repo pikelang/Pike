@@ -24,23 +24,25 @@ inherit Stdio.UDP : snmp;
 
 import Standards.ASN1.Types;
 
+#define U(x) make_combined_tag(0, (x))
+
 protected mapping snmp_type_proc =
   ([
     // from RFC-1065 :
-    64 : OctetString, // ipaddress
-    65 : Integer,     // counter
-    66 : Integer,     // gauge
-    67 : Integer,     // timeticks
-    68 : OctetString, // opaque
+    U(64) : OctetString, // ipaddress
+    U(65) : Integer,     // counter
+    U(66) : Integer,     // gauge
+    U(67) : Integer,     // timeticks
+    U(68) : OctetString, // opaque
 
     // v2
-    70 : Integer,     // counter64
+    U(70) : Integer,     // counter64
 
     // context PDU
-    128 : Sequence,
-    129 : Sequence,
-    130 : Sequence,
-    131 : Sequence,
+    U(128) : Sequence,
+    U(129) : Sequence,
+    U(130) : Sequence,
+    U(131) : Sequence,
   ]);
 
 

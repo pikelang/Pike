@@ -203,8 +203,11 @@ mapping(int:program(.Types.Object)) universal_types =
 //!   a DER encoded object
 //!
 //! @param types
-//!   An optional set of application-specific types.
-//!   This set is used to extend @[universal_types].
+//!   An optional set of application-specific types. Should map
+//!   combined tag numbers to classes from or derived from
+//!   @[Standards.ASN1.Types]. Combined tag numbers may be generated
+//!   using @[Standards.ASN1.Types.make_combined_tag]. This set is
+//!   used to extend @[universal_types].
 //!
 //! @returns
 //!   an object from @[Standards.ASN1.Types] or
