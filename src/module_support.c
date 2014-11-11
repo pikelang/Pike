@@ -529,7 +529,7 @@ PMOD_EXPORT void get_all_args(const char *fname, INT32 args,
 	ret+1,
 	"string(1..255)",
 	sp+ret-args,
-	"Bad argument %d to %s().\n",
+	"Bad argument %d to %s(). NUL in string.\n",
 	ret+1, fname);
       /* NOT REACHED */
 
