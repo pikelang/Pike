@@ -489,6 +489,34 @@ PIKECLASS Configuration {
 
     EXIT
     {
+      if (THIS->ses.at) {
+	zxid_free_at(&THIS->config->conf, THIS->ses.at);
+	THIS->ses.at = NULL;
+      }
+      if (THIS->ses.cookie) {
+	ZX_FREE(THIS->config->conf.ctx, THIS->ses.cookie);
+	THIS->ses.cookie = NULL;
+      }
+      if (THIS->ses.sesix) {
+	ZX_FREE(THIS->config->conf.ctx, THIS->ses.sesix);
+	THIS->ses.sesix = NULL;
+      }
+      if (THIS->ses.setcookie) {
+	ZX_FREE(THIS->config->conf.ctx, THIS->ses.setcookie);
+	THIS->ses.setcookie = NULL;
+      }
+      if (THIS->ses.sso_a7n_path) {
+	ZX_FREE(THIS->config->conf.ctx, THIS->ses.sso_a7n_path);
+	if (THIS->ses.tgt_a7n_path == THIS->ses.sso_a7n_path) {
+	  /* Often the same pointer. */
+	  THIS->ses.tgt_a7n_path = NULL;
+	}
+	THIS->ses.sso_a7n_path = NULL;
+      }
+      if (THIS->ses.tgt_a7n_path) {
+	ZX_FREE(THIS->config->conf.ctx, THIS->ses.tgt_a7n_path);
+	THIS->ses.tgt_a7n_path = NULL;
+      }
       mt_destroy(&THIS->session_lock);
       if (THIS->ses.sesbuf) {
 	ZX_FREE(THIS->config->conf.ctx, THIS->ses.sesbuf);
