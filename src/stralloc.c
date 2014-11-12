@@ -2137,6 +2137,7 @@ void init_shared_string_table(void)
   base_table=xcalloc(sizeof(struct pike_string *), htable_size);
 
   empty_pike_string = make_shared_string("");
+  empty_pike_string->flags |= STRING_IS_LOWERCASE | STRING_IS_UPPERCASE;
 }
 
 #ifdef DO_PIKE_CLEANUP
