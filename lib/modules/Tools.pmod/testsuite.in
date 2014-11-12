@@ -197,8 +197,8 @@ test_hilfe("a & b;", "3")
 
 test_hilfe("switch(a) { case 2: return 1; case 3: return 2; }", "Ok.\n")
 
-test_hilfe("ADT.struct struct = ADT.struct();", "")
-test_hilfe("ADT.struct struct = ADT.struct();", "")
+test_hilfe("String.Buffer b = String.Buffer();", "")
+test_hilfe("String.Buffer b = String.Buffer();", "")
 
 test_do( add_constant("testhilfe") )
 
