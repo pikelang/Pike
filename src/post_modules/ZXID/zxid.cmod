@@ -540,8 +540,9 @@ PIKECLASS Configuration {
     /* Same as zxid_simple_cf_ses(), but without environment variables,
      * and uri_path passed as an argument instead.
      */
-    static char* my_cf_ses(zxid_conf* cf, char *uri_path, int qs_len, char* qs,
-			   zxid_ses* ses, int* res_len, int auto_flags)
+    static char* pike_cf_ses(zxid_conf* cf, char *uri_path,
+			     int qs_len, char* qs,
+			     zxid_ses* ses, int* res_len, int auto_flags)
     {
       int got, ret;
       char* res = 0;
@@ -624,9 +625,9 @@ PIKECLASS Configuration {
       mt_lock(session_lock);
 
       /* Let the library handle metadata. */
-      res = my_cf_ses(&config->conf, uri_path->str, mutable_query.s->len,
-		      mutable_query.s->str, ses, &res_len,
-		      ZXID_AUTO_METAC|ZXID_AUTO_FMTJ);
+      res = pike_cf_ses(&config->conf, uri_path->str, mutable_query.s->len,
+			mutable_query.s->str, ses, &res_len,
+			ZXID_AUTO_METAC|ZXID_AUTO_FMTJ);
 
       mt_unlock(session_lock);
       THREADS_DISALLOW();
