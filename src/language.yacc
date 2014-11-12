@@ -1271,7 +1271,7 @@ modifier:
       $$ = ID_FINAL | ID_INLINE;
       if( !(THIS_COMPILATION->lex.pragmas & ID_NO_DEPRECATION_WARNINGS) &&
           !TEST_COMPAT(7, 6) && Pike_compiler->compiler_pass==1 )
-        yywarning("Keyword nomask is deprecated in favor for 'final'.");
+        yywarning("Keyword nomask is deprecated in favour of 'final'.");
 
     }
   | TOK_FINAL_ID   { $$ = ID_FINAL | ID_INLINE; }
