@@ -63,52 +63,52 @@
 
 int _fetchlimit=FETCHLIMIT;
 Thread.Mutex _unnamedportalmux;
-protected Thread.Mutex unnamedstatement;
+private Thread.Mutex unnamedstatement;
 int _portalsinflight;
 
-protected .pgsql_util.PGassist c;
-protected string cancelsecret;
-protected int backendpid;
-protected int backendstatus;
+private .pgsql_util.PGassist c;
+private string cancelsecret;
+private int backendpid;
+private int backendstatus;
 mapping(string:mixed) options;
-protected array(string) lastmessage=({});
-protected int clearmessage;
-protected mapping(string:array(mixed)) notifylist=([]);
+private array(string) lastmessage=({});
+private int clearmessage;
+private mapping(string:array(mixed)) notifylist=([]);
 mapping(string:string) _runtimeparameter;
 mapping(string:mapping(string:mixed)) _prepareds=([]);
-protected int pstmtcount;
-protected int ptstmtcount;	// Periodically one would like to reset this
+private int pstmtcount;
+private int ptstmtcount;	// Periodically one would like to reset this
 				// but checking when this is safe to do
 				// probably is more costly than the gain
 int _pportalcount;
-protected int totalhits;
-protected int cachedepth=STATEMENTCACHEDEPTH;
-protected int timeout=QUERYTIMEOUT;
-protected int portalbuffersize=PORTALBUFFERSIZE;
-protected int reconnected;     // Number of times the connection was reset
-protected int reconnectdelay;	// Time to next reconnect
+private int totalhits;
+private int cachedepth=STATEMENTCACHEDEPTH;
+private int timeout=QUERYTIMEOUT;
+private int portalbuffersize=PORTALBUFFERSIZE;
+private int reconnected;     // Number of times the connection was reset
+private int reconnectdelay;	// Time to next reconnect
 #ifdef PG_STATS
-protected int skippeddescribe; // Number of times we skipped Describe phase
-protected int portalsopened;   // Number of portals opened
-protected int prepstmtused;    // Number of times prepared statements were used
+private int skippeddescribe; // Number of times we skipped Describe phase
+private int portalsopened;   // Number of portals opened
+private int prepstmtused;    // Number of times prepared statements were used
 #endif
 int _msgsreceived;	     // Number of protocol messages received
 int _bytesreceived;	     // Number of bytes received
-protected int warningsdropcount; // Number of uncollected warnings
-protected int warningscollected;
-protected int invalidatecache;
-protected Thread.Queue qportals;
+private int warningsdropcount; // Number of uncollected warnings
+private int warningscollected;
+private int invalidatecache;
+private Thread.Queue qportals;
 mixed _delayederror;
-protected function (:void) readyforquery_cb;
+private function (:void) readyforquery_cb;
 
 string _host;
-protected string database, user, pass;
+private string database, user, pass;
 int _port;
-protected Thread.Mutex waitforauth;
-protected Thread.Condition waitforauthready;
+private Thread.Mutex waitforauth;
+private Thread.Condition waitforauthready;
 int _readyforquerycount;
 
-protected string _sprintf(int type, void|mapping flags) {
+private string _sprintf(int type, void|mapping flags) {
   string res=UNDEFINED;
   switch(type) {
     case 'O':
@@ -302,7 +302,7 @@ int ping() {
    ? !!reconnected : -1;
 }
 
-protected .pgsql_util.PGassist getsocket(void|int nossl) {
+private .pgsql_util.PGassist getsocket(void|int nossl) {
   return .pgsql_util.PGassist(this,qportals,(int)nossl);
 }
 
@@ -523,17 +523,17 @@ int setfetchlimit(void|int newfetchlimit) {
   return oldfetchlimit;
 }
 
-protected string glob2reg(string glob) {
+private string glob2reg(string glob) {
   if(!glob||!sizeof(glob))
     return "%";
   return replace(glob,({"*","?","\\","%","_"}),({"%","_","\\\\","\\%","\\_"}));
 }
 
-protected string a2nls(array(string) msg) {
+private string a2nls(array(string) msg) {
   return msg*"\n"+"\n";
 }
 
-protected string pinpointerror(void|string query,void|string offset) {
+private string pinpointerror(void|string query,void|string offset) {
   if(!query)
     return "";
   int k=(int)offset;
@@ -542,16 +542,16 @@ protected string pinpointerror(void|string query,void|string offset) {
   return MARKSTART+(k>1?query[..k-2]:"")+MARKERROR+query[k-1..]+MARKEND;
 }
 
-protected void connect_cb() {
+private void connect_cb() {
   PD("%O\n",_runtimeparameter);
 }
 
-protected void reconnect_cb() {
+private void reconnect_cb() {
   lastmessage+=({sprintf("Reconnected to database %s",host_info())});
   runcallback(backendpid,"_reconnect","");
 }
 
-protected array(string) showbindings(.pgsql_util.pgsql_result portal) {
+private array(string) showbindings(.pgsql_util.pgsql_result portal) {
   array(string) msgs=({});
   array from;
   if(portal && (from = portal._params)) {
@@ -568,7 +568,7 @@ protected array(string) showbindings(.pgsql_util.pgsql_result portal) {
   return msgs;
 }
 
-protected void preplastmessage(mapping(string:string) msgresponse) {
+private void preplastmessage(mapping(string:string) msgresponse) {
   lastmessage=({
     sprintf("%s %s:%s %s\n (%s:%s:%s)",
             msgresponse.S,msgresponse.C,msgresponse.P||"",
@@ -576,14 +576,14 @@ protected void preplastmessage(mapping(string:string) msgresponse) {
             msgresponse.L||"")});
 }
 
-protected void storetiming(.pgsql_util.pgsql_result portal) {
+private void storetiming(.pgsql_util.pgsql_result portal) {
   mapping(string:mixed) tp=portal._tprepared;
   tp.trun=gethrtime()-tp.trunstart;
   m_delete(tp,"trunstart");
   portal._tprepared = UNDEFINED;
 }
 
-protected void waitauthready() {
+private void waitauthready() {
   if(waitforauthready) {
     Thread.MutexKey lock=waitforauth->lock();
     catch(waitforauthready->wait(lock));
@@ -591,7 +591,7 @@ protected void waitauthready() {
   }
 }
 
-protected inline mixed callout(function(mixed ...:void) f,
+private inline mixed callout(function(mixed ...:void) f,
  float|int delay,mixed ... args) {
   return .pgsql_util.local_backend->call_out(f,delay,@args);
 }
@@ -1258,7 +1258,7 @@ void close() {
   c=0;
 }
 
-void destroy() {
+protected void destroy() {
   close();
   .pgsql_util.unregister_backend();
 }
@@ -1290,7 +1290,7 @@ void _connectfail(void|mixed err) {
     _delayederror=err;
 }
 
-protected int reconnect(void|int force) {
+private int reconnect(void|int force) {
   PD("(Re)connect\n");
   if(!force) {
     Thread.MutexKey lock=waitforauth->lock();
@@ -1349,7 +1349,7 @@ void reload() {
   resync();
 }
 
-protected void resync_cb() {
+private void resync_cb() {
   switch(backendstatus) {
     case 'T':case 'E':
       foreach(_prepareds;;mapping tp) {
@@ -1363,7 +1363,7 @@ protected void resync_cb() {
   }
 }
 
-protected void sendsync() {
+private void sendsync() {
   _readyforquerycount++;
   c->start()->sendcmd(syncsend);
 }
@@ -1470,7 +1470,7 @@ void set_notify_callback(string condition,
   }
 }
 
-protected void runcallback(int pid,string condition,string extrainfo) {
+private void runcallback(int pid,string condition,string extrainfo) {
   array cb;
   if((cb=notifylist[condition]||notifylist[""])
      && (pid!=backendpid || sizeof(cb)>1 && cb[1]))
@@ -1719,7 +1719,7 @@ array(mapping(string:mixed)) list_fields(void|string table, void|string glob) {
   return ret;
 }
 
-protected string trbackendst(int c) {
+private string trbackendst(int c) {
   switch(c) {
     case 'I': return "idle";
     case 'T': return "intransaction";
@@ -1743,16 +1743,16 @@ final string status_commit() {
   return trbackendst(backendstatus);
 }
 
-final inline void closestatement(
+private inline void closestatement(
   .pgsql_util.PGassist|.pgsql_util.PGplugbuffer plugbuffer,string oldprep) {
   .pgsql_util.closestatement(plugbuffer,oldprep);
 }
 
-protected inline string int2hex(int i) {
+private inline string int2hex(int i) {
   return String.int2hex(i);
 }
 
-final inline void throwdelayederror(object parent) {
+private inline void throwdelayederror(object parent) {
   .pgsql_util.throwdelayederror(parent);
 }
 
