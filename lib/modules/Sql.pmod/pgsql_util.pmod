@@ -19,15 +19,15 @@
 //! The instance of the pgsql dedicated backend.
 final Pike.Backend local_backend = Pike.SmallBackend();
 
-protected Thread.Mutex backendmux = Thread.Mutex();
-protected int clientsregistered;
+private Thread.Mutex backendmux = Thread.Mutex();
+private int clientsregistered;
 
 multiset cachealways=(<"BEGIN","begin","END","end","COMMIT","commit">);
 Regexp createprefix
  =Regexp("^[ \t\f\r\n]*[Cc][Rr][Ee][Aa][Tt][Ee][ \t\f\r\n]");
-protected Regexp dontcacheprefix
+private Regexp dontcacheprefix
  =Regexp("^[ \t\f\r\n]*([Ff][Ee][Tt][Cc][Hh]|[Cc][Oo][Pp][Yy])[ \t\f\r\n]");
-protected Regexp execfetchlimit
+private Regexp execfetchlimit
  =Regexp("^[ \t\f\r\n]*(([Uu][Pp][Dd][Aa]|[Dd][Ee][Ll][Ee])[Tt][Ee]|\
 [Ii][Nn][Ss][Ee][Rr][Tt])[ \t\f\r\n]|\
 [ \t\f\r\n][Ll][Ii][Mm][Ii][Tt][ \t\f\r\n]+[12][; \t\f\r\n]*$");
@@ -39,7 +39,7 @@ final void closestatement(PGplugbuffer|PGassist plugbuffer,string oldprep) {
   }
 }
 
-protected void run_local_backend() {
+private void run_local_backend() {
   Thread.MutexKey lock;
   int looponce;
   do {
@@ -98,13 +98,13 @@ final int oidformat(int oid) {
   return 0;	// text
 }
 
-protected sctype mergemode(PGassist realbuffer,sctype mode) {
+private sctype mergemode(PGassist realbuffer,sctype mode) {
   if(mode>realbuffer->stashflushmode)
     realbuffer->stashflushmode=mode;
   return realbuffer->stashflushmode;
 }
 
-protected inline mixed callout(function(mixed ...:void) f,
+private inline mixed callout(function(mixed ...:void) f,
  float|int delay,mixed ... args) {
   return local_backend->call_out(f,delay,@args);
 }
@@ -114,7 +114,7 @@ protected inline mixed callout(function(mixed ...:void) f,
 class PGplugbuffer {
   inherit Stdio.Buffer;
 
-  protected PGassist realbuffer;
+  private PGassist realbuffer;
 
   protected void create(PGassist _realbuffer) {
     realbuffer=_realbuffer;
@@ -129,8 +129,7 @@ class PGplugbuffer {
     return this;
   }
 
-  final
-   void sendcmd(void|sctype mode,void|pgsql_result portal) {
+  final void sendcmd(void|sctype mode,void|pgsql_result portal) {
     Thread.MutexKey lock=realbuffer->stashupdate->lock();
     if(portal)
       realbuffer->stashqueue->write(portal);
@@ -152,12 +151,12 @@ class PGassist {
   inherit Stdio.Buffer:i;
   inherit Stdio.Buffer:o;
 
-  protected Thread.Condition fillread;
-  protected Thread.Mutex fillreadmux;
-  protected Thread.Queue qportals;
+  private Thread.Condition fillread;
+  private Thread.Mutex fillreadmux;
+  private Thread.Queue qportals;
   final Stdio.File socket;
-  protected object pgsqlsess;
-  protected int towrite;
+  private object pgsqlsess;
+  private int towrite;
 
   final function(:void) gottimeout;
   final int timeout;
@@ -175,7 +174,7 @@ class PGassist {
   final int queueinidx;
 #endif
 
-  inline void queueup(pgsql_result portal) {
+  private inline void queueup(pgsql_result portal) {
     qportals->write(portal); portal->_synctransact=synctransact;
     PD(">%O %d %d Queue portal %d bytes\n",portal._portalname,++queueoutidx,
      synctransact,sizeof(this));
@@ -216,7 +215,7 @@ class PGassist {
     return true;
   }
 
-  protected int read_cb(mixed id,mixed b) {
+  private int read_cb(mixed id,mixed b) {
     Thread.MutexKey lock=fillreadmux->lock();
     if(fillread)
       fillread.signal();
@@ -224,25 +223,24 @@ class PGassist {
     return 0;
   }
 
-  protected int write_cb() {
+  private int write_cb() {
     towrite-=output_to(socket,towrite);
     if(!fillread && !sizeof(this))
       socket->close();
     return 0;
   }
 
-  inline final    int consume(int w)     { return i::consume(w);     }
-  inline final    int unread(int w)      { return i::unread(w);      }
-  inline final string read(int w)        { return i::read(w);        }
-  inline final object read_buffer(int w) { return i::read_buffer(w); }
-  inline final    int read_sint(int w)   { return i::read_sint(w);   }
-  inline final    int read_int8()        { return i::read_int8();    }
-  inline final    int read_int16()       { return i::read_int16();   }
-  inline final    int read_int32()       { return i::read_int32();   }
-  inline final string read_cstring()     { return i::read_cstring(); }
+  final inline    int consume(int w)     { return i::consume(w);     }
+  final inline    int unread(int w)      { return i::unread(w);      }
+  final inline string read(int w)        { return i::read(w);        }
+  final inline object read_buffer(int w) { return i::read_buffer(w); }
+  final inline    int read_sint(int w)   { return i::read_sint(w);   }
+  final inline    int read_int8()        { return i::read_int8();    }
+  final inline    int read_int16()       { return i::read_int16();   }
+  final inline    int read_int32()       { return i::read_int32();   }
+  final inline string read_cstring()     { return i::read_cstring(); }
 
-  final
-   void sendcmd(void|sctype mode,void|pgsql_result portal) {
+  final void sendcmd(void|sctype mode,void|pgsql_result portal) {
     if(portal)
       queueup(portal);
     if(mode==flushlogsend) {
@@ -295,7 +293,7 @@ outer:
     return socket->close();
   }
 
-  final void destroy() {
+  protected void destroy() {
     catch(close());		// Exceptions don't work inside destructors
     pgsqlsess=0;
   }
@@ -371,10 +369,10 @@ outer:
 //!   @[Sql.sql_result], @[Sql.pgsql], @[Sql.Sql], @[Sql.pgsql()->big_query()]
 class pgsql_result {
 
-  protected object pgsqlsess;
-  protected int numrows;
-  protected int eoffound;
-  protected PGassist c;
+  private object pgsqlsess;
+  private int numrows;
+  private int eoffound;
+  private PGassist c;
   final mixed _delayederror;
   final portalstate _state;
   final int _fetchlimit;
@@ -391,20 +389,20 @@ class pgsql_result {
   final Thread.Condition _ddescribe;
   final Thread.Mutex _ddescribemux;
   final Thread.MutexKey _unnamedportalkey,_unnamedstatementkey;
-  protected Thread.Mutex closemux;
+  private Thread.Mutex closemux;
   final array _params;
   final string _statuscmdcomplete;
   final string _query;
   final Thread.Queue _datarows;
   final array(mapping(string:mixed)) _datarowdesc;
   final int _oldpbpos;
-  protected Stdio.Buffer prepbuffer;
-  protected Thread.Condition prepbufferready;
-  protected Thread.Mutex prepbuffermux;
+  private Stdio.Buffer prepbuffer;
+  private Thread.Condition prepbufferready;
+  private Thread.Mutex prepbuffermux;
   final string _preparedname;
   final mapping(string:mixed) _tprepared;
 
-  protected string _sprintf(int type, void|mapping flags) {
+  private string _sprintf(int type, void|mapping flags) {
     string res=UNDEFINED;
     switch(type) {
       case 'O':
@@ -470,7 +468,7 @@ class pgsql_result {
     return rows;
   }
 
-  protected void waitfordescribe() {
+  private void waitfordescribe() {
     Thread.MutexKey lock=_ddescribemux->lock();
     if(!_datarowdesc)
       _ddescribe->wait(lock);
@@ -493,7 +491,7 @@ class pgsql_result {
     return _rowsreceived;
   }
 
-  protected inline void trydelayederror() {
+  private inline void trydelayederror() {
     if(_delayederror)
       throwdelayederror(this);
   }
@@ -673,7 +671,7 @@ class pgsql_result {
       tp.datarowdesc=datarowdesc;
   }
 
-  protected void gotdatarowdesc() {
+  private void gotdatarowdesc() {
     if(!prepbuffer) {
       Thread.MutexKey lock=prepbuffermux->lock();
       prepbufferready->wait(lock);
@@ -866,7 +864,7 @@ class pgsql_result {
       _releasesession();
   }
 
-  protected void run_result_cb(
+  private void run_result_cb(
    function(pgsql_result, array(mixed), mixed ...:void) callback,
    array(mixed) args) {
     int|array datarow;
@@ -890,7 +888,7 @@ class pgsql_result {
       Thread.Thread(run_result_cb,callback,args);
   }
 
-  protected void run_result_array_cb(
+  private void run_result_array_cb(
    function(pgsql_result, array(array(mixed)), mixed ...:void) callback,
    array(mixed) args) {
     array(array|int) datarow;
