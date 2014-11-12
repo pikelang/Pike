@@ -34,17 +34,17 @@ class auth_file
   
   void create(string s)
   {
-    object struct = ADT.struct(s);
+    Stdio.Buffer struct = Stdio.Buffer(s);
 
-    while (!struct->is_empty())
+    while (sizeof(struct))
       {
 	mapping m = ([ ]);
 	
-	m->family = struct->get_uint(2);
-	m->address = struct->get_var_string(2);
-	m->display = (int) struct->get_var_string(2);
-	m->name = struct->get_var_string(2);
-	m->data = struct->get_var_string(2); 
+	m->family = struct->read_int(2);
+	m->address = struct->read_hstring(2);
+	m->display = (int) struct->read_hstring(2);
+	m->name = struct->read_hstring(2);
+	m->data = struct->read_hstring(2);
 
 	if (!auth[m->family])
 	  auth[m->family] = ([]);

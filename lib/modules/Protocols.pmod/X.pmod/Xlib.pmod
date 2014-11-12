@@ -147,7 +147,7 @@ class Display
   // FIXME! Should use some sort of (global) db.
   mapping compose_patterns;
 
-  program Struct = ADT.struct;
+  program(Stdio.Buffer) Struct = Stdio.Buffer;
 
   constant STATE_WAIT_CONNECT = 0;
   constant STATE_WAIT_CONNECT_DATA = 1;
@@ -355,87 +355,87 @@ class Display
 	case STATE_WAIT_CONNECT_DATA:
 	  {
 	    int nbytesVendor, numRoots, numFormats;
-	    object struct  = Struct(msg);
+	    Stdio.Buffer struct  = Struct(msg);
 
-	    release = struct->get_uint(4);
-	    ridBase = struct->get_uint(4);
-	    ridMask = struct->get_uint(4);
+	    release = struct->read_int(4);
+	    ridBase = struct->read_int(4);
+	    ridMask = struct->read_int(4);
 	    id_manager::create(ridBase, ridMask);
 	    
-	    motionBufferSize = struct->get_uint(4);
-	    nbytesVendor = struct->get_uint(2);
-	    maxRequestSize = struct->get_uint(2);
-	    numRoots = struct->get_uint(1);
-	    numFormats = struct->get_uint(1);
-	    imageByteOrder = struct->get_uint(1);
-	    bitmapBitOrder = struct->get_uint(1);
-	    bitmapScanlineUnit = struct->get_uint(1);
-	    bitmapScanlinePad = struct->get_uint(1);
-	    minKeyCode = struct->get_uint(1);
-	    maxKeyCode = struct->get_uint(1);
-	    /* pad2 */ struct->get_fix_string(4);
+	    motionBufferSize = struct->read_int(4);
+	    nbytesVendor = struct->read_int(2);
+	    maxRequestSize = struct->read_int(2);
+	    numRoots = struct->read_int(1);
+	    numFormats = struct->read_int(1);
+	    imageByteOrder = struct->read_int(1);
+	    bitmapBitOrder = struct->read_int(1);
+	    bitmapScanlineUnit = struct->read_int(1);
+	    bitmapScanlinePad = struct->read_int(1);
+	    minKeyCode = struct->read_int(1);
+	    maxKeyCode = struct->read_int(1);
+	    /* pad2 */ struct->read(4);
 	  
-	    vendor = struct->get_fix_string(nbytesVendor);
-	    /* pad */ struct->get_fix_string( (- nbytesVendor) % 4);
+	    vendor = struct->read(nbytesVendor);
+	    /* pad */ struct->read( (- nbytesVendor) % 4);
 
 	    int i;
 	    formats = allocate(numFormats);
 	    for(i=0; i<numFormats; i++)
 	      {
 		mapping m = ([]);
-		m->depth = struct->get_uint(1);
-		m->bitsPerPixel = struct->get_uint(1);
-		m->scanLinePad = struct->get_uint(1);
-		/* pad */ struct->get_fix_string(5);
+		m->depth = struct->read_int(1);
+		m->bitsPerPixel = struct->read_int(1);
+		m->scanLinePad = struct->read_int(1);
+		/* pad */ struct->read(5);
 		formats[i] = m;
 	      }
 
 	    roots = allocate(numRoots);
 	    for(i=0; i<numRoots; i++)
 	      {
-		int wid = struct->get_uint(4);
+		int wid = struct->read_int(4);
 		object r = .Types.RootWindow(this, wid);
-		int cm = struct->get_uint(4);
+		int cm = struct->read_int(4);
 		r->colormap = r->defaultColorMap = .Types.Colormap(this, cm, 0);
 		r->colormap->autofree=0;
-		r->whitePixel = struct->get_uint(4);
-		r->blackPixel = struct->get_uint(4);
-		r->currentInputMask = struct->get_uint(4);
-		r->pixWidth = struct->get_uint(2);
-		r->pixHeight = struct->get_uint(2);
-		r->mmWidth = struct->get_uint(2);
-		r->mmHeight = struct->get_uint(2);
-		r->minInstalledMaps = struct->get_uint(2);
-		r->maxInstalledMaps = struct->get_uint(2);
-		int rootVisualID = struct->get_uint(4);
-		r->backingStore = struct->get_uint(1);
-		r->saveUnders = struct->get_uint(1);
-		r->rootDepth = struct->get_uint(1);
-		int nDepths = struct->get_uint(1);
+		r->whitePixel = struct->read_int(4);
+		r->blackPixel = struct->read_int(4);
+		r->currentInputMask = struct->read_int(4);
+		r->pixWidth = struct->read_int(2);
+		r->pixHeight = struct->read_int(2);
+		r->mmWidth = struct->read_int(2);
+		r->mmHeight = struct->read_int(2);
+		r->minInstalledMaps = struct->read_int(2);
+		r->maxInstalledMaps = struct->read_int(2);
+		int rootVisualID = struct->read_int(4);
+		r->backingStore = struct->read_int(1);
+		r->saveUnders = struct->read_int(1);
+		r->rootDepth = struct->read_int(1);
+		int nDepths = struct->read_int(1);
 	      
 		r->depths = ([ ]);
 		for (int j=0; j<nDepths; j++)
 		  {
 		    mapping d = ([]);
-		    int depth = struct->get_uint(1);
-		    /* pad */ struct->get_fix_string(1);
-		    int nVisuals = struct->get_uint(2);
-		    /* pad */ struct->get_fix_string(4);
+		    int depth = struct->read_int(1);
+		    /* pad */ struct->read(1);
+		    int nVisuals = struct->read_int(2);
+		    /* pad */ struct->read(4);
 		  
 		    array visuals = allocate(nVisuals);
 		    for(int k=0; k<nVisuals; k++)
 		      {
-			int visualID = struct->get_uint(4);
+			int visualID = struct->read_int(4);
 			object v = .Types.Visual(this, visualID);
 
 			v->depth = depth;
-			v->c_class = struct->get_uint(1);
-			v->bitsPerRGB = struct->get_uint(1);
-			v->colorMapEntries = struct->get_uint(2);
-			v->redMask = struct->get_uint(4);
-			v->greenMask = struct->get_uint(4);
-			v->blueMask = struct->get_uint(4);
-			/* pad */ struct->get_fix_string(4);
+			v->c_class = struct->read_int(1);
+			v->bitsPerRGB = struct->read_int(1);
+			v->colorMapEntries = struct->read_int(2);
+			v->redMask = struct->read_int(4);
+			v->greenMask = struct->read_int(4);
+			v->blueMask = struct->read_int(4);
+			/* pad */ struct->read(4);
 			visuals[k] = v;
 		      }
 		    r->depths[depth] = visuals;
