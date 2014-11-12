@@ -1090,14 +1090,14 @@ modifier:
       $$ = ID_FINAL | ID_INLINE;
       if( !(THIS_COMPILATION->lex.pragmas & ID_NO_DEPRECATION_WARNINGS) &&
           !TEST_COMPAT(7, 6) && Pike_compiler->compiler_pass==1 )
-        yywarning("Keyword nomask is deprecated in favor for 'final'.");
+        yywarning("Keyword nomask is deprecated in favour of 'final'.");
     }
   | TOK_FINAL_ID   { $$ = ID_FINAL | ID_INLINE; }
   | TOK_STATIC     {
     $$ = ID_PROTECTED;
     if( !(THIS_COMPILATION->lex.pragmas & ID_NO_DEPRECATION_WARNINGS) &&
         !TEST_COMPAT(7, 8) && Pike_compiler->compiler_pass==1 )
-      yywarning("Keyword static is deprecated in favor for 'protected'.");
+      yywarning("Keyword static is deprecated in favour of 'protected'.");
     }
   | TOK_EXTERN     { $$ = ID_EXTERN; }
   | TOK_OPTIONAL   { $$ = ID_OPTIONAL; }
