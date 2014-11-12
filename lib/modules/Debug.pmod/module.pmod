@@ -245,7 +245,7 @@ protected enum PikeTypes {
   T_OR = 255,
 }
 
-protected class Decoder(ADT.struct input)
+protected class Decoder(Stdio.Buffer input)
 {
   mapping(int:mixed) decoded = ([]);
   int counter = -(1<<(8-6));
@@ -261,7 +261,7 @@ protected class Decoder(ADT.struct input)
 
   array(int) next()
   {
-    int what = input->get_uint(1);
+    int what = input->read_int(1);
     int e = what >> 6;
     int num;
     if(what & TAG_SMALL) {
@@ -269,7 +269,7 @@ protected class Decoder(ADT.struct input)
     } else {
       num = 0;
       while(e-->=0) {
-	num = (num<<8) + (input->get_uint(1)+1);
+	num = (num<<8) + (input->read_int(1)+1);
       }
       num += (1<<(8-6)) - 1;
     }
@@ -305,7 +305,7 @@ protected class Decoder(ADT.struct input)
 		   len, sizeof(input));
       len = sizeof(input);
     }
-    string ret = input->get_fix_string(len);
+    string ret = input->read(len);
 
     if (shift) {
       // FIXME: Only shift 1!
@@ -316,7 +316,7 @@ protected class Decoder(ADT.struct input)
 
   protected mixed decode_type()
   {
-    int tmp = input->get_uint(1);
+    int tmp = input->read_int(1);
     if (tmp <= 15) tmp ^= 8;
 
     switch(tmp)
@@ -326,21 +326,21 @@ protected class Decoder(ADT.struct input)
       break;
 
     case T_ASSIGN:
-      tmp = input->get_uint(1);
+      tmp = input->read_int(1);
       if ((tmp < '0') || (tmp > '9')) {
 	decode_error("Bad marker in type string (%d).\n", tmp);
       }
       return decode_type();
 
     case T_SCOPE:
-      tmp = input->get_uint(1);
+      tmp = input->read_int(1);
       return decode_type();
 
     case T_FUNCTION:
       int narg = 0;
 
-      while (input->get_uint(1) != T_MANY) {
-	input->index--;
+      while (input->read_int(1) != T_MANY) {
+	input->unread(1);
 	decode_type();
       }
       decode_type();	/* Many */
@@ -361,8 +361,8 @@ protected class Decoder(ADT.struct input)
       return decode_type();
 
     case T_INT:
-      input->get_uint(4);	// min
-      input->get_uint(4);	// max
+      input->read_int(4);	// min
+      input->read_int(4);	// max
       return typeof([int](mixed)0);
 
     case T_STRING:
@@ -408,7 +408,7 @@ protected class Decoder(ADT.struct input)
       return decode_type();
 
     case T_OBJECT:
-      int flag = input->get_uint(1);
+      int flag = input->read_int(1);
       werror("%*sObject type (%d):\n",
 	     depth, "", flag);
       depth += 2;
@@ -1159,9 +1159,9 @@ protected class Decoder(ADT.struct input)
 //!   Returns the number of encoding errors that were detected (if any).
 int describe_encoded_value(string data)
 {
-  ADT.struct input = ADT.struct(data);
+  Stdio.Buffer input = Stdio.Buffer(data);
 
-  string header = input->get_fix_string(4);
+  string header = input->read(4);
   if ((String.width(data) != 8) || (header != "\266ke0") || !sizeof(input)) {
     werror("Not an encoded value.\n");
     return 1;
