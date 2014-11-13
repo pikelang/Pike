@@ -22,11 +22,13 @@ final Pike.Backend local_backend = Pike.SmallBackend();
 private Thread.Mutex backendmux = Thread.Mutex();
 private int clientsregistered;
 
-multiset cachealways=(<"BEGIN","begin","END","end","COMMIT","commit">);
-Regexp createprefix
+final multiset cachealways=(<"BEGIN","begin","END","end","COMMIT","commit">);
+final Regexp createprefix
  =Regexp("^[ \t\f\r\n]*[Cc][Rr][Ee][Aa][Tt][Ee][ \t\f\r\n]");
 private Regexp dontcacheprefix
  =Regexp("^[ \t\f\r\n]*([Ff][Ee][Tt][Cc][Hh]|[Cc][Oo][Pp][Yy])[ \t\f\r\n]");
+private Regexp commitprefix=Regexp(
+  "^[ \t\f\r\n]*([Cc][Oo][Mm][Mm][Ii][Tt]|[Ee][Nn][Dd])([ \t\f\r\n;]|$)");
 private Regexp execfetchlimit
  =Regexp("^[ \t\f\r\n]*(([Uu][Pp][Dd][Aa]|[Dd][Ee][Ll][Ee])[Tt][Ee]|\
 [Ii][Nn][Ss][Ee][Rr][Tt])[ \t\f\r\n]|\
@@ -312,7 +314,7 @@ outer:
         socket->connect(pgsqlsess._host,pgsqlsess._port);
 #if constant(SSL.File)
         if(!nossl && !pgsqlsess->nossl
-         && (pgsqlsess.options.use_ssl || pgsqlsess.options.force_ssl)) {
+         && (pgsqlsess._options.use_ssl || pgsqlsess._options.force_ssl)) {
           PD("SSLRequest\n");
           start()->add_int32(8)->add_int32(PG_PROTOCOL(1234,5679))
            ->sendcmd(sendout);
@@ -327,13 +329,13 @@ outer:
               pgsqlsess.nossl=1;
               continue;
             case 'N':
-              if(pgsqlsess.options.force_ssl)
+              if(pgsqlsess._options.force_ssl)
                 error("Encryption not supported on connection to %s:%d\n",
                       pgsqlsess.host,pgsqlsess.port);
           }
         }
 #else
-        if(pgsqlsess.options.force_ssl)
+        if(pgsqlsess._options.force_ssl)
           error("Encryption library missing,"
                 " cannot establish connection to %s:%d\n",
                 pgsqlsess.host,pgsqlsess.port);
@@ -687,8 +689,19 @@ class pgsql_result {
     Stdio.Buffer plugbuffer=prepbuffer;
     prepbuffer=0;
     plugbuffer->add_int16(sizeof(_datarowdesc));
-    foreach(_datarowdesc;;mapping col)
-      plugbuffer->add_int16(oidformat(col.type));
+    if(sizeof(_datarowdesc))
+      foreach(_datarowdesc;;mapping col)
+        plugbuffer->add_int16(oidformat(col.type));
+    else if(commitprefix->match(_query)) {
+      Thread.MutexKey lock=pgsqlsess->_commitmux->lock();
+      if(pgsqlsess->_portalsinflight) {
+        pgsqlsess->_waittocommit++;
+        PD("Commit waiting for portals to finish\n");
+        pgsqlsess->_readyforcommit->wait(lock);
+        pgsqlsess->_waittocommit--;
+      }
+      lock=0;
+    }
     PD("Bind portal %O statement %O\n",_portalname,_preparedname);
     _fetchlimit=pgsqlsess->_fetchlimit;
     _openportal();
@@ -751,11 +764,17 @@ class pgsql_result {
           retval=flushsend;
         } else
           _unnamedportalkey=0;
-        if(!--pgsqlsess->_portalsinflight && !alreadyfilled) {
-          pgsqlsess->_readyforquerycount++;
+        Thread.MutexKey lockc=pgsqlsess->_commitmux->lock();
+        if(!--pgsqlsess->_portalsinflight) {
+          if(pgsqlsess->_waittocommit) {
+            PD("Signal no portals in flight\n");
+            pgsqlsess->_readyforcommit->signal();
+            lockc=0;
+          } else if(!alreadyfilled)
+            pgsqlsess->_readyforquerycount++, retval=syncsend;
           pgsqlsess->_pportalcount=0;
-          retval=syncsend;
         }
+        lockc=0;
     }
     lock=0;
     return retval;
