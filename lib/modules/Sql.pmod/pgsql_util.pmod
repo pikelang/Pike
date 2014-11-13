@@ -243,11 +243,23 @@ class PGassist {
   final void sendcmd(void|sctype mode,void|pgsql_result portal) {
     if(portal)
       queueup(portal);
-    if(mode==flushlogsend) {
-      mode=flushsend; qportals->write(synctransact++);
-      PD(">%O %d Queue simplequery %d bytes\n",portal._portalname,
-       ++queueoutidx,sizeof(this));
-    }
+nosync:
+    do {
+      switch(mode) {
+        default:
+          break nosync;
+        case syncsend:
+          PD(">Sync %d %d Queue\n",synctransact,++queueoutidx);
+          add(PGSYNC);
+          mode=sendout;
+          break;
+        case flushlogsend:
+          PD(">%O %d Queue simplequery %d bytes\n",portal._portalname,
+           ++queueoutidx,sizeof(this));
+          mode=flushsend;
+      }
+      qportals->write(synctransact++);
+    } while(0);
     if(started) {
       Thread.MutexKey lock=stashupdate->lock();
       if(sizeof(stash)) {
@@ -265,10 +277,6 @@ outer:
         switch(mode) {
           default:
             break outer;
-          case syncsend:
-            PD(">Sync %d %d Queue\n",synctransact,++queueoutidx);
-            qportals->write(synctransact++); add(PGSYNC);
-            break;
           case flushsend:
             PD("Flush\n");
             add(PGFLUSH);
@@ -722,6 +730,11 @@ class pgsql_result {
     PD("%O Try Closeportal %d\n",_portalname,_state);
     Thread.MutexKey lock=closemux->lock();
     _fetchlimit=0;				   // disables further Executes
+    int alreadyfilled=sizeof(plugbuffer);
+    /* alreadyfilled will be non-zero if a parse request has been queued
+     * before the close was initiated.
+     * It's a bit of a tricky race, but this check should be sufficient.
+     */
     switch(_state) {
       case portalinit:
         _state=closed;
@@ -738,7 +751,7 @@ class pgsql_result {
           retval=flushsend;
         } else
           _unnamedportalkey=0;
-        if(!--pgsqlsess->_portalsinflight) {
+        if(!--pgsqlsess->_portalsinflight && !alreadyfilled) {
           pgsqlsess->_readyforquerycount++;
           pgsqlsess->_pportalcount=0;
           retval=syncsend;
