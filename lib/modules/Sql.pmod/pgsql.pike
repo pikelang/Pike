@@ -1953,6 +1953,8 @@ private inline void throwdelayederror(object parent) {
           (portal._unnamedstatementkey=
            (syncparse?unnamedstatement->lock:unnamedstatement->trylock)(1))
            ? "" : PTSTMTPREFIX+int2hex(ptstmtcount++);
+      else if(syncparse)
+        portal._unnamedstatementkey=unnamedstatement->lock(1);
       // Even though the protocol doesn't require the Parse command to be
       // followed by a flush, it makes a VERY noticeable difference in
       // performance if it is omitted; seems like a flaw in the PostgreSQL
