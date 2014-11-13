@@ -74,7 +74,7 @@ static struct ba_page * ba_alloc_page(struct block_allocator * a, int i) {
     size_t n = l.offset + l.block_size + l.doffset;
     struct ba_page * p;
     if (l.alignment) {
-	p = aligned_alloc(n, l.alignment);
+	p = xalloc_aligned(n, l.alignment);
     } else {
 #ifdef DEBUG_MALLOC
 	/* In debug malloc mode, calling xalloc from the block alloc may result
