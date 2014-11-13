@@ -233,7 +233,7 @@ PMOD_EXPORT void *debug_xmalloc(size_t s) MALLOC_FUNCTION;
 PMOD_EXPORT void debug_xfree(void *mem);
 PMOD_EXPORT void *debug_xrealloc(void *m, size_t s) MALLOC_FUNCTION;
 PMOD_EXPORT void *debug_xcalloc(size_t n, size_t s) MALLOC_FUNCTION;
-PMOD_EXPORT void *aligned_alloc(size_t size, size_t alignment) MALLOC_FUNCTION;
+PMOD_EXPORT void *xalloc_aligned(size_t size, size_t alignment) MALLOC_FUNCTION;
 
 #define PIKE_ALIGNTO(x, a)	(((x) + (a)-1) & ~((a)-1))
 

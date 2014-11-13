@@ -415,7 +415,7 @@ PMOD_EXPORT void *debug_xcalloc(size_t n, size_t s)
   return 0;
 }
 
-PMOD_EXPORT void *aligned_alloc(size_t size, size_t alignment) {
+PMOD_EXPORT void *xalloc_aligned(size_t size, size_t alignment) {
     void * ret;
 
     if (!size) return 0;
