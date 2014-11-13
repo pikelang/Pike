@@ -1235,14 +1235,17 @@ final void _processloop(.pgsql_util.PGassist ci) {
       if(objectp(portal))
         portal->_releasesession();
       portal=0;
-      continue;
+      if(!waitforauthready)
+        continue;		// Only continue if authentication did not fail
     }
     break;
   }
   _delayederror=err;
   if(!ci->close() && !terminating && _options.reconnect)
     _connectfail();
-  if(err)
+  else if(waitforauthready)
+    destruct(waitforauthready);
+  if(err && !stringp(err))
     throw(err);
 }
 
@@ -1266,10 +1269,8 @@ protected void destroy() {
 
 void _connectfail(void|mixed err) {
   PD("Connect failed %O reconnectdelay %d\n",err,reconnectdelay);
-  if(waitforauthready) {
+  if(waitforauthready)
     destruct(waitforauthready);
-    waitforauthready=0;
-  }
   if(!err || reconnectdelay) {
     int tdelay;
     switch(tdelay=reconnectdelay) {
