@@ -61,52 +61,53 @@
 
 #define ERROR(X ...)	     predef::error(X)
 
-int _fetchlimit=FETCHLIMIT;
-Thread.Mutex _unnamedportalmux;
+final int _fetchlimit=FETCHLIMIT;
+final Thread.Mutex _unnamedportalmux;
 private Thread.Mutex unnamedstatement;
-int _portalsinflight;
+final int _portalsinflight;
 
 private .pgsql_util.PGassist c;
 private string cancelsecret;
-private int backendpid;
-private int backendstatus;
-mapping(string:mixed) options;
+private int backendpid, backendstatus;
+final mapping(string:mixed) _options;
 private array(string) lastmessage=({});
 private int clearmessage;
 private mapping(string:array(mixed)) notifylist=([]);
-mapping(string:string) _runtimeparameter;
-mapping(string:mapping(string:mixed)) _prepareds=([]);
+final mapping(string:string) _runtimeparameter;
+final mapping(string:mapping(string:mixed)) _prepareds=([]);
 private int pstmtcount;
 private int ptstmtcount;	// Periodically one would like to reset this
 				// but checking when this is safe to do
 				// probably is more costly than the gain
-int _pportalcount;
+final int _pportalcount;
 private int totalhits;
 private int cachedepth=STATEMENTCACHEDEPTH;
 private int timeout=QUERYTIMEOUT;
 private int portalbuffersize=PORTALBUFFERSIZE;
-private int reconnected;     // Number of times the connection was reset
+private int reconnected;	// Number of times the connection was reset
 private int reconnectdelay;	// Time to next reconnect
 #ifdef PG_STATS
-private int skippeddescribe; // Number of times we skipped Describe phase
-private int portalsopened;   // Number of portals opened
-private int prepstmtused;    // Number of times prepared statements were used
+private int skippeddescribe;	// Number of times we skipped Describe phase
+private int portalsopened;	// Number of portals opened
+private int prepstmtused;	// Number of times we used prepared statements
 #endif
-int _msgsreceived;	     // Number of protocol messages received
-int _bytesreceived;	     // Number of bytes received
-private int warningsdropcount; // Number of uncollected warnings
+final int _msgsreceived;	// Number of protocol messages received
+final int _bytesreceived;	// Number of bytes received
+private int warningsdropcount;	// Number of uncollected warnings
 private int warningscollected;
 private int invalidatecache;
 private Thread.Queue qportals;
-mixed _delayederror;
+final mixed _delayederror;
 private function (:void) readyforquery_cb;
 
-string _host;
+final string _host;
+final int _port;
 private string database, user, pass;
-int _port;
 private Thread.Mutex waitforauth;
 private Thread.Condition waitforauthready;
-int _readyforquerycount;
+final Thread.Mutex _commitmux;
+final Thread.Condition _readyforcommit;
+final int _waittocommit, _readyforquerycount;
 
 private string _sprintf(int type, void|mapping flags) {
   string res=UNDEFINED;
@@ -209,7 +210,7 @@ protected void create(void|string host, void|string database,
   }
   this::user = user;
   this::database = database;
-  this::options = options || ([]);
+  _options = options || ([]);
 
   if(!host) host = PGSQL_DEFAULT_HOST;
   if(has_value(host,":") && sscanf(host,"%s:%d",host,_port)!=2)
@@ -606,8 +607,8 @@ final void _processloop(.pgsql_util.PGassist ci) {
       plugbuffer->add("user\0")->add(user)->add_int8(0);
     if(database)
       plugbuffer->add("database\0")->add(database)->add_int8(0);
-    options->reconnect=undefinedp(options->reconnect) || options->reconnect;
-    foreach(options
+    _options.reconnect=undefinedp(_options.reconnect) || _options.reconnect;
+    foreach(_options
           -(<"use_ssl","force_ssl","cache_autoprepared_statements","reconnect",
                "text_query","is_superuser","server_encoding","server_version",
                "integer_datetimes","session_authorization">);
@@ -1239,7 +1240,7 @@ final void _processloop(.pgsql_util.PGassist ci) {
     break;
   }
   _delayederror=err;
-  if(!ci->close() && !terminating && options.reconnect)
+  if(!ci->close() && !terminating && _options.reconnect)
     _connectfail();
   if(err)
     throw(err);
@@ -1278,7 +1279,7 @@ void _connectfail(void|mixed err) {
       default:
         if(err)
           _delayederror=err;
-        if(options.reconnect!=-1)
+        if(_options.reconnect!=-1)
           return;
         reconnectdelay=RECONNECTBACKOFF;
         break;
@@ -1319,12 +1320,15 @@ private int reconnect(void|int force) {
     PD("Flushing old cache\n");
     foreach(_prepareds;;mapping tp)
       m_delete(tp,"preparedname");
-    if(!options.reconnect)
+    if(!_options.reconnect)
       return 0;
   }
   PD("Actually start to connect\n");
   qportals=Thread.Queue();
+  _commitmux=Thread.Mutex();
+  _readyforcommit=Thread.Condition();
   _readyforquerycount=1;
+  _waittocommit=0;
   qportals->write(1);
   if(!(c=getsocket())) {
     string msg=sprintf("Couldn't connect to database on %s:%d",_host,_port);
@@ -1822,8 +1826,8 @@ private inline void throwdelayederror(object parent) {
                                    void|int _alltyped) {
   throwdelayederror(this);
   string preparedname="";
-  int forcecache=-1, forcetext=options.text_query;
-  int syncparse=zero_type(options.sync_parse)?-1:options.sync_parse;
+  int forcecache=-1, forcetext=_options.text_query;
+  int syncparse=zero_type(_options.sync_parse)?-1:_options.sync_parse;
   if(waitforauthready)
     waitauthready();
   string cenc=_runtimeparameter[CLIENT_ENCODING];
@@ -1901,8 +1905,8 @@ private inline void throwdelayederror(object parent) {
         preparedname=tp.preparedname;
       } else if((tstart=tp.trun)
               && tp.tparse*FACTORPLAN>=tstart
-              && (undefinedp(options.cache_autoprepared_statements)
-             || options.cache_autoprepared_statements))
+              && (undefinedp(_options.cache_autoprepared_statements)
+             || _options.cache_autoprepared_statements))
 	preparedname=PREPSTMTPREFIX+int2hex(pstmtcount++);
     } else {
       if(totalhits>=cachedepth)
