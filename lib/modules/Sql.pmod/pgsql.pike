@@ -1349,6 +1349,13 @@ void reload() {
   resync();
 }
 
+private void reset_dbsession() {
+  big_query("ROLLBACK");
+  big_query("RESET ALL");
+  big_query("CLOSE ALL");
+  big_query("DISCARD TEMP");
+}
+
 private void resync_cb() {
   switch(backendstatus) {
     case 'T':case 'E':
@@ -1356,10 +1363,7 @@ private void resync_cb() {
         m_delete(tp,"datatypeoid");
         m_delete(tp,"datarowdesc");
       }
-      big_query("ROLLBACK");
-      big_query("RESET ALL");
-      big_query("CLOSE ALL");
-      big_query("DISCARD TEMP");
+      Thread.Thread(reset_dbsession);	  // Urgently and deadlockfree
   }
 }
 
