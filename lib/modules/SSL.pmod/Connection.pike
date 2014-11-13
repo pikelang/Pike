@@ -765,9 +765,10 @@ string(8bit)|int got_data(string(8bit) data)
     if (packet->is_alert)
     { /* Reply alert */
       SSL3_DEBUG_MSG("SSL.Connection: Bad received packet\n");
-      send_packet(packet);
       if (alert_callback)
 	alert_callback(packet, current_read_state->seq_num, alert_context);
+      if (this && packet)
+	send_packet(packet);
       if ((!packet) || (!this) || (packet->level == ALERT_fatal))
 	return -1;
       if (alert_callback)
