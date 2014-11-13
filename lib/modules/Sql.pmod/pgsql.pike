@@ -1908,6 +1908,7 @@ private inline void throwdelayederror(object parent) {
 	}
       if(forcecache!=1 && .pgsql_util.createprefix->match(q)) {
 	invalidatecache=1;			// Flush cache on CREATE
+        pstmtcount=0;			// Reset prepared statementnos
         tp=UNDEFINED;
       } else
 	_prepareds[q]=tp=([]);
