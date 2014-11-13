@@ -1265,6 +1265,10 @@ protected void destroy() {
 
 void _connectfail(void|mixed err) {
   PD("Connect failed %O reconnectdelay %d\n",err,reconnectdelay);
+  if(waitforauthready) {
+    destruct(waitforauthready);
+    waitforauthready=0;
+  }
   if(!err || reconnectdelay) {
     int tdelay;
     switch(tdelay=reconnectdelay) {
