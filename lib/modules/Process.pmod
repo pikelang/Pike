@@ -442,9 +442,18 @@ protected array(string) runpike;
 //!   order to include these components in command path (module path is 
 //!   included by default.)
 //!
+//! @param launcher
+//!   Optional launcher prefix command used to spawn the pike binary.
+//!
+//!   When used this is typically something like
+//!   @expr{({ "/usr/bin/valgrind" })@}.
+//!
+//!   Defaults to the empty array.
+//!
 //! @seealso
 //!   @[Process.Process]
-Process spawn_pike(array(string) argv, void|mapping(string:mixed) options)
+Process spawn_pike(array(string) argv, void|mapping(string:mixed) options,
+		   array(string)|void launcher)
 {
   if (!runpike) {
     array(string) res = ({
@@ -481,7 +490,8 @@ Process spawn_pike(array(string) argv, void|mapping(string:mixed) options)
       res[0] = search_path(res[0]);
     runpike = res;
   }
-  return Process(runpike + argv, options);
+  if (!launcher) launcher = ({});
+  return Process(launcher + runpike + argv, options);
 }
 
 //! Easy and lazy way of using @[Process.Process] that runs a process 
