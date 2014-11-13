@@ -144,10 +144,17 @@ PMOD_EXPORT p_wchar2 index_shared_string(const struct pike_string *s, ptrdiff_t 
 
 /* arithmetic left shift. compilers will understand this
  * and generate one arithmetic left shift. Left shifting
- * a negative integer is undefined and could be optimized
- * away by compilers.
+ * a negative integer is implementation defined and
+ * not all compilers do arithmetic left shifts.
  */
-#define SAL(a, b)	((a) < 0 ? -(-(a) << (b)) : (a) << (b))
+__attribute__((unused))
+static INLINE ptrdiff_t SAL(ptrdiff_t a, unsigned int b) {
+    if (a < 0) {
+        return -(-a << b);
+    } else {
+        return a << b;
+    }
+}
 
 #define EXTRACT_CHARP(PTR,SHIFT) INDEX_CHARP((PTR),0,(SHIFT))
 #define CHARP_ADD(PTR,X,SHIFT) (PTR)+=SAL(X,SHIFT)
