@@ -171,7 +171,7 @@ class PGassist {
   final int synctransact;
 #ifdef PG_DEBUG
   final int queueoutidx;
-  final int queueinidx;
+  final int queueinidx=-1;
 #endif
 
   private inline void queueup(pgsql_result portal) {
@@ -407,15 +407,11 @@ class pgsql_result {
     switch(type) {
       case 'O':
         res=sprintf("pgsql_result  numrows: %d  eof: %d inflight: %d\n"
-#ifdef PG_DEBUGMORE
                     "query: %O\n"
-#endif
                     "portalname: %O  datarows: %d"
                     "  laststatus: %s\n",
                     numrows,eoffound,_inflight,
-#ifdef PG_DEBUGMORE
                     _query,
-#endif
                     _portalname,_datarowdesc&&sizeof(_datarowdesc),
                     _statuscmdcomplete||"");
         break;
@@ -676,6 +672,9 @@ class pgsql_result {
       Thread.MutexKey lock=prepbuffermux->lock();
       prepbufferready->wait(lock);
       lock=0;
+      if(_state==closed)
+        return;
+      prepbuffermux=0;
     }
     Stdio.Buffer plugbuffer=prepbuffer;
     prepbuffer=0;
@@ -775,6 +774,16 @@ class pgsql_result {
     PGassist plugbuffer=c->start(1);
     plugbuffer->sendcmd(_closeportal(plugbuffer));
     pgsqlsess=UNDEFINED;
+    Thread.MutexKey lock;
+    if(prepbuffermux) {
+      Thread.MutexKey lock=prepbuffermux->lock();
+      prepbufferready->signal();
+    }
+    if(!_datarowdesc) {
+      lock=_ddescribemux->lock();
+      _ddescribe->broadcast();
+    }
+    lock=0;
   }
 
   protected void destroy() {
