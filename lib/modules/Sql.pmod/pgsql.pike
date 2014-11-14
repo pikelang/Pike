@@ -324,11 +324,13 @@ void cancelquery() {
 #ifdef PG_DEBUGMORE
   PD("Closetrace %O\n",backtrace());
 #endif
-  .pgsql_util.PGassist plugbuffer=c->start(1);
-  foreach(qportals->peek_array();;int|.pgsql_util.pgsql_result portal)
-    if(objectp(portal))
-      portal->_closeportal(plugbuffer);
-  plugbuffer->sendcmd(sendout);
+  if(c) {
+    .pgsql_util.PGassist plugbuffer=c->start(1);
+    foreach(qportals->peek_array();;int|.pgsql_util.pgsql_result portal)
+      if(objectp(portal))
+        portal->_closeportal(plugbuffer);
+    plugbuffer->sendcmd(sendout);
+  }
 }
 
 //! Changes the connection charset.  When set to @expr{"UTF8"@}, the query,
@@ -586,9 +588,11 @@ private void storetiming(.pgsql_util.pgsql_result portal) {
 
 private void waitauthready() {
   if(waitforauthready) {
+    PD("Wait for auth ready %O\n",backtrace()[-2]);
     Thread.MutexKey lock=waitforauth->lock();
     catch(waitforauthready->wait(lock));
     lock=0;
+    PD("Wait for auth ready released.\n");
   }
 }
 
@@ -1114,6 +1118,7 @@ final void _processloop(.pgsql_util.PGassist ci) {
               USERERROR(a2nls(lastmessage
                               +({pinpointerror(portal._query,msgresponse.P)})
                               +showbindings(portal)));
+            case "53000":case "53100":case "53200":case "53300":case "53400":
             case "57P01":case "57P02":case "57P03":
               preplastmessage(msgresponse);
               PD(a2nls(lastmessage));throw(0);
@@ -1240,7 +1245,15 @@ final void _processloop(.pgsql_util.PGassist ci) {
     }
     break;
   }
+  PD("Closing database processloop %O\n",err);
   _delayederror=err;
+  for(;objectp(portal);portal=qportals->read())
+    if(objectp(portal)) {
+#ifdef PG_DEBUG
+      showportal(0);
+#endif
+      portal->_purgeportal();
+    }
   if(!ci->close() && !terminating && _options.reconnect)
     _connectfail();
   else if(waitforauthready)
