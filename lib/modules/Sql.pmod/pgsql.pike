@@ -66,7 +66,7 @@ final Thread.Mutex _unnamedportalmux;
 private Thread.Mutex unnamedstatement;
 final int _portalsinflight;
 
-private .pgsql_util.PGassist c;
+private .pgsql_util.conxion c;
 private string cancelsecret;
 private int backendpid, backendstatus;
 final mapping(string:mixed) _options;
@@ -303,8 +303,8 @@ int ping() {
    ? !!reconnected : -1;
 }
 
-private .pgsql_util.PGassist getsocket(void|int nossl) {
-  return .pgsql_util.PGassist(this,qportals,(int)nossl);
+private .pgsql_util.conxion getsocket(void|int nossl) {
+  return .pgsql_util.conxion(this,qportals,(int)nossl);
 }
 
 //! Cancels all currently running queries in this session.
@@ -317,7 +317,7 @@ private .pgsql_util.PGassist getsocket(void|int nossl) {
 //! through the generic SQL-interface.
 void cancelquery() {
   PD("CancelRequest\n");
-  .pgsql_util.PGassist lcon=getsocket(1);
+  .pgsql_util.conxion lcon=getsocket(1);
   lcon->add_int32(16)->add_int32(PG_PROTOCOL(1234,5678))
    ->add_int32(backendpid)->add(cancelsecret)->sendcmd(flushsend);
   lcon->close();
@@ -325,8 +325,8 @@ void cancelquery() {
   PD("Closetrace %O\n",backtrace());
 #endif
   if(c) {
-    .pgsql_util.PGassist plugbuffer=c->start(1);
-    foreach(qportals->peek_array();;int|.pgsql_util.pgsql_result portal)
+    .pgsql_util.conxion plugbuffer=c->start(1);
+    foreach(qportals->peek_array();;int|.pgsql_util.sql_result portal)
       if(objectp(portal))
         portal->_closeportal(plugbuffer);
     plugbuffer->sendcmd(sendout);
@@ -554,7 +554,7 @@ private void reconnect_cb() {
   runcallback(backendpid,"_reconnect","");
 }
 
-private array(string) showbindings(.pgsql_util.pgsql_result portal) {
+private array(string) showbindings(.pgsql_util.sql_result portal) {
   array(string) msgs=({});
   array from;
   if(portal && (from = portal._params)) {
@@ -579,7 +579,7 @@ private void preplastmessage(mapping(string:string) msgresponse) {
             msgresponse.L||"")});
 }
 
-private void storetiming(.pgsql_util.pgsql_result portal) {
+private void storetiming(.pgsql_util.sql_result portal) {
   mapping(string:mixed) tp=portal._tprepared;
   tp.trun=gethrtime()-tp.trunstart;
   m_delete(tp,"trunstart");
@@ -601,9 +601,9 @@ private inline mixed callout(function(mixed ...:void) f,
   return .pgsql_util.local_backend->call_out(f,delay,@args);
 }
 
-final void _processloop(.pgsql_util.PGassist ci) {
+final void _processloop(.pgsql_util.conxion ci) {
   int terminating=0;
-  int|.pgsql_util.pgsql_result portal;
+  int|.pgsql_util.sql_result portal;
   mixed err;
   {
     Stdio.Buffer plugbuffer=Stdio.Buffer()->add_int32(PG_PROTOCOL(3,0));
@@ -815,7 +815,7 @@ final void _processloop(.pgsql_util.PGassist ci) {
 #endif
             portal->_purgeportal();
           }
-          foreach(qportals->peek_array();;.pgsql_util.pgsql_result qp) {
+          foreach(qportals->peek_array();;.pgsql_util.sql_result qp) {
             if(objectp(qp) && qp._synctransact && qp._synctransact<=portal) {
               PD("Checking portal %O %d<=%d\n",
                qp._portalname,qp._synctransact,portal);
@@ -1225,14 +1225,14 @@ final void _processloop(.pgsql_util.PGassist ci) {
         ERROR(a2nls(lastmessage+=({msg})));
       }
     };				// We only get here if there is an error
-    if(err==MAGICTERMINATE) {
+    if(err==MAGICTERMINATE) {	// Announce connection termination to server
       ci->start()->add("X\0\0\0\4")->sendcmd(sendout);
       terminating=1;
       if(!sizeof(ci))
         break;
     }
     if(stringp(err)) {
-      .pgsql_util.pgsql_result or;
+      .pgsql_util.sql_result or;
       if(!objectp(or=portal))
         or=this;
       if(!or._delayederror)
@@ -1584,7 +1584,7 @@ string server_info () {
 //! If specified, list only those databases matching it.
 array(string) list_dbs (void|string glob) {
   array row,ret=({});
-  .pgsql_util.pgsql_result res=big_query("SELECT d.datname "
+  .pgsql_util.sql_result res=big_query("SELECT d.datname "
                                          "FROM pg_database d "
                                          "WHERE d.datname ILIKE :glob "
                                          "ORDER BY d.datname",
@@ -1602,7 +1602,7 @@ array(string) list_dbs (void|string glob) {
 //! If specified, list only the tables with matching names.
 array(string) list_tables (void|string glob) {
   array row,ret=({});		 // This query might not work on PostgreSQL 7.4
-  .pgsql_util.pgsql_result res=big_query(       // due to missing schemasupport
+  .pgsql_util.sql_result res=big_query(       // due to missing schemasupport
    "SELECT CASE WHEN 'public'=n.nspname THEN '' ELSE n.nspname||'.' END "
    "  ||c.relname AS name "
    "FROM pg_catalog.pg_class c "
@@ -1663,7 +1663,7 @@ array(mapping(string:mixed)) list_fields(void|string table, void|string glob) {
 
   sscanf(table||"*", "%s.%s", schema, table);
 
-  .pgsql_util.pgsql_result res = big_typed_query(
+  .pgsql_util.sql_result res = big_typed_query(
   "SELECT a.attname, a.atttypid, t.typname, a.attlen, "
   " c.relhasindex, c.relhaspkey, CAST(c.reltuples AS BIGINT) AS reltuples, "
   " (c.relpages "
@@ -1770,7 +1770,7 @@ final string status_commit() {
 }
 
 private inline void closestatement(
-  .pgsql_util.PGassist|.pgsql_util.PGplugbuffer plugbuffer,string oldprep) {
+  .pgsql_util.conxion|.pgsql_util.bufcon plugbuffer,string oldprep) {
   .pgsql_util.closestatement(plugbuffer,oldprep);
 }
 
@@ -1782,8 +1782,8 @@ private inline void throwdelayederror(object parent) {
   .pgsql_util.throwdelayederror(parent);
 }
 
-//! @decl Sql.pgsql_util.pgsql_result big_query(string query)
-//! @decl Sql.pgsql_util.pgsql_result big_query(string query, mapping bindings)
+//! @decl Sql.pgsql_util.sql_result big_query(string query)
+//! @decl Sql.pgsql_util.sql_result big_query(string query, mapping bindings)
 //!
 //! This is the only provided interface which allows you to query the
 //! database. If you wish to use the simpler @[Sql.Sql()->query()] function,
@@ -1808,7 +1808,7 @@ private inline void throwdelayederror(object parent) {
 //! @endmapping
 //!
 //! @returns
-//! A @[Sql.pgsql_util.pgsql_result] object (which conforms to the
+//! A @[Sql.pgsql_util.sql_result] object (which conforms to the
 //! @[Sql.sql_result] standard interface for accessing data). It is
 //! recommended to use @[Sql.Sql()->query()] for simpler queries (because
 //! it is easier to handle, but stores all the result in memory), and
@@ -1834,8 +1834,8 @@ private inline void throwdelayederror(object parent) {
 //!
 //! @seealso
 //!   @[big_typed_query()], @[Sql.Sql], @[Sql.sql_result],
-//!   @[Sql.Sql()->query()], @[Sql.pgsql_util.pgsql_result]
-.pgsql_util.pgsql_result big_query(string q,
+//!   @[Sql.Sql()->query()], @[Sql.pgsql_util.sql_result]
+.pgsql_util.sql_result big_query(string q,
                                    void|mapping(string|int:mixed) bindings,
                                    void|int _alltyped) {
   throwdelayederror(this);
@@ -1952,10 +1952,10 @@ private inline void throwdelayederror(object parent) {
     } else
       plugbuffer->sendcmd();				       // close start()
     tstart=gethrtime();
-  } else				  // pgsql_result autoassigns to portal
+  } else				  // sql_result autoassigns to portal
     tp=UNDEFINED;
-  .pgsql_util.pgsql_result portal;
-  portal=.pgsql_util.pgsql_result(this,c,q,
+  .pgsql_util.sql_result portal;
+  portal=.pgsql_util.sql_result(this,c,q,
                                     portalbuffersize,_alltyped,from,forcetext);
   portal._tprepared=tp;
 #ifdef PG_STATS
@@ -2018,7 +2018,7 @@ private inline void throwdelayederror(object parent) {
 //!
 //! @seealso
 //!   @[big_query()], @[big_typed_query()], @[Sql.Sql], @[Sql.sql_result]
-.pgsql_util.pgsql_result streaming_query(string q,
+.pgsql_util.sql_result streaming_query(string q,
                                      void|mapping(string|int:mixed) bindings) {
   return big_query(q,bindings);
 }
@@ -2028,7 +2028,7 @@ private inline void throwdelayederror(object parent) {
 //!
 //! @seealso
 //!   @[big_query()], @[Sql.Sql], @[Sql.sql_result]
-.pgsql_util.pgsql_result big_typed_query(string q,
+.pgsql_util.sql_result big_typed_query(string q,
                                      void|mapping(string|int:mixed) bindings) {
   return big_query(q,bindings,1);
 }
