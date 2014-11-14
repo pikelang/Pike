@@ -353,6 +353,20 @@ outer:
     pgsqlsess->_connectfail(err);
   }
 
+  private string _sprintf(int type, void|mapping flags) {
+    string res=UNDEFINED;
+    switch(type) {
+      case 'O':
+        res=predef::sprintf("PGassist  fd: %d input queue: %d/%d "
+                    "queued portals: %d  output queue: %d/%d\n",
+                    socket&&socket->query_fd(),
+                    sizeof(i::this),i::_size_object(),
+                    qportals->size(),sizeof(this),_size_object());
+        break;
+    }
+    return res;
+  }
+
   protected void create(object _pgsqlsess,Thread.Queue _qportals,int nossl) {
     i::create(); o::create();
     qportals = _qportals;
