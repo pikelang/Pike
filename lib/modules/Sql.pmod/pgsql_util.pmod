@@ -4,7 +4,9 @@
  */
 
 //! The pgsql backend, shared between all connection instances.
-//! It runs even in non-callback mode in a separate thread.
+//! It runs even in non-callback mode in a separate thread and makes sure
+//! that communication with the database is real-time and event driven
+//! at all times.
 //!
 //! @note
 //! Callbacks running from this backend directly determine the latency
@@ -34,7 +36,7 @@ private Regexp execfetchlimit
 [Ii][Nn][Ss][Ee][Rr][Tt])[ \t\f\r\n]|\
 [ \t\f\r\n][Ll][Ii][Mm][Ii][Tt][ \t\f\r\n]+[12][; \t\f\r\n]*$");
 
-final void closestatement(PGplugbuffer|PGassist plugbuffer,string oldprep) {
+final void closestatement(bufcon|conxion plugbuffer,string oldprep) {
   if(oldprep) {
     PD("Close statement %s\n",oldprep);
     plugbuffer->add_int8('C')->add_hstring(({'S',oldprep,0}),4,4);
@@ -100,7 +102,7 @@ final int oidformat(int oid) {
   return 0;	// text
 }
 
-private sctype mergemode(PGassist realbuffer,sctype mode) {
+private sctype mergemode(conxion realbuffer,sctype mode) {
   if(mode>realbuffer->stashflushmode)
     realbuffer->stashflushmode=mode;
   return realbuffer->stashflushmode;
@@ -113,25 +115,25 @@ private inline mixed callout(function(mixed ...:void) f,
 
 // Some pgsql utility functions
 
-class PGplugbuffer {
+class bufcon {
   inherit Stdio.Buffer;
 
-  private PGassist realbuffer;
+  private conxion realbuffer;
 
-  protected void create(PGassist _realbuffer) {
+  protected void create(conxion _realbuffer) {
     realbuffer=_realbuffer;
   }
 
-  final PGplugbuffer start(void|int waitforreal) {
+  final bufcon start(void|int waitforreal) {
     realbuffer->stashcount++;
 #ifdef PG_DEBUG
     if(waitforreal)
-      error("pgsql.PGplugbuffer not allowed here\n");
+      error("pgsql.bufcon not allowed here\n");
 #endif
     return this;
   }
 
-  final void sendcmd(void|sctype mode,void|pgsql_result portal) {
+  final void sendcmd(void|sctype mode,void|sql_result portal) {
     Thread.MutexKey lock=realbuffer->stashupdate->lock();
     if(portal)
       realbuffer->stashqueue->write(portal);
@@ -149,7 +151,7 @@ class PGplugbuffer {
 
 }
 
-class PGassist {
+class conxion {
   inherit Stdio.Buffer:i;
   inherit Stdio.Buffer:o;
 
@@ -176,13 +178,13 @@ class PGassist {
   final int queueinidx=-1;
 #endif
 
-  private inline void queueup(pgsql_result portal) {
+  private inline void queueup(sql_result portal) {
     qportals->write(portal); portal->_synctransact=synctransact;
     PD(">%O %d %d Queue portal %d bytes\n",portal._portalname,++queueoutidx,
      synctransact,sizeof(this));
   }
 
-  final PGassist|PGplugbuffer start(void|int waitforreal) {
+  final conxion|bufcon start(void|int waitforreal) {
     Thread.MutexKey lock;
     if(lock=(waitforreal?nostash->lock:nostash->trylock)(1)) {
       started=lock;
@@ -190,13 +192,13 @@ class PGassist {
       if(stashcount)
         stashavail.wait(lock);
       add(stash); stash->clear();
-      foreach(stashqueue->try_read_array();;pgsql_result portal)
+      foreach(stashqueue->try_read_array();;sql_result portal)
         queueup(portal);
       lock=0;
       return this;
     }
     stashcount++;
-    return PGplugbuffer(this);
+    return bufcon(this);
   }
 
   protected bool range_error(int howmuch) {
@@ -242,7 +244,7 @@ class PGassist {
   final inline    int read_int32()       { return i::read_int32();   }
   final inline string read_cstring()     { return i::read_cstring(); }
 
-  final void sendcmd(void|sctype mode,void|pgsql_result portal) {
+  final void sendcmd(void|sctype mode,void|sql_result portal) {
     if(portal)
       queueup(portal);
 nosync:
@@ -266,7 +268,7 @@ nosync:
       Thread.MutexKey lock=stashupdate->lock();
       if(sizeof(stash)) {
         add(stash); stash->clear();
-        foreach(stashqueue->try_read_array();;pgsql_result portal)
+        foreach(stashqueue->try_read_array();;sql_result portal)
           queueup(portal);
       }
       mode=mergemode(this,mode);
@@ -360,7 +362,7 @@ outer:
     string res=UNDEFINED;
     switch(type) {
       case 'O':
-        res=predef::sprintf("PGassist  fd: %d input queue: %d/%d "
+        res=predef::sprintf("conxion  fd: %d input queue: %d/%d "
                     "queued portals: %d  output queue: %d/%d\n",
                     socket&&socket->query_fd(),
                     sizeof(i::this),i::_size_object(),
@@ -394,12 +396,12 @@ outer:
 //!
 //! @seealso
 //!   @[Sql.sql_result], @[Sql.pgsql], @[Sql.Sql], @[Sql.pgsql()->big_query()]
-class pgsql_result {
+class sql_result {
 
   private object pgsqlsess;
   private int numrows;
   private int eoffound;
-  private PGassist c;
+  private conxion c;
   final mixed _delayederror;
   final portalstate _state;
   final int _fetchlimit;
@@ -433,7 +435,7 @@ class pgsql_result {
     string res=UNDEFINED;
     switch(type) {
       case 'O':
-        res=sprintf("pgsql_result  numrows: %d  eof: %d inflight: %d\n"
+        res=sprintf("sql_result  numrows: %d  eof: %d inflight: %d\n"
                     "query: %O\n"
                     "portalname: %O  datarows: %d"
                     "  laststatus: %s\n",
@@ -446,7 +448,7 @@ class pgsql_result {
     return res;
   }
 
-  protected void create(object _pgsqlsess,PGassist _c,string query,
+  protected void create(object _pgsqlsess,conxion _c,string query,
               int portalbuffersize,int alltyped,array params,int forcetext) {
     pgsqlsess = _pgsqlsess;
     c = _c;
@@ -722,7 +724,7 @@ class pgsql_result {
     PD("Bind portal %O statement %O\n",_portalname,_preparedname);
     _fetchlimit=pgsqlsess->_fetchlimit;
     _openportal();
-    PGassist bindbuffer=c->start(1);
+    conxion bindbuffer=c->start(1);
     _unnamedstatementkey=0;
     bindbuffer->add_int8('B')->add_hstring(plugbuffer,4,4);
     if(!_tprepared)
@@ -757,7 +759,7 @@ class pgsql_result {
     releaseconditions();
   }
 
-  final sctype _closeportal(PGplugbuffer plugbuffer) {
+  final sctype _closeportal(bufcon plugbuffer) {
     sctype retval=keep;
     PD("%O Try Closeportal %d\n",_portalname,_state);
     Thread.MutexKey lock=closemux->lock();
@@ -838,7 +840,7 @@ class pgsql_result {
   final void _releasesession() {
     _inflight=0;
     _datarows->write(1);			// Signal EOF
-    PGassist plugbuffer=c->start(1);
+    conxion plugbuffer=c->start(1);
     plugbuffer->sendcmd(_closeportal(plugbuffer));
     releaseconditions();
   }
@@ -849,7 +851,7 @@ class pgsql_result {
     };
   }
 
-  final void _sendexecute(int fetchlimit,void|PGplugbuffer plugbuffer) {
+  final void _sendexecute(int fetchlimit,void|bufcon plugbuffer) {
     int flushmode;
     PD("Execute portal %O fetchlimit %d\n",_portalname,fetchlimit);
     if(!plugbuffer)
@@ -931,7 +933,7 @@ class pgsql_result {
   }
 
   private void run_result_cb(
-   function(pgsql_result, array(mixed), mixed ...:void) callback,
+   function(sql_result, array(mixed), mixed ...:void) callback,
    array(mixed) args) {
     int|array datarow;
     while(arrayp(datarow=_datarows->read_array()))
@@ -948,14 +950,14 @@ class pgsql_result {
   //! @seealso
   //!  @[fetch_row()]
   void set_result_callback(
-   function(pgsql_result, array(mixed), mixed ...:void) callback,
+   function(sql_result, array(mixed), mixed ...:void) callback,
    mixed ... args) {
     if(callback)
       Thread.Thread(run_result_cb,callback,args);
   }
 
   private void run_result_array_cb(
-   function(pgsql_result, array(array(mixed)), mixed ...:void) callback,
+   function(sql_result, array(array(mixed)), mixed ...:void) callback,
    array(mixed) args) {
     array(array|int) datarow;
     while((datarow=_datarows->read_array()) && arrayp(datarow[-1]))
@@ -974,7 +976,7 @@ class pgsql_result {
   //! @seealso
   //!  @[fetch_row()]
   void set_result_array_callback(
-   function(pgsql_result, array(array(mixed)), mixed ...:void) callback,
+   function(sql_result, array(array(mixed)), mixed ...:void) callback,
    mixed ... args) {
     if(callback)
       Thread.Thread(run_result_array_cb,callback,args);
