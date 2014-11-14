@@ -292,7 +292,8 @@ outer:
       started=0;
       return;
     };
-    pgsqlsess->_connectfail();
+    if(pgsqlsess)
+      pgsqlsess->_connectfail();
   }
 
   final void sendterminate() {
@@ -300,6 +301,7 @@ outer:
   }
 
   final int close() {
+    destruct(nostash);
     return socket->close();
   }
 
@@ -350,7 +352,8 @@ outer:
       Thread.Thread(pgsqlsess->_processloop,this);
       return;
     };
-    pgsqlsess->_connectfail(err);
+    if(pgsqlsess)
+      pgsqlsess->_connectfail(err);
   }
 
   private string _sprintf(int type, void|mapping flags) {
@@ -746,6 +749,7 @@ class pgsql_result {
     switch(_state) {
       case copyinprogress:
       case bound:
+        _datarows->write(1);			   // Signal EOF
         --pgsqlsess->_portalsinflight;
     }
     _state=closed;
