@@ -743,7 +743,7 @@ class pgsql_result {
   }
 
   final void _purgeportal() {
-    _unnamedportalkey=0;
+    _unnamedportalkey=_unnamedstatementkey=0;
     Thread.MutexKey lock=closemux->lock();
     _fetchlimit=0;				   // disables further Executes
     switch(_state) {
@@ -754,6 +754,7 @@ class pgsql_result {
     }
     _state=closed;
     lock=0;
+    releaseconditions();
   }
 
   final sctype _closeportal(PGplugbuffer plugbuffer) {
@@ -768,6 +769,7 @@ class pgsql_result {
      */
     switch(_state) {
       case portalinit:
+        _unnamedstatementkey=0;
         _state=closed;
         break;
       case copyinprogress:
@@ -818,12 +820,8 @@ class pgsql_result {
     }
   }
 
-  final void _releasesession() {
-    _inflight=0;
-    _datarows->write(1);			// Signal EOF
-    PGassist plugbuffer=c->start(1);
-    plugbuffer->sendcmd(_closeportal(plugbuffer));
-    pgsqlsess=UNDEFINED;
+  private void releaseconditions() {
+    pgsqlsess=0;
     Thread.MutexKey lock;
     if(prepbuffermux) {
       Thread.MutexKey lock=prepbuffermux->lock();
@@ -832,8 +830,17 @@ class pgsql_result {
     if(!_datarowdesc) {
       lock=_ddescribemux->lock();
       _ddescribe->broadcast();
+      _datarowdesc=({});
     }
     lock=0;
+  }
+
+  final void _releasesession() {
+    _inflight=0;
+    _datarows->write(1);			// Signal EOF
+    PGassist plugbuffer=c->start(1);
+    plugbuffer->sendcmd(_closeportal(plugbuffer));
+    releaseconditions();
   }
 
   protected void destroy() {
