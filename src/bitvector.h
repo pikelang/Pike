@@ -206,6 +206,27 @@ static INLINE unsigned INT32 __attribute__((unused)) log2_u32(unsigned INT32 v) 
     return fls32(v) - 1;
 }
 
+static INLINE int __attribute__((unused)) popcount32(unsigned INT32 v) {
+#if HAS___BUILTIN_POPCOUNT
+    return __builtin_popcount(v);
+#else
+    /* Standard Hamming weight implementation, see for instance
+     * https://en.wikipedia.org/wiki/Hamming_weight
+     */
+    v = v - ((v >> 1) & 0x55555555);
+    v = (v & 0x33333333) + ((v >> 2) & 0x33333333);
+    return (((v + (v >> 4)) & 0x0F0F0F0F) * 0x01010101) >> 24;
+#endif
+}
+
+static INLINE int __attribute__((unused)) popcount64(unsigned INT64 v) {
+#if HAS___BUILTIN_POPCOUNTLL
+    return __builtin_popcountll(v);
+#else
+    return popcount32(v) + popcount32(v >> 32);
+#endif
+}
+
 #define bswap16(x)     ((unsigned INT16)bswap32((unsigned INT32)x << 16))
 
 #if PIKE_BYTEORDER == 1234
