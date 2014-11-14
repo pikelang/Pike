@@ -69,10 +69,8 @@ static void check_callback_chain(struct callback_list *lst)
 #define check_callback_chain(X)
 #endif
 
-/* Return the first free callback struct, allocate more if needed */
-
-
-/* Traverse a linked list of callbacks and call all the active callbacks
+/**
+ * Traverse a linked list of callbacks and call all the active callbacks
  * in the list. Deactivated callbacks are freed and placed in the free list.
  */
 PMOD_EXPORT void low_call_callback(struct callback_list *lst, void *arg)
@@ -119,11 +117,13 @@ PMOD_EXPORT void low_call_callback(struct callback_list *lst, void *arg)
   }
 }
 
-/* Add a callback to the linked list pointed to by ptr. */
+/**
+ * Add a callback to the linked list pointed to by ptr.
+ */
 PMOD_EXPORT struct callback *debug_add_to_callback(struct callback_list *lst,
-				       callback_func call,
-				       void *arg,
-				       callback_func free_func)
+						   callback_func call,
+						   void *arg,
+						   callback_func free_func)
 {
   struct callback *l;
   l=ba_alloc(&callback_allocator);
@@ -139,8 +139,9 @@ PMOD_EXPORT struct callback *debug_add_to_callback(struct callback_list *lst,
   return l;
 }
 
-/* This function deactivates a callback.
- * It is not actually freed until next time this callback is "called"
+/**
+ * Deactivates a callback.
+ * It is not actually freed until next time the callback is "called".
  */
 PMOD_EXPORT void *remove_callback(struct callback *l)
 {
@@ -149,7 +150,9 @@ PMOD_EXPORT void *remove_callback(struct callback *l)
   return l->arg;
 }
 
-/* Free all the callbacks in a linked list of callbacks */
+/**
+ * Free all the callbacks in a linked list of callbacks.
+ */
 void free_callback_list(struct callback_list *lst)
 {
   struct callback *l,**ptr;
@@ -164,6 +167,9 @@ void free_callback_list(struct callback_list *lst)
   }
 }
 
+/**
+ * Free all callbacks.
+ */
 void cleanup_callbacks(void)
 {
   ba_destroy(&callback_allocator);
