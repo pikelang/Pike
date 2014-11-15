@@ -897,6 +897,8 @@ class KeyExchangeECDH
 	connection->ke = UNDEFINED;
 	error("Invalid size in point format.\n");
       }
+      // NB: No need to validate that the point is valid for the curve here.
+      //     The check will be done when the point is used in point_mul().
       [x, y] = map(rest/(sizeof(rest)/2), Gmp.mpz, 256);
       break;
     default:
