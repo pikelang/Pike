@@ -520,8 +520,8 @@ class KeyExchangeRSA
       SSL3_DEBUG_MSG("Sending a server key exchange-message, "
 		     "with a %d-bits key.\n", temp_key->key_size());
       Stdio.Buffer output = Stdio.Buffer();
-      output->add_hstring(temp_key->get_n()->digits(256),2);
-      output->add_hstring(temp_key->get_e()->digits(256),2);
+      output->add_hint(temp_key->get_n(),2);
+      output->add_hint(temp_key->get_e(),2);
       return output;
     }
 
@@ -697,7 +697,7 @@ class KeyExchangeDH
 			   version);
 
     Stdio.Buffer output = Stdio.Buffer();
-    output->add_hstring(dh_state->our->digits(256), 2);
+    output->add_hint(dh_state->our, 2);
     return output->read();
   }
 
@@ -792,9 +792,9 @@ class KeyExchangeDHE
     dh_state->new_secret(context->random);
 
     Stdio.Buffer output = Stdio.Buffer();
-    output->add_hstring(dh_state->parameters->p->digits(256), 2);
-    output->add_hstring(dh_state->parameters->g->digits(256), 2);
-    output->add_hstring(dh_state->our->digits(256), 2);
+    output->add_hint(dh_state->parameters->p, 2);
+    output->add_hint(dh_state->parameters->g, 2);
+    output->add_hint(dh_state->our, 2);
     return output;
   }
 
