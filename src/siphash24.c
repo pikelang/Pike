@@ -53,7 +53,7 @@
 __attribute__((fastcall))
 #endif
 __attribute__((hot))
-static size_t low_hashmem_siphash24( const void *s, size_t len, size_t nbytes, size_t key )
+static unsigned INT64 low_hashmem_siphash24( const void *s, size_t len, size_t nbytes, unsigned INT64 key )
 {
   const unsigned char * in = (const unsigned char*)s;
   unsigned long long inlen = MINIMUM(len, nbytes);
