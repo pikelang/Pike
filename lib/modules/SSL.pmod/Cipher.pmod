@@ -1229,7 +1229,7 @@ class KeyExchangeKRB
     string authenticator = input->read_hstring(2);
     string encrypted_premaster_secret = input->read_hstring(2);
 
-    if( sizeof(intput) )
+    if( sizeof(input) )
     {
       connection->ke = UNDEFINED;
       return ALERT_unexpected_message;
