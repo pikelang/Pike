@@ -77,10 +77,13 @@
 #define PD(X ...)	     0
 #endif
 
-protected enum portalstate {
-  portalinit=0,bound,copyinprogress,closed
-};
+#define PORTALINIT	0		// Portal states
+#define BOUND		1
+#define COPYINPROGRESS	2
+#define CLOSED		3
 
-protected enum sctype {
-  keep=0,sendout,flushsend,flushlogsend,syncsend
-};
+#define KEEP		0		// Sendcmd subcommands
+#define SENDOUT		1
+#define FLUSHSEND	2
+#define FLUSHLOGSEND	3
+#define SYNCSEND	4
