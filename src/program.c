@@ -386,8 +386,8 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *!   @[args] are the arguments passed when the program was called.
  *!
  *! @note
- *!   In Pike 7.2 and later this function can be created implicitly
- *!   by the compiler using the new syntax:
+ *!   This function can be created implicitly
+ *!   by the compiler using the syntax:
  *! @code
  *! class Foo(int foo) {
  *!   int bar;
@@ -517,10 +517,6 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *! @[lfun::destroy] in the cycle are already scheduled for
  *! destruction and will therefore be destroyed even if external
  *! references are added to them.
- *!
- *! @note
- *! The garbage collector had completely random destruct order in
- *! versions prior to 7.2.
  *!
  *! @seealso
  *!   @[lfun::create()], @[predef::destruct()]

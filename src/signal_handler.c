@@ -1784,9 +1784,6 @@ lostchild:
  *!   @value 2
  *!     Exited
  *! @endint
- *!
- *! @note
- *!   Prior to Pike 7.5 the value 1 was returned for exited processes.
  */
 static void f_pid_status_status(INT32 args)
 {

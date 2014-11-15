@@ -2930,7 +2930,7 @@ void low_backtrace(struct Pike_interpreter_struct *i)
  *!
  *! @note
  *!   Please note that the frame order may be reversed in a later version
- *!   (than 7.1) of Pike to accommodate for deferred backtraces.
+ *!   of Pike to accommodate for deferred backtraces.
  *!
  *!   Note that the arguments reported in the backtrace are the current
  *!   values of the variables, and not the ones that were at call-time.

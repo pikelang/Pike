@@ -687,9 +687,7 @@ PIKECLASS Simple
 
 /* Flag bits. */
 #define ALLOW_RXML_ENTITIES	0x01
-#define COMPAT_ALLOW_7_2_ERRORS	0x02
-#define COMPAT_ALLOW_7_6_ERRORS	0x04
-#define ALLOW_PESMEG_EVERYWHERE	0x08
+#define ALLOW_PESMEG_EVERYWHERE	0x02
 
   /* callback:
    *   string type
@@ -711,9 +709,6 @@ PIKECLASS Simple
   /*! @decl array parse(string xml, string context, @
    *!                   function cb, mixed ... extra_args)
    *! @decl array parse(string xml, function cb, mixed ... extra_args)
-   *!
-   *! @note
-   *!   The @[context] argument was introduced in Pike 7.8.
    */
   PIKEFUN array parse(string s, string|function cb, mixed ... UNUSED)
     rawtype PARSETYPE;
@@ -749,9 +744,6 @@ PIKECLASS Simple
   /*! @decl mixed parse_dtd(string dtd, string context, @
    *!                       function cb, mixed ... extras)
    *! @decl mixed parse_dtd(string dtd, function cb, mixed ... extras)
-   *!
-   *! @note
-   *!   The @[context] argument was introduced in Pike 7.8.
    */
   PIKEFUN mixed parse_dtd(string s, string|function cb, mixed ... UNUSED)
     rawtype PARSETYPE;
@@ -832,9 +824,6 @@ PIKECLASS Simple
    *!
    *! @returns
    *!   Returns the verbatim expansion of the entity.
-   *!
-   *! @note
-   *!   Added in Pike 7.7.
    */
   PIKEFUN string lookup_entity(string entity)
   {
@@ -931,45 +920,6 @@ PIKECLASS Simple
     push_int(0);
   }
 
-  /*! @decl void compat_allow_errors(string version)
-   *!
-   *! Set whether the parser should allow certain errors for
-   *! compatibility with earlier versions. @[version] can be:
-   *!
-   *! @string
-   *!   @value "7.2"
-   *!     Allow more data after the root element.
-   *!   @value "7.6"
-   *!     Allow multiple and invalidly placed "<?xml ... ?>" and
-   *!     "<!DOCTYPE ... >" declarations (invalid "<?xml ... ?>"
-   *!     declarations are otherwise treated as normal PI:s). Allow
-   *!     "<![CDATA[ ... ]]>" outside the root element. Allow the root
-   *!     element to be absent.
-   *! @endstring
-   *!
-   *! @[version] can also be zero to enable all error checks.
-   */
-  PIKEFUN void compat_allow_errors(string|void version)
-  {
-    if (args < 1)
-      SIMPLE_TOO_FEW_ARGS_ERROR ("compat_allow_errors", 1);
-
-    if (!version) {
-      THIS->flags &= ~(COMPAT_ALLOW_7_2_ERRORS|COMPAT_ALLOW_7_6_ERRORS);
-    } else if (version == MK_STRING("7.2")) {
-      THIS->flags |= COMPAT_ALLOW_7_2_ERRORS|COMPAT_ALLOW_7_6_ERRORS;
-    } else if (version == MK_STRING("7.6")) {
-      THIS->flags &= ~COMPAT_ALLOW_7_2_ERRORS;
-      THIS->flags |= COMPAT_ALLOW_7_6_ERRORS;
-    } else {
-      Pike_error ("Got unknown version string.\n");
-    }
-
-    pop_n_elems(args);
-    push_int(0);
-  }
-
-
   INIT
   {
     push_text("lt");    push_text("&#60;");
@@ -1063,8 +1013,6 @@ PIKECLASS Simple
     {
 #define XML_ADD_INTEGER_CONSTANT(X)	add_integer_constant(#X, X, 0)
       XML_ADD_INTEGER_CONSTANT(ALLOW_RXML_ENTITIES);
-      XML_ADD_INTEGER_CONSTANT(COMPAT_ALLOW_7_2_ERRORS);
-      XML_ADD_INTEGER_CONSTANT(COMPAT_ALLOW_7_6_ERRORS);
       XML_ADD_INTEGER_CONSTANT(ALLOW_PESMEG_EVERYWHERE);
     }
 
@@ -1906,7 +1854,7 @@ static void parse_optional_xmldecl(void)
     else
       READ(2);
 
-    if (!(THIS->flags & COMPAT_ALLOW_7_6_ERRORS)) {
+    {
       struct pike_string *str_version;
       MAKE_CONST_STRING (str_version, "version");
       if (!low_mapping_string_lookup (m, str_version))
@@ -2704,8 +2652,7 @@ static struct pike_string *very_low_parse_xml(struct pike_string *end,
   int done=0, toplevel = THIS->doc_seq_pos != DOC_IN_ROOT_ELEM;
 
 #define CHECK_TOPLEVEL_EPILOG(ERRMSG) do {				\
-    if (THIS->doc_seq_pos == DOC_AFTER_ROOT_ELEM &&			\
-	!(THIS->flags & COMPAT_ALLOW_7_2_ERRORS)) {			\
+    if (THIS->doc_seq_pos == DOC_AFTER_ROOT_ELEM) {			\
       XMLERROR_STAY (ERRMSG);						\
     }									\
   } while (0)
@@ -2822,12 +2769,8 @@ static struct pike_string *very_low_parse_xml(struct pike_string *end,
 		{
 		  READ(9);
 
-		  if (!(THIS->flags & COMPAT_ALLOW_7_6_ERRORS)) {
-		    if (toplevel)
-		      XMLERROR_STAY ("All data must be inside tags");
-		  }
-		  else
-		    CHECK_TOPLEVEL_EPILOG ("All data must be inside tags");
+		  if (toplevel)
+		    XMLERROR_STAY ("All data must be inside tags");
 
 		  push_constant_text("<![CDATA[");
 		  push_int(0);
@@ -2873,22 +2816,17 @@ static struct pike_string *very_low_parse_xml(struct pike_string *end,
 		}else{
 		  READ(9);
 
-		  if (!(THIS->flags & COMPAT_ALLOW_7_6_ERRORS)) {
-		    switch (THIS->doc_seq_pos) {
-		      case DOC_GOT_DOCTYPE:
-			XMLERROR_STAY (
-			  "Multiple DOCTYPE declarations are not allowed.");
-			break;
-		      case DOC_IN_ROOT_ELEM:
-		      case DOC_AFTER_ROOT_ELEM:
-			XMLERROR_STAY (
-			  "DOCTYPE must occur before the root element.");
-			break;
-		    }
+		  switch (THIS->doc_seq_pos) {
+		    case DOC_GOT_DOCTYPE:
+		      XMLERROR_STAY (
+		        "Multiple DOCTYPE declarations are not allowed.");
+		      break;
+		    case DOC_IN_ROOT_ELEM:
+		    case DOC_AFTER_ROOT_ELEM:
+		      XMLERROR_STAY (
+		        "DOCTYPE must occur before the root element.");
+		      break;
 		  }
-		  else
-		    CHECK_TOPLEVEL_EPILOG (
-		      "DOCTYPE must occur before the root element.");
 
 		  SKIPSPACE();
 		  push_constant_text("<!DOCTYPE");
@@ -3126,8 +3064,7 @@ static int low_parse_xml(struct pike_string *end)
       }
       THIS->doc_seq_pos = DOC_BEGINNING;
       low_parse_xml(NULL);
-      if (THIS->doc_seq_pos != DOC_AFTER_ROOT_ELEM &&
-	  !(THIS->flags & COMPAT_ALLOW_7_6_ERRORS))
+      if (THIS->doc_seq_pos != DOC_AFTER_ROOT_ELEM)
 	xmlerror ("Root element missing.", NULL);
     }
 
@@ -3174,9 +3111,6 @@ static int low_parse_xml(struct pike_string *end)
      *!   the field @expr{"context"@} where it can be useful
      *!   for eg resolving relative URLs when parsing DTDs,
      *!   or for determining where errors occur.
-     *!
-     *! @note
-     *!   The @[context] argument was introduced in Pike 7.8.
      */
     PIKEFUN void push_string(string s, string|void context)
     {
@@ -3220,9 +3154,6 @@ static int low_parse_xml(struct pike_string *end)
      *! @param cb
      *!   Callback function. This function gets called at various
      *!   stages during the parsing.
-     *!
-     *! @note
-     *!   The @[context] argument was introduced in Pike 7.8.
      */
     PIKEFUN void create(string s, string|int flags, int|function cb,
 			mixed ... extra_args)

@@ -2480,12 +2480,6 @@ struct pike_cond {
  *!   be exceeded if eg the mutex is busy after the timeout.
  *!
  *! @note
- *!   In Pike 7.2 and earlier it was possible to call @[wait()]
- *!   without arguments. This possibility was removed in later
- *!   versions since it unavoidably leads to programs with races
- *!   and/or deadlocks.
- *!
- *! @note
  *!   Note also that any threads waiting on the condition will be
  *!   woken up when it gets destructed.
  *!
@@ -2707,9 +2701,6 @@ void f_thread_id__sprintf (INT32 args)
 /*! @decl protected int id_number()
  *!
  *! Returns an id number identifying the thread.
- *!
- *! @note
- *!   This function was added in Pike 7.2.204.
  */
 void f_thread_id_id_number(INT32 args)
 {

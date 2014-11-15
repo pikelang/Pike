@@ -64,11 +64,6 @@
  *! of the specified @[domain] and current locale. If there is no
  *! translation available, @[msg] is returned.
  *!
- *! @note
- *!   Prior to Pike 7.3 this function only accepted one argument,
- *!   and the other functionality was provided by @[dgettext()]
- *!   and @[dcgettext()].
- *!
  *! @seealso
  *!   @[bindtextdomain], @[textdomain], @[setlocale], @[localeconv]
  */

@@ -1946,18 +1946,6 @@ void f_sprintf(INT32 args)
   push_string(finish_string_builder(&r));
 }
 
-/* Compatibility notes regarding %O:
- *
- * In Pike 0.5 and earlier only the characters '\\' and '"' were quoted
- * by %O.
- *
- * Quoting of '\n', '\t', '\b' and '\r' was added in Pike 0.6.
- *
- * Quoting of '\f', '\a' and '\v' was added in Pike 7.5.
- *
- * Quoting of '\e' was added in Pike 7.7.
- */
-
 #define PSAT_INVALID	1
 #define PSAT_MARKER	2
 

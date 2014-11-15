@@ -1512,12 +1512,6 @@ static void file_read(INT32 args)
  *!    The function may be interrupted prematurely
  *!    of the timeout (due to signals); 
  *!    check the timing manually if this is imporant.
- *!
- *! @note
- *!    The @[not_eof] parameter was added in Pike 7.7.
- *!
- *! @note
- *!    This function was not available on NT in Pike 7.6 and earlier.
  */
 static void file_peek(INT32 args)
 {
@@ -1644,11 +1638,6 @@ static void file_peek(INT32 args)
  *!
  *! If no arguments are given, @[read_oob()] reads to the end of the
  *! stream.
- *!
- *! @note
- *!   Out-of-band data was not supported in Pike 0.5 and earlier, and
- *!   not in Pike 0.6 through 7.4 if they were compiled with the
- *!   option @tt{'--without-oob'@}.
  *!
  *! @note
  *!   It is not guaranteed that all out-of-band data sent from the
@@ -2200,11 +2189,6 @@ static void file_write(INT32 args)
  *!
  *! If more than one argument is given, @[sprintf()] is used to format
  *! them.
- *!
- *! @note
- *!   Out-of-band data was not supported in Pike 0.5 and earlier, and
- *!   not in Pike 0.6 through 7.4 if they were compiled with the
- *!   option @tt{'--without-oob'@}.
  *!
  *! @note
  *!   It is not guaranteed that all out-of-band data sent from the
@@ -2863,7 +2847,7 @@ static void file_open(INT32 args)
  *!   Returns a new file object on success, and @expr{0@} (zero) on failure.
  *!
  *! @note
- *!   Not available on all architectures, or in Pike 7.6 and earlier.
+ *!   Not available on all architectures.
  *!
  *! @seealso
  *!   @[open()], @[statat()], @[unlinkat()]
@@ -3353,9 +3337,6 @@ static void file_truncate(INT32 args)
  *! @returns
  *!   See @[file_stat()] for a description of the return value.
  *!
- *! @note
- *!   Prior to Pike 7.1 this function returned an array(int).
- *!
  *! @seealso
  *!   @[file_stat()], @[statat()]
  */
@@ -3406,7 +3387,7 @@ static void file_stat(INT32 args)
  *!   See @[file_stat()] for a description of the return value.
  *!
  *! @note
- *!   Not available on all architectures, or in Pike 7.6 and earlier.
+ *!   Not available on all architectures.
  *!
  *! @seealso
  *!   @[file_stat()], @[stat()], @[openat()], @[unlinkat()]
@@ -3527,7 +3508,7 @@ static void file_unlinkat(INT32 args)
  *!   Returns an array of filenames.
  *!
  *! @note
- *!   Not available on all architectures, or in Pike 7.6 and earlier.
+ *!   Not available on all architectures.
  *!
  *! @seealso
  *!   @[predef::get_dir()], @[statat()], @[openat()], @[unlinkat()]
@@ -3863,7 +3844,7 @@ static void file_errno(INT32 args)
  *! @endint
  *!
  *! @note
- *!   In some versions of Pike 7.7 and 7.8 the @tt{PROP_@} flags were
+ *!   In some versions of Pike 7.8 the @tt{PROP_@} flags were
  *!   filtered from the result.
  *!
  *! @seealso
@@ -4708,7 +4689,7 @@ static void low_dup(struct object *UNUSED(toob),
  *!   Returns @expr{1@} on success and @expr{0@} (zero) on failure.
  *!
  *! @note
- *!   In Pike 7.7 and later @[to] need not be open, in which
+ *!   @[to] need not be open, in which
  *!   case a new fd is allocated.
  *!
  *! @note

@@ -5126,17 +5126,7 @@ class Decoder (void|string fname, void|int mkobj, void|object handler)
   {
     DEC_MSG ("objectof (%O)\n", what);
     if (!what) {
-      // This is necessary for compatibility with 7.2 encoded values:
-      // If an object was fed to encode_value there and there was no
-      // codec then a zero would be encoded silently since the failed
-      // call to nameof was ignored. decode_value would likewise
-      // silently ignore the failed call objectof(0) and a zero would
-      // be decoded. Now we supply a fairly capable codec which is
-      // used by default and we therefore get these objectof(0) calls
-      // here. So if we throw an error we can't decode values which
-      // 7.2 would encode and decode without a codec (albeit partly
-      // incorrectly). So just print a sulky warning and continue.. :P
-      DEC_MSG ("Warning: Decoded broken object identifier to zero.\n");
+      error ("Decoded broken object identifier to zero.\n");
       DEC_RETURN (0);
     }
     DEC_RETURN ([object] thingof (what));
@@ -5416,8 +5406,7 @@ CompatResolver get_compilation_handler(int major, int minor)
 
 string _sprintf(int t)
 {
-  // NOTE: The ||'O' is for Pike 7.2 compat only.
-  switch(t||'O') {
+  switch(t) {
     // FIXME: What good is this lying for 't'? The master is still an
     // object.. /mast
   case 't': return "master";
