@@ -412,14 +412,14 @@ class KeyExchange(object context, object session, object connection,
   {
     SSL3_DEBUG_MSG("SSL.Session: SERVER_KEY_EXCHANGE\n");
 
-    Stdio.Buffer temp_struct = parse_server_key_exchange(input);
+    Stdio.Buffer struct = parse_server_key_exchange(input);
     int verification_ok;
 
-    if(temp_struct)
+    if(struct)
     {
       mixed err = catch {
           verification_ok = session->cipher_spec->verify(
-            session, client_random + server_random, temp_struct, input);
+            session, client_random + server_random, struct, input);
         };
 #ifdef SSL3_DEBUG
       if( err ) {
@@ -490,8 +490,6 @@ class KeyExchangeRSA
 
   Stdio.Buffer server_key_params()
   {
-    Stdio.Buffer struct;
-  
     SSL3_DEBUG_MSG("KE_RSA\n");
     if (session->cipher_spec->is_exportable)
     {
@@ -521,14 +519,13 @@ class KeyExchangeRSA
 
       SSL3_DEBUG_MSG("Sending a server key exchange-message, "
 		     "with a %d-bits key.\n", temp_key->key_size());
-      struct = Stdio.Buffer();
-      struct->add_hstring(temp_key->get_n()->digits(256),2);
-      struct->add_hstring(temp_key->get_e()->digits(256),2);
+      Stdio.Buffer output = Stdio.Buffer();
+      output->add_hstring(temp_key->get_n()->digits(256),2);
+      output->add_hstring(temp_key->get_e()->digits(256),2);
+      return output;
     }
-    else
-      return 0;
 
-    return struct;
+    return 0;
   }
 
   string client_key_exchange_packet(string client_random,
@@ -537,22 +534,21 @@ class KeyExchangeRSA
   {
     SSL3_DEBUG_MSG("client_key_exchange_packet(%O, %O, %d.%d)\n",
 		   client_random, server_random, version>>8, version & 0xff);
-    Stdio.Buffer struct = Stdio.Buffer();
-    string data;
-    string premaster_secret;
-
     SSL3_DEBUG_MSG("KE_RSA\n");
+
     // NOTE: To protect against version roll-back attacks,
     //       the version sent here MUST be the same as the
     //       one in the initial handshake!
+    Stdio.Buffer struct = Stdio.Buffer();
     struct->add_int(client_version, 2);
     struct->add( context->random(46) );
-    premaster_secret = struct->read();
+    string premaster_secret = struct->read();
 
     SSL3_DEBUG_MSG("temp_key: %O\n"
 		   "session->peer_public_key: %O\n",
 		   temp_key, session->peer_public_key);
-    data = (temp_key || session->peer_public_key)->encrypt(premaster_secret);
+    string data = (temp_key ||
+                   session->peer_public_key)->encrypt(premaster_secret);
 
     if(version >= PROTOCOL_TLS_1_0)
       data = sprintf("%2H", [string(8bit)]data);
@@ -577,11 +573,7 @@ class KeyExchangeRSA
 		   session->ke_method);
 
     SSL3_DEBUG_MSG("KE_RSA\n");
-    /* Decrypt the premaster_secret */
-    SSL3_DEBUG_MSG("encrypted premaster_secret: %O\n", data);
-    SSL3_DEBUG_MSG("temp_key: %O\n"
-		   "session->private_key: %O\n",
-		   temp_key, session->private_key);
+
     string rest = "";
     if(version >= PROTOCOL_TLS_1_0)
       sscanf(data, "%2H%s", data, rest);
@@ -633,17 +625,19 @@ class KeyExchangeRSA
 
   Stdio.Buffer parse_server_key_exchange(Stdio.Buffer input)
   {
-    Stdio.Buffer temp_struct = Stdio.Buffer();
-
     SSL3_DEBUG_MSG("KE_RSA\n");
+
     string n = input->read_hstring(2);
     string e = input->read_hstring(2);
-    temp_struct->add_hstring(n, 2);
-    temp_struct->add_hstring(e, 2);
+
+
     if (session->cipher_spec->is_exportable)
       temp_key = Crypto.RSA()->set_public_key(Gmp.mpz(n,256), Gmp.mpz(e,256));
 
-    return temp_struct;
+    Stdio.Buffer output = Stdio.Buffer();
+    output->add_hstring(n, 2);
+    output->add_hstring(e, 2);
+    return output;
   }
 }
 
@@ -702,9 +696,9 @@ class KeyExchangeDH
       derive_master_secret(premaster_secret, client_random, server_random,
 			   version);
 
-    Stdio.Buffer struct = Stdio.Buffer();
-    struct->add_hstring(dh_state->our->digits(256), 2);
-    return struct->read();
+    Stdio.Buffer output = Stdio.Buffer();
+    output->add_hstring(dh_state->our->digits(256), 2);
+    return output->read();
   }
 
   //! @returns
@@ -723,12 +717,12 @@ class KeyExchangeDH
     anonymous = 1;
 
     /* Explicit encoding */
-    Stdio.Buffer struct = Stdio.Buffer(data);
+    Stdio.Buffer input = Stdio.Buffer(data);
 
     if (catch
       {
-	dh_state->set_other(Gmp.mpz(struct->read_hstring(2),256));
-      } || sizeof(struct))
+	dh_state->set_other(Gmp.mpz(input->read_hstring(2),256));
+      } || sizeof(input))
     {
       connection->ke = UNDEFINED;
       return ALERT_unexpected_message;
@@ -767,7 +761,6 @@ class KeyExchangeDHE
     SSL3_DEBUG_MSG("KE_DHE\n");
     // anonymous, not used on the server, but here for completeness.
     anonymous = 1;
-    Stdio.Buffer struct = Stdio.Buffer();
 
     // NIST SP800-57 5.6.1
     // { symmetric key length, p limit, q limit }
@@ -798,11 +791,11 @@ class KeyExchangeDHE
     dh_state = DHKeyExchange(p);
     dh_state->new_secret(context->random);
 
-    struct->add_hstring(dh_state->parameters->p->digits(256), 2);
-    struct->add_hstring(dh_state->parameters->g->digits(256), 2);
-    struct->add_hstring(dh_state->our->digits(256), 2);
-
-    return struct;
+    Stdio.Buffer output = Stdio.Buffer();
+    output->add_hstring(dh_state->parameters->p->digits(256), 2);
+    output->add_hstring(dh_state->parameters->g->digits(256), 2);
+    output->add_hstring(dh_state->our->digits(256), 2);
+    return output;
   }
 
   //! @returns
@@ -834,8 +827,6 @@ class KeyExchangeDHE
 
   Stdio.Buffer parse_server_key_exchange(Stdio.Buffer input)
   {
-    Stdio.Buffer temp_struct = Stdio.Buffer();
-
     SSL3_DEBUG_MSG("KE_DHE\n");
     string p = input->read_hstring(2);
     string g = input->read_hstring(2);
@@ -852,10 +843,11 @@ class KeyExchangeDHE
     dh_state = DHKeyExchange(params);
     dh_state->set_other(Gmp.mpz(o,256));
 
-    temp_struct->add_hstring(p, 2);
-    temp_struct->add_hstring(g, 2);
-    temp_struct->add_hstring(o, 2);
-    return temp_struct;
+    Stdio.Buffer output = Stdio.Buffer();
+    output->add_hstring(p, 2);
+    output->add_hstring(g, 2);
+    output->add_hstring(o, 2);
+    return output;
   }
 }
 
@@ -1124,14 +1116,14 @@ class KeyExchangeECDHE
   {
     SSL3_DEBUG_MSG("KE_ECDHE\n");
 
-    Stdio.Buffer temp_struct = Stdio.Buffer();
+    Stdio.Buffer output = Stdio.Buffer();
 
     // First the curve.
     switch(input->read_int(1)) {
     case CURVETYPE_named_curve:
-      temp_struct->add_int(CURVETYPE_named_curve, 1);
+      output->add_int(CURVETYPE_named_curve, 1);
       int c = input->read_int(2);
-      temp_struct->add_int(c, 2);
+      output->add_int(c, 2);
       session->curve = ECC_CURVES[c];
       if (!session->curve) {
 	connection->ke = UNDEFINED;
@@ -1148,9 +1140,9 @@ class KeyExchangeECDHE
     // Then the point.
     string raw = input->read_hstring(1);
     [ pubx, puby ] = decode_point(raw);
-    temp_struct->add_hstring(raw, 1);
 
-    return temp_struct;
+    output->add_hstring(raw, 1);
+    return output;
   }
 }
 
@@ -1208,19 +1200,15 @@ class KeyExchangeKRB
     string(8bit) encrypted_premaster_secret =
       gss_context->wrap(premaster_secret, 1);
 
-    struct = Stdio.Buffer();
-
-    struct->add_hstring(token, 2);
-
-    struct->add_hstring("", 2);	// Authenticator.
-
-    struct->add_hstring(encrypted_premaster_secret, 2);
-
     session->master_secret = derive_master_secret(premaster_secret,
 						  client_random,
 						  server_random,
 						  version);
-    return struct->read();
+    Stdio.Buffer output = Stdio.Buffer();
+    output->add_hstring(token, 2);
+    output->add_hstring("", 2);	// Authenticator.
+    output->add_hstring(encrypted_premaster_secret, 2);
+    return output->read();
   }
 
   //! @returns
@@ -1235,11 +1223,17 @@ class KeyExchangeKRB
 
     SSL3_DEBUG_MSG("KE_KRB\n");
 
-    Stdio.Buffer struct = Stdio.Buffer(data);
+    Stdio.Buffer input = Stdio.Buffer(data);
 
-    string ticket = struct->read_hstring(2);
-    string authenticator = struct->read_hstring(2);
-    string encrypted_premaster_secret = struct->read_hstring(2);
+    string ticket = input->read_hstring(2);
+    string authenticator = input->read_hstring(2);
+    string encrypted_premaster_secret = input->read_hstring(2);
+
+    if( sizeof(intput) )
+    {
+      connection->ke = UNDEFINED;
+      return ALERT_unexpected_message;
+    }
 
     gss_context = GSSAPI.AcceptContext();
     gss_context->accept(ticket);
