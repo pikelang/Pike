@@ -200,18 +200,6 @@ static node *optimize_f_aggregate(node *n)
   return mkefuncallnode("`+", add_args);
 }
 
-/*! @decl __deprecated__ int hash_7_4(string s)
- *! @decl __deprecated__ int hash_7_4(string s, int max)
- *!
- *! @deprecated 7.4::hash
- *!
- *! @seealso
- *!   @[7.4::hash()], @[hash()]
- */
-
-/*! @namespace 7.4::
- */
-
 #define MK_HASHMEM(NAME, TYPE)		ATTRIBUTE((const))	\
   static INLINE size_t NAME(const TYPE *str, ptrdiff_t len, ptrdiff_t maxn) \
   {                                                                         \
