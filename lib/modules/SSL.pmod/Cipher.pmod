@@ -254,7 +254,7 @@ class CipherSpec {
         // FIXME: We could check that the signature is encoded
         // (padded) to the correct number of bytes
         // (pkc->private_key->key_size()/8).
-        Gmp.mpz signature = Gmp.mpz(input->read_hstring(2),256);
+        Gmp.mpz signature = Gmp.mpz(input->read_hint(2));
         return pkc->raw_verify(digest, signature);
       }
 
@@ -721,7 +721,7 @@ class KeyExchangeDH
 
     if (catch
       {
-	dh_state->set_other(Gmp.mpz(input->read_hstring(2),256));
+	dh_state->set_other(Gmp.mpz(input->read_hint(2)));
       } || sizeof(input))
     {
       connection->ke = UNDEFINED;
