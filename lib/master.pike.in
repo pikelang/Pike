@@ -5125,10 +5125,8 @@ class Decoder (void|string fname, void|int mkobj, void|object handler)
   object objectof (string|array what)
   {
     DEC_MSG ("objectof (%O)\n", what);
-    if (!what) {
+    if (!what)
       error ("Decoded broken object identifier to zero.\n");
-      DEC_RETURN (0);
-    }
     DEC_RETURN ([object] thingof (what));
   }
 
