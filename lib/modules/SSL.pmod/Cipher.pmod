@@ -174,7 +174,7 @@ class CipherSpec {
   SignatureAlgorithm signature_alg;
 
   //! The function used to sign packets.
-  ADT.struct sign(object session, string(8bit) cookie, ADT.struct struct)
+  Stdio.Buffer sign(object session, string(8bit) cookie, Stdio.Buffer struct)
   {
     if( signature_alg == SIGNATURE_anonymous )
       return struct;
@@ -183,16 +183,16 @@ class CipherSpec {
     if( session->version >= PROTOCOL_TLS_1_2 )
     {
       string sign =
-        session->private_key->pkcs_sign(cookie + struct->contents(),
+        session->private_key->pkcs_sign(cookie + (string)struct,
                                         HASH_lookup[signature_hash]);
-      struct->put_uint(signature_hash, 1);
-      struct->put_uint(signature_alg, 1);
-      struct->put_var_string(sign, 2);
+      struct->add_int(signature_hash, 1);
+      struct->add_int(signature_alg, 1);
+      struct->add_hstring(sign, 2);
       return struct;
     }
 
     // RFC 4346 7.4.3 (struct Signature)
-    string data = cookie + struct->contents();
+    string data = cookie + (string)struct;
     switch( signature_alg )
     {
     case SIGNATURE_rsa:
@@ -209,9 +209,9 @@ class CipherSpec {
     case SIGNATURE_ecdsa:
       {
         string s =
-          session->private_key->pkcs_sign(cookie + struct->contents(),
+          session->private_key->pkcs_sign(cookie + (string)struct,
                                           Crypto.SHA1);
-        struct->put_var_string(s, 2);
+        struct->add_hstring(s, 2);
         return struct;
       }
     }
@@ -220,8 +220,8 @@ class CipherSpec {
   }
 
   //! The function used to verify the signature for packets.
-  int(0..1) verify(object session, string cookie, ADT.struct struct,
-                   ADT.struct input)
+  int(0..1) verify(object session, string cookie, Stdio.Buffer struct,
+                   Stdio.Buffer input)
   {
     if( signature_alg == SIGNATURE_anonymous )
       return 1;
@@ -232,20 +232,20 @@ class CipherSpec {
     // RFC 5246 4.7
     if( session->version >= PROTOCOL_TLS_1_2 )
     {
-      int hash_id = input->get_uint(1);
-      int sign_id = input->get_uint(1);
-      string sign = input->get_var_string(2);
+      int hash_id = input->read_int(1);
+      int sign_id = input->read_int(1);
+      string sign = input->read_hstring(2);
 
       Crypto.Hash hash = HASH_lookup[hash_id];
       if (!hash) return 0;
 
       // FIXME: Validate that the sign_id is correct.
 
-      return pkc->pkcs_verify(cookie + struct->contents(), hash, sign);
+      return pkc->pkcs_verify(cookie + (string)struct, hash, sign);
     }
 
     // RFC 4346 7.4.3 (struct Signature)
-    string data = cookie + struct->contents();
+    string data = cookie + (string)struct;
     switch( signature_alg )
     {
     case SIGNATURE_rsa:
@@ -254,15 +254,14 @@ class CipherSpec {
         // FIXME: We could check that the signature is encoded
         // (padded) to the correct number of bytes
         // (pkc->private_key->key_size()/8).
-        Gmp.mpz signature = input->get_bignum();
+        Gmp.mpz signature = Gmp.mpz(input->read_hstring(2),256);
         return pkc->raw_verify(digest, signature);
       }
 
     case SIGNATURE_dsa:
     case SIGNATURE_ecdsa:
       {
-        return pkc->pkcs_verify(data, Crypto.SHA1,
-                                input->get_var_string(2));
+        return pkc->pkcs_verify(data, Crypto.SHA1, input->read_hstring(2));
       }
     }
 
@@ -319,9 +318,9 @@ class KeyExchange(object context, object session, object connection,
   int message_was_bad;
 
   //! @returns
-  //!   Returns an @[ADT.struct] with the
+  //!   Returns an @[Stdio.Buffer] with the
   //!   @[HANDSHAKE_server_key_exchange] payload.
-  ADT.struct server_key_params();
+  Stdio.Buffer server_key_params();
 
   //! The default implementation calls @[server_key_params()] to generate
   //! the base payload.
@@ -330,11 +329,11 @@ class KeyExchange(object context, object session, object connection,
   //!   Returns the signed payload for a @[HANDSHAKE_server_key_exchange].
   string server_key_exchange_packet(string client_random, string server_random)
   {
-    ADT.struct struct = server_key_params();
+    Stdio.Buffer struct = server_key_params();
     if (!struct) return 0;
 
     session->cipher_spec->sign(session, client_random + server_random, struct);
-    return struct->pop_data();
+    return struct->read();
   }
 
   //! Derive the master secret from the premaster_secret
@@ -382,17 +381,20 @@ class KeyExchange(object context, object session, object connection,
 						 ProtocolVersion version);
 
   //! @param input
-  //!   @[ADT.struct] with the content of a @[HANDSHAKE_server_key_exchange].
+  //!   @[Stdio.Buffer] with the content of a
+  //!   @[HANDSHAKE_server_key_exchange].
   //!
   //! @returns
   //!   The key exchange information should be extracted from @[input],
   //!   so that it is positioned at the signature.
   //!
-  //!   Returns a new @[ADT.struct] with the unsigned payload of @[input].
-  ADT.struct parse_server_key_exchange(ADT.struct input);
+  //!   Returns a new @[Stdio.Buffer] with the unsigned payload of
+  //!   @[input].
+  Stdio.Buffer parse_server_key_exchange(Stdio.Buffer input);
 
   //! @param input
-  //!   @[ADT.struct] with the content of a @[HANDSHAKE_server_key_exchange].
+  //!   @[Stdio.Buffer] with the content of a
+  //!   @[HANDSHAKE_server_key_exchange].
   //!
   //! The default implementation calls @[parse_server_key_exchange()],
   //! and then verifies the signature.
@@ -404,13 +406,13 @@ class KeyExchange(object context, object session, object connection,
   //!     @value -1
   //!       Returns negative on verification failure.
   //!   @endint
-  int server_key_exchange(ADT.struct input,
+  int server_key_exchange(Stdio.Buffer input,
 			  string client_random,
 			  string server_random)
   {
     SSL3_DEBUG_MSG("SSL.Session: SERVER_KEY_EXCHANGE\n");
 
-    ADT.struct temp_struct = parse_server_key_exchange(input);
+    Stdio.Buffer temp_struct = parse_server_key_exchange(input);
     int verification_ok;
 
     if(temp_struct)
@@ -443,9 +445,9 @@ class KeyExchangeNULL
 {
   inherit KeyExchange;
 
-  ADT.struct server_key_params()
+  Stdio.Buffer server_key_params()
   {
-    return ADT.struct();
+    return Stdio.Buffer();
   }
 
   string client_key_exchange_packet(string client_random,
@@ -468,7 +470,7 @@ class KeyExchangeNULL
     return "";
   }
 
-  int server_key_exchange(ADT.struct input,
+  int server_key_exchange(Stdio.Buffer input,
 			  string client_random,
 			  string server_random)
   {
@@ -486,9 +488,9 @@ class KeyExchangeRSA
   Crypto.RSA temp_key; /* Key used for session key exchange (if not the same
 			* as the server's certified key) */
 
-  ADT.struct server_key_params()
+  Stdio.Buffer server_key_params()
   {
-    ADT.struct struct;
+    Stdio.Buffer struct;
   
     SSL3_DEBUG_MSG("KE_RSA\n");
     if (session->cipher_spec->is_exportable)
@@ -519,9 +521,9 @@ class KeyExchangeRSA
 
       SSL3_DEBUG_MSG("Sending a server key exchange-message, "
 		     "with a %d-bits key.\n", temp_key->key_size());
-      struct = ADT.struct();
-      struct->put_bignum(temp_key->get_n());
-      struct->put_bignum(temp_key->get_e());
+      struct = Stdio.Buffer();
+      struct->add_hstring(temp_key->get_n()->digits(256),2);
+      struct->add_hstring(temp_key->get_e()->digits(256),2);
     }
     else
       return 0;
@@ -535,7 +537,7 @@ class KeyExchangeRSA
   {
     SSL3_DEBUG_MSG("client_key_exchange_packet(%O, %O, %d.%d)\n",
 		   client_random, server_random, version>>8, version & 0xff);
-    ADT.struct struct = ADT.struct();
+    Stdio.Buffer struct = Stdio.Buffer();
     string data;
     string premaster_secret;
 
@@ -543,9 +545,9 @@ class KeyExchangeRSA
     // NOTE: To protect against version roll-back attacks,
     //       the version sent here MUST be the same as the
     //       one in the initial handshake!
-    struct->put_uint(client_version, 2);
-    struct->put_fix_string( context->random(46) );
-    premaster_secret = struct->pop_data();
+    struct->add_int(client_version, 2);
+    struct->add( context->random(46) );
+    premaster_secret = struct->read();
 
     SSL3_DEBUG_MSG("temp_key: %O\n"
 		   "session->peer_public_key: %O\n",
@@ -629,18 +631,17 @@ class KeyExchangeRSA
 				version);
   }
 
-  ADT.struct parse_server_key_exchange(ADT.struct input)
+  Stdio.Buffer parse_server_key_exchange(Stdio.Buffer input)
   {
-    ADT.struct temp_struct = ADT.struct();
+    Stdio.Buffer temp_struct = Stdio.Buffer();
 
     SSL3_DEBUG_MSG("KE_RSA\n");
-    Gmp.mpz n = input->get_bignum();
-    Gmp.mpz e = input->get_bignum();
-    temp_struct->put_bignum(n);
-    temp_struct->put_bignum(e);
-    if (session->cipher_spec->is_exportable) {
-      temp_key = Crypto.RSA()->set_public_key(n, e);
-    }
+    string n = input->read_hstring(2);
+    string e = input->read_hstring(2);
+    temp_struct->add_hstring(n, 2);
+    temp_struct->add_hstring(e, 2);
+    if (session->cipher_spec->is_exportable)
+      temp_key = Crypto.RSA()->set_public_key(Gmp.mpz(n,256), Gmp.mpz(e,256));
 
     return temp_struct;
   }
@@ -656,14 +657,11 @@ class KeyExchangeDH
 
   DHKeyExchange dh_state; /* For diffie-hellman key exchange */
 
-  ADT.struct server_key_params()
+  Stdio.Buffer server_key_params()
   {
-    ADT.struct struct;
-
     SSL3_DEBUG_MSG("KE_DH\n");
     // anonymous, not used on the server, but here for completeness.
     anonymous = 1;
-    struct = ADT.struct();
 
     dh_state = DHKeyExchange(Crypto.DH.Parameters(session->private_key));
     dh_state->secret = session->private_key->get_x();
@@ -684,9 +682,6 @@ class KeyExchangeDH
   {
     SSL3_DEBUG_MSG("client_key_exchange_packet(%O, %O, %d.%d)\n",
 		   client_random, server_random, version>>8, version & 0xff);
-    ADT.struct struct = ADT.struct();
-    string data;
-    string premaster_secret;
 
     SSL3_DEBUG_MSG("KE_DH\n");
     anonymous = 1;
@@ -701,14 +696,15 @@ class KeyExchangeDH
       dh_state->other = session->peer_public_key->get_y();
     }
     dh_state->new_secret(context->random);
-    struct->put_bignum(dh_state->our);
-    data = struct->pop_data();
-    premaster_secret = dh_state->get_shared()->digits(256);
 
+    string premaster_secret = dh_state->get_shared()->digits(256);
     session->master_secret =
       derive_master_secret(premaster_secret, client_random, server_random,
 			   version);
-    return data;
+
+    Stdio.Buffer struct = Stdio.Buffer();
+    struct->add_hstring(dh_state->our->digits(256), 2);
+    return struct->read();
   }
 
   //! @returns
@@ -727,11 +723,11 @@ class KeyExchangeDH
     anonymous = 1;
 
     /* Explicit encoding */
-    ADT.struct struct = ADT.struct(data);
+    Stdio.Buffer struct = Stdio.Buffer(data);
 
     if (catch
       {
-	dh_state->set_other(struct->get_bignum());
+	dh_state->set_other(Gmp.mpz(struct->read_hstring(2),256));
       } || sizeof(struct))
     {
       connection->ke = UNDEFINED;
@@ -745,7 +741,7 @@ class KeyExchangeDH
 				version);
   }
 
-  ADT.struct parse_server_key_exchange(ADT.struct input)
+  Stdio.Buffer parse_server_key_exchange(Stdio.Buffer input)
   {
     SSL3_DEBUG_MSG("KE_DH\n");
     // RFC 4346 7.4.3:
@@ -766,14 +762,12 @@ class KeyExchangeDHE
 {
   inherit KeyExchangeDH;
 
-  ADT.struct server_key_params()
+  Stdio.Buffer server_key_params()
   {
-    ADT.struct struct;
-
     SSL3_DEBUG_MSG("KE_DHE\n");
     // anonymous, not used on the server, but here for completeness.
     anonymous = 1;
-    struct = ADT.struct();
+    Stdio.Buffer struct = Stdio.Buffer();
 
     // NIST SP800-57 5.6.1
     // { symmetric key length, p limit, q limit }
@@ -804,9 +798,9 @@ class KeyExchangeDHE
     dh_state = DHKeyExchange(p);
     dh_state->new_secret(context->random);
 
-    struct->put_bignum(dh_state->parameters->p);
-    struct->put_bignum(dh_state->parameters->g);
-    struct->put_bignum(dh_state->our);
+    struct->add_hstring(dh_state->parameters->p->digits(256), 2);
+    struct->add_hstring(dh_state->parameters->g->digits(256), 2);
+    struct->add_hstring(dh_state->our->digits(256), 2);
 
     return struct;
   }
@@ -838,25 +832,29 @@ class KeyExchangeDHE
 					 version);
   }
 
-  ADT.struct parse_server_key_exchange(ADT.struct input)
+  Stdio.Buffer parse_server_key_exchange(Stdio.Buffer input)
   {
-    ADT.struct temp_struct = ADT.struct();
+    Stdio.Buffer temp_struct = Stdio.Buffer();
 
     SSL3_DEBUG_MSG("KE_DHE\n");
-    Gmp.mpz p = input->get_bignum();
-    Gmp.mpz g = input->get_bignum();
-    Crypto.DH.Parameters params = Crypto.DH.Parameters(p, g);
+    string p = input->read_hstring(2);
+    string g = input->read_hstring(2);
+    string o = input->read_hstring(2);
+
+    Crypto.DH.Parameters params = Crypto.DH.Parameters(Gmp.mpz(p,256),
+                                                       Gmp.mpz(g,256));
     if( !validate_dh(params, session) )
     {
       SSL3_DEBUG_MSG("DH parameters not correct or not secure.\n");
       return 0;
     }
-    temp_struct->put_bignum(p);
-    temp_struct->put_bignum(g);
-    dh_state = DHKeyExchange(params);
-    dh_state->set_other(input->get_bignum());
-    temp_struct->put_bignum(dh_state->other);
 
+    dh_state = DHKeyExchange(params);
+    dh_state->set_other(Gmp.mpz(o,256));
+
+    temp_struct->add_hstring(p, 2);
+    temp_struct->add_hstring(g, 2);
+    temp_struct->add_hstring(o, 2);
     return temp_struct;
   }
 }
@@ -886,13 +884,13 @@ class KeyExchangeECDH
 
   array(Gmp.mpz) decode_point(string(8bit) data)
   {
-    ADT.struct struct = ADT.struct(data);
+    Stdio.Buffer struct = Stdio.Buffer(data);
 
     Gmp.mpz x;
     Gmp.mpz y;
-    switch(struct->get_uint(1)) {
+    switch(struct->read_int(1)) {
     case 4:
-      string rest = struct->get_rest();
+      string rest = struct->read();
       if (sizeof(rest) & 1) {
 	connection->ke = UNDEFINED;
 	error("Invalid size in point format.\n");
@@ -923,7 +921,7 @@ class KeyExchangeECDH
     return session->peer_public_key->get_y();
   }
 
-  ADT.struct server_key_params()
+  Stdio.Buffer server_key_params()
   {
     SSL3_DEBUG_MSG("KE_ECDH\n");
     // RFC 4492 2.1:
@@ -939,20 +937,10 @@ class KeyExchangeECDH
   {
     SSL3_DEBUG_MSG("client_key_exchange_packet(%O, %O, %d.%d)\n",
 		   client_random, server_random, version>>8, version & 0xff);
-    ADT.struct struct = ADT.struct();
-    string data;
-    string premaster_secret;
-
     SSL3_DEBUG_MSG("KE_ECDH\n");
 
     Gmp.mpz secret = session->curve->new_scalar(context->random);
     [Gmp.mpz x, Gmp.mpz y] = session->curve * secret;
-
-    ADT.struct point = ADT.struct();
-
-    struct->put_var_string(encode_point(x, y), 1);
-
-    data = struct->pop_data();
 
     Gmp.mpz pubx = get_server_pubx();
     Gmp.mpz puby = get_server_puby();
@@ -963,17 +951,19 @@ class KeyExchangeECDH
     // Conversion Primitive, has constant length for any given
     // field; leading zeros found in this octet string MUST NOT be
     // truncated.
-    premaster_secret =
+    string premaster_secret =
       sprintf("%*c",
 	      (session->curve->size() + 7)>>3,
 	      session->curve->point_mul(pubx, puby, secret)[0]);
-
     secret = 0;
 
     session->master_secret =
       derive_master_secret(premaster_secret, client_random, server_random,
 			   version);
-    return data;
+
+    Stdio.Buffer struct = Stdio.Buffer();
+    struct->add_hstring(encode_point(x, y), 1);
+    return struct->read();
   }
 
   //! @returns
@@ -1002,11 +992,11 @@ class KeyExchangeECDH
     string premaster_secret;
 
     /* Explicit encoding */
-    ADT.struct struct = ADT.struct(data);
+    Stdio.Buffer struct = Stdio.Buffer(data);
 
     if (catch
       {
-	[ Gmp.mpz x, Gmp.mpz y ] = decode_point(struct->get_var_string(1));
+	[ Gmp.mpz x, Gmp.mpz y ] = decode_point(struct->read_hstring(1));
 	Gmp.mpz secret = get_server_secret();
 	// RFC 4492 5.10:
 	// Note that this octet string (Z in IEEE 1363 terminology) as
@@ -1028,7 +1018,7 @@ class KeyExchangeECDH
 				version);
   }
 
-  ADT.struct parse_server_key_exchange(ADT.struct input)
+  Stdio.Buffer parse_server_key_exchange(Stdio.Buffer input)
   {
     SSL3_DEBUG_MSG("KE_ECDH\n");
     // RFC 4492 2.1:
@@ -1066,14 +1056,11 @@ class KeyExchangeECDHE
     return puby;
   }
 
-  ADT.struct server_key_params()
+  Stdio.Buffer server_key_params()
   {
-    ADT.struct struct;
-
     SSL3_DEBUG_MSG("KE_ECDHE\n");
     // anonymous, not used on the server, but here for completeness.
     anonymous = 1;
-    struct = ADT.struct();
 
     // Select a suitable curve.
     int c;
@@ -1106,11 +1093,10 @@ class KeyExchangeECDHE
     SSL3_DEBUG_MSG("x: %O\n", x);
     SSL3_DEBUG_MSG("y: %O\n", y);
 
-    struct->put_uint(CURVETYPE_named_curve, 1);
-    struct->put_uint(c, 2);
-
-    struct->put_var_string(encode_point(x, y), 1);
-
+    Stdio.Buffer struct = Stdio.Buffer();
+    struct->add_int(CURVETYPE_named_curve, 1);
+    struct->add_int(c, 2);
+    struct->add_hstring(encode_point(x, y), 1);
     return struct;
   }
 
@@ -1134,18 +1120,18 @@ class KeyExchangeECDHE
 					 server_random, version);
   }
 
-  ADT.struct parse_server_key_exchange(ADT.struct input)
+  Stdio.Buffer parse_server_key_exchange(Stdio.Buffer input)
   {
     SSL3_DEBUG_MSG("KE_ECDHE\n");
 
-    ADT.struct temp_struct = ADT.struct();
+    Stdio.Buffer temp_struct = Stdio.Buffer();
 
     // First the curve.
-    switch(input->get_uint(1)) {
+    switch(input->read_int(1)) {
     case CURVETYPE_named_curve:
-      temp_struct->put_uint(CURVETYPE_named_curve, 1);
-      int c = input->get_uint(2);
-      temp_struct->put_uint(c, 2);
+      temp_struct->add_int(CURVETYPE_named_curve, 1);
+      int c = input->read_int(2);
+      temp_struct->add_int(c, 2);
       session->curve = ECC_CURVES[c];
       if (!session->curve) {
 	connection->ke = UNDEFINED;
@@ -1160,9 +1146,9 @@ class KeyExchangeECDHE
     }
 
     // Then the point.
-    string raw;
-    [ pubx, puby ] = decode_point(raw = input->get_var_string(1));
-    temp_struct->put_var_string(raw, 1);
+    string raw = input->read_hstring(1);
+    [ pubx, puby ] = decode_point(raw);
+    temp_struct->add_hstring(raw, 1);
 
     return temp_struct;
   }
@@ -1181,7 +1167,7 @@ class KeyExchangeKRB
 
   GSSAPI.Context gss_context;
 
-  ADT.struct server_key_params()
+  Stdio.Buffer server_key_params()
   {
     SSL3_DEBUG_MSG("KE_KRB\n");
 
@@ -1210,31 +1196,31 @@ class KeyExchangeKRB
 
     string(8bit) token = gss_context->init();
 
-    ADT.struct struct = ADT.struct();
+    Stdio.Buffer struct = Stdio.Buffer();
 
     // NOTE: To protect against version roll-back attacks,
     //       the version sent here MUST be the same as the
     //       one in the initial handshake!
-    struct->put_uint(client_version, 2);
-    struct->put_fix_string(context->random(46));
-    string(8bit) premaster_secret = struct->pop_data();
+    struct->add_int(client_version, 2);
+    struct->add(context->random(46));
+    string(8bit) premaster_secret = struct->read();
 
     string(8bit) encrypted_premaster_secret =
       gss_context->wrap(premaster_secret, 1);
 
-    struct = ADT.struct();
+    struct = Stdio.Buffer();
 
-    struct->put_string(token, 2);
+    struct->add_hstring(token, 2);
 
-    struct->put_string("", 2);	// Authenticator.
+    struct->add_hstring("", 2);	// Authenticator.
 
-    struct->put_string(encrypted_premaster_secret, 2);
+    struct->add_hstring(encrypted_premaster_secret, 2);
 
     session->master_secret = derive_master_secret(premaster_secret,
 						  client_random,
 						  server_random,
 						  version);
-    return struct->pop_data();
+    return struct->read();
   }
 
   //! @returns
@@ -1249,11 +1235,11 @@ class KeyExchangeKRB
 
     SSL3_DEBUG_MSG("KE_KRB\n");
 
-    ADT.struct struct = ADT.struct(data);
+    Stdio.Buffer struct = Stdio.Buffer(data);
 
-    string ticket = struct->get_var_string(2);
-    string authenticator = struct->get_var_string(2);
-    string encrypted_premaster_secret = struct->get_var_string(2);
+    string ticket = struct->read_hstring(2);
+    string authenticator = struct->read_hstring(2);
+    string encrypted_premaster_secret = struct->read_hstring(2);
 
     gss_context = GSSAPI.AcceptContext();
     gss_context->accept(ticket);
@@ -1307,7 +1293,7 @@ class KeyExchangeKRB
 				version);
   }
 
-  ADT.struct parse_server_key_exchange(ADT.struct input)
+  Stdio.Buffer parse_server_key_exchange(Stdio.Buffer input)
   {
     SSL3_DEBUG_MSG("KE_RSA\n");
     error("Invalid message.\n");
