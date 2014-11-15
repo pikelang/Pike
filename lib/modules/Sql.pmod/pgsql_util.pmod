@@ -180,8 +180,8 @@ class conxion {
 
   private inline void queueup(sql_result portal) {
     qportals->write(portal); portal->_synctransact=synctransact;
-    PD(">%O %d %d Queue portal %d bytes\n",portal._portalname,++queueoutidx,
-     synctransact,sizeof(this));
+    PD("%d>%O %d %d Queue portal %d bytes\n",socket->query_fd(),
+     portal._portalname,++queueoutidx,synctransact,sizeof(this));
   }
 
   final conxion|bufcon start(void|int waitforreal) {
@@ -229,8 +229,10 @@ class conxion {
 
   private int write_cb() {
     towrite-=output_to(socket,towrite);
-    if(!fillread && !sizeof(this))
+    if(!fillread && !sizeof(this)) {
+      PD("%d>Close socket delayed\n",socket->query_fd());
       socket->close();
+    }
     return 0;
   }
 
@@ -253,13 +255,14 @@ nosync:
         default:
           break nosync;
         case syncsend:
-          PD(">Sync %d %d Queue\n",synctransact,++queueoutidx);
+          PD("%d>Sync %d %d Queue\n",
+           socket->query_fd(),synctransact,++queueoutidx);
           add(PGSYNC);
           mode=sendout;
           break;
         case flushlogsend:
-          PD(">%O %d Queue simplequery %d bytes\n",portal._portalname,
-           ++queueoutidx,sizeof(this));
+          PD("%d>%O %d Queue simplequery %d bytes\n",
+           socket->query_fd(),portal._portalname,++queueoutidx,sizeof(this));
           mode=flushsend;
       }
       qportals->write(synctransact++);
@@ -287,7 +290,7 @@ outer:
           case sendout:;
         }
         if(towrite=sizeof(this)) {
-          PD(">Sendcmd %O\n",((string)this)[..towrite-1]);
+          PD("%d>Sendcmd %O\n",socket->query_fd(),((string)this)[..towrite-1]);
           towrite-=output_to(socket,towrite);
         }
       } while(0);
@@ -304,6 +307,7 @@ outer:
 
   final int close() {
     destruct(nostash);
+    PD("%d>Close socket\n",socket->query_fd());
     return socket->close();
   }
 
@@ -329,7 +333,8 @@ outer:
                 socket=fcon;
                 break;
               }
-            default:socket->close();
+            default:PD("%d>Close socket\n",socket->query_fd());
+              socket->close();
               pgsqlsess.nossl=1;
               continue;
             case 'N':

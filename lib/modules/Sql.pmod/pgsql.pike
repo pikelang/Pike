@@ -113,8 +113,8 @@ private string _sprintf(int type, void|mapping flags) {
   string res=UNDEFINED;
   switch(type) {
     case 'O':
-      res=sprintf(DRIVERNAME"(%s@%s:%d/%s,%d)",
-       user,_host,_port,database,backendpid);
+      res=sprintf(DRIVERNAME"(%s@%s:%d/%s,%d,%d)",
+       user,_host,_port,database,c?->socket?->query_fd(),backendpid);
       break;
   }
   return res;
@@ -343,7 +343,8 @@ void cancelquery() {
 //!   @[get_charset()], @[create()],
 //!   @url{http://www.postgresql.org/search/?u=%2Fdocs%2Fcurrent%2F&q=character+sets@}
 void set_charset(string charset) {
-  big_query(sprintf("SET CLIENT_ENCODING TO '%s'",quote(charset)));
+  if(charset)
+    big_query(sprintf("SET CLIENT_ENCODING TO '%s'",quote(charset)));
 }
 
 //! @returns
@@ -588,11 +589,11 @@ private void storetiming(.pgsql_util.sql_result portal) {
 
 private void waitauthready() {
   if(waitforauthready) {
-    PD("Wait for auth ready %O\n",backtrace()[-2]);
+    PD("%d Wait for auth ready %O\n",c?->socket?->query_fd(),backtrace()[-2]);
     Thread.MutexKey lock=waitforauth->lock();
     catch(waitforauthready->wait(lock));
     lock=0;
-    PD("Wait for auth ready released.\n");
+    PD("%d Wait for auth ready released.\n",c?->socket?->query_fd());
   }
 }
 
@@ -630,10 +631,11 @@ final void _processloop(.pgsql_util.conxion ci) {
 
   void showportal(int msgtype) {
     if(objectp(portal))
-      PD("<%O %d %c switch portal\n",
-       portal._portalname,++ci->queueinidx,msgtype);
+      PD("%d<%O %d %c switch portal\n",
+       ci->socket->query_fd(),portal._portalname,++ci->queueinidx,msgtype);
     else if(portal>0)
-      PD("<Sync %d %d %c portal\n",++ci->queueinidx,portal,msgtype);
+      PD("%d<Sync %d %d %c portal\n",
+       ci->socket->query_fd(),++ci->queueinidx,portal,msgtype);
   };
 #endif
   for(;;) {
@@ -660,6 +662,7 @@ final void _processloop(.pgsql_util.conxion ci) {
         protocolunsupported
       };
       errortype errtype=noerror;
+      PD("%d",ci->socket->query_fd());
       switch(msgtype) {
         array(mapping) getcols() {
           int bintext=ci->read_int8();
@@ -1119,7 +1122,7 @@ final void _processloop(.pgsql_util.conxion ci) {
                               +({pinpointerror(portal._query,msgresponse.P)})
                               +showbindings(portal)));
             case "53000":case "53100":case "53200":case "53300":case "53400":
-            case "57P01":case "57P02":case "57P03":
+            case "57P01":case "57P02":case "57P03":case "57P04":case "3D000":
               preplastmessage(msgresponse);
               PD(a2nls(lastmessage));throw(0);
             case "08P01":case "42P05":
@@ -1269,21 +1272,24 @@ final void _processloop(.pgsql_util.conxion ci) {
 //! This function is PostgreSQL-specific, and thus it is not available
 //! through the generic SQL-interface.
 void close() {
-  cancelquery();
-  if(c)
-    c->sendterminate();
+  catch(cancelquery());
+  catch(c->sendterminate());
   c=0;
+  if(waitforauthready)
+    destruct(waitforauthready);
 }
 
 protected void destroy() {
-  close();
+  catch(close());
   .pgsql_util.unregister_backend();
 }
 
 void _connectfail(void|mixed err) {
   PD("Connect failed %O reconnectdelay %d\n",err,reconnectdelay);
-  if(waitforauthready)
-    destruct(waitforauthready);
+  catch {
+    if(waitforauthready)
+      destruct(waitforauthready);
+  };
   if(!err || reconnectdelay) {
     int tdelay;
     switch(tdelay=reconnectdelay) {
@@ -1419,8 +1425,10 @@ void resync() {
     ERROR(a2nls(lastmessage));
   err = catch {
     PD("Portalsinflight: %d\n",_portalsinflight);
-    readyforquery_cb=resync_cb;
-    sendsync();
+    if(!waitforauthready) {
+      readyforquery_cb=resync_cb;
+      sendsync();
+    }
     return;
   };
   PD("%O\n",err);
