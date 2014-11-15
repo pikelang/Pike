@@ -1815,6 +1815,13 @@ private inline void throwdelayederror(object parent) {
 //!   This can speed up parsing by increased parallelism.
 //! @endmapping
 //!
+//! @note
+//!  The bindings-parameter passed to this function must remain unaltered
+//!  until the parameters have been sent to the database.  The driver
+//!  currently does not expose this moment, but to avoid a race condition
+//!  it is sufficient to keep them unaltered until the first resultrow
+//!  has been fetched (or EOF is reached, in case of no resultrows).
+//!
 //! @returns
 //! A @[Sql.pgsql_util.sql_result] object (which conforms to the
 //! @[Sql.sql_result] standard interface for accessing data). It is
