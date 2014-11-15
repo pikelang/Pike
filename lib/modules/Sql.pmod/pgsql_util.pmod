@@ -102,7 +102,7 @@ final int oidformat(int oid) {
   return 0;	// text
 }
 
-private sctype mergemode(conxion realbuffer,sctype mode) {
+private int mergemode(conxion realbuffer,int mode) {
   if(mode>realbuffer->stashflushmode)
     realbuffer->stashflushmode=mode;
   return realbuffer->stashflushmode;
@@ -133,7 +133,7 @@ class bufcon {
     return this;
   }
 
-  final void sendcmd(void|sctype mode,void|sql_result portal) {
+  final void sendcmd(int mode,void|sql_result portal) {
     Thread.MutexKey lock=realbuffer->stashupdate->lock();
     if(portal)
       realbuffer->stashqueue->write(portal);
@@ -145,7 +145,7 @@ class bufcon {
     this->clear();
     if(lock=realbuffer->nostash->trylock(1)) {
       realbuffer->started=lock; lock=0;
-      realbuffer->sendcmd(sendout);
+      realbuffer->sendcmd(SENDOUT);
     }
   }
 
@@ -246,7 +246,7 @@ class conxion {
   final inline    int read_int32()       { return i::read_int32();   }
   final inline string read_cstring()     { return i::read_cstring(); }
 
-  final void sendcmd(void|sctype mode,void|sql_result portal) {
+  final void sendcmd(void|int mode,void|sql_result portal) {
     if(portal)
       queueup(portal);
 nosync:
@@ -254,16 +254,16 @@ nosync:
       switch(mode) {
         default:
           break nosync;
-        case syncsend:
+        case SYNCSEND:
           PD("%d>Sync %d %d Queue\n",
            socket->query_fd(),synctransact,++queueoutidx);
           add(PGSYNC);
-          mode=sendout;
+          mode=SENDOUT;
           break;
-        case flushlogsend:
+        case FLUSHLOGSEND:
           PD("%d>%O %d Queue simplequery %d bytes\n",
            socket->query_fd(),portal._portalname,++queueoutidx,sizeof(this));
-          mode=flushsend;
+          mode=FLUSHSEND;
       }
       qportals->write(synctransact++);
     } while(0);
@@ -275,7 +275,7 @@ nosync:
           queueup(portal);
       }
       mode=mergemode(this,mode);
-      stashflushmode=keep;
+      stashflushmode=KEEP;
       lock=0;
     }
     catch {
@@ -284,10 +284,10 @@ outer:
         switch(mode) {
           default:
             break outer;
-          case flushsend:
+          case FLUSHSEND:
             PD("Flush\n");
             add(PGFLUSH);
-          case sendout:;
+          case SENDOUT:;
         }
         if(towrite=sizeof(this)) {
           PD("%d>Sendcmd %O\n",socket->query_fd(),((string)this)[..towrite-1]);
@@ -325,7 +325,7 @@ outer:
          && (pgsqlsess._options.use_ssl || pgsqlsess._options.force_ssl)) {
           PD("SSLRequest\n");
           start()->add_int32(8)->add_int32(PG_PROTOCOL(1234,5679))
-           ->sendcmd(sendout);
+           ->sendcmd(SENDOUT);
           switch(read_int8()) {
             case 'S':
               object fcon=SSL.File(socket,SSL.Context());
@@ -408,7 +408,7 @@ class sql_result {
   private int eoffound;
   private conxion c;
   final mixed _delayederror;
-  final portalstate _state;
+  final int _state;
   final int _fetchlimit;
   final int _alltext;
   final int _forcetext;
@@ -468,7 +468,7 @@ class sql_result {
     _alltext = !alltyped;
     _params = params;
     _forcetext = forcetext;
-    _state = portalinit;
+    _state = PORTALINIT;
   }
 
   //! Returns the command-complete status for this query.
@@ -706,7 +706,7 @@ class sql_result {
       Thread.MutexKey lock=prepbuffermux->lock();
       prepbufferready->wait(lock);
       lock=0;
-      if(_state==closed)
+      if(_state==CLOSED)
         return;
       prepbuffermux=0;
     }
@@ -744,7 +744,7 @@ class sql_result {
   final void _openportal() {
     pgsqlsess->_portalsinflight++;
     Thread.MutexKey lock=closemux->lock();
-    _state=bound;
+    _state=BOUND;
     lock=0;
     _statuscmdcomplete=UNDEFINED;
   }
@@ -754,18 +754,18 @@ class sql_result {
     Thread.MutexKey lock=closemux->lock();
     _fetchlimit=0;				   // disables further Executes
     switch(_state) {
-      case copyinprogress:
-      case bound:
+      case COPYINPROGRESS:
+      case BOUND:
         _datarows->write(1);			   // Signal EOF
         --pgsqlsess->_portalsinflight;
     }
-    _state=closed;
+    _state=CLOSED;
     lock=0;
     releaseconditions();
   }
 
-  final sctype _closeportal(bufcon plugbuffer) {
-    sctype retval=keep;
+  final int _closeportal(bufcon plugbuffer) {
+    int retval=KEEP;
     PD("%O Try Closeportal %d\n",_portalname,_state);
     Thread.MutexKey lock=closemux->lock();
     _fetchlimit=0;				   // disables further Executes
@@ -775,20 +775,20 @@ class sql_result {
      * It's a bit of a tricky race, but this check should be sufficient.
      */
     switch(_state) {
-      case portalinit:
+      case PORTALINIT:
         _unnamedstatementkey=0;
-        _state=closed;
+        _state=CLOSED;
         break;
-      case copyinprogress:
+      case COPYINPROGRESS:
         PD("CopyDone\n");
         plugbuffer->add("c\0\0\0\4");
-      case bound:
-        _state=closed;
+      case BOUND:
+        _state=CLOSED;
         lock=0;
         PD("Close portal %O\n",_portalname);
         if(sizeof(_portalname)) {
           plugbuffer->add_int8('C')->add_hstring(({'P',_portalname,0}),4,4);
-          retval=flushsend;
+          retval=FLUSHSEND;
         } else
           _unnamedportalkey=0;
         Thread.MutexKey lockc=pgsqlsess->_commitmux->lock();
@@ -798,7 +798,7 @@ class sql_result {
             pgsqlsess->_readyforcommit->signal();
             lockc=0;
           } else if(!alreadyfilled)
-            pgsqlsess->_readyforquerycount++, retval=syncsend;
+            pgsqlsess->_readyforquerycount++, retval=SYNCSEND;
           pgsqlsess->_pportalcount=0;
         }
         lockc=0;
@@ -864,9 +864,9 @@ class sql_result {
     plugbuffer->add_int8('E')->add_hstring(_portalname,4,8+1)
      ->add_int8(0)->add_int32(fetchlimit);
     if(!fetchlimit)
-      flushmode=_closeportal(plugbuffer)==syncsend?syncsend:flushsend;
+      flushmode=_closeportal(plugbuffer)==SYNCSEND?SYNCSEND:FLUSHSEND;
     else
-      _inflight+=fetchlimit, flushmode=flushsend;
+      _inflight+=fetchlimit, flushmode=FLUSHSEND;
     plugbuffer->sendcmd(flushmode,this);
   }
 
@@ -932,7 +932,7 @@ class sql_result {
     trydelayederror();
     if(copydata) {
       PD("CopyData\n");
-      c->start()->add_int8('d')->add_hstring(copydata,4,4)->sendcmd(sendout);
+      c->start()->add_int8('d')->add_hstring(copydata,4,4)->sendcmd(SENDOUT);
     } else
       _releasesession();
   }

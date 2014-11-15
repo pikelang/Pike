@@ -299,7 +299,7 @@ int is_open() {
 //! @seealso
 //!   @[is_open()]
 int ping() {
-  return is_open() && !catch(c->start()->sendcmd(flushsend))
+  return is_open() && !catch(c->start()->sendcmd(FLUSHSEND))
    ? !!reconnected : -1;
 }
 
@@ -319,7 +319,7 @@ void cancelquery() {
   PD("CancelRequest\n");
   .pgsql_util.conxion lcon=getsocket(1);
   lcon->add_int32(16)->add_int32(PG_PROTOCOL(1234,5678))
-   ->add_int32(backendpid)->add(cancelsecret)->sendcmd(flushsend);
+   ->add_int32(backendpid)->add(cancelsecret)->sendcmd(FLUSHSEND);
   lcon->close();
 #ifdef PG_DEBUGMORE
   PD("Closetrace %O\n",backtrace());
@@ -329,7 +329,7 @@ void cancelquery() {
     foreach(qportals->peek_array();;int|.pgsql_util.sql_result portal)
       if(objectp(portal))
         portal->_closeportal(plugbuffer);
-    plugbuffer->sendcmd(sendout);
+    plugbuffer->sendcmd(SENDOUT);
   }
 }
 
@@ -621,7 +621,7 @@ final void _processloop(.pgsql_util.conxion ci) {
       plugbuffer->add(name)->add_int8(0)->add((string)value)->add_int8(0);
     plugbuffer->add_int8(0);
     PD("%O\n",(string)plugbuffer);
-    ci->start()->add_hstring(plugbuffer,4,4)->sendcmd(sendout);
+    ci->start()->add_hstring(plugbuffer,4,4)->sendcmd(SENDOUT);
   }		// Do not flush at this point, PostgreSQL 9.4 disapproves
   cancelsecret=0;
 #ifdef PG_DEBUG
@@ -768,7 +768,7 @@ final void _processloop(.pgsql_util.conxion ci) {
             case noerror:
               if(cancelsecret!="")
                 ci->start()->add_int8('p')->add_hstring(sendpass,4,5)
-                 ->add_int8(0)->sendcmd(sendout);
+                 ->add_int8(0)->sendcmd(SENDOUT);
               break;	// No flushing here, PostgreSQL 9.4 disapproves
             default:
             case protocolunsupported:
@@ -1091,7 +1091,7 @@ final void _processloop(.pgsql_util.conxion ci) {
           portal->_setrowdesc(getcols());
           PD("<%O CopyInResponse %d columns\n",
            portal._portalname,sizeof(portal._datarowdesc));
-          portal._state=copyinprogress;
+          portal._state=COPYINPROGRESS;
           {
             Thread.MutexKey resultlock=portal._resultmux->lock();
             portal._newresult.signal();
@@ -1229,7 +1229,7 @@ final void _processloop(.pgsql_util.conxion ci) {
       }
     };				// We only get here if there is an error
     if(err==MAGICTERMINATE) {	// Announce connection termination to server
-      ci->start()->add("X\0\0\0\4")->sendcmd(sendout);
+      ci->start()->add("X\0\0\0\4")->sendcmd(SENDOUT);
       terminating=1;
       if(!sizeof(ci))
         break;
@@ -1397,7 +1397,7 @@ private void resync_cb() {
 
 private void sendsync() {
   _readyforquerycount++;
-  c->start()->sendcmd(syncsend);
+  c->start()->sendcmd(SYNCSEND);
 }
 
 //! @decl void resync()
@@ -1963,9 +1963,9 @@ private inline void throwdelayederror(object parent) {
     }
     if(sizeof(plugbuffer)) {
       PD("%O\n",(string)plugbuffer);
-      plugbuffer->sendcmd(flushsend);			      // close expireds
+      plugbuffer->sendcmd(FLUSHSEND);			      // close expireds
     } else
-      plugbuffer->sendcmd();				       // close start()
+      plugbuffer->sendcmd(KEEP);			       // close start()
     tstart=gethrtime();
   } else				  // sql_result autoassigns to portal
     tp=UNDEFINED;
@@ -1984,7 +1984,7 @@ private inline void throwdelayederror(object parent) {
     _readyforquerycount++;
     Thread.MutexKey lock=unnamedstatement->lock(1);
     c->start(1)->add_int8('Q')->add_hstring(q,4,4+1)->add_int8(0)
-     ->sendcmd(flushlogsend,portal);
+     ->sendcmd(FLUSHLOGSEND,portal);
     lock=0;
     PD("Simple query: %O\n",q);
   } else {
@@ -2008,10 +2008,10 @@ private inline void throwdelayederror(object parent) {
     if(!tp || !tp.datatypeoid) {
       PD("Describe statement %O\n",preparedname);
       (plugbuffer||c->start())->add_int8('D')
-       ->add_hstring(({'S',preparedname,0}),4,4)->sendcmd(flushsend,portal);
+       ->add_hstring(({'S',preparedname,0}),4,4)->sendcmd(FLUSHSEND,portal);
     } else {
       if(plugbuffer)
-        plugbuffer->sendcmd();
+        plugbuffer->sendcmd(KEEP);
 #ifdef PG_STATS
       skippeddescribe++;
 #endif
