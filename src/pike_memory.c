@@ -12,6 +12,7 @@
 #include "fd_control.h"
 #include "dmalloc.h"
 #include "block_allocator.h"
+#include "siphash24.h"
 
 #ifdef HAVE_SYS_MMAN_H
 #include <sys/mman.h>
@@ -170,8 +171,6 @@ void reorder(char *memory, INT32 nitems, INT32 size,INT32 *order)
   memcpy(memory, tmp, size * nitems);
   free(tmp);
 }
-
-#include "siphash24.c"
 
 #if (defined(__i386__) || defined(__amd64__)) && defined(__GNUC__)
 /*

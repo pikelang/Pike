@@ -186,6 +186,7 @@ CORE_OBJ= \
  svalue.o \
  las.o \
  builtin_functions.o \
+ siphash24.o \
  peep.o @EXTRA_OBJS@
 
 OBJ=$(CORE_OBJ) @MODULE_O@

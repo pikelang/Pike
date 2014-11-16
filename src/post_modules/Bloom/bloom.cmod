@@ -20,7 +20,7 @@
 #include "builtin_functions.h"
 #include "module_support.h"
 
-#include "siphash24.c"
+#include "siphash24.h"
 
 /*! @module ADT
  */
@@ -633,7 +633,7 @@ PIKECLASS String {
 
         size_t len = s->len << s->size_shift;
 
-        hval = low_hashmem_siphash24(STR0(s), len, len, s->size_shift);
+        hval = siphash24_pike_string(s, 42);
 
         hash->h1 = hval;
         hash->h2 = hval >> (sizeof(hash->h1)*CHAR_BIT);
