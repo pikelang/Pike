@@ -4,8 +4,10 @@ static inline size_t _low_cb_check_node(cb_node_t node, const char *, int);
 #ifdef DEBUG_CHECKS
 # define cb_check_node(node)	do { _low_cb_check_node(node, \
 					    __FILE__, __LINE__); } while (0)
+# define DEBUGCHECKUSED(X)	X
 #else
 # define cb_check_node(node)	do {} while(0)
+# define DEBUGCHECKUSED(X)	UNUSED(X)
 #endif
 
 #define CB_FATAL(x)	Pike_error x
@@ -143,7 +145,7 @@ static inline int cb_print_path(struct string_builder *buf, cb_node_t node,
 }
 
 static inline void cb_check(cb_node_t node,
-                            cb_node_t DEBUGUSED(last),
+                            cb_node_t DEBUGCHECKUSED(last),
                             char *issue) {
 #ifdef DEBUG_CHECKS
     if (CB_LT(node->key.len, last->key.len)) {
