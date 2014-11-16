@@ -18,6 +18,22 @@
 <p>The remainder of this chapter describes the main incompatibilities
    between the various versions of Pike and the current version.</p>
 
+<section title="Pike 8.0">
+  <subsection title="Global Functions">
+  </subsection>
+  <subsection title="Modules">
+    <p>The following modules and functions have moved, been renamed or
+      been deleted:
+      <matrix>
+      </matrix>
+    </p>
+  </subsection>
+  <subsection title="Compiler">
+  </subsection>
+  <subsection title="Runtime">
+  </subsection>
+</section>
+
 <section title="Pike 7.8">
   <subsection title="Global Functions">
     <p><ref>decode_value()</ref> used to be able to decode programs using
@@ -79,67 +95,10 @@
   </subsection>
 </section>
 
-<section title="Pike 7.6">
-  <subsection title="Modules">
-    <p>Signal handlers in GTK2 used to get their arguments in the
-       form of an array.</p>
-    <p>Sql.mysql used to automatically attempt to reconnect on
-       broken connection.</p>
-    <p>The following modules and functions have moved, been renamed or
-       been deleted:
-      <matrix>
-        <r><c><ref>ADT.Heap.size()</ref></c>
-           <c>Deprecated by <ref>ADT.Heap._sizeof()</ref></c></r>
-        <r><c><ref>ADT.Heap.top()</ref></c>
-           <c>Deprecated by <ref>ADT.Heap.pop()</ref></c></r>
-        <r><c><ref>7.6::Array.transpose_old</ref></c>
-           <c>(deleted)</c></r>
-        <r><c><ref>7.6::Image.colortable</ref></c>
-           <c><ref>Image.Colortable</ref></c></r>
-        <r><c><ref>7.6::Image.font</ref></c>
-           <c><ref>Image.Font</ref></c></r>
-        <r><c><ref>7.6::Image.image</ref></c>
-           <c><ref>Image.Image</ref></c></r>
-        <r><c><ref>7.6::_Charset</ref></c>
-           <c><ref>Locale.Charset.module</ref></c></r>
-        <r><c><ref>7.6::spider.isbasechar()</ref></c>
-           <c><ref>Parser.XML.isbasechar()</ref></c></r>
-        <r><c><ref>7.6::spider.iscombiningchar()</ref></c>
-           <c><ref>Parser.XML.iscombiningchar()</ref></c></r>
-        <r><c><ref>7.6::spider.isdigit()</ref></c>
-           <c><ref>Parser.XML.isdigit()</ref></c></r>
-        <r><c><ref>7.6::spider.isextender()</ref></c>
-           <c><ref>Parser.XML.isextender()</ref></c></r>
-        <r><c><ref>7.6::spider.isfirstnamechar()</ref></c>
-           <c><ref>Parser.XML.isfirstnamechar()</ref></c></r>
-        <r><c><ref>7.6::spider.ishexchar()</ref></c>
-           <c><ref>Parser.XML.ishexchar()</ref></c></r>
-        <r><c><ref>7.6::spider.isidographic()</ref></c>
-           <c><ref>Parser.XML.isidographic()</ref></c></r>
-        <r><c><ref>7.6::spider.isletter()</ref></c>
-           <c><ref>Parser.XML.isletter()</ref></c></r>
-        <r><c><ref>7.6::spider.isnamechar()</ref></c>
-           <c><ref>Parser.XML.isnamechar()</ref></c></r>
-        <r><c><ref>7.6::spider.isspace()</ref></c>
-           <c><ref>Parser.XML.ispace()</ref></c></r>
-      </matrix>
-    </p>
-  </subsection>
-  <subsection title="Compiler">
-    <p>The compiler used to not complain about use of
-       the keyword <tt>nomask</tt>.</p>
-  </subsection>
-  <subsection title="Runtime">
-    <p>The <tt>main()</tt> function used to get the environment
-       as a mapping in argument number three.</p>
-    <p>The API for <ref>Debug.describe_program()</ref> was different.</p>
-  </subsection>
-</section>
-
-<section title="Pike 7.4 and earlier">
+<section title="Pike 7.6 and earlier">
   <subsection title="Deprecated">
-    <p>The backward compatibility code for Pike 7.4 and earlier
-       has been removed in Pike 8.0.</p>
+    <p>The backward compatibility code for Pike 7.6 and earlier
+       has been removed in Pike 8.2.</p>
   </subsection>
 </section>
 
