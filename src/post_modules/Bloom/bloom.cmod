@@ -665,8 +665,8 @@ PIKECLASS Simple {
         if (len < 8)
             Pike_error("String too short.\n");
 
-        hash->h1 = get_unaligned32(STR0(s));
-        hash->h2 = get_unaligned32(STR0(s)+4);
+        hash->h1 = get_unaligned_be32(STR0(s));
+        hash->h2 = get_unaligned_be32(STR0(s)+4);
         hash->ch = hash->h1;
         hash->left = (sizeof(hash->h1)*CHAR_BIT);
     }
