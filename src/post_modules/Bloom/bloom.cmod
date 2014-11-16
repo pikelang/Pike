@@ -593,8 +593,8 @@ PIKECLASS Filter {
  *! as index, albeit with higher false positive probability.
  *! 
  *! @note
- *!     Except when using only non-bignum integer elements, the hash values are only valid within the
- *!     same pike process. Therefore encoding and decoding objects of this type does not work reliably.
+ *!     The hash values are only valid within the same pike process. Therefore encoding and decoding
+ *!     objects of this type does not work reliably.
  */
 
 PIKECLASS SValue {
