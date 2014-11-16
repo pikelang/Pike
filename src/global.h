@@ -512,6 +512,7 @@ typedef struct p_wchar_p
 #define DLOC_PF(PRE, SUF)	PRE "%s:%d" SUF
 #define DLOC_ARGS_OPT		dloc_file, dloc_line
 #define COMMA_DLOC_ARGS_OPT	, dloc_file, dloc_line
+#define USE_DLOC_ARGS()		((void)(DLOC_ARGS_OPT))
 #define DLOC_ENABLED
 
 #else  /* !PIKE_DEBUG */
@@ -528,6 +529,7 @@ typedef struct p_wchar_p
 #define DLOC_PF(PRE, SUF)
 #define DLOC_ARGS_OPT
 #define COMMA_DLOC_ARGS_OPT
+#define USE_DLOC_ARGS()
 
 #endif	/* !PIKE_DEBUG */
 

@@ -461,12 +461,14 @@ PMOD_EXPORT INLINE void pike_low_lock_interpreter (DLOC_DECL)
   mt_unlock (&interpreter_lock_wanted);
 
   SET_LOCKING_THREAD;
+  USE_DLOC_ARGS();
   THREADS_FPRINTF (1, (stderr, "Got iplock" DLOC_PF(" @ ",) "\n"
 		       COMMA_DLOC_ARGS_OPT));
 }
 
 PMOD_EXPORT INLINE void pike_low_wait_interpreter (COND_T *cond COMMA_DLOC_DECL)
 {
+  USE_DLOC_ARGS();
   THREADS_FPRINTF (1, (stderr,
 		       "Waiting on cond %p without iplock" DLOC_PF(" @ ",) "\n",
 		       cond COMMA_DLOC_ARGS_OPT));
@@ -488,6 +490,7 @@ PMOD_EXPORT INLINE int pike_low_timedwait_interpreter (COND_T *cond,
 						       COMMA_DLOC_DECL)
 {
   int res;
+  USE_DLOC_ARGS();
   THREADS_FPRINTF (1, (stderr,
 		       "Waiting on cond %p without iplock" DLOC_PF(" @ ",) "\n",
 		       cond COMMA_DLOC_ARGS_OPT));
@@ -508,6 +511,7 @@ PMOD_EXPORT INLINE int pike_low_timedwait_interpreter (COND_T *cond,
 static void threads_disabled_wait (DLOC_DECL)
 {
   assert (threads_disabled);
+  USE_DLOC_ARGS();
   do {
     THREADS_FPRINTF (1, (stderr,
 			 "Waiting on threads_disabled" DLOC_PF(" @ ",) "\n"
@@ -529,6 +533,7 @@ PMOD_EXPORT INLINE void pike_lock_interpreter (DLOC_DECL)
 
 PMOD_EXPORT INLINE void pike_unlock_interpreter (DLOC_DECL)
 {
+  USE_DLOC_ARGS();
   THREADS_FPRINTF (1, (stderr, "Releasing iplock" DLOC_PF(" @ ",) "\n"
 		       COMMA_DLOC_ARGS_OPT));
   UNSET_LOCKING_THREAD;
@@ -587,6 +592,7 @@ PMOD_EXPORT void pike_init_thread_state (struct thread_state *ts)
 PMOD_EXPORT void pike_swap_out_thread (struct thread_state *ts
 				       COMMA_DLOC_DECL)
 {
+  USE_DLOC_ARGS();
   THREADS_FPRINTF (2, (stderr, "Swap out %sthread %p" DLOC_PF(" @ ",) "\n",
 		       ts == Pike_interpreter.thread_state ? "current " : "",
 		       ts
@@ -838,6 +844,7 @@ PMOD_EXPORT void pike_unlock_imutex (IMUTEX_T *im COMMA_DLOC_DECL)
   /* If threads are disabled, we already hold the lock. */
   if (threads_disabled) return;
 
+  USE_DLOC_ARGS();
   THREADS_FPRINTF(0, (stderr, "Unlocking IMutex %p" DLOC_PF(" @ ",) "\n",
 		      im COMMA_DLOC_ARGS_OPT));
   mt_unlock(&(im->lock));
@@ -3003,7 +3010,7 @@ void f_thread_local_set(INT32 args)
 }
 
 #ifdef PIKE_DEBUG
-void gc_check_thread_local (struct object *o)
+void gc_check_thread_local (struct object *UNUSED(o))
 {
   /* Only used by with locate_references. */
   if (Pike_in_gc == GC_PASS_LOCATE) {
