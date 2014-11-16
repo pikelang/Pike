@@ -3040,8 +3040,11 @@ int main(int argc, array(string) argv)
 
   tmp->declarations += ({
     "\n\n"
+    "#ifndef PIKE_UNUSED_ATTRIBUTE\n"
+    "#define PIKE_UNUSED_ATTRIBUTE\n"
+    "#endif\n"
     "#define CMOD_MAP_PROGRAM_IDS_DEFINED 1\n"
-    "static int ___cmod_map_program_ids(int id);\n"
+    "static int ___cmod_map_program_ids(int id) PIKE_UNUSED_ATTRIBUTE;\n"
     "#ifndef TYPEOF\n"
     "static void set_program_id_to_id(void*UNUSED(id)){}\n"
     "/* Compat with older Pikes. */\n"
