@@ -665,8 +665,27 @@ PIKECLASS Simple {
         if (len < 8)
             Pike_error("String too short.\n");
 
-        hash->h1 = get_unaligned_be32(STR0(s));
-        hash->h2 = get_unaligned_be32(STR0(s)+4);
+        /* These memory accesses are _not_ unaligned, but
+         * currently this is a safe way to handle it correctly
+         * with C89 aliasing rules.
+         */
+        switch (s->size_shift) {
+        case eightbit:
+            hash->h1 = get_unaligned_le32(STR0(s));
+            hash->h2 = get_unaligned_le32(STR0(s)+4);
+            break;
+        case sixteenbit:
+            hash->h1 = get_unaligned16(STR0(s)+0) << 16 |
+                       get_unaligned16(STR0(s)+2);
+            hash->h2 = get_unaligned16(STR0(s)+4) << 16 |
+                       get_unaligned16(STR0(s)+6);
+            break;
+        default:
+            hash->h1 = get_unaligned32(STR0(s)+0);
+            hash->h2 = get_unaligned32(STR0(s)+4);
+            break;
+        }
+
         hash->ch = hash->h1;
         hash->left = (sizeof(hash->h1)*CHAR_BIT);
     }
