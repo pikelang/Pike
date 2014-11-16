@@ -141,6 +141,9 @@
   </dir>
 
   <void>
+    <!-- The compatibility modules should perhaps be added to a
+         compatibility chapter, but they would need a modifying
+         wrapper first. -->
     <insert-move entity="7-8::"/>
     <insert-move entity="8-0::"/>
     <insert-move entity="_Roxen"/>
