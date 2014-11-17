@@ -687,7 +687,9 @@ PIKECLASS Simple
 
 /* Flag bits. */
 #define ALLOW_RXML_ENTITIES	0x01
-#define ALLOW_PESMEG_EVERYWHERE	0x02
+#define COMPAT_ALLOW_7_2_ERRORS	0x02
+#define COMPAT_ALLOW_7_6_ERRORS	0x04
+#define ALLOW_PESMEG_EVERYWHERE	0x08
 
   /* callback:
    *   string type
