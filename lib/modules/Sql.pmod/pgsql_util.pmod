@@ -161,6 +161,7 @@ class conxion {
   final Stdio.File socket;
   private object pgsqlsess;
   private int towrite;
+  private Thread.Mutex towritemux;
 
   final function(:void) gottimeout;
   final int timeout;
@@ -228,7 +229,9 @@ class conxion {
   }
 
   private int write_cb() {
+    Thread.MutexKey lock=towritemux->lock();
     towrite-=output_to(socket,towrite);
+    lock=0;
     if(!fillread && !sizeof(this)) {
       PD("%d>Close socket delayed\n",socket->query_fd());
       socket->close();
@@ -289,10 +292,12 @@ outer:
             add(PGFLUSH);
           case SENDOUT:;
         }
+        Thread.MutexKey lock=towritemux->lock();
         if(towrite=sizeof(this)) {
           PD("%d>Sendcmd %O\n",socket->query_fd(),((string)this)[..towrite-1]);
           towrite-=output_to(socket,towrite);
         }
+        lock=0;
       } while(0);
       started=0;
       return;
@@ -381,6 +386,7 @@ outer:
     i::create(); o::create();
     qportals = _qportals;
     synctransact = 1;
+    towritemux=Thread.Mutex();
     fillread=Thread.Condition();
     fillreadmux=Thread.Mutex();
     gottimeout=sendcmd;		// Preset it with a NOP
