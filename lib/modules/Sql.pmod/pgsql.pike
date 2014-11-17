@@ -1026,11 +1026,9 @@ final void _processloop(.pgsql_util.conxion ci) {
             } else if(!collen)
               a[i]="";
           }
-          portal._inflight--;
-          portal._datarows->write(a);
+          portal->_processdataready(a);
           if(serror)
             ERROR(serror);
-          portal->_processdataready();
           break;
         }
         case 's':
@@ -1050,8 +1048,6 @@ final void _processloop(.pgsql_util.conxion ci) {
           if(portal._tprepared)
             storetiming(portal);
           PD("<%O CommandComplete %O\n",portal._portalname,s);
-          if(!portal._statuscmdcomplete)
-            portal._statuscmdcomplete=s;
 #ifdef PG_DEBUG
           if(ci->read_int8())
             errtype=protocolerror;
@@ -1059,7 +1055,7 @@ final void _processloop(.pgsql_util.conxion ci) {
 #else
           ci->consume(1);
 #endif
-          portal->_releasesession();
+          portal->_releasesession(s);
           portal=0;
           break;
         }
@@ -1081,11 +1077,10 @@ final void _processloop(.pgsql_util.conxion ci) {
             errtype=protocolerror;
 #endif
           portal._bytesreceived+=msglen;
-          portal._datarows->write(({ci->read(msglen)}));
+          portal->_processdataready(({ci->read(msglen)}));
 #ifdef PG_DEBUG
           msglen=0;
 #endif
-          portal->_processdataready();
           break;
         case 'G':
           portal->_setrowdesc(getcols());
