@@ -549,8 +549,8 @@ class sql_result {
   }
 
   final void _setrowdesc(array(mapping(string:mixed)) datarowdesc) {
-    _datarowdesc=datarowdesc;
     Thread.MutexKey lock=_ddescribemux->lock();
+    _datarowdesc=datarowdesc;
     _ddescribe->broadcast();
     lock=0;
   }
@@ -684,15 +684,14 @@ class sql_result {
             break;
         }
     }
-    prepbuffer=plugbuffer;
-    int skipsignal=0;
     if(_tprepared)
       if(_tprepared.datarowdesc)
-        skipsignal=1, gotdatarowdesc();
+        prepbuffer=plugbuffer, gotdatarowdesc();
       else if(dontcacheprefix->match(_query))	// Don't cache FETCH/COPY
         m_delete(pgsqlsess->_prepareds,_query),_tprepared=0;
-    if(!skipsignal) {
-      Thread.MutexKey lock=prepbuffermux->lock();
+    Thread.MutexKey lock;
+    if(!prepbuffer && !catch(lock=prepbuffermux->lock())) {
+      prepbuffer=plugbuffer;
       prepbufferready->signal();
       lock=0;
     }
@@ -708,16 +707,17 @@ class sql_result {
   }
 
   private void gotdatarowdesc() {
-    if(!prepbuffer) {
-      Thread.MutexKey lock=prepbuffermux->lock();
+    Thread.MutexKey lock;
+    if(catch(lock=prepbuffermux->lock()))
+      return;
+    if(!prepbuffer)
       prepbufferready->wait(lock);
-      lock=0;
-      if(_state==CLOSED)
-        return;
-      prepbuffermux=0;
-    }
+    destruct(prepbuffermux);
+    lock=0;
+    if(_state==CLOSED)
+      return;
     Stdio.Buffer plugbuffer=prepbuffer;
-    prepbuffer=0;
+    prepbuffer=0;				// Free memory early
     plugbuffer->add_int16(sizeof(_datarowdesc));
     if(sizeof(_datarowdesc))
       foreach(_datarowdesc;;mapping col)
@@ -842,8 +842,8 @@ class sql_result {
     }
     if(!_datarowdesc) {
       lock=_ddescribemux->lock();
-      _ddescribe->broadcast();
       _datarowdesc=({});
+      _ddescribe->broadcast();
     }
     lock=0;
   }
