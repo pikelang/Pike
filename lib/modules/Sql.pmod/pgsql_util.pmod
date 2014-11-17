@@ -689,10 +689,10 @@ class sql_result {
         prepbuffer=plugbuffer, gotdatarowdesc();
       else if(dontcacheprefix->match(_query))	// Don't cache FETCH/COPY
         m_delete(pgsqlsess->_prepareds,_query),_tprepared=0;
-    Thread.MutexKey lock;
-    if(!prepbuffer && !catch(lock=prepbuffermux->lock())) {
+    if(!prepbuffer) {
+      Thread.MutexKey lock=prepbuffermux->lock();
       prepbuffer=plugbuffer;
-      prepbufferready->signal();
+      catch(prepbufferready->signal());
       lock=0;
     }
   }
@@ -707,12 +707,10 @@ class sql_result {
   }
 
   private void gotdatarowdesc() {
-    Thread.MutexKey lock;
-    if(catch(lock=prepbuffermux->lock()))
-      return;
+    Thread.MutexKey lock=prepbuffermux->lock();
     if(!prepbuffer)
-      prepbufferready->wait(lock);
-    destruct(prepbuffermux);
+      catch(prepbufferready->wait(lock));
+    destruct(prepbufferready);
     lock=0;
     if(_state==CLOSED)
       return;
@@ -836,9 +834,9 @@ class sql_result {
   private void releaseconditions() {
     pgsqlsess=0;
     Thread.MutexKey lock;
-    if(prepbuffermux) {
+    if(prepbufferready) {
       Thread.MutexKey lock=prepbuffermux->lock();
-      prepbufferready->signal();
+      catch(prepbufferready->signal());
     }
     if(!_datarowdesc) {
       lock=_ddescribemux->lock();
