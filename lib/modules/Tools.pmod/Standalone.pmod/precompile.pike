@@ -2444,7 +2444,12 @@ static struct %s *%s_gdb_dummy_ptr;
 		  });
 		} else {
 		  ret+=({
-		    PC.Token(sprintf("if (args > %d) {\n",argnum), arg->line()),
+		    PC.Token(sprintf("if ((args > %d) &&\n"
+				     "    ((TYPEOF(Pike_sp[%d%s]) != PIKE_T_INT) ||\n"
+				     "     (SUBTYPEOF(Pike_sp[%d%s]) != NUMBER_UNDEFINED))) {\n",
+				     argnum,
+				     argnum, check_argbase,
+				     argnum, check_argbase), arg->line()),
 		  });
 		}
 		got_void_or_zero_check = 1;
@@ -2535,7 +2540,7 @@ static struct %s *%s_gdb_dummy_ptr;
 	      // End the argcnt loop.
 	      ret += ({ PC.Token(sprintf ("  } while (++argcnt < %s-%d);\n"
 					  "  %s=Pike_sp%+d%s;\n"
-					  "} else %s=0;\n",
+					  "} else %s = NULL;\n",
 					  num_arguments, argnum,
 					  arg->name(), argnum, argbase,
 					  arg->name()),
