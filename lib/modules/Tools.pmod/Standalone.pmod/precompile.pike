@@ -2435,9 +2435,9 @@ static struct %s *%s_gdb_dummy_ptr;
 	      if (void_or_zero == 2) {
 		if (!(<"int","mixed">)[arg->basetype()]) {
 		  ret+=({
-		    PC.Token(sprintf("if (args > %d &&"
-				     "    (TYPEOF(Pike_sp[%d%s]) != PIKE_T_INT ||"
-			     "     Pike_sp[%d%s].u.integer)) {\n",
+		    PC.Token(sprintf("if (args > %d &&\n"
+				     "    (TYPEOF(Pike_sp[%d%s]) != PIKE_T_INT ||\n"
+				     "     Pike_sp[%d%s].u.integer)) {\n",
 				     argnum,
 				     argnum, check_argbase,
 				     argnum, check_argbase), arg->line()),
@@ -2453,7 +2453,7 @@ static struct %s *%s_gdb_dummy_ptr;
 	      else if (void_or_zero == 1) {
 		if (!(<"int", "mixed">)[arg->basetype()]) {
 		  ret += ({
-		    PC.Token (sprintf ("if (TYPEOF(Pike_sp[%d%s]) != PIKE_T_INT ||"
+		    PC.Token (sprintf ("if (TYPEOF(Pike_sp[%d%s]) != PIKE_T_INT ||\n"
 				       "    Pike_sp[%d%s].u.integer) {\n",
 				       argnum, check_argbase,
 				       argnum, check_argbase), arg->line()),
@@ -2471,7 +2471,8 @@ static struct %s *%s_gdb_dummy_ptr;
 	       * wide strings
 	       */
 	      ret+=({
-		PC.Token(sprintf("if(TYPEOF(Pike_sp[%d%s]) != PIKE_T_STRING || Pike_sp[%d%s].u.string->shift_size)",
+		PC.Token(sprintf("if(TYPEOF(Pike_sp[%d%s]) != PIKE_T_STRING ||\n"
+				 "   Pike_sp[%d%s].u.string->shift_size)",
 				 argnum,check_argbase,
 				 argnum,check_argbase), arg->line())
 	      });
