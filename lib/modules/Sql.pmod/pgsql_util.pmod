@@ -656,7 +656,11 @@ class sql_result {
     Stdio.Buffer plugbuffer=Stdio.Buffer();
     plugbuffer->add(_portalname=
       (_unnamedportalkey=pgsqlsess._unnamedportalmux->trylock(1))
-       ? "" : PORTALPREFIX+int2hex(pgsqlsess._pportalcount++) )->add_int8(0)
+       ? "" : PORTALPREFIX
+#ifdef PG_DEBUG
+        +(string)(c->socket->query_fd())+"_"
+#endif
+        +int2hex(pgsqlsess._pportalcount++) )->add_int8(0)
      ->add(_preparedname)->add_int8(0)->add_int16(sizeof(dtoid));
     foreach(dtoid;;int textbin)
       plugbuffer->add_int16(oidformat(textbin));

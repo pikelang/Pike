@@ -650,7 +650,7 @@ final void _processloop(.pgsql_util.conxion ci) {
       _msgsreceived++;
       _bytesreceived+=1+msglen;
       int errtype=NOERROR;
-      PD("%d",ci->socket->query_fd());
+      PD("%d>",ci->socket->query_fd());
       switch(msgtype) {
         array(mapping) getcols() {
           int bintext=ci->read_int8();
@@ -687,7 +687,7 @@ final void _processloop(.pgsql_util.conxion ci) {
           return msgresponse;
         };
         case 'R': {
-          PD("<Authentication ");
+          PD("Authentication ");
           string sendpass;
           int authtype;
           msglen-=4+4;
@@ -769,12 +769,12 @@ final void _processloop(.pgsql_util.conxion ci) {
           msglen-=4+4;backendpid=ci->read_int32();
           cancelsecret=ci->read(msglen);
 #ifdef PG_DEBUG
-          PD("<BackendKeyData %O\n",cancelsecret);
+          PD("BackendKeyData %O\n",cancelsecret);
           msglen=0;
 #endif
           break;
         case 'S': {
-          PD("<ParameterStatus ");
+          PD("ParameterStatus ");
           msglen-=4;
           array(string) ts=reads();
 #ifdef PG_DEBUG
@@ -790,7 +790,7 @@ final void _processloop(.pgsql_util.conxion ci) {
         }
         case '3':
 #ifdef PG_DEBUG
-          PD("<CloseComplete\n");
+          PD("CloseComplete\n");
           msglen-=4;
 #endif
           break;
@@ -798,7 +798,7 @@ final void _processloop(.pgsql_util.conxion ci) {
           backendstatus=ci->read_int8();
 #ifdef PG_DEBUG
           msglen-=4+1;
-          PD("<ReadyForQuery %c\n",backendstatus);
+          PD("ReadyForQuery %c\n",backendstatus);
 #endif
           for(;objectp(portal);portal=qportals->read()) {
 #ifdef PG_DEBUG
@@ -822,7 +822,7 @@ final void _processloop(.pgsql_util.conxion ci) {
           break;
         case '1':
 #ifdef PG_DEBUG
-          PD("<ParseComplete\n");
+          PD("ParseComplete\n");
           msglen-=4;
 #endif
           break;
@@ -830,7 +830,7 @@ final void _processloop(.pgsql_util.conxion ci) {
           array a;
           int cols=ci->read_int16();
 #ifdef PG_DEBUG
-          PD("<%O ParameterDescription %d values\n",portal._query,cols);
+          PD("%O ParameterDescription %d values\n",portal._query,cols);
           msglen-=4+2+4*cols;
 #endif
           foreach(a=allocate(cols);int i;)
@@ -847,7 +847,7 @@ final void _processloop(.pgsql_util.conxion ci) {
           array a;
 #ifdef PG_DEBUG
           int cols=ci->read_int16();
-          PD("<RowDescription %d columns %O\n",cols,portal._query);
+          PD("RowDescription %d columns %O\n",cols,portal._query);
           msglen-=4+2;
           foreach(a=allocate(cols);int i;)
 #else
@@ -894,7 +894,7 @@ final void _processloop(.pgsql_util.conxion ci) {
         case 'n': {
 #ifdef PG_DEBUG
           msglen-=4;
-          PD("<NoData %O\n",portal._query);
+          PD("NoData %O\n",portal._query);
 #endif
           portal._fetchlimit=0;			// disables subsequent Executes
           portal->_processrowdesc(({}));
@@ -903,13 +903,13 @@ final void _processloop(.pgsql_util.conxion ci) {
         }
         case 'H':
           portal->_processrowdesc(getcols());
-          PD("<CopyOutResponse %O\n",portal._query);
+          PD("CopyOutResponse %O\n",portal._query);
           break;
         case '2': {
           mapping tp;
 #ifdef PG_DEBUG
           msglen-=4;
-          PD("<%O BindComplete\n",portal._portalname);
+          PD("%O BindComplete\n",portal._portalname);
 #endif
           if(tp=portal._tprepared) {
             int tend=gethrtime();
@@ -935,12 +935,12 @@ final void _processloop(.pgsql_util.conxion ci) {
           msglen-=4;
 #ifdef PG_DEBUG
 #ifdef PG_DEBUGMORE
-          PD("<%O DataRow %d bytes\n",portal._portalname,msglen);
+          PD("%O DataRow %d bytes\n",portal._portalname,msglen);
 #endif
           datarowdebugcount++;
           if(!datarowdebug)
             datarowdebug=sprintf(
-             "<%O DataRow %d bytes",portal._portalname,msglen);
+             "%O DataRow %d bytes",portal._portalname,msglen);
 #endif
 #ifdef PG_DEBUG
           msglen=
@@ -949,7 +949,7 @@ final void _processloop(.pgsql_util.conxion ci) {
           break;
         case 's':
 #ifdef PG_DEBUG
-          PD("<%O PortalSuspended\n",portal._portalname);
+          PD("%O PortalSuspended\n",portal._portalname);
           msglen-=4;
 #endif
           portal=0;
@@ -962,7 +962,7 @@ final void _processloop(.pgsql_util.conxion ci) {
 #endif
           string s=ci->read(msglen-1);
           portal->_storetiming();
-          PD("<%O CommandComplete %O\n",portal._portalname,s);
+          PD("%O CommandComplete %O\n",portal._portalname,s);
 #ifdef PG_DEBUG
           if(ci->read_int8())
             errtype=PROTOCOLERROR;
@@ -976,14 +976,14 @@ final void _processloop(.pgsql_util.conxion ci) {
         }
         case 'I':
 #ifdef PG_DEBUG
-          PD("<EmptyQueryResponse %O\n",portal._portalname);
+          PD("EmptyQueryResponse %O\n",portal._portalname);
           msglen-=4;
 #endif
           portal->_releasesession();
           portal=0;
           break;
         case 'd':
-          PD("<%O CopyData\n",portal._portalname);
+          PD("%O CopyData\n",portal._portalname);
           portal->_storetiming();
           msglen-=4;
 #ifdef PG_DEBUG
@@ -997,7 +997,7 @@ final void _processloop(.pgsql_util.conxion ci) {
           break;
         case 'G':
           portal->_setrowdesc(getcols());
-          PD("<%O CopyInResponse\n",portal._portalname);
+          PD("%O CopyInResponse\n",portal._portalname);
           portal._state=COPYINPROGRESS;
           {
             Thread.MutexKey resultlock=portal._resultmux->lock();
@@ -1007,7 +1007,7 @@ final void _processloop(.pgsql_util.conxion ci) {
           break;
         case 'c':
 #ifdef PG_DEBUG
-          PD("<%O CopyDone\n",portal._portalname);
+          PD("%O CopyDone\n",portal._portalname);
           msglen-=4;
 #endif
           portal=0;
@@ -1015,7 +1015,7 @@ final void _processloop(.pgsql_util.conxion ci) {
         case 'E': {
           if(!_readyforquerycount)
             sendsync();
-          PD("<%O ErrorResponse %O\n",
+          PD("%O ErrorResponse %O\n",
            objectp(portal)&&(portal._portalname||portal._preparedname),
            objectp(portal)&&portal._query);
           mapping(string:string) msgresponse;
@@ -1059,7 +1059,7 @@ final void _processloop(.pgsql_util.conxion ci) {
           break;
         }
         case 'N': {
-          PD("<NoticeResponse\n");
+          PD("NoticeResponse\n");
           mapping(string:string) msgresponse;
           msgresponse=getresponse();
           if(clearmessage) {
@@ -1073,7 +1073,7 @@ final void _processloop(.pgsql_util.conxion ci) {
           break;
         }
         case 'A': {
-          PD("<NotificationResponse\n");
+          PD("NotificationResponse\n");
           msglen-=4+4;
           int pid=ci->read_int32();
           string condition,extrainfo=UNDEFINED;
