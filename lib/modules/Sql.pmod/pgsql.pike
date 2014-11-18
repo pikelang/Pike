@@ -605,11 +605,7 @@ final void _processloop(.pgsql_util.conxion ci) {
     if(database)
       plugbuffer->add("database\0")->add(database)->add_int8(0);
     _options.reconnect=undefinedp(_options.reconnect) || _options.reconnect;
-    foreach(_options
-          -(<"use_ssl","force_ssl","cache_autoprepared_statements","reconnect",
-               "text_query","is_superuser","server_encoding","server_version",
-               "integer_datetimes","session_authorization">);
-            string name;mixed value)
+    foreach(_options-.pgsql_util.censoroptions; string name; mixed value)
       plugbuffer->add(name)->add_int8(0)->add((string)value)->add_int8(0);
     plugbuffer->add_int8(0);
     PD("%O\n",(string)plugbuffer);
