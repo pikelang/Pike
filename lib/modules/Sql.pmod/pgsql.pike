@@ -1917,6 +1917,7 @@ private inline void throwdelayederror(object parent) {
       plugbuffer=c->start()->add_int8('P')
        ->add_hstring(({preparedname,0,q,"\0\0\0"}),4,4)->add(PGFLUSH);
     }
+    portal._preparedname=preparedname;
     if(!tp || !tp.datatypeoid) {
       PD("Describe statement %O\n",preparedname);
       (plugbuffer||c->start())->add_int8('D')
@@ -1929,7 +1930,6 @@ private inline void throwdelayederror(object parent) {
 #endif
       portal->_setrowdesc(tp.datarowdesc);
     }
-    portal._preparedname=preparedname;
     if((portal._tprepared=tp) && tp.datatypeoid) {
       mixed e=catch(portal->_preparebind(tp.datatypeoid));
       if(e && !portal._delayederror)
