@@ -156,6 +156,7 @@ class conxion {
   inherit Stdio.Buffer:o;
 
   private Thread.Condition fillread;
+  private Thread.Mutex fillreadmux;
   private Thread.Queue qportals;
   final Thread.Mutex shortmux;
   final Stdio.File socket;
@@ -209,7 +210,7 @@ class conxion {
 #endif
     if(fillread) {
       array cid=callout(gottimeout,timeout);
-      Thread.MutexKey lock=shortmux->lock();
+      Thread.MutexKey lock=fillreadmux->lock();
       fillread.wait(lock);
       lock=0;
       local_backend->remove_call_out(cid);
@@ -219,7 +220,7 @@ class conxion {
   }
 
   private int read_cb(mixed id,mixed b) {
-    Thread.MutexKey lock=shortmux->lock();
+    Thread.MutexKey lock=fillreadmux->lock();
     if(fillread)
       fillread.signal();
     lock=0;
@@ -268,8 +269,9 @@ nosync:
       }
       qportals->write(synctransact++);
     } while(0);
+    Thread.MutexKey lock;
     if(started) {
-      Thread.MutexKey lock=shortmux->lock();
+      lock=shortmux->lock();
       if(sizeof(stash)) {
         add(stash); stash->clear();
         foreach(stashqueue->try_read_array();;sql_result portal)
@@ -277,7 +279,6 @@ nosync:
       }
       mode=mergemode(this,mode);
       stashflushmode=KEEP;
-      lock=0;
     }
     catch {
 outer:
@@ -290,16 +291,17 @@ outer:
             add(PGFLUSH);
           case SENDOUT:;
         }
-        Thread.MutexKey lock=shortmux->lock();
+        if(!lock)
+          lock=shortmux->lock();
         if(towrite=sizeof(this)) {
           PD("%d>Sendcmd %O\n",socket->query_fd(),((string)this)[..towrite-1]);
           towrite-=output_to(socket,towrite);
         }
-        lock=0;
       } while(0);
-      started=0;
+      lock=started=0;
       return;
     };
+    lock=0;
     if(pgsqlsess)
       pgsqlsess->_connectfail();
   }
@@ -387,11 +389,12 @@ outer:
     gottimeout=sendcmd;		// Preset it with a NOP
     timeout=128;		// Just a reasonable amount
     socket=Stdio.File();
-    stashqueue=Thread.Queue();
-    nostash=Thread.Mutex();
+    fillreadmux=Thread.Mutex();
     shortmux=Thread.Mutex();
-    stashavail=Thread.Condition();
+    nostash=Thread.Mutex();
     fillread=Thread.Condition();
+    stashavail=Thread.Condition();
+    stashqueue=Thread.Queue();
     stash=Stdio.Buffer();
     pgsqlsess=_pgsqlsess;
     Thread.Thread(connectloop,nossl);
