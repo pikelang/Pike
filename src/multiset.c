@@ -4387,6 +4387,7 @@ static void debug_dump_indval_data (struct msnode_indval *node,
 	   node->val.u.refs, MSNODE2OFF (msd, IVNODE (node)));
 }
 
+#ifndef PIKE_DEBUG
 static void simple_describe_multiset (struct multiset *l)
 {
   dynamic_buffer save_buf;
@@ -4397,6 +4398,7 @@ static void simple_describe_multiset (struct multiset *l)
   fprintf (stderr, "%s\n", desc);
   free (desc);
 }
+#endif
 
 void debug_dump_multiset (struct multiset *l)
 {
