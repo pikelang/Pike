@@ -134,7 +134,7 @@ class bufcon {
   }
 
   final void sendcmd(int mode,void|sql_result portal) {
-    Thread.MutexKey lock=realbuffer->stashupdate->lock();
+    Thread.MutexKey lock=realbuffer->shortmux->lock();
     if(portal)
       realbuffer->stashqueue->write(portal);
     realbuffer->stash->add(this);
@@ -156,18 +156,16 @@ class conxion {
   inherit Stdio.Buffer:o;
 
   private Thread.Condition fillread;
-  private Thread.Mutex fillreadmux;
   private Thread.Queue qportals;
+  final Thread.Mutex shortmux;
   final Stdio.File socket;
   private object pgsqlsess;
   private int towrite;
-  private Thread.Mutex towritemux;
 
   final function(:void) gottimeout;
   final int timeout;
   final Thread.Mutex nostash;
   final Thread.MutexKey started;
-  final Thread.Mutex stashupdate;
   final Thread.Queue stashqueue;
   final Thread.Condition stashavail;
   final Stdio.Buffer stash;
@@ -189,7 +187,7 @@ class conxion {
     Thread.MutexKey lock;
     if(lock=(waitforreal?nostash->lock:nostash->trylock)(1)) {
       started=lock;
-      lock=stashupdate->lock();
+      lock=shortmux->lock();
       if(stashcount)
         stashavail.wait(lock);
       add(stash); stash->clear();
@@ -211,7 +209,7 @@ class conxion {
 #endif
     if(fillread) {
       array cid=callout(gottimeout,timeout);
-      Thread.MutexKey lock=fillreadmux->lock();
+      Thread.MutexKey lock=shortmux->lock();
       fillread.wait(lock);
       lock=0;
       local_backend->remove_call_out(cid);
@@ -221,7 +219,7 @@ class conxion {
   }
 
   private int read_cb(mixed id,mixed b) {
-    Thread.MutexKey lock=fillreadmux->lock();
+    Thread.MutexKey lock=shortmux->lock();
     if(fillread)
       fillread.signal();
     lock=0;
@@ -229,7 +227,7 @@ class conxion {
   }
 
   private int write_cb() {
-    Thread.MutexKey lock=towritemux->lock();
+    Thread.MutexKey lock=shortmux->lock();
     towrite-=output_to(socket,towrite);
     lock=0;
     if(!fillread && !sizeof(this)) {
@@ -271,7 +269,7 @@ nosync:
       qportals->write(synctransact++);
     } while(0);
     if(started) {
-      Thread.MutexKey lock=stashupdate->lock();
+      Thread.MutexKey lock=shortmux->lock();
       if(sizeof(stash)) {
         add(stash); stash->clear();
         foreach(stashqueue->try_read_array();;sql_result portal)
@@ -292,7 +290,7 @@ outer:
             add(PGFLUSH);
           case SENDOUT:;
         }
-        Thread.MutexKey lock=towritemux->lock();
+        Thread.MutexKey lock=shortmux->lock();
         if(towrite=sizeof(this)) {
           PD("%d>Sendcmd %O\n",socket->query_fd(),((string)this)[..towrite-1]);
           towrite-=output_to(socket,towrite);
@@ -382,18 +380,17 @@ outer:
     return res;
   }
 
-  protected void create(object _pgsqlsess,Thread.Queue _qportals,int nossl) {
+  protected void create(object _pgsqlsess,Thread.Queue _qportals,int nossl,
+   Thread.Mutex _shortmux) {
     i::create(); o::create();
     qportals = _qportals;
     synctransact = 1;
-    towritemux=Thread.Mutex();
     fillread=Thread.Condition();
-    fillreadmux=Thread.Mutex();
+    shortmux=_shortmux;
     gottimeout=sendcmd;		// Preset it with a NOP
     timeout=128;		// Just a reasonable amount
     socket=Stdio.File();
     nostash=Thread.Mutex();
-    stashupdate=Thread.Mutex();
     stashqueue=Thread.Queue();
     stashavail=Thread.Condition();
     stash=Stdio.Buffer();
@@ -827,7 +824,7 @@ class sql_result {
         foreach(datarowdesc;;mapping col)
           plugbuffer->add_int16(oidformat(col.type));
       else if(commitprefix->match(_query)) {
-        lock=pgsqlsess->_commitmux->lock();
+        lock=pgsqlsess->_shortmux->lock();
         if(pgsqlsess->_portalsinflight) {
           pgsqlsess->_waittocommit++;
           PD("Commit waiting for portals to finish\n");
@@ -902,7 +899,7 @@ class sql_result {
           retval=FLUSHSEND;
         } else
           _unnamedportalkey=0;
-        Thread.MutexKey lockc=pgsqlsess->_commitmux->lock();
+        Thread.MutexKey lockc=pgsqlsess->_shortmux->lock();
         if(!--pgsqlsess->_portalsinflight) {
           if(pgsqlsess->_waittocommit) {
             PD("Signal no portals in flight\n");

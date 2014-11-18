@@ -103,9 +103,8 @@ private function (:void) readyforquery_cb;
 final string _host;
 final int _port;
 private string database, user, pass;
-private Thread.Mutex waitforauth;
 private Thread.Condition waitforauthready;
-final Thread.Mutex _commitmux;
+final Thread.Mutex _shortmux;
 final Thread.Condition _readyforcommit;
 final int _waittocommit, _readyforquerycount;
 
@@ -220,7 +219,7 @@ protected void create(void|string host, void|string database,
   if(!_port)
     _port = PGSQL_DEFAULT_PORT;
   .pgsql_util.register_backend();
-  waitforauth=Thread.Mutex();
+  _shortmux=Thread.Mutex();
   reconnect();
 }
 
@@ -304,7 +303,7 @@ int ping() {
 }
 
 private .pgsql_util.conxion getsocket(void|int nossl) {
-  return .pgsql_util.conxion(this,qportals,(int)nossl);
+  return .pgsql_util.conxion(this,qportals,(int)nossl,_shortmux);
 }
 
 //! Cancels all currently running queries in this session.
@@ -583,7 +582,7 @@ private void preplastmessage(mapping(string:string) msgresponse) {
 private void waitauthready() {
   if(waitforauthready) {
     PD("%d Wait for auth ready %O\n",c?->socket?->query_fd(),backtrace()[-2]);
-    Thread.MutexKey lock=waitforauth->lock();
+    Thread.MutexKey lock=_shortmux->lock();
     catch(waitforauthready->wait(lock));
     lock=0;
     PD("%d Wait for auth ready released.\n",c?->socket?->query_fd());
@@ -1211,7 +1210,7 @@ void _connectfail(void|mixed err) {
         reconnectdelay=RECONNECTBACKOFF;
         break;
     }
-    Thread.MutexKey lock=waitforauth->lock();
+    Thread.MutexKey lock=_shortmux->lock();
     if(!waitforauthready)
       waitforauthready=Thread.Condition();
     lock=0;
@@ -1225,7 +1224,7 @@ void _connectfail(void|mixed err) {
 private int reconnect(void|int force) {
   PD("(Re)connect\n");
   if(!force) {
-    Thread.MutexKey lock=waitforauth->lock();
+    Thread.MutexKey lock=_shortmux->lock();
     if(waitforauthready) {
       lock=0;
       return 0;			// Connect still in progress in other thread
@@ -1252,7 +1251,6 @@ private int reconnect(void|int force) {
   }
   PD("Actually start to connect\n");
   qportals=Thread.Queue();
-  _commitmux=Thread.Mutex();
   _readyforcommit=Thread.Condition();
   _readyforquerycount=1;
   _waittocommit=0;
