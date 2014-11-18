@@ -24,6 +24,10 @@ final Pike.Backend local_backend = Pike.SmallBackend();
 private Thread.Mutex backendmux = Thread.Mutex();
 private int clientsregistered;
 
+final multiset censoroptions=(<"use_ssl","force_ssl",
+ "cache_autoprepared_statements","reconnect","text_query","is_superuser",
+ "server_encoding","server_version","integer_datetimes",
+ "session_authorization">);
 final multiset cachealways=(<"BEGIN","begin","END","end","COMMIT","commit">);
 final Regexp createprefix
  =Regexp("^[ \t\f\r\n]*[Cc][Rr][Ee][Aa][Tt][Ee][ \t\f\r\n]");
