@@ -580,13 +580,6 @@ private void preplastmessage(mapping(string:string) msgresponse) {
             msgresponse.L||"")});
 }
 
-private void storetiming(.pgsql_util.sql_result portal) {
-  mapping(string:mixed) tp=portal._tprepared;
-  tp.trun=gethrtime()-tp.trunstart;
-  m_delete(tp,"trunstart");
-  portal._tprepared = UNDEFINED;
-}
-
 private void waitauthready() {
   if(waitforauthready) {
     PD("%d Wait for auth ready %O\n",c?->socket?->query_fd(),backtrace()[-2]);
@@ -915,8 +908,7 @@ final void _processloop(.pgsql_util.conxion ci) {
         }
         case 'H':
           portal->_processrowdesc(getcols());
-          PD("<CopyOutResponse %d %O\n",
-           sizeof(portal._datarowdesc),portal._query);
+          PD("<CopyOutResponse %O\n",portal._query);
           break;
         case '2': {
           mapping tp;
@@ -944,93 +936,22 @@ final void _processloop(.pgsql_util.conxion ci) {
           }
           break;
         }
-        case 'D': {
+        case 'D':
           msglen-=4;
-          string serror;
-          if(portal._tprepared)
-            storetiming(portal);
-          portal._bytesreceived+=msglen;
-          array datarowdesc=portal._datarowdesc;
-          int cols=ci->read_int16();
 #ifdef PG_DEBUG
 #ifdef PG_DEBUGMORE
-          PD("<%O DataRow %d cols %d bytes\n",portal._portalname,cols,msglen);
+          PD("<%O DataRow %d bytes\n",portal._portalname,msglen);
 #endif
           datarowdebugcount++;
           if(!datarowdebug)
             datarowdebug=sprintf(
-             "<%O DataRow %d cols %d bytes",portal._portalname,cols,msglen);
+             "<%O DataRow %d bytes",portal._portalname,msglen);
 #endif
-          int atext = portal._alltext;		     // cache locally for speed
-          int forcetext = portal._forcetext;	     // cache locally for speed
-          string cenc=_runtimeparameter[CLIENT_ENCODING];
-          array a=allocate(cols,!atext&&Val.null);
-          msglen-=2+4*cols;
-          foreach(datarowdesc;int i;mapping m) {
-            int collen=ci->read_sint(4);
-            if(collen>0) {
-              msglen-=collen;
-              mixed value;
-              switch(int typ=m.type) {
-              case FLOAT4OID:
-#if SIZEOF_FLOAT>=8
-              case FLOAT8OID:
+#ifdef PG_DEBUG
+          msglen=
 #endif
-                if(!atext) {
-                  value=(float)ci->read(collen);
-                  break;
-                }
-              default:value=ci->read(collen);
-                break;
-              case CHAROID:
-                value=atext?ci->read(1):ci->read_int8();
-                break;
-              case BOOLOID:value=ci->read_int8();
-                switch(value) {
-                  case 'f':value=0;
-                    break;
-                  case 't':value=1;
-                }
-                if(atext)
-                  value=value?"t":"f";
-                break;
-              case TEXTOID:
-              case BPCHAROID:
-              case VARCHAROID:
-                value=ci->read(collen);
-                if(cenc==UTF8CHARSET && catch(value=utf8_to_string(value))
-                 && !serror)
-                  serror=SERROR("%O contains non-%s characters\n",
-                                                         value,UTF8CHARSET);
-                break;
-              case INT8OID:case INT2OID:
-              case OIDOID:case INT4OID:
-                if(forcetext) {
-                  value=ci->read(collen);
-                  if(!atext)
-                    value=(int)value;
-                } else {
-                  switch(typ) {
-                    case INT8OID:value=ci->read_sint(8);
-                      break;
-                    case INT2OID:value=ci->read_sint(2);
-                      break;
-                    case OIDOID:
-                    case INT4OID:value=ci->read_sint(4);
-                  }
-                  if(atext)
-                    value=(string)value;
-                }
-              }
-              a[i]=value;
-            } else if(!collen)
-              a[i]="";
-          }
-          portal->_processdataready(a);
-          if(serror)
-            ERROR(serror);
+          portal->_decodedata(msglen,_runtimeparameter[CLIENT_ENCODING]);
           break;
-        }
         case 's':
 #ifdef PG_DEBUG
           PD("<%O PortalSuspended\n",portal._portalname);
@@ -1045,8 +966,7 @@ final void _processloop(.pgsql_util.conxion ci) {
             errtype=protocolerror;
 #endif
           string s=ci->read(msglen-1);
-          if(portal._tprepared)
-            storetiming(portal);
+          portal->_storetiming();
           PD("<%O CommandComplete %O\n",portal._portalname,s);
 #ifdef PG_DEBUG
           if(ci->read_int8())
@@ -1069,23 +989,20 @@ final void _processloop(.pgsql_util.conxion ci) {
           break;
         case 'd':
           PD("<%O CopyData\n",portal._portalname);
-          if(portal._tprepared)
-            storetiming(portal);
+          portal->_storetiming();
           msglen-=4;
 #ifdef PG_DEBUG
           if(msglen<0)
             errtype=protocolerror;
 #endif
-          portal._bytesreceived+=msglen;
-          portal->_processdataready(({ci->read(msglen)}));
+          portal->_processdataready(({ci->read(msglen)}),msglen);
 #ifdef PG_DEBUG
           msglen=0;
 #endif
           break;
         case 'G':
           portal->_setrowdesc(getcols());
-          PD("<%O CopyInResponse %d columns\n",
-           portal._portalname,sizeof(portal._datarowdesc));
+          PD("<%O CopyInResponse\n",portal._portalname);
           portal._state=COPYINPROGRESS;
           {
             Thread.MutexKey resultlock=portal._resultmux->lock();
