@@ -446,10 +446,10 @@ class sql_result {
       case 'O':
         res=sprintf("sql_result state: %d numrows: %d eof: %d inflight: %d\n"
                     "query: %O\n"
-                    "portalname: %O  datarows: %d"
+                    "fd: %O portalname: %O  datarows: %d"
                     "  laststatus: %s\n",
                     _state,rowsreceived,eoffound,inflight,
-                    _query,
+                    _query,c?->socket?->query_fd(),
                     _portalname,datarowdesc&&sizeof(datarowdesc),
                     statuscmdcomplete||(_unnamedstatementkey?"*parsing*":""));
         break;
