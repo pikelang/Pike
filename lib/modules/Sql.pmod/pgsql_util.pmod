@@ -650,145 +650,155 @@ class sql_result {
     if(sizeof(dtoid)!=sizeof(paramValues))
       SUSERERROR("Invalid number of bindings, expected %d, got %d\n",
                  sizeof(dtoid),sizeof(paramValues));
-#ifdef PG_DEBUGMORE
-    PD("ParamValues to bind: %O\n",paramValues);
-#endif
-    Stdio.Buffer plugbuffer=Stdio.Buffer();
-    plugbuffer->add(_portalname=
-      (_unnamedportalkey=pgsqlsess._unnamedportalmux->trylock(1))
-       ? "" : PORTALPREFIX
+    Thread.MutexKey lock=prepbuffermux->lock();
+    if(!_portalname) {
+      _portalname=(_unnamedportalkey=pgsqlsess._unnamedportalmux->trylock(1))
+         ? "" : PORTALPREFIX
 #ifdef PG_DEBUG
-        +(string)(c->socket->query_fd())+"_"
+          +(string)(c->socket->query_fd())+"_"
 #endif
-        +int2hex(pgsqlsess._pportalcount++) )->add_int8(0)
-     ->add(_preparedname)->add_int8(0)->add_int16(sizeof(dtoid));
-    foreach(dtoid;;int textbin)
-      plugbuffer->add_int16(oidformat(textbin));
-    plugbuffer->add_int16(sizeof(dtoid));
-    string cenc=pgsqlsess._runtimeparameter[CLIENT_ENCODING];
-    foreach(paramValues;int i;mixed value) {
-      if(undefinedp(value) || objectp(value)&&value->is_val_null)
-        plugbuffer->add_int32(-1);				// NULL
-      else if(stringp(value) && !sizeof(value)) {
-        int k=0;
-        switch(dtoid[i]) {
-          default:
-            k=-1;	     // cast empty strings to NULL for non-string types
-          case BYTEAOID:
-          case TEXTOID:
-          case XMLOID:
-          case BPCHAROID:
-          case VARCHAROID:;
-        }
-        plugbuffer->add_int32(k);
-      } else
-        switch(dtoid[i]) {
-          case TEXTOID:
-          case BPCHAROID:
-          case VARCHAROID: {
-            if(!value) {
-              plugbuffer->add_int32(-1);
+          +int2hex(pgsqlsess._pportalcount++);
+      lock=0;
+#ifdef PG_DEBUGMORE
+      PD("ParamValues to bind: %O\n",paramValues);
+#endif
+      Stdio.Buffer plugbuffer=Stdio.Buffer();
+      plugbuffer->add(_portalname=
+        (_unnamedportalkey=pgsqlsess._unnamedportalmux->trylock(1))
+         ? "" : PORTALPREFIX
+#ifdef PG_DEBUG
+          +(string)(c->socket->query_fd())+"_"
+#endif
+          +int2hex(pgsqlsess._pportalcount++) )->add_int8(0)
+       ->add(_preparedname)->add_int8(0)->add_int16(sizeof(dtoid));
+      foreach(dtoid;;int textbin)
+        plugbuffer->add_int16(oidformat(textbin));
+      plugbuffer->add_int16(sizeof(dtoid));
+      string cenc=pgsqlsess._runtimeparameter[CLIENT_ENCODING];
+      foreach(paramValues;int i;mixed value) {
+        if(undefinedp(value) || objectp(value)&&value->is_val_null)
+          plugbuffer->add_int32(-1);				// NULL
+        else if(stringp(value) && !sizeof(value)) {
+          int k=0;
+          switch(dtoid[i]) {
+            default:
+              k=-1;	     // cast empty strings to NULL for non-string types
+            case BYTEAOID:
+            case TEXTOID:
+            case XMLOID:
+            case BPCHAROID:
+            case VARCHAROID:;
+          }
+          plugbuffer->add_int32(k);
+        } else
+          switch(dtoid[i]) {
+            case TEXTOID:
+            case BPCHAROID:
+            case VARCHAROID: {
+              if(!value) {
+                plugbuffer->add_int32(-1);
+                break;
+              }
+              value=(string)value;
+              switch(cenc) {
+                case UTF8CHARSET:
+                  value=string_to_utf8(value);
+                  break;
+                default:
+                  if(String.width(value)>8) {
+                    SUSERERROR("Don't know how to convert %O to %s encoding\n",
+                               value,cenc);
+                    value="";
+                  }
+              }
+              plugbuffer->add_hstring(value,4);
               break;
             }
-            value=(string)value;
-            switch(cenc) {
-              case UTF8CHARSET:
-                value=string_to_utf8(value);
+            default: {
+              if(!value) {
+                plugbuffer->add_int32(-1);
                 break;
-              default:
-                if(String.width(value)>8) {
-                  SUSERERROR("Don't know how to convert %O to %s encoding\n",
-                             value,cenc);
+              }
+              value=(string)value;
+              if(String.width(value)>8)
+                if(dtoid[i]==BYTEAOID)
+                  value=string_to_utf8(value);
+                else {
+                  SUSERERROR("Wide string %O not supported for type OID %d\n",
+                             value,dtoid[i]);
                   value="";
                 }
-            }
-            plugbuffer->add_hstring(value,4);
-            break;
-          }
-          default: {
-            if(!value) {
-              plugbuffer->add_int32(-1);
+              plugbuffer->add_hstring(value,4);
               break;
             }
-            value=(string)value;
-            if(String.width(value)>8)
-              if(dtoid[i]==BYTEAOID)
-                value=string_to_utf8(value);
-              else {
-                SUSERERROR("Wide string %O not supported for type OID %d\n",
-                           value,dtoid[i]);
-                value="";
-              }
-            plugbuffer->add_hstring(value,4);
-            break;
-          }
-          case BOOLOID:plugbuffer->add_int32(1);
-            do {
-              int tval;
-              if(stringp(value))
-                tval=value[0];
-              else if(!intp(value)) {
-                value=!!value;			// cast to boolean
-                break;
-              } else
-                tval=value;
-              switch(tval) {
-                case 'o':case 'O':
-                  catch {
-                    tval=value[1];
-                    value=tval=='n'||tval=='N';
-                  };
+            case BOOLOID:plugbuffer->add_int32(1);
+              do {
+                int tval;
+                if(stringp(value))
+                  tval=value[0];
+                else if(!intp(value)) {
+                  value=!!value;			// cast to boolean
                   break;
-                default:
-                  value=1;
-                  break;
-                case 0:case '0':case 'f':case 'F':case 'n':case 'N':
-                  value=0;
+                } else
+                  tval=value;
+                switch(tval) {
+                  case 'o':case 'O':
+                    catch {
+                      tval=value[1];
+                      value=tval=='n'||tval=='N';
+                    };
                     break;
+                  default:
+                    value=1;
+                    break;
+                  case 0:case '0':case 'f':case 'F':case 'n':case 'N':
+                    value=0;
+                      break;
+                }
+              } while(0);
+              plugbuffer->add_int8(value);
+              break;
+            case CHAROID:
+              if(intp(value))
+                plugbuffer->add_hstring(value,4);
+              else {
+                value=(string)value;
+                switch(sizeof(value)) {
+                  default:
+                    SUSERERROR(
+                     "\"char\" types must be 1 byte wide, got %O\n",value);
+                  case 0:
+                    plugbuffer->add_int32(-1);			// NULL
+                    break;
+                  case 1:
+                    plugbuffer->add_hstring(value[0],4);
+                }
               }
-            } while(0);
-            plugbuffer->add_int8(value);
-            break;
-          case CHAROID:
-            if(intp(value))
-              plugbuffer->add_hstring(value,4);
-            else {
-              value=(string)value;
-              switch(sizeof(value)) {
-                default:
-                  SUSERERROR(
-                   "\"char\" types must be 1 byte wide, got %O\n",value);
-                case 0:
-                  plugbuffer->add_int32(-1);			// NULL
-                  break;
-                case 1:
-                  plugbuffer->add_hstring(value[0],4);
-              }
-            }
-            break;
-          case INT8OID:
-            plugbuffer->add_int32(8)->add_int((int)value,8);
-            break;
-          case OIDOID:
-          case INT4OID:
-            plugbuffer->add_int32(4)->add_int32((int)value);
-            break;
-          case INT2OID:
-            plugbuffer->add_int32(2)->add_int16((int)value);
-            break;
-        }
+              break;
+            case INT8OID:
+              plugbuffer->add_int32(8)->add_int((int)value,8);
+              break;
+            case OIDOID:
+            case INT4OID:
+              plugbuffer->add_int32(4)->add_int32((int)value);
+              break;
+            case INT2OID:
+              plugbuffer->add_int32(2)->add_int16((int)value);
+              break;
+          }
+      }
+      if(_tprepared)
+        if(_tprepared.datarowdesc)
+          gotdatarowdesc(plugbuffer);
+        else if(dontcacheprefix->match(_query))	// Don't cache FETCH/COPY
+          m_delete(pgsqlsess->_prepareds,_query),_tprepared=0;
+      if(prepbufferready) {
+        lock=prepbuffermux->lock();
+        prepbuffer=plugbuffer;
+        catch(prepbufferready->signal());
+      }
     }
-    if(_tprepared)
-      if(_tprepared.datarowdesc)
-        gotdatarowdesc(plugbuffer);
-      else if(dontcacheprefix->match(_query))	// Don't cache FETCH/COPY
-        m_delete(pgsqlsess->_prepareds,_query),_tprepared=0;
-    if(prepbufferready) {
-      Thread.MutexKey lock=prepbuffermux->lock();
-      prepbuffer=plugbuffer;
-      catch(prepbufferready->signal());
-      lock=0;
-    }
+    lock=0;
   }
 
   final void _processrowdesc(array(mapping(string:mixed)) datarowdesc) {
