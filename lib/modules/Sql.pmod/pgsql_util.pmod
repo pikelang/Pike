@@ -415,7 +415,7 @@ class sql_result {
   final mixed _delayederror;
   final int _state;
   final int _fetchlimit;
-  final int _alltext;
+  private int alltext;
   final int _forcetext;
 
   final string _portalname;
@@ -428,15 +428,15 @@ class sql_result {
   private Thread.Mutex prepbuffermux;
   private Thread.Mutex closemux;
   private Thread.Queue datarows;
+  private array(mapping(string:mixed)) datarowdesc;
   private string statuscmdcomplete;
-  final int _bytesreceived;
+  private int bytesreceived;
   final int _synctransact;
   final Thread.Condition _ddescribe;
   final Thread.Mutex _ddescribemux;
   final Thread.MutexKey _unnamedportalkey,_unnamedstatementkey;
   final array _params;
   final string _query;
-  final array(mapping(string:mixed)) _datarowdesc;
   final string _preparedname;
   final mapping(string:mixed) _tprepared;
 
@@ -450,7 +450,7 @@ class sql_result {
                     "  laststatus: %s\n",
                     _state,rowsreceived,eoffound,inflight,
                     _query,
-                    _portalname,_datarowdesc&&sizeof(_datarowdesc),
+                    _portalname,datarowdesc&&sizeof(datarowdesc),
                     statuscmdcomplete||(_unnamedstatementkey?"*parsing*":""));
         break;
     }
@@ -469,7 +469,7 @@ class sql_result {
     prepbufferready=Thread.Condition();
     prepbuffermux=Thread.Mutex();
     portalbuffersize=_portalbuffersize;
-    _alltext = !alltyped;
+    alltext = !alltyped;
     _params = params;
     _forcetext = forcetext;
     _state = PORTALINIT;
@@ -502,9 +502,17 @@ class sql_result {
     return rows;
   }
 
+  final void _storetiming() {
+    if(_tprepared) {
+      _tprepared.trun=gethrtime()-_tprepared.trunstart;
+      m_delete(_tprepared,"trunstart");
+      _tprepared = UNDEFINED;
+    }
+  }
+
   private void waitfordescribe() {
     Thread.MutexKey lock=_ddescribemux->lock();
-    if(!_datarowdesc)
+    if(!datarowdesc)
       _ddescribe->wait(lock);
     lock=0;
   }
@@ -512,10 +520,10 @@ class sql_result {
   //! @seealso
   //!  @[Sql.sql_result()->num_fields()]
   int num_fields() {
-    if(!_datarowdesc)
+    if(!datarowdesc)
       waitfordescribe();
     trydelayederror();
-    return sizeof(_datarowdesc);
+    return sizeof(datarowdesc);
   }
 
   //! @seealso
@@ -540,15 +548,99 @@ class sql_result {
   //! @seealso
   //!  @[Sql.sql_result()->fetch_fields()]
   array(mapping(string:mixed)) fetch_fields() {
-    if(!_datarowdesc)
+    if(!datarowdesc)
       waitfordescribe();
     trydelayederror();
-    return _datarowdesc+({});
+    return datarowdesc+({});
   }
 
-  final void _setrowdesc(array(mapping(string:mixed)) datarowdesc) {
+#ifdef PG_DEBUG
+  final int
+#else
+  final void
+#endif
+   _decodedata(int msglen,string cenc) {
+    _storetiming();
+    string serror;
+    bytesreceived+=msglen;
+    int cols=c->read_int16();
+    array a=allocate(cols,!alltext&&Val.null);
+#ifdef PG_DEBUG
+    msglen-=2+4*cols;
+#endif
+    foreach(datarowdesc;int i;mapping m) {
+      int collen=c->read_sint(4);
+      if(collen>0) {
+#ifdef PG_DEBUG
+        msglen-=collen;
+#endif
+        mixed value;
+        switch(int typ=m.type) {
+          case FLOAT4OID:
+#if SIZEOF_FLOAT>=8
+          case FLOAT8OID:
+#endif
+            if(!alltext) {
+              value=(float)c->read(collen);
+              break;
+            }
+          default:value=c->read(collen);
+            break;
+          case CHAROID:
+            value=alltext?c->read(1):c->read_int8();
+            break;
+          case BOOLOID:value=c->read_int8();
+            switch(value) {
+              case 'f':value=0;
+                break;
+              case 't':value=1;
+            }
+            if(alltext)
+              value=value?"t":"f";
+            break;
+          case TEXTOID:
+          case BPCHAROID:
+          case VARCHAROID:
+            value=c->read(collen);
+            if(cenc==UTF8CHARSET && catch(value=utf8_to_string(value))
+             && !serror)
+              serror=SERROR("%O contains non-%s characters\n",
+                                                     value,UTF8CHARSET);
+            break;
+          case INT8OID:case INT2OID:
+          case OIDOID:case INT4OID:
+            if(_forcetext) {
+              value=c->read(collen);
+              if(!alltext)
+                value=(int)value;
+            } else {
+              switch(typ) {
+                case INT8OID:value=c->read_sint(8);
+                  break;
+                case INT2OID:value=c->read_sint(2);
+                  break;
+                case OIDOID:
+                case INT4OID:value=c->read_sint(4);
+              }
+              if(alltext)
+                value=(string)value;
+            }
+        }
+        a[i]=value;
+      } else if(!collen)
+        a[i]="";
+    }
+    _processdataready(a);
+    if(serror)
+      error(serror);
+#ifdef PG_DEBUG
+    return msglen;
+#endif
+  }
+
+  final void _setrowdesc(array(mapping(string:mixed)) drowdesc) {
     Thread.MutexKey lock=_ddescribemux->lock();
-    _datarowdesc=datarowdesc;
+    datarowdesc=drowdesc;
     _ddescribe->broadcast();
     lock=0;
   }
@@ -716,9 +808,9 @@ class sql_result {
     else {
       destruct(prepbufferready);	// Make sure we do this exactly once
       lock=0;
-      plugbuffer->add_int16(sizeof(_datarowdesc));
-      if(sizeof(_datarowdesc))
-        foreach(_datarowdesc;;mapping col)
+      plugbuffer->add_int16(sizeof(datarowdesc));
+      if(sizeof(datarowdesc))
+        foreach(datarowdesc;;mapping col)
           plugbuffer->add_int16(oidformat(col.type));
       else if(commitprefix->match(_query)) {
         lock=pgsqlsess->_commitmux->lock();
@@ -812,17 +904,17 @@ class sql_result {
     return retval;
   }
 
-  final void _processdataready(array datarow) {
+  final void _processdataready(array datarow,void|int msglen) {
+    bytesreceived+=msglen;
     inflight--;
     datarows->write(datarow);
-    rowsreceived++;
-    if(rowsreceived==1)
+    if(++rowsreceived==1)
       PD("<%O _fetchlimit %d=min(%d||1,%d), inflight %d\n",_portalname,
-       _fetchlimit,(portalbuffersize>>1)*rowsreceived/_bytesreceived,
+       _fetchlimit,(portalbuffersize>>1)*rowsreceived/bytesreceived,
        pgsqlsess._fetchlimit,inflight);
     if(_fetchlimit) {
       _fetchlimit=
-       min((portalbuffersize>>1)*rowsreceived/_bytesreceived||1,
+       min((portalbuffersize>>1)*rowsreceived/bytesreceived||1,
         pgsqlsess._fetchlimit);
       Thread.MutexKey lock=closemux->lock();
       if(_fetchlimit && inflight<=_fetchlimit-1)
@@ -841,9 +933,9 @@ class sql_result {
       Thread.MutexKey lock=prepbuffermux->lock();
       catch(prepbufferready->signal());
     }
-    if(!_datarowdesc) {
+    if(!datarowdesc) {
       lock=_ddescribemux->lock();
-      _datarowdesc=({});
+      datarowdesc=({});
       _ddescribe->broadcast();
     }
     lock=0;
