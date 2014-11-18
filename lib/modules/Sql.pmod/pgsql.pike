@@ -649,12 +649,7 @@ final void _processloop(.pgsql_util.conxion ci) {
       int msglen=ci->read_int32();
       _msgsreceived++;
       _bytesreceived+=1+msglen;
-      enum errortype {
-        noerror=0,
-        protocolerror,
-        protocolunsupported
-      };
-      errortype errtype=noerror;
+      int errtype=NOERROR;
       PD("%d",ci->socket->query_fd());
       switch(msgtype) {
         array(mapping) getcols() {
@@ -673,7 +668,7 @@ final void _processloop(.pgsql_util.conxion ci) {
         array(string) reads() {
 #ifdef PG_DEBUG
           if(msglen<1)
-            errtype=protocolerror;
+            errtype=PROTOCOLERROR;
 #endif
           array ret=({}),aw=({0});
           do {
@@ -707,7 +702,7 @@ final void _processloop(.pgsql_util.conxion ci) {
               break;
             case 2:
               PD("KerberosV5\n");
-              errtype=protocolunsupported;
+              errtype=PROTOCOLUNSUPPORTED;
               break;
             case 3:
               PD("ClearTextPassword\n");
@@ -715,13 +710,13 @@ final void _processloop(.pgsql_util.conxion ci) {
               break;
             case 4:
               PD("CryptPassword\n");
-              errtype=protocolunsupported;
+              errtype=PROTOCOLUNSUPPORTED;
               break;
             case 5:
               PD("MD5Password\n");
 #ifdef PG_DEBUG
               if(msglen<4)
-                errtype=protocolerror;
+                errtype=PROTOCOLERROR;
 #endif
 #define md5hex(x) String.string2hex(Crypto.MD5.hash(x))
               sendpass=md5hex(pass+user);
@@ -732,39 +727,39 @@ final void _processloop(.pgsql_util.conxion ci) {
               break;
             case 6:
               PD("SCMCredential\n");
-              errtype=protocolunsupported;
+              errtype=PROTOCOLUNSUPPORTED;
               break;
             case 7:
               PD("GSS\n");
-              errtype=protocolunsupported;
+              errtype=PROTOCOLUNSUPPORTED;
               break;
             case 9:
               PD("SSPI\n");
-              errtype=protocolunsupported;
+              errtype=PROTOCOLUNSUPPORTED;
               break;
             case 8:
               PD("GSSContinue\n");
-              errtype=protocolunsupported;
+              errtype=PROTOCOLUNSUPPORTED;
               cancelsecret=ci->read(msglen);		// Actually SSauthdata
 #ifdef PG_DEBUG
               if(msglen<1)
-                errtype=protocolerror;
+                errtype=PROTOCOLERROR;
               msglen=0;
 #endif
               break;
             default:
               PD("Unknown Authentication Method %c\n",authtype);
-              errtype=protocolunsupported;
+              errtype=PROTOCOLUNSUPPORTED;
               break;
           }
           switch(errtype) {
-            case noerror:
+            case NOERROR:
               if(cancelsecret!="")
                 ci->start()->add_int8('p')->add_hstring(sendpass,4,5)
                  ->add_int8(0)->sendcmd(SENDOUT);
               break;	// No flushing here, PostgreSQL 9.4 disapproves
             default:
-            case protocolunsupported:
+            case PROTOCOLUNSUPPORTED:
               ERROR("Unsupported authenticationmethod %c\n",authtype);
               break;
           }
@@ -789,7 +784,7 @@ final void _processloop(.pgsql_util.conxion ci) {
 #ifdef PG_DEBUG
             PD("%O=%O\n",ts[0],ts[1]);
           } else
-            errtype=protocolerror;
+            errtype=PROTOCOLERROR;
 #endif
           break;
         }
@@ -963,14 +958,14 @@ final void _processloop(.pgsql_util.conxion ci) {
           msglen-=4;
 #ifdef PG_DEBUG
           if(msglen<1)
-            errtype=protocolerror;
+            errtype=PROTOCOLERROR;
 #endif
           string s=ci->read(msglen-1);
           portal->_storetiming();
           PD("<%O CommandComplete %O\n",portal._portalname,s);
 #ifdef PG_DEBUG
           if(ci->read_int8())
-            errtype=protocolerror;
+            errtype=PROTOCOLERROR;
           msglen=0;
 #else
           ci->consume(1);
@@ -993,7 +988,7 @@ final void _processloop(.pgsql_util.conxion ci) {
           msglen-=4;
 #ifdef PG_DEBUG
           if(msglen<0)
-            errtype=protocolerror;
+            errtype=PROTOCOLERROR;
 #endif
           portal->_processdataready(({ci->read(msglen)}),msglen);
 #ifdef PG_DEBUG
@@ -1038,7 +1033,7 @@ final void _processloop(.pgsql_util.conxion ci) {
               preplastmessage(msgresponse);
               PD(a2nls(lastmessage));throw(0);
             case "08P01":case "42P05":
-              errtype=protocolerror;
+              errtype=PROTOCOLERROR;
             case "XX000":case "42883":case "42P01":
               invalidatecache=1;
             default:
@@ -1087,10 +1082,10 @@ final void _processloop(.pgsql_util.conxion ci) {
             switch(sizeof(ts)) {
 #if PG_DEBUG
               case 0:
-                errtype=protocolerror;
+                errtype=PROTOCOLERROR;
                 break;
               default:
-                errtype=protocolerror;
+                errtype=PROTOCOLERROR;
 #endif
               case 2:
                 extrainfo=ts[1];
@@ -1110,7 +1105,7 @@ final void _processloop(.pgsql_util.conxion ci) {
 #ifdef PG_DEBUG
             msglen=0;
 #endif
-            errtype=protocolunsupported;
+            errtype=PROTOCOLUNSUPPORTED;
           } else {
             lastmessage+=({
              sprintf("Connection lost to database %s@%s:%d/%s %d\n",
@@ -1123,18 +1118,18 @@ final void _processloop(.pgsql_util.conxion ci) {
       }
 #ifdef PG_DEBUG
       if(msglen)
-        errtype=protocolerror;
+        errtype=PROTOCOLERROR;
 #endif
       {
         string msg;
         switch(errtype) {
-          case protocolunsupported:
+          case PROTOCOLUNSUPPORTED:
             msg=sprintf("Unsupported servermessage received %c\n",msgtype);
             break;
-          case protocolerror:
+          case PROTOCOLERROR:
             msg=sprintf("Protocol error with database %s",host_info());
             break;
-          case noerror:
+          case NOERROR:
             continue;				// Normal production loop
         }
         ERROR(a2nls(lastmessage+=({msg})));
