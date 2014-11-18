@@ -657,10 +657,10 @@ class sql_result {
     plugbuffer->add(_portalname=
       (_unnamedportalkey=pgsqlsess._unnamedportalmux->trylock(1))
        ? "" : PORTALPREFIX+int2hex(pgsqlsess._pportalcount++) )->add_int8(0)
-     ->add(_preparedname)->add_int8(0)->add_int16(sizeof(paramValues));
+     ->add(_preparedname)->add_int8(0)->add_int16(sizeof(dtoid));
     foreach(dtoid;;int textbin)
       plugbuffer->add_int16(oidformat(textbin));
-    plugbuffer->add_int16(sizeof(paramValues));
+    plugbuffer->add_int16(sizeof(dtoid));
     string cenc=pgsqlsess._runtimeparameter[CLIENT_ENCODING];
     foreach(paramValues;int i;mixed value) {
       if(undefinedp(value) || objectp(value)&&value->is_val_null)
@@ -828,7 +828,7 @@ class sql_result {
       conxion bindbuffer=c->start(1);
       _unnamedstatementkey=0;
       bindbuffer->add_int8('B')->add_hstring(plugbuffer,4,4);
-      if(!_tprepared)
+      if(!_tprepared && sizeof(_preparedname))
         closestatement(bindbuffer,_preparedname);
       _sendexecute(pgsqlsess->_fetchlimit
                            && !(cachealways[_query]
