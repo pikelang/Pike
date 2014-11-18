@@ -303,7 +303,7 @@ int ping() {
 }
 
 private .pgsql_util.conxion getsocket(void|int nossl) {
-  return .pgsql_util.conxion(this,qportals,(int)nossl,_shortmux);
+  return .pgsql_util.conxion(this,qportals,(int)nossl);
 }
 
 //! Cancels all currently running queries in this session.
@@ -998,11 +998,6 @@ final void _processloop(.pgsql_util.conxion ci) {
           portal->_setrowdesc(getcols());
           PD("%O CopyInResponse\n",portal._portalname);
           portal._state=COPYINPROGRESS;
-          {
-            Thread.MutexKey resultlock=portal._resultmux->lock();
-            portal._newresult.signal();
-            resultlock=0;
-          }
           break;
         case 'c':
 #ifdef PG_DEBUG

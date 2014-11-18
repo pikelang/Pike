@@ -380,19 +380,18 @@ outer:
     return res;
   }
 
-  protected void create(object _pgsqlsess,Thread.Queue _qportals,int nossl,
-   Thread.Mutex _shortmux) {
+  protected void create(object _pgsqlsess,Thread.Queue _qportals,int nossl) {
     i::create(); o::create();
     qportals = _qportals;
     synctransact = 1;
-    fillread=Thread.Condition();
-    shortmux=_shortmux;
     gottimeout=sendcmd;		// Preset it with a NOP
     timeout=128;		// Just a reasonable amount
     socket=Stdio.File();
-    nostash=Thread.Mutex();
     stashqueue=Thread.Queue();
+    nostash=Thread.Mutex();
+    shortmux=Thread.Mutex();
     stashavail=Thread.Condition();
+    fillread=Thread.Condition();
     stash=Stdio.Buffer();
     pgsqlsess=_pgsqlsess;
     Thread.Thread(connectloop,nossl);
