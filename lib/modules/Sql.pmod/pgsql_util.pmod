@@ -803,7 +803,7 @@ class sql_result {
       plugbuffer=prepbuffer;
       prepbuffer=0;		// Free memory when plugbuffer leaves scope
     }
-    if(!prepbufferready || _state==CLOSED)
+    if(!prepbufferready || _state>=CLOSING)
       lock=_unnamedstatementkey=0;
     else {
       destruct(prepbufferready);	// Make sure we do this exactly once
@@ -848,12 +848,12 @@ class sql_result {
 
   final void _purgeportal() {
     _unnamedportalkey=_unnamedstatementkey=0;
+    datarows->write(1);				   // Signal EOF
     Thread.MutexKey lock=closemux->lock();
     _fetchlimit=0;				   // disables further Executes
     switch(_state) {
       case COPYINPROGRESS:
       case BOUND:
-        datarows->write(1);			   // Signal EOF
         --pgsqlsess->_portalsinflight;
     }
     _state=CLOSED;
@@ -874,13 +874,13 @@ class sql_result {
     switch(_state) {
       case PORTALINIT:
         _unnamedstatementkey=0;
-        _state=CLOSED;
+        _state=CLOSING;
         break;
       case COPYINPROGRESS:
         PD("CopyDone\n");
         plugbuffer->add("c\0\0\0\4");
       case BOUND:
-        _state=CLOSED;
+        _state=CLOSING;
         lock=0;
         PD("Close portal %O\n",_portalname);
         if(sizeof(_portalname)) {
@@ -907,7 +907,8 @@ class sql_result {
   final void _processdataready(array datarow,void|int msglen) {
     bytesreceived+=msglen;
     inflight--;
-    datarows->write(datarow);
+    if(_state<CLOSED)
+      datarows->write(datarow);
     if(++rowsreceived==1)
       PD("<%O _fetchlimit %d=min(%d||1,%d), inflight %d\n",_portalname,
        _fetchlimit,(portalbuffersize>>1)*rowsreceived/bytesreceived,
@@ -945,9 +946,10 @@ class sql_result {
     if(statusccomplete && !statuscmdcomplete)
       statuscmdcomplete=statusccomplete;
     inflight=0;
-    datarows->write(1);				// Signal EOF
     conxion plugbuffer=c->start(1);
     plugbuffer->sendcmd(_closeportal(plugbuffer));
+    _state=CLOSED;
+    datarows->write(1);				// Signal EOF
     releaseconditions();
   }
 

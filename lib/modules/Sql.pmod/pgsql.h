@@ -80,10 +80,15 @@
 #define PORTALINIT	0		// Portal states
 #define BOUND		1
 #define COPYINPROGRESS	2
-#define CLOSED		3
+#define CLOSING		3
+#define CLOSED		4
 
 #define KEEP		0		// Sendcmd subcommands
 #define SENDOUT		1
 #define FLUSHSEND	2
 #define FLUSHLOGSEND	3
 #define SYNCSEND	4
+
+#define NOERROR			0	// Error states networkparser
+#define PROTOCOLERROR		1
+#define PROTOCOLUNSUPPORTED	2
