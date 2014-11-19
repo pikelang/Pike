@@ -311,7 +311,10 @@ outer:
   }
 
   final void sendterminate() {
-    destruct(fillread);  // Delayed close() after flushing the output buffer
+    Thread.MutexKey lock=fillreadmux->lock();
+    fillread.signal();
+    fillread=0;		 // Delayed close() after flushing the output buffer
+    lock=0;
   }
 
   final int close() {
@@ -798,7 +801,8 @@ class sql_result {
       if(prepbufferready) {
         lock=prepbuffermux->lock();
         prepbuffer=plugbuffer;
-        catch(prepbufferready->signal());
+        if(prepbufferready)
+          prepbufferready->signal();
       }
     }
     lock=0;
@@ -815,15 +819,16 @@ class sql_result {
   private void gotdatarowdesc(void|Stdio.Buffer plugbuffer) {
     Thread.MutexKey lock=prepbuffermux->lock();
     if(!plugbuffer) {
-      if(!prepbuffer)
-        catch(prepbufferready->wait(lock));
+      if(!prepbuffer && prepbufferready)
+        prepbufferready->wait(lock);
       plugbuffer=prepbuffer;
       prepbuffer=0;		// Free memory when plugbuffer leaves scope
     }
     if(!prepbufferready || _state>=CLOSING)
       lock=_unnamedstatementkey=0;
     else {
-      destruct(prepbufferready);	// Make sure we do this exactly once
+      prepbufferready->signal();
+      prepbufferready=0;		// Make sure we do this exactly once
       lock=0;
       plugbuffer->add_int16(sizeof(datarowdesc));
       if(sizeof(datarowdesc))
@@ -948,8 +953,9 @@ class sql_result {
     pgsqlsess=0;
     Thread.MutexKey lock;
     if(prepbufferready) {
-      Thread.MutexKey lock=prepbuffermux->lock();
-      catch(prepbufferready->signal());
+      lock=prepbuffermux->lock();
+      if(prepbufferready)
+        prepbufferready->signal();
     }
     if(!datarowdesc) {
       lock=_ddescribemux->lock();
