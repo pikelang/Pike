@@ -2153,6 +2153,29 @@ PIKECLASS Backend
       my_add_timeval(next_timeout, &now);
     }
 
+    if (me->wakeup_pipe_send_fd < 0) {
+      int pipe[2];
+      IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: Creating wakeup pipe...\n",
+                    THR_NO, me->id));
+      if(pike_make_pipe(pipe) < 0)
+        Pike_error("Couldn't create backend wakeup pipe! errno=%d.\n",errno);
+
+      set_nonblocking(pipe[0],1);
+      set_nonblocking(pipe[1],1);
+      IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: Initializing wakeup pipe...\n",
+		    THR_NO, me->id));
+      change_fd_for_box (&me->wakeup_cb_box, pipe[0]);
+      me->wakeup_pipe_send_fd = pipe[1];
+
+      IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: Wakeup pipe is [%d, %d]\n",
+		    THR_NO, me->id,
+		    me->wakeup_pipe_send_fd, THIS->wakeup_cb_box.fd));
+
+      /* Don't keep these on exec! */
+      set_close_on_exec(pipe[0], 1);
+      set_close_on_exec(pipe[1], 1);
+    }
+
     *start_time = now;
 
     if(me->exec_thread) {
@@ -2588,28 +2611,7 @@ PIKECLASS Backend
       Pike_error("Attempt to clone the base Backend class.\n");
     }
 
-    if (me->wakeup_pipe_send_fd < 0) {
-      int pipe[2];
-      IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: Creating wakeup pipe...\n",
-		    THR_NO, me->id));
-      if(pike_make_pipe(pipe) < 0)
-	Pike_error("Couldn't create backend wakeup pipe! errno=%d.\n",errno);
 
-      set_nonblocking(pipe[0],1);
-      set_nonblocking(pipe[1],1);
-      IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: Initializing wakeup pipe...\n",
-		    THR_NO, me->id));
-      change_fd_for_box (&me->wakeup_cb_box, pipe[0]);
-      me->wakeup_pipe_send_fd = pipe[1];
-
-      IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: Wakeup pipe is [%d, %d]\n",
-		    THR_NO, me->id,
-		    me->wakeup_pipe_send_fd, THIS->wakeup_cb_box.fd));
-
-      /* Don't keep these on exec! */
-      set_close_on_exec(pipe[0], 1);
-      set_close_on_exec(pipe[1], 1);
-    }
   }
 }
 
