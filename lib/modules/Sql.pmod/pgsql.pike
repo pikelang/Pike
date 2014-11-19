@@ -609,7 +609,13 @@ final void _processloop(.pgsql_util.conxion ci) {
       plugbuffer->add(name)->add_int8(0)->add((string)value)->add_int8(0);
     plugbuffer->add_int8(0);
     PD("%O\n",(string)plugbuffer);
-    ci->start()->add_hstring(plugbuffer,4,4)->sendcmd(SENDOUT);
+    if(catch(ci->start()->add_hstring(plugbuffer,4,4)->sendcmd(SENDOUT))) {
+      if(_options.reconnect)
+        _connectfail();
+      else
+        destruct(waitforauthready);
+      return;
+    }
   }		// Do not flush at this point, PostgreSQL 9.4 disapproves
   cancelsecret=0;
 #ifdef PG_DEBUG
