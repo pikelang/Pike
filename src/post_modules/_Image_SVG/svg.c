@@ -367,7 +367,10 @@ PIKE_MODULE_INIT
 {
 #ifdef HAVE_SVG
 #ifdef HAVE_SVG_2_36_OR_NEWER
+#if GLIB_MINOR_VERSION < 36
+  /* Obsoleted in glib 2.36. */
   g_type_init(); /* Initialize the glib type system. */
+#endif
 #else
   rsvg_init(); /* Initialize librsvg */
 #endif
