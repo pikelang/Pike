@@ -103,44 +103,51 @@ static void low__decode( INT32 args, int header_only )
   struct pike_string *data;
   struct mapping *opts = 0;
   struct svalue *debugsp = Pike_sp;
+
   if( args > 2 )
-    Pike_error("Too many arguments\n");
+    Pike_error("Too many arguments.\n");
   
   if( args == 2 )
   {
     if( TYPEOF(Pike_sp[-1]) != PIKE_T_MAPPING )
-      Pike_error("Illegal argument 2, expected mapping\n");
+      Pike_error("Illegal argument 2, expected mapping.\n");
     opts = Pike_sp[-1].u.mapping;
     Pike_sp--;
     args--;
   }
 
-  if( TYPEOF(Pike_sp[-1]) != PIKE_T_STRING )
-    Pike_error("Illegal argument 1, expected string\n");
+  if( TYPEOF(Pike_sp[-args]) != PIKE_T_STRING ) {
+    _do_free_mapping(opts);
+    Pike_error("Illegal argument 1, expected string.\n");
+  }
 
   f_string_to_utf8( 1 );
   data = Pike_sp[-1].u.string;
   handle = rsvg_handle_new( );
 
-  if( !handle )
-    Pike_error("rsvg_handle_new() failed\n");
+  if( !handle ) {
+    _do_free_mapping(opts);
 
-  rsvg_handle_set_size_callback( handle, do_resize,
-				 (void *)opts, _do_free_mapping );
+    Pike_error("rsvg_handle_new() failed.\n");
+  }
+
+  rsvg_handle_set_size_callback( handle, do_resize, (void *)opts, NULL );
 
   rsvg_handle_write( handle, (void *)data->str, data->len, &err );
+
+  _do_free_mapping(opts);
 
   if( err )
   {
     rsvg_handle_free( handle );
-    Pike_error("Failed to decode SVG\n");
+    Pike_error("Failed to decode SVG.\n");
   }
   rsvg_handle_close( handle, &err );
 
   if( err )
   {
     rsvg_handle_free( handle );
-    Pike_error("Failed to decode SVG\n");
+    Pike_error("Failed to decode SVG.\n");
   }
 
   res = rsvg_handle_get_pixbuf( handle );
@@ -149,7 +156,7 @@ static void low__decode( INT32 args, int header_only )
   if( !res )
   {
     rsvg_handle_free( handle );
-    Pike_error("Failed to decode SVG\n");
+    Pike_error("Failed to decode SVG.\n");
   }
   
   {
