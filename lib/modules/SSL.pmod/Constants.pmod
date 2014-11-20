@@ -283,13 +283,20 @@ constant SSL_rsa_with_null_md5			= 0x0001;	// SSL 3.0
 constant SSL_rsa_with_null_sha			= 0x0002;	// SSL 3.0
 constant SSL_rsa_export_with_rc4_40_md5		= 0x0003;	// SSL 3.0
 constant SSL_rsa_export_with_rc2_cbc_40_md5	= 0x0006;	// SSL 3.0
+constant TLS_rsa_with_idea_cbc_sha              = 0x0007;       // RFC 5469
 constant SSL_rsa_export_with_des40_cbc_sha	= 0x0008;	// SSL 3.0
+constant TLS_rsa_with_des_cbc_sha               = 0x0009;       // RFC 5469
 constant SSL_dh_dss_export_with_des40_cbc_sha	= 0x000b;	// SSL 3.0
+constant TLS_dh_dss_with_des_cbc_sha            = 0x000c;       // RFC 5469
 constant SSL_dh_rsa_export_with_des40_cbc_sha	= 0x000e;	// SSL 3.0
+constant TLS_dh_rsa_with_des_cbc_sha            = 0x000f;       // RFC 5469
 constant SSL_dhe_dss_export_with_des40_cbc_sha	= 0x0011;	// SSL 3.0
+constant TLS_dhe_dss_with_des_cbc_sha           = 0x0012;       // RFC 5469
 constant SSL_dhe_rsa_export_with_des40_cbc_sha	= 0x0014;	// SSL 3.0
+constant TLS_dhe_rsa_with_des_cbc_sha           = 0x0015;       // RFC 5469
 constant SSL_dh_anon_export_with_rc4_40_md5	= 0x0017;	// SSL 3.0
 constant SSL_dh_anon_export_with_des40_cbc_sha	= 0x0019;	// SSL 3.0
+constant TLS_dh_anon_with_des_cbc_sha           = 0x001a;       // RFC 5469
 constant TLS_krb5_with_des_cbc_40_sha           = 0x0026;	// RFC 2712
 constant TLS_krb5_with_rc2_cbc_40_sha           = 0x0027;	// RFC 2712
 constant TLS_krb5_with_rc4_40_sha               = 0x0028;	// RFC 2712
@@ -728,14 +735,20 @@ constant CIPHER_SUITES =
    // NB: The IDEA and DES suites are obsolete in TLS 1.2 and later.
 #if constant(Crypto.IDEA)
    SSL_rsa_with_idea_cbc_sha :		({ KE_rsa, CIPHER_idea, HASH_sha }),
+   TLS_rsa_with_idea_cbc_sha :          ({ KE_rsa, CIPHER_idea, HASH_sha }),
    SSL_rsa_with_idea_cbc_md5 :		({ KE_rsa, CIPHER_idea, HASH_md5 }),
 #endif
    SSL_rsa_with_des_cbc_sha :		({ KE_rsa, CIPHER_des, HASH_sha }),
+   TLS_rsa_with_des_cbc_sha :           ({ KE_rsa, CIPHER_des, HASH_sha }),
    SSL_rsa_with_des_cbc_md5 :		({ KE_rsa, CIPHER_des, HASH_md5 }),
    SSL_dhe_dss_with_des_cbc_sha :	({ KE_dhe_dss, CIPHER_des, HASH_sha }),
+   TLS_dhe_dss_with_des_cbc_sha :       ({ KE_dhe_dss, CIPHER_des, HASH_sha }),
    SSL_dhe_rsa_with_des_cbc_sha :	({ KE_dhe_rsa, CIPHER_des, HASH_sha }),
+   TLS_dhe_rsa_with_des_cbc_sha :       ({ KE_dhe_rsa, CIPHER_des, HASH_sha }),
    SSL_dh_dss_with_des_cbc_sha :	({ KE_dh_dss, CIPHER_des, HASH_sha }),
+   TLS_dh_dss_with_des_cbc_sha :        ({ KE_dh_dss, CIPHER_des, HASH_sha }),
    SSL_dh_rsa_with_des_cbc_sha :	({ KE_dh_rsa, CIPHER_des, HASH_sha }),
+   TLS_dh_rsa_with_des_cbc_sha :        ({ KE_dh_rsa, CIPHER_des, HASH_sha }),
 
    SSL_rsa_with_rc4_128_sha :		({ KE_rsa, CIPHER_rc4, HASH_sha }),
    SSL_rsa_with_rc4_128_md5 :		({ KE_rsa, CIPHER_rc4, HASH_md5 }),
@@ -753,6 +766,7 @@ constant CIPHER_SUITES =
    SSL_dh_anon_export_with_des40_cbc_sha: ({ KE_dh_anon, CIPHER_des40, HASH_sha }),
    SSL_dh_anon_with_rc4_128_md5:	({ KE_dh_anon, CIPHER_rc4, HASH_md5 }),
    SSL_dh_anon_with_des_cbc_sha:	({ KE_dh_anon, CIPHER_des, HASH_sha }),
+   TLS_dh_anon_with_des_cbc_sha:        ({ KE_dh_anon, CIPHER_des, HASH_sha }),
    SSL_dh_anon_with_3des_ede_cbc_sha:	({ KE_dh_anon, CIPHER_3des, HASH_sha }),
    TLS_dh_anon_with_aes_128_cbc_sha:	({ KE_dh_anon, CIPHER_aes, HASH_sha }),
    TLS_dh_anon_with_aes_256_cbc_sha:	({ KE_dh_anon, CIPHER_aes256, HASH_sha }),

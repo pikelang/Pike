@@ -67,7 +67,7 @@ The TLS 1.2 Protocol is specified in the following RFCs:
  [X] AES GCM Cipher for TLS		RFC 5288
  [X] ECC with SHA256/384 & GCM		RFC 5289
  [/] Suite B Profile for TLS		RFC 5430
- [ ] DES and IDEA for TLS		RFC 5469
+ [X] DES and IDEA for TLS		RFC 5469
  [ ] Pre-Shared Keys with GCM		RFC 5487
  [ ] ECDHA_PSK Cipher for TLS		RFC 5489
  [ ] Renegotiation Extension		RFC 5746
