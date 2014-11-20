@@ -1319,7 +1319,7 @@ private void sendsync() {
 //! through the generic SQL-interface.
 void resync() {
   mixed err;
-  if(!is_open()&&!reconnect())
+  if(!is_open()&&!reconnect()&&sizeof(lastmessage))
     ERROR(a2nls(lastmessage));
   err = catch {
     PD("Portalsinflight: %d\n",_portalsinflight);
@@ -1330,7 +1330,7 @@ void resync() {
     return;
   };
   PD("%O\n",err);
-  if(!reconnect())
+  if(!reconnect()&&sizeof(lastmessage))
     ERROR(a2nls(lastmessage));
 }
 
