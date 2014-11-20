@@ -691,9 +691,9 @@ final void _processloop(.pgsql_util.conxion ci) {
         case 'R': {
           PD("Authentication ");
           string sendpass;
-          int authtype;
           msglen-=4+4;
-          switch(authtype=cr->read_int32()) {
+          int authtype=cr->read_int32();
+          switch(authtype) {
             case 0:
               PD("Ok\n");
               .pgsql_util.local_backend->remove_call_out(reconnect);
