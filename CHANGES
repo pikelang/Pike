@@ -681,6 +681,8 @@ o pgsql
   + Eliminates an obscure and rare Pike-internals corruption bug.
   + Drops the _PGsql CMOD in favour of pure Pike using Stdio.Buffer.
   + Fully threaded, event and callback driven operation.
+  + Allows for query setup and row fetches to be spread out over
+    an arbitrary number of threads.
   + Maximum parallelism over a single filedescriptor (better than before).
   + New interface: fetch_row_array() and callback driven.
   + Less filling and faster than the existing driver.
