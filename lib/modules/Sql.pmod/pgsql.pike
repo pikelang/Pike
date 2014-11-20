@@ -1899,9 +1899,10 @@ private inline void throwdelayederror(object parent) {
       // followed by a flush, it makes a VERY noticeable difference in
       // performance if it is omitted; seems like a flaw in the PostgreSQL
       // server v8.3.3
+      // In v8.4 and later, things speed up slightly when it is omitted.
       PD("Parse statement %O=%O\n",preparedname,q);
       plugbuffer=c->start()->add_int8('P')
-       ->add_hstring(({preparedname,0,q,"\0\0\0"}),4,4)->add(PGFLUSH);
+       ->add_hstring(({preparedname,0,q,"\0\0\0"}),4,4); //->add(PGFLUSH);
     }
     portal._preparedname=preparedname;
     if(!tp || !tp.datatypeoid) {

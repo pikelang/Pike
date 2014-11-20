@@ -16,7 +16,6 @@
 				    // 0 for no chunking
 				    // Needs to be >0 for interleaved
 				    // portals
-#define FETCHLIMITLONGRUN    1	    // for long running background queries
 #define MINPREPARELENGTH     16	    // statements shorter than this will not
 				    // be cached
 #define STATEMENTCACHEDEPTH  1024   // Initial maximum cachecountsum for
