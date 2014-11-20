@@ -596,6 +596,7 @@ private inline mixed callout(function(mixed ...:void) f,
 
 final void _processloop(.pgsql_util.conxion ci) {
   int terminating=0;
+  .pgsql_util.conxiin cr=ci->i;
   int|.pgsql_util.sql_result portal;
   mixed err;
   {
@@ -640,29 +641,29 @@ final void _processloop(.pgsql_util.conxion ci) {
         datarowdebug=0; datarowdebugcount=0;
       }
 #endif
-      int msgtype=ci->read_int8();
+      int msgtype=cr->read_int8();
       if(!portal) {
         portal=qportals->try_read();
 #ifdef PG_DEBUG
         showportal(msgtype);
 #endif
       }
-      int msglen=ci->read_int32();
+      int msglen=cr->read_int32();
       _msgsreceived++;
       _bytesreceived+=1+msglen;
       int errtype=NOERROR;
       PD("%d>",ci->socket->query_fd());
       switch(msgtype) {
         array(mapping) getcols() {
-          int bintext=ci->read_int8();
-          int cols=ci->read_int16();
+          int bintext=cr->read_int8();
+          int cols=cr->read_int16();
 #ifdef PG_DEBUG
           array a;
           msglen-=4+1+2+2*cols;
           foreach(a=allocate(cols,([]));;mapping m)
-            m.type=ci->read_int16();
+            m.type=cr->read_int16();
 #else
-	  ci->consume(cols<<1);
+	  cr->consume(cols<<1);
 #endif			      // Discard column info, and make it line oriented
           return ({(["type":bintext?BYTEAOID:TEXTOID,"name":"line"])});
         };
@@ -673,7 +674,7 @@ final void _processloop(.pgsql_util.conxion ci) {
 #endif
           array ret=({}),aw=({0});
           do {
-            string w=ci->read_cstring();
+            string w=cr->read_cstring();
             msglen-=sizeof(w)+1; aw[0]=w; ret+=aw;
           } while(msglen);
           return ret;
@@ -692,12 +693,12 @@ final void _processloop(.pgsql_util.conxion ci) {
           string sendpass;
           int authtype;
           msglen-=4+4;
-          switch(authtype=ci->read_int32()) {
+          switch(authtype=cr->read_int32()) {
             case 0:
               PD("Ok\n");
               .pgsql_util.local_backend->remove_call_out(reconnect);
-              ci->gottimeout=cancelquery;
-              ci->timeout=timeout;
+              cr->gottimeout=cancelquery;
+              cr->timeout=timeout;
               reconnectdelay=0;
               cancelsecret="";
               break;
@@ -721,7 +722,7 @@ final void _processloop(.pgsql_util.conxion ci) {
 #endif
 #define md5hex(x) String.string2hex(Crypto.MD5.hash(x))
               sendpass=md5hex(pass+user);
-              sendpass="md5"+md5hex(sendpass+ci->read(msglen));
+              sendpass="md5"+md5hex(sendpass+cr->read(msglen));
 #ifdef PG_DEBUG
               msglen=0;
 #endif
@@ -741,7 +742,7 @@ final void _processloop(.pgsql_util.conxion ci) {
             case 8:
               PD("GSSContinue\n");
               errtype=PROTOCOLUNSUPPORTED;
-              cancelsecret=ci->read(msglen);		// Actually SSauthdata
+              cancelsecret=cr->read(msglen);		// Actually SSauthdata
 #ifdef PG_DEBUG
               if(msglen<1)
                 errtype=PROTOCOLERROR;
@@ -767,8 +768,8 @@ final void _processloop(.pgsql_util.conxion ci) {
           break;
         }
         case 'K':
-          msglen-=4+4;backendpid=ci->read_int32();
-          cancelsecret=ci->read(msglen);
+          msglen-=4+4;backendpid=cr->read_int32();
+          cancelsecret=cr->read(msglen);
 #ifdef PG_DEBUG
           PD("BackendKeyData %O\n",cancelsecret);
           msglen=0;
@@ -796,7 +797,7 @@ final void _processloop(.pgsql_util.conxion ci) {
 #endif
           break;
         case 'Z':
-          backendstatus=ci->read_int8();
+          backendstatus=cr->read_int8();
 #ifdef PG_DEBUG
           msglen-=4+1;
           PD("ReadyForQuery %c\n",backendstatus);
@@ -818,8 +819,7 @@ final void _processloop(.pgsql_util.conxion ci) {
           _readyforquerycount--;
           if(readyforquery_cb)
             readyforquery_cb(),readyforquery_cb=0;
-          if(waitforauthready)
-            destruct(waitforauthready);
+          destruct(waitforauthready);
           break;
         case '1':
 #ifdef PG_DEBUG
@@ -829,13 +829,13 @@ final void _processloop(.pgsql_util.conxion ci) {
           break;
         case 't': {
           array a;
-          int cols=ci->read_int16();
+          int cols=cr->read_int16();
 #ifdef PG_DEBUG
           PD("%O ParameterDescription %d values\n",portal._query,cols);
           msglen-=4+2+4*cols;
 #endif
           foreach(a=allocate(cols);int i;)
-            a[i]=ci->read_int32();
+            a[i]=cr->read_int32();
 #ifdef PG_DEBUGMORE
           PD("%O\n",a);
 #endif
@@ -847,37 +847,37 @@ final void _processloop(.pgsql_util.conxion ci) {
         case 'T': {
           array a;
 #ifdef PG_DEBUG
-          int cols=ci->read_int16();
+          int cols=cr->read_int16();
           PD("RowDescription %d columns %O\n",cols,portal._query);
           msglen-=4+2;
           foreach(a=allocate(cols);int i;)
 #else
-          foreach(a=allocate(ci->read_int16());int i;)
+          foreach(a=allocate(cr->read_int16());int i;)
 #endif
           {
-            string s=ci->read_cstring();
+            string s=cr->read_cstring();
             mapping(string:mixed) res=(["name":s]);
 #ifdef PG_DEBUG
             msglen-=sizeof(s)+1+4+2+4+2+4+2;
-            res.tableoid=ci->read_int32()||UNDEFINED;
-            res.tablecolattr=ci->read_int16()||UNDEFINED;
+            res.tableoid=cr->read_int32()||UNDEFINED;
+            res.tablecolattr=cr->read_int16()||UNDEFINED;
 #else
-            ci->consume(6);
+            cr->consume(6);
 #endif
-            res.type=ci->read_int32();
+            res.type=cr->read_int32();
 #ifdef PG_DEBUG
             {
-              int len=ci->read_sint(2);
+              int len=cr->read_sint(2);
               res.length=len>=0?len:"variable";
             }
-            res.atttypmod=ci->read_int32();
+            res.atttypmod=cr->read_int32();
             /* formatcode contains just a zero when Bind has not been issued
              * yet, but the content is irrelevant because it's determined
              * at query time
              */
-            res.formatcode=ci->read_int16();
+            res.formatcode=cr->read_int16();
 #else
-            ci->consume(8);
+            cr->consume(8);
 #endif
             a[i]=res;
           }
@@ -961,15 +961,15 @@ final void _processloop(.pgsql_util.conxion ci) {
           if(msglen<1)
             errtype=PROTOCOLERROR;
 #endif
-          string s=ci->read(msglen-1);
+          string s=cr->read(msglen-1);
           portal->_storetiming();
           PD("%O CommandComplete %O\n",portal._portalname,s);
 #ifdef PG_DEBUG
-          if(ci->read_int8())
+          if(cr->read_int8())
             errtype=PROTOCOLERROR;
           msglen=0;
 #else
-          ci->consume(1);
+          cr->consume(1);
 #endif
           portal->_releasesession(s);
           portal=0;
@@ -991,7 +991,7 @@ final void _processloop(.pgsql_util.conxion ci) {
           if(msglen<0)
             errtype=PROTOCOLERROR;
 #endif
-          portal->_processdataready(({ci->read(msglen)}),msglen);
+          portal->_processdataready(({cr->read(msglen)}),msglen);
 #ifdef PG_DEBUG
           msglen=0;
 #endif
@@ -1071,7 +1071,7 @@ final void _processloop(.pgsql_util.conxion ci) {
         case 'A': {
           PD("NotificationResponse\n");
           msglen-=4+4;
-          int pid=ci->read_int32();
+          int pid=cr->read_int32();
           string condition,extrainfo=UNDEFINED;
           {
             array(string) ts=reads();
@@ -1097,7 +1097,7 @@ final void _processloop(.pgsql_util.conxion ci) {
           if(msgtype!=-1) {
             string s;
             PD("Unknown message received %c\n",msgtype);
-            s=ci->read(msglen-=4);PD("%O\n",s);
+            s=cr->read(msglen-=4);PD("%O\n",s);
 #ifdef PG_DEBUG
             msglen=0;
 #endif
@@ -1162,7 +1162,7 @@ final void _processloop(.pgsql_util.conxion ci) {
     }
   if(!ci->close() && !terminating && _options.reconnect)
     _connectfail();
-  else if(waitforauthready)
+  else
     destruct(waitforauthready);
   if(err && !stringp(err))
     throw(err);
@@ -1178,8 +1178,7 @@ void close() {
   catch(cancelquery());
   catch(c->sendterminate());
   c=0;
-  if(waitforauthready)
-    destruct(waitforauthready);
+  destruct(waitforauthready);
 }
 
 protected void destroy() {
@@ -1189,10 +1188,7 @@ protected void destroy() {
 
 void _connectfail(void|mixed err) {
   PD("Connect failed %O reconnectdelay %d\n",err,reconnectdelay);
-  catch {
-    if(waitforauthready)
-      destruct(waitforauthready);
-  };
+  destruct(waitforauthready);
   if(!err || reconnectdelay) {
     int tdelay;
     switch(tdelay=reconnectdelay) {
