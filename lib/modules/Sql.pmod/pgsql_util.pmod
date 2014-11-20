@@ -117,6 +117,8 @@ private inline mixed callout(function(mixed ...:void) f,
   return local_backend->call_out(f,delay,@args);
 }
 
+private void nop() { }
+
 // Some pgsql utility functions
 
 class bufcon {
@@ -155,20 +157,57 @@ class bufcon {
 
 }
 
-class conxion {
+class conxiin {
   inherit Stdio.Buffer:i;
-  inherit Stdio.Buffer:o;
 
-  private Thread.Condition fillread;
-  private Thread.Mutex fillreadmux;
+  final Thread.Condition fillread;
+  final Thread.Mutex fillreadmux;
+  final function(:void) gottimeout;
+  final int timeout;
+
+  protected bool range_error(int howmuch) {
+#ifdef PG_DEBUG
+    if(howmuch<=0)
+      error("Out of range %d\n",howmuch);
+#endif
+    if(fillread) {
+      array cid=callout(gottimeout,timeout);
+      Thread.MutexKey lock=fillreadmux->lock();
+      fillread.wait(lock);
+      lock=0;
+      local_backend->remove_call_out(cid);
+    } else
+      throw(MAGICTERMINATE);
+    return true;
+  }
+
+  final int read_cb(mixed id,mixed b) {
+    Thread.MutexKey lock=fillreadmux->lock();
+    if(fillread)
+      fillread.signal();
+    lock=0;
+    return 0;
+  }
+
+  protected void create() {
+    i::create();
+    gottimeout=nop;		// Preset it with a NOP
+    timeout=128;		// Just a reasonable amount
+    fillreadmux=Thread.Mutex();
+    fillread=Thread.Condition();
+  }
+}
+
+class conxion {
+  inherit Stdio.Buffer:o;
+  final conxiin i;
+
   private Thread.Queue qportals;
   final Thread.Mutex shortmux;
   final Stdio.File socket;
   private object pgsqlsess;
   private int towrite;
 
-  final function(:void) gottimeout;
-  final int timeout;
   final Thread.Mutex nostash;
   final Thread.MutexKey started;
   final Thread.Queue stashqueue;
@@ -205,52 +244,16 @@ class conxion {
     return bufcon(this);
   }
 
-  protected bool range_error(int howmuch) {
-    if(!howmuch)
-      return false;
-#ifdef PG_DEBUG
-    if(howmuch<0)
-      error("Out of range %d\n",howmuch);
-#endif
-    if(fillread) {
-      array cid=callout(gottimeout,timeout);
-      Thread.MutexKey lock=fillreadmux->lock();
-      fillread.wait(lock);
-      lock=0;
-      local_backend->remove_call_out(cid);
-    } else
-      throw(MAGICTERMINATE);
-    return true;
-  }
-
-  private int read_cb(mixed id,mixed b) {
-    Thread.MutexKey lock=fillreadmux->lock();
-    if(fillread)
-      fillread.signal();
-    lock=0;
-    return 0;
-  }
-
   private int write_cb() {
     Thread.MutexKey lock=shortmux->lock();
     towrite-=output_to(socket,towrite);
     lock=0;
-    if(!fillread && !sizeof(this)) {
+    if(!i->fillread && !sizeof(this)) {
       PD("%d>Close socket delayed\n",socket->query_fd());
       socket->close();
     }
     return 0;
   }
-
-  final inline    int consume(int w)     { return i::consume(w);     }
-  final inline    int unread(int w)      { return i::unread(w);      }
-  final inline string read(int w)        { return i::read(w);        }
-  final inline object read_buffer(int w) { return i::read_buffer(w); }
-  final inline    int read_sint(int w)   { return i::read_sint(w);   }
-  final inline    int read_int8()        { return i::read_int8();    }
-  final inline    int read_int16()       { return i::read_int16();   }
-  final inline    int read_int32()       { return i::read_int32();   }
-  final inline string read_cstring()     { return i::read_cstring(); }
 
   final void sendcmd(void|int mode,void|sql_result portal) {
     if(portal)
@@ -311,9 +314,9 @@ outer:
   }
 
   final void sendterminate() {
-    Thread.MutexKey lock=fillreadmux->lock();
-    fillread.signal();
-    fillread=0;		 // Delayed close() after flushing the output buffer
+    Thread.MutexKey lock=i->fillreadmux->lock();
+    i->fillread.signal();
+    i->fillread=0;	 // Delayed close() after flushing the output buffer
     lock=0;
   }
 
@@ -366,8 +369,8 @@ outer:
       if(!socket->is_open())
         error(strerror(socket->errno()));
       socket->set_backend(local_backend);
-      socket->set_buffer_mode(i::this,0);
-      socket->set_nonblocking(read_cb,write_cb,0);
+      socket->set_buffer_mode(i,0);
+      socket->set_nonblocking(i->read_cb,write_cb,0);
       Thread.Thread(pgsqlsess->_processloop,this);
       return;
     };
@@ -382,7 +385,7 @@ outer:
         res=predef::sprintf("conxion  fd: %d input queue: %d/%d "
                     "queued portals: %d  output queue: %d/%d\n",
                     socket&&socket->query_fd(),
-                    sizeof(i::this),i::_size_object(),
+                    sizeof(i),i->_size_object(),
                     qportals->size(),sizeof(this),_size_object());
         break;
     }
@@ -390,16 +393,13 @@ outer:
   }
 
   protected void create(object _pgsqlsess,Thread.Queue _qportals,int nossl) {
-    i::create(); o::create();
+    o::create();
     qportals = _qportals;
     synctransact = 1;
-    gottimeout=sendcmd;		// Preset it with a NOP
-    timeout=128;		// Just a reasonable amount
     socket=Stdio.File();
-    fillreadmux=Thread.Mutex();
+    i=conxiin();
     shortmux=Thread.Mutex();
     nostash=Thread.Mutex();
-    fillread=Thread.Condition();
     stashavail=Thread.Condition();
     stashqueue=Thread.Queue();
     stash=Stdio.Buffer();
@@ -418,6 +418,7 @@ class sql_result {
   private object pgsqlsess;
   private int eoffound;
   private conxion c;
+  private conxiin cr;
   final mixed _delayederror;
   final int _state;
   final int _fetchlimit;
@@ -466,7 +467,7 @@ class sql_result {
   protected void create(object _pgsqlsess,conxion _c,string query,
               int _portalbuffersize,int alltyped,array params,int forcetext) {
     pgsqlsess = _pgsqlsess;
-    c = _c;
+    cr = (c = _c)->i;
     _query = query;
     datarows = Thread.Queue();
     _ddescribe=Thread.Condition();
@@ -569,13 +570,13 @@ class sql_result {
     _storetiming();
     string serror;
     bytesreceived+=msglen;
-    int cols=c->read_int16();
+    int cols=cr->read_int16();
     array a=allocate(cols,!alltext&&Val.null);
 #ifdef PG_DEBUG
     msglen-=2+4*cols;
 #endif
     foreach(datarowdesc;int i;mapping m) {
-      int collen=c->read_sint(4);
+      int collen=cr->read_sint(4);
       if(collen>0) {
 #ifdef PG_DEBUG
         msglen-=collen;
@@ -587,15 +588,15 @@ class sql_result {
           case FLOAT8OID:
 #endif
             if(!alltext) {
-              value=(float)c->read(collen);
+              value=(float)cr->read(collen);
               break;
             }
-          default:value=c->read(collen);
+          default:value=cr->read(collen);
             break;
           case CHAROID:
-            value=alltext?c->read(1):c->read_int8();
+            value=alltext?cr->read(1):cr->read_int8();
             break;
-          case BOOLOID:value=c->read_int8();
+          case BOOLOID:value=cr->read_int8();
             switch(value) {
               case 'f':value=0;
                 break;
@@ -607,7 +608,7 @@ class sql_result {
           case TEXTOID:
           case BPCHAROID:
           case VARCHAROID:
-            value=c->read(collen);
+            value=cr->read(collen);
             if(cenc==UTF8CHARSET && catch(value=utf8_to_string(value))
              && !serror)
               serror=SERROR("%O contains non-%s characters\n",
@@ -616,17 +617,17 @@ class sql_result {
           case INT8OID:case INT2OID:
           case OIDOID:case INT4OID:
             if(_forcetext) {
-              value=c->read(collen);
+              value=cr->read(collen);
               if(!alltext)
                 value=(int)value;
             } else {
               switch(typ) {
-                case INT8OID:value=c->read_sint(8);
+                case INT8OID:value=cr->read_sint(8);
                   break;
-                case INT2OID:value=c->read_sint(2);
+                case INT2OID:value=cr->read_sint(2);
                   break;
                 case OIDOID:
-                case INT4OID:value=c->read_sint(4);
+                case INT4OID:value=cr->read_sint(4);
               }
               if(alltext)
                 value=(string)value;
