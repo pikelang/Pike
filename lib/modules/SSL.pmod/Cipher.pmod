@@ -880,15 +880,17 @@ class KeyExchangeECDH
     Gmp.mpz y;
     switch(data->read_int(1)) {
     case 4:
-      if (!sizeof(data) || sizeof(data) & 1) {
+      int len = sizeof(data);
+      if (!len || len & 1) {
 	connection->ke = UNDEFINED;
 	error("Invalid size in point format.\n");
       }
 
       // NB: No need to validate that the point is valid for the curve here.
       //     The check will be done when the point is used in point_mul().
-      x = Gmp.mpz(data->read_int(sizeof(data)/2));
-      y = Gmp.mpz(data->read_int(sizeof(data)));
+      len /= 2;
+      x = Gmp.mpz(data->read_int(len));
+      y = Gmp.mpz(data->read_int(len));
       break;
     default:
       // Compressed points not supported yet.
