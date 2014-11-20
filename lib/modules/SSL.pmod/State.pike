@@ -291,7 +291,7 @@ Alert|Packet decrypt_packet(Packet packet)
 }
 
 //! Encrypts a packet (including deflating and MAC-generation).
-Alert|Packet encrypt_packet(Packet packet)
+Alert|Packet encrypt_packet(Packet packet, Context ctx)
 {
   ProtocolVersion version = packet->protocol_version;
   string data = packet->fragment;
@@ -335,7 +335,7 @@ Alert|Packet encrypt_packet(Packet packet)
 	  // Generate a cryptographically strong random number R of length
 	  // CipherSpec.block_length and prepend it to the plaintext prior
 	  // to encryption.
-	  string iv = Crypto.Random.random_string(tls_iv);
+	  string iv = ctx->random(tls_iv);
 	  crypt->set_iv(iv);
 	  data = iv + crypt->crypt(data) + crypt->crypt(digest) + crypt->pad(Crypto.PAD_TLS);
 	} else {
