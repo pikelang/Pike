@@ -874,22 +874,21 @@ class KeyExchangeECDH
 		   (session->curve->size() + 7)>>3, y);
   }
 
-  array(Gmp.mpz) decode_point(string(8bit) data)
+  array(Gmp.mpz) decode_point(Stdio.Buffer data)
   {
-    Stdio.Buffer struct = Stdio.Buffer(data);
-
     Gmp.mpz x;
     Gmp.mpz y;
-    switch(struct->read_int(1)) {
+    switch(data->read_int(1)) {
     case 4:
-      string rest = struct->read();
-      if (sizeof(rest) & 1) {
+      if (!sizeof(data) || sizeof(data) & 1) {
 	connection->ke = UNDEFINED;
 	error("Invalid size in point format.\n");
       }
+
       // NB: No need to validate that the point is valid for the curve here.
       //     The check will be done when the point is used in point_mul().
-      [x, y] = map(rest/(sizeof(rest)/2), Gmp.mpz, 256);
+      x = Gmp.mpz(data->read_int(sizeof(data)/2));
+      y = Gmp.mpz(data->read_int(sizeof(data)));
       break;
     default:
       // Compressed points not supported yet.
@@ -990,7 +989,7 @@ class KeyExchangeECDH
 
     if (catch
       {
-	[ Gmp.mpz x, Gmp.mpz y ] = decode_point(struct->read_hstring(1));
+	[ Gmp.mpz x, Gmp.mpz y ] = decode_point(struct->read_hbuffer(1));
 	Gmp.mpz secret = get_server_secret();
 	// RFC 4492 5.10:
 	// Note that this octet string (Z in IEEE 1363 terminology) as
@@ -1118,14 +1117,13 @@ class KeyExchangeECDHE
   {
     SSL3_DEBUG_MSG("KE_ECDHE\n");
 
-    Stdio.Buffer output = Stdio.Buffer();
+    Stdio.Buffer.RewindKey key = input->rewind_key();
+    int len = sizeof(input);
 
     // First the curve.
     switch(input->read_int(1)) {
     case CURVETYPE_named_curve:
-      output->add_int(CURVETYPE_named_curve, 1);
       int c = input->read_int(2);
-      output->add_int(c, 2);
       session->curve = ECC_CURVES[c];
       if (!session->curve) {
 	connection->ke = UNDEFINED;
@@ -1140,11 +1138,11 @@ class KeyExchangeECDHE
     }
 
     // Then the point.
-    string raw = input->read_hstring(1);
-    [ pubx, puby ] = decode_point(raw);
+    [ pubx, puby ] = decode_point(input->read_hbuffer(1));
 
-    output->add_hstring(raw, 1);
-    return output;
+    len = len - sizeof(input);
+    key->rewind();
+    return input->read_buffer(len);
   }
 }
 
