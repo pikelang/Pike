@@ -596,7 +596,7 @@ private inline mixed callout(function(mixed ...:void) f,
 
 final void _processloop(.pgsql_util.conxion ci) {
   int terminating=0;
-  .pgsql_util.conxion cr=ci->i;
+  .pgsql_util.conxiin cr=ci->i;
   int|.pgsql_util.sql_result portal;
   mixed err;
   {
