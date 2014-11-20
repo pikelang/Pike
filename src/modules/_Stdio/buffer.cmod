@@ -2419,12 +2419,12 @@ fail: CALL_AND_UNSET_ONERROR(e);
    *! inside itself, this means that it can only grow. So do not keep
    *! the rewind key when it is not needed.
    */
-  PIKEFUN Buffer.RewindKey rewind_on_error()
+  PIKEFUN object(Buffer.RewindKey) rewind_on_error()
   {
     push_object( io_create_rewind_key( THIS, 1 ) );
   }
 
-  PIKEFUN Buffer.RewindKey rewind_key()
+  PIKEFUN object(Buffer.RewindKey) rewind_key()
   {
     push_object( io_create_rewind_key( THIS, 0 ) );
   }
