@@ -803,8 +803,13 @@ class PikeType
 	case "float":   return "tFloat";
 	case "string":
 	  {
-	    int low = (int)(string)(args[0]->t);
-	    int high = (int)(string)(args[1]->t);
+            // Clamp the integer range to 32 bit signed.
+            int low = limit(-0x80000000, (int)(string)(args[0]->t), 0x7fffffff);
+            int high = limit(-0x80000000, (int)(string)(args[1]->t), 0x7fffffff);
+            if (high < low)
+              exit(1, "Error: Inversed range in integer type, string(%s..%s).\n",
+                   (string)args[0]->t, (string)args[1]->t);
+
 	    if (!low) {
 	      switch(high) {
 	      case 0x0000: return "tStr0";
@@ -823,17 +828,11 @@ class PikeType
 	case "mixed":   return "tMix";
 	case "int":
 	  // Clamp the integer range to 32 bit signed.
-	  int low = (int)(string)(args[0]->t);
-	  int high = (int)(string)(args[1]->t);
-	  if (low < -2147483648) low = -2147483648;
-	  else if (low > 2147483647) low = 2147483647;
-	  if (high > 2147483647) high = 2147483647;
-	  else if (high < -2147483648) high = -2147483648;
-	  if (high < low) {
-	    int tmp = low;
-	    low = high;
-	    high = tmp;
-	  }
+	  int low = limit(-0x80000000, (int)(string)(args[0]->t), 0x7fffffff);
+	  int high = limit(-0x80000000, (int)(string)(args[1]->t), 0x7fffffff);
+	  if (high < low)
+            exit(1, "Error: Inversed range in integer type, int(%s..%s).\n",
+                 (string)args[0]->t, (string)args[1]->t);
 
 	  // NOTE! This piece of code KNOWS that PIKE_T_INT is 8!
 	  return stringify(sprintf("\010%4c%4c", low, high));
