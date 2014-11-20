@@ -562,25 +562,24 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
       INT_TYPE i=val->u.integer;
       if (i != (INT32)i)
       {
-	 /* Reuse the id. */
-	 data->counter.u.integer--;
-	 /* Make sure we don't find ourselves again below... */
-	 map_delete(data->encoded, val);
-
+        MP_INT tmp;
+        char *buffer;
+        mpz_init( &tmp );
+        mpz_set_si( &tmp, i );
 	 /* Encode as a bignum */
-	 push_int(i);
-	 convert_stack_top_to_bignum();
-	 encode_value2(Pike_sp-1,data, 0);
-	 pop_stack();
-
-	 /* Restore the entry we removed above. */
-	 mapping_insert(data->encoded, val, &entry_id);
-	 goto encode_done;
+        buffer = alloca( mpz_sizeinbase(&tmp, 36) + 2 );
+        mpz_get_str( buffer, 36, &tmp );
+        mpz_clear( &tmp );
+	code_entry(TAG_OBJECT, 2, data);
+        push_text( buffer );
+        encode_value2( Pike_sp-1, data, 0 );
+        pop_stack();
+	 /* mapping_insert(data->encoded, val, &entry_id); */
       }
       else
 	 code_entry(TAG_INT, i,data);
     }
-#else       
+#else
       code_entry(TAG_INT, val->u.integer,data);
 #endif
       break;
