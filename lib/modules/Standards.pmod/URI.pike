@@ -116,17 +116,29 @@ int `==(mixed something)
 
 string combine_uri_path(string base, string rel)
 {
-  string buf;
+  string buf = rel;
+  array segments;
 
-  // RFC 2396, §5.2.6:
-  // a) All but the last segment of the base URI's path component is
-  //    copied to the buffer.  In other words, any characters after the
-  //    last (right-most) slash character, if any, are excluded.
-  array segments=base/"/";
-  buf=segments[..<1]*"/"+"/";
+  // RFC 2396, §5.2.5:
+  //    If the path component begins with a slash character ("/"),
+  //    then the reference is an absolute-path and we skip to step 7.
+  //
+  // NB: The RFC does not take into account that even absolute
+  //     paths may contain segments of ".." and ".", and this
+  //     function may get called by external code that wants
+  //     to get rid of them. We simply ignore the base URI's
+  //     path if rel is absolute.
+  if (!has_prefix(rel, "/")) {
+    // RFC 2396, §5.2.6:
+    // a) All but the last segment of the base URI's path component is
+    //    copied to the buffer.  In other words, any characters after the
+    //    last (right-most) slash character, if any, are excluded.
+    segments = base/"/";
+    buf = segments[..<1]*"/"+"/";
 
-  // b) The reference's path component is appended to the buffer string.
-  buf+=rel;
+    // b) The reference's path component is appended to the buffer string.
+    buf += rel;
+  }
   segments = buf / "/";
 
   // c) All occurrences of "./", where "." is a complete path segment,
@@ -343,6 +355,9 @@ void reparse_uri(this_program|string|void base_uri)
 
     // 5) If the path component begins with a slash character ("/"), then
     //    the reference is an absolute-path and we skip to step 7.
+    //
+    // FIXME: What if it contains "." or ".." segments?
+    // cf combine_uri_path() above.
     if(!has_prefix(path, "/"))
     {
 
