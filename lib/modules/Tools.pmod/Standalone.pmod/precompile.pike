@@ -785,10 +785,21 @@ class PikeType
 	case "any":     return "tAny";
 	case "mixed":   return "tMix";
 	case "int":
+	  // Clamp the integer range to 32 bit signed.
+	  int low = (int)(string)(args[0]->t);
+	  int high = (int)(string)(args[1]->t);
+	  if (low < -2147483648) low = -2147483648;
+	  else if (low > 2147483647) low = 2147483647;
+	  if (high > 2147483647) high = 2147483647;
+	  else if (high < -2147483648) high = -2147483648;
+	  if (high < low) {
+	    int tmp = low;
+	    low = high;
+	    high = tmp;
+	  }
+
 	  // NOTE! This piece of code KNOWS that PIKE_T_INT is 8!
-	  return stringify(sprintf("\010%4c%4c",
-				   (int)(string)(args[0]->t),
-				   (int)(string)(args[1]->t)));
+	  return stringify(sprintf("\010%4c%4c", low, high));
 
 	case "bignum":
 	case "longest":
