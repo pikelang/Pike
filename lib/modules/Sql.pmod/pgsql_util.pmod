@@ -847,11 +847,11 @@ class sql_result {
       bindbuffer->add_int8('B')->add_hstring(plugbuffer,4,4);
       if(!_tprepared && sizeof(_preparedname))
         closestatement(bindbuffer,_preparedname);
-      _sendexecute(pgsqlsess->_fetchlimit
+      _sendexecute(_fetchlimit
                            && !(cachealways[_query]
                                 || sizeof(_query)>=MINPREPARELENGTH &&
                                 execfetchlimit->match(_query))
-                           && FETCHLIMITLONGRUN,bindbuffer);
+                           && _fetchlimit,bindbuffer);
     }
   }
 
@@ -935,7 +935,7 @@ class sql_result {
        min((portalbuffersize>>1)*rowsreceived/bytesreceived||1,
         pgsqlsess._fetchlimit);
       Thread.MutexKey lock=closemux->lock();
-      if(_fetchlimit && inflight<=_fetchlimit-1)
+      if(_fetchlimit && inflight<=(_fetchlimit>>1)-1)
         _sendexecute(_fetchlimit);
       else if(!_fetchlimit)
         PD("<%O _fetchlimit %d, inflight %d, skip execute\n",
