@@ -204,6 +204,8 @@ MODULE_REQUIREMENTS= \
   $(SRCDIR)/interpret_protos.h \
   lib @EXTRA_MODULE_REQUIREMENTS@
 
+PMOD_TARGETS=@PMOD_TARGETS@
+
 SRC_TARGETS= \
  $(SRCDIR)/language.c \
  $(SRCDIR)/language.h \
@@ -212,7 +214,7 @@ SRC_TARGETS= \
  $(SRCDIR)/peep_engine.c \
  $(SRCDIR)/case_info.h \
  $(SRCDIR)/whitespace.h \
- $(SRCDIR)/treeopt.h @PMOD_TARGETS@
+ $(SRCDIR)/treeopt.h $(PMOD_TARGETS)
 
 
 #
@@ -500,12 +502,14 @@ undump_modules: delete_dumped_modules
 	  exit $$status; \
 	fi
 
+$(PMOD_TARGETS): precompile.sh-stamp $(TMP_BINDIR)/precompile.pike $(PIKE_SRC_DIR)/../lib/modules/Tools.pmod/Standalone.pmod/precompile.pike Makefile
+
 #
 # Please note that this must be accompanied by a dependency rule as
 # The .c file will not be created in the SOURCE directory otherwise.
 # -Hubbe
 #
-.cmod.c: precompile.sh-stamp $(TMP_BINDIR)/precompile.pike
+.cmod.c:
 	./precompile.sh --cache precompile.pike $(PRECOMPILER_ARGS) >"$@" "$<" || { rm "$@"; exit 1; }
 
 # The same applies to this.
