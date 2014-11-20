@@ -1,4 +1,4 @@
-/* -*- c -*-
+/* vim:syntax=c
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
@@ -21,6 +21,7 @@
 #include "module_support.h"
 
 #include "siphash24.h"
+#include "bignum.h"
 
 /*! @module ADT
  */
@@ -33,8 +34,8 @@
  *! All filters use double hashing to construct an infinite series of hash values from two
  *! initial hash values.
  *! All bloom filters can be serialized (using @[encode_value]) and transferred over the network.
- *! However, only the hash values of @[String] and @[Simple] are independent of the current pike
- *! process.
+ *! However, only the hash values of @[String], @[Simple] and @[Int] are independent of the current
+ *! pike process.
  */
 
 DECLARATIONS
@@ -58,6 +59,13 @@ struct hash_data {
     unsigned INT32 ch;
     unsigned INT32 left;
 };
+
+static INLINE void init_hash(struct hash_data *hash, unsigned INT64 hval) {
+    hash->h1 = hval;
+    hash->h2 = hval >> (sizeof(hash->h1)*CHAR_BIT);
+    hash->ch = hash->h1;
+    hash->left = (sizeof(hash->h1)*CHAR_BIT);
+}
 
 static INLINE unsigned INT32 get_hash_fast(struct hash_data *d, unsigned INT32 bits) {
     unsigned INT32 mask = (1U << bits) - 1;
@@ -92,6 +100,39 @@ static void memcpy_be64(void * _dst, const void * _src, size_t len) {
         src += 8;
         dst += 8;
     }
+}
+
+/* Integer mixing functions. */
+
+/* This is the 64bit finalizer of Murmur Hash 3 */
+static INLINE unsigned INT64 mix6464(unsigned INT64 h) {
+    h ^= h >> 33;
+    h *= 0xff51afd7ed558ccd;
+    h ^= h >> 33;
+    h *= 0xc4ceb9fe1a85ec53;
+    h ^= h >> 33;
+    return h;
+}
+
+static INLINE unsigned INT64 mix3264(unsigned INT32 h) {
+    unsigned INT32 h1 = h;
+    /* this is the 32 bit finalizer of murmur hash 3 */
+    h1 = ((h1 >> 16) ^ h1) * 0x85ebca6b;
+    h1 = ((h1 >> 13) ^ h1) * 0xc2b2ae35;
+    h1 ^= h1 >> 16;
+    /* this mixing function is due to thomas mueller */
+    h = ((h >> 16) ^ h) * 0x45d9f3b;
+    h = ((h >> 16) ^ h) * 0x45d9f3b;
+    h = ((h >> 16) ^ h);
+    return (unsigned INT64)h << 32 | h1;
+}
+
+static INLINE unsigned INT64 mix_ptr(void * ptr) {
+#if SIZEOF_CHARP == 8
+    return mix6464((unsigned INT64)((char*)ptr - (char*)NULL));
+#else
+    return mix3264((unsigned INT32)((char*)ptr - (char*)NULL));
+#endif
 }
 
 /*! @class Filter
@@ -505,17 +546,18 @@ PIKECLASS Filter {
      *! hash functions and the same bits set.
      */
     PIKEFUN int _equal(mixed v) {
+        INT_TYPE ret = 0;
+
         if (TYPEOF(*v) == PIKE_T_OBJECT) {
             const struct object *o = v->u.object;
             const struct Filter_struct *this = THIS;
             const struct Filter_struct *that = OBJ2_FILTER(o);
 
-            if (bloom_compatiblep(Pike_fp->current_object, this, o, that)
-                && !memcmp(this->vector, that->vector, bloom_length_bytes(this)))
-                RETURN 1;
+            if (bloom_compatiblep(Pike_fp->current_object, this, o, that))
+                ret = !memcmp(this->vector, that->vector, bloom_length_bytes(this));
         }
 
-        RETURN 0;
+        RETURN ret;
     }
 
     /*! @decl int(0..1) superset_of(object(Filter) o)
@@ -550,7 +592,7 @@ PIKECLASS Filter {
         RETURN ret;
     }
 
-    /*! @decl int(0..1) subset_of(object(Filter) v)
+    /*! @decl int(0..1) subset_of(object(Filter) o)
      *!
      *! Returns true if @expr{o@} represents a subset of this bloom filter.
      */
@@ -588,7 +630,7 @@ PIKECLASS Filter {
 /*! @class SValue
  *!
  *! This bloom filter accepts any value as an index. It is not completely compatible with the
- *! usual equality in pike, in particular it does not respect the @[lfun::__hash] lfun and 
+ *! usual equality in pike, in particular it does not respect the @[lfun::__hash] lfun and
  *! hashing of trampolines. Compatibility can be achieved by using the return value of @[hash_value]
  *! as index, albeit with higher false positive probability.
  *! 
@@ -598,24 +640,21 @@ PIKECLASS Filter {
  */
 
 PIKECLASS SValue {
-    static void siphash_svalue(const struct svalue *sv, struct hash_data *hash) {
+    static void my_hash_svalue(const struct svalue *sv, struct hash_data *hash) {
         unsigned INT64 hval;
 
-        unsigned INT64 key = TYPEOF(*sv);
+        unsigned INT32 key = TYPEOF(*sv);
 
         if (key == PIKE_T_FUNCTION)
-            key += SUBTYPEOF(*sv);
+            key |= (unsigned INT32)SUBTYPEOF(*sv) << 16;
 
-        hval = low_hashmem_siphash24(&sv->u, sizeof(union anything), sizeof(union anything), key);
+        hval = mix_ptr(sv->u.dummy) ^ mix3264(key);
 
-        hash->h1 = hval;
-        hash->h2 = hval >> (sizeof(hash->h1)*CHAR_BIT);
-        hash->ch = hash->h1;
-        hash->left = (sizeof(hash->h1)*CHAR_BIT);
+        init_hash(hash, hval);
     }
 #cmod_define SVALUE_IS_KEY(sv)  (1)
 #cmod_define SVALUE_TO_KEY(sv)  (sv)
-#cmod_define HASH_FUNCTION siphash_svalue
+#cmod_define HASH_FUNCTION my_hash_svalue
 #cmod_define INDEX_TYPE mixed
 #cmod_include "filter.H"
 }
@@ -628,17 +667,13 @@ PIKECLASS SValue {
  */
 PIKECLASS String {
     static void siphash_string(const struct pike_string *s, struct hash_data *hash) {
-        struct svalue tmp;
         unsigned INT64 hval;
 
         size_t len = s->len << s->size_shift;
 
         hval = siphash24_pike_string(s, 42);
 
-        hash->h1 = hval;
-        hash->h2 = hval >> (sizeof(hash->h1)*CHAR_BIT);
-        hash->ch = hash->h1;
-        hash->left = (sizeof(hash->h1)*CHAR_BIT);
+        init_hash(hash, hval);
     }
 #cmod_define SVALUE_IS_KEY(sv)  (TYPEOF(*(sv)) == PIKE_T_STRING)
 #cmod_define SVALUE_TO_KEY(sv)  (sv)->u.string
@@ -658,8 +693,7 @@ PIKECLASS String {
  */
 PIKECLASS Simple {
     static void hash_string(const struct pike_string *s, struct hash_data *hash) {
-        struct svalue tmp;
-        size_t hval;
+        unsigned INT64 hval;
         size_t len = s->len << s->size_shift;
 
         if (len < 8)
@@ -693,6 +727,54 @@ PIKECLASS Simple {
 #cmod_define SVALUE_TO_KEY(sv)  (sv)->u.string
 #cmod_define HASH_FUNCTION hash_string
 #cmod_define INDEX_TYPE string
+#cmod_include "filter.H"
+}
+/*! @endclass
+ */
+
+/*! @class Int
+ *!
+ *! This bloom filter accepts only integers as indices.
+ *! 
+ *! @bugs
+ *! For integers that fit into 64 bit signed integers, the hashes are independent
+ *! of the pike process. For bigger values the hash values may depend on the architecture.
+ *! 
+ */
+PIKECLASS Int {
+    static void hash_int(const struct svalue *sv, struct hash_data *hash) {
+        unsigned INT64 hval;
+
+        if (TYPEOF(*sv) == PIKE_T_INT) {
+            hval = mix6464((unsigned INT64)sv->u.integer);
+        } else {
+            struct object * o = sv->u.object;
+#if SIZEOF_INT_TYPE < 8
+            if (int64_from_bignum((INT64*)&hval, o)) {
+                hval = mix6464(hval);
+            } else
+#endif
+            {
+                MP_INT * mpz = (MP_INT*)(o->storage);
+                size_t len = mpz_size(mpz) * sizeof(mp_limb_t);
+                /* nice try, but _mp_d is still architecture specific */
+                hval = low_hashmem_siphash24(mpz->_mp_d, len, len, mpz_sgn(mpz) < 0 ? 1 : 0);
+            }
+
+        }
+        hash->h1 = hval;
+        hash->h2 = hval >> 32;
+        hash->ch = hash->h1;
+        hash->left = (sizeof(hash->h1)*CHAR_BIT);
+    }
+    static INLINE int int_svalue_is_key(const struct svalue *sv) {
+        return TYPEOF(*sv) == PIKE_T_INT ||
+              (TYPEOF(*sv) == PIKE_T_OBJECT && is_bignum_object(sv->u.object));
+    }
+#cmod_define SVALUE_IS_KEY(sv)  int_svalue_is_key(sv)
+#cmod_define SVALUE_TO_KEY(sv)  (sv)
+#cmod_define HASH_FUNCTION hash_int
+#cmod_define INDEX_TYPE bignum
 #cmod_include "filter.H"
 }
 
