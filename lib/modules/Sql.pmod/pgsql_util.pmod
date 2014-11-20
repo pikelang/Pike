@@ -670,13 +670,7 @@ class sql_result {
       PD("ParamValues to bind: %O\n",paramValues);
 #endif
       Stdio.Buffer plugbuffer=Stdio.Buffer();
-      plugbuffer->add(_portalname=
-        (_unnamedportalkey=pgsqlsess._unnamedportalmux->trylock(1))
-         ? "" : PORTALPREFIX
-#ifdef PG_DEBUG
-          +(string)(c->socket->query_fd())+"_"
-#endif
-          +int2hex(pgsqlsess._pportalcount++) )->add_int8(0)
+      plugbuffer->add(_portalname)->add_int8(0)
        ->add(_preparedname)->add_int8(0)->add_int16(sizeof(dtoid));
       foreach(dtoid;;int textbin)
         plugbuffer->add_int16(oidformat(textbin));
