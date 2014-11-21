@@ -553,36 +553,34 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
   {
     case T_INT:
       /* NOTE: Doesn't encode NUMBER_UNDEFINED et al. */
-      /* But that's a feature; NUMBER_UNDEFINED is an inherently
-       * transient value. It would lose its usefulness otherwise.
-       * /mast */
-
-#if SIZEOF_INT_TYPE > 4
-    {
-      INT_TYPE i=val->u.integer;
-      if (i != (INT32)i)
       {
-	 /* Reuse the id. */
-	 data->counter.u.integer--;
-	 /* Make sure we don't find ourselves again below... */
-	 map_delete(data->encoded, val);
-
-	 /* Encode as a bignum */
-	 push_int(i);
-	 convert_stack_top_to_bignum();
-	 encode_value2(Pike_sp-1,data, 0);
-	 pop_stack();
-
-	 /* Restore the entry we removed above. */
-	 mapping_insert(data->encoded, val, &entry_id);
-	 goto encode_done;
-      }
-      else
-	 code_entry(TAG_INT, i,data);
-    }
-#else       
-      code_entry(TAG_INT, val->u.integer,data);
+        INT_TYPE i=val->u.integer;
+#if SIZEOF_INT_TYPE > 4
+        if (i != (INT32)i)
+        {
+          MP_INT tmp;
+          /* Note: Assumes sizeof_int_type is a multiple of 8. */
+#if (SIZEOF_INT_TYPE > SIZEOF_LONG) || (SIZEOF_INT_TYPE&7)
+#  error Assumption about size of int type not true.
 #endif
+          char buffer[16*(SIZEOF_INT_TYPE/8)];
+          size_t l;
+          /* Note: conversion to base 36 could be done directly here
+             using / and % instead.  Doing it like this is actually
+             only slightly slower, however, and saves on code size.
+          */
+          mpz_init_set_si( &tmp, i );
+          mpz_get_str( buffer, 36, &tmp );
+          mpz_clear( &tmp );
+          l = strlen(buffer);
+          code_entry(TAG_OBJECT, 2, data);
+          code_entry(TAG_STRING, l, data);
+          addstr(buffer,l);
+        }
+        else
+#endif
+          code_entry(TAG_INT, i, data);
+      }
       break;
 
     case T_STRING:
@@ -841,18 +839,17 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
        */
       if(is_bignum_object(val->u.object))
       {
+        MP_INT *i = (MP_INT*)val->u.object->storage;
+        char *buffer;
+        size_t l;
+
+        buffer = xalloc(mpz_sizeinbase(i, 36)+2);
+        mpz_get_str( buffer, 36, i );
+        l = strlen(buffer);
 	code_entry(TAG_OBJECT, 2, data);
-	/* 256 would be better, but then negative numbers
-	 * won't work... /Hubbe
-	 */
-	push_int(36);
-	apply(val->u.object,"digits",1);
-#ifdef PIKE_DEBUG
-	if(TYPEOF(Pike_sp[-1]) != T_STRING)
-	  Pike_error("Gmp.mpz->digits did not return a string!\n");
-#endif
-	encode_value2(Pike_sp-1, data, 0);
-	pop_stack();
+        code_entry(TAG_STRING, l, data);
+        addstr(buffer,l);
+        free(buffer);
 	break;
       }
 
