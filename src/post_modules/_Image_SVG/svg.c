@@ -123,6 +123,8 @@ static void low__decode( INT32 args, int header_only )
 
   f_string_to_utf8( 1 );
   data = Pike_sp[-1].u.string;
+
+#if LIBRSVG_MINOR_VERSION < 14
   handle = rsvg_handle_new( );
 
   if( !handle ) {
@@ -221,6 +223,129 @@ static void low__decode( INT32 args, int header_only )
     f_aggregate_mapping( Pike_sp - osp );
   }
   rsvg_handle_free( handle );
+
+#else /* LIBRSVG_MINOR_VERSION >= 14 */
+
+  handle = rsvg_handle_new_from_data(STR0(data), data->len, &err);
+
+  if( !handle ) {
+    _do_free_mapping(opts);
+    Pike_error("Failed to decode SVG.\n");
+  }
+
+  {
+    struct svalue *osp = Pike_sp;
+    RsvgDimensionData dimensions;
+    gint width, height;
+
+    rsvg_handle_get_dimensions(handle, &dimensions);
+    width = dimensions.width;
+    height = dimensions.height;
+    do_resize(&width, &height, (void *)opts);
+    _do_free_mapping(opts);
+
+    push_text( "xsize" ); push_int( width );
+    push_text( "ysize" ); push_int( height );
+    ref_push_string( literal_type_string );  push_text( "image/svg");
+    if( !header_only )
+    {
+      struct svalue *image_image;
+      struct object *ao=0, *io=0;
+      struct image *i=0, *a=0;
+      cairo_surface_t *surface;
+      cairo_t *cr;
+      rgb_group *rgbpix;
+      rgb_group *apix;
+      unsigned INT32 *argbpix;
+      int errcode;
+      size_t stride;
+      int x, y;
+
+      push_text( "Image.Image" );
+      APPLY_MASTER( "resolv", 1 );
+
+      image_image = Pike_sp - 1;
+
+      push_int( width );
+      push_int( height );
+      apply_svalue( image_image, 2 );
+      io = Pike_sp[-1].u.object;
+      i = (struct image*)io->storage;
+
+      push_int( width );
+      push_int( height );
+      apply_svalue( image_image, 2 );
+      ao = Pike_sp[-1].u.object;
+      a = (struct image*)ao->storage;
+
+      Pike_sp -= 2;
+      pop_stack();	/* Image.Image */
+
+      /* NB: Potential but very unlikely leak of image objects
+       *     here on failure to allocate the strings "image"
+       *     or "alpha".
+       */
+      push_text( "image" ); push_object( io );
+      push_text( "alpha" ); push_object( ao );
+
+      surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, width, height);
+      cr = cairo_create(surface);
+      if ((errcode = cairo_status(cr))) {
+	cairo_destroy(cr);
+	Pike_error("Failed to create cairo: %d.\n", errcode);
+      }
+
+      /* Scale to fit. */
+      if (dimensions.width && dimensions.height &&
+	  ((width != dimensions.width) || (height != dimensions.height))) {
+	cairo_scale(cr,
+		    ((double)width)/dimensions.width,
+		    ((double)height)/dimensions.height);
+      }
+
+      /* Render to cairo. */
+      rsvg_handle_render_cairo(handle, cr);
+
+      cairo_surface_flush(surface);
+
+      /* Convert the cairo RGBA image to RGB + alpha. */
+      rgbpix = i->img;
+      apix = a->img;
+      argbpix = (unsigned INT32 *)cairo_image_surface_get_data(surface);
+      stride = cairo_image_surface_get_stride(surface)>>2;
+
+      for(y = 0; y < height; y++) {
+	for(x = 0; x < width; x++) {
+	  unsigned INT32 argb = argbpix[x];
+	  int alpha = (argb>>24) & 0xff;
+	  if (alpha) {
+	    apix->r = apix->g = apix->b = alpha;
+	    if (argb & 0xffffff) {
+	      rgbpix->r = (argb >> 16);
+	      rgbpix->g = (argb >> 8);
+	      rgbpix->b = argb;
+	      if (alpha != 0xff) {
+		/* Compensate for premultiplied alpha. */
+		rgbpix->r = (rgbpix->r * 0xff)/alpha;
+		rgbpix->g = (rgbpix->g * 0xff)/alpha;
+		rgbpix->b = (rgbpix->b * 0xff)/alpha;
+	      }
+	    }
+	  }
+	  rgbpix++;
+	  apix++;
+	}
+	argbpix += stride;
+      }
+
+      /* We're done with cairo and the rsvg handle. */
+      cairo_surface_destroy(surface);
+      cairo_destroy(cr);
+      g_object_unref(handle);
+    }
+    f_aggregate_mapping( Pike_sp - osp );
+  }
+#endif
 }
 
 static void f_decode_header( INT32 args )
