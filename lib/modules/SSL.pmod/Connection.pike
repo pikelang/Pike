@@ -88,13 +88,13 @@ Alert alert(int(1..2) level, int(8bit) description,
 
 string(8bit) get_signature_algorithms()
 {
-  ADT.struct sign_algs = ADT.struct();
+  Stdio.Buffer sign_algs = Stdio.Buffer();
   foreach(context->get_signature_algorithms(), [int hash, int sign])
   {
-    sign_algs->put_uint(hash, 1);
-    sign_algs->put_uint(sign, 1);
+    sign_algs->add_int(hash, 1);
+    sign_algs->add_int(sign, 1);
   }
-  return sign_algs->pop_data();
+  return (string(8bit))sign_algs;
 }
 
 #ifdef SSL3_PROFILING
@@ -189,13 +189,13 @@ Packet heartbleed_packet()
   //
   // Note that we detect the packet on return by it having all zeros
   // in the second field.
-  ADT.struct hb_msg = ADT.struct();
-  hb_msg->put_uint(HEARTBEAT_MESSAGE_request, 1);
-  hb_msg->put_uint(16, 2);
+  Stdio.Buffer hb_msg = Stdio.Buffer();
+  hb_msg->add_int(HEARTBEAT_MESSAGE_request, 1);
+  hb_msg->add_int(16, 2);
   int now = gethrtime();
-  hb_msg->put_fix_string(heartbeat_encode->crypt(sprintf("%8c%8c", now, 0)));
+  hb_msg->add(heartbeat_encode->crypt(sprintf("%8c%8c", now, 0)));
   // No padding.
-  return heartbeat_packet(hb_msg->pop_data());
+  return heartbeat_packet((string(8bit))hb_msg);
 }
 
 // verify that a certificate chain is acceptable
@@ -619,22 +619,22 @@ void send_heartbeat()
     return;
   }
 
-  ADT.struct hb_msg = ADT.struct();
-  hb_msg->put_uint(HEARTBEAT_MESSAGE_request, 1);
-  hb_msg->put_uint(16, 2);
+  Stdio.Buffer hb_msg = Stdio.Buffer();
+  hb_msg->add_int(HEARTBEAT_MESSAGE_request, 1);
+  hb_msg->add_int(16, 2);
   int now = gethrtime();
-  hb_msg->put_fix_string(heartbeat_encode->crypt(sprintf("%8c%8c", now, now)));
+  hb_msg->add(heartbeat_encode->crypt(sprintf("%8c%8c", now, now)));
   // We pad to an even 64 bytes.
-  hb_msg->put_fix_string(random_string(64 - sizeof(hb_msg)));
-  send_packet(heartbeat_packet(hb_msg->pop_data()));
+  hb_msg->add(random_string(64 - sizeof(hb_msg)));
+  send_packet(heartbeat_packet((string(8bit))hb_msg));
 }
 
 void handle_heartbeat(string(8bit) s)
 {
   if (sizeof(s) < 19) return;	// Minimum size for valid heartbeats.
-  ADT.struct hb_msg = ADT.struct(s);
-  int hb_type = hb_msg->get_uint(1);
-  int hb_len = hb_msg->get_uint(2);
+  Stdio.Buffer hb_msg = Stdio.Buffer(s);
+  int hb_type = hb_msg->read_int(1);
+  int hb_len = hb_msg->read_int(2);
 
   SSL3_DEBUG_MSG("SSL.Connection: Heartbeat %s (%d bytes)",
 		 fmt_constant(hb_type, "HEARTBEAT_MESSAGE"), hb_len);
@@ -647,7 +647,7 @@ void handle_heartbeat(string(8bit) s)
   // large, the received HeartbeatMessage MUST be discarded silently.
   if ((hb_len < 0) || ((hb_len + 16) > sizeof(hb_msg))) {
 #ifdef SSL3_SIMULATE_HEARTBLEED
-    payload = hb_msg->get_rest();
+    payload = hb_msg->read();
     if (sizeof(payload) < hb_len) {
       payload = payload + random_string(hb_len - sizeof(payload));
     } else {
@@ -657,7 +657,7 @@ void handle_heartbeat(string(8bit) s)
     return;
 #endif
   } else {
-    payload = hb_msg->get_fix_string(hb_len);
+    payload = hb_msg->read(hb_len);
     pad_len = sizeof(hb_msg);
   }
 
@@ -669,21 +669,21 @@ void handle_heartbeat(string(8bit) s)
     // this document, the receiver MUST send a corresponding
     // HeartbeatResponse message carrying an exact copy of the payload
     // of the received HeartbeatRequest.
-    hb_msg = ADT.struct();
-    hb_msg->put_uint(HEARTBEAT_MESSAGE_response, 1);
-    hb_msg->put_uint(hb_len, 2);
-    hb_msg->put_fix_string(payload);
-    hb_msg->put_fix_string(random_string(pad_len));
-    send_packet(heartbeat_packet(hb_msg->pop_data()));
+    hb_msg = Stdio.Buffer();
+    hb_msg->add_int(HEARTBEAT_MESSAGE_response, 1);
+    hb_msg->add_int(hb_len, 2);
+    hb_msg->add(payload);
+    hb_msg->add(random_string(pad_len));
+    send_packet(heartbeat_packet((string(8bit))hb_msg));
     break;
   case HEARTBEAT_MESSAGE_response:
     // RFC 6520 4:
     // If a received HeartbeatResponse message does not contain the
     // expected payload, the message MUST be discarded silently.
     if ((sizeof(payload) == 16) && heartbeat_decode) {
-      hb_msg = ADT.struct(heartbeat_decode->crypt(payload));
-      int a = hb_msg->get_uint(8);
-      int b = hb_msg->get_uint(8);
+      hb_msg = Stdio.Buffer(heartbeat_decode->crypt(payload));
+      int a = hb_msg->read_int(8);
+      int b = hb_msg->read_int(8);
       if (a != b) {
 	if (!b) {
 	  // Heartbleed probe response.
