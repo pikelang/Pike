@@ -15,7 +15,6 @@
 
 import ".";
 import Constants;
-protected constant Struct = ADT.struct;
 
 #ifdef SSL3_DEBUG
 #define SSL3_DEBUG_MSG(X ...)  werror(X)
@@ -508,8 +507,9 @@ array(string(8bit)) generate_keys(string(8bit) client_random,
                                   string(8bit) server_random,
                                   ProtocolVersion version)
 {
-  Struct key_data = Struct(generate_key_block(client_random, server_random,
-					      version));
+  Stdio.Buffer key_data = Stdio.Buffer(generate_key_block(client_random,
+                                                          server_random,
+                                                          version));
   array(string(8bit)) keys = allocate(6);
 
   SSL3_DEBUG_MSG("client_random: %s\nserver_random: %s\nversion: %d.%d\n",
@@ -518,19 +518,19 @@ array(string(8bit)) generate_keys(string(8bit) client_random,
                  version>>8, version & 0xff);
 
   // client_write_MAC_secret
-  keys[0] = key_data->get_fix_string(cipher_spec->hash_size);
+  keys[0] = key_data->read(cipher_spec->hash_size);
   // server_write_MAC_secret
-  keys[1] = key_data->get_fix_string(cipher_spec->hash_size);
+  keys[1] = key_data->read(cipher_spec->hash_size);
 
   if (cipher_spec->is_exportable)
   {
     // Exportable (ie weak) crypto.
     if(version == PROTOCOL_SSL_3_0) {
       // SSL 3.0
-      keys[2] = Crypto.MD5.hash(key_data->get_fix_string(5) +
+      keys[2] = Crypto.MD5.hash(key_data->read(5) +
 				client_random + server_random)
 	[..cipher_spec->key_material-1];
-      keys[3] = Crypto.MD5.hash(key_data->get_fix_string(5) +
+      keys[3] = Crypto.MD5.hash(key_data->read(5) +
 				server_random + client_random)
 	[..cipher_spec->key_material-1];
       if (cipher_spec->iv_size)
@@ -543,8 +543,8 @@ array(string(8bit)) generate_keys(string(8bit) client_random,
 
     } else if(version >= PROTOCOL_TLS_1_0) {
       // TLS 1.0 or later.
-      string(8bit) client_wkey = key_data->get_fix_string(5);
-      string(8bit) server_wkey = key_data->get_fix_string(5);
+      string(8bit) client_wkey = key_data->read(5);
+      string(8bit) server_wkey = key_data->read(5);
       keys[2] = cipher_spec->prf(client_wkey, "client write key",
 				 client_random + server_random,
 				 cipher_spec->key_material);
@@ -566,12 +566,12 @@ array(string(8bit)) generate_keys(string(8bit) client_random,
     
   }
   else {
-    keys[2] = key_data->get_fix_string(cipher_spec->key_material);
-    keys[3] = key_data->get_fix_string(cipher_spec->key_material);
+    keys[2] = key_data->read(cipher_spec->key_material);
+    keys[3] = key_data->read(cipher_spec->key_material);
     if (cipher_spec->iv_size)
       {
-	keys[4] = key_data->get_fix_string(cipher_spec->iv_size);
-	keys[5] = key_data->get_fix_string(cipher_spec->iv_size);
+	keys[4] = key_data->read(cipher_spec->iv_size);
+	keys[5] = key_data->read(cipher_spec->iv_size);
       }
   }
 
