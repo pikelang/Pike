@@ -18,6 +18,15 @@ test_any([[
   return -1;
 ]], -1)
 
+test_any([[
+  ADT.struct s = ADT.struct("xxxx");
+  if( s->get_uint(1) != 'x' )
+    return 1;
+  if( s->buffer != "xxx" )
+    return s->buffer;
+  return -1;
+]], -1)
+
 define(test_cert, ([[
   test_any([[
     string der = Standards.PEM.Messages(#"$1")->get_certificate();
