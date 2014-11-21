@@ -1,6 +1,6 @@
 #pike 8.1
 
-inherit Locale;
+//! @decl inherit predef::Locale
 
 //! @module Charset
 //!
