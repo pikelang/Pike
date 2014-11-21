@@ -839,7 +839,7 @@ int main(int ac,array(string) am)
       t +=
 	 sprintf("   %-13s({%-=60s\n",
 		 sprintf("%O:",co),
-		 map(zs[co],lambda(string s) { return sprintf("%O",s); })
+		 map(sort(zs[co]),lambda(string s) { return sprintf("%O",s); })
 		 *", "+"}),");
       zone_names[co] = 0;
    }
@@ -848,7 +848,7 @@ int main(int ac,array(string) am)
       t +=
 	 sprintf("   %-13s({%-=60s\n",
 		 sprintf("%O:",co),
-		 map(zs[co],lambda(string s) { return sprintf("%O",s); })
+		 map(sort(zs[co]),lambda(string s) { return sprintf("%O",s); })
 		 *", "+"}),");
    }
    t += "]);\n\n" +
