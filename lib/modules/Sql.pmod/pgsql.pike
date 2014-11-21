@@ -611,7 +611,11 @@ final void _processloop(.pgsql_util.conxion ci) {
     plugbuffer->add_int8(0);
     PD("%O\n",(string)plugbuffer);
     if(catch(ci->start()->add_hstring(plugbuffer,4,4)->sendcmd(SENDOUT))) {
-      if(_options.reconnect)
+#ifdef PG_DEBUG
+      if(!_options)
+        PD("_options is zero, %O\n",this);
+#endif
+      if(_options && _options.reconnect)	// FIXME why can _options be 0?
         _connectfail();
       else
         destruct(waitforauthready);
@@ -1319,17 +1323,17 @@ private void sendsync() {
 //! through the generic SQL-interface.
 void resync() {
   mixed err;
-  if(!is_open()&&!reconnect()&&sizeof(lastmessage))
-    ERROR(a2nls(lastmessage));
-  err = catch {
-    PD("Portalsinflight: %d\n",_portalsinflight);
-    if(!waitforauthready) {
-      readyforquery_cb=resync_cb;
-      sendsync();
-    }
-    return;
-  };
-  PD("%O\n",err);
+  if(is_open()) {
+    err = catch {
+      PD("Portalsinflight: %d\n",_portalsinflight);
+      if(!waitforauthready) {
+        readyforquery_cb=resync_cb;
+        sendsync();
+      }
+      return;
+    };
+    PD("%O\n",err);
+  }
   if(!reconnect()&&sizeof(lastmessage))
     ERROR(a2nls(lastmessage));
 }
