@@ -49,6 +49,7 @@ State pending_write_state;
 /* State variables */
 
 int handshake_state; // Constant.STATE_*
+int reuse;
 
 constant CERT_none = 0;
 constant CERT_requested = 1;
