@@ -797,7 +797,6 @@ class sql_result {
           foreach(datarowtypes;;int typ)
             plugbuffer->add_int16(oidformat(typ));
         else if(commitprefix->match(_query)) {
-
           lock=pgsqlsess->_shortmux->lock();
           if(pgsqlsess->_portalsinflight) {
             pgsqlsess->_waittocommit++;
@@ -911,7 +910,7 @@ class sql_result {
        min((portalbuffersize>>1)*rowsreceived/bytesreceived||1,
         pgsqlsess._fetchlimit);
       Thread.MutexKey lock=closemux->lock();
-      if(_fetchlimit && inflight<=(_fetchlimit>>1)-1)
+      if(_fetchlimit && inflight<=(_fetchlimit-1)>>1)
         _sendexecute(_fetchlimit);
       else if(!_fetchlimit)
         PD("<%O _fetchlimit %d, inflight %d, skip execute\n",
