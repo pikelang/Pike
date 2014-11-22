@@ -656,7 +656,7 @@ final void _processloop(.pgsql_util.conxion ci) {
       _msgsreceived++;
       _bytesreceived+=1+msglen;
       int errtype=NOERROR;
-      PD("%d>",ci->socket->query_fd());
+      PD("%d<",ci->socket->query_fd());
       switch(msgtype) {
         array(mapping) getcols() {
           int bintext=cr->read_int8();
@@ -845,7 +845,7 @@ final void _processloop(.pgsql_util.conxion ci) {
 #endif
           if(portal._tprepared)
             portal._tprepared.datatypeoid=a;
-          callout(portal->_preparebind,0,a);
+          Thread.Thread(portal->_preparebind,a);
           break;
         }
         case 'T': {
