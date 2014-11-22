@@ -277,7 +277,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
       SSL3_DEBUG_MSG("SSL.ClientConnection: SERVER_HELLO\n");
 
       handshake_messages += raw;
-      string id;
+      string(8bit) id;
       int cipher_suite, compression_method;
 
       version = [int(0x300..0x300)|ProtocolVersion]input->get_uint(2);
@@ -466,6 +466,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	return -1;
       }
 
+      session->identity = id;
       handshake_state = STATE_wait_for_peer;
       break;
     }
