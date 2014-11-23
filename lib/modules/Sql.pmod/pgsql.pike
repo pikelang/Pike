@@ -113,7 +113,7 @@ private string _sprintf(int type, void|mapping flags) {
   switch(type) {
     case 'O':
       res=sprintf(DRIVERNAME"(%s@%s:%d/%s,%d,%d)",
-       user,_host,_port,database,c?->socket?->query_fd(),backendpid);
+       user,_host,_port,database,c&&c->socket?->query_fd(),backendpid);
       break;
   }
   return res;
@@ -581,11 +581,11 @@ private void preplastmessage(mapping(string:string) msgresponse) {
 
 private void waitauthready() {
   if(waitforauthready) {
-    PD("%d Wait for auth ready %O\n",c?->socket?->query_fd(),backtrace()[-2]);
+    PD("%d Wait for auth ready %O\n",c&&c->socket?->query_fd(),backtrace()[-2]);
     Thread.MutexKey lock=_shortmux->lock();
     catch(waitforauthready->wait(lock));
     lock=0;
-    PD("%d Wait for auth ready released.\n",c?->socket?->query_fd());
+    PD("%d Wait for auth ready released.\n",c&&c->socket?->query_fd());
   }
 }
 
