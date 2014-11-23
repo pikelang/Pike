@@ -42,7 +42,7 @@ Packet client_hello(string(8bit)|void server_name)
   client_random = context->random(32);
 
   struct->put_fix_string(client_random);
-  struct->put_var_string("", 1);
+  struct->put_var_string(session->identity || "", 1);
 
   array(int) cipher_suites, compression_methods;
   cipher_suites = context->preferred_suites;
@@ -224,12 +224,23 @@ Packet certificate_verify_packet()
 }
 #endif
 
-protected void create(Context ctx, string(8bit)|void server_name)
+//! Initialize a new @[ClientConnection].
+//!
+//! @param ctx
+//!   @[Context] to use.
+//!
+//! @param server_name
+//!   Optional host name of the server.
+//!
+//! @param session
+//!   Optional @[Session] to resume.
+protected void create(Context ctx, string(8bit)|void server_name,
+		      Session|void session)
 {
   ::create(ctx);
   handshake_state = STATE_wait_for_hello;
   handshake_messages = "";
-  session = context->new_session();
+  this_program::session = session || context->new_session();
   send_packet(client_hello(server_name));
 }
 
