@@ -372,19 +372,22 @@ protected void create (Stdio.File stream, SSL.Context ctx)
 //! @param dest_addr
 //!   Optional name of the server that we are connected to.
 //!
+//! @param session
+//!   Session to resume (if any).
+//!
 //! @returns
 //!   Returns @expr{0@} on handshaking failure in blocking mode,
 //!   and otherwise @expr{1@}.
 //!
 //! @seealso
 //!   @[accept()]
-int(1bit) connect(string|void dest_addr)
+int(1bit) connect(string|void dest_addr, SSL.Session|void session)
 {
   if (conn) error("A connection is already configured!\n");
 
   ENTER (0) {
 
-    conn = .ClientConnection(context, dest_addr);
+    conn = .ClientConnection(context, dest_addr, session);
 
     SSL3_DEBUG_MSG("connect: Installing read/close callbacks.\n");
 
