@@ -1937,7 +1937,6 @@ protected int ssl_write_callback (int ignored)
 	  else
 #endif
 	    write_errno = stream->errno();
-	  cleanup_on_error();
 	  SSL3_DEBUG_MSG ("ssl_write_callback: Write failed: %s\n",
 			  strerror (write_errno));
 
@@ -1954,6 +1953,7 @@ protected int ssl_write_callback (int ignored)
 
 	    if (close_state == CLEAN_CLOSE) {
 	      // Never accept a failure if a clean close is requested.
+	      cleanup_on_error();
 	      if (!(conn->state & CONNECTION_failing)) {
 		// Make sure that the connection is failing.
 		conn->send_packet(conn->alert(ALERT_fatal, ALERT_close_notify));
@@ -1974,6 +1974,8 @@ protected int ssl_write_callback (int ignored)
 		return ret;
 	      }
 	    }
+	  } else {
+	    cleanup_on_error();
 	  }
 
 	  // Still try to call the write (or close) callback to
