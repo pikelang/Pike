@@ -454,7 +454,7 @@ class sql_result {
                     "fd: %O portalname: %O  datarows: %d"
                     "  laststatus: %s\n",
                     _state,rowsreceived,eoffound,inflight,
-                    _query,c?->socket?->query_fd(),
+                    _query,c&&c->socket?->query_fd(),
                     _portalname,datarowtypes&&sizeof(datarowtypes),
                     statuscmdcomplete||(_unnamedstatementkey?"*parsing*":""));
         break;
