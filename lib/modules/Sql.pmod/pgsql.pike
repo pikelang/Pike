@@ -164,8 +164,10 @@ private string _sprintf(int type, void|mapping flags) {
 //!   @member int "sync_parse"
 //!     Set it to zero to turn synchronous parsing off for statements.
 //!     Setting this to off can cause surprises because statements could
-//!     be parsed before the previous statements have been executed.
-//!     This can speed up parsing by increased parallelism.
+//!     be parsed before the previous statements have been executed
+//!     (e.g. references to temporary tables created in the preceding
+//!     statement),
+//!     but it can speed up parsing due to increased parallelism.
 //!   @member int "cache_autoprepared_statements"
 //!	If set to zero, it disables the automatic statement prepare and
 //!	cache logic; caching prepared statements can be problematic
@@ -190,11 +192,11 @@ private string _sprintf(int type, void|mapping flags) {
 //! otherwise you'll get exceptions when you try to query it. Also
 //! notice that this function @b{can@} raise exceptions if the db
 //! server doesn't respond, if the database doesn't exist or is not
-//! accessible by you.
+//! accessible to you.
 //!
 //! @seealso
 //!   @[Postgres.postgres], @[Sql.Sql], @[select_db()],
-//!   @url{http://www.postgresql.org/search/?u=%2Fdocs%2Fcurrent%2F&q=client+connection+defaults@}
+//!   @url{http://www.postgresql.org/search/?u=%2Fdocs%2Fcurrent%2F&q=client+connection+search_path@}
 protected void create(void|string host, void|string database,
                       void|string user, void|string pass,
                       void|mapping(string:mixed) options) {
@@ -385,7 +387,7 @@ private .pgsql_util.conxion getsocket(void|int nossl) {
 //! For other runtimeparameters check the PostgreSQL documentation.
 //!
 //! @seealso
-//!   @url{http://www.postgresql.org/search/?u=%2Fdocs%2Fcurrent%2F&q=client+connection+defaults@}
+//!   @url{http://www.postgresql.org/search/?u=%2Fdocs%2Fcurrent%2F&q=client+connection+search_path@}
 //!
 //! @note
 //! This function is PostgreSQL-specific, and thus it is not available
