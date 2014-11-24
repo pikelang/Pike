@@ -81,7 +81,7 @@ Packet client_hello(string(8bit)|void server_name)
     if(condition)
     {
       extensions->put_uint(id, 2);
-      extensions->add_hstring(code()->pop_data(), 2);
+      extensions->add_hstring(code(), 2);
     }
   };
 
@@ -98,17 +98,17 @@ Packet client_hello(string(8bit)|void server_name)
     // RFC 4492 5.1:
     // The extensions SHOULD be sent along with any ClientHello message
     // that proposes ECC cipher suites.
-    Buffer extension = Buffer();
+    Buffer curves = Buffer();
     foreach(context->ecc_curves, int curve) {
-      extension->put_uint(curve, 2);
+      curves->put_uint(curve, 2);
     }
-    return extension->add_hstring(extension->pop_data(), 2);
+    return Buffer()->add_hstring(curves, 2);
   };
 
   ext (EXTENSION_ec_point_formats, sizeof(context->ecc_curves)) {
-    Buffer extension = Buffer();
-    extension->put_uint(POINT_uncompressed, 1);
-    return extension->add_hstring(extension->pop_data(), 1);
+    Buffer point = Buffer();
+    point->put_uint(POINT_uncompressed, 1);
+    return Buffer()->add_hstring(point, 1);
   };
 
   // We always attempt to enable the heartbeat extension.
@@ -139,15 +139,11 @@ Packet client_hello(string(8bit)|void server_name)
 
   ext (EXTENSION_server_name, !!server_name)
   {
-    Buffer extension = Buffer();
-
     Buffer hostname = Buffer();
     hostname->put_uint(0, 1); // name_time host_name(0)
     hostname->add_hstring(server_name, 2); // hostname
 
-    extension->add_hstring(hostname->pop_data(), 2);
-
-    return extension;
+    return Buffer()->add_hstring(hostname, 2);
   };
 
   ext (EXTENSION_application_layer_protocol_negotiation, !!(context->advertised_protocols))
@@ -171,10 +167,9 @@ Packet client_hello(string(8bit)|void server_name)
   };
 
   if(sizeof(extensions) && (version >= PROTOCOL_TLS_1_0))
-    struct->add_hstring(extensions->pop_data(), 2);
+    struct->add_hstring(extensions, 2);
 
-  string data = struct->pop_data();
-
+  string data = struct->read();
   SSL3_DEBUG_MSG("SSL.ClientConnection: Client hello: %q\n", data);
   return handshake_packet(HANDSHAKE_client_hello, data);
 }
@@ -220,7 +215,7 @@ Packet certificate_verify_packet()
   session->cipher_spec->sign(cx, handshake_messages, struct);
 
   return handshake_packet (HANDSHAKE_certificate_verify,
-			  struct->pop_data());
+			  struct->read());
 }
 #endif
 

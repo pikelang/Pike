@@ -58,7 +58,7 @@ Packet server_hello_packet()
     if(condition)
     {
       extensions->put_uint(id, 2);
-      extensions->add_hstring(code()->pop_data(), 2);
+      extensions->add_hstring(code(), 2);
     }
   };
 
@@ -92,9 +92,9 @@ Packet server_hello_packet()
     // ServerHello message in response to a ClientHello message
     // containing the Supported Point Formats Extension when
     // negotiating an ECC cipher suite.
-    Buffer extension = Buffer();
-    extension->put_uint(POINT_uncompressed, 1);
-    return extension->add_hstring(extension->pop_data(), 1);
+    Buffer point = Buffer();
+    point->put_uint(POINT_uncompressed, 1);
+    return Buffer()->add_hstring(point, 1);
   };
 
   ext (EXTENSION_truncated_hmac, session->truncated_hmac) {
@@ -123,9 +123,9 @@ Packet server_hello_packet()
   // NB: Assume that the client understands extensions
   //     if it has sent extensions...
   if (sizeof(extensions))
-      struct->add_hstring(extensions->pop_data(), 2);
+      struct->add_hstring(extensions, 2);
 
-  string data = struct->pop_data();
+  string data = struct->read();
   return handshake_packet(HANDSHAKE_server_hello, data);
 }
 
@@ -149,7 +149,7 @@ Packet certificate_request_packet(Context context)
     struct->add_hstring([string(8bit)]
                         sprintf("%{%2H%}", context->authorities_cache), 2);
     return handshake_packet(HANDSHAKE_certificate_request,
-				 struct->pop_data());
+				 struct->read());
 }
 
 //! Renegotiate the connection (server initiated).

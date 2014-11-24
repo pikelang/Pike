@@ -11,7 +11,6 @@ this_program add_hstring(string(8bit)|Stdio.Buffer str, int sz)
   return [object(this_program)]::add_hstring(str,sz);
 }
 
-
 //! Create a new buffer, optionally initialized with the
 //! value @[s].
 void create(void|string(0..255) s)
@@ -23,23 +22,10 @@ void create(void|string(0..255) s)
   set_error_mode(.BufferError);
 }
 
-//! Trims the buffer to only contain the data after the
-//! read pointer and returns the contents of the buffer.
-string(0..255) contents()
-{
-  return (string(8bit))this;
-}
-
 //! Adds the data @[s] verbatim to the end of the buffer.
 this_program add_data(string(0..255) s)
 {
   return [object(this_program)]add(s);
-}
-
-//! Return all the data in the buffer and empties it.
-string(0..255) pop_data()
-{
-  return read();
 }
 
 //! Appends an unsigned integer in network order to the buffer.
