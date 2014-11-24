@@ -893,7 +893,7 @@ Session new_session()
 {
   Session s = Session();
   s->identity = (use_cache) ?
-    sprintf("%4cPikeSSL3%4c", time(), session_number++) : "";
+    sprintf("PikeSSL3%s", Standards.UUID.make_version4()->encode()) : "";
   return s;
 }
 
