@@ -149,10 +149,7 @@ class struct {
   //! from the buffer.
   array(int) get_fix_uint_array(int item_size, int size)
   {
-    array(int) res = allocate(size);
-    for(int i = 0; i<size; i++)
-      res[i] = read_int(item_size);
-    return res;
+    return read_ints(size, item_size);
   }
 
   //! Reads an array of integers as written by @[put_var_uint_array]
@@ -163,7 +160,7 @@ class struct {
     int elems = size/item_size;
     if( elems*item_size != size )
       throw(structError("Impossible uint array length value.\n"));
-    return get_fix_uint_array(item_size, elems);
+    return read_ints(elems, item_size);
   }
 
   //! Returns one if there is any more data to read.
