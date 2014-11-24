@@ -242,7 +242,7 @@ protected void create(void|string host, void|string database,
 //!
 //! @seealso
 //!   @[big_query()]
-string error(void|int clear) {
+/*semi*/final string error(void|int clear) {
   throwdelayederror(this);
   string s=lastmessage*"\n";
   if(clear)
@@ -256,7 +256,7 @@ string error(void|int clear) {
 //!
 //! @seealso
 //!   @[server_info()]
-string host_info() {
+/*semi*/final string host_info() {
   return sprintf("fd:%d TCP/IP %s:%d PID %d",
                  c?c->socket->query_fd():-1,_host,_port,backendpid);
 }
@@ -273,7 +273,7 @@ string host_info() {
 //!
 //! @seealso
 //!   @[ping()]
-int is_open() {
+/*semi*/final int is_open() {
   catch {
     return c->socket->is_open();
   };
@@ -297,7 +297,7 @@ int is_open() {
 //!
 //! @seealso
 //!   @[is_open()]
-int ping() {
+/*semi*/final int ping() {
   return is_open() && !catch(c->start()->sendcmd(FLUSHSEND))
    ? !!reconnected : -1;
 }
@@ -314,7 +314,7 @@ private .pgsql_util.conxion getsocket(void|int nossl) {
 //! @note
 //! This function is PostgreSQL-specific, and thus it is not available
 //! through the generic SQL-interface.
-void cancelquery() {
+/*semi*/final void cancelquery() {
   PD("CancelRequest\n");
   .pgsql_util.conxion lcon=getsocket(1);
   lcon->add_int32(16)->add_int32(PG_PROTOCOL(1234,5678))
@@ -341,7 +341,7 @@ void cancelquery() {
 //! @seealso
 //!   @[get_charset()], @[create()],
 //!   @url{http://www.postgresql.org/search/?u=%2Fdocs%2Fcurrent%2F&q=character+sets@}
-void set_charset(string charset) {
+/*semi*/final void set_charset(string charset) {
   if(charset)
     big_query(sprintf("SET CLIENT_ENCODING TO '%s'",quote(charset)));
 }
@@ -352,7 +352,7 @@ void set_charset(string charset) {
 //! @seealso
 //!   @[set_charset()], @[getruntimeparameters()],
 //!   @url{http://www.postgresql.org/search/?u=%2Fdocs%2Fcurrent%2F&q=character+sets@}
-string get_charset() {
+/*semi*/final string get_charset() {
   waitauthready();
   return _runtimeparameter[CLIENT_ENCODING];
 }
@@ -396,7 +396,7 @@ string get_charset() {
 //! @note
 //! This function is PostgreSQL-specific, and thus it is not available
 //! through the generic SQL-interface.
-mapping(string:string) getruntimeparameters() {
+/*semi*/final mapping(string:string) getruntimeparameters() {
   waitauthready();
   return _runtimeparameter+([]);
 }
@@ -440,7 +440,7 @@ mapping(string:string) getruntimeparameters() {
 //! @note
 //! This function is PostgreSQL-specific, and thus it is not available
 //! through the generic SQL-interface.
-mapping(string:mixed) getstatistics() {
+/*semi*/final mapping(string:mixed) getstatistics() {
   mapping(string:mixed) stats=([
     "warnings_dropped":warningsdropcount,
     "current_prepared_statements":sizeof(_prepareds),
@@ -468,7 +468,7 @@ mapping(string:mixed) getstatistics() {
 //! @note
 //! This function is PostgreSQL-specific, and thus it is not available
 //! through the generic SQL-interface.
-int setcachedepth(void|int newdepth) {
+/*semi*/final int setcachedepth(void|int newdepth) {
   int olddepth=cachedepth;
   if(!undefinedp(newdepth) && newdepth>=0)
     cachedepth=newdepth;
@@ -484,7 +484,7 @@ int setcachedepth(void|int newdepth) {
 //! @note
 //! This function is PostgreSQL-specific, and thus it is not available
 //! through the generic SQL-interface.
-int settimeout(void|int newtimeout) {
+/*semi*/final int settimeout(void|int newtimeout) {
   int oldtimeout=timeout;
   if(!undefinedp(newtimeout) && newtimeout>0) {
     timeout=newtimeout;
@@ -503,7 +503,7 @@ int settimeout(void|int newtimeout) {
 //! @note
 //! This function is PostgreSQL-specific, and thus it is not available
 //! through the generic SQL-interface.
-int setportalbuffersize(void|int newportalbuffersize) {
+/*semi*/final int setportalbuffersize(void|int newportalbuffersize) {
   int oldportalbuffersize=portalbuffersize;
   if(!undefinedp(newportalbuffersize) && newportalbuffersize>0)
     portalbuffersize=newportalbuffersize;
@@ -519,7 +519,7 @@ int setportalbuffersize(void|int newportalbuffersize) {
 //! @note
 //! This function is PostgreSQL-specific, and thus it is not available
 //! through the generic SQL-interface.
-int setfetchlimit(void|int newfetchlimit) {
+/*semi*/final int setfetchlimit(void|int newfetchlimit) {
   int oldfetchlimit=_fetchlimit;
   if(!undefinedp(newfetchlimit) && newfetchlimit>=0)
     _fetchlimit=newfetchlimit;
@@ -1178,7 +1178,7 @@ final void _processloop(.pgsql_util.conxion ci) {
 //! @note
 //! This function is PostgreSQL-specific, and thus it is not available
 //! through the generic SQL-interface.
-void close() {
+/*semi*/final void close() {
   catch(cancelquery());
   catch(c->sendterminate());
   c=0;
@@ -1190,7 +1190,7 @@ protected void destroy() {
   .pgsql_util.unregister_backend();
 }
 
-void _connectfail(void|mixed err) {
+final void _connectfail(void|mixed err) {
   PD("Connect failed %O reconnectdelay %d\n",err,reconnectdelay);
   destruct(waitforauthready);
   if(!err || reconnectdelay) {
@@ -1275,7 +1275,7 @@ private int reconnect(void|int force) {
 //!
 //! @seealso
 //!   @[resync()], @[cancelquery()]
-void reload() {
+/*semi*/final void reload() {
   resync();
 }
 
@@ -1321,7 +1321,7 @@ private void sendsync() {
 //! @note
 //! This function is PostgreSQL-specific, and thus it is not available
 //! through the generic SQL-interface.
-void resync() {
+/*semi*/final void resync() {
   mixed err;
   if(is_open()) {
     err = catch {
@@ -1349,7 +1349,7 @@ void resync() {
 //!
 //! @seealso
 //!   @[create()]
-void select_db(string dbname) {
+/*semi*/final void select_db(string dbname) {
   database=dbname;
   reconnect();
   reconnected=0;
@@ -1389,7 +1389,7 @@ void select_db(string dbname) {
 //! @note
 //! This function is PostgreSQL-specific, and thus it is not available
 //! through the generic SQL-interface.
-void set_notify_callback(string condition,
+/*semi*/final void set_notify_callback(string condition,
  void|function(int,string,string,mixed ...:void) notify_cb,void|int selfnotify,
   mixed ... args) {
   if(!notify_cb)
@@ -1423,7 +1423,7 @@ private void runcallback(int pid,string condition,string extrainfo) {
 //!
 //! @seealso
 //!   @[big_query()], @[quotebinary()], @[create()]
-string quote(string s) {
+/*semi*/final string quote(string s) {
   waitauthready();
   string r=_runtimeparameter.standard_conforming_strings;
   if(r && r=="on")
@@ -1444,7 +1444,7 @@ string quote(string s) {
 //! @note
 //! This function is PostgreSQL-specific, and thus it is not available
 //! through the generic SQL-interface.
-string quotebinary(string s) {
+/*semi*/final string quotebinary(string s) {
   return replace(s, ({ "'", "\\", "\0" }), ({ "''", "\\\\", "\\000" }) );
 }
 
@@ -1456,7 +1456,7 @@ string quotebinary(string s) {
 //!
 //! @seealso
 //!   @[drop_db()]
-void create_db(string db) {
+/*semi*/final void create_db(string db) {
   big_query(sprintf("CREATE DATABASE %s",db));
 }
 
@@ -1470,7 +1470,7 @@ void create_db(string db) {
 //!
 //! @seealso
 //!   @[create_db()]
-void drop_db(string db) {
+/*semi*/final void drop_db(string db) {
   big_query(sprintf("DROP DATABASE %s",db));
 }
 
@@ -1482,7 +1482,7 @@ void drop_db(string db) {
 //!
 //! @seealso
 //!   @[host_info()]
-string server_info () {
+/*semi*/final string server_info () {
   waitauthready();
   return DRIVERNAME"/"+(_runtimeparameter.server_version||"unknown");
 }
@@ -1492,7 +1492,7 @@ string server_info () {
 //!
 //! @param glob
 //! If specified, list only those databases matching it.
-array(string) list_dbs (void|string glob) {
+/*semi*/final array(string) list_dbs (void|string glob) {
   array row,ret=({});
   .pgsql_util.sql_result res=big_query("SELECT d.datname "
                                          "FROM pg_database d "
@@ -1510,7 +1510,7 @@ array(string) list_dbs (void|string glob) {
 //!
 //! @param glob
 //! If specified, list only the tables with matching names.
-array(string) list_tables (void|string glob) {
+/*semi*/final array(string) list_tables (void|string glob) {
   array row,ret=({});		 // This query might not work on PostgreSQL 7.4
   .pgsql_util.sql_result res=big_query(       // due to missing schemasupport
    "SELECT CASE WHEN 'public'=n.nspname THEN '' ELSE n.nspname||'.' END "
@@ -1567,7 +1567,8 @@ array(string) list_tables (void|string glob) {
 //! @param glob
 //! If specified, list only the tables with matching names.
 //! Setting it to @expr{*@} will include system columns in the list.
-array(mapping(string:mixed)) list_fields(void|string table, void|string glob) {
+/*semi*/final array(mapping(string:mixed)) list_fields(void|string table,
+ void|string glob) {
   array row, ret=({});
   string schema=UNDEFINED;
 
@@ -1752,7 +1753,7 @@ private inline void throwdelayederror(object parent) {
 //! @seealso
 //!   @[big_typed_query()], @[Sql.Sql], @[Sql.sql_result],
 //!   @[Sql.Sql()->query()], @[Sql.pgsql_util.sql_result]
-.pgsql_util.sql_result big_query(string q,
+/*semi*/final .pgsql_util.sql_result big_query(string q,
                                    void|mapping(string|int:mixed) bindings,
                                    void|int _alltyped) {
   throwdelayederror(this);
@@ -1936,7 +1937,7 @@ private inline void throwdelayederror(object parent) {
 //!
 //! @seealso
 //!   @[big_query()], @[big_typed_query()], @[Sql.Sql], @[Sql.sql_result]
-.pgsql_util.sql_result streaming_query(string q,
+/*semi*/final .pgsql_util.sql_result streaming_query(string q,
                                      void|mapping(string|int:mixed) bindings) {
   return big_query(q,bindings);
 }
@@ -1946,7 +1947,7 @@ private inline void throwdelayederror(object parent) {
 //!
 //! @seealso
 //!   @[big_query()], @[Sql.Sql], @[Sql.sql_result]
-.pgsql_util.sql_result big_typed_query(string q,
+/*semi*/final .pgsql_util.sql_result big_typed_query(string q,
                                      void|mapping(string|int:mixed) bindings) {
   return big_query(q,bindings,1);
 }

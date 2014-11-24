@@ -155,7 +155,7 @@ class bufcon {
     }
   }
 
-}
+};
 
 class conxiin {
   inherit Stdio.Buffer:i;
@@ -196,7 +196,7 @@ class conxiin {
     fillreadmux=Thread.Mutex();
     fillread=Thread.Condition();
   }
-}
+};
 
 class conxion {
   inherit Stdio.Buffer:o;
@@ -406,7 +406,7 @@ outer:
     pgsqlsess=_pgsqlsess;
     Thread.Thread(connectloop,nossl);
   }
-}
+};
 
 //! The result object returned by @[Sql.pgsql()->big_query()], except for
 //! the noted differences it behaves the same as @[Sql.sql_result].
@@ -486,7 +486,7 @@ class sql_result {
   //! @note
   //! This function is PostgreSQL-specific, and thus it is not available
   //! through the generic SQL-interface.
-  string status_command_complete() {
+  /*semi*/final string status_command_complete() {
     return statuscmdcomplete;
   }
 
@@ -498,7 +498,7 @@ class sql_result {
   //! @note
   //! This function is PostgreSQL-specific, and thus it is not available
   //! through the generic SQL-interface.
-  int affected_rows() {
+  /*semi*/final int affected_rows() {
     int rows;
     if(statuscmdcomplete)
       sscanf(statuscmdcomplete,"%*s %d",rows);
@@ -522,7 +522,7 @@ class sql_result {
 
   //! @seealso
   //!  @[Sql.sql_result()->num_fields()]
-  int num_fields() {
+  /*semi*/final int num_fields() {
     if(!datarowtypes)
       waitfordescribe();
     trydelayederror();
@@ -531,7 +531,7 @@ class sql_result {
 
   //! @seealso
   //!  @[Sql.sql_result()->num_rows()]
-  int num_rows() {
+  /*semi*/final int num_rows() {
     trydelayederror();
     return rowsreceived;
   }
@@ -543,14 +543,14 @@ class sql_result {
 
   //! @seealso
   //!  @[Sql.sql_result()->eof()]
-  int eof() {
+  /*semi*/final int eof() {
     trydelayederror();
     return eoffound;
   }
 
   //! @seealso
   //!  @[Sql.sql_result()->fetch_fields()]
-  array(mapping(string:mixed)) fetch_fields() {
+  /*semi*/final array(mapping(string:mixed)) fetch_fields() {
     if(!datarowtypes)
       waitfordescribe();
     trydelayederror();
@@ -558,11 +558,11 @@ class sql_result {
   }
 
 #ifdef PG_DEBUG
-  final int
+#define INTVOID int
 #else
-  final void
+#define INTVOID void
 #endif
-   _decodedata(int msglen,string cenc) {
+  final INTVOID _decodedata(int msglen,string cenc) {
     _storetiming();
     string serror;
     bytesreceived+=msglen;
@@ -968,7 +968,7 @@ class sql_result {
   //!
   //! @seealso
   //!  @[eof()], @[send_row()]
-  array(mixed) fetch_row() {
+  /*semi*/final array(mixed) fetch_row() {
     int|array datarow;
     if(arrayp(datarow=datarows->try_read()))
       return datarow;
@@ -992,7 +992,7 @@ class sql_result {
   //!
   //! @seealso
   //!  @[eof()], @[fetch_row()]
-  array(array(mixed)) fetch_row_array() {
+  /*semi*/final array(array(mixed)) fetch_row_array() {
     if(eoffound)
       return 0;
     array(array|int) datarow=datarows->try_read_array();
@@ -1018,7 +1018,7 @@ class sql_result {
   //!
   //! @seealso
   //!  @[fetch_row()], @[eof()]
-  void send_row(void|string|array(string) copydata) {
+  /*semi*/final void send_row(void|string|array(string) copydata) {
     trydelayederror();
     if(copydata) {
       PD("CopyData\n");
@@ -1044,7 +1044,7 @@ class sql_result {
   //!
   //! @seealso
   //!  @[fetch_row()]
-  void set_result_callback(
+  /*semi*/final void set_result_callback(
    function(sql_result, array(mixed), mixed ...:void) callback,
    mixed ... args) {
     if(callback)
@@ -1070,11 +1070,11 @@ class sql_result {
   //!
   //! @seealso
   //!  @[fetch_row()]
-  void set_result_array_callback(
+  /*semi*/final void set_result_array_callback(
    function(sql_result, array(array(mixed)), mixed ...:void) callback,
    mixed ... args) {
     if(callback)
       Thread.Thread(run_result_array_cb,callback,args);
   }
 
-}
+};
