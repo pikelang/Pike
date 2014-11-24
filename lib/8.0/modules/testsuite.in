@@ -117,6 +117,28 @@ test_do( Standards.ASN1.Decode.constructed(1,0,0)->end_decode_constructed(7); )
 test_true( stringp(Standards.ASN1.Decode.constructed(1,0,0)->debug_string()) )
 
 test_any([[
+  object aes_cbc = Crypto.CBC(Crypto.AES);
+  aes_cbc->set_decrypt_key(String.hex2string("0"*32));
+  aes_cbc->set_iv(String.hex2string("0"*32));
+  string ct = String.hex2string("0"*32);
+  for(int i = 0; i < 10000; i++) {
+    ct = aes_cbc->crypt(ct);
+  }
+  return ct;
+]], [[ String.hex2string("FACA37E0B0C85373DF706E73F7C9AF86") ]])
+
+test_any([[
+  object b1 = Crypto.Buffer(Crypto.AES);
+  object b2 = Crypto.AES();
+  b1->set_encrypt_key("A"*32);
+  b2->set_decrypt_key("A"*32);
+
+  if(sizeof(b1->crypt("AA"))) error("Data returned.\n");
+  string x = b1->pad();
+  return b2->crypt(x)[-1];
+]], 13)
+
+test_any([[
   object ctx = SSL.Context();
   object rsa = Crypto.RSA();
   rsa->set_random(random_string);

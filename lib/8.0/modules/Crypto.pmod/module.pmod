@@ -1,7 +1,5 @@
 #pike 8.1
 
-inherit Crypto : pre;
-
 protected constant compat_required_methods = ({
   "block_size",
   "key_size",
@@ -10,7 +8,7 @@ protected constant compat_required_methods = ({
   "crypt",
 });
 
-protected void compat_assert_is_crypto_object(.CipherState obj)
+protected void compat_assert_is_crypto_object(Crypto.CipherState obj)
 {
   foreach(compat_required_methods, string method) {
     if (!obj[method]) error("Object is missing identifier \"%s\"\n", method);
@@ -20,7 +18,7 @@ protected void compat_assert_is_crypto_object(.CipherState obj)
 //! @ignore
 protected class CompatProxy
 {
-  inherit .BlockCipher;
+  inherit Crypto.BlockCipher;
 
   class _CBC {
     inherit ::this_program;
@@ -36,21 +34,21 @@ protected class CompatProxy
       //!
       //! @deprecated BlockCipher.CBC
 
-      protected .CipherState proxy_obj;
+      protected Crypto.CipherState proxy_obj;
 
-      protected .CipherState substate_factory()
+      protected Crypto.CipherState substate_factory()
       {
 	return proxy_obj;
       }
 
       //!
-      protected void create(.CipherState|program(.CipherState) fun,
-					   mixed ... args)
+      protected void create(Crypto.CipherState|program(Crypto.CipherState) fun,
+                            mixed ... args)
       {
 	if (callablep(fun)) {
-	  proxy_obj = [object(.CipherState)]fun(@args);
+	  proxy_obj = [object(Crypto.CipherState)]fun(@args);
 	} else if (objectp(fun)) {
-	  proxy_obj = [object(.CipherState)]fun;
+	  proxy_obj = [object(Crypto.CipherState)]fun;
 	} else {
 	  error("Bad argument 1 to create(). Expected program|object|function.\n");
 	}
@@ -79,21 +77,21 @@ protected class CompatProxy
       //!
       //! @deprecated BlockCipher.Buffer
 
-      protected CipherState proxy_obj;
+      protected Crypto.CipherState proxy_obj;
 
-      protected CipherState substate_factory()
+      protected Crypto.CipherState substate_factory()
       {
 	return proxy_obj;
       }
 
       //!
-      protected void create(CipherState|program(CipherState) fun,
-					   mixed ... args)
+      protected void create(Crypto.CipherState|program(Crypto.CipherState) fun,
+                            mixed ... args)
       {
 	if (callablep(fun)) {
-	  proxy_obj = [object(CipherState)]fun(@args);
+	  proxy_obj = [object(Crypto.CipherState)]fun(@args);
 	} else if (objectp(fun)) {
-	  proxy_obj = [object(CipherState)]fun;
+	  proxy_obj = [object(Crypto.CipherState)]fun;
 	} else {
 	  error("Bad argument 1 to create(). Expected program|object|function.\n");
 	}
@@ -112,7 +110,7 @@ protected class CompatProxy
 
 protected CompatProxy compat_proxy = CompatProxy();
 
-program(CipherState) CBC = compat_proxy.CBC.State;
+program(Crypto.CipherState) CBC = compat_proxy.CBC.State;
 
 //! This class has moved to submodules of the respective ciphers.
-program(CipherState) Buffer = compat_proxy.Buffer.State;
+program(Crypto.CipherState) Buffer = compat_proxy.Buffer.State;
