@@ -199,4 +199,6 @@ test_eq( sizeof(Crypto.Random.blocking_random_string(10)), 10 )
 test_true( functionp(Yabu.db) )
 test_true( functionp(Yabu.lookup) )
 
+test_equal( sort(indices(Locale.Charset)), sort(indices(Charset)) )
+
 END_MARKER
