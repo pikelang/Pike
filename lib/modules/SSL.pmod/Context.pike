@@ -916,11 +916,19 @@ void record_session(Session s)
   }
 }
 
-//! Remove a session from the cache.
+//! Invalidate a session for resumption and remove it from the cache.
 void purge_session(Session s)
 {
   SSL3_DEBUG_MSG("SSL.Context->purge_session: %O\n", s->identity || "");
   if (s->identity)
     m_delete (session_cache, s->identity);
+  /* RFC 4346 7.2:
+   *   In this case [fatal alert], other connections corresponding to
+   *   the session may continue, but the session identifier MUST be
+   *   invalidated, preventing the failed session from being used to
+   *   establish new connections.
+   */
+  s->identity = 0;
+  s->master_secret = 0;
   /* There's no need to remove the id from the active_sessions queue */
 }
