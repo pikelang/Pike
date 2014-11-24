@@ -200,6 +200,18 @@ static node *optimize_f_aggregate(node *n)
   return mkefuncallnode("`+", add_args);
 }
 
+/*! @decl __deprecated__ int hash_7_4(string s)
+ *! @decl __deprecated__ int hash_7_4(string s, int max)
+ *!
+ *! @deprecated 7.4::hash
+ *!
+ *! @seealso
+ *!   @[7.4::hash()], @[hash()]
+ */
+
+/*! @namespace 7.4::
+ */
+
 #define MK_HASHMEM(NAME, TYPE)		ATTRIBUTE((const))	\
   static INLINE size_t NAME(const TYPE *str, ptrdiff_t len, ptrdiff_t maxn) \
   {                                                                         \
@@ -225,6 +237,120 @@ MK_HASHMEM(simple_hashmem2, p_wchar2)
  *! @decl int hash(string s, int max)
  *!
  *!   Return an integer derived from the string @[s]. The same string
+ *!   will always hash to the same value, also between processes.
+ *!
+ *!   If @[max] is given, the result will be >= 0 and < @[max],
+ *!   otherwise the result will be >= 0 and <= 0x7fffffff.
+ *!
+ *! @note
+ *!   This function is provided for backward compatibility reasons.
+ *!
+ *!   This function is byte-order dependant for wide strings.
+ *!
+ *! @seealso
+ *!   @[predef::hash()], @[7.0::hash()]
+ */
+static void f_hash_7_4(INT32 args)
+{
+  size_t i = 0;
+  struct pike_string *s = Pike_sp[-args].u.string;
+
+  if(!args)
+    SIMPLE_TOO_FEW_ARGS_ERROR("7.4::hash",1);
+
+  if(TYPEOF(Pike_sp[-args]) != T_STRING)
+    SIMPLE_BAD_ARG_ERROR("7.4::hash", 1, "string");
+
+  i = simple_hashmem((unsigned char *)s->str, s->len<<s->size_shift,
+		     100<<s->size_shift);
+
+  if(args > 1)
+  {
+    if(TYPEOF(Pike_sp[1-args]) != T_INT)
+      SIMPLE_BAD_ARG_ERROR("7.4::hash",2,"int");
+
+    if(!Pike_sp[1-args].u.integer)
+      PIKE_ERROR("7.4::hash", "Modulo by zero.\n", Pike_sp, args);
+
+    i%=(unsigned INT32)Pike_sp[1-args].u.integer;
+  }
+  pop_n_elems(args);
+  push_int64(i);
+}
+
+/*! @endnamespace
+ */
+
+ATTRIBUTE((const)) static INLINE size_t hashstr(const unsigned char *str, ptrdiff_t maxn)
+{
+  size_t ret,c;
+
+  if(!(ret=str++[0]))
+    return ret;
+  for(; maxn>=0; maxn--)
+  {
+    c=str++[0];
+    if(!c) break;
+    ret ^= ( ret << 4 ) + c ;
+    ret &= 0x7fffffff;
+  }
+
+  return ret;
+}
+
+/*! @decl int hash_7_0(string s)
+ *! @decl int hash_7_0(string s, int max)
+ *!
+ *!   Return an integer derived from the string @[s]. The same string
+ *!   always hashes to the same value, also between processes.
+ *!
+ *!   If @[max] is given, the result will be >= 0 and < @[max],
+ *!   otherwise the result will be >= 0 and <= 0x7fffffff.
+ *!
+ *! @note
+ *!   This function is provided for backward compatibility with
+ *!   code written for Pike up and including version 7.0.
+ *!
+ *!   This function is not NUL-safe, and is byte-order dependant.
+ *!
+ *! @seealso
+ *!   @[hash()], @[7.4::hash()]
+ */
+static void f_hash_7_0( INT32 args )
+{
+  struct pike_string *s = Pike_sp[-args].u.string;
+  unsigned int i;
+  if(!args)
+    SIMPLE_TOO_FEW_ARGS_ERROR("7.0::hash",1);
+  if(TYPEOF(Pike_sp[-args]) != T_STRING)
+    SIMPLE_BAD_ARG_ERROR("7.0::hash", 1, "string");
+
+  if( s->size_shift )
+  {
+    f_hash_7_4( args );
+    return;
+  }
+
+  i = DO_NOT_WARN((unsigned int)hashstr( (unsigned char *)s->str,
+					 MINIMUM(100,s->len)));
+  if(args > 1)
+  {
+    if(TYPEOF(Pike_sp[1-args]) != T_INT)
+      SIMPLE_BAD_ARG_ERROR("7.0::hash",2,"int");
+
+    if(!Pike_sp[1-args].u.integer)
+      PIKE_ERROR("7.0::hash", "Modulo by zero.\n", Pike_sp, args);
+
+    i%=(unsigned INT32)Pike_sp[1-args].u.integer;
+  }
+  pop_n_elems(args);
+  push_int( i );
+}
+
+/*! @decl int hash(string s)
+ *! @decl int hash(string s, int max)
+ *!
+ *!   Return an integer derived from the string @[s]. The same string
  *!   always hashes to the same value, also between processes,
  *!   architectures, and Pike versions (see compatibility notes below,
  *!   though).
@@ -233,11 +359,19 @@ MK_HASHMEM(simple_hashmem2, p_wchar2)
  *!   otherwise the result will be >= 0 and <= 0x7fffffff.
  *!
  *! @note
+ *!   The hash algorithm was changed in Pike 7.5. If you want a hash
+ *!   that is compatible with Pike 7.4 and earlier, use @[7.4::hash()].
+ *!   The difference only affects wide strings.
+ *!
+ *!   The hash algorithm was also changed in Pike 7.1. If you want a hash
+ *!   that is compatible with Pike 7.0 and earlier, use @[7.0::hash()].
+ *!
+ *! @note
  *!   This hash function differs from the one provided by @[hash_value()],
  *!   in that @[hash_value()] returns a process specific value.
  *!
  *! @seealso
- *!   @[hash_value]
+ *!   @[hash_7_0()], @[7.4::hash()], @[hash_value]
  */
 PMOD_EXPORT void f_hash(INT32 args)
 {
@@ -272,7 +406,7 @@ PMOD_EXPORT void f_hash(INT32 args)
   {
     if(TYPEOF(Pike_sp[1-args]) != T_INT)
       SIMPLE_BAD_ARG_ERROR("hash",2,"int");
-    
+
     if(Pike_sp[1-args].u.integer <= 0)
       PIKE_ERROR("hash", "Modulo < 1.\n", Pike_sp, args);
 
@@ -9588,6 +9722,12 @@ void init_builtin_efuns(void)
   
 /* function(string,int|void:int) */
   ADD_EFUN("hash",f_hash,tFunc(tStr tOr(tInt,tVoid),tInt),OPT_TRY_OPTIMIZE);
+
+  ADD_EFUN("hash_7_0",f_hash_7_0,
+           tFunc(tStr tOr(tInt,tVoid),tInt),OPT_TRY_OPTIMIZE);
+
+  ADD_EFUN("hash_7_4",f_hash_7_4,
+           tFunc(tStr tOr(tInt,tVoid),tInt),OPT_TRY_OPTIMIZE);
 
   ADD_EFUN("hash_value",f_hash_value,tFunc(tMix,tInt),OPT_TRY_OPTIMIZE);
 
