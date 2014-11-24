@@ -46,7 +46,7 @@ Packet server_hello_packet()
   SSL3_DEBUG_MSG("Writing server hello, with version: %s\n",
                  fmt_version(version));
   struct->put_fix_string(server_random);
-  struct->put_var_string(session->identity, 1);
+  struct->add_hstring(session->identity, 1);
   struct->put_uint(session->cipher_suite, 2);
   struct->put_uint(session->compression_algorithm, 1);
 
@@ -58,7 +58,7 @@ Packet server_hello_packet()
     if(condition)
     {
       extensions->put_uint(id, 2);
-      extensions->put_var_string(code()->pop_data(), 2);
+      extensions->add_hstring(code()->pop_data(), 2);
     }
   };
 
@@ -67,7 +67,7 @@ Packet server_hello_packet()
     // The server MUST include a "renegotiation_info" extension
     // containing the saved client_verify_data and server_verify_data in
     // the ServerHello.
-    return Buffer()->put_var_string(client_verify_data + server_verify_data, 1);
+    return Buffer()->add_hstring(client_verify_data + server_verify_data, 1);
   };
 
   ext (EXTENSION_max_fragment_length, session->max_packet_size != PACKET_MAX_SIZE) {
@@ -94,7 +94,7 @@ Packet server_hello_packet()
     // negotiating an ECC cipher suite.
     Buffer extension = Buffer();
     extension->put_uint(POINT_uncompressed, 1);
-    return extension->put_var_string(extension->pop_data(), 1);
+    return extension->add_hstring(extension->pop_data(), 1);
   };
 
   ext (EXTENSION_truncated_hmac, session->truncated_hmac) {
@@ -123,7 +123,7 @@ Packet server_hello_packet()
   // NB: Assume that the client understands extensions
   //     if it has sent extensions...
   if (sizeof(extensions))
-      struct->put_var_string(extensions->pop_data(), 2);
+      struct->add_hstring(extensions->pop_data(), 2);
 
   string data = struct->pop_data();
   return handshake_packet(HANDSHAKE_server_hello, data);
@@ -144,10 +144,10 @@ Packet certificate_request_packet(Context context)
     struct->put_var_uint_array(context->preferred_auth_methods, 1, 1);
     if (version >= PROTOCOL_TLS_1_2) {
       // TLS 1.2 has var_uint_array of hash and sign pairs here.
-      struct->put_var_string(get_signature_algorithms(), 2);
+      struct->add_hstring(get_signature_algorithms(), 2);
     }
-    struct->put_var_string([string(8bit)]
-			   sprintf("%{%2H%}", context->authorities_cache), 2);
+    struct->add_hstring([string(8bit)]
+                        sprintf("%{%2H%}", context->authorities_cache), 2);
     return handshake_packet(HANDSHAKE_certificate_request,
 				 struct->pop_data());
 }

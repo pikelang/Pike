@@ -42,7 +42,7 @@ Packet client_hello(string(8bit)|void server_name)
   client_random = context->random(32);
 
   struct->put_fix_string(client_random);
-  struct->put_var_string(session->identity || "", 1);
+  struct->add_hstring(session->identity || "", 1);
 
   array(int) cipher_suites, compression_methods;
   cipher_suites = context->preferred_suites;
@@ -81,7 +81,7 @@ Packet client_hello(string(8bit)|void server_name)
     if(condition)
     {
       extensions->put_uint(id, 2);
-      extensions->put_var_string(code()->pop_data(), 2);
+      extensions->add_hstring(code()->pop_data(), 2);
     }
   };
 
@@ -91,7 +91,7 @@ Packet client_hello(string(8bit)|void server_name)
     // extension, or the TLS_EMPTY_RENEGOTIATION_INFO_SCSV signaling
     // cipher suite value in the ClientHello.  Including both is NOT
     // RECOMMENDED.
-    return Buffer()->put_var_string(client_verify_data, 1);
+    return Buffer()->add_hstring(client_verify_data, 1);
   };
 
   ext (EXTENSION_elliptic_curves, sizeof(context->ecc_curves)) {
@@ -102,13 +102,13 @@ Packet client_hello(string(8bit)|void server_name)
     foreach(context->ecc_curves, int curve) {
       extension->put_uint(curve, 2);
     }
-    return extension->put_var_string(extension->pop_data(), 2);
+    return extension->add_hstring(extension->pop_data(), 2);
   };
 
   ext (EXTENSION_ec_point_formats, sizeof(context->ecc_curves)) {
     Buffer extension = Buffer();
     extension->put_uint(POINT_uncompressed, 1);
-    return extension->put_var_string(extension->pop_data(), 1);
+    return extension->add_hstring(extension->pop_data(), 1);
   };
 
   // We always attempt to enable the heartbeat extension.
@@ -134,7 +134,7 @@ Packet client_hello(string(8bit)|void server_name)
     // to accept.
 
     // We list all hashes and signature formats that we support.
-    return Buffer()->put_var_string(get_signature_algorithms(), 2);
+    return Buffer()->add_hstring(get_signature_algorithms(), 2);
   };
 
   ext (EXTENSION_server_name, !!server_name)
@@ -143,9 +143,9 @@ Packet client_hello(string(8bit)|void server_name)
 
     Buffer hostname = Buffer();
     hostname->put_uint(0, 1); // name_time host_name(0)
-    hostname->put_var_string(server_name, 2); // hostname
+    hostname->add_hstring(server_name, 2); // hostname
 
-    extension->put_var_string(hostname->pop_data(), 2);
+    extension->add_hstring(hostname->pop_data(), 2);
 
     return extension;
   };
@@ -171,7 +171,7 @@ Packet client_hello(string(8bit)|void server_name)
   };
 
   if(sizeof(extensions) && (version >= PROTOCOL_TLS_1_0))
-    struct->put_var_string(extensions->pop_data(), 2);
+    struct->add_hstring(extensions->pop_data(), 2);
 
   string data = struct->pop_data();
 

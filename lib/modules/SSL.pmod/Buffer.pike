@@ -6,6 +6,12 @@
 
 inherit Stdio.Buffer;
 
+this_program add_hstring(string(8bit)|Stdio.Buffer str, int sz)
+{
+  return [object(this_program)]::add_hstring(str,sz);
+}
+
+
 //! Create a new buffer, optionally initialized with the
 //! value @[s].
 void create(void|string(0..255) s)
@@ -45,14 +51,6 @@ string(0..255) pop_data()
 this_program put_uint(int i, int(0..) len)
 {
   return [object(this_program)]add_int(i,len);
-}
-
-//! Appends a variable string @[s] preceded with an unsigned integer
-//! of the size @[len_width] declaring the length of the string. The
-//! string @[s] should be 8 bits wide.
-this_program put_var_string(string(0..255) s, int(0..) len_width)
-{
-  return [object(this_program)]add_hstring(s,len_width);
 }
 
 //! Appends a bignum @[i] as a variable string preceded with an
