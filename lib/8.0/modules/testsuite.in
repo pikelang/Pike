@@ -201,4 +201,6 @@ test_true( functionp(Yabu.lookup) )
 
 test_equal( sort(indices(Locale.Charset)), sort(indices(Charset)) )
 
+test_eq( Parser.XML.Validating()->get_external_entity(""), 0 )
+
 END_MARKER
