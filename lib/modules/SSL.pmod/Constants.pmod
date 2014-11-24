@@ -41,6 +41,7 @@ constant STATE_wait_for_hello		= 0;
 constant STATE_wait_for_peer		= 1;
 constant STATE_wait_for_verify		= 2;
 constant STATE_wait_for_finish		= 3;
+constant STATE_handshake_finished	= 4;
 
 //! Connection states.
 //!
