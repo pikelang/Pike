@@ -1,4 +1,5 @@
 #pike 7.9
+#pragma no_deprecation_warnings
 
 class struct
 {

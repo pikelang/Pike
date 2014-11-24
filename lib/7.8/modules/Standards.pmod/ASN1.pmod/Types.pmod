@@ -3,6 +3,7 @@
 
 #pike 8.0
 #pragma strict_types
+#pragma no_deprecation_warnings
 
 #if 0
 #define WERROR werror

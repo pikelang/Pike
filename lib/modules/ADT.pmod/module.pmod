@@ -21,12 +21,14 @@ protected class structError
 
 //! String buffer with the possibility to read and write data
 //! as they would be formatted in structs.
+//!
+//! @deprecated Stdio.Buffer
 class struct {
   inherit Stdio.Buffer;
 
   //! Create a new buffer, optionally initialized with the
   //! value @[s].
-  void create(void|string(0..255) s)
+  __deprecated__ void create(void|string(0..255) s)
   {
      if( s && strlen(s) )
          ::create(s);

@@ -381,11 +381,13 @@ dnl  - ADT.struct
 
 define(test_put,[[
 test_any([[
+#pragma no_deprecation_warnings
   object s=ADT.struct();
   s->$1;
   return s->pop_data()+"\7777"+s->pop_data();
 ]],$2"\7777")
 test_any_equal([[
+#pragma no_deprecation_warnings
   object s=ADT.struct($2);
   return s->$3;
 ]], $4)
@@ -395,10 +397,8 @@ test_put(add_data("hej"), "hej", get_fix_string(3), "hej")
 test_put(put_uint(17,1), "\21", get_uint(1), 17)
 test_put(put_uint(17,2), "\0\21", get_uint(2), 17)
 test_put(put_var_string("hej",1), "\3hej", get_var_string(1), "hej")
-cond([[ master()->resolv("Gmp")->mpz ]],[[
-  test_put(put_bignum(Gmp.mpz(123456789)), "\0\4\7[\315\25", get_bignum(),
+test_put(put_bignum(Gmp.mpz(123456789)), "\0\4\7[\315\25", get_bignum(),
     Gmp.mpz(123456789))
-]])
 test_put(put_fix_string("hej"), "hej", get_fix_string(3), "hej")
 test_put(put_fix_uint_array(({1,2,3,4}), 1), "\1\2\3\4", get_fix_uint_array(1,4),
   ({1,2,3,4}))
@@ -406,33 +406,44 @@ test_put(put_var_uint_array(({1,2,3,4}),1,1), "\4\1\2\3\4", get_var_uint_array(1
   ({1,2,3,4}))
 
 test_any([[
+#pragma no_deprecation_warnings
   object s=ADT.struct("abcdefghijk");
   return s->get_fix_string(3)+" "+s->contents()+" "+s->get_fix_string(3);
 ]],  "abc defghijk def")
 
 test_any([[
+#pragma no_deprecation_warnings
   object s=ADT.struct("abcdefghijk");
   return s->get_fix_string(3)+" "+s->get_rest();
 ]], "abc defghijk")
 
 test_eval_error([[
+#pragma no_deprecation_warnings
   object s=ADT.struct("abc");
   s->get_rest();
   s->get_fix_string(1);
 ]])
 
 test_any([[
+#pragma no_deprecation_warnings
   object s=ADT.struct("hej");
   string r = "x" + sizeof(s);
   s->get_uint(3);
   return r + ":" + sizeof(s);
 ]], "x3:0")
 
-test_eq([[ ADT.struct()->add_data("hej")->put_uint(1,2)->put_var_string("hi",1)->put_bignum(Gmp.mpz(1),1)->put_fix_string("x")->put_fix_uint_array(({6,7}),1)->put_var_uint_array(({6,7}),1,1)->pop_data() ]], "hej\0\1\2hi\1\1x\6\7\2\6\7")
-test_eq([[ ADT.struct()->put_var_uint_array(({6,7}),2,2)->pop_data() ]], "\0\4\0\6\0\7")
-test_eq([[ ADT.struct()->put_var_string_array(({"a","b"}),2,2)->pop_data() ]], "\0\6\0\1a\0\1b")
+test_eq([[
+#pragma no_deprecation_warnings
+ ADT.struct()->add_data("hej")->put_uint(1,2)->put_var_string("hi",1)->put_bignum(Gmp.mpz(1),1)->put_fix_string("x")->put_fix_uint_array(({6,7}),1)->put_var_uint_array(({6,7}),1,1)->pop_data() ]], "hej\0\1\2hi\1\1x\6\7\2\6\7")
+test_eq([[
+#pragma no_deprecation_warnings
+ ADT.struct()->put_var_uint_array(({6,7}),2,2)->pop_data() ]], "\0\4\0\6\0\7")
+test_eq([[
+#pragma no_deprecation_warnings
+ ADT.struct()->put_var_string_array(({"a","b"}),2,2)->pop_data() ]], "\0\6\0\1a\0\1b")
 
 test_any([[
+#pragma no_deprecation_warnings
   object o = ADT.struct("abcd");
   o->get_fix_string(1);
   return decode_value(encode_value(o))->get_fix_string(3);
