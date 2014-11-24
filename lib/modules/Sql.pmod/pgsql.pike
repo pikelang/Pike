@@ -119,10 +119,6 @@ private string _sprintf(int type, void|mapping flags) {
   return res;
 }
 
-//! @decl void create()
-//! @decl void create(string host, void|string database, void|string user,@
-//!		      void|string password, void|mapping(string:mixed) options)
-//!
 //! With no arguments, this function initialises (reinitialises if a
 //! connection has been set up previously) a connection to the
 //! PostgreSQL backend. Since PostgreSQL requires a database to be
@@ -280,8 +276,6 @@ protected void create(void|string host, void|string database,
   return 0;
 }
 
-//! @decl int ping()
-//!
 //! Check whether the connection is alive.
 //!
 //! @returns
@@ -1269,8 +1263,6 @@ private int reconnect(void|int force) {
   return 1;
 }
 
-//! @decl void reload()
-//!
 //! For PostgreSQL this function performs the same function as @[resync()].
 //!
 //! @seealso
@@ -1302,8 +1294,6 @@ private void sendsync() {
   c->start()->sendcmd(SYNCSEND);
 }
 
-//! @decl void resync()
-//!
 //! Resyncs the database session; typically used to make sure the session is
 //! not still in a dangling transaction.
 //!
@@ -1693,9 +1683,6 @@ private inline void throwdelayederror(object parent) {
   .pgsql_util.throwdelayederror(parent);
 }
 
-//! @decl Sql.pgsql_util.sql_result big_query(string query)
-//! @decl Sql.pgsql_util.sql_result big_query(string query, mapping bindings)
-//!
 //! This is the only provided interface which allows you to query the
 //! database. If you wish to use the simpler @[Sql.Sql()->query()] function,
 //! you need to use the @[Sql.Sql] generic SQL-object.
@@ -1900,14 +1887,18 @@ private inline void throwdelayederror(object parent) {
            ? "" : PTSTMTPREFIX+int2hex(ptstmtcount++);
       else if(syncparse)
         portal._unnamedstatementkey=unnamedstatement->lock(1);
+      PD("Parse statement %O=%O\n",preparedname,q);
+      plugbuffer=c->start()->add_int8('P')
+       ->add_hstring(({preparedname,0,q,"\0\0\0"}),4,4)
+#if 0
       // Even though the protocol doesn't require the Parse command to be
       // followed by a flush, it makes a VERY noticeable difference in
       // performance if it is omitted; seems like a flaw in the PostgreSQL
       // server v8.3.3
       // In v8.4 and later, things speed up slightly when it is omitted.
-      PD("Parse statement %O=%O\n",preparedname,q);
-      plugbuffer=c->start()->add_int8('P')
-       ->add_hstring(({preparedname,0,q,"\0\0\0"}),4,4); //->add(PGFLUSH);
+      ->add(PGFLUSH)
+#endif
+      ;
     }
     portal._preparedname=preparedname;
     if(!tp || !tp.datatypeoid) {

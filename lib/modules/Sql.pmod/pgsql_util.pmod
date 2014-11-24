@@ -529,6 +529,12 @@ class sql_result {
     return sizeof(datarowtypes);
   }
 
+  //! @note
+  //!  This method returns the number of rows already received from
+  //!  the database for the current query.  Note that this number
+  //!  can still increase between subsequent calls if the results from
+  //!  the query are not complete yet.  This function is only guaranteed to
+  //!  return the correct count after EOF has been reached.
   //! @seealso
   //!  @[Sql.sql_result()->num_rows()]
   /*semi*/final int num_rows() {
