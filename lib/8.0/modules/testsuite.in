@@ -209,4 +209,6 @@ cond_resolv([[
   test_true( Sql.sybase()->drop_db )
 ]])
 
+test_true( Stdio.File()->set_peek_file_before_read_callback(0) )
+
 END_MARKER
