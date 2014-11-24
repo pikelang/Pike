@@ -33,6 +33,7 @@ import .Constants;
 #define State .State
 #define Session .Session
 #define Context .Context
+#define Buffer .Buffer
 
 #ifdef SSL3_DEBUG
 #define SSL3_DEBUG_MSG(X ...)  werror(X)
@@ -89,7 +90,7 @@ Alert alert(int(1..2) level, int(8bit) description,
 
 string(8bit) get_signature_algorithms()
 {
-  Stdio.Buffer sign_algs = Stdio.Buffer();
+  Buffer sign_algs = Buffer();
   foreach(context->get_signature_algorithms(), [int hash, int sign])
   {
     sign_algs->add_int(hash, 1);
@@ -147,7 +148,7 @@ string(8bit) hash_messages(string(8bit) sender)
 
 Packet certificate_packet(array(string(8bit)) certificates)
 {
-  ADT.struct struct = ADT.struct();
+  Buffer struct = Buffer();
   struct->put_var_string_array(certificates, 3, 3);
   return handshake_packet(HANDSHAKE_certificate, struct->pop_data());
 }
@@ -190,7 +191,7 @@ Packet heartbleed_packet()
   //
   // Note that we detect the packet on return by it having all zeros
   // in the second field.
-  Stdio.Buffer hb_msg = Stdio.Buffer();
+  Buffer hb_msg = Buffer();
   hb_msg->add_int(HEARTBEAT_MESSAGE_request, 1);
   hb_msg->add_int(16, 2);
   int now = gethrtime();
@@ -620,7 +621,7 @@ void send_heartbeat()
     return;
   }
 
-  Stdio.Buffer hb_msg = Stdio.Buffer();
+  Buffer hb_msg = Buffer();
   hb_msg->add_int(HEARTBEAT_MESSAGE_request, 1);
   hb_msg->add_int(16, 2);
   int now = gethrtime();
@@ -633,7 +634,7 @@ void send_heartbeat()
 void handle_heartbeat(string(8bit) s)
 {
   if (sizeof(s) < 19) return;	// Minimum size for valid heartbeats.
-  Stdio.Buffer hb_msg = Stdio.Buffer(s);
+  Buffer hb_msg = Buffer(s);
   int hb_type = hb_msg->read_int(1);
   int hb_len = hb_msg->read_int(2);
 
@@ -670,7 +671,7 @@ void handle_heartbeat(string(8bit) s)
     // this document, the receiver MUST send a corresponding
     // HeartbeatResponse message carrying an exact copy of the payload
     // of the received HeartbeatRequest.
-    hb_msg = Stdio.Buffer();
+    hb_msg = Buffer();
     hb_msg->add_int(HEARTBEAT_MESSAGE_response, 1);
     hb_msg->add_int(hb_len, 2);
     hb_msg->add(payload);
@@ -682,7 +683,7 @@ void handle_heartbeat(string(8bit) s)
     // If a received HeartbeatResponse message does not contain the
     // expected payload, the message MUST be discarded silently.
     if ((sizeof(payload) == 16) && heartbeat_decode) {
-      hb_msg = Stdio.Buffer(heartbeat_decode->crypt(payload));
+      hb_msg = Buffer(heartbeat_decode->crypt(payload));
       int a = hb_msg->read_int(8);
       int b = hb_msg->read_int(8);
       if (a != b) {
@@ -878,7 +879,7 @@ string(8bit)|int got_data(string(8bit) data)
              };
            if( exception )
            {
-             if( objectp(exception) && ([object]exception)->ADT_struct )
+             if( objectp(exception) && ([object]exception)->buffer_error )
              {
                Error.Generic e = [object(Error.Generic)]exception;
                send_packet(alert(ALERT_fatal, ALERT_decode_error,
@@ -933,7 +934,7 @@ string(8bit)|int got_data(string(8bit) data)
             };
           if( exception )
           {
-            if( objectp(exception) && ([object]exception)->ADT_struct )
+            if( objectp(exception) && ([object]exception)->buffer_error )
             {
               Error.Generic e = [object(Error.Generic)]exception;
               send_packet(alert(ALERT_fatal, ALERT_decode_error,

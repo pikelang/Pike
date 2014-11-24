@@ -26,7 +26,7 @@ protected string _sprintf(int t)
 //!
 Packet client_hello(string(8bit)|void server_name)
 {
-  ADT.struct struct = ADT.struct();
+  Buffer struct = Buffer();
   /* Build client_hello message */
   client_version = version;
   struct->put_uint(client_version, 2); /* version */
@@ -74,9 +74,9 @@ Packet client_hello(string(8bit)|void server_name)
   struct->put_var_uint_array(cipher_suites, 2, 2);
   struct->put_var_uint_array(compression_methods, 1, 1);
 
-  ADT.struct extensions = ADT.struct();
+  Buffer extensions = Buffer();
 
-  void ext(int id, int condition, function(void:ADT.struct) code)
+  void ext(int id, int condition, function(void:Buffer) code)
   {
     if(condition)
     {
@@ -91,14 +91,14 @@ Packet client_hello(string(8bit)|void server_name)
     // extension, or the TLS_EMPTY_RENEGOTIATION_INFO_SCSV signaling
     // cipher suite value in the ClientHello.  Including both is NOT
     // RECOMMENDED.
-    return ADT.struct()->put_var_string(client_verify_data, 1);
+    return Buffer()->put_var_string(client_verify_data, 1);
   };
 
   ext (EXTENSION_elliptic_curves, sizeof(context->ecc_curves)) {
     // RFC 4492 5.1:
     // The extensions SHOULD be sent along with any ClientHello message
     // that proposes ECC cipher suites.
-    ADT.struct extension = ADT.struct();
+    Buffer extension = Buffer();
     foreach(context->ecc_curves, int curve) {
       extension->put_uint(curve, 2);
     }
@@ -106,7 +106,7 @@ Packet client_hello(string(8bit)|void server_name)
   };
 
   ext (EXTENSION_ec_point_formats, sizeof(context->ecc_curves)) {
-    ADT.struct extension = ADT.struct();
+    Buffer extension = Buffer();
     extension->put_uint(POINT_uncompressed, 1);
     return extension->put_var_string(extension->pop_data(), 1);
   };
@@ -114,12 +114,12 @@ Packet client_hello(string(8bit)|void server_name)
   // We always attempt to enable the heartbeat extension.
   ext (EXTENSION_heartbeat, 1) {
     // RFC 6420
-    return ADT.struct()->put_uint(HEARTBEAT_MODE_peer_allowed_to_send, 1);
+    return Buffer()->put_uint(HEARTBEAT_MODE_peer_allowed_to_send, 1);
   };
 
   ext (EXTENSION_encrypt_then_mac, context->encrypt_then_mac) {
     // draft-ietf-tls-encrypt-then-mac
-    return ADT.struct();
+    return Buffer();
   };
 
   ext (EXTENSION_signature_algorithms, client_version >= PROTOCOL_TLS_1_2) {
@@ -134,14 +134,14 @@ Packet client_hello(string(8bit)|void server_name)
     // to accept.
 
     // We list all hashes and signature formats that we support.
-    return ADT.struct()->put_var_string(get_signature_algorithms(), 2);
+    return Buffer()->put_var_string(get_signature_algorithms(), 2);
   };
 
   ext (EXTENSION_server_name, !!server_name)
   {
-    ADT.struct extension = ADT.struct();
+    Buffer extension = Buffer();
 
-    ADT.struct hostname = ADT.struct();
+    Buffer hostname = Buffer();
     hostname->put_uint(0, 1); // name_time host_name(0)
     hostname->put_var_string(server_name, 2); // hostname
 
@@ -152,7 +152,7 @@ Packet client_hello(string(8bit)|void server_name)
 
   ext (EXTENSION_application_layer_protocol_negotiation, !!(context->advertised_protocols))
   {
-    return ADT.struct()->put_var_string_array(context->advertised_protocols, 1, 2);
+    return Buffer()->put_var_string_array(context->advertised_protocols, 1, 2);
   };
 
   // When the client HELLO packet data is in the range 256-511 bytes
@@ -167,7 +167,7 @@ Packet client_hello(string(8bit)|void server_name)
     int padding = max(0, 512-packet_size-4);
     SSL3_DEBUG_MSG("SSL.ClientConnection: Adding %d bytes of padding.\n",
                    padding);
-    return ADT.struct()->add_data("\0"*padding);
+    return Buffer()->add_data("\0"*padding);
   };
 
   if(sizeof(extensions) && (version >= PROTOCOL_TLS_1_0))
@@ -211,7 +211,7 @@ Packet client_key_exchange_packet()
 #if 0
 Packet certificate_verify_packet()
 {
-  ADT.struct struct = ADT.struct();
+  Buffer struct = Buffer();
 
   // FIXME: This temporary context is probably not needed.
   Context cx = Context();
@@ -261,7 +261,7 @@ void send_renegotiate()
 //! send_packet() function to transmit packets.
 int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 {
-  ADT.struct input = ADT.struct(data);
+  Buffer input = Buffer(data);
 #ifdef SSL3_PROFILING
   addRecord(type,0);
 #endif
@@ -357,13 +357,13 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
       int missing_secure_renegotiation = secure_renegotiation;
 
       if (sizeof(input)) {
-	ADT.struct extensions = ADT.struct(input->get_var_string(2));
+	Buffer extensions = Buffer(input->get_var_string(2));
         multiset(int) remote_extensions = (<>);
 
 	while (sizeof(extensions)) {
 	  int extension_type = extensions->get_uint(2);
-	  ADT.struct extension_data =
-	    ADT.struct(extensions->get_var_string(2));
+	  Buffer extension_data =
+	    Buffer(extensions->get_var_string(2));
 	  SSL3_DEBUG_MSG("SSL.ClientConnection->handle_handshake: "
 			 "Got extension %s.\n",
 			 fmt_constant(extension_type, "EXTENSION"));
@@ -521,7 +521,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
         if(ke && ke->anonymous)
           break;
 
-        ADT.struct cert_data = ADT.struct(input->get_var_string(3));
+        Buffer cert_data = Buffer(input->get_var_string(3));
         array(string(8bit)) certs = ({ });
         while(sizeof(cert_data))
           certs += ({ cert_data->get_var_string(3) });
@@ -607,7 +607,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 			 fmt_signature_pairs(session->signature_algorithms));
 	}
 
-        ADT.struct s = ADT.struct(input->get_var_string(2));
+        Buffer s = Buffer(input->get_var_string(2));
         while(sizeof(s))
         {
           string(8bit) der = s->get_var_string(2);

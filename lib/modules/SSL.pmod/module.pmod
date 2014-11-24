@@ -33,3 +33,9 @@
 //! @seealso
 //!   @[File], @[Port], @[Context], @[Constants.CertificatePair],
 //!   @[Constants]
+
+class BufferError
+{
+  inherit Error.Generic;
+  constant buffer_error = 1;
+}

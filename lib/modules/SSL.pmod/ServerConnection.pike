@@ -40,7 +40,7 @@ Packet finished_packet(string(8bit) sender)
 
 Packet server_hello_packet()
 {
-  ADT.struct struct = ADT.struct();
+  Buffer struct = Buffer();
   /* Build server_hello message */
   struct->put_uint(version, 2); /* version */
   SSL3_DEBUG_MSG("Writing server hello, with version: %s\n",
@@ -50,10 +50,10 @@ Packet server_hello_packet()
   struct->put_uint(session->cipher_suite, 2);
   struct->put_uint(session->compression_algorithm, 1);
 
-  ADT.struct extensions = ADT.struct();
+  Buffer extensions = Buffer();
   Alert fail;
 
-  void ext(int id, int condition, function(void:ADT.struct) code)
+  void ext(int id, int condition, function(void:Buffer) code)
   {
     if(condition)
     {
@@ -67,12 +67,12 @@ Packet server_hello_packet()
     // The server MUST include a "renegotiation_info" extension
     // containing the saved client_verify_data and server_verify_data in
     // the ServerHello.
-    return ADT.struct()->put_var_string(client_verify_data + server_verify_data, 1);
+    return Buffer()->put_var_string(client_verify_data + server_verify_data, 1);
   };
 
   ext (EXTENSION_max_fragment_length, session->max_packet_size != PACKET_MAX_SIZE) {
     // RFC 3546 3.2.
-    ADT.struct extension = ADT.struct();
+    Buffer extension = Buffer();
     switch(session->max_packet_size) {
     case 512:  extension->put_uint(FRAGMENT_512,  1); break;
     case 1024: extension->put_uint(FRAGMENT_1024, 1); break;
@@ -92,30 +92,30 @@ Packet server_hello_packet()
     // ServerHello message in response to a ClientHello message
     // containing the Supported Point Formats Extension when
     // negotiating an ECC cipher suite.
-    ADT.struct extension = ADT.struct();
+    Buffer extension = Buffer();
     extension->put_uint(POINT_uncompressed, 1);
     return extension->put_var_string(extension->pop_data(), 1);
   };
 
   ext (EXTENSION_truncated_hmac, session->truncated_hmac) {
     // RFC 3546 3.5 "Truncated HMAC"
-    return ADT.struct();
+    return Buffer();
   };
 
   ext (EXTENSION_heartbeat, session->heartbeat_mode) {
     // RFC 6520
-    return ADT.struct()->put_uint(HEARTBEAT_MODE_peer_allowed_to_send, 1);
+    return Buffer()->put_uint(HEARTBEAT_MODE_peer_allowed_to_send, 1);
   };
 
   ext (EXTENSION_encrypt_then_mac, session->encrypt_then_mac) {
     // draft-ietf-tls-encrypt-then-mac
-    return ADT.struct();
+    return Buffer();
   };
 
   ext (EXTENSION_application_layer_protocol_negotiation,
        application_protocol && has_application_layer_protocol_negotiation)
   {
-    return ADT.struct()->put_var_string_array(({application_protocol}), 1, 2);
+    return Buffer()->put_var_string_array(({application_protocol}), 1, 2);
   };
 
   if (fail) return fail;
@@ -140,7 +140,7 @@ Packet server_key_exchange_packet()
 Packet certificate_request_packet(Context context)
 {
     /* Send a CertificateRequest message */
-    ADT.struct struct = ADT.struct();
+    Buffer struct = Buffer();
     struct->put_var_uint_array(context->preferred_auth_methods, 1, 1);
     if (version >= PROTOCOL_TLS_1_2) {
       // TLS 1.2 has var_uint_array of hash and sign pairs here.
@@ -230,7 +230,7 @@ protected void create(Context ctx)
 //! send_packet() function to transmit packets.
 int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 {
-  ADT.struct input = ADT.struct(data);
+  Buffer input = Buffer(data);
 #ifdef SSL3_PROFILING
   addRecord(type,0);
 #endif
@@ -325,9 +325,9 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	  version = client_version;
 	}
 
-	ADT.struct extensions;
+	Buffer extensions;
 	if (sizeof(input)) {
-	  extensions = ADT.struct(input->get_var_string(2));
+	  extensions = Buffer(input->get_var_string(2));
 	}
 
 #ifdef SSL3_DEBUG
@@ -344,7 +344,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	  while (sizeof(extensions)) {
 	    int extension_type = extensions->get_uint(2);
 	    string(8bit) raw = extensions->get_var_string(2);
-	    ADT.struct extension_data = ADT.struct(raw);
+	    Buffer extension_data = Buffer(raw);
 	    SSL3_DEBUG_MSG("SSL.ServerConnection->handle_handshake: "
 			   "Got extension %s.\n",
 			   fmt_constant(extension_type, "EXTENSION"));
@@ -407,8 +407,8 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	      // RFC 6066 3.1 "Server Name Indication"
 	      session->server_name = 0;
 	      while (sizeof(extension_data)) {
-		ADT.struct server_name =
-		  ADT.struct(extension_data->get_var_string(2));
+		Buffer server_name =
+		  Buffer(extension_data->get_var_string(2));
 		switch(server_name->get_uint(1)) {	// name_type
 		case 0:	// host_name
                   if( session->server_name )
@@ -971,7 +971,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
       {
 	int(0..1) verification_ok;
 	mixed err = catch {
-	    ADT.struct handshake_messages_struct = ADT.struct();
+	    Buffer handshake_messages_struct = Buffer();
 	    handshake_messages_struct->put_fix_string(handshake_messages);
 	    verification_ok = session->cipher_spec->verify(
 	      session, "", handshake_messages_struct, input);
