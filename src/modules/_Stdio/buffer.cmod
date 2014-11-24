@@ -347,21 +347,29 @@ PIKECLASS Buffer
 
   static void io_range_error_throw( Buffer *io, int howmuch )
   {
-      if( io->error_mode )
+    if( io->error_mode )
+    {
+      struct object *err;
+      if( howmuch > 0 )
       {
-          if( howmuch > 0 )
-          {
-              push_text("Trying to read %d bytes outside allowed range\n");
-              push_int(howmuch);
-              f_sprintf(2);
-          }
-          else
-              push_text("Illegal arguments\n");
-
-          ref_push_object( io->this );
-          push_object(clone_object(io->error_mode, 2));
-          f_throw(1);
+        push_text("Trying to read %d bytes outside allowed range\n");
+        push_int(howmuch);
+        f_sprintf(2);
       }
+      else
+        push_text("Illegal arguments\n");
+
+      if( io->error_mode != buffer_error_program )
+      {
+        ref_push_object( io->this );
+        err = clone_object(io->error_mode,2);
+      }
+      else
+        err = clone_object(io->error_mode,1);
+
+      push_object(err);
+      f_throw(1);
+    }
   }
 
   static struct pike_string *io_read_string( Buffer *io, ssize_t len )
