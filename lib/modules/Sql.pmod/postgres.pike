@@ -472,7 +472,7 @@ int|object streaming_query(object|string q,
 //! onto
 //!   @tt{pgsql://[user[:password]@@][hostname][:port][/database]@}
 //!
-//! The reason this happens, is because Pike was compiled without libpq
+//! This only happens if Pike was compiled without libpq
 //! support, therefore Pike falls back to the faster, smaller memory
 //! footprint, more advanced and native PostgreSQL driver called @[Sql.pgsql].
 //!
