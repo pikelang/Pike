@@ -196,4 +196,7 @@ test_true( Tools.PEM.simple_build_pem )
 
 test_eq( sizeof(Crypto.Random.blocking_random_string(10)), 10 )
 
+test_true( functionp(Yabu.db) )
+test_true( functionp(Yabu.lookup) )
+
 END_MARKER

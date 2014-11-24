@@ -1,11 +1,9 @@
 #pike 8.1
 
-inherit Yabu;
-
-DB db(string a,string b) {
-  return DB(a,b);
+Yabu.DB db(string a,string b) {
+  return Yabu.DB(a,b);
 }
 
-LookupDB lookup(string a,string b,mapping|void c) {
-  return LookupDB(a,b,c);
+Yabu.LookupDB lookup(string a,string b,mapping|void c) {
+  return Yabu.LookupDB(a,b,c);
 }
