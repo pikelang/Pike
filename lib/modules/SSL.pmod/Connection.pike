@@ -88,7 +88,7 @@ Alert alert(int(1..2) level, int(8bit) description,
 				message);
 }
 
-string(8bit) get_signature_algorithms()
+Buffer get_signature_algorithms()
 {
   Buffer sign_algs = Buffer();
   foreach(context->get_signature_algorithms(), [int hash, int sign])
@@ -96,7 +96,7 @@ string(8bit) get_signature_algorithms()
     sign_algs->add_int(hash, 1);
     sign_algs->add_int(sign, 1);
   }
-  return (string(8bit))sign_algs;
+  return sign_algs;
 }
 
 #ifdef SSL3_PROFILING
