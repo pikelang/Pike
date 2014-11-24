@@ -200,13 +200,23 @@ static node *optimize_f_aggregate(node *n)
   return mkefuncallnode("`+", add_args);
 }
 
-/*! @decl __deprecated__ int hash_7_4(string s)
- *! @decl __deprecated__ int hash_7_4(string s, int max)
+/*! @decl int hash_7_4(string s)
+ *! @decl int hash_7_4(string s, int max)
  *!
- *! @deprecated 7.4::hash
+ *!   Return an integer derived from the string @[s]. The same string
+ *!   always hashes to the same value, also between processes.
+ *!
+ *!   If @[max] is given, the result will be >= 0 and < @[max],
+ *!   otherwise the result will be >= 0 and <= 0x7fffffff.
+ *!
+ *! @note
+ *!   This function is provided for backward compatibility with
+ *!   code written for Pike up and including version 7.4.
+ *!
+ *!   This function is byte-order dependant.
  *!
  *! @seealso
- *!   @[7.4::hash()], @[hash()]
+ *!   @[hash()], @[hash_7_0]
  */
 
 /*! @namespace 7.4::
@@ -314,7 +324,7 @@ ATTRIBUTE((const)) static INLINE size_t hashstr(const unsigned char *str, ptrdif
  *!   This function is not NUL-safe, and is byte-order dependant.
  *!
  *! @seealso
- *!   @[hash()], @[7.4::hash()]
+ *!   @[hash()], @[hash_7_4]
  */
 static void f_hash_7_0( INT32 args )
 {
