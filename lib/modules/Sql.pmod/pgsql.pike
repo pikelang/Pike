@@ -230,7 +230,7 @@ protected void create(void|string host, void|string database,
 //! During the execution of a statement, this function accumulates all
 //! non-error messages (notices, warnings, etc.).  If a statement does not
 //! generate any errors, this function will return all collected messages
-//! from the last statement.
+//! since the last statement.
 //!
 //! @note
 //! The string returned is not newline-terminated.
@@ -1703,8 +1703,10 @@ private inline void throwdelayederror(object parent) {
 //!  @member int ":_sync"
 //!   Forces synchronous parsing on or off for statements.
 //!   Setting this to off can cause surprises because statements could
-//!   be parsed before the previous statements have been executed.
-//!   This can speed up parsing by increased parallelism.
+//!   be parsed before the previous statements have been executed
+//!   (e.g. references to temporary tables created in the preceding
+//!   statement),
+//!   but it can speed up parsing due to increased parallelism.
 //! @endmapping
 //!
 //! @note
