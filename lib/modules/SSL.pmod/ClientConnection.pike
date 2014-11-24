@@ -29,7 +29,7 @@ Packet client_hello(string(8bit)|void server_name)
   Buffer struct = Buffer();
   /* Build client_hello message */
   client_version = version;
-  struct->put_uint(client_version, 2); /* version */
+  struct->add_int(client_version, 2); /* version */
 
   // The first four bytes of the client_random is specified to be the
   // timestamp on the client side. This is to guard against bad random
@@ -80,7 +80,7 @@ Packet client_hello(string(8bit)|void server_name)
   {
     if(condition)
     {
-      extensions->put_uint(id, 2);
+      extensions->add_int(id, 2);
       extensions->add_hstring(code(), 2);
     }
   };
@@ -100,21 +100,21 @@ Packet client_hello(string(8bit)|void server_name)
     // that proposes ECC cipher suites.
     Buffer curves = Buffer();
     foreach(context->ecc_curves, int curve) {
-      curves->put_uint(curve, 2);
+      curves->add_int(curve, 2);
     }
     return Buffer()->add_hstring(curves, 2);
   };
 
   ext (EXTENSION_ec_point_formats, sizeof(context->ecc_curves)) {
     Buffer point = Buffer();
-    point->put_uint(POINT_uncompressed, 1);
+    point->add_int(POINT_uncompressed, 1);
     return Buffer()->add_hstring(point, 1);
   };
 
   // We always attempt to enable the heartbeat extension.
   ext (EXTENSION_heartbeat, 1) {
     // RFC 6420
-    return Buffer()->put_uint(HEARTBEAT_MODE_peer_allowed_to_send, 1);
+    return Buffer()->add_int(HEARTBEAT_MODE_peer_allowed_to_send, 1);
   };
 
   ext (EXTENSION_encrypt_then_mac, context->encrypt_then_mac) {
@@ -140,7 +140,7 @@ Packet client_hello(string(8bit)|void server_name)
   ext (EXTENSION_server_name, !!server_name)
   {
     Buffer hostname = Buffer();
-    hostname->put_uint(0, 1); // name_time host_name(0)
+    hostname->add_int(0, 1); // name_time host_name(0)
     hostname->add_hstring(server_name, 2); // hostname
 
     return Buffer()->add_hstring(hostname, 2);
@@ -286,11 +286,11 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
       string(8bit) id;
       int cipher_suite, compression_method;
 
-      version = [int(0x300..0x300)|ProtocolVersion]input->get_uint(2);
-      server_random = input->get_fix_string(32);
-      id = input->get_var_string(1);
-      cipher_suite = input->get_uint(2);
-      compression_method = input->get_uint(1);
+      version = [int(0x300..0x300)|ProtocolVersion]input->read_int(2);
+      server_random = input->read(32);
+      id = input->read_hstring(1);
+      cipher_suite = input->read_int(2);
+      compression_method = input->read_int(1);
 
       if( !has_value(context->preferred_suites, cipher_suite) ||
 	  !has_value(context->preferred_compressors, compression_method) ||
@@ -352,13 +352,13 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
       int missing_secure_renegotiation = secure_renegotiation;
 
       if (sizeof(input)) {
-	Buffer extensions = Buffer(input->get_var_string(2));
+	Buffer extensions = Buffer(input->read_hstring(2));
         multiset(int) remote_extensions = (<>);
 
 	while (sizeof(extensions)) {
-	  int extension_type = extensions->get_uint(2);
+	  int extension_type = extensions->read_int(2);
 	  Buffer extension_data =
-	    Buffer(extensions->get_var_string(2));
+	    Buffer(extensions->read_hstring(2));
 	  SSL3_DEBUG_MSG("SSL.ClientConnection->handle_handshake: "
 			 "Got extension %s.\n",
 			 fmt_constant(extension_type, "EXTENSION"));
@@ -373,7 +373,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 
 	  switch(extension_type) {
 	  case EXTENSION_renegotiation_info:
-	    string renegotiated_connection = extension_data->get_var_string(1);
+	    string renegotiated_connection = extension_data->read_hstring(1);
 	    if ((renegotiated_connection !=
 		 (client_verify_data + server_verify_data)) ||
 		(!(state & CONNECTION_handshaking) && !secure_renegotiation)) {
@@ -417,7 +417,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	    {
 	      int hb_mode;
 	      if (!sizeof(extension_data) ||
-		  !(hb_mode = extension_data->get_uint(1)) ||
+		  !(hb_mode = extension_data->read_int(1)) ||
 		  sizeof(extension_data) ||
 		  ((hb_mode != HEARTBEAT_MODE_peer_allowed_to_send) &&
 		   (hb_mode != HEARTBEAT_MODE_peer_not_allowed_to_send))) {
@@ -516,10 +516,10 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
         if(ke && ke->anonymous)
           break;
 
-        Buffer cert_data = Buffer(input->get_var_string(3));
+        Buffer cert_data = Buffer(input->read_hstring(3));
         array(string(8bit)) certs = ({ });
         while(sizeof(cert_data))
-          certs += ({ cert_data->get_var_string(3) });
+          certs += ({ cert_data->read_hstring(3) });
 
         // we have the certificate chain in hand, now we must verify
         // them.
@@ -588,7 +588,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 
 	if (version >= PROTOCOL_TLS_1_2) {
 	  // TLS 1.2 has var_uint_array of hash and sign pairs here.
-	  string bytes = input->get_var_string(2);
+	  string bytes = input->read_hstring(2);
           if( sizeof(bytes)&1 )
           {
             send_packet(alert(ALERT_fatal, ALERT_handshake_failure,
@@ -602,10 +602,10 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 			 fmt_signature_pairs(session->signature_algorithms));
 	}
 
-        Buffer s = Buffer(input->get_var_string(2));
+        Buffer s = Buffer(input->read_hstring(2));
         while(sizeof(s))
         {
-          string(8bit) der = s->get_var_string(2);
+          string(8bit) der = s->read_hstring(2);
           Standards.ASN1.Types.Object o =
             Standards.ASN1.Decode.secure_der_decode(der);
           if( o->type_name != "SEQUENCE" )
@@ -725,10 +725,10 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 
       string my_digest;
       if (version == PROTOCOL_SSL_3_0) {
-        server_verify_data = input->get_fix_string(36);
+        server_verify_data = input->read(36);
         my_digest = hash_messages("SRVR");
       } else if (version >= PROTOCOL_TLS_1_0) {
-        server_verify_data = input->get_fix_string(12);
+        server_verify_data = input->read(12);
         my_digest = hash_messages("server finished");
       }
 

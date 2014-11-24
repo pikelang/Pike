@@ -11,6 +11,11 @@ this_program add_hstring(string(8bit)|Stdio.Buffer str, int sz)
   return [object(this_program)]::add_hstring(str,sz);
 }
 
+this_program add_int(int i, int sz)
+{
+  return [object(this_program)]::add_int(i,sz);
+}
+
 //! Create a new buffer, optionally initialized with the
 //! value @[s].
 void create(void|string(0..255) s)
@@ -26,17 +31,6 @@ void create(void|string(0..255) s)
 this_program add_data(string(0..255) s)
 {
   return [object(this_program)]add(s);
-}
-
-//! Appends an unsigned integer in network order to the buffer.
-//!
-//!  @param i
-//!    Unsigned integer to append.
-//!  @param len
-//!    Length of integer in bytes.
-this_program put_uint(int i, int(0..) len)
-{
-  return [object(this_program)]add_int(i,len);
 }
 
 //! Appends a bignum @[i] as a variable string preceded with an
@@ -81,41 +75,10 @@ this_program put_var_string_array(array(string(8bit)) data, int(0..) item_size, 
   return [object(this_program)]add(sub);
 }
 
-//! Reads an unsigned integer from the buffer.
-int(0..) get_uint(int len)
-{
-  return read_int(len);
-}
-
-//! Reads a fixed sized string of length @[len] from the buffer.
-string(0..255) get_fix_string(int len)
-{
-  return read(len);
-}
-
-//! Reads a string written by @[put_var_string] from the buffer.
-string(0..255) get_var_string(int len)
-{
-  return read_hstring(len);
-}
-
 //! Reads a bignum written by @[put_bignum] from the buffer.
 Gmp.mpz get_bignum(int|void len)
 {
   return Gmp.mpz(read_hstring(len||2),256);
-}
-
-//! Get the remaining data from the buffer and clears the buffer.
-string(0..255) get_rest()
-{
-  return read();
-}
-
-//! Reads an array of integers as written by @[put_fix_uint_array]
-//! from the buffer.
-array(int) get_fix_uint_array(int item_size, int size)
-{
-  return read_ints(size, item_size);
 }
 
 //! Reads an array of integers as written by @[put_var_uint_array]
@@ -127,10 +90,4 @@ array(int) get_var_uint_array(int item_size, int len)
   if( elems*item_size != size )
     throw(.BufferError("Impossible uint array length value.\n"));
   return read_ints(elems, item_size);
-}
-
-//! Returns one if there is any more data to read.
-int(0..1) is_empty()
-{
-  return !sizeof(this);
 }

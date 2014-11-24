@@ -42,13 +42,13 @@ Packet server_hello_packet()
 {
   Buffer struct = Buffer();
   /* Build server_hello message */
-  struct->put_uint(version, 2); /* version */
+  struct->add_int(version, 2); /* version */
   SSL3_DEBUG_MSG("Writing server hello, with version: %s\n",
                  fmt_version(version));
   struct->put_fix_string(server_random);
   struct->add_hstring(session->identity, 1);
-  struct->put_uint(session->cipher_suite, 2);
-  struct->put_uint(session->compression_algorithm, 1);
+  struct->add_int(session->cipher_suite, 2);
+  struct->add_int(session->compression_algorithm, 1);
 
   Buffer extensions = Buffer();
   Alert fail;
@@ -57,7 +57,7 @@ Packet server_hello_packet()
   {
     if(condition)
     {
-      extensions->put_uint(id, 2);
+      extensions->add_int(id, 2);
       extensions->add_hstring(code(), 2);
     }
   };
@@ -74,10 +74,10 @@ Packet server_hello_packet()
     // RFC 3546 3.2.
     Buffer extension = Buffer();
     switch(session->max_packet_size) {
-    case 512:  extension->put_uint(FRAGMENT_512,  1); break;
-    case 1024: extension->put_uint(FRAGMENT_1024, 1); break;
-    case 2048: extension->put_uint(FRAGMENT_2048, 1); break;
-    case 4096: extension->put_uint(FRAGMENT_4096, 1); break;
+    case 512:  extension->add_int(FRAGMENT_512,  1); break;
+    case 1024: extension->add_int(FRAGMENT_1024, 1); break;
+    case 2048: extension->add_int(FRAGMENT_2048, 1); break;
+    case 4096: extension->add_int(FRAGMENT_4096, 1); break;
     default:
       fail = alert(ALERT_fatal, ALERT_illegal_parameter,
                    "Invalid fragment size.\n");
@@ -93,7 +93,7 @@ Packet server_hello_packet()
     // containing the Supported Point Formats Extension when
     // negotiating an ECC cipher suite.
     Buffer point = Buffer();
-    point->put_uint(POINT_uncompressed, 1);
+    point->add_int(POINT_uncompressed, 1);
     return Buffer()->add_hstring(point, 1);
   };
 
@@ -104,7 +104,7 @@ Packet server_hello_packet()
 
   ext (EXTENSION_heartbeat, session->heartbeat_mode) {
     // RFC 6520
-    return Buffer()->put_uint(HEARTBEAT_MODE_peer_allowed_to_send, 1);
+    return Buffer()->add_int(HEARTBEAT_MODE_peer_allowed_to_send, 1);
   };
 
   ext (EXTENSION_encrypt_then_mac, session->encrypt_then_mac) {
@@ -284,11 +284,11 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	if (
 	  catch{
 	    client_version =
-	      [int(0x300..0x300)|ProtocolVersion]input->get_uint(2);
-	  client_random = input->get_fix_string(32);
-	  id = input->get_var_string(1);
-	  cipher_len = input->get_uint(2);
-	  cipher_suites = input->get_fix_uint_array(2, cipher_len/2);
+	      [int(0x300..0x300)|ProtocolVersion]input->read_int(2);
+	  client_random = input->read(32);
+	  id = input->read_hstring(1);
+	  cipher_len = input->read_int(2);
+	  cipher_suites = input->read_ints(cipher_len/2, 2);
 	  compression_methods = input->get_var_uint_array(1, 1);
 	  SSL3_DEBUG_MSG("STATE_wait_for_hello: received hello\n"
 			 "version = %s\n"
@@ -327,7 +327,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 
 	Buffer extensions;
 	if (sizeof(input)) {
-	  extensions = Buffer(input->get_var_string(2));
+	  extensions = Buffer(input->read_hstring(2));
 	}
 
 #ifdef SSL3_DEBUG
@@ -342,8 +342,8 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	if (extensions) {
 	  int maybe_safari_10_8 = 1;
 	  while (sizeof(extensions)) {
-	    int extension_type = extensions->get_uint(2);
-	    string(8bit) raw = extensions->get_var_string(2);
+	    int extension_type = extensions->read_int(2);
+	    string(8bit) raw = extensions->read_hstring(2);
 	    Buffer extension_data = Buffer(raw);
 	    SSL3_DEBUG_MSG("SSL.ServerConnection->handle_handshake: "
 			   "Got extension %s.\n",
@@ -366,7 +366,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 		maybe_safari_10_8 = 0;
 	      }
 	      // RFC 5246
-	      string bytes = extension_data->get_var_string(2);
+	      string bytes = extension_data->read_hstring(2);
 	      // Pairs of <hash_alg, signature_alg>.
 	      session->signature_algorithms = ((array(int))bytes)/2;
 	      SSL3_DEBUG_MSG("New signature_algorithms:\n"+
@@ -408,8 +408,8 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	      session->server_name = 0;
 	      while (sizeof(extension_data)) {
 		Buffer server_name =
-		  Buffer(extension_data->get_var_string(2));
-		switch(server_name->get_uint(1)) {	// name_type
+		  Buffer(extension_data->read_hstring(2));
+		switch(server_name->read_int(1)) {	// name_type
 		case 0:	// host_name
                   if( session->server_name )
                   {
@@ -417,7 +417,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
                                       "Multiple names given.\n"));
                     return -1;
                   }
-		  session->server_name = server_name->get_var_string(2);
+		  session->server_name = server_name->read_hstring(2);
 		  break;
 		default:
 		  // No other NameTypes defined yet.
@@ -429,7 +429,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	    case EXTENSION_max_fragment_length:
 	      // RFC 3546 3.2 "Maximum Fragment Length Negotiation"
 	      int mfsz = sizeof(extension_data) &&
-		extension_data->get_uint(1);
+		extension_data->read_int(1);
 	      if (sizeof(extension_data)) mfsz = 0;
 	      switch(mfsz) {
 	      case FRAGMENT_512:  session->max_packet_size = 512; break;
@@ -455,7 +455,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 
 	    case EXTENSION_renegotiation_info:
 	      string renegotiated_connection =
-		extension_data->get_var_string(1);
+		extension_data->read_hstring(1);
 	      if ((renegotiated_connection != client_verify_data) ||
 		  (!(state & CONNECTION_handshaking) && !secure_renegotiation)) {
 		// RFC 5746 3.7: (secure_renegotiation)
@@ -483,14 +483,14 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
                 if( !context->advertised_protocols )
                   break;
                 multiset(string) protocols = (<>);
-                if( extension_data->get_uint(2) != sizeof(extension_data) )
+                if( extension_data->read_int(2) != sizeof(extension_data) )
                 {
                   send_packet(alert(ALERT_fatal, ALERT_handshake_failure,
 				    "ALPN: Length mismatch.\n"));
                   return -1;
                 }
                 while (sizeof(extension_data)) {
-                  string server_name = extension_data->get_var_string(1);
+                  string server_name = extension_data->read_hstring(1);
                   if( sizeof(server_name)==0 )
                   {
                     send_packet(alert(ALERT_fatal, ALERT_handshake_failure,
@@ -530,7 +530,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	      {
 		int hb_mode;
 		if (!sizeof(extension_data) ||
-		    !(hb_mode = extension_data->get_uint(1)) ||
+		    !(hb_mode = extension_data->read_int(1)) ||
 		    sizeof(extension_data) ||
 		    ((hb_mode != HEARTBEAT_MODE_peer_allowed_to_send) &&
 		     (hb_mode != HEARTBEAT_MODE_peer_not_allowed_to_send))) {
@@ -803,7 +803,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
        if(version == PROTOCOL_SSL_3_0) {
 	 my_digest=hash_messages("CLNT");
 	 if (catch {
-	   digest = input->get_fix_string(36);
+	   digest = input->read(36);
            } || sizeof(input))
 	   {
 	     send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
@@ -813,7 +813,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
        } else if(version >= PROTOCOL_TLS_1_0) {
 	 my_digest=hash_messages("client finished");
 	 if (catch {
-	   digest = input->get_fix_string(12);
+	   digest = input->read(12);
            } || sizeof(input))
 	   {
 	     send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
@@ -921,12 +921,12 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
        }
        mixed e;
        if (e = catch {
-	 int certs_len = input->get_uint(3);
+	 int certs_len = input->read_int(3);
          SSL3_DEBUG_MSG("got %d certificate bytes\n", certs_len);
 
 	 array(string(8bit)) certs = ({ });
 	 while(sizeof(input))
-	   certs += ({ input->get_var_string(3) });
+	   certs += ({ input->read_hstring(3) });
 
 	  // we have the certificate chain in hand, now we must verify them.
           if((!sizeof(certs) && context->auth_level == AUTHLEVEL_require) ||
