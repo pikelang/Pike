@@ -351,7 +351,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
       int missing_secure_renegotiation = secure_renegotiation;
 
       if (sizeof(input)) {
-	Buffer extensions = Buffer(input->read_hstring(2));
+	Stdio.Buffer extensions = input->read_hbuffer(2);
         multiset(int) remote_extensions = (<>);
 
 	while (sizeof(extensions)) {
@@ -515,7 +515,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
         if(ke && ke->anonymous)
           break;
 
-        Buffer cert_data = Buffer(input->read_hstring(3));
+        Stdio.Buffer cert_data = input->read_hbuffer(3);
         array(string(8bit)) certs = ({ });
         while(sizeof(cert_data))
           certs += ({ cert_data->read_hstring(3) });
@@ -601,7 +601,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 			 fmt_signature_pairs(session->signature_algorithms));
 	}
 
-        Buffer s = Buffer(input->read_hstring(2));
+        Stdio.Buffer s = input->read_hbuffer(2);
         while(sizeof(s))
         {
           string(8bit) der = s->read_hstring(2);

@@ -324,10 +324,9 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	  version = client_version;
 	}
 
-	Buffer extensions;
-	if (sizeof(input)) {
-	  extensions = Buffer(input->read_hstring(2));
-	}
+	Stdio.Buffer extensions;
+	if (sizeof(input))
+	  extensions = input->read_hbuffer(2);
 
 #ifdef SSL3_DEBUG
 	if (sizeof(input))
@@ -406,8 +405,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	      // RFC 6066 3.1 "Server Name Indication"
 	      session->server_name = 0;
 	      while (sizeof(extension_data)) {
-		Buffer server_name =
-		  Buffer(extension_data->read_hstring(2));
+		Stdio.Buffer server_name = extension_data->read_hbuffer(2);
 		switch(server_name->read_int(1)) {	// name_type
 		case 0:	// host_name
                   if( session->server_name )
