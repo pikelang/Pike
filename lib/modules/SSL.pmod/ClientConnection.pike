@@ -169,9 +169,8 @@ Packet client_hello(string(8bit)|void server_name)
   if(sizeof(extensions) && (version >= PROTOCOL_TLS_1_0))
     struct->add_hstring(extensions, 2);
 
-  string data = struct->read();
-  SSL3_DEBUG_MSG("SSL.ClientConnection: Client hello: %q\n", data);
-  return handshake_packet(HANDSHAKE_client_hello, data);
+  SSL3_DEBUG_MSG("SSL.ClientConnection: Client hello: %q\n", struct);
+  return handshake_packet(HANDSHAKE_client_hello, struct->read());
 }
 
 Packet finished_packet(string(8bit) sender)
@@ -185,7 +184,7 @@ Packet finished_packet(string(8bit) sender)
 Packet client_key_exchange_packet()
 {
   ke = ke || session->cipher_spec->ke_factory(context, session, this, client_version);
-  string data =
+  string(8bit) data =
     ke->client_key_exchange_packet(client_random, server_random, version);
   if (!data) {
     send_packet(alert(ALERT_fatal, ALERT_unexpected_message,

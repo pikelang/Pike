@@ -109,7 +109,7 @@ void addRecord(int t,int s) {
 
 string(8bit) handshake_messages;
 
-Packet handshake_packet(int(8bit) type, string data)
+Packet handshake_packet(int(8bit) type, string(8bit) data)
 {
 #ifdef SSL3_PROFILING
   addRecord(type,1);
@@ -117,7 +117,7 @@ Packet handshake_packet(int(8bit) type, string data)
   /* Perhaps one need to split large packages? */
   Packet packet = Packet(version);
   packet->content_type = PACKET_handshake;
-  packet->fragment = sprintf("%1c%3H", type, [string(8bit)]data);
+  packet->fragment = sprintf("%1c%3H", type, data);
   handshake_messages += packet->fragment;
   return packet;
 }

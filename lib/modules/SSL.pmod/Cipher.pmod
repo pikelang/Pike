@@ -327,7 +327,8 @@ class KeyExchange(object context, object session, object connection,
   //!
   //! @returns
   //!   Returns the signed payload for a @[HANDSHAKE_server_key_exchange].
-  string server_key_exchange_packet(string client_random, string server_random)
+  string(8bit) server_key_exchange_packet(string client_random,
+                                          string server_random)
   {
     Stdio.Buffer struct = server_key_params();
     if (!struct) return 0;
@@ -363,9 +364,9 @@ class KeyExchange(object context, object session, object connection,
   //! @returns
   //!   Returns the payload for a @[HANDSHAKE_client_key_exchange] packet.
   //!   May return @expr{0@} (zero) to generate an @[ALERT_unexpected_message].
-  string client_key_exchange_packet(string client_random,
-				    string server_random,
-				    ProtocolVersion version);
+  string(8bit) client_key_exchange_packet(string client_random,
+                                          string server_random,
+                                          ProtocolVersion version);
 
   //! @param data
   //!   Payload from a @[HANDSHAKE_client_key_exchange].
@@ -450,9 +451,9 @@ class KeyExchangeNULL
     return Stdio.Buffer();
   }
 
-  string client_key_exchange_packet(string client_random,
-				    string server_random,
-				    ProtocolVersion version)
+  string(8bit) client_key_exchange_packet(string client_random,
+                                          string server_random,
+                                          ProtocolVersion version)
   {
     anonymous = 1;
     session->master_secret = "";
@@ -528,9 +529,9 @@ class KeyExchangeRSA
     return 0;
   }
 
-  string client_key_exchange_packet(string client_random,
-				    string server_random,
-				    ProtocolVersion version)
+  string(8bit) client_key_exchange_packet(string client_random,
+                                          string server_random,
+                                          ProtocolVersion version)
   {
     SSL3_DEBUG_MSG("client_key_exchange_packet(%O, %O, %d.%d)\n",
 		   client_random, server_random, version>>8, version & 0xff);
@@ -547,11 +548,11 @@ class KeyExchangeRSA
     SSL3_DEBUG_MSG("temp_key: %O\n"
 		   "session->peer_public_key: %O\n",
 		   temp_key, session->peer_public_key);
-    string data = (temp_key ||
-                   session->peer_public_key)->encrypt(premaster_secret);
+    string(8bit) data = (temp_key ||
+                         session->peer_public_key)->encrypt(premaster_secret);
 
     if(version >= PROTOCOL_TLS_1_0)
-      data = sprintf("%2H", [string(8bit)]data);
+      data = sprintf("%2H", data);
 
     session->master_secret = derive_master_secret(premaster_secret,
 						  client_random,
@@ -670,9 +671,9 @@ class KeyExchangeDH
     return 0;
   }
 
-  string client_key_exchange_packet(string client_random,
-				    string server_random,
-				    ProtocolVersion version)
+  string(8bit) client_key_exchange_packet(string client_random,
+                                          string server_random,
+                                          ProtocolVersion version)
   {
     SSL3_DEBUG_MSG("client_key_exchange_packet(%O, %O, %d.%d)\n",
 		   client_random, server_random, version>>8, version & 0xff);
@@ -926,9 +927,9 @@ class KeyExchangeECDH
     return 0;
   }
 
-  string client_key_exchange_packet(string client_random,
-				    string server_random,
-				    ProtocolVersion version)
+  string(8bit) client_key_exchange_packet(string client_random,
+                                          string server_random,
+                                          ProtocolVersion version)
   {
     SSL3_DEBUG_MSG("client_key_exchange_packet(%O, %O, %d.%d)\n",
 		   client_random, server_random, version>>8, version & 0xff);
@@ -1095,9 +1096,9 @@ class KeyExchangeECDHE
     return struct;
   }
 
-  string client_key_exchange_packet(string client_random,
-				    string server_random,
-				    ProtocolVersion version)
+  string(8bit) client_key_exchange_packet(string client_random,
+                                          string server_random,
+                                          ProtocolVersion version)
   {
     anonymous = 1;
     return ::client_key_exchange_packet(client_random, server_random, version);
@@ -1175,9 +1176,9 @@ class KeyExchangeKRB
     return 0;
   }
 
-  string client_key_exchange_packet(string client_random,
-				    string server_random,
-				    ProtocolVersion version)
+  string(8bit) client_key_exchange_packet(string client_random,
+                                          string server_random,
+                                          ProtocolVersion version)
   {
     SSL3_DEBUG_MSG("client_key_exchange_packet(%O, %O, %d.%d)\n",
 		   client_random, server_random, version>>8, version & 0xff);

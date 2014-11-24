@@ -125,15 +125,14 @@ Packet server_hello_packet()
   if (sizeof(extensions))
       struct->add_hstring(extensions, 2);
 
-  string data = struct->read();
-  return handshake_packet(HANDSHAKE_server_hello, data);
+  return handshake_packet(HANDSHAKE_server_hello, struct->read());
 }
 
 Packet server_key_exchange_packet()
 {
   if (ke) error("KE!\n");
   ke = session->cipher_spec->ke_factory(context, session, this, client_version);
-  string data = ke->server_key_exchange_packet(client_random, server_random);
+  string(8bit) data = ke->server_key_exchange_packet(client_random, server_random);
   return data && handshake_packet(HANDSHAKE_server_key_exchange, data);
 }
 
