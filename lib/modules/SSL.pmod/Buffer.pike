@@ -37,14 +37,7 @@ void create(void|string(8bit) s)
 //! of the string. @[len_width] defaults to 2.
 this_program put_bignum(Gmp.mpz i, int(0..)|void len_width)
 {
-  return [object(this_program)]add_hstring(i->digits(256),len_width||2);
-}
-
-//! Appends an array of unsigned integers of width @[item_size]
-//! to the buffer.
-this_program put_fix_uint_array(array(int) data, int(0..) item_size)
-{
-  return [object(this_program)]add_ints(data,item_size);
+  return [object(this_program)]add_hint(i,len_width||2);
 }
 
 //! Appends an array of unsigned integers of width @[item_size]
@@ -64,14 +57,13 @@ this_program put_var_string_array(array(string(8bit)) data, int(0..) item_size, 
   Stdio.Buffer sub = Stdio.Buffer();
   foreach(data, string(8bit) s)
     sub->add_hstring(s, item_size);
-  add_int(sizeof(sub),len);
-  return [object(this_program)]add(sub);
+  return [object(this_program)]add_hstring(sub, len);
 }
 
 //! Reads a bignum written by @[put_bignum] from the buffer.
 Gmp.mpz get_bignum(int|void len)
 {
-  return Gmp.mpz(read_hstring(len||2),256);
+  return Gmp.mpz(read_hint(len||2));
 }
 
 //! Reads an array of integers as written by @[put_var_uint_array]
