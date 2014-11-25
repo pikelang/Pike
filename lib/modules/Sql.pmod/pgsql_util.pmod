@@ -165,6 +165,7 @@ class conxiin {
   final Thread.Mutex fillreadmux;
   final function(:void) gottimeout;
   final int timeout;
+  private int didreadcb;
 
   protected bool range_error(int howmuch) {
 #ifdef PG_DEBUG
@@ -174,8 +175,9 @@ class conxiin {
     if(fillread) {
       array cid=callout(gottimeout,timeout);
       Thread.MutexKey lock=fillreadmux->lock();
-      if(howmuch>sizeof(this))
+      if(!didreadcb)
         fillread.wait(lock);
+      didreadcb=0;
       lock=0;
       local_backend->remove_call_out(cid);
     } else
@@ -186,7 +188,7 @@ class conxiin {
   final int read_cb(mixed id,mixed b) {
     Thread.MutexKey lock=fillreadmux->lock();
     if(fillread)
-      fillread.signal();
+      didreadcb=1, fillread.signal();
     lock=0;
     return 0;
   }
