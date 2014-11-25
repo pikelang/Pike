@@ -858,9 +858,6 @@ ADT.Queue active_sessions = ADT.Queue();
 
 mapping(string:Session) session_cache = ([]);
 
-int session_number; /* Incremented for each session, and used when
-		     * constructing the session id */
-
 // Remove sessions older than @[session_lifetime] from the session cache.
 void forget_old_sessions()
 {
@@ -895,9 +892,7 @@ Session new_session()
       id = random(32);
     } while( session_cache[id] );
 
-  Session s = Session();
-  s->identity = id;
-  return s;
+  return Session(id);
 }
 
 //! Add a session to the cache (if caching is enabled).

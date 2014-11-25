@@ -66,6 +66,11 @@ int max_packet_size = PACKET_MAX_SIZE;
 //! to the first 10 bytes (80 bits). Cf RFC 3546 3.5.
 int(0..1) truncated_hmac;
 
+protected void create(string(8bit) id)
+{
+  identity = id;
+}
+
 /*
  * Extensions provided by the peer.
  */
