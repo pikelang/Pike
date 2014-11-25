@@ -288,10 +288,6 @@ protected class Pike_7_6_master
   program compile_string(string data, void|string name);
   program compile_file(string file);
 
-#if constant(_static_modules.Builtin.mutex)
-  extern object compilation_mutex;
-#endif
-
   constant master_efuns = ({});
   class joinnode {};
   extern mapping(string:mixed) fc;
@@ -1209,7 +1205,6 @@ protected void call_compile_warning (object handler, string file,
 
 #if constant(_static_modules.Builtin.mutex)
 #define THREADED
-_static_modules.Builtin.mutex compilation_mutex = Builtin.mutex();
 #endif
 
 #ifdef __NT__
@@ -1372,17 +1367,6 @@ protected program low_findprog(string pname,
 
   resolv_debug("low_findprog(%O, %O, %O, %O)\n",
 	       pname, ext, handler, mkobj);
-
-#ifdef THREADED
-  object key;
-  // The catch is needed, since we might be called in a context when
-  // threads are disabled. (compile() disables threads).
-  mixed err = catch {
-    key=compilation_mutex->lock(2);
-  };
-  if (err && !has_suffix (err[0], "when threads are disabled!"))
-    throw (err);
-#endif
 
 #ifdef PIKE_MODULE_RELOC
   fname = unrelocate_module(fname);
