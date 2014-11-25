@@ -174,7 +174,8 @@ class conxiin {
     if(fillread) {
       array cid=callout(gottimeout,timeout);
       Thread.MutexKey lock=fillreadmux->lock();
-      fillread.wait(lock);
+      if(!sizeof(this))
+        fillread.wait(lock);
       lock=0;
       local_backend->remove_call_out(cid);
     } else
