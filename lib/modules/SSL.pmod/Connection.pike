@@ -154,7 +154,7 @@ string(8bit) hash_messages(string(8bit) sender)
 Packet certificate_packet(array(string(8bit)) certificates)
 {
   Buffer struct = Buffer();
-  struct->put_var_string_array(certificates, 3, 3);
+  struct->add_string_array(certificates, 3, 3);
   return handshake_packet(HANDSHAKE_certificate, struct->read());
 }
 

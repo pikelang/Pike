@@ -71,8 +71,8 @@ Packet client_hello(string(8bit)|void server_name)
                  fmt_cipher_suites(cipher_suites));
   compression_methods = context->preferred_compressors;
 
-  struct->put_var_uint_array(cipher_suites, 2, 2);
-  struct->put_var_uint_array(compression_methods, 1, 1);
+  struct->add_int_array(cipher_suites, 2, 2);
+  struct->add_int_array(compression_methods, 1, 1);
 
   Buffer extensions = Buffer();
 
@@ -148,7 +148,7 @@ Packet client_hello(string(8bit)|void server_name)
 
   ext (EXTENSION_application_layer_protocol_negotiation, !!(context->advertised_protocols))
   {
-    return Buffer()->put_var_string_array(context->advertised_protocols, 1, 2);
+    return Buffer()->add_string_array(context->advertised_protocols, 1, 2);
   };
 
   // When the client HELLO packet data is in the range 256-511 bytes
@@ -400,7 +400,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	    break;
 	  case EXTENSION_ec_point_formats:
 	    array(int) ecc_point_formats =
-	      extension_data->get_var_uint_array(1, 1);
+	      extension_data->read_int_array(1, 1);
 	    // NB: We only support the uncompressed point format for now.
 	    if (has_value(ecc_point_formats, POINT_uncompressed)) {
 	      session->ecc_point_format = POINT_uncompressed;
@@ -582,7 +582,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	  return -1;
         }
 
-        client_cert_types = input->get_var_uint_array(1, 1);
+        client_cert_types = input->read_int_array(1, 1);
         client_cert_distinguished_names = ({});
 
 	if (version >= PROTOCOL_TLS_1_2) {

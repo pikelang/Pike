@@ -115,7 +115,7 @@ Packet server_hello_packet()
   ext (EXTENSION_application_layer_protocol_negotiation,
        application_protocol && has_application_layer_protocol_negotiation)
   {
-    return Buffer()->put_var_string_array(({application_protocol}), 1, 2);
+    return Buffer()->add_string_array(({application_protocol}), 1, 2);
   };
 
   if (fail) return fail;
@@ -140,7 +140,7 @@ Packet certificate_request_packet(Context context)
 {
     /* Send a CertificateRequest message */
     Buffer struct = Buffer();
-    struct->put_var_uint_array(context->preferred_auth_methods, 1, 1);
+    struct->add_int_array(context->preferred_auth_methods, 1, 1);
     if (version >= PROTOCOL_TLS_1_2) {
       // TLS 1.2 has var_uint_array of hash and sign pairs here.
       struct->add_hstring(get_signature_algorithms(), 2);
@@ -288,7 +288,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	  id = input->read_hstring(1);
 	  cipher_len = input->read_int(2);
 	  cipher_suites = input->read_ints(cipher_len/2, 2);
-	  compression_methods = input->get_var_uint_array(1, 1);
+	  compression_methods = input->read_int_array(1, 1);
 	  SSL3_DEBUG_MSG("STATE_wait_for_hello: received hello\n"
 			 "version = %s\n"
 			 "id=%O\n"
@@ -376,7 +376,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 		maybe_safari_10_8 = 0;
 	      }
 	      session->ecc_curves =
-		filter(reverse(sort(extension_data->get_var_uint_array(2, 2))),
+		filter(reverse(sort(extension_data->read_int_array(2, 2))),
 		       ECC_CURVES);
 	      SSL3_DEBUG_MSG("Elliptic curves: %O\n",
 			     map(session->ecc_curves, fmt_constant, "CURVE"));
@@ -387,7 +387,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 		maybe_safari_10_8 = 0;
 	      }
 	      array(int) ecc_point_formats =
-		extension_data->get_var_uint_array(1, 1);
+                extension_data->read_int_array(1, 1);
 	      // NB: We only support the uncompressed point format for now.
 	      if (has_value(ecc_point_formats, POINT_uncompressed)) {
 		session->ecc_point_format = POINT_uncompressed;
