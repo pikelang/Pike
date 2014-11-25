@@ -39,7 +39,7 @@ private Regexp execfetchlimit
  =Regexp("^[ \t\f\r\n]*(([Uu][Pp][Dd][Aa]|[Dd][Ee][Ll][Ee])[Tt][Ee]|\
 [Ii][Nn][Ss][Ee][Rr][Tt])[ \t\f\r\n]|\
 [ \t\f\r\n][Ll][Ii][Mm][Ii][Tt][ \t\f\r\n]+[12][; \t\f\r\n]*$");
-final array(mixed) emptyarray=({});
+final array emptyarray=({});
 
 final void closestatement(bufcon|conxion plugbuffer,string oldprep) {
   if(oldprep) {
@@ -434,7 +434,7 @@ class sql_result {
   private Thread.Mutex closemux;
   private Thread.Queue datarows;
   private array(mapping(string:mixed)) datarowdesc;
-  private array(int) datarowtypes;	// cached types from datarowdesc
+  private array(int) datarowtypes;	// types from datarowdesc
   private string statuscmdcomplete;
   private int bytesreceived;
   final int _synctransact;
