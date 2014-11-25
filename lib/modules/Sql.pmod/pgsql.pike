@@ -866,6 +866,7 @@ final void _processloop(.pgsql_util.conxion ci) {
 #endif
             at[i]=cr->read_int32();
 #ifdef PG_DEBUG
+            res.type=at[i];
             {
               int len=cr->read_sint(2);
               res.length=len>=0?len:"variable";
