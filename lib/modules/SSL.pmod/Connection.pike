@@ -516,29 +516,23 @@ void send_renegotiate();
 //! of the sent data is returned.
 int send_streaming_data (string(8bit) data)
 {
-  if (!sizeof(data)) return 0;
-  Packet packet = Packet(version, PACKET_application_data, "");
-  int max_packet_size = session->max_packet_size;
-  int size;
+  int size = sizeof(data);
+  if (!size) return 0;
+
   if ((!sent) && (version < PROTOCOL_TLS_1_1) &&
-      (session->cipher_spec->cipher_type ==
-       CIPHER_block)) {
+      (session->cipher_spec->cipher_type == CIPHER_block) &&
+      (size>1))
+  {
     // Workaround for the BEAST attack.
     // This method is known as the 1/(n-1) split:
     //   Send just one byte of payload in the first packet
     //   to improve the initialization vectors in TLS 1.0.
-    size = sizeof((packet->fragment = data[..0]));
-    if (sizeof(data) > 1) {
-      // If we have more data, take the opportunity to queue some of it too.
-      send_packet(packet);
-
-      packet = Packet(version, PACKET_application_data, "");
-      size += sizeof((packet->fragment = data[1..max_packet_size-1]));
-    }
-  } else {
-    size = sizeof ((packet->fragment = data[..max_packet_size-1]));
+    send_packet(Packet(version, PACKET_application_data, data[..0]));
+    data = data[1..];
   }
-  send_packet (packet);
+
+  send_packet(Packet(version, PACKET_application_data,
+                     data[..session->max_packet_size-1]));;
   sent += size;
   return size;
 }
