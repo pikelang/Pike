@@ -45,7 +45,7 @@ Packet server_hello_packet()
   struct->add_int(version, 2); /* version */
   SSL3_DEBUG_MSG("Writing server hello, with version: %s\n",
                  fmt_version(version));
-  struct->put_fix_string(server_random);
+  struct->add(server_random);
   struct->add_hstring(session->identity, 1);
   struct->add_int(session->cipher_suite, 2);
   struct->add_int(session->compression_algorithm, 1);
@@ -968,10 +968,8 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
       {
 	int(0..1) verification_ok;
 	mixed err = catch {
-	    Buffer handshake_messages_struct = Buffer();
-	    handshake_messages_struct->put_fix_string(handshake_messages);
 	    verification_ok = session->cipher_spec->verify(
-	      session, "", handshake_messages_struct, input);
+              session, "", Buffer(handshake_messages), input);
 	  };
 #ifdef SSL3_DEBUG
 	if (err) {

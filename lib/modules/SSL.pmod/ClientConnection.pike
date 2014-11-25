@@ -41,7 +41,7 @@ Packet client_hello(string(8bit)|void server_name)
   // fingerprinting.
   client_random = context->random(32);
 
-  struct->put_fix_string(client_random);
+  struct->add(client_random);
   struct->add_hstring(session->identity || "", 1);
 
   array(int) cipher_suites, compression_methods;
@@ -163,7 +163,7 @@ Packet client_hello(string(8bit)|void server_name)
     int padding = max(0, 512-packet_size-4);
     SSL3_DEBUG_MSG("SSL.ClientConnection: Adding %d bytes of padding.\n",
                    padding);
-    return Buffer()->add_data("\0"*padding);
+    return Buffer()->add("\0"*padding);
   };
 
   if(sizeof(extensions) && (version >= PROTOCOL_TLS_1_0))

@@ -16,9 +16,14 @@ this_program add_int(int i, int sz)
   return [object(this_program)]::add_int(i,sz);
 }
 
+this_program add(string(8bit)|Stdio.Buffer str)
+{
+  return [object(this_program)]::add(str);
+}
+
 //! Create a new buffer, optionally initialized with the
 //! value @[s].
-void create(void|string(0..255) s)
+void create(void|string(8bit) s)
 {
   if( s && strlen(s) )
     ::create(s);
@@ -27,24 +32,12 @@ void create(void|string(0..255) s)
   set_error_mode(.BufferError);
 }
 
-//! Adds the data @[s] verbatim to the end of the buffer.
-this_program add_data(string(0..255) s)
-{
-  return [object(this_program)]add(s);
-}
-
 //! Appends a bignum @[i] as a variable string preceded with an
 //! unsigned integer of the size @[len_width] declaring the length
 //! of the string. @[len_width] defaults to 2.
 this_program put_bignum(Gmp.mpz i, int(0..)|void len_width)
 {
   return [object(this_program)]add_hstring(i->digits(256),len_width||2);
-}
-
-//! Appends the fix sized string @[s] to the buffer.
-this_program put_fix_string(string(0..255) s)
-{
-  return [object(this_program)]add(s);
 }
 
 //! Appends an array of unsigned integers of width @[item_size]
