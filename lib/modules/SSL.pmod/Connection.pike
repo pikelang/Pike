@@ -130,8 +130,9 @@ string(8bit) hash_messages(string(8bit) sender)
 {
   string(8bit) hash;
   if(version == PROTOCOL_SSL_3_0) {
-    hash = .Cipher.MACmd5(session->master_secret)->hash(handshake_messages + sender) +
-      .Cipher.MACsha(session->master_secret)->hash(handshake_messages + sender);
+    handshake_messages += sender;
+    hash = .Cipher.MACmd5(session->master_secret)->hash(handshake_messages) +
+      .Cipher.MACsha(session->master_secret)->hash(handshake_messages);
   }
   else if(version <= PROTOCOL_TLS_1_1) {
     hash = session->cipher_spec->prf(session->master_secret, sender,
@@ -139,7 +140,8 @@ string(8bit) hash_messages(string(8bit) sender)
 				     Crypto.SHA1.hash(handshake_messages), 12);
   } else if(version >= PROTOCOL_TLS_1_2) {
     hash = session->cipher_spec->prf(session->master_secret, sender,
-				     session->cipher_spec->hash->hash(handshake_messages), 12);
+				     session->cipher_spec->hash
+                                     ->hash(handshake_messages), 12);
   }
 
   // Handshake hash is only calculated once.
@@ -414,7 +416,8 @@ void send_packet(Packet packet, int|void priority)
 		  PACKET_change_cipher_spec : PRI_urgent,
 	          PACKET_handshake : PRI_urgent,
 		  PACKET_heartbeat : PRI_urgent,
-		  PACKET_application_data : PRI_application ])[packet->content_type];
+		  PACKET_application_data : PRI_application
+    ])[packet->content_type];
 
   if ((packet->content_type == PACKET_handshake) &&
       (priority == PRI_application)) {
@@ -566,7 +569,8 @@ protected int handle_alert(string s)
   {
     SSL3_DEBUG_MSG("SSL.Connection: %O\n", ALERT_descriptions[description]);
 
-    if ((certificate_state == CERT_requested) && (context->auth_level == AUTHLEVEL_ask))
+    if ( (certificate_state == CERT_requested) &&
+         (context->auth_level == AUTHLEVEL_ask) )
     {
       certificate_state = CERT_no_certificate;
       return 0;
