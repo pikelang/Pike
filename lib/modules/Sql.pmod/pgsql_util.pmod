@@ -737,7 +737,7 @@ class sql_result {
               plugbuffer->add_hstring(value,4);
               break;
             }
-            case BOOLOID:plugbuffer->add_int32(1);
+            case BOOLOID:
               do {
                 int tval;
                 if(stringp(value))
@@ -762,7 +762,7 @@ class sql_result {
                       break;
                 }
               } while(0);
-              plugbuffer->add_int8(value);
+              plugbuffer->add_int32(1)->add_int8(value);
               break;
             case CHAROID:
               if(intp(value))
