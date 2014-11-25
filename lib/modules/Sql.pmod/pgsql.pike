@@ -654,7 +654,7 @@ final void _processloop(.pgsql_util.conxion ci) {
       int errtype=NOERROR;
       PD("%d<",ci->socket->query_fd());
       switch(msgtype) {
-        array(mapping) getcols() {
+        array getcols() {
           int bintext=cr->read_int8();
           int cols=cr->read_int16();
 #ifdef PG_DEBUG
@@ -665,7 +665,7 @@ final void _processloop(.pgsql_util.conxion ci) {
 #else
 	  cr->consume(cols<<1);
 #endif			      // Discard column info, and make it line oriented
-          return ({(["type":bintext?BYTEAOID:TEXTOID,"name":"line"])});
+          return ({ ({(["name":"line"])}), ({bintext?BYTEAOID:TEXTOID}) });
         };
         array(string) reads() {
 #ifdef PG_DEBUG
@@ -829,13 +829,14 @@ final void _processloop(.pgsql_util.conxion ci) {
           break;
         case 't': {
           array a;
-          int cols=cr->read_int16();
 #ifdef PG_DEBUG
+          int cols=cr->read_int16();
           PD("%O ParameterDescription %d values\n",portal._query,cols);
           msglen-=4+2+4*cols;
+          a=cr->read_ints(cols,4);
+#else
+          a=cr->read_ints(cr->read_int16(),4);
 #endif
-          foreach(a=allocate(cols);int i;)
-            a[i]=cr->read_int32();
 #ifdef PG_DEBUGMORE
           PD("%O\n",a);
 #endif
@@ -845,15 +846,14 @@ final void _processloop(.pgsql_util.conxion ci) {
           break;
         }
         case 'T': {
-          array a;
-#ifdef PG_DEBUG
+          array a,at;
           int cols=cr->read_int16();
+#ifdef PG_DEBUG
           PD("RowDescription %d columns %O\n",cols,portal._query);
           msglen-=4+2;
-          foreach(a=allocate(cols);int i;)
-#else
-          foreach(a=allocate(cr->read_int16());int i;)
 #endif
+          at=allocate(cols);
+          foreach(a=allocate(cols);int i;)
           {
             string s=cr->read_cstring();
             mapping(string:mixed) res=(["name":s]);
@@ -864,7 +864,7 @@ final void _processloop(.pgsql_util.conxion ci) {
 #else
             cr->consume(6);
 #endif
-            res.type=cr->read_int32();
+            at[i]=cr->read_int32();
 #ifdef PG_DEBUG
             {
               int len=cr->read_sint(2);
@@ -885,9 +885,9 @@ final void _processloop(.pgsql_util.conxion ci) {
           PD("%O\n",a);
 #endif
           if(portal._forcetext)
-            portal->_setrowdesc(a);		// Do not consume queued portal
+            portal->_setrowdesc(a,at);		// Do not consume queued portal
           else {
-            portal->_processrowdesc(a);
+            portal->_processrowdesc(a,at);
             portal=0;
           }
           break;
@@ -898,12 +898,13 @@ final void _processloop(.pgsql_util.conxion ci) {
           PD("NoData %O\n",portal._query);
 #endif
           portal._fetchlimit=0;			// disables subsequent Executes
-          portal->_processrowdesc(({}));
+          portal
+           ->_processrowdesc(.pgsql_util.emptyarray,.pgsql_util.emptyarray);
           portal=0;
           break;
         }
         case 'H':
-          portal->_processrowdesc(getcols());
+          portal->_processrowdesc(@getcols());
           PD("CopyOutResponse %O\n",portal._query);
           break;
         case '2': {
@@ -997,7 +998,7 @@ final void _processloop(.pgsql_util.conxion ci) {
 #endif
           break;
         case 'G':
-          portal->_setrowdesc(getcols());
+          portal->_setrowdesc(@getcols());
           PD("%O CopyInResponse\n",portal._portalname);
           portal._state=COPYINPROGRESS;
           break;
@@ -1286,6 +1287,7 @@ private void resync_cb() {
       foreach(_prepareds;;mapping tp) {
         m_delete(tp,"datatypeoid");
         m_delete(tp,"datarowdesc");
+        m_delete(tp,"datarowtypes");
       }
       Thread.Thread(reset_dbsession);	  // Urgently and deadlockfree
   }
@@ -1915,7 +1917,7 @@ private inline void throwdelayederror(object parent) {
 #ifdef PG_STATS
       skippeddescribe++;
 #endif
-      portal->_setrowdesc(tp.datarowdesc);
+      portal->_setrowdesc(tp.datarowdesc,tp.datarowtypes);
     }
     if((portal._tprepared=tp) && tp.datatypeoid) {
       mixed e=catch(portal->_preparebind(tp.datatypeoid));

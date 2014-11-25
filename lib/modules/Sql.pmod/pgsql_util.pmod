@@ -39,6 +39,7 @@ private Regexp execfetchlimit
  =Regexp("^[ \t\f\r\n]*(([Uu][Pp][Dd][Aa]|[Dd][Ee][Ll][Ee])[Tt][Ee]|\
 [Ii][Nn][Ss][Ee][Rr][Tt])[ \t\f\r\n]|\
 [ \t\f\r\n][Ll][Ii][Mm][Ii][Tt][ \t\f\r\n]+[12][; \t\f\r\n]*$");
+final array(mixed) emptyarray=({});
 
 final void closestatement(bufcon|conxion plugbuffer,string oldprep) {
   if(oldprep) {
@@ -560,7 +561,7 @@ class sql_result {
     if(!datarowtypes)
       waitfordescribe();
     trydelayederror();
-    return datarowdesc+({});
+    return datarowdesc+emptyarray;
   }
 
 #ifdef PG_DEBUG
@@ -647,9 +648,11 @@ class sql_result {
 #endif
   }
 
-  final void _setrowdesc(array(mapping(string:mixed)) drowdesc) {
+  final void _setrowdesc(array(mapping(string:mixed)) drowdesc,
+   array(int) drowtypes) {
     Thread.MutexKey lock=_ddescribemux->lock();
-    datarowtypes=map(datarowdesc=drowdesc,lambda(mapping m){return m.type;});
+    datarowdesc=drowdesc;
+    datarowtypes=drowtypes;
     _ddescribe->broadcast();
     lock=0;
   }
@@ -674,8 +677,7 @@ class sql_result {
       Stdio.Buffer plugbuffer=Stdio.Buffer();
       plugbuffer->add(_portalname)->add_int8(0)
        ->add(_preparedname)->add_int8(0)->add_int16(sizeof(dtoid));
-      foreach(dtoid;;int textbin)
-        plugbuffer->add_int16(oidformat(textbin));
+      plugbuffer->add_ints(map(dtoid,oidformat),2);
       plugbuffer->add_int16(sizeof(dtoid));
       string cenc=pgsqlsess._runtimeparameter[CLIENT_ENCODING];
       foreach(paramValues;int i;mixed value) {
@@ -800,8 +802,7 @@ class sql_result {
       else {
         plugbuffer->add_int16(sizeof(datarowtypes));
         if(sizeof(datarowtypes))
-          foreach(datarowtypes;;int typ)
-            plugbuffer->add_int16(oidformat(typ));
+          plugbuffer->add_ints(map(datarowtypes,oidformat),2);
         else if(commitprefix->match(_query)) {
           lock=pgsqlsess->_shortmux->lock();
           if(pgsqlsess->_portalsinflight) {
@@ -830,10 +831,13 @@ class sql_result {
       lock=0;
   }
 
-  final void _processrowdesc(array(mapping(string:mixed)) datarowdesc) {
-    _setrowdesc(datarowdesc);
-    if(_tprepared)
+  final void _processrowdesc(array(mapping(string:mixed)) datarowdesc,
+   array(int) datarowtypes) {
+    _setrowdesc(datarowdesc,datarowtypes);
+    if(_tprepared) {
       _tprepared.datarowdesc=datarowdesc;
+      _tprepared.datarowtypes=datarowtypes;
+    }
   }
 
   final void _openportal() {
@@ -929,7 +933,8 @@ class sql_result {
     pgsqlsess=0;
     if(!datarowtypes) {
       Thread.MutexKey lock=_ddescribemux->lock();
-      datarowtypes=datarowdesc=({});
+      datarowtypes=emptyarray;
+      datarowdesc=emptyarray;
       _ddescribe->broadcast();
       lock=0;
     }
