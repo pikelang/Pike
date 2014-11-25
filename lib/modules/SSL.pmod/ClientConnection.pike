@@ -696,6 +696,9 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
       else if(version >= PROTOCOL_TLS_1_0)
 	send_packet(finished_packet("client finished"));
 
+      // NB: The server direction hash will be calculated
+      //     when we've received the server finished packet.
+
       if (context->heartbleed_probe &&
           session->heartbeat_mode == HEARTBEAT_MODE_peer_allowed_to_send) {
 	// Probe for the Heartbleed vulnerability (CVE-2014-0160).
@@ -755,6 +758,9 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	  send_packet(heartbleed_packet());
 	}
       }
+
+      // Handshake hash is calculated for both directions above.
+      handshake_messages = 0;
 
       return 1;			// We're done shaking hands
     }

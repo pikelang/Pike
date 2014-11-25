@@ -150,8 +150,6 @@ string(8bit) hash_messages(string(8bit) sender)
                                      ->hash(handshake_messages), 12);
   }
 
-  // Handshake hash is only calculated once.
-  handshake_messages = 0;
   return hash;
 }
 
