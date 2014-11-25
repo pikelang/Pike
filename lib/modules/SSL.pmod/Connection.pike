@@ -132,18 +132,23 @@ Packet change_cipher_packet()
 
 string(8bit) hash_messages(string(8bit) sender)
 {
+  string(8bit) hash;
   if(version == PROTOCOL_SSL_3_0) {
-    return .Cipher.MACmd5(session->master_secret)->hash(handshake_messages + sender) +
+    hash = .Cipher.MACmd5(session->master_secret)->hash(handshake_messages + sender) +
       .Cipher.MACsha(session->master_secret)->hash(handshake_messages + sender);
   }
   else if(version <= PROTOCOL_TLS_1_1) {
-    return session->cipher_spec->prf(session->master_secret, sender,
+    hash = session->cipher_spec->prf(session->master_secret, sender,
 				     Crypto.MD5.hash(handshake_messages)+
 				     Crypto.SHA1.hash(handshake_messages), 12);
   } else if(version >= PROTOCOL_TLS_1_2) {
-    return session->cipher_spec->prf(session->master_secret, sender,
+    hash = session->cipher_spec->prf(session->master_secret, sender,
 				     session->cipher_spec->hash->hash(handshake_messages), 12);
   }
+
+  // Handshake hash is only calculated once.
+  handshake_messages = 0;
+  return hash;
 }
 
 Packet certificate_packet(array(string(8bit)) certificates)
