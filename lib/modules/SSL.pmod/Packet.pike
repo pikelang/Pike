@@ -33,6 +33,14 @@ protected void create(ProtocolVersion version, void|int extra)
   marginal_size = extra;
 }
 
+protected variant void create(ProtocolVersion version,
+                              int content_type, string(8bit) fragment)
+{
+  protocol_version = version;
+  this::content_type = content_type;
+  this::fragment = fragment;
+}
+
 protected object check_size(string data, int extra)
 {
   if (sizeof(data) > (PACKET_MAX_SIZE + extra))
