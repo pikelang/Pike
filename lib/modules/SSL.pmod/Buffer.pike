@@ -32,14 +32,6 @@ void create(void|string(8bit) s)
   set_error_mode(.BufferError);
 }
 
-//! Appends a bignum @[i] as a variable string preceded with an
-//! unsigned integer of the size @[len_width] declaring the length
-//! of the string. @[len_width] defaults to 2.
-this_program put_bignum(Gmp.mpz i, int(0..)|void len_width)
-{
-  return [object(this_program)]add_hint(i,len_width||2);
-}
-
 //! Appends an array of unsigned integers of width @[item_size]
 //! to the buffer, preceded with an unsigned integer @[len] declaring
 //! the size of the array in bytes.
@@ -58,12 +50,6 @@ this_program put_var_string_array(array(string(8bit)) data, int(0..) item_size, 
   foreach(data, string(8bit) s)
     sub->add_hstring(s, item_size);
   return [object(this_program)]add_hstring(sub, len);
-}
-
-//! Reads a bignum written by @[put_bignum] from the buffer.
-Gmp.mpz get_bignum(int|void len)
-{
-  return Gmp.mpz(read_hint(len||2));
 }
 
 //! Reads an array of integers as written by @[put_var_uint_array]
