@@ -881,9 +881,7 @@ void forget_old_sessions()
 Session lookup_session(string id)
 {
   if (use_cache)
-  {
     return session_cache[id];
-  }
   else
     return 0;
 }
@@ -891,9 +889,14 @@ Session lookup_session(string id)
 //! Create a new session.
 Session new_session()
 {
+  string(8bit) id = "";
+  if(use_cache)
+    do {
+      id = random(32);
+    } while( session_cache[id] );
+
   Session s = Session();
-  s->identity = (use_cache) ?
-    sprintf("PikeSSL3%s", Standards.UUID.make_version4()->encode()) : "";
+  s->identity = id;
   return s;
 }
 
