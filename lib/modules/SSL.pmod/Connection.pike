@@ -115,19 +115,15 @@ Packet handshake_packet(int(8bit) type, string(8bit) data)
   addRecord(type,1);
 #endif
   /* Perhaps one need to split large packages? */
-  Packet packet = Packet(version);
-  packet->content_type = PACKET_handshake;
-  packet->fragment = sprintf("%1c%3H", type, data);
+  Packet packet = Packet(version, PACKET_handshake,
+                         sprintf("%1c%3H", type, data));
   handshake_messages += packet->fragment;
   return packet;
 }
 
 Packet change_cipher_packet()
 {
-  Packet packet = Packet(version);
-  packet->content_type = PACKET_change_cipher_spec;
-  packet->fragment = "\001";
-  return packet;
+  return Packet(version, PACKET_change_cipher_spec, "\001");
 }
 
 string(8bit) hash_messages(string(8bit) sender)
@@ -160,10 +156,7 @@ Packet certificate_packet(array(string(8bit)) certificates)
 
 Packet heartbeat_packet(string(8bit) s)
 {
-  Packet packet = Packet(version);
-  packet->content_type = PACKET_heartbeat;
-  packet->fragment = s;
-  return packet;
+  return Packet(version, PACKET_heartbeat, s);
 }
 
 protected Crypto.AES heartbeat_encode;
@@ -524,8 +517,7 @@ void send_renegotiate();
 int send_streaming_data (string(8bit) data)
 {
   if (!sizeof(data)) return 0;
-  Packet packet = Packet(version);
-  packet->content_type = PACKET_application_data;
+  Packet packet = Packet(version, PACKET_application_data, "");
   int max_packet_size = session->max_packet_size;
   int size;
   if ((!sent) && (version < PROTOCOL_TLS_1_1) &&
@@ -540,8 +532,7 @@ int send_streaming_data (string(8bit) data)
       // If we have more data, take the opportunity to queue some of it too.
       send_packet(packet);
 
-      packet = Packet(version);
-      packet->content_type = PACKET_application_data;
+      packet = Packet(version, PACKET_application_data, "");
       size += sizeof((packet->fragment = data[1..max_packet_size-1]));
     }
   } else {
