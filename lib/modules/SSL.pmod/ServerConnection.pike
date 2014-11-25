@@ -125,7 +125,7 @@ Packet server_hello_packet()
   if (sizeof(extensions))
       struct->add_hstring(extensions, 2);
 
-  return handshake_packet(HANDSHAKE_server_hello, struct->read());
+  return handshake_packet(HANDSHAKE_server_hello, struct);
 }
 
 Packet server_key_exchange_packet()
@@ -147,8 +147,7 @@ Packet certificate_request_packet(Context context)
     }
     struct->add_hstring([string(8bit)]
                         sprintf("%{%2H%}", context->authorities_cache), 2);
-    return handshake_packet(HANDSHAKE_certificate_request,
-				 struct->read());
+    return handshake_packet(HANDSHAKE_certificate_request, struct);
 }
 
 //! Renegotiate the connection (server initiated).

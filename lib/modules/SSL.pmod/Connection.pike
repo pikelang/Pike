@@ -109,15 +109,21 @@ void addRecord(int t,int s) {
 
 string(8bit) handshake_messages;
 
-Packet handshake_packet(int(8bit) type, string(8bit) data)
+Packet handshake_packet(int(8bit) type, string(8bit)|Buffer data)
 {
 #ifdef SSL3_PROFILING
   addRecord(type,1);
 #endif
+  string(8bit) str;
+  if(stringp(data))
+    str = [string(8bit)]data;
+  else
+    str = ([object(Buffer)]data)->read();
+  str = sprintf("%1c%3H", type, str);
+  handshake_messages += str;
+
   /* Perhaps one need to split large packages? */
-  Packet packet = Packet(version, PACKET_handshake,
-                         sprintf("%1c%3H", type, data));
-  handshake_messages += packet->fragment;
+  Packet packet = Packet(version, PACKET_handshake, str);
   return packet;
 }
 
@@ -151,14 +157,13 @@ string(8bit) hash_messages(string(8bit) sender)
 
 Packet certificate_packet(array(string(8bit)) certificates)
 {
-  Buffer struct = Buffer();
-  struct->add_string_array(certificates, 3, 3);
-  return handshake_packet(HANDSHAKE_certificate, struct->read());
+  return handshake_packet(HANDSHAKE_certificate,
+                          Buffer()->add_string_array(certificates, 3, 3));
 }
 
-Packet heartbeat_packet(string(8bit) s)
+Packet heartbeat_packet(Buffer s)
 {
-  return Packet(version, PACKET_heartbeat, s);
+  return Packet(version, PACKET_heartbeat, s->read());
 }
 
 protected Crypto.AES heartbeat_encode;
@@ -197,7 +202,7 @@ Packet heartbleed_packet()
   int now = gethrtime();
   hb_msg->add(heartbeat_encode->crypt(sprintf("%8c%8c", now, 0)));
   // No padding.
-  return heartbeat_packet((string(8bit))hb_msg);
+  return heartbeat_packet(hb_msg);
 }
 
 // verify that a certificate chain is acceptable
@@ -622,7 +627,7 @@ void send_heartbeat()
   hb_msg->add(heartbeat_encode->crypt(sprintf("%8c%8c", now, now)));
   // We pad to an even 64 bytes.
   hb_msg->add(random_string(64 - sizeof(hb_msg)));
-  send_packet(heartbeat_packet((string(8bit))hb_msg));
+  send_packet(heartbeat_packet(hb_msg));
 }
 
 void handle_heartbeat(string(8bit) s)
@@ -670,7 +675,7 @@ void handle_heartbeat(string(8bit) s)
     hb_msg->add_int(hb_len, 2);
     hb_msg->add(payload);
     hb_msg->add(random_string(pad_len));
-    send_packet(heartbeat_packet((string(8bit))hb_msg));
+    send_packet(heartbeat_packet(hb_msg));
     break;
   case HEARTBEAT_MESSAGE_response:
     // RFC 6520 4:

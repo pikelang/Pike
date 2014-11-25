@@ -170,7 +170,7 @@ Packet client_hello(string(8bit)|void server_name)
     struct->add_hstring(extensions, 2);
 
   SSL3_DEBUG_MSG("SSL.ClientConnection: Client hello: %q\n", struct);
-  return handshake_packet(HANDSHAKE_client_hello, struct->read());
+  return handshake_packet(HANDSHAKE_client_hello, struct);
 }
 
 Packet finished_packet(string(8bit) sender)
@@ -213,8 +213,7 @@ Packet certificate_verify_packet()
 
   session->cipher_spec->sign(cx, handshake_messages, struct);
 
-  return handshake_packet (HANDSHAKE_certificate_verify,
-			  struct->read());
+  return handshake_packet(HANDSHAKE_certificate_verify, struct);
 }
 #endif
 
