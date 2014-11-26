@@ -24,23 +24,39 @@ final Pike.Backend local_backend = Pike.SmallBackend();
 private Thread.Mutex backendmux = Thread.Mutex();
 private int clientsregistered;
 
+final array emptyarray=({});
 final multiset censoroptions=(<"use_ssl","force_ssl",
  "cache_autoprepared_statements","reconnect","text_query","is_superuser",
  "server_encoding","server_version","integer_datetimes",
  "session_authorization">);
 final multiset cachealways=(<"BEGIN","begin","END","end","COMMIT","commit">);
-final Regexp createprefix
- =Regexp("^[ \t\f\r\n]*[Cc][Rr][Ee][Aa][Tt][Ee][ \t\f\r\n]");
+
+ /* Statements matching createprefix cause the prepared statement cache
+  * to be flushed to prevent stale references to (temporary) tables
+  */
+final Regexp createprefix=Regexp(
+ "^[ \t\f\r\n]*([Cc][Rr][Ee][Aa][Tt][Ee]|[Dd][Rr][Oo][Pp])[ \t\f\r\n]");
+
+ /* Statements matching dontcacheprefix never enter the cache
+  */
 private Regexp dontcacheprefix
  =Regexp("^[ \t\f\r\n]*([Ff][Ee][Tt][Cc][Hh]|[Cc][Oo][Pp][Yy])[ \t\f\r\n]");
-private Regexp commitprefix=Regexp(
- "^[ \t\f\r\n]*([Cc][Oo][Mm][Mm][Ii][Tt]|[Ee][Nn][Dd]|[Ss][Ee][Tt])"
- "([ \t\f\r\n;]|$)");
+
+ /* Statements not matching paralleliseprefix will cause the driver
+  * to stall submission until all previously started statements have
+  * run to completion
+  */
+private Regexp paralleliseprefix=Regexp(
+ "^[ \t\f\r\n]*([Ss][Ee][Ll][Ee][Cc][Tt]|[Uu][Pp][Dd][Aa][Tt][Ee]"
+ "|[Ii][Nn][Ss][Ee][Rr][Tt]|[Dd][Ee][Ll][Ee][Tt][Ee])[ \t\f\r\n]");
+
+ /* For statements matching execfetchlimit the resultrows will not be
+  * fetched in pieces
+  */
 private Regexp execfetchlimit
  =Regexp("^[ \t\f\r\n]*(([Uu][Pp][Dd][Aa]|[Dd][Ee][Ll][Ee])[Tt][Ee]"
  "|[Ii][Nn][Ss][Ee][Rr][Tt])[ \t\f\r\n]"
- "|[ \t\f\r\n][Ll][Ii][Mm][Ii][Tt][ \t\f\r\n]+[12][; \t\f\r\n]*$");
-final array emptyarray=({});
+ "|[ \t\f\r\n][Ll][Ii][Mm][Ii][Tt][ \t\f\r\n]+[1-9][; \t\f\r\n]*$");
 
 final void closestatement(bufcon|conxion plugbuffer,string oldprep) {
   if(oldprep) {
@@ -807,7 +823,7 @@ class sql_result {
         plugbuffer->add_int16(sizeof(datarowtypes));
         if(sizeof(datarowtypes))
           plugbuffer->add_ints(map(datarowtypes,oidformat),2);
-        else if(commitprefix->match(_query)) {
+        else if(!paralleliseprefix->match(_query)) {
           lock=pgsqlsess->_shortmux->lock();
           if(pgsqlsess->_portalsinflight) {
             pgsqlsess->_waittocommit++;
