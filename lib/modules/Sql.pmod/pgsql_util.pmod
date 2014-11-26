@@ -702,10 +702,10 @@ class sql_result {
       PD("ParamValues to bind: %O\n",paramValues);
 #endif
       Stdio.Buffer plugbuffer=Stdio.Buffer();
-      plugbuffer->add(_portalname)->add_int8(0)
-       ->add(_preparedname)->add_int8(0)->add_int16(sizeof(dtoid));
-      plugbuffer->add_ints(map(dtoid,oidformat),2);
-      plugbuffer->add_int16(sizeof(dtoid));
+      { array dta=({sizeof(dtoid)});
+        plugbuffer->add(_portalname,0,_preparedname,0)
+         ->add_ints(dta+map(dtoid,oidformat)+dta,2);
+      }
       string cenc=pgsqlsess._runtimeparameter[CLIENT_ENCODING];
       foreach(paramValues;int i;mixed value) {
         if(undefinedp(value) || objectp(value)&&value->is_val_null)
@@ -989,8 +989,8 @@ class sql_result {
     PD("Execute portal %O fetchlimit %d\n",_portalname,fetchlimit);
     if(!plugbuffer)
       plugbuffer=c->start(1);
-    plugbuffer->add_int8('E')->add_hstring(_portalname,4,8+1)
-     ->add_int8(0)->add_int32(fetchlimit);
+    plugbuffer->add_int8('E')->add_hstring(({_portalname,0}),4,8)
+     ->add_int32(fetchlimit);
     if(!fetchlimit)
       flushmode=_closeportal(plugbuffer)==SYNCSEND?SYNCSEND:FLUSHSEND;
     else
