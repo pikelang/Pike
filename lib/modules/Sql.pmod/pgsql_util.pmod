@@ -45,7 +45,7 @@ private Regexp dontcacheprefix=iregexp("^\a*(FETCH|COPY)\a");
   * run to completion
   */
 private Regexp paralleliseprefix
- =iregexp("^\a*(SELECT|(UPDA|DELE)TE|INSERT)\a");
+ =iregexp("^\a*((SELEC|INSER)T|(UPDA|DELE)TE|FETCH)\a");
 
  /* For statements matching execfetchlimit the resultrows will not be
   * fetched in pieces
