@@ -409,7 +409,7 @@ private .pgsql_util.conxion getsocket(void|int nossl) {
 //!    describe the statement parameters because it was already cached.
 //!    Only available if PG_STATS is compile-time enabled.
 //!  @member int "used_prepared_statements"
-//!    Numer of times prepared statements were used from cache instead of
+//!    Number of times prepared statements were used from cache instead of
 //!    reparsing in the current session.
 //!    Only available if PG_STATS is compile-time enabled.
 //!  @member int "current_prepared_statements"
@@ -1309,6 +1309,9 @@ private void sendsync() {
 //! If issued while inside a transaction, it will rollback the transaction,
 //! close all open cursors, drop all temporary tables and reset all
 //! session variables to their default values.
+//!
+//! @note
+//! This function @b{can@} raise exceptions.
 //!
 //! @seealso
 //!   @[cancelquery()], @[reload()]
