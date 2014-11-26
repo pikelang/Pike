@@ -34,11 +34,12 @@ final Regexp createprefix
 private Regexp dontcacheprefix
  =Regexp("^[ \t\f\r\n]*([Ff][Ee][Tt][Cc][Hh]|[Cc][Oo][Pp][Yy])[ \t\f\r\n]");
 private Regexp commitprefix=Regexp(
-  "^[ \t\f\r\n]*([Cc][Oo][Mm][Mm][Ii][Tt]|[Ee][Nn][Dd])([ \t\f\r\n;]|$)");
+ "^[ \t\f\r\n]*([Cc][Oo][Mm][Mm][Ii][Tt]|[Ee][Nn][Dd]|[Ss][Ee][Tt])"
+ "([ \t\f\r\n;]|$)");
 private Regexp execfetchlimit
- =Regexp("^[ \t\f\r\n]*(([Uu][Pp][Dd][Aa]|[Dd][Ee][Ll][Ee])[Tt][Ee]|\
-[Ii][Nn][Ss][Ee][Rr][Tt])[ \t\f\r\n]|\
-[ \t\f\r\n][Ll][Ii][Mm][Ii][Tt][ \t\f\r\n]+[12][; \t\f\r\n]*$");
+ =Regexp("^[ \t\f\r\n]*(([Uu][Pp][Dd][Aa]|[Dd][Ee][Ll][Ee])[Tt][Ee]"
+ "|[Ii][Nn][Ss][Ee][Rr][Tt])[ \t\f\r\n]"
+ "|[ \t\f\r\n][Ll][Ii][Mm][Ii][Tt][ \t\f\r\n]+[12][; \t\f\r\n]*$");
 final array emptyarray=({});
 
 final void closestatement(bufcon|conxion plugbuffer,string oldprep) {
