@@ -598,12 +598,12 @@ final void _processloop(.pgsql_util.conxion ci) {
   {
     Stdio.Buffer plugbuffer=Stdio.Buffer()->add_int32(PG_PROTOCOL(3,0));
     if(user)
-      plugbuffer->add("user\0")->add(user)->add_int8(0);
+      plugbuffer->add("user\0",user,0);
     if(database)
-      plugbuffer->add("database\0")->add(database)->add_int8(0);
+      plugbuffer->add("database\0",database,0);
     _options.reconnect=undefinedp(_options.reconnect) || _options.reconnect;
     foreach(_options-.pgsql_util.censoroptions; string name; mixed value)
-      plugbuffer->add(name)->add_int8(0)->add((string)value)->add_int8(0);
+      plugbuffer->add(name,0,(string)value,0);
     plugbuffer->add_int8(0);
     PD("%O\n",(string)plugbuffer);
     if(catch(ci->start()->add_hstring(plugbuffer,4,4)->sendcmd(SENDOUT))) {
@@ -757,8 +757,8 @@ final void _processloop(.pgsql_util.conxion ci) {
           switch(errtype) {
             case NOERROR:
               if(cancelsecret!="")
-                ci->start()->add_int8('p')->add_hstring(sendpass,4,5)
-                 ->add_int8(0)->sendcmd(SENDOUT);
+                ci->start()->add_int8('p')->add_hstring(({sendpass,0}),4,4)
+                 ->sendcmd(SENDOUT);
               break;	// No flushing here, PostgreSQL 9.4 disapproves
             default:
             case PROTOCOLUNSUPPORTED:
@@ -1883,7 +1883,7 @@ private inline void throwdelayederror(object parent) {
     portal->_openportal();
     _readyforquerycount++;
     Thread.MutexKey lock=unnamedstatement->lock(1);
-    c->start(1)->add_int8('Q')->add_hstring(q,4,4+1)->add_int8(0)
+    c->start(1)->add_int8('Q')->add_hstring(({q,0}),4,4)
      ->sendcmd(FLUSHLOGSEND,portal);
     lock=0;
     PD("Simple query: %O\n",q);
