@@ -34,29 +34,36 @@ final multiset cachealways=(<"BEGIN","begin","END","end","COMMIT","commit">);
  /* Statements matching createprefix cause the prepared statement cache
   * to be flushed to prevent stale references to (temporary) tables
   */
-final Regexp createprefix=Regexp(
- "^[ \t\f\r\n]*([Cc][Rr][Ee][Aa][Tt][Ee]|[Dd][Rr][Oo][Pp])[ \t\f\r\n]");
+final Regexp createprefix=iregexp("^\a*(CREATE|DROP)\a");
 
  /* Statements matching dontcacheprefix never enter the cache
   */
-private Regexp dontcacheprefix
- =Regexp("^[ \t\f\r\n]*([Ff][Ee][Tt][Cc][Hh]|[Cc][Oo][Pp][Yy])[ \t\f\r\n]");
+private Regexp dontcacheprefix=iregexp("^\a*(FETCH|COPY)\a");
 
  /* Statements not matching paralleliseprefix will cause the driver
   * to stall submission until all previously started statements have
   * run to completion
   */
-private Regexp paralleliseprefix=Regexp(
- "^[ \t\f\r\n]*([Ss][Ee][Ll][Ee][Cc][Tt]|[Uu][Pp][Dd][Aa][Tt][Ee]"
- "|[Ii][Nn][Ss][Ee][Rr][Tt]|[Dd][Ee][Ll][Ee][Tt][Ee])[ \t\f\r\n]");
+private Regexp paralleliseprefix
+ =iregexp("^\a*(SELECT|(UPDA|DELE)TE|INSERT)\a");
 
  /* For statements matching execfetchlimit the resultrows will not be
   * fetched in pieces
   */
 private Regexp execfetchlimit
- =Regexp("^[ \t\f\r\n]*(([Uu][Pp][Dd][Aa]|[Dd][Ee][Ll][Ee])[Tt][Ee]"
- "|[Ii][Nn][Ss][Ee][Rr][Tt])[ \t\f\r\n]"
- "|[ \t\f\r\n][Ll][Ii][Mm][Ii][Tt][ \t\f\r\n]+[1-9][; \t\f\r\n]*$");
+ =iregexp("^\a*((UPDA|DELE)TE|INSERT)\a|\aLIMIT\a+[1-9][; \t\f\r\n]*$");
+
+private Regexp iregexp(string expr) {
+  Stdio.Buffer ret=Stdio.Buffer();
+  foreach(expr;;int c)
+    if(c>='A'&&c<='Z')
+      ret->add('[',c,c+'a'-'A',']');
+    else if(c=='\a')			// Replace with generic whitespace
+      ret->add("[ \t\f\r\n]");
+    else
+      ret->add_int8(c);
+  return Regexp(ret->read());
+}
 
 final void closestatement(bufcon|conxion plugbuffer,string oldprep) {
   if(oldprep) {
