@@ -338,6 +338,7 @@ struct program_constant
 #define ID_SAVE_PARENT             0x10000 /* #pragma save_parent */
 #define ID_DONT_SAVE_PARENT        0x20000 /* #pragma dont_save_parent */
 #define ID_NO_DEPRECATION_WARNINGS 0x40000 /* #pragma no_deprecation_warnings */
+#define ID_DISASSEMBLE             0x80000 /* #pragma disassemble */
 
 
 /*

@@ -777,6 +777,14 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 	  {
 	    lex->pragmas &= ~ID_NO_DEPRECATION_WARNINGS;
 	  }
+	  else if (ISWORD("disassemble"))
+	  {
+	    lex->pragmas |= ID_DISASSEMBLE;
+	  }
+	  else if (ISWORD("no_disassemble"))
+	  {
+	    lex->pragmas &= ~ID_DISASSEMBLE;
+	  }
           else
           {
             if( Pike_compiler->compiler_pass == 1 )

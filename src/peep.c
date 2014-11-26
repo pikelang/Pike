@@ -23,6 +23,7 @@
 #include "constants.h"
 #include "interpret.h"
 #include "pikecode.h"
+#include "pike_compiler.h"
 
 #ifdef PIKE_DEBUG
 static int hasarg(int opcode)
@@ -184,6 +185,9 @@ INT32 assemble(int store_linenumbers)
 #endif
   int relabel;
   int reoptimize = relabel = !(debug_options & NO_PEEP_OPTIMIZING);
+  struct lex *lex;
+  CHECK_COMPILER();
+  lex = &THIS_COMPILATION->lex;
 
   c=(p_instr *)instrbuf.s.str;
   length=instrbuf.s.len / sizeof(p_instr);
@@ -506,7 +510,9 @@ INT32 assemble(int store_linenumbers)
 		 "0x%04"PRINTPTRDIFFT"x != 0x%04"PRINTPTRDIFFT"x\n",
 		 e, c - ((p_instr *)instrbuf.s.str));
     }
-    if((a_flag > 2 && store_linenumbers) || a_flag > 3)
+    if(((a_flag > 2) && store_linenumbers) ||
+       (a_flag > 3) ||
+       (lex->pragmas & ID_DISASSEMBLE))
     {
       if (c->opcode == F_POP_SYNCH_MARK) synch_depth--;
       fprintf(stderr, "===%4ld %4lx %*s", (long)c->line,
