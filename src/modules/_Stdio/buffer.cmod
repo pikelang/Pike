@@ -1659,6 +1659,7 @@ PIKECLASS Buffer
   PIKEFUN string(0..255) _sprintf(int o, mapping UNUSED)
     flags ID_PROTECTED;
   {
+    size_t bytes;
     pop_n_elems(args-1);
     Pike_sp--;
     switch( o )
@@ -1685,12 +1686,16 @@ PIKECLASS Buffer
         break;
 
       case 's':
-        push_string( io_read_string( THIS, io_len(THIS)) );
+	bytes = io_len(THIS);
+        push_string( io_read_string(THIS, bytes) );
+	io_rewind(THIS, bytes);
         break;
 
       case 'q':
         push_text("%q");
-        push_string( io_read_string( THIS, io_len(THIS)) );
+	bytes = io_len(THIS);
+        push_string( io_read_string(THIS, bytes) );
+	io_rewind(THIS, bytes);
         f_sprintf(2);
         break;
       default:
