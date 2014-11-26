@@ -136,9 +136,9 @@ string(8bit) hash_messages(string(8bit) sender)
 {
   string(8bit) hash;
   if(version == PROTOCOL_SSL_3_0) {
-    handshake_messages += sender;
-    hash = .Cipher.MACmd5(session->master_secret)->hash(handshake_messages) +
-      .Cipher.MACsha(session->master_secret)->hash(handshake_messages);
+    string data = handshake_messages + sender;
+    hash = .Cipher.MACmd5(session->master_secret)->hash(data) +
+      .Cipher.MACsha(session->master_secret)->hash(data);
   }
   else if(version <= PROTOCOL_TLS_1_1) {
     hash = session->cipher_spec->prf(session->master_secret, sender,
