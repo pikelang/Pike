@@ -425,6 +425,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 		// AlertDescription MUST be sent in response.
 		send_packet(alert(ALERT_fatal, ALERT_illegal_parameter,
 				  "Invalid heartbeat extension.\n"));
+                return -1;
 	      }
 	      SSL3_DEBUG_MSG("heartbeat extension: %s\n",
 			     fmt_constant(hb_mode, "HEARTBEAT_MODE"));
@@ -438,7 +439,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 		if (sizeof(extension_data)) {
 		  send_packet(alert(ALERT_fatal, ALERT_illegal_parameter,
 				    "Encrypt-then-MAC: Invalid extension.\n"));
-		  break;
+                  return -1;
 		}
 		if (((sizeof(CIPHER_SUITES[cipher_suite]) == 3) &&
 		     (< CIPHER_rc4, CIPHER_rc4_40 >)[CIPHER_SUITES[cipher_suite][1]]) ||
@@ -446,6 +447,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 		     (CIPHER_SUITES[cipher_suite][3] != MODE_cbc))) {
 		  send_packet(alert(ALERT_fatal, ALERT_illegal_parameter,
 				    "Encrypt-then-MAC: Invalid for selected suite.\n"));
+                  return -1;
 		}
 
 		SSL3_DEBUG_MSG("Encrypt-then-MAC: Enabled.\n");
