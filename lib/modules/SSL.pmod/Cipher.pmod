@@ -868,15 +868,19 @@ class KeyExchangeECDH
   string(8bit) encode_point(Gmp.mpz x, Gmp.mpz y)
   {
     // ANSI x9.62 4.3.6.
+    //
+    // Nothing x9.62 4.3.1 states an upper limit on the number of
+    // bytes to use, but in practice implementations check that the
+    // correct size is used.
+    //
     // Format #4 is uncompressed.
-    return sprintf("%c%*c%*c",
-		   4,
-		   (session->curve->size() + 7)>>3, x,
-		   (session->curve->size() + 7)>>3, y);
+    int size = (session->curve->size() + 7)>>3;
+    return sprintf("%c%*c%*c", 4, size, x, size, y);
   }
 
   array(Gmp.mpz) decode_point(Stdio.Buffer data)
   {
+    // ANSI x9.62 4.3.7.
     Gmp.mpz x;
     Gmp.mpz y;
     switch(data->read_int(1)) {

@@ -1027,7 +1027,7 @@ constant AUTH_ecdsa_sign        = 64;	// RFC 4492
 constant AUTH_rsa_fixed_ecdh    = 65;	// RFC 4492
 constant AUTH_ecdsa_fixed_ecdh  = 66;	// RFC 4492
 
-/* ECC curve types from RFC 4492 5.4. */
+/* ECC curve types from RFC 4492 5.4 (ECCurveType). */
 enum CurveType {
   CURVETYPE_explicit_prime	= 1,
   CURVETYPE_explicit_char2	= 2,
@@ -1041,7 +1041,7 @@ enum ECBasisType {
 }
 
 /* Groups used for elliptic curves DHE (ECDHE) and finite field DH
-   (FFDHE). RFC 4492 5.1.1. / TLS 1.3 7.4.2.5.2. */
+   (FFDHE). RFC 4492 5.1.1 (NamedCurve) / TLS 1.3 7.4.2.5.2. */
 enum NamedGroup {
   GROUP_sect163k1			= 1,	// RFC 4492
   GROUP_sect163r1			= 2,	// RFC 4492
@@ -1092,7 +1092,7 @@ constant ECC_NAME_TO_CURVE = ([
   "SECP_521R1": GROUP_secp521r1,
 ]);
 
-/* ECC point formats from RFC 4492 5.1.2. */
+/* ECC point formats from RFC 4492 5.1.2 (ECPointFormat). */
 enum PointFormat {
   POINT_uncompressed = 0,
   POINT_ansiX962_compressed_prime = 1,
