@@ -455,6 +455,7 @@ test_do([[
     int state;
 
     int trigged = 10;
+    int remaining = sizeof(client_msg);
 
     string fail;
 
@@ -463,9 +464,10 @@ test_do([[
       trigged = 2;
       int bytes = server->write(server_buf);
       server_buf = server_buf[bytes..];
+      remaining -= bytes;
       if (!sizeof(server_buf)) {
 	server->set_write_callback(UNDEFINED);
-	if (state) {
+	if (!remaining) {
 	  server->close();
 	  state = 2;
 	}
@@ -702,7 +704,7 @@ test_do([[
     client->set_blocking();
     if (!client->connect()) {
       server_thread->wait();
-      return exp_data && ({ "Client failed to connect.\n" });
+      return exp_data ? ({ "Client failed to connect.\n" }) : ({});
     }
     if (exp_data &&
 	((client->query_version() != exp_version) ||
@@ -749,6 +751,8 @@ test_do([[
     destruct(client);
     destruct(server);
     return failures;
+#else /* !constant(thread_create) */
+    return ({});
 #endif /* constant(thread_create) */
   };
   add_constant("threaded_low_test_ssl_connection", f);
