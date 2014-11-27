@@ -26,7 +26,7 @@ class State {
   protected Gmp.mpz n;  /* modulo */
   protected Gmp.mpz e;  /* public exponent */
   protected Gmp.mpz d;  /* private exponent (if known) */
-  protected int size;
+  protected int(31bit) size;
 
   /* Extra info associated with a private key. Not currently used. */
    
@@ -279,10 +279,7 @@ class State {
   string(8bit) pkcs_sign(string(8bit) message, .Hash h)
   {
     string(8bit) di = Standards.PKCS.Signature.build_digestinfo(message, h);
-    string(8bit) sign = raw_sign(di)->digits(256);
-    while( sizeof(sign) < size )
-      sign = "\0"+sign;
-    return sign;
+    return [string(8bit)]sprintf("%*c", size, raw_sign(di));
   }
 
   //! Verify PKCS-1 signature @[sign] of message @[message] using hash
