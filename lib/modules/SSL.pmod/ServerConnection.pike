@@ -448,6 +448,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	      if (sizeof(extension_data)) {
 		send_packet(alert(ALERT_fatal, ALERT_illegal_parameter,
 				  "Invalid trusted HMAC extension.\n"));
+                return -1;
 	      }
 	      session->truncated_hmac = 1;
               SSL3_DEBUG_MSG("Trucated HMAC\n");
@@ -519,8 +520,11 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
                     break;
                   }
                 if( !application_protocol )
+                {
                   send_packet(alert(ALERT_fatal, ALERT_no_application_protocol,
 				    "ALPN: No compatible protocol.\n"));
+                  return -1;
+                }
                 SSL3_DEBUG_MSG("ALPN extension: %O %O\n",
 			       protocols, application_protocol);
               }
@@ -540,6 +544,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 		  // AlertDescription MUST be sent in response.
 		  send_packet(alert(ALERT_fatal, ALERT_illegal_parameter,
 				    "Heartbeat: Invalid extension.\n"));
+                  return -1;
 		}
 		SSL3_DEBUG_MSG("heartbeat extension: %s\n",
 			       fmt_constant(hb_mode, "HEARTBEAT_MODE"));
@@ -552,6 +557,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 		if (sizeof(extension_data)) {
 		  send_packet(alert(ALERT_fatal, ALERT_illegal_parameter,
 				    "Encrypt-then-MAC: Invalid extension.\n"));
+                  return -1;
 		}
 		if (context->encrypt_then_mac) {
 		  SSL3_DEBUG_MSG("Encrypt-then-MAC: Tentatively enabled.\n");
@@ -564,9 +570,12 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 
             case EXTENSION_padding:
               if( !equal(String.range((string)extension_data), ({0,0})) )
+              {
                 send_packet(alert(ALERT_fatal, ALERT_illegal_parameter,
                                   "Possible covert side channel in padding.\n"
                                   ));
+                return -1;
+              }
               break;
 
 	    default:
