@@ -1918,11 +1918,16 @@ void image_gif__decode(INT32 args)
 	       {
 		  push_svalue(b->item+6);
 		  lcto=clone_object(image_colortable_program,1);
+                  push_object(lcto);
 	       }
 	       else
 	       {
 		  lcto=cto;
-		  if (lcto) add_ref(lcto);
+		  if (lcto) {
+                      ref_push_object(lcto);
+                  } else {
+                      push_int(0);
+                  }
 	       }
 
 	       push_int(b->item[3].u.integer);
@@ -1930,6 +1935,10 @@ void image_gif__decode(INT32 args)
 	       o=clone_object(image_program,2);
 	       img=get_storage(o,image_program);
 	       push_object(o);
+
+               /* Swap colortable and image program */
+               stack_swap();
+
 	       if (transparency)
 	       {
 		  push_int(b->item[3].u.integer);
@@ -1963,6 +1972,9 @@ void image_gif__decode(INT32 args)
 				     0);
 	       }
 
+               /* Swap colortable and image program */
+               stack_swap();
+
 	       if (interlace)
 	       {
 		  gif_deinterlace(img->img,img->xsize,img->ysize);
@@ -1970,9 +1982,6 @@ void image_gif__decode(INT32 args)
 		     gif_deinterlace(aimg->img,aimg->xsize,aimg->ysize);
 	       }
 
-	       if (lcto) push_object(lcto); 
-	       else push_int(0);
-	       
 	       push_int(interlace);
 	       push_int(transparency_index);
 	       push_int(delay);
