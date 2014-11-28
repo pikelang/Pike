@@ -1676,6 +1676,8 @@ fprintf(stderr,"_gif_decode_lzw(%lx,%lu,%d,%lx,%lx,%lx,%lu,%d)\n",
 
 #define MAX_GIF_CODE 4096
 
+   if (maxcode > MAX_GIF_CODE) return;
+
    c=xalloc(sizeof(struct lzwc)*MAX_GIF_CODE);
 
    for (n=0; n<clearcode; n++)
