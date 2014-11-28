@@ -43,9 +43,14 @@ static void fix_png_mapping(void)
   struct svalue *s;
   if(TYPEOF(sp[-1]) != T_MAPPING) return;
   if((s = low_mapping_string_lookup(sp[-1].u.mapping, literal_type_string))) {
+    /* s is a pointer into the mapping data, so we have to push it onto
+     * the stack, as mapping_insert might rehash, which would lead to a
+     * use after free.
+     */
     push_text("_type");
-    mapping_insert(sp[-2].u.mapping, &sp[-1], s);
-    pop_stack();
+    push_svalue(s);
+    mapping_insert(sp[-3].u.mapping, &sp[-2], &sp[-1]);
+    pop_n_elems(2);
   }
   ref_push_string(literal_type_string);
   push_text("image/png");
