@@ -634,8 +634,8 @@ typedef mapping(string:ResultAttributeValue) ResultEntry;
 
 #ifndef PARSE_RFCS
   //! @decl void create()
-  //! @decl void create(string url)
-  //! @decl void create(string url, object context)
+  //! @decl void create(string|mapping(string:mixed) url)
+  //! @decl void create(string|mapping(string:mixed) url, object context)
   //!
   //! Create object. The first optional argument can be used later
   //! for subsequence operations. The second one can specify
