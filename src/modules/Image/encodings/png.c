@@ -281,10 +281,11 @@ static void image_png___decode(INT32 args)
       f_aggregate(3);
       DO_AGGREGATE_ARRAY(20);
 
+      if (x+4>len) break;
+
       if( int_from_32bit((unsigned char *)data) == 0x49454e44 ) /* IEND */
         break;
 
-      if (x+4>len) break;
       len-=x+4;
       data+=x+4;
    }
