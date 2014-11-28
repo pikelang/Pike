@@ -18,9 +18,9 @@ protected Gmp.mpz read_number(Stdio.Buffer b)
 //     @member int validity
 //     @member object key
 //   @endmapping
-protected mapping decode_public_key(string s) {
+protected mapping decode_public_key(string|Stdio.Buffer s) {
 
-  Stdio.Buffer b = Stdio.Buffer(s);
+  Stdio.Buffer b = objectp(s)?s:Stdio.Buffer(s);
   mapping r = ([]);
 
   r->version = b->read_int(1);
@@ -82,6 +82,36 @@ protected mapping decode_public_key(string s) {
     break;
   default:
     r->_type = "Unknown";
+    break;
+  }
+
+  return r;
+}
+
+protected mapping decode_secret_key(string s)
+{
+  Stdio.Buffer b = Stdio.Buffer(s);
+  mapping r = decode_public_key(b);
+
+  int usage = b->read_int(1);
+  if( usage != 0 )
+  {
+    r->_error = "Only unencrypted string-to-key usage supported.";
+    return r;
+  }
+
+  switch(r->type)
+  {
+  case 1:
+    // d, p and q.
+    r->key->set_private_key(read_number(b), ({ read_number(b), read_number(b) }));
+    // u. Not used
+    read_number(b);
+    break;
+
+  case 17:
+    // x
+    r->key->set_private_key(read_number(b));
     break;
   }
 
@@ -172,6 +202,8 @@ protected constant pgp_id = ([
 protected mapping(string:function) pgp_decoder = ([
   "public_key":decode_public_key,
   "public_subkey":decode_public_key,
+  "secret_key":decode_secret_key,
+  "secret_subkey":decode_secret_key,
   "signature":decode_signature,
   "compressed_data":decode_compressed,
 ]);
