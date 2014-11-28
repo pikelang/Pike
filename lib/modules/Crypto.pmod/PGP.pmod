@@ -4,6 +4,12 @@
 #pike __REAL_VERSION__
 #require constant(Crypto.HashState)
 
+protected Gmp.mpz read_number(Stdio.Buffer b)
+{
+  int bits = b->read_int(2);
+  return Gmp.mpz(b->read_int( (bits+7)>>3 ));
+}
+
 // Decodes a PGP public key.
 // @returns
 //   @mapping
@@ -14,28 +20,22 @@
 //   @endmapping
 protected mapping decode_public_key(string s) {
 
+  Stdio.Buffer b = Stdio.Buffer(s);
   mapping r = ([]);
-  string key;
-  int l;
-  if(s[0]>=4)
-    sscanf(s, "%1c%4c%1c%2c%s", r->version, r->tstamp,
-	   r->type, l, key);
-  else
-    sscanf(s, "%1c%4c%2c%1c%2c%s", r->version, r->tstamp, r->validity,
-	   r->type, l, key);
+
+  r->version = b->read_int(1);
+  r->tstamp  = b->read_int(4);
+  if( r->version < 4 )
+    r->validity = b->read(2);
+  r->type    = b->read_int(1);
 
   switch(r->type) {
   case 1: {
     // RSA, Encrypt or Sign
     r->_type = "RSA (encrypt or sign)";
-    Gmp.mpz n, e;
 
-    l = (l+7)>>3;
-    n = Gmp.mpz(key[..l-1],256);
-    sscanf(key[l..], "%2c%s", l, key);
-    l = (l+7)>>3;
-    e = Gmp.mpz(key[..l-1],256);
-    r->key = Crypto.RSA()->set_public_key(n, e);
+    // n and e
+    r->key = Crypto.RSA()->set_public_key(read_number(b), read_number(b));
   }
     break;
   case 2:
@@ -53,20 +53,10 @@ protected mapping decode_public_key(string s) {
   case 17: {
     // DSA
     r->_type = "DSA";
-    Gmp.mpz p, q, g, y;
 
-    l = (l+7)>>3;
-    p = Gmp.mpz(key[..l-1],256);
-    sscanf(key[l..], "%2c%s", l, key);
-    l = (l+7)>>3;
-    q = Gmp.mpz(key[..l-1],256);
-    sscanf(key[l..], "%2c%s", l, key);
-    l = (l+7)>>3;
-    g = Gmp.mpz(key[..l-1],256);
-    sscanf(key[l..], "%2c%s", l, key);
-    l = (l+7)>>3;
-    y = Gmp.mpz(key[..l-1],256);
-    r->key = Crypto.DSA()->set_public_key(p, q, g, y);
+    // p, q, g and y
+    r->key = Crypto.DSA()->set_public_key(read_number(b), read_number(b),
+                                          read_number(b), read_number(b));
     r->key->random = Crypto.Random.random_string;
   }
     break;
