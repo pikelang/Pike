@@ -377,17 +377,22 @@ protected void create (Stdio.File stream, SSL.Context ctx)
 //!
 //! @returns
 //!   Returns @expr{0@} on handshaking failure in blocking mode,
-//!   and otherwise @expr{1@}.
+//!   and otherwise the @[Session] object for the connection.
+//!
+//! @throws
+//!   Throws an error if a connection already has been established.
 //!
 //! @seealso
 //!   @[accept()]
-int(1bit) connect(string|void dest_addr, SSL.Session|void session)
+SSL.Session connect(string|void dest_addr, SSL.Session|void session)
 {
   if (conn) error("A connection is already configured!\n");
 
   ENTER (0) {
 
     conn = .ClientConnection(context, dest_addr, session);
+
+    session = conn->session;
 
     SSL3_DEBUG_MSG("connect: Installing read/close callbacks.\n");
 
@@ -409,7 +414,7 @@ int(1bit) connect(string|void dest_addr, SSL.Session|void session)
     }
   } LEAVE;
 
-  return 1;
+  return session;
 }
 
 //! Configure as server and set up the connection.
