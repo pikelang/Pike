@@ -142,8 +142,6 @@ private inline mixed callout(function(mixed ...:void) f,
   return local_backend->call_out(f,delay,@args);
 }
 
-private void nop() { }
-
 // Some pgsql utility functions
 
 class bufcon {
@@ -187,8 +185,6 @@ class conxiin {
 
   final Thread.Condition fillread;
   final Thread.Mutex fillreadmux;
-  final function(:void) gottimeout;
-  final int timeout;
   private int didreadcb;
 
   protected bool range_error(int howmuch) {
@@ -197,13 +193,11 @@ class conxiin {
       error("Out of range %d\n",howmuch);
 #endif
     if(fillread) {
-      array cid=callout(gottimeout,timeout);
       Thread.MutexKey lock=fillreadmux->lock();
       if(!didreadcb)
         fillread.wait(lock);
       didreadcb=0;
       lock=0;
-      local_backend->remove_call_out(cid);
     } else
       throw(MAGICTERMINATE);
     return true;
@@ -219,8 +213,6 @@ class conxiin {
 
   protected void create() {
     i::create();
-    gottimeout=nop;		// Preset it with a NOP
-    timeout=128;		// Just a reasonable amount
     fillreadmux=Thread.Mutex();
     fillread=Thread.Condition();
   }
@@ -472,6 +464,8 @@ class sql_result {
   final string _query;
   final string _preparedname;
   final mapping(string:mixed) _tprepared;
+  private function(:void) gottimeout;
+  private int timeout;
 
   private string _sprintf(int type, void|mapping flags) {
     string res=UNDEFINED;
@@ -491,7 +485,8 @@ class sql_result {
   }
 
   protected void create(object _pgsqlsess,conxion _c,string query,
-              int _portalbuffersize,int alltyped,array params,int forcetext) {
+   int _portalbuffersize,int alltyped,array params,int forcetext,
+   int _timeout) {
     pgsqlsess = _pgsqlsess;
     cr = (c = _c)->i;
     _query = query;
@@ -504,6 +499,8 @@ class sql_result {
     _params = params;
     _forcetext = forcetext;
     _state = PORTALINIT;
+    timeout = _timeout;
+    gottimeout = _pgsqlsess->cancelquery;
   }
 
   //! Returns the command-complete status for this query.
@@ -1011,10 +1008,14 @@ class sql_result {
     if(arrayp(datarow=datarows->try_read()))
       return datarow;
     if(!eoffound) {
-      if(!datarow
-       && (PD("%O Block for datarow\n",_portalname),
-           arrayp(datarow=datarows->read())))
-        return datarow;
+      if(!datarow) {
+        PD("%O Block for datarow\n",_portalname);
+        array cid=callout(gottimeout,timeout);
+        datarow=datarows->read();
+        local_backend->remove_call_out(cid);
+        if(arrayp(datarow))
+          return datarow;
+      }
       eoffound=1;
       datarows->write(1);			// Signal EOF for other threads
     }
@@ -1034,8 +1035,11 @@ class sql_result {
     if(eoffound)
       return 0;
     array(array|int) datarow=datarows->try_read_array();
-    if(!datarow)
+    if(!datarow) {
+      array cid=callout(gottimeout,timeout);
       datarow=datarows->read_array();
+      local_backend->remove_call_out(cid);
+    }
     if(arrayp(datarow[-1]))
       return datarow;
     trydelayederror();
@@ -1069,8 +1073,14 @@ class sql_result {
    function(sql_result, array(mixed), mixed ...:void) callback,
    array(mixed) args) {
     int|array datarow;
-    while(arrayp(datarow=datarows->read_array()))
+    for(;;) {
+      array cid=callout(gottimeout,timeout);
+      datarow=datarows->read();
+      local_backend->remove_call_out(cid);
+      if(!arrayp(datarow))
+        break;
       callout(callback, 0, this, datarow, @args);
+    }
     trydelayederror();
     eoffound=1;
     callout(callback, 0, this, 0, @args);
@@ -1093,8 +1103,14 @@ class sql_result {
    function(sql_result, array(array(mixed)), mixed ...:void) callback,
    array(mixed) args) {
     array(array|int) datarow;
-    while((datarow=datarows->read_array()) && arrayp(datarow[-1]))
+    for(;;) {
+      array cid=callout(gottimeout,timeout);
+      datarow=datarows->read_array();
+      local_backend->remove_call_out(cid);
+      if(!datarow || !arrayp(datarow[-1]))
+        break;
       callout(callback, 0, this, datarow, @args);
+    }
     trydelayederror();
     eoffound=1;
     if(sizeof(datarow)>1)

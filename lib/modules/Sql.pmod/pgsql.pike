@@ -482,11 +482,8 @@ private .pgsql_util.conxion getsocket(void|int nossl) {
 //! through the generic SQL-interface.
 /*semi*/final int settimeout(void|int newtimeout) {
   int oldtimeout=timeout;
-  if(!undefinedp(newtimeout) && newtimeout>0) {
+  if(!undefinedp(newtimeout) && newtimeout>0)
     timeout=newtimeout;
-    if(c)
-      c->timeout=timeout;
-  }
   return oldtimeout;
 }
 
@@ -697,8 +694,6 @@ final void _processloop(.pgsql_util.conxion ci) {
             case 0:
               PD("Ok\n");
               .pgsql_util.local_backend->remove_call_out(reconnect);
-              cr->gottimeout=cancelquery;
-              cr->timeout=timeout;
               reconnectdelay=0;
               cancelsecret="";
               break;
@@ -1871,7 +1866,7 @@ private inline void throwdelayederror(object parent) {
     tp=UNDEFINED;
   .pgsql_util.sql_result portal;
   portal=.pgsql_util.sql_result(this,c,q,
-                                    portalbuffersize,_alltyped,from,forcetext);
+                            portalbuffersize,_alltyped,from,forcetext,timeout);
   portal._tprepared=tp;
 #ifdef PG_STATS
   portalsopened++;
