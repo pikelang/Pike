@@ -437,7 +437,15 @@ static struct pike_string *_png_unfilter(unsigned char *data,
       if (!len || !ysize--)
       {
 	 if (pos) *pos=s;
-         /* this string might contain uninitialized memory */
+         if (d - STR0(ps) < ps->len) {
+            /* Should we throw an error here, instead?
+             * This case means that there is extra
+             * IDAT data, when we have already processed all
+             * scanlines specified in the IHDR
+             *  /arne
+             */
+            memset(d, 0, ps->len - (d - STR0(ps)));
+         }
 	 return end_shared_string(ps);
       }
       x=xsize;
