@@ -233,7 +233,7 @@ protected void create(Context ctx, string(8bit)|void server_name,
   ::create(ctx);
   handshake_state = STATE_wait_for_hello;
   handshake_messages = "";
-  this_program::session = session || context->new_session();
+  this_program::session = session || Session();
   send_packet(client_hello(server_name));
 }
 
