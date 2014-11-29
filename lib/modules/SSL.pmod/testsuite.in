@@ -439,7 +439,8 @@ test_do([[
 test_do([[
   import SSL.Constants;
   string f(SSL.Context server_ctx, SSL.Context client_ctx,
-           string exp_data, int exp_suite, int exp_version)
+           string exp_data, int exp_suite, int exp_version,
+	   SSL.Session|void session)
   {
     Stdio.File client_con = Stdio.File();
     Stdio.File server_con =
@@ -449,7 +450,7 @@ test_do([[
 
     SSL.File client = SSL.File(client_con, client_ctx);
 
-    if (!client->connect()) return 0;
+    if (!client->connect(UNDEFINED, session)) return 0;
     if (!server->accept()) return 0;
 
     int state;
@@ -639,16 +640,43 @@ test_do([[
     client_ctx->max_version = client_max;
     server_ctx->expect_fail = client_ctx->expect_fail = !exp_data;
 
+    SSL.Session session = SSL.Session();
+
     string fail =
       low_test_ssl_connection(server_ctx, client_ctx,
-			      exp_data, suites[0], exp_version);
+			      exp_data, suites[0], exp_version,
+			      session);
 
-    if (!fail) return 1;
+    if (fail) {
+      log_ssl_failure(client_min, client_max, server_min, server_max,
+		      fail, suites);
 
-    log_ssl_failure(client_min, client_max, server_min, server_max,
-		    fail, suites);
+      return 0;
+    }
 
-    return 0;
+    string sessionid = session->identity;
+    if (!sessionid) return 1;
+
+    if (!`==(client_min, client_max, server_min, server_max)) return 1;
+
+    // Try resuming the session.
+
+    fail =
+      low_test_ssl_connection(server_ctx, client_ctx,
+			      exp_data, suites[0], exp_version,
+			      session);
+
+    if (!fail && (sessionid != session->identity)) {
+      fail = "New session.";
+    }
+
+    if (fail) {
+      log_ssl_failure(client_min, client_max, server_min, server_max,
+		      "RESUME: " + fail, suites);
+
+      return 0;
+    }
+    return 2;
   };
   add_constant("test_ssl_connection", f);
 ]])
@@ -873,9 +901,10 @@ define(test_ssl, [[
 	       $1 & 0xff, $2 & 0xff, $3 & 0xff, $4 & 0xff);
 
     foreach(suites, int suite) {
-      successes += threaded_test_ssl_connection($1,$2,$3,$4,$5,
-						server_ctx, ({suite}) );
-      tests++;
+      int count = threaded_test_ssl_connection($1,$2,$3,$4,$5,
+					       server_ctx, ({suite}) );
+      successes += count;
+      tests += count || 1;
     }
     return ({ successes, tests-successes });
 #endif /* constant(thread_create) */
@@ -919,8 +948,9 @@ define(test_ssl, [[
     }
 
     foreach(suites, int suite) {
-      successes += test_ssl_connection($1,$2,$3,$4,$5, server_ctx, ({suite}) );
-      tests++;
+      int count = test_ssl_connection($1,$2,$3,$4,$5, server_ctx, ({suite}) );
+      successes += count;
+      tests += count || 1;
     }
     return ({ successes, tests-successes });
   }]])
@@ -1065,9 +1095,10 @@ array(int) a() {
     log_status("Testing ECDSA curve %O...", curve->name());
     object server_ctx = make_context(curve);
     array suites = server_ctx->get_suites(128, 2);
-    successes += test_ssl_connection(0x300, 0x303, 0x303, 0x303,
-				     client_msg,server_ctx,suites);
-    tests++;
+    int count = test_ssl_connection(0x300, 0x303, 0x303, 0x303,
+				    client_msg,server_ctx,suites);
+    successes += count;
+    tests += count || 1;
   }
 
   return ({ successes, tests-successes });
