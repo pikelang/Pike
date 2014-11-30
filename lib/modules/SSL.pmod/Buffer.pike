@@ -23,7 +23,7 @@ this_program add(string(8bit)|Stdio.Buffer str)
 
 //! Create a new buffer, optionally initialized with the
 //! value @[s].
-void create(void|string(8bit) s)
+protected void create(void|string(8bit) s)
 {
   if( s && strlen(s) )
     ::create(s);

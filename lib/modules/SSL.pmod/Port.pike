@@ -166,7 +166,7 @@ object accept()
 //!
 //! @seealso
 //!   @[bind()], @[listen_fd()]
-void create(Context|void ctx)
+protected void create(Context|void ctx)
 {
 #ifdef SSL3_DEBUG
   werror("SSL.Port->create\n");

@@ -16,8 +16,8 @@ string message;
 constant is_alert = 1;
 
 //!
-void create(int(1..2) level, int(8bit) description,
-            ProtocolVersion version, string|void message)
+protected void create(int(1..2) level, int(8bit) description,
+		      ProtocolVersion version, string|void message)
 {
   if ((version == PROTOCOL_SSL_3_0) &&
       (description == ALERT_no_renegotiation)) {
