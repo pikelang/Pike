@@ -644,7 +644,7 @@ range_do_clone:
 	cb_node_t node = NULL;
 
 	if (THIS->tree.root) {
-	    if (args == 0 || IS_UNDEFINED(key))
+	    if (key == NULL || IS_UNDEFINED(key))
 		node = THIS->tree.root;
 	    else
 		node = cb_subtree_prefix(THIS->tree.root,
