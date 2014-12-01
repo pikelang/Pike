@@ -253,7 +253,7 @@ class conxion {
       started=lock;
       lock=shortmux->lock();
       if(stashcount)
-        stashavail.wait(lock);
+        PT(stashavail.wait(lock));
       add(stash); stash->clear();
       foreach(stashqueue->try_read_array();;sql_result portal)
         queueup(portal);
@@ -541,7 +541,7 @@ class sql_result {
   private void waitfordescribe() {
     Thread.MutexKey lock=_ddescribemux->lock();
     if(!datarowtypes)
-      _ddescribe->wait(lock);
+      PT(_ddescribe->wait(lock));
     lock=0;
   }
 
@@ -832,7 +832,7 @@ class sql_result {
           if(pgsqlsess->_portalsinflight) {
             pgsqlsess->_waittocommit++;
             PD("Commit waiting for portals to finish\n");
-            pgsqlsess->_readyforcommit->wait(lock);
+            PT(pgsqlsess->_readyforcommit->wait(lock));
             pgsqlsess->_waittocommit--;
           }
         }
@@ -1011,7 +1011,7 @@ class sql_result {
       if(!datarow) {
         PD("%O Block for datarow\n",_portalname);
         array cid=callout(gottimeout,timeout);
-        datarow=datarows->read();
+        PT(datarow=datarows->read());
         local_backend->remove_call_out(cid);
         if(arrayp(datarow))
           return datarow;
@@ -1037,7 +1037,7 @@ class sql_result {
     array(array|int) datarow=datarows->try_read_array();
     if(!datarow) {
       array cid=callout(gottimeout,timeout);
-      datarow=datarows->read_array();
+      PT(datarow=datarows->read_array());
       local_backend->remove_call_out(cid);
     }
     if(arrayp(datarow[-1]))
@@ -1075,7 +1075,7 @@ class sql_result {
     int|array datarow;
     for(;;) {
       array cid=callout(gottimeout,timeout);
-      datarow=datarows->read();
+      PT(datarow=datarows->read());
       local_backend->remove_call_out(cid);
       if(!arrayp(datarow))
         break;
@@ -1105,7 +1105,7 @@ class sql_result {
     array(array|int) datarow;
     for(;;) {
       array cid=callout(gottimeout,timeout);
-      datarow=datarows->read_array();
+      PT(datarow=datarows->read_array());
       local_backend->remove_call_out(cid);
       if(!datarow || !arrayp(datarow[-1]))
         break;
