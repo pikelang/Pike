@@ -3247,6 +3247,7 @@ TimeofDay dwim_time(string what,void|TimeRange cx)
 	     string dayformat )
       foreach ( ({ "%t %z",
 		   "T%t %z",
+		   "T%t%z",
 		   "T%t",
 		   "%h"COLON"%m"COLON"%s %p %z",
 		   "%h"COLON"%m"COLON"%s %p",
@@ -3258,6 +3259,12 @@ TimeofDay dwim_time(string what,void|TimeRange cx)
 		   "%h"COLON"%m %z",
 		   "%h"COLON"%m%z",
 		   "%h"COLON"%m",
+		   "T%h"COLON"%m"COLON"%s %z",
+		   "T%h"COLON"%m"COLON"%s%z",
+		   "T%h"COLON"%m"COLON"%s",
+		   "T%h"COLON"%m %z",
+		   "T%h"COLON"%m%z",
+		   "T%h"COLON"%m",
 		   "%h%*[ ]%p",
 		   "%*[a-zA-Z.] %h"COLON"%m"COLON"%s %p %z",
 		   "%*[a-zA-Z.] %h"COLON"%m"COLON"%s %p",
@@ -3270,6 +3277,7 @@ TimeofDay dwim_time(string what,void|TimeRange cx)
 		   "%*[a-zA-Z.] %h"COLON"%m%z",
 		   "%*[a-zA-Z.] %h"COLON"%m",
 		   "%*[a-zA-Z.] %h%*[ ]%p",
+		   "%t%z",
 		   "%t",
 		}),
 		string todformat )
