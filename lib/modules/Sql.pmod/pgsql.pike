@@ -576,7 +576,7 @@ private void waitauthready() {
   if(waitforauthready) {
     PD("%d Wait for auth ready %O\n",c&&c->socket?->query_fd(),backtrace()[-2]);
     Thread.MutexKey lock=_shortmux->lock();
-    catch(waitforauthready->wait(lock));
+    catch(PT(waitforauthready->wait(lock)));
     lock=0;
     PD("%d Wait for auth ready released.\n",c&&c->socket?->query_fd());
   }

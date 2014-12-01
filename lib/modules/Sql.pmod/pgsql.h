@@ -71,9 +71,12 @@
 
 #ifdef PG_DEBUG
 #define PD(X ...)            werror(X)
+			     // PT() puts this in the backtrace
+#define PT(X ...)	     (lambda(object _this){return (X);}(this))
 #else
 #undef PG_DEBUGMORE
 #define PD(X ...)	     0
+#define PT(X ...)	     (X)
 #endif
 
 #define PORTALINIT	0		// Portal states
