@@ -57,25 +57,19 @@ void report_size()
 #endif
 }
 
-array find_testsuites(string dir)
+array(string) find_testsuites(string dir)
 {
-  array(string) ret=({});
-  if(array(string) s=get_dir(dir||"."))
+  array(string) ret = ({});
+  if(array(string) s = get_dir(dir))
   {
-    if(has_value(s,"no_testsuites")) return ret;
+    if(has_value(s, "no_testsuites")) return ret;
     foreach(s, string file)
     {
-      string name=combine_path(dir||"",file);
-      if(Stdio.is_dir(name)) {
-	ret+=find_testsuites(name);
-	continue;
-      }
-      switch(file)
-      {
-      case "testsuite":
-      case "module_testsuite":
-	ret+=({ combine_path(dir||"",file) });
-      }
+      string name = combine_path(dir, file);
+      if(Stdio.is_dir(name))
+	ret += find_testsuites(name);
+      else if(file=="testsuite")
+	ret += ({ combine_path(dir, file) });
     }
   }
   return ret;
