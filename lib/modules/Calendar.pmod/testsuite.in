@@ -46,6 +46,8 @@ test_dwim([["Tuesday, 19-Nov-02 07:04:03 GMT"]],"GMT")
 test_dwim("Tue Nov 19 07:04:03 2002","GMT")
 test_dwim("20021119T070403 GMT","GMT")
 test_dwim("20021119T070403")
+test_dwim("2002-11-19T07:04:03+0000","UTC")
+test_dwim("2002-11-19T07:04:03")
 test_dwim("20021119 070403 GMT","GMT")
 test_dwim("20021119 070403")
 
