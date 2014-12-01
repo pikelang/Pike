@@ -837,6 +837,22 @@ dnl lock
 
 dnl cast
 
+test_any([[
+  Stdio.Buffer b = Stdio.Buffer("a\0b");
+  return (string)b+(string)b;
+]], "a\0ba\0b")
+test_any([[
+  class A {
+    inherit Stdio.Buffer;
+    mixed cast(string to) {
+      if(to=="int") return 7;
+      return ::cast(to);
+    }
+  };
+  Stdio.Buffer b = A("x");
+  return (string)b+(int)b;
+]], "x7")
+
 dnl indexing
 
 dnl set_error_mode
