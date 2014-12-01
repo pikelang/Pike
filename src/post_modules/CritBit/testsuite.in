@@ -32,7 +32,6 @@ define(low_test_tree,[[
     test_do(add_constant("GET_SORTED_A", lambda() { return all_constants()->THE_SORTED_A; }) )
     test_do(add_constant("SET_SORTED_A", lambda(mixed m) { add_constant("THE_SORTED_A", m); }) )
     test_do([[
-	random_seed(4044);
 	SET_SAMPLE( $2 );
 	SET_SORTFUN( $3 );
 	SET_TREE($1(GET_SAMPLE()));
