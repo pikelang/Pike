@@ -1561,6 +1561,7 @@ PIKECLASS Buffer
    *! This only works for buffers whose length is less than 0x7fffffff.
    */
   PIKEFUN string(0..255) cast(string to)
+    flags ID_PROTECTED;
   {
     if( to != literal_string_string )
     {
