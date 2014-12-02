@@ -40,9 +40,10 @@
 #define sp Pike_sp
 
 #undef THIS
-#define THIS ((MP_INT *)(Pike_fp->current_storage))
-#define THIS_PROGRAM (Pike_fp->context->prog)
-#define THIS_OBJECT (Pike_fp->current_object)
+#define DECLARE_THIS() struct pike_frame *_fp = Pike_fp
+#define THIS ((MP_INT *)(_fp->current_storage))
+#define THIS_PROGRAM (_fp->context->prog)
+#define THIS_OBJECT (_fp->current_object)
 
 struct program *mpzmod_program = NULL;
 PMOD_EXPORT struct program *bignum_program = NULL;
@@ -518,6 +519,7 @@ MP_INT *debug_get_mpz(struct svalue *s,
  */
 static void mpzmod_create(INT32 args)
 {
+  DECLARE_THIS();
   switch(args)
   {
   case 1:
@@ -559,6 +561,7 @@ static void mpzmod_create(INT32 args)
  */
 static void mpzmod_get_int(INT32 args)
 {
+  DECLARE_THIS();
   pop_n_elems(args);
   add_ref(THIS_OBJECT);
   mpzmod_reduce(THIS_OBJECT);
@@ -583,6 +586,7 @@ static void mpzmod_get_int(INT32 args)
  */
 static void mpzmod___hash(INT32 args)
 {
+  DECLARE_THIS();
   MP_INT *mpz = THIS;
   size_t len = mpz_size(mpz) * sizeof(mp_limb_t);
   size_t h = hashmem(mpz->_mp_d, len, len);
@@ -599,6 +603,7 @@ static void mpzmod___hash(INT32 args)
  */
 static void mpzmod_get_float(INT32 args)
 {
+  DECLARE_THIS();
   pop_n_elems(args);
   push_float((FLOAT_TYPE)mpz_get_d(THIS));
 }
@@ -656,6 +661,7 @@ struct pike_string *low_get_mpz_digits(MP_INT *mpz, int base)
  */
 static void mpzmod_get_string(INT32 args)
 {
+  DECLARE_THIS();
   /* Also called as json_encode (with some arguments). */
   pop_n_elems(args);
   push_string(low_get_mpz_digits(THIS, 10));
@@ -672,6 +678,7 @@ static void mpzmod_get_string(INT32 args)
  */
 static void mpzmod_digits(INT32 args)
 {
+  DECLARE_THIS();
   INT32 base;
   struct pike_string *s;
   
@@ -696,6 +703,7 @@ static void mpzmod_digits(INT32 args)
  */
 static void mpzmod__sprintf(INT32 args)
 {
+  DECLARE_THIS();
   INT_TYPE precision, width, width_undecided, base = 0, mask_shift = 0;
   struct pike_string *s = 0;
   INT_TYPE flag_left, method;
@@ -893,6 +901,7 @@ static void mpzmod__is_type(INT32 UNUSED(args))
  */
 static void mpzmod_size(INT32 args)
 {
+  DECLARE_THIS();
   int base;
   if (!args)
   {
@@ -980,6 +989,7 @@ double double_from_sval(struct svalue *s)
 #define BINFUN2(name, errmsg_op, fun, OP, f_op, LFUN)			\
 static void name(INT32 args)						\
 {									\
+  DECLARE_THIS();                                                       \
   INT32 e;								\
   struct object *res;							\
   if(THIS_PROGRAM == bignum_program)					\
@@ -1055,6 +1065,7 @@ static void name(INT32 args)						\
 STRINGCONV(                                                             \
 static void PIKE_CONCAT(name,_rhs)(INT32 args)				\
 {									\
+  DECLARE_THIS();                                                       \
   INT32 e;								\
   struct object *res;							\
   if(THIS_PROGRAM == bignum_program)					\
@@ -1100,6 +1111,7 @@ static void PIKE_CONCAT(name,_rhs)(INT32 args)				\
 
 static void mpzmod_add_eq(INT32 args)
 {
+  DECLARE_THIS();
   INT32 e;
   if(THIS_PROGRAM == bignum_program)
   {
@@ -1160,6 +1172,7 @@ BINFUN2(mpzmod_mul, "*", mpz_mul, *, f_multiply, MULTIPLY)
  */
 static void mpzmod_gcd(INT32 args)
 {
+  DECLARE_THIS();
   INT32 e;
   struct object *res;
   for(e=0; e<args; e++)
@@ -1181,6 +1194,7 @@ static void mpzmod_gcd(INT32 args)
  */
 static void mpzmod_sub(INT32 args)
 {
+  DECLARE_THIS();
   INT32 e;
   struct object *res;
 
@@ -1207,6 +1221,7 @@ static void mpzmod_sub(INT32 args)
  */
 static void mpzmod_rsub(INT32 args)
 {
+  DECLARE_THIS();
   struct object *res = NULL;
   MP_INT *a;
   
@@ -1226,6 +1241,7 @@ static void mpzmod_rsub(INT32 args)
  */
 static void mpzmod_div(INT32 args)
 {
+  DECLARE_THIS();
   INT32 e;
   struct object *res;
   
@@ -1270,6 +1286,7 @@ static void mpzmod_div(INT32 args)
  */
 static void mpzmod_rdiv(INT32 args)
 {
+  DECLARE_THIS();
   MP_INT *a;
   struct object *res = NULL;
 
@@ -1291,6 +1308,7 @@ static void mpzmod_rdiv(INT32 args)
  */
 static void mpzmod_mod(INT32 args)
 {
+  DECLARE_THIS();
   INT32 e;
   struct object *res;
   
@@ -1311,6 +1329,7 @@ static void mpzmod_mod(INT32 args)
  */
 static void mpzmod_rmod(INT32 args)
 {
+  DECLARE_THIS();
   MP_INT *a;
   struct object *res = NULL;
 
@@ -1344,6 +1363,7 @@ static void mpzmod_rmod(INT32 args)
  */
 static void mpzmod_gcdext(INT32 args)
 {
+  DECLARE_THIS();
   struct object *g, *s, *t;
   MP_INT *a;
 
@@ -1380,6 +1400,7 @@ static void mpzmod_gcdext(INT32 args)
  */
 static void mpzmod_gcdext2(INT32 args)
 {
+  DECLARE_THIS();
   struct object *g, *s;
   MP_INT *a;
 
@@ -1407,6 +1428,7 @@ static void mpzmod_gcdext2(INT32 args)
  */
 static void mpzmod_invert(INT32 args)
 {
+  DECLARE_THIS();
   MP_INT *modulo;
   struct object *res;
 
@@ -1437,6 +1459,7 @@ static void mpzmod_invert(INT32 args)
  */
 static void mpzmod_fac(INT32 args)
 {
+  DECLARE_THIS();
   struct object *res;
   if (mpz_sgn (THIS) < 0)
     Pike_error ("Cannot calculate factorial for negative integer.\n");
@@ -1470,6 +1493,7 @@ static void mpzmod_fac(INT32 args)
  */
 static void mpzmod_bin(INT32 args)
 {
+  DECLARE_THIS();
   MP_INT *k;
   struct object *res;
 
@@ -1491,6 +1515,7 @@ static void mpzmod_bin(INT32 args)
 #define BINFUN(name, errmsg_name, fun)			\
 static void name(INT32 args)				\
 {							\
+  DECLARE_THIS();                                       \
   INT32 e;						\
   struct object *res;					\
   for(e=0; e<args; e++)					\
@@ -1520,6 +1545,7 @@ BINFUN(mpzmod_xor, "`^", mpz_xor)
  */
 static void mpzmod_compl(INT32 args)
 {
+  DECLARE_THIS();
   struct object *o;
   pop_n_elems(args);
   o=fast_clone_object(THIS_PROGRAM);
@@ -1530,6 +1556,7 @@ static void mpzmod_compl(INT32 args)
 #define CMPEQU(name,errmsg_name,cmp,default)		\
 static void name(INT32 args)				\
 {							\
+  DECLARE_THIS();                                       \
   INT32 i;						\
   MP_INT *arg;						\
   if(!args) SIMPLE_TOO_FEW_ARGS_ERROR (errmsg_name, 1);	\
@@ -1568,6 +1595,7 @@ CMPEQU(mpzmod_eq, "`==", ==, RET_UNDEFINED)
  */
 static void mpzmod_probably_prime_p(INT32 args)
 {
+  DECLARE_THIS();
   INT_TYPE count;
   if (args)
   {
@@ -1611,6 +1639,7 @@ static unsigned long mpz_small_factor(mpz_t n, int limit)
  */
 static void mpzmod_small_factor(INT32 args)
 {
+  DECLARE_THIS();
   INT_TYPE limit;
 
   if (args)
@@ -1631,6 +1660,7 @@ static void mpzmod_small_factor(INT32 args)
  */
 static void mpzmod_next_prime(INT32 args)
 {
+  DECLARE_THIS();
   struct object *o;
 
   pop_n_elems(args);
@@ -1648,6 +1678,7 @@ static void mpzmod_next_prime(INT32 args)
  */
 static void mpzmod_sgn(INT32 args)
 {
+  DECLARE_THIS();
   pop_n_elems(args);
   push_int(mpz_sgn(THIS));
 }
@@ -1659,6 +1690,7 @@ static void mpzmod_sgn(INT32 args)
  */
 static void mpzmod_sqrt(INT32 args)
 {
+  DECLARE_THIS();
   struct object *o = 0;   /* Make gcc happy. */
   pop_n_elems(args);
   if(mpz_sgn(THIS)<0)
@@ -1673,6 +1705,7 @@ static void mpzmod_sqrt(INT32 args)
  */
 static void mpzmod_sqrtrem(INT32 args)
 {
+  DECLARE_THIS();
   struct object *root = 0, *rem = 0;   /* Make gcc happy. */
   
   pop_n_elems(args);
@@ -1690,6 +1723,7 @@ static void mpzmod_sqrtrem(INT32 args)
  */
 static void mpzmod_lsh(INT32 args)
 {
+  DECLARE_THIS();
   struct object *res = NULL;
   MP_INT *mi;
 
@@ -1733,6 +1767,7 @@ static void mpzmod_lsh(INT32 args)
  */
 static void mpzmod_rsh(INT32 args)
 {
+  DECLARE_THIS();
   struct object *res = NULL;
 
   if (args != 1)
@@ -1778,6 +1813,7 @@ static void mpzmod_rsh(INT32 args)
  */
 static void mpzmod_rlsh(INT32 args)
 {
+  DECLARE_THIS();
   struct object *res = NULL;
   MP_INT *mi;
 
@@ -1810,6 +1846,7 @@ static void mpzmod_rlsh(INT32 args)
  */
 static void mpzmod_rrsh(INT32 args)
 {
+  DECLARE_THIS();
   struct object *res = NULL;
   MP_INT *mi;
 
@@ -1842,6 +1879,7 @@ static void mpzmod_rrsh(INT32 args)
  */
 static void mpzmod_powm(INT32 args)
 {
+  DECLARE_THIS();
   struct object *res = NULL;
   MP_INT *n, *e;
   
@@ -1869,6 +1907,7 @@ static void mpzmod_powm(INT32 args)
  */
 static void mpzmod_pow(INT32 args)
 {
+  DECLARE_THIS();
   struct object *res = NULL;
   INT_TYPE i;
   MP_INT *mi;
@@ -1928,6 +1967,7 @@ too_large:
  */
 static void mpzmod_not(INT32 args)
 {
+  DECLARE_THIS();
   pop_n_elems(args);
   push_int(!mpz_sgn(THIS));
 }
@@ -1939,6 +1979,7 @@ static void mpzmod_not(INT32 args)
  */
 static void mpzmod_popcount(INT32 args)
 {
+  DECLARE_THIS();
   pop_n_elems(args);
   push_int(mpz_popcount(THIS));
 #ifdef BIG_PIKE_INT
@@ -1952,6 +1993,7 @@ static void mpzmod_popcount(INT32 args)
  */
 static void mpzmod_random(INT32 args)
 {
+  DECLARE_THIS();
   struct object *res = 0;   /* Make gcc happy. */
   pop_n_elems(args);
   args = 0;
@@ -2005,6 +2047,7 @@ static void mpzmod__decode(INT32 args)
  */
 static void gmp_fac(INT32 args)
 {
+  DECLARE_THIS();
   struct object *res = NULL;
   if (args != 1)
     Pike_error("Gmp.fac: Wrong number of arguments.\n");
@@ -2022,16 +2065,19 @@ static void gmp_fac(INT32 args)
 
 static void mpzmod__size_object(INT32 UNUSED(args))
 {
+  DECLARE_THIS();
   push_int(LIMBS(THIS)*sizeof(mp_limb_t)+sizeof(mpz_t));
 }
 
 static void init_mpz_glue(struct object * UNUSED(o))
 {
+  DECLARE_THIS();
   mpz_init(THIS);
 }
 
 static void exit_mpz_glue(struct object *UNUSED(o))
 {
+  DECLARE_THIS();
   if( THIS_OBJECT->flags & OBJECT_CLEAR_ON_EXIT )
      memset( THIS->_mp_d, 0,LIMBS(THIS) * sizeof(mp_limb_t));
   mpz_clear(THIS);
@@ -2039,6 +2085,7 @@ static void exit_mpz_glue(struct object *UNUSED(o))
 
 static void gc_recurse_mpz (struct object *o)
 {
+  DECLARE_THIS();
   if (mc_count_bytes (o))
     mc_counted_bytes += LIMBS(THIS)*sizeof (mp_limb_t) + sizeof (mpz_t);
 }
