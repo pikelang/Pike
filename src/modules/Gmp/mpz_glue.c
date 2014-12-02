@@ -2045,18 +2045,19 @@ static void gc_recurse_mpz (struct object *o)
 
 PIKE_MODULE_EXIT
 {
+  pike_exit_smpz_module();
   pike_exit_mpf_module();
   pike_exit_mpq_module();
   if(mpzmod_program)
   {
     free_program(mpzmod_program);
-    mpzmod_program=0;
+    mpzmod_program = NULL;
   }
 
   if(bignum_program)
   {
     free_program(bignum_program);
-    bignum_program=0;
+    bignum_program = NULL;
   }
   mpz_clear (mpz_int_type_min);
 #ifdef INT64
@@ -2251,6 +2252,7 @@ PIKE_MODULE_INIT
 
   pike_init_mpq_module();
   pike_init_mpf_module();
+  pike_init_smpz_module();
 }
 
 /*! @endmodule

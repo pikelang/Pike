@@ -1,7 +1,7 @@
 @make_variables@
 VPATH=@srcdir@
 MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
-OBJS=mpz_glue.o mpq.o mpf.o
+OBJS=mpz_glue.o mpq.o mpf.o smpz.o
 SRC_TARGETS=$(SRCDIR)/prime_table.out
 
 CONFIG_HEADERS=@CONFIG_HEADERS@

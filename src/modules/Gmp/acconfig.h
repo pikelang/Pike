@@ -16,4 +16,8 @@
 /* Define to the actual number of numb bits if known. */
 #undef PIKE_GMP_NUMB_BITS
 
+#undef HAVE_GMP5
+
+#undef HAVE_GMP6
+
 #endif

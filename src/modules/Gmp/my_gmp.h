@@ -89,4 +89,8 @@ void pike_exit_mpq_module(void);
 void pike_init_mpf_module(void);
 void pike_exit_mpf_module(void);
 
+/* SMPZ protos */
+void pike_init_smpz_module(void);
+void pike_exit_smpz_module(void);
+
 #endif /* MY_GMP_H_INCLUDED */

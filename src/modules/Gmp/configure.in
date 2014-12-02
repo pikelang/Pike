@@ -29,6 +29,20 @@ if test "$ac_cv_header_gmp_h" = "yes" ; then
 
   AC_CHECK_SIZEOF(mp_limb_t, 0)
 
+  # Side channel secure powm added in 5.0
+  AC_MSG_CHECKING(for mpz_powm_sec)
+  AC_TRY_LINK([], [mpz_powm_sec], [
+    AC_DEFINE(HAVE_GMP5)
+    AC_MSG_RESULT(yes)
+  ], [AC_MSG_RESULT(no)])
+
+  # Side channel secure invert added in 6.0
+  AC_MSG_CHECKING(for mpn_sec_invert)
+  AC_TRY_LINK([], [mpn_sec_invert], [
+    AC_DEFINE(HAVE_GMP6)
+    AC_MSG_RESULT(yes)
+  ], [AC_MSG_RESULT(no)])
+
   # Some packages of gmp have a gmp.h that lies about the number
   # bits in limbs when running with the non-default ABI.
   # (eg /opt/csw/include/gmp.h on Solaris 10/sparc).
