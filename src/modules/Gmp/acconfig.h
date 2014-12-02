@@ -16,8 +16,10 @@
 /* Define to the actual number of numb bits if known. */
 #undef PIKE_GMP_NUMB_BITS
 
+/* Define if GMP 5.0 functions are supported. */
 #undef HAVE_GMP5
 
+/* Define if GMP 6.0 functions are supported. */
 #undef HAVE_GMP6
 
 #endif

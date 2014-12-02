@@ -21,7 +21,7 @@
 #define LIMBS(X) THIS->_mp_alloc
 #define NLIMBS(X) THIS->_mp_size
 
-struct program *smpz_program = NULL;
+static struct program *smpz_program = NULL;
 
 #ifdef HAVE_GMP5
 static void smpz_powm(INT32 args)
