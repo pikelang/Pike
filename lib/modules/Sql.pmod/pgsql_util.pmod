@@ -268,10 +268,8 @@ class conxion {
     Thread.MutexKey lock=shortmux->lock();
     towrite-=output_to(socket,towrite);
     lock=0;
-    if(!i->fillread && !sizeof(this)) {
-      PD("%d>Close socket delayed\n",socket->query_fd());
-      socket->close();
-    }
+    if(!i->fillread && !sizeof(this))
+      close();
     return 0;
   }
 
@@ -390,7 +388,7 @@ outer:
         error(strerror(socket->errno()));
       socket->set_backend(local_backend);
       socket->set_buffer_mode(i,0);
-      socket->set_nonblocking(i->read_cb,write_cb,0);
+      socket->set_nonblocking(i->read_cb,write_cb,close);
       Thread.Thread(pgsqlsess->_processloop,this);
       return;
     };
