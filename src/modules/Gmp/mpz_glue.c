@@ -38,11 +38,11 @@
 #endif
 
 #define sp Pike_sp
-#define fp Pike_fp
 
 #undef THIS
-#define THIS ((MP_INT *)(fp->current_storage))
-#define THIS_PROGRAM (fp->context->prog)
+#define THIS ((MP_INT *)(Pike_fp->current_storage))
+#define THIS_PROGRAM (Pike_fp->context->prog)
+#define THIS_OBJECT (Pike_fp->current_object)
 
 struct program *mpzmod_program = NULL;
 PMOD_EXPORT struct program *bignum_program = NULL;
@@ -523,13 +523,13 @@ static void mpzmod_create(INT32 args)
   case 1:
     if(TYPEOF(sp[-args]) == T_STRING) {
       if (sp[-args].u.string->flags & STRING_CLEAR_ON_EXIT) {
-	Pike_fp->current_object->flags |= OBJECT_CLEAR_ON_EXIT;
+	THIS_OBJECT->flags |= OBJECT_CLEAR_ON_EXIT;
       }
       get_mpz_from_digits(THIS, sp[-args].u.string, 0);
     } else {
       if ((TYPEOF(sp[-args]) == T_OBJECT) &&
 	  (sp[-args].u.object->flags & OBJECT_CLEAR_ON_EXIT)) {
-	Pike_fp->current_object->flags |= OBJECT_CLEAR_ON_EXIT;
+	THIS_OBJECT->flags |= OBJECT_CLEAR_ON_EXIT;
       }
       get_new_mpz(THIS, sp-args, 1, "Gmp.mpz", 1, args);
     }
@@ -543,7 +543,7 @@ static void mpzmod_create(INT32 args)
       SIMPLE_ARG_TYPE_ERROR ("create", 2, "int");
 
     if (sp[-args].u.string->flags & STRING_CLEAR_ON_EXIT) {
-      Pike_fp->current_object->flags |= OBJECT_CLEAR_ON_EXIT;
+      THIS_OBJECT->flags |= OBJECT_CLEAR_ON_EXIT;
     }
 
     get_mpz_from_digits(THIS, sp[-args].u.string, sp[1-args].u.integer);
@@ -560,8 +560,8 @@ static void mpzmod_create(INT32 args)
 static void mpzmod_get_int(INT32 args)
 {
   pop_n_elems(args);
-  add_ref(fp->current_object);
-  mpzmod_reduce(fp->current_object);
+  add_ref(THIS_OBJECT);
+  mpzmod_reduce(THIS_OBJECT);
   if( TYPEOF(Pike_sp[-1]) == T_OBJECT &&
       Pike_sp[-1].u.object->prog != bignum_program )
   {
@@ -700,7 +700,7 @@ static void mpzmod__sprintf(INT32 args)
   struct pike_string *s = 0;
   INT_TYPE flag_left, method;
 
-  debug_malloc_touch(Pike_fp->current_object);
+  debug_malloc_touch(THIS_OBJECT);
   
   if(args < 2)
     SIMPLE_TOO_FEW_ARGS_ERROR("_sprintf", 2);
@@ -735,7 +735,7 @@ static void mpzmod__sprintf(INT32 args)
   flag_left=sp[-1].u.integer;
   pop_stack();
 
-  debug_malloc_touch(Pike_fp->current_object);
+  debug_malloc_touch(THIS_OBJECT);
 
   switch(method = sp[-args].u.integer)
   {
@@ -862,7 +862,7 @@ static void mpzmod__sprintf(INT32 args)
   break;
   }
 
-  debug_malloc_touch(Pike_fp->current_object);
+  debug_malloc_touch(THIS_OBJECT);
 
   pop_n_elems(args);
 
@@ -1006,8 +1006,8 @@ static void name(INT32 args)						\
 	    args++;							\
 	    e++;							\
 	    SET_SVAL(Pike_sp[-args], T_OBJECT, 0 /* FIXME? */, object,	\
-		     Pike_fp->current_object);				\
-	    add_ref(Pike_fp->current_object);				\
+		     THIS_OBJECT);                                      \
+	    add_ref(THIS_OBJECT);                                       \
 	    args = low_rop(o, fun, e, args);				\
 	    if (args > 1) {						\
 	      f_op(args);						\
@@ -1134,8 +1134,8 @@ static void mpzmod_add_eq(INT32 args)
       mpz_add(THIS, THIS, OBTOMPZ(sp[e-args].u.object));
     else
       mpz_add_ui(THIS,THIS, sp[e-args].u.integer);
-  add_ref(fp->current_object);
-  PUSH_REDUCED(fp->current_object);
+  add_ref(THIS_OBJECT);
+  PUSH_REDUCED(THIS_OBJECT);
 }
 
 /*! @decl Gmp.mpz `+(int|float|Gmp.mpz x)
@@ -2032,7 +2032,7 @@ static void init_mpz_glue(struct object * UNUSED(o))
 
 static void exit_mpz_glue(struct object *UNUSED(o))
 {
-  if( Pike_fp->current_object->flags & OBJECT_CLEAR_ON_EXIT )
+  if( THIS_OBJECT->flags & OBJECT_CLEAR_ON_EXIT )
      memset( THIS->_mp_d, 0,LIMBS(THIS) * sizeof(mp_limb_t));
   mpz_clear(THIS);
 }
@@ -2041,28 +2041,6 @@ static void gc_recurse_mpz (struct object *o)
 {
   if (mc_count_bytes (o))
     mc_counted_bytes += LIMBS(THIS)*sizeof (mp_limb_t) + sizeof (mpz_t);
-}
-
-PIKE_MODULE_EXIT
-{
-  pike_exit_smpz_module();
-  pike_exit_mpf_module();
-  pike_exit_mpq_module();
-  if(mpzmod_program)
-  {
-    free_program(mpzmod_program);
-    mpzmod_program = NULL;
-  }
-
-  if(bignum_program)
-  {
-    free_program(bignum_program);
-    bignum_program = NULL;
-  }
-  mpz_clear (mpz_int_type_min);
-#ifdef INT64
-  mpz_clear (mpz_int64_min);
-#endif
 }
 
 static void *pike_mp_alloc (size_t alloc_size)
@@ -2253,6 +2231,28 @@ PIKE_MODULE_INIT
   pike_init_mpq_module();
   pike_init_mpf_module();
   pike_init_smpz_module();
+}
+
+PIKE_MODULE_EXIT
+{
+  pike_exit_smpz_module();
+  pike_exit_mpf_module();
+  pike_exit_mpq_module();
+  if(mpzmod_program)
+  {
+    free_program(mpzmod_program);
+    mpzmod_program = NULL;
+  }
+
+  if(bignum_program)
+  {
+    free_program(bignum_program);
+    bignum_program = NULL;
+  }
+  mpz_clear (mpz_int_type_min);
+#ifdef INT64
+  mpz_clear (mpz_int64_min);
+#endif
 }
 
 /*! @endmodule
