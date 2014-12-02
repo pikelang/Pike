@@ -155,9 +155,9 @@ PIKECLASS Hash
     return 0;
   }
 
-  /*! @decl string(0..255) hash(Stdio.File file, void|int bytes)
+  /*! @decl string(0..255) hash(Stdio.File|Stdio.Buffer|String.Buffer|System.Memory source, void|int bytes)
    *!
-   *!  Works as a (faster) shortcut for
+   *!  Works as a (faster) shortcut for e.g.
    *!  @expr{State()->update(Stdio.read_file(file))->digest()@},
    *!  where State is the hash state class corresponding to this
    *!  Hash.
@@ -175,7 +175,8 @@ PIKECLASS Hash
     optflags OPT_EXTERNAL_DEPEND;
     {
     void *ctx;
-    int len, fd;
+    size_t len;
+    int fd;
     char *read_buffer;
     PIKE_STAT_T st;
     struct pike_string *out;
@@ -184,8 +185,21 @@ PIKECLASS Hash
     if (!meta)
       Pike_error("HashInfo not properly initialized.\n");
 
+    ctx = alloca(meta->context_size);
+    if (!ctx)
+      SIMPLE_OUT_OF_MEMORY_ERROR("hash", meta->context_size);
+    meta->init(ctx);
+
+    if( get_memory_object_memory(in, (void **)&read_buffer, &len, NULL) )
+    {
+      if( bytes )
+        len = MINIMUM(len, MAXIMUM(bytes->u.integer,0) );
+      meta->update( ctx, len, (const uint8_t*)read_buffer);
+      goto ret_meta;
+    }
+
     if (!is_stdio_file(in))
-      Pike_error("Object not Fd or Fd_ref, or subclass.\n");
+      Pike_error("Object not Fd or Fd_ref, or subclass or 8bit buffer.\n");
 
     apply(in, "query_fd", 0);
     fd = Pike_sp[-1].u.integer;
@@ -197,14 +211,9 @@ PIKECLASS Hash
     if (!S_ISREG(st.st_mode))
       Pike_error("Non-regular file.\n");
 
-    ctx = alloca(meta->context_size);
-    if (!ctx)
-      SIMPLE_OUT_OF_MEMORY_ERROR("hash", meta->context_size);
-
     read_buffer=xalloc(8192);
 
     THREADS_ALLOW();
-    meta->init(ctx);
     if(args==2 && bytes->u.integer>-1) {
       int bytes_left = bytes->u.integer;
       int read_bytes = MINIMUM(8192, bytes_left);
@@ -221,6 +230,7 @@ PIKECLASS Hash
     free(read_buffer);
 
     THREADS_DISALLOW();
+  ret_meta:
     out = begin_shared_string(meta->digest_size);
     meta->digest(ctx, meta->digest_size, (uint8_t *)out->str);
 
