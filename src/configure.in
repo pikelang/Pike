@@ -6450,6 +6450,8 @@ else
   [
     AC_TRY_RUN([
 #include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
 void fatal(char *foo,...) __attribute__ ((noreturn,format (printf,1,2)));
 int sqr(int x) __attribute__ ((const));
 
@@ -6458,7 +6460,7 @@ int sqr(int x) { return x*x; }
 void fatal(char *foo,...)
 {
   va_list args;
-  va_start(foo,args);
+  va_start(args, foo);
   printf(foo,args);
   va_end(args);
   exit(2);
@@ -6470,6 +6472,8 @@ int main() {  exit(0); }
       echo $ac_n "crosscompiling... $ac_c" 1>&6
       AC_TRY_LINK([
 #include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
 void fatal(char *foo,...) __attribute__ ((noreturn,format (printf,1,2)));
 int sqr(int x) __attribute__ ((const));
 
@@ -6478,7 +6482,7 @@ int sqr(int x) { return x*x; }
 void fatal(char *foo,...)
 {
   va_list args;
-  va_start(foo,args);
+  va_start(args, foo);
   printf(foo,args);
   va_end(args);
   exit(2);
