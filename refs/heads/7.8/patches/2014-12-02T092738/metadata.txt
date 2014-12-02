@@ -1,4 +1,4 @@
-subject: Pike 7.8: Multiple fixes:
+subject: Pike 7.8: HTTP Query, tzdata2014j, WSAEACCES, precompile, Improved dwim_time
 from: 346699b0ad3f6a14323113c6382a661e56f3e097
 to: fc8ab7ff14c3edab1c33abec60ed162f40105449
 originator: wellhardh@roxen.com
@@ -9,81 +9,11 @@ Multiple fixes:
 
   * Fix bug where the write callback could be dropped if 0 bytes were written.
     
-    Conflicts:
-    	lib/modules/Protocols.pmod/HTTP.pmod/Query.pike
-
-  * ZXID: Some support for ZXID 1.19 and later.
-    
-    Some fields in struct zxid_conf changed names in ZXID 1.19:2013-12-04.
-
-  * ZXID: Some more forward compat.
-    
-    The variable zx_debug was renamed to errmac_debug on 2013-11-13.
-    
-    The fields wsp_localpdp_obl_req and wsc_localpdp_obl_accept in
-    struct zxid_conf are no longer strings but arrays.
-    
-    These changes seem to be sufficient to be able to link against
-    current libzxid.
-
-  * ZXID: Added check for zxid_cgi.uri_path.
-
-  * ZXID: Changed arguments to authenticate().
-    
-    Recent versions of the zxid library have an extra parameter "uri_path"
-    that they want from the request. To avoid needing to pass this argument
-    via enviroment variables, we now use some lower level functions.
-    
-    Fixes "null or empty cgi->uri_path=(null) qs(...) programming error".
-
-  * ZXID: Added configuration option "IPPORT".
-
-  * ZXID: Added version().
-
-  * release number bumped to 898 by export.pike
-
-  * release number bumped to 899 by export.pike
-
-  * release number bumped to 900 by export.pike
-
-  * release number bumped to 901 by export.pike
-
-  * ZXID: Added Session()->get_auth_info().
-    
-    An explicit getter is needed when proxying via Remote.
-
-  * Standards.JSON: Allow \' in strings.
-    
-    Some JSON encoders (eg ZXID) add extraneous escaping of single quotes
-    in strings.
-
-  * Fix formatcheck to accomodate for the optional 2nd argument.
-
-  * English grammar fix.
-
-  * ZXID: Fixed some memory leaks on Session destruct.
-
-  * ZXID: Renamed internal function to avoid namespace conflicts.
-
-  * release number bumped to 902 by export.pike
-
-  * release number bumped to 903 by export.pike
-
   * Updated to tzdata2014j.
 
   * backzone has been added
 
-  * release number bumped to 904 by export.pike
-
-  * release number bumped to 905 by export.pike
-
   * Don't print errors for WSAEACCES when ports are reserved in Windows.
-
-  * release number bumped to 906 by export.pike
-
-  * release number bumped to 907 by export.pike
-
-  * Build: Support Bison 3.
 
   * precompile: Make sure to clamp the integer range correctly.
     
@@ -94,10 +24,6 @@ Multiple fixes:
     
     NB: This bug also caused low_describe_type() to loop infinitely
         when describing the return type.
-
-  * release number bumped to 908 by export.pike
-
-  * release number bumped to 909 by export.pike
 
   * Calendar.YMD: Improved dwim_time().
     
