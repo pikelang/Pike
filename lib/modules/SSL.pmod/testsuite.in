@@ -396,14 +396,16 @@ test_do([[
 
   // Mapping from suite to the last TLS version it was valid in (if any).
   add_constant("obsoleted_suites", ([
-    // Duplicates. Obsolete for all versions.
-    SSL.Constants.TLS_rsa_with_idea_cbc_sha: 0,
-    SSL.Constants.TLS_rsa_with_des_cbc_sha: 0,
-    SSL.Constants.TLS_dh_dss_with_des_cbc_sha: 0,
-    SSL.Constants.TLS_dh_rsa_with_des_cbc_sha: 0,
-    SSL.Constants.TLS_dhe_dss_with_des_cbc_sha: 0,
-    SSL.Constants.TLS_dhe_rsa_with_des_cbc_sha: 0,
-    SSL.Constants.TLS_dh_anon_with_des_cbc_sha: 0,
+#if 0
+    // Duplicates. Listed further below under their SSL_* names.
+    SSL.Constants.TLS_rsa_with_idea_cbc_sha: TLS_1_1,
+    SSL.Constants.TLS_rsa_with_des_cbc_sha: TLS_1_1,
+    SSL.Constants.TLS_dh_dss_with_des_cbc_sha: TLS_1_1,
+    SSL.Constants.TLS_dh_rsa_with_des_cbc_sha: TLS_1_1,
+    SSL.Constants.TLS_dhe_dss_with_des_cbc_sha: TLS_1_1,
+    SSL.Constants.TLS_dhe_rsa_with_des_cbc_sha: TLS_1_1,
+    SSL.Constants.TLS_dh_anon_with_des_cbc_sha: TLS_1_1,
+#endif
 
     // Obsoleted in TLS 1.1:
     SSL.Constants.SSL_dhe_dss_export_with_des40_cbc_sha: TLS_1_0,
