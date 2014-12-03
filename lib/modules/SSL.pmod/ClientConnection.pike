@@ -69,7 +69,12 @@ Packet client_hello(string(8bit)|void server_name)
   }
   SSL3_DEBUG_MSG("Client ciphers:\n%s",
                  fmt_cipher_suites(cipher_suites));
-  compression_methods = context->preferred_compressors;
+  if (client_version >= PROTOCOL_TLS_1_3) {
+    // TLS 1.3 (draft 3) does not allow any compression.
+    compression_methods = ({ COMPRESSION_null });
+  } else {
+    compression_methods = context->preferred_compressors;
+  }
 
   struct->add_int_array(cipher_suites, 2, 2);
   struct->add_int_array(compression_methods, 1, 1);
