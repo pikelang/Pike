@@ -401,4 +401,16 @@ dnl    mpx_test($1,$2,$3,Gmp.mpf)
   mpx_mega_test(1,2,3)
   mpx_mega_test(-2,-1,4)
 
+
+  test_eq( (int)Gmp.smpz(3), 3 )
+  test_eq( (int)Gmp.smpz(Gmp.mpz(3)), 3 )
+
+cond([[ Gmp.smpz(1)->sec_powm ]],[[
+  test_eq(Gmp.smpz(17)->powm(12,4711),85)
+]])
+
+cond([[ Gmp.smpz(1)->sec_invert ]],[[
+  test_eq(Gmp.smpz(17)->invert(4711), 2217)
+]])
+
 END_MARKER
