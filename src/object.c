@@ -3320,15 +3320,18 @@ PMOD_EXPORT enum memobj_type get_memory_object_memory( struct object *o, void **
 
   if( (src.b = string_buffer(o)) )
   {
-    if( src.b->s->size_shift )
+    struct pike_string *s = src.b->s;
+    if( !s )
+      s = empty_pike_string;
+    if( s->size_shift )
     {
       if( shift )
-        *shift = src.b->s->size_shift;
+        *shift = s->size_shift;
       else
         return MEMOBJ_NONE;
     }
-    if( len ) *len = src.b->s->len;
-    if( ptr ) *ptr = src.b->s->str;
+    if( len ) *len = s->len;
+    if( ptr ) *ptr = s->str;
     return MEMOBJ_STRING_BUFFER;
   }
 
