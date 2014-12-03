@@ -11,12 +11,10 @@
 #include "interpret.h"
 #include "program.h"
 
-#define sp Pike_sp
-#define fp Pike_fp
-
 #undef THIS
-#define THIS ((MP_INT *)(fp->current_storage))
-#define THIS_PROGRAM (fp->context->prog)
+#define DECLARE_THIS() struct pike_frame *_fp = Pike_fp
+#define THIS ((MP_INT *)(_fp->current_storage))
+#define THIS_PROGRAM (_fp->context->prog)
 
 #define LIMBS(X) THIS->_mp_alloc
 #define NLIMBS(X) THIS->_mp_size
@@ -26,14 +24,15 @@ static struct program *smpz_program = NULL;
 #ifdef HAVE_GMP5
 static void smpz_powm(INT32 args)
 {
+  DECLARE_THIS();
   struct object *res = NULL;
   MP_INT *n, *e;
   
   if(args != 2)
     SIMPLE_WRONG_NUM_ARGS_ERROR ("powm", 2);
 
-  e = get_mpz(sp - 2, 1, "powm", 1, 2);
-  n = get_mpz(sp - 1, 1, "powm", 2, 2);
+  e = get_mpz(Pike_sp - 2, 1, "powm", 1, 2);
+  n = get_mpz(Pike_sp - 1, 1, "powm", 2, 2);
 
   if (!mpz_sgn(n))
     SIMPLE_DIVISION_BY_ZERO_ERROR ("powm");
@@ -51,12 +50,13 @@ static void smpz_powm(INT32 args)
 /* int mpz_invert (mpz_t rop, const mpz_t op1, const mpz_t op2) */
 static void smpz_invert(INT32 args)
 {
+  DECLARE_THIS();
   MP_INT *modulo;
   struct object *res;
 
   if (args != 1)
     SIMPLE_WRONG_NUM_ARGS_ERROR ("invert", 1);
-  modulo = get_mpz(sp-1, 1, "invert", 1, 1);
+  modulo = get_mpz(Pike_sp-1, 1, "invert", 1, 1);
 
   if (!mpz_sgn(modulo))
     SIMPLE_DIVISION_BY_ZERO_ERROR ("invert");
