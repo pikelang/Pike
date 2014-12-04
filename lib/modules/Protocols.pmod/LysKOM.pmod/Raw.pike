@@ -53,6 +53,7 @@ protected inline int conwrite(string what)
 #ifdef LYSKOM_DEBUG
    werror("-> %O\n",what);
 #endif
+   if (!con) return 0;
    int i=con->write(what)==sizeof(what);
    if (!i) { werror("write failed!!!\n"); _exit(1); }
    return i;
@@ -282,6 +283,7 @@ void read_thread()
       }
       recv(0,s);
    }
+   connection_lost();
 }
 
 #if constant(thread_create) && !LYSKOM_UNTHREADED
