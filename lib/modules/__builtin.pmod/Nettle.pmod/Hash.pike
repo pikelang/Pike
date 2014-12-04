@@ -15,13 +15,23 @@ inherit .__Hash;
 //! Calling `() will return a @[State] object.
 State `()() { return State(); }
 
-//! @decl string hash(string data)
-//! @decl string hash(Stdio.File|Stdio.Buffer|String.Buffer|System.Memory source, void|int bytes)
-//!
-//! Shortcut for hashing some data.
+//!  Works as a (possibly faster) shortcut for e.g.
+//!  @expr{State(data)->digest()@}, where @[State] is the hash state
+//!  class corresponding to this @[Hash].
 //!
 //! @param data
 //!   String to hash.
+//!
+//! @seealso
+//!   @[Stdio.File], @[State()->update()] and @[State()->digest()].
+string hash(string data)
+{
+  return State(data)->digest();
+}
+
+//!  Works as a (possibly faster) shortcut for e.g. @expr{State(
+//!  obj->read() )->digest()@}, where @[State] is the hash state class
+//!  corresponding to this @[Hash].
 //!
 //! @param source
 //!   Object to read some data to hash from.
@@ -31,47 +41,40 @@ State `()() { return State(); }
 //!   hashed. Zero and negative numbers are ignored and the whole file
 //!   is hashed.
 //!
-//!  Works as a (possibly faster) shortcut for e.g.
-//!  @expr{State(data)->digest()@}, where @[State] is the hash state
-//!  class corresponding to this @[Hash].
-//!
-//! @seealso
-//!   @[Stdio.File], @[State()->update()] and @[State()->digest()].
-string hash(string|Stdio.File|Stdio.Buffer|String.Buffer|System.Memory in,
-            int|void bytes)
+//! @[Stdio.File], @[Stdio.Buffer], @[String.Buffer], @[System.Memory]
+variant string hash(Stdio.File|Stdio.Buffer|String.Buffer|System.Memory source,
+                    int|void bytes)
 {
-  if (objectp(in)){
-    function(int|void:string) f;
+  function(int|void:string) f;
 
-    if (in->read)
-    {
-      // Stdio.File, Stdio.Buffer
-      f = [function(int|void:string)]in->read;
-    }
-    else if (in->get)
-    {
-      // String.Buffer
-      f = [function(int|void:string)]in->get;
-    }
-    else if (in->pread)
-    {
-      // System.Memory
-      f = lambda(int|void b)
-        {
-          return ([function(int,int:string)]in->pread)(0, b || sizeof(in));
-        };
-    }
-
-    if (f)
-    {
-      if (bytes>0) {
-        in = f(bytes);
-      } else {
-        in = f();
-      }
-    }
+  if (source->read)
+  {
+    // Stdio.File, Stdio.Buffer
+    f = [function(int|void:string)]source->read;
   }
-  return State([string]in)->digest();
+  else if (source->get)
+  {
+    // String.Buffer
+    f = [function(int|void:string)]source->get;
+  }
+  else if (source->pread)
+  {
+    // System.Memory
+    f = lambda(int|void b)
+        {
+          System.Memory m = [object(System.Memory)]source;
+          return m->pread(0, b || sizeof(source));
+        };
+  }
+
+  if (f)
+  {
+    if (bytes>0)
+      return hash( f(bytes) );
+    else
+      return hash( f() );
+  }
+  error("Incompatible object\n");
 }
 
 //! @module HMAC
