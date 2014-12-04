@@ -16,9 +16,6 @@
 #define THIS ((MP_INT *)(_fp->current_storage))
 #define THIS_PROGRAM (_fp->context->prog)
 
-#define LIMBS(X) THIS->_mp_alloc
-#define NLIMBS(X) THIS->_mp_size
-
 static struct program *smpz_program = NULL;
 
 #ifdef HAVE_GMP5
@@ -71,9 +68,6 @@ static void smpz_invert(INT32 args)
   push_object(res);
 }
 #endif
-
-#define tMpz_arg tOr3(tInt,tFloat,tObj)
-#define tMpz_ret tObjIs_GMP_MPZ
 
 void pike_init_smpz_module(void)
 {

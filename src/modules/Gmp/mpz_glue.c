@@ -2061,8 +2061,6 @@ static void gmp_fac(INT32 args)
   PUSH_REDUCED(res);
 }
 
-#define LIMBS(X) THIS->_mp_alloc
-
 static void mpzmod__size_object(INT32 UNUSED(args))
 {
   DECLARE_THIS();
@@ -2116,13 +2114,6 @@ static void pike_mp_free (void *ptr, size_t UNUSED(size))
 {
   free (ptr);
 }
-
-
-#define tMpz_arg tOr3(tInt,tFloat,tObj)
-#define tMpz_ret tObjIs_GMP_MPZ
-#define tMpz_shift_type tFunc(tMpz_arg,tMpz_ret)
-#define tMpz_binop_type tFuncV(tNone, tMpz_arg, tMpz_ret)
-#define tMpz_cmpop_type tFunc(tMixed, tInt01)
 
 #define MPZ_DEFS()							\
   ADD_STORAGE(MP_INT);							\

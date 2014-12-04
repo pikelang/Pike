@@ -33,6 +33,12 @@ MP_INT *debug_get_mpz(struct svalue *s,
 void mpzmod_reduce(struct object *o);
 struct pike_string *low_get_mpz_digits(MP_INT *mpz, int base);
 
+#define tMpz_arg tOr3(tInt,tFloat,tObj)
+#define tMpz_ret tObjIs_GMP_MPZ
+#define tMpz_shift_type tFunc(tMpz_arg,tMpz_ret)
+#define tMpz_binop_type tFuncV(tNone, tMpz_arg, tMpz_ret)
+#define tMpz_cmpop_type tFunc(tMixed, tInt01)
+
 extern struct program *mpzmod_program;
 extern struct program *mpq_program;
 extern struct program *mpf_program;
@@ -46,7 +52,10 @@ extern struct program *bignum_program;
 #define get_mpz debug_get_mpz 
 #endif
 
+/* This is where we break abstraction layers. */
 #define MP_FLT __mpf_struct
+#define LIMBS(X) THIS->_mp_alloc
+#define NLIMBS(X) THIS->_mp_size
 
 #define OBTOMPZ(o) ((MP_INT *)(o->storage))
 #define OBTOMPQ(o) ((MP_RAT *)(o->storage))
