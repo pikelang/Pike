@@ -16,34 +16,59 @@ inherit .__Hash;
 State `()() { return State(); }
 
 //! @decl string hash(string data)
-//! @decl string hash(Stdio.File file, void|int bytes)
+//! @decl string hash(Stdio.File|Stdio.Buffer|String.Buffer|System.Memory source, void|int bytes)
 //!
 //! Shortcut for hashing some data.
 //!
 //! @param data
 //!   String to hash.
 //!
-//! @param file
-//!   @[Stdio.File] object to read some data to hash from.
+//! @param source
+//!   Object to read some data to hash from.
 //!
 //! @param bytes
-//!   The number of bytes of the file object @[file] that should be
-//!   hashed. Negative numbers are ignored and the whole file is
-//!   hashed.
+//!   The number of bytes of the @[source] object that should be
+//!   hashed. Zero and negative numbers are ignored and the whole file
+//!   is hashed.
 //!
-//!  Works as a (possibly faster) shortcut for
-//!  @expr{State(data)->digest()@}, where @[State] is
-//!  the hash state class corresponding to this @[Hash].
+//!  Works as a (possibly faster) shortcut for e.g.
+//!  @expr{State(data)->digest()@}, where @[State] is the hash state
+//!  class corresponding to this @[Hash].
 //!
 //! @seealso
 //!   @[Stdio.File], @[State()->update()] and @[State()->digest()].
-string hash(string|Stdio.File in, int|void bytes)
+string hash(string|Stdio.File|Stdio.Buffer|String.Buffer|System.Memory in,
+            int|void bytes)
 {
-  if (objectp(in)) {
-    if (bytes) {
-      in = in->read(bytes);
-    } else {
-      in = in->read();
+  if (objectp(in)){
+    function(int|void:string) f;
+
+    if (in->read)
+    {
+      // Stdio.File, Stdio.Buffer
+      f = [function(int|void:string)]in->read;
+    }
+    else if (in->get)
+    {
+      // String.Buffer
+      f = [function(int|void:string)]in->get;
+    }
+    else if (in->pread)
+    {
+      // System.Memory
+      f = lambda(int|void b)
+        {
+          return ([function(int,int:string)]in->pread)(0, b || sizeof(in));
+        };
+    }
+
+    if (f)
+    {
+      if (bytes>0) {
+        in = f(bytes);
+      } else {
+        in = f();
+      }
     }
   }
   return State([string]in)->digest();
