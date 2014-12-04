@@ -179,12 +179,13 @@ class CipherSpec {
     if( signature_alg == SIGNATURE_anonymous )
       return struct;
 
+    string data = cookie + (string)struct;
+
     // RFC 5246 4.7
     if( session->version >= PROTOCOL_TLS_1_2 )
     {
       string sign =
-        session->private_key->pkcs_sign(cookie + (string)struct,
-                                        HASH_lookup[signature_hash]);
+        session->private_key->pkcs_sign(data, HASH_lookup[signature_hash]);
       struct->add_int(signature_hash, 1);
       struct->add_int(signature_alg, 1);
       struct->add_hstring(sign, 2);
@@ -192,7 +193,6 @@ class CipherSpec {
     }
 
     // RFC 4346 7.4.3 (struct Signature)
-    string data = cookie + (string)struct;
     switch( signature_alg )
     {
     case SIGNATURE_rsa:
@@ -208,10 +208,8 @@ class CipherSpec {
     case SIGNATURE_dsa:
     case SIGNATURE_ecdsa:
       {
-        string s =
-          session->private_key->pkcs_sign(cookie + (string)struct,
-                                          Crypto.SHA1);
-        struct->add_hstring(s, 2);
+        string sign = session->private_key->pkcs_sign(data, Crypto.SHA1);
+        struct->add_hstring(sign, 2);
         return struct;
       }
     }
@@ -229,6 +227,8 @@ class CipherSpec {
     Crypto.Sign.State pkc = session->peer_public_key;
     if( !pkc ) return 0;
 
+    string data = cookie + (string)struct;
+
     // RFC 5246 4.7
     if( session->version >= PROTOCOL_TLS_1_2 )
     {
@@ -241,11 +241,10 @@ class CipherSpec {
 
       // FIXME: Validate that the sign_id is correct.
 
-      return pkc->pkcs_verify(cookie + (string)struct, hash, sign);
+      return pkc->pkcs_verify(data, hash, sign);
     }
 
     // RFC 4346 7.4.3 (struct Signature)
-    string data = cookie + (string)struct;
     switch( signature_alg )
     {
     case SIGNATURE_rsa:
@@ -1159,7 +1158,7 @@ class KeyExchangeECDHE
 
 //! Key exchange for @[KE_krb].
 //!
-//! @[KeyExchange] that uses Kerberos.
+//! @[KeyExchange] that uses Kerberos (RFC 2712).
 class KeyExchangeKRB
 {
   inherit KeyExchange;
