@@ -8463,7 +8463,7 @@ PMOD_EXPORT void f__dmalloc_set_name(INT32 args)
  *! @note
  *!   Only available when compiled with dmalloc.
  */
-PMOD_EXPORT void f__list_open_fds(INT32 args)
+PMOD_EXPORT void f__list_open_fds(INT32 UNUSED(args))
 {
   extern void list_open_fds(void);
   list_open_fds();
