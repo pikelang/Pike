@@ -2506,41 +2506,6 @@ void ins_f_byte(unsigned int b)
     }
     return;
 
-  case F_INC:
-    {
-    LABELS();
-    ins_debug_instr_prologue(b, 0, 0);
-    amd64_load_sp_reg();
-    mov_mem8_reg(sp_reg, -16, P_REG_RAX );
-    test_reg32(P_REG_RAX);
-    jnz(&label_A);
-    add_imm_mem(1, sp_reg, -8);
-    jno(&label_B);
-    add_imm_mem(-1, sp_reg, -8);
-    LABEL_A;
-    amd64_call_c_opcode(addr, flags);
-    LABEL_B;
-    }
-    return;
-
-  case F_DEC:
-    {
-    LABELS();
-    ins_debug_instr_prologue(b, 0, 0);
-    amd64_load_sp_reg();
-    mov_mem8_reg(sp_reg, -16, P_REG_RAX );
-    test_reg32(P_REG_RAX);
-    jnz(&label_A);
-    add_imm_mem(-1, sp_reg, -8);
-    jno(&label_B);
-    add_imm_mem(1, sp_reg, -8);
-    LABEL_A;
-    amd64_call_c_opcode(addr, flags);
-    LABEL_B;
-    }
-    return;
-
-
   case F_SUBTRACT:
     {
     LABELS();
