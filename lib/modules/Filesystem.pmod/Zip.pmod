@@ -82,10 +82,9 @@ class Decrypt
 
     k = key[2] | 2;
     c = c ^ (((k * (k^1)) >> 8) & 255);
-    o = sprintf("%c", c);
     update_keys(c);
     
-    return o;
+    return c;
   }
   
   //! decrypt a string
@@ -97,7 +96,7 @@ class Decrypt
     String.Buffer buf = String.Buffer();
     
     foreach(x;; int c)
-      buf->add(decrypt_char(c));
+      buf->putchar(decrypt_char(c));
       
     return buf->get();
   }
