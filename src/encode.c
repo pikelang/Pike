@@ -2651,7 +2651,6 @@ static void decode_value2(struct decode_data *data)
       struct pike_type *t;
 
       decode_type(t, data);
-      check_type_string(t);
       push_type_value(t);
 
       entry_id = data->counter;

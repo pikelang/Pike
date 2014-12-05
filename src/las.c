@@ -1195,7 +1195,6 @@ node *debug_mkexternalnode(struct program *parent_prog, int i)
 #ifdef PIKE_DEBUG
     if(d_flag)
     {
-      check_type_string(id->type);
       check_string(id->name);
     }
 #endif
@@ -3932,9 +3931,6 @@ void fix_type_field(node *n)
   if (old_type) {
     free_type(old_type);
   }
-#ifdef PIKE_DEBUG
-  check_type_string(n->type);
-#endif /* PIKE_DEBUG */
 }
 
 static void zapp_try_optimize(node *n)

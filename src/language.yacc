@@ -633,9 +633,6 @@ block_or_semi: block
 
 type_or_error: simple_type
   {
-#ifdef PIKE_DEBUG
-    check_type_string($1->u.sval.u.type);
-#endif /* PIKE_DEBUG */
     if(Pike_compiler->compiler_frame->current_type)
       free_type(Pike_compiler->compiler_frame->current_type);
     copy_pike_type(Pike_compiler->compiler_frame->current_type,
@@ -4620,9 +4617,6 @@ int low_add_local_name(struct compiler_frame *frame,
   } else {
     int var = frame->current_number_of_locals;
 
-#ifdef PIKE_DEBUG
-    check_type_string(type);
-#endif /* PIKE_DEBUG */
     if (pike_types_le(type, void_type_string)) {
       if (Pike_compiler->compiler_pass != 1) {
 	yywarning("Declaring local variable %S with type void "

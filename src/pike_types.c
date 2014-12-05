@@ -688,14 +688,6 @@ static inline struct pike_type *debug_mk_type(unsigned INT32 type,
 #define mk_type debug_mk_type
 #endif /* DEBUG_MALLOC */
 
-#ifdef PIKE_DEBUG
-void debug_check_type_string(struct pike_type *s)
-{
-  /* FIXME: Add verification code here */
-}
-
-#endif /* PIKE_DEBUG */
-
 struct pike_type **type_stack;
 struct pike_type ***pike_type_mark_stack;
 
@@ -2622,7 +2614,6 @@ void my_describe_type(struct pike_type *type)
 struct pike_string *describe_type(struct pike_type *type)
 {
   dynamic_buffer save_buf;
-  check_type_string(type);
   if(!type) return make_shared_string("mixed");
   init_buf(&save_buf);
   low_describe_type(type);
@@ -4790,16 +4781,12 @@ static int low_get_return_type(struct pike_type *a, struct pike_type *b)
 
 int match_types(struct pike_type *a, struct pike_type *b)
 {
-  check_type_string(a);
-  check_type_string(b);
   clear_markers();
   return !!low_match_types(a, b, 0);
 }
 
 int pike_types_le(struct pike_type *a,struct pike_type *b)
 {
-  check_type_string(a);
-  check_type_string(b);
   clear_markers();
   return low_pike_types_le(a, b, 0, 0);
 }
@@ -5470,9 +5457,6 @@ int check_indexing(struct pike_type *type,
 		   struct pike_type *index_type,
 		   node *n)
 {
-  check_type_string(type);
-  check_type_string(index_type);
-
   return low_check_indexing(type, index_type, n);
 }
 
@@ -5526,8 +5510,6 @@ static int low_count_arguments(struct pike_type *q)
  */
 int count_arguments(struct pike_type *s)
 {
-  check_type_string(s);
-
   return low_count_arguments(s);
 }
 
@@ -5572,7 +5554,6 @@ static int low_minimum_arguments(struct pike_type *q)
 int minimum_arguments(struct pike_type *s)
 {
   int ret;
-  check_type_string(s);
 
   ret = low_minimum_arguments(s);
 
@@ -5589,8 +5570,6 @@ struct pike_type *check_call(struct pike_type *args,
 			     struct pike_type *type,
 			     int strict)
 {
-  check_type_string(args);
-  check_type_string(type);
   clear_markers();
   type_stack_mark();
   max_correct_args=0;

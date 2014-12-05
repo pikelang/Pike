@@ -183,9 +183,6 @@ PMOD_EXPORT void quick_add_efun(const char *name, ptrdiff_t name_length,
 
   n = make_shared_binary_string(name, name_length);
   t = make_pike_type(type);
-#ifdef DEBUG
-  check_type_string(t);
-#endif
   add_ref(n);
   SET_SVAL(s, T_FUNCTION, FUNCTION_BUILTIN, efun,
 	   low_make_callable(fun, n, t, flags, optimize, docode));

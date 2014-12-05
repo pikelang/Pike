@@ -3740,7 +3740,6 @@ void check_program(struct program *p)
   for(e=0;e<p->num_identifiers;e++)
   {
     check_string(p->identifiers[e].name);
-    check_type_string(p->identifiers[e].type);
 
     switch (p->identifiers[e].identifier_flags & IDENTIFIER_TYPE_MASK) {
       case IDENTIFIER_VARIABLE:

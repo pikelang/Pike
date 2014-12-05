@@ -95,12 +95,6 @@ void debug_free_type(struct pike_type *t);
 extern struct pike_type **type_stack;
 extern struct pike_type ***pike_type_mark_stack;
 
-#ifdef DEBUG_MALLOC
-#define check_type_string(T) debug_check_type_string((struct pike_type *)debug_malloc_pass_named(T, "check_type_string"))
-#elif defined (PIKE_DEBUG)
-#define check_type_string debug_check_type_string
-#endif /* PIKE_DEBUG */
-
 #define debug_free_type_preamble(T) do {				\
     debug_malloc_touch_named (T, "free_type");				\
     DO_IF_DEBUG (							\
@@ -215,7 +209,6 @@ extern void type_stack_mark(void);
 PMOD_EXPORT void really_free_pike_type(struct pike_type * t);
 PMOD_EXPORT ATTRIBUTE((malloc)) struct pike_type * alloc_pike_type(void);
 PMOD_EXPORT void count_memory_in_pike_types(size_t *n, size_t *s);
-void debug_check_type_string(struct pike_type *s);
 void init_types(void);
 ptrdiff_t pop_stack_mark(void);
 void debug_pop_type_stack(unsigned int expected);
@@ -370,10 +363,6 @@ PMOD_EXPORT void set_program_id_to_id( int (*to)(int) );
 #define push_finished_type debug_push_finished_type
 #define push_finished_type_with_markers debug_push_finished_type_with_markers
 #define push_finished_type_backwards debug_push_finished_type_backwards
-#endif
-
-#ifndef PIKE_DEBUG
-#define check_type_string(X)
 #endif
 
 #endif
