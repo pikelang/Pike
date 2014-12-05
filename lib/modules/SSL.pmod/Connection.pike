@@ -563,6 +563,15 @@ protected int handle_alert(string s)
                    ALERT_descriptions[description]);
     state = [int(0..0)|ConnectionState](state | CONNECTION_peer_fatal |
 					CONNECTION_peer_closed);
+    // SSL3 5.4:
+    // Alert messages with a level of fatal result in the immediate
+    // termination of the connection. In this case, other
+    // connections corresponding to the session may continue, but
+    // the session identifier must be invalidated, preventing the
+    // failed session from being used to establish new connections.
+    if (session) {
+      context->purge_session(session);
+    }
     return -1;
   }
   if (description == ALERT_close_notify)
