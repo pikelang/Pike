@@ -4581,6 +4581,10 @@ test_any([[mixed s="foo"; return ++s;]],"foo1")
 test_any([[float p=2.0; return p--;]],2.0);
 test_any([[float p=2.0; p--; return p;]],1.0)
 test_any([[float p=2.0; return --p;]],1.0)
+test_any([[mapping m=([0:2]); m[0]++; return m[0]++;]], 3);
+test_any([[mapping m=([0:2]); ++m[0]; return ++m[0];]], 4);
+test_any([[mapping m=([0:2]); m[0]--; return m[0]--;]], 1);
+test_any([[mapping m=([0:2]); --m[0]; return --m[0];]], 0);
 
 test_compile_error(int foo() { LJjjjjJJJ ; })
 test_true(class c { constant i=1; }()->i)
