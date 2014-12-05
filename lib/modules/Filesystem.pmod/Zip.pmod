@@ -34,20 +34,20 @@ class Decrypt
   private array key = ({305419896, 591751049, 878082192});
   private array tab = allocate(256);
   
-  protected void create(string pw)
+  private void create(string pw)
   {   
     gentab();
-    foreach((array)pw;; int ch)
+    foreach(pw;; int ch)
     {
       update_keys(ch);
     }
   }
 
   // populate the crc table
-  protected void gentab()
+  private void gentab()
   {
     int poly = 0xedb88320;
-    foreach(tab;int i; int b)
+    for(int i; i<sizeof(tab); i++)
     {
       int crc = i;
       for(int j = 0; j < 8; j++)
@@ -62,12 +62,12 @@ class Decrypt
   } 
    
   // single byte crc
-  protected int crc32(int c, int crc)
+  private int crc32(int c, int crc)
   {
     return ((crc >> 8) & 0xffffff) ^ tab[(crc ^ c) & 0xff];
   }
     
-  void update_keys(int ch)
+  private void update_keys(int ch)
   {
     key[0] = crc32(ch, key[0]);
     key[1] = (key[1] + (key[0] & 255)) & 0xffffffff;
@@ -75,13 +75,11 @@ class Decrypt
     key[2] = crc32((key[1] >> 24) & 255, key[2]);
   }
   
-  protected string decrypt_char(string x)
+  private string decrypt_char(int x)
   {
     int c, k;
     string o;
-    
-    sscanf(x, "%1c", c);
-    
+
     k = key[2] | 2;
     c = c ^ (((k * (k^1)) >> 8) & 255);
     o = sprintf("%c", c);
@@ -98,7 +96,7 @@ class Decrypt
   {
     String.Buffer buf = String.Buffer();
     
-    foreach(x/"";; string c)
+    foreach(x;; int c)
       buf->add(decrypt_char(c));
       
     return buf->get();
@@ -1042,7 +1040,6 @@ protected void low_add_dir(object i, string current_dir, int recurse, object sta
 
   foreach(i->get_dir();; string fn)
   {
-//    if(fn == "CVS") continue; // never add CVS data
     if(i->stat(fn)->isdir)
     {
       if(recurse) low_add_dir(i->cd(fn), current_dir + "/" + fn, recurse, i->stat(fn));
