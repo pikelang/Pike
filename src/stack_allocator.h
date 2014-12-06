@@ -15,7 +15,7 @@ struct chunk {
 void stack_alloc_enlarge(struct stack_allocator * a, size_t size);
 void stack_alloc_destroy(struct stack_allocator * a);
 
-static void __attribute__((unused)) stack_alloc_init(struct stack_allocator * a, size_t initial) {
+static void ATTRIBUTE((unused)) stack_alloc_init(struct stack_allocator * a, size_t initial) {
     a->cur = NULL;
     a->initial = initial;
 }
@@ -40,7 +40,7 @@ static void * sa_alloc_fast(struct stack_allocator * a, size_t size) {
 }
 
 MALLOC_FUNCTION
-static void __attribute__((unused)) * sa_alloc(struct stack_allocator * a, size_t size) {
+static void ATTRIBUTE((unused)) * sa_alloc(struct stack_allocator * a, size_t size) {
     sa_alloc_enlarge(a, size);
     return sa_alloc_fast(a, size);
 }

@@ -225,7 +225,7 @@ static void PIKE_CONCAT3(low_init_,DATA,_hash)(size_t size)			     \
 }									     \
 									     \
 									     \
-static void __attribute((unused)) PIKE_CONCAT3(init_,DATA,_hash)(void)       \
+static void ATTRIBUTE((unused)) PIKE_CONCAT3(init_,DATA,_hash)(void)       \
 {									     \
   PIKE_CONCAT3(low_init_,DATA,_hash)(BSIZE);		                     \
 }									     \
