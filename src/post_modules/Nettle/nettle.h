@@ -58,9 +58,11 @@ typedef nettle_hash_digest_func		pike_nettle_hash_digest_func;
 typedef nettle_hash_update_func		pike_nettle_hash_update_func;
 #else
 /* Nettle 2.0 */
-typedef nettle_crypt_func		*pike_nettle_crypt_func;
-typedef nettle_hash_digest_func		*pike_nettle_hash_digest_func;
-typedef nettle_hash_update_func		*pike_nettle_hash_update_func;
+#if 0
+typedef nettle_crypt_func		(*pike_nettle_crypt_func);
+typedef nettle_hash_digest_func		(*pike_nettle_digest_func);
+typedef nettle_hash_update_func		(*pike_nettle_update_func);
+#endif
 #endif
 
 
