@@ -369,7 +369,7 @@ PIKECLASS Buffer
     }
   }
 
-  static struct pike_string *io_read_string( Buffer *io, ssize_t len )
+  static struct pike_string *io_read_string( Buffer *io, ptrdiff_t len )
     ATTRIBUTE((noclone,noinline));
   static size_t io_rewind( Buffer *io, INT_TYPE n );
 
@@ -571,7 +571,7 @@ PIKECLASS Buffer
     return len;
   }
 
-  static struct pike_string *io_read_string( Buffer *io, ssize_t len )
+  static struct pike_string *io_read_string( Buffer *io, ptrdiff_t len )
   {
     struct pike_string *s;
 
@@ -684,7 +684,7 @@ PIKECLASS Buffer
     unsigned char*d;
     struct pike_string *s;
     int pad = 0;
-    ssize_t bytes;
+    ptrdiff_t bytes;
     size_t exp;
 
     if( mpz_sgn( i ) < 0 )
