@@ -149,7 +149,7 @@ PIKECLASS EventPoller
     struct array * ph;
     HANDLE nh;
     HANDLE * handles;
-    h = get_storage(handle, NotificationHandle_program);
+    h = get_storage(handle, Wnotify_NotificationHandle_program);
     if(!h)
     {
       pop_stack();
@@ -158,7 +158,7 @@ PIKECLASS EventPoller
 
     ph = append_array(THIS->phandles, &Pike_sp[-args]);
     THIS->phandles = ph;
-    nh = OBJ2_NOTIFICATIONHANDLE(handle)->handle;
+    nh = OBJ2_WNOTIFY_NOTIFICATIONHANDLE(handle)->handle;
 
     if(THIS->handles_size <= THIS->handles_used)
     {
@@ -192,11 +192,11 @@ PIKECLASS EventPoller
       Pike_error("poll: no paths to monitor.\n");
     }     
 
-    if(!timeout || (timeout->type == PIKE_T_INT && timeout->u.integer == 0))
+    if(!timeout || SAFE_IS_ZERO(timeout))
     {
        to = INFINITE;
     }
-    else if(timeout->type == PIKE_T_FLOAT)
+    else if(TYPEOF(*timeout) == PIKE_T_FLOAT)
     {
       to = (DWORD)timeout->u.float_number * 1000;
     }
@@ -215,7 +215,7 @@ PIKECLASS EventPoller
       struct svalue * sv;
       sv = THIS->phandles->item+res;
       /* TODO: proper value checking of the items in the array! */
-      OBJ2_NOTIFICATIONHANDLE(sv->u.object)->triggered = 1;
+      OBJ2_WNOTIFY_NOTIFICATIONHANDLE(sv->u.object)->triggered = 1;
       push_svalue(&ITEM(THIS->phandles)[res]);
       FindNextChangeNotification(THIS->handles+res);
 
