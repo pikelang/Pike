@@ -779,14 +779,16 @@ PIKECLASS Buffer
 
   static void io_append_short_uc( Buffer *io, unsigned short shrt )
   {
-      *((short *)(io->buffer+io->len)) = htons(shrt);
-      io->len+=2;
+      io->buffer[io->len++] = shrt>>8;
+      io->buffer[io->len++] = shrt;
   }
 
   static void io_append_int_uc( Buffer *io, unsigned INT32 i )
   {
-      *((INT32 *)(io->buffer+io->len)) = htonl(i);
-      io->len+=4;
+      io->buffer[io->len++] = i>>24;
+      io->buffer[io->len++] = i>>16;
+      io->buffer[io->len++] = i>>8;
+      io->buffer[io->len++] = i;
   }
 
 
