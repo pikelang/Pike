@@ -31,6 +31,7 @@
 #include "cache.h"
 #include "util.h"
 #include "backend.h"
+#include "pike_embed.h"
 
 
 struct cache *first_cache;
@@ -146,7 +147,6 @@ static void really_free_cache_entry(struct cache  *c, struct cache_entry *e,
 				    struct cache_entry *prev, size_t b)
 {
 #ifdef DEBUG
-  extern int d_flag;
   if(d_flag>2)
   {
     if(b!=(cache_hash(e->url, e->url_len) +

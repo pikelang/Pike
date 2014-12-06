@@ -37,6 +37,7 @@
 #include "builtin_functions.h"
 #include "pike_macros.h"
 #include "version.h"
+#include "pike_embed.h"
 
 
 #ifdef HAVE_ORACLE
@@ -2051,7 +2052,6 @@ static void f_big_typed_query_create(INT32 args)
   int i,num;
   struct object *new_parent=0;
   struct bind_block bind;
-  extern int d_flag;
 
 #ifdef ORACLE_DEBUG
   fprintf(stderr,"%s\n",__FUNCTION__);

@@ -14,6 +14,7 @@
 #include "stralloc.h"
 #include "program.h"
 #include "pike_types.h"
+#include "pike_embed.h"
 
 #include "program_id.h"
 
