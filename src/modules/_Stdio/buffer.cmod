@@ -25,9 +25,16 @@
 #include "buffer.h"
 #include "module_support.h"
 
+#ifdef HAVE_ARPA_INET_H
 #include <arpa/inet.h>
+#endif
+
 #undef MP_INT
 #include <gmp.h>
+
+#ifndef HAVE_SSIZE_T
+#define ssize_t SIZE_T
+#endif /* HAVE_SSIZE_T */
 
 #define DEFAULT_CMOD_STORAGE static
 DECLARATIONS
@@ -372,8 +379,8 @@ PIKECLASS Buffer
     }
   }
 
-  static struct pike_string *io_read_string( Buffer *io, ssize_t len )
-    ATTRIBUTE((noclone,noinline));
+  static struct pike_string *io_read_string( Buffer *io, ssize_t len ) ATTRIBUTE((noclone,noinline));
+
   static size_t io_rewind( Buffer *io, INT_TYPE n );
 
   static void io_do_rewind_on_error( struct rewind_to *e )

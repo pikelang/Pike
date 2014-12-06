@@ -4,6 +4,7 @@
 || for more information.
 */
 
+#include <io.h>
 #ifndef FILE_H
 #define FILE_H
 
@@ -58,6 +59,18 @@
 #if defined(HAVE_IPPROTO_IPv6) && !defined(IPPROTO_IPV6)
 // Hidden in an enum.
 #define IPPROTO_IPV6 IPPROTO_IPV6
+#endif
+
+/* Provide some values not provided by windows (and without a direct equivalent) */
+#ifndef R_OK
+#define R_OK    4       /* Test for read permission.  */
+#endif
+#ifndef W_OK
+#define W_OK    2       /* Test for write permission.  */
+#endif
+#define   X_OK    R_OK  /* execute permission - unsupported in windows*/
+#ifndef F_OK
+#define F_OK    0       /* Test for existence.  */
 #endif
 
 struct my_file

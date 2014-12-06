@@ -560,7 +560,7 @@ typedef struct p_wchar_p
    removing the annotation. */
 #ifndef PIKE_UNUSED_ATTRIBUTE
 # ifdef __GNUC__
-#  define PIKE_UNUSED_ATTRIBUTE  __attribute__((unused))
+#  define PIKE_UNUSED_ATTRIBUTE  ATTRIBUTE((unused))
 # else
 #  define PIKE_UNUSED_ATTRIBUTE
 # endif

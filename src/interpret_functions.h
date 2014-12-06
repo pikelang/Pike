@@ -416,6 +416,7 @@ OPCODE2(F_ASSIGN_PRIVATE_TYPED_GLOBAL_AND_POP, "assign global <private,typed> an
   pop_stack();
 });
 
+
 OPCODE2(F_ASSIGN_PRIVATE_TYPED_GLOBAL, "assign global <private,typed>", 0, {
   union anything  *tmp;
   LOCAL_VAR(struct object *o);
@@ -426,6 +427,8 @@ OPCODE2(F_ASSIGN_PRIVATE_TYPED_GLOBAL, "assign global <private,typed>", 0, {
   assign_to_short_svalue( tmp, arg2, Pike_sp-1);
 });
 
+/* This define exists because msvc cannot cope with precompiler directives within a macro expansion. */
+#if SIZEOF_FLOAT_TYPE != SIZEOF_INT_TYPE
 
 OPCODE2(F_PRIVATE_TYPED_GLOBAL, "global <private,typed>", I_UPDATE_SP, {
     void *ptr;
@@ -435,16 +438,10 @@ OPCODE2(F_PRIVATE_TYPED_GLOBAL, "global <private,typed>", I_UPDATE_SP, {
     ptr = (void *)(o->storage + Pike_fp->context->storage_offset + arg1);
     if( arg2 < MIN_REF_TYPE )
     {
-#if SIZEOF_FLOAT_TYPE != SIZEOF_INT_TYPE
       if( UNLIKELY(arg2)==PIKE_T_INT )
 	push_int( *(INT_TYPE*)ptr );
       else
 	push_float( *(FLOAT_TYPE*)ptr );
-#else
-      SET_SVAL_TYPE_SUBTYPE(Pike_sp[0],arg2,0);
-      Pike_sp[0].u.integer = *(INT_TYPE*)ptr;
-      Pike_sp++;
-#endif
     }
     else
     {
@@ -462,6 +459,39 @@ OPCODE2(F_PRIVATE_TYPED_GLOBAL, "global <private,typed>", I_UPDATE_SP, {
 
     print_return_value();
 });
+
+#else /* SIZEOF_FLOAT_TYPE != SIZEOF_INT_TYPE */
+
+OPCODE2(F_PRIVATE_TYPED_GLOBAL, "global <private,typed>", I_UPDATE_SP, {
+    void *ptr;
+    LOCAL_VAR(struct object *o);
+
+    o = Pike_fp->current_object;
+    ptr = (void *)(o->storage + Pike_fp->context->storage_offset + arg1);
+    if( arg2 < MIN_REF_TYPE )
+    {
+      SET_SVAL_TYPE_SUBTYPE(Pike_sp[0],arg2,0);
+      Pike_sp[0].u.integer = *(INT_TYPE*)ptr;
+      Pike_sp++;
+    }
+    else
+    {
+      INT32 *refs = *(INT32**)ptr;
+      if( !refs )
+	push_undefined();
+      else
+      {
+	struct svalue tmp;
+	SET_SVAL_TYPE_SUBTYPE(tmp,arg2,0);
+	tmp.u.refs = refs;
+	push_svalue(&tmp);
+      }
+    }
+
+    print_return_value();
+});
+
+#endif /* SIZEOF_FLOAT_TYPE != SIZEOF_INT_TYPE */
 
 OPCODE2_TAIL(F_MARK_AND_EXTERNAL, "mark & external", I_UPDATE_SP|I_UPDATE_M_SP, {
   *(Pike_mark_sp++)=Pike_sp;
