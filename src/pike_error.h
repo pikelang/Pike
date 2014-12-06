@@ -123,7 +123,7 @@ typedef struct JMP_BUF
 } JMP_BUF;
 
 PMOD_EXPORT extern struct svalue throw_value;
-extern int throw_severity;
+PMOD_EXPORT extern int throw_severity;
 
 #ifdef PIKE_DEBUG
 PMOD_EXPORT extern const char msg_unsetjmp_nosync_1[];

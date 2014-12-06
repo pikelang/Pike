@@ -267,8 +267,8 @@ static void image_ttf_make(INT32 args)
 */
 
 #define THISOBJ (Pike_fp->current_object)
-#define THISf (get_storage(THISOBJ,image_ttf_face_program))
-#define THISi (get_storage(THISOBJ,image_ttf_faceinstance_program))
+#define THISf ((struct image_ttf_face_struct *)get_storage(THISOBJ,image_ttf_face_program))
+#define THISi ((struct image_ttf_faceinstance_struct *)get_storage(THISOBJ,image_ttf_faceinstance_program))
 
 static void image_ttf_face_exit(struct object *o)
 {

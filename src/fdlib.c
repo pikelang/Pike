@@ -47,7 +47,8 @@ int first_free_handle;
 #endif
 
 /* _dosmaperr is internal but still exported in the dll interface. */
-__declspec(dllimport) void __cdecl _dosmaperr(unsigned long);
+/*__declspec(dllimport)*/
+ void __cdecl _dosmaperr(unsigned long);
 
 PMOD_EXPORT void set_errno_from_win32_error (unsigned long err)
 {
