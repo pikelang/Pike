@@ -519,7 +519,7 @@ static struct multiset_data *copy_multiset_data (struct multiset_data *old)
  * old block is always freed. The refs and noval_refs are transferred
  * to the new block. */
 static struct multiset_data *resize_multiset_data (struct multiset_data *old,
-						   int newsize, int verbatim)
+						   INT64 newsize, int verbatim)
 {
   struct multiset_data *new;
 
