@@ -603,13 +603,10 @@ test_eq([[ Array.rreduce(`<<, ({4,3,2,1})) ]], 1125899906842624)
 test_equal(Array.shuffle(({})), ({}))
 test_equal(Array.shuffle(({1})), ({1}))
 test_any([[
-  random_seed(4711);
   array b = Array.shuffle(Array.enumerate(1000));
-  random_seed(4711);
   // There is a chance in 1000! (aprox. 4E2568) that this fails of
   // natural causes.
-  return equal(b, Array.shuffle(Array.enumerate(1000))) &&
-               !equal(Array.enumerate(1000),b);
+  return !equal(b, Array.shuffle(Array.enumerate(1000)));
 ]], 1);
 test_true( equal(Array.enumerate(1000),sort(Array.shuffle(Array.enumerate(1000)))) )
 

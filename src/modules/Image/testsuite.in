@@ -545,7 +545,6 @@ test_do( Image.Image(100,100)->setcolor(255,0,0,128)->
   polyfill( ({20,20, 80,20, 80,80 }) ) )
 
 test_true( img()->random() != img()->random() )
-test_true( img()->random(17) == img()->random(17) )
 
 test_do( img()->randomgrey() )
 
