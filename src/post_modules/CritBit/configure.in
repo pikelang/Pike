@@ -1,3 +1,4 @@
 AC_INIT(glue.c)
 AC_MODULE_INIT()
+AC_CHECK_LIB(gmp, mpz_cmp)
 AC_OUTPUT(Makefile)
