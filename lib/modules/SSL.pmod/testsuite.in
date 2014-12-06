@@ -597,7 +597,8 @@ test_do([[
 test_do([[
   import SSL.Constants;
   int f(int client_min, int client_max, int server_min, int server_max,
-        string exp_data, object server_ctx, array(int) suites)
+        string exp_data, object server_ctx, array(int) suites,
+        array(CertificatePair)|void client_certs)
   {
     server_ctx->min_version = server_min;
     server_ctx->max_version = server_max;
@@ -645,6 +646,13 @@ test_do([[
     client_ctx->min_version = client_min;
     client_ctx->max_version = client_max;
     server_ctx->expect_fail = client_ctx->expect_fail = !exp_data;
+
+    if (client_certs) {
+      // Add the certificates.
+      foreach(client_certs, CertificatePair cp) {
+        client_ctx->add_cert(cp);
+      }
+    }
 
     SSL.Session session = SSL.Session();
 
@@ -1181,6 +1189,54 @@ test_suite_b(0x302, 128, 1, 0x302, 128, 1,
 	     TLS_ecdhe_ecdsa_with_aes_128_cbc_sha)
 
 ]]) dnl Crypto.ECC
+
+test_tests([[
+  import SSL.Constants;
+
+  array(int) a() {
+    int successes;
+    int tests;
+    array suites = server_ctx->get_suites(128, 2);
+
+    // First without any certs.
+    foreach(({ AUTHLEVEL_none, AUTHLEVEL_ask, AUTHLEVEL_require, }),
+	    server_ctx->auth_level) {
+      string exp = client_msg;
+      if (server_ctx->auth_level == AUTHLEVEL_require) exp = UNDEFINED;
+      int count = test_ssl_connection(0x300, 0x303, 0x303, 0x303,
+				      exp, server_ctx, suites);
+      successes += count;
+      tests += count || 1;
+    }
+
+    // Then with certs, but none accepted.
+    array(CertificatePair) certs = server_ctx->get_certificates();
+    foreach(({ AUTHLEVEL_none, AUTHLEVEL_ask, AUTHLEVEL_require, }),
+	    server_ctx->auth_level) {
+      string exp = client_msg;
+      if (server_ctx->auth_level == AUTHLEVEL_require) exp = UNDEFINED;
+      int count = test_ssl_connection(0x300, 0x303, 0x303, 0x303,
+				      exp, server_ctx, suites, certs);
+      successes += count;
+      tests += count || 1;
+    }
+
+    // Then with accepted certs, one at a time.
+    foreach(certs, CertificatePair cp) {
+      server_ctx->set_authorities(({ cp->certs[0] }));
+      foreach(({ AUTHLEVEL_none, AUTHLEVEL_ask, AUTHLEVEL_require, }),
+		 server_ctx->auth_level) {
+	string exp = client_msg;
+        int count = test_ssl_connection(0x300, 0x303, 0x303, 0x303,
+				        exp, server_ctx, suites, certs);
+        successes += count;
+        tests += count || 1;
+      }
+    }
+
+    return ({ successes, tests-successes });
+  }
+]])
 
 test_do([[
   add_constant("obsoleted_suites");
