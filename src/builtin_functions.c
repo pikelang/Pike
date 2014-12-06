@@ -219,9 +219,6 @@ static node *optimize_f_aggregate(node *n)
  *!   @[hash()], @[hash_7_0]
  */
 
-/*! @namespace 7.4::
- */
-
 #define MK_HASHMEM(NAME, TYPE)		ATTRIBUTE((const))	\
   static INLINE size_t NAME(const TYPE *str, ptrdiff_t len, ptrdiff_t maxn) \
   {                                                                         \
@@ -243,8 +240,8 @@ MK_HASHMEM(simple_hashmem, unsigned char)
 MK_HASHMEM(simple_hashmem1, p_wchar1)
 MK_HASHMEM(simple_hashmem2, p_wchar2)
 
-/*! @decl int hash(string s)
- *! @decl int hash(string s, int max)
+/*! @decl int hash_7_4(string s)
+ *! @decl int hash_7_4(string s, int max)
  *!
  *!   Return an integer derived from the string @[s]. The same string
  *!   will always hash to the same value, also between processes.
@@ -287,9 +284,6 @@ static void f_hash_7_4(INT32 args)
   pop_n_elems(args);
   push_int64(i);
 }
-
-/*! @endnamespace
- */
 
 ATTRIBUTE((const)) static INLINE size_t hashstr(const unsigned char *str, ptrdiff_t maxn)
 {
@@ -381,7 +375,7 @@ static void f_hash_7_0( INT32 args )
  *!   in that @[hash_value()] returns a process specific value.
  *!
  *! @seealso
- *!   @[hash_7_0()], @[7.4::hash()], @[hash_value]
+ *!   @[hash_7_0()], @[hash_7_4()], @[hash_value]
  */
 PMOD_EXPORT void f_hash(INT32 args)
 {
