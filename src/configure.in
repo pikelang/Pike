@@ -7534,16 +7534,12 @@ if test -z "$LDSHARED" ; then
     ;;
     Windows_NT*|NT*)
       if test x$with_dynamic_modules != xno; then
-	if test x$enable_dll = xno; then
-	 LDSHARED="pntld"
-	else
 	  # It's important that we use $(CC) unexpanded here so that any
 	  # -MD/-MDd flags also gets passed to the linker.
 	  LDSHARED='$(CC) -shared'
 	  LDSHARED_BASE_REQS=pike.lib
 	  LDSHARED_MODULE_ARGS="-l`pwd`/pike"
 	  LDSHARED_MODULE_REQS="`pwd`/pike.lib"
-	fi
 	LDSHARED_MODULE_ARGS="$LDSHARED_MODULE_ARGS -pdb:\$\$modname.pdb"
       fi
     ;;
@@ -7682,8 +7678,6 @@ then
       SCO_SV*) LINKFORSHARED="-Bdynamic -dy -Wl,-Bexport";;
       # What about UNIX_SV?
       UnixWare*|OpenUNIX*) LINKFORSHARED="-Bdynamic -dy -Wl,-Bexport";;
-      Windows_NT*|NT*)
-	test x$enable_dll != xyes && LINKFORSHARED="-rdynamic";;
 
       FreeBSD*)
         AC_TRY_RUN([int main(){exit(
@@ -7787,7 +7781,6 @@ fi
 crt_type=static
 
 if test x$with_dynamic_modules = xyes \
-     -a x$enable_dll = xyes \
      -a "x$pike_cv_sys_os" = xWindows_NT ; then
   # If dlls are enabled then compile for and link with the dynamic crt
   # to make all modules share the same crt instance.
