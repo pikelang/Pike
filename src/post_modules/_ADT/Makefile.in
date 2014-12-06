@@ -10,9 +10,4 @@ PRECOMPILER_ARGS="--base="
 
 @dynamic_module_makefile@
 
-# Compatibility with stupid makes..
-adt.o: $(SRCDIR)/adt.c
-sequence.o: $(SRCDIR)/sequence.c
-circular_list.o: $(SRCDIR)/circular_list.c
-
 @dependencies@

@@ -24,8 +24,6 @@ floattree.o: $(COMMON_HEADERS) $(SRCDIR)/floattree.c $(SRCDIR)/critbit/float2sva
 
 bignumtree.o: $(COMMON_HEADERS) $(SRCDIR)/bignumtree.c $(SRCDIR)/critbit/bignum2svalue.h $(SRCDIR)/critbit/key_bignum.h
 
-glue.o: $(SRCDIR)/glue.c
-
 $(SRCDIR)/stringtree.c: $(CMOD_HEADERS)
 $(SRCDIR)/inttree.c: $(CMOD_HEADERS)
 $(SRCDIR)/floattree.c: $(CMOD_HEADERS)

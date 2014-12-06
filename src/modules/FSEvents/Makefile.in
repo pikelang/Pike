@@ -11,6 +11,4 @@ OBJS=fsevents.o
 
 @dynamic_module_makefile@
 
-fsevents.o : $(SRCDIR)/fsevents.c
-
 @dependencies@

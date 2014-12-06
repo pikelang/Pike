@@ -7,7 +7,4 @@ CONFIG_HEADERS=@CONFIG_HEADERS@
 
 @dynamic_module_makefile@
 
-# Compatibility with stupid makes..
-zxid.o: $(SRCDIR)/zxid.c
-
 @dependencies@

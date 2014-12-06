@@ -6,6 +6,5 @@ MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
 CONFIG_HEADERS=@CONFIG_HEADERS@
 
 @dynamic_module_makefile@
-kerberos.o: $(SRCDIR)/kerberos.c
 
 @dependencies@

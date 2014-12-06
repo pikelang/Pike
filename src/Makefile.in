@@ -1249,15 +1249,6 @@ $(SRCDIR)/language.c: $(SRCDIR)/language.c_src
 $(SRCDIR)/interpret_functions_fixed.h: $(SRCDIR)/interpret_functions.h precompile.sh-stamp
 	./precompile.sh --cache make_interpret_functions.pike >"$@" "$(SRCDIR)/interpret_functions.h" || { rm "$@"; exit 1; }
 
-# UnixWare make needs help to find the source file...
-builtin.o: $(SRCDIR)/builtin.c $(SRCDIR)/whitespace.h
-
-iterators.o: $(SRCDIR)/iterators.c
-
-backend.o: $(SRCDIR)/backend.c
-
-libpike.o: $(SRCDIR)/libpike.c
-
 # Internal testing target
 run_yacc: $(SRCDIR)/language.c
 

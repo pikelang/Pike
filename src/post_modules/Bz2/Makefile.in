@@ -7,6 +7,4 @@ CONFIG_HEADERS=@CONFIG_HEADERS@
 
 @dynamic_module_makefile@
 
-libbzip2mod.o: $(SRCDIR)/libbzip2mod.c
-
 @dependencies@

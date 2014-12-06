@@ -36,6 +36,4 @@ source: $(RAGEL_TARGETS)
 ragel_clean:
 	cd "$(SRCDIR)" && $(RM) $(RAGEL_TARGETS)
 
-json.o : $(SRCDIR)/json.c
-
 @dependencies@

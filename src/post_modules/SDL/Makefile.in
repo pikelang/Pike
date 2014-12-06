@@ -10,7 +10,4 @@ PRECOMPILER_ARGS="--base="
 
 @dynamic_module_makefile@
 
-# Compatibility with stupid makes..
-SDL.o:$(SRCDIR)/SDL.c
-
 @dependencies@
