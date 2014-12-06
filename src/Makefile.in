@@ -660,7 +660,7 @@ clean_here: tidy doc_clean
 	-rm -rf test-install test-pike tpike tpike.* *.pdb
 	-rm -f TAGS tags yacc.acts yacc.debug yacc.tmp *.debug.log a.out pike.tmp
 	-rm -f master.pike compiler-warnings dumpmodule.log
-	-rm -f interpreter_debug.h lexer?.h
+	-rm -f interpreter_debug.h lexer.h
 	-rm -f import-stamp master-stamp headerfiles-stamp
 	-rm -f static-modules-stamp dynamic-modules-stamp post-modules-stamp
 	-rm -f post-module-pike-stamp pike-complete-stamp
@@ -1074,22 +1074,6 @@ $(SRCDIR)/treeopt.h: $(SRCDIR)/treeopt.in $(TMP_BINDIR)/mktreeopt.pike
 	./precompile.sh $(TMP_BINDIR)/mktreeopt.pike $(SRCDIR)/treeopt.in || ( rm $(SRCDIR)/treeopt.h ; exit 1 )
 
 las.o: $(SRCDIR)/treeopt.h
-
-# This dependency is here to make sure that lexer[012].h are generated.
-# The reason for the split is that some compilers (read cl) generate
-# better code then. Strange, but true.
-lex.o: lexer0.h lexer1.h lexer2.h
-
-lex.protos: lexer0.h lexer1.h lexer2.h
-
-lexer0.h: lexer.h
-	cp "$(SRCDIR)/lexer.h" "$@"
-
-lexer1.h: lexer.h
-	cp "$(SRCDIR)/lexer.h" "$@"
-
-lexer2.h: lexer.h
-	cp "$(SRCDIR)/lexer.h" "$@"
 
 
 # unbug needs interpreter_nd.h to be able to
