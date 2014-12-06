@@ -28,6 +28,7 @@
 #include "gc.h"
 #include "threads.h"
 #include "operators.h"
+#include "pike_types.h"
 
 #ifdef HAVE_COM
 
