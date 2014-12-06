@@ -660,7 +660,7 @@ clean_here: tidy doc_clean
 	-rm -rf test-install test-pike tpike tpike.* *.pdb
 	-rm -f TAGS tags yacc.acts yacc.debug yacc.tmp *.debug.log a.out pike.tmp
 	-rm -f master.pike compiler-warnings dumpmodule.log
-	-rm -f interpreter_debug.h lexer.h
+	-rm -f interpreter_debug.h
 	-rm -f import-stamp master-stamp headerfiles-stamp
 	-rm -f static-modules-stamp dynamic-modules-stamp post-modules-stamp
 	-rm -f post-module-pike-stamp pike-complete-stamp
