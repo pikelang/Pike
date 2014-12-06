@@ -650,8 +650,14 @@ mapping(string:array(string)) local_interfaces()
         foreach( (ifconfig(iface) + ifconfig(iface + " inet6"))/"\n",
                  string q )
         {
-            string i,m;
+            string i,m,f;
             q = String.trim_whites(q);
+            if( sscanf( q, "%*sflags=%*x<%s>", f )==3 &&
+                search(f/",", "UP")<0) {
+                // ignore interfaces which are not up
+                ips = ({});
+                break;
+            }
             if( (sscanf( q, "inet addr:%[^ ]%*sMask:%s", i, m )==3) ||
                 (sscanf( q, "inet %[^ ] mask %[^ ]", i, m )==2) ||
                 (sscanf( q, "inet %[^ ]%*snetmask %[^ ]", i, m )==3))
