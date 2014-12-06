@@ -468,6 +468,11 @@ static void neg_reg( enum amd64_reg reg )
 
 static void mov_imm_reg( long imm, enum amd64_reg reg )
 {
+  if( !imm ) 
+  {
+    clear_reg(reg);
+    return;
+  }
   if( (imm > 0x7fffffffLL) || (imm < -0x80000000LL) )
   {
     rex(1,0,0,reg);
