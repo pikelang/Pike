@@ -32,6 +32,8 @@
 #include "code/ppc64.c"
 #elif PIKE_BYTECODE_METHOD == PIKE_BYTECODE_GOTO
 #include "code/computedgoto.c"
+#elif PIKE_BYTECODE_METHOD == PIKE_BYTECODE_ARM32
+#include "code/arm32.c"
 #else
 #include "code/bytecode.c"
 #endif
