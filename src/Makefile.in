@@ -1447,6 +1447,7 @@ $(SRCDIR)/pikecode.h: \
   $(SRCDIR)/code/sparc.h \
   $(SRCDIR)/code/ppc32.h \
   $(SRCDIR)/code/ppc64.h \
+  $(SRCDIR)/code/arm32.h \
   $(SRCDIR)/code/computedgoto.h \
   $(SRCDIR)/code/bytecode.h
 	touch $(SRCDIR)/pikecode.h
@@ -1457,6 +1458,7 @@ $(SRCDIR)/pikecode.c: \
   $(SRCDIR)/code/sparc.c \
   $(SRCDIR)/code/ppc32.c \
   $(SRCDIR)/code/ppc64.c \
+  $(SRCDIR)/code/arm32.c \
   $(SRCDIR)/code/computedgoto.c \
   $(SRCDIR)/code/bytecode.c
 	touch $(SRCDIR)/pikecode.c
