@@ -3731,25 +3731,20 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
   case F_MARK_CALL_BUILTIN:
     if(a == F_MARK_CALL_BUILTIN )
     {
-      /* Note: It is not actually possible to do ins_debug_instr_prologue
-         here.
-         ins_debug_instr_prologue(a-F_OFFSET, b, 0);
-      */
+      ins_debug_instr_prologue(a-F_OFFSET, b, 0);
       mov_imm_reg( 0, ARG1_REG );
     }
 
   case F_CALL_BUILTIN1:
     if(a == F_CALL_BUILTIN1 )
     {
-      /* Note: It is not actually possible to do ins_debug_instr_prologue
-         here.
-         ins_debug_instr_prologue(a-F_OFFSET, b, 0);
-      */
+      ins_debug_instr_prologue(a-F_OFFSET, b, 0);
       mov_imm_reg( 1, ARG1_REG );
     }
 
-    /* Get function pointer */
-    ins_debug_instr_prologue(a-F_OFFSET, b, 0);
+    /* Note: It is not actually possible to do ins_debug_instr_prologue
+     *       here.
+     */
     amd64_call_c_opcode(Pike_compiler->new_program->constants[b].sval.u.efun->function,
                         I_UPDATE_SP);
     return;
