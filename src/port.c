@@ -75,7 +75,7 @@ time_t time PROT((time_t *));
 #ifdef HAVE_GETSYSTEMTIMEASFILETIME
 #include <winbase.h>
 
-void GETTIMEOFDAY(struct timeval *t)
+PMOD_EXPORT void GETTIMEOFDAY(struct timeval *t)
 {
   union {
     unsigned __int64 ft_scalar;
@@ -97,7 +97,7 @@ void GETTIMEOFDAY(struct timeval *t)
 }
 
 #else
-void GETTIMEOFDAY(struct timeval *t)
+PMOD_EXPORT void GETTIMEOFDAY(struct timeval *t)
 {
   t->tv_sec=(long)time(0);
   t->tv_usec=0;
