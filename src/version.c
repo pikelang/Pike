@@ -36,10 +36,12 @@ PMOD_EXPORT void f_version(INT32 args)
 void push_compact_version(void)
 {
   push_constant_string_code (str, {
+      p_wchar2 *wstr;
       str = begin_wide_shared_string (3, 2);
-      STR2(str)[0] = PIKE_MAJOR_VERSION;
-      STR2(str)[1] = PIKE_MINOR_VERSION;
-      STR2(str)[2] = PIKE_BUILD_VERSION;
+      wstr = STR2(str);
+      wstr[0] = PIKE_MAJOR_VERSION;
+      wstr[1] = PIKE_MINOR_VERSION;
+      wstr[2] = PIKE_BUILD_VERSION;
       str = end_shared_string (str);
     });
 }
