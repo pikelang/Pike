@@ -9,7 +9,7 @@
 #include "callback.h"
 #include "pike_error.h"
 #include "block_allocator.h"
-#include "interpret.h"
+#include "pike_embed.h"
 
 struct callback_list fork_child_callback;
 
