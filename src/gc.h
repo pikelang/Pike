@@ -112,7 +112,6 @@ extern int gc_keep_markers;
 #define ADD_GC_CALLBACK() do { if(!gc_evaluator_callback)  gc_evaluator_callback=add_to_callback(&evaluator_callbacks,(callback_func)do_gc,0,0); }while(0)
 
 #define LOW_GC_ALLOC(OBJ) do {						\
- extern int d_flag;							\
  num_objects++;								\
  num_allocs++;								\
  DO_IF_DEBUG(								\
@@ -142,7 +141,6 @@ extern int gc_keep_markers;
  * gc_mark function on. The new block must take over all references
  * that pointed to the old block. */
 #define GC_REALLOC_BLOCK(OLDPTR, NEWPTR) do {				\
-  extern int d_flag;							\
   if (d_flag) CHECK_INTERPRETER_LOCK();					\
   if (Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_FREE)	\
     gc_move_marker ((OLDPTR), (NEWPTR));				\
@@ -151,7 +149,6 @@ extern int gc_keep_markers;
 /* Use this when freeing blocks that you've used any gc_check or
  * gc_mark function on and that can't contain references. */
 #define GC_FREE_SIMPLE_BLOCK(PTR) do {					\
-  extern int d_flag;							\
   if(d_flag) CHECK_INTERPRETER_LOCK();					\
   if (Pike_in_gc == GC_PASS_CHECK)					\
     Pike_fatal("No free is allowed in this gc pass.\n");		\
@@ -162,7 +159,6 @@ extern int gc_keep_markers;
 /* Use this when freeing blocks that you've used any gc_check or
  * gc_mark function on and that can contain references. */
 #define GC_FREE_BLOCK(PTR) do {						\
-  extern int d_flag;							\
   if(d_flag) CHECK_INTERPRETER_LOCK();					\
   if (Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_FREE)	\
     Pike_fatal("Freeing objects within gc is not allowed.\n");		\

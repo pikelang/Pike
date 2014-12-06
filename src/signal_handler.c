@@ -804,7 +804,6 @@ void my_signal(int sig, sigfunctype fun)
 PMOD_EXPORT void check_signals(struct callback *UNUSED(foo), void *UNUSED(bar), void *UNUSED(gazonk))
 {
 #ifdef PIKE_DEBUG
-  extern int d_flag;
   if(d_flag>5) do_debug();
 #endif
 

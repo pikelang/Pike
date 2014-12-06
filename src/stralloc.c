@@ -660,7 +660,6 @@ PMOD_EXPORT struct pike_string *debug_begin_shared_string(size_t len)
 {
   struct pike_string *t;
 #ifdef PIKE_DEBUG
-  extern int d_flag;
   if(d_flag>10)
     verify_shared_strings_tables();
 #endif
@@ -770,7 +769,6 @@ PMOD_EXPORT struct pike_string *debug_begin_wide_shared_string(size_t len, int s
 {
   struct pike_string *t = NULL;
 #ifdef PIKE_DEBUG
-  extern int d_flag;
   if(d_flag>10)
     verify_shared_strings_tables();
 #endif
@@ -1098,7 +1096,6 @@ PMOD_EXPORT void do_free_unlinked_pike_string(struct pike_string *s)
 PMOD_EXPORT void really_free_string(struct pike_string *s)
 {
 #ifdef PIKE_DEBUG
-  extern int d_flag;
   if (s->refs) {
 #ifdef DEBUG_MALLOC
     describe_something(s, T_STRING, 0,2,0, NULL);

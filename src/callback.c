@@ -9,6 +9,7 @@
 #include "callback.h"
 #include "pike_error.h"
 #include "block_allocator.h"
+#include "interpret.h"
 
 struct callback_list fork_child_callback;
 
@@ -39,8 +40,6 @@ void count_memory_in_callbacks(size_t * num, size_t * size) {
 
 
 #ifdef PIKE_DEBUG
-extern int d_flag;
-
 static void check_callback_chain(struct callback_list *lst)
 {
   int len=0;

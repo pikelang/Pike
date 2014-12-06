@@ -862,7 +862,10 @@ static INLINE void strict_apply_svalue(struct svalue *sval, INT32 args)
 		  (FUN) + Pike_fp->context->identifier_level,	\
 		  (ARGS), (FUNNAME))
 
-PMOD_EXPORT extern int d_flag; /* really in main.c */
+#ifdef PIKE_DEBUG
+/* Implemented in pike_embed.c */
+PMOD_EXPORT extern int d_flag;
+#endif
 
 PMOD_EXPORT extern int Pike_stack_size;
 struct callback;
