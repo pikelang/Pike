@@ -11,4 +11,6 @@ CONFIG_HEADERS=@CONFIG_HEADERS@
 
 @dynamic_module_makefile@
 
+bson.o: $(SRCDIR)/bson.c
+
 @dependencies@

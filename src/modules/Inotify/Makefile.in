@@ -10,4 +10,6 @@ OBJS=inotify.o
 
 @dynamic_module_makefile@
 
+inotify.o : $(SRCDIR)/inotify.c
+
 @dependencies@

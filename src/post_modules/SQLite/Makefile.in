@@ -10,4 +10,6 @@ PRECOMPILER_ARGS="--base="
 
 @dynamic_module_makefile@
 
+sqlite.o: $(SRCDIR)/sqlite.c
+
 @dependencies@

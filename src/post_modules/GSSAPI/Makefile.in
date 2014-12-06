@@ -11,4 +11,6 @@ PRECOMPILER_ARGS="--base="
 
 @dynamic_module_makefile@
 
+gssapi.o: $(SRCDIR)/gssapi.c
+
 @dependencies@

@@ -11,4 +11,6 @@ OBJS=wnotify.o
 
 @dynamic_module_makefile@
 
+wnotify.o : $(SRCDIR)/wnotify.c
+
 @dependencies@

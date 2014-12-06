@@ -10,4 +10,6 @@ PRECOMPILER_ARGS="--base="
 
 @dynamic_module_makefile@
 
+xml.o : $(SRCDIR)/xml.c
+
 @dependencies@

@@ -11,6 +11,9 @@ SRC_TARGETS=$(SRCDIR)/wordbits.h \
 UNICODEDATA=../../UnicodeData.txt
 UNICODEDATARM=../../UnicodeData-ReadMe.txt
 
+# UnixWare make needs help to find the source file...
+unicode_module.o: $(SRCDIR)/unicode_module.c
+
 $(SRCDIR)/decompositions.h: $(SRCDIR)/make_decompose.pike $(SRCDIR)/$(UNICODEDATA)
 	 $(RUNPIKE) $(SRCDIR)/make_decompose.pike 		\
                     $(SRCDIR)/$(UNICODEDATA) "$@" || { rm "$@"; exit 1; }
