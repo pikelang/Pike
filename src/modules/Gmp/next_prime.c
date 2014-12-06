@@ -29,7 +29,7 @@
 #include "my_gmp.h"
 
 /* Define NUMBER_OF_PRIMES and primes[] */
-#include "prime_table.out"
+#include "prime_table.h"
 
 #define SQR(x) ((x)*(x))
 
