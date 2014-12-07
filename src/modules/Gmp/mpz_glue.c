@@ -1611,7 +1611,7 @@ static void mpzmod_probably_prime_p(INT32 args)
 }
 
 /* Define NUMBER_OF_PRIMES and primes[] */
-#include "prime_table.out"
+#include "prime_table.h"
 
 /* Returns a small factor of n, or 0 if none is found.*/
 static unsigned long mpz_small_factor(mpz_t n, int limit)
