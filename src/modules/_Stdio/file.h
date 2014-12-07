@@ -4,7 +4,6 @@
 || for more information.
 */
 
-#include <io.h>
 #ifndef FILE_H
 #define FILE_H
 
@@ -12,10 +11,15 @@
 #include <netinet/in.h>
 #endif
 
+#ifdef HAVE_IO_H
+#include <io.h>
+#endif /* HAVE_IO_H */
+
 #ifdef HAVE_ARPA_INET_H
 #ifndef ARPA_INET_H
 #include <arpa/inet.h>
 #define ARPA_INET_H
+#endif /* HAVE_ARPA_INET_H */
 
 #ifdef HAVE_DIRENT_H
 # include <dirent.h>

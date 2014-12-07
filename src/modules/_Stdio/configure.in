@@ -11,7 +11,7 @@ AC_HAVE_HEADERS(sys/types.h sys/socket.h arpa/inet.h sys/socketvar.h \
   sys/stream.h sys/protosw.h netdb.h sys/sysproto.h winsock2.h ws2tcpip.h \
   direct.h sys/wait.h process.h sys/file.h net/netdb.h limits.h unistd.h \
   termios.h poll.h sys/poll.h sys/select.h sys/un.h netinet/tcp.h \
-  sys/sendfile.h sys/ioctl.h linux/if.h sys/xattr.h libzfs.h \
+  sys/sendfile.h sys/ioctl.h linux/if.h sys/xattr.h libzfs.h io.h \
   AvailabilityMacros.h,,,[
 /* Needed for <sys/socket.h> on FreeBSD 4.9. */
 #ifdef HAVE_SYS_TYPES_H
@@ -209,22 +209,6 @@ if test "$pike_cv_struct_stat_atim" = "yes"; then
 else
   AC_MSG_RESULT(no)
 fi
-
-AC_MSG_CHECKING(if ssize_t is defined)
-AC_CACHE_VAL(pike_cv_ssize_t_defined, [
-	AC_TRY_COMPILE([
-], [
-	ssize_t sz;
-],  [pike_cv_ssize_t_defined=yes],[pike_cv_ssize_t_defined=no])
-])
-
-if test "$pike_cv_ssize_t_defined" = "yes"; then
-  AC_MSG_RESULT(yes)
-  AC_DEFINE(HAVE_SSIZE_T)
-else
-  AC_MSG_RESULT(no)
-fi
-
 
 AC_MSG_CHECKING([if struct sockaddr_un has a sun_len member (BSD)])
 AC_CACHE_VAL(pike_cv_struct_sockaddr_un_sun_len, [
