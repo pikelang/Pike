@@ -71,7 +71,9 @@
 #ifndef W_OK
 #define W_OK    2       /* Test for write permission.  */
 #endif
-#define   X_OK    R_OK  /* execute permission - unsupported in windows*/
+#ifndef X_OK
+#define X_OK    R_OK  /* execute permission - unsupported in windows*/
+#endif
 #ifndef F_OK
 #define F_OK    0       /* Test for existence.  */
 #endif
