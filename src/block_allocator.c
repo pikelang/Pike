@@ -435,7 +435,7 @@ static size_t bv_ctz(struct bitvector * bv, size_t n) {
 }
 
 #ifdef PIKE_DEBUG
-static void __attribute((unused)) bv_print(struct bitvector * bv) {
+static void ATTRIBUTE((unused)) bv_print(struct bitvector * bv) {
     size_t i;
     for (i = 0; i < bv->length; i++) {
 	fprintf(stderr, "%d", bv_get(bv, i));
