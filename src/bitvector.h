@@ -30,7 +30,7 @@ static INLINE unsigned INT32 ATTRIBUTE((unused)) clz32(unsigned INT32 i) {
 #elif defined(HAS__BITSCANREVERSE)
     unsigned long index;
     if (_BitScanReverse(&index, (unsigned long)i))
-	return (unsigned INT32)index;
+	return (unsigned INT32)(31 - index);
     return 32;
 #else
     unsigned INT32 t;
@@ -101,7 +101,7 @@ static INLINE unsigned INT32 ATTRIBUTE((unused)) clz64(unsigned INT64 i) {
 # elif defined(HAS__BITSCANREVERSE64)
     unsigned long index;
     if (_BitScanReverse64(&index, i))
-	return index;
+	return (63 - index);
     return 64;
 # else
     unsigned INT64 t;
