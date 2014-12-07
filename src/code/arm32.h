@@ -26,8 +26,8 @@ void arm_flush_instruction_cache(void *addr, size_t len);
 void arm32_start_function(int no_pc);
 void arm32_end_function(int no_pc);
 
-//#define START_NEW_FUNCTION arm32_start_function
-//#define END_FUNCTION       arm32_end_function
+#define START_NEW_FUNCTION arm32_start_function
+#define END_FUNCTION       arm32_end_function
 
 void arm_ins_entry(void);
 #define INS_ENTRY()	arm_ins_entry()
