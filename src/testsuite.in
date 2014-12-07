@@ -5363,6 +5363,14 @@ void test()
     return Process.system (RUNPIKE +" testsuite_test.pike");
   ]], 0)
 
+  test_eval_error([[
+    Thread.thread_create(lambda(){
+	// NB: It's currently not possible to inhibit the
+	//     backtrace (without messing with the master).
+	error("Ignore the following line.\n");
+    })->wait();
+  ]])
+
 cond_end // thread_create
 
 cond([[0]],

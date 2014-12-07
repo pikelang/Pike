@@ -23,6 +23,7 @@ struct pike_frame;
 #define THREAD_NOT_STARTED -1
 #define THREAD_RUNNING 0
 #define THREAD_EXITED 1
+#define THREAD_ABORTED 2
 
 /* Thread flags */
 #define THREAD_FLAG_TERM	1	/* Pending termination. */
