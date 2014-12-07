@@ -96,7 +96,13 @@ static void set_master(const char *file)
 {
   if( master_file_location != _master_location+CONSTANT_STRLEN(MASTER_COOKIE))
     free((void*)master_file_location);
+#if DEBUG_MALLOC
+#ifndef __NT__
 #undef strdup /* We can't use dmalloc strdup before pike_memory is initialized. */
+#else
+#define strdup _strdup
+#endif /* __NT__ */
+#endif /* DEBUG_MALLOC */
   master_file_location = strdup( file );
 }
 
@@ -104,7 +110,7 @@ static void set_master(const char *file)
 static void get_master_key(HKEY cat)
 {
   HKEY k;
-  char buffer[4096];
+  char * buffer = malloc(4096);
   DWORD len=sizeof(buffer)-1,type=REG_SZ;
 
   if(RegOpenKeyEx(cat,
@@ -161,7 +167,7 @@ static void set_default_master(const char *bin_name)
       fprintf (stderr, "Failed to get path to exe file: %d\n",
 	       GetLastError());
     else {
-      char tmp[MAXPATHLEN * 2];
+      char * tmp = malloc(MAXPATHLEN * 2);
       char *p = strrchr (exepath, '\\');
       if (p) *p = 0;
       snprintf (tmp, sizeof (tmp), "%s/%s", exepath, mp);
@@ -293,7 +299,6 @@ int main(int argc, char **argv)
   JMP_BUF back;
   int e, num;
   char *p;
-
 #ifdef PIKE_EXTRA_DEBUG
   if (sizeof(void *) == 8) {
     /* 64-bit Solaris 10 in Xenofarm fails with SIGPIPE.
