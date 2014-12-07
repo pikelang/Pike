@@ -1,11 +1,11 @@
 #!/usr/local/bin/pike
-#pike 7.6
+#pike 7.8
 
 // Parse BMML (Black Magic Markup Language) to AutoDoc XML.
 // Written by Fredrik Hubinette, dark sourceror and inventor of BMML.
 
-#include <stdio.h>
-#include <string.h>
+import Stdio;
+import String;
 
 multiset efuns = mkmultiset(indices(all_constants())) |
   (<"sscanf","gauge","catch">);
