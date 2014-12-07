@@ -112,7 +112,7 @@ static void set_master(const char *file)
 static void get_master_key(HKEY cat)
 {
   HKEY k;
-  char * buffer = malloc(4096);
+  char buffer[4096];
   DWORD len=sizeof(buffer)-1,type=REG_SZ;
 
   if(RegOpenKeyEx(cat,
@@ -169,7 +169,7 @@ static void set_default_master(const char *bin_name)
       fprintf (stderr, "Failed to get path to exe file: %d\n",
 	       GetLastError());
     else {
-      char * tmp = malloc(MAXPATHLEN * 2);
+      char tmp[MAXPATHLEN * 2];
       char *p = strrchr (exepath, '\\');
       if (p) *p = 0;
       SNPRINTF (tmp, sizeof (tmp), "%s/%s", exepath, mp);
