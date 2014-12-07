@@ -1,4 +1,5 @@
 AC_INIT(glue.c)
 AC_MODULE_INIT()
-AC_CHECK_LIB(gmp, mpz_cmp)
+CRITBIT_LIBS="-lgmp"
+AC_SUBST(CRITBIT_LIBS, ${CRITBIT_LIBS})
 AC_OUTPUT(Makefile)
