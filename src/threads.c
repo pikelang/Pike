@@ -1784,20 +1784,26 @@ TH_RETURN_TYPE new_thread_func(void *data)
 
   if(SETJMP(back))
   {
-    if(throw_severity <= THROW_ERROR)
+    if(throw_severity <= THROW_ERROR) {
+      if (thread_state->thread_obj) {
+	/* Copy the thrown exit value to the thread_state here,
+	 * if the thread hasn't been destructed. */
+	assign_svalue(&thread_state->result, &throw_value);
+      }
+
       call_handle_error();
-    else if(throw_severity == THROW_EXIT)
+    }
+
+    if(throw_severity == THROW_EXIT)
     {
       /* This is too early to get a clean exit if DO_PIKE_CLEANUP is
        * active. Otoh it cannot be done later since it requires the
        * evaluator stacks in the gc calls. It's difficult to solve
        * without handing over the cleanup duty to the main thread. */
       pike_do_exit(throw_value.u.integer);
-    } else if (thread_state->thread_obj) {
-      /* Copy the thrown exit value to the thread_state here,
-       * if the thread hasn't been destructed. */
-      assign_svalue(&thread_state->result, &throw_value);
     }
+
+    thread_state->status = THREAD_ABORTED;
   } else {
     INT32 args=arg.args->size;
     back.severity=THROW_EXIT;
@@ -1810,6 +1816,8 @@ TH_RETURN_TYPE new_thread_func(void *data)
     if (thread_state->thread_obj)
       assign_svalue(&thread_state->result, Pike_sp-1);
     pop_stack();
+
+    thread_state->status = THREAD_EXITED;
   }
 
   UNSETJMP(back);
@@ -1821,7 +1829,6 @@ TH_RETURN_TYPE new_thread_func(void *data)
     thread_state->thread_local = NULL;
   }
 
-  thread_state->status = THREAD_EXITED;
   co_broadcast(&thread_state->status_change);
 
   THREADS_FPRINTF(0, (stderr,"new_thread_func(): Thread %p done\n",
@@ -2677,6 +2684,7 @@ void f_thread_backtrace(INT32 args)
  *!     @value Thread.THREAD_NOT_STARTED
  *!     @value Thread.THREAD_RUNNING
  *!     @value Thread.THREAD_EXITED
+ *!     @value Thread.THREAD_ABORTED
  *!   @endint
  */
 void f_thread_id_status(INT32 args)
@@ -2719,10 +2727,15 @@ void f_thread_id_id_number(INT32 args)
  *!
  *! Waits for the thread to complete, and then returns
  *! the value returned from the thread function.
+ *!
+ *! @throws
+ *!   Rethrows the error thrown by the thread if it exited by
+ *!   throwing an error.
  */
 static void f_thread_id_result(INT32 UNUSED(args))
 {
   struct thread_state *th=THIS_THREAD;
+  int th_status;
 
   if (threads_disabled) {
     Pike_error("Cannot wait for threads when threads are disabled!\n");
@@ -2732,7 +2745,7 @@ static void f_thread_id_result(INT32 UNUSED(args))
 
   THREADS_FPRINTF(0, (stderr, "Thread->wait(): Waiting for thread_state %p "
 		      "(state:%d).\n", th, th->status));
-  while(th->status != THREAD_EXITED) {
+  while(th->status < THREAD_EXITED) {
     SWAP_OUT_CURRENT_THREAD();
     co_wait_interpreter(&th->status_change);
     SWAP_IN_CURRENT_THREAD();
@@ -2741,6 +2754,8 @@ static void f_thread_id_result(INT32 UNUSED(args))
 		    (stderr, "Thread->wait(): Waiting for thread_state %p "
 		     "(state:%d).\n", th, th->status));
   }
+
+  th_status = th->status;
 
   assign_svalue_no_free(Pike_sp, &th->result);
   Pike_sp++;
@@ -2751,6 +2766,8 @@ static void f_thread_id_result(INT32 UNUSED(args))
   if (!th->thread_obj)
     /* Do this only if exit_thread_obj already has run. */
     cleanup_thread_state (th);
+
+  if (th_status == THREAD_ABORTED) f_throw(1);
 }
 
 static int num_pending_interrupts = 0;
@@ -3361,6 +3378,7 @@ void th_init(void)
   add_integer_constant("THREAD_NOT_STARTED", THREAD_NOT_STARTED, 0);
   add_integer_constant("THREAD_RUNNING", THREAD_RUNNING, 0);
   add_integer_constant("THREAD_EXITED", THREAD_EXITED, 0);
+  add_integer_constant("THREAD_ABORTED", THREAD_ABORTED, 0);
 
   original_interpreter = Pike_interpreter_pointer;
   backend_thread_obj = fast_clone_object(thread_id_prog);
