@@ -11,9 +11,9 @@ inherit Standards.ASN1.Types : pre;
 protected class BaseMixin
 {
   extern string der;
-  void end_decode_constructed(int length) { }
+  optional void end_decode_constructed(int length) { }
 
-  string(0..255) record_der(string(0..255) s)
+  optional string(0..255) record_der(string(0..255) s)
   {
     return (der = s);
   }
@@ -27,8 +27,8 @@ class Object
 
 protected class CompoundMixin
 {
-  extern string _sprintf(int);
-  string debug_string() {
+  extern optional string _sprintf(int);
+  optional string debug_string() {
     WERROR("asn1_compound[%s]->debug_string(), elements = %O\n",
 	   type_name, elements);
     return _sprintf('O');
@@ -44,8 +44,8 @@ class Compound
 
 protected class StringMixin
 {
-  extern string _sprintf(int);
-  string debug_string() {
+  extern optional string _sprintf(int);
+  optional string debug_string() {
     WERROR("asn1_string[%s]->debug_string(), value = %O\n", type_name, value);
     return _sprintf('O');
   }
@@ -63,7 +63,7 @@ class Boolean
   inherit pre::String;
   inherit BaseMixin;
 
-  string debug_string() {
+  optional string debug_string() {
     return value ? "TRUE" : "FALSE";
   }
 }
@@ -71,7 +71,7 @@ class Boolean
 protected class IntegerMixin
 {
   extern Gmp.mpz value;
-  string debug_string() {
+  optional string debug_string() {
     return sprintf("INTEGER (%d) %s", value->size(), value->digits());
   }
 }
@@ -95,7 +95,7 @@ class Real
   inherit pre::Real;
   inherit BaseMixin;
 
-  string debug_string()
+  optional string debug_string()
   {
     return sprintf("REAL %O", value);
   }
@@ -106,7 +106,7 @@ class BitString
   inherit pre::BitString;
   inherit BaseMixin;
 
-  string debug_string() {
+  optional string debug_string() {
     return sprintf("BIT STRING (%d) %s",
 		   sizeof(value||"") * 8 - unused,
 		   ([object(Gmp.mpz)](Gmp.mpz(value||"", 256) >> unused))
@@ -126,7 +126,7 @@ class Null
   inherit pre::Null;
   inherit BaseMixin;
 
-  string debug_string() { return "NULL"; }
+  optional string debug_string() { return "NULL"; }
 }
 
 class Identifier
@@ -134,7 +134,7 @@ class Identifier
   inherit pre::Identifier;
   inherit BaseMixin;
 
-  string debug_string() {
+  optional string debug_string() {
     if(!id) return "IDENTIFIER 0";
     return "IDENTIFIER " + (array(string)) id * ".";
   }
@@ -243,7 +243,7 @@ class MetaExplicit
     inherit BaseMixin;
     inherit CompoundMixin;
 
-    string debug_string() {
+    optional string debug_string() {
       return type_name + "[" + (int) real_tag + "]";
     }
   }
