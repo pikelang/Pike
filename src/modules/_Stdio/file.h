@@ -55,7 +55,6 @@
 #endif
 
 #endif
-#endif
 
 #include "pike_netlib.h"
 #include "backend.h"
