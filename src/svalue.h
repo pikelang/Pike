@@ -204,16 +204,18 @@ struct svalue
 
 #define T_UNFINISHED 7
 
+/*
+ * NOTE: The following types may show up on the stack, but are NOT
+ *       reference counted there. There they are mainly used for
+ *       lvalues. They MUST NOT have a value that has bit 3 (8) set.
+ */
+
 #define T_VOID       16 /**< Can't return any value. Also used on stack to fill out the second
  * svalue on an lvalue when it isn't used. */
-
 
 #define T_MANY       17
 
 #define PIKE_T_INT_UNTYPED  18 /* Optimization of int type size */
-
-#define PIKE_T_GET_SET 32	/* Getter setter.
-				 * Only valid in struct identifier */
 
 /* Type to put in freed svalues. Only the type field in such svalues
  * is defined. Freeing a PIKE_T_FREE svalue is allowed and does
@@ -224,10 +226,31 @@ struct svalue
  * NUMBER_NUMBER.
  *
  * PIKE_T_FREE svalues are recorded as BIT_INT in type hint fields.
- *
- * Please avoid letting pike_t_free & 8 be anything but 0.
  */
-#define PIKE_T_FREE 229
+#define PIKE_T_FREE 19
+
+/** svalue.u.lval points to an svalue. Primarily used in lvalues on
+ * stack, but can also occur in arrays containing lvalue pairs.
+ */
+#define T_SVALUE_PTR 20
+
+/** svalue.u.identifer is an identifier index in an object. Primarily
+ * used in lvalues on stack, but can also occur in arrays containing
+ * lvalue pairs.
+ */
+#define T_OBJ_INDEX 21
+#define T_ARRAY_LVALUE 22
+
+/* No types above this value should appear on the stack. */
+#define PIKE_T_STACK_MAX	T_ARRAY_LVALUE
+
+/*
+ * The following types are only used in compile-time types and
+ * as markers in struct identifier.
+ */
+
+#define PIKE_T_GET_SET 32	/* Getter setter.
+				 * Only valid in struct identifier */
 
 #define PIKE_T_ATTRIBUTE 238	/* Attribute node. */
 #define PIKE_T_NSTRING 239	/* Narrow string. Only for serialization. */
@@ -239,16 +262,6 @@ struct svalue
 #define T_DELETED 246
 #define PIKE_T_UNKNOWN 247
 
-/** svalue.u.identifer is an identifier index in an object. Primarily
- * used in lvalues on stack, but can also occur in arrays containing
- * lvalue pairs. */
-#define T_OBJ_INDEX 248
-
-/** svalue.u.lval points to an svalue. Primarily used in lvalues on
- * stack, but can also occur in arrays containing lvalue pairs. */
-#define T_SVALUE_PTR 249
-
-#define T_ARRAY_LVALUE 250
 #define PIKE_T_MIXED 251
 #define T_NOT 253
 #define T_AND 254
@@ -487,8 +500,7 @@ PMOD_EXPORT extern void describe(void *); /* defined in gc.c */
 PMOD_EXPORT extern const char msg_type_error[];
 PMOD_EXPORT extern const char msg_assign_svalue_error[];
 
-#define IS_INVALID_TYPE(T)						\
-  ((T > MAX_TYPE && T < T_OBJ_INDEX && T != T_VOID) || T > T_ARRAY_LVALUE)
+#define IS_INVALID_TYPE(T) is_invalid_stack_type(T)
 
 #define check_type(T) do {						\
     TYPE_T typ_ = (T);							\
@@ -522,6 +534,7 @@ void low_thorough_check_short_svalue (const union anything *u, TYPE_T type);
 
 void check_short_svalue(const union anything *u, TYPE_T type);
 PMOD_EXPORT void debug_svalue_type_error (const struct svalue *s);
+PMOD_EXPORT int is_invalid_stack_type(unsigned int t);
 PMOD_EXPORT void debug_check_svalue(const struct svalue *s);
 void debug_check_type_hint (const struct svalue *svals, size_t num, TYPE_FIELD type_hint);
 PMOD_EXPORT void real_gc_mark_external_svalues(const struct svalue *s, ptrdiff_t num,

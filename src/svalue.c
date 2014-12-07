@@ -2040,6 +2040,12 @@ PMOD_EXPORT void debug_svalue_type_error (const struct svalue *s)
     Pike_fatal ("Invalid type %d in svalue at %p.\n", TYPEOF(*s), s);
 }
 
+PMOD_EXPORT int is_invalid_stack_type(unsigned int t)
+{
+  if (t <= PIKE_T_STACK_MAX) return 0;
+  return 1;
+}
+
 PMOD_EXPORT void debug_check_svalue(const struct svalue *s)
 {
   check_svalue_type (s);
