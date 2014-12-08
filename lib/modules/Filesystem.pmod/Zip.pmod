@@ -75,7 +75,7 @@ class Decrypt
     key[2] = crc32((key[1] >> 24) & 255, key[2]);
   }
   
-  private string decrypt_char(int x)
+  private string decrypt_char(int c)
   {
     int c, k;
     string o;
