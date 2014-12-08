@@ -334,7 +334,7 @@ PMOD_EXPORT void check_string(struct pike_string *s);
 PMOD_EXPORT void verify_shared_strings_tables(void);
 int safe_debug_findstring(const struct pike_string *foo);
 struct pike_string *debug_findstring(const struct pike_string *foo);
-PMOD_EXPORT void debug_dump_pike_string(struct pike_string *s, INT32 max);
+PMOD_EXPORT void debug_dump_pike_string(const struct pike_string *s, INT32 max);
 void dump_stralloc_strings(void);
 int low_quick_binary_strcmp(const char *a, ptrdiff_t alen,
                             const char *b, ptrdiff_t blen) ATTRIBUTE((pure));
