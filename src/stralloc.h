@@ -332,7 +332,7 @@ PMOD_EXPORT void debug_free_string(struct pike_string *s);
 struct pike_string *add_string_status(int verbose);
 PMOD_EXPORT void check_string(struct pike_string *s);
 PMOD_EXPORT void verify_shared_strings_tables(void);
-int safe_debug_findstring(struct pike_string *foo);
+int safe_debug_findstring(const struct pike_string *foo);
 struct pike_string *debug_findstring(const struct pike_string *foo);
 PMOD_EXPORT void debug_dump_pike_string(struct pike_string *s, INT32 max);
 void dump_stralloc_strings(void);
@@ -347,18 +347,18 @@ ptrdiff_t generic_find_binary_prefix(const char *a,
                                      ptrdiff_t alen, int asize,
                                      const char *b,
                                      ptrdiff_t blen, int bsize) ATTRIBUTE((pure));
-PMOD_EXPORT int c_compare_string(struct pike_string *s, char *foo, int len) ATTRIBUTE((pure));
-PMOD_EXPORT ptrdiff_t my_quick_strcmp(struct pike_string *a,
-				      struct pike_string *b) ATTRIBUTE((pure));
-PMOD_EXPORT ptrdiff_t my_strcmp(struct pike_string *a,struct pike_string *b) ATTRIBUTE((pure));
+PMOD_EXPORT int c_compare_string(const struct pike_string *s,
+                                 const char *foo, int len) ATTRIBUTE((pure));
+PMOD_EXPORT ptrdiff_t my_quick_strcmp(const struct pike_string *a,
+				      const struct pike_string *b) ATTRIBUTE((pure));
 struct pike_string *realloc_unlinked_string(struct pike_string *a,
                                             ptrdiff_t size);
 struct pike_string *new_realloc_shared_string(struct pike_string *a, INT32 size, int shift) ATTRIBUTE((malloc));
 struct pike_string *modify_shared_string(struct pike_string *a,
                                          INT32 position,
                                          INT32 c);
-PMOD_EXPORT struct pike_string *add_shared_strings(struct pike_string *a,
-					 struct pike_string *b);
+PMOD_EXPORT struct pike_string *add_shared_strings(const struct pike_string *a,
+                                                   const struct pike_string *b);
 PMOD_EXPORT struct pike_string *add_and_free_shared_strings(struct pike_string *a,
 						struct pike_string *b);
 PMOD_EXPORT ptrdiff_t string_search(struct pike_string *haystack,
@@ -378,11 +378,11 @@ PMOD_EXPORT void visit_string (struct pike_string *s, int action, void *extra);
 void gc_mark_string_as_referenced (struct pike_string *s);
 unsigned gc_touch_all_strings(void);
 void gc_mark_all_strings(void);
-struct pike_string *next_pike_string (struct pike_string *s);
+struct pike_string *next_pike_string (const struct pike_string *s);
 PMOD_EXPORT void init_string_builder(struct string_builder *s, int mag);
 PMOD_EXPORT void init_string_builder_alloc(struct string_builder *s, ptrdiff_t length, int mag);
 PMOD_EXPORT void init_string_builder_copy(struct string_builder *to,
-					  struct string_builder *from);
+					  const struct string_builder *from);
 PMOD_EXPORT void string_build_mkspace(struct string_builder *s,
 				      ptrdiff_t chars, int mag);
 PMOD_EXPORT void *string_builder_allocate(struct string_builder *s, ptrdiff_t chars, int mag);
@@ -396,27 +396,24 @@ PMOD_EXPORT void string_builder_binary_strcat1(struct string_builder *s,
 PMOD_EXPORT void string_builder_binary_strcat2(struct string_builder *s,
 					       const p_wchar2 *str, ptrdiff_t len);
 PMOD_EXPORT void string_builder_append(struct string_builder *s,
-				       PCHARP from,
+				       const PCHARP from,
 				       ptrdiff_t len);
 PMOD_EXPORT void string_builder_fill(struct string_builder *s,
 				     ptrdiff_t howmany,
-				     PCHARP from,
+				     const PCHARP from,
 				     ptrdiff_t len,
 				     ptrdiff_t offset);
 PMOD_EXPORT void string_builder_utf16_strcat(struct string_builder *s,
 					     const p_wchar1 *utf16str);
-PMOD_EXPORT void string_builder_strcat(struct string_builder *s, char *str);
-PMOD_EXPORT void string_builder_shared_strcat(struct string_builder *s, struct pike_string *str);
+PMOD_EXPORT void string_builder_strcat(struct string_builder *s, const char *str);
+PMOD_EXPORT void string_builder_shared_strcat(struct string_builder *s,
+                                              const struct pike_string *str);
 PMOD_EXPORT ptrdiff_t string_builder_quote_string(struct string_builder *buf,
-						  struct pike_string *str,
+						  const struct pike_string *str,
 						  ptrdiff_t start,
 						  ptrdiff_t max_len,
 						  int flags);
-PMOD_EXPORT void update_flags_for_add( struct pike_string *a, struct pike_string *b);
-PMOD_EXPORT void set_flags_for_add( struct pike_string *ret,
-                                    unsigned char aflags, unsigned char amin,
-                                    unsigned char amax,
-                                    struct pike_string *b);
+void update_flags_for_add( struct pike_string *a, const struct pike_string *b);
 PMOD_EXPORT void string_builder_append_integer(struct string_builder *s,
 					       LONGEST val,
 					       unsigned int base,
@@ -431,7 +428,7 @@ PMOD_EXPORT void string_builder_sprintf(struct string_builder *s,
 PMOD_EXPORT void reset_string_builder(struct string_builder *s);
 PMOD_EXPORT void free_string_builder(struct string_builder *s);
 PMOD_EXPORT struct pike_string *finish_string_builder(struct string_builder *s);
-PMOD_EXPORT PCHARP MEMCHR_PCHARP(PCHARP ptr, int chr, ptrdiff_t len);
+PMOD_EXPORT PCHARP MEMCHR_PCHARP(const PCHARP ptr, int chr, ptrdiff_t len);
 PMOD_EXPORT long STRTOL_PCHARP(PCHARP str, PCHARP *ptr, int base);
 PMOD_EXPORT int string_to_svalue_inumber(struct svalue *r,
 			     char * str,
