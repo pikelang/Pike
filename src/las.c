@@ -2961,7 +2961,7 @@ static int depend_p2(node *a, node *b)
 
 static int depend_p3(node *a,node *b)
 {
-  if(!b) return 0;
+  if(!b || !a) return 0;
 #if 0
   if(!(b->tree_info & OPT_SIDE_EFFECT) && 
      (b->tree_info & OPT_EXTERNAL_DEPEND))
