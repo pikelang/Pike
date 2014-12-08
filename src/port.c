@@ -699,12 +699,7 @@ void _dosmaperr(int err) {
 }
 #endif /* __MINGW32__ */
 
-/* strdup() is used by several modules, so let's provide it */
-#ifndef HAVE_STRDUP
-#ifdef HAVE__STRDUP
-#define strdup _strdup
-#else
-#undef strdup
+#if !defined(HAVE_STRDUP) && !defined(HAVE__STRDUP)
 char *strdup(const char *str)
 {
   char *res = NULL;
@@ -716,5 +711,4 @@ char *strdup(const char *str)
   }
   return(res);
 }
-#endif /* HAVE__STRDUP */
 #endif /* !HAVE_STRDUP */
