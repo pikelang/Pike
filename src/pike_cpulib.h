@@ -56,10 +56,4 @@ PMOD_EXPORT void x86_get_cpuid(int oper, INT32 *cpuid_ptr);
 #endif
 #endif
 
-#ifdef PIKE_NEED_MEMLOCK
-extern void init_pike_cpulib(void);
-#else
-#define init_pike_cpulib()
-#endif
-
 #endif /* PIKE_CPULIB_H */

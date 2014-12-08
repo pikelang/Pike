@@ -126,9 +126,6 @@ void init_pike(char **argv, const char *file)
   /* Attempt to make sure stderr is unbuffered. */
   setvbuf(stderr, NULL, _IONBF, 0);
 
-  TRACE((stderr, "Init CPU lib...\n"));
-  init_pike_cpulib();
-
 #ifdef TRY_USE_MMX
   TRACE((stderr, "Init MMX...\n"));
   try_use_mmx=mmx_ok();
