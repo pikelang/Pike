@@ -77,10 +77,7 @@ class Decrypt
   
   private string decrypt_char(int c)
   {
-    int c, k;
-    string o;
-
-    k = key[2] | 2;
+    int k = key[2] | 2;
     c = c ^ (((k * (k^1)) >> 8) & 255);
     update_keys(c);
     
