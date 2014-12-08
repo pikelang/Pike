@@ -101,7 +101,7 @@ static void set_master(const char *file)
 #ifdef DEBUG_MALLOC
 #undef strdup /* We can't use dmalloc strdup before pike_memory is initialized. */
 #endif /* DEBUG_MALLOC */
-#if !defined(__NT__) && !defined(strdup)
+#if defined(__NT__) && !defined(strdup)
   /* strdup() is broken on WIN32, but _strdup() isn't... */
 #define strdup _strdup
 #endif /* __NT__ */
