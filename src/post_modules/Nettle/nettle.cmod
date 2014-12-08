@@ -22,6 +22,10 @@
 #include <stdio.h>
 #include <stdarg.h>
 
+#ifdef HAVE_STDINT_H
+#include <stdint.h>
+#endif /* HAVE_STDINT_H */
+
 DECLARATIONS
 
 /*! @module Nettle

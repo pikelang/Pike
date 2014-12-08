@@ -20,6 +20,10 @@
 
 DECLARATIONS
 
+#ifdef HAVE_STDINT_H
+#include <stdint.h>
+#endif /* HAVE_STDINT_H */
+
 #include "nettle.h"
 
 #ifdef HAVE_NETTLE_POLY1305_H
