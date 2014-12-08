@@ -10,4 +10,10 @@ PRECOMPILER_ARGS="--base="
 
 @static_module_makefile@
 
+# UnixWare make needs help to find the source file...
+mpq.o: $(SRCDIR)/mpq.c
+
+# UnixWare make needs help to find the source file...
+mpf.o: $(SRCDIR)/mpf.c
+
 @dependencies@
