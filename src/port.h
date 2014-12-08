@@ -202,6 +202,12 @@ char *strchr(const char *s,int c);
 #define HAVE_LDEXP 1
 #define LDEXP(X,Y) ldexp(X,Y)
 
+#ifndef HAVE_STRDUP
+#undef strdup
+#ifdef HAVE__STRDUP
+#define strdup(X) _strdup(X)
+#endif
+#endif
 
 #ifdef EXTRACT_UCHAR_BY_CAST
 #  define EXTRACT_UCHAR(p) (*(const unsigned char *)(p))

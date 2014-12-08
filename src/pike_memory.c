@@ -31,22 +31,6 @@
 
 int page_size;
 
-/* strdup() is used by several modules, so let's provide it */
-#ifndef HAVE_STRDUP
-#undef strdup
-char *strdup(const char *str)
-{
-  char *res = NULL;
-  if (str) {
-    int len = strlen(str)+1;
-
-    res = xalloc(len);
-    memcpy(res, str, len);
-  }
-  return(res);
-}
-#endif /* !HAVE_STRDUP && !strdup */
-
 ptrdiff_t pcharp_memcmp(PCHARP a, PCHARP b, int sz)
 {
   return generic_quick_binary_strcmp((char *)a.ptr, sz, a.shift,

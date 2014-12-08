@@ -4504,6 +4504,7 @@ AC_CHECK_FUNCS( \
  dld_get_func \
  pipe \
  strdup \
+ _strdup \
  kill \
  alarm \
  fork1 \

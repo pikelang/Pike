@@ -697,4 +697,24 @@ void _dosmaperr(int err) {
 
   /* FIXME: Set generic error? */
 }
-#endif
+#endif /* __MINGW32__ */
+
+/* strdup() is used by several modules, so let's provide it */
+#ifndef HAVE_STRDUP
+#ifdef HAVE__STRDUP
+#define strdup _strdup
+#else
+#undef strdup
+char *strdup(const char *str)
+{
+  char *res = NULL;
+  if (str) {
+    int len = strlen(str)+1;
+
+    res = xalloc(len);
+    memcpy(res, str, len);
+  }
+  return(res);
+}
+#endif /* HAVE__STRDUP */
+#endif /* !HAVE_STRDUP */
