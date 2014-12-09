@@ -3589,14 +3589,14 @@ expr4: string
   | expr4 TOK_SAFE_START_INDEX line_number_info expr0 ']'
   {
     /* A[?X] to ((tmp=A) && tmp[X]) */
-    if( $1->token == F_LOCAL )
+    if( $1 && ($1->token == F_LOCAL) )
     {
       $$=mknode(F_LAND, copy_node($1), mknode(F_INDEX,  $1, $4));
     }
     else
     {
       fix_type_field( $1 );
-      if( $1->type )
+      if( $1 && $1->type )
       {
         int temporary;
         $1->type->refs++;
@@ -3621,14 +3621,14 @@ expr4: string
   {
     /* A[?X..Y] to ((tmp=A) && tmp[X..Y]) */
     node *range = mknode(':',$4,$6);
-    if( $1->token == F_LOCAL )
+    if( $1 && ($1->token == F_LOCAL ) )
     {
       $$ = mknode( F_LAND, copy_node($1), mknode(F_RANGE, $1, range) );
     }
     else
     {
       fix_type_field( $1 );
-      if( $1->type )
+      if( $1 && $1->type )
       {
         int temporary;
         $1->type->refs++;
@@ -3735,7 +3735,7 @@ expr4: string
   {
     /* A?->B to ((tmp=A) && tmp->B) */
     int temporary;
-    if( $1->token == F_LOCAL )
+    if( $1 && ($1->token == F_LOCAL) )
     {
       $$=mknode(F_LAND, copy_node($1), mknode(F_ARROW, $1, $4));
     }

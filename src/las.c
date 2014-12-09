@@ -3167,7 +3167,7 @@ void fix_type_field(node *n)
   struct pike_type *type_a, *type_b;
   struct pike_type *old_type;
 
-  if (n->type && !(n->node_info & OPT_TYPE_NOT_FIXED))
+  if (!n || (n->type && !(n->node_info & OPT_TYPE_NOT_FIXED)))
     return; /* assume it is correct */
 
   old_type = n->type;
