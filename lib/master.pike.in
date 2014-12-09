@@ -1967,6 +1967,11 @@ class dirnode (string dirname, object|void compilation_handler,
 
   protected void create()
   {
+    if (!dirname) {
+      error("Attempt to create a dirnode without a directory.\n"
+	    "Have you inherited a dirnode?\n");
+    }
+
     resolv_debug ("dirnode(%O,%O) created with name %O\n", dirname,
                   compilation_handler, name);
     fc[dirname]=this;
@@ -2321,6 +2326,11 @@ class joinnode (array(object|mapping) joined_modules,
       // NOTE: Uses the empty mapping as the default fallback
       // for simplified code.
       fallback_module = ([]);
+    }
+
+    if (!joined_modules) {
+      error("Attempt to create a joinnode without joined modules.\n"
+	    "Have you inherited a joinnode?\n");
     }
 
     if (!name)
