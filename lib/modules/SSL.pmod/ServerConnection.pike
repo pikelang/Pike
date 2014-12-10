@@ -719,9 +719,18 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	  return -1;
 	}
 
-        if( version >= PROTOCOL_TLS_1_3 )
-          compression_methods = ({ COMPRESSION_null }) & compression_methods;
-        else
+        if( version >= PROTOCOL_TLS_1_3 ) {
+	  if (!equal(compression_methods, ({ COMPRESSION_null }))) {
+	    // TLS 1.3 draft 3 7.4.1:
+	    //
+	    // If a TLS 1.3 ClientHello is received with any other
+	    // value in this field, the server MUST generate a fatal
+	    // "illegal_parameter" alert.
+	    send_packet(alert(ALERT_fatal, ALERT_illegal_parameter,
+			      "Illegal with compression in TLS 1.3 and later.\n"));
+	    return -1;
+	  }
+        } else
           compression_methods =
             context->preferred_compressors & compression_methods;
 	if (sizeof(compression_methods))
