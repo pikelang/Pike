@@ -333,15 +333,18 @@ outer:
 
   final void sendterminate() {
     Thread.MutexKey lock=i->fillreadmux->lock();
-    i->fillread.signal();
-    i->fillread=0;	 // Delayed close() after flushing the output buffer
+    if(i->fillread)	 // Delayed close() after flushing the output buffer
+      i->fillread.signal(), i->fillread=0;
     lock=0;
   }
 
   final int close() {
+    int ret;
     destruct(nostash);
     PD("%d>Close socket\n",socket->query_fd());
-    return socket->close();
+    ret=socket->close();
+    sendterminate();
+    return ret;
   }
 
   protected void destroy() {
