@@ -545,6 +545,163 @@ PIKECLASS ECC_Curve
     stack_pop_n_elems_keep_top(args);
   }
 
+  /*! @class Point
+   *!
+   *! A point on an elliptic curve.
+   */
+  PIKECLASS Point
+    program_flags PROGRAM_USES_PARENT|PROGRAM_NEEDS_PARENT|PROGRAM_CLEAR_STORAGE;
+  {
+    CVAR struct ecc_point point;
+
+    INIT
+    {
+      const struct ecc_curve *curve =
+	(((const struct Nettle_ECC_Curve_struct *)parent_storage(1, Nettle_ECC_Curve_program))->curve);
+      if (!curve) Pike_error("No curve selected.\n");
+      ecc_point_init(&THIS->point, curve);
+    }
+
+    EXIT
+    {
+      const struct ecc_curve *curve =
+	(((const struct Nettle_ECC_Curve_struct *)parent_storage(1, Nettle_ECC_Curve_program))->curve);
+      if (!curve) return;
+      ecc_point_clear(&THIS->point);
+    }
+
+    /*! @decl string(7bit) name()
+     *!
+     *! Returns the string @expr{"Point"@} followed by
+     *! the parenthesized name of the curve.
+     */
+    PIKEFUN string(7bit) name()
+    {
+      ref_push_string(MK_STRING("Point("));
+      apply_external(1, f_Nettle_ECC_Curve_name_fun_num, 0);
+      ref_push_string(MK_STRING(")"));
+      f_add(3);
+    }
+
+    /*! @decl ECC_Curve get_curve()
+     *!
+     *! Get the elliptic curve that is in use.
+     */
+    PIKEFUN object(Nettle_ECC_Curve) get_curve()
+    {
+      struct external_variable_context loc;
+      loc.o = Pike_fp->current_object;
+      loc.inherit = Pike_fp->context;
+      find_external_context(&loc, 1);
+      ref_push_object_inherit(loc.o, loc.inherit - loc.o->prog->inherits);
+    }
+
+    /*! @decl object(Gmp.mpz) get_x()
+     *!
+     *! Get the x coordinate of the point.
+     *!
+     *! @seealso
+     *!   @[get_y()]
+     */
+    PIKEFUN object(Gmp.mpz) get_x()
+    {
+      struct object *ret;
+      push_object(ret = fast_clone_object(bignum_program));
+      ecc_point_get(&THIS->point, (mpz_ptr)ret->storage, NULL);
+    }
+
+    /*! @decl object(Gmp.mpz) get_y()
+     *!
+     *! Get the y coordinate of the point.
+     *!
+     *! @seealso
+     *!   @[get_x()]
+     */
+    PIKEFUN object(Gmp.mpz) get_y()
+    {
+      struct object *ret;
+      push_object(ret = fast_clone_object(bignum_program));
+      ecc_point_get(&THIS->point, NULL, (mpz_ptr)ret->storage);
+    }
+
+    /*! @decl void set(object(Gmp.mpz)|int x, object(Gmp.mpz)|int y)
+     *!
+     *! Change to the selected point on the curve.
+     *!
+     *! @note
+     *!   Throws errors if the point isn't on the curve.
+     */
+    PIKEFUN void set(object(Gmp.mpz)|int x, object(Gmp.mpz)|int y)
+    {
+      convert_svalue_to_bignum(x);
+      convert_svalue_to_bignum(y);
+      if (!ecc_point_set(&THIS->point,
+			 (mpz_srcptr)x->u.object->storage,
+			 (mpz_srcptr)y->u.object->storage)) {
+	SIMPLE_ARG_ERROR("set", 1, "Invalid point on curve.");
+      }
+    }
+
+    /*! @decl Point `*(Gmp.mpz|int scalar)
+     *!
+     *! Multiply the point on the curve by a scalar.
+     *!
+     *! A typical use is for Elliptic Curve Diffie Hellman (ECDH) key exchange.
+     *!
+     *! @returns
+     *!   Returns the new point on the curve.
+     */
+    PIKEFUN Nettle_ECC_Curve_Point `*(object(Gmp.mpz)|int scalar)
+      flags ID_PROTECTED;
+    {
+      struct ecc_scalar s;
+      struct ecc_point r;
+      struct object *rx;
+      struct object *ry;
+      const struct ecc_curve *curve =
+	(((const struct Nettle_ECC_Curve_struct *)parent_storage(1, Nettle_ECC_Curve_program))->curve);
+
+      if (!curve) Pike_error("No curve defined.\n");
+
+      convert_svalue_to_bignum(scalar);
+
+      ecc_scalar_init(&s, curve);
+
+      if (!ecc_scalar_set(&s, (mpz_srcptr)scalar->u.object->storage)) {
+	ecc_scalar_clear(&s);
+	SIMPLE_ARG_ERROR("`*", 1, "Invalid scalar for curve.");
+      }
+
+      ecc_point_init(&r, curve);
+
+      ecc_point_mul(&r, &s, &THIS->point);
+
+      push_object(rx = fast_clone_object(bignum_program));
+      push_object(ry = fast_clone_object(bignum_program));
+      ecc_point_get(&r, (mpz_ptr)rx->storage, (mpz_ptr)ry->storage);
+
+      ecc_point_clear(&r);
+      ecc_scalar_clear(&s);
+
+      apply_external(1, Nettle_ECC_Curve_Point_program_fun_num, 2);
+    }
+
+    /*! @decl void create(object(Gmp.mpz)|int x, object(Gmp.mpz)|int y)
+     *!
+     *! Initialize to the selected point on the curve.
+     *!
+     *! @note
+     *!   Throws errors if the point isn't on the curve.
+     */
+    PIKEFUN void create(object(Gmp.mpz)|int x, object(Gmp.mpz)|int y)
+      flags ID_PROTECTED;
+    {
+      apply_current(f_Nettle_ECC_Curve_Point_set_fun_num, args);
+    }
+  }
+  /*! @endclass Point
+   */
+
   /*! @class ECDSA
    *!
    *! Elliptic Curve Digital Signing Algorithm
