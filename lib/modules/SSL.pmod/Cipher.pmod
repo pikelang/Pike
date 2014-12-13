@@ -723,13 +723,12 @@ class KeyExchangeDH
     /* Explicit encoding */
     Stdio.Buffer input = Stdio.Buffer(data);
 
-    if (catch
-      {
-	if (!dh_state->set_other(Gmp.mpz(input->read_hint(2)))) {
-	  connection->ke = UNDEFINED;
-	  return ALERT_handshake_failure;
-	}
-      } || sizeof(input))
+    if (!dh_state->set_other(Gmp.mpz(input->read_hint(2)))) {
+      connection->ke = UNDEFINED;
+      return ALERT_handshake_failure;
+    }
+
+    if(sizeof(input))
     {
       connection->ke = UNDEFINED;
       return ALERT_handshake_failure;
@@ -1004,21 +1003,20 @@ class KeyExchangeECDH
     /* Explicit encoding */
     Stdio.Buffer struct = Stdio.Buffer(data);
 
-    if (catch
-      {
-	[ Gmp.mpz x, Gmp.mpz y ] = decode_point(struct->read_hbuffer(1));
-	Gmp.mpz secret = get_server_secret();
-	// RFC 4492 5.10:
-	// Note that this octet string (Z in IEEE 1363 terminology) as
-	// output by FE2OSP, the Field Element to Octet String
-	// Conversion Primitive, has constant length for any given
-	// field; leading zeros found in this octet string MUST NOT be
-	// truncated.
-	premaster_secret =
-	  sprintf("%*c",
-		  (session->curve->size() + 7)>>3,
-		  session->curve->point_mul(x, y, secret)[0]);
-      } || sizeof(struct))
+    [ Gmp.mpz x, Gmp.mpz y ] = decode_point(struct->read_hbuffer(1));
+    Gmp.mpz secret = get_server_secret();
+    // RFC 4492 5.10:
+    // Note that this octet string (Z in IEEE 1363 terminology) as
+    // output by FE2OSP, the Field Element to Octet String
+    // Conversion Primitive, has constant length for any given
+    // field; leading zeros found in this octet string MUST NOT be
+    // truncated.
+    premaster_secret =
+      sprintf("%*c",
+              (session->curve->size() + 7)>>3,
+              session->curve->point_mul(x, y, secret)[0]);
+
+    if(sizeof(struct))
     {
       connection->ke = UNDEFINED;
       return ALERT_unexpected_message;

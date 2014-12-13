@@ -279,26 +279,23 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 
 	SSL3_DEBUG_MSG("SSL.ServerConnection: CLIENT_HELLO\n");
 
-	if (
-	  catch{
-	    client_version =
-	      [int(0x300..0x300)|ProtocolVersion]input->read_int(2);
-	  client_random = input->read(32);
-	  id = input->read_hstring(1);
-	  cipher_len = input->read_int(2);
-	  cipher_suites = input->read_ints(cipher_len/2, 2);
-	  compression_methods = input->read_int_array(1, 1);
-	  SSL3_DEBUG_MSG("STATE_wait_for_hello: received hello\n"
-			 "version = %s\n"
-			 "id=%O\n"
-			 "cipher suites:\n%s\n"
-			 "compression methods: %O\n",
-			 fmt_version(client_version),
-			 id, fmt_cipher_suites(cipher_suites),
-                         compression_methods);
+        client_version =
+          [int(0x300..0x300)|ProtocolVersion]input->read_int(2);
+        client_random = input->read(32);
+        id = input->read_hstring(1);
+        cipher_len = input->read_int(2);
+        cipher_suites = input->read_ints(cipher_len/2, 2);
+        compression_methods = input->read_int_array(1, 1);
+        SSL3_DEBUG_MSG("STATE_wait_for_hello: received hello\n"
+                       "version = %s\n"
+                       "id=%O\n"
+                       "cipher suites:\n%s\n"
+                       "compression methods: %O\n",
+                       fmt_version(client_version),
+                       id, fmt_cipher_suites(cipher_suites),
+                       compression_methods);
 
-	}
-	  || (cipher_len & 1))
+	if(cipher_len & 1)
 	{
 	  send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
 			    "Invalid client_hello.\n"));
@@ -819,25 +816,22 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 
        if(version == PROTOCOL_SSL_3_0) {
 	 my_digest=hash_messages("CLNT");
-	 if (catch {
-	   digest = input->read(36);
-           } || sizeof(input))
-	   {
-	     send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
-			       "Invalid handshake finished message.\n"));
-	     return -1;
-	   }
+         digest = input->read(36);
+         if(sizeof(input))
+         {
+           send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
+                             "Invalid handshake finished message.\n"));
+           return -1;
+         }
        } else if(version >= PROTOCOL_TLS_1_0) {
 	 my_digest=hash_messages("client finished");
-	 if (catch {
-	   digest = input->read(12);
-           } || sizeof(input))
-	   {
-	     send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
-			       "Invalid handshake finished message.\n"));
-	     return -1;
-	   }
-
+         digest = input->read(12);
+         if(sizeof(input))
+         {
+           send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
+                             "Invalid handshake finished message.\n"));
+           return -1;
+         }
 
        }
 
@@ -940,29 +934,27 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 			   "Unexpected client cert.\n"));
 	 return -1;
        }
-       mixed e;
-       if (e = catch {
-	 int certs_len = input->read_int(3);
-         SSL3_DEBUG_MSG("got %d certificate bytes\n", certs_len);
 
-	 array(string(8bit)) certs = ({ });
-	 while(sizeof(input))
-	   certs += ({ input->read_hstring(3) });
+       int certs_len = input->read_int(3);
+       SSL3_DEBUG_MSG("got %d certificate bytes\n", certs_len);
 
-	  // we have the certificate chain in hand, now we must verify them.
-          if((!sizeof(certs) && context->auth_level == AUTHLEVEL_require) ||
-             certs_len != [int]Array.sum(map(certs, sizeof)) ||
-             !verify_certificate_chain(certs))
-          {
-	    send_packet(alert(ALERT_fatal, ALERT_bad_certificate,
-			      "Bad client certificate.\n"));
-	    return -1;
-          }
-          else
-          {
-	    session->peer_certificate_chain = certs;
-          }
-         } || sizeof(input))
+       array(string(8bit)) certs = ({ });
+       while(sizeof(input))
+         certs += ({ input->read_hstring(3) });
+
+       // we have the certificate chain in hand, now we must verify them.
+       if((!sizeof(certs) && context->auth_level == AUTHLEVEL_require) ||
+          certs_len != [int]Array.sum(map(certs, sizeof)) ||
+          !verify_certificate_chain(certs))
+       {
+         send_packet(alert(ALERT_fatal, ALERT_bad_certificate,
+                           "Bad client certificate.\n"));
+         return -1;
+       }
+
+       session->peer_certificate_chain = certs;
+
+       if(sizeof(input))
        {
 	 send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
 			   "Unexpected client cert.\n"));
