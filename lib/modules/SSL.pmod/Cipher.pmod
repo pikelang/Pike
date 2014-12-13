@@ -698,7 +698,11 @@ class KeyExchangeDH
         return 0;
       }
       dh_state = DHKeyExchange(p);
-      dh_state->other = session->peer_public_key->get_y();
+      if (!dh_state->set_other(session->peer_public_key->get_y())) {
+	SSL3_DEBUG_MSG("DH Ys not valid for set parameters.\n");
+	dh_state = 0;
+	return 0;
+      }
     }
     dh_state->new_secret(context->random);
     struct->put_bignum(dh_state->our);
@@ -731,11 +735,14 @@ class KeyExchangeDH
 
     if (catch
       {
-	dh_state->set_other(struct->get_bignum());
+	if (!dh_state->set_other(struct->get_bignum())) {
+	  connection->ke = UNDEFINED;
+	  return ALERT_handshake_failure;
+	}
       } || sizeof(struct))
     {
       connection->ke = UNDEFINED;
-      return ALERT_unexpected_message;
+      return ALERT_handshake_failure;
     }
 
     premaster_secret = dh_state->get_shared()->digits(256);
@@ -854,7 +861,11 @@ class KeyExchangeDHE
     temp_struct->put_bignum(p);
     temp_struct->put_bignum(g);
     dh_state = DHKeyExchange(params);
-    dh_state->set_other(input->get_bignum());
+    if (!dh_state->set_other(input->get_bignum())) {
+      SSL3_DEBUG_MSG("DH Ys not valid for set parameters.\n");
+      dh_state = 0;
+      return 0;
+    }
     temp_struct->put_bignum(dh_state->other);
 
     return temp_struct;
@@ -1460,7 +1471,7 @@ class RC2
 //! @[KE_dhe_dss], @[KE_dhe_rsa] and @[KE_dh_anon].
 class DHKeyExchange
 {
-  /* Public parameters */
+  //! Finite field Diffie-Hellman parameters.
   Crypto.DH.Parameters parameters;
 
   Gmp.mpz our; /* Our value */
@@ -1477,8 +1488,29 @@ class DHKeyExchange
     [our, secret] = parameters->generate_keypair(random);
     return this;
   }
-  
+
+  //! Set the value received from the peer.
+  //!
+  //! @returns
+  //!   Returns @[UNDEFINED] if @[o] is invalid for the set @[parameters].
+  //!
+  //!   Otherwise returns the current object.
   this_program set_other(Gmp.mpz o) {
+    if ((o <= 1) || (o >= (parameters->p - 1))) {
+      // Negotiated FF DHE Parameters Draft 4 3:
+      //   If the selected group matches an offered FFDHE group exactly, the
+      //   the client MUST verify that dh_Ys is in the range 1 < dh_Ys < dh_p
+      //   - 1.  If dh_Ys is not in this range, the client MUST terminate the
+      //   connection with a fatal handshake_failure(40) alert.
+      //
+      // Negotiated FF DHE Parameters Draft 4 4:
+      //   When a compatible server selects an FFDHE group from among a
+      //   client's Supported Groups, and the client sends a ClientKeyExchange,
+      //   the server MUST verify that 1 < dh_Yc < dh_p - 1. If it is out of
+      //   range, the server MUST terminate the connection with fatal
+      //   handshake_failure(40) alert.
+      return UNDEFINED;
+    }
     other = o;
     return this;
   }
