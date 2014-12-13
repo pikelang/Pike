@@ -192,7 +192,7 @@ Packet client_key_exchange_packet()
   string(8bit) data =
     ke->client_key_exchange_packet(client_random, server_random, version);
   if (!data) {
-    send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
+    send_packet(alert(ALERT_fatal, ALERT_handshake_failure,
 		      "Invalid KEX.\n"));
     return 0;
   }
@@ -567,7 +567,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	if (ke) error("KE!\n");
 	ke = session->cipher_spec->ke_factory(context, session, this, client_version);
 	if (ke->server_key_exchange(input, client_random, server_random) < 0) {
-	  send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
+	  send_packet(alert(ALERT_fatal, ALERT_handshake_failure,
 			    "Verification of ServerKeyExchange failed.\n"));
 	  return -1;
 	}
@@ -615,7 +615,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
             Standards.ASN1.Decode.secure_der_decode(der);
           if( o->type_name != "SEQUENCE" )
           {
-            send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
+            send_packet(alert(ALERT_fatal, ALERT_handshake_failure,
                               "Badly formed Certificate Request.\n"));
             return -1;
           }
