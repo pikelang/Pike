@@ -391,10 +391,10 @@ Parameters MODPGroup24 =
              Gmp.mpz("8CF83642 A709A097 B4479976 40129DA2 99B1A47D 1EB3750B"
                      "A308B0FE 64F5FBD3", 16));
 
-//! Discrete Log Diffie-Hellman 2048
+//! Finite Field Diffie-Hellman 2048
 //!
 //! From Negotiated FF-DHE for TLS draft 04, December 2014, Appendix A.1.
-Parameters DLDHE2048 =
+Parameters FFDHE2048 =
   /* p = 2^2048 - 2^1984 + floor{2^1918 e + 560315} * 2^64 - 1 */
   Parameters(Gmp.mpz("FFFFFFFF FFFFFFFF ADF85458 A2BB4A9A AFDC5620 273D3CF1"
 		     "D8B9C583 CE2D3695 A9E13641 146433FB CC939DCE 249B3EF9"
@@ -408,10 +408,10 @@ Parameters DLDHE2048 =
 		     "3BB5FCBC 2EC22005 C58EF183 7D1683B2 C6F34A26 C1B2EFFA"
 		     "886B4238 61285C97 FFFFFFFF FFFFFFFF", 16));
 
-//! Discrete Log Diffie-Hellman 2432
+//! Finite Field Diffie-Hellman 2432
 //!
-//! From Negotiated DL-DHE for TLS draft 02, April 2014, Appendix A.1.
-Parameters DLDHE2432 =
+//! From Negotiated FF-DHE for TLS draft 03, November 2014, Appendix A.1.
+Parameters FFDHE2432 =
   /* p = 2^2432 - 2^2368 + floor{2^2302 e + 2111044} * 2^64 - 1 */
   Parameters(Gmp.mpz("FFFFFFFF FFFFFFFF ADF85458 A2BB4A9A AFDC5620 273D3CF1"
 		     "D8B9C583 CE2D3695 A9E13641 146433FB CC939DCE 249B3EF9"
@@ -427,10 +427,10 @@ Parameters DLDHE2432 =
 		     "61B46FC9 D6E6C907 7AD91D26 91F7F7EE 598CB0FA C186D91C"
 		     "AEFE1309 8533C8B3 FFFFFFFF FFFFFFFF", 16));
 
-//! Discrete Log Diffie-Hellman 3072
+//! Finite Field Diffie-Hellman 3072
 //!
-//! From Negotiated DL-DHE for TLS draft 02, April 2014, Appendix A.2.
-Parameters DLDHE3072 =
+//! From Negotiated FF-DHE for TLS draft 04, December 2014, Appendix A.2.
+Parameters FFDHE3072 =
   /* p = 2^3072 - 2^3008 + floor{2^2942 e + 2625351} * 2^64 -1 */
   Parameters(Gmp.mpz("FFFFFFFF FFFFFFFF ADF85458 A2BB4A9A AFDC5620 273D3CF1"
 		     "D8B9C583 CE2D3695 A9E13641 146433FB CC939DCE 249B3EF9"
@@ -450,10 +450,10 @@ Parameters DLDHE3072 =
 		     "3C1B20EE 3FD59D7C 25E41D2B 66C62E37 FFFFFFFF FFFFFFFF",
 		     16));
 
-//! Discrete Log Diffie-Hellman 4096
+//! Finite Field Diffie-Hellman 4096
 //!
-//! From Negotiated DL-DHE for TLS draft 02, April 2014, Appendix A.3.
-Parameters DLDHE4096 =
+//! From Negotiated FF-DHE for TLS draft 04, December 2014, Appendix A.3.
+Parameters FFDHE4096 =
   /* p = 2^4096 - 2^4032 + floor{2^3966 e + 5736041} * 2^64 - 1 */
   Parameters(Gmp.mpz("FFFFFFFF FFFFFFFF ADF85458 A2BB4A9A AFDC5620 273D3CF1"
 		     "D8B9C583 CE2D3695 A9E13641 146433FB CC939DCE 249B3EF9"
@@ -478,10 +478,10 @@ Parameters DLDHE4096 =
 		     "8EC9B55A 7F88A46B 4DB5A851 F44182E1 C68A007E 5E655F6A"
 		     "FFFFFFFF FFFFFFFF", 16));
 
-//! Discrete Log Diffie-Hellman 6144
+//! Finite Field Diffie-Hellman 6144
 //!
-//! From Negotiated DL-DHE for TLS draft 02, April 2014, Appendix A.4.
-Parameters DLDHE6144 =
+//! From Negotiated FF-DHE for TLS draft 02, October 2014, Appendix A.4.
+Parameters FFDHE6144 =
   /* p = 2^6144 - 2^6080 + floor{2^6014 e + 15705020} * 2^64 - 1 */
   Parameters(Gmp.mpz("FFFFFFFF FFFFFFFF ADF85458 A2BB4A9A AFDC5620 273D3CF1"
 		     "D8B9C583 CE2D3695 A9E13641 146433FB CC939DCE 249B3EF9"
@@ -517,10 +517,10 @@ Parameters DLDHE6144 =
 		     "A41D570D 7938DAD4 A40E329C D0E40E65 FFFFFFFF FFFFFFFF",
 		     16));
 
-//! Discrete Log Diffie-Hellman 8192
+//! Finite Field Diffie-Hellman 8192
 //!
-//! From Negotiated DL-DHE for TLS draft 02, April 2014, Appendix A.5.
-Parameters DLDHE8192 =
+//! From Negotiated FF-DHE for TLS draft 04, December 2014, Appendix A.4.
+Parameters FFDHE8192 =
   /* p = 2^8192 - 2^8128 + floor{2^8062 e + 10965728} * 2^64 - 1 */
   Parameters(Gmp.mpz("FFFFFFFF FFFFFFFF ADF85458 A2BB4A9A AFDC5620 273D3CF1"
 		     "D8B9C583 CE2D3695 A9E13641 146433FB CC939DCE 249B3EF9"
