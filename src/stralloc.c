@@ -3190,30 +3190,12 @@ PMOD_EXPORT long STRTOL_PCHARP(PCHARP str, PCHARP *ptr, int base)
   }
 }
 
-/*
-static int string_to_svalue_inumber(struct svalue *r,
-			     char * str,
-			     char **ptr,
-			     int base,
-			     int maxlength)
-{
-  PCHARP tmp;
-  int ret=pcharp_to_svalue_inumber(r,
-				   MKPCHARP(str,0),
-				   &tmp,
-				   base,
-				   maxlength);
-  if(ptr) *ptr=(char *)tmp.ptr;
-  return ret;
-}
-*/
-
 int wide_string_to_svalue_inumber(struct svalue *r,
-					      void * str,
-					      void *ptr,
-					      int base,
-					      ptrdiff_t maxlength,
-					      int shift)
+                                  void * str,
+                                  void *ptr,
+                                  int base,
+                                  ptrdiff_t maxlength,
+                                  int shift)
 {
   PCHARP tmp;
   int ret=pcharp_to_svalue_inumber(r,
@@ -3402,7 +3384,7 @@ PMOD_EXPORT int convert_stack_top_string_to_inumber(int base)
 
 /* Convert PCHARP to a double.  If ENDPTR is not NULL, a pointer to the
    character after the last one used in the number is put in *ENDPTR.  */
-PMOD_EXPORT double STRTOD_PCHARP(PCHARP nptr, PCHARP *endptr)
+PMOD_EXPORT double STRTOD_PCHARP(const PCHARP nptr, PCHARP *endptr)
 {
   /* Note: Code duplication in strtod. */
 
@@ -3557,8 +3539,8 @@ PMOD_EXPORT double STRTOD_PCHARP(PCHARP nptr, PCHARP *endptr)
 }
 
 
-PMOD_EXPORT p_wchar0 *require_wstring0(struct pike_string *s,
-			   char **to_free)
+PMOD_EXPORT p_wchar0 *require_wstring0(const struct pike_string *s,
+                                       char **to_free)
 {
   switch(s->size_shift)
   {
@@ -3577,8 +3559,8 @@ PMOD_EXPORT p_wchar0 *require_wstring0(struct pike_string *s,
   return 0;
 }
 
-PMOD_EXPORT p_wchar1 *require_wstring1(struct pike_string *s,
-			   char **to_free)
+PMOD_EXPORT p_wchar1 *require_wstring1(const struct pike_string *s,
+                                       char **to_free)
 {
   switch(s->size_shift)
   {
@@ -3603,8 +3585,8 @@ PMOD_EXPORT p_wchar1 *require_wstring1(struct pike_string *s,
 }
 
 
-PMOD_EXPORT p_wchar2 *require_wstring2(struct pike_string *s,
-			   char **to_free)
+PMOD_EXPORT p_wchar2 *require_wstring2(const struct pike_string *s,
+                                       char **to_free)
 {
   switch(s->size_shift)
   {

@@ -430,11 +430,6 @@ PMOD_EXPORT void free_string_builder(struct string_builder *s);
 PMOD_EXPORT struct pike_string *finish_string_builder(struct string_builder *s);
 PMOD_EXPORT PCHARP MEMCHR_PCHARP(const PCHARP ptr, int chr, ptrdiff_t len);
 PMOD_EXPORT long STRTOL_PCHARP(PCHARP str, PCHARP *ptr, int base);
-PMOD_EXPORT int string_to_svalue_inumber(struct svalue *r,
-			     char * str,
-			     char **ptr,
-			     int base,
-			     int maxlength);
 int wide_string_to_svalue_inumber(struct svalue *r,
 					      void * str,
 					      void *ptr,
@@ -453,13 +448,13 @@ PMOD_EXPORT int pcharp_to_svalue_inumber(struct svalue *r,
 					 int base,
 					 ptrdiff_t maxlength);
 PMOD_EXPORT int convert_stack_top_string_to_inumber(int base);
-PMOD_EXPORT double STRTOD_PCHARP(PCHARP nptr, PCHARP *endptr);
-PMOD_EXPORT p_wchar0 *require_wstring0(struct pike_string *s,
-               char **to_free);
-PMOD_EXPORT p_wchar1 *require_wstring1(struct pike_string *s,
-			   char **to_free);
-PMOD_EXPORT p_wchar2 *require_wstring2(struct pike_string *s,
-			   char **to_free);
+PMOD_EXPORT double STRTOD_PCHARP(const PCHARP nptr, PCHARP *endptr);
+PMOD_EXPORT p_wchar0 *require_wstring0(const struct pike_string *s,
+                                       char **to_free);
+PMOD_EXPORT p_wchar1 *require_wstring1(const struct pike_string *s,
+                                       char **to_free);
+PMOD_EXPORT p_wchar2 *require_wstring2(const struct pike_string *s,
+                                       char **to_free);
 /* Prototypes end here */
 
 /* Compat alias. */
