@@ -1075,11 +1075,12 @@ enum NamedGroup {
   GROUP_brainpoolP384r1			= 27,	// RFC 7027
   GROUP_brainpoolP512r1			= 28,	// RFC 7027
 
-  GROUP_ffdhe2432                       = 256,  // draft-ietf-tls-negotiated-ff-dhe-02
-  GROUP_ffdhe3072                       = 257,  // draft-ietf-tls-negotiated-ff-dhe-02
-  GROUP_ffdhe4096                       = 258,  // draft-ietf-tls-negotiated-ff-dhe-02
-  GROUP_ffdhe6144                       = 259,  // draft-ietf-tls-negotiated-ff-dhe-02
-  GROUP_ffdhe8192                       = 260,  // draft-ietf-tls-negotiated-ff-dhe-02
+  GROUP_ffdhe2048                       = 256,  // draft-ietf-tls-negotiated-ff-dhe-04
+  GROUP_ffdhe2432                       = 256,  // draft-ietf-tls-negotiated-ff-dhe-03 (OBSOLETE)
+  GROUP_ffdhe3072                       = 257,  // draft-ietf-tls-negotiated-ff-dhe-04
+  GROUP_ffdhe4096                       = 258,  // draft-ietf-tls-negotiated-ff-dhe-04
+  GROUP_ffdhe6144                       = 259,  // draft-ietf-tls-negotiated-ff-dhe-02 (OBSOLETE)
+  GROUP_ffdhe8192                       = 259,  // draft-ietf-tls-negotiated-ff-dhe-04
 
   GROUP_arbitrary_explicit_prime_curves	= 0xFF01,
   GROUP_arbitrary_explicit_char2_curves	= 0xFF02,
@@ -1157,6 +1158,13 @@ constant ECC_CURVES = ([
   GROUP_secp384r1: Crypto.ECC.SECP_384R1,
   GROUP_secp521r1: Crypto.ECC.SECP_521R1,
 #endif
+]);
+
+constant FFDHE_GROUPS = ([
+  GROUP_ffdhe2048: Crypto.DH.FFDHE2048,
+  GROUP_ffdhe3072: Crypto.DH.FFDHE3072,
+  GROUP_ffdhe4096: Crypto.DH.FFDHE4096,
+  GROUP_ffdhe8192: Crypto.DH.FFDHE8192,
 ]);
 
 enum HeartBeatModeType {
