@@ -164,12 +164,19 @@ array(int) preferred_suites;
 //! Supported elliptical curve cipher curves in order of preference.
 array(int) ecc_curves = reverse(sort(indices(ECC_CURVES)));
 
-//! Supported DH groups for DHE key exchanges, in order of preference.
-//! Defaults to MODP Group 24 (2048/256 bits) from RFC 5114 section
-//! 2.3.
-array(Crypto.DH.Parameters) dh_groups = ({
-  Crypto.DH.MODPGroup24, // MODP Group 24 (2048/256 bits).
-});
+//! Supported FFDHE groups for DHE key exchanges, in order of preference,
+//! most preferred first.
+//!
+//! Defaults to the full set of supported FFDHE groups from the FFDHE
+//! draft, in order of size with the smallest group (2048 bits) first.
+//!
+//! Server-side the first group in the list that satisfies the NIST guide
+//! lines for key strength (NIST SP800-57 5.6.1) (if any) for the selected
+//! cipher suite will be selected, and otherwise the largest group.
+//!
+//! Client-side the list will be reversed (as a precaution if the server
+//! actually follows the clients preferences).
+array(int) ffdhe_groups = sort(indices(FFDHE_GROUPS));
 
 
 //! The set of <hash, signature> combinations to use by us.
@@ -892,7 +899,10 @@ Session new_session()
       id = random(32);
     } while( session_cache[id] );
 
-  return Session(id);
+  Session s = Session(id);
+  s->ffdhe_groups = ffdhe_groups;
+
+  return s;
 }
 
 //! Add a session to the cache (if caching is enabled).

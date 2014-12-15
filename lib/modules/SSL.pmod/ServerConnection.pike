@@ -371,11 +371,28 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 		  (raw != "\0\6\0\x17\0\x18\0\x19")) {
 		maybe_safari_10_8 = 0;
 	      }
-	      session->ecc_curves =
-		filter(reverse(sort(extension_data->read_int_array(2, 2))),
-		       ECC_CURVES);
+	      array(int) named_groups =
+		reverse(sort(extension_data->read_int_array(2, 2)));
+	      session->ecc_curves = filter(named_groups, ECC_CURVES);
 	      SSL3_DEBUG_MSG("Elliptic curves: %O\n",
 			     map(session->ecc_curves, fmt_constant, "CURVE"));
+	      session->ffdhe_groups = context->ffdhe_groups &
+		filter(named_groups, FFDHE_GROUPS);
+	      if (!sizeof(session->ffdhe_groups) &&
+		  (version <= PROTOCOL_TLS_1_2)) {
+		// FFDHE group extension not supported by the client,
+		// or client wants a group we don't support. Select
+		// our configured set of groups to either assume that
+		// the client doesn't support the extension, or to
+		// pretend that we don't support the extension.
+		//
+		// NB: This behaviour violates the FFDHE draft, but
+		//     leaves it to the client to determine whether
+		//     it wants to accept the group.
+		//
+		// NB: In TLS 1.3 support for this extension is mandatory.
+		session->ffdhe_groups = context->ffdhe_groups;
+	      }
 	      break;
 	    case EXTENSION_ec_point_formats:
 	      if (!remote_extensions[EXTENSION_elliptic_curves] ||

@@ -99,7 +99,8 @@ Packet client_hello(string(8bit)|void server_name)
     return Buffer()->add_hstring(client_verify_data, 1);
   };
 
-  ext (EXTENSION_elliptic_curves, sizeof(context->ecc_curves)) {
+  ext (EXTENSION_elliptic_curves,
+       sizeof(context->ecc_curves)||sizeof(context->ffdhe_groups)) {
     // RFC 4492 5.1:
     // The extensions SHOULD be sent along with any ClientHello message
     // that proposes ECC cipher suites.
@@ -107,6 +108,32 @@ Packet client_hello(string(8bit)|void server_name)
     foreach(context->ecc_curves, int curve) {
       curves->add_int(curve, 2);
     }
+    // FFDHE draft 4 3:
+    //   The compatible client that wants to be able to negotiate
+    //   strong FFDHE SHOULD send a "Supported Groups" extension
+    //   (identified by type elliptic_curves(10) in [RFC4492]) in the
+    //   ClientHello, and include a list of known FFDHE groups in the
+    //   extension data, ordered from most preferred to least preferred.
+    //
+    // NB: The ffdhe_groups in the context has the smallest group first,
+    //     so we reverse it here in case the server actually follows
+    //     our priority order.
+    foreach(reverse(context->ffdhe_groups), int group) {
+      curves->add_int(group, 2);
+    }
+    // FIXME: FFDHE draft 4 6.1:
+    //   More subtly, clients MAY interleave preferences between ECDHE
+    //   and FFDHE groups, for example if stronger groups are
+    //   preferred regardless of cost, but weaker groups are
+    //   acceptable, the Supported Groups extension could consist of:
+    //   <ffdhe8192,secp384p1,ffdhe3072,secp256r1>. In this example,
+    //   with the same CipherSuite offered as the previous example, a
+    //   server configured to respect client preferences and with
+    //   support for all listed groups SHOULD select
+    //   TLS_DHE_RSA_WITH_AES_128_CBC_SHA with ffdhe8192. A server
+    //   configured to respect client preferences and with support for
+    //   only secp384p1 and ffdhe3072 SHOULD select
+    //   TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA with secp384p1.
     return Buffer()->add_hstring(curves, 2);
   };
 
@@ -239,6 +266,9 @@ protected void create(Context ctx, string(8bit)|void server_name,
   handshake_state = STATE_wait_for_hello;
   handshake_messages = "";
   this_program::session = session || Session();
+  if (!this_program::session->ffdhe_groups) {
+    this_program::session->ffdhe_groups = ctx->ffdhe_groups;
+  }
   send_packet(client_hello(server_name));
 }
 

@@ -97,7 +97,7 @@ Drafts (in order of age, oldest first):
  [/] TLS Padding			draft-agl-tls-padding
  [X] TLS Fallback SCSV			draft-ietf-tls-downgrade-scsv-00.txt
  [/] SSL 3.4/TLS 1.3			draft-ietf-tls-tls13-02.txt
- [/] Negotiated FF-DHE Parameters	draft-ietf-tls-negotiated-ff-dhe
+ [X] Negotiated FF-DHE Parameters	draft-ietf-tls-negotiated-ff-dhe
  [ ] Prohibit RC4			draft-ietf-tls-prohibiting-rc4
 
 The TLS parameters registry:

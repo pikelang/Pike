@@ -784,8 +784,10 @@ class KeyExchangeDHE
       if( key_strength <= key ) break;
 
     Crypto.DH.Parameters p;
-    foreach( context->dh_groups, Crypto.DH.Parameters o )
+    foreach( context->ffdhe_groups, int g )
     {
+      Crypto.DH.Parameters o = FFDHE_GROUPS[g];
+      if (!o) continue;	// Paranoia.
       if( !p || o->p->size()>p->p->size() ||
           (o->p->size()==p->p->size() && o->q->size()>p->q->size()) )
         p = o;

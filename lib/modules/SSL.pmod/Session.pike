@@ -93,6 +93,18 @@ array(array(int)) signature_algorithms = ({
   ({ HASH_sha, SIGNATURE_ecdsa }),
 });
 
+//! Supported finite field diffie-hellman groups in order of preference.
+//!
+//! @mixed
+//!   @type int(0..0)
+//!     Zero indicates that none have been specified.
+//!   @type array(zero)
+//!     The empty array indicates that none are supported.
+//!   @type array(int)
+//!     List of supported groups, with the most preferred first.
+//! @endmixed
+array(int) ffdhe_groups;
+
 //! Supported elliptical curve cipher curves in order of preference.
 array(int) ecc_curves = ({});
 
@@ -290,7 +302,8 @@ int select_cipher_suite(array(CertificatePair) certs,
 #if constant(Crypto.ECC.Curve)
   if (!sizeof(ecc_curves)) {
     // The client may claim to support ECC, but hasn't sent the
-    // required extension, so don't believe it.
+    // required extension or any curves that we support, so
+    // don't believe it.
     ke_mask &= ~((1<<KE_ecdh_ecdsa)|(1<<KE_ecdhe_ecdsa));
   }
 #endif
@@ -339,6 +352,13 @@ int select_cipher_suite(array(CertificatePair) certs,
 		 (1<<KE_ecdh_anon));
   }
 #endif
+
+  if (!sizeof(ffdhe_groups)) {
+    // The client doesn't support the same set of Finite Field
+    // Diffie-Hellman groups as we do, so filter DHE.
+    ke_mask &= ~((1<<KE_dhe_dss)|(1<<KE_dhe_rsa)|
+		 (1<<KE_dh_anon)|(1<<KE_dhe_psk));
+  }
 
   // Given the set of certs, filter the set of client_suites,
   // to find the best.
