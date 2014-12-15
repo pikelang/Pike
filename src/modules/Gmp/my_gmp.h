@@ -54,8 +54,8 @@ extern struct program *bignum_program;
 
 /* This is where we break abstraction layers. */
 #define MP_FLT __mpf_struct
-#define LIMBS(X) THIS->_mp_alloc
-#define NLIMBS(X) THIS->_mp_size
+#define LIMBS(X) ((X)->_mp_alloc)
+#define NLIMBS(X) ((X)->_mp_size)
 
 #define OBTOMPZ(o) ((MP_INT *)(o->storage))
 #define OBTOMPQ(o) ((MP_RAT *)(o->storage))
