@@ -450,7 +450,6 @@ else
   CROSS="$ac_cv_prog_cc_cross"
 fi
 AC_SUBST(CROSS)
-
 if test "x$enable_binary" = "xno"; then
   CC="$BINDIR/nobinary_dummy cc"
   RUNPIKE="USE_PIKE"
@@ -462,8 +461,6 @@ else
   RUNPIKE="DEFAULT_RUNPIKE"
   RUNTPIKE="USE_TPIKE"
 fi
-AC_SUBST(RUNPIKE)
-AC_SUBST(RUNTPIKE)
 
 #############################################################################
 if test "x$enable_binary" != "xno"; then
@@ -2211,6 +2208,7 @@ if test "$cflags_is_set" = "no"; then
     # Windows NT
     DO_IF_OS(Windows_NT,
     [
+
       case "x$CC" in
       *rntecl*)
         # Some options used by ecl (Intel's IA64 compiler).
@@ -2250,6 +2248,9 @@ if test "$cflags_is_set" = "no"; then
         pike_cv_sys_dynamic_loading=yes
       fi
     ])
+
+AC_SUBST(RUNPIKE)
+AC_SUBST(RUNTPIKE)
 
     dnl
     dnl This does not work with Digital UNIX cc/ld (cc thinks it is ok, ld does not)
@@ -2332,6 +2333,7 @@ else
     AC_SYS_COMPILER_FLAG(-qhalt=e,qhalt_e,CFLAGS)
   ])
 fi
+
 
 AC_MSG_CHECKING([crc32 intrinsics])
 AC_CACHE_VAL(pike_cv_sys_have_crc_intrinsics,[
