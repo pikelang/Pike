@@ -14,8 +14,6 @@
 
 #ifdef HAVE_LIBNETTLE
 
-#include "nettle.h"
-
 #include <nettle/yarrow.h>
 #include <nettle/knuth-lfib.h>
 
@@ -25,6 +23,8 @@
 #ifdef HAVE_STDINT_H
 #include <stdint.h>
 #endif /* HAVE_STDINT_H */
+
+#include "nettle.h"
 
 DECLARATIONS
 

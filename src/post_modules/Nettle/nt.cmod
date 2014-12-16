@@ -11,6 +11,10 @@
 #include "pike_macros.h"
 #include "stralloc.h"
 
+#ifdef HAVE_STDINT_H
+#include <stdint.h>
+#endif /* HAVE_STDINT_H */
+
 #include "nettle.h"
 
 #include <winerror.h>
