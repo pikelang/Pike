@@ -587,11 +587,16 @@ private inline mixed callout(function(mixed ...:void) f,
   return .pgsql_util.local_backend->call_out(f,delay,@args);
 }
 
+private int|.pgsql_util.sql_result portal;     // state information procmessage
+#ifdef PG_DEBUG
+private string datarowdebug;
+private int datarowdebugcount;
+#endif
+
 final void _processloop(.pgsql_util.conxion ci) {
-  int terminating=0;
-  .pgsql_util.conxiin cr=ci->i;
-  int|.pgsql_util.sql_result portal;
-  mixed err;
+  (c=ci)->socket->set_id(procmessage);
+  cancelsecret=0;
+  portal=0;
   {
     Stdio.Buffer plugbuffer=Stdio.Buffer()->add_int32(PG_PROTOCOL(3,0));
     if(user)
@@ -612,14 +617,18 @@ final void _processloop(.pgsql_util.conxion ci) {
         _connectfail();
       else
         destruct(waitforauthready);
-      return;
-    }
-  }		// Do not flush at this point, PostgreSQL 9.4 disapproves
-  cancelsecret=0;
+    } else	      // Do not flush at this point, PostgreSQL 9.4 disapproves
+      procmessage();
+  }
+}
+
+private void procmessage() {
+  int terminating=0;
+  .pgsql_util.conxion ci=c;		// cache value FIXME sensible?
+  .pgsql_util.conxiin cr=ci->i;		// cache value FIXME sensible?
+  mixed err;
 #ifdef PG_DEBUG
   PD("Processloop\n");
-  string datarowdebug;
-  int datarowdebugcount;
 
   void showportal(int msgtype) {
     if(objectp(portal))
@@ -638,6 +647,15 @@ final void _processloop(.pgsql_util.conxion ci) {
         datarowdebug=0; datarowdebugcount=0;
       }
 #endif
+      if(!sizeof(cr)) {				// Preliminary check, fast path
+        Thread.MutexKey lock=cr->fillreadmux->lock();
+        if(!sizeof(cr)) {			// Check for real
+          cr->procmsg=1;
+          lock=0;
+          return;			// Terminate thread, wait for callback
+        }
+        lock=0;
+      }
       int msgtype=cr->read_int8();
       if(!portal) {
         portal=qportals->try_read();
