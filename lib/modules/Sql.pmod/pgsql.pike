@@ -618,11 +618,10 @@ final void _processloop(.pgsql_util.conxion ci) {
       if(_options && _options.reconnect)	// FIXME why can _options be 0?
         _connectfail();
       else
-        catch(destruct(waitforauthready));      // FIXME why can it be 0?
-      return;
-    }
-  }		      // Do not flush at this point, PostgreSQL 9.4 disapproves
-  procmessage();
+        destruct(waitforauthready);
+    } else	      // Do not flush at this point, PostgreSQL 9.4 disapproves
+      procmessage();
+  }
 }
 
 private void procmessage() {
@@ -1268,8 +1267,15 @@ private int reconnect() {
   _readyforquerycount=1;
   _waittocommit=0;
   qportals->write(1);
-  if(!(c=getsocket()))
-    ERROR("Couldn't connect to database on %s:%d\n",_host,_port);
+  if(!getsocket()) {
+    string msg=sprintf("Couldn't connect to database on %s:%d",_host,_port);
+    if(force) {
+      if(!sizeof(lastmessage) || lastmessage[sizeof(lastmessage)-1]!=msg)
+        lastmessage+=({msg});
+      return 0;
+    } else
+      ERROR(msg+"\n");
+  }
   _runtimeparameter=([]);
   _unnamedportalmux=Thread.Mutex();
   unnamedstatement=Thread.Mutex();
