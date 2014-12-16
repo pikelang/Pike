@@ -185,6 +185,7 @@ class conxiin {
 
   final Thread.Condition fillread;
   final Thread.Mutex fillreadmux;
+  final int procmsg;
   private int didreadcb;
 
   protected bool range_error(int howmuch) {
@@ -204,8 +205,11 @@ class conxiin {
   }
 
   final int read_cb(mixed id,mixed b) {
+    PD("Read callback %O\n",(string)b);
     Thread.MutexKey lock=fillreadmux->lock();
-    if(fillread)
+    if(procmsg)
+      procmsg=0,lock=0,Thread.Thread(id);
+    else if(fillread)
       didreadcb=1, fillread.signal();
     lock=0;
     return 0;
@@ -225,7 +229,7 @@ class conxion {
   private Thread.Queue qportals;
   final Thread.Mutex shortmux;
   final Stdio.File socket;
-  private object pgsqlsess;
+  private function(void|mixed:void) connectfail;
   private int towrite;
 
   final Thread.Mutex nostash;
@@ -327,8 +331,7 @@ outer:
       return;
     };
     lock=0;
-    if(pgsqlsess)
-      pgsqlsess->_connectfail();
+    catch(connectfail());
   }
 
   final void sendterminate() {
@@ -349,10 +352,10 @@ outer:
 
   protected void destroy() {
     catch(close());		// Exceptions don't work inside destructors
-    pgsqlsess=0;
+    connectfail=0;
   }
 
-  final void connectloop(int nossl) {
+  final void connectloop(object pgsqlsess, int nossl) {
     mixed err=catch {
       for(;;clear()) {
         socket->connect(pgsqlsess._host,pgsqlsess._port);
@@ -392,11 +395,11 @@ outer:
       socket->set_backend(local_backend);
       socket->set_buffer_mode(i,0);
       socket->set_nonblocking(i->read_cb,write_cb,close);
+      connectfail=pgsqlsess->_connectfail;
       Thread.Thread(pgsqlsess->_processloop,this);
       return;
     };
-    if(pgsqlsess)
-      pgsqlsess->_connectfail(err);
+    catch(connectfail(err));
   }
 
   private string _sprintf(int type, void|mapping flags) {
@@ -413,7 +416,7 @@ outer:
     return res;
   }
 
-  protected void create(object _pgsqlsess,Thread.Queue _qportals,int nossl) {
+  protected void create(object pgsqlsess,Thread.Queue _qportals,int nossl) {
     o::create();
     qportals = _qportals;
     synctransact = 1;
@@ -424,8 +427,7 @@ outer:
     stashavail=Thread.Condition();
     stashqueue=Thread.Queue();
     stash=Stdio.Buffer();
-    pgsqlsess=_pgsqlsess;
-    Thread.Thread(connectloop,nossl);
+    Thread.Thread(connectloop,pgsqlsess,nossl);
   }
 };
 
