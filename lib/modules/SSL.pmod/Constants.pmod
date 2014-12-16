@@ -1167,6 +1167,16 @@ constant FFDHE_GROUPS = ([
   GROUP_ffdhe8192: Crypto.DH.FFDHE8192,
 ]);
 
+// These groups have equivalent strength to the FFDHE groups
+// above, but don't have codepoints of their own. As they are
+// popular groups to use for DHE, we also allow them.
+constant MODP_GROUPS = ([
+  GROUP_ffdhe2048: Crypto.DH.MODPGroup14,
+  GROUP_ffdhe3072: Crypto.DH.MODPGroup15,
+  GROUP_ffdhe4096: Crypto.DH.MODPGroup16,
+  GROUP_ffdhe8192: Crypto.DH.MODPGroup18,
+]);
+
 enum HeartBeatModeType {
   HEARTBEAT_MODE_disabled = 0,
   HEARTBEAT_MODE_peer_allowed_to_send = 1,

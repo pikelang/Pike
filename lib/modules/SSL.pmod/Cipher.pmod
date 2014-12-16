@@ -31,8 +31,30 @@ protected mapping(Gmp.mpz:mapping(Gmp.mpz:int)) make_valid_dh()
   return dh;
 }
 
+// FIXME: This function ought to check that the selected group
+//        is strong enough for the selected key length.
 protected bool validate_dh(Crypto.DH.Parameters dh, object session)
 {
+  if (sizeof(session->ffdhe_groups | ({}))) {
+    // Check if one of the recommended groups was selected,
+    // in which case we're done.
+    foreach(session->ffdhe_groups, int g) {
+      Crypto.DH.Parameters ffdhe = FFDHE_GROUPS[g];
+      if (!ffdhe) continue;
+      if ((ffdhe->p == dh->p) &&
+	  (ffdhe->g == dh->g) &&
+	  (ffdhe->q == dh->q)) return 1;
+    }
+    // Also check for the equivalent MODP groups.
+    foreach(session->ffdhe_groups, int g) {
+      Crypto.DH.Parameters ffdhe = MODP_GROUPS[g];
+      if (!ffdhe) continue;
+      if ((ffdhe->p == dh->p) &&
+	  (ffdhe->g == dh->g) &&
+	  (ffdhe->q == dh->q)) return 1;
+    }
+  }
+
   if( !valid_dh || valid_dh_count > 1000 )
   {
     valid_dh = make_valid_dh();
