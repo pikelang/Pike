@@ -59,7 +59,7 @@ static void smpz_invert(INT32 args)
     SIMPLE_DIVISION_BY_ZERO_ERROR ("invert");
   res = fast_clone_object(THIS_PROGRAM);
   if (mpn_sec_invert(LIMBS(OBTOMPZ(res)), LIMBS(THIS), LIMBS(modulo),
-                     NLIMBS(OBTOMPZ(res)), NLIMBS(THIS), NLIMBS(module)) == 0)
+                     NLIMBS(OBTOMPZ(res)), NLIMBS(THIS), NLIMBS(modulo)) == 0)
   {
     free_object(res);
     Pike_error("Not invertible.\n");
