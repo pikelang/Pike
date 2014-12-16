@@ -208,7 +208,7 @@ class conxiin {
     PD("Read callback %O\n",(string)b);
     Thread.MutexKey lock=fillreadmux->lock();
     if(procmsg)
-      procmsg=0,lock=0,Thread.Thread(id);
+      procmsg=0,lock=0,Thread.Thread(id());
     else if(fillread)
       didreadcb=1, fillread.signal();
     lock=0;
@@ -355,10 +355,7 @@ outer:
   }
 
   protected void destroy() {
-    catch {			// Exceptions don't work inside destructors
-      close();
-      socket->set_callbacks();	// Clear all callbacks
-    };
+    catch(close());		// Exceptions don't work inside destructors
     connectfail=0;
   }
 
@@ -403,6 +400,7 @@ outer:
       socket->set_backend(local_backend);
       socket->set_buffer_mode(i,0);
       socket->set_nonblocking(i->read_cb,write_cb,close);
+      connectfail=pgsqlsess->_connectfail;
       Thread.Thread(pgsqlsess->_processloop,this);
       return;
     };
