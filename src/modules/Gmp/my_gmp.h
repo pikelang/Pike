@@ -52,10 +52,16 @@ extern struct program *bignum_program;
 #define get_mpz debug_get_mpz 
 #endif
 
-/* This is where we break abstraction layers. */
+/*
+ * This is where we break abstraction layers.
+ */
 #define MP_FLT __mpf_struct
-#define LIMBS(X) ((X)->_mp_alloc)
+/* Number of allocated limbs. */
+#define ALIMBS(X) ((X)->_mp_alloc)
+/* Number of limbs in use + sign. */
 #define NLIMBS(X) ((X)->_mp_size)
+/* Array of limbs. */
+#define LIMBS(X) ((X)->_mp_d)
 
 #define OBTOMPZ(o) ((MP_INT *)(o->storage))
 #define OBTOMPQ(o) ((MP_RAT *)(o->storage))

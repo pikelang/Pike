@@ -2064,7 +2064,7 @@ static void gmp_fac(INT32 args)
 static void mpzmod__size_object(INT32 UNUSED(args))
 {
   DECLARE_THIS();
-  push_int(LIMBS(THIS)*sizeof(mp_limb_t)+sizeof(mpz_t));
+  push_int(ALIMBS(THIS) * sizeof(mp_limb_t) + sizeof(mpz_t));
 }
 
 static void init_mpz_glue(struct object * UNUSED(o))
@@ -2077,7 +2077,7 @@ static void exit_mpz_glue(struct object *UNUSED(o))
 {
   DECLARE_THIS();
   if( THIS_OBJECT->flags & OBJECT_CLEAR_ON_EXIT )
-     memset( THIS->_mp_d, 0,LIMBS(THIS) * sizeof(mp_limb_t));
+    memset(LIMBS(THIS), 0, ALIMBS(THIS) * sizeof(mp_limb_t));
   mpz_clear(THIS);
 }
 
@@ -2085,7 +2085,7 @@ static void gc_recurse_mpz (struct object *o)
 {
   DECLARE_THIS();
   if (mc_count_bytes (o))
-    mc_counted_bytes += LIMBS(THIS)*sizeof (mp_limb_t) + sizeof (mpz_t);
+    mc_counted_bytes += ALIMBS(THIS) * sizeof(mp_limb_t) + sizeof(mpz_t);
 }
 
 static void *pike_mp_alloc (size_t alloc_size)
