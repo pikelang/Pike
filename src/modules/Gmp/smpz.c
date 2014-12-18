@@ -11,6 +11,8 @@
 #include "interpret.h"
 #include "program.h"
 
+/* #define ENABLE_SMPZ_INVERT */
+
 #undef THIS
 #define DECLARE_THIS() struct pike_frame *_fp = Pike_fp
 #define THIS ((MP_INT *)(_fp->current_storage))
@@ -42,6 +44,28 @@ static void smpz_powm(INT32 args)
 
 #ifdef HAVE_GMP6
 
+#ifdef ENABLE_SMPZ_INVERT
+/* This function has multiple issues:
+ *
+ *   * It doesn't work as implemented (eg argument 6 to mpb_sec_invert()
+ *     is wrong).
+ *
+ *   * It would clobber THIS. Gmp manual 8.1:
+ *     "In either case, the input A is destroyed."
+ *
+ *   * To work, the number of limbs in THIS, modulo and res MUST
+ *     be the same (aka n). This can probably be accomplished
+ *     by using mpz_realloc2(), of which the Gmp manual 5.1 says:
+ *     "Calling this function is never necessary; reallocation is
+ *     handled automatically by GMP when needed."
+ *
+ * Fixing the above issues while still keeping the _sec property
+ * is non-trivial, and best left to the Gmp people, so we wait for
+ * an mpz_invert_sec().
+ *
+ *	/grubba 2014-12-18
+ */
+
 /* int mpn_sec_invert (mp_limb_t *rp, mp_limb_t *ap, const mp_limb_t *mp,
                        mp_size_t n, mp_bitcnt_t nbcnt, mp_limb_t *tp) */
 /* int mpz_invert (mpz_t rop, const mpz_t op1, const mpz_t op2) */
@@ -67,6 +91,7 @@ static void smpz_invert(INT32 args)
   pop_n_elems(args);
   push_object(res);
 }
+#endif /* ENABLE_SMPZ_INVERT */
 #endif
 
 void pike_init_smpz_module(void)
@@ -80,8 +105,10 @@ void pike_init_smpz_module(void)
 #endif
 
 #ifdef HAVE_GMP6
+#ifdef ENABLE_SMPZ_INVERT
   ADD_INT_CONSTANT("sec_invert", 1, 0);
   ADD_FUNCTION("invert", smpz_invert,tFunc(tMpz_arg,tMpz_ret),0);
+#endif /* ENABLE_SMPZ_INVERT */
 #endif
 
   smpz_program = end_program();
