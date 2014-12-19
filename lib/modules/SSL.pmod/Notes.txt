@@ -57,8 +57,9 @@ The TLS 1.1 Protocol is specified in the following RFCs:
  [ ] OpenPGP Authentication		RFC 5081
  [X] Authenticated Encryption		RFC 5116
 
-The DTLS Protocol is specified in the following RFCs:
+The DTLS 1.0 Protocol is specified in the following RFCs:
 
+ [ ] DTLS 1.0				RFC 4347
  [ ] DTLS over DCCP			RFC 5238
 
 The TLS 1.2 Protocol is specified in the following RFCs:
@@ -89,6 +90,10 @@ The TLS 1.2 Protocol is specified in the following RFCs:
  [X] AES-CCM ECC Suites for TLS		RFC 7251
  [X] TLS ALPN Extension			RFC 7301
  [X] TLS Encrypt-then-MAC		RFC 7366
+
+The DTLS 1.2 Protocol is specified in the following RFCs:
+
+ [ ] DTLS 1.2				RFC 6347
 
 Drafts (in order of age, oldest first):
  [/] 56-bit Export Cipher		draft-ietf-tls-56-bit-ciphersuites-01.txt

@@ -15,6 +15,9 @@ enum ProtocolVersion {
   PROTOCOL_SSL_3_3	= 0x303, //! SSL 3.3 - The RFC 5246 version of SSL.
   PROTOCOL_TLS_1_2	= 0x303, //! TLS 1.2 - The RFC 5246 version of TLS.
   PROTOCOL_TLS_1_3      = 0x304, //! TLS 1.3 - draft
+
+  PROTOCOL_DTLS_1_0	= 0xfeff, //! DTLS 1.0 - The RFC 4347 version of DTLS.
+  PROTOCOL_DTLS_1_2	= 0xfefd, //! DTLS 1.2 - The RFC 6347 version of DTLS.
 }
 
 //! Max supported SSL version.
