@@ -255,8 +255,8 @@ test_do([[
   ASSERT(rsa->public_key_equal(rsa_again));
 
   array attrs = ({
-    (["organizationName":Standards.ASN1.Types.PrintableString("Test")]),
-    (["commonName":Standards.ASN1.Types.PrintableString("*")]),
+    (["commonName":"*"]),
+    (["organizationName":"Test"]),
   });
 
   string _cert = Standards.PEM.build("CERTIFICATE",
