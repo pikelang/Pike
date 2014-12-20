@@ -17,7 +17,10 @@ enum ProtocolVersion {
   PROTOCOL_TLS_1_3      = 0x304, //! TLS 1.3 - draft
 
   PROTOCOL_DTLS_1_0	= 0xfeff, //! DTLS 1.0 - The RFC 4347 version of DTLS.
+				  //! This is essentially TLS 1.1 over UDP.
+
   PROTOCOL_DTLS_1_2	= 0xfefd, //! DTLS 1.2 - The RFC 6347 version of DTLS.
+				  //! This is essentially TLS 1.2 over UDP.
 }
 
 //! Max supported SSL version.
