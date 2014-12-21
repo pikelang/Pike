@@ -994,28 +994,28 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
     case HANDSHAKE_certificate_verify:
       SSL3_DEBUG_MSG("SSL.ServerConnection: CERTIFICATE_VERIFY\n");
 
-      if (!ke->message_was_bad)
-      {
-	int(0..1) verification_ok;
-	mixed err = catch {
-	    ADT.struct handshake_messages_struct = ADT.struct();
-	    handshake_messages_struct->put_fix_string(handshake_messages);
-	    verification_ok = session->cipher_spec->verify(
-	      session, "", handshake_messages_struct, input);
-	  };
+      SSL3_DEBUG_MSG("SERVER: handshake_messages: %d bytes.\n",
+		     sizeof(handshake_messages));
+      int(0..1) verification_ok;
+      mixed err = catch {
+	  ADT.struct handshake_messages_struct = ADT.struct();
+	  handshake_messages_struct->put_fix_string(handshake_messages);
+	  verification_ok = session->cipher_spec->verify(
+	    session, "", handshake_messages_struct, input);
+	};
 #ifdef SSL3_DEBUG
-	if (err) {
-	  master()->handle_error(err);
-	}
-#endif
-	err = UNDEFINED;	// Get rid of warning.
-	if (!verification_ok)
-	{
-	  send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
-			    "Verification of CertificateVerify failed.\n"));
-	  return -1;
-	}
+      if (err) {
+	master()->handle_error(err);
       }
+#endif
+      err = UNDEFINED;	// Get rid of warning.
+      if (!verification_ok)
+      {
+	send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
+			  "Verification of CertificateVerify failed.\n"));
+	return -1;
+      }
+
       handshake_messages += raw;
       handshake_state = STATE_wait_for_finish;
       expect_change_cipher = 1;
