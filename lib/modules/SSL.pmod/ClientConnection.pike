@@ -232,22 +232,17 @@ Packet client_key_exchange_packet()
   return handshake_packet(HANDSHAKE_client_key_exchange, data);
 }
 
-// FIXME: The certificate code has changed, so this no longer works,
-// if it ever did.
-#if 0
 Packet certificate_verify_packet()
 {
+  SSL3_DEBUG_MSG("SSL.ClientConnection: CERTIFICATE_VERIFY\n"
+		 "CLIENT: handshake_messages: %d bytes.\n",
+		 sizeof(handshake_messages));
   Buffer struct = Buffer();
 
-  // FIXME: This temporary context is probably not needed.
-  Context cx = Context();
-  cx->private_key = context->private_key;
-
-  session->cipher_spec->sign(cx, handshake_messages, struct);
+  session->cipher_spec->sign(session, handshake_messages, struct);
 
   return handshake_packet(HANDSHAKE_certificate_verify, struct);
 }
-#endif
 
 //! Initialize a new @[ClientConnection].
 //!
@@ -655,7 +650,6 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
                          ( [object(Standards.ASN1.Types.Sequence)]o ));
         }
 
-        certificate_state = CERT_requested;
         break;
       }
 
@@ -665,15 +659,25 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
       /* Send Certificate, ClientKeyExchange, CertificateVerify and
        * ChangeCipherSpec as appropriate, and then Finished.
        */
+      CertificatePair cert;
+
       /* only send a certificate if it's been requested. */
-      if(certificate_state == CERT_requested)
+      if(client_cert_types)
       {
+	SSL3_DEBUG_MSG("Searching for a suitable client certificate...\n");
+
         // Okay, we have a list of certificate types and DN:s that are
         // acceptable to the remote server. We should weed out the certs
         // we have so that we only send certificates that match what they
         // want.
 
-	array(CertificatePair) certs = context->find_cert_issuer(client_cert_distinguished_names) || ({});
+	SSL3_DEBUG_MSG("All certs: %O\n"
+		       "distinguished_names: %O\n",
+		       context->get_certificates(),
+		       client_cert_distinguished_names);
+
+	array(CertificatePair) certs =
+	  context->find_cert_issuer(client_cert_distinguished_names) || ({});
 
 	certs = [array(CertificatePair)]
           filter(certs,
@@ -684,19 +688,13 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 
 	if (sizeof(certs)) {
 	  SSL3_DEBUG_MSG("Found %d matching client certs.\n", sizeof(certs));
-	  session->private_key = certs[0]->key;
-          session->certificate_chain = certs[0]->certs;
+	  cert = certs[0];
+	  session->private_key = cert->key;
+          session->certificate_chain = cert->certs;
 	  send_packet(certificate_packet(session->certificate_chain));
-
-          // We use this as a way of saying "the server received our
-          // certificate"
-          // FIXME: Using the same state variable for certificates in
-          // both directions doesn't work, as they overwrite each
-          // others state.
-          certificate_state = CERT_received;
 	} else {
+	  SSL3_DEBUG_MSG("No suitable client certificate found.\n");
 	  send_packet(certificate_packet(({})));
-          certificate_state = CERT_no_certificate;
 	}
       }
 
@@ -715,16 +713,12 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 
       // FIXME: The certificate code has changed, so this no longer
       // works, if it ever did.
-#if 0
+
       // FIXME: Certificate verify; we should redo this so it makes more sense
-      if(certificate_state == CERT_received &&
-         sizeof(context->cert_pairs) &&
-	 context->private_key)
+      if(cert) {
          // we sent a certificate, so we should send the verification.
-      {
          send_packet(certificate_verify_packet());
       }
-#endif
 
       send_packet(change_cipher_packet());
 
