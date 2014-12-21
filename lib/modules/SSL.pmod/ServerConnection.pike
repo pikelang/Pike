@@ -925,33 +925,54 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 			   "Unexpected client cert.\n"));
 	 return -1;
        }
+
+       array(string(8bit)) certs = ({ });
+
        mixed e;
        if (e = catch {
-	 int certs_len = input->get_uint(3);
-         SSL3_DEBUG_MSG("got %d certificate bytes\n", certs_len);
+	   ADT.struct certs_struct = ADT.struct();
+	   certs_struct->put_fix_string(input->get_var_string(3));
 
-	 array(string(8bit)) certs = ({ });
-	 while(sizeof(input))
-	   certs += ({ input->get_var_string(3) });
+	   SSL3_DEBUG_MSG("got %d certificate bytes\n", sizeof(certs));
 
-	  // we have the certificate chain in hand, now we must verify them.
-          if((!sizeof(certs) && context->auth_level == AUTHLEVEL_require) ||
-             certs_len != [int]Array.sum(map(certs, sizeof)) ||
-             !verify_certificate_chain(certs))
-          {
-	    send_packet(alert(ALERT_fatal, ALERT_bad_certificate,
-			      "Bad client certificate.\n"));
-	    return -1;
-          }
-          else
-          {
-	    session->peer_certificate_chain = certs;
-          }
+	   while(sizeof(certs_struct))
+	     certs += ({ certs_struct->get_var_string(3) });
+
+	   if( !verify_certificate_chain(certs) )
+	   {
+	     send_packet(alert(ALERT_fatal, ALERT_bad_certificate,
+			       "Bad client certificate.\n"));
+	     return -1;
+	   }
+
+	   session->peer_certificate_chain = certs;
          } || sizeof(input))
        {
 	 send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
 			   "Unexpected client cert.\n"));
 	 return -1;
+       }
+
+       if (sizeof(certs)) {
+	 mixed error=catch {
+	     session->peer_public_key = Standards.X509.decode_certificate(
+               session->peer_certificate_chain[0])->public_key->pkc;
+#if constant(Crypto.ECC.Curve)
+	     if (session->peer_public_key->curve) {
+	       session->curve =
+		 ([object(Crypto.ECC.SECP_521R1.ECDSA)]session->peer_public_key)->
+		 curve();
+	     }
+#endif
+	   };
+
+	 if(error)
+	 {
+	   session->peer_certificate_chain = UNDEFINED;
+	   send_packet(alert(ALERT_fatal, ALERT_bad_certificate,
+			     "Failed to decode client certificate.\n"));
+	   return -1;
+	 }
        }
 
        if(session->peer_certificate_chain &&
