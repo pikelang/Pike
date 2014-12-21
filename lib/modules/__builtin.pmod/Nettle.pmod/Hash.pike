@@ -470,10 +470,8 @@ string pbkdf2(string password, string salt, int rounds, int bytes)
 //!   @[pbkdf2()]
 string hkdf(string password, string salt, string info, int bytes)
 {
-  int dsz = digest_size();
-
   // RFC 5869 2.2 Extract
-  if(!salt) salt = "\0"*dsz;
+  if(!salt) salt = "\0"*digest_size();
   object(_HMAC.State) hmac = HMAC(HMAC(salt)(password));
 
   // RFC 5869 2.3 Expand
