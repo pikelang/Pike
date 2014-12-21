@@ -959,10 +959,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
        while(sizeof(input))
          certs += ({ input->read_hstring(3) });
 
-       // we have the certificate chain in hand, now we must verify them.
-       if((!sizeof(certs) && context->auth_level == AUTHLEVEL_require) ||
-          certs_len != [int]Array.sum(map(certs, sizeof)) ||
-          !verify_certificate_chain(certs))
+       if( !verify_certificate_chain(certs) )
        {
          send_packet(alert(ALERT_fatal, ALERT_bad_certificate,
                            "Bad client certificate.\n"));
