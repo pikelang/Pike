@@ -968,6 +968,28 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 
        session->peer_certificate_chain = certs;
 
+       if (sizeof(certs)) {
+	 mixed error=catch {
+	     session->peer_public_key = Standards.X509.decode_certificate(
+               session->peer_certificate_chain[0])->public_key->pkc;
+#if constant(Crypto.ECC.Curve)
+	     if (session->peer_public_key->curve) {
+	       session->curve =
+		 ([object(Crypto.ECC.SECP_521R1.ECDSA)]session->peer_public_key)->
+		 curve();
+	     }
+#endif
+	   };
+
+	 if(error)
+	 {
+	   session->peer_certificate_chain = UNDEFINED;
+	   send_packet(alert(ALERT_fatal, ALERT_bad_certificate,
+			     "Failed to decode client certificate.\n"));
+	   return -1;
+	 }
+       }
+
        if(sizeof(input))
        {
 	 send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
