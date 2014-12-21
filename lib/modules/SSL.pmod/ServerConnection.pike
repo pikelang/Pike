@@ -952,8 +952,8 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	 return -1;
        }
 
-       int certs_len = input->read_int(3);
-       SSL3_DEBUG_MSG("got %d certificate bytes\n", certs_len);
+       Stdio.Buffer input = input->read_hbuffer(3);
+       SSL3_DEBUG_MSG("got %d certificate bytes\n", sizeof(input));
 
        array(string(8bit)) certs = ({ });
        while(sizeof(input))
