@@ -203,24 +203,23 @@ Packet heartbleed_packet()
   return heartbeat_packet(hb_msg);
 }
 
-// verify that a certificate chain is acceptable
+// Verify that a certificate chain is acceptable
 //
 int verify_certificate_chain(array(string) certs)
 {
-  // do we need to verify the certificate chain?
+  // Do we need to verify the certificate chain?
   if(!context->verify_certificates)
     return 1;
 
-  // if we're not requiring the certificate, and we don't provide one, 
+  // If we're not requiring the certificate, and we don't provide one,
   // that should be okay. 
   if((context->auth_level < AUTHLEVEL_require) && !sizeof(certs))
     return 1;
 
-  // a lack of certificates when we reqiure and must verify the
+  // A lack of certificates when we reqiure and must verify the
   // certificates is probably a failure.
-  if(!certs || !sizeof(certs))
+  if(!sizeof(certs))
     return 0;
-
 
   // See if the issuer of the certificate is acceptable. This means
   // the issuer of the certificate must be one of the authorities.
@@ -253,7 +252,6 @@ int verify_certificate_chain(array(string) certs)
     Standards.X509.verify_certificate_chain(certs,
                                             context->trusted_issuers_cache,
 					    context->require_trust);
-
   if(result->verified)
   {
     // This data isn't actually used internally.
