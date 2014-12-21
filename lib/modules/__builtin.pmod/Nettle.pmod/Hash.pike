@@ -383,7 +383,7 @@ string crypt_hash(string password, string salt, int rounds)
 //!   the length of the generated keys.
 //!
 //! @seealso
-//!   @[pbkdf2()], @[openssl_pbkdf()], @[crypt_password()]
+//!   @[hkdf()], @[pbkdf2()], @[openssl_pbkdf()], @[crypt_password()]
 string pbkdf1(string password, string salt, int rounds, int bytes)
 {
   if( bytes>digest_size() )
@@ -420,7 +420,7 @@ string pbkdf1(string password, string salt, int rounds, int bytes)
 //!   Returns the derived key.
 //!
 //! @seealso
-//!   @[pbkdf1()], @[openssl_pbkdf()], @[crypt_password()]
+//!   @[hkdf()], @[pbkdf1()], @[openssl_pbkdf()], @[crypt_password()]
 string pbkdf2(string password, string salt, int rounds, int bytes)
 {
   if( rounds <=0 )
@@ -440,6 +440,52 @@ string pbkdf2(string password, string salt, int rounds, int bytes)
       frag ^= buf;
     }
     res += frag;
+  }
+
+  return res[..bytes-1];
+}
+
+//! HMAC-based Extract-and-Expand Key Derivation Function, HKDF, RFC
+//! 5869. This is very similar to @[pbkdf2], with a few important
+//! differences. HKDF can use an "info" string that binds a generated
+//! password to a specific use or application (e.g. port number or
+//! cipher suite). It does not however support multiple rounds of
+//! hashing to add computational cost to brute force attacks.
+//!
+//! @param password
+//!   Password for the keygenerator.
+//!
+//! @param salt
+//! @param info
+//!   Both the salt and info arguments are optional for the function
+//!   and can either be 0.
+//!
+//! @param bytes
+//!   The number of bytes of output.
+//!
+//! @returns
+//!   Returns the derived key.
+//!
+//! @seealso
+//!   @[pbkdf2()]
+string hkdf(string password, string salt, string info, int bytes)
+{
+  int dsz = digest_size();
+
+  // RFC 5869 2.2 Extract
+  if(!salt) salt = "\0"*dsz;
+  object(_HMAC.State) hmac = HMAC(HMAC(salt)(password));
+
+  // RFC 5869 2.3 Expand
+  string t = "";
+  string res = "";
+  if(!info) info = "";
+  int i;
+  while (sizeof(res) < bytes )
+  {
+    i++;
+    t = hmac(sprintf("%s%s%c", t, info, i));
+    res += t;
   }
 
   return res[..bytes-1];
