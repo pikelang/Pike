@@ -1191,6 +1191,7 @@ test_tests([[
     int successes;
     int tests;
     array suites = server_ctx->get_suites(128, 2);
+    server_ctx->preferred_suites = suites;
 
     // First without any certs.
     foreach(({ AUTHLEVEL_none, AUTHLEVEL_ask, AUTHLEVEL_require, }),
