@@ -952,12 +952,12 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	 return -1;
        }
 
-       Stdio.Buffer input = input->read_hbuffer(3);
-       SSL3_DEBUG_MSG("got %d certificate bytes\n", sizeof(input));
+       Stdio.Buffer certs_buf = input->read_hbuffer(3);
+       SSL3_DEBUG_MSG("got %d certificate bytes\n", sizeof(certs_buf));
 
        array(string(8bit)) certs = ({ });
-       while(sizeof(input))
-         certs += ({ input->read_hstring(3) });
+       while(sizeof(certs_buf))
+         certs += ({ certs_buf->read_hstring(3) });
 
        if( !verify_certificate_chain(certs) )
        {
