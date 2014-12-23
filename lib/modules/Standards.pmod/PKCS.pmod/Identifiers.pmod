@@ -72,17 +72,29 @@ Identifier pkcs_id = Identifier(1, 2, 840, 113549, 1);
 Identifier pkcs_1_id = pkcs_id->append(1);
 Identifier pkcs_9_id = pkcs_id->append(9);
 
-/* For public key */
+/* For public key (RFC 4055 1.2). */
 Identifier rsa_id = pkcs_1_id->append(1);
 
 /* Signature algorithms */
+// RFC 3279 2.2.1:
 Identifier rsa_md2_id = pkcs_1_id->append(2);
 // Identifier rsa_md4_id = pkcs_1_id->append(3);
 Identifier rsa_md5_id = pkcs_1_id->append(4);
 Identifier rsa_sha1_id = pkcs_1_id->append(5);
+// RFC 4055 5:
 Identifier rsa_sha256_id = pkcs_1_id->append(11);
 Identifier rsa_sha384_id = pkcs_1_id->append(12);
 Identifier rsa_sha512_id = pkcs_1_id->append(13);
+Identifier rsa_sha224_id = pkcs_1_id->append(14);
+
+// RFC 4055 2.2:
+Identifier mfg1_id = pkcs_1_id->append(8);
+
+// RFC 4055 3.1:
+Identifier rsassa_pss_id = pkcs_1_id->append(10);
+
+// RFC 4055 4.1:
+Identifier rsaes_oaep_id = pkcs_1_id->append(7);
 
 Identifier ecdsa_sha1_id   = Identifier(1, 2, 840, 10045, 4, 1);
 Identifier ecdsa_sha224_id = Identifier(1, 2, 840, 10045, 4, 3, 1);
@@ -149,13 +161,17 @@ Identifier dsa_sha_id = Identifier(1, 2, 840, 10040, 4, 3);
 Identifier dsa_sha224_id = Identifier(2, 16, 840, 1, 101, 3, 4, 3, 1);
 Identifier dsa_sha256_id = Identifier(2, 16, 840, 1, 101, 3, 4, 3, 2);
 
+// RFC 3279 2.2.1:
 Identifier md2_id = Identifier(1, 2, 840, 113549, 2, 2);
 Identifier md4_id = Identifier(1, 2, 840, 113549, 2, 4);
 Identifier md5_id = Identifier(1, 2, 840, 113549, 2, 5);
+
+// RFC 4055 2.1:
 Identifier sha1_id = Identifier(1, 3, 14, 3, 2, 26);
 Identifier sha256_id = Identifier(2, 16, 840, 1, 101, 3, 4, 2, 1);
 Identifier sha384_id = Identifier(2, 16, 840, 1, 101, 3, 4, 2, 2);
 Identifier sha512_id = Identifier(2, 16, 840, 1, 101, 3, 4, 2, 3);
+Identifier sha224_id = Identifier(2, 16, 840, 1, 101, 3, 4, 2, 4);
 
 /*      dhpublicnumber OBJECT IDENTIFIER ::= { iso(1) member-body(2)
                   us(840) ansi-x942(10046) number-type(2) 1 } */
