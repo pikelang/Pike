@@ -301,6 +301,8 @@ class State {
     return Standards.ASN1.Types.Sequence(sign)->get_der();
   }
 
+  // FIXME: Consider implementing RFC 6979.
+
 #define Object Standards.ASN1.Types.Object
 
   //! Verify PKCS-1 signature @[sign] of message @[message] using hash

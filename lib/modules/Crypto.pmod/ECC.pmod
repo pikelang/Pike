@@ -183,6 +183,8 @@ class Curve {
       return Sequence(sign)->get_der();
     }
 
+    // FIXME: Consider implementing RFC 6979.
+
     //! Verify PKCS-1 signature @[sign] of message @[message] using hash
     //! algorithm @[h].
     int(0..1) pkcs_verify(string(8bit) message, .Hash h, string(8bit) sign)
