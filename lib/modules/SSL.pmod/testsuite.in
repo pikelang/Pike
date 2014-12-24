@@ -611,27 +611,35 @@ test_do([[
       exp_data = 0;
     }
 
-    // We only have self-signed certificates, so all ECDH_RSA and
-    // DH_RSA suites will fail prior to TLS 1.2, since they require
-    // the certificate to be signed with RSA.
-    if ((exp_version < PROTOCOL_TLS_1_2) && (sizeof(suites) == 1)) {
-      int ke = CIPHER_SUITES[suites[0] ][0];
-      if ((ke == KE_ecdh_rsa) || (ke == KE_dh_rsa)) {
-        exp_data = 0;
-      }
-      if (sizeof(CIPHER_SUITES[suites[0] ]) == 4) {
-        // AEAD ciphers and cipher specific prfs not supported prior
-	// to TLS 1.2.
-	exp_data = 0;
-      }
-      if (client_max < PROTOCOL_TLS_1_0) {
-        // SSL 3.0 doesn't support extensions, so it can't support ECC.
-	if ((ke == KE_ecdh_ecdsa) || (ke == KE_ecdhe_ecdsa) ||
-	    (ke == KE_ecdhe_rsa) || (ke == KE_ecdh_anon)) {
-	  exp_data = 0;
+    int exp_suite = -1;
+
+    foreach(suites, int suite) {
+      if (exp_version < PROTOCOL_TLS_1_2) {
+	int ke = CIPHER_SUITES[suite ][0];
+	if ((ke == KE_ecdh_rsa) || (ke == KE_dh_rsa)) {
+	  // We only have self-signed certificates, so all ECDH_RSA and
+	  // DH_RSA suites will fail prior to TLS 1.2, since they require
+	  // the certificate to be signed with RSA.
+	  continue;
+	}
+	if (sizeof(CIPHER_SUITES[suite ]) == 4) {
+	  // AEAD ciphers and cipher specific prfs not supported prior
+	  // to TLS 1.2.
+	  continue;
+	}
+	if (client_max < PROTOCOL_TLS_1_0) {
+	  // SSL 3.0 doesn't support extensions, so it can't support ECC.
+	  if ((ke == KE_ecdh_ecdsa) || (ke == KE_ecdhe_ecdsa) ||
+	      (ke == KE_ecdhe_rsa) || (ke == KE_ecdh_anon)) {
+	    continue;
+	  }
 	}
       }
+      exp_suite = suite;
+      break;
     }
+
+    if (exp_suite == -1) exp_data = 0;
 
     // A client that supports just a single cipher suite.
     SSL.Context client_ctx = TestContext();
@@ -652,7 +660,7 @@ test_do([[
 
     string fail =
       low_test_ssl_connection(server_ctx, client_ctx,
-			      exp_data, suites[0], exp_version,
+			      exp_data, exp_suite, exp_version,
 			      session);
 
     if (fail) {
