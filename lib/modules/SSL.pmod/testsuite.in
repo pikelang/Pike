@@ -1222,10 +1222,12 @@ test_tests([[
 	    server_ctx->auth_level) {
       string exp = client_msg;
       if (server_ctx->auth_level == AUTHLEVEL_require) exp = UNDEFINED;
-      int count = test_ssl_connection(0x300, 0x303, 0x303, 0x303,
-				      exp, server_ctx, suites);
-      successes += count;
-      tests += count || 1;
+      for (int ver = 0x300; ver <= 0x303; ver++) {
+	int count = test_ssl_connection(0x300, ver, 0x300, 0x303,
+					exp, server_ctx, suites);
+	successes += count;
+	tests += count || 1;
+      }
     }
 
     // Then with certs, but none accepted.
@@ -1234,10 +1236,12 @@ test_tests([[
 	    server_ctx->auth_level) {
       string exp = client_msg;
       if (server_ctx->auth_level == AUTHLEVEL_require) exp = UNDEFINED;
-      int count = test_ssl_connection(0x300, 0x303, 0x303, 0x303,
-				      exp, server_ctx, suites, certs);
-      successes += count;
-      tests += count || 1;
+      for (int ver = 0x300; ver <= 0x303; ver++) {
+	int count = test_ssl_connection(0x300, ver, 0x300, 0x303,
+					exp, server_ctx, suites);
+	successes += count;
+	tests += count || 1;
+      }
     }
 
     // Then with accepted certs, one at a time.
@@ -1246,10 +1250,12 @@ test_tests([[
       foreach(({ AUTHLEVEL_none, AUTHLEVEL_ask, AUTHLEVEL_require, }),
 		 server_ctx->auth_level) {
 	string exp = client_msg;
-        int count = test_ssl_connection(0x300, 0x303, 0x303, 0x303,
-				        exp, server_ctx, suites, certs);
-        successes += count;
-        tests += count || 1;
+	for (int ver = 0x300; ver <= 0x303; ver++) {
+	  int count = test_ssl_connection(0x300, ver, 0x300, 0x303,
+					  exp, server_ctx, suites);
+	  successes += count;
+	  tests += count || 1;
+	}
       }
     }
 
