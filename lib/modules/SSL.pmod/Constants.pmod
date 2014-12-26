@@ -1004,6 +1004,7 @@ constant HANDSHAKE_client_hello		= 1;  // RFC 5246
 constant HANDSHAKE_server_hello		= 2;  // RFC 5246
 constant HANDSHAKE_hello_verify_request = 3;  // RFC 6347
 constant HANDSHAKE_NewSessionTicket     = 4;  // RFC 4507
+constant HANDSHAKE_hello_retry_request	= 4;  // TLS 1.3 draft 3 A.4.
 constant HANDSHAKE_certificate		= 11; // RFC 5246
 constant HANDSHAKE_server_key_exchange	= 12; // RFC 5246
 constant HANDSHAKE_certificate_request	= 13; // RFC 5246
