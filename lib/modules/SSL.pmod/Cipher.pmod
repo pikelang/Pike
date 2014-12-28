@@ -345,10 +345,15 @@ class KeyExchange(object context, object session, object connection,
 
   //! TLS 1.3 and later.
   //!
-  //! Generate a client key share offer for the named group
-  //! (currently only implemented in @[KeyShareECDHE] and
-  //! @[KeyShareDHE]).
-  optional Stdio.Buffer client_key_share_offer(int named_group);
+  //! Generate a key share offer for the configured named group
+  //! (currently only implemented in @[KeyShareECDHE] and @[KeyShareDHE]).
+  optional Stdio.Buffer make_key_share_offer();
+
+  //! TLS 1.3 and later.
+  //!
+  //! Receive a key share offer key exchange for the configured group
+  //! (currently only implemented in @[KeyShareECDHE] and @[KeyShareDHE]).
+  optional void receive_key_share_offer(string(8bit) offer);
 
   //! The default implementation calls @[server_key_params()] to generate
   //! the base payload.
@@ -896,29 +901,37 @@ class KeyShareDHE
 {
   inherit KeyExchangeDHE;
 
-  Stdio.Buffer client_key_share_offer(int g)
+  int group;
+
+  Stdio.Buffer make_key_share_offer()
   {
-    Crypto.DH.Parameters params = FFDHE_GROUPS[g];
-
-    dh_state = DHKeyExchange(params);
-    dh_state->new_secret(context->random);
-
     Stdio.Buffer offer = Stdio.Buffer();
-    offer->add_int(g, 2);
+    offer->add_int(group, 2);
     offer->add_hint(dh_state->our, 2);
     return offer;
   }
 
-  protected void create(void|int g, void|string(8bit) offer)
+  void receive_key_share_offer(string(8bit) offer)
   {
-    if (!g && !offer) return;
+    dh_state->set_other(Gmp.mpz(offer, 256));
+  }
 
+  protected void create(object context, object session, object connection,
+			ProtocolVersion client_version,
+			int g, void|string(8bit) offer)
+  {
+    ::create(context, session, connection, client_version);
+
+    group = g;
     Crypto.DH.Parameters params = FFDHE_GROUPS[g];
     if (!params) error("Unsupported FF-DHE group.\n");
 
     dh_state = DHKeyExchange(params);
     dh_state->new_secret(context->random);
-    dh_state->set_other(Gmp.mpz(offer, 256));
+
+    if (!offer) return;
+
+    receive_key_share_offer(offer);
   }
 }
 
@@ -1226,34 +1239,42 @@ class KeyShareECDHE
 {
   inherit KeyExchangeECDHE;
 
+  int group;
   Crypto.ECC.Curve curve;
 
-  Stdio.Buffer client_key_share_offer(int c)
+  Stdio.Buffer make_key_share_offer()
   {
-    curve = ECC_CURVES[c];
-
-    secret = curve->new_scalar(context->random);
-    [Gmp.mpz x, Gmp.mpz y] = session->curve * secret;
+    [Gmp.mpz x, Gmp.mpz y] = curve * secret;
 
     SSL3_DEBUG_MSG("secret: %O\n", secret);
     SSL3_DEBUG_MSG("x: %O\n", x);
     SSL3_DEBUG_MSG("y: %O\n", y);
 
     Stdio.Buffer offer = Stdio.Buffer();
-    offer->add_int(c, 2);
+    offer->add_int(group, 2);
     offer->add_hstring(encode_point(x, y), 1);
     return offer;
   }
 
-  protected void create(void|int c, void|string(8bit) offer)
+  void receive_key_share_offer(string(8bit) offer)
   {
-    if (!c && !offer) return;
+    [ pubx, puby ] = decode_point(Stdio.Buffer(offer));
+  }
 
+  protected void create(object context, object session, object connection,
+			ProtocolVersion client_version,
+			int c, void|string(8bit) offer)
+  {
+    ::create(context, session, connection, client_version);
+
+    group = c;
     curve = ECC_CURVES[c];
     if (!curve) error("Unsupported curve.\n");
-
-    [ pubx, puby ] = decode_point(Stdio.Buffer(offer));
     secret = curve->new_scalar(context->random);
+
+    if (!offer) return;
+
+    receive_key_share_offer(offer);
   }
 }
 
