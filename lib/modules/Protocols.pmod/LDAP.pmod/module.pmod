@@ -1665,6 +1665,13 @@ protected void periodic_idle_conns_garb()
   }
 }
 
+// This mapping is used to attempt to pin connections to a single
+// LDAP server in the case of clustering with DNS round-robin.
+//
+// Mapping from hostname to an array with the index of the most
+// recently working connection in index 0, followed by ip-numbers.
+protected mapping(string:array(int|string)) host_lookup = ([]);
+
 object/*(client)*/ get_connection (string ldap_url, void|string binddn,
 				   void|string password, void|int version)
 //! Returns a client connection to the specified LDAP URL. If a bind
@@ -1763,6 +1770,48 @@ object/*(client)*/ get_connection (string ldap_url, void|string binddn,
 
   if (!conn) {
     DWRITE("Connecting to %O.\n", ldap_url);
+    string host = parsed_url->host;
+    if (host) {
+      if (!host_lookup[host]) {
+	array(string|array(string)) entry =
+	  Protocols.DNS.gethostbyname(host);
+	if ((sizeof(entry) >= 2) && sizeof(entry[1])) {
+	  DWRITE("DNS lookup: %O.\n", entry[1]);
+	  host_lookup[host] = ({ random(sizeof(entry[1])) + 1 }) + entry[1];
+	} else {
+	  entry = gethostbyname(host);
+	  if ((sizeof(entry) >= 2) && sizeof(entry[1])) {
+	    DWRITE("Hosts lookup: %O.\n", entry[1]);
+	    host_lookup[host] = ({ random(sizeof(entry[1])) + 1 }) + entry[1];
+	  }
+	}
+      }
+      array(int|string) ips = host_lookup[host];
+      if (ips) {
+	int i = ips[0];
+	for (int j = 1; j < sizeof(ips); j++) {
+	  mixed err = catch {
+	      DWRITE("Attempt #%d: %O.\n", j, ips[i]);
+	      parsed_url->host = ips[i];
+	      conn = Protocols.LDAP["client"](parsed_url);
+	      ips[0] = i;
+	      break;
+	    };
+	  if (!err) {
+	    break;
+	  }
+	  DWRITE("Failure: %s\n", describe_error(err));
+	  if (++i >= sizeof(ips)) i = 1;
+	}
+	parsed_url->host = host;
+	if (!conn) {
+	  m_delete(host_lookup, host);
+	}
+      }
+    }
+  }
+
+  if (!conn) {
     conn = Protocols.LDAP["client"] (parsed_url);
   }
 
