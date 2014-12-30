@@ -232,18 +232,6 @@ Packet client_key_exchange_packet()
   return handshake_packet(HANDSHAKE_client_key_exchange, data);
 }
 
-Packet certificate_verify_packet()
-{
-  SSL3_DEBUG_MSG("SSL.ClientConnection: CERTIFICATE_VERIFY\n"
-		 "CLIENT: handshake_messages: %d bytes.\n",
-		 sizeof(handshake_messages));
-  Buffer struct = Buffer();
-
-  session->cipher_spec->sign(session, handshake_messages, struct);
-
-  return handshake_packet(HANDSHAKE_certificate_verify, struct);
-}
-
 //! Initialize a new @[ClientConnection].
 //!
 //! @param ctx

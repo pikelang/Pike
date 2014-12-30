@@ -159,6 +159,18 @@ Packet certificate_packet(array(string(8bit)) certificates)
                           Buffer()->add_string_array(certificates, 3, 3));
 }
 
+Packet certificate_verify_packet()
+{
+  SSL3_DEBUG_MSG("SSL.Connection: CERTIFICATE_VERIFY\n"
+		 "%O: handshake_messages: %d bytes.\n",
+		 this_object(), sizeof(handshake_messages));
+  Buffer struct = Buffer();
+
+  session->cipher_spec->sign(session, handshake_messages, struct);
+
+  return handshake_packet(HANDSHAKE_certificate_verify, struct);
+}
+
 Packet heartbeat_packet(Buffer s)
 {
   return Packet(version, PACKET_heartbeat, s->read());
