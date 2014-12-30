@@ -3084,6 +3084,7 @@ int main(int argc, array(string) argv)
     "/* Compat with Pike 7.8 and earlier. */\n"
     "/* NB: Not strictly correct; PIKE_UNUSED was added the\n"
     " *     day after set_program_id_to_id(), but good enough.\n"
+    " */\n"
     "static void set_program_id_to_id(void*UNUSED(id)){}\n"
     "#else /* */\n"
     "PMOD_EXPORT void set_program_id_to_id( int (*to)(int) );\n"
