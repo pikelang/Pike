@@ -408,7 +408,7 @@ mapping get_information(Stdio.File fd)
     }
     //werror("Charset: %O\n", charset);
     res->charset = ({ charset });
-    object decoder = Locale.Charset.decoder(charset);
+    object decoder = Charset.decoder(charset);
     foreach(res; string key; array(string) vals) {
       res[key] = map(vals,
 		     lambda(string val, object decoder) {
