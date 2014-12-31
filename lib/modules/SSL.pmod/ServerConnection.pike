@@ -128,11 +128,32 @@ Packet server_hello_packet()
   return handshake_packet(HANDSHAKE_server_hello, struct);
 }
 
+Packet server_hello_retry_request_packet(int suite, int group)
+{
+  Buffer struct = Buffer();
+  struct->add_int(version, 2);
+  struct->add_int(suite, 2);
+  struct->add_int(group, 2);
+
+  // TLS 1.3 draft 3 7.4.2.4:
+  //   The server SHOULD send only the extensions necessary for the
+  //   client to generate a correct ClientHello/ClientKeyShare pair.
+  struct->add_hstring("", 2);	// extensions.
+
+  return handshake_packet(HANDSHAKE_hello_retry_request, struct);
+}
+
+Packet server_key_share_packet(Stdio.Buffer offer)
+{
+  return handshake_packet(HANDSHAKE_server_key_share, offer);
+}
+
 Packet server_key_exchange_packet()
 {
   if (ke) error("KE!\n");
   ke = session->cipher_spec->ke_factory(context, session, this, client_version);
-  string(8bit) data = ke->server_key_exchange_packet(client_random, server_random);
+  string(8bit) data =
+    ke->server_key_exchange_packet(client_random, server_random);
   return data && handshake_packet(HANDSHAKE_server_key_exchange, data);
 }
 
