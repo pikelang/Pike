@@ -979,6 +979,9 @@ class KeyExchangeECDH
       len /= 2;
       x = Gmp.mpz(data->read_int(len));
       y = Gmp.mpz(data->read_int(len));
+
+      // FIXME: Are there any security implications of (x, y) above
+      //        being == curve.g (ie remote.secret == 1)?
       break;
     default:
       // Compressed points not supported yet.
