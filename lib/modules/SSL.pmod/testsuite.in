@@ -447,6 +447,11 @@ test_do([[
       // CBC and RC4 suites obsoleted in TLS 1.3.
       obsoleted_suites[suite] = SSL.Constants.PROTOCOL_TLS_1_2;
     }
+    if (!(< SSL.Constants.KE_dhe_dss, SSL.Constants.KE_dhe_rsa, SSL.Constants.KE_dh_anon,
+	    SSL.Constants.KE_ecdhe_ecdsa, SSL.Constants.KE_ecdhe_rsa, SSL.Constants.KE_ecdh_anon >)[def[0] ]) {
+      // Only DHE and ECDHE are valid key exchanges in TLS 1.3.
+      obsoleted_suites[suite] = SSL.Constants.PROTOCOL_TLS_1_2;
+    }
   }
 
   add_constant("obsoleted_suites", obsoleted_suites);
