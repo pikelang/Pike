@@ -347,13 +347,24 @@ class KeyExchange(object context, object session, object connection,
   //!
   //! Generate a key share offer for the configured named group
   //! (currently only implemented in @[KeyShareECDHE] and @[KeyShareDHE]).
-  optional Stdio.Buffer make_key_share_offer();
+  optional void make_key_share_offer(Stdio.Buffer offer);
 
   //! TLS 1.3 and later.
   //!
   //! Receive a key share offer key exchange for the configured group
   //! (currently only implemented in @[KeyShareECDHE] and @[KeyShareDHE]).
-  optional void receive_key_share_offer(string(8bit) offer);
+  //!
+  //! @note
+  //!   Clears the secret state.
+  //!
+  //! @returns
+  //!   Returns the shared pre-master key.
+  optional string(8bit) receive_key_share_offer(string(8bit) offer);
+
+  //! TLS 1.3 and later.
+  //!
+  //! Set the group or curve to be used.
+  optional void set_group(int group);
 
   //! The default implementation calls @[server_key_params()] to generate
   //! the base payload.
@@ -903,35 +914,32 @@ class KeyShareDHE
 
   int group;
 
-  Stdio.Buffer make_key_share_offer()
+  void make_key_share_offer(Stdio.Buffer offer)
   {
-    Stdio.Buffer offer = Stdio.Buffer();
     offer->add_int(group, 2);
     offer->add_hint(dh_state->our, 2);
-    return offer;
   }
 
-  void receive_key_share_offer(string(8bit) offer)
+  string(8bit) receive_key_share_offer(string(8bit) offer)
   {
     dh_state->set_other(Gmp.mpz(offer, 256));
+
+    string(8bit) premaster_secret =
+      dh_state->get_shared()->digits(256);
+
+    dh_state = UNDEFINED;
+
+    return premaster_secret;
   }
 
-  protected void create(object context, object session, object connection,
-			ProtocolVersion client_version,
-			int g, void|string(8bit) offer)
+  void set_group(int g)
   {
-    ::create(context, session, connection, client_version);
-
     group = g;
     Crypto.DH.Parameters params = FFDHE_GROUPS[g];
     if (!params) error("Unsupported FF-DHE group.\n");
 
     dh_state = DHKeyExchange(params);
     dh_state->new_secret(context->random);
-
-    if (!offer) return;
-
-    receive_key_share_offer(offer);
   }
 }
 
@@ -1245,7 +1253,20 @@ class KeyShareECDHE
   int group;
   Crypto.ECC.Curve curve;
 
-  Stdio.Buffer make_key_share_offer()
+  string(8bit) encode_point(Gmp.mpz x, Gmp.mpz y)
+  {
+    // ANSI x9.62 4.3.6.
+    //
+    // Nothing x9.62 4.3.1 states an upper limit on the number of
+    // bytes to use, but in practice implementations check that the
+    // correct size is used.
+    //
+    // Format #4 is uncompressed.
+    int size = (curve->size() + 7)>>3;
+    return sprintf("%c%*c%*c", 4, size, x, size, y);
+  }
+
+  void make_key_share_offer(Stdio.Buffer offer)
   {
     [Gmp.mpz x, Gmp.mpz y] = curve * secret;
 
@@ -1253,31 +1274,35 @@ class KeyShareECDHE
     SSL3_DEBUG_MSG("x: %O\n", x);
     SSL3_DEBUG_MSG("y: %O\n", y);
 
-    Stdio.Buffer offer = Stdio.Buffer();
     offer->add_int(group, 2);
-    offer->add_hstring(encode_point(x, y), 1);
-    return offer;
+    offer->add_hstring(encode_point(x, y), 2);
   }
 
-  void receive_key_share_offer(string(8bit) offer)
+  string(8bit) receive_key_share_offer(string(8bit) offer)
   {
     [ pubx, puby ] = decode_point(Stdio.Buffer(offer));
+
+    // RFC 4492 5.10:
+    // Note that this octet string (Z in IEEE 1363 terminology) as
+    // output by FE2OSP, the Field Element to Octet String
+    // Conversion Primitive, has constant length for any given
+    // field; leading zeros found in this octet string MUST NOT be
+    // truncated.
+    string premaster_secret =
+      sprintf("%*c",
+	      (curve->size() + 7)>>3,
+	      curve->point_mul(pubx, puby, secret)[0]);
+    secret = 0;
+
+    return premaster_secret;
   }
 
-  protected void create(object context, object session, object connection,
-			ProtocolVersion client_version,
-			int c, void|string(8bit) offer)
+  void set_group(int c)
   {
-    ::create(context, session, connection, client_version);
-
     group = c;
     curve = ECC_CURVES[c];
     if (!curve) error("Unsupported curve.\n");
     secret = curve->new_scalar(context->random);
-
-    if (!offer) return;
-
-    receive_key_share_offer(offer);
   }
 }
 
