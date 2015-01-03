@@ -2089,37 +2089,60 @@ CipherSpec lookup(int suite, ProtocolVersion|int version,
     }
   }
 
-  switch(ke_method)
-  {
-  case KE_null:
-    res->ke_factory = KeyExchangeNULL;
-    break;
-  case KE_rsa:
-  case KE_rsa_fips:
-    res->ke_factory = KeyExchangeRSA;
-    break;
-  case KE_dh_dss:
-  case KE_dh_rsa:
-    res->ke_factory = KeyExchangeDH;
-    break;
-  case KE_dh_anon:
-  case KE_dhe_rsa:
-  case KE_dhe_dss:
-    res->ke_factory = KeyExchangeDHE;
-    break;
+  if (version >= PROTOCOL_TLS_1_3) {
+    // NB: Only DHE and ECDHE are supported in TLS 1.3 and later.
+    switch(ke_method) {
+    case KE_dh_anon:
+    case KE_dhe_rsa:
+    case KE_dhe_dss:
+      res->ke_factory = KeyShareDHE;
+      break;
 #if constant(Crypto.ECC.Curve)
-  case KE_ecdhe_rsa:
-  case KE_ecdhe_ecdsa:
-  case KE_ecdh_anon:
-    res->ke_factory = KeyExchangeECDHE;
-    break;
-  case KE_ecdh_rsa:
-  case KE_ecdh_ecdsa:
-    res->ke_factory = KeyExchangeECDH;
-    break;
+    case KE_ecdhe_rsa:
+    case KE_ecdhe_ecdsa:
+    case KE_ecdh_anon:
+      res->ke_factory = KeyShareECDHE;
+      break;
 #endif
-  default:
-    error( "Internal error.\n" );
+    default:
+      werror( "%s: Unsupported KE: %s\n",
+	      fmt_version(version),
+	      fmt_constant(ke_method, "KE") );
+      return 0;
+    }
+  } else {
+    switch(ke_method)
+    {
+    case KE_null:
+      res->ke_factory = KeyExchangeNULL;
+      break;
+    case KE_rsa:
+    case KE_rsa_fips:
+      res->ke_factory = KeyExchangeRSA;
+      break;
+    case KE_dh_dss:
+    case KE_dh_rsa:
+      res->ke_factory = KeyExchangeDH;
+      break;
+    case KE_dh_anon:
+    case KE_dhe_rsa:
+    case KE_dhe_dss:
+      res->ke_factory = KeyExchangeDHE;
+      break;
+#if constant(Crypto.ECC.Curve)
+    case KE_ecdhe_rsa:
+    case KE_ecdhe_ecdsa:
+    case KE_ecdh_anon:
+      res->ke_factory = KeyExchangeECDHE;
+      break;
+    case KE_ecdh_rsa:
+    case KE_ecdh_ecdsa:
+      res->ke_factory = KeyExchangeECDH;
+      break;
+#endif
+    default:
+      error( "Internal error.\n" );
+    }
   }
 
   switch(ke_method)
