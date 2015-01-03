@@ -934,8 +934,11 @@ define(test_ssl, [[
     int successes;
     int tests;
 
-    log_status("Testing SSL 3.%d..3.%d client with SSL 3.%d..3.%d server (threaded)...",
-	       $1 & 0xff, $2 & 0xff, $3 & 0xff, $4 & 0xff);
+    log_status("Testing %s..%s client with %s..%s server (threaded)...",
+	       SSL.Constants.fmt_version($1),
+	       SSL.Constants.fmt_version($2),
+	       SSL.Constants.fmt_version($3),
+	       SSL.Constants.fmt_version($4));
 
     foreach(suites, int suite) {
       int count = threaded_test_ssl_connection($1,$2,$3,$4,$5,
@@ -954,8 +957,11 @@ define(test_ssl, [[
     int successes;
     int tests;
 
-    log_status("Testing SSL 3.%d..3.%d client with SSL 3.%d..3.%d server...",
-	       $1 & 0xff, $2 & 0xff, $3 & 0xff, $4 & 0xff);
+    log_status("Testing %s..%s client with %s..%s server...",
+	       SSL.Constants.fmt_version($1),
+	       SSL.Constants.fmt_version($2),
+	       SSL.Constants.fmt_version($3),
+	       SSL.Constants.fmt_version($4));
 
     // Default to just testing all key exchanges with a cipher
     // suite that is mostly valid in all versions of SSL.
