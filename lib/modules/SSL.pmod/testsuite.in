@@ -896,212 +896,134 @@ test_do([[
   add_constant("threaded_test_ssl_connection", f);
 ]])
 
-dnl client_min, client_max, server_min, server_max, exp
-define(test_ssl, [[
-  test_tests([[array(int) a() {
-    int exp_protocol = min($2, $4);
+test_do([[
+  // Default suite for TLS 1.1 and earlier.
+  // Default to just testing all key exchanges with a cipher
+  // suite that is mostly valid in all versions prior to TLS 1.3.
+  add_constant("legacy_suites", ({
+    // These two are used to test cipher suite protocol downgrade.
+    SSL.Constants.SSL_rsa_export_with_des40_cbc_sha,	// <= TLS 1.0.
+    SSL.Constants.SSL_rsa_with_des_cbc_md5,		// <= TLS 1.1.
 
-    // Default to just testing all key exchanges with a cipher
-    // suite that is mostly valid in all versions of SSL.
-    array(int) suites = ({
-      // These two are used to test cipher suite protocol downgrade.
-      SSL.Constants.SSL_rsa_export_with_des40_cbc_sha,	// <= TLS 1.0.
-      SSL.Constants.SSL_rsa_with_des_cbc_md5,		// <= TLS 1.1.
-
-      SSL.Constants.SSL_dh_anon_with_3des_ede_cbc_sha,
-      SSL.Constants.SSL_rsa_with_3des_ede_cbc_sha,
-      SSL.Constants.SSL_dhe_rsa_with_3des_ede_cbc_sha,
-      SSL.Constants.SSL_dhe_dss_with_3des_ede_cbc_sha,
-      SSL.Constants.SSL_dh_rsa_with_3des_ede_cbc_sha,
-      SSL.Constants.SSL_dh_dss_with_3des_ede_cbc_sha,
+    SSL.Constants.SSL_dh_anon_with_3des_ede_cbc_sha,
+    SSL.Constants.SSL_rsa_with_3des_ede_cbc_sha,
+    SSL.Constants.SSL_dhe_rsa_with_3des_ede_cbc_sha,
+    SSL.Constants.SSL_dhe_dss_with_3des_ede_cbc_sha,
+    SSL.Constants.SSL_dh_rsa_with_3des_ede_cbc_sha,
+    SSL.Constants.SSL_dh_dss_with_3des_ede_cbc_sha,
 #if constant(Crypto.ECC.Curve)
-      SSL.Constants.TLS_ecdh_anon_with_3des_ede_cbc_sha,
-      SSL.Constants.TLS_ecdhe_rsa_with_3des_ede_cbc_sha,
-      SSL.Constants.TLS_ecdhe_ecdsa_with_3des_ede_cbc_sha,
-      SSL.Constants.TLS_ecdh_rsa_with_3des_ede_cbc_sha,
-      SSL.Constants.TLS_ecdh_ecdsa_with_3des_ede_cbc_sha,
+    SSL.Constants.TLS_ecdh_anon_with_3des_ede_cbc_sha,
+    SSL.Constants.TLS_ecdhe_rsa_with_3des_ede_cbc_sha,
+    SSL.Constants.TLS_ecdhe_ecdsa_with_3des_ede_cbc_sha,
+    SSL.Constants.TLS_ecdh_rsa_with_3des_ede_cbc_sha,
+    SSL.Constants.TLS_ecdh_ecdsa_with_3des_ede_cbc_sha,
 #endif
-    });
+  }));
+
+  // In TLS 1.2 AEAD suites were added, and in
+  // TLS 1.3 all other suites will be removed.
+  // Try some AEAD suites that are available with most versions of Nettle.
+  add_constant("aead_suites", ({
+    SSL.Constants.TLS_dhe_rsa_with_aes_128_ccm,
+#if constant(Crypto.ECC.Curve)
+    SSL.Constants.TLS_ecdhe_ecdsa_with_aes_128_ccm,
+#endif
+#if constant(Crypto.AES.GCM)
+    SSL.Constants.TLS_dh_anon_with_aes_128_gcm_sha256,
+    SSL.Constants.TLS_dhe_dss_with_aes_256_gcm_sha384,
+#if constant(Crypto.ECC.Curve)
+    SSL.Constants.TLS_ecdhe_rsa_with_aes_256_gcm_sha384
+#endif
+#endif
+  }));
+]])
+
+dnl client_min, client_max, server_min, server_max, exp
+test_tests([[
+array(int) a() {
+  int successes;
+  int tests;
+  int skip;
+
+  for (int server_max = SSL.Constants.PROTOCOL_SSL_3_0;
+       server_max <= SSL.Constants.PROTOCOL_TLS_MAX; server_max++) {
+  for (int server_min = SSL.Constants.PROTOCOL_SSL_3_0;
+       server_min <= server_max; server_min++) {
+  for (int client_max = SSL.Constants.PROTOCOL_SSL_3_0;
+       client_max <= SSL.Constants.PROTOCOL_TLS_MAX; client_max++) {
+  for (int client_min = SSL.Constants.PROTOCOL_SSL_3_0;
+       client_min <= client_max; client_min++) {
+
+    int exp_protocol = min(client_max, server_max);
+
+    string exp_res = client_msg;
+    if ((client_max < server_min) || (server_max < client_min)) {
+      exp_res = UNDEFINED;
+    }
+
+    array(int) suites = legacy_suites;
+
+    if ((server_max >= SSL.Constants.PROTOCOL_TLS_1_2) ||
+	(client_max >= SSL.Constants.PROTOCOL_TLS_1_2)) {
+      // Try some AEAD suites too.
+      if (client_min >= SSL.Constants.PROTOCOL_TLS_1_3) {
+        // None of the legacy suites are valid in TLS 1.3 (not AEAD),
+	// and will never be sent by a TLS 1.3-only client.
+	suites = ({});
+      }
+      suites += aead_suites;
+    }
 
 #if 0
-    if( `==($1,$3, SSL.Constants.PROTOCOL_SSL_3_0) && ($2 == $4) ) {
+    if( `==(client_min, server_min, SSL.Constants.PROTOCOL_SSL_3_0) &&
+	(client_max == server_max) ) {
       // Test all known cipher suites.
       suites = server_ctx->get_suites(-1, 2);
     }
 #endif
 
 #if constant(thread_create)
-    int successes;
-    int tests;
-
     log_status("Testing %s..%s client with %s..%s server (threaded)...",
-	       SSL.Constants.fmt_version($1),
-	       SSL.Constants.fmt_version($2),
-	       SSL.Constants.fmt_version($3),
-	       SSL.Constants.fmt_version($4));
+	       SSL.Constants.fmt_version(client_min),
+	       SSL.Constants.fmt_version(client_max),
+	       SSL.Constants.fmt_version(server_min),
+	       SSL.Constants.fmt_version(server_max));
 
     foreach(suites, int suite) {
-      int count = threaded_test_ssl_connection($1,$2,$3,$4,$5,
+      int count = threaded_test_ssl_connection(client_min, client_max,
+					       server_min, server_max, exp_res,
 					       server_ctx, ({suite}) );
       successes += count;
       tests += count || 1;
     }
-    return ({ successes, tests-successes });
+#else
+    skip += sizeof(suites);
 #endif /* constant(thread_create) */
-    return ({ 0, 0, sizeof(suites) });
-  }]])
-
-  test_tests([[array(int) a() {
-
-    int exp_protocol = min($2, $4);
-    int successes;
-    int tests;
 
     log_status("Testing %s..%s client with %s..%s server...",
-	       SSL.Constants.fmt_version($1),
-	       SSL.Constants.fmt_version($2),
-	       SSL.Constants.fmt_version($3),
-	       SSL.Constants.fmt_version($4));
+	       SSL.Constants.fmt_version(client_min),
+	       SSL.Constants.fmt_version(client_max),
+	       SSL.Constants.fmt_version(server_min),
+	       SSL.Constants.fmt_version(server_max));
 
-    // Default to just testing all key exchanges with a cipher
-    // suite that is mostly valid in all versions of SSL.
-    array(int) suites = ({
-      // These two are used to test cipher suite protocol downgrade.
-      SSL.Constants.SSL_rsa_export_with_des40_cbc_sha,	// <= TLS 1.0.
-      SSL.Constants.SSL_rsa_with_des_cbc_md5,		// <= TLS 1.1.
-
-      SSL.Constants.SSL_dh_anon_with_3des_ede_cbc_sha,
-      SSL.Constants.SSL_rsa_with_3des_ede_cbc_sha,
-      SSL.Constants.SSL_dhe_rsa_with_3des_ede_cbc_sha,
-      SSL.Constants.SSL_dhe_dss_with_3des_ede_cbc_sha,
-      SSL.Constants.SSL_dh_rsa_with_3des_ede_cbc_sha,
-      SSL.Constants.SSL_dh_dss_with_3des_ede_cbc_sha,
-#if constant(Crypto.ECC.Curve)
-      SSL.Constants.TLS_ecdh_anon_with_3des_ede_cbc_sha,
-      SSL.Constants.TLS_ecdhe_rsa_with_3des_ede_cbc_sha,
-      SSL.Constants.TLS_ecdhe_ecdsa_with_3des_ede_cbc_sha,
-      SSL.Constants.TLS_ecdh_rsa_with_3des_ede_cbc_sha,
-      SSL.Constants.TLS_ecdh_ecdsa_with_3des_ede_cbc_sha,
-#endif
-    });
-
-    if( `==($1,$3, SSL.Constants.PROTOCOL_SSL_3_0) && ($2 == $4) ) {
+    if( `==(client_min, server_min, SSL.Constants.PROTOCOL_SSL_3_0) &&
+	(client_max == server_max) ) {
       // Test all known cipher suites.
       suites = server_ctx->get_suites(-1, 2);
     }
 
     foreach(suites, int suite) {
-      int count = test_ssl_connection($1,$2,$3,$4,$5, server_ctx, ({suite}) );
+      int count = test_ssl_connection(client_min, client_max,
+				      server_min, server_max, exp_res,
+				      server_ctx, ({suite}) );
       successes += count;
       tests += count || 1;
+      if (!count) skip += !!exp_res;	// Skipped resume.
     }
-    return ({ successes, tests-successes });
-  }]])
+  }}}}
+  return ({ successes, tests-successes, skip });
+}
 ]])
-
-test_ssl(0x300,0x300,0x300,0x300,client_msg)
-test_ssl(0x300,0x301,0x300,0x300,client_msg)
-test_ssl(0x301,0x301,0x300,0x300,0)
-test_ssl(0x300,0x302,0x300,0x300,client_msg)
-test_ssl(0x301,0x302,0x300,0x300,0)
-test_ssl(0x302,0x302,0x300,0x300,0)
-test_ssl(0x300,0x303,0x300,0x300,client_msg)
-test_ssl(0x301,0x303,0x300,0x300,0)
-test_ssl(0x302,0x303,0x300,0x300,0)
-test_ssl(0x303,0x303,0x300,0x300,0)
-
-test_ssl(0x300,0x300,0x300,0x301,client_msg)
-test_ssl(0x300,0x300,0x301,0x301,0)
-test_ssl(0x300,0x301,0x300,0x301,client_msg)
-test_ssl(0x300,0x301,0x301,0x301,client_msg)
-test_ssl(0x301,0x301,0x300,0x301,client_msg)
-test_ssl(0x301,0x301,0x301,0x301,client_msg)
-test_ssl(0x300,0x302,0x300,0x301,client_msg)
-test_ssl(0x300,0x302,0x301,0x301,client_msg)
-test_ssl(0x301,0x302,0x300,0x301,client_msg)
-test_ssl(0x301,0x302,0x301,0x301,client_msg)
-test_ssl(0x302,0x302,0x300,0x301,0)
-test_ssl(0x302,0x302,0x301,0x301,0)
-test_ssl(0x300,0x303,0x300,0x301,client_msg)
-test_ssl(0x300,0x303,0x301,0x301,client_msg)
-test_ssl(0x301,0x303,0x300,0x301,client_msg)
-test_ssl(0x301,0x303,0x301,0x301,client_msg)
-test_ssl(0x302,0x303,0x300,0x301,0)
-test_ssl(0x302,0x303,0x301,0x301,0)
-test_ssl(0x303,0x303,0x300,0x301,0)
-test_ssl(0x303,0x303,0x301,0x301,0)
-
-test_ssl(0x300,0x300,0x300,0x302,client_msg)
-test_ssl(0x300,0x300,0x301,0x302,0)
-test_ssl(0x300,0x300,0x302,0x302,0)
-test_ssl(0x300,0x301,0x300,0x302,client_msg)
-test_ssl(0x300,0x301,0x301,0x302,client_msg)
-test_ssl(0x300,0x301,0x302,0x302,0)
-test_ssl(0x301,0x301,0x300,0x302,client_msg)
-test_ssl(0x301,0x301,0x301,0x302,client_msg)
-test_ssl(0x301,0x301,0x302,0x302,0)
-test_ssl(0x300,0x302,0x300,0x302,client_msg)
-test_ssl(0x300,0x302,0x301,0x302,client_msg)
-test_ssl(0x300,0x302,0x302,0x302,client_msg)
-test_ssl(0x301,0x302,0x300,0x302,client_msg)
-test_ssl(0x301,0x302,0x301,0x302,client_msg)
-test_ssl(0x301,0x302,0x302,0x302,client_msg)
-test_ssl(0x302,0x302,0x300,0x302,client_msg)
-test_ssl(0x302,0x302,0x301,0x302,client_msg)
-test_ssl(0x302,0x302,0x302,0x302,client_msg)
-test_ssl(0x300,0x303,0x300,0x302,client_msg)
-test_ssl(0x300,0x303,0x301,0x302,client_msg)
-test_ssl(0x300,0x303,0x302,0x302,client_msg)
-test_ssl(0x301,0x303,0x300,0x302,client_msg)
-test_ssl(0x301,0x303,0x301,0x302,client_msg)
-test_ssl(0x301,0x303,0x302,0x302,client_msg)
-test_ssl(0x302,0x303,0x300,0x302,client_msg)
-test_ssl(0x302,0x303,0x301,0x302,client_msg)
-test_ssl(0x302,0x303,0x302,0x302,client_msg)
-test_ssl(0x303,0x303,0x300,0x302,0)
-test_ssl(0x303,0x303,0x301,0x302,0)
-test_ssl(0x303,0x303,0x302,0x302,0)
-
-test_ssl(0x300,0x300,0x300,0x303,client_msg)
-test_ssl(0x300,0x300,0x301,0x303,0)
-test_ssl(0x300,0x300,0x302,0x303,0)
-test_ssl(0x300,0x300,0x303,0x303,0)
-test_ssl(0x300,0x301,0x300,0x303,client_msg)
-test_ssl(0x300,0x301,0x301,0x303,client_msg)
-test_ssl(0x300,0x301,0x302,0x303,0)
-test_ssl(0x300,0x301,0x303,0x303,0)
-test_ssl(0x301,0x301,0x300,0x303,client_msg)
-test_ssl(0x301,0x301,0x301,0x303,client_msg)
-test_ssl(0x301,0x301,0x302,0x303,0)
-test_ssl(0x301,0x301,0x303,0x303,0)
-test_ssl(0x300,0x302,0x300,0x303,client_msg)
-test_ssl(0x300,0x302,0x301,0x303,client_msg)
-test_ssl(0x300,0x302,0x302,0x303,client_msg)
-test_ssl(0x300,0x302,0x303,0x303,0)
-test_ssl(0x301,0x302,0x300,0x303,client_msg)
-test_ssl(0x301,0x302,0x301,0x303,client_msg)
-test_ssl(0x301,0x302,0x302,0x303,client_msg)
-test_ssl(0x301,0x302,0x303,0x303,0)
-test_ssl(0x302,0x302,0x300,0x303,client_msg)
-test_ssl(0x302,0x302,0x301,0x303,client_msg)
-test_ssl(0x302,0x302,0x302,0x303,client_msg)
-test_ssl(0x302,0x302,0x303,0x303,0)
-test_ssl(0x300,0x303,0x300,0x303,client_msg)
-test_ssl(0x300,0x303,0x301,0x303,client_msg)
-test_ssl(0x300,0x303,0x302,0x303,client_msg)
-test_ssl(0x300,0x303,0x303,0x303,client_msg)
-test_ssl(0x301,0x303,0x300,0x303,client_msg)
-test_ssl(0x301,0x303,0x301,0x303,client_msg)
-test_ssl(0x301,0x303,0x302,0x303,client_msg)
-test_ssl(0x301,0x303,0x303,0x303,client_msg)
-test_ssl(0x302,0x303,0x300,0x303,client_msg)
-test_ssl(0x302,0x303,0x301,0x303,client_msg)
-test_ssl(0x302,0x303,0x302,0x303,client_msg)
-test_ssl(0x302,0x303,0x303,0x303,client_msg)
-test_ssl(0x303,0x303,0x300,0x303,client_msg)
-test_ssl(0x303,0x303,0x301,0x303,client_msg)
-test_ssl(0x303,0x303,0x302,0x303,client_msg)
-test_ssl(0x303,0x303,0x303,0x303,client_msg)
 
 cond_resolv(Crypto.ECC, [[
 
@@ -1274,7 +1196,13 @@ test_tests([[
   }
 ]])
 
+dnl FIXME: Test TLS 1.2 and earlier server and client (separately)
+dnl	   without EXTENSION_encrypt_then_mac.
+dnl Hmm... This might be already be tested with SSL 3.0 (client-side only).
+
 test_do([[
+  add_constant("aead_suites");
+  add_constant("legacy_suites");
   add_constant("obsoleted_suites");
   add_constant("log_ssl_failure");
   add_constant("client_msg");
