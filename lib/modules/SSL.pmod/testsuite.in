@@ -1153,10 +1153,14 @@ test_tests([[
     // First without any certs.
     foreach(({ AUTHLEVEL_none, AUTHLEVEL_ask, AUTHLEVEL_require, }),
 	    server_ctx->auth_level) {
+      log_status("Client certificates: NONE, %s",
+		 fmt_constant(server_ctx->auth_level, "AUTHLEVEL"));
+
       string exp = client_msg;
       if (server_ctx->auth_level == AUTHLEVEL_require) exp = UNDEFINED;
-      for (int ver = 0x300; ver <= 0x303; ver++) {
-	int count = test_ssl_connection(0x300, ver, 0x300, 0x303,
+      for (int ver = PROTOCOL_SSL_3_0; ver <= PROTOCOL_TLS_MAX; ver++) {
+	int count = test_ssl_connection(PROTOCOL_SSL_3_0, ver,
+					PROTOCOL_SSL_3_0, PROTOCOL_TLS_MAX,
 					exp, server_ctx, suites);
 	successes += count;
 	tests += count || 1;
@@ -1167,10 +1171,14 @@ test_tests([[
     array(CertificatePair) certs = server_ctx->get_certificates();
     foreach(({ AUTHLEVEL_none, AUTHLEVEL_ask, AUTHLEVEL_require, }),
 	    server_ctx->auth_level) {
+      log_status("Client certificates: INVALID, %s",
+		 fmt_constant(server_ctx->auth_level, "AUTHLEVEL"));
+
       string exp = client_msg;
       if (server_ctx->auth_level == AUTHLEVEL_require) exp = UNDEFINED;
-      for (int ver = 0x300; ver <= 0x303; ver++) {
-	int count = test_ssl_connection(0x300, ver, 0x300, 0x303,
+      for (int ver = PROTOCOL_SSL_3_0; ver <= PROTOCOL_TLS_MAX; ver++) {
+	int count = test_ssl_connection(PROTOCOL_SSL_3_0, ver,
+					PROTOCOL_SSL_3_0, PROTOCOL_TLS_MAX,
 					exp, server_ctx, suites);
 	successes += count;
 	tests += count || 1;
@@ -1182,9 +1190,15 @@ test_tests([[
       server_ctx->set_authorities(({ cp->certs[0] }));
       foreach(({ AUTHLEVEL_none, AUTHLEVEL_ask, AUTHLEVEL_require, }),
 		 server_ctx->auth_level) {
+	log_status("Client certificates: %s(%d bits), %s",
+		   fmt_constant(cp->cert_type, "AUTH"),
+		   cp->key->key_size(),
+		   fmt_constant(server_ctx->auth_level, "AUTHLEVEL"));
+
 	string exp = client_msg;
-	for (int ver = 0x300; ver <= 0x303; ver++) {
-	  int count = test_ssl_connection(0x300, ver, 0x300, 0x303,
+	for (int ver = PROTOCOL_SSL_3_0; ver <= PROTOCOL_TLS_MAX; ver++) {
+	  int count = test_ssl_connection(PROTOCOL_SSL_3_0, ver,
+					  PROTOCOL_SSL_3_0, PROTOCOL_TLS_MAX,
 					  exp, server_ctx, suites);
 	  successes += count;
 	  tests += count || 1;
