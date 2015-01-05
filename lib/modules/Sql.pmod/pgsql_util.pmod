@@ -874,7 +874,6 @@ class sql_result {
   }
 
   final void _purgeportal() {
-    _unnamedportalkey=_unnamedstatementkey=0;
     datarows->write(1);				   // Signal EOF
     Thread.MutexKey lock=closemux->lock();
     _fetchlimit=0;				   // disables further Executes
@@ -955,6 +954,7 @@ class sql_result {
   }
 
   private void releaseconditions() {
+    _unnamedportalkey=_unnamedstatementkey=0;
     pgsqlsess=0;
     if(!datarowtypes) {
       Thread.MutexKey lock=_ddescribemux->lock();
