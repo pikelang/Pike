@@ -24,7 +24,8 @@ protected string _sprintf(int t)
 }
 
 //!
-Packet client_hello(string(8bit)|void server_name)
+Packet client_hello(string(8bit)|void server_name,
+		    array(Packet)|void early_data)
 {
   Buffer struct = Buffer();
   /* Build client_hello message */
@@ -196,6 +197,16 @@ Packet client_hello(string(8bit)|void server_name)
     SSL3_DEBUG_MSG("SSL.ClientConnection: Adding %d bytes of padding.\n",
                    padding);
     return Buffer()->add("\0"*padding);
+  };
+
+  ext(EXTENSION_early_data, early_data && sizeof(early_data)) {
+    SSL3_DEBUG_MSG("SSL.ClientConnection: Adding %d packets of early data.\n",
+		   sizeof(early_data));
+    Buffer buf = Buffer();
+    foreach(early_data, Packet p) {
+      buf->add(p->send());
+    }
+    return buf;
   };
 
   if(sizeof(extensions) && (version >= PROTOCOL_TLS_1_0))
