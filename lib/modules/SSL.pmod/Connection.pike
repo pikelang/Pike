@@ -30,10 +30,11 @@
 //#define SSL3_PROFILING
 
 import .Constants;
-#define State .State
-#define Session .Session
-#define Context .Context
-#define Buffer .Buffer
+
+private constant State = .State;
+private constant Session = .Session;
+private constant Context = .Context;
+private constant Buffer = .Buffer;
 
 #ifdef SSL3_DEBUG
 #define SSL3_DEBUG_MSG(X ...)  werror(X)
@@ -78,8 +79,8 @@ ProtocolVersion client_version; /* Used to check for version roll-back attacks. 
 string(8bit) client_random;
 string(8bit) server_random;
 
-#define Packet .Packet
-#define Alert .Alert
+private constant Packet = .Packet;
+private constant Alert = .Alert;
 
 Alert alert(int(1..2) level, int(8bit) description,
             string|void message)
@@ -109,7 +110,8 @@ void addRecord(int t,int s) {
 
 string(8bit) handshake_messages;
 
-Packet handshake_packet(int(8bit) type, string(8bit)|Buffer data)
+Packet handshake_packet(int(8bit) type,
+			string(8bit)|Buffer|object(Stdio.Buffer) data)
 {
 #ifdef SSL3_PROFILING
   addRecord(type,1);
@@ -118,7 +120,7 @@ Packet handshake_packet(int(8bit) type, string(8bit)|Buffer data)
   if(stringp(data))
     str = [string(8bit)]data;
   else
-    str = ([object(Buffer)]data)->read();
+    str = (string(8bit))data;
   str = sprintf("%1c%3H", type, str);
   handshake_messages += str;
 
