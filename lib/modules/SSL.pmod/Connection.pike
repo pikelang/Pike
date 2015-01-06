@@ -51,6 +51,7 @@ State pending_write_state;
 /* State variables */
 
 int handshake_state; // Constant.STATE_*
+int previous_handshake;	// Constant.HANDSHAKE_*
 int reuse;
 
 constant CERT_none = 0;
@@ -462,6 +463,7 @@ void send_packet(Packet packet, int|void priority)
     certificate_state = 0;
     state = [int(0..0)|ConnectionState](state | CONNECTION_handshaking);
     handshake_state = STATE_wait_for_hello;
+    previous_handshake = 0;
   }
 
   SSL3_DEBUG_MSG("SSL.Connection->send_packet: type %d, pri %d, %O\n",

@@ -303,6 +303,15 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
   werror("sizeof(data)="+sizeof(data)+"\n");
 #endif
 
+  if (type <= previous_handshake) {
+    // Enforce packet ordering.
+    send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
+		      "Invalid handshake packet order.\n"));
+    return -1;
+  }
+
+  previous_handshake = type;
+
   switch(handshake_state)
   {
   default:
