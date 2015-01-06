@@ -811,21 +811,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	  session = old_session;
 	  send_packet(server_hello_packet());
 
-	  array(State) res;
-	  mixed err;
-          if( err = catch(res = session->new_server_states(this,
-							   client_random,
-							   server_random,
-							   version)) )
-          {
-            // DES/DES3 throws an exception if a weak key is used. We
-            // could possibly send ALERT_insufficient_security instead.
-            send_packet(alert(ALERT_fatal, ALERT_internal_error,
-			      "Internal error.\n"));
-            return -1;
-          }
-	  pending_read_state = res[0];
-	  pending_write_state = res[1];
+	  new_cipher_states();
 	  send_packet(change_cipher_packet());
 	  if(version == PROTOCOL_SSL_3_0)
 	    send_packet(finished_packet("SRVR"));
@@ -958,12 +944,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
       {
 	return -1;
       } else {
-
-	array(State) res =
-	  session->new_server_states(this, client_random, server_random,
-				     version);
-	pending_read_state = res[0];
-	pending_write_state = res[1];
+	new_cipher_states();
 
         SSL3_DEBUG_MSG("certificate_state: %d\n", certificate_state);
       }

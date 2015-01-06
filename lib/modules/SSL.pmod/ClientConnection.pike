@@ -529,14 +529,10 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 
       if ((id == session->identity) && sizeof(id)) {
 	SSL3_DEBUG_MSG("Resuming session %O.\n", id);
-	array(State) res =
-	  session->new_client_states(this, client_random, server_random,
-				     version);
-	pending_read_state = res[0];
-	pending_write_state = res[1];
+	new_cipher_states();
+	send_packet(change_cipher_packet());
 
 	handshake_state = STATE_wait_for_finish;
-	send_packet(change_cipher_packet());
 	reuse = 1;
 	break;
       }
