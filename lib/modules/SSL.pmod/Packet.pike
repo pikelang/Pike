@@ -124,7 +124,7 @@ string(8bit)|.Packet recv(string(8bit) data)
 //!
 //! @returns
 //!   Returns the serialized packet.
-string send()
+string(8bit) send()
 {
   if (! PACKET_types[content_type] )
     error( "Invalid type" );
