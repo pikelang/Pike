@@ -235,10 +235,7 @@ Packet client_key_exchange_packet()
     return 0;
   }
 
-  array(State) res =
-    session->new_client_states(this, client_random, server_random, version);
-  pending_read_state = res[0];
-  pending_write_state = res[1];
+  new_cipher_states();
 
   return handshake_packet(HANDSHAKE_client_key_exchange, data);
 }
@@ -273,6 +270,18 @@ void send_renegotiate()
 {
   send_packet(client_hello(), PRI_application);
 }
+
+void new_cipher_states()
+{
+  SSL3_DEBUG_MSG("CLIENT: master: %O\n", session->master_secret);
+
+  array(State) res =
+    session->new_client_states(this, client_random, server_random,
+			       version);
+  pending_read_state = res[0];
+  pending_write_state = res[1];
+}
+
 
 //! Do handshake processing. Type is one of HANDSHAKE_*, data is the
 //! contents of the packet, and raw is the raw packet received (needed

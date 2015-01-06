@@ -276,6 +276,25 @@ int verify_certificate_chain(array(string) certs)
  return 0;
 }
 
+//! Generate new pending cipher states.
+void new_cipher_states();
+
+//! Derive the master secret from the premaster_secret
+//! and the random seeds, and configure the keys.
+void derive_master_secret(string(8bit) premaster_secret)
+{
+  SSL3_DEBUG_MSG("%O: derive_master_secret: %s (%s)\n",
+		 this, fmt_constant(handshake_state, "HANDSHAKE"),
+		 fmt_version(version));
+
+  session->master_secret =
+    session->cipher_spec->prf(premaster_secret, "master secret",
+			      client_random + server_random, 48);
+
+  new_cipher_states();
+}
+
+
 //! Do handshake processing. Type is one of HANDSHAKE_*, data is the
 //! contents of the packet, and raw is the raw packet received (needed
 //! for supporting SSLv2 hello messages).

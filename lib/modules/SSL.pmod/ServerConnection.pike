@@ -240,6 +240,18 @@ protected void create(Context ctx)
   handshake_state = STATE_wait_for_hello;
 }
 
+void new_cipher_states()
+{
+  SSL3_DEBUG_MSG("master: %O\n", session->master_secret);
+
+  array(State) res =
+    session->new_server_states(this, client_random, server_random,
+			       version);
+  pending_read_state = res[0];
+  pending_write_state = res[1];
+}
+
+
 //! Do handshake processing. Type is one of HANDSHAKE_*, data is the
 //! contents of the packet, and raw is the raw packet received (needed
 //! for supporting SSLv2 hello messages).
