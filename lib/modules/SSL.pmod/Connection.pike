@@ -131,6 +131,7 @@ Packet handshake_packet(int(8bit) type,
 
 Packet change_cipher_packet()
 {
+  expect_change_cipher = 1;
   return Packet(version, PACKET_change_cipher_spec, "\001");
 }
 

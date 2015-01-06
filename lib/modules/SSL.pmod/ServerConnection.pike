@@ -832,7 +832,6 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	    send_packet(heartbleed_packet());
 	  }
 
-	  expect_change_cipher = 1;
 	  reuse = 1;
 
 	  handshake_state = STATE_wait_for_finish;
@@ -904,7 +903,6 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 
        if (!reuse)
        {
-	 send_packet(change_cipher_packet());
 	 if(version == PROTOCOL_SSL_3_0)
 	   send_packet(finished_packet("SRVR"));
 	 else if(version >= PROTOCOL_TLS_1_0)
@@ -915,8 +913,6 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	   // Probe for the Heartbleed vulnerability (CVE-2014-0160).
 	   send_packet(heartbleed_packet());
 	 }
-
-	 expect_change_cipher = 1;
 	 context->record_session(session); /* Cache this session */
        }
 
@@ -970,7 +966,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
       else
       {
 	handshake_state = STATE_wait_for_finish;
-	expect_change_cipher = 1;
+	send_packet(change_cipher_packet());
       }
 
       break;
@@ -1071,7 +1067,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 
       handshake_messages += raw;
       handshake_state = STATE_wait_for_finish;
-      expect_change_cipher = 1;
+      send_packet(change_cipher_packet());
       break;
     }
     break;

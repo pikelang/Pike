@@ -527,7 +527,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	pending_write_state = res[1];
 
 	handshake_state = STATE_wait_for_finish;
-	expect_change_cipher = 1;
+	send_packet(change_cipher_packet());
 	reuse = 1;
 	break;
       }
@@ -745,7 +745,6 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
       }
 
       handshake_state = STATE_wait_for_finish;
-      expect_change_cipher = 1;
       break;
     }
     break;
@@ -781,8 +780,6 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
       handshake_state = STATE_handshake_finished;
 
       if (reuse) {
-	send_packet(change_cipher_packet());
-
 	handshake_messages += raw; /* Second hash includes this message,
 				    * the first doesn't */
 
