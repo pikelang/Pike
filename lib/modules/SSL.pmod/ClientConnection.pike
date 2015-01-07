@@ -18,6 +18,11 @@ inherit Connection;
 array(int) client_cert_types;
 array(string(8bit)) client_cert_distinguished_names;
 
+//! Active key share offers.
+//!
+//! NB: Only used with TLS 1.3 and later.
+mapping(int:.Cipher.KeyExchange) keyshares = ([]);
+
 protected string _sprintf(int t)
 {
   if (t == 'O') return sprintf("SSL.ClientConnection(%s)", describe_state());
@@ -216,6 +221,63 @@ Packet client_hello(string(8bit)|void server_name,
   return handshake_packet(HANDSHAKE_client_hello, struct);
 }
 
+protected void make_key_share_offer(int group)
+{
+  SSL3_DEBUG_MSG("make_key_share_offer(%s)\n",
+		 fmt_constant(group, "GROUP"));
+  if (keyshares[group]) return;
+
+  .Cipher.KeyExchange ke;
+
+  if ((group & 0xff00) == 0x0100) {
+    if (!FFDHE_GROUPS[group]) return;
+    ke = .Cipher.KeyShareDHE(context, 0, this, client_version);
+    ke->set_group(group);
+#if constant(Crypto.ECC.Curve)
+  } else if (!(group & 0xff00)) {
+    if (!ECC_CURVES[group]) return;
+    ke = .Cipher.KeyShareECDHE(context, 0, this, client_version);
+    ke->set_group(group);
+#endif
+  } else {
+    SSL3_DEBUG_MSG("Can't create key share for unknown group: %s\n",
+		   fmt_constant(group, "GROUP"));
+  }
+
+  keyshares[group] = ke;
+}
+
+Packet client_key_share_packet()
+{
+  Stdio.Buffer offers = Stdio.Buffer();
+
+  // NB: Prefer any ECDHE exchange to any DHE exchange.
+
+  SSL3_DEBUG_MSG("Key shares: %O\n", keyshares);
+
+#if constant(Crypto.ECC.Curve)
+  foreach(context->ecc_curves, int c) {
+    .Cipher.KeyExchange ke = keyshares[c];
+    if (!ke) continue;
+    SSL3_DEBUG_MSG("%s: %O\n",
+		   fmt_constant(c, "GROUP"), ke);
+    ke->make_key_share_offer(offers);
+  }
+#endif
+
+  foreach(context->ffdhe_groups, int g) {
+    .Cipher.KeyExchange ke = keyshares[g];
+    if (!ke) continue;
+    SSL3_DEBUG_MSG("%s: %O\n",
+		   fmt_constant(g, "GROUP"), ke);
+    ke->make_key_share_offer(offers);
+  }
+
+  Stdio.Buffer struct = Stdio.Buffer();
+  struct->add_hstring(offers, 2);
+  return handshake_packet(HANDSHAKE_client_key_share, struct);
+}
+
 Packet finished_packet(string(8bit) sender)
 {
   SSL3_DEBUG_MSG("Sending finished_packet, with sender=\""+sender+"\"\n" );
@@ -260,7 +322,39 @@ protected void create(Context ctx, string(8bit)|void server_name,
   if (!this_program::session->ffdhe_groups) {
     this_program::session->ffdhe_groups = ctx->ffdhe_groups;
   }
-  send_packet(client_hello(server_name));
+
+  if (ctx->max_version >= PROTOCOL_TLS_1_3) {
+    // Generate some key shares.
+    SSL3_DEBUG_MSG("Generating default key shares for %s.\n",
+		   fmt_version(ctx->max_version));
+#if constant(Crypto.ECC.Curve)
+    if (sizeof(ctx->ecc_curves)) {
+      make_key_share_offer(ctx->ecc_curves[0]);
+    }
+#endif
+    if (sizeof(ctx->ffdhe_groups)) {
+      make_key_share_offer(ctx->ffdhe_groups[0]);
+    }
+  }
+
+  if (ctx->min_version >= PROTOCOL_TLS_1_3) {
+    // TLS 1.3.
+    SSL3_DEBUG_MSG("CLIENT: True TLS 1.3 handshake.\n");
+    send_packet(client_hello(server_name));
+    send_packet(client_key_share_packet());
+  } else if (ctx->max_version >= PROTOCOL_TLS_1_3) {
+    // Backward compat mode TLS 1.3.
+    SSL3_DEBUG_MSG("CLIENT: Compat TLS 1.3 handshake.\n");
+    // NB: The client key share packet is not to be hashed separately.
+    string(8bit) save_handshake_messages = handshake_messages;
+    Packet cksp = client_key_share_packet();
+    handshake_messages = save_handshake_messages;
+    send_packet(client_hello(server_name, ({ cksp })));
+  } else {
+    // Pre-TLS 1.3.
+    SSL3_DEBUG_MSG("CLIENT: Legacy TLS handshake.\n");
+    send_packet(client_hello(server_name));
+  }
 }
 
 //! Renegotiate the connection (client initiated).
