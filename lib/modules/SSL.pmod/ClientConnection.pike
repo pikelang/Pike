@@ -21,7 +21,7 @@ array(string(8bit)) client_cert_distinguished_names;
 //! Active key share offers.
 //!
 //! NB: Only used with TLS 1.3 and later.
-mapping(int:.Cipher.KeyExchange) keyshares = ([]);
+mapping(int:Cipher.KeyExchange) keyshares = ([]);
 
 protected string _sprintf(int t)
 {
@@ -227,16 +227,16 @@ protected void make_key_share_offer(int group)
 		 fmt_constant(group, "GROUP"));
   if (keyshares[group]) return;
 
-  .Cipher.KeyExchange ke;
+  Cipher.KeyExchange ke;
 
   if ((group & 0xff00) == 0x0100) {
     if (!FFDHE_GROUPS[group]) return;
-    ke = .Cipher.KeyShareDHE(context, 0, this, client_version);
+    ke = Cipher.KeyShareDHE(context, 0, this, client_version);
     ke->set_group(group);
 #if constant(Crypto.ECC.Curve)
   } else if (!(group & 0xff00)) {
     if (!ECC_CURVES[group]) return;
-    ke = .Cipher.KeyShareECDHE(context, 0, this, client_version);
+    ke = Cipher.KeyShareECDHE(context, 0, this, client_version);
     ke->set_group(group);
 #endif
   } else {
@@ -257,7 +257,7 @@ Packet client_key_share_packet()
 
 #if constant(Crypto.ECC.Curve)
   foreach(context->ecc_curves, int c) {
-    .Cipher.KeyExchange ke = keyshares[c];
+    Cipher.KeyExchange ke = keyshares[c];
     if (!ke) continue;
     SSL3_DEBUG_MSG("%s: %O\n",
 		   fmt_constant(c, "GROUP"), ke);
@@ -266,7 +266,7 @@ Packet client_key_share_packet()
 #endif
 
   foreach(context->ffdhe_groups, int g) {
-    .Cipher.KeyExchange ke = keyshares[g];
+    Cipher.KeyExchange ke = keyshares[g];
     if (!ke) continue;
     SSL3_DEBUG_MSG("%s: %O\n",
 		   fmt_constant(g, "GROUP"), ke);
