@@ -365,6 +365,91 @@ void send_renegotiate()
   send_packet(client_hello(), PRI_application);
 }
 
+protected int send_certs()
+{
+  /* Send Certificate, ClientKeyExchange, CertificateVerify and
+   * ChangeCipherSpec as appropriate, and then Finished.
+   */
+  CertificatePair cert;
+
+  /* only send a certificate if it's been requested. */
+  if(client_cert_types)
+  {
+    SSL3_DEBUG_MSG("Searching for a suitable client certificate...\n");
+
+    // Okay, we have a list of certificate types and DN:s that are
+    // acceptable to the remote server. We should weed out the certs
+    // we have so that we only send certificates that match what they
+    // want.
+
+    SSL3_DEBUG_MSG("All certs: %O\n"
+		   "distinguished_names: %O\n",
+		   context->get_certificates(),
+		   client_cert_distinguished_names);
+
+    array(CertificatePair) certs =
+      context->find_cert_issuer(client_cert_distinguished_names) || ({});
+
+    certs = [array(CertificatePair)]
+      filter(certs,
+	     lambda(CertificatePair cp, array(int)) {
+	       // FIXME: Needs to look at session->signature_algorithms.
+	       return has_value(client_cert_types, cp->cert_type);
+	     }, client_cert_types);
+
+    if (sizeof(certs)) {
+      SSL3_DEBUG_MSG("Found %d matching client certs.\n", sizeof(certs));
+      cert = certs[0];
+      session->private_key = cert->key;
+      session->certificate_chain = cert->certs;
+      send_packet(certificate_packet(session->certificate_chain));
+    } else {
+      SSL3_DEBUG_MSG("No suitable client certificate found.\n");
+      send_packet(certificate_packet(({})));
+    }
+  }
+
+  if( !session->has_required_certificates() )
+  {
+    send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
+		      "Certificate message missing.\n"));
+    return -1;
+  }
+
+  Packet key_exchange = client_key_exchange_packet();
+
+  if (key_exchange)
+    send_packet(key_exchange);
+
+
+  // FIXME: The certificate code has changed, so this no longer
+  // works, if it ever did.
+
+  // FIXME: Certificate verify; we should redo this so it makes more sense
+  if(cert) {
+    // we sent a certificate, so we should send the verification.
+    send_packet(certificate_verify_packet());
+  }
+
+  send_packet(change_cipher_packet());
+
+  if(version == PROTOCOL_SSL_3_0)
+    send_packet(finished_packet("CLNT"));
+  else if(version >= PROTOCOL_TLS_1_0)
+    send_packet(finished_packet("client finished"));
+
+  // NB: The server direction hash will be calculated
+  //     when we've received the server finished packet.
+
+  if (context->heartbleed_probe &&
+      session->heartbeat_mode == HEARTBEAT_MODE_peer_allowed_to_send) {
+    // Probe for the Heartbleed vulnerability (CVE-2014-0160).
+    send_packet(heartbleed_packet());
+  }
+
+  return 0;
+}
+
 void new_cipher_states()
 {
   SSL3_DEBUG_MSG("CLIENT: master: %O\n", session->master_secret);
@@ -763,86 +848,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
     case HANDSHAKE_server_hello_done:
       SSL3_DEBUG_MSG("SSL.ClientConnection: SERVER_HELLO_DONE\n");
 
-      /* Send Certificate, ClientKeyExchange, CertificateVerify and
-       * ChangeCipherSpec as appropriate, and then Finished.
-       */
-      CertificatePair cert;
-
-      /* only send a certificate if it's been requested. */
-      if(client_cert_types)
-      {
-	SSL3_DEBUG_MSG("Searching for a suitable client certificate...\n");
-
-        // Okay, we have a list of certificate types and DN:s that are
-        // acceptable to the remote server. We should weed out the certs
-        // we have so that we only send certificates that match what they
-        // want.
-
-	SSL3_DEBUG_MSG("All certs: %O\n"
-		       "distinguished_names: %O\n",
-		       context->get_certificates(),
-		       client_cert_distinguished_names);
-
-	array(CertificatePair) certs =
-	  context->find_cert_issuer(client_cert_distinguished_names) || ({});
-
-	certs = [array(CertificatePair)]
-          filter(certs,
-		 lambda(CertificatePair cp, array(int)) {
-                   // FIXME: Needs to look at session->signature_algorithms.
-		   return has_value(client_cert_types, cp->cert_type);
-		 }, client_cert_types);
-
-	if (sizeof(certs)) {
-	  SSL3_DEBUG_MSG("Found %d matching client certs.\n", sizeof(certs));
-	  cert = certs[0];
-	  session->private_key = cert->key;
-          session->certificate_chain = cert->certs;
-	  send_packet(certificate_packet(session->certificate_chain));
-	} else {
-	  SSL3_DEBUG_MSG("No suitable client certificate found.\n");
-	  send_packet(certificate_packet(({})));
-	}
-      }
-
-      if( !session->has_required_certificates() )
-      {
-        send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
-                          "Certificate message missing.\n"));
-        return -1;
-      }
-
-      Packet key_exchange = client_key_exchange_packet();
-
-      if (key_exchange)
-	send_packet(key_exchange);
-
-
-      // FIXME: The certificate code has changed, so this no longer
-      // works, if it ever did.
-
-      // FIXME: Certificate verify; we should redo this so it makes more sense
-      if(cert) {
-         // we sent a certificate, so we should send the verification.
-         send_packet(certificate_verify_packet());
-      }
-
-      send_packet(change_cipher_packet());
-
-      if(version == PROTOCOL_SSL_3_0)
-	send_packet(finished_packet("CLNT"));
-      else if(version >= PROTOCOL_TLS_1_0)
-	send_packet(finished_packet("client finished"));
-
-      // NB: The server direction hash will be calculated
-      //     when we've received the server finished packet.
-
-      if (context->heartbleed_probe &&
-          session->heartbeat_mode == HEARTBEAT_MODE_peer_allowed_to_send) {
-	// Probe for the Heartbleed vulnerability (CVE-2014-0160).
-	send_packet(heartbleed_packet());
-      }
-
+      if (send_certs()) return -1;
       handshake_state = STATE_wait_for_finish;
       break;
     }
