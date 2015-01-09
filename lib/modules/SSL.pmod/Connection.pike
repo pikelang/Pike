@@ -536,8 +536,13 @@ string|int to_write()
     }
   }
   string res = current_write_state->encrypt_packet(packet, context)->send();
-  if (packet->content_type == PACKET_change_cipher_spec)
+  if (packet->content_type == PACKET_change_cipher_spec) {
     current_write_state = pending_write_state;
+    if (version >= PROTOCOL_TLS_1_3) {
+      // The change cipher state packet is not sent on the wire in TLS 1.3.
+      return to_write();
+    }
+  }
   return res;
 }
 
@@ -860,6 +865,11 @@ string(8bit)|int got_data(string(8bit) data)
                              "Zero length ChangeCipherSpec fragments not allowed.\n"));
            return -1;
          }
+	 if (version >= PROTOCOL_TLS_1_3) {
+           send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
+                             "ChangeCipherSpec not allowed in TLS 1.3 and later.\n"));
+           return -1;
+	 }
          foreach(packet->fragment;; int c)
 	 {
 	   int err = handle_change_cipher(c);
@@ -889,7 +899,7 @@ string(8bit)|int got_data(string(8bit) data)
 			     "Renegotiation not supported in unsecure mode.\n"));
 	   return -1;
 	 }
-	 if (expect_change_cipher)
+	 if (expect_change_cipher && (version < PROTOCOL_TLS_1_3))
 	 {
 	   /* No change_cipher message was received */
 	   // FIXME: There's a bug somewhere since expect_change_cipher often
