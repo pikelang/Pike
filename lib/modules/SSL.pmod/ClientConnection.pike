@@ -372,7 +372,7 @@ protected int send_certs()
    */
   CertificatePair cert;
 
-  /* only send a certificate if it's been requested. */
+  /* Only send a certificate if it's been requested. */
   if(client_cert_types)
   {
     SSL3_DEBUG_MSG("Searching for a suitable client certificate...\n");
@@ -422,12 +422,8 @@ protected int send_certs()
     send_packet(key_exchange);
 
 
-  // FIXME: The certificate code has changed, so this no longer
-  // works, if it ever did.
-
-  // FIXME: Certificate verify; we should redo this so it makes more sense
   if(cert) {
-    // we sent a certificate, so we should send the verification.
+    // We sent a certificate, so we should send the verification.
     send_packet(certificate_verify_packet());
   }
 
