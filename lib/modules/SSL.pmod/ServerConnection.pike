@@ -247,8 +247,8 @@ void new_cipher_states()
   array(State) res =
     session->new_server_states(this, client_random, server_random,
 			       version);
-  pending_read_state = res[0];
-  pending_write_state = res[1];
+  pending_read_state += ({ res[0] });
+  pending_write_state += ({ res[1] });
 }
 
 
@@ -291,6 +291,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 
      /* Reset all extra state variables */
      expect_change_cipher = certificate_state = 0;
+     pending_read_state = pending_write_state = ({});
      ke = 0;
 
      handshake_messages = raw;

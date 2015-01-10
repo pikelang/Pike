@@ -453,8 +453,8 @@ void new_cipher_states()
   array(State) res =
     session->new_client_states(this, client_random, server_random,
 			       version);
-  pending_read_state = res[0];
-  pending_write_state = res[1];
+  pending_read_state += ({ res[0] });
+  pending_write_state += ({ res[1] });
 }
 
 

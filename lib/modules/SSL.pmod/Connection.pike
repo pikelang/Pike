@@ -45,8 +45,8 @@ private constant Buffer = .Buffer;
 Session session;
 Context context;
 
-State pending_read_state;
-State pending_write_state;
+array(State) pending_read_state = ({});
+array(State) pending_write_state = ({});
 
 /* State variables */
 
@@ -132,7 +132,7 @@ Packet handshake_packet(int(8bit) type,
 
 Packet change_cipher_packet()
 {
-  expect_change_cipher = 1;
+  expect_change_cipher++;
   return Packet(version, PACKET_change_cipher_spec, "\001");
 }
 
@@ -537,7 +537,12 @@ string|int to_write()
   }
   string res = current_write_state->encrypt_packet(packet, context)->send();
   if (packet->content_type == PACKET_change_cipher_spec) {
-    current_write_state = pending_write_state;
+    if (sizeof(pending_write_state)) {
+      current_write_state = pending_write_state[0];
+      pending_write_state = pending_write_state[1..];
+    } else {
+      error("Invalid Change Cipher Spec.\n");
+    }
     if (version >= PROTOCOL_TLS_1_3) {
       // The change cipher state packet is not sent on the wire in TLS 1.3.
       return to_write();
@@ -652,8 +657,14 @@ int handle_change_cipher(int c)
   }
   else
   {
-    current_read_state = pending_read_state;
-    expect_change_cipher = 0;
+    if (sizeof(pending_read_state)) {
+      SSL3_DEBUG_MSG("%O: Changing read state.\n", this);
+      current_read_state = pending_read_state[0];
+      pending_read_state = pending_read_state[1..];
+    } else {
+      error("No new read state pending!\n");
+    }
+    expect_change_cipher--;
     return 0;
   }
 }
