@@ -786,16 +786,35 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 			      "Illegal with compression in TLS 1.3 and later.\n"));
 	    return -1;
 	  }
-        } else
+
+	  Session old_session = sizeof(id) && context->lookup_session(id);
+	  if (old_session && old_session->reusable_as(session))
+	  {
+	    SSL3_DEBUG_MSG("SSL.ServerConnection: Reusing session %O\n", id);
+
+	    /* Reuse session */
+	    session = old_session;
+	    reuse = 1;
+	  }
+
+	  /* TLS 1.3 or later.
+	   *
+	   * We must read the ClientKeyShare packet.
+	   */
+	  handshake_state = STATE_wait_for_key_share;
+
+	  return 0;
+        } else {
           compression_methods =
             context->preferred_compressors & compression_methods;
-	if (sizeof(compression_methods))
-	  session->set_compression_method(compression_methods[0]);
-	else
-	{
-	  send_packet(alert(ALERT_fatal, ALERT_handshake_failure,
-			    "Unsupported compression method.\n"));
-	  return -1;
+	  if (sizeof(compression_methods))
+	    session->set_compression_method(compression_methods[0]);
+	  else
+	  {
+	    send_packet(alert(ALERT_fatal, ALERT_handshake_failure,
+			      "Unsupported compression method.\n"));
+	    return -1;
+	  }
 	}
 
 #ifdef SSL3_DEBUG
@@ -844,6 +863,176 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
      }
      break;
    }
+  case STATE_wait_for_key_share:
+    if (client_version < PROTOCOL_TLS_1_3) {
+      error("Waiting for key share in %s.\n", fmt_version(version));
+    }
+    handshake_messages += raw;
+    switch(type)
+    {
+    default:
+      SSL3_DEBUG_MSG("Got %s packet.\n",
+		     fmt_constant(type, "HANDSHAKE"));
+      send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
+			"Expected key share.\n"));
+      return -1;
+    case HANDSHAKE_client_key_share:
+      {
+	int wanted_group;
+	if (session->cipher_spec->ke_factory == .Cipher.KeyShareDHE) {
+	  wanted_group = session->ffdhe_groups[0];
+#if constant(Crypto.ECC.Curve)
+	} else if (session->cipher_spec->ke_factory == .Cipher.KeyShareECDHE) {
+	  switch(session->cipher_spec->key_bits) {
+	  case 257..:
+	    wanted_group = GROUP_secp521r1;
+	    break;
+	  case 129..256:
+	    // Suite B requires SECP384r1/SHA256 for AES-256
+	    wanted_group = GROUP_secp384r1;
+	    break;
+	  case ..128:
+	    // Suite B requires SECP256r1/SHA256 for AES-128
+	    wanted_group = GROUP_secp256r1;
+	    break;
+	  }
+
+	  if (!has_value(session->ecc_curves, wanted_group)) {
+	    // Preferred curve not available -- Select the strongest available.
+	    wanted_group = session->ecc_curves[0];
+	  }
+	  session->curve = [object(Crypto.ECC.Curve)]ECC_CURVES[wanted_group];
+#endif
+	} else {
+	  error("Unsupported KeyExchange factory for KeyShare: %O.\n",
+		session->cipher_spec->ke_factory);
+	}
+	SSL3_DEBUG_MSG("Wanted group: %s\n",
+		       fmt_constant(wanted_group, "GROUP"));
+	Stdio.Buffer offers = input->read_hbuffer(2);
+	if (sizeof(input)) {
+	  send_packet(alert(ALERT_fatal, ALERT_handshake_failure,
+			    "Invalid ClientKeyShare.\n"));
+	  return -1;
+	}
+	Stdio.Buffer sks;
+	mapping(int:string(8bit)) kes = ([]);
+	string(8bit) premaster_secret;
+	int best_group = 0x10000;
+	ke = UNDEFINED;
+	while (sizeof(offers)) {
+	  int group = offers->read_int(2);
+	  string(8bit) key_offer = offers->read_hstring(2);
+	  SSL3_DEBUG_MSG("Offer: %s: %O\n",
+			 fmt_constant(group, "GROUP"),
+			 key_offer);
+	  if (kes[group]) {
+	    // Clients MUST NOT offer multiple ClientKeyShareOffers
+	    // for the same parameters.
+	    send_packet(alert(ALERT_fatal, ALERT_handshake_failure,
+			      "Duplicate key share offers.\n"));
+	    return -1;
+	  }
+	  kes[group] = key_offer;
+	  if (((group & 0xff00) == (wanted_group & 0xff00)) &&
+	      (group >= wanted_group) && (group < best_group)) {
+	    // Select the smallest offered group that is at
+	    // least as large as the wanted group.
+	    best_group = group;
+	  }
+	}
+
+	if (reuse) {
+	  SSL3_DEBUG_MSG("Reuse the existing session.\n");
+
+	  send_packet(server_hello_packet());
+	  derive_master_secret(session->master_secret);
+	  send_packet(change_cipher_packet());
+	  handle_change_cipher(1);
+
+	  handshake_state = STATE_wait_for_finish;
+	} else if (!kes[best_group]) {
+	  // Send HelloRetryRequest.
+	  send_packet(server_hello_retry_request_packet(session->cipher_suite,
+							wanted_group));
+	  // Reset the state to accept a new ClientHello.
+	  secure_renegotiation = 0;
+	  remote_extensions = (<>);
+	  previous_handshake = 0;
+	  handshake_state = STATE_wait_for_hello;
+	  break;
+	} else {
+	  SSL3_DEBUG_MSG("Got an acceptable key share offer for %s.\n",
+			 fmt_constant(best_group, "GROUP"));
+	  ke = session->cipher_spec->ke_factory(context, session, this,
+						client_version);
+	  ke->set_group(best_group);
+	  sks = Stdio.Buffer();
+	  ke->make_key_share_offer(sks);
+	  premaster_secret = ke->receive_key_share_offer(kes[best_group]);
+
+	  send_packet(server_hello_packet());
+	  send_packet(server_key_share_packet(sks));
+	  ke = UNDEFINED;
+
+	  derive_master_secret(premaster_secret);
+	  send_packet(change_cipher_packet());
+	  handle_change_cipher(1);
+
+	  handshake_state = STATE_wait_for_finish;
+
+	  // NB: From this point encryption is enabled on our side.
+
+	  // FIXME: Encrypted extensions here.
+
+	  // Don't send any certificate in anonymous mode.
+	  if (session->cipher_spec->signature_alg != SIGNATURE_anonymous) {
+	    // NB: session->certificate_chain is set by
+	    // session->select_cipher_suite() above.
+
+	    SSL3_DEBUG_MSG("Checking for Certificate.\n");
+
+	    if (session->certificate_chain)
+	    {
+	      SSL3_DEBUG_MSG("Sending Certificate.\n");
+	      send_packet(certificate_packet(session->certificate_chain));
+	    } else {
+	      // Otherwise the server will just silently send an invalid
+	      // ServerHello sequence.
+	      error ("Certificate(s) missing.\n");
+	    }
+
+	    // NB: Client certificates are only supported in non-anonymous mode.
+	    if (context->auth_level >= AUTHLEVEL_ask)
+	    {
+	      // we can send a certificate request packet, even if we don't have
+	      // any authorized issuers.
+	      SSL3_DEBUG_MSG("Sending CertificateRequest.\n");
+	      send_packet(certificate_request_packet(context));
+	      certificate_state = CERT_requested;
+	      handshake_state = STATE_wait_for_peer;
+	    }
+
+	    send_packet(certificate_verify_packet());
+	  }
+	}
+
+	send_packet(finished_packet("server finished"));
+
+	if (handshake_state == STATE_wait_for_finish) {
+	  // No need to wait for the client's certificate, etc.
+
+	  derive_master_secret(session->master_secret);
+	  send_packet(change_cipher_packet());
+	  // Note: Don't switch to the new keys for the client
+	  //       before we've received it's finished packet.
+
+	  // NB: From this point on we can send application data.
+	}
+      }
+      break;
+    }
+    break;
   case STATE_wait_for_finish:
     switch(type)
     {
