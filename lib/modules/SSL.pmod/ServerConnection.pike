@@ -294,8 +294,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
      pending_read_state = pending_write_state = ({});
      ke = 0;
 
-     handshake_messages = raw;
-
+     handshake_messages += raw;
 
      // The first four bytes of the client_random is specified to be
      // the timestamp on the client side. This is to guard against bad

@@ -109,7 +109,7 @@ void addRecord(int t,int s) {
 }
 #endif
 
-string(8bit) handshake_messages;
+string(8bit) handshake_messages = "";
 
 Packet handshake_packet(int(8bit) type,
 			string(8bit)|Buffer|object(Stdio.Buffer) data)
