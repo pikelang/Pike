@@ -287,14 +287,39 @@ void new_cipher_states();
 void derive_master_secret(string(8bit) premaster_secret)
 {
   SSL3_DEBUG_MSG("%O: derive_master_secret: %s (%s)\n",
-		 this, fmt_constant(handshake_state, "HANDSHAKE"),
+		 this, fmt_constant(handshake_state, "STATE"),
 		 fmt_version(version));
 
-  session->master_secret =
-    session->cipher_spec->prf(premaster_secret, "master secret",
-			      client_random + server_random, 48);
+  if (version >= PROTOCOL_TLS_1_3) {
+    switch(handshake_state) {
+    case STATE_wait_for_hello:	// Resume
+    case STATE_wait_for_key_share:	// Full hello
+      session->master_secret = premaster_secret;
+      session->master_secret = hash_messages("handshake master secret", 48);
+      break;
+    case STATE_wait_for_finish:
+      session->master_secret = premaster_secret;
+      session->master_secret = hash_messages("extended master secret", 48);
+      break;
+    default:
+      error("Unexpected handshake state: %s\n",
+	    fmt_constant(handshake_state, "STATE"));
+      break;
+    }
+  } else {
+    session->master_secret =
+      session->cipher_spec->prf(premaster_secret, "master secret",
+				client_random + server_random, 48);
+  }
 
   new_cipher_states();
+
+  if ((version >= PROTOCOL_TLS_1_3) &&
+      (handshake_state == STATE_wait_for_finish)) {
+    // Generate the resumption premaster secret.
+    session->master_secret = premaster_secret;
+    session->master_secret = hash_messages("resumption premaster secret", 48);
+  }
 }
 
 
