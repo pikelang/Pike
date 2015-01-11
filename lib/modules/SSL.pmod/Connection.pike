@@ -136,7 +136,7 @@ Packet change_cipher_packet()
   return Packet(version, PACKET_change_cipher_spec, "\001");
 }
 
-string(8bit) hash_messages(string(8bit) sender)
+string(8bit) hash_messages(string(8bit) sender, int|void len)
 {
   string(8bit) hash;
   if(version == PROTOCOL_SSL_3_0) {
@@ -151,7 +151,8 @@ string(8bit) hash_messages(string(8bit) sender)
   } else if(version >= PROTOCOL_TLS_1_2) {
     hash = session->cipher_spec->prf(session->master_secret, sender,
 				     session->cipher_spec->hash
-                                     ->hash(handshake_messages), 12);
+                                     ->hash(handshake_messages),
+				     len || 12);
   }
 
   return hash;
