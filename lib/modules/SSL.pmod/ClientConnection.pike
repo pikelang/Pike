@@ -319,6 +319,7 @@ protected void create(Context ctx, string(8bit)|void server_name,
   handshake_state = STATE_wait_for_hello;
   handshake_messages = "";
   this_program::session = session || Session();
+  this_program::session->server_name = server_name;
   if (!this_program::session->ffdhe_groups) {
     this_program::session->ffdhe_groups = ctx->ffdhe_groups;
   }
@@ -492,17 +493,62 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
   default:
     error( "Internal error\n" );
   case STATE_wait_for_hello:
-    if(type != HANDSHAKE_server_hello)
-    {
+    handshake_messages += raw;
+    switch(type) {
+    case HANDSHAKE_hello_retry_request:
+      SSL3_DEBUG_MSG("SSL.ClientConnection: HELLO_RETRY_REQUEST\n");
+      if (version >= PROTOCOL_TLS_1_3) {
+	// The server didn't like our key shares.
+	// Add the one requested.
+
+	ProtocolVersion suggested_version =
+	  [int(0..0)|ProtocolVersion]input->read_int(2);
+	int suggested_suite = input->read_int(2);
+	int suggested_group = input->read_int(2);
+	string(8bit) extensions = input->read_hstring(2);
+	// NB: We currently don't care about the extensions.
+	extensions = 0;	// Silence warning.
+	SSL3_DEBUG_MSG("Suggested: %s %s %s.\n",
+		       fmt_version(suggested_version),
+		       fmt_cipher_suite(suggested_suite),
+		       fmt_constant(suggested_group, "GROUP"));
+	if ((suggested_version >= PROTOCOL_TLS_1_3) &&
+	    (suggested_version <= version) &&
+	    has_value(context->preferred_suites, suggested_suite) &&
+	    (has_value(context->ecc_curves, suggested_group) ||
+	     has_value(context->ffdhe_groups, suggested_group))) {
+	  // Valid parameters.
+	  if (suggested_version < context->min_version) {
+	    // Unlikely for quite some time, but...
+	    send_packet(alert(ALERT_fatal, ALERT_protocol_version,
+			      "Unsupported protocol version.\n"));
+	    return -1;
+	  }
+
+	  // Generate the suggested keyshare.
+	  make_key_share_offer(suggested_group);
+
+	  // Resend the hello.
+	  // NB: No need for TLS 1.2 and earlier compat here, as we
+	  //     know that the server supports TLS 1.3 and later.
+	  send_packet(client_hello(session->server_name));
+	  send_packet(client_key_share_packet());
+	  handshake_state = STATE_wait_for_hello;
+	  previous_handshake = 0;
+	  break;
+	}
+	SSL3_DEBUG_MSG("Invalid suggestion.\n");
+      } else {
+	SSL3_DEBUG_MSG("Not valid in %s.\n", fmt_version(version));
+      }
+      // FALL_THROUGH
+    default:
       send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
 			"Expected server hello.\n"));
       return -1;
-    }
-    else
-    {
+    case HANDSHAKE_server_hello:
       SSL3_DEBUG_MSG("SSL.ClientConnection: SERVER_HELLO\n");
 
-      handshake_messages += raw;
       string(8bit) id;
       int cipher_suite, compression_method;
 
