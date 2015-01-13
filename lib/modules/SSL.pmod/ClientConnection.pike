@@ -759,7 +759,56 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
       }
 
       session->identity = id;
-      handshake_state = STATE_wait_for_peer;
+      if (version >= PROTOCOL_TLS_1_3) {
+	handshake_state = STATE_wait_for_key_share;
+      } else {
+	handshake_state = STATE_wait_for_peer;
+      }
+      break;
+    }
+    break;
+
+  case STATE_wait_for_key_share:
+    if (version < PROTOCOL_TLS_1_3) {
+      error("Waiting for key share in %s.\n", fmt_version(version));
+    }
+    handshake_messages += raw;
+    switch(type)
+    {
+    default:
+      send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
+			"Expected key share.\n"));
+      return -1;
+    case HANDSHAKE_server_key_share:
+      {
+	int group = input->read_int(2);
+	string(8bit) key_offer = input->read_hstring(2);
+
+	if (!(ke = keyshares[group])) {
+	  // Not a group that we've offered.
+	  send_packet(alert(ALERT_fatal, ALERT_handshake_failure,
+			    "Unknown key share offer.\n"));
+	  return -1;
+	}
+
+	string(8bit) premaster_secret;
+	premaster_secret = ke->receive_key_share_offer(key_offer);
+
+	// Derive the handshake master secret.
+	derive_master_secret(premaster_secret);
+	send_packet(change_cipher_packet());
+	handle_change_cipher(1);
+
+	if (session->cipher_spec->signature_alg == SIGNATURE_anonymous) {
+	  handshake_state = STATE_wait_for_finish;
+	} else {
+	  handshake_state = STATE_wait_for_peer;
+	}
+
+	ke = UNDEFINED;
+
+	// NB: From this point encryption is enabled on our side.
+      }
       break;
     }
     break;
