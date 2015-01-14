@@ -237,6 +237,7 @@ string(8bit) server_derive_master_secret(string(8bit) data)
 protected void create(Context ctx)
 {
   ::create(ctx);
+  session = context->new_session();
   handshake_state = STATE_wait_for_hello;
 }
 
@@ -372,8 +373,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 		 "extra data in hello message ignored\n");
 #endif
 
-	session = context->new_session();
-
+	string(8bit) early_data = "";
 	int missing_secure_renegotiation = secure_renegotiation;
 	if (extensions) {
 	  int maybe_safari_10_8 = 1;
@@ -620,6 +620,10 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	      }
 	      break;
 
+	    case EXTENSION_early_data:
+	      early_data += (string)extension_data;
+	      break;
+
             case EXTENSION_padding:
               if( !equal(String.range((string)extension_data), ({0,0})) )
               {
@@ -775,6 +779,8 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	  return -1;
 	}
 
+	// FIXME: Support TLS 1.3 fallback to TLS 1.2 or earlier
+	//        for clients that don't use early_data?
         if( version >= PROTOCOL_TLS_1_3 ) {
 	  if (!equal(compression_methods, ({ COMPRESSION_null }))) {
 	    // TLS 1.3 draft 3 7.4.1:
@@ -802,6 +808,57 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	   * We must read the ClientKeyShare packet.
 	   */
 	  handshake_state = STATE_wait_for_key_share;
+
+	  string(8bit) handshake_buffer = "";
+	  while(sizeof(early_data)) {
+	    SSL3_DEBUG_MSG("Handling early data packet...\n");
+	    Packet p = Packet(version);
+	    string(8bit)|Packet remainder = p->recv(early_data);
+	    if (!stringp(remainder)) {
+	      send_packet(([object]remainder) ||
+			  alert(ALERT_fatal, ALERT_record_overflow,
+				"Early data extension contains a "
+				"partial packet.\n"));
+	      return -1;
+	    }
+	    early_data = [string]remainder;
+	    if (p->content_type != PACKET_handshake) {
+	      SSL3_DEBUG_MSG("Ignoring non-handshake early data packet.\n");
+	      continue;
+	    }
+	    handshake_buffer += p->fragment;
+	  }
+
+	  while(sizeof(handshake_buffer) >= 4) {
+	    int handshake_type;
+	    int len;
+	    sscanf(handshake_buffer, "%1c%3c", handshake_type, len);
+	    if (sizeof(handshake_buffer) < (len + 4))
+	      break;
+	    // NB: Empty string as last argument to avoid hashing the
+	    //     early data packets twice.
+	    int(-1..1) ret =
+	      handle_handshake(handshake_type,
+			       handshake_buffer[4..len + 3], "");
+	    handshake_buffer = handshake_buffer[len + 4..];
+	    if (ret) {
+	      if (ret < 0) return ret;
+	      if (sizeof(handshake_buffer)) {
+		// Unlikely, but...
+		send_packet(alert(ALERT_fatal, ALERT_record_overflow,
+				  "Early data extension contains extraneous "
+				  "handshake packets.\n"));
+		return -1;
+	      }
+	      return 1;
+	    }
+	  }
+	  if (sizeof(handshake_buffer)) {
+	    send_packet(alert(ALERT_fatal, ALERT_record_overflow,
+			      "Early data extension contains incomplete "
+			      "handshake packets.\n"));
+	    return -1;
+	  }
 
 	  return 0;
         } else {
@@ -1115,6 +1172,19 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
     handshake_messages += raw;
     switch(type)
     {
+    case HANDSHAKE_client_key_share:
+      // We can come here with TLS 1.3 clients that:
+      //
+      //  * Have no TLS 1.3 suites that we support.
+      //
+      //  * Have suites valid for TLS 1.2 or earlier that we support.
+      //
+      //  * Don't use the early data extension for this packet.
+      //
+      // Note that such clients aren't compatible with TLS 1.2
+      // and earlier servers anyway...
+      SSL3_DEBUG_MSG("SSL.ServerConnection: CLIENT_KEY_SHARE\n");
+      // FALL_THROUGH.
     default:
       send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
 			"Expected client KEX or cert.\n"));
