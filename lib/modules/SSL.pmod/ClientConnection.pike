@@ -459,6 +459,61 @@ void new_cipher_states()
 }
 
 
+int(-1..0) got_certificate_request(Buffer input)
+{
+  SSL3_DEBUG_MSG("SSL.ClientConnection: CERTIFICATE_REQUEST\n");
+
+  // It is a fatal handshake_failure alert for an anonymous server to
+  // request client authentication.
+  if(ke->anonymous)
+  {
+    send_packet(alert(ALERT_fatal, ALERT_handshake_failure,
+		      "Anonymous server requested authentication by "
+		      "certificate.\n"));
+    return -1;
+  }
+
+  client_cert_types = input->read_int_array(1, 1);
+  client_cert_distinguished_names = ({});
+
+  if (version >= PROTOCOL_TLS_1_2) {
+    // TLS 1.2 has var_uint_array of hash and sign pairs here.
+    string bytes = input->read_hstring(2);
+    if( sizeof(bytes)&1 )
+    {
+      send_packet(alert(ALERT_fatal, ALERT_handshake_failure,
+			"Odd number of bytes in "
+			"supported_signature_algorithms.\n"));
+      return -1;
+    }
+    // Pairs of <hash_alg, signature_alg>.
+    session->signature_algorithms = ((array(int))bytes)/2;
+    SSL3_DEBUG_MSG("New signature_algorithms:\n"+
+		   fmt_signature_pairs(session->signature_algorithms));
+  }
+
+  Stdio.Buffer s = input->read_hbuffer(2);
+  while(sizeof(s))
+  {
+    string(8bit) der = s->read_hstring(2);
+    Standards.ASN1.Types.Object o =
+      Standards.ASN1.Decode.secure_der_decode(der);
+    if( o->type_name != "SEQUENCE" )
+    {
+      send_packet(alert(ALERT_fatal, ALERT_handshake_failure,
+			"Badly formed Certificate Request.\n"));
+      return -1;
+    }
+    client_cert_distinguished_names += ({ der });
+    SSL3_DEBUG_MSG("got an authorized issuer: %O\n",
+		   Standards.PKCS.Certificate.get_dn_string
+		   ( [object(Standards.ASN1.Types.Sequence)]o ));
+  }
+
+  return 0;
+}
+
+
 //! Do handshake processing. Type is one of HANDSHAKE_*, data is the
 //! contents of the packet, and raw is the raw packet received (needed
 //! for supporting SSLv2 hello messages).
@@ -883,58 +938,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
       }
 
     case HANDSHAKE_certificate_request:
-      {
-        SSL3_DEBUG_MSG("SSL.ClientConnection: CERTIFICATE_REQUEST\n");
-
-        // it is a fatal handshake_failure alert for an anonymous server to
-        // request client authentication.
-        if(ke->anonymous)
-        {
-	  send_packet(alert(ALERT_fatal, ALERT_handshake_failure,
-			    "Anonymous server requested authentication by "
-			    "certificate.\n"));
-	  return -1;
-        }
-
-        client_cert_types = input->read_int_array(1, 1);
-        client_cert_distinguished_names = ({});
-
-	if (version >= PROTOCOL_TLS_1_2) {
-	  // TLS 1.2 has var_uint_array of hash and sign pairs here.
-	  string bytes = input->read_hstring(2);
-          if( sizeof(bytes)&1 )
-          {
-            send_packet(alert(ALERT_fatal, ALERT_handshake_failure,
-                              "Odd number of bytes in "
-                              "supported_signature_algorithms.\n"));
-            return -1;
-          }
-	  // Pairs of <hash_alg, signature_alg>.
-	  session->signature_algorithms = ((array(int))bytes)/2;
-	  SSL3_DEBUG_MSG("New signature_algorithms:\n"+
-			 fmt_signature_pairs(session->signature_algorithms));
-	}
-
-        Stdio.Buffer s = input->read_hbuffer(2);
-        while(sizeof(s))
-        {
-          string(8bit) der = s->read_hstring(2);
-          Standards.ASN1.Types.Object o =
-            Standards.ASN1.Decode.secure_der_decode(der);
-          if( o->type_name != "SEQUENCE" )
-          {
-            send_packet(alert(ALERT_fatal, ALERT_handshake_failure,
-                              "Badly formed Certificate Request.\n"));
-            return -1;
-          }
-          client_cert_distinguished_names += ({ der });
-          SSL3_DEBUG_MSG("got an authorized issuer: %O\n",
-                         Standards.PKCS.Certificate.get_dn_string
-                         ( [object(Standards.ASN1.Types.Sequence)]o ));
-        }
-
-        break;
-      }
+      return got_certificate_request(input);
 
     case HANDSHAKE_server_hello_done:
       SSL3_DEBUG_MSG("SSL.ClientConnection: SERVER_HELLO_DONE\n");
