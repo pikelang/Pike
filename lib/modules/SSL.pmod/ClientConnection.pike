@@ -465,8 +465,11 @@ int(-1..0) got_certificate_request(Buffer input)
 
   // It is a fatal handshake_failure alert for an anonymous server to
   // request client authentication.
-  if(ke->anonymous)
-  {
+  //
+  // RFC 5246 7.4.4:
+  //   A non-anonymous server can optionally request a certificate from
+  //   the client, if appropriate for the selected cipher suite.
+  if(session->cipher_spec->signature_alg == SIGNATURE_anonymous) {
     send_packet(alert(ALERT_fatal, ALERT_handshake_failure,
 		      "Anonymous server requested authentication by "
 		      "certificate.\n"));
@@ -922,6 +925,10 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	}
 
         certificate_state = CERT_received;
+
+	if (version >= PROTOCOL_TLS_1_3) {
+	  handshake_state = STATE_wait_for_verify;
+	}
         break;
       }
 
@@ -944,6 +951,55 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
       SSL3_DEBUG_MSG("SSL.ClientConnection: SERVER_HELLO_DONE\n");
 
       if (send_certs()) return -1;
+      handshake_state = STATE_wait_for_finish;
+      break;
+    }
+    break;
+
+  case STATE_wait_for_verify:
+    if (version < PROTOCOL_TLS_1_3) {
+      error("Waiting for verify in %s.\n",
+	    fmt_version(version));
+    }
+    switch(type) {
+    default:
+      send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
+			"Unexpected server message.\n"));
+      return -1;
+    case HANDSHAKE_certificate_request:
+      handshake_messages += raw;
+      return got_certificate_request(input);
+    case HANDSHAKE_certificate_verify:
+      SSL3_DEBUG_MSG("SSL.ClientConnection: CERTIFICATE_VERIFY\n");
+
+      if (version < PROTOCOL_TLS_1_3) {
+	send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
+			  "Unexpected server message.\n"));
+	return -1;
+      }
+
+      SSL3_DEBUG_MSG("SERVER: handshake_messages: %d bytes.\n",
+		     sizeof(handshake_messages));
+      int(0..1) verification_ok;
+      mixed err = catch {
+	  verification_ok = session->cipher_spec->verify(
+            session, "", Buffer(handshake_messages), input);
+	};
+#ifdef SSL3_DEBUG
+      if (err) {
+	master()->handle_error(err);
+      }
+#endif
+      err = UNDEFINED;	// Get rid of warning.
+      if (!verification_ok)
+      {
+	send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
+			  "Verification of CertificateVerify failed.\n"));
+	return -1;
+      }
+
+      handshake_messages += raw;
+
       handshake_state = STATE_wait_for_finish;
       break;
     }
