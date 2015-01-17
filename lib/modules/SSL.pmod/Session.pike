@@ -360,6 +360,12 @@ int select_cipher_suite(array(CertificatePair) certs,
 		 (1<<KE_dh_anon)|(1<<KE_dhe_psk));
   }
 
+  if (version >= PROTOCOL_TLS_1_3) {
+    // TLS 1.3 and later only support ephemeral keyexchanges.
+    ke_mask &= ((1<<KE_dhe_dss)|(1<<KE_dhe_rsa)|(1<<KE_dh_anon)|
+		(1<<KE_ecdhe_ecdsa)|(1<<KE_ecdhe_rsa)|(1<<KE_ecdh_anon));
+  }
+
   // Given the set of certs, filter the set of client_suites,
   // to find the best.
   cipher_suites =
