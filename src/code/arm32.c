@@ -240,6 +240,15 @@ OPCODE_FUN GEN_REG_IMM(enum data_proc_instr op, enum arm_register dst,
     return instr;
 }
 
+OPCODE_FUN GEN_CMP_REG_IMM(enum arm_register a, unsigned char imm, unsigned char rot) {
+    unsigned INT32 instr = GEN_REG_IMM(ARM_PROC_CMP, 0, a, imm, rot);
+
+    instr |= (1<<20);
+
+    return instr;
+}
+
+
 OPCODE_FUN str_reg_imm(enum arm_register dst, enum arm_register base, INT32 offset) {
     unsigned INT32 instr = ARM_COND_AL;
 
