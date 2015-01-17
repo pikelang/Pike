@@ -521,13 +521,17 @@ void arm_flush_dirty_regs(void) {
 
 static void arm_push_int(unsigned INT32 value, int subtype) {
     unsigned INT32 combined = TYPE_SUBTYPE(PIKE_T_INT, subtype);
+    enum arm_register tmp1 = ra_alloc_any(), tmp2 = ra_alloc_any();
 
     arm_load_sp_reg();
 
-    arm_set_reg(ARM_REG_R1, combined);
-    arm_set_reg(ARM_REG_R2, value);
+    arm_set_reg(tmp1, combined);
+    arm_set_reg(tmp2, value);
 
-    add_to_program(store_multiple(ARM_REG_PIKE_SP, ARM_MULT_IAW, RBIT(1)|RBIT(2)));
+    add_to_program(store_multiple(ARM_REG_PIKE_SP, ARM_MULT_IAW, RBIT(tmp1)|RBIT(tmp2)));
+
+    ra_free(tmp1);
+    ra_free(tmp2);
 
     compiler_state.flags |= FLAG_SP_CHANGED;
 
