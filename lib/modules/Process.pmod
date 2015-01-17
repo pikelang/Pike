@@ -621,6 +621,7 @@ mapping run(string|array(string) cmd, void|mapping modifiers)
 				  mystderr = 0;
 				});
 
+#if constant(Shuffler)
   if (mystdin) {
     Shuffler.Shuffler sfr = Shuffler.Shuffler();
     sfr->set_backend (backend);
@@ -632,6 +633,7 @@ mapping run(string|array(string) cmd, void|mapping modifiers)
 			   });
     sf->start();
   }
+#endif
 
   while( mystdout || mystderr || mystdin )
     backend( 1.0 );
