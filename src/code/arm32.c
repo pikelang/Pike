@@ -372,6 +372,33 @@ static void free_push_list(void) {
     compiler_state.push_list = NULL;
 }
 
+struct label {
+    struct location_list_entry *list;
+};
+
+static void label_init(struct label *l) {
+    l->list = NULL;
+}
+
+static INT32 label_dist(struct label *l) {
+    l->list = add_to_list(l->list, PIKE_PC);
+    return 0;
+}
+
+static void label_generate(struct label *l) {
+    unsigned INT32 loc = PIKE_PC;
+
+    struct location_list_entry *e = l->list;
+
+    while (e) {
+        unsigned INT32 instr = read_pointer(e->location);
+        upd_pointer(e->location, instr|(loc - e->location - 2));
+        e = e->next;
+    }
+
+    free_list(l->list);
+}
+
 static void ra_init(void) {
     /* all register r0 through r10 are unused
      *
@@ -688,6 +715,8 @@ void ins_f_byte(unsigned int opcode)
 
 void ins_f_byte_with_arg(unsigned int a, INT32 b)
 {
+  struct label done;
+  label_init(&done);
 
   switch (a) {
   case F_NUMBER:
@@ -699,10 +728,53 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
         return;
       }
       break;
+  case F_SUBTRACT_INT:
+    {
+      struct label fallback;
+      enum arm_register tmp = ra_alloc_any(), tmp2;
+      label_init(&fallback);
+      arm_load_sp_reg();
+      add_to_program(ldr_reg_imm(tmp, ARM_REG_PIKE_SP, -sizeof(struct svalue)+0));
+      add_to_program(GEN_CMP_REG_IMM(tmp, 0, 0));
+      add_to_program(set_cond(b_imm(label_dist(&fallback)), ARM_COND_NE));
+      add_to_program(ldr_reg_imm(tmp, ARM_REG_PIKE_SP, -sizeof(struct svalue)+4));
+      tmp2 = ra_alloc_any();
+      arm_set_reg(tmp2, b);
+      add_to_program(sub_reg_reg(tmp, tmp2, tmp)|(1<<20));
+      ra_free(tmp2);
+      add_to_program(set_cond(b_imm(label_dist(&fallback)), ARM_COND_VS));
+      add_to_program(str_reg_imm(tmp, ARM_REG_PIKE_SP, -sizeof(struct svalue)+4));
+      ra_free(tmp);
+      add_to_program(b_imm(label_dist(&done)));
+      label_generate(&fallback);
+      break;
+    }
+  case F_ADD_INT:
+    {
+      struct label fallback;
+      enum arm_register tmp = ra_alloc_any(), tmp2;
+      label_init(&fallback);
+      arm_load_sp_reg();
+      add_to_program(ldr_reg_imm(tmp, ARM_REG_PIKE_SP, -sizeof(struct svalue)+0));
+      add_to_program(GEN_CMP_REG_IMM(tmp, 0, 0));
+      add_to_program(set_cond(b_imm(label_dist(&fallback)), ARM_COND_NE));
+      add_to_program(ldr_reg_imm(tmp, ARM_REG_PIKE_SP, -sizeof(struct svalue)+4));
+      tmp2 = ra_alloc_any();
+      arm_set_reg(tmp2, b);
+      add_to_program(add_reg_reg(tmp, tmp, tmp2)|(1<<20));
+      ra_free(tmp2);
+      add_to_program(set_cond(b_imm(label_dist(&fallback)), ARM_COND_VS));
+      add_to_program(str_reg_imm(tmp, ARM_REG_PIKE_SP, -sizeof(struct svalue)+4));
+      ra_free(tmp);
+      add_to_program(b_imm(label_dist(&done)));
+      label_generate(&fallback);
+      break;
+    }
   }
   arm_set_reg(ra_alloc(ARM_REG_R0), b);
   low_ins_f_byte(a);
   ra_free(ARM_REG_R0);
+  label_generate(&done);
   return;
 }
 
