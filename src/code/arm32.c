@@ -58,14 +58,14 @@ unsigned INT32 RBIT(enum arm_register reg) {
 }
 
 enum arm_condition {
-    ARM_COND_EQ,
-    ARM_COND_NE = 1 << 28,
+    ARM_COND_EQ,           /* equal */
+    ARM_COND_NE = 1 << 28, /* not equal */
     ARM_COND_CS = 2 << 28,
     ARM_COND_CC = 3 << 28,
     ARM_COND_MI = 4 << 28,
     ARM_COND_PL = 5 << 28,
-    ARM_COND_VS = 6 << 28,
-    ARM_COND_VC = 7 << 28,
+    ARM_COND_VS = 6 << 28, /* overflow */
+    ARM_COND_VC = 7 << 28, /* no overflow */
     ARM_COND_HI = 8 << 28,
     ARM_COND_LS = 9 << 28,
     ARM_COND_GE = 10 << 28,
