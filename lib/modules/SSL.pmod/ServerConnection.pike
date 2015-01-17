@@ -1142,11 +1142,16 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 
        client_verify_data = digest;
 
+       if (version >= PROTOCOL_TLS_1_3) {
+	 // The client will use the main keys from this point on.
+	 handle_change_cipher(1);
+       }
+
        if (!reuse)
        {
 	 if(version == PROTOCOL_SSL_3_0)
 	   send_packet(finished_packet("SRVR"));
-	 else if(version >= PROTOCOL_TLS_1_0)
+	 else if(version < PROTOCOL_TLS_1_3)
 	   send_packet(finished_packet("server finished"));
 
 	 if (context->heartbleed_probe &&
@@ -1279,6 +1284,16 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	  sizeof(session->peer_certificate_chain))
           certificate_state = CERT_received;
        else certificate_state = CERT_no_certificate;
+
+       if (version >= PROTOCOL_TLS_1_3) {
+	 if (certificate_state == CERT_received) {
+	   handshake_state = STATE_wait_for_verify;
+	 } else {
+	   handshake_state = STATE_wait_for_finish;
+	   derive_master_secret(session->master_secret);
+	   send_packet(change_cipher_packet());
+	 }
+       }
        break;
      }
     }
@@ -1316,7 +1331,14 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 
       handshake_messages += raw;
       handshake_state = STATE_wait_for_finish;
+
+      if (version >= PROTOCOL_TLS_1_3) {
+	derive_master_secret(session->master_secret);
+      }
+
       send_packet(change_cipher_packet());
+
+      // NB TLS 1.3: From this point on we can send application data.
       break;
     }
     break;

@@ -417,23 +417,34 @@ protected int send_certs()
     return -1;
   }
 
-  Packet key_exchange = client_key_exchange_packet();
+  if (version < PROTOCOL_TLS_1_3) {
+    Packet key_exchange = client_key_exchange_packet();
 
-  if (key_exchange)
-    send_packet(key_exchange);
-
+    if (key_exchange) {
+      send_packet(key_exchange);
+    }
+  }
 
   if(cert) {
     // We sent a certificate, so we should send the verification.
     send_packet(certificate_verify_packet());
   }
 
-  send_packet(change_cipher_packet());
+  if (version < PROTOCOL_TLS_1_3) {
+    send_packet(change_cipher_packet());
+  } else {
+    derive_master_secret(session->master_secret);
+  }
 
   if(version == PROTOCOL_SSL_3_0)
     send_packet(finished_packet("CLNT"));
-  else if(version >= PROTOCOL_TLS_1_0)
+  else if(version >= PROTOCOL_TLS_1_0) {
     send_packet(finished_packet("client finished"));
+    if (version >= PROTOCOL_TLS_1_3) {
+      send_packet(change_cipher_packet());
+      handle_change_cipher(1);
+    }
+  }
 
   // NB: The server direction hash will be calculated
   //     when we've received the server finished packet.
@@ -808,8 +819,15 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 
       if ((id == session->identity) && sizeof(id)) {
 	SSL3_DEBUG_MSG("Resuming session %O.\n", id);
-	new_cipher_states();
-	send_packet(change_cipher_packet());
+
+	if (version < PROTOCOL_TLS_1_3) {
+	  new_cipher_states();
+	  send_packet(change_cipher_packet());
+	} else {
+	  derive_master_secret(session->master_secret);
+	  send_packet(change_cipher_packet());
+	  handle_change_cipher(1);
+	}
 
 	handshake_state = STATE_wait_for_finish;
 	reuse = 1;
@@ -1033,17 +1051,24 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
         return -1;
       }
 
-      handshake_state = STATE_handshake_finished;
-
-      if (reuse) {
+      if (reuse || (version >= PROTOCOL_TLS_1_3)) {
 	handshake_messages += raw; /* Second hash includes this message,
 				    * the first doesn't */
 
 	if(version == PROTOCOL_SSL_3_0)
 	  send_packet(finished_packet("CLNT"));
-	else if(version >= PROTOCOL_TLS_1_0)
+	else if(version <= PROTOCOL_TLS_1_2)
 	  send_packet(finished_packet("client finished"));
-
+	else if (version >= PROTOCOL_TLS_1_3) {
+	  // NB: send_certs() sends the finished_packet for us.
+	  if (reuse) {
+	    // Derive the extended master secret.
+	    derive_master_secret(session->master_secret);
+	    send_packet(finished_packet("client finished"));
+	    send_packet(change_cipher_packet());
+	    handle_change_cipher(1);
+	  } else if (send_certs()) return -1;
+	}
 	if (context->heartbleed_probe &&
 	    session->heartbeat_mode == HEARTBEAT_MODE_peer_allowed_to_send) {
 	  // Probe for the Heartbleed vulnerability (CVE-2014-0160).
@@ -1053,6 +1078,8 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 
       // Handshake hash is calculated for both directions above.
       handshake_messages = 0;
+
+      handshake_state = STATE_handshake_finished;
 
       return 1;			// We're done shaking hands
     }
