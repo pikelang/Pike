@@ -416,6 +416,8 @@ static void ra_init(void) {
     compiler_state.dirt = 0;
     compiler_state.push_addr = -1;
     compiler_state.flags = 0;
+    // FIXME: not quite the place
+    instrs[F_CATCH - F_OFFSET].address = inter_return_opcode_F_CATCH;
     free_pop_list();
     free_push_list();
 }
@@ -648,36 +650,53 @@ static void low_ins_call(void *addr) {
   arm_call(addr);
 }
 
+static void arm_call_c_opcode(unsigned int opcode) {
+  void *addr = instrs[opcode-F_OFFSET].address;
+  int flags = instrs[opcode-F_OFFSET].flags;
+
+  /*
+  if (flags & I_UPDATE_SP && compiler_state.flags & FLAG_SP_LOADED) {
+    compiler_state.flags &= ~FLAG_SP_LOADED;
+    ra_free(ARM_REG_PIKE_SP);
+  }
+  if (flags & I_UPDATE_M_SP) {}
+  if (flags & I_UPDATE_FP && compiler_state.flags & FLAG_FP_LOADED) {
+    compiler_state.flags &= ~FLAG_FP_LOADED;
+    ra_free(ARM_REG_PIKE_FP);
+  }
+  */
+
+  low_ins_call(addr);
+}
+
 static void low_ins_f_byte(unsigned int b)
 {
-  void *addr;
+  int flags;
   INT32 rel_addr = rel_addr;
 
-  b-=F_OFFSET;
 #ifdef PIKE_DEBUG
-  if(b>255)
+  if(b-F_OFFSET>255)
     Pike_error("Instruction too big %d\n",b);
 #endif
 
-  addr = instrs[b].address;
+  flags = instrs[b-F_OFFSET].flags;
 
   switch (b) {
-  case F_UNDEFINED - F_OFFSET:
+  case F_UNDEFINED:
       arm_push_int(0, NUMBER_UNDEFINED);
       return;
-  case F_CONST_1 - F_OFFSET:
+  case F_CONST_1:
       arm_push_int(-1, NUMBER_NUMBER);
       return;
-  case F_CONST1 - F_OFFSET:
+  case F_CONST1:
       arm_push_int(1, NUMBER_NUMBER);
       return;
-  case F_CONST0 - F_OFFSET:
+  case F_CONST0:
       arm_push_int(0, NUMBER_NUMBER);
       return;
-  case F_CATCH - F_OFFSET:
+  case F_CATCH:
       {
           int i;
-          addr = inter_return_opcode_F_CATCH;
           //add_to_program(0);
           //add_to_program(LDR_IMM(ARM_REG_R12, ARM_REG_R0, 0));
           //add_to_program(ADD_REG_IN
@@ -693,29 +712,29 @@ static void low_ins_f_byte(unsigned int b)
       break;
   }
 
-  low_ins_call(addr);
+  arm_call_c_opcode(b);
 
-  if (b == F_CATCH - F_OFFSET) ra_free(ARM_REG_R0);
+  if (b == F_CATCH) ra_free(ARM_REG_R0);
 
-  if (instrs[b].flags & I_RETURN) {
-      if ((b + F_OFFSET) == F_RETURN_IF_TRUE) {
+  if (flags & I_RETURN) {
+      if (b == F_RETURN_IF_TRUE) {
           add_to_program(ldr_reg_imm(ARM_REG_R12, ARM_REG_SP, -4));
           add_to_program(add_reg_imm(ARM_REG_R12, ARM_REG_R12, 4*JUMP_EPILOGUE_SIZE, 0));
       }
     
       arm_ins_maybe_exit();
 
-      if ((b + F_OFFSET) == F_RETURN_IF_TRUE) {
+      if (b == F_RETURN_IF_TRUE) {
           ADD_REL_COND_JMP(ARM_REG_R0, ARM_REG_R12, ARM_COND_EQ, 2);
           add_to_program(bx_reg(ARM_REG_R0));
           return;
       }
   }
-  if (instrs[b].flags & I_JUMP) {
+  if (flags & I_JUMP) {
     /* This is the code that JUMP_EPILOGUE_SIZE compensates for. */
     add_to_program(bx_reg(ARM_REG_R0));
 
-    if (b + F_OFFSET == F_CATCH) {
+    if (b == F_CATCH) {
         arm_set_reg_at(rel_addr, 4*(PIKE_PC - rel_addr - 1), ARM_REG_R2);
     }
   }
