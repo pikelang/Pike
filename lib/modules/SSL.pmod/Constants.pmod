@@ -209,6 +209,12 @@ enum CompressionType {
   COMPRESSION_lzs = 64,		//! LZS compression. RFC 3943
 }
 
+/* Signature context strings. */
+constant SIGN_server_certificate_verify =
+  " "*64 + "TLS 1.3, server CertificateVerify\0";
+constant SIGN_client_certificate_verify =
+  " "*64 + "TLS 1.3, client CertificateVerify\0";
+
 /* Alert messages */
 constant ALERT_warning			= 1;
 constant ALERT_fatal			= 2;

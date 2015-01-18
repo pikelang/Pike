@@ -423,16 +423,21 @@ protected int send_certs()
     if (key_exchange) {
       send_packet(key_exchange);
     }
-  }
 
-  if(cert) {
-    // We sent a certificate, so we should send the verification.
-    send_packet(certificate_verify_packet());
-  }
+    if(cert) {
+      // We sent a certificate, so we should send the verification.
+      send_packet(certificate_verify_packet());
+    }
 
-  if (version < PROTOCOL_TLS_1_3) {
     send_packet(change_cipher_packet());
+
   } else {
+
+    if(cert) {
+      // We sent a certificate, so we should send the verification.
+      send_packet(certificate_verify_packet(SIGN_client_certificate_verify));
+    }
+
     derive_master_secret(session->master_secret);
   }
 
@@ -998,21 +1003,8 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 
       SSL3_DEBUG_MSG("SERVER: handshake_messages: %d bytes.\n",
 		     sizeof(handshake_messages));
-      int(0..1) verification_ok;
-      mixed err = catch {
-	  verification_ok = session->cipher_spec->verify(
-            session, "", Buffer(handshake_messages), input);
-	};
-#ifdef SSL3_DEBUG
-      if (err) {
-	master()->handle_error(err);
-      }
-#endif
-      err = UNDEFINED;	// Get rid of warning.
-      if (!verification_ok)
-      {
-	send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
-			  "Verification of CertificateVerify failed.\n"));
+      if (validate_certificate_verify(input,
+				      SIGN_server_certificate_verify) < 0) {
 	return -1;
       }
 

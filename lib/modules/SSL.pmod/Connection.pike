@@ -164,16 +164,55 @@ Packet certificate_packet(array(string(8bit)) certificates)
                           Buffer()->add_string_array(certificates, 3, 3));
 }
 
-Packet certificate_verify_packet()
+Packet certificate_verify_packet(string(8bit)|void signature_context)
 {
   SSL3_DEBUG_MSG("SSL.Connection: CERTIFICATE_VERIFY\n"
 		 "%O: handshake_messages: %d bytes.\n",
 		 this_object(), sizeof(handshake_messages));
   Buffer struct = Buffer();
 
-  session->cipher_spec->sign(session, handshake_messages, struct);
+  if (signature_context) {
+    // TLS 1.3 and later.
+    session->cipher_spec->sign(session,
+			       signature_context +
+			       session->cipher_spec->hash
+			       ->hash(handshake_messages),
+			       struct);
+  } else {
+    session->cipher_spec->sign(session, handshake_messages, struct);
+  }
 
   return handshake_packet(HANDSHAKE_certificate_verify, struct);
+}
+
+int(-1..0) validate_certificate_verify(Buffer input,
+				       string(8bit) signature_context)
+{
+  int(0..1) verification_ok;
+  string(8bit) signed = handshake_messages;
+  if (version < PROTOCOL_TLS_1_3) {
+    signature_context = "";
+  } else {
+    signed = session->cipher_spec->hash->hash(signed);
+  }
+  mixed err = catch {
+      verification_ok = session->cipher_spec->verify(
+        session, signature_context, Buffer(signed), input);
+    };
+#ifdef SSL3_DEBUG
+  if (err) {
+    master()->handle_error(err);
+  }
+#endif
+  err = UNDEFINED;	// Get rid of warning.
+  if (!verification_ok)
+  {
+    send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
+		      "Validation of CertificateVerify failed.\n"));
+    return -1;
+  }
+
+  return 0;
 }
 
 Packet heartbeat_packet(Buffer s)
