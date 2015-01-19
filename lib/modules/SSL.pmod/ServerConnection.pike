@@ -972,7 +972,6 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 			    "Invalid ClientKeyShare.\n"));
 	  return -1;
 	}
-	Stdio.Buffer sks;
 	mapping(int:string(8bit)) kes = ([]);
 	string(8bit) premaster_secret;
 	int best_group = 0x10000;
@@ -1024,7 +1023,10 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	  ke = session->cipher_spec->ke_factory(context, session, this,
 						client_version);
 	  ke->set_group(best_group);
-	  sks = Stdio.Buffer();
+#if constant(Crypto.ECC.Curve)
+	  session->curve = [object(Crypto.ECC.Curve)]ke->curve;
+#endif
+	  Stdio.Buffer sks = Stdio.Buffer();
 	  ke->make_key_share_offer(sks);
 	  premaster_secret = ke->receive_key_share_offer(kes[best_group]);
 
