@@ -1026,9 +1026,17 @@ constant HANDSHAKE_certificate_status   = 22; // RFC 6066
 constant HANDSHAKE_supplemental_data    = 23; // RFC 4680
 constant HANDSHAKE_next_protocol	= 67;	// draft-agl-tls-nextprotoneg
 
+
+//! Don't request nor check any certificate.
 constant AUTHLEVEL_none		= 1;
+
+//! As a server, request a certificate, but don't require a response.
+//! This AUTHLEVEL is not relevant for clients.
 constant AUTHLEVEL_ask		= 2;
+
+//! Require other party to send a valid certificate.
 constant AUTHLEVEL_require	= 3;
+
 
 /* FIXME: CERT_* would be better names for these constants */
 constant AUTH_rsa_sign		= 1;	// SSL 3.0
