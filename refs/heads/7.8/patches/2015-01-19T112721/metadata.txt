@@ -1,0 +1,38 @@
+subject: Pike 7.8: Multiple fixes:
+from: fc8ab7ff14c3edab1c33abec60ed162f40105449
+to: 78915aa1cb33c48c9f9e86094cfab6367dfa30be
+originator: grubba@grubba.org
+depends: 2014-12-02T092738
+restart: true
+
+Multiple fixes:
+
+  * release number bumped to 910 by export.pike
+
+  * release number bumped to 911 by export.pike
+
+  * Handle read errors in Protocols.LysKOM.Raw.
+    
+    If there is a network outage, con->read() will return 0 (not the empty
+    string) after a (long) while.  Treat that properly by calling
+    connection_lost() in that case as well.
+    
+    Fixed a backrace in conwrite by returning 0 if the connection
+    is closed.
+    
+    (cherry picked from commit 7cdea47d8c28017dbdbff49607c811ca0472000c)
+
+  * release number bumped to 912 by export.pike
+
+  * release number bumped to 913 by export.pike
+
+  * Protocols.LDAP: Attempt to pin connections to the same server.
+    
+    When using replication and DNS-round-robin for LDAP, it is common that
+    the servers in the rotation aren't 100% identical, so attempt to have
+    successive connections go to the same LDAP server if possible, otherwise
+    higher level protocols (eg incremental updates) may be broken.
+    
+    Fixes [bug 7406].
+    
+    Also improves support for IPv6.
