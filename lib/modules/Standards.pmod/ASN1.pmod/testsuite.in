@@ -55,12 +55,12 @@ test_decode("181131393932303732323133323130302e335a", "GeneralizedTime(199207221
 
 dnl
 dnl --- START tests from
-dnl A Layman's Guide to a Subset of ASN.1, BER, and DER)
+dnl A Layman's Guide to a Subset of ASN.1, BER, and DER
 dnl
 
 dnl 5.4
 test_decode("03 04 06 6e 5d c0", "BitString(18 011011100101110111)")
-test_decode("03 04 06 6e 5d e0", "BitString(18 011011100101110111)")
+test_false(Standards.ASN1.Decode.simple_der_decode(String.hex2string("03 04 06 6e 5d e0"-" ")))
 test_eq(P(Standards.ASN1.Decode.simple_der_decode(String.hex2string("03 81 04 06 6e 5d c0"-" "))), "BitString(18 011011100101110111)")
 test_eq(P(Standards.ASN1.Decode.simple_der_decode(String.hex2string("23 09 03 03 00 6e 5d 03 02 06 c0"-" "))), "BitString(18 011011100101110111)")
 

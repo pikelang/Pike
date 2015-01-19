@@ -548,7 +548,14 @@ class BitString
 
     if (unused >= 8)
       return 0;
+
     value = contents[1..];
+
+    // Unused bits should be zero. I can't find anything in X.690 that
+    // explicitly states this though.
+    if (sizeof(value) && unused && value[-1]&(1<<unused)-1)
+      return 0;
+
     return this;
   }
 
@@ -563,6 +570,11 @@ class BitString
     if( unused ) error("Adding to a non-aligned bit stream.\n");
     value += e->value;
     unused = e->unused;
+
+    // Unused bits should be zero. I can't find anything in X.690 that
+    // explicitly states this though.
+    if (sizeof(value) && unused && value[-1]&(1<<unused)-1)
+      error("Non-zero padding bits.\n");
   }
 
   protected string _sprintf(int t) {
