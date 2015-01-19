@@ -1,4 +1,4 @@
-subject: Pike 7.8: Multiple fixes:
+subject: Pike 7.8: Multiple fixes: LysKOM read-errors, LDAP IP-pinning.
 from: fc8ab7ff14c3edab1c33abec60ed162f40105449
 to: 78915aa1cb33c48c9f9e86094cfab6367dfa30be
 originator: grubba@grubba.org
@@ -6,10 +6,6 @@ depends: 2014-12-02T092738
 restart: true
 
 Multiple fixes:
-
-  * release number bumped to 910 by export.pike
-
-  * release number bumped to 911 by export.pike
 
   * Handle read errors in Protocols.LysKOM.Raw.
     
@@ -21,10 +17,6 @@ Multiple fixes:
     is closed.
     
     (cherry picked from commit 7cdea47d8c28017dbdbff49607c811ca0472000c)
-
-  * release number bumped to 912 by export.pike
-
-  * release number bumped to 913 by export.pike
 
   * Protocols.LDAP: Attempt to pin connections to the same server.
     
