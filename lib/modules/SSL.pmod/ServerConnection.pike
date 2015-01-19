@@ -273,7 +273,10 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
   werror("sizeof(data)="+sizeof(data)+"\n");
 #endif
 
-  if (type <= previous_handshake) {
+  if ((type <= previous_handshake) &&
+      // NB: certificate_verify <=> client_key_exchange are out of order!
+      ((type != HANDSHAKE_certificate_verify) ||
+       (previous_handshake != HANDSHAKE_client_key_exchange))) {
     // Enforce packet ordering.
     send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
 		      "Invalid handshake packet order.\n"));
