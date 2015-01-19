@@ -263,10 +263,6 @@ Packet heartbleed_packet()
 //
 int verify_certificate_chain(array(string) certs)
 {
-  // Do we need to verify the certificate chain?
-  if(!context->verify_certificates)
-    return 1;
-
   // If we're not requiring the certificate, and we don't provide one,
   // that should be okay. 
   if((context->auth_level < AUTHLEVEL_require) && !sizeof(certs))
@@ -315,7 +311,7 @@ int verify_certificate_chain(array(string) certs)
     return 1;
   }
 
- return 0;
+  return 0;
 }
 
 //! Generate new pending cipher states.

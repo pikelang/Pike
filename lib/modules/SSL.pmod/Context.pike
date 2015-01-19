@@ -664,10 +664,6 @@ array(array(string)) get_trusted_issuers()
 protected array(array(string)) trusted_issuers = ({});
 mapping(string:array(Standards.X509.Verifier)) trusted_issuers_cache = ([]);
 
-//! Determines whether certificates presented by the peer are
-//! verified, or just accepted as being valid.
-int verify_certificates = 0;
-
 //! For client authentication. Used only if auth_level is AUTH_ask or
 //! AUTH_require.
 array(int) preferred_auth_methods =
@@ -939,4 +935,29 @@ void purge_session(Session s)
   s->identity = 0;
   s->master_secret = 0;
   /* There's no need to remove the id from the active_sessions queue */
+}
+
+
+//
+// --- Compatibility code
+//
+
+//! @decl int verify_certificates
+//!
+//! Determines whether certificates presented by the peer are
+//! verified, or just accepted as being valid.
+//!
+//! @deprecated auth_level
+
+__deprecated__ void `verify_certificates=(int i)
+{
+  if(!i)
+    auth_level = AUTHLEVEL_none;
+  else if(auth_level < AUTHLEVEL_ask)
+    auth_level = AUTHLEVEL_ask;
+}
+
+__deprecated__ int `verify_certificates()
+{
+  return auth_level >= AUTHLEVEL_ask;
 }
