@@ -22,17 +22,20 @@ extern "C++" {
 #define INT_TYPE_SIGN(x)             ((x) < 0)
 
 /*
- * Arithmetic operations which try to be standard compliant when checking for overflow.
- * The first set of functions uses a second larger integer type to perform computations.
- * The second uses manual multiplication for unsigned multiply or checks for overflow
- * as recommended in
+ * Arithmetic operations which try to be standard compliant when
+ * checking for overflow. The first set of functions uses a second
+ * larger integer type to perform computations. The second uses manual
+ * multiplication for unsigned multiply or checks for overflow as
+ * recommended in
  *  https://www.securecoding.cert.org/confluence/display/seccode/INT32-C.+Ensure+that+operations+on+signed+integers+do+not+result+in+overflow
- *  When using clang with builtin support for checking arithmetic overflow, those builtins will
- *  be used.
- *  These functions will also detect and try to avoid undefined behavior, e.g. shifts of
+ *
+ *  When using clang with builtin support for checking arithmetic
+ *  overflow, those builtins will be used. These functions will also
+ *  detect and try to avoid undefined behavior, e.g. shifts of
  *  negative integers.
  *
- *  The family of DO_*_OVERFLOW functions sets the result only if no overflow occured.
+ *  The family of DO_*_OVERFLOW functions sets the result only if no
+ *  overflow occured.
  */
 #define GENERIC_OVERFLOW_CHECKS(type)                                                   \
 static INLINE int __attribute__((unused)) DO_## type ## _NEG_OVERFLOW(type a, type * res) { \
