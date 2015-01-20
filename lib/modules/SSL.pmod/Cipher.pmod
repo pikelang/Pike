@@ -956,50 +956,6 @@ class KeyExchangeECDH
 {
   inherit KeyExchange;
 
-  string(8bit) encode_point(Gmp.mpz x, Gmp.mpz y)
-  {
-    // ANSI x9.62 4.3.6.
-    //
-    // Nothing x9.62 4.3.1 states an upper limit on the number of
-    // bytes to use, but in practice implementations check that the
-    // correct size is used.
-    //
-    // Format #4 is uncompressed.
-    int size = (session->curve->size() + 7)>>3;
-    return sprintf("%c%*c%*c", 4, size, x, size, y);
-  }
-
-  array(Gmp.mpz) decode_point(Stdio.Buffer data)
-  {
-    // ANSI x9.62 4.3.7.
-    Gmp.mpz x;
-    Gmp.mpz y;
-    switch(data->read_int(1)) {
-    case 4:
-      int len = sizeof(data);
-      if (!len || len & 1) {
-	connection->ke = UNDEFINED;
-	error("Invalid size in point format.\n");
-      }
-
-      // NB: No need to validate that the point is valid for the curve here.
-      //     The check will be done when the point is used in point_mul().
-      len /= 2;
-      x = Gmp.mpz(data->read_int(len));
-      y = Gmp.mpz(data->read_int(len));
-
-      // FIXME: Are there any security implications of (x, y) above
-      //        being == curve.g (ie remote.secret == 1)?
-      break;
-    default:
-      // Compressed points not supported yet.
-      connection->ke = UNDEFINED;
-      error("Unsupported point format.\n");
-      break;
-    }
-    return ({ x, y });
-  }
-
   protected Gmp.mpz get_server_secret()
   {
     return session->private_key->get_private_key();
@@ -1056,7 +1012,7 @@ class KeyExchangeECDH
 			   version);
 
     Stdio.Buffer struct = Stdio.Buffer();
-    struct->add_hstring(encode_point(x, y), 1);
+    struct->add_hstring(session->curve->Point(x,y)->encode(), 1);
     return struct->read();
   }
 
@@ -1088,7 +1044,7 @@ class KeyExchangeECDH
     /* Explicit encoding */
     Stdio.Buffer struct = Stdio.Buffer(data);
 
-    [ Gmp.mpz x, Gmp.mpz y ] = decode_point(struct->read_hbuffer(1));
+    object point = session->curve->Point(struct->read_hbuffer(1));
     Gmp.mpz secret = get_server_secret();
     // RFC 4492 5.10:
     // Note that this octet string (Z in IEEE 1363 terminology) as
@@ -1096,10 +1052,9 @@ class KeyExchangeECDH
     // Conversion Primitive, has constant length for any given
     // field; leading zeros found in this octet string MUST NOT be
     // truncated.
+
     premaster_secret =
-      sprintf("%*c",
-              (session->curve->size() + 7)>>3,
-              session->curve->point_mul(x, y, secret)[0]);
+      sprintf("%*c", (session->curve->size() + 7)>>3, (point*secret)->get_x());
 
     if(sizeof(struct))
     {
@@ -1189,7 +1144,7 @@ class KeyExchangeECDHE
     Stdio.Buffer struct = Stdio.Buffer();
     struct->add_int(CURVETYPE_named_curve, 1);
     struct->add_int(c, 2);
-    struct->add_hstring(encode_point(x, y), 1);
+    struct->add_hstring(session->curve->Point(x,y)->encode(), 1);
     return struct;
   }
 
@@ -1238,7 +1193,9 @@ class KeyExchangeECDHE
     }
 
     // Then the point.
-    [ pubx, puby ] = decode_point(input->read_hbuffer(1));
+    object point = session->curve->Point(input->read_hbuffer(1));
+    pubx = point->get_x();
+    puby = point->get_y();
 
     len = len - sizeof(input);
     key->rewind();
@@ -1253,19 +1210,6 @@ class KeyShareECDHE
   int group;
   Crypto.ECC.Curve curve;
 
-  string(8bit) encode_point(Gmp.mpz x, Gmp.mpz y)
-  {
-    // ANSI x9.62 4.3.6.
-    //
-    // Nothing x9.62 4.3.1 states an upper limit on the number of
-    // bytes to use, but in practice implementations check that the
-    // correct size is used.
-    //
-    // Format #4 is uncompressed.
-    int size = (curve->size() + 7)>>3;
-    return sprintf("%c%*c%*c", 4, size, x, size, y);
-  }
-
   void make_key_share_offer(Stdio.Buffer offer)
   {
     [Gmp.mpz x, Gmp.mpz y] = curve * secret;
@@ -1275,12 +1219,14 @@ class KeyShareECDHE
     SSL3_DEBUG_MSG("y: %O\n", y);
 
     offer->add_int(group, 2);
-    offer->add_hstring(encode_point(x, y), 2);
+    offer->add_hstring(curve->Point(x,y)->encode(), 2);
   }
 
   string(8bit) receive_key_share_offer(string(8bit) offer)
   {
-    [ pubx, puby ] = decode_point(Stdio.Buffer(offer));
+    object point = curve->Point(Stdio.Buffer(offer));
+    pubx = point->get_x();
+    puby = point->get_y();
 
     // RFC 4492 5.10:
     // Note that this octet string (Z in IEEE 1363 terminology) as
@@ -1289,9 +1235,7 @@ class KeyShareECDHE
     // field; leading zeros found in this octet string MUST NOT be
     // truncated.
     string premaster_secret =
-      sprintf("%*c",
-	      (curve->size() + 7)>>3,
-	      curve->point_mul(pubx, puby, secret)[0]);
+      sprintf("%*c", (curve->size() + 7)>>3, (point*secret)->get_x());
     secret = 0;
 
     return premaster_secret;
