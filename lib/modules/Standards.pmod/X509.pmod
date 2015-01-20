@@ -1382,7 +1382,7 @@ string make_root_certificate(Crypto.Sign.State c, int ttl, mapping|array name,
 TBSCertificate decode_certificate(string|object cert)
 {
   if (stringp (cert)) {
-    cert = Standards.ASN1.Decode.secure_der_decode(cert, x509_types);
+    cert = Standards.PKCS.Signature.decode_signed(cert, x509_types);
   }
 
   if (!cert
@@ -1683,7 +1683,7 @@ mapping verify_certificate_chain(array(string) cert_chain,
 
   foreach(cert_chain; int idx; string c)
   {
-     object cert = Standards.ASN1.Decode.secure_der_decode(c);
+     object cert = Standards.PKCS.Signature.decode_signed(c);
      TBSCertificate tbs = decode_certificate(cert);
      if(!tbs)
        FATAL(CERT_INVALID);
