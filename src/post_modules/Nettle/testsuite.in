@@ -1928,6 +1928,22 @@ DDAF35A1 93617ABA CC417349 AE204131 12E6FA4E 89A97EA2 0A9EEEE6 4B55D39A
 
 ]]) dnl Nettle.ECC_Curve
 
+test_any([[
+  object c=Nettle.ECC_Curve(1,192,1);
+  object p=c->Point(@(c*17));
+  return String.string2hex(p->encode());
+]], "0444275cd2e1f46dc3f9f57636c2b4213b8bb445930510ff8aefad8348fde30c87de438612a818e98d9b76a67ad25ddfd0")
+
+test_any_equal([[
+  object p=Nettle.ECC_Curve(1,192,1)->Point(Stdio.Buffer(String.hex2string("0444275cd2e1f46dc3f9f57636c2b4213b8bb445930510ff8aefad8348fde30c87de438612a818e98d9b76a67ad25ddfd0")));
+  return ({ p->get_x(), p->get_y() })
+]],[[ ({ 1671125335834827806091558150169784167134350298655600213898, 5876882175903236860388081433302259871828398972419132219344 }) ]])
+
+test_any_equal([[
+  object p=Nettle.ECC_Curve(1,192,1)->Point(String.hex2string("0444275cd2e1f46dc3f9f57636c2b4213b8bb445930510ff8aefad8348fde30c87de438612a818e98d9b76a67ad25ddfd0"));
+  return ({ p->get_x(), p->get_y() })
+]],[[ ({ 1671125335834827806091558150169784167134350298655600213898, 5876882175903236860388081433302259871828398972419132219344 }) ]])
+
 test_do( add_constant( "test_adata" ) )
 test_do( add_constant( "test_data" ) )
 test_do( add_constant( "T" ) )

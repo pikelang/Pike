@@ -2,15 +2,23 @@
 #pragma strict_types
 
 extern void set(Gmp.mpz|int x, Gmp.mpz|int y);
+extern object get_curve();
 
 protected void create(Gmp.mpz|int x, Gmp.mpz|int y)
 {
   set(x, y);
 }
 
+// Restrict the integer to not cause problems in the sprintf in
+// encode.
+private int(16bit) bytes()
+{
+  return [int(16bit)]((get_curve()->size()+7)>>3);
+}
+
 // FIXME: Perhaps we want to send the agreed upon point format as
 // optional second argument to verify against?
-variant protected void create(string(7bit)|Stdio.Buffer data)
+variant protected void create(string(8bit)|Stdio.Buffer data)
 {
   Stdio.Buffer buf = stringp(data) ?
     Stdio.Buffer(data) : [object(Stdio.Buffer)]data;
@@ -20,13 +28,13 @@ variant protected void create(string(7bit)|Stdio.Buffer data)
   switch(buf->read_int(1))
   {
   case 4:
-    int len = sizeof(data);
-    if (!len || len & 1)
+    int size = bytes();
+
+    if (sizeof(buf) != size*2)
       error("Invalid size in point format.\n");
 
-    len /= 2;
-    x = Gmp.mpz(data->read_int(len));
-    y = Gmp.mpz(data->read_int(len));
+    x = Gmp.mpz(buf->read_int(size));
+    y = Gmp.mpz(buf->read_int(size));
 
     // FIXME: Are there any security implications of (x, y) above
     //        being == curve.g (ie remote.secret == 1)?
@@ -41,4 +49,14 @@ variant protected void create(string(7bit)|Stdio.Buffer data)
   }
 
   set(x, y);
+}
+
+extern Gmp.mpz get_x();
+extern Gmp.mpz get_y();
+
+// FIXME: Parameter to select encoding format.
+string encode()
+{
+  int(31bit) size = bytes();
+  return sprintf("%c%*c%*c", 4, size, get_x(), size, get_y());
 }
