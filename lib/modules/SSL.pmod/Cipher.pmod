@@ -885,42 +885,6 @@ class KeyExchangeECDH
 {
   inherit KeyExchange;
 
-  string(8bit) encode_point(Gmp.mpz x, Gmp.mpz y)
-  {
-    // ANSI x9.62 4.3.6.
-    // Format #4 is uncompressed.
-    return sprintf("%c%*c%*c",
-		   4,
-		   (session->curve->size() + 7)>>3, x,
-		   (session->curve->size() + 7)>>3, y);
-  }
-
-  array(Gmp.mpz) decode_point(string(8bit) data)
-  {
-    ADT.struct struct = ADT.struct(data);
-
-    Gmp.mpz x;
-    Gmp.mpz y;
-    switch(struct->get_uint(1)) {
-    case 4:
-      string rest = struct->get_rest();
-      if (sizeof(rest) & 1) {
-	connection->ke = UNDEFINED;
-	error("Invalid size in point format.\n");
-      }
-      // NB: No need to validate that the point is valid for the curve here.
-      //     The check will be done when the point is used in point_mul().
-      [x, y] = map(rest/(sizeof(rest)/2), Gmp.mpz, 256);
-      break;
-    default:
-      // Compressed points not supported yet.
-      connection->ke = UNDEFINED;
-      error("Unsupported point format.\n");
-      break;
-    }
-    return ({ x, y });
-  }
-
   protected Gmp.mpz get_server_secret()
   {
     return session->private_key->get_private_key();
@@ -961,9 +925,7 @@ class KeyExchangeECDH
     Gmp.mpz secret = session->curve->new_scalar(context->random);
     [Gmp.mpz x, Gmp.mpz y] = session->curve * secret;
 
-    ADT.struct point = ADT.struct();
-
-    struct->put_var_string(encode_point(x, y), 1);
+    struct->put_var_string(session->curve->Point(x,y)->encode(), 1);
 
     data = struct->pop_data();
 
@@ -1017,25 +979,17 @@ class KeyExchangeECDH
     /* Explicit encoding */
     ADT.struct struct = ADT.struct(data);
 
-    if (catch
-      {
-	[ Gmp.mpz x, Gmp.mpz y ] = decode_point(struct->get_var_string(1));
-	Gmp.mpz secret = get_server_secret();
-	// RFC 4492 5.10:
-	// Note that this octet string (Z in IEEE 1363 terminology) as
-	// output by FE2OSP, the Field Element to Octet String
-	// Conversion Primitive, has constant length for any given
-	// field; leading zeros found in this octet string MUST NOT be
-	// truncated.
-	premaster_secret =
-	  sprintf("%*c",
-		  (session->curve->size() + 7)>>3,
-		  session->curve->point_mul(x, y, secret)[0]);
-      } || sizeof(struct))
-    {
-      connection->ke = UNDEFINED;
-      return ALERT_unexpected_message;
-    }
+    object point = session->curve->Point(struct->get_var_string(1));
+    Gmp.mpz secret = get_server_secret();
+    // RFC 4492 5.10:
+    // Note that this octet string (Z in IEEE 1363 terminology) as
+    // output by FE2OSP, the Field Element to Octet String
+    // Conversion Primitive, has constant length for any given
+    // field; leading zeros found in this octet string MUST NOT be
+    // truncated.
+
+    premaster_secret =
+      sprintf("%*c", (session->curve->size() + 7)>>3, (point*secret)->get_x());
 
     return derive_master_secret(premaster_secret, client_random, server_random,
 				version);
@@ -1121,9 +1075,7 @@ class KeyExchangeECDHE
 
     struct->put_uint(CURVETYPE_named_curve, 1);
     struct->put_uint(c, 2);
-
-    struct->put_var_string(encode_point(x, y), 1);
-
+    struct->put_var_string(session->curve->Point(x,y)->encode(), 1);
     return struct;
   }
 
@@ -1174,7 +1126,9 @@ class KeyExchangeECDHE
 
     // Then the point.
     string raw;
-    [ pubx, puby ] = decode_point(raw = input->get_var_string(1));
+    object point = session->curve->Point(raw = input->get_var_string(1));
+    pubx = point->get_x();
+    puby = point->get_y();
     temp_struct->put_var_string(raw, 1);
 
     return temp_struct;
