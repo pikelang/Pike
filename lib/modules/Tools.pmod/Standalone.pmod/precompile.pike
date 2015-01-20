@@ -1482,7 +1482,7 @@ int evaluate_method(mixed q)
       val++;
       for(int d=e+1;d<sizeof(q);d++)
       {
-	if(!sizeof(q[e] ^ q[d])) /* equal is broken in some Pikes */
+	if(q[d] && !sizeof(q[e] ^ q[d])) /* equal is broken in some Pikes */
 	{
 #ifdef PRECOMPILE_OVERLOAD_DEBUG
 	  werror("EQ, %d %d\n",e,d);
