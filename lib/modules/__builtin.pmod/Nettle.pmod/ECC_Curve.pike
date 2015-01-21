@@ -1,6 +1,7 @@
 #pike __REAL_VERSION__
 #pragma strict_types
 
+class Point {
 extern void set(Gmp.mpz|int x, Gmp.mpz|int y);
 extern object get_curve();
 
@@ -16,10 +17,18 @@ private int(16bit) bytes()
   return [int(16bit)]((get_curve()->size()+7)>>3);
 }
 
-// FIXME: Perhaps we want to send the agreed upon point format as
-// optional second argument to verify against?
+//! @decl void create(Gmp.mpz|int x, Gmp.mpz|int y)
+//! @decl void create(Stdio.Buffer|string(7bit) data)
+//!
+//! Initialize to the selected point on the curve.
+//!
+//! @note
+//!   Throws errors if the point isn't on the curve.
 variant protected void create(string(8bit)|Stdio.Buffer data)
 {
+  // FIXME: Perhaps we want to send the agreed upon point format as
+  // optional second argument to verify against?
+
   Stdio.Buffer buf = stringp(data) ?
     Stdio.Buffer(data) : [object(Stdio.Buffer)]data;
   Gmp.mpz x,y;
@@ -59,4 +68,6 @@ string encode()
 {
   int(31bit) size = bytes();
   return sprintf("%c%*c%*c", 4, size, get_x(), size, get_y());
+}
+
 }

@@ -337,6 +337,10 @@ program_flags PROGRAM_CLEAR_STORAGE;
  */
 PIKECLASS ECC_Curve
 {
+  /*! @decl inherit __builtin.Nettle.ECC_Curve
+   */
+  INHERIT "__builtin.Nettle.ECC_Curve";
+
   CVAR const struct ecc_curve *curve;
   CVAR int field_size;
 
@@ -554,7 +558,32 @@ PIKECLASS ECC_Curve
   {
     CVAR struct ecc_point point;
 
-    INHERIT "__builtin.Nettle.Point";
+    /*! @decl inherit ECC_Curve::Point
+     */
+    EXTRA
+    {
+      /* Perform an inherit of the Point class that our parent
+       * contains via its inherit of __builtin.Nettle.ECC_Curve.
+       */
+      struct program *parent_prog = Pike_compiler->previous->new_program;
+      struct object *parent_obj = Pike_compiler->previous->fake_object;
+      int parent_Point_fun_num =
+	really_low_find_shared_string_identifier(MK_STRING("Point"),
+						 parent_prog,
+						 SEE_PROTECTED|SEE_PRIVATE);
+      if (parent_Point_fun_num >= 0) {
+	struct program *parent_Point_prog =
+	  low_program_from_function(parent_obj, parent_Point_fun_num);
+	if (parent_Point_prog) {
+	  parent_Point_fun_num =
+	    really_low_reference_inherited_identifier(Pike_compiler->previous,
+						      0, parent_Point_fun_num);
+	  low_inherit(parent_Point_prog, 0,
+		      parent_Point_fun_num,
+		      1 + 42, 0, NULL);
+	}
+      }
+    }
 
     INIT
     {
@@ -687,15 +716,6 @@ PIKECLASS ECC_Curve
 
       apply_external(1, Nettle_ECC_Curve_Point_program_fun_num, 2);
     }
-
-    /*! @decl void create(Gmp.mpz|int x, Gmp.mpz|int y)
-     *! @decl void create(Stdio.Buffer|string(7bit) data)
-     *!
-     *! Initialize to the selected point on the curve.
-     *!
-     *! @note
-     *!   Throws errors if the point isn't on the curve.
-     */
   }
   /*! @endclass Point
    */
