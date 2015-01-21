@@ -1,8 +1,14 @@
 #pike __REAL_VERSION__
 #pragma strict_types
 
+//! Base class for Elliptic Curve Definitions.
+//!
+//! @seealso
+//!   @[Crypto.ECC.Curve], @[Nettle.ECC_Curve]
+
 extern int size();
 
+//! Base class for a point on an elliptic curve.
 class Point {
   extern void set(Gmp.mpz|int x, Gmp.mpz|int y);
 
@@ -65,6 +71,10 @@ class Point {
   extern Gmp.mpz get_y();
 
   // FIXME: Parameter to select encoding format.
+  //! Serialize the @[Point].
+  //!
+  //! The default implementation serializes according to ANSI x9.62
+  //! encoding #4 (uncompressed point format).
   string encode()
   {
     int(31bit) size = bytes();
