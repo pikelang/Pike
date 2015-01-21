@@ -1167,8 +1167,6 @@ test_tests([[
       }
     }
 
-#if 0
- // FIXME: Add invalid certificate to client context.
     // Then with certs, but none accepted.
     array(CertificatePair) certs = server_ctx->get_certificates();
     foreach(({ AUTHLEVEL_none, AUTHLEVEL_ask, AUTHLEVEL_require, }),
@@ -1181,15 +1179,12 @@ test_tests([[
       for (int ver = PROTOCOL_SSL_3_0; ver <= PROTOCOL_TLS_MAX; ver++) {
 	int count = test_ssl_connection(PROTOCOL_SSL_3_0, ver,
 					PROTOCOL_SSL_3_0, PROTOCOL_TLS_MAX,
-					exp, server_ctx, suites);
+					exp, server_ctx, suites, certs);
 	successes += count;
 	tests += count || 1;
       }
     }
-#endif
 
-#if 0
-  // FIXME: Add valid certificate to client context.
     // Then with accepted certs, one at a time.
     foreach(certs, CertificatePair cp) {
       server_ctx->set_authorities(({ cp->certs[0] }));
@@ -1204,13 +1199,12 @@ test_tests([[
 	for (int ver = PROTOCOL_SSL_3_0; ver <= PROTOCOL_TLS_MAX; ver++) {
 	  int count = test_ssl_connection(PROTOCOL_SSL_3_0, ver,
 					  PROTOCOL_SSL_3_0, PROTOCOL_TLS_MAX,
-					  exp, server_ctx, suites);
+					  exp, server_ctx, suites, certs);
 	  successes += count;
 	  tests += count || 1;
 	}
       }
     }
-#endif
 
     return ({ successes, tests-successes });
   }
