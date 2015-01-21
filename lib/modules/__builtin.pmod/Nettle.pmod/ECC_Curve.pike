@@ -1,21 +1,22 @@
 #pike __REAL_VERSION__
 #pragma strict_types
 
+extern int size();
+
 class Point {
-extern void set(Gmp.mpz|int x, Gmp.mpz|int y);
-extern object get_curve();
+  extern void set(Gmp.mpz|int x, Gmp.mpz|int y);
 
-protected void create(Gmp.mpz|int x, Gmp.mpz|int y)
-{
-  set(x, y);
-}
+  protected void create(Gmp.mpz|int x, Gmp.mpz|int y)
+  {
+    set(x, y);
+  }
 
-// Restrict the integer to not cause problems in the sprintf in
-// encode.
-private int(16bit) bytes()
-{
-  return [int(16bit)]((get_curve()->size()+7)>>3);
-}
+  // Restrict the integer to not cause problems in the sprintf in
+  // encode.
+  private int(16bit) bytes()
+  {
+    return [int(16bit)]((size()+7)>>3);
+  }
 
 //! @decl void create(Gmp.mpz|int x, Gmp.mpz|int y)
 //! @decl void create(Stdio.Buffer|string(7bit) data)
@@ -60,14 +61,14 @@ variant protected void create(string(8bit)|Stdio.Buffer data)
   set(x, y);
 }
 
-extern Gmp.mpz get_x();
-extern Gmp.mpz get_y();
+  extern Gmp.mpz get_x();
+  extern Gmp.mpz get_y();
 
-// FIXME: Parameter to select encoding format.
-string encode()
-{
-  int(31bit) size = bytes();
-  return sprintf("%c%*c%*c", 4, size, get_x(), size, get_y());
-}
+  // FIXME: Parameter to select encoding format.
+  string encode()
+  {
+    int(31bit) size = bytes();
+    return sprintf("%c%*c%*c", 4, size, get_x(), size, get_y());
+  }
 
 }
