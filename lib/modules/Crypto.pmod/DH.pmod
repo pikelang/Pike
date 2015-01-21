@@ -6,6 +6,23 @@
 //! Diffie-Hellman key-exchange related stuff.
 //!
 
+private /*constant*/ multiset(Gmp.mpz) known_primes = (<
+
+  // Hard-coded in Apache httpd 2.2, modules/ssl/ssl_engine_dh.c.
+  Gmp.mpz("d67de440cbbbdc1936d693d34afd0ad50c84d239a45f520bb88174cb98bce951849f912e639c72fb13b4b4d7177e16d55ac179ba420b2a29fe324a467a635e81ff5901377beddcfd33168a461aad3b72dae8860078045b07a7dbca7874087d1510ea9fcc9ddd330507dd62db88aeaa747de0f4d6e2bd68b0e7393e0f24218eb3",16),
+
+  // Hard-coded in nginx, src/event/ngx_event_openssl.c.
+  Gmp.mpz("bbbc2dcad84674907c43fcf580e9cfdbd958a3f568b42d4b08eed4eb0fb3504c6c030276e710800c5ccbbaa8922614c5beeca565a5fdf1d287a2bc049be6778060e91a92a757e3048f68b076f7d36cc8f29ba5df81dc2ca725ece66270cc9a5035d8ceceef9ea0274a63ab1e58fafd4988d0f65d146757da071df045cfe16b9b",16),
+
+  // Offered as a parameter by several high-traffic sites, including
+  // mozilla.org, as of Jan 2015.
+  Gmp.mpz("c9bbf5f774a8297b0f97cdda3a3468c7117b6bf799a13d9f1f5dac487b2241fe95efb13c2855dfd2f898b3f99188e24edf326dd68c76cc85537283512d46f1953129c693364d8c71202eabb3ebc85c1df53907fbd0b7eb490ad0bc99289686800c46ab04bf7cdd9ad425e6fb25592eb6258a0655d75e93b2671746ae349e721b",16),
+
+  // Hard-coded in Apache httpd 2.0, modules/ssl/ssl_engine_dh.c.
+  Gmp.mpz("e6969d3d495be32c7cf180c3bdd4798e91b7818251bb055e2a2064904a79a770fa15a259cbd523a6a6ef09c43048d5a22f971f3c20129b48000e6edd061cbc053e371d794e5327df611ebbbe1bac9b5c6044cf023d76e05eea9bad991b13a63c974e9ef1839eb5db125136f7262e56a8871538dfd823c6505085e21f0dd5c86b",16),
+
+>);
+
 //! Diffie-Hellman parameters.
 class Parameters
 {
@@ -52,7 +69,7 @@ class Parameters
   //! test verifies that @[g] is of high order.
   bool validate(int(0..) effort)
   {
-    if( effort && !p->probably_prime_p(effort) )
+    if( effort && !known_primes[p] && !p->probably_prime_p(effort) )
       return 0;
 
     Gmp.mpz qq = [object(Gmp.mpz)]((p-1)/2);
