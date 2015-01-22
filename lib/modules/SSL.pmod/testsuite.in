@@ -727,12 +727,17 @@ test_do([[
     Stdio.File client_con = Stdio.File();
     Stdio.File server_con =
       client_con->pipe(Stdio.PROP_NONBLOCK | Stdio.PROP_BIDIRECTIONAL);
-    SSL.sslfile server;
-    SSL.sslfile client;
+    SSL.File server;
+    SSL.File client;
+
+    if (!server_con) {
+      return ({ sprintf("Failed to create pipe: %s\n",
+			strerror(client_con->errno())) });
+    }
 
     Thread.Thread server_thread =
       Thread.Thread(lambda(int bytes) {
-        server = SSL.sslfile(server_con, server_ctx);
+        server = SSL.File(server_con, server_ctx);
         server->set_blocking();
 	if (!server->accept()) {
 	  return exp_data && "Server accept failed.\n";
@@ -764,7 +769,7 @@ test_do([[
 	return 0;
       }, sizeof(client_msg));
 
-    /* SSL.sslfile */ client = SSL.sslfile(client_con, client_ctx);
+    /* SSL.File */ client = SSL.File(client_con, client_ctx);
 
     client->set_blocking();
     if (!client->connect()) {
