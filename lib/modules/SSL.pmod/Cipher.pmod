@@ -923,9 +923,9 @@ class KeyExchangeECDH
     SSL3_DEBUG_MSG("KE_ECDH\n");
 
     Gmp.mpz secret = session->curve->new_scalar(context->random);
-    [Gmp.mpz x, Gmp.mpz y] = session->curve * secret;
+    Crypto.ECC.Curve.Point p = session->curve * secret;
 
-    struct->put_var_string(session->curve->Point(x,y)->encode(), 1);
+    struct->put_var_string(p->encode(), 1);
 
     data = struct->pop_data();
 
@@ -941,8 +941,7 @@ class KeyExchangeECDH
     premaster_secret =
       sprintf("%*c",
 	      (session->curve->size() + 7)>>3,
-	      session->curve->point_mul(pubx, puby, secret)[0]);
-
+	      session->curve->point_mul(pubx, puby, secret)->get_x());
     secret = 0;
 
     session->master_secret =
@@ -1067,15 +1066,15 @@ class KeyExchangeECDHE
     SSL3_DEBUG_MSG("Curve: %s: %O\n", fmt_constant(c, "CURVE"), session->curve);
 
     secret = session->curve->new_scalar(context->random);
-    [Gmp.mpz x, Gmp.mpz y] = session->curve * secret;
+    Crypto.ECC.Curve.Point p = session->curve * secret;
 
     SSL3_DEBUG_MSG("secret: %O\n", secret);
-    SSL3_DEBUG_MSG("x: %O\n", x);
-    SSL3_DEBUG_MSG("y: %O\n", y);
+    SSL3_DEBUG_MSG("x: %O\n", p->get_x());
+    SSL3_DEBUG_MSG("y: %O\n", p->get_y());
 
     struct->put_uint(CURVETYPE_named_curve, 1);
     struct->put_uint(c, 2);
-    struct->put_var_string(session->curve->Point(x,y)->encode(), 1);
+    struct->put_var_string(p->encode(), 1);
     return struct;
   }
 
