@@ -447,16 +447,18 @@ PIKECLASS ECC_Curve
     ecc_scalar_clear(&s);
   }
 
-  /*! @decl array(Gmp.mpz) `*(Gmp.mpz|int scalar)
+  static int Nettle_ECC_Curve_Point_program_fun_num;
+
+  /*! @decl Point `*(Gmp.mpz|int scalar)
    *!
    *! Multiply the curve by a scalar.
    *!
    *! This can be used to get the public key from a private key.
    *!
    *! @returns
-   *!   Returns a new point (x, y) on the curve.
+   *!   Returns a new @[Point] on the curve.
    */
-  PIKEFUN array(object(Gmp.mpz)) `*(object(Gmp.mpz)|int scalar)
+  PIKEFUN Nettle_ECC_Curve_Point `*(object(Gmp.mpz)|int scalar)
   {
     struct ecc_scalar s;
     struct ecc_point r;
@@ -484,23 +486,25 @@ PIKECLASS ECC_Curve
     ecc_scalar_clear(&s);
     ecc_point_clear(&r);
 
-    f_aggregate(2);
+    apply_current(Nettle_ECC_Curve_Point_program_fun_num, 2);
   }
 
-  /*! @decl array(Gmp.mpz) point_mul(Gmp.mpz|int x, Gmp.mpz|int y, @
-   *!                                Gmp.mpz|int scalar)
+  /*! @decl Point point_mul(Gmp.mpz|int x, Gmp.mpz|int y, @
+   *!                       Gmp.mpz|int scalar)
    *!
    *! Multiply a point on the curve by a scalar.
    *!
    *! A typical use is for Elliptic Curve Diffie Hellman (ECDH) key exchange.
    *!
+   *! This is equivalent to @code{(Point(x, y) * scalar)@}.
+   *!
    *! @returns
-   *!   Returns the new point on the curve.
+   *!   Returns the new @[Point] on the curve.
    *!
    *! @throws
    *!   Throws an error if the point (@[x], @[y]) isn't on the curve.
    */
-  PIKEFUN array(object(Gmp.mpz)) point_mul(object(Gmp.mpz)|int x,
+  PIKEFUN Nettle_ECC_Curve_Point point_mul(object(Gmp.mpz)|int x,
 					   object(Gmp.mpz)|int y,
 					   object(Gmp.mpz)|int scalar)
   {
@@ -545,7 +549,7 @@ PIKECLASS ECC_Curve
     ecc_scalar_clear(&s);
     ecc_point_clear(&p);
 
-    f_aggregate(2);
+    apply_current(Nettle_ECC_Curve_Point_program_fun_num, 2);
     stack_pop_n_elems_keep_top(args);
   }
 
