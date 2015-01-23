@@ -990,7 +990,7 @@ class KeyExchangeECDH
     SSL3_DEBUG_MSG("KE_ECDH\n");
 
     Gmp.mpz secret = session->curve->new_scalar(context->random);
-    [Gmp.mpz x, Gmp.mpz y] = session->curve * secret;
+    Crypto.ECC.Curve.Point p = session->curve * secret;
 
     Gmp.mpz pubx = get_server_pubx();
     Gmp.mpz puby = get_server_puby();
@@ -1004,7 +1004,7 @@ class KeyExchangeECDH
     string premaster_secret =
       sprintf("%*c",
 	      (session->curve->size() + 7)>>3,
-	      session->curve->point_mul(pubx, puby, secret)[0]);
+	      session->curve->point_mul(pubx, puby, secret)->get_x());
     secret = 0;
 
     session->master_secret =
@@ -1012,7 +1012,7 @@ class KeyExchangeECDH
 			   version);
 
     Stdio.Buffer struct = Stdio.Buffer();
-    struct->add_hstring(session->curve->Point(x,y)->encode(), 1);
+    struct->add_hstring(p->encode(), 1);
     return struct->read();
   }
 
@@ -1135,16 +1135,16 @@ class KeyExchangeECDHE
     SSL3_DEBUG_MSG("Curve: %s: %O\n", fmt_constant(c, "CURVE"), session->curve);
 
     secret = session->curve->new_scalar(context->random);
-    [Gmp.mpz x, Gmp.mpz y] = session->curve * secret;
+    Crypto.ECC.Curve.Point p = session->curve * secret;
 
     SSL3_DEBUG_MSG("secret: %O\n", secret);
-    SSL3_DEBUG_MSG("x: %O\n", x);
-    SSL3_DEBUG_MSG("y: %O\n", y);
+    SSL3_DEBUG_MSG("x: %O\n", p->get_x());
+    SSL3_DEBUG_MSG("y: %O\n", p->get_y());
 
     Stdio.Buffer struct = Stdio.Buffer();
     struct->add_int(CURVETYPE_named_curve, 1);
     struct->add_int(c, 2);
-    struct->add_hstring(session->curve->Point(x,y)->encode(), 1);
+    struct->add_hstring(p->encode(), 1);
     return struct;
   }
 
@@ -1212,14 +1212,14 @@ class KeyShareECDHE
 
   void make_key_share_offer(Stdio.Buffer offer)
   {
-    [Gmp.mpz x, Gmp.mpz y] = curve * secret;
+    Crypto.ECC.Curve.Point p = curve * secret;
 
     SSL3_DEBUG_MSG("secret: %O\n", secret);
-    SSL3_DEBUG_MSG("x: %O\n", x);
-    SSL3_DEBUG_MSG("y: %O\n", y);
+    SSL3_DEBUG_MSG("x: %O\n", p->get_x());
+    SSL3_DEBUG_MSG("y: %O\n", p->get_y());
 
     offer->add_int(group, 2);
-    offer->add_hstring(curve->Point(x,y)->encode(), 2);
+    offer->add_hstring(p->encode(), 2);
   }
 
   string(8bit) receive_key_share_offer(string(8bit) offer)
