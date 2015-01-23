@@ -1,11 +1,9 @@
-subject: Pike 7.8:   * release number bumped to 915 by export.pike
+subject: Pike 7.8: Crypto optimization
 from: ddf3b9a14c9f71836d1fe16dc1d8aad1d5af7502
 to: 73e172fc98160bed8abcfe1acfbae7da7dc90557
 originator: wellhardh@roxen.com
 depends: 2015-01-23T144735|pike/7.8.914
 restart: true
-
-  * release number bumped to 915 by export.pike
 
   * Crypto.RandomString: Reduce entropy waste.
     
