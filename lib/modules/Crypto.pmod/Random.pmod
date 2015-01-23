@@ -138,7 +138,8 @@ protected class RND {
   string low_random_string(int len) {
     String.Buffer buf = String.Buffer(len);
     int new_tick = ticker();
-    update( (string)(new_tick-last_tick), 1, 1 );
+    string tmp = (string)(new_tick-last_tick);
+    update( tmp, 1, sizeof(tmp)*4 );
     last_tick = new_tick;
 
     while(len) {
@@ -148,7 +149,7 @@ protected class RND {
       len -= pass;
       if(bytes_left - pass <= 0) {
 	update( s->read(32), 0, 256 );
-	bytes_left += 32;
+	bytes_left += 32 * 256;
       }
     }
     return (string)buf;
