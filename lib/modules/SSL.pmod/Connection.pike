@@ -341,6 +341,9 @@ void derive_master_secret(string(8bit) premaster_secret)
 	    fmt_constant(handshake_state, "STATE"));
       break;
     }
+  } else if (!sizeof(premaster_secret)) {
+    // Clear text mode.
+    session->master_secret = "";
   } else {
     session->master_secret =
       session->cipher_spec->prf(premaster_secret, "master secret",

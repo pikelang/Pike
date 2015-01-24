@@ -230,7 +230,7 @@ int(-1..0) reply_new_session(array(int) cipher_suites,
 //! Derive the new master secret from the state of @[ke] and
 //! the payload @[data] received fron the client in its
 //! @[HANDSHAKE_client_key_exchange] packet.
-string(8bit) server_derive_master_secret(string(8bit) data)
+int(0..1) server_derive_master_secret(string(8bit) data)
 {
   string(8bit)|int(8bit) premaster_secret =
     ke->got_client_key_exchange(data, version);
@@ -242,12 +242,8 @@ string(8bit) server_derive_master_secret(string(8bit) data)
     return 0;
   }
 
-  // Clear-text?
-  if (!sizeof([string(8bit)]premaster_secret)) return "";
-
-  return session->cipher_spec->prf([string(8bit)]premaster_secret,
-				   "master secret",
-				   client_random + server_random, 48);
+  derive_master_secret([string(8bit)]premaster_secret);
+  return 1;
 }
 
 protected void create(Context ctx)
@@ -1225,14 +1221,11 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	return -1;
       }
 
-      if (!(session->master_secret = server_derive_master_secret(data)))
-      {
+      if (!server_derive_master_secret(data)) {
 	return -1;
-      } else {
-	new_cipher_states();
-
-        SSL3_DEBUG_MSG("certificate_state: %d\n", certificate_state);
       }
+
+      SSL3_DEBUG_MSG("certificate_state: %d\n", certificate_state);
       // TODO: we need to determine whether the certificate has signing abilities.
       if (certificate_state == CERT_received)
       {
