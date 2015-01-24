@@ -1845,11 +1845,17 @@ define(test_ecdsa,[[
 test_do([[
   add_constant("C", Nettle.ECC_Curve(1, $1, 1));
 ]])
-test_equal([[
+test_eq([[
   // Verify derivation of the public key.
-  C * T(#"$4")
+  (C * T(#"$4"))->get_x()
 ]], [[
-  ({ T(#"$2"), T(#"$3") })
+  T(#"$2")
+]])
+test_eq([[
+  // Verify derivation of the public key.
+  (C * T(#"$4"))->get_y()
+]], [[
+  T(#"$3")
 ]])
 test_any([[
   // Validate signing.
@@ -1930,7 +1936,7 @@ DDAF35A1 93617ABA CC417349 AE204131 12E6FA4E 89A97EA2 0A9EEEE6 4B55D39A
 
 test_any([[
   object c=Nettle.ECC_Curve(1,192,1);
-  object p=c->Point(@(c*17));
+  object p=c*17;
   return String.string2hex(p->encode());
 ]], "0444275cd2e1f46dc3f9f57636c2b4213b8bb445930510ff8aefad8348fde30c87de438612a818e98d9b76a67ad25ddfd0")
 
