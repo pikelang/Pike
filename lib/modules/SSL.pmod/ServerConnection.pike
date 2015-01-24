@@ -148,6 +148,9 @@ Packet server_key_share_packet(Stdio.Buffer offer)
   return handshake_packet(HANDSHAKE_server_key_share, offer);
 }
 
+//! Initialize the KeyExchange @[ke], and generate a
+//! @[HANDSHAKE_server_key_exchange] packet if the
+//! key exchange needs one.
 Packet server_key_exchange_packet()
 {
   if (ke) error("KE!\n");
@@ -224,14 +227,27 @@ int(-1..0) reply_new_session(array(int) cipher_suites,
   return 0;
 }
 
+//! Derive the new master secret from the state of @[ke] and
+//! the payload @[data] received fron the client in its
+//! @[HANDSHAKE_client_key_exchange] packet.
 string(8bit) server_derive_master_secret(string(8bit) data)
 {
-  string(8bit)|int(8bit) res =
-    ke->server_derive_master_secret(data, client_random, server_random, version);
-  if (stringp(res)) return [string]res;
-  send_packet(alert(ALERT_fatal, [int(8bit)]res,
-		    "Failed to derive master secret.\n"));
-  return 0;
+  string(8bit)|int(8bit) premaster_secret =
+    ke->got_client_key_exchange(data, version);
+  ke = UNDEFINED;
+
+  if (intp(premaster_secret)) {
+    send_packet(alert(ALERT_fatal, [int(8bit)]premaster_secret,
+		      "Failed to derive master secret.\n"));
+    return 0;
+  }
+
+  // Clear-text?
+  if (!sizeof([string(8bit)]premaster_secret)) return "";
+
+  return session->cipher_spec->prf([string(8bit)]premaster_secret,
+				   "master secret",
+				   client_random + server_random, 48);
 }
 
 protected void create(Context ctx)

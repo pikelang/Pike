@@ -416,13 +416,11 @@ class KeyExchange(object context, object session, object connection,
   //!   Payload from a @[HANDSHAKE_client_key_exchange].
   //!
   //! @returns
-  //!   Master secret or alert number.
+  //!   Premaster secret or alert number.
   //!
   //! @note
-  //!   May set @[message_was_bad] and return a fake master secret.
-  string(8bit)|int(8bit) server_derive_master_secret(string(8bit) data,
-						 string(8bit) client_random,
-						 string(8bit) server_random,
+  //!   May set @[message_was_bad] and return a fake premaster secret.
+  string(8bit)|int(8bit) got_client_key_exchange(string(8bit) data,
 						 ProtocolVersion version);
 
   //! @param input
@@ -505,11 +503,9 @@ class KeyExchangeNULL
   }
 
   //! @returns
-  //!   Master secret or alert number.
-  string(8bit) server_derive_master_secret(string(8bit) data,
-                                           string(8bit) client_random,
-                                           string(8bit) server_random,
-                                           ProtocolVersion version)
+  //!   Premaster secret or alert number.
+  string(8bit) got_client_key_exchange(string(8bit) data,
+				       ProtocolVersion version)
   {
     anonymous = 1;
     return "";
@@ -606,15 +602,13 @@ class KeyExchangeRSA
   }
 
   //! @returns
-  //!   Master secret or alert number.
-  string(8bit)|int(8bit) server_derive_master_secret(string(8bit) data,
-                                                     string(8bit) client_random,
-                                                     string(8bit) server_random,
-                                                     ProtocolVersion version)
+  //!   Premaster secret or alert number.
+  string(8bit)|int(8bit) got_client_key_exchange(string(8bit) data,
+						 ProtocolVersion version)
   {
     string premaster_secret;
 
-    SSL3_DEBUG_MSG("server_derive_master_secret: ke_method %d\n",
+    SSL3_DEBUG_MSG("got_client_key_exchange: ke_method %d\n",
 		   session->ke_method);
 
     SSL3_DEBUG_MSG("KE_RSA\n");
@@ -664,8 +658,7 @@ class KeyExchangeRSA
       connection->ke = this;
     }
 
-    return derive_master_secret(premaster_secret, client_random, server_random,
-				version);
+    return premaster_secret;
   }
 
   Stdio.Buffer parse_server_key_exchange(Stdio.Buffer input)
@@ -751,10 +744,8 @@ class KeyExchangeDH
   }
 
   //! @returns
-  //!   Master secret or alert number.
-  string(8bit)|int(8bit) server_derive_master_secret(string(8bit) data,
-						 string(8bit) client_random,
-						 string(8bit) server_random,
+  //!   Premaster secret or alert number.
+  string(8bit)|int(8bit) got_client_key_exchange(string(8bit) data,
 						 ProtocolVersion version)
   {
     string premaster_secret;
@@ -782,8 +773,7 @@ class KeyExchangeDH
     premaster_secret = dh_state->get_shared()->digits(256);
     dh_state = 0;
 
-    return derive_master_secret(premaster_secret, client_random, server_random,
-				version);
+    return premaster_secret;
   }
 
   Stdio.Buffer parse_server_key_exchange(Stdio.Buffer input)
@@ -852,13 +842,11 @@ class KeyExchangeDHE
   }
 
   //! @returns
-  //!   Master secret or alert number.
-  string(8bit)|int(8bit) server_derive_master_secret(string(8bit) data,
-						 string(8bit) client_random,
-						 string(8bit) server_random,
-						 ProtocolVersion version)
+  //!   Premaster secret or alert number.
+  string(8bit)|int(8bit) got_client_key_exchage(string(8bit) data,
+						ProtocolVersion version)
   {
-    SSL3_DEBUG_MSG("server_derive_master_secret: ke_method %d\n",
+    SSL3_DEBUG_MSG("got_client_key_exchange: ke_method %d\n",
 		   session->ke_method);
 
     SSL3_DEBUG_MSG("KE_DHE\n");
@@ -874,8 +862,7 @@ class KeyExchangeDHE
       return ALERT_certificate_unknown;
     }
 
-    return ::server_derive_master_secret(data, client_random, server_random,
-					 version);
+    return ::got_client_key_exchange(data, version);
   }
 
   Stdio.Buffer parse_server_key_exchange(Stdio.Buffer input)
@@ -1017,13 +1004,11 @@ class KeyExchangeECDH
   }
 
   //! @returns
-  //!   Master secret or alert number.
-  string(8bit)|int(8bit) server_derive_master_secret(string(8bit) data,
-						 string(8bit) client_random,
-						 string(8bit) server_random,
+  //!   Premaster secret or alert number.
+  string(8bit)|int(8bit) got_client_key_exchange(string(8bit) data,
 						 ProtocolVersion version)
   {
-    SSL3_DEBUG_MSG("server_derive_master_secret: ke_method %d\n",
+    SSL3_DEBUG_MSG("got_client_key_exchange: ke_method %d\n",
 		   session->ke_method);
 
     SSL3_DEBUG_MSG("KE_ECDH\n");
@@ -1062,8 +1047,7 @@ class KeyExchangeECDH
       return ALERT_unexpected_message;
     }
 
-    return derive_master_secret(premaster_secret, client_random, server_random,
-				version);
+    return premaster_secret;
   }
 
   Stdio.Buffer parse_server_key_exchange(Stdio.Buffer input)
@@ -1157,15 +1141,12 @@ class KeyExchangeECDHE
   }
 
   //! @returns
-  //!   Master secret or alert number.
-  string(8bit)|int(8bit) server_derive_master_secret(string(8bit) data,
-						 string(8bit) client_random,
-						 string(8bit) server_random,
+  //!   Premaster secret or alert number.
+  string(8bit)|int(8bit) got_client_key_exchange(string(8bit) data,
 						 ProtocolVersion version)
   {
     anonymous = 1;
-    return ::server_derive_master_secret(data, client_random,
-					 server_random, version);
+    return ::got_client_key_exchange(data, version);
   }
 
   Stdio.Buffer parse_server_key_exchange(Stdio.Buffer input)
@@ -1316,13 +1297,11 @@ class KeyExchangeKRB
   }
 
   //! @returns
-  //!   Master secret or alert number.
-  string(0..255)|int server_derive_master_secret(string(0..255) data,
-						 string(0..255) client_random,
-						 string(0..255) server_random,
-						 ProtocolVersion version)
+  //!   Premaster secret or alert number.
+  string(0..255)|int got_client_key_exchange(string(0..255) data,
+					     ProtocolVersion version)
   {
-    SSL3_DEBUG_MSG("server_derive_master_secret: ke_method %d\n",
+    SSL3_DEBUG_MSG("got_client_key_exchange: ke_method %d\n",
 		   session->ke_method);
 
     SSL3_DEBUG_MSG("KE_KRB\n");
@@ -1387,8 +1366,7 @@ class KeyExchangeKRB
       connection->ke = this;
     }
 
-    return derive_master_secret(premaster_secret, client_random, server_random,
-				version);
+    return premaster_secret;
   }
 
   Stdio.Buffer parse_server_key_exchange(Stdio.Buffer input)
