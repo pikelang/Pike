@@ -742,7 +742,7 @@ class KeyExchangeDH
   {
     string premaster_secret;
 
-    SSL3_DEBUG_MSG("server_derive_master_secret: ke_method %d\n",
+    SSL3_DEBUG_MSG("got_client_key_exchange: ke_method %d\n",
 		   session->ke_method);
 
     SSL3_DEBUG_MSG("KE_DH\n");
