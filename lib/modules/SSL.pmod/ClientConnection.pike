@@ -288,18 +288,20 @@ Packet finished_packet(string(8bit) sender)
 
 Packet client_key_exchange_packet()
 {
+  Stdio.Buffer packet_data = Stdio.Buffer();
   ke = ke || session->cipher_spec->ke_factory(context, session, this, client_version);
-  string(8bit) data =
-    ke->client_key_exchange_packet(client_random, server_random, version);
-  if (!data) {
+  string(8bit) premaster_secret =
+    ke->client_key_exchange_packet(packet_data, version);
+
+  if (!premaster_secret) {
     send_packet(alert(ALERT_fatal, ALERT_handshake_failure,
 		      "Invalid KEX.\n"));
     return 0;
   }
 
-  new_cipher_states();
+  derive_master_secret(premaster_secret);
 
-  return handshake_packet(HANDSHAKE_client_key_exchange, data);
+  return handshake_packet(HANDSHAKE_client_key_exchange, packet_data);
 }
 
 //! Initialize a new @[ClientConnection].

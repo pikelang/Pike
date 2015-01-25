@@ -406,11 +406,12 @@ class KeyExchange(object context, object session, object connection,
   }
 
   //! @returns
-  //!   Returns the payload for a @[HANDSHAKE_client_key_exchange] packet.
+  //!   Returns the premaster secret, and fills in the payload for
+  //!   a @[HANDSHAKE_client_key_exchange] packet in the submitted buffer.
+  //!
   //!   May return @expr{0@} (zero) to generate an @[ALERT_unexpected_message].
-  string(8bit) client_key_exchange_packet(string client_random,
-                                          string server_random,
-                                          ProtocolVersion version);
+  string(8bit) client_key_exchange_packet(Stdio.Buffer packet_data,
+					  ProtocolVersion version);
 
   //! @param data
   //!   Payload from a @[HANDSHAKE_client_key_exchange].
@@ -493,12 +494,10 @@ class KeyExchangeNULL
     return Stdio.Buffer();
   }
 
-  string(8bit) client_key_exchange_packet(string client_random,
-                                          string server_random,
+  string(8bit) client_key_exchange_packet(Stdio.Buffer packet_data,
                                           ProtocolVersion version)
   {
     anonymous = 1;
-    session->master_secret = "";
     return "";
   }
 
@@ -569,8 +568,7 @@ class KeyExchangeRSA
     return 0;
   }
 
-  string(8bit) client_key_exchange_packet(string client_random,
-                                          string server_random,
+  string(8bit) client_key_exchange_packet(Stdio.Buffer packet_data,
                                           ProtocolVersion version)
   {
     SSL3_DEBUG_MSG("client_key_exchange_packet(%O, %O, %d.%d)\n",
@@ -591,14 +589,13 @@ class KeyExchangeRSA
     string(8bit) data = (temp_key ||
                          session->peer_public_key)->encrypt(premaster_secret);
 
-    if(version >= PROTOCOL_TLS_1_0)
-      data = sprintf("%2H", data);
+    if(version >= PROTOCOL_TLS_1_0) {
+      packet_data->add_hstring(data, 2);
+    } else {
+      packet_data->add(data);
+    }
 
-    session->master_secret = derive_master_secret(premaster_secret,
-						  client_random,
-						  server_random,
-						  version);
-    return data;
+    return premaster_secret;
   }
 
   //! @returns
@@ -708,8 +705,7 @@ class KeyExchangeDH
     return 0;
   }
 
-  string(8bit) client_key_exchange_packet(string client_random,
-                                          string server_random,
+  string(8bit) client_key_exchange_packet(Stdio.Buffer packet_data,
                                           ProtocolVersion version)
   {
     SSL3_DEBUG_MSG("client_key_exchange_packet(%O, %O, %d.%d)\n",
@@ -734,13 +730,9 @@ class KeyExchangeDH
     dh_state->new_secret(context->random);
 
     string premaster_secret = dh_state->get_shared()->digits(256);
-    session->master_secret =
-      derive_master_secret(premaster_secret, client_random, server_random,
-			   version);
 
-    Stdio.Buffer output = Stdio.Buffer();
-    output->add_hint(dh_state->our, 2);
-    return output->read();
+    packet_data->add_hint(dh_state->our, 2);
+    return premaster_secret;
   }
 
   //! @returns
@@ -963,8 +955,7 @@ class KeyExchangeECDH
     return 0;
   }
 
-  string(8bit) client_key_exchange_packet(string client_random,
-                                          string server_random,
+  string(8bit) client_key_exchange_packet(Stdio.Buffer packet_data,
                                           ProtocolVersion version)
   {
     SSL3_DEBUG_MSG("client_key_exchange_packet(%O, %O, %d.%d)\n",
@@ -985,13 +976,8 @@ class KeyExchangeECDH
 	      (get_server_point()*secret)->get_x());
     secret = 0;
 
-    session->master_secret =
-      derive_master_secret(premaster_secret, client_random, server_random,
-			   version);
-
-    Stdio.Buffer struct = Stdio.Buffer();
-    struct->add_hstring(p->encode(), 1);
-    return struct->read();
+    packet_data->add_hstring(p->encode(), 1);
+    return premaster_secret;
   }
 
   //! @returns
@@ -1117,12 +1103,11 @@ class KeyExchangeECDHE
     return struct;
   }
 
-  string(8bit) client_key_exchange_packet(string client_random,
-                                          string server_random,
+  string(8bit) client_key_exchange_packet(Stdio.Buffer packet_data,
                                           ProtocolVersion version)
   {
     anonymous = 1;
-    return ::client_key_exchange_packet(client_random, server_random, version);
+    return ::client_key_exchange_packet(packet_data, version);
   }
 
   //! @returns
@@ -1239,8 +1224,7 @@ class KeyExchangeKRB
     return 0;
   }
 
-  string(8bit) client_key_exchange_packet(string client_random,
-                                          string server_random,
+  string(8bit) client_key_exchange_packet(Stdio.Buffer packet_data,
                                           ProtocolVersion version)
   {
     SSL3_DEBUG_MSG("client_key_exchange_packet(%O, %O, %d.%d)\n",
@@ -1266,15 +1250,10 @@ class KeyExchangeKRB
     string(8bit) encrypted_premaster_secret =
       gss_context->wrap(premaster_secret, 1);
 
-    session->master_secret = derive_master_secret(premaster_secret,
-						  client_random,
-						  server_random,
-						  version);
-    Stdio.Buffer output = Stdio.Buffer();
-    output->add_hstring(token, 2);
-    output->add_hstring("", 2);	// Authenticator.
-    output->add_hstring(encrypted_premaster_secret, 2);
-    return output->read();
+    packet_data->add_hstring(token, 2);
+    packet_data->add_hstring("", 2);	// Authenticator.
+    packet_data->add_hstring(encrypted_premaster_secret, 2);
+    return premaster_secret;
   }
 
   //! @returns
