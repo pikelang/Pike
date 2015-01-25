@@ -948,14 +948,9 @@ class KeyExchangeECDH
     return session->private_key->get_private_key();
   }
 
-  protected Gmp.mpz get_server_pubx()
+  protected Crypto.ECC.Curve.Point get_server_point()
   {
-    return session->peer_public_key->get_x();
-  }
-
-  protected Gmp.mpz get_server_puby()
-  {
-    return session->peer_public_key->get_y();
+    return session->peer_public_key->get_point();
   }
 
   Stdio.Buffer server_key_params()
@@ -979,9 +974,6 @@ class KeyExchangeECDH
     Gmp.mpz secret = session->curve->new_scalar(context->random);
     Crypto.ECC.Curve.Point p = session->curve * secret;
 
-    Gmp.mpz pubx = get_server_pubx();
-    Gmp.mpz puby = get_server_puby();
-
     // RFC 4492 5.10:
     // Note that this octet string (Z in IEEE 1363 terminology) as
     // output by FE2OSP, the Field Element to Octet String
@@ -989,9 +981,8 @@ class KeyExchangeECDH
     // field; leading zeros found in this octet string MUST NOT be
     // truncated.
     string premaster_secret =
-      sprintf("%*c",
-	      (session->curve->size() + 7)>>3,
-	      session->curve->point_mul(pubx, puby, secret)->get_x());
+      sprintf("%*c",(session->curve->size() + 7)>>3,
+	      (get_server_point()*secret)->get_x());
     secret = 0;
 
     session->master_secret =
@@ -1070,23 +1061,17 @@ class KeyExchangeECDHE
   inherit KeyExchangeECDH;
 
   protected Gmp.mpz secret;
-  protected Gmp.mpz pubx;
-  protected Gmp.mpz puby;
+  protected Crypto.ECC.Curve.Point point;
 
   protected Gmp.mpz get_server_secret()
   {
     return secret;
   }
 
-  protected Gmp.mpz get_server_pubx()
+  protected Crypto.ECC.Curve.Point get_server_point()
   {
-    return pubx;
-  }
-
-  protected Gmp.mpz get_server_puby()
-  {
-    return puby;
-  }
+    return point;
+  }                                             \
 
   Stdio.Buffer server_key_params()
   {
@@ -1174,9 +1159,7 @@ class KeyExchangeECDHE
     }
 
     // Then the point.
-    object point = session->curve->Point(input->read_hbuffer(1));
-    pubx = point->get_x();
-    puby = point->get_y();
+    point = session->curve->Point(input->read_hbuffer(1));
 
     len = len - sizeof(input);
     key->rewind();
@@ -1205,9 +1188,7 @@ class KeyShareECDHE
 
   string(8bit) receive_key_share_offer(string(8bit) offer)
   {
-    object point = curve->Point(Stdio.Buffer(offer));
-    pubx = point->get_x();
-    puby = point->get_y();
+    point = curve->Point(Stdio.Buffer(offer));
 
     // RFC 4492 5.10:
     // Note that this octet string (Z in IEEE 1363 terminology) as
