@@ -46,7 +46,7 @@ string(8bit) private_key(Crypto.ECC.SECP_521R1.ECDSA ecdsa)
 					[int(0..)]((ecdsa->size() + 7)>>3),
 					ecdsa->get_private_key())),
 		    // parameters [0] ECParameters {{ NamedCurve }} OPTIONAL,
-		    TaggedType0(ecdsa->curve()->pkcs_ec_parameters()),
+		    TaggedType0(ecdsa->get_curve()->pkcs_ec_parameters()),
 		    // publicKey  [1] BIT STRING OPTIONAL
 		    TaggedType1(BitString(ecdsa->get_public_key())),
 		  }))->get_der();

@@ -71,7 +71,7 @@ class Curve {
     //! @decl inherit ECC_Curve::ECDSA;
 
     //! Return the curve.
-    Curve curve()
+    Curve get_curve()
     {
       return Curve::this;
     }
@@ -142,7 +142,7 @@ class Curve {
     //! ECDSA object.
     int(0..1) public_key_equal(this_program ecdsa)
     {
-      return ecdsa->curve() == Curve::this &&
+      return ecdsa->get_curve() == Curve::this &&
 	ecdsa->get_x() == get_x() &&
 	ecdsa->get_y() == get_y();
     }
