@@ -108,6 +108,13 @@ class Curve {
       return this;
     }
 
+    //!
+    variant this_program set_public_key(Point p)
+    {
+      ::set_public_key(p->get_x(), p->get_y());
+      return this;
+    }
+
     //! Change to the selected point on the curve as public key.
     //!
     //! @param key
@@ -169,10 +176,13 @@ class Curve {
     //! Get the ANSI x9.62 4.3.6 encoded uncompressed public key.
     string(8bit) get_public_key()
     {
-      return sprintf("%c%*c%*c",
-		     4,	// Uncompressed.
-		     (size() + 7)>>3, get_x(),
-		     (size() + 7)>>3, get_y());
+      return Point(get_x(),get_y())->encode();
+    }
+
+    //! Get the public key curve point.
+    Point get_point()
+    {
+      return Point(get_x(), get_y());
     }
 
     //! Signs the @[message] with a PKCS-1 signature using hash algorithm

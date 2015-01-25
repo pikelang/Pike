@@ -652,6 +652,9 @@ cond_resolv(Crypto.ECC.$1, [[
   test_do(add_constant("ecdsa", Crypto.ECC.$1.ECDSA()))
   test_true(ecdsa->set_random(random_string))
   test_true(ecdsa->generate_key())
+  test_do(ecdsa->set_public_key(ecdsa->get_x(),ecdsa->get_y()))
+  test_do(ecdsa->set_public_key(ecdsa->get_point()))
+  test_do(ecdsa->set_public_key(ecdsa->get_public_key()))
   test_eq(ecdsa->curve(),Crypto.ECC.$1)
   test_eq(ecdsa->size(),(int)"$1"[5..])
   test_any([[
