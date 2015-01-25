@@ -180,10 +180,10 @@ protected int(0..1) is_supported_cert(CertificatePair cp,
     return 0;
 
 #if constant(Crypto.ECC.Curve)
-  if (cp->key->curve) {
+  if (cp->key->get_curve) {
     // Is the ECC curve supported by the client?
     Crypto.ECC.Curve c =
-      ([object(Crypto.ECC.SECP_521R1.ECDSA)]cp->key)->curve();
+      ([object(Crypto.ECC.Curve.ECDSA)]cp->key)->get_curve();
     SSL3_DEBUG_MSG("Curve: %O (%O)\n",
 		   c, ECC_NAME_TO_CURVE[c->name()]);
     return has_value(ecc_curves, ECC_NAME_TO_CURVE[c->name()]);
@@ -392,8 +392,8 @@ int select_cipher_suite(array(CertificatePair) certs,
 
     certificate_chain = cert->certs;
 #if constant(Crypto.ECC.Curve)
-    if (private_key->curve) {
-      curve = [object(Crypto.ECC.Curve)]private_key->curve();
+    if (private_key->get_curve) {
+      curve = [object(Crypto.ECC.Curve)]private_key->get_curve();
     }
 #endif /* Crypto.ECC.Curve */
 
