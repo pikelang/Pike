@@ -850,39 +850,29 @@ mapping set_legend_size(mapping diagram_data)
   {
     for(int i=0; i<j; i++)
     {
+      int xpos = (i/raws)*b;
+      int ypos = (i%raws)*diagram_data->legendfontsize +
+	diagram_data->image->ysize() - diagram_data->legend_size;
+
       diagram_data->image
 	->paste_alpha_color(plupps[i], 
 			    @(diagram_data->datacolors[i]), 
-			    (i/raws)*b,
-			    (i%raws)*diagram_data->legendfontsize
-			    +diagram_data->image
-			    ->ysize()-diagram_data->legend_size );
+			    xpos, ypos);
       diagram_data->image->setcolor(0,0,0);
       draw( diagram_data->image, 0.5,
-	    ({(i/raws)*b, (i%raws)*diagram_data->legendfontsize+
-	      diagram_data->image->ysize()-diagram_data->legend_size+1,
-	      (i/raws)*b+plupps[i]->xsize()-1.0,
-	      (i%raws)*diagram_data->legendfontsize
-	      + diagram_data->image->ysize()-diagram_data->legend_size+1, 
-	      (i/raws)*b+plupps[i]->xsize()-1.0,
-	      (i%raws)*diagram_data->legendfontsize
-	      + diagram_data->image->ysize()-diagram_data->legend_size
-	      + plupps[i]->ysize()-1,
-	      (i/raws)*b+1,
-	      (i%raws)*diagram_data->legendfontsize + diagram_data->image
-	      -> ysize()-diagram_data->legend_size+plupps[i]->ysize()-1,
-	      (i/raws)*b, (i%raws)*diagram_data->legendfontsize
-	      + diagram_data->image->ysize()-diagram_data->legend_size+1
+	    ({
+	      xpos, ypos+1,
+	      xpos + plupps[i]->xsize() - 1.0, ypos+1,
+	      xpos + plupps[i]->xsize() - 1.0, ypos + plupps[i]->ysize() - 1,
+	      xpos + 1, ypos + plupps[i]->ysize() - 1,
+	      xpos, ypos+1,
 	    })); 
       
       
       diagram_data->image
 	->paste_alpha_color(texts[i], 
 			    @(diagram_data->textcolor), 
-			    (i/raws)*b+1+diagram_data->legendfontsize,
-			    (i%raws)*diagram_data->legendfontsize+
-			    diagram_data->image->ysize()
-			    - diagram_data->legend_size );
+			    xpos + 1 + diagram_data->legendfontsize, ypos);
     }
   }
   else
