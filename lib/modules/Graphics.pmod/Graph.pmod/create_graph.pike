@@ -864,7 +864,7 @@ mapping set_legend_size(mapping diagram_data)
 	      xpos, ypos+1,
 	      xpos + plupps[i]->xsize() - 1.0, ypos+1,
 	      xpos + plupps[i]->xsize() - 1.0, ypos + plupps[i]->ysize() - 1,
-	      xpos + 1, ypos + plupps[i]->ysize() - 1,
+	      xpos, ypos + plupps[i]->ysize() - 1,
 	      xpos, ypos+1,
 	    })); 
       
