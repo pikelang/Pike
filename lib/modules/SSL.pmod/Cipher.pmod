@@ -381,30 +381,6 @@ class KeyExchange(object context, object session, object connection,
     return struct->read();
   }
 
-  //! Derive the master secret from the premaster_secret
-  //! and the random seeds.
-  //!
-  //! @returns
-  //!   Returns the master secret.
-  string derive_master_secret(string premaster_secret,
-			      string client_random,
-			      string server_random,
-			      ProtocolVersion version)
-  {
-    string res = "";
-
-    SSL3_DEBUG_MSG("KeyExchange: in derive_master_secret is version=0x%x\n",
-		   version);
-
-    res = session->cipher_spec->prf(premaster_secret, "master secret",
-				    client_random + server_random, 48);
-
-    connection->ke = UNDEFINED;
-
-    SSL3_DEBUG_MSG("master: %O\n", res);
-    return res;
-  }
-
   //! @returns
   //!   Returns the premaster secret, and fills in the payload for
   //!   a @[HANDSHAKE_client_key_exchange] packet in the submitted buffer.
