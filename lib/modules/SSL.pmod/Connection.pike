@@ -350,6 +350,7 @@ int(0..1) handle_certificates(Buffer packet)
   if( !sizeof(certs) )
     return 1;
 
+  // This data isn't actually used internally.
   session->peer_certificate_chain = certs;
 
   session->peer_public_key = decoded[-1]->public_key->pkc;
