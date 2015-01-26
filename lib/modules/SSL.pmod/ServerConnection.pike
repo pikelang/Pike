@@ -1249,15 +1249,8 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	 return -1;
        }
 
-       if( !handle_certificates(input->read_hbuffer(3)) )
+       if( !handle_certificates(input) )
          return -1;
-
-       if(sizeof(input))
-       {
-	 send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
-			   "Unexpected client cert.\n"));
-	 return -1;
-       }
 
        if(session->peer_certificate_chain)
          certificate_state = CERT_received;

@@ -260,12 +260,13 @@ Packet heartbleed_packet()
 }
 
 // Verify that a certificate chain is acceptable
-private int verify_certificate_chain(array(string) certs)
+private array(Standards.X509.TBSCertificate)
+  verify_certificate_chain(array(string) certs)
 {
   // If we're not requiring the certificate, and we don't provide one,
   // that should be okay. 
   if((context->auth_level < AUTHLEVEL_require) && !sizeof(certs))
-    return 1;
+    return ({});
 
   // A lack of certificates when we reqiure and must verify the
   // certificates is probably a failure.
@@ -307,7 +308,7 @@ private int verify_certificate_chain(array(string) certs)
   {
     // This data isn't actually used internally.
     session->cert_data = result;
-    return 1;
+    return [array(Standards.X509.TBSCertificate)]result->certificates;
   }
 
   return 0;
@@ -318,10 +319,11 @@ private int verify_certificate_chain(array(string) certs)
 // certificates are received session->peer_public_key is updated with
 // the public key object. If that is an ECC object, the curve is set
 // in session->curve.
-int(0..1) handle_certificates(Stdio.Buffer input)
+int(0..1) handle_certificates(Buffer packet)
 {
   // FIXME: Throw exception if called more than once?
 
+  Stdio.Buffer input = packet->read_hbuffer(3);
   array(string(8bit)) certs = ({ });
   while(sizeof(input))
     certs += ({ input->read_hstring(3) });
@@ -329,7 +331,17 @@ int(0..1) handle_certificates(Stdio.Buffer input)
   // drain input fully or read out of bounds and trigger a decode
   // error alert packet.
 
-  if( !verify_certificate_chain(certs) )
+  if(sizeof(packet))
+  {
+    send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
+                      "Unknown additional data in packet.\n"));
+    return 0;
+  }
+
+  // This array is in the reverse order of the certs array.
+  array(Standards.X509.TBSCertificate) decoded =
+    verify_certificate_chain(certs);
+  if( !decoded )
   {
     send_packet(alert(ALERT_fatal, ALERT_bad_certificate,
                       "Bad server certificate chain.\n"));
@@ -340,26 +352,14 @@ int(0..1) handle_certificates(Stdio.Buffer input)
 
   session->peer_certificate_chain = certs;
 
-  mixed error=catch {
-      session->peer_public_key = Standards.X509.decode_certificate(
-               certs[0])->public_key->pkc;
+  session->peer_public_key = decoded[-1]->public_key->pkc;
 #if constant(Crypto.ECC.Curve)
-      if (session->peer_public_key->get_curve) {
-        session->curve =
-          ([object(Crypto.ECC.Curve.ECDSA)]session->peer_public_key)->
-          get_curve();
-      }
-#endif
-    };
-
-  if(error)
-  {
-    session->peer_certificate_chain = UNDEFINED;
-    send_packet(alert(ALERT_fatal, ALERT_bad_certificate,
-                      sprintf("Failed to decode peer certificate. %s\n",
-                              describe_backtrace(error))));
-    return 0;
+  if (session->peer_public_key->get_curve) {
+    session->curve =
+      ([object(Crypto.ECC.Curve.ECDSA)]session->peer_public_key)->
+      get_curve();
   }
+#endif
 
   return 1;
 }

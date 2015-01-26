@@ -912,7 +912,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
         if(ke && ke->anonymous)
           break;
 
-        if( !handle_certificates(input->read_hbuffer(3)) )
+        if( !handle_certificates(input) )
           return -1;
 
         certificate_state = CERT_received;
