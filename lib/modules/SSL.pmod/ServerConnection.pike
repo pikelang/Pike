@@ -1249,43 +1249,8 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	 return -1;
        }
 
-       Stdio.Buffer certs_buf = input->read_hbuffer(3);
-       SSL3_DEBUG_MSG("got %d certificate bytes\n", sizeof(certs_buf));
-
-       array(string(8bit)) certs = ({ });
-       while(sizeof(certs_buf))
-         certs += ({ certs_buf->read_hstring(3) });
-
-       if( !verify_certificate_chain(certs) )
-       {
-         send_packet(alert(ALERT_fatal, ALERT_bad_certificate,
-                           "Bad client certificate.\n"));
+       if( !handle_certificates(input->read_hbuffer(3)) )
          return -1;
-       }
-
-       session->peer_certificate_chain = certs;
-
-       if (sizeof(certs)) {
-	 mixed error=catch {
-	     session->peer_public_key = Standards.X509.decode_certificate(
-               session->peer_certificate_chain[0])->public_key->pkc;
-#if constant(Crypto.ECC.Curve)
-	     if (session->peer_public_key->get_curve) {
-	       session->curve =
-		 ([object(Crypto.ECC.Curve.ECDSA)]session->peer_public_key)->
-		 get_curve();
-	     }
-#endif
-	   };
-
-	 if(error)
-	 {
-	   session->peer_certificate_chain = UNDEFINED;
-	   send_packet(alert(ALERT_fatal, ALERT_bad_certificate,
-			     "Failed to decode client certificate.\n"));
-	   return -1;
-	 }
-       }
 
        if(sizeof(input))
        {
@@ -1294,10 +1259,10 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	 return -1;
        }
 
-       if(session->peer_certificate_chain &&
-	  sizeof(session->peer_certificate_chain))
-          certificate_state = CERT_received;
-       else certificate_state = CERT_no_certificate;
+       if(session->peer_certificate_chain)
+         certificate_state = CERT_received;
+       else
+         certificate_state = CERT_no_certificate;
 
        if (version >= PROTOCOL_TLS_1_3) {
 	 if (certificate_state == CERT_received) {

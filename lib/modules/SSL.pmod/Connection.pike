@@ -260,8 +260,7 @@ Packet heartbleed_packet()
 }
 
 // Verify that a certificate chain is acceptable
-//
-int verify_certificate_chain(array(string) certs)
+private int verify_certificate_chain(array(string) certs)
 {
   // If we're not requiring the certificate, and we don't provide one,
   // that should be okay. 
@@ -312,6 +311,57 @@ int verify_certificate_chain(array(string) certs)
   }
 
   return 0;
+}
+
+// Decodes certificate data. Leaves session->peer_certificate_chain
+// either 0 or with an array with 1 or more certificates. If
+// certificates are received session->peer_public_key is updated with
+// the public key object. If that is an ECC object, the curve is set
+// in session->curve.
+int(0..1) handle_certificates(Stdio.Buffer input)
+{
+  // FIXME: Throw exception if called more than once?
+
+  array(string(8bit)) certs = ({ });
+  while(sizeof(input))
+    certs += ({ input->read_hstring(3) });
+  // No need to check remainder input, as the above loop will either
+  // drain input fully or read out of bounds and trigger a decode
+  // error alert packet.
+
+  if( !verify_certificate_chain(certs) )
+  {
+    send_packet(alert(ALERT_fatal, ALERT_bad_certificate,
+                      "Bad server certificate chain.\n"));
+    return 0;
+  }
+  if( !sizeof(certs) )
+    return 1;
+
+  session->peer_certificate_chain = certs;
+
+  mixed error=catch {
+      session->peer_public_key = Standards.X509.decode_certificate(
+               certs[0])->public_key->pkc;
+#if constant(Crypto.ECC.Curve)
+      if (session->peer_public_key->get_curve) {
+        session->curve =
+          ([object(Crypto.ECC.Curve.ECDSA)]session->peer_public_key)->
+          get_curve();
+      }
+#endif
+    };
+
+  if(error)
+  {
+    session->peer_certificate_chain = UNDEFINED;
+    send_packet(alert(ALERT_fatal, ALERT_bad_certificate,
+                      sprintf("Failed to decode peer certificate. %s\n",
+                              describe_backtrace(error))));
+    return 0;
+  }
+
+  return 1;
 }
 
 //! Generate new pending cipher states.
