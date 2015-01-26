@@ -227,25 +227,25 @@ static INLINE int EXTRACT_CHAR(const char *p) { return *p > 0x7f ? *p - 0x100 : 
 #  define EXTRACT_INT(p) (*(INT32 *)(p))
 #else
 #ifdef PIKE_DEBUG
-PMOD_EXPORT unsigned INT16 EXTRACT_UWORD_(unsigned char *p);
-PMOD_EXPORT INT16 EXTRACT_WORD_(unsigned char *p);
-PMOD_EXPORT INT32 EXTRACT_INT_(unsigned char *p);
+PMOD_EXPORT unsigned INT16 EXTRACT_UWORD_(const unsigned char *p);
+PMOD_EXPORT INT16 EXTRACT_WORD_(const unsigned char *p);
+PMOD_EXPORT INT32 EXTRACT_INT_(const unsigned char *p);
 #else
-/*@unused@*/ static INLINE unsigned EXTRACT_UWORD_(unsigned char *p)
+/*@unused@*/ static INLINE unsigned EXTRACT_UWORD_(const unsigned char *p)
 {
   unsigned INT16 a;
   memcpy(&a,p,sizeof(a));
   return a;
 }
 
-/*@unused@*/ static INLINE int EXTRACT_WORD_(unsigned char *p)
+/*@unused@*/ static INLINE int EXTRACT_WORD_(const unsigned char *p)
 {
   INT16 a;
   memcpy(&a,p,sizeof(a));
   return a;
 }
 
-/*@unused@*/ static INLINE INT32 EXTRACT_INT_(unsigned char *p)
+/*@unused@*/ static INLINE INT32 EXTRACT_INT_(const unsigned char *p)
 {
   INT32 a;
   memcpy(&a,p,sizeof(a));
@@ -253,9 +253,9 @@ PMOD_EXPORT INT32 EXTRACT_INT_(unsigned char *p);
 }
 #endif
 
-#define EXTRACT_UWORD(p) EXTRACT_UWORD_((unsigned char *)(p))
-#define EXTRACT_WORD(p) EXTRACT_WORD_((unsigned char *)(p))
-#define EXTRACT_INT(p) EXTRACT_INT_((unsigned char *)(p))
+#define EXTRACT_UWORD(p) EXTRACT_UWORD_((const unsigned char *)(p))
+#define EXTRACT_WORD(p) EXTRACT_WORD_((const unsigned char *)(p))
+#define EXTRACT_INT(p) EXTRACT_INT_((const unsigned char *)(p))
 
 #endif
 
