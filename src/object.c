@@ -1953,6 +1953,11 @@ PMOD_EXPORT int object_equal_p(struct object *a, struct object *b, struct proces
 	 IDENTIFIER_IS_ALIAS(i->identifier_flags))
 	continue;
 
+      /* Do we want to call getters and compare their return values?
+       *        - arne
+       */
+      if (i->run_time_type == PIKE_T_GET_SET) continue;
+
       if(i->run_time_type == T_MIXED)
       {
 	if(!low_is_equal((struct svalue *)LOW_GET_GLOBAL(a,e,i),

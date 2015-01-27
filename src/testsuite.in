@@ -4091,6 +4091,16 @@ test_any([[
   return Y(5)->x;
 ]], 7)
 
+test_any([[
+  // Triggered fatal since object_equal_p did not handle
+  // getter/setter identifier correctly
+  class A {
+    string `foo() { return "bar"; }
+  }
+
+  return equal(A(), A());
+]], 1)
+
 test_eval_error([[
   // Triggered infinite recursion and core dump.
   // cf LysLysKOM 18719518/Pike mailinglist 12047.
