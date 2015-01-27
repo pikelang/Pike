@@ -586,9 +586,11 @@ class KeyExchangeRSA
 
     SSL3_DEBUG_MSG("KE_RSA\n");
 
-    string data = "";
+    string data;
     if(version >= PROTOCOL_TLS_1_0)
       data = input->read_hstring(2);
+    else
+      data = input->read();
 
     // Decrypt, even when we know data is incorrect, for time invariance.
     premaster_secret = (temp_key || session->private_key)->decrypt(data);
