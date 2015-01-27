@@ -300,9 +300,9 @@ class Curve {
 //! @endmodule
 
 //! @ignore
-Curve SECP_192R1 = Curve(1, 192, 1);
-Curve SECP_224R1 = Curve(1, 224, 1);
-Curve SECP_256R1 = Curve(1, 256, 1);
-Curve SECP_384R1 = Curve(1, 384, 1);
-Curve SECP_521R1 = Curve(1, 521, 1);
+Curve SECP_192R1 = Curve(Nettle.SECP192R1);
+Curve SECP_224R1 = Curve(Nettle.SECP224R1);
+Curve SECP_256R1 = Curve(Nettle.SECP256R1);
+Curve SECP_384R1 = Curve(Nettle.SECP384R1);
+Curve SECP_521R1 = Curve(Nettle.SECP521R1);
 //! @endignore

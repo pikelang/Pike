@@ -331,6 +331,12 @@ program_flags PROGRAM_CLEAR_STORAGE;
 
 #include <nettle/ecdsa.h>
 
+#define SECP192R1 0
+#define SECP224R1 1
+#define SECP256R1 2
+#define SECP384R1 3
+#define SECP521R1 4
+
 /*! @class ECC_Curve
  *!
  *! Elliptic Curve Definition
@@ -342,52 +348,40 @@ PIKECLASS ECC_Curve
   INHERIT "__builtin.Nettle.ECC_Curve";
 
   CVAR const struct ecc_curve *curve;
-  CVAR int field_size;
 
   DECLARE_STORAGE;
 
-  /*! @decl void create(int(0..) family, int(0..) field_size, int(0..) revision)
+  /*! @decl void create(int(0..) curve)
    *!
    *! Initialize the curve.
+   *!
+   *! @param curve
+   *! The curve type the object should be initialized as.
+   *! @int
+   *!   @value Nettle.SECP192R1
+   *!   @value Nettle.SECP224R1
+   *!   @value Nettle.SECP256R1
+   *!   @value Nettle.SECP384R1
+   *!   @value Nettle.SECP521R1
+   *! @endint
    */
-  PIKEFUN void create(int(0..) family, int(0..) field_size, int(0..) revision)
+  PIKEFUN void create(int(0..) curve)
     flags ID_STATIC
   {
     if (THIS->curve) {
       Pike_error("The curve has already been initialized!\n");
     }
 
-    switch(family) {
-    case 1:
-      if (revision != 1)
-	Pike_error("Unsupported revision.\n");
-      switch(field_size)
-      {
-      case 192:
-	THIS->curve = &nettle_secp_192r1;
-	break;
-      case 224:
-	THIS->curve = &nettle_secp_224r1;
-	break;
-      case 256:
-	THIS->curve = &nettle_secp_256r1;
-	break;
-      case 384:
-	THIS->curve = &nettle_secp_384r1;
-	break;
-      case 521:
-	THIS->curve = &nettle_secp_521r1;
-	break;
-      default:
-	Pike_error("Invalid curve\n");
-	break;
-      }
-      break;
+    switch(curve) {
+    case SECP192R1: THIS->curve = &nettle_secp_192r1; break;
+    case SECP224R1: THIS->curve = &nettle_secp_224r1; break;
+    case SECP256R1: THIS->curve = &nettle_secp_256r1; break;
+    case SECP384R1: THIS->curve = &nettle_secp_384r1; break;
+    case SECP521R1: THIS->curve = &nettle_secp_521r1; break;
     default:
-      Pike_error("Unknown curve family.\n");
+      Pike_error("Invalid curve\n");
       break;
     }
-    THIS->field_size = field_size;
   }
 
   PIKEFUN int(0..1) `==(mixed x)
@@ -455,7 +449,7 @@ PIKECLASS ECC_Curve
    */
   PIKEFUN int size()
   {
-    push_int(THIS->field_size);
+    push_int(ecc_bit_size(THIS->curve));
   }
 
   /*! @decl Gmp.mpz new_scalar(function(int(0..):string(8bit)) rnd)
@@ -994,6 +988,12 @@ void
 hogweed_init(void)
 {
   INIT;
+
+  ADD_INT_CONSTANT("SECP192R1", SECP192R1, 0);
+  ADD_INT_CONSTANT("SECP224R1", SECP224R1, 0);
+  ADD_INT_CONSTANT("SECP256R1", SECP256R1, 0);
+  ADD_INT_CONSTANT("SECP384R1", SECP384R1, 0);
+  ADD_INT_CONSTANT("SECP521R1", SECP521R1, 0);
 }
 
 void
