@@ -230,7 +230,7 @@ int(-1..0) reply_new_session(array(int) cipher_suites,
 //! Derive the new master secret from the state of @[ke] and
 //! the payload @[data] received fron the client in its
 //! @[HANDSHAKE_client_key_exchange] packet.
-int(0..1) server_derive_master_secret(string(8bit) data)
+int(0..1) server_derive_master_secret(Buffer data)
 {
   string(8bit)|int(8bit) premaster_secret =
     ke->got_client_key_exchange(data, version);
@@ -1221,8 +1221,15 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	return -1;
       }
 
-      if (!server_derive_master_secret(data)) {
+      if (!server_derive_master_secret(input)) {
 	return -1;
+      }
+
+      if (sizeof(input))
+      {
+        send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
+                          "Trailing key exchange data.\n"));
+        return -1;
       }
 
       SSL3_DEBUG_MSG("certificate_state: %d\n", certificate_state);

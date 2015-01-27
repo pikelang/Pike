@@ -397,7 +397,7 @@ class KeyExchange(object context, object session, object connection,
   //!
   //! @note
   //!   May set @[message_was_bad] and return a fake premaster secret.
-  string(8bit)|int(8bit) got_client_key_exchange(string(8bit) data,
+  string(8bit)|int(8bit) got_client_key_exchange(Stdio.Buffer data,
 						 ProtocolVersion version);
 
   //! @param input
@@ -479,7 +479,7 @@ class KeyExchangeNULL
 
   //! @returns
   //!   Premaster secret or alert number.
-  string(8bit) got_client_key_exchange(string(8bit) data,
+  string(8bit) got_client_key_exchange(Stdio.Buffer data,
 				       ProtocolVersion version)
   {
     anonymous = 1;
@@ -576,7 +576,7 @@ class KeyExchangeRSA
 
   //! @returns
   //!   Premaster secret or alert number.
-  string(8bit)|int(8bit) got_client_key_exchange(string(8bit) data,
+  string(8bit)|int(8bit) got_client_key_exchange(Stdio.Buffer input,
 						 ProtocolVersion version)
   {
     string premaster_secret;
@@ -586,9 +586,10 @@ class KeyExchangeRSA
 
     SSL3_DEBUG_MSG("KE_RSA\n");
 
-    string rest = "";
+    string data = "";
     if(version >= PROTOCOL_TLS_1_0)
-      sscanf(data, "%2H%s", data, rest);
+      data = input->read_hstring(2);
+
     // Decrypt, even when we know data is incorrect, for time invariance.
     premaster_secret = (temp_key || session->private_key)->decrypt(data);
 
@@ -597,7 +598,7 @@ class KeyExchangeRSA
     // We want both branches to execute in equal time (ignoring
     // SSL3_DEBUG in the hope it is never on in production).
     // Workaround documented in RFC 2246.
-    if ( `+( !premaster_secret, sizeof(rest),
+    if ( `+( !premaster_secret,
              (sizeof(premaster_secret) != 48),
              (premaster_secret[0] != 3),
              (premaster_secret[1] != (client_version & 0xff)) ))
@@ -713,7 +714,7 @@ class KeyExchangeDH
 
   //! @returns
   //!   Premaster secret or alert number.
-  string(8bit)|int(8bit) got_client_key_exchange(string(8bit) data,
+  string(8bit)|int(8bit) got_client_key_exchange(Stdio.Buffer input,
 						 ProtocolVersion version)
   {
     string premaster_secret;
@@ -723,9 +724,6 @@ class KeyExchangeDH
 
     SSL3_DEBUG_MSG("KE_DH\n");
     anonymous = 1;
-
-    /* Explicit encoding */
-    Stdio.Buffer input = Stdio.Buffer(data);
 
     if (!dh_state->set_other(Gmp.mpz(input->read_hint(2)))) {
       connection->ke = UNDEFINED;
@@ -811,7 +809,7 @@ class KeyExchangeDHE
 
   //! @returns
   //!   Premaster secret or alert number.
-  string(8bit)|int(8bit) got_client_key_exchage(string(8bit) data,
+  string(8bit)|int(8bit) got_client_key_exchage(Stdio.Buffer data,
 						ProtocolVersion version)
   {
     SSL3_DEBUG_MSG("got_client_key_exchange: ke_method %d\n",
@@ -958,7 +956,7 @@ class KeyExchangeECDH
 
   //! @returns
   //!   Premaster secret or alert number.
-  string(8bit)|int(8bit) got_client_key_exchange(string(8bit) data,
+  string(8bit)|int(8bit) got_client_key_exchange(Stdio.Buffer data,
 						 ProtocolVersion version)
   {
     SSL3_DEBUG_MSG("got_client_key_exchange: ke_method %d\n",
@@ -979,10 +977,7 @@ class KeyExchangeECDH
 
     string premaster_secret;
 
-    /* Explicit encoding */
-    Stdio.Buffer struct = Stdio.Buffer(data);
-
-    object point = session->curve->Point(struct->read_hbuffer(1));
+    object point = session->curve->Point(data->read_hbuffer(1));
     Gmp.mpz secret = get_server_secret();
     // RFC 4492 5.10:
     // Note that this octet string (Z in IEEE 1363 terminology) as
@@ -993,12 +988,6 @@ class KeyExchangeECDH
 
     premaster_secret =
       sprintf("%*c", (session->curve->size() + 7)>>3, (point*secret)->get_x());
-
-    if(sizeof(struct))
-    {
-      connection->ke = UNDEFINED;
-      return ALERT_unexpected_message;
-    }
 
     return premaster_secret;
   }
@@ -1088,7 +1077,7 @@ class KeyExchangeECDHE
 
   //! @returns
   //!   Premaster secret or alert number.
-  string(8bit)|int(8bit) got_client_key_exchange(string(8bit) data,
+  string(8bit)|int(8bit) got_client_key_exchange(Stdio.Buffer data,
 						 ProtocolVersion version)
   {
     anonymous = 1;
@@ -1234,7 +1223,7 @@ class KeyExchangeKRB
 
   //! @returns
   //!   Premaster secret or alert number.
-  string(0..255)|int got_client_key_exchange(string(0..255) data,
+  string(0..255)|int got_client_key_exchange(Stdio.Buffer input,
 					     ProtocolVersion version)
   {
     SSL3_DEBUG_MSG("got_client_key_exchange: ke_method %d\n",
@@ -1242,17 +1231,9 @@ class KeyExchangeKRB
 
     SSL3_DEBUG_MSG("KE_KRB\n");
 
-    Stdio.Buffer input = Stdio.Buffer(data);
-
     string ticket = input->read_hstring(2);
     string authenticator = input->read_hstring(2);
     string encrypted_premaster_secret = input->read_hstring(2);
-
-    if( sizeof(input) )
-    {
-      connection->ke = UNDEFINED;
-      return ALERT_unexpected_message;
-    }
 
     gss_context = GSSAPI.AcceptContext();
     gss_context->accept(ticket);
