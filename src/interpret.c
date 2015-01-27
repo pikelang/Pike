@@ -3341,11 +3341,15 @@ void gdb_backtrace (
       {
 	args=0;
       }else{
-	args=f->num_args;
-	args = DO_NOT_WARN((INT32) MINIMUM(f->num_args, Pike_sp - f->locals));
-	if(of)
-	  args = DO_NOT_WARN((INT32)MINIMUM(f->num_args,of->locals - f->locals));
-	args=MAXIMUM(args,0);
+        ptrdiff_t tmp;
+
+	if(of) {
+          tmp = of->locals - f->locals;
+        } else {
+          tmp = ts->state.stack_pointer - f->locals;
+        }
+        args = (INT32)tmp;
+	args = MAXIMUM(MINIMUM(args, f->num_args),0);
       }
 
       for (i = 0; i < args; i++) {
