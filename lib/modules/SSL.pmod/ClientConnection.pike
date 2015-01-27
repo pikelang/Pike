@@ -395,10 +395,31 @@ protected int send_certs()
 
     certs = [array(CertificatePair)]
       filter(certs,
-	     lambda(CertificatePair cp, array(int)) {
-	       // FIXME: Needs to look at session->signature_algorithms.
-	       return has_value(client_cert_types, cp->cert_type);
-	     }, client_cert_types);
+	     lambda(CertificatePair cp) {
+
+               // Is the certificate type supported?
+               if( !has_value(client_cert_types, cp->cert_type) )
+                 return 0;
+
+               // Are the individual hash and sign algorithms in the
+               // certificate chain supported?
+               foreach(cp->sign_algs, [int cert_hash, int cert_sign])
+               {
+                 int match;
+                 foreach(session->signature_algorithms, [int hash, int sign])
+                 {
+                   if( hash==cert_hash && sign==cert_sign )
+                   {
+                     match = 1;
+                     break;
+                   }
+                 }
+                 if( !match )
+                   return 0;
+               }
+
+	       return 1;
+	     });
 
     if (sizeof(certs)) {
       SSL3_DEBUG_MSG("Found %d matching client certs.\n", sizeof(certs));
@@ -581,13 +602,16 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	  [int(0..0)|ProtocolVersion]input->read_int(2);
 	int suggested_suite = input->read_int(2);
 	int suggested_group = input->read_int(2);
+
 	string(8bit) extensions = input->read_hstring(2);
 	// NB: We currently don't care about the extensions.
 	extensions = 0;	// Silence warning.
+
 	SSL3_DEBUG_MSG("Suggested: %s %s %s.\n",
 		       fmt_version(suggested_version),
 		       fmt_cipher_suite(suggested_suite),
 		       fmt_constant(suggested_group, "GROUP"));
+
 	if ((suggested_version >= PROTOCOL_TLS_1_3) &&
 	    (suggested_version <= version) &&
 	    has_value(context->preferred_suites, suggested_suite) &&
@@ -814,6 +838,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	  }
 	}
       }
+
       if (missing_secure_renegotiation) {
 	// RFC 5746 3.5:
 	// When a ServerHello is received, the client MUST verify that the
@@ -1045,5 +1070,6 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
       return 1;			// We're done shaking hands
     }
   }
+
   return 0;
 }
