@@ -426,9 +426,9 @@ class KeyExchange(object context, object session, object connection,
   //!     @value -1
   //!       Returns negative on verification failure.
   //!   @endint
-  int server_key_exchange(Stdio.Buffer input,
-			  string client_random,
-			  string server_random)
+  int got_server_key_exchange(Stdio.Buffer input,
+			      string client_random,
+			      string server_random)
   {
     SSL3_DEBUG_MSG("SSL.Session: SERVER_KEY_EXCHANGE\n");
 
@@ -486,9 +486,9 @@ class KeyExchangeNULL
     return "";
   }
 
-  int server_key_exchange(Stdio.Buffer input,
-			  string client_random,
-			  string server_random)
+  int got_server_key_exchange(Stdio.Buffer input,
+			      string client_random,
+			      string server_random)
   {
     return 0;
   }
