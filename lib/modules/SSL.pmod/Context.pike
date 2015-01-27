@@ -591,6 +591,11 @@ void configure_suite_b(int(128..)|void min_keylength,
 // with a certificate matching the requested issuer der. These are
 // stored in the cert_chains_issuer mapping.
 //
+// FIXME: Currently only one client certificate per der issuer is
+// supported. If multiple are added a random one will be selected,
+// which later may fail when verified against supported certificate
+// types, hash/signature algorithms.
+//
 // The client/server potentially has a set of trusted issuers
 // certificate (root certificates) that are used to validate the
 // server/client sent certificate. These are stored in a cache from
