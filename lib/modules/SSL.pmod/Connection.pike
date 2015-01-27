@@ -344,7 +344,7 @@ int(0..1) handle_certificates(Buffer packet)
   if( !decoded )
   {
     send_packet(alert(ALERT_fatal, ALERT_bad_certificate,
-                      "Bad certificate chain %O.\n"));
+                      "Bad certificate chain.\n"));
     return 0;
   }
   if( !sizeof(certs) )
