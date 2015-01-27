@@ -25,6 +25,13 @@ class Curve {
 #define Object Standards.ASN1.Types.Object
 #define Sequence Standards.ASN1.Types.Sequence
 
+  protected local int(0..1) `==(mixed x)
+  {
+    if (!objectp(x)) return 0;
+    // NB: Argument order below.
+    return x == ECC_Curve::this;
+  }
+
   //! Returns the PKCS-1 elliptic curve identifier for the curve.
   //! cf RFC 5480 2.1.1.
   Identifier pkcs_named_curve_id()

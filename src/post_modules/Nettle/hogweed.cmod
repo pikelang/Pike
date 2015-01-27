@@ -390,6 +390,43 @@ PIKECLASS ECC_Curve
     THIS->field_size = field_size;
   }
 
+  PIKEFUN int(0..1) `==(mixed x)
+    flags ID_PROTECTED|ID_LOCAL;
+  {
+    struct Nettle_ECC_Curve_struct *c;
+    struct inherit *inh;
+    struct program *p;
+    if (!x || (TYPEOF(*x) != PIKE_T_OBJECT) ||
+	!x->u.object || !x->u.object->prog) RETURN 0;
+    p = x->u.object->prog;
+    inh = p->inherits + SUBTYPEOF(*x);
+    p = inh->prog;
+    if (p != Nettle_ECC_Curve_program) {
+      int lfun_eq;
+      if ((low_get_storage(p, Nettle_ECC_Curve_program) == -1) ||
+	  ((lfun_eq = FIND_LFUN(p, LFUN_EQ)) == -1)) {
+	/* p does not inherit ECC.Curve, or has made `==() private. */
+	RETURN 0;
+      }
+      /* Let's see if LFUN::`==() in x traverses down to ECC.Curve. */
+      /* FIXME: We're recursing via potentially broken code,
+       *        so we probably ought to use CYCLIC here.
+       */
+      lfun_eq += inh->identifier_level;
+      ref_push_object_inherit(Pike_fp->current_object,
+			      Pike_fp->context -
+			      Pike_fp->current_object->prog->inherits);
+      apply_low(x->u.object, lfun_eq, 1);
+      stack_pop_n_elems_keep_top(args);
+      return;
+    }
+    c = (struct Nettle_ECC_Curve_struct *)
+      (PIKE_OBJ_STORAGE(x->u.object) +
+       INHERIT_FROM_INT(x->u.object->prog, SUBTYPEOF(*x))->storage_offset +
+       Nettle_ECC_Curve_storage_offset);
+    RETURN c->curve == THIS->curve;
+  }
+
   /*! @decl string(7bit) name()
    *!
    *! Returns the name of the curve.
