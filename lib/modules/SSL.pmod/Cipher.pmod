@@ -861,6 +861,17 @@ class KeyExchangeDHE
     output->add_hstring(o, 2);
     return output;
   }
+
+  string(8bit) client_key_exchange_packet(Stdio.Buffer packet_data,
+                                          ProtocolVersion version)
+  {
+    SSL3_DEBUG_MSG("KE_DH\n");
+    if (!dh_state) {
+      SSL3_DEBUG_MSG("Missing server key exchange packet.\n");
+      return 0;
+    }
+    return ::client_key_exchange_packet(packet_data, version);
+  }
 }
 
 class KeyShareDHE
@@ -1074,6 +1085,10 @@ class KeyExchangeECDHE
                                           ProtocolVersion version)
   {
     anonymous = 1;
+    if (!point) {
+      SSL3_DEBUG_MSG("Missing server key exchange packet.\n");
+      return 0;
+    }
     return ::client_key_exchange_packet(packet_data, version);
   }
 
