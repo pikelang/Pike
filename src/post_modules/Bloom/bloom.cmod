@@ -688,8 +688,8 @@ PIKECLASS String {
 /*! @class Simple
  *!
  *! This bloom filter only accepts strings as indices and uses the first 8 bytes as the hash value.
- *! It is intended to be used in cases where a strong hash value is already available, e.g. the output
- *! of a cryptographic hash function.
+ *! It is intended to be used in cases where a good hash value, e.g. the output of a cryptographic
+ *! hash function, is already available
  */
 PIKECLASS Simple {
     static void hash_string(const struct pike_string *s, struct hash_data *hash) {
