@@ -1214,8 +1214,9 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
     case HANDSHAKE_client_key_exchange:
       SSL3_DEBUG_MSG("SSL.ServerConnection: CLIENT_KEY_EXCHANGE\n");
 
-      if (certificate_state == CERT_requested)
-      { /* Certificate must be sent before key exchange message */
+      if ((certificate_state == CERT_requested) ||
+	  (version >= PROTOCOL_TLS_1_3)) {
+	/* Certificate must be sent before key exchange message */
 	send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
 			  "Expected client cert.\n"));
 	return -1;
