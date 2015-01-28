@@ -102,6 +102,9 @@ else
     # These weren't present in old Nettles.
     AC_CHECK_FUNCS(nettle_salsa20_crypt nettle_sha224_init)
 
+    # This is only present in very new Nettles.
+    AC_CHECK_FUNCS(nettle_ecc_bit_size)
+
     AC_MSG_CHECKING([whether nettle_crypt_func is a pointer type])
     AC_CACHE_VAL(pike_cv_nettle_crypt_func_is_pointer, [
       pike_cv_nettle_crypt_func_is_pointer=no

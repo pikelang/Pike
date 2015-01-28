@@ -449,7 +449,23 @@ PIKECLASS ECC_Curve
    */
   PIKEFUN int size()
   {
+#ifdef HAVE_NETTLE_ECC_BIT_SIZE
     push_int(ecc_bit_size(THIS->curve));
+#else
+    if (THIS->curve == &nettle_secp_192r1) {
+      push_int(192);
+    } else if (THIS->curve == &nettle_secp_224r1) {
+      push_int(224);
+    } else if (THIS->curve == &nettle_secp_256r1) {
+      push_int(256);
+    } else if (THIS->curve == &nettle_secp_384r1) {
+      push_int(384);
+    } else if (THIS->curve == &nettle_secp_521r1) {
+      push_int(521);
+    } else {
+      push_int(0);
+    }
+#endif
   }
 
   /*! @decl Gmp.mpz new_scalar(function(int(0..):string(8bit)) rnd)
