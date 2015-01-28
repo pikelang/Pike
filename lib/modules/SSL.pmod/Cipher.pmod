@@ -870,6 +870,18 @@ class KeyExchangeDHE
 
     return temp_struct;
   }
+
+  string client_key_exchange_packet(string client_random,
+				    string server_random,
+				    ProtocolVersion version)
+  {
+    SSL3_DEBUG_MSG("KE_DHE\n");
+    if (!dh_state) {
+      SSL3_DEBUG_MSG("Missing server key exchange packet.\n");
+      return 0;
+    }
+    return ::client_key_exchange_packet(client_random, server_random, version);
+  }
 }
 
 #if constant(Crypto.ECC.Curve)
@@ -1083,6 +1095,10 @@ class KeyExchangeECDHE
 				    ProtocolVersion version)
   {
     anonymous = 1;
+    if (!pubx || !puby) {
+      SSL3_DEBUG_MSG("Missing server key exchange packet.\n");
+      return 0;
+    }
     return ::client_key_exchange_packet(client_random, server_random, version);
   }
 
