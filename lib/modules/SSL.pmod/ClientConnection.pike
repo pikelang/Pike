@@ -218,7 +218,31 @@ Packet client_hello(string(8bit)|void server_name,
     struct->add_hstring(extensions, 2);
 
   SSL3_DEBUG_MSG("SSL.ClientConnection: Client hello: %q\n", struct);
-  return handshake_packet(HANDSHAKE_client_hello, struct);
+  Packet ret = handshake_packet(HANDSHAKE_client_hello, struct);
+  if (version > PROTOCOL_TLS_1_0) {
+    // For maximum interoperability, it seems having
+    // version TLS 1.0 at the packet level is best.
+    //
+    // From Xiaoyin Liu <xiaoyin.l@outlook.com> on
+    // the TLS mailing list 2015-01-21:
+    //
+    // (1) Number of sites scanned: 1,000,001
+    // (2) Number of DNS Error: 45,402
+    // (3) Number of sites that refuse TCP connection on port 443
+    //     (RST, timeout): 289,334
+    // (4) Number of sites that fail sending ServerHello in all 4
+    //     attempts: 238,846
+    // (5) Number of sites that are tolerant to (TLS1.3, TLS1.3):
+    //     397,152 (93.1%)
+    // (6) Number of sites that need to fallback to (TLS1.0, TLS1.3):
+    //     22,461 (5.3%)
+    // (7) Number of sites that need to fallback to (TLS1.0, TLS1.2):
+    //     6,352 (1.5%)
+    // (8) Number of sites that need to fallback to (TLS1.0, TLS1.0):
+    //     454 (0.1%)
+    ret->protocol_version = PROTOCOL_TLS_1_0;
+  }
+  return ret;
 }
 
 protected void make_key_share_offer(int group)
