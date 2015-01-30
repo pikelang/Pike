@@ -431,8 +431,8 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	      array(int) named_groups =
 		reverse(sort(extension_data->read_int_array(2, 2)));
 	      session->ecc_curves = filter(named_groups, ECC_CURVES);
-	      SSL3_DEBUG_MSG("Elliptic curves: %O\n",
-			     map(session->ecc_curves, fmt_constant, "CURVE"));
+	      SSL3_DEBUG_MSG("Elliptic and finite field groups: %O\n",
+			     map(session->ecc_curves, fmt_constant, "GROUP"));
 	      session->ffdhe_groups = context->ffdhe_groups &
 		filter(named_groups, FFDHE_GROUPS);
 	      if (!sizeof(session->ffdhe_groups) &&
