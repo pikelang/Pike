@@ -7819,6 +7819,13 @@ test_any([[mixed a; sscanf("a93","%*s%o",a); return a]],3)
 test_any([[mixed a; sscanf("a93","%s%*x",a); return a]],"")
 test_any([[mixed a; sscanf("a93","%*s%x",a); return a]],0xa93)
 test_any([[mixed a; sscanf("f","f%n",a); return a]],1)
+test_any([[
+    string y = "32";
+    {
+        string foo = "bar";
+    }
+    if (1 || sscanf(y, "%d", int x)) return !x;
+]], 1)
 
 define(test_sscanf, [[
     test_any([[$1 a = $3, b; string s = sprintf($2, a); sscanf(s, $2, b); return s == sprintf($2, b);]], 1)
