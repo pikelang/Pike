@@ -952,7 +952,47 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
       {
 	int wanted_group;
 	if (session->cipher_spec->ke_factory == .Cipher.KeyShareDHE) {
-	  wanted_group = session->ffdhe_groups[0];
+	  // These limits are taken from RFC 3526 8 "Strength Estimate 1".
+	  //
+	  // See also RFC 3766 5.
+	  switch(session->cipher_spec->key_bits) {
+	  case ..110:
+	    wanted_group = GROUP_ffdhe2048;
+	    break;
+	  case 111..130:
+	    wanted_group = GROUP_ffdhe3072;
+	    break;
+	  case 131..150:
+	    wanted_group = GROUP_ffdhe4096;
+	    break;
+	  case 151..190:
+	    wanted_group = GROUP_ffdhe8192;
+	    break;
+	  case 191..:
+	    wanted_group = /* GROUP_ffdhe15424; */ GROUP_ffdhe8192;
+	    break;
+	  }
+
+	  if (!has_value(session->ffdhe_groups, wanted_group)) {
+	    int a = 0;
+	    int b = 0x10000;
+	    // Preferred group not available.
+	    // Select the the closest in strength available.
+	    foreach(session->ffdhe_groups, int g) {
+	      if (g > wanted_group) {
+		if (g < b) b = g;
+	      } else if (g > a) {
+		a = g;
+	      }
+	    }
+	    if (b != 0x10000) {
+	      // There's a stronger group available.
+	      wanted_group = b;
+	    } else {
+	      // Select the strongest available.
+	      wanted_group = a;
+	    }
+	  }
 #if constant(Crypto.ECC.Curve)
 	} else if (session->cipher_spec->ke_factory == .Cipher.KeyShareECDHE) {
 	  switch(session->cipher_spec->key_bits) {
@@ -970,10 +1010,25 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	  }
 
 	  if (!has_value(session->ecc_curves, wanted_group)) {
-	    // Preferred curve not available -- Select the strongest available.
-	    wanted_group = session->ecc_curves[0];
+	    int a = 0;
+	    int b = 0x10000;
+	    // Preferred curve not available.
+	    // Select the the closest in strength available.
+	    foreach(session->ecc_curves, int c) {
+	      if (c > wanted_group) {
+		if (c < b) b = c;
+	      } else if (c > a) {
+		a = c;
+	      }
+	    }
+	    if (b != 0x10000) {
+	      // There's a stronger curve available.
+	      wanted_group = b;
+	    } else {
+	      // Select the strongest available.
+	      wanted_group = a;
+	    }
 	  }
-	  session->curve = [object(Crypto.ECC.Curve)]ECC_CURVES[wanted_group];
 #endif
 	} else {
 	  error("Unsupported KeyExchange factory for KeyShare: %O.\n",
