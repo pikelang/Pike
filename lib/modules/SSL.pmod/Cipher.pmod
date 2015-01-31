@@ -547,8 +547,8 @@ class KeyExchangeRSA
   string(8bit) client_key_exchange_packet(Stdio.Buffer packet_data,
                                           ProtocolVersion version)
   {
-    SSL3_DEBUG_MSG("client_key_exchange_packet(%O, %O, %d.%d)\n",
-		   client_random, server_random, version>>8, version & 0xff);
+    SSL3_DEBUG_MSG("client_key_exchange_packet(%O, %d.%d)\n",
+		   packet_data, version>>8, version & 0xff);
     SSL3_DEBUG_MSG("KE_RSA\n");
 
     // NOTE: To protect against version roll-back attacks,
@@ -687,8 +687,8 @@ class KeyExchangeDH
   string(8bit) client_key_exchange_packet(Stdio.Buffer packet_data,
                                           ProtocolVersion version)
   {
-    SSL3_DEBUG_MSG("client_key_exchange_packet(%O, %O, %d.%d)\n",
-		   client_random, server_random, version>>8, version & 0xff);
+    SSL3_DEBUG_MSG("client_key_exchange_packet(%O, %d.%d)\n",
+		   packet_data, version>>8, version & 0xff);
 
     SSL3_DEBUG_MSG("KE_DH\n");
     anonymous = 1;
@@ -945,8 +945,8 @@ class KeyExchangeECDH
   string(8bit) client_key_exchange_packet(Stdio.Buffer packet_data,
                                           ProtocolVersion version)
   {
-    SSL3_DEBUG_MSG("client_key_exchange_packet(%O, %O, %d.%d)\n",
-		   client_random, server_random, version>>8, version & 0xff);
+    SSL3_DEBUG_MSG("client_key_exchange_packet(%O, %d.%d)\n",
+		   packet_data, version>>8, version & 0xff);
     SSL3_DEBUG_MSG("KE_ECDH\n");
 
     Gmp.mpz secret = session->curve->new_scalar(context->random);
@@ -1209,8 +1209,8 @@ class KeyExchangeKRB
   string(8bit) client_key_exchange_packet(Stdio.Buffer packet_data,
                                           ProtocolVersion version)
   {
-    SSL3_DEBUG_MSG("client_key_exchange_packet(%O, %O, %d.%d)\n",
-		   client_random, server_random, version>>8, version & 0xff);
+    SSL3_DEBUG_MSG("client_key_exchange_packet(%O, %d.%d)\n",
+		   packet_data, version>>8, version & 0xff);
 
     SSL3_DEBUG_MSG("KE_KRB\n");
 
@@ -1256,7 +1256,8 @@ class KeyExchangeKRB
     gss_context->accept(ticket);
 
     /* Decrypt the premaster_secret */
-    SSL3_DEBUG_MSG("encrypted premaster_secret: %O\n", data);
+    SSL3_DEBUG_MSG("encrypted premaster_secret: %O\n",
+		   encrypted_premaster_secret);
 
     string(8bit) premaster_secret =
       gss_context->unwrap(encrypted_premaster_secret, 1);
