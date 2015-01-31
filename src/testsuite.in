@@ -4096,7 +4096,7 @@ test_any([[
   // getter/setter identifier correctly
   class A {
     string `foo() { return "bar"; }
-  }
+  };
 
   return equal(A(), A());
 ]], 1)
