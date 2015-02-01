@@ -675,115 +675,14 @@ class KeyExchangeRSA
   }
 }
 
-//! Key exchange for @[KE_dh_dss] and @[KE_dh_dss].
-//!
-//! @[KeyExchange] that uses Diffie-Hellman with a key from
-//! a DSS certificate.
-class KeyExchangeDH
-{
-  inherit KeyExchange;
-
-  DHKeyExchange dh_state; /* For diffie-hellman key exchange */
-
-  Stdio.Buffer server_key_params()
-  {
-    SSL3_DEBUG_MSG("KE_DH\n");
-    // anonymous, not used on the server, but here for completeness.
-    anonymous = 1;
-
-    dh_state = DHKeyExchange(Crypto.DH.Parameters(session->private_key));
-    dh_state->secret = session->private_key->get_x();
-
-    // RFC 4346 7.4.3:
-    // It is not legal to send the server key exchange message for the
-    // following key exchange methods:
-    //
-    //   RSA
-    //   DH_DSS
-    //   DH_RSA
-    return 0;
-  }
-
-  string(8bit) client_key_exchange_packet(Stdio.Buffer packet_data,
-                                          ProtocolVersion version)
-  {
-    SSL3_DEBUG_MSG("client_key_exchange_packet(%O, %d.%d)\n",
-		   packet_data, version>>8, version & 0xff);
-
-    SSL3_DEBUG_MSG("KE_DH\n");
-    anonymous = 1;
-    if (!dh_state) {
-      Crypto.DH.Parameters p = Crypto.DH.Parameters(session->peer_public_key);
-      if( !validate_dh(p, session) )
-      {
-        SSL3_DEBUG_MSG("DH parameters not correct or not secure.\n");
-        return 0;
-      }
-      dh_state = DHKeyExchange(p);
-      if (!dh_state->set_other(session->peer_public_key->get_y())) {
-	SSL3_DEBUG_MSG("DH Ys not valid for set parameters.\n");
-	dh_state = 0;
-	return 0;
-      }
-    }
-    dh_state->new_secret(context->random);
-
-    string premaster_secret = dh_state->get_shared()->digits(256);
-
-    packet_data->add_hint(dh_state->our, 2);
-    return premaster_secret;
-  }
-
-  //! @returns
-  //!   Premaster secret or alert number.
-  string(8bit)|int(8bit) got_client_key_exchange(Stdio.Buffer input,
-						 ProtocolVersion version)
-  {
-    string premaster_secret;
-
-    SSL3_DEBUG_MSG("got_client_key_exchange: ke_method %d\n",
-		   session->ke_method);
-
-    SSL3_DEBUG_MSG("KE_DH\n");
-    anonymous = 1;
-
-    if (!dh_state->set_other(Gmp.mpz(input->read_hint(2)))) {
-      connection->ke = UNDEFINED;
-      return ALERT_handshake_failure;
-    }
-
-    if(sizeof(input))
-    {
-      connection->ke = UNDEFINED;
-      return ALERT_handshake_failure;
-    }
-
-    premaster_secret = dh_state->get_shared()->digits(256);
-    dh_state = 0;
-
-    return premaster_secret;
-  }
-
-  Stdio.Buffer parse_server_key_exchange(Stdio.Buffer input)
-  {
-    SSL3_DEBUG_MSG("KE_DH\n");
-    // RFC 4346 7.4.3:
-    // It is not legal to send the server key exchange message for the
-    // following key exchange methods:
-    //
-    //   RSA
-    //   DH_DSS
-    //   DH_RSA
-    error("Invalid message.\n");
-  }
-}
-
 //! KeyExchange for @[KE_dhe_rsa], @[KE_dhe_dss] and @[KE_dh_anon].
 //!
 //! KeyExchange that uses Diffie-Hellman to generate an Ephemeral key.
 class KeyExchangeDHE
 {
-  inherit KeyExchangeDH;
+  inherit KeyExchange;
+
+  DHKeyExchange dh_state; /* For diffie-hellman key exchange */
 
   Stdio.Buffer server_key_params()
   {
@@ -829,17 +728,40 @@ class KeyExchangeDHE
     return output;
   }
 
+  string(8bit) client_key_exchange_packet(Stdio.Buffer packet_data,
+                                          ProtocolVersion version)
+  {
+    SSL3_DEBUG_MSG("client_key_exchange_packet(%O, %d.%d)\n",
+		   packet_data, version>>8, version & 0xff);
+
+    SSL3_DEBUG_MSG("KE_DH/KE_DHE\n");
+    anonymous = 1;
+    if (!dh_state) {
+      SSL3_DEBUG_MSG("Invalid DH exchange.\n");
+      return 0;
+    }
+    dh_state->new_secret(context->random);
+
+    string premaster_secret = dh_state->get_shared()->digits(256);
+
+    packet_data->add_hint(dh_state->our, 2);
+    return premaster_secret;
+  }
+
   //! @returns
   //!   Premaster secret or alert number.
-  string(8bit)|int(8bit) got_client_key_exchage(Stdio.Buffer data,
-						ProtocolVersion version)
+  string(8bit)|int(8bit) got_client_key_exchange(Stdio.Buffer input,
+						 ProtocolVersion version)
   {
+    string premaster_secret;
+
     SSL3_DEBUG_MSG("got_client_key_exchange: ke_method %d\n",
 		   session->ke_method);
 
-    SSL3_DEBUG_MSG("KE_DHE\n");
+    SSL3_DEBUG_MSG("KE_DH/KE_DHE\n");
+    anonymous = 1;
 
-    if (!sizeof(data))
+    if (!sizeof(input))
     {
       /* Implicit encoding; Should never happen unless we have
        * requested and received a client certificate of type
@@ -850,7 +772,21 @@ class KeyExchangeDHE
       return ALERT_certificate_unknown;
     }
 
-    return ::got_client_key_exchange(data, version);
+    if (!dh_state->set_other(Gmp.mpz(input->read_hint(2)))) {
+      connection->ke = UNDEFINED;
+      return ALERT_handshake_failure;
+    }
+
+    if(sizeof(input))
+    {
+      connection->ke = UNDEFINED;
+      return ALERT_handshake_failure;
+    }
+
+    premaster_secret = dh_state->get_shared()->digits(256);
+    dh_state = 0;
+
+    return premaster_secret;
   }
 
   Stdio.Buffer parse_server_key_exchange(Stdio.Buffer input)
@@ -881,16 +817,64 @@ class KeyExchangeDHE
     output->add_hstring(o, 2);
     return output;
   }
+}
 
-  string(8bit) client_key_exchange_packet(Stdio.Buffer packet_data,
-                                          ProtocolVersion version)
+//! Key exchange for @[KE_dh_dss] and @[KE_dh_dss].
+//!
+//! @[KeyExchange] that uses Diffie-Hellman with a key from
+//! a DSS certificate.
+class KeyExchangeDH
+{
+  inherit KeyExchangeDHE;
+
+  int(0..1) init_server()
   {
-    SSL3_DEBUG_MSG("KE_DH\n");
-    if (!dh_state) {
-      SSL3_DEBUG_MSG("Missing server key exchange packet.\n");
+    dh_state = DHKeyExchange(Crypto.DH.Parameters(session->private_key));
+    dh_state->secret = session->private_key->get_x();
+    return ::init_server();
+  }
+
+  int(0..1) init_client()
+  {
+    Crypto.DH.Parameters p = Crypto.DH.Parameters(session->peer_public_key);
+    if( !validate_dh(p, session) )
+    {
+      SSL3_DEBUG_MSG("DH parameters not correct or not secure.\n");
       return 0;
     }
-    return ::client_key_exchange_packet(packet_data, version);
+    dh_state = DHKeyExchange(p);
+    if (!dh_state->set_other(session->peer_public_key->get_y())) {
+      SSL3_DEBUG_MSG("DH Ys not valid for set parameters.\n");
+      dh_state = 0;
+      return 0;
+    }
+    return ::init_client();
+  }
+
+  Stdio.Buffer server_key_params()
+  {
+    SSL3_DEBUG_MSG("KE_DH\n");
+    // RFC 4346 7.4.3:
+    // It is not legal to send the server key exchange message for the
+    // following key exchange methods:
+    //
+    //   RSA
+    //   DH_DSS
+    //   DH_RSA
+    return 0;
+  }
+
+  Stdio.Buffer parse_server_key_exchange(Stdio.Buffer input)
+  {
+    SSL3_DEBUG_MSG("KE_DH\n");
+    // RFC 4346 7.4.3:
+    // It is not legal to send the server key exchange message for the
+    // following key exchange methods:
+    //
+    //   RSA
+    //   DH_DSS
+    //   DH_RSA
+    error("Invalid message.\n");
   }
 }
 
