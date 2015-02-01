@@ -1398,8 +1398,14 @@ TBSCertificate decode_certificate(string|object cert)
 
   TBSCertificate tbs = TBSCertificate()->init(cert[0]);
 
+  // FIXME: The re-encoding and algorithm checks are more appropriate
+  // in verify_certificate, but the full certificate doesn't reach
+  // there.
   if (!tbs || (cert[1]->get_der() != tbs->algorithm->get_der()))
     return NULL("Failed to generate TBSCertificate.\n");
+
+  if(tbs->algorithm->get_der() != cert[1]->get_der())
+    return NULL("Mismatching algorithm identifiers.\n");
 
   return tbs;
 }
