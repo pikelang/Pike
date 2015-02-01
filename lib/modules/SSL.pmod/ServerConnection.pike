@@ -155,6 +155,7 @@ Packet server_key_exchange_packet()
 {
   if (ke) error("KE!\n");
   ke = session->cipher_spec->ke_factory(context, session, this, client_version);
+  if (!ke->init_server()) return 0;
   string(8bit) data =
     ke->server_key_exchange_packet(client_random, server_random);
   return data && handshake_packet(HANDSHAKE_server_key_exchange, data);
@@ -1092,6 +1093,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 			 fmt_constant(best_group, "GROUP"));
 	  ke = session->cipher_spec->ke_factory(context, session, this,
 						client_version);
+	  // ke->init_server();
 	  ke->set_group(best_group);
 #if constant(Crypto.ECC.Curve)
 	  session->curve = [object(Crypto.ECC.Curve)]ke->curve;

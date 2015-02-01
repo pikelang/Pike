@@ -256,11 +256,13 @@ protected void make_key_share_offer(int group)
   if ((group & 0xff00) == 0x0100) {
     if (!FFDHE_GROUPS[group]) return;
     ke = Cipher.KeyShareDHE(context, 0, this, client_version);
+    // ke->init_client();
     ke->set_group(group);
 #if constant(Crypto.ECC.Curve)
   } else if (!(group & 0xff00)) {
     if (!ECC_CURVES[group]) return;
     ke = Cipher.KeyShareECDHE(context, 0, this, client_version);
+    // ke->init_client();
     ke->set_group(group);
 #endif
   } else {
@@ -313,7 +315,15 @@ Packet finished_packet(string(8bit) sender)
 Packet client_key_exchange_packet()
 {
   Stdio.Buffer packet_data = Stdio.Buffer();
-  ke = ke || session->cipher_spec->ke_factory(context, session, this, client_version);
+  if (!ke) {
+    ke = session->cipher_spec->ke_factory(context, session, this,
+					  client_version);
+    if (!ke->init_client()) {
+      send_packet(alert(ALERT_fatal, ALERT_handshake_failure,
+			"Invalid KEX.\n"));
+      return 0;
+    }
+  }
   string(8bit) premaster_secret =
     ke->client_key_exchange_packet(packet_data, version);
 
@@ -964,9 +974,11 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
     case HANDSHAKE_server_key_exchange:
       {
 	if (ke) error("KE!\n");
-	ke = session->cipher_spec->ke_factory(context, session, this, client_version);
-	if (ke->got_server_key_exchange(input, client_random,
-					server_random) < 0) {
+	ke = session->cipher_spec->ke_factory(context, session, this,
+					      client_version);
+	if (!ke->init_server() ||
+	    (ke->got_server_key_exchange(input, client_random,
+					 server_random) < 0)) {
 	  send_packet(alert(ALERT_fatal, ALERT_handshake_failure,
 			    "Verification of ServerKeyExchange failed.\n"));
 	  return -1;

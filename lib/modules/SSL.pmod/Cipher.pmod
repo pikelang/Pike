@@ -343,6 +343,26 @@ class KeyExchange(object context, object session, object connection,
   //!   @[HANDSHAKE_server_key_exchange] payload.
   Stdio.Buffer server_key_params();
 
+  //! Initialize for client side use.
+  //!
+  //! @returns
+  //!   Returns @expr{1@} on success, and @expr{0@} (zero)
+  //!   on failure.
+  int(0..1) init_client()
+  {
+    return 1;
+  }
+
+  //! Initialize for server side use.
+  //!
+  //! @returns
+  //!   Returns @expr{1@} on success, and @expr{0@} (zero)
+  //!   on failure.
+  int(0..1) init_server()
+  {
+    return 1;
+  }
+
   //! TLS 1.3 and later.
   //!
   //! Generate a key share offer for the configured named group
