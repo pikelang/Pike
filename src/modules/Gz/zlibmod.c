@@ -45,6 +45,13 @@ struct zipper
 #endif /* _REENTRANT */
 };
 
+struct memobj
+{
+  void *ptr;
+  size_t len;
+  int shift;
+};
+
 #define BUF 32768
 #define MAX_BUF	(64*BUF)
 
@@ -335,8 +342,8 @@ static int do_deflate(dynamic_buffer *buf,
    return ret;
 }
 
-void zlibmod_pack(struct pike_string *data, dynamic_buffer *buf,
-		  int level, int strategy, int wbits)
+void low_zlibmod_pack(struct memobj data, dynamic_buffer *buf,
+                      int level, int strategy, int wbits)
 {
   struct zipper z;
   int ret;
@@ -364,8 +371,8 @@ void zlibmod_pack(struct pike_string *data, dynamic_buffer *buf,
   z.gz.zalloc = Z_NULL;
   z.gz.zfree = Z_NULL;
 
-  z.gz.next_in = (Bytef *)data->str;
-  z.gz.avail_in = (unsigned INT32)(data->len);
+  z.gz.next_in = (Bytef *)data.ptr;
+  z.gz.avail_in = (unsigned INT32)(data.len);
 
   do {
     ret = deflateInit2(&z.gz, level, Z_DEFLATED, wbits, 9, strategy);
@@ -411,10 +418,21 @@ void zlibmod_pack(struct pike_string *data, dynamic_buffer *buf,
     Pike_error("Error while deflating data (%d).\n",ret);
 }
 
+void zlibmod_pack(struct pike_string *data, dynamic_buffer *buf,
+                  int level, int strategy, int wbits)
+{
+  struct memobj lowdata;
+  lowdata.ptr = data->str;
+  lowdata.len = data->len;
+  lowdata.shift = data->size_shift;
+  low_zlibmod_pack(lowdata, buf, level, strategy, wbits);
+}
+
 /*! @endclass
  */
 
-/*! @decl string(8bit) compress(string(8bit) data, void|int(0..1) raw, @
+/*! @decl string(8bit) compress(string(8bit)|String.Buffer|System.Memory|Stdio.Buffer data, @
+ *!                             void|int(0..1) raw, @
  *!                             void|int(0..9) level, void|int strategy, @
  *!                             void|int(8..15) window_size)
  *!
@@ -470,7 +488,8 @@ void zlibmod_pack(struct pike_string *data, dynamic_buffer *buf,
  */
 static void gz_compress(INT32 args)
 {
-  struct pike_string *data;
+  struct svalue *data_arg;
+  struct memobj data;
   dynamic_buffer buf;
   ONERROR err;
 
@@ -479,8 +498,33 @@ static void gz_compress(INT32 args)
   int level = 8;
   int strategy = Z_DEFAULT_STRATEGY;
 
-  get_all_args("compress", args, "%n.%d%d%d%d", &data, &raw, &level, &strategy,
+  get_all_args("compress", args, "%*.%d%d%d%d", &data_arg, &raw, &level, &strategy,
                &wbits);
+
+  switch (TYPEOF(*data_arg))
+  {
+    case PIKE_T_STRING:
+    {
+      struct pike_string *s = data_arg->u.string;
+      data.ptr = (unsigned char*)s->str;
+      data.len = s->len;
+      data.shift = s->size_shift;
+      break;
+    }
+    case PIKE_T_OBJECT:
+    {
+      enum memobj_type t = get_memory_object_memory(data_arg->u.object,
+                                                    &data.ptr, &data.len,
+                                                    &data.shift);
+      if (t != MEMOBJ_NONE)
+        break;
+      // fall through
+    }
+    default:
+      SIMPLE_BAD_ARG_ERROR("compress", 1, "string|String.Buffer|System.Memory|Stdio.Buffer");
+  }
+  if (data.shift)
+    Pike_error("Cannot input wide string to compress\n");
 
   if( !wbits )
     wbits = 15;
@@ -490,7 +534,7 @@ static void gz_compress(INT32 args)
 
   initialize_buf(&buf);
   SET_ONERROR(err, toss_buffer, &buf);
-  zlibmod_pack(data, &buf, level, strategy, wbits);
+  low_zlibmod_pack(data, &buf, level, strategy, wbits);
   UNSET_ONERROR(err);
 
   pop_n_elems(args);
@@ -500,7 +544,8 @@ static void gz_compress(INT32 args)
 /*! @class deflate
  */
 
-/*! @decl string(8bit) deflate(string(8bit) data, int|void flush)
+/*! @decl string(8bit) deflate(string(8bit)|String.Buffer|System.Memory|Stdio.Buffer data, @
+ *!                            int|void flush)
  *!
  *! This function performs gzip style compression on a string @[data] and
  *! returns the packed data. Streaming can be done by calling this
@@ -523,7 +568,7 @@ static void gz_compress(INT32 args)
  */
 static void gz_deflate(INT32 args)
 {
-  struct pike_string *data;
+  struct memobj data;
   int flush, fail;
   struct zipper *this=THIS;
   dynamic_buffer buf;
@@ -542,11 +587,30 @@ static void gz_deflate(INT32 args)
   if(args<1)
     Pike_error("Too few arguments to gz_deflate->deflate()\n");
 
-  if(TYPEOF(sp[-args]) != T_STRING)
-    Pike_error("Bad argument 1 to gz_deflate->deflate()\n");
+  switch (TYPEOF(Pike_sp[-args]))
+  {
+    case PIKE_T_STRING:
+    {
+      struct pike_string *s = Pike_sp[-args].u.string;
+      data.ptr = (unsigned char*)s->str;
+      data.len = s->len;
+      data.shift = s->size_shift;
+      break;
+    }
+    case PIKE_T_OBJECT:
+    {
+      enum memobj_type t = get_memory_object_memory(Pike_sp[-args].u.object,
+                                                    &data.ptr, &data.len,
+                                                    &data.shift);
+      if (t != MEMOBJ_NONE)
+        break;
+      // fall through
+    }
+    default:
+      Pike_error("Bad argument 1 to gz_deflate->deflate()\n");
+  }
 
-  data=sp[-args].u.string;
-  if (data->size_shift)
+  if (data.shift)
     Pike_error("Cannot input wide string to gz_deflate->deflate()\n");
   
   if(args>1)
@@ -571,8 +635,8 @@ static void gz_deflate(INT32 args)
     flush=Z_FINISH;
   }
 
-  this->gz.next_in=(Bytef *)data->str;
-  this->gz.avail_in = DO_NOT_WARN((unsigned INT32)(data->len));
+  this->gz.next_in=(Bytef *)data.ptr;
+  this->gz.avail_in = DO_NOT_WARN((unsigned INT32)(data.len));
 
   initialize_buf(&buf);
 
@@ -825,7 +889,7 @@ static int do_inflate(dynamic_buffer *buf,
   return fail;
 }
 
-void zlibmod_unpack(struct pike_string *data, dynamic_buffer *buf, int raw)
+void low_zlibmod_unpack(struct memobj data, dynamic_buffer *buf, int raw)
 {
   struct zipper z;
   int ret;
@@ -834,8 +898,8 @@ void zlibmod_unpack(struct pike_string *data, dynamic_buffer *buf, int raw)
   z.gz.zalloc = Z_NULL;
   z.gz.zfree = Z_NULL;
 
-  z.gz.next_in=(Bytef *)data->str;
-  z.gz.avail_in = DO_NOT_WARN((unsigned INT32)(data->len));
+  z.gz.next_in=(Bytef *)data.ptr;
+  z.gz.avail_in = DO_NOT_WARN((unsigned INT32)(data.len));
 
   if( raw )
     ret = inflateInit2(&z.gz, -15);
@@ -875,10 +939,19 @@ void zlibmod_unpack(struct pike_string *data, dynamic_buffer *buf, int raw)
     Pike_error("Failed to inflate data (%d).\n", ret);
 }
 
+void zlibmod_unpack(struct pike_string *data, dynamic_buffer *buf, int raw)
+{
+  struct memobj lowdata;
+  lowdata.ptr = data->str;
+  lowdata.len = data->len;
+  lowdata.shift = data->size_shift;
+  low_zlibmod_unpack(lowdata, buf, raw);
+}
+
 /*! @endclass
 */
 
-/*! @decl string(8bit) uncompress(string(8bit) data, void|int(0..1) raw)
+/*! @decl string(8bit) uncompress(string(8bit)|String.Buffer|System.Memory|Stdio.Buffer data, void|int(0..1) raw)
  *!
  *! Uncompresses the @[data] and returns it. The @[raw] parameter
  *! tells the decoder that the indata lacks the data header and footer
@@ -887,14 +960,35 @@ void zlibmod_unpack(struct pike_string *data, dynamic_buffer *buf, int raw)
 static void gz_uncompress(INT32 args)
 {
   dynamic_buffer buf;
+  struct memobj data;
   ONERROR err;
   int raw = 0;
 
   if(args<1)
     SIMPLE_TOO_FEW_ARGS_ERROR("uncompress", 1);
-  if(TYPEOF(Pike_sp[-args]) != PIKE_T_STRING)
-    SIMPLE_BAD_ARG_ERROR("uncompress", 1, "string");
-  if (Pike_sp[-args].u.string->size_shift)
+  switch (TYPEOF(Pike_sp[-args]))
+  {
+    case PIKE_T_STRING:
+    {
+      struct pike_string *s = Pike_sp[-args].u.string;
+      data.ptr = (unsigned char*)s->str;
+      data.len = s->len;
+      data.shift = s->size_shift;
+      break;
+    }
+    case PIKE_T_OBJECT:
+    {
+      enum memobj_type t = get_memory_object_memory(Pike_sp[-args].u.object,
+                                                    &data.ptr, &data.len,
+                                                    &data.shift);
+      if (t != MEMOBJ_NONE)
+        break;
+      // fall through
+    }
+    default:
+      SIMPLE_BAD_ARG_ERROR("uncompress", 1, "string|String.Buffer|System.Memory|Stdio.Buffer");
+  }
+  if (data.shift)
     Pike_error("Cannot input wide string to uncompress\n");
   if(args>1)
   {
@@ -906,7 +1000,7 @@ static void gz_uncompress(INT32 args)
 
   initialize_buf(&buf);
   SET_ONERROR(err, toss_buffer, &buf);
-  zlibmod_unpack(Pike_sp[-args].u.string, &buf, raw);
+  low_zlibmod_unpack(data, &buf, raw);
   UNSET_ONERROR(err);
 
   pop_n_elems(args);
@@ -917,7 +1011,7 @@ static void gz_uncompress(INT32 args)
 /*! @class inflate
  */
 
-/*! @decl string(8bit) inflate(string(8bit) data)
+/*! @decl string(8bit) inflate(string(8bit)|String.Buffer|System.Memory|Stdio.Buffer data)
  *!
  *! This function performs gzip style decompression. It can inflate
  *! a whole file at once or in blocks.
@@ -938,7 +1032,7 @@ static void gz_uncompress(INT32 args)
  */
 static void gz_inflate(INT32 args)
 {
-  struct pike_string *data;
+  struct memobj data;
   int fail;
   struct zipper *this=THIS;
   dynamic_buffer buf;
@@ -950,15 +1044,34 @@ static void gz_inflate(INT32 args)
   if(args<1)
     Pike_error("Too few arguments to gz_inflate->inflate()\n");
 
-  if(TYPEOF(sp[-args]) != T_STRING)
-    Pike_error("Bad argument 1 to gz_inflate->inflate()\n");
+  switch (TYPEOF(Pike_sp[-args]))
+  {
+    case PIKE_T_STRING:
+    {
+      struct pike_string *s = Pike_sp[-args].u.string;
+      data.ptr = (unsigned char*)s->str;
+      data.len = s->len;
+      data.shift = s->size_shift;
+      break;
+    }
+    case PIKE_T_OBJECT:
+    {
+      enum memobj_type t = get_memory_object_memory(Pike_sp[-args].u.object,
+                                                    &data.ptr, &data.len,
+                                                    &data.shift);
+      if (t != MEMOBJ_NONE)
+        break;
+      // fall through
+    }
+    default:
+      Pike_error("Bad argument 1 to gz_inflate->inflate()\n");
+  }
 
-  data=sp[-args].u.string;
-  if (data->size_shift)
+  if (data.shift)
     Pike_error("Cannot input wide string to gz_inflate->inflate()\n");
 
-  this->gz.next_in=(Bytef *)data->str;
-  this->gz.avail_in = DO_NOT_WARN((unsigned INT32)(data->len));
+  this->gz.next_in=(Bytef *)data.ptr;
+  this->gz.avail_in = DO_NOT_WARN((unsigned INT32)(data.len));
 
   initialize_buf(&buf);
 
@@ -1123,8 +1236,8 @@ PIKE_MODULE_INIT
   
   /* function(int|void,int|void:void) */
   ADD_FUNCTION("create",gz_deflate_create,tFunc(tOr(tMapping, tOr(tInt,tVoid)) tOr(tInt,tVoid),tVoid),0);
-  /* function(string(8bit),int|void:string(8bit)) */
-  ADD_FUNCTION("deflate",gz_deflate,tFunc(tStr8 tOr(tInt,tVoid),tStr8),0);
+  /* function(string(8bit)|String.Buffer|System.Memory|Stdio.Buffer,int|void:string(8bit)) */
+  ADD_FUNCTION("deflate",gz_deflate,tFunc(tOr(tStr8,tObj) tOr(tInt,tVoid),tStr8),0);
   ADD_FUNCTION("_size_object", gz_deflate_size, tFunc(tVoid,tInt), 0);
 
   add_integer_constant("NO_FLUSH",Z_NO_FLUSH,0);
@@ -1161,8 +1274,8 @@ PIKE_MODULE_INIT
   
   /* function(int|void:void) */
   ADD_FUNCTION("create",gz_inflate_create,tFunc(tOr(tMapping,tOr(tInt,tVoid)),tVoid),0);
-  /* function(string(8bit):string(8bit)) */
-  ADD_FUNCTION("inflate",gz_inflate,tFunc(tStr8,tStr8),0);
+  /* function(string(8bit)|String.Buffer|System.Memory|Stdio.Buffer:string(8bit)) */
+  ADD_FUNCTION("inflate",gz_inflate,tFunc(tOr(tStr8,tObj),tStr8),0);
   /* function(:string(8bit)) */
   ADD_FUNCTION("end_of_stream",gz_end_of_stream,tFunc(tNone,tStr8),0);
   ADD_FUNCTION("_size_object", gz_inflate_size, tFunc(tVoid,tInt), 0);
@@ -1198,11 +1311,11 @@ PIKE_MODULE_INIT
   /* function(string(8bit),void|int:int) */
   ADD_FUNCTION("crc32",gz_crc32,tFunc(tStr8 tOr(tVoid,tInt),tInt),0);
 
-  /* function(string(8bit),void|int(0..1),void|int,void|int:string(8bit)) */
-  ADD_FUNCTION("compress",gz_compress,tFunc(tStr8 tOr(tVoid,tInt01) tOr(tVoid,tInt09) tOr(tVoid,tInt) tOr(tVoid,tInt),tStr8),0);
+  /* function(string(8bit)|String.Buffer|System.Memory|Stdio.Buffer,void|int(0..1),void|int,void|int:string(8bit)) */
+  ADD_FUNCTION("compress",gz_compress,tFunc(tOr(tStr8,tObj) tOr(tVoid,tInt01) tOr(tVoid,tInt09) tOr(tVoid,tInt) tOr(tVoid,tInt),tStr8),0);
 
-  /* function(string(8bit),void|int(0..1):string(8bit)) */
-  ADD_FUNCTION("uncompress",gz_uncompress,tFunc(tStr8 tOr(tVoid,tInt01),tStr8),0);
+  /* function(string(8bit)|String.Buffer|System.Memory|Stdio.Buffer,void|int(0..1):string(8bit)) */
+  ADD_FUNCTION("uncompress",gz_uncompress,tFunc(tOr(tStr8,tObj) tOr(tVoid,tInt01),tStr8),0);
 
   PIKE_MODULE_EXPORT(Gz, crc32);
   PIKE_MODULE_EXPORT(Gz, zlibmod_pack);
