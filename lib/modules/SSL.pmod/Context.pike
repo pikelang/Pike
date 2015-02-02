@@ -380,6 +380,10 @@ array(int) sort_suites(array(int) suites)
 //!   Multiset of cipher modes that are NOT to be used.
 //!
 //! @note
+//!   The list of suites is also filtered on the current settings of
+//!   @[min_version] and @[max_version].
+//!
+//! @note
 //!   Note that the effective keylength may differ from
 //!   the actual keylength for old ciphers where there
 //!   are known attacks.
@@ -468,6 +472,65 @@ array(int) get_suites(int(-1..)|void min_keylength,
 		 }, blacklisted_ciphermodes);
   }
 
+  switch(min_version) {
+  case PROTOCOL_TLS_1_3:
+    res = filter(res,
+		 lambda(int suite) {
+		   array(int) info = [array(int)]CIPHER_SUITES[suite];
+		   // Non-AEAD suites were obsoleted in TLS 1.3.
+		   if (sizeof(info) < 4) return 0;
+		   if (info[3] == MODE_cbc) return 0;
+		   return 1;
+		 });
+    break;
+  case PROTOCOL_TLS_1_2:
+    res = filter(res,
+		 lambda(int suite) {
+		   array(int) info = [array(int)]CIPHER_SUITES[suite];
+		   switch(info[1]) {
+		   // Export cipher suites were removed in TLS 1.1.
+		   case 0:
+		   case CIPHER_rc2_40:
+		   case CIPHER_rc4_40:
+		   case CIPHER_des40:
+		   // IDEA and DES suites were removed in TLS 1.2.
+		   case CIPHER_idea:
+		   case CIPHER_des:
+		     return 0;
+		   }
+		   return 1;
+		 });
+    break;
+  case PROTOCOL_TLS_1_1:
+    res = filter(res,
+		 lambda(int suite) {
+		   array(int) info = [array(int)]CIPHER_SUITES[suite];
+		   // Export cipher suites were removed in TLS 1.1.
+		   switch(info[1]) {
+		   case 0:
+		   case CIPHER_rc2_40:
+		   case CIPHER_rc4_40:
+		   case CIPHER_des40:
+		     return 0;
+		   }
+		   return 1;
+		 });
+    break;
+  }
+
+  switch(max_version) {
+  case PROTOCOL_TLS_1_1:
+  case PROTOCOL_TLS_1_0:
+  case PROTOCOL_SSL_3_0:
+    res = filter(res,
+		 lambda(int suite) {
+		   array(int) info = [array(int)]CIPHER_SUITES[suite];
+		   // AEAD suites are not supported in TLS versions
+		   // prior to TLS 1.2.
+		   return (sizeof(info) < 4);
+		 });
+    break;
+  }
   // Sort and return.
   return sort_suites(res);
 }
