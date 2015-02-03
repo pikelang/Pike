@@ -682,7 +682,51 @@ class KeyExchangeDHE
 {
   inherit KeyExchange;
 
-  DHKeyExchange dh_state; /* For diffie-hellman key exchange */
+  //! Finite field Diffie-Hellman parameters.
+  Crypto.DH.Parameters parameters;
+
+  Gmp.mpz our; /* Our value */
+  Gmp.mpz other; /* Other party's value */
+  Gmp.mpz secret; /* our =  g ^ secret mod p */
+
+  protected void new_secret()
+  {
+    [our, secret] = parameters->generate_keypair(context->random);
+  }
+
+  protected Gmp.mpz get_shared()
+  {
+    Gmp.mpz shared = other->powm(secret, parameters->p);
+    secret = 0;
+    return shared;
+  }
+
+  //! Set the value received from the peer.
+  //!
+  //! @returns
+  //!   Returns @expr{1@} if @[o] is valid for the set @[parameters].
+  //!
+  //!   Otherwise returns @[UNDEFINED].
+  protected int(0..1) set_other(Gmp.mpz o)
+  {
+    if ((o <= 1) || (o >= (parameters->p - 1))) {
+      // Negotiated FF DHE Parameters Draft 4 3:
+      //   If the selected group matches an offered FFDHE group exactly, the
+      //   the client MUST verify that dh_Ys is in the range 1 < dh_Ys < dh_p
+      //   - 1.  If dh_Ys is not in this range, the client MUST terminate the
+      //   connection with a fatal handshake_failure(40) alert.
+      //
+      // Negotiated FF DHE Parameters Draft 4 4:
+      //   When a compatible server selects an FFDHE group from among a
+      //   client's Supported Groups, and the client sends a ClientKeyExchange,
+      //   the server MUST verify that 1 < dh_Yc < dh_p - 1. If it is out of
+      //   range, the server MUST terminate the connection with fatal
+      //   handshake_failure(40) alert.
+      return UNDEFINED;
+    }
+    other = o;
+    return 1;
+  }
 
   Stdio.Buffer server_key_params()
   {
@@ -717,14 +761,16 @@ class KeyExchangeDHE
         break;
     }
 
+    // FIXME: Fall back to just selecting a group and pretend
+    //        not to support the FFDHE extension?
     if(!p) error("No suitable DH group in Context.\n");
-    dh_state = DHKeyExchange(p);
-    dh_state->new_secret(context->random);
+    parameters = p;
+    new_secret();
 
     Stdio.Buffer output = Stdio.Buffer();
-    output->add_hint(dh_state->parameters->p, 2);
-    output->add_hint(dh_state->parameters->g, 2);
-    output->add_hint(dh_state->our, 2);
+    output->add_hint(parameters->p, 2);
+    output->add_hint(parameters->g, 2);
+    output->add_hint(our, 2);
     return output;
   }
 
@@ -736,15 +782,15 @@ class KeyExchangeDHE
 
     SSL3_DEBUG_MSG("KE_DH/KE_DHE\n");
     anonymous = 1;
-    if (!dh_state) {
+    if (!parameters) {
       SSL3_DEBUG_MSG("Invalid DH exchange.\n");
       return 0;
     }
-    dh_state->new_secret(context->random);
+    new_secret();
 
-    string premaster_secret = dh_state->get_shared()->digits(256);
+    string premaster_secret = get_shared()->digits(256);
 
-    packet_data->add_hint(dh_state->our, 2);
+    packet_data->add_hint(our, 2);
     return premaster_secret;
   }
 
@@ -772,7 +818,7 @@ class KeyExchangeDHE
       return ALERT_certificate_unknown;
     }
 
-    if (!dh_state->set_other(Gmp.mpz(input->read_hint(2)))) {
+    if (!set_other(Gmp.mpz(input->read_hint(2)))) {
       connection->ke = UNDEFINED;
       return ALERT_handshake_failure;
     }
@@ -783,8 +829,8 @@ class KeyExchangeDHE
       return ALERT_handshake_failure;
     }
 
-    premaster_secret = dh_state->get_shared()->digits(256);
-    dh_state = 0;
+    premaster_secret = get_shared()->digits(256);
+    parameters = 0;
 
     return premaster_secret;
   }
@@ -804,10 +850,10 @@ class KeyExchangeDHE
       return 0;
     }
 
-    dh_state = DHKeyExchange(params);
-    if (!dh_state->set_other(Gmp.mpz(o,256))) {
+    parameters = params;
+    if (!set_other(Gmp.mpz(o,256))) {
       SSL3_DEBUG_MSG("DH Ys not valid for set parameters.\n");
-      dh_state = 0;
+      parameters = 0;
       return 0;
     }
 
@@ -829,8 +875,8 @@ class KeyExchangeDH
 
   int(0..1) init_server()
   {
-    dh_state = DHKeyExchange(Crypto.DH.Parameters(session->private_key));
-    dh_state->secret = session->private_key->get_x();
+    parameters = Crypto.DH.Parameters(session->private_key);
+    secret = session->private_key->get_x();
     return ::init_server();
   }
 
@@ -842,10 +888,10 @@ class KeyExchangeDH
       SSL3_DEBUG_MSG("DH parameters not correct or not secure.\n");
       return 0;
     }
-    dh_state = DHKeyExchange(p);
-    if (!dh_state->set_other(session->peer_public_key->get_y())) {
+    parameters = p;
+    if (!set_other(session->peer_public_key->get_y())) {
       SSL3_DEBUG_MSG("DH Ys not valid for set parameters.\n");
-      dh_state = 0;
+      parameters = 0;
       return 0;
     }
     return ::init_client();
@@ -887,17 +933,16 @@ class KeyShareDHE
   void make_key_share_offer(Stdio.Buffer offer)
   {
     offer->add_int(group, 2);
-    offer->add_hint(dh_state->our, 2);
+    offer->add_hint(our, 2);
   }
 
   string(8bit) receive_key_share_offer(string(8bit) offer)
   {
-    dh_state->set_other(Gmp.mpz(offer, 256));
+    set_other(Gmp.mpz(offer, 256));
 
-    string(8bit) premaster_secret =
-      dh_state->get_shared()->digits(256);
+    string(8bit) premaster_secret = get_shared()->digits(256);
 
-    dh_state = UNDEFINED;
+    parameters = UNDEFINED;
 
     return premaster_secret;
   }
@@ -905,11 +950,9 @@ class KeyShareDHE
   void set_group(int g)
   {
     group = g;
-    Crypto.DH.Parameters params = FFDHE_GROUPS[g];
-    if (!params) error("Unsupported FF-DHE group.\n");
-
-    dh_state = DHKeyExchange(params);
-    dh_state->new_secret(context->random);
+    parameters = FFDHE_GROUPS[g];
+    if (!parameters) error("Unsupported FF-DHE group.\n");
+    new_secret();
   }
 }
 
@@ -1597,61 +1640,6 @@ class RC2
   }
 }
 #endif /* Crypto.Arctwo */
-
-//! Implements Diffie-Hellman key-exchange.
-//!
-//! The following key exchange methods are implemented here:
-//! @[KE_dhe_dss], @[KE_dhe_rsa] and @[KE_dh_anon].
-class DHKeyExchange
-{
-  //! Finite field Diffie-Hellman parameters.
-  Crypto.DH.Parameters parameters;
-
-  Gmp.mpz our; /* Our value */
-  Gmp.mpz other; /* Other party's value */
-  Gmp.mpz secret; /* our =  g ^ secret mod p */
-
-  //!
-  protected void create(Crypto.DH.Parameters p) {
-    parameters = p;
-  }
-
-  this_program new_secret(function random)
-  {
-    [our, secret] = parameters->generate_keypair(random);
-    return this;
-  }
-
-  //! Set the value received from the peer.
-  //!
-  //! @returns
-  //!   Returns @[UNDEFINED] if @[o] is invalid for the set @[parameters].
-  //!
-  //!   Otherwise returns the current object.
-  this_program set_other(Gmp.mpz o) {
-    if ((o <= 1) || (o >= (parameters->p - 1))) {
-      // Negotiated FF DHE Parameters Draft 4 3:
-      //   If the selected group matches an offered FFDHE group exactly, the
-      //   the client MUST verify that dh_Ys is in the range 1 < dh_Ys < dh_p
-      //   - 1.  If dh_Ys is not in this range, the client MUST terminate the
-      //   connection with a fatal handshake_failure(40) alert.
-      //
-      // Negotiated FF DHE Parameters Draft 4 4:
-      //   When a compatible server selects an FFDHE group from among a
-      //   client's Supported Groups, and the client sends a ClientKeyExchange,
-      //   the server MUST verify that 1 < dh_Yc < dh_p - 1. If it is out of
-      //   range, the server MUST terminate the connection with fatal
-      //   handshake_failure(40) alert.
-      return UNDEFINED;
-    }
-    other = o;
-    return this;
-  }
-
-  Gmp.mpz get_shared() {
-    return other->powm(secret, parameters->p);
-  }
-}
 
 //! Lookup the crypto parameters for a cipher suite.
 //!
