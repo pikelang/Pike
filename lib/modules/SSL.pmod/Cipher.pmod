@@ -957,132 +957,16 @@ class KeyShareDHE
 }
 
 #if constant(Crypto.ECC.Curve)
-//! KeyExchange for @[KE_ecdh_rsa] and @[KE_ecdh_ecdsa].
-//!
-//! NB: The only difference between the two is whether the certificate
-//!     is signed with RSA or ECDSA.
-//!
-//! This KeyExchange uses the Elliptic Curve parameters from
-//! the ECDSA certificate on the server side, and ephemeral
-//! parameters on the client side.
-class KeyExchangeECDH
-{
-  inherit KeyExchange;
-
-  protected Gmp.mpz get_server_secret()
-  {
-    return session->private_key->get_private_key();
-  }
-
-  protected Crypto.ECC.Curve.Point get_server_point()
-  {
-    return session->peer_public_key->get_point();
-  }
-
-  Stdio.Buffer server_key_params()
-  {
-    SSL3_DEBUG_MSG("KE_ECDH\n");
-    // RFC 4492 2.1:
-    // A ServerKeyExchange MUST NOT be sent (the server's certificate
-    // contains all the necessary keying information required by the client
-    // to arrive at the premaster secret).
-    return 0;
-  }
-
-  string(8bit) client_key_exchange_packet(Stdio.Buffer packet_data,
-                                          ProtocolVersion version)
-  {
-    SSL3_DEBUG_MSG("client_key_exchange_packet(%O, %d.%d)\n",
-		   packet_data, version>>8, version & 0xff);
-    SSL3_DEBUG_MSG("KE_ECDH\n");
-
-    Gmp.mpz secret = session->curve->new_scalar(context->random);
-    Crypto.ECC.Curve.Point p = session->curve * secret;
-
-    // RFC 4492 5.10:
-    // Note that this octet string (Z in IEEE 1363 terminology) as
-    // output by FE2OSP, the Field Element to Octet String
-    // Conversion Primitive, has constant length for any given
-    // field; leading zeros found in this octet string MUST NOT be
-    // truncated.
-    string premaster_secret =
-      sprintf("%*c",(session->curve->size() + 7)>>3,
-	      (get_server_point()*secret)->get_x());
-    secret = 0;
-
-    packet_data->add_hstring(p->encode(), 1);
-    return premaster_secret;
-  }
-
-  //! @returns
-  //!   Premaster secret or alert number.
-  string(8bit)|int(8bit) got_client_key_exchange(Stdio.Buffer data,
-						 ProtocolVersion version)
-  {
-    SSL3_DEBUG_MSG("got_client_key_exchange: ke_method %d\n",
-		   session->ke_method);
-
-    SSL3_DEBUG_MSG("KE_ECDH\n");
-
-    if (!sizeof(data))
-    {
-      /* Implicit encoding; Should never happen unless we have
-       * requested and received a client certificate of type
-       * rsa_fixed_dh or dss_fixed_dh. Not supported. */
-      SSL3_DEBUG_MSG("SSL.ServerConnection: Client uses implicit encoding if its DH-value.\n"
-		     "               Hanging up.\n");
-      connection->ke = UNDEFINED;
-      return ALERT_certificate_unknown;
-    }
-
-    string premaster_secret;
-
-    object point = session->curve->Point(data->read_hbuffer(1));
-    Gmp.mpz secret = get_server_secret();
-    // RFC 4492 5.10:
-    // Note that this octet string (Z in IEEE 1363 terminology) as
-    // output by FE2OSP, the Field Element to Octet String
-    // Conversion Primitive, has constant length for any given
-    // field; leading zeros found in this octet string MUST NOT be
-    // truncated.
-
-    premaster_secret =
-      sprintf("%*c", (session->curve->size() + 7)>>3, (point*secret)->get_x());
-
-    return premaster_secret;
-  }
-
-  Stdio.Buffer parse_server_key_exchange(Stdio.Buffer input)
-  {
-    SSL3_DEBUG_MSG("KE_ECDH\n");
-    // RFC 4492 2.1:
-    // A ServerKeyExchange MUST NOT be sent (the server's certificate
-    // contains all the necessary keying information required by the client
-    // to arrive at the premaster secret).
-    error("Invalid message.\n");
-  }
-}
-
 //! KeyExchange for @[KE_ecdhe_rsa] and @[KE_ecdhe_ecdsa].
 //!
 //! KeyExchange that uses Elliptic Curve Diffie-Hellman to
 //! generate an Ephemeral key.
 class KeyExchangeECDHE
 {
-  inherit KeyExchangeECDH;
+  inherit KeyExchange;
 
   protected Gmp.mpz secret;
   protected Crypto.ECC.Curve.Point point;
-
-  protected Gmp.mpz get_server_secret()
-  {
-    return secret;
-  }
-
-  protected Crypto.ECC.Curve.Point get_server_point()
-  {
-    return point;
-  }                                             \
 
   Stdio.Buffer server_key_params()
   {
@@ -1131,12 +1015,26 @@ class KeyExchangeECDHE
   string(8bit) client_key_exchange_packet(Stdio.Buffer packet_data,
                                           ProtocolVersion version)
   {
-    anonymous = 1;
-    if (!point) {
-      SSL3_DEBUG_MSG("Missing server key exchange packet.\n");
-      return 0;
-    }
-    return ::client_key_exchange_packet(packet_data, version);
+    SSL3_DEBUG_MSG("client_key_exchange_packet(%O, %d.%d)\n",
+		   packet_data, version>>8, version & 0xff);
+    SSL3_DEBUG_MSG("KE_ECDH\n");
+
+    Gmp.mpz secret = session->curve->new_scalar(context->random);
+    Crypto.ECC.Curve.Point p = session->curve * secret;
+
+    // RFC 4492 5.10:
+    // Note that this octet string (Z in IEEE 1363 terminology) as
+    // output by FE2OSP, the Field Element to Octet String
+    // Conversion Primitive, has constant length for any given
+    // field; leading zeros found in this octet string MUST NOT be
+    // truncated.
+    string premaster_secret =
+      sprintf("%*c",(session->curve->size() + 7)>>3,
+	      (point*secret)->get_x());
+    secret = 0;
+
+    packet_data->add_hstring(p->encode(), 1);
+    return premaster_secret;
   }
 
   //! @returns
@@ -1144,8 +1042,36 @@ class KeyExchangeECDHE
   string(8bit)|int(8bit) got_client_key_exchange(Stdio.Buffer data,
 						 ProtocolVersion version)
   {
-    anonymous = 1;
-    return ::got_client_key_exchange(data, version);
+    SSL3_DEBUG_MSG("got_client_key_exchange: ke_method %d\n",
+		   session->ke_method);
+
+    SSL3_DEBUG_MSG("KE_ECDH\n");
+
+    if (!sizeof(data))
+    {
+      /* Implicit encoding; Should never happen unless we have
+       * requested and received a client certificate of type
+       * rsa_fixed_dh or dss_fixed_dh. Not supported. */
+      SSL3_DEBUG_MSG("SSL.ServerConnection: Client uses implicit encoding if its DH-value.\n"
+		     "               Hanging up.\n");
+      connection->ke = UNDEFINED;
+      return ALERT_certificate_unknown;
+    }
+
+    string premaster_secret;
+
+    object point = session->curve->Point(data->read_hbuffer(1));
+    // RFC 4492 5.10:
+    // Note that this octet string (Z in IEEE 1363 terminology) as
+    // output by FE2OSP, the Field Element to Octet String
+    // Conversion Primitive, has constant length for any given
+    // field; leading zeros found in this octet string MUST NOT be
+    // truncated.
+
+    premaster_secret =
+      sprintf("%*c", (session->curve->size() + 7)>>3, (point*secret)->get_x());
+
+    return premaster_secret;
   }
 
   Stdio.Buffer parse_server_key_exchange(Stdio.Buffer input)
@@ -1178,6 +1104,51 @@ class KeyExchangeECDHE
     len = len - sizeof(input);
     key->rewind();
     return input->read_buffer(len);
+  }
+}
+
+//! KeyExchange for @[KE_ecdh_rsa] and @[KE_ecdh_ecdsa].
+//!
+//! NB: The only difference between the two is whether the certificate
+//!     is signed with RSA or ECDSA.
+//!
+//! This KeyExchange uses the Elliptic Curve parameters from
+//! the ECDSA certificate on the server side, and ephemeral
+//! parameters on the client side.
+class KeyExchangeECDH
+{
+  inherit KeyExchangeECDHE;
+
+  int(0..1) init_server()
+  {
+    secret = session->private_key->get_private_key();
+    return ::init_server();
+  }
+
+  int(0..1) init_client()
+  {
+    point = session->peer_public_key->get_point();
+    return ::init_client();
+  }
+
+  Stdio.Buffer server_key_params()
+  {
+    SSL3_DEBUG_MSG("KE_ECDH\n");
+    // RFC 4492 2.1:
+    // A ServerKeyExchange MUST NOT be sent (the server's certificate
+    // contains all the necessary keying information required by the client
+    // to arrive at the premaster secret).
+    return 0;
+  }
+
+  Stdio.Buffer parse_server_key_exchange(Stdio.Buffer input)
+  {
+    SSL3_DEBUG_MSG("KE_ECDH\n");
+    // RFC 4492 2.1:
+    // A ServerKeyExchange MUST NOT be sent (the server's certificate
+    // contains all the necessary keying information required by the client
+    // to arrive at the premaster secret).
+    error("Invalid message.\n");
   }
 }
 
