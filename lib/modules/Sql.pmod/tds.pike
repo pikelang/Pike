@@ -1208,9 +1208,12 @@ protected {
 			  raw, scale, res);
 	  return res;
 	}
+      case SYBUNIQUE:
+	{
+	  return Standards.UUID.UUID(raw)->str();
+	}
       case SYBREAL:
       case SYBFLT8:
-      case SYBUNIQUE:
       default:
 	// FIXME:
 	TDS_CONV_WERROR("Not yet supported: %d (%O)\n",
