@@ -1183,6 +1183,7 @@ protected {
 	  return res;
 	}
       case SYBNUMERIC:
+      case SYBDECIMAL:
 	{
 	  string res =
 	    sprintf("%d", array_sscanf(raw[1..],
@@ -1207,7 +1208,6 @@ protected {
 			  raw, scale, res);
 	  return res;
 	}
-      case SYBDECIMAL:
       case SYBREAL:
       case SYBFLT8:
       case SYBUNIQUE:
