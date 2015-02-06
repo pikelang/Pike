@@ -1212,6 +1212,10 @@ protected {
 	{
 	  return Standards.UUID.UUID(raw)->str();
 	}
+      case SYBFLTN:
+	{
+	  return sprintf("%g", @array_sscanf(raw, "%-" + sizeof(raw) + "F"));
+	}
       case SYBREAL:
       case SYBFLT8:
       default:
