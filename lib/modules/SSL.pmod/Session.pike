@@ -753,5 +753,6 @@ int(0..1) reusable_as(Session other)
     ecc_point_format == other->ecc_point_format &&
     encrypt_then_mac == other->encrypt_then_mac &&
     equal(signature_algorithms, other->signature_algorithms) &&
-    equal(ecc_curves, other->ecc_curves);
+    equal(ecc_curves, other->ecc_curves) &&
+    equal(ffdhe_groups, other->ffdhe_groups);
 }
