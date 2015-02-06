@@ -13632,4 +13632,14 @@ test_do(add_constant("OBJ"))
 dnl / : ; ^ _ > hasn't been tested
 test_eval_error(return sprintf("%d");)
 
+test_any([[
+    class A {
+        object true = Val.true;
+        object false = Val.false;
+        object null = Val.null;
+    };
+    object a = A();
+    return objectp(a->type) && objectp(a->false) && objectp(a->null);
+]], 1)
+
 END_MARKER
