@@ -1691,14 +1691,21 @@ new_name: optional_stars TOK_IDENTIFIER
        * NB: The compat test is due to that this changes the semantics
        *     of calling __INIT() by hand.
        */
-      if (SAFE_IS_ZERO(&$5->u.sval) &&
-	  !SUBTYPEOF($5->u.sval) &&
+      if ((TYPEOF($5->u.sval) == PIKE_T_INT) && !SUBTYPEOF($5->u.sval) &&
+	  !$5->u.sval.u.integer &&
 	  !IDENTIFIER_IS_ALIAS(ID_FROM_INT(Pike_compiler->new_program,
 					   $<number>4)->identifier_flags)) {
 	/* NB: Inherited variables get converted into aliases by
 	 *     define_variable, and we need to support clearing
 	 *     of inherited variables.
 	 */
+#ifdef PIKE_DEBUG
+	if (l_flag > 5) {
+	  fprintf(stderr,
+		  "Ignoring initialization to zero for variable %s.\n",
+		  $2->u.sval.u.string->str);
+	}
+#endif /* PIKE_DEBUG */
 	free_node($5);
 	$5 = NULL;
       }
