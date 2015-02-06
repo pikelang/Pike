@@ -548,7 +548,7 @@ mapping run(string|array(string) cmd, void|mapping modifiers)
   if(!modifiers)
     modifiers = ([]);
 
-  if((modifiers->stdout && !ccallablep(modifiers->stdout))
+  if((modifiers->stdout && !callablep(modifiers->stdout))
     || (modifiers->stderr && !callablep(modifiers->stderr)))
     throw( ({ "Can not redirect stdout or stderr in Process.run, "
               "please use Process.Process instead.", backtrace() }) );
