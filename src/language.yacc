@@ -1860,7 +1860,7 @@ block:'{'
   statements end_block
   {
     unuse_modules(Pike_compiler->num_used_modules - $<number>1);
-    pop_local_variables($<number>2);
+    $5 = pop_local_variables($<number>2, $5);
     Pike_compiler->compiler_frame->last_block_level=$<number>4;
     if ($5) COPY_LINE_NUMBER_INFO($5, $3);
     free_node ($3);
@@ -3005,7 +3005,7 @@ cond: TOK_IF
     $$ = mkcastnode(void_type_string, $$);
     COPY_LINE_NUMBER_INFO($$, $3);
     free_node ($3);
-    pop_local_variables($<number>2);
+    $$ = pop_local_variables($<number>2, $$);
     Pike_compiler->compiler_frame->last_block_level=$<number>4;
   }
   ;
@@ -3074,7 +3074,7 @@ foreach: TOK_FOREACH
     }
     COPY_LINE_NUMBER_INFO($$, $3);
     free_node ($3);
-    pop_local_variables($<number>2);
+    $$ = pop_local_variables($<number>2, $$);
     Pike_compiler->compiler_frame->last_block_level=$<number>4;
     Pike_compiler->compiler_frame->opt_flags |= OPT_CUSTOM_LABELS;
   }
@@ -3129,7 +3129,7 @@ for: TOK_FOR
 	      mknode(F_FOR,$8,mknode(':',$12,$10)));
     COPY_LINE_NUMBER_INFO($$, $3);
     free_node ($3);
-    pop_local_variables($<number>2);
+    $$ = pop_local_variables($<number>2, $$);
     Pike_compiler->compiler_frame->last_block_level=$<number>4;
     Pike_compiler->compiler_frame->opt_flags |= OPT_CUSTOM_LABELS;
   }
@@ -3151,7 +3151,7 @@ while:  TOK_WHILE
     $$=mknode(F_FOR,$6,mknode(':',$8,NULL));
     COPY_LINE_NUMBER_INFO($$, $3);
     free_node ($3);
-    pop_local_variables($<number>2);
+    $$ = pop_local_variables($<number>2, $$);
     Pike_compiler->compiler_frame->last_block_level=$<number>4;
     Pike_compiler->compiler_frame->opt_flags |= OPT_CUSTOM_LABELS;
   }
@@ -3176,7 +3176,7 @@ switch:	TOK_SWITCH
     $$=mknode(F_SWITCH,$6,$8);
     COPY_LINE_NUMBER_INFO($$, $3);
     free_node ($3);
-    pop_local_variables($<number>2);
+    $$ = pop_local_variables($<number>2, $$);
     Pike_compiler->compiler_frame->last_block_level=$<number>4;
   }
   ;
@@ -3449,7 +3449,7 @@ optional_block: /* EMPTY */ { $$=0; }
 
     /* block code */
     unuse_modules(Pike_compiler->num_used_modules - $<number>1);
-    pop_local_variables($<number>4);
+    $5 = pop_local_variables($<number>4, $5);
 
     debug_malloc_touch($5);
     $5=mknode(F_COMMA_EXPR,$5,mknode(F_RETURN,mkintnode(0),0));

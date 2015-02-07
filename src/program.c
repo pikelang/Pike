@@ -11393,13 +11393,21 @@ void push_compiler_frame(int lexical_scope)
   Pike_compiler->compiler_frame=f;
 }
 
-void low_pop_local_variables(int level)
+node *low_pop_local_variables(int level, node *block)
 {
   struct compilation *c = THIS_COMPILATION;
   while(Pike_compiler->compiler_frame->current_number_of_locals > level)
   {
     int e;
     e=--(Pike_compiler->compiler_frame->current_number_of_locals);
+    if (block) {
+      block = mknode(F_COMMA_EXPR, block,
+		     mknode(F_POP_VALUE,
+			    mknode(F_ASSIGN,
+				   mkintnode(0),
+				   mklocalnode(e, 0)),
+			    NULL));
+    }
     if ((Pike_compiler->compiler_pass == 2) &&
 	!(Pike_compiler->compiler_frame->variable[e].flags &
 	  LOCAL_VAR_IS_USED)) {
@@ -11417,9 +11425,10 @@ void low_pop_local_variables(int level)
 
     free_string(Pike_compiler->compiler_frame->variable[e].file);
   }
+  return block;
 }
 
-void pop_local_variables(int level)
+node *pop_local_variables(int level, node *block)
 {
 #if 1
   struct compilation *c = THIS_COMPILATION;
@@ -11450,7 +11459,7 @@ void pop_local_variables(int level)
     }
   }
 #endif
-  low_pop_local_variables(level);
+  return low_pop_local_variables(level, block);
 }
 
 
@@ -11464,7 +11473,7 @@ void pop_compiler_frame(void)
     Pike_fatal("Popping out of compiler frames\n");
 #endif
 
-  low_pop_local_variables(0);
+  low_pop_local_variables(0, NULL);
   if(f->current_type)
     free_type(f->current_type);
 
