@@ -118,9 +118,19 @@ BYTE ENTRY START_FUNCTION CLEAR_N_LOCAL [$1a <= $4a] : BYTE($1a) ENTRY START_FUN
 
 CLEAR_LOCAL CLEAR_LOCAL($1a) : CLEAR_LOCAL($1a)
 CLEAR_LOCAL CLEAR_LOCAL($1a+1) : CLEAR_N_LOCAL($1a,2)
+CLEAR_LOCAL CLEAR_LOCAL($1a-1) : CLEAR_N_LOCAL($2a,2)
 
 CLEAR_LOCAL CLEAR_N_LOCAL($1a+1)   : CLEAR_N_LOCAL($1a,$2b+1)
+CLEAR_N_LOCAL CLEAR_LOCAL($1a-1)   : CLEAR_N_LOCAL($1a-1, $1b+1)
 CLEAR_N_LOCAL CLEAR_LOCAL($1a+$1b) : CLEAR_N_LOCAL($1a,$1b+1)
+
+// Overlapping range and single:
+CLEAR_LOCAL CLEAR_N_LOCAL [$1a >= $2a] [$1a < $2a+$2b] : CLEAR_N_LOCAL($2a, $2b)
+CLEAR_N_LOCAL CLEAR_LOCAL [$1a <= $2a] [$2a < $1a+$1b] : CLEAR_N_LOCAL($1a, $1b)
+
+// Joining of ranges:
+CLEAR_N_LOCAL CLEAR_N_LOCAL [$1a <= $2a] [$1a + $1b >= $2a] : CLEAR_N_LOCAL($1a, MAXIMUM($1a + $1b, $2a + $2b) - $1a)
+CLEAR_N_LOCAL CLEAR_N_LOCAL [$2a <= $1a] [$2a + $2b >= $1a] : CLEAR_N_LOCAL($2a, MAXIMUM($1a + $1b, $2a + $2b) - $2a)
 
 // Attempt to de-interleave clearing of locals.
 CONST0 CLEAR_LOCAL : CLEAR_LOCAL($2a) CONST0
@@ -130,6 +140,14 @@ NUMBER CLEAR_LOCAL : CLEAR_LOCAL($2a) NUMBER($1a)
 NEG_NUMBER CLEAR_LOCAL : CLEAR_LOCAL($2a) NEG_NUMBER($1a)
 CONSTANT CLEAR_LOCAL : CLEAR_LOCAL($2a) CONSTANT($1a)
 
+// FIXME:
+//   The following aren't sound as they need to account for
+//   frame->min_number_of_locals to not affect trampolines.
+//   The cleanest fix is probably to move trampolies to true objects.
+// CLEAR_LOCAL RETURN_0: RETURN_0
+// CLEAR_LOCAL_RETURN_1: RETURN_1
+// CLEAR_N_LOCAL RETURN_0: RETURN_0
+// CLEAR_N_LOCAL RETURN_1: RETURN_1
 
 // CONST_1 MULTIPLY : NEGATE
 // CONST0 MULTIPLY : POP_VALUE CONST0
