@@ -324,18 +324,18 @@ program_flags PROGRAM_CLEAR_STORAGE;
 
 #endif /* dsa_params_init */
 
+#define SECP192R1 0
+#define SECP224R1 1
+#define SECP256R1 2
+#define SECP384R1 3
+#define SECP521R1 4
+
 #ifdef HAVE_NETTLE_ECDSA_H
 #include <nettle/ecc-curve.h>
 
 #include <nettle/ecc.h>
 
 #include <nettle/ecdsa.h>
-
-#define SECP192R1 0
-#define SECP224R1 1
-#define SECP256R1 2
-#define SECP384R1 3
-#define SECP521R1 4
 
 /*! @class ECC_Curve
  *!
