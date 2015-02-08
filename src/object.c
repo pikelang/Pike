@@ -1235,9 +1235,9 @@ static void assign_svalue_from_ptr_no_free(struct svalue *to,
  *       compiling program (notably lfun::`->()) and thus
  *       execute in place-holder objacts.
  */
-PMOD_EXPORT void low_object_index_no_free(struct svalue *to,
-					  struct object *o,
-					  ptrdiff_t f)
+PMOD_EXPORT int low_object_index_no_free(struct svalue *to,
+					 struct object *o,
+					 ptrdiff_t f)
 {
   struct identifier *i;
   struct program *p = NULL;
@@ -1258,7 +1258,7 @@ PMOD_EXPORT void low_object_index_no_free(struct svalue *to,
        * The most common cases of object indexing should match these.
        */
       assign_svalue_from_ptr_no_free(to, o, ref->run_time_type, ref->func);
-      return;
+      return ref->run_time_type;
     }
 
     i=ID_FROM_PTR(p, ref);
@@ -1322,7 +1322,7 @@ PMOD_EXPORT void low_object_index_no_free(struct svalue *to,
 	/* Prototype constant. */
 	SET_SVAL(*to, T_INT, NUMBER_NUMBER, integer, 0);
       }
-      break;
+      return T_SVALUE_PTR;
     }
 
   case IDENTIFIER_VARIABLE:
@@ -1367,16 +1367,17 @@ PMOD_EXPORT void low_object_index_no_free(struct svalue *to,
     Pike_fatal ("Unknown identifier type.\n");
 #endif
   }
+  return ref->run_time_type;
 }
 
 /* Get a variable without going through `->= or `[]= lfuns. If index
  * is a string then the externally visible identifiers are indexed. If
  * index is T_OBJ_INDEX then any identifier is accessed through
  * identifier index. */
-PMOD_EXPORT void object_index_no_free2(struct svalue *to,
-				       struct object *o,
-				       int inherit_number,
-				       struct svalue *index)
+PMOD_EXPORT int object_index_no_free2(struct svalue *to,
+				      struct object *o,
+				      int inherit_number,
+				      struct svalue *index)
 {
   struct program *p;
   struct inherit *inh;
@@ -1385,7 +1386,7 @@ PMOD_EXPORT void object_index_no_free2(struct svalue *to,
   if(!o || !(p=o->prog))
   {
     Pike_error("Lookup in destructed object.\n");
-    return; /* make gcc happy */
+    return T_VOID; /* make gcc happy */
   }
 
   p = (inh = p->inherits + inherit_number)->prog;
@@ -1412,8 +1413,9 @@ PMOD_EXPORT void object_index_no_free2(struct svalue *to,
   if(f < 0)
   {
     SET_SVAL(*to, T_INT, NUMBER_UNDEFINED, integer, 0);
+    return T_VOID;
   }else{
-    low_object_index_no_free(to, o, f);
+    return low_object_index_no_free(to, o, f);
   }
 }
 
@@ -1421,10 +1423,10 @@ PMOD_EXPORT void object_index_no_free2(struct svalue *to,
 
 /* Get a variable through external indexing, i.e. by going through
  * `-> or `[] lfuns, not seeing private and protected etc. */
-PMOD_EXPORT void object_index_no_free(struct svalue *to,
-				      struct object *o,
-				      int inherit_number,
-				      struct svalue *index)
+PMOD_EXPORT int object_index_no_free(struct svalue *to,
+				     struct object *o,
+				     int inherit_number,
+				     struct svalue *index)
 {
   struct program *p = NULL;
   struct inherit *inh;
@@ -1433,7 +1435,7 @@ PMOD_EXPORT void object_index_no_free(struct svalue *to,
   if(!o || !(p=o->prog))
   {
     Pike_error("Lookup in destructed object.\n");
-    return; /* make gcc happy */
+    return T_VOID; /* make gcc happy */
   }
 
   p = (inh = p->inherits + inherit_number)->prog;
@@ -1464,7 +1466,7 @@ PMOD_EXPORT void object_index_no_free(struct svalue *to,
 #endif
 	SET_SVAL(*to, T_OBJECT, 0, object, placeholder_object);
 	add_ref(placeholder_object);
-	return;
+	return T_MIXED;
       }
     }
     l=low_find_lfun(p, lfun);
@@ -1477,8 +1479,9 @@ PMOD_EXPORT void object_index_no_free(struct svalue *to,
     *to=sp[-1];
     sp--;
     dmalloc_touch_svalue(sp);
+    return PIKE_T_GET_SET;
   } else {
-    object_index_no_free2(to, o, inherit_number, index);
+    return object_index_no_free2(to, o, inherit_number, index);
   }
 }
 
@@ -2736,8 +2739,7 @@ static void f_magic_index(INT32 args)
     push_undefined();
   }else{
     struct svalue sval;
-    low_object_index_no_free(&sval,o,f+
-			     inherit->identifier_level);
+    low_object_index_no_free(&sval,o,f+inherit->identifier_level);
     *sp=sval;
     sp++;
     dmalloc_touch_svalue(Pike_sp-1);
@@ -3061,8 +3063,8 @@ static void f_magic_values (INT32 args)
       if (ref->id_flags & ID_HIDDEN) continue;
       if ((ref->id_flags & (ID_INHERITED|ID_PRIVATE)) ==
 	  (ID_INHERITED|ID_PRIVATE)) continue;
-      low_object_index_no_free (ITEM(res) + i, obj,
-				e + inherit->identifier_level);
+      low_object_index_no_free(ITEM(res) + i, obj,
+			       e + inherit->identifier_level);
       types |= 1 << TYPEOF(ITEM(res)[i]);
       i++;
     }
@@ -3076,8 +3078,8 @@ static void f_magic_values (INT32 args)
   push_array (res = allocate_array_no_init (prog->num_identifier_index, 0));
   types = 0;
   for (e = 0; e < (int) prog->num_identifier_index; e++) {
-    low_object_index_no_free (ITEM(res) + e, obj,
-			      prog->identifier_index[e] + inherit->identifier_level);
+    low_object_index_no_free(ITEM(res) + e, obj,
+			     prog->identifier_index[e] + inherit->identifier_level);
     types |= 1 << TYPEOF(ITEM(res)[e]);
   }
   res->type_field = types;

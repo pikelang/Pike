@@ -107,17 +107,17 @@ PMOD_EXPORT void destruct_object (struct object *o, enum object_destruct_reason 
 PMOD_EXPORT void low_destruct_objects_to_destruct(void);
 void destruct_objects_to_destruct_cb(void);
 PMOD_EXPORT void schedule_really_free_object(struct object *o);
-PMOD_EXPORT void low_object_index_no_free(struct svalue *to,
-					  struct object *o,
-					  ptrdiff_t f);
-PMOD_EXPORT void object_index_no_free2(struct svalue *to,
-				       struct object *o,
-				       int inherit_level,
-				       struct svalue *key);
-PMOD_EXPORT void object_index_no_free(struct svalue *to,
+PMOD_EXPORT int low_object_index_no_free(struct svalue *to,
+					 struct object *o,
+					 ptrdiff_t f);
+PMOD_EXPORT int object_index_no_free2(struct svalue *to,
 				      struct object *o,
 				      int inherit_level,
 				      struct svalue *key);
+PMOD_EXPORT int object_index_no_free(struct svalue *to,
+				     struct object *o,
+				     int inherit_level,
+				     struct svalue *key);
 PMOD_EXPORT void object_low_set_index(struct object *o,
 				      int f,
 				      struct svalue *from);
