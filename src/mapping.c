@@ -1876,6 +1876,8 @@ void o_append_mapping( INT32 args )
 {
   struct svalue *lval = Pike_sp - args;
   struct svalue *val = lval + 2;
+  int lvalue_type;
+
 #ifdef PIKE_DEBUG
   if (args < 3) {
     Pike_fatal("Too few arguments to o_append_mapping(): %d\n", args);
@@ -1883,10 +1885,9 @@ void o_append_mapping( INT32 args )
 #endif
   args -= 3;
   /* Note: val should always be a zero here! */
-  lvalue_to_svalue_no_free(val, lval);
+  lvalue_type = lvalue_to_svalue_no_free(val, lval);
 
-  if (TYPEOF(*val) == T_MAPPING)
-  {
+  if ((TYPEOF(*val) == T_MAPPING) && (lvalue_type != PIKE_T_GET_SET)) {
     struct mapping *m = val->u.mapping;
     if( m->refs == 2 )
     {
