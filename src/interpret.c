@@ -392,11 +392,13 @@ int lvalue_to_svalue_no_free(struct svalue *to, struct svalue *lval)
       break;
 
     case T_OBJECT:
-      /* FIXME: Object subtypes! */
+      /* FIXME: Index subtypes! */
       if (TYPEOF(lval[1]) == T_OBJ_INDEX)
-	low_object_index_no_free (to, lval->u.object, lval[1].u.identifier);
+	run_time_type = low_object_index_no_free(to, lval->u.object,
+						 lval[1].u.identifier);
       else
-	object_index_no_free(to, lval->u.object, SUBTYPEOF(*lval), lval+1);
+	run_time_type = object_index_no_free(to, lval->u.object,
+					     SUBTYPEOF(*lval), lval+1);
       break;
       
     case T_ARRAY:
