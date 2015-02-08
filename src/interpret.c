@@ -358,14 +358,15 @@ PMOD_EXPORT void init_interpreter(void)
  * lvalue array: { T_ARRAY_LVALUE, array with lvalue pairs }
  */
 
-void lvalue_to_svalue_no_free(struct svalue *to,struct svalue *lval)
+int lvalue_to_svalue_no_free(struct svalue *to, struct svalue *lval)
 {
+  int run_time_type;
 #ifdef PIKE_SECURITY
   if(TYPEOF(*lval) <= MAX_COMPLEX)
     if(!CHECK_DATA_SECURITY(lval->u.array, SECURITY_BIT_INDEX))
       Pike_error("Index permission denied.\n");
 #endif
-  switch(TYPEOF(*lval))
+  switch(run_time_type = TYPEOF(*lval))
   {
    case T_ARRAY_LVALUE:
     {
@@ -421,6 +422,7 @@ void lvalue_to_svalue_no_free(struct svalue *to,struct svalue *lval)
       else
 	index_error(0,0,0,lval,lval+1,"Indexing a basic type.\n");
   }
+  return run_time_type;
 }
 
 PMOD_EXPORT void assign_lvalue(struct svalue *lval,struct svalue *from)
