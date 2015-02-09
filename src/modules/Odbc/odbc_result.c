@@ -246,30 +246,37 @@ static void odbc_fix_fields(void)
     case SQL_NUMERIC:
       push_text("numeric");
       odbc_field_types[i] = SQL_C_CHAR;
+      odbc_field_sizes[i]++;	/* Allow for a sign chanracter. */
       break;
     case SQL_DECIMAL:
       push_text("decimal");
       odbc_field_types[i] = SQL_C_CHAR;
+      odbc_field_sizes[i]++;	/* Allow for a sign chanracter. */
       break;
     case SQL_INTEGER:
       push_text("integer");
       odbc_field_types[i] = SQL_C_CHAR;
+      odbc_field_sizes[i]++;	/* Allow for a sign chanracter. */
       break;
     case SQL_SMALLINT:
       push_text("short");
       odbc_field_types[i] = SQL_C_CHAR;
+      odbc_field_sizes[i]++;	/* Allow for a sign chanracter. */
       break;
     case SQL_FLOAT:
       ref_push_string(literal_float_string);
       odbc_field_types[i] = SQL_C_CHAR;
+      odbc_field_sizes[i]++;	/* Allow for a sign chanracter. */
       break;
     case SQL_REAL:
       push_text("real");
       odbc_field_types[i] = SQL_C_CHAR;
+      odbc_field_sizes[i]++;	/* Allow for a sign chanracter. */
       break;
     case SQL_DOUBLE:
       push_text("double");
       odbc_field_types[i] = SQL_C_CHAR;
+      odbc_field_sizes[i]++;	/* Allow for a sign chanracter. */
       break;
     case SQL_VARCHAR:
 #ifdef SQL_WVARCHAR
@@ -318,9 +325,11 @@ static void odbc_fix_fields(void)
       break;
     case SQL_BIGINT:
       push_text("long integer");
+      odbc_field_sizes[i]++;	/* Allow for a sign chanracter. */
       break;
     case SQL_TINYINT:
       push_text("tiny integer");
+      odbc_field_sizes[i]++;	/* Allow for a sign chanracter. */
       break;
     case SQL_BIT:
       push_text("bit");
