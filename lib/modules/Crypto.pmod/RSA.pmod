@@ -432,7 +432,7 @@ class State {
   //!   @[rsa_pad], @[raw_sign]
   int(0..1) raw_verify(string(8bit) digest, Gmp.mpz s)
   {
-    return Gmp.mpz(s)->powm(e, n) == rsa_pad(digest, 1, 0);
+    return Gmp.smpz(s)->powm(e, n) == rsa_pad(digest, 1, 0);
   }
 }
 
