@@ -1201,7 +1201,7 @@ protected {
 	  }
 
 	  // Fix the sign.
-	  if (!res[0]) {
+	  if (!raw[0]) {
 	    res = "-" + res;
 	  }
 	  TDS_CONV_WERROR("%O (scale: %d) ==> %O\n",
