@@ -740,9 +740,10 @@ protected class Monitor(string path,
     
     //  Note: ctime seems to change unexpectedly when running ImageMagick
     //        on NFS disk so we disable it for the moment [bug 5587].
-    if ((st->mtime != old_st->mtime) ||
-	/* (st->ctime != old_st->ctime) || */
-	(st->size != old_st->size)) {
+    if (last_change != -0x7fffffff &&
+	((st->mtime != old_st->mtime) ||
+	 /* (st->ctime != old_st->ctime) || */
+	 (st->size != old_st->size))) {
       last_change = time(1);
       update(st);
       if (status_change(old_st, st, orig_flags, flags)) return 1;
