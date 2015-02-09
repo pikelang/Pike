@@ -686,7 +686,7 @@ class KeyExchangeDHE
   Crypto.DH.Parameters parameters;
 
   Gmp.mpz our; /* Our value */
-  Gmp.mpz other; /* Other party's value */
+  private Gmp.smpz other; /* Other party's value */
   Gmp.mpz secret; /* our =  g ^ secret mod p */
 
   protected void new_secret()
@@ -707,7 +707,7 @@ class KeyExchangeDHE
   //!   Returns @expr{1@} if @[o] is valid for the set @[parameters].
   //!
   //!   Otherwise returns @[UNDEFINED].
-  protected int(0..1) set_other(Gmp.mpz o)
+  protected int(0..1) set_other(Gmp.smpz o)
   {
     if ((o <= 1) || (o >= (parameters->p - 1))) {
       // Negotiated FF DHE Parameters Draft 4 3:
@@ -818,7 +818,7 @@ class KeyExchangeDHE
       return ALERT_certificate_unknown;
     }
 
-    if (!set_other(Gmp.mpz(input->read_hint(2)))) {
+    if (!set_other(Gmp.smpz(input->read_hint(2)))) {
       connection->ke = UNDEFINED;
       return ALERT_handshake_failure;
     }
@@ -851,7 +851,7 @@ class KeyExchangeDHE
     }
 
     parameters = params;
-    if (!set_other(Gmp.mpz(o,256))) {
+    if (!set_other(Gmp.smpz(o,256))) {
       SSL3_DEBUG_MSG("DH Ys not valid for set parameters.\n");
       parameters = 0;
       return 0;
@@ -889,7 +889,7 @@ class KeyExchangeDH
       return 0;
     }
     parameters = p;
-    if (!set_other(session->peer_public_key->get_y())) {
+    if (!set_other(Gmp.smpz(session->peer_public_key->get_y()))) {
       SSL3_DEBUG_MSG("DH Ys not valid for set parameters.\n");
       parameters = 0;
       return 0;
@@ -938,7 +938,7 @@ class KeyShareDHE
 
   string(8bit) receive_key_share_offer(string(8bit) offer)
   {
-    set_other(Gmp.mpz(offer, 256));
+    set_other(Gmp.smpz(offer, 256));
 
     string(8bit) premaster_secret = get_shared()->digits(256);
 

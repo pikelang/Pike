@@ -307,7 +307,7 @@ class State {
   //! Decrypt a message encrypted with @[encrypt].
   string(8bit) decrypt(string(8bit) s)
   {
-    return rsa_unpad(Gmp.mpz(s, 256)->powm(d, n), 2);
+    return rsa_unpad(Gmp.smpz(s, 256)->powm(d, n), 2);
   }
 
   //
@@ -401,7 +401,7 @@ class State {
     default:
       error( "Unknown type.\n" );
     }
-    return Gmp.mpz(sprintf("%c", type) + padding + "\0" + message, 256);
+    return Gmp.smpz(sprintf("%c", type) + padding + "\0" + message, 256);
   }
 
   //! Reverse the effect of @[rsa_pad].
@@ -432,7 +432,7 @@ class State {
   //!   @[rsa_pad], @[raw_sign]
   int(0..1) raw_verify(string(8bit) digest, Gmp.mpz s)
   {
-    return s->powm(e, n) == rsa_pad(digest, 1, 0);
+    return Gmp.mpz(s)->powm(e, n) == rsa_pad(digest, 1, 0);
   }
 }
 
