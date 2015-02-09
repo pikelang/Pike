@@ -243,7 +243,10 @@ protected class Monitor(string path,
 
   int next_poll;
   Stdio.Stat st;
-  int last_change = 0x7fffffff;	// Future...
+  int last_change = 0x7fffffff;	// Future... Can be set to -0x7fffffff
+				// to indicate immediate stabilization
+				// (avoid an extra check() round to
+				// let the stat stabilize).
   array(string) files;
 
 #ifdef HAVE_INOTIFY
