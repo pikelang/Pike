@@ -156,9 +156,7 @@ struct precompiled_odbc_result {
 /*
  * Prototypes
  */
-#ifdef SQL_WCHAR
 void push_sqlwchar(SQLWCHAR *str, size_t num_bytes);
-#endif /* SQL_WCHAR */
 void odbc_error(const char *fun, const char *msg,
 		struct precompiled_odbc *odbc, SQLHSTMT hstmt,
 		RETCODE code, void (*clean)(void *), void *clean_arg);

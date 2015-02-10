@@ -92,7 +92,6 @@ int odbc_driver_is_old_freetds(HDBC odbc_conn)
  * Helper functions
  */
 
-#ifdef SQL_WCHAR
 struct pike_string *make_shared_binary_sqlwchar(SQLWCHAR *str,
 						size_t len)
 {
@@ -105,7 +104,6 @@ void push_sqlwchar(SQLWCHAR *str, size_t len)
 {
   push_string(make_shared_binary_sqlwchar(str, len));
 }
-#endif /* SQL_WCHAR */
 
 void odbc_error(const char *fun, const char *msg,
 		struct precompiled_odbc *odbc, SQLHSTMT hstmt,
@@ -125,26 +123,15 @@ void odbc_error(const char *fun, const char *msg,
 		RETCODE code, void (*clean)(void *), void *clean_arg)
 {
   RETCODE _code;
-#ifdef SQL_WCHAR
   SQLWCHAR errcode[256];
   SQLWCHAR errmsg[SQL_MAX_MESSAGE_LENGTH];
-#else
-  unsigned char errcode[256];
-  unsigned char errmsg[SQL_MAX_MESSAGE_LENGTH];
-#endif
   SWORD errmsg_len = 0;
   SDWORD native_error;
   HDBC hdbc = odbc->hdbc;
 
   ODBC_ALLOW();
-  _code =
-#ifdef SQL_WCHAR
-    SQLErrorW
-#else
-    SQLError
-#endif
-    (odbc_henv, hdbc, hstmt, errcode, &native_error,
-     errmsg, (SQL_MAX_MESSAGE_LENGTH-1), &errmsg_len);
+  _code = SQLErrorW(odbc_henv, hdbc, hstmt, errcode, &native_error,
+		    errmsg, (SQL_MAX_MESSAGE_LENGTH-1), &errmsg_len);
   errmsg[errmsg_len] = '\0';
   ODBC_DISALLOW();
 
@@ -152,11 +139,7 @@ void odbc_error(const char *fun, const char *msg,
     if (odbc->last_error) {
       free_string(odbc->last_error);
     }
-#ifdef SQL_WCHAR
     odbc->last_error = make_shared_binary_sqlwchar(errmsg, errmsg_len);
-#else
-    odbc->last_error = make_shared_binary_string((char *)errmsg, errmsg_len);
-#endif
   }
 
   if (clean) {
@@ -165,15 +148,9 @@ void odbc_error(const char *fun, const char *msg,
   switch(_code) {
   case SQL_SUCCESS:
   case SQL_SUCCESS_WITH_INFO:
-#ifdef SQL_WCHAR
     Pike_error("%s(): %s:\n"
 	  "%d:%ls:%ls\n",
 	  fun, msg, code, errcode, errmsg);
-#else
-    Pike_error("%s(): %s:\n"
-	  "%d:%s:%s\n",
-	  fun, msg, code, errcode, errmsg);
-#endif
     break;
   case SQL_ERROR:
     Pike_error("%s(): %s:\n"
@@ -612,13 +589,8 @@ static void f_reload(INT32 args)
  */
 static void f_list_dbs(INT32 args)
 {
-#ifdef SQL_WCHAR
   static SQLWCHAR buf[SQL_MAX_DSN_LENGTH+1];
   static SQLWCHAR descr[256];
-#else
-  static UCHAR buf[SQL_MAX_DSN_LENGTH+1];
-  static UCHAR descr[256];
-#endif
   SQLSMALLINT buf_len = 0;
   SQLSMALLINT descr_len = 0;
   int cnt = 0;
@@ -627,35 +599,19 @@ static void f_list_dbs(INT32 args)
   pop_n_elems(args);
 
   ODBC_ALLOW();
-  ret =
-#ifdef SQL_WCHAR
-    SQLDataSourcesW
-#else
-    SQLDataSources
-#endif
-    (odbc_henv, SQL_FETCH_FIRST,
-     buf, SQL_MAX_DSN_LENGTH, &buf_len,
-     descr, 255, &descr_len);
+  ret = SQLDataSourcesW(odbc_henv, SQL_FETCH_FIRST,
+			buf, SQL_MAX_DSN_LENGTH, &buf_len,
+			descr, 255, &descr_len);
   ODBC_DISALLOW();
 
   while ((ret == SQL_SUCCESS) || (ret == SQL_SUCCESS_WITH_INFO)) {
-#ifdef SQL_WCHAR
     push_sqlwchar(buf, buf_len);
-#else
-    push_string(make_shared_binary_string(buf, buf_len));
-#endif
     cnt++;
 
     ODBC_ALLOW();
-    ret =
-#ifdef SQL_WCHAR
-      SQLDataSourcesW
-#else
-      SQLDataSources
-#endif
-      (odbc_henv, SQL_FETCH_NEXT,
-       buf, SQL_MAX_DSN_LENGTH, &buf_len,
-       descr, 255, &descr_len);
+    ret = SQLDataSourcesW(odbc_henv, SQL_FETCH_NEXT,
+			  buf, SQL_MAX_DSN_LENGTH, &buf_len,
+			  descr, 255, &descr_len);
     ODBC_DISALLOW();
   }
 

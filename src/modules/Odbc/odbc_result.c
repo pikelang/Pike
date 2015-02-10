@@ -139,11 +139,7 @@ static void odbc_fix_fields(void)
   SQLULEN *odbc_field_sizes =
     alloca(sizeof(SQLULEN) * PIKE_ODBC_RES->num_fields);
   size_t buf_size = 1024;
-#ifdef SQL_WCHAR
   SQLWCHAR *buf = alloca(buf_size * sizeof(SQLWCHAR));
-#else
-  unsigned char *buf = alloca(buf_size);
-#endif
 
   if ((!buf)||(!odbc_field_types)) {
     Pike_error("odbc_fix_fields(): Out of memory\n");
@@ -163,51 +159,29 @@ static void odbc_fix_fields(void)
     while (1) {
       RETCODE code;
       ODBC_ALLOW();
-      code =
-#ifdef SQL_WCHAR
-	SQLDescribeColW
-#else
-	SQLDescribeCol
-#endif
-	(hstmt, i+1,
-	 buf,
-	 DO_NOT_WARN((SQLSMALLINT)buf_size),
-	 &name_len,
-	 &sql_type, &precision, &scale, &nullable);
+      code = SQLDescribeColW(hstmt, i+1,
+			     buf,
+			     DO_NOT_WARN((SQLSMALLINT)buf_size),
+			     &name_len,
+			     &sql_type, &precision, &scale, &nullable);
       ODBC_DISALLOW();
       odbc_check_error("odbc_fix_fields", "Failed to fetch field info",
 		       code, NULL, NULL);
-      if (name_len
-#ifdef SQL_WCHAR
-	  * (ptrdiff_t)sizeof(SQLWCHAR)
-#endif
-	  < (ptrdiff_t)buf_size) {
+      if ((name_len * (ptrdiff_t)sizeof(SQLWCHAR)) < (ptrdiff_t)buf_size) {
 	break;
       }
       do {
 	buf_size *= 2;
-      } while (name_len
-#ifdef SQL_WCHAR
-	       * (ptrdiff_t)sizeof(SQLWCHAR)
-#endif
-	       >= (ptrdiff_t)buf_size);
-      if (!(buf = alloca(
-			 buf_size
-#ifdef SQL_WCHAR
-			 * sizeof(SQLWCHAR)
-#endif
-			 ))) {
+      } while ((name_len * (ptrdiff_t)sizeof(SQLWCHAR)) >= (ptrdiff_t)buf_size);
+      if (!(buf = alloca(buf_size * sizeof(SQLWCHAR)))) {
 	Pike_error("odbc_fix_fields(): Out of memory\n");
       }
     }
 #ifdef ODBC_DEBUG
-    fprintf(stderr, "ODBC:odbc_fix_fields():\n"
-#ifdef SQL_WCHAR
-	    "name:%ls\n"
-#else
-	    "name:%s\n"
-#endif
-	    "", buf);
+    fprintf(stderr,
+	    "ODBC:odbc_fix_fields():\n"
+	    "name:%ls\n",
+	    buf);
     fprintf(stderr,
 	    "name_len:%d\n"
 	    "sql_type:%d\n"
@@ -218,29 +192,16 @@ static void odbc_fix_fields(void)
 #endif /* ODBC_DEBUG */
     /* Create the mapping */
     push_text("name");
-#ifdef SQL_WCHAR
     push_sqlwchar(buf, name_len);
-#else
-    push_string(make_shared_binary_string((char *)buf, name_len));
-#endif
     push_text("type");
-#ifdef SQL_WCHAR
 #ifdef ODBC_DEBUG
     fprintf(stderr, "SQL_C_WCHAR\n");
 #endif /* ODBC_DEBUG */
     odbc_field_types[i] = SQL_C_WCHAR;
-#else
-#ifdef ODBC_DEBUG
-    fprintf(stderr, "SQL_C_CHAR\n");
-#endif /* ODBC_DEBUG */
-    odbc_field_types[i] = SQL_C_CHAR;
-#endif
     odbc_field_sizes[i] = precision;
     switch(sql_type) {
     case SQL_CHAR:
-#ifdef SQL_WCHAR
     case SQL_WCHAR:
-#endif
       push_text("string");
       break;
     case SQL_NUMERIC:
@@ -368,7 +329,6 @@ static void odbc_fix_fields(void)
    */
   for (i=0; i < PIKE_ODBC_RES->num_fields; i++) {
     PIKE_ODBC_RES->field_info[i].type = odbc_field_types[i];
-#ifdef SQL_WCHAR
     if (odbc_field_types[i] == SQL_C_WCHAR) {
       /* NOTE: Field size is in characters, while SQLGetData()
        *       wants bytes.
@@ -376,7 +336,6 @@ static void odbc_fix_fields(void)
       PIKE_ODBC_RES->field_info[i].size = odbc_field_sizes[i]
 	* (ptrdiff_t)sizeof(SQLWCHAR);
     } else
-#endif 
       PIKE_ODBC_RES->field_info[i].size = odbc_field_sizes[i];
   }
 }
@@ -423,16 +382,11 @@ static void f_execute(INT32 args)
   SWORD num_fields;
   SQLLEN num_rows;
 
-#ifdef SQL_WCHAR
   get_all_args("odbc_result->execute", args, "%W", &q);
   if ((q->size_shift > 1) && (sizeof(SQLWCHAR) == 2)) {
     SIMPLE_ARG_TYPE_ERROR("execute", 1, "string(16bit)");
   }
-#else
-  get_all_args("odbc_result->execute", args, "%S", &q);
-#endif
 
-#ifdef SQL_WCHAR
   if (q->size_shift) {
     char *to_free = NULL;
     SQLWCHAR *p;
@@ -457,9 +411,7 @@ static void f_execute(INT32 args)
     }
     ODBC_DISALLOW();
     if (to_free) free (to_free);
-  } else
-#endif
-  {
+  } else {
     ODBC_ALLOW();
     code = SQLExecDirect(hstmt, STR0(q), DO_NOT_WARN((SQLINTEGER)(q->len)));
     if (code != SQL_SUCCESS && code != SQL_SUCCESS_WITH_INFO)
@@ -636,7 +588,7 @@ static void f_fetch_row(INT32 args)
 #endif /* ODBC_DEBUG */
 	code = SQLGetData(hstmt, (SQLUSMALLINT)(i+1),
 			  field_type, dummy_buf, 0, &len);
-#ifdef SQL_WCHAR
+
 	if (code == SQL_NULL_DATA && (field_type == SQL_C_WCHAR)) {
 	  /* Kludge for FreeTDS which doesn't support WCHAR.
 	   * Refetch as a normal char.
@@ -654,7 +606,6 @@ static void f_fetch_row(INT32 args)
 	  code = SQLGetData(hstmt, (SQLUSMALLINT)(i+1),
 			    field_type, dummy_buf, 0, &len);
 	}
-#endif
 
 #ifdef ODBC_DEBUG
 	fprintf(stderr, "ODBC:fetch_row(): Field %d: "
@@ -665,11 +616,8 @@ static void f_fetch_row(INT32 args)
 
 	ODBC_DISALLOW();
 
-#ifdef SQL_WCHAR
 	/* In case the type got changed in the kludge above. */
 	PIKE_ODBC_RES->field_info[i].type = field_type;
-#endif
-
       }
 
 #ifdef ODBC_DEBUG
@@ -712,12 +660,10 @@ static void f_fetch_row(INT32 args)
 	default:
 	case SQL_C_BINARY:
 	  break;
-#ifdef SQL_WCHAR
 	case SQL_C_WCHAR:
 	  /* Adjust for NUL. */
 	  pad = sizeof(SQLWCHAR);
 	  break;
-#endif /* SQL_WCHAR */
 	}
 
 	while((bytes = len)) {
@@ -732,12 +678,10 @@ static void f_fetch_row(INT32 args)
 	  case SQL_C_BINARY:
 	    s = begin_shared_string(bytes);
 	    break;
-#ifdef SQL_WCHAR
 	  case SQL_C_WCHAR:
 	    s = begin_wide_shared_string(bytes/sizeof(SQLWCHAR),
 					 sizeof(SQLWCHAR)>2?2:1);
 	    break;
-#endif /* SQL_WCHAR */
 	  }
 
 #ifdef ODBC_DEBUG
@@ -800,9 +744,8 @@ static void f_fetch_row(INT32 args)
 			(long)len);
 #endif /* ODBC_DEBUG */
 	      } else len = 0;
-#ifdef SQL_WCHAR
+
 	      str_len = str_len>>s->size_shift;
-#endif
 	      push_string(end_and_resize_shared_string(s, str_len));
 	    }
 	  }
