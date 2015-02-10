@@ -66,8 +66,10 @@ string encode(mapping m, int|void query_mode)
 
 protected string toCString(string str)
 {
-	if(has_value(str, "\0")) ERROR("String cannot contain null bytes.\n");
-	else return string_to_utf8(str) + "\0";
+  if(has_value(str, "\0"))
+    ERROR("String cannot contain null bytes.\n");
+  else
+    return string_to_utf8(str) + "\0";
 }
 
 protected void low_encode(mapping m, String.Buffer buf, int|void allow_specials)
@@ -100,8 +102,7 @@ protected void encode_value(string key, mixed value, String.Buffer buf, int|void
    }
    else if(arrayp(value))
    {
-     int qi = 0; 
-     buf->sprintf("%c%s%c%s", TYPE_ARRAY, key, 0, encode(mkmapping(map(value, lambda(mixed e){return (string)qi++;}), value), allow_specials));
+     buf->sprintf("%c%s%c%s", TYPE_ARRAY, key, 0, encode( mkmapping((array(string))indices(value), value), allow_specials));
    }
    else if(intp(value))
    {
@@ -155,17 +156,17 @@ protected void encode_value(string key, mixed value, String.Buffer buf, int|void
    {
      buf->sprintf("%c%s%c%s%s", TYPE_REGEX, key, 0, toCString(value->regex), toCString(value->options));
    } 
-   // Val.Null
+   // Val.null
    else if(objectp(value) && value->is_val_null)
    {
      buf->sprintf("%c%s%c", TYPE_NULL, key, 0);
    }
-   // Val.True
+   // Val.true
    else if(objectp(value) && value->is_val_true)
    {
      buf->sprintf("%c%s%c%c", TYPE_BOOLEAN, key, 0, 1);
    }
-   // Val.False
+   // Val.false
    else if(objectp(value) && value->is_val_false)
    {
      buf->sprintf("%c%s%c%c", TYPE_BOOLEAN, key, 0, 0);
@@ -180,6 +181,8 @@ protected void encode_value(string key, mixed value, String.Buffer buf, int|void
    {
      buf->sprintf("%c%s%c", TYPE_MAX_KEY, key, 0);
    }
+   else
+     ERROR("Unknown object %O.\n", value);
 }
 
 //! Encode an array of data structures as a BSON formatted string
