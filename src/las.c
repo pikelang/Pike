@@ -5165,6 +5165,9 @@ int dooptcode(struct pike_string *name,
   union idptr tmp;
   int args, vargs, ret;
   struct svalue *foo;
+#ifdef PIKE_DEBUG
+  struct compilation *c = THIS_COMPILATION;
+#endif
 
   CHECK_COMPILER();
 
@@ -5173,7 +5176,7 @@ int dooptcode(struct pike_string *name,
   check_tree(n, 0);
 
 #ifdef PIKE_DEBUG
-  if(a_flag > 1)
+  if((a_flag > 1) || (c->lex.pragmas & ID_DISASSEMBLE))
     fprintf(stderr, "Doing function '%s' at %lx\n", name->str,
 	    DO_NOT_WARN((unsigned long)PIKE_PC));
 #endif
@@ -5227,8 +5230,6 @@ int dooptcode(struct pike_string *name,
 	   tmp.c_fun != f_backtrace)
 	{
 #ifdef PIKE_DEBUG
-	  struct compilation *c = THIS_COMPILATION;
-
 	  if(a_flag > 1)
 	    fprintf(stderr,"%s:%ld: IDENTIFIER OPTIMIZATION %s == %s\n",
 		    c->lex.current_file->str,
