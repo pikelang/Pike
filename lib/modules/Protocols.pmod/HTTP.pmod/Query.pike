@@ -785,6 +785,8 @@ this_program async_request(string server,int port,string query,
 
   this::real_host = server;
 
+   if (con) con->set_nonblocking_keep_callbacks();
+
    int keep_alive = con && con->is_open() && (this::host == server) &&
      (this::port == port) && this::headers &&
      (lower_case(this::headers->connection||"close") != "close");
