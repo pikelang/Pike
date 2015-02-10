@@ -828,6 +828,12 @@ void cpp_change_compat(struct cpp *this, int major, int minor)
  *!       to all functions that follow.
  *!     @value "all_final"
  *!       Instructs the compiler to mark all symbols as @tt{final@}.
+ *!     @value "deprecation_warnings"
+ *!       Enable warnings for use of deprecated symbols (default).
+ *!     @value "no_deprecation_warnings"
+ *!       Disable warnings for use of deprecated symbols. This is
+ *!       typically used in code that implements the deprecated
+ *!       symbols.
  *!     @value "save_parent"
  *!       Cause nested classes to save a reference to their
  *!       surrounding class even if not strictly needed.
@@ -838,6 +844,15 @@ void cpp_change_compat(struct cpp *this, int major, int minor)
  *!     @value "strict_types"
  *!       Enable warnings for all cases where the compiler
  *!       isn't certain that the types are correct.
+ *!     @value "disassemble"
+ *!       Enable disassembly output for the code being compiled.
+ *!       Note that this option essentially has a function-level
+ *!       scope, so enabling it for just a few lines is usually
+ *!       a noop. This is similar to @[Debug.assembler_debug()]
+ *!       level @expr{3@}. Note that this @tt{#pragma@} is a noop
+ *!       if Pike hasn't been compiled @tt{--with-debug@}.
+ *!     @value "no_disassemble"
+ *!       Disable disassembly output (default).
  *!   @endstring
 */
 
