@@ -427,6 +427,10 @@ void get_mpz_from_digits(MP_INT *tmp,
     }
 #endif
   }
+  else if(base == -256)
+  {
+    mpz_import (tmp, digits->len, -1, 1, 0, 0, digits->str);
+  }
   else
   {
     Pike_error("Invalid base.\n");
@@ -553,7 +557,8 @@ MP_INT *debug_get_mpz(struct svalue *s,
 
 /*! @decl void create()
  *! @decl void create(string|int|float|object value)
- *! @decl void create(string value, int(2..36)|int(256..256) base)
+ *! @decl void create(string value, @
+ *!                   int(2..36)|int(256..256)|int(-256..-256) base)
  *!
  *!   Create and initialize a @[Gmp.mpz] object.
  *!
@@ -566,12 +571,14 @@ MP_INT *debug_get_mpz(struct svalue *s,
  *!   The base can be either a value in the range @tt{[2..36]@} (inclusive),
  *!   in which case the numbers are taken from the ASCII range
  *!   @tt{0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ@} (case-insensitive),
- *!   or the value 256, in which case @[value] is taken to be the binary
- *!   representation in network byte order.
+ *!   or either of the values @expr{256@} or @expr{-256@}, in which
+ *!   case @[value] is taken to be the unsigned binary representation in
+ *!   network byte order or reversed byte order respectively.
  *!
  *! @note
- *!   Leading zeroes in @[value] are not significant. In particular leading
- *!   NUL characters are not preserved in base 256 mode.
+ *!   Leading zeroes in @[value] are not significant when a base is
+ *!   explicitly given. In particular leading NUL characters are not
+ *!   preserved in the base 256 modes.
  */
 static void mpzmod_create(INT32 args)
 {
@@ -697,7 +704,7 @@ struct pike_string *low_get_mpz_digits(MP_INT *mpz, int base)
     while(s->str[len]) len++;
     s=end_and_resize_shared_string(s, len);
   }
-  else if (base == 256)
+  else if ((base == 256) || (base == -256))
   {
     size_t i;
 
@@ -718,25 +725,10 @@ struct pike_string *low_get_mpz_digits(MP_INT *mpz, int base)
       if (len != 1)
 	Pike_fatal("mpz->low_get_mpz_digits: strange mpz state!\n");
       s->str[0] = 0;
+    } else if (base < 0) {
+      mpz_export(s->str, NULL, -1, 1, 0, 0, mpz);
     } else {
-#if GMP_NUMB_BITS != SIZEOF_MP_LIMB_T * CHAR_BIT
-#error Cannot cope with GMP using nail bits.
-#endif
-      size_t pos = 0;
-      unsigned char *dst = (unsigned char *)s->str+s->len;
-
-      while (len > 0)
-      {
-	mp_limb_t x = MPZ_GETLIMBN (mpz, pos++);
-	for (i=0; i<sizeof(mp_limb_t); i++)
-	{
-	  *(--dst) = DO_NOT_WARN((unsigned char)(x & 0xff));
-	  x >>= 8;
-	  if (!--len)
-	    break;
-	  
-	}
-      }
+      mpz_export(s->str, NULL, 1, 1, 0, 0, mpz);
     }
     s = end_shared_string(s);
   }
@@ -758,11 +750,11 @@ static void mpzmod_get_string(INT32 args)
   push_string(low_get_mpz_digits(THIS, 10));
 }
 
-/*! @decl string digits(void|int(2..36)|int(256..256) base)
+/*! @decl string digits(void|int(2..36)|int(256..256)|int(-256..-256) base)
  *!
  *! Convert this mpz object to a string. If a @[base] is given the
  *! number will be represented in that base. Valid bases are 2-36 and
- *! 256. The default base is 10.
+ *! @expr{256@} and @expr{-256@}. The default base is 10.
  *!
  *! @seealso
  *!   @[cast_to_string]

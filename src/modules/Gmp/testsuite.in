@@ -13,6 +13,50 @@ cond_begin([[ master()->resolv("Gmp")->mpz ]])
   test_eq(Gmp.mpz(10.0),10)
   test_eq(Gmp.mpz("10",8),8)
   test_eq(Gmp.mpz("0",256),'0')
+  test_eq(Gmp.mpz("+0",256),11056)
+  test_eq(Gmp.mpz("-0",256),11568)
+  test_eq(Gmp.mpz("0",-256),'0')
+  test_eq(Gmp.mpz("0+",-256),11056)
+  test_eq(Gmp.mpz("0-",-256),11568)
+  test_eval_error(Gmp.mpz("abcd", 47))
+
+  // digits
+  test_eval_error(Gmp.mpz(-17)->digits(256))
+  test_eval_error(Gmp.mpz(-17)->digits(-256))
+  test_eq(Gmp.mpz(0)->digits(256), "\0");
+  test_eq(Gmp.mpz(0)->digits(-256), "\0");
+  test_eval_error(Gmp.mpz(17)->digits(0))
+  test_eval_error(Gmp.mpz(17)->digits(1))
+  test_eq(Gmp.mpz(17)->digits(2), "10001");
+  test_eq(Gmp.mpz(17)->digits(3), "122");
+  test_eq(Gmp.mpz(17)->digits(10), "17");
+  test_eq(Gmp.mpz(17)->digits(36), "h");
+  test_eval_error(Gmp.mpz(17)->digits(37))
+  test_eq(Gmp.mpz(17)->digits(256), "\021");
+  test_eq(Gmp.mpz(17)->digits(-256), "\021");
+  test_eq(Gmp.mpz(63382396627932698323045648224275)->digits(256),
+          "\3\37\377\221\252\363 \211\231\346\330D\320\23")
+  test_eq(Gmp.mpz(63382396627932698323045648224275)->digits(-256),
+          "\23\320D\330\346\231\211 \363\252\221\377\37\3")
+
+  // _random
+  test_do(random(Gmp.mpz(17)))
+
+  // _encode / _decode
+  test_eq(decode_value(encode_value(Gmp.mpz(-1))), Gmp.mpz(-1))
+
+  // encode_json
+  test_eq(Gmp.mpz(1)->encode_json(), "1")
+  test_eq(Gmp.mpz(-1)->encode_json(), "-1")
+
+  // size
+  test_eq(Gmp.mpz(4711)->size(2), 13)
+
+  // cast_to_int
+  test_eq((int)Gmp.mpz(17),17)
+
+  // cast_to_string
+  test_eq((string)Gmp.mpz(17),"17")
 
   test_eq(Gmp.mpz("17") == "foo", 0)
   test_eq(Gmp.mpz("17") != "foo", 1)
