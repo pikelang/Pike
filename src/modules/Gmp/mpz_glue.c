@@ -381,6 +381,10 @@ void get_mpz_from_digits(MP_INT *tmp,
   {
     mpz_import (tmp, digits->len, 1, 1, 0, 0, digits->str);
   }
+  else if(base == -256)
+  {
+    mpz_import (tmp, digits->len, -1, 1, 0, 0, digits->str);
+  }
   else
   {
     Pike_error("Invalid base.\n");
@@ -490,7 +494,8 @@ MP_INT *debug_get_mpz(struct svalue *s,
 
 /*! @decl void create()
  *! @decl void create(string|int|float|object value)
- *! @decl void create(string value, int(2..36)|int(256..256) base)
+ *! @decl void create(string value, @
+ *!                   int(2..36)|int(256..256)|int(-256..-256) base)
  *!
  *!   Create and initialize a @[Gmp.mpz] object.
  *!
@@ -503,8 +508,9 @@ MP_INT *debug_get_mpz(struct svalue *s,
  *!   The base can be either a value in the range @tt{[2..36]@} (inclusive),
  *!   in which case the numbers are taken from the ASCII range
  *!   @tt{0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ@} (case-insensitive),
- *!   or the value 256, in which case @[value] is taken to be the binary
- *!   representation in network byte order.
+ *!   or either of the values @expr{256@} or @expr{-256@}, in which
+ *!   case @[value] is taken to be the unsigned binary representation in
+ *!   network byte order or reversed byte order respectively.
  *!
  *!   Values in base @tt{[2..36]@} can be prefixed with @expr{"+"@} or
  *!   @expr{"-"@}. Values prefixed with @expr{"0b"@} or @expr{"0B"@}
@@ -515,7 +521,7 @@ MP_INT *debug_get_mpz(struct svalue *s,
  *! @note
  *!   Leading zeroes in @[value] are not significant when a base is
  *!   explicitly given. In particular leading NUL characters are not
- *!   preserved in base 256 mode.
+ *!   preserved in the base 256 modes.
  */
 static void mpzmod_create(INT32 args)
 {
@@ -624,7 +630,7 @@ struct pike_string *low_get_mpz_digits(MP_INT *mpz, int base)
     while(s->str[len]) len++;
     s=end_and_resize_shared_string(s, len);
   }
-  else if (base == 256)
+  else if ((base == 256) || (base == -256))
   {
     size_t i;
 
@@ -643,8 +649,10 @@ struct pike_string *low_get_mpz_digits(MP_INT *mpz, int base)
 	Pike_fatal("mpz->low_get_mpz_digits: strange mpz state!\n");
 #endif
       s->str[0] = 0;
+    } else if (base < 0) {
+      mpz_export(s->str, NULL, -1, 1, 0, 0, mpz);
     } else {
-      mpz_export(s->str, NULL, 1, 1, 1, 0, mpz);
+      mpz_export(s->str, NULL, 1, 1, 0, 0, mpz);
     }
     s = end_shared_string(s);
   }
@@ -667,11 +675,11 @@ static void mpzmod_get_string(INT32 args)
   push_string(low_get_mpz_digits(THIS, 10));
 }
 
-/*! @decl string digits(void|int(2..36)|int(256..256) base)
+/*! @decl string digits(void|int(2..36)|int(256..256)|int(-256..-256) base)
  *!
  *! Convert this mpz object to a string. If a @[base] is given the
  *! number will be represented in that base. Valid bases are 2-36 and
- *! 256. The default base is 10.
+ *! @expr{256@} and @expr{-256@}. The default base is 10.
  *!
  *! @seealso
  *!   @[cast_to_string]
