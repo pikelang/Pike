@@ -1,3 +1,5 @@
+/* bson.cmod -*- c -*- */
+
 #define _GNU_SOURCE
 
 #include "bson_config.h"
@@ -185,23 +187,18 @@ struct mapping * decode_document(struct pike_string * pike_slist)
 
 char * decode_next_value(struct pike_string * pike_slist, char * n, struct mapping * list)
 {
-  char * slist;
+  char * slist = pike_slist->str;
   uint8_t type;
   char * cname;
-  struct pike_string * nstr;
-  struct pike_string * name;
-  char * x;
-  int32_t len;
-  
-  slist = pike_slist->str;
+  int32_t name_len;
 
   type = n[0];
-  
   n++;
 
+  /* guaranteed by spec to be a null terminated string. */
   cname = n;
-
-  n +=   (strlen(cname) + 1);
+  name_len = strlen(cname);
+  n += name_len + 1;
 
   switch(type)
   {
@@ -545,10 +542,10 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
       Pike_error("Unknown field type %d.\n", type);
   }
 
-  name = make_shared_binary_string(cname, strlen(cname)); /* guaranteed by spec to be a null terminated string. */
-  push_string(name);
+  push_string( make_shared_binary_string(cname, name_len) );
+
   f_utf8_to_string(1);
-  mapping_string_insert(list, (Pike_sp-1)->u.string, Pike_sp-2);
+  mapping_insert(list, Pike_sp-1, Pike_sp-2);
   pop_stack();
   pop_stack();
 
