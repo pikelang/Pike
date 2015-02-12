@@ -546,12 +546,12 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
   }
 
   name = make_shared_binary_string(cname, strlen(cname)); /* guaranteed by spec to be a null terminated string. */
-
-  mapping_string_insert(list, name, Pike_sp-1);
+  push_string(name);
+  f_utf8_to_string(1);
+  mapping_string_insert(list, (Pike_sp-1)->u.string, Pike_sp-2);
+  pop_stack();
   pop_stack();
 
-  free_string(name);
-  
   return n;
 }
 
