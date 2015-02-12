@@ -133,6 +133,10 @@ static void exit_res_struct(struct object *o)
  * More help functions
  */
 
+#ifndef SQL_SS_UDT
+#define SQL_SS_UDT	(-151)
+#endif
+
 static void odbc_fix_fields(void)
 {
   SQLHSTMT hstmt = PIKE_ODBC_RES->hstmt;
@@ -302,6 +306,17 @@ static void odbc_fix_fields(void)
       break;
     case SQL_BIT:
       push_text("bit");
+      break;
+    case SQL_SS_UDT:
+      /* User-defined data type. */
+      /* FIXME: Use SQLGetDescFieldW(hstmt, i+1,
+       *                             SQL_CA_SS_UDT_ASSEMBLY_TYPE_NAME,
+       *                             &wstr_buf, wstr_buf_bytes,
+       *                             &out_bytes)
+       *        to get the actual type.
+       */
+      push_text("user-defined");
+      odbc_field_types[i] = SQL_C_BINARY;
       break;
     default:
       push_text("unknown");
