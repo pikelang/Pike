@@ -248,6 +248,12 @@ static void odbc_fix_fields(void)
       push_text("var string");
       odbc_field_sizes[i] = 0;	/* Variable length */
       break;
+#ifdef SQL_GUID
+    case SQL_GUID:
+      push_text("uuid");
+      odbc_field_types[i] = SQL_C_CHAR;
+      break;
+#endif
     case SQL_DATE:
       push_text("date");
       odbc_field_sizes[i] = 32;
