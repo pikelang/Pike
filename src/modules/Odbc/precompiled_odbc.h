@@ -63,6 +63,8 @@
 extern struct program *odbc_program;
 extern struct program *odbc_result_program;
 
+extern int odbc_result_fun_num;
+
 /*
  * Typedefs
  */
