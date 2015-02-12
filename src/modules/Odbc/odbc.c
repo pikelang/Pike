@@ -453,7 +453,12 @@ static void f_big_query(INT32 args)
 
   /* Allocate the statement (result) object */
   ref_push_object(fp->current_object);
-  push_object(clone_object(odbc_result_program, 1));
+  apply_current(odbc_result_fun_num, 1);
+
+  if (TYPEOF(Pike_sp[-1]) != T_OBJECT) {
+    Pike_error("odbc->big_typed_query(): Unexpected return value from "
+	  "odbc_result().\n");
+  }
 
   UNSET_ONERROR(ebuf);
 
@@ -720,6 +725,8 @@ PIKE_MODULE_INIT
   set_init_callback(init_odbc_struct);
   set_exit_callback(exit_odbc_struct);
  
+  init_odbc_res_programs();
+
   odbc_program = end_program();
   add_program_constant("odbc", odbc_program, 0);
  
@@ -729,8 +736,6 @@ PIKE_MODULE_INIT
 #ifdef PIKE_THREADS
   ADD_FUNCTION ("connect_lock", f_connect_lock, tFunc(tOr(tVoid,tInt),tInt01), ID_PUBLIC);
 #endif
-
-  init_odbc_res_programs();
 
 #else
   HIDE_MODULE();
