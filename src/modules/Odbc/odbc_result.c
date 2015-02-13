@@ -133,8 +133,23 @@ static void exit_res_struct(struct object *o)
  * More help functions
  */
 
+#ifndef SQL_SS_VARIANT
+#define SQL_SS_VARIANT		(-150)
+#endif
 #ifndef SQL_SS_UDT
-#define SQL_SS_UDT	(-151)
+#define SQL_SS_UDT		(-151)
+#endif
+#ifndef SQL_SS_XML
+#define SQL_SS_XML		(-152)
+#endif
+#ifndef SQL_SS_TABLE
+#define SQL_SS_TABLE		(-153)
+#endif
+#ifndef SQL_SS_TIME2
+#define SQL_SS_TIME2		(-154)
+#endif
+#ifndef SQL_SS_TIMESTAMPOFFSET
+#define SQL_SS_TIMESTAMPOFFSET	(-155)
 #endif
 
 static void odbc_fix_fields(void)
@@ -262,9 +277,20 @@ static void odbc_fix_fields(void)
       push_text("date");
       odbc_field_sizes[i] = 32;
       break;
-    case SQL_TIMESTAMP:
+    case SQL_SS_TIME2:
+    case SQL_TIME:
       push_text("time");
       odbc_field_sizes[i] = 32;
+      break;
+    case SQL_SS_TIMESTAMPOFFSET:
+    case SQL_TIMESTAMP:
+      push_text("timestamp");
+      odbc_field_sizes[i] = 32;
+      break;
+    case SQL_SS_XML:
+      /* This corresponds to MSSQL xml. */
+      push_text("xml");
+      odbc_field_sizes[i] = 0;	/* Variable length */
       break;
     case SQL_LONGVARCHAR:
 #ifdef SQL_WLONGVARCHAR
@@ -316,6 +342,14 @@ static void odbc_fix_fields(void)
        *        to get the actual type.
        */
       push_text("user-defined");
+      odbc_field_types[i] = SQL_C_BINARY;
+      break;
+    case SQL_SS_VARIANT:
+      push_text("variant");
+      odbc_field_types[i] = SQL_C_BINARY;
+      break;
+    case SQL_SS_TABLE:
+      push_text("table");
       odbc_field_types[i] = SQL_C_BINARY;
       break;
     default:
