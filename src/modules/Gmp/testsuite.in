@@ -22,12 +22,13 @@ START_MARKER
   test_eq(Gmp.mpz("+010"),8)
   test_eq(Gmp.mpz("-010"),-8)
   test_eq(Gmp.mpz("0x10"),16)
+  test_eval_error(Gmp.mpz("0x10",16))
   test_eq(Gmp.mpz("0X10"),16)
   test_eq(Gmp.mpz("-0X10"),-16)
   test_eq(Gmp.mpz("10",36),36)
   test_eq(Gmp.mpz("+10",36),36)
   test_eq(Gmp.mpz("-10",36),-36)
-  test_eval_error(Gmp.mpz("10",37))
+  test_eval_error(Gmp.mpz("10",63))
   test_eq(Gmp.mpz("0",256),'0')
   test_eq(Gmp.mpz("+0",256),11056)
   test_eq(Gmp.mpz("-0",256),11568)
@@ -36,7 +37,6 @@ START_MARKER
   test_eq(Gmp.mpz("0-",-256),11568)
   test_eval_error(Gmp.mpz("1\u1234"))
   test_eval_error(Gmp.mpz("1\U12345678"))
-  test_eval_error(Gmp.mpz("abcd", 47))
 
   // digits
   test_eval_error(Gmp.mpz(-17)->digits(256))

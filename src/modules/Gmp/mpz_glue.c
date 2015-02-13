@@ -336,7 +336,7 @@ void get_mpz_from_digits(MP_INT *tmp,
   if (digits->size_shift)
     Pike_error("Invalid digits, cannot convert to Gmp.mpz.\n");
 
-  if(!base || ((base >= 2) && (base <= 36)))
+  if(!base || ((base >= 2) && (base <= 62)))
   {
     int offset = 0;
     int neg = 0;
@@ -493,7 +493,7 @@ MP_INT *debug_get_mpz(struct svalue *s,
 /*! @decl void create()
  *! @decl void create(string|int|float|object value)
  *! @decl void create(string value, @
- *!                   int(2..36)|int(256..256)|int(-256..-256) base)
+ *!                   int(2..62)|int(256..256)|int(-256..-256) base)
  *!
  *!   Create and initialize a @[Gmp.mpz] object.
  *!
@@ -502,24 +502,29 @@ MP_INT *debug_get_mpz(struct svalue *s,
  *!   to zero.
  *!
  *! @param base
- *!   Base the value is specified in. The default base is base 10.
- *!   The base can be either a value in the range @tt{[2..36]@} (inclusive),
- *!   in which case the numbers are taken from the ASCII range
- *!   @tt{0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ@} (case-insensitive),
- *!   or either of the values @expr{256@} or @expr{-256@}, in which
- *!   case @[value] is taken to be the unsigned binary representation in
- *!   network byte order or reversed byte order respectively.
+ *!   Base the value is specified in. The default base is base 10. The
+ *!   base can be either a value in the range @tt{[2..36]@}
+ *!   (inclusive), in which case the numbers are taken from the ASCII
+ *!   range @tt{0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ@}
+ *!   (case-insensitive), in the range @tt{[37..62]@} (inclusive), in
+ *!   which case the ASCII range will be case sensitive, or either of
+ *!   the values @expr{256@} or @expr{-256@}, in which case @[value]
+ *!   is taken to be the unsigned binary representation in network
+ *!   byte order or reversed byte order respectively.
  *!
- *!   Values in base @tt{[2..36]@} can be prefixed with @expr{"+"@} or
- *!   @expr{"-"@}. Values prefixed with @expr{"0b"@} or @expr{"0B"@}
- *!   will be interpreted as binary. Values prefixed with @expr{"0x"@}
- *!   or @expr{"0X"@} will be interpreted as hexadecimal. Values
- *!   prefixed with @expr{"0"@} will be interpreted as octal.
+ *!   Values in base @tt{[2..62]@} can be prefixed with @expr{"+"@} or
+ *!   @expr{"-"@}. If no base is given, values prefixed with
+ *!   @expr{"0b"@} or @expr{"0B"@} will be interpreted as binary.
+ *!   Values prefixed with @expr{"0x"@} or @expr{"0X"@} will be
+ *!   interpreted as hexadecimal. Values prefixed with @expr{"0"@}
+ *!   will be interpreted as octal.
  *!
  *! @note
  *!   Leading zeroes in @[value] are not significant when a base is
  *!   explicitly given. In particular leading NUL characters are not
  *!   preserved in the base 256 modes.
+ *!
+ *!   Before GMP 5.0 only bases 2-36 and 256 were supported.
  */
 static void mpzmod_create(INT32 args)
 {
