@@ -624,7 +624,10 @@ struct pike_string *low_get_mpz_digits(MP_INT *mpz, int base)
   
   if (
 #ifdef HAVE_GMP5
-      ((base >= 2) && (base <= 62)) || ((base >= -36) && (base <= -2))
+      (base >= 2) && (base <= 62)
+      /* -2..-36 is also available for upper case conversions, but
+          it's just confusing together with the -256 notation, so
+          let's leave that out of the Pike API. */
 #else
       (base >= 2) && (base <= 36)
 #endif
@@ -684,7 +687,7 @@ static void mpzmod_get_string(INT32 args)
   push_string(low_get_mpz_digits(THIS, 10));
 }
 
-/*! @decl string digits(void|int(2..36)|int(256..256)|int(-256..-256) base)
+/*! @decl string digits(void|int(2..62)|int(256..256)|int(-256..-256) base)
  *!
  *! Convert this mpz object to a string. If a @[base] is given the
  *! number will be represented in that base. Valid bases are 2-36 and
