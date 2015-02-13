@@ -68,7 +68,11 @@ START_MARKER
   test_eq(Gmp.mpz(-1)->encode_json(), "-1")
 
   // size
-  test_eq(Gmp.mpz(4711)->size(2), 13)
+  test_eq(Gmp.mpz(4711)->size(), 13)
+  test_eq(Gmp.mpz(4711)->size(36), 3)
+  test_eq(Gmp.mpz(4711)->size(256), 2)
+  test_eq(Gmp.mpz(4711)->size(-256), 2)
+  test_eval_error(Gmp.mpz(4711)->size(100))
 
   // cast_to_int
   test_compile_warning(Gmp.mpz(9)->cast_to_int())

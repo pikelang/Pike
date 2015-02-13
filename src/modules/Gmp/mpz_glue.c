@@ -924,12 +924,12 @@ static void mpzmod_size(INT32 args)
     if (TYPEOF(sp[-args]) != T_INT)
       SIMPLE_ARG_TYPE_ERROR ("size", 1, "int");
     base = sp[-args].u.integer;
-    if ((base != 256) && ((base < 2) || (base > 36)))
+    if ((base != 256) && (base != -256) && ((base < 2) || (base > 62)))
       SIMPLE_ARG_ERROR ("size", 1, "Invalid base.");
   }
   pop_n_elems(args);
 
-  if (base == 256)
+  if (base == 256 || base == -256)
     push_int(DO_NOT_WARN((INT32)((mpz_sizeinbase(THIS, 2) + 7) / 8)));
   else
     push_int(DO_NOT_WARN((INT32)(mpz_sizeinbase(THIS, base))));
