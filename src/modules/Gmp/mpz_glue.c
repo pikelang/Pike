@@ -351,13 +351,10 @@ void get_mpz_from_digits(MP_INT *tmp,
 	neg = 1;
       }
 
-      /* We need to fix the case with binary
-       * 0b101... and -0b101... numbers.
-       *
-       * What about hexadecimal and octal?
-       *	/grubba 2003-05-16
-       *
-       * No sweat - they are handled by mpz_set_str. /mast
+#ifndef HAVE_GMP5
+      /* mpz_set_str() will parse leading "0x" and "0X" as hex and
+       * leading "0" as octal. "0b" and "0B" for binary are supported
+       * from GMP 5.0.
        */
       if(!base && digits->len > 2)
       {
@@ -369,6 +366,7 @@ void get_mpz_from_digits(MP_INT *tmp,
 	  base = 2;
 	}
       }
+#endif
     }
 
     if (mpz_set_str(tmp, digits->str + offset, base))

@@ -9,6 +9,7 @@ START_MARKER
   test_eq(Gmp.mpz(10),10)
   test_eq(Gmp.mpz("10"),10)
   test_eq(Gmp.mpz(10.0),10)
+  test_eq(Gmp.mpz("010"),8)
   test_eq(Gmp.mpz("10",8),8)
   test_eval_error(Gmp.mpz("10",1))
   test_eq(Gmp.mpz("0b10"),2)
