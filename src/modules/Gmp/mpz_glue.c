@@ -2009,6 +2009,21 @@ static void mpzmod_popcount(INT32 args)
 #endif
 }
 
+/*! @decl int hamdist(int x)
+ *! Calculates the hamming distance between this number and @[x].
+ */
+static void mpzmod_hamdist(INT32 args)
+{
+  DECLARE_THIS();
+  MP_INT *x;
+  if (args != 1)
+    SIMPLE_WRONG_NUM_ARGS_ERROR ("hamdist", 1);
+  x = get_mpz(sp-1, 1, "hamdist", 1, 1);
+  push_int(mpz_hamdist(THIS, x));
+  stack_swap();
+  pop_stack();
+}
+
 /*! @decl Gmp.mpz _random()
  */
 static void mpzmod_random(INT32 args)
@@ -2216,6 +2231,7 @@ static void pike_mp_free (void *ptr, size_t UNUSED(size))
   ADD_FUNCTION("pow", mpzmod_pow,tMpz_shift_type, 0);			\
 									\
   ADD_FUNCTION("popcount", mpzmod_popcount,tFunc(tVoid,tInt), 0);	\
+  ADD_FUNCTION("hamdist", mpzmod_hamdist,tFunc(tMpz_arg,tInt), 0);	\
 									\
   ADD_FUNCTION("_random",mpzmod_random,tFunc(tNone,tMpz_ret),0);	\
   									\
@@ -2253,7 +2269,6 @@ PIKE_MODULE_INIT
   mpzmod_program->id = PROG_GMP_MPZ_ID;
   add_program_constant("mpz", mpzmod_program, 0);
 
-  /* function(int:object) */
   ADD_FUNCTION("fac", gmp_fac,tFunc(tInt,tObj), 0);
 
   /* This program autoconverts to integers, Gmp.mpz does not!!

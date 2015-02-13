@@ -167,6 +167,11 @@ START_MARKER
   test_eq(Gmp.mpz(-1)->popcount(), -1)
   test_eq(Gmp.mpz(-4711)->popcount(), -1)
 
+  // hamdist
+  test_eq(Gmp.mpz(2)->hamdist(3), 1)
+  test_eq(Gmp.mpz(2)->hamdist(Gmp.mpz(1)), 2)
+  test_eq(Gmp.mpz(-17)->hamdist(4711), -1)
+
   // probably_prime_p
   test_false(Gmp.mpz(0)->probably_prime_p())
   test_false(Gmp.mpz(1)->probably_prime_p(), 0)
