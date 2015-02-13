@@ -156,15 +156,20 @@ static void odbc_fix_fields(void)
 {
   SQLHSTMT hstmt = PIKE_ODBC_RES->hstmt;
   int i;
-  SWORD *odbc_field_types = alloca(sizeof(SWORD) * PIKE_ODBC_RES->num_fields);
-  SQLULEN *odbc_field_sizes =
-    alloca(sizeof(SQLULEN) * PIKE_ODBC_RES->num_fields);
+  struct field_info *field_info;
   size_t buf_size = 1024;
   SQLWCHAR *buf = alloca(buf_size * sizeof(SQLWCHAR));
 
-  if ((!buf)||(!odbc_field_types)) {
+  if (!buf) {
     Pike_error("odbc_fix_fields(): Out of memory\n");
   }
+
+  if (PIKE_ODBC_RES->field_info) {
+    free(PIKE_ODBC_RES->field_info);
+    PIKE_ODBC_RES->field_info = NULL;
+  }
+  PIKE_ODBC_RES->field_info = field_info = (struct field_info *)
+    xalloc(sizeof(struct field_info) * PIKE_ODBC_RES->num_fields);
 
   /*
    * First build the fields-array;
@@ -218,8 +223,8 @@ static void odbc_fix_fields(void)
 #ifdef ODBC_DEBUG
     fprintf(stderr, "SQL_C_WCHAR\n");
 #endif /* ODBC_DEBUG */
-    odbc_field_types[i] = SQL_C_WCHAR;
-    odbc_field_sizes[i] = precision;
+    field_info[i].type = SQL_C_WCHAR;
+    field_info[i].size = precision;
     switch(sql_type) {
     case SQL_CHAR:
     case SQL_WCHAR:
@@ -227,108 +232,108 @@ static void odbc_fix_fields(void)
       break;
     case SQL_NUMERIC:
       push_text("numeric");
-      odbc_field_types[i] = SQL_C_CHAR;
-      odbc_field_sizes[i]++;	/* Allow for a sign character. */
+      field_info[i].type = SQL_C_CHAR;
+      field_info[i].size++;	/* Allow for a sign character. */
       break;
     case SQL_DECIMAL:
       push_text("decimal");
-      odbc_field_types[i] = SQL_C_CHAR;
-      odbc_field_sizes[i]++;	/* Allow for a sign character. */
+      field_info[i].type = SQL_C_CHAR;
+      field_info[i].size++;	/* Allow for a sign character. */
       break;
     case SQL_INTEGER:
       push_text("integer");
-      odbc_field_types[i] = SQL_C_CHAR;
-      odbc_field_sizes[i]++;	/* Allow for a sign character. */
+      field_info[i].type = SQL_C_CHAR;
+      field_info[i].size++;	/* Allow for a sign character. */
       break;
     case SQL_SMALLINT:
       push_text("short");
-      odbc_field_types[i] = SQL_C_CHAR;
-      odbc_field_sizes[i]++;	/* Allow for a sign character. */
+      field_info[i].type = SQL_C_CHAR;
+      field_info[i].size++;	/* Allow for a sign character. */
       break;
     case SQL_FLOAT:
       push_text("float");
-      odbc_field_types[i] = SQL_C_CHAR;
-      odbc_field_sizes[i]++;	/* Allow for a sign character. */
+      field_info[i].type = SQL_C_CHAR;
+      field_info[i].size++;	/* Allow for a sign character. */
       break;
     case SQL_REAL:
       push_text("real");
-      odbc_field_types[i] = SQL_C_CHAR;
-      odbc_field_sizes[i]++;	/* Allow for a sign character. */
+      field_info[i].type = SQL_C_CHAR;
+      field_info[i].size++;	/* Allow for a sign character. */
       break;
     case SQL_DOUBLE:
       push_text("double");
-      odbc_field_types[i] = SQL_C_CHAR;
-      odbc_field_sizes[i]++;	/* Allow for a sign character. */
+      field_info[i].type = SQL_C_CHAR;
+      field_info[i].size++;	/* Allow for a sign character. */
       break;
     case SQL_VARCHAR:
 #ifdef SQL_WVARCHAR
     case SQL_WVARCHAR:
 #endif
       push_text("var string");
-      odbc_field_sizes[i] = 0;	/* Variable length */
+      field_info[i].size = 0;	/* Variable length */
       break;
 #ifdef SQL_GUID
     case SQL_GUID:
       push_text("uuid");
-      odbc_field_types[i] = SQL_C_CHAR;
+      field_info[i].type = SQL_C_CHAR;
       break;
 #endif
     case SQL_DATE:
       push_text("date");
-      odbc_field_sizes[i] = 32;
+      field_info[i].size = 32;
       break;
     case SQL_SS_TIME2:
     case SQL_TIME:
       push_text("time");
-      odbc_field_sizes[i] = 32;
+      field_info[i].size = 32;
       break;
     case SQL_SS_TIMESTAMPOFFSET:
     case SQL_TIMESTAMP:
       push_text("timestamp");
-      odbc_field_sizes[i] = 32;
+      field_info[i].size = 32;
       break;
     case SQL_SS_XML:
       /* This corresponds to MSSQL xml. */
       push_text("xml");
-      odbc_field_sizes[i] = 0;	/* Variable length */
+      field_info[i].size = 0;	/* Variable length */
       break;
     case SQL_LONGVARCHAR:
 #ifdef SQL_WLONGVARCHAR
     case SQL_WLONGVARCHAR:
 #endif
       push_text("var string");
-      odbc_field_sizes[i] = 0;	/* Variable length */
+      field_info[i].size = 0;	/* Variable length */
       break;
     case SQL_BINARY:
       push_text("binary");
 #ifdef ODBC_DEBUG
       fprintf(stderr, "SQL_C_BINARY\n");
 #endif /* ODBC_DEBUG */
-      odbc_field_types[i] = SQL_C_BINARY;
+      field_info[i].type = SQL_C_BINARY;
       break;
     case SQL_VARBINARY:
       push_text("blob");
 #ifdef ODBC_DEBUG
       fprintf(stderr, "SQL_C_BINARY\n");
 #endif /* ODBC_DEBUG */
-      odbc_field_types[i] = SQL_C_BINARY;
-      odbc_field_sizes[i] = 0;	/* Variable length */
+      field_info[i].type = SQL_C_BINARY;
+      field_info[i].size = 0;	/* Variable length */
       break;
     case SQL_LONGVARBINARY:
       push_text("long blob");
 #ifdef ODBC_DEBUG
       fprintf(stderr, "SQL_C_BINARY\n");
 #endif /* ODBC_DEBUG */
-      odbc_field_types[i] = SQL_C_BINARY;
-      odbc_field_sizes[i] = 0;	/* Variable length */
+      field_info[i].type = SQL_C_BINARY;
+      field_info[i].size = 0;	/* Variable length */
       break;
     case SQL_BIGINT:
       push_text("long integer");
-      odbc_field_sizes[i]++;	/* Allow for a sign character. */
+      field_info[i].size++;	/* Allow for a sign character. */
       break;
     case SQL_TINYINT:
       push_text("tiny integer");
-      odbc_field_sizes[i]++;	/* Allow for a sign character. */
+      field_info[i].size++;	/* Allow for a sign character. */
       break;
     case SQL_BIT:
       push_text("bit");
@@ -342,15 +347,15 @@ static void odbc_fix_fields(void)
        *        to get the actual type.
        */
       push_text("user-defined");
-      odbc_field_types[i] = SQL_C_BINARY;
+      field_info[i].type = SQL_C_BINARY;
       break;
     case SQL_SS_VARIANT:
       push_text("variant");
-      odbc_field_types[i] = SQL_C_BINARY;
+      field_info[i].type = SQL_C_BINARY;
       break;
     case SQL_SS_TABLE:
       push_text("table");
-      odbc_field_types[i] = SQL_C_BINARY;
+      field_info[i].type = SQL_C_BINARY;
       break;
     default:
       push_text("unknown");
@@ -378,22 +383,16 @@ static void odbc_fix_fields(void)
   add_ref(PIKE_ODBC_RES->fields = Pike_sp[-1].u.array);
   pop_stack();
 
-  PIKE_ODBC_RES->field_info = (struct field_info *)
-    xalloc(sizeof(struct field_info) * PIKE_ODBC_RES->num_fields);
-
   /*
    * Now it's time to bind the columns
    */
   for (i=0; i < PIKE_ODBC_RES->num_fields; i++) {
-    PIKE_ODBC_RES->field_info[i].type = odbc_field_types[i];
-    if (odbc_field_types[i] == SQL_C_WCHAR) {
+    if (field_info[i].type == SQL_C_WCHAR) {
       /* NOTE: Field size is in characters, while SQLGetData()
        *       wants bytes.
        */
-      PIKE_ODBC_RES->field_info[i].size = odbc_field_sizes[i]
-	* (ptrdiff_t)sizeof(SQLWCHAR);
-    } else
-      PIKE_ODBC_RES->field_info[i].size = odbc_field_sizes[i];
+      field_info[i].size *= (ptrdiff_t)sizeof(SQLWCHAR);
+    }
   }
 }
 
