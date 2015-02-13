@@ -622,7 +622,13 @@ struct pike_string *low_get_mpz_digits(MP_INT *mpz, int base)
   struct pike_string *s = 0;   /* Make gcc happy. */
   ptrdiff_t len;
   
-  if ( (base >= 2) && (base <= 36))
+  if (
+#ifdef HAVE_GMP5
+      ((base >= 2) && (base <= 62)) || ((base >= -36) && (base <= -2))
+#else
+      (base >= 2) && (base <= 36)
+#endif
+      )
   {
     len = mpz_sizeinbase(mpz, base) + 2;
     s = begin_shared_string(len);

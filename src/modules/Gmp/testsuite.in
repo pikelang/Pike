@@ -49,7 +49,7 @@ START_MARKER
   test_eq(Gmp.mpz(17)->digits(3), "122");
   test_eq(Gmp.mpz(17)->digits(10), "17");
   test_eq(Gmp.mpz(17)->digits(36), "h");
-  test_eval_error(Gmp.mpz(17)->digits(37))
+  test_eval_error(Gmp.mpz(17)->digits(63))
   test_eq(Gmp.mpz(17)->digits(256), "\021");
   test_eq(Gmp.mpz(17)->digits(-256), "\021");
   test_eq(Gmp.mpz(63382396627932698323045648224275)->digits(256),
