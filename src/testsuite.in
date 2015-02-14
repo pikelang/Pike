@@ -8740,6 +8740,14 @@ test_equal("foo"/"",lambda(mixed ... x) { return x; }(@a()))
 test_any([[array a=({1,2,3}); return lambda(mixed ... x) { return x; }(@a) !=a]],1)
 test_any([[array z=({lambda(mixed x){return x;},17});return `()(@z);]],17)
 
+// testing ++
+test_any([[ class A(void|int i){}; object a = A(); a->i++; return undefinedp(a->i); ]], 0)
+test_any([[ class A(void|int i){}; object a = A(); ++a->i; return undefinedp(a->i); ]], 0)
+
+// testing --
+test_any([[ class A(void|int i){}; object a = A(); a->i--; return undefinedp(a->i); ]], 0)
+test_any([[ class A(void|int i){}; object a = A(); --a->i; return undefinedp(a->i); ]], 0)
+
 // testing +=
 test_any(int a=1; a+=10; return a,11)
 test_any_equal(mapping m=([]); m->x+=([]); return m->x, ([]))
