@@ -337,6 +337,13 @@ program_flags PROGRAM_CLEAR_STORAGE;
 #define SECP384R1 3
 #define SECP521R1 4
 
+#ifndef ecc_point_equal_p
+int ecc_point_equal_p(const struct ecc_point *a, const struct ecc_point *b)
+{
+  return (a->ecc == b->ecc) && !mpn_cmp(a->p, b->p, ecc_size_a(a->ecc));
+}
+#endif
+
 /*! @class ECC_Curve
  *!
  *! Elliptic Curve Definition
@@ -384,6 +391,12 @@ PIKECLASS ECC_Curve
     }
   }
 
+  /*! @decl protected local int(0..1) `==(mixed x)
+   *!
+   *! @returns
+   *!   Returns @expr{1@} if @[x] is the same @[Curve],
+   *!   and @expr{0@} (zero) otherwise.
+   */
   PIKEFUN int(0..1) `==(mixed x)
     flags ID_PROTECTED|ID_LOCAL;
   {
@@ -650,6 +663,52 @@ PIKECLASS ECC_Curve
 	(((const struct Nettle_ECC_Curve_struct *)parent_storage(1, Nettle_ECC_Curve_program))->curve);
       if (!curve) return;
       ecc_point_clear(&THIS->point);
+    }
+
+    /*! @decl protected local int(0..1) _equal(mixed x)
+     *!
+     *! @returns
+     *!   Returns @expr{1@} if @[x] is a @[Point] on the same
+     *!   @[Curve] and has the same coordinates, and otherwise
+     *!   returns @expr@{0@} (zero).
+     */
+    PIKEFUN int(0..1) _equal(mixed x)
+      flags ID_PROTECTED|ID_LOCAL;
+    {
+      struct inherit *inh;
+      struct program *p;
+      const struct ecc_point *xp;
+      if (!x || (TYPEOF(*x) != PIKE_T_OBJECT) ||
+	  !x->u.object || !x->u.object->prog) RETURN 0;
+      p = x->u.object->prog;
+      inh = p->inherits + SUBTYPEOF(*x);
+      p = inh->prog;
+      if (p != Nettle_ECC_Curve_Point_program) {
+	int lfun__equal;
+	if ((low_get_storage(p, Nettle_ECC_Curve_Point_program) == -1) ||
+	    ((lfun__equal = FIND_LFUN(p, LFUN__EQUAL)) == -1)) {
+	  /* p does not inherit ECC.Curve, or has made _equal() private. */
+	  RETURN 0;
+	}
+	/* Let's see if LFUN::_equal() in x traverses down to ECC.Curve. */
+	/* FIXME: We're recursing via potentially broken code,
+	 *        so we probably ought to use CYCLIC here.
+	 */
+	lfun__equal += inh->identifier_level;
+	ref_push_object_inherit(Pike_fp->current_object,
+				Pike_fp->context -
+				Pike_fp->current_object->prog->inherits);
+	apply_low(x->u.object, lfun__equal, 1);
+	stack_pop_n_elems_keep_top(args);
+	return;
+      }
+      /* Find the other point. */
+      xp = &((struct Nettle_ECC_Curve_Point_struct *)
+	     (PIKE_OBJ_STORAGE(x->u.object) +
+	      inh->storage_offset +
+	      Nettle_ECC_Curve_Point_storage_offset))->point;
+      /* Compare and return. */
+      RETURN ecc_point_equal_p(&(THIS->point), xp);
     }
 
     /*! @decl string(7bit) name()
