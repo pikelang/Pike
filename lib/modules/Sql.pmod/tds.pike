@@ -1210,11 +1210,16 @@ protected {
 	}
       case SYBUNIQUE:
 	{
-	  return Standards.UUID.UUID(raw)->str();
+	  string res = Standards.UUID.UUID(raw)->str();
+	  TDS_CONV_WERROR("%O ==> %O\n", raw, res);
+	  return res;
 	}
       case SYBFLTN:
 	{
-	  return sprintf("%g", @array_sscanf(raw, "%-" + sizeof(raw) + "F"));
+	  string res =
+	    sprintf("%g", @array_sscanf(raw, "%-" + sizeof(raw) + "F"));
+	  TDS_CONV_WERROR("%O ==> %O\n", raw, res);
+	  return res;
 	}
       case SYBREAL:
       case SYBFLT8:
