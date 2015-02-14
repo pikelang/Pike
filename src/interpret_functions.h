@@ -1024,7 +1024,9 @@ OPCODE1(F_GLOBAL_LVALUE, "& global", I_UPDATE_SP, {
 
 OPCODE0(F_INC, "++x", I_UPDATE_SP, {
   union anything *u=get_pointer_if_this_type(Pike_sp-2, PIKE_T_INT);
-  if(u && !INT_TYPE_ADD_OVERFLOW(u->integer, 1))
+  /* NOTE: if u->integer is 0, the lvalue could be UNDEFINED.
+   * we use the slow path to make sure it becomes a proper integer */
+  if(u && u->integer && !INT_TYPE_ADD_OVERFLOW(u->integer, 1))
   {
     INT_TYPE val = ++u->integer;
     pop_2_elems();
@@ -1040,7 +1042,9 @@ OPCODE0(F_INC, "++x", I_UPDATE_SP, {
 
 OPCODE0(F_DEC, "--x", I_UPDATE_SP, {
   union anything *u=get_pointer_if_this_type(Pike_sp-2, PIKE_T_INT);
-  if(u && !INT_TYPE_SUB_OVERFLOW(u->integer, 1))
+  /* NOTE: if u->integer is 0, the lvalue could be UNDEFINED.
+   * we use the slow path to make sure it becomes a proper integer */
+  if(u && u->integer && !INT_TYPE_SUB_OVERFLOW(u->integer, 1))
   {
     INT_TYPE val = --u->integer;
     pop_2_elems();
@@ -1056,7 +1060,9 @@ OPCODE0(F_DEC, "--x", I_UPDATE_SP, {
 
 OPCODE0(F_DEC_AND_POP, "x-- and pop", I_UPDATE_SP, {
   union anything *u=get_pointer_if_this_type(Pike_sp-2, PIKE_T_INT);
-  if(u && !INT_TYPE_SUB_OVERFLOW(u->integer, 1))
+  /* NOTE: if u->integer is 0, the lvalue could be UNDEFINED.
+   * we use the slow path to make sure it becomes a proper integer */
+  if(u && u->integer && !INT_TYPE_SUB_OVERFLOW(u->integer, 1))
   {
     --u->integer;
     pop_2_elems();
@@ -1071,7 +1077,9 @@ OPCODE0(F_DEC_AND_POP, "x-- and pop", I_UPDATE_SP, {
 
 OPCODE0(F_INC_AND_POP, "x++ and pop", I_UPDATE_SP, {
   union anything *u=get_pointer_if_this_type(Pike_sp-2, PIKE_T_INT);
-  if(u && !INT_TYPE_ADD_OVERFLOW(u->integer, 1))
+  /* NOTE: if u->integer is 0, the lvalue could be UNDEFINED.
+   * we use the slow path to make sure it becomes a proper integer */
+  if(u && u->integer && !INT_TYPE_ADD_OVERFLOW(u->integer, 1))
   {
     ++u->integer;
     pop_2_elems();
@@ -1086,7 +1094,9 @@ OPCODE0(F_INC_AND_POP, "x++ and pop", I_UPDATE_SP, {
 
 OPCODE0(F_POST_INC, "x++", I_UPDATE_SP, {
   union anything *u=get_pointer_if_this_type(Pike_sp-2, PIKE_T_INT);
-  if(u && !INT_TYPE_ADD_OVERFLOW(u->integer, 1))
+  /* NOTE: if u->integer is 0, the lvalue could be UNDEFINED.
+   * we use the slow path to make sure it becomes a proper integer */
+  if(u && u->integer && !INT_TYPE_ADD_OVERFLOW(u->integer, 1))
   {
     INT_TYPE val = u->integer++;
     pop_2_elems();
@@ -1105,7 +1115,9 @@ OPCODE0(F_POST_INC, "x++", I_UPDATE_SP, {
 
 OPCODE0(F_POST_DEC, "x--", I_UPDATE_SP, {
   union anything *u=get_pointer_if_this_type(Pike_sp-2, PIKE_T_INT);
-  if(u && !INT_TYPE_SUB_OVERFLOW(u->integer, 1))
+  /* NOTE: if u->integer is 0, the lvalue could be UNDEFINED.
+   * we use the slow path to make sure it becomes a proper integer */
+  if(u && u->integer && !INT_TYPE_SUB_OVERFLOW(u->integer, 1))
   {
     INT_TYPE val = u->integer--;
     pop_2_elems();
