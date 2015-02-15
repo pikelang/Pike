@@ -382,7 +382,7 @@ badresult:
 #endif
 #if defined(HAVE_PQUNESCAPEBYTEA) && defined(BYTEAOID)
 	    case BYTEAOID:
-	      if(binbuf = PQunescapeBytea(value, &binlen)) {
+	      if((binbuf = PQunescapeBytea((unsigned char *)value, &binlen))) {
 		value = binbuf;
 		len = binlen;
 	      }
