@@ -545,7 +545,7 @@ define(test_crypto_cipher,[[
   ]])
 ]])
 
-test_do(add_constant("test_data", Crypto.Random.random_string(1024)))
+test_do(add_constant("test_data", random_string(1024)))
 
 define(test_generic_cipher,[[
   cond_resolv($1, [[
