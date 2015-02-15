@@ -7,6 +7,7 @@
 //!   @[Crypto.ECC.Curve], @[Nettle.ECC_Curve]
 
 extern int size();
+extern string name();
 
 //! Base class for a point on an elliptic curve.
 class Point {
@@ -81,4 +82,14 @@ class Point {
     return sprintf("%c%*c%*c", 4, size, get_x(), size, get_y());
   }
 
+  protected string _sprintf(int type)
+  {
+    return type=='O' && sprintf("%O(0x%x,0x%x)", this_program,
+                                get_x(), get_y());
+  }
+}
+
+protected string _sprintf(int type)
+{
+  return type=='O' && sprintf("%O(%s)", this_program, name() || "UNKOWN");
 }
