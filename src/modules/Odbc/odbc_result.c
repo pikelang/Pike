@@ -114,6 +114,8 @@ static void init_res_struct(struct object *o)
 {
   memset(PIKE_ODBC_RES, 0, sizeof(struct precompiled_odbc_result));
   PIKE_ODBC_RES->hstmt = SQL_NULL_HSTMT;
+  SET_SVAL(PIKE_ODBC_RES->null_value, PIKE_T_INT, NUMBER_UNDEFINED,
+	   integer, 0);
 }
  
 static void exit_res_struct(struct object *o)
@@ -819,6 +821,240 @@ static void f_fetch_row(INT32 args)
   }
 }
  
+/* int|array(string|float|int|object) fetch_typed_row() */
+static void f_fetch_typed_row(INT32 args)
+{
+  SQLHSTMT hstmt = PIKE_ODBC_RES->hstmt;
+  int i;
+  unsigned int old_tds_kludge = PIKE_ODBC_RES->odbc->flags & PIKE_ODBC_OLD_TDS_KLUDGE;
+  RETCODE code;
+
+  pop_n_elems(args);
+
+  ODBC_ALLOW();
+  code = SQLFetch(hstmt);
+  ODBC_DISALLOW();
+
+  if (code == SQL_NO_DATA_FOUND) {
+    /* No rows left in result */
+    push_undefined();
+  } else {
+    struct svalue *null_value = &PIKE_ODBC_RES->null_value;
+
+    odbc_check_error("odbc->fetch_row", "Couldn't fetch row",
+		     code, NULL, NULL);
+
+    for (i=0; i < PIKE_ODBC_RES->num_fields; i++) {
+      SQLLEN len = PIKE_ODBC_RES->field_info[i].size;
+      SWORD field_type = PIKE_ODBC_RES->field_info[i].type;
+      static char dummy_buf[4];
+
+      /* First get the size of the data.
+       *
+       * Note that this method of getting the size apparently isn't
+       * always supported for all data types (eg for INTEGER/MSSQL),
+       * where we instead use the width returned by SQLDescribeCol()
+       * earlier.
+       *
+       * Note also that FreeTDS/UnixODBC apparently has both a broken
+       * SQLDescribeCol() (which returns the SQL_C_BINARY size for
+       * eg INTEGER even if SQL_C_CHAR has been requested, and a
+       * SQLGetData() which doesn't properly support streamed fetching.
+       *
+       * We tried solving this by performing SQLGetData with zero size,
+       * and using the result if it succeeded, using the SQLDescribeCol()
+       * size if not zero, and otherwise throw an error. Unfortunately
+       * this didn't work, since MSSQL believes that it returned all the
+       * data in the first call (which failed with code "22003")...
+       *
+       * On unbroken ODBC implementations the UnixODBC method is
+       * preferred, since less buffer space is wasted.
+       */
+
+      if (old_tds_kludge || !len) {
+
+	ODBC_ALLOW();
+
+#ifdef ODBC_DEBUG
+	fprintf(stderr, "ODBC:fetch_row(): Field %d: "
+		"SQLGetData(X, %d, %d, X, 0, X)...\n",
+		i + 1, i+1, field_type);
+#endif /* ODBC_DEBUG */
+	code = SQLGetData(hstmt, (SQLUSMALLINT)(i+1),
+			  field_type, dummy_buf, 0, &len);
+
+	if (code == SQL_NULL_DATA && (field_type == SQL_C_WCHAR)) {
+	  /* Kludge for FreeTDS which doesn't support WCHAR.
+	   * Refetch as a normal char.
+	   */
+#ifdef ODBC_DEBUG
+	  fprintf(stderr, "ODBC:fetch_row(): Field %d: WCHAR not supported.\n",
+		  i + 1);
+#endif /* ODBC_DEBUG */
+	  field_type = SQL_C_CHAR;
+#ifdef ODBC_DEBUG
+	  fprintf(stderr, "ODBC:fetch_row(): Field %d: "
+		  "SQLGetData(X, %d, %d, X, 0, X)...\n",
+		  i + 1, i+1, field_type);
+#endif /* ODBC_DEBUG */
+	  code = SQLGetData(hstmt, (SQLUSMALLINT)(i+1),
+			    field_type, dummy_buf, 0, &len);
+	}
+
+#ifdef ODBC_DEBUG
+	fprintf(stderr, "ODBC:fetch_row(): Field %d: "
+		"SQLGetData(X, %d, %d, X, 0, X, X) ==> code: %d, len: %ld.\n",
+		i + 1,
+		i+1, field_type, code, len);
+#endif /* ODBC_DEBUG */
+
+	ODBC_DISALLOW();
+
+	/* In case the type got changed in the kludge above. */
+	PIKE_ODBC_RES->field_info[i].type = field_type;
+      }
+
+#ifdef ODBC_DEBUG
+      fprintf(stderr, "ODBC:fetch_row(): Field %d: "
+	      "field_type: %d, len: %ld, code: %d.\n",
+	      i + 1, field_type, len, code);
+#endif /* ODBC_DEBUG */
+
+      if (code == SQL_NO_DATA_FOUND) {
+	/* All data already returned. */
+#ifdef ODBC_DEBUG
+	fprintf(stderr, "ODBC:fetch_row(): NO DATA FOUND\n");
+#endif /* ODBC_DEBUG */
+	push_empty_string();
+	continue;
+      }
+      if (!len) {
+	odbc_check_error("odbc->fetch_row", "SQLGetData() failed",
+			 code, NULL, NULL);
+      }
+      if (len == SQL_NULL_DATA) {
+#ifdef ODBC_DEBUG
+	fprintf(stderr, "ODBC:fetch_row(): NULL\n");
+#endif /* ODBC_DEBUG */
+	/* NULL */
+	push_svalue(null_value);
+      } else if (len == 0) {
+	push_empty_string();
+      } else {
+	struct pike_string *s;
+	SQLLEN bytes;
+	SQLLEN pad = 0;
+	int num_strings = 0;
+
+	switch(field_type) {
+	case SQL_C_CHAR:
+	  /* Adjust for NUL. */
+	  pad = 1;
+	  break;
+	default:
+	case SQL_C_BINARY:
+	  break;
+	case SQL_C_WCHAR:
+	  /* Adjust for NUL. */
+	  pad = sizeof(SQLWCHAR);
+	  break;
+	}
+
+	while((bytes = len)) {
+#ifdef SQL_NO_TOTAL
+	  if (bytes == SQL_NO_TOTAL) {
+	    bytes = BLOB_BUFSIZ;
+	  }
+#endif /* SQL_NO_TOTAL */
+	  switch(field_type) {
+	  case SQL_C_CHAR:
+	  default:
+	  case SQL_C_BINARY:
+	    s = begin_shared_string(bytes);
+	    break;
+	  case SQL_C_WCHAR:
+	    s = begin_wide_shared_string(bytes/sizeof(SQLWCHAR),
+					 sizeof(SQLWCHAR)>2?2:1);
+	    break;
+	  }
+
+#ifdef ODBC_DEBUG
+	  fprintf(stderr, "ODBC:fetch_row(): Field %d: "
+		  "SQLGetData(X, %d, %d, X, %d, X)...\n",
+		  i + 1, i+1, field_type, bytes+pad);
+#endif /* ODBC_DEBUG */
+
+	  ODBC_ALLOW();
+
+	  code = SQLGetData(hstmt, (SQLUSMALLINT)(i+1),
+			    field_type, s->str, bytes + pad, &len);
+
+	  ODBC_DISALLOW();
+
+	  num_strings++;
+#ifdef ODBC_DEBUG
+	  fprintf(stderr,
+		  "ODBC:fetch_row(): %d:%d: Got %ld/%ld bytes (pad: %ld).\n"
+		  "     Code: %d\n",
+		  i+1, num_strings, (long)bytes, (long)len, (long)pad,
+		  code);
+#endif /* ODBC_DEBUG */
+	  if (code == SQL_NO_DATA_FOUND) {
+	    /* No data or end marker. */
+	    free_string(s);
+	    push_empty_string();
+	    break;
+	  } else {
+	    odbc_check_error("odbc->fetch_row", "SQLGetData() failed",
+			     code, NULL, NULL);
+	    if (!len) {
+	      free_string(s);
+	      push_empty_string();
+	      break;
+	    } else if (len == SQL_NULL_DATA) {
+	      free_string(s);
+	      if (num_strings > 1) {
+		num_strings--;
+	      } else {
+		push_svalue(null_value);
+		num_strings = -1;
+	      }
+	      break;
+#ifdef SQL_NO_TOTAL
+	    } else if (len == SQL_NO_TOTAL) {
+	      /* More data remaining... */
+	      push_string(end_shared_string(s));
+#ifdef ODBC_DEBUG
+	      fprintf(stderr, "ODBC:fetch_row(): More data remaining.\n");
+#endif /* ODBC_DEBUG */
+#endif /* SQL_NO_TOTAL */
+	    } else {
+	      SQLLEN str_len = len;
+	      if (len > bytes) {
+		/* Possibly truncated result. */
+		str_len = bytes;
+		len -= bytes;
+#ifdef ODBC_DEBUG
+		fprintf(stderr, "ODBC:fetch_row(): %ld bytes remaining.\n",
+			(long)len);
+#endif /* ODBC_DEBUG */
+	      } else len = 0;
+	      str_len = str_len>>s->size_shift;
+	      push_string(end_and_resize_shared_string(s, str_len));
+	    }
+	  }
+	}
+	if (!num_strings) {
+	  push_empty_string();
+	} else if (num_strings > 1) {
+	  f_add(num_strings);
+	}
+      }
+    }
+    f_aggregate(PIKE_ODBC_RES->num_fields);
+  }
+}
+
 /* int eof() */
 static void f_eof(INT32 args)
 {
@@ -844,6 +1080,8 @@ void init_odbc_res_programs(void)
 	       OFFSETOF(precompiled_odbc_result, obj), T_OBJECT);
   map_variable("_fields", "array(mapping(string:mixed))", 0,
 	       OFFSETOF(precompiled_odbc_result, fields), T_ARRAY);
+  map_variable("_null_value", "mixed", 0,
+	       OFFSETOF(precompiled_odbc_result, null_value), T_MIXED);
  
   /* function(object:void) */
   ADD_FUNCTION("create", f_create,tFunc(tObj,tVoid), ID_PUBLIC);
@@ -881,6 +1119,10 @@ void init_odbc_res_programs(void)
 
   start_new_program();
   low_inherit(odbc_result_program, NULL, -1, 0, 0, NULL);
+  ADD_FUNCTION("fetch_row", f_fetch_typed_row,
+	       tFunc(tVoid,tOr(tInt,tArr(tOr4(tStr,tInt,tFlt,tObj)))),
+	       ID_PUBLIC);
+
   odbc_typed_result_program = end_program();
   odbc_typed_result_fun_num =
     add_program_constant("typed_result", odbc_typed_result_program, 0);

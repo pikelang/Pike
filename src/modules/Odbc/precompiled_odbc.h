@@ -131,6 +131,7 @@ struct precompiled_odbc_result {
   SQLLEN num_rows;
   struct array *fields;
   struct field_info *field_info;
+  struct svalue null_value;		/* NULL value for typed_queries. */
 };
 
 /*
