@@ -65,8 +65,10 @@
  */
 
 struct program *odbc_result_program = NULL;
+struct program *odbc_typed_result_program = NULL;
 
 int odbc_result_fun_num = -1;
+int odbc_typed_result_fun_num = -1;
 
 /*
  * Functions
@@ -866,10 +868,20 @@ void init_odbc_res_programs(void)
   odbc_result_program = end_program();
   odbc_result_fun_num =
     add_program_constant("result", odbc_result_program, 0);
+
+  start_new_program();
+  low_inherit(odbc_result_program, NULL, -1, 0, 0, NULL);
+  odbc_typed_result_program = end_program();
+  odbc_typed_result_fun_num =
+    add_program_constant("typed_result", odbc_typed_result_program, 0);
 }
  
 void exit_odbc_res(void)
 {
+  if (odbc_typed_result_program) {
+    free_program(odbc_typed_result_program);
+    odbc_typed_result_program = NULL;
+  }
   if (odbc_result_program) {
     free_program(odbc_result_program);
     odbc_result_program = NULL;
