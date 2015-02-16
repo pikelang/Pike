@@ -227,46 +227,44 @@ static void odbc_fix_fields(void)
 #ifdef ODBC_DEBUG
     fprintf(stderr, "SQL_C_WCHAR\n");
 #endif /* ODBC_DEBUG */
-    field_info[i].type = SQL_C_WCHAR;
+    field_info[i].type = SQL_C_CHAR;
     field_info[i].size = precision;
     switch(sql_type) {
     case SQL_CHAR:
     case SQL_WCHAR:
+      field_info[i].type = SQL_C_WCHAR;
+      /* NOTE: Field size is in characters, while SQLGetData()
+       *       wants bytes.
+       */
+      field_info[i].size *= (ptrdiff_t)sizeof(SQLWCHAR);
       ref_push_string(literal_string_string);
       break;
     case SQL_NUMERIC:
       push_text("numeric");
-      field_info[i].type = SQL_C_CHAR;
       field_info[i].size++;	/* Allow for a sign character. */
       break;
     case SQL_DECIMAL:
       push_text("decimal");
-      field_info[i].type = SQL_C_CHAR;
       field_info[i].size++;	/* Allow for a sign character. */
       break;
     case SQL_INTEGER:
       push_text("integer");
-      field_info[i].type = SQL_C_CHAR;
       field_info[i].size++;	/* Allow for a sign character. */
       break;
     case SQL_SMALLINT:
       push_text("short");
-      field_info[i].type = SQL_C_CHAR;
       field_info[i].size++;	/* Allow for a sign character. */
       break;
     case SQL_FLOAT:
       ref_push_string(literal_float_string);
-      field_info[i].type = SQL_C_CHAR;
       field_info[i].size++;	/* Allow for a sign character. */
       break;
     case SQL_REAL:
       push_text("real");
-      field_info[i].type = SQL_C_CHAR;
       field_info[i].size++;	/* Allow for a sign character. */
       break;
     case SQL_DOUBLE:
       push_text("double");
-      field_info[i].type = SQL_C_CHAR;
       field_info[i].size++;	/* Allow for a sign character. */
       break;
     case SQL_VARCHAR:
@@ -274,31 +272,44 @@ static void odbc_fix_fields(void)
     case SQL_WVARCHAR:
 #endif
       push_text("var string");
+      field_info[i].type = SQL_C_WCHAR;
       field_info[i].size = 0;	/* Variable length */
       break;
 #ifdef SQL_GUID
     case SQL_GUID:
       push_text("uuid");
-      field_info[i].type = SQL_C_CHAR;
       break;
 #endif
     case SQL_DATE:
       push_text("date");
-      field_info[i].size = 32;
+      field_info[i].type = SQL_C_WCHAR;
+      /* NOTE: Field size is in characters, while SQLGetData()
+       *       wants bytes.
+       */
+      field_info[i].size = 32 * (ptrdiff_t)sizeof(SQLWCHAR);
       break;
     case SQL_SS_TIME2:
     case SQL_TIME:
       push_text("time");
-      field_info[i].size = 32;
+      field_info[i].type = SQL_C_WCHAR;
+      /* NOTE: Field size is in characters, while SQLGetData()
+       *       wants bytes.
+       */
+      field_info[i].size = 32 * (ptrdiff_t)sizeof(SQLWCHAR);
       break;
     case SQL_SS_TIMESTAMPOFFSET:
     case SQL_TIMESTAMP:
       push_text("timestamp");
-      field_info[i].size = 32;
+      field_info[i].type = SQL_C_WCHAR;
+      /* NOTE: Field size is in characters, while SQLGetData()
+       *       wants bytes.
+       */
+      field_info[i].size = 32 * (ptrdiff_t)sizeof(SQLWCHAR);
       break;
     case SQL_SS_XML:
       /* This corresponds to MSSQL xml. */
       push_text("xml");
+      field_info[i].type = SQL_C_WCHAR;
       field_info[i].size = 0;	/* Variable length */
       break;
     case SQL_LONGVARCHAR:
@@ -306,6 +317,7 @@ static void odbc_fix_fields(void)
     case SQL_WLONGVARCHAR:
 #endif
       push_text("var string");
+      field_info[i].type = SQL_C_WCHAR;
       field_info[i].size = 0;	/* Variable length */
       break;
     case SQL_BINARY:
@@ -363,6 +375,11 @@ static void odbc_fix_fields(void)
       break;
     default:
       push_text("unknown");
+      field_info[i].type = SQL_C_WCHAR;
+      /* NOTE: Field size is in characters, while SQLGetData()
+       *       wants bytes.
+       */
+      field_info[i].size *= (ptrdiff_t)sizeof(SQLWCHAR);
       break;
     }
     push_text("length"); push_int64(precision);
@@ -386,18 +403,6 @@ static void odbc_fix_fields(void)
 
   add_ref(PIKE_ODBC_RES->fields = Pike_sp[-1].u.array);
   pop_stack();
-
-  /*
-   * Now it's time to bind the columns
-   */
-  for (i=0; i < PIKE_ODBC_RES->num_fields; i++) {
-    if (field_info[i].type == SQL_C_WCHAR) {
-      /* NOTE: Field size is in characters, while SQLGetData()
-       *       wants bytes.
-       */
-      field_info[i].size *= (ptrdiff_t)sizeof(SQLWCHAR);
-    }
-  }
 }
 
 /*
