@@ -227,8 +227,11 @@ static void odbc_fix_fields(void)
 #ifdef ODBC_DEBUG
     fprintf(stderr, "SQL_C_WCHAR\n");
 #endif /* ODBC_DEBUG */
+    field_info[i].factory = NULL;
     field_info[i].type = SQL_C_CHAR;
     field_info[i].size = precision;
+    field_info[i].bin_type = SQL_C_BINARY;
+    field_info[i].bin_size = precision;
     switch(sql_type) {
     case SQL_CHAR:
     case SQL_WCHAR:
@@ -842,7 +845,14 @@ static void f_fetch_typed_row(INT32 args)
     for (i=0; i < PIKE_ODBC_RES->num_fields; i++) {
       SQLLEN len = PIKE_ODBC_RES->field_info[i].size;
       SWORD field_type = PIKE_ODBC_RES->field_info[i].type;
+      field_factory_func factory = PIKE_ODBC_RES->field_info[i].factory;
       static char dummy_buf[4];
+
+      /* Read fields with factories as binary. */
+      if (factory) {
+	field_type = PIKE_ODBC_RES->field_info[i].bin_type;
+	len = PIKE_ODBC_RES->field_info[i].bin_size;
+      }
 
       /* First get the size of the data.
        *
@@ -1034,15 +1044,21 @@ static void f_fetch_typed_row(INT32 args)
 			(long)len);
 #endif /* ODBC_DEBUG */
 	      } else len = 0;
+
 	      str_len = str_len>>s->size_shift;
 	      push_string(end_and_resize_shared_string(s, str_len));
 	    }
 	  }
 	}
-	if (!num_strings) {
-	  push_empty_string();
-	} else if (num_strings > 1) {
-	  f_add(num_strings);
+	if (num_strings >= 0) {
+	  if (!num_strings) {
+	    push_empty_string();
+	  } else if (num_strings > 1) {
+	    f_add(num_strings);
+	  }
+	  if (factory) {
+	    factory(i);
+	  }
 	}
       }
     }
