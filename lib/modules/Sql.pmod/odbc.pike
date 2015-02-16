@@ -18,4 +18,12 @@ int|object big_query(object|string q, mapping(string|int:mixed)|void bindings)
   return ::big_query(.sql_util.emulate_bindings(q, bindings, this));
 }
 
+int|object big_typed_query(object|string q,
+			   mapping(string|int:mixed)|void bindings)
+{
+  if (!bindings)
+    return ::big_typed_query(q);
+  return ::big_typed_query(.sql_util.emulate_bindings(q, bindings, this));
+}
+
 constant list_dbs = Odbc.list_dbs;
