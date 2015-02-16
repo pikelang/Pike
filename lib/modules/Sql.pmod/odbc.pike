@@ -27,3 +27,12 @@ int|object big_typed_query(object|string q,
 }
 
 constant list_dbs = Odbc.list_dbs;
+
+//!
+class typed_result
+{
+  inherit ::this_program;
+
+  //! Value to use to represent NULL.
+  mixed _null_value = Val.null;
+}
