@@ -502,6 +502,74 @@ static void f_big_query(INT32 args)
 #endif /* PIKE_DEBUG */
 }
 
+static void f_big_typed_query(INT32 args)
+{
+  ONERROR ebuf;
+  struct pike_string *q = NULL;
+#ifdef PIKE_DEBUG
+  struct svalue *save_sp = sp + 1 - args;
+#endif /* PIKE_DEBUG */
+
+  get_all_args("big_typed_query", args, "%W", &q);
+
+  add_ref(q);
+  SET_ONERROR(ebuf, odbc_free_string, q);
+
+  pop_n_elems(args);
+
+  clean_last_error();
+
+  /* Allocate the statement (result) object */
+  ref_push_object(fp->current_object);
+  apply_current(odbc_typed_result_fun_num, 1);
+
+  if (TYPEOF(Pike_sp[-1]) != T_OBJECT) {
+    Pike_error("odbc->big_typed_query(): Unexpected return value from "
+	  "odbc_typed_result().\n");
+  }
+
+  UNSET_ONERROR(ebuf);
+
+  /* Potential return value is now in place */
+
+  PIKE_ODBC->affected_rows = 0;
+
+  /* Do the actual query */
+  push_string(q);
+  apply(sp[-2].u.object, "execute", 1);
+
+  if (TYPEOF(sp[-1]) != T_INT) {
+    Pike_error("odbc->big_typed_query(): Unexpected return value from "
+	  "odbc_result->execute().\n");
+  }
+
+  if (!sp[-1].u.integer) {
+    pop_n_elems(2);	/* Zap the result object too */
+
+#ifdef ENABLE_IMPLICIT_COMMIT
+    /* This breaks with Free TDS. */
+    {
+      HDBC hdbc = PIKE_ODBC->hdbc;
+      RETCODE code;
+      ODBC_ALLOW();
+      code = SQLTransact(odbc_henv, hdbc, SQL_COMMIT);
+      ODBC_DISALLOW();
+      odbc_check_error("odbc->big_query", "Couldn't commit query",
+		       code, NULL, NULL);
+    }
+#endif /* ENABLE_IMPLICIT_COMMIT */
+
+    push_int(0);
+  } else {
+    pop_stack();	/* Keep the result object */
+  }
+#ifdef PIKE_DEBUG
+  if (sp != save_sp) {
+    Pike_fatal("Stack error in odbc->big_typed_query().\n");
+  }
+#endif /* PIKE_DEBUG */
+}
+
 static void f_list_tables(INT32 args)
 {
 #ifdef PIKE_DEBUG
@@ -689,6 +757,9 @@ PIKE_MODULE_INIT
   ADD_FUNCTION("select_db", f_select_db,tFunc(tStr,tVoid), ID_PUBLIC);
   /* function(string:int|object) */
   ADD_FUNCTION("big_query", f_big_query,tFunc(tStr,tOr(tInt,tObj)), ID_PUBLIC);
+  /* function(string:int|object) */
+  ADD_FUNCTION("big_typed_query", f_big_typed_query, tFunc(tStr,tOr(tInt,tObj)),
+	       ID_PUBLIC);
   /* function(void:int) */
   ADD_FUNCTION("affected_rows", f_affected_rows,tFunc(tVoid,tInt), ID_PUBLIC);
   /* function(void|string:object) */
