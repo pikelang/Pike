@@ -907,15 +907,16 @@ static void f_fetch_typed_row(INT32 args)
 		     code, NULL, NULL);
 
     for (i=0; i < PIKE_ODBC_RES->num_fields; i++) {
-      SQLLEN len = PIKE_ODBC_RES->field_info[i].size;
-      SWORD field_type = PIKE_ODBC_RES->field_info[i].type;
-      field_factory_func factory = PIKE_ODBC_RES->field_info[i].factory;
+      struct field_info *field_info = &PIKE_ODBC_RES->field_info[i];
+      SQLLEN len = field_info->size;
+      SWORD field_type = field_info->type;
+      field_factory_func factory = field_info->factory;
       static char dummy_buf[4];
 
       /* Read fields with factories as binary. */
       if (factory) {
-	field_type = PIKE_ODBC_RES->field_info[i].bin_type;
-	len = PIKE_ODBC_RES->field_info[i].bin_size;
+	field_type = field_info->bin_type;
+	len = field_info->bin_size;
       }
 
       /* First get the size of the data.
@@ -980,7 +981,7 @@ static void f_fetch_typed_row(INT32 args)
 	ODBC_DISALLOW();
 
 	/* In case the type got changed in the kludge above. */
-	PIKE_ODBC_RES->field_info[i].type = field_type;
+	field_info->type = field_type;
       }
 
 #ifdef ODBC_DEBUG
