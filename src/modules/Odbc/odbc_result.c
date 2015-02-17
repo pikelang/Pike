@@ -137,6 +137,20 @@ static void exit_res_struct(struct object *o)
  * More help functions
  */
 
+static void push_sql_float(int i)
+{
+  struct pike_string *data = Pike_sp[-1].u.string;
+  SQLDOUBLE *res = (SQLDOUBLE *)data->str;
+
+  if (data->len != sizeof(SQLDOUBLE)) {
+    Pike_error("Invalid floating point field length: %d\n", data->len);
+  }
+
+  Pike_sp--;
+  push_float(*res);
+  free_string(data);
+}
+
 static void push_sql_int(int i)
 {
   struct pike_string *data = Pike_sp[-1].u.string;
@@ -290,17 +304,26 @@ static void odbc_fix_fields(void)
       field_info[i].bin_size = 2;
       field_info[i].factory = push_sql_int;
       break;
-    case SQL_FLOAT:
+    case SQL_FLOAT:	/* float or double */
       push_text("float");
       field_info[i].size++;	/* Allow for a sign character. */
+      field_info[i].bin_type = SQL_C_DOUBLE;
+      field_info[i].bin_size = sizeof(SQLDOUBLE);
+      field_info[i].factory = push_sql_float;
       break;
-    case SQL_REAL:
+    case SQL_REAL:	/* float */
       push_text("real");
       field_info[i].size++;	/* Allow for a sign character. */
+      field_info[i].bin_type = SQL_C_DOUBLE;
+      field_info[i].bin_size = sizeof(SQLDOUBLE);
+      field_info[i].factory = push_sql_float;
       break;
-    case SQL_DOUBLE:
+    case SQL_DOUBLE:	/* double */
       push_text("double");
       field_info[i].size++;	/* Allow for a sign character. */
+      field_info[i].bin_type = SQL_C_DOUBLE;
+      field_info[i].bin_size = sizeof(SQLDOUBLE);
+      field_info[i].factory = push_sql_float;
       break;
     case SQL_VARCHAR:
 #ifdef SQL_WVARCHAR
