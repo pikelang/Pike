@@ -137,6 +137,34 @@ static void exit_res_struct(struct object *o)
  * More help functions
  */
 
+static void push_sql_int(int i)
+{
+  struct pike_string *data = Pike_sp[-1].u.string;
+  Pike_sp--;
+  switch(data->len) {
+  case 0:
+    push_int(0);
+    break;
+  case 1:
+    push_int(data->str[0]);
+    break;
+  case 2:
+    push_int(*((INT16 *)(data->str)));
+    break;
+  case 4:
+    push_int(*((INT32 *)(data->str)));
+    break;
+  case 8:
+    push_int64(*((SQLBIGINT *)(data->str)));
+    break;
+  default:
+    Pike_sp++;
+    Pike_error("Invalid integer field length: %d\n", data->len);
+    break;
+  }
+  free_string(data);
+}
+
 #ifndef SQL_SS_VARIANT
 #define SQL_SS_VARIANT		(-150)
 #endif
@@ -250,13 +278,17 @@ static void odbc_fix_fields(void)
       push_text("decimal");
       field_info[i].size++;	/* Allow for a sign character. */
       break;
-    case SQL_INTEGER:
+    case SQL_INTEGER:	/* INT32 */
       push_text("integer");
       field_info[i].size++;	/* Allow for a sign character. */
+      field_info[i].bin_size = 4;
+      field_info[i].factory = push_sql_int;
       break;
-    case SQL_SMALLINT:
+    case SQL_SMALLINT:	/* INT16 */
       push_text("short");
       field_info[i].size++;	/* Allow for a sign character. */
+      field_info[i].bin_size = 2;
+      field_info[i].factory = push_sql_int;
       break;
     case SQL_FLOAT:
       push_text("float");
@@ -346,16 +378,25 @@ static void odbc_fix_fields(void)
       field_info[i].type = SQL_C_BINARY;
       field_info[i].size = 0;	/* Variable length */
       break;
-    case SQL_BIGINT:
+    case SQL_BIGINT:	/* INT64 */
       push_text("long integer");
       field_info[i].size++;	/* Allow for a sign character. */
+      field_info[i].bin_type = SQL_C_SBIGINT;
+      field_info[i].bin_size = sizeof(SQLBIGINT);
+      field_info[i].factory = push_sql_int;
       break;
-    case SQL_TINYINT:
+    case SQL_TINYINT:	/* INT8 */
       push_text("tiny integer");
       field_info[i].size++;	/* Allow for a sign character. */
+      field_info[i].bin_type = SQL_C_SLONG;
+      field_info[i].bin_size = sizeof(SQLINTEGER);
+      field_info[i].factory = push_sql_int;
       break;
-    case SQL_BIT:
+    case SQL_BIT:	/* INT1 */
       push_text("bit");
+      field_info[i].bin_type = SQL_C_SLONG;
+      field_info[i].bin_size = sizeof(SQLINTEGER);
+      field_info[i].factory = push_sql_int;
       break;
     case SQL_SS_UDT:
       /* User-defined data type. */
