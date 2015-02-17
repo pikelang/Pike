@@ -21,14 +21,14 @@ PMOD_EXPORT struct svalue auto_bignum_program = SVALUE_INIT_FREE;
 
 PMOD_EXPORT struct program *get_auto_bignum_program(void)
 {
-  return program_from_function(&auto_bignum_program);
+  return program_from_svalue(&auto_bignum_program);
 }
 
 PMOD_EXPORT struct program *get_auto_bignum_program_or_zero(void)
 {
   if (auto_bignum_program.type == PIKE_T_FREE)
     return 0;
-  return program_from_function(&auto_bignum_program);
+  return program_from_svalue(&auto_bignum_program);
 }
 
 void exit_auto_bignum(void)
