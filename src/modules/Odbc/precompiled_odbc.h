@@ -116,6 +116,7 @@ typedef void (*field_factory_func)(int);
 struct field_info {
   SWORD type;
   SWORD bin_type;
+  SWORD scale;
   SQLULEN size;
   SQLULEN bin_size;
   field_factory_func factory;
