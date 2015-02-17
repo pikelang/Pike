@@ -35,4 +35,19 @@ class typed_result
 
   //! Value to use to represent NULL.
   mixed _null_value = Val.null;
+
+  //! Helper function that scales @[mantissa] by a
+  //! factor @expr{10->pow(scale)@}.
+  //!
+  //! @returns
+  //!   Returns an @[Gmp.mpq] object if @[scale] is negative,
+  //!   and otherwise an integer (bignum).
+  object(Gmp.mpq)|int scale_numeric(int mantissa, int scale)
+  {
+    if (!scale) return mantissa;
+    if (scale > 0) {
+      return mantissa * 10->pow(scale);
+    }
+    return Gmp.mpq(mantissa, 10->pow(-scale));
+  }
 }

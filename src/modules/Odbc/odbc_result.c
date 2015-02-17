@@ -70,6 +70,8 @@ struct program *odbc_typed_result_program = NULL;
 int odbc_result_fun_num = -1;
 int odbc_typed_result_fun_num = -1;
 
+static int scale_numeric_fun_num = -1;
+
 /*
  * Functions
  */
@@ -179,6 +181,35 @@ static void push_sql_int(int i)
   free_string(data);
 }
 
+static void push_numeric(int i)
+{
+  struct pike_string *data = Pike_sp[-1].u.string;
+  struct tagSQL_NUMERIC_STRUCT *numeric =
+    (struct tagSQL_NUMERIC_STRUCT *)data->str;
+  struct object *res;
+  MP_INT *mp;
+
+  if (data->len != sizeof(struct tagSQL_NUMERIC_STRUCT)) {
+    Pike_error("Invalid numeric field length: %d\n", data->len);
+  }
+
+  res = fast_clone_object(bignum_program);
+  Pike_sp--;
+  push_object(res);
+  mp = (MP_INT *)res->storage;
+  mpz_import(mp, SQL_MAX_NUMERIC_LEN, -1, 1, 0, 0, numeric->val);
+  if (!numeric->sign) {
+    mpz_neg(mp, mp);
+  }
+  if (numeric->scale) {
+    push_int(-numeric->scale);
+    free_string(data);
+    apply_current(scale_numeric_fun_num, 2);
+    return;
+  }
+  free_string(data);
+}
+
 #ifndef SQL_SS_VARIANT
 #define SQL_SS_VARIANT		(-150)
 #endif
@@ -274,6 +305,7 @@ static void odbc_fix_fields(void)
     field_info[i].size = precision;
     field_info[i].bin_type = SQL_C_BINARY;
     field_info[i].bin_size = precision;
+    field_info[i].scale = scale;
     switch(sql_type) {
     case SQL_CHAR:
     case SQL_WCHAR:
@@ -284,13 +316,19 @@ static void odbc_fix_fields(void)
       field_info[i].size *= (ptrdiff_t)sizeof(SQLWCHAR);
       ref_push_string(literal_string_string);
       break;
-    case SQL_NUMERIC:
+    case SQL_NUMERIC:	/* INT128 + scale + sign */
       push_text("numeric");
       field_info[i].size++;	/* Allow for a sign character. */
+      field_info[i].bin_type = SQL_C_NUMERIC;
+      field_info[i].bin_size = sizeof(struct tagSQL_NUMERIC_STRUCT);
+      field_info[i].factory = push_numeric;
       break;
-    case SQL_DECIMAL:
+    case SQL_DECIMAL:	/* INT128 + scale + sign */
       push_text("decimal");
       field_info[i].size++;	/* Allow for a sign character. */
+      field_info[i].bin_type = SQL_C_NUMERIC;
+      field_info[i].bin_size = sizeof(struct tagSQL_NUMERIC_STRUCT);
+      field_info[i].factory = push_numeric;
       break;
     case SQL_INTEGER:	/* INT32 */
       push_text("integer");
@@ -902,6 +940,7 @@ static void f_fetch_typed_row(INT32 args)
     push_undefined();
   } else {
     struct svalue *null_value = &PIKE_ODBC_RES->null_value;
+    SQLHDESC hdesc = NULL;
 
     odbc_check_error("odbc->fetch_row", "Couldn't fetch row",
 		     code, NULL, NULL);
@@ -1020,6 +1059,41 @@ static void f_fetch_typed_row(INT32 args)
 	case SQL_C_CHAR:
 	  /* Adjust for NUL. */
 	  pad = 1;
+	  break;
+	case SQL_C_NUMERIC:
+	  /* NOTE: API stupidity.
+	   *
+	   *   When using SQLGetData() with field type SQL_NUMERIC the
+	   *   values returned by MSSQL are normalized to scale == 0,
+	   *   which means that any decimals will be truncated.
+	   *
+	   *   We work around this by using setting the field scaling
+	   *   parameters by hand and using the virtual field type
+	   *   SQL_ARD_TYPE.
+	   */
+	  if (!field_info->scale) break;
+	  if (!hdesc) {
+	    odbc_check_error("odbc->fetch_row", "SQLGetStmtAttr() failed",
+			     SQLGetStmtAttr(hstmt, SQL_ATTR_APP_ROW_DESC,
+					    &hdesc, 0, NULL),
+			     NULL, NULL);
+	    /* NB: hdesc is an implicit descriptor handle, and is
+	     *     freed when hstmt is freed.
+	     */
+	  }
+	  odbc_check_error("odbc->fetch_row", "SQLSetDescField() failed",
+			   SQLSetDescField(hdesc, i + 1, SQL_DESC_TYPE,
+					   (void*)SQL_C_NUMERIC, 0),
+			   NULL, NULL);
+	  odbc_check_error("odbc->fetch_row", "SQLSetDescField() failed",
+			   SQLSetDescField(hdesc, i + 1, SQL_DESC_PRECISION,
+					   (void*)(field_info->size-1), 0),
+			   NULL, NULL);
+	  odbc_check_error("odbc->fetch_row", "SQLSetDescField() failed",
+			   SQLSetDescField(hdesc, i + 1, SQL_DESC_SCALE,
+					   (void*)field_info->scale, 0),
+			   NULL, NULL);
+	  field_info->bin_type = field_type = SQL_ARD_TYPE;
 	  break;
 	default:
 	case SQL_C_BINARY:
@@ -1198,6 +1272,12 @@ void init_odbc_res_programs(void)
   ADD_FUNCTION("fetch_row", f_fetch_typed_row,
 	       tFunc(tVoid,tOr(tInt,tArr(tOr4(tStr,tInt,tFlt,tObj)))),
 	       ID_PUBLIC);
+
+  /* Prototypes for functions implemented in Pike. */
+  scale_numeric_fun_num =
+    ADD_FUNCTION("scale_numeric", NULL,
+		 tFunc(tInt tInt, tOr(tInt, tObj)),
+		 ID_PUBLIC);
 
   odbc_typed_result_program = end_program();
   odbc_typed_result_fun_num =
