@@ -71,6 +71,7 @@ int odbc_result_fun_num = -1;
 int odbc_typed_result_fun_num = -1;
 
 static int scale_numeric_fun_num = -1;
+static int timestamp_factory_fun_num = -1;
 
 /*
  * Functions
@@ -208,6 +209,45 @@ static void push_numeric(int i)
     return;
   }
   free_string(data);
+}
+
+static void push_date(int i)
+{
+  struct pike_string *data = Pike_sp[-1].u.string;
+  struct tagDATE_STRUCT *date = (struct tagDATE_STRUCT *)(data->str);
+  if (data->len < sizeof(struct tagDATE_STRUCT)) {
+    return;
+  }
+  Pike_sp--;
+  push_int(date->year);
+  push_int(date->month);
+  push_int(date->day);
+  free_string(data);
+  apply_current(timestamp_factory_fun_num, 3);
+}
+
+static void push_timestamp(int i)
+{
+  struct pike_string *data = Pike_sp[-1].u.string;
+  struct tagTIMESTAMP_STRUCT *date = (struct tagTIMESTAMP_STRUCT *)(data->str);
+  if (data->len < sizeof(struct tagTIMESTAMP_STRUCT)) {
+    return;
+  }
+  Pike_sp--;
+  push_int(date->year);
+  push_int(date->month);
+  push_int(date->day);
+  push_int(date->hour);
+  push_int(date->minute);
+  push_int(date->second);
+  push_int(date->fraction);	/* ns */
+#if 0
+  /* New in struct tagSS_TIMESTAMPOFFSET_STRUCT. */
+  push_int(time->timezone_hour);
+  push_int(time->timezone_minute);
+#endif
+  free_string(data);
+  apply_current(timestamp_factory_fun_num, 7);
 }
 
 #ifndef SQL_SS_VARIANT
@@ -383,6 +423,8 @@ static void odbc_fix_fields(void)
        *       wants bytes.
        */
       field_info[i].size = 32 * (ptrdiff_t)sizeof(SQLWCHAR);
+      field_info[i].bin_size = sizeof(struct tagDATE_STRUCT);
+      field_info[i].factory = push_date;
       break;
     case SQL_SS_TIME2:
     case SQL_TIME:
@@ -394,6 +436,12 @@ static void odbc_fix_fields(void)
       field_info[i].size = 32 * (ptrdiff_t)sizeof(SQLWCHAR);
       break;
     case SQL_SS_TIMESTAMPOFFSET:
+      /* This corresponds to MSSQL datetimeoffset, and is
+       * a timestamp followed by timestamp UTC offset.
+       *
+       * FIXME: We just convert it to SQL_C_TIMESTAMP for now.
+       */
+      /* FALL_THROUGH */
     case SQL_TIMESTAMP:
       push_text("timestamp");
       field_info[i].type = SQL_C_WCHAR;
@@ -401,6 +449,16 @@ static void odbc_fix_fields(void)
        *       wants bytes.
        */
       field_info[i].size = 32 * (ptrdiff_t)sizeof(SQLWCHAR);
+      /* NB: This is the old timestamp format (datetime) when
+       *     precision:scale is 23:3, and the new (datetime2)
+       *     when they are 27:7, but unixODBC 2.3.2 doesn't
+       *     seem to have the struct corresponding to datetime,
+       *     so we force the driver convert it to the current
+       *     timestamp format.
+       */
+      field_info[i].bin_type = SQL_C_TYPE_TIMESTAMP;
+      field_info[i].bin_size = sizeof(struct tagTIMESTAMP_STRUCT);
+      field_info[i].factory = push_timestamp;
       break;
     case SQL_SS_XML:
       /* This corresponds to MSSQL xml. */
@@ -1277,6 +1335,13 @@ void init_odbc_res_programs(void)
   scale_numeric_fun_num =
     ADD_FUNCTION("scale_numeric", NULL,
 		 tFunc(tInt tInt, tOr(tInt, tObj)),
+		 ID_PUBLIC);
+  timestamp_factory_fun_num =
+    ADD_FUNCTION("timestamp_factory", NULL,
+		 tFunc(tInt tInt tInt
+		       tOr(tInt, tVoid) tOr(tInt, tVoid)
+		       tOr(tInt, tVoid) tOr(tInt, tVoid)
+		       tOr(tInt, tVoid) tOr(tInt, tVoid), tMix),
 		 ID_PUBLIC);
 
   odbc_typed_result_program = end_program();
