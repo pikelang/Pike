@@ -258,8 +258,9 @@ int(0..1) is_supported_suite(int suite, int ke_mask, ProtocolVersion version)
 //!   The list of @[CertificatePair]s that are applicable to the
 //!   @[server_name] of this session.
 //!
-//! @param client_suites
-//!   The set of cipher suites that the client claims to support.
+//! @param cipher_suites
+//!   The set of cipher suites that the client and server have in
+//!   common.
 //!
 //! @param version
 //!   The SSL protocol version to use.
@@ -279,6 +280,11 @@ int select_cipher_suite(array(CertificatePair) certs,
   if (!certs || !sizeof(certs))
   {
     SSL3_DEBUG_MSG("No certificates.\n");
+
+    foreach(cipher_suites, int suite)
+      if (KE_Anonymous[CIPHER_SUITES[suite][0]])
+        return set_cipher_suite(suite, version, 0, 0);
+
     return 0;
   }
 
@@ -430,20 +436,6 @@ int select_cipher_suite(array(CertificatePair) certs,
     }
   }
 
-  if (encrypt_then_mac) {
-    // Check if enrypt-then-mac is valid for the suite.
-    if (((sizeof(CIPHER_SUITES[suite]) == 3) &&
-	 ((< CIPHER_rc4, CIPHER_rc4_40 >)[CIPHER_SUITES[suite][1]])) ||
-	((sizeof(CIPHER_SUITES[suite]) == 4) &&
-	 (CIPHER_SUITES[suite][3] != MODE_cbc))) {
-      // Encrypt-then-MAC not allowed with non-CBC suites.
-      encrypt_then_mac = 0;
-      SSL3_DEBUG_MSG("Encrypt-then-MAC: Disabled (not valid for suite).\n");
-    } else {
-      SSL3_DEBUG_MSG("Encrypt-then-MAC: Enabled.\n");
-    }
-  }
-
   return set_cipher_suite(suite, version, signature_algorithms,
 			  max_hash_size);
 }
@@ -477,6 +469,21 @@ int set_cipher_suite(int suite, ProtocolVersion version,
   cipher_suite = suite;
   SSL3_DEBUG_MSG("SSL.Session: cipher_spec %O\n",
                  mkmapping(indices(cipher_spec), values(cipher_spec)));
+
+  if (encrypt_then_mac) {
+    // Check if enrypt-then-mac is valid for the suite.
+    if (((sizeof(CIPHER_SUITES[suite]) == 3) &&
+	 ((< CIPHER_rc4, CIPHER_rc4_40 >)[CIPHER_SUITES[suite][1]])) ||
+	((sizeof(CIPHER_SUITES[suite]) == 4) &&
+	 (CIPHER_SUITES[suite][3] != MODE_cbc))) {
+      // Encrypt-then-MAC not allowed with non-CBC suites.
+      encrypt_then_mac = 0;
+      SSL3_DEBUG_MSG("Encrypt-then-MAC: Disabled (not valid for suite).\n");
+    } else {
+      SSL3_DEBUG_MSG("Encrypt-then-MAC: Enabled.\n");
+    }
+  }
+
   return 1;
 }
 
