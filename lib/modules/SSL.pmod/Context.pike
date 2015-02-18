@@ -640,6 +640,13 @@ void configure_suite_b(int(128..)|void min_keylength,
 
 #endif /* Crypto.ECC.Curve && Crypto.AES.GCM && Crypto.SHA384 */
 
+// --- PSK API
+
+optional string(8bit) get_psk_hint();
+
+optional string(8bit) get_psk_id(void|string(8bit) hint);
+
+optional string(8bit) get_psk();
 
 //
 // --- Certificates and authentication

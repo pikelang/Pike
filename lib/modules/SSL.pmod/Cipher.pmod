@@ -514,6 +514,63 @@ class KeyExchangeNULL
   }
 }
 
+class KeyExchangePSK
+{
+  inherit KeyExchange;
+
+  private string hint;
+
+  Stdio.Buffer server_key_exchange_packet()
+  {
+    werror("server_key_exchange_packet\n");
+    Stdio.Buffer ret = Stdio.Buffer();
+    if( context->get_psk_hint )
+    {
+      string str = context->get_psk_hint();
+      if( str )
+        ret->add_hstring(str, 2);
+    }
+    return ret;
+  }
+
+  string(8bit) client_key_exchange_packet(Stdio.Buffer packet_data,
+                                          ProtocolVersion version)
+  {
+    werror("client_key_exchange_packet\n");
+    anonymous = 1;
+
+    string id = context->get_psk_id(hint);
+    packet_data->add_hstring(id, 2);
+
+    string psk = context->get_psk(id);
+    return sprintf("%2H%2H", "\0"*sizeof(psk), psk);
+  }
+
+  string(8bit)|int(8bit) got_client_key_exchange(Stdio.Buffer data,
+                                                 ProtocolVersion version)
+  {
+    anonymous = 1;
+    werror("got_client_key_exchange %O\n", data);
+    string psk = context->get_psk( data->read_hstring(2) );
+    if( sizeof(data) )
+      return ALERT_unexpected_message;
+
+    return sprintf("%2H%2H", "\0"*sizeof(psk), psk);
+  }
+
+  int got_server_key_exchange(Stdio.Buffer input,
+			      string client_random,
+			      string server_random)
+  {
+    if( sizeof(input) )
+      hint = input->read_hstring(2);
+    if( sizeof(input) )
+      return -1;
+
+    return 0;
+  }
+}
+
 //! Key exchange for @[KE_rsa].
 //!
 //! @[KeyExchange] that uses the Rivest Shamir Adelman algorithm.
@@ -1960,6 +2017,9 @@ CipherSpec lookup(int suite, ProtocolVersion|int version,
       res->ke_factory = KeyExchangeECDH;
       break;
 #endif
+    case KE_psk:
+      res->ke_factory = KeyExchangePSK;
+      break;
     default:
       error( "Internal error.\n" );
     }
@@ -1981,6 +2041,7 @@ CipherSpec lookup(int suite, ProtocolVersion|int version,
   case KE_null:
   case KE_dh_anon:
   case KE_ecdh_anon:
+  case KE_psk:
     res->signature_alg = SIGNATURE_anonymous;
     break;
 #if constant(Crypto.ECC.Curve)
