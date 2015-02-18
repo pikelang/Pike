@@ -111,4 +111,10 @@ class typed_result
     return Calendar.ISO.Fraction(year, month, day,
 				 hour, minute, second, nanos);
   }
+
+  //! Function called to create UUID/GUID objects.
+  Standards.UUID.UUID uuid_factory(string(0..255) raw_uuid)
+  {
+    return Standards.UUID.UUID(raw_uuid);
+  }
 }
