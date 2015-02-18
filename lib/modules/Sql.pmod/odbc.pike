@@ -53,6 +53,44 @@ class typed_result
     return Gmp.mpq(mantissa, 10->pow(-scale));
   }
 
+  //! Time of day.
+  class TOD(int hour, int minute, int second,
+	    int|void nanos)
+  {
+    protected string _sprintf(int c)
+    {
+      if (nanos) {
+	return sprintf("%02d:%02d:%02d.%09d",
+		       hour, minute, second, nanos);
+      }
+      return sprintf("%02d:%02d:%02d", hour, minute, second);
+    }
+
+    protected mixed cast(string t)
+    {
+      switch(t) {
+      case "string":
+	return _sprintf('s');
+      case "int":
+	// Number of seconds since the start of the day.
+	return (hour*60 + minute)*60 + second;
+      case "float":
+	int seconds = cast("int");
+	return seconds + nanos/1000000000.0;
+      }
+      return UNDEFINED;
+    }
+  }
+
+  //! Function called to create time of day objects.
+  //!
+  //! The default implementation just passes along its
+  //! arguments to @[TOD].
+  TOD time_factory(int hour, int minute, int second, int|void nanos)
+  {
+    return TOD(hour, minute, second, nanos);
+  }
+
   //! Function called to create timestamp and date objects.
   //!
   //! @note

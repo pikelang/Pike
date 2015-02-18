@@ -71,6 +71,7 @@ int odbc_result_fun_num = -1;
 int odbc_typed_result_fun_num = -1;
 
 static int scale_numeric_fun_num = -1;
+static int time_factory_fun_num = -1;
 static int timestamp_factory_fun_num = -1;
 
 /*
@@ -221,6 +222,25 @@ static void push_numeric(int i)
     apply_current(scale_numeric_fun_num, 2);
     return;
   }
+}
+
+static void push_time(int i)
+{
+  struct pike_string *data = Pike_sp[-1].u.string;
+  struct tagTIME_STRUCT *time = (struct tagTIME_STRUCT *)(data->str);
+  if (data->len < sizeof(struct tagTIME_STRUCT)) {
+    return;
+  }
+  Pike_sp--;
+  push_int(time->hour);
+  push_int(time->minute);
+  push_int(time->second);
+#if 0
+  /* New in struct tagSS_TIME2_STRUCT. */
+  push_int(time->fraction);	/* ns */
+#endif
+  free_string(data);
+  apply_current(time_factory_fun_num, 3);
 }
 
 static void push_date(int i)
@@ -439,6 +459,12 @@ static void odbc_fix_fields(void)
       field_info[i].factory = push_date;
       break;
     case SQL_SS_TIME2:
+      /* This corresponds to MSSQL time, and is time of day
+       * with nanosecond precision.
+       *
+       * FIXME: We just convert it to SQL_C_TYPE_TIME for now.
+       */
+      /* FALL_THROUGH */
     case SQL_TIME:
       push_text("time");
       field_info[i].type = SQL_C_WCHAR;
@@ -446,6 +472,9 @@ static void odbc_fix_fields(void)
        *       wants bytes.
        */
       field_info[i].size = 32 * (ptrdiff_t)sizeof(SQLWCHAR);
+      field_info[i].bin_type = SQL_C_TYPE_TIME;
+      field_info[i].bin_size = sizeof(struct tagTIME_STRUCT);
+      field_info[i].factory = push_time;
       break;
     case SQL_SS_TIMESTAMPOFFSET:
       /* This corresponds to MSSQL datetimeoffset, and is
@@ -1357,6 +1386,10 @@ void init_odbc_res_programs(void)
   scale_numeric_fun_num =
     ADD_FUNCTION("scale_numeric", NULL,
 		 tFunc(tInt tInt, tOr(tInt, tObj)),
+		 ID_PUBLIC);
+  time_factory_fun_num =
+    ADD_FUNCTION("time_factory", NULL,
+		 tFunc(tInt tInt tInt tOr(tInt, tVoid), tMix),
 		 ID_PUBLIC);
   timestamp_factory_fun_num =
     ADD_FUNCTION("timestamp_factory", NULL,
