@@ -200,6 +200,8 @@ constant KE_Anonymous = (<
   KE_null,
   KE_dh_anon,
   KE_ecdh_anon,
+  KE_psk,
+  KE_dhe_psk,
 >);
 
 //! Compression methods.
