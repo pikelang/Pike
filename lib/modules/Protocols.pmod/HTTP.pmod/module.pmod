@@ -423,7 +423,7 @@ void do_async_method(string method,
     "host" : url->host + 
     (url->port!=(url->scheme=="https"?443:80)?":"+url->port:"")]);
 
-  if(url->user || url->passwd)
+  if(url->user || url->password)
     default_headers->authorization = "Basic "
 				   + MIME.encode_base64(url->user + ":" +
 							(url->password || ""));
