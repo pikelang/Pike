@@ -522,7 +522,6 @@ class KeyExchangePSK
 
   Stdio.Buffer server_key_exchange_packet()
   {
-    werror("server_key_exchange_packet\n");
     Stdio.Buffer ret = Stdio.Buffer();
     if( context->get_psk_hint )
     {
@@ -536,7 +535,6 @@ class KeyExchangePSK
   string(8bit) client_key_exchange_packet(Stdio.Buffer packet_data,
                                           ProtocolVersion version)
   {
-    werror("client_key_exchange_packet\n");
     anonymous = 1;
 
     string id = context->get_psk_id(hint);
@@ -550,7 +548,7 @@ class KeyExchangePSK
                                                  ProtocolVersion version)
   {
     anonymous = 1;
-    werror("got_client_key_exchange %O\n", data);
+
     string psk = context->get_psk( data->read_hstring(2) );
     if( sizeof(data) )
       return ALERT_unexpected_message;
