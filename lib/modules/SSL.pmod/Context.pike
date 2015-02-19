@@ -642,11 +642,29 @@ void configure_suite_b(int(128..)|void min_keylength,
 
 // --- PSK API
 
+// In addition to implementing get_psk, get_psk_id if you are a client
+// and optionally get_psk_hint if you are a server, the context object
+// also needs to ensure the apprioriate PSK cipher suites are in the
+// preferred_suites array. If the server is only accepting these PSK
+// connections, simply setting the array to a single member is best.
+// The client must only inlcude PSK suites when talking to a servers
+// known to support it, or risk getting MITM attacks.
+
+//! A context created for server side PSK use can optionally implement
+//! get_psk_hint to return a hint string to be sent to the client. If
+//! not implemented, or returning 0, no PSK hint will be sent.
 optional string(8bit) get_psk_hint();
 
-optional string(8bit) get_psk_id(void|string(8bit) hint);
+//! A context created for client side PSK use must implement a
+//! get_psk_id method, which will be called with the server provided
+//! hint, or 0 if no hint was sent. The method should return a key id
+//! for the PSK, which will be sent to the server.
+optional string(8bit) get_psk_id(string(8bit) hint);
 
-optional string(8bit) get_psk();
+//! A context created for PSK use must implement a get_psk method,
+//! which will be called with the key id, and should return the key to
+//! be used for the connection.
+optional string(8bit) get_psk(string(8bit) id);
 
 //
 // --- Certificates and authentication
