@@ -538,6 +538,7 @@ class KeyExchangePSK
     anonymous = 1;
 
     string id = context->get_psk_id(hint);
+    if( !id ) return 0;
     packet_data->add_hstring(id, 2);
 
     string psk = context->get_psk(id);
@@ -552,6 +553,8 @@ class KeyExchangePSK
     string psk = context->get_psk( data->read_hstring(2) );
     if( sizeof(data) )
       return ALERT_unexpected_message;
+    if( !psk )
+      return ALERT_unknown_psk_identity;
 
     return sprintf("%2H%2H", "\0"*sizeof(psk), psk);
   }

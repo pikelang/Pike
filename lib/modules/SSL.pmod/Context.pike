@@ -658,12 +658,14 @@ optional string(8bit) get_psk_hint();
 //! A context created for client side PSK use must implement a
 //! get_psk_id method, which will be called with the server provided
 //! hint, or 0 if no hint was sent. The method should return a key id
-//! for the PSK, which will be sent to the server.
+//! for the PSK, which will be sent to the server. If the hint is not
+//! valid, 0 should be returned.
 optional string(8bit) get_psk_id(string(8bit) hint);
 
 //! A context created for PSK use must implement a get_psk method,
 //! which will be called with the key id, and should return the key to
-//! be used for the connection.
+//! be used for the connection. If the id is not valid, 0 should be
+//! returned.
 optional string(8bit) get_psk(string(8bit) id);
 
 //
