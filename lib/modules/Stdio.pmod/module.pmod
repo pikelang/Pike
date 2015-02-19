@@ -3277,12 +3277,12 @@ protected class nb_sendfile
     SF_WERR("Writer done.");
 
     // Disable any reader.
-    if (from && from->set_nonblocking) {
+    if (from && !blocking_from && from->set_nonblocking) {
       from->set_nonblocking(0, from->query_write_callback(), 0);
     }
 
     // Disable any writer.
-    if (to && to->set_nonblocking) {
+    if (to && !blocking_to && to->set_nonblocking) {
       to->set_nonblocking(to->query_read_callback(), 0,
 			  to->query_close_callback());
     }
