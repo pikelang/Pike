@@ -724,6 +724,24 @@ string fmt_version(ProtocolVersion version)
 }
 
 /* FIXME: Add SIGN-type element to table */
+
+//! A mapping from cipher suite identifier to an array defining the
+//! algorithms to be used in that suite.
+//!
+//! @array
+//!   @elem 0
+//!     The key exchange algorithm to be used for this suite, or 0.
+//!     E.g. @[KE_rsa].
+//!   @elem 1
+//!     The cipher algorithm to be used for this suite, or 0. E.g.
+//!     @[CIPHER_aes].
+//!   @elem 2
+//!     The hash algorithm to be used for this suite, or 0. E.g.
+//!     @[HASH_sha].
+//!   @elem 3
+//!     Optionally for TLS 1.2 and later cipher suites the mode of
+//!     operation. E.g. @[MODE_cbc].
+//! @endarray
 constant CIPHER_SUITES =
 ([
    // The following cipher suites are only intended for testing.
