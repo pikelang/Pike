@@ -657,7 +657,11 @@ optional string(8bit) get_psk_hint();
 
 //! A context created for client side PSK use must implement a
 //! get_psk_id method, which will be called with the server provided
-//! hint, or 0 if no hint was sent. The method should return a key id
+//! hint, or 0 if no hint was sent. Note that while there is an API
+//! difference between no hint and a zero length hint, some PSK modes
+//! are unable to send no hints.
+//!
+//! The method should return a key id
 //! for the PSK, which will be sent to the server. If the hint is not
 //! valid, 0 should be returned.
 optional string(8bit) get_psk_id(string(8bit) hint);

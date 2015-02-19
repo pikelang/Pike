@@ -72,6 +72,7 @@ test_tests([[
 	  "dhe":([
 	    "dss":KE_dhe_dss,
 	    "rsa":KE_dhe_rsa,
+            "psk":KE_dhe_psk,
 	  ]),
 #if constant(Crypto.ECC.Curve)
 	  "ecdh":([
@@ -1257,7 +1258,7 @@ test_do([[
         TLS_psk_with_aes_128_cbc_sha256,
         TLS_psk_with_aes_256_cbc_sha384,
         TLS_psk_with_null_sha256,
-        //   TLS_psk_with_null_sha384,
+        TLS_psk_with_null_sha384,
         TLS_psk_with_camellia_128_gcm_sha256,
         TLS_psk_with_camellia_256_gcm_sha384,
         TLS_psk_with_camellia_128_cbc_sha256,
@@ -1266,6 +1267,24 @@ test_do([[
         TLS_psk_with_aes_256_ccm,
         TLS_psk_with_aes_128_ccm_8,
         TLS_psk_with_aes_256_ccm_8,
+
+        TLS_dhe_psk_with_null_sha,
+        TLS_dhe_psk_with_rc4_128_sha,
+        TLS_dhe_psk_with_3des_ede_cbc_sha,
+        TLS_dhe_psk_with_aes_128_cbc_sha,
+        TLS_dhe_psk_with_aes_256_cbc_sha,
+        TLS_dhe_psk_with_aes_128_gcm_sha256,
+        TLS_dhe_psk_with_aes_256_gcm_sha384,
+        TLS_dhe_psk_with_aes_128_cbc_sha256,
+        TLS_dhe_psk_with_aes_256_cbc_sha384,
+        TLS_dhe_psk_with_null_sha256,
+        TLS_deh_psk_with_null_sha384,
+        TLS_dhe_psk_with_camellia_128_gcm_sha256,
+        TLS_dhe_psk_with_camellia_256_gcm_sha384,
+        TLS_dhe_psk_with_camellia_128_cbc_sha256,
+        TLS_dhe_psk_with_camellia_256_cbc_sha384,
+        TLS_dhe_psk_with_aes_128_ccm,
+        TLS_dhe_psk_with_aes_256_ccm,
       });
     }
   };
@@ -1297,6 +1316,7 @@ define(test_psk,[[
   ]])
 ]])
 
+test_psk(TLS_dhe_psk_with_aes_128_cbc_sha)
 test_psk(TLS_psk_with_aes_128_cbc_sha)
 
 test_do([[

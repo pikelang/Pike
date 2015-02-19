@@ -443,7 +443,7 @@ constant TLS_rsa_psk_with_aes_256_gcm_sha384    = 0x00ad;	// RFC 5487
 constant TLS_psk_with_aes_128_cbc_sha256        = 0x00ae;	// RFC 5487
 constant TLS_psk_with_aes_256_cbc_sha384        = 0x00af;	// RFC 5487
 constant TLS_psk_with_null_sha256               = 0x00b0;	// RFC 5487
-//constant TLS_psk_with_null_sha384               = 0x00b1;	// RFC 5487
+constant TLS_psk_with_null_sha384               = 0x00b1;	// RFC 5487
 constant TLS_dhe_psk_with_aes_128_cbc_sha256    = 0x00b2;	// RFC 5487
 constant TLS_dhe_psk_with_aes_256_cbc_sha384    = 0x00b3;	// RFC 5487
 constant TLS_dhe_psk_with_null_sha256           = 0x00b4;	// RFC 5487
@@ -1018,7 +1018,7 @@ TLS_ecdhe_ecdsa_with_aes_256_ccm_8 :	({ KE_ecdhe_ecdsa, CIPHER_aes256, HASH_sha2
    TLS_psk_with_aes_128_cbc_sha256 : ({ KE_psk, CIPHER_aes, HASH_sha256 }),
    TLS_psk_with_aes_256_cbc_sha384 : ({ KE_psk, CIPHER_aes256, HASH_sha384, MODE_cbc }),
    TLS_psk_with_null_sha256 : ({ KE_psk, 0, HASH_sha256 }),
-   //   TLS_psk_with_null_sha384 : ({ KE_psk, 0, HASH_sha384 }),
+   TLS_psk_with_null_sha384 : ({ KE_psk, 0, HASH_sha384, MODE_cbc }),
    TLS_psk_with_camellia_128_gcm_sha256 : ({ KE_psk, CIPHER_camellia128, HASH_sha256, MODE_gcm }),
    TLS_psk_with_camellia_256_gcm_sha384 : ({ KE_psk, CIPHER_camellia256, HASH_sha384, MODE_gcm }),
    TLS_psk_with_camellia_128_cbc_sha256 : ({ KE_psk, CIPHER_camellia128, HASH_sha256 }),
@@ -1027,6 +1027,25 @@ TLS_ecdhe_ecdsa_with_aes_256_ccm_8 :	({ KE_ecdhe_ecdsa, CIPHER_aes256, HASH_sha2
    TLS_psk_with_aes_256_ccm : ({ KE_psk, CIPHER_aes256, HASH_sha256, MODE_ccm }),
    TLS_psk_with_aes_128_ccm_8 : ({ KE_psk, CIPHER_aes, HASH_sha256, MODE_ccm_8 }),
    TLS_psk_with_aes_256_ccm_8 : ({ KE_psk, CIPHER_aes256, HASH_sha256, MODE_ccm_8 }),
+
+   // PSK with DHE
+   TLS_dhe_psk_with_null_sha : ({ KE_dhe_psk, 0, HASH_sha }),
+   TLS_dhe_psk_with_rc4_128_sha : ({ KE_dhe_psk, CIPHER_rc4, HASH_sha }),
+   TLS_dhe_psk_with_3des_ede_cbc_sha : ({ KE_dhe_psk, CIPHER_3des, HASH_sha }),
+   TLS_dhe_psk_with_aes_128_cbc_sha : ({ KE_dhe_psk, CIPHER_aes, HASH_sha }),
+   TLS_dhe_psk_with_aes_256_cbc_sha : ({ KE_dhe_psk, CIPHER_aes256, HASH_sha }),
+   TLS_dhe_psk_with_aes_128_gcm_sha256 : ({ KE_dhe_psk, CIPHER_aes, HASH_sha256, MODE_gcm }),
+   TLS_dhe_psk_with_aes_256_gcm_sha384 : ({ KE_dhe_psk, CIPHER_aes256, HASH_sha384, MODE_gcm }),
+   TLS_dhe_psk_with_aes_128_cbc_sha256 : ({ KE_dhe_psk, CIPHER_aes, HASH_sha256 }),
+   TLS_dhe_psk_with_aes_256_cbc_sha384 : ({ KE_dhe_psk, CIPHER_aes256, HASH_sha384, MODE_cbc }),
+   TLS_dhe_psk_with_null_sha256 : ({ KE_dhe_psk, 0, HASH_sha256 }),
+   TLS_dhe_psk_with_null_sha384 : ({ KE_dhe_psk, 0, HASH_sha384, MODE_cbc }),
+   TLS_dhe_psk_with_camellia_128_gcm_sha256 : ({ KE_dhe_psk, CIPHER_camellia128, HASH_sha256, MODE_gcm }),
+   TLS_dhe_psk_with_camellia_256_gcm_sha384 : ({ KE_dhe_psk, CIPHER_camellia256, HASH_sha384, MODE_gcm }),
+   TLS_dhe_psk_with_camellia_128_cbc_sha256 : ({ KE_dhe_psk, CIPHER_camellia128, HASH_sha256 }),
+   TLS_dhe_psk_with_camellia_256_cbc_sha384 : ({ KE_dhe_psk, CIPHER_camellia256, HASH_sha384, MODE_cbc }),
+   TLS_dhe_psk_with_aes_128_ccm : ({ KE_dhe_psk, CIPHER_aes, HASH_sha256, MODE_ccm }),
+   TLS_dhe_psk_with_aes_256_ccm : ({ KE_dhe_psk, CIPHER_aes256, HASH_sha256, MODE_ccm }),
 
 ]);
 

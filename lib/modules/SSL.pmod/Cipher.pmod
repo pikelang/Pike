@@ -514,11 +514,12 @@ class KeyExchangeNULL
   }
 }
 
+//! Key exchange for @[KE_psk], pre shared keys.
 class KeyExchangePSK
 {
   inherit KeyExchange;
 
-  private string hint;
+  protected string hint;
 
   Stdio.Buffer server_key_exchange_packet()
   {
@@ -920,6 +921,65 @@ class KeyExchangeDHE
     output->add_hstring(g, 2);
     output->add_hstring(o, 2);
     return output;
+  }
+}
+
+//! Key exchange for @[KE_dhe_psk].
+class KeyExchangeDHEPSK
+{
+  inherit KeyExchangePSK : PSK;
+  inherit KeyExchangeDHE : DHE;
+
+  protected void create(object context, object session, object connection,
+                        ProtocolVersion client_version)
+  {
+    PSK::create(context, session, connection, client_version);
+    DHE::create(context, session, connection, client_version);
+  }
+
+  Stdio.Buffer server_key_exchange_packet()
+  {
+    Stdio.Buffer psk = PSK::server_key_exchange_packet();
+    if( !sizeof(psk) )
+      psk->add_int(0, 2);
+    Stdio.Buffer dhe = DHE::server_key_params();
+    return psk->add(dhe);
+  }
+
+  string(8bit) client_key_exchange_packet(Stdio.Buffer packet_data,
+                                          ProtocolVersion version)
+  {
+    string(8bit) id = context->get_psk_id(hint);
+    if( !id ) return 0;
+    packet_data->add_hstring(id, 2);
+
+    string(8bit) s = DHE::client_key_exchange_packet(packet_data, version);
+    if( !s ) return 0;
+
+    string(8bit) psk = context->get_psk(id);
+    return s + sprintf("%2H", psk);
+  }
+
+  string(8bit)|int(8bit) got_client_key_exchange(Stdio.Buffer data,
+                                                 ProtocolVersion version)
+  {
+    string(8bit) psk = context->get_psk( data->read_hstring(2) );
+    if( !psk )
+      return ALERT_unknown_psk_identity;
+
+    string(8bit)|int(8bit) s = DHE::got_client_key_exchange(data, version);
+    if( intp(s) ) return s;
+
+    return [string(8bit)]s + sprintf("%2H", psk);
+  }
+
+  int got_server_key_exchange(Stdio.Buffer input,
+			      string client_random,
+			      string server_random)
+  {
+    hint = input->read_hstring(2);
+    DHE::parse_server_key_exchange(input);
+    return 0;
   }
 }
 
@@ -2021,6 +2081,9 @@ CipherSpec lookup(int suite, ProtocolVersion|int version,
     case KE_psk:
       res->ke_factory = KeyExchangePSK;
       break;
+    case KE_dhe_psk:
+      res->ke_factory = KeyExchangeDHEPSK;
+      break;
     default:
       error( "Internal error.\n" );
     }
@@ -2043,6 +2106,7 @@ CipherSpec lookup(int suite, ProtocolVersion|int version,
   case KE_dh_anon:
   case KE_ecdh_anon:
   case KE_psk:
+  case KE_dhe_psk:
     res->signature_alg = SIGNATURE_anonymous;
     break;
 #if constant(Crypto.ECC.Curve)
