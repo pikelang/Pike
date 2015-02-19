@@ -396,14 +396,14 @@ static void odbc_fix_fields(void)
       break;
     case SQL_NUMERIC:	/* INT128 + scale + sign */
       push_text("numeric");
-      field_info[i].size++;	/* Allow for a sign character. */
+      field_info[i].size += 3;	/* Sign, leading zero and decimal characters. */
       field_info[i].bin_type = SQL_C_NUMERIC;
       field_info[i].bin_size = sizeof(struct tagSQL_NUMERIC_STRUCT);
       field_info[i].factory = push_numeric;
       break;
     case SQL_DECIMAL:	/* INT128 + scale + sign */
       push_text("decimal");
-      field_info[i].size++;	/* Allow for a sign character. */
+      field_info[i].size += 3;	/* Sign, leading zero and decimal characters. */
       field_info[i].bin_type = SQL_C_NUMERIC;
       field_info[i].bin_size = sizeof(struct tagSQL_NUMERIC_STRUCT);
       field_info[i].factory = push_numeric;
@@ -422,21 +422,21 @@ static void odbc_fix_fields(void)
       break;
     case SQL_FLOAT:	/* float or double */
       push_text("float");
-      field_info[i].size++;	/* Allow for a sign character. */
+      field_info[i].size += 3;	/* Sign, leading zero and decimal characters. */
       field_info[i].bin_type = SQL_C_DOUBLE;
       field_info[i].bin_size = sizeof(SQLDOUBLE);
       field_info[i].factory = push_sql_float;
       break;
     case SQL_REAL:	/* float */
       push_text("real");
-      field_info[i].size++;	/* Allow for a sign character. */
+      field_info[i].size += 3;	/* Sign, leading zero and decimal characters. */
       field_info[i].bin_type = SQL_C_DOUBLE;
       field_info[i].bin_size = sizeof(SQLDOUBLE);
       field_info[i].factory = push_sql_float;
       break;
     case SQL_DOUBLE:	/* double */
       push_text("double");
-      field_info[i].size++;	/* Allow for a sign character. */
+      field_info[i].size += 3;	/* Sign, leading zero and decimal characters. */
       field_info[i].bin_type = SQL_C_DOUBLE;
       field_info[i].bin_size = sizeof(SQLDOUBLE);
       field_info[i].factory = push_sql_float;
