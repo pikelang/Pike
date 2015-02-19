@@ -1235,13 +1235,13 @@ test_do([[
     string(8bit) get_psk_id(void|string(8bit) hint)
     {
       if (hint=="hint") return "key id";
-      return "not key id";
+      return 0;
     }
 
     string(8bit) get_psk(string(8bit) id)
     {
       if (id=="key id") return sprintf("%32s", "key");
-      return sprintf("%32s", "not key");
+      return 0;
     }
 
     void create(void|array(int) suites)
