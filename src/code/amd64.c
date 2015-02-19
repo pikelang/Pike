@@ -2789,7 +2789,7 @@ int amd64_ins_f_jump(unsigned int op, int backward_jump)
       mov_mem_reg( sp_reg, -4*sizeof(struct svalue)+8, P_REG_RBX );
       mov_mem32_reg( P_REG_RBX, OFFSETOF(array,size), P_REG_RCX );
       cmp_reg_reg( P_REG_RAX, P_REG_RCX );
-      je(&label_A);
+      jge(&label_A);
 
       /* increase counter */
       add_mem_imm( sp_reg, -1*(int)sizeof(struct svalue)+8, 1 );
