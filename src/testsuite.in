@@ -8847,6 +8847,13 @@ test_any([[
 ]],1)
 
 test_any([[
+  // Bug 7426.
+  array a = ({});
+  foreach(a[1..], mixed e) return 0;
+  return 1;
+]], 1)
+
+test_any([[
   int ret;
   foreach( ([1:2,3:5,7:11,13:17]) ; int a ; int b) ret+=a*b;
   return ret;
