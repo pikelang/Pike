@@ -84,6 +84,7 @@ test_tests([[
 	    "rsa":KE_ecdhe_rsa,
 	  ]),
 #endif
+          "psk":KE_psk,
 	]));
 
       if ((sizeof(fields) > fno) && (< "fips", "oldfips" >)[ fields[fno] ] &&
@@ -1218,6 +1219,85 @@ test_tests([[
 dnl FIXME: Test TLS 1.2 and earlier server and client (separately)
 dnl	   without EXTENSION_encrypt_then_mac.
 dnl Hmm... This might be already be tested with SSL 3.0 (client-side only).
+
+test_do([[
+  import SSL.Constants;
+
+  class Context
+  {
+    inherit SSL.Context;
+
+    string(8bit) get_psk_hint()
+    {
+      return "hint";
+    }
+
+    string(8bit) get_psk_id(void|string(8bit) hint)
+    {
+      if (hint=="hint") return "key id";
+      return "not key id";
+    }
+
+    string(8bit) get_psk(string(8bit) id)
+    {
+      if (id=="key id") return sprintf("%32s", "key");
+      return sprintf("%32s", "not key");
+    }
+
+    void create(void|array(int) suites)
+    {
+      preferred_suites = suites || ({
+        TLS_psk_with_null_sha,
+        TLS_psk_with_rc4_128_sha,
+        TLS_psk_with_3des_ede_cbc_sha,
+        TLS_psk_with_aes_128_cbc_sha,
+        TLS_psk_with_aes_256_cbc_sha,
+        TLS_psk_with_aes_128_gcm_sha256,
+        TLS_psk_with_aes_256_gcm_sha384,
+        TLS_psk_with_aes_128_cbc_sha256,
+        TLS_psk_with_aes_256_cbc_sha384,
+        TLS_psk_with_null_sha256,
+        //   TLS_psk_with_null_sha384,
+        TLS_psk_with_camellia_128_gcm_sha256,
+        TLS_psk_with_camellia_256_gcm_sha384,
+        TLS_psk_with_camellia_128_cbc_sha256,
+        TLS_psk_with_camellia_256_cbc_sha384,
+        TLS_psk_with_aes_128_ccm,
+        TLS_psk_with_aes_256_ccm,
+        TLS_psk_with_aes_128_ccm_8,
+        TLS_psk_with_aes_256_ccm_8,
+      });
+    }
+  };
+
+  add_constant("TestContext", Context);
+  SSL.Context ctx = Context();
+  ctx->random = random_string;
+  add_constant("server_ctx", ctx);
+]])
+
+define(test_psk,[[
+  test_program([[
+    import SSL.Constants;
+
+    int a()
+    {
+      SSL.Context client_ctx = TestContext(({$1}));
+      string fail =
+        low_test_ssl_connection(server_ctx, client_ctx, client_msg,
+                                $1, PROTOCOL_TLS_MAX);
+      if (fail) {
+        log_ssl_failure(client_ctx->min_version, client_ctx->max_version,
+                        server_ctx->min_version, server_ctx->max_version,
+                        fail, server_ctx->preferred_suites);
+        return 0;
+      }
+      return 1;
+    };
+  ]])
+]])
+
+test_psk(TLS_psk_with_aes_128_cbc_sha)
 
 test_do([[
   add_constant("aead_suites");
