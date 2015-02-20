@@ -790,6 +790,36 @@ static int emit_ltosval_call_and_assign( node *lval, node *func, node *args )
    return 1;
 }
 
+static int is_apply_constant_function_arg0( node *n, node *target )
+{
+    if (/*n->token == F_APPLY &&*/ 
+        (CAR(n)->token == F_CONSTANT) &&
+        (TYPEOF(CAR(n)->u.sval) == T_FUNCTION) &&
+        (SUBTYPEOF(CAR(n)->u.sval) == FUNCTION_BUILTIN) &&
+        (CAR(n)->u.sval.u.efun->function != f_map) &&
+        (CAR(n)->u.sval.u.efun->function != f_filter)) {
+	/* efuns typically don't access object variables. */
+        node *args = CDR(n), **arg;
+	if (args)
+        {
+            arg = my_get_arg(&args, 0);
+            if (arg && node_is_eq(target, *arg) &&
+                !(args->tree_info & OPT_ASSIGNMENT))
+            {
+                if(match_types(target->type, array_type_string) ||
+                   match_types(target->type, string_type_string) ||
+                   match_types(target->type, object_type_string) ||
+                   match_types(target->type, multiset_type_string) ||
+                   match_types(target->type, mapping_type_string))
+                {
+                    return emit_ltosval_call_and_assign(target,CAR(n),args);
+                }
+            }
+	}
+    }
+    return 0;
+}
+
 static void emit_multi_assign(node *vals, node *vars, int no)
 {
   struct compilation *c = THIS_COMPILATION;
@@ -1323,33 +1353,16 @@ static int do_docode2(node *n, int flags)
 	emit0(n->token);
 	return n->token==F_ASSIGN; /* So when is this false? /mast */
       }
+    case F_SOFT_CAST:
+        /*  a  = [type]`oper(a,*) */
+        if( CAAR(n)->token == F_APPLY &&
+            is_apply_constant_function_arg0( CAAR(n), CDR(n) ))
+            return 1;
+        goto do_not_suboptimize_assign;
     case F_APPLY:
-      if ((CAAR(n)->token == F_CONSTANT) &&
-	  (TYPEOF(CAAR(n)->u.sval) == T_FUNCTION) &&
-	  (SUBTYPEOF(CAAR(n)->u.sval) == FUNCTION_BUILTIN) &&
-	  (CAAR(n)->u.sval.u.efun->function != f_map) &&
-	  (CAAR(n)->u.sval.u.efun->function != f_filter)) {
-	/* efuns typically don't access object variables. */
-        node *args = CDAR(n), **arg;
-	if (args && count_args(args) > 1)
-        {
-	  arg = my_get_arg(&args, 0);
-	  if (arg && node_is_eq(CDR(n), *arg) &&
-	      !(args->tree_info & OPT_ASSIGNMENT)) {
-            if(match_types(CDR(n)->type, array_type_string) ||
-               match_types(CDR(n)->type, string_type_string) ||
-               match_types(CDR(n)->type, object_type_string) ||
-               match_types(CDR(n)->type, multiset_type_string) ||
-               match_types(CDR(n)->type, mapping_type_string))
-            {
-              /* First arg is the lvalue.
-               * We optimize this to allow for destructive operations.
-               */
-              return emit_ltosval_call_and_assign( CDR(n), CAAR(n), CDAR(n) );
-            }
-          }
-	}
-      }
+        /*  a  = `oper(a,*) */
+        if (is_apply_constant_function_arg0( CAR(n), CDR(n) ))
+            return 1;
       /* FALL_THROUGH */
     default:
       do_not_suboptimize_assign:
