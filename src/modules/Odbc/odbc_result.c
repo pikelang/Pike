@@ -189,13 +189,12 @@ static struct program *bignum_program = NULL;
 static void push_numeric(int i)
 {
   struct pike_string *data = Pike_sp[-1].u.string;
-  struct tagSQL_NUMERIC_STRUCT *numeric =
-    (struct tagSQL_NUMERIC_STRUCT *)data->str;
+  SQL_NUMERIC_STRUCT *numeric = (SQL_NUMERIC_STRUCT *)data->str;
   struct object *res;
   int sign;
   int scale;
 
-  if (data->len != sizeof(struct tagSQL_NUMERIC_STRUCT)) {
+  if (data->len != sizeof(SQL_NUMERIC_STRUCT)) {
     Pike_error("Invalid numeric field length: %d\n", data->len);
   }
 
@@ -228,8 +227,8 @@ static void push_numeric(int i)
 static void push_time(int i)
 {
   struct pike_string *data = Pike_sp[-1].u.string;
-  struct tagTIME_STRUCT *time = (struct tagTIME_STRUCT *)(data->str);
-  if (data->len < sizeof(struct tagTIME_STRUCT)) {
+  TIME_STRUCT *time = (TIME_STRUCT *)(data->str);
+  if (data->len < sizeof(TIME_STRUCT)) {
     return;
   }
   Pike_sp--;
@@ -237,7 +236,7 @@ static void push_time(int i)
   push_int(time->minute);
   push_int(time->second);
 #if 0
-  /* New in struct tagSS_TIME2_STRUCT. */
+  /* New in SS_TIME2_STRUCT. */
   push_int(time->fraction);	/* ns */
 #endif
   free_string(data);
@@ -247,8 +246,8 @@ static void push_time(int i)
 static void push_date(int i)
 {
   struct pike_string *data = Pike_sp[-1].u.string;
-  struct tagDATE_STRUCT *date = (struct tagDATE_STRUCT *)(data->str);
-  if (data->len < sizeof(struct tagDATE_STRUCT)) {
+  DATE_STRUCT *date = (DATE_STRUCT *)(data->str);
+  if (data->len < sizeof(DATE_STRUCT)) {
     return;
   }
   Pike_sp--;
@@ -262,8 +261,8 @@ static void push_date(int i)
 static void push_timestamp(int i)
 {
   struct pike_string *data = Pike_sp[-1].u.string;
-  struct tagTIMESTAMP_STRUCT *date = (struct tagTIMESTAMP_STRUCT *)(data->str);
-  if (data->len < sizeof(struct tagTIMESTAMP_STRUCT)) {
+  TIMESTAMP_STRUCT *date = (TIMESTAMP_STRUCT *)(data->str);
+  if (data->len < sizeof(TIMESTAMP_STRUCT)) {
     return;
   }
   Pike_sp--;
@@ -275,7 +274,7 @@ static void push_timestamp(int i)
   push_int(date->second);
   push_int(date->fraction);	/* ns */
 #if 0
-  /* New in struct tagSS_TIMESTAMPOFFSET_STRUCT. */
+  /* New in struct SS_TIMESTAMPOFFSET_STRUCT. */
   push_int(time->timezone_hour);
   push_int(time->timezone_minute);
 #endif
@@ -398,14 +397,14 @@ static void odbc_fix_fields(void)
       push_text("numeric");
       field_info[i].size += 3;	/* Sign, leading zero and decimal characters. */
       field_info[i].bin_type = SQL_C_NUMERIC;
-      field_info[i].bin_size = sizeof(struct tagSQL_NUMERIC_STRUCT);
+      field_info[i].bin_size = sizeof(SQL_NUMERIC_STRUCT);
       field_info[i].factory = push_numeric;
       break;
     case SQL_DECIMAL:	/* INT128 + scale + sign */
       push_text("decimal");
       field_info[i].size += 3;	/* Sign, leading zero and decimal characters. */
       field_info[i].bin_type = SQL_C_NUMERIC;
-      field_info[i].bin_size = sizeof(struct tagSQL_NUMERIC_STRUCT);
+      field_info[i].bin_size = sizeof(SQL_NUMERIC_STRUCT);
       field_info[i].factory = push_numeric;
       break;
     case SQL_INTEGER:	/* INT32 */
@@ -452,7 +451,7 @@ static void odbc_fix_fields(void)
 #ifdef SQL_GUID
     case SQL_GUID:
       push_text("uuid");
-      field_info[i].bin_size = sizeof(struct tagSQLGUID);
+      field_info[i].bin_size = sizeof(SQLGUID);
       field_info[i].factory = push_uuid;
       break;
 #endif
@@ -463,7 +462,7 @@ static void odbc_fix_fields(void)
        *       wants bytes.
        */
       field_info[i].size = 32 * (ptrdiff_t)sizeof(SQLWCHAR);
-      field_info[i].bin_size = sizeof(struct tagDATE_STRUCT);
+      field_info[i].bin_size = sizeof(DATE_STRUCT);
       field_info[i].factory = push_date;
       break;
     case SQL_SS_TIME2:
@@ -481,7 +480,7 @@ static void odbc_fix_fields(void)
        */
       field_info[i].size = 32 * (ptrdiff_t)sizeof(SQLWCHAR);
       field_info[i].bin_type = SQL_C_TYPE_TIME;
-      field_info[i].bin_size = sizeof(struct tagTIME_STRUCT);
+      field_info[i].bin_size = sizeof(TIME_STRUCT);
       field_info[i].factory = push_time;
       break;
     case SQL_SS_TIMESTAMPOFFSET:
@@ -506,7 +505,7 @@ static void odbc_fix_fields(void)
        *     timestamp format.
        */
       field_info[i].bin_type = SQL_C_TYPE_TIMESTAMP;
-      field_info[i].bin_size = sizeof(struct tagTIMESTAMP_STRUCT);
+      field_info[i].bin_size = sizeof(TIMESTAMP_STRUCT);
       field_info[i].factory = push_timestamp;
       break;
     case SQL_SS_XML:
