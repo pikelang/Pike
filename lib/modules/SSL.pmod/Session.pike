@@ -374,18 +374,19 @@ int select_cipher_suite(array(CertificatePair) certs,
 
   // Given the set of certs, filter the set of client_suites,
   // to find the best.
-  cipher_suites =
-    filter(cipher_suites, is_supported_suite, ke_mask, version);
+  int suite = -1;
+  foreach(cipher_suites, int s)
+    if( is_supported_suite(s, ke_mask, version) ) {
+      suite = s;
+      break;
+    }
 
-  if (!sizeof(cipher_suites)) {
+  if (suite==-1) {
     SSL3_DEBUG_MSG("No suites left after certificate filtering.\n");
     return 0;
   }
 
-  SSL3_DEBUG_MSG("intersection:\n%s\n",
-                 fmt_cipher_suites(cipher_suites));
-
-  int suite = cipher_suites[0];
+  SSL3_DEBUG_MSG("selected suite:\n%s\n", fmt_cipher_suite(cipher_suites));
 
   int ke_method = [int]CIPHER_SUITES[suite][0];
 
