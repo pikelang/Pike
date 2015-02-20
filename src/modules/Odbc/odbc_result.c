@@ -174,7 +174,7 @@ static void push_sql_int(int i)
     push_int(*((INT32 *)(data->str)));
     break;
   case 8:
-    push_int64(*((SQLBIGINT *)(data->str)));
+    push_int64(*((INT64 *)(data->str)));
     break;
   default:
     Pike_sp++;
