@@ -672,15 +672,15 @@ class KeyExchangeRSA
       data = input->read();
 
     // Decrypt, even when we know data is incorrect, for time invariance.
-    premaster_secret = (temp_key || session->private_key)->decrypt(data);
+    premaster_secret = (temp_key || session->private_key)->decrypt(data) ||
+      "xx";
 
     SSL3_DEBUG_MSG("premaster_secret: %O\n", premaster_secret);
 
     // We want both branches to execute in equal time (ignoring
     // SSL3_DEBUG in the hope it is never on in production).
     // Workaround documented in RFC 2246.
-    if ( `+( !premaster_secret,
-             (sizeof(premaster_secret) != 48),
+    if ( `+( (sizeof(premaster_secret) != 48),
              (premaster_secret[0] != 3),
              (premaster_secret[1] != (client_version & 0xff)) ))
     {
@@ -731,6 +731,62 @@ class KeyExchangeRSA
     output->add_hstring(n, 2);
     output->add_hstring(e, 2);
     return output;
+  }
+}
+
+//! Key exchange for @[KE_rsa_psk].
+class KeyExchangeRSAPSK
+{
+  inherit KeyExchangePSK;
+
+  string(8bit) client_key_exchange_packet(Stdio.Buffer packet_data,
+                                          ProtocolVersion version)
+  {
+    string id = context->get_psk_id(hint);
+    if( !id ) return 0;
+    packet_data->add_hstring(id, 2);
+
+    // PreMasterSecret/EncryptedPreMAsterSecret from TLS 1.0.
+    Stdio.Buffer struct = Stdio.Buffer();
+    struct->add_int(client_version, 2);
+    struct->add( context->random(46) );
+    string premaster_secret = struct->read();
+    packet_data->add( session->peer_public_key->encrypt(premaster_secret) );
+
+    string psk = context->get_psk(id);
+    Stdio.Buffer master_secret = Stdio.Buffer();
+    master_secret->add_hstring(premaster_secret, 2);
+    master_secret->add_hstring(psk, 2);
+    return master_secret->read();
+  }
+
+  string(8bit)|int(8bit) got_client_key_exchange(Stdio.Buffer data,
+                                                 ProtocolVersion version)
+  {
+    string psk = context->get_psk( data->read_hstring(2) );
+    if( !psk )
+      return ALERT_unknown_psk_identity;
+
+    string premaster_secret = session->private_key->decrypt( data->read() ) ||
+      "xx";
+
+    if ( `+( (sizeof(premaster_secret) != 48),
+             (premaster_secret[0] != 3),
+             (premaster_secret[1] != (client_version & 0xff)) ))
+    {
+      premaster_secret = context->random(48);
+      message_was_bad = 1;
+      connection->ke = UNDEFINED;
+    } else {
+      string timing_attack_mitigation = context->random(48);
+      message_was_bad = 0;
+      connection->ke = this;
+    }
+
+    Stdio.Buffer master_secret = Stdio.Buffer();
+    master_secret->add_hstring(premaster_secret, 2);
+    master_secret->add_hstring(psk, 2);
+    return master_secret->read();
   }
 }
 
@@ -2084,6 +2140,9 @@ CipherSpec lookup(int suite, ProtocolVersion|int version,
     case KE_dhe_psk:
       res->ke_factory = KeyExchangeDHEPSK;
       break;
+    case KE_rsa_psk:
+      res->ke_factory = KeyExchangeRSAPSK;
+      break;
     default:
       error( "Internal error.\n" );
     }
@@ -2095,6 +2154,7 @@ CipherSpec lookup(int suite, ProtocolVersion|int version,
   case KE_rsa_fips:
   case KE_dhe_rsa:
   case KE_ecdhe_rsa:
+  case KE_rsa_psk:
     res->signature_alg = SIGNATURE_rsa;
     break;
   case KE_dh_rsa:
