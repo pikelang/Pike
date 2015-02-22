@@ -112,6 +112,11 @@ Packet server_hello_packet()
     return Buffer();
   };
 
+  ext (EXTENSION_extended_master_secret, session->extended_master_secret) {
+    // draft-ietf-tls-session-hash
+    return Buffer();
+  };
+
   ext (EXTENSION_application_layer_protocol_negotiation,
        application_protocol && has_application_layer_protocol_negotiation)
   {
@@ -633,6 +638,18 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 		} else {
 		  SSL3_DEBUG_MSG("Encrypt-then-MAC: Rejected.\n");
 		}
+	      }
+	      break;
+
+	    case EXTENSION_extended_master_secret:
+	      {
+		if (sizeof(extension_data)) {
+		  send_packet(alert(ALERT_fatal, ALERT_illegal_parameter,
+				    "Extended-master-secret: Invalid extension.\n"));
+                  return -1;
+		}
+		SSL3_DEBUG_MSG("Extended-master-secret: Enabled.\n");
+		session->extended_master_secret = 1;
 	      }
 	      break;
 

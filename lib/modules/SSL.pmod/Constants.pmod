@@ -1233,6 +1233,7 @@ constant EXTENSION_client_certificate_type      = 19;           // RFC-ietf-tls-
 constant EXTENSION_server_certificate_type      = 20;           // RFC-ietf-tls-oob-pubkey-11
 constant EXTENSION_padding                      = 21;           // TEMPORARY draft-agl-tls-padding
 constant EXTENSION_encrypt_then_mac		= 22;		// TEMPORARY draft-ietf-tls-encrypt-then-mac, expires 2015-06-05.
+constant EXTENSION_extended_master_secret	= 23;		// draft-ietf-tls-session-hash
 constant EXTENSION_session_ticket_tls           = 35;           // RFC 4507 / RFC 5077
 constant EXTENSION_extended_random              = 40;           // draft-rescorla-tls-extended-random
 constant EXTENSION_early_data			= 128;		// TBD TLS 1.3 draft

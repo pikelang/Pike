@@ -395,6 +395,10 @@ void derive_master_secret(string(8bit) premaster_secret)
   } else if (!sizeof(premaster_secret)) {
     // Clear text mode.
     session->master_secret = "";
+  } else if (session->extended_master_secret) {
+    // Extended Master Secret Draft.
+    session->master_secret = premaster_secret;
+    session->master_secret = hash_messages("extended master secret", 48);
   } else {
     session->master_secret =
       session->cipher_spec->prf(premaster_secret, "master secret",

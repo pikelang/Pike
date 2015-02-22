@@ -66,6 +66,12 @@ int max_packet_size = PACKET_MAX_SIZE;
 //! to the first 10 bytes (80 bits). Cf RFC 3546 3.5.
 int(0..1) truncated_hmac;
 
+//! Indicates that the connection uses the Extended Master Secret method
+//! of deriving the master secret.
+//!
+//! This setting is only relevant for TLS 1.2 and earlier.
+int(0..1) extended_master_secret;
+
 protected void create(string(8bit)|void id)
 {
   identity = id || "";

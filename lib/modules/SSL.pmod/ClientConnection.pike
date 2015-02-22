@@ -160,6 +160,13 @@ Packet client_hello(string(8bit)|void server_name,
     return Buffer();
   };
 
+  ext (EXTENSION_extended_master_secret,
+       context->min_version < PROTOCOL_TLS_1_3) {
+    // draft-ietf-tls-session-hash
+    // NB: This extension is implicit in TLS 1.3.
+    return Buffer();
+  };
+
   ext (EXTENSION_signature_algorithms, client_version >= PROTOCOL_TLS_1_2) {
     // RFC 5246 7.4.1.4.1:
     // If the client supports only the default hash and signature algorithms
@@ -821,6 +828,19 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	      SSL3_DEBUG_MSG("heartbeat extension: %s\n",
 			     fmt_constant(hb_mode, "HEARTBEAT_MODE"));
 	      session->heartbeat_mode = [int(0..1)]hb_mode;
+	    }
+	    break;
+
+	  case EXTENSION_extended_master_secret:
+	    {
+	      if (sizeof(extension_data) ||
+		  (context->min_version >= PROTOCOL_TLS_1_3)) {
+		send_packet(alert(ALERT_fatal, ALERT_illegal_parameter,
+				  "Extended-master-secret: Invalid extension.\n"));
+		return -1;
+	      }
+	      SSL3_DEBUG_MSG("Extended-master-secret: Enabled.\n");
+	      session->extended_master_secret = 1;
 	    }
 	    break;
 
