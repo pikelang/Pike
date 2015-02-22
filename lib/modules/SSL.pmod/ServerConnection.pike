@@ -1248,7 +1248,6 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
   case STATE_wait_for_peer:
     // NB: ALERT_no_certificate can be valid in this state, and
     //     is handled directly by connection:handle_alert().
-    handshake_messages += raw;
     switch(type)
     {
     case HANDSHAKE_client_key_share:
@@ -1290,6 +1289,8 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
         return -1;
       }
 
+      handshake_messages += raw;
+
       SSL3_DEBUG_MSG("certificate_state: %d\n", certificate_state);
       // TODO: we need to determine whether the certificate has signing abilities.
       if (certificate_state == CERT_received)
@@ -1313,6 +1314,8 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 			   "Unexpected client cert.\n"));
 	 return -1;
        }
+
+       handshake_messages += raw;
 
        if( !handle_certificates(input) )
          return -1;
