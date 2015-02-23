@@ -2198,7 +2198,8 @@ CipherSpec lookup(int suite, ProtocolVersion|int version,
     res->set_hash(max_hash_size, signature_algorithms, wanted_hash_id);
   }
 
-  if (res->is_exportable && (version >= PROTOCOL_TLS_1_1)) {
+  if (res->is_exportable && res->bulk_cipher_algorithm &&
+      (version >= PROTOCOL_TLS_1_1)) {
     // RFC 4346 A.5:
     // TLS 1.1 implementations MUST NOT negotiate
     // these cipher suites in TLS 1.1 mode.
