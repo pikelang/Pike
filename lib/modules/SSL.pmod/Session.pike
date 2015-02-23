@@ -345,7 +345,7 @@ int select_cipher_suite(array(CertificatePair) certs,
 
   // Find the set of key exchange algorithms supported by
   // the remaining certs.
-  ke_mask = (1<<KE_null)|(1<<KE_dh_anon)
+  ke_mask = (1<<KE_null)|(1<<KE_dh_anon)|(1<<KE_psk)|(1<<KE_dhe_psk)
 #if constant(Crypto.ECC.Curve)
     |(1<<KE_ecdh_anon)
 #endif
@@ -392,7 +392,7 @@ int select_cipher_suite(array(CertificatePair) certs,
     return 0;
   }
 
-  SSL3_DEBUG_MSG("selected suite:\n%s\n", fmt_cipher_suite(cipher_suites));
+  SSL3_DEBUG_MSG("selected suite:\n%s\n", fmt_cipher_suite(suite));
 
   int ke_method = [int]CIPHER_SUITES[suite][0];
 
