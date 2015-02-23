@@ -120,7 +120,7 @@ class Client
     if (bytes > 0) {
       sent += bytes;
     } else if (sent < 0) {
-      exit(17, "Failed to write data: %s\n", strerror(ssl->errno()));
+      exit(1, "Failed to write data: %s\n", strerror(ssl->errno()));
     }
     if (sent == sizeof(request)) {
       ssl->set_write_callback(UNDEFINED);
@@ -164,12 +164,11 @@ int main()
 {
 #ifdef HTTPS_CLIENT
   Stdio.File con = Stdio.File();
-  if (!con->connect(HOST, PORT)) {
-    werror("Failed to connect to server: %s\n", strerror(con->errno()));
-    return 17;
-  }
+  if (!con->connect(HOST, PORT))
+    exit(1, "Failed to connect to server: %s\n", strerror(con->errno()));
+
   Client(con);
-  return -17;
+  return -1;
 #else
   SSL.Context ctx = MyContext();
 
@@ -224,13 +223,9 @@ int main()
 
   werror("Starting\n");
   if (!port->bind(PORT, my_accept_callback))
-  {
-    Stdio.perror("");
-    return 17;
-  }
-  else {
-    werror("Listening on port %d.\n", PORT);
-    return -17;
-  }
+    exit(1, "Failed to bind port %d.\n", PORT);
+
+  werror("Listening on port %d.\n", PORT);
+  return -1;
 #endif
 }
