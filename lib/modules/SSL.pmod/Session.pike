@@ -312,7 +312,7 @@ int select_cipher_suite(array(CertificatePair) certs,
   }
 
 #if constant(Crypto.ECC.Curve)
-  if (!sizeof(ecc_curves)) {
+  if (!sizeof(ecc_curves) || ecc_point_format==-1) {
     // The client may claim to support ECC, but hasn't sent the
     // required extension or any curves that we support, so
     // don't believe it.
@@ -357,7 +357,7 @@ int select_cipher_suite(array(CertificatePair) certs,
   }
 
 #if constant(Crypto.ECC.Curve)
-  if (!sizeof(ecc_curves)) {
+  if (!sizeof(ecc_curves) || ecc_point_format==-1) {
     // The client may claim to support ECC, but hasn't sent the
     // required extension, so don't believe it.
     ke_mask &= ~((1<<KE_ecdh_rsa)|(1<<KE_ecdhe_rsa)|

@@ -188,13 +188,6 @@ void send_renegotiate()
   send_packet(hello_request(), PRI_application);
 }
 
-int(0..1) not_ecc_suite(int cipher_suite)
-{
-  array(int) suite = [array(int)]CIPHER_SUITES[cipher_suite];
-  return suite &&
-    !(< KE_ecdh_ecdsa, KE_ecdhe_ecdsa, KE_ecdh_rsa, KE_ecdhe_rsa >)[suite[0]];
-}
-
 int(-1..0) reply_new_session(array(int) cipher_suites,
 			     array(int) compression_methods)
 {
@@ -763,13 +756,6 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	cipher_suites = context->preferred_suites & cipher_suites;
 	SSL3_DEBUG_MSG("intersection:\n%s\n",
 		       fmt_cipher_suites((array(int))cipher_suites));
-
-	if (!sizeof(session->ecc_curves) || (session->ecc_point_format == -1)) {
-	  // No overlapping support for ecc.
-	  // Filter the ECC suites from the set.
-	  SSL3_DEBUG_MSG("ECC not supported.\n");
-	  cipher_suites = filter(cipher_suites, not_ecc_suite);
-	}
 
 	if (sizeof(cipher_suites)) {
 	  array(CertificatePair) certs =
