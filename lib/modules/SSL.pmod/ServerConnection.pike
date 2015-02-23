@@ -329,7 +329,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
        return -1;
      case HANDSHAKE_client_hello:
       {
-	string id;
+	string session_id;
 	int cipher_len;
 	array(int) cipher_suites;
 	array(int) compression_methods;
@@ -338,26 +338,6 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 
         client_version =
           [int(0x300..0x300)|ProtocolVersion]input->read_int(2);
-        client_random = input->read(32);
-        id = input->read_hstring(1);
-        cipher_len = input->read_int(2);
-        cipher_suites = input->read_ints(cipher_len/2, 2);
-        compression_methods = input->read_int_array(1, 1);
-        SSL3_DEBUG_MSG("STATE_wait_for_hello: received hello\n"
-                       "version = %s\n"
-                       "id=%O\n"
-                       "cipher suites:\n%s\n"
-                       "compression methods: %O\n",
-                       fmt_version(client_version),
-                       id, fmt_cipher_suites(cipher_suites),
-                       compression_methods);
-
-	if(cipher_len & 1)
-	{
-	  send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
-			    "Invalid client_hello.\n"));
-	  return -1;
-	}
 	if (((client_version & ~0xff) != PROTOCOL_SSL_3_0) ||
 	    (client_version < context->min_version)) {
 	  SSL3_DEBUG_MSG("Unsupported version of SSL: %s.\n",
@@ -376,6 +356,28 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 			 fmt_version(client_version));
 	  version = client_version;
 	}
+
+        client_random = input->read(32);
+        session_id = input->read_hstring(1);
+
+        cipher_len = input->read_int(2);
+	if(cipher_len & 1)
+	{
+	  send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
+			    "Invalid client_hello.\n"));
+	  return -1;
+	}
+        cipher_suites = input->read_ints(cipher_len/2, 2);
+
+        compression_methods = input->read_int_array(1, 1);
+        SSL3_DEBUG_MSG("STATE_wait_for_hello: received hello\n"
+                       "version = %s\n"
+                       "session_id=%O\n"
+                       "cipher suites:\n%s\n"
+                       "compression methods: %O\n",
+                       fmt_version(client_version),
+                       session_id, fmt_cipher_suites(cipher_suites),
+                       compression_methods);
 
 	Stdio.Buffer extensions;
 	if (sizeof(input))
@@ -812,10 +814,12 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	    return -1;
 	  }
 
-	  Session old_session = sizeof(id) && context->lookup_session(id);
+	  Session old_session = sizeof(session_id) &&
+            context->lookup_session(session_id);
 	  if (old_session && old_session->reusable_as(session))
 	  {
-	    SSL3_DEBUG_MSG("SSL.ServerConnection: Reusing session %O\n", id);
+	    SSL3_DEBUG_MSG("SSL.ServerConnection: Reusing session %O\n",
+                           session_id);
 
 	    /* Reuse session */
 	    session = old_session;
@@ -894,13 +898,15 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	}
 
 #ifdef SSL3_DEBUG
-	if (sizeof(id))
-	  werror("SSL.ServerConnection: Looking up session %O\n", id);
+	if (sizeof(session_id))
+	  werror("SSL.ServerConnection: Looking up session %O\n", session_id);
 #endif
-	Session old_session = sizeof(id) && context->lookup_session(id);
+	Session old_session = sizeof(session_id) &&
+          context->lookup_session(session_id);
 	if (old_session && old_session->reusable_as(session))
         {
-	  SSL3_DEBUG_MSG("SSL.ServerConnection: Reusing session %O\n", id);
+	  SSL3_DEBUG_MSG("SSL.ServerConnection: Reusing session %O\n",
+                         session_id);
 
 	  /* Reuse session */
 	  session = old_session;
