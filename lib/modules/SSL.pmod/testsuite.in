@@ -29,11 +29,16 @@ test_eq( S(SSL.Cipher.MAChmac_sha512("foo")->hash("bar")),
 
 test_do([[
   array(int) parse_fields(array(string) fields, int fno,
-			  mapping(string:mapping|int) tab)
+                          mapping(string:mapping|int) tab)
   {
     while (fno < sizeof(fields)) {
       int|mapping val = tab[fields[fno++] ];
-      if (undefinedp(val)) break;
+      if (undefinedp(val))
+      {
+        if (val=tab["fallback"])
+          return ({ val, fno-1 });
+        break;
+      }
       if (intp(val)) return ({ val, fno });
       tab = val;
     }
@@ -46,8 +51,6 @@ test_tests([[
   import SSL.Constants;
   array(int) a()
   {
-    // Validate the SSL.Constants.CIPHER_SUITES table.
-
     log_status("Testing the cipher suite lookup table...");
 
     int successes;
@@ -63,7 +66,10 @@ test_tests([[
       [ke, fno] = parse_fields(fields, fno,
 	([
 	  "null":KE_null,
-	  "rsa":KE_rsa,
+	  "rsa":([
+            "fallback":KE_rsa,
+            "psk":KE_rsa_psk,
+          ]),
 	  "dh":([
 	    "dss":KE_dh_dss,
 	    "rsa":KE_dh_rsa,
@@ -85,7 +91,10 @@ test_tests([[
 	    "rsa":KE_ecdhe_rsa,
 	  ]),
 #endif
-          "psk":KE_psk,
+          "psk":([
+            "fallback":KE_psk,
+            "dhe":KE_dhe_psk,
+          ]),
 	]));
 
       if ((sizeof(fields) > fno) && (< "fips", "oldfips" >)[ fields[fno] ] &&
@@ -1285,6 +1294,22 @@ test_do([[
         TLS_dhe_psk_with_camellia_256_cbc_sha384,
         TLS_dhe_psk_with_aes_128_ccm,
         TLS_dhe_psk_with_aes_256_ccm,
+
+        TLS_rsa_psk_with_null_sha,
+        TLS_rsa_psk_with_rc4_128_sha,
+        TLS_rsa_psk_with_3des_ede_cbc_sha,
+        TLS_rsa_psk_with_aes_128_cbc_sha,
+        TLS_rsa_psk_with_aes_256_cbc_sha,
+        TLS_rsa_psk_with_aes_128_gcm_sha256,
+        TLS_rsa_psk_with_aes_256_gcm_sha384,
+        TLS_rsa_psk_with_aes_128_cbc_sha256,
+        TLS_rsa_psk_with_aes_256_cbc_sha384,
+        TLS_rsa_psk_with_null_sha256,
+        TLS_rsa_psk_with_null_sha384,
+        TLS_rsa_psk_with_camellia_128_gcm_sha256,
+        TLS_rsa_psk_with_camellia_256_gcm_sha384,
+        TLS_rsa_psk_with_camellia_128_cbc_sha256,
+        TLS_rsa_psk_with_camellia_256_cbc_sha384,
       });
     }
   };
@@ -1331,6 +1356,7 @@ test_do([[
 
 test_psk(TLS_dhe_psk_with_aes_128_cbc_sha)
 test_psk(TLS_psk_with_aes_128_cbc_sha)
+test_psk(TLS_rsa_psk_with_aes_128_cbc_sha)
 
 test_do([[
   add_constant("aead_suites");

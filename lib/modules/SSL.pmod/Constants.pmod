@@ -1113,7 +1113,41 @@ TLS_ecdhe_ecdsa_with_aes_256_ccm_8 :	({ KE_ecdhe_ecdsa, CIPHER_aes256, HASH_sha2
 #endif /* Crypto.Camellia */
    TLS_dhe_psk_with_aes_128_ccm : ({ KE_dhe_psk, CIPHER_aes, HASH_sha256, MODE_ccm }),
    TLS_dhe_psk_with_aes_256_ccm : ({ KE_dhe_psk, CIPHER_aes256, HASH_sha256, MODE_ccm }),
+   TLS_psk_dhe_with_aes_128_ccm_8 : ({ KE_dhe_psk, CIPHER_aes, HASH_sha256, MODE_ccm_8 }),
+   TLS_psk_dhe_with_aes_256_ccm_8 : ({ KE_dhe_psk, CIPHER_aes256, HASH_sha256, MODE_ccm_8 }),
 
+   // PSK with RSA
+   TLS_rsa_psk_with_null_sha : ({ KE_rsa_psk, 0, HASH_sha }),
+   TLS_rsa_psk_with_rc4_128_sha : ({ KE_rsa_psk, CIPHER_rc4, HASH_sha }),
+   TLS_rsa_psk_with_3des_ede_cbc_sha : ({ KE_rsa_psk, CIPHER_3des, HASH_sha }),
+   TLS_rsa_psk_with_aes_128_cbc_sha : ({ KE_rsa_psk, CIPHER_aes, HASH_sha }),
+   TLS_rsa_psk_with_aes_256_cbc_sha : ({ KE_rsa_psk, CIPHER_aes256, HASH_sha }),
+#if constant(Crypto.AES.GCM)
+   TLS_rsa_psk_with_aes_128_gcm_sha256 : ({ KE_rsa_psk, CIPHER_aes, HASH_sha256, MODE_gcm }),
+#if constant(Crypto.SHA384)
+   TLS_rsa_psk_with_aes_256_gcm_sha384 : ({ KE_rsa_psk, CIPHER_aes256, HASH_sha384, MODE_gcm }),
+#endif /* Crypto.SHA384 */
+#endif /* Crypto.AES.GCM */
+   TLS_rsa_psk_with_aes_128_cbc_sha256 : ({ KE_rsa_psk, CIPHER_aes, HASH_sha256 }),
+#if constant(Crypto.SHA384)
+   TLS_rsa_psk_with_aes_256_cbc_sha384 : ({ KE_rsa_psk, CIPHER_aes256, HASH_sha384, MODE_cbc }),
+#endif /* Crypto.SHA384 */
+   TLS_rsa_psk_with_null_sha256 : ({ KE_rsa_psk, 0, HASH_sha256 }),
+#if constant(Crypto.SHA384)
+   TLS_rsa_psk_with_null_sha384 : ({ KE_rsa_psk, 0, HASH_sha384, MODE_cbc }),
+#endif /* Crypto.SHA384 */
+#if constant(Crypto.Camellia)
+#if constant(Crypto.Camellia.GCM)
+   TLS_rsa_psk_with_camellia_128_gcm_sha256 : ({ KE_rsa_psk, CIPHER_camellia128, HASH_sha256, MODE_gcm }),
+#if constant(Crypto.SHA384)
+   TLS_rsa_psk_with_camellia_256_gcm_sha384 : ({ KE_rsa_psk, CIPHER_camellia256, HASH_sha384, MODE_gcm }),
+#endif /* Crypto.SHA384 */
+#endif /* Crypto.Camellia.GCM */
+   TLS_rsa_psk_with_camellia_128_cbc_sha256 : ({ KE_rsa_psk, CIPHER_camellia128, HASH_sha256 }),
+#if constant(Crypto.SHA384)
+   TLS_rsa_psk_with_camellia_256_cbc_sha384 : ({ KE_rsa_psk, CIPHER_camellia256, HASH_sha384, MODE_cbc }),
+#endif /* Crypto.SHA384 */
+#endif /* Crypto.Camellia */
 ]);
 
 constant HANDSHAKE_hello_request	= 0;  // RFC 5246
@@ -1522,7 +1556,7 @@ class CertificatePair
     ke_mask_invariant = 0;
     switch(sign_algs[0][1]) {
     case SIGNATURE_rsa:
-      foreach(({ KE_rsa, KE_rsa_fips, KE_dhe_rsa, KE_ecdhe_rsa }),
+      foreach(({ KE_rsa, KE_rsa_fips, KE_dhe_rsa, KE_ecdhe_rsa, KE_rsa_psk }),
 	      KeyExchangeType ke) {
 	ke_mask |= 1<<ke;
       }
