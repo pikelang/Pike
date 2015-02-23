@@ -516,7 +516,6 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	    fprintf(stderr,"TAG%d", TYPEOF(*val));
 	  }else{
 	    print_svalue(stderr, val);
-	  
 	  }
 	  fputc('\n', stderr););
       code_entry (TAG_DELAYED, entry_id.u.integer, data);
@@ -541,10 +540,11 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	  {
 	    fprintf(stderr,"TAG%d", TYPEOF(*val));
 	  }else{
-	    print_svalue(stderr, val);	  
+	    print_svalue(stderr, val);
 	  }
 	  fputc('\n', stderr););
-      mapping_insert(data->encoded, val, &entry_id);
+      if( TYPEOF(*val) < MIN_REF_TYPE || val->u.dummy->refs > 1 )
+          mapping_insert(data->encoded, val, &entry_id);
       data->counter.u.integer++;
     }
   }
