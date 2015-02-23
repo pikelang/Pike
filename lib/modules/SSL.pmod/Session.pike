@@ -367,8 +367,7 @@ int select_cipher_suite(array(CertificatePair) certs,
   if (!sizeof(ecc_curves) || ecc_point_format==-1) {
     // Client and server have no common curves, so remove ECC from KE
     // mask.
-    ke_mask &= ~((1<<KE_ecdh_rsa)|(1<<KE_ecdhe_rsa)|
-		 (1<<KE_ecdh_anon));
+    ke_mask &= ~KE_ecc_mask;
   }
 #endif
 
