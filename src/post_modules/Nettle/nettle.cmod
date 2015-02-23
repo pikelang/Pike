@@ -286,8 +286,7 @@ program_flags PROGRAM_CLEAR_STORAGE;
   }
 
   /*! @decl void reseed(string(8bit) data)
-   *! Generates new a new key based on the provided additional
-   *! entropy.
+   *! Updated the internal key with the provided additional entropy.
    */
   PIKEFUN void reseed(string(8bit) data)
   {
@@ -311,7 +310,7 @@ program_flags PROGRAM_CLEAR_STORAGE;
     struct string_builder s;
 
     if(len<0) Pike_error("Length has to be positive.\n");
-    init_string_builder_alloc(&s, len+16, 0);
+    init_string_builder_alloc(&s, len, 0);
 
     while( stored < len )
     {

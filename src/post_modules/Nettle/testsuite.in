@@ -1874,6 +1874,11 @@ test_any([[
   string key = aes->crypt("\0"*15+"\1") + aes->crypt("\0"*15+"\2");
   return aes->set_encrypt_key(key)->crypt("\0"*15+"\3");
 ]], F->random_string(16))
+test_eq( sizeof(F->random_string(0)), 0)
+test_eq( sizeof(F->random_string(1)), 1)
+test_eq( sizeof(F->random_string(15)), 15)
+test_eq( sizeof(F->random_string(16)), 16)
+test_eq( sizeof(F->random_string(17)), 17)
 test_do( add_constant("F"); )
 
 // crypt_md5
