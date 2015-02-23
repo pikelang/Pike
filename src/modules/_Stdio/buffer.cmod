@@ -869,6 +869,7 @@ PIKECLASS Buffer
             io->buffer = (unsigned char*)s->str;
             io->len = s->len;
             add_ref(s);
+            io_trigger_output( io );
           }
           else
             io_append( io, s->str, s->len );
