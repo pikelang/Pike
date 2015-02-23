@@ -195,6 +195,9 @@ enum KeyExchangeType {
   KE_rsa_fips	= 20,	//! Rivest-Shamir-Adelman with FIPS keys.
 }
 
+constant KE_ecc_mask = (1<<KE_ecdh_ecdsa)|(1<<KE_ecdhe_ecdsa)|
+  (1<<KE_ecdh_rsa)|(1<<KE_ecdhe_rsa)|(1<<KE_ecdh_anon);
+
 //! Lists @[KeyExchangeType] that doesn't require certificates.
 constant KE_Anonymous = (<
   KE_null,

@@ -313,10 +313,10 @@ int select_cipher_suite(array(CertificatePair) certs,
 
 #if constant(Crypto.ECC.Curve)
   if (!sizeof(ecc_curves) || ecc_point_format==-1) {
-    // The client may claim to support ECC, but hasn't sent the
-    // required extension or any curves that we support, so
-    // don't believe it.
-    ke_mask &= ~((1<<KE_ecdh_ecdsa)|(1<<KE_ecdhe_ecdsa));
+    // Client and server have no common curves, so remove ECC from KE
+    // mask. This would be caught anyway in the curve check in
+    // is_supported_cert, but this gives the code an earlier out.
+    ke_mask &= ~KE_ecc_mask;
   }
 #endif
 
@@ -358,8 +358,8 @@ int select_cipher_suite(array(CertificatePair) certs,
 
 #if constant(Crypto.ECC.Curve)
   if (!sizeof(ecc_curves) || ecc_point_format==-1) {
-    // The client may claim to support ECC, but hasn't sent the
-    // required extension, so don't believe it.
+    // Client and server have no common curves, so remove ECC from KE
+    // mask.
     ke_mask &= ~((1<<KE_ecdh_rsa)|(1<<KE_ecdhe_rsa)|
 		 (1<<KE_ecdh_anon));
   }
