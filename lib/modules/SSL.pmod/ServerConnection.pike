@@ -10,6 +10,11 @@
 #define SSL3_DEBUG_MSG(X ...)
 #endif
 
+#define COND_FATAL(X,Y,Z) if(X) {          \
+    send_packet(alert(ALERT_fatal, Y, Z)); \
+    return -1;                             \
+  }
+
 import ".";
 import Constants;
 inherit Connection;
@@ -284,15 +289,12 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
   werror("sizeof(data)="+sizeof(data)+"\n");
 #endif
 
-  if ((type <= previous_handshake) &&
+  COND_FATAL((type <= previous_handshake) &&
       // NB: certificate_verify <=> client_key_exchange are out of order!
       ((type != HANDSHAKE_certificate_verify) ||
-       (previous_handshake != HANDSHAKE_client_key_exchange))) {
-    // Enforce packet ordering.
-    send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
-		      "Invalid handshake packet order.\n"));
-    return -1;
-  }
+       (previous_handshake != HANDSHAKE_client_key_exchange)),
+             ALERT_unexpected_message,
+             "Invalid handshake packet order.\n");
 
   previous_handshake = type;
 
@@ -324,9 +326,8 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
      switch(type)
      {
      default:
-       send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
-			 "Expected client_hello.\n"));
-       return -1;
+       COND_FATAL(1, ALERT_unexpected_message, "Expected client_hello.\n");
+
      case HANDSHAKE_client_hello:
       {
 	string session_id;
@@ -338,14 +339,11 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 
         client_version =
           [int(0x300..0x300)|ProtocolVersion]input->read_int(2);
-	if (((client_version & ~0xff) != PROTOCOL_SSL_3_0) ||
-	    (client_version < context->min_version)) {
-	  SSL3_DEBUG_MSG("Unsupported version of SSL: %s.\n",
-			 fmt_version(client_version));
-	  send_packet(alert(ALERT_fatal, ALERT_protocol_version,
-			    "Unsupported version.\n"));
-	  return -1;
-	}
+	COND_FATAL(((client_version & ~0xff) != PROTOCOL_SSL_3_0) ||
+                   (client_version < context->min_version),
+                   ALERT_protocol_version,
+                   "Unsupported version.\n");
+
 	if (client_version > version) {
 	  SSL3_DEBUG_MSG("Falling back client from %s to %s.\n",
 			 fmt_version(client_version),
@@ -361,12 +359,9 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
         session_id = input->read_hstring(1);
 
         cipher_len = input->read_int(2);
-	if(cipher_len & 1)
-	{
-	  send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
-			    "Invalid client_hello.\n"));
-	  return -1;
-	}
+	COND_FATAL(cipher_len & 1, ALERT_unexpected_message,
+                   "Invalid client_hello.\n");
+
         cipher_suites = input->read_ints(cipher_len/2, 2);
 
         compression_methods = input->read_int_array(1, 1);
@@ -400,14 +395,11 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	    SSL3_DEBUG_MSG("SSL.ServerConnection->handle_handshake: "
 			   "Got extension %s.\n",
 			   fmt_constant(extension_type, "EXTENSION"));
-            if( remote_extensions[extension_type] )
-            {
-              send_packet(alert(ALERT_fatal, ALERT_decode_error,
-                                "Same extension sent twice.\n"));
-              return -1;
-            }
-            else
-              remote_extensions[extension_type] = 1;
+            COND_FATAL(remote_extensions[extension_type],
+                       ALERT_decode_error,
+                       "Same extension sent twice.\n");
+
+            remote_extensions[extension_type] = 1;
 
           extensions:
 	    switch(extension_type) {
@@ -479,12 +471,10 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 		Stdio.Buffer server_name = extension_data->read_hbuffer(2);
 		switch(server_name->read_int(1)) {	// name_type
 		case 0:	// host_name
-                  if( session->server_name )
-                  {
-                    send_packet(alert(ALERT_fatal, ALERT_unrecognized_name,
-                                      "Multiple names given.\n"));
-                    return -1;
-                  }
+                  COND_FATAL(session->server_name,
+                             ALERT_unrecognized_name,
+                             "Multiple names given.\n");
+
 		  session->server_name = server_name->read_hstring(2);
 		  break;
 		default:
@@ -505,19 +495,17 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	      case FRAGMENT_2048: session->max_packet_size = 2048; break;
 	      case FRAGMENT_4096: session->max_packet_size = 4096; break;
 	      default:
-		send_packet(alert(ALERT_fatal, ALERT_illegal_parameter,
-				  "Invalid fragment size.\n"));
-		return -1;
+                COND_FATAL(1, ALERT_illegal_parameter,
+                           "Invalid fragment size.\n");
 	      }
               SSL3_DEBUG_MSG("Maximum frame size %O.\n", session->max_packet_size);
 	      break;
 	    case EXTENSION_truncated_hmac:
 	      // RFC 3546 3.5 "Truncated HMAC"
-	      if (sizeof(extension_data)) {
-		send_packet(alert(ALERT_fatal, ALERT_illegal_parameter,
-				  "Invalid trusted HMAC extension.\n"));
-                return -1;
-	      }
+	      COND_FATAL(sizeof(extension_data),
+                         ALERT_illegal_parameter,
+                         "Invalid trusted HMAC extension.\n");
+
 	      session->truncated_hmac = 1;
               SSL3_DEBUG_MSG("Trucated HMAC\n");
 	      break;
@@ -525,22 +513,23 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	    case EXTENSION_renegotiation_info:
 	      string renegotiated_connection =
 		extension_data->read_hstring(1);
-	      if ((renegotiated_connection != client_verify_data) ||
-		  (!(state & CONNECTION_handshaking) && !secure_renegotiation)) {
-		// RFC 5746 3.7: (secure_renegotiation)
-		// The server MUST verify that the value of the
-		// "renegotiated_connection" field is equal to the saved
-		// client_verify_data value; if it is not, the server MUST
-		// abort the handshake.
-		//
-		// RFC 5746 4.4: (!secure_renegotiation)
-		// The server MUST verify that the "renegotiation_info"
-		// extension is not present; if it is, the server MUST
-		// abort the handshake.
-		send_packet(alert(ALERT_fatal, ALERT_handshake_failure,
-				  "Invalid renegotiation data.\n"));
-		return -1;
-	      }
+
+              // RFC 5746 3.7: (secure_renegotiation)
+              // The server MUST verify that the value of the
+              // "renegotiated_connection" field is equal to the saved
+              // client_verify_data value; if it is not, the server MUST
+              // abort the handshake.
+              //
+              // RFC 5746 4.4: (!secure_renegotiation)
+              // The server MUST verify that the "renegotiation_info"
+              // extension is not present; if it is, the server MUST
+              // abort the handshake.
+	      COND_FATAL((renegotiated_connection != client_verify_data) ||
+                         (!(state & CONNECTION_handshaking) &&
+                          !secure_renegotiation),
+                         ALERT_handshake_failure,
+                         "Invalid renegotiation data.\n");
+
 	      secure_renegotiation = 1;
 	      missing_secure_renegotiation = 0;
               SSL3_DEBUG_MSG("Renego extension: %O\n", renegotiated_connection);
@@ -552,20 +541,15 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
                 if( !context->advertised_protocols )
                   break;
                 multiset(string) protocols = (<>);
-                if( extension_data->read_int(2) != sizeof(extension_data) )
-                {
-                  send_packet(alert(ALERT_fatal, ALERT_handshake_failure,
-				    "ALPN: Length mismatch.\n"));
-                  return -1;
-                }
+                COND_FATAL(extension_data->read_int(2) != sizeof(extension_data),
+                           ALERT_handshake_failure,
+                           "ALPN: Length mismatch.\n");
+
                 while (sizeof(extension_data)) {
                   string server_name = extension_data->read_hstring(1);
-                  if( sizeof(server_name)==0 )
-                  {
-                    send_packet(alert(ALERT_fatal, ALERT_handshake_failure,
-				      "ALPN: Empty protocol.\n"));
-                    return -1;
-                  }
+                  COND_FATAL(sizeof(server_name)==0, ALERT_handshake_failure,
+                             "ALPN: Empty protocol.\n");
+
                   protocols[ server_name ] = 1;
                 }
 
@@ -587,12 +571,10 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
                     application_protocol = prot;
                     break;
                   }
-                if( !application_protocol )
-                {
-                  send_packet(alert(ALERT_fatal, ALERT_no_application_protocol,
-				    "ALPN: No compatible protocol.\n"));
-                  return -1;
-                }
+                COND_FATAL(!application_protocol,
+                           ALERT_no_application_protocol,
+                           "ALPN: No compatible protocol.\n");
+
                 SSL3_DEBUG_MSG("ALPN extension: %O %O\n",
 			       protocols, application_protocol);
               }
@@ -601,19 +583,19 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	    case EXTENSION_heartbeat:
 	      {
 		int hb_mode;
-		if (!sizeof(extension_data) ||
-		    !(hb_mode = extension_data->read_int(1)) ||
-		    sizeof(extension_data) ||
-		    ((hb_mode != HEARTBEAT_MODE_peer_allowed_to_send) &&
-		     (hb_mode != HEARTBEAT_MODE_peer_not_allowed_to_send))) {
-		  // RFC 6520 2:
-		  // Upon reception of an unknown mode, an error Alert
-		  // message using illegal_parameter as its
-		  // AlertDescription MUST be sent in response.
-		  send_packet(alert(ALERT_fatal, ALERT_illegal_parameter,
-				    "Heartbeat: Invalid extension.\n"));
-                  return -1;
-		}
+
+                // RFC 6520 2:
+                // Upon reception of an unknown mode, an error Alert
+                // message using illegal_parameter as its
+                // AlertDescription MUST be sent in response.
+		COND_FATAL(!sizeof(extension_data) ||
+                           !(hb_mode = extension_data->read_int(1)) ||
+                           sizeof(extension_data) ||
+                           ((hb_mode != HEARTBEAT_MODE_peer_allowed_to_send) &&
+                            (hb_mode != HEARTBEAT_MODE_peer_not_allowed_to_send)),
+                           ALERT_illegal_parameter,
+                           "Heartbeat: Invalid extension.\n");
+
 		SSL3_DEBUG_MSG("heartbeat extension: %s\n",
 			       fmt_constant(hb_mode, "HEARTBEAT_MODE"));
 		session->heartbeat_mode = [int(0..1)]hb_mode;
@@ -622,11 +604,10 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 
 	    case EXTENSION_encrypt_then_mac:
 	      {
-		if (sizeof(extension_data)) {
-		  send_packet(alert(ALERT_fatal, ALERT_illegal_parameter,
-				    "Encrypt-then-MAC: Invalid extension.\n"));
-                  return -1;
-		}
+		COND_FATAL(sizeof(extension_data),
+                           ALERT_illegal_parameter,
+                           "Encrypt-then-MAC: Invalid extension.\n");
+
 		if (context->encrypt_then_mac) {
 		  SSL3_DEBUG_MSG("Encrypt-then-MAC: Tentatively enabled.\n");
 		  session->encrypt_then_mac = 1;
@@ -638,11 +619,10 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 
 	    case EXTENSION_extended_master_secret:
 	      {
-		if (sizeof(extension_data)) {
-		  send_packet(alert(ALERT_fatal, ALERT_illegal_parameter,
-				    "Extended-master-secret: Invalid extension.\n"));
-                  return -1;
-		}
+		COND_FATAL(sizeof(extension_data),
+                           ALERT_illegal_parameter,
+                           "Extended-master-secret: Invalid extension.\n");
+
 		SSL3_DEBUG_MSG("Extended-master-secret: Enabled.\n");
 		session->extended_master_secret = 1;
 	      }
@@ -653,13 +633,9 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	      break;
 
             case EXTENSION_padding:
-              if( !equal(String.range((string)extension_data), ({0,0})) )
-              {
-                send_packet(alert(ALERT_fatal, ALERT_illegal_parameter,
-                                  "Possible covert side channel in padding.\n"
-                                  ));
-                return -1;
-              }
+              COND_FATAL(!equal(String.range((string)extension_data),({0,0})),
+                         ALERT_illegal_parameter,
+                         "Possible covert side channel in padding.\n");
               break;
 
 	    default:
@@ -702,48 +678,48 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	    }
 	  }
 	}
-	if (missing_secure_renegotiation) {
-	  // RFC 5746 3.7: (secure_renegotiation)
-	  // The server MUST verify that the "renegotiation_info" extension is
-	  // present; if it is not, the server MUST abort the handshake.
-	  send_packet(alert(ALERT_fatal, ALERT_handshake_failure,
-			    "Missing secure renegotiation extension.\n"));
-	  return -1;
-	}
+
+        // RFC 5746 3.7: (secure_renegotiation)
+        // The server MUST verify that the "renegotiation_info"
+        // extension is present; if it is not, the server MUST abort
+        // the handshake.
+	COND_FATAL(missing_secure_renegotiation,
+                   ALERT_handshake_failure,
+                   "Missing secure renegotiation extension.\n");
+
 	if (has_value(cipher_suites, TLS_empty_renegotiation_info_scsv)) {
-	  if (secure_renegotiation || !(state & CONNECTION_handshaking)) {
-	    // RFC 5746 3.7: (secure_renegotiation)
-	    // When a ClientHello is received, the server MUST verify that it
-	    // does not contain the TLS_EMPTY_RENEGOTIATION_INFO_SCSV SCSV.  If
-	    // the SCSV is present, the server MUST abort the handshake.
-	    //
-	    // RFC 5746 4.4: (!secure_renegotiation)
-	    // When a ClientHello is received, the server MUST verify
-	    // that it does not contain the
-	    // TLS_EMPTY_RENEGOTIATION_INFO_SCSV SCSV.  If the SCSV is
-	    // present, the server MUST abort the handshake.
-	    send_packet(alert(ALERT_fatal, ALERT_handshake_failure,
-			      "SCSV is present.\n"));
-	    return -1;
-	  } else {
-	    // RFC 5746 3.6:
-	    // When a ClientHello is received, the server MUST check if it
-	    // includes the TLS_EMPTY_RENEGOTIATION_INFO_SCSV SCSV.  If it
-	    // does, set the secure_renegotiation flag to TRUE.
-	    secure_renegotiation = 1;
-	  }
+
+          // RFC 5746 3.7: (secure_renegotiation)
+          // When a ClientHello is received, the server MUST verify
+          // that it does not contain the
+          // TLS_EMPTY_RENEGOTIATION_INFO_SCSV SCSV. If the SCSV is
+          // present, the server MUST abort the handshake.
+          //
+          // RFC 5746 4.4: (!secure_renegotiation)
+          // When a ClientHello is received, the server MUST verify
+          // that it does not contain the
+          // TLS_EMPTY_RENEGOTIATION_INFO_SCSV SCSV. If the SCSV is
+          // present, the server MUST abort the handshake.
+	  COND_FATAL(secure_renegotiation || !(state & CONNECTION_handshaking),
+                     ALERT_handshake_failure, "SCSV is present.\n");
+
+          // RFC 5746 3.6:
+          // When a ClientHello is received, the server MUST check if
+          // it includes the TLS_EMPTY_RENEGOTIATION_INFO_SCSV SCSV.
+          // If it does, set the secure_renegotiation flag to TRUE.
+          secure_renegotiation = 1;
 	}
+
 	if (has_value(cipher_suites, TLS_fallback_scsv)) {
 	  // draft-ietf-tls-downgrade-scsv 3:
-	  // If TLS_FALLBACK_SCSV appears in ClientHello.cipher_suites and the
-	  // highest protocol version supported by the server is higher than
-	  // the version indicated in ClientHello.client_version, the server
-	  // MUST respond with an inappropriate_fallback alert.
-	  if (client_version < context->max_version) {
-	    send_packet(alert(ALERT_fatal, ALERT_inappropriate_fallback,
-			      "Too low client version.\n"));
-	    return -1;
-	  }
+	  // If TLS_FALLBACK_SCSV appears in ClientHello.cipher_suites
+	  // and the highest protocol version supported by the server
+	  // is higher than the version indicated in
+	  // ClientHello.client_version, the server MUST respond with
+	  // an inappropriate_fallback alert.
+	  COND_FATAL(client_version < context->max_version,
+                     ALERT_inappropriate_fallback,
+                     "Too low client version.\n");
 	}
 
 #ifdef SSL3_DEBUG
@@ -792,27 +768,23 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	  }
 	}
 
-	if (!sizeof(cipher_suites)) {
-	  // No overlapping cipher suites, or obsolete cipher suite selected,
-	  // or incompatible certificates.
-	  send_packet(alert(ALERT_fatal, ALERT_handshake_failure,
-			    "No common suites!\n"));
-	  return -1;
-	}
+        // No overlapping cipher suites, or obsolete cipher suite
+        // selected, or incompatible certificates.
+	COND_FATAL(!sizeof(cipher_suites),
+                   ALERT_handshake_failure, "No common suites!\n");
 
 	// FIXME: Support TLS 1.3 fallback to TLS 1.2 or earlier
 	//        for clients that don't use early_data?
         if( version >= PROTOCOL_TLS_1_3 ) {
-	  if (!equal(compression_methods, ({ COMPRESSION_null }))) {
-	    // TLS 1.3 draft 3 7.4.1:
-	    //
-	    // If a TLS 1.3 ClientHello is received with any other
-	    // value in this field, the server MUST generate a fatal
-	    // "illegal_parameter" alert.
-	    send_packet(alert(ALERT_fatal, ALERT_illegal_parameter,
-			      "Illegal with compression in TLS 1.3 and later.\n"));
-	    return -1;
-	  }
+
+          // TLS 1.3 draft 3 7.4.1:
+          //
+          // If a TLS 1.3 ClientHello is received with any other
+          // value in this field, the server MUST generate a fatal
+          // "illegal_parameter" alert.
+	  COND_FATAL(!equal(compression_methods, ({ COMPRESSION_null })),
+                     ALERT_illegal_parameter,
+                     "Illegal with compression in TLS 1.3 and later.\n");
 
 	  Session old_session = sizeof(session_id) &&
             context->lookup_session(session_id);
@@ -866,35 +838,28 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	    handshake_buffer = handshake_buffer[len + 4..];
 	    if (ret) {
 	      if (ret < 0) return ret;
-	      if (sizeof(handshake_buffer)) {
-		// Unlikely, but...
-		send_packet(alert(ALERT_fatal, ALERT_record_overflow,
-				  "Early data extension contains extraneous "
-				  "handshake packets.\n"));
-		return -1;
-	      }
+	      COND_FATAL(sizeof(handshake_buffer),
+                         ALERT_record_overflow,
+                         "Early data extension contains extraneous "
+                         "handshake packets.\n");
+
 	      return 1;
 	    }
 	  }
-	  if (sizeof(handshake_buffer)) {
-	    send_packet(alert(ALERT_fatal, ALERT_record_overflow,
-			      "Early data extension contains incomplete "
-			      "handshake packets.\n"));
-	    return -1;
-	  }
+	  COND_FATAL(sizeof(handshake_buffer),
+                     ALERT_record_overflow,
+                     "Early data extension contains incomplete "
+                     "handshake packets.\n");
 
 	  return 0;
         } else {
           compression_methods =
             context->preferred_compressors & compression_methods;
-	  if (sizeof(compression_methods))
-	    session->set_compression_method(compression_methods[0]);
-	  else
-	  {
-	    send_packet(alert(ALERT_fatal, ALERT_handshake_failure,
-			      "Unsupported compression method.\n"));
-	    return -1;
-	  }
+          COND_FATAL(!sizeof(compression_methods),
+                     ALERT_handshake_failure,
+                     "Unsupported compression method.\n");
+
+          session->set_compression_method(compression_methods[0]);
 	}
 
 #ifdef SSL3_DEBUG
@@ -953,11 +918,9 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
     switch(type)
     {
     default:
-      SSL3_DEBUG_MSG("Got %s packet.\n",
-		     fmt_constant(type, "HANDSHAKE"));
-      send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
-			"Expected key share.\n"));
-      return -1;
+      SSL3_DEBUG_MSG("Got %s packet.\n", fmt_constant(type, "HANDSHAKE"));
+      COND_FATAL(1, ALERT_unexpected_message, "Expected key share.\n");
+      break;
     case HANDSHAKE_client_key_share:
       {
 	int wanted_group;
@@ -1047,11 +1010,9 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	SSL3_DEBUG_MSG("Wanted group: %s\n",
 		       fmt_constant(wanted_group, "GROUP"));
 	Stdio.Buffer offers = input->read_hbuffer(2);
-	if (sizeof(input)) {
-	  send_packet(alert(ALERT_fatal, ALERT_handshake_failure,
-			    "Invalid ClientKeyShare.\n"));
-	  return -1;
-	}
+	COND_FATAL(sizeof(input), ALERT_handshake_failure,
+                   "Invalid ClientKeyShare.\n");
+
 	mapping(int:string(8bit)) kes = ([]);
 	string(8bit) premaster_secret;
 	int best_group = 0x10000;
@@ -1062,13 +1023,12 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	  SSL3_DEBUG_MSG("Offer: %s: %O\n",
 			 fmt_constant(group, "GROUP"),
 			 key_offer);
-	  if (kes[group]) {
-	    // Clients MUST NOT offer multiple ClientKeyShareOffers
-	    // for the same parameters.
-	    send_packet(alert(ALERT_fatal, ALERT_handshake_failure,
-			      "Duplicate key share offers.\n"));
-	    return -1;
-	  }
+
+          // Clients MUST NOT offer multiple ClientKeyShareOffers for
+          // the same parameters.
+	  COND_FATAL(kes[group], ALERT_handshake_failure,
+                     "Duplicate key share offers.\n");
+
 	  kes[group] = key_offer;
 	  if (((group & 0xff00) == (wanted_group & 0xff00)) &&
 	      (group >= wanted_group) && (group < best_group)) {
@@ -1177,9 +1137,8 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
     switch(type)
     {
     default:
-      send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
-			"Expected finished.\n"));
-      return -1;
+      COND_FATAL(1, ALERT_unexpected_message, "Expected finished.\n");
+      break;
     case HANDSHAKE_finished:
      {
        string(8bit) my_digest;
@@ -1190,22 +1149,13 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
        if(version == PROTOCOL_SSL_3_0) {
 	 my_digest=hash_messages("CLNT");
          digest = input->read(36);
-         if(sizeof(input))
-         {
-           send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
-                             "Invalid handshake finished message.\n"));
-           return -1;
-         }
+         COND_FATAL(sizeof(input), ALERT_unexpected_message,
+                    "Invalid handshake finished message.\n");
        } else if(version >= PROTOCOL_TLS_1_0) {
 	 my_digest=hash_messages("client finished");
          digest = input->read(12);
-         if(sizeof(input))
-         {
-           send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
-                             "Invalid handshake finished message.\n"));
-           return -1;
-         }
-
+         COND_FATAL(sizeof(input), ALERT_unexpected_message,
+                    "Invalid handshake finished message.\n");
        }
 
        if ((ke && ke->message_was_bad)	/* Error delayed until now */
@@ -1215,9 +1165,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	   SSL3_DEBUG_MSG("message_was_bad\n");
 	 if(my_digest != digest)
 	   SSL3_DEBUG_MSG("digests differ\n");
-	 send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
-			   "Key exchange failure.\n"));
-	 return -1;
+         COND_FATAL(1, ALERT_unexpected_message, "Key exchange failure.\n");
        }
        handshake_messages += raw; /* Second hash includes this message,
 				   * the first doesn't */
@@ -1273,30 +1221,23 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
       SSL3_DEBUG_MSG("SSL.ServerConnection: CLIENT_KEY_SHARE\n");
       // FALL_THROUGH.
     default:
-      send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
-			"Expected client KEX or cert.\n"));
-      return -1;
+      COND_FATAL(1, ALERT_unexpected_message,
+                 "Expected client KEX or cert.\n");
+      break;
     case HANDSHAKE_client_key_exchange:
       SSL3_DEBUG_MSG("SSL.ServerConnection: CLIENT_KEY_EXCHANGE\n");
 
-      if ((certificate_state == CERT_requested) ||
-	  (version >= PROTOCOL_TLS_1_3)) {
-	/* Certificate must be sent before key exchange message */
-	send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
-			  "Expected client cert.\n"));
-	return -1;
-      }
+      // Certificate must be sent before key exchange message
+      COND_FATAL((certificate_state == CERT_requested) ||
+                 (version >= PROTOCOL_TLS_1_3),
+                 ALERT_unexpected_message, "Expected client cert.\n");
 
       if (!server_derive_master_secret(input)) {
 	return -1;
       }
 
-      if (sizeof(input))
-      {
-        send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
-                          "Trailing key exchange data.\n"));
-        return -1;
-      }
+      COND_FATAL(sizeof(input), ALERT_unexpected_message,
+                 "Trailing key exchange data.\n");
 
       handshake_messages += raw;
 
@@ -1317,12 +1258,8 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
      {
        SSL3_DEBUG_MSG("SSL.ServerConnection: CLIENT_CERTIFICATE\n");
 
-       if (certificate_state != CERT_requested)
-       {
-	 send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
-			   "Unexpected client cert.\n"));
-	 return -1;
-       }
+       COND_FATAL(certificate_state != CERT_requested,
+                  ALERT_unexpected_message, "Unexpected client cert.\n");
 
        handshake_messages += raw;
 
@@ -1352,9 +1289,8 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
     switch(type)
     {
     default:
-      send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
-			"Expected cert verify.\n"));
-      return -1;
+      COND_FATAL(1, ALERT_unexpected_message, "Expected cert verify.\n");
+      break;
     case HANDSHAKE_certificate_verify:
       SSL3_DEBUG_MSG("SSL.ServerConnection: CERTIFICATE_VERIFY\n");
 
