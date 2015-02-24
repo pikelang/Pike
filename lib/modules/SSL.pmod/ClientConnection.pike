@@ -686,21 +686,17 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
       }
 
       if (((version & ~0xff) != PROTOCOL_SSL_3_0) ||
-	  (version < context->min_version)) {
-	SSL3_DEBUG_MSG("Unsupported version of SSL: %s.\n",
-		       fmt_version(version));
-	version = client_version; // FIXME: Do we need this?
+	  (version < context->min_version) ||
+	  (version > client_version)) {
+	SSL3_DEBUG_MSG("Unsupported version of SSL: %s (Requested %s).\n",
+		       fmt_version(version), fmt_version(client_version));
+	version = client_version;
 	COND_FATAL(1, ALERT_protocol_version, "Unsupported version.\n");
       }
       if (client_version > version) {
 	SSL3_DEBUG_MSG("Falling back client from %s to %s.\n",
 		       fmt_version(client_version),
 		       fmt_version(version));
-      } else if (version > client_version) {
-	SSL3_DEBUG_MSG("Falling back server from %s to %s.\n",
-		       fmt_version(version),
-		       fmt_version(client_version));
-	version = client_version;
       }
 
       COND_FATAL(!session->set_cipher_suite(cipher_suite, version,
