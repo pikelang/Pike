@@ -184,32 +184,45 @@ static void push_sql_int(int i)
   free_string(data);
 }
 
+static struct program *bignum_program = NULL;
+
 static void push_numeric(int i)
 {
   struct pike_string *data = Pike_sp[-1].u.string;
-  SQL_NUMERIC_STRUCT *numeric = (SQL_NUMERIC_STRUCT *)data->str;
+  struct tagSQL_NUMERIC_STRUCT *numeric =
+    (struct tagSQL_NUMERIC_STRUCT *)data->str;
   struct object *res;
-  MP_INT *mp;
+  int sign;
+  int scale;
 
-  if (data->len != sizeof(SQL_NUMERIC_STRUCT)) {
+  if (data->len != sizeof(struct tagSQL_NUMERIC_STRUCT)) {
     Pike_error("Invalid numeric field length: %d\n", data->len);
   }
 
-  res = fast_clone_object(bignum_program);
-  Pike_sp--;
+  sign = numeric->sign;
+  scale = numeric->scale;
+
+  if (!bignum_program) {
+    bignum_program = get_auto_bignum_program();
+    if (!bignum_program) {
+      Pike_error("Bignums not supported in this installation of Pike.\n");
+    }
+  }
+
+  push_string(make_shared_binary_string(numeric->val, SQL_MAX_NUMERIC_LEN));
+  push_int(-256);
+  res = clone_object(bignum_program, 2);
+  pop_stack();
   push_object(res);
-  mp = (MP_INT *)res->storage;
-  mpz_import(mp, SQL_MAX_NUMERIC_LEN, -1, 1, 0, 0, numeric->val);
-  if (!numeric->sign) {
-    mpz_neg(mp, mp);
+
+  if (!sign) {
+    o_negate();
   }
   if (numeric->scale) {
     push_int(-numeric->scale);
-    free_string(data);
     apply_current(scale_numeric_fun_num, 2);
     return;
   }
-  free_string(data);
 }
 
 static void push_time(int i)
