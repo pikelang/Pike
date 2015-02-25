@@ -3,14 +3,9 @@
 
 //! Encryption and MAC algorithms used in SSL.
 
+#include "tls.h"
+
 import .Constants;
-
-#ifdef SSL3_DEBUG
-#define SSL3_DEBUG_MSG(X ...)  werror(X)
-#else /*! SSL3_DEBUG */
-#define SSL3_DEBUG_MSG(X ...)
-#endif /* SSL3_DEBUG */
-
 
 // A mapping from DH p to DH q to effort verification level to
 // indicate if a DH group with a specific p and q is valid or not. -1

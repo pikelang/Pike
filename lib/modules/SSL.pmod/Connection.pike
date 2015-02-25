@@ -29,18 +29,14 @@
 
 //#define SSL3_PROFILING
 
+#include "tls.h"
+
 import .Constants;
 
 private constant State = .State;
 private constant Session = .Session;
 private constant Context = .Context;
 private constant Buffer = .Buffer;
-
-#ifdef SSL3_DEBUG
-#define SSL3_DEBUG_MSG(X ...)  werror(X)
-#else /*! SSL3_DEBUG */
-#define SSL3_DEBUG_MSG(X ...)
-#endif /* SSL3_DEBUG */
 
 Session session;
 Context context;

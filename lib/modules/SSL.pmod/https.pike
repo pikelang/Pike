@@ -3,6 +3,8 @@
 
 //! Dummy HTTPS server/client
 
+#include "tls.h"
+
 #ifndef PORT
 #define PORT 25678
 #endif
@@ -26,12 +28,6 @@
 #ifndef HOST
 #define HOST	"127.0.0.1"
 #endif
-
-#ifdef SSL3_DEBUG
-#define SSL3_DEBUG_MSG(X ...)  werror(X)
-#else /*! SSL3_DEBUG */
-#define SSL3_DEBUG_MSG(X ...)
-#endif /* SSL3_DEBUG */
 
 class MyContext
 {

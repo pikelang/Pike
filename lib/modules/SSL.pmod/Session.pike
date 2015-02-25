@@ -13,14 +13,10 @@
 //! It is also possible to change to a new session in the middle of a
 //! connection.
 
+#include "tls.h"
+
 import ".";
 import Constants;
-
-#ifdef SSL3_DEBUG
-#define SSL3_DEBUG_MSG(X ...)  werror(X)
-#else /*! SSL3_DEBUG */
-#define SSL3_DEBUG_MSG(X ...)
-#endif /* SSL3_DEBUG */
 
 //! Identifies the session to the server
 string(8bit) identity;

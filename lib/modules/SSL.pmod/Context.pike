@@ -33,11 +33,7 @@
 //! @seealso
 //!   @[File], @[Port], @[Standards.X509]
 
-#ifdef SSL3_DEBUG
-#define SSL3_DEBUG_MSG(X ...)  werror(X)
-#else /*! SSL3_DEBUG */
-#define SSL3_DEBUG_MSG(X ...)
-#endif /* SSL3_DEBUG */
+#include "tls.h"
 
 import ".";
 import Constants;
