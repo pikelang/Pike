@@ -656,12 +656,12 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
     case HANDSHAKE_server_hello:
       SSL3_DEBUG_MSG("SSL.ClientConnection: SERVER_HELLO\n");
 
-      string(8bit) id;
+      string(8bit) session_id;
       int cipher_suite, compression_method;
 
       version = [int(0x300..0x300)|ProtocolVersion]input->read_int(2);
       server_random = input->read(32);
-      id = input->read_hstring(1);
+      session_id = input->read_hstring(1);
       cipher_suite = input->read_int(2);
       compression_method = input->read_int(1);
 
@@ -705,11 +705,11 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 
       SSL3_DEBUG_MSG("STATE_wait_for_hello: received hello\n"
 		     "version = %s\n"
-		     "id=%O\n"
+		     "session_id=%O\n"
 		     "cipher suite: %O\n"
 		     "compression method: %O\n",
 		     fmt_version(version),
-		     id, cipher_suite, compression_method);
+		     session_id, cipher_suite, compression_method);
 
       int missing_secure_renegotiation = secure_renegotiation;
 
@@ -846,8 +846,8 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
       COND_FATAL(missing_secure_renegotiation, ALERT_handshake_failure,
                  "Missing secure renegotiation extension.\n");
 
-      if ((id == session->identity) && sizeof(id)) {
-	SSL3_DEBUG_MSG("Resuming session %O.\n", id);
+      if ((session_id == session->identity) && sizeof(session_id)) {
+	SSL3_DEBUG_MSG("Resuming session %O.\n", session_id);
 
 	if (version < PROTOCOL_TLS_1_3) {
 	  new_cipher_states();
@@ -863,7 +863,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	break;
       }
 
-      session->identity = id;
+      session->identity = session_id;
       if (version >= PROTOCOL_TLS_1_3) {
 	handshake_state = STATE_wait_for_key_share;
       } else {
