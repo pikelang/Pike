@@ -1229,7 +1229,13 @@ class KeyExchangeECDHE
 
     string premaster_secret;
 
-    object point = session->curve->Point(data->read_hbuffer(1));
+    Crypto.ECC.Curve.Point point;
+    catch {
+      point = session->curve->Point(data->read_hbuffer(1));
+    };
+    if (!point)
+      return ALERT_decode_error;
+
     // RFC 4492 5.10:
     // Note that this octet string (Z in IEEE 1363 terminology) as
     // output by FE2OSP, the Field Element to Octet String
@@ -1268,7 +1274,11 @@ class KeyExchangeECDHE
     }
 
     // Then the point.
-    point = session->curve->Point(input->read_hbuffer(1));
+    catch {
+      point = session->curve->Point(input->read_hbuffer(1));
+    };
+    if (!point)
+      return 0;
 
     len = len - sizeof(input);
     key->rewind();
@@ -1342,7 +1352,11 @@ class KeyShareECDHE
 
   string(8bit) receive_key_share_offer(string(8bit) offer)
   {
-    point = curve->Point(Stdio.Buffer(offer));
+    catch {
+      point = curve->Point(Stdio.Buffer(offer));
+    };
+    if (!point)
+      return 0;
 
     // RFC 4492 5.10:
     // Note that this octet string (Z in IEEE 1363 terminology) as

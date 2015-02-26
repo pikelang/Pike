@@ -1061,6 +1061,8 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	  Stdio.Buffer sks = Stdio.Buffer();
 	  ke->make_key_share_offer(sks);
 	  premaster_secret = ke->receive_key_share_offer(kes[best_group]);
+          COND_FATAL(!premaster_secret, ALERT_decode_error,
+                     "Unable to decode key share offer.\n");
 
 	  send_packet(server_hello_packet());
 	  send_packet(server_key_share_packet(sks));

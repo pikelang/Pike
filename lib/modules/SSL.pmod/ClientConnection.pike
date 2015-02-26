@@ -894,6 +894,8 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 
 	string(8bit) premaster_secret;
 	premaster_secret = ke->receive_key_share_offer(key_offer);
+        COND_FATAL(!premaster_secret, ALERT_decode_error,
+                   "Unable to decode key share offer.\n");
 
 	// Derive the handshake master secret.
 	derive_master_secret(premaster_secret);
