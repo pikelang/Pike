@@ -260,43 +260,11 @@ int(0..1) is_supported_suite(int suite, int ke_mask, ProtocolVersion version)
   return 1;
 }
 
-//! Selects an apropriate certificate, authentication method
-//! and cipher suite for the parameters provided by the client.
-//!
-//! @param certs
-//!   The list of @[CertificatePair]s that are applicable to the
-//!   @[server_name] of this session.
-//!
-//! @param cipher_suites
-//!   The set of cipher suites that the client and server have in
-//!   common.
-//!
-//! @param version
-//!   The SSL protocol version to use.
-//!
-//! Typical client extensions that also are used:
-//! @dl
-//!   @item @[signature_algorithms]
-//!     The set of signature algorithm tuples that
-//!     the client claims to support.
-//! @enddl
-int select_cipher_suite(array(CertificatePair) certs,
-			array(int) cipher_suites,
-			ProtocolVersion version)
+private array(CertificatePair)
+  select_certificates(array(CertificatePair) certs,
+                      array(int) cipher_suites,
+                      ProtocolVersion version)
 {
-  if (!sizeof(cipher_suites)) return 0;
-
-  if (!certs || !sizeof(certs))
-  {
-    SSL3_DEBUG_MSG("No certificates.\n");
-
-    foreach(cipher_suites, int suite)
-      if (KE_Anonymous[CIPHER_SUITES[suite][0]])
-        return set_cipher_suite(suite, version, 0, 0);
-
-    return 0;
-  }
-
   SSL3_DEBUG_MSG("Candidate certificates: %O\n", certs);
 
   // Find the set of key exchange and hash algorithms supported by the
@@ -345,10 +313,51 @@ int select_cipher_suite(array(CertificatePair) certs,
   }
 
   SSL3_DEBUG_MSG("Client supported certificates: %O\n", certs);
+  return certs;
+}
+
+//! Selects an apropriate certificate, authentication method
+//! and cipher suite for the parameters provided by the client.
+//!
+//! @param certs
+//!   The list of @[CertificatePair]s that are applicable to the
+//!   @[server_name] of this session.
+//!
+//! @param cipher_suites
+//!   The set of cipher suites that the client and server have in
+//!   common.
+//!
+//! @param version
+//!   The SSL protocol version to use.
+//!
+//! Typical client extensions that also are used:
+//! @dl
+//!   @item @[signature_algorithms]
+//!     The set of signature algorithm tuples that
+//!     the client claims to support.
+//! @enddl
+int select_cipher_suite(array(CertificatePair) certs,
+			array(int) cipher_suites,
+			ProtocolVersion version)
+{
+  if (!sizeof(cipher_suites)) return 0;
+
+  if (!certs || !sizeof(certs))
+  {
+    SSL3_DEBUG_MSG("No certificates.\n");
+
+    foreach(cipher_suites, int suite)
+      if (KE_Anonymous[CIPHER_SUITES[suite][0]])
+        return set_cipher_suite(suite, version, 0, 0);
+
+    return 0;
+  }
+
+  certs = select_certificates(certs, cipher_suites, version);
 
   // Find the set of key exchange algorithms supported by
   // the remaining certs.
-  ke_mask = (1<<KE_null)|(1<<KE_dh_anon)|(1<<KE_psk)|(1<<KE_dhe_psk)
+  int ke_mask = (1<<KE_null)|(1<<KE_dh_anon)|(1<<KE_psk)|(1<<KE_dhe_psk)
 #if constant(Crypto.ECC.Curve)
     |(1<<KE_ecdh_anon)
 #endif
