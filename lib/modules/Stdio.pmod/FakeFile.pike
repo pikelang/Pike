@@ -201,9 +201,9 @@ int seek(int pos, string|void how) {
               ptr = strlen(data);
           break;
       case Stdio.SEEK_END:
-          pos = sizeof(data)+pos;
-          if( pos < 0 )
-              pos = 0;
+          ptr = sizeof(data)+pos;
+          if( ptr < 0 )
+              ptr = 0;
           break;
       case Stdio.SEEK_CUR:
           ptr += pos;
