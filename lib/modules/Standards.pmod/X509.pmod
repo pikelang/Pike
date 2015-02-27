@@ -1379,21 +1379,18 @@ string make_root_certificate(Crypto.Sign.State c, int ttl, mapping|array name,
 
 //! Decodes a certificate and verifies that it is structually sound.
 //! Returns a @[TBSCertificate] object if ok, otherwise @expr{0@}.
-TBSCertificate decode_certificate(string|object cert)
+TBSCertificate decode_certificate(string|.PKCS.Signature.Signed cert)
 {
-  if (stringp (cert)) {
+  if (stringp (cert))
     cert = Standards.PKCS.Signature.decode_signed(cert, x509_types);
-  }
 
   if (!cert
-      || (cert->type_name != "SEQUENCE")
-      || (sizeof(cert) != 3)
-      || (cert[0]->type_name != "SEQUENCE")
-      || (cert[1]->type_name != "SEQUENCE")
-      || (!sizeof(cert[1]))
-      || (cert[1][0]->type_name != "OBJECT IDENTIFIER")
-      || (cert[2]->type_name != "BIT STRING")
-      || cert[2]->unused)
+      || (cert->tbs->type_name != "SEQUENCE")
+      || (cert->algorithm->type_name != "SEQUENCE")
+      || (!sizeof(cert->algorithm))
+      || (cert->algorithm[0]->type_name != "OBJECT IDENTIFIER")
+      || (cert->signature->type_name != "BIT STRING")
+      || cert->signature->unused)
     return NULL("Certificate has the wrong ASN.1 structure.\n");
 
   TBSCertificate tbs = TBSCertificate()->init(cert[0]);
@@ -1401,10 +1398,10 @@ TBSCertificate decode_certificate(string|object cert)
   // FIXME: The re-encoding and algorithm checks are more appropriate
   // in verify_certificate, but the full certificate doesn't reach
   // there.
-  if (!tbs || (cert[1]->get_der() != tbs->algorithm->get_der()))
+  if (!tbs)
     return NULL("Failed to generate TBSCertificate.\n");
 
-  if(tbs->algorithm->get_der() != cert[1]->get_der())
+  if(tbs->algorithm->get_der() != cert->algorithm->get_der())
     return NULL("Mismatching algorithm identifiers.\n");
 
   return tbs;
