@@ -1425,7 +1425,7 @@ TBSCertificate verify_certificate(string s,
   if (!tbs) return 0;
 
   array(Verifier)|Verifier verifiers;
-  
+
   if (tbs->issuer->get_der() == tbs->subject->get_der())
   {
     DBG("Self signed certificate: %O\n", tbs->public_key);
@@ -1630,7 +1630,7 @@ mapping(string:array(Verifier)) load_authorities(string|array(string)|void root_
 //! No verifications are done on the leaf certificate to determine
 //! what it can and can not be used for.
 //!
-//! Returns a mapping with the following contents, depending 
+//! Returns a mapping with the following contents, depending
 //! on the verification of the certificate chain:
 //!
 //! @mapping
@@ -1788,7 +1788,7 @@ mapping verify_certificate_chain(array(string) cert_chain,
         // the authority.
         if(idx == 0)
           m->authority = tbs->issuer;
- 
+
         if(idx == sizeof(chain_cert)-1) m->cn = tbs->subject;
         break;
       }
