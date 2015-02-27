@@ -607,7 +607,7 @@ yupbegin:       res=PQexec(conn,"BEGIN");
 			pgdebug("\tBad.\n");
 			set_error(PQerrorMessage(conn));
 			PQclear(res);
-			Pike_error ("Error in frontend-backend communications.\n");
+			Pike_error("Postgres error: %S\n", THIS->last_error);
 		case PGRES_TUPLES_OK:
 			pgdebug("\tResult.\n");
 			THIS->last_result=res;
