@@ -1382,16 +1382,7 @@ string make_root_certificate(Crypto.Sign.State c, int ttl, mapping|array name,
 TBSCertificate decode_certificate(string|.PKCS.Signature.Signed cert)
 {
   if (stringp (cert))
-    cert = Standards.PKCS.Signature.decode_signed(cert, x509_types);
-
-  if (!cert
-      || (cert->tbs->type_name != "SEQUENCE")
-      || (cert->algorithm->type_name != "SEQUENCE")
-      || (!sizeof(cert->algorithm))
-      || (cert->algorithm[0]->type_name != "OBJECT IDENTIFIER")
-      || (cert->signature->type_name != "BIT STRING")
-      || cert->signature->unused)
-    return NULL("Certificate has the wrong ASN.1 structure.\n");
+    cert = .PKCS.Signature.decode_signed(cert, x509_types);
 
   TBSCertificate tbs = TBSCertificate()->init(cert[0]);
 
@@ -1400,9 +1391,6 @@ TBSCertificate decode_certificate(string|.PKCS.Signature.Signed cert)
   // there.
   if (!tbs)
     return NULL("Failed to generate TBSCertificate.\n");
-
-  if(tbs->algorithm->get_der() != cert->algorithm->get_der())
-    return NULL("Mismatching algorithm identifiers.\n");
 
   return tbs;
 }
@@ -1419,10 +1407,13 @@ TBSCertificate decode_certificate(string|.PKCS.Signature.Signed cert)
 TBSCertificate verify_certificate(string s,
 				  mapping(string:Verifier|array(Verifier)) authorities)
 {
-  object cert = Standards.ASN1.Decode.secure_der_decode(s);
+  .PKCS.Signature.Signed cert = .PKCS.Signature.decode_signed(s, x509_types);
 
   TBSCertificate tbs = decode_certificate(cert);
   if (!tbs) return 0;
+
+  if(tbs->algorithm->get_der() != cert->algorithm->get_der())
+    return NULL("Mismatching algorithm identifiers.\n");
 
   array(Verifier)|Verifier verifiers;
 

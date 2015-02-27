@@ -45,8 +45,10 @@ class Signed
   }
 
   //! ASN.1 structure to be signed.
-  void `tbs=(object o)
+  void `tbs=(Sequence o)
   {
+    if( o->type_name != "SEQUENCE" )
+      error("Illegal ASN.1.\n");
     elements[0] = o;
   }
 
@@ -64,6 +66,10 @@ class Signed
   //!   @[sign()]
   void `algorithm=(Sequence a)
   {
+    if( a->type_name != "SEQUENCE"
+        || sizeof(a)<1
+        || a[0]->type_name != "OBJECT IDENTIFIER" )
+      error("Illegal ASN.1.\n");
     elements[1] = a;
   }
 
@@ -81,6 +87,9 @@ class Signed
   //!   @[sign()]
   void `signature=(BitString s)
   {
+    if( s->type_name != "BIT STRING"
+        || s->unused )
+      error("Illegal ASN.1.\n");
     elements[2] = s;
   }
 
@@ -99,13 +108,16 @@ class Signed
 
   protected void create(Sequence|void s)
   {
-    elements = ({ Null(), Null(), Null() });
     if (s) {
-      if ((s->type_name != "SEQUENCE") || (sizeof(s->elements) != 3)) {
+      elements = allocate(3);
+      if ((s->type_name != "SEQUENCE") || (sizeof(s->elements) != 3))
 	error("Invalid arguments to Standards.PKCS.Signature.Signed.");
-      }
-      elements = s->elements;
+      tbs = s[0];
+      algorithm = s[1];
+      signature = s[2];
     }
+    else
+      elements = ({ Null(), Null(), Null() });
   }
 }
 
