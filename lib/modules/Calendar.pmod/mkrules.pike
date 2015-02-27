@@ -746,7 +746,7 @@ int main(int ac,array(string) am)
 
    write("thinking...\n");
 
-   string t=TZrules_base;
+   string t="#pike "+__MAJOR__+"."+__MINOR__+"\n\n" + TZrules_base;
 
    foreach (arules,MyRule r)
       t+=r->dump();
