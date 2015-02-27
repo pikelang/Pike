@@ -132,11 +132,13 @@ void result_create (struct object * UNUSED(o)) {
 	pgdebug("result_create().\n");
 	THIS->result=NULL;
 	THIS->cursor=0;
+	THIS->pgod = NULL;
+	THIS->pgo = NULL;
 }
 
 void result_destroy (struct object * UNUSED(o)) {
 	pgdebug("result_destroy().\n");
-	if(THIS->pgod->docommit) {
+	if(THIS->pgod && THIS->pgod->docommit) {
 	  PGconn * conn = THIS->pgod->dblink;
 	  PGresult * res=THIS->result;
 	  PQ_FETCH();
@@ -149,6 +151,11 @@ void result_destroy (struct object * UNUSED(o)) {
 	  THREADS_DISALLOW();
 	  THIS->result=res;
 	  THIS->pgod->lastcommit=1;
+	}
+	THIS->pgod = NULL;
+	if (THIS->pgo) {
+	  free_object(THIS->pgo);
+	  THIS->pgo = NULL;
 	}
 	PQclear(THIS->result);
 }
