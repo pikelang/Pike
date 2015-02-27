@@ -255,7 +255,7 @@ private array(Standards.X509.TBSCertificate)
   verify_certificate_chain(array(string) certs)
 {
   // If we're not requiring the certificate, and we don't provide one,
-  // that should be okay. 
+  // that should be okay.
   if((context->auth_level < AUTHLEVEL_require) && !sizeof(certs))
     return ({});
 
@@ -286,9 +286,9 @@ private array(Standards.X509.TBSCertificate)
     }
   }
 
-  // ok, so we have a certificate chain whose client certificate is 
+  // ok, so we have a certificate chain whose client certificate is
   // issued by an authority known to us.
-  
+
   // next we must verify the chain to see if the chain is unbroken
 
   mapping result =

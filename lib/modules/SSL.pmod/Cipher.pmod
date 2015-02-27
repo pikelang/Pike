@@ -1670,7 +1670,7 @@ protected string(8bit) P_hash(Crypto.Hash hashfn,
     res+=hmac(temp+seed);
   }
   return res[..(len-1)];
-} 
+}
 
 //! This Pseudo Random Function is used to derive secret keys in SSL 3.0.
 //!
@@ -1852,7 +1852,7 @@ CipherSpec lookup(int suite, ProtocolVersion|int version,
     res->key_material = 8;
     res->iv_size = 8;
     res->key_bits = 40;
-    break;    
+    break;
   case CIPHER_null:
     res->bulk_cipher_algorithm = 0;
     res->cipher_type = CIPHER_stream;

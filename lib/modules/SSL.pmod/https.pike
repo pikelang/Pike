@@ -86,7 +86,7 @@ class Conn {
     if (index == sizeof(message))
       sslfile->close();
   }
-  
+
   void read_callback(mixed id, string data)
   {
     SSL3_DEBUG_MSG("Received: '" + data + "'\n");

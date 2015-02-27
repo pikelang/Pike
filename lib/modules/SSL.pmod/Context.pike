@@ -716,12 +716,12 @@ void set_authorities(array(string) a)
 
 //! When set, require the chain to be known, even if the root is self
 //! signed.
-//! 
+//!
 //! Note that if set, and certificates are set to be verified, trusted
 //! issuers must be provided, or no connections will be accepted.
 int require_trust=0;
 
-//! Get the list of allowed authorities. See @[set_authorities]. 
+//! Get the list of allowed authorities. See @[set_authorities].
 array(string) get_authorities()
 {
   return authorities;
@@ -730,7 +730,7 @@ array(string) get_authorities()
 protected array(string) authorities = ({});
 array(string(8bit)) authorities_cache = ({});
 
-//! Sets the list of trusted certificate issuers. 
+//! Sets the list of trusted certificate issuers.
 //!
 //! @param a
 //!
@@ -740,7 +740,7 @@ array(string(8bit)) authorities_cache = ({});
 //! the chain. The string is a DER-encoded certificate, which
 //! typically must be decoded using @[MIME.decode_base64] or
 //! @[Standards.PEM.Messages] first.
-//! 
+//!
 //! If this array is left empty, and the context is set to verify
 //! certificates, a certificate chain must have a root that is self
 //! signed.
@@ -750,7 +750,7 @@ void set_trusted_issuers(array(array(string))  i)
   update_trusted_issuers();
 }
 
-//! Get the list of trusted issuers. See @[set_trusted_issuers]. 
+//! Get the list of trusted issuers. See @[set_trusted_issuers].
 array(array(string)) get_trusted_issuers()
 {
   return trusted_issuers;
