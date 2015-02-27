@@ -10,6 +10,8 @@ inherit Standards._BSON;
 
 #define ERROR(X ...) throw(Error.Generic(sprintf(X)))
 
+constant dont_dump_program = 1;
+
 //! @appears Standards.BSON module
 //!
 //! Tools for handling the BSON structured data format. See
