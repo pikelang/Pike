@@ -496,7 +496,7 @@ PIKECLASS ECC_Curve
    *!
    *! A typical use is for Elliptic Curve Diffie Hellman (ECDH) key exchange.
    *!
-   *! This is equivalent to @code{(Point(x, y) * scalar)@}.
+   *! This is equivalent to @expr{(Point(x, y) * scalar)@}.
    *!
    *! @returns
    *!   Returns the new @[Point] on the curve.
