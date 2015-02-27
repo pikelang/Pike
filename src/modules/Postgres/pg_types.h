@@ -14,6 +14,7 @@ struct postgres_result_object_data {
   PGresult * result;
   int cursor;
   struct pgres_object_data* pgod;
+  struct object *pgo;
 };
 
 struct pgres_object_data {

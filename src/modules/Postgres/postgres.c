@@ -634,7 +634,7 @@ yupbegin:       res=PQexec(conn,"BEGIN");
 			pgdebug("\tResult.\n");
 			THIS->last_result=res;
                         THIS->last_rows=PQntuples(res);
-			push_object(this_object());
+			ref_push_object(this_object());
 			push_object(clone_object(pgresult_program,1));
 			return;
 		default:
