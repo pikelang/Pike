@@ -1384,7 +1384,7 @@ TBSCertificate decode_certificate(string|.PKCS.Signature.Signed cert)
   if (stringp (cert))
     cert = .PKCS.Signature.decode_signed(cert, x509_types);
 
-  TBSCertificate tbs = TBSCertificate()->init(cert[0]);
+  TBSCertificate tbs=TBSCertificate([object(.PKCS.Signature.Signed)]cert->tbs);
 
   // FIXME: The re-encoding and algorithm checks are more appropriate
   // in verify_certificate, but the full certificate doesn't reach
@@ -1647,7 +1647,8 @@ mapping(string:array(Verifier)) load_authorities(string|array(string)|void root_
 //!
 //! @param cert_chain
 //!   An array of certificates, with the relative-root last. Each
-//!   certificate should be a DER-encoded certificate.
+//!   certificate should be a DER-encoded certificate, or decoded as a
+//!   @[Standards.PKCS.Signature.Signed] object.
 //! @param authorities
 //!   A mapping from (DER-encoded) names to verifiers.
 //! @param require_trust
@@ -1656,7 +1657,7 @@ mapping(string:array(Verifier)) load_authorities(string|array(string)|void root_
 //!
 //! See @[Standards.PKCS.Certificate.get_dn_string] for converting the
 //! RDN to an X500 style string.
-mapping verify_certificate_chain(array(string) cert_chain,
+mapping verify_certificate_chain(array(string|.PKCS.Signature.Signed) cert_chain,
 				 mapping(string:Verifier|array(Verifier)) authorities,
                                  int|void require_trust)
 {
@@ -1675,10 +1676,12 @@ mapping verify_certificate_chain(array(string) cert_chain,
   array chain_obj = allocate(len);
   array chain_cert = allocate(len);
 
-  foreach(cert_chain; int idx; string c)
+  foreach(cert_chain; int idx; string|.PKCS.Signature.Signed c)
   {
-     object cert = Standards.PKCS.Signature.decode_signed(c);
-     TBSCertificate tbs = decode_certificate(cert);
+    .PKCS.Signature.Signed cert;
+    if( stringp(c) )
+      cert = .PKCS.Signature.decode_signed(c);
+     TBSCertificate tbs = decode_certificate(c);
      if(!tbs)
        FATAL(CERT_INVALID);
 
