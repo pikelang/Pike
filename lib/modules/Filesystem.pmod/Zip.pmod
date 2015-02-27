@@ -186,7 +186,7 @@ class CentralRecord
   string extra;
   string comment;
   
-  void create()
+  protected void create()
   {
       sscanf( fd->read( this_size ),
             "%-4c" + "%-2c"*6 + "%-4c"*3 +  "%-2c"*5 + "%-4c"*2,
@@ -348,12 +348,12 @@ class LocalFileRecord
   long data_offset;
   object _fd;
 
-  string _sprintf(mixed t)
+  protected string _sprintf(mixed t)
   {
     return "LocalFileRecord(" + filename + ")";
   }  
 
-  void create(int | mapping entry, object|void central_record)
+  protected void create(int | mapping entry, object|void central_record)
   {
     if(mappingp(entry))
       populate(entry);
@@ -708,7 +708,7 @@ class EndRecord64
   int central_start_offset;
   string extra;
   
- void create(int offset)
+ protected void create(int offset)
  {
    int full_size;
    int i;
@@ -764,7 +764,7 @@ class EndRecordLocator64
  int central_end_offset;
  int disk_count;
   
- void create(int from)
+ protected void create(int from)
  {
    int i;
    
@@ -832,7 +832,7 @@ class EndRecord
   
   constant this_size = (6 * 2) + (3 * 4);
 
-  void create( )
+  protected void create( )
   {
     int i;
     for( i = -10; i>-(0xffff+23); i-- )
@@ -848,6 +848,7 @@ class EndRecord
       error("Could not find Zip-file index\n");
 
     fd->seek( i );
+
     sscanf( fd->read(this_size), ("%-4c" + "%-2c"*4 + "%-4c"*2 + "%-2c"),
             signature, this_disk, central_start_disk, entries_here,
             file_count, central_size, central_start_offset,
@@ -855,9 +856,9 @@ class EndRecord
 
     if( (this_disk != central_start_disk) )
       error("Could not find Zip-file index\n");
-    
+
     EndRecordLocator64(i);
-    
+
     if(!use_zip64)
     {
       fd->seek( central_start_offset );
@@ -915,7 +916,8 @@ array(string) get_dir( string base )
 }
 
 //!
-void create(object|void fd, string|void filename, object|void parent)
+protected void create(object|void fd, string|void filename,
+                      object|void parent)
 {
   this_program::filename = filename;
   this_program::fd = fd;
@@ -1125,9 +1127,9 @@ class _ZipFS
 
   _Zip zip;
 
-  void create(_Zip _zip,
-	      string _wd, string _root,
-	      Filesystem.Base _parent)
+  protected void create(_Zip _zip,
+                        string _wd, string _root,
+                        Filesystem.Base _parent)
   {
     zip = _zip;
 
@@ -1146,7 +1148,7 @@ class _ZipFS
     zip->set_password(pw);
   }
 
-  string _sprintf(int t)
+  protected string _sprintf(int t)
   {
     return  t=='O' && sprintf("_ZipFS(/* root=%O, wd=%O */)", root, wd);
   }
@@ -1224,8 +1226,9 @@ class `()
 {
   inherit _ZipFS;
 
-  void create(string|object filename, void|Filesystem.Base parent,
-	      void|object f)
+  protected void create(string|object filename,
+                        void|Filesystem.Base parent,
+                        void|object f)
   {
     if(!parent) parent = Filesystem.System();
 
@@ -1244,7 +1247,7 @@ class `()
     _ZipFS::create(zip, "/", "", parent);
   }
 
-  string _sprintf(int t)
+  protected string _sprintf(int t)
   {
     return t=='O' &&
       sprintf("Filesystem.zip(/* zip->filename=%O, root=%O, wd=%O */)",
