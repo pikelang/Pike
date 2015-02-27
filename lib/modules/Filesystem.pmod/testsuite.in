@@ -4,11 +4,6 @@ test_do( Filesystem.Base() )
 test_do( Filesystem.Traversion(".") )
 
 test_do([[
-  add_constant("Z", Filesystem.Zip("/home/nilsson/pike/test/test.zip"));
-]])
-test_do(add_constant("Z"))
-
-test_do([[
   string z = String.hex2string(
     "504b03040a00000000007d868845000000000000000000000000"
     "05001c00746573742f55540900031dc98554e055ef5475780b00"
