@@ -196,7 +196,8 @@ class Messages
   //! first available certificate, or @expr{0@}.
   string get_certificate()
   {
-    return get_certificates()[?0];
+    array(string) certs = get_certificates();
+    return sizeof(certs) && certs[0];
   }
 
   //! Returns an array of all the bodies of @expr{"RSA PRIVATE KEY"@},
