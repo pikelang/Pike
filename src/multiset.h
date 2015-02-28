@@ -39,6 +39,7 @@ union msnode
 {
   struct msnode_ind i;
   struct msnode_indval iv;
+  struct rb_node_hdr rb_hdr;
 };
 
 #define MULTISET_FLAG_MARKER	0x1000
