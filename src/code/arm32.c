@@ -23,6 +23,8 @@
 void add_to_program(unsigned INT32 op);
 #endif
 
+#define MACRO  ATTRIBUTE((unused)) static
+
 enum arm_register {
     ARM_REG_R0,
     ARM_REG_R1,
@@ -30,16 +32,16 @@ enum arm_register {
     ARM_REG_R3,
 
     /* free for all */
-    ARM_REG_R4,
-    ARM_REG_R5,
-    ARM_REG_R6,
-    ARM_REG_R7,
+    ARM_REG_R4 = 4,
+    ARM_REG_R5 = 5,
+    ARM_REG_R6 = 6,
+    ARM_REG_R7 = 7,
 
-    ARM_REG_R8,
+    ARM_REG_R8 = 8,
     ARM_REG_PIKE_IP = 8,
-    ARM_REG_R9,
+    ARM_REG_R9 = 9,
     ARM_REG_PIKE_SP = 9,
-    ARM_REG_R10,
+    ARM_REG_R10 = 10,
     ARM_REG_PIKE_FP = 10,
     ARM_REG_R11,
     ARM_REG_FP = 11,
@@ -50,7 +52,8 @@ enum arm_register {
     ARM_REG_R14,
     ARM_REG_LR = 14,
     ARM_REG_R15,
-    ARM_REG_PC = 15
+    ARM_REG_PC = 15,
+    ARM_REG_NONE = -1
 };
 
 unsigned INT32 RBIT(enum arm_register reg) {
@@ -389,18 +392,21 @@ static void label_init(struct label *l) {
     l->list = NULL;
 }
 
-static INT32 label_dist(struct label *l) {
+MACRO INT32 label_dist(struct label *l) {
     l->list = add_to_list(l->list, PIKE_PC);
     return 0;
 }
 
-static void label_generate(struct label *l) {
+MACRO void label_generate(struct label *l) {
     unsigned INT32 loc = PIKE_PC;
 
     struct location_list_entry *e = l->list;
 
     while (e) {
         unsigned INT32 instr = read_pointer(e->location);
+        if (instr & 0xffffff) {
+            Pike_fatal("Setting label distance twice in %x\n", instr);
+        }
         upd_pointer(e->location, instr|(loc - e->location - 2));
         e = e->next;
     }
@@ -408,21 +414,21 @@ static void label_generate(struct label *l) {
     free_list(l->list);
 }
 
-static void ra_init(void) {
+MACRO void ra_init(void) {
     /* all register r0 through r10 are unused
      *
      */
-    compiler_state.free = 0x7ff;
+    compiler_state.free = RBIT(0)|RBIT(1)|RBIT(2)|RBIT(3)|RBIT(4)|RBIT(5);
     compiler_state.dirt = 0;
     compiler_state.push_addr = -1;
     compiler_state.flags = 0;
     // FIXME: not quite the place
     instrs[F_CATCH - F_OFFSET].address = inter_return_opcode_F_CATCH;
-    free_pop_list();
-    free_push_list();
+    compiler_state.pop_list = NULL;
+    compiler_state.push_list = NULL;
 }
 
-static enum arm_register ra_alloc(enum arm_register reg) {
+MACRO enum arm_register ra_alloc(enum arm_register reg) {
     unsigned INT32 rbit = RBIT(reg);
 
     if (!(rbit & compiler_state.free))
@@ -434,14 +440,26 @@ static enum arm_register ra_alloc(enum arm_register reg) {
     return reg;
 }
 
-static enum arm_register ra_alloc_any(void) {
+MACRO enum arm_register ra_alloc_persistent(void) {
+    unsigned short free = compiler_state.free;
+
+    /* we dont want 0-3 */
+    free &= 0xfff0;
+
+    if (!free)
+        Pike_fatal("No register left.\n");
+
+    return ra_alloc(ctz32(free));
+}
+
+MACRO enum arm_register ra_alloc_any(void) {
     if (!compiler_state.free)
         Pike_fatal("No register left.\n");
 
     return ra_alloc(ctz32(compiler_state.free));
 }
 
-static void ra_free(enum arm_register reg) {
+MACRO void ra_free(enum arm_register reg) {
     unsigned INT32 rbit = RBIT(reg);
 
     if (rbit & compiler_state.free)
@@ -450,27 +468,40 @@ static void ra_free(enum arm_register reg) {
     compiler_state.free |= rbit;
 }
 
-static void add_push(void) {
+MACRO int ra_is_dirty(enum arm_register reg) {
+    unsigned INT32 rbit = RBIT(reg);
+
+    return !!(rbit & compiler_state.dirt);
+}
+
+MACRO int ra_is_free(enum arm_register reg) {
+    unsigned INT32 rbit = RBIT(reg);
+
+    return !!(rbit & compiler_state.free);
+}
+
+MACRO void add_push(void) {
     unsigned INT32 registers;
 
     add_to_push_list(PIKE_PC);
     add_to_program(0);
 }
 
-static void add_pop(void) {
+MACRO void add_pop(void) {
     add_to_pop_list(PIKE_PC);
     add_to_program(0);
 }
 
-static void arm_prologue(void) {
-    add_to_program(mov_reg(ARM_REG_IP, ARM_REG_SP));
+/* corresponds to ENTRY_PROLOGUE_SIZE */
+MACRO void arm_prologue(void) {
+    //add_to_program(mov_reg(ARM_REG_IP, ARM_REG_SP));
     add_push();
     add_to_program(mov_reg(ARM_REG_PIKE_IP, ARM_REG_R0));
-    add_to_program(sub_reg_imm(ARM_REG_FP, ARM_REG_IP, 4, 0));
+    //add_to_program(sub_reg_imm(ARM_REG_FP, ARM_REG_IP, 4, 0));
 }
 
 #define EPILOGUE_SIZE 2
-static void arm_epilogue(void) {
+MACRO void arm_epilogue(void) {
     add_pop();
     add_to_program(bx_reg(ARM_REG_LR));
 }
@@ -491,42 +522,40 @@ void arm_flush_instruction_cache(void *addr, size_t len) {
 }
 
 #ifdef PIKE_CONCAT
-void arm_load_sp_reg() {
-    if (1/*!(compiler_state.flags & FLAG_SP_LOADED)*/) {
+static void arm_load_sp_reg(void) {
+    if (!(compiler_state.flags & FLAG_SP_LOADED)) {
         INT32 offset = OFFSETOF(Pike_interpreter_struct, stack_pointer);
+
+        compiler_state.flags |= FLAG_SP_LOADED;
+
         add_to_program(
            ldr_reg_imm(ARM_REG_PIKE_SP, ARM_REG_PIKE_IP,
                        offset));
-        compiler_state.flags |= FLAG_SP_LOADED;
     }
 }
 
-void arm_store_sp_reg() {
-    if (1/*compiler_state.flags & FLAG_SP_CHANGED*/) {
+static void arm_store_sp_reg(void) {
+    if (compiler_state.flags & FLAG_SP_CHANGED) {
         INT32 offset = OFFSETOF(Pike_interpreter_struct, stack_pointer);
+        if (!(compiler_state.flags & FLAG_SP_LOADED)) {
+            Pike_fatal("pike sp not loaded into register.\n");
+        }
         add_to_program(
             str_reg_imm(ARM_REG_PIKE_SP, ARM_REG_PIKE_IP, offset));
         compiler_state.flags &= ~FLAG_SP_CHANGED;
     }
 }
 
-void arm_load_fp_reg() {
-    enum arm_register fp_reg;
-
+static void arm_load_fp_reg(void) {
     if (!(compiler_state.flags & FLAG_FP_LOADED)) {
-        fp_reg = ra_alloc(ARM_REG_PIKE_FP);
-    } else {
-        fp_reg = ARM_REG_PIKE_FP;
-    }
-    if (1/*!(compiler_state.flags & FLAG_FP_LOADED)*/) {
         INT32 offset = OFFSETOF(Pike_interpreter_struct, frame_pointer);
         /* load Pike_interpreter_pointer->frame_pointer into ARM_REG_PIKE_FP */
-        add_to_program(ldr_reg_imm(fp_reg, ARM_REG_PIKE_IP, offset));
+        add_to_program(ldr_reg_imm(ARM_REG_PIKE_FP, ARM_REG_PIKE_IP, offset));
         compiler_state.flags |= FLAG_FP_LOADED;
     }
 }
 
-void arm_flush_dirty_regs(void) {
+static void arm_flush_dirty_regs(void) {
     arm_store_sp_reg();
 }
 
@@ -550,38 +579,28 @@ static void arm_push_int(unsigned INT32 value, int subtype) {
 }
 
 void arm_flush_codegen_state(void) {
-    if ((compiler_state.flags & FLAG_FP_LOADED)) {
-        ra_free(ARM_REG_PIKE_FP);
-    }
+    //fprintf(stderr, "flushing codegen state.\n");
     compiler_state.flags = 0;
 }
-void arm32_start_function(int no_pc) {
+
+void arm32_start_function(int UNUSED(no_pc)) {
     ra_init();
 }
 
-void arm32_end_function(int no_pc) {
+void arm32_end_function(int UNUSED(no_pc)) {
     unsigned INT32 registers, instr;
     struct location_list_entry *e;
 
-    registers = compiler_state.dirt;
-
-    /* no need to push r0-r3 */
-    registers &= ~0xf;
-
-    registers |= RBIT(ARM_REG_PIKE_SP)
-                |RBIT(ARM_REG_PIKE_FP)
+    registers = RBIT(ARM_REG_PIKE_SP)
                 |RBIT(ARM_REG_PIKE_IP)
-                |RBIT(ARM_REG_FP)
-                |RBIT(ARM_REG_LR);
-
-    if (__builtin_popcount(registers)&1) {
-        registers |= RBIT(3);
-    }
+                |RBIT(ARM_REG_PIKE_FP)
+                |RBIT(ARM_REG_LR)
+                |RBIT(4)
+                |RBIT(5);
 
     e = compiler_state.pop_list;
 
-    instr = load_multiple(ARM_REG_SP, ARM_MULT_IA,
-                          registers|RBIT(ARM_REG_SP));
+    instr = load_multiple(ARM_REG_SP, ARM_MULT_IAW, registers);
     while (e) {
         upd_pointer(e->location, instr);
         e = e->next;
@@ -589,22 +608,26 @@ void arm32_end_function(int no_pc) {
 
     e = compiler_state.push_list;
 
-    instr = store_multiple(ARM_REG_SP, ARM_MULT_DBW,
-                           registers|RBIT(ARM_REG_IP)|RBIT(ARM_REG_PC));
+    instr = store_multiple(ARM_REG_SP, ARM_MULT_DBW, registers);
 
     while (e) {
         upd_pointer(e->location, instr);
         e = e->next;
     }
+
+    free_pop_list();
+    free_push_list();
 }
 
-/* Update Pike_fp->pc */
+/* Store $pc into Pike_fp->pc */
 void arm_update_pc(void) {
     unsigned INT32 v = PIKE_PC;
+    INT32 offset;
     enum arm_register tmp = ra_alloc_any();
 
     arm_load_fp_reg();
-    arm_set_reg(tmp, v);
+    v = 4*(PIKE_PC - v + 2);
+    add_to_program(sub_reg_imm(tmp, ARM_REG_PC, v, 0));
     add_to_program(str_reg_imm(tmp, ARM_REG_PIKE_FP, OFFSETOF(pike_frame, pc)));
     ra_free(tmp);
 }
@@ -621,12 +644,12 @@ void arm_ins_exit(void) {
 }
 #endif
 
-void ADD_REL_COND_JMP(enum arm_register reg, enum arm_register b, enum arm_condition cond, int jmp) {
+static void ADD_REL_COND_JMP(enum arm_register reg, enum arm_register b, enum arm_condition cond, int jmp) {
     add_to_program(GEN_CMP_REG_REG(reg, b));
     add_to_program(set_cond(b_imm(jmp-2), cond));
 }
 
-void arm_ins_maybe_exit(void) {
+static void arm_ins_maybe_exit(void) {
     arm_set_reg(ARM_REG_R1, -1);
     ADD_REL_COND_JMP(ARM_REG_R0, ARM_REG_R1, ARM_COND_NE, EPILOGUE_SIZE+1);
     arm_epilogue();
@@ -639,11 +662,11 @@ static void low_ins_call(void *addr) {
     if(last_prog_id != Pike_compiler->new_program->id ||
        last_num_linenumbers != Pike_compiler->new_program->num_linenumbers)
     {
+      unsigned INT32 tmp = PIKE_PC;
       last_prog_id=Pike_compiler->new_program->id;
       last_num_linenumbers = Pike_compiler->new_program->num_linenumbers;
 
-      arm_load_fp_reg();
-      add_to_program(str_reg_imm(ARM_REG_PC, ARM_REG_PIKE_FP, OFFSETOF(pike_frame, pc)));
+      UPDATE_PC();
     }
   }
 
@@ -654,17 +677,13 @@ static void arm_call_c_opcode(unsigned int opcode) {
   void *addr = instrs[opcode-F_OFFSET].address;
   int flags = instrs[opcode-F_OFFSET].flags;
 
-  /*
-  if (flags & I_UPDATE_SP && compiler_state.flags & FLAG_SP_LOADED) {
+  if ((flags & I_UPDATE_SP) && (compiler_state.flags & FLAG_SP_LOADED)) {
     compiler_state.flags &= ~FLAG_SP_LOADED;
-    ra_free(ARM_REG_PIKE_SP);
   }
   if (flags & I_UPDATE_M_SP) {}
-  if (flags & I_UPDATE_FP && compiler_state.flags & FLAG_FP_LOADED) {
+  if ((flags & I_UPDATE_FP) && (compiler_state.flags & FLAG_FP_LOADED)) {
     compiler_state.flags &= ~FLAG_FP_LOADED;
-    ra_free(ARM_REG_PIKE_FP);
   }
-  */
 
   low_ins_call(addr);
 }
@@ -717,16 +736,20 @@ static void low_ins_f_byte(unsigned int b)
   if (b == F_CATCH) ra_free(ARM_REG_R0);
 
   if (flags & I_RETURN) {
+      enum arm_register kludge_reg = ARM_REG_NONE;
+
       if (b == F_RETURN_IF_TRUE) {
-          add_to_program(ldr_reg_imm(ARM_REG_R12, ARM_REG_SP, -4));
-          add_to_program(add_reg_imm(ARM_REG_R12, ARM_REG_R12, 4*JUMP_EPILOGUE_SIZE, 0));
+          kludge_reg = ra_alloc_persistent();
+          /* -4 == 4*(JUMP_EPILOGUE_SIZE - 2) */
+          add_to_program(sub_reg_imm(kludge_reg, ARM_REG_PC, 4, 0));
       }
     
       arm_ins_maybe_exit();
 
       if (b == F_RETURN_IF_TRUE) {
-          ADD_REL_COND_JMP(ARM_REG_R0, ARM_REG_R12, ARM_COND_EQ, 2);
+          ADD_REL_COND_JMP(ARM_REG_R0, kludge_reg, ARM_COND_EQ, 2);
           add_to_program(bx_reg(ARM_REG_R0));
+          ra_free(kludge_reg);
           return;
       }
   }
