@@ -219,7 +219,7 @@ class File
     if (outbuffer)
       outbuffer->__fd_set_output( 0 );
     if( outbuffer = out )
-      outbuffer->__fd_set_output( this );
+      outbuffer->__fd_set_output( ::write );
   }
 
   //! Get the active input and output buffers that have been
