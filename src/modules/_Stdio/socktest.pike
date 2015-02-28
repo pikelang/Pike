@@ -117,7 +117,7 @@ class Socket {
 	       input_finished, output_finished);
     if(input_finished && output_finished)
     {
-      finish();
+      finish(this_program);
       DEBUG_WERR("Closing fd:%O\n", query_fd());
       close();
       set_blocking();
@@ -251,6 +251,51 @@ class Socket2
   }
 }
 
+class BufferSocket {
+  inherit Socket;
+
+  void write_callback(mixed id, Stdio.Buffer out)
+  {
+#ifdef BACKEND
+    set_backend(backend);
+#endif
+    got_callback();
+    DEBUG_WERR("write_callback[%O]: output_buffer: %O\n",
+	       query_fd(), output_buffer);
+    if(sizeof(output_buffer))
+    {
+      out->add(output_buffer);
+      output_buffer = "";
+    }else{
+      if (!sizeof(out)) {
+          set_write_callback(0);
+          close("w");
+          output_finished++;
+          cleanup();
+      }
+    }
+  }
+
+  void read_callback(mixed id, Stdio.Buffer in)
+  {
+    got_callback();
+    DEBUG_WERR("read_callback[%O]: Got %O\n", query_fd(), in);
+    input_buffer+=in->read();
+  }
+
+  void read_oob_callback(mixed id, string foo)
+  {
+    got_callback();
+    fd_fail("Got unexpected out of band data on %O: %O", query_fd(), foo);
+  }
+
+  void create(object|void o)
+  {
+    ::create(o);
+    set_buffer_mode(Stdio.Buffer(), Stdio.Buffer());
+  }
+};
+
 void die()
 {
   fd_fail("No callbacks for %d seconds!\n", SOCKTEST_TIMEOUT);
@@ -331,7 +376,7 @@ void send_oob1()
   oob_originator->set_read_oob_callback(got_oob0);
 }
 
-void got_oob0(mixed ignored, string got)
+void got_oob0(object socket, string got)
 {
 #ifdef OOB_DEBUG
   write("s");
@@ -355,7 +400,7 @@ void got_oob0(mixed ignored, string got)
     oob_loopback->close();
     oob_originator->set_blocking();
     oob_originator->close();
-    finish();
+    finish(object_program(socket));
   } else {
     oob_originator->set_write_oob_callback(send_oob0);
   }
@@ -376,7 +421,7 @@ int portno2;
 
 int protocol_supported;
 
-array(object(Socket)) stdtest()
+array(object) stdtest(program Socket)
 {
   object sock,sock2;
   int warned = 0;
@@ -490,7 +535,7 @@ array(object) spair(int type)
 
 mixed keeper;
 
-void finish()
+void finish(program Socket)
 {
   gc();
   num_running--;
@@ -514,14 +559,15 @@ void finish()
     switch(_tests)
     {
       case 1:
+        log_status("Beginning tests for Socket type %O", Socket);
 	log_status("Testing dup & assign");
-	sock1=stdtest()[0];
+	sock1=stdtest(Socket)[0];
 	sock1->assign(sock1->dup());
 	break;
 	
       case 2:
 	log_status("Testing accept");
-	string data1 = "foobar" * 4711;
+	string data1 = long_random_string;
 	for(int e=0;e<10;e++)
 	{
 	  sock1=Socket();
@@ -534,7 +580,7 @@ void finish()
 	log_status("Testing uni-directional shutdown on socket");
 	socks=spair(0);
 	num_running=1;
-	socks[1]->set_nonblocking(lambda() {},lambda(){},finish);
+	socks[1]->set_nonblocking(lambda() {},lambda(){},Function.curry(finish)(Socket));
 	socks[0]->close("w");
 	keeper=socks;
 	break;
@@ -543,7 +589,7 @@ void finish()
 	log_status("Testing uni-directional shutdown on pipe");
 	socks=spair(1);
 	num_running=1;
-	socks[1]->set_nonblocking(lambda() {},lambda(){},finish);
+	socks[1]->set_nonblocking(lambda() {},lambda(){},Function.curry(finish)(Socket));
 	socks[0]->close("w");
 	keeper=socks;
 	break;
@@ -551,8 +597,8 @@ void finish()
       case 5..13:
 	tests=(_tests-2)*2;
 	log_status("Testing "+(tests*2)+" sockets");
-	for(int e=0;e<tests;e++) stdtest();
-	stdtest();
+	for(int e=0;e<tests;e++) stdtest(Socket);
+	stdtest(Socket);
 	break;
 
       case 14..26:
@@ -560,8 +606,8 @@ void finish()
 	  /* These tests require mare than 64 open fds. */
 	  tests=(_tests-2)*2;
 	  log_status("Testing "+(tests*2)+" sockets");
-	  for(int e=0;e<tests;e++) stdtest();
-	  stdtest();
+	  for(int e=0;e<tests;e++) stdtest(Socket);
+	  stdtest(Socket);
 	  break;
 	}
 	/* Too few available fds; advance to the next set of tests. */
@@ -573,8 +619,8 @@ void finish()
 	log_status("Copying "+((tests/2)*(2<<(tests/2))*11)+" bytes of data on "+(tests&~1)+" "+(tests&1?"pipes":"sockets"));
 	for(int e=0;e<tests/2;e++)
 	{
-	  string data1 = "foobar" * (2<<(tests/2));
-	  string data2 = "fubar" * (2<<(tests/2));
+	  string data1 = random_string(6 * (2<<(tests/2)));
+	  string data2 = random_string(6 * (2<<(tests/2)));
 	  socks=spair(!(tests & 1));
 	  sock1=socks[0];
 	  sock2=socks[1];
@@ -595,8 +641,8 @@ void finish()
 
       case 49: {
 	log_status ("Testing leak in write()");
-	string data1="foobar" * 20;
-	string data2="fubar" * 20;
+	string data1=random_string(6*20);
+	string data2=random_string(6*20);
 	socks=spair(1);
 	sock1=socks[0];
 	sock2=socks[1];
@@ -604,8 +650,8 @@ void finish()
 	{
 	  fd_fail("Failed to open pipe: "+strerror(sock1->errno())+".\n");
 	}
-	sock1=Socket2(sock1);
-	sock2=Socket2(sock2);
+	sock1=Socket(sock1);
+	sock2=Socket(sock2);
 	  
 	sock1->output_buffer=data1;
 	sock2->expected_data=data1;
@@ -645,6 +691,8 @@ void finish()
 //  log_msg("FINISHED with FINISH %d\n",_tests);
 }
 
+string long_random_string = random_string(4711*6);
+
 void accept_callback()
 {
   object o=port1::accept();
@@ -657,15 +705,23 @@ void accept_callback()
   o->set_backend(backend);
 #endif
   o=Socket(o);
-  o->expected_data = "foobar" * 4711;
+  o->expected_data = long_random_string;
 }
 
 int main(int argc, array(string) argv)
 {
   verbose = (int) (getenv()->TEST_VERBOSITY || 2);
+  int socket_test_num = argc > 1 && (int)argv[-1];
 
   if (verbose) {
-    string greeting = "Socket test";
+    string greeting;
+    if (socket_test_num == 2) {
+        greeting = "Stdio.Buffer Socket test";
+    } else if (socket_test_num) {
+        greeting = "Leak check Socket test";
+    } else {
+        greeting = "Socket test";
+    }
 #ifdef BACKEND
     greeting += " using " DEFINETOSTRING(BACKEND);
 #endif
@@ -778,7 +834,8 @@ int main(int argc, array(string) argv)
   _tests=49;
   finish();
 #else /* !OOB_DEBUG */
-  stdtest();
+  constant socket_types = ({ Socket, Socket2, BufferSocket });
+  stdtest(socket_types[socket_test_num]);
 #endif /* OOB_DEBUG */
 
 #ifdef BACKEND

@@ -309,26 +309,30 @@ define(run_sub_test, [[
   ]])
 ]])
 
-run_sub_test(({"SRCDIR/socktest.pike"}))
+define(run_socktest, [[
+    run_sub_test($1 + ({"SRCDIR/socktest.pike"}))
+    run_sub_test($1 + ({"-DIPV6", "SRCDIR/socktest.pike"}))
+    run_sub_test($1 + ({"SRCDIR/socktest.pike", "1"}))
+    run_sub_test($1 + ({"-DIPV6", "SRCDIR/socktest.pike", "1"}))
+    run_sub_test($1 + ({"SRCDIR/socktest.pike", "2"}))
+    run_sub_test($1 + ({"-DIPV6", "SRCDIR/socktest.pike", "2"}))
+]])
 
-run_sub_test(({"-DIPV6", "SRCDIR/socktest.pike"}))
+run_socktest(({}))
 
 cond_begin([[ Pike["SelectBackend"] ]])
-run_sub_test(({"-DBACKEND=SelectBackend", "SRCDIR/socktest.pike"}))
+run_socktest(({"-DBACKEND=SelectBackend"}))
 
-run_sub_test(({"-DBACKEND=SelectBackend", "-DIPV6", "SRCDIR/socktest.pike"}))
 cond_end
 
 cond_begin([[ Pike["PollBackend"] ]])
-  run_sub_test(({"-DBACKEND=PollBackend", "SRCDIR/socktest.pike"}))
+  run_socktest(({"-DBACKEND=PollBackend"}))
 
-  run_sub_test(({"-DBACKEND=PollBackend", "-DIPV6", "SRCDIR/socktest.pike"}))
 cond_end
 
 cond_begin([[ Pike["PollDeviceBackend"] ]])
-  run_sub_test(({"-DBACKEND=PollDeviceBackend", "SRCDIR/socktest.pike"}))
+  run_socktest(({"-DBACKEND=PollDeviceBackend"}))
 
-  run_sub_test(({"-DBACKEND=PollDeviceBackend", "-DIPV6", "SRCDIR/socktest.pike"}))
 cond_end
 
 run_sub_test(({"SRCDIR/sendfiletest.pike"}))
