@@ -142,7 +142,13 @@ static void exit_res_struct(struct object *UNUSED(o))
  * More help functions
  */
 
-static void push_sql_float(int i)
+/* NB: The field number argument (i) in these callbacks
+ *     is currently unused in all of the functions, but
+ *     it will in the future be used when handling the
+ *     used defined types.
+ */
+
+static void push_sql_float(int UNUSED(i))
 {
   struct pike_string *data = Pike_sp[-1].u.string;
   SQLDOUBLE *res = (SQLDOUBLE *)data->str;
@@ -156,9 +162,10 @@ static void push_sql_float(int i)
   free_string(data);
 }
 
-static void push_sql_int(int i)
+static void push_sql_int(int UNUSED(i))
 {
   struct pike_string *data = Pike_sp[-1].u.string;
+  void *bytes = data->str;
   Pike_sp--;
   switch(data->len) {
   case 0:
@@ -168,13 +175,13 @@ static void push_sql_int(int i)
     push_int(data->str[0]);
     break;
   case 2:
-    push_int(*((INT16 *)(data->str)));
+    push_int(*((INT16 *)bytes));
     break;
   case 4:
-    push_int(*((INT32 *)(data->str)));
+    push_int(*((INT32 *)bytes));
     break;
   case 8:
-    push_int64(*((INT64 *)(data->str)));
+    push_int64(*((INT64 *)bytes));
     break;
   default:
     Pike_sp++;
@@ -186,7 +193,7 @@ static void push_sql_int(int i)
 
 static struct program *bignum_program = NULL;
 
-static void push_numeric(int i)
+static void push_numeric(int UNUSED(i))
 {
   struct pike_string *data = Pike_sp[-1].u.string;
   struct tagSQL_NUMERIC_STRUCT *numeric =
@@ -225,11 +232,11 @@ static void push_numeric(int i)
   }
 }
 
-static void push_time(int i)
+static void push_time(int UNUSED(i))
 {
   struct pike_string *data = Pike_sp[-1].u.string;
   TIME_STRUCT *time = (TIME_STRUCT *)(data->str);
-  if (data->len < sizeof(TIME_STRUCT)) {
+  if (data->len < ((ptrdiff_t)sizeof(TIME_STRUCT))) {
     return;
   }
   Pike_sp--;
@@ -244,11 +251,11 @@ static void push_time(int i)
   apply_current(time_factory_fun_num, 3);
 }
 
-static void push_date(int i)
+static void push_date(int UNUSED(i))
 {
   struct pike_string *data = Pike_sp[-1].u.string;
   DATE_STRUCT *date = (DATE_STRUCT *)(data->str);
-  if (data->len < sizeof(DATE_STRUCT)) {
+  if (data->len < ((ptrdiff_t)sizeof(DATE_STRUCT))) {
     return;
   }
   Pike_sp--;
@@ -259,11 +266,11 @@ static void push_date(int i)
   apply_current(timestamp_factory_fun_num, 3);
 }
 
-static void push_timestamp(int i)
+static void push_timestamp(int UNUSED(i))
 {
   struct pike_string *data = Pike_sp[-1].u.string;
   TIMESTAMP_STRUCT *date = (TIMESTAMP_STRUCT *)(data->str);
-  if (data->len < sizeof(TIMESTAMP_STRUCT)) {
+  if (data->len < ((ptrdiff_t)sizeof(TIMESTAMP_STRUCT))) {
     return;
   }
   Pike_sp--;
@@ -283,7 +290,7 @@ static void push_timestamp(int i)
   apply_current(timestamp_factory_fun_num, 7);
 }
 
-static void push_uuid(int i)
+static void push_uuid(int UNUSED(i))
 {
   apply_current(uuid_factory_fun_num, 1);
 }
@@ -1198,7 +1205,8 @@ static void f_fetch_typed_row(INT32 args)
 			   NULL, NULL);
 	  odbc_check_error("odbc->fetch_row", "SQLSetDescField() failed",
 			   SQLSetDescField(hdesc, i + 1, SQL_DESC_SCALE,
-					   (void*)field_info->scale, 0),
+					   (void*)(ptrdiff_t)field_info->scale,
+					   0),
 			   NULL, NULL);
 	  field_info->bin_type = field_type = SQL_ARD_TYPE;
 	  break;
