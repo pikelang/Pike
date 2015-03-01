@@ -244,7 +244,7 @@ protected void thread_error (string msg, THREAD_T other_thread)
 
 
 //! Run one pass of the backend.
-protected int(0..0)|float backend_once()
+protected int(0..0)|float backend_once(int|void nonwaiting_mode)
 {
   if (nonblocking_mode) {
     // Assume that the backend is active when is has been started.
@@ -268,10 +268,19 @@ protected int(0..0)|float backend_once()
 #else
     if (!local_backend || local_backend->executing_thread()) return 0;
 #endif
-    SSL3_DEBUG_MSG("Running local backend [r:%O w:%O], infinite timeout\n",
-		   !!stream->query_read_callback(),
-		   !!stream->query_write_callback());
-    return local_backend(0);
+    if (nonwaiting_mode) {
+      // This mode is used in some cases where I/O isn't expected.
+      // A typical case is from is_open().
+      SSL3_DEBUG_MSG("Running local backend [r:%O w:%O], zero timeout\n",
+		     !!stream->query_read_callback(),
+		     !!stream->query_write_callback());
+      return local_backend(0.0);
+    } else {
+      SSL3_DEBUG_MSG("Running local backend [r:%O w:%O], infinite timeout\n",
+		     !!stream->query_read_callback(),
+		     !!stream->query_write_callback());
+      return local_backend(0);
+    }
   }
 }
 
@@ -289,7 +298,7 @@ protected int(0..0)|float backend_once()
 	  break;							\
 	}								\
 									\
-	action = backend_once();					\
+	action = backend_once(NONWAITING_MODE);				\
 									\
 	if (NONWAITING_MODE && !action) {				\
 	  SSL3_DEBUG_MSG ("Nonwaiting local backend ended - nothing to do\n"); \
