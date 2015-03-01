@@ -762,7 +762,7 @@ test_do([[
 	  // NB: Client doesn't close connection before all data has
 	  //     been returned, so we can't just use read(1024) here.
           if (!server->is_open()) {
-              return "Server connection was closed.\n";
+              return exp_data && "Server connection was closed.\n";
           }
 	  string data = server->read(min(1024, bytes));
 	  if (!data) {
@@ -798,7 +798,7 @@ test_do([[
     Thread.Thread sender_thread =
       Thread.Thread(lambda() {
         if (!client->is_open()) {
-            return "Client connection was closed.\n";
+            return exp_data && "Client connection was closed.\n";
         }
         int bytes = client->write(client_msg);
 	if (bytes == sizeof(client_msg)) return 0;
@@ -808,7 +808,7 @@ test_do([[
     Thread.Thread reader_thread =
       Thread.Thread(lambda() {
         if (!client->is_open()) {
-            return "Client connection was closed.\n";
+            return exp_data && "Client connection was closed.\n";
         }
         string recv = client->read(sizeof(client_msg));
 	client->close();
