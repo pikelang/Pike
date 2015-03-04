@@ -750,16 +750,18 @@ constant CIPHER_SUITES =
 ([
    // The following cipher suites are only intended for testing.
    SSL_null_with_null_null :    	({ 0, 0, 0 }),
-   SSL_rsa_with_null_md5 :      	({ KE_rsa, 0, HASH_md5 }), 
-   SSL_rsa_with_null_sha :      	({ KE_rsa, 0, HASH_sha }),
-   TLS_rsa_with_null_sha256 :      	({ KE_rsa, 0, HASH_sha256 }),
+   SSL_rsa_with_null_md5 :      	({ KE_rsa_export, 0, HASH_md5 }), 
+   SSL_rsa_with_null_sha :      	({ KE_rsa_export, 0, HASH_sha }),
+   TLS_rsa_with_null_sha256 :      	({ KE_rsa_export, 0, HASH_sha256 }),
 
    // NB: The export suites are obsolete in TLS 1.1 and later.
    //     The RC4/40 suite is required for Netscape 4.05 Intl.
 #if constant(Crypto.Arctwo)
-   SSL_rsa_export_with_rc2_cbc_40_md5 :	({ KE_rsa, CIPHER_rc2_40, HASH_md5 }),
+   SSL_rsa_export_with_rc2_cbc_40_md5 :
+      ({ KE_rsa_export, CIPHER_rc2_40, HASH_md5 }),
 #endif
-   SSL_rsa_export_with_rc4_40_md5 :	({ KE_rsa, CIPHER_rc4_40, HASH_md5 }),
+   SSL_rsa_export_with_rc4_40_md5 :
+      ({ KE_rsa_export, CIPHER_rc4_40, HASH_md5 }),
    SSL_dhe_dss_export_with_des40_cbc_sha :
       ({ KE_dhe_dss, CIPHER_des40, HASH_sha }),
    SSL_dhe_rsa_export_with_des40_cbc_sha :
@@ -768,7 +770,8 @@ constant CIPHER_SUITES =
       ({ KE_dh_dss, CIPHER_des40, HASH_sha }),
    SSL_dh_rsa_export_with_des40_cbc_sha :
       ({ KE_dh_rsa, CIPHER_des40, HASH_sha }),
-   SSL_rsa_export_with_des40_cbc_sha :  ({ KE_rsa, CIPHER_des40, HASH_sha }),
+   SSL_rsa_export_with_des40_cbc_sha :
+      ({ KE_rsa_export, CIPHER_des40, HASH_sha }),
 
    // NB: The IDEA and DES suites are obsolete in TLS 1.2 and later.
 #if constant(Crypto.IDEA)

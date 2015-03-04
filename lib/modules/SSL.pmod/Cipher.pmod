@@ -575,46 +575,26 @@ class KeyExchangeRSA
 {
   inherit KeyExchange;
 
-  Crypto.RSA temp_key; /* Key used for session key exchange (if not the same
-			* as the server's certified key) */
+  Crypto.RSA rsa; /* Key used for session key exchange. Typically the
+		   * server's certified key, but may get overridden
+		   * in KeyExchangeExportRSA.
+		   */
+
+  int(0..1) init_client()
+  {
+    rsa = session->peer_public_key;
+    return 1;
+  }
+
+  int(0..1) init_server()
+  {
+    rsa = session->private_key;
+    return 1;
+  }
 
   Stdio.Buffer server_key_params()
   {
     SSL3_DEBUG_MSG("KE_RSA\n");
-    if (session->cipher_spec->is_exportable)
-    {
-      /* Send a ServerKeyExchange message. */
-
-      if (temp_key = context->short_rsa) {
-	if (--context->short_rsa_counter <= 0) {
-	  context->short_rsa = UNDEFINED;
-	}
-      } else {
-	// RFC 2246 D.1:
-	// For typical electronic commerce applications, it is suggested
-	// that keys be changed daily or every 500 transactions, and more
-	// often if possible.
-
-	// Now >10 years later, an aging laptop is capable of generating
-	// >75 512-bit RSA keys per second, and clients requiring
-	// export suites are getting far between, so rotating the key
-	// after 5 uses seems ok. When the key generation rate reaches
-	// ~250/second, I believe rotating the key every transaction
-	// will be feasible.
-	//	/grubba 2014-03-23
-	SSL3_DEBUG_MSG("Generating a new ephemeral 512-bit RSA key.\n");
-	context->short_rsa_counter = 5 - 1;
-	context->short_rsa = temp_key = Crypto.RSA()->generate_key(512);
-      }
-
-      SSL3_DEBUG_MSG("Sending a server key exchange-message, "
-		     "with a %d-bits key.\n", temp_key->key_size());
-      Stdio.Buffer output = Stdio.Buffer();
-      output->add_hint(temp_key->get_n(),2);
-      output->add_hint(temp_key->get_e(),2);
-      return output;
-    }
-
     return 0;
   }
 
@@ -633,11 +613,8 @@ class KeyExchangeRSA
     struct->add( context->random(46) );
     string premaster_secret = struct->read();
 
-    SSL3_DEBUG_MSG("temp_key: %O\n"
-		   "session->peer_public_key: %O\n",
-		   temp_key, session->peer_public_key);
-    string(8bit) data = (temp_key ||
-                         session->peer_public_key)->encrypt(premaster_secret);
+    SSL3_DEBUG_MSG("rsa: %O\n", rsa);
+    string(8bit) data = rsa->encrypt(premaster_secret);
 
     if(version >= PROTOCOL_TLS_1_0) {
       packet_data->add_hstring(data, 2);
@@ -667,8 +644,7 @@ class KeyExchangeRSA
       data = input->read();
 
     // Decrypt, even when we know data is incorrect, for time invariance.
-    premaster_secret = (temp_key || session->private_key)->decrypt(data) ||
-      "xx";
+    premaster_secret = rsa->decrypt(data) || "xx";
 
     SSL3_DEBUG_MSG("premaster_secret: %O\n", premaster_secret);
 
@@ -710,6 +686,52 @@ class KeyExchangeRSA
 
     return premaster_secret;
   }
+}
+
+//! Key exchange for @[KE_rsa_export].
+//!
+//! @[KeyExchange] that uses the Rivest Shamir Adelman algorithm,
+//! but limited to 512 bits for encryption and decryption.
+class KeyExchangeExportRSA
+{
+  inherit KeyExchangeRSA;
+
+  Stdio.Buffer server_key_params()
+  {
+    SSL3_DEBUG_MSG("KE_EXPORT_RSA\n");
+
+    /* Send a ServerKeyExchange message. */
+
+    if (rsa = context->short_rsa) {
+      if (--context->short_rsa_counter <= 0) {
+	context->short_rsa = UNDEFINED;
+      }
+    } else {
+      // RFC 2246 D.1:
+      // For typical electronic commerce applications, it is suggested
+      // that keys be changed daily or every 500 transactions, and more
+      // often if possible.
+
+      // Now >10 years later, an aging laptop is capable of generating
+      // >75 512-bit RSA keys per second, and clients requiring
+      // export suites are getting far between, so rotating the key
+      // after 5 uses seems ok. When the key generation rate reaches
+      // ~250/second, I believe rotating the key every transaction
+      // will be feasible.
+      //	/grubba 2014-03-23
+      SSL3_DEBUG_MSG("Generating a new ephemeral 512-bit RSA key.\n");
+      context->short_rsa_counter = 5 - 1;
+      context->short_rsa = rsa = Crypto.RSA()->generate_key(512);
+    }
+
+    SSL3_DEBUG_MSG("Sending a server key exchange-message, "
+		   "with a %d-bits key.\n",
+		   rsa->key_size());
+    Stdio.Buffer output = Stdio.Buffer();
+    output->add_hint(rsa->get_n(),2);
+    output->add_hint(rsa->get_e(),2);
+    return output;
+  }
 
   Stdio.Buffer parse_server_key_exchange(Stdio.Buffer input)
   {
@@ -718,9 +740,7 @@ class KeyExchangeRSA
     string n = input->read_hstring(2);
     string e = input->read_hstring(2);
 
-
-    if (session->cipher_spec->is_exportable)
-      temp_key = Crypto.RSA()->set_public_key(Gmp.mpz(n,256), Gmp.mpz(e,256));
+    rsa = Crypto.RSA()->set_public_key(Gmp.mpz(n,256), Gmp.mpz(e,256));
 
     Stdio.Buffer output = Stdio.Buffer();
     output->add_hstring(n, 2);
@@ -2122,6 +2142,9 @@ CipherSpec lookup(int suite, ProtocolVersion|int version,
     case KE_rsa:
     case KE_rsa_fips:
       res->ke_factory = KeyExchangeRSA;
+      break;
+    case KE_rsa_export:
+      res->ke_factory = KeyExchangeExportRSA;
       break;
     case KE_dh_dss:
     case KE_dh_rsa:

@@ -67,6 +67,7 @@ test_tests([[
 	([
 	  "null":KE_null,
 	  "rsa":([
+            "export":KE_rsa_export,
             "fallback":KE_rsa,
 	    "fips":KE_rsa_fips,
 	    "oldfips":KE_rsa_fips,
@@ -146,6 +147,7 @@ test_tests([[
 	  "chacha20":CIPHER_chacha20,
 #endif
 	]));
+      if ((cipher == CIPHER_null) && (ke == KE_rsa)) ke = KE_rsa_export;
       int mode = -1;
       if (sizeof(fields) > fno) {
 	switch(fields[fno]) {
