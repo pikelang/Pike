@@ -80,22 +80,26 @@ DECLARATIONS
 
 /*! @module Bz2
  *!
- *! The Bz2 module contains functions to compress and uncompress strings using
- *! the same algorithm as the program @tt{bzip2@}. Compressing and decompressing
- *! can be done in streaming mode feeding the compress and decompress objects 
- *! with arbitrarily large pieces of data.
- *! The Bz2 module consists of three classes; Bz2.Deflate,Bz2.Inflate. and Bz2.File
- *! Bz2.Deflate is used to compress data
- *! and Bz2.Inflate is used to uncompress data. (Think "inflatable boat")
- *! Bz2.File is used to handle Bzip2 files.
+ *! The Bz2 module contains functions to compress and uncompress
+ *! strings using the same algorithm as the program @tt{bzip2@}.
+ *! Compressing and decompressing can be done in streaming mode
+ *! feeding the compress and decompress objects with arbitrarily large
+ *! pieces of data.
+ *!
+ *! The Bz2 module consists of three classes; @[Bz2.Deflate],
+ *! @[Bz2.Inflate] and @[Bz2.File]. @[Bz2.Deflate] is used to compress
+ *! data and @[Bz2.Inflate] is used to uncompress data. @[Bz2.File] is
+ *! used to handle Bzip2 files.
+ *!
  *! @note
  *!   Note that this module is only available if libbzip2 was
  *!   available when Pike was compiled.
  *!
- *!   Note that although the functions in Inflate and Deflate use the same @i{algorithm@} as
- *!   @tt{bzip2@}, they do not use the exact same format, so you can not directly
- *!   zip files or unzip zip-files using those functions. That is why there exists a third 
- *!   class for files.
+ *!   Note that although the functions in @[Inflate] and @[Deflate]
+ *!   use the same @i{algorithm@} as @tt{bzip2@}, they do not use the
+ *!   exact same format, so you can not directly zip files or unzip
+ *!   zip-files using those functions. That is why there exists a
+ *!   third class for files.
  */
 
 /*! @class Deflate
@@ -104,8 +108,8 @@ DECLARATIONS
  *! packing routines in the bzlib library.
  *!
  *! @note
- *! This program is only available if libz was available and found when
- *! Pike was compiled.
+ *! This program is only available if libz was available and found
+ *! when Pike was compiled.
  *!
  *! @seealso
  *! @[Bz2.Inflate()]
@@ -113,14 +117,14 @@ DECLARATIONS
 
 /*! @decl void create(int(1..9)|void block_size)
  *!
- *! If given, @[block_size] should be a number from 1 to 9 indicating the
- *! block size used when doing compression. The actual block size will
- *! be a 100000 times this number. Low numbers are considered 'fast', higher numbers
- *! are considered 'slow' but give better packing. The parameter is set to 
- *! 9 if it is omitted.
+ *! If given, @[block_size] should be a number from 1 to 9 indicating
+ *! the block size used when doing compression. The actual block size
+ *! will be a 100000 times this number. Low numbers are considered
+ *! 'fast', higher numbers are considered 'slow' but give better
+ *! packing. The parameter is set to 9 if it is omitted.
  *!
- *! This function can also be used to re-initialize a Bz2.Deflate object
- *! so it can be re-used.
+ *! This function can also be used to re-initialize a Bz2.Deflate
+ *! object so it can be re-used.
  */
 
 #ifdef HAVE_BZ2LIB
@@ -162,11 +166,11 @@ PIKECLASS Deflate
     
     }
     if(work_factor < 1 || work_factor > 250){
-      Pike_error("work_factor out of range for Bz2.Deflate().\n");
+      Pike_error("Work factor out of range for Bz2.Deflate().\n");
     }
 
     if(compression_rate < 1 || compression_rate > 9){
-      Pike_error("compression_rate out of range for Bz2.Deflate().\n");
+      Pike_error("Compression rate out of range for Bz2.Deflate().\n");
     }
   
     s = &(THIS->strm);
@@ -206,13 +210,13 @@ PIKECLASS Deflate
     }
     pop_n_elems(args);
   }
-  /***********************************************************************************/
 
   /*! @decl void feed(string data)
    *!	
-   *! This function feeds the data to the internal buffers of 
-   *! the Deflate object. All data is buffered until a read or
-   *! a finish is done.
+   *! This function feeds the data to the internal buffers of the
+   *! Deflate object. All data is buffered until a read or a finish is
+   *! done.
+   *!
    *! @seealso
    *! @[Bz2.Deflate->read()]
    *! @[Bz2.Deflate->finish()]
@@ -331,9 +335,10 @@ PIKECLASS Deflate
   
   /*! @decl string read(string data)
    *!
-   *! This function feeds the data to the internal buffers of 
-   *! the Deflate object. Then it compresses all buffered data
-   *! and returns the compressed data as a string
+   *! This function feeds the data to the internal buffers of the
+   *! Deflate object. Then it compresses all buffered data and returns
+   *! the compressed data as a string
+   *!
    *! @seealso
    *! @[Bz2.Deflate->feed()]
    *! @[Bz2.Deflate->finish()]
@@ -387,10 +392,11 @@ PIKECLASS Deflate
 
   /*! @decl string finish(string data)
    *!
-   *! This method feeds the data to the internal buffers of 
-   *! the Deflate object. Then it compresses all buffered data
-   *! adds a end of data marker ot it, returns the compressed 
-   *! data as a string, and reinitializes the deflate object.
+   *! This method feeds the data to the internal buffers of the
+   *! Deflate object. Then it compresses all buffered data adds a end
+   *! of data marker ot it, returns the compressed data as a string,
+   *! and reinitializes the deflate object.
+   *!
    *! @seealso
    *! @[Bz2.Deflate->feed()]
    *! @[Bz2.Deflate->read()]
@@ -470,11 +476,13 @@ PIKECLASS Deflate
 
   /*! @decl string deflate(string data, int(0..2)|void flush_mode)
    *!
-   *! This function performs bzip2 style compression on a string @[data] and
-   *! returns the packed data. Streaming can be done by calling this
-   *! function several times and concatenating the returned data.
+   *! This function performs bzip2 style compression on a string
+   *! @[data] and returns the packed data. Streaming can be done by
+   *! calling this function several times and concatenating the
+   *! returned data.
    *!
-   *! The optional argument @[flush_mode] should be one of the following:
+   *! The optional argument @[flush_mode] should be one of the
+   *! following:
    *! @int
    *!   @value Bz2.BZ_RUN
    *!     Runs Bz2.Deflate->feed()
@@ -562,8 +570,8 @@ PIKECLASS Deflate
  *! unpacking routines in the libz library.
  *!
  *! @note
- *! This program is only available if bzlib was available and found when
- *! Pike was compiled.
+ *! This program is only available if bzlib was available and found
+ *! when Pike was compiled.
  *!
  *! @seealso
  *!   @[Deflate]
@@ -622,8 +630,10 @@ PIKECLASS Inflate
   /*! @decl string inflate(string data)
    *!
    *! This function performs bzip2 style decompression. It can do
-   *! decompression with arbitrarily large pieces of data. When fed with 
-   *! data, it decompresses as much as it can and buffers the rest.
+   *! decompression with arbitrarily large pieces of data. When fed
+   *! with data, it decompresses as much as it can and buffers the
+   *! rest.
+   *!
    *! @example
    *! while(..){
    *!   foo = compressed_data[i..i+9]; 
@@ -683,9 +693,10 @@ PIKECLASS Inflate
     s->avail_out = INFL_BUF_SIZE;
     
     while(1){
-      /* This Loop runs bzDecompress and stores the result in retbuf, if retbuf is filled
-	 it makes retbuf bigger and calls decompress again until the whole input data string 
-	 has been unpacked*/
+      /* This Loop runs bzDecompress and stores the result in retbuf,
+	 if retbuf is filled it makes retbuf bigger and calls
+	 decompress again until the whole input data string has been
+	 unpacked*/
       retval = bzDecompress(s); /* updates next_in, avail_in, total_in, next_out, avail_out, total_out*/
       
       if(tmp != NULL){
@@ -705,8 +716,9 @@ PIKECLASS Inflate
 		   "is fed with invalid data.\n");
       }    
       
-      /* If outputbuffer is not full, or input buffer is empty, or end of stream has been detected
-	 then compression has been done as far as possible*/
+      /* If outputbuffer is not full, or input buffer is empty, or end
+	 of stream has been detected then compression has been done as
+	 far as possible*/
       if((s->avail_out > 0) || (s->avail_in == 0) || (retval == BZ_STREAM_END)){
 	break;
       }
@@ -725,8 +737,8 @@ PIKECLASS Inflate
       }
     }
     
-    /*return the bytes decompressed since the last time bytes were returned from this stream, in other
-      words, return a block*/
+    /*return the bytes decompressed since the last time bytes were
+      returned from this stream, in other words, return a block*/
     if((retval == BZ_OK) || (retval==BZ_STREAM_END)){
       if(TOTAL_OUT(s) - THIS->total_out_previous_flush > 0){
 	retstr = make_shared_binary_string(ret_buffer.s.str,TOTAL_OUT(s)-THIS->total_out_previous_flush);
@@ -803,7 +815,7 @@ PIKECLASS Inflate
 */
 
 #ifndef __NT__
-/* We currentlu have to disable this on Windows since we typically
+/* We currently have to disable this on Windows since we typically
  * have a different CRT in the bz2 lib than in pike. That makes it
  * impossible to pass fd's between them. */
 
