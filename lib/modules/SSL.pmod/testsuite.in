@@ -68,6 +68,8 @@ test_tests([[
 	  "null":KE_null,
 	  "rsa":([
             "fallback":KE_rsa,
+	    "fips":KE_rsa_fips,
+	    "oldfips":KE_rsa_fips,
             "psk":KE_rsa_psk,
           ]),
 	  "dh":([
@@ -96,12 +98,6 @@ test_tests([[
             "dhe":KE_dhe_psk,
           ]),
 	]));
-
-      if ((sizeof(fields) > fno) && (< "fips", "oldfips" >)[ fields[fno] ] &&
-          (ke == KE_rsa)) {
-        ke = KE_rsa_fips;
-        fno++;
-      }
 
       if ((sizeof(fields) > fno) &&
 	  !(<"export", "with">)[fields[fno] ]) {
