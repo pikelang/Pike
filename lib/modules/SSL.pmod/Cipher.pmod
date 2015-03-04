@@ -2160,6 +2160,7 @@ CipherSpec lookup(int suite, ProtocolVersion|int version,
   switch(ke_method)
   {
   case KE_rsa:
+  case KE_rsa_export:
   case KE_rsa_fips:
   case KE_dhe_rsa:
   case KE_ecdhe_rsa:

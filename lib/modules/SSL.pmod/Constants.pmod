@@ -170,29 +170,30 @@ enum SignatureAlgorithm {
 enum KeyExchangeType {
   KE_null	= 0,	//! None.
   KE_rsa	= 1,	//! Rivest-Shamir-Adelman
-  KE_dh_dss	= 2,	//! Diffie-Hellman cert signed with DSS
-  KE_dh_rsa	= 3,	//! Diffie-Hellman cert signed with RSA
-  KE_dhe_dss	= 4,	//! Diffie-Hellman Ephemeral DSS
-  KE_dhe_rsa	= 5,	//! Diffie-Hellman Ephemeral RSA
-  KE_dh_anon	= 6,	//! Diffie-Hellman Anonymous
-  KE_dms	= 7,
-  KE_fortezza	= 8,
+  KE_rsa_export	= 2,	//! Rivest-Shamir-Adelman (EXPORT)
+  KE_dh_dss	= 3,	//! Diffie-Hellman cert signed with DSS
+  KE_dh_rsa	= 4,	//! Diffie-Hellman cert signed with RSA
+  KE_dhe_dss	= 5,	//! Diffie-Hellman Ephemeral DSS
+  KE_dhe_rsa	= 6,	//! Diffie-Hellman Ephemeral RSA
+  KE_dh_anon	= 7,	//! Diffie-Hellman Anonymous
+  KE_dms	= 8,
+  KE_fortezza	= 9,
   // The following five are from RFC 4492.
-  KE_ecdh_ecdsa = 9,	//! Elliptic Curve DH cert signed with ECDSA
-  KE_ecdhe_ecdsa= 10,	//! Elliptic Curve DH Ephemeral with ECDSA
-  KE_ecdh_rsa   = 11,	//! Elliptic Curve DH cert signed with RSA
-  KE_ecdhe_rsa  = 12,	//! Elliptic Curve DH Ephemeral with RSA
-  KE_ecdh_anon  = 13,	//! Elliptic Curve DH Anonymous
+  KE_ecdh_ecdsa = 10,	//! Elliptic Curve DH cert signed with ECDSA
+  KE_ecdhe_ecdsa= 11,	//! Elliptic Curve DH Ephemeral with ECDSA
+  KE_ecdh_rsa   = 12,	//! Elliptic Curve DH cert signed with RSA
+  KE_ecdhe_rsa  = 13,	//! Elliptic Curve DH Ephemeral with RSA
+  KE_ecdh_anon  = 14,	//! Elliptic Curve DH Anonymous
   // The following three are from RFC 4279.
-  KE_psk	= 14,	//! Preshared Key
-  KE_dhe_psk	= 15,	//! Preshared Key with DHE
-  KE_rsa_psk	= 16,	//! Preshared Key signed with RSA
+  KE_psk	= 15,	//! Preshared Key
+  KE_dhe_psk	= 16,	//! Preshared Key with DHE
+  KE_rsa_psk	= 17,	//! Preshared Key signed with RSA
   // The following three are from RFC 5054.
-  KE_srp_sha	= 17,	//! Secure Remote Password (SRP)
-  KE_srp_sha_rsa= 18,	//! SRP signed with RSA
-  KE_srp_sha_dss= 19,	//! SRP signed with DSS
+  KE_srp_sha	= 18,	//! Secure Remote Password (SRP)
+  KE_srp_sha_rsa= 19,	//! SRP signed with RSA
+  KE_srp_sha_dss= 20,	//! SRP signed with DSS
   // This was used during SSL 3.0 to test TLS 1.0.
-  KE_rsa_fips	= 20,	//! Rivest-Shamir-Adelman with FIPS keys.
+  KE_rsa_fips	= 21,	//! Rivest-Shamir-Adelman with FIPS keys.
 }
 
 constant KE_ecc_mask = (1<<KE_ecdh_ecdsa)|(1<<KE_ecdhe_ecdsa)|
@@ -1558,7 +1559,9 @@ class CertificatePair
     ke_mask_invariant = 0;
     switch(sign_algs[0][1]) {
     case SIGNATURE_rsa:
-      foreach(({ KE_rsa, KE_rsa_fips, KE_dhe_rsa, KE_ecdhe_rsa, KE_rsa_psk }),
+      foreach(({ KE_rsa, KE_rsa_fips, KE_dhe_rsa, KE_ecdhe_rsa, KE_rsa_psk,
+		 KE_rsa_export,
+	      }),
 	      KeyExchangeType ke) {
 	ke_mask |= 1<<ke;
       }

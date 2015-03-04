@@ -286,16 +286,17 @@ protected int cipher_suite_sort_key(int suite)
     KE_ecdh_anon:	2,
     KE_fortezza:	3,
     KE_dms:		4,
-    KE_dh_rsa:		5,
-    KE_dh_dss:		6,
-    KE_rsa:		7,
-    KE_rsa_fips:	8,
-    KE_ecdh_rsa:	9,
-    KE_ecdh_ecdsa:	10,
-    KE_dhe_rsa:		11,
-    KE_dhe_dss:		12,
-    KE_ecdhe_rsa:	13,
-    KE_ecdhe_ecdsa:	14,
+    KE_rsa_export:	5,
+    KE_dh_rsa:		6,
+    KE_dh_dss:		7,
+    KE_rsa:		8,
+    KE_rsa_fips:	9,
+    KE_ecdh_rsa:	10,
+    KE_ecdh_ecdsa:	11,
+    KE_dhe_rsa:		12,
+    KE_dhe_dss:		13,
+    KE_ecdhe_rsa:	14,
+    KE_ecdhe_ecdsa:	15,
   ])[info[0]];
 
   int auth_prio = keylength && ([
@@ -304,6 +305,7 @@ protected int cipher_suite_sort_key(int suite)
     KE_ecdh_anon:	0,
     KE_fortezza:	1,
     KE_dms:		2,
+    KE_rsa_export:	4,	// cf FREAK-attack.
     KE_rsa:		8,
     KE_rsa_fips:	8,
     KE_dhe_rsa:		8,
@@ -401,7 +403,7 @@ array(int) get_suites(int(-1..)|void min_keylength,
   if (ke_flags) {
     // Static certificate based key exchange methods.
     kes |= (<
-      KE_rsa, KE_rsa_fips,
+      KE_rsa, KE_rsa_export, KE_rsa_fips,
       KE_dh_rsa, KE_dh_dss,
 #if constant(Crypto.ECC.Curve)
       KE_ecdh_rsa,
