@@ -54,6 +54,15 @@ protected int read_varint(Stdio.Buffer data)
   return ret;
 }
 
+// @returns
+// @array
+//   @elem int 1
+//     Class
+//   @elem bool 2
+//     Constructed
+//   @elem int 3
+//     Tag
+// @endarray
 protected array(int) read_identifier(Stdio.Buffer data)
 {
   int byte = data->read_int8();
