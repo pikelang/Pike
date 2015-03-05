@@ -1251,6 +1251,11 @@ enum NamedGroup {
   GROUP_ffdhe6144                       = 259,  // draft-ietf-tls-negotiated-ff-dhe-07
   GROUP_ffdhe8192                       = 260,  // draft-ietf-tls-negotiated-ff-dhe-07
 
+  GROUP_ffdhe_private0			= 508,	// draft-ietf-tls-negotiated-ff-dhe-07
+  GROUP_ffdhe_private1			= 509,	// draft-ietf-tls-negotiated-ff-dhe-07
+  GROUP_ffdhe_private2			= 510,	// draft-ietf-tls-negotiated-ff-dhe-07
+  GROUP_ffdhe_private3			= 511,	// draft-ietf-tls-negotiated-ff-dhe-07
+
   GROUP_arbitrary_explicit_prime_curves	= 0xFF01,
   GROUP_arbitrary_explicit_char2_curves	= 0xFF02,
 }
