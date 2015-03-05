@@ -306,7 +306,7 @@ class TBSCertificate
   string `der()
   {
     if (internal_der) return internal_der;
-    return internal_der = der_encode();
+    return internal_der = build_der(get_der_content());
   }
 
   //!

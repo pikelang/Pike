@@ -52,15 +52,9 @@ class Object
 
   constant type_name = "";
 
-  //! Return the DER payload.
-  string(8bit) get_der_content()
+  protected string(8bit) get_der_content()
   {
     return "";
-  }
-
-  string(0..255) der_encode()
-  {
-    return build_der(get_der_content());
   }
 
   //! Get the class of this object.
@@ -83,7 +77,7 @@ class Object
     return make_combined_tag(get_cls(), get_tag());
   }
 
-  string(0..255) der;
+  protected string(0..255) der;
 
   // Should be overridden by subclasses
   this_program decode_primitive(string contents,
@@ -143,7 +137,8 @@ class Object
     return data;
   }
 
-  void record_der_contents(string(0..255) s)
+  // Set the encoded data for the node.
+  protected void record_der_contents(string(0..255) s)
   {
     der = build_der(s);
   }
@@ -153,7 +148,7 @@ class Object
   //! @returns
   //!   DER encoded representation of this object.
   string(0..255) get_der() {
-    return der || (der = der_encode());
+    return der || (der = build_der(get_der_content()));
   }
 
   protected void create(mixed ...args) {
@@ -612,8 +607,6 @@ class Null
   inherit Object;
   int tag = 5;
   constant type_name = "NULL";
-
-  string(0..255) get_der_content() { return ""; }
 
   this_program decode_primitive(string(0..255) contents,
 				function(Stdio.Buffer,
