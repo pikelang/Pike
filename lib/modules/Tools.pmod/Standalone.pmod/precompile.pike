@@ -3157,13 +3157,18 @@ int main(int argc, array(string) argv)
     "  id = id&0x00ffffff;\n"
   });
 
-  foreach( map_types; int i; string how )
+  if( sizeof(map_types) )
   {
-    if( how[0] )
-      x += ({ "#ifdef "+how[0]+"\n" });
-    x += ({  "if(id=="+i+") "+how[1]+"\n" });
-    if( how[0] )
-      x += ({ "#endif\n" });
+    x += ({ "  switch(id) {\n" });
+    foreach( map_types; int i; string how )
+    {
+      if( how[0] )
+        x += ({ "#ifdef "+how[0]+"\n" });
+      x += ({  "  case "+i+":\n    "+how[1]+"\n    break;\n" });
+      if( how[0] )
+        x += ({ "#endif\n" });
+    }
+    x += ({ "  };\n\n" });
   }
 
   if( sizeof( need_obj_defines ) )
