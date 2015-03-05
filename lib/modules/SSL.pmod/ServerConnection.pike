@@ -921,7 +921,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	  // See also RFC 3766 5.
 	  switch(session->cipher_spec->key_bits) {
 	  case ..110:
-	    wanted_group = GROUP_ffdhe2048;
+	    wanted_group = GROUP_ffdhe2432;
 	    break;
 	  case 111..130:
 	    wanted_group = GROUP_ffdhe3072;
