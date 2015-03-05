@@ -214,6 +214,13 @@ test_eq(Standards.ASN1.Decode.secure_der_decode("\1\1\0")->get_der(),
 "\1\1\0")
 test_eq(Standards.ASN1.Decode.secure_der_decode("\1\1\0\0"), 0)
 
+test_any([[
+  // Sequence(Integer(4),Integer(7))
+  Types.Sequence s = Standards.ASN1.Decode.simple_der_decode("0\6\2\1\4\2\1\a");
+  s->elements[0] = Types.Integer(8);
+  return s->get_der();
+]], "0\6\2\1\4\2\1\a" /* Should be "0\6\2\1\b\2\1\a" */)
+
 test_do( add_constant("P"); )
 test_do( add_constant("Types"); )
 
