@@ -1245,11 +1245,11 @@ enum NamedGroup {
   GROUP_brainpoolP384r1			= 27,	// RFC 7027
   GROUP_brainpoolP512r1			= 28,	// RFC 7027
 
-  GROUP_ffdhe2432                       = 256,  // draft-ietf-tls-negotiated-ff-dhe-06
-  GROUP_ffdhe3072                       = 257,  // draft-ietf-tls-negotiated-ff-dhe-06
-  GROUP_ffdhe4096                       = 258,  // draft-ietf-tls-negotiated-ff-dhe-06
-  GROUP_ffdhe6144                       = 259,  // draft-ietf-tls-negotiated-ff-dhe-06
-  GROUP_ffdhe8192                       = 260,  // draft-ietf-tls-negotiated-ff-dhe-06
+  GROUP_ffdhe2048			= 256,  // draft-ietf-tls-negotiated-ff-dhe-07
+  GROUP_ffdhe3072                       = 257,  // draft-ietf-tls-negotiated-ff-dhe-07
+  GROUP_ffdhe4096                       = 258,  // draft-ietf-tls-negotiated-ff-dhe-07
+  GROUP_ffdhe6144                       = 259,  // draft-ietf-tls-negotiated-ff-dhe-07
+  GROUP_ffdhe8192                       = 260,  // draft-ietf-tls-negotiated-ff-dhe-07
 
   GROUP_arbitrary_explicit_prime_curves	= 0xFF01,
   GROUP_arbitrary_explicit_char2_curves	= 0xFF02,
@@ -1332,7 +1332,7 @@ constant ECC_CURVES = ([
 ]);
 
 constant FFDHE_GROUPS = ([
-  GROUP_ffdhe2432: Crypto.DH.FFDHE2432,
+  GROUP_ffdhe2048: Crypto.DH.FFDHE2048,
   GROUP_ffdhe3072: Crypto.DH.FFDHE3072,
   GROUP_ffdhe4096: Crypto.DH.FFDHE4096,
   GROUP_ffdhe6144: Crypto.DH.FFDHE6144,
