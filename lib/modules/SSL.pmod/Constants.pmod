@@ -733,16 +733,16 @@ string fmt_version(ProtocolVersion version)
 //! algorithms to be used in that suite.
 //!
 //! @array
-//!   @elem 0
+//!   @elem KeyExchangeType 0
 //!     The key exchange algorithm to be used for this suite, or 0.
 //!     E.g. @[KE_rsa].
-//!   @elem 1
+//!   @elem int 1
 //!     The cipher algorithm to be used for this suite, or 0. E.g.
 //!     @[CIPHER_aes].
-//!   @elem 2
+//!   @elem HashAlgorithm 2
 //!     The hash algorithm to be used for this suite, or 0. E.g.
 //!     @[HASH_sha].
-//!   @elem 3
+//!   @elem CipherModes 3
 //!     Optionally for TLS 1.2 and later cipher suites the mode of
 //!     operation. E.g. @[MODE_cbc].
 //! @endarray
