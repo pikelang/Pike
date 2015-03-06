@@ -36,6 +36,10 @@ class typed_result
   //! Value to use to represent NULL.
   mixed _null_value = Val.null;
 
+  //! Function called by @[user_defined_factory()] to create values for
+  //! custom types.
+  function(string(0..255), mapping(string:mixed), int: mixed) user_defined_cb;
+
   //! Helper function that scales @[mantissa] by a
   //! factor @expr{10->pow(scale)@}.
   //!
@@ -116,5 +120,17 @@ class typed_result
   Standards.UUID.UUID uuid_factory(string(0..255) raw_uuid)
   {
     return Standards.UUID.UUID(raw_uuid);
+  }
+
+  //! Function called to create representations of user-defined types.
+  //!
+  //! The default implementation just calls @[user_defined_cb] if
+  //! it has been set, and otherwise returns @[raw].
+  mixed user_defined_factory(string(0..255) raw,
+			     mapping(string:mixed) field_info,
+			     int field_number)
+  {
+    if (user_defined_cb) return user_defined_cb(raw, field_info, field_number);
+    return raw;
   }
 }

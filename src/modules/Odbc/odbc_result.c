@@ -73,6 +73,7 @@ int odbc_typed_result_fun_num = -1;
 static int scale_numeric_fun_num = -1;
 static int time_factory_fun_num = -1;
 static int timestamp_factory_fun_num = -1;
+static int user_defined_factory_fun_num = -1;
 static int uuid_factory_fun_num = -1;
 
 /*
@@ -280,6 +281,13 @@ static void push_timestamp(int UNUSED(i))
 static void push_uuid(int UNUSED(i))
 {
   apply_current(uuid_factory_fun_num, 1);
+}
+
+static void push_user_defined(int i)
+{
+  push_svalue(PIKE_ODBC_RES->fields->item + i);
+  push_int(i);
+  apply_current(user_defined_factory_fun_num, 3);
 }
 
 #ifndef SQL_SS_VARIANT
@@ -570,6 +578,7 @@ static void odbc_fix_fields(void)
        */
       push_text("user-defined");
       field_info[i].type = SQL_C_BINARY;
+      field_info[i].factory = push_user_defined;
       break;
     case SQL_SS_VARIANT:
       push_text("variant");
@@ -1390,6 +1399,10 @@ void init_odbc_res_programs(void)
 		       tOr(tInt, tVoid) tOr(tInt, tVoid)
 		       tOr(tInt, tVoid) tOr(tInt, tVoid)
 		       tOr(tInt, tVoid) tOr(tInt, tVoid), tMix),
+		 ID_PUBLIC);
+  user_defined_factory_fun_num =
+    ADD_FUNCTION("user_defined_factory", NULL,
+		 tFunc(tStr8 tMap(tMix, tMix), tMix),
 		 ID_PUBLIC);
   uuid_factory_fun_num =
     ADD_FUNCTION("uuid_factory", NULL, tFunc(tStr8, tObj), ID_PUBLIC);
