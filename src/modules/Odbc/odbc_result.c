@@ -321,7 +321,7 @@ static void odbc_fix_fields(void)
   SQLHSTMT hstmt = PIKE_ODBC_RES->hstmt;
   int i;
   struct field_info *field_info;
-  size_t buf_size = 1024;
+  size_t buf_size = 256;
   SQLWCHAR *buf = alloca(buf_size * sizeof(SQLWCHAR));
 
   if (!buf) {
