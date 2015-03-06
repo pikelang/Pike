@@ -1080,7 +1080,8 @@ static void f_fetch_typed_row(INT32 args)
 {
   SQLHSTMT hstmt = PIKE_ODBC_RES->hstmt;
   int i;
-  unsigned int old_tds_kludge = PIKE_ODBC_RES->odbc->flags & PIKE_ODBC_OLD_TDS_KLUDGE;
+  unsigned int old_tds_kludge =
+    PIKE_ODBC_RES->odbc->flags & PIKE_ODBC_OLD_TDS_KLUDGE;
   RETCODE code;
 
   pop_n_elems(args);
