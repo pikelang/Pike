@@ -309,6 +309,13 @@ static void push_user_defined(int i)
 #define SQL_SS_TIMESTAMPOFFSET	(-155)
 #endif
 
+#ifndef SQL_CA_SS_BASE
+#define SQL_CA_SS_BASE		1200
+#endif
+#ifndef SQL_CA_SS_UDT_ASSEMBLY_TYPE_NAME
+#define SQL_CA_SS_UDT_ASSEMBLY_TYPE_NAME	(SQL_CA_SS_BASE + 21)
+#endif
+
 static void odbc_fix_fields(void)
 {
   SQLHSTMT hstmt = PIKE_ODBC_RES->hstmt;
@@ -332,12 +339,14 @@ static void odbc_fix_fields(void)
    * First build the fields-array;
    */
   for (i=0; i < PIKE_ODBC_RES->num_fields; i++) {
+    struct svalue *save_sp = Pike_sp;
     int nbits;
     SWORD name_len = 0;
     SWORD sql_type;
     SQLULEN precision;
     SWORD scale;
     SWORD nullable = 0;
+    SQLHDESC hdesc = NULL;
 
     while (1) {
       RETCODE code;
@@ -579,6 +588,41 @@ static void odbc_fix_fields(void)
       push_text("user-defined");
       field_info[i].type = SQL_C_BINARY;
       field_info[i].factory = push_user_defined;
+      {
+	SQLINTEGER user_type_len = 0;
+	struct pike_string *user_type = NULL;
+	RETCODE code;
+
+	if (!hdesc) {
+	  odbc_check_error("odbc->fetch_row", "SQLGetStmtAttr() failed",
+			   SQLGetStmtAttr(hstmt, SQL_ATTR_APP_ROW_DESC,
+					  &hdesc, 0, NULL),
+			   NULL, NULL);
+	  /* NB: hdesc is an implicit descriptor handle, and is
+	   *     freed when hstmt is freed.
+	   */
+	}
+	SQLGetDescFieldW(hdesc, i + 1,
+			 SQL_CA_SS_UDT_ASSEMBLY_TYPE_NAME,
+			 NULL, 0, &user_type_len);
+	if (user_type_len) {
+	  push_text("user_type");
+	  if (sizeof(SQLWCHAR) == 4) {
+	    user_type = begin_wide_shared_string(user_type_len, 2);
+	  } else {
+	    user_type = begin_wide_shared_string(user_type_len, 1);
+	  }
+	  code = SQLGetDescFieldW(hdesc, i + 1,
+				  SQL_CA_SS_UDT_ASSEMBLY_TYPE_NAME,
+				  user_type->str,
+				  (user_type_len + 1) * sizeof(SQLWCHAR),
+				  &user_type_len);
+	  push_string(end_shared_string(user_type));
+	  odbc_check_error("odbc->fetch_row", "SQLGetDescField() failed",
+			   code, NULL, NULL);
+	}
+      }
+
       break;
     case SQL_SS_VARIANT:
       push_text("variant");
@@ -612,7 +656,7 @@ static void odbc_fix_fields(void)
     }
     f_aggregate_multiset(nbits);
 
-    f_aggregate_mapping(5*2);
+    f_aggregate_mapping(Pike_sp - save_sp);
   }
   f_aggregate(PIKE_ODBC_RES->num_fields);
 
