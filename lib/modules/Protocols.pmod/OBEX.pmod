@@ -1,4 +1,4 @@
- 
+
 #pike __REAL_VERSION__
 
 //! The IrDA® Object Exchange Protocol.
@@ -173,7 +173,7 @@ array(string) split_headers(string h, int chunklen)
     h = h[l..];
   }
 
-  return r + (sizeof(acc) || !sizeof(r)? ({ acc }) : ({ }));  
+  return r + (sizeof(acc) || !sizeof(r)? ({ acc }) : ({ }));
 }
 
 
@@ -417,7 +417,7 @@ class Client
   array(int|Headers) do_session(Headers|void headers)
   {
     return do_request(REQ_SESSION, headers);
-  }  
+  }
 
   //! Establish a new connection using the @[REQ_CONNECT] opcode to
   //! negotiate transfer parameters
@@ -467,7 +467,7 @@ class Client
     if(rc != 200)
       return 0;
 
-    connected = 0;    
+    connected = 0;
 
 #ifdef OBEX_DEBUG
     werror("OBEX disconnected.\n");
@@ -493,7 +493,6 @@ class Client
     if(!connect())
       error("Failed to establish OBEX connection\n");
   }
-  
 }
 
 
