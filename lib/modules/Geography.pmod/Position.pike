@@ -166,6 +166,8 @@ float eccentricity_squared() {
   return 2*f - pow(f,2);
 }
 
+// FIXME: Consider adding models from http://epsg-registry.org/.
+
 //! A mapping with reference ellipsoids, which can be fed to the
 //! UTM converter. The mapping maps the name of the ellipsoid to
 //! an array where the first element is a float describing the
