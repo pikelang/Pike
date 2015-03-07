@@ -321,8 +321,6 @@ int main(int num, array(string) args) {
   F(SDL.Music);
   F(SDL.open_audio);	/* Aka SDL_mixer */
 
-  // Ssleay
-
   write("\nStandards\n");
   M(Standards.JSON.encode);
 
