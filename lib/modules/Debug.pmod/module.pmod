@@ -1,5 +1,7 @@
 #pike __REAL_VERSION__
 
+inherit _Debug;
+
 constant verify_internals = _verify_internals;
 constant memory_usage = _memory_usage;
 constant gc_status = _gc_status;
@@ -7,13 +9,9 @@ constant describe_program = _describe_program;
 constant size_object = _size_object;
 constant map_all_objects = _map_all_objects;
 
-#if constant(_debug)
+#if constant(Debug.HAS_DEBUG)
 // These functions require --with-rtldebug.
-constant debug = _debug;
-constant optimizer_debug = _optimizer_debug;
-constant assembler_debug = _assembler_debug;
 constant disassemble = Builtin._disassemble;
-constant dump_program_tables = _dump_program_tables;
 constant locate_references = _locate_references;
 constant describe = _describe;
 constant gc_set_watch = _gc_set_watch;
@@ -26,11 +24,6 @@ constant reset_dmalloc = _reset_dmalloc;
 constant dmalloc_set_name = _dmalloc_set_name;
 constant list_open_fds = _list_open_fds;
 constant dump_dmalloc_locations = _dump_dmalloc_locations;
-#endif
-
-#if constant(_compiler_trace)
-// Requires -DYYDEBUG.
-constant compiler_trace  = _compiler_trace;
 #endif
 
 /* significantly more compact version of size2string */

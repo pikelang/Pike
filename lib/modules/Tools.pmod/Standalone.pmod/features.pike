@@ -57,7 +57,7 @@ int main(int num, array(string) args) {
 
   write("Compilation options\n");
   f("Debug.reset_dmalloc", "DEBUG_MALLOC");
-  f("_leak", "PIKE_DEBUG");
+  f("Debug.HAVE_DEBUG", "PIKE_DEBUG");
   f("get_profiling_info", "PROFILING");
   f("load_module", "USE_DYNAMIC_MODULES");
 

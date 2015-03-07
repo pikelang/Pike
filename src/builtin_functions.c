@@ -5387,133 +5387,6 @@ PMOD_EXPORT void f__verify_internals(INT32 args)
   pop_n_elems(args);
 }
 
-#ifdef PIKE_DEBUG
-
-/*! @decl int(0..) debug(int(0..) level)
- *! @belongs Debug
- *!
- *!   Set the run-time debug level.
- *!
- *! @returns
- *!   The old debug level will be returned.
- *! 
- *! @note
- *!   This function is only available if the Pike runtime has been compiled
- *!   with RTL debug.
- */
-PMOD_EXPORT void f__debug(INT32 args)
-{
-  INT_TYPE d;
-
-  ASSERT_SECURITY_ROOT("_debug");
-
-  get_all_args("_debug", args, "%+", &d);
-  pop_n_elems(args);
-  push_int(d_flag);
-  d_flag = d;
-}
-
-/*! @decl int(0..) optimizer_debug(int(0..) level)
- *! @belongs Debug
- *!
- *!   Set the optimizer debug level.
- *!
- *! @returns
- *!   The old optimizer debug level will be returned.
- *! 
- *! @note
- *!   This function is only available if the Pike runtime has been compiled
- *!   with RTL debug.
- */
-PMOD_EXPORT void f__optimizer_debug(INT32 args)
-{
-  INT_TYPE l;
-
-  ASSERT_SECURITY_ROOT("_optimizer_debug");
-
-  get_all_args("_optimizer_debug", args, "%+", &l);
-  pop_n_elems(args);
-  push_int(l_flag);
-  l_flag = l;
-}
-
-
-/*! @decl int(0..) assembler_debug(int(0..) level)
- *! @belongs Debug
- *!
- *!   Set the assembler debug level.
- *!
- *! @returns
- *!   The old assembler debug level will be returned.
- *! 
- *! @note
- *!   This function is only available if the Pike runtime has been compiled
- *!   with RTL debug.
- */
-PMOD_EXPORT void f__assembler_debug(INT32 args)
-{
-  INT_TYPE l;
-
-  ASSERT_SECURITY_ROOT("_assembler_debug");
-
-  get_all_args("_assembler_debug", args, "%+", &l);
-  pop_n_elems(args);
-  push_int(a_flag);
-  a_flag = l;
-}
-
-/*! @decl void dump_program_tables(program p, int(0..)|void indent)
- *! @belongs Debug
- *!
- *! Dumps the internal tables for the program @[p] on stderr.
- *!
- *! @param p
- *!   Program to dump.
- *!
- *! @param indent
- *!   Number of spaces to indent the output.
- */
-void f__dump_program_tables(INT32 args)
-{
-  struct program *p;
-  INT_TYPE indent = 0;
-
-  ASSERT_SECURITY_ROOT("_dump_program_tables");	/* FIXME: Might want lower. */
-  get_all_args("_dump_program_tables", args, "%p.%+", &p, &indent);
-
-  dump_program_tables(p, indent);
-  pop_n_elems(args);
-}
-
-#ifdef YYDEBUG
-
-/*! @decl int(0..) compiler_trace(int(0..) level)
- *! @belongs Debug
- *!
- *!   Set the compiler trace level.
- *!
- *! @returns
- *!   The old compiler trace level will be returned.
- *! 
- *! @note
- *!   This function is only available if the Pike runtime has been compiled
- *!   with RTL debug.
- */
-PMOD_EXPORT void f__compiler_trace(INT32 args)
-{
-  extern int yydebug;
-  INT_TYPE yyd;
-  ASSERT_SECURITY_ROOT("_compiler_trace");
-
-  get_all_args("_compiler_trace", args, "%i", &yyd);
-  pop_n_elems(args);
-  push_int(yydebug);
-  yydebug = yyd;
-}
-
-#endif /* YYDEBUG */
-#endif
-
 static void encode_struct_tm(struct tm *tm)
 {
   push_text("sec");
@@ -7842,29 +7715,6 @@ PMOD_EXPORT void f__refs(INT32 args)
   push_int(i);
 }
 
-#ifdef PIKE_DEBUG
-/* This function is for debugging *ONLY*
- * do not document please. /Hubbe
- */
-PMOD_EXPORT void f__leak(INT32 args)
-{
-  INT32 i;
-
-  if(!args)
-    SIMPLE_TOO_FEW_ARGS_ERROR("_leak", 1);
-
-  if(!REFCOUNTED_TYPE(TYPEOF(Pike_sp[-args])))
-    SIMPLE_BAD_ARG_ERROR("_leak", 1,
-			 "array|mapping|multiset|object|"
-			 "function|program|string");
-
-  add_ref(Pike_sp[-args].u.dummy);
-  i=Pike_sp[-args].u.refs[0];
-  pop_n_elems(args);
-  push_int(i);
-}
-#endif
-
 /*! @decl type _typeof(mixed x)
  *!
  *!   Return the runtime type of @[x].
@@ -9587,9 +9437,6 @@ void init_builtin_efuns(void)
 #endif /* PROFILING */
 
   ADD_EFUN("_refs",f__refs,tFunc(tRef,tInt),OPT_EXTERNAL_DEPEND);
-#ifdef PIKE_DEBUG
-  ADD_EFUN("_leak",f__leak,tFunc(tRef,tInt),OPT_EXTERNAL_DEPEND);
-#endif
   ADD_EFUN("_typeof", f__typeof, tFunc(tSetvar(0, tMix), tType(tVar(0))), 0);
 
   /* class __master
@@ -10010,31 +9857,6 @@ void init_builtin_efuns(void)
   ADD_EFUN("_verify_internals",f__verify_internals,
 	   tFunc(tNone,tVoid),OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
 
-#ifdef PIKE_DEBUG
-  
-/* function(int:int) */
-  ADD_EFUN("_debug",f__debug,
-	   tFunc(tIntPos,tIntPos),OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
-
-/* function(int:int) */
-  ADD_EFUN("_optimizer_debug",f__optimizer_debug,
-	   tFunc(tIntPos,tIntPos),OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
-
-/* function(int:int) */
-  ADD_EFUN("_assembler_debug",f__assembler_debug,
-	   tFunc(tInt,tIntPos), OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
-
-  ADD_EFUN("_dump_program_tables", f__dump_program_tables,
-	   tFunc(tPrg(tObj) tIntPos,tVoid), OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
-
-#ifdef YYDEBUG
-  
-/* function(int:int) */
-  ADD_EFUN("_compiler_trace",f__compiler_trace,
-	   tFunc(tIntPos,tIntPos),OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
-#endif /* YYDEBUG */
-#endif
-  
 /* function(:mapping(string:int)) */
   ADD_EFUN("_memory_usage",f__memory_usage,
 	   tFunc(tNone,tMap(tStr,tInt)),OPT_EXTERNAL_DEPEND);
