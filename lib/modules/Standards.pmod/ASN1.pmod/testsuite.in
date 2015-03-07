@@ -219,7 +219,7 @@ test_any([[
   Types.Sequence s = Standards.ASN1.Decode.simple_der_decode("0\6\2\1\4\2\1\a");
   s->elements[0] = Types.Integer(8);
   return s->get_der();
-]], "0\6\2\1\4\2\1\a" /* Should be "0\6\2\1\b\2\1\a" */)
+]], "0\6\2\1\b\2\1\a")
 
 test_do( add_constant("P"); )
 test_do( add_constant("Types"); )

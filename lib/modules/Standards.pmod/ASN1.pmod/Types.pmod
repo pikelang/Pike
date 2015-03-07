@@ -137,18 +137,12 @@ class Object
     return data;
   }
 
-  // Set the encoded data for the node.
-  protected void record_der_contents(string(0..255) s)
-  {
-    der = build_der(s);
-  }
-
   //! Get the DER encoded version of this object.
   //!
   //! @returns
   //!   DER encoded representation of this object.
   string(0..255) get_der() {
-    return der || (der = build_der(get_der_content()));
+    return build_der(get_der_content());
   }
 
   protected void create(mixed ...args) {
@@ -180,7 +174,6 @@ class Compound
 
   void begin_decode_constructed(string(0..255) raw) {
     WERROR("asn1_compound[%s]->begin_decode_constructed\n", type_name);
-    record_der_contents(raw);
   }
 
   void decode_constructed_element(int i, object e) {
@@ -245,7 +238,6 @@ class String
 					 mapping(int:program(Object)):
 					 Object)|void decoder,
 				mapping(int:program(Object))|void types) {
-    record_der_contents(contents);
     value = contents;
     return this;
   }
@@ -296,7 +288,6 @@ class Boolean
 					 mapping(int:program(Object)):
 					 Object)|void decoder,
 				mapping(int:program(Object))|void types) {
-    record_der_contents(contents);
     if( contents=="" ) error("Illegal boolean value.\n");
     value = (contents != "\0");
     return this;
@@ -355,7 +346,6 @@ class Integer
 					 mapping(int:program(Object)):
 					 Object)|void decoder,
 				mapping(int:program(Object))|void types) {
-    record_der_contents(contents);
     value = Gmp.mpz(contents, 256);
     if (contents[0] & 0x80)  /* Negative */
       value -= pow(256, sizeof(contents));
@@ -536,7 +526,6 @@ class BitString
 					 mapping(int:program(Object)):
 					 Object)|void decoder,
 				mapping(int:program(Object))|void types) {
-    record_der_contents(contents);
     if (!sizeof(contents))
       return 0;
     unused = contents[0];
@@ -613,7 +602,6 @@ class Null
 					 mapping(int:program(Object)):
 					 Object)|void decoder,
 				mapping(int:program(Object))|void types) {
-    record_der_contents(contents);
     return !sizeof(contents) && this;
   }
 
@@ -665,8 +653,6 @@ class Identifier
 					 mapping(int:program(Object)):
 					 Object)|void decoder,
 				mapping(int:program(Object))|void types) {
-    record_der_contents(contents);
-
     if (contents[0] < 120)
       id = ({ contents[0] / 40, contents[0] % 40 });
     else
