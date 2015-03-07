@@ -303,10 +303,18 @@ test_do([[
       }
       return ::alert_factory(con, level, description, version, message);
     }
+
+    protected void create()
+    {
+      // Test support for private FFDHE groups with the weakest MODP group.
+      private_ffdhe_groups[SSL.Constants.GROUP_ffdhe_private0] =
+	Crypto.DH.MODPGroup1;
+    }
   };
   add_constant("TestContext", TestContext);
   SSL.Context ctx = TestContext();
   ctx->random = random_string;
+  ctx->ffdhe_groups += ({ SSL.Constants.GROUP_ffdhe_private0 });
   add_constant("server_ctx", ctx);
 ]])
 
@@ -614,7 +622,8 @@ test_do([[
   import SSL.Constants;
   int f(int client_min, int client_max, int server_min, int server_max,
         string exp_data, object server_ctx, array(int) suites,
-        array(CertificatePair)|void client_certs)
+        array(CertificatePair)|void client_certs,
+        array(int)|void ffdhe_groups)
   {
     server_ctx->min_version = server_min;
     server_ctx->max_version = server_max;
@@ -669,6 +678,9 @@ test_do([[
     client_ctx->preferred_suites = suites;
     client_ctx->min_version = client_min;
     client_ctx->max_version = client_max;
+
+    if (ffdhe_groups) client_ctx->ffdhe_groups = ffdhe_groups;
+
     server_ctx->expect_fail = client_ctx->expect_fail = !exp_data;
 
     if (client_certs) {
@@ -842,7 +854,8 @@ test_do([[
   import SSL.Constants;
   int f(int client_min, int client_max, int server_min, int server_max,
         string exp_data, object server_ctx, array(int) suites,
-        array(CertificatePair)|void client_certs)
+        array(CertificatePair)|void client_certs,
+	array(int)|void ffdhe_groups)
   {
     server_ctx->min_version = server_min;
     server_ctx->max_version = server_max;
@@ -889,6 +902,9 @@ test_do([[
     client_ctx->preferred_suites = suites;
     client_ctx->min_version = client_min;
     client_ctx->max_version = client_max;
+
+    if (ffdhe_groups) client_ctx->ffdhe_groups = ffdhe_groups;
+
     server_ctx->expect_fail = client_ctx->expect_fail = !exp_data;
 
     if (client_certs) {
@@ -1021,10 +1037,13 @@ array(int) a() {
 	       SSL.Constants.fmt_version(server_min),
 	       SSL.Constants.fmt_version(server_max));
 
+    int test_ffdhe;
+
     if( `==(client_min, server_min, SSL.Constants.PROTOCOL_SSL_3_0) &&
 	(client_max == server_max) ) {
       // Test all known cipher suites.
       suites = server_ctx->get_suites(-1, 2);
+      test_ffdhe = 1;
     }
 
     foreach(suites, int suite) {
@@ -1034,6 +1053,21 @@ array(int) a() {
       successes += count;
       tests += count || 1;
       if (!count) skip += !!exp_res;	// Skipped resume.
+      if (exp_res && test_ffdhe &&
+	  (< SSL.Constants.KE_dhe_dss,
+	     SSL.Constants.KE_dhe_rsa,
+	     SSL.Constants.KE_dh_anon >)[SSL.Constants.CIPHER_SUITES[suite] ]) {
+	// DHE.
+	foreach(server_ctx->ffdhe_groups, int group) {
+	  int count = test_ssl_connection(client_min, client_max,
+					   server_min, server_max, exp_res,
+					   server_ctx, ({suite}),
+					   UNDEFINED, ({ group }) );
+	  successes += count;
+	  tests += count || 1;
+	  if (!count) skip += !!exp_res;	// Skipped resume.
+	}
+      }
     }
   }}}}
   return ({ successes, tests-successes, skip });

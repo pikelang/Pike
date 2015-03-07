@@ -174,6 +174,16 @@ array(int) ecc_curves = reverse(sort(indices(ECC_CURVES)));
 //! actually follows the clients preferences).
 array(int) ffdhe_groups = sort(indices(FFDHE_GROUPS));
 
+//! DHE parameter lookup for the FFDHE private range.
+//!
+//! Add any custom FFDHE-groups here.
+//!
+//! Defaults to the empty mapping.
+//!
+//! @note
+//!   If you add any groups here, you will also need to update
+//!   @[ffdhe_groups] accordingly.
+mapping(int(508..511):Crypto.DH.Parameters) private_ffdhe_groups = ([]);
 
 //! The set of <hash, signature> combinations to use by us.
 //!

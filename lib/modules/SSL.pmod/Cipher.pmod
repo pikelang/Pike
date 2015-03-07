@@ -28,13 +28,16 @@ protected mapping(Gmp.mpz:mapping(Gmp.mpz:int)) make_valid_dh()
 
 // FIXME: This function ought to check that the selected group
 //        is strong enough for the selected key length.
-protected bool validate_dh(Crypto.DH.Parameters dh, object session)
+protected bool validate_dh(Crypto.DH.Parameters dh,
+			   object session,
+			   object context)
 {
   if (sizeof(session->ffdhe_groups | ({}))) {
     // Check if one of the recommended groups was selected,
     // in which case we're done.
     foreach(session->ffdhe_groups, int g) {
-      Crypto.DH.Parameters ffdhe = FFDHE_GROUPS[g];
+      Crypto.DH.Parameters ffdhe =
+	FFDHE_GROUPS[g] || context->private_ffdhe_groups[g];
       if (!ffdhe) continue;
       if ((ffdhe->p == dh->p) &&
 	  (ffdhe->g == dh->g) &&
@@ -882,7 +885,8 @@ class KeyExchangeDHE
     Crypto.DH.Parameters p;
     foreach( context->ffdhe_groups, int g )
     {
-      Crypto.DH.Parameters o = FFDHE_GROUPS[g];
+      Crypto.DH.Parameters o =
+	FFDHE_GROUPS[g] || context->private_ffdhe_groups[g];
       if (!o) continue;	// Paranoia.
       if( !p || o->p->size()>p->p->size() ||
           (o->p->size()==p->p->size() && o->q->size()>p->q->size()) )
@@ -974,7 +978,7 @@ class KeyExchangeDHE
 
     Crypto.DH.Parameters params = Crypto.DH.Parameters(Gmp.mpz(p,256),
                                                        Gmp.mpz(g,256));
-    if( !validate_dh(params, session) )
+    if( !validate_dh(params, session, context) )
     {
       SSL3_DEBUG_MSG("DH parameters not correct or not secure.\n");
       return 0;
@@ -1072,7 +1076,7 @@ class KeyExchangeDH
   int(0..1) init_client()
   {
     Crypto.DH.Parameters p = Crypto.DH.Parameters(session->peer_public_key);
-    if( !validate_dh(p, session) )
+    if( !validate_dh(p, session, context) )
     {
       SSL3_DEBUG_MSG("DH parameters not correct or not secure.\n");
       return 0;
@@ -1139,7 +1143,7 @@ class KeyShareDHE
   void set_group(int g)
   {
     group = g;
-    parameters = FFDHE_GROUPS[g];
+    parameters = FFDHE_GROUPS[g] || context->private_ffdhe_groups[g];
     if (!parameters) error("Unsupported FF-DHE group.\n");
     new_secret();
   }

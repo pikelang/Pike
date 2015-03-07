@@ -257,7 +257,7 @@ protected void make_key_share_offer(int group)
   Cipher.KeyExchange ke;
 
   if ((group & 0xff00) == 0x0100) {
-    if (!FFDHE_GROUPS[group]) return;
+    if (!FFDHE_GROUPS[group] && !context->private_ffdhe_groups[group]) return;
     ke = Cipher.KeyShareDHE(context, 0, this, client_version);
     // ke->init_client();
     ke->set_group(group);

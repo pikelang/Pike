@@ -418,7 +418,8 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	      SSL3_DEBUG_MSG("Elliptic and finite field groups: %O\n",
 			     map(session->ecc_curves, fmt_constant, "GROUP"));
 	      session->ffdhe_groups = context->ffdhe_groups &
-		filter(named_groups, FFDHE_GROUPS);
+		filter(named_groups,
+		       FFDHE_GROUPS | context->private_ffdhe_groups);
 	      if (!sizeof(session->ffdhe_groups) &&
 		  (version <= PROTOCOL_TLS_1_2)) {
 		// FFDHE group extension not supported by the client,
