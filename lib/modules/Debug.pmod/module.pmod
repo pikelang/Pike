@@ -7,7 +7,6 @@ constant memory_usage = _memory_usage;
 constant gc_status = _gc_status;
 constant describe_program = _describe_program;
 constant size_object = _size_object;
-constant map_all_objects = _map_all_objects;
 
 #if constant(Debug.HAS_DEBUG)
 // These functions require --with-rtldebug.
