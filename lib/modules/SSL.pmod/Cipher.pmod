@@ -1210,7 +1210,7 @@ class KeyExchangeECDHE
   {
     SSL3_DEBUG_MSG("client_key_exchange_packet(%O, %d.%d)\n",
 		   packet_data, version>>8, version & 0xff);
-    SSL3_DEBUG_MSG("KE_ECDH\n");
+    SSL3_DEBUG_MSG("KE_ECDHE\n");
 
     Gmp.mpz secret = session->curve->new_scalar(context->random);
     Crypto.ECC.Curve.Point p = session->curve * secret;
@@ -1238,7 +1238,7 @@ class KeyExchangeECDHE
     SSL3_DEBUG_MSG("got_client_key_exchange: ke_method %d\n",
 		   session->ke_method);
 
-    SSL3_DEBUG_MSG("KE_ECDH\n");
+    SSL3_DEBUG_MSG("KE_ECDHE\n");
 
     if (!sizeof(data))
     {
