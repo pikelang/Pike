@@ -10,7 +10,6 @@
 #include "interpret.h"
 #include "pike_embed.h"
 #include "module_support.h"
-#include "pike_security.h"
 
 #ifdef PIKE_DEBUG
 /* This function is for debugging *ONLY*
@@ -113,7 +112,6 @@ void f_dump_program_tables(INT32 args)
   struct program *p;
   INT_TYPE indent = 0;
 
-  ASSERT_SECURITY_ROOT("dump_program_tables");	/* FIXME: Might want lower. */
   get_all_args("dump_program_tables", args, "%p.%+", &p, &indent);
 
   dump_program_tables(p, indent);
@@ -138,9 +136,8 @@ PMOD_EXPORT void f_compiler_trace(INT32 args)
 {
   extern int yydebug;
   INT_TYPE yyd;
-  ASSERT_SECURITY_ROOT("_compiler_trace");
 
-  get_all_args("_compiler_trace", args, "%i", &yyd);
+  get_all_args("compiler_trace", args, "%i", &yyd);
   pop_n_elems(args);
   push_int(yydebug);
   yydebug = yyd;
