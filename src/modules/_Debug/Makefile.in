@@ -10,4 +10,6 @@ PRECOMPILER_ARGS="--base="
 
 @static_module_makefile@
 
+debug.o: $(SRCDIR)/debug.c
+
 @dependencies@
