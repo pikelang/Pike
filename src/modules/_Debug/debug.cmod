@@ -13,8 +13,6 @@
 #include "pike_security.h"
 #include "builtin_functions.h"
 
-#define DEFAULT_CMOD_STORAGE
-
 DECLARATIONS
 
 /*! @decl int(0..) map_all_objects(function(object:void) cb)
@@ -60,6 +58,7 @@ PIKEFUN int(0..) map_all_objects(function(object:void) cb)
  * do not document please. /Hubbe
  */
 PIKEFUN int leak(array|mapping|multiset|object|function|program|string|type val)
+  export;
 {
   INT32 i;
 
@@ -86,6 +85,7 @@ PIKEFUN int leak(array|mapping|multiset|object|function|program|string|type val)
  *!   with RTL debug.
  */
 PIKEFUN int(0..) debug(int(0..) d)
+  export;
 {
   pop_n_elems(args);
   push_int(d_flag);
@@ -105,6 +105,7 @@ PIKEFUN int(0..) debug(int(0..) d)
  *!   with RTL debug.
  */
 PIKEFUN int(0..) optimizer_debug(int(0..) l)
+  export;
 {
   pop_n_elems(args);
   push_int(l_flag);
@@ -124,6 +125,7 @@ PIKEFUN int(0..) optimizer_debug(int(0..) l)
  *!   with RTL debug.
  */
 PIKEFUN int(0..) assembler_debug(int(0..) l)
+  export;
 {
   pop_n_elems(args);
   push_int(a_flag);
@@ -162,6 +164,7 @@ PIKEFUN void dump_program_tables(program p, int(0..)|void indent)
  *!   with RTL debug.
  */
 PIKEFUN int(0..) compiler_trace(int(0..) yyd)
+  export;
 {
   extern int yydebug;
   pop_n_elems(args);
