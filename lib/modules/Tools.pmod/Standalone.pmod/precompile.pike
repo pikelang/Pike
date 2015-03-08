@@ -144,6 +144,7 @@ string usage = #"[options] <from> > <to>
 
  Currently, the following attributes are understood:
    efun;          makes this function a global constant (no value)
+   export;        Declare the corresponding C-symbol PMOD_EXPORT.
    flags;         ID_STATIC | ID_NOMASK etc.
    optflags;      OPT_TRY_OPTIMIZE | OPT_SIDE_EFFECT etc.
    optfunc;       Optimization function.
@@ -1326,6 +1327,7 @@ array recursive(mixed func, array data, mixed ... args)
 // where.
 constant valid_attributes = (<
   "efun",
+  "export",
   "flags",
   "optflags",
   "optfunc",
@@ -2340,8 +2342,16 @@ static struct %s *%s_gdb_dummy_ptr;
 	if (attributes->prototype) {
 	  funcname = "NULL";
 	} else {
-	  ret+=({
-	    sprintf("DEFAULT_CMOD_STORAGE void %s(INT32 args) ",funcname),
+	  if (attributes->export) {
+	    ret+=({
+	      sprintf("PMOD_EXPORT void %s(INT32 args) ",funcname),
+	    });
+	  } else {
+	    ret+=({
+	      sprintf("DEFAULT_CMOD_STORAGE void %s(INT32 args) ",funcname),
+	    });
+	  }
+	  ret += ({
 	    "{","\n",
 	  });
 
