@@ -347,7 +347,7 @@ test_do([[
   server_ctx->short_rsa->generate_key(512);
 
   // Make sure that all cipher suites are available server side.
-  server_ctx->preferred_suites = server_ctx->get_suites(-1, 2);
+  server_ctx->preferred_suites = server_ctx->get_suites(-1, 2, (<>));
 ]])
 
 test_do([[
@@ -1009,7 +1009,7 @@ array(int) a() {
     if( `==(client_min, server_min, SSL.Constants.PROTOCOL_SSL_3_0) &&
 	(client_max == server_max) ) {
       // Test all known cipher suites.
-      suites = server_ctx->get_suites(-1, 2);
+      suites = server_ctx->get_suites(-1, 2, (<>));
     }
 #endif
 
@@ -1042,7 +1042,7 @@ array(int) a() {
     if( `==(client_min, server_min, SSL.Constants.PROTOCOL_SSL_3_0) &&
 	(client_max == server_max) ) {
       // Test all known cipher suites.
-      suites = server_ctx->get_suites(-1, 2);
+      suites = server_ctx->get_suites(-1, 2, (<>));
       test_ffdhe = 1;
     }
 
@@ -1091,7 +1091,7 @@ object make_context(Crypto.ECC.Curve curve) {
 
   ctx->add_cert(ecdsa, ({ cert }));
 
-  ctx->preferred_suites = server_ctx->get_suites(-1, 2);
+  ctx->preferred_suites = server_ctx->get_suites(-1, 2, (<>));
   return ctx;
 }
 array(int) a() {

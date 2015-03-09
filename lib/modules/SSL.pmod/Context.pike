@@ -43,7 +43,8 @@ protected void create()
   SSL3_DEBUG_MSG("SSL.Context->create\n");
 
   /* Backwards compatibility */
-  preferred_suites = get_suites(128, 1);
+  multiset(int) blocked = (< CIPHER_rc4 >);
+  preferred_suites = get_suites(128, 1, blocked);
 }
 
 //! The minimum supported protocol version.
@@ -376,7 +377,9 @@ array(int) sort_suites(array(int) suites)
 //!   @endint
 //!
 //! @param blacklisted_ciphers
-//!   Multiset of ciphers that are NOT to be used.
+//!   Multiset of ciphers that are NOT to be used. By default RC4, DES
+//!   and export ciphers are blacklisted. An empty multiset needs to
+//!   be given to unlock these.
 //!
 //! @param blacklisted_kes
 //!   Multiset of key exchange methods that are NOT to be used.
@@ -450,12 +453,18 @@ array(int) get_suites(int(-1..)|void min_keylength,
 		 }, min_keylength);
   }
 
-  if (blacklisted_ciphers) {
-    res = filter(res,
-		 lambda(int suite, multiset(int) blacklisted_hashes) {
-		   return !blacklisted_hashes[CIPHER_SUITES[suite][1]];
-		 }, blacklisted_ciphers);
+  if( !blacklisted_ciphers )
+  {
+    // Block export ciphers and DES because they are demonstrably
+    // broken. Block RC4 because it probably is (RFC 7465).
+    blacklisted_ciphers = (< CIPHER_rc4, CIPHER_des, CIPHER_rc4_40,
+                             CIPHER_rc2_40, CIPHER_des40 >);
   }
+  if( sizeof(blacklisted_ciphers) )
+      res = filter(res,
+                   lambda(int suite, multiset(int) blacklisted_hashes) {
+                     return !blacklisted_hashes[CIPHER_SUITES[suite][1]];
+                   }, blacklisted_ciphers);
 
 #if !constant(Crypto.SHA384)
   // Filter suites needing SHA384 as our Nettle doesn't support it.

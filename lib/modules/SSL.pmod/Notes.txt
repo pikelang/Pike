@@ -90,7 +90,7 @@ The TLS 1.2 Protocol is specified in the following RFCs:
  [X] AES-CCM ECC Suites for TLS		RFC 7251
  [X] TLS ALPN Extension			RFC 7301
  [X] TLS Encrypt-then-MAC		RFC 7366
- [ ] Prohibit RC4			RFC 7465
+ [X] Prohibit RC4			RFC 7465
 
 The DTLS 1.2 Protocol is specified in the following RFCs:
 
