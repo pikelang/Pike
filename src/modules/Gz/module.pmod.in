@@ -4,6 +4,8 @@
 
 inherit @module@;
 
+#define DATA_CHUNK_SIZE 64*1024
+
 //! Low-level implementation of read/write support for GZip files
 class _file {
 
@@ -404,9 +406,31 @@ class File {
     String.Buffer buf = String.Buffer();
     string data;
     do {
-      if (!(data = ::read(1024*64))) break;
+      if (!(data = ::read(DATA_CHUNK_SIZE))) break;
       buf->add(data);
     } while (sizeof(data));
     return (string)buf;
+  }
+
+
+  function(:string) read_function(int nbytes)
+  //! Returns a function that when called will call @[read] with
+  //! nbytes as argument. Can be used to get various callback
+  //! functions, eg for the fourth argument to
+  //! @[String.SplitIterator].
+  {
+    return lambda(){ return ::read(nbytes); };
+  }
+
+  String.SplitIterator|Stdio.LineIterator line_iterator( int|void trim )
+  //! Returns an iterator that will loop over the lines in this file. 
+  //! If trim is true, all @tt{'\r'@} characters will be removed from
+  //! the input.
+  {
+    if( trim )
+      return String.SplitIterator( "",(<'\n','\r'>),1,
+				   read_function(DATA_CHUNK_SIZE));
+    // This one is about twice as fast, but it's way less flexible.
+    return Stdio.LineIterator( read_function(DATA_CHUNK_SIZE) );
   }
 }
