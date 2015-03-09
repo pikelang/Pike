@@ -100,9 +100,9 @@ constant CIPHER_chacha20 = 13;
 constant CIPHER_effective_keylengths = ([
   CIPHER_null:		0, 
   CIPHER_rc2_40:	16,	// A 64bit key in RC2 has strength ~34...
-  CIPHER_rc4_40:	40,
+  CIPHER_rc4_40:	24,	// Estimated from plain rc4.
   CIPHER_des40:		32,	// A 56bit key in DES has strength ~40...
-  CIPHER_rc4:		128,
+  CIPHER_rc4:		38,	// RFC 7465: 13*2^30 encryptions.
   CIPHER_des:		40,
   CIPHER_3des:		112,
   CIPHER_fortezza:	96,
