@@ -625,7 +625,8 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	      break;
 
             case EXTENSION_padding:
-              COND_FATAL(!equal(String.range((string)extension_data),({0,0})),
+              COND_FATAL(sizeof(extension_data) &&
+                         !equal(String.range((string)extension_data),({0,0})),
                          ALERT_illegal_parameter,
                          "Possible covert side channel in padding.\n");
               break;
