@@ -108,7 +108,7 @@ constant CIPHER_types = (< CIPHER_stream, CIPHER_block, CIPHER_aead >);
 
 constant CIPHER_null     = 0;
 constant CIPHER_rc4_40   = 2;
-constant CIPHER_rc2      = 3;
+constant CIPHER_rc2_40   = 3;
 constant CIPHER_des40    = 6;
 #ifndef WEAK_CRYPTO_40BIT
 constant CIPHER_rc4      = 1;
@@ -125,11 +125,11 @@ constant CIPHER_camellia256 = 12;
 //! Mapping from cipher algorithm to effective key length.
 constant CIPHER_effective_keylengths = ([
   CIPHER_null:		0, 
-  CIPHER_rc4_40:	40,
-  CIPHER_rc2:		40,
+  CIPHER_rc2_40:	16,	// A 64bit key in RC2 has strength ~34...
+  CIPHER_rc4_40:	24,	// Estimated from plain rc4.
   CIPHER_des40:		32,	// A 56bit key in DES has strength ~40...
 #ifndef WEAK_CRYPTO_40BIT
-  CIPHER_rc4:		128,
+  CIPHER_rc4:		38,	// RFC 7465: 13*2^30 encryptions.
   CIPHER_des:		40,
   CIPHER_3des:		112,
   CIPHER_fortezza:	96,
