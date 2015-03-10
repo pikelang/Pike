@@ -634,13 +634,12 @@ array(string(8bit)) generate_keys(string(8bit) client_random,
 #ifdef SSL3_DEBUG
   printKey( "client_write_MAC_secret",keys[0]);
   printKey( "server_write_MAC_secret",keys[1]);
-  printKey( "keys[2]",keys[2]);
-  printKey( "keys[3]",keys[3]);
+  printKey( "client_write_key", keys[2]);
+  printKey( "server_write_key", keys[3]);
 
   if(cipher_spec->iv_size) {
-    printKey( "keys[4]",keys[4]);
-    printKey( "keys[5]",keys[5]);
-
+    printKey( "client_IV", keys[4]);
+    printKey( "server_IV", keys[5]);
   } else {
     werror("No IVs!!\n");
   }
