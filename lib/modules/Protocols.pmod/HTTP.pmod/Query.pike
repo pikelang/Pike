@@ -1098,38 +1098,29 @@ protected array|mapping|string cast(string to)
 //!   before having read all data.
 class PseudoFile
 {
-   string buf;
+   Stdio.Buffer buf;
    int len;
 
    protected void create(string _buf, int _len)
    {
-      buf=_buf;
+      buf=Stdio.Buffer(_buf);
       len=_len;
    }
 
    //!
    string read(int n, int(0..1)|void not_all)
    {
-      string s;
-
       if (!len) return "";
       if (n > len) n = len;
 
       if (sizeof(buf)<n && con)
-      {
-	 if (!not_all || !sizeof(buf)) {
-	    string s = con->read(n-sizeof(buf), not_all);
-	    if (s) {
-	       buf += s;
-	    }
-	 }
-      }
+         buf->input_from( con, n-sizeof(buf), not_all);
 
-      s=buf[..n-1];
-      buf=buf[n..];
-      if (len != 0x7fffffff) {
-	len -= sizeof(s);
-      }
+      string s = buf->read(min(n,sizeof(buf)));
+
+      if (len != 0x7fffffff)
+        len -= strlen(s);
+
       return s;
    }
 
@@ -1197,7 +1188,7 @@ object datafile()
 #if constant(thread_create)
    `()();
 #endif
-   return PseudoFile(buf[datapos..], (int)headers["content-length"]);
+   return PseudoFile(buf[datapos..], (int)(headers["content-length"]||0x7ffffff));
 }
 
 protected void destroy()
