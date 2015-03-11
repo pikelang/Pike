@@ -793,7 +793,7 @@ void handle_heartbeat(string(8bit) s)
   int hb_type = hb_msg->read_int(1);
   int hb_len = hb_msg->read_int(2);
 
-  SSL3_DEBUG_MSG("SSL.Connection: Heartbeat %s (%d bytes)",
+  SSL3_DEBUG_MSG("SSL.Connection: Heartbeat %s (%d bytes)\n",
 		 fmt_constant(hb_type, "HEARTBEAT_MESSAGE"), hb_len);
 
   string(8bit) payload;
