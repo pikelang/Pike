@@ -96,10 +96,7 @@ cmod_DEFINE_EVAL(COPY_NODE, TREE_CLASSIFY(_copy_node))
     DOCSTART() @decl void create(array|mapping|void o)
      *! Create a tree_class from o.
     DOCEND()
-    PIKEFUN void create (array|mapping|void o)
-      optflags OPT_TRY_OPTIMIZE;
-    {
-
+    PIKEFUN void create (array|mapping|void o) {
 	if (args == 1) {
 	  switch (TYPEOF(*o)) {
 	    case PIKE_T_MAPPING: {
