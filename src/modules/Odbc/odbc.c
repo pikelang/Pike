@@ -304,6 +304,16 @@ static void f_create(INT32 args)
   } while(0)
 
   GET_ARG(pwd, 3);
+  if (pwd) {
+    add_ref(pwd);
+    pop_n_elems(args-3);
+    /* NB: Potential but very unlikely leak of pwd here
+     *     if "CENSORED" fails to allocate.
+     */
+    push_text("CENSORED");
+    push_string(pwd);	/* Let the stack hold the reference. */
+    args = 5;
+  }
   GET_ARG(user, 2);
   GET_ARG(database, 1);
   GET_ARG(server, 0);
