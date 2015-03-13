@@ -818,17 +818,29 @@ static struct pike_type *lfun_setter_type_string = NULL;
 
 /*! @decl int(0..1) lfun::`==(mixed arg)
  *!
- *!   Equality test callback.
+ *!   Equivalence test callback.
+ *!
+ *! @returns
+ *!   Is expected to return @expr{1@} if the current object is
+ *!   equivalent to @[arg] (ie may be replaced with @[arg], with
+ *!   no semantic differences (disregarding the effects of @[destruct()])),
+ *!   and @expr{0@} (zero) otherwise.
  *!
  *! @note
- *!   If this is implemented it might be necessary to implement
- *!   @[lfun::__hash] too. Otherwise mappings might hold several
+ *!   If this is implemented it may be necessary to implement
+ *!   @[lfun::__hash] too. Otherwise mappings may hold several
  *!   objects as indices which are duplicates according to this
- *!   function. Various other functions that use hashing also might
- *!   not work correctly, e.g. @[predef::Array.uniq].
+ *!   function. This may also affect various other functions
+ *!   that use hashing internally, e.g. @[predef::Array.uniq].
  *!
  *! @note
  *!   It's assumed that this function is side-effect free.
+ *!
+ *! @note
+ *!   It's recommended to only implement this function for
+ *!   immutable objects, as otherwise stuff may get confusing
+ *!   when things that once were equivalent no longer are so,
+ *!   or the reverse.
  *!
  *! @seealso
  *!   @[predef::`==()], @[lfun::__hash]
@@ -1193,8 +1205,16 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *!
  *!   Recursive equality callback.
  *!
+ *! @returns
+ *!   Is expected to return @expr{1@} if the current object is
+ *!   equal to @[arg], and @expr{0@} (zero) otherwise.
+ *!
  *! @note
  *!   It's assumed that this function is side-effect free.
+ *!
+ *! @note
+ *!   Note that this function may return different values at different
+ *!   times for the same argument due to the mutability of the object.
  *!
  *! @seealso
  *!   @[predef::equal()], @[lfun::`==()]
