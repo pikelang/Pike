@@ -21,6 +21,8 @@ DECLARATIONS
 #define KRB_FPRINTF(X)	fprintf X
 #else /* !KRB_DEBUG */
 #define KRB_FPRINTF(X)
+/* Don't complain about us using krb5_get_init_creds_opt_init(). */
+#define KRB5_DEPRECATED_FUNCTION(X)
 #endif /* KRB_DEBUG */
 
 #ifdef HAVE_KRB5
