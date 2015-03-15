@@ -35,6 +35,7 @@ object master()
 protected Mapping.ShadowedMapping compat_all_constants =
   Mapping.ShadowedMapping(predef::all_constants(),
 			  ([
+			    "all_constants" : all_constants,
                             "map" : map,
 			    "master" : master,
 			  ]), 1);
