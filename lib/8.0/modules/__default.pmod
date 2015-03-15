@@ -17,6 +17,15 @@ object master()
 protected Mapping.ShadowedMapping compat_all_constants =
   Mapping.ShadowedMapping(predef::all_constants(),
 			  ([
+#if constant(Debug.HAVE_DEBUG)
+			    "_assembler_debug": Debug.assembler_debug,
+			    "_debug": Debug.debug,
+			    "_dump_program_tables": Debug.dump_program_tables,
+			    "_leak": Debug.leak,
+			    "_optimizer_debug": Debug.optimizer_debug,
+#endif /* Debug.HAVE_DEBUG */
+			    "_map_all_objects": Debug.map_all_objects,
+			    "_refs": Debug.refs,
 			    "master": master,
 			  ]), 1);
 
