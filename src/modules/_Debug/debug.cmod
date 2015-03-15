@@ -1,4 +1,4 @@
-/*
+/* -*- c -*-
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
@@ -52,6 +52,27 @@ PIKEFUN int(0..) map_all_objects(function(object:void) cb)
     }
     RETURN total;
 }
+
+/*! @decl int refs(string|array|mapping|multiset|function|object|program o)
+ *! @belongs Debug
+ *!
+ *!   Return the number of references @[o] has.
+ *!
+ *!   It is mainly meant for debugging the Pike runtime, but can also be
+ *!   used to control memory usage.
+ *!
+ *! @note
+ *!   Note that the number of references will always be at least one since
+ *!   the value is located on the stack when this function is executed.
+ *!
+ *! @seealso
+ *!   @[_next()], @[_prev()]
+ */
+PIKEFUN int refs(string|array|mapping|multiset|function|object|program o)
+{
+  RETURN o->u.refs[0];
+}
+
 
 #ifdef PIKE_DEBUG
 /* This function is for debugging *ONLY*

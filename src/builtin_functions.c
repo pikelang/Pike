@@ -7645,37 +7645,6 @@ PMOD_EXPORT void f__prev(INT32 args)
   }
 }
 
-/*! @decl int _refs(string|array|mapping|multiset|function|object|program o)
- *!
- *!   Return the number of references @[o] has.
- *!
- *!   It is mainly meant for debugging the Pike runtime, but can also be
- *!   used to control memory usage.
- *!
- *! @note
- *!   Note that the number of references will always be at least one since
- *!   the value is located on the stack when this function is executed.
- *!
- *! @seealso
- *!   @[_next()], @[_prev()]
- */
-PMOD_EXPORT void f__refs(INT32 args)
-{
-  INT32 i;
-
-  if(!args)
-    SIMPLE_TOO_FEW_ARGS_ERROR("_refs", 1);
-
-  if(!REFCOUNTED_TYPE(TYPEOF(Pike_sp[-args])))
-    SIMPLE_BAD_ARG_ERROR("refs", 1,
-			 "array|mapping|multiset|object|"
-			 "function|program|string");
-
-  i=Pike_sp[-args].u.refs[0];
-  pop_n_elems(args);
-  push_int(i);
-}
-
 /*! @decl type _typeof(mixed x)
  *!
  *!   Return the runtime type of @[x].
@@ -9397,7 +9366,6 @@ void init_builtin_efuns(void)
 	   tFunc(tPrg(tObj),tArray), OPT_EXTERNAL_DEPEND);
 #endif /* PROFILING */
 
-  ADD_EFUN("_refs",f__refs,tFunc(tRef,tInt),OPT_EXTERNAL_DEPEND);
   ADD_EFUN("_typeof", f__typeof, tFunc(tSetvar(0, tMix), tType(tVar(0))), 0);
 
   /* class __master
