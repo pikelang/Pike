@@ -196,3 +196,11 @@ PIKEFUN int(0..) compiler_trace(int(0..) yyd)
 #endif /* YYDEBUG */
 
 #endif /* PIKE_DEBUG */
+
+PIKE_MODULE_INIT
+{
+  INIT;
+#ifdef PIKE_DEBUG
+  ADD_INT_CONSTANT("HAVE_DEBUG", 1, 0);
+#endif
+}
