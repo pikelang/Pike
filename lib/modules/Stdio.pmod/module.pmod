@@ -1078,6 +1078,23 @@ class File
 
 #endif /* !STDIO_CALLBACK_TEST_MODE */
 
+  private int __read_callback_error()
+  {
+#if constant(System.EWOULDBLOCK)
+    if (errno() == System.EWOULDBLOCK) {
+      // Necessary to reregister since the callback is disabled
+      // until a successful read() has been done.
+      ::set_read_callback(__stdio_read_callback);
+      return 0;
+    }
+#endif
+    ::set_read_callback(0);
+    if (___close_callback) {
+      BE_WERR ("  calling close callback");
+      return ___close_callback(___id||this);
+    }
+  }
+
   // FIXME: No way to specify the maximum to read.
   protected int __stdio_read_callback()
   {
@@ -1101,19 +1118,7 @@ class File
 	  ::set_read_callback(__stdio_read_callback);
 	  return 0;
         case ..-1:
-#if constant(System.EWOULDBLOCK)
-          if (errno() == System.EWOULDBLOCK) {
-            // Necessary to reregister since the callback is disabled
-            // until a successful read() has been done.
-            ::set_read_callback(__stdio_read_callback);
-            return 0;
-          }
-#endif
-          ::set_read_callback(0);
-          if (___close_callback) {
-            BE_WERR ("  calling close callback");
-            return ___close_callback(___id||this);
-          }
+          return __read_callback_error();
         }
       }
       string s;
@@ -1130,29 +1135,13 @@ class File
 	}
 	BE_WERR ("  got eof");
       }
-
-      else {
-#if constant(System.EWOULDBLOCK)
-	if (errno() == System.EWOULDBLOCK) {
-	  // Necessary to reregister since the callback is disabled
-	  // until a successful read() has been done.
-	  ::set_read_callback(__stdio_read_callback);
-	  return 0;
-	}
-#endif
+      else
 	BE_WERR ("  got error " + strerror (errno()) + " from read()");
-      }
     }
     else
       BE_WERR ("  got error " + strerror (errno()) + " from backend");
 
-    ::set_read_callback(0);
-    if (___close_callback) {
-      BE_WERR ("  calling close callback");
-      return ___close_callback(___id||this);
-    }
-
-    return 0;
+    return __read_callback_error();
   }
 
   protected int __stdio_fs_event_callback(int event_mask)
