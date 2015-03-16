@@ -5379,7 +5379,7 @@ class Version
   protected string _sprintf(int t) {
     switch(t) {
     case 's': return sprintf("%d.%d",major,minor);
-    case 'O': return sprintf("%O(%s)", this_program, this);
+    case 'O': return sprintf("%O(%s)", this_program, _sprintf('s'));
     }
   }
 
