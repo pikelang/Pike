@@ -199,7 +199,7 @@ static void udp_bind(INT32 args)
   PIKE_SOCKADDR addr;
   int addr_len;
   int zero=0, one=1;
-  int fd,tmp;
+  int fd, port, tmp;
 #if !defined(SOL_IP) && defined(HAVE_GETPROTOBYNAME)
   static int ip_proto_num = -1;
 #endif /* !SOL_IP && HAVE_GETPROTOBYNAME */
@@ -230,12 +230,12 @@ static void udp_bind(INT32 args)
 
   THIS->inet_flags &= ~PIKE_INET_FLAG_IPV6;
 
+  port = TYPEOF(Pike_sp[-args])==PIKE_T_INT ? Pike_sp[-args].u.integer : -1;
   addr_len = get_inet_addr(&addr, (args > 1 && TYPEOF(Pike_sp[1-args])==PIKE_T_STRING?
 				   Pike_sp[1-args].u.string->str : NULL),
 			   (TYPEOF(Pike_sp[-args]) == PIKE_T_STRING?
 			    Pike_sp[-args].u.string->str : NULL),
-			   (TYPEOF(Pike_sp[-args]) == PIKE_T_INT?
-			    Pike_sp[-args].u.integer : -1),
+                           port,
 			   THIS->inet_flags);
   INVALIDATE_CURRENT_TIME();
 
@@ -314,8 +314,7 @@ static void udp_bind(INT32 args)
   {
     fd_close(fd);
     THIS->my_errno=errno;
-    Pike_error("Stdio.UDP->bind: failed to bind to port %d\n",
-	       (unsigned INT16)Pike_sp[-args].u.integer);
+    Pike_error("Stdio.UDP->bind: failed to bind to port %d\n", port);
     return;
   }
 
