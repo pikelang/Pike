@@ -11,24 +11,21 @@ object|function|program request_program=.Request;
 //! The simplest server possible. Binds a port and calls
 //! a callback with @[request_program] objects.
 
-//! @decl void create(function(.Request:void) callback)
-//! @decl void create(function(.Request:void) callback,@
-//!                   int portno, void|string interface)
-void create(function(.Request:void) _callback,
-            void|int _portno,
-            void|string _interface,
+//!
+void create(function(.Request:void) callback,
+            void|int portno,
+            void|string interface,
             void|int share)
 {
-   portno=_portno;
-   if (!portno) portno=80; // default HTTP port
+  this::portno=portno || 80;
 
-   callback=_callback;
-   interface=_interface;
-   port=Stdio.Port();
-   if (!port->bind(portno,new_connection,interface,share))
-      error("HTTP.Server.Port: failed to bind port %s%d: %s\n",
-	    interface?interface+":":"",
-	    portno,strerror(port->errno()));
+  this::callback=callback;
+  this::interface=interface;
+  port=Stdio.Port();
+  if (!port->bind(portno,new_connection,interface,share))
+    error("HTTP.Server.Port: failed to bind port %s%d: %s\n",
+          interface?interface+":":"",
+          portno,strerror(port->errno()));
 }
 
 //! Closes the HTTP port.
