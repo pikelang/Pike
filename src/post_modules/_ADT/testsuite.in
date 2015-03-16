@@ -1092,14 +1092,14 @@ test_any(_ADT.CircularList l = _ADT.CircularList(10);
 	 array a = ({1,2,3,4});
 	 l->push_front(a);
 	 l->pop_back();
-	 return _refs(a), 2)
+	 return Debug.refs(a), 2)
 
 
 test_any(_ADT.CircularList l = _ADT.CircularList(10);
 	 array a = ({1,2,3,4});
 	 l->push_back(a);
 	 l->pop_front();
-	 return _refs(a), 2)
+	 return Debug.refs(a), 2)
 
 
 test_any(_ADT.CircularList l = _ADT.CircularList(10);
@@ -1115,7 +1115,7 @@ test_any(_ADT.CircularList l = _ADT.CircularList(10);
 	 l->pop_front();
 	 l->pop_back();
 	 l->clear();
-	 return _refs(a), 2)
+	 return Debug.refs(a), 2)
 
 ****************************************************************************
 *                      CircularListIterator                                *

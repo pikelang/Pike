@@ -120,9 +120,9 @@ test_eq(Standards.JSON.decode("0E4"), 0.0)
 // test reference counter.
 // not sure how stable that is among pike versions....
 // It better be, or else we got garbage trouble. /mast
-test_true(_refs(Standards.JSON.decode("\" It says little, does less, means nothing.\"")) == 1)
-test_eq(_refs(Standards.JSON.decode(" { \"asd\" : 45 }  ")), 1)
-test_eq(_refs(Standards.JSON.decode(" [ 45, 34, 3, 4, 5 ] ")), 1)
+test_true(Debug.refs(Standards.JSON.decode("\" It says little, does less, means nothing.\"")) == 1)
+test_eq(Debug.refs(Standards.JSON.decode(" { \"asd\" : 45 }  ")), 1)
+test_eq(Debug.refs(Standards.JSON.decode(" [ 45, 34, 3, 4, 5 ] ")), 1)
 
 // testing if junk at the end breaks
 test_true(-1 != Standards.JSON.validate_utf8("[ 32, 23, 43  , 54   ,45]        uh"))

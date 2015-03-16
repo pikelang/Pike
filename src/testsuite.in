@@ -4353,10 +4353,10 @@ test_do([[{
     // it, so we have to do it the hard way..
     object obj;
   find_trampoline_object: {
-      for (obj = next_object();
+      for (obj = Debug.next_object();
 	   objectp (obj) ||		// It's a normal object.
 	   (intp (obj) && obj);		// It's a bignum object.
-	   obj = next_object (obj))
+	   obj = Debug.next_object (obj))
 	if (obj->`() == trampoline) break find_trampoline_object;
       error ("Trampoline object not found.\n");
     }
@@ -4954,13 +4954,6 @@ test_any([[
     }
   return ret;
 ]],1)
-test_true(_refs(""));
-test_true(_refs(({})));
-test_true(_refs(([])));
-test_true(_refs(this_object()))
-test_true(arrayp( _next(({})) || _prev(({}))))
-test_do(object o=this_object(); while(o=_next(o)))
-test_do(object o=this_object(); while(o=_prev(o)))
 
 test_any([[
   object q=class {}();
@@ -10341,11 +10334,7 @@ return 0;
 // - _disable_threads
 // - _do_call_outs
 // - _exit
-// - _leak
 // - _memory_usage
-// - _next
-// - _prev
-// - _refs
 // - _static_modules
 // - _typeof
 
@@ -11366,15 +11355,6 @@ cond([[all_constants()->mktime]],
 // Tested in foop
 
 // - mv
-
-// - next_object
-test_true(objectp(next_object()) || intp(next_object()) && next_object())
-test_any([[
-  object o=next_object();
-  for(int e=0; e<10000 && (objectp(o) || intp(o) && o); e++)
-    o=next_object(o);
-  return o;
-]], 0)
 
 // - normalize_path
 // Tested in lib

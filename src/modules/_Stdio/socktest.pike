@@ -228,11 +228,11 @@ class Socket2
     got_callback();
     if(sizeof(output_buffer))
     {
-      int prerefs = _refs ("%s");
+      int prerefs = Debug.refs ("%s");
       int tmp=write(({"%s"}), output_buffer);
-      if (_refs ("%s") != prerefs) {
+      if (Debug.refs ("%s") != prerefs) {
 	log_msg ("Format string leak from %d to %d.\n",
-		 prerefs, _refs ("%s"));
+		 prerefs, Debug.refs ("%s"));
 	exit_test (1);
       }
       if(tmp >= 0)
