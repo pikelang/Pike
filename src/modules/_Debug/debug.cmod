@@ -10,7 +10,6 @@
 #include "interpret.h"
 #include "pike_embed.h"
 #include "module_support.h"
-#include "pike_security.h"
 #include "builtin_functions.h"
 #include "mapping.h"
 #include "multiset.h"
@@ -38,7 +37,6 @@ PIKEFUN int(0..) map_all_objects(function(object:void) cb)
 {
     struct object *o = first_object;
     INT32 total = 0;
-    ASSERT_SECURITY_ROOT("map_all_objects");
 
     while( o )
     {

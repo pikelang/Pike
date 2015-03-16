@@ -931,25 +931,18 @@ static INLINE TYPE_FIELD __attribute__((unused)) dmalloc_gc_cycle_check_svalues 
 #endif /* !NO_PIKE_SHORTHAND */
 
 #define PIKE_MEMORY_OBJECT_MEMBERS	\
-  INT32 refs				\
-  DO_IF_SECURITY(; struct object *prot) \
+  INT32 refs                            \
 
-#ifdef PIKE_SECURITY
-#define PIKE_CONSTANT_MEMOBJ_INIT(refs, type) refs, 0
-#else
 #define PIKE_CONSTANT_MEMOBJ_INIT(refs, type) refs
-#endif
 
-#define INIT_PIKE_MEMOBJ(X, TYPE) do {			\
-  struct ref_dummy *v_=(struct ref_dummy *)(X);		\
-  v_->refs=0;						\
-  add_ref(v_); /* For DMALLOC... */			\
-  DO_IF_SECURITY( INITIALIZE_PROT(v_) );		\
+#define INIT_PIKE_MEMOBJ(X, TYPE) do {                  \
+  struct ref_dummy *v_=(struct ref_dummy *)(X);         \
+  v_->refs=0;                                           \
+  add_ref(v_); /* For DMALLOC... */                     \
 }while(0)
 
-#define EXIT_PIKE_MEMOBJ(X) do {		\
-  struct ref_dummy *v_=(struct ref_dummy *)(X);		\
-  DO_IF_SECURITY( FREE_PROT(v_) );		\
+#define EXIT_PIKE_MEMOBJ(X) do {                        \
+  struct ref_dummy *v_=(struct ref_dummy *)(X); 	\
 }while(0)
 
 struct ref_dummy

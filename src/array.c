@@ -19,7 +19,6 @@
 #include "pike_memory.h"
 #include "gc.h"
 #include "main.h"
-#include "pike_security.h"
 #include "stuff.h"
 #include "cyclic.h"
 #include "multiset.h"

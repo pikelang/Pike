@@ -14,7 +14,6 @@
 #include "module_support.h"
 #include "pike_error.h"
 #include "bignum.h"
-#include "pike_security.h"
 
 #include "threads.h"
 #include <stdio.h>
@@ -186,53 +185,6 @@ static void f_read( INT32 args )
     my_fd = 0;
   } else if(TYPEOF(*file) == T_STRING &&
 	    file->u.string->size_shift == 0) {
-#ifdef PIKE_SECURITY
-      if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
-      {
-	if(!CHECK_SECURITY(SECURITY_BIT_CONDITIONAL_IO))
-	  Pike_error("Permission denied.\n");
-	push_text("read");
-	push_int(0);
-	ref_push_string(file->u.string);
-	push_text("r");
-	push_int(00666);
-
-	safe_apply(OBJ2CREDS(CURRENT_CREDS)->user,"valid_open",5);
-	switch(TYPEOF(Pike_sp[-1]))
-	{
-	case PIKE_T_INT:
-	  switch(Pike_sp[-1].u.integer)
-	  {
-	  case 0: /* return 0 */
-	    errno=EPERM;
-	    Pike_error("Failed to open file for reading (errno=%d).\n",
-		       errno);
-
-	  case 2: /* ok */
-	    pop_stack();
-	    break;
-
-	  case 3: /* permission denied */
-	    Pike_error("permission denied.\n");
-
-	  default:
-	    Pike_error("Error in user->valid_open, wrong return value.\n");
-	  }
-	  break;
-
-	default:
-#ifdef PIKE_DEBUG
-	  Pike_error("Error in user->valid_open, wrong return type.\n");
-#endif
-          /* Fallthrough */
-	case PIKE_T_STRING:
-	  /*	  if(Pike_sp[-1].u.string->shift_size) */
-	  /*	    file=Pike_sp[-1]; */
-	  pop_stack();
-	}
-
-      }
-#endif
     do {
       THREADS_ALLOW();
       f=fd_open((char *)STR0(file->u.string), fd_RDONLY, 0);

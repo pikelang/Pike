@@ -45,16 +45,6 @@
       if(!(p->flags & PROGRAM_PASS_1_DONE) || (p->flags & PROGRAM_AVOID_CHECK))
 	PIKE_ERROR("__empty_program() -> function",
 	      "Cannot call functions in unfinished objects.\n", Pike_sp, args);
-	
-
-#ifdef PIKE_SECURITY
-      CHECK_DATA_SECURITY_OR_ERROR(o, SECURITY_BIT_CALL,
-				   ("Function call permission denied.\n"));
-
-      if(!CHECK_DATA_SECURITY(o, SECURITY_BIT_NOT_SETUID))
-	SET_CURRENT_CREDS(o->prot);
-#endif
-
 
 #ifdef PIKE_DEBUG
       if(fun>=(int)p->num_identifier_references)

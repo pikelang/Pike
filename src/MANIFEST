@@ -415,10 +415,6 @@ Core runtime support
   pike_types.h
     Handling of types in pike.
 
-  pike_security.h
-  security.c
-    The pike security system.
-
   signal_handler.c
   signal_handler.h
     Signal and process support.

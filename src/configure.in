@@ -1507,12 +1507,6 @@ MY_AC_ARG_WITH(oob, MY_DESCR([--without-oob],
 MY_AC_ARG_WITH(compiler-trace, MY_DESCR([--with-compiler-trace],
 					[enable tracing of the compiler]),
 	       [AC_DEFINE(YYDEBUG)])
-AC_ARG_WITH(security, MY_DESCR([--with-security],
-			       [enable internal pike security system]),
-	    [AC_MSG_ERROR([Pike security is deprecated. Use --with-deprecated-security to enable.])])
-AC_ARG_WITH(deprecated-security, MY_DESCR([--with-deprecated-security],
-			       [enable internal pike security system]),
-	    [AC_DEFINE(PIKE_SECURITY)])
 dnl Shared nodes has been disabled in an ugly way. To enable it you
 dnl need to remove the line that sets the OPT_NOT_SHARED flag at the
 dnl top of freeze_node in src/las.c. /mast

@@ -37,7 +37,6 @@ struct Pike_interpreter_struct {
   struct thread_state *thread_state;
 #endif
   char *stack_top;
-  DO_IF_SECURITY(struct object *current_creds;)
 
   struct catch_context *catch_ctx;
   LOW_JMP_BUF *catching_eval_jmpbuf;
@@ -92,7 +91,6 @@ struct pike_frame
   struct inherit *context;
   char *current_storage;
 
-  DO_IF_SECURITY(struct object *current_creds;)
 #if defined(PROFILING)
   cpu_time_t children_base;	/** Accounted time when the frame started. */
   cpu_time_t start_time;	/** Adjusted time when thr frame started. */

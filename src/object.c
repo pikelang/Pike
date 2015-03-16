@@ -22,7 +22,6 @@
 #include "cpp.h"
 #include "builtin_functions.h"
 #include "cyclic.h"
-#include "pike_security.h"
 #include "module_support.h"
 #include "fdlib.h"
 #include "mapping.h"

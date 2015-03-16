@@ -28,7 +28,6 @@
 #include "stuff.h"
 #include "mapping.h"
 #include "cyclic.h"
-#include "pike_security.h"
 #include "pike_types.h"
 #include "opcodes.h"
 #include "version.h"
@@ -2996,10 +2995,6 @@ void low_start_new_program(struct program *p,
 
 #ifdef PIKE_DEBUG
   Pike_compiler->fake_object->program_id=p->id;
-#endif
-
-#ifdef PIKE_SECURITY
-  Pike_compiler->fake_object->prot=0;
 #endif
 
   debug_malloc_touch(Pike_compiler->fake_object);

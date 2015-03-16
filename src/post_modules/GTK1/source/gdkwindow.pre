@@ -491,11 +491,7 @@ void set_background(GDK1.Color|GDK1.Pixmap to)
 //! The argument is either a GDK1.Pixmap or a GDK1.Color object.
 {
   struct object *o;
-#if PIKE_SECURITY
-  get_all_args("set_background", args, "%O", &o);
-#else
   get_all_args("set_background", args, "%o", &o);
-#endif
 
 /*   gdk_error_trap_push(); */
   if(!o)

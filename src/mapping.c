@@ -19,7 +19,6 @@
 #include "las.h"
 #include "gc.h"
 #include "stralloc.h"
-#include "pike_security.h"
 #include "block_allocator.h"
 #include "opcodes.h"
 #include "stuff.h"
@@ -62,7 +61,6 @@ void really_free_mapping(struct mapping * m) {
     Pike_fatal("really free mapping on mapping with %d refs.\n", m->refs);
   }
 #endif
-  FREE_PROT(m);
   unlink_mapping_data(m->data);
   DOUBLEUNLINK(first_mapping, m);
   GC_FREE(m);
@@ -257,7 +255,6 @@ PMOD_EXPORT struct mapping *debug_allocate_mapping(int size)
 
   GC_ALLOC(m);
 
-  INITIALIZE_PROT(m);
   init_mapping(m,size,0);
 
   m->refs = 0;

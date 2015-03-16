@@ -65,7 +65,6 @@
 #include "interpret.h"
 #include "operators.h"
 #include "stuff.h"
-#include "pike_security.h"
 #include "fdlib.h"
 
 #define sp Pike_sp
@@ -890,8 +889,6 @@ void f_LogonUser(INT32 args)
   DWORD logontype, logonprovider;
   HANDLE x;
   BOOL ret;
-
-  ASSERT_SECURITY_ROOT("System.LogonUser");
 
   check_all_args("System.LogonUser",args,
 		 BIT_STRING, BIT_INT | BIT_STRING, BIT_STRING,
@@ -3165,7 +3162,6 @@ static void f_SetNamedSecurityInfo(INT32 args)
   DWORD ret;
   SE_OBJECT_TYPE type=SE_FILE_OBJECT;
 
-  ASSERT_SECURITY_ROOT("SetNamedSecurity");
   get_all_args("SetNamedSecurityInfo",args,"%s%m",&name,&m);
 
   if((sval=low_mapping_string_lookup(m, literal_type_string)))

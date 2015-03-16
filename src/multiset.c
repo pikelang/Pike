@@ -20,7 +20,6 @@
 #include "opcodes.h"
 #include "pike_error.h"
 #include "rbtree_low.h"
-#include "pike_security.h"
 #include "svalue.h"
 
 #ifdef TEST_MULTISET
@@ -235,7 +234,6 @@ void free_multiset_data (struct multiset_data *msd);
 
 #define INIT_MULTISET(L) do {						\
     GC_ALLOC (L);							\
-    INITIALIZE_PROT (L);						\
     L->refs = 0;							\
     add_ref(L);	/* For DMALLOC... */					\
     L->node_refs = 0;							\
@@ -245,7 +243,6 @@ void free_multiset_data (struct multiset_data *msd);
 static struct block_allocator multiset_allocator = BA_INIT_PAGES(sizeof(struct multiset), 2);
 
 PMOD_EXPORT void really_free_multiset (struct multiset *l) {
-    FREE_PROT (l);
 #ifdef PIKE_DEBUG
     if (l->refs) {
 # if DEBUG_MALLOC

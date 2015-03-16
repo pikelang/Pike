@@ -67,9 +67,6 @@
 /* With this, dmalloc will report leaks made by malloc(3) calls */
 #undef REPORT_ENCAPSULATED_MALLOC
 
-/* Define this to enable the internal Pike security system */
-#undef PIKE_SECURITY
-
 /* Define this to simulate dynamic module loading with static modules. */
 #undef USE_SEMIDYNAMIC_MODULES
 

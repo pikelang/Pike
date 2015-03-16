@@ -29,7 +29,6 @@
 #include "bignum.h"
 #include "builtin_functions.h"
 #include "cyclic.h"
-#include "pike_security.h"
 #include "pike_compiler.h"
 
 #define sp Pike_sp
@@ -59,12 +58,6 @@
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
-#ifdef PIKE_SECURITY
-  if(TYPEOF(*what) <= MAX_COMPLEX)
-    if(!CHECK_DATA_SECURITY(what->u.array, SECURITY_BIT_INDEX))
-      Pike_error("Index permission denied.\n");
-#endif
-
   switch(TYPEOF(*what))
   {
   case T_ARRAY:

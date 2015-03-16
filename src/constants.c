@@ -14,7 +14,6 @@
 #include "interpret.h"
 #include "mapping.h"
 #include "pike_error.h"
-#include "pike_security.h"
 #include "gc.h"
 #include "block_allocator.h"
 
