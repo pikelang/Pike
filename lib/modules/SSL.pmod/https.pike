@@ -218,7 +218,7 @@ int main()
   port = SSL.Port(ctx);
 
   werror("Starting\n");
-  if (!port->bind(PORT, my_accept_callback, "::"))
+  if (!port->bind(PORT, my_accept_callback, Netutils.ANY))
     exit(1, "Failed to bind port %d.\n", PORT);
 
   werror("Listening on port %d.\n", PORT);
