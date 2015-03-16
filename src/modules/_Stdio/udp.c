@@ -198,7 +198,7 @@ static void udp_bind(INT32 args)
 {
   PIKE_SOCKADDR addr;
   int addr_len;
-  int o;
+  int optval;
   int fd,tmp;
 #if !defined(SOL_IP) && defined(HAVE_GETPROTOBYNAME)
   static int ip_proto_num = -1;
@@ -257,13 +257,13 @@ static void udp_bind(INT32 args)
   /* Make sure this fd gets closed on exec. */
   set_close_on_exec(fd, 1);
 
-  o=1;
   /* linux kernel commit f24d43c07e208372aa3d3bff419afbf43ba87698 introduces
    * a behaviour change where you can get used random ports if bound with
    * SO_REUSEADDR. */
+  optval=1;
   if(addr.ipv4.sin_port && (args > 2 ? !Pike_sp[2-args].u.integer : 1)
      && fd_setsockopt(fd, SOL_SOCKET,SO_REUSEADDR,
-		      (char *)&o, sizeof(int)) < 0)
+		      (char *)&optval, sizeof(int)) < 0)
   {
     fd_close(fd);
     THIS->my_errno=errno;
@@ -275,8 +275,8 @@ static void udp_bind(INT32 args)
     /* Attempt to enable dual-stack (ie mapped IPv4 adresses). Needed on WIN32.
      * cf http://msdn.microsoft.com/en-us/library/windows/desktop/bb513665(v=vs.85).aspx
      */
-    o = 0;
-    fd_setsockopt(fd, IPPROTO_IPV6, IPV6_V6ONLY, (char *)&o, sizeof(int));
+    optval = 0;
+    fd_setsockopt(fd, IPPROTO_IPV6, IPV6_V6ONLY, (char *)&optval, sizeof(int));
   }
 #endif
 
@@ -301,10 +301,12 @@ static void udp_bind(INT32 args)
 #ifdef IP_HDRINCL
   /*  From mtr-0.28:net.c: FreeBSD wants this to avoid sending
       out packets with protocol type RAW to the network. */
-
   if (THIS->type==SOCK_RAW && THIS->protocol==255 /* raw */)
-     if(fd_setsockopt(fd, SOL_IP, IP_HDRINCL, (char *)&o, sizeof(int)))
+  {
+    optval = 1;
+     if(fd_setsockopt(fd, SOL_IP, IP_HDRINCL, (char *)&optval, sizeof(int)))
 	Pike_error("Stdio.UDP->bind: setsockopt IP_HDRINCL failed\n");
+  }
 #endif /* IP_HDRINCL */
 
   THREADS_ALLOW_UID();
