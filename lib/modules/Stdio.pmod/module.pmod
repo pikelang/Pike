@@ -1093,12 +1093,27 @@ class File
     if (!errno()) {
       if( inbuffer )
       {
-        if( inbuffer->input_from( this,UNDEFINED,1 ) )
-          return ___read_callback( ___id||this, inbuffer );
-        else
+        switch( inbuffer->input_from( this,UNDEFINED,1 ) )
         {
+        case 1..:
+          return ___read_callback( ___id||this, inbuffer );
+        case 0:
 	  ::set_read_callback(__stdio_read_callback);
 	  return 0;
+        case ..-1:
+#if constant(System.EWOULDBLOCK)
+          if (errno() == System.EWOULDBLOCK) {
+            // Necessary to reregister since the callback is disabled
+            // until a successful read() has been done.
+            ::set_read_callback(__stdio_read_callback);
+            return 0;
+          }
+#endif
+          ::set_read_callback(0);
+          if (___close_callback) {
+            BE_WERR ("  calling close callback");
+            return ___close_callback(___id||this);
+          }
         }
       }
       string s;
@@ -1130,7 +1145,6 @@ class File
     }
     else
       BE_WERR ("  got error " + strerror (errno()) + " from backend");
-
 
     ::set_read_callback(0);
     if (___close_callback) {
@@ -1206,6 +1220,7 @@ class File
         {
           outbuffer->__fd_set_output( 0 );
           res = ___write_callback(___id||this,outbuffer);
+          if( !this ) return res;
           if( sizeof( outbuffer ) )
             outbuffer->output_to( this );
           outbuffer->__fd_set_output( ::write );
