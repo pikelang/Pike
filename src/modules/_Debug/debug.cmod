@@ -123,16 +123,22 @@ PIKEFUN object next_object(void|object o)
  *! @seealso
  *!   @[next_object()], @[prev()]
  */
-static void f__next(INT32 args)
+PIKEFUN mixed next(mixed x)
+rawtype tOr6(tFunc(tStr,tStr),
+             tFunc(tObj,tObj),
+             tFunc(tMapping,tMapping),
+             tFunc(tMultiset,tMultiset),
+             tFunc(tPrg(tObj),tPrg(tObj)),
+             tFunc(tArray,tArray));
 {
-  struct svalue tmp;
-
-  pop_n_elems(args-1);
-  args = 1;
-  tmp=Pike_sp[-1];
+  struct svalue tmp = *x;
   switch(TYPEOF(tmp))
   {
-  case T_OBJECT:  tmp.u.object=tmp.u.object->next; break;
+  case T_OBJECT:
+    tmp.u.object=tmp.u.object->next;
+    while(tmp.u.object && !tmp.u.object->prog)
+      tmp.u.object=tmp.u.object->next;
+    break;
   case T_ARRAY:   tmp.u.array=tmp.u.array->next; break;
   case T_MAPPING: tmp.u.mapping=tmp.u.mapping->next; break;
   case T_MULTISET:tmp.u.multiset=tmp.u.multiset->next; break;
@@ -142,24 +148,14 @@ static void f__next(INT32 args)
     SIMPLE_BAD_ARG_ERROR("next", 1,
 			 "object|array|mapping|multiset|program|string");
   }
+
   if(tmp.u.refs)
+    assign_svalue(Pike_sp-1, &tmp);
+  else
   {
-    assign_svalue(Pike_sp-1,&tmp);
-  }else{
     pop_stack();
     push_int(0);
   }
-}
-
-PIKEFUN mixed next(mixed x)
-rawtype tOr6(tFunc(tStr,tStr),
-             tFunc(tObj,tObj),
-             tFunc(tMapping,tMapping),
-             tFunc(tMultiset,tMultiset),
-             tFunc(tPrg(tObj),tPrg(tObj)),
-             tFunc(tArray,tArray));
-{
-  f__next(1);
 }
 
 /*! @decl mixed prev(mixed x)
@@ -177,16 +173,21 @@ rawtype tOr6(tFunc(tStr,tStr),
  *! @seealso
  *!   @[next_object()], @[next()]
  */
-static void f__prev(INT32 args)
+PIKEFUN mixed prev(mixed x)
+rawtype tOr5(tFunc(tObj,tObj),
+             tFunc(tMapping,tMapping),
+             tFunc(tMultiset,tMultiset),
+             tFunc(tPrg(tObj),tPrg(tObj)),
+             tFunc(tArray,tArray));
 {
-  struct svalue tmp;
-
-  pop_n_elems(args-1);
-  args = 1;
-  tmp=Pike_sp[-1];
+  struct svalue tmp = *x;
   switch(TYPEOF(tmp))
   {
-  case T_OBJECT:  tmp.u.object=tmp.u.object->prev; break;
+  case T_OBJECT:
+    tmp.u.object=tmp.u.object->prev;
+    while(tmp.u.object && !tmp.u.object->prog)
+      tmp.u.object=tmp.u.object->prev;
+    break;
   case T_ARRAY:   tmp.u.array=tmp.u.array->prev; break;
   case T_MAPPING: tmp.u.mapping=tmp.u.mapping->prev; break;
   case T_MULTISET:tmp.u.multiset=tmp.u.multiset->prev; break;
@@ -195,22 +196,12 @@ static void f__prev(INT32 args)
     SIMPLE_BAD_ARG_ERROR("prev", 1, "object|array|mapping|multiset|program");
   }
   if(tmp.u.refs)
+    assign_svalue(Pike_sp-1, &tmp);
+  else
   {
-    assign_svalue(Pike_sp-1,&tmp);
-  }else{
     pop_stack();
     push_int(0);
   }
-}
-
-PIKEFUN mixed prev(mixed x)
-rawtype tOr5(tFunc(tObj,tObj),
-             tFunc(tMapping,tMapping),
-             tFunc(tMultiset,tMultiset),
-             tFunc(tPrg(tObj),tPrg(tObj)),
-             tFunc(tArray,tArray));
-{
-  f__prev(1);
 }
 
 #ifdef PIKE_DEBUG
