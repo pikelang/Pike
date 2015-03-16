@@ -333,7 +333,8 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	COND_FATAL(((client_version & ~0xff) != PROTOCOL_SSL_3_0) ||
                    (client_version < context->min_version),
                    ALERT_protocol_version,
-                   "Unsupported version.\n");
+                   sprintf("Unsupported version %s.\n",
+                           fmt_version(client_version)));
 
 	if (client_version > version) {
 	  SSL3_DEBUG_MSG("Falling back client from %s to %s.\n",
