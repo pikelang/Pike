@@ -278,7 +278,6 @@ class BufferSocket {
     }
   }
 
-  int empty;
   void read_callback(mixed id, Stdio.Buffer in)
   {
     got_callback();
