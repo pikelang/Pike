@@ -4957,11 +4957,11 @@ test_any([[
 
 test_any([[
   object q=class {}();
-  object o=_next(this_object());
-  while(zero_type(o)) o=_next(o);  /* skip destructed */
+  object o=Debug.next(this_object());
+  while(zero_type(o)) o=Debug.next(o);  /* skip destructed */
   catch { if(objectp(o) || object_program(o)) return 1;  };
-  o=_prev(this_object());
-  while(zero_type(o)) o=_prev(o); /* skip destructed */
+  o=Debug.prev(this_object());
+  while(zero_type(o)) o=Debug.prev(o); /* skip destructed */
   catch { if(objectp(o) || object_program(o)) return 1;  };
   return 0;  
 ]],1)
@@ -7222,15 +7222,15 @@ test_eq(5000000000000000000 * 10, 50000000000000000000)
 // Numbers that shouldn't be native integers. Has to resort to
 // strange methods to test this since bignums behave like native
 // integers in almost every way.
-test_do([[ _next ((mixed) Int.NATIVE_MAX + 1) ]])
-test_do([[ _next ((mixed) Int.NATIVE_MIN - 1) ]])
+test_do([[ Debug.next ((mixed) Int.NATIVE_MAX + 1) ]])
+test_do([[ Debug.next ((mixed) Int.NATIVE_MIN - 1) ]])
 
 // These numbers should be native integers.
-test_eval_error([[ _next ((mixed) -0x80000000) ]])
-test_eval_error([[ _next ((mixed) -0x7fffffff) ]])
-test_eval_error([[ _next ((mixed) 0x7fffffff) ]])
-test_eval_error([[ _next ((mixed) Int.NATIVE_MAX) ]])
-test_eval_error([[ _next ((mixed) Int.NATIVE_MIN) ]])
+test_eval_error([[ Debug.next ((mixed) -0x80000000) ]])
+test_eval_error([[ Debug.next ((mixed) -0x7fffffff) ]])
+test_eval_error([[ Debug.next ((mixed) 0x7fffffff) ]])
+test_eval_error([[ Debug.next ((mixed) Int.NATIVE_MAX) ]])
+test_eval_error([[ Debug.next ((mixed) Int.NATIVE_MIN) ]])
 
 // Test incrementations (FIXME: More cases?).
 test_eq("2147483648",
@@ -7459,10 +7459,10 @@ test_eq(-0x12345678012, [[ decode_value(encode_value(-0x12345678012)) ]])
 test_eq(-0x123456780123, [[ decode_value(encode_value(-0x123456780123)) ]])
 test_eq(-0x1234567801234, [[ decode_value(encode_value(-0x1234567801234))]])
 
-test_eval_error([[ _next ((mixed) decode_value (encode_value (Int.NATIVE_MAX))) ]])
-test_eval_error([[ _next ((mixed) decode_value (encode_value (Int.NATIVE_MIN))) ]])
-test_do([[ _next ((mixed) decode_value (encode_value (Int.NATIVE_MAX + 1))) ]])
-test_do([[ _next ((mixed) decode_value (encode_value (Int.NATIVE_MIN - 1))) ]])
+test_eval_error([[ Debug.next ((mixed) decode_value (encode_value (Int.NATIVE_MAX))) ]])
+test_eval_error([[ Debug.next ((mixed) decode_value (encode_value (Int.NATIVE_MIN))) ]])
+test_do([[ Debug.next ((mixed) decode_value (encode_value (Int.NATIVE_MAX + 1))) ]])
+test_do([[ Debug.next ((mixed) decode_value (encode_value (Int.NATIVE_MIN - 1))) ]])
 test_eq(2147483648, -2147483648/-1)
 test_eq(2147483648, -2147483648*-1)
 
