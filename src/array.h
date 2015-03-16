@@ -22,7 +22,7 @@
  */
 struct array
 {
-  PIKE_MEMORY_OBJECT_MEMBERS;
+  INT32 refs;
 
   struct array *next;	/**< we need to keep track of all arrays */
   struct array *prev;	/**< Another pointer, so we don't have to search

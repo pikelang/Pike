@@ -930,9 +930,6 @@ static INLINE TYPE_FIELD __attribute__((unused)) dmalloc_gc_cycle_check_svalues 
 
 #endif /* !NO_PIKE_SHORTHAND */
 
-#define PIKE_MEMORY_OBJECT_MEMBERS	\
-  INT32 refs                            \
-
 #define PIKE_CONSTANT_MEMOBJ_INIT(refs, type) refs
 
 #define INIT_PIKE_MEMOBJ(X, TYPE) do {                  \
@@ -947,7 +944,7 @@ static INLINE TYPE_FIELD __attribute__((unused)) dmalloc_gc_cycle_check_svalues 
 
 struct ref_dummy
 {
-  PIKE_MEMORY_OBJECT_MEMBERS;
+  INT32 refs;
 };
 
 /* The following macro is useful to initialize static svalues. Note

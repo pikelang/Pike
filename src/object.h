@@ -18,7 +18,7 @@
 #endif
 struct object
 {
-  PIKE_MEMORY_OBJECT_MEMBERS; /* Must be first */
+  INT32 refs;
   size_t flags;
   struct program *prog;
   struct object *next;
