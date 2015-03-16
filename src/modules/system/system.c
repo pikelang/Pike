@@ -2093,7 +2093,7 @@ int get_inet_addr(PIKE_SOCKADDR *addr,char *name,char *service, INT_TYPE port,
       Pike_error("Invalid service\n");
     }
 #endif
-  } else if(port >= 0) {
+  } else if(port > 0) {
 /*     fprintf(stderr, "get_inet_addr(): port()\n"); */
 #ifdef AF_INET6
     if (SOCKADDR_FAMILY(*addr) == AF_INET6) {
