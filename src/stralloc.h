@@ -378,7 +378,7 @@ PMOD_EXPORT void visit_string (struct pike_string *s, int action, void *extra);
 void gc_mark_string_as_referenced (struct pike_string *s);
 unsigned gc_touch_all_strings(void);
 void gc_mark_all_strings(void);
-struct pike_string *next_pike_string (const struct pike_string *s);
+PMOD_EXPORT struct pike_string *next_pike_string (const struct pike_string *s);
 PMOD_EXPORT void init_string_builder(struct string_builder *s, int mag);
 PMOD_EXPORT void init_string_builder_alloc(struct string_builder *s, ptrdiff_t length, int mag);
 PMOD_EXPORT void init_string_builder_copy(struct string_builder *to,

@@ -3733,50 +3733,6 @@ PMOD_EXPORT void f_types(INT32 args)
   push_array(a);
 }
 
-/*! @decl object next_object(object o)
- *! @decl object next_object()
- *!
- *!   Returns the next object from the list of all objects.
- *!
- *!   All objects are stored in a linked list.
- *!
- *! @returns
- *!   If no arguments have been given @[next_object()] will return the first
- *!   object from the list.
- *!
- *!   If @[o] has been specified the object after @[o] on the list will be
- *!   returned.
- *!
- *! @note
- *!   This function is not recomended to use.
- *!
- *! @seealso
- *!   @[destruct()]
- */
-PMOD_EXPORT void f_next_object(INT32 args)
-{
-  struct object *o;
-
-  ASSERT_SECURITY_ROOT("next_object");
-
-  if(args < 1)
-  {
-    o = first_object;
-  }else{
-    if(TYPEOF(Pike_sp[-args]) != T_OBJECT)
-      SIMPLE_BAD_ARG_ERROR("next_object", 1, "object");
-    o = Pike_sp[-args].u.object->next;
-  }
-  while(o && !o->prog) o=o->next;
-  pop_n_elems(args);
-  if(!o)
-  {
-    push_int(0);
-  }else{
-    ref_push_object(o);
-  }
-}
-
 /*! @decl program|function object_program(mixed o)
  *!
  *!   Return the program from which @[o] was instantiated. If the
@@ -7553,98 +7509,6 @@ static void f__size_object( INT32 UNUSED(args) )
     push_int(sum);
 }
 
-
-/*! @decl mixed _next(mixed x)
- *!
- *!   Find the next object/array/mapping/multiset/program or string.
- *!
- *!   All objects, arrays, mappings, multisets, programs and strings are
- *!   stored in linked lists inside Pike. This function returns the next
- *!   item on the corresponding list. It is mainly meant for debugging
- *!   the Pike runtime, but can also be used to control memory usage.
- *!
- *! @seealso
- *!   @[next_object()], @[_prev()]
- */
-PMOD_EXPORT void f__next(INT32 args)
-{
-  struct svalue tmp;
-
-  ASSERT_SECURITY_ROOT("_next");
-
-  if(!args)
-    SIMPLE_TOO_FEW_ARGS_ERROR("_next", 1);
-  
-  pop_n_elems(args-1);
-  args = 1;
-  tmp=Pike_sp[-1];
-  switch(TYPEOF(tmp))
-  {
-  case T_OBJECT:  tmp.u.object=tmp.u.object->next; break;
-  case T_ARRAY:   tmp.u.array=tmp.u.array->next; break;
-  case T_MAPPING: tmp.u.mapping=tmp.u.mapping->next; break;
-  case T_MULTISET:tmp.u.multiset=tmp.u.multiset->next; break;
-  case T_PROGRAM: tmp.u.program=tmp.u.program->next; break;
-  case T_STRING:  tmp.u.string=next_pike_string(tmp.u.string); break;
-  default:
-    SIMPLE_BAD_ARG_ERROR("_next", 1,
-			 "object|array|mapping|multiset|program|string");
-  }
-  if(tmp.u.refs)
-  {
-    assign_svalue(Pike_sp-1,&tmp);
-  }else{
-    pop_stack();
-    push_int(0);
-  }
-}
-
-/*! @decl mixed _prev(mixed x)
- *!
- *!   Find the previous object/array/mapping/multiset or program.
- *!
- *!   All objects, arrays, mappings, multisets and programs are
- *!   stored in linked lists inside Pike. This function returns the previous
- *!   item on the corresponding list. It is mainly meant for debugging
- *!   the Pike runtime, but can also be used to control memory usage.
- *!
- *! @note
- *!   Unlike @[_next()] this function does not work on strings.
- *!
- *! @seealso
- *!   @[next_object()], @[_next()]
- */
-PMOD_EXPORT void f__prev(INT32 args)
-{
-  struct svalue tmp;
-
-  ASSERT_SECURITY_ROOT("_prev");
-
-  if(!args)
-    SIMPLE_TOO_FEW_ARGS_ERROR("_prev", 1);
-  
-  pop_n_elems(args-1);
-  args = 1;
-  tmp=Pike_sp[-1];
-  switch(TYPEOF(tmp))
-  {
-  case T_OBJECT:  tmp.u.object=tmp.u.object->prev; break;
-  case T_ARRAY:   tmp.u.array=tmp.u.array->prev; break;
-  case T_MAPPING: tmp.u.mapping=tmp.u.mapping->prev; break;
-  case T_MULTISET:tmp.u.multiset=tmp.u.multiset->prev; break;
-  case T_PROGRAM: tmp.u.program=tmp.u.program->prev; break;
-  default:
-    SIMPLE_BAD_ARG_ERROR("_prev", 1, "object|array|mapping|multiset|program");
-  }
-  if(tmp.u.refs)
-  {
-    assign_svalue(Pike_sp-1,&tmp);
-  }else{
-    pop_stack();
-    push_int(0);
-  }
-}
-
 /*! @decl type _typeof(mixed x)
  *!
  *!   Return the runtime type of @[x].
@@ -9543,27 +9407,6 @@ void init_builtin_efuns(void)
   ADD_INT_CONSTANT("PIKE_WEAK_INDICES", PIKE_WEAK_INDICES, 0);
   ADD_INT_CONSTANT("PIKE_WEAK_VALUES", PIKE_WEAK_VALUES, 0);
 
-/* function(void|object:object) */
-  ADD_EFUN("next_object",f_next_object,
-	   tFunc(tOr(tVoid,tObj),tObj),OPT_EXTERNAL_DEPEND);
-
-/* function(string:string)|function(object:object)|function(mapping:mapping)|function(multiset:multiset)|function(program:program)|function(array:array) */
-  ADD_EFUN("_next",f__next,
-	   tOr6(tFunc(tStr,tStr),
-		tFunc(tObj,tObj),
-		tFunc(tMapping,tMapping),
-		tFunc(tMultiset,tMultiset),
-		tFunc(tPrg(tObj),tPrg(tObj)),
-		tFunc(tArray,tArray)),OPT_EXTERNAL_DEPEND);
-  
-/* function(object:object)|function(mapping:mapping)|function(multiset:multiset)|function(program:program)|function(array:array) */
-  ADD_EFUN("_prev",f__prev,
-	   tOr5(tFunc(tObj,tObj),
-		tFunc(tMapping,tMapping),
-		tFunc(tMultiset,tMultiset),
-		tFunc(tPrg(tObj),tPrg(tObj)),
-		tFunc(tArray,tArray)),OPT_EXTERNAL_DEPEND);
-  
   /* function(mixed:program|function) */
   ADD_EFUN2("object_program", f_object_program,
 	    tFunc(tMix, tOr(tPrg(tObj),tFunction)),

@@ -26,6 +26,9 @@ protected Mapping.ShadowedMapping compat_all_constants =
 #endif /* Debug.HAVE_DEBUG */
 			    "_map_all_objects": Debug.map_all_objects,
 			    "_refs": Debug.refs,
+                            "_next": Debug.next,
+                            "_prev": Debug.prev,
+                            "next_object": Debug.next_object,
 			    "all_constants": all_constants,
 			    "master": master,
 			  ]), 1);

@@ -2222,7 +2222,7 @@ void gc_mark_all_strings(void)
 }
 #endif
 
-struct pike_string *next_pike_string (const struct pike_string *s)
+PMOD_EXPORT struct pike_string *next_pike_string (const struct pike_string *s)
 {
   struct pike_string *next = s->next;
   if (!next) {

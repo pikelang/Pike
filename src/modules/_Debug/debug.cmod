@@ -12,6 +12,8 @@
 #include "module_support.h"
 #include "pike_security.h"
 #include "builtin_functions.h"
+#include "mapping.h"
+#include "multiset.h"
 
 DECLARATIONS
 
@@ -66,13 +68,150 @@ PIKEFUN int(0..) map_all_objects(function(object:void) cb)
  *!   the value is located on the stack when this function is executed.
  *!
  *! @seealso
- *!   @[_next()], @[_prev()]
+ *!   @[next()], @[prev()]
  */
 PIKEFUN int refs(string|array|mapping|multiset|function|object|program o)
 {
   RETURN o->u.refs[0];
 }
 
+/*! @decl object next_object(object o)
+ *! @decl object next_object()
+ *!
+ *!   Returns the next object from the list of all objects.
+ *!
+ *!   All objects are stored in a linked list.
+ *!
+ *! @returns
+ *!   If no arguments have been given @[next_object()] will return the first
+ *!   object from the list.
+ *!
+ *!   If @[o] has been specified the object after @[o] on the list will be
+ *!   returned.
+ *!
+ *! @note
+ *!   This function is not recomended to use.
+ *!
+ *! @seealso
+ *!   @[destruct()]
+ */
+PIKEFUN object next_object(void|object o)
+{
+  if (!o)
+    o = first_object;
+  else
+    o = Pike_sp[-args].u.object->next;
+
+  while(o && !o->prog) o=o->next;
+
+  pop_n_elems(args);
+  if(o)
+    ref_push_object(o);
+  else
+    push_int(0);
+}
+
+/*! @decl mixed next(mixed x)
+ *!
+ *!   Find the next object/array/mapping/multiset/program or string.
+ *!
+ *!   All objects, arrays, mappings, multisets, programs and strings are
+ *!   stored in linked lists inside Pike. This function returns the next
+ *!   item on the corresponding list. It is mainly meant for debugging
+ *!   the Pike runtime, but can also be used to control memory usage.
+ *!
+ *! @seealso
+ *!   @[next_object()], @[prev()]
+ */
+static void f__next(INT32 args)
+{
+  struct svalue tmp;
+
+  pop_n_elems(args-1);
+  args = 1;
+  tmp=Pike_sp[-1];
+  switch(TYPEOF(tmp))
+  {
+  case T_OBJECT:  tmp.u.object=tmp.u.object->next; break;
+  case T_ARRAY:   tmp.u.array=tmp.u.array->next; break;
+  case T_MAPPING: tmp.u.mapping=tmp.u.mapping->next; break;
+  case T_MULTISET:tmp.u.multiset=tmp.u.multiset->next; break;
+  case T_PROGRAM: tmp.u.program=tmp.u.program->next; break;
+  case T_STRING:  tmp.u.string=next_pike_string(tmp.u.string); break;
+  default:
+    SIMPLE_BAD_ARG_ERROR("next", 1,
+			 "object|array|mapping|multiset|program|string");
+  }
+  if(tmp.u.refs)
+  {
+    assign_svalue(Pike_sp-1,&tmp);
+  }else{
+    pop_stack();
+    push_int(0);
+  }
+}
+
+PIKEFUN mixed next(mixed x)
+rawtype tOr6(tFunc(tStr,tStr),
+             tFunc(tObj,tObj),
+             tFunc(tMapping,tMapping),
+             tFunc(tMultiset,tMultiset),
+             tFunc(tPrg(tObj),tPrg(tObj)),
+             tFunc(tArray,tArray));
+{
+  f__next(1);
+}
+
+/*! @decl mixed prev(mixed x)
+ *!
+ *!   Find the previous object/array/mapping/multiset or program.
+ *!
+ *!   All objects, arrays, mappings, multisets and programs are
+ *!   stored in linked lists inside Pike. This function returns the previous
+ *!   item on the corresponding list. It is mainly meant for debugging
+ *!   the Pike runtime, but can also be used to control memory usage.
+ *!
+ *! @note
+ *!   Unlike @[next()] this function does not work on strings.
+ *!
+ *! @seealso
+ *!   @[next_object()], @[next()]
+ */
+static void f__prev(INT32 args)
+{
+  struct svalue tmp;
+
+  pop_n_elems(args-1);
+  args = 1;
+  tmp=Pike_sp[-1];
+  switch(TYPEOF(tmp))
+  {
+  case T_OBJECT:  tmp.u.object=tmp.u.object->prev; break;
+  case T_ARRAY:   tmp.u.array=tmp.u.array->prev; break;
+  case T_MAPPING: tmp.u.mapping=tmp.u.mapping->prev; break;
+  case T_MULTISET:tmp.u.multiset=tmp.u.multiset->prev; break;
+  case T_PROGRAM: tmp.u.program=tmp.u.program->prev; break;
+  default:
+    SIMPLE_BAD_ARG_ERROR("prev", 1, "object|array|mapping|multiset|program");
+  }
+  if(tmp.u.refs)
+  {
+    assign_svalue(Pike_sp-1,&tmp);
+  }else{
+    pop_stack();
+    push_int(0);
+  }
+}
+
+PIKEFUN mixed prev(mixed x)
+rawtype tOr5(tFunc(tObj,tObj),
+             tFunc(tMapping,tMapping),
+             tFunc(tMultiset,tMultiset),
+             tFunc(tPrg(tObj),tPrg(tObj)),
+             tFunc(tArray,tArray));
+{
+  f__prev(1);
+}
 
 #ifdef PIKE_DEBUG
 /* This function is for debugging *ONLY*

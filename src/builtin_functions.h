@@ -84,7 +84,6 @@ PMOD_EXPORT void f_destruct(INT32 args);
 PMOD_EXPORT void f_indices(INT32 args);
 PMOD_EXPORT void f_values(INT32 args);
 PMOD_EXPORT void f_types(INT32 args);
-PMOD_EXPORT void f_next_object(INT32 args);
 PMOD_EXPORT void f_object_program(INT32 args);
 int find_longest_prefix(char *str,
 			ptrdiff_t len,
@@ -118,10 +117,6 @@ TYPEP(f_floatp, "floatp", PIKE_T_FLOAT)
 PMOD_EXPORT void f_sort(INT32 args);
 PMOD_EXPORT void f_rows(INT32 args);
 PMOD_EXPORT void f__verify_internals(INT32 args);
-PMOD_EXPORT void f__debug(INT32 args);
-PMOD_EXPORT void f__optimizer_debug(INT32 args);
-PMOD_EXPORT void f__assembler_debug(INT32 args);
-PMOD_EXPORT void f__compiler_trace(INT32 args);
 PMOD_EXPORT void f_gmtime(INT32 args);
 PMOD_EXPORT void f_localtime(INT32 args);
 PMOD_EXPORT void f_mktime (INT32 args);
@@ -138,10 +133,6 @@ struct callback *add_memory_usage_callback(callback_func call,
 					  void *arg,
 					  callback_func free_func);
 PMOD_EXPORT void f__memory_usage(INT32 args);
-PMOD_EXPORT void f__next(INT32 args);
-PMOD_EXPORT void f__prev(INT32 args);
-PMOD_EXPORT void f__refs(INT32 args);
-PMOD_EXPORT void f__leak(INT32 args);
 PMOD_EXPORT void f__typeof(INT32 args);
 PMOD_EXPORT void f_replace_master(INT32 args);
 PMOD_EXPORT void f_master(INT32 args);
