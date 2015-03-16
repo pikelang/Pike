@@ -56,6 +56,7 @@ struct local_variable
   unsigned int flags;
 };
 
+/* Keeps track of local variables and similar for the current function. */
 struct compiler_frame
 {
   struct compiler_frame *previous;
