@@ -186,6 +186,8 @@ class Socket {
   {
     got_callback();
     DEBUG_WERR("read_callback[%O]: Got %O\n", query_fd(), foo);
+    if( !sizeof(foo) )
+      fd_fail("Got empty read callback.\n");
     input_buffer+=foo;
   }
 
@@ -276,10 +278,13 @@ class BufferSocket {
     }
   }
 
+  int empty;
   void read_callback(mixed id, Stdio.Buffer in)
   {
     got_callback();
     DEBUG_WERR("read_callback[%O]: Got %O\n", query_fd(), in);
+    if( !sizeof(in) )
+      fd_fail("Got empty read callback.\n");
     input_buffer+=in->read();
   }
 
