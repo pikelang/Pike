@@ -6,9 +6,14 @@ constant gc_status = _gc_status;
 constant describe_program = _describe_program;
 constant size_object = _size_object;
 constant map_all_objects = _map_all_objects;
+constant refs = _refs;
+constant next = _next;
+constant prev = _prev;
+constant next_object = predef::next_object;
 
 #if constant(_debug)
 // These functions require --with-rtldebug.
+constant HAVE_DEBUG = 1;
 constant debug = _debug;
 constant optimizer_debug = _optimizer_debug;
 constant assembler_debug = _assembler_debug;
