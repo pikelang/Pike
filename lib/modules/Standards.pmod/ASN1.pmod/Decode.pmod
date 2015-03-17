@@ -218,7 +218,7 @@ mapping(int:program(.Types.Object)) universal_types =
 				mapping(int:program(.Types.Object))|void types)
 {
   types = types ? universal_types+types : universal_types;
-  return der_decode(Stdio.Buffer(data), types);
+  return der_decode(Stdio.Buffer(data)->set_error_mode(1), types);
 }
 
 //! Works just like @[simple_der_decode], except it will return
