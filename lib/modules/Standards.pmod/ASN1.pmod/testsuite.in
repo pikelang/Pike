@@ -18,6 +18,8 @@ test_do( add_constant("P", lambda(object o)
   }
 }); )
 
+test_eval_error(Standards.ASN1.Decode.simple_der_decode(""))
+
 define(test_decode,[[
   test_eq(P(Standards.ASN1.Decode.simple_der_decode(String.hex2string($1-" "))),$2)
   test_eq(Standards.ASN1.Decode.simple_der_decode(String.hex2string($1-" "))->get_der(),
