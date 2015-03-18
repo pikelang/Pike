@@ -960,7 +960,7 @@ static void sf_create(INT32 args)
       struct svalue *sval;
       if (!(sval = (struct svalue *)get_storage(sf.from_file,
 						file_ref_program)) ||
-	!(sval->type != T_OBJECT) ||
+	(sval->type != T_OBJECT) ||
 	!(sf.from = (struct my_file *)get_storage(sval->u.object, file_program))) {
 	SIMPLE_BAD_ARG_ERROR("sendfile", 2, "object(Stdio.File)");
       }
