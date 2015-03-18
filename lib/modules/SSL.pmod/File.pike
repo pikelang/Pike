@@ -718,7 +718,11 @@ Stdio.File shutdown()
     global::stream = 0;
 
     // Zapp all the callbacks.
-    stream->set_nonblocking();
+    if (stream->is_open())
+        stream->set_nonblocking();
+    else
+        stream->set_callbacks(0,0,0,0,0);
+
     // Restore the configured backend.
     stream->set_backend(real_backend);
 
