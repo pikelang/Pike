@@ -1190,10 +1190,12 @@ constant int GTK_MENU_DIR_NEXT;
 constant int GTK_MENU_DIR_PREV;
 
 /* GTK: GtkMenuBar: GtkPackDirection */
+require gtk28;
 constant int GTK_PACK_DIRECTION_LTR;
 constant int GTK_PACK_DIRECTION_RTL;
 constant int GTK_PACK_DIRECTION_TTB;
 constant int GTK_PACK_DIRECTION_BTT;
+endrequire;
 
 /* GTK: GtkToolbar: GtkToolbarChildType
  deprecated
