@@ -85,6 +85,21 @@ static void pike_crypt_func(void *object, pike_nettle_size_t length,
   pop_stack();
 }
 
+#ifndef HAVE_MEMXOR3
+/* Really old versions of nettle don't have memxor3(). */
+static unsigned char *pike_memxor3(unsigned char *dst, const unsigned char *a,
+				   const unsigned char *b, size_t n)
+{
+  size_t i;
+  for(i = 0; i < n; i++) {
+    dst[i] = a[i]^b[i];
+  }
+  return dst;
+}
+
+#define memxor3(D, A, B, N)	pike_memxor3((D), (A), (B), (N))
+#endif
+
 /* Calls Pike_error on errors */ 
 typedef void (*pike_nettle_set_key_func)(void *ctx,
 					 ptrdiff_t length, const char *key,

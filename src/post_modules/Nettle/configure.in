@@ -100,7 +100,7 @@ else
     AC_CHECK_FUNCS(nettle_yarrow256_slow_reseed)
 
     # These weren't present in old Nettles.
-    AC_CHECK_FUNCS(nettle_salsa20_crypt nettle_sha224_init)
+    AC_CHECK_FUNCS(nettle_salsa20_crypt nettle_sha224_init memxor3)
 
     AC_MSG_CHECKING([whether nettle_crypt_func is a pointer type])
     AC_CACHE_VAL(pike_cv_nettle_crypt_func_is_pointer, [
