@@ -100,7 +100,7 @@ else
     AC_CHECK_FUNCS(nettle_yarrow256_slow_reseed)
 
     # These weren't present in old Nettles.
-    AC_CHECK_FUNCS(nettle_salsa20_crypt nettle_sha224_init)
+    AC_CHECK_FUNCS(nettle_salsa20_crypt nettle_sha224_init memxor3)
 
     # This is only present in very new Nettles.
     AC_CHECK_FUNCS(nettle_ecc_bit_size)
