@@ -133,8 +133,8 @@ struct mapping * decode_document(struct pike_string * pike_slist)
 {
   char * slist;
   struct mapping * doc;
-  int32_t len;
-  int32_t left;
+  INT32 len;
+  INT32 left;
   char * n;
   char * end;
   struct mapping * list;
@@ -191,7 +191,7 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
   struct pike_string * nstr;
   struct pike_string * name;
   char * x;
-  int32_t len;
+  INT32 len;
   
   slist = pike_slist->str;
 
@@ -209,7 +209,7 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
     {  
       struct pike_string * fstr;
       struct array * a;
-      int32_t left;
+      INT32 left;
       left = pike_slist->len - (n - slist);      
       if(8 > left)
         Pike_error("invalid BSON. not enough data.\n");
@@ -230,8 +230,8 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
     case TYPE_BSON_STRING:
     {
       struct pike_string * val;
-      int32_t bump;
-      int32_t left;
+      INT32 bump;
+      INT32 left;
       bump = get_unaligned_le32(n);
       left = pike_slist->len - (n - slist);
 
@@ -250,8 +250,8 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
     case TYPE_BSON_BINARY:
     {
       struct pike_string * val;
-      int32_t bump = get_unaligned_le32(n);
-      int32_t left;
+      INT32 bump = get_unaligned_le32(n);
+      INT32 left;
       n+=4;
       left = pike_slist->len - (n - slist);
 
@@ -267,8 +267,8 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
     
     case TYPE_BSON_INTEGER:
     {  
-      int32_t t;
-      int32_t left = pike_slist->len - (n - slist);
+      INT32 t;
+      INT32 left = pike_slist->len - (n - slist);
       if(left < 4)
       {
         Pike_error("invalid BSON. not enough data 6.\n");
@@ -280,9 +280,9 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
     }
 
     case TYPE_BSON_INTEGER64:
-    {  
-      int64_t t;
-      int32_t left = pike_slist->len - (n - slist);
+    {
+      INT64 t;
+      INT32 left = pike_slist->len - (n - slist);
       if(left < 8)
       {
         Pike_error("invalid BSON. not enough data 7.\n");
@@ -346,7 +346,7 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
     {
       struct pike_string * str;
       
-      int32_t left = pike_slist->len - (n - slist);
+      INT32 left = pike_slist->len - (n - slist);
       if(left < 12)
       {
         Pike_error("invalid BSON. not enough data 8.\n");
@@ -365,8 +365,8 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
     
     case TYPE_BSON_TIMESTAMP:
     {
-      uint64_t sec;
-      int32_t left = pike_slist->len - (n - slist);
+      UINT64 sec;
+      INT32 left = pike_slist->len - (n - slist);
       if(left < 8)
       {
         Pike_error("invalid BSON. not enough data 9.\n");
@@ -386,8 +386,8 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
     
     case TYPE_BSON_SECOND:
     {
-      uint64_t sec;
-      int32_t left = pike_slist->len - (n - slist);
+      UINT64 sec;
+      INT32 left = pike_slist->len - (n - slist);
       if(left < 8)
       {
         Pike_error("invalid BSON. not enough data 10.\n");
@@ -408,13 +408,13 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
       struct mapping * doc;
       struct array * arr;
       INT_TYPE asize;
-      int32_t len;
+      INT32 len;
       /* used by NEW_MAPPING_LOOP */
       const struct keypair *k=0;
       const struct mapping_data *md;
       INT32 e;
 
-      int32_t left = pike_slist->len - (n - slist);
+      INT32 left = pike_slist->len - (n - slist);
 
       if(left < 4)
       {
@@ -468,8 +468,8 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
     {
       struct pike_string * d;
       struct mapping * doc;
-      int32_t len;
-      int32_t left = pike_slist->len - (n - slist);
+      INT32 len;
+      INT32 left = pike_slist->len - (n - slist);
       if(left < 4)
       {
         Pike_error("invalid BSON. not enough data 11.\n");      
@@ -518,8 +518,8 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
     case TYPE_BSON_JAVASCRIPT:
     {
       struct pike_string * val;
-      int32_t bump = get_unaligned_le32(n);
-      int32_t left;
+      INT32 bump = get_unaligned_le32(n);
+      INT32 left;
       n+=4;
       left = pike_slist->len - (n - slist);
       if(bump <= 0 || bump > left)
