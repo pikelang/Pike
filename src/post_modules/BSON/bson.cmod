@@ -185,7 +185,7 @@ struct mapping * decode_document(struct pike_string * pike_slist)
 char * decode_next_value(struct pike_string * pike_slist, char * n, struct mapping * list)
 {
   char * slist;
-  uint8_t type;
+  unsigned INT8 type;
   char * cname;
   struct pike_string * nstr;
   struct pike_string * name;
@@ -312,8 +312,8 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
     
     case TYPE_BSON_BOOLEAN:
     {
-      int8_t t;
-      t = *(int8_t*)n;
+      INT8 t;
+      t = *(INT8*)n;
       n++;
       if(t == 1) /* true */
       {
