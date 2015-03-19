@@ -119,12 +119,9 @@ struct svalue * lookup_svalue(const char * prog)
     Pike_error("Unable to load class %s.\n", prog);
   }
 
-  add_ref_svalue(Pike_sp-1);
-
-  move_svalue(&low_Second, Pike_sp-1);
-  p = &low_Second;
+  assign_svalue(&low_Second, Pike_sp-1);
   pop_stack();
-  return p;
+  return &low_Second;
 }
 
 DECLARATIONS
