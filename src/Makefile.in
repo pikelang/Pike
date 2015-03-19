@@ -502,7 +502,7 @@ undump_modules: delete_dumped_modules
 	  exit $$status; \
 	fi
 
-$(PMOD_TARGETS): precompile.sh-stamp $(TMP_BINDIR)/precompile.pike $(PIKE_SRC_DIR)/../lib/modules/Tools.pmod/Standalone.pmod/precompile.pike Makefile
+$(PMOD_TARGETS): precompile.sh-stamp $(TMP_BINDIR)/precompile.pike $(PIKE_SRC_DIR)/../lib/modules/Tools.pmod/Standalone.pmod/precompile.pike
 
 #
 # Please note that this must be accompanied by a dependency rule as
