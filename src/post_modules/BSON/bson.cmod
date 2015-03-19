@@ -269,12 +269,27 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
     }
 
     case TYPE_BSON_INTEGER64:
+    {
       INT32 left = pike_slist->len - (n - slist);
       if(left < 8)
       {
         Pike_error("Invalid BSON. Not enough data.\n");
       }
+#ifdef INT64
       push_int64( get_unaligned_le64(n) );
+#else
+      push_string(make_shared_binary_string(n, 8));
+      if (n[7] & 0x80) {
+	/* Negative. */
+	f_compl(1);
+      }
+      push_int(-256);
+      push_object(clone_object(bignum_program, 2));
+      if (n[7] & 0x80) {
+	/* Negative. */
+	f_compl(1);
+      }
+#endif
       n+=8;
       break;
     }
@@ -349,19 +364,27 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
     
     case TYPE_BSON_TIMESTAMP:
     {
+#ifdef INT64
       UINT64 sec;
+#endif
       INT32 left = pike_slist->len - (n - slist);
       if(left < 8)
       {
         Pike_error("Invalid BSON. Not enough data.\n");
       }
+      if(!Timestamp)
+	Timestamp = lookup_program("Standards.BSON.Timestamp");
+      ref_push_program(Timestamp);
+#ifdef INT64
       sec = get_unaligned_le64(n);
+      push_int64(sec);
+#else
+      push_string(make_shared_binary_string(n, 8));
+      push_int(-256);
+      push_object(clone_object(bignum_program, 2));
+#endif
       n+=8;
       
-     if(!Timestamp)
-      Timestamp = lookup_program("Standards.BSON.Timestamp");
-     ref_push_program(Timestamp);
-     push_int64(sec);
      apply_svalue( Pike_sp-2, 1);
      stack_swap(); 
      pop_stack();
@@ -370,19 +393,28 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
     
     case TYPE_BSON_SECOND:
     {
+#ifdef INT64
       UINT64 sec;
+#endif
       INT32 left = pike_slist->len - (n - slist);
       if(left < 8)
       {
         Pike_error("Invalid BSON. Not enough data.\n");
       }
-      sec = get_unaligned_le64(n);
-      n+=8;
-      
       if(!Second)
         Second = lookup_svalue("Calendar.Second");
       push_text("unix");
+#ifdef INT64
+      sec = get_unaligned_le64(n);
       push_int64(sec/1000);
+#else
+      push_string(make_shared_binary_string(n, 8));
+      push_int(-256);
+      push_object(clone_object(bignum_program, 2));
+      push_int(1000);
+      f_divide(2);
+#endif
+      n+=8;
       apply_svalue(Second, 2);
       break;  
     }
