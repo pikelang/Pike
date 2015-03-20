@@ -50,28 +50,25 @@ typedef size_t		pike_nettle_size_t;
 typedef unsigned	pike_nettle_size_t;
 #endif
 
-/* In Nettle 2.0 the nettle_*_func typedefs lost their pointers. */ 
-#ifdef HAVE_NETTLE_CRYPT_FUNC_IS_POINTER 
-/* Nettle 1.x */ 
-typedef nettle_crypt_func           pike_nettle_crypt_func; 
-typedef nettle_hash_digest_func             pike_nettle_hash_digest_func; 
-typedef nettle_hash_update_func             pike_nettle_hash_update_func; 
-#else 
-/* Nettle 2.0 */ 
-typedef void (*pike_nettle_crypt_func)(void *ctx,
-                              unsigned length, uint8_t *dst,
-                              const uint8_t *src); 
-                               
-typedef void (*pike_nettle_hash_digest_func)(void *ctx,
-                               unsigned length, uint8_t *dst);
-                                                                   
-typedef void (*pike_nettle_hash_update_func)(void *ctx,
-                                unsigned length,
-                                const uint8_t *src);
- 
-/* Nettle 3.0 */ 
- 
-#endif 
+/* In Nettle 2.0 the nettle_*_func typedefs lost their pointers. */
+#ifdef HAVE_NETTLE_CRYPT_FUNC_IS_POINTER
+/* Nettle 1.x */
+typedef nettle_crypt_func		pike_nettle_crypt_func;
+typedef nettle_hash_digest_func		pike_nettle_hash_digest_func;
+typedef nettle_hash_update_func		pike_nettle_hash_update_func;
+#else
+/* Nettle 2.0 */
+
+#ifdef dsa_params_init
+/* Nettle 3.0 */
+typedef nettle_cipher_func              *pike_nettle_crypt_func;
+#else
+typedef nettle_crypt_func		*pike_nettle_crypt_func;
+#endif
+
+typedef nettle_hash_digest_func		*pike_nettle_hash_digest_func;
+typedef nettle_hash_update_func		*pike_nettle_hash_update_func;
+#endif
 
 
 char *pike_crypt_md5(int pl, const char *const pw,
