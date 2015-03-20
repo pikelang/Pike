@@ -16,6 +16,8 @@ werror(const char *format, ...)
 #define werror(x)
 #endif
 
+#include <nettle/nettle-types.h>
+
 struct program;
 extern struct program *nettle_hash_program;
 extern struct program *hash_instance_program;
