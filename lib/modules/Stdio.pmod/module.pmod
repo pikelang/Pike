@@ -141,8 +141,8 @@ class BlockFile
 //! The string (or void) version is used when buffer mode (see
 //! @[set_buffer_mode]) has not been enabled for reading.
 //!
-//! The Buffer version is used when a Buffer has been enabled
-//! for reading
+//! The @[Buffer] version is used when a @[Buffer] has been enabled
+//! for reading.
 //!
 //! In both cases the data is the newly arrived data, but in buffered
 //! mode data you did not fully read in the last read callback is
@@ -157,8 +157,8 @@ local typedef
 //! The void version is used when buffer mode (see
 //! @[set_buffer_mode]) has not been enabled for writing.
 //!
-//! The Buffer version is used when a Buffer has been enabled
-//! for reading, add data to that buffer to send it.
+//! The @[Buffer] version is used when a @[Buffer] has been enabled
+//! for writing, add data to that buffer to send it.
 local typedef
   function(mixed|void:int|void) |
   function(mixed|void,Buffer:int|void) write_callback_t;
@@ -982,7 +982,7 @@ class File
       if (outbuffer && sizeof(outbuffer)) {
 	outbuffer->__fd_set_output(0);
 
-	int actual_bytes = outbuffer->output_to(this);
+	int actual_bytes = outbuffer->output_to(::write);
 
 	outbuffer->__fd_set_output(::write);
 	if (actual_bytes <= 0) {
@@ -1033,7 +1033,7 @@ class File
 
       if (sizeof(outbuffer)) {
 	// The write buffer isn't empty, so try to empty it. */
-	int bytes = outbuffer->output_to( this );
+	int bytes = outbuffer->output_to( ::write );
 	if (sizeof(outbuffer) && (bytes > 0)) {
 	  // Not all was written. Probably EWOULDBLOCK.
 	  // We propagate errno below.
@@ -1223,14 +1223,14 @@ class File
       {
         int res;
         if( sizeof( outbuffer ) )
-          res = outbuffer->output_to( this );
+          res = outbuffer->output_to( ::write );
         else
         {
           outbuffer->__fd_set_output( 0 );
           res = ___write_callback(___id||this,outbuffer);
           if( !this ) return res;
           if( sizeof( outbuffer ) )
-            outbuffer->output_to( this );
+            outbuffer->output_to( ::write );
           outbuffer->__fd_set_output( ::write );
         }
         return res;
