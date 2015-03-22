@@ -330,13 +330,13 @@ test_any([[
   // Check that parent pointers aren't added unnecessarily [LysLysKOM 18781511].
 
   class Foo {
-    final constant const = 1; 
+    final constant const_val = 1;
     class Bar
     {
       int func()
       {
-        // parent-pointer not needed, since const is final.
-        return const;
+        // parent-pointer not needed, since const_val is final.
+        return const_val;
       };
     }
   };
@@ -2935,8 +2935,8 @@ test_do([[
 
 test_do([[
   // Restore constants that were zapped by the various masters used above.
-  foreach(__saved_constants__; string const; mixed val) {
-    add_constant(const, val);
+  foreach(__saved_constants__; string const_name; mixed val) {
+    add_constant(const_name, val);
   }
   add_constant("__saved_constants__");  
 ]])

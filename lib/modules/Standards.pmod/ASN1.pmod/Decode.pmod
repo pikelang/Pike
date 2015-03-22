@@ -68,13 +68,13 @@ protected array(int) read_identifier(Stdio.Buffer data)
   int byte = data->read_int8();
 
   int cls = byte >> 6;
-  int const = (byte >> 5) & 1;
+  int constructed = (byte >> 5) & 1;
   int tag = byte & 0x1f;
 
   if( tag == 0x1f )
     tag = read_varint(data);
 
-  return ({ cls, const, tag });
+  return ({ cls, constructed, tag });
 }
 
 //! @param data
@@ -97,10 +97,10 @@ protected array(int) read_identifier(Stdio.Buffer data)
 .Types.Object der_decode(Stdio.Buffer data,
                          mapping(int:program(.Types.Object)) types)
 {
-  [int cls, int const, int tag] = read_identifier(data);
+  [int(0..3) cls, int constructed, int(0..) tag] = read_identifier(data);
 
   int len = data->read_int8();
-  if( !cls && !const && !tag && !len )
+  if( !cls && !constructed && !tag && !len )
     error("End-of-contents not supported.\n");
   if (len & 0x80)
   {
@@ -110,14 +110,15 @@ protected array(int) read_identifier(Stdio.Buffer data)
       error("Indefinite length form not supported.\n");
     len = data->read_int(len & 0x7f);
   }
-  DBG("class %O, construced=%d, tag=%d, length=%d\n",
-      ({"universal","application","context","private"})[cls], const, tag, len);
+  DBG("class %O, constructed=%d, tag=%d, length=%d\n",
+      ({"universal","application","context","private"})[cls],
+      constructed, tag, len);
 
   data = [object(Stdio.Buffer)]data->read_buffer(len);
 
   program(.Types.Object) p = types[ .Types.make_combined_tag(cls, tag) ];
 
-  if (const)
+  if (constructed)
   {
     DBG("Decoding constructed %O\n", p);
 

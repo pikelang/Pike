@@ -1169,7 +1169,7 @@ string class_name = "";
 
 string parse_not_doc(Node n) {
   string ret = "";
-  int method, argument, variable, const, typedf, cppdir;
+  int method, argument, variable, num_const, typedf, cppdir;
 
   if (!n) return "";
 
@@ -1427,7 +1427,7 @@ string parse_not_doc(Node n) {
       break;
 
     case "constant":
-      if(const++) ret += "<br />\n";
+      if(num_const++) ret += "<br />\n";
       ret += "<tt>";
       cc = c->get_first_element("modifiers");
       if(cc) ret += map(cc->get_children(), parse_type)*" " + " ";
