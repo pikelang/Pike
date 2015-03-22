@@ -1,5 +1,11 @@
 #pike __REAL_VERSION__
 
+#ifdef WEBSOCKET_DEBUG
+# define WS_WERR(level, x...)  do { if (WEBSOCKET_DEBUG >= level) { werror("%O: ", this); werror(x); } } while(0)
+#else
+# define WS_WERR(level, x...)
+#endif
+
 constant websocket_id = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 
 //! This module implements the WebSocket protocol as described in RFC 6455.
@@ -71,6 +77,62 @@ string describe_opcode(FRAME op) {
     return sprintf("0x%x", op);
 }
 
+//! Parses one WebSocket frame. Returns @expr{0@} if the buffer does not contain enough data.
+Frame parse(Stdio.Buffer buf) {
+    if (sizeof(buf) < 2) return 0;
+
+    int opcode, len, hlen;
+    int(0..1) masked;
+    string mask, data;
+
+    opcode = buf->read_int8();
+    len = buf->read_int8();
+
+    masked = len >> 7;
+    len &= 127;
+
+    if (len == 126) {
+        len = buf->read_int16();
+        if (len == -1) {
+            buf->unread(2);
+            return 0;
+        }
+        hlen = 4;
+    }  else if (len == 127) {
+        len = buf->read_int(8);
+        if (len == -1) {
+            buf->unread(2);
+            return 0;
+        }
+        hlen = 10;
+    }
+
+    if (masked) {
+        if (sizeof(buf) < 4 + len) {
+            buf->unread(hlen);
+            return 0;
+        }
+        mask = buf->read(4);
+    } else if (sizeof(buf) < len) {
+        buf->unread(hlen);
+        return 0;
+    }
+
+    Frame f = Frame(opcode & 15);
+    f->fin = opcode >> 7;
+    f->mask = mask;
+
+    data = buf->read(len);
+
+    if (masked) {
+        data = MASK(data, mask);
+    }
+
+    f->data = data;
+
+    return f;
+}
+
 //! Parses WebSocket frames.
 class Parser {
     //! Unparsed data.
@@ -84,58 +146,7 @@ class Parser {
     //! Parses and returns one WebSocket frame from the internal buffer. If
     //! the buffer does not contain a full frame, @expr{0@} is returned.
     Frame parse() {
-	if (sizeof(buf) < 2) return 0;
-
-	int opcode, len, hlen;
-	int(0..1) masked;
-	string mask, data;
-
-        opcode = buf->read_int8();
-        len = buf->read_int8();
-
-	masked = len >> 7;
-	len &= 127;
-
-	if (len == 126) {
-            len = buf->read_int16();
-            if (len == -1) {
-                buf->unread(2);
-                return 0;
-            }
-            hlen = 4;
-	}  else if (len == 127) {
-            len = buf->read_int(8);
-            if (len == -1) {
-                buf->unread(2);
-                return 0;
-            }
-            hlen = 10;
-	}
-
-	if (masked) {
-            if (sizeof(buf) < 4 + len) {
-                buf->unread(hlen);
-                return 0;
-            }
-            mask = buf->read(4);
-	} else if (sizeof(buf) < len) {
-            buf->unread(hlen);
-            return 0;
-        }
-
-        Frame f = Frame(opcode & 15);
-        f->fin = opcode >> 7;
-        f->mask = mask;
-
-        data = buf->read(len);
-
-        if (masked) {
-            data = MASK(data, mask);
-        }
-
-        f->data = data;
-
-        return f;
+        return global::parse(buf);
     }
 }
 
@@ -253,15 +264,12 @@ class Frame {
 
 //!
 class Connection {
-    //! An instance of @[Parser] used to parse incoming data.
-    Parser parser;
-
     //! The actual client connection.
     Stdio.File stream;
 
-    Stdio.Buffer buf = Stdio.Buffer();
+    Stdio.Buffer out = Stdio.Buffer();
+    Stdio.Buffer in = Stdio.Buffer();
 
-    protected int(0..1) will_write = 1;
     protected mixed id;
 
     //! If true, all outgoing frames are masked.
@@ -288,6 +296,10 @@ class Connection {
 
     protected CLOSE_STATUS close_reason;
 
+    protected string _sprintf(int type) {
+        return sprintf("%O(%d, %O)", this_program, state, stream);
+    }
+
     //! Set the @expr{id@}. It will be passed as last argument to all
     //! callbacks.
     void set_id(mixed id) {
@@ -295,11 +307,12 @@ class Connection {
     }
 
     protected void create(Stdio.File f) {
-        parser = Parser();
         stream = f;
         f->set_nonblocking(websocket_in, websocket_write, websocket_closed);
+        f->set_buffer_mode(in, out);
         state = OPEN;
         if (onopen) onopen(id || this);
+        WS_WERR(1, "opened\n");
     }
 
     // Sorry guys...
@@ -322,41 +335,27 @@ class Connection {
     //! Number of bytes in the send buffer.
 
     int `bufferdAmount() {
-        return sizeof(buf);
+        return sizeof(out);
     }
 
-    void send_raw(string s) {
-        buf->add(s);
+    void send_raw(string(8bit) ... s) {
+        WS_WERR(3, "out:\n----\n%s\n----\n", s*"\n----\n");
+        out->add(@s);
     }
 
     protected void websocket_write() {
-        if (sizeof(buf)) {
-            int n = buf->output_to(stream);
-
-            if (n < 0) {
-                int e = errno();
-                if (e) {
-                    websocket_closed();
-                }
-                will_write = 0;
-            } else will_write = 1;
-
-        } else will_write = 0;
     }
 
-    protected void websocket_in(mixed _id, string data) {
+    protected void websocket_in(mixed _id, Stdio.Buffer in) {
 
         // it would be nicer to set the read callback to zero
         // once a close handshake has been received. however,
         // without a read callback pike does not trigger the
         // close event.
         if (state == CLOSED) return;
-        parser->feed(data);
 
-        while (Frame frame = parser->parse()) {
-#ifdef WEBSOCKET_DEBUG
-            werror("%O in %O\n", this, frame);
-#endif
+        while (Frame frame = parse(in)) {
+            WS_WERR(2, "%O in %O\n", this, frame);
             switch (frame->opcode) {
             case FRAME_PING:
                 send(Frame(FRAME_PONG, frame->data));
@@ -397,6 +396,7 @@ class Connection {
         stream = 0;
         // if this is the end of a proper close handshake, this wont do anything
         close_event(0);
+        WS_WERR(1, "closed\n");
     }
 
     //! Send a WebSocket ping frame.
@@ -416,13 +416,13 @@ class Connection {
         if (state != OPEN) error("WebSocket connection is not open: %O.\n", this);
         if (masking && sizeof(frame->data))
             frame->mask = Crypto.Random.random_string(4);
-        frame->encode(buf);
+        WS_WERR(2, "sending %O\n", frame);
+        frame->encode(out);
         if (frame->opcode == FRAME_CLOSE) {
             state = CLOSING;
             close_reason = frame->reason;
             // TODO: time out the connection
         }
-        if (!will_write) websocket_write();
     }
 
     //! Send a WebSocket text frame.
@@ -448,9 +448,7 @@ class Request(function(array(string), Request:void) cb) {
 	} else {
 	    string proto = request_headers["sec-websocket-protocol"];
 	    array(string) protocols =  proto ? proto / ", " : ({});
-#ifdef WEBSOCKET_DEBUG
-            werror("websocket request: %O %O\n", this, protocols);
-#endif
+            WS_WERR(1, "websocket request: %O\n", protocols);
 	    cb(protocols, this);
 	}
     }
@@ -470,10 +468,10 @@ class Request(function(array(string), Request:void) cb) {
 	mapping heads = ([
 	    "Upgrade" : "websocket",
 	    "Connection" : "Upgrade",
-	    "sec-websocket-accept" : MIME.encode_base64(Crypto.SHA1.hash(s)),
-            "sec-websocket-version" : "13",
+	    "Sec-Websocket-Accept" : MIME.encode_base64(Crypto.SHA1.hash(s)),
+            "Sec-Websocket-Version" : "13",
 	]);
-	if (protocol) heads["sec-websocket-protocol"] = protocol;
+	if (protocol) heads["Sec-Websocket-Protocol"] = protocol;
 
         Connection ws = Connection(my_fd);
         my_fd = 0;
@@ -487,13 +485,7 @@ class Request(function(array(string), Request:void) cb) {
             a[i++] = sprintf("%s: %s", k, v);
         }
 
-        string reply = a * "\r\n" + "\r\n\r\n";
-
-        ws->send_raw(reply);
-
-#ifdef WEBSOCKET_DEBUG
-        werror("%O reply %O\n", protocol, reply);
-#endif
+        ws->send_raw(a * "\r\n", "\r\n\r\n");
 
         finish(0);
 
