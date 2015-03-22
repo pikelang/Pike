@@ -1383,9 +1383,9 @@ int main(int argc, array(string) argv)
 #if 1
   if(verbose && sizeof(all_constants())!=sizeof(const_names)) {
     multiset const_names = (multiset)const_names;
-    foreach(indices(all_constants()), string const)
-      if( !const_names[const] )
-	log_msg("Leaked constant %O\n", const);
+    foreach(indices(all_constants()), string const_name)
+      if( !const_names[const_name] )
+	log_msg("Leaked constant %O\n", const_name);
   }
 #endif
 

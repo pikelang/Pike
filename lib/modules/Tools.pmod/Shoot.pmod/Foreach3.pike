@@ -4,13 +4,13 @@ inherit Tools.Shoot.Test;
 constant name="Foreach (arr,global)";
 constant dont_dump_program = 1;
 
-array const = enumerate(10000000);
+array const_array = enumerate(10000000);
 int n;
 
 int perform()
 {
     int res;
-    foreach( const;;n )
+    foreach( const_array;;n )
         res=1;
     return ++n;
 }
