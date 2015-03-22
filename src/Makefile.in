@@ -134,7 +134,6 @@ MAKE_FLAGS=
 #
 CORE_OBJ= \
  language.o \
- security.o \
  bignum.o \
  pike_cpulib.o \
  interpret.o \
@@ -1400,7 +1399,6 @@ HFILES=						\
   rusage.protos					\
   cyclic.protos					\
   lex.protos						\
-  security.protos					\
   signal_handler.protos				\
   pike_search.protos				\
   docode.protos					\
