@@ -446,6 +446,7 @@ void o_append_array(INT32 args)
 {
   struct svalue *lval = Pike_sp - args;
   struct svalue *val = lval + 2;
+  int lval_type;
 #ifdef PIKE_DEBUG
   if (args < 3) {
     Pike_fatal("Too few arguments to o_append_array(): %d\n", args);
@@ -453,7 +454,7 @@ void o_append_array(INT32 args)
 #endif
   args -= 3;
   /* Note: val should always be a zero here! */
-  lvalue_to_svalue_no_free(val, lval);
+  lval_type = lvalue_to_svalue_no_free(val, lval);
 
   if (TYPEOF(*val) == T_ARRAY) {
     struct svalue tmp;
@@ -462,10 +463,15 @@ void o_append_array(INT32 args)
        element and do not do the assign.  This can be done because the
        lvalue already has the array as it's value.
     */
-    if( v->refs == 2 )
-    {
-      if( v->real_item+v->malloced_size >= v->item+v->size+args )
-      {
+    if( (v->refs == 2) && (lval_type != PIKE_T_GET_SET) ) {
+      if ((TYPEOF(*lval) == T_OBJECT) &&
+	  lval->u.object->prog &&
+	  ((FIND_LFUN(lval->u.object->prog, LFUN_ASSIGN_INDEX) >= 0) ||
+	   (FIND_LFUN(lval->u.object->prog, LFUN_ASSIGN_ARROW) >= 0))) {
+	/* There's a function controlling assignments in this object,
+	 * so we can't alter the array in place.
+	 */
+      } else if( v->real_item+v->malloced_size >= v->item+v->size+args ) {
         struct svalue *from = val+1;
         int i;
         for( i = 0; i<args; i++,from++ )
