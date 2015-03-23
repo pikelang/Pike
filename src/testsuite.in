@@ -4113,6 +4113,52 @@ test_any([[
 ]], 1)
 
 test_any([[
+  // Since the addition of F_APPEND_ARRAY the setter is not being
+  // called anymore. Instead, the array _data is modified in place.
+  class A(array _data) {
+    int counter;
+
+    void `foo=(mixed v) {
+      counter += !!v;
+      _data = v;
+    }
+
+    mixed `foo() {
+      return _data;
+    }
+  };
+
+  object a = A(({}));
+
+  for (int i = 0; i < 6; i++) {
+    a->foo += ({ i });
+  }
+
+  return a->counter;
+]], 6)
+
+test_any([[
+  // Since the addition of F_APPEND_ARRAY the setter is not being
+  // called anymore. Instead, the array _data is modified in place.
+  class A(array foo) {
+    int counter;
+
+    mixed `->=(string sym, mixed v) {
+      counter += !!v;
+      return ::`->=(sym, v);
+    }
+  };
+
+  object a = A(({}));
+
+  for (int i = 0; i < 6; i++) {
+    a->foo += ({ i });
+  }
+
+  return a->counter;
+]], 6)
+
+test_any([[
   // Triggered fatal since object_equal_p did not handle
   // getter/setter identifier correctly
   class A {
