@@ -31,6 +31,9 @@
 
 #ifdef BACKEND
 Pike.BACKEND backend = Pike.BACKEND();
+#define DO_IF_BACKEND(X) (X)
+#else
+#define DO_IF_BACKEND(X)
 #endif
 
 #ifndef SOCKTEST_TIMEOUT
@@ -43,9 +46,6 @@ Pike.BACKEND backend = Pike.BACKEND();
 #endif
 
 constant log_msg = Tools.Testsuite.log_msg;
-
-//int idnum;
-//mapping in_cleanup=([]);
 
 int num_tests, num_failed;
 
@@ -69,9 +69,8 @@ void exit_test (int failure)
 void fd_fail (string msg, mixed... args)
 {
   log_msg (msg, @args);
-#if constant(Stdio.get_all_active_fd)
-  array(int) fds = sort(Stdio.get_all_active_fd());
 
+  array(int) fds = sort(Stdio.get_all_active_fd());
   if (sizeof(fds)) {
     log_msg("%d open fds:\n", sizeof(fds));
     int i;
@@ -92,14 +91,12 @@ void fd_fail (string msg, mixed... args)
     }
     log_msg("\n");
   }
-#endif /* constant(Stdio.get_all_active_fd) */
+
   exit_test(1);
 }
 
 class Socket {
   inherit Stdio.File;
-
-//  int id=idnum++;
 
   int num=num_running;
 
@@ -125,6 +122,12 @@ class Socket {
     }
   }
 
+  string cap_size(string str)
+  {
+    if( sizeof(str)<100 ) return str;
+    return sprintf("%d bytes.", sizeof(str));
+  }
+
   void close_callback()
   {
     int err=errno();
@@ -134,20 +137,8 @@ class Socket {
     {
       log_msg("Failed to read complete data, errno=%d, %O.\n",
 	      err, strerror(err));
-      if(sizeof(input_buffer) < 100)
-      {
-	log_msg(num+":Input buffer: "+input_buffer+"\n");
-      }else{
-	log_msg(num+":Input buffer: "+sizeof(input_buffer)+" bytes.\n");
-      }
-
-      if(sizeof(expected_data) < 100)
-      {
-	log_msg(num+":Expected data: "+expected_data+"\n");
-      }else{
-	log_msg(num+":Expected data: "+sizeof(expected_data)+" bytes.\n");
-      }
-
+      log_msg(num+":Input buffer: "+cap_size(input_buffer)+"\n");
+      log_msg(num+":Expected data: "+cap_size(expected_data)+"\n");
       exit_test(1);
     }
 
@@ -157,9 +148,7 @@ class Socket {
 
   void write_callback()
   {
-#ifdef BACKEND
-    set_backend(backend);
-#endif
+    DO_IF_BACKEND(set_backend(backend));
     got_callback();
     DEBUG_WERR("write_callback[%O]: output_buffer: %O\n",
 	       query_fd(), output_buffer);
@@ -212,9 +201,7 @@ class Socket {
 	fd_fail("Failed to open socket: "+strerror(errno())+"\n");
       }
     }
-#ifdef BACKEND
-    set_backend(backend);
-#endif
+    DO_IF_BACKEND(set_backend(backend));
     set_id(0);
     set_nonblocking(read_callback,write_callback,close_callback,
 		    read_oob_callback, UNDEFINED);
@@ -258,9 +245,7 @@ class BufferSocket {
 
   void write_callback(mixed id, Stdio.Buffer out)
   {
-#ifdef BACKEND
-    set_backend(backend);
-#endif
+    DO_IF_BACKEND(set_backend(backend));
     got_callback();
     DEBUG_WERR("write_callback[%O]: output_buffer: %O\n",
 	       query_fd(), output_buffer);
@@ -492,9 +477,7 @@ array(object) stdtest(program Socket)
     fd_fail("Accept returned 0, errno: %d, %O\n",
 	    port2::errno(), strerror(port2::errno()));
   }
-#ifdef BACKEND
-  sock2->set_backend(backend);
-#endif
+  DO_IF_BACKEND(sock2->set_backend(backend));
   DEBUG_WERR("Socket connected: %O <==> %O\n",
 	     sock2->query_address(1),
 	     sock2->query_address());
@@ -509,9 +492,7 @@ array(object) spair(int type)
 {
   object sock1,sock2;
   sock1=Stdio.File();
-#ifdef BACKEND
-  sock1->set_backend(backend);
-#endif
+  DO_IF_BACKEND(sock1->set_backend(backend));
   if(!type)
   {
     sock1->connect(LOOPBACK, portno2);
@@ -531,9 +512,7 @@ array(object) spair(int type)
 	      sock1->errno(), strerror(sock1->errno()));
     }
   }
-#ifdef BACKEND
-  sock2->set_backend(backend);
-#endif
+  DO_IF_BACKEND(sock2->set_backend(backend));
   return ({sock1,sock2});
 }
 
@@ -705,9 +684,7 @@ void accept_callback()
     fd_fail("Accept failed, errno: %d, %O\n",
 	    port1::errno(), strerror(port1::errno()));
   }
-#ifdef BACKEND
-  o->set_backend(backend);
-#endif
+  DO_IF_BACKEND(o->set_backend(backend));
   o=Socket(o);
   o->expected_data = long_random_string;
 }
@@ -726,9 +703,7 @@ int main(int argc, array(string) argv)
     } else {
         greeting = "Socket test";
     }
-#ifdef BACKEND
-    greeting += " using " DEFINETOSTRING(BACKEND);
-#endif
+    DO_IF_BACKEND(greeting += " using " DEFINETOSTRING(BACKEND));
 #ifdef IPV6
     greeting += " in IPv6 mode";
 #endif /* IPV6 */
@@ -751,9 +726,6 @@ int main(int argc, array(string) argv)
 #endif /* constant(System.getrlimit) */
 
 #if constant(fork)
-#if 0
-  log_msg("Forking...\n");
-#endif
   object pid;
   num_tests++;
   if (mixed err = catch { pid = fork(); }) {
@@ -769,14 +741,8 @@ int main(int argc, array(string) argv)
       }
       num_failed++;
     }
-#if 0
-    log_msg("Running in parent...\n");
-#endif
     log_prefix = "Parent: ";
   } else {
-#if 0
-    log_msg("Fork ok.\n");
-#endif
     log_prefix = "Child: ";
   }
 #endif /* constant(fork) */
