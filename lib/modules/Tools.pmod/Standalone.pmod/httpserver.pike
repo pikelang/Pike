@@ -29,7 +29,7 @@ int main(int argc, array(string) argv)
              my_port=(int)argv[-1];
         }
 
-    Protocols.HTTP.Server.Port(handle_request, my_port, Netutils.ANY);
+    Protocols.HTTP.Server.Port(handle_request, my_port, NetUtils.ANY);
     write("%s is now accessible on port %d through http, "
           "without password.\n", getcwd(), my_port);
     return -1;
