@@ -1229,12 +1229,12 @@ protected void create()
   // Note partial code dup with client.get_attr_type_descr.
   array(mapping(string:mixed)) incomplete = ({});
 
-  foreach (indices (this_program), string const) {
-    if (has_prefix (const, "ATD_")) {
+  foreach (indices (this_program), string name) {
+    if (has_prefix (name, "ATD_")) {
       mapping(string:mixed) descr =
 	// Pike doesn't allow a type as first arg in the native []
 	// operator syntax.
-	predef::`[] (this_program, const);
+	predef::`[] (this_program, name);
       if (_standard_attr_type_descrs[descr->oid])
 	error ("OID conflict between %O and %O.\n",
 	       _standard_attr_type_descrs[descr->oid], descr);
