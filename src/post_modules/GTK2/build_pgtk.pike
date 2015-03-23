@@ -1023,12 +1023,12 @@ class Type
     if( !c_inited )c_init();
     return consumed;
   }
-  string c_declare( int a, int|void const )
+  string c_declare( int a, int|void is_const )
   {
     if( !c_inited )c_init();
     c_declared = 1;
     if(!declare) return 0;
-    if( const &&
+    if( is_const &&
 	(!free || (pushed && !has_value (get_modifiers(), "free"))) )
       return sprintf( replace( declare, "CONST", "const" ), a );
     return sprintf( replace( declare, "CONST", "" ), a );
