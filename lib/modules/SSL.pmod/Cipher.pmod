@@ -703,30 +703,7 @@ class KeyExchangeExportRSA
   {
     SSL3_DEBUG_MSG("KE_EXPORT_RSA\n");
 
-    /* Send a ServerKeyExchange message. */
-
-    if (rsa = context->short_rsa) {
-      if (--context->short_rsa_counter <= 0) {
-	context->short_rsa = UNDEFINED;
-      }
-    } else {
-      // RFC 2246 D.1:
-      // For typical electronic commerce applications, it is suggested
-      // that keys be changed daily or every 500 transactions, and more
-      // often if possible.
-
-      // Now >10 years later, an aging laptop is capable of generating
-      // >75 512-bit RSA keys per second, and clients requiring
-      // export suites are getting far between, so rotating the key
-      // after 5 uses seems ok. When the key generation rate reaches
-      // ~250/second, I believe rotating the key every transaction
-      // will be feasible.
-      //	/grubba 2014-03-23
-      SSL3_DEBUG_MSG("Generating a new ephemeral 512-bit RSA key.\n");
-      context->short_rsa_counter = 5 - 1;
-      context->short_rsa = rsa = Crypto.RSA()->generate_key(512);
-    }
-
+    rsa = Crypto.RSA()->generate_key(512);
     SSL3_DEBUG_MSG("Sending a server key exchange-message, "
 		   "with a %d-bits key.\n",
 		   rsa->key_size());

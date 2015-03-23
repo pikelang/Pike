@@ -340,12 +340,6 @@ test_do([[
 
   server_ctx->add_cert(rsa, ({ cert_md5 }));
 
-  // FIXME: Shouldn't this be an ephemeral key?
-  //        It doesn't seem to be related to the certificate.
-  server_ctx->short_rsa = Crypto.RSA();
-  server_ctx->short_rsa->set_random(server_ctx->random);
-  server_ctx->short_rsa->generate_key(512);
-
   // Make sure that all cipher suites are available server side.
   server_ctx->preferred_suites = server_ctx->get_suites(-1, 2, (<>));
 ]])

@@ -124,27 +124,6 @@ Alert alert_factory(object con,
 // --- Cryptography
 //
 
-//! Temporary, non-certified, private keys, used for RSA key exchange
-//! in export mode. They are used as follows:
-//!
-//! @[short_rsa] is a 512-bit RSA key used for the SSL 3.0 and TLS 1.0
-//! export cipher suites.
-//!
-//! @[long_rsa] is a 1024-bit RSA key to be used for the RSA_EXPORT1024
-//! suites from draft-ietf-tls-56-bit-ciphersuites-01.txt.
-//!
-//! They have associated counters @[short_rsa_counter] and @[long_rsa_counter],
-//! which are decremented each time the keys are used.
-//!
-//! When the counters reach zero, the corresponding RSA key is cleared,
-//! and a new generated on demand at which time the counter is reset.
-Crypto.RSA.State long_rsa;
-Crypto.RSA.State short_rsa;
-
-//! Counters for export RSA keys.
-int long_rsa_counter;
-int short_rsa_counter;
-
 //! Used to generate random cookies for the hello-message. If we use
 //! the RSA keyexchange method, and this is a server, this random
 //! number generator is not used for generating the master_secret. By
