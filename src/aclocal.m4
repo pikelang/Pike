@@ -828,6 +828,12 @@ define([AC_MODULE_INIT],
     dynamic_module_makefile=$BUILD_BASE/dynamic_module_makefile
     static_module_makefile=$BUILD_BASE/dynamic_module_makefile
   fi
+
+  PIKE_AC_CHECK_OS()
+
+  if test x"$pike_cv_sys_os" = xWindows_NT ; then
+    PIKE_FUNCS_NEED_DECLS(yes)
+  fi
 ])
 
 pushdef([AC_OUTPUT],
