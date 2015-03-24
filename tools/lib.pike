@@ -173,7 +173,7 @@ string opt_path(string p1, string p2)
   return  ( ( ((p1||"") + ";" + (p2||"")) / ";" ) - ({""}) ) * ";";
 }
 
-static void watchdog(int|void sig)
+protected void watchdog(int|void sig)
 {
   // Reinstate the alarm.
   alarm(1);
