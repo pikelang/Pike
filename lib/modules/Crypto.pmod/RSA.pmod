@@ -26,7 +26,6 @@ class State {
   protected Gmp.mpz n;  /* modulo */
   protected Gmp.mpz e;  /* public exponent */
   protected Gmp.mpz d;  /* private exponent (if known) */
-  protected int(31bit) size;
 
   /* Extra info associated with a private key. Not currently used. */
    
@@ -79,8 +78,7 @@ class State {
   {
     n = Gmp.mpz(modulo);
     e = Gmp.mpz(pub);
-    size = n->size(256);
-    if (size < 12)
+    if (n->size(256) < 12)
       error( "Too small modulo.\n" );
     return this;
   }
@@ -121,7 +119,6 @@ class State {
       p = Gmp.mpz(extra[0]);
       q = Gmp.mpz(extra[1]);
       n = [object(Gmp.mpz)](p*q);
-      size = n->size(256);
     }
     return this;
   }
@@ -152,7 +149,6 @@ class State {
     if(!key) error("Error generating key.\n");
     [ n, d, p, q ] = key;
     this::e = Gmp.mpz(e);
-    size = n->size(256);
     return this;
   }
 
@@ -279,14 +275,14 @@ class State {
   string(8bit) pkcs_sign(string(8bit) message, .Hash h)
   {
     string(8bit) di = Standards.PKCS.Signature.build_digestinfo(message, h);
-    return [string(8bit)]sprintf("%*c", size, raw_sign(di));
+    return [string(8bit)]sprintf("%*c", n->size(256), raw_sign(di));
   }
 
   //! Verify PKCS-1 signature @[sign] of message @[message] using hash
   //! algorithm @[h].
   int(0..1) pkcs_verify(string(8bit) message, .Hash h, string(8bit) sign)
   {
-    if( sizeof(sign)!=size ) return 0;
+    if( sizeof(sign)!=n->size(256) ) return 0;
     string(8bit) s = Standards.PKCS.Signature.build_digestinfo(message, h);
     return raw_verify(s, Gmp.mpz(sign, 256));
   }
@@ -348,13 +344,12 @@ class State {
   //! Returns the crypto block size, or zero if not yet set.
   int block_size()
   {
-    if(!size) return 0;
     // FIXME: This can be both zero and negative...
-    return size - 3;
+    return n->size(256) - 3;
   }
 
   //! Returns the size of the key in terms of number of bits.
-  int(0..) key_size() { return [int(0..)](size*8); }
+  int(0..) key_size() { return n->size(); }
 
 
   //
@@ -383,9 +378,9 @@ class State {
     // padding type and leading null (not explicitly coded, as Gmp.mpz
     // does the right thing anyway). Require at least 8 bytes of padding
     // as security margin.
-    int len = size - 3 - sizeof(message);
+    int len = n->size(256) - 3 - sizeof(message);
     if (len < 8)
-      error( "Block too large. (%d>%d)\n", sizeof(message), size-11 );
+      error( "Block too large. (%d>%d)\n", sizeof(message), n->size(256)-11 );
 
     switch(type)
     {
@@ -410,7 +405,7 @@ class State {
     string(8bit) s = block->digits(256);
 
     // Content independent size information. Not timing sensitive.
-    if( sizeof(s)!=(size-1) ) return 0;
+    if( sizeof(s)!=(n->size(256)-1) ) return 0;
 
     int i = Nettle.rsa_unpad(s, type);
     if( !i ) return 0;
