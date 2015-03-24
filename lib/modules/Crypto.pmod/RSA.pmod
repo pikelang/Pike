@@ -341,7 +341,7 @@ class State {
     return (encrypt_mode ? encrypt(s) : decrypt(s));
   }
 
-  //! Returns the crypto block size, or zero if not yet set.
+  //! Returns the crypto block size, in bytes, or zero if not yet set.
   int block_size()
   {
     // FIXME: This can be both zero and negative...
