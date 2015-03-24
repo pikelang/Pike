@@ -588,6 +588,60 @@ AC_DEFUN(PIKE_CHECK_CONSTANTS,
 ])
 
 
+dnl PIKE_AC_CHECK_OS()
+dnl
+dnl Check the operating system
+AC_DEFUN(PIKE_AC_CHECK_OS, [
+  AC_PATH_PROG(uname_prog,uname,no)
+  AC_MSG_CHECKING(operating system)
+  AC_CACHE_VAL(pike_cv_sys_os, [
+    if test "$cross_compiling" = "yes"; then
+      case "$host_alias" in
+	*amigaos*)	pike_cv_sys_os="AmigaOS";;
+	*linux*)	pike_cv_sys_os="Linux";;
+	*solaris*)	pike_cv_sys_os="Solaris";;
+	*sunos*)	pike_cv_sys_os="SunOS";;
+	*windows*)	pike_cv_sys_os="Windows_NT";;
+	*mingw*|*MINGW*)
+			pike_cv_sys_os="Windows_NT"
+			pike_cv_is_mingw="yes";;
+	*)		pike_cv_sys_os="Unknown";;
+      esac
+    elif test "$uname_prog" != "no"; then
+      # uname on UNICOS doesn't work like other people's uname...
+      if getconf CRAY_RELEASE >/dev/null 2>&1; then
+	pike_cv_sys_os="UNICOS"
+      else
+	pike_cv_sys_os="`uname`"
+      fi
+
+      case "$pike_cv_sys_os" in
+	SunOS)
+	  case "`uname -r`" in
+	    5.*) pike_cv_sys_os="Solaris" ;;
+	  esac
+	  ;;
+	Monterey64)
+	  # According to the release notes, the string "Monterey64"
+	  # will be changed to "AIX" in the final release.
+	  # (Monterey 64 is also known as AIX 5L).
+	  pike_cv_sys_os="AIX"
+	;;
+	*Windows*|*windows*)
+	  pike_cv_sys_os="Windows_NT"
+	;;
+	*MINGW*|*mingw*)
+	  pike_cv_is_mingw="yes"
+	  pike_cv_sys_os="Windows_NT"
+	;;
+      esac
+    else
+      pike_cv_sys_os="Not Solaris"
+    fi
+  ])
+  AC_MSG_RESULT($pike_cv_sys_os)
+])
+
 dnl 
 dnl PIKE_FEATURE_CLEAR()
 dnl PIKE_FEATURE(feature,text)
