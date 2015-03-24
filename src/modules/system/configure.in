@@ -11,8 +11,6 @@ AC_CHECK_LIB(net, __get_socket_descriptor)
 dnl For Cygwin
 AC_CHECK_LIB(cygipc, shmget)
 
-PIKE_AC_CHECK_OS()
-
 if test x"$pike_cv_sys_os" = xWindows_NT ; then
   # FIXME: These look suspiciously much like 32bit versions.
   #        We probably want to use 64bit versions on IA64.
