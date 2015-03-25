@@ -13095,6 +13095,43 @@ test_any(class A {int f(){return 1;}}; class B {inherit A; final int f(){return 
 test_any(class A {int f(){return 1;}}; class B {inherit A; local int f(){return 2;}}; return B()->f(), 2)
 test_any(class A {int f(){return 1;}}; class B {inherit A; inline int f(){return 2;}}; return B()->f(), 2)
 
+// test masking of lfuns using an empty declaration
+
+test_any([[
+    // F_LFUN vs F_GLOBAL
+    class A {
+        void a() {}
+        int(0..1) b() {
+            return this->a == a;
+        }
+    };
+    class B {
+        inherit A;
+
+        void a();
+    };
+    return B()->b();
+]], 1)
+
+test_any([[
+    class A {
+        void a();
+        int(0..1) b() {
+            return this->a == a;
+        }
+    };
+    class B {
+        inherit A;
+
+        void a() {}
+    };
+    class C {
+        inherit B;
+        void a();
+    };
+    return B()->b();
+]], 1)
+
 // - modifiers, misc checks
 
 test_program([[
