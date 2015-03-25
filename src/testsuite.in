@@ -4113,6 +4113,29 @@ test_any([[
 ]], 1)
 
 test_any([[
+  // Since the addition of F_APPEND_MAPPING in set_bar below
+  // the setter is not being called anymore. Instead, the mapping
+  // _data->foo is modified in place.
+  class A(mapping foo) {
+    mapping _modified = ([]);
+
+    mixed `->=(string sym, mixed v) {
+      return _modified[sym] = v;
+    }
+
+    void set_bar(int v) {
+      this->foo += ([ "bar" : v ]);
+    }
+  };
+
+  object a = A(([ "foo" : ([]) ]));
+
+  a->set_bar(2);
+
+  return has_index(a->_modified, "foo");
+]], 1)
+
+test_any([[
   // Since the addition of F_APPEND_ARRAY the setter is not being
   // called anymore. Instead, the array _data is modified in place.
   class A(array _data) {

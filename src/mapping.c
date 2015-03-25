@@ -1891,12 +1891,21 @@ void o_append_mapping( INT32 args )
     struct mapping *m = val->u.mapping;
     if( m->refs == 2 )
     {
-      int i;
-      /* fprintf( stderr, "map_refs==2\n" ); */
-      for( i=0; i<args; i+=2 )
-        low_mapping_insert( m, Pike_sp-(i+2), Pike_sp-(i+1), 2 );
-      stack_pop_n_elems_keep_top(2+args);
-      return;
+      if ((TYPEOF(*lval) == T_OBJECT) &&
+	  lval->u.object->prog &&
+	  ((FIND_LFUN(lval->u.object->prog, LFUN_ASSIGN_INDEX) >= 0) ||
+	   (FIND_LFUN(lval->u.object->prog, LFUN_ASSIGN_ARROW) >= 0))) {
+	/* There's a function controlling assignments in this object,
+	 * so we can't alter the mapping in place.
+	 */
+      } else {
+	int i;
+	/* fprintf( stderr, "map_refs==2\n" ); */
+	for( i=0; i<args; i+=2 )
+	  low_mapping_insert( m, Pike_sp-(i+2), Pike_sp-(i+1), 2 );
+	stack_pop_n_elems_keep_top(2+args);
+	return;
+      }
     }
   }
 
