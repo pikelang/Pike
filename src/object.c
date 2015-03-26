@@ -1275,6 +1275,13 @@ PMOD_EXPORT int low_object_index_no_free(struct svalue *to,
   switch(i->identifier_flags & IDENTIFIER_TYPE_MASK)
   {
   case IDENTIFIER_PIKE_FUNCTION:
+#if 0
+    /* This special case should hopefully not be needed anymore
+     * now that prototype functions are considered false by
+     * complex_svalue_is_true().
+     *
+     * /grubba 2015-03-26
+     */
     if (i->func.offset == -1 && p->flags & PROGRAM_FINISHED) {
       /* Prototype. In the first pass we must be able to get a
        * function anyway.
@@ -1290,6 +1297,7 @@ PMOD_EXPORT int low_object_index_no_free(struct svalue *to,
       SET_SVAL(*to, T_INT, NUMBER_UNDEFINED, integer, 0);
       break;
     }
+#endif /* 0 */
     /* Fall through. */
 
   case IDENTIFIER_C_FUNCTION:
