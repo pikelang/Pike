@@ -2134,17 +2134,46 @@ PMOD_EXPORT ptrdiff_t debug_fd_read(FD fd, void *to, ptrdiff_t len)
   }
 
   ret=0;
-  if(len && !ReadFile(handle, to,
-		      DO_NOT_WARN((DWORD)len),
-		      &ret,0) && ret<=0)
-  {
+  while(len && !ReadFile(handle, to,
+			 DO_NOT_WARN((DWORD)len),
+			 &ret,0) && ret<=0) {
     unsigned int err = GetLastError();
     release_fd(fd);
     set_errno_from_win32_error (err);
     switch(err)
     {
-      /* Pretend we reached the end of the file */
+      case ERROR_NOT_ENOUGH_MEMORY:
+	/* This can happen when reading from stdin, and can be due
+	 * to running out of OS io-buffers. cf ReadConsole():
+	 *
+	 * | lpBuffer [out]
+	 * |   A pointer to a buffer that receives the data read from
+	 * |   the console input buffer.
+	 * |
+	 * |   The storage for this buffer is allocated from a shared
+	 * |   heap for the process that is 64 KB in size. The maximum
+	 * |   size of the buffer will depend on heap usage.
+	 *
+	 * The limit seems to be 26608 bytes on Windows Server 2003,
+	 * and 31004 bytes on some versions of Windows XP.
+	 *
+	 * The gdb people ran into the same bug in 2006.
+	 * cf http://permalink.gmane.org/gmane.comp.gdb.patches/29669
+	 *
+	 * FIXME: We ought to attempt to fill the remainder of
+	 *        the buffer on success and full read, but as
+	 *        this failure mode usually only happens with
+	 *        the console, we would risk blocking, so let
+	 *        the higher levels of code deal with the
+	 *        resulting short reads.
+	 */
+	/* Halve the size of the request and retry. */
+	len = len >> 1;
+	if (len) continue;
+	/* Total failure. Fall out to the generic error return. */
+	break;
       case ERROR_BROKEN_PIPE:
+	/* Pretend we reached the end of the file */
         return 0;
     }
     FDDEBUG(fprintf(stderr,"Read failed %d\n",errno));
