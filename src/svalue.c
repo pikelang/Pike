@@ -515,9 +515,12 @@ int complex_svalue_is_true( const struct svalue *s )
 {
   if(TYPEOF(*s) == T_FUNCTION)
   {
+    struct program *p;
+    struct reference *ref;
+    struct identifier *i;
     if (SUBTYPEOF(*s) == FUNCTION_BUILTIN) return 1;
-    if(!s->u.object->prog) return 0;
-    if (s->u.object->prog == pike_trampoline_program) {
+    if(!(p = s->u.object->prog)) return 0;
+    if (p == pike_trampoline_program) {
       /* Trampoline */
       struct pike_trampoline *tramp =
         get_storage(s->u.object, pike_trampoline_program);
@@ -526,6 +529,14 @@ int complex_svalue_is_true( const struct svalue *s )
 	/* Uninitialized trampoline, or trampoline to destructed object. */
 	return 0;
       }
+    }
+    ref = PTR_FROM_INT(p, SUBTYPEOF(*s));
+    i = ID_FROM_PTR(p, ref);
+    if ((i->func.offset == -1) &&
+	((i->identifier_flags & IDENTIFIER_TYPE_MASK) ==
+	 IDENTIFIER_PIKE_FUNCTION)) {
+      /* Prototype. */
+      return 0;
     }
     return 1;
   }
