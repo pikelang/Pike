@@ -217,6 +217,7 @@ test_eq(max("foo","bar","gazonk"),"gazonk")
 test_eq(max(1,2.0,3),3)
 test_eq(max(),0)
 test_eq(max(Math.inf,0.0,-Math.inf),Math.inf)
+test_eq(typeof(max(0,0)), typeof(0))
 
 dnl - min
 test_eq(min(5),5)
@@ -226,6 +227,7 @@ test_eq(min("foo","bar","gazonk"),"bar")
 test_eq(min(1,2.0,3),1)
 test_eq(min(),0)
 test_eq(min(Math.inf,0.0,-Math.inf),-Math.inf)
+test_eq(typeof(min(0,0)), typeof(0))
 
 dnl - abs
 test_eq(abs(5),5)
