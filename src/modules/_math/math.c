@@ -763,10 +763,12 @@ PIKE_MODULE_INIT
   ADD_EFUN("round",f_round,tFunc(tNUM,tFlt),0);
 
 #define CMP_TYPE							\
-  tOr4(tFuncV(tString,tString,tString),					\
+  tOr4(tIfnot(tFuncV(tNone,tNot(tString),tMix),				\
+	      tFuncV(tString,tString,tString)),				\
        tFunc(tVoid,tInt0),						\
-       tFuncV(tSetvar(0,tOr(tInt,tFloat)),				\
-	      tSetvar(1,tOr(tInt,tFloat)),tOr(tVar(0),tVar(1))),	\
+       tIfnot(tFuncV(tNone,tNot(tOr(tInt,tFloat)),tMix),		\
+	      tFuncV(tSetvar(0,tOr(tInt,tFloat)),			\
+		     tSetvar(1,tOr(tInt,tFloat)),tOr(tVar(0),tVar(1)))), \
        tIfnot(tFuncV(tNone,tNot(tOr(tObj,tMix)),tMix),			\
 	      tFuncV(tMix,tMix,tMix)))
 
