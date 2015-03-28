@@ -235,7 +235,14 @@ protected void create(Context ctx, string(8bit)|void server_name,
   ::create(ctx);
   handshake_state = STATE_wait_for_hello;
   handshake_messages = "";
-  this_program::session = session || Session();
+  if (session &&
+      (!server_name || session->server_name == server_name)) {
+    // Reuse the session.
+    this_program::session = session;
+  } else {
+    this_program::session = Session();
+    this_program::session->server_name = server_name;
+  }
   send_packet(client_hello(server_name));
 }
 
