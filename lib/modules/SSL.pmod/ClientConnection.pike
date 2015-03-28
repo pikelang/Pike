@@ -251,7 +251,7 @@ protected void create(Context ctx, string(8bit)|void server_name,
 //! Sends a @[client_hello] to force a new round of handshaking.
 void send_renegotiate()
 {
-  send_packet(client_hello(), PRI_application);
+  send_packet(client_hello(session->server_name), PRI_application);
 }
 
 //! Do handshake processing. Type is one of HANDSHAKE_*, data is the
