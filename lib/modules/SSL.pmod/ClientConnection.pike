@@ -571,9 +571,14 @@ int(-1..0) got_certificate_request(Buffer input)
   SSL3_DEBUG_MSG("Got %O potential certificate names.",
                  sizeof(client_cert_distinguished_names));
 
+  if (sizeof(input)) {
+    send_packet(alert(ALERT_fatal, ALERT_handshake_failure,
+		      "Badly formed Certificate Request.\n"));
+    return -1;
+  }
+
   return 0;
 }
-
 
 //! Do handshake processing. Type is one of HANDSHAKE_*, data is the
 //! contents of the packet, and raw is the raw packet received (needed
@@ -1054,6 +1059,12 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 
       return 1;			// We're done shaking hands
     }
+  }
+
+  if (sizeof(input)) {
+    send_packet(alert(ALERT_fatal, ALERT_handshake_failure,
+		      "Badly formed handshake packet.\n"));
+    return -1;
   }
 
   return 0;
