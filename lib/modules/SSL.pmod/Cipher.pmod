@@ -32,7 +32,7 @@ protected bool validate_dh(Crypto.DH.Parameters dh,
 			   object session,
 			   object context)
 {
-  if (sizeof(session->ffdhe_groups | ({}))) {
+  if (sizeof(session->ffdhe_groups || ({}))) {
     // Check if one of the recommended groups was selected,
     // in which case we're done.
     foreach(session->ffdhe_groups, int g) {
