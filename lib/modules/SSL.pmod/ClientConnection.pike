@@ -24,9 +24,8 @@ protected string _sprintf(int t)
   if (t == 'O') return sprintf("SSL.ClientConnection(%s)", describe_state());
 }
 
-//!
-Packet client_hello(string(8bit)|void server_name,
-		    array(Packet)|void early_data)
+protected Packet client_hello(string(8bit)|void server_name,
+                              array(Packet)|void early_data)
 {
   Buffer struct = Buffer();
   /* Build client_hello message */
@@ -50,7 +49,7 @@ Packet client_hello(string(8bit)|void server_name,
   if ((state & CONNECTION_handshaking) && !secure_renegotiation) {
     // Initial handshake.
     // Use the backward-compat way of asking for
-    // support for secure renegotiation.
+   // support for secure renegotiation.
     cipher_suites += ({ TLS_empty_renegotiation_info_scsv });
 
     if (client_version < context->max_version) {
@@ -276,7 +275,7 @@ protected void make_key_share_offer(int group)
   keyshares[group] = ke;
 }
 
-Packet client_key_share_packet()
+protected Packet client_key_share_packet()
 {
   Stdio.Buffer offers = Stdio.Buffer();
 
@@ -307,7 +306,7 @@ Packet client_key_share_packet()
   return handshake_packet(HANDSHAKE_client_key_share, struct);
 }
 
-Packet finished_packet(string(8bit) sender)
+protected Packet finished_packet(string(8bit) sender)
 {
   SSL3_DEBUG_MSG("Sending finished_packet, with sender=\""+sender+"\"\n" );
   // We're the client.
@@ -315,7 +314,7 @@ Packet finished_packet(string(8bit) sender)
   return handshake_packet(HANDSHAKE_finished, client_verify_data);
 }
 
-Packet client_key_exchange_packet()
+protected Packet client_key_exchange_packet()
 {
   Stdio.Buffer packet_data = Stdio.Buffer();
   if (!ke) {
@@ -535,7 +534,7 @@ void new_cipher_states()
 }
 
 
-int(-1..0) got_certificate_request(Buffer input)
+protected int(-1..0) got_certificate_request(Buffer input)
 {
   SSL3_DEBUG_MSG("SSL.ClientConnection: CERTIFICATE_REQUEST\n");
 

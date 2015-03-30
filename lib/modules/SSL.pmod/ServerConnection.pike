@@ -21,12 +21,12 @@ protected string _sprintf(int t)
   if (t == 'O') return sprintf("SSL.ServerConnection(%s)", describe_state());
 }
 
-Packet hello_request()
+protected Packet hello_request()
 {
   return handshake_packet(HANDSHAKE_hello_request, "");
 }
 
-Packet finished_packet(string(8bit) sender)
+protected Packet finished_packet(string(8bit) sender)
 {
   SSL3_DEBUG_MSG("Sending finished_packet, with sender=\""+sender+"\"\n" );
   // We're the server.
@@ -34,7 +34,7 @@ Packet finished_packet(string(8bit) sender)
   return handshake_packet(HANDSHAKE_finished, server_verify_data);
 }
 
-Packet server_hello_packet()
+protected Packet server_hello_packet()
 {
   Buffer struct = Buffer();
   /* Build server_hello message */
@@ -129,7 +129,7 @@ Packet server_hello_packet()
   return handshake_packet(HANDSHAKE_server_hello, struct);
 }
 
-Packet server_hello_retry_request_packet(int suite, int group)
+protected Packet server_hello_retry_request_packet(int suite, int group)
 {
   Buffer struct = Buffer();
   struct->add_int(version, 2);
@@ -144,7 +144,7 @@ Packet server_hello_retry_request_packet(int suite, int group)
   return handshake_packet(HANDSHAKE_hello_retry_request, struct);
 }
 
-Packet server_key_share_packet(Stdio.Buffer offer)
+protected Packet server_key_share_packet(Stdio.Buffer offer)
 {
   return handshake_packet(HANDSHAKE_server_key_share, offer);
 }
@@ -152,7 +152,7 @@ Packet server_key_share_packet(Stdio.Buffer offer)
 //! Initialize the KeyExchange @[ke], and generate a
 //! @[HANDSHAKE_server_key_exchange] packet if the
 //! key exchange needs one.
-Packet server_key_exchange_packet()
+protected Packet server_key_exchange_packet()
 {
   if (ke) error("KE!\n");
   ke = session->cipher_spec->ke_factory(context, session, this, client_version);
@@ -162,7 +162,7 @@ Packet server_key_exchange_packet()
   return data && handshake_packet(HANDSHAKE_server_key_exchange, data);
 }
 
-Packet certificate_request_packet(Context context)
+protected Packet certificate_request_packet(Context context)
 {
     /* Send a CertificateRequest message */
     Buffer struct = Buffer();
@@ -184,8 +184,8 @@ void send_renegotiate()
   send_packet(hello_request(), PRI_application);
 }
 
-int(-1..0) reply_new_session(array(int) cipher_suites,
-			     array(int) compression_methods)
+protected int(-1..0) reply_new_session(array(int) cipher_suites,
+                                       array(int) compression_methods)
 {
   send_packet(server_hello_packet());
 
@@ -225,7 +225,7 @@ int(-1..0) reply_new_session(array(int) cipher_suites,
 //! Derive the new master secret from the state of @[ke] and
 //! the payload @[data] received fron the client in its
 //! @[HANDSHAKE_client_key_exchange] packet.
-int(0..1) server_derive_master_secret(Buffer data)
+protected int(0..1) server_derive_master_secret(Buffer data)
 {
   string(8bit)|int(8bit) premaster_secret =
     ke->got_client_key_exchange(data, version);
