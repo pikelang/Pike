@@ -425,13 +425,28 @@ static int parameter_marker(struct svalue *map,struct pike_string *what,
    md=v->u.mapping->data;
    NEW_MAPPING_LOOP(md)
       {
-	 if (TYPEOF(k->ind) != T_INT || TYPEOF(k->val) != T_STRING ||
-	     k->val.u.string->size_shift)
-	    Pike_error("Image.JPEG.encode: illegal value of option "
-		       "marker; expected mapping(int:8 bit string)\n");
-	 jpeg_write_marker(cinfo, k->ind.u.integer, 
-			   (const unsigned char *)k->val.u.string->str,
-			   k->val.u.string->len); 
+	 if (TYPEOF(k->ind) == T_INT) {
+	    if (TYPEOF(k->val) == T_STRING && !k->val.u.string->size_shift) {
+	       jpeg_write_marker(cinfo, k->ind.u.integer,
+				 (const unsigned char *)k->val.u.string->str,
+				 k->val.u.string->len);
+	       continue;
+	    } else if (TYPEOF(k->val) == T_ARRAY) {
+	       struct array *a = k->val.u.array;
+	       INT32 i;
+	       for (i = 0; i < a->size; i++) {
+		 struct pike_string *str = ITEM(a)[i].u.string;
+		 if (TYPEOF(ITEM(a)[i]) != T_STRING || str->size_shift)
+		   goto fail;
+		 jpeg_write_marker(cinfo, k->ind.u.integer,
+				   STR0(str), str->len);
+	       }
+	       continue;
+	    }
+	 }
+      fail:
+	 Pike_error("Image.JPEG.encode: illegal value of option marker; "
+		    "expected mapping(int:string(8bit)|array(string(8bit)))\n");
       }
 
    return 1;
@@ -656,7 +671,7 @@ void set_jpeg_transform_options(INT32 args, jpeg_transform_info *options)
  *!     Default is off for quality<25.
  *!   @member mapping(int:array(array(int))) "quant_tables"
  *!     Tune quantisation tables manually.
- *!   @member mapping(int:string) "marker"
+ *!   @member mapping(int:string(8bit)|array(string(8bit))) "marker"
  *!     Application and comment markers;
  *!     the integer should be one of @[Marker.COM], @[Marker.APP0],
  *!     @[Marker.APP1], ..., @[Marker.APP15]. The string is up to the application;
@@ -984,6 +999,8 @@ static void image_jpeg_encode(INT32 args)
  *!     JPEG quant tables.
  *!   @member int(0..100) "quality"
  *!     JPEG quality guess.
+ *!   @member mapping(int(0..255):string(8bit)|array(string(8bit))) "marker"
+ *!     Mapping from application and comment markers to their values.
  *! @endmapping
  */
 
@@ -1003,7 +1020,7 @@ static void img_jpeg_decode(INT32 args,int mode)
    rgb_group *d;
    JSAMPROW row_pointer[8];
 
-   int n=0,m;
+   int n=0;
 
    if (args<1
        || TYPEOF(sp[-args]) != T_STRING
@@ -1055,6 +1072,9 @@ static void img_jpeg_decode(INT32 args,int mode)
 
    if (mode!=IMG_DECODE_IMAGE)
    {
+      struct mapping *markers;
+      int got_comment = 0;
+
       /* standard header info */
 
       ref_push_string(literal_type_string); n++;
@@ -1115,30 +1135,51 @@ static void img_jpeg_decode(INT32 args,int mode)
       push_int(mds.cinfo.saw_Adobe_marker);
 
       ref_push_string(param_marker); n++;
-      m=0;
+      push_mapping(markers = allocate_mapping(mds.first_marker?10:0));
       while (mds.first_marker)
       {
 	 struct my_marker *mm=mds.first_marker;
+	 struct svalue *val;
 	 push_int(mm->id);
-	 push_string(make_shared_binary_string((char *)mm->data, mm->len));
-	 m++;
+	 if ((val = low_mapping_lookup(markers, Pike_sp-1))) {
+	    if (TYPEOF(*val) == T_STRING) {
+	       /* Both values are strings. */
+	       ref_push_string(val->u.string);
+	       push_string(make_shared_binary_string((char *)mm->data,
+						     mm->len));
+	       f_aggregate(2);
+	    } else {
+	       struct array *old = val->u.array;
+	       struct array *new;
+	       push_string(make_shared_binary_string((char *)mm->data,
+						     mm->len));
+	       new = append_array(old, Pike_sp-1);
+	       pop_stack();
+	       if (new == old) {
+		 /* Array modified in place.
+		  * No need to reassign it.
+		  */
+		 free_array(old);
+		 continue;
+	       }
+	       push_array(new);
+	    }
+	 } else {
+	    push_string(make_shared_binary_string((char *)mm->data, mm->len));
+	 }
+	 mapping_insert(markers, Pike_sp-2, Pike_sp-1);
+	 if ((mm->id == JPEG_COM) && !got_comment) {
+	    /* First comment - Add the comment to the main mapping too. */
+	    stack_swap();
+	    pop_stack();
+	    ref_push_string(param_comment);
+	    stack_swap();
+	    got_comment = 1;
+	 } else {
+	    pop_n_elems(2);
+	 }
 	 mds.first_marker=mm->next;
 	 free(mm);
-      }
-      f_aggregate_mapping(m*2);
-
-      if (m)
-      {
-	 stack_dup();
-	 push_int(JPEG_COM);
-	 f_index(2);
-	 if (TYPEOF(sp[-1]) == T_STRING)
-	 {
-	    ref_push_string(param_comment); n++;
-	    stack_swap();
-	 }
-	 else
-	    pop_stack();
       }
    }
 
