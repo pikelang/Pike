@@ -571,11 +571,8 @@ int(-1..0) got_certificate_request(Buffer input)
   SSL3_DEBUG_MSG("Got %O potential certificate names.",
                  sizeof(client_cert_distinguished_names));
 
-  if (sizeof(input)) {
-    send_packet(alert(ALERT_fatal, ALERT_handshake_failure,
-		      "Badly formed Certificate Request.\n"));
-    return -1;
-  }
+  COND_FATAL(sizeof(input), ALERT_handshake_failure,
+             "Badly formed Certificate Request.\n");
 
   return 0;
 }
@@ -1061,11 +1058,8 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
     }
   }
 
-  if (sizeof(input)) {
-    send_packet(alert(ALERT_fatal, ALERT_handshake_failure,
-		      "Badly formed handshake packet.\n"));
-    return -1;
-  }
+  COND_FATAL(sizeof(input), ALERT_handshake_failure,
+             "Badly formed handshake packet.\n");
 
   return 0;
 }
