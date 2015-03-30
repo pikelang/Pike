@@ -1043,6 +1043,8 @@ string(8bit)|int got_data(string(8bit) data)
 	     return err;
 	   if (err > 0) {
 	     state &= ~CONNECTION_handshaking;
+             COND_FATAL(sizeof(handshake_buffer), ALERT_record_overflow,
+                        "Extraneous handshake data.\n");
 	   }
 	 }
 	 break;
