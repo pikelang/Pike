@@ -1056,8 +1056,5 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
     }
   }
 
-  COND_FATAL(sizeof(input), ALERT_handshake_failure,
-             "Badly formed handshake packet.\n");
-
   return 0;
 }

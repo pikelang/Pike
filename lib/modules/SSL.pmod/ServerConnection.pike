@@ -369,12 +369,6 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
 	if (sizeof(input))
 	  extensions = input->read_hbuffer(2);
 
-#ifdef SSL3_DEBUG
-	if (sizeof(input))
-	  werror("SSL.ServerConnection->handle_handshake: "
-		 "extra data in hello message ignored\n");
-#endif
-
 	string(8bit) early_data = "";
 	int missing_secure_renegotiation = secure_renegotiation;
 	if (extensions) {
@@ -715,12 +709,6 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
                      "Too low client version.\n");
 	}
 
-#ifdef SSL3_DEBUG
-	if (sizeof(input))
-	  werror("SSL.ServerConnection->handle_handshake: "
-		 "extra data in hello message ignored\n");
-#endif
-
 	SSL3_DEBUG_MSG("ciphers: me:\n%s, client:\n%s",
 		       fmt_cipher_suites(context->preferred_suites),
 		       fmt_cipher_suites(cipher_suites));
@@ -734,7 +722,8 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
 
 	  ProtocolVersion orig_version = version;
 
-	  while (!session->select_cipher_suite(certs, cipher_suites, version)) {
+	  while (!session->select_cipher_suite(certs, cipher_suites, version))
+          {
 	    if (version > context->min_version) {
 	      // Try falling back to an older version of SSL/TLS.
 	      version--;
@@ -1007,8 +996,6 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
 	SSL3_DEBUG_MSG("Wanted group: %s\n",
 		       fmt_constant(wanted_group, "GROUP"));
 	Stdio.Buffer offers = input->read_hbuffer(2);
-	COND_FATAL(sizeof(input), ALERT_handshake_failure,
-                   "Invalid ClientKeyShare.\n");
 
 	mapping(int:string(8bit)) kes = ([]);
 	string(8bit) premaster_secret;
@@ -1231,12 +1218,8 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
                  (version >= PROTOCOL_TLS_1_3),
                  ALERT_unexpected_message, "Expected client cert.\n");
 
-      if (!server_derive_master_secret(input)) {
+      if (!server_derive_master_secret(input))
 	return -1;
-      }
-
-      COND_FATAL(sizeof(input), ALERT_unexpected_message,
-                 "Trailing key exchange data.\n");
 
       handshake_messages += raw->read();
 
@@ -1314,6 +1297,6 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
     }
     break;
   }
-  //  SSL3_DEBUG_MSG("SSL.ServerConnection: messages = %O\n", handshake_messages);
+
   return 0;
 }

@@ -1029,6 +1029,9 @@ string(8bit)|int got_data(string(8bit) data)
 
            mixed exception = catch {
                err = handle_handshake(type, input, raw);
+               COND_FATAL(err>=0 && sizeof(input), ALERT_record_overflow,
+                          sprintf("Extraneous handshake packet data (%O).\n",
+                                  type));
              };
            if( exception )
            {
@@ -1044,7 +1047,7 @@ string(8bit)|int got_data(string(8bit) data)
 	   if (err > 0) {
 	     state &= ~CONNECTION_handshaking;
              COND_FATAL(sizeof(handshake_buffer), ALERT_record_overflow,
-                        "Extraneous handshake data.\n");
+                        "Extraneous handshake packets.\n");
 	   }
 	 }
 	 break;
