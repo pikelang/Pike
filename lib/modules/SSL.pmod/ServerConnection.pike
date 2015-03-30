@@ -1135,13 +1135,9 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
        if(version == PROTOCOL_SSL_3_0) {
 	 my_digest=hash_messages("CLNT");
          digest = input->read(36);
-         COND_FATAL(sizeof(input), ALERT_unexpected_message,
-                    "Invalid handshake finished message.\n");
        } else if(version >= PROTOCOL_TLS_1_0) {
 	 my_digest=hash_messages("client finished");
          digest = input->read(12);
-         COND_FATAL(sizeof(input), ALERT_unexpected_message,
-                    "Invalid handshake finished message.\n");
        }
 
        if ((ke && ke->message_was_bad)	/* Error delayed until now */
