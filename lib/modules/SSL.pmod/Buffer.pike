@@ -23,12 +23,10 @@ this_program add(string(8bit)|Stdio.Buffer str)
 
 //! Create a new buffer, optionally initialized with the
 //! value @[s].
-protected void create(void|string(8bit) s)
+protected void create(void|string(8bit)|Stdio.Buffer s)
 {
-  if( s && strlen(s) )
+  if( s )
     ::create(s);
-  else
-    ::create();
   set_error_mode(.BufferError);
 }
 

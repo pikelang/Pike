@@ -583,9 +583,8 @@ protected int(-1..0) got_certificate_request(Buffer input)
 //! This function returns 0 if handshake is in progress, 1 if handshake
 //! is finished, and -1 if a fatal error occurred. It uses the
 //! send_packet() function to transmit packets.
-int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
+int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
 {
-  Buffer input = Buffer(data);
 #ifdef SSL3_PROFILING
   addRecord(type,0);
 #endif
@@ -606,7 +605,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
   default:
     error( "Internal error\n" );
   case STATE_wait_for_hello:
-    handshake_messages += raw;
+    handshake_messages += raw->read();
     switch(type) {
     case HANDSHAKE_hello_retry_request:
       SSL3_DEBUG_MSG("SSL.ClientConnection: HELLO_RETRY_REQUEST\n");
@@ -882,7 +881,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
     if (version < PROTOCOL_TLS_1_3) {
       error("Waiting for key share in %s.\n", fmt_version(version));
     }
-    handshake_messages += raw;
+    handshake_messages += raw->read();
     switch(type)
     {
     default:
@@ -922,7 +921,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
     break;
 
   case STATE_wait_for_peer:
-    handshake_messages += raw;
+    handshake_messages += raw->read();
     switch(type)
     {
     default:
@@ -982,7 +981,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
       COND_FATAL(1, ALERT_unexpected_message, "Unexpected server message.\n");
       break;
     case HANDSHAKE_certificate_request:
-      handshake_messages += raw;
+      handshake_messages += raw->read();
       return got_certificate_request(input);
     case HANDSHAKE_certificate_verify:
       SSL3_DEBUG_MSG("SSL.ClientConnection: CERTIFICATE_VERIFY\n");
@@ -997,7 +996,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	return -1;
       }
 
-      handshake_messages += raw;
+      handshake_messages += raw->read();
 
       handshake_state = STATE_wait_for_finish;
       break;
@@ -1024,8 +1023,8 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
                  ALERT_unexpected_message, "Digests differ.\n");
 
       if (reuse || (version >= PROTOCOL_TLS_1_3)) {
-	handshake_messages += raw; /* Second hash includes this message,
-				    * the first doesn't */
+	handshake_messages += raw->read();
+        /* Second hash includes this message, the first doesn't */
 
 	if(version == PROTOCOL_SSL_3_0)
 	  send_packet(finished_packet("CLNT"));

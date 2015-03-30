@@ -414,7 +414,7 @@ void derive_master_secret(string(8bit) premaster_secret)
 //! This function returns 0 if handshake is in progress, 1 if handshake
 //! is finished, and -1 if a fatal error occurred. It uses the
 //! send_packet() function to transmit packets.
-int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw);
+int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw);
 
 //! Initialize the connection state.
 //!
@@ -860,8 +860,8 @@ void handle_heartbeat(string(8bit) s)
   }
 }
 
+Stdio.Buffer handshake_buffer = Stdio.Buffer(); // Error mode 0.
 string(8bit) alert_buffer = "";
-string(8bit) handshake_buffer = "";
 
 //! Main receive handler.
 //!
@@ -1008,18 +1008,27 @@ string(8bit)|int got_data(string(8bit) data)
 	 COND_FATAL(expect_change_cipher && (version < PROTOCOL_TLS_1_3),
                     ALERT_unexpected_message, "Expected change cipher.\n");
 
-	 int err, len;
-	 handshake_buffer += packet->fragment;
+	 int err;
+	 handshake_buffer->add( packet->fragment );
 
 	 while (sizeof(handshake_buffer) >= 4)
 	 {
-	   sscanf(handshake_buffer, "%*c%3c", len);
-	   if (sizeof(handshake_buffer) < (len + 4))
-	     break;
+           Stdio.Buffer.RewindKey key = handshake_buffer->rewind_key();
+           int type = handshake_buffer->read_int8();
+           Buffer input = Buffer(handshake_buffer->read_hbuffer(3));
+           if(!input)
+           {
+             // Not enough data.
+             key->rewind();
+             break;
+           }
+
+           int len = 1+3+sizeof(input);
+           key->rewind();
+           Stdio.Buffer raw = handshake_buffer->read_buffer(len);
+
            mixed exception = catch {
-               err = handle_handshake(handshake_buffer[0],
-                                      handshake_buffer[4..len + 3],
-                                      handshake_buffer[.. len + 3]);
+               err = handle_handshake(type, input, raw);
              };
            if( exception )
            {
@@ -1030,7 +1039,6 @@ string(8bit)|int got_data(string(8bit) data)
              }
              throw(exception);
            }
-	   handshake_buffer = handshake_buffer[len + 4..];
 	   if (err < 0)
 	     return err;
 	   if (err > 0) {

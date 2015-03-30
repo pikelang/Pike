@@ -267,9 +267,8 @@ void new_cipher_states()
 //! This function returns 0 if handshake is in progress, 1 if handshake
 //! is finished, and -1 if a fatal error occurred. It uses the
 //! send_packet() function to transmit packets.
-int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
+int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
 {
-  Buffer input = Buffer(data);
 #ifdef SSL3_PROFILING
   addRecord(type,0);
 #endif
@@ -302,7 +301,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
      pending_read_state = pending_write_state = ({});
      ke = 0;
 
-     handshake_messages += raw;
+     handshake_messages += raw->read();
 
      // The first four bytes of the client_random is specified to be
      // the timestamp on the client side. This is to guard against bad
@@ -828,7 +827,8 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	    //     early data packets twice.
 	    int(-1..1) ret =
 	      handle_handshake(handshake_type,
-			       handshake_buffer[4..len + 3], "");
+			       Buffer(handshake_buffer[4..len + 3]),
+                               Buffer(""));
 	    handshake_buffer = handshake_buffer[len + 4..];
 	    if (ret) {
 	      if (ret < 0) return ret;
@@ -908,7 +908,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
     if (client_version < PROTOCOL_TLS_1_3) {
       error("Waiting for key share in %s.\n", fmt_version(version));
     }
-    handshake_messages += raw;
+    handshake_messages += raw->read();
     switch(type)
     {
     default:
@@ -1166,10 +1166,10 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	   SSL3_DEBUG_MSG("digests differ\n");
          COND_FATAL(1, ALERT_unexpected_message, "Key exchange failure.\n");
        }
-       handshake_messages += raw; /* Second hash includes this message,
-				   * the first doesn't */
-       /* Handshake complete */
+       handshake_messages += raw->read();
+       /* Second hash includes this message, the first doesn't */
 
+       /* Handshake complete */
        client_verify_data = digest;
 
        if (version >= PROTOCOL_TLS_1_3) {
@@ -1238,7 +1238,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
       COND_FATAL(sizeof(input), ALERT_unexpected_message,
                  "Trailing key exchange data.\n");
 
-      handshake_messages += raw;
+      handshake_messages += raw->read();
 
       SSL3_DEBUG_MSG("certificate_state: %d\n", certificate_state);
       // TODO: we need to determine whether the certificate has signing abilities.
@@ -1260,7 +1260,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
        COND_FATAL(certificate_state != CERT_requested,
                   ALERT_unexpected_message, "Unexpected client cert.\n");
 
-       handshake_messages += raw;
+       handshake_messages += raw->read();
 
        if( !handle_certificates(input) )
          return -1;
@@ -1300,7 +1300,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	return -1;
       }
 
-      handshake_messages += raw;
+      handshake_messages += raw->read();
       handshake_state = STATE_wait_for_finish;
 
       if (version >= PROTOCOL_TLS_1_3) {
