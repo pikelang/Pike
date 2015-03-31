@@ -36,24 +36,25 @@ protected void create(ProtocolVersion version, void|int extra)
 protected object check_size(string data, int extra)
 {
   if (sizeof(data) > (PACKET_MAX_SIZE + extra))
-    return Alert(ALERT_fatal, ALERT_unexpected_message, version);
+    return Alert(ALERT_fatal, ALERT_record_overflow, version);
   marginal_size = extra;
   fragment = data;
+  return 0;
 }
 
 object set_plaintext(string data)
 {
-  check_size(data, 0);
+  return check_size(data, 0);
 }
 
 object set_compressed(string data)
 {
-  check_size(data, 1024);
+  return check_size(data, 1024);
 }
 
 object set_encrypted(string data)
 {
-  check_size(data, 2048);
+  return check_size(data, 2048);
 }
 
 //! Receive data read from the network.
