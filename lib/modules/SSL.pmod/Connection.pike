@@ -99,9 +99,14 @@ Buffer get_signature_algorithms()
 
 #ifdef SSL3_PROFILING
 System.Timer timer = System.Timer();
+float last_time = 0.0;
 void addRecord(int t,int s) {
-  Stdio.stdout.write("time: %.6f sender: %d type: %s\n", timer->get(), s,
-                     fmt_constant(t, "HANDSHAKE"));
+  addRecord(sprintf("sender: %d type: %s", s, fmt_constant(t, "HANDSHAKE")));
+}
+variant void addRecord(string label) {
+  float stamp = timer->peek();
+  Stdio.stdout.write("time: %.6f (%.6f) %s\n", stamp, stamp-last_time, label);
+  last_time = stamp;
 }
 #endif
 
@@ -134,24 +139,20 @@ Packet change_cipher_packet()
 
 string(8bit) hash_messages(string(8bit) sender, int|void len)
 {
-  string(8bit) hash;
   if(version == PROTOCOL_SSL_3_0) {
     string(8bit) data = handshake_messages + sender;
-    hash = .Cipher.MACmd5(session->master_secret)->hash(data) +
+    return .Cipher.MACmd5(session->master_secret)->hash(data) +
       .Cipher.MACsha(session->master_secret)->hash(data);
   }
   else if(version <= PROTOCOL_TLS_1_1) {
-    hash = session->cipher_spec->prf(session->master_secret, sender,
+    return session->cipher_spec->prf(session->master_secret, sender,
 				     Crypto.MD5.hash(handshake_messages)+
 				     Crypto.SHA1.hash(handshake_messages), 12);
-  } else if(version >= PROTOCOL_TLS_1_2) {
-    hash = session->cipher_spec->prf(session->master_secret, sender,
-				     session->cipher_spec->hash
-                                     ->hash(handshake_messages),
-				     len || 12);
   }
-
-  return hash;
+  return session->cipher_spec->prf(session->master_secret, sender,
+                                   session->cipher_spec->hash
+                                   ->hash(handshake_messages),
+                                   len || 12);
 }
 
 Packet certificate_packet(array(string(8bit)) certificates)
