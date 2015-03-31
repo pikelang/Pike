@@ -1048,8 +1048,14 @@ string(8bit)|int got_data(string(8bit) data)
 	     return err;
 	   if (err > 0) {
 	     state &= ~CONNECTION_handshaking;
-             COND_FATAL(sizeof(handshake_buffer), ALERT_record_overflow,
-                        "Extraneous handshake packets.\n");
+	     if ((version >= PROTOCOL_TLS_1_3) || expect_change_cipher) {
+	       // NB: Renegotiation is available in TLS 1.2 and earlier.
+	       COND_FATAL(sizeof(handshake_buffer), ALERT_unexpected_message,
+			  "Extraneous handshake packets.\n");
+	     }
+	     COND_FATAL(sizeof(handshake_buffer) && !secure_renegotiation,
+			ALERT_no_renegotiation,
+			"Renegotiation not supported in unsecure mode.\n");
 	   }
 	 }
 	 break;
