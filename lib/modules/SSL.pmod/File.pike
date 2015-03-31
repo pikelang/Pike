@@ -1738,6 +1738,7 @@ protected int queue_write()
 
   // Allow write_buffer to contain at most buffer_limit + 2^14 + 2048
   // bytes.
+ loop:
   while (sizeof(write_buffer) < buffer_limit) {
     res = conn->to_write();
 
@@ -1745,17 +1746,17 @@ protected int queue_write()
     werror ("queue_write: To write: %O\n", res);
 #endif
 
-    if (!stringp(res)) {
+    switch(res)
+    {
+    case -1:
+    case 1:
       SSL3_DEBUG_MSG ("queue_write: Connection closed %s\n",
 		      res == 1 ? "normally" : "abruptly");
-      break;
-    }
-
-    if (res == "") {
+      break loop;
+    case 0:
       SSL3_DEBUG_MSG ("queue_write: Got nothing to write (%d bytes buffered)\n",
 		      sizeof (write_buffer));
-      res = 0;
-      break;
+      break loop;
     }
 
     write_buffer->add(res);

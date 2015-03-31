@@ -606,7 +606,7 @@ int query_write_queue_size()
 }
 
 //! Extracts data from the packet queues. Returns a string of data
-//! to be written, "" if there are no pending packets, 1 of the
+//! to be written, 0 if there are no pending packets, 1 of the
 //! connection is being closed politely, and -1 if the connection
 //! died unexpectedly.
 //!
@@ -621,9 +621,8 @@ string|int to_write()
 
   Packet packet = [object(Packet)](alert_q->get() || urgent_q->get() ||
                                    application_q->get());
-  if (!packet) {
-    return (state & CONNECTION_local_closing) ? 1 : "";
-  }
+  if (!packet)
+    return !!(state & CONNECTION_local_closing);
 
   SSL3_DEBUG_MSG("SSL.Connection: writing packet of type %d, %O\n",
                  packet->content_type, packet->fragment[..6]);
