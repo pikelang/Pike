@@ -645,7 +645,7 @@ string|int to_write()
       state = [int(0..0)|ConnectionState](state | CONNECTION_local_closed);
     }
   }
-  string res = current_write_state->encrypt_packet(packet, context)->send();
+  packet = current_write_state->encrypt_packet(packet, context);
   if (packet->content_type == PACKET_change_cipher_spec) {
     if (sizeof(pending_write_state)) {
       current_write_state = pending_write_state[0];
@@ -658,7 +658,8 @@ string|int to_write()
       return to_write();
     }
   }
-  return res;
+
+  return packet->send();
 }
 
 //! Initiate close.
