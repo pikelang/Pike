@@ -1366,18 +1366,17 @@ PMOD_EXPORT void f_has_index(INT32 args)
       push_int(t);
       break;
       
-    case T_MULTISET:
     case T_MAPPING:
-      f_index(2);
-      f_zero_type(1);
-      
-#ifdef PIKE_DEBUG
-      if(TYPEOF(Pike_sp[-1]) != T_INT)
-	PIKE_ERROR("has_index",
-		   "Function `zero_type' gave incorrect result.\n", Pike_sp, args);
-#endif
-      Pike_sp[-1].u.integer = !Pike_sp[-1].u.integer;
-      break;
+        t=!!low_mapping_lookup( Pike_sp[-2].u.mapping, Pike_sp-1 );
+        pop_n_elems(2);
+        push_int(t);
+        break;
+
+    case T_MULTISET:
+        t = multiset_member( Pike_sp[-2].u.multiset, Pike_sp-1 );
+        pop_n_elems(2);
+        push_int(t);
+        break;
       
     case T_OBJECT:
     case T_PROGRAM:
