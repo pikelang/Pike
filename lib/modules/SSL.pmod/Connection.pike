@@ -605,16 +605,15 @@ int query_write_queue_size()
   return sizeof(alert_q) + sizeof(urgent_q) + sizeof(application_q);
 }
 
-//! Extracts data from the packet queues. Returns a string of data
-//! to be written, 0 if there are no pending packets, 1 of the
-//! connection is being closed politely, and -1 if the connection
-//! died unexpectedly.
+//! Extracts data from the packet queues. Returns 2 if data has been
+//! written, 0 if there are no pending packets, 1 of the connection is
+//! being closed politely, and -1 if the connection died unexpectedly.
 //!
 //! This function is intended to be called from an i/o write callback.
 //!
 //! @seealso
 //!   @[query_write_queue_size()], @[send_streaming_data()].
-string|int to_write()
+int(-1..2) to_write(Stdio.Buffer output)
 {
   if (state & CONNECTION_local_fatal)
     return -1;
@@ -654,11 +653,12 @@ string|int to_write()
     }
     if (version >= PROTOCOL_TLS_1_3) {
       // The change cipher state packet is not sent on the wire in TLS 1.3.
-      return to_write();
+      return 2;
     }
   }
 
-  return packet->send();
+  packet->send(output);
+  return 2;
 }
 
 //! Initiate close.

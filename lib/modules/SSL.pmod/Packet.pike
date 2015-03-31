@@ -122,10 +122,7 @@ string(8bit)|.Packet recv(string(8bit) data)
 }
 
 //! Serialize the packet for sending.
-//!
-//! @returns
-//!   Returns the serialized packet.
-string(8bit) send()
+void send(Stdio.Buffer output)
 {
   if (! PACKET_types[content_type] )
     error( "Invalid type" );
@@ -140,6 +137,7 @@ string(8bit) send()
   if (sizeof(fragment) > (PACKET_MAX_SIZE + marginal_size))
     error( "Maximum packet size exceeded\n" );
 
-  return sprintf("%c%2c%2c%s", content_type, protocol_version,
-		 sizeof(fragment), fragment);
+  output->add_int8(content_type);
+  output->add_int16(protocol_version);
+  output->add_hstring(fragment, 2);
 }

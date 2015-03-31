@@ -211,7 +211,7 @@ protected Packet client_hello(string(8bit)|void server_name,
 		   sizeof(early_data));
     Buffer buf = Buffer();
     foreach(early_data, Packet p) {
-      buf->add(p->send());
+      p->send(buf);
     }
     return buf;
   };

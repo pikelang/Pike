@@ -1740,7 +1740,7 @@ protected int queue_write()
   // bytes.
  loop:
   while (sizeof(write_buffer) < buffer_limit) {
-    res = conn->to_write();
+    res = conn->to_write(write_buffer);
 
 #ifdef SSL3_DEBUG_TRANSPORT
     werror ("queue_write: To write: %O\n", res);
@@ -1758,10 +1758,6 @@ protected int queue_write()
 		      sizeof (write_buffer));
       break loop;
     }
-
-    write_buffer->add(res);
-    SSL3_DEBUG_MSG ("queue_write: Got %d bytes to write (%d bytes buffered)\n",
-		    sizeof (res), sizeof (write_buffer));
     res = 0;
   }
 
