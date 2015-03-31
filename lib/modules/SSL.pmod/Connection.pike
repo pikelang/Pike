@@ -697,7 +697,16 @@ int send_streaming_data (string(8bit) data)
   return size;
 }
 
-protected int handle_alert(string s)
+// @returns
+// @int
+//   @elem value -1
+//     A Fatal error occurred and processing should stop.
+//   @elem value 0
+//     Processing can continue.
+//   @elem value 1
+//     Connection should close.
+// @endint
+protected int(-1..1) handle_alert(string s)
 {
   // sizeof(s)==2, checked at caller.
   int level = s[0];
@@ -861,7 +870,7 @@ void handle_heartbeat(string(8bit) s)
 }
 
 Stdio.Buffer handshake_buffer = Stdio.Buffer(); // Error mode 0.
-string(8bit) alert_buffer = "";
+Stdio.Buffer alert_buffer = Stdio.Buffer();
 
 //! Main receive handler.
 //!
@@ -944,15 +953,11 @@ string(8bit)|int got_data(string(8bit) data)
          COND_FATAL(!sizeof(packet->fragment), ALERT_unexpected_message,
                     "Zero length Alert fragments not allowed.\n");
 
-	 int i;
 	 int err = 0;
-	 alert_buffer += packet->fragment;
-	 for (i = 0;
-	      !err && ((sizeof(alert_buffer) - i) >= 2);
-	      i+= 2)
-	   err = handle_alert(alert_buffer[i..i+1]);
+	 alert_buffer->add( packet->fragment );
+         while(!err && sizeof(alert_buffer)>1)
+           err = handle_alert(alert_buffer->read(2));
 
-	 alert_buffer = alert_buffer[i..];
 	 if (err)
 	   if (err > 0 && sizeof (res))
 	     // If we get a close then we return the data we got so far.
