@@ -901,6 +901,19 @@ string(8bit)|int got_data(string(8bit) data)
 	     return err;
 	   if (err > 0) {
 	     state &= ~CONNECTION_handshaking;
+             if( expect_change_cipher && sizeof(handshake_buffer) )
+             {
+               send_packet(alert(ALERT_fatal, ALERT_unexpected_message,
+                                 "Extraneous handshake packets.\n"));
+               return -1;
+             }
+             if( !secure_renegotiation && sizeof(handshake_buffer) )
+             {
+               send_packet(alert(ALERT_fatal, ALERT_no_renegotiation,
+                                 "Renegotiation not supported in unsecure "
+                                 "mode.\n"));
+               return -1;
+             }
 	   }
 	 }
 	 break;
