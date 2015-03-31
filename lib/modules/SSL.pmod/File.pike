@@ -1731,14 +1731,14 @@ protected int queue_write()
 {
   if (!conn) return -1;
 
-  // Estimate how much data there is in the write_buffer.
-  int got = sizeof(write_buffer);
-
   int buffer_limit = 16384;
   if (conn->state & CONNECTION_closing) buffer_limit = 1;
 
   int|string res;
-  while (got < buffer_limit) {
+
+  // Allow write_buffer to contain at most buffer_limit + 2^14 + 2048
+  // bytes.
+  while (sizeof(write_buffer) < buffer_limit) {
     res = conn->to_write();
 
 #ifdef SSL3_DEBUG_TRANSPORT
@@ -1758,10 +1758,7 @@ protected int queue_write()
       break;
     }
 
-    int was_empty = !sizeof (write_buffer);
     write_buffer->add(res);
-    got += sizeof(res);
-
     SSL3_DEBUG_MSG ("queue_write: Got %d bytes to write (%d bytes buffered)\n",
 		    sizeof (res), sizeof (write_buffer));
     res = 0;
