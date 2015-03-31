@@ -1872,6 +1872,7 @@ class client
     {
       remove(this_object());
     }
+    mixed retry_co;
   };
 
   mapping requests=([]);
@@ -1881,6 +1882,8 @@ class client
     if(!r) return;
     sscanf(r->req,"%2c",int id);
     m_delete(requests,id);
+    if (r->retry_co) remove_call_out(r->retry_co);
+    r->retry_co = UNDEFINED;
     r->callback && r->callback(r->domain,0,@r->args);
     destruct(r);
   }
@@ -1903,7 +1906,7 @@ class async_client
     if (nsno >= sizeof(nameservers)) {
       if(r->retries++ > RETRIES)
       {
-	call_out(remove,REMOVE_DELAY,r);
+	r->retry_co = call_out(remove, REMOVE_DELAY, r);
 	return;
       } else {
 	nsno = 0;
@@ -1911,7 +1914,7 @@ class async_client
     }
 
     send(nameservers[nsno],53,r->req);
-    call_out(retry,RETRY_DELAY,r,nsno+1);
+    r->retry_co = call_out(retry, RETRY_DELAY, r, nsno+1);
   }
 
   //! Enqueue a new raw DNS request.
@@ -1935,7 +1938,7 @@ class async_client
 	object r = Request(domain, req, callback, args);
 	requests[lid]=r;
 	udp::send(nameservers[0],53,r->req);
-	call_out(retry,RETRY_DELAY,r,1);
+	r->retry_co = call_out(retry, RETRY_DELAY, r, 1);
 	return r;
       }
     }
