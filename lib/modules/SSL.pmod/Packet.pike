@@ -71,54 +71,44 @@ object set_encrypted(string data)
 //!   Raw data from the network.
 //!
 //! @returns
-//!   Returns a string of leftover data if packet is complete,
-//!   otherwise @expr{0@}.
+//!   Returns a @expr{1@} data if packet is complete, otherwise
+//!   @expr{0@}.
 //!
 //!   If there's an error, an alert object is returned.
 //!
-string(8bit)|.Packet recv(string(8bit) data)
+int(0..1)|.Packet recv(Stdio.Buffer data)
 {
-  buffer += data;
-  while (sizeof(buffer) >= needed_chars)
+  if(sizeof(data)<HEADER_SIZE) return 0;
+
+  Stdio.Buffer.RewindKey key = data->rewind_key();
+  content_type = data->read_int8();
+  if( !PACKET_types[content_type] )
+    return Alert(ALERT_fatal, ALERT_unexpected_message, protocol_version);
+
+  protocol_version = data->read_int16();
+  if ((protocol_version & ~0xff) != PROTOCOL_SSL_3_0)
+    return Alert(ALERT_fatal, ALERT_unexpected_message, protocol_version,
+                 sprintf("SSL.Packet->send: Version %d.%d "
+                         "is not supported\n",
+                         protocol_version>>8, protocol_version & 0xff));
+#ifdef SSL3_DEBUG
+  if (protocol_version > PROTOCOL_TLS_MAX)
+    werror("SSL.Packet->recv: received version %d.%d packet\n",
+           protocol_version>>8, protocol_version & 0xff);
+#endif
+
+  int length = data->read_int16();
+  if ( (length <= 0) || (length > (PACKET_MAX_SIZE + marginal_size)))
+    return Alert(ALERT_fatal, ALERT_unexpected_message, protocol_version);
+
+  if(length > sizeof(data))
   {
-    if (needed_chars == HEADER_SIZE)
-    {
-      content_type = buffer[0];
-      fragment = 0;
-      int length;
-
-      /* Support only short SSL2 headers */
-      if ( (content_type & 0x80) && (buffer[2] == 1) )
-      {
-#ifdef SSL3_DEBUG
-	werror("SSL.Packet: Receiving SSL2 packet %O\n", buffer[..4]);
-#endif
-        return Alert(ALERT_fatal, ALERT_insufficient_security, PROTOCOL_SSL_3_0);
-      }
-      if( !PACKET_types[content_type] )
-        return Alert(ALERT_fatal, ALERT_unexpected_message, protocol_version);
-
-      sscanf(buffer, "%*c%2c%2c", protocol_version, length);
-      if ( (length <= 0) || (length > (PACKET_MAX_SIZE + marginal_size)))
-	return Alert(ALERT_fatal, ALERT_unexpected_message, protocol_version);
-      if ((protocol_version & ~0xff) != PROTOCOL_SSL_3_0)
-	return Alert(ALERT_fatal, ALERT_unexpected_message, protocol_version,
-		     sprintf("SSL.Packet->send: Version %d.%d "
-			     "is not supported\n",
-			     protocol_version>>8, protocol_version & 0xff));
-#ifdef SSL3_DEBUG
-      if (protocol_version > PROTOCOL_TLS_MAX)
-	werror("SSL.Packet->recv: received version %d.%d packet\n",
-	       protocol_version>>8, protocol_version & 0xff);
-#endif
-
-      needed_chars += length;
-    } else {
-      fragment = buffer[HEADER_SIZE .. needed_chars - 1];
-      return buffer[needed_chars ..];
-    }
+    key->rewind();
+    return 0;
   }
-  return 0;
+
+  fragment = data->read(length);
+  return 1;
 }
 
 //! Serialize the packet for sending.

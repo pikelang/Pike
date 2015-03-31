@@ -787,18 +787,18 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
 	  handshake_state = STATE_wait_for_key_share;
 
 	  string(8bit) handshake_buffer = "";
-	  while(sizeof(early_data)) {
+          Stdio.Buffer read_buffer = Stdio.Buffer();
+	  while(sizeof(read_buffer)) {
 	    SSL3_DEBUG_MSG("Handling early data packet...\n");
 	    Packet p = Packet(version);
-	    string(8bit)|Packet remainder = p->recv(early_data);
-	    if (!stringp(remainder)) {
-	      send_packet(([object]remainder) ||
+	    int(0..1)|Packet res = p->recv(read_buffer);
+	    if (res!=1) {
+	      send_packet(([object]res) ||
 			  alert(ALERT_fatal, ALERT_record_overflow,
 				"Early data extension contains a "
 				"partial packet.\n"));
 	      return -1;
 	    }
-	    early_data = [string]remainder;
 	    if (p->content_type != PACKET_handshake) {
 	      SSL3_DEBUG_MSG("Ignoring non-handshake early data packet.\n");
 	      continue;

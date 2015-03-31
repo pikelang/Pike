@@ -449,7 +449,7 @@ protected void create(Context ctx)
 
 State current_read_state;
 State current_write_state;
-string(8bit) left_over;
+Stdio.Buffer read_buffer = Stdio.Buffer();
 Packet packet;
 
 //! Number of application data bytes sent by us.
@@ -511,20 +511,21 @@ void set_alert_callback(function(object,int|object,string:void) callback)
 //! more data is needed to get a complete packet.
 protected Packet recv_packet(string(8bit) data)
 {
-  string(8bit)|Packet res;
+  int(0..1)|Packet res;
+
+  read_buffer->add(data);
 
   //  SSL3_DEBUG_MSG("SSL.Connection->recv_packet(%O)\n", data);
-  if (left_over || !packet)
-  {
+  if (!packet)
     packet = Packet(version, 2048);
-    res = packet->recv( (left_over || "")  + data);
-  }
-  else
-    res = packet->recv(data);
 
-  if (stringp(res))
+  res = packet->recv(read_buffer);
+
+  if(objectp(res))
+    return [object(Packet)]res;
+
+  if (res)
   { /* Finished a packet */
-    left_over = [string]res;
     if (current_read_state) {
       SSL3_DEBUG_MSG("SSL.Connection->recv_packet(): version=0x%x\n",
 		     version);
@@ -534,10 +535,8 @@ protected Packet recv_packet(string(8bit) data)
       return 0;
     }
   }
-  else /* Partial packet read, or error */
-    left_over = 0;
 
-  return [object]res;
+  return 0;
 }
 
 //! Queues a packet for write. Handshake and and change cipher
@@ -930,7 +929,8 @@ string(8bit)|int got_data(string(8bit) data)
     { /* Reply alert */
       SSL3_DEBUG_MSG("SSL.Connection: Bad received packet\n");
       if (alert_callback)
-	alert_callback(packet, current_read_state->seq_num, left_over);
+	alert_callback(packet, current_read_state->seq_num,
+                       (string)read_buffer);
       if (this && packet)
 	send_packet(packet);
       if ((!packet) || (!this) || (packet->level == ALERT_fatal))
