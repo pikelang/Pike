@@ -369,7 +369,7 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
 	if (sizeof(input))
 	  extensions = input->read_hbuffer(2);
 
-	string(8bit) early_data = "";
+	Stdio.Buffer early_data = Stdio.Buffer();
 	int missing_secure_renegotiation = secure_renegotiation;
 	if (extensions) {
 	  int maybe_safari_10_8 = 1;
@@ -615,7 +615,7 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
 	      break;
 
 	    case EXTENSION_early_data:
-	      early_data += (string)extension_data;
+	      early_data->add(extension_data);
 	      break;
 
             case EXTENSION_padding:
@@ -787,11 +787,10 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
 	  handshake_state = STATE_wait_for_key_share;
 
 	  string(8bit) handshake_buffer = "";
-          Stdio.Buffer read_buffer = Stdio.Buffer();
-	  while(sizeof(read_buffer)) {
+	  while(sizeof(early_data)) {
 	    SSL3_DEBUG_MSG("Handling early data packet...\n");
 	    Packet p = Packet(version);
-	    int(0..1)|Packet res = p->recv(read_buffer);
+	    int(0..1)|Packet res = p->recv(early_data);
 	    if (res!=1) {
 	      send_packet(([object]res) ||
 			  alert(ALERT_fatal, ALERT_record_overflow,
