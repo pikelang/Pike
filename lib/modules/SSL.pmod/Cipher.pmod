@@ -703,7 +703,7 @@ class KeyExchangeExportRSA
   {
     SSL3_DEBUG_MSG("KE_EXPORT_RSA\n");
 
-    rsa = Crypto.RSA()->generate_key(512);
+    rsa = context->get_export_rsa_key();
     SSL3_DEBUG_MSG("Sending a server key exchange-message, "
 		   "with a %d-bits key.\n",
 		   rsa->key_size());

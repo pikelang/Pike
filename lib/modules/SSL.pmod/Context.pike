@@ -636,6 +636,15 @@ void configure_suite_b(int(128..)|void min_keylength,
 
 #endif /* Crypto.ECC.Curve && Crypto.AES.GCM && Crypto.SHA384 */
 
+//! Called by the KeyExchangeExportRSA during KE_rsa_export key
+//! exchanges to ge thte weak RSA key. By default a new 512 bit key is
+//! generated for each key exchange. This method can be overloaded to
+//! provide caching or alternative means to generate keys.
+Crypto.RSA get_export_rsa_key()
+{
+  return Crypto.RSA()->generate_key(512);
+}
+
 // --- PSK API
 
 // In addition to implementing get_psk, get_psk_id if you are a client

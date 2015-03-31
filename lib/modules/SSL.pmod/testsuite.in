@@ -304,6 +304,12 @@ test_do([[
       return ::alert_factory(con, level, description, version, message);
     }
 
+    Crypto.RSA export_key;
+    Crypto.RSA get_export_rsa_key()
+    {
+      return export_key || (export_key=::get_export_rsa_key());
+    }
+
     protected void create()
     {
       // Test support for private FFDHE groups with the weakest MODP group.
