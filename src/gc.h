@@ -423,7 +423,7 @@ PMOD_EXPORT extern const char *gc_found_place;
     gc_found_in_type = orig_gc_found_in_type;				\
   } while (0)
 
-static INLINE int __attribute__((unused)) debug_gc_check (void *a, const char *place)
+static INLINE int PIKE_UNUSED_ATTRIBUTE debug_gc_check (void *a, const char *place)
 {
   int res;
   const char *orig_gc_found_place = gc_found_place;
@@ -433,7 +433,7 @@ static INLINE int __attribute__((unused)) debug_gc_check (void *a, const char *p
   return res;
 }
 
-static INLINE int __attribute__((unused)) debug_gc_check_weak (void *a, const char *place)
+static INLINE int PIKE_UNUSED_ATTRIBUTE debug_gc_check_weak (void *a, const char *place)
 {
   int res;
   const char *orig_gc_found_place = gc_found_place;
@@ -686,7 +686,7 @@ PMOD_EXPORT TYPE_T type_from_visit_fn (visit_thing_fn *fn);
 PMOD_EXPORT TYPE_FIELD real_visit_svalues (struct svalue *s, size_t num,
 					   int ref_type, void *extra);
 
-static INLINE int __attribute__((unused)) real_visit_short_svalue (union anything *u, TYPE_T t,
+static INLINE int PIKE_UNUSED_ATTRIBUTE real_visit_short_svalue (union anything *u, TYPE_T t,
 								   int ref_type, void *extra)
 {
   check_short_svalue (u, t);
@@ -698,7 +698,7 @@ static INLINE int __attribute__((unused)) real_visit_short_svalue (union anythin
   (real_visit_short_svalue (debug_malloc_pass ((U)), (T), (REF_TYPE), (EXTRA)))
 
 #ifdef DEBUG_MALLOC
-static INLINE TYPE_FIELD __attribute__((unused)) dmalloc_visit_svalues (struct svalue *s, size_t num,
+static INLINE TYPE_FIELD PIKE_UNUSED_ATTRIBUTE dmalloc_visit_svalues (struct svalue *s, size_t num,
 									int ref_type, char *l, void *extra)
 {
   return real_visit_svalues (dmalloc_check_svalues (s, num, l),
@@ -706,7 +706,7 @@ static INLINE TYPE_FIELD __attribute__((unused)) dmalloc_visit_svalues (struct s
 }
 #define visit_svalues(S, NUM, REF_TYPE, EXTRA)				\
   dmalloc_visit_svalues ((S), (NUM), (REF_TYPE), (EXTRA), DMALLOC_LOCATION())
-static INLINE void __attribute__((unused)) dmalloc_visit_svalue (struct svalue *s,
+static INLINE void PIKE_UNUSED_ATTRIBUTE dmalloc_visit_svalue (struct svalue *s,
 								 int ref_type, void *extra, char *l)
 {
   int t = TYPEOF(*s);
@@ -721,7 +721,7 @@ static INLINE void __attribute__((unused)) dmalloc_visit_svalue (struct svalue *
   dmalloc_visit_svalue ((S), (REF_TYPE), (EXTRA), DMALLOC_LOCATION())
 #else
 #define visit_svalues real_visit_svalues
-static INLINE void __attribute__((unused)) visit_svalue (struct svalue *s, int ref_type, void *extra)
+static INLINE void PIKE_UNUSED_ATTRIBUTE visit_svalue (struct svalue *s, int ref_type, void *extra)
 {
   int t = TYPEOF(*s);
   check_svalue (s);
