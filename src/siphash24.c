@@ -50,9 +50,9 @@
 
 /* SipHash-2-4 */
 #ifdef __i386__
-__attribute__((fastcall))
+ATTRIBUTE((fastcall))
 #endif
-__attribute__((hot))
+ATTRIBUTE((hot))
 static size_t low_hashmem_siphash24( const void *s, size_t len, size_t nbytes, size_t key )
 {
   const unsigned char * in = (const unsigned char*)s;

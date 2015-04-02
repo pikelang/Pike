@@ -232,7 +232,7 @@ void reorder(char *memory, INT32 nitems, INT32 size,INT32 *order)
 
 #define bit_SSE4_2 (1<<20)
 
-__attribute__((const)) static inline int supports_sse42( ) 
+ATTRIBUTE((const)) static inline int supports_sse42( ) 
 {
     unsigned int ignore, cpuid_ecx;
     __cpuid( 0x1, ignore, ignore, cpuid_ecx, ignore );
@@ -240,7 +240,7 @@ __attribute__((const)) static inline int supports_sse42( )
 }
 
 #ifdef __i386__
-__attribute__((fastcall))
+ATTRIBUTE((fastcall))
 #endif
 #ifdef HAVE_CRC32_INTRINSICS
 /*
@@ -248,9 +248,9 @@ The intrinsics are only available if -msse4 is specified.
 However, specifying that option on the command-line makes the whole runtime-test here
 pointless, since gcc will use other sse4 instructions when suitable.
 */
-__attribute__((target("sse4")))
+ATTRIBUTE((target("sse4")))
 #endif
-__attribute__((hot))
+ATTRIBUTE((hot))
 static inline size_t low_hashmem_ia32_crc32( const void *s, size_t len,
 					     size_t nbytes, size_t key )
 {
@@ -331,7 +331,7 @@ static inline size_t low_hashmem_ia32_crc32( const void *s, size_t len,
 }
 
 #ifdef __i386__
-__attribute__((fastcall))
+ATTRIBUTE((fastcall))
 #endif
   size_t (*low_hashmem)(const void *, size_t, size_t, size_t);
 
