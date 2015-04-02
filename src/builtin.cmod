@@ -36,7 +36,10 @@
 #include <ctype.h>
 #include <errno.h>
 #include <math.h>
+
+#ifdef HAVE_ARPA_INET_H
 #include <arpa/inet.h>
+#endif /* HAVE_ARPA_INET_H */
 
 #define DEFAULT_CMOD_STORAGE
 
