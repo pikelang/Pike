@@ -25,6 +25,7 @@
 #include "pike_error.h"
 #include "module_support.h"
 #include "pike_memory.h"
+#include "pike_types.h"
 #include "gc.h"
 #include "threads.h"
 #include "operators.h"
