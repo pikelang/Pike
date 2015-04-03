@@ -533,6 +533,7 @@ int main(int argc, array(string) argv)
     Stdio.recursive_rm(vpath);
   }
 
+  rm(pike_base_name+"/"+filename+".tar.gz");
   if(Process.create_process
      ( ({"gzip",
 	 "-9",
