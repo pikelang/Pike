@@ -408,6 +408,7 @@ int main(int argc, array(string) argv)
     Stdio.recursive_rm(vpath);
   }
 
+  rm(pike_base_name+"/"+filename+".tar.gz");
   run( "gzip", "-9", pike_base_name+"/"+filename+".tar" )
   {
     clean_exit(1, "Gzip failed!\n");
