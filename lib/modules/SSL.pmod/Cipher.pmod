@@ -253,10 +253,17 @@ class CipherSpec {
       int sign_id = input->read_int(1);
       string sign = input->read_hstring(2);
 
+      if( hash_id != signature_hash ||
+          sign_id != signature_alg )
+      {
+        SSL3_DEBUG_MSG("Signature pair <%d,%d> doesn't match "
+                       "negotiated <%d,%d>\n", hash_id, sign_id,
+                       signature_hash, signature_alg);
+        return 0;
+      }
+
       Crypto.Hash hash = HASH_lookup[hash_id];
       if (!hash) return 0;
-
-      // FIXME: Validate that the sign_id is correct.
 
       return pkc->pkcs_verify(data, hash, sign);
     }
