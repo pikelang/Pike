@@ -58,6 +58,16 @@ Alert|Packet decrypt_packet(Packet packet)
   ProtocolVersion version = packet->protocol_version;
   string data = packet->fragment;
 
+  if (!data)
+  {
+    // packet->fragment is zero when the packet format is illegal,
+    // so returning early is safe. We should never get to this
+    // though, as decrypt_packet isn't called from connection if the
+    // fragment isn't successfully parsed.
+    return alert(ALERT_fatal, ALERT_unexpected_message,
+                 "SSL.State: Failed to get fragment.\n");
+  }
+
 #ifdef SSL3_DEBUG_CRYPT
   werror("SSL.State->decrypt_packet (3.%d, type: %d, seq_num: %d): data = %O\n",
 	 version & 0xff, packet->content_type, seq_num, data);
@@ -104,16 +114,6 @@ Alert|Packet decrypt_packet(Packet packet)
 #endif
 
     string msg = data;
-
-    if (!msg)
-    {
-      // packet->fragment is zero when the packet format is illegal,
-      // so returning early is safe. We should never get to this
-      // though, as decrypt_packet isn't called from connection if the
-      // fragment isn't successfully parsed.
-      return alert(ALERT_fatal, ALERT_unexpected_message,
-		   "SSL.State: Failed to get fragment.\n");
-    }
 
     switch(session->cipher_spec->cipher_type) {
     case CIPHER_stream:
@@ -290,9 +290,6 @@ Alert|Packet decrypt_packet(Packet packet)
     if (!data)
       fail = fail || alert(ALERT_fatal, ALERT_unexpected_message,
 			   "Invalid compression.\n");
-    if (sizeof(data)>16384)
-      fail = fail || alert(ALERT_fatal, ALERT_decompression_failure,
-                           "Inflated package >16K\n");
 
     // Set uncompressed data
     fail = fail || [object(Alert)]packet->set_plaintext(data);
