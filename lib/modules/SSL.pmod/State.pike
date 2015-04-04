@@ -1,6 +1,7 @@
 #pike __REAL_VERSION__
 // #pragma strict_types
 #require constant(SSL.Cipher)
+#include "tls.h"
 
 //! The state object handles a one-way stream of packets, and operates
 //! in either decryption or encryption mode. A connection switches
@@ -68,10 +69,9 @@ Alert|Packet decrypt_packet(Packet packet)
                  "SSL.State: Failed to get fragment.\n");
   }
 
-#ifdef SSL3_DEBUG_CRYPT
-  werror("SSL.State->decrypt_packet (3.%d, type: %d, seq_num: %d): data = %O\n",
-	 version & 0xff, packet->content_type, seq_num, data);
-#endif
+  SSL3_DEBUG_CRYPT_MSG("SSL.State->decrypt_packet "
+                       "(3.%d, type: %d, seq_num: %d): data = %O\n",
+                       version & 0xff, packet->content_type, seq_num, data);
 
   int hmac_size = mac && (session->truncated_hmac ? 10 :
 			  session->cipher_spec?->hash_size);
@@ -87,17 +87,14 @@ Alert|Packet decrypt_packet(Packet packet)
 
     if (mac->hash_packet(packet, seq_num, hmac_size)[..hmac_size-1] != digest) {
       // Bad digest.
-#ifdef SSL3_DEBUG
-      werror("Failed MAC-verification!!\n");
-#endif
-#ifdef SSL3_DEBUG_CRYPT
-      werror("Expected digest: %O\n"
-	     "Calculated digest: %O\n"
-	     "Seqence number: %O\n",
-	     digest,
-	     mac->hash_packet(packet, seq_num, hmac_size)[..hmac_size-1],
-	     seq_num);
-#endif
+      SSL3_DEBUG_MSG("Failed MAC-verification!!\n");
+      SSL3_DEBUG_CRYPT_MSG("Expected digest: %O\n"
+                           "Calculated digest: %O\n"
+                           "Seqence number: %O\n",
+                           digest,
+                           mac->hash_packet(packet, seq_num,
+                                            hmac_size)[..hmac_size-1],
+                           seq_num);
       return alert(ALERT_fatal, ALERT_bad_record_mac,
 		   "Bad MAC-verification.\n");
     }
@@ -107,11 +104,8 @@ Alert|Packet decrypt_packet(Packet packet)
 
   if (crypt)
   {
-#ifdef SSL3_DEBUG_CRYPT
-    werror("SSL.State: Trying decrypt...\n");
-    //    werror("SSL.State: The encrypted packet is:%O\n", data);
-    werror("sizeof of the encrypted packet is:"+sizeof(data)+"\n");
-#endif
+    SSL3_DEBUG_CRYPT_MSG("SSL.State: Trying decrypt...\n");
+    SSL3_DEBUG_CRYPT_MSG("encrypted packet size is %d\n", sizeof(data));
 
     string msg = data;
 
@@ -141,9 +135,7 @@ Alert|Packet decrypt_packet(Packet packet)
                        "SSL.State: Invalid padding.\n");
       } else if (version >= PROTOCOL_TLS_1_0) {
 
-#ifdef SSL3_DEBUG_CRYPT
-        werror("SSL.State: Decrypted message: %O.\n", msg);
-#endif
+        SSL3_DEBUG_CRYPT_MSG("SSL.State: Decrypted message: %O.\n", msg);
         if (catch { msg = crypt->unpad(msg, Crypto.PAD_TLS); }) {
           fail = alert(ALERT_fatal, ALERT_unexpected_message,
                        "SSL.State: Invalid padding.\n");
@@ -170,9 +162,7 @@ Alert|Packet decrypt_packet(Packet packet)
 	// using salt and implicit iv.
 	iv = sprintf("%s%*c", salt, crypt->iv_size() - sizeof(salt), seq_num);
       }
-#ifdef SSL3_DEBUG_CRYPT
-      werror("SSL.State: AEAD IV: %O.\n", iv);
-#endif
+      SSL3_DEBUG_CRYPT_MSG("SSL.State: AEAD IV: %O.\n", iv);
 
       int digest_size = crypt->digest_size();
       string digest = msg[<digest_size-1..];
@@ -188,16 +178,12 @@ Alert|Packet decrypt_packet(Packet packet)
 			    (session->cipher_spec->explicit_iv_size +
 			     digest_size));
       }
-#ifdef SSL3_DEBUG_CRYPT
-      werror("SSL.State: AEAD Auth data: %O.\n", auth_data);
-#endif
+      SSL3_DEBUG_CRYPT_MSG("SSL.State: AEAD Auth data: %O.\n", auth_data);
 
       crypt->update(auth_data);
       msg = crypt->crypt(msg[session->cipher_spec->explicit_iv_size..
                              <digest_size]);
-#ifdef SSL3_DEBUG_CRYPT
-      werror("SSL.State: Decrypted message: %O.\n", msg);
-#endif
+      SSL3_DEBUG_CRYPT_MSG("SSL.State: Decrypted message: %O.\n", msg);
       seq_num++;
       if (digest != crypt->digest()) {
         // Bad digest.
@@ -212,9 +198,7 @@ Alert|Packet decrypt_packet(Packet packet)
     data = msg;
   }
 
-#ifdef SSL3_DEBUG_CRYPT
-  werror("SSL.State: Decrypted_packet %O\n", data);
-#endif
+  SSL3_DEBUG_CRYPT_MSG("SSL.State: Decrypted_packet %O\n", data);
 
   if (tls_iv) {
     // TLS 1.1 IV. RFC 4346 6.2.3.2:
@@ -227,9 +211,7 @@ Alert|Packet decrypt_packet(Packet packet)
 
   if (hmac_size)
   {
-#ifdef SSL3_DEBUG_CRYPT
-    werror("SSL.State: Trying mac verification...\n");
-#endif
+    SSL3_DEBUG_CRYPT_MSG("SSL.State: Trying mac verification...\n");
     int length = sizeof(data) - hmac_size;
     string digest = data[length ..];
     data = data[.. length - 1];
@@ -261,15 +243,12 @@ Alert|Packet decrypt_packet(Packet packet)
 
     if (digest != mac->hash_packet(packet, seq_num)[..hmac_size-1])
       {
-#ifdef SSL3_DEBUG
-	werror("Failed MAC-verification!!\n");
-#endif
-#ifdef SSL3_DEBUG_CRYPT
-	werror("Expected digest: %O\n"
-	       "Calculated digest: %O\n"
-	       "Seqence number: %O\n",
-	       digest, mac->hash_packet(packet, seq_num), seq_num);
-#endif
+        SSL3_DEBUG_MSG("Failed MAC-verification!!\n");
+        SSL3_DEBUG_CRYPT_MSG("Expected digest: %O\n"
+                             "Calculated digest: %O\n"
+                             "Seqence number: %O\n",
+                             digest, mac->hash_packet(packet, seq_num),
+                             seq_num);
 	fail = fail || alert(ALERT_fatal, ALERT_bad_record_mac,
 			     "Bad MAC.\n");
       }
@@ -283,9 +262,7 @@ Alert|Packet decrypt_packet(Packet packet)
 
   if (compress)
   {
-#ifdef SSL3_DEBUG_CRYPT
-    werror("SSL.State: Trying decompression...\n");
-#endif
+    SSL3_DEBUG_CRYPT_MSG("SSL.State: Trying decompression...\n");
     data = compress(data);
     if (!data)
       fail = fail || alert(ALERT_fatal, ALERT_unexpected_message,
@@ -329,9 +306,8 @@ Alert|Packet encrypt_packet(Packet packet, Context ctx)
 
   if (crypt)
   {
-#ifdef SSL3_DEBUG_CRYPT
-    werror("SSL.State: Encrypting message #%d: %O.\n", seq_num, data);
-#endif
+    SSL3_DEBUG_CRYPT_MSG("SSL.State: Encrypting message #%d: %O.\n",
+                         seq_num, data);
 
     switch(session->cipher_spec->cipher_type) {
     case CIPHER_stream:
@@ -373,9 +349,7 @@ Alert|Packet encrypt_packet(Packet packet, Context ctx)
 	//   number.
 	iv = sprintf("%s%*c", salt, crypt->iv_size() - sizeof(salt), seq_num);
       }
-#ifdef SSL3_DEBUG_CRYPT
-      werror("SSL.State: AEAD IV: %O.\n", iv);
-#endif
+      SSL3_DEBUG_CRYPT_MSG("SSL.State: AEAD IV: %O.\n", iv);
       crypt->set_iv(iv);
       string auth_data;
       if (version >= PROTOCOL_TLS_1_3) {
@@ -387,9 +361,7 @@ Alert|Packet encrypt_packet(Packet packet, Context ctx)
 			    version, sizeof(data));
       }
 
-#ifdef SSL3_DEBUG_CRYPT
-      werror("SSL.State: AEAD auth data: %O.\n", auth_data);
-#endif
+      SSL3_DEBUG_CRYPT_MSG("SSL.State: AEAD auth data: %O.\n", auth_data);
       crypt->update(auth_data);
       data = explicit_iv + crypt->crypt(data) + crypt->digest();
       break;
