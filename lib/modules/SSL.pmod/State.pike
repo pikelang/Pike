@@ -59,8 +59,8 @@ Alert|Packet decrypt_packet(Packet packet)
   string data = packet->fragment;
 
 #ifdef SSL3_DEBUG_CRYPT
-  werror("SSL.State->decrypt_packet (3.%d, type: %d): data = %O\n",
-	 version & 0xff, packet->content_type, data);
+  werror("SSL.State->decrypt_packet (3.%d, type: %d, seq_num: %d): data = %O\n",
+	 version & 0xff, packet->content_type, seq_num, data);
 #endif
 
   int hmac_size = mac && (session->truncated_hmac ? 10 :
@@ -170,6 +170,10 @@ Alert|Packet decrypt_packet(Packet packet)
 	// using salt and implicit iv.
 	iv = sprintf("%s%*c", salt, crypt->iv_size() - sizeof(salt), seq_num);
       }
+#ifdef SSL3_DEBUG_CRYPT
+      werror("SSL.State: AEAD IV: %O.\n", iv);
+#endif
+
       int digest_size = crypt->digest_size();
       string digest = msg[<digest_size-1..];
       crypt->set_iv(iv);
@@ -184,9 +188,16 @@ Alert|Packet decrypt_packet(Packet packet)
 			    (session->cipher_spec->explicit_iv_size +
 			     digest_size));
       }
+#ifdef SSL3_DEBUG_CRYPT
+      werror("SSL.State: AEAD Auth data: %O.\n", auth_data);
+#endif
+
       crypt->update(auth_data);
       msg = crypt->crypt(msg[session->cipher_spec->explicit_iv_size..
                              <digest_size]);
+#ifdef SSL3_DEBUG_CRYPT
+      werror("SSL.State: Decrypted message: %O.\n", msg);
+#endif
       seq_num++;
       if (digest != crypt->digest()) {
         // Bad digest.
@@ -321,6 +332,10 @@ Alert|Packet encrypt_packet(Packet packet, Context ctx)
 
   if (crypt)
   {
+#ifdef SSL3_DEBUG_CRYPT
+    werror("SSL.State: Encrypting message #%d: %O.\n", seq_num, data);
+#endif
+
     switch(session->cipher_spec->cipher_type) {
     case CIPHER_stream:
       data = crypt->crypt(data + digest);
@@ -361,6 +376,9 @@ Alert|Packet encrypt_packet(Packet packet, Context ctx)
 	//   number.
 	iv = sprintf("%s%*c", salt, crypt->iv_size() - sizeof(salt), seq_num);
       }
+#ifdef SSL3_DEBUG_CRYPT
+      werror("SSL.State: AEAD IV: %O.\n", iv);
+#endif
       crypt->set_iv(iv);
       string auth_data;
       if (version >= PROTOCOL_TLS_1_3) {
@@ -371,6 +389,10 @@ Alert|Packet encrypt_packet(Packet packet, Context ctx)
 			    seq_num, packet->content_type,
 			    version, sizeof(data));
       }
+
+#ifdef SSL3_DEBUG_CRYPT
+      werror("SSL.State: AEAD auth data: %O.\n", auth_data);
+#endif
       crypt->update(auth_data);
       data = explicit_iv + crypt->crypt(data) + crypt->digest();
       break;
