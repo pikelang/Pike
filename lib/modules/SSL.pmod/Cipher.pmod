@@ -198,10 +198,7 @@ class CipherSpec {
     case SIGNATURE_rsa:
       {
         string digest = Crypto.MD5->hash(data) + Crypto.SHA1->hash(data);
-
-        int size = session->private_key->key_size()/8;
-        struct->add_int16(size);
-        struct->add_int(session->private_key->raw_sign(digest), size);
+        struct->add_hint(session->private_key->raw_sign(digest), 2);
         return struct;
       }
 
