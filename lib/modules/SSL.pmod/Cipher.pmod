@@ -238,16 +238,13 @@ class CipherSpec {
   }
 
   //! The function used to verify the signature for packets.
-  int(0..1) verify(object session, string cookie, Stdio.Buffer struct,
-                   Stdio.Buffer input)
+  int(0..1) verify(object session, string data, Stdio.Buffer input)
   {
     if( signature_alg == SIGNATURE_anonymous )
       return 1;
 
     Crypto.Sign.State pkc = session->peer_public_key;
     if( !pkc ) return 0;
-
-    string data = cookie + (string)struct;
 
     // RFC 5246 4.7
     if( session->version >= PROTOCOL_TLS_1_2 )
@@ -457,7 +454,7 @@ class KeyExchange(object context, object session, object connection,
     {
       mixed err = catch {
           verification_ok = session->cipher_spec->verify(
-            session, client_random + server_random, struct, input);
+            session, client_random + server_random + (string)struct, input);
         };
 #ifdef SSL3_DEBUG
       if( err ) {

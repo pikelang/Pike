@@ -187,14 +187,12 @@ int(-1..0) validate_certificate_verify(Buffer input,
 {
   int(0..1) verification_ok;
   string(8bit) signed = handshake_messages;
-  if (version < PROTOCOL_TLS_1_3) {
-    signature_context = "";
-  } else {
-    signed = session->cipher_spec->hash->hash(signed);
-  }
+  if (version >= PROTOCOL_TLS_1_3)
+    signed = signature_context + session->cipher_spec->hash->hash(signed);
+
   mixed err = catch {
       verification_ok = session->cipher_spec->verify(
-        session, signature_context, Buffer(signed), input);
+        session, signed, input);
     };
 #ifdef SSL3_DEBUG
   if (err) {
