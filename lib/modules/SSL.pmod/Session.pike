@@ -43,10 +43,10 @@ mapping cert_data;
 //! Negotiated protocol version.
 ProtocolVersion version;
 
-//! the peer certificate chain
+//! The peer certificate chain
 array(string(8bit)) peer_certificate_chain;
 
-//! our certificate chain
+//! Our certificate chain
 array(string(8bit)) certificate_chain;
 
 //! Our private key.
@@ -370,8 +370,9 @@ int select_cipher_suite(array(CertificatePair) certs,
 
 #if constant(Crypto.ECC.Curve)
   if (!sizeof(ecc_curves) || ecc_point_format==-1) {
-    // Client and server have no common curves, so remove ECC from KE
-    // mask.
+    // The client may claim to support ECC, but hasn't sent the
+    // required extension or any curves that we support, so
+    // remove ECC from KE mask.
     ke_mask &= ~KE_ecc_mask;
   }
 #endif
