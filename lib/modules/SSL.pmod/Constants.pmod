@@ -240,7 +240,7 @@ constant ALERT_unknown_ca			= 48;	// TLS 1.0
 constant ALERT_access_denied			= 49;	// TLS 1.0
 constant ALERT_decode_error			= 50;	// TLS 1.0
 constant ALERT_decrypt_error			= 51;	// TLS 1.0
-constant ALERT_export_restriction_RESERVED	= 60;	// TLS 1.0
+constant ALERT_export_restriction	        = 60;	// TLS 1.0
 constant ALERT_protocol_version			= 70;	// TLS 1.0
 constant ALERT_insufficient_security		= 71;	// TLS 1.0
 constant ALERT_internal_error			= 80;	// TLS 1.0
@@ -273,7 +273,7 @@ constant ALERT_descriptions = ([
   ALERT_access_denied: "Access denied.",
   ALERT_decode_error: "Decoding error.",
   ALERT_decrypt_error: "Decryption error.",
-  ALERT_export_restriction_RESERVED: "Export restrictions apply.",
+  ALERT_export_restriction: "Export restrictions apply.",
   ALERT_protocol_version: "Unsupported protocol.",
   ALERT_insufficient_security: "Insufficient security.",
   ALERT_internal_error: "Internal error.",
@@ -285,10 +285,17 @@ constant ALERT_descriptions = ([
   ALERT_unrecognized_name: "Unrecognized host name.",
   ALERT_bad_certificate_status_response: "Bad certificate status response.",
   ALERT_bad_certificate_hash_value: "Invalid certificate signature.",
-  // ALERT_unknown_psk_identity
-  ALERT_no_application_protocol : "No compatible application layer protocol.",
+  ALERT_unknown_psk_identity: "Unknown PSK identity.",
+  ALERT_no_application_protocol: "No compatible application layer protocol.",
 ]);
- 			      
+
+constant ALERT_deprecated = ([
+  ALERT_decryption_failed: PROTOCOL_TLS_1_2,
+  ALERT_decompression_failure: PROTOCOL_TLS_1_3,
+  ALERT_no_certificate: PROTOCOL_TLS_1_1,
+  ALERT_export_restriction: PROTOCOL_TLS_1_1,
+]);
+
 constant CONNECTION_client 	= 0;
 constant CONNECTION_server 	= 1;
 constant CONNECTION_client_auth = 2;

@@ -712,6 +712,11 @@ protected int(-1..1) handle_alert(string s)
   COND_FATAL(!(ALERT_levels[level] && ALERT_descriptions[description]),
              ALERT_unexpected_message, "Invalid alert\n");
 
+  // Consider all deprecated alerts as fatals.
+  COND_FATAL((ALERT_deprecated[description] &&
+              ALERT_deprecated[description] < version),
+             ALERT_unexpected_message, "Deprecated alert\n");
+
   if (level == ALERT_fatal)
   {
     SSL3_DEBUG_MSG("SSL.Connection: Fatal alert %O\n",
