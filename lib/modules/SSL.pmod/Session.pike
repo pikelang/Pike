@@ -70,7 +70,7 @@ int(0..1) extended_master_secret;
 
 protected void create(string(8bit)|void id)
 {
-  identity = id || "";
+  identity = id;
 }
 
 /*
