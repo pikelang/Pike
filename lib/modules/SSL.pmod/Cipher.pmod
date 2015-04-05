@@ -1295,7 +1295,7 @@ class KeyExchangeECDHE
   }
 }
 
-//! Key exchange for @[KE_dhe_psk].
+//! Key exchange for @[KE_ecdhe_psk].
 class KeyExchangeECDHEPSK
 {
   inherit KeyExchangePSK : PSK;
