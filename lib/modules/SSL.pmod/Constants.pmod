@@ -184,14 +184,14 @@ enum KeyExchangeType {
   KE_psk	= 15,	//! Pre-shared Key
   KE_dhe_psk	= 16,	//! Pre-shared Key with DHE
   KE_rsa_psk	= 17,	//! Pre-shared Key signed with RSA
-  // The following three are from RFC 5054.
-  KE_srp_sha	= 18,	//! Secure Remote Password (SRP)
-  KE_srp_sha_rsa= 19,	//! SRP signed with RSA
-  KE_srp_sha_dss= 20,	//! SRP signed with DSS
-  // This was used during SSL 3.0 to test TLS 1.0.
-  KE_rsa_fips	= 21,	//! Rivest-Shamir-Adelman with FIPS keys.
   // This is from RFC 5489.
-  KE_ecdhe_psk  = 22,   //! Pre-shared Key with ECDHE
+  KE_ecdhe_psk  = 18,   //! Pre-shared Key with ECDHE
+  // The following three are from RFC 5054.
+  KE_srp_sha	= 19,	//! Secure Remote Password (SRP)
+  KE_srp_sha_rsa= 20,	//! SRP signed with RSA
+  KE_srp_sha_dss= 21,	//! SRP signed with DSS
+  // This was used during SSL 3.0 to test TLS 1.0.
+  KE_rsa_fips	= 22,	//! Rivest-Shamir-Adelman with FIPS keys.
 }
 
 constant KE_ecc_mask = (1<<KE_ecdh_ecdsa)|(1<<KE_ecdhe_ecdsa)|
