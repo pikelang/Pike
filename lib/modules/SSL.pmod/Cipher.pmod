@@ -331,6 +331,13 @@ class CipherSpec {
 class KeyExchange(object context, object session, object connection,
 		  ProtocolVersion client_version)
 {
+  // 1. Server calls server_key_exchange_packet()
+  // 1.1 Unless overloaded server_key_params() is called.
+  // 2. Client calls got_server_key_exchange()
+  // 2.1 Unless overloaded parse_server_key_exchange() is called.
+  // 3. Client calls client_key_exchange_packet()
+  // 4. Server calls got_client_key_exchange()
+
   //! Indicates whether a certificate isn't required.
   int anonymous;
 
@@ -742,7 +749,7 @@ class KeyExchangeRSAPSK
     if( !id ) return 0;
     packet_data->add_hstring(id, 2);
 
-    // PreMasterSecret/EncryptedPreMAsterSecret from TLS 1.0.
+    // PreMasterSecret/EncryptedPreMasterSecret from TLS 1.0.
     Stdio.Buffer struct = Stdio.Buffer();
     struct->add_int(client_version, 2);
     struct->add( context->random(46) );
@@ -1285,6 +1292,65 @@ class KeyExchangeECDHE
     len = len - sizeof(input);
     key->rewind();
     return input->read_buffer(len);
+  }
+}
+
+//! Key exchange for @[KE_dhe_psk].
+class KeyExchangeECDHEPSK
+{
+  inherit KeyExchangePSK : PSK;
+  inherit KeyExchangeECDHE : ECDHE;
+
+  protected void create(object context, object session, object connection,
+                        ProtocolVersion client_version)
+  {
+    PSK::create(context, session, connection, client_version);
+    ECDHE::create(context, session, connection, client_version);
+  }
+
+  Stdio.Buffer server_key_exchange_packet()
+  {
+    Stdio.Buffer psk = PSK::server_key_exchange_packet();
+    if( !sizeof(psk) )
+      psk->add_int(0, 2);
+    Stdio.Buffer ecdhe = ECDHE::server_key_params();
+    return psk->add(ecdhe);
+  }
+
+  string(8bit) client_key_exchange_packet(Stdio.Buffer packet_data,
+                                          ProtocolVersion version)
+  {
+    string(8bit) id = context->get_psk_id(hint);
+    if( !id ) return 0;
+    packet_data->add_hstring(id, 2);
+
+    string(8bit) z = ECDHE::client_key_exchange_packet(packet_data, version);
+    if( !z ) return 0;
+
+    string(8bit) psk = context->get_psk(id);
+    return sprintf("%2H%2H", z, psk);
+  }
+
+  string(8bit)|int(8bit) got_client_key_exchange(Stdio.Buffer data,
+                                                 ProtocolVersion version)
+  {
+    string(8bit) psk = context->get_psk( data->read_hstring(2) );
+    if( !psk )
+      return ALERT_unknown_psk_identity;
+
+    string(8bit)|int(8bit) z = ECDHE::got_client_key_exchange(data, version);
+    if( intp(z) ) return z;
+
+    return sprintf("%2H%2H", [string(8bit)]z, psk);
+  }
+
+  int got_server_key_exchange(Stdio.Buffer input,
+			      string client_random,
+			      string server_random)
+  {
+    hint = input->read_hstring(2);
+    ECDHE::parse_server_key_exchange(input);
+    return 0;
   }
 }
 
@@ -2157,6 +2223,9 @@ CipherSpec lookup(int suite, ProtocolVersion|int version,
     case KE_rsa_psk:
       res->ke_factory = KeyExchangeRSAPSK;
       break;
+    case KE_ecdhe_psk:
+      res->ke_factory = KeyExchangeECDHEPSK;
+      break;
     default:
       error( "Internal error.\n" );
     }
@@ -2182,6 +2251,9 @@ CipherSpec lookup(int suite, ProtocolVersion|int version,
   case KE_ecdh_anon:
   case KE_psk:
   case KE_dhe_psk:
+#if constant(Crypto.ECC.Curve)
+  case KE_ecdhe_psk:
+#endif
     res->signature_alg = SIGNATURE_anonymous;
     break;
 #if constant(Crypto.ECC.Curve)

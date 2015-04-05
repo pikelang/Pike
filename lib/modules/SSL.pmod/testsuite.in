@@ -47,6 +47,47 @@ test_do([[
   add_constant("parse_fields", parse_fields);
 ]])
 
+test_do([[
+  import SSL.Constants;
+  mapping KE_mapping = ([
+    "null":KE_null,
+    "rsa":([
+      "export":KE_rsa_export,
+      "fallback":KE_rsa,
+      "fips":KE_rsa_fips,
+      "oldfips":KE_rsa_fips,
+      "psk":KE_rsa_psk,
+    ]),
+    "dh":([
+      "dss":KE_dh_dss,
+      "rsa":KE_dh_rsa,
+      "anon":KE_dh_anon,
+    ]),
+    "dhe":([
+      "dss":KE_dhe_dss,
+      "rsa":KE_dhe_rsa,
+      "psk":KE_dhe_psk,
+    ]),
+#if constant(Crypto.ECC.Curve)
+    "ecdh":([
+      "ecdsa":KE_ecdh_ecdsa,
+      "rsa":KE_ecdh_rsa,
+      "anon":KE_ecdh_anon,
+    ]),
+    "ecdhe":([
+      "ecdsa":KE_ecdhe_ecdsa,
+      "rsa":KE_ecdhe_rsa,
+      "psk":KE_ecdhe_psk,
+    ]),
+#endif
+    "psk":([
+      "fallback":KE_psk,
+      "dhe":KE_dhe_psk,
+    ]),
+  ]);
+  add_constant("KE_mapping", KE_mapping);
+]])
+
 test_tests([[
   import SSL.Constants;
   array(int) a()
@@ -63,42 +104,7 @@ test_tests([[
 
       int ke = -1;
 
-      [ke, fno] = parse_fields(fields, fno,
-	([
-	  "null":KE_null,
-	  "rsa":([
-            "export":KE_rsa_export,
-            "fallback":KE_rsa,
-	    "fips":KE_rsa_fips,
-	    "oldfips":KE_rsa_fips,
-            "psk":KE_rsa_psk,
-          ]),
-	  "dh":([
-	    "dss":KE_dh_dss,
-	    "rsa":KE_dh_rsa,
-	    "anon":KE_dh_anon,
-	  ]),
-	  "dhe":([
-	    "dss":KE_dhe_dss,
-	    "rsa":KE_dhe_rsa,
-            "psk":KE_dhe_psk,
-	  ]),
-#if constant(Crypto.ECC.Curve)
-	  "ecdh":([
-	    "ecdsa":KE_ecdh_ecdsa,
-	    "rsa":KE_ecdh_rsa,
-	    "anon":KE_ecdh_anon,
-	  ]),
-	  "ecdhe":([
-	    "ecdsa":KE_ecdhe_ecdsa,
-	    "rsa":KE_ecdhe_rsa,
-	  ]),
-#endif
-          "psk":([
-            "fallback":KE_psk,
-            "dhe":KE_dhe_psk,
-          ]),
-	]));
+      [ke, fno] = parse_fields(fields, fno, KE_mapping);
 
       if ((sizeof(fields) > fno) &&
 	  !(<"export", "with">)[fields[fno] ]) {
@@ -234,6 +240,7 @@ test_tests([[
 ]])
 
 test_do([[
+  add_constant("KE_mapping");
   add_constant("parse_fields");
 ]])
 
@@ -1343,6 +1350,18 @@ test_do([[
         TLS_rsa_psk_with_camellia_256_gcm_sha384,
         TLS_rsa_psk_with_camellia_128_cbc_sha256,
         TLS_rsa_psk_with_camellia_256_cbc_sha384,
+
+        TLS_ecdhe_psk_with_null_sha,
+        TLS_ecdhe_psk_with_null_sha256,
+        TLS_ecdhe_psk_with_null_sha384,
+        TLS_ecdhe_psk_with_rc4_128_sha,
+        TLS_ecdhe_psk_with_3des_ede_cbc_sha,
+        TLS_ecdhe_psk_with_aes_128_cbc_sha,
+        TLS_ecdhe_psk_with_aes_256_cbc_sha,
+        TLS_ecdhe_psk_with_aes_128_cbc_sha256,
+        TLS_ecdhe_psk_with_aes_256_cbc_sha384,
+        TLS_ecdhe_psk_with_camellia_128_cbc_sha256,
+        TLS_ecdhe_psk_with_camellia_256_cbc_sha384,
       });
     }
   };
@@ -1380,6 +1399,7 @@ test_psk(TLS_psk_with_null_sha256)
 test_psk(TLS_psk_with_null_sha384)
 test_psk(TLS_psk_with_aes_256_gcm_sha384)
 test_psk(TLS_dhe_psk_with_aes_128_cbc_sha)
+test_psk(TLS_ecdhe_psk_with_aes_128_cbc_sha)
 
 test_do([[
   Crypto.Sign key = Crypto.RSA()->generate_key(1024);

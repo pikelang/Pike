@@ -181,15 +181,17 @@ enum KeyExchangeType {
   KE_ecdhe_rsa  = 13,	//! Elliptic Curve DH Ephemeral with RSA
   KE_ecdh_anon  = 14,	//! Elliptic Curve DH Anonymous
   // The following three are from RFC 4279.
-  KE_psk	= 15,	//! Preshared Key
-  KE_dhe_psk	= 16,	//! Preshared Key with DHE
-  KE_rsa_psk	= 17,	//! Preshared Key signed with RSA
+  KE_psk	= 15,	//! Pre-shared Key
+  KE_dhe_psk	= 16,	//! Pre-shared Key with DHE
+  KE_rsa_psk	= 17,	//! Pre-shared Key signed with RSA
   // The following three are from RFC 5054.
   KE_srp_sha	= 18,	//! Secure Remote Password (SRP)
   KE_srp_sha_rsa= 19,	//! SRP signed with RSA
   KE_srp_sha_dss= 20,	//! SRP signed with DSS
   // This was used during SSL 3.0 to test TLS 1.0.
   KE_rsa_fips	= 21,	//! Rivest-Shamir-Adelman with FIPS keys.
+  // This is from RFC 5489.
+  KE_ecdhe_psk  = 22,   //! Pre-shared Key with ECDHE
 }
 
 constant KE_ecc_mask = (1<<KE_ecdh_ecdsa)|(1<<KE_ecdhe_ecdsa)|
@@ -202,6 +204,7 @@ constant KE_Anonymous = (<
   KE_ecdh_anon,
   KE_psk,
   KE_dhe_psk,
+  KE_ecdhe_psk,
 >);
 
 //! Compression methods.
@@ -1155,6 +1158,29 @@ TLS_ecdhe_ecdsa_with_aes_256_ccm_8 :	({ KE_ecdhe_ecdsa, CIPHER_aes256, HASH_sha2
    TLS_rsa_psk_with_camellia_256_cbc_sha384 : ({ KE_rsa_psk, CIPHER_camellia256, HASH_sha384, MODE_cbc }),
 #endif /* Crypto.SHA384 */
 #endif /* Crypto.Camellia */
+
+   // PSK with ECDHE
+#if constant(Crypto.ECC.Curve)
+   TLS_ecdhe_psk_with_null_sha : ({ KE_ecdhe_psk, 0, HASH_sha }),
+   TLS_ecdhe_psk_with_null_sha256 : ({ KE_ecdhe_psk, 0, HASH_sha256 }),
+#if constant(Crypto.SHA384)
+   TLS_ecdhe_psk_with_null_sha384 : ({ KE_ecdhe_psk, 0, HASH_sha384, MODE_cbc }),
+#endif /* Crypto.SHA384 */
+   TLS_ecdhe_psk_with_rc4_128_sha : ({ KE_ecdhe_psk, CIPHER_rc4, HASH_sha }),
+   TLS_ecdhe_psk_with_3des_ede_cbc_sha : ({ KE_ecdhe_psk, CIPHER_3des, HASH_sha }),
+   TLS_ecdhe_psk_with_aes_128_cbc_sha : ({ KE_ecdhe_psk, CIPHER_aes, HASH_sha }),
+   TLS_ecdhe_psk_with_aes_256_cbc_sha : ({ KE_ecdhe_psk, CIPHER_aes256, HASH_sha }),
+   TLS_ecdhe_psk_with_aes_128_cbc_sha256 : ({ KE_ecdhe_psk, CIPHER_aes, HASH_sha256 }),
+#if constant(Crypto.SHA384)
+   TLS_ecdhe_psk_with_aes_256_cbc_sha384 : ({ KE_ecdhe_psk, CIPHER_aes256, HASH_sha384, MODE_cbc }),
+#endif /* Crypto.SHA384 */
+#if constant(Crypto.Camellia)
+   TLS_ecdhe_psk_with_camellia_128_cbc_sha256 : ({ KE_ecdhe_psk, CIPHER_camellia128, HASH_sha256 }),
+#if constant(Crypto.SHA384)
+   TLS_ecdhe_psk_with_camellia_256_cbc_sha384 : ({ KE_ecdhe_psk, CIPHER_camellia256, HASH_sha384, MODE_cbc }),
+#endif /* Crypto.SHA384 */
+#endif /* Crypto.Camellia */
+#endif /* Crypto.ECC.Curve */
 ]);
 
 constant HANDSHAKE_hello_request	= 0;  // RFC 5246
