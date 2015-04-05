@@ -542,8 +542,8 @@ protected Packet recv_packet(string(8bit) data)
 //! close_notifies.
 void send_packet(Packet packet, int|void priority)
 {
-  if (state & CONNECTION_local_closing) {
-    SSL3_DEBUG_MSG("SSL.Connection->send_packet: ignoring packet after close\n");
+  if (state & (CONNECTION_local_closed | CONNECTION_local_failing)) {
+    SSL3_DEBUG_MSG("send_packet: Ignoring packet after close/fail.\n");
     return;
   }
 
