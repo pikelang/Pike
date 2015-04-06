@@ -2213,6 +2213,9 @@ CipherSpec lookup(int suite, ProtocolVersion|int version,
     case KE_ecdh_ecdsa:
       res->ke_factory = KeyExchangeECDH;
       break;
+    case KE_ecdhe_psk:
+      res->ke_factory = KeyExchangeECDHEPSK;
+      break;
 #endif
     case KE_psk:
       res->ke_factory = KeyExchangePSK;
@@ -2222,9 +2225,6 @@ CipherSpec lookup(int suite, ProtocolVersion|int version,
       break;
     case KE_rsa_psk:
       res->ke_factory = KeyExchangeRSAPSK;
-      break;
-    case KE_ecdhe_psk:
-      res->ke_factory = KeyExchangeECDHEPSK;
       break;
     default:
       error( "Internal error.\n" );
