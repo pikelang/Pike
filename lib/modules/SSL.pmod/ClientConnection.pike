@@ -948,6 +948,9 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
 
     case HANDSHAKE_server_key_exchange:
       {
+	COND_FATAL(version >= PROTOCOL_TLS_1_3, ALERT_unexpected_message,
+		   "Unexpected server message.\n");
+
 	if (ke) error("KE!\n");
 	ke = session->cipher_spec->ke_factory(context, session, this,
 					      client_version);
@@ -964,6 +967,9 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
 
     case HANDSHAKE_server_hello_done:
       SSL3_DEBUG_MSG("SSL.ClientConnection: SERVER_HELLO_DONE\n");
+
+      COND_FATAL(version >= PROTOCOL_TLS_1_3, ALERT_unexpected_message,
+		 "Unexpected server message.\n");
 
       if (send_certs()) return -1;
       handshake_state = STATE_wait_for_finish;
