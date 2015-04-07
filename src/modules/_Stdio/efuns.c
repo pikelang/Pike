@@ -66,6 +66,7 @@ static libzfs_handle_t *libzfs_handle;
 
 #include <winbase.h>
 #include <io.h>
+#include <direct.h>
 
 /* Old versions of the headerfiles don't have this constant... */
 #ifndef INVALID_SET_FILE_POINTER
@@ -1876,8 +1877,20 @@ static void f_errno(INT32 args)
   push_int(errno);
 }
 
+#ifdef HAVE__ACCESS
+#define access(PATH, FLAGS)	_access(PATH, FLAGS)
+#define HAVE_ACCESS
+#endif
 
-#if defined(HAVE_ACCESS)
+#ifdef HAVE_ACCESS
+
+#ifndef R_OK
+#define R_OK	4
+#define W_OK	2
+#define X_OK	1
+#define F_OK	0
+#endif
+
 /*! @decl int access( string path, string|void mode )
  *!
  *! access() checks if the calling process can access the file
@@ -1973,7 +1986,7 @@ static void f_access( INT32 args )
     pop_n_elems(args);
     push_int( !res );
 }
-#endif
+#endif /* HAVE_ACCESS */
 
 void init_stdio_efuns(void)
 {
