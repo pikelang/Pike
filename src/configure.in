@@ -37,6 +37,23 @@ Fix your permissions.
 ])
 fi
 
+if_autoconf(2,50,[
+  if test "x$cache_file" = "x/dev/null"; then
+    if uname | grep -i windows >/dev/null; then
+      PIKE_MSG_WARN([Windows detected.])
+      PIKE_MSG_WARN([Enabling the configure cache for performance reasons.])
+      cache_file=./config.cache
+      if test -r "$cache_file"; then
+	echo "loading cache $cache_file"
+	  . $cache_file
+      else
+	echo "creating cache $cache_file"
+	  > $cache_file
+      fi
+    fi
+  fi
+])
+
 AC_PROG_MAKE_SET
 
 
