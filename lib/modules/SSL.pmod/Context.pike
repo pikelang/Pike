@@ -927,7 +927,12 @@ void purge_session(Session s)
    *   establish new connections.
    */
   s->identity = 0;
-  s->master_secret = 0;
+  if (s->version > PROTOCOL_TLS_1_2) {
+    // In TLS 1.2 and earlier the master_secret may be shared
+    // between multiple concurrent connections (cf eg above),
+    // so we can't scratch the master secret.
+    s->master_secret = 0;
+  }
   /* There's no need to remove the id from the active_sessions queue */
 }
 
