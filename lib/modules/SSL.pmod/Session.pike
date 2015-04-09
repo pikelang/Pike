@@ -359,7 +359,7 @@ int select_cipher_suite(array(CertificatePair) certs,
   // the remaining certs.
   int ke_mask = (1<<KE_null)|(1<<KE_dh_anon)|(1<<KE_psk)|(1<<KE_dhe_psk)
 #if constant(Crypto.ECC.Curve)
-    |(1<<KE_ecdh_anon)
+    |(1<<KE_ecdh_anon)|(1<<KE_ecdhe_psk)
 #endif
     ;
   if (version >= PROTOCOL_TLS_1_2) {

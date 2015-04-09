@@ -1414,6 +1414,7 @@ test_do([[
 test_psk(TLS_psk_with_aes_128_cbc_sha)
 test_psk(TLS_dhe_psk_with_aes_128_cbc_sha)
 test_psk(TLS_rsa_psk_with_aes_128_cbc_sha)
+test_psk(TLS_ecdhe_psk_with_aes_128_cbc_sha)
 
 test_do([[
   add_constant("aead_suites");
