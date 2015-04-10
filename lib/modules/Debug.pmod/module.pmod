@@ -16,14 +16,6 @@ constant gc_set_watch = _gc_set_watch;
 constant dump_backlog = _dump_backlog;
 #endif
 
-#if constant(_dmalloc_set_name)
-// These functions require --with-dmalloc.
-constant reset_dmalloc = _reset_dmalloc;
-constant dmalloc_set_name = _dmalloc_set_name;
-constant list_open_fds = _list_open_fds;
-constant dump_dmalloc_locations = _dump_dmalloc_locations;
-#endif
-
 /* significantly more compact version of size2string */
 private string mi2sz( int i )
 {

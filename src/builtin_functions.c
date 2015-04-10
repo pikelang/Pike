@@ -8046,70 +8046,6 @@ PMOD_EXPORT void f_transpose(INT32 args)
 /*! @endmodule
  */
 
-#ifdef DEBUG_MALLOC
-/*! @decl void reset_dmalloc()
- *! @belongs Debug
- *!
- *! @note
- *!   Only available when compiled with dmalloc.
- */
-PMOD_EXPORT void f__reset_dmalloc(INT32 args)
-{
-  pop_n_elems(args);
-  reset_debug_malloc();
-}
-
-/*! @decl void dmalloc_set_name(string filename, int(1..) linenumber)
- *! @belongs Debug
- *!
- *! @note
- *!   Only available when compiled with dmalloc.
- */
-PMOD_EXPORT void f__dmalloc_set_name(INT32 args)
-{
-  char *s;
-  INT_TYPE i;
-  extern char * dynamic_location(const char *file, INT_TYPE line);
-  extern char * dmalloc_default_location;
-
-  if(args)
-  {
-    get_all_args("_dmalloc_set_name", args, "%s%+", &s, &i);
-    dmalloc_default_location = dynamic_location(s, i);
-  }else{
-    dmalloc_default_location=0;
-  }
-  pop_n_elems(args);
-}
-
-/*! @decl void list_open_fds()
- *! @belongs Debug
- *!
- *! @note
- *!   Only available when compiled with dmalloc.
- */
-PMOD_EXPORT void f__list_open_fds(INT32 UNUSED(args))
-{
-  extern void list_open_fds(void);
-  list_open_fds();
-}
-
-/*! @decl void dump_dmalloc_locations(string|array|mapping| @
- *!                                   multiset|function|object| @
- *!                                   program|type o)
- *! @belongs Debug
- *!
- *! @note
- *!   Only available when compiled with dmalloc.
- */
-PMOD_EXPORT void f__dump_dmalloc_locations(INT32 args)
-{
-  if(args)
-    debug_malloc_dump_references (Pike_sp[-args].u.refs, 2, 1, 0);
-  pop_n_elems(args-1);
-}
-#endif
-
 #ifdef PIKE_DEBUG
 /*! @decl void locate_references(string|array|mapping| @
  *!                              multiset|function|object| @
@@ -9764,18 +9700,6 @@ void init_builtin_efuns(void)
   ADD_FUNCTION2("function_defined", f_function_defined,
 	       tFunc(tFunction,tString), 0, OPT_TRY_OPTIMIZE);
 
-#ifdef DEBUG_MALLOC
-  
-/* function(void:void) */
-  ADD_EFUN("_reset_dmalloc",f__reset_dmalloc,
-	   tFunc(tVoid,tVoid),OPT_SIDE_EFFECT);
-  ADD_EFUN("_dmalloc_set_name",f__dmalloc_set_name,
-	   tOr(tFunc(tStr tIntPos,tVoid), tFunc(tVoid,tVoid)),OPT_SIDE_EFFECT);
-  ADD_EFUN("_list_open_fds",f__list_open_fds,
-	   tFunc(tVoid,tVoid),OPT_SIDE_EFFECT);
-  ADD_EFUN("_dump_dmalloc_locations",f__dump_dmalloc_locations,
-	   tFunc(tSetvar(1,tMix),tVar(1)),OPT_SIDE_EFFECT);
-#endif
 #ifdef PIKE_DEBUG
   
 /* function(1=mixed:1) */

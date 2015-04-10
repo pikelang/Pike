@@ -1804,7 +1804,7 @@ static void add_location(struct memhdr *mh,
   return;
 }
 
-LOCATION dmalloc_default_location=0;
+PMOD_EXPORT LOCATION dmalloc_default_location=0;
 
 static struct memhdr *low_make_memhdr(void *p, int s, LOCATION location
 #ifdef DMALLOC_C_STACK_TRACE
@@ -2497,7 +2497,7 @@ PMOD_EXPORT void debug_malloc_dump_references(void *x, int indent, int depth, in
   }
 }
 
-void list_open_fds(void)
+PMOD_EXPORT void list_open_fds(void)
 {
   unsigned long h;
   mt_lock(&debug_malloc_mutex);
@@ -2881,7 +2881,7 @@ static LOCATION low_dynamic_location(char type, const char *file,
   return str->str;
 }
 
-LOCATION dynamic_location(const char *file, INT_TYPE line)
+PMOD_EXPORT LOCATION dynamic_location(const char *file, INT_TYPE line)
 {
   return low_dynamic_location('D',file,line, NULL, NULL, 0);
 }

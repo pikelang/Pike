@@ -380,6 +380,66 @@ PIKEFUN void disassemble(function fun)
 
 #endif /* PIKE_DEBUG */
 
+#ifdef DEBUG_MALLOC
+
+/*! @decl void reset_dmalloc()
+ *!
+ *! @note
+ *!   Only available when compiled with dmalloc.
+ */
+PIKEFUN void reset_dmalloc()
+{
+  reset_debug_malloc();
+}
+
+extern char * dynamic_location(const char *file, INT_TYPE line);
+extern char * dmalloc_default_location;
+
+/*! @decl void dmalloc_set_name()
+ *!
+ *! @note
+ *!   Only available when compiled with dmalloc.
+ */
+PIKEFUN void dmalloc_set_name()
+{
+  dmalloc_default_location=0;
+}
+
+/*! @decl void dmalloc_set_name(string filename, int(1..) linenumber)
+ *!
+ *! @note
+ *!   Only available when compiled with dmalloc.
+ */
+PIKEFUN void dmalloc_set_name(string filename, int(1..) linenumber)
+{
+  dmalloc_default_location = dynamic_location(filename->str, linenumber);
+}
+
+extern void list_open_fds(void);
+
+/*! @decl void list_open_fds()
+ *!
+ *! @note
+ *!   Only available when compiled with dmalloc.
+ */
+PIKEFUN void list_open_fds()
+{
+  list_open_fds();
+}
+
+/*! @decl void dump_dmalloc_locations(string|array|mapping| @
+ *!                                   multiset|function|object| @
+ *!                                   program|type o)
+ *!
+ *! @note
+ *!   Only available when compiled with dmalloc.
+ */
+PIKEFUN void dump_dmalloc_locations(string|array|mapping|multiset|function|object|program|type o)
+{
+  debug_malloc_dump_references (o->u.refs, 2, 1, 0);
+}
+#endif /* DEBUG_MALLOC */
+
 /*! @endmodule
  */
 
