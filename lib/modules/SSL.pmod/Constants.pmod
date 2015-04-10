@@ -110,9 +110,9 @@ constant CIPHER_effective_keylengths = ([
   CIPHER_des:		40,
   CIPHER_3des:		112,
   CIPHER_fortezza:	96,
-  CIPHER_idea:		128,
-  CIPHER_aes:		128,
-  CIPHER_aes256:	256,
+  CIPHER_idea:		128,	// 126.1 bits with bicliques attack.
+  CIPHER_aes:		128,	// 126.1 bits with bicliques attack.
+  CIPHER_aes256:	256,	// 254.4 bits with bicliques attack.
   CIPHER_camellia128:	128,
   CIPHER_camellia256:	256,
   CIPHER_chacha20:	256,
