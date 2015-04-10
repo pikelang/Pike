@@ -16,8 +16,10 @@
 
 DECLARATIONS
 
+/*! @module Debug
+ */
+
 /*! @decl int(0..) map_all_objects(function(object:void) cb)
- *! @belongs Debug
  *!
  *! Call cb for all objects that currently exist. The callback will
  *! not be called with destructed objects as it's argument.
@@ -54,7 +56,6 @@ PIKEFUN int(0..) map_all_objects(function(object:void) cb)
 }
 
 /*! @decl int refs(string|array|mapping|multiset|function|object|program o)
- *! @belongs Debug
  *!
  *!   Return the number of references @[o] has.
  *!
@@ -222,7 +223,6 @@ PIKEFUN int leak(array|mapping|multiset|object|function|program|string|type val)
 }
 
 /*! @decl int(0..) debug(int(0..) level)
- *! @belongs Debug
  *!
  *!   Set the run-time debug level.
  *!
@@ -242,7 +242,6 @@ PIKEFUN int(0..) debug(int(0..) d)
 }
 
 /*! @decl int(0..) optimizer_debug(int(0..) level)
- *! @belongs Debug
  *!
  *!   Set the optimizer debug level.
  *!
@@ -262,7 +261,6 @@ PIKEFUN int(0..) optimizer_debug(int(0..) l)
 }
 
 /*! @decl int(0..) assembler_debug(int(0..) level)
- *! @belongs Debug
  *!
  *!   Set the assembler debug level.
  *!
@@ -282,7 +280,6 @@ PIKEFUN int(0..) assembler_debug(int(0..) l)
 }
 
 /*! @decl void dump_program_tables(program p, int(0..)|void indent)
- *! @belongs Debug
  *!
  *! Dumps the internal tables for the program @[p] on stderr.
  *!
@@ -301,7 +298,6 @@ PIKEFUN void dump_program_tables(program p, int(0..)|void indent)
 #ifdef YYDEBUG
 
 /*! @decl int(0..) compiler_trace(int(0..) level)
- *! @belongs Debug
  *!
  *!   Set the compiler trace level.
  *!
@@ -326,7 +322,6 @@ PIKEFUN int(0..) compiler_trace(int(0..) yyd)
 #if defined(PIKE_PORTABLE_BYTECODE)
 
 /*! @decl void disassemble(function fun)
- *! @belongs Debug
  *!
  *!   Disassemble a Pike function to @[Stdio.stderr].
  *!
@@ -383,8 +378,10 @@ PIKEFUN void disassemble(function fun)
 
 #endif /*  PIKE_PORTABLE_BYTECODE */
 
-
 #endif /* PIKE_DEBUG */
+
+/*! @endmodule
+ */
 
 PIKE_MODULE_INIT
 {
