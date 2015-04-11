@@ -595,6 +595,7 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
   werror("sizeof(data)="+sizeof(data)+"\n");
 #endif
 
+  // Enforce packet ordering.
   COND_FATAL(type <= previous_handshake, ALERT_unexpected_message,
              "Invalid handshake packet order.\n");
 
@@ -927,9 +928,10 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
     default:
       COND_FATAL(1, ALERT_unexpected_message, "Unexpected server message.\n");
       break;
+      /* FIXME: HANDSHAKE_encrypted_extensions */
     case HANDSHAKE_certificate:
       {
-	SSL3_DEBUG_MSG("SSL.ClientConnection: Certificate recevied\n");
+	SSL3_DEBUG_MSG("SSL.ClientConnection: Certificate received\n");
 
         // we're anonymous, so no certificate is requred.
         if(ke && ke->anonymous)

@@ -279,6 +279,7 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
   werror("sizeof(data)="+sizeof(data)+"\n");
 #endif
 
+  // Enforce packet ordering.
   COND_FATAL((type <= previous_handshake) &&
       // NB: certificate_verify <=> client_key_exchange are out of order!
       ((type != HANDSHAKE_certificate_verify) ||
@@ -752,6 +753,8 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
 
         // No overlapping cipher suites, or obsolete cipher suite
         // selected, or incompatible certificates.
+	// FIXME: Consider ALERT_insufficient_security
+	//        (cf RFC 7465 section 2).
 	COND_FATAL(!sizeof(cipher_suites),
                    ALERT_handshake_failure, "No common suites!\n");
 
