@@ -8,8 +8,35 @@
 //!
 inherit Stdio.Port : socket;
 
-//! Context to use for the connections.
-Context ctx;
+//! Function called to create the @[Context] object for this @[Port].
+//!
+//! By overriding this function the setup of certificates, etc
+//! for the port can be delayed until the first access to the port.
+//!
+//! @returns
+//!   Returns the @[Context] to be used with this @[Port].
+Context context_factory()
+{
+  return Context();
+}
+
+protected Context _ctx;
+
+//! @[Context] to use for the connections.
+//!
+//! @note
+//!   The @[Context] is created (by calling @[context_factory()])
+//!   on first access to the variable.
+Context `ctx()
+{
+  if (_ctx) return _ctx;
+  return _ctx = context_factory();
+}
+
+void `ctx=(Context c)
+{
+  _ctx = c;
+}
 
 protected ADT.Queue accept_queue = ADT.Queue();
 
@@ -164,6 +191,12 @@ object accept()
 
 //! Create a new port for accepting SSL connections.
 //!
+//! @param ctx
+//!   @[Context] to be used with this @[Port].
+//!
+//!   If left out, it will be created on demand on first access
+//!   by calling @[context_factory()].
+//!
 //! @seealso
 //!   @[bind()], @[listen_fd()]
 protected void create(Context|void ctx)
@@ -171,6 +204,6 @@ protected void create(Context|void ctx)
 #ifdef SSL3_DEBUG
   werror("SSL.Port->create\n");
 #endif
-  if (!ctx) ctx = Context();
-  this::ctx = ctx;
+  if (ctx)
+    this::ctx = ctx;
 }
