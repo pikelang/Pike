@@ -927,7 +927,11 @@ string(8bit)|int got_data(string(8bit) data)
   while (packet = recv_packet())
   {
     if (packet->is_alert)
-    { /* Reply alert */
+    {
+      // recv_packet returns packets with is_alert set if it is
+      // generated on our side, as opposed to an alert that is
+      // received. These are always fatal (wrong packet type, packet
+      // version, packet size).
       SSL3_DEBUG_MSG("SSL.Connection: Bad received packet\n");
       if (alert_callback)
       {
@@ -937,168 +941,110 @@ string(8bit)|int got_data(string(8bit) data)
                        (string)read_buffer);
         here->rewind();
       }
+
+      // We or the packet may have been destructed by the
+      // alert_callback.
       if (this && packet)
 	send_packet(packet);
-      if ((!packet) || (!this) || (packet->level == ALERT_fatal))
-	return -1;
-      if (alert_callback)
-	break;
+
+      return -1;
     }
-    else
+
+    SSL3_DEBUG_MSG("SSL.Connection: received packet of type %d\n",
+                   packet->content_type);
+    switch (packet->content_type)
     {
-      SSL3_DEBUG_MSG("SSL.Connection: received packet of type %d\n",
-                     packet->content_type);
-      switch (packet->content_type)
+    case PACKET_alert:
       {
-      case PACKET_alert:
-       {
-	 SSL3_DEBUG_MSG("SSL.Connection: ALERT\n");
+        SSL3_DEBUG_MSG("SSL.Connection: ALERT\n");
 
-         COND_FATAL(!sizeof(packet->fragment), ALERT_unexpected_message,
-                    "Zero length Alert fragments not allowed.\n");
+        COND_FATAL(!sizeof(packet->fragment), ALERT_unexpected_message,
+                   "Zero length Alert fragments not allowed.\n");
 
-	 int err = 0;
-	 alert_buffer->add( packet->fragment );
-         while(!err && sizeof(alert_buffer)>1)
-           err = handle_alert(alert_buffer->read(2));
+        int err = 0;
+        alert_buffer->add( packet->fragment );
+        while(!err && sizeof(alert_buffer)>1)
+          err = handle_alert(alert_buffer->read(2));
 
-	 if (err)
-	   if (err > 0 && sizeof (res))
-	     // If we get a close then we return the data we got so far.
-	     return res;
-	   else
-	     return err;
-	 break;
-       }
-      case PACKET_change_cipher_spec:
-       {
-	 SSL3_DEBUG_MSG("SSL.Connection: CHANGE_CIPHER_SPEC\n");
+        if (err)
+          if (err > 0 && sizeof (res))
+            // If we get a close then we return the data we got so far.
+            return res;
+          else
+            return err;
+        break;
+      }
+    case PACKET_change_cipher_spec:
+      {
+        SSL3_DEBUG_MSG("SSL.Connection: CHANGE_CIPHER_SPEC\n");
 
-         COND_FATAL(!sizeof(packet->fragment), ALERT_unexpected_message,
-                    "Zero length ChangeCipherSpec fragments not allowed.\n");
+        COND_FATAL(!sizeof(packet->fragment), ALERT_unexpected_message,
+                   "Zero length ChangeCipherSpec fragments not allowed.\n");
 
-	 COND_FATAL(version >= PROTOCOL_TLS_1_3, ALERT_unexpected_message,
-                    "ChangeCipherSpec not allowed in TLS 1.3 and later.\n");
+        COND_FATAL(version >= PROTOCOL_TLS_1_3, ALERT_unexpected_message,
+                   "ChangeCipherSpec not allowed in TLS 1.3 and later.\n");
 
-         foreach(packet->fragment;; int c)
-	 {
-	   int err = handle_change_cipher(c);
-           SSL3_DEBUG_MSG("tried change_cipher: %d\n", err);
-	   if (err)
-	     return err;
-	 }
-	 break;
-       }
-      case PACKET_handshake:
-       {
-	 SSL3_DEBUG_MSG("SSL.Connection: HANDSHAKE\n");
+        foreach(packet->fragment;; int c)
+        {
+          int err = handle_change_cipher(c);
+          SSL3_DEBUG_MSG("tried change_cipher: %d\n", err);
+          if (err)
+            return err;
+        }
+        break;
+      }
+    case PACKET_handshake:
+      {
+        SSL3_DEBUG_MSG("SSL.Connection: HANDSHAKE\n");
 
-         COND_FATAL(!sizeof(packet->fragment), ALERT_unexpected_message,
-                    "Zero length Handshake fragments not allowed.\n");
+        COND_FATAL(!sizeof(packet->fragment), ALERT_unexpected_message,
+                   "Zero length Handshake fragments not allowed.\n");
 
-         // Don't allow renegotiation in unsecure mode, to address
-         // http://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2009-3555.
-         // For details see: http://www.g-sec.lu/practicaltls.pdf and
-         // RFC 5746.
-	 COND_FATAL(!(state & CONNECTION_handshaking) &&
-                    !secure_renegotiation, ALERT_no_renegotiation,
-                    "Renegotiation not supported in unsecure mode.\n");
+        // Don't allow renegotiation in unsecure mode, to address
+        // http://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2009-3555.
+        // For details see: http://www.g-sec.lu/practicaltls.pdf and
+        // RFC 5746.
+        COND_FATAL(!(state & CONNECTION_handshaking) &&
+                   !secure_renegotiation, ALERT_no_renegotiation,
+                   "Renegotiation not supported in unsecure mode.\n");
 
-         /* No change_cipher message was received */
-         // FIXME: There's a bug somewhere since expect_change_cipher
-         // often remains set after the handshake is completed. The
-         // effect is that renegotiation doesn't work all the time.
-         //
-         // A side effect is that we are partly invulnerable to the
-         // renegotiation vulnerability mentioned above. It is however
-         // not safe to assume that, since there might be routes past
-         // this, maybe through the use of a version 2 hello message
-         // below.
-	 COND_FATAL(expect_change_cipher && (version < PROTOCOL_TLS_1_3),
-                    ALERT_unexpected_message, "Expected change cipher.\n");
+        /* No change_cipher message was received */
+        // FIXME: There's a bug somewhere since expect_change_cipher
+        // often remains set after the handshake is completed. The
+        // effect is that renegotiation doesn't work all the time.
+        //
+        // A side effect is that we are partly invulnerable to the
+        // renegotiation vulnerability mentioned above. It is however
+        // not safe to assume that, since there might be routes past
+        // this, maybe through the use of a version 2 hello message
+        // below.
+        COND_FATAL(expect_change_cipher && (version < PROTOCOL_TLS_1_3),
+                   ALERT_unexpected_message, "Expected change cipher.\n");
 
-	 int err;
-	 handshake_buffer->add( packet->fragment );
+        int err;
+        handshake_buffer->add( packet->fragment );
 
-	 while (sizeof(handshake_buffer) >= 4)
-	 {
-           Stdio.Buffer.RewindKey key = handshake_buffer->rewind_key();
-           int type = handshake_buffer->read_int8();
-           Buffer input = Buffer(handshake_buffer->read_hbuffer(3));
-           if(!input)
-           {
-             // Not enough data.
-             key->rewind();
-             break;
-           }
+        while (sizeof(handshake_buffer) >= 4)
+        {
+          Stdio.Buffer.RewindKey key = handshake_buffer->rewind_key();
+          int type = handshake_buffer->read_int8();
+          Buffer input = Buffer(handshake_buffer->read_hbuffer(3));
+          if(!input)
+          {
+            // Not enough data.
+            key->rewind();
+            break;
+          }
 
-           int len = 1+3+sizeof(input);
-           key->rewind();
-           Stdio.Buffer raw = handshake_buffer->read_buffer(len);
-
-           mixed exception = catch {
-               err = handle_handshake(type, input, raw);
-               COND_FATAL(err>=0 && sizeof(input), ALERT_record_overflow,
-                          sprintf("Extraneous handshake packet data (%O).\n",
-                                  type));
-             };
-           if( exception )
-           {
-             if( objectp(exception) && ([object]exception)->buffer_error )
-             {
-               Error.Generic e = [object(Error.Generic)]exception;
-               COND_FATAL(1, ALERT_decode_error, e->message());
-             }
-             throw(exception);
-           }
-	   if (err < 0)
-	     return err;
-	   if (err > 0) {
-	     state &= ~CONNECTION_handshaking;
-	     if ((version >= PROTOCOL_TLS_1_3) || expect_change_cipher) {
-	       // NB: Renegotiation is available in TLS 1.2 and earlier.
-	       COND_FATAL(sizeof(handshake_buffer), ALERT_unexpected_message,
-			  "Extraneous handshake packets.\n");
-	     }
-	     COND_FATAL(sizeof(handshake_buffer) && !secure_renegotiation,
-			ALERT_no_renegotiation,
-			"Renegotiation not supported in unsecure mode.\n");
-	   }
-	 }
-	 break;
-       }
-      case PACKET_application_data:
-	SSL3_DEBUG_MSG("SSL.Connection: APPLICATION_DATA\n");
-
-	COND_FATAL(state & CONNECTION_handshaking,
-                   ALERT_unexpected_message,
-                   "Handshake not finished yet!\n");
-
-	res += packet->fragment;
-	break;
-      case PACKET_heartbeat:
-	{
-	  // RFC 6520.
-	  SSL3_DEBUG_MSG("SSL.Connection: Heartbeat.\n");
-	  if (state != CONNECTION_ready) {
-	    // RFC 6520 3:
-	    // The receiving peer SHOULD discard the message silently,
-	    // if it arrives during the handshake.
-	    break;
-	  }
-	  if (!session->heartbeat_mode) {
-	    // RFC 6520 2:
-	    // If an endpoint that has indicated peer_not_allowed_to_send
-	    // receives a HeartbeatRequest message, the endpoint SHOULD
-	    // drop the message silently and MAY send an unexpected_message
-	    // Alert message.
-	    send_packet(alert(ALERT_warning, ALERT_unexpected_message,
-			      "Heart beat mode not enabled.\n"));
-	    break;
-	  }
+          int len = 1+3+sizeof(input);
+          key->rewind();
+          Stdio.Buffer raw = handshake_buffer->read_buffer(len);
 
           mixed exception = catch {
-              handle_heartbeat(packet->fragment);
+              err = handle_handshake(type, input, raw);
+              COND_FATAL(err>=0 && sizeof(input), ALERT_record_overflow,
+                         sprintf("Extraneous handshake packet data (%O).\n",
+                                 type));
             };
           if( exception )
           {
@@ -1109,21 +1055,78 @@ string(8bit)|int got_data(string(8bit) data)
             }
             throw(exception);
           }
-
-	}
-	break;
-      default:
-	COND_FATAL(state & CONNECTION_handshaking,
-                   ALERT_unexpected_message,
-                   "Unexpected message during handshake!\n");
-
-	// RFC 4346 6:
-	//   If a TLS implementation receives a record type it does not
-	//   understand, it SHOULD just ignore it.
-	SSL3_DEBUG_MSG("SSL.Connection: Ignoring packet of type %s\n",
-		       fmt_constant(packet->content_type, "PACKET"));
-	break;
+          if (err < 0)
+            return err;
+          if (err > 0) {
+            state &= ~CONNECTION_handshaking;
+            if ((version >= PROTOCOL_TLS_1_3) || expect_change_cipher) {
+              // NB: Renegotiation is available in TLS 1.2 and earlier.
+              COND_FATAL(sizeof(handshake_buffer), ALERT_unexpected_message,
+                         "Extraneous handshake packets.\n");
+            }
+            COND_FATAL(sizeof(handshake_buffer) && !secure_renegotiation,
+                       ALERT_no_renegotiation,
+                       "Renegotiation not supported in unsecure mode.\n");
+          }
+        }
+        break;
       }
+    case PACKET_application_data:
+      SSL3_DEBUG_MSG("SSL.Connection: APPLICATION_DATA\n");
+
+      COND_FATAL(state & CONNECTION_handshaking,
+                 ALERT_unexpected_message,
+                 "Handshake not finished yet!\n");
+
+      res += packet->fragment;
+      break;
+    case PACKET_heartbeat:
+      {
+        // RFC 6520.
+        SSL3_DEBUG_MSG("SSL.Connection: Heartbeat.\n");
+        if (state != CONNECTION_ready) {
+          // RFC 6520 3:
+          // The receiving peer SHOULD discard the message silently,
+          // if it arrives during the handshake.
+          break;
+        }
+        if (!session->heartbeat_mode) {
+          // RFC 6520 2:
+          // If an endpoint that has indicated
+          // peer_not_allowed_to_send receives a HeartbeatRequest
+          // message, the endpoint SHOULD drop the message silently
+          // and MAY send an unexpected_message Alert message.
+          send_packet(alert(ALERT_warning, ALERT_unexpected_message,
+                            "Heart beat mode not enabled.\n"));
+          break;
+        }
+
+        mixed exception = catch {
+            handle_heartbeat(packet->fragment);
+          };
+        if( exception )
+        {
+          if( objectp(exception) && ([object]exception)->buffer_error )
+          {
+            Error.Generic e = [object(Error.Generic)]exception;
+            COND_FATAL(1, ALERT_decode_error, e->message());
+          }
+          throw(exception);
+        }
+
+      }
+      break;
+    default:
+      COND_FATAL(state & CONNECTION_handshaking,
+                 ALERT_unexpected_message,
+                 "Unexpected message during handshake!\n");
+
+      // RFC 4346 6:
+      //   If a TLS implementation receives a record type it does not
+      //   understand, it SHOULD just ignore it.
+      SSL3_DEBUG_MSG("SSL.Connection: Ignoring packet of type %s\n",
+                     fmt_constant(packet->content_type, "PACKET"));
+      break;
     }
   }
 
