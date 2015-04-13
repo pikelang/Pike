@@ -1339,8 +1339,8 @@ cmod_CONCAT_EVAL(ENSURE_SENTINEL,GATHER(##_OR_NULL))(recvbuf, #_name_, 2);  \
  *! @example
  *!int main() {
  *!	MPI.Init();
- *!	write("I am process %d of %d.\n", MPI.comm->rank,
- *!	      MPI.comm->size);
+ *!	write("I am process %d of %d.\n", MPI.world->rank,
+ *!	      MPI.world->size);
  *!	MPI.Finalize();
  *!	return 0;
  *!}
