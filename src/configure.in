@@ -2315,6 +2315,7 @@ fi
 
 define(TEST_BUILTIN, [
     AC_MSG_CHECKING(for $1)
+    AC_CACHE_VAL(translit([pike_cv_builtin_$1], [A-Z], [a-z]), [
     AC_TRY_LINK([
 $3
 ],[
@@ -2323,16 +2324,19 @@ volatile int foo = 0;
 foo = (int)$1($2);
 return 0;
 ],
-    AC_MSG_RESULT(yes)
-    AC_DEFINE(translit([HAS_$1], [a-z], [A-Z]), 1, [Whether $1 is available])
-    ,
-    AC_MSG_RESULT(no)
-    )
+    translit([pike_cv_builtin_$1], [A-Z], [a-z])="yes",
+    translit([pike_cv_builtin_$1], [A-Z], [a-z])="no")
+    ])
+    AC_MSG_RESULT($$translit([pike_cv_builtin_$1], [A-Z], [a-z]))
+    if test "$$translit([pike_cv_builtin_$1], [A-Z], [a-z])" = "yes"; then
+      AC_DEFINE(translit([HAS_$1], [a-z], [A-Z]), 1, [Whether $1 is available])
+    fi
 ])
 
 
 define(TEST_BUILTIN_VOID, [
     AC_MSG_CHECKING(for $1)
+    AC_CACHE_VAL(translit([pike_cv_builtin_$1], [A-Z], [a-z]), [
     AC_TRY_LINK([
 $3
 ],[
@@ -2340,11 +2344,13 @@ unsigned long lint;
 $1($2);
 return 0;
 ],
-    AC_MSG_RESULT(yes)
-    AC_DEFINE(translit([HAS_$1], [a-z], [A-Z]), 1, [Whether $1 is available])
-    ,
-    AC_MSG_RESULT(no)
-    )
+    translit([pike_cv_builtin_$1], [A-Z], [a-z])="yes",
+    translit([pike_cv_builtin_$1], [A-Z], [a-z])="no")
+    ])
+    AC_MSG_RESULT($$translit([pike_cv_builtin_$1], [A-Z], [a-z]))
+    if test "$$translit([pike_cv_builtin_$1], [A-Z], [a-z])" = "yes"; then
+      AC_DEFINE(translit([HAS_$1], [a-z], [A-Z]), 1, [Whether $1 is available])
+    fi
 ])
 
 # RDRND hardware random support
