@@ -763,6 +763,9 @@ string(8bit)|int got_data(string(8bit) data)
   // That enables the caller to check for a clean close, and
   // to get the leftovers after the SSL connection.
 
+  /* If alert_callback is called, this data is passed as an argument */
+  string(8bit) alert_context = (left_over || "") + data;
+
   string(8bit) res = "";
   Packet packet;
   while (packet = recv_packet(data))
@@ -773,7 +776,7 @@ string(8bit)|int got_data(string(8bit) data)
     { /* Reply alert */
       SSL3_DEBUG_MSG("SSL.Connection: Bad received packet\n");
       if (alert_callback)
-	alert_callback(packet, current_read_state->seq_num, left_over);
+	alert_callback(packet, current_read_state->seq_num, alert_context);
       if (this && packet)
 	send_packet(packet);
       if ((!packet) || (!this) || (packet->level == ALERT_fatal))
