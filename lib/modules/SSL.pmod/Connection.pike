@@ -509,26 +509,26 @@ void set_alert_callback(function(object,int|object,string:void) callback)
 //! more data is needed to get a complete packet.
 protected Packet recv_packet()
 {
-  int(0..1)|Packet res;
-
   if (!packet)
     packet = Packet(version, 2048);
 
-  res = packet->recv(read_buffer);
+  int res = packet->recv(read_buffer);
 
-  if(objectp(res))
-    return [object(Packet)]res;
-
-  if (res)
-  { /* Finished a packet */
-    if (current_read_state) {
+  switch(res)
+  {
+  case 1:
+    // Finished a packet
+    if (current_read_state)
       SSL3_DEBUG_MSG("SSL.Connection->recv_packet(): version=0x%x\n",
 		     version);
-      return current_read_state->decrypt_packet(packet);
-    } else {
-      SSL3_DEBUG_MSG("SSL.Connection->recv_packet(): current_read_state is zero!\n");
-      return 0;
-    }
+    return current_read_state->decrypt_packet(packet);
+  case 0:
+    SSL3_DEBUG_MSG("SSL.Connection->recv_packet(): current_read_state is zero!\n");
+    return 0;
+  case -1:
+    return alert(ALERT_fatal, ALERT_unexpected_message);
+  default:
+    error("Internal error.\n");
   }
 
   return 0;

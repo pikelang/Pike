@@ -78,21 +78,21 @@ object set_encrypted(string data)
 //!
 //!   If there's an error, an alert object is returned.
 //!
-int(0..1)|.Packet recv(Stdio.Buffer data)
+int(-1..1) recv(Stdio.Buffer data)
 {
   if(sizeof(data)<HEADER_SIZE) return 0;
 
   Stdio.Buffer.RewindKey key = data->rewind_key();
   content_type = data->read_int8();
   if( !PACKET_types[content_type] )
-    return Alert(ALERT_fatal, ALERT_unexpected_message, protocol_version);
+    return -1;
 
+  // FIXME: Protocol version packet header appears to be ignored in
+  // TLS 1.3.
   protocol_version = data->read_int16();
   if ((protocol_version & ~0xff) != PROTOCOL_SSL_3_0)
-    return Alert(ALERT_fatal, ALERT_unexpected_message, protocol_version,
-                 sprintf("SSL.Packet->send: Version %d.%d "
-                         "is not supported\n",
-                         protocol_version>>8, protocol_version & 0xff));
+    return -1;
+
 #ifdef SSL3_DEBUG
   if (protocol_version > PROTOCOL_TLS_MAX)
     werror("SSL.Packet->recv: received version %d.%d packet\n",
@@ -101,7 +101,7 @@ int(0..1)|.Packet recv(Stdio.Buffer data)
 
   int length = data->read_int16();
   if ( (length <= 0) || (length > (PACKET_MAX_SIZE + marginal_size)))
-    return Alert(ALERT_fatal, ALERT_unexpected_message, protocol_version);
+    return -1;
 
   if(length > sizeof(data))
   {

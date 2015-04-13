@@ -793,15 +793,20 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
 	  while(sizeof(early_data)) {
 	    SSL3_DEBUG_MSG("Handling early data packet...\n");
 	    Packet p = Packet(version);
-	    int(0..1)|Packet res = p->recv(early_data);
-	    if (res!=1) {
-	      send_packet(([object]res) ||
-			  alert(ALERT_fatal, ALERT_record_overflow,
+	    int res = p->recv(early_data);
+            switch(res)
+            {
+            case 0:
+	      send_packet(alert(ALERT_fatal, ALERT_record_overflow,
 				"Early data extension contains a "
 				"partial packet.\n"));
 	      return -1;
+            case -1:
+              send_packet(alert(ALERT_fatal, ALERT_unexpected_message));
+              return -1;
 	    }
 	    if (p->content_type != PACKET_handshake) {
+              // FIXME: This should probably be a fatal.
 	      SSL3_DEBUG_MSG("Ignoring non-handshake early data packet.\n");
 	      continue;
 	    }
