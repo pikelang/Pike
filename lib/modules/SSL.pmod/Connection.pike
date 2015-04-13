@@ -507,13 +507,10 @@ void set_alert_callback(function(object,int|object,string:void) callback)
 
 //! Low-level receive handler. Returns a packet, an alert, or zero if
 //! more data is needed to get a complete packet.
-protected Packet recv_packet(string(8bit) data)
+protected Packet recv_packet()
 {
   int(0..1)|Packet res;
 
-  read_buffer->add(data);
-
-  //  SSL3_DEBUG_MSG("SSL.Connection->recv_packet(%O)\n", data);
   if (!packet)
     packet = Packet(version, 2048);
 
@@ -922,18 +919,17 @@ string(8bit)|int got_data(string(8bit) data)
   // That enables the caller to check for a clean close, and
   // to get the leftovers after the SSL connection.
 
+  read_buffer->add(data);
+
   string(8bit) res = "";
   Packet packet;
-  while (packet = recv_packet(data))
+  while (packet = recv_packet())
   {
-    data = "";
-
     if (packet->is_alert)
     { /* Reply alert */
       SSL3_DEBUG_MSG("SSL.Connection: Bad received packet\n");
       if (alert_callback)
-	alert_callback(packet, current_read_state->seq_num,
-                       (string)read_buffer);
+	alert_callback(packet, current_read_state->seq_num, data);
       if (this && packet)
 	send_packet(packet);
       if ((!packet) || (!this) || (packet->level == ALERT_fatal))
@@ -1123,6 +1119,7 @@ string(8bit)|int got_data(string(8bit) data)
       }
     }
   }
+
   if (sizeof(res)) return res;
   if (state & CONNECTION_peer_closed) return 1;
   return "";
