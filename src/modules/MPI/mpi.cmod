@@ -71,15 +71,15 @@ static inline void using_mpi(const char *name) {
 }
 
 #define IS_SENTINEL(x) ((x) && (-1 != low_get_storage((x)->prog,	\
-					      IntArray_program)		\
+					      MPI_IntArray_program)	\
 			|| -1 != low_get_storage((x)->prog,		\
-						 FloatArray_program)	\
+						 MPI_FloatArray_program)\
 			|| -1 != low_get_storage((x)->prog,		\
-						 Sentinel_program)))
+						 MPI_Sentinel_program)))
 
 #define IS_SENTINEL_OR_PTR(x) (IS_SENTINEL(x) || -1 			\
 			       != low_get_storage((x)->prog,		\
-						  Pointer_program))
+						  MPI_Pointer_program))
 
 #define ENSURE_SENTINEL(x, fun, argnum) do { if (!IS_SENTINEL(x))	\
     SIMPLE_BAD_ARG_ERROR(fun, argnum, "inherits(MPI.IntArray)|"		\
@@ -112,7 +112,7 @@ PIKECLASS IntArray
 #cmod_define pike_type int
 #cmod_define c_type int
 #cmod_define name_prefix Int
-#cmod_define ARRAY_STORAGE OBJ2_INTARRAY
+#cmod_define ARRAY_STORAGE OBJ2_MPI_INTARRAY
 #cmod_define PUSH push_int
 #cmod_define MPI_DATATYPE MPI_INT
 #cmod_define MPI_SHIFT (1<<3)
@@ -136,7 +136,7 @@ PIKECLASS FloatArray
 #cmod_define pike_type float
 #cmod_define c_type double
 #cmod_define name_prefix Float
-#cmod_define ARRAY_STORAGE OBJ2_FLOATARRAY
+#cmod_define ARRAY_STORAGE OBJ2_MPI_FLOATARRAY
 #cmod_define PUSH push_float
 #cmod_define MPI_DATATYPE MPI_DOUBLE
 #cmod_define MPI_SHIFT (2<<3)
@@ -160,7 +160,7 @@ PIKECLASS SingleArray
 #cmod_define pike_type float
 #cmod_define c_type float
 #cmod_define name_prefix Single
-#cmod_define ARRAY_STORAGE OBJ2_SINGLEARRAY
+#cmod_define ARRAY_STORAGE OBJ2_MPI_SINGLEARRAY
 #cmod_define PUSH push_float
 #cmod_define MPI_DATATYPE MPI_FLOAT
 #cmod_define MPI_SHIFT (3<<3)
@@ -263,14 +263,14 @@ PMOD_EXPORT struct object * mpi_clone_sentinel(MPI_Datatype type,
 					       unsigned int shift,
 					       void * p,
 					       struct object * other) {
-    struct object * o = low_clone(Sentinel_program);
+    struct object * o = low_clone(MPI_Sentinel_program);
 
-    OBJ2_SENTINEL(o)->i.length = length;
-    OBJ2_SENTINEL(o)->i.type_size = type_size;
-    OBJ2_SENTINEL(o)->i.shift = shift;
-    OBJ2_SENTINEL(o)->i.type = type;
-    OBJ2_SENTINEL(o)->i.data = p;
-    OBJ2_SENTINEL(o)->other = other;
+    OBJ2_MPI_SENTINEL(o)->i.length = length;
+    OBJ2_MPI_SENTINEL(o)->i.type_size = type_size;
+    OBJ2_MPI_SENTINEL(o)->i.shift = shift;
+    OBJ2_MPI_SENTINEL(o)->i.type = type;
+    OBJ2_MPI_SENTINEL(o)->i.data = p;
+    OBJ2_MPI_SENTINEL(o)->other = other;
     add_ref(other);
     return o;
 }
@@ -316,10 +316,10 @@ PIKECLASS Op
 
 PMOD_EXPORT struct object *mpi_clone_op(MPI_Op op, unsigned int *refcnt)
 {
-    struct object *o = low_clone(Op_program);
+    struct object *o = low_clone(MPI_Op_program);
 
-    OBJ2_OP(o)->op = op;
-    OBJ2_OP(o)->refcnt = refcnt;
+    OBJ2_MPI_OP(o)->op = op;
+    OBJ2_MPI_OP(o)->refcnt = refcnt;
     return o;
 }
 
@@ -327,9 +327,9 @@ static inline struct object *mpi_clone_array(struct program *prog, unsigned int 
 {
     struct object *r = low_clone(prog);
 
-    OBJ2_INTARRAY(r)->i.clone = 1;
-    OBJ2_INTARRAY(r)->i.data = data;
-    OBJ2_INTARRAY(r)->i.length = length;
+    OBJ2_MPI_INTARRAY(r)->i.clone = 1;
+    OBJ2_MPI_INTARRAY(r)->i.data = data;
+    OBJ2_MPI_INTARRAY(r)->i.length = length;
 
     return r;
 }
@@ -387,14 +387,14 @@ static void mpi_user_function(void *invec, void *outvec, int *len,
 
 	/* TODO: can this even happen? i think not, but have to be sure! */
 	if (*(unsigned int*)len * tsize
-		!= OBJ2_OP(mpi_pike_user_function.op)->len)
+		!= OBJ2_MPI_OP(mpi_pike_user_function.op)->len)
 	    Pike_fatal("Pike defined MPI operation with nonmatching length (%d (%d)received vs %d in op).\n",
-		       *len * tsize, tsize, OBJ2_OP(mpi_pike_user_function.op)->len);
+		       *len * tsize, tsize, OBJ2_MPI_OP(mpi_pike_user_function.op)->len);
 
-	oinfo = OBJ2_OP(mpi_pike_user_function.op)->create(OBJ2_OP(mpi_pike_user_function.op)->info);
+	oinfo = OBJ2_MPI_OP(mpi_pike_user_function.op)->create(OBJ2_MPI_OP(mpi_pike_user_function.op)->info);
 	v->v1 = oinfo.o;
 	*(v->p1 = oinfo.data) = invec;
-	oinfo = OBJ2_OP(mpi_pike_user_function.op)->create(OBJ2_OP(mpi_pike_user_function.op)->info);
+	oinfo = OBJ2_MPI_OP(mpi_pike_user_function.op)->create(OBJ2_MPI_OP(mpi_pike_user_function.op)->info);
 	v->v2 = oinfo.o;
 	*(v->p2 = oinfo.data) = outvec;
     }
@@ -432,8 +432,8 @@ static void mpi_user_function(void *invec, void *outvec, int *len,
 static inline int mpi_Reduce(struct object *sendbuf, struct object *recvbuf,
 	       MPI_Op op, int root, MPI_Comm comm)
 {
-    unsigned int shift = OBJ2_INTARRAY(sendbuf)->i.shift,
-		 length = OBJ2_INTARRAY(sendbuf)->i.length;
+    unsigned int shift = OBJ2_MPI_INTARRAY(sendbuf)->i.shift,
+		 length = OBJ2_MPI_INTARRAY(sendbuf)->i.length;
     int rank;
 
     MPI_Bcast(&shift, 1, MPI_INT, root, comm);
@@ -441,27 +441,27 @@ static inline int mpi_Reduce(struct object *sendbuf, struct object *recvbuf,
 
     MPI_Comm_rank(comm, &rank);
 
-    if (OBJ2_INTARRAY(recvbuf)->i.shift != OBJ2_INTARRAY(sendbuf)->i.shift)
+    if (OBJ2_MPI_INTARRAY(recvbuf)->i.shift != OBJ2_MPI_INTARRAY(sendbuf)->i.shift)
 	Pike_fatal("Reduce: recvbuf and sendbuf differ in shift (%u vs %u).\n",
-		   OBJ2_INTARRAY(recvbuf)->i.shift, OBJ2_INTARRAY(sendbuf)->i.shift);
-    if (OBJ2_INTARRAY(recvbuf)->i.length != OBJ2_INTARRAY(sendbuf)->i.length)
+		   OBJ2_MPI_INTARRAY(recvbuf)->i.shift, OBJ2_MPI_INTARRAY(sendbuf)->i.shift);
+    if (OBJ2_MPI_INTARRAY(recvbuf)->i.length != OBJ2_MPI_INTARRAY(sendbuf)->i.length)
 	Pike_fatal("Reduce: recvbuf and sendbuf differ in size (%u vs %u).\n",
-		   OBJ2_INTARRAY(recvbuf)->i.length, OBJ2_INTARRAY(sendbuf)->i.length);
+		   OBJ2_MPI_INTARRAY(recvbuf)->i.length, OBJ2_MPI_INTARRAY(sendbuf)->i.length);
 
     if (rank != root) {
-	if (shift != OBJ2_INTARRAY(recvbuf)->i.shift)
+	if (shift != OBJ2_MPI_INTARRAY(recvbuf)->i.shift)
 	    Pike_fatal("Cannot Reduce magic shift %u into buffer of magic shift %u.\n",
-		       shift, OBJ2_INTARRAY(recvbuf)->i.shift);
-	if (length > OBJ2_INTARRAY(recvbuf)->i.length)
+		       shift, OBJ2_MPI_INTARRAY(recvbuf)->i.shift);
+	if (length > OBJ2_MPI_INTARRAY(recvbuf)->i.length)
 	    Pike_fatal("Cannot Reduce magic shift %u and length %d into buffer of length %d.\n",
-		       shift, length, OBJ2_INTARRAY(recvbuf)->i.length);
+		       shift, length, OBJ2_MPI_INTARRAY(recvbuf)->i.length);
     }
 
     INVALIDATE_CURRENT_TIME();
 
-    return MPI_Reduce(OBJ2_INTARRAY(sendbuf)->i.data,
-		      OBJ2_INTARRAY(recvbuf)->i.data, length,
-		      OBJ2_INTARRAY(sendbuf)->i.type, op,
+    return MPI_Reduce(OBJ2_MPI_INTARRAY(sendbuf)->i.data,
+		      OBJ2_MPI_INTARRAY(recvbuf)->i.data, length,
+		      OBJ2_MPI_INTARRAY(sendbuf)->i.type, op,
 		      root, comm);
 }
 
@@ -470,8 +470,8 @@ static inline int mpi_Reduce(struct object *sendbuf, struct object *recvbuf,
 				       struct object *recvbuf,		\
 				       MPI_Op op, MPI_Comm comm)	\
 {									\
-    unsigned int shift = OBJ2_INTARRAY(sendbuf)->i.shift,		\
-		 length = OBJ2_INTARRAY(sendbuf)->i.length;		\
+    unsigned int shift = OBJ2_MPI_INTARRAY(sendbuf)->i.shift,		\
+		 length = OBJ2_MPI_INTARRAY(sendbuf)->i.length;		\
     int rank;								\
 									\
     MPI_Bcast(&shift, 1, MPI_INT, 0, comm);				\
@@ -479,32 +479,32 @@ static inline int mpi_Reduce(struct object *sendbuf, struct object *recvbuf,
 									\
     MPI_Comm_rank(comm, &rank);						\
 									\
-    if (OBJ2_INTARRAY(recvbuf)->i.shift					\
-	    != OBJ2_INTARRAY(sendbuf)->i.shift)				\
+    if (OBJ2_MPI_INTARRAY(recvbuf)->i.shift					\
+	    != OBJ2_MPI_INTARRAY(sendbuf)->i.shift)				\
 	Pike_fatal(#_name_ ": recvbuf and sendbuf differ in shift (%u vs %u).\n",\
-		   OBJ2_INTARRAY(recvbuf)->i.shift,			\
-		   OBJ2_INTARRAY(sendbuf)->i.shift);			\
-    if (OBJ2_INTARRAY(recvbuf)->i.length				\
-	    != OBJ2_INTARRAY(sendbuf)->i.length)			\
+		   OBJ2_MPI_INTARRAY(recvbuf)->i.shift,			\
+		   OBJ2_MPI_INTARRAY(sendbuf)->i.shift);			\
+    if (OBJ2_MPI_INTARRAY(recvbuf)->i.length				\
+	    != OBJ2_MPI_INTARRAY(sendbuf)->i.length)			\
 	Pike_fatal(#_name_ ": recvbuf and sendbuf differ in size (%u vs %u).\n",\
-		   OBJ2_INTARRAY(recvbuf)->i.length,			\
-		   OBJ2_INTARRAY(sendbuf)->i.length);			\
+		   OBJ2_MPI_INTARRAY(recvbuf)->i.length,			\
+		   OBJ2_MPI_INTARRAY(sendbuf)->i.length);			\
 									\
     if (rank) {								\
-	if (shift != OBJ2_INTARRAY(recvbuf)->i.shift)			\
+	if (shift != OBJ2_MPI_INTARRAY(recvbuf)->i.shift)			\
 	    Pike_fatal("Cannot " #_name_ " magic shift %u into buffer of magic shift %u.\n",\
-		       shift, OBJ2_INTARRAY(recvbuf)->i.shift);	\
-	if (length > OBJ2_INTARRAY(recvbuf)->i.length)			\
+		       shift, OBJ2_MPI_INTARRAY(recvbuf)->i.shift);	\
+	if (length > OBJ2_MPI_INTARRAY(recvbuf)->i.length)			\
 	    Pike_fatal("Cannot " #_name_ " magic shift %u and length %d into buffer of length %d.\n",\
 		       shift, length,				\
-		       OBJ2_INTARRAY(recvbuf)->i.length);		\
+		       OBJ2_MPI_INTARRAY(recvbuf)->i.length);		\
     }									\
 									\
     INVALIDATE_CURRENT_TIME();						\
 									\
-    return MPI_ ## _name_(OBJ2_INTARRAY(sendbuf)->i.data,		\
-		      OBJ2_INTARRAY(recvbuf)->i.data, length,		\
-		      OBJ2_INTARRAY(sendbuf)->i.type, op,		\
+    return MPI_ ## _name_(OBJ2_MPI_INTARRAY(sendbuf)->i.data,		\
+		      OBJ2_MPI_INTARRAY(recvbuf)->i.data, length,		\
+		      OBJ2_MPI_INTARRAY(sendbuf)->i.type, op,		\
 		      comm);						\
 }
 
@@ -526,22 +526,22 @@ static inline int mpi_Recv(struct object *buf, int source, int tag,
     MPI_Recv(&shift, 1, MPI_INT, source, tag, comm, status);
     MPI_Recv(&length, 1, MPI_INT, status->MPI_SOURCE, status->MPI_TAG, comm, NULL);
 
-    if (shift != OBJ2_INTARRAY(buf)->i.shift)
+    if (shift != OBJ2_MPI_INTARRAY(buf)->i.shift)
 	Pike_error("Trying to receive shift %u into buffer of shift %u.\n",
-		   shift, OBJ2_INTARRAY(buf)->i.shift);
-    if (OBJ2_INTARRAY(buf)->i.length < length)
+		   shift, OBJ2_MPI_INTARRAY(buf)->i.shift);
+    if (OBJ2_MPI_INTARRAY(buf)->i.length < length)
 #if 0
 	Pike_error("Cannot receive MPI." cmod_STRFY_EVAL(name_prefix) "Array(%d) into MPI." cmod_STRFY_EVAL(name_prefix) "Array(%d).\n",
-		   length, OBJ2_INTARRAY(buf)->i.length);
+		   length, OBJ2_MPI_INTARRAY(buf)->i.length);
 #else
 	Pike_error("Cannot receive magic shift %u length %d into length %d.\n",
-		   shift, length, OBJ2_INTARRAY(buf)->i.length);
+		   shift, length, OBJ2_MPI_INTARRAY(buf)->i.length);
 #endif
 
     INVALIDATE_CURRENT_TIME();
 
-    return MPI_Recv(OBJ2_INTARRAY(buf)->i.data, length,
-		    OBJ2_INTARRAY(buf)->i.type, status->MPI_SOURCE,
+    return MPI_Recv(OBJ2_MPI_INTARRAY(buf)->i.data, length,
+		    OBJ2_MPI_INTARRAY(buf)->i.type, status->MPI_SOURCE,
 		    status->MPI_TAG, comm, NULL);
 }
 
@@ -592,8 +592,8 @@ static inline int mpi_string_Recv(int source, int tag, MPI_Comm comm,
 
 static inline int mpi_Bcast(struct object *buf, int root, MPI_Comm comm)
 {
-    unsigned int length = OBJ2_INTARRAY(buf)->i.length,
-		 shift = OBJ2_INTARRAY(buf)->i.shift;
+    unsigned int length = OBJ2_MPI_INTARRAY(buf)->i.length,
+		 shift = OBJ2_MPI_INTARRAY(buf)->i.shift;
     int rank;
 
     INVALIDATE_CURRENT_TIME();
@@ -604,16 +604,16 @@ static inline int mpi_Bcast(struct object *buf, int root, MPI_Comm comm)
     MPI_Comm_rank(comm, &rank);
 
     if (rank != root) {
-	if (shift != OBJ2_INTARRAY(buf)->i.shift)
+	if (shift != OBJ2_MPI_INTARRAY(buf)->i.shift)
 	    Pike_fatal("Cannot (receive) broadcast of shift %u into buffer of shift %u.\n",
-		       shift, OBJ2_INTARRAY(buf)->i.shift);
-	if (length > OBJ2_INTARRAY(buf)->i.length)
+		       shift, OBJ2_MPI_INTARRAY(buf)->i.shift);
+	if (length > OBJ2_MPI_INTARRAY(buf)->i.length)
 	    Pike_fatal("Buffer of shift %u and size %d to small for transmission of size %d.\n",
-		       shift, OBJ2_INTARRAY(buf)->i.length, length);
+		       shift, OBJ2_MPI_INTARRAY(buf)->i.length, length);
     }
 
-    return MPI_Bcast(OBJ2_INTARRAY(buf)->i.data, length,
-		     OBJ2_INTARRAY(buf)->i.type, root, comm);
+    return MPI_Bcast(OBJ2_MPI_INTARRAY(buf)->i.data, length,
+		     OBJ2_MPI_INTARRAY(buf)->i.type, root, comm);
 }
 
 static inline int mpi_string_Bcast(struct pike_string **ps, int root, MPI_Comm comm, PIKE_MUTEX_T *m)
@@ -677,10 +677,10 @@ static inline int mpi_Send(struct object *buf, int dest, int tag, MPI_Comm comm)
 {
     INVALIDATE_CURRENT_TIME();
 
-    MPI_Send(&OBJ2_INTARRAY(buf)->i.shift, 1, MPI_INT, dest, tag, comm);
-    MPI_Send(&OBJ2_INTARRAY(buf)->i.length, 1, MPI_INT, dest, tag, comm);
-    return MPI_Send(OBJ2_INTARRAY(buf)->i.data, OBJ2_INTARRAY(buf)->i.length,
-		    OBJ2_INTARRAY(buf)->i.type, dest, tag, comm);
+    MPI_Send(&OBJ2_MPI_INTARRAY(buf)->i.shift, 1, MPI_INT, dest, tag, comm);
+    MPI_Send(&OBJ2_MPI_INTARRAY(buf)->i.length, 1, MPI_INT, dest, tag, comm);
+    return MPI_Send(OBJ2_MPI_INTARRAY(buf)->i.data, OBJ2_MPI_INTARRAY(buf)->i.length,
+		    OBJ2_MPI_INTARRAY(buf)->i.type, dest, tag, comm);
 }
 
 static inline int mpi_Gather(struct object *sendbuf, struct object *recvbuf, int root, MPI_Comm comm)
@@ -696,24 +696,24 @@ static inline int mpi_Gather(struct object *sendbuf, struct object *recvbuf, int
     if (rank == root) {
 	if (!IS_SENTINEL(recvbuf))
 	    Pike_error("Gather: Rank root (%d) really needs a recvbuf.\n", root);
-	shift = OBJ2_INTARRAY(recvbuf)->i.shift;
-	length = OBJ2_INTARRAY(recvbuf)->i.length / size;
+	shift = OBJ2_MPI_INTARRAY(recvbuf)->i.shift;
+	length = OBJ2_MPI_INTARRAY(recvbuf)->i.length / size;
     }
 
     MPI_Bcast(&shift, 1, MPI_INT, root, comm);
     MPI_Bcast(&length, 1, MPI_INT, root, comm);
 
-    if (shift != OBJ2_INTARRAY(sendbuf)->i.shift)
+    if (shift != OBJ2_MPI_INTARRAY(sendbuf)->i.shift)
 	Pike_error("Cannot Gather magic shift %u into buffer of magic shift %u.\n",
-		   shift, OBJ2_INTARRAY(recvbuf)->i.shift);
-    if (length > OBJ2_INTARRAY(sendbuf)->i.length)
+		   shift, OBJ2_MPI_INTARRAY(recvbuf)->i.shift);
+    if (length > OBJ2_MPI_INTARRAY(sendbuf)->i.length)
 	Pike_error("Cannot Gather buffer of magic shift %u, length %u into buffer of length %u.\n",
-		   shift, length, OBJ2_INTARRAY(recvbuf)->i.length);
+		   shift, length, OBJ2_MPI_INTARRAY(recvbuf)->i.length);
 
-    return MPI_Gather(OBJ2_INTARRAY(sendbuf)->i.data, length, OBJ2_INTARRAY(sendbuf)->i.type,
-		      recvbuf ? OBJ2_INTARRAY(recvbuf)->i.data : NULL, length,
-		      recvbuf ? OBJ2_INTARRAY(recvbuf)->i.type
-			      : OBJ2_INTARRAY(sendbuf)->i.type,
+    return MPI_Gather(OBJ2_MPI_INTARRAY(sendbuf)->i.data, length, OBJ2_MPI_INTARRAY(sendbuf)->i.type,
+		      recvbuf ? OBJ2_MPI_INTARRAY(recvbuf)->i.data : NULL, length,
+		      recvbuf ? OBJ2_MPI_INTARRAY(recvbuf)->i.type
+			      : OBJ2_MPI_INTARRAY(sendbuf)->i.type,
 		      root, comm);
 }
 
@@ -729,8 +729,8 @@ static inline int mpi_Scatter(struct object *sendbuf, struct object *recvbuf, in
 	if (!IS_SENTINEL(sendbuf))
 	    Pike_error("Scatter: Rank root (%d) really needs a sendbuf.\n",
 		       root);
-	shift = OBJ2_INTARRAY(sendbuf)->i.shift;
-	length = OBJ2_INTARRAY(sendbuf)->i.length / size;
+	shift = OBJ2_MPI_INTARRAY(sendbuf)->i.shift;
+	length = OBJ2_MPI_INTARRAY(sendbuf)->i.length / size;
     }
 
     INVALIDATE_CURRENT_TIME();
@@ -738,17 +738,17 @@ static inline int mpi_Scatter(struct object *sendbuf, struct object *recvbuf, in
     MPI_Bcast(&shift, 1, MPI_INT, root, comm);
     MPI_Bcast(&length, 1, MPI_INT, root, comm);
 
-    if (shift != OBJ2_INTARRAY(recvbuf)->i.shift)
+    if (shift != OBJ2_MPI_INTARRAY(recvbuf)->i.shift)
 	Pike_error("Cannot Scatter magic shift %u into buffer of magic shift %u.\n",
-		   shift, OBJ2_INTARRAY(recvbuf)->i.shift);
-    if (length > OBJ2_INTARRAY(recvbuf)->i.length)
+		   shift, OBJ2_MPI_INTARRAY(recvbuf)->i.shift);
+    if (length > OBJ2_MPI_INTARRAY(recvbuf)->i.length)
 	Pike_error("Cannot Scatter buffer of magic shift %u, length %u into buffer of length %u.\n",
-		   shift, length, OBJ2_INTARRAY(recvbuf)->i.length);
+		   shift, length, OBJ2_MPI_INTARRAY(recvbuf)->i.length);
 
-    return MPI_Scatter(sendbuf ? OBJ2_INTARRAY(sendbuf)->i.data : NULL, length,
-		       sendbuf ? OBJ2_INTARRAY(sendbuf)->i.type
-			       : OBJ2_INTARRAY(recvbuf)->i.type,
-		       OBJ2_INTARRAY(recvbuf)->i.data, length, OBJ2_INTARRAY(recvbuf)->i.type,
+    return MPI_Scatter(sendbuf ? OBJ2_MPI_INTARRAY(sendbuf)->i.data : NULL, length,
+		       sendbuf ? OBJ2_MPI_INTARRAY(sendbuf)->i.type
+			       : OBJ2_MPI_INTARRAY(recvbuf)->i.type,
+		       OBJ2_MPI_INTARRAY(recvbuf)->i.data, length, OBJ2_MPI_INTARRAY(recvbuf)->i.type,
 		       root, comm);
 }
 
@@ -776,22 +776,22 @@ static inline int mpi_Scatterv(struct object *sendbuf, struct object *counts,
 	    Pike_error("Scatterv: root (%d) really needs a displacements array.\n",
 		       root);
 
-	shift = OBJ2_INTARRAY(sendbuf)->i.shift;
+	shift = OBJ2_MPI_INTARRAY(sendbuf)->i.shift;
 
-	if (OBJ2_INTARRAY(counts)->i.length != (unsigned int)size)
+	if (OBJ2_MPI_INTARRAY(counts)->i.length != (unsigned int)size)
 	    Pike_error("Scatterv: count array of wrong size (%u vs %U).\n",
-		       OBJ2_INTARRAY(counts)->i.length, size);
-	if (OBJ2_INTARRAY(displ)->i.length != (unsigned int)size)
+		       OBJ2_MPI_INTARRAY(counts)->i.length, size);
+	if (OBJ2_MPI_INTARRAY(displ)->i.length != (unsigned int)size)
 	    Pike_error("Scatterv: displacements array of wrong size (%u vs %u).\n",
-		       OBJ2_INTARRAY(displ)->i.length, size);
+		       OBJ2_MPI_INTARRAY(displ)->i.length, size);
 
 	for (i = 0; i < size; i++) {
-	    if (((int*)OBJ2_INTARRAY(counts)->i.data)[i]
-		+ ((int*)OBJ2_INTARRAY(displ)->i.data)[i]
-		> (int)OBJ2_INTARRAY(sendbuf)->i.length
-		|| (int)OBJ2_INTARRAY(sendbuf)->i.length < 0)
+	    if (((int*)OBJ2_MPI_INTARRAY(counts)->i.data)[i]
+		+ ((int*)OBJ2_MPI_INTARRAY(displ)->i.data)[i]
+		> (int)OBJ2_MPI_INTARRAY(sendbuf)->i.length
+		|| (int)OBJ2_MPI_INTARRAY(sendbuf)->i.length < 0)
 		Pike_error("counts[%u]+displ[%<u]<sizeof(sendbuf) (%u).\n",
-			   i, OBJ2_INTARRAY(sendbuf)->i.length);
+			   i, OBJ2_MPI_INTARRAY(sendbuf)->i.length);
 	}
     }
 
@@ -799,23 +799,23 @@ static inline int mpi_Scatterv(struct object *sendbuf, struct object *counts,
     INVALIDATE_CURRENT_TIME();
 
     MPI_Bcast(&shift, 1, MPI_INT, root, comm);
-    MPI_Scatter(counts ? OBJ2_INTARRAY(counts)->i.data : NULL, 1, MPI_INT,
+    MPI_Scatter(counts ? OBJ2_MPI_INTARRAY(counts)->i.data : NULL, 1, MPI_INT,
 		&count, 1, MPI_INT, root, comm);
 
-    if (shift != OBJ2_INTARRAY(recvbuf)->i.shift)
+    if (shift != OBJ2_MPI_INTARRAY(recvbuf)->i.shift)
 	Pike_error("Cannot Scatterv magic shift %u into buffer of magic shift %u.\n",
-		   shift, OBJ2_INTARRAY(recvbuf)->i.shift);
-    if (OBJ2_INTARRAY(recvbuf)->i.length < count)
+		   shift, OBJ2_MPI_INTARRAY(recvbuf)->i.shift);
+    if (OBJ2_MPI_INTARRAY(recvbuf)->i.length < count)
 	Pike_error("Scatterv: to small buffer (%u vs %u) on rank %d.\n",
-		   OBJ2_INTARRAY(recvbuf)->i.length, count, rank);
+		   OBJ2_MPI_INTARRAY(recvbuf)->i.length, count, rank);
 
-    return MPI_Scatterv(sendbuf ? OBJ2_INTARRAY(sendbuf)->i.data : NULL,
-			counts ? (int*)OBJ2_INTARRAY(counts)->i.data : NULL,
-			displ ? (int*)OBJ2_INTARRAY(displ)->i.data : NULL,
-			sendbuf ? OBJ2_INTARRAY(sendbuf)->i.type
-				: OBJ2_INTARRAY(recvbuf)->i.type,
-			OBJ2_INTARRAY(recvbuf)->i.data, count,
-			OBJ2_INTARRAY(recvbuf)->i.type,
+    return MPI_Scatterv(sendbuf ? OBJ2_MPI_INTARRAY(sendbuf)->i.data : NULL,
+			counts ? (int*)OBJ2_MPI_INTARRAY(counts)->i.data : NULL,
+			displ ? (int*)OBJ2_MPI_INTARRAY(displ)->i.data : NULL,
+			sendbuf ? OBJ2_MPI_INTARRAY(sendbuf)->i.type
+				: OBJ2_MPI_INTARRAY(recvbuf)->i.type,
+			OBJ2_MPI_INTARRAY(recvbuf)->i.data, count,
+			OBJ2_MPI_INTARRAY(recvbuf)->i.type,
 			root, comm);
 }
 
@@ -843,22 +843,22 @@ static inline int mpi_Gatherv(struct object *sendbuf, struct object *recvbuf,
 	    Pike_error("Gatherv: root (%d) really needs a displacements array.\n",
 		       root);
 
-	shift = OBJ2_INTARRAY(recvbuf)->i.shift;
+	shift = OBJ2_MPI_INTARRAY(recvbuf)->i.shift;
 
-	if (OBJ2_INTARRAY(counts)->i.length != (unsigned int)size)
+	if (OBJ2_MPI_INTARRAY(counts)->i.length != (unsigned int)size)
 	    Pike_error("Gatherv: count array of wrong size (%u vs %U).\n",
-		       OBJ2_INTARRAY(counts)->i.length, size);
-	if (OBJ2_INTARRAY(displ)->i.length != (unsigned int)size)
+		       OBJ2_MPI_INTARRAY(counts)->i.length, size);
+	if (OBJ2_MPI_INTARRAY(displ)->i.length != (unsigned int)size)
 	    Pike_error("Gatherv: displacements array of wrong size (%u vs %u).\n",
-		       OBJ2_INTARRAY(displ)->i.length, size);
+		       OBJ2_MPI_INTARRAY(displ)->i.length, size);
 
 	for (i = 0; i < size; i++) {
-	    if (((int*)OBJ2_INTARRAY(counts)->i.data)[i]
-		+ ((int*)OBJ2_INTARRAY(displ)->i.data)[i]
-		> (int)OBJ2_INTARRAY(recvbuf)->i.length
-		|| (int)OBJ2_INTARRAY(recvbuf)->i.length < 0)
+	    if (((int*)OBJ2_MPI_INTARRAY(counts)->i.data)[i]
+		+ ((int*)OBJ2_MPI_INTARRAY(displ)->i.data)[i]
+		> (int)OBJ2_MPI_INTARRAY(recvbuf)->i.length
+		|| (int)OBJ2_MPI_INTARRAY(recvbuf)->i.length < 0)
 		Pike_error("counts[%u]+displ[%<u]<sizeof(sendbuf) (%u).\n",
-			   i, OBJ2_INTARRAY(sendbuf)->i.length);
+			   i, OBJ2_MPI_INTARRAY(sendbuf)->i.length);
 	}
     }
 
@@ -866,22 +866,22 @@ static inline int mpi_Gatherv(struct object *sendbuf, struct object *recvbuf,
     INVALIDATE_CURRENT_TIME();
 
     MPI_Bcast(&shift, 1, MPI_INT, root, comm);
-    MPI_Scatter(counts ? OBJ2_INTARRAY(counts)->i.data : NULL, 1, MPI_INT,
+    MPI_Scatter(counts ? OBJ2_MPI_INTARRAY(counts)->i.data : NULL, 1, MPI_INT,
 		&count, 1, MPI_INT, root, comm);
 
-    if (shift != OBJ2_INTARRAY(sendbuf)->i.shift)
+    if (shift != OBJ2_MPI_INTARRAY(sendbuf)->i.shift)
 	Pike_error("Cannot Gatherv magic shift %u into buffer of magic shift %u.\n",
-		   OBJ2_INTARRAY(sendbuf)->i.shift, shift);
-    if (OBJ2_INTARRAY(sendbuf)->i.length < count)
+		   OBJ2_MPI_INTARRAY(sendbuf)->i.shift, shift);
+    if (OBJ2_MPI_INTARRAY(sendbuf)->i.length < count)
 	Pike_error("Gatherv: to small buffer (%u vs %u) on rank %d.\n",
-		   OBJ2_INTARRAY(sendbuf)->i.length, count, rank);
+		   OBJ2_MPI_INTARRAY(sendbuf)->i.length, count, rank);
 
-    return MPI_Gatherv(OBJ2_INTARRAY(sendbuf)->i.data,
-		       count, OBJ2_INTARRAY(sendbuf)->i.type,
-		       recvbuf ? OBJ2_INTARRAY(recvbuf)->i.data : NULL,
-		       counts ? (int*)OBJ2_INTARRAY(counts)->i.data : NULL,
-		       displ ? (int*)OBJ2_INTARRAY(displ)->i.data : NULL,
-		       recvbuf ? OBJ2_INTARRAY(recvbuf)->i.type : MPI_INT,
+    return MPI_Gatherv(OBJ2_MPI_INTARRAY(sendbuf)->i.data,
+		       count, OBJ2_MPI_INTARRAY(sendbuf)->i.type,
+		       recvbuf ? OBJ2_MPI_INTARRAY(recvbuf)->i.data : NULL,
+		       counts ? (int*)OBJ2_MPI_INTARRAY(counts)->i.data : NULL,
+		       displ ? (int*)OBJ2_MPI_INTARRAY(displ)->i.data : NULL,
+		       recvbuf ? OBJ2_MPI_INTARRAY(recvbuf)->i.type : MPI_INT,
 		       root, comm);
 }
 
@@ -1084,19 +1084,19 @@ PIKECLASS Comm
 
 	using_mpi("Recv");
 
-	if (status && -1 == low_get_storage(status->prog, Status_program)) {
+	if (status && -1 == low_get_storage(status->prog, MPI_Status_program)) {
 	    SIMPLE_BAD_ARG_ERROR("Recv", 4, "inherits(MPI.Status)");
 	}
 
 	if (IS_SENTINEL(buf)) {
 	    mpi_Recv(buf, source, tag ? tag->u.integer : 0, THIS->comm,
-		     status ? &OBJ2_STATUS(status)->status : NULL);
+		     status ? &OBJ2_MPI_STATUS(status)->status : NULL);
 	    pop_n_elems(args);
 	} else {
-	    if (-1 == low_get_storage(buf->prog, Pointer_program))
+	    if (-1 == low_get_storage(buf->prog, MPI_Pointer_program))
 		FAIL_SENTINEL_OR_PTR("Recv", 1);
 	    mpi_string_Recv(source, tag ? tag->u.integer : 0, THIS->comm, &ps,
-			    status ? &OBJ2_STATUS(status)->status : NULL);
+			    status ? &OBJ2_MPI_STATUS(status)->status : NULL);
 	    pop_n_elems(args-1);
 	    push_string(ps);
 	    f_call_function(2);
@@ -1129,7 +1129,7 @@ PIKECLASS Comm
 	} else {
 	    struct pike_string *ps = NULL;
 
-	    if (-1 == low_get_storage(buf->prog, Pointer_program))
+	    if (-1 == low_get_storage(buf->prog, MPI_Pointer_program))
 		FAIL_SENTINEL_OR_PTR("Bcast", 1);
 
 	    mpi_string_Bcast(&ps, root, THIS->comm, &THIS->bm);
@@ -1146,38 +1146,38 @@ PIKECLASS Comm
     {
 	using_mpi("Reduce");
 
-	if (-1 == low_get_storage(op->prog, Op_program))
+	if (-1 == low_get_storage(op->prog, MPI_Op_program))
 	    SIMPLE_BAD_ARG_ERROR("Reduce", 3, "inherits(MPI.Op)");
 	ENSURE_SENTINEL(sendbuf, "Reduce", 1);
 	ENSURE_SENTINEL(recvbuf, "Reduce", 2);
 
-	if (OBJ2_OP(op)->refcnt) {
+	if (OBJ2_MPI_OP(op)->refcnt) {
 	    assign_svalue_no_free(&mpi_pike_user_function.ufun,
-				  &OBJ2_OP(op)->ufun);
+				  &OBJ2_MPI_OP(op)->ufun);
 	    sub_ref(mpi_pike_user_function.ufun.u.dummy);
-	    if (!OBJ2_OP(op)->create) {
+	    if (!OBJ2_MPI_OP(op)->create) {
 		/* mpi_Reduce et al. check for the same shift in both buffers
 		 * (and fail if those differ). As shifts should differ easier
 		 * than programs (i.e. Sentinel_program - lots of shifts, one
 		 * program) - we just need to store any one ->prog. */
 		mpi_pike_user_function.bufprog = recvbuf->prog;
 	    } else {
-		if (OBJ2_OP(op)->len != OBJ2_SENTINEL(recvbuf)->i.length
-			* OBJ2_SENTINEL(recvbuf)->i.type_size)
+		if (OBJ2_MPI_OP(op)->len != OBJ2_MPI_SENTINEL(recvbuf)->i.length
+			* OBJ2_MPI_SENTINEL(recvbuf)->i.type_size)
 		    Pike_fatal("MPI: User defined MPI operation does not match data length with buffers (%d vs %d).\n",
-			       OBJ2_OP(op)->len,
-			       OBJ2_SENTINEL(recvbuf)->i.length
-			       * OBJ2_SENTINEL(recvbuf)->i.type_size);
-		if (OBJ2_OP(op)->shift != OBJ2_SENTINEL(recvbuf)->i.shift)
+			       OBJ2_MPI_OP(op)->len,
+			       OBJ2_MPI_SENTINEL(recvbuf)->i.length
+			       * OBJ2_MPI_SENTINEL(recvbuf)->i.type_size);
+		if (OBJ2_MPI_OP(op)->shift != OBJ2_MPI_SENTINEL(recvbuf)->i.shift)
 		    Pike_fatal("MPI: User defined MPI operation does not match shift with buffers (%d vs %d).\n",
-			       OBJ2_OP(op)->shift,
-			       OBJ2_SENTINEL(recvbuf)->i.shift);
+			       OBJ2_MPI_OP(op)->shift,
+			       OBJ2_MPI_SENTINEL(recvbuf)->i.shift);
 		mpi_pike_user_function.bufprog = NULL;
 		mpi_pike_user_function.op = op;
 	    }
 	}
 
-	mpi_Reduce(sendbuf, recvbuf, OBJ2_OP(op)->op, root, THIS->comm);
+	mpi_Reduce(sendbuf, recvbuf, OBJ2_MPI_OP(op)->op, root, THIS->comm);
 	pop_n_elems(args);
     }
 
@@ -1185,35 +1185,35 @@ PIKECLASS Comm
 					     object recvbuf, object op)	\
     {									\
 	using_mpi(#_name_);						\
-	if (-1 == low_get_storage(op->prog, Op_program))		\
+	if (-1 == low_get_storage(op->prog, MPI_Op_program))		\
 	    SIMPLE_BAD_ARG_ERROR(#_name_, 3, "inherits(MPI.Op)");	\
 	ENSURE_SENTINEL(sendbuf, #_name_, 1);				\
 	ENSURE_SENTINEL(recvbuf, #_name_, 2);				\
 									\
-	if (OBJ2_OP(op)->refcnt) {					\
+	if (OBJ2_MPI_OP(op)->refcnt) {					\
 	    assign_svalue_no_free(&mpi_pike_user_function.ufun,		\
-				  &OBJ2_OP(op)->ufun);			\
+				  &OBJ2_MPI_OP(op)->ufun);			\
 	    sub_ref(mpi_pike_user_function.ufun.u.dummy);		\
-	    if (!OBJ2_OP(op)->create) {					\
+	    if (!OBJ2_MPI_OP(op)->create) {					\
 		mpi_pike_user_function.bufprog = recvbuf->prog;		\
 	    } else {							\
-		if (OBJ2_OP(op)->len != OBJ2_SENTINEL(recvbuf)->i.length\
-			* OBJ2_SENTINEL(recvbuf)->i.type_size)		\
+		if (OBJ2_MPI_OP(op)->len != OBJ2_MPI_SENTINEL(recvbuf)->i.length\
+			* OBJ2_MPI_SENTINEL(recvbuf)->i.type_size)		\
 		    Pike_fatal("MPI: User defined MPI operation does not match data length with buffers (%d vs %d).\n",\
-			       OBJ2_OP(op)->len,			\
-			       OBJ2_SENTINEL(recvbuf)->i.length		\
-			       * OBJ2_SENTINEL(recvbuf)->i.type_size);	\
-		if (OBJ2_OP(op)->shift					\
-			!= OBJ2_SENTINEL(recvbuf)->i.shift)		\
+			       OBJ2_MPI_OP(op)->len,			\
+			       OBJ2_MPI_SENTINEL(recvbuf)->i.length		\
+			       * OBJ2_MPI_SENTINEL(recvbuf)->i.type_size);	\
+		if (OBJ2_MPI_OP(op)->shift					\
+			!= OBJ2_MPI_SENTINEL(recvbuf)->i.shift)		\
 		    Pike_fatal("MPI: User defined MPI operation does not match shift with buffers (%d vs %d).\n",\
-			       OBJ2_OP(op)->shift,			\
-			       OBJ2_SENTINEL(recvbuf)->i.shift);	\
+			       OBJ2_MPI_OP(op)->shift,			\
+			       OBJ2_MPI_SENTINEL(recvbuf)->i.shift);	\
 		mpi_pike_user_function.bufprog = NULL;			\
 		mpi_pike_user_function.op = op;				\
 	    }								\
 	}								\
 									\
-	mpi_ ## _name_(sendbuf, recvbuf, OBJ2_OP(op)->op, THIS->comm);	\
+	mpi_ ## _name_(sendbuf, recvbuf, OBJ2_MPI_OP(op)->op, THIS->comm);	\
 	pop_n_elems(args);						\
     }
 
@@ -1251,9 +1251,9 @@ cmod_CONCAT_EVAL(ENSURE_SENTINEL,GATHER(##_OR_NULL))(recvbuf, #_name_, 2);  \
 	using_mpi("Scatterv");
 
 	ENSURE_SENTINEL_OR_NULL(sendbuf, "Scatterv", 1);
-	if (counts && -1 == low_get_storage(counts->prog, IntArray_program))
+	if (counts && -1 == low_get_storage(counts->prog, MPI_IntArray_program))
 	    SIMPLE_BAD_ARG_ERROR("Scatterv", 2, "inherits(MPI.IntArray)");
-	if (displ && -1 == low_get_storage(displ->prog, IntArray_program))
+	if (displ && -1 == low_get_storage(displ->prog, MPI_IntArray_program))
 	    SIMPLE_BAD_ARG_ERROR("Scatterv", 3, "inherits(MPI.IntArray)");
 	ENSURE_SENTINEL(recvbuf, "Scatterv", 4);
 
@@ -1268,9 +1268,9 @@ cmod_CONCAT_EVAL(ENSURE_SENTINEL,GATHER(##_OR_NULL))(recvbuf, #_name_, 2);  \
 	using_mpi("Gatherv");
 	ENSURE_SENTINEL(sendbuf, "Gatherv", 1);
 	ENSURE_SENTINEL_OR_NULL(recvbuf, "Gatherv", 2);
-	if (counts && -1 == low_get_storage(counts->prog, IntArray_program))
+	if (counts && -1 == low_get_storage(counts->prog, MPI_IntArray_program))
 	    SIMPLE_BAD_ARG_ERROR("Gatherv", 3, "inherits(MPI.IntArray)|void");
-	if (displ && -1 == low_get_storage(displ->prog, IntArray_program))
+	if (displ && -1 == low_get_storage(displ->prog, MPI_IntArray_program))
 	    SIMPLE_BAD_ARG_ERROR("Gatherv", 4, "inherits(MPI.IntArray)|void");
 
 	mpi_Gatherv(sendbuf, recvbuf, counts, displ, root, THIS->comm);
@@ -1317,11 +1317,11 @@ cmod_CONCAT_EVAL(ENSURE_SENTINEL,GATHER(##_OR_NULL))(recvbuf, #_name_, 2);  \
 
 	using_mpi("dup");
 
-	o = clone_object(Comm_program, 0);
+	o = clone_object(MPI_Comm_program, 0);
 
 	MPI_Comm_dup(THIS->comm, &comm);
 
-	OBJ2_COMM(o)->comm = comm;
+	OBJ2_MPI_COMM(o)->comm = comm;
 
 	RETURN o;
     }
@@ -1437,7 +1437,7 @@ PIKEFUN object Op_create(function ufun, int commute)
 
     MPI_Op_create(mpi_user_function, commute, &mpiop);
     op = mpi_clone_op(mpiop, refcnt);
-    assign_svalue_no_free(&OBJ2_OP(op)->ufun, ufun);
+    assign_svalue_no_free(&OBJ2_MPI_OP(op)->ufun, ufun);
 
     pop_n_elems(args);
     push_object(op);
@@ -1452,11 +1452,11 @@ PMOD_EXPORT struct object *mpi_ex_op(struct op_info (*create)(void *), struct sv
 
     MPI_Op_create(mpi_user_function, commute, &mpiop);
     o = mpi_clone_op(mpiop, refcnt);
-    OBJ2_OP(o)->create = create;
-    OBJ2_OP(o)->info = info;
-    OBJ2_OP(o)->shift = shift;
-    OBJ2_OP(o)->len = len;
-    assign_svalue_no_free(&OBJ2_OP(o)->ufun, ufun);
+    OBJ2_MPI_OP(o)->create = create;
+    OBJ2_MPI_OP(o)->info = info;
+    OBJ2_MPI_OP(o)->shift = shift;
+    OBJ2_MPI_OP(o)->len = len;
+    assign_svalue_no_free(&OBJ2_MPI_OP(o)->ufun, ufun);
 
     return o;
 }
@@ -1469,8 +1469,8 @@ PIKE_MODULE_INIT
 
     ADD_INT_CONSTANT("ANY_SOURCE", MPI_ANY_SOURCE, 0);
     ADD_INT_CONSTANT("ANY_TAG", MPI_ANY_TAG, 0);
-    add_object_constant("world", co = clone_object(Comm_program, 0), 0);
-    OBJ2_COMM(co)->comm = MPI_COMM_WORLD;
+    add_object_constant("world", co = clone_object(MPI_Comm_program, 0), 0);
+    OBJ2_MPI_COMM(co)->comm = MPI_COMM_WORLD;
 
 #define EXPORT_OP(_op_) add_object_constant(		\
 	#_op_, mpi_clone_op(MPI_ ## _op_, NULL), 0);

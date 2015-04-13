@@ -1,7 +1,7 @@
 #cmod_ifdef ARRAY_CLASSIFY
 # cmod_undef ARRAY_CLASSIFY
 #cmod_endif
-#cmod_define ARRAY_CLASSIFY(x...) cmod_CONCAT_EVAL(name_prefix, ##x)
+#cmod_define ARRAY_CLASSIFY(x...) cmod_CONCAT_EVAL(MPI_, name_prefix, ##x)
 
     CVAR struct mpi_info i;
 
