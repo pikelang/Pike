@@ -425,8 +425,8 @@ test_any([[
     while(!cb_data)
       Pike.DefaultBackend(0.005);
 
-    return cb_data;
-]], "GET / ")
+    return has_prefix("GET / HTTP/1.0\r\n\r\n", cb_data);
+]], 1)
 
 test_do([[
   add_constant("client_msg", random_string(65519));
