@@ -200,17 +200,15 @@ test_tests([[
 	hash = HASH_sha256;
       }
       if ((ke >= 0) && (cipher >= 0) && (hash >= 0)) {
-	if ((mode == -1) &&
-	    ((hash > HASH_sha256) &&
-	     !((cipher == CIPHER_camellia256) &&
-	       has_prefix(sym, "TLS_ecdh")) ||
-	     ((hash == HASH_sha256) &&
-	      (cipher == CIPHER_aes) &&
-	      has_prefix(sym, "TLS_ecdh")))) {
-	  // NB: The RFC 6367 suites allow use with TLS 1.1 and earlier.
-	  //     While the reverse is true for the RFC 5289 suites.
-	  mode = MODE_cbc;
-	}
+
+    int suite = SSL.Constants[sym];
+    if ((mode == -1) && (hash >= HASH_sha256) &&
+        ((suite < 0xc072) || (suite > 0xc079))) {
+      // CBC with a custom PRF and not a suite in RFC 6367 section 2.1.
+      // These suites are only supported with TLS 1.2.
+      mode = MODE_cbc;
+    }
+
 	if (mode >= 0) {
 	  expected = ({ ke, cipher, hash, mode });
 	} else {
