@@ -880,4 +880,36 @@ test_any( [[
     "_static_modules._Stdio()->Buffer(6 bytes, read=[..-1] data=[0..5] free=[6..0] string)|"
     "ABC\"\n\0")
 
+dnl rewind_key.rewind
+
+test_any([[
+  Stdio.Buffer b = Stdio.Buffer("123456789");
+  if( b->read(2) != "12" ) return 1;
+  Stdio.Buffer.RewindKey k = b->rewind_key();
+  if( b->read(2) != "34" ) return 2;
+  k->rewind();
+  if( b->read(4) != "3456") return 3;
+  return -1;
+]], -1)
+
+test_any([[
+  Stdio.Buffer b = Stdio.Buffer("123456789");
+  Stdio.Buffer.RewindKey k1 = b->rewind_key();
+  if( b->read(6) != "123456" ) return 1;
+  Stdio.Buffer.RewindKey k2 = b->rewind_key();
+  k1->rewind();
+  if( b->read(1) != "1" ) return 2;
+  k2->rewind();
+  if( b->read(1) != "7" ) return 3;
+  return -1;
+]], -1)
+
+test_any([[
+  Stdio.Buffer b = Stdio.Buffer("123");
+  Stdio.Buffer.RewindKey k = b->rewind_key();
+  b->read(1);
+  k->rewind(); // Destructs the key.
+  return !!k;
+]], 0)
+
 END_MARKER
