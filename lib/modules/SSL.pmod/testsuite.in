@@ -392,6 +392,42 @@ test_do([[
 #endif
 ]])
 
+test_any([[
+    Stdio.File client_con = Stdio.File();
+    Stdio.File server_con =
+      client_con->pipe(Stdio.PROP_NONBLOCK | Stdio.PROP_BIDIRECTIONAL);
+
+    SSL.Context server_ctx = TestContext();
+    SSL.File server = SSL.File(server_con, server_ctx);
+
+    if (!server->accept()) return 0;
+
+    void dummy() { };
+    server->set_nonblocking(dummy, dummy, dummy);
+    string cb_data;
+    void alert_cb(object p, object s, string data)
+    {
+      cb_data = data;
+    };
+    server->set_alert_callback(alert_cb);
+
+    Stdio.Buffer out = Stdio.Buffer("GET / HTTP/1.0\r\n\r\n");
+
+    void my_write()
+    {
+      if(!sizeof(out))
+        return;
+      client_con->write(out->read(1));
+      my_write();
+    };
+    Thread.Thread(my_write);
+
+    while(!cb_data)
+      Pike.DefaultBackend(0.005);
+
+    return cb_data;
+]], "GET / ")
+
 test_do([[
   add_constant("client_msg", random_string(65519));
 ]])

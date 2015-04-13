@@ -920,6 +920,7 @@ string(8bit)|int got_data(string(8bit) data)
   // to get the leftovers after the SSL connection.
 
   read_buffer->add(data);
+  Stdio.Buffer.RewindKey read_buffer_key = read_buffer->rewind_key();
 
   string(8bit) res = "";
   Packet packet;
@@ -929,7 +930,13 @@ string(8bit)|int got_data(string(8bit) data)
     { /* Reply alert */
       SSL3_DEBUG_MSG("SSL.Connection: Bad received packet\n");
       if (alert_callback)
-	alert_callback(packet, current_read_state->seq_num, data);
+      {
+        Stdio.Buffer.RewindKey here = read_buffer->rewind_key();
+        read_buffer_key->rewind();
+        alert_callback(packet, current_read_state->seq_num,
+                       (string)read_buffer);
+        here->rewind();
+      }
       if (this && packet)
 	send_packet(packet);
       if ((!packet) || (!this) || (packet->level == ALERT_fatal))
