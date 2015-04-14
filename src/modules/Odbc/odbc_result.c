@@ -733,25 +733,16 @@ static void f_list_tables(INT32 args)
   SQLHSTMT hstmt = PIKE_ODBC_RES->hstmt;
   RETCODE code;
   const char *err_msg = NULL;
-  SWORD num_fields;
-  SQLLEN num_rows;
+  SWORD num_fields = 0;
+  SQLLEN num_rows = 0;
 
-  if (!args) {
-    push_constant_text("%");
-    args = 1;
-  } else if ((Pike_sp[-args].type != T_STRING) ||
-	     (Pike_sp[-args].u.string->size_shift)) {
-    Pike_error("odbc_result->list_tables(): "
-	       "Bad argument 1. Expected 8-bit string.\n");
-  }
-
-  table_name_pattern = Pike_sp[-args].u.string;
+  get_all_args("odbc_result->list_tables()", args, ".%S", &table_name_pattern);
 
   ODBC_ALLOW();
-  code = SQLTables(hstmt, (SQLCHAR *) "%", 1, (SQLCHAR *) "%", 1,
-		   (SQLCHAR *) table_name_pattern->str,
-		   DO_NOT_WARN((SQLSMALLINT)table_name_pattern->len),
-		   (SQLCHAR *) "%", 1);
+  code = SQLTables(hstmt, NULL, 0, NULL, 0,
+		   table_name_pattern?(SQLCHAR *)table_name_pattern->str:NULL,
+		   table_name_pattern?DO_NOT_WARN((SQLSMALLINT)table_name_pattern->len):0,
+		   NULL, 0);
   if (code != SQL_SUCCESS && code != SQL_SUCCESS_WITH_INFO)
     err_msg = "Query failed";
   else {

@@ -989,9 +989,16 @@ array(string) list_tables(string|void wild)
     };
   }
   if (res && sizeof(res) && mappingp(res[0])) {
-    res = map(res, lambda (mapping m) {
-		     return values(m)[0]; // Hope that there's only one field
-		   } );
+    string col_name = indices(res[0])[0];
+    if (sizeof(res[0]) > 1) {
+      if (!zero_type(res[0]["TABLE_NAME"])) {
+	// MSSQL.
+	col_name = "TABLE_NAME";
+      }
+    }
+    res = map(res, lambda (mapping m, string col_name) {
+		     return m[col_name];
+		   }, col_name);
   }
   if (res && wild) {
     res = filter(res,
