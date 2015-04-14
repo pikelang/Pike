@@ -71,6 +71,21 @@ void seek(int skip) {
 //!   represented.
 int|array(string|int|float) fetch_row();
 
+//! Switch to the next set of results.
+//!
+//! Some databases support returning more than one set of results.
+//! This function terminates the current set and switches to
+//! the next (if any).
+//!
+//! @returns
+//!   Returns the @[sql_result] object if there were more results,
+//!   and @expr{0@} (zero) otherwise.
+this_program next_result()
+{
+  if (master_res->next_result) return master_res->next_result();
+  return 0;
+}
+
 // --- Iterator API
 
 class _get_iterator
