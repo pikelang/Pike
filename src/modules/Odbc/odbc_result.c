@@ -1361,6 +1361,29 @@ static void f_fetch_typed_row(INT32 args)
   }
 }
 
+/* object next_result() */
+static void f_next_result(INT32 args)
+{
+  SQLHSTMT hstmt = PIKE_ODBC_RES->hstmt;
+  RETCODE code;
+
+  ODBC_ALLOW();
+  code = SQLMoreResults(hstmt);
+  ODBC_DISALLOW();
+
+  if (code == SQL_NO_DATA_FOUND) {
+    pop_n_elems(args);
+    push_int(0);
+    return;
+  }
+
+  odbc_check_error("odbc->next_result", "Failed to get next result.",
+		   code, NULL, NULL);
+
+  pop_n_elems(args);
+  ref_push_object(Pike_fp->current_object);
+}
+
 /* int eof() */
 static void f_eof(INT32 UNUSED(args))
 {
@@ -1415,6 +1438,8 @@ void init_odbc_res_programs(void)
   ADD_FUNCTION("seek", f_seek,tFunc(tInt,tVoid), ID_PUBLIC);
   /* function(void:int|array(string|int|float)) */
   ADD_FUNCTION("fetch_row", f_fetch_row,tFunc(tVoid,tOr(tInt,tArr(tOr3(tStr,tInt,tFlt)))), ID_PUBLIC);
+
+  ADD_FUNCTION("next_result", f_next_result, tFunc(tNone,tObj), ID_PUBLIC);
  
   set_init_callback(init_res_struct);
   set_exit_callback(exit_res_struct);
