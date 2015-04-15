@@ -85,8 +85,11 @@ static void pike_crypt_func(void *object, pike_nettle_size_t length,
   pop_stack();
 }
 
-#ifndef HAVE_MEMXOR3
-/* Really old versions of nettle don't have memxor3(). */
+#if !defined(HAVE_MEMXOR3) && !defined(memxor3)
+/* Really old versions of nettle don't have memxor3().
+ *
+ * Note that prior to Nettle 3.1 memxor3() didn't have a namespace prefix.
+ */
 static unsigned char *pike_memxor3(unsigned char *dst, const unsigned char *a,
 				   const unsigned char *b, size_t n)
 {
