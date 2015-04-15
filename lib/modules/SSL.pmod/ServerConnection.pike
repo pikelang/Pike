@@ -294,823 +294,825 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
   default:
     error( "Internal error\n" );
   case STATE_wait_for_hello:
-   {
-     /* Reset all extra state variables */
-     expect_change_cipher = certificate_state = 0;
-     pending_read_state = pending_write_state = ({});
-     ke = 0;
+    {
+      /* Reset all extra state variables */
+      expect_change_cipher = certificate_state = 0;
+      pending_read_state = pending_write_state = ({});
+      ke = 0;
 
-     add_handshake_message(raw);
+      add_handshake_message(raw);
 
-     // The first four bytes of the client_random is specified to be
-     // the timestamp on the client side. This is to guard against bad
-     // random generators, where a client could produce the same
-     // random numbers if the seed is reused. This argument is flawed,
-     // since a broken random generator will make the connection
-     // insecure anyways. The standard explicitly allows these bytes
-     // to not be correct, so sending random data instead is safer and
-     // reduces client fingerprinting.
-     server_random = context->random(32);
+      // The first four bytes of the client_random is specified to be
+      // the timestamp on the client side. This is to guard against
+      // bad random generators, where a client could produce the same
+      // random numbers if the seed is reused. This argument is
+      // flawed, since a broken random generator will make the
+      // connection insecure anyways. The standard explicitly allows
+      // these bytes to not be correct, so sending random data instead
+      // is safer and reduces client fingerprinting.
+      server_random = context->random(32);
 
-     if (type != HANDSHAKE_client_hello)
-       COND_FATAL(1, ALERT_unexpected_message, "Expected client_hello.\n");
+      if (type != HANDSHAKE_client_hello)
+        COND_FATAL(1, ALERT_unexpected_message, "Expected client_hello.\n");
 
-	string session_id;
-	int cipher_len;
-	array(int) cipher_suites;
-	array(int) compression_methods;
+      string session_id;
+      int cipher_len;
+      array(int) cipher_suites;
+      array(int) compression_methods;
 
-	SSL3_DEBUG_MSG("SSL.ServerConnection: CLIENT_HELLO\n");
+      SSL3_DEBUG_MSG("SSL.ServerConnection: CLIENT_HELLO\n");
 
-        client_version =
-          [int(0x300..0x300)|ProtocolVersion]input->read_int(2);
-	COND_FATAL(((client_version & ~0xff) != PROTOCOL_SSL_3_0) ||
-                   (client_version < context->min_version),
-                   ALERT_protocol_version,
-                   sprintf("Unsupported version %s.\n",
-                           fmt_version(client_version)));
+      client_version =
+        [int(0x300..0x300)|ProtocolVersion]input->read_int(2);
+      COND_FATAL(((client_version & ~0xff) != PROTOCOL_SSL_3_0) ||
+                 (client_version < context->min_version),
+                 ALERT_protocol_version,
+                 sprintf("Unsupported version %s.\n",
+                         fmt_version(client_version)));
 
-	if (client_version > version) {
-	  SSL3_DEBUG_MSG("Falling back client from %s to %s.\n",
-			 fmt_version(client_version),
-			 fmt_version(version));
-	} else if (version > client_version) {
-	  SSL3_DEBUG_MSG("Falling back server from %s to %s.\n",
-			 fmt_version(version),
-			 fmt_version(client_version));
-	  version = client_version;
-	}
-
-        client_random = input->read(32);
-        session_id = input->read_hstring(1);
-
-        cipher_len = input->read_int(2);
-	COND_FATAL(cipher_len & 1, ALERT_unexpected_message,
-                   "Invalid client_hello.\n");
-
-        cipher_suites = input->read_ints(cipher_len/2, 2);
-
-        compression_methods = input->read_int_array(1, 1);
-        SSL3_DEBUG_MSG("STATE_wait_for_hello: received hello\n"
-                       "version = %s\n"
-                       "session_id=%O\n"
-                       "cipher suites:\n%s\n"
-                       "compression methods: %O\n",
+      if (client_version > version) {
+        SSL3_DEBUG_MSG("Falling back client from %s to %s.\n",
                        fmt_version(client_version),
-                       session_id, fmt_cipher_suites(cipher_suites),
-                       compression_methods);
+                       fmt_version(version));
+      } else if (version > client_version) {
+        SSL3_DEBUG_MSG("Falling back server from %s to %s.\n",
+                       fmt_version(version),
+                       fmt_version(client_version));
+        version = client_version;
+      }
 
-	Stdio.Buffer extensions;
-	if (sizeof(input))
-	  extensions = input->read_hbuffer(2);
+      client_random = input->read(32);
+      session_id = input->read_hstring(1);
 
-	Stdio.Buffer early_data = Stdio.Buffer();
-	int missing_secure_renegotiation = secure_renegotiation;
-	if (extensions) {
-	  int maybe_safari_10_8 = 1;
-	  while (sizeof(extensions)) {
-	    int extension_type = extensions->read_int(2);
-	    string(8bit) raw = extensions->read_hstring(2);
-	    Buffer extension_data = Buffer(raw);
-	    SSL3_DEBUG_MSG("SSL.ServerConnection->handle_handshake: "
-			   "Got extension %s.\n",
-			   fmt_constant(extension_type, "EXTENSION"));
-            COND_FATAL(remote_extensions[extension_type],
-                       ALERT_decode_error,
-                       "Same extension sent twice.\n");
+      cipher_len = input->read_int(2);
+      COND_FATAL(cipher_len & 1, ALERT_unexpected_message,
+                 "Invalid client_hello.\n");
 
-            remote_extensions[extension_type] = 1;
+      cipher_suites = input->read_ints(cipher_len/2, 2);
 
-          extensions:
-	    switch(extension_type) {
-	    case EXTENSION_signature_algorithms:
-	      if (!remote_extensions[EXTENSION_ec_point_formats] ||
-		  (raw != "\0\12\5\1\4\1\2\1\4\3\2\3") ||
-		  (client_version != PROTOCOL_TLS_1_2)) {
-		maybe_safari_10_8 = 0;
-	      }
-	      // RFC 5246
-	      string bytes = extension_data->read_hstring(2);
-	      // Pairs of <hash_alg, signature_alg>.
-	      session->signature_algorithms = ((array(int))bytes)/2;
-	      SSL3_DEBUG_MSG("New signature_algorithms:\n"+
-			     fmt_signature_pairs(session->signature_algorithms));
-	      break;
-	    case EXTENSION_elliptic_curves:
-	      if (!remote_extensions[EXTENSION_server_name] ||
-		  (raw != "\0\6\0\x17\0\x18\0\x19")) {
-		maybe_safari_10_8 = 0;
-	      }
-	      array(int) named_groups =
-		reverse(sort(extension_data->read_int_array(2, 2)));
-	      session->ecc_curves = filter(named_groups, ECC_CURVES);
-	      SSL3_DEBUG_MSG("Elliptic and finite field groups: %O\n",
-			     map(session->ecc_curves, fmt_constant, "GROUP"));
-	      session->ffdhe_groups = context->ffdhe_groups &
-		filter(named_groups,
-		       FFDHE_GROUPS | context->private_ffdhe_groups);
-	      if (!sizeof(session->ffdhe_groups) &&
-		  (version <= PROTOCOL_TLS_1_2)) {
-		// FFDHE group extension not supported by the client,
-		// or client wants a group we don't support. Select
-		// our configured set of groups to either assume that
-		// the client doesn't support the extension, or to
-		// pretend that we don't support the extension.
-		//
-		// NB: This behaviour violates the FFDHE draft, but
-		//     leaves it to the client to determine whether
-		//     it wants to accept the group.
-		//
-		// NB: In TLS 1.3 support for this extension is mandatory.
-		session->ffdhe_groups = context->ffdhe_groups;
-	      }
-	      break;
-	    case EXTENSION_ec_point_formats:
-	      if (!remote_extensions[EXTENSION_elliptic_curves] ||
-		  (raw != "\1\0")) {
-		maybe_safari_10_8 = 0;
-	      }
-	      array(int) ecc_point_formats =
-                extension_data->read_int_array(1, 1);
-	      // NB: We only support the uncompressed point format for now.
-	      if (has_value(ecc_point_formats, POINT_uncompressed)) {
-		session->ecc_point_format = POINT_uncompressed;
-	      } else {
-		// Not a supported point format.
-		session->ecc_point_format = -1;
-	      }
-	      SSL3_DEBUG_MSG("Elliptic point format: %O\n",
-			     session->ecc_point_format);
-	      break;
-	    case EXTENSION_server_name:
-	      if (sizeof(remote_extensions) != 1) {
-		maybe_safari_10_8 = 0;
-	      }
-	      // RFC 6066 3.1 "Server Name Indication"
-	      session->server_name = 0;
-	      while (sizeof(extension_data)) {
-		Stdio.Buffer server_name = extension_data->read_hbuffer(2);
-		switch(server_name->read_int(1)) {	// name_type
-		case 0:	// host_name
-                  COND_FATAL(session->server_name,
-                             ALERT_unrecognized_name,
-                             "Multiple names given.\n");
+      compression_methods = input->read_int_array(1, 1);
+      SSL3_DEBUG_MSG("STATE_wait_for_hello: received hello\n"
+                     "version = %s\n"
+                     "session_id=%O\n"
+                     "cipher suites:\n%s\n"
+                     "compression methods: %O\n",
+                     fmt_version(client_version),
+                     session_id, fmt_cipher_suites(cipher_suites),
+                     compression_methods);
 
-		  session->server_name = server_name->read_hstring(2);
-		  break;
-		default:
-		  // No other NameTypes defined yet.
-		  break;
-		}
-	      }
-              SSL3_DEBUG_MSG("SNI extension: %O\n", session->server_name);
-	      break;
-	    case EXTENSION_max_fragment_length:
-	      // RFC 3546 3.2 "Maximum Fragment Length Negotiation"
-	      int mfsz = sizeof(extension_data) &&
-		extension_data->read_int(1);
-	      if (sizeof(extension_data)) mfsz = 0;
-	      switch(mfsz) {
-	      case FRAGMENT_512:  session->max_packet_size = 512; break;
-	      case FRAGMENT_1024: session->max_packet_size = 1024; break;
-	      case FRAGMENT_2048: session->max_packet_size = 2048; break;
-	      case FRAGMENT_4096: session->max_packet_size = 4096; break;
-	      default:
-                COND_FATAL(1, ALERT_illegal_parameter,
-                           "Invalid fragment size.\n");
-	      }
-              SSL3_DEBUG_MSG("Maximum frame size %O.\n", session->max_packet_size);
-	      break;
-	    case EXTENSION_truncated_hmac:
-	      // RFC 3546 3.5 "Truncated HMAC"
-	      COND_FATAL(sizeof(extension_data),
-                         ALERT_illegal_parameter,
-                         "Invalid trusted HMAC extension.\n");
+      Stdio.Buffer extensions;
+      if (sizeof(input))
+        extensions = input->read_hbuffer(2);
 
-	      session->truncated_hmac = 1;
-              SSL3_DEBUG_MSG("Trucated HMAC\n");
-	      break;
+      Stdio.Buffer early_data = Stdio.Buffer();
+      int missing_secure_renegotiation = secure_renegotiation;
+      if (extensions) {
+        int maybe_safari_10_8 = 1;
+        while (sizeof(extensions)) {
+          int extension_type = extensions->read_int(2);
+          string(8bit) raw = extensions->read_hstring(2);
+          Buffer extension_data = Buffer(raw);
+          SSL3_DEBUG_MSG("SSL.ServerConnection->handle_handshake: "
+                         "Got extension %s.\n",
+                         fmt_constant(extension_type, "EXTENSION"));
+          COND_FATAL(remote_extensions[extension_type],
+                     ALERT_decode_error,
+                     "Same extension sent twice.\n");
 
-	    case EXTENSION_renegotiation_info:
-	      string renegotiated_connection =
-		extension_data->read_hstring(1);
+          remote_extensions[extension_type] = 1;
 
-              // RFC 5746 3.7: (secure_renegotiation)
-              // The server MUST verify that the value of the
-              // "renegotiated_connection" field is equal to the saved
-              // client_verify_data value; if it is not, the server MUST
-              // abort the handshake.
+        extensions:
+          switch(extension_type) {
+          case EXTENSION_signature_algorithms:
+            if (!remote_extensions[EXTENSION_ec_point_formats] ||
+                (raw != "\0\12\5\1\4\1\2\1\4\3\2\3") ||
+                (client_version != PROTOCOL_TLS_1_2)) {
+              maybe_safari_10_8 = 0;
+            }
+            // RFC 5246
+            string bytes = extension_data->read_hstring(2);
+            // Pairs of <hash_alg, signature_alg>.
+            session->signature_algorithms = ((array(int))bytes)/2;
+            SSL3_DEBUG_MSG("New signature_algorithms:\n"+
+                           fmt_signature_pairs(session->signature_algorithms));
+            break;
+          case EXTENSION_elliptic_curves:
+            if (!remote_extensions[EXTENSION_server_name] ||
+                (raw != "\0\6\0\x17\0\x18\0\x19")) {
+              maybe_safari_10_8 = 0;
+            }
+            array(int) named_groups =
+              reverse(sort(extension_data->read_int_array(2, 2)));
+            session->ecc_curves = filter(named_groups, ECC_CURVES);
+            SSL3_DEBUG_MSG("Elliptic and finite field groups: %O\n",
+                           map(session->ecc_curves, fmt_constant, "GROUP"));
+            session->ffdhe_groups = context->ffdhe_groups &
+              filter(named_groups,
+                     FFDHE_GROUPS | context->private_ffdhe_groups);
+            if (!sizeof(session->ffdhe_groups) &&
+                (version <= PROTOCOL_TLS_1_2)) {
+              // FFDHE group extension not supported by the client, or
+              // client wants a group we don't support. Select our
+              // configured set of groups to either assume that the
+              // client doesn't support the extension, or to pretend
+              // that we don't support the extension.
               //
-              // RFC 5746 4.4: (!secure_renegotiation)
-              // The server MUST verify that the "renegotiation_info"
-              // extension is not present; if it is, the server MUST
-              // abort the handshake.
-	      COND_FATAL((renegotiated_connection != client_verify_data) ||
-                         (!(state & CONNECTION_handshaking) &&
-                          !secure_renegotiation),
-                         ALERT_handshake_failure,
-                         "Invalid renegotiation data.\n");
+              // NB: This behaviour violates the FFDHE draft, but
+              //     leaves it to the client to determine whether it
+              //     wants to accept the group.
+              //
+              // NB: In TLS 1.3 support for this extension is
+              //     mandatory.
+              session->ffdhe_groups = context->ffdhe_groups;
+            }
+            break;
+          case EXTENSION_ec_point_formats:
+            if (!remote_extensions[EXTENSION_elliptic_curves] ||
+                (raw != "\1\0")) {
+              maybe_safari_10_8 = 0;
+            }
+            array(int) ecc_point_formats =
+              extension_data->read_int_array(1, 1);
+            // NB: We only support the uncompressed point format for now.
+            if (has_value(ecc_point_formats, POINT_uncompressed)) {
+              session->ecc_point_format = POINT_uncompressed;
+            } else {
+              // Not a supported point format.
+              session->ecc_point_format = -1;
+            }
+            SSL3_DEBUG_MSG("Elliptic point format: %O\n",
+                           session->ecc_point_format);
+            break;
+          case EXTENSION_server_name:
+            if (sizeof(remote_extensions) != 1) {
+              maybe_safari_10_8 = 0;
+            }
+            // RFC 6066 3.1 "Server Name Indication"
+            session->server_name = 0;
+            while (sizeof(extension_data)) {
+              Stdio.Buffer server_name = extension_data->read_hbuffer(2);
+              switch(server_name->read_int(1)) {	// name_type
+              case 0:	// host_name
+                COND_FATAL(session->server_name,
+                           ALERT_unrecognized_name,
+                           "Multiple names given.\n");
 
-	      secure_renegotiation = 1;
-	      missing_secure_renegotiation = 0;
-              SSL3_DEBUG_MSG("Renego extension: %O\n", renegotiated_connection);
-	      break;
-
-            case EXTENSION_application_layer_protocol_negotiation:
-              {
-                has_application_layer_protocol_negotiation = 1;
-                if( !context->advertised_protocols )
-                  break;
-                multiset(string) protocols = (<>);
-                COND_FATAL(extension_data->read_int(2) != sizeof(extension_data),
-                           ALERT_handshake_failure,
-                           "ALPN: Length mismatch.\n");
-
-                while (sizeof(extension_data)) {
-                  string server_name = extension_data->read_hstring(1);
-                  COND_FATAL(sizeof(server_name)==0, ALERT_handshake_failure,
-                             "ALPN: Empty protocol.\n");
-
-                  protocols[ server_name ] = 1;
-                }
-
-                if( !sizeof(protocols) )
-                {
-                  // FIXME: What does an empty list mean? Ignore, no
-                  // protocol failure or handshake failure? Currently
-                  // it will hit the no compatible protocol fatal
-                  // alert below.
-                }
-
-                // Although the protocol list is sent in client
-                // preference order, it is the server preference that
-                // wins.
-                application_protocol = 0;
-                foreach(context->advertised_protocols;; string(8bit) prot)
-                  if( protocols[prot] )
-                  {
-                    application_protocol = prot;
-                    break;
-                  }
-                COND_FATAL(!application_protocol,
-                           ALERT_no_application_protocol,
-                           "ALPN: No compatible protocol.\n");
-
-                SSL3_DEBUG_MSG("ALPN extension: %O %O\n",
-			       protocols, application_protocol);
+                session->server_name = server_name->read_hstring(2);
+                break;
+              default:
+                // No other NameTypes defined yet.
+                break;
               }
-              break;
+            }
+            SSL3_DEBUG_MSG("SNI extension: %O\n", session->server_name);
+            break;
+          case EXTENSION_max_fragment_length:
+            // RFC 3546 3.2 "Maximum Fragment Length Negotiation"
+            int mfsz = sizeof(extension_data) &&
+              extension_data->read_int(1);
+            if (sizeof(extension_data)) mfsz = 0;
+            switch(mfsz) {
+            case FRAGMENT_512:  session->max_packet_size = 512; break;
+            case FRAGMENT_1024: session->max_packet_size = 1024; break;
+            case FRAGMENT_2048: session->max_packet_size = 2048; break;
+            case FRAGMENT_4096: session->max_packet_size = 4096; break;
+            default:
+              COND_FATAL(1, ALERT_illegal_parameter,
+                         "Invalid fragment size.\n");
+            }
+            SSL3_DEBUG_MSG("Maximum frame size %O.\n", session->max_packet_size);
+            break;
+          case EXTENSION_truncated_hmac:
+            // RFC 3546 3.5 "Truncated HMAC"
+            COND_FATAL(sizeof(extension_data),
+                       ALERT_illegal_parameter,
+                       "Invalid trusted HMAC extension.\n");
 
-	    case EXTENSION_heartbeat:
-	      {
-		int hb_mode;
+            session->truncated_hmac = 1;
+            SSL3_DEBUG_MSG("Trucated HMAC\n");
+            break;
 
-                // RFC 6520 2:
-                // Upon reception of an unknown mode, an error Alert
-                // message using illegal_parameter as its
-                // AlertDescription MUST be sent in response.
-		COND_FATAL(!sizeof(extension_data) ||
-                           !(hb_mode = extension_data->read_int(1)) ||
-                           sizeof(extension_data) ||
-                           ((hb_mode != HEARTBEAT_MODE_peer_allowed_to_send) &&
-                            (hb_mode != HEARTBEAT_MODE_peer_not_allowed_to_send)),
-                           ALERT_illegal_parameter,
-                           "Heartbeat: Invalid extension.\n");
+          case EXTENSION_renegotiation_info:
+            string renegotiated_connection =
+              extension_data->read_hstring(1);
 
-		SSL3_DEBUG_MSG("heartbeat extension: %s\n",
-			       fmt_constant(hb_mode, "HEARTBEAT_MODE"));
-		session->heartbeat_mode = [int(0..1)]hb_mode;
-	      }
-	      break;
+            // RFC 5746 3.7: (secure_renegotiation)
+            // The server MUST verify that the value of the
+            // "renegotiated_connection" field is equal to the saved
+            // client_verify_data value; if it is not, the server MUST
+            // abort the handshake.
+            //
+            // RFC 5746 4.4: (!secure_renegotiation)
+            // The server MUST verify that the "renegotiation_info"
+            // extension is not present; if it is, the server MUST
+            // abort the handshake.
+            COND_FATAL((renegotiated_connection != client_verify_data) ||
+                       (!(state & CONNECTION_handshaking) &&
+                        !secure_renegotiation),
+                       ALERT_handshake_failure,
+                       "Invalid renegotiation data.\n");
 
-	    case EXTENSION_encrypt_then_mac:
-	      {
-		COND_FATAL(sizeof(extension_data),
-                           ALERT_illegal_parameter,
-                           "Encrypt-then-MAC: Invalid extension.\n");
+            secure_renegotiation = 1;
+            missing_secure_renegotiation = 0;
+            SSL3_DEBUG_MSG("Renego extension: %O\n", renegotiated_connection);
+            break;
 
-		if (context->encrypt_then_mac) {
-		  SSL3_DEBUG_MSG("Encrypt-then-MAC: Tentatively enabled.\n");
-		  session->encrypt_then_mac = 1;
-		} else {
-		  SSL3_DEBUG_MSG("Encrypt-then-MAC: Rejected.\n");
-		}
-	      }
-	      break;
+          case EXTENSION_application_layer_protocol_negotiation:
+            {
+              has_application_layer_protocol_negotiation = 1;
+              if( !context->advertised_protocols )
+                break;
+              multiset(string) protocols = (<>);
+              COND_FATAL(extension_data->read_int(2) != sizeof(extension_data),
+                         ALERT_handshake_failure,
+                         "ALPN: Length mismatch.\n");
 
-	    case EXTENSION_extended_master_secret:
-	      {
-		COND_FATAL(sizeof(extension_data),
-                           ALERT_illegal_parameter,
-                           "Extended-master-secret: Invalid extension.\n");
+              while (sizeof(extension_data)) {
+                string server_name = extension_data->read_hstring(1);
+                COND_FATAL(sizeof(server_name)==0, ALERT_handshake_failure,
+                           "ALPN: Empty protocol.\n");
 
-		SSL3_DEBUG_MSG("Extended-master-secret: Enabled.\n");
-		session->extended_master_secret = 1;
-	      }
-	      break;
+                protocols[ server_name ] = 1;
+              }
 
-	    case EXTENSION_early_data:
-	      early_data->add(extension_data);
-	      break;
+              if( !sizeof(protocols) )
+              {
+                // FIXME: What does an empty list mean? Ignore, no
+                // protocol failure or handshake failure? Currently it
+                // will hit the no compatible protocol fatal alert
+                // below.
+              }
 
-            case EXTENSION_padding:
-              COND_FATAL(sizeof(extension_data) &&
-                         !equal(String.range((string)extension_data),({0,0})),
+              // Although the protocol list is sent in client
+              // preference order, it is the server preference that
+              // wins.
+              application_protocol = 0;
+              foreach(context->advertised_protocols;; string(8bit) prot)
+                if( protocols[prot] )
+                {
+                  application_protocol = prot;
+                  break;
+                }
+              COND_FATAL(!application_protocol,
+                         ALERT_no_application_protocol,
+                         "ALPN: No compatible protocol.\n");
+
+              SSL3_DEBUG_MSG("ALPN extension: %O %O\n",
+                             protocols, application_protocol);
+            }
+            break;
+
+          case EXTENSION_heartbeat:
+            {
+              int hb_mode;
+
+              // RFC 6520 2:
+              // Upon reception of an unknown mode, an error Alert
+              // message using illegal_parameter as its
+              // AlertDescription MUST be sent in response.
+              COND_FATAL(!sizeof(extension_data) ||
+                         !(hb_mode = extension_data->read_int(1)) ||
+                         sizeof(extension_data) ||
+                         ((hb_mode != HEARTBEAT_MODE_peer_allowed_to_send) &&
+                          (hb_mode != HEARTBEAT_MODE_peer_not_allowed_to_send)),
                          ALERT_illegal_parameter,
-                         "Possible covert side channel in padding.\n");
-              break;
+                         "Heartbeat: Invalid extension.\n");
 
-	    default:
-              SSL3_DEBUG_MSG("Unhandled extension %O (%d bytes)\n",
-                             (string)extension_data,
-                             sizeof(extension_data));
-	      break;
-	    }
-	  }
-	  if (maybe_safari_10_8) {
-	    // According to OpenSSL (ssl/t1_lib.c:ssl_check_for_safari()),
-	    // the Safari browser versions 10.8.0..10.8.3 have
-	    // broken support for ECDHE_ECDSA, but advertise such
-	    // suites anyway. We attempt to fingerprint Safari 10.8
-	    // above by the set of extensions and the order it
-	    // sends them in.
-	    SSL3_DEBUG_MSG("Client version: %s\n"
-			   "Number of extensions: %d\n",
-			   fmt_version(client_version),
-			   sizeof(remote_extensions));
-	    if (((client_version == PROTOCOL_TLS_1_2) &&
-		 ((sizeof(remote_extensions) != 4) ||
-		  !remote_extensions[EXTENSION_signature_algorithms])) ||
-		((client_version < PROTOCOL_TLS_1_2) &&
-		 ((sizeof(remote_extensions) != 3) ||
-		  !remote_extensions[EXTENSION_ec_point_formats]))) {
-	      maybe_safari_10_8 = 0;
-	    }
-	    if (maybe_safari_10_8) {
-	      SSL3_DEBUG_MSG("Safari 10.8 (or similar) detected.\n");
-	      cipher_suites = filter(cipher_suites,
-				     lambda(int suite) {
-				       return CIPHER_SUITES[suite] &&
-					 (CIPHER_SUITES[suite][0] !=
-					  KE_ecdhe_ecdsa);
-				     });
-	      SSL3_DEBUG_MSG("Remaining cipher suites:\n"
-			     "%s\n",
-			     fmt_cipher_suites(cipher_suites));
-	    }
-	  }
-	}
+              SSL3_DEBUG_MSG("heartbeat extension: %s\n",
+                             fmt_constant(hb_mode, "HEARTBEAT_MODE"));
+              session->heartbeat_mode = [int(0..1)]hb_mode;
+            }
+            break;
+
+          case EXTENSION_encrypt_then_mac:
+            {
+              COND_FATAL(sizeof(extension_data),
+                         ALERT_illegal_parameter,
+                         "Encrypt-then-MAC: Invalid extension.\n");
+
+              if (context->encrypt_then_mac) {
+                SSL3_DEBUG_MSG("Encrypt-then-MAC: Tentatively enabled.\n");
+                session->encrypt_then_mac = 1;
+              } else {
+                SSL3_DEBUG_MSG("Encrypt-then-MAC: Rejected.\n");
+              }
+            }
+            break;
+
+          case EXTENSION_extended_master_secret:
+            {
+              COND_FATAL(sizeof(extension_data),
+                         ALERT_illegal_parameter,
+                         "Extended-master-secret: Invalid extension.\n");
+
+              SSL3_DEBUG_MSG("Extended-master-secret: Enabled.\n");
+              session->extended_master_secret = 1;
+            }
+            break;
+
+          case EXTENSION_early_data:
+            early_data->add(extension_data);
+            break;
+
+          case EXTENSION_padding:
+            COND_FATAL(sizeof(extension_data) &&
+                       !equal(String.range((string)extension_data),({0,0})),
+                       ALERT_illegal_parameter,
+                       "Possible covert side channel in padding.\n");
+            break;
+
+          default:
+            SSL3_DEBUG_MSG("Unhandled extension %O (%d bytes)\n",
+                           (string)extension_data,
+                           sizeof(extension_data));
+            break;
+          }
+        }
+        if (maybe_safari_10_8) {
+          // According to OpenSSL (ssl/t1_lib.c:ssl_check_for_safari()),
+          // the Safari browser versions 10.8.0..10.8.3 have broken
+          // support for ECDHE_ECDSA, but advertise such suites
+          // anyway. We attempt to fingerprint Safari 10.8 above by
+          // the set of extensions and the order it sends them in.
+          SSL3_DEBUG_MSG("Client version: %s\n"
+                         "Number of extensions: %d\n",
+                         fmt_version(client_version),
+                         sizeof(remote_extensions));
+          if (((client_version == PROTOCOL_TLS_1_2) &&
+               ((sizeof(remote_extensions) != 4) ||
+                !remote_extensions[EXTENSION_signature_algorithms])) ||
+              ((client_version < PROTOCOL_TLS_1_2) &&
+               ((sizeof(remote_extensions) != 3) ||
+                !remote_extensions[EXTENSION_ec_point_formats]))) {
+            maybe_safari_10_8 = 0;
+          }
+          if (maybe_safari_10_8) {
+            SSL3_DEBUG_MSG("Safari 10.8 (or similar) detected.\n");
+            cipher_suites = filter(cipher_suites,
+                                   lambda(int suite) {
+                                     return CIPHER_SUITES[suite] &&
+                                       (CIPHER_SUITES[suite][0] !=
+                                        KE_ecdhe_ecdsa);
+                                   });
+            SSL3_DEBUG_MSG("Remaining cipher suites:\n"
+                           "%s\n",
+                           fmt_cipher_suites(cipher_suites));
+          }
+        }
+      }
+
+      // RFC 5746 3.7: (secure_renegotiation)
+      // The server MUST verify that the "renegotiation_info"
+      // extension is present; if it is not, the server MUST abort the
+      // handshake.
+      COND_FATAL(missing_secure_renegotiation,
+                 ALERT_handshake_failure,
+                 "Missing secure renegotiation extension.\n");
+
+      if (has_value(cipher_suites, TLS_empty_renegotiation_info_scsv)) {
 
         // RFC 5746 3.7: (secure_renegotiation)
-        // The server MUST verify that the "renegotiation_info"
-        // extension is present; if it is not, the server MUST abort
-        // the handshake.
-	COND_FATAL(missing_secure_renegotiation,
-                   ALERT_handshake_failure,
-                   "Missing secure renegotiation extension.\n");
+        // When a ClientHello is received, the server MUST verify that
+        // it does not contain the TLS_EMPTY_RENEGOTIATION_INFO_SCSV
+        // SCSV. If the SCSV is present, the server MUST abort the
+        // handshake.
+        //
+        // RFC 5746 4.4: (!secure_renegotiation)
+        // When a ClientHello is received, the server MUST verify that
+        // it does not contain the TLS_EMPTY_RENEGOTIATION_INFO_SCSV
+        // SCSV. If the SCSV is present, the server MUST abort the
+        // handshake.
+        COND_FATAL(secure_renegotiation || !(state & CONNECTION_handshaking),
+                   ALERT_handshake_failure, "SCSV is present.\n");
 
-	if (has_value(cipher_suites, TLS_empty_renegotiation_info_scsv)) {
+        // RFC 5746 3.6:
+        // When a ClientHello is received, the server MUST check if it
+        // includes the TLS_EMPTY_RENEGOTIATION_INFO_SCSV SCSV. If it
+        // does, set the secure_renegotiation flag to TRUE.
+        secure_renegotiation = 1;
+      }
 
-          // RFC 5746 3.7: (secure_renegotiation)
-          // When a ClientHello is received, the server MUST verify
-          // that it does not contain the
-          // TLS_EMPTY_RENEGOTIATION_INFO_SCSV SCSV. If the SCSV is
-          // present, the server MUST abort the handshake.
-          //
-          // RFC 5746 4.4: (!secure_renegotiation)
-          // When a ClientHello is received, the server MUST verify
-          // that it does not contain the
-          // TLS_EMPTY_RENEGOTIATION_INFO_SCSV SCSV. If the SCSV is
-          // present, the server MUST abort the handshake.
-	  COND_FATAL(secure_renegotiation || !(state & CONNECTION_handshaking),
-                     ALERT_handshake_failure, "SCSV is present.\n");
+      if (has_value(cipher_suites, TLS_fallback_scsv)) {
+        // draft-ietf-tls-downgrade-scsv 3:
+        // If TLS_FALLBACK_SCSV appears in ClientHello.cipher_suites
+        // and the highest protocol version supported by the server is
+        // higher than the version indicated in
+        // ClientHello.client_version, the server MUST respond with an
+        // inappropriate_fallback alert.
+        COND_FATAL(client_version < context->max_version,
+                   ALERT_inappropriate_fallback,
+                   "Too low client version.\n");
+      }
 
-          // RFC 5746 3.6:
-          // When a ClientHello is received, the server MUST check if
-          // it includes the TLS_EMPTY_RENEGOTIATION_INFO_SCSV SCSV.
-          // If it does, set the secure_renegotiation flag to TRUE.
-          secure_renegotiation = 1;
-	}
+      SSL3_DEBUG_MSG("ciphers: me:\n%s, client:\n%s",
+                     fmt_cipher_suites(context->preferred_suites),
+                     fmt_cipher_suites(cipher_suites));
+      cipher_suites = context->preferred_suites & cipher_suites;
+      SSL3_DEBUG_MSG("intersection:\n%s\n",
+                     fmt_cipher_suites((array(int))cipher_suites));
 
-	if (has_value(cipher_suites, TLS_fallback_scsv)) {
-	  // draft-ietf-tls-downgrade-scsv 3:
-	  // If TLS_FALLBACK_SCSV appears in ClientHello.cipher_suites
-	  // and the highest protocol version supported by the server
-	  // is higher than the version indicated in
-	  // ClientHello.client_version, the server MUST respond with
-	  // an inappropriate_fallback alert.
-	  COND_FATAL(client_version < context->max_version,
-                     ALERT_inappropriate_fallback,
-                     "Too low client version.\n");
-	}
+      if (sizeof(cipher_suites)) {
+        array(CertificatePair) certs =
+          context->find_cert_domain(session->server_name);
 
-	SSL3_DEBUG_MSG("ciphers: me:\n%s, client:\n%s",
-		       fmt_cipher_suites(context->preferred_suites),
-		       fmt_cipher_suites(cipher_suites));
-	cipher_suites = context->preferred_suites & cipher_suites;
-	SSL3_DEBUG_MSG("intersection:\n%s\n",
-		       fmt_cipher_suites((array(int))cipher_suites));
+        ProtocolVersion orig_version = version;
 
-	if (sizeof(cipher_suites)) {
-	  array(CertificatePair) certs =
-	    context->find_cert_domain(session->server_name);
-
-	  ProtocolVersion orig_version = version;
-
-	  while (!session->select_cipher_suite(certs, cipher_suites, version))
-          {
-	    if (version > context->min_version) {
-	      // Try falling back to an older version of SSL/TLS.
-	      version--;
-	    } else {
-#if 0
-	      werror("FAIL: %s (%s, client: %s)\n"
-		     "Client suites:\n"
-		     "%s\n",
-		     fmt_version(version), fmt_version(orig_version),
-		     fmt_version(client_version),
-		     fmt_cipher_suites(cipher_suites));
-#endif
-	      // No compatible suite.
-	      version = orig_version;
-	      cipher_suites = ({});
-	      break;
-	    }
-	  }
-
-	  if (version != orig_version) {
-	    SSL3_DEBUG_MSG("Fallback from %s to %s to select suite %s.\n",
-			   fmt_version(orig_version), fmt_version(version),
-			   fmt_cipher_suite(session->cipher_suite));
-	  }
-	}
-
-        // No overlapping cipher suites, or obsolete cipher suite
-        // selected, or incompatible certificates.
-	// FIXME: Consider ALERT_insufficient_security
-	//        (cf RFC 7465 section 2).
-	COND_FATAL(!sizeof(cipher_suites),
-                   ALERT_handshake_failure, "No common suites!\n");
-
-	// FIXME: Support TLS 1.3 fallback to TLS 1.2 or earlier
-	//        for clients that don't use early_data?
-        if( version >= PROTOCOL_TLS_1_3 ) {
-
-          // TLS 1.3 draft 3 7.4.1:
-          //
-          // If a TLS 1.3 ClientHello is received with any other
-          // value in this field, the server MUST generate a fatal
-          // "illegal_parameter" alert.
-	  COND_FATAL(!equal(compression_methods, ({ COMPRESSION_null })),
-                     ALERT_illegal_parameter,
-                     "Illegal with compression in TLS 1.3 and later.\n");
-
-	  Session old_session = sizeof(session_id) &&
-            context->lookup_session(session_id);
-	  if (old_session && old_session->reusable_as(session))
-	  {
-	    SSL3_DEBUG_MSG("SSL.ServerConnection: Reusing session %O\n",
-                           session_id);
-
-	    /* Reuse session */
-	    session = old_session;
-	    reuse = 1;
-	  }
-
-	  /* TLS 1.3 or later.
-	   *
-	   * We must read the ClientKeyShare packet.
-	   */
-	  handshake_state = STATE_wait_for_key_share;
-
-	  string(8bit) handshake_buffer = "";
-	  while(sizeof(early_data)) {
-	    SSL3_DEBUG_MSG("Handling early data packet...\n");
-	    Packet p = Packet(version);
-	    int res = p->recv(early_data);
-            switch(res)
-            {
-            case 0:
-	      send_packet(alert(ALERT_fatal, ALERT_record_overflow,
-				"Early data extension contains a "
-				"partial packet.\n"));
-	      return -1;
-            case -1:
-              send_packet(alert(ALERT_fatal, ALERT_unexpected_message));
-              return -1;
-	    }
-	    if (p->content_type != PACKET_handshake) {
-              // FIXME: This should probably be a fatal.
-	      SSL3_DEBUG_MSG("Ignoring non-handshake early data packet.\n");
-	      continue;
-	    }
-	    handshake_buffer += p->fragment;
-	  }
-
-	  while(sizeof(handshake_buffer) >= 4) {
-	    int handshake_type;
-	    int len;
-	    sscanf(handshake_buffer, "%1c%3c", handshake_type, len);
-	    if (sizeof(handshake_buffer) < (len + 4))
-	      break;
-	    // NB: Empty string as last argument to avoid hashing the
-	    //     early data packets twice.
-	    int(-1..1) ret =
-	      handle_handshake(handshake_type,
-			       Buffer(handshake_buffer[4..len + 3]),
-                               Buffer(""));
-	    handshake_buffer = handshake_buffer[len + 4..];
-	    if (ret) {
-	      if (ret < 0) return ret;
-	      COND_FATAL(sizeof(handshake_buffer),
-                         ALERT_record_overflow,
-                         "Early data extension contains extraneous "
-                         "handshake packets.\n");
-
-	      return 1;
-	    }
-	  }
-	  COND_FATAL(sizeof(handshake_buffer),
-                     ALERT_record_overflow,
-                     "Early data extension contains incomplete "
-                     "handshake packets.\n");
-
-	  return 0;
-        } else {
-          compression_methods =
-            context->preferred_compressors & compression_methods;
-          COND_FATAL(!sizeof(compression_methods),
-                     ALERT_handshake_failure,
-                     "Unsupported compression method.\n");
-
-          session->set_compression_method(compression_methods[0]);
-	}
-
-#ifdef SSL3_DEBUG
-	if (sizeof(session_id))
-	  werror("SSL.ServerConnection: Looking up session %O\n", session_id);
-#endif
-	Session old_session = sizeof(session_id) &&
-          context->lookup_session(session_id);
-	if (old_session && old_session->reusable_as(session))
+        while (!session->select_cipher_suite(certs, cipher_suites, version))
         {
-	  SSL3_DEBUG_MSG("SSL.ServerConnection: Reusing session %O\n",
+          if (version > context->min_version) {
+            // Try falling back to an older version of SSL/TLS.
+            version--;
+          } else {
+#if 0
+            werror("FAIL: %s (%s, client: %s)\n"
+                   "Client suites:\n"
+                   "%s\n",
+                   fmt_version(version), fmt_version(orig_version),
+                   fmt_version(client_version),
+                   fmt_cipher_suites(cipher_suites));
+#endif
+            // No compatible suite.
+            version = orig_version;
+            cipher_suites = ({});
+            break;
+          }
+        }
+
+        if (version != orig_version) {
+          SSL3_DEBUG_MSG("Fallback from %s to %s to select suite %s.\n",
+                         fmt_version(orig_version), fmt_version(version),
+                         fmt_cipher_suite(session->cipher_suite));
+        }
+      }
+
+      // No overlapping cipher suites, or obsolete cipher suite
+      // selected, or incompatible certificates.
+      // FIXME: Consider ALERT_insufficient_security
+      //        (cf RFC 7465 section 2).
+      COND_FATAL(!sizeof(cipher_suites),
+                 ALERT_handshake_failure, "No common suites!\n");
+
+      // FIXME: Support TLS 1.3 fallback to TLS 1.2 or earlier
+      //        for clients that don't use early_data?
+      if( version >= PROTOCOL_TLS_1_3 ) {
+
+        // TLS 1.3 draft 3 7.4.1:
+        //
+        // If a TLS 1.3 ClientHello is received with any other value
+        // in this field, the server MUST generate a fatal
+        // "illegal_parameter" alert.
+        COND_FATAL(!equal(compression_methods, ({ COMPRESSION_null })),
+                   ALERT_illegal_parameter,
+                   "Illegal with compression in TLS 1.3 and later.\n");
+
+        Session old_session = sizeof(session_id) &&
+          context->lookup_session(session_id);
+        if (old_session && old_session->reusable_as(session))
+        {
+          SSL3_DEBUG_MSG("SSL.ServerConnection: Reusing session %O\n",
                          session_id);
 
-	  /* Reuse session */
-	  session = old_session;
-	  send_packet(server_hello_packet());
+          /* Reuse session */
+          session = old_session;
+          reuse = 1;
+        }
 
-	  new_cipher_states();
-	  send_packet(change_cipher_packet());
-	  if(version == PROTOCOL_SSL_3_0)
-	    send_packet(finished_packet("SRVR"));
-	  else if(version >= PROTOCOL_TLS_1_0)
-	    send_packet(finished_packet("server finished"));
+        /* TLS 1.3 or later.
+         *
+         * We must read the ClientKeyShare packet.
+         */
+        handshake_state = STATE_wait_for_key_share;
 
-	  // NB: The client direction hash will be calculated
-	  //     when we've received the client finished packet.
+        string(8bit) handshake_buffer = "";
+        while(sizeof(early_data)) {
+          SSL3_DEBUG_MSG("Handling early data packet...\n");
+          Packet p = Packet(version);
+          int res = p->recv(early_data);
+          switch(res)
+          {
+          case 0:
+            send_packet(alert(ALERT_fatal, ALERT_record_overflow,
+                              "Early data extension contains a "
+                              "partial packet.\n"));
+            return -1;
+          case -1:
+            send_packet(alert(ALERT_fatal, ALERT_unexpected_message));
+            return -1;
+          }
+          if (p->content_type != PACKET_handshake) {
+            // FIXME: This should probably be a fatal.
+            SSL3_DEBUG_MSG("Ignoring non-handshake early data packet.\n");
+            continue;
+          }
+          handshake_buffer += p->fragment;
+        }
 
-	  if (context->heartbleed_probe &&
-              session->heartbeat_mode == HEARTBEAT_MODE_peer_allowed_to_send) {
-	    // Probe for the Heartbleed vulnerability (CVE-2014-0160).
-	    send_packet(heartbleed_packet());
-	  }
+        while(sizeof(handshake_buffer) >= 4) {
+          int handshake_type;
+          int len;
+          sscanf(handshake_buffer, "%1c%3c", handshake_type, len);
+          if (sizeof(handshake_buffer) < (len + 4))
+            break;
+          // NB: Empty string as last argument to avoid hashing the
+          //     early data packets twice.
+          int(-1..1) ret =
+            handle_handshake(handshake_type,
+                             Buffer(handshake_buffer[4..len + 3]),
+                             Buffer(""));
+          handshake_buffer = handshake_buffer[len + 4..];
+          if (ret) {
+            if (ret < 0) return ret;
+            COND_FATAL(sizeof(handshake_buffer),
+                       ALERT_record_overflow,
+                       "Early data extension contains extraneous "
+                       "handshake packets.\n");
 
-	  reuse = 1;
+            return 1;
+          }
+        }
+        COND_FATAL(sizeof(handshake_buffer),
+                   ALERT_record_overflow,
+                   "Early data extension contains incomplete "
+                   "handshake packets.\n");
 
-	  handshake_state = STATE_wait_for_finish;
-	} else {
-	  /* New session, do full handshake. */
+        return 0;
+      } else {
+        compression_methods =
+          context->preferred_compressors & compression_methods;
+        COND_FATAL(!sizeof(compression_methods),
+                   ALERT_handshake_failure,
+                   "Unsupported compression method.\n");
 
-	  int(-1..0) err = reply_new_session(cipher_suites,
-					     compression_methods);
-	  if (err)
-	    return err;
-	  handshake_state = STATE_wait_for_peer;
-	}
+        session->set_compression_method(compression_methods[0]);
+      }
+
+#ifdef SSL3_DEBUG
+      if (sizeof(session_id))
+        werror("SSL.ServerConnection: Looking up session %O\n", session_id);
+#endif
+      Session old_session = sizeof(session_id) &&
+        context->lookup_session(session_id);
+      if (old_session && old_session->reusable_as(session))
+      {
+        SSL3_DEBUG_MSG("SSL.ServerConnection: Reusing session %O\n",
+                       session_id);
+
+        /* Reuse session */
+        session = old_session;
+        send_packet(server_hello_packet());
+
+        new_cipher_states();
+        send_packet(change_cipher_packet());
+        if(version == PROTOCOL_SSL_3_0)
+          send_packet(finished_packet("SRVR"));
+        else if(version >= PROTOCOL_TLS_1_0)
+          send_packet(finished_packet("server finished"));
+
+        // NB: The client direction hash will be calculated
+        //     when we've received the client finished packet.
+
+        if (context->heartbleed_probe &&
+            session->heartbeat_mode == HEARTBEAT_MODE_peer_allowed_to_send) {
+          // Probe for the Heartbleed vulnerability (CVE-2014-0160).
+          send_packet(heartbleed_packet());
+        }
+
+        reuse = 1;
+
+        handshake_state = STATE_wait_for_finish;
+      } else {
+        /* New session, do full handshake. */
+
+        int(-1..0) err = reply_new_session(cipher_suites,
+                                           compression_methods);
+        if (err)
+          return err;
+        handshake_state = STATE_wait_for_peer;
+      }
    }
    break;
   case STATE_wait_for_key_share:
-    if (client_version < PROTOCOL_TLS_1_3) {
-      error("Waiting for key share in %s.\n", fmt_version(version));
-    }
-    add_handshake_message(raw);
-    if (type != HANDSHAKE_client_key_share)
     {
-      SSL3_DEBUG_MSG("Got %s packet.\n", fmt_constant(type, "HANDSHAKE"));
-      COND_FATAL(1, ALERT_unexpected_message, "Expected key share.\n");
-    }
-    {
-	int wanted_group;
-	if (session->cipher_spec->ke_factory == .Cipher.KeyShareDHE) {
-	  // These limits are taken from RFC 3526 8 "Strength Estimate 1".
-	  //
-	  // See also RFC 3766 5.
-	  switch(session->cipher_spec->key_bits) {
-	  case ..110:
-	    wanted_group = GROUP_ffdhe2048;
-	    break;
-	  case 111..130:
-	    wanted_group = GROUP_ffdhe3072;
-	    break;
-	  case 131..150:
-	    wanted_group = GROUP_ffdhe4096;
-	    break;
-	  case 151..170:
-	    wanted_group = GROUP_ffdhe6144;
-	    break;
-	  case 171..190:
-	    wanted_group = GROUP_ffdhe8192;
-	    break;
-	  case 191..:
-	    wanted_group = /* GROUP_ffdhe15424; */ GROUP_ffdhe8192;
-	    break;
-	  }
+      if (client_version < PROTOCOL_TLS_1_3)
+        error("Waiting for key share in %s.\n", fmt_version(version));
 
-	  if (!has_value(session->ffdhe_groups, wanted_group)) {
-	    int a = 0;
-	    int b = 0x10000;
-	    // Preferred group not available.
-	    // Select the the closest in strength available.
-	    foreach(session->ffdhe_groups, int g) {
-	      if (g > wanted_group) {
-		if (g < b) b = g;
-	      } else if (g > a) {
-		a = g;
-	      }
-	    }
-	    if (b != 0x10000) {
-	      // There's a stronger group available.
-	      wanted_group = b;
-	    } else {
-	      // Select the strongest available.
-	      wanted_group = a;
-	    }
-	  }
+      add_handshake_message(raw);
+      if (type != HANDSHAKE_client_key_share)
+      {
+        SSL3_DEBUG_MSG("Got %s packet.\n", fmt_constant(type, "HANDSHAKE"));
+        COND_FATAL(1, ALERT_unexpected_message, "Expected key share.\n");
+      }
+
+      int wanted_group;
+      if (session->cipher_spec->ke_factory == .Cipher.KeyShareDHE) {
+        // These limits are taken from RFC 3526 8 "Strength Estimate 1".
+        //
+        // See also RFC 3766 5.
+        switch(session->cipher_spec->key_bits) {
+        case ..110:
+          wanted_group = GROUP_ffdhe2048;
+          break;
+        case 111..130:
+          wanted_group = GROUP_ffdhe3072;
+          break;
+        case 131..150:
+          wanted_group = GROUP_ffdhe4096;
+          break;
+        case 151..170:
+          wanted_group = GROUP_ffdhe6144;
+          break;
+        case 171..190:
+          wanted_group = GROUP_ffdhe8192;
+          break;
+        case 191..:
+          wanted_group = /* GROUP_ffdhe15424; */ GROUP_ffdhe8192;
+          break;
+        }
+
+        if (!has_value(session->ffdhe_groups, wanted_group)) {
+          int a = 0;
+          int b = 0x10000;
+          // Preferred group not available.
+          // Select the the closest in strength available.
+          foreach(session->ffdhe_groups, int g) {
+            if (g > wanted_group) {
+              if (g < b) b = g;
+            } else if (g > a) {
+              a = g;
+            }
+          }
+          if (b != 0x10000) {
+            // There's a stronger group available.
+            wanted_group = b;
+          } else {
+            // Select the strongest available.
+            wanted_group = a;
+          }
+        }
 #if constant(Crypto.ECC.Curve)
-	} else if (session->cipher_spec->ke_factory == .Cipher.KeyShareECDHE) {
-	  switch(session->cipher_spec->key_bits) {
-	  case 257..:
-	    wanted_group = GROUP_secp521r1;
-	    break;
-	  case 129..256:
-	    // Suite B requires SECP384r1/SHA256 for AES-256
-	    wanted_group = GROUP_secp384r1;
-	    break;
-	  case ..128:
-	    // Suite B requires SECP256r1/SHA256 for AES-128
-	    wanted_group = GROUP_secp256r1;
-	    break;
-	  }
+      } else if (session->cipher_spec->ke_factory == .Cipher.KeyShareECDHE) {
+        switch(session->cipher_spec->key_bits) {
+        case 257..:
+          wanted_group = GROUP_secp521r1;
+          break;
+        case 129..256:
+          // Suite B requires SECP384r1/SHA256 for AES-256
+          wanted_group = GROUP_secp384r1;
+          break;
+        case ..128:
+          // Suite B requires SECP256r1/SHA256 for AES-128
+          wanted_group = GROUP_secp256r1;
+          break;
+        }
 
-	  if (!has_value(session->ecc_curves, wanted_group)) {
-	    int a = 0;
-	    int b = 0x10000;
-	    // Preferred curve not available.
-	    // Select the the closest in strength available.
-	    foreach(session->ecc_curves, int c) {
-	      if (c > wanted_group) {
-		if (c < b) b = c;
-	      } else if (c > a) {
-		a = c;
-	      }
-	    }
-	    if (b != 0x10000) {
-	      // There's a stronger curve available.
-	      wanted_group = b;
-	    } else {
-	      // Select the strongest available.
-	      wanted_group = a;
-	    }
-	  }
+        if (!has_value(session->ecc_curves, wanted_group)) {
+          int a = 0;
+          int b = 0x10000;
+          // Preferred curve not available.
+          // Select the the closest in strength available.
+          foreach(session->ecc_curves, int c) {
+            if (c > wanted_group) {
+              if (c < b) b = c;
+            } else if (c > a) {
+              a = c;
+            }
+          }
+          if (b != 0x10000) {
+            // There's a stronger curve available.
+            wanted_group = b;
+          } else {
+            // Select the strongest available.
+            wanted_group = a;
+          }
+        }
 #endif
-	} else {
-	  error("Unsupported KeyExchange factory for KeyShare: %O.\n",
-		session->cipher_spec->ke_factory);
-	}
-	SSL3_DEBUG_MSG("Wanted group: %s\n",
-		       fmt_constant(wanted_group, "GROUP"));
-	Stdio.Buffer offers = input->read_hbuffer(2);
+      } else {
+        error("Unsupported KeyExchange factory for KeyShare: %O.\n",
+              session->cipher_spec->ke_factory);
+      }
+      SSL3_DEBUG_MSG("Wanted group: %s\n",
+                     fmt_constant(wanted_group, "GROUP"));
+      Stdio.Buffer offers = input->read_hbuffer(2);
 
-	mapping(int:string(8bit)) kes = ([]);
-	string(8bit) premaster_secret;
-	int best_group = 0x10000;
-	ke = UNDEFINED;
-	while (sizeof(offers)) {
-	  int group = offers->read_int(2);
-	  string(8bit) key_offer = offers->read_hstring(2);
-	  SSL3_DEBUG_MSG("Offer: %s: %O\n",
-			 fmt_constant(group, "GROUP"),
-			 key_offer);
+      mapping(int:string(8bit)) kes = ([]);
+      string(8bit) premaster_secret;
+      int best_group = 0x10000;
+      ke = UNDEFINED;
+      while (sizeof(offers)) {
+        int group = offers->read_int(2);
+        string(8bit) key_offer = offers->read_hstring(2);
+        SSL3_DEBUG_MSG("Offer: %s: %O\n",
+                       fmt_constant(group, "GROUP"),
+                       key_offer);
 
-          // Clients MUST NOT offer multiple ClientKeyShareOffers for
-          // the same parameters.
-	  COND_FATAL(kes[group], ALERT_handshake_failure,
-                     "Duplicate key share offers.\n");
+        // Clients MUST NOT offer multiple ClientKeyShareOffers for
+        // the same parameters.
+        COND_FATAL(kes[group], ALERT_handshake_failure,
+                   "Duplicate key share offers.\n");
 
-	  kes[group] = key_offer;
-	  if (((group & 0xff00) == (wanted_group & 0xff00)) &&
-	      (group >= wanted_group) && (group < best_group)) {
-	    // Select the smallest offered group that is at
-	    // least as large as the wanted group.
-	    best_group = group;
-	  }
-	}
+        kes[group] = key_offer;
+        if (((group & 0xff00) == (wanted_group & 0xff00)) &&
+            (group >= wanted_group) && (group < best_group)) {
+          // Select the smallest offered group that is at least as
+          // large as the wanted group.
+          best_group = group;
+        }
+      }
 
-	if (reuse) {
-	  SSL3_DEBUG_MSG("Reuse the existing session.\n");
+      if (reuse) {
+        SSL3_DEBUG_MSG("Reuse the existing session.\n");
 
-	  send_packet(server_hello_packet());
-	  derive_master_secret(session->master_secret);
-	  send_packet(change_cipher_packet());
-	  handle_change_cipher(1);
+        send_packet(server_hello_packet());
+        derive_master_secret(session->master_secret);
+        send_packet(change_cipher_packet());
+        handle_change_cipher(1);
 
-	  handshake_state = STATE_wait_for_finish;
-	} else if (!kes[best_group]) {
-	  // Send HelloRetryRequest.
-	  send_packet(server_hello_retry_request_packet(session->cipher_suite,
-							wanted_group));
-	  // Reset the state to accept a new ClientHello.
-	  secure_renegotiation = 0;
-	  remote_extensions = (<>);
-	  previous_handshake = 0;
-	  handshake_state = STATE_wait_for_hello;
-	  break;
-	} else {
-	  SSL3_DEBUG_MSG("Got an acceptable key share offer for %s.\n",
-			 fmt_constant(best_group, "GROUP"));
-	  ke = session->cipher_spec->ke_factory(context, session, this,
-						client_version);
-	  // ke->init_server();
-	  ke->set_group(best_group);
+        handshake_state = STATE_wait_for_finish;
+      } else if (!kes[best_group]) {
+        // Send HelloRetryRequest.
+        send_packet(server_hello_retry_request_packet(session->cipher_suite,
+                                                      wanted_group));
+        // Reset the state to accept a new ClientHello.
+        secure_renegotiation = 0;
+        remote_extensions = (<>);
+        previous_handshake = 0;
+        handshake_state = STATE_wait_for_hello;
+        break;
+      } else {
+        SSL3_DEBUG_MSG("Got an acceptable key share offer for %s.\n",
+                       fmt_constant(best_group, "GROUP"));
+        ke = session->cipher_spec->ke_factory(context, session, this,
+                                              client_version);
+        // ke->init_server();
+        ke->set_group(best_group);
 #if constant(Crypto.ECC.Curve)
-	  session->curve = [object(Crypto.ECC.Curve)]ke->curve;
+        session->curve = [object(Crypto.ECC.Curve)]ke->curve;
 #endif
-	  Stdio.Buffer sks = Stdio.Buffer();
-	  ke->make_key_share_offer(sks);
-	  premaster_secret = ke->receive_key_share_offer(kes[best_group]);
-          COND_FATAL(!premaster_secret, ALERT_decode_error,
-                     "Unable to decode key share offer.\n");
+        Stdio.Buffer sks = Stdio.Buffer();
+        ke->make_key_share_offer(sks);
+        premaster_secret = ke->receive_key_share_offer(kes[best_group]);
+        COND_FATAL(!premaster_secret, ALERT_decode_error,
+                   "Unable to decode key share offer.\n");
 
-	  send_packet(server_hello_packet());
-	  send_packet(server_key_share_packet(sks));
-	  ke = UNDEFINED;
+        send_packet(server_hello_packet());
+        send_packet(server_key_share_packet(sks));
+        ke = UNDEFINED;
 
-	  derive_master_secret(premaster_secret);
-	  send_packet(change_cipher_packet());
-	  handle_change_cipher(1);
+        derive_master_secret(premaster_secret);
+        send_packet(change_cipher_packet());
+        handle_change_cipher(1);
 
-	  handshake_state = STATE_wait_for_finish;
+        handshake_state = STATE_wait_for_finish;
 
-	  // NB: From this point encryption is enabled on our side.
+        // NB: From this point encryption is enabled on our side.
 
-	  // FIXME: Encrypted extensions here.
+        // FIXME: Encrypted extensions here.
 
-	  // Don't send any certificate in anonymous mode.
-	  if (session->cipher_spec->signature_alg != SIGNATURE_anonymous) {
-	    // NB: session->certificate_chain is set by
-	    // session->select_cipher_suite() above.
+        // Don't send any certificate in anonymous mode.
+        if (session->cipher_spec->signature_alg != SIGNATURE_anonymous) {
+          // NB: session->certificate_chain is set by
+          // session->select_cipher_suite() above.
 
-	    SSL3_DEBUG_MSG("Checking for Certificate.\n");
+          SSL3_DEBUG_MSG("Checking for Certificate.\n");
 
-	    if (session->certificate_chain)
-	    {
-	      SSL3_DEBUG_MSG("Sending Certificate.\n");
-	      send_packet(certificate_packet(session->certificate_chain));
-	    } else {
-	      // Otherwise the server will just silently send an invalid
-	      // ServerHello sequence.
-	      error ("Certificate(s) missing.\n");
-	    }
+          if (session->certificate_chain)
+          {
+            SSL3_DEBUG_MSG("Sending Certificate.\n");
+            send_packet(certificate_packet(session->certificate_chain));
+          } else {
+            // Otherwise the server will just silently send an invalid
+            // ServerHello sequence.
+            error ("Certificate(s) missing.\n");
+          }
 
-	    // NB: Client certificates are only supported in non-anonymous mode.
-	    if (context->auth_level >= AUTHLEVEL_ask)
-	    {
-	      // we can send a certificate request packet, even if we don't have
-	      // any authorized issuers.
-	      SSL3_DEBUG_MSG("Sending CertificateRequest.\n");
-	      send_packet(certificate_request_packet(context));
-	      certificate_state = CERT_requested;
-	      handshake_state = STATE_wait_for_peer;
-	    }
+          // NB: Client certificates are only supported in
+          // non-anonymous mode.
+          if (context->auth_level >= AUTHLEVEL_ask)
+          {
+            // we can send a certificate request packet, even if we
+            // don't have any authorized issuers.
+            SSL3_DEBUG_MSG("Sending CertificateRequest.\n");
+            send_packet(certificate_request_packet(context));
+            certificate_state = CERT_requested;
+            handshake_state = STATE_wait_for_peer;
+          }
 
-	    send_packet(certificate_verify_packet(SIGN_server_certificate_verify));
-	  }
-	}
+          send_packet(certificate_verify_packet(SIGN_server_certificate_verify));
+        }
+      }
 
-	send_packet(finished_packet("server finished"));
+      send_packet(finished_packet("server finished"));
 
-	if (handshake_state == STATE_wait_for_finish) {
-	  // No need to wait for the client's certificate, etc.
+      if (handshake_state == STATE_wait_for_finish) {
+        // No need to wait for the client's certificate, etc.
 
-	  derive_master_secret(session->master_secret);
-	  send_packet(change_cipher_packet());
-	  // Note: Don't switch to the new keys for the client
-	  //       before we've received it's finished packet.
+        derive_master_secret(session->master_secret);
+        send_packet(change_cipher_packet());
+        // Note: Don't switch to the new keys for the client
+        //       before we've received it's finished packet.
 
-	  // NB: From this point on we can send application data.
-	}
+        // NB: From this point on we can send application data.
+      }
     }
     break;
   case STATE_wait_for_finish:
@@ -1118,60 +1120,60 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
       if (type != HANDSHAKE_finished)
         COND_FATAL(1, ALERT_unexpected_message, "Expected finished.\n");
 
-       string(8bit) my_digest;
-       string(8bit) digest;
+      string(8bit) my_digest;
+      string(8bit) digest;
 
-       SSL3_DEBUG_MSG("SSL.ServerConnection: FINISHED\n");
+      SSL3_DEBUG_MSG("SSL.ServerConnection: FINISHED\n");
 
-       if(version == PROTOCOL_SSL_3_0) {
-	 my_digest=hash_messages("CLNT");
-         digest = input->read(36);
-       } else if(version >= PROTOCOL_TLS_1_0) {
-	 my_digest=hash_messages("client finished");
-         digest = input->read(12);
-       }
+      if(version == PROTOCOL_SSL_3_0) {
+        my_digest=hash_messages("CLNT");
+        digest = input->read(36);
+      } else if(version >= PROTOCOL_TLS_1_0) {
+        my_digest=hash_messages("client finished");
+        digest = input->read(12);
+      }
 
-       if ((ke && ke->message_was_bad)	/* Error delayed until now */
-	   || (my_digest != digest))
-       {
-	 if(ke && ke->message_was_bad)
-	   SSL3_DEBUG_MSG("message_was_bad\n");
-	 if(my_digest != digest)
-	   SSL3_DEBUG_MSG("digests differ\n");
-         COND_FATAL(1, ALERT_unexpected_message, "Key exchange failure.\n");
-       }
-       add_handshake_message(raw);
-       /* Second hash includes this message, the first doesn't */
+      if ((ke && ke->message_was_bad)	/* Error delayed until now */
+          || (my_digest != digest))
+      {
+        if(ke && ke->message_was_bad)
+          SSL3_DEBUG_MSG("message_was_bad\n");
+        if(my_digest != digest)
+          SSL3_DEBUG_MSG("digests differ\n");
+        COND_FATAL(1, ALERT_unexpected_message, "Key exchange failure.\n");
+      }
+      add_handshake_message(raw);
+      /* Second hash includes this message, the first doesn't */
 
-       /* Handshake complete */
-       client_verify_data = digest;
+      /* Handshake complete */
+      client_verify_data = digest;
 
-       if (version >= PROTOCOL_TLS_1_3) {
-	 // The client will use the main keys from this point on.
-	 handle_change_cipher(1);
-       }
+      if (version >= PROTOCOL_TLS_1_3) {
+        // The client will use the main keys from this point on.
+        handle_change_cipher(1);
+      }
 
-       if (!reuse)
-       {
-	 if(version == PROTOCOL_SSL_3_0)
-	   send_packet(finished_packet("SRVR"));
-	 else if(version < PROTOCOL_TLS_1_3)
-	   send_packet(finished_packet("server finished"));
+      if (!reuse)
+      {
+        if(version == PROTOCOL_SSL_3_0)
+          send_packet(finished_packet("SRVR"));
+        else if(version < PROTOCOL_TLS_1_3)
+          send_packet(finished_packet("server finished"));
 
-	 if (context->heartbleed_probe &&
-             session->heartbeat_mode == HEARTBEAT_MODE_peer_allowed_to_send) {
-	   // Probe for the Heartbleed vulnerability (CVE-2014-0160).
-	   send_packet(heartbleed_packet());
-	 }
-	 context->record_session(session); /* Cache this session */
-       }
+        if (context->heartbleed_probe &&
+            session->heartbeat_mode == HEARTBEAT_MODE_peer_allowed_to_send) {
+          // Probe for the Heartbleed vulnerability (CVE-2014-0160).
+          send_packet(heartbleed_packet());
+        }
+        context->record_session(session); /* Cache this session */
+      }
 
-       // Handshake hash is calculated for both directions above.
-       handshake_messages = 0;
+      // Handshake hash is calculated for both directions above.
+      handshake_messages = 0;
 
-       handshake_state = STATE_wait_for_hello;
+      handshake_state = STATE_wait_for_hello;
 
-       return 1;
+      return 1;
     }
     break;
   case STATE_wait_for_peer:
