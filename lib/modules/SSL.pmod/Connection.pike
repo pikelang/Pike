@@ -122,17 +122,11 @@ Packet handshake_packet(int(8bit) type,
 #ifdef SSL3_PROFILING
   addRecord(type,1);
 #endif
-  string(8bit) str;
-  if(stringp(data))
-    str = [string(8bit)]data;
-  else
-    str = (string(8bit))data;
-  str = sprintf("%1c%3H", type, str);
+  string(8bit) str = sprintf("%1c%3H", type, (string(8bit))data);
   add_handshake_message(str);
 
-  /* Perhaps one need to split large packages? */
-  Packet packet = Packet(version, PACKET_handshake, str);
-  return packet;
+  /* FIXME: One need to split large packages. */
+  return Packet(version, PACKET_handshake, str);
 }
 
 Packet change_cipher_packet()
