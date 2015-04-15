@@ -355,7 +355,6 @@ protected void create(Context ctx, string(8bit)|void server_name,
 {
   ::create(ctx);
   handshake_state = STATE_wait_for_hello;
-  handshake_messages = "";
   if (session &&
       (!server_name || session->server_name == server_name)) {
     // Reuse the session.
@@ -389,7 +388,8 @@ protected void create(Context ctx, string(8bit)|void server_name,
     // Backward compat mode TLS 1.3.
     SSL3_DEBUG_MSG("CLIENT: Compat TLS 1.3 handshake.\n");
     // NB: The client key share packet is not to be hashed separately.
-    string(8bit) save_handshake_messages = handshake_messages;
+    Buffer save_handshake_messages = handshake_messages;
+    handshake_messages = Buffer();
     Packet cksp = client_key_share_packet();
     handshake_messages = save_handshake_messages;
     send_packet(client_hello(server_name, ({ cksp })));
@@ -606,7 +606,7 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
   default:
     error( "Internal error\n" );
   case STATE_wait_for_hello:
-    handshake_messages += raw->read();
+    add_handshake_message(raw);
     switch(type) {
     case HANDSHAKE_hello_retry_request:
       SSL3_DEBUG_MSG("SSL.ClientConnection: HELLO_RETRY_REQUEST\n");
@@ -882,7 +882,7 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
     if (version < PROTOCOL_TLS_1_3) {
       error("Waiting for key share in %s.\n", fmt_version(version));
     }
-    handshake_messages += raw->read();
+    add_handshake_message(raw);
     switch(type)
     {
     default:
@@ -922,7 +922,7 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
     break;
 
   case STATE_wait_for_peer:
-    handshake_messages += raw->read();
+    add_handshake_message(raw);
     switch(type)
     {
     default:
@@ -989,7 +989,7 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
       COND_FATAL(1, ALERT_unexpected_message, "Unexpected server message.\n");
       break;
     case HANDSHAKE_certificate_request:
-      handshake_messages += raw->read();
+      add_handshake_message(raw);
       return got_certificate_request(input);
     case HANDSHAKE_certificate_verify:
       SSL3_DEBUG_MSG("SSL.ClientConnection: CERTIFICATE_VERIFY\n");
@@ -1004,7 +1004,7 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
 	return -1;
       }
 
-      handshake_messages += raw->read();
+      add_handshake_message(raw);
 
       handshake_state = STATE_wait_for_finish;
       break;
@@ -1031,7 +1031,7 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
                  ALERT_unexpected_message, "Digests differ.\n");
 
       if (reuse || (version >= PROTOCOL_TLS_1_3)) {
-	handshake_messages += raw->read();
+	add_handshake_message(raw);
         /* Second hash includes this message, the first doesn't */
 
 	if(version == PROTOCOL_SSL_3_0)

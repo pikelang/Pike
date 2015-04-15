@@ -110,7 +110,11 @@ variant void addRecord(string label) {
 }
 #endif
 
-string(8bit) handshake_messages = "";
+Buffer handshake_messages = Buffer();
+protected void add_handshake_message(Buffer|Stdio.Buffer|string(8bit) data)
+{
+  handshake_messages->add(data);
+}
 
 Packet handshake_packet(int(8bit) type,
 			string(8bit)|Buffer|object(Stdio.Buffer) data)
@@ -124,7 +128,7 @@ Packet handshake_packet(int(8bit) type,
   else
     str = (string(8bit))data;
   str = sprintf("%1c%3H", type, str);
-  handshake_messages += str;
+  add_handshake_message(str);
 
   /* Perhaps one need to split large packages? */
   Packet packet = Packet(version, PACKET_handshake, str);
@@ -140,7 +144,7 @@ Packet change_cipher_packet()
 string(8bit) hash_messages(string(8bit) sender, int|void len)
 {
   if(version == PROTOCOL_SSL_3_0) {
-    string(8bit) data = handshake_messages + sender;
+    string(8bit) data = (string(8bit))handshake_messages + sender;
     return .Cipher.MACmd5(session->master_secret)->hash(data) +
       .Cipher.MACsha(session->master_secret)->hash(data);
   }
@@ -151,7 +155,7 @@ string(8bit) hash_messages(string(8bit) sender, int|void len)
   }
   return session->cipher_spec->prf(session->master_secret, sender,
                                    session->cipher_spec->hash
-                                   ->hash(handshake_messages),
+                                   ->hash((string(8bit))handshake_messages),
                                    len || 12);
 }
 
@@ -173,10 +177,10 @@ Packet certificate_verify_packet(string(8bit)|void signature_context)
     session->cipher_spec->sign(session,
 			       signature_context +
 			       session->cipher_spec->hash
-			       ->hash(handshake_messages),
+			       ->hash((string(8bit))handshake_messages),
 			       struct);
   } else {
-    session->cipher_spec->sign(session, handshake_messages, struct);
+    session->cipher_spec->sign(session, (string(8bit))handshake_messages, struct);
   }
 
   return handshake_packet(HANDSHAKE_certificate_verify, struct);
@@ -186,7 +190,7 @@ int(-1..0) validate_certificate_verify(Buffer input,
 				       string(8bit) signature_context)
 {
   int(0..1) verification_ok;
-  string(8bit) signed = handshake_messages;
+  string(8bit) signed = (string(8bit))handshake_messages;
   if (version >= PROTOCOL_TLS_1_3)
     signed = signature_context + session->cipher_spec->hash->hash(signed);
 

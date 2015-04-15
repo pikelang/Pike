@@ -302,7 +302,7 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
      pending_read_state = pending_write_state = ({});
      ke = 0;
 
-     handshake_messages += raw->read();
+     add_handshake_message(raw);
 
      // The first four bytes of the client_random is specified to be
      // the timestamp on the client side. This is to guard against bad
@@ -904,7 +904,7 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
     if (client_version < PROTOCOL_TLS_1_3) {
       error("Waiting for key share in %s.\n", fmt_version(version));
     }
-    handshake_messages += raw->read();
+    add_handshake_message(raw);
     switch(type)
     {
     default:
@@ -1156,7 +1156,7 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
 	   SSL3_DEBUG_MSG("digests differ\n");
          COND_FATAL(1, ALERT_unexpected_message, "Key exchange failure.\n");
        }
-       handshake_messages += raw->read();
+       add_handshake_message(raw);
        /* Second hash includes this message, the first doesn't */
 
        /* Handshake complete */
@@ -1224,7 +1224,7 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
       if (!server_derive_master_secret(input))
 	return -1;
 
-      handshake_messages += raw->read();
+      add_handshake_message(raw);
 
       SSL3_DEBUG_MSG("certificate_state: %d\n", certificate_state);
       // TODO: we need to determine whether the certificate has signing abilities.
@@ -1246,7 +1246,7 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
        COND_FATAL(certificate_state != CERT_requested,
                   ALERT_unexpected_message, "Unexpected client cert.\n");
 
-       handshake_messages += raw->read();
+       add_handshake_message(raw);
 
        if( !handle_certificates(input) )
          return -1;
@@ -1286,7 +1286,7 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
 	return -1;
       }
 
-      handshake_messages += raw->read();
+      add_handshake_message(raw);
       handshake_state = STATE_wait_for_finish;
 
       if (version >= PROTOCOL_TLS_1_3) {
