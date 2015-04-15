@@ -464,10 +464,13 @@ protected string _sprintf(int type, mapping|void flags)
 
 protected array(mapping(string:mixed)) res_obj_to_array(object res_obj)
 {
-  if (res_obj) 
+  if (!res_obj)
+    return 0;
+
+  array(mapping(string:mixed)) res = ({});
+  while (res_obj)
   {
     // Not very efficient, but sufficient
-    array(mapping(string:mixed)) res = ({});
     array(string) fieldnames;
     array(mixed) row;
 
@@ -495,9 +498,10 @@ protected array(mapping(string:mixed)) res_obj_to_array(object res_obj)
       while (row = res_obj->fetch_row())
 	res += ({ mkmapping(fieldnames, row) });
 
-    return res;
+    // Try the next result.
+    res_obj = res_obj->next_result && res_obj->next_result();
   }
-  return 0;
+  return res;
 }
 
 //! Return last error message.
