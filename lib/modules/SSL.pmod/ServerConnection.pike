@@ -295,8 +295,6 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
     error( "Internal error\n" );
   case STATE_wait_for_hello:
    {
-     array(int) cipher_suites;
-
      /* Reset all extra state variables */
      expect_change_cipher = certificate_state = 0;
      pending_read_state = pending_write_state = ({});
@@ -314,13 +312,9 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
      // reduces client fingerprinting.
      server_random = context->random(32);
 
-     switch(type)
-     {
-     default:
+     if (type != HANDSHAKE_client_hello)
        COND_FATAL(1, ALERT_unexpected_message, "Expected client_hello.\n");
 
-     case HANDSHAKE_client_hello:
-      {
 	string session_id;
 	int cipher_len;
 	array(int) cipher_suites;
@@ -895,24 +889,19 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
 	    return err;
 	  handshake_state = STATE_wait_for_peer;
 	}
-	break;
-      }
-     }
-     break;
    }
+   break;
   case STATE_wait_for_key_share:
     if (client_version < PROTOCOL_TLS_1_3) {
       error("Waiting for key share in %s.\n", fmt_version(version));
     }
     add_handshake_message(raw);
-    switch(type)
+    if (type != HANDSHAKE_client_key_share)
     {
-    default:
       SSL3_DEBUG_MSG("Got %s packet.\n", fmt_constant(type, "HANDSHAKE"));
       COND_FATAL(1, ALERT_unexpected_message, "Expected key share.\n");
-      break;
-    case HANDSHAKE_client_key_share:
-      {
+    }
+    {
 	int wanted_group;
 	if (session->cipher_spec->ke_factory == .Cipher.KeyShareDHE) {
 	  // These limits are taken from RFC 3526 8 "Strength Estimate 1".
@@ -1122,18 +1111,13 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
 
 	  // NB: From this point on we can send application data.
 	}
-      }
-      break;
     }
     break;
   case STATE_wait_for_finish:
-    switch(type)
     {
-    default:
-      COND_FATAL(1, ALERT_unexpected_message, "Expected finished.\n");
-      break;
-    case HANDSHAKE_finished:
-     {
+      if (type != HANDSHAKE_finished)
+        COND_FATAL(1, ALERT_unexpected_message, "Expected finished.\n");
+
        string(8bit) my_digest;
        string(8bit) digest;
 
@@ -1188,7 +1172,6 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
        handshake_state = STATE_wait_for_hello;
 
        return 1;
-     }
     }
     break;
   case STATE_wait_for_peer:
@@ -1270,13 +1253,11 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
     }
     break;
   case STATE_wait_for_verify:
-    // compute challenge first, then update handshake_messages /Sigge
-    switch(type)
     {
-    default:
-      COND_FATAL(1, ALERT_unexpected_message, "Expected cert verify.\n");
-      break;
-    case HANDSHAKE_certificate_verify:
+      // compute challenge first, then update handshake_messages /Sigge
+      if (type != HANDSHAKE_certificate_verify)
+        COND_FATAL(1, ALERT_unexpected_message, "Expected cert verify.\n");
+
       SSL3_DEBUG_MSG("SSL.ServerConnection: CERTIFICATE_VERIFY\n");
 
       SSL3_DEBUG_MSG("SERVER: handshake_messages: %d bytes.\n",
@@ -1296,7 +1277,6 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
       send_packet(change_cipher_packet());
 
       // NB TLS 1.3: From this point on we can send application data.
-      break;
     }
     break;
   }
