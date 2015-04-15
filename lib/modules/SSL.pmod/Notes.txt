@@ -191,8 +191,21 @@ ssl_close_callback():
 ssl_close_alert_callback():
 	As ssl_close_callback, but allow use of stream when done.
 
-Known Problems:
+
+Known Problems and Missing Features
+-----------------------------------
+
 	Nonblocking mode without callbacks.
 
 	Support for set_buffer_mode() et al not yet supported,
 	neither directly nor in the embedded stream.
+
+	Session objects should be possible to serialize with
+	encode_value() to allow multiple frontend nodes to share the
+	session cache. (Overloading the session cache functionality in
+	Context is already easy to do)
+
+	The handshake message hash should be steaming and discard raw
+	data after each packet. Also, it is probably possible to find
+	only one place in the code where data can be fed to the
+	streaming hash.
