@@ -13651,4 +13651,7 @@ test_any_equal([[
     return map(values(a), objectp);
 ]], ({ 1, 1, 1 }))
 
+dnl This syntax error generates a Fatal with PIKE_DEBUG
+test_compile_error(object(foo bar) o;)
+
 END_MARKER
