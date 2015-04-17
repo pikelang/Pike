@@ -262,9 +262,7 @@ PIKECLASS Deflate
     int total_out_old = 0;
     int i = 1;
     
-    bz_stream *s;
-    
-    s = &(THIS->strm);
+    bz_stream *s = &(THIS->strm);
     
     s->next_in = data->str;
     s->avail_in = data->len;
@@ -316,11 +314,9 @@ PIKECLASS Deflate
     struct pike_string *retstr;
     /* FIXME: Ought to use string_builder instead. */
     dynamic_buffer retbuf;
-    bz_stream *s;
+    bz_stream *s = &(THIS->strm);
     ONERROR err;
 
-    s = &(THIS->strm);
-    
     initialize_buf(&retbuf);
     SET_ONERROR(err, toss_buffer, &retbuf);
 
@@ -375,9 +371,8 @@ PIKECLASS Deflate
     int retval = 0;
     dynamic_buffer retbuf;
     ONERROR err;
-    
-    bz_stream *s;
-    s = &(THIS->strm);
+    bz_stream *s = &(THIS->strm);
+
     initialize_buf(&retbuf);
     SET_ONERROR(err, toss_buffer, &retbuf);
 
@@ -545,12 +540,7 @@ PIKECLASS Inflate
   PIKEFUN void create(){
      
     int retval;
-    bz_stream *s;
-    
-    if(args > 0){
-      Pike_error("Bz2.Inflate() should be called with NO arguments.\n");
-    }
-    s = &(THIS->strm);
+    bz_stream *s = &(THIS->strm);
     
     if(THIS->internbuf != NULL){
       toss_buffer(&(THIS->intern_buffer));
@@ -573,8 +563,7 @@ PIKECLASS Inflate
     s->next_out = NULL;
     s->avail_in = 0;
     s->avail_out = 0;
-    
-    
+
     /*reset the counted bytes*/
     THIS->total_out_previous_flush = 0;
     pop_n_elems(args);
@@ -607,8 +596,7 @@ PIKECLASS Inflate
     char *tmp_internbuf = NULL;
     dynamic_buffer ret_buffer;
     dynamic_buffer *retbuf = &ret_buffer;
-    bz_stream *s;
-    s = &(THIS->strm);
+    bz_stream *s = &(THIS->strm);
     
     /*the incoming string has to be appended to the input buffer*/
     
@@ -789,36 +777,30 @@ PIKECLASS File
    *! closes the file
    */
 
-  PIKEFUN int close(){
-    if(args == 0){
-      if (!THIS->fp) RETURN (1);
-      switch(THIS->mode){
-      case READ_MODE:
-	bzReadClose(&(THIS->bzerror),THIS->file);
-	break;
-      case WRITE_MODE:
-	bzWriteClose ( &(THIS->bzerror), THIS->file,0,NULL,NULL);
-	break;
-      default:
-	Pike_error("This error can never occur.\n");
-      }
-      fclose(THIS->fp);
-      THIS->fp = NULL;
+  PIKEFUN int close()
+  {
+    if (!THIS->fp) RETURN (1);
+    switch(THIS->mode){
+    case READ_MODE:
+      bzReadClose(&(THIS->bzerror),THIS->file);
+      break;
+    case WRITE_MODE:
+      bzWriteClose ( &(THIS->bzerror), THIS->file,0,NULL,NULL);
+      break;
+    default:
+      Pike_error("This error can never occur.\n");
     }
-    else{
-      Pike_error("Too many arguments in call to Bz2.File()->close(), "
-		 "there should be none.\n");
-    }
+
+    fclose(THIS->fp);
+
+    THIS->fp = NULL;
     THIS->mode = NO_FILE_MODE;
     THIS->small = 0;
 
-    if((THIS->bzerror)==BZ_OK){
+    if((THIS->bzerror)==BZ_OK)
       RETURN(1);
-    }
-    else{
-      RETURN(0);
-    }
 
+    RETURN(0);
   }
 
   /*! @decl int(0..1) read_open(string file)
@@ -858,12 +840,11 @@ PIKECLASS File
 	Pike_error("Error in Bz2.File()->read_open.\n");
       }
     }
-    if(tmp==NULL){
+
+    if(tmp==NULL)
       RETURN(0);
-    }
-    else{
-      RETURN(1);
-    }
+
+    RETURN(1);
   }
 
   /*! @decl int(0..1) write_open(string file)
@@ -877,34 +858,27 @@ PIKECLASS File
     int compression_rate = DEFAULT_COMPRESSION_RATE;
     FILE *tmp = NULL;
     
-    if(compression){
-      if(TYPEOF(*compression) != T_INT){
-	Pike_error("Bad argument 2 in call to Bz2.File()->write_open().\n");
-      }
-      else{
+    if(compression)
+    {
 	compression_rate = compression->u.integer;
-      }
+        if(compression_rate < 1 || compression_rate > 9){
+          Pike_error("Compression rate %d is out of range for "
+                     "Bz2.File()->write_open().\n", compression_rate);
+        }
     }
-    if(work){
-      if(TYPEOF(*work) != T_INT){
-	Pike_error("Bad argument 3 in call to Bz2.File()->write_open().\n");
-      }
-      else{
+
+    if(work)
+    {
 	work_factor = work->u.integer;
-      }
+        if(work_factor < 1 || work_factor > 250){
+          Pike_error("Work factor %d is out of range for "
+                     "Bz2.File()->write_open().\n", work_factor);
+        }
     }
     
-    if(compression_rate < 1 || compression_rate > 9){
-      Pike_error("Compression rate %d is out of range for "
-		 "Bz2.File()->write_open().\n", compression_rate);
-    }
-    if(work_factor < 1 || work_factor > 250){
-      Pike_error("Work factor %d is out of range for "
-		 "Bz2.File()->write_open().\n", work_factor);
-    }
-    if (THIS->mode == NO_FILE_MODE){
+    if (THIS->mode == NO_FILE_MODE)
       tmp = fopen(file_name->str,"wb");
-    }
+
     if(tmp != NULL){
       THIS->file = bzWriteOpen(&(THIS->bzerror),tmp,compression_rate,0,work_factor);
 
@@ -919,12 +893,10 @@ PIKECLASS File
       THIS->mode = WRITE_MODE;
     }
     
-    if(tmp == NULL){
+    if(tmp == NULL)
       RETURN(0);
-    }
-    else{
-      RETURN(1);
-    }
+
+    RETURN(1);
   }
 
   /*! @decl int(0..1) open(string file, void|string mode)
@@ -938,28 +910,30 @@ PIKECLASS File
   
   PIKEFUN int open(string filename, string|void mode)
   {
-    if (!mode) {
-      if (args > 1) {
-	pop_n_elems(args-1);
-      }
+    if (!mode)
+    {
       f_Bz2_File_read_open(1);
       return;
-    } else {
-      /* FIXME: These string comparisons should be cleaned up. */
-      if (strcmp(mode->str, "w") == 0) {
+    }
+
+    if (mode->len==1)
+    {
+      if (mode->str[0]=='w')
+      {
 	pop_stack();
 	f_Bz2_File_write_open(1);
+        return;
       }
-      else if (strcmp(mode->str, "r") == 0) {
+      if (mode->str[0]=='r')
+      {
 	pop_stack();
 	f_Bz2_File_read_open(1);
+        return;
       }
-      else{
-	Pike_error("Unknown open mode for file, "
-		   "should be either 'w' or 'r'.\n");
-      }
-      /* The integer is returned by the called functions f_File_... */
     }
+
+    Pike_error("Unknown open mode for file, "
+               "should be either 'w' or 'r'.\n");
   }
   
 
@@ -1012,7 +986,7 @@ PIKECLASS File
   PIKEFUN string read(int|void bytes){
     void *buf = NULL;
     struct string_builder retstr;
-    int to_be_read;
+    int to_be_read = INFL_BUF_SIZE;
     int was_read;
 
     if( THIS->bzerror == BZ_STREAM_END )
@@ -1022,25 +996,8 @@ PIKECLASS File
       return;
     }
 
-    if(args == 1){
-      if (!bytes) {
-	/* UNDEFINED. */
-	to_be_read = INFL_BUF_SIZE;
-      } else if(TYPEOF(*bytes) == T_INT){
-	to_be_read = bytes->u.integer;
-      }
-      else{
-	Pike_error("Bad type of argument in call to Bz2.File()->read.\n");
-      }
-    }
-    else if(args == 0){
-      /*do not know how long the file will be, think of a better 
-       way to set to_be_read */
-      to_be_read = INFL_BUF_SIZE;
-    }
-    else{
-      Pike_error("Bad number of arguments in call to Bz2.File->read.\n");
-    }
+    if (bytes)
+      to_be_read = bytes->u.integer;
 
     init_string_builder(&retstr, 0);
     buf = xalloc(to_be_read);
@@ -1073,18 +1030,11 @@ PIKECLASS File
    *!  0 otherwise
    */
 
-  PIKEFUN int(0..1)eof(){
-    if(args == 0){
-      if(THIS->bzerror == BZ_STREAM_END){
-	RETURN(1);
-      }
-      else{
-	RETURN(0);
-      }
-    }
-    else{
-      Pike_error("Too many arguments in call to Bz2.File()->eof().\n");
-    }  
+  PIKEFUN int(0..1)eof()
+  {
+    if(THIS->bzerror == BZ_STREAM_END)
+      RETURN(1);
+    RETURN(0);
   }
 
   INIT
