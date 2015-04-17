@@ -144,24 +144,19 @@ PIKECLASS Deflate
     int work_factor = DEFAULT_WORK_FACTOR;
     int retval;
     bz_stream *s;
-    
-    switch(args){
-    case 0: 
-      break;
-    case 2:
+
+    if (work) {
       work_factor = work->u.integer;
       if(work_factor < 1 || work_factor > 250)
         Pike_error("Work factor out of range for Bz2.Deflate().\n");
-      /* Fallthrough */
-    case 1:
+    }
+
+    if (compression) {
       compression_rate = compression->u.integer;
       if(compression_rate < 1 || compression_rate > 9)
         Pike_error("Compression rate out of range for Bz2.Deflate().\n");
-      break;
-    default:
-      Pike_error("Wrong number of arguments in call to Bz2.Deflate().\n");
     }
-  
+
     s = &(THIS->strm);
 
     if(THIS->internbuf != NULL){
