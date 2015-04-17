@@ -282,25 +282,19 @@ PIKECLASS mpq
   {
     switch(args)
     {
-      case 1:
-	if(TYPEOF(*x) == T_STRING)
-	  get_mpq_from_digits(THISMPQ, x->u.string, 0);
-	else
-	  get_new_mpq(THISMPQ, x, 1, "create", 1, args);
-	break;
-
       case 2:
 	/* Args are string of digits and integer base */
 	/* or int num / den */
 
-	if (TYPEOF(*base) != T_INT)
-	  if(TYPEOF(*base) != T_OBJECT ||
+	if (base && x) {
+	  if (TYPEOF(*base) != T_INT)
+	    if(TYPEOF(*base) != T_OBJECT ||
 	     base->u.object->prog != bignum_program ||
-	     TYPEOF(*x) == T_STRING)
-            SIMPLE_ARG_TYPE_ERROR ("create", 2, "int");
+	       TYPEOF(*x) == T_STRING)
+	      SIMPLE_ARG_TYPE_ERROR ("create", 2, "int");
 
-	switch(TYPEOF(*x))
-	{
+	  switch(TYPEOF(*x))
+	  {
 	  case T_STRING:
 	    get_mpq_from_digits(THISMPQ, x->u.string, base->u.integer);
 	    break;
@@ -316,14 +310,26 @@ PIKECLASS mpq
 	    mpq_set_den(THISMPQ,get_mpz(base, 1, "create", 2, args));
 	    mpq_canonicalize(THISMPQ);
 	    break;
+	  }
+	  break;
 	}
+	/* FALL_THROUGH */
+
+      case 1:
+	if (x) {
+	  if(TYPEOF(*x) == T_STRING)
+	    get_mpq_from_digits(THISMPQ, x->u.string, 0);
+	  else
+	    get_new_mpq(THISMPQ, x, 1, "create", 1, args);
+	  break;
+	}
+	/* FALL_THROUGH */
+
+      case 0:
 	break;
 
       default:
 	SIMPLE_WRONG_NUM_ARGS_ERROR ("create", 2);
-
-      case 0:
-	break;	/* Needed by AIX cc */
     }
   }
 
