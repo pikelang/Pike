@@ -155,13 +155,13 @@ PMOD_EXPORT extern const char msg_no_multiset_flag_marker[];
 #endif
 
 #define MULTISET_STEP_FUNC(FUNC, NODE)					\
-  ((union msnode *) FUNC ((struct rb_node_hdr *) msnode_check (NODE)))
+  ((union msnode *) FUNC (&(msnode_check(NODE)->rb_hdr)))
 #define low_multiset_first(MSD) MULTISET_STEP_FUNC (rb_first, (MSD)->root)
 #define low_multiset_last(MSD) MULTISET_STEP_FUNC (rb_last, (MSD)->root)
 #define low_multiset_prev(NODE) MULTISET_STEP_FUNC (rb_prev, NODE)
 #define low_multiset_next(NODE) MULTISET_STEP_FUNC (rb_next, NODE)
 #define low_multiset_get_nth(MSD, N)					\
-  ((union msnode *) rb_get_nth ((struct rb_node_hdr *) (MSD)->root, (N)))
+  ((union msnode *) rb_get_nth (&((MSD)->root->rb_hdr), (N)))
 
 #define low_assign_multiset_index_no_free(TO, NODE) do {		\
     struct svalue *_ms_index_to_ = (TO);				\
