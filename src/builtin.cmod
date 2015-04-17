@@ -517,13 +517,13 @@ PIKECLASS TM
     {
         time_t t = _t;
         struct tm *res = localtime_zone( &t, &THIS->t );
+        if( !res )
+            RETURN 0;
 
         /* These are supposedly correctly by localtime_zone. */
         SET_GMTOFF(res, GET_GMTOFF(&(THIS->t)));
         SET_ZONE(res, GET_ZONE(&(THIS->t)));
 
-        if( !res )
-            RETURN 0;
         THIS->t = *res;
         THIS->modified = 1;
         RETURN 1;
