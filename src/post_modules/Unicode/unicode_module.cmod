@@ -174,7 +174,7 @@ PIKEFUN int is_wordchar( int c )
 static int is_rtl_char( int c )
 {
   unsigned int rtl=0, i;
-  for(i=0; i<sizeof(_rtl); i++)
+  for(i=0; i<NELEM(_rtl); i++)
   {
     if(c<_rtl[i]) return rtl;
     rtl ^= 1;
