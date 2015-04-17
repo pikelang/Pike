@@ -286,7 +286,7 @@ void img_scale2(struct image *dest, struct image *source)
        pixel(dest,newx,y).g = (COLORTYPE)
 	 (((INT32) pixel(source,2*newx,2*y+0).g+
 	   (INT32) pixel(source,2*newx,2*y+1).g) >> 1);
-       pixel(dest,newx,y).g = (COLORTYPE)
+       pixel(dest,newx,y).b = (COLORTYPE)
 	 (((INT32) pixel(source,2*newx,2*y+0).b+
 	   (INT32) pixel(source,2*newx,2*y+1).b) >> 1);
      }
