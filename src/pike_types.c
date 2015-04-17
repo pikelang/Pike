@@ -6180,7 +6180,8 @@ static int match_type_svalue(struct pike_type *type,
       sub = type->car;
       if (sub->type == T_ZERO)
       {
-        res = sval->u.string->len == 0;
+        res = (sval->u.string->len == 0);
+	break;
       }
       else if( sub->type == PIKE_T_INT )
       {
