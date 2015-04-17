@@ -466,29 +466,14 @@ PIKECLASS Deflate
   
   PIKEFUN string deflate(string data, int|void mode)
   {
-    int flush_mode = 0;
+    int flush_mode = BZ_FLUSH;
     
-    switch (args){
-    case 0:
-      Pike_error("Too few arguments to method Deflate->deflate().\n"); 
-      break; 
-    case 1:
-      flush_mode = BZ_FLUSH;
-      break;
-    case 2:
-      if(TYPEOF(*mode) == T_INT){
+    if(mode)
+    {
       flush_mode = mode->u.integer;
+      pop_stack();
     }
-    else{
-      Pike_error("Bad argument 2 in call to Bz2.Deflate->deflate().\n");
-    }
-    pop_n_elems(1);
-    break;
-    default:
-      Pike_error("Too many arguments to method Deflate->deflate().\n");
-      break;
-    }
-    
+
     switch (flush_mode){
     case BZ_FLUSH:
       f_Bz2_Deflate_read(1);
