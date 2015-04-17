@@ -101,11 +101,6 @@ else
     AC_CACHE_VAL(pike_cv_nettle_crypt_func_is_pointer, [
       pike_cv_nettle_crypt_func_is_pointer=no
       AC_TRY_COMPILE([
-/* Note: Old Nettles had the nettle_crypt_func typedef directly
- *       in <nettle/nettle-meta.h> while more modern have it in
- *       <nettle/nettle-types.h>. Since <nettle/nettle-meta.h>
- *       pulls in <nettle/nettle-types.h> it should be sufficient.
- */
 #include <nettle/nettle-meta.h>
       ], [
   nettle_crypt_func foo = (nettle_crypt_func)(void *)0;
