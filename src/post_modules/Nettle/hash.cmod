@@ -35,7 +35,6 @@ DECLARATIONS
 #ifdef HAVE_NETTLE_GOSTHASH94_H
 #include <nettle/gosthash94.h>
 #endif
-#include <nettle/nettle-meta.h>
 
 #include <stdio.h>
 #include <stdarg.h>

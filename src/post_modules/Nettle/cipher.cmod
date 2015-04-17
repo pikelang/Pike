@@ -46,7 +46,6 @@ DECLARATIONS
 #endif
 #include <nettle/twofish.h>
 #include "idea.h"
-#include <nettle/nettle-meta.h>
 
 #include <nettle/cbc.h>
 #include <nettle/ctr.h>

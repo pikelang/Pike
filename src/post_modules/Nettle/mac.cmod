@@ -28,7 +28,6 @@ DECLARATIONS
 #ifdef HAVE_NETTLE_UMAC_H
 #include <nettle/umac.h>
 #endif
-#include <nettle/nettle-meta.h>
 
 #include <stdio.h>
 #include <stdarg.h>

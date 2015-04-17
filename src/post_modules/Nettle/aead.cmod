@@ -27,8 +27,6 @@ DECLARATIONS
 #include <nettle/chacha-poly1305.h>
 #endif
 
-#include <nettle/nettle-meta.h>
-
 #include <stdio.h>
 #include <stdarg.h>
 
