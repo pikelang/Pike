@@ -338,7 +338,7 @@ PIKECLASS Hash
     meta->update(ctx, plen, p);					/* 7 */
     meta->digest(ctx, dsz, abcbuf);				/* 8 */
 
-    meta->init(ctx);						/* 1 */
+    /* 1 */
     meta->update(ctx, plen, p);					/* 2 */
     meta->update(ctx, slen, s);					/* 3 */
 
@@ -358,7 +358,7 @@ PIKECLASS Hash
 
     meta->digest(ctx, dsz, abcbuf);				/* 12 */
 
-    meta->init(ctx);						/* 13 */
+    /* 13 */
     for (i = 0; i < plen; i++) {				/* 14 */
       meta->update(ctx, plen, p);
     }
@@ -366,7 +366,7 @@ PIKECLASS Hash
 
     /* Sequence P is implicit. */				/* 16 */
 
-    meta->init(ctx);						/* 17 */
+    /* 17 */
     for(i = 0; i < 16 + abcbuf[0]; i++) {			/* 18 */
       meta->update(ctx, slen, s);
     }
@@ -375,7 +375,7 @@ PIKECLASS Hash
     /* Sequence S is implicit. */				/* 20 */
 
     for (r = 0; r < rounds; r++) {				/* 21 */
-      meta->init(ctx);						/* a */
+      /* a */
       if (r & 1) {						/* b */
 	for (i = 0; i + dsz < plen; i += dsz) {
 	  meta->update(ctx, dsz, dpbuf);
