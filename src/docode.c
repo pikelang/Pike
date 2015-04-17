@@ -1266,7 +1266,6 @@ static int do_docode2(node *n, int flags)
       return 1;
     }
 
-  {
   case F_ASSIGN_SELF:
     /* in assign self we know this:
      *
@@ -1473,7 +1472,6 @@ static int do_docode2(node *n, int flags)
       }
       return flags & DO_POP ? 0 : 1;
     }
-  }
 
   case F_LAND:
   case F_LOR:
