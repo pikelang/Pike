@@ -44,7 +44,7 @@ struct pike_aead
 {
   const char *name;
 
-  unsigned context_size;
+  size_t context_size;
 
   unsigned digest_size;
 
@@ -82,8 +82,8 @@ struct pike_aead
   pike_##name##_set_iv,				\
   (pike_nettle_crypt_func) name##_encrypt,	\
   (pike_nettle_crypt_func) name##_decrypt,	\
-  name##_update,				\
-  name##_digest,				\
+  (pike_nettle_hash_update_func) name##_update, \
+  (pike_nettle_hash_digest_func) name##_digest, \
 }
 
 /*! @class AEAD
