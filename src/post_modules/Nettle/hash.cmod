@@ -23,10 +23,8 @@ DECLARATIONS
 #include "nettle.h"
 
 #include <nettle/md5.h>
-#ifdef HAVE_NETTLE_MD4_INIT
 #include <nettle/md4.h>
 #include <nettle/md2.h>
-#endif
 #include <nettle/sha.h>
 #ifdef HAVE_NETTLE_SHA3_H
 #include <nettle/sha3.h>
@@ -610,8 +608,6 @@ PIKECLASS Hash
 #cmod_undef PIKE_NAME
 #cmod_undef NETTLE_NAME
 
-#ifdef HAVE_NETTLE_MD4_INIT
-
 #cmod_define PIKE_NAME MD4
 #cmod_define NETTLE_NAME md4
 #cmod_include "hash.H"
@@ -623,8 +619,6 @@ PIKECLASS Hash
 #cmod_include "hash.H"
 #cmod_undef PIKE_NAME
 #cmod_undef NETTLE_NAME
-
-#endif /* HAVE_NETTLE_MD4_INIT */
 
 #cmod_define PIKE_NAME SHA1
 #cmod_define NETTLE_NAME sha1

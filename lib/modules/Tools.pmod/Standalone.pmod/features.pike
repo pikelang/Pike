@@ -133,14 +133,12 @@ int main(int num, array(string) args) {
 
   write("\nCrypto\n");
   F(Crypto.AES.GCM);
-  F(Crypto.Arctwo);
   F(Crypto.Blowfish);
   F(Crypto.Camellia);
   F(Crypto.ChaCha20);
   F(Crypto.ECC.Curve);
   F(Crypto.GOST94);
   F(Crypto.IDEA);
-  F(Crypto.MD4);
   F(Crypto.RIPEMD160);
   F(Crypto.SALSA20);
   F(Crypto.SALSA20R12);

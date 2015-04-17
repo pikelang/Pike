@@ -25,9 +25,7 @@ DECLARATIONS
 
 #include <nettle/memxor.h>
 #include <nettle/aes.h>
-#ifdef HAVE_NETTLE_ARCTWO_H
 #include <nettle/arctwo.h>
-#endif
 #include <nettle/arcfour.h>
 #ifdef HAVE_NETTLE_BLOWFISH_DECRYPT
 #include <nettle/blowfish.h>
@@ -51,6 +49,7 @@ DECLARATIONS
 #include <nettle/nettle-meta.h>
 
 #include <nettle/cbc.h>
+#include <nettle/ctr.h>
 
 #include <stdio.h>
 #include <stdarg.h>
@@ -2074,42 +2073,6 @@ PIKECLASS BlockCipher
    *!   @[CBC], @[GCM], @[Buffer]
    */
   PIKEVAR object(Nettle_Cipher) CTR;
-
-#ifdef HAVE_NETTLE_CTR_H
-#include <nettle/ctr.h>
-#else
-  /* Fallback implementation. */
-  void ctr_crypt(void *ctx, pike_nettle_crypt_func f,
-		 pike_nettle_size_t block_size, uint8_t *ctr,
-		 pike_nettle_size_t length, uint8_t *dst,
-		 const uint8_t *src)
-  {
-    while (length >= block_size) {
-      int c = 1;
-      int i;
-      f(ctx, block_size, dst, ctr);
-      memxor(dst, src, block_size);
-      dst += block_size;
-      src += block_size;
-      length -= block_size;
-      for (i = block_size; i--;) {
-	ctr[i] += c;
-	c &= !ctr[i];
-      }
-    }
-    if (length) {
-      /* Truncated block. */
-      int c = 1;
-      int i;
-      f(ctx, block_size, dst, ctr);
-      memxor(dst, src, length);
-      for (i = block_size; i--;) {
-	ctr[i] += c;
-	c &= !ctr[i];
-      }
-    }
-  }
-#endif
 
   PIKECLASS _CTR
     program_flags PROGRAM_NEEDS_PARENT|PROGRAM_USES_PARENT;
@@ -4620,9 +4583,6 @@ pike_aes_set_decrypt_key(void *ctx,
 #cmod_undef PIKE_NAME
 #cmod_undef NETTLE_NAME
 
-#ifdef HAVE_NETTLE_ARCTWO_H
-
-/* NB: Requires Nettle 1.11 or later, which should be fine by now. */
 static void pike_arctwo_set_key(void *ctx,
 				ptrdiff_t length, const char *key,
 				int ekb)
@@ -4787,8 +4747,6 @@ PIKECLASS ARCTWO
 /*! @endclass ARCTWO
  */
 
-#endif /* HAVE_NETTLE_ARCTWO_H */
-
 static void
 pike_arcfour_set_key(void *ctx,
 		     ptrdiff_t length, const char *key,
@@ -4799,6 +4757,7 @@ pike_arcfour_set_key(void *ctx,
 
   arcfour_set_key(ctx, length, (const uint8_t *)key);
 }
+
 #define pike_arcfour_set_encrypt_key pike_arcfour_set_key
 #define pike_arcfour_set_decrypt_key pike_arcfour_set_key
 #define arcfour_encrypt arcfour_crypt
