@@ -1061,7 +1061,10 @@ PIKECLASS File
     }
 
     if(args == 1){
-      if(TYPEOF(*bytes) == T_INT){
+      if (!bytes) {
+	/* UNDEFINED. */
+	to_be_read = INFL_BUF_SIZE;
+      } else if(TYPEOF(*bytes) == T_INT){
 	to_be_read = bytes->u.integer;
       }
       else{
