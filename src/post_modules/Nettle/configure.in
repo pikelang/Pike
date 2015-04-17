@@ -90,13 +90,16 @@ else
     # This is the recomended interface in Nettle 2.0.
     AC_CHECK_FUNCS(nettle_yarrow256_slow_reseed)
 
-    # These weren't present in old Nettles.
+    # nettle_salsa20_crypt was added in Nettle 2.5.
+    # nettle_sha224_init was added in Nettle 2.1.
+    # nettle_memxor3 replaced memxor3 in Nettle 3.0
     AC_CHECK_FUNCS(nettle_salsa20_crypt nettle_sha224_init \
 		   memxor3 nettle_memxor3)
 
-    # This is only present in very new Nettles.
+    # This was added in Nettle 3.0.
     AC_CHECK_FUNCS(nettle_ecc_bit_size)
 
+    # nettle_crypt_func was changed in Nettle 2.0.
     AC_MSG_CHECKING([whether nettle_crypt_func is a pointer type])
     AC_CACHE_VAL(pike_cv_nettle_crypt_func_is_pointer, [
       pike_cv_nettle_crypt_func_is_pointer=no
