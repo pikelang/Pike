@@ -148,29 +148,18 @@ PIKECLASS Deflate
     switch(args){
     case 0: 
       break;
-    case 1:
-      if(TYPEOF(*compression) != T_INT){
-	Pike_error("Wrong type of argument 1 in call to Bz2.Deflate().\n");
-      }
-      compression_rate = compression->u.integer;
-      break;
     case 2:
-      if(TYPEOF(*work) != T_INT){
-	Pike_error("Wrong type of argument 2 in call to Bz2.Deflate().\n");
-      }
-      compression_rate = compression->u.integer;
       work_factor = work->u.integer;
+      if(work_factor < 1 || work_factor > 250)
+        Pike_error("Work factor out of range for Bz2.Deflate().\n");
+      /* Fallthrough */
+    case 1:
+      compression_rate = compression->u.integer;
+      if(compression_rate < 1 || compression_rate > 9)
+        Pike_error("Compression rate out of range for Bz2.Deflate().\n");
       break;
-    default: 
+    default:
       Pike_error("Wrong number of arguments in call to Bz2.Deflate().\n");
-    
-    }
-    if(work_factor < 1 || work_factor > 250){
-      Pike_error("Work factor out of range for Bz2.Deflate().\n");
-    }
-
-    if(compression_rate < 1 || compression_rate > 9){
-      Pike_error("Compression rate out of range for Bz2.Deflate().\n");
     }
   
     s = &(THIS->strm);
