@@ -240,10 +240,10 @@ void img_crop(struct image *dest,
 
    if( ! (( x2 < 0) || (y2 < 0) || (x1>=img->xsize) || (y1>=img->ysize))) {
      
-     if (x1<0) x1=0; else if (x1>=img->xsize) x1=img->xsize-1;
-     if (y1<0) y1=0; else if (y1>=img->ysize) y1=img->ysize-1;
-     if (x2<0) x2=0; else if (x2>=img->xsize) x2=img->xsize-1;
-     if (y2<0) y2=0; else if (y2>=img->ysize) y2=img->ysize-1;
+     if (x1<0) x1=0;
+     if (y1<0) y1=0;
+     if (x2>=img->xsize) x2=img->xsize-1;
+     if (y2>=img->ysize) y2=img->ysize-1;
      
      img_blit(new+xp+yp*dest->xsize,
 	      img->img+xs+(img->xsize)*ys,
