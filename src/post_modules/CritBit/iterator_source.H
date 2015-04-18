@@ -148,7 +148,7 @@
 	    encode_fun = cmod_OBJ2_TREE(tree)->encode_fun;
 
 	    if (THIS->tree) {
-		if (!step || IS_UNDEFINED(step)) {
+		if (!step) {
 		    THIS->step = 1;
 		} else {
 		    THIS->step = step->u.integer;
@@ -156,62 +156,53 @@
 			SIMPLE_BAD_ARG_ERROR("create", 1, "int(..-1)|int(1..)");
 		}
 
-		switch (args) {
-		case 3:
-		    if (!IS_UNDEFINED(stop)) {
-			if (encode_fun >= 0) {
-			    push_svalue(stop);
-			    apply_low(tree, encode_fun, 1);
-			    assign_svalue(stop, Pike_sp-1);
-			    pop_stack();
-			    if (!((1<<TYPEOF(*stop)) & T_KEY))
-				SIMPLE_BAD_ARG_ERROR("create", 3, cmod_STRFY_EVAL(key_ptype));
-			}
-			THIS->stop = CB_LOW_KEY_FROM_SVALUE(stop);
-			CB_ADD_KEY_REF(THIS->stop);
-		    }
-		    /* FALL_THROUGH */
-		case 2:
-		    if (!IS_UNDEFINED(start)) {
-			cb_key s;
-			if (encode_fun >= 0) {
-			    push_svalue(start);
-			    apply_low(tree, encode_fun, 1);
-			    assign_svalue(start, Pike_sp-1);
-			    pop_stack();
-			    if (!((1<<TYPEOF(*start)) & T_KEY))
-				SIMPLE_BAD_ARG_ERROR("create", 2, cmod_STRFY_EVAL(key_ptype));
-			}
-			s = CB_LOW_KEY_FROM_SVALUE(start);
+                if (stop) {
+                  if (encode_fun >= 0) {
+                    push_svalue(stop);
+                    apply_low(tree, encode_fun, 1);
+                    assign_svalue(stop, Pike_sp-1);
+                    pop_stack();
+                    if (!((1<<TYPEOF(*stop)) & T_KEY))
+                      SIMPLE_BAD_ARG_ERROR("create", 3, cmod_STRFY_EVAL(key_ptype));
+                  }
+                  THIS->stop = CB_LOW_KEY_FROM_SVALUE(stop);
+                  CB_ADD_KEY_REF(THIS->stop);
+                }
 
-			t = cb_index(THIS->tree, s);
+                if (start) {
+                  cb_key s;
+                  if (encode_fun >= 0) {
+                    push_svalue(start);
+                    apply_low(tree, encode_fun, 1);
+                    assign_svalue(start, Pike_sp-1);
+                    pop_stack();
+                    if (!((1<<TYPEOF(*start)) & T_KEY))
+                      SIMPLE_BAD_ARG_ERROR("create", 2, cmod_STRFY_EVAL(key_ptype));
+                  }
+                  s = CB_LOW_KEY_FROM_SVALUE(start);
 
-			if (!t) {
-			    t = (THIS->step < 0)
-				? cb_find_previous(THIS->tree, s)
-				: cb_find_next(THIS->tree, s);
-			    if (t && (THIS->stop.len.chars || THIS->stop.len.bits)) {
-				/* check if we ran over stop */
-				if (THIS->step < 0) {
-				    if (CB_KEY_LT(t->key, THIS->stop))
-					t = NULL;
-				} else {
-				    if (CB_KEY_LT(THIS->stop, t->key))
-					t = NULL;
-				}
-			    }
-			}
-		    }
-		    /* FALL_THROUGH */
-		case 1:
-		case 0:
-		    if (!t) t = (THIS->step < 0)
-				? cb_find_last(THIS->tree)
-				: cb_find_first(THIS->tree);
-		    break;
-		default:
-		    Pike_error("Too many arguments.\n");
-		}
+                  t = cb_index(THIS->tree, s);
+
+                  if (!t) {
+                    t = (THIS->step < 0)
+                      ? cb_find_previous(THIS->tree, s)
+                      : cb_find_next(THIS->tree, s);
+                    if (t && (THIS->stop.len.chars || THIS->stop.len.bits)) {
+                      /* check if we ran over stop */
+                      if (THIS->step < 0) {
+                        if (CB_KEY_LT(t->key, THIS->stop))
+                          t = NULL;
+                      } else {
+                        if (CB_KEY_LT(THIS->stop, t->key))
+                          t = NULL;
+                      }
+                    }
+                  }
+                }
+
+                if (!t) t = (THIS->step < 0)
+                          ? cb_find_last(THIS->tree)
+                          : cb_find_first(THIS->tree);
 
 		if (t) {
 		    CB_GET_VALUE(t, &THIS->lastval);
