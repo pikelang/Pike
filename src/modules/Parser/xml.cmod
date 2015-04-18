@@ -1276,7 +1276,7 @@ static int gobble(char *s)
 	break;								 \
       }									 \
     }									 \
-    if (i) continue;							 \
+    if (i) break;							 \
 									 \
     /* lookup entry in mapping and parse it recursively */		 \
     /* Generate error if entity is not defined */			 \
