@@ -719,25 +719,26 @@ PIKECLASS Shuffle
     if( !THIS->file_obj )
       Pike_error("Cannot add source, no destination.\n");
 
-    if( args > 1 )
+    if( start )
     {
       if( TYPEOF(*start) == PIKE_T_OBJECT )
 	int64_from_bignum( &rstart, start->u.object );
       else if( TYPEOF(*start) == PIKE_T_INT && !SUBTYPEOF(*start) )
         rstart = start->u.integer;
     }
-    if( args > 2 )
+    if( length )
     {
       if( TYPEOF(*length) == PIKE_T_OBJECT )
 	int64_from_bignum( &rlength, length->u.object );
       else if( TYPEOF(*length) == PIKE_T_INT && !SUBTYPEOF(*length) )
         rlength = length->u.integer;
-    }
-    if( rlength == 0 )
-    {
-      pop_n_elems(args);
-      push_int(0);
-      return;
+
+      if( rlength == 0 )
+      {
+	pop_n_elems(args);
+	push_int(0);
+	return;
+      }
     }
     debug_malloc_touch( source );
 
