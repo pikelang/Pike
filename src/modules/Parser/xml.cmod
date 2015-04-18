@@ -512,9 +512,11 @@ static INLINE int isDigit(INT32 c)
     case 0x0e:
       if(c>=0x0E50 && c<=0x0E59) return 1;
       if(c>=0x0ED0 && c<=0x0ED9) return 1;
+      break;
 
     case 0x0f:
       if(c>=0x0F20 && c<=0x0F29) return 1;
+      break;
   }
   return 0;
 }
