@@ -125,6 +125,7 @@ PMOD_EXPORT JMP_BUF *init_recovery(JMP_BUF *r, size_t stack_pop_levels DEBUG_INI
   return r;
 }
 
+/* coverity[+kill] */
 PMOD_EXPORT DECLSPEC(noreturn) void pike_throw(void) ATTRIBUTE((noreturn))
 {
 #ifdef TRACE_UNFINISHED_TYPE_FIELDS
