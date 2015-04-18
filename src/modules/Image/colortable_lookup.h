@@ -39,7 +39,7 @@ void NCTLU_FLAT_CUBICLES_NAME(rgb_group *s,
 
 CHRONO("init flat/cubicles");
 
-      cub=cubs->cubicles=malloc(sizeof(struct nctlu_cubicle)*n2);
+      cub=cubs->cubicles=calloc(sizeof(struct nctlu_cubicle), n2);
       
       if (!cub) Pike_error("out of memory\n");
 
