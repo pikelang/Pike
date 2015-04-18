@@ -1003,6 +1003,9 @@ static void f_parse_pmt(INT32 args)
     return;
   }
 
+  /* Clear the stream, and most notably, set stream.ecminfo to NULL. */
+  memset(&stream, 0, sizeof(stream));
+
   pmt_pid = (u_short)Pike_sp[-1].u.integer;
   Pike_sp--;
 
