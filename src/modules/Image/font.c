@@ -308,7 +308,7 @@ void font_load(INT32 args)
 #ifdef HAVE_MMAP
   size_t mmaped_size = 0;
 #endif
-  size_t size = 0;
+  int size = 0;
   char *filename = NULL;
 
   get_all_args("load", args, ".%s", &filename);
@@ -331,7 +331,7 @@ void font_load(INT32 args)
 
     if (fd >= 0)
     {
-      size = (size_t) file_size(fd);
+      size = file_size(fd);
       if (size > 0)
       {
 	THREADS_ALLOW();
@@ -431,8 +431,8 @@ void font_load(INT32 args)
 
 	for (i=0; i<num_chars; i++)
 	{
-	  if (i*sizeof(INT32)<size
-	      && ntohl(fh->o[i])<size
+	  if (i*sizeof(INT32)<(size_t)size
+	      && ntohl(fh->o[i])<(size_t)size
 	      && ! ( ntohl(fh->o[i]) % 4) ) /* must be aligned */
 	  {
 	    ch = (struct char_head*)
