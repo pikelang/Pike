@@ -999,6 +999,7 @@ double double_from_sval(struct svalue *s)
     case T_OBJECT: 
       if(IS_MPZ_OBJ (s->u.object))
 	return mpz_get_d(OBTOMPZ(s->u.object));
+      /* Fallthough */
     default:
       Pike_error("Bad argument, expected a number of some sort.\n");
   }
