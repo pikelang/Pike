@@ -258,7 +258,7 @@ regexp *pike_regcomp(char *exp,int excompat)
     int             flags;
     short	   *exp2,*dest,c;
 
-    if (exp == (char *)NULL)
+    if (exp == NULL)
 	FAIL("NULL argument");
 
     exp2=xalloc( (strlen(exp)+1) * sizeof(short) );
@@ -308,8 +308,8 @@ regexp *pike_regcomp(char *exp,int excompat)
     regnpar = 1;
     regsize = 0L;
     regcode = &regdummy;
-    if (reg(0, &flags) == (char *)NULL)
-	return ((regexp *)NULL);
+    if (reg(0, &flags) == NULL)
+	return (NULL);
 
     /* Small enough for pointer-storage convention? */
     if (regsize >= 32767L)	/* Probably could be 65535L. */
@@ -323,7 +323,7 @@ regexp *pike_regcomp(char *exp,int excompat)
     regnpar = 1;
     regcode = r->program;
     if (reg(0, &flags) == NULL)
-	return ((regexp *) NULL);
+	return (NULL);
 
     /* Dig out information for optimizations. */
     r->regstart = '\0';		/* Worst-case defaults. */
@@ -392,13 +392,13 @@ static char *reg(int paren,int *flagp)
 	regnpar++;
 	ret = regnode((char)(OPEN + parno));
     } else
-	ret = (char *)NULL;
+	ret = NULL;
 
     /* Pick up the branches, linking them together. */
     br = regbranch(&flags);
-    if (br == (char *)NULL)
-	return ((char *)NULL);
-    if (ret != (char *)NULL)
+    if (br == NULL)
+	return (NULL);
+    if (ret != NULL)
 	regtail(ret, br);	/* OPEN -> first. */
     else
 	ret = br;
@@ -408,8 +408,8 @@ static char *reg(int paren,int *flagp)
     while (*regparse == OR_OP) {
 	regparse++;
 	br = regbranch(&flags);
-	if (br == (char *)NULL)
-	    return ((char *)NULL);
+	if (br == NULL)
+	    return (NULL);
 	regtail(ret, br);	/* BRANCH -> BRANCH. */
 	if (!(flags & HASWIDTH))
 	    *flagp &= ~HASWIDTH;
@@ -421,7 +421,7 @@ static char *reg(int paren,int *flagp)
     regtail(ret, ender);
 
     /* Hook the tails of the branches to the closing node. */
-    for (br = ret; br != (char *)NULL; br = regnext(br))
+    for (br = ret; br != NULL; br = regnext(br))
 	regoptail(br, ender);
 
     /* Check for proper termination. */
@@ -452,19 +452,19 @@ static char  *regbranch(int *flagp)
     *flagp = WORST;		/* Tentatively. */
 
     ret = regnode(BRANCH);
-    chain = (char *)NULL;
+    chain = NULL;
     while (*regparse != '\0' && *regparse != OR_OP && *regparse != RBRAC) {
 	latest = regpiece(&flags);
-	if (latest == (char *)NULL)
-	    return ((char *)NULL);
+	if (latest == NULL)
+	    return (NULL);
 	*flagp |= flags & HASWIDTH;
-	if (chain == (char *)NULL)	/* First piece. */
+	if (chain == NULL)	/* First piece. */
 	    *flagp |= flags & SPSTART;
 	else
 	    regtail(chain, latest);
 	chain = latest;
     }
-    if (chain == (char *)NULL)		/* Loop ran zero times. */
+    if (chain == NULL)		/* Loop ran zero times. */
 	regnode(NOTHING);
 
     return (ret);
@@ -486,8 +486,8 @@ static char *regpiece(int *flagp)
   int             flags;
 
   ret = regatom(&flags);
-  if (ret == (char *)NULL)
-    return ((char *)NULL);
+  if (ret == NULL)
+    return (NULL);
 
   op = *regparse;
   if (!ISMULT(op)) {
@@ -614,8 +614,8 @@ static char *regatom(int *flagp)
 	break;
     case LBRAC:
 	ret = reg(1, &flags);
-	if (ret == (char *)NULL)
-	    return ((char *)NULL);
+	if (ret == NULL)
+	    return (NULL);
 	*flagp |= flags & (HASWIDTH | SPSTART);
 	break;
     case '\0':
@@ -732,7 +732,7 @@ static void regtail(char *p, char *val)
     scan = p;
     for (;;) {
 	temp = regnext(scan);
-	if (temp == (char *)NULL)
+	if (temp == NULL)
 	    break;
 	scan = temp;
     }
@@ -751,7 +751,7 @@ static void regtail(char *p, char *val)
 static void regoptail(char *p, char *val)
 {
     /* "Operandless" and "op != BRANCH" are synonymous in practice. */
-    if (p == (char *)NULL || p == &regdummy || OP(p) != BRANCH)
+    if (p == NULL || p == &regdummy || OP(p) != BRANCH)
 	return;
     regtail(OPERAND(p), val);
 }
@@ -789,20 +789,20 @@ int pike_regexec(regexp *prog, char *string)
     register char  *s;
 
     /* Be paranoid... */
-    if (prog == (regexp *)NULL || string == (char *)NULL) {
+    if (prog == NULL || string == NULL) {
 	regerror("NULL parameter");
 	return (0);
     }
 
     /* If there is a "must appear" string, look for it. */
-    if (prog->regmust != (char *)NULL) {
+    if (prog->regmust != NULL) {
 	s = string;
-	while ((s = strchr(s, prog->regmust[0])) != (char *)NULL) {
+	while ((s = strchr(s, prog->regmust[0])) != NULL) {
 	    if (strncmp(s, prog->regmust, prog->regmlen) == 0)
 		break;		/* Found it. */
 	    s++;
 	}
-	if (s == (char *)NULL)		/* Not present. */
+	if (s == NULL)		/* Not present. */
 	    return (0);
     }
     /* Mark beginning of line for ^ . */
@@ -816,7 +816,7 @@ int pike_regexec(regexp *prog, char *string)
     s = string;
     if (prog->regstart != '\0')
 	/* We know what char it must start with. */
-	while ((s = strchr(s, prog->regstart)) != (char *)NULL) {
+	while ((s = strchr(s, prog->regstart)) != NULL) {
 	    if (regtry(prog, s))
 		return (1);
 	    s++;
@@ -858,8 +858,8 @@ char           *string;
     sp = prog->startp;
     ep = prog->endp;
     for (i = NSUBEXP; i > 0; i--) {
-	*sp++ = (char *)NULL;
-	*ep++ = (char *)NULL;
+	*sp++ = NULL;
+	*ep++ = NULL;
     }
     if (regmatch(prog->program)) {
 	prog->startp[0] = string;
@@ -897,10 +897,10 @@ char           *prog;
 
     scan = prog;
 #ifdef PIKE_DEBUG
-    if (scan != (char *)NULL && regnarrate)
+    if (scan != NULL && regnarrate)
 	fprintf(stderr, "%s(\n", regprop(scan));
 #endif
-    while (scan != (char *)NULL) {
+    while (scan != NULL) {
 #ifdef PIKE_DEBUG
 	if (regnarrate)
 	    fprintf(stderr, "%s...\n", regprop(scan));
@@ -953,13 +953,13 @@ char           *prog;
 	    break;
 	case ANYOF:
 	    if (*reginput == '\0' || 
-		 strchr(OPERAND(scan), *reginput) == (char *)NULL)
+		 strchr(OPERAND(scan), *reginput) == NULL)
 		return (0);
 	    reginput++;
 	    break;
 	case ANYBUT:
 	    if (*reginput == '\0' || 
-		 strchr(OPERAND(scan), *reginput) != (char *)NULL)
+		 strchr(OPERAND(scan), *reginput) != NULL)
 		return (0);
 	    reginput++;
 	    break;
@@ -980,7 +980,7 @@ char           *prog;
 			    return (1);
 			reginput = save;
 			scan = regnext(scan);
-		    } while (scan != (char *)NULL && OP(scan) == BRANCH);
+		    } while (scan != NULL && OP(scan) == BRANCH);
 		    return (0);
 		    /* NOTREACHED */
 		}
@@ -1032,7 +1032,7 @@ char           *prog;
 		     * Don't set startp if some later invocation of the same
 		     * parentheses already has. 
 		     */
-		    if (regstartp[no] == (char *)NULL)
+		    if (regstartp[no] == NULL)
 			regstartp[no] = save;
 		    return (1);
 		} else
@@ -1052,7 +1052,7 @@ char           *prog;
 		     * Don't set endp if some later invocation of the same
 		     * parentheses already has. 
 		     */
-		    if (regendp[no] == (char *)NULL)
+		    if (regendp[no] == NULL)
 			regendp[no] = save;
 		    return (1);
 		} else
@@ -1106,13 +1106,13 @@ char           *p;
 	}
 	break;
     case ANYOF:
-	while (*scan != '\0' && strchr(opnd, *scan) != (char *)NULL) {
+	while (*scan != '\0' && strchr(opnd, *scan) != NULL) {
 	    count++;
 	    scan++;
 	}
 	break;
     case ANYBUT:
-	while (*scan != '\0' && strchr(opnd, *scan) == (char *)NULL) {
+	while (*scan != '\0' && strchr(opnd, *scan) == NULL) {
 	    count++;
 	    scan++;
 	}
@@ -1145,11 +1145,11 @@ register char  *p;
     register int    offset;
 
     if (p == &regdummy)
-	return ((char *)NULL);
+	return (NULL);
 
     offset = NEXT(p);
     if (offset == 0)
-	return ((char *)NULL);
+	return (NULL);
 
     if (OP(p) == BACK)
 	return (p - offset);
@@ -1186,7 +1186,7 @@ regexp         *r;
 	       DO_NOT_WARN((long)(s - r->program)),
 	       regprop(s));
 	nxt = regnext(s);
-	if (nxt == (char *)NULL)	/* nxt ptr. */
+	if (nxt == NULL)	/* nxt ptr. */
 	    printf("(0)");
 	else
 	    printf("(%ld)",
@@ -1208,7 +1208,7 @@ regexp         *r;
 	printf("start `%c' ", r->regstart);
     if (r->reganch)
 	printf("anchored ");
-    if (r->regmust != (char *)NULL)
+    if (r->regmust != NULL)
 	printf("must have \"%s\"", r->regmust);
     printf("\n");
 }
@@ -1276,20 +1276,20 @@ char           *op;
         if(OP(op) >= OPEN && OP(op) < OPEN+NSUBEXP)
 	{
 	  sprintf(buf + strlen(buf), "OPEN%d", OP(op) - OPEN);
-	  p = (char *)NULL;
+	  p = NULL;
 	  break;
 	}
         if(OP(op) >= CLOSE && OP(op) < CLOSE+NSUBEXP)
 	{
 	  sprintf(buf + strlen(buf), "CLOSE%d", OP(op) - CLOSE);
-	  p = (char *)NULL;
+	  p = NULL;
 	  break;
 	}
 	regerror("corrupted opcode");
-	p=(char *)NULL;
+	p=NULL;
 	break;
     }
-    if (p != (char *)NULL)
+    if (p != NULL)
 	strcat(buf, p);
     return (buf);
 }
@@ -1307,8 +1307,8 @@ char *pike_regsub(regexp *prog, char *source, char *dest, int n)
     register int    no;
     register ptrdiff_t len;
 
-    if (prog == (regexp *)NULL || 
-	source == (char *)NULL || dest == (char *)NULL) {
+    if (prog == NULL ||
+	source == NULL || dest == NULL) {
 	regerror("NULL parm to regsub");
 	return NULL;
     }
@@ -1331,8 +1331,8 @@ char *pike_regsub(regexp *prog, char *source, char *dest, int n)
 		return NULL;
 	    }
 	    *dst++ = c;
-	} else if (prog->startp[no] != (char *)NULL && 
-		   prog->endp[no] != (char *)NULL) {
+	} else if (prog->startp[no] != NULL &&
+		   prog->endp[no] != NULL) {
 	    len = prog->endp[no] - prog->startp[no];
 	    if ( (n-=len) < 0 ) {		/* amylaar */
 		regerror("line too long");
