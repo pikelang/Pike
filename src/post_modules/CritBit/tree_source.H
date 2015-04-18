@@ -97,7 +97,7 @@ cmod_DEFINE_EVAL(COPY_NODE, TREE_CLASSIFY(_copy_node))
      *! Create a tree_class from o.
     DOCEND()
     PIKEFUN void create (array|mapping|void o) {
-	if (args == 1) {
+	if (o) {
 	  switch (TYPEOF(*o)) {
 	    case PIKE_T_MAPPING: {
 		struct keypair *k;
