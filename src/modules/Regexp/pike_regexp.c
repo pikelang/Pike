@@ -220,19 +220,16 @@ static char     regdummy;
 /*
  * Forward declarations for regcomp()'s friends.
  */
-#ifndef STATIC
-#define	STATIC	static
-#endif
-STATIC char    *reg(int, int *);
-STATIC char    *regbranch(int *);
-STATIC char    *regpiece(int *);
-STATIC char    *regatom(int *);
-STATIC char    *regnode(char);
-STATIC char    *regnext(register char *);
-STATIC void     regc(char b);
-STATIC void     reginsert(char, char *);
-STATIC void     regtail(char *, char *);
-STATIC void     regoptail(char *, char *);
+static char    *reg(int, int *);
+static char    *regbranch(int *);
+static char    *regpiece(int *);
+static char    *regatom(int *);
+static char    *regnode(char);
+static char    *regnext(register char *);
+static void     regc(char b);
+static void     reginsert(char, char *);
+static void     regtail(char *, char *);
+static void     regoptail(char *, char *);
 
 /*
  - regcomp - compile a regular expression into internal code
@@ -771,14 +768,14 @@ static char   **regendp;	/* Ditto for endp. */
 /*
  * Forwards.
  */
-STATIC int      	regtry(regexp *, char *);
-STATIC int      	regmatch(char *);
-STATIC ptrdiff_t	regrepeat(char *);
+static int      	regtry(regexp *, char *);
+static int      	regmatch(char *);
+static ptrdiff_t	regrepeat(char *);
 
 #ifdef PIKE_DEBUG
 int             regnarrate = 0;
 void            regdump(regexp *);
-STATIC char    *regprop(char *op);
+static char    *regprop(char *op);
 #endif
 
 /*
@@ -1122,7 +1119,7 @@ static char *regnext(register char *p)
 
 #ifdef PIKE_DEBUG
 
-STATIC char    *regprop(char *);
+static char    *regprop(char *);
 
 /*
  - regdump - dump a regexp onto stdout in vaguely comprehensible form
