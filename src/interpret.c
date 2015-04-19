@@ -2238,6 +2238,8 @@ void* low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
     args--;
     arg1=(void *)(Pike_sp-args-1);
 
+    /* FALL_THROUGH */
+
   case APPLY_SVALUE:
   case APPLY_SVALUE_STRICT:
   apply_svalue:
