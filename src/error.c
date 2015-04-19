@@ -242,6 +242,7 @@ PMOD_EXPORT struct svalue throw_value = SVALUE_INIT_FREE;
 PMOD_EXPORT int throw_severity;
 static const char *in_error;
 
+/* coverity[+kill] */
 PMOD_EXPORT DECLSPEC(noreturn) void low_error(const char *buf) ATTRIBUTE((noreturn))
 {
   push_error(buf);
@@ -262,6 +263,7 @@ PMOD_EXPORT void va_make_error (const char *fmt, va_list args)
   f_aggregate(2);
 }
 
+/* coverity[+kill] */
 PMOD_EXPORT void DECLSPEC(noreturn) va_error(const char *fmt, va_list args)
   ATTRIBUTE((noreturn))
 {
@@ -317,6 +319,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void Pike_error(const char *fmt,...) ATTRIBUTE((n
   va_end(args);
 }
 
+/* coverity[+kill] */
 PMOD_EXPORT DECLSPEC(noreturn) void new_error(const char *name,
 					      const char *text,
 					      struct svalue *oldsp,
@@ -399,6 +402,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void new_error(const char *name,
 
 static int inhibit_errors = 0;
 
+/* coverity[+kill] */
 PMOD_EXPORT void exit_on_error(const void *msg)
 {
   ONERROR tmp;
@@ -472,6 +476,7 @@ PMOD_EXPORT void fatal_on_error(const void *msg)
   do_abort();
 }
 
+/* coverity[+kill] */
 PMOD_EXPORT DECLSPEC(noreturn) void debug_va_fatal(const char *fmt, va_list args) ATTRIBUTE((noreturn))
 {
   static int in_fatal = 0;
@@ -898,6 +903,7 @@ static void f_error_create(INT32 args)
  *    fmt_args using string_builder_vsprintf. (fmt_args is passed as a
  *    va_list pointer to be able to pass NULL if fmt is NULL.)
  */
+/* coverity[+kill] */
 PMOD_EXPORT DECLSPEC(noreturn) void generic_error_va(
   struct object *o, const char *func, const struct svalue *base_sp, int args,
   const char *fmt, va_list *fmt_args)
@@ -973,6 +979,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void generic_error_va(
  *       At least fast_clone_object() MUST have been used, or the object
  *       data must have been properly initialized in some other way!
  */
+/* coverity[+kill] */
 PMOD_EXPORT DECLSPEC(noreturn) void throw_error_object(
   struct object *o,
   const char *func,
@@ -986,6 +993,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void throw_error_object(
   ERROR_DONE(generic);
 }
 
+/* coverity[+kill] */
 PMOD_EXPORT DECLSPEC(noreturn) void generic_error(
   const char *func,
   struct svalue *base_sp,  int args,
@@ -995,6 +1003,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void generic_error(
   ERROR_DONE(generic);
 }
 
+/* coverity[+kill] */
 PMOD_EXPORT DECLSPEC(noreturn) void index_error(
   const char *func,
   struct svalue *base_sp,  int args,
@@ -1008,6 +1017,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void index_error(
   ERROR_DONE(generic);
 }
 
+/* coverity[+kill] */
 PMOD_EXPORT DECLSPEC(noreturn) void bad_arg_error(
   const char *func,
   struct svalue *base_sp,  int args,
@@ -1029,6 +1039,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void bad_arg_error(
   ERROR_DONE(generic);
 }
 
+/* coverity[+kill] */
 PMOD_EXPORT DECLSPEC(noreturn) void math_error(
   const char *func,
   struct svalue *base_sp,  int args,
@@ -1046,6 +1057,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void math_error(
   ERROR_DONE(generic);
 }
 
+/* coverity[+kill] */
 PMOD_EXPORT DECLSPEC(noreturn) void resource_error(
   const char *func,
   struct svalue *base_sp,  int args,
@@ -1060,6 +1072,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void resource_error(
   ERROR_DONE(generic);
 }
 
+/* coverity[+kill] */
 PMOD_EXPORT DECLSPEC(noreturn) void permission_error(
   const char *func,
   struct svalue *base_sp, int args,
@@ -1072,6 +1085,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void permission_error(
   ERROR_DONE(generic);
 }
 
+/* coverity[+kill] */
 PMOD_EXPORT void wrong_number_of_args_error(const char *name, int args, int expected)
 {
   if(expected>args)
