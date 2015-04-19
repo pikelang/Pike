@@ -310,7 +310,10 @@ regexp *pike_regcomp(char *exp,int excompat)
 
     /* Small enough for pointer-storage convention? */
     if (regsize >= 32767L)	/* Probably could be 65535L. */
-      goto exit_regcomp;
+    {
+      free(exp2);
+      FAIL("regexp too big");
+    }
 
     /* Allocate space. */
     r = malloc(sizeof(regexp) + (unsigned) regsize);
