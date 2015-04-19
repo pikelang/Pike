@@ -1746,8 +1746,8 @@ static void read_entityvalue(struct string_builder *X,
       case 0x09:
 	POKE(*X, 0x20);
 	READ(1);
-	break;
 #endif
+	break;
 	
 #if 0
       case '&':
@@ -1974,9 +1974,11 @@ void read_choice_seq_or_name(int maybe_pcdata)
 	{
 	  case 0:
 	    XMLERROR_STAY("End of xml while reading ELEMENT declaration.");
+	    /* FALL_THROUGH */
 	    
 	  default:
 	    XMLERROR("Expected | or ,");
+	    break;
 
 	  case ')':
 	    READ(1);
@@ -2530,6 +2532,8 @@ static int really_low_parse_dtd(void)
 		      
 		    case 'S':
 		      if(GOBBLE("SYSTEM")) goto read_system;
+		      /* FALL_THROUGH */
+
 		    default:
 		      XMLERROR("Expected PUBLIC or SYSTEM, found something else.");
 		      push_int(0);
