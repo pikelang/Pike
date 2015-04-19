@@ -2254,6 +2254,7 @@ void* low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 	Pike_error("Attempt to call the value %"PRINTPIKEINT"d\n", 
 		   s->u.integer);
       }
+      break;
 
     case T_STRING:
       if (s->u.string->len > 20) {
@@ -2261,11 +2262,16 @@ void* low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
       } else {
 	Pike_error("Attempt to call the string \"%S\"\n", s->u.string);
       }
+      break;
+
     case T_MAPPING:
       Pike_error("Attempt to call a mapping\n");
+      break;
+
     default:
       Pike_error("Call to non-function value type:%s.\n",
 		 get_name_of_type(TYPEOF(*s)));
+      break;
 
     case T_FUNCTION:
       if(SUBTYPEOF(*s) == FUNCTION_BUILTIN)
