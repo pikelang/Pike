@@ -712,11 +712,9 @@ static void reginsert(char op, char *opnd)
 	regsize += 3;
 	return;
     }
-    src = regcode;
+
+    memmove(opnd+3, opnd, (size_t)(regcode - opnd));
     regcode += 3;
-    dst = regcode;
-    while (src > opnd)
-	*--dst = *--src;
 
     place = opnd;		/* Op node, where operand used to be. */
     *place++ = op;
@@ -781,7 +779,7 @@ static char   **regendp;	/* Ditto for endp. */
  */
 static int      	regtry(regexp *, char *);
 static int      	regmatch(char *);
-static ptrdiff_t	regrepeat(char *);
+static size_t   	regrepeat(char *);
 
 #ifdef PIKE_DEBUG
 int             regnarrate = 0;
@@ -803,16 +801,9 @@ int pike_regexec(regexp *prog, char *string)
     }
 
     /* If there is a "must appear" string, look for it. */
-    if (prog->regmust != NULL) {
-	s = string;
-	while ((s = strchr(s, prog->regmust[0])) != NULL) {
-	    if (strncmp(s, prog->regmust, prog->regmlen) == 0)
-		break;		/* Found it. */
-	    s++;
-	}
-	if (s == NULL)		/* Not present. */
-	    return (0);
-    }
+    if (prog->regmust != NULL && strstr(string, prog->regmust) == NULL)
+      return(0);
+
     /* Mark beginning of line for ^ . */
     regbol = string;
 
@@ -977,29 +968,18 @@ static int regmatch(char *prog)
 	    break;
 	case KPLUS:
 	case STAR:{
-		register char   nextch;
-		register ptrdiff_t no;
-		register char  *save;
-		register ptrdiff_t minimum;
+		register char   nextch =
+                  (OP(nxt) == EXACTLY) ? *OPERAND(nxt) : '\0';
+		register size_t no;
+		register char  *save = reginput;
+		register size_t minimum = (OP(scan) == STAR) ? 0 : 1;
 
-		/*
-		 * Lookahead to avoid useless match attempts when we know
-		 * what character comes next. 
-		 */
-		nextch = '\0';
-		if (OP(nxt) == EXACTLY)
-		    nextch = *OPERAND(nxt);
-		minimum = (OP(scan) == STAR) ? 0 : 1;
-		save = reginput;
-		no = regrepeat(OPERAND(scan));
-		while (no >= minimum) {
+		for(no = regrepeat(OPERAND(scan)) + 1; no > minimum; no--) {
+                    reginput = save + no -1;
 		    /* If it could work, try it. */
 		    if (nextch == '\0' || *reginput == nextch)
 			if (regmatch(nxt))
 			    return (1);
-		    /* Couldn't or didn't -- back up. */
-		    no--;
-		    reginput = save + no;
 		}
 		return (0);
 	    }
@@ -1066,45 +1046,35 @@ static int regmatch(char *prog)
 /*
  - regrepeat - repeatedly match something simple, report how many
  */
-static ptrdiff_t regrepeat(char *p)
+static size_t regrepeat(char *node)
 {
-    register ptrdiff_t count = 0;
+    register size_t count = 0;
     register char  *scan;
-    register char  *opnd;
+    register char  ch;
 
-    scan = reginput;
-    opnd = OPERAND(p);
-    switch (OP(p)) {
+    switch (OP(node)) {
     case ANY:
-	count = strlen(scan);
-	scan += count;
+        return(strlen(reginput));
 	break;
     case EXACTLY:
-	while (*opnd == *scan) {
-	    count++;
-	    scan++;
-	}
+        ch = *OPERAND(node);
+        count = 0;
+        for (scan = reginput; *scan == ch; scan++)
+          count++;
+        return(count);
 	break;
     case ANYOF:
-	while (*scan != '\0' && strchr(opnd, *scan) != NULL) {
-	    count++;
-	    scan++;
-	}
+        return(strspn(reginput, OPERAND(node)));
 	break;
     case ANYBUT:
-	while (*scan != '\0' && strchr(opnd, *scan) == NULL) {
-	    count++;
-	    scan++;
-	}
+        return(strcspn(reginput, OPERAND(node)));
 	break;
     default:			/* Oh dear.  Called inappropriately. */
 	regerror("internal foulup");
-	count = 0;		/* Best compromise. */
+	return(0);		/* Best compromise. */
 	break;
     }
-    reginput = scan;
-
-    return (count);
+    /* NOREACHED */
 }
 
 
