@@ -112,21 +112,20 @@ PMOD_EXPORT int set_nonblocking(int fd,int which)
 
 PMOD_EXPORT int query_nonblocking(int fd)
 {
-  int ret;
+  int ret = 0;
 #ifdef PIKE_DEBUG
   if(fd<0)
     Pike_fatal("Filedescriptor out of range.\n");
 #endif
 
-  do 
-  {
 #ifdef FCNTL_NBFLAG
-    ret = fcntl(fd, F_GETFL, 0) & FCNTL_NBFLAG;
-#else
-    return 0;
-#endif
+  do {
+    ret = fcntl(fd, F_GETFL, 0);
   } while(ret <0 && errno==EINTR);
+  return ret & FCNTL_NBFLAG;
+#else
   return ret;
+#endif
 }
 
 /* The following code doesn't link without help, and
