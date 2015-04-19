@@ -213,9 +213,9 @@
  */
 static short   *regparse;	/* Input-scan pointer. */
 static int      regnpar;	/* () count. */
-static char     regdummy;
 static char    *regcode;	/* Code-emit pointer; &regdummy = don't. */
 static long     regsize;	/* Code size. */
+static char     regdummy;
 
 /*
  * Forward declarations for regcomp()'s friends.
@@ -835,17 +835,7 @@ int pike_regexec(regexp *prog, char *string)
 /*
  - regtry - try match at specific point
  */
-#ifdef __STDC__
-
 static int regtry(regexp *prog, char *string)
-
-#else
-
-static int regtry(prog, string)
-regexp         *prog;
-char           *string;
-
-#endif
 {
     register int    i;
     register char **sp;
@@ -879,16 +869,7 @@ char           *string;
  * need to know whether the rest of the match failed) by a loop instead of
  * by recursion.
  */
-#ifdef __STDC__
-
 static int regmatch(char *prog)
-
-#else
-
-static int regmatch(prog)
-char           *prog;
-
-#endif
 {
     register char  *scan;	/* Current node. */
     char           *nxt;	/* nxt node. */
@@ -1077,16 +1058,7 @@ char           *prog;
 /*
  - regrepeat - repeatedly match something simple, report how many
  */
-#ifdef __STDC__
-
 static ptrdiff_t regrepeat(char *p)
-
-#else
-
-static ptrdiff_t regrepeat(p)
-char           *p;
-
-#endif
 {
     register ptrdiff_t count = 0;
     register char  *scan;
@@ -1131,16 +1103,7 @@ char           *p;
 /*
  - regnext - dig the "nxt" pointer out of a node
  */
-#ifdef __STDC__
-
 static char *regnext(register char *p)
-
-#else
-
-static char *regnext(p)
-register char  *p;
-
-#endif
 {
     register int    offset;
 
@@ -1164,16 +1127,7 @@ STATIC char    *regprop(char *);
 /*
  - regdump - dump a regexp onto stdout in vaguely comprehensible form
  */
-#ifdef __STDC__
-
 void regdump(regexp *r)
-
-#else
-
-void regdump(r)
-regexp         *r;
-
-#endif
 {
     register char  *s;
     register char   op = EXACTLY;	/* Arbitrary non-END op. */
@@ -1216,16 +1170,7 @@ regexp         *r;
 /*
  - regprop - printable representation of opcode
  */
-#ifdef __STDC__
-
 static char *regprop(char *op)
-
-#else
-
-static char *regprop(op)
-char           *op;
-
-#endif
 {
     register char  *p;
     static char     buf[50];
