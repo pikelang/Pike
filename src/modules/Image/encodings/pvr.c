@@ -1046,7 +1046,7 @@ void img_pvr_decode(INT32 args,int header_only)
      INT32 l = s[4]|(s[5]<<8)|(s[6]<<16)|(s[7]<<24);
      if(l>=4 && l<=len-8) {
        push_text("global_index");
-       push_int(s[8]|(s[9]<<8)|(s[10]<<16)|(s[11]<<24));
+       push_int((INT32)(s[8]|(s[9]<<8)|(s[10]<<16)|(s[11]<<24)));
        n++;
        len -= l+8;
        s += l+8;
@@ -1072,6 +1072,11 @@ void img_pvr_decode(INT32 args,int header_only)
    w = s[12]|(s[13]<<8);
    h = s[14]|(s[15]<<8);
 
+   if (!w)
+     Pike_error("Invalid xsize.\n");
+   if (!h)
+     Pike_error("Invalid ysize.\n");
+
    s += 16;
    len -= 16;
 
@@ -1095,10 +1100,12 @@ void img_pvr_decode(INT32 args,int header_only)
      switch(attr&0xff00) {
       case MODE_TWIDDLE_MIPMAP:
 	mipmap = 1;
+	/* FALL_THROUGH */
       case MODE_TWIDDLE:
 	twiddle = 1;
 	if(w != h || w<8 || w>1024 || (w&(w-1)))
 	  Pike_error("invalid size for twiddle texture\n");
+	/* FALL_THROUGH */
       case MODE_RECTANGLE:
       case MODE_STRIDE:
 	break;
@@ -1110,6 +1117,7 @@ void img_pvr_decode(INT32 args,int header_only)
 	break;
       case MODE_COMPRESSED_MIPMAP:
 	mipmap = 1;
+	/* FALL_THROUGH */
       case MODE_COMPRESSED:
 	compress = 1;
 	twiddle = 1;
@@ -1130,6 +1138,7 @@ void img_pvr_decode(INT32 args,int header_only)
       case MODE_ARGB1555:
       case MODE_ARGB4444:
 	hasalpha=1;
+	/* FALL_THROUGH */
       case MODE_RGB565:
       case MODE_RGB555:
 	bpp=2; break;
