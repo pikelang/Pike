@@ -248,7 +248,7 @@ static void     regoptail(char *, char *);
  */
 regexp *pike_regcomp(char *exp,int excompat)
 {
-    register regexp *r;
+    register regexp *r = NULL;
     register char  *scan;
     register char  *longest;
     register ptrdiff_t len;
@@ -258,7 +258,7 @@ regexp *pike_regcomp(char *exp,int excompat)
     if (exp == NULL)
 	FAIL("NULL argument");
 
-    exp2=xalloc( (strlen(exp)+1) * sizeof(short) );
+    exp2=xcalloc( (strlen(exp)+1), sizeof(short) );
     for ( scan=exp,dest=exp2;( c= UCHARAT(scan++)); ) {
 	switch (c) {
 	    case '(':
@@ -299,28 +299,37 @@ regexp *pike_regcomp(char *exp,int excompat)
 		*dest++ = c;
 	}
     }
-    *dest=0;
+
     /* First pass: determine size, legality. */
     regparse = exp2;
     regnpar = 1;
     regsize = 0L;
     regcode = &regdummy;
     if (reg(0, &flags) == NULL)
-	return (NULL);
+      goto exit_regcomp;
 
     /* Small enough for pointer-storage convention? */
     if (regsize >= 32767L)	/* Probably could be 65535L. */
-	FAIL("regexp too big");
+      goto exit_regcomp;
 
     /* Allocate space. */
-    r = xalloc(sizeof(regexp) + (unsigned) regsize);
+    r = malloc(sizeof(regexp) + (unsigned) regsize);
+    if(!r)
+    {
+      free(exp2);
+      Pike_error(msg_out_of_mem);
+    }
 
     /* Second pass: emit code. */
     regparse = exp2;
     regnpar = 1;
     regcode = r->program;
     if (reg(0, &flags) == NULL)
-	return (NULL);
+    {
+      free(r);
+      r = NULL;
+      goto exit_regcomp;
+    }
 
     /* Dig out information for optimizations. */
     r->regstart = '\0';		/* Worst-case defaults. */
@@ -358,6 +367,8 @@ regexp *pike_regcomp(char *exp,int excompat)
 	    r->regmlen = len;
 	}
     }
+
+    exit_regcomp:
     free(exp2);
     return (r);
 }
