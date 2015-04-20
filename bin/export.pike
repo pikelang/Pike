@@ -345,7 +345,7 @@ int main(int argc, array(string) argv)
   }
 
   string revision = git_cmd("rev-list", "-1", "HEAD");
-  string source = ((git_cmd("ls-tree", "HEAD", "src")/"\t")[-1]/" ")[-1];
+  string source = ((git_cmd("ls-tree", "HEAD", "src")/"\t")[0]/" ")[-1];
 
   t = t||time();
   mapping m = gmtime(t);
