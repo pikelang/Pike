@@ -431,7 +431,7 @@ void font_load(INT32 args)
 
 	for (i=0; i<num_chars; i++)
 	{
-	  if (i*sizeof(INT32)<(size_t)size
+	  if ((i*sizeof(INT32) + OFFSETOF(file_head, o))<(size_t)size
 	      && ntohl(fh->o[i])<(size_t)size
 	      && ! ( ntohl(fh->o[i]) % 4) ) /* must be aligned */
 	  {
