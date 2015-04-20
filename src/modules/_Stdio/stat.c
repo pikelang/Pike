@@ -733,7 +733,7 @@ static void _stat_index_set (INT_TYPE code, struct svalue *val, int got_int_val,
 static void stat_index_set (INT32 args)
 {
   int got_int_val = 0;
-  INT64 int_val;
+  INT64 int_val = 0;
 
   if (args < 2)
     SIMPLE_TOO_FEW_ARGS_ERROR ("Stat `[]=", 2);
