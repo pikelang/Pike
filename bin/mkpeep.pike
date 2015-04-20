@@ -508,6 +508,15 @@ int main(int argc, array(string) argv)
     }
   }
 
+  mapping(string:Rule) froms = ([]);
+  foreach(data;; Rule r)
+  {
+    if(froms[r->from*","])
+      werror("Collision between\n  %O and\n  %O.\n",
+             froms[r->from*","]->line, r->line);
+    froms[r->from*","] = r;
+  }
+
   write("\n\n/* Generated from %s by mkpeep.pike\n   %s\n*/\n\n",
 	argv[1], Calendar.ISO.now()->format_time());
 
