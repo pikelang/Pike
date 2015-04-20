@@ -206,9 +206,12 @@ array(string) build_file_list(string list_file)
 
 constant stamp=#"Pike export stamp
 time:%t
+type:%type
 major:%maj
 minor:%min
 build:%bld
+revision:%rev
+source:%src
 year:%Y
 month:%M
 day:%D
@@ -341,6 +344,9 @@ int main(int argc, array(string) argv)
     git_cmd("checkout", tag);
   }
 
+  string revision = git_cmd("rev-list", "-1", "HEAD");
+  string source = ((git_cmd("ls-tree", "HEAD", "src")/"\t")[-1]/" ")[-1];
+
   t = t||time();
   mapping m = gmtime(t);
   array(int) version = getversion();
@@ -348,6 +354,9 @@ int main(int argc, array(string) argv)
     "%maj":(string) version[0],
     "%min":(string) version[1],
     "%bld":(string) version[2],
+    "%rev":revision,
+    "%src":source,
+    "%type":snapshot?"snapshot":"release",
     "%Y":sprintf("%04d",1900+m->year),
     "%M":sprintf("%02d",1+m->mon),
     "%D":sprintf("%02d",m->mday),
