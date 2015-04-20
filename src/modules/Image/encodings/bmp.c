@@ -283,7 +283,8 @@ void img_bmp_encode(INT32 args)
    free_object(o);
    if (TYPEOF(sp[-1]) != T_OBJECT ||
        !(img=get_storage(o=sp[-1].u.object,image_program))) {
-      free_object(oc);
+      if (oc)
+         free_object(oc);
       Pike_error("Weird result from ->mirrory()\n");
    }
    if (nct) push_object(oc);
