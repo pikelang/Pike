@@ -220,7 +220,9 @@ static void decode_layers_and_masks( struct psd_image *dst,
     layer->left = psd_read_int( src );
     layer->bottom = psd_read_int( src );
     layer->right = psd_read_int( src );
-    layer->num_channels = psd_read_short( src );
+    layer->num_channels = psd_read_ushort( src );
+    if (layer->num_channels * 6 > src->len)
+      Pike_error("Too many channels.\n");
     for(cnt=0; cnt<layer->num_channels; cnt++)
     {
       layer->channel_info[cnt].id = psd_read_ushort(src);
