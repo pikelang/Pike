@@ -205,7 +205,7 @@ PIKECLASS Hash
 
     THREADS_ALLOW();
     meta->init(ctx);
-    if(args==2 && bytes->u.integer>-1) {
+    if(bytes && bytes->u.integer>-1) {
       int bytes_left = bytes->u.integer;
       int read_bytes = MINIMUM(8192, bytes_left);
       while(read_bytes>0 && (len=fd_read(fd, read_buffer, read_bytes))>0) {
