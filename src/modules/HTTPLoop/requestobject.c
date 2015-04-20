@@ -379,12 +379,14 @@ void f_aap_index_op(INT32 args)
   {
 #ifdef fd_inet_ntop
     char buffer[64];
-    push_text(fd_inet_ntop(SOCKADDR_FAMILY(THIS->request->from),
-			   SOCKADDR_IN_ADDR(THIS->request->from),
-			   buffer, sizeof(buffer)) );
-#else
-    push_text(inet_ntoa(*SOCKADDR_IN_ADDR(THIS->request->from)));
+    if (fd_inet_ntop(SOCKADDR_FAMILY(THIS->request->from),
+		     SOCKADDR_IN_ADDR(THIS->request->from),
+		     buffer, sizeof(buffer)))
+      push_text(buffer);
+    else
 #endif
+      push_text(inet_ntoa(*SOCKADDR_IN_ADDR(THIS->request->from)));
+
     push_string(s_remoteaddr);
     mapping_insert(THIS->misc_variables, sp-1, sp-2);
     sp--;

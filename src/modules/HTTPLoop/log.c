@@ -71,16 +71,17 @@ static void push_log_entry(struct log_entry *le)
   lo->method = make_shared_binary_string(le->method.str, le->method.len);
   lo->protocol = le->protocol;
   le->protocol->refs++;
-#ifdef fd_inet_ntop
   {
+#ifdef fd_inet_ntop
     char buffer[64];
-    lo->from = make_shared_string( fd_inet_ntop(SOCKADDR_FAMILY(le->from),
-						SOCKADDR_IN_ADDR(le->from),
-						buffer, sizeof(buffer)) );
-  }
-#else
-  lo->from = make_shared_string( inet_ntoa(*SOCKADDR_IN_ADDR(le->from)) );
+    if (fd_inet_ntop(SOCKADDR_FAMILY(le->from),
+		     SOCKADDR_IN_ADDR(le->from),
+		     buffer, sizeof(buffer)))
+      lo->from = make_shared_string(buffer);
+    else
 #endif
+      lo->from = make_shared_string( inet_ntoa(*SOCKADDR_IN_ADDR(le->from)) );
+  }
   push_object( o );
 }
 
