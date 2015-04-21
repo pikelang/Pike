@@ -47,9 +47,11 @@ dnl test non-crash
 test_do(Regexp("^((.*)[ ]|)(.*)[ ]")->split("abcdef"))
 
 dnl Shortcuts
-test_eq(Regexp.match("^[abc]$","-"),0)
-test_eq(Regexp.match("^[abc]$","a"),1)
-test_equal(Regexp.split("^(a*)[^a]*$","aaabbb"),({"aaa"}))
-test_equal( Regexp.replace("(a)", "abrakadabra", "·"), "·br·k·d·br·")
+cond_resolv(Regexp.match, [[
+  test_eq(Regexp.match("^[abc]$","-"),0)
+  test_eq(Regexp.match("^[abc]$","a"),1)
+  test_equal(Regexp.split("^(a*)[^a]*$","aaabbb"),({"aaa"}))
+  test_equal( Regexp.replace("(a)", "abrakadabra", "·"), "·br·k·d·br·")
+]])
 
 END_MARKER
