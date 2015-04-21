@@ -99,8 +99,8 @@
  * Structure for regexp "program".  This is essentially a linear encoding
  * of a nondeterministic finite-state machine (aka syntax charts or
  * "railroad normal form" in parsing technology).  Each node is an opcode
- * plus a "nxt" pointer, possibly plus an operand.  "Nxt" pointers of
- * all nodes except BRANCH implement concatenation; a "nxt" pointer with
+ * plus a "next" pointer, possibly plus an operand.  "Next" pointers of
+ * all nodes except BRANCH implement concatenation; a "next" pointer with
  * a BRANCH on both ends of it is connecting two alternatives.  (Here we
  * have one of the subtle syntax dependencies:  an individual BRANCH (as
  * opposed to a collection of them) is never concatenated with anything
@@ -111,26 +111,26 @@
  * to the thing following the set of BRANCHes.)  The opcodes are:
  */
 
-/* definition	number	opnd?	meaning */
-#define	END	0		/* no	End of program. */
-#define	BOL	1		/* no	Match "" at beginning of line. */
-#define	EOL	2		/* no	Match "" at end of line. */
-#define	ANY	3		/* no	Match any one character. */
-#define	ANYOF	4		/* str	Match any character in this string. */
-#define	ANYBUT	5		/* str	Match any character not in this
+/* definition	  number	opnd?   meaning */
+#define	END	  0		/* no	End of program. */
+#define	BOL	  1		/* no	Match "" at beginning of line. */
+#define	EOL	  2		/* no	Match "" at end of line. */
+#define	ANY	  3		/* no	Match any one character. */
+#define	ANYOF	  4		/* str	Match any character in this string. */
+#define	ANYBUT	  5		/* str	Match any character not in this
 				 * string. */
-#define	BRANCH	6		/* node	Match this alternative, or the
-				 * nxt... */
-#define	BACK	7		/* no	Match "", "nxt" ptr points backward. */
-#define	EXACTLY	8		/* str	Match this string. */
-#define	NOTHING	9		/* no	Match empty string. */
-#define	STAR	10		/* node	Match this (simple) thing 0 or more
+#define	BRANCH	  6		/* node	Match this alternative, or the
+				 * next... */
+#define	BACK	  7		/* no	Match "", "next" ptr points backward. */
+#define	EXACTLY	  8		/* str	Match this string. */
+#define	NOTHING	  9		/* no	Match empty string. */
+#define	STAR	  10		/* node	Match this (simple) thing 0 or more
 				 * times. */
 #define WORDSTART 11		/* node matching a start of a word          */
-#define WORDEND 12		/* node matching an end of a word           */
-#define KPLUS	13		/* node Match this (simple) thing 1 or more
+#define WORDEND   12		/* node matching an end of a word           */
+#define KPLUS	  13		/* node Match this (simple) thing 1 or more
 				 * times. */
-#define	OPEN	20		/* no	Mark this point in input as start of
+#define	OPEN	  20		/* no	Mark this point in input as start of
 				 * #n. */
  /* OPEN+1 is number 1, etc. */
 #define	CLOSE	(OPEN+NSUBEXP)	/* no	Analogous to OPEN. */
@@ -139,14 +139,14 @@
  * Opcode notes:
  *
  * BRANCH	The set of branches constituting a single choice are hooked
- *		together with their "nxt" pointers, since precedence prevents
+ *		together with their "next" pointers, since precedence prevents
  *		anything being concatenated to any individual branch.  The
- *		"nxt" pointer of the last BRANCH in a choice points to the
+ *		"next" pointer of the last BRANCH in a choice points to the
  *		thing following the whole choice.  This is also where the
- *		final "nxt" pointer of each individual branch points; each
+ *		final "next" pointer of each individual branch points; each
  *		branch starts with the operand node of a BRANCH node.
  *
- * BACK		Normal "nxt" pointers all implicitly point forward; BACK
+ * BACK		Normal "next" pointers all implicitly point forward; BACK
  *		exists to make loop structures possible.
  *
  * STAR,KPLUS	Complex cases are implemented as circular BRANCH structures
@@ -158,13 +158,13 @@
  */
 
 /*
- * A node is one char of opcode followed by two chars of "nxt" pointer.
- * "Nxt" pointers are stored as two 8-bit pieces, high order first.  The
+ * A node is one char of opcode followed by two chars of "next" pointer.
+ * "Next" pointers are stored as two 8-bit pieces, high order first.  The
  * value is a positive offset from the opcode of the node containing it.
  * An operand, if any, simply follows the node.  (Note that much of the
  * code generation knows about this implicit relationship.)
  *
- * Using two bytes for the "nxt" pointer is vast overkill for most things,
+ * Using two bytes for the "next" pointer is vast overkill for most things,
  * but allows patterns to get big without disasters.
  */
 #define	OP(p)	(*(p))
@@ -682,7 +682,7 @@ static char *regnode(char op)
     }
     ptr = ret;
     *ptr++ = op;
-    *ptr++ = '\0';		/* Null "nxt" pointer. */
+    *ptr++ = '\0';		/* Null "next" pointer. */
     *ptr++ = '\0';
     regcode = ptr;
 
@@ -872,7 +872,7 @@ static int regtry(regexp *prog, char *string)
 static int regmatch(char *prog)
 {
     register char  *scan;	/* Current node. */
-    char           *next;	/* nxt node. */
+    char           *next;	/* next node. */
 
     check_c_stack (4 * sizeof (void *));
 
@@ -1080,7 +1080,7 @@ static size_t regrepeat(char *node)
 
 
 /*
- - regnext - dig the "nxt" pointer out of a node
+ - regnext - dig the "next" pointer out of a node
  */
 static char *regnext(register char *p)
 {
