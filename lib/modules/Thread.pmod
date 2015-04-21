@@ -539,10 +539,16 @@ optional class Farm
         {
           mixed res, err;
           int st = gethrtime();
-          if( err = catch(res = q[1][0]( @q[1][1] )) && q[0])
-            ([object]q[0])->provide_error( err );
-          else if( q[0] )
-            ([object]q[0])->provide( res );
+
+          err = catch(res = q[1][0]( @q[1][1] ));
+
+          if( q[0] )
+          {
+            if( err )
+              ([object]q[0])->provide_error( err );
+            else
+              ([object]q[0])->provide( res );
+          }
           object lock = mutex->lock();
           free_threads += ({ this });
           lock = 0;
