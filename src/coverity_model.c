@@ -97,9 +97,12 @@ int image_colortable_map_image(struct neo_colortable *nct,
 			       int rowlen)
 {
   rgb_group first, last;
+  int maybe;
+  if (maybe) return 0;
   d[0] = first;
   d[len-1] = last;
   __coverity_write_all__(d);
+  return 1;
 }
 
 COLORTABLE_NCTLU_CONVERT(_img_nct_index_8bit_flat_cubicles, unsigned char);
@@ -114,9 +117,12 @@ int image_colortable_index_8bit_image(struct neo_colortable *nct,
 				      int rowlen)
 {
   unsigned char first, last;
+  int maybe;
+  if (maybe) return 0;
   d[0] = first;
   d[len-1] = last;
   __coverity_write_all__(d);
+  return 1;
 }
 
 COLORTABLE_NCTLU_CONVERT(_img_nct_index_16bit_flat_cubicles, unsigned short);
@@ -131,9 +137,12 @@ int image_colortable_index_16bit_image(struct neo_colortable *nct,
 				       int rowlen)
 {
   unsigned short first, last;
+  int maybe;
+  if (maybe) return 0;
   d[0] = first;
   d[len-1] = last;
   __coverity_write_all__(d);
+  return 1;
 }
 
 COLORTABLE_NCTLU_CONVERT(_img_nct_index_32bit_flat_cubicles, unsigned INT32);
@@ -148,7 +157,10 @@ int image_colortable_index_32bit_image(struct neo_colortable *nct,
 				       int rowlen)
 {
   unsigned INT32 first, last;
+  int maybe;
+  if (maybe) return 0;
   d[0] = first;
   d[len-1] = last;
   __coverity_write_all__(d);
+  return 1;
 }
