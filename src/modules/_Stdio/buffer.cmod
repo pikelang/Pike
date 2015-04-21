@@ -1420,8 +1420,9 @@ PIKECLASS Buffer
     {
       INT_TYPE ui = i->u.integer;
       for( width=0; width<SIZEOF_INT_TYPE; width++ )
-        if( ui < (1<<(width*8)) && ui >= -(1<<(width*8-1)) )
-            break;
+        if( ui < (((INT_TYPE)1)<<(width*8)) &&
+	    ui >= -(((INT_TYPE)1)<<(width*8-1)) )
+	  break;
       io_add_int( THIS, width, len_width );
       io_add_int( THIS, i->u.integer, width );
       Pike_sp--;
