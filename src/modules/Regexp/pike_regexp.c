@@ -493,7 +493,7 @@ static char *regpiece(int *flagp)
 {
   register char  *ret;
   register short  op;
-  /* register char  *nxt; */
+  /* register char  *next; */
   int             flags;
 
   ret = regatom(&flags);
@@ -533,10 +533,10 @@ static char *regpiece(int *flagp)
     }
     else
     {
-      /* ret ->	1: x			nxt: 2
-       * tmp ->	2: BRANCH	op: 3	nxt: 4
-       *	3: BACK			nxt: 1
-       *	4: BRANCH	op: 5	nxt: 5
+      /* ret ->	1: x			next: 2
+       * tmp ->	2: BRANCH	op: 3	next: 4
+       *	3: BACK			next: 1
+       *	4: BRANCH	op: 5	next: 5
        *	5: NOTHING
        */
       char *tmp;
@@ -589,8 +589,8 @@ static char *regatom(int *flagp)
 	ret = regnode(WORDEND);
 	break;
     case LSQBRAC:{
-	    register int    class;
-	    register int    classend;
+	    register int    range;
+	    register int    rangeend;
 
 	    if (*regparse == CARET) {	/* Complement of range. */
 		ret = regnode(ANYBUT);
@@ -605,12 +605,12 @@ static char *regatom(int *flagp)
 		    if (*regparse == RSQBRAC || *regparse == '\0')
 			regc('-');
 		    else {
-			class = (CHARBITS & *(regparse - 2)) + 1;
-			classend = (CHARBITS & *(regparse));
-			if (class > classend + 1)
+			range = (CHARBITS & *(regparse - 2)) + 1;
+			rangeend = (CHARBITS & *(regparse));
+			if (range > rangeend + 1)
 			    FAIL("invalid [] range");
-			for (; class <= classend; class++)
-			    regc((char)class);
+			for (; range <= rangeend; range++)
+			    regc((char)range);
 			regparse++;
 		    }
 		} else
@@ -707,8 +707,6 @@ static void regc(char b)
  */
 static void reginsert(char op, char *opnd)
 {
-    register char  *src;
-    register char  *dst;
     register char  *place;
 
     if (regcode == &regdummy) {
@@ -840,18 +838,18 @@ int pike_regexec(regexp *prog, char *string)
 static int regtry(regexp *prog, char *string)
 {
     register int    i;
-    register char **sp;
-    register char **ep;
+    register char **stp;
+    register char **enp;
 
     reginput = string;
     regstartp = prog->startp;
     regendp = prog->endp;
 
-    sp = prog->startp;
-    ep = prog->endp;
+    stp = prog->startp;
+    enp = prog->endp;
     for (i = NSUBEXP; i > 0; i--) {
-	*sp++ = NULL;
-	*ep++ = NULL;
+	*stp++ = NULL;
+	*enp++ = NULL;
     }
     if (regmatch(prog->program)) {
 	prog->startp[0] = string;
@@ -874,7 +872,7 @@ static int regtry(regexp *prog, char *string)
 static int regmatch(char *prog)
 {
     register char  *scan;	/* Current node. */
-    char           *nxt;	/* nxt node. */
+    char           *next;	/* nxt node. */
 
     check_c_stack (4 * sizeof (void *));
 
@@ -888,7 +886,7 @@ static int regmatch(char *prog)
 	if (regnarrate)
 	    fprintf(stderr, "%s...\n", regprop(scan));
 #endif
-	nxt = regnext(scan);
+	next = regnext(scan);
 
 	switch (OP(scan)) {
 	case BOL:
@@ -954,8 +952,8 @@ static int regmatch(char *prog)
 	case BRANCH:{
 		register char  *save;
 
-		if (OP(nxt) != BRANCH)	/* No choice. */
-		    nxt = OPERAND(scan);	/* Avoid recursion. */
+		if (OP(next) != BRANCH)	/* No choice. */
+		    next = OPERAND(scan);	/* Avoid recursion. */
 		else {
 		    do {
 			save = reginput;
@@ -972,7 +970,7 @@ static int regmatch(char *prog)
 	case KPLUS:
 	case STAR:{
 		register char   nextch =
-                  (OP(nxt) == EXACTLY) ? *OPERAND(nxt) : '\0';
+                  (OP(next) == EXACTLY) ? *OPERAND(next) : '\0';
 		register size_t no;
 		register char  *save = reginput;
 		register size_t minimum = (OP(scan) == STAR) ? 0 : 1;
@@ -981,7 +979,7 @@ static int regmatch(char *prog)
                     reginput = save + no -1;
 		    /* If it could work, try it. */
 		    if (nextch == '\0' || *reginput == nextch)
-			if (regmatch(nxt))
+			if (regmatch(next))
 			    return (1);
 		}
 		return (0);
@@ -994,18 +992,18 @@ static int regmatch(char *prog)
         if(OP(scan) >= OPEN && OP(scan)<OPEN+NSUBEXP)
 	{
 		register int    no;
-		register char  *save;
+		register char  *input;
 
 		no = OP(scan) - OPEN;
-		save = reginput;
+		input = reginput;
 
-		if (regmatch(nxt)) {
+		if (regmatch(next)) {
 		    /*
 		     * Don't set startp if some later invocation of the same
 		     * parentheses already has. 
 		     */
 		    if (regstartp[no] == NULL)
-			regstartp[no] = save;
+			regstartp[no] = input;
 		    return (1);
 		} else
 		    return (0);
@@ -1014,18 +1012,18 @@ static int regmatch(char *prog)
         if(OP(scan) >= CLOSE && OP(scan)<CLOSE+NSUBEXP)
         {
 		register int    no;
-		register char  *save;
+		register char  *input;
 
 		no = OP(scan) - CLOSE;
-		save = reginput;
+		input = reginput;
 
-		if (regmatch(nxt)) {
+		if (regmatch(next)) {
 		    /*
 		     * Don't set endp if some later invocation of the same
 		     * parentheses already has. 
 		     */
 		    if (regendp[no] == NULL)
-			regendp[no] = save;
+			regendp[no] = input;
 		    return (1);
 		} else
 		    return (0);
@@ -1035,7 +1033,7 @@ static int regmatch(char *prog)
 
 	}
 
-	scan = nxt;
+	scan = next;
     }
 
     /*
@@ -1112,7 +1110,7 @@ void regdump(regexp *r)
 {
     register char  *s;
     register char   op = EXACTLY;	/* Arbitrary non-END op. */
-    register char  *nxt;
+    register char  *next;
 
     s = r->program;
     while (op != END) {		/* While that wasn't END last time... */
@@ -1120,12 +1118,12 @@ void regdump(regexp *r)
 	printf("%2ld%s",	/* Where, what. */
 	       DO_NOT_WARN((long)(s - r->program)),
 	       regprop(s));
-	nxt = regnext(s);
-	if (nxt == NULL)	/* nxt ptr. */
+	next = regnext(s);
+	if (next == NULL)	/* next ptr. */
 	    printf("(0)");
 	else
 	    printf("(%ld)",
-		   DO_NOT_WARN((long)( (s - r->program) + (nxt - s))));
+		   DO_NOT_WARN((long)( (s - r->program) + (next - s))));
 	s += 3;
 	if (op == ANYOF || op == ANYBUT || op == EXACTLY) {
 	    /* Literal string, where present. */
