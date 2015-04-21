@@ -98,7 +98,7 @@ int image_colortable_map_image(struct neo_colortable *nct,
 {
   rgb_group first, last;
   d[0] = first;
-  d[n-1] = last;
+  d[len-1] = last;
   __coverity_write_all__(d);
 }
 
@@ -115,7 +115,7 @@ int image_colortable_index_8bit_image(struct neo_colortable *nct,
 {
   unsigned char first, last;
   d[0] = first;
-  d[n-1] = last;
+  d[len-1] = last;
   __coverity_write_all__(d);
 }
 
@@ -132,7 +132,7 @@ int image_colortable_index_16bit_image(struct neo_colortable *nct,
 {
   unsigned short first, last;
   d[0] = first;
-  d[n-1] = last;
+  d[len-1] = last;
   __coverity_write_all__(d);
 }
 
@@ -149,6 +149,6 @@ int image_colortable_index_32bit_image(struct neo_colortable *nct,
 {
   unsigned INT32 first, last;
   d[0] = first;
-  d[n-1] = last;
+  d[len-1] = last;
   __coverity_write_all__(d);
 }
