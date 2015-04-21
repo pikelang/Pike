@@ -592,12 +592,12 @@ static void f_resultset_intersect( INT32 args )
 
   while( left_left && right_left )
   {
-    if( left_left && left_used ) /* New from left */
+    if( left_used ) /* New from left */
     {
       if( ++lp == left_size )
       {
 	left_left = 0;
-	continue;
+	break;
       }
       else
       {
@@ -609,24 +609,23 @@ static void f_resultset_intersect( INT32 args )
       }
     }
 
-    if( right_left && right_used ) /* New from right */
+    if( right_used ) /* New from right */
     {
       if( ++rp == right_size )
       {
 	right_left = 0;
-	continue;
+	break;
       }
       else
       {
 	right_doc = set_r->hits[rp].doc_id;
 	right_rank = set_r->hits[rp].ranking;
 	if( !right_rank ) right_rank = left_rank;
-	if( !left_left ) left_rank = right_rank;
 	right_used = 0;
       }
     }
 
-    if(!right_left || (left_doc <= right_doc))
+    if(left_doc <= right_doc)
     {
       if( left_doc == right_doc )
       {	
@@ -637,7 +636,7 @@ static void f_resultset_intersect( INT32 args )
       left_used=1;
     }
 
-    if(!left_left || (right_doc <= left_doc))
+    if(right_doc <= left_doc)
     {
       if( right_doc == left_doc )
       {	
@@ -697,12 +696,12 @@ static void f_resultset_add_ranking( INT32 args )
   
   while( left_left )
   {
-    if( left_left && left_used ) /* New from left */
+    if( left_used ) /* New from left */
     {
       if( ++lp == left_size )
       {
 	left_left = 0;
-	continue;
+	break;
       }
       else
       {
@@ -717,8 +716,6 @@ static void f_resultset_add_ranking( INT32 args )
       if( ++rp == right_size )
       {
 	right_left = 0;
-	if( !left_left )
-	  continue;
       }
       else
       {
@@ -744,9 +741,6 @@ static void f_resultset_add_ranking( INT32 args )
     if( right_doc <= left_doc )
       right_used=1;
   }
-  if( !left_used )
-    if(left_doc!=last)
-      wf_resultset_add( res, (last = left_doc), left_rank );
   pop_n_elems( args );
   wf_resultset_push( res );
 }
@@ -804,7 +798,7 @@ static void f_resultset_sub( INT32 args )
       if( ++lp == left_size )
       {
 	left_left = 0;
-	continue;
+	break;
       }
       else
       {
@@ -819,8 +813,6 @@ static void f_resultset_sub( INT32 args )
       if( ++rp == right_size )
       {
 	right_left = 0;
-	if( !left_left )
-	  continue;
       }
       else
       {
