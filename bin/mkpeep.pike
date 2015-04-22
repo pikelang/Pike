@@ -148,6 +148,26 @@ array(string) tokenize(string line) {
 	line = line[i+1..];
       }
       break;
+
+      // Error message
+    case '"':
+      int i;
+      for (i = 1; (i < sizeof(line)); i++) {
+	if (line[i] == '"') break;
+	if (line[i] == '\\') i++;
+      }
+      t += ({ line[..i] });
+      line = line[i+1..];
+      break;
+
+    case ' ': case '\t': case '\r': case '\n':
+      break;
+
+    default:
+      werror("Unsupported character: '%c' (%d)\n",
+	     line[0], line[0]);
+      line = line[1..];
+      break;
     }
 
     SKIPWHITE(line);
@@ -473,6 +493,12 @@ array(Switch|Breakable) make_switches(array(Rule) data)
 	  string tmp=d->to[i+1];
 	  args=explode_comma_expr(tmp[1..sizeof(tmp)-2]);
 	  i++;
+	}
+	if (fcode[0] == '"') {
+	  buf->add_line(" "*ind+"my_yyerror(",
+			({ fcode, @map(args,treat)[*]+"" }) * ", ",
+			");");
+	  continue;
 	}
 	ops += ({ ({ sizeof(args)+1+", ", fcode+", ",
 		     @map(args,treat)[*]+", " }) });
