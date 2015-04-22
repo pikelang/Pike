@@ -66,7 +66,7 @@ class State
     return block_size();
   }
 
-  int(0..) rsa_size() { return [int(0..)](size*8); }
+  int(0..) rsa_size() { return key_size(); }
 
 
   // Broken implementation of RSA/MD5 SIG RFC 2537. The 0x00 01 FF* 00
