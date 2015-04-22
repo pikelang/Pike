@@ -760,6 +760,7 @@ static void pipe_input(INT32 args)
        off_t filep=fd_lseek(fd, 0L, SEEK_CUR); /* keep the file pointer */
        size_t len = s.st_size - filep;
        if(S_ISREG(s.st_mode)	/* regular file */
+	  && (filep >= 0)	/* lseek() succeeded. */
 	  && ((m=(char *)mmap(0, len, PROT_READ,
 			      MAP_FILE|MAP_SHARED,fd,filep))+1))
        {
