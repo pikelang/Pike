@@ -952,16 +952,13 @@ private void update_trusted_issuers()
 //! Non-zero to enable caching of sessions
 int use_cache = 1;
 
-//! Sessions are removed from the cache when they are older than this
-//! limit (in seconds). Sessions are also removed from the cache if a
-//! connection using the session dies unexpectedly.
+//! Sessions are removed from the cache when they have been inactive
+//! more than this number of seconds. Sessions are also removed from
+//! the cache if a connection using the session dies unexpectedly.
 int session_lifetime = 600;
 
 //! Maximum number of sessions to keep in the cache.
 int max_sessions = 300;
-
-/* Queue of pairs (time, id), in cronological order */
-ADT.Queue active_sessions = ADT.Queue();
 
 mapping(string:Session) session_cache = ([]);
 
@@ -969,13 +966,15 @@ mapping(string:Session) session_cache = ([]);
 void forget_old_sessions()
 {
   int t = time() - session_lifetime;
-  array pair;
-  while ( (pair = [array]active_sessions->peek())
-	  && (pair[0] < t)) {
-    SSL3_DEBUG_MSG("SSL.Context->forget_old_sessions: "
-                   "garbing session %O due to session_lifetime limit\n",
-                   pair[1]);
-    m_delete (session_cache, [string]([array]active_sessions->get())[1]);
+  foreach(session_cache; string id; Session session)
+  {
+    if(session->last_activity < t)
+    {
+      SSL3_DEBUG_MSG("SSL.Context->forget_old_sessions: "
+                     "garbing session %O due to session_lifetime limit\n",
+                     id);
+    m_delete (session_cache, id);
+    }
   }
 }
 
@@ -1010,16 +1009,18 @@ void record_session(Session s)
 {
   if (use_cache && s->identity)
   {
-    while (sizeof (active_sessions) >= max_sessions) {
-      array pair = [array] active_sessions->get();
-      SSL3_DEBUG_MSG("SSL.Context->record_session: "
-                     "garbing session %O due to max_sessions limit\n", pair[1]);
-      m_delete (session_cache, [string]pair[1]);
-    }
     forget_old_sessions();
+    int to_delete = sizeof(session_cache)-max_sessions;
+    foreach(session_cache; string id;)
+    {
+      // Randomly delete sessions to keep within the limit.
+      if( to_delete-- < 0 ) break;
+      SSL3_DEBUG_MSG("SSL.Context->record_session: "
+                     "garbing session %O due to max_sessions limit\n", id);
+      m_delete (session_cache, id);
+    }
     SSL3_DEBUG_MSG("SSL.Context->record_session: caching session %O\n",
                    s->identity);
-    active_sessions->put( ({ time(1), s->identity }) );
     session_cache[s->identity] = s;
   }
 }
@@ -1043,7 +1044,6 @@ void purge_session(Session s)
     // so we can't scratch the master secret.
     s->master_secret = 0;
   }
-  /* There's no need to remove the id from the active_sessions queue */
 }
 
 

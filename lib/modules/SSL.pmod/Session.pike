@@ -18,6 +18,9 @@
 import ".";
 import Constants;
 
+//! When this session object was used last.
+int last_activity = time();
+
 //! Identifies the session to the server
 string(8bit) identity;
 

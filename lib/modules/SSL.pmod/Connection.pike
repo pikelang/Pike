@@ -542,6 +542,8 @@ void send_packet(Packet packet, int|void priority)
     return;
   }
 
+  session->last_activity = time(1);
+
   if (packet->content_type == PACKET_alert) {
     if (packet->level == ALERT_fatal) {
       state = [int(0..0)|ConnectionState](state | CONNECTION_local_failing);
@@ -917,6 +919,7 @@ string(8bit)|int got_data(string(8bit) data)
   // That enables the caller to check for a clean close, and
   // to get the leftovers after the SSL connection.
 
+  session->last_activity = time(1);
   read_buffer->add(data);
   Stdio.Buffer.RewindKey read_buffer_key = read_buffer->rewind_key();
 
