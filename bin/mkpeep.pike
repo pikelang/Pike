@@ -515,6 +515,24 @@ array(Switch|Breakable) make_switches(array(Rule) data)
   return ret;
 }
 
+void check_duplicates(array(Rule) data)
+{
+  int err;
+  mapping(string:Rule) froms = ([]);
+  foreach(data;; Rule r)
+  {
+    if(froms[r->from*","])
+    {
+      werror("Collision between\n  %O and\n  %O.\n",
+             froms[r->from*","]->line, r->line);
+      err=1;
+    }
+    froms[r->from*","] = r;
+  }
+
+  if(err)
+    exit(1, "Found %d rule collisions.\n", err);
+}
 
 int main(int argc, array(string) argv)
 {
@@ -534,14 +552,7 @@ int main(int argc, array(string) argv)
     }
   }
 
-  mapping(string:Rule) froms = ([]);
-  foreach(data;; Rule r)
-  {
-    if(froms[r->from*","])
-      werror("Collision between\n  %O and\n  %O.\n",
-             froms[r->from*","]->line, r->line);
-    froms[r->from*","] = r;
-  }
+  check_duplicates(data);
 
   write("\n\n/* Generated from %s by mkpeep.pike\n   %s\n*/\n\n",
 	argv[1], Calendar.ISO.now()->format_time());
