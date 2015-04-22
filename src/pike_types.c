@@ -6131,8 +6131,9 @@ static int match_type_svalue(struct pike_type *type,
       match_type_svalue(type->cdr, 0, sval);
     break;
   case T_AND:
-    res = match_type_svalue(type->car, 0, sval) ||
+    res = match_type_svalue(type->car, 0, sval) &&
       match_type_svalue(type->cdr, 0, sval);
+    break;
   case T_NOT:
     flags ^= CALL_INVERTED_TYPES;
     type = type->car;
