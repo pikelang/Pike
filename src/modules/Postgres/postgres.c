@@ -434,6 +434,7 @@ static void f_big_query(INT32 args)
           default:
             if(TYPEOF(Pike_sp[1-args]) == PIKE_T_ARRAY)
               bnds=Pike_sp[1-args].u.array;
+	    /* FALL_THROUGH */
       
           case 1:
 	    query=" ";
