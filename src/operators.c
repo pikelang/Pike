@@ -1848,21 +1848,27 @@ PMOD_EXPORT void f_add(INT32 args)
 
   case BIT_ARRAY|BIT_INT:
     ADD_WITH_UNDEFINED (array, T_ARRAY, add_arrays, push_array);
+    break;
       
   case BIT_ARRAY:
     ADD (array, add_arrays, push_array);
+    break;
 
   case BIT_MAPPING|BIT_INT:
     ADD_WITH_UNDEFINED (mapping, T_MAPPING, add_mappings, push_mapping);
+    break;
 
   case BIT_MAPPING:
     ADD (mapping, add_mappings, push_mapping);
+    break;
 
   case BIT_MULTISET|BIT_INT:
     ADD_WITH_UNDEFINED (multiset, T_MULTISET, add_multisets, push_multiset);
+    break;
 
   case BIT_MULTISET:
     ADD (multiset, add_multisets, push_multiset);
+    break;
 
 #undef ADD_WITH_UNDEFINED
 #undef ADD
