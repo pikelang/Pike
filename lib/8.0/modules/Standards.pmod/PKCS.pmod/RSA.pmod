@@ -72,7 +72,7 @@ Crypto.RSA.State parse_public_key(string key)
 //!   RSAPrivateKey provided in ASN.1 format
 //! @returns
 //!   @[Crypto.RSA] object
-Crypto.RSA.State parse_private_key(Sequence seq)
+Crypto.RSA.State parse_private_key(object seq)
 {
   if ((sizeof(seq->elements) != 9)
       || (sizeof(seq->elements->type_name - ({ "INTEGER" })))
