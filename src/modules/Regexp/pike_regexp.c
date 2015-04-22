@@ -250,8 +250,6 @@ regexp *pike_regcomp(char *exp,int excompat)
 {
     register regexp *r = NULL;
     register char  *scan;
-    register char  *longest;
-    register ptrdiff_t len;
     int             flags;
     short	   *exp2,*dest,c;
 
@@ -358,8 +356,8 @@ regexp *pike_regcomp(char *exp,int excompat)
 	 * absence of others. 
 	 */
 	if (flags & SPSTART) {
-	    longest = NULL;
-	    len = 0;
+	    char *longest = NULL;
+	    size_t len = 0;
 	    for (; scan != NULL; scan = regnext(scan))
 		if (OP(scan) == EXACTLY &&
 		    strlen(OPERAND(scan)) >= (size_t)len) {
