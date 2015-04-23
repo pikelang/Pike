@@ -1153,15 +1153,25 @@ static void img_jpeg_decode(INT32 args,int mode)
 	       struct array *new;
 	       push_string(make_shared_binary_string((char *)mm->data,
 						     mm->len));
+
+	       /* Make sure not to free the old array in place
+		* on realloc, as that would invalidate the mapping.
+		*/
+	       add_ref(old);
+
 	       new = append_array(old, Pike_sp-1);
 	       pop_stack();
 	       if (new == old) {
 		 /* Array modified in place.
 		  * No need to reassign it.
+		  * Remove the extra reference from above.
 		  */
 		 free_array(old);
 		 continue;
 	       }
+	       /* The reference we added to old has migrated to new.
+		* Pass it along to the stack.
+		*/
 	       push_array(new);
 	    }
 	 } else {
@@ -1171,9 +1181,10 @@ static void img_jpeg_decode(INT32 args,int mode)
 	 if ((mm->id == JPEG_COM) && !got_comment) {
 	    /* First comment - Add the comment to the main mapping too. */
 	    stack_swap();
-	    pop_stack();
+	    pop_stack();	/* Zap mm->id from the stack. */
 	    ref_push_string(param_comment);
-	    stack_swap();
+	    stack_swap();	/* And replace it with "comment". */
+	    n++;		/* One more element for the main mapping. */
 	    got_comment = 1;
 	 } else {
 	    pop_n_elems(2);
