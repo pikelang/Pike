@@ -387,12 +387,14 @@ INT32 assemble(int store_linenumbers)
 	  {
 	    case TWOO(F_LOR,F_BRANCH_WHEN_NON_ZERO):
 	      c[e].opcode=F_BRANCH_WHEN_NON_ZERO;
+	      /* FALL_THROUGH */
 	    case TWOO(F_LOR,F_LOR):
 	      c[e].arg=c[tmp].arg;
 	      continue;
 	      
 	    case TWOO(F_LAND,F_BRANCH_WHEN_ZERO):
 	      c[e].opcode=F_BRANCH_WHEN_ZERO;
+	      /* FALL_THROUGH */
 	    case TWOO(F_LAND,F_LAND):
 	      c[e].arg=c[tmp].arg;
 	      continue;

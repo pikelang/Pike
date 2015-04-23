@@ -346,6 +346,7 @@ static void mapping_rehash_backwards_evil(struct mapping_data *md,
       switch(md->flags & MAPPING_WEAK) {
       default:
 	Pike_fatal("Instable mapping data flags.\n");
+	break;
       case MAPPING_WEAK_INDICES:
 	if (!REFCOUNTED_TYPE(TYPEOF(from->ind)) ||
 	    (*from->ind.u.refs > 1)) {
@@ -439,6 +440,7 @@ static void mapping_rehash_backwards_good(struct mapping_data *md,
       switch(md->flags & MAPPING_WEAK) {
       default:
 	Pike_fatal("Instable mapping data flags.\n");
+	break;
       case MAPPING_WEAK_INDICES:
 	if (REFCOUNTED_TYPE(TYPEOF(from->ind)) &&
 	    (*from->ind.u.refs > 1)) {

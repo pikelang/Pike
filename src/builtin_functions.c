@@ -5045,6 +5045,7 @@ PMOD_EXPORT void f_programp(INT32 args)
       push_int(1);
       return;
     }
+    /* FALL_THROUGH */
 
   default:
     pop_n_elems(args);

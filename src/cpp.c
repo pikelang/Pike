@@ -1128,6 +1128,7 @@ static ptrdiff_t readstring( struct cpp *this, const PCHARP data, ptrdiff_t len,
 	PUTNL();
       else
 	cpp_error(this,"Newline in string.");
+      /* FALL_THROUGH */
     default:
       string_builder_putchar(nf, INDEX_PCHARP(data,pos));
       continue;
