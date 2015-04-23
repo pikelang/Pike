@@ -1184,6 +1184,7 @@ cont_2:
 	  sprintf_error(fs,"Error in format string, U%08x is not a format.\n",
 			mode);
 	}
+	break;
 
       /* First the modifiers */
       case '0':
@@ -1192,6 +1193,7 @@ cont_2:
 	    fsp->flags|=ZERO_PAD;
 	    continue; 
 	 }
+	 /* FALL_THROUGH */
       case '1': case '2': case '3':
       case '4': case '5': case '6':
       case '7': case '8': case '9':
