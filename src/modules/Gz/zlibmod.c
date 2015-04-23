@@ -1108,12 +1108,6 @@ static void gz_inflate(INT32 args)
     else
       pop_stack();
   }
-
-  if(fail != Z_STREAM_END && fail!=Z_OK && !sp[-1].u.string->len)
-  {
-    pop_stack();
-    push_int(0);
-  }
 }
 
 /*! @decl string(8bit) end_of_stream()
