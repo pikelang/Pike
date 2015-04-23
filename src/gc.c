@@ -6170,6 +6170,7 @@ void f_identify_cycle(INT32 args)
     SIMPLE_OUT_OF_MEMORY_ERROR ("Pike.count_memory",
 				MC_WQ_START_SIZE * sizeof (mc_work_queue[0]));
   }
+  /* NB: 1-based indexing in mc_work_queue. */
   mc_work_queue--;
   mc_wq_size = MC_WQ_START_SIZE;
   mc_wq_used = 1;
@@ -6208,7 +6209,9 @@ void f_identify_cycle(INT32 args)
 #endif
 
   exit_mc_marker_hash();
-  free (mc_work_queue + 1);
+  /* NB: 1-based indexing in mc_work_queue. */
+  mc_work_queue++;
+  free(mc_work_queue);
   mc_work_queue = NULL;
 
   visit_enter = NULL;
