@@ -1009,15 +1009,18 @@ void record_session(Session s)
 {
   if (use_cache && s->identity)
   {
-    forget_old_sessions();
-    int to_delete = sizeof(session_cache)-max_sessions;
-    foreach(session_cache; string id;)
+    if( sizeof(session_cache) > max_sessions )
     {
-      // Randomly delete sessions to keep within the limit.
-      if( to_delete-- < 0 ) break;
-      SSL3_DEBUG_MSG("SSL.Context->record_session: "
-                     "garbing session %O due to max_sessions limit\n", id);
-      m_delete (session_cache, id);
+      forget_old_sessions();
+      int to_delete = sizeof(session_cache)-max_sessions;
+      foreach(session_cache; string id;)
+      {
+        // Randomly delete sessions to keep within the limit.
+        if( to_delete-- < 0 ) break;
+        SSL3_DEBUG_MSG("SSL.Context->record_session: "
+                       "garbing session %O due to max_sessions limit\n", id);
+        m_delete (session_cache, id);
+      }
     }
     SSL3_DEBUG_MSG("SSL.Context->record_session: caching session %O\n",
                    s->identity);
