@@ -1553,9 +1553,10 @@ static void _img_sub_colortable(struct neo_colortable *rdest,
       if (!(mark=insert_in_hash_nd(en->color,hash,hashsize)))
       {
 	 struct color_hash_entry *oldhash=hash;
-	 j=hashsize;
+	 size_t oldhashsize = hashsize;
 
 rerun_rehash_add_1:
+	 j = oldhashsize;
 
 	 hashsize*=2;
 
@@ -1567,16 +1568,17 @@ rerun_rehash_add_1:
 	    free_colortable_struct(&tmp2);
 	    resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
 	 }
-	 k=hashsize;
-	 while (k--) hash[k].pixels=0;
 
 	 while (j--) 
 	    if (oldhash[j].pixels)
 	    {
 	       mark=insert_in_hash_nd(oldhash[j].color,hash,hashsize);
-	       if (!mark) goto rerun_rehash_add_1;
-	       mark->no=oldhash[i].no;
-	       mark->pixels=oldhash[i].pixels;
+	       if (!mark) {
+		 free(hash);
+		 goto rerun_rehash_add_1;
+	       }
+	       mark->no=oldhash[j].no;
+	       mark->pixels=oldhash[j].pixels;
 	    }
 	 
 	 free(oldhash);
@@ -1599,9 +1601,10 @@ rerun_rehash_add_1:
       if (!(mark=insert_in_hash_nd(en->color,hash,hashsize)))
       {
 	 struct color_hash_entry *oldhash=hash;
-	 j=hashsize;
+	 size_t oldhashsize = hashsize;
 
 rerun_rehash_add_2:
+	 j = oldhashsize;
 
 	 hashsize*=2;
 
@@ -1613,17 +1616,18 @@ rerun_rehash_add_2:
 	    free_colortable_struct(&tmp2);
 	    resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
 	 }
-	 i=hashsize;
-	 while (i--) hash[i].pixels=0;
 
 	 while (j--) 
 	    if (oldhash[j].pixels)
 	    {
 	       mark=insert_in_hash_nd(oldhash[j].color,hash,hashsize);
-	       if (!mark) goto rerun_rehash_add_2;
+	       if (!mark) {
+		 free(hash);
+		 goto rerun_rehash_add_2;
+	       }
 	       if (mark->pixels!=1)
-		  mark->no=oldhash[i].no;
-	       mark->pixels=oldhash[i].pixels;
+		  mark->no=oldhash[j].no;
+	       mark->pixels=oldhash[j].pixels;
 	    }
 	 
 	 free(oldhash);
