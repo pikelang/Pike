@@ -724,6 +724,8 @@ PMOD_EXPORT int is_eq(const struct svalue *a, const struct svalue *b)
 	if(TYPEOF(*b) != T_OBJECT) return 0;
       }
 
+      /* FALL_THROUGH */
+
     case TWO_TYPES(BIT_ARRAY,BIT_OBJECT):
     case TWO_TYPES(BIT_MAPPING,BIT_OBJECT):
     case TWO_TYPES(BIT_MULTISET,BIT_OBJECT):
