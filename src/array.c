@@ -2477,6 +2477,7 @@ PMOD_EXPORT struct pike_string *implode(struct array *a,
 	 /* FALLTHROUGH */
       default:
 	Pike_error("Array element %d is not a string\n", ae-a->item);
+	break;
       case T_STRING:
 	delims++;
         len+=ae->u.string->len + del->len;
