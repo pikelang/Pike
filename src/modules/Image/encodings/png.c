@@ -941,6 +941,14 @@ static const struct png_interlace adam7[8]=
   {0,2,1,2},
   {1,2,0,1} };
 
+static void free_and_clear(void **mem)
+{
+  if(*mem) {
+    free(*mem);
+    *mem=0;
+  }
+}
+
 struct IHDR
 {
   unsigned INT32 width,height;
@@ -962,6 +970,7 @@ static int _png_decode_idat(struct IHDR *ihdr, struct neo_colortable *ct,
   rgb_group *w1,*wa1=NULL;
   unsigned char *s0;
   unsigned int i,x,y,got_alpha=0;
+  ONERROR err, a_err;
 
   switch(ihdr->type)
   {
@@ -1054,9 +1063,11 @@ static int _png_decode_idat(struct IHDR *ihdr, struct neo_colortable *ct,
 	       ihdr->width, ihdr->height);
   }
 
-  w1=xalloc(sizeof(rgb_group)*ihdr->width*ihdr->height + RGB_VEC_PAD);
   if( got_alpha )
     wa1=xalloc(sizeof(rgb_group)*ihdr->width*ihdr->height + RGB_VEC_PAD);
+  SET_ONERROR(a_err, free_and_clear, &wa1);
+  w1=xalloc(sizeof(rgb_group)*ihdr->width*ihdr->height + RGB_VEC_PAD);
+  SET_ONERROR(err, free_and_clear, &w1);
 
   fs = sp[-1].u.string;
 
@@ -1083,12 +1094,15 @@ static int _png_decode_idat(struct IHDR *ihdr, struct neo_colortable *ct,
 
   case 1: /* adam7 */
     {
-      rgb_group *t1,*ta1;
+      rgb_group *t1, *ta1 = NULL;
+      ONERROR t_err, ta_err;
 
       /* need arena */
       t1=xalloc(sizeof(rgb_group)*ihdr->width*ihdr->height + RGB_VEC_PAD);
+      SET_ONERROR(t_err, free_and_clear, &t1);
       if( got_alpha )
         ta1=xalloc(sizeof(rgb_group)*ihdr->width*ihdr->height + RGB_VEC_PAD);
+      SET_ONERROR(ta_err, free_and_clear, &ta1);
 
       /* loop over adam7 interlace's
 	 and write them to the arena */
@@ -1135,13 +1149,16 @@ static int _png_decode_idat(struct IHDR *ihdr, struct neo_colortable *ct,
         pop_stack();
       }
 
+      UNSET_ONERROR(ta_err);
+      UNSET_ONERROR(t_err);
+
       if (got_alpha) {
         free(wa1);
 	wa1 = ta1;
       }
 
       free(w1);
-      w1=t1;
+      w1 = t1;
     }
     break;
   default:
@@ -1159,6 +1176,8 @@ static int _png_decode_idat(struct IHDR *ihdr, struct neo_colortable *ct,
   img->ysize=ihdr->height;
   img->img=w1;
 
+  UNSET_ONERROR(err);
+
   /* Create alpha object and leave it on the stack */
   if( wa1 )
   {
@@ -1168,8 +1187,10 @@ static int _png_decode_idat(struct IHDR *ihdr, struct neo_colortable *ct,
     img->xsize=ihdr->width;
     img->ysize=ihdr->height;
     img->img=wa1;
+    UNSET_ONERROR(a_err);
     return 1;
   }
+  UNSET_ONERROR(a_err);
 
   return 0;
 }
