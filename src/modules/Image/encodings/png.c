@@ -1016,6 +1016,13 @@ static int _png_decode_idat(struct IHDR *ihdr, struct neo_colortable *ct,
   if( TYPEOF(sp[-1]) != T_STRING )
     Pike_error("Got illegal data from decompression.\n");
 
+  if (INT32_MUL_OVERFLOW(ihdr->width, ihdr->height) ||
+      ihdr->width*ihdr->height > (0x7fffffff - RGB_VEC_PAD)/sizeof(rgb_group)) {
+    /* Overflow in size calculation below. */
+    Pike_error("Image too large (%d * %d)\n",
+	       ihdr->width, ihdr->height);
+  }
+
   w1=xalloc(sizeof(rgb_group)*ihdr->width*ihdr->height + RGB_VEC_PAD);
   SET_ONERROR(err, free_and_clear, &w1);
   wa1=xalloc(sizeof(rgb_group)*ihdr->width*ihdr->height + RGB_VEC_PAD);
