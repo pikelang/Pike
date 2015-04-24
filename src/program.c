@@ -1484,15 +1484,11 @@ struct object *compilation_environment = NULL;
 struct program *gc_internal_program = 0;
 static struct program *gc_mark_program_pos = 0;
 
-#ifdef PIKE_DEBUG
 #define CHECK_FILE_ENTRY(PROG, STRNO)					\
   do {									\
     if ((STRNO < 0) || (STRNO >= PROG->num_strings))			\
       Pike_fatal ("Invalid file entry in linenumber info.\n");		\
   } while (0)
-#else
-#define CHECK_FILE_ENTRY(PROG, STRNO) do {} while (0)
-#endif
 
 INT_TYPE get_small_number(char **q);
 
