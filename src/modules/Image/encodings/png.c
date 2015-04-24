@@ -545,18 +545,16 @@ static struct pike_string *_png_unfilter(unsigned char *data,
    }
 }
 
-static int _png_write_rgb(rgb_group *w1,
-			  rgb_group *wa1,
-			  int type,int bpp,
-			  const unsigned char *s,
-			  size_t len,
-			  unsigned long width,
-			  size_t n,
-			  const struct neo_colortable *ct,
-			  const struct pike_string *trns)
+static void _png_write_rgb(rgb_group *w1,
+                           rgb_group *wa1,
+                           int type,int bpp,
+                           const unsigned char *s,
+                           size_t len,
+                           unsigned long width,
+                           size_t n,
+                           const struct neo_colortable *ct,
+                           const struct pike_string *trns)
 {
-   /* returns 1 if alpha channel, 0 if not */
-
    static const rgb_group white={255,255,255};
    static const rgb_group grey4[4]={{0,0,0},{85,85,85},
 			      {170,170,170},{255,255,255}};
@@ -644,9 +642,6 @@ static int _png_write_rgb(rgb_group *w1,
 		  n--;
 	       }
 	       break;
-	    default:
-	       Pike_error("Image.PNG._decode: Unsupported color type/bit depth %d (grey)/%d bit.\n",
-		     type,bpp);
 	 }
 	 if (trns && trns->len==2)
 	 {
@@ -655,9 +650,8 @@ static int _png_write_rgb(rgb_group *w1,
 	    n=n0;
 	    d1=w1;
 	    while (n--) *(da1++)=(tr.r==(d1++)->r)?black:white;
-	    return 1; /* alpha channel */
 	 }
-	 return 0; /* no alpha channel */
+	 return;
 
       case 2: /* 8 or 16 bit r,g,b */
 	 switch (bpp)
@@ -687,9 +681,6 @@ static int _png_write_rgb(rgb_group *w1,
 		  n--;
 	       }
 	       break;
-	    default:
-	       Pike_error("Image.PNG._decode: Unsupported color type/bit depth %d (rgb)/%d bit.\n",
-		     type,bpp);
 	 }
 	 if (trns && trns->len==6)
 	 {
@@ -701,25 +692,11 @@ static int _png_write_rgb(rgb_group *w1,
 	    n=n0;
 	    d1=w1;
 	    while (n--) *(da1++)=(tr.r==d1->r && tr.g==d1->g && tr.b==d1->b)?black:white,d1++;
-	    return 1; /* alpha channel */
 	 }
-	 return 0; /* no alpha channel */
+	 return;
 
       case 3: /* 1,2,4,8 bit palette index. Alpha might be in palette */
-	 if (!ct)
-	 {
-	    Pike_error("Image.PNG.decode: No palette, but color type 3 needs one.\n");
-	 }
-	 if (ct->type!=NCT_FLAT)
-	 {
-	    Pike_error("Image.PNG.decode: Internal error (created palette isn't flat).\n");
-	 }
 	 mz=ct->u.flat.numentries;
-	 if (mz==0)
-	 {
-	    Pike_error("Image.PNG.decode: Palette is zero entries long;"
-		       " need at least one color.\n");
-	 }
 
 #define CUTPLTE(X,Z) (((X)>=(Z))?0:(X))
 	 switch (bpp)
@@ -879,12 +856,8 @@ static int _png_write_rgb(rgb_group *w1,
 		     n--;
 		  }
 	       break;
-
-	    default:
-	       Pike_error("Image.PNG._decode: Unsupported color type/bit depth %d (palette)/%d bit.\n",
-		     type,bpp);
 	 }
-	 return !!trns; /* alpha channel if trns chunk */
+	 return;
 
       case 4: /* 8 or 16 bit grey,a */
 	 switch (bpp)
@@ -913,11 +886,8 @@ static int _png_write_rgb(rgb_group *w1,
 		  n--;
 	       }
 	       break;
-	    default:
-	       Pike_error("Image.PNG._decode: Unsupported color type/bit depth %d (grey+a)/%d bit.\n",
-		     type,bpp);
 	 }
-	 return 1; /* alpha channel */
+	 return;
 
       case 6: /* 8 or 16 bit r,g,b,a */
 	 switch (bpp)
@@ -952,19 +922,12 @@ static int _png_write_rgb(rgb_group *w1,
 		  n--;
 	       }
 	       break;
-	    default:
-	       Pike_error("Image.PNG._decode: Unsupported color type/bit depth %d (rgba)/%d bit.\n",
-		     type,bpp);
 	 }
-	 return 1; /* alpha channel */
-      default:
-	 Pike_error("Image.PNG._decode: Unknown color type %d (bit depth %d).\n",
-	       type,bpp);
+	 return;
    }
 #ifdef PIKE_DEBUG
    Pike_fatal("Image.PNG._decode: illegal state\n");
 #endif
-   return 0; /* stupid */
 }
 
 struct png_interlace
@@ -1007,10 +970,89 @@ static int _png_decode_idat(struct IHDR *ihdr, struct neo_colortable *ct,
 {
   struct pike_string *fs;
   struct image *img;
-  rgb_group *w1,*wa1;
+  rgb_group *w1,*wa1=NULL;
   unsigned char *s0;
-  unsigned int i,x,y;
-  ONERROR err, a_err;
+  unsigned int i,x,y,got_alpha=0;
+
+  switch(ihdr->type)
+  {
+  case 0: /* 1,2,4,8 or 16 bit greyscale */
+    switch(ihdr->bpp)
+    {
+    case 1:
+    case 2:
+    case 4:
+    case 8:
+    case 16:
+      break;
+    default:
+      Pike_error("Image.PNG._decode: Unsupported color type/bit depth %d (grey)/%d bit.\n", 0, ihdr->bpp);
+    }
+    if( trns && trns->len==2 )
+      got_alpha=1;
+    break;
+
+  case 2: /* 8 or 16 bit r,g,b */
+    switch(ihdr->bpp)
+    {
+    case 8:
+    case 16:
+      break;
+    default:
+      Pike_error("Image.PNG._decode: Unsupported color type/bit depth %d (rgb)/%d bit.\n", 1, ihdr->bpp);
+    }
+    if( trns && trns->len==6)
+      got_alpha=1;
+    break;
+
+  case 3: /* 1,2,4,8 bit palette index */
+    if (!ct)
+      Pike_error("Image.PNG.decode: No palette, but color type 3 needs one.\n");
+    if (ct->type!=NCT_FLAT)
+      Pike_error("Image.PNG.decode: Internal error (created palette isn't flat).\n");
+    if (ct->u.flat.numentries==0)
+      Pike_error("Image.PNG.decode: Palette is zero entries long;"
+                 " need at least one color.\n");
+    switch(ihdr->bpp)
+    {
+    case 1:
+    case 2:
+    case 4:
+    case 8:
+      break;
+    default:
+      Pike_error("Image.PNG._decode: Unsupported color type/bit depth %d (palette)/%d bit.\n", 3, ihdr->bpp);
+    }
+    got_alpha = !!trns;
+    break;
+
+  case 4: /* 8 or 16 bit grey */
+    switch(ihdr->bpp)
+    {
+    case 8:
+    case 16:
+      break;
+    default:
+      Pike_error("Image.PNG._decode: Unsupported color type/bit depth %d (palette)/%d bit.\n", 4, ihdr->bpp);
+    }
+    got_alpha=1;
+    break;
+
+  case 6: /* 8 ot 16 bit rgba */
+    switch(ihdr->bpp)
+    {
+    case 8:
+    case 16:
+      break;
+    default:
+      Pike_error("Image.PNG._decode: Unsupported color type/bit depth %d (palette)/%d bit.\n", 4, ihdr->bpp);
+    }
+    got_alpha=1;
+    break;
+
+  default:
+    Pike_error("Image.PNG._decode: Unsupported color type/bit depth %d (palette)/%d bit.\n", ihdr->type, ihdr->bpp);
+  }
 
   png_decompress(ihdr->compression);
   if( TYPEOF(sp[-1]) != T_STRING )
@@ -1024,9 +1066,8 @@ static int _png_decode_idat(struct IHDR *ihdr, struct neo_colortable *ct,
   }
 
   w1=xalloc(sizeof(rgb_group)*ihdr->width*ihdr->height + RGB_VEC_PAD);
-  SET_ONERROR(err, free_and_clear, &w1);
-  wa1=xalloc(sizeof(rgb_group)*ihdr->width*ihdr->height + RGB_VEC_PAD);
-  SET_ONERROR(a_err, free_and_clear, &wa1);
+  if( got_alpha )
+    wa1=xalloc(sizeof(rgb_group)*ihdr->width*ihdr->height + RGB_VEC_PAD);
 
   fs = sp[-1].u.string;
 
@@ -1042,16 +1083,12 @@ static int _png_decode_idat(struct IHDR *ihdr, struct neo_colortable *ct,
 
     push_string(fs);
 
-    if (!_png_write_rgb(w1,wa1,
-                        ihdr->type,ihdr->bpp,
-                        (unsigned char*)fs->str,fs->len,
-                        ihdr->width,
-                        ihdr->width*ihdr->height,
-                        ct,trns))
-    {
-      free(wa1);
-      wa1=NULL;
-    }
+    _png_write_rgb(w1,wa1,
+                   ihdr->type,ihdr->bpp,
+                   (unsigned char*)fs->str,fs->len,
+                   ihdr->width,
+                   ihdr->width*ihdr->height,
+                   ct,trns);
     pop_stack();
     break;
 
@@ -1059,13 +1096,15 @@ static int _png_decode_idat(struct IHDR *ihdr, struct neo_colortable *ct,
     {
       rgb_group *t1,*ta1;
       ONERROR t_err, ta_err, ds_err;
-      int got_alpha = 0;
 
       /* need arena */
       t1=xalloc(sizeof(rgb_group)*ihdr->width*ihdr->height + RGB_VEC_PAD);
       SET_ONERROR(t_err, free_and_clear, &t1);
-      ta1=xalloc(sizeof(rgb_group)*ihdr->width*ihdr->height + RGB_VEC_PAD);
-      SET_ONERROR(ta_err, free_and_clear, &ta1);
+      if( got_alpha )
+      {
+        ta1=xalloc(sizeof(rgb_group)*ihdr->width*ihdr->height + RGB_VEC_PAD);
+        SET_ONERROR(ta_err, free_and_clear, &ta1);
+      }
 
       /* loop over adam7 interlace's
 	 and write them to the arena */
@@ -1091,17 +1130,18 @@ static int _png_decode_idat(struct IHDR *ihdr, struct neo_colortable *ct,
 
         push_string(ds);
 
-	if (_png_write_rgb(w1,wa1,ihdr->type,ihdr->bpp,
-			   (unsigned char*)ds->str,ds->len,
-			   iwidth,
-			   iwidth*iheight,
-			   ct,trns))
+	_png_write_rgb(w1,wa1,ihdr->type,ihdr->bpp,
+                       (unsigned char*)ds->str,ds->len,
+                       iwidth,
+                       iwidth*iheight,
+                       ct,trns);
+
+        if( got_alpha )
 	{
 	  da1 = wa1;
 	  for (y=y0; y<ihdr->height; y+=yd)
 	    for (x=x0; x<ihdr->width; x+=xd)
 	      ta1[x+y*ihdr->width]=*(da1++);
-	  got_alpha = 1;
 	}
 	d1=w1;
 	for (y=y0; y<ihdr->height; y+=yd)
@@ -1111,17 +1151,13 @@ static int _png_decode_idat(struct IHDR *ihdr, struct neo_colortable *ct,
         pop_stack();
       }
 
-      free(wa1);
       if (got_alpha) {
+        free(wa1);
 	wa1 = ta1;
-      } else {
-	free(ta1);
-	wa1 = NULL;
       }
-      UNSET_ONERROR(ta_err);
+
       free(w1);
       w1=t1;
-      UNSET_ONERROR(t_err);
     }
     break;
   default:
@@ -1130,9 +1166,6 @@ static int _png_decode_idat(struct IHDR *ihdr, struct neo_colortable *ct,
 
   /* Image data now in w1, alpha in wa1 */
   pop_stack();
-
-  UNSET_ONERROR(a_err);
-  UNSET_ONERROR(err);
 
   /* Create image object and leave it on the stack */
   push_object(clone_object(image_program,0));
