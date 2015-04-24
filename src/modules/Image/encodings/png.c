@@ -925,9 +925,6 @@ static void _png_write_rgb(rgb_group *w1,
 	 }
 	 return;
    }
-#ifdef PIKE_DEBUG
-   Pike_fatal("Image.PNG._decode: illegal state\n");
-#endif
 }
 
 struct png_interlace
@@ -943,14 +940,6 @@ static const struct png_interlace adam7[8]=
   {2,4,0,2},
   {0,2,1,2},
   {1,2,0,1} };
-
-static void free_and_clear(void **mem)
-{
-  if(*mem) {
-    free(*mem);
-    *mem=0;
-  }
-}
 
 struct IHDR
 {
@@ -1095,16 +1084,11 @@ static int _png_decode_idat(struct IHDR *ihdr, struct neo_colortable *ct,
   case 1: /* adam7 */
     {
       rgb_group *t1,*ta1;
-      ONERROR t_err, ta_err, ds_err;
 
       /* need arena */
       t1=xalloc(sizeof(rgb_group)*ihdr->width*ihdr->height + RGB_VEC_PAD);
-      SET_ONERROR(t_err, free_and_clear, &t1);
       if( got_alpha )
-      {
         ta1=xalloc(sizeof(rgb_group)*ihdr->width*ihdr->height + RGB_VEC_PAD);
-        SET_ONERROR(ta_err, free_and_clear, &ta1);
-      }
 
       /* loop over adam7 interlace's
 	 and write them to the arena */
