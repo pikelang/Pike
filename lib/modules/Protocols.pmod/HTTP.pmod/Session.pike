@@ -307,7 +307,7 @@ class Request
       con->set_callbacks(0,0);
 
       if (data_callback) data_callback(@extra_callback_arguments);
-      extra_callback_arguments=0; // clear references there too
+      if (this) extra_callback_arguments=0; // clear references there too
    }
 
    void wait_for_connection(function callback,mixed ...args)
