@@ -934,7 +934,7 @@ PIKECLASS Buffer
     struct my_file *fd;
     int once = 0;
 
-    if( _nbytes && (SUBTYPEOF(*_nbytes) == NUMBER_NUMBER) ) {
+    if( _nbytes ) {
         nbytes = _nbytes->u.integer;
 	if (!nbytes) RETURN 0;
     }
@@ -1060,7 +1060,7 @@ PIKECLASS Buffer
       io_range_error(io,  sz);
       sz = io_len(io);
     }
-    if( nbytes && (SUBTYPEOF(*nbytes) == NUMBER_NUMBER) )
+    if( nbytes )
       sz = MINIMUM(nbytes->u.integer, sz);
 
     if( TYPEOF(*f) == PIKE_T_OBJECT ) {
@@ -2481,7 +2481,7 @@ fail: CALL_AND_UNSET_ONERROR(e);
     Buffer *this = THIS;
     if( this->buffer )
       Pike_error("Can not initialize twice.\n");
-    if( args == 0 )
+    if( !x )
     {
       this->buffer = xalloc(256-32);
       this->allocated = 256-32;
