@@ -28,17 +28,9 @@ struct msnode_ind
   struct svalue ind;		/* Must be second. */
 };
 
-struct msnode_indval
-{
-  struct msnode_indval *prev, *next; /* Must be first. */
-  struct svalue ind;		/* Must be second. */
-  struct svalue val;
-};
-
 union msnode
 {
   struct msnode_ind i;
-  struct msnode_indval iv;
   struct rb_node_hdr rb_hdr;
 };
 
@@ -136,10 +128,6 @@ struct multiset
 #define MULTISET_WEAK_INDICES	2
 #define MULTISET_WEAK		2
 
-#define MULTISET_WEAK_VALUES	0
-
-#define MULTISET_INDVAL		0
-
 extern struct multiset *first_multiset;
 extern struct multiset *gc_internal_multiset;
 
@@ -189,21 +177,13 @@ PMOD_EXPORT extern const char msg_no_multiset_flag_marker[];
    &(VAR))
 
 #define low_get_multiset_value(MSD, NODE)				\
-  ((MSD)->flags & MULTISET_INDVAL ? &(NODE)->iv.val :			\
-   /* Caller better not try to change this. */				\
+  (/* Caller better not try to change this. */				\
    (struct svalue *) &svalue_int_one)
-#define low_set_multiset_value(MSD, NODE, VAL) do {			\
-    if ((MSD)->flags & MULTISET_INDVAL)					\
-      assign_svalue (&(NODE)->iv.val, VAL);				\
-  } while (0)
 
 #define OFF2MSNODE(MSD, OFFSET)						\
-  ((MSD)->flags & MULTISET_INDVAL ?					\
-   (union msnode *) (&(MSD)->nodes->iv + (OFFSET)) :			\
-   (union msnode *) (&(MSD)->nodes->i + (OFFSET)))
+  ((union msnode *) (&(MSD)->nodes->i + (OFFSET)))
 #define MSNODE2OFF(MSD, NODE)						\
-  ((MSD)->flags & MULTISET_INDVAL ?					\
-   &(NODE)->iv - &(MSD)->nodes->iv : &(NODE)->i - &(MSD)->nodes->i)
+  (&(NODE)->i - &(MSD)->nodes->i)
 
 PMOD_EXPORT INT32 multiset_sizeof (struct multiset *l);
 #define l_sizeof(L) multiset_sizeof (L)
@@ -211,7 +191,6 @@ PMOD_EXPORT INT32 multiset_sizeof (struct multiset *l);
 #define multiset_val_types(L) ((L)->msd->val_types)
 #define multiset_get_flags(L) ((L)->msd->flags)
 #define multiset_get_cmp_less(L) (&(L)->msd->cmp_less)
-#define multiset_indval(L) ((L)->msd->flags & MULTISET_INDVAL)
 
 /* This is somewhat faster than using multiset_sizeof just to
  * check whether or not the multiset has no elements at all. */
@@ -340,14 +319,8 @@ PMOD_EXPORT int msnode_is_deleted (struct multiset *l, ptrdiff_t nodepos);
    &(VAR))
 
 #define get_multiset_value(L, NODEPOS)					\
-  ((L)->msd->flags & MULTISET_INDVAL ?					\
-   &access_msnode ((L), (NODEPOS))->iv.val :				\
-   /* Caller better not try to change this. */				\
+  (/* Caller better not try to change this. */				\
    (struct svalue *) &svalue_int_one)
-#define set_multiset_value(L, NODEPOS, VAL) do {			\
-    if ((L)->msd->flags & MULTISET_INDVAL)				\
-      assign_svalue (&access_msnode ((L), (NODEPOS))->iv.val, VAL);	\
-  } while (0)
 /* Note: It's intentional that the value is silently ignored for
  * index-only multisets. */
 
@@ -373,13 +346,11 @@ PMOD_EXPORT void multiset_insert (struct multiset *l,
 				  struct svalue *ind);
 PMOD_EXPORT int multiset_delete (struct multiset *l,
 				 struct svalue *ind);
-#ifdef MULTISET_INDVAL
 PMOD_EXPORT int multiset_delete_2 (struct multiset *l,
 				   struct svalue *ind,
 				   struct svalue *removed_val);
 PMOD_EXPORT struct svalue *multiset_lookup (struct multiset *l,
 					    struct svalue *key);
-#endif
 PMOD_EXPORT int multiset_member (struct multiset *l,
 				 struct svalue *key);
 struct array *multiset_indices (struct multiset *l);

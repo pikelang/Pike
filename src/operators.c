@@ -830,8 +830,6 @@ PMOD_EXPORT void o_cast(struct pike_type *type, INT32 run_time_type)
 #endif
 
 	  ptrdiff_t nodepos;
-	  if (multiset_indval (tmp))
-	    Pike_error ("FIXME: Casting not implemented for multisets with values.\n");
 	  push_multiset (m = allocate_multiset (multiset_sizeof (tmp),
 						multiset_get_flags (tmp),
 						multiset_get_cmp_less (tmp)));

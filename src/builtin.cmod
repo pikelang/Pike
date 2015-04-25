@@ -2129,18 +2129,9 @@ PIKEFUN mixed random(multiset m)
 {
   if(multiset_is_empty (m))
     SIMPLE_BAD_ARG_ERROR("random", 1, "multiset with elements in it");
-  if (multiset_indval (m)) {
-    ptrdiff_t nodepos = multiset_get_nth (m, my_rand() % multiset_sizeof (m));
-    push_multiset_index (m, nodepos);
-    push_multiset_value (m, nodepos);
-    sub_msnode_ref (m);
-    f_aggregate (2);
-  }
-  else {
-    push_multiset_index (m, multiset_get_nth (m, my_rand() %
-					      multiset_sizeof (m)));
-    sub_msnode_ref (m);
-  }
+  push_multiset_index (m, multiset_get_nth (m, my_rand() %
+					    multiset_sizeof (m)));
+  sub_msnode_ref (m);
   stack_swap();
   pop_stack();
 }

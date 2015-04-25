@@ -904,18 +904,11 @@ void describe_location(void *real_memblock,
       struct multiset_data *msd = (struct multiset_data *) descblock;
       union msnode *node = low_multiset_first (msd);
       struct svalue ind;
-      int indval = msd->flags & MULTISET_INDVAL;
       for (; node; node = low_multiset_next (node)) {
 	if (&node->i.ind == (struct svalue *) location) {
 	  fprintf (stderr, "%*s  **In index ", indent, "");
 	  safe_print_svalue (stderr, low_use_multiset_index (node, ind));
 	  fputc ('\n', stderr);
-	  break;
-	}
-	else if (indval && &node->iv.val == (struct svalue *) location) {
-	  fprintf(stderr, "%*s  **In value with index ", indent, "");
-	  safe_print_svalue (stderr, low_use_multiset_index (node, ind));
-	  fputc('\n', stderr);
 	  break;
 	}
       }

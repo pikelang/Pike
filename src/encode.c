@@ -794,9 +794,8 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
     case T_MULTISET: {
       struct multiset *l = val->u.multiset;
 
-      if (multiset_indval (l) ||
-	  TYPEOF(*multiset_get_cmp_less(l)) != T_INT)
-	Pike_error ("FIXME: Encoding of multisets with values and/or "
+      if (TYPEOF(*multiset_get_cmp_less(l)) != T_INT)
+	Pike_error ("FIXME: Encoding of multisets with "
 		    "custom sort function not yet implemented.\n");
       else {
 	/* Encode valueless multisets without compare functions in a
