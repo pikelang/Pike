@@ -288,11 +288,15 @@ PIKECLASS mpq
 	    get_mpq_from_digits(THISMPQ, x->u.string, base->u.integer);
 	    break;
 
+	  default:
+	    SIMPLE_ARG_TYPE_ERROR ("create", 1, "int|string");
+	    break;
+
 	  case T_OBJECT:
 	    if(x->u.object->prog != bignum_program)
-
-	  default:
 	      SIMPLE_ARG_TYPE_ERROR ("create", 1, "int|string");
+
+	    /* FALL_THROUGH */
 
 	  case T_INT:
 	    mpq_set_num(THISMPQ,get_mpz(x, 1, "create", 1, args));
