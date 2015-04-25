@@ -693,12 +693,14 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
       }
 
       if (has_value(cipher_suites, TLS_fallback_scsv)) {
-        // draft-ietf-tls-downgrade-scsv 3:
-        // If TLS_FALLBACK_SCSV appears in ClientHello.cipher_suites
-        // and the highest protocol version supported by the server is
-        // higher than the version indicated in
-        // ClientHello.client_version, the server MUST respond with an
-        // inappropriate_fallback alert.
+        // RFC 7507 3:
+	// If TLS_FALLBACK_SCSV appears in ClientHello.cipher_suites
+	// and the highest protocol version supported by the server is
+	// higher than the version indicated in
+	// ClientHello.client_version, the server MUST respond with a
+	// fatal inappropriate_fallback alert (unless it responds with
+	// a fatal protocol_version alert because the version
+	// indicated in ClientHello.client_version is unsupported).
         COND_FATAL(client_version < context->max_version,
                    ALERT_inappropriate_fallback,
                    "Too low client version.\n");

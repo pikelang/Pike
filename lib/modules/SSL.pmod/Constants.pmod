@@ -247,7 +247,7 @@ constant ALERT_export_restriction	        = 60;	// TLS 1.0
 constant ALERT_protocol_version			= 70;	// TLS 1.0
 constant ALERT_insufficient_security		= 71;	// TLS 1.0
 constant ALERT_internal_error			= 80;	// TLS 1.0
-constant ALERT_inappropriate_fallback		= 86;	// draft-ietf-tls-downgrade-scsv
+constant ALERT_inappropriate_fallback		= 86;	// RFC 7507
 constant ALERT_user_canceled			= 90;	// TLS 1.0
 constant ALERT_no_renegotiation			= 100;	// TLS 1.0
 constant ALERT_unsupported_extension		= 110;	// RFC 3546
@@ -477,7 +477,7 @@ constant TLS_dh_anon_with_camellia_256_cbc_sha256= 0x00c5;	// RFC 5932
 
 constant TLS_empty_renegotiation_info_scsv	= 0x00ff;	// RFC 5746
 
-constant TLS_fallback_scsv			= 0x5600;	// draft-ietf-tls-downgrade-scsv
+constant TLS_fallback_scsv			= 0x5600;	// RFC 7507
 
 constant TLS_ecdh_ecdsa_with_null_sha           = 0xc001;	// RFC 4492
 constant TLS_ecdh_ecdsa_with_rc4_128_sha        = 0xc002;	// RFC 4492

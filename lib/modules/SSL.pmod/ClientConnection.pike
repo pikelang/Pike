@@ -55,15 +55,14 @@ protected Packet client_hello(string(8bit)|void server_name,
     if (client_version < context->max_version) {
       // Negotiating a version lower than the max supported version.
       //
-      // draft-ietf-tls-downgrade-scsv 4:
+      // RFC 7507 4:
       // If a client sends a ClientHello.client_version containing a lower
       // value than the latest (highest-valued) version supported by the
       // client, it SHOULD include the TLS_FALLBACK_SCSV cipher suite value
-      // in ClientHello.cipher_suites.  (Since the cipher suite list in the
-      // ClientHello is ordered by preference, with the client's favorite
-      // choice first, signaling cipher suite values will generally appear
-      // after all cipher suites that the client actually intends to
-      // negotiate.)
+      // in ClientHello.cipher_suites; see Section 6 for security
+      // considerations for this recommendation.  (The client SHOULD put
+      // TLS_FALLBACK_SCSV after all cipher suites that it actually intends
+      // to negotiate.)
       cipher_suites += ({ TLS_fallback_scsv });
     }
   }
