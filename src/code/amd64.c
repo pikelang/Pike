@@ -3179,6 +3179,9 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
   case F_MOD_INT:
     if( b < 0 )
       break;
+
+    /* FALL_THROUGH */
+
   case F_DIVIDE_INT:
     {
       LABELS();
@@ -3354,6 +3357,9 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
   case F_SUBTRACT_INT:
   case F_ADD_NEG_INT:
     b = -b;
+
+    /* FALL_THROUGH */
+
   case F_ADD_INT:
     {
       LABELS();
@@ -3733,12 +3739,16 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
     shr_reg_imm( ARG1_REG, 4 );
     /* arg1 = (sp_reg - *--mark_sp)/16 (sizeof(svalue)) */
 
+    /* FALL_THROUGH */
+
   case F_MARK_CALL_BUILTIN:
     if(a == F_MARK_CALL_BUILTIN )
     {
       ins_debug_instr_prologue(a-F_OFFSET, b, 0);
       mov_imm_reg( 0, ARG1_REG );
     }
+
+    /* FALL_THROUGH */
 
   case F_CALL_BUILTIN1:
     if(a == F_CALL_BUILTIN1 )
