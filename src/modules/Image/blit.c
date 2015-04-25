@@ -210,7 +210,7 @@ void img_crop(struct image *dest,
    rgb_group *new;
    INT32 xp,yp,xs,ys,tmp;
 
-   if (dest->img) { free(dest->img); dest->img=NULL; }
+   if (dest->img) { free(dest->img); }
 
    if (x1>x2) tmp=x1, x1=x2, x2=tmp;
    if (y1>y2) tmp=y1, y1=y2, y2=tmp;

@@ -165,7 +165,7 @@ void img_scale(struct image *dest,
 
 CHRONO("scale begin");
 
-   if (dest->img) { free(dest->img); dest->img=NULL; }
+   if (dest->img) { free(dest->img); }
 
    if (!THIS->img) return; /* no way */
    if (newx<1) newx=1;
@@ -238,7 +238,7 @@ void img_scale2(struct image *dest, struct image *source)
    newx = (source->xsize+1) >> 1;
    newy = (source->ysize+1) >> 1;
 
-   if (dest->img) { free(dest->img); dest->img=NULL; }
+   if (dest->img) { free(dest->img); }
    if (!THIS->img || newx<0 || newy<0) return; /* no way */
 
    if (!newx) newx = 1;
