@@ -31,7 +31,6 @@ typedef struct regexp
 /* Prototypes begin here */
 regexp *pike_regcomp(char *exp);
 int pike_regexec(regexp *prog, char *string);
-char *pike_regsub(regexp *prog, char *source, char *dest, int n);
 /* Prototypes end here */
 
 #endif
