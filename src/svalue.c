@@ -2259,7 +2259,7 @@ void gc_check_weak_short_svalue(const union anything *u, TYPE_T type)
       } while (0)
 
 #define GC_RECURSE_SWITCH(U, T, ZAP, FREE_WEAK, GC_DO, PRE,		\
-			  DO_FUNC, DO_OBJ, DO_STR, DO_TYPE)		\
+			  DO_FUNC, DO_OBJ, DO_STR, DO_TYPE, DO_SKIP)	\
   switch (T) {								\
     case T_FUNCTION:							\
       PRE DO_FUNC(U, T, ZAP, GC_DO)					\
@@ -2287,8 +2287,8 @@ void gc_check_weak_short_svalue(const union anything *u, TYPE_T type)
       PRE DO_TYPE(U, type); break;					\
     );									\
     case PIKE_T_FREE:							\
-      /* Assume use inside a for loop. */				\
-      continue;								\
+      /* Skip to next svalue. Typically continue or break. */		\
+      DO_SKIP;								\
   }
 
 #define DONT_FREE_WEAK(U, T, ZAP)
@@ -2348,7 +2348,7 @@ PMOD_EXPORT TYPE_FIELD real_gc_mark_svalues(struct svalue *s, size_t num)
     GC_RECURSE_SWITCH((s->u), TYPEOF(*s), ZAP_SVALUE, DONT_FREE_WEAK,
 		      GC_DO_MARK, MARK_PRE,
 		      DO_MARK_FUNC_SVALUE, GC_DO_MARK,
-		      DO_MARK_STRING, GC_DO_MARK);
+		      DO_MARK_STRING, GC_DO_MARK, continue);
     t |= BITOF(*s);
   }
   return freed ? t : 0;
@@ -2365,7 +2365,7 @@ TYPE_FIELD gc_mark_weak_svalues(struct svalue *s, size_t num)
     GC_RECURSE_SWITCH((s->u), TYPEOF(*s), ZAP_SVALUE, FREE_WEAK,
 		      GC_DONT_MARK, MARK_PRE,
 		      DO_MARK_FUNC_SVALUE, DO_MARK_OBJ_WEAK,
-		      DO_MARK_STRING, GC_DO_MARK);
+		      DO_MARK_STRING, GC_DO_MARK, continue);
     t |= BITOF(*s);
   }
   return freed ? t : 0;
@@ -2379,7 +2379,7 @@ int real_gc_mark_short_svalue(union anything *u, TYPE_T type)
     GC_RECURSE_SWITCH((*u), type, ZAP_SHORT_SVALUE, DONT_FREE_WEAK,
 		      GC_DO_MARK, {if (!u->refs) return 0;},
 		      DO_FUNC_SHORT_SVALUE, GC_DO_MARK,
-		      DO_MARK_STRING, GC_DO_MARK);
+		      DO_MARK_STRING, GC_DO_MARK, break);
   } while (0);
   return freed;
 }
@@ -2392,7 +2392,7 @@ int gc_mark_weak_short_svalue(union anything *u, TYPE_T type)
     GC_RECURSE_SWITCH((*u), type, ZAP_SHORT_SVALUE, FREE_WEAK,
 		      GC_DONT_MARK, {if (!u->refs) return 0;},
 		      DO_FUNC_SHORT_SVALUE, DO_MARK_OBJ_WEAK,
-		      DO_MARK_STRING, GC_DO_MARK);
+		      DO_MARK_STRING, GC_DO_MARK, break);
   } while (0);
   return freed;
 }
@@ -2405,7 +2405,7 @@ int gc_mark_without_recurse(struct svalue *s)
     GC_RECURSE_SWITCH((s->u), TYPEOF(*s), ZAP_SVALUE, DONT_FREE_WEAK,
 		      GC_DONT_MARK, MARK_PRE,
 		      DONT_MARK_FUNC_SVALUE, GC_DONT_MARK,
-		      DONT_MARK_STRING, GC_DONT_MARK);
+		      DONT_MARK_STRING, GC_DONT_MARK, break);
   } while (0);
   return freed;
 }
@@ -2418,7 +2418,7 @@ int gc_mark_weak_without_recurse(struct svalue *s)
     GC_RECURSE_SWITCH((s->u), TYPEOF(*s), ZAP_SVALUE, FREE_WEAK,
 		      GC_DONT_MARK, MARK_PRE,
 		      DONT_MARK_FUNC_SVALUE, GC_DONT_MARK,
-		      DONT_MARK_STRING, GC_DONT_MARK);
+		      DONT_MARK_STRING, GC_DONT_MARK, break);
   } while (0);
   return freed;
 }
@@ -2444,7 +2444,7 @@ PMOD_EXPORT TYPE_FIELD real_gc_cycle_check_svalues(struct svalue *s, size_t num)
     GC_RECURSE_SWITCH((s->u), TYPEOF(*s), ZAP_SVALUE, DONT_FREE_WEAK,
 		      DO_CYCLE_CHECK, {},
 		      DO_CYCLE_CHECK_FUNC_SVALUE, DO_CYCLE_CHECK,
-		      DONT_CYCLE_CHECK_STRING, DONT_CYCLE_CHECK);
+		      DONT_CYCLE_CHECK_STRING, DONT_CYCLE_CHECK, continue);
     t |= BITOF(*s);
   }
   return freed ? t : 0;
@@ -2461,7 +2461,7 @@ TYPE_FIELD gc_cycle_check_weak_svalues(struct svalue *s, size_t num)
     GC_RECURSE_SWITCH((s->u), TYPEOF(*s), ZAP_SVALUE, DONT_FREE_WEAK,
 		      DO_CYCLE_CHECK_WEAK, {},
 		      DO_CYCLE_CHECK_FUNC_SVALUE, DO_CYCLE_CHECK_WEAK,
-		      DONT_CYCLE_CHECK_STRING, DONT_CYCLE_CHECK);
+		      DONT_CYCLE_CHECK_STRING, DONT_CYCLE_CHECK, continue);
     t |= BITOF(*s);
   }
   return freed ? t : 0;
@@ -2475,7 +2475,7 @@ PMOD_EXPORT int real_gc_cycle_check_short_svalue(union anything *u, TYPE_T type)
     GC_RECURSE_SWITCH((*u), type, ZAP_SHORT_SVALUE, DONT_FREE_WEAK,
 		      DO_CYCLE_CHECK, {if (!u->refs) return 0;},
 		      DO_FUNC_SHORT_SVALUE, DO_CYCLE_CHECK,
-		      DONT_CYCLE_CHECK_STRING, DONT_CYCLE_CHECK);
+		      DONT_CYCLE_CHECK_STRING, DONT_CYCLE_CHECK, break);
   } while (0);
   return freed;
 }
@@ -2488,7 +2488,7 @@ int gc_cycle_check_weak_short_svalue(union anything *u, TYPE_T type)
     GC_RECURSE_SWITCH((*u), type, ZAP_SHORT_SVALUE, DONT_FREE_WEAK,
 		      DO_CYCLE_CHECK_WEAK, {if (!u->refs) return 0;},
 		      DO_FUNC_SHORT_SVALUE, DO_CYCLE_CHECK_WEAK,
-		      DONT_CYCLE_CHECK_STRING, DONT_CYCLE_CHECK);
+		      DONT_CYCLE_CHECK_STRING, DONT_CYCLE_CHECK, break);
   } while (0);
   return freed;
 }
