@@ -76,7 +76,8 @@ array(string) features()
     {
       object tmp;
       if(sizeof(indices((tmp = master()->resolv(modname)) || ({})) -
-		({ "dont_dump_module" })))
+		({ "dont_dump_module" })) ||
+	 (tmp && !objectp(tmp)))
       {
 	if(modname[0] == '_')
 	  modname = replace(modname[1..], "_", ".");
