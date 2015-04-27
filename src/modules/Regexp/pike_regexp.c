@@ -246,7 +246,7 @@ static void     regoptail(char *, char *);
  * Beware that the optimization-preparation code in here knows about some
  * of the structure of the compiled regexp.
  */
-regexp *pike_regcomp(char *exp,int excompat)
+regexp *pike_regcomp(char *exp)
 {
     register regexp *r = NULL;
     register char  *scan;
@@ -261,8 +261,6 @@ regexp *pike_regcomp(char *exp,int excompat)
 	switch (c) {
 	    case '(':
 	    case ')':
-		*dest++ = excompat ? c : c | SPECIAL;
-		break;
 	    case '.':
 	    case '*':
 	    case '+':
@@ -277,7 +275,7 @@ regexp *pike_regcomp(char *exp,int excompat)
 		switch ( c = *scan++ ) {
 		    case '(':
 		    case ')':
-			*dest++ = excompat ? c | SPECIAL : c;
+			*dest++ = c;
 			break;
 		    case '<':
 		    case '>':

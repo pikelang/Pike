@@ -92,7 +92,7 @@ static void regexp_create(INT32 args)
   if(args)
   {
     get_all_args("create", args, "%s", &str);
-    THIS->regexp=pike_regcomp(Pike_sp[-args].u.string->str, 0);
+    THIS->regexp=pike_regcomp(Pike_sp[-args].u.string->str);
   }
 }
 
