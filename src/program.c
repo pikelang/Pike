@@ -44,8 +44,6 @@
 
 #define sp Pike_sp
 
-#undef ATTRIBUTE
-#define ATTRIBUTE(X)
 
 #ifdef PIKE_THREADS
 static COND_T Pike_compiler_cond;

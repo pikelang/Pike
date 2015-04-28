@@ -72,8 +72,6 @@
 int try_use_mmx;
 #endif
 
-#undef ATTRIBUTE
-#define ATTRIBUTE(X)
 
 /* Define this to trace the execution of main(). */
 /* #define TRACE_MAIN */
