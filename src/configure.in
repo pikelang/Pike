@@ -6407,16 +6407,12 @@ __declspec(noreturn) void fatal(char *foo,...)
 AC_MSG_RESULT($pike_cv_lc___declspec)
 if test "$pike_cv_lc___declspec" = yes; then
   AC_DEFINE(HAVE_DECLSPEC)
-else
+fi
 
-  # NOTE: Avoid using __attribute__ if __declspec is available.
-  #       This is a kludge to descrease the number of warnings
-  #       on ecc.
-
-  AC_MSG_CHECKING(for gcc function attributes)
-  AC_CACHE_VAL(pike_cv_gcc_attributes,
-  [
-    AC_TRY_RUN([
+AC_MSG_CHECKING(for gcc function attributes)
+AC_CACHE_VAL(pike_cv_gcc_attributes,
+[
+  AC_TRY_RUN([
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -6436,9 +6432,9 @@ void fatal(char *foo,...)
 
 int main() {  exit(0); }
 
-    ], pike_cv_gcc_attributes=yes, pike_cv_gcc_attributes=no, [
-      echo $ac_n "crosscompiling... $ac_c" 1>&6
-      AC_TRY_LINK([
+  ], pike_cv_gcc_attributes=yes, pike_cv_gcc_attributes=no, [
+    echo $ac_n "crosscompiling... $ac_c" 1>&6
+    AC_TRY_LINK([
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -6455,16 +6451,15 @@ void fatal(char *foo,...)
   va_end(args);
   exit(2);
 }
-      ], [
+    ], [
   exit(0);
-      ], pike_cv_gcc_attributes=yes, pike_cv_gcc_attributes=no)
-    ])
+    ], pike_cv_gcc_attributes=yes, pike_cv_gcc_attributes=no)
   ])
+])
 
-  AC_MSG_RESULT($pike_cv_gcc_attributes)
-  if test "$pike_cv_gcc_attributes" = yes; then
-    AC_DEFINE(HAVE_FUNCTION_ATTRIBUTES)
-  fi
+AC_MSG_RESULT($pike_cv_gcc_attributes)
+if test "$pike_cv_gcc_attributes" = yes; then
+  AC_DEFINE(HAVE_FUNCTION_ATTRIBUTES)
 fi
 
 AC_MSG_CHECKING(if va_list is a state pointer)
