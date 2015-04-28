@@ -156,7 +156,7 @@ class State {
 
   // Generate a prime with @[bits] number of bits using random function
   // @[r].
-  protected Gmp.mpz get_prime(int bits, function(int:string(8bit)) r)
+  protected Gmp.mpz get_prime(int bits, function(int(0..):string(8bit)) r)
   {
     int len = (bits + 7) / 8;
     int bit_to_set = 1 << ( (bits - 1) % 8);
