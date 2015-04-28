@@ -29,7 +29,7 @@ typedef struct regexp
 
 
 /* Prototypes begin here */
-regexp *pike_regcomp(char *exp);
+regexp *pike_regcomp(const char *exp);
 int pike_regexec(regexp *prog, char *string);
 /* Prototypes end here */
 

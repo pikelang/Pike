@@ -228,8 +228,8 @@ static char    *regnode(char);
 static char    *regnext(char *);
 static void     regc(char b);
 static void     reginsert(char, char *);
-static void     regtail(char *, char *);
-static void     regoptail(char *, char *);
+static void     regtail(char *, const char *);
+static void     regoptail(char *, const char *);
 
 /*
  - regcomp - compile a regular expression into internal code
@@ -246,7 +246,7 @@ static void     regoptail(char *, char *);
  * Beware that the optimization-preparation code in here knows about some
  * of the structure of the compiled regexp.
  */
-regexp *pike_regcomp(char *exp)
+regexp *pike_regcomp(const char *exp)
 {
     regexp *r = NULL;
     char   *scan;
@@ -257,7 +257,7 @@ regexp *pike_regcomp(char *exp)
 	FAIL("NULL argument");
 
     exp2=xcalloc( (strlen(exp)+1), sizeof(short) );
-    for ( scan=exp,dest=exp2;( c= UCHARAT(scan++)); ) {
+    for ( dest=exp2; (c=UCHARAT(exp++)); ) {
 	switch (c) {
 	    case '(':
 	    case ')':
@@ -272,7 +272,7 @@ regexp *pike_regcomp(char *exp)
 		*dest++ =  c | SPECIAL;
 		break;
 	    case '\\':
-		switch ( c = *scan++ ) {
+		switch ( c = *exp++ ) {
 		    case '(':
 		    case ')':
 			*dest++ = c;
@@ -721,7 +721,7 @@ static void reginsert(char op, char *opnd)
 /*
  - regtail - set the next-pointer at the end of a node chain
  */
-static void regtail(char *p, char *val)
+static void regtail(char *p, const char *val)
 {
     char      *scan;
     char      *temp;
@@ -750,7 +750,7 @@ static void regtail(char *p, char *val)
 /*
  - regoptail - regtail on operand of first argument; nop if operandless
  */
-static void regoptail(char *p, char *val)
+static void regoptail(char *p, const char *val)
 {
     /* "Operandless" and "op != BRANCH" are synonymous in practice. */
     if (p == NULL || p == &regdummy || OP(p) != BRANCH)
