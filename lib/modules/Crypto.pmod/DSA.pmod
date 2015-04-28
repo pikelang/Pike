@@ -132,7 +132,10 @@ class State {
       string(8bit) h = [string(8bit)]
 	(nist_hash(s) ^ nist_hash( [object(Gmp.mpz)](s + 1) ));
 
-      h = sprintf("%c%s%c", h[0] | 0x80, h[1..<1], h[-1] | 1);
+      h = sprintf("%c%s%c",
+		  [int(8bit)](h[0] | 0x80),
+		  h[1..<1],
+		  [int(8bit)](h[-1] | 1));
 
       Gmp.mpz q = Gmp.mpz(h, 256);
 
