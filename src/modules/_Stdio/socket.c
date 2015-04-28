@@ -778,7 +778,7 @@ void init_stdio_port(void)
 #ifdef HAVE_SYS_UN_H
   /* function(int|string,void|mixed,void|string:int) */
   ADD_FUNCTION("bind_unix", bind_unix,
-               tFunc(tStr tOr(tVoid,tMix),tInt), 0);
+               tFunc(tStr tOr(tVoid,tMix),tInt), ID_OPTIONAL);
 #endif /* HAVE_SYS_UN_H */
   ADD_FUNCTION("close",port_close,tFunc(tNone,tVoid),0);
   /* function(int,void|mixed:int) */
@@ -805,10 +805,10 @@ void init_stdio_port(void)
   ADD_FUNCTION ("query_fd", port_query_fd, tFunc(tVoid,tInt), 0);
 
 #ifdef SO_REUSEPORT
-  ADD_INT_CONSTANT( "SO_REUSEPORT_SUPPORT", SO_REUSEPORT, 0 );
+  ADD_INT_CONSTANT( "SO_REUSEPORT_SUPPORT", SO_REUSEPORT, ID_OPTIONAL );
 #endif
 #ifdef TCP_FASTOPEN
-  ADD_INT_CONSTANT( "TCP_FASTOPEN_SUPPORT", TCP_FASTOPEN, 0 );
+  ADD_INT_CONSTANT( "TCP_FASTOPEN_SUPPORT", TCP_FASTOPEN, ID_OPTIONAL );
 #endif
   set_init_callback(init_port_struct);
   set_exit_callback(exit_port_struct);
