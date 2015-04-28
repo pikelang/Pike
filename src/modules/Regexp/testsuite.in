@@ -1,6 +1,13 @@
 START_MARKER
 
 dnl Regexp->match
+test_eq(Regexp("")->match(""),1)
+test_eq(Regexp(".*hej")->match("hej"),1)
+test_eq(Regexp(".*hej")->match("ohej"),1)
+test_eq(Regexp("^hej")->match("hej"),1)
+test_eq(Regexp("^hej")->match("ohej"),0)
+test_eq(Regexp(".hej")->match("hej"),0)
+test_eq(Regexp(".hej")->match("ohej"),1)
 test_eq(Regexp("^.*$")->match(""),1)
 test_eq(Regexp(".*")->match("foo"),1)
 test_eq(Regexp("^.*$")->match("a"),1)
