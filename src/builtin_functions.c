@@ -7860,7 +7860,7 @@ PMOD_EXPORT void f_uniq_array(INT32 args)
 
   get_all_args("uniq", args, "%a", &a);
   push_mapping(m = allocate_mapping(a->size));
-  push_array(b = allocate_array(a->size));
+  b = allocate_array(a->size);
 
   for(i =0; i< a->size; i++)
   {
@@ -7871,13 +7871,9 @@ PMOD_EXPORT void f_uniq_array(INT32 args)
       assign_svalue_no_free(ITEM(b)+ j++, ITEM(a)+i);
     }
   }
-  dmalloc_touch_svalue(Pike_sp-1);
-  Pike_sp--; /* keep the ref to 'b' */
-  ACCEPT_UNFINISHED_TYPE_FIELDS {
-    b=resize_array(b,  j);
-  } END_ACCEPT_UNFINISHED_TYPE_FIELDS;
+
   b->type_field = a->type_field;
-  pop_n_elems(args-1); /* pop args and the mapping */
+  b=array_shrink(b, j);
   push_array(b);
 }
 
@@ -7906,21 +7902,22 @@ PMOD_EXPORT void f_splice(INT32 args)
       if (Pike_sp[i-args].u.array->size < size)
 	size=Pike_sp[i-args].u.array->size;
 
-  out=allocate_array(args * size);
-  if (!args)
+  if(!args || !size)
   {
-    push_array(out);
+    push_empty_array();
     return;
   }
 
+  out=allocate_array(args * size);
   out->type_field=0;
-  for(i=-args; i<0; i++) out->type_field|=Pike_sp[i].u.array->type_field;
 
   for(k=j=0; j<size; j++)
     for(i=-args; i<0; i++)
-      assign_svalue_no_free(out->item+(k++), Pike_sp[i].u.array->item+j);
+    {
+      assign_svalue_no_free(out->item+k, Pike_sp[i].u.array->item+j);
+      out->type_field |= (1<<TYPEOF(*(out->item+(k++))));
+    }
 
-  pop_n_elems(args);
   push_array(out);
   return;
 }
@@ -7972,7 +7969,6 @@ PMOD_EXPORT void f_everynth(INT32 args)
   }
   a->type_field=types;
 
-  pop_n_elems(args);
   push_array(a);
   return;
 }
@@ -8002,10 +7998,8 @@ PMOD_EXPORT void f_transpose(INT32 args)
 
   if(!sizein)
   {
-    pop_n_elems(args);
-    out=allocate_array(0);
-    push_array(out);
-    return; 
+    push_empty_array();
+    return;
   }
 
   if( (in->type_field != BIT_ARRAY) &&
@@ -8039,7 +8033,6 @@ PMOD_EXPORT void f_transpose(INT32 args)
   }
 
   out->type_field=BIT_ARRAY;
-  pop_n_elems(args);
   push_array(out);
   return;
 }
