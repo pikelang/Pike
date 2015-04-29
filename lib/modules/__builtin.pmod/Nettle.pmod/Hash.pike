@@ -259,15 +259,15 @@ string crypt_hash(string password, string salt, int rounds)
   update(password);						/* 2 */
   update(salt);							/* 3 */
 
-  void crypt_add(string in)
+  void crypt_add(string in, int len)
   {
     int i;
-    for (; i+dsz<plen; i += dsz)
+    for (; i+dsz<len; i += dsz)
       update(in);
-    update(in[..plen-i-1]);
+    update(in[..len-i-1]);
   };
 
-  crypt_add(b);							/* 9-10 */
+  crypt_add(b, plen);						/* 9-10 */
 
   for (int i = 1; i < plen; i <<= 1) {				/* 11 */
     if (plen & i)
@@ -300,20 +300,20 @@ string crypt_hash(string password, string salt, int rounds)
 
   for (int r = 0; r < rounds; r++) {				/* 21 */
     if (r & 1)
-      crypt_add(dp);						/* b */
+      crypt_add(dp, plen);					/* b */
     else							/* c */
       update(a);
 
     if (r % 3)							/* d */
-      crypt_add(ds);
+      crypt_add(ds, sizeof(salt));
 
     if (r % 7)							/* e */
-      crypt_add(dp);
+      crypt_add(dp, plen);
 
     if (r & 1)							/* f */
       update(a);
     else							/* g */
-      crypt_add(dp);
+      crypt_add(dp, plen);
 
     a = digest();						/* h */
   }
