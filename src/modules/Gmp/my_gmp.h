@@ -42,7 +42,7 @@ struct pike_string *low_get_mpz_digits(MP_INT *mpz, int base);
 extern struct program *mpzmod_program;
 extern struct program *mpq_program;
 extern struct program *mpf_program;
-extern struct program *bignum_program;
+PMOD_EXPORT extern struct program *bignum_program;
 
 #ifdef DEBUG_MALLOC
 #define get_mpz(S, THROW_ERROR, ARG_FUNC, ARG, ARGS)			\
