@@ -70,7 +70,7 @@ static void do_free(void)
 {
   if(THIS->regexp)
   {
-    free((char *)THIS->regexp);
+    free(THIS->regexp);
     THIS->regexp=0;
   }
 }
@@ -86,11 +86,10 @@ static void do_free(void)
  */
 static void regexp_create(INT32 args)
 {
-  const char *str;
-
-  do_free();
   if(args)
   {
+    const char *str;
+    do_free();
     get_all_args("create", args, "%s", &str);
     THIS->regexp=pike_regcomp(Pike_sp[-args].u.string->str);
   }
@@ -234,7 +233,8 @@ PIKE_MODULE_INIT
   ADD_STORAGE(struct regexp_glue);
 
   /* function(void|string:void) */
-  ADD_FUNCTION("create",regexp_create,tFunc(tOr(tVoid,tStr),tVoid),0);
+  ADD_FUNCTION("create",regexp_create,tFunc(tOr(tVoid,tStr),tVoid),
+               ID_PROTECTED);
 
   /* function(string:int) */
   ADD_FUNCTION("match",regexp_match,
