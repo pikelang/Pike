@@ -168,7 +168,7 @@ class State {
     Gmp.mpz p;
   
     do {
-      string(8bit) s = r(len);
+      string(8bit) s = r([int(0..)]len);
       p = Gmp.mpz(sprintf("%c%s", (s[0] & (bit_to_set - 1))
 			  | bit_to_set, s[1..]),
 		  256)->next_prime();
