@@ -1616,7 +1616,7 @@ PMOD_EXPORT FD debug_fd_dup2(FD from, FD to)
 PMOD_EXPORT const char *debug_fd_inet_ntop(int af, const void *addr,
 					   char *cp, size_t sz)
 {
-  static char *(*inet_ntop_funp)(int, void*, char *, size_t);
+  static char *(*inet_ntop_funp)(int, const void*, char *, size_t);
   static int tried;
   static HINSTANCE ws2_32lib;
 
@@ -1626,7 +1626,7 @@ PMOD_EXPORT const char *debug_fd_inet_ntop(int af, const void *addr,
       if ((ws2_32lib = LoadLibrary("Ws2_32"))) {
 	FARPROC proc;
 	if ((proc = GetProcAddress(ws2_32lib, "InetNtopA"))) {
-	  inet_ntop_funp = (char *(*)(int, void *, char *, size_t))proc;
+	  inet_ntop_funp = (char *(*)(int, const void *, char *, size_t))proc;
 	}
       }
     }
