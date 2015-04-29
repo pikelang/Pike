@@ -806,10 +806,10 @@ PMOD_EXPORT int debug_fd_pipe(int fds[2] DMALLOC_LINE_ARGS)
   {
     set_errno_from_win32_error (GetLastError());
     mt_lock(&fd_mutex);
-    fd_type[tmp_fd[1]] = first_free_handle;
-    first_free_handle = tmp_fd[1];
-    fd_type[tmp_fd[0]] = first_free_handle;
-    first_free_handle = tmp_fd[0];
+    fd_type[tmp_fds[1]] = first_free_handle;
+    first_free_handle = tmp_fds[1];
+    fd_type[tmp_fds[0]] = first_free_handle;
+    first_free_handle = tmp_fds[0];
     mt_unlock(fd_mutex);
     return -1;
   }
@@ -1567,12 +1567,11 @@ PMOD_EXPORT FD debug_fd_dup2(FD from, FD to)
 {
   HANDLE x,p=GetCurrentProcess();
 
-  mt_lock(&fd_mutex);
-  if ((fd < 0) || (fd >= FD_SETSIZE)) {
-    mt_unlock(&fd_mutex);
+  if ((from < 0) || (from >= FD_SETSIZE)) {
     errno = EBADF;
     return -1;
   }
+  mt_lock(&fd_mutex);
   if(fd_type[from] >= FD_NO_MORE_FREE) {
     mt_unlock(&fd_mutex);
     errno = EBADF;
