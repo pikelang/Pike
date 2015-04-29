@@ -239,6 +239,9 @@ protected constant base64tab =
 //!   @[crypt_md5()]
 string crypt_hash(string password, string salt, int rounds)
 {
+  int dsz = digest_size();
+  int plen = sizeof(password);
+
   if (!rounds) rounds = 5000;
   if (rounds < 1000) rounds = 1000;
   if (rounds > 999999999) rounds = 999999999;
@@ -253,66 +256,65 @@ string crypt_hash(string password, string salt, int rounds)
 
   /* NB: Comments refer to http://www.akkadia.org/drepper/SHA-crypt.txt */
   string b = update(password + salt + password)->digest();	/* 5-8 */
+  update(password);						/* 2 */
+  update(salt);							/* 3 */
 
-  update(password + salt);					/* 2-3 */
-
-  if (sizeof(b)) {
+  void crypt_add(string in)
+  {
     int i;
-    for (i=sizeof(password); i <= sizeof(b); i += sizeof(b)) {	/* 9 */
-      update(b);
-    }
-    if (i) {							/* 10 */
-      update(b[..i-1]);
-    }
-  }
+    for (; i+dsz<plen; i += dsz)
+      update(in);
+    update(in[..plen-i-1]);
+  };
 
-  for (int i = 1; i < sizeof(password); i <<= 1) {		/* 11 */
-    if (sizeof(password) & i) {
+  crypt_add(b);							/* 9-10 */
+
+  for (int i = 1; i < plen; i <<= 1) {				/* 11 */
+    if (plen & i)
       update(b);
-    } else {
+    else
       update(password);
-    }
   }
 
   string a = digest();						/* 12 */
 
-  for (int i = 0; i < sizeof(password); i++) {			/* 14 */
+  for (int i = 0; i < plen; i++)				/* 14 */
     update(password);
-  }
+
   string dp = digest();						/* 15 */
 
-  if (sizeof(dp) && (sizeof(dp) != sizeof(password))) {
-    dp *= 1 + (sizeof(password)-1)/sizeof(dp);			/* 16 */
-    dp = dp[..sizeof(password)-1];
+  if (dsz != plen) {
+    dp *= 1 + (plen-1)/dsz;					/* 16 */
+    dp = dp[..plen-1];
   }
 
-  for(int i = 0; i < 16 + (a[0] & 0xff); i++) {			/* 18 */
+  for(int i = 0; i < 16 + (a[0] & 0xff); i++)			/* 18 */
     update(salt);
-  }
+
   string ds = digest();						/* 19 */
 
-  if (sizeof(ds) && (sizeof(ds) != sizeof(salt))) {
-    ds *= 1 + (sizeof(salt)-1)/sizeof(ds);			/* 20 */
+  if (dsz != sizeof(salt)) {
+    ds *= 1 + (sizeof(salt)-1)/dsz;				/* 20 */
     ds = ds[..sizeof(salt)-1];
   }
 
   for (int r = 0; r < rounds; r++) {				/* 21 */
-    if (r & 1) {						/* b */
-      hash(dp);
-    } else {							/* c */
-      hash(a);
-    }
-    if (r % 3) {						/* d */
-      hash(ds);
-    }
-    if (r % 7) {						/* e */
-      hash(dp);
-    }
-    if (r & 1) {						/* f */
-      hash(a);
-    } else {							/* g */
-      hash(dp);
-    }
+    if (r & 1)
+      crypt_add(dp);						/* b */
+    else							/* c */
+      update(a);
+
+    if (r % 3)							/* d */
+      crypt_add(ds);
+
+    if (r % 7)							/* e */
+      crypt_add(dp);
+
+    if (r & 1)							/* f */
+      update(a);
+    else							/* g */
+      crypt_add(dp);
+
     a = digest();						/* h */
   }
 
