@@ -781,38 +781,56 @@ PMOD_EXPORT FD debug_fd_socket(int domain, int type, int proto)
 
 PMOD_EXPORT int debug_fd_pipe(int fds[2] DMALLOC_LINE_ARGS)
 {
+  int tmp_fds[2];
   HANDLE files[2];
   mt_lock(&fd_mutex);
-  if(first_free_handle == FD_NO_MORE_FREE)
+  if((first_free_handle == FD_NO_MORE_FREE) ||
+     (fd_type[first_free_handle] == FD_NO_MORE_FREE))
   {
     mt_unlock(&fd_mutex);
     errno=EMFILE;
     return -1;
   }
+  /* Allocate the fds. */
+  tmp_fds[0] = first_free_handle;
+  first_free_handle = fd_type[tmp_fds[0]];
+  fd_type[tmp_fds[0]] = FD_PIPE;
+  da_handle[tmp_fds[0]] = INVALID_HANDLE_VALUE;
+  tmp_fds[1] = first_free_handle;
+  first_free_handle = fd_type[tmp_fds[1]];
+  fd_type[tmp_fds[1]] = FD_PIPE;
+  da_handle[tmp_fds[1]] = INVALID_HANDLE_VALUE;
   mt_unlock(&fd_mutex);
+
   if(!CreatePipe(&files[0], &files[1], NULL, 0))
   {
     set_errno_from_win32_error (GetLastError());
+    mt_lock(&fd_mutex);
+    fd_type[tmp_fd[1]] = first_free_handle;
+    first_free_handle = tmp_fd[1];
+    fd_type[tmp_fd[0]] = first_free_handle;
+    first_free_handle = tmp_fd[0];
+    mt_unlock(fd_mutex);
     return -1;
   }
   
-  FDDEBUG(fprintf(stderr,"ReadHANDLE=%d WriteHANDLE=%d\n",files[0],files[1]));
+  FDDEBUG(fprintf(stderr, "ReadHANDLE=%d WriteHANDLE=%d\n",
+		  files[0], files[1]));
   
-  SetHandleInformation(files[0],HANDLE_FLAG_INHERIT|HANDLE_FLAG_PROTECT_FROM_CLOSE,0);
-  SetHandleInformation(files[1],HANDLE_FLAG_INHERIT|HANDLE_FLAG_PROTECT_FROM_CLOSE,0);
+  SetHandleInformation(files[0],
+		       HANDLE_FLAG_INHERIT|HANDLE_FLAG_PROTECT_FROM_CLOSE, 0);
+  SetHandleInformation(files[1],
+		       HANDLE_FLAG_INHERIT|HANDLE_FLAG_PROTECT_FROM_CLOSE, 0);
+
   mt_lock(&fd_mutex);
-  fds[0]=first_free_handle;
-  first_free_handle=fd_type[fds[0]];
-  fd_type[fds[0]]=FD_PIPE;
+  fds[0] = tmp_fds[0];
   da_handle[fds[0]] = files[0];
-
-  fds[1]=first_free_handle;
-  first_free_handle=fd_type[fds[1]];
-  fd_type[fds[1]]=FD_PIPE;
+  fds[1] = tmp_fds[1];
   da_handle[fds[1]] = files[1];
-
   mt_unlock(&fd_mutex);
-  FDDEBUG(fprintf(stderr,"New pipe: %d (%d) -> %d (%d)\n",fds[0],files[0], fds[1], fds[1]));;
+
+  FDDEBUG(fprintf(stderr,"New pipe: %d (%d) -> %d (%d)\n",
+		  fds[0], files[0], fds[1], files[1]));
 
 #ifdef DEBUG_MALLOC
   debug_malloc_register_fd( fds[0], DMALLOC_LOCATION());
