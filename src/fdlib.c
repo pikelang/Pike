@@ -1535,7 +1535,7 @@ PMOD_EXPORT FD debug_fd_dup(FD from)
   HANDLE x,p=GetCurrentProcess();
 
   mt_lock(&fd_mutex);
-  if ((fd < 0) || (fd >= FD_SETSIZE)) {
+  if ((from < 0) || (from >= FD_SETSIZE)) {
     mt_unlock(&fd_mutex);
     errno = EBADF;
     return -1;
