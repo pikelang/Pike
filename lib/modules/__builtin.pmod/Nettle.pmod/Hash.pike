@@ -532,7 +532,7 @@ string pkcs_digest(string s)
   if (!build_digestinfo) {
     // NB: We MUST NOT use other modules at compile-time,
     //     so we load Standards.PKCS.Signature on demand.
-    object pkcs = [object]master()->resolve("Standards.PKCS.Signature");
+    object pkcs = [object]master()->resolv("Standards.PKCS.Signature");
     build_digestinfo = [function(string,this_program:string)]pkcs->build_digestinfo;
   }
   return build_digestinfo(s, this);
