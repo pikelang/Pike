@@ -15,7 +15,9 @@ if test x$with_vcdiff = xyes ; then
   AC_CHECK_HEADERS(google/vcencoder.h google/vcdecoder.h)
 
   if test $ac_cv_header_google_vcencoder_h = yes ; then
-     PIKE_FEATURE(VCDiff,[no (broken lib)])
+    PIKE_FEATURE(VCDiff,[no (broken lib)])
+
+    AC_CHECK_LIB(stdc++, main)
     AC_MSG_CHECKING(if the library works)
     AC_CACHE_VAL(pike_cv_vcdiff_works, [
       ac_save_LIBS="$LIBS"
