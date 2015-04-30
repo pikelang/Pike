@@ -8040,27 +8040,6 @@ PMOD_EXPORT void f_transpose(INT32 args)
 /*! @endmodule
  */
 
-#ifdef PIKE_DEBUG
-/*! @decl void dump_backlog()
- *! @belongs Debug
- *!
- *!   Dumps the 1024 latest executed opcodes, along with the source
- *!   code lines, to standard error. The backlog is only collected on
- *!   debug level 1 or higher, set with @[_debug] or with the @tt{-d@}
- *!   argument on the command line.
- *!
- *! @note
- *!   This function only exists if the Pike runtime has been compiled
- *!   with RTL debug.
- */
-PMOD_EXPORT void f__dump_backlog(INT32 args)
-{
-  pop_n_elems(args);
-  dump_backlog();
-}
-
-#endif
-
 /*! @decl mixed map(mixed arr, void|mixed fun, mixed ... extra)
  *!
  *!   Applies @[fun] to the elements in @[arr] and collects the results.
@@ -9636,8 +9615,6 @@ void init_builtin_efuns(void)
 #ifdef PIKE_DEBUG
   
 /* function(1=mixed:1) */
-  ADD_EFUN("_dump_backlog", f__dump_backlog,
-	   tFunc(tNone,tVoid), OPT_SIDE_EFFECT);
   ADD_EFUN("_gdb_breakpoint", pike_gdb_breakpoint,
 	   tFuncV(tNone,tMix,tVoid), OPT_SIDE_EFFECT);
 #endif

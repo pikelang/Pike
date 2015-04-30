@@ -350,6 +350,23 @@ PIKEFUN void gc_set_watch(array|multiset|mapping|object|function|program|string 
   pop_stack();
 }
 
+/*! @decl void dump_backlog()
+ *! @belongs Debug
+ *!
+ *!   Dumps the 1024 latest executed opcodes, along with the source
+ *!   code lines, to standard error. The backlog is only collected on
+ *!   debug level 1 or higher, set with @[_debug] or with the @tt{-d@}
+ *!   argument on the command line.
+ *!
+ *! @note
+ *!   This function only exists if the Pike runtime has been compiled
+ *!   with RTL debug.
+ */
+PIKEFUN void dump_backlog()
+{
+  dump_backlog();
+}
+
 #ifdef YYDEBUG
 
 /*! @decl int(0..) compiler_trace(int(0..) level)

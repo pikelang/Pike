@@ -999,7 +999,7 @@ static INLINE void low_debug_instr_prologue (PIKE_INSTR_T instr)
 	    (long) backlog[backlogp].arg2),			\
     write_to_stderr(trace_buffer,strlen(trace_buffer)) : 0))
 
-void dump_backlog(void)
+PMOD_EXPORT void dump_backlog(void)
 {
 #ifdef _REENTRANT
   struct thread_state *thread=0;

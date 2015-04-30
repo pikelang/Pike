@@ -8,11 +8,6 @@ constant gc_status = _gc_status;
 constant describe_program = _describe_program;
 constant size_object = _size_object;
 
-#if constant(Debug.HAS_DEBUG)
-// These functions require --with-rtldebug.
-constant dump_backlog = _dump_backlog;
-#endif
-
 /* significantly more compact version of size2string */
 private string mi2sz( int i )
 {

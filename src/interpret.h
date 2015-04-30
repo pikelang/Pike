@@ -748,8 +748,10 @@ PMOD_EXPORT void assign_lvalue(struct svalue *lval,struct svalue *from);
 PMOD_EXPORT union anything *get_pointer_if_this_type(struct svalue *lval, TYPE_T t);
 void print_return_value(void);
 void reset_evaluator(void);
+#ifdef PIKE_DEBUG
 struct backlog;
-void dump_backlog(void);
+PMOD_EXPORT void dump_backlog(void);
+#endif /* PIKE_DEBUG */
 struct catch_context *alloc_catch_context(void);
 PMOD_EXPORT void really_free_catch_context( struct catch_context *data );
 PMOD_EXPORT void really_free_pike_frame( struct pike_frame *X );
