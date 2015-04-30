@@ -295,7 +295,7 @@ PIKEFUN void dump_program_tables(program p, int(0..)|void indent)
   pop_n_elems(args);
 }
 
-/*! @decl void locate_references(string|array|mapping| @
+/*! @decl mixed locate_references(string|array|mapping| @
  *!                              multiset|function|object| @
  *!                              program|type o)
  *! @belongs Debug
@@ -309,7 +309,8 @@ PIKEFUN void dump_program_tables(program p, int(0..)|void indent)
  *!   This function only exists if the Pike runtime has been compiled
  *!   with RTL debug.
  */
-PIKEFUN void locate_references(mixed o)
+PIKEFUN mixed locate_references(mixed o)
+  rawtype tFunc(tSetvar(1,tMix),tVar(1));
 {
   locate_references(o);
 }
