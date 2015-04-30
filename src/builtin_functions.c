@@ -9612,12 +9612,8 @@ void init_builtin_efuns(void)
   ADD_FUNCTION2("function_defined", f_function_defined,
 	       tFunc(tFunction,tString), 0, OPT_TRY_OPTIMIZE);
 
-#ifdef PIKE_DEBUG
-  
-/* function(1=mixed:1) */
   ADD_EFUN("_gdb_breakpoint", pike_gdb_breakpoint,
-	   tFuncV(tNone,tMix,tVoid), OPT_SIDE_EFFECT);
-#endif
+	   tFunc(tNone,tVoid), OPT_SIDE_EFFECT);
 
   ADD_EFUN("_gc_status",f__gc_status,
 	   tFunc(tNone,tMap(tString,tOr(tInt,tFloat))),
