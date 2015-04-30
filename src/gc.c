@@ -1665,7 +1665,7 @@ PMOD_EXPORT void describe(void *x)
   describe_something(x, type, 0, 0, 0, inblock);
 }
 
-void debug_describe_svalue(struct svalue *s)
+PMOD_EXPORT void debug_describe_svalue(struct svalue *s)
 {
   fprintf(stderr,"Svalue at %p is:\n",s);
   switch(TYPEOF(*s))

@@ -8041,25 +8041,6 @@ PMOD_EXPORT void f_transpose(INT32 args)
  */
 
 #ifdef PIKE_DEBUG
-/*! @decl mixed describe(mixed x)
- *! @belongs Debug
- *!
- *!   Prints out a description of the thing @[x] to standard error.
- *!   The description contains various internal info associated with
- *!   @[x].
- *!
- *! @note
- *!   This function only exists if the Pike runtime has been compiled
- *!   with RTL debug.
- */
-PMOD_EXPORT void f__describe(INT32 args)
-{
-  struct svalue *s;
-  get_all_args("_describe", args, "%*", &s);
-  debug_describe_svalue(debug_malloc_pass(s));
-  pop_n_elems(args-1);
-}
-
 /*! @decl void gc_set_watch(array|multiset|mapping|object|function|program|string x)
  *! @belongs Debug
  *!
@@ -9676,8 +9657,6 @@ void init_builtin_efuns(void)
 #ifdef PIKE_DEBUG
   
 /* function(1=mixed:1) */
-  ADD_EFUN("_describe",f__describe,
-	   tFunc(tSetvar(1,tMix),tVar(1)),OPT_SIDE_EFFECT);
   ADD_EFUN("_gc_set_watch", f__gc_set_watch,
 	   tFunc(tComplex,tVoid), OPT_SIDE_EFFECT);
   ADD_EFUN("_dump_backlog", f__dump_backlog,

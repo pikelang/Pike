@@ -10,7 +10,6 @@ constant size_object = _size_object;
 
 #if constant(Debug.HAS_DEBUG)
 // These functions require --with-rtldebug.
-constant describe = _describe;
 constant gc_set_watch = _gc_set_watch;
 constant dump_backlog = _dump_backlog;
 #endif

@@ -13,6 +13,7 @@
 #include "builtin_functions.h"
 #include "mapping.h"
 #include "multiset.h"
+#include "gc.h"
 
 DECLARATIONS
 
@@ -313,6 +314,23 @@ PIKEFUN mixed locate_references(mixed o)
   rawtype tFunc(tSetvar(1,tMix),tVar(1));
 {
   locate_references(o);
+}
+
+/*! @decl mixed describe(mixed x)
+ *! @belongs Debug
+ *!
+ *!   Prints out a description of the thing @[x] to standard error.
+ *!   The description contains various internal info associated with
+ *!   @[x].
+ *!
+ *! @note
+ *!   This function only exists if the Pike runtime has been compiled
+ *!   with RTL debug.
+ */
+PIKEFUN mixed describe(mixed x)
+  rawtype tFunc(tSetvar(1,tMix),tVar(1));
+{
+  debug_describe_svalue(debug_malloc_pass(&Pike_sp[-1]));
 }
 
 #ifdef YYDEBUG
