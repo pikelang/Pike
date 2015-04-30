@@ -2,18 +2,18 @@ START_MARKER
 
 test_do(add_constant("S",String.string2hex))
 test_do([[
-class SHA256
+class HASH(object alg)
 {
   inherit __builtin.Nettle.Hash;
 
   Standards.ASN1.Types.Identifier pkcs_hash_id()
   {
-    return Standards.PKCS.Identifiers.sha256_id;
+    return alg->pkcs_hash_id();
   }
 
-  string name() { return Crypto.SHA256.name(); }
-  int(0..) digest_size() { return Crypto.SHA256.digest_size(); }
-  int(1..) block_size() { return Crypto.SHA256.block_size(); }
+  string name() { return alg->name(); }
+  int(0..) digest_size() { return alg->digest_size(); }
+  int(1..) block_size() { return alg->block_size(); }
 
   class State
   {
@@ -21,7 +21,7 @@ class SHA256
 
     protected void create(void|string data)
     {
-      h = Crypto.SHA256();
+      h = alg();
       if(data) update(data);
     }
 
@@ -47,7 +47,8 @@ class SHA256
     int(1..) block_size() { return h->block_size(); }
   }
 };
-add_constant("SHA256", SHA256());
+add_constant("SHA256", HASH(Crypto.SHA256));
+add_constant("SHA512", HASH(Crypto.SHA512));
 ]])
 
 test_eq(S(SHA256->hash("foo"*1000)),
@@ -59,8 +60,10 @@ dnl Test System.Memory
 
 test_eq(S(SHA256->HMAC("hello")("hi")),
         "42eb9553cf9288e53d3389208d00db1ac80d3666f1fa74fe02e1038672d0c83a")
-dnl test_eq(SHA256->crypt_hash("Hello world!", "saltstring", 5000),
-dnl         "5B8vYYiY.CVt1RlTTf8KbXBH3hsxY/GNooZaBBGWEc5")
+test_eq(SHA256->crypt_hash("Hello world!", "saltstring", 5000),
+        "5B8vYYiY.CVt1RlTTf8KbXBH3hsxY/GNooZaBBGWEc5")
+test_eq(SHA512->crypt_hash("Hello world!", "saltstring", 5000),
+        "svn8UoSVapNtMuq1ukKS4tPQd8iKwSMHWjl/O817G3uBnIFNjnQJuesI68u4OTLiBFdcbYEdFCoEOfaS35inz1")
 test_eq(S(SHA256->pbkdf1("aaaa","bbbb",64,16)),
         "d879716a511f8e1cf23d6974802a6e6e")
 test_eq(S(SHA256->pbkdf2("aaaa","bbbb",64,16)),
@@ -75,6 +78,7 @@ test_eq(S(SHA256->P_hash("aaaa","bbbb",64,16)),
 test_eq(S(SHA256->pkcs_digest("hi")),
 "3031300d0609608648016503040201050004208f434346648f6b96df89dda901c5176b10a6d83961dd3c1ac88b59b2dc327aa4")
 
+test_do(add_constant("SHA512"))
 test_do(add_constant("SHA256"))
 test_do(add_constant("S"))
 

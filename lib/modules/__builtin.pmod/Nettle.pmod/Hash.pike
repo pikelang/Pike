@@ -220,12 +220,21 @@ _HMAC HMAC = _HMAC();
 //! @endmodule HMAC
 
 /* NOTE: This is NOT the MIME base64 table! */
-protected constant b64tab =
+private constant b64tab =
   "./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
 /* NOTE: This IS the MIME base64 table! */
-protected constant base64tab =
+private constant base64tab =
   "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+private void b64enc(String.Buffer dest, int a, int b, int c, int sz)
+{
+  int bitbuf = a | (b << 8) | (c << 16);
+  while (sz--) {
+    dest->putchar( b64tab[bitbuf & 63] );
+    bitbuf >>= 6;
+  }
+}
 
 //!   Password hashing function in @[crypt_md5()]-style.
 //!
@@ -333,6 +342,44 @@ string crypt_hash(string password, string salt, int rounds)
    *
    * This is followed by a custom base64-style encoding.
    */
+
+  if( dsz==32 || dsz==64)
+  {
+    int z = 0;
+    int y = dsz/3;
+    int x = 2*y;
+
+    String.Buffer ret = String.Buffer(dsz);
+
+    if( dsz==32 )
+    {
+      for (int i = 0; i + 3 < dsz; i+=3) {
+        b64enc(ret, a[x], a[y], a[z], 4);
+
+        int t = x+1;
+        x = y+1;
+        y = z+1;
+        z = t;
+      }
+
+      b64enc(ret, a[30], a[31], 0, 3);
+    }
+    else if( dsz==64 )
+    {
+      for (int i = 0; i + 3 < dsz; i+=3) {
+        b64enc(ret, a[x], a[y], a[z], 4);
+
+        int t = x+1;
+        x = z+1;
+        z = y+1;
+        y = t;
+      }
+
+      b64enc(ret, a[63], 0, 0, 2);
+    }
+
+    return (string)ret;
+  }
 
   /* We do some table magic here to avoid modulo operations
    * on the table index.
