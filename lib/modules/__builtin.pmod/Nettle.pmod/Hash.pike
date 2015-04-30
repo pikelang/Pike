@@ -223,10 +223,6 @@ _HMAC HMAC = _HMAC();
 private constant b64tab =
   "./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
-/* NOTE: This IS the MIME base64 table! */
-private constant base64tab =
-  "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-
 private void b64enc(String.Buffer dest, int a, int b, int c, int sz)
 {
   int bitbuf = a | (b << 8) | (c << 16);
@@ -343,44 +339,6 @@ string crypt_hash(string password, string salt, int rounds)
    * This is followed by a custom base64-style encoding.
    */
 
-  if( dsz==32 || dsz==64)
-  {
-    int z = 0;
-    int y = dsz/3;
-    int x = 2*y;
-
-    String.Buffer ret = String.Buffer(dsz);
-
-    if( dsz==32 )
-    {
-      for (int i = 0; i + 3 < dsz; i+=3) {
-        b64enc(ret, a[x], a[y], a[z], 4);
-
-        int t = x+1;
-        x = y+1;
-        y = z+1;
-        z = t;
-      }
-
-      b64enc(ret, a[30], a[31], 0, 3);
-    }
-    else if( dsz==64 )
-    {
-      for (int i = 0; i + 3 < dsz; i+=3) {
-        b64enc(ret, a[x], a[y], a[z], 4);
-
-        int t = x+1;
-        x = z+1;
-        z = y+1;
-        y = t;
-      }
-
-      b64enc(ret, a[63], 0, 0, 2);
-    }
-
-    return (string)ret;
-  }
-
   /* We do some table magic here to avoid modulo operations
    * on the table index.
    */
@@ -393,20 +351,24 @@ string crypt_hash(string password, string salt, int rounds)
   shuffler[1][0] = sublength;
   shuffler[2][0] = sublength*2;
 
-  array(int) shuffled = ({});
   int shift = sizeof(a) % 3;
 
-  for (int i = 0; i < sublength; i++) {
-    int t = i & 1;
-    int tt = !i;
-    for (int j = 0; j < 3; j++) {
-      shuffled += ({ a[shuffler[j][t]] });
-      shuffler[j][tt] = shuffler[j + shift][t] + 1;
-    }
+  int t;
+  String.Buffer ret = String.Buffer();
+  for (int i = 0; i + 3 < dsz; i+=3)
+  {
+    b64enc(ret, a[shuffler[2][t]], a[shuffler[1][t]], a[shuffler[0][t]], 4);
+    shuffler[0][!t] = shuffler[shift][t]+1;
+    shuffler[1][!t] = shuffler[shift+1][t]+1;
+    shuffler[2][!t] = shuffler[shift+2][t]+1;
+    t=!t;
   }
 
-  return replace(MIME.encode_base64((string)shuffled, 1),
-		 base64tab/"", b64tab/"");
+  a+="\0\0";
+  t = dsz/3*3;
+  b64enc(ret, a[t], a[t+1], a[t+2], dsz%3+1);
+
+  return (string)ret;
 }
 
 //! Password Based Key Derivation Function #1 from RFC 2898. This
