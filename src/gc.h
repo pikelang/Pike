@@ -330,7 +330,7 @@ void debug_gc_touch(void *a);
 PMOD_EXPORT int real_gc_check(void *a);
 PMOD_EXPORT int real_gc_check_weak(void *a);
 void exit_gc(void);
-void locate_references(void *a);
+PMOD_EXPORT void locate_references(void *a);
 void debug_gc_add_extra_ref(void *a);
 void debug_gc_free_extra_ref(void *a);
 int debug_gc_is_referenced(void *a);

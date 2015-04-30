@@ -8041,27 +8041,6 @@ PMOD_EXPORT void f_transpose(INT32 args)
  */
 
 #ifdef PIKE_DEBUG
-/*! @decl void locate_references(string|array|mapping| @
- *!                              multiset|function|object| @
- *!                              program|type o)
- *! @belongs Debug
- *!
- *!   This function is mostly intended for debugging. It will search through
- *!   all data structures in Pike looking for @[o] and print the
- *!   locations on stderr. @[o] can be anything but @expr{int@} or
- *!   @expr{float@}.
- *!
- *! @note
- *!   This function only exists if the Pike runtime has been compiled
- *!   with RTL debug.
- */
-PMOD_EXPORT void f__locate_references(INT32 args)
-{
-  if(args)
-    locate_references(Pike_sp[-args].u.refs);
-  pop_n_elems(args-1);
-}
-
 /*! @decl mixed describe(mixed x)
  *! @belongs Debug
  *!
@@ -9697,8 +9676,6 @@ void init_builtin_efuns(void)
 #ifdef PIKE_DEBUG
   
 /* function(1=mixed:1) */
-  ADD_EFUN("_locate_references",f__locate_references,
-	   tFunc(tSetvar(1,tMix),tVar(1)),OPT_SIDE_EFFECT);
   ADD_EFUN("_describe",f__describe,
 	   tFunc(tSetvar(1,tMix),tVar(1)),OPT_SIDE_EFFECT);
   ADD_EFUN("_gc_set_watch", f__gc_set_watch,

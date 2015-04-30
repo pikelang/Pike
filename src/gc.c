@@ -2089,7 +2089,7 @@ static void mark_externals (void)
     gc_mark_external (constants, " as global constants mapping");
 }
 
-void locate_references(void *a)
+PMOD_EXPORT void locate_references(void *a)
 {
   int tmp, orig_in_gc = Pike_in_gc;
   const char *orig_gc_found_place = gc_found_place;

@@ -295,6 +295,25 @@ PIKEFUN void dump_program_tables(program p, int(0..)|void indent)
   pop_n_elems(args);
 }
 
+/*! @decl void locate_references(string|array|mapping| @
+ *!                              multiset|function|object| @
+ *!                              program|type o)
+ *! @belongs Debug
+ *!
+ *!   This function is mostly intended for debugging. It will search through
+ *!   all data structures in Pike looking for @[o] and print the
+ *!   locations on stderr. @[o] can be anything but @expr{int@} or
+ *!   @expr{float@}.
+ *!
+ *! @note
+ *!   This function only exists if the Pike runtime has been compiled
+ *!   with RTL debug.
+ */
+PIKEFUN void locate_references(mixed o)
+{
+  locate_references(o);
+}
+
 #ifdef YYDEBUG
 
 /*! @decl int(0..) compiler_trace(int(0..) level)
