@@ -8041,27 +8041,6 @@ PMOD_EXPORT void f_transpose(INT32 args)
  */
 
 #ifdef PIKE_DEBUG
-/*! @decl void gc_set_watch(array|multiset|mapping|object|function|program|string x)
- *! @belongs Debug
- *!
- *!   Sets a watch on the given thing, so that the gc will print a
- *!   message whenever it's encountered. Intended to be used together
- *!   with breakpoints to debug the garbage collector.
- *!
- *! @note
- *!   This function only exists if the Pike runtime has been compiled
- *!   with RTL debug.
- */
-PMOD_EXPORT void f__gc_set_watch(INT32 args)
-{
-  if (args < 1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("_gc_set_watch", 1);
-  if (!REFCOUNTED_TYPE(TYPEOF(Pike_sp[-args])))
-    SIMPLE_BAD_ARG_ERROR("_gc_set_watch", 1, "reference type");
-  gc_watch(Pike_sp[-args].u.refs);
-  pop_n_elems(args);
-}
-
 /*! @decl void dump_backlog()
  *! @belongs Debug
  *!
@@ -9657,8 +9636,6 @@ void init_builtin_efuns(void)
 #ifdef PIKE_DEBUG
   
 /* function(1=mixed:1) */
-  ADD_EFUN("_gc_set_watch", f__gc_set_watch,
-	   tFunc(tComplex,tVoid), OPT_SIDE_EFFECT);
   ADD_EFUN("_dump_backlog", f__dump_backlog,
 	   tFunc(tNone,tVoid), OPT_SIDE_EFFECT);
   ADD_EFUN("_gdb_breakpoint", pike_gdb_breakpoint,

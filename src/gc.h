@@ -325,7 +325,7 @@ void low_describe_something(void *a,
 void describe_something(void *a, int t, int indent, int depth, int flags, void *inblock);
 PMOD_EXPORT void describe(void *x);
 PMOD_EXPORT void debug_describe_svalue(struct svalue *s);
-void gc_watch(void *a);
+PMOD_EXPORT void gc_watch(void *a);
 void debug_gc_touch(void *a);
 PMOD_EXPORT int real_gc_check(void *a);
 PMOD_EXPORT int real_gc_check_weak(void *a);

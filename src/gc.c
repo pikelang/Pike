@@ -1703,7 +1703,7 @@ PMOD_EXPORT void debug_describe_svalue(struct svalue *s)
   describe_something(s->u.refs, TYPEOF(*s), 0, 1, 0, 0);
 }
 
-void gc_watch(void *a)
+PMOD_EXPORT void gc_watch(void *a)
 {
   struct marker *m;
   init_gc();

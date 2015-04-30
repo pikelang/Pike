@@ -333,6 +333,23 @@ PIKEFUN mixed describe(mixed x)
   debug_describe_svalue(debug_malloc_pass(&Pike_sp[-1]));
 }
 
+/*! @decl void gc_set_watch(array|multiset|mapping|object|function|program|string x)
+ *! @belongs Debug
+ *!
+ *!   Sets a watch on the given thing, so that the gc will print a
+ *!   message whenever it's encountered. Intended to be used together
+ *!   with breakpoints to debug the garbage collector.
+ *!
+ *! @note
+ *!   This function only exists if the Pike runtime has been compiled
+ *!   with RTL debug.
+ */
+PIKEFUN void gc_set_watch(array|multiset|mapping|object|function|program|string x)
+{
+  gc_watch(&Pike_sp[-1]);
+  pop_stack();
+}
+
 #ifdef YYDEBUG
 
 /*! @decl int(0..) compiler_trace(int(0..) level)
