@@ -93,6 +93,11 @@ PMOD_EXPORT void check_recovery_context(void)
 }
 #endif
 
+/*! @decl void _gdb_breakpoint()
+ *!
+ *! This function only exists so that it is possible to set a gdb
+ *! breakpoint on the function pike_gdb_breakpoint.
+ */
 PMOD_EXPORT void pike_gdb_breakpoint(INT32 args)
 {
   pop_n_elems(args);
