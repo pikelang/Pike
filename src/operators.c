@@ -305,6 +305,7 @@ PMOD_EXPORT void o_cast_to_int(void)
 	    
   default:
     Pike_error("Cannot cast %s to int.\n", get_name_of_type(TYPEOF(sp[-1])));
+    break;
   }
 }
 
@@ -424,6 +425,7 @@ PMOD_EXPORT void o_cast_to_string(void)
 
   default:
     Pike_error("Cannot cast %s to string.\n", get_name_of_type(TYPEOF(sp[-1])));
+    break;
 
   case PIKE_T_STRING:
     return;
@@ -517,6 +519,7 @@ PMOD_EXPORT void o_cast(struct pike_type *type, INT32 run_time_type)
       {
       default:
 	Pike_error("Cannot perform cast to that type.\n");
+	break;
 
       case T_MULTISET:
 	switch(TYPEOF(sp[-1]))
@@ -4828,20 +4831,24 @@ PMOD_EXPORT void o_range2 (int bound_types)
 	    bad_arg_error (range_func_name (bound_types),
 			   ind, sp - ind, 1, "object", ind,
 			   "Object got neither `[..] nor `[].\n");
+	    break;
 	  case 2:
 	    bad_arg_error (range_func_name (bound_types),
 			   ind, sp - ind, 1, "object", ind,
 			   "Object got no `[..] and there is no _sizeof to "
 			   "translate the from-the-end index to use `[].\n");
+	    break;
 	  case 3:
 	    bad_arg_error (range_func_name (bound_types),
 			   ind, 3, 1, "object", ind,
 			   "Cannot call `[..] in destructed object.\n");
+	    break;
 	  default:
 	    free_svalue (ind);
 	    move_svalue (ind, sp - 1);
 	    /* low and high have lost their refs in call_old_range_lfun. */
 	    sp = ind + 1;
+	    break;
 	}
 
       break;
@@ -5036,19 +5043,23 @@ PMOD_EXPORT void f_range(INT32 args)
 	  case 1:
 	    SIMPLE_ARG_ERROR ("predef::`[..]", 1,
 			      "Object got neither `[..] nor `[].\n");
+	    break;
 	  case 2:
 	    SIMPLE_ARG_ERROR ("predef::`[..]", 1,
 			      "Object got no `[..] and there is no _sizeof to "
 			      "translate the from-the-end index to use `[].\n");
+	    break;
 	  case 3:
 	    SIMPLE_ARG_ERROR ("predef::`[..]", 1,
 			      "Cannot call `[..] in destructed object.\n");
+	    break;
 	  default:
 	    free_svalue (ind);
 	    move_svalue (ind, sp - 1);
 	    /* The bound types are simple integers and the bounds
 	     * themselves have lost their refs in call_old_range_lfun. */
 	    sp = ind + 1;
+	    break;
 	}
       }
 
