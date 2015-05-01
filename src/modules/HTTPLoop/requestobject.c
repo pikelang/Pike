@@ -52,7 +52,7 @@
 #include "requestobject.h"
 
 /* Used when Pike_fatal() can't be. */
-#define DWERROR(X)	write(2, X, sizeof(X) - sizeof(""))
+#define DWERROR(X)	fd_write(2, X, sizeof(X) - sizeof(""))
 
 /* All current implementations of sendfile(2) are broken. */
 #ifndef HAVE_BROKEN_SENDFILE
@@ -693,7 +693,7 @@ static void actually_send(struct send_args *a)
 #endif
     {
       int true=1;
-      setsockopt( a->to->fd, SOL_TCP, TCP_CORK, &true, 4 );
+      fd_setsockopt( a->to->fd, SOL_TCP, TCP_CORK, &true, sizeof(true) );
     }
 #endif
     fail = WRITE(a->to->fd, (char *)data, data_len);
@@ -712,7 +712,7 @@ static void actually_send(struct send_args *a)
     if(!first)
     {
       first=1;
-      fail = read(a->from_fd, foo, 10);
+      fail = fd_read(a->from_fd, foo, 10);
       if(fail < 0)
         goto end;
       WRITE( a->to->fd, foo, fail );
@@ -796,7 +796,7 @@ static void actually_send(struct send_args *a)
 #if defined(TCP_CORK) && defined(SOL_TCP)
   {
     int false = 0;
-    setsockopt( a->to->fd, SOL_TCP, TCP_CORK, &false, 4 );
+    fd_setsockopt( a->to->fd, SOL_TCP, TCP_CORK, &false, sizeof(false) );
   }
 #endif
   {
