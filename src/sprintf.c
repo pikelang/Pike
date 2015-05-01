@@ -820,6 +820,8 @@ static int do_one(struct format_stack *fs,
 	    lastspace=e;
 	    rest=ADD_PCHARP(f->b,e+1);
 	  }
+	  /* FALL_THROUGH */
+
 	default:
 	  continue;
       }
@@ -1166,6 +1168,8 @@ cont_1:
             }
           }
         }
+	/* FALL_THROUGH */
+
       default:
         goto cont_2;
       }
