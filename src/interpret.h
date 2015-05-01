@@ -59,21 +59,49 @@ struct Pike_interpreter_struct {
 #ifndef STRUCT_FRAME_DECLARED
 #define STRUCT_FRAME_DECLARED
 #endif
+
+enum frame_type {
+    FRAME_FREE,
+    FRAME_EFUN,
+    FRAME_C_FUNCTION,
+    FRAME_PIKE_FUNCTION,
+    FRAME_CLONE,
+    FRAME_PARENT_CLONE,
+    FRAME_ARRAY,
+    FRAME_CAST,
+    FRAME_BUILTIN,
+} ATTRIBUTE((packed));
+
 struct pike_frame
 {
   INT32 refs;/* must be first */
-  INT32 args;			/** Actual number of arguments. */
+  unsigned INT16 args;			/** Actual number of arguments. */
   unsigned INT16 fun;		/** Function number. */
   INT16 num_locals;		/** Number of local variables. */
   INT16 num_args;		/** Number of argument variables. */
-  unsigned INT16 flags;		/** PIKE_FRAME_* */
+  unsigned INT8 flags;		/** PIKE_FRAME_* */
+  enum frame_type type;         /** FRAME_ **/
   INT16 ident;
   struct pike_frame *next;
-  struct pike_frame *scope;
-  PIKE_OPCODE_T *pc;		/** Address of current opcode. */
+  struct object *current_object;
+  struct program *current_program;	/* program containing the context. */
+/**
+ * if (type == FRAME_C_FUNCTION
+ *      Address of c function
+ * if (type == FRAME_PIKE_FUNCTION
+ *      Address of current opcode.
+ * if (type == FRAME_CLONE
+ *      Address of the svalue 
+ * if (type == FRAME_ARRAY
+ *      Address of the array
+ * if (type == FRAME_CAST
+ *      Address of type
+ */
+  void *ptr;
+  void *pc;
   PIKE_OPCODE_T *return_addr;	/** Address of opcode to continue at after call. */
-  struct svalue *locals;	/** Start of local variables. */
 
+  struct svalue *locals;	/** Start of local variables. */
   /** This is <= locals, and this is where the
    * return value should go.
    */
@@ -86,10 +114,13 @@ struct pike_frame
   struct svalue *expendible;
   struct svalue **save_mark_sp;
   struct svalue **mark_sp_base;
-  struct object *current_object;
-  struct program *current_program;	/* program containing the context. */
   struct inherit *context;
   char *current_storage;
+
+  /* scope, used only with the trampoline program, will always be
+   * FRAME_C_FUNCTION
+   */
+  struct pike_frame *scope;
 
 #ifdef PROFILING
   cpu_time_t children_base;	/** Accounted time when the frame started. */
@@ -99,7 +130,7 @@ struct pike_frame
 
 #define PIKE_FRAME_RETURN_INTERNAL 1
 #define PIKE_FRAME_RETURN_POP 2
-#define PIKE_FRAME_MALLOCED_LOCALS 0x8000
+#define PIKE_FRAME_MALLOCED_LOCALS 4
 
 struct external_variable_context
 {
@@ -209,31 +240,6 @@ PMOD_EXPORT extern const char Pike_check_c_stack_errmsg[];
 #define pop_2_elems() do { pop_stack(); pop_stack(); }while(0)
 
 PMOD_EXPORT extern const char msg_pop_neg[];
-#define pop_n_elems(X)							\
- do {									\
-   ptrdiff_t x_=(X);							\
-   if(x_) {								\
-     struct svalue *_sp_;						\
-     check__positive(x_, (msg_pop_neg, x_));				\
-     _sp_ = Pike_sp = Pike_sp - x_;					\
-     debug_check_stack();						\
-     free_mixed_svalues(_sp_, x_);					\
-   }									\
- } while (0)
-
-/* This pops a number of arguments from the stack but keeps the top
- * element on top. Used for popping the arguments while keeping the
- * return value.
- */
-#define stack_unlink(X) do {						\
-    ptrdiff_t x2_ = (X);						\
-    if (x2_) {								\
-      struct svalue *_sp_ = --Pike_sp;					\
-      free_svalue (_sp_ - x2_);						\
-      move_svalue (_sp_ - x2_, _sp_);					\
-      pop_n_elems (x2_ - 1);						\
-    }									\
-  }while(0)
 
 #define stack_pop_n_elems_keep_top(X) stack_unlink(X)
 
@@ -753,6 +759,18 @@ PMOD_EXPORT void really_free_pike_frame( struct pike_frame *X );
 void count_memory_in_catch_contexts(size_t*, size_t*);
 void count_memory_in_pike_frames(size_t*, size_t*);
 
+
+struct pike_frame * frame_return(struct pike_frame *frame) ATTRIBUTE((warn_unused_result));
+void frame_pop(struct pike_frame *frame);
+void frame_return_and_unlink(struct pike_frame *frame);
+struct pike_frame *frame_init() ATTRIBUTE((warn_unused_result, malloc));
+void frame_setup_builtin(struct pike_frame * frame, struct object *o, struct program *p);
+void frame_prepare_builtin(struct pike_frame * frame, struct inherit *context, int args);
+void frame_setup_from_fun(struct pike_frame * frame, struct object *o, unsigned short fun);
+void frame_setup_from_svalue(struct pike_frame * frame, const struct svalue * sv);
+void frame_prepare(struct pike_frame * frame, int args);
+void frame_execute(const struct pike_frame * frame);
+
 /*BLOCK_ALLOC (catch_context, 0);*/
 /*BLOCK_ALLOC(pike_frame,128);*/
 
@@ -776,8 +794,6 @@ PMOD_EXPORT void find_external_context(struct external_variable_context *loc,
 				       int arg2);
 struct pike_frame *alloc_pike_frame(void);
 void really_free_pike_scope(struct pike_frame *scope);
-void *lower_mega_apply( INT32 args, struct object *o, ptrdiff_t fun );
-void *low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2);
 void low_return(void);
 void low_return_pop(void);
 void unlink_previous_frame(void);
@@ -888,5 +904,107 @@ struct Pike_stack
     *(old_stack_->save_ptr++) = *--Pike_sp;				   \
   Pike_interpreter.current_stack=Pike_interpreter.current_stack->previous; \
 }while(0)
+
+static inline void pop_n_elems(ptrdiff_t n) {
+#ifdef PIKE_DEBUG
+  if (n < 0) Pike_fatal(msg_pop_neg, n);
+#endif
+  if(n) {
+    Pike_sp -= n;
+    debug_check_stack();
+    free_mixed_svalues(Pike_sp, n);
+  }
+}
+
+
+/* This pops a number of arguments from the stack but keeps the top
+ * element on top. Used for popping the arguments while keeping the
+ * return value.
+ */
+PIKE_UNUSED_ATTRIBUTE
+static inline void stack_unlink(ptrdiff_t n) {
+#ifdef PIKE_DEBUG
+  if (n < 0) Pike_fatal(msg_pop_neg, n);
+#endif
+  if (n) {
+    struct svalue *_sp_ = --Pike_sp;
+    free_svalue (_sp_ - n);
+    move_svalue (_sp_ - n, _sp_);
+    pop_n_elems (n - 1);
+  }
+}
+
+PIKE_UNUSED_ATTRIBUTE
+static inline void *lower_mega_apply( INT32 args, struct object *o, ptrdiff_t fun )
+{
+  struct pike_frame *fp = frame_init();
+
+  frame_setup_from_fun(fp, o, fun);
+  frame_prepare(fp, args);
+  if (fp->type == FRAME_PIKE_FUNCTION) {
+      return fp->pc;
+  }
+  frame_execute(fp);
+  frame_return_and_unlink(fp);
+
+  return NULL;
+}
+
+/* Apply a function.
+ *
+ * Application types:
+ *
+ *   APPLY_STACK:         Apply Pike_sp[-args] with args-1 arguments.
+ *
+ *   APPLY_SVALUE:        Apply the svalue at arg1, and adjust the stack
+ *                        to leave a return value.
+ *
+ *   APPLY_SVALUE_STRICT: Apply the svalue at arg1, and don't adjust the
+ *                        stack for functions that return void.
+ *
+ *   APPLY_LOW:		  Apply function #arg2 in object arg1.
+ *
+ * Return values:
+ *
+ *   Returns zero if the function was invalid or has been executed.
+ *
+ *   Returns one if a frame has been set up to start the function
+ *   with eval_instruction(Pike_fp->pc - ENTRY_PROLOGUE_SIZE). After
+ *   eval_instruction() is done the frame needs to be removed by a call
+ *   to low_return() or low_return_pop().
+ */
+PIKE_UNUSED_ATTRIBUTE
+static inline void* low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
+{
+  struct pike_frame *frame = frame_init();
+
+  switch (type) {
+  case APPLY_STACK:
+    frame_setup_from_svalue(frame, Pike_sp-args);
+    args--;
+    frame_prepare(frame, args);
+    frame->save_sp--;
+    break;
+  case APPLY_SVALUE:
+  case APPLY_SVALUE_STRICT:
+    frame_setup_from_svalue(frame, arg1);
+    frame_prepare(frame, args);
+    break;
+  case APPLY_LOW:
+    frame_setup_from_fun(frame, arg1, PTR_TO_INT(arg2));
+    frame_prepare(frame, args);
+    break;
+  }
+
+  if (frame->type == FRAME_PIKE_FUNCTION) return frame->pc;
+
+  frame_execute(frame);
+
+  frame_return_and_unlink(frame);
+
+  return NULL;
+}
+
+
 
 #endif

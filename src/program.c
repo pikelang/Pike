@@ -10410,6 +10410,8 @@ static void low_enter_compiler(struct object *ce, int inherit)
   new_frame->return_addr = 0;
   new_frame->scope = 0;
   new_frame->save_sp = Pike_sp;
+  new_frame->type = FRAME_C_FUNCTION;
+  new_frame->ptr = NULL;
   Pike_fp = new_frame;
 }
 

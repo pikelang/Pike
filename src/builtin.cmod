@@ -2906,7 +2906,7 @@ void low_backtrace(struct Pike_interpreter_struct *i)
 
     bf = OBJ2_BACKTRACE_FRAME(o);
 
-    if ((bf->prog = f->context->prog)) {
+    if (f->type == FRAME_PIKE_FUNCTION && f->context && (bf->prog = f->context->prog)) {
       add_ref(bf->prog);
       bf->pc = f->pc;
     }
@@ -2914,7 +2914,7 @@ void low_backtrace(struct Pike_interpreter_struct *i)
     SET_SVAL(bf->_fun, PIKE_T_INT, NUMBER_DESTRUCTED, integer, 0);
 
     if (f->current_object && f->current_object->prog) {
-      if (f->fun == FUNCTION_BUILTIN) {
+      if (f->type == FRAME_BUILTIN) {
 	/* Unusual case. The frame is from call_c_initializers(), gc()
 	 * or similar. cf [bug 6156].	/grubba
 	 *

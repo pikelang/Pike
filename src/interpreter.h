@@ -366,3 +366,5 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
   }
 #endif /* HAVE_COMPUTED_GOTO */
 }
+
+#undef CASE

@@ -188,74 +188,32 @@ PMOD_EXPORT struct object *low_clone(struct program *p)
   return o;
 }
 
-#define LOW_PUSH_FRAME2(O, P)			\
-  pike_frame=alloc_pike_frame();		\
-  pike_frame->next=Pike_fp;			\
-  pike_frame->current_object=O;			\
-  pike_frame->current_program=P;		\
-  pike_frame->locals=0;				\
-  pike_frame->num_locals=0;			\
-  pike_frame->fun = FUNCTION_BUILTIN;		\
-  pike_frame->pc=0;				\
-  pike_frame->context=NULL;                     \
-  Pike_fp = pike_frame
+PMOD_EXPORT void call_prog_event(struct object *o, int event)
+{
+  int e;
+  struct program *p=o->prog;
+  struct pike_frame *pike_frame=0;
+  int frame_pushed = 0;
 
-#define LOW_PUSH_FRAME(O, P)	do{		\
-    struct pike_frame *pike_frame;		\
-    LOW_PUSH_FRAME2(O, P)
-
-
-#define PUSH_FRAME(O, P)			\
-  LOW_PUSH_FRAME(O, P);				\
-  add_ref(pike_frame->current_object);		\
-  add_ref(pike_frame->current_program)
-
-#define PUSH_FRAME2(O, P) do{			\
-    LOW_PUSH_FRAME2(O, P);			\
-    add_ref(pike_frame->current_object);	\
-    add_ref(pike_frame->current_program);	\
-  }while(0)
-
-#define LOW_SET_FRAME_CONTEXT(X)					     \
-  pike_frame->context=(X);						     \
-  pike_frame->fun = FUNCTION_BUILTIN;					\
-  pike_frame->current_storage=o->storage+pike_frame->context->storage_offset
-
-#define SET_FRAME_CONTEXT(X)						\
-  LOW_SET_FRAME_CONTEXT(X)
-
-#define LOW_UNSET_FRAME_CONTEXT()		\
-  pike_frame->context = NULL;			\
-  pike_frame->current_storage = NULL
-
-
-#ifdef DEBUG
-#define CHECK_FRAME() do { \
-    if(pike_frame != Pike_fp) \
-      Pike_fatal("Frame stack out of whack.\n"); \
-  } while(0)
-#else
-#define CHECK_FRAME()	0
-#endif
-
-#define POP_FRAME()				\
-  CHECK_FRAME();				\
-  Pike_fp=pike_frame->next;			\
-  pike_frame->next=0;				\
-  free_pike_frame(pike_frame); }while(0)
-
-#define POP_FRAME2()				\
-  do{CHECK_FRAME();				\
-  Pike_fp=pike_frame->next;			\
-  pike_frame->next=0;				\
-  free_pike_frame(pike_frame);}while(0)
-
-#define LOW_POP_FRAME()				\
-  add_ref(Pike_fp->current_object); \
-  add_ref(Pike_fp->current_program); \
-  POP_FRAME();
-
-
+  /* call event handlers */
+  for(e=p->num_inherits-1; e>=0; e--)
+  {
+    struct program *prog = p->inherits[e].prog;
+    if(prog->event_handler)
+    {
+      if( !frame_pushed )
+      {
+        pike_frame = frame_init();
+        frame_setup_builtin(pike_frame, o, p);
+	frame_pushed = 1;
+      }
+      frame_prepare_builtin(pike_frame, p->inherits + e, 0);
+      prog->event_handler(event);
+    }
+  }
+  if( frame_pushed )
+    frame_pop(pike_frame);
+}
 
 PMOD_EXPORT void call_c_initializers(struct object *o)
 {
@@ -272,50 +230,7 @@ PMOD_EXPORT void call_c_initializers(struct object *o)
    */
 
   /* Call C initializers */
-  for(e = p->num_inherits; e--;)
-  {
-    struct program *prog = p->inherits[e].prog;
-    if(prog->event_handler)
-    {
-      if( !frame_pushed )
-      {
-	PUSH_FRAME2(o, p);
-	Pike_fp->num_args = 0;
-	frame_pushed = 1;
-      }
-      SET_FRAME_CONTEXT(p->inherits + e);
-      prog->event_handler(PROG_EVENT_INIT);
-    }
-  }
-  if( frame_pushed )
-    POP_FRAME2();
-}
-
-
-PMOD_EXPORT void call_prog_event(struct object *o, int event)
-{
-  int e;
-  struct program *p=o->prog;
-  struct pike_frame *pike_frame=0;
-  int frame_pushed = 0;
-
-  /* call event handlers */
-  for(e=p->num_inherits-1; e>=0; e--)
-  {
-    struct program *prog = p->inherits[e].prog;
-    if(prog->event_handler)
-    {
-      if( !frame_pushed )
-      {
-	PUSH_FRAME2(o, p);
-	frame_pushed = 1;
-      }
-      SET_FRAME_CONTEXT(p->inherits + e);
-      prog->event_handler(event);
-    }
-  }
-  if( frame_pushed )
-    POP_FRAME2();
+  call_prog_event(o, PROG_EVENT_INIT);
 }
 
 
@@ -919,10 +834,11 @@ PMOD_EXPORT void destruct_object (struct object *o, enum object_destruct_reason 
     {
       if( !frame_pushed )
       {
-	PUSH_FRAME2(o, p);
+        pike_frame = frame_init();
+        frame_setup_builtin(pike_frame, o, p);
 	frame_pushed = 1;
       }
-      SET_FRAME_CONTEXT(p->inherits + e);
+      frame_prepare_builtin(pike_frame, p->inherits + e, 0);
       prog->event_handler(PROG_EVENT_EXIT);
     }
 
@@ -987,7 +903,7 @@ PMOD_EXPORT void destruct_object (struct object *o, enum object_destruct_reason 
   }
 
   if( frame_pushed )
-    POP_FRAME2();
+    frame_pop(pike_frame);
 
   if (o->storage && (o->flags & OBJECT_CLEAR_ON_EXIT)) {
     guaranteed_memset(o->storage, 0, p->storage_needed);
@@ -2261,13 +2177,16 @@ PMOD_EXPORT void visit_object (struct object *o, int action, void *extra)
       }
 
       if (inh_prog->event_handler) {
-	if (!pike_frame) PUSH_FRAME2 (o, p);
-	SET_FRAME_CONTEXT (inh + e);
+	if (!pike_frame) {
+            pike_frame = frame_init();
+            frame_setup_builtin(pike_frame, o, p);
+        }
+        frame_prepare_builtin(pike_frame, inh + e, 0);
 	inh_prog->event_handler (PROG_EVENT_GC_RECURSE);
       }
     }
 
-    if (pike_frame) POP_FRAME2();
+    if (pike_frame) frame_pop(pike_frame);
 
     /* Strong ref follows. It must be last. */
     if (p->flags & PROGRAM_USES_PARENT)
@@ -2318,6 +2237,7 @@ PMOD_EXPORT void gc_mark_object_as_referenced(struct object *o)
       }
 
       if(p && PIKE_OBJ_INITED(o)) {
+        struct pike_frame *pike_frame;
 	debug_malloc_touch(p);
 
 	gc_mark_program_as_referenced (p);
@@ -2326,13 +2246,14 @@ PMOD_EXPORT void gc_mark_object_as_referenced(struct object *o)
 	  if(PARENT_INFO(o)->parent)
 	    gc_mark_object_as_referenced(PARENT_INFO(o)->parent);
 
-	LOW_PUSH_FRAME(o, p);
+        pike_frame = frame_init();
+        frame_setup_builtin(pike_frame, o, p);
 
 	for(e=p->num_inherits-1; e>=0; e--)
 	{
 	  int q;
 
-	  LOW_SET_FRAME_CONTEXT(p->inherits + e);
+          frame_prepare_builtin(pike_frame, p->inherits + e, 0);
 
 	  for(q=0;q<(int)pike_frame->context->prog->num_variable_index;q++)
 	  {
@@ -2368,10 +2289,9 @@ PMOD_EXPORT void gc_mark_object_as_referenced(struct object *o)
 	  if(pike_frame->context->prog->event_handler)
 	    pike_frame->context->prog->event_handler(PROG_EVENT_GC_RECURSE);
 
-	  LOW_UNSET_FRAME_CONTEXT();
 	}
 
-	LOW_POP_FRAME();
+        frame_pop(pike_frame);
       }
     } GC_LEAVE;
   }
@@ -2386,19 +2306,21 @@ PMOD_EXPORT void real_gc_cycle_check_object(struct object *o, int weak)
     struct program *p = o->prog;
 
     if (p && PIKE_OBJ_INITED(o)) {
+      struct pike_frame *pike_frame; 
 #if 0
       struct object *o2;
       for (o2 = gc_internal_object; o2 && o2 != o; o2 = o2->next) {}
       if (!o2) Pike_fatal("Object not on gc_internal_object list.\n");
 #endif
 
-      LOW_PUSH_FRAME(o, p);
+      pike_frame = frame_init();
+      frame_setup_builtin(pike_frame, o, p);
 
       for(e=p->num_inherits-1; e>=0; e--)
       {
 	int q;
 
-	LOW_SET_FRAME_CONTEXT(p->inherits + e);
+        frame_prepare_builtin(pike_frame, p->inherits + e, 0);
 
 	for(q=0;q<(int)pike_frame->context->prog->num_variable_index;q++)
 	{
@@ -2434,10 +2356,9 @@ PMOD_EXPORT void real_gc_cycle_check_object(struct object *o, int weak)
 	if(pike_frame->context->prog->event_handler)
 	  pike_frame->context->prog->event_handler(PROG_EVENT_GC_RECURSE);
 
-	LOW_UNSET_FRAME_CONTEXT();
       }
 
-      LOW_POP_FRAME();
+      frame_pop(pike_frame);
 
       /* Even though it's essential that the program isn't freed
        * before the object, it doesn't need a strong link. That since
@@ -2461,19 +2382,21 @@ static void gc_check_object(struct object *o)
   GC_ENTER (o, T_OBJECT) {
     if((p=o->prog) && PIKE_OBJ_INITED(o))
     {
+      struct pike_frame *pike_frame;
       debug_malloc_touch(p);
       debug_gc_check (p, " as the program of an object");
 
       if(p->flags & PROGRAM_USES_PARENT && PARENT_INFO(o)->parent)
 	debug_gc_check (PARENT_INFO(o)->parent, " as parent of an object");
 
-      LOW_PUSH_FRAME(o, p);
+      pike_frame = frame_init();
+      frame_setup_builtin(pike_frame, o, p);
 
       for(e=p->num_inherits-1; e>=0; e--)
       {
 	int q;
-	LOW_SET_FRAME_CONTEXT(p->inherits + e);
-
+        frame_prepare_builtin(pike_frame, p->inherits + e, 0);
+        
 	for(q=0;q<(int)pike_frame->context->prog->num_variable_index;q++)
 	{
 	  int d=pike_frame->context->prog->variable_index[q];
@@ -2508,9 +2431,8 @@ static void gc_check_object(struct object *o)
 	if(pike_frame->context->prog->event_handler)
 	  pike_frame->context->prog->event_handler(PROG_EVENT_GC_CHECK);
 
-	LOW_UNSET_FRAME_CONTEXT();
       }
-      LOW_POP_FRAME();
+      frame_pop(pike_frame);
     }
   } GC_LEAVE;
 }

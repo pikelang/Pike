@@ -2858,6 +2858,9 @@ OPCODE1(F_LTOSVAL_CALL_BUILTIN_AND_ASSIGN_POP,
   add_ref(new_frame->current_object = Pike_fp->current_object);		   \
   add_ref(new_frame->current_program = Pike_fp->current_program);	   \
   new_frame->context = Pike_fp->context;				   \
+  new_frame->ptr = Pike_fp->ptr;\
+  new_frame->pc = new_frame->ptr;\
+  new_frame->type = Pike_fp->type;\
 									   \
   DO_IF_PROFILING({							   \
       struct identifier *func;						   \
