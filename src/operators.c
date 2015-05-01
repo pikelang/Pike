@@ -1484,9 +1484,6 @@ PMOD_EXPORT void f_add(INT32 args)
 	struct program *p;
 	int i;
 
-	if (args == 1)
-	  return;
-
 	if(TYPEOF(sp[-args]) == T_OBJECT && sp[-args].u.object->prog)
 	{
 	  /* The first argument is an object. */
