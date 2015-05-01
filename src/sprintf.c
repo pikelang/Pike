@@ -2031,7 +2031,6 @@ static int push_sprintf_argument_types(PCHARP format,
 
       /* First the modifiers */
       case '*':
-	tmp = 0;
 	if (setwhat < 2) {
 	  push_int_type(0, MAX_INT32);
 	} else {
@@ -2164,23 +2163,13 @@ static int push_sprintf_argument_types(PCHARP format,
 	if(EXTRACT_PCHARP(a)=='*') {
 	  push_int_type(0, /*num_arg*/ MAX_INT32);
 	  INC_PCHARP(a,1);
-	  tmp = 0;
-	} else
-	  tmp=STRTOL_PCHARP(a,&a,10);
+	}
 	if((c = EXTRACT_PCHARP(a))!=']')  {
 	  yyreport(severity, type_check_system_string,
 		   0, "Expected ] in format string, not %c.",
 		   c);
 	  ret = -1;
 	}
-#if 0
-	if(tmp >= num_arg) {
-	  yyreport(severity, type_check_system_string,
-		   0, "Not enough arguments to [%d].", tmp);
-	  ret = -1;
-	}
-#endif /* 0 */
-	/* arg = argp+tmp; */
 	continue;
 	
         /* now the real operators */
