@@ -973,7 +973,7 @@ void forget_old_sessions()
       SSL3_DEBUG_MSG("SSL.Context->forget_old_sessions: "
                      "garbing session %O due to session_lifetime limit\n",
                      id);
-    m_delete (session_cache, id);
+      m_delete (session_cache, id);
     }
   }
 }
