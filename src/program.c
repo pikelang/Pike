@@ -11659,7 +11659,6 @@ PMOD_EXPORT struct program *program_from_type(const struct pike_type *t)
     return NULL;
   }
 
-  if (!t) return NULL;
   return id_to_program((int)(ptrdiff_t)t->cdr);
 }
 
