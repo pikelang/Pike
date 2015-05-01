@@ -6111,10 +6111,7 @@ static void f_interleave_array(INT32 args)
     max *= 2;
     /* max will be the padding at the end. */
     size = (nelems + max) * 8;	/* Initial size */
-    if (!(tab = malloc(size + max))) {
-      SIMPLE_OUT_OF_MEMORY_ERROR("interleave_array", size+max);
-    }
-    memset(tab, 0, size + max);
+    tab = xcalloc(size + max, 1);
 
     for (i = 0; i < order->size; i++) {
       int low = ITEM(min)[i].u.integer;
