@@ -517,9 +517,6 @@ PMOD_EXPORT void o_cast(struct pike_type *type, INT32 run_time_type)
     {
       default:
 	Pike_error("Cannot perform cast to that type.\n");
-	
-      case T_MIXED:
-	return;
 
       case T_MULTISET:
 	switch(TYPEOF(sp[-1]))
