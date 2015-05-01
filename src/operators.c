@@ -513,64 +513,64 @@ PMOD_EXPORT void o_cast(struct pike_type *type, INT32 run_time_type)
 
     } else
 
-    switch(run_time_type)
-    {
+      switch(run_time_type)
+      {
       default:
 	Pike_error("Cannot perform cast to that type.\n");
 
       case T_MULTISET:
 	switch(TYPEOF(sp[-1]))
 	{
-	  case T_ARRAY:
+        case T_ARRAY:
 	  {
 	    extern void f_mkmultiset(INT32);
 	    f_mkmultiset(1);
 	    break;
 	  }
 
-	  default:
-	    Pike_error("Cannot cast %s to multiset.\n",
-		       get_name_of_type(TYPEOF(sp[-1])));
+        default:
+          Pike_error("Cannot cast %s to multiset.\n",
+                     get_name_of_type(TYPEOF(sp[-1])));
 	}
 	break;
-	
+
       case T_MAPPING:
 	switch(TYPEOF(sp[-1]))
 	{
-	  case T_ARRAY:
+        case T_ARRAY:
 	  {
-	     struct array *a=sp[-1].u.array;
-	     struct array *b;
-	     struct mapping *m;
-	     INT32 i;
-	     m=allocate_mapping(a->size); /* MAP_SLOTS(a->size) */
-	     push_mapping(m);
-	     for (i=0; i<a->size; i++)
-	     {
-	        if (TYPEOF(ITEM(a)[i]) != T_ARRAY)
-		   Pike_error("Cast array to mapping: "
-			 "element %d is not an array\n", i);
-		b=ITEM(a)[i].u.array;
-		if (b->size!=2)
-		   Pike_error("Cast array to mapping: "
-			 "element %d is not an array of size 2\n", i);
-		mapping_insert(m,ITEM(b)+0,ITEM(b)+1);
-	     }
-	     stack_swap();
-	     pop_n_elems(1);
-	     break;
+            struct array *a=sp[-1].u.array;
+            struct array *b;
+            struct mapping *m;
+            INT32 i;
+            m=allocate_mapping(a->size); /* MAP_SLOTS(a->size) */
+            push_mapping(m);
+            for (i=0; i<a->size; i++)
+            {
+              if (TYPEOF(ITEM(a)[i]) != T_ARRAY)
+                Pike_error("Cast array to mapping: "
+                           "element %d is not an array\n", i);
+              b=ITEM(a)[i].u.array;
+              if (b->size!=2)
+                Pike_error("Cast array to mapping: "
+                           "element %d is not an array of size 2\n", i);
+              mapping_insert(m,ITEM(b)+0,ITEM(b)+1);
+            }
+            stack_swap();
+            pop_n_elems(1);
+            break;
 	  }
 
-	  default:
-	    Pike_error("Cannot cast %s to mapping.\n",
-		       get_name_of_type(TYPEOF(sp[-1])));
+        default:
+          Pike_error("Cannot cast %s to mapping.\n",
+                     get_name_of_type(TYPEOF(sp[-1])));
 	}
 	break;
-	
+
       case T_ARRAY:
 	switch(TYPEOF(sp[-1]))
 	{
-	  case T_MAPPING:
+        case T_MAPPING:
 	  {
 	    struct array *a=mapping_to_array(sp[-1].u.mapping);
 	    pop_stack();
@@ -578,39 +578,38 @@ PMOD_EXPORT void o_cast(struct pike_type *type, INT32 run_time_type)
 	    break;
 	  }
 
-	  case T_STRING:
-	    f_values(1);
-	    break;
+        case T_STRING:
+          f_values(1);
+          break;
 
-	  case T_MULTISET:
-	    f_indices(1);
-	    break;
+        case T_MULTISET:
+          f_indices(1);
+          break;
 
-	  default:
-	    Pike_error("Cannot cast %s to array.\n",
-		       get_name_of_type(TYPEOF(sp[-1])));
-	      
+        default:
+          Pike_error("Cannot cast %s to array.\n",
+                     get_name_of_type(TYPEOF(sp[-1])));
 	}
 	break;
-	
-    case T_INT:
-      o_cast_to_int();
-      return;
-	
-    case T_STRING:
-      o_cast_to_string();
-      return;
+
+      case T_INT:
+        o_cast_to_int();
+        return;
+
+      case T_STRING:
+        o_cast_to_string();
+        return;
 
       case T_FLOAT:
-      {
-	FLOAT_TYPE f = 0.0;
-	
-	switch(TYPEOF(sp[-1]))
-	{
+        {
+          FLOAT_TYPE f = 0.0;
+
+          switch(TYPEOF(sp[-1]))
+          {
 	  case T_INT:
 	    f=(FLOAT_TYPE)(sp[-1].u.integer);
 	    break;
-	    
+
 	  case T_STRING:
 	    f =
 	      (FLOAT_TYPE)STRTOD_PCHARP(MKPCHARP(sp[-1].u.string->str,
@@ -618,57 +617,57 @@ PMOD_EXPORT void o_cast(struct pike_type *type, INT32 run_time_type)
 					0);
 	    free_string(sp[-1].u.string);
 	    break;
-	    
+
 	  default:
 	    Pike_error("Cannot cast %s to float.\n",
 		       get_name_of_type(TYPEOF(sp[-1])));
-	}
-	
-	SET_SVAL(sp[-1], T_FLOAT, 0, float_number, f);
-	break;
-      }
-      
+          }
+
+          SET_SVAL(sp[-1], T_FLOAT, 0, float_number, f);
+          break;
+        }
+
       case T_OBJECT:
 	switch(TYPEOF(sp[-1]))
 	{
-	  case T_STRING: {
-	    struct pike_string *file;
-	    INT_TYPE lineno;
-	    if(Pike_fp->pc &&
-	       (file = low_get_line(Pike_fp->pc, Pike_fp->context->prog, &lineno))) {
-	      push_string(file);
-	    }else{
-	      push_int(0);
-	    }
-	    /* FIXME: Ought to allow compile_handler to override.
-	     */
-	    APPLY_MASTER("cast_to_object",2);
-	    return;
-	  }
-	    
-	  case T_FUNCTION:
-	    if (SUBTYPEOF(Pike_sp[-1]) == FUNCTION_BUILTIN) {
-	      Pike_error("Cannot cast builtin functions to object.\n");
-	    } else if (Pike_sp[-1].u.object->prog == pike_trampoline_program) {
-	      ref_push_object(((struct pike_trampoline *)
-			       (Pike_sp[-1].u.object->storage))->
-			      frame->current_object);
-	      stack_pop_keep_top();
-	    } else {
-	      SET_SVAL_TYPE(Pike_sp[-1], T_OBJECT);
-	      SET_SVAL_SUBTYPE(Pike_sp[-1], 0);
-	    }
-	    break;
+        case T_STRING: {
+          struct pike_string *file;
+          INT_TYPE lineno;
+          if(Pike_fp->pc &&
+             (file = low_get_line(Pike_fp->pc, Pike_fp->context->prog, &lineno))) {
+            push_string(file);
+          }else{
+            push_int(0);
+          }
+          /* FIXME: Ought to allow compile_handler to override.
+           */
+          APPLY_MASTER("cast_to_object",2);
+          return;
+        }
 
-	  default:
-	    Pike_error("Cannot cast %s to object.\n",
-		       get_name_of_type(TYPEOF(sp[-1])));
+        case T_FUNCTION:
+          if (SUBTYPEOF(Pike_sp[-1]) == FUNCTION_BUILTIN) {
+            Pike_error("Cannot cast builtin functions to object.\n");
+          } else if (Pike_sp[-1].u.object->prog == pike_trampoline_program) {
+            ref_push_object(((struct pike_trampoline *)
+                             (Pike_sp[-1].u.object->storage))->
+                            frame->current_object);
+            stack_pop_keep_top();
+          } else {
+            SET_SVAL_TYPE(Pike_sp[-1], T_OBJECT);
+            SET_SVAL_SUBTYPE(Pike_sp[-1], 0);
+          }
+          break;
+
+        default:
+          Pike_error("Cannot cast %s to object.\n",
+                     get_name_of_type(TYPEOF(sp[-1])));
 	}
 	break;
-	
+
       case T_PROGRAM:
-      switch(TYPEOF(sp[-1]))
-      {
+        switch(TYPEOF(sp[-1]))
+        {
 	case T_STRING: {
 	  struct pike_string *file;
 	  INT_TYPE lineno;
@@ -683,40 +682,40 @@ PMOD_EXPORT void o_cast(struct pike_type *type, INT32 run_time_type)
 	  APPLY_MASTER("cast_to_program",2);
 	  return;
 	}
-	  
+
 	case T_FUNCTION:
-	{
-	  struct program *p=program_from_function(sp-1);
-	  if(p)
-	  {
-	    add_ref(p);
-	    pop_stack();
-	    push_program(p);
-	  }else{
-	    pop_stack();
-	    push_int(0);
-	  }
-	}
-	return;
+          {
+            struct program *p=program_from_function(sp-1);
+            if(p)
+            {
+              add_ref(p);
+              pop_stack();
+              push_program(p);
+            }else{
+              pop_stack();
+              push_int(0);
+            }
+          }
+          return;
 
         case PIKE_T_TYPE:
-	{
-	  struct pike_type *t = Pike_sp[-1].u.type;
-	  struct program *p = program_from_type(t);
-	  pop_stack();
-	  if (p) {
-	    ref_push_program(p);
-	  } else {
-	    push_int(0);
-	  }
-	  return;
-	}
+          {
+            struct pike_type *t = Pike_sp[-1].u.type;
+            struct program *p = program_from_type(t);
+            pop_stack();
+            if (p) {
+              ref_push_program(p);
+            } else {
+              push_int(0);
+            }
+            return;
+          }
 
 	default:
 	  Pike_error("Cannot cast %s to a program.\n",
 		     get_name_of_type(TYPEOF(sp[-1])));
+        }
       }
-    }
   }
 
   if(run_time_type != TYPEOF(sp[-1]))
@@ -751,13 +750,13 @@ PMOD_EXPORT void o_cast(struct pike_type *type, INT32 run_time_type)
 	       get_name_of_type(TYPEOF(sp[-1])));
   }
 
-  emulated_type_ok:
+ emulated_type_ok:
 
   if (!type) return;
 
   switch(run_time_type)
   {
-    case T_ARRAY:
+  case T_ARRAY:
     {
       struct pike_type *itype;
       INT32 run_time_itype;
@@ -770,7 +769,7 @@ PMOD_EXPORT void o_cast(struct pike_type *type, INT32 run_time_type)
 	struct array *a;
 	struct array *tmp=sp[-2].u.array;
 	DECLARE_CYCLIC();
-	
+
 	if((a=(struct array *)BEGIN_CYCLIC(tmp,0)))
 	{
 	  ref_push_array(a);
@@ -782,7 +781,7 @@ PMOD_EXPORT void o_cast(struct pike_type *type, INT32 run_time_type)
 #endif
 	  push_array(a=allocate_array(tmp->size));
 	  SET_CYCLIC_RET(a);
-	  
+
 	  for(e=0;e<a->size;e++)
 	  {
 	    push_svalue(tmp->item+e);
@@ -804,7 +803,7 @@ PMOD_EXPORT void o_cast(struct pike_type *type, INT32 run_time_type)
     }
     break;
 
-    case T_MULTISET:
+  case T_MULTISET:
     {
       struct pike_type *itype;
       INT32 run_time_itype;
@@ -817,7 +816,7 @@ PMOD_EXPORT void o_cast(struct pike_type *type, INT32 run_time_type)
 	struct multiset *m;
 	struct multiset *tmp=sp[-2].u.multiset;
 	DECLARE_CYCLIC();
-	
+
 	if((m=(struct multiset *)BEGIN_CYCLIC(tmp,0)))
 	{
 	  ref_push_multiset(m);
@@ -859,7 +858,7 @@ PMOD_EXPORT void o_cast(struct pike_type *type, INT32 run_time_type)
     }
     break;
 
-    case T_MAPPING:
+  case T_MAPPING:
     {
       struct pike_type *itype, *vtype;
       INT32 run_time_itype;
@@ -877,7 +876,7 @@ PMOD_EXPORT void o_cast(struct pike_type *type, INT32 run_time_type)
 	struct mapping *m;
 	struct mapping *tmp=sp[-3].u.mapping;
 	DECLARE_CYCLIC();
-	
+
 	if((m=(struct mapping *)BEGIN_CYCLIC(tmp,0)))
 	{
 	  ref_push_mapping(m);
@@ -889,7 +888,7 @@ PMOD_EXPORT void o_cast(struct pike_type *type, INT32 run_time_type)
 	  struct svalue *save_sp=sp+1;
 #endif
 	  push_mapping(m=allocate_mapping(m_sizeof(tmp)));
-	  
+
 	  SET_CYCLIC_RET(m);
 
 	  md = tmp->data;
