@@ -74,12 +74,10 @@ static ptrdiff_t eat_text(unsigned char *src, ptrdiff_t srclen,
 	EMIT(DEFCHAR);
     }
     return 0;
-    break;
   case MODE_96:
     while(srclen--)
       EMIT(DEFCHAR);
     return 0;
-    break;
   case MODE_9494:
     while(srclen>1) {
       char hi, lo;
@@ -123,7 +121,6 @@ static ptrdiff_t eat_text(unsigned char *src, ptrdiff_t srclen,
       }
     }
     return 0;
-    break;
   case MODE_96:
     while(srclen--) {
       UNICHAR c;
@@ -139,7 +136,6 @@ static ptrdiff_t eat_text(unsigned char *src, ptrdiff_t srclen,
       }
     }
     return 0;
-    break;
   case MODE_9494:
     while(srclen>1) {
       char hi, lo;
@@ -813,10 +809,11 @@ static void eat_enc_string(struct pike_string *str, struct iso2022enc_stor *s,
 	      s->r[1].map = NULL;
 	    }
 	    lat = 0;
-	  } else if(!asc && c>' ' && c<0x7f) {
+	  } else if(!asc && c>' ' && c<0x7f)
 #else
-	  if(!asc) {
+	  if(!asc)
 #endif
+	  {
 	    string_builder_strcat(&s->strbuild, "\033(B");
 	    s->g[0].transl = map_ANSI_X3_4_1968;
 	    s->g[0].mode = MODE_94;
@@ -844,6 +841,7 @@ static void eat_enc_string(struct pike_string *str, struct iso2022enc_stor *s,
     break;
   case 1:
     s1++;
+    /* FALL_THROUGH */
   case 2:
     {
       char *p = str->str;
@@ -998,6 +996,7 @@ static void eat_enc_string(struct pike_string *str, struct iso2022enc_stor *s,
 	      default:
 		mode = MODE_9494;
 		index = 0x12;
+		break;
 	      }
 	      break;
 	    case VARIANT_KR:
@@ -1007,6 +1006,7 @@ static void eat_enc_string(struct pike_string *str, struct iso2022enc_stor *s,
 	    case VARIANT_CN:
 	      mode = MODE_9494;
 	      index = 0x11;
+	      break;
 	    }
 	  else if(c>=0x3000) {
 
@@ -1257,6 +1257,7 @@ static void eat_enc_string(struct pike_string *str, struct iso2022enc_stor *s,
 #ifdef PIKE_DEBUG
   default:
     Pike_fatal("Illegal shift size!\n");
+    break;
 #endif
   }
 }
