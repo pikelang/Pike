@@ -384,12 +384,8 @@ PIKECLASS Hash
       } else {
 	meta->update(ctx, dsz, abcbuf);				/* c */
       }
-      if (r % 3) {						/* d */
-	for (i = 0; i + dsz < slen; i += dsz) {
-	  meta->update(ctx, dsz, dsbuf);
-	}
-	meta->update(ctx, slen - i, dsbuf);
-      }
+      if (r % 3)						/* d */
+	meta->update(ctx, slen, dsbuf);
       if (r % 7) {						/* e */
 	for (i = 0; i + dsz < plen; i += dsz) {
 	  meta->update(ctx, dsz, dpbuf);
