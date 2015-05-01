@@ -1545,7 +1545,6 @@ PMOD_EXPORT void f_add(INT32 args)
     PCHARP buf;
     ptrdiff_t tmp;
     int max_shift=0;
-    if(args==1) return;
 
     size=0;
     for(e=-args;e<0;e++)
