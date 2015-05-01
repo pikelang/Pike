@@ -80,6 +80,8 @@ static unsigned int TOKENIZE(struct array **res, CHAR *data, unsigned int len)
 	    break;
 	  default: break;
 	}
+	break;
+
       case '{': case '}':
       case '[': case ']':
       case '(': case ')':
@@ -109,6 +111,7 @@ static unsigned int TOKENIZE(struct array **res, CHAR *data, unsigned int len)
 
       case '+': case '&':  case '|':
 	if( data[pos+1] == data[pos] ) pos++;
+	/* fallthrough. */
 
       case '*': case '%':  
       case '^': case '!':  case '~':  case '=':
