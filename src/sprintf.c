@@ -2164,6 +2164,8 @@ static int push_sprintf_argument_types(PCHARP format,
 	  push_int_type(0, /*num_arg*/ MAX_INT32);
 	  INC_PCHARP(a,1);
 	}
+        else
+	  STRTOL_PCHARP(a,&a,10);
 	if((c = EXTRACT_PCHARP(a))!=']')  {
 	  yyreport(severity, type_check_system_string,
 		   0, "Expected ] in format string, not %c.",
