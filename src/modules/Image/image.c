@@ -3902,7 +3902,7 @@ void image_modify_by_intensity(INT32 args)
    rgb_group *s,*d;
    struct object *o;
    struct image *img;
-   long div;
+   unsigned int div;
 
    if (!THIS->img)
      Pike_error("Called Image.Image object is not initialized\n");
@@ -3978,7 +3978,7 @@ void image_modify_by_intensity(INT32 args)
    THREADS_ALLOW();
    while (x--)
    {
-      int q = ((((int)s->r)*rgb.r+((int)s->g)*rgb.g+((int)s->b)*rgb.b)/div);
+      unsigned int q = (s->r*rgb.r + s->g*rgb.g + s->b*rgb.b)/div;
       *(d++)=list[testrange( q )];
       s++;
    }
