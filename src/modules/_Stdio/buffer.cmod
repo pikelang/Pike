@@ -1407,12 +1407,16 @@ PIKECLASS Buffer
     if( TYPEOF(*i) == PIKE_T_INT )
     {
       INT_TYPE ui = i->u.integer;
-      for( width=0; width<SIZEOF_INT_TYPE; width++ )
-        if( ui < (((INT_TYPE)1)<<(width*8)) &&
-	    ui >= -(((INT_TYPE)1)<<(width*8-1)) )
-	  break;
-      io_add_int( THIS, width, len_width );
-      io_add_int( THIS, i->u.integer, width );
+      if (!ui) {
+	io_add_int( THIS, 0, len_width );
+      } else {
+	for( width=1; width<SIZEOF_INT_TYPE; width++ )
+	  if( ui < (((INT_TYPE)1)<<(width*8)) &&
+	      ui >= -(((INT_TYPE)1)<<(width*8-1)) )
+	    break;
+	io_add_int( THIS, width, len_width );
+	io_add_int( THIS, i->u.integer, width );
+      }
       Pike_sp--;
     }
     else
