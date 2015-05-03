@@ -5251,7 +5251,7 @@ int low_define_alias(struct pike_string *name, struct pike_type *type,
 	  "Added identifier: \"%s\"\n", name->str);
 #endif
 
-  for(e = 0; state && (e < depth); e++) {
+  for(e = 0; DO_IF_DEBUG_ELSE(state, 1) && (e < depth); e++) {
     state = state->previous;
   }
 
