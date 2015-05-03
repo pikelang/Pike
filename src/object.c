@@ -1502,10 +1502,10 @@ static void object_lower_set_index(struct object *o, union idptr func, int rtt,
     switch(rtt) {
     case T_SVALUE_PTR: case T_OBJ_INDEX:
       Pike_error("Cannot assign functions or constants.\n");
-      continue;
+      break;
     case PIKE_T_FREE:
       Pike_error("Attempt to store data in extern variable.\n");
-      continue;
+      break;
 
     case PIKE_T_GET_SET:
       {
@@ -1525,14 +1525,14 @@ static void object_lower_set_index(struct object *o, union idptr func, int rtt,
 	} else {
 	  Pike_error("No setter for variable.\n");
 	}
-	continue;
+	return;
       }
 
     /* Partial code duplication from assign_to_short_svalue. */
     case T_MIXED:
       /* Count references to ourselves. */
       assign_svalue(to, from);
-      continue;
+      return;
     case PIKE_T_NO_REF_MIXED:
       /* Don't count references to ourselves to help the gc. DDTAH. */
       dmalloc_touch_svalue(to);
@@ -1564,18 +1564,18 @@ static void object_lower_set_index(struct object *o, union idptr func, int rtt,
 	dmalloc_touch_svalue (to);
 #endif /* DEBUG_MALLOC */
       }
-      continue;
+      return;
 
     case T_INT:
     case PIKE_T_NO_REF_INT:
       if (TYPEOF(*from) != T_INT) break;
       u->integer=from->u.integer;
-      continue;
+      return;
     case T_FLOAT:
     case PIKE_T_NO_REF_FLOAT:
       if (TYPEOF(*from) != T_FLOAT) break;
       u->float_number=from->u.float_number;
-      continue;
+      return;
 
     case PIKE_T_NO_REF_OBJECT:
       {
@@ -1594,7 +1594,7 @@ static void object_lower_set_index(struct object *o, union idptr func, int rtt,
         if (is_zero) {
           debug_malloc_touch(u->ptr);
           u->refs = NULL;
-          continue;
+          return;
         }
       }
       u->refs = from->u.refs;
@@ -1607,7 +1607,7 @@ static void object_lower_set_index(struct object *o, union idptr func, int rtt,
 	debug_malloc_touch(o);
 #endif /* DEBUG_MALLOC */
       }
-      continue;
+      return;
 
     default:
       {
@@ -1620,11 +1620,11 @@ static void object_lower_set_index(struct object *o, union idptr func, int rtt,
         if (is_zero) {
           debug_malloc_touch(u->ptr);
           u->refs = NULL;
-          continue;
+          return;
         }
         u->refs = from->u.refs;
         add_ref(u->dummy);
-        continue;
+        return;
       }
     }
     Pike_error("Wrong type in assignment, expected %s, got %s.\n",
