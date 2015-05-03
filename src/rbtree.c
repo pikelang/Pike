@@ -32,6 +32,8 @@ DECLSPEC(noreturn) static void debug_custom_rb_fatal (
   (fprintf (stderr, "%s:%d: Fatal in rbtree: ", __FILE__, __LINE__),	\
    debug_custom_rb_fatal)
 
+#else
+#define rb_fatal Pike_fatal
 #endif
 
 void rbstack_low_push (struct rbstack_ptr *rbstack, struct rb_node_hdr *node)
@@ -262,9 +264,7 @@ static struct rb_node_hdr *rebalance_after_add (struct rb_node_hdr *node,
 
   while (parent->flags & RB_RED) {
     /* Since the root always is black we know there's a grandparent. */
-#ifdef PIKE_DEBUG
-    if (!grandparent) rb_fatal (parent, "No parent for red node.\n");
-#endif
+    if (UNLIKELY(!grandparent)) rb_fatal (parent, "No parent for red node.\n");
 #ifdef RB_STATS
     rb_add_rebalance_cnt++;
 #endif
