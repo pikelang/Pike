@@ -65,6 +65,10 @@
 #include <linux/if.h>
 #endif
 
+#ifdef HAVE_LINUX_IP_H
+#include <linux/ip.h>
+#endif
+
 #ifdef HAVE_SYS_UIO_H
 #include <sys/uio.h>
 #endif /* HAVE_SYS_UIO_H */
@@ -6338,6 +6342,34 @@ PIKE_MODULE_INIT
    *! Used in @[File.setsockopt()] to set Type Of Service
    */
   add_integer_constant("IP_TOS", IP_TOS, 0);
+#endif
+
+#ifdef IPTOS_LOWDELAY
+  /*! @decl constant IPTOS_LOWDELAY
+   *! Used in @[File.setsockopt()] to select minimum delay
+   */
+  add_integer_constant("IPTOS_LOWDELAY", IPTOS_LOWDELAY, 0);
+#endif
+
+#ifdef IPTOS_THROUGHPUT
+  /*! @decl constant IPTOS_THROUGHPUT
+   *! Used in @[File.setsockopt()] to select maximum throughput
+   */
+  add_integer_constant("IPTOS_THROUGHPUT", IPTOS_THROUGHPUT, 0);
+#endif
+
+#ifdef IPTOS_RELIABILITY
+  /*! @decl constant IPTOS_RELIABILITY
+   *! Used in @[File.setsockopt()] to select maximum reliability
+   */
+  add_integer_constant("IPTOS_RELIABILITY", IPTOS_RELIABILITY, 0);
+#endif
+
+#ifdef IPTOS_MINCOST
+  /*! @decl constant IPTOS_MINCOST
+   *! Used in @[File.setsockopt()] to select minimum monetary cost
+   */
+  add_integer_constant("IPTOS_MINCOST", IPTOS_MINCOST, 0);
 #endif
 
   add_integer_constant("__HAVE_OOB__",1,0);
