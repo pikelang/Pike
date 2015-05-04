@@ -672,7 +672,10 @@ void low_do_sendfile(struct pike_sendfile *this)
 #endif
     SF_DFPRINTF((stderr, "sendfile: Using read() and write().\n"));
 
-    fd_lseek(this->from_fd, this->offset, SEEK_SET);
+    while ((fd_lseek(this->from_fd, this->offset, SEEK_SET) < 0) &&
+	   (errno == EINTR))
+      ;
+
     {
       ptrdiff_t buflen;
       ptrdiff_t len;
