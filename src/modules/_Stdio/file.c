@@ -4965,7 +4965,7 @@ static void file_set_keepalive(INT32 args)
   push_int(!i);
 }
 
-/*! @decl int(0..1) setsockopt(int opt,int(0..1) on_off)
+/*! @decl int(0..1) setsockopt(int level,int opt,int state)
  *!
  *! Set socket options like Stdio.SO_KEEPALIVE. This function is always
  *! available; the presence or absence of the option constants indicates
@@ -4979,15 +4979,15 @@ static void file_set_keepalive(INT32 args)
  */
 static void file_setsockopt(INT32 args)
 {
-  int tmp, i, opt;
-  INT_TYPE o, t;
+  int tmp, i, opt, level;
+  INT_TYPE o, t, l;
 
-  get_all_args("setsockopt", args, "%i%i", &o, &t);
+  get_all_args("setsockopt", args, "%i%i%i", &l, &o, &t);
 
   /* In case int and INT_TYPE have different sizes */
-  tmp = t; opt = o;
+  tmp = t; opt = o; level = l;
 
-  i = fd_setsockopt(FD, SOL_SOCKET, opt, (char *)&tmp, sizeof(tmp));
+  i = fd_setsockopt(FD, level, opt, (char *)&tmp, sizeof(tmp));
   if(i)
   {
     ERRNO=errno;
@@ -6333,6 +6333,27 @@ PIKE_MODULE_INIT
 #endif
   };
 
+#ifdef SOL_SOCKET
+  /*! @decl constant SOL_SOCKET
+   *! Used in @[File.setsockopt()] to set socket-level options
+   */
+  add_integer_constant("SOL_SOCKET", SOL_SOCKET, 0);
+#endif
+
+#ifdef IPPROTO_IP
+  /*! @decl constant IPPROTO_IP
+   *! Used in @[File.setsockopt()] to set IP-level options
+   */
+  add_integer_constant("IPPROTO_IP", IPPROTO_IP, 0);
+#endif
+
+#ifdef IPPROTO_TCP
+  /*! @decl constant IPPROTO_TCP
+   *! Used in @[File.setsockopt()] to set TCP-level options
+   */
+  add_integer_constant("IPPROTO_TCP", IPPROTO_TCP, 0);
+#endif
+
 #ifdef TCP_NODELAY
   /*! @decl constant TCP_NODELAY
    *! Used in @[File.setsockopt()] to control Nagle's Algorithm.
@@ -6345,6 +6366,13 @@ PIKE_MODULE_INIT
    *! Used in @[File.setsockopt()] to control TCP/IP keep-alive packets.
    */
   add_integer_constant("SO_KEEPALIVE", SO_KEEPALIVE, 0);
+#endif
+
+#ifdef IP_TOS
+  /*! @decl constant IP_TOS
+   *! Used in @[File.setsockopt()] to set Type Of Service
+   */
+  add_integer_constant("IP_TOS", IP_TOS, 0);
 #endif
 
   add_integer_constant("__HAVE_OOB__",1,0);
