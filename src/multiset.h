@@ -181,9 +181,9 @@ PMOD_EXPORT extern const char msg_no_multiset_flag_marker[];
    (struct svalue *) &svalue_int_one)
 
 #define OFF2MSNODE(MSD, OFFSET)						\
-  ((union msnode *) (&(MSD)->nodes->i + (OFFSET)))
+  ((MSD)->nodes + (OFFSET))
 #define MSNODE2OFF(MSD, NODE)						\
-  (&(NODE)->i - &(MSD)->nodes->i)
+  ((NODE) - (MSD)->nodes)
 
 PMOD_EXPORT INT32 multiset_sizeof (struct multiset *l);
 #define l_sizeof(L) multiset_sizeof (L)
