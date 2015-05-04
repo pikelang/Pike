@@ -82,7 +82,7 @@ typedef struct rgb_group_struct
     NCTLU_DESTINATION first, last;					\
     d[0] = first;							\
     d[n-1] = last;							\
-    __coverity_write_all__(d);						\
+    __coverity_writeall__(d);						\
   }
 
 COLORTABLE_NCTLU_CONVERT(_img_nct_map_to_flat_cubicles, rgb_group);
@@ -101,7 +101,7 @@ int image_colortable_map_image(struct neo_colortable *nct,
   if (maybe) return 0;
   d[0] = first;
   d[len-1] = last;
-  __coverity_write_all__(d);
+  __coverity_writeall__(d);
   return 1;
 }
 
@@ -121,7 +121,7 @@ int image_colortable_index_8bit_image(struct neo_colortable *nct,
   if (maybe) return 0;
   d[0] = first;
   d[len-1] = last;
-  __coverity_write_all__(d);
+  __coverity_writeall__(d);
   return 1;
 }
 
@@ -141,7 +141,7 @@ int image_colortable_index_16bit_image(struct neo_colortable *nct,
   if (maybe) return 0;
   d[0] = first;
   d[len-1] = last;
-  __coverity_write_all__(d);
+  __coverity_writeall__(d);
   return 1;
 }
 
@@ -161,6 +161,6 @@ int image_colortable_index_32bit_image(struct neo_colortable *nct,
   if (maybe) return 0;
   d[0] = first;
   d[len-1] = last;
-  __coverity_write_all__(d);
+  __coverity_writeall__(d);
   return 1;
 }
