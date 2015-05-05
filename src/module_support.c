@@ -96,8 +96,10 @@ PMOD_EXPORT void check_all_args(const char *fnname, int args, ... )
   case ERR_NONE: return;
   case ERR_TOO_FEW:
     new_error(fnname, "Too few arguments.\n", sp, args, NULL, 0);
+    break;
   case ERR_TOO_MANY:
     new_error(fnname, "Too many arguments.\n", sp, args, NULL, 0);
+    break;
 
   case ERR_BAD_ARG:
   {
@@ -124,6 +126,7 @@ PMOD_EXPORT void check_all_args(const char *fnname, int args, ... )
 	  fnname,
 	  buf,
 	  get_name_of_type(tmp.got));
+    break;
   }
   }
 }
