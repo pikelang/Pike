@@ -55,20 +55,27 @@ static inline COLORTYPE FLOAT_TO_COLOR(double X)
 {
   return DO_NOT_WARN((COLORTYPE)((X)*((double)COLORMAX+0.4)));
 }
-static inline INT32 FLOAT_TO_COLORL(double X)
-{
-  /* stupid floats */
-  return (DO_NOT_WARN((INT32)((X)*((double)(COLORLMAX/256))))*256+
-	  DO_NOT_WARN((INT32)((X)*255)));
-}
 #else /* !__ECL */
 #define DOUBLE_TO_INT(D)	((int)(D))
 #define DOUBLE_TO_CHAR(D)	((char)(D))
 #define DOUBLE_TO_COLORTYPE(D)	((COLORTYPE)(D))
 #define FLOAT_TO_COLOR(X) ((COLORTYPE)((X)*((float)COLORMAX+0.4)))
-#define FLOAT_TO_COLORL(X) /* stupid floats */ \
-	(((INT32)((X)*((float)(COLORLMAX/256))))*256+((INT32)((X)*255)))
 #endif /* __ECL */
+static inline INT32 PIKE_UNUSED_ATTRIBUTE FLOAT_TO_COLORL(double X)
+{
+  /* stupid floats */
+  /* The problem here is that the range of X is 0.0 - 1.0 inclusive,
+   * while it would be simpler if the max value wasn't reachable.
+   *
+   * A straight multiplication with COLORLMAX would map too few
+   * colors to COLORLMAX. We thus multiply with the size of the
+   * COLORL range (0 - COLORLMAX, ie (COLORLMAX + 1)) and check
+   * for the special case of X == 1.0.
+   */
+  unsigned INT32 tmp = X * ((double)COLORLMAX + 1.0);
+  if (UNLIKELY(tmp > (unsigned INT32)COLORLMAX)) return COLORLMAX;
+  return DO_NOT_WARN((INT32)tmp);
+}
 
 #ifdef USE_VALGRIND
 /* Workaround for valgrind false alarms: gcc (4.2.3) can generate code
