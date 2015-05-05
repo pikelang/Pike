@@ -738,8 +738,8 @@ string post_url_data(string|Standards.URI url,
 //!	@pre{
 //!	> Protocols.HTTP.http_encode_query( (["anna":"eva","lilith":"blue"]) );  
 //!     Result: "lilith=blue&anna=eva"
-//!     > Protocols.HTTP.http_encode_query( (["&amp;":"&","'=\"":"\0\0\0"]) );  
-//!     Result: "%26amp%3b=%26&%27%3d%22=%00%00%00"
+//!     > Protocols.HTTP.http_encode_query( (["&amp;":"&","'=\"":"\0\0\0\u0434"]) );  
+//!     Result: "%27%3D%22=%00%00%00%D0%B4&%26amp%3B=%26"
 //!	@}
 string http_encode_query(mapping(string:int|string|array(string)) variables)
 {
