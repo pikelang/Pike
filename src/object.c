@@ -468,14 +468,16 @@ struct pike_string *low_read_file(const char *file)
   PIKE_OFF_T len;
   FD f;
 
-  while((f = fd_open(file,fd_RDONLY,0666)) <0 && errno==EINTR)
+  while(((f = fd_open(file, fd_RDONLY, 0666)) < 0) && (errno == EINTR))
     check_threads_etc();
   if(f >= 0)
   {
     PIKE_OFF_T tmp, pos = 0;
 
-    len = fd_lseek(f, 0, SEEK_END);
-    fd_lseek(f, 0, SEEK_SET);
+    while (((len = fd_lseek(f, 0, SEEK_END)) < 0) && (errno == EINTR))
+      check_threads_etc();
+    while ((fd_lseek(f, 0, SEEK_SET) < 0) && (errno == EINTR))
+      check_threads_etc();
 
     if (len > MAX_INT32)
       Pike_fatal ("low_read_file(%s): File too large: %"PRINTPIKEOFFT"d b.\n",
