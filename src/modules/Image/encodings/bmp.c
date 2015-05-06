@@ -108,7 +108,7 @@ static INLINE void push_ubo_16bit(unsigned long x)
 static INLINE unsigned long int_from_32bit(unsigned char *data)
 {
    /* NB: Avoid sign-extension in implicit cast from int to unsigned long. */
-   return ((data[0])|(data[1]<<8)|(data[2]<<16)|(((unsigned long)data[3])<<24));
+   return (data[0])|(data[1]<<8)|(data[2]<<16)|(((unsigned long)data[3])<<24);
 }
 
 #define int_from_16bit(X) _int_from_16bit((unsigned char*)(X))
