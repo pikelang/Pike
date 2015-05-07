@@ -6220,10 +6220,10 @@ static struct array *longest_ordered_sequence(struct array *a)
   ONERROR tmp2;
 
   if(!a->size)
-    return allocate_array(0);
+    return &empty_array;
 
-  stack = malloc(sizeof(int)*a->size);
-  links = malloc(sizeof(int)*a->size);
+  stack = calloc(sizeof(int), a->size);
+  links = calloc(sizeof(int), a->size);
 
   if (!stack || !links)
   {
@@ -6253,8 +6253,7 @@ static struct array *longest_ordered_sequence(struct array *a)
     stack[pos] = i;
   }
 
-  /* FIXME(?) memory unfreed upon error here */
-  res = low_allocate_array(top, 0); 
+  res = low_allocate_array(top, 0);
   while (ltop != -1)
   {
     ITEM(res)[--top].u.integer = ltop;
@@ -6298,7 +6297,6 @@ static void f_longest_ordered_sequence(INT32 args)
 			       (int)sizeof(int *)*a->size*2);
   }
 
-  pop_n_elems(args);
   push_array(aa);
 }
 
@@ -6989,17 +6987,16 @@ PMOD_EXPORT void f_permute( INT32 args )
   struct array *a;
   struct svalue *it;
 
-  if( args != 2 )
-    SIMPLE_TOO_FEW_ARGS_ERROR("permute", 2);
-  if( TYPEOF(Pike_sp[ -2 ]) != T_ARRAY )
-     SIMPLE_BAD_ARG_ERROR("permute", 1, "array");
-  if (TYPEOF(Pike_sp[ -1 ]) != T_INT)
-    SIMPLE_BAD_ARG_ERROR("permute", 2, "int");
+  get_all_args("permute", args, "%a%+", &a, &n);
 
-  n  = Pike_sp[ -1 ].u.integer;
-  if( n<0 ) Pike_error("Only positive permutations are allowed.\n");
-  a = copy_array( Pike_sp[ -2 ].u.array );
-  pop_n_elems( args );
+  if( a->refs>1 )
+  {
+    a = copy_array( a );
+    push_array( a );
+  }
+  else
+    pop_n_elems(args-1);
+
   q = a->size;
   it = a->item;
   while( n && q )
@@ -7016,7 +7013,6 @@ PMOD_EXPORT void f_permute( INT32 args )
     }
     i++;
   }
-  push_array( a );
 }
 
 /*! @decl array(array(array)) diff(array a, array b)
@@ -7056,13 +7052,12 @@ PMOD_EXPORT void f_diff(INT32 args)
        f_aggregate(1);
        f_aggregate(2);
      }
-     stack_pop_n_elems_keep_top(args);
      return;
    }
 
    cmptbl = diff_compare_table(a, b, &uniq);
-
    push_array(cmptbl);
+
 #ifdef ENABLE_DYN_DIFF
    if (uniq * 100 > cmptbl->size) {
 #endif /* ENABLE_DYN_DIFF */
@@ -7080,12 +7075,9 @@ PMOD_EXPORT void f_diff(INT32 args)
      seq = diff_dyn_longest_sequence(cmptbl, b->size);
    }     
 #endif /* ENABLE_DYN_DIFF */
-   push_array(seq);
-   
-   diff=diff_build(a,b,seq);
 
-   pop_n_elems(2+args);
-   push_array(diff);
+   push_array(seq);
+   push_array(diff_build(a,b,seq));
 }
 
 /*! @decl array(array(int)) diff_compare_table(array a, array b)
@@ -7115,14 +7107,10 @@ PMOD_EXPORT void f_diff_compare_table(INT32 args)
 {
   struct array *a;
   struct array *b;
-  struct array *cmptbl;
 
   get_all_args("diff_compare_table", args, "%a%a", &a, &b);
 
-  cmptbl = diff_compare_table(a, b, NULL);
-
-  pop_n_elems(args);
-  push_array(cmptbl);
+  push_array(diff_compare_table(a, b, NULL));
 }
 
 /*! @decl array(int) diff_longest_sequence(array a, array b)
@@ -7137,19 +7125,14 @@ PMOD_EXPORT void f_diff_longest_sequence(INT32 args)
 {
   struct array *a;
   struct array *b;
-  struct array *seq;
   struct array *cmptbl;
 
   get_all_args("diff_longest_sequence", args, "%a%a", &a, &b);
 
   cmptbl = diff_compare_table(a, b, NULL);
-
   push_array(cmptbl);
 
-  seq = diff_longest_sequence(cmptbl, b->size);
-
-  pop_n_elems(args+1);
-  push_array(seq); 
+  push_array(diff_longest_sequence(cmptbl, b->size));
 }
 
 /*! @decl array(int) diff_dyn_longest_sequence(array a, array b)
@@ -7169,19 +7152,14 @@ PMOD_EXPORT void f_diff_dyn_longest_sequence(INT32 args)
 {
   struct array *a;
   struct array *b;
-  struct array *seq;
   struct array *cmptbl;
 
   get_all_args("diff_dyn_longest_sequence", args, "%a%a", &a, &b);
 
   cmptbl=diff_compare_table(a, b, NULL);
-
   push_array(cmptbl);
 
-  seq = diff_dyn_longest_sequence(cmptbl, b->size);
-
-  pop_n_elems(args+1);
-  push_array(seq); 
+  push_array(diff_dyn_longest_sequence(cmptbl, b->size));
 }
 
 /*! @endmodule
@@ -7856,6 +7834,12 @@ PMOD_EXPORT void f_uniq_array(INT32 args)
   int i, j=0,size=0;
 
   get_all_args("uniq", args, "%a", &a);
+  if( !a->size )
+  {
+    push_empty_array();
+    return;
+  }
+
   push_mapping(m = allocate_mapping(a->size));
   b = allocate_array(a->size);
 
@@ -7870,8 +7854,7 @@ PMOD_EXPORT void f_uniq_array(INT32 args)
   }
 
   b->type_field = a->type_field;
-  b=array_shrink(b, j);
-  push_array(b);
+  push_array(array_shrink(b, j));
 }
 
 /*! @decl array(mixed) splice(array(mixed) arr1, array(mixed) arr2, @
@@ -8839,8 +8822,6 @@ PMOD_EXPORT void f_program_identifier_defined(INT32 args)
       INT_TYPE line;
       struct pike_string *tmp = low_get_program_line(p, &line);
 
-      pop_n_elems(args);
-
       if (tmp) 
       {
           push_string(tmp);
@@ -8872,7 +8853,6 @@ PMOD_EXPORT void f_program_identifier_defined(INT32 args)
 
   if (file)
   {
-      pop_n_elems(args);
       if (line) {
           push_string(file);
           push_text(":");
@@ -8883,7 +8863,7 @@ PMOD_EXPORT void f_program_identifier_defined(INT32 args)
           push_string (file);
       return;
   }
-  pop_n_elems(args);
+
   push_int(0);
 }
 
@@ -9020,7 +9000,6 @@ PMOD_EXPORT void f_function_defined(INT32 args)
 
     if (file)
     {
-      pop_n_elems(args);
       if (line) {
 	push_string(file);
 	push_text(":");
@@ -9033,7 +9012,6 @@ PMOD_EXPORT void f_function_defined(INT32 args)
     }
   }
 
-  pop_n_elems(args);
   push_int(0);
 }
 
