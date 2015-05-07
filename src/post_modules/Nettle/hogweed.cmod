@@ -82,6 +82,7 @@ PIKEFUN array(object(Gmp.mpz))
 
   if (!dsa_generate_params(&params, rnd, random_func_wrapper,
 			   NULL, NULL, p_bits, q_bits)) {
+    dsa_params_clear(&params);
     Pike_error("Illegal parameter value.\n");
   }
 
