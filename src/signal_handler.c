@@ -3591,8 +3591,8 @@ void f_create_process(INT32 args)
        * fork() failed
        */
 
-        while(UNLIKELY(close(control_pipe[0])) < 0 && UNLIKELY(errno==EINTR));
-        while(UNLIKELY(close(control_pipe[1])) < 0 && UNLIKELY(errno==EINTR));
+        while(UNLIKELY(close(control_pipe[0]) < 0) && UNLIKELY(errno==EINTR));
+        while(UNLIKELY(close(control_pipe[1]) < 0) && UNLIKELY(errno==EINTR));
 
       free_perishables(&storage);
 
