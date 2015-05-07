@@ -13,7 +13,7 @@
  *
  *   * Uninitialized variables have any value.
  *
- * Henrik Grubbström 2015-04-21.
+ * Henrik GrubbstrÃ¶m 2015-04-21.
  */
 
 /*
