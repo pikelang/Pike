@@ -274,7 +274,7 @@ struct timeval;
 #  define alloca __builtin_alloca
 # else
 #  ifdef _AIX
- #pragma alloca
+#pragma alloca
 #  else
 #   ifndef alloca /* predefined by HP cc +Olibcalls */
 void *alloca();

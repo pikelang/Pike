@@ -228,14 +228,14 @@ PIKECLASS CircularList
       if(a == b) RETURN 1;
       if(THIS->size != list->size) RETURN 0;
       if(!THIS->size) RETURN 1;
-      
-     #ifdef PIKE_DEBUG
+
+#ifdef PIKE_DEBUG
       if(d_flag > 1)
 	{
 	  array_check_type_field(a);
 	  array_check_type_field(b);
 	}
-     #endif
+#endif
       
       /* This could be done much better if I KNEW that
        * the type fields didn't contain types that
