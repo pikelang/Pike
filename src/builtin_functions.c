@@ -6219,8 +6219,10 @@ static struct array *longest_ordered_sequence(struct array *a)
   ONERROR tmp;
   ONERROR tmp2;
 
-  if(!a->size)
+  if(!a->size) {
+    add_ref(&empty_array);
     return &empty_array;
+  }
 
   stack = calloc(sizeof(int), a->size);
   links = calloc(sizeof(int), a->size);
@@ -6229,7 +6231,7 @@ static struct array *longest_ordered_sequence(struct array *a)
   {
     if (stack) free(stack);
     if (links) free(links);
-    return 0;
+    return NULL;
   }
 
   /* is_gt(), is_lt() and low_allocate_array() can generate errors. */
