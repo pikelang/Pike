@@ -2608,15 +2608,14 @@ static INLINE void img_lay_stroke(struct layer *ly,
    {
       while (len>SNUMPIXS)
       {
-	 (ly->row_func)(s,l?l:ly->sfill,d,sa,NULL,da,
-			SNUMPIXS,ly->alpha_value);
+	 (ly->row_func)(s, ly->sfill, d, sa, NULL, da,
+			SNUMPIXS, ly->alpha_value);
 	 s+=SNUMPIXS; d+=SNUMPIXS;
 	 sa+=SNUMPIXS;da+=SNUMPIXS;
-	 if (l) l+=SNUMPIXS;
 	 len-=SNUMPIXS;
       }
       if (len)
-	 (ly->row_func)(s,l?l:ly->sfill,d,sa,NULL,da,len,ly->alpha_value);
+	 (ly->row_func)(s, ly->sfill, d, sa, NULL, da, len, ly->alpha_value);
    }
    else
    {
@@ -2624,17 +2623,16 @@ static INLINE void img_lay_stroke(struct layer *ly,
 
       while (len>SNUMPIXS)
       {
-	 (ly->row_func)(s,l?l:ly->sfill,d,sa,la?la:ly->sfill_alpha,da,
-			SNUMPIXS,ly->alpha_value);
+	 (ly->row_func)(s, ly->sfill, d, sa, la?la: ly->sfill_alpha, da,
+			SNUMPIXS, ly->alpha_value);
 	 s+=SNUMPIXS; d+=SNUMPIXS;
 	 sa+=SNUMPIXS; da+=SNUMPIXS;
-	 if (l) l+=SNUMPIXS;
 	 if (la) la+=SNUMPIXS;
 	 len-=SNUMPIXS;
       }
       if (len)
-	 (ly->row_func)(s,l?l:ly->sfill,d,sa,la?la:ly->sfill_alpha,
-			da,len,ly->alpha_value);
+	 (ly->row_func)(s, ly->sfill, d, sa, la?la: ly->sfill_alpha,
+			da, len, ly->alpha_value);
    }
 }
 
