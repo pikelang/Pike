@@ -674,55 +674,48 @@ PIKECLASS Inflate
 	total_out_old = TOTAL_OUT(s);
       }
     }
-    
+
+    /* NB: On exit from the loop retval is either BZ_STREAM_END or BZ_OK. */
+
     /*return the bytes decompressed since the last time bytes were
       returned from this stream, in other words, return a block*/
-    if((retval == BZ_OK) || (retval==BZ_STREAM_END)){
-      if(TOTAL_OUT(s) - THIS->total_out_previous_flush > 0){
-	retstr = make_shared_binary_string(ret_buffer.s.str,TOTAL_OUT(s)-THIS->total_out_previous_flush);
-      }
-      else{
-	retstr = make_shared_binary_string("",0);
-      }
-      THIS->total_out_previous_flush = TOTAL_OUT(s);
-      if(retval == BZ_STREAM_END){
-	bzDecompressEnd(s);
-	toss_buffer(&(THIS->intern_buffer));/*free the final buffer*/
-	
-	if(THIS->internbuf != NULL){
-	  toss_buffer(&(THIS->intern_buffer));
-	  THIS->internbuf = NULL;
-	}
-	
-	s->bzalloc = NULL;
-	s->bzfree = NULL;
-	s->opaque = NULL;
-	
-	retval = bzDecompressInit(s, 0, 0);
-	
-	/* make more detailed*/
-	if(retval != BZ_OK){
-	  Pike_error("Unexpected error in Bz2.Inflate().\n");
-	}
-	
-	s->next_in = NULL;
-	s->next_out = NULL;
-	s->avail_in = 0;
-	s->avail_out = 0;
-	
-	
-	/*reset the counted bytes*/
-	THIS->total_out_previous_flush = 0;
-      }
-      toss_buffer(&ret_buffer);
-      RETURN(retstr);
+    if(TOTAL_OUT(s) - THIS->total_out_previous_flush > 0){
+      retstr = make_shared_binary_string(ret_buffer.s.str,TOTAL_OUT(s)-THIS->total_out_previous_flush);
     }
-    
     else{
-      /* something went really wrong*/
-      toss_buffer(&ret_buffer);
-      RETURN(0);
+      retstr = make_shared_binary_string("",0);
     }
+    THIS->total_out_previous_flush = TOTAL_OUT(s);
+    if(retval == BZ_STREAM_END){
+      bzDecompressEnd(s);
+      toss_buffer(&(THIS->intern_buffer));/*free the final buffer*/
+
+      if(THIS->internbuf != NULL){
+	toss_buffer(&(THIS->intern_buffer));
+	THIS->internbuf = NULL;
+      }
+
+      s->bzalloc = NULL;
+      s->bzfree = NULL;
+      s->opaque = NULL;
+
+      retval = bzDecompressInit(s, 0, 0);
+
+      /* make more detailed*/
+      if(retval != BZ_OK){
+	Pike_error("Unexpected error in Bz2.Inflate().\n");
+      }
+
+      s->next_in = NULL;
+      s->next_out = NULL;
+      s->avail_in = 0;
+      s->avail_out = 0;
+
+      /*reset the counted bytes*/
+      THIS->total_out_previous_flush = 0;
+    }
+    toss_buffer(&ret_buffer);
+    RETURN(retstr);
   }
   
   INIT
