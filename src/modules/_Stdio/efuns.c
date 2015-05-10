@@ -1524,6 +1524,8 @@ void f_exece(INT32 args)
     if(m_val_types(en) & ~BIT_STRING)
       SIMPLE_BAD_ARG_ERROR("exece", 3, "mapping(string:string)");
 
+    /* FALL_THROUGH */
+
   case 2:
     if(TYPEOF(sp[1-args]) != T_ARRAY)
       SIMPLE_BAD_ARG_ERROR("exece", 2, "array(string)");
@@ -1532,9 +1534,12 @@ void f_exece(INT32 args)
     if(array_fix_type_field(sp[1-args].u.array) & ~BIT_STRING)
       SIMPLE_BAD_ARG_ERROR("exece", 2, "array(string)");
 
+    /* FALL_THROUGH */
+
   case 1:
     if(TYPEOF(sp[0-args]) != T_STRING)
       SIMPLE_BAD_ARG_ERROR("exece", 1, "string");
+    break;
   }
 
   argv=xalloc((2+sp[1-args].u.array->size) * sizeof(char *));
