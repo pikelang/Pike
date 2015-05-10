@@ -324,6 +324,7 @@ static struct object *low_pcx_decode( struct pike_string *data )
         Pike_error("Unsupported number of planes for %d bpp image: %d\n",
               pcx_header.bpp, pcx_header.planes);
      }
+     break;
    default:
      Pike_error("Unsupported bits per plane: %d\n", pcx_header.bpp);
   }
