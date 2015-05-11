@@ -2618,7 +2618,6 @@ PMOD_EXPORT struct multiset *merge_multisets (struct multiset *a,
 
 	{
 	  INTERNAL_CMP (&a_ind, &b_ind, cmp_res);
-	  if (cmp_res == CMPFUN_UNORDERED) cmp_res = 0;
 	},
 
 	{			/* Copy m.a_node. */
@@ -2656,7 +2655,6 @@ PMOD_EXPORT struct multiset *merge_multisets (struct multiset *a,
 
 	{
 	  INTERNAL_CMP (&a_ind, &b_ind, cmp_res);
-	  if (cmp_res == CMPFUN_UNORDERED) cmp_res = 0;
 	},
 
 	{			/* Copy m.a_node. */
