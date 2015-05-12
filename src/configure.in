@@ -8349,8 +8349,8 @@ int main()
 
    fprintf(out,"]PAD_FEATURE([svalue size])[%d bytes (%d+%d+%d)\n",
            sizeof(sval),
-           sizeof(sval.type),
-           sizeof(sval.subtype),
+           sizeof(TYPEOF(sval)),
+           sizeof(SUBTYPEOF(sval)),
            sizeof(sval.u));
 
    fclose(out);
