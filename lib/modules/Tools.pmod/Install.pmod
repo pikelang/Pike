@@ -68,7 +68,7 @@ array(string) features()
              "Postgres", "SANE", "SDL", "Ssleay", "Yp", "sybase", "_WhiteFish",
 	     "X", "Bz2", "COM", "Fuse", "GTK2", "Gettext", "HTTPAccept",
 	     "Kerberos", "SQLite", "_Image_SVG", "_Regexp_PCRE", "GSSAPI",
-	     "Protocols.DNS_SD", "Gnome2", "MIME", "_PGsql", "Standards.JSON",
+	     "Protocols.DNS_SD", "Gnome2", "MIME", "Standards.JSON",
 	     "VCDiff", "ZXID" }),
 	  string modname)
   {
