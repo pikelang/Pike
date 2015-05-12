@@ -797,7 +797,7 @@ int main(int argc, array(string) argv)
 
 	    if (tmp != 1) {
 	      if ((verbose > 1) && !err) {
-		log_msg("Contitional %d%s failed:\n",
+		log_msg("Conditional %d%s failed:\n",
 			e+1, testline?" (line "+testline+")":"");
 		print_code( condition );
 	      }
