@@ -2415,6 +2415,8 @@ static int really_low_parse_dtd(void)
 			      goto comefrom_fixed;
 			    }
 
+			    /* FALL_THROUGH */
+
 			  default:
 			bad_defaultdecl:
 			    XMLERROR("Bad default declaration.");
