@@ -7880,7 +7880,13 @@ PMOD_EXPORT void f_uniq_array(INT32 args)
   }
 
   b->type_field = a->type_field;
-  push_array(array_shrink(b, j));
+  if (j != a->size) {
+    /* There are zeros in the unused fields... */
+    b->type_field |= BIT_INT;
+    b = array_shrink(b, j);
+    b->type_field = a->type_field;
+  }
+  push_array(b);
 }
 
 /*! @decl array(mixed) splice(array(mixed) arr1, array(mixed) arr2, @
