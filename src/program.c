@@ -2288,7 +2288,7 @@ struct program *id_to_program(INT32 id)
       } else if ((id >= 300) && (id < 400)) {
 	module = "Nettle";
       } else if ((id >= 1000) && (id < 2000)) {
-	module = "___GTK";
+	module = "___GTK1";
       } else if ((id >= 2000) && (id < 3000)) {
 	module = "___GTK2";
       }
