@@ -65,13 +65,37 @@
 
 /*! @decl int equal(mixed a, mixed b)
  *!
- *!   This function checks if the values @[a] and @[b] are equal.
+ *!   This function checks if the values @[a] and @[b] are equivalent.
  *!
- *!   For all types but arrays, multisets and mappings, this operation is
- *!   the same as doing @expr{@[a] == @[b]@}.
- *!   For arrays, mappings and multisets however, their contents are checked
- *!   recursively, and if all their contents are the same and in the same
- *!   place, they are considered equal.
+ *! @returns
+ *!   If either of the values is an object the (normalized) result
+ *!   of calling @[lfun::_equal()] will be returned.
+ *!
+ *!   Returns @expr{1@} if both values are false (zero, destructed objects,
+ *!   prototype functions, etc).
+ *!
+ *!   Returns @expr{0@} (zero) if the values have different types.
+ *!
+ *!   Otherwise depending on the type of the values:
+ *!   @mixed
+ *!     @type int
+ *!     @type float
+ *!     @type string
+ *!     @type program
+ *!       Returns the same as @expr{a == b@}.
+ *!     @type array
+ *!     @type mapping
+ *!     @type multiset
+ *!     @type object
+ *!       The contents of @[a] and @[b] are checked recursively, and
+ *!       if all their contents are @[equal] and in the same place,
+ *!       they are considered equal.
+ *!
+ *!       Note that for objects this case is only reached if neither
+ *!       @[a] nor @[b] implements @[lfun::_equal()].
+ *!     @type type
+ *!       Returns @expr{(a <= b) && (b <= a)@}.
+ *!  @endmixed
  *!
  *! @seealso
  *!   @[copy_value()]

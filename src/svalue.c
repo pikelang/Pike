@@ -883,6 +883,8 @@ PMOD_EXPORT int low_is_equal(const struct svalue *a,
 
   if(is_eq(a,b)) return 1;
 
+  if(UNSAFE_IS_ZERO(a) && UNSAFE_IS_ZERO(b)) return 1;
+
   if(TYPEOF(*a) != TYPEOF(*b)) return 0;
 
   switch(TYPEOF(*a))
