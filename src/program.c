@@ -4520,6 +4520,8 @@ PMOD_EXPORT void pike_set_prog_optimize_callback(node *(*opt)(node *))
  *
  * @return
  *   Returns an equivalent reference that is INLINE|HIDDEN.
+ *
+ *   Returns -1 if the referenced identifier is -1 or a prototype.
  */
 PMOD_EXPORT int really_low_reference_inherited_identifier(struct program_state *q,
 							  int i,
@@ -4533,6 +4535,15 @@ PMOD_EXPORT int really_low_reference_inherited_identifier(struct program_state *
   if(f==-1) return -1;
 
   p = np->inherits[i].prog;
+
+  if ((q?q:Pike_compiler)->compiler_pass == 2) {
+    struct identifier *id = ID_FROM_INT(p, i);
+    if (((id->identifier_flags & IDENTIFIER_TYPE_MASK) ==
+	 IDENTIFIER_PIKE_FUNCTION) && (id->func.offset == -1)) {
+      /* Prototype. */
+      return -1;
+    }
+  }
 
   funp = p->identifier_references[f];
   funp.inherit_offset += i;
