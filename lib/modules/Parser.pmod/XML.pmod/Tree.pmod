@@ -2188,7 +2188,7 @@ class RootNode
 		     mapping|void predefined_entities,
 		     ParseFlags|void flags)
   {
-    Node::create(XML_ROOT, "", 0, "");
+    ::create(XML_ROOT, "", 0, "");
     if (data) {
       parse(data, predefined_entities, flags);
     }
@@ -2312,7 +2312,7 @@ class DTDElementNode
   protected void create(string name, array expression)
   {
     this::expression = expression;
-    Node::create(DTD_ELEMENT, name, 0, "");
+    ::create(DTD_ELEMENT, name, 0, "");
   }
 }
 
