@@ -1797,7 +1797,7 @@ PMOD_EXPORT int array_equal_p(struct array *a, struct array *b, struct processin
    * really aren't in the array
    */
   if(!(a->type_field & b->type_field) &&
-     !( (a->type_field | b->type_field) & BIT_OBJECT ))
+     !( (a->type_field | b->type_field) & (BIT_OBJECT|BIT_FUNCTION) ))
     return 0;
 
   curr.pointer_a = a;
