@@ -24,6 +24,7 @@
 #include "pike_threadlib.h"
 #include "buffer.h"
 #include "module_support.h"
+#include "bitvector.h"
 
 /* Includes <gmp.h> */
 #include "bignum.h"
@@ -278,11 +279,15 @@ PIKECLASS Buffer
 
     if( UNLIKELY(io->len + bytes > io->allocated) )
     {
-      size_t new_len = io->allocated;
+      size_t new_len;
 
-      do
-        new_len = ((new_len+32)*2)-32;
-      while( new_len < io->len + bytes );
+#if SIZEOF_CHARP == 8
+      new_len = round_up64(io->len+bytes);
+#else
+      new_len = round_up32(io->len+bytes);
+#endif
+      if( !new_len )
+        Pike_error(msg_out_of_mem_2, io->len+bytes);
 
       io->buffer = xrealloc( io->buffer, new_len );
       io->num_malloc++;
