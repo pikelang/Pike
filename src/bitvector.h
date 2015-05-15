@@ -162,12 +162,16 @@ static INLINE unsigned INT64 ATTRIBUTE((unused)) bswap64(unsigned INT64 x) {
 #endif
 }
 
-static INLINE unsigned INT64 ATTRIBUTE((unused)) round_up64(unsigned INT64 v) {
-    unsigned INT64 i;
+static INLINE unsigned INT64 PIKE_UNUSED_ATTRIBUTE round_up64(unsigned INT64 v) {
+    unsigned INT32 i;
 
-    if (!v) return 0;
+    if (!v) return 1;
 
-    return (unsigned INT64)1 << (64 - clz64(v));
+    i = clz64(v);
+
+    if (!i) return 0;
+
+    return (unsigned INT64)1 << (64 - i);
 }
 
 static INLINE unsigned INT32 ATTRIBUTE((unused)) ffs64(unsigned INT64 v) {
@@ -187,9 +191,13 @@ static INLINE unsigned INT32 ATTRIBUTE((unused)) log2_u64(unsigned INT64 v) {
 static INLINE unsigned INT32 ATTRIBUTE((unused)) round_up32(unsigned INT32 v) {
     unsigned INT32 i;
 
-    if (!v) return 0;
+    if (!v) return 1;
 
-    return 1U << (32 - clz32(v));
+    i = clz32(v);
+
+    if (!i) return 0;
+
+    return 1U << (32 - i);
 }
 
 static INLINE unsigned INT32 ATTRIBUTE((unused)) ffs32(unsigned INT32 v) {

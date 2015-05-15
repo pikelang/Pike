@@ -73,6 +73,15 @@ static struct ba_page * ba_alloc_page(struct block_allocator * a, int i) {
     struct ba_layout l = ba_get_layout(a, i);
     size_t n = l.offset + l.block_size + l.doffset;
     struct ba_page * p;
+
+    /*
+     * note that i is always positive, so this only
+     * happens if ba_get_layout overflows
+     */
+    if (a->l.offset > l.offset || n < l.offset) {
+        Pike_error("Overflow.\n");
+    }
+
     if (l.alignment) {
 	p = xalloc_aligned(n, l.alignment);
     } else {
@@ -129,8 +138,10 @@ PMOD_EXPORT void ba_low_init_aligned(struct block_allocator * a) {
 	a->l.doffset = sizeof(struct ba_page);
     }
 
-    if (a->l.blocks & (a->l.blocks - 1))
-        a->l.blocks = round_up32(a->l.blocks);
+    if (a->l.blocks & (a->l.blocks - 1)) {
+        unsigned INT32 tmp = round_up32(a->l.blocks);
+        if (tmp) a->l.blocks = tmp;
+    } else if (!a->l.blocks) a->l.blocks = 1;
     a->l.block_size = block_size;
     a->l.offset = block_size * (a->l.blocks-1);
 }
@@ -222,7 +233,7 @@ static void ba_low_alloc(struct block_allocator * a) {
     }
 
     if (a->size == (sizeof(a->pages)/sizeof(a->pages[0]))) {
-        Pike_error("Out of memory.");
+        Pike_error("Out of memory.\n");
     }
     a->pages[a->size] = ba_alloc_page(a, a->size);
     a->alloc = a->size;
