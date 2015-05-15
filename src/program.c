@@ -4537,7 +4537,7 @@ PMOD_EXPORT int really_low_reference_inherited_identifier(struct program_state *
   p = np->inherits[i].prog;
 
   if ((q?q:Pike_compiler)->compiler_pass == 2) {
-    struct identifier *id = ID_FROM_INT(p, i);
+    struct identifier *id = ID_FROM_INT(p, f);
     if (((id->identifier_flags & IDENTIFIER_TYPE_MASK) ==
 	 IDENTIFIER_PIKE_FUNCTION) && (id->func.offset == -1)) {
       /* Prototype. */
