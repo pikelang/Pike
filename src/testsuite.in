@@ -8547,7 +8547,7 @@ test_eq(([0:'f',1:'o',2:'o'])[random(0)-1],0)
 test_eq((<'f','o','o'>)['o'],1)
 test_eq((<'f','o','o'>)['f'],1)
 test_eq((<'f','o','o'>)[random(0)+'b'],0)
-test_eq((<'f','o','o'>)[-1],0)
+test_eq((<'f','o','o'>)[ [int](mixed)-1],0)
 
 test_eq([[class Z { mixed `->(mixed x) { return this_object()[x]; } int foo() { return 1; }}()->foo()]],1)
 
