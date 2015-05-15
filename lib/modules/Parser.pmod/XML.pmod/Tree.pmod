@@ -1928,6 +1928,7 @@ class SimpleRootNode
 		     ParseFlags|void flags,
 		     string|void default_namespace)
   {
+    ::create(XML_ROOT, "", 0, "");
     if (data) {
       parse(data, predefined_entities, flags, default_namespace);
     }
