@@ -1119,11 +1119,11 @@ test_compile_any([[
   }
 ]])
 
-// Test that prototypes evaluate to zero.
-test_any([[
+// Test that prototypes are equal() to zero.
+test_any_equal([[
   class Foo {int foo();};
-  return Foo()->foo == 0;
-]], 1)
+  return Foo()->foo;
+]], 0)
 test_any_equal([[
   class Foo {int foo();};
   return indices(Foo());
@@ -1132,17 +1132,17 @@ test_any_equal([[
   class Foo {int foo();};
   return values(Foo());
 ]], ({0}))
-test_any([[
+test_any_equal([[
   class Foo
   {
     int foo();
-    int(0..1) f()
+    function f()
     {
-      return foo == 0;
+      return foo;
     }
   };
   return Foo()->f();
-]], 1)
+]], 0)
 test_any([[
   class Foo
   {
