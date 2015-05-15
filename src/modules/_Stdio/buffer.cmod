@@ -1209,6 +1209,7 @@ PIKECLASS Buffer
     int byte = 0;
     if( _byte ) byte = _byte->u.integer;
     memset( io_add_space( io, nbytes,0), byte, nbytes );
+    io->len += nbytes;
     Pike_sp -= args;
     ref_push_object( io->this );
   }
