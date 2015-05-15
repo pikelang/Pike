@@ -1650,6 +1650,7 @@ int is_open()
 {
   SSL3_DEBUG_MSG ("SSL.File->is_open()\n");
   ENTER (0) {
+    if (sizeof(user_read_buffer || "")) RETURN(1);
     if ((close_state == STREAM_OPEN || close_state == CLEAN_CLOSE) &&
 	stream && stream->is_open()) {
       // When close_state == STREAM_OPEN, we have to check if there's
@@ -1672,8 +1673,10 @@ int is_open()
 	RUN_MAYBE_BLOCKING (
 	  action && (close_state == CLEAN_CLOSE ?
 		     (conn->state & CONNECTION_closed) != CONNECTION_closed :
-		     !(conn->state & CONNECTION_closed)),
+		     !(conn->state & CONNECTION_closed)) &&
+	  !sizeof(user_read_buffer || ""),
 	  1);
+      if (sizeof(user_read_buffer || "")) RETURN(1);
       closed = conn->state & CONNECTION_closed;
       RETURN (close_state == CLEAN_CLOSE ?
 	      ((closed != CONNECTION_closed) && 2) : !closed);
