@@ -3371,8 +3371,25 @@ expr2: expr3
   | TOK_INC expr4       { $$=mknode(F_INC,$2,0); }
   | TOK_DEC expr4       { $$=mknode(F_DEC,$2,0); }
   | TOK_NOT expr2        { $$=mkopernode("`!",$2,0); }
-  | '~' expr2          { $$=mkopernode("`~",$2,0); }
-  | '-' expr2          { $$=mkopernode("`-",$2,0); }
+  | '~' expr2
+  {
+    if ($2 && ($2->token == F_CONSTANT) && (TYPEOF($2->u.sval) == T_INT)) {
+      $$ = mkintnode(~($2->u.sval.u.integer));
+      free_node($2);
+    } else {
+      $$ = mkopernode("`~", $2, 0);
+    }
+  }
+  | '-' expr2
+  {
+    if ($2 && ($2->token == F_CONSTANT) && (TYPEOF($2->u.sval) == T_INT) &&
+	!INT_TYPE_NEG_OVERFLOW($2->u.sval.u.integer)) {
+      $$ = mkintnode(-($2->u.sval.u.integer));
+      free_node($2);
+    } else {
+      $$=mkopernode("`-", $2, 0);
+    }
+  }
   ;
 
 expr3: expr4
