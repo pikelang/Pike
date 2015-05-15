@@ -1209,17 +1209,21 @@ PIKECLASS Buffer
       RETURN THIS->malloced ? THIS->allocated : THIS->stash.len;
   }
 
-  /*! @decl Buffer add_padding( int nbytes, int(0..255)|void byte )
+  /*! @decl Buffer add_padding( int(0..) nbytes, int(0..255)|void byte )
    *!
    *! Add @[nbytes] bytes of padding, if @[byte] is not specified the
    *! area will be filled with 0's, otherwise the specified byte will
    *! be repeated.
    */
-  PIKEFUN Buffer add_padding( int nbytes, int|void _byte )
+  PIKEFUN Buffer add_padding( int(0..) nbytes, int|void _byte )
   {
     Buffer *io = THIS;
     int byte = 0;
     if( _byte ) byte = _byte->u.integer;
+
+    if( nbytes < 0 )
+      Pike_error("Cannot add negative padding.\n");
+
     memset( io_add_space( io, nbytes,0), byte, nbytes );
     io->len += nbytes;
     Pike_sp -= args;
