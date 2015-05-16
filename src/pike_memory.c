@@ -425,7 +425,7 @@ PMOD_EXPORT char *debug_xstrdup(const char *src)
   char *dst = NULL;
   if (src) {
     int len = strlen (src) + 1;
-    dst = malloc (len);
+    dst = xalloc (len);
     memcpy (dst, src, len);
   }
   return dst;
