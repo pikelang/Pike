@@ -224,15 +224,14 @@ PMOD_EXPORT struct mallinfo dlmallinfo(void);
 #define debug_malloc_dump_fd(fd)
 #define xalloc debug_xalloc
 #define xcalloc debug_xcalloc
+#define xrealloc debug_xrealloc
 
 #if defined(DYNAMIC_MODULE) && defined(__NT__) && !defined(USE_DLL)
 #define xmalloc debug_xmalloc
-#define xrealloc debug_xrealloc
 #define xfree debug_xfree
 #define xstrdup debug_xstrdup
 #else
 #define xmalloc malloc
-#define xrealloc realloc
 #define xfree free
 #define xstrdup strdup
 #endif /* defined(DYNAMIC_MODULE) && defined(__NT__) && !defined(USE_DLL) */

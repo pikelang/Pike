@@ -383,7 +383,10 @@ PMOD_EXPORT void *debug_xmalloc(size_t s)
 
 PMOD_EXPORT void *debug_xrealloc(void *m, size_t s)
 {
-  return realloc(m,s);
+  void *ret = realloc(m,s);
+  if (ret) return ret;
+  Pike_error(msg_out_of_mem_2, s);
+  return NULL;
 }
 
 PMOD_EXPORT void *debug_xcalloc(size_t n, size_t s)
