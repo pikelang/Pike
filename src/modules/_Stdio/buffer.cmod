@@ -289,9 +289,9 @@ PIKECLASS Buffer
         new_len = ((new_len+32)*2)-32;
       while( new_len < io->len + bytes );
 
-      new_ptr = xrealloc( io->buffer, bytes );
+      new_ptr = xrealloc( io->buffer, new_len );
       if( !new_ptr )
-        Pike_error(msg_out_of_mem_2, bytes );
+        Pike_error(msg_out_of_mem_2, new_len );
       io->buffer = new_ptr;
       io->num_malloc++;
       io->allocated = new_len;
