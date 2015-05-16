@@ -547,6 +547,13 @@ PIKECLASS AEAD
 
 #ifdef HAVE_NETTLE_CHACHA_POLY1305_H
 
+/* NB: Nettle 3.0 had an implementation of the draft AEAD construct,
+ *     which is incompatible with the RFC 7539 definition.
+ *
+ *     In the old implementation the length of the nonce was 8 bytes.
+ */
+#if CHACHA_POLY1305_NONCE_SIZE == 12
+
 static void pike_chacha_poly1305_set_encrypt_key(void *ctx,
 						 ptrdiff_t length,
 						 const uint8_t *key)
@@ -582,6 +589,8 @@ static void pike_chacha_poly1305_set_iv(void *ctx,
 #cmod_include "aead.H"
 #cmod_undef PIKE_NAME
 #cmod_undef NETTLE_NAME
+
+#endif /* CHACHA_POLY1305_NONCE_SIZE == 12 */
 
 #endif /* HAVE_NETTLE_CHACHA_POLY1305_H */
 
