@@ -5779,6 +5779,7 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
 	if (!(remote_ref->id_flags & (ID_INLINE|ID_HIDDEN))) {
 	  /* We need to get a suitable reference. */
 	  n = really_low_reference_inherited_identifier(state, 0, n);
+	  if (n < 0) return n;
 	}
 	return define_alias(name, id->type, flags, depth, n);
       }
