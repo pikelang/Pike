@@ -279,16 +279,12 @@ PIKECLASS Buffer
     if( UNLIKELY(io->len + bytes > io->allocated) )
     {
       size_t new_len = io->allocated;
-      void *new_ptr;
 
       do
         new_len = ((new_len+32)*2)-32;
       while( new_len < io->len + bytes );
 
-      new_ptr = xrealloc( io->buffer, new_len );
-      if( !new_ptr )
-        Pike_error(msg_out_of_mem_2, new_len );
-      io->buffer = new_ptr;
+      io->buffer = xrealloc( io->buffer, new_len );
       io->num_malloc++;
       io->allocated = new_len;
     }
@@ -2078,15 +2074,11 @@ fail: CALL_AND_UNSET_ONERROR(e);
   PIKEFUN void trim(  )
   {
     Buffer *io = THIS;
-    void *new_ptr;
 
     io_add_space( io, 0, 1 );
     if( io->allocated > io->len+32 )
     {
-      new_ptr = xrealloc( io->buffer, io->len );
-      if (new_ptr)
-        Pike_error(msg_out_of_mem_2, io->len);
-      io->buffer = new_ptr;
+      io->buffer = xrealloc( io->buffer, io->len );
       io->num_malloc++;
       io->allocated = io->len;
     }
