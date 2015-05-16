@@ -203,7 +203,7 @@ PIKECLASS Buffer
     }
   }
 
-  static void io_ensure_malloced( Buffer *io, int bytes )
+  static void io_ensure_malloced( Buffer *io, size_t bytes )
   {
     if( UNLIKELY(!io->malloced) )
     {
@@ -211,9 +211,17 @@ PIKECLASS Buffer
       if( !io_unstash_malloc(io) )
       {
           unsigned char *old = io->buffer;
-          io->buffer = xalloc( io->len + bytes + 100 );
+
+          bytes += io->len;
+
+          if (bytes < io->len || bytes + 100 < bytes)
+            Pike_error(msg_out_of_mem_2, bytes + 100);
+
+          bytes += 100;
+
+          io->buffer = xalloc( bytes );
           io->malloced = 1;
-          io->allocated = io->len + bytes + 100;
+          io->allocated = bytes;
           io->num_malloc++;
           memcpy( io->buffer, old, io->len );
           io_unlink_external_storage(io);
@@ -286,8 +294,7 @@ PIKECLASS Buffer
 #else
       new_len = round_up32(io->len+bytes);
 #endif
-      if( !new_len )
-        Pike_error(msg_out_of_mem_2, io->len+bytes);
+      if (!new_len) new_len = io->len + bytes;
 
       io->buffer = xrealloc( io->buffer, new_len );
       io->num_malloc++;
