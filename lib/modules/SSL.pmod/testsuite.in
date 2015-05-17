@@ -1026,6 +1026,8 @@ array(int) a() {
   for (int client_min = SSL.Constants.PROTOCOL_SSL_3_0;
        client_min <= client_max; client_min++) {
 
+    __signal_watchdog();
+
     int exp_protocol = min(client_max, server_max);
 
     string exp_res = client_msg;
