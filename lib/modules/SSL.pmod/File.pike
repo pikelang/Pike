@@ -235,7 +235,6 @@ protected void thread_error (string msg, THREAD_T other_thread)
 
 #endif	// !SSLFILE_DEBUG
 
-#define CHECK_CB_MODE(CUR_THREAD) do {} while (0)
 #define CHECK(IN_CALLBACK) do {} while (0)
 #define ENTER(IN_CALLBACK) do
 #define RESTORE do {} while (0)
@@ -287,45 +286,39 @@ protected int(0..0)|float backend_once(int|void nonwaiting_mode)
 // stream is assumed to be operational on entry but might be zero
 // afterwards.
 #define RUN_MAYBE_BLOCKING(REPEAT_COND, NONWAITING_MODE) do {		\
-  run_local_backend: {							\
-      CHECK_CB_MODE (THIS_THREAD());					\
+    while (1) {								\
+      float|int(0..0) action;						\
 									\
-      while (1) {							\
-	float|int(0..0) action;						\
-									\
-	if (conn->state & CONNECTION_peer_fatal) {			\
-	  SSL3_DEBUG_MSG ("Backend ended efter peer fatal.\n");		\
-	  break;							\
-	}								\
-									\
-	action = backend_once(NONWAITING_MODE);				\
-									\
-	if (NONWAITING_MODE && !action) {				\
-	  SSL3_DEBUG_MSG ("Nonwaiting local backend ended - nothing to do\n"); \
-	  break;							\
-	}								\
-									\
-	if (!action && (conn->state & CONNECTION_local_closing)) {	\
-	  SSL3_DEBUG_MSG ("Did not get a remote close - "		\
-			  "signalling delayed error from writing close message\n"); \
-	  cleanup_on_error();						\
-	  close_errno = write_errno = System.EPIPE;			\
-	  if (close_state != CLEAN_CLOSE)				\
-	    close_state = ABRUPT_CLOSE;					\
-	}								\
-									\
-	if (!stream) {							\
-	  SSL3_DEBUG_MSG ("Backend ended after close.\n");		\
-	  break run_local_backend;					\
-	}								\
-									\
-	if (!(REPEAT_COND)) {						\
-	  SSL3_DEBUG_MSG ("Local backend ended - repeat condition false\n"); \
-	  break;							\
-	}								\
+      if (conn->state & CONNECTION_peer_fatal) {			\
+	SSL3_DEBUG_MSG ("Backend ended efter peer fatal.\n");		\
+	break;								\
       }									\
 									\
-      CHECK_CB_MODE (THIS_THREAD());					\
+      action = backend_once(NONWAITING_MODE);				\
+									\
+      if (NONWAITING_MODE && !action) {					\
+	SSL3_DEBUG_MSG ("Nonwaiting local backend ended - nothing to do\n"); \
+	break;								\
+      }									\
+									\
+      if (!action && (conn->state & CONNECTION_local_closing)) {	\
+	SSL3_DEBUG_MSG ("Did not get a remote close - "			\
+			"signalling delayed error from writing close message\n"); \
+	cleanup_on_error();						\
+	close_errno = write_errno = System.EPIPE;			\
+	if (close_state != CLEAN_CLOSE)					\
+	  close_state = ABRUPT_CLOSE;					\
+      }									\
+									\
+      if (!stream) {							\
+	SSL3_DEBUG_MSG ("Backend ended after close.\n");		\
+	break;								\
+      }									\
+									\
+      if (!(REPEAT_COND)) {						\
+	SSL3_DEBUG_MSG ("Local backend ended - repeat condition false\n"); \
+	break;								\
+      }									\
     }									\
   } while (0)
 
