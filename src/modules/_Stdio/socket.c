@@ -724,6 +724,22 @@ static void port_query_backend (INT32 args)
 				    default_backend));
 }
 
+int fd_from_portobject( struct object *p )
+{
+  struct port *po = get_storage( p, port_program );
+  if(!po) return -1;
+  return po->box.fd;
+}
+
+/*! @decl int query_fd()
+ *!
+ *! Returns the file descriptor number associated with this object.
+ */
+static void port_query_fd(INT32 UNUSED(args))
+{
+  push_int(fd_from_portobject(Pike_fp->current_object));
+}
+
 
 static void init_port_struct(struct object *o)
 {
@@ -738,18 +754,6 @@ static void exit_port_struct(struct object *UNUSED(o))
   unhook_fd_callback_box (&THIS->box);
   /* map_variable takes care of id and accept_callback. */
 }
-
-int fd_from_portobject( struct object *p )
-{
-  struct port *po = get_storage( p, port_program );
-  if(!po) return -1;
-  return po->box.fd;
-}
-
-static void port_query_fd(INT32 UNUSED(args))
-{
-    push_int(fd_from_portobject(Pike_fp->current_object));
-} 
 /*! @endclass
  */
 
