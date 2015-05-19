@@ -151,8 +151,6 @@ PIKECLASS EventPoller
   PIKEFUN void add_handle(object handle)
   {
     void * h;
-    int s,  n;
-    struct array * ph;
     HANDLE nh;
 
     h = get_storage(handle, Wnotify_NotificationHandle_program);
@@ -162,15 +160,13 @@ PIKECLASS EventPoller
       Pike_error("add_handle: invalid object type.\n");
     }
 
-    ph = append_array(THIS->phandles, &Pike_sp[-args]);
-    THIS->phandles = ph;
+    THIS->phandles = append_array(THIS->phandles, &Pike_sp[-args]);
     nh = OBJ2_WNOTIFY_NOTIFICATIONHANDLE(handle)->handle;
 
     if(THIS->handles_size <= THIS->handles_used)
     {
-       s = n = THIS->handles_size || 1;
-       s*=2;
-       THIS->handles = xrealloc(THIS->handles, sizeof(HANDLE) * s);
+       int s = THIS->handles_size || 1;
+       THIS->handles = xrealloc(THIS->handles, sizeof(HANDLE) * s * 2);
     }
 
     THIS->handles[THIS->handles_used++] = nh;
