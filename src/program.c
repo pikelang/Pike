@@ -7708,6 +7708,7 @@ static char *make_plain_file (struct pike_string *filename, int malloced)
     if (malloced) {
       bufsize = len + 21;
       buffer = malloc (bufsize);
+      if(!buffer) return NULL;
     }
     else {
       bufsize = NELEM(buf) - 1;
@@ -7722,8 +7723,15 @@ static char *make_plain_file (struct pike_string *filename, int malloced)
 
       if (ptr + space > bufsize) {
 	if (malloced) {
+          char *new_buffer;
 	  bufsize = (bufsize << 1) + space + 1;
-	  buffer = realloc (buffer, bufsize);
+	  new_buffer = realloc (buffer, bufsize);
+          if(!new_buffer)
+          {
+            free(buffer);
+            return NULL;
+          }
+          buffer = new_buffer;
 	}
 	else
 	  break;

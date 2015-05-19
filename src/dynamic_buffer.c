@@ -83,10 +83,8 @@ PMOD_EXPORT void low_init_buf_with_string(dynbuf_string s, dynamic_buffer *buf)
      the bufsize back */
   for(buf->bufsize=BUFFER_BEGIN_SIZE;buf->bufsize<buf->s.len;buf->bufsize*=2);
   buf->s.str=realloc(buf->s.str,buf->bufsize);
-#ifdef PIKE_DEBUG
   if(!buf->s.str)
     Pike_fatal("Realloc failed.\n");
-#endif
 }
 
 PMOD_EXPORT dynbuf_string complex_free_buf(dynamic_buffer *old_buf)

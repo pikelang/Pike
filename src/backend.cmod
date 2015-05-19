@@ -765,10 +765,8 @@ PIKECLASS Backend
 	  struct hash_ent *new_hash;
 	  int e;
 
-	  new_heap = realloc(me->call_heap,
+	  new_heap = xrealloc(me->call_heap,
 	    sizeof(struct Backend_CallOut_struct *)*me->call_heap_size*2);
-	  if(!new_heap)
-	    Pike_error("Not enough memory for another call_out\n");
 	  memset(new_heap + me->call_heap_size, 0,
 		 sizeof(struct Backend_CallOut_struct *)*me->call_heap_size);
 	  me->call_heap_size *= 2;
@@ -3539,12 +3537,9 @@ PIKECLASS PollDeviceBackend
   {
     if (num_pdb_backends == pdb_backends_size) {
       struct PollDeviceBackend_struct **new_backends =
-	realloc(pdb_backends,
-		(pdb_backends_size+1) *
-		sizeof(struct PollDeviceBackend_struct *)*2);
-      if (!new_backends) {
-	Pike_error("Out of memory.\n");
-      }
+	xrealloc(pdb_backends,
+                 (pdb_backends_size+1) *
+                 sizeof(struct PollDeviceBackend_struct *)*2);
       pdb_backends = new_backends;
       pdb_backends_size = (pdb_backends_size+1)*2;
     }
