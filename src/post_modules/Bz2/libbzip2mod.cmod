@@ -248,7 +248,7 @@ PIKECLASS Deflate
   }
   
   void do_deflate(struct pike_string *data, dynamic_buffer *retbuf,
-		  int mode, INT32 UNUSED(args)){
+		  int mode){
     char *tmp = NULL;
     int retval;
     int total_out_old = 0;
@@ -310,7 +310,7 @@ PIKECLASS Deflate
     SET_ONERROR(err, toss_buffer, &retbuf);
 
     low_make_buf_space(DEFL_BUF_SIZE, &retbuf);
-    do_deflate(data, &retbuf, BZ_FLUSH, args);
+    do_deflate(data, &retbuf, BZ_FLUSH);
     
     if(TOTAL_OUT(s) - THIS->total_out_previous_flush > 0){
       if(THIS->total_out_previous_buf > THIS->total_out_previous_flush){
@@ -364,7 +364,7 @@ PIKECLASS Deflate
 
     low_make_buf_space(DEFL_BUF_SIZE, &retbuf);
     
-    do_deflate(data, &retbuf, BZ_FINISH, args);
+    do_deflate(data, &retbuf, BZ_FINISH);
         
     /*use perhaps a better check?*/
     if(TOTAL_OUT(s) - THIS->total_out_previous_flush > 0){
