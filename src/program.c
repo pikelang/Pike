@@ -8251,18 +8251,20 @@ void handle_compile_exception (const char *yyerror_fmt, ...)
 
 extern int yyparse(void);
 
+static void do_yyparse(void)
+{
+  struct svalue *save_sp = Pike_sp;
+  yyparse();  /* Parse da program */
+  if (save_sp != Pike_sp) {
 #ifdef PIKE_DEBUG
-#define do_yyparse() do {				\
-  struct svalue *save_sp=Pike_sp;			\
-  yyparse();  /* Parse da program */			\
-  if(save_sp != Pike_sp) {				\
-    Pike_fatal("yyparse() left %"PRINTPTRDIFFT"d droppings on the stack!\n", \
-	  Pike_sp - save_sp);				\
-  }							\
-}while(0)
-#else
-#define do_yyparse() yyparse()
+    if (!Pike_compiler->num_parse_error) {
+      Pike_fatal("yyparse() left %"PRINTPTRDIFFT"d droppings on the stack!\n",
+		 Pike_sp - save_sp);
+    }
 #endif
+    pop_n_elems(Pike_sp - save_sp);
+  }
+}
 
 struct Supporter *current_supporter=0;
 
