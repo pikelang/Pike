@@ -6564,14 +6564,7 @@ static struct array *diff_longest_sequence(struct array *cmptbl, int blen)
    if(!cmptbl->size)
      return allocate_array(0);
 
-   stack = malloc(sizeof(struct diff_magic_link*)*cmptbl->size);
-
-   if (!stack) {
-     int args = 0;
-     SIMPLE_OUT_OF_MEMORY_ERROR("diff_longest_sequence",
-				(int)sizeof(struct diff_magic_link*) *
-				cmptbl->size);
-   }
+   stack = xcalloc(sizeof(struct diff_magic_link*), cmptbl->size);
 
    /* NB: marks is used for optimization purposes only */
    marks = calloc(blen, 1);
@@ -6784,12 +6777,7 @@ static struct array *diff_dyn_longest_sequence(struct array *cmptbl, int blen)
   unsigned int off2 = blen + 1;
   ONERROR err;
 
-  table = calloc(sizeof(struct diff_magic_link_head)*2, off2);
-  if (!table) {
-    int args = 0;
-    SIMPLE_OUT_OF_MEMORY_ERROR("diff_dyn_longest_sequence",
-			       sizeof(struct diff_magic_link_head) * 2 * off2);
-  }
+  table = xcalloc(sizeof(struct diff_magic_link_head)*2, off2);
 
   /* FIXME: Assumes NULL is represented with all zeroes */
   /* NOTE: Scan strings backwards to get the same result as the G-M
