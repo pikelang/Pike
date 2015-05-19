@@ -156,7 +156,7 @@ PIKECLASS Deflate
         Pike_error("Compression rate out of range for Bz2.Deflate().\n");
     }
 
-    s = &(THIS->strm);
+    s = &THIS->strm;
     if(THIS->buffer.bufsize){
       bzCompressEnd(s);
     }
@@ -211,7 +211,7 @@ PIKECLASS Deflate
     bz_stream *s;
     char* tmp = NULL;
 
-    s = &(THIS->strm);
+    s = &THIS->strm;
     s->next_in = data->str;
     s->avail_in = data->len;
 
@@ -254,7 +254,7 @@ PIKECLASS Deflate
     int total_out_old = 0;
     int i = 1;
     
-    bz_stream *s = &(THIS->strm);
+    bz_stream *s = &THIS->strm;
     
     s->next_in = data->str;
     s->avail_in = data->len;
@@ -269,9 +269,6 @@ PIKECLASS Deflate
 	free(tmp);
       }
       if(retval < 0){
-#if 0
-	fprintf(stderr,"\nRetval is %d", retval); 
-#endif /* 0 */
 	bzCompressEnd(s);
 	Pike_error("Error when compressing data.\n");
       }
@@ -306,7 +303,7 @@ PIKECLASS Deflate
     struct pike_string *retstr;
     /* FIXME: Ought to use string_builder instead. */
     dynamic_buffer retbuf;
-    bz_stream *s = &(THIS->strm);
+    bz_stream *s = &THIS->strm;
     ONERROR err;
 
     initialize_buf(&retbuf);
@@ -360,7 +357,7 @@ PIKECLASS Deflate
     int retval = 0;
     dynamic_buffer retbuf;
     ONERROR err;
-    bz_stream *s = &(THIS->strm);
+    bz_stream *s = &THIS->strm;
 
     initialize_buf(&retbuf);
     SET_ONERROR(err, toss_buffer, &retbuf);
@@ -470,9 +467,7 @@ PIKECLASS Deflate
   INIT
     {
       bz_stream *s;
-      initialize_buf(&THIS->buffer);
-
-      s =&(THIS->strm);
+      s = &THIS->strm;
       s->bzalloc = NULL;
       s->bzfree = NULL;
       s->opaque = NULL;
@@ -480,11 +475,14 @@ PIKECLASS Deflate
       s->next_out = NULL;
       s->avail_in = 0;
       s->avail_out = 0;
+
+      initialize_buf(&THIS->buffer);
     }
+
   EXIT
     gc_trivial;
     {
-      bzCompressEnd(&(THIS->strm));
+      bzCompressEnd(&THIS->strm);
       toss_buffer(&THIS->buffer);
     }
 }
@@ -521,7 +519,7 @@ PIKECLASS Inflate
   PIKEFUN void create(){
      
     int retval;
-    bz_stream *s = &(THIS->strm);
+    bz_stream *s = &THIS->strm;
     
     if(THIS->buffer.bufsize)
       bzDecompressEnd(s);
@@ -576,7 +574,7 @@ PIKECLASS Inflate
     char *tmp_internbuf = NULL;
     dynamic_buffer ret_buffer;
     dynamic_buffer *retbuf = &ret_buffer;
-    bz_stream *s = &(THIS->strm);
+    bz_stream *s = &THIS->strm;
     
     /*the incoming string has to be appended to the input buffer*/
     
@@ -691,7 +689,7 @@ PIKECLASS Inflate
   INIT
     {
       bz_stream *s;
-      s = &(THIS->strm);
+      s = &THIS->strm;
       s->bzalloc = NULL;
       s->bzfree = NULL;
       s->opaque = NULL;
@@ -706,7 +704,7 @@ PIKECLASS Inflate
   EXIT
     gc_trivial;
     {
-      bzDecompressEnd(&(THIS->strm));
+      bzDecompressEnd(&THIS->strm);
       toss_buffer(&THIS->buffer);
     }
 }
@@ -743,10 +741,10 @@ PIKECLASS File
     if (!THIS->fp) RETURN (1);
     switch(THIS->mode){
     case READ_MODE:
-      bzReadClose(&(THIS->bzerror),THIS->file);
+      bzReadClose(&THIS->bzerror,THIS->file);
       break;
     case WRITE_MODE:
-      bzWriteClose ( &(THIS->bzerror), THIS->file,0,NULL,NULL);
+      bzWriteClose (&THIS->bzerror, THIS->file,0,NULL,NULL);
       break;
     default:
       Pike_error("This error can never occur.\n");
@@ -778,7 +776,7 @@ PIKECLASS File
     }
     if(tmp != NULL){
       THIS->fp = tmp;
-      THIS->file = bzReadOpen(&(THIS->bzerror),tmp,0,0,NULL,0);
+      THIS->file = bzReadOpen(&THIS->bzerror,tmp,0,0,NULL,0);
       THIS->mode = READ_MODE;
       
       switch(THIS->bzerror){
@@ -786,9 +784,9 @@ PIKECLASS File
 	break;
       case BZ_MEM_ERROR:
 	if(THIS->small == 0){
-	  bzReadClose(&(THIS->bzerror),THIS->file);
+	  bzReadClose(&THIS->bzerror,THIS->file);
 	  THIS->small = 1;
-	  bzReadOpen(&(THIS->bzerror),tmp,1,0,NULL,0);
+	  bzReadOpen(&THIS->bzerror,tmp,1,0,NULL,0);
 	  if(THIS->bzerror != BZ_OK){
 	    Pike_error("Bz2.File->read_open() failed.\n");
 	  }	    
@@ -841,7 +839,7 @@ PIKECLASS File
       tmp = fopen(file_name->str,"wb");
 
     if(tmp != NULL){
-      THIS->file = bzWriteOpen(&(THIS->bzerror),tmp,compression_rate,0,work_factor);
+      THIS->file = bzWriteOpen(&THIS->bzerror,tmp,compression_rate,0,work_factor);
 
       switch(THIS->bzerror){
       case BZ_OK:
@@ -927,7 +925,7 @@ PIKECLASS File
   PIKEFUN int write(string data){
     int len =  data->len;
     
-    bzWrite(&(THIS->bzerror), THIS->file, data->str,len);
+    bzWrite(&THIS->bzerror, THIS->file, data->str,len);
     switch(THIS->bzerror){
     case BZ_OK:
       break;
@@ -965,7 +963,7 @@ PIKECLASS File
 
     while( to_be_read>0 && THIS->bzerror == BZ_OK )
     {
-      was_read = bzRead( &(THIS->bzerror), THIS->file, buf, to_be_read );
+      was_read = bzRead( &THIS->bzerror, THIS->file, buf, to_be_read );
       string_builder_binary_strcat0( &retstr, buf, was_read );
       if( args != 0 )
         to_be_read -= was_read;
@@ -1013,10 +1011,10 @@ PIKECLASS File
       if(THIS->fp != NULL){
 	switch(THIS->mode){
 	case READ_MODE:
-	  bzReadClose(&(THIS->bzerror),THIS->file);
+	  bzReadClose(&THIS->bzerror,THIS->file);
 	  break;
 	case WRITE_MODE:
-	  bzWriteClose ( &(THIS->bzerror), THIS->file,0,NULL,NULL);
+	  bzWriteClose (&THIS->bzerror, THIS->file,0,NULL,NULL);
 	  break;
 	case NO_FILE_MODE:
 	  break;
