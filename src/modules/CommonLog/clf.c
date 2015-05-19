@@ -159,7 +159,7 @@ static void f_read( INT32 args )
 #ifdef DYNAMIC_BUF
   dynamic_buffer buf;
 #else
-#define BUFSET(X) do { if(bufpos == bufsize) { bufsize *= 2; buf = realloc(buf, bufsize+1); } buf[bufpos++] = c; } while(0)
+#define BUFSET(X) do { if(bufpos == bufsize) { bufsize *= 2; buf = xrealloc(buf, bufsize+1); } buf[bufpos++] = c; } while(0)
 #define PUSHBUF() do { push_string( make_shared_binary_string( buf,bufpos ) ); bufpos=0; } while(0)
   char *buf;
   int bufsize=CLF_BLOCK_SIZE, bufpos=0;

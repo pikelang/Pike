@@ -46,7 +46,7 @@ static void wf_buffer_make_space( struct buffer *b, unsigned int n )
   if( b->allocated_size-b->size < n )
   {
     b->allocated_size += range(n,b->allocated_size);
-    b->data = realloc(b->data,b->allocated_size);
+    b->data = xrealloc(b->data,b->allocated_size);
   }
 }
 

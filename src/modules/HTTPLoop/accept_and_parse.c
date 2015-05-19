@@ -210,8 +210,8 @@ static int parse(struct args *arg)
      * This could cause trouble with the leftovers code below, so that 
      * would have to be changed as well.
      */
-    arg->res.data=realloc(arg->res.data,
-			  arg->res.body_start+arg->res.content_len);
+    arg->res.data=xrealloc(arg->res.data,
+                           arg->res.body_start+arg->res.content_len);
     while( arg->res.data_len < arg->res.body_start+arg->res.content_len)
     {
       while(((nr = fd_read(arg->fd, arg->res.data+arg->res.data_len, 
@@ -359,13 +359,8 @@ void aap_handle_connection(struct args *arg)
       if(buffer_len > MAXLEN)
 	break;
 
-      buffer = realloc(buffer, buffer_len);
+      buffer = xrealloc(buffer, buffer_len);
       p = buffer+pos;
-      if(!buffer) 
-      {
-	perror("AAP: Failed to allocate memory (reading)");
-	break;
-      }
     }
   }
 

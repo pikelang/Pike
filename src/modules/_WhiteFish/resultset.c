@@ -73,10 +73,8 @@ void wf_resultset_add( struct object *o,
   if( T(o)->allocated_size == ind )
   {
     T(o)->allocated_size += 2048;
-    d = T(o)->d = realloc( d, 4 + /* num_docs */
-			   4*T(o)->allocated_size*2 ); /* hits */
-    if( !d )
-      Pike_error( "Out of memory" );
+    d = T(o)->d = xrealloc( d, 4 + /* num_docs */
+                            4*T(o)->allocated_size*2 ); /* hits */
   }
   d->hits[ind].doc_id = document;
   d->hits[ind].ranking = weight;

@@ -101,10 +101,7 @@ static void increase_buffer_size( struct buffer * buffer )
    * NOTE: buffer->str seems to point into Pike strings sometimes,
    * in which case realloc() is wrong.
    */
-  new_d = realloc( buffer->str, buffer->len*2 );
-  if(!new_d) Pike_error("Realloc (%ld->%ld) failed!\n",
-		   DO_NOT_WARN((long)buffer->len),
-		   DO_NOT_WARN((long)buffer->len*2));
+  new_d = xrealloc( buffer->str, buffer->len*2 );
   memset(new_d+buffer->len, 0, buffer->len);
   buffer->str = new_d;
   buffer->len *= 2;
