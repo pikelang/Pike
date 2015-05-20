@@ -45,7 +45,7 @@ all: bin/pike compile
 force:
 	-@$(BIN_TRUE)
 
-src/configure:
+src/configure: src/configure.in src/aclocal.m4
 	cd src && ./run_autoconfig .
 
 force_autoconfig:
@@ -278,11 +278,13 @@ gdb_hilfe:
 	@$(DO_MAKE) "METATARGET=gdb_hilfe" _make_in_builddir
 
 source:
+	cd src && ./run_autoconfig .
 	@PIKE_BUILD_OS=source $(DO_MAKE) \
 	  "CONFIGUREARGS=--disable-binary $(CONFIGUREARGS)" \
 	  "LIMITED_TARGETS=yes" "METATARGET=source" _make_in_builddir
 
 export:
+	cd src && ./run_autoconfig .
 	@EXPORT_PREREQ=yepp ; echo ; \
 	if [ -f "$(BUILDDIR)/autodoc.xml" ]; then : ; else \
 	  echo 'No documentation source built.'; \
@@ -299,11 +301,13 @@ export:
 	  "LIMITED_TARGETS=yes" "METATARGET=export" _make_in_builddir
 
 export_forced:
+	cd src && ./run_autoconfig .
 	@PIKE_BUILD_OS=source $(DO_MAKE) \
 	  "CONFIGUREARGS=--disable-binary $(CONFIGUREARGS)" \
 	  "LIMITED_TARGETS=yes" "METATARGET=export" _make_in_builddir
 
 snapshot_export:
+	cd src && ./run_autoconfig .
 	@PIKE_BUILD_OS=source $(DO_MAKE) \
 	  "CONFIGUREARGS=--disable-binary $(CONFIGUREARGS)" \
 	  "LIMITED_TARGETS=yes" "METATARGET=snapshot_export" \
@@ -312,6 +316,7 @@ snapshot_export:
 snapshot: snapshot_export
 
 xenofarm_export:
+	cd src && ./run_autoconfig .
 	@echo Begin export
 	@rm -f export_result.txt
 	@PIKE_BUILD_OS=source $(DO_MAKE) \
