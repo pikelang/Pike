@@ -1320,7 +1320,13 @@ class CertificatePair
 
     // Validate that the key matches the cert.
     if (!key || !key->public_key_equal(tbss[0]->public_key->pkc)) {
-      error("Private key doesn't match certificate.\n");
+      if(sizeof(tbss) > 1 && key &&
+         key->public_key_equal(tbss[-1]->public_key->pkc)) {
+        tbss = reverse(tbss);
+        certs = reverse(certs);
+      }
+      else
+        error("Private key doesn't match certificate.\n");
     }
 
     this::key = key;
