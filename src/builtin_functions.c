@@ -1637,7 +1637,7 @@ PMOD_EXPORT void f_zero_type(INT32 args)
 
   if((TYPEOF(Pike_sp[-args]) == T_OBJECT ||
       TYPEOF(Pike_sp[-args]) == T_FUNCTION)
-     && !Pike_sp[-args].u.object->prog)
+     && IS_DESTRUCTED(Pike_sp-args))
   {
     pop_n_elems(args);
     push_int(NUMBER_DESTRUCTED);
