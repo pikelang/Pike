@@ -357,9 +357,9 @@ extern PMOD_EXPORT struct svalue svalue_undefined,
   && (!(X)->u.object->prog                                              \
       || ((X)->u.object->prog == pike_trampoline_program                \
           && !((struct pike_trampoline *)(X)->u.object->storage)        \
-          ->frame->current_object->prog))                               \
+          ->frame->current_object->prog                                 \
           && SUBTYPEOF(*(X)) == QUICK_FIND_LFUN(pike_trampoline_program,\
-                                                LFUN_CALL)))
+                                                LFUN_CALL)))))
 
 #define check_destructed(S) \
 do{ \
