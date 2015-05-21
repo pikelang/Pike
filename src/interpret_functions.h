@@ -3034,24 +3034,26 @@ OPCODE0(F_UNDEFINEDP,"undefinedp",0, {
 });
 
 OPCODE0(F_DESTRUCTEDP,"destructedp",0, {
-    if((TYPEOF(Pike_sp[-1]) == T_OBJECT || TYPEOF(Pike_sp[-1]) == T_FUNCTION)
-       && !Pike_sp[-1].u.object->prog)
+  if(TYPEOF(Pike_sp[-1]) != T_INT)
+  {
+    if(IS_DESTRUCTED(Pike_sp-1))
     {
       pop_stack();
       push_int(1);
-    }
-    else
-    {
+    }else{
       pop_stack();
       push_int(0);
     }
+  }else{
+    SET_SVAL(Pike_sp[-1], T_INT, NUMBER_NUMBER, integer,
+	     NUMBER_DESTRUCTED == SUBTYPEOF(Pike_sp[-1]));
+  }
 });
 
 OPCODE0(F_ZERO_TYPE, "zero_type", 0, {
   if(TYPEOF(Pike_sp[-1]) != T_INT)
   {
-    if((TYPEOF(Pike_sp[-1]) == T_OBJECT || TYPEOF(Pike_sp[-1]) == T_FUNCTION)
-       && !Pike_sp[-1].u.object->prog)
+    if(IS_DESTRUCTED(Pike_sp-1))
     {
       pop_stack();
       push_int(NUMBER_DESTRUCTED);
