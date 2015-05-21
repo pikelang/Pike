@@ -186,7 +186,6 @@ static void f_cp(INT32 args)
 {
   char *from, *to;
   int ret;
-  VALID_FILE_IO("cp","write");
   get_all_args("cp",args,"%s%s",&from,&to);
   ret=CopyFile(from, to, 0);
   if(!ret) set_errno_from_win32_error (GetLastError());
@@ -2903,7 +2902,6 @@ static void f_GetFileAttributes(INT32 args)
 {
   char *file;
   DWORD ret;
-  VALID_FILE_IO("GetFileAttributes","read");
   get_all_args("GetFileAttributes",args,"%s",&file);
   ret=GetFileAttributes( (LPCTSTR) file);
   pop_stack();
@@ -2926,7 +2924,6 @@ static void f_SetFileAttributes(INT32 args)
   char *file;
   INT_TYPE attr, ret;
   DWORD tmp;
-  VALID_FILE_IO("SetFileAttributes","write");
   get_all_args("SetFileAttributes", args, "%s%i", &file, &attr);
   tmp=attr;
   ret=SetFileAttributes( (LPCTSTR) file, tmp);
