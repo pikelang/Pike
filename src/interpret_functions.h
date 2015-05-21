@@ -427,6 +427,12 @@ OPCODE2(F_ASSIGN_PRIVATE_TYPED_GLOBAL, "assign global <private,typed>", 0, {
 });
 
 
+#if SIZEOF_FLOAT_TYPE != SIZEOF_INT_TYPE
+#define DO_IF_ELSE_SIZEOF_FLOAT_INT(EQ, NEQ)	do { NEQ; } while(0)
+#else
+#define DO_IF_ELSE_SIZEOF_FLOAT_INT(EQ, NEQ)	do { EQ; } while(0)
+#endif
+
 OPCODE2(F_PRIVATE_TYPED_GLOBAL, "global <private,typed>", I_UPDATE_SP, {
     void *ptr;
     LOCAL_VAR(struct object *o);
@@ -435,16 +441,16 @@ OPCODE2(F_PRIVATE_TYPED_GLOBAL, "global <private,typed>", I_UPDATE_SP, {
     ptr = (void *)(o->storage + Pike_fp->context->storage_offset + arg1);
     if( arg2 < MIN_REF_TYPE )
     {
-#if SIZEOF_FLOAT_TYPE != SIZEOF_INT_TYPE
-      if( UNLIKELY(arg2)==PIKE_T_INT )
-	push_int( *(INT_TYPE*)ptr );
-      else
-	push_float( *(FLOAT_TYPE*)ptr );
-#else
-      SET_SVAL_TYPE_SUBTYPE(Pike_sp[0],arg2,0);
-      Pike_sp[0].u.integer = *(INT_TYPE*)ptr;
-      Pike_sp++;
-#endif
+      DO_IF_ELSE_SIZEOF_FLOAT_INT(
+	if( UNLIKELY(arg2)==PIKE_T_INT )
+	  push_int( *(INT_TYPE*)ptr );
+	else
+	  push_float( *(FLOAT_TYPE*)ptr )
+	,
+	SET_SVAL_TYPE_SUBTYPE(Pike_sp[0],arg2,0);
+	Pike_sp[0].u.integer = *(INT_TYPE*)ptr;
+	Pike_sp++
+      );
     }
     else
     {
