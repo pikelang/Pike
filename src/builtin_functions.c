@@ -1552,8 +1552,7 @@ PMOD_EXPORT void f_zero_type(INT32 args)
   if(args < 1)
     SIMPLE_TOO_FEW_ARGS_ERROR("zero_type",1);
 
-  if((Pike_sp[-args].type==T_OBJECT || Pike_sp[-args].type==T_FUNCTION)
-     && !Pike_sp[-args].u.object->prog)
+  if(IS_DESTRUCTED(Pike_sp-args))
   {
     pop_n_elems(args);
     push_int(NUMBER_DESTRUCTED);

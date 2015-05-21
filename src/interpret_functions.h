@@ -2688,8 +2688,7 @@ OPCODE1(F_THIS_OBJECT, "this_object", I_UPDATE_SP, {
 OPCODE0(F_ZERO_TYPE, "zero_type", 0, {
   if(Pike_sp[-1].type != T_INT)
   {
-    if((Pike_sp[-1].type==T_OBJECT || Pike_sp[-1].type==T_FUNCTION)
-       && !Pike_sp[-1].u.object->prog)
+    if(IS_DESTRUCTED(Pike_sp-1))
     {
       pop_stack();
       push_int(NUMBER_DESTRUCTED);
