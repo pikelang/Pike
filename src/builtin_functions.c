@@ -1603,9 +1603,7 @@ PMOD_EXPORT void f_zero_type(INT32 args)
   if(args < 1)
     SIMPLE_TOO_FEW_ARGS_ERROR("zero_type",1);
 
-  if((TYPEOF(Pike_sp[-args]) == T_OBJECT ||
-      TYPEOF(Pike_sp[-args]) == T_FUNCTION)
-     && IS_DESTRUCTED(Pike_sp-args))
+  if(IS_DESTRUCTED(Pike_sp-args))
   {
     pop_n_elems(args);
     push_int(NUMBER_DESTRUCTED);
