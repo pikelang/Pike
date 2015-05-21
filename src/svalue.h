@@ -458,10 +458,13 @@ extern PMOD_EXPORT struct svalue svalue_int_one;
 
 #define IS_UNDEFINED(X) (check_svalue (X), TYPEOF(*(X))==PIKE_T_INT&&SUBTYPEOF(*(X))==NUMBER_UNDEFINED)
 
-#define IS_DESTRUCTED(X) \
-  (((TYPEOF(*(X)) == PIKE_T_OBJECT) ||					\
-    ((TYPEOF(*(X))==PIKE_T_FUNCTION) &&					\
-     (SUBTYPEOF(*(X)) != FUNCTION_BUILTIN))) && !(X)->u.object->prog)
+#define IS_DESTRUCTED(X)                                                \
+((TYPEOF(*(X)) == PIKE_T_OBJECT && !(X)->u.object->prog) ||             \
+ (TYPEOF(*(X)) == PIKE_T_FUNCTION && SUBTYPEOF(*(X)) != FUNCTION_BUILTIN\
+  && (!(X)->u.object->prog                                              \
+      || ((X)->u.object->prog == pike_trampoline_program                \
+          && !((struct pike_trampoline *)(X)->u.object->storage)        \
+          ->frame->current_object->prog))))
 
 #define check_destructed(S)			\
   do{						\
