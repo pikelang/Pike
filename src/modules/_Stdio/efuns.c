@@ -1336,9 +1336,7 @@ void f_get_dir(INT32 args)
   int dir_fd;
 #endif
   DIR *dir = NULL;
-#ifdef HAVE_READDIR_R
   ptrdiff_t name_max = -1;
-#endif
   struct pike_string *str=0;
 
   get_all_args("get_dir",args,".%N",&str);
