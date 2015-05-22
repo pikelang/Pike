@@ -33,6 +33,7 @@
 #include "pike_error.h"
 #include "builtin_functions.h"
 #include "operators.h"
+#include "bignum.h"
 
 #include "image.h"
 #include "colortable.h"
@@ -66,7 +67,8 @@ static void f__decode( INT32 args )
   xs = data[0] | (data[1]<<8) | (data[2]<<16) | (data[3]<<24);
   ys = data[4] | (data[5]<<8) | (data[6]<<16) | (data[7]<<24);
 
-  if( (xs * ys * 2) != (ptrdiff_t)(len-8) )
+  if( (xs * ys * 2) != (ptrdiff_t)(len-8) ||
+      INT32_MUL_OVERFLOW(xs, ys) || ((xs * ys) & -0x8000000) )
     Pike_error("Not a DSI %d * %d + 8 != %ld\n",
 	  xs, ys,
 	  DO_NOT_WARN((long)len));
