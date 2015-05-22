@@ -270,9 +270,11 @@ string eat(multiset(string) | string token) {
 //!   into new-style.
 string eatIdentifier(void|int allowScopePrefix) {
   //  SHOW(({lookAhead(0),lookAhead(1),lookAhead(2)}));
-  string scope = scopeModules[lookAhead(0)] && lookAhead(1) == "::"
-    ? readToken()
-    : "";
+  string scope = "";
+  if ((lookAhead(1) == "::") &&
+      (scopeModules[lookAhead(0)] || isVersion(lookAhead(0)))) {
+    scope = readToken();
+  }
   string colons = peekToken() == "::" ? readToken() : "";
   //  werror("scope == %O ,colons == %O\n", scope, colons);
 
@@ -612,7 +614,7 @@ Type parseType() {
     case ".":
       return parseObject();
     default:
-      if (isIdent(s))
+      if (isIdent(s) || (lookAhead(1) == "::" && isVersion(s)))
         return parseObject();
       else
         return 0;
