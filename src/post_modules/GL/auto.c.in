@@ -92,8 +92,8 @@ static int check_234_args(char *func, INT32 args, int mn, int mx, int ty,
 	if(ty&(1<<tt)) {
 	  ty&=~(1<<tt);
 	  if(n++)
-	    strcat(buf, " or ");
-	  strcat(buf, get_name_of_type(tt));
+	    strncat(buf, " or ", sizeof(buf)-strlen(buf)-1);
+	  strncat(buf, get_name_of_type(tt), sizeof(buf)-strlen(buf)-1);
 	}
       Pike_error("%s: got %s, expected %s.\n", func,
 		 get_name_of_type(TYPEOF(s[i])), buf);
