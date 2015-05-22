@@ -22,6 +22,7 @@
 #include "pike_error.h"
 #include "mapping.h"
 #include "operators.h"
+#include "bignum.h"
 
 #include "image.h"
 #include "builtin_functions.h"
@@ -62,16 +63,20 @@ void image_avs_f__decode(INT32 args)
   int w, h;
   unsigned char *q;
   get_all_args( "decode", args, "%S", &s);
-  
+
+  if (s->len < 12)	/* Width + height + one pixel */
+    Pike_error("This is not an AVS file.\n");
+
   q = (unsigned char *)s->str;
   w = q[0]<<24 | q[1]<<16 | q[2]<<8 | q[3];
   h = q[4]<<24 | q[5]<<16 | q[6]<<8 | q[7];
 
-  /* Check for under and overflow. */
-  if ((w <= 0) || (h <= 0) || (w>>16)*(h>>16))
+  /* Check for under- and overflow. */
+  if ((w <= 0) || (h <= 0) || INT32_MUL_OVERFLOW(w, h) ||
+      ((w * h) & -0x40000000))
     Pike_error("This is not an AVS file (w=%d; h=%d)\n", w, h);
 
-  if((size_t)w*h*4+8 != (size_t)s->len)
+  if((size_t)w*h*4 != (size_t)(s->len-8))
     Pike_error("This is not an AVS file (w=%d; h=%d; s=%ld)\n",
 	  w, h,
 	  DO_NOT_WARN((long)s->len));
