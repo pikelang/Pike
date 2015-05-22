@@ -1550,6 +1550,8 @@ AC_DEFUN(PIKE_CHECK_ABI_DIR,
   AC_REQUIRE([PIKE_SELECT_ABI])dnl
   AC_REQUIRE([PIKE_INIT_REAL_DIRS])dnl
 
+  pike_file_follow_symlink_opt=""
+
   AC_MSG_CHECKING(whether $1 contains $pike_cv_abi-bit ABI files)
   abi_dir_ok="no"
   abi_dir_dynamic="unknown"
@@ -1594,7 +1596,19 @@ AC_DEFUN(PIKE_CHECK_ABI_DIR,
       for f in "$d"/* no; do
         if test -f "$f"; then
 	  empty=no
-          filetype="`file $f`"
+	  # NB: GNU file and BSD file default to not following symlinks.
+	  #	Solaris /bin/file does not understand -L. The following
+	  #	should support most cases.
+          filetype="`POSIXLY_CORRECT=yes file $pike_follow_symlink_opt $f 2>/dev/null`"
+
+	  case "$filetype" in
+	    *"symbolic link"*)
+	      if file -L $f >/dev/null 2>&1; then
+	        pike_file_follow_symbolic_link="-L";
+		filetype="`POSIXLY_CORRECT=yes file -L $f 2>/dev/null`"
+	      fi
+	      ;;
+	  esac
 
 	  case "$filetype" in
             *32-bit*)
