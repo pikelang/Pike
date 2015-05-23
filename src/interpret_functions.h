@@ -95,6 +95,10 @@
 #define LOCAL_VAR(X)	X
 #endif
 
+#ifndef MACHINE_CODE_FORCE_FP
+#define MACHINE_CODE_FORCE_FP()	0
+#endif
+
 #ifndef OVERRIDE_JUMPS
 
 #undef GET_JUMP
@@ -1307,6 +1311,7 @@ OPCODE0(F_CLEAR_STRING_SUBTYPE, "clear string subtype", 0, {
 
       /* Jumps */
 OPCODE0_BRANCH(F_BRANCH, "branch", 0, {
+  MACHINE_CODE_FORCE_FP();
   DO_BRANCH();
 });
 
@@ -1324,6 +1329,7 @@ OPCODE2_BRANCH(F_BRANCH_IF_NOT_LOCAL_ARROW, "branch if !local->x", 0, {
   OPCODE0_TAILBRANCH(F_BRANCH_WHEN_ZERO, "branch if zero", I_UPDATE_SP, {
     if(!UNSAFE_IS_ZERO(Pike_sp-1))
     {
+      MACHINE_CODE_FORCE_FP();
       DONT_BRANCH();
     }else{
       DO_BRANCH();

@@ -83,6 +83,9 @@ extern const unsigned INT32 sparc_flush_instruction_cache[];
 
 struct dynamic_buffer_s;
 
+#define MACHINE_CODE_FORCE_FP()	sparc_force_fp()
+int sparc_force_fp(void);
+
 void sparc_encode_program(struct program *p, struct dynamic_buffer_s *buf);
 void sparc_decode_program(struct program *p);
 

@@ -92,6 +92,11 @@ void CALL_MACHINE_CODE(PIKE_OPCODE_T *pc)
 void EXIT_MACHINE_CODE()
 	Clean up from CALL_MACHINE_CODE.
 
+int MACHINE_CODE_FORCE_FP()
+	Kludge to force the C compiler to generate a frame
+	for some opcode functions. This is needed for a few
+	machine code backends.
+
 void START_NEW_FUNCTION(int store_lines)
 	Called at the start of a function. store_lines is true for any
 	non-constant evaluation function. This hook can be used to
