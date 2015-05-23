@@ -1383,7 +1383,8 @@ int gnapp(int t)
       o->wait();
       __signal_watchdog();
     }
-//    werror("%d",t);
+    if (gethostname() == "medaka")
+      werror("%s: %d:%d\n", __FILE__, t, e);
   }
   return -1;
 }
