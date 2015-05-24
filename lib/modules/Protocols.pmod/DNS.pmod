@@ -261,6 +261,42 @@ enum EntryType
   T_DLV=32769,
 };
 
+//! Flag bits used in @[T_DNSKEY] RRs.
+enum DNSKEY_Flags {
+  F_ZONEKEY		= 0x0100,	//! Zone Key.
+  F_SECUREENTRYPOINT	= 0x0001,	//! Secure Entry Point.
+};
+
+//! DNSSEC Protocol types.
+//!
+//! @note
+//!   RFC 4034 obsoleted all but @[DNSSEC_DNSSEC].
+enum DNSSEC_Protocol {
+  DNSSEC_TLS		= 1,	//! Reserved for use by TLS.
+  DNSSEC_EMAIL		= 2,	//! Reserved for use by SMTP et al.
+  DNSSEC_DNSSEC		= 3,	//! Key for use by DNSSEC. RFC 4034 2.1.2.
+  DNSSEC_IPSEC		= 4,	//! Reserved for use by IPSEC.
+  DNSSEC_ALL		= 255,	//! Any use. Discouraged.
+};
+
+//! DNSSEC Algorithm types.
+enum DNSSES_Algorithm {
+  DNSSEC_RSAMD5		= 1,	//! RSA/MD5 RFC 2537.
+  DNSSEC_DH		= 2,	//! Diffie-Hellman RFC 2539.
+  DNSSEC_DSA		= 3,	//! DSA/SHA1 RFC 2536.
+  DNSSEC_ECC		= 4,
+  DNSSEC_RSASHA1	= 5,	//! RSA/SHA1 RFC 3110.
+
+  DNSSEC_INDIRECT	= 252,
+  DNSSEC_PRIVATEDNS	= 253,	//! Private algorithm DNS-based RFC 4035 A.1.1.
+  DNSSEC_PRIVATEOID	= 254,	//! Private algorithm OID-based RFC 4035 A.1.1.
+};
+
+//! DNSSEC Digest types.
+enum DNSSEC_Digests {
+  DNSSEC_SHA1		= 1,	//! SHA1 digest RFC 4035 A.2.
+};
+
 int safe_bind(Stdio.UDP udp, string|int port, string|void device)
 {
   mixed err = catch {
