@@ -2620,6 +2620,12 @@ int fd_cleanup_cb(void *data, int fd)
  *! @member function(Process.Process:void) "callback"
  *!  Function called when the created process changes state.
  *!
+ *!  Note that this function is called in a signal handler context,
+ *!  which means that it may be called by any thread at any time after
+ *!  the child process has changed state, and is thus not only called
+ *!  by the main thread when the main backend is idle. Indeed, you can
+ *!  specify a callback even if your program does not use a backend.
+ *!
  *! @member string "cwd"
  *!  Execute the command in another directory than the current
  *!  directory of this process. Please note that if the command is
