@@ -176,4 +176,3 @@ int(0..) main(int num, array(string) args)
    else
      write("-"*58+"\n");
 }
-

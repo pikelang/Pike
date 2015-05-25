@@ -34,4 +34,3 @@ class State
 State `()() {
   return State();
 }
-

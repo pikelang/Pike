@@ -31,6 +31,3 @@
 #define DWRITE(X,Y ...)
 #define ERROR(X)
 #endif
-
-
-

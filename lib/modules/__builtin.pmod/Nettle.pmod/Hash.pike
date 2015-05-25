@@ -574,4 +574,3 @@ string P_hash(string password, string salt, int rounds, int bytes)
   }
   return res[..(bytes-1)];
 }
-

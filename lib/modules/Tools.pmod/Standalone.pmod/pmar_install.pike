@@ -566,4 +566,3 @@ string get_local_modulepath()
 
   return dir;
 }
-

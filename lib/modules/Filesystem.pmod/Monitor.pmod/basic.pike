@@ -1266,4 +1266,3 @@ void set_file_interval_factor(int file_interval_factor)
     this::file_interval_factor = default_file_interval_factor;
   }
 }
-

@@ -90,4 +90,3 @@ mapping(string:int|float) run(Test test, int maximum_seconds, float overhead)
                         (["stdout":fd->pipe()]));
     return Standards.JSON.decode( fd->read() );
 }
-

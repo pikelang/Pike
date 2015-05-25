@@ -358,4 +358,3 @@ string(7bit) hash(string(8bit) password, string(7bit)|void scheme,
 
   return render_hash([string(7bit)]scheme, salt, hash, rounds);
 }
-

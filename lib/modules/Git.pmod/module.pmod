@@ -94,4 +94,3 @@ string hash_blob(string data)
   sha1->update(data);
   return String.string2hex(sha1->digest());
 }
-

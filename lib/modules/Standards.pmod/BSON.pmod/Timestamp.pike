@@ -19,4 +19,3 @@
   {
     timestamp = _timestamp;
   }
-

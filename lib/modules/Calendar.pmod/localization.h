@@ -40,9 +40,3 @@ string default_timezone="locale";
 // assume the language is english (=ISO).
 
 string default_language="ISO"; 
-
-
-
-
-
-
