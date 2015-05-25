@@ -2632,6 +2632,8 @@ int fd_cleanup_cb(void *data, int fd)
  *!  given is a relative path, it will be relative to this directory
  *!  rather than the current directory of this process.
  *!
+ *!  Note also that the path is relative to the @expr{"chroot"@} if used.
+ *!
  *! @member string "chroot"
  *!   Chroot to this directory before executing the command.
  *!
