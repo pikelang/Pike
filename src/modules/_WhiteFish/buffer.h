@@ -118,5 +118,3 @@ void wf_buffer_rewind_w( struct buffer *b, int n );
 /* Subtract n from size.
  * If n == -1, the size is set to 0.
  */
-
-

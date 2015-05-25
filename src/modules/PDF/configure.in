@@ -58,5 +58,3 @@ if test x$with_libpanda = xyes ; then
 fi
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )
-
-

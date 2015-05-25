@@ -228,4 +228,3 @@ static inline size_t _low_cb_check_node(cb_node_t node,
 
     return node->size;
 }
-

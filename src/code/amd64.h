@@ -90,6 +90,3 @@ void amd64_update_pc(void);
 extern ptrdiff_t amd64_prev_stored_pc;
 
 #define READ_INCR_BYTE(PC)	EXTRACT_UCHAR((PC)++)
-
-
-

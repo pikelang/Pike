@@ -1841,4 +1841,3 @@ PIKE_MODULE_EXIT {
 }
 
 #endif
-

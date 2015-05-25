@@ -214,4 +214,3 @@ case 10:
     state->flags |= JSON_ERROR;
     return p;
 }
-

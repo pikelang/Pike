@@ -133,5 +133,3 @@ EOF
 fi
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )
-
-

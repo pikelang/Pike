@@ -821,4 +821,3 @@ void init_stdio_port(void)
   add_program_constant( "_port", port_program, 0 );
 
 }
-

@@ -8,4 +8,3 @@ dnl updated here.
 AC_CHECK_LIB(gmp, main)
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )
-

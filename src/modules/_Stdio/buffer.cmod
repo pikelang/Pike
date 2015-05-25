@@ -2662,4 +2662,3 @@ void exit_stdio_buffer(void)
   free_program( buffer_error_program );
   EXIT
 }
-

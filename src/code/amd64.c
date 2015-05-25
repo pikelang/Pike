@@ -4422,4 +4422,3 @@ INT32 amd64_read_f_jump(INT32 offset)
 {
   return read_pointer(offset) + offset + 4;
 }
-

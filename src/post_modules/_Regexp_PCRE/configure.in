@@ -21,5 +21,3 @@ if test x$with_libpcre = xyes ; then
 fi
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )
-
-

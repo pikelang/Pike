@@ -96,5 +96,3 @@ int main(int argc, char **argv)
 fi
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )
-
-

@@ -20,5 +20,3 @@ if test x$with_gdbm = xyes; then
 fi
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )
-
-

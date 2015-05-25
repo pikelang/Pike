@@ -13,4 +13,3 @@
 @pgtk_defined_HAVE_PANEL_PIXEL_SIZE@
 @pgtk_defined_HAVE_PANEL_DRAW_SIGNAL@
 @pgtk_defined_HAVE_APPLET_QUEUE_RESIZE@
-

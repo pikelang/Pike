@@ -10,5 +10,3 @@ REGEXP_OBJS="pike_regexp.o"
 AC_SUBST(REGEXP_OBJS)
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )
-
-

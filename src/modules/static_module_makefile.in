@@ -69,4 +69,3 @@ module.a: $(OBJS)
 $(OBJS): propagated_variables
 
 install: $(MODULE_INSTALL)
-

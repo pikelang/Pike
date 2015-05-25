@@ -2041,5 +2041,3 @@ PIKE_MODULE_EXIT
   CoUninitialize();
 #endif /* HAVE_COM */
 }
-
-

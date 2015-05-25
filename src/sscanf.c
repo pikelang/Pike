@@ -2048,5 +2048,3 @@ void f___handle_sscanf_format(INT32 args)
   pop_n_elems(args);
   push_undefined();
 }
-
-

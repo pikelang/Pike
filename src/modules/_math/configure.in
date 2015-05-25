@@ -59,5 +59,3 @@ else
   AC_MSG_RESULT(no)
 fi
 AC_OUTPUT(Makefile,echo FOO >stamp-h )
-
-

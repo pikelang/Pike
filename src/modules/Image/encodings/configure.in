@@ -8,5 +8,3 @@ AC_PROG_RANLIB
 AC_SUBST(RANLIB)
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )
-
-

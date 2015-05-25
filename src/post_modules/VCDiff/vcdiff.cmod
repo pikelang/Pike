@@ -266,4 +266,3 @@ PIKE_MODULE_EXIT
   EXIT
 #endif
 }
-

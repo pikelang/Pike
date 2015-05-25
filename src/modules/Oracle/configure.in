@@ -370,4 +370,3 @@ fi
 AC_SUBST(ORACLE_LIBS)
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )
-

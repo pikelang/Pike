@@ -170,5 +170,3 @@ void draw_image(GDK1.GC gc, GDK1.Image image, int xsrc, int ysrc,
                      array(array(float,size=2)) coordinates)
  gc, filledp, array with xy pairs
 */
-
-
