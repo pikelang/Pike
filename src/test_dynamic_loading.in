@@ -92,7 +92,7 @@ Tprog([[
 #ifdef __NT__
 #define EXPORT __declspec(dllexport)
 #else
-#define EXPORT 
+#define EXPORT
 #endif
 
   extern int integer;

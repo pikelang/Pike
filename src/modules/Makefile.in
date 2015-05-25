@@ -126,7 +126,7 @@ fdtestsuites:
 	@for a in $(MODULES) no ; do test $$a = no || \
 	  ( echo "Making testsuite in $(MY_DIR)/$$a"; \
 	    $(TMP_BINDIR)/mktestsuite $(SRCDIR)/$$a/testsuite.in >$$a/testsuite -DSRCDIR="`echo $(SRCDIR)/$$a|$(BUILD_BASE)/posix_to_native.sh`" ) || exit $$? ; \
-	done	
+	done
 
 testsuites:
 	@for a in $(MODULES) no ; do test $$a = no || \

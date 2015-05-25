@@ -141,7 +141,7 @@ void f_dcgettext(INT32 args)
  *! current domain of the active @[LC_MESSAGES] locale category. The
  *! @[domain] argument is a string that can contain only the
  *! characters allowed in legal filenames.
- *! 
+ *!
  *! The domain argument is the unique name of a domain on the
  *! system. If there are multiple versions of the same domain on
  *! one system, namespace collisions can be avoided by using
@@ -178,7 +178,7 @@ void f_textdomain(INT32 args)
  *!
  *! If @[domainname] is a non-empty string and has not been bound
  *! previously, bindtextdomain() binds @[domainname] with @[dirname].
- *! 
+ *!
  *! If @[domainname] is a non-empty string and has been bound previously,
  *! bindtextdomain() replaces the old binding with @[dirname].
  *!
@@ -227,7 +227,7 @@ void f_bindtextdomain(INT32 args)
   pop_n_elems(args);
   if(returnstring == NULL)
     push_int(0);
-  else 
+  else
     push_text(returnstring);
 }
 
@@ -236,10 +236,10 @@ void f_bindtextdomain(INT32 args)
  *! The setlocale() function is used to set the program's
  *! current locale. If @[locale] is "C" or "POSIX", the current
  *! locale is set to the portable locale.
- *! 
+ *!
  *! If @[locale] is "", the locale is set to the default locale which
  *! is selected from the environment variable LANG.
- *! 
+ *!
  *! The argument @[category] determines which functions are
  *! influenced by the new locale are @[LC_ALL], @[LC_COLLATE], @[LC_CTYPE],
  *! @[LC_MONETARY], @[LC_NUMERIC] and @[LC_TIME].
@@ -264,7 +264,7 @@ void f_setlocale(INT32 args)
   else
     push_int(1);
 }
-  
+
 /*! @decl mapping localeconv()
  *!
  *! The localeconv() function returns a mapping with settings for
@@ -338,7 +338,7 @@ void f_setlocale(INT32 args)
  *!     Set to 1 or 0 if the currency_symbol respectively
  *!     is or is not separated by a space from the value
  *!     for a negative formatted monetary quantity.
- *! 
+ *!
  *!   @member int(0..4) "p_sign_posn"
  *!     Set to a value indicating the positioning of the
  *!     positive_sign for a non-negative formatted

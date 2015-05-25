@@ -87,7 +87,7 @@ AC_CACHE_VAL(pike_cv_framework_sybaseopenclient, [
     CS_CONTEXT *context;
     CS_RETCODE ret;
     ret = cs_ctx_alloc(CS_VERSION_110, &context);
-    ret = ct_init(context, CS_VERSION_110);    
+    ret = ct_init(context, CS_VERSION_110);
   ], [
     pike_cv_framework_sybaseopenclient="yes"
   ])

@@ -338,7 +338,7 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *!
  *!   @item
  *!     Overloading of other builtin functions.
- *!     
+ *!
  *!     @[_is_type()], @[_sprintf()], @[_m_delete()],
  *!     @[_get_iterator()], @[_search()]
  *! @endul
@@ -377,9 +377,9 @@ static struct pike_type *lfun_setter_type_string = NULL;
 /*! @decl void lfun::create(zero ... args)
  *!
  *!   Object creation callback.
- *!   
+ *!
  *!   This function is called right after @[lfun::__INIT()].
- *!   
+ *!
  *!   @[args] are the arguments passed when the program was called.
  *!
  *! @note
@@ -410,7 +410,7 @@ static struct pike_type *lfun_setter_type_string = NULL;
 /*! @decl void lfun::destroy (void|int reason)
  *!
  *!   Object destruction callback.
- *!   
+ *!
  *!   This function is called right before the object is destructed.
  *!   That can happen either through a call to @[predef::destruct()],
  *!   when there are no more references to the object, or when the
@@ -441,7 +441,7 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *!
  *! @note
  *! Regarding destruction order during garbage collection:
- *! 
+ *!
  *! If an object is destructed by the garbage collector, it's part of
  *! a reference cycle with other things but with no external
  *! references. If there are other objects with @expr{destroy@}
@@ -452,10 +452,10 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *! (directly or indirectly) points back to this one, you might find
  *! that the other object already has been destructed and the variable
  *! thus contains zero.
- *! 
+ *!
  *! The garbage collector tries to minimize such problems by defining
  *! an order as far as possible:
- *! 
+ *!
  *! @ul
  *! @item
  *!   If an object A contains an @[lfun::destroy] and an object B does
@@ -482,7 +482,7 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *!   destructs a parent object before all children have been
  *!   destructed.)
  *! @endul
- *! 
+ *!
  *! An example with well defined destruct order due to strong
  *! references:
  *!
@@ -1179,7 +1179,7 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *!   conversion-types:
  *!   @int
  *!     @value 'F'
- *!       Binary IEEE representation of float (@tt{%4F@} gives 
+ *!       Binary IEEE representation of float (@tt{%4F@} gives
  *!       single precision, @tt{%8F@} gives double precision.)
  *!   @endint
  *!
@@ -1890,7 +1890,7 @@ struct node_s *find_module_identifier(struct pike_string *ident,
 	    mkexternalnode(p->new_program, i);
 	}
       }
-      
+
       if((ret=index_modules(ident,
 			    &p->module_index_cache,
 			    p->num_used_modules,
@@ -2329,7 +2329,7 @@ struct program *id_to_program(INT32 id)
  *
  * fixate_program    ==> PROGRAM_FIXED
  *
- * optimize_program  ==> PROGRAM_OPTIMIZED 
+ * optimize_program  ==> PROGRAM_OPTIMIZED
  *
  * end_first_pass(1) ==> PROGRAM_FINISHED
  */
@@ -2351,7 +2351,7 @@ void optimize_program(struct program *p)
 #ifdef PIKE_USE_MACHINE_CODE
   /* Don't move our mexec-allocated memory into the malloc... */
 #define BAR(NUMTYPE,TYPE,ARGTYPE,NAME)
-#endif /* PIKE_USE_MACHINE_CODE */ 
+#endif /* PIKE_USE_MACHINE_CODE */
 
 #define FOO(NUMTYPE,TYPE,ARGTYPE,NAME) \
   size=DO_ALIGN(size, ALIGNOF(TYPE)); \
@@ -2359,7 +2359,7 @@ void optimize_program(struct program *p)
 #include "program_areas.h"
 
   data=malloc(size);
-  if(!data) 
+  if(!data)
   {
     make_program_executable(p);
     return; /* We are out of memory, but we don't care! */
@@ -2370,7 +2370,7 @@ void optimize_program(struct program *p)
 #ifdef PIKE_USE_MACHINE_CODE
   /* As above. */
 #define BAR(NUMTYPE,TYPE,ARGTYPE,NAME)
-#endif /* PIKE_USE_MACHINE_CODE */ 
+#endif /* PIKE_USE_MACHINE_CODE */
 
 #define FOO(NUMTYPE,TYPE,ARGTYPE,NAME) \
   size=DO_ALIGN(size, ALIGNOF(TYPE)); \
@@ -2796,7 +2796,7 @@ void fixate_program(void)
     INT_TYPE line;
     struct pike_string *tmp;
     struct memory_map *m=0;;
-    if(c->lex.current_file && 
+    if(c->lex.current_file &&
        c->lex.current_file->str &&
        c->lex.current_file->len &&
        !strcmp(c->lex.current_file->str,"-"))
@@ -3108,7 +3108,7 @@ void low_start_new_program(struct program *p,
       START_SIZE;							\
     Pike_compiler->new_program->NAME =					\
       (TYPE *)mexec_alloc(sizeof(TYPE) * START_SIZE);
-#endif /* PIKE_USE_MACHINE_CODE */ 
+#endif /* PIKE_USE_MACHINE_CODE */
 #define FOO(NUMTYPE,TYPE,ARGTYPE,NAME)					\
     if (Pike_compiler->new_program->NAME) {				\
       free (Pike_compiler->new_program->NAME);				\
@@ -3280,7 +3280,7 @@ static void exit_program_struct(struct program *p)
 #define FOO(NUMTYPE,TYPE,ARGTYPE,NAME)	do {			     \
       p->NAME=0;						     \
     } while(0);
-    
+
 #include "program_areas.h"
   }else{
 #ifdef PIKE_USE_MACHINE_CODE
@@ -3708,7 +3708,7 @@ void check_program(struct program *p)
 
   for(e=0;e<p->num_inherits;e++)
   {
-    if(!p->inherits[e].prog) 
+    if(!p->inherits[e].prog)
     {
       /* This inherit is not yet initialized, ignore rest of tests.. */
       return;
@@ -4319,15 +4319,15 @@ static size_t add_xstorage(size_t size,
   if(available < (ptrdiff_t)(offset+size))
   {
     available=
-      DO_ALIGN( ((offset + size) - available), 
+      DO_ALIGN( ((offset + size) - available),
 		Pike_compiler->new_program->alignment_needed);
-    
+
     for(e=0;e<Pike_compiler->new_program->num_inherits;e++)
       Pike_compiler->new_program->inherits[e].storage_offset+=available;
 
     Pike_compiler->new_program->storage_needed+=available;
   }
-  
+
   return (size_t) offset;
 }
 
@@ -4358,7 +4358,7 @@ static void add_compat_event_handler(void)
       for(e=0;e<sizeof(Pike_compiler->new_program->event_handler);e++)
 	add_to_program(tmp[e]);
 #endif /* HAVE_COMPUTED_GOTO */
-    }    
+    }
     Pike_compiler->new_program->event_handler=compat_event_handler;
   }
 }
@@ -4779,7 +4779,7 @@ void lower_inherit(struct program *p,
 #endif
   CDFPRINTF((stderr, "th(%ld) %p inherit %p\n",
 	     (long) th_self(), Pike_compiler->new_program, p));
-	
+
   if(!p)
   {
     yyerror("Illegal program pointer.");
@@ -5009,7 +5009,7 @@ void lower_inherit(struct program *p,
     {
       Pike_compiler->flags |= COMPILATION_CHECK_FINAL;
     }
-    
+
     if (flags & ID_PUBLIC)
       fun.id_flags &= ~(ID_PRIVATE|ID_PUBLIC);
 
@@ -5600,7 +5600,7 @@ int define_variable(struct pike_string *name,
 			"Illegal to redefine inherited variable %S "
 			"with different type.", name);
 	}
-	
+
 
 	if(!IDENTIFIER_IS_VARIABLE(ID_FROM_INT(Pike_compiler->new_program, n)->
 				   identifier_flags))
@@ -5785,7 +5785,7 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
       }
     }
   }
-    
+
   if(
 #if 1
     c &&
@@ -6183,7 +6183,7 @@ INT32 define_function(struct pike_string *name,
 	flags &= ~ID_VARIANT;
       }
       i = isidentifier(symbol);
-      if ((i >= 0) && 
+      if ((i >= 0) &&
 	  !((ref = PTR_FROM_INT(prog, i))->id_flags & ID_INHERITED)) {
 	/* Not an inherited symbol. */
 	struct identifier *id = ID_FROM_INT(prog, i);
@@ -6516,7 +6516,7 @@ INT32 define_function(struct pike_string *name,
 
 #ifdef PIKE_DEBUG
     if (a_flag > 5) {
-      fprintf(stderr, 
+      fprintf(stderr,
 	      "Adding new function #%d: '%s'\n"
 	      "  identifier_flags:0x%02x opt_flags:0x%04x\n",
 	      prog->num_identifiers,
@@ -7383,14 +7383,14 @@ int program_index_no_free(struct svalue *to, struct svalue *what,
  * Filename entry:
  *   1. char		127 (marker).
  *   2. small number	Filename entry number in string table.
- * 
+ *
  * Line number entry:
  *   1. small number	Index in program.program (pc).
  * 			Stored as the difference from the pc in the
  * 			closest previous line number entry. The first
  * 			stored entry is absolute.
  *   2. small number	Line number. Stored in the same way as the pc.
- * 
+ *
  * Small number:
  *   If -127 < n < 127:
  *     1. char		The number.
@@ -8813,7 +8813,7 @@ static void f_compilation_env_get_compilation_handler(INT32 args)
  *!   @endmixed
  *!
  *! @note
- *!   This function is typically called by 
+ *!   This function is typically called by
  *!   @[Pike_compiler()->get_default_module()].
  *!
  *! @seealso
@@ -9352,7 +9352,7 @@ static int call_delayed_pass2(struct compilation *cc, int finish)
   run_cleanup(cc,1);
 
   exit_compiler();
-  
+
   debug_malloc_touch(cc);
 
 #ifdef PIKE_DEBUG
@@ -9720,7 +9720,7 @@ static void f_compilation_compile(INT32 args)
     run_pass2(c);
     debug_malloc_touch(c);
     run_cleanup(c,0);
-    
+
     ret = debug_malloc_pass(c->p);
 
     debug_malloc_touch(c);
@@ -9906,7 +9906,7 @@ static void f_compilation_change_compiler_compatibility(INT32 args)
     pop_n_elems(args);
     if (c->compat_handler) {
       free_object(c->compat_handler);
-      c->compat_handler = NULL;    
+      c->compat_handler = NULL;
     } else {
       /* No change in compat handler. */
       push_int(0);
@@ -10457,7 +10457,7 @@ static void compile_compiler(void)
    *       the PC_*_FUN_NUM definitions in "pike_compiler.h".
    */
 
-  ADD_FUNCTION("report", f_compilation_report, 
+  ADD_FUNCTION("report", f_compilation_report,
 	       tFuncV(tName("SeverityLevel", tInt03) tStr tIntPos
 		      tStr tStr, tMix, tVoid),0);
 
@@ -10476,7 +10476,7 @@ static void compile_compiler(void)
   ADD_FUNCTION("get_compilation_handler",
 	       f_compilation_get_compilation_handler,
 	       tFunc(tInt tInt, tObj), 0);
-  
+
   ADD_FUNCTION("get_default_module", f_compilation_get_default_module,
 	       tFunc(tNone, tOr(tMap(tStr, tMix), tObj)), 0);
 
@@ -10538,7 +10538,7 @@ static void compile_compiler(void)
    * Remove the one we added above, so that we don't get it double.
    */
   p2->xstorage = 0;
-  
+
   end_class("PikeCompiler", 0);
   /* end_class()/end_program() has zapped the inherit once again,
    * so we need to repair the frame pointer.
@@ -10548,7 +10548,7 @@ static void compile_compiler(void)
   ADD_FUNCTION("get_compilation_handler",
 	       f_compilation_env_get_compilation_handler,
 	       tFunc(tInt tInt, tObj), 0);
-  
+
   ADD_FUNCTION("get_default_module",
 	       f_compilation_env_get_default_module,
 	       tFunc(tNone, tOr(tMap(tStr, tMix), tObj)), 0);
@@ -10683,7 +10683,7 @@ struct program *compile(struct pike_string *aprog,
     if(c->p) run_pass2(c);
     debug_malloc_touch(c);
     run_cleanup(c,0);
-    
+
     ret=c->p;
     /* FIXME: Looks like ret should get an extra ref here, but I'm not
      * sure. Besides, this function isn't used anymore. /mast */
@@ -11188,7 +11188,7 @@ void gc_mark_program_as_referenced(struct program *p)
 
     return;
   }
-  
+
   if(gc_mark(p, T_PROGRAM))
     GC_ENTER (p, T_PROGRAM) {
       int e;
@@ -11234,12 +11234,12 @@ void real_gc_cycle_check_program(struct program *p, int weak)
     {
       for(e = p->num_constants - 1; e >= 0; e--)
 	gc_cycle_check_svalues(& p->constants[e].sval, 1);
-      
+
       for(e = p->num_inherits - 1; e >= 0; e--)
       {
 	if(p->inherits[e].parent)
 	  gc_cycle_check_object(p->inherits[e].parent, 0);
-	
+
 	if(e && p->inherits[e].prog)
 	  gc_cycle_check_program(p->inherits[e].prog, 0);
       }
@@ -11268,11 +11268,11 @@ static void gc_check_program(struct program *p)
   GC_ENTER (p, T_PROGRAM) {
     if(p->parent)
       debug_gc_check (p->parent, " as parent program of a program");
-  
+
     for(e = p->num_constants - 1; e >= 0; e--) {
       debug_gc_check_svalues (&p->constants[e].sval, 1, " as program constant");
     }
-  
+
     for(e = p->num_inherits - 1; e >= 0; e--)
     {
       if(p->inherits[e].parent)
@@ -12266,7 +12266,7 @@ PMOD_EXPORT void *parent_storage(int depth, struct program *expected)
   loc.o = Pike_fp->current_object;
   loc.parent_identifier = 0;
   loc.inherit = Pike_fp->context;
-  
+
   find_external_context(&loc, depth);
 
   if (!loc.o->prog)

@@ -123,7 +123,7 @@ void image_avs_f_encode(INT32 args )
   unsigned int *q;
   rgb_group apix = {255, 255, 255};
   get_all_args( "encode", args, "%o.%o", &io, &ao);
-  
+
   if(!(i = get_storage( io, image_program)))
     Pike_error("Wrong argument 1 to Image.AVS.encode\n");
 

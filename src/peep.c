@@ -79,7 +79,7 @@ void exit_bytecode(void)
     c[e].file = (void *)(ptrdiff_t)~0;
 #endif
   }
-  
+
   toss_buffer(&instrbuf);
 }
 
@@ -157,7 +157,7 @@ void update_arg(int instr,INT32 arg)
 #ifdef PIKE_DEBUG
   if(instr > (long)instrbuf.s.len / (long)sizeof(p_instr) || instr < 0)
     Pike_fatal("update_arg outside known space.\n");
-#endif  
+#endif
   p=(p_instr *)instrbuf.s.str;
   p[instr].arg=arg;
 }
@@ -233,7 +233,7 @@ INT32 assemble(int store_linenumbers)
     /* fprintf(stderr, "length:%d directives:%d\n",
      *         length, num_linedirectives);
      */
-      
+
     if (!(tripples = begin_wide_shared_string(3*(length+num_linedirectives),
 					      2))) {
       Pike_fatal("Failed to allocate wide string of length %d 3*(%d + %d).\n",
@@ -280,7 +280,7 @@ INT32 assemble(int store_linenumbers)
 #endif /* PIKE_DEBUG */
     tripples = end_shared_string(tripples);
   }
-  
+
 #endif /* PIKE_PORTABLE_BYTECODE */
 
   for(e=0;e<length;e++,c++) {
@@ -316,7 +316,7 @@ INT32 assemble(int store_linenumbers)
       }
       if (c->opcode == F_SYNCH_MARK) synch_depth++;
     }
-    
+
     Pike_fatal("Reference to undefined label %d > %d\n",
 	       max_pointer, max_label);
   }
@@ -340,7 +340,7 @@ INT32 assemble(int store_linenumbers)
       labels[e]=jumps[e]= aliases[e] = -1;
       uses[e]=0;
     }
-    
+
     c=(p_instr *)instrbuf.s.str;
     length=instrbuf.s.len / sizeof(p_instr);
     for(e=0;e<length;e++)
@@ -357,7 +357,7 @@ INT32 assemble(int store_linenumbers)
 	  aliases[c[e].arg] = l;
 	}
       }
-    
+
     for(e=0;e<length;e++)
     {
       if(instrs[c[e].opcode-F_OFFSET].flags & I_POINTER)
@@ -368,21 +368,21 @@ INT32 assemble(int store_linenumbers)
 	{
 	  int tmp;
 	  tmp=labels[c[e].arg];
-	  
+
 	  while(tmp<length &&
 		(c[tmp].opcode == F_LABEL ||
 		 c[tmp].opcode == F_NOP)) tmp++;
-	  
+
 	  if(tmp>=length) break;
-	  
+
 	  if(c[tmp].opcode==F_BRANCH)
 	  {
 	    c[e].arg=c[tmp].arg;
 	    continue;
 	  }
-	  
+
 #define TWOO(X,Y) (((X)<<8)+(Y))
-	  
+
 	  switch(TWOO(c[e].opcode,c[tmp].opcode))
 	  {
 	    case TWOO(F_LOR,F_BRANCH_WHEN_NON_ZERO):
@@ -391,18 +391,18 @@ INT32 assemble(int store_linenumbers)
 	    case TWOO(F_LOR,F_LOR):
 	      c[e].arg=c[tmp].arg;
 	      continue;
-	      
+
 	    case TWOO(F_LAND,F_BRANCH_WHEN_ZERO):
 	      c[e].opcode=F_BRANCH_WHEN_ZERO;
 	      /* FALL_THROUGH */
 	    case TWOO(F_LAND,F_LAND):
 	      c[e].arg=c[tmp].arg;
 	      continue;
-	      
+
 	    case TWOO(F_LOR, F_RETURN):
 	      c[e].opcode=F_RETURN_IF_TRUE;
 	      goto pointer_opcode_done;
-	      
+
 	    case TWOO(F_BRANCH, F_RETURN):
 	    case TWOO(F_BRANCH, F_RETURN_0):
 	    case TWOO(F_BRANCH, F_RETURN_1):
@@ -428,7 +428,7 @@ INT32 assemble(int store_linenumbers)
       }
     pointer_opcode_done:;
     }
-    
+
     for(e=0;e<=max_label;e++)
     {
       if(!uses[e] && labels[e]>=0)
@@ -732,11 +732,11 @@ INT32 assemble(int store_linenumbers)
 	case F_RETURN_0:
 	case F_RETURN_1:
 	case F_RETURN_LOCAL:
-	  
+
 #define CALLS(X) \
       case PIKE_CONCAT3(F_,X,_AND_RETURN): \
       case PIKE_CONCAT3(F_MARK_,X,_AND_RETURN):
-	  
+
 	  CALLS(APPLY)
 	    CALLS(CALL_FUNCTION)
 	    CALLS(CALL_LFUN)
@@ -746,7 +746,7 @@ INT32 assemble(int store_linenumbers)
       }
     }
 #endif
-    
+
     c++;
   }
 
@@ -1004,7 +1004,7 @@ static void do_optimization(int topop, int topush, ...)
   pop_n_opcodes(topop);
 
   va_start(arglist, topush);
-  
+
   while((oplen = va_arg(arglist, int)))
   {
     q++;

@@ -68,7 +68,7 @@ compile1: options
 compile2: compile1
 
 options: config.status
-	./config.status 
+	./config.status
 
 #pre_install: GDK2.pmod Gnome2.pmod Pango.pmod
 #	$(TMP_BINDIR)/install_module GDK2.pmod $(SYSTEM_MODULE_PATH)/$(MODDIR)GDK2.pmod

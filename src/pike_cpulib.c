@@ -81,9 +81,9 @@ PMOD_EXPORT void x86_get_cpuid(int oper, INT32 *cpuid_ptr)
                  "cpuid            \n\t"
                  "movl %%ebx, %1   \n\t" /* save what cpuid just put in %ebx */
                  "popl %%ebx       \n\t" /* restore the old %ebx */
-                 : "=a"(cpuid_ptr[0]), 
-                   "=r"(cpuid_ptr[1]), 
-                   "=c"(cpuid_ptr[2]), 
+                 : "=a"(cpuid_ptr[0]),
+                   "=r"(cpuid_ptr[1]),
+                   "=c"(cpuid_ptr[2]),
                    "=d"(cpuid_ptr[3])
                  : "0"(oper)
                  : "cc");

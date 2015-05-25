@@ -141,7 +141,7 @@ void reorder(char *memory, INT32 nitems, INT32 size,INT32 *order)
   for(e=0;e<nitems;e++) to[e]=from[order[e]];	\
   break;					\
  }
-  
+
 
 #ifdef HANDLES_UNALIGNED_MEMORY_ACCESS
   switch(size)
@@ -232,7 +232,7 @@ void reorder(char *memory, INT32 nitems, INT32 size,INT32 *order)
 
 #define bit_SSE4_2 (1<<20)
 
-ATTRIBUTE((const)) static inline int supports_sse42( ) 
+ATTRIBUTE((const)) static inline int supports_sse42( )
 {
     unsigned int ignore, cpuid_ecx;
     __cpuid( 0x1, ignore, ignore, cpuid_ecx, ignore );
@@ -361,7 +361,7 @@ ATTRIBUTE((hot))
 PMOD_EXPORT void *debug_xalloc(size_t size)
 {
   void *ret;
-  if(!size) 
+  if(!size)
      Pike_error("Allocating zero bytes.\n");
 
   ret=(void *)malloc(size);
@@ -392,7 +392,7 @@ PMOD_EXPORT void *debug_xrealloc(void *m, size_t s)
 PMOD_EXPORT void *debug_xcalloc(size_t n, size_t s)
 {
   void *ret;
-  if(!n || !s) 
+  if(!n || !s)
      Pike_error("Allocating zero bytes.\n");
 
   ret=(void *)calloc(n, s);
@@ -592,7 +592,7 @@ static struct mexec_hdr *grow_mexec_hdr(struct mexec_hdr *base, size_t sz)
     verify_mexec_hdr(base);
     wanted = (struct mexec_hdr *)(((char *)base) + base->size);
   }
-  
+
   hdr = mexec_do_alloc (wanted, sz);
   if (!hdr) return NULL;
   if (hdr == wanted) {
@@ -644,7 +644,7 @@ static struct mexec_block *low_mexec_alloc(struct mexec_hdr *hdr, size_t sz)
 {
   struct mexec_free_block **free;
   struct mexec_block *res;
-    
+
   /* fprintf(stderr, "low_mexec_alloc(%p, %p)\n", hdr, (void *)sz); */
   if (!hdr) return NULL;
   verify_mexec_hdr(hdr);
@@ -1121,7 +1121,7 @@ void *fake_malloc(size_t x)
     LOWDEBUG3("fakemalloc --> ",ret);
     return ret;
   }
-    
+
   if(!x) return 0;
 
   if(!fake_free_list) init_fake_malloc();
@@ -1473,7 +1473,7 @@ char *do_pad(char *mem, long size)
   else {
     unsigned long q,e;
     q= (((long)mem) ^ 0x555555) + (size * 9248339);
-  
+
     /*  fprintf(stderr,"Padding  %p(%d) %ld\n",mem, size, q); */
 #if 1
     q%=RNDSIZE;
@@ -1534,7 +1534,7 @@ void check_pad(struct memhdr *mh, int freeok)
   if(memcmp(mem - DEBUG_MALLOC_PAD, mem+size, DEBUG_MALLOC_PAD))
   {
     q= (((long)mem) ^ 0x555555) + (size * 9248339);
-    
+
     q%=RNDSIZE;
     if(memcmp(mem - DEBUG_MALLOC_PAD, rndbuf+q, DEBUG_MALLOC_PAD))
     {
@@ -1544,7 +1544,7 @@ void check_pad(struct memhdr *mh, int freeok)
       describe(mem);
       abort();
     }
-    
+
     if(memcmp(mem + size, rndbuf+q, DEBUG_MALLOC_PAD))
     {
       out_biking=1;
@@ -1745,7 +1745,7 @@ static struct memloc *find_location(struct memhdr *mh, LOCATION location)
 
   return NULL;
 }
-				 
+
 static void add_location(struct memhdr *mh,
 			 LOCATION location)
 {
@@ -2154,7 +2154,7 @@ PMOD_EXPORT void debug_free(void *p, LOCATION location, int mustfind)
       }
     }
   }
-  
+
   if(mh)
   {
     PIKE_MEM_RW_RANGE((char *) p - DEBUG_MALLOC_PAD,
@@ -2336,7 +2336,7 @@ void dump_memhdr_locations(struct memhdr *from,
     if(notfrom && find_location(notfrom, l->location))
       continue;
 
-    
+
     fprintf(stderr,"%*s%s %s (%d times)%s\n",
 	    indent,"",
 	    LOCATION_IS_DYNAMIC(l->location) ? "-->" : "***",
@@ -2403,7 +2403,7 @@ static void find_references_to(void *block, int indent, int depth, int flags)
 	}
 	continue;
       }
-      
+
       if( ! ((sizeof(void *)-1) & (long) p ))
       {
 	if(m->size > 0)
@@ -2448,7 +2448,7 @@ void *dmalloc_find_memblock_base(void *ptr)
       unsigned int e;
       struct memhdr *tmp;
       char *p=(char *)m->data;
-      
+
       if( ! ((sizeof(void *)-1) & (long) p ))
       {
 	if( p <= lookfor && lookfor < p + m->size)
@@ -2514,7 +2514,7 @@ PMOD_EXPORT void list_open_fds(void)
       struct memloc *l;
       void *p=m->data;
       if(m->flags & MEM_FREE) continue;
-      
+
       if( 1 & (long) p )
       {
 	if( FD2PTR( PTR2FD(p) ) == p)
@@ -2628,7 +2628,7 @@ static void cleanup_memhdrs(void)
 	  fprintf(stderr, "possibly referenced memory: (%p) %ld bytes\n",p, m->size);
 	else
 	  fprintf(stderr, "==LEAK==: (%p) %ld bytes\n",p, m->size);
-	  
+
 	if( 1 & (long) p )
 	{
 	  if( FD2PTR( PTR2FD(p) ) == p)
@@ -2654,7 +2654,7 @@ static void cleanup_memhdrs(void)
 	  h--;
 	  break;
 	}
-	
+
 	find_references_to(p,0,0,0);
 	dump_memhdr_locations(m, 0,0);
       }
@@ -2665,7 +2665,7 @@ static void cleanup_memhdrs(void)
     {
       INT32 num,mem;
       long free_memhdr=0, ignored_memhdr=0, total_memhdr=0;
-      
+
       fprintf(stderr,"add_location %d cache %d (%3.3f%%) new: %d (%3.3f%%)\n",
 	      add_location_calls,
 	      add_location_cache_hits,
@@ -2679,7 +2679,7 @@ static void cleanup_memhdrs(void)
 
       count_memory_in_memhdrs(&num,&mem);
       fprintf(stderr,"memhdrs:  %8ld, %10ld bytes\n",(long)num,(long)mem);
-      
+
       for(h=0;h<(unsigned long)memhdr_hash_table_size;h++)
       {
 	struct memhdr *m;
@@ -2730,12 +2730,12 @@ static void initialize_dmalloc(void)
     memset(mlhash, 0, sizeof(mlhash));
 
     for(e=0;e<(long)NELEM(rndbuf);e++) rndbuf[e]= (rand() % 511) | 1;
-    
+
 #if DEBUG_MALLOC_PAD & 3
     fprintf(stderr,"DEBUG_MALLOC_PAD not dividable by four!\n");
     exit(99);
 #endif
-    
+
 #ifdef _REENTRANT
 #ifdef mt_init_recursive
     mt_init_recursive(&debug_malloc_mutex);
@@ -2848,7 +2848,7 @@ static LOCATION low_dynamic_location(char type, const char *file,
       break;
     }
   }
-  
+
   if(!str)
   {
     char line_str[30];
@@ -2898,7 +2898,7 @@ PMOD_EXPORT void * debug_malloc_name(void *p,const char *file, INT_TYPE line)
     LOCATION loc=dynamic_location(file, line);
 
     mt_lock(&debug_malloc_mutex);
-      
+
     if((mh=my_find_memhdr(p,0)))
       add_location(mh, loc);
 

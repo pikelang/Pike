@@ -354,7 +354,7 @@ else
         fi
       ])
     ])
-  
+
     # Note: ORBit-2.0.pc on Solaris 10/x86 adds -mt to cflags,
     #       which gcc doesn't like...
     #       The manual for cc says that -mt is -D_REENTRANT plus -lthread;
@@ -394,13 +394,13 @@ fi
 AC_MSG_CHECKING([if we are using X11])
 AC_CACHE_VAL(pgtk2_cv_have_x11, [
    AC_TRY_COMPILE([
-#include <gdk/gdk.h> 
-#include <gdk/gdkx.h> 
- ], 
+#include <gdk/gdk.h>
+#include <gdk/gdkx.h>
+ ],
  [
      GdkWindow *w = (GdkWindow *)0;
      Window window = GDK_WINDOW_XWINDOW (w);
- ], 
+ ],
  [pgtk2_cv_have_x11=x11],
  [pgtk2_cv_have_x11=nox11])
 ])

@@ -34,7 +34,7 @@
  *
  *   e004	e308	NON-SPACING UMLAUT
  *   e005	e344	NON-SPACING DIAERESIS WITH ACCENT
- *   e006	e300	NON-SPACING GRAVE ACCENT	
+ *   e006	e300	NON-SPACING GRAVE ACCENT
  *   e007	e301	NON-SPACING ACUTE ACCENT
  *   e008	e302	NON-SPACING CICUMFLEX ACCENT
  *   e009	e303	NON-SPACING TILDE
@@ -55,7 +55,7 @@
  *   e018	e313	NON-SPACING PSILI PNEUMATA
  *   -   	e342	NON-SPACING GREEK PERISPOMENI
  *   -   	e345	NON-SPACING GREEK YPOGEGRAMMENI
- *	
+ *
  *   e019	02bd	GREEK DASIA PNEUMATA
  *   e01a	02bc	GREEK PSILI PNEUMATA
  *   e01b	03d0	GREEK SMALL LETTER MIDDLE BETA
@@ -1157,7 +1157,7 @@ static const UNICHAR map_SI_1311_2002[] = {
   0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd,
   0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd,
   0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd,
-  0xfffd, 0x20ac, 0x20aa, 0x202d, 0x202e, 0x202c, 0xfffd, 0x2017, 
+  0xfffd, 0x20ac, 0x20aa, 0x202d, 0x202e, 0x202c, 0xfffd, 0x2017,
   0x05d0, 0x05d1, 0x05d2, 0x05d3, 0x05d4, 0x05d5, 0x05d6, 0x05d7,
   0x05d8, 0x05d9, 0x05da, 0x05db, 0x05dc, 0x05dd, 0x05de, 0x05df,
   0x05e0, 0x05e1, 0x05e2, 0x05e3, 0x05e4, 0x05e5, 0x05e6, 0x05e7,
@@ -1291,7 +1291,7 @@ static const UNICHAR map_ISO_8859_13_1998[] = {
   0x0105, 0x012f, 0x0101, 0x0107, 0x00e4, 0x00e5, 0x0119, 0x0113,
   0x010d, 0x00e9, 0x017a, 0x0117, 0x0123, 0x0137, 0x012b, 0x013c,
   0x0161, 0x0144, 0x0146, 0x00f3, 0x014d, 0x00f5, 0x00f6, 0x00f7,
-  0x0173, 0x0142, 0x015b, 0x016b, 0x00fc, 0x017c, 0x017e, 0x2019, }; 
+  0x0173, 0x0142, 0x015b, 0x016b, 0x00fc, 0x017c, 0x017e, 0x2019, };
 static const UNICHAR map_ISO_IR_206[] = {
   0x00a0, 0x201d, 0x00a2, 0x00a3, 0x20ac, 0x201e, 0x00a6, 0x00a7,
   0x00d8, 0x00a9, 0x0156, 0x00ab, 0x00ac, 0x00ad, 0x00ae, 0x00c6,
@@ -1319,17 +1319,17 @@ static const UNICHAR map_ISO_8859_14_1998[] = {
   0x0175, 0x00f1, 0x00f2, 0x00f3, 0x00f4, 0x00f5, 0x00f6, 0x1e6b,
   0x00f8, 0x00f9, 0x00fa, 0x00fb, 0x00fc, 0x00fd, 0x0177, 0x00ff, };
 static const UNICHAR map_ISO_8859_15_1999[] = {
-  0x00a0, 0x00a1, 0x00a2, 0x00a3, 0x20ac, 0x00a5, 0x0160, 0x00a7, 
-  0x0161, 0x00a9, 0x00aa, 0x00ab, 0x00ac, 0x00ad, 0x00ae, 0x00af, 
-  0x00b0, 0x00b1, 0x00b2, 0x00b3, 0x017d, 0x00b5, 0x00b6, 0x00b7, 
-  0x017e, 0x00b9, 0x00ba, 0x00bb, 0x0152, 0x0153, 0x0178, 0x00bf, 
-  0x00c0, 0x00c1, 0x00c2, 0x00c3, 0x00c4, 0x00c5, 0x00c6, 0x00c7, 
-  0x00c8, 0x00c9, 0x00ca, 0x00cb, 0x00cc, 0x00cd, 0x00ce, 0x00cf, 
-  0x00d0, 0x00d1, 0x00d2, 0x00d3, 0x00d4, 0x00d5, 0x00d6, 0x00d7, 
-  0x00d8, 0x00d9, 0x00da, 0x00db, 0x00dc, 0x00dd, 0x00de, 0x00df, 
-  0x00e0, 0x00e1, 0x00e2, 0x00e3, 0x00e4, 0x00e5, 0x00e6, 0x00e7, 
-  0x00e8, 0x00e9, 0x00ea, 0x00eb, 0x00ec, 0x00ed, 0x00ee, 0x00ef, 
-  0x00f0, 0x00f1, 0x00f2, 0x00f3, 0x00f4, 0x00f5, 0x00f6, 0x00f7, 
+  0x00a0, 0x00a1, 0x00a2, 0x00a3, 0x20ac, 0x00a5, 0x0160, 0x00a7,
+  0x0161, 0x00a9, 0x00aa, 0x00ab, 0x00ac, 0x00ad, 0x00ae, 0x00af,
+  0x00b0, 0x00b1, 0x00b2, 0x00b3, 0x017d, 0x00b5, 0x00b6, 0x00b7,
+  0x017e, 0x00b9, 0x00ba, 0x00bb, 0x0152, 0x0153, 0x0178, 0x00bf,
+  0x00c0, 0x00c1, 0x00c2, 0x00c3, 0x00c4, 0x00c5, 0x00c6, 0x00c7,
+  0x00c8, 0x00c9, 0x00ca, 0x00cb, 0x00cc, 0x00cd, 0x00ce, 0x00cf,
+  0x00d0, 0x00d1, 0x00d2, 0x00d3, 0x00d4, 0x00d5, 0x00d6, 0x00d7,
+  0x00d8, 0x00d9, 0x00da, 0x00db, 0x00dc, 0x00dd, 0x00de, 0x00df,
+  0x00e0, 0x00e1, 0x00e2, 0x00e3, 0x00e4, 0x00e5, 0x00e6, 0x00e7,
+  0x00e8, 0x00e9, 0x00ea, 0x00eb, 0x00ec, 0x00ed, 0x00ee, 0x00ef,
+  0x00f0, 0x00f1, 0x00f2, 0x00f3, 0x00f4, 0x00f5, 0x00f6, 0x00f7,
   0x00f8, 0x00f9, 0x00fa, 0x00fb, 0x00fc, 0x00fd, 0x00fe, 0x00ff, };
 static const UNICHAR map_ISO_6937_2_25[] = {
   0x00a0, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd,
@@ -12522,21 +12522,21 @@ static const UNICHAR map_CCITT_T_101_III_suppl[] = {
 #include "jisx0213_tables.h"
 
 const UNICHAR * const iso2022_94[] = {
-  map_ISO_646_irv_1983, map_BS_4730, map_ANSI_X3_4_1968, map_NATS_SEFI, 
-  map_NATS_SEFI_ADD, map_NATS_DANO, map_NATS_DANO_ADD, map_SEN_850200_B, 
-  map_SEN_850200_C, map_JIS_C6220_1969_jp, map_JIS_C6220_1969_ro, map_DIN_66003, 
-  map_PT, map_ISO_6438, map_ISO_5427, map_DIN_31624, 
-  map_ISO_5426_1980, map_ISO_5427_1981, map_NF_Z_62_010_1973, map_ISO_5428_1980, 
-  map_GB_1988_80, map_Latin_greek_1, map_BS_viewdata, map_INIS, 
-  map_ISO_5428_bibl, map_IT, map_ES, map_greek7_old, 
+  map_ISO_646_irv_1983, map_BS_4730, map_ANSI_X3_4_1968, map_NATS_SEFI,
+  map_NATS_SEFI_ADD, map_NATS_DANO, map_NATS_DANO_ADD, map_SEN_850200_B,
+  map_SEN_850200_C, map_JIS_C6220_1969_jp, map_JIS_C6220_1969_ro, map_DIN_66003,
+  map_PT, map_ISO_6438, map_ISO_5427, map_DIN_31624,
+  map_ISO_5426_1980, map_ISO_5427_1981, map_NF_Z_62_010_1973, map_ISO_5428_1980,
+  map_GB_1988_80, map_Latin_greek_1, map_BS_viewdata, map_INIS,
+  map_ISO_5428_bibl, map_IT, map_ES, map_greek7_old,
   map_latin_greek, map_INIS_8, map_INIS_cyrillic, map_CODAR_U,
   map_NS_4551_1, map_NS_4551_2, map_videotex_suppl + 0x80, /*ISOIR71*/NULL,
-  /*ISOIR72/ISOIR173*/NULL, map_ISO_IR_68, map_NF_Z_62_010, map_PT2, 
-  map_ES2, map_MSZ_7795_3, map_greek7, map_ASMO_449, 
+  /*ISOIR72/ISOIR173*/NULL, map_ISO_IR_68, map_NF_Z_62_010, map_PT2,
+  map_ES2, map_MSZ_7795_3, map_greek7, map_ASMO_449,
   map_iso_ir_90 + 0x80, map_JIS_C6229_1984_a, map_JIS_C6229_1984_b, map_JIS_C6229_1984_b_add,
-  map_JIS_C6229_1984_hand, map_JIS_C6229_1984_hand_add, map_JIS_C6229_1984_kana, map_ISO_2033_1983, 
+  map_JIS_C6229_1984_hand, map_JIS_C6229_1984_hand_add, map_JIS_C6229_1984_kana, map_ISO_2033_1983,
   map_ANSI_X3_110_1983 + 0x80, map_T_61_7bit, map_T_61_8bit + 0x80, map_CSA_Z243_4_1985_1,
-  map_CSA_Z243_4_1985_2, /*ISOIR137*/NULL, map_JUS_I_B1_002, map_JUS_I_B1_003_serb, 
+  map_CSA_Z243_4_1985_2, /*ISOIR137*/NULL, map_JUS_I_B1_002, map_JUS_I_B1_003_serb,
   map_T_101_G2 + 0x80, map_JUS_I_B1_003_mac, NULL };
 const UNICHAR * const iso2022_94_2[] = {
   map_greek_ccitt, map_NC_99_10_81, map_ISO_IR_170, map_IS_433_1996,
@@ -12556,39 +12556,39 @@ const UNICHAR * const iso2022_94_2[] = {
   NULL, NULL, NULL, NULL,
   NULL, NULL, NULL, };
 const UNICHAR * const iso2022_96[] = {
-  map_ECMA_cyrillic, map_ISO_8859_1_1998, map_ISO_8859_2_1999, map_ISO_8859_3_1999, 
-  map_ISO_8859_4_1998, map_CSA_Z243_4_1985_gr, map_ISO_8859_7_1987, map_ISO_8859_6_1999, 
+  map_ECMA_cyrillic, map_ISO_8859_1_1998, map_ISO_8859_2_1999, map_ISO_8859_3_1999,
+  map_ISO_8859_4_1998, map_CSA_Z243_4_1985_gr, map_ISO_8859_7_1987, map_ISO_8859_6_1999,
   map_ECMA_121, map_CSN_369103, map_ISO_6937_2_add, map_IEC_P27_1,
-  map_ISO_8859_5_1999, map_ISO_8859_9_1999, map_ISO_6937_2_25, map_GOST_19768_74, 
-  map_ISO_8859_supp, map_ISO_10367_box, map_ISO_6937_2001, map_ISO_IR_164, 
+  map_ISO_8859_5_1999, map_ISO_8859_9_1999, map_ISO_6937_2_25, map_GOST_19768_74,
+  map_ISO_8859_supp, map_ISO_10367_box, map_ISO_6937_2001, map_ISO_IR_164,
   map_TIS_620_2533_1990, map_ISO_IR_167, map_ISO_8859_10_1998, NULL,
   map_latin_lap, map_ISO_8859_13_1998, map_TCVN_5712_1993, map_ISO_IR_181,
   map_ISO_IR_182, map_ISO_IR_197, map_ISO_8859_8_1999, map_ISO_8859_14_1998,
   map_ISO_IR_200, map_ISO_IR_201, map_ISO_8859_15_1999, map_ISO_IR_204,
   map_ISO_IR_205, map_ISO_IR_206, map_SR_14111_1998, map_IS_434_1997,
-  map_ISO_IR_209, map_ISO_8859_7_2003, map_SI_1311_2002, NULL, 
-  NULL, NULL, NULL, NULL, 
-  NULL, NULL, NULL, NULL, 
-  NULL, NULL, NULL, NULL, 
-  NULL, NULL, NULL, NULL, 
+  map_ISO_IR_209, map_ISO_8859_7_2003, map_SI_1311_2002, NULL,
+  NULL, NULL, NULL, NULL,
+  NULL, NULL, NULL, NULL,
+  NULL, NULL, NULL, NULL,
+  NULL, NULL, NULL, NULL,
   NULL, map_CCITT_T_101_III_suppl, NULL };
 const UNICHAR * const iso2022_9494[] = {
-  map_JIS_C6226_1978, map_GB_2312_80, map_JIS_C6226_1983, map_KS_C_5601_1987, 
-  map_JIS_X0212_1990, /*ISOIR165*/NULL, /*ISOIR169*/NULL, /*ISOIR171*/NULL, 
-  /*ISOIR172*/NULL, /*ISOIR183*/NULL, /*ISOIR184*/NULL, /*ISOIR185*/NULL, 
+  map_JIS_C6226_1978, map_GB_2312_80, map_JIS_C6226_1983, map_KS_C_5601_1987,
+  map_JIS_X0212_1990, /*ISOIR165*/NULL, /*ISOIR169*/NULL, /*ISOIR171*/NULL,
+  /*ISOIR172*/NULL, /*ISOIR183*/NULL, /*ISOIR184*/NULL, /*ISOIR185*/NULL,
   /*ISOIR186*/NULL, /*ISOIR187*/NULL, map_KPS_9566_97, map_JIS_X0213_2000_1,
   map_JIS_X0213_2000_2, map_JIS_X0213_2004_1, NULL, NULL,
-  NULL, NULL, NULL, NULL, 
-  NULL, NULL, NULL, NULL, 
+  NULL, NULL, NULL, NULL,
+  NULL, NULL, NULL, NULL,
   NULL, NULL, NULL, NULL };
 const UNICHAR * const iso2022_9696[] = {
-  NULL, NULL, NULL, NULL, 
-  NULL, NULL, NULL, NULL, 
-  NULL, NULL, NULL, NULL, 
-  NULL, NULL, NULL, NULL, 
-  NULL, NULL, NULL, NULL, 
-  NULL, NULL, NULL, NULL, 
-  NULL, NULL, NULL, NULL, 
+  NULL, NULL, NULL, NULL,
+  NULL, NULL, NULL, NULL,
+  NULL, NULL, NULL, NULL,
+  NULL, NULL, NULL, NULL,
+  NULL, NULL, NULL, NULL,
+  NULL, NULL, NULL, NULL,
+  NULL, NULL, NULL, NULL,
   NULL, NULL, NULL, NULL };
 #include "gbk_tables.h"
 static const UNICHAR map_cp949_81[] = {

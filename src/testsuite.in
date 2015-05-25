@@ -346,14 +346,14 @@ test_any([[
 ]], 0)
 
 test_compile_any([[
-  mixed foo() 
+  mixed foo()
   {
     Stdio.File bar(int x, int y)
-    { 
+    {
       return 0;
     };
     return bar;
-  } 
+  }
 ]])
 
 test_compile_any([[
@@ -531,24 +531,24 @@ test_any([[
 dnl bug in for loop optimization in combination with +=
 
 test_any([[
-array v=({1,2,3}); 
-  for (int i=0; i<sizeof(v); i++) 
-    for (int j=0; j<i; j++) 
-    { 
-       v+=({1+i}); 
-       if (i==17) { i=10000; break; } 
-    } 
+array v=({1,2,3});
+  for (int i=0; i<sizeof(v); i++)
+    for (int j=0; j<i; j++)
+    {
+       v+=({1+i});
+       if (i==17) { i=10000; break; }
+    }
     return sizeof(v); // if buggy, will be 6 and not 140
 ]], 140);
 
 test_any([[
-array v=({1,2,3}); 
-  for (int i=0; i<sizeof(v); i++) 
-    for (int j=0; j<i; j++) 
-    { 
-       v=v+({1+i}); 
-       if (i==17) { i=10000; break; } 
-    } 
+array v=({1,2,3});
+  for (int i=0; i<sizeof(v); i++)
+    for (int j=0; j<i; j++)
+    {
+       v=v+({1+i});
+       if (i==17) { i=10000; break; }
+    }
     return sizeof(v); // not buggy, will be 140
 ]], 140);
 
@@ -1110,7 +1110,7 @@ test_compile_any([[
         return B(y);
      }
   }
-  
+
   class B
   {
      void create(int y)
@@ -1176,7 +1176,7 @@ class Bar
   class Gazonk
   {
     inherit Foo;
-    
+
 
     void create(Stdio.File f)
       {
@@ -1209,7 +1209,7 @@ test_any([[
 	    ret+=({ foo });
 	  }
 	}
-  
+
 	return func(ret, @args);
       };
     }();
@@ -1234,7 +1234,7 @@ test_compile_error( [[
   // This triggs a segfault on Pike 7.4.
   void f()
   {
-    constant days = 
+    constant days =
       ([ "1" : "Sunday"
 	 "2" : "Monday" ]);
   }
@@ -1309,7 +1309,7 @@ class Test
    inherit Prototype;
    int test() { return bar(); }
 };
-return Test()->test(); 
+return Test()->test();
 ]], 1 );
 
 test_any( [[
@@ -2099,7 +2099,7 @@ test_any([[ int a; catch { [a]=({1,2}); return 0; }; return 1]],1)
 test_compile_error([[ int a,b; catch { [a,b]=({1}); return 0; }; return 1]],1)
 test_any([[ int a,b; catch { [a,b]=lambda(){ return ({1}); }(); return 0; }; return 1]],1)
 test_any([[ mapping m=([]); m[m]=m; return stringp(sprintf("%O",m)); ]],1)
-dnl test_any([[ 
+dnl test_any([[
 dnl // don't know if this /should/ be valid  /Mirar
 dnl // remove if it shouldn't
 dnl
@@ -2136,7 +2136,7 @@ test_compile_error([[
     return 17;
   }
 ]])
-test_compile_error([[ 
+test_compile_error([[
   array a;
   a = path_info[..(sizeof(path_info)-2]*"/";
 ]])
@@ -2356,7 +2356,7 @@ test_any([[
   };
   return foo(1,2,3,4)|foo(1);
 ]], 0)
-  
+
 define(test_backtrace_line_charset, [[
 test_any([[
   program p=compile_string(
@@ -2397,7 +2397,7 @@ test_program([[
   {
     array bt = catch (f())[1];
     int ok = 0;
-    foreach (reverse (bt), object ent) 
+    foreach (reverse (bt), object ent)
       switch (functionp (ent[2]) && function_name (ent[2])) {
 	case "create": if (ent[1] == 7) ok++; break;
 	case "f": if (ent[1] == 14) ok++; break;
@@ -2596,7 +2596,7 @@ string efoo(string e)
 
       es=res;
    }
-}	
+}
 	");
 
  // Compilation handler that hides compilation errors.
@@ -2642,8 +2642,8 @@ test_any([[
  class handler
  {
    void handle_error(array(mixed)|object trace) { }
-   void compile_error(string file, int line, string err) { } 
-   void compile_warning(string file, int line, string err) { } 
+   void compile_error(string file, int line, string err) { }
+   void compile_warning(string file, int line, string err) { }
  };
 
   object orig_master = master();
@@ -2657,11 +2657,11 @@ test_any([[
   master()->set_inhibit_compile_errors(0);
   replace_master(orig_master);
   if(err)
-  { 
+  {
     Stdio.recursive_rm("testsuite_test_dir.pmod");
     return 0;
   }
-  
+
  return 1;
 ]],0);
 
@@ -2763,8 +2763,8 @@ test_do([[
   class handler
   {
     void handle_error(array(mixed)|object trace) { }
-    void compile_error(string file, int line, string err) { } 
-    void compile_warning(string file, int line, string err) { } 
+    void compile_error(string file, int line, string err) { }
+    void compile_warning(string file, int line, string err) { }
   };
 
   object orig_master = master();
@@ -2938,7 +2938,7 @@ test_do([[
   foreach(__saved_constants__; string const_name; mixed val) {
     add_constant(const_name, val);
   }
-  add_constant("__saved_constants__");  
+  add_constant("__saved_constants__");
 ]])
 
 test_compile_any([[int log() { return 17; } class Greta { int hanna() { return log(); } }]])
@@ -3024,10 +3024,10 @@ test_any([[
   {
     protected string foo = "bar";
   };
-  
+
   string to_compile=#"
     constant fum = \"gazonk\";
-    
+
     class B()
     {
        inherit A;
@@ -3037,7 +3037,7 @@ test_any([[
        }
     }
   ";
-  
+
   add_constant("A",A);
   compile_string(to_compile);
   add_constant("A");
@@ -3225,7 +3225,7 @@ test_compile_error_any([[
   	int func() { return gurka; }
      }
   }
-  
+
   class CScope
   {
      string hohum;
@@ -3467,7 +3467,7 @@ void low_generate(int depth,
     tests++;
 
     if(!(tests & 63))
-    {	
+    {
       __signal_watchdog();
       log_status("Testing vtables and scope access: %d:%d",maxdepth,tests);
     }
@@ -3519,7 +3519,7 @@ void low_generate(int depth,
       return;
     }
   }else{
-    low_generate(depth, 
+    low_generate(depth,
 		 code+
 		 ({sprintf("string F%d(){ return %s()+\"F%d\"; }",cnt,acc,cnt)}),
 		 sprintf("F%d",cnt),
@@ -3528,18 +3528,18 @@ void low_generate(int depth,
 
     for(int e=0;e<sizeof(code);e++)
     {
-      low_generate(depth, 
+      low_generate(depth,
 		   code[..e-1]+({
 		     sprintf("class C%d {\n%s\n};",cnt,code[e..]*"\n")
 		       }),
 		   sprintf("C%d()->%s",cnt,acc),
 		   ans,cnt+1);
     }
-      
+
 
     if(sscanf(acc,"%s()->%s",string classname,string rest))
     {
-      low_generate(depth, 
+      low_generate(depth,
 		   code+({sprintf("inherit %s;",classname) }),
 		   rest,
 		   ans,
@@ -3561,7 +3561,7 @@ array(int) a()
     total_tests+=tests;
     tests=0;
   }
-  
+
   return ({ total_tests-errors, errors });
 }
 
@@ -3973,13 +3973,13 @@ test_compile_any([[
      {
      }
   }
-  
+
   class inherit_top
   {
      inherit top:top;
-  
+
      constant top_the_class=top::the_class;
-  
+
      class the_other_class
      {
         inherit top_the_class;
@@ -4444,7 +4444,7 @@ test_eq(120,
              int f(int i) { return i == 0 ? 1 : i*f(i-1); };
              return f(5);
            }(); ]])
-  
+
 test_eq([[function f;
 	for(int i = 0; i < 2; i++)
 	  { {int _i = i; f = lambda(int j) { return _i+j; }; } }
@@ -5032,7 +5032,7 @@ test_any([[
   o=Debug.prev(this_object());
   while(zero_type(o)) o=Debug.prev(o); /* skip destructed */
   catch { if(objectp(o) || object_program(o)) return 1;  };
-  return 0;  
+  return 0;
 ]],1)
 
 test_any([[object(Stdio.File) o=Stdio.File(); return objectp(o);]],1)
@@ -5080,7 +5080,7 @@ test_any([[
   int q;
   return function_object( lambda() { return q; });
 ]],[[this_object()]])
-  
+
 
 test_compile(class c { object(Stdio.File) foo=class foobar {} ();})
 test_compile(class c { object(Stdio.File) foo=class {} ();})
@@ -5723,7 +5723,7 @@ test_any_equal([[
   foreach(m;string k;)
   {
       if(k=="%70")
-      {   
+      {
 	  m[k]=0;
 	  break;
       }
@@ -7678,15 +7678,15 @@ test_eq([[Gmp.mpz(123456789012345678901234567890)/
 test_eq([[Gmp.mpz(123456789012345678901234567890)/
 	  Gmp.mpz(67890123456789)]],Gmp.mpz(1818479371169857));
 
-test_any([[int a=10->pow(30); int b=1000000000000000000000000000000; 
+test_any([[int a=10->pow(30); int b=1000000000000000000000000000000;
           return ([a:1])[b]]],1);
-test_any([[int a=10->pow(30); int b=1000000000000000000000000000000; 
+test_any([[int a=10->pow(30); int b=1000000000000000000000000000000;
           return (<a>)[b]]],1);
-test_any([[int a=10->pow(30); int b=1000000000000000000000000000000; 
+test_any([[int a=10->pow(30); int b=1000000000000000000000000000000;
           return sizeof( ({a})-({b}) )]],0);
-test_any([[int a=10->pow(30); int b=1000000000000000000000000000000; 
+test_any([[int a=10->pow(30); int b=1000000000000000000000000000000;
           return sizeof( ({a})&({b}) )]],1);
-test_any([[int k=10->pow(30); 
+test_any([[int k=10->pow(30);
 	    array a=({k+17,k+16,k+13,k+14,k+12,k,k+9});
           return sort(a)[0]==k && sort(a)[-1]==k+17]],1)
 
@@ -8052,7 +8052,7 @@ test_any([[mixed a; sscanf("\0\0","%-2H",a); return a]],"")
 test_any([[mixed a; sscanf("\4","%-2H",a); return a]],0)
 test_any([[mixed a; sscanf("\4\0","%-2H",a); return a]],0)
 test_any([[mixed a; sscanf("\4\0hello","%-2H",a); return a]],"hell")
-	
+
 test_any([[
 class Bar {
   string sum = "";
@@ -11711,26 +11711,26 @@ test_do([[
   class C
   {
     mapping m;
-    
+
     int `==()
     {
       foreach(indices(m), mixed x)
   	m_delete(m, x);
       return 0;
     }
-  
+
     void create(mapping _m)
     {
       m = _m;
     }
   };
-  
+
   mapping m = ([ ]);
   C o = C(m);
-  
+
   for(int i = 0; i < 100; i++)
     m[i] = o;
-  
+
   return search(m, 4711);
 ]])
 
@@ -12375,15 +12375,15 @@ test_any([[
    sleep(tts);
    int hrt2=gethrtime();
    float t2=time(t0);
-   
+
    float e=(hrt2-hrt1)*1e-6;
    float f=t2-t1;
 
    array r=({});
-   if (e<tts-0.1 || e>tts+0.1) 
+   if (e<tts-0.1 || e>tts+0.1)
       r+=({sprintf("hrtime %.6f, %+.6f",e,e-tts)});
 
-   if (f<tts-0.1 || f>tts+0.1) 
+   if (f<tts-0.1 || f>tts+0.1)
       r+=({sprintf("timeofday %.6f, %+.6f",f,f-tts)});
 
    if (sizeof(r)) return r*" / ";
@@ -12657,13 +12657,13 @@ test_true([[catch {float f = 1.0 / 0.0;}]])
 
 // - this failed in Calendar.Timezone
 
-test_compile( 
+test_compile(
 [[
    array tz_ux(int ux)
    {
       if (ux<-0x80000000 || ux>0x7fffffff)
 	 error("bah\n");
-      return ({}); 
+      return ({});
    };
    tz_ux(0);
 ]]);
@@ -13212,7 +13212,7 @@ class Fnord
     inherit Bzonk;
     constant floingngg=fNord;
     array Zpfoooinginoooo() {}
-    
+
     int t()
       {
 	return fNord + fNord;
@@ -13323,7 +13323,7 @@ test_any_equal([[
 test_any_equal([[
   mixed test(int a, mixed ... b) {
     if(a) return test(0);
-    return b; 
+    return b;
   };
   return test(1,2);
 ]],[[ ({}) ]])
@@ -13456,12 +13456,12 @@ test_true(stringp(sprintf("%e",exp(700))))
 test_true(stringp(sprintf("%E",exp(700))))
 
 dnl test for "inf" problems
-test_eq(lower_case(sprintf("%f",Math.inf)),"inf") 
+test_eq(lower_case(sprintf("%f",Math.inf)),"inf")
 test_eq(lower_case(sprintf("%g",Math.inf)),"inf")
 test_eq(lower_case(sprintf("%G",Math.inf)),"inf")
 test_eq(lower_case(sprintf("%e",Math.inf)),"inf")
 test_eq(lower_case(sprintf("%E",Math.inf)),"inf")
-test_eq(lower_case(sprintf("%f",-Math.inf)),"-inf") 
+test_eq(lower_case(sprintf("%f",-Math.inf)),"-inf")
 test_eq(lower_case(sprintf("%g",-Math.inf)),"-inf")
 test_eq(lower_case(sprintf("%G",-Math.inf)),"-inf")
 test_eq(lower_case(sprintf("%e",-Math.inf)),"-inf")
@@ -13469,7 +13469,7 @@ test_eq(lower_case(sprintf("%E",-Math.inf)),"-inf")
 
 dnl test for "nan" problems
 dnl At least the following variants exist: "nan", "Nan", "NaN", "NaNQ".
-test_eq(lower_case(sprintf("%f",Math.nan)[..2]),"nan") 
+test_eq(lower_case(sprintf("%f",Math.nan)[..2]),"nan")
 test_eq(lower_case(sprintf("%g",Math.nan)[..2]),"nan")
 test_eq(lower_case(sprintf("%G",Math.nan)[..2]),"nan")
 test_eq(lower_case(sprintf("%e",Math.nan)[..2]),"nan")

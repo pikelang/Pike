@@ -258,7 +258,7 @@ void low_set_index(struct pike_string *s, ptrdiff_t pos, int value)
     STR0(s)[pos]=value;
   else if(s->size_shift == 1)
     STR1(s)[pos]=value;
-  else 
+  else
     STR2(s)[pos]=value;
 }
 
@@ -435,7 +435,7 @@ static int improper_zero_termination(const struct pike_string *s)
 #endif /* PIKE_DEBUG */
 
 /* Find a string in the shared string table.
- * This assumes that the string is minimized!!!! 
+ * This assumes that the string is minimized!!!!
  */
 static struct pike_string *internal_findstring(const char *s,
                                                ptrdiff_t len,
@@ -507,7 +507,7 @@ struct pike_string *binary_findstring_pcharp(PCHARP foo, ptrdiff_t l)
   struct pike_string *res;
   if( !foo.shift )
     return binary_findstring( (void*)foo.ptr, l );
-  
+
   if( UNLIKELY(foo.shift == 2) )
     foo.shift=find_magnitude2( (void*)foo.ptr, l );
   else if( foo.shift == 1 )
@@ -530,7 +530,7 @@ struct pike_string *binary_findstring_pcharp(PCHARP foo, ptrdiff_t l)
     foo.ptr = tmp;
   }
 
-  res=internal_findstring((void*)foo.ptr, l, foo.shift, 
+  res=internal_findstring((void*)foo.ptr, l, foo.shift,
 			  low_do_hash(foo.ptr,l,foo.shift));
 
   if( tmp )
@@ -834,7 +834,7 @@ struct pike_string *low_end_shared_string(struct pike_string *s)
   }
   s2 = internal_findstring(s->str, len, s->size_shift, h);
 #ifdef PIKE_DEBUG
-  if(s2==s) 
+  if(s2==s)
     Pike_fatal("end_shared_string called twice! (or something like that)\n");
 #endif
 
@@ -848,7 +848,7 @@ struct pike_string *low_end_shared_string(struct pike_string *s)
   }
 
   return s;
-  
+
 }
 
 /*
@@ -933,7 +933,7 @@ PMOD_EXPORT struct pike_string * debug_make_shared_binary_string(const char *str
   ptrdiff_t h = StrHash(str, len);
 
   s = internal_findstring(str,len,0,h);
-  if (!s) 
+  if (!s)
   {
     s=begin_shared_string(len);
     memcpy(s->str, str, len);
@@ -990,7 +990,7 @@ PMOD_EXPORT struct pike_string * debug_make_shared_binary_string1(const p_wchar1
   h=low_do_hash(str, len, 1);
 
   s = internal_findstring((char *)str,len,1,h);
-  if (!s) 
+  if (!s)
   {
     s=begin_wide_shared_string(len,1);
     memcpy(s->str, str, len<<1);
@@ -1025,7 +1025,7 @@ PMOD_EXPORT struct pike_string * debug_make_shared_binary_string2(const p_wchar2
   h=low_do_hash(str, len, 2);
 
   s = internal_findstring((char *)str,len,2,h);
-  if (!s) 
+  if (!s)
   {
     s=begin_wide_shared_string(len,2);
     memcpy(s->str, str, len<<2);
@@ -1710,7 +1710,7 @@ struct pike_string *modify_shared_string(struct pike_string *a,
    * if all characters in the new string can fit in a string
    * of a lower magnitude, it must be shrunk
    */
-     
+
   if(min_magnitude(old_value) == a->size_shift &&
      min_magnitude(c) < min_magnitude(old_value))
   {
@@ -1728,7 +1728,7 @@ struct pike_string *modify_shared_string(struct pike_string *a,
 	if(find_magnitude1(STR1(a),index)) break;
 	if(find_magnitude1(STR1(a)+index+1,a->len-index-1))
 	  break;
-	
+
 	b=begin_shared_string(a->len);
 	convert_1_to_0((p_wchar0 *)b->str,STR1(a),a->len);
 	b->str[index]=c;
@@ -1761,7 +1761,7 @@ struct pike_string *modify_shared_string(struct pike_string *a,
 	}
     }
   }
-     
+
 
   /* We now know that the string has the right character size */
   if(a->refs==1)
@@ -2040,7 +2040,7 @@ PMOD_EXPORT struct pike_string *string_replace(struct pike_string *str,
       delimeters++;
       s+=del->len << str->size_shift;
     }
-    
+
     if(!delimeters)
     {
       CALL_AND_UNSET_ONERROR (mojt_uwp);
@@ -2821,7 +2821,7 @@ PMOD_EXPORT void string_builder_vsprintf(struct string_builder *s,
       size_t min_width = 0;
       size_t precision = 0;
       int state = 0;
-      
+
       fmt++;
       while (1) {
 	switch (*(fmt++)) {
@@ -2873,7 +2873,7 @@ PMOD_EXPORT void string_builder_vsprintf(struct string_builder *s,
 	case 'z':	/* size_t */
 	  flags = (flags & ~APPEND_WIDTH_MASK) | APPEND_WIDTH_PTR;
 	  continue;
-	  
+
 	case 'O':
 	  {
 	    /* FIXME: Doesn't care about field or integer widths yet. */
@@ -3248,7 +3248,7 @@ PMOD_EXPORT int pcharp_to_svalue_inumber(struct svalue *r,
   /* Note: Code duplication in strtol and STRTOL_PCHARP. */
 
   PCHARP str_start;
-  
+
   unsigned INT_TYPE val, mul_limit;
   int c;
   int xx, neg = 0, add_limit, overflow = 0;
@@ -3260,10 +3260,10 @@ PMOD_EXPORT int pcharp_to_svalue_inumber(struct svalue *r,
   SET_SVAL(*r, T_INT, NUMBER_NUMBER, integer, 0);
   if(ptr != 0)
     *ptr = str;
-  
+
   if(base < 0 || MBASE < base)
     return 0;
-  
+
   if(!WIDE_ISALNUM(c = EXTRACT_PCHARP(str)))
   {
     while(WIDE_ISSPACE(c))
@@ -3271,7 +3271,7 @@ PMOD_EXPORT int pcharp_to_svalue_inumber(struct svalue *r,
       INC_PCHARP(str,1);
       c = EXTRACT_PCHARP(str);
     }
-    
+
     switch (c)
     {
     case '-':
@@ -3282,7 +3282,7 @@ PMOD_EXPORT int pcharp_to_svalue_inumber(struct svalue *r,
       c = EXTRACT_PCHARP(str);
     }
   }
-  
+
   if(base == 0)
   {
     if(c != '0')
@@ -3294,7 +3294,7 @@ PMOD_EXPORT int pcharp_to_svalue_inumber(struct svalue *r,
     else
       base = 8;
   }
-  
+
   /*
    * For any base > 10, the digits incrementally following
    * 9 are assumed to be "abc...z" or "ABC...Z".
@@ -3322,7 +3322,7 @@ PMOD_EXPORT int pcharp_to_svalue_inumber(struct svalue *r,
     mul_limit = MAX_INT_TYPE / base;
     add_limit = (int) (MAX_INT_TYPE % base);
   }
-  
+
   for(val = DIGIT(c);
       (INC_PCHARP(str,1), WIDE_ISALNUM(c = EXTRACT_PCHARP(str) )) &&
 	(xx = DIGIT(c)) < base &&
@@ -3333,7 +3333,7 @@ PMOD_EXPORT int pcharp_to_svalue_inumber(struct svalue *r,
     else
       val = base * val + xx;
   }
-  
+
   if(ptr != 0)
     *ptr = str;
 
@@ -3350,7 +3350,7 @@ PMOD_EXPORT int pcharp_to_svalue_inumber(struct svalue *r,
     push_int(base);
     convert_stack_top_with_base_to_bignum();
     if(neg) o_negate();
-    
+
     *r = *--Pike_sp;
     dmalloc_touch_svalue (r);
   }
@@ -3373,9 +3373,9 @@ PMOD_EXPORT int convert_stack_top_string_to_inumber(int base)
 
   if(TYPEOF(Pike_sp[-1]) != T_STRING)
     Pike_error("Cannot convert stack top to integer number.\n");
-  
+
   i=pcharp_to_svalue_inumber(&r, MKPCHARP_STR(Pike_sp[-1].u.string), 0, base, 0);
-  
+
   free_string(Pike_sp[-1].u.string);
   Pike_sp[-1] = r;
 
@@ -3432,7 +3432,7 @@ PMOD_EXPORT double STRTOD_PCHARP(const PCHARP nptr, PCHARP *endptr)
 	   gotten as many digits as can be represented in a `double'.
 	   This doesn't necessarily mean the result will overflow.
 	   The exponent may reduce it to within range.
-	   
+
 	   We just need to record that there was another
 	   digit so that we can multiply by 10 later.  */
 	++exponent;
@@ -3530,7 +3530,7 @@ PMOD_EXPORT double STRTOD_PCHARP(const PCHARP nptr, PCHARP *endptr)
   /* Return an underflow error.  */
   errno = ERANGE;
   return 0.0;
-  
+
  noconv:
   /* There was no number.  */
   if (endptr != NULL)

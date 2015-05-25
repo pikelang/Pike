@@ -189,7 +189,7 @@ void f_openlog(INT32 args)
   if(p_option & (1<<1)) option |= LOG_NDELAY;
   if(p_option & (1<<2)) option |= LOG_PERROR;
   if(p_option & (1<<3)) option |= LOG_PID;
- 
+
   if(p_facility & (1<<0)) facility |= LOG_AUTH; /* Don't use */
   if(p_facility & (1<<1)) facility |= LOG_AUTHPRIV;
   if(p_facility & (1<<2)) facility |= LOG_CRON;
@@ -216,14 +216,14 @@ void f_openlog(INT32 args)
 #endif /* LOG_NOWAIT */
 
   THREADS_ALLOW();
-  
+
   openlog(ident, option, facility);
 
   THREADS_DISALLOW();
 
   pop_n_elems(args);
 }
- 
+
 /*! @decl void syslog(int priority, string msg)
  *!
  *! Writes the message @[msg] to the log with the priorities in
@@ -257,7 +257,7 @@ void f_syslog(INT32 args)
   INT_TYPE pri=0, i;
 
   get_all_args("syslog", args, "%i%S", &i, &s);
- 
+
   if(i & (1<<0)) pri |= LOG_EMERG;
   if(i & (1<<1)) pri |= LOG_ALERT;
   if(i & (1<<2)) pri |= LOG_CRIT;

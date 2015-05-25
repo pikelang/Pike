@@ -19,7 +19,7 @@ static void LM_FUNC(rgb_group *s,rgb_group *l,rgb_group *d,
       memcpy(d,s,sizeof(rgb_group)*len);
       memcpy(da,sa,sizeof(rgb_group)*len);
 #endif
-      return; 
+      return;
    }
    else if (alpha==1.0)
    {
@@ -98,9 +98,9 @@ static void LM_FUNC(rgb_group *s,rgb_group *l,rgb_group *d,
 	      d->g=L_TRUNC(L_OPER(s->g,l->g));
 	      d->b=L_TRUNC(L_OPER(s->b,l->b));
 #ifndef L_COPY_ALPHA
-	      *da=white; da++; 
+	      *da=white; da++;
 #endif
-	      l++; s++; sa++; d++; 
+	      l++; s++; sa++; d++;
 	   }
       }
       else
@@ -147,7 +147,7 @@ static void LM_FUNC(rgb_group *s,rgb_group *l,rgb_group *d,
 	       ALPHA_ADD_nA(s,t,d,sa,la,da,b);
 #endif
 	    }
-	    l++; s++; la++; sa++; d++; 
+	    l++; s++; la++; sa++; d++;
 #ifndef L_COPY_ALPHA
 	    da++;
 #endif
@@ -183,7 +183,7 @@ static void LM_FUNC(rgb_group *s,rgb_group *l,rgb_group *d,
 	    ALPHA_ADD_V_NOLA_nA(s,t,d,sa,da,alpha,b);
 
 #endif
-	    l++; s++; sa++; d++; 
+	    l++; s++; sa++; d++;
 	 }
       else
 	 while (len--)
@@ -198,7 +198,7 @@ static void LM_FUNC(rgb_group *s,rgb_group *l,rgb_group *d,
 #ifdef L_USE_SA
 	    *da=*sa;
 #endif
-	    da++; 
+	    da++;
 #else
 	    t->r=L_TRUNC(L_OPER(s->r,l->r));
 	    ALPHA_ADD_V_nA(s,t,d,sa,la,da,alpha,r);
@@ -216,9 +216,9 @@ static void LM_FUNC(rgb_group *s,rgb_group *l,rgb_group *d,
    {
       smear_color(d,L_TRANS,len);
       smear_color(da,L_TRANS,len);
-      return; 
+      return;
    }
-   else 
+   else
    {
       if (!la)  /* no layer alpha => full opaque */
 	 while (len--)
@@ -226,7 +226,7 @@ static void LM_FUNC(rgb_group *s,rgb_group *l,rgb_group *d,
 	    *da=*d=L_LOGIC(L_OPER(s->r,l->r),
 			   L_OPER(s->g,l->g),
 			   L_OPER(s->b,l->b));
-	    l++; s++; sa++; d++; da++; 
+	    l++; s++; sa++; d++; da++;
 	 }
       else
 	 while (len--)
@@ -237,7 +237,7 @@ static void LM_FUNC(rgb_group *s,rgb_group *l,rgb_group *d,
 	       *da=*d=L_LOGIC(L_OPER(s->r,l->r),
 			      L_OPER(s->g,l->g),
 			      L_OPER(s->b,l->b));
-	    l++; s++; la++; sa++; d++; da++; 
+	    l++; s++; la++; sa++; d++; da++;
 	 }
    }
 #endif /* L_LOGIC */

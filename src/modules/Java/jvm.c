@@ -1541,7 +1541,7 @@ static void ffi_dispatch(ffi_cif *cif, void *rval, void **args,
   /* userdata is a native_method_context pointer which has a cpu_context
      as its first member (so we can find the statc flag) */
   struct cpu_context *cpu = (struct cpu_context *) userdata;
-  
+
   /* args[1] will contain the "this" pointer for instance methods and the
      class reference for static methods. However, since native_dispatch()
      expects the "this" pointer to be part of args while class is sent
@@ -1588,7 +1588,7 @@ static ffi_type *get_ffi_type(char p)
   case 'L':
   case '[':
     return &ffi_type_pointer;
-    
+
   case 'Z':
     if (sizeof (jboolean) == sizeof (jbyte))
       return &ffi_type_sint8;
@@ -1599,7 +1599,7 @@ static ffi_type *get_ffi_type(char p)
     return &ffi_type_sint8;
   case 'C':
     return &ffi_type_uint16;
-  case 'S': 
+  case 'S':
     return &ffi_type_sint16;
   case 'I':
   default:
@@ -1927,7 +1927,7 @@ static void *low_make_stub(struct cpu_context *ctx, void *data, int statc,
     *p++ = 0x38a00000;  /* li r5,0         */
     *p++ = 0x38000001;  /* li r0,1	   */
   }
-  
+
   *p++ = 0x7c641b78;  /* mr r4,r3        */
   *p++ = 0x98010000|VAOFFS(gpr);
 		      /* stb r0,gpr      */
@@ -1949,7 +1949,7 @@ static void *low_make_stub(struct cpu_context *ctx, void *data, int statc,
                       /* lis r3,hi16(data)          */
   *p++ = 0x60630000|(((unsigned INT32)(void *)data)&0xffff);
                       /* ori r3,r3,lo16(data)       */
- 
+
   *p++ = 0x3d800000|(((unsigned INT32)(void *)dispatch)>>16);
                       /* lis r12,hi16(dispatch)     */
   *p++ = 0x618c0000|(((unsigned INT32)(void *)dispatch)&0xffff);
@@ -1992,9 +1992,9 @@ static void *low_make_stub(struct cpu_context *ctx, void *data, int statc,
     int i, fp=1;
     for(i=0; i<6; i++)
       if(flt_args&(1<<i))
-	*p++ = 0xd0010000|((fp++)<<21)|(4*i+88);  /* stfs fN,X(r1)   */	
+	*p++ = 0xd0010000|((fp++)<<21)|(4*i+88);  /* stfs fN,X(r1)   */
       else if(i<5 && dbl_args&(1<<i)) {
-	*p++ = 0xd8010000|((fp++)<<21)|(4*i+88);  /* stfd fN,X(r1)   */	
+	*p++ = 0xd8010000|((fp++)<<21)|(4*i+88);  /* stfd fN,X(r1)   */
 	i++;
       } else
 	*p++ = 0x90010000|((i+5)<<21)|(4*i+88);  /* stw rN,X(r1)   */
@@ -2015,14 +2015,14 @@ static void *low_make_stub(struct cpu_context *ctx, void *data, int statc,
     *p++ = 0x38a00000;  /* li r5,0         */
     *p++ = 0x38c10054;  /* addi r6,r1,84   */
   }
-  
+
   *p++ = 0x7c641b78;  /* mr r4,r3        */
 
   *p++ = 0x3c600000|(((unsigned INT32)(void *)data)>>16);
                       /* lis r3,hi16(data)          */
   *p++ = 0x60630000|(((unsigned INT32)(void *)data)&0xffff);
                       /* ori r3,r3,lo16(data)       */
- 
+
   *p++ = 0x3d800000|(((unsigned INT32)(void *)dispatch)>>16);
                       /* lis r12,hi16(dispatch)     */
   *p++ = 0x618c0000|(((unsigned INT32)(void *)dispatch)&0xffff);
@@ -2101,17 +2101,17 @@ static void *low_make_stub(struct cpu_context *ctx, void *data, int statc,
   else
     /* stq a5,40(sp) */
     *p++ = 0xb6be0028;
-  if(statc) { 
+  if(statc) {
     /* mov a1,a2 */
     *p++ = 0x46310412;
     /* lda a3,16(sp) */
     *p++ = 0x227e0010;
-  } else { 
+  } else {
     /* clr a2 */
     *p++ = 0x47ff0412;
     /* lda a3,8(sp) */
     *p++ = 0x227e0008;
-  } 
+  }
   /* mov a0,a1 */
   *p++ = 0x46100411;
   /* ldq a0,64(t12) */
@@ -2378,24 +2378,24 @@ static void do_native_dispatch(void *arg)
       default:
 	push_int(GET_NATIVE_ARG(jint));
 	break;
-      
+
       case 'J':
 	push_int(GET_NATIVE_ARG(jlong));
 	break;
-      
+
       case 'F':
 	push_float(GET_NATIVE_ARG(NATIVE_ARG_JFLOAT_TYPE));
 	break;
-      
+
       case 'D':
 	push_float(GET_NATIVE_ARG(jdouble));
 	break;
-      
+
       case 'L':
 	push_java_anyobj(GET_NATIVE_ARG(jobject), ctx->nat->jvm, env);
 	while(*p && *p++!=';') ;
 	break;
-      
+
       case '[':
 	push_java_array(GET_NATIVE_ARG(jarray), ctx->nat->jvm, env, *p);
 	while(*p == '[')
@@ -2516,7 +2516,7 @@ static void exit_natives_struct(struct object *PIKE_UNUSED(o))
 {
   JNIEnv *env;
   struct natives_storage *n = THIS_NATIVES;
-  
+
   if(n->jvm) {
     if(n->cls) {
       if((env = jvm_procure_env(n->jvm)) != NULL) {
@@ -2625,11 +2625,11 @@ static void f_natives_create(INT32 args)
       assign_svalue_no_free(&n->cons[i].callback, &ITEM(nm)[2]);
       n->cons[i].nat = n;
       n->num_methods++;
-      
+
       build_native_entry(env, c->jobj, &n->cons[i], &n->jnms[i],
 			 ITEM(nm)[0].u.string, ITEM(nm)[1].u.string);
     }
-    
+
     n->jvm = c->jvm;
     n->cls = cls;
     add_ref(n->jvm);
@@ -2651,7 +2651,7 @@ static void f_super_class(INT32 args)
 {
   struct jobj_storage *jo = THIS_JOBJ;
   JNIEnv *env;
-  
+
   pop_n_elems(args);
   if((env = jvm_procure_env(jo->jvm))) {
     push_java_class((*env)->GetSuperclass(env, jo->jobj), jo->jvm, env);
@@ -2713,7 +2713,7 @@ static void f_alloc(INT32 args)
 {
   struct jobj_storage *jo = THIS_JOBJ;
   JNIEnv *env;
-  
+
   pop_n_elems(args);
 
   if((env = jvm_procure_env(jo->jvm))) {
@@ -2831,7 +2831,7 @@ static void f_register_natives(INT32 args)
   else {
     free_object(oo);
     push_int(0);
-  } 
+  }
 }
 #endif /* SUPPORT_NATIVE_METHODS */
 
@@ -2867,7 +2867,7 @@ static void f_javaarray_sizeof(INT32 args)
   pop_n_elems(args);
 
   if((env = jvm_procure_env(jo->jvm))) {
-    push_int((*env)->GetArrayLength(env, jo->jobj));  
+    push_int((*env)->GetArrayLength(env, jo->jobj));
     jvm_vacate_env(jo->jvm, env);
   } else
     push_int(0);
@@ -3208,7 +3208,7 @@ static void f_javaarray_values(INT32 args)
 	      SET_SVAL(ITEM(ar)[i], PIKE_T_FLOAT, 0, float_number,
 		       ((jdouble*)a)[i]);
 	    }
-	    break;	    
+	    break;
 	  }
 	  (*env)->ReleasePrimitiveArrayCritical(env, jo->jobj, a, 0);
 	  push_array(ar);
@@ -3436,7 +3436,7 @@ static void f_create(INT32 args)
 #endif
 #endif
 
-  /* load and initialize a Java VM, return a JNI interface 
+  /* load and initialize a Java VM, return a JNI interface
    * pointer in env */
   {
     jint errcode;

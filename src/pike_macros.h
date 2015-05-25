@@ -37,7 +37,7 @@
 
 PMOD_EXPORT extern const char Pike_is8bitalnum_vector[];
 #define is8bitalnum(X)	(Pike_is8bitalnum_vector[((unsigned)(X))&0xff] == '1')
-  
+
 #define isidchar(X) is8bitalnum(X)
 
 

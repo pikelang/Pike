@@ -217,8 +217,8 @@ PMOD_EXPORT struct mallinfo dlmallinfo(void);
 #define dmalloc_close_fd(X) (X)
 #define dmfree(X) free((X))
 #define dmalloc_accept_leak(X) (void)(X)
-#define DMALLOC_LINE_ARGS 
-#define DMALLOC_POS 
+#define DMALLOC_LINE_ARGS
+#define DMALLOC_POS
 #define DMALLOC_PROXY_ARGS
 #define debug_malloc_dump_references(X,x,y,z)
 #define debug_malloc_dump_fd(fd)

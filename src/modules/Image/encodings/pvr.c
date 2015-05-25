@@ -1085,10 +1085,10 @@ void img_pvr_decode(INT32 args,int header_only)
    n++;
    push_text("xsize");
    push_int(w);
-   n++;   
+   n++;
    push_text("ysize");
    push_int(h);
-   n++;   
+   n++;
 
    if(!header_only) {
      int twiddle=0, hasalpha=0, bpp=0, compress=0;
@@ -1123,7 +1123,7 @@ void img_pvr_decode(INT32 args,int header_only)
 	twiddle = 1;
 	if((w<h && (w<8 || w>1024 || (w&(w-1)) || h%w)) ||
 	   (h>=w && (h<8 || h>1024 || (h&(h-1)) || w%h)))
-	  Pike_error("invalid size for vq texture\n");	  
+	  Pike_error("invalid size for vq texture\n");
 	break;
       case MODE_CLUT4:
       case MODE_CLUT4_MIPMAP:
@@ -1181,7 +1181,7 @@ void img_pvr_decode(INT32 args,int header_only)
 
      if(twiddle && !twiddleinited)
        init_twiddletab();
-     
+
      if(twiddle)
        if(h<w)
 	 for(x=0; x<w; x+=h)
@@ -1201,7 +1201,7 @@ void img_pvr_decode(INT32 args,int header_only)
        img=get_storage(o,image_program);
        push_object(o);
        n++;
-       
+
        if(twiddle)
 	 if(h<w)
 	   for(x=0; x<w; x+=h)

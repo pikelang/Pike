@@ -4003,7 +4003,7 @@ low_idents: TOK_IDENTIFIER
 	/* FIXME: Add this identifier as a constant in the current program to
 	 *        avoid multiple reporting of the same identifier.
 	 * NOTE: This should then only be done in the second pass.
-	 */	
+	 */
 	$$=0;
       }else{
 	$$=mknode(F_UNDEFINED,0,0);
@@ -4212,7 +4212,7 @@ typeof: TOK_TYPEOF '(' expr0 ')'
     t=(tmp && CAR(tmp) && CAR(tmp)->type ? CAR(tmp)->type : mixed_type_string);
     $$ = mktypenode(t);
     free_node(tmp);
-  } 
+  }
   | TOK_TYPEOF '(' error ')' { $$=0; yyerrok; }
   | TOK_TYPEOF '(' error '}' { $$=0; yyerror("Missing ')'."); }
   | TOK_TYPEOF '(' error TOK_LEX_EOF
@@ -4222,7 +4222,7 @@ typeof: TOK_TYPEOF '(' expr0 ')'
   }
   | TOK_TYPEOF '(' error ';' { $$=0; yyerror("Missing ')'."); }
   ;
- 
+
 catch_arg: '(' comma_expr ')'  { $$=$2; }
   | '(' error ')' { $$=0; yyerrok; }
   | '(' error TOK_LEX_EOF
@@ -4234,7 +4234,7 @@ catch_arg: '(' comma_expr ')'  { $$=$2; }
   | '(' error ';' { $$=0; yyerror("Missing ')'."); }
   | block
   | error { $$=0; yyerror("Bad expression for catch."); }
-  ; 
+  ;
 
 catch: TOK_CATCH
      {
@@ -4743,7 +4743,7 @@ static node *add_protected_variable(struct pike_string *name,
       p->new_program->flags |= PROGRAM_USES_PARENT;
       p = p->previous;
     }
-    
+
     tmp_name = get_new_name(name);
     id = define_parent_variable(p, tmp_name, type,
 				ID_PROTECTED|ID_PRIVATE|ID_INLINE);
@@ -4796,7 +4796,7 @@ static node *lexical_islocal(struct pike_string *str)
 {
   int e,depth=0;
   struct compiler_frame *f=Pike_compiler->compiler_frame;
-  
+
   while(1)
   {
     for(e=f->current_number_of_locals-1;e>=0;e--)
@@ -4807,7 +4807,7 @@ static node *lexical_islocal(struct pike_string *str)
 
 	f->variable[e].flags |= LOCAL_VAR_IS_USED;
 
-	while(q!=f) 
+	while(q!=f)
 	{
 	  q->lexical_scope|=SCOPE_SCOPED;
 	  q=q->previous;

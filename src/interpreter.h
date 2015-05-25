@@ -30,7 +30,7 @@
     Pike_fp->pc = PROG_COUNTER++;		\
     goto *instr;		\
   } while(0)
-    
+
 #endif /* PIKE_DEBUG */
 
 #define LOW_GET_ARG()	((INT32)(ptrdiff_t)(*(PROG_COUNTER++)))
@@ -230,7 +230,7 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
 
 #include "interpret_functions.h"
 
-#ifndef HAVE_COMPUTED_GOTO      
+#ifndef HAVE_COMPUTED_GOTO
     default:
       Pike_fatal("Strange instruction %ld\n",(long)instr);
     }

@@ -533,7 +533,7 @@ static struct case_info *find_ci(INT32 c)
   }
 
   if ((ci) && (ci[0].low <= c) && (ci[1].low > c)) {
-    return ci; 
+    return ci;
   }
 
   while (lo != hi-1) {
@@ -563,7 +563,7 @@ static struct case_info *find_ci_shift0(INT32 c)
   }
 
   if ((ci) && (ci[0].low <= c) && (ci[1].low > c)) {
-    return ci; 
+    return ci;
   }
 
   while (lo != hi-1) {
@@ -951,7 +951,7 @@ void f_query_num_arg(INT32 args)
  *!   In all other cases @expr{-1@} will be returned when not found.
  *!
  *! @seealso
- *!   @[indices()], @[values()], @[zero_type()], @[has_value()], 
+ *!   @[indices()], @[values()], @[zero_type()], @[has_value()],
  *!   @[has_prefix()], @[has_suffix()]
  */
 PMOD_EXPORT void f_search(INT32 args)
@@ -1147,7 +1147,7 @@ PMOD_EXPORT void f_search(INT32 args)
 	      /* FIXME: Should probably indicate not found in some other way.
 	       *        On the other hand, the iterator should be false now.
 	       */
-	      push_undefined();	
+	      push_undefined();
 	      return;
 	    }
 	    pop_n_elems(2);
@@ -1376,7 +1376,7 @@ PMOD_EXPORT void f_has_suffix(INT32 args)
 PMOD_EXPORT void f_has_index(INT32 args)
 {
   int t = 0;
-  
+
   if(args < 2)
     SIMPLE_TOO_FEW_ARGS_ERROR("has_index", 2);
   if(args > 2)
@@ -1387,19 +1387,19 @@ PMOD_EXPORT void f_has_index(INT32 args)
     case T_STRING:
       if(TYPEOF(Pike_sp[-1]) == T_INT)
 	t = (0 <= Pike_sp[-1].u.integer && Pike_sp[-1].u.integer < Pike_sp[-2].u.string->len);
-  
+
       pop_n_elems(args);
       push_int(t);
       break;
-      
+
     case T_ARRAY:
       if(TYPEOF(Pike_sp[-1]) == T_INT)
 	t = (0 <= Pike_sp[-1].u.integer && Pike_sp[-1].u.integer < Pike_sp[-2].u.array->size);
-      
+
       pop_n_elems(args);
       push_int(t);
       break;
-      
+
     case T_MAPPING:
         t=!!low_mapping_lookup( Pike_sp[-2].u.mapping, Pike_sp-1 );
         pop_n_elems(2);
@@ -1411,7 +1411,7 @@ PMOD_EXPORT void f_has_index(INT32 args)
         pop_n_elems(2);
         push_int(t);
         break;
-      
+
     case T_OBJECT:
     case T_PROGRAM:
       /* FIXME: If the object behaves like an array, it will throw an
@@ -1420,7 +1420,7 @@ PMOD_EXPORT void f_has_index(INT32 args)
 
 	 Maybe we should use object->_has_index(index) provided that
 	 the object implements it.
-	 
+
 	 /Noring */
       /* If it is an iterator object we may want to use the iterator
          interface to look for the index. */
@@ -1429,7 +1429,7 @@ PMOD_EXPORT void f_has_index(INT32 args)
       f_indices(1);
       stack_swap();
       f_search(2);
-      
+
       if(TYPEOF(Pike_sp[-1]) == T_INT)
 	Pike_sp[-1].u.integer = (Pike_sp[-1].u.integer != -1);
       else
@@ -1467,7 +1467,7 @@ PMOD_EXPORT void f_has_index(INT32 args)
  *! @endcode
  *!
  *! @seealso
- *!   @[has_index()], @[indices()], @[search()], @[has_prefix()], 
+ *!   @[has_index()], @[indices()], @[search()], @[has_prefix()],
  *!   @[has_suffix()], @[values()], @[zero_type()]
  */
 PMOD_EXPORT void f_has_value(INT32 args)
@@ -1482,7 +1482,7 @@ PMOD_EXPORT void f_has_value(INT32 args)
     case T_MAPPING:
       f_search(2);
       f_zero_type(1);
-      
+
       if(TYPEOF(Pike_sp[-1]) == T_INT)
 	Pike_sp[-1].u.integer = !Pike_sp[-1].u.integer;
       else
@@ -1496,10 +1496,10 @@ PMOD_EXPORT void f_has_value(INT32 args)
 	 with `values' in case of objects. The problem is that we cannot
 	 use `search' directly since it's undefined whether it returns
 	 -1 (array) or 0 (mapping) during e.g. some data type emulation.
-	 
+
 	 Maybe we should use object->_has_value(value) provided that
 	 the object implements it.
-	 
+
 	 /Noring */
 
       /* FALL_THROUGH */
@@ -1806,7 +1806,7 @@ PMOD_EXPORT void f_string_to_unicode(INT32 args)
 	if (c > 0xffff) {
 	  /* Use surrogates */
 	  c -= 0x10000;
-	  
+
 	  out->str[j + 1] = c & 0xff;
 	  out->str[j] = 0xdc | ((c >> 8) & 0x03);
 	  j -= 2;
@@ -1915,7 +1915,7 @@ PMOD_EXPORT void f_unicode_to_string(INT32 args)
 
 	if ((str0[-1]&surrmask) == surr2 && num_surrogates &&
 	    (str0[-2]&surrmask) == surr1) {
-	    
+
 	  str2[i] = ((str0[-2]&0x3ff)<<10) + (str0[-1]&0x3ff) + 0x10000;
 
 	  --str0;
@@ -1933,7 +1933,7 @@ PMOD_EXPORT void f_unicode_to_string(INT32 args)
       memcpy(out->str, str0-len, len*2);
   } else {
     /* Reverse endian */
-    
+
     if (num_surrogates) {
       /* Convert surrogates */
 
@@ -1943,7 +1943,7 @@ PMOD_EXPORT void f_unicode_to_string(INT32 args)
 
 	if ((str0[-1]&surrmask) == surr2 && num_surrogates &&
 	    (str0[-2]&surrmask) == surr1) {
-	    
+
 #if (PIKE_BYTEORDER == 4321)
 	  str2[i] = ((((unsigned char *)str0)[-3]&3)<<18) +
 	    (((unsigned char *)str0)[-4]<<10) +
@@ -2779,7 +2779,7 @@ PMOD_EXPORT void f_get_active_compilation_handler(INT32 args)
       c = (struct compilation *)compiler_frame->current_storage;
     }
   }
-  
+
   pop_n_elems(args);
   if (c && c->compat_handler) {
     ref_push_object(c->compat_handler);
@@ -2816,7 +2816,7 @@ PMOD_EXPORT void f_get_active_error_handler(INT32 args)
       c = (struct compilation *)compiler_frame->current_storage;
     }
   }
-  
+
   pop_n_elems(args);
   if (c && c->handler) {
     ref_push_object(c->handler);
@@ -3244,7 +3244,7 @@ PMOD_EXPORT void f_crypt(INT32 args)
  *!
  *!   All pointers and function pointers to this object will become zero.
  *!   The destructed object will be freed from memory as soon as possible.
- */ 
+ */
 PMOD_EXPORT void f_destruct(INT32 args)
 {
   struct object *o;
@@ -3399,7 +3399,7 @@ static node *fix_overloaded_type(node *n, int lfun, const char *deftype, int UNU
       }
     }
 
-    /* If it is an object, it *may* be overloaded, we or with 
+    /* If it is an object, it *may* be overloaded, we or with
      * the deftype....
      */
 #if 1
@@ -3413,7 +3413,7 @@ static node *fix_overloaded_type(node *n, int lfun, const char *deftype, int UNU
     }
 #endif
   }
-  
+
   return 0; /* continue optimization */
 }
 
@@ -3556,7 +3556,7 @@ static node *fix_aggregate_mapping_type(node *n)
 
     if (n->parent) {
       n->parent->node_info |= OPT_TYPE_NOT_FIXED;
-    }    
+    }
   }
  done:
   if (args) {
@@ -3780,7 +3780,7 @@ PMOD_EXPORT void f_object_program(INT32 args)
 	  push_function(loc.o, loc.parent_identifier);
 	  return;
 	}
-      } else if((p->flags & PROGRAM_USES_PARENT) && 
+      } else if((p->flags & PROGRAM_USES_PARENT) &&
 	 PARENT_INFO(o)->parent &&
 	 PARENT_INFO(o)->parent->prog)
       {
@@ -3986,7 +3986,7 @@ PMOD_EXPORT void f_reverse(INT32 args)
   }
 
   default:
-    SIMPLE_BAD_ARG_ERROR("reverse", 1, "string|int|array");    
+    SIMPLE_BAD_ARG_ERROR("reverse", 1, "string|int|array");
   }
 }
 
@@ -4075,7 +4075,7 @@ int find_longest_prefix(char *str,
   }
   return match;
 }
-			       
+
 
 static int replace_sortfun(struct replace_many_tupel *a,
 			   struct replace_many_tupel *b)
@@ -4361,7 +4361,7 @@ static struct pike_string *replace_many(struct pike_string *str,
  *!
  *!   This function can do several kinds replacement operations, the
  *!   different syntaxes do different things as follows:
- *! 
+ *!
  *!   If all the arguments are strings, a copy of @[s] with every
  *!   occurrence of @[from] replaced with @[to] will be returned.
  *!   Special case: @[to] will be inserted between every character in
@@ -4442,7 +4442,7 @@ PMOD_EXPORT void f_replace(INT32 args)
 		       Pike_sp[1-args].u.string,
 		       Pike_sp[2-args].u.string);
       break;
-      
+
     case T_ARRAY:
       if (TYPEOF(Pike_sp[2-args]) == T_STRING) {
 	push_int(Pike_sp[1-args].u.array->size);
@@ -4454,7 +4454,7 @@ PMOD_EXPORT void f_replace(INT32 args)
       s=replace_many(Pike_sp[-args].u.string,
 		     Pike_sp[1-args].u.array,
 		     Pike_sp[2-args].u.array);
-    
+
     }
     pop_n_elems(args);
     push_string(s);
@@ -4620,7 +4620,7 @@ PMOD_EXPORT void f_compile(INT32 args)
  *!   Set the value @[m] to use weak or normal references in its
  *!   indices and/or values (whatever is applicable). @[state] is a
  *!   bitfield built by using @expr{|@} between the following flags:
- *!   
+ *!
  *!   @int
  *!   	@value Pike.WEAK_INDICES
  *!   	  Use weak references for indices. Only applicable for
@@ -4631,7 +4631,7 @@ PMOD_EXPORT void f_compile(INT32 args)
  *!   	@value Pike.WEAK
  *!   	  Shorthand for @expr{Pike.WEAK_INDICES|Pike.WEAK_VALUES@}.
  *!   @endint
- *!   
+ *!
  *!   If a flag is absent, the corresponding field will use normal
  *!   references. @[state] can also be @expr{1@} as a compatibility
  *!   measure; it's treated like @[Pike.WEAK].
@@ -4920,7 +4920,7 @@ PMOD_EXPORT void f_sleep(INT32 args)
  *!   Only signal handlers can interrupt the sleep. Other callbacks are
  *!   not called during delay. Beware that this function uses busy-waiting
  *!   to achieve the highest possible accuracy.
- *!   
+ *!
  *! @seealso
  *!   @[signal()], @[sleep()]
  */
@@ -5181,7 +5181,7 @@ TYPEP(f_floatp, "floatp", T_FLOAT, float)
  *!
  *! @returns
  *!   The first argument is returned.
- *! 
+ *!
  *! @note
  *!   The sort is stable, i.e. elements that are compare-wise equal
  *!   aren't reordered.
@@ -5279,7 +5279,7 @@ PMOD_EXPORT void f_rows(INT32 args)
     types |= 1 << TYPEOF(ITEM(a)[e]);
   }
   a->type_field = types;
-  
+
   Pike_sp--;
   dmalloc_touch_svalue(Pike_sp);
   pop_n_elems(args);
@@ -5885,7 +5885,7 @@ static int does_match_x_x(struct pike_string *s,int j,
        if(j++>=s->len) return 0;
        break;
 
-     case '*': 
+     case '*':
       i++;
       if (i==m->len) return 1;	/* slut */
 
@@ -5895,7 +5895,7 @@ static int does_match_x_x(struct pike_string *s,int j,
 
       return 0;
 
-     default: 
+     default:
        if(j>=s->len ||
 	  index_shared_string(m,i)!=index_shared_string(s,j)) return 0;
        j++;
@@ -5924,7 +5924,7 @@ static int does_match(struct pike_string *s,int j,
  *!
  *! @param glob
  *!   @mixed
- *!    @type string 
+ *!    @type string
  *!      The glob pattern. A question sign ('?') matches any character
  *!      and an asterisk ('*') matches a string of arbitrary length. All
  *!      other characters only match themselves.
@@ -5961,7 +5961,7 @@ static int any_does_match( struct svalue *items, int nglobs, struct pike_string 
        return 1;
    }
    return 0;
-} 
+}
 
 PMOD_EXPORT void f_glob(INT32 args)
 {
@@ -6002,7 +6002,7 @@ PMOD_EXPORT void f_glob(INT32 args)
       pop_n_elems(2);
       push_int(i);
    break;
-    
+
   case T_ARRAY: {
     INT32 j;
     unsigned matches = 0;
@@ -6390,7 +6390,7 @@ static struct array* diff_compare_table(struct array *a,struct array *b,int *u)
 }
 
 struct diff_magic_link
-{ 
+{
    int x;
    int refs;
    struct diff_magic_link *prev;
@@ -6430,7 +6430,7 @@ static INLINE struct diff_magic_link_pool*
    return *pools;
 }
 
-static INLINE struct diff_magic_link* 
+static INLINE struct diff_magic_link*
        dml_new(struct diff_magic_link_pool **pools)
 {
    struct diff_magic_link *new;
@@ -6458,9 +6458,9 @@ static INLINE struct diff_magic_link*
       pool->firstfreenum=1;
       return pool->dml;
    }
-   
+
    return NULL;
-}	
+}
 
 static INLINE void dml_free_pools(struct diff_magic_link_pool *pools)
 {
@@ -6496,8 +6496,8 @@ static INLINE int diff_ponder_stack(int x,
 				    int top)
 {
    int middle,a,b;
-   
-   a=0; 
+
+   a=0;
    b=top;
    while (b>a)
    {
@@ -6515,8 +6515,8 @@ static INLINE int diff_ponder_array(int x,
 				    int top)
 {
    int middle,a,b;
-   
-   a=0; 
+
+   a=0;
    b=top;
    while (b>a)
    {
@@ -6672,9 +6672,9 @@ static struct array *diff_longest_sequence(struct array *cmptbl, int blen)
 	       dml->prev = NULL;
 
 	     top++;
-	    
+
 	     stack[pos] = dml;
-	   } else if (pos && 
+	   } else if (pos &&
 		      stack[pos]->refs == 1 &&
 		      stack[pos-1] == stack[pos]->prev)
 	   {
@@ -6710,7 +6710,7 @@ static struct array *diff_longest_sequence(struct array *cmptbl, int blen)
 
 	     if (!--stack[pos]->refs)
 	       dml_delete(pools, stack[pos]);
-	    
+
 	     stack[pos] = dml;
 	   }
 #ifdef DIFF_DEBUG
@@ -6732,7 +6732,7 @@ static struct array *diff_longest_sequence(struct array *cmptbl, int blen)
    free(marks);
 
    /* FIXME(?) memory unfreed upon error here. */
-   a=low_allocate_array(top,0); 
+   a=low_allocate_array(top,0);
    if (top)
    {
        dml=stack[top-1];
@@ -6924,7 +6924,7 @@ static struct array* diff_build(struct array *a,
    /* FIXME(?) memory unfreed upon error here (and later) */
    ad=low_allocate_array(0,32);
    bd=low_allocate_array(0,32);
-   
+
    eqstart=0;
    lbi=bi=ai=-1;
    for (i=0; i<seq->size; i++)
@@ -6972,7 +6972,7 @@ static struct array* diff_build(struct array *a,
       push_array(friendly_slice_array(b,lbi+1,b->size));
       bd=append_array(bd, Pike_sp-1);
       pop_stack();
-      
+
       push_array(friendly_slice_array(a,ai+1,a->size));
       ad=append_array(ad,Pike_sp-1);
       pop_stack();
@@ -7085,7 +7085,7 @@ PMOD_EXPORT void f_diff(INT32 args)
 	     uniq, cmptbl->size);
 #endif /* DIFF_DEBUG */
      seq = diff_dyn_longest_sequence(cmptbl, b->size);
-   }     
+   }
 #endif /* ENABLE_DYN_DIFF */
 
    push_array(seq);
@@ -8014,7 +8014,7 @@ PMOD_EXPORT void f_transpose(INT32 args)
 
   for(i=0; i<sizein; i++)
     type|=in->item[i].u.array->type_field;
-  
+
   for(j=0; j<sizeininner; j++)
   {
     struct svalue * ett;
@@ -8125,8 +8125,8 @@ PMOD_EXPORT void f_map(INT32 args)
       case T_MAPPING:
       case T_PROGRAM:
       case T_FUNCTION:
-	 /* mapping ret =                             
-	       mkmapping(indices(arr),                
+	 /* mapping ret =
+	       mkmapping(indices(arr),
 	                 map(values(arr),fun,@extra)); */
 	 f_aggregate(args-2);
 	 mysp=Pike_sp;
@@ -8148,7 +8148,7 @@ PMOD_EXPORT void f_map(INT32 args)
 	 return;
 
       case T_MULTISET:
-	 /* multiset ret =                             
+	 /* multiset ret =
 	       (multiset)(map(indices(arr),fun,@extra)); */
 	 push_svalue(Pike_sp-args);      /* take indices from arr */
 	 free_svalue(Pike_sp-args-1);    /* move it to top of stack */
@@ -8157,7 +8157,7 @@ PMOD_EXPORT void f_map(INT32 args)
 	 Pike_sp--;
 	 dmalloc_touch_svalue(Pike_sp);
 	 Pike_sp[-args]=Pike_sp[0];           /* move it back */
-	 f_map(args);               
+	 f_map(args);
 
 	 push_multiset (mkmultiset (Pike_sp[-1].u.array));
 	 free_array (Pike_sp[-2].u.array);
@@ -8167,21 +8167,21 @@ PMOD_EXPORT void f_map(INT32 args)
 	 return;
 
       case T_STRING:
-	 /* multiset ret =                             
+	 /* multiset ret =
 	       (string)(map((array)arr,fun,@extra)); */
 	 push_svalue(Pike_sp-args);      /* take indices from arr */
 	 free_svalue(Pike_sp-args-1);    /* move it to top of stack */
 	 mark_free_svalue (Pike_sp-args-1);
 	 o_cast(NULL,T_ARRAY);      /* cast the string to an array */
-	 Pike_sp--;                       
+	 Pike_sp--;
 	 dmalloc_touch_svalue(Pike_sp);
 	 Pike_sp[-args]=Pike_sp[0];           /* move it back */
-	 f_map(args);               
+	 f_map(args);
 	 o_cast(NULL,T_STRING);     /* cast the array to a string */
 	 return;
 
       case T_OBJECT:
-	 /* if arr->cast :              
+	 /* if arr->cast :
                try map((array)arr,fun,@extra);
                try map((mapping)arr,fun,@extra);
                try map((multiset)arr,fun,@extra); */
@@ -8313,7 +8313,7 @@ PMOD_EXPORT void f_map(INT32 args)
 	   for (i=0; i<n; i++)
 	   {
 	     push_svalue(ITEM(a)+i);
-	     if (splice) 
+	     if (splice)
 	     {
 	       add_ref_svalue(mysp-1);
 	       push_array_items(mysp[-1].u.array);
@@ -8337,7 +8337,7 @@ PMOD_EXPORT void f_map(INT32 args)
 	 pop_stack();
 	 stack_swap();
 	 f_rows(2);
-	 return; 
+	 return;
 
       case T_STRING:
 	 /* ret[i]=arr[i][fun](@extra); */
@@ -8368,7 +8368,7 @@ PMOD_EXPORT void f_map(INT32 args)
 	 SIMPLE_BAD_ARG_ERROR("map",2,
 			      "function|program|object|"
 			      "string|int(0..0)|multiset");
-   }      
+   }
 }
 
 /*! @decl mixed filter(mixed arr, void|mixed fun, mixed ...extra)
@@ -8458,7 +8458,7 @@ PMOD_EXPORT void f_filter(INT32 args)
 
    if (args<1)
       SIMPLE_TOO_FEW_ARGS_ERROR("filter", 1);
-   
+
    switch (TYPEOF(Pike_sp[-args]))
    {
       case T_ARRAY:
@@ -8482,7 +8482,7 @@ PMOD_EXPORT void f_filter(INT32 args)
 	    if (!UNSAFE_IS_ZERO(f->item+i))
 	    {
 	       push_svalue(a->item+i);
-	       if (m++>32) 
+	       if (m++>32)
 	       {
 		  f_aggregate(m);
 		  m=0;
@@ -8503,8 +8503,8 @@ PMOD_EXPORT void f_filter(INT32 args)
       case T_MAPPING:
       case T_PROGRAM:
       case T_FUNCTION:
-	 /* mapping ret =                             
-	       mkmapping(indices(arr),                
+	 /* mapping ret =
+	       mkmapping(indices(arr),
 	                 map(values(arr),fun,@extra)); */
 	 memmove(Pike_sp-args+2,Pike_sp-args,args*sizeof(*Pike_sp));
 	 Pike_sp+=2;
@@ -8548,7 +8548,7 @@ PMOD_EXPORT void f_filter(INT32 args)
 	 free_svalue(Pike_sp-args-1);    /* move it to top of stack */
 	 mark_free_svalue (Pike_sp-args-1);
 	 f_indices(1);              /* call f_indices */
-	 Pike_sp--;                       
+	 Pike_sp--;
 	 dmalloc_touch_svalue(Pike_sp);
 	 Pike_sp[-args]=Pike_sp[0];           /* move it back */
 	 f_filter(args);
@@ -8565,10 +8565,10 @@ PMOD_EXPORT void f_filter(INT32 args)
 	 free_svalue(Pike_sp-args-1);    /* move it to top of stack */
 	 mark_free_svalue (Pike_sp-args-1);
 	 o_cast(NULL,T_ARRAY);      /* cast the string to an array */
-	 Pike_sp--;                       
+	 Pike_sp--;
 	 dmalloc_touch_svalue(Pike_sp);
 	 Pike_sp[-args]=Pike_sp[0];           /* move it back */
-	 f_filter(args);               
+	 f_filter(args);
 	 o_cast(NULL,T_STRING);     /* cast the array to a string */
 	 return;
 
@@ -8703,7 +8703,7 @@ void f_enumerate(INT32 args)
 
    if (args<1)
       SIMPLE_TOO_FEW_ARGS_ERROR("enumerate", 1);
-   if (args<2) 
+   if (args<2)
    {
       push_int(1);
       args++;
@@ -8840,7 +8840,7 @@ PMOD_EXPORT void f_program_identifier_defined(INT32 args)
       INT_TYPE line;
       struct pike_string *tmp = low_get_program_line(p, &line);
 
-      if (tmp) 
+      if (tmp)
       {
           push_string(tmp);
           if(line >= 1)
@@ -8899,9 +8899,9 @@ PMOD_EXPORT void f_inherit_list(INT32 args)
   get_all_args("inherit_list",args,"%*",&arg);
   if(TYPEOF(Pike_sp[-args]) == T_OBJECT)
     f_object_program(1);
-  
+
   p=program_from_svalue(arg);
-  if(!p) 
+  if(!p)
     SIMPLE_BAD_ARG_ERROR("inherit_list", 1, "program");
 
   if(TYPEOF(*arg) == T_FUNCTION)
@@ -8934,7 +8934,7 @@ PMOD_EXPORT void f_inherit_list(INT32 args)
 	      tmp.o=par;
 	      tmp.parent_identifier=parid;
 	      tmp.inherit=INHERIT_FROM_INT(par->prog,parid);
-	      
+
 	      find_external_context(&tmp, in->parent_offset-1);
 	      ref_push_function(tmp.o,
 				in->parent_identifier +
@@ -8942,11 +8942,11 @@ PMOD_EXPORT void f_inherit_list(INT32 args)
 	    }
 	  }
 	  break;
-	  
+
 	  case INHERIT_PARENT:
 	    ref_push_function(in->parent, in->parent_identifier);
 	    break;
-	    
+
 	  case OBJECT_PARENT:
 	    if(par)
 	    {
@@ -9089,7 +9089,7 @@ void init_builtin_efuns(void)
 
   /* __master still contains a reference */
   free_program(pike___master_program);
-  
+
   /* function(string,void|mixed:void) */
   ADD_EFUN("add_constant", f_add_constant,
 	   tFunc(tStr tOr(tVoid,tMix),tVoid),OPT_SIDE_EFFECT);
@@ -9098,11 +9098,11 @@ void init_builtin_efuns(void)
   ADD_EFUN2("aggregate",debug_f_aggregate,
 	    tFuncV(tNone,tSetvar(0,tMix),tArr(tVar(0))),
 	    OPT_TRY_OPTIMIZE, optimize_f_aggregate, 0);
-  
+
   /* function(0=mixed ...:multiset(0)) */
   ADD_EFUN("aggregate_multiset",f_aggregate_multiset,
 	   tFuncV(tNone,tSetvar(0,tMix),tSet(tVar(0))),OPT_TRY_OPTIMIZE);
-  
+
   /* function(0=mixed ...:mapping(0:0)) */
   ADD_EFUN2("aggregate_mapping",f_aggregate_mapping,
 	    tFuncV(tNone,tSetvar(0,tMix),tMap(tVar(0),tVar(0))),
@@ -9111,21 +9111,21 @@ void init_builtin_efuns(void)
   /* function(:mapping(string:mixed)) */
   ADD_EFUN("all_constants",f_all_constants,
 	   tFunc(tNone,tMap(tStr,tMix)),OPT_EXTERNAL_DEPEND);
-  
+
   /* function(:object) */
   ADD_EFUN("get_active_compilation_handler",
 	   f_get_active_compilation_handler,
 	   tFunc(tNone, tObj), OPT_EXTERNAL_DEPEND);
-  
+
   /* function(:object) */
   ADD_EFUN("get_active_error_handler",
 	   f_get_active_error_handler,
 	   tFunc(tNone, tObj), OPT_EXTERNAL_DEPEND);
-  
+
   /* function(int,void|0=mixed:array(0)) */
   ADD_EFUN("allocate", f_allocate,
 	   tFunc(tInt tOr(tVoid,tSetvar(0,tMix)),tArr(tVar(0))), 0);
-  
+
   /* function(mixed:int) */
   ADD_EFUN("arrayp", f_arrayp,tFunc(tMix,tInt01),0);
 
@@ -9142,21 +9142,21 @@ void init_builtin_efuns(void)
   ADD_EFUN("combine_path",f_combine_path_unix,tFuncV(tNone,tStr,tStr),0);
 #endif
 #endif
-  
+
   ADD_EFUN("compile", f_compile,
 	   tFunc(tStr tOr(tObj, tVoid) tOr(tInt, tVoid) tOr(tInt, tVoid) tOr(tPrg(tObj), tVoid) tOr(tObj, tVoid) ,tPrg(tObj)),
 	   OPT_EXTERNAL_DEPEND);
-  
+
   /* function(1=mixed:1) */
   ADD_EFUN("copy_value",f_copy_value,tFunc(tSetvar(1,tMix),tVar(1)),0);
-  
+
   /* function(string:string)|function(string,string:int) */
   ADD_EFUN("crypt",f_crypt,
 	   tOr(tFunc(tStr,tStr7),tFunc(tStr tStr,tInt01)),OPT_EXTERNAL_DEPEND);
-  
+
   /* function(object|void:void) */
   ADD_EFUN("destruct",f_destruct,tFunc(tOr(tObj,tVoid),tVoid),OPT_SIDE_EFFECT);
-  
+
   /* function(mixed,mixed:int) */
   ADD_EFUN("equal",f_equal,tFunc(tMix tMix,tInt01),OPT_TRY_OPTIMIZE);
 
@@ -9164,29 +9164,29 @@ void init_builtin_efuns(void)
   ADD_FUNCTION2("everynth",f_everynth,
 		tFunc(tArr(tSetvar(0,tMix)) tOr(tInt,tVoid) tOr(tInt,tVoid),
 		      tArr(tVar(0))), 0, OPT_TRY_OPTIMIZE);
-  
+
   /* function(int:void) */
   ADD_EFUN("exit",f_exit,tFuncV(tInt tOr(tVoid,tStr),tOr(tVoid,tMix),tVoid),
 	   OPT_SIDE_EFFECT);
-  
+
   /* function(int:void) */
   ADD_EFUN("_exit",f__exit,tFunc(tInt,tVoid),OPT_SIDE_EFFECT);
-  
+
   /* function(mixed:int) */
   ADD_EFUN("floatp",  f_floatp,tFunc(tMix,tInt01),OPT_TRY_OPTIMIZE);
-  
+
   /* function(mixed:int) */
   ADD_EFUN("functionp",  f_functionp,tFunc(tMix,tInt01),OPT_TRY_OPTIMIZE);
 
   /* function(mixed:int) */
   ADD_EFUN("callablep",  f_callablep,tFunc(tMix,tInt01),OPT_TRY_OPTIMIZE);
-  
+
   /* function(string,string:int(0..1))|function(string,string*:array(string)) */
   ADD_EFUN("glob",f_glob,
            tOr(tFunc(tOr(tStr,tArr(tStr)) tStr,tInt01),
                tFunc(tOr(tStr,tArr(tStr)) tSetvar(1,tArr(tStr)),tVar(1))),
 	   OPT_TRY_OPTIMIZE);
-  
+
   /* function(string,int|void:int) */
   ADD_EFUN("hash",f_hash,tFunc(tStr tOr(tInt,tVoid),tInt),OPT_TRY_OPTIMIZE);
 
@@ -9217,14 +9217,14 @@ void init_builtin_efuns(void)
 
   /* function(mixed:int) */
   ADD_EFUN("multisetp", f_multisetp,tFunc(tMix,tInt01),OPT_TRY_OPTIMIZE);
-  
+
   /* function(string:string)|function(int:int) */
   ADD_EFUN("lower_case",f_lower_case,
 	   tOr(tFunc(tStr,tStr), tFunc(tInt,tInt)),OPT_TRY_OPTIMIZE);
-  
+
   /* function(mixed:int) */
   ADD_EFUN("mappingp",f_mappingp,tFunc(tMix,tInt01),OPT_TRY_OPTIMIZE);
-  
+
   /* function(1=mixed,int:1) */
   ADD_EFUN("set_weak_flag",f_set_weak_flag,
 	   tFunc(tSetvar(1,tMix) tInt,tVar(1)),OPT_SIDE_EFFECT);
@@ -9236,24 +9236,24 @@ void init_builtin_efuns(void)
   ADD_EFUN2("object_program", f_object_program,
 	    tFunc(tMix, tOr(tPrg(tObj),tFunction)),
 	    OPT_TRY_OPTIMIZE, fix_object_program_type, 0);
-  
+
   /* function(mixed:int) */
   ADD_EFUN("objectp", f_objectp,tFunc(tMix,tInt01),0);
-  
+
   /* function(mixed:int) */
   ADD_EFUN("programp",f_programp,tFunc(tMix,tInt01),0);
-  
+
   /* function(:int) */
   ADD_EFUN("query_num_arg",f_query_num_arg,
 	   tFunc(tNone,tInt),OPT_EXTERNAL_DEPEND);
-  
+
   /* function(int:void) */
   ADD_EFUN("random_seed",f_random_seed,
 	   tFunc(tInt,tVoid),OPT_SIDE_EFFECT);
 
   ADD_EFUN("random_string",f_random_string,
 	   tFunc(tInt,tStr8), OPT_EXTERNAL_DEPEND);
-  
+
   ADD_EFUN2("replace", f_replace,
 	    tOr5(tFunc(tStr tStr tStr,tStr),
 		 tFunc(tStr tArr(tStr) tOr(tArr(tStr), tStr), tStr),
@@ -9261,13 +9261,13 @@ void init_builtin_efuns(void)
 		 tFunc(tSetvar(0,tArray) tMix tMix,tVar(0)),
 		 tFunc(tSetvar(1,tMapping) tMix tMix,tVar(1))),
 	    OPT_TRY_OPTIMIZE, optimize_replace, 0);
-  
+
   ADD_EFUN("reverse",f_reverse,
 	   tOr3(tFunc(tInt tOr(tVoid, tInt) tOr(tVoid, tInt), tInt),
 		tFunc(tStr tOr(tVoid, tInt) tOr(tVoid, tInt), tStr),
 		tFunc(tSetvar(0, tArray) tOr(tVoid, tInt) tOr(tVoid, tInt),
 		      tVar(0))),0);
-  
+
   /* function(mixed,array:array) */
   ADD_EFUN("rows",f_rows,
 	   tOr6(tFunc(tMap(tSetvar(0,tMix),tSetvar(1,tMix)) tArr(tVar(0)),
@@ -9288,7 +9288,7 @@ void init_builtin_efuns(void)
                       tOr(tVoid,tVar(1)), tVar(1)),
 		tFunc(tObj tMix tOr(tVoid, tSetvar(3, tMix)), tVar(3))),
 	   0);
-  
+
   ADD_EFUN2("has_prefix", f_has_prefix, tFunc(tOr(tStr,tObj) tStr,tInt01),
 	    OPT_TRY_OPTIMIZE, 0, 0);
 
@@ -9316,7 +9316,7 @@ void init_builtin_efuns(void)
 	   tFunc(tOr(tFlt,tInt) tOr(tInt,tVoid),tVoid),OPT_SIDE_EFFECT);
   ADD_EFUN("delay", f_delay,
 	   tFunc(tOr(tFlt,tInt) tOr(tInt,tVoid),tVoid),OPT_SIDE_EFFECT);
-  
+
   /* function(array(0=mixed),array(mixed)...:array(0)) */
   ADD_EFUN("sort",f_sort,
 	   tFuncV(tArr(tSetvar(0,tMix)),tArr(tMix),tArr(tVar(0))),
@@ -9331,27 +9331,27 @@ void init_builtin_efuns(void)
   ADD_FUNCTION2("uniq_array", f_uniq_array,
 		tFunc(tArr(tSetvar(0,tMix)), tArr(tVar(0))), 0,
 		OPT_TRY_OPTIMIZE);
-  
+
   /* function(mixed:int) */
   ADD_EFUN("stringp", f_stringp, tFunc(tMix,tInt01), 0);
 
   ADD_EFUN2("this_object", f_this_object,tFunc(tOr(tVoid,tIntPos),tObj),
 	    OPT_EXTERNAL_DEPEND, optimize_this_object, generate_this_object);
-  
+
   /* function(mixed:void) */
   ADD_EFUN("throw",f_throw,tFunc(tMix,tOr(tMix,tVoid)),OPT_SIDE_EFFECT);
-  
+
   /* function(void|int(0..1):int(2..))|function(int(2..):float) */
   ADD_EFUN("time",f_time,
 	   tOr(tFunc(tOr(tVoid,tInt01),tInt2Plus),
 	       tFunc(tInt2Plus,tFlt)),
 	   OPT_SIDE_EFFECT);
-  
+
   /* function(array(0=mixed):array(0)) */
   ADD_FUNCTION2("transpose",f_transpose,
 		tFunc(tArr(tSetvar(0,tMix)),tArr(tVar(0))), 0,
 		OPT_TRY_OPTIMIZE);
-  
+
   /* function(string:string)|function(int:int) */
   ADD_EFUN("upper_case",f_upper_case,
 	   tOr(tFunc(tStr,tStr),tFunc(tInt,tInt)),OPT_TRY_OPTIMIZE);
@@ -9363,7 +9363,7 @@ void init_builtin_efuns(void)
 			  tMap(tMix,tSetvar(0,tMix)),
 			  tObj,tPrg(tObj)),
 		     tArr(tVar(0)))),0,fix_values_type,0);
-  
+
   /* function(string|multiset:array(int))|function(array(0=mixed)|mapping(mixed:0=mixed)|object|program:array(0)) */
   ADD_EFUN2("types", f_types,
 	    tOr3(tFunc(tOr3(tNStr(tSetvar(0,tInt)),
@@ -9372,10 +9372,10 @@ void init_builtin_efuns(void)
 		       tArr(tType(tVar(0)))),
 		 tFunc(tMultiset, tArr(tType(tInt1))),
 		 tFunc(tOr(tObj,tPrg(tObj)), tArr(tType(tMix)))),0,NULL,0);
-  
+
   /* function(mixed:int) */
   ADD_EFUN2("zero_type",f_zero_type,tFunc(tMix,tInt01),0,0,generate_zero_type);
-  
+
   /* function(string,string:array) */
   ADD_EFUN("array_sscanf", f_sscanf,
 	   tFunc(tStr tAttr("sscanf_format", tStr),
@@ -9386,22 +9386,22 @@ void init_builtin_efuns(void)
 	   0);
 
   /* Some Wide-string stuff */
-  
+
   /* function(string:string(0..255)) */
   ADD_EFUN("string_to_unicode", f_string_to_unicode,
 	   tFunc(tStr,tStr8), OPT_TRY_OPTIMIZE);
-  
+
   /* function(string(0..255):string) */
   ADD_EFUN("unicode_to_string", f_unicode_to_string,
 	   tFunc(tStr8,tStr), OPT_TRY_OPTIMIZE);
-  
+
   /* function(string,int|void:string(0..255)) */
   ADD_EFUN("string_to_utf8", f_string_to_utf8,
 	   tFunc(tStr tOr(tInt,tVoid),tStr8), OPT_TRY_OPTIMIZE);
 
   ADD_EFUN("string_filter_non_unicode", f_string_filter_non_unicode,
 	   tFunc(tStr tOr(tInt,tVoid),tStr8), OPT_TRY_OPTIMIZE);
-  
+
   /* function(string(0..255),int|void:string) */
   ADD_EFUN("utf8_to_string", f_utf8_to_string,
 	   tFunc(tStr8 tOr(tInt,tVoid),tStr), OPT_TRY_OPTIMIZE);
@@ -9458,10 +9458,10 @@ void init_builtin_efuns(void)
   ADD_EFUN("_size_object",f__size_object,
 	   tFunc(tObj,tInt),OPT_EXTERNAL_DEPEND);
 
-  
+
   /* function(:int) */
   ADD_EFUN("gc",f_gc,tFunc(tNone,tInt),OPT_SIDE_EFFECT);
-  
+
   /* function(:string) */
   ADD_EFUN("version", f_version,tFunc(tNone,tStr), OPT_TRY_OPTIMIZE);
 
@@ -9480,7 +9480,7 @@ void init_builtin_efuns(void)
   /* function(string,void|object:mixed) */
   ADD_EFUN("decode_value", f_decode_value,
 	   tFunc(tStr tOr(tVoid,tObj),tMix), OPT_TRY_OPTIMIZE);
-  
+
   /* function(object,string:int) */
   ADD_EFUN("object_variablep", f_object_variablep,
 	   tFunc(tObj tStr,tInt), OPT_EXTERNAL_DEPEND);
@@ -9542,7 +9542,7 @@ void init_builtin_efuns(void)
 			   tMap(tVar(3),tMix),
 			   tMap(tVar(3),tArr(tMix)),
 			   tMap(tVar(3),tOr(tInt0,tVar(2)))),
-		
+
  		 tMapStuff(tSet(tSetvar(1,tMix)),tVar(1),
 			   tSet(tVar(2)),
 			   tSet(tInt01),
@@ -9559,7 +9559,7 @@ void init_builtin_efuns(void)
 			   tMap(tStr,tArr(tMix)),
 			   tMap(tStr,tOr(tInt0,tVar(2)))),
 
-		 tOr4( tFuncV(tString tFuncV(tInt,tMix,tInt),tMix,tString), 
+		 tOr4( tFuncV(tString tFuncV(tInt,tMix,tInt),tMix,tString),
 		       tFuncV(tString tFuncV(tInt,tMix,tInt),tMix,tString),
 		       tFuncV(tString tSet(tMix),tMix,tString),
 		       tFuncV(tString tMap(tMix,tInt), tMix, tString) ),
@@ -9572,7 +9572,7 @@ void init_builtin_efuns(void)
 
 		 tFuncV(tObj,tMix,tMix) ),
 	    OPT_TRY_OPTIMIZE, fix_map_node_info, 0);
-  
+
 #if 1
   ADD_EFUN2("filter", f_filter,
 	    tOr3(tFuncV(tSetvar(1,tOr4(tArray,tMapping,tMultiset,tString)),
@@ -9600,10 +9600,10 @@ void init_builtin_efuns(void)
 		tFunc(tIntPos tOr(tInt,tFloat) tFloat,tArr(tFloat)),
 		tFunc(tIntPos tMix tObj,tArr(tVar(1))),
 		tFunc(tIntPos tObj tOr(tVoid,tMix),tArr(tVar(1))),
-		tFunc(tIntPos tMix tMix 
+		tFunc(tIntPos tMix tMix
 		      tFuncV(tNone,tMix,tSetvar(1,tMix)),tArr(tVar(1)))),
 	   OPT_TRY_OPTIMIZE);
-		
+
   ADD_FUNCTION2("inherit_list", f_inherit_list,
 		tFunc(tOr(tObj,tPrg(tObj)),tArr(tPrg(tObj))), 0,
                 OPT_TRY_OPTIMIZE);
@@ -9653,7 +9653,7 @@ void init_builtin_efuns(void)
 
 #ifdef WITH_DOUBLE_PRECISION_SVALUE
   ADD_INT_CONSTANT("__DOUBLE_PRECISION_FLOAT__",1,0);
-#else 
+#else
 #ifdef WITH_LONG_DOUBLE_PRECISION_SVALUE
   ADD_INT_CONSTANT("__LONG_DOUBLE_PRECISION_FLOAT__",1,0);
 #else

@@ -14,7 +14,7 @@
 #define PARSE_FAILED ("HTTP/1.0 500 Internal Server Error\r\nContent-Type: text/html\r\n\r\nRequest parsing failed.\r\n")
 
 #include "global.h"
-/*! @module HTTPLoop 
+/*! @module HTTPLoop
  *!
  *! High performance webserver optimized for somewhat static content.
  *!
@@ -124,10 +124,10 @@ struct args *new_args(void)
 }
 
 
-/* This should probably be improved to include the reason for the 
- * failure. Currently, all failed requests get the same (hardcoded) 
+/* This should probably be improved to include the reason for the
+ * failure. Currently, all failed requests get the same (hardcoded)
  * error message.
- * 
+ *
  * It is virtually impossible to call a pike function from here, so that
  * is not an option.
  */
@@ -137,7 +137,7 @@ static void failed(struct args *arg)
 #ifdef AAP_DEBUG
   fprintf(stderr, "AAP: Failed\n");
 #endif /* AAP_DEBUG */
-  free_args( arg ); 
+  free_args( arg );
 }
 
 
@@ -151,8 +151,8 @@ static int parse(struct args *arg)
   /* get: URL, Protocol, method, headers*/
   for(i=0;i<arg->res.data_len;i++)
     if(arg->res.data[i] == ' ') {
-      if(!s1) 
-	s1=i; 
+      if(!s1)
+	s1=i;
       else
 	s2=i;
     } else if(arg->res.data[i]=='\r')
@@ -168,7 +168,7 @@ static int parse(struct args *arg)
    * 0  ^s1                           ^s2      ^i
    */
 
-  if(!s2) 
+  if(!s2)
     arg->res.protocol = s_http_09;
   else if(!memcmp("HTTP/1.", arg->res.data+s2+1, 7))
   {
@@ -197,24 +197,24 @@ static int parse(struct args *arg)
     /* read the rest of the request.. OBS: This is done without any
      * timeout right now. It is relatively easy to add one, though.
      * The only problem is that this might be an upload of a _large_ file,
-     * if so the upload could take an hour or more. So there can be no 
+     * if so the upload could take an hour or more. So there can be no
      * sensible default timeout. The only option is to reshedule the timeout
      * for each and every read.
      *
-     * This code should probably not allocate infinite amounts of 
+     * This code should probably not allocate infinite amounts of
      * memory either...
-     * 
+     *
      * TODO: rewrite this to use a mmaped file if the size is bigger than
      * 1Mb or so.
-     * 
-     * This could cause trouble with the leftovers code below, so that 
+     *
+     * This could cause trouble with the leftovers code below, so that
      * would have to be changed as well.
      */
     arg->res.data=xrealloc(arg->res.data,
                            arg->res.body_start+arg->res.content_len);
     while( arg->res.data_len < arg->res.body_start+arg->res.content_len)
     {
-      while(((nr = fd_read(arg->fd, arg->res.data+arg->res.data_len, 
+      while(((nr = fd_read(arg->fd, arg->res.data+arg->res.data_len,
 			   (arg->res.body_start+arg->res.content_len)-
 			   arg->res.data_len)) < 0) && errno == EINTR);
       if(nr <= 0)
@@ -239,7 +239,7 @@ static int parse(struct args *arg)
 
   arg->res.url = arg->res.data+s1+1;
   arg->res.url_len = (s2?s2:i)-s1-1;
-  
+
   {
     struct pstring h;
     h.len=0;
@@ -256,7 +256,7 @@ static int parse(struct args *arg)
     if(arg->cache->max_size && arg->res.data[0]== 'G') /* GET, presumably */
     {
       if(!aap_get_header(arg, "pragma", H_EXISTS, 0))
-	if((ce = aap_cache_lookup(arg->res.url, arg->res.url_len, 
+	if((ce = aap_cache_lookup(arg->res.url, arg->res.url_len,
 			      arg->res.host, arg->res.host_len,
 			      arg->cache,0, NULL, NULL)) && ce->data)
 	{
@@ -267,7 +267,7 @@ static int parse(struct args *arg)
 	  if((arg->res.protocol==s_http_11)
 	     ||aap_get_header(arg, "connection", H_EXISTS, 0))
 	  {
-	    return -1; 
+	    return -1;
 	  }
 #ifdef AAP_DEBUG
 	  fprintf(stderr, "Closing connection...\n");
@@ -297,7 +297,7 @@ void aap_handle_connection(struct args *arg)
     buffer_len = MAXIMUM(arg->res.data_len,8192);
     arg->res.data=0;
   }
-  else 
+  else
     p = buffer = malloc(8192);
 
   if(arg->res.leftovers && arg->res.leftovers_len)
@@ -316,7 +316,7 @@ void aap_handle_connection(struct args *arg)
       goto ok;
     p += arg->res.leftovers_len;
   }
-  
+
   if(!buffer)
   {
     perror("AAP: Failed to allocate buffer");
@@ -481,7 +481,7 @@ static void low_accept_loop(struct args *arg)
 	while(c && c != arg->cache) {p=c;c = c->next;}
 	if(c)
 	{
-	  if(p) 
+	  if(p)
 	    p->next = c->next;
 	  else
 	    first_cache = c->next;
@@ -560,7 +560,7 @@ static void finished_p(struct callback *UNUSED(foo), void *UNUSED(b), void *UNUS
 static void f_accept_with_http_parse(INT32 nargs)
 {
   /* From socket.c */
-  struct port 
+  struct port
   {
     struct fd_callback_box box;
     int my_errno;
@@ -573,7 +573,7 @@ static void f_accept_with_http_parse(INT32 nargs)
   struct object *port;
   struct svalue *fun, *cb, *program;
   struct cache *c;
-  struct args *args = LTHIS; 
+  struct args *args = LTHIS;
   get_all_args("accept_http_loop", nargs, "%o%*%*%*%i%i%i", &port, &program,
 	       &fun, &cb, &ms, &dolog, &to);
   memset(args, 0, sizeof(struct args));
@@ -671,25 +671,25 @@ static void f_cache_status(INT32 args)
 {
   struct cache *c = LTHIS->cache;
   pop_n_elems(args);
-  push_text("hits"); 
+  push_text("hits");
   push_int64(c->hits);
-  push_text("misses"); 
+  push_text("misses");
   push_int64(c->misses);
-  push_text("stale"); 
+  push_text("stale");
   push_int64(c->stale);
-  push_text("size"); 
+  push_text("size");
   push_int64(c->size);
-  push_text("entries"); 
+  push_text("entries");
   push_int64(c->entries);
-  push_text("max_size"); 
+  push_text("max_size");
   push_int64(c->max_size);
 
   /* Relative from last call */
-  push_text("sent_bytes"); 
+  push_text("sent_bytes");
   push_int(c->sent_data);        c->sent_data=0;
-  push_text("num_request"); 
+  push_text("num_request");
   push_int(c->num_requests);    c->num_requests=0;
-  push_text("received_bytes"); 
+  push_text("received_bytes");
   push_int(c->received_data);c->received_data=0;
   f_aggregate_mapping( 18 );
 }
@@ -811,11 +811,11 @@ PIKE_MODULE_INIT
 
   start_new_program();
   ADD_STORAGE(struct args);
-  add_function("create", f_accept_with_http_parse, 
+  add_function("create", f_accept_with_http_parse,
 	       "function(object,program,function,mixed,int,int,int:void)", 0);
   add_function("cache_status", f_cache_status,"function(void:mapping)", 0);
   add_function("log_as_array",f_aap_log_as_array,"function(void:array(object))",0);
-  add_function("log_as_commonlog_to_file", f_aap_log_as_commonlog_to_file, 
+  add_function("log_as_commonlog_to_file", f_aap_log_as_commonlog_to_file,
 	       "function(object:int)", 0);
 
   add_function("log_size", f_aap_log_size, "function(void:int)", 0);
@@ -846,14 +846,14 @@ PIKE_MODULE_INIT
 /* add_function("`->=", f_index_equal_op, "function(string,mixed:mixed)",0); */
 /* add_function("`[]=", f_index_equal_op, "function(string,mixed:mixed)",0); */
 
-  add_function("scan_for_query", f_aap_scan_for_query, 
+  add_function("scan_for_query", f_aap_scan_for_query,
 	       "function(string:string)", OPT_TRY_OPTIMIZE);
 
   add_function("end", f_aap_end, "function(string|void,int|void:void)", 0);
   add_function("send", f_aap_output, "function(string:void)", 0);
   add_function("reply", f_aap_reply,
 	       "function(string|void,object|void,int|void:void)", 0);
-  add_function("reply_with_cache", f_aap_reply_with_cache, 
+  add_function("reply_with_cache", f_aap_reply_with_cache,
 	       "function(string,int:void)", 0);
   set_init_callback( aap_init_request_object );
   set_exit_callback( aap_exit_request_object );
@@ -868,7 +868,7 @@ PIKE_MODULE_EXIT
 {
 #ifdef _REENTRANT
   struct log *log = aap_first_log;
-  /* This is very dangerous, since the 
+  /* This is very dangerous, since the
    * accept threads are still going strong.
    */
 
@@ -891,7 +891,7 @@ PIKE_MODULE_EXIT
    * be in read() or something similar. Also, the locking of aap_timeout_mutex
    * above disables the timeout, so they might linger in read() indefinately.
    * Thus, we cannot free _all_ structures, only the ones that are always
-   * protected by mutexes. Most notably, we must leave the main 'log' and 
+   * protected by mutexes. Most notably, we must leave the main 'log' and
    * 'cache' structures alive. We can, on the other hand, free all data _in_
    * the cache and log structures.
    */
@@ -940,8 +940,8 @@ PIKE_MODULE_EXIT
     first_cache = next;
   }
 
-  /* This will free all the string constants. It might be dangerous, 
-   * but should not be so. No thread should enter the pike level code 
+  /* This will free all the string constants. It might be dangerous,
+   * but should not be so. No thread should enter the pike level code
    * again, since all mutex locks are now locked.
    */
 #define STRING(X,Y) free_string(X)

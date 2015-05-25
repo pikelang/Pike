@@ -169,7 +169,7 @@ struct source *source_pikestream_make( struct svalue *s,
   if( (TYPEOF(*s) != PIKE_T_OBJECT) ||
       (find_identifier("set_read_callback",s->u.object->prog)==-1) )
     return 0;
-  
+
   res = calloc( 1, sizeof( struct pf_source ) );
   if( !res ) return NULL;
 

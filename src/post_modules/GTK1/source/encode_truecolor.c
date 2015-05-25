@@ -4,7 +4,7 @@
 || for more information.
 */
 
-static unsigned char swap_bits[256] = 
+static unsigned char swap_bits[256] =
 { 0,128,64,192,32,160,96,224,16,144,80,208,48,176,112,
   240,8,136,72,200,40,168,104,232,24,152,88,216,56,184,
   120,248,4,132,68,196,36,164,100,228,20,148,84,212,52,
@@ -201,9 +201,9 @@ ENCODE_8(242,bgr,(((s->b>>5)<<4) | (s->g>>4))<<2 | (s->r>>6));
 ENCODE_8(233,bgr,(((s->b>>5)<<3) | (s->g>>4))<<3 | (s->r>>5));
 
 
-static void encode_truecolor_generic(int rbits, int rshift, int gbits, 
-                                     int gshift, int bbits, int bshift, 
-                                     int bpp, int alignbits,int swap_bytes, 
+static void encode_truecolor_generic(int rbits, int rshift, int gbits,
+                                     int gshift, int bbits, int bshift,
+                                     int bpp, int alignbits,int swap_bytes,
                                      struct image *img, unsigned char *dest,
                                      int len)
 {
@@ -308,7 +308,7 @@ static void encode_truecolor_generic(int rbits, int rshift, int gbits,
 	   d++;
          }
 	 if(bit)
-	   *d|=b>>(24+bit); 
+	   *d|=b>>(24+bit);
 	 else
 	   *d=b>>24;
          bit+=bp;
@@ -355,7 +355,7 @@ static void encode_truecolor_generic(int rbits, int rshift, int gbits,
           x-=2;
         }
         break;
-      case 1: 
+      case 1:
         while (x--) {*(d)=swap_bits[*d]; d++; }
         break;
      }
@@ -364,8 +364,8 @@ static void encode_truecolor_generic(int rbits, int rshift, int gbits,
 
 static INLINE void examine_mask(unsigned int x, int *bits,int *shift)
 {
-   *bits=0; 
-   *shift=0; 
+   *bits=0;
+   *shift=0;
    if (!x) return;
    while (!(x&1)) x>>=1,(*shift)++;
    while (x&1) x>>=1,(*bits)++;
@@ -405,7 +405,7 @@ void pgtk_encode_truecolor_masks(struct image *i,
                                  unsigned int red_mask,
                                  unsigned int green_mask,
                                  unsigned int blue_mask,
-                                 unsigned char *buffer, 
+                                 unsigned char *buffer,
                                  int debug_len)
 {
    int rbits,rshift,gbits,gshift,bbits,bshift;

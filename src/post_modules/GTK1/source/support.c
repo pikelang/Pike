@@ -479,7 +479,7 @@ void push_gdk_event(GdkEvent *e)
 {
   if( e )
   {
-    GdkEvent *f = g_malloc( sizeof(GdkEvent) ); 
+    GdkEvent *f = g_malloc( sizeof(GdkEvent) );
     *f = *e;
     push_gdkobject( f, event );
   } else
@@ -622,14 +622,14 @@ static void build_push_callbacks( )
   CB( GTK_TYPE_ULONG,            pgtk_push_int_param );
   CB( GTK_TYPE_CHAR,             pgtk_push_int_param );
 
-  CB( GTK_TYPE_NONE,    NULL ); 
+  CB( GTK_TYPE_NONE,    NULL );
   CB( GTK_TYPE_POINTER,  NULL );
 
 /*
    CB( GTK_TYPE_SIGNAL,   NULL );
    CB( GTK_TYPE_INVALID,  NULL );
  *   This might not be exactly what we want */
-  
+
 }
 int pgtk_new_signal_call_convention;
 
@@ -720,7 +720,7 @@ int pgtk_signal_func_wrapper(GtkObject *obj,struct signal_data *d,
 
     push_param_r( params+i,params[i].type );
   }
-  
+
   if( d->new_interface || pgtk_new_signal_call_convention)
   {
     push_gtkobject( obj );
@@ -735,24 +735,24 @@ int pgtk_signal_func_wrapper(GtkObject *obj,struct signal_data *d,
      break;
    case GTK_TYPE_CHAR:
      *GTK_RETLOC_CHAR(params[nparams]) = PGTK_GETINT( Pike_sp-1 );
-     break;     
+     break;
    case GTK_TYPE_UCHAR:
      *GTK_RETLOC_UCHAR(params[nparams]) = PGTK_GETINT( Pike_sp-1 );
-     break;     
+     break;
    case GTK_TYPE_BOOL:
      *GTK_RETLOC_BOOL(params[nparams]) = PGTK_GETINT( Pike_sp-1 );
-     break;     
+     break;
    case GTK_TYPE_INT:
    case GTK_TYPE_ENUM:
      *GTK_RETLOC_INT(params[nparams]) = PGTK_GETINT( Pike_sp-1 );
-     break;     
+     break;
    case GTK_TYPE_UINT:
    case GTK_TYPE_FLAGS:
      *GTK_RETLOC_UINT(params[nparams]) = PGTK_GETINT( Pike_sp-1 );
-     break;     
+     break;
    case GTK_TYPE_LONG:
      *GTK_RETLOC_LONG(params[nparams]) = PGTK_GETINT( Pike_sp-1 );
-     break;     
+     break;
    case GTK_TYPE_ULONG:
      *GTK_RETLOC_ULONG(params[nparams]) = PGTK_GETINT( Pike_sp-1 );
      break;

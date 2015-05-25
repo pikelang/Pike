@@ -4218,7 +4218,7 @@ void test_multiset (void)
     for (i = 1*2*3*4*5*6*7*8*9; i > 0; i--) {
       if (!(i % 1000)) fprintf (stderr, "ind %s %d         \r",
 				pass ? "cmp_less" : "internal", i);
-      
+
       TM_VERBOSE((stderr, "pass:%d, i:%d\n", pass, i));
 
       l = allocate_multiset (0, 0, pass ? less_efun : NULL);

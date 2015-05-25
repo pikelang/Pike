@@ -463,7 +463,7 @@ static void f_encode_qp( INT32 args )
 	col = 0;
       }
     }
-    
+
     /* Return the result */
     pop_n_elems( args );
     push_string( finish_string_builder( &buf ) );
@@ -585,7 +585,7 @@ static void do_uue_encode(ptrdiff_t groups, unsigned char **srcp, char **destp,
 	DO_NOT_WARN((char)(3*g + last));
       last = 0;
     } else
-      *dest++ = ' ' + 
+      *dest++ = ' ' +
 	DO_NOT_WARN((char)(3*g));
 
     groups -= g;
@@ -978,7 +978,7 @@ static void low_tokenize( const char *funname, INT32 args, int mode )
  *! domain-literal @tt{[127.0.0.1]@} from the quoted-string
  *! @tt{"[127.0.0.1]"@}. Hopefully this won't cause any problems.
  *! Domain-literals are used seldom, if at all, anyway...
- *! 
+ *!
  *! The set of special-characters is the one specified in RFC1521
  *! (i.e. @expr{"<", ">", "@@", ",", ";", ":", "\", "/", "?", "="@}),
  *! and not the set specified in RFC822.
@@ -1295,7 +1295,7 @@ static void f_quote_labled( INT32 args )
       string_builder_putchar( &buf, ')' );
 
       prev_atom = 0;
-      
+
     } else if (c_compare_string( item->u.array->item[0].u.string,
 				 "domain-literal", 14 )) {
 

@@ -722,7 +722,7 @@ struct mapping_data *copy_mapping_data(struct mapping_data *md)
     free_mapping_data(md);					\
 }while(0)
 
-      
+
 /* Assumes md is *NOT* locked */
 #define COPYMAP2() do {				\
   ptrdiff_t off;				\
@@ -838,7 +838,7 @@ PMOD_EXPORT void low_mapping_insert(struct mapping *m,
 #endif
 
   h2=hash_svalue(key);
-  
+
 #ifdef PIKE_DEBUG
   if(d_flag>1)  check_mapping(m);
 #endif
@@ -1000,12 +1000,12 @@ PMOD_EXPORT union anything *mapping_get_item_ptr(struct mapping *m,
   {
     PREPARE_FOR_DATA_CHANGE2();
     PROPAGATE(); /* prepare then propagate */
-    
+
     return & ( k->val.u );
   }
-  
+
   return 0;
-  
+
  mg_insert:
 #ifdef PIKE_DEBUG
   if(m->data != md)
@@ -1124,7 +1124,7 @@ PMOD_EXPORT void map_delete_no_free(struct mapping *m,
   if(m->data ==md)
     m->debug_size--;
 #endif
-  
+
   if(md->size < (md->hashsize + 1) * MIN_LINK_LENGTH)
   {
     debug_malloc_touch(m);
@@ -1166,7 +1166,7 @@ PMOD_EXPORT void check_mapping_for_destruct(struct mapping *m)
       for(prev= md->hash + e;(k=*prev);)
       {
 	check_destructed(& k->val);
-	
+
 	if((TYPEOF(k->ind) == T_OBJECT || TYPEOF(k->ind) == T_FUNCTION) &&
 	   !k->ind.u.object->prog)
 	{
@@ -1370,7 +1370,7 @@ PMOD_EXPORT struct array *mapping_indices(struct mapping *m)
   NEW_MAPPING_LOOP(m->data) assign_svalue(s++, & k->ind);
 
   a->type_field = m->data->ind_types;
-  
+
 #ifdef PIKE_DEBUG
   if(d_flag > 1) check_mapping_type_fields(m);
 #endif
@@ -1403,7 +1403,7 @@ PMOD_EXPORT struct array *mapping_values(struct mapping *m)
 #ifdef PIKE_DEBUG
   if(d_flag > 1) check_mapping_type_fields(m);
 #endif
-  
+
   return a;
 }
 
@@ -1692,7 +1692,7 @@ static struct mapping *xor_mappings(struct mapping *a, struct mapping *b)
     b = tmp;
     a_md = b_md;
     b_md = b->data;
-  }    
+  }
   res = destructive_copy_mapping(b);
   SET_ONERROR(err, do_free_mapping, res);
 
@@ -1799,7 +1799,7 @@ PMOD_EXPORT struct mapping *merge_mappings(struct mapping *a, struct mapping *b,
  * FIXME: It ought to be optimized just like the unordered variant.
  *	/grubba 2003-11-12
  */
-PMOD_EXPORT struct mapping *merge_mapping_array_ordered(struct mapping *a, 
+PMOD_EXPORT struct mapping *merge_mapping_array_ordered(struct mapping *a,
 					    struct array *b, INT32 op)
 {
   ONERROR r1,r2;
@@ -1838,7 +1838,7 @@ PMOD_EXPORT struct mapping *merge_mapping_array_ordered(struct mapping *a,
 
   UNSET_ONERROR(r2); free_array(av);
   UNSET_ONERROR(r1); free_array(ai);
-  
+
   free(zipper);
 
   m=mkmapping(ci, cv);
@@ -1848,7 +1848,7 @@ PMOD_EXPORT struct mapping *merge_mapping_array_ordered(struct mapping *a,
   return m;
 }
 
-PMOD_EXPORT struct mapping *merge_mapping_array_unordered(struct mapping *a, 
+PMOD_EXPORT struct mapping *merge_mapping_array_unordered(struct mapping *a,
 					      struct array *b, INT32 op)
 {
   ONERROR r1;
@@ -1949,7 +1949,7 @@ PMOD_EXPORT struct mapping *add_mappings(struct svalue *argp, INT32 args)
       if(e==md->size)
 	return copy_mapping(m);
 #endif
-    
+
       if(m->refs == 1 && !md->hardlinks)
       {
 	add_ref( ret=m );
@@ -1966,7 +1966,7 @@ PMOD_EXPORT struct mapping *add_mappings(struct svalue *argp, INT32 args)
   {
     struct mapping *m=argp[d].u.mapping;
     struct mapping_data *md=m->data;
-    
+
     add_ref(md);
     NEW_MAPPING_LOOP(md)
       low_mapping_insert(ret, &k->ind, &k->val, 2);
@@ -2161,7 +2161,7 @@ void describe_mapping(struct mapping *m,struct processing *p,int indent)
       struct svalue *tmp;
       if(e)
 	my_strcat(",\n");
-    
+
       for(d = 0; d < indent; d++)
 	my_putchar(' ');
 
@@ -2171,9 +2171,9 @@ void describe_mapping(struct mapping *m,struct processing *p,int indent)
       {
 	int save_t_flag=Pike_interpreter.trace_level;
 	Pike_interpreter.trace_level=0;
-	
+
 	tmp=low_mapping_lookup(m, ITEM(a)+e);
-	
+
 	Pike_interpreter.trace_level=save_t_flag;
       }
       if(tmp)
@@ -2314,7 +2314,7 @@ PMOD_EXPORT struct mapping *copy_mapping_recursively(struct mapping *m,
     push_int(0);
     copy_svalues_recursively_no_free(Pike_sp-2,&k->ind, 1, p);
     copy_svalues_recursively_no_free(Pike_sp-1,&k->val, 1, p);
-    
+
     low_mapping_insert(ret, Pike_sp-2, Pike_sp-1, 2);
     pop_n_elems(2);
   }
@@ -2346,9 +2346,9 @@ PMOD_EXPORT void mapping_search_no_free(struct svalue *to,
     if(key)
     {
       h2=hash_svalue(key);
-      
+
       FIND();
-      
+
       if(!k)
       {
 	SET_SVAL(*to, T_INT, NUMBER_UNDEFINED, integer, 0);
@@ -2356,14 +2356,14 @@ PMOD_EXPORT void mapping_search_no_free(struct svalue *to,
       }
       k=k->next;
     }
-    
-    
+
+
     md=m->data;
     if(md->size)
     {
       md->valrefs++;
       add_ref(md);
-      
+
       if(h < (unsigned INT32)md->hashsize)
       {
 	while(1)
@@ -2373,7 +2373,7 @@ PMOD_EXPORT void mapping_search_no_free(struct svalue *to,
 	    if(is_eq(look_for, &k->val))
 	    {
 	      assign_svalue_no_free(to,&k->ind);
-	      
+
 	      md->valrefs--;
 	      free_mapping_data(md);
 	      return;
@@ -2387,7 +2387,7 @@ PMOD_EXPORT void mapping_search_no_free(struct svalue *to,
 	}
       }
     }
-    
+
     md->valrefs--;
     free_mapping_data(md);
   }
@@ -2429,7 +2429,7 @@ void check_mapping(const struct mapping *m)
       fprintf(stderr,"Pike was in GC stage %d when this fatal occurred:\n",Pike_in_gc);
       Pike_in_gc=0;
     }
-    
+
     fprintf(stderr,"--MAPPING ZAPPING (%d!=%d), mapping:\n",m->debug_size,md->size);
     describe(m);
     fprintf(stderr,"--MAPPING ZAPPING (%d!=%d), mapping data:\n",m->debug_size,md->size);
@@ -2479,7 +2479,7 @@ void check_mapping(const struct mapping *m)
 
   if(md->num_keypairs > (md->hashsize + 3) * AVG_LINK_LENGTH)
     Pike_fatal("Mapping from hell detected, attempting to send it back...\n");
-  
+
   if(md->size > 0 && (!md->ind_types || !md->val_types))
     Pike_fatal("Mapping type fields are... wrong.\n");
 
@@ -2508,7 +2508,7 @@ void check_mapping(const struct mapping *m)
        * is required!!
        */
     }
-  
+
   if(md->size != num)
     Pike_fatal("Shields are failing, hull integrity down to 20%%\n");
 

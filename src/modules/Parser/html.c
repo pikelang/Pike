@@ -124,13 +124,13 @@ static INLINE void really_free_out_piece(struct out_piece * p) {
 struct feed_stack
 {
    int ignore_data, parse_tags;
-   
+
    struct feed_stack *prev;
 
    /* this is a feed-stack, ie
       these contains the result of callbacks,
       if they are to be parsed.
-      
+
       The bottom stack element is also the global feed
       (parser_html_storage.top). */
 
@@ -358,7 +358,7 @@ struct parser_html_storage
 
    /* The current context in the output queue. */
    enum contexts out_ctx;
-   
+
    /* parser stack */
    struct feed_stack *stack;
    struct feed_stack top;
@@ -408,7 +408,7 @@ struct parser_html_storage
 
    p_wchar2 *lazy_entity_ends;
    size_t n_lazy_entity_ends;
-  
+
    p_wchar2 *ws;
    size_t n_ws;
 
@@ -465,7 +465,7 @@ static void debug_mark_spot(char *desc,struct piece *feed,int c)
    fprintf(stderr,"%-*s `",DO_NOT_WARN((int)l),desc);
    i=c-m/2;
    if (i+m>=feed->s->len) i=feed->s->len-m;
-   if (i<0) i=0; 
+   if (i<0) i=0;
    for (i0=i;i<feed->s->len && i-i0<m;i++)
    {
       p_wchar2 ch=index_shared_string(feed->s,i);
@@ -755,7 +755,7 @@ static void init_html_struct(struct object *UNUSED(o))
    memcpy(THIS->argq_start,argq_start,sizeof(argq_start));
    memcpy(THIS->argq_stop,argq_stop,sizeof(argq_stop));
    THIS->arg_eq=DEF_EQ;
-   
+
    /* allocated stuff */
    THIS->lazy_entity_ends=NULL;
    THIS->ws=NULL;
@@ -837,7 +837,7 @@ static void exit_html_struct(struct object *UNUSED(o))
  *! length string.
  *!
  *! If a string or array is given instead of a function, it
- *! will act as the return value from the function. Arrays 
+ *! will act as the return value from the function. Arrays
  *! or empty strings is probably preferable to avoid recursion.
  *!
  *! @returns
@@ -951,7 +951,7 @@ static void html__set_entity_callback(INT32 args)
  *!
  *! @seealso
  *!   @[tags], @[containers], @[entities]
- *!	
+ *!
  */
 
 static void html_add_tag(INT32 args)
@@ -1220,7 +1220,7 @@ static void html_add_tags(INT32 args)
 	 html_add_tag(2);
 	 pop_stack();
       }
-   
+
    pop_n_elems(args);
    ref_push_object(THISOBJ);
 }
@@ -1241,7 +1241,7 @@ static void html_add_containers(INT32 args)
 	 html_add_container(2);
 	 pop_stack();
       }
-   
+
    pop_n_elems(args);
    ref_push_object(THISOBJ);
 }
@@ -1262,7 +1262,7 @@ static void html_add_entities(INT32 args)
 	 html_add_entity(2);
 	 pop_stack();
       }
-   
+
    pop_n_elems(args);
    ref_push_object(THISOBJ);
 }
@@ -1396,7 +1396,7 @@ static INLINE void recheck_scan(struct parser_html_storage *this,
    if (TYPEOF(this->callback__entity) != T_INT ||
        m_sizeof(this->mapentity))
       *scan_entity=1;
-   else 
+   else
       *scan_entity=0;
 }
 
@@ -1729,8 +1729,8 @@ static int scan_forward(struct piece *feed,
 	 SCAN_DEBUG_MARK_SPOT("scan_forward end (nothing to look for)",
 			      *destp,*d_p);
 	 return 0; /* not found :-) */
-	 
-      case 1: 
+
+      case 1:
 	 if (!rev) {
 	    while (feed)
 	    {
@@ -1944,19 +1944,19 @@ retryloop:
 	    {
 	       static const p_wchar2 minus='-';
 
-	       if (what == SCAN_ARG_PUSH) 
+	       if (what == SCAN_ARG_PUSH)
 		  n += low_push_feed_range(feed,c,*destp,*d_p);
 
 	 /* skip to next -- */
 
 	       DEBUG_MARK_SPOT("scan_forward_arg: "
 			       "found --",*destp,*d_p);
-	       FORWARD_CHAR (*destp, *d_p, *destp, *d_p); 
+	       FORWARD_CHAR (*destp, *d_p, *destp, *d_p);
 	       for (;;)
 	       {
 		  res=scan_forward(*destp,d_p[0]+1,destp,d_p,&minus,1);
 		  if (!res) {
-		     if (!finished) 
+		     if (!finished)
 		     {
 			DEBUG_MARK_SPOT("scan_forward_arg: "
 					"wait for --",*destp,*d_p);
@@ -1994,11 +1994,11 @@ retryloop:
 	    }
 	 }
       }
-	 
+
       if (what == SCAN_ARG_PUSH) n += low_push_feed_range(feed,c,*destp,*d_p);
 
       if (!res) {
-	 if (!finished) 
+	 if (!finished)
 	 {
 	    DEBUG_MARK_SPOT("scan_forward_arg: wait",feed,c);
 	    if (what == SCAN_ARG_PUSH) pop_n_elems(n);
@@ -2100,7 +2100,7 @@ in_quote_cont:
 	if (what == SCAN_ARG_PUSH) n += low_push_feed_range(feed,c,*destp,*d_p);
 
 	if (!res) {
-	  if (!finished) 
+	  if (!finished)
 	  {
 	    DEBUG_MARK_SPOT("scan_forward_arg: wait (quote)",feed,c);
 	    if (what == SCAN_ARG_PUSH) pop_n_elems(n);
@@ -2194,7 +2194,7 @@ static int scan_for_end_of_tag(struct parser_html_storage *this,
       res=scan_forward(feed,c,destp,d_p,
 		       LOOK_FOR_START (this), NUM_LOOK_FOR_START (this));
       if (!res) {
-	 if (!finished) 
+	 if (!finished)
 	 {
 	    DEBUG((stderr,"scan for end of tag: "
 		   "wait at %p:%"PRINTPTRDIFFT"d\n",feed,c));
@@ -2290,7 +2290,7 @@ static int scan_for_end_of_tag(struct parser_html_storage *this,
 			       LOOK_FOR_END (this)[i],
 			       NUM_LOOK_FOR_END (this)[i]);
 	    if (!res) {
-	      if (!finished) 
+	      if (!finished)
 	      {
 		DEBUG((stderr,"scan for end of tag: "
 		       "wait at %p:%"PRINTPTRDIFFT"d\n", destp[0],*d_p));
@@ -2473,14 +2473,14 @@ static newstate handle_result(struct parser_html_storage *this,
    int i;
 
    /* on sp[-1]:
-      string: push it to feed stack 
+      string: push it to feed stack
       int: noop, output range
       array(string): output string */
 
    switch (TYPEOF(sp[-1]))
    {
       case T_STRING: /* push it to feed stack */
-	 
+
 	 /* first skip this in local feed*/
 	 if (skip) skip_feed_range(st,head,c_head,tail,c_tail);
 
@@ -2610,14 +2610,14 @@ static void do_callback(struct parser_html_storage *this,
       DEBUG((stderr,"_-callback args=%d\n",2+this->extra_args->size));
 
       dmalloc_touch_svalue(callback_function);
-      apply_svalue(callback_function,2+this->extra_args->size);  
+      apply_svalue(callback_function,2+this->extra_args->size);
    }
    else
    {
       DEBUG((stderr,"_-callback args=%d\n",2));
 
       dmalloc_touch_svalue(callback_function);
-      apply_svalue(callback_function,2);  
+      apply_svalue(callback_function,2);
    }
 
    UNSET_ONERROR(uwp);
@@ -2855,7 +2855,7 @@ static newstate find_end_of_container(struct parser_html_storage *this,
       DEBUG_MARK_SPOT("find_end_of_cont : loop",feed,c);
       if (!scan_forward(feed,c,&s1,&c1,&TAG_START(this),1))
       {
-	 if (!finished) 
+	 if (!finished)
 	 {
 	    DEBUG_MARK_SPOT("find_end_of_cont : wait",s1,c1);
 	    return STATE_WAIT; /* please wait */
@@ -3213,7 +3213,7 @@ static newstate do_try_feed(struct parser_html_storage *this,
 	   st->ignore_data=1;
 	   return STATE_WAIT; /* come again */
 	 }
-	 
+
 	 if (m_sizeof(this->maptag) ||
 	     m_sizeof(this->mapcont))
 	 {
@@ -3704,7 +3704,7 @@ static newstate do_try_feed(struct parser_html_storage *this,
 	if (m_sizeof(this->mapentity))
 	{
 	  struct svalue *v;
-	    
+
 	  push_feed_range(*feed,st->c+1,dst,cdst);
 	  cdst++;
 
@@ -3806,7 +3806,7 @@ done:
 
 static void try_feed(int finished)
 {
-   /* 
+   /*
       o if tag_stack:
           o pop & parse that
           o ev put on stack
@@ -4429,10 +4429,10 @@ new_arg:
 	  continue;
 	}
       }
-      
+
       /* left: case of '=' */
       c3++; /* skip it */
-      
+
       /* skip whitespace */
       scan_forward(s3,c3,&s2,&c2,WS(this),
 		   -(ptrdiff_t)N_WS(this));
@@ -4693,7 +4693,7 @@ static void html__inspect(INT32 args)
 
    push_text("feed");
    m=0;
-   
+
    st=THIS->stack;
    while (st)
    {
@@ -4717,7 +4717,7 @@ static void html__inspect(INT32 args)
       push_text("position");
       push_int(DO_NOT_WARN(st->c));
       o++;
-      
+
       push_text("byteno");
       push_int(st->pos.byteno);
       o++;
@@ -4895,7 +4895,7 @@ static void html_clone(INT32 args)
    p->n_ws=THIS->n_ws;
    newstr=(p_wchar2*)xalloc(sizeof(p_wchar2)*p->n_ws);
    memcpy(newstr,THIS->ws,sizeof(p_wchar2)*p->n_ws);
-   if (p->ws) free(p->ws); 
+   if (p->ws) free(p->ws);
    p->ws=newstr;
 #endif
 
@@ -5296,7 +5296,7 @@ static void html_max_stack_depth(INT32 args)
    check_all_args("max_stack_depth",args,BIT_VOID|BIT_INT,0);
    if (args) {
      THIS->max_stack_depth = sp[-args].u.integer;
-   } 
+   }
    pop_n_elems(args);
    push_int(o);
 }
@@ -5550,7 +5550,7 @@ void init_parser_html(void)
 		      tObjImpl_PARSER_HTML),0);
 
    /* debug, whatever */
-   
+
    ADD_FUNCTION("_inspect",html__inspect,tFunc(tNone,tMapping),0);
 
    /* just useful */
@@ -5604,7 +5604,7 @@ class Parse_HTML
    void extra(mixed ...extra);
 
    // query where we are now
-   string current();  // current tag/entity/etc data string 
+   string current();  // current tag/entity/etc data string
 
    array tag();       // tag data: ({string name,mapping arguments})
    string tag_args(); // tag arguments only

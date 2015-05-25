@@ -80,7 +80,7 @@ static rgba_group decode_color( struct buffer *s )
        break;
     }
     return res;
-  } 
+  }
   if(s->len==4&&(!strncmp(s->str,"None",4)||!strncmp(s->str,"none",4)))
   {
     res.r = res.g = res.b = 0;
@@ -318,7 +318,7 @@ void f__xpm_write_rows( INT32 args )
       }
     }
     break;
-   case 3: 
+   case 3:
    {
      rgba_group **p_colors;
      int i;
@@ -332,7 +332,7 @@ void f__xpm_write_rows( INT32 args )
        {
          p_colors[id] = xcalloc(sizeof(rgba_group), 128);
        }
-       if(ind > 127) 
+       if(ind > 127)
        {
          p_colors[id] = realloc(p_colors[id],sizeof(rgba_group)*256);
          memset(p_colors[id]+128, 0, sizeof(rgba_group)*128);
@@ -376,7 +376,7 @@ void f__xpm_write_rows( INT32 args )
 
      for(i=0; i<colors->size; i++)
      {
-       unsigned short id = 
+       unsigned short id =
          extract_short((unsigned char*)colors->item[i].u.string->str);
        p_colors[id] = parse_color_line( colors->item[i].u.string, bpc );
      }

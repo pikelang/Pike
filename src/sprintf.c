@@ -46,7 +46,7 @@
    A newspaper
    sprintf("%-=*s %-=*s\n",width/2,article1,width/2,article2);
 
-   A 'dotted-line' pricelist row 
+   A 'dotted-line' pricelist row
    sprintf("%'.'-10s.%'.'4d\n",item,cost);
 
 */
@@ -160,7 +160,7 @@
  *!     @value 'E'
  *!       Like @tt{%e@}, but uses uppercase @tt{E@} for exponent.
  *!     @value 'F'
- *!       Binary IEEE representation of float (@tt{%4F@} gives 
+ *!       Binary IEEE representation of float (@tt{%4F@} gives
  *!       single precision, @tt{%8F@} gives double precision)
  *!       in network (big endian) byte order. To get little endian
  *!       byte order, negate the field size.
@@ -600,10 +600,10 @@ static void fix_field(struct string_builder *r,
       string_builder_append(r,b,len);
       return;
     }
-  
+
     if (flags & (FIELD_CENTER|FIELD_LEFT)) {
       ptrdiff_t d=0;
-  
+
       if(flags & FIELD_CENTER)
       {
   	e=len;
@@ -615,7 +615,7 @@ static void fix_field(struct string_builder *r,
   	  width-=e;
   	}
       }
-  
+
       /* Left adjust */
       if(pos_pad && EXTRACT_PCHARP(b)!='-')
       {
@@ -631,7 +631,7 @@ static void fix_field(struct string_builder *r,
 	string_builder_append(r, b, len);
 	width -= len;
       }
-#else /* 0 */  
+#else /* 0 */
       d+=MINIMUM(width,len);
       while(len && width)
       {
@@ -641,13 +641,13 @@ static void fix_field(struct string_builder *r,
   	width--;
       }
 #endif /* 1 */
-  
+
       if(width>0)
       {
 	d%=pad_length;
 	string_builder_fill(r, width, pad_string, pad_length, d);
       }
-      
+
       return;
     }
   }
@@ -1192,10 +1192,10 @@ cont_2:
 
       /* First the modifiers */
       case '0':
-	 if (setwhat<2) 
-	 { 
+	 if (setwhat<2)
+	 {
 	    fsp->flags|=ZERO_PAD;
-	    continue; 
+	    continue;
 	 }
 	 /* FALL_THROUGH */
       case '1': case '2': case '3':
@@ -1315,14 +1315,14 @@ cont_2:
 	  INC_PCHARP(a,1);
 	} else
 	  tmp=STRTOL_PCHARP(a,&a,10);
-	if(EXTRACT_PCHARP(a)!=']') 
+	if(EXTRACT_PCHARP(a)!=']')
 	  sprintf_error(fs, "Expected ] in format string, not %c.\n",
 			EXTRACT_PCHARP(a));
 	if(tmp >= num_arg)
 	  sprintf_error(fs, "Not enough arguments to [%d].\n",tmp);
 	arg = argp+tmp;
 	continue;
-	
+
         /* now the real operators */
 
       case '{':
@@ -1344,7 +1344,7 @@ cont_2:
 	    }
 	  }
 	}
-            
+
 	GET_ARRAY(w);
 	if(!w->size)
 	{
@@ -1383,7 +1383,7 @@ cont_2:
 	  fsp->fi_free_string=(char *)b.s;
 	  UNSET_ONERROR(err);
 	}
-	
+
 	INC_PCHARP(a,e);
 	break;
       }
@@ -1437,7 +1437,7 @@ cont_2:
 	    tmp>>=8;
 	  }
 	}
-	else 
+	else
 	{
 	  l=1;
 	  if(fsp->width > 0) l=fsp->width;
@@ -1494,7 +1494,7 @@ cont_2:
 	    tmp>>=8;
 	  }
 	}
-	else 
+	else
 	{
 	  while(--l>=0)
 	  {
@@ -1506,7 +1506,7 @@ cont_2:
 	init_string_builder_alloc(&buf, s->len+fsp->len, 0);
 	string_builder_append(&buf,fsp->b,fsp->len);
 	string_builder_shared_strcat(&buf,s);
-	
+
 	fsp->b = MKPCHARP_STR(buf.s);
 	fsp->len = buf.s->len;
 	buf.s->len = buf.malloced;
@@ -1524,15 +1524,15 @@ cont_2:
 	int base = 0, mask_size = 0;
        char *x;
 	INT_TYPE val;
-	
+
 	GET_INT(val);
 
 	if(fsp->precision != SPRINTF_UNDECIDED && fsp->precision > 0)
 	  mask_size = fsp->precision;
-	
+
 	x=(char *)sa_alloc(&fs->a, sizeof(val)*CHAR_BIT + 4 + mask_size);
 	fsp->b=MKPCHARP(x,0);
-	
+
 	switch(mode)
 	{
 	  case 'b': base = 1; break;
@@ -1634,7 +1634,7 @@ cont_2:
 	sprintf(x,buffer,1,fsp->precision<0?0:fsp->precision,tf);
 	debug_malloc_touch(x);
 	fsp->len=strlen(x);
-	
+
 	/* Make sure that the last digits really are zero. */
 	if(fsp->precision<0)
 	{
@@ -1828,7 +1828,7 @@ cont_2:
 	f->column_width=max_len;
       f->column_entries=nr;
       columns=f->width/(f->column_width+1);
-      
+
       if(f->column_width<1 || columns<1)
 	columns=1;
       f->column_modulo=(nr+columns-1)/columns;
@@ -1844,12 +1844,12 @@ cont_2:
       if(! MEMCHR_PCHARP(f->b, '\n', f->len).ptr ) f->flags|=MULTI_LINE;
     }
   }
-  
+
   for(f=fs->format_info_stack + start+1;f<=fs->fsp;)
   {
     for(;f<=fs->fsp && !(f->flags&MULTILINE);f++)
       do_one(fs, r, f);
-    
+
     do {
       d=0;
       for(e=0;f+e<=fs->fsp && (f[e].flags & MULTILINE);e++)
@@ -1869,19 +1869,19 @@ cont_2:
     if(f < fs->format_info_stack)
       Pike_fatal("sprintf: fsp out of bounds.\n");
 #endif
-    
+
     if(f->fi_free_string)
       free(f->fi_free_string);
 #ifdef PIKE_DEBUG
     f->fi_free_string=0;
 #endif
-    
+
     if(f->to_free_string)
       free_string(f->to_free_string);
 #ifdef PIKE_DEBUG
     f->to_free_string=0;
 #endif
-    
+
     f--;
   }
   fs->fsp = f;
@@ -2177,7 +2177,7 @@ static int push_sprintf_argument_types(PCHARP format,
 	  ret = -1;
 	}
 	continue;
-	
+
         /* now the real operators */
 
       case '{':
@@ -2203,7 +2203,7 @@ static int push_sprintf_argument_types(PCHARP format,
 	    if (c > max_char) max_char = c;
 	  }
 	}
-            
+
 	type_stack_mark();
 	/* Note: No need to check the return value, since we
 	 *       simply or all the types together. Thus the
@@ -2224,7 +2224,7 @@ static int push_sprintf_argument_types(PCHARP format,
 	push_type(T_OR);
 
 	push_type(PIKE_T_ARRAY);
-	
+
 	INC_PCHARP(a,e);
 	break;
       }
@@ -2245,7 +2245,7 @@ static int push_sprintf_argument_types(PCHARP format,
       case 't':
       {
 	push_type(T_MIXED);
-	
+
 	/* Lower-case ASCII */
 	if ('a' < min_char) min_char = 'a';
 	if ('z' > max_char) max_char = 'z';
@@ -2373,7 +2373,7 @@ static node *optimize_sprintf(node *n)
     /* First argument is a constant string. */
     struct pike_string *fmt = (*arg0)->u.sval.u.string;
 
-    if(arg1 && num_args == 2 && 
+    if(arg1 && num_args == 2 &&
        fmt->size_shift == 0 && fmt->len == 2 && STR0(fmt)[0]=='%')
     {
       /* First argument is a two character format string. */
@@ -2463,7 +2463,7 @@ static node *optimize_sprintf(node *n)
  *!   @[PikeCompiler()->apply_attribute_constant()], @[sprintf()]
  */
 void f___handle_sprintf_format(INT32 args)
-{  
+{
   struct pike_type *res;
   struct pike_type *tmp;
   struct pike_string *attr;
@@ -2520,7 +2520,7 @@ void f___handle_sprintf_format(INT32 args)
   if (marker > '9') marker = 0;
 
   fmt = Pike_sp[-3].u.string;
-  MAKE_CONST_STRING(attr, "sprintf_args");  
+  MAKE_CONST_STRING(attr, "sprintf_args");
 
   type_stack_mark();
   type_stack_mark();
@@ -2818,7 +2818,7 @@ void init_sprintf(void)
   free_type(s.u.type);
 
   /* function(string|object, mixed ... : string) */
-  ADD_EFUN2("sprintf", 
+  ADD_EFUN2("sprintf",
 	    f_sprintf,
 	    tFuncV(tAttr("strict_sprintf_format", tOr(tStr, tObj)),
 		   tAttr("sprintf_args", tMix), tAttr("sprintf_result", tStr)),

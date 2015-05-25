@@ -114,7 +114,7 @@ struct source *source_normal_file_make( struct svalue *s,
   if( !S_ISREG(st.st_mode) )
   {
     goto fail;
-  }  
+  }
   if( len > 0 )
   {
     if( len > st.st_size-start )

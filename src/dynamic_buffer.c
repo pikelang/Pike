@@ -76,7 +76,7 @@ PMOD_EXPORT void low_reinit_buf(dynamic_buffer *buf)
 
 PMOD_EXPORT void low_init_buf_with_string(dynbuf_string s, dynamic_buffer *buf)
 {
-  if(buf->s.str) { free(buf->s.str); buf->s.str=NULL; } 
+  if(buf->s.str) { free(buf->s.str); buf->s.str=NULL; }
   buf->s=s;
   if(!buf->s.str) initialize_buf(buf);
   /* if the string is an old buffer, this realloc will set the old

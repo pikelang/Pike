@@ -49,7 +49,7 @@ PMOD_EXPORT extern struct program *bignum_program;
   (REFCOUNTED_TYPE(TYPEOF(*(S))) ? debug_malloc_touch((S)->u.object) : 0, \
    debug_get_mpz((S), (THROW_ERROR), (ARG_FUNC), (ARG), (ARGS)))
 #else
-#define get_mpz debug_get_mpz 
+#define get_mpz debug_get_mpz
 #endif
 
 /*

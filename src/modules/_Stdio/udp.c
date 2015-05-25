@@ -133,7 +133,7 @@
 struct udp_storage {
   struct fd_callback_box box;	/* Must be first. */
   int my_errno;
-   
+
   int inet_flags;
 
   int type;
@@ -369,7 +369,7 @@ static void udp_query_fd(INT32 args)
 
 /*! @decl int(0..1) enable_broadcast()
  *!
- *! Set the broadcast flag. 
+ *! Set the broadcast flag.
  *! If enabled then sockets receive packets sent  to  a  broadcast
  *! address  and  they are allowed to send packets to a
  *! broadcast address.
@@ -693,7 +693,7 @@ void udp_wait(INT32 args)
     res = poll(pollfds, 1, ms);
     e = errno;
   } while (res < 0 && e == EINTR)
-    
+
   THREADS_DISALLOW();
   if (!res) {
     /* Timeout */
@@ -756,7 +756,7 @@ void udp_wait(INT32 args)
  *! Flag @[flag] is a bitfield, 1 for out of band data and 2 for peek
  *!
  *! @returns
- *!  mapping(string:int|string) in the form 
+ *!  mapping(string:int|string) in the form
  *!	([
  *!	   "data" : string received data
  *!	   "ip" : string   received from this ip
@@ -772,7 +772,7 @@ void udp_read(INT32 args)
   PIKE_SOCKADDR from;
   char buffer[UDP_BUFFSIZE];
   ACCEPT_SIZE_T fromlen = sizeof(from);
-  
+
   if(args)
   {
     if(Pike_sp[-args].u.integer & 1) {
@@ -905,10 +905,10 @@ void udp_sendto(INT32 args)
 
   if(FD < 0)
     Pike_error("UDP: not open\n");
-  
+
   check_all_args("send", args,
 		 BIT_STRING, BIT_INT|BIT_STRING, BIT_STRING, BIT_INT|BIT_VOID, 0);
-  
+
   if(args>3)
   {
     if(Pike_sp[3-args].u.integer & 1) {
@@ -947,7 +947,7 @@ void udp_sendto(INT32 args)
 
     check_threads_etc();
   } while((res == -1) && e==EINTR);
-  
+
   if(res<0)
   {
     switch(e)
@@ -1095,7 +1095,7 @@ static void udp_set_blocking(INT32 args)
  *!
  *!   This function connects an UDP socket previously created with
  *!   @[Stdio.UDP()] to a remote socket. The @[address] is the IP name or
- *!   number for the remote machine. 
+ *!   number for the remote machine.
  *!
  *! @returns
  *!   Returns @expr{1@} on success, @expr{0@} (zero) otherwise.
@@ -1173,7 +1173,7 @@ static void udp_connect(INT32 args)
 }
 
 /*! @decl string query_address()
- *! 
+ *!
  *! Returns the local address of a socket on the form "x.x.x.x port".
  *! If this file is not a socket, not connected or some other error occurs,
  *! zero is returned.
@@ -1298,7 +1298,7 @@ static void udp_set_type(INT32 args)
 
    THIS->type=type;
    THIS->protocol=proto;
-   
+
    pop_n_elems(args);
    ref_push_object(THISOBJ);
 }
@@ -1453,7 +1453,7 @@ void init_stdio_udp(void)
 
   ADD_FUNCTION("connect",udp_connect,
 	       tFunc(tString tOr(tInt,tStr),tInt),0);
-  
+
   ADD_FUNCTION("_set_nonblocking", udp_set_nonblocking,
 	       tFunc(tOr(tFunc(tVoid,tVoid),tVoid),tObj), 0 );
   ADD_FUNCTION("_set_read_callback", udp_set_read_callback,

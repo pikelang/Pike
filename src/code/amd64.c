@@ -8,7 +8,7 @@
 #include "builtin_functions.h"
 
 /* These come from linux include files. */
-#ifdef REG_RBX 
+#ifdef REG_RBX
 #undef REG_RAX
 #undef REG_RBX
 #undef REG_RCX
@@ -468,7 +468,7 @@ static void neg_reg( enum amd64_reg reg )
 
 static void mov_imm_reg( long imm, enum amd64_reg reg )
 {
-  if( !imm ) 
+  if( !imm )
   {
     clear_reg(reg);
     return;
@@ -565,7 +565,7 @@ static void set_if_neq(enum amd64_reg reg)
 
 #if 0
 static void low_mov_if_cond_reg(unsigned char subop,
-				enum amd64_reg to_reg, 
+				enum amd64_reg to_reg,
 				enum amd64_reg from_reg )
 {
   rex(0, from_reg, 0, to_reg );
@@ -969,7 +969,7 @@ static void add_reg_reg( enum amd64_reg reg, enum amd64_reg reg2 )
 static void mul_reg_reg( enum amd64_reg reg, enum amd64_reg reg2 )
 {
 #if 0
-  /* 64b * 64b -> 128b 
+  /* 64b * 64b -> 128b
      This would actually not need an overflow check.
      instead, push high if not zero, push low, genreate gmp.
      but... Well.
@@ -996,8 +996,8 @@ static void div_reg_reg( enum amd64_reg reg, enum amd64_reg reg2 )
   if( reg != P_REG_RAX )  Pike_error("Not supported, reg1 must be RAX\n");
   if( reg2 == P_REG_RDX ) Pike_error("Clobbers RAX+RDX\n");
   rex(1,0,0,0);
-  opcode(0x99); 
-  /* 
+  opcode(0x99);
+  /*
    *cqo:
    *sign extend 64bit rax -> 128bit in rdx:rax
   */
@@ -1005,7 +1005,7 @@ static void div_reg_reg( enum amd64_reg reg, enum amd64_reg reg2 )
   rex(1,0,0,reg2);
   opcode( 0xf7 );
   modrm( 3, 7, reg2 );
-  /* idiv, ax = dx:ax / reg2 
+  /* idiv, ax = dx:ax / reg2
      dx = dx:ax % reg2
   */
 }
@@ -2783,7 +2783,7 @@ int amd64_ins_f_jump(unsigned int op, int backward_jump)
       /* Bad arg 1. Let the C opcode throw the error. */
       amd64_call_c_opcode(instrs[off].address, flags);
       /* NOT_REACHED */
-      
+
      LABEL_D;
       mov_mem_reg( sp_reg, -1*sizeof(struct svalue)+8, P_REG_RAX );
       mov_mem_reg( sp_reg, -4*sizeof(struct svalue)+8, P_REG_RBX );
@@ -2884,13 +2884,13 @@ int amd64_ins_f_jump(unsigned int op, int backward_jump)
       mov_mem8_reg( sp_reg, -sizeof(struct svalue)*2,P_REG_RBX );
       cmp_reg_reg( P_REG_RCX, P_REG_RBX );
       jnz( &label_A ); /* Types differ */
-      
+
       /* Fallback to C for functions, objects and floats. */
       mov_imm_reg(1, P_REG_RBX);
       shl_reg32_reg(P_REG_RBX, P_REG_RCX);
       and_reg_imm(P_REG_RBX, (BIT_FUNCTION|BIT_OBJECT|BIT_FLOAT));
       jnz( &label_A );
-      
+
       mov_mem_reg( sp_reg, -sizeof(struct svalue)+8,  P_REG_RBX );
       sub_reg_mem( P_REG_RBX, sp_reg, -sizeof(struct svalue)*2+8);
       /* RBX will now be 0 if they are equal.*/
@@ -3229,7 +3229,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
     mov_mem8_reg(sp_reg, SVAL(-1).type, P_REG_RAX );
     test_reg32(P_REG_RAX);
     jnz(&label_A);
-    
+
  /* FIXME: and_mem_imm */
     mov_mem_reg(sp_reg, SVAL(-1).value, P_REG_RAX );
     and_reg_imm(P_REG_RAX,b);

@@ -54,7 +54,7 @@
 #define SNAME(X,Y) \
   extern struct X PIKE_CONCAT(Y,_base); \
   struct X * Y = & PIKE_CONCAT(Y,_base); \
-  struct X PIKE_CONCAT(Y,_base) = { 0, 
+  struct X PIKE_CONCAT(Y,_base) = { 0,
 #define SEND };
 #endif
 
@@ -75,8 +75,8 @@
 
 
 #ifdef POP
-#define IMEMBER(X,Y,Z) 
-#define ZMEMBER(X,Y,Z) 
+#define IMEMBER(X,Y,Z)
+#define ZMEMBER(X,Y,Z)
 
 #define STACKMEMBER(X,Y,Z) DO_DEBUG_CODE( \
     if(Pike_compiler->Y < oLd->Y) \
@@ -112,8 +112,8 @@
 
 
 #ifdef EXIT
-#define IMEMBER(X,Y,Z) 
-#define ZMEMBER(X,Y,Z) 
+#define IMEMBER(X,Y,Z)
+#define ZMEMBER(X,Y,Z)
 
 #define STACKMEMBER(X,Y,Z) DO_DEBUG_CODE( \
     if(c->Y < oLd->Y) \

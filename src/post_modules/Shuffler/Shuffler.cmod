@@ -101,13 +101,13 @@ PIKECLASS Shuffle
   PIKEVAR object shuffler;
   /*! @decl Shuffler shuffler;
    *! The @[Shuffler] that owns this @[Shuffle] object
-   *! 
+   *!
   */
   PIKEVAR object throttler;
   /*! @decl Throttler throttler;
    *! The @[Throttler] that is associated with this @[Shuffle] object,
    *! if any.
-   *! 
+   *!
   */
 
   PIKEVAR mixed done_callback;
@@ -116,15 +116,15 @@ PIKECLASS Shuffle
 
   CVAR struct source *current_source;
   CVAR struct source *last_source;
-  CVAR struct object *file_obj; 
+  CVAR struct object *file_obj;
   CVAR int callback;
   CVAR int write_callback;
-  
+
   CVAR int sent;
   CVAR ShuffleState state;
 
   CVAR struct data leftovers;
-  
+
 
   static void _send_more( struct Shuffle_struct *t );
   static void __set_callbacks( struct Shuffle_struct *t )
@@ -142,7 +142,7 @@ PIKECLASS Shuffle
       SHUFFLE_DEBUG1("EEP: No destination! Cannot set callbacks\n",t);
     }
   }
-  
+
   static void __remove_callbacks( struct Shuffle_struct *t )
   {
     SHUFFLE_DEBUG2("__remove_calllbacks(%s)\n", t, (t->box.fd>=0?"C":"Pike") );
@@ -169,11 +169,11 @@ PIKECLASS Shuffle
 
     return 0; // Everything OK.
   }
-  
+
   PIKEFUN void set_throttler( object t )
   /*! @decl void set_throttler(Throttler t)
    *! Calling this function overrides the @[Shuffler] global throttler.
-   *! 
+   *!
   */
     optflags OPT_SIDE_EFFECT;
   {
@@ -192,7 +192,7 @@ PIKECLASS Shuffle
   PIKEFUN int sent_data()
   /*! @decl int sent_data()
    *! Returns the amount of data that has been sent so far.
-   *! 
+   *!
   */
     optflags OPT_TRY_OPTIMIZE;
   {
@@ -204,14 +204,14 @@ PIKECLASS Shuffle
   /*! @decl int state()
    *! Returns the current state of the shuffler.
    *! This is one of the following:
-   *!   @[INITIAL], 
-   *!   @[RUNNING], 
-   *!   @[PAUSED], 
-   *!   @[DONE], 
-   *!   @[WRITE_ERROR], 
+   *!   @[INITIAL],
+   *!   @[RUNNING],
+   *!   @[PAUSED],
+   *!   @[DONE],
+   *!   @[WRITE_ERROR],
    *!   @[READ_ERROR] and
    *!   @[USER_ABORT]
-   *!   
+   *!
   */
     optflags OPT_TRY_OPTIMIZE;
   {
@@ -231,15 +231,15 @@ PIKECLASS Shuffle
     THIS->current_source = NULL;
     THIS->file_obj = NULL;
     THIS->state = INITIAL;
-    THIS->callback = 
+    THIS->callback =
       find_identifier("send_more_callback",Pike_fp->current_object->prog);
 
-    THIS->write_callback = 
+    THIS->write_callback =
       find_identifier("write_callback",Pike_fp->current_object->prog);
     INIT_FD_CALLBACK_BOX(&THIS->box, NULL, Pike_fp->current_object, -1,
 			 0, got_shuffler_event, 0);
     debug_malloc_touch(THIS->box.ref_obj);
-    
+
     SHUFFLE_DEBUG1("init()\n", THIS );
   }
 
@@ -275,7 +275,7 @@ PIKECLASS Shuffle
       THIS->leftovers.do_free = 0;
     }
   }
-  
+
   static void __send_more_callback( struct Shuffle_struct *t, int amount );
   static void _request( struct Shuffle_struct *t, int amount )
   {
@@ -293,11 +293,11 @@ PIKECLASS Shuffle
       pop_stack();
     }
     else /* bypass the pike function calling for the case
-  	* when no throttling is done 
+  	* when no throttling is done
   	*/
       __send_more_callback( t, amount );
   }
-  
+
   static void _send_more( struct Shuffle_struct *t )
   {
     int l = BLOCK;
@@ -306,7 +306,7 @@ PIKECLASS Shuffle
       l = t->leftovers.len;
     _request( t, l );
   }
-  
+
   static void _set_callbacks( struct Shuffle_struct *t )
   {
     SHUFFLE_DEBUG1("_set_callbacks()\n", t );
@@ -314,7 +314,7 @@ PIKECLASS Shuffle
       t->current_source->setup_callbacks( t->current_source );
     __set_callbacks( t );
   }
-  
+
   static void _remove_callbacks( struct Shuffle_struct *t )
   {
     SHUFFLE_DEBUG1("_remove_callbacks()\n",t );
@@ -322,7 +322,7 @@ PIKECLASS Shuffle
       t->current_source->remove_callbacks( t->current_source );
     __remove_callbacks( t );
   }
-  
+
   static void _all_done( struct Shuffle_struct *t, int reason )
   {
     SHUFFLE_DEBUG2("_all_done(%d)\n", t,reason );
@@ -347,7 +347,7 @@ PIKECLASS Shuffle
         safe_apply(t->file_obj, "take_fd", 1 );
       pop_stack();
     }
-    
+
     debug_malloc_touch( t->box.ref_obj );
     ref_push_object( t->box.ref_obj );
 
@@ -416,7 +416,7 @@ PIKECLASS Shuffle
    /*! @decl void set_done_callback( function(Shuffle,int:void) cb )
     *! Sets the done callback. This function will be called when all
     *! sources have been processed, or if an error occurs.
-    *! 
+    *!
     */
     optflags OPT_SIDE_EFFECT;
   {
@@ -431,14 +431,14 @@ PIKECLASS Shuffle
     *!
     *! Sets the extra argument sent to @[Throttler()->request()] and
     *! @[Throttler()->give_back].
-    *! 
+    *!
     */
     optflags OPT_SIDE_EFFECT;
   {
     SHUFFLE_DEBUG2("set_request_arg(%p)\n", THIS, arg->u.object );
     assign_svalue( &THIS->request_arg, arg );
   }
-  
+
   static void _give_back( struct Shuffle_struct *t, int amount )
   {
     SHUFFLE_DEBUG2("_give_back(%d)\n", t, amount );
@@ -773,7 +773,7 @@ PIKECLASS Shuffle
  *! A data shuffler. An instance of this class handles a list of
  *! @[Shuffle] objects. Each @[Shuffle] object can send data from one
  *! or more sources to a destination in the background.
- *! 
+ *!
  */
 
 PIKECLASS Shuffler
@@ -796,13 +796,13 @@ PIKECLASS Shuffler
     debug_malloc_touch( THIS->sources );
     Pike_sp--;
   }
-  
+
 
   PIKEFUN void set_backend( object b )
     /*! @decl void set_backend( Pike.Backend b );
      *! Set the backend that will be used by all @[Shuffle] objects created
      *! from this shuffler.
-     *! 
+     *!
      */
   {
     if( THIS->backend )
@@ -818,7 +818,7 @@ PIKECLASS Shuffler
      *! Set the throttler that will be used in all @[Shuffle] objects
      *! created from this shuffler, unless overridden in the
      *! @[Shuffle] objects.
-     *! 
+     *!
      */
   {
     if( THIS->throttler )
@@ -831,7 +831,7 @@ PIKECLASS Shuffler
   PIKEFUN void pause()
     /*! @decl void pause();
      *! Pause all @[Shuffle] objects associated with this @[Shuffler]
-     *! 
+     *!
      */
   {
     int i;
@@ -848,7 +848,7 @@ PIKECLASS Shuffler
   PIKEFUN void start()
     /*! @decl void start();
      *! Unpause all @[Shuffle] objects associated with this @[Shuffler]
-     *! 
+     *!
      */
   {
     int i;

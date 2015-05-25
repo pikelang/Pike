@@ -232,7 +232,7 @@ int parse_esc_seq (WCHAR *buf, p_wchar2 *chr, ptrdiff_t *len)
       if( Pike_compiler->compiler_pass == 1 )
 	yywarning("%c is not a valid octal digit.", c);
       break;
-      
+
     case 'x': {
       unsigned INT32 n=0;
       for (l = 1;; l++) {
@@ -383,7 +383,7 @@ static struct pike_string *readstring(struct lex *lex)
 #endif /* SHIFT != 0 */
 
   init_string_builder(&tmp,0);
-  
+
   while(1)
   {
     char *buf;
@@ -404,19 +404,19 @@ static struct pike_string *readstring(struct lex *lex)
       lex->pos -= (1<<SHIFT);
       yyerror("End of file in string.");
       break;
-      
+
     case '\n':
       lex->current_line++;
       yyerror("Newline in string.");
       break;
-      
+
     case '\\':
       string_builder_putchar(&tmp, char_const(lex));
       continue;
-      
+
     case '"':
       break;
-      
+
     default:
 #ifdef PIKE_DEBUG
       Pike_fatal("Default case in readstring() reached. c:%d\n", c);
@@ -651,7 +651,7 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 	     * - Upper case is used for symbols intended for #if constant().
 	     */
 	    if (tmp->size_shift) {
-	      free_string(tmp);	    
+	      free_string(tmp);
 	      return TOK_IDENTIFIER;
 	    }
 	    while(len--) {
@@ -661,7 +661,7 @@ static int low_yylex(struct lex *lex, YYSTYPE *yylval)
 		return TOK_IDENTIFIER;
 	      }
 	    }
-	    free_string(tmp);	    
+	    free_string(tmp);
 	  }
 	  return TOK_RESERVED;
 	}
@@ -943,7 +943,7 @@ unknown_directive:
 	goto read_float;
       }
       return '.';
-  
+
     case '0':
     {
       int base = 0;
@@ -1070,17 +1070,17 @@ unknown_directive:
       if(GOBBLE('>')) return TOK_ARROW;
       if(GOBBLE('-')) return TOK_DEC;
       return '-';
-  
+
     case '+':
       if(GOBBLE('=')) return TOK_ADD_EQ;
       if(GOBBLE('+')) return TOK_INC;
       return '+';
-  
+
     case '&':
       if(GOBBLE('=')) return TOK_AND_EQ;
       if(GOBBLE('&')) return TOK_LAND;
       return '&';
-  
+
     case '|':
       if(GOBBLE('=')) return TOK_OR_EQ;
       if(GOBBLE('|')) return TOK_LOR;
@@ -1089,7 +1089,7 @@ unknown_directive:
     case '^':
       if(GOBBLE('=')) return TOK_XOR_EQ;
       return '^';
-  
+
     case '*':
       if(GOBBLE('=')) return TOK_MULT_EQ;
       return '*';
@@ -1097,15 +1097,15 @@ unknown_directive:
     case '%':
       if(GOBBLE('=')) return TOK_MOD_EQ;
       return '%';
-  
+
     case '/':
       if(GOBBLE('=')) return TOK_DIV_EQ;
       return '/';
-  
+
     case '=':
       if(GOBBLE('=')) return TOK_EQ;
       return '=';
-  
+
     case '<':
       if(GOBBLE('<'))
       {
@@ -1114,7 +1114,7 @@ unknown_directive:
       }
       if(GOBBLE('=')) return TOK_LE;
       return '<';
-  
+
     case '>':
       if(GOBBLE(')')) return TOK_MULTISET_END;
       if(GOBBLE('=')) return TOK_GE;
@@ -1180,7 +1180,7 @@ unknown_directive:
 	  offset--;
 	}
       }
-      
+
       switch(c = GETC())
       {
       case '/': tmp="```/"; break;
@@ -1218,13 +1218,13 @@ unknown_directive:
 
       case '(':
 	tmp="```()";
-	if(GOBBLE(')')) 
+	if(GOBBLE(')'))
 	{
 	  break;
 	}
 	yyerror("Illegal ` identifier. Expected `().");
 	break;
-	
+
       case '-':
 	if(GOBBLE('>'))
 	{
@@ -1322,7 +1322,7 @@ unknown_directive:
       }
     }
 
-  
+
     default:
       {
 	if (c > 31) {

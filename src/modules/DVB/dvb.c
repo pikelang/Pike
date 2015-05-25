@@ -894,7 +894,7 @@ static void ParseCADescriptor (dvb_stream_data *st, unsigned char *data,
 
   struct ECMINFO *e = NULL;
 
-#ifdef DVB_DEBUG 
+#ifdef DVB_DEBUG
     printf("DEB: dvb: ca_descr:");
     for (j=0; j<length; j++) printf(" %02x",data[j]);
     printf("\n");
@@ -917,7 +917,7 @@ static void ParseCADescriptor (dvb_stream_data *st, unsigned char *data,
         e->id = (data[j+2] << 8) | data[j+3];
         e->next = st->ecminfo;
         st->ecminfo = e;
-      }        
+      }
       break;
     case VIACCESS_CA_SYSTEM:
       j = 4;
@@ -976,7 +976,7 @@ static void ParseCADescriptor (dvb_stream_data *st, unsigned char *data,
  *! @seealso
  *!   @[analyze_pat()]
  */
-static void f_parse_pmt(INT32 args) 
+static void f_parse_pmt(INT32 args)
 {
   unsigned char buffer[4096];
   unsigned int length,info_len,data_len, index;
@@ -1021,7 +1021,7 @@ static void f_parse_pmt(INT32 args)
       n = read_t(dmx,buffer,sizeof(buffer),1);
     }
     while (n>=2 && (buffer[0]!=0 || buffer[1]!=0x02));
-   
+
     length = ((buffer[2] & 0x0F) << 8) | buffer[3];
     if (length+4 > sizeof(buffer))
       n = -1;
@@ -1235,12 +1235,12 @@ static void f__sprintf(INT32 args) {
  */
 
 /*  @decl int set_buffer(int len)
- * 
+ *
  *  Sets stream's internal buffer.
- * 
+ *
  *  @note
  *    The size is 4096 by default.
- * 
+ *
  *  @seealso
  *    @[read()]
  */
@@ -1559,7 +1559,7 @@ static void f_audio_status(INT32 args) {
   else {
     push_text("av_sync"); push_int(status.AVSyncState);
     push_text("mute"); push_int(status.muteState);
-    push_text("state"); 
+    push_text("state");
       switch(status.playState) {
 	case AUDIO_STOPPED: push_text("stopped");
 			    break;
@@ -1603,7 +1603,7 @@ static void f_audio_ctrl(INT32 args) {
 
   if(TYPEOF(Pike_sp[-1]) == T_INT)
     cw = (u_short)Pike_sp[-1].u.integer;
-  else 
+  else
     if(!strcmp(Pike_sp[-1].u.string->str, "play"))
       cw = AUDIO_PLAY;
     else
@@ -1732,7 +1732,7 @@ static void exit_dvb_stream(struct object *UNUSED(obj)) {
       free(DVBStream->ecminfo);
       DVBStream->ecminfo = e;
     } while (e != NULL);
-  
+
 }
 
 /*

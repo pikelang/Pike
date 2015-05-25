@@ -900,7 +900,7 @@ static int do_safe_index_call(struct cpp *this, struct pike_string *s)
   } else {
     ref_push_string(s);
     f_index(2);
-    
+
     res=!(UNSAFE_IS_ZERO(sp-1) && SUBTYPEOF(sp[-1]) == NUMBER_UNDEFINED);
   }
   UNSETJMP(recovery);
@@ -1233,7 +1233,7 @@ static ptrdiff_t find_end_of_comment( struct cpp *this, const PCHARP data, ptrdi
   pos++;
 
   while(INDEX_PCHARP(data,pos)!='*' || INDEX_PCHARP(data,pos+1)!='/')
-  {	
+  {
     if(pos+2>=len)
     {
       cpp_error(this,"End of file in comment.");
@@ -1314,7 +1314,7 @@ static ptrdiff_t find_end_of_string( struct cpp *this, const PCHARP data,
       }
       pos++;
     }
-  } 
+  }
   return pos;
 }
 
@@ -1335,7 +1335,7 @@ static ptrdiff_t find_end_of_char( struct cpp *this, const PCHARP data, ptrdiff_
       this->current_line++;
       PUTNL();
       break;
-    case '\'': 
+    case '\'':
       return pos;
     case '\\':
       if(INDEX_PCHARP(data,pos)=='\n') {
@@ -1453,7 +1453,7 @@ static struct pike_string *gobble_identifier (struct cpp *this, const PCHARP dat
 
   while (1) {
     ptrdiff_t start = p;
-    while (wide_isidchar (INDEX_PCHARP(data,p))) 
+    while (wide_isidchar (INDEX_PCHARP(data,p)))
       p++;
     if (p != start)
     {
@@ -1916,7 +1916,7 @@ static struct pike_string *filter_bom(struct pike_string *data)
   if (!data->size_shift) {
     return(data);
   }
-  
+
   init_string_builder(&buf, data->size_shift);
   if (data->size_shift == 1) {
     /* 16 bit string */
@@ -2062,14 +2062,14 @@ static ptrdiff_t find_eos( struct cpp *this, const PCHARP data, ptrdiff_t len, p
 
 static ptrdiff_t skipwhite(struct cpp *this, const PCHARP data, ptrdiff_t pos)
 {
-  do 
+  do
   {
     int c;
     if(!wide_isspace(c=DATA(pos)))
     {
-      if (c == '\\') 
+      if (c == '\\')
       {
-	if (DATA(pos+1) == '\n') 
+	if (DATA(pos+1) == '\n')
 	{
 	  pos += 2;
 	  PUTNL();
@@ -2085,9 +2085,9 @@ static ptrdiff_t skipwhite(struct cpp *this, const PCHARP data, ptrdiff_t pos)
       }
       break;
     }
-    else if(c=='\n') 
-    { 
-      PUTNL(); this->current_line++; 
+    else if(c=='\n')
+    {
+      PUTNL(); this->current_line++;
     }
     pos++;
   } while(1);
@@ -2311,7 +2311,7 @@ static ptrdiff_t calcC(struct cpp *this, PCHARP data, ptrdiff_t len,
 	      if (this->keep_comments) {
 		start = pos - 2;
 	        SKIPCOMMENT_INC_LINES();
-	      } else 
+	      } else
 		SKIPCOMMENT();
 	    } else if (DATA(pos) == '/') {
 	      if (this->keep_comments) {

@@ -51,7 +51,7 @@ static void chrono(char *x)
    getrusage(RUSAGE_SELF,&r);
    fprintf(stderr,"%s: %ld.%06ld - %ld.%06ld\n",x,
 	   (long)r.ru_utime.tv_sec,(long)r.ru_utime.tv_usec,
-	   
+
 	   (long)(((r.ru_utime.tv_usec-rold.ru_utime.tv_usec<0)?-1:0)
 		  +r.ru_utime.tv_sec-rold.ru_utime.tv_sec),
 	   (long)(((r.ru_utime.tv_usec-rold.ru_utime.tv_usec<0)?1000000:0)
@@ -81,7 +81,7 @@ static void chrono(char *x)
 **!     </pre>
 **!	Red, green and blue channels are added
 **!	and not compared separately.
-**!     
+**!
 **!     If you first use orient4 you can give its
 **!     output as input to this function.
 **!
@@ -114,7 +114,7 @@ static void _image_orient(struct image *source,
       push_object(o[i]);
    }
 
-THREADS_ALLOW();  
+THREADS_ALLOW();
 CHRONO("start");
    for (i=0; i<4; i++) /* four directions */
    {
@@ -142,7 +142,7 @@ CHRONO("start");
 	 }
    }
 CHRONO("end");
-THREADS_DISALLOW();  
+THREADS_DISALLOW();
 }
 
 void image_orient(INT32 args)
@@ -198,7 +198,7 @@ void image_orient(INT32 args)
 	  (img1->ysize!=h))
 	Pike_error("The images in the array given as argument 2 to orient have different sizes\n");
     }
-    for(i=0; i<4; i++) 
+    for(i=0; i<4; i++)
         img[i]=get_storage(sp[1-args].u.array->item[i].u.object,image_program);
     pop_n_elems(args);
     push_int(this->xsize);
@@ -219,13 +219,13 @@ void image_orient(INT32 args)
   s3=img[3]->img;
   d=img[4]->img;
 
-THREADS_ALLOW();  
+THREADS_ALLOW();
 CHRONO("begin hsv...");
   n=this->xsize*this->ysize;
   while (n--)
   {
      /* Första färg, sista mörkhet */
-     double j=(s0->r+s0->g+s0->b-s2->r-s2->g-s2->b)/3.0; 
+     double j=(s0->r+s0->g+s0->b-s2->r-s2->g-s2->b)/3.0;
                 /* riktning - - riktning | */
 
      double h=(s1->r+s1->g+s1->b-s3->r-s3->g-s3->b)/3.0;
@@ -233,7 +233,7 @@ CHRONO("begin hsv...");
 
      int z,w;
 
-     if (my_abs(DOUBLE_TO_INT(h)) > my_abs(DOUBLE_TO_INT(j))) 
+     if (my_abs(DOUBLE_TO_INT(h)) > my_abs(DOUBLE_TO_INT(j)))
 	if (h) {
 	  z = -DOUBLE_TO_INT(32*(j/h)+(h>0)*128+64);
 	  w = my_abs(DOUBLE_TO_INT(h));
@@ -248,7 +248,7 @@ CHRONO("begin hsv...");
      }
 
      d->r=(COLORTYPE)z;
-     d->g=255;     
+     d->g=255;
      d->b = MINIMUM(DOUBLE_TO_COLORTYPE(w*mag), 255);
 
      d++;
@@ -273,7 +273,7 @@ void image_orient4(INT32 args)
 {
   struct object *o[5];
   struct image *img[5];
-  
+
   if (!THIS->img) { Pike_error("Called Image.Image object is not initialized\n");;  return; }
 
   pop_n_elems(args);

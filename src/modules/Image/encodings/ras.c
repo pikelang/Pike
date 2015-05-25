@@ -76,7 +76,7 @@ struct rasterfile {
 /*
 **! method object decode(string data)
 **!	Decodes RAS data and creates an image object.
-**! 	
+**!
 **! see also: encode
 **!
 **! note
@@ -186,7 +186,7 @@ void img_ras_decode(INT32 args)
 
      if(len < rs.ras_maplength)
        Pike_error("Image.RAS.decode: colormap truncated\n");
-     
+
      src += rs.ras_maplength;
      len -= rs.ras_maplength;
      if(len && (rs.ras_maplength&1)) {
@@ -366,7 +366,7 @@ void img_ras_decode(INT32 args)
 /*
 **! method string encode(object image)
 **! method string encode(object image, mapping options)
-**! 	Encodes a RAS image. 
+**! 	Encodes a RAS image.
 **!
 **!     The <tt>options</tt> argument may be a mapping
 **!	containing zero or more encoding options:
@@ -523,7 +523,7 @@ static void img_ras_encode(INT32 args)
      llen = ((img->xsize+1)&~1)*3;
      break;
   }
-  
+
   rs.ras_length = llen*img->ysize;
 
   res2 = begin_shared_string(rs.ras_length);
@@ -574,7 +574,7 @@ static void img_ras_encode(INT32 args)
       if((pklen += n)>rs.ras_length)
 	break;
     }
-      
+
     if(pklen<rs.ras_length) {
       do_free_unlinked_pike_string(res2);
       res2 = make_shared_binary_string((char *)pkdata, pklen);

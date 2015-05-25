@@ -33,7 +33,7 @@
 #ifdef DYNAMIC_MODULE
 static struct program *image_program=NULL;
 #else
-extern struct program *image_program; 
+extern struct program *image_program;
 /* Image module is probably linked static too. */
 #endif
 
@@ -218,7 +218,7 @@ static void pushg(mpz_t val, unsigned char *face, int s)
     pushg(val, face+s*49, s);
     pushg(val, face+s*48, s);
     pushg(val, face+s, s);
-    pushg(val, face, s);    
+    pushg(val, face, s);
   } else
     push(val, botprob,
 	 (face[0])|((face[1])<<1)|((face[48])<<2)|((face[49])<<3));
@@ -355,7 +355,7 @@ static struct pike_string *encodeface(rgb_group *in)
 /*
 **! method object decode(string data)
 **! method object decode(string data, mapping options)
-**! 	Decodes an X-Face image. 
+**! 	Decodes an X-Face image.
 **!
 **!     The <tt>options</tt> argument may be a mapping
 **!	containing zero options.
@@ -389,7 +389,7 @@ static void image_xface_decode(INT32 args)
 /*
 **! method string encode(object img)
 **! method string encode(object img, mapping options)
-**! 	Encodes an X-Face image. 
+**! 	Encodes an X-Face image.
 **!
 **!     The <tt>img</tt> argument must be an image of the dimensions
 **!     48 by 48 pixels.  All non-black pixels will be considered white.
@@ -404,15 +404,15 @@ static void image_xface_encode(INT32 args)
   struct image *img=NULL;
   struct pike_string *res;
 
-  if (args<1 
+  if (args<1
       || TYPEOF(sp[-args]) != T_OBJECT
       || !(img=get_storage(sp[-args].u.object,image_program))
       || (args>1 && TYPEOF(sp[1-args]) != T_MAPPING))
     Pike_error("Illegal arguments\n");
-  
+
   if (!img->img)
     Pike_error("Given image is empty.\n");
-  
+
   if (img->xsize != 48 || img->ysize != 48)
     Pike_error("Wrong image dimensions (must be 48 by 48).\n");
 
@@ -430,7 +430,7 @@ static void image_xface_encode(INT32 args)
 /*
 **! method object decode_header(string data)
 **! method object decode_header(string data, mapping options)
-**! 	Decodes an X-Face image header. 
+**! 	Decodes an X-Face image header.
 **!
 **!	<pre>
 **!	    "xsize":int

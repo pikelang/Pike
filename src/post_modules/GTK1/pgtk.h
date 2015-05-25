@@ -195,7 +195,7 @@ void pgtk_free_str( gchar *s );
 #else
 # define PGTK_ISSTR( X ) ((TYPEOF(*(X)) == PIKE_T_STRING)&&((X)->u.string->size_shift==0))
 # define PGTK_GETSTR(X)  ((char*)((X)->u.string->str))
-# define PGTK_FREESTR(X)  
+# define PGTK_FREESTR(X)
 # define PGTK_PUSH_GCHAR(X) push_text( X )
 #endif
 

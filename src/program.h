@@ -299,7 +299,7 @@ struct identifier
 
 /*
  * This is used to store constants, both
- * inline constants and those defined explicitly with 
+ * inline constants and those defined explicitly with
  * the constant keyword.
  */
 struct program_constant
@@ -625,7 +625,7 @@ struct program
   struct program *next;
   struct program *prev;
   struct program *parent;
-  
+
   node *(*optimize)(node *n);
 
   void (*event_handler)(int);
@@ -643,7 +643,7 @@ struct program
 
 #define FOO(NUMTYPE,TYPE,ARGTYPE,NAME) NUMTYPE PIKE_CONCAT(num_,NAME) ;
 #include "program_areas.h"
-  
+
   INT16 lfuns[NUM_LFUNS];
 };
 

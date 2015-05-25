@@ -360,7 +360,7 @@ PIKECLASS mapping_iterator
     }
 #endif /* PIKE_MAPPING_KEYPAIR_LOOP */
 
-  
+
   PIKEFUN object `+(int(0..) steps)
     {
       struct object *o=low_clone(mapping_iterator_program);
@@ -497,7 +497,7 @@ PIKECLASS array_iterator
 {
   CVAR int pos;
   CVAR struct array *a;
-  
+
   PIKEFUN mixed value()
     {
       if(!THIS->a || THIS->pos < 0 || THIS->pos >= THIS->a->size)
@@ -565,7 +565,7 @@ PIKECLASS array_iterator
 	Pike_error("Bad position.\n");
       }else{
 	THIS->pos = pos;
-      }      
+      }
     }
 
   /* Hubbe: Should this really be destructive ?? */
@@ -593,11 +593,11 @@ PIKECLASS array_iterator
     {
       if(THIS->a)
 	Pike_error("Array iterators cannot be reused.\n");
-      
+
       add_ref(THIS->a=a);
     }
-  
-  INIT 
+
+  INIT
     {
       THIS->a=0;
       THIS->pos=0;
@@ -609,7 +609,7 @@ PIKECLASS array_iterator
       if (THIS->a)
 	free_array(THIS->a);
     }
-    
+
 };
 
 /*! @endclass
@@ -802,7 +802,7 @@ PIKECLASS multiset_iterator
       THIS->nodepos = multiset_first (THIS->l);
     }
 
-  INIT 
+  INIT
     {
       THIS->l = NULL;
     }
@@ -845,7 +845,7 @@ PIKECLASS string_iterator
 {
   CVAR int pos;
   CVAR struct pike_string *s;
-  
+
   PIKEFUN int value()
     {
       if(!THIS->s || THIS->pos < 0 || THIS->pos >= THIS->s->len)
@@ -959,11 +959,11 @@ PIKECLASS string_iterator
     {
       if(THIS->s)
 	Pike_error("String iterators cannot be reused.\n");
-      
+
       add_ref(THIS->s=s);
     }
-  
-  INIT 
+
+  INIT
     {
       THIS->s=0;
       THIS->pos=0;
@@ -1059,7 +1059,7 @@ PIKECLASS file_line_iterator
       ssi->buffer = NULL;
       return;
    }
-  
+
   PIKEFUN string value()
     {
       if (THIS->current) {
@@ -1136,8 +1136,8 @@ PIKECLASS file_line_iterator
       THIS->index = -1;
       fl_find_next(THIS);
     }
-  
-  INIT 
+
+  INIT
     {
       THIS->buffer = NULL;
       THIS->current = NULL;
@@ -1160,8 +1160,8 @@ PIKECLASS file_line_iterator
       free_svalue(&THIS->feed);
       assert_free_svalue (&THIS->feed);
     }
-  
-  
+
+
 }
 
 /*! @module String
@@ -1225,7 +1225,7 @@ PIKECLASS string_split_iterator
       OFF++;						\
     }							\
   } while(0)
-  
+
 #define COMPLEX_SKIP_CASE(THIS, SHIFT, OFF)	\
   case SHIFT:					\
     COMPLEX_SKIP(THIS, SHIFT, OFF);		\
@@ -1387,7 +1387,7 @@ PIKECLASS string_split_iterator
       ssi->buffer = 0;						\
     }								\
     break
-  
+
   static void find_next(struct string_split_iterator_struct *ssi)
     {
       int offset = ssi->offset;
@@ -1648,8 +1648,8 @@ PIKECLASS string_split_iterator
       THIS->index = -1;
       find_next(THIS);
     }
-  
-  INIT 
+
+  INIT
     {
       THIS->buffer = NULL;
       THIS->current = NULL;
@@ -1761,7 +1761,7 @@ PIKECLASS string_split_iterator
 		    for (i = 0; tmp && (tmp->token == F_ARG_LIST);
 			 tmp = CDR(tmp)) {
 		      if (!CAR(tmp)) continue;
-		      if ((CAR(tmp)->token != F_CONSTANT) || 
+		      if ((CAR(tmp)->token != F_CONSTANT) ||
 			  (TYPEOF(CAR(tmp)->u.sval) != T_STRING) ||
 			  (CAR(tmp)->u.sval.u.string->len != 1)) {
 			return NULL;
@@ -1844,7 +1844,7 @@ PIKECLASS string_split_iterator
  *!     @type object
  *!       If @[data] is an object with @[lfun::_get_iterator] defined then
  *!       it's called in it to create the iterator.
- *!   
+ *!
  *!       If @[data] is an object that lacks @[lfun::_get_iterator] then
  *!       it's assumed to already be an iterator object, and is simply
  *!       returned.
@@ -1958,7 +1958,7 @@ int foreach_iterate(struct object *o, int do_step)
 
       if(TYPEOF(Pike_sp[-4]) != T_INT)
 	assign_lvalue(Pike_sp-4, & i->current->ind);
-	
+
       if(TYPEOF(Pike_sp[-2]) != T_INT)
 	assign_lvalue(Pike_sp-2, & i->current->val);
 

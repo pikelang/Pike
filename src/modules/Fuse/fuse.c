@@ -349,7 +349,7 @@ static int pf_setxattr(const char *path, const char *name, const char *value,
 	DEFAULT_ERRNO();
     return -Pike_sp[-1].u.integer;
 }
- 
+
 static int pf_getxattr(const char *path, const char *name, char *value,
 		       size_t size)
 {
@@ -490,12 +490,12 @@ static struct fuse_operations pike_fuse_oper = {
     .listxattr	= pf_listxattr,
     .removexattr= pf_removexattr,
     .access     = pf_access,
-    .create     = pf_creat, 
+    .create     = pf_creat,
 };
 
 struct passon {
     struct fuse *f;
-    struct fuse_cmd *cmd; 
+    struct fuse_cmd *cmd;
 };
 
 static void low_dispatch_fuse_command( void *ptr )
@@ -555,7 +555,7 @@ static void f_fuse_run( INT32 nargs )
 	}
 	argv[i] = args->item[i].u.string->str;
     }
-    fuse = fuse_setup(args->size, argv, &pike_fuse_oper, sizeof(pike_fuse_oper), 
+    fuse = fuse_setup(args->size, argv, &pike_fuse_oper, sizeof(pike_fuse_oper),
 		      &mountpoint, &multi, &fd );
     free( argv );
 
@@ -580,7 +580,7 @@ static void f_fuse_run( INT32 nargs )
     fuse_teardown( fuse, mountpoint);
 #endif
     global_fuse = NULL;
-    exit(0); 
+    exit(0);
     global_fuse_obj=NULL;
 }
 

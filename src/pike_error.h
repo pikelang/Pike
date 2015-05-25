@@ -386,7 +386,7 @@ PMOD_EXPORT extern const char msg_div_by_zero[];
             if(__is_exception) /* rethrow needs this */ \
                 UNSETJMP(exception); \
             if(!__is_exception)
-    
+
 #define exception_catch_if \
             else if
 

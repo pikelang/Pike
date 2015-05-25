@@ -123,13 +123,13 @@ else
       PIKE_FEATURE_NODEP(GL)
       tmp_gl_fail=yes
     fi
-    
+
     if test x"$tmp_gl_fail" = xno; then
       AC_DEFINE(HAVE_GL)
       PIKE_FEATURE_OK(GL)
       AUTO_OBJS="auto.o"
     fi
-    
+
   fi
 
 fi

@@ -20,7 +20,7 @@ struct compilation
   struct program *target;		/* Program being compiled. */
   struct object *placeholder;
   int flags;
-  
+
   struct program *p;			/* Compiled program or NULL. */
   struct lex lex;
   int compilation_inherit;		/* Inherit in supporter->self containing

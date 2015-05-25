@@ -411,8 +411,8 @@ static void f_create_dsn(INT32 args)
      SQLUSMALLINT     DriverCompletion);
 */
   odbc_check_error("odbc->create_dsn", "Connect failed",
-    SQLDriverConnect(PIKE_ODBC->hdbc, 
-      NULL, 
+    SQLDriverConnect(PIKE_ODBC->hdbc,
+      NULL,
       (unsigned char *)connectstring->str,
       DO_NOT_WARN((SQLSMALLINT)connectstring->len),
       outconnectionstring,
@@ -479,7 +479,7 @@ static void f_big_query(INT32 args)
   /* Do the actual query */
   push_string(q);
   apply(sp[-2].u.object, "execute", 1);
-  
+
   if (TYPEOF(sp[-1]) != T_INT) {
     Pike_error("odbc->big_query(): Unexpected return value from "
 	  "odbc_result->execute().\n");
@@ -620,7 +620,7 @@ static void f_list_tables(INT32 args)
   } else {
     apply(sp[-1].u.object, "list_tables", 0);
   }
-  
+
   if (TYPEOF(sp[-1]) != T_INT) {
     Pike_error("odbc->list_tables(): Unexpected return value from "
 	       "odbc_result->list_tables().\n");
@@ -798,19 +798,19 @@ PIKE_MODULE_INIT
   ADD_FUNCTION("list_fields", f_list_fields,tFunc(tStr tOr(tVoid,tStr),tArr(tOr(tInt,tMap(tStr,tMix)))), ID_PUBLIC);
   /* function(void|string:object) */
   ADD_FUNCTION("list_processes", f_list_processes,tFunc(tOr(tVoid,tStr),tObj), ID_PUBLIC);
- 
+
   /* function(void:int) */
   ADD_FUNCTION("binary_data", f_binary_data,tFunc(tVoid,tInt), ID_PUBLIC);
 #endif /* 0 */
- 
+
   set_init_callback(init_odbc_struct);
   set_exit_callback(exit_odbc_struct);
- 
+
   init_odbc_res_programs();
 
   odbc_program = end_program();
   add_program_constant("odbc", odbc_program, 0);
- 
+
   /* function(void|string:array(string)) */
   ADD_FUNCTION("list_dbs", f_list_dbs,tFunc(tOr(tVoid,tStr),tArr(tStr)), ID_PUBLIC);
 
@@ -831,7 +831,7 @@ PIKE_MODULE_EXIT
 #if defined (PIKE_THREADS) && !defined (HAS_STATIC_MUTEX_INIT)
   mt_destroy (&connect_mutex);
 #endif
- 
+
   if (odbc_program) {
     free_program(odbc_program);
     odbc_program = NULL;

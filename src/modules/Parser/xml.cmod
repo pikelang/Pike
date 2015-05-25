@@ -566,7 +566,7 @@ static INLINE int isSpace(INT32 c)
 
 static INLINE int isNameChar(INT32 c)
 {
-  return isLetter(c) || isDigit(c) || 
+  return isLetter(c) || isDigit(c) ||
     c=='.' || c=='-' || c=='_' ||  c==':' ||
     isCombiningChar(c) || isExtender(c);
 }
@@ -970,7 +970,7 @@ PIKECLASS Simple
     push_text("amp");   push_text("&#38;");
     push_text("apos");  push_text("'");
     push_text("quot");  push_text("\"");
-  
+
     f_aggregate_mapping(10);
     THIS->entities=sp[-1].u.mapping;
     sp--;
@@ -1102,7 +1102,7 @@ static inline int xmlread(int z, int UNUSED(line))
   INC_PCHARP(THIS->input->datap, z);
   while(THIS->input->next && XMLEOF()) { POP(); popped++; }
   return popped;
-}  
+}
 
 #define READ(X) xmlread((X),__LINE__)
 
@@ -1406,10 +1406,10 @@ static int gobble(char *s)
 #define SMEG() \
   ((THIS->flags & ALLOW_PESMEG_EVERYWHERE) && \
    (PEEK(0)=='%') && read_smeg_pereference())
-  
-    
-    
-    
+
+
+
+
 #define READ_ATTVALUE(X,is_cdata) do {			\
         SKIPSPACE();					\
         switch(PEEK(0))					\
@@ -1659,7 +1659,7 @@ static void read_attvalue(struct string_builder *X,
       case '&':
 	READ_REFERENCE(1,(*X), read_attvalue(X, 0,1));
 	break;
-	
+
       case 0x0d:
 	if (!keepspace && PEEK(1)==0x0a) READ(1);	/* cr/lf */
       case 0x20:
@@ -1668,7 +1668,7 @@ static void read_attvalue(struct string_builder *X,
 	READ(1);
 	POKE(*X, 0x20);
 	break;
-	
+
       default:
 	POKE(*X, PEEK(0));
 	READ(1);
@@ -1702,7 +1702,7 @@ static void read_pubid(struct string_builder *X,
 	READ(1);
 	POKE(*X, 0x20);
 	break;
-	
+
       default:
 	POKE(*X, PEEK(0));
 	READ(1);
@@ -1741,7 +1741,7 @@ static void read_entityvalue(struct string_builder *X,
 	READ(1);
 #endif
 	break;
-	
+
 #if 0
       case '&':
 	READ_REFERENCE(1,(*X), read_entityvalue(X, 0));
@@ -1845,7 +1845,7 @@ static void simple_readnmtoken(void)
 static void simple_read_attributes(struct mapping *is_cdata)
 {
   SKIPSPACE();
-  
+
   /* Read unordered attributes */
   while(THIS->input->len>0 && isFirstNameChar(PEEK(0)))
   {
@@ -1962,13 +1962,13 @@ void read_choice_seq_or_name(int maybe_pcdata)
 	read_choice_seq_or_name(0);
 	num++;
 	SKIPSPACE();
-	
+
 	switch(PEEK(0))
 	{
 	  case 0:
 	    XMLERROR_STAY("End of xml while reading ELEMENT declaration.");
 	    /* FALL_THROUGH */
-	    
+
 	  default:
 	    XMLERROR("Expected | or ,");
 	    break;
@@ -1996,7 +1996,7 @@ void read_choice_seq_or_name(int maybe_pcdata)
 	      f_aggregate(num);
 	    }
 	    break;
-	    
+
 	  case '|':
 	    if(!seq)
 	    {
@@ -2007,7 +2007,7 @@ void read_choice_seq_or_name(int maybe_pcdata)
 	    }
 	    READ(1);
 	    continue;
-	    
+
 	  case ',':
 	    if(!seq)
 	    {
@@ -2018,7 +2018,7 @@ void read_choice_seq_or_name(int maybe_pcdata)
 	    }
 	    READ(1);
 	    continue;
-	    
+
 	}
 	break;
       }
@@ -2169,7 +2169,7 @@ static int really_low_parse_dtd(void)
 			goto check_ndata;
 		      }
 		      goto not_system;
-			 
+
 		    case 'P': /* PUBLIC */
 		      if(PEEK(1)=='U' &&
 			 PEEK(2)=='B' &&
@@ -2187,7 +2187,7 @@ static int really_low_parse_dtd(void)
 			attributes++;
 			push_constant_text("SYSTEM");
 			SIMPLE_READ_SYSTEMLITERAL();
-			
+
 
 		      check_ndata:
 			SKIPSPACE();
@@ -2197,7 +2197,7 @@ static int really_low_parse_dtd(void)
 			  {
 			    XMLERROR("This entity is not allowed to have an NDATA keyword.");
 			  }
-			  
+
 			  attributes++;
 			  push_constant_text("NDATA");
 			  SKIPSPACE();
@@ -2216,7 +2216,7 @@ static int really_low_parse_dtd(void)
 		      XMLERROR("Unexpected data in <!ENTITY");
 		      SKIPTO('>');
 		  }
-		  
+
 		  SKIPSPACE();
 		  if(PEEK(0)!='>')
 		    XMLERROR("Missing '>' in <!ENTITY.");
@@ -2261,7 +2261,7 @@ static int really_low_parse_dtd(void)
 		      XMLERROR("Unknown stuff in <!ELEMENT>");
 		      push_int(0);
 		  }
-		  
+
 		  SKIPSPACE();
 		  if(PEEK(0)!='>')
 		    XMLERROR("Missing '>' in <!ELEMENT.");
@@ -2270,7 +2270,7 @@ static int really_low_parse_dtd(void)
 		  SYS();
 		  break;
 		}
-		  
+
 
 		goto unknown_entry_in_dtd;
 
@@ -2346,7 +2346,7 @@ static int really_low_parse_dtd(void)
 			push_empty_string();
 			READ(1);
 			SKIPSPACE();
-			
+
 			SIMPLE_READNMTOKEN();
 			SKIPSPACE();
 			while(PEEK(0)=='|')
@@ -2375,12 +2375,12 @@ static int really_low_parse_dtd(void)
 			switch(PEEK(1))
 			{
 			  case 'R':
-			    if(PEEK(2)=='E' && 
-			       PEEK(3)=='Q' && 
-			       PEEK(4)=='U' && 
-			       PEEK(5)=='I' && 
-			       PEEK(6)=='R' && 
-			       PEEK(7)=='E' && 
+			    if(PEEK(2)=='E' &&
+			       PEEK(3)=='Q' &&
+			       PEEK(4)=='U' &&
+			       PEEK(5)=='I' &&
+			       PEEK(6)=='R' &&
+			       PEEK(7)=='E' &&
 			       PEEK(8)=='D')
 			    {
 			      READ(9);
@@ -2388,13 +2388,13 @@ static int really_low_parse_dtd(void)
 			      break;
 			    }
 			    goto bad_defaultdecl;
-			       
+
 			  case 'I':
-			    if(PEEK(2)=='M' && 
-			       PEEK(3)=='P' && 
-			       PEEK(4)=='L' && 
-			       PEEK(5)=='I' && 
-			       PEEK(6)=='E' && 
+			    if(PEEK(2)=='M' &&
+			       PEEK(3)=='P' &&
+			       PEEK(4)=='L' &&
+			       PEEK(5)=='I' &&
+			       PEEK(6)=='E' &&
 			       PEEK(7)=='D')
 			    {
 			      READ(8);
@@ -2404,9 +2404,9 @@ static int really_low_parse_dtd(void)
 			    goto bad_defaultdecl;
 
 			  case 'F':
-			    if(PEEK(2)=='I' && 
-			       PEEK(3)=='X' && 
-			       PEEK(4)=='E' && 
+			    if(PEEK(2)=='I' &&
+			       PEEK(3)=='X' &&
+			       PEEK(4)=='E' &&
 			       PEEK(5)=='D')
 			    {
 			      READ(6);
@@ -2435,14 +2435,14 @@ static int really_low_parse_dtd(void)
 			SIMPLE_READ_ATTVALUE(is_cdata);
 
 			/* Stack is:
-			 * -6 tagname 
+			 * -6 tagname
 			 * -5 attmapping
 			 * -4 attname
 			 * -3 type
 			 * -2 "#FIXED" or ""
 			 * -1 attvalue
 			 */
-#ifdef VERBOSE_XMLDEBUG			    
+#ifdef VERBOSE_XMLDEBUG
 
 			fprintf(stderr,
 				"Inserting default for %s %s = '%s'\n",
@@ -2463,11 +2463,11 @@ static int really_low_parse_dtd(void)
 		    /* Update is_cdata */
 		    if (is_cdata) {
 		      /* Stack is a bit unknown...
-		       * x-6 tagname 
+		       * x-6 tagname
 		       * x-5 attmapping
 		       * x-4 attname
 		       */
-#ifdef VERBOSE_XMLDEBUG			    
+#ifdef VERBOSE_XMLDEBUG
 		      fprintf(stderr,
 			      "Inserting CDATA for %s %s = %ld\n",
 			      save[-4].u.string->str,
@@ -2515,16 +2515,16 @@ static int really_low_parse_dtd(void)
 			if(PEEK(0) != '>')
 			{
 			read_system:
-			  
+
 			  push_constant_text("SYSTEM");
 			  SIMPLE_READ_SYSTEMLITERAL();
 			  n++;
 			}
 			f_aggregate_mapping(n*2);
 			break;
-			
+
 		      }
-		      
+
 		    case 'S':
 		      if(GOBBLE("SYSTEM")) goto read_system;
 		      /* FALL_THROUGH */
@@ -2532,7 +2532,7 @@ static int really_low_parse_dtd(void)
 		    default:
 		      XMLERROR("Expected PUBLIC or SYSTEM, found something else.");
 		      push_int(0);
-		      
+
 		  }
 		  SKIPSPACE();
 		  if(PEEK(0)!='>')
@@ -2590,7 +2590,7 @@ static int really_low_parse_dtd(void)
 		    XMLERROR_STAY("Missing '[' in <![INCLUDE.");
 		  else
 		    READ(1);
-		  
+
 		  low_parse_dtd();
 
 		  if(XMLEOF() ||
@@ -2689,7 +2689,7 @@ static int low_parse_dtd(void)
 #endif
   /* There is now one value on the stack */
   return done;
-}  
+}
 
 #define DOC_BEGINNING 0
 #define DOC_GOT_DOCTYPE 1
@@ -2751,7 +2751,7 @@ static struct pike_string *very_low_parse_xml(struct pike_string *end,
 
       case '<':
 	INTERMISSION(*text);
-	
+
 	switch(PEEK(1))
 	{
 	  case '?': /* Ends with ?> */
@@ -3011,7 +3011,7 @@ static struct pike_string *very_low_parse_xml(struct pike_string *end,
 	      "There can not be more than one element on the top level.");
 
 	    STACK_LEVEL_START(0);
-	    push_constant_text(">"); 
+	    push_constant_text(">");
 
 	    READ(1);
 	    SIMPLE_READNAME();
@@ -3064,7 +3064,7 @@ static struct pike_string *very_low_parse_xml(struct pike_string *end,
 		  sp+=2;
 		  push_int(0);
 		  SYS();
-		  
+
 		  pop_n_elems(sp-save_sp);
 		}
 
@@ -3090,7 +3090,7 @@ static struct pike_string *very_low_parse_xml(struct pike_string *end,
 		SYS();
 		if (toplevel) THIS->doc_seq_pos = DOC_AFTER_ROOT_ELEM;
 		break;
-		
+
 	    }
 	}
     }
@@ -3287,7 +3287,7 @@ PIKEFUN string autoconvert(string s)
 	  push_string(end_shared_string(t));
 	}
 	/* FALL_THROUGH */
-	
+
       case 0xfeff: /* UTF-16, big-endian */
 	IF_XMLDEBUG(fprintf(stderr,"UTF-16, big endian detected.\n"));
 	push_int(2);
@@ -3392,7 +3392,7 @@ PIKEFUN string autoconvert(string s)
 
 	  /* <?xml version =. "1.0" */
 	  while(isSpace(STR0(s)[pos])) pos++;
-	  
+
 	  /* <?xml version = ."1.0" */
 	  if(STR0(s)[pos]=='\'')
 	  {
@@ -3408,24 +3408,24 @@ PIKEFUN string autoconvert(string s)
 	  }else{
 	    break; /* No encoding detected */
 	  }
-	  
+
 	  /* <?xml version = "1.0". encoding="encname" */
 	  while(isSpace(STR0(s)[pos])) pos++;
-	  
+
 	  /* <?xml version = "1.0" .encoding="encname" */
 	  if(memcmp("encoding",STR0(s)+pos,8)) break;
 	  pos+=8;
-	  
+
 	  /* <?xml version = "1.0" encoding. ="encname" */
 	  while(isSpace(STR0(s)[pos])) pos++;
-	  
+
 	  /* <?xml version = "1.0" encoding .="encname" */
 	  if(STR0(s)[pos]!='=') break;
 	  pos++;
-	  
+
 	  /* <?xml version = "1.0" encoding =. "encname" */
 	  while(isSpace(STR0(s)[pos])) pos++;
-	  
+
 	  /* <?xml version = "1.0" encoding = ."encname" */
 	  encstart=pos+1;
 	  if(STR0(s)[pos]=='\'')
@@ -3456,7 +3456,7 @@ PIKEFUN string autoconvert(string s)
 	  f_call_function(1);
 	  return;
 	}
-	
+
       case 0x4c6fa794: /* EBCDIC */
 	IF_XMLDEBUG(fprintf(stderr,"EBCDIC detected.\n"));
 	Pike_error("XML: EBCDIC not supported yet.\n");

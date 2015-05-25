@@ -111,7 +111,7 @@
  *!
  *!  Single socket output.
  *!
- *!  Regular file output and (multiple, adding) socket output 
+ *!  Regular file output and (multiple, adding) socket output
  *!  with no mmap input.
  *!
  *!  Multiple socket output without regular file output illegal.
@@ -134,7 +134,7 @@ struct input
   enum { I_NONE,I_OBJ,I_BLOCKING_OBJ,I_STRING,I_MMAP } type;
   union
   {
-    struct object *obj; 
+    struct object *obj;
     struct pike_string *str;
     char *mmap;
   } u;
@@ -148,9 +148,9 @@ struct output
   struct object *obj;
   ptrdiff_t write_offset, set_blocking_offset, set_nonblocking_offset;
   int fd;
-      
-  enum 
-  { 
+
+  enum
+  {
     O_RUN,			/* waiting for callback */
     O_SLEEP			/* sleeping; waiting for more data */
   } mode;
@@ -188,7 +188,7 @@ struct pipe
   int fd;			/* buffer fd or -1 */
 
   unsigned long bytes_in_buffer;
-  size_t pos; 
+  size_t pos;
   /* fd: size of buffer file */
   /* current position of first element (buffer or mmap) */
   struct buffer *firstbuffer,*lastbuffer;
@@ -273,7 +273,7 @@ static INLINE void free_input(struct input *i)
   case I_MMAP:
 #if defined(HAVE_MMAP) && defined(HAVE_MUNMAP)
     munmap(i->u.mmap,i->len);
-    mmapped -= i->len;  
+    mmapped -= i->len;
 #else
     Pike_error("I_MMAP input when MMAP is diabled!");
 #endif
@@ -304,7 +304,7 @@ static void finished_p(void)
 {
   if(THIS->done) return;
 
-  if(THIS->fd != -1) 
+  if(THIS->fd != -1)
   {
     if(THIS->living_outputs > 1) return;
     if(THIS->firstinput) return;
@@ -520,7 +520,7 @@ static INLINE struct pike_string* gimme_some_data(size_t pos)
      return make_shared_string("buffer underflow"); /* shit */
 
    /* We want something in the next buffer */
-   while (this->firstbuffer && pos>=this->pos+this->firstbuffer->s->len) 
+   while (this->firstbuffer && pos>=this->pos+this->firstbuffer->s->len)
    {
      /* Free the first buffer, and update THIS->pos */
       b=this->firstbuffer;
@@ -592,7 +592,7 @@ static INLINE struct pike_string* gimme_some_data(size_t pos)
        }
      }
      return NULL;		/* no data */
-   } 
+   }
 
    if (pos==this->pos)
    {
@@ -670,12 +670,12 @@ static INLINE void output_try_write_some(struct object *obj)
   struct pike_string *s;
   size_t len;
   INT_TYPE ret;
-  
+
    debug_malloc_touch(obj);
 
   out=(struct output*)(obj->storage);
 
-#ifdef INSISTANT_WRITE   
+#ifdef INSISTANT_WRITE
   do
   {
 #endif
@@ -789,7 +789,7 @@ static void pipe_input(INT32 args)
    i->set_blocking_offset=find_identifier("set_blocking",i->u.obj->prog);
 
    if (i->set_nonblocking_offset<0 ||
-       i->set_blocking_offset<0) 
+       i->set_blocking_offset<0)
    {
       if (find_identifier("read", i->u.obj->prog) < 0) {
 	 /* Not even a read function */
@@ -813,7 +813,7 @@ static void pipe_input(INT32 args)
 	 return;
       }
    }
-  
+
    if (i==THIS->firstinput)
    {
      push_callback(offset_input_read_callback);
@@ -876,7 +876,7 @@ static void pipe_output(INT32 args)
   struct stat s;
   struct buffer *b;
 
-  if (args<1 || 
+  if (args<1 ||
       TYPEOF(sp[-args]) != T_OBJECT ||
       !sp[-args].u.object ||
       !sp[-args].u.object->prog)
@@ -885,10 +885,10 @@ static void pipe_output(INT32 args)
   if (args==2 &&
       TYPEOF(sp[1-args]) != T_INT)
     Pike_error("Bad argument 2 to pipe->output().\n");
-       
+
   if (THIS->fd==-1)		/* no buffer */
   {
-    /* test if usable as buffer */ 
+    /* test if usable as buffer */
     apply(sp[-args].u.object,"query_fd",0);
 
     if ((TYPEOF(sp[-1]) == T_INT)
@@ -939,7 +939,7 @@ static void pipe_output(INT32 args)
       return;
     }
     pop_stack();		/* from apply */
-  } 
+  }
 
   THIS->living_outputs++;
   /* add_ref(THISOBJ); */	/* Weird */
@@ -959,7 +959,7 @@ static void pipe_output(INT32 args)
   o->set_blocking_offset=find_identifier("set_blocking",o->obj->prog);
 
   if (o->write_offset<0 || o->set_nonblocking_offset<0 ||
-      o->set_blocking_offset<0) 
+      o->set_blocking_offset<0)
   {
     free_object(o->obj);
     Pike_error("illegal file object%s%s%s\n",
@@ -988,7 +988,7 @@ static void pipe_output(INT32 args)
   push_callback(offset_output_close_callback);
   apply_low(o->obj,o->set_nonblocking_offset,3);
   pop_stack();
-   
+
   pop_n_elems(args-1);
 }
 
@@ -1017,8 +1017,8 @@ static void pipe_set_done_callback(INT32 args)
   }
 
   free_svalue(&THIS->done_callback);
-  assign_svalue_no_free(&(THIS->done_callback),sp-args); 
-  pop_n_elems(args-1); 
+  assign_svalue_no_free(&(THIS->done_callback),sp-args);
+  pop_n_elems(args-1);
 }
 
 /*! @decl void set_output_closed_callback(void|function(mixed, object:mixed) close_cb, @
@@ -1045,8 +1045,8 @@ static void pipe_set_output_closed_callback(INT32 args)
      assign_svalue_no_free(&(THIS->id),sp-args+1);
   }
   free_svalue(&THIS->output_closed_callback);
-  assign_svalue_no_free(&(THIS->output_closed_callback),sp-args); 
-  pop_n_elems(args-1); 
+  assign_svalue_no_free(&(THIS->output_closed_callback),sp-args);
+  pop_n_elems(args-1);
 }
 
 /*! @decl void finish()
@@ -1129,7 +1129,7 @@ static void pipe_read_input_callback(INT32 args)
 
   if (args<2 || TYPEOF(sp[1-args]) != T_STRING)
     Pike_error("Illegal argument to pipe->read_input_callback\n");
-   
+
   i=THIS->firstinput;
 
   if (!i)
@@ -1202,13 +1202,13 @@ void close_and_free_everything(struct object *thisobj,struct pipe *p)
 
    debug_malloc_touch(thisobj);
    debug_malloc_touch(p);
-   
+
    if(p->done){
      return;
    }
    p->done=1;
 
-   if (thisobj) 
+   if (thisobj)
       add_ref(thisobj); /* don't kill object during this */
 
    while (p->firstbuffer)
@@ -1247,7 +1247,7 @@ void close_and_free_everything(struct object *thisobj,struct pipe *p)
    }
 
    p->living_outputs=0;
-   
+
    if (thisobj)
      free_object(thisobj);
 
@@ -1290,7 +1290,7 @@ static void exit_pipe_struct(struct object *UNUSED(o))
 static void exit_output_struct(struct object *DMALLOCUSED(obj))
 {
   struct output *o;
-  
+
    debug_malloc_touch(obj);
   o=(struct output *)(Pike_fp->current_storage);
 
@@ -1355,7 +1355,7 @@ PIKE_MODULE_INIT
 {
    start_new_program();
    ADD_STORAGE(struct pipe);
-   
+
    /* function(object:void) */
   ADD_FUNCTION("input",pipe_input,tFunc(tObj,tVoid),0);
    /* function(object,void|int:void) */
@@ -1367,12 +1367,12 @@ PIKE_MODULE_INIT
   ADD_FUNCTION("start",pipe_start,tFunc(tNone,tVoid),0);
    /* function(:void) */
   ADD_FUNCTION("finish",pipe_finish,tFunc(tNone,tVoid),0);
-   
+
    /* function(void|function(mixed,object:mixed),void|mixed:void) */
   ADD_FUNCTION("set_output_closed_callback",pipe_set_output_closed_callback,tFunc(tOr(tVoid,tFunc(tMix tObj,tMix)) tOr(tVoid,tMix),tVoid),0);
    /* function(void|function(mixed:mixed),void|mixed:void) */
   ADD_FUNCTION("set_done_callback",pipe_set_done_callback,tFunc(tOr(tVoid,tFunc(tMix,tMix)) tOr(tVoid,tMix),tVoid),0);
-   
+
    /* function(int:void) */
   ADD_FUNCTION("_output_close_callback",pipe_close_output_callback,tFunc(tInt,tVoid),0);
    /* function(int:void) */
@@ -1384,16 +1384,16 @@ PIKE_MODULE_INIT
 
    /* function(:string) */
   ADD_FUNCTION("version",pipe_version,tFunc(tNone,tStr),0);
-   
+
    /* function(:int) */
   ADD_FUNCTION("bytes_sent",f_bytes_sent,tFunc(tNone,tInt),0);
 
    set_init_callback(init_pipe_struct);
    set_exit_callback(exit_pipe_struct);
-   
+
    pipe_program=end_program();
    add_program_constant("pipe",pipe_program, 0);
-   
+
    offset_output_close_callback=find_identifier("_output_close_callback",
 						pipe_program);
    offset_input_close_callback=find_identifier("_input_close_callback",

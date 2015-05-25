@@ -283,9 +283,9 @@ PIKEFUN mapping(string:object(Image.Image)|string) _decode( string data )
   push_text( "image" );  push_object( i );
   push_text( "img" );  ref_push_object( i );
   push_text( "alpha" );
-  if( a ) 
+  if( a )
     push_object( a );
-  else 
+  else
     push_undefined( );
   push_text("format"); push_text("image/webp");
   push_text( "xsize" ); push_int( width );
@@ -523,7 +523,7 @@ PIKEFUN string(0..255) encode( object(Image.Image) i,
         if( !aptr )
             Pike_error("Alpha channels is not an image object\n");
 #if WEBP_ENCODER_ABI_VERSION < 0x0201
-        else 
+        else
             Pike_error("Alpha channels are not supported by your libwebp.\n");
 #endif
         if( image_width( a ) != width || image_height( a ) != height )
@@ -541,7 +541,7 @@ PIKEFUN string(0..255) encode( object(Image.Image) i,
         }
     }
 
-    size = Encode( rgba ? rgba : iptr, width, height, width*(rgba?4:3), 
+    size = Encode( rgba ? rgba : iptr, width, height, width*(rgba?4:3),
                    importer, &config, &result );
 
     if( rgba ) free( rgba );

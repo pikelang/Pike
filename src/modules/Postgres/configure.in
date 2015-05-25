@@ -11,10 +11,10 @@ echo "Configuring Postgres module"
 AC_ARG_WITH(postgres,
 	[  --with(out)-postgres               postgres95 DB server support],
 	[],[with_postgres=yes])
-AC_ARG_WITH(postgres-include-dir, 
+AC_ARG_WITH(postgres-include-dir,
 	[  --with-postgres-include-dir=dir    look for header-files in dir],
 	[pike_postgres_user_include_directory=$withval])
-AC_ARG_WITH(libpq-dir, 
+AC_ARG_WITH(libpq-dir,
 	[  --with-libpq-dir=dir               look for library-files in dir],
 	[pike_postgres_user_lib_directory=$withval])
 
@@ -92,7 +92,7 @@ dnl final ckeck, just to be sure we did not mess up
 		   postgresql/server/catalog/pg_type.h \
 		   server/pg_config.h postgresql/server/pg_config.h \
 		   pg_config.h libpq-fe.h)
-  
+
 dnl check whether we have Postgres 7.2 or newer.
   HAVE_PG72=no
   AC_EGREP_CPP([\"7\.[2-9].*], [
@@ -144,7 +144,7 @@ PG_VERSION
           ac_pike_postgres_works=no
       ])
   fi
-  
+
   echo "Have Postgres 7.2? $HAVE_PG72"
   if test "x$ac_cv_header_libpq_fe_h" = xno -o \
 	  "x$HAVE_PG72$ac_cv_header_postgres_h$ac_cv_header_postgres_fe_h$ac_cv_header_server_postgres_h$ac_cv_header_server_postgres_fe_h" = xnonononono ; then

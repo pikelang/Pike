@@ -369,7 +369,7 @@ static void do_cond_jump(node *n, int label, int iftrue, int flags)
       do_cond_jump(CDR(n), label, iftrue, flags);
     }
     return;
-    
+
   case F_APPLY:
     if(!is_efun(CAR(n), f_not)) break;
 
@@ -380,7 +380,7 @@ static void do_cond_jump(node *n, int label, int iftrue, int flags)
   }
 
   code_expression(n, flags | DO_NOT_COPY, "condition");
-  
+
   if(flags & DO_POP)
   {
     if(iftrue)
@@ -792,7 +792,7 @@ static int emit_ltosval_call_and_assign( node *lval, node *func, node *args )
 
 static int is_apply_constant_function_arg0( node *n, node *target )
 {
-    if (/*n->token == F_APPLY &&*/ 
+    if (/*n->token == F_APPLY &&*/
         (CAR(n)->token == F_CONSTANT) &&
         (TYPEOF(CAR(n)->u.sval) == T_FUNCTION) &&
         (SUBTYPEOF(CAR(n)->u.sval) == FUNCTION_BUILTIN) &&
@@ -843,7 +843,7 @@ static void emit_multi_assign(node *vals, node *vars, int no)
 
   switch(var->token) {
   case F_LOCAL:
-    if(var->u.integer.a >= 
+    if(var->u.integer.a >=
        find_local_frame(var->u.integer.b)->max_number_of_locals)
       yyerror("Illegal to use local variable here.");
 
@@ -947,7 +947,7 @@ static int do_docode2(node *n, int flags)
 	emit1(F_NUMBER,0);
 	emit1(F_NUMBER,0);
 	return 2;
-	
+
       case F_ARRAY_LVALUE:
       case F_LVALUE_LIST:
       case F_LOCAL:
@@ -975,7 +975,7 @@ static int do_docode2(node *n, int flags)
   {
     ptrdiff_t x_= ((char *)&x_) + STACK_DIRECTION * (32768) -
       Pike_interpreter.stack_top ;
-    x_*=STACK_DIRECTION;						
+    x_*=STACK_DIRECTION;
     if(x_>0)
     {
       yyerror("Too deep recursion in compiler. (please report this)");
@@ -1001,7 +1001,7 @@ static int do_docode2(node *n, int flags)
 	  n->u.node.b->u.sval.u.integer,
 	  n->u.node.a->u.sval.u.integer);
     return 1;
-      
+
   case F_EXTERNAL:
   case F_GET_SET:
     {
@@ -1720,7 +1720,7 @@ static int do_docode2(node *n, int flags)
       BLOCK_END;
       return 0;
     }
-    
+
 
     BLOCK_BEGIN;
 
@@ -1888,7 +1888,7 @@ static int do_docode2(node *n, int flags)
     default:
       if (compile_type_to_runtime_type(n->type) == PIKE_T_MIXED) {
 	tmp1 = do_docode(CAR(n), 0);
-	if(!tmp1) 
+	if(!tmp1)
 	  emit0(F_CONST0);
 	else if(tmp1>1)
 	  do_pop(DO_NOT_WARN((INT32)(tmp1-1)));
@@ -1935,7 +1935,7 @@ static int do_docode2(node *n, int flags)
       {
 	if(SUBTYPEOF(CAR(n)->u.sval) == FUNCTION_BUILTIN) /* driver fun? */
 	{
-	  if(!CAR(n)->u.sval.u.efun->docode || 
+	  if(!CAR(n)->u.sval.u.efun->docode ||
 	     !CAR(n)->u.sval.u.efun->docode(n))
 	  {
 	    if(args==1)
@@ -2063,7 +2063,7 @@ static int do_docode2(node *n, int flags)
       n->parent = NULL;
       tmp1 = 0;
     next_car:
-      while (CAR(n) && 
+      while (CAR(n) &&
 	     ((CAR(n)->token == F_ARG_LIST) ||
 	      (CAR(n)->token == F_COMMA_EXPR))) {
 	CAR(n)->parent = n;
@@ -2071,7 +2071,7 @@ static int do_docode2(node *n, int flags)
       }
       /* CAR(n) is not F_ARG_LIST or F_COMMA_EXPR */
       tmp1 += do_docode(CAR(n), flags & ~WANT_LVALUE);
-      
+
       do {
 	if (CDR(n)) {
 	  if ((CDR(n)->token == F_ARG_LIST) ||
@@ -2550,7 +2550,7 @@ static int do_docode2(node *n, int flags)
 #endif
 	emit0(F_INDIRECT);
       }
-      
+
       if(do_docode(CDR(n),0) != 1)
 	Pike_fatal("Internal compiler error, please report this (1).\n");
       if(CDR(n)->token != F_CONSTANT &&
@@ -2667,7 +2667,7 @@ static int do_docode2(node *n, int flags)
 			  !(n->tree_info & OPT_EXTERNAL_DEPEND),
 			  n->name);
       emit1(F_CONSTANT, DO_NOT_WARN((INT32)tmp1));
-      
+
       /* copy now or later ? */
       if(!(flags & DO_NOT_COPY) && !(n->tree_info & OPT_EXTERNAL_DEPEND))
       {
@@ -2702,7 +2702,7 @@ static int do_docode2(node *n, int flags)
     }
 
   case F_LOCAL:
-    if(n->u.integer.a >= 
+    if(n->u.integer.a >=
        find_local_frame(n->u.integer.b)->max_number_of_locals)
       yyerror("Illegal to use local variable here.");
 

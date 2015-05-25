@@ -53,7 +53,7 @@ static size_t rfc_charset_name_offs = 0;
 static struct array *double_custom_chars = NULL;
 static struct array *double_combiner_chars = NULL;
 
-struct std_cs_stor { 
+struct std_cs_stor {
   struct string_builder strbuild;
   struct pike_string *retain, *replace;
   struct svalue repcb;
@@ -301,7 +301,7 @@ static void f_drain_rfc1345(INT32 args)
 		s->strbuild.s->len--;
 		break;
 	      }
-	    } 
+	    }
 	  }
 	}
       }
@@ -384,7 +384,7 @@ static void f_clear(INT32 args)
   }
 
   reset_string_builder(&s->strbuild);
-  
+
   push_object(this_object());
 }
 
@@ -716,7 +716,7 @@ static ptrdiff_t feed_utf7(struct pike_string *str, struct std_cs_stor *s)
 	--p;
       } else
 	if(l==0)
-	  break;	
+	  break;
     } else {
       while(l-->0 && *p!='+')
 	string_builder_putchar(&s->strbuild, *p++);
@@ -751,7 +751,7 @@ static void f_clear_utf7(INT32 args)
     (struct utf7_stor *)(fp->current_storage+utf7_stor_offs);
 
   f_clear(args);
-  
+
   u7->dat = 0;
   u7->surro = 0;
   u7->shift = 0;
@@ -1460,15 +1460,15 @@ static void f_rfc1345(INT32 args)
 	default:
 	  Pike_fatal("Internal error in rfc1345\n");
 	}
-	
+
 	if(hi2) {
 	  struct std16e_stor *s16;
 	  s16 = push_std_16bite((args>2? args-2:0), args, lowtrans, 65536);
-	  
+
 	  s16->lowtrans = lowtrans;
 	  s16->lo = lowtrans;
 	  s16->hi = lowtrans;
-	  
+
 	  for(z=0, i=lo; i<=hi; i++, z+=(hi2-lo2+1))
 	    for(j=lo2; j<=hi2; j++)
 	      if((c=charset_map[mid].table[z+j-lo2])!=0xfffd && c>=s16->lo) {
@@ -1479,11 +1479,11 @@ static void f_rfc1345(INT32 args)
 	} else {
 	  struct std8e_stor *s8;
 	  s8 = push_std_8bite((args>2? args-2:0), args, lowtrans, 65536);
-	  
+
 	  s8->lowtrans = lowtrans;
 	  s8->lo = lowtrans;
 	  s8->hi = lowtrans;
-	  
+
 	  for(i=lo; i<=hi; i++)
 	    if((c=charset_map[mid].table[i-lo])!=0xfffd && c>=s8->lo) {
 	      s8->revtab[c-s8->lo]=i;
@@ -1782,7 +1782,7 @@ static void feed_utf8e(struct std_cs_stor *cs, struct string_builder *sb,
 	  string_builder_putchar(sb, c);
         else {
 	  string_builder_putchar(sb, 0xc0|(c>>6));
-	  string_builder_putchar(sb, 0x80|(c&0x3f));	
+	  string_builder_putchar(sb, 0x80|(c&0x3f));
 	}
     }
     break;
@@ -1794,11 +1794,11 @@ static void feed_utf8e(struct std_cs_stor *cs, struct string_builder *sb,
 	  string_builder_putchar(sb, c);
 	else if(c<=0x7ff) {
 	  string_builder_putchar(sb, 0xc0|(c>>6));
-	  string_builder_putchar(sb, 0x80|(c&0x3f));	
+	  string_builder_putchar(sb, 0x80|(c&0x3f));
 	} else if (c <= 0xd7ff || c >= 0xe000) {
       	  string_builder_putchar(sb, 0xe0|(c>>12));
 	  string_builder_putchar(sb, 0x80|((c>>6)&0x3f));
-	  string_builder_putchar(sb, 0x80|(c&0x3f));	
+	  string_builder_putchar(sb, 0x80|(c&0x3f));
 	} else
 	  REPLACE_CHAR(c, feed_utf8e, cs, str, p - STR1(str) - 1);
     }
@@ -1813,7 +1813,7 @@ static void feed_utf8e(struct std_cs_stor *cs, struct string_builder *sb,
 	}
 	else if(c<=0x7ff) {
 	  string_builder_putchar(sb, 0xc0|(c>>6));
-	  string_builder_putchar(sb, 0x80|(c&0x3f));	
+	  string_builder_putchar(sb, 0x80|(c&0x3f));
 	  continue;
 	} else if(c<=0xffff) {
 	  if (c <= 0xd7ff || c >= 0xe000) {
@@ -1826,7 +1826,7 @@ static void feed_utf8e(struct std_cs_stor *cs, struct string_builder *sb,
 	  string_builder_putchar(sb, 0xf0|(c>>18));
 	  string_builder_putchar(sb, 0x80|((c>>12)&0x3f));
 	  string_builder_putchar(sb, 0x80|((c>>6)&0x3f));
-	  string_builder_putchar(sb, 0x80|(c&0x3f));	
+	  string_builder_putchar(sb, 0x80|(c&0x3f));
 	  continue;
 	}
 	REPLACE_CHAR(c, feed_utf8e, cs, str, p - STR2(str) - 1);
@@ -2004,7 +2004,7 @@ static void feed_utf7_5e(struct std_cs_stor *cs, struct string_builder *sb,
 	  string_builder_putchar(sb, c);
         else {
 	  string_builder_putchar(sb, 0xa0|(c>>6));
-	  string_builder_putchar(sb, 0xc0|(c&0x3f));	
+	  string_builder_putchar(sb, 0xc0|(c&0x3f));
 	}
     }
     break;
@@ -2016,11 +2016,11 @@ static void feed_utf7_5e(struct std_cs_stor *cs, struct string_builder *sb,
 	  string_builder_putchar(sb, c);
 	else if(c<=0x3ff) {
 	  string_builder_putchar(sb, 0xa0|(c>>6));
-	  string_builder_putchar(sb, 0xc0|(c&0x3f));	
+	  string_builder_putchar(sb, 0xc0|(c&0x3f));
 	} else {
       	  string_builder_putchar(sb, 0xb0|(c>>12));
 	  string_builder_putchar(sb, 0xc0|((c>>6)&0x3f));
-	  string_builder_putchar(sb, 0xc0|(c&0x3f));	
+	  string_builder_putchar(sb, 0xc0|(c&0x3f));
 	}
     }
     break;
@@ -2032,11 +2032,11 @@ static void feed_utf7_5e(struct std_cs_stor *cs, struct string_builder *sb,
 	  string_builder_putchar(sb, c);
 	else if(c<=0x3ff) {
 	  string_builder_putchar(sb, 0xa0|(c>>6));
-	  string_builder_putchar(sb, 0xc0|(c&0x3f));	
+	  string_builder_putchar(sb, 0xc0|(c&0x3f));
 	} else if(c<=0xffff) {
 	  string_builder_putchar(sb, 0xb0|(c>>12));
 	  string_builder_putchar(sb, 0xc0|((c>>6)&0x3f));
-	  string_builder_putchar(sb, 0xc0|(c&0x3f));	
+	  string_builder_putchar(sb, 0xc0|(c&0x3f));
 	} else
 	  REPLACE_CHAR(c, feed_utf7_5e, cs, str, p - STR2(str) - 1);
       /* FIXME: Encode using surrogates? */
@@ -2085,7 +2085,7 @@ static void feed_utf7e(struct utf7_stor *u7, struct string_builder *sb,
 	    }
 	    if(c>='+' && c<='z' && rev64t[c-'+']>=0)
 	      string_builder_putchar(sb, '-');
-	    shift = 0;  
+	    shift = 0;
 	  }
 	  string_builder_putchar(sb, c);
 	} else if(c==43 && !shift) {
@@ -2121,7 +2121,7 @@ static void feed_utf7e(struct utf7_stor *u7, struct string_builder *sb,
 	    }
 	    if(c>='+' && c<='z' && rev64t[c-'+']>=0)
 	      string_builder_putchar(sb, '-');
-	    shift = 0;  
+	    shift = 0;
 	  }
 	  string_builder_putchar(sb, c);
 	} else if(c==43 && !shift) {
@@ -2157,7 +2157,7 @@ static void feed_utf7e(struct utf7_stor *u7, struct string_builder *sb,
 	    }
 	    if(c>='+' && c<='z' && rev64t[c-'+']>=0)
 	      string_builder_putchar(sb, '-');
-	    shift = 0;  
+	    shift = 0;
 	  }
 	  string_builder_putchar(sb, c);
 	} else if(c==43 && !shift) {
@@ -2236,7 +2236,7 @@ static void f_drain_utf7e(INT32 args)
       u7->datbit=0;
     }
     string_builder_putchar(&cs->strbuild, '-');
-    u7->shift = 0;  
+    u7->shift = 0;
   }
   f_drain(args);
 }
@@ -2747,7 +2747,7 @@ PIKE_MODULE_EXIT
 
   if(std_9696_program != NULL)
     free_program(std_9696_program);
-  
+
   if(std_big5_program != NULL)
     free_program(std_big5_program);
 

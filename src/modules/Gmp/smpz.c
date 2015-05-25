@@ -26,7 +26,7 @@ static void smpz_powm(INT32 args)
   DECLARE_THIS();
   struct object *res = NULL;
   MP_INT *n, *e;
-  
+
   if(args != 2)
     SIMPLE_WRONG_NUM_ARGS_ERROR ("powm", 2);
 

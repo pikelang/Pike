@@ -124,7 +124,7 @@ PMOD_EXPORT extern const char msg_stack_error[];
 #define check__positive(X,Y) if((X)<0) Pike_fatal Y
 #else
 #define check__positive(X,Y)
-#define debug_check_stack() 
+#define debug_check_stack()
 #endif
 
 #define low_stack_check(X) \
@@ -693,7 +693,7 @@ PMOD_EXPORT extern unsigned long evaluator_callback_calls;
 #define low_check_threads_etc() do { \
   DO_IF_INTERNAL_PROFILING (evaluator_callback_calls++); \
   call_callback(& evaluator_callbacks, NULL); \
-}while(0) 
+}while(0)
 
 #define check_threads_etc() do {					\
     DO_IF_DEBUG (if (Pike_interpreter.trace_level > 2)			\
@@ -907,6 +907,6 @@ struct Pike_stack
   while(Pike_sp > Pike_interpreter.current_stack->stack)		   \
     *(old_stack_->save_ptr++) = *--Pike_sp;				   \
   Pike_interpreter.current_stack=Pike_interpreter.current_stack->previous; \
-}while(0)  
+}while(0)
 
 #endif

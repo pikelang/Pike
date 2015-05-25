@@ -184,7 +184,7 @@ void th_atfork_child(void);
  * with only one CPU. Otherwise, only systemcalls are actually
  * threaded.
  */
-#define th_setconcurrency(X) 
+#define th_setconcurrency(X)
 #ifdef HAVE_SCHED_YIELD
 #define low_th_yield() sched_yield()
 #elif defined (HAVE_PTHREAD_YIELD)

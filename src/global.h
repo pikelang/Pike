@@ -265,7 +265,7 @@ struct timeval;
 #   undef alloca
 #  endif
 #  define alloca __builtin_alloca
-# endif 
+# endif
 #else
 # ifdef __GNUC__
 #  ifdef alloca
@@ -604,7 +604,7 @@ typedef struct p_wchar_p
 #  else
 #    define PMOD_EXPORT  __attribute__ ((visibility("protected")))
 #  endif
-# else 
+# else
 #  define PMOD_EXPORT
 # endif
 #endif

@@ -8,7 +8,7 @@
 **! module Image
 **! submodule Color
 **!
-**!	This module keeps names and easy handling 
+**!	This module keeps names and easy handling
 **!	for easy color support. It gives you an easy
 **!	way to get colors from names.
 **!
@@ -23,11 +23,11 @@
 **!	Image.Color(string hex_name)      // "#ff00ff"
 **!	Image.Color(string cmyk_string)   // "%17,42,0,19.4"
 **!	Image.Color(string hsv_string)    // "%@327,90,32"
-**!	Image.Color(int red, int green, int blue) 
+**!	Image.Color(int red, int green, int blue)
 **!     </pre>
 **!
-**!	The color names available can be listed by using indices 
-**!	on Image.Color. The colors are available by name directly 
+**!	The color names available can be listed by using indices
+**!	on Image.Color. The colors are available by name directly
 **!	as <tt>Image.Color.name</tt>, too:
 **!	<pre>
 **!	...Image.Color.red...
@@ -41,18 +41,18 @@
 **!
 **!	Giving red, green and blue values is equal to calling
 **!	<ref>Image.Color.rgb</ref>().
-**!	
-**!	The prefix_string method is a form for getting modified 
+**!
+**!	The prefix_string method is a form for getting modified
 **!	colors, it understands all modifiers
 **!	(<link to=Color.light>light</link>,
 **!	<link to=Color.dark>dark</link>,
 **!	<link to=Color.bright>bright</link>,
 **!	<link to=Color.dull>dull</link> and
 **!	<link to=Color.neon>neon</link>). Simply  use
-**!	"method"+"color"; (as in <tt>lightgreen</tt>, 
+**!	"method"+"color"; (as in <tt>lightgreen</tt>,
 **!	<tt>dullmagenta</tt>, <tt>lightdullorange</tt>).
 **!
-**!	The <tt>hex_name</tt> form is a simple 
+**!	The <tt>hex_name</tt> form is a simple
 **!	<tt>#rrggbb</tt> form, as in HTML or X-program argument.
 **!	A shorter form (<tt>#rgb</tt>) is also accepted. This
 **!	is the inverse to the <ref>Image.Color.Color->hex</ref>()
@@ -74,16 +74,16 @@
 **! from the color object itself, i.e. Image.Color.mintcream->neon()->dark()->dark()->dark().
 **!
 **! <execute>
-**! 
+**!
 **! import Image;
-**! 
+**!
 **! array modifiers=({"neon","light","dark","bright","dull"});
-**! 
+**!
 **! object F=Font();
 **!
 **! mixed color_info(array(object) ac)
 **! {
-**! 
+**!
 **! #define YZ 14
 **! #define YZz (YZ+1)
 **! #define MODX 32
@@ -97,7 +97,7 @@
 **! #define tPOS 0
 **! #define txPOS(t) (XSP*2)
 **! #define XZ (CXZ+CSP+(MSP+MODX)*sizeof(modifiers)-MSP)
-**! 
+**!
 **!    object i=Image(XZ+XTEXT,YZz*sizeof(ac),Color.black);
 **!    object a=Image(XZ+XTEXT,YZz*sizeof(ac),Color.black);
 **!
@@ -108,7 +108,7 @@
 **!       i->box(cPOS+CXZ,y+YZ-LSP,cPOS+XZ,   y+YZ-1,c);
 **!       a->box(cPOS+0,  y,       cPOS+CXZ-1,y+YZ-1,Color.white);
 **!       a->box(cPOS+CXZ,y+YZ-LSP,cPOS+XZ,   y+YZ-1,Color.white);
-**!       
+**!
 **!       int x=CXZ+CSP+cPOS;
 **!       foreach (modifiers,string mod)
 **!       {
@@ -119,25 +119,25 @@
 **!       i->box(tPOS,y,tPOS+XTEXT-XSP-1,y+YZ-1,
 **!              c->neon()->dark()->dark()->dark());
 **!       a->box(tPOS,y,tPOS+XTEXT-XSP-1,y+YZ-1,Color.white);
-**!       i->paste_alpha_color(F->write(c->name()), Color.white, 
+**!       i->paste_alpha_color(F->write(c->name()), Color.white,
 **!                            txPOS(c->name()),y+1);
 **!       y+=YZz;
 **!    }
-**! 
+**!
 **!    write(illustration(i,(["alpha":a])));
 **!    write(mktag("br")+"\n");
 **! }
-**! 
+**!
 **! void main()
 **! {
 **!    array cs=values(Color);
-**!    
+**!
 **!    array orig=({Color.black,Color.red,Color.green,Color.yellow,
 **! 		    Color.blue,Color.violet,Color.cyan,Color.white});
 **!    cs-=orig;
 **!    cs-=({Color.pikegreen,Color.avantgardepikegreen,Color.roxenorange,
 **!          Color.pikeblue}); // Lame sort of easter egg.
-**!    
+**!
 **!    array grey=Array.filter(cs,lambda(object c) { return c->s==0; });
 **!    array colored=cs-grey;
 **!
@@ -148,14 +148,14 @@
 **! 			      {
 **! 				 return (c->h*50-c->s)*10+c->v;
 **! 			      }),colored);
-**! 
+**!
 **!    Array.map(({orig}),color_info);
 **!    // write("\240");
 **!    Array.map(({grey}),color_info);
 **!    // write("\240");
 **!    Array.map(colored/8.0,color_info);
 **! }
-**! 
+**!
 **! </execute>
 **!
 **!
@@ -163,11 +163,11 @@
 **!
 **! added:
 **!	pike 0.7
-**!	
-**! note: 
-**!	<tt>Image.Color["something"]</tt> will never(!) generate an error, 
+**!
+**! note:
+**!	<tt>Image.Color["something"]</tt> will never(!) generate an error,
 **!	but a zero_type 0, if the color is unknown. This is enough
-**!	to give the error "not present in module", if used 
+**!	to give the error "not present in module", if used
 **!	as <tt>Image.Color.something</tt>, though.
 **!
 **!     If you are using colors from for instance a webpage, you might
@@ -179,13 +179,13 @@
 **!
 **!	and subtract with a space (lower_case(x)-" ") to make
 **!	sure you get all variants.
-**!	
+**!
 **! see also: Image.Color.Color, Image.Color.guess, Image, Image.Colortable
 **!
 **! class Color
 **!	This is the color object. It has six readable variables,
-**!	<tt>r</tt>, <tt>g</tt>, <tt>b</tt>, for the <i>red</i>, 
-**!	<i>green</i> and <i>blue</i> values, 
+**!	<tt>r</tt>, <tt>g</tt>, <tt>b</tt>, for the <i>red</i>,
+**!	<i>green</i> and <i>blue</i> values,
 **!	and <tt>h</tt>, <tt>s</tt>, <tt>v</tt>, for
 **!	the <i>hue</i>, <i>saturation</i> anv <i>value</i> values.
 */
@@ -234,9 +234,9 @@ static struct pike_string *str_v;
 static struct pike_string *no_name;
 
 /* forward */
-static void _image_make_rgbl_color(INT32 r,INT32 g,INT32 b); 
+static void _image_make_rgbl_color(INT32 r,INT32 g,INT32 b);
 static void _image_make_rgbf_color(double r, double g, double b);
-static void image_make_hsv_color(INT32 args); 
+static void image_make_hsv_color(INT32 args);
 static void image_make_cmyk_color(INT32 args);
 static void image_make_color(INT32 args);
 static void image_make_rgb_color(INT32 args);
@@ -249,11 +249,11 @@ struct html_color
 } html_color[]=
 {{0,0,0,"black",NULL}, {255,255,255,"white",NULL},
  {0,128,0,"green",NULL}, {192,192,192,"silver",NULL},
- {0,255,0,"lime",NULL}, {128,128,128,"gray",NULL}, 
- {128,128,0,"olive",NULL}, {255,255,0,"yellow",NULL}, 
- {128,0,0,"maroon",NULL}, {0,0,128,"navy",NULL}, 
+ {0,255,0,"lime",NULL}, {128,128,128,"gray",NULL},
+ {128,128,0,"olive",NULL}, {255,255,0,"yellow",NULL},
+ {128,0,0,"maroon",NULL}, {0,0,128,"navy",NULL},
  {255,0,0,"red",NULL}, {0,0,255,"blue",NULL},
- {128,0,128,"purple",NULL}, {0,128,128,"teal",NULL}, 
+ {128,0,128,"purple",NULL}, {0,128,128,"teal",NULL},
  {255,0,255,"fuchsia",NULL}, {0,255,255,"aqua",NULL}};
 
 static void make_colors(void)
@@ -281,7 +281,7 @@ static void make_colors(void)
       push_text(c[i].name);
       copy_shared_string(c[i].pname,sp[-1].u.string);
 
-      push_object(clone_object(image_color_program,0)); 
+      push_object(clone_object(image_color_program,0));
       cs=get_storage(sp[-1].u.object,image_color_program);
       cs->rgb.r=(COLORTYPE)c[i].r;
       cs->rgb.g=(COLORTYPE)c[i].g;
@@ -336,7 +336,7 @@ static void init_color_struct(struct object *UNUSED(dummy))
 
 static void exit_color_struct(struct object *UNUSED(dummy))
 {
-   if (THIS->name) 
+   if (THIS->name)
    {
       free_string(THIS->name);
       THIS->name=NULL;
@@ -363,7 +363,7 @@ static void try_find_name(struct color_struct *this)
    if (!colors)
       make_colors();
 
-   if (this->name) 
+   if (this->name)
       Pike_fatal("try_find_name called twice\n");
 
    if (this->rgbl.r!=COLOR_TO_COLORL(this->rgb.r) ||
@@ -371,13 +371,13 @@ static void try_find_name(struct color_struct *this)
        this->rgbl.b!=COLOR_TO_COLORL(this->rgb.b))
    {
       copy_shared_string(this->name,no_name);
-      return; 
+      return;
    }
 
    _img_nct_map_to_flat_cubicles(&(this->rgb),&d,1,
 				 (struct neo_colortable*)colortable->storage,
 				 &dith,1);
-   
+
    if (d.r==this->rgb.r &&
        d.g==this->rgb.g &&
        d.b==this->rgb.b)
@@ -400,7 +400,7 @@ static void try_find_name(struct color_struct *this)
 /*
 **! method void create(int r,int g,int b)
 **!	This is the main <ref>Image.Color.Color</ref> creation
-**!	method, mostly for internal use. 
+**!	method, mostly for internal use.
 **----- internal note: it takes a fourth argument, name of color ---
 **!
 */
@@ -413,16 +413,16 @@ static void try_find_name(struct color_struct *this)
 **! method int greylevel()
 **! method int greylevel(int r, int g, int b)
 **!	This is methods of getting information from an
-**!	<ref>Image.Color.Color</ref> object. 
-**!	
-**!	They give an array of 
+**!	<ref>Image.Color.Color</ref> object.
+**!
+**!	They give an array of
 **!	red, green and blue (rgb) values (color value),<br>
 **!	hue, saturation and value (hsv) values (range as color value), <br>
 **!	cyan, magenta, yellow, black (cmyk) values (in percent)	<br>
-**!     or the greylevel value (range as color value). 
+**!     or the greylevel value (range as color value).
 **!
 **!	The greylevel is calculated by weighting red, green
-**!	and blue. Default weights are 87, 127 and 41, respective, 
+**!	and blue. Default weights are 87, 127 and 41, respective,
 **!	and could be given by argument.
 **!
 **! returns array(int) respective int
@@ -476,7 +476,7 @@ static void image_color_hsvf(INT32 args)
 
    pop_n_elems(args);
 
-   if((THIS->rgb.r==THIS->rgb.g) && (THIS->rgb.g==THIS->rgb.b)) 
+   if((THIS->rgb.r==THIS->rgb.g) && (THIS->rgb.g==THIS->rgb.b))
    {
       push_float(0.0);
       push_float(0.0);
@@ -484,7 +484,7 @@ static void image_color_hsvf(INT32 args)
       f_aggregate(3);
       return;
    }
-  
+
    r = COLORL_TO_FLOAT(THIS->rgbl.r);
    g = COLORL_TO_FLOAT(THIS->rgbl.g);
    b = COLORL_TO_FLOAT(THIS->rgbl.b);
@@ -585,7 +585,7 @@ static void image_color_bits( INT32 args )
 
   /* Do it on the stack to support bignums (it's possible to get 2M
    * bits for each channel this way. Not that that's really useful,
-   * but... 
+   * but...
    */
 
 #define push_int_bits( i, b, s )                \
@@ -636,14 +636,14 @@ static void image_color_bits( INT32 args )
 **!
 **!	<ref>hex</ref>() simply gives a string on the <tt>#rrggbb</tt>
 **!	format. If <tt>n</tt> is given, the number of significant
-**!	digits is set to this number. 
+**!	digits is set to this number.
 **!     (Ie, <tt>n=3</tt> gives <tt>#rrrgggbbb</tt>.)
 **!
-**!	<ref>name</ref>() is a simplified method; 
+**!	<ref>name</ref>() is a simplified method;
 **!	if the color exists in the database, the name is returned,
 **!	per default is the <ref>hex</ref>() method use.
 **!
-**!	<ref>html</ref>() gives the <tt>HTML</tt> name of 
+**!	<ref>html</ref>() gives the <tt>HTML</tt> name of
 **!	the color, or the <ref>hex</ref>(2) if it isn't one
 **!	of the 16 <tt>HTML</tt> colors.
 **!
@@ -675,14 +675,14 @@ static void image_color_hex(INT32 args)
 	 sprintf(buf,"#%0*x%0*x%0*x",
 		 (int)i,(unsigned)(THIS->rgb.r>>sh),
 		 (int)i,(unsigned)(THIS->rgb.g>>sh),
-		 (int)i,(unsigned)(THIS->rgb.b>>sh)); 
+		 (int)i,(unsigned)(THIS->rgb.b>>sh));
       else
       {
 	 unsigned INT32 r=THIS->rgbl.r;
 	 unsigned INT32 g=THIS->rgbl.g;
 	 unsigned INT32 b=THIS->rgbl.b;
 	 sh=COLORLBITS-i*4;
-	 if (sh<0) 
+	 if (sh<0)
 	 {
 	    r=(r<<-sh)+(r>>(COLORLBITS+sh));
 	    g=(g<<-sh)+(g>>(COLORLBITS+sh));
@@ -698,14 +698,14 @@ static void image_color_hex(INT32 args)
    else
       switch (sizeof(COLORTYPE)) /* constant */
       {
-	 case 1: 
-	    sprintf(buf,"#%02x%02x%02x",THIS->rgb.r,THIS->rgb.g,THIS->rgb.b); 
+	 case 1:
+	    sprintf(buf,"#%02x%02x%02x",THIS->rgb.r,THIS->rgb.g,THIS->rgb.b);
 	    break;
-	 case 2: 
-	    sprintf(buf,"#%04x%04x%04x",THIS->rgb.r,THIS->rgb.g,THIS->rgb.b); 
+	 case 2:
+	    sprintf(buf,"#%04x%04x%04x",THIS->rgb.r,THIS->rgb.g,THIS->rgb.b);
 	    break;
-	 case 4: 
-	    sprintf(buf,"#%08x%08x%08x",THIS->rgb.r,THIS->rgb.g,THIS->rgb.b); 
+	 case 4:
+	    sprintf(buf,"#%08x%08x%08x",THIS->rgb.r,THIS->rgb.g,THIS->rgb.b);
 	    break;
 	 default:
 	    Pike_error("unknown size of colortype\n");
@@ -722,15 +722,15 @@ static void image_color_html(INT32 args)
    pop_n_elems(args);
 
    for (i=0; (size_t)i<sizeof(html_color)/sizeof(html_color[0]); i++)
-      if (THIS->rgb.r==html_color[i].r && 
-	  THIS->rgb.g==html_color[i].g && 
+      if (THIS->rgb.r==html_color[i].r &&
+	  THIS->rgb.g==html_color[i].g &&
 	  THIS->rgb.b==html_color[i].b)
       {
 	 ref_push_string(html_color[i].pname);
 	 return;
       }
 
-   push_int(2); 
+   push_int(2);
    image_color_hex(1);
 }
 
@@ -760,7 +760,7 @@ static void image_color_cast(INT32 args)
        TYPEOF(sp[-1]) != T_STRING)
      bad_arg_error("cast",sp-args,args,0,"",sp-args,
                    "Bad arguments to cast.\n");
-   
+
    if (sp[-1].u.string==literal_array_string)
    {
       image_color_rgb(args);
@@ -931,10 +931,10 @@ static void image_color_index(INT32 args)
 **!	object red=Image.Color.red;
 **!	object other=Image.Color. ...;
 **!	object black=Image.Color.black;
-**!	
+**!
 **!	if (red==other) ...
 **!     if (red==({255,0,0})) ...
-**!     if (black==0) ... 
+**!     if (black==0) ...
 **!     if (red=="red") ...
 **!	</pre>
 **!
@@ -946,7 +946,7 @@ static void image_color_index(INT32 args)
 
 static void image_color_equal(INT32 args)
 {
-   if (args!=1) 
+   if (args!=1)
       Pike_error("Image.Color.Color->`==: illegal number of arguments\n");
 
    if (TYPEOF(sp[-1]) == T_OBJECT)
@@ -1060,7 +1060,7 @@ static void image_color___hash(INT32 args)
 **! note:
 **!	The opposites may not always take each other out.
 **!	The color is maximised at white and black levels,
-**!	so, for instance 
+**!	so, for instance
 **!	<ref>Image.Color</ref>.white-><ref>light</ref>()-><ref>dark</ref>()
 **!	doesn't give the white color back, but the equal to
 **!	<ref>Image.Color</ref>.white-><ref>dark</ref>(), since
@@ -1178,7 +1178,7 @@ int image_color_svalue(struct svalue *v,rgb_group *rgb)
    {
       struct color_struct *cs=get_storage(v->u.object,image_color_program);
 
-      if (cs) 
+      if (cs)
       {
 	 *rgb=cs->rgb;
 	 return 1;
@@ -1246,9 +1246,9 @@ static void image_get_color(INT32 args)
    int n;
    static const char *callables[]={"light","dark","neon","dull","bright"};
 
-   if (args!=1) 
+   if (args!=1)
       Pike_error("Image.Color[]: illegal number of args.\n");
-   
+
    if (!colors)
       make_colors();
 
@@ -1272,7 +1272,7 @@ static void image_get_color(INT32 args)
 	  sp[-1].u.string->str[0]=='#')
       {
 	 /* #rgb, #rrggbb, #rrrgggbbb, etc */
-	 
+
 	 size_t i = sp[-1].u.string->len-1, j, k;
 	 unsigned INT32 rgb[3];
 	 unsigned char *src=(unsigned char *)sp[-1].u.string->str+1;
@@ -1299,9 +1299,9 @@ static void image_get_color(INT32 args)
 		  case 3: z=(z*0x00100100+(z>>8))>>(32-COLORLBITS); break;
 
 		  case 4:
-		  case 5: 
-		  case 6: 
-		  case 7: 
+		  case 5:
+		  case 6:
+		  case 7:
 		  case 8:
 		     if (i*4<COLORLBITS)
 			z=(z<<(COLORLBITS-i*4))+(z>>(i*8-COLORLBITS));
@@ -1388,16 +1388,16 @@ static void image_get_color(INT32 args)
 	 if (TYPEOF(sp[-1]) == T_ARRAY &&
 	     sp[-1].u.array->size==1)
 	 {
-	    double f;	
+	    double f;
 	    f = sp[-1].u.array->item[0].u.float_number;
 	    pop_stack();
 	    pop_stack();
-	    push_int( DO_NOT_WARN((int)(255*f/100)) ); 
+	    push_int( DO_NOT_WARN((int)(255*f/100)) );
                  /* grey100 is white, grey0 is black */
 	    stack_dup();
 	    stack_dup();
 	    image_make_rgb_color(3);
-	       
+
 	    return;
 	 }
 	 pop_stack();
@@ -1413,10 +1413,10 @@ static void image_get_color(INT32 args)
 
 static void image_guess_color(INT32 args)
 {
-   if (args!=1 && TYPEOF(sp[-args]) != T_STRING) 
+   if (args!=1 && TYPEOF(sp[-args]) != T_STRING)
      bad_arg_error("guess",sp-args,args,0,"",sp-args,
                    "Bad arguments to guess.\n");
-   
+
    f_lower_case(1);
    push_text(" ");
    o_subtract();
@@ -1452,7 +1452,7 @@ static void image_colors_index(INT32 args)
 
 static void image_make_color(INT32 args)
 {
-   if (args==1 && TYPEOF(sp[-args]) == T_STRING) 
+   if (args==1 && TYPEOF(sp[-args]) == T_STRING)
    {
       image_get_color(args);
       return;
@@ -1461,14 +1461,14 @@ static void image_make_color(INT32 args)
 }
 
 
-/* 
+/*
 **! module Image
 **! submodule Color
 **!
 **! method object guess(string color)
 **!	This is equivalent to
 **!	<tt><ref>Image.Color</ref>(lower_case(str)-" ")</tt>,
-**!	and tries the color with a prepending '#' if no 
+**!	and tries the color with a prepending '#' if no
 **!	corresponding color is found.
 **!
 **! returns a color object or zero_type
@@ -1584,11 +1584,11 @@ static void image_make_hsv_color(INT32 args)
       get_all_args("hsv",args,"%i%i%i",&hi,&si,&vi);
       pop_n_elems(args);
 
-      if (hi<0) hi=(hi%COLORMAX)+COLORMAX; 
+      if (hi<0) hi=(hi%COLORMAX)+COLORMAX;
       else if (hi>COLORMAX) hi%=COLORMAX; /* repeating */
       if (si<0) si=0; else if (si>COLORMAX) si=COLORMAX;
       if (vi<0) vi=0; else if (vi>COLORMAX) vi=COLORMAX;
-   
+
       h = (hi/((double)COLORMAX))*(360.0/60.0);
       s = si/((double)COLORMAX);
       v = vi/((double)COLORMAX);
@@ -1601,7 +1601,7 @@ static void image_make_hsv_color(INT32 args)
       if (h>360.0) h -= ((DOUBLE_TO_INT(h)/360)*360);
       h/=60;
    }
-     
+
    if(s==0.0)
    {
       r = g = b = v;
@@ -1662,13 +1662,13 @@ static void image_make_html_color(INT32 args)
    int i;
 
    if (args!=1 ||
-       TYPEOF(sp[-1]) != T_STRING) 
+       TYPEOF(sp[-1]) != T_STRING)
    {
      bad_arg_error("html",sp-args,args,0,"",sp-args,
                    "Bad arguments to html.\n");
       return;
    }
-   
+
    f_lower_case(1);
    for (i=0; (size_t)i<sizeof(html_color)/sizeof(html_color[0]); i++)
       if (html_color[i].pname==sp[-1].u.string)
@@ -1779,14 +1779,14 @@ void init_image_colors(void)
 					   tObjIs_IMAGE_COLOR_COLOR),0);
 
    image_color_program=end_program();
-   image_color_program->flags |= 
+   image_color_program->flags |=
      PROGRAM_CONSTANT |
      PROGRAM_NO_EXPLICIT_DESTRUCT ;
 
    PIKE_MODULE_EXPORT(Image, image_color_program);
 
    /* this is the Image.Color stuff */
-   
+
    ADD_FUNCTION("`[]",image_colors_index,tFunc(tStr,tObjIs_IMAGE_COLOR_COLOR),0);
    ADD_FUNCTION("`()",image_make_color,
 		tOr3(tFunc(tStr,tObjIs_IMAGE_COLOR_COLOR),
@@ -1798,9 +1798,9 @@ void init_image_colors(void)
    ADD_FUNCTION("hsv",image_make_hsv_color,
 		tOr(tFunc(tInt tInt tInt,tObjIs_IMAGE_COLOR_COLOR),
 		    tFunc(tFlt tFlt tFlt,tObjIs_IMAGE_COLOR_COLOR)),0);
-   ADD_FUNCTION("cmyk",image_make_cmyk_color,tFunc(tOr(tInt,tFlt) 
-						   tOr(tInt,tFlt) 
-						   tOr(tInt,tFlt) 
+   ADD_FUNCTION("cmyk",image_make_cmyk_color,tFunc(tOr(tInt,tFlt)
+						   tOr(tInt,tFlt)
+						   tOr(tInt,tFlt)
 						   tOr(tInt,tFlt),
 						   tObjIs_IMAGE_COLOR_COLOR), 0);
    ADD_FUNCTION("html",image_make_html_color,
@@ -1815,7 +1815,7 @@ void init_image_colors(void)
 		tFunc(tNone,tArr(tObjIs_IMAGE_COLOR_COLOR)),0);
 
    image_color_program->id = PROG_IMAGE_COLOR_COLOR_ID;
-   
+
    add_program_constant("Color",image_color_program,0);
 }
 

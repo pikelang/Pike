@@ -339,7 +339,7 @@ static void encode_type(struct pike_type *t, struct encode_data *data)
       }
       t=t->cdr;
       goto one_more_type;
-    
+
     case T_ASSIGN:
       {
 	ptrdiff_t marker = CAR_TO_INT(t);
@@ -679,7 +679,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 		pike_ftype=Pike_FP_PINF;
 #endif
 	; /* Terminate any remaining else */
-	
+
 	if(
 #ifdef HAVE_SIGNBIT
 	  signbit(d)
@@ -692,13 +692,13 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	    case Pike_FP_PINF:
 	      pike_ftype=Pike_FP_NINF;
 	      break;
-	      
+
 	    case Pike_FP_PZERO:
 	      pike_ftype=Pike_FP_NZERO;
 	      break;
 	  }
 	}
-	
+
 	if(pike_ftype != Pike_FP_UNKNOWN)
 	{
 	  code_entry(TAG_FLOAT,0,data);
@@ -883,7 +883,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 
 	    /* We have to remove ourself from the cache */
 	    map_delete(data->encoded, val);
-	    
+
 	    pop_stack();
 	    push_svalue(val);
 	    f_object_program(1);
@@ -892,7 +892,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	    code_entry(TAG_OBJECT, 3,data);
 	    encode_value2(Pike_sp-1, data, 1);
 	    pop_stack();
-	    
+
 	    push_svalue(val);
 
 	    /* If we do not exist in cache, use backwards-
@@ -904,7 +904,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	      int fun;
 	      EDB(1,fprintf(stderr, "%*sZapping 3 -> 1 in TAG_OBJECT\n",
 			    data->depth, ""));
-	      
+
 	      /* This causes the code_entry above to
 	       * become: code_entry(TAG_OBJECT, 1, data);
 	       * -Hubbe
@@ -1918,7 +1918,7 @@ void f_encode_value_canonic(INT32 args)
   data->encoded=allocate_mapping(128);
   data->delayed = allocate_array (0);
   SET_SVAL(data->counter, T_INT, NUMBER_NUMBER, integer, COUNTER_START);
-  
+
 #ifdef ENCODE_DEBUG
   data->debug = args > 2 ? Pike_sp[2-args].u.integer : 0;
   data->depth = -2;
@@ -2432,7 +2432,7 @@ static INT32 decode_portable_bytecode(struct decode_data *data, INT32 string_no)
 		 "%td (expected multiple of 3).\n", bytecode->len);
   }
 
-  init_bytecode();  
+  init_bytecode();
 
   SET_ONERROR(err, exit_bytecode, NULL);
 
@@ -2621,7 +2621,7 @@ static void decode_value2(struct decode_data *data)
 	  case Pike_FP_QNAN: /* Quiet Not A Number */
 	    push_float(DO_NOT_WARN((FLOAT_TYPE)MAKE_NAN()));
 	    break;
-		       
+
 	  case Pike_FP_NINF: /* Negative infinity */
 	    push_float(DO_NOT_WARN((FLOAT_TYPE)MAKE_INF(-1)));
 	    break;
@@ -3078,7 +3078,7 @@ static void decode_value2(struct decode_data *data)
 	   * knows which program is being decoded? */
 	    ref_push_program (p);
 	    apply (decoder_codec (data), "__register_new_program", 1);
-	      
+
 	    /* Returns a placeholder. */
 	    if (TYPEOF(Pike_sp[-1]) == T_OBJECT) {
 	      if (Pike_sp[-1].u.object->prog != null_program)
@@ -3196,7 +3196,7 @@ static void decode_value2(struct decode_data *data)
 	    if (fun >= 0) {
 	      ref_push_program(p);
 	      apply_low(data->codec, fun, 1);
-	      
+
 	      /* Returned a placeholder */
 	      if(TYPEOF(Pike_sp[-1]) == T_OBJECT)
 	      {
@@ -3294,7 +3294,7 @@ static void decode_value2(struct decode_data *data)
 		decode_error(data, NULL,
 			     "Bad instruction checksum: %d (expected %d)\n",
 			     csum, instrs_checksum);
-	      }	    
+	      }
 	    }
 #endif /* PIKE_USE_MACHINE_CODE */
 
@@ -3395,7 +3395,7 @@ static void decode_value2(struct decode_data *data)
 	      ref_push_program (p);
 	      decode_error(data, Pike_sp - 1,
 			   "Bad efun/type number: %d (expected 0 - %d).\n",
-			   efun_no, local_num_constants-1);	      
+			   efun_no, local_num_constants-1);
 	    }
 	    constant = p->constants+efun_no;
 	    /* value */
@@ -3987,7 +3987,7 @@ static void decode_value2(struct decode_data *data)
 	    constant->sval = Pike_sp[-1];
 	    dmalloc_touch_svalue(Pike_sp-1);
 	    Pike_sp -= 1;
-#endif /* 0 */	    
+#endif /* 0 */
 	    EDB(5,
 		fprintf(stderr, "%*sDecoded constant %d to a %s\n",
 			data->depth, "",

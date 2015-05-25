@@ -264,8 +264,8 @@ void init_pike_runtime(void (*exit_cb)(int))
 	/* Linux glibc threads are limited to a 4 Mb stack
 	 * __pthread_initial_thread_bos is the actual limit
 	 */
-	
-	if(__pthread_initial_thread_bos && 
+
+	if(__pthread_initial_thread_bos &&
 	   (__pthread_initial_thread_bos - Pike_interpreter.stack_top) *STACK_DIRECTION < 0)
 	{
 	  Pike_interpreter.stack_top=__pthread_initial_thread_bos;
@@ -430,7 +430,7 @@ void pike_enable_stack_profiling(void)
 {
 #ifdef PROFILING
   add_to_callback(&evaluator_callbacks, sample_stack, 0, 0);
-#endif	    
+#endif
 }
 
 static struct callback_list exit_callbacks;

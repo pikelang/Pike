@@ -149,7 +149,7 @@ FILE_FUNC("`<<",file_lsh, tAttr("deprecated", tFunc(tMixed,FILE_OBJ)))
 FILE_FUNC("proxy",file_proxy, tFunc(tObj,tVoid))
 #endif
 
-#if defined(HAVE_FD_FLOCK) || defined(HAVE_FD_LOCKF) 
+#if defined(HAVE_FD_FLOCK) || defined(HAVE_FD_LOCKF)
 /* function(void|int:object) */
 FILE_FUNC("lock",file_lock, tFunc(tOr(tVoid,tInt),tObjImpl_STDIO_FILE_LOCK_KEY))
 /* function(void|int:object) */

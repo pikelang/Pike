@@ -116,5 +116,5 @@ int aap_get_header(struct args *req, char *header, int operation, void *res)
     }
   }
   return 0;
-} 
+}
 #endif

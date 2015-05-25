@@ -12,7 +12,7 @@
 **!	of the <ref>Image</ref> module.
 **!
 **!	GIF is a common image storage format,
-**!	usable for a limited color palette - a GIF image can 
+**!	usable for a limited color palette - a GIF image can
 **!	only contain as most 256 colors - and animations.
 **!
 **!	Simple encoding:
@@ -97,7 +97,7 @@ extern struct program *image_layer_program;
 
 #endif /* DYNAMIC_MODULE */
 
-enum 
+enum
 {
    GIF_ILLEGAL,
 
@@ -123,7 +123,7 @@ static void chrono(char *x)
    getrusage(RUSAGE_SELF,&r);
    fprintf(stderr,"%s: %ld.%06ld - %ld.%06ld\n",x,
 	   (long)r.ru_utime.tv_sec,(long)r.ru_utime.tv_usec,
-	   
+
 	   (long)(((r.ru_utime.tv_usec-rold.ru_utime.tv_usec<0)?-1:0)
 		  +r.ru_utime.tv_sec-rold.ru_utime.tv_sec),
 	   (long)(((r.ru_utime.tv_usec-rold.ru_utime.tv_usec<0)?1000000:0)
@@ -143,7 +143,7 @@ static void chrono(char *x)
 **! method string header_block(int xsize,int ysize,object colortable,int background_color_index,int gif87a,int aspectx,int aspecty,int r,int g,int b);
 **!     This function gives back a GIF header block.
 **!
-**! 	Giving a colortable to this function includes a 
+**! 	Giving a colortable to this function includes a
 **!	global palette in the header block.
 **!
 **! returns the created header block as a string
@@ -163,7 +163,7 @@ static void chrono(char *x)
 **! arg int aspecty
 **!	Aspect ratio of pixels,
 **!	ranging from 4:1 to 1:4 in increments
-**!	of 1/16th. Ignored by most decoders. 
+**!	of 1/16th. Ignored by most decoders.
 **!	If any of <tt>aspectx</tt> or <tt>aspecty</tt> is zero,
 **!	aspectratio information is skipped.
 **! arg int r
@@ -171,7 +171,7 @@ static void chrono(char *x)
 **! arg int b
 **!	Add this color as the transparent color.
 **!	This is the color used as transparency color in
-**!	case of alpha-channel given as image object. 
+**!	case of alpha-channel given as image object.
 **!	This increases (!) the number of colors by one.
 **!
 **! note
@@ -267,13 +267,13 @@ void image_gif_header_block(INT32 args)
 	   gif87a?'7':'9',
 	   xs&255, (xs>>8)&255, /* width */
 	   ys&255, (ys>>8)&255, /* height */
-	   ((globalpalette<<7) 
+	   ((globalpalette<<7)
 	    | ((bpp-1)<<4) /* color resolution = 2^bpp */
 	    | (0 <<3) /* palette is sorted, most used first */
 	    | ((bpp)-1)), /* palette size = 2^bpp */
 	   bkgi,
 	   aspect);
-   
+
    push_string(make_shared_binary_string(buf,13));
 
    if (globalpalette)
@@ -283,13 +283,13 @@ void image_gif_header_block(INT32 args)
       memset(ps->str + (numcolors + alphaentry) * 3, 0,
 	     ((1 << bpp) - numcolors - alphaentry) * 3);
 
-      if (alphaentry) 
+      if (alphaentry)
       {
 	 ps->str[3*numcolors+0]=alphacolor.r;
 	 ps->str[3*numcolors+1]=alphacolor.g;
 	 ps->str[3*numcolors+2]=alphacolor.b;
       }
-      /* note: same as _calculated_ 'alphaidx' 
+      /* note: same as _calculated_ 'alphaidx'
 	       in image_gif_render_block */
 
       push_string(end_shared_string(ps));
@@ -329,7 +329,7 @@ void image_gif_end_block(INT32 args)
 **!
 **!     This function gives back a Graphic Control Extension block.
 **!	A GCE block has the scope of the following render block.
-**!	
+**!
 **! arg int transparency
 **! arg int transparency_index
 **!	The following image has transparency, marked with this index.
@@ -366,7 +366,7 @@ void image_gif_end_block(INT32 args)
 static void image_gif__gce_block(INT32 args)
 {
    char buf[20];
-   if (args<5) 
+   if (args<5)
       Pike_error("Image.GIF._gce_block(): too few arguments\n");
    if (TYPEOF(sp[-args]) != T_INT ||
        TYPEOF(sp[1-args]) != T_INT ||
@@ -386,7 +386,7 @@ static void image_gif__gce_block(INT32 args)
 	   (int) sp[1-args].u.integer & 255, /* transparency index */
 	   0 /* end block */
 	   );
-	   
+
    pop_n_elems(args);
    push_string(make_shared_binary_string(buf,8));
 }
@@ -396,7 +396,7 @@ static void image_gif__gce_block(INT32 args)
 **! method string _render_block(int x,int y,int xsize,int ysize,int bpp,string indices,0|string colortable,int interlace);
 **!	Advanced (!) method for writing renderblocks for placement
 **!	in a GIF file. This method only applies LZW encoding on the
-**!	indices and makes the correct headers. 
+**!	indices and makes the correct headers.
 **!
 **! arg int x
 **! arg int y
@@ -418,7 +418,7 @@ static void image_gif__gce_block(INT32 args)
 **!	should _not_ be pre-interlaced.
 **!
 **! see also: encode, _encode, header_block, end_block
-**! 
+**!
 **! note
 **!	This is in the very advanced sector of the GIF support;
 **!	please read about how GIF files works.
@@ -433,7 +433,7 @@ static void image_gif__render_block(INT32 args)
    struct gif_lzw lzw;
    int i;
    int numstrings=0;
-   
+
 CHRONO("gif _render_block begun");
 
    if (args<8)
@@ -485,16 +485,16 @@ CHRONO("gif _render_block begun");
 	   xs&255, (xs>>8)&255, /* width */
 	   ys&255, (ys>>8)&255, /* height */
 	   /* packed field */
-	   ((localpalette<<7) 
+	   ((localpalette<<7)
 	    | (interlace<<6)
 	    | (0 <<5) /* palette is sorted, most used first */
 	    | ((bpp)-1)) /* palette size = 2^bpp */
            );
-   push_string(make_shared_binary_string(buf,10)); 
+   push_string(make_shared_binary_string(buf,10));
    numstrings++;
 
 /*** write local palette if needed */
-   
+
    if (localpalette)
    {
      ref_push_string(cps);
@@ -510,7 +510,7 @@ CHRONO("gif _render_block begun");
 
    push_string(make_shared_binary_string(buf,1));
    numstrings++;
-   
+
    image_gif_lzw_init(&lzw,(bpp<2)?2:bpp);
    if (lzw.broken) Pike_error("out of memory\n");
 
@@ -522,7 +522,7 @@ CHRONO("gif _render_block begun");
    {
       int y;
       for (y=0; y<ys; y+=8)
-         image_gif_lzw_add(&lzw,((unsigned char *)ips->str)+y*xs,xs); 
+         image_gif_lzw_add(&lzw,((unsigned char *)ips->str)+y*xs,xs);
       for (y=4; y<ys; y+=8)
          image_gif_lzw_add(&lzw,((unsigned char *)ips->str)+y*xs,xs);
       for (y=2; y<ys; y+=4)
@@ -532,7 +532,7 @@ CHRONO("gif _render_block begun");
    }
 
    image_gif_lzw_finish(&lzw);
-   
+
    THREADS_DISALLOW();
 
    if (lzw.broken) Pike_error("out of memory\n");
@@ -596,7 +596,7 @@ CHRONO("gif _render_block end");
 **!
 **!     This function gives a image block for placement in a GIF file,
 **!	with or without transparency.
-**!	The some options actually gives two blocks, 
+**!	The some options actually gives two blocks,
 **!	the first with graphic control extensions for such things
 **!	as delay or transparency.
 **!
@@ -665,7 +665,7 @@ CHRONO("gif _render_block end");
 **! arg int y
 **!	Position of this image.
 **! arg int localpalette
-**!	If set, writes a local palette. 
+**!	If set, writes a local palette.
 **! arg object alpha
 **!	Alpha channel image; black is transparent.
 **! arg int r
@@ -698,7 +698,7 @@ CHRONO("gif _render_block end");
 **!     </dl>
 **!
 **! see also: encode, header_block, end_block
-**! 
+**!
 **! note
 **!	This is in the advanced sector of the GIF support;
 **!	please read some about how GIFs are packed.
@@ -730,7 +730,7 @@ CHRONO("gif render_block begin");
 
    alphacolor.r=alphacolor.g=alphacolor.b=0;
 
-   if (args<2) 
+   if (args<2)
       Pike_error("Image.GIF.render_block(): Too few arguments\n");
    if (TYPEOF(sp[-args]) != T_OBJECT ||
        !(img=get_storage(sp[-args].u.object,image_program)))
@@ -790,10 +790,10 @@ CHRONO("gif render_block begin");
 	    alphacolor.g=(unsigned char)(sp[7-args].u.integer);
 	    alphacolor.b=(unsigned char)(sp[8-args].u.integer);
 
-	    /* note: same as transparent color index 
+	    /* note: same as transparent color index
 	             in image_gif_header_block */
 	    alphaentry=1;
-	    if (numcolors>255) 
+	    if (numcolors>255)
 	       Pike_error("Image.GIF.render_block(): too many colors in colortable (255 is max, need one for transparency)\n");
 	 }
       }
@@ -857,12 +857,12 @@ CHRONO("gif render_block begin");
 	 }
       }
    }
-   else 
+   else
       transparency=0;
 
    bpp=1;
    while ((1<<bpp)<numcolors+alphaentry) bpp++;
-	 
+
 /*** write GCE if needed */
 
    if (transparency || delay || user_input || disposal)
@@ -914,7 +914,7 @@ CHRONO("gif render_block write local colortable begin");
       ps=begin_shared_string((1<<bpp)*3);
       image_colortable_write_rgb(nct,(unsigned char *)ps->str);
       memset(ps->str+(numcolors+alphaentry)*3,0,((1<<bpp)-numcolors)*3);
-      if (alphaentry) 
+      if (alphaentry)
       {
 	 ps->str[3*alphaidx+0]=alphacolor.r;
 	 ps->str[3*alphaidx+1]=alphacolor.g;
@@ -960,14 +960,14 @@ CHRONO("gif render_block end");
 **! method string encode_trans(object img,object colortable,int transp_index);
 **!     Create a complete GIF file.
 **!
-**!	The latter (<ref>encode_trans</ref>) functions 
+**!	The latter (<ref>encode_trans</ref>) functions
 **!	add transparency capabilities.
 **!
 **!	Example:
 **!	<pre>
 **!	img=<ref>Image.Image</ref>([...]);
 **!	[...] // make your very-nice image
-**!	write(<ref>Image.GIF.encode</ref>(img)); // write it as GIF on stdout 
+**!	write(<ref>Image.GIF.encode</ref>(img)); // write it as GIF on stdout
 **!	</pre>
 **!
 **! arg object img
@@ -993,8 +993,8 @@ CHRONO("gif render_block end");
 **! arg int a_r
 **! arg int a_g
 **! arg int a_b
-**!	Encode transparent pixels (given by alpha channel image) 
-**!	to have this color. This option is for making GIFs for 
+**!	Encode transparent pixels (given by alpha channel image)
+**!	to have this color. This option is for making GIFs for
 **!	the decoders that doesn't support transparency.
 **! arg int transp_index
 **!	Use this color no in the colortable as transparent color.
@@ -1037,7 +1037,7 @@ void _image_gif_encode(INT32 args,int fs)
       Pike_error("Image.GIF.encode(): Illegal argument 1 (expected image object)\n");
    add_ref(imgobj);
 
-   
+
    if (args>=2) {
       if (TYPEOF(sp[1-args]) == T_INT)
       {
@@ -1121,7 +1121,7 @@ void _image_gif_encode(INT32 args,int fs)
 	    if (!nct)
 	       Pike_error("Image.GIF.encode(): Internal error; colortable isn't colortable\n");
 	 }
-   
+
 	 tr.r=(unsigned char)sp[arg-args].u.integer;
 	 tr.g=(unsigned char)sp[1+arg-args].u.integer;
 	 tr.b=(unsigned char)sp[2+arg-args].u.integer;
@@ -1156,7 +1156,7 @@ void _image_gif_encode(INT32 args,int fs)
       image_gif_header_block(3);
    else if (trans==1)
    {
-      push_int64(tridx); 
+      push_int64(tridx);
       push_int(0);
       push_int(0);
       push_int(0);
@@ -1167,7 +1167,7 @@ void _image_gif_encode(INT32 args,int fs)
    }
    else
    {
-      push_int64(tridx); 
+      push_int64(tridx);
       image_gif_header_block(4);
    }
 
@@ -1251,11 +1251,11 @@ void image_gif_netscape_loop_block(INT32 args)
 **! method array __decode();
 **!     Decodes a GIF image structure down to chunks and
 **!     returns an array containing the GIF structure;
-**!	
+**!
 **!     <pre>
 **!	({int xsize,int ysize,      // 0: size of image drawing area
-**!	  int numcol,               // 2: suggested number of colors 
-**!	  void|string colortable,   // 3: opt. global colortable 
+**!	  int numcol,               // 2: suggested number of colors
+**!	  void|string colortable,   // 3: opt. global colortable
 **!	  ({ int aspx, int aspy,    // 4,0: aspect ratio or 0, 0 if not set
 **!	     int background }),     //   1: index of background color
 **!	</pre>
@@ -1264,12 +1264,12 @@ void image_gif_netscape_loop_block(INT32 args)
 **!	  ({ GIF.EXTENSION,         //   0: block identifier
 **!	     int extension,         //   1: extension number
 **!	     string data })         //   2: extension data
-**!				    
+**!
 **!	  ({ GIF.RENDER,            //   0: block identifier
 **!	     int x, int y,          //   1: position of render
 **!	     int xsize, int ysize,  //   3: size of render
 **!	     int interlace,         //   5: interlace flag
-**!	     void|string colortbl,  //   6: opt. local colortable 
+**!	     void|string colortbl,  //   6: opt. local colortable
 **!	     int lzwsize,           //   7: lzw code size
 **!	     string lzwdata })      //   8: packed lzw data
 **!     </pre>
@@ -1301,9 +1301,9 @@ static void _decode_get_extension(unsigned char **s,
 
    if (*len<3) { (*s)+=*len; (*len)=0; return; }
    n=0;
-   
+
    ext=(*s)[1];
-   
+
    (*len)-=2;
    (*s)+=2;
 
@@ -1354,10 +1354,10 @@ static void _decode_get_render(unsigned char **s,
       4 (16)   unused
       3 (8)    unused
       2..0 (7) bits per pixel - 1 (ie, palette size)
-   10+ ...local palette... 
+   10+ ...local palette...
    y-1  lzw minimum code
    y+0  size
-   y+1+ size bytes of packed lzw codes 
+   y+1+ size bytes of packed lzw codes
    ..repeat from y+0
    z    0 (end)
 */
@@ -1436,22 +1436,22 @@ static void image_gif___decode(INT32 args)
    pop_n_elems(args);
    SET_ONERROR(uwp,do_free_string,str);
 
-/* byte ... is 
+/* byte ... is
    0  'G'
    1  'I'
    2  'F'
-   3  '8' (ignored) 
+   3  '8' (ignored)
    4  '9' / '7' (ignored)
    5  'a' (ignored)
    6  xsize, low 8 bits
    7  xsize, high 8 bits
    8  ysize, low 8 bits
    9  ysize, high 8 bits
-   10 bitfield : 
+   10 bitfield :
       7 (128)    global palette flag
       6..4 (112) color resolution (= 2<<x)
       3 (8)      palette is sorted (ignored)
-      2..0 (7)   palette size (= 2<<x)   
+      2..0 (7)   palette size (= 2<<x)
    11 background color index
    12 aspect     (64*aspx/aspy-15)
    +numcolors*3 bytes of palette
@@ -1464,10 +1464,10 @@ static void image_gif___decode(INT32 args)
        s[1]!='I' ||
        s[2]!='F')
       Pike_error("Image.GIF.__decode: not a GIF (no GIF header found)\n");
-   
+
    xsize=s[6]+(s[7]<<8);
    ysize=s[8]+(s[9]<<8);
-   
+
    globalpalette=s[10]&128;
    colorres=((s[10]>>4)&7)+1;
    bpp=(s[10]&7)+1;
@@ -1477,7 +1477,7 @@ static void image_gif___decode(INT32 args)
    s+=13; len-=13;
    if (globalpalette && len<(unsigned long)(3<<bpp))
       Pike_error("Image.GIF.__decode: premature EOD (in global palette)\n");
-   
+
    push_int(xsize);
    push_int(ysize);
    push_int(1<<colorres);
@@ -1498,7 +1498,7 @@ static void image_gif___decode(INT32 args)
       int prim[]={2,3,5,7};
       int i;
       for (i=0; i<4; i++)
-	 while (!(aspx%prim[i]) && !(aspy%prim[i])) 
+	 while (!(aspx%prim[i]) && !(aspy%prim[i]))
 	    aspx/=prim[i],aspy/=prim[i];
       push_int(aspx); /* aspectx */
       push_int(aspy); /* aspecty */
@@ -1531,7 +1531,7 @@ static void image_gif___decode(INT32 args)
       {
 	 case 0x21: _decode_get_extension(&s, &len); n++; break;
 	 case 0x2c: _decode_get_render(&s, &len); n++; break;
-	 case 0x3b: 
+	 case 0x3b:
 	    push_int(GIF_ERROR_TOO_MUCH_DATA);
 	    push_string(make_shared_binary_string((char *)s+1,len-1));
 	    f_aggregate(2);
@@ -1563,24 +1563,24 @@ static void image_gif___decode(INT32 args)
 **! method array _decode(array __decoded);
 **!     Decodes a GIF image structure down to chunks, and
 **!     also decode the images in the render chunks.
-**!	
+**!
 **!     <pre>
 **!	({int xsize,int ysize,    // 0: size of image drawing area
-**!	  void|object colortable, // 2: opt. global colortable 
+**!	  void|object colortable, // 2: opt. global colortable
 **!	  ({ int aspx, int aspy,  // 3 0: aspect ratio or 0, 0 if not set
 **!	     int background }),   //   2: index of background color
 **!	</pre>
-**!     followed by any number these blocks in any order (gce chunks 
+**!     followed by any number these blocks in any order (gce chunks
 **!	are decoded and incorporated in the render chunks):
 **!	<pre>
 **!	  ({ GIF.RENDER,          //   0: block identifier
 **!	    int x, int y,         //   1: position of render
-**!	    object image,         //   3: render image 
+**!	    object image,         //   3: render image
 **!	    void|object alpha,    //   4: 0 or render alpha channel
 **!	    object colortable,    //   5: colortable (may be same as global)
-**!				       	   
-**!	    int interlace,        //   6: interlace flag 
-**!	    int trans_index,      //   7: 0 or transparent color index 
+**!
+**!	    int interlace,        //   6: interlace flag
+**!	    int trans_index,      //   7: 0 or transparent color index
 **!	    int delay,            //   8: 0 or delay in centiseconds
 **!	    int user_input,       //   9: user input flag
 **!	    int disposal})        //  10: disposal method number (0..7)
@@ -1603,10 +1603,10 @@ static void image_gif___decode(INT32 args)
 **!
 **!	The <ref>decode</ref> method uses this data in a way similar
 **!	to this program:
-**!   
-**!	<pre> 
+**!
+**!	<pre>
 **!	import Image;
-**!	
+**!
 **!	object my_decode_gif(string data)
 **!	{
 **!	   array a=GIF._decode(data);
@@ -1618,7 +1618,7 @@ static void image_gif___decode(INT32 args)
 **!	   return img;
 **!	}
 **!	</pre>
-**!	
+**!
 **!
 **! arg string gifdata
 **!	GIF data (with header and all)
@@ -1682,30 +1682,30 @@ fprintf(stderr,"_gif_decode_lzw(%lx,%lu,%d,%lx,%lx,%lx,%lu,%d)\n",
 
    for (n=0; n<clearcode; n++)
       c[n].prev=0xffff,c[n].len=1,c[n].c=n;
-   c[clearcode].len=0; 
-   c[endcode].len=0;   
+   c[clearcode].len=0;
+   c[endcode].len=0;
    last_last_seq = c+clearcode;
 
    while (bit>0)
    {
       /* get next code */
 
-      n=q&mask; 
+      n=q&mask;
       q>>=bits;
-      bit-=bits; 
+      bit-=bits;
 
 #ifdef GIF_DEBUG
       if (debug) fprintf(stderr,"code=%d 0x%02x bits=%d\n",n,n,bits);
 #endif
 
-      if (n==m && last!=n) 
+      if (n==m && last!=n)
       {
 	// Copy the last color from the previous sequence
 	 c[n].prev=last;
 	 c[n].c=last_last_seq->c;
 	 c[n].len=c[last].len+1;
       }
-      else if (n>=m) 
+      else if (n>=m)
       {
 #ifdef GIF_DEBUG
 	 fprintf(stderr,"cancel; illegal code, %d>=%d at %lx\n",n,m,s);
@@ -1713,7 +1713,7 @@ fprintf(stderr,"_gif_decode_lzw(%lx,%lu,%d,%lx,%lx,%lx,%lu,%d)\n",
 	 break; /* illegal code */
       }
       if (!c[n].len) {
-	 if (n==clearcode) 
+	 if (n==clearcode)
 	 {
 	    bits=obits+1;
 	    mask=(1<<bits)-1;
@@ -1722,21 +1722,21 @@ fprintf(stderr,"_gif_decode_lzw(%lx,%lu,%d,%lx,%lx,%lx,%lu,%d)\n",
 	    maxcode=1<<bits;
 	    last_last_seq = c+clearcode;
 	 }
-	 else 
+	 else
 	 {
 	    /* endcode */
 #ifdef GIF_DEBUG
 	    fprintf(stderr,"endcode at %lx\n",s);
 #endif
-	    break; 
+	    break;
 	 }
       } else {
 	 struct lzwc *myc;
 	 rgb_group *d,*da=NULL;
 	 unsigned short lc;
 	 myc=c+n;
-	 
-	 if (myc->len>dlen) 
+
+	 if (myc->len>dlen)
 	 {
 #ifdef GIF_DEBUG
 	    fprintf(stderr,"cancel at dlen left=%lu\n",dlen);
@@ -1747,7 +1747,7 @@ fprintf(stderr,"_gif_decode_lzw(%lx,%lu,%d,%lx,%lx,%lx,%lu,%d)\n",
 	 d=(dest+=myc->len);
 	 if (alpha) da=(alpha+=myc->len);
 	 dlen-=myc->len;
-	 
+
 	 for (;;)
 	 {
 	    lc=myc->c;
@@ -1784,11 +1784,11 @@ fprintf(stderr,"_gif_decode_lzw(%lx,%lu,%d,%lx,%lx,%lx,%lu,%d)\n",
 	       bits=12;
 	    }
 	    else
-	    { 
-	       bits++; 
+	    {
+	       bits++;
 	       mask=(1<<bits)-1;
-	       maxcode<<=1; 
-	       if (maxcode>MAX_GIF_CODE) 
+	       maxcode<<=1;
+	       if (maxcode>MAX_GIF_CODE)
 	       {
 #ifdef GIF_DEBUG
 		  fprintf(stderr,"cancel; gif codes=%ld m=%ld\n",maxcode,m);
@@ -1800,7 +1800,7 @@ fprintf(stderr,"_gif_decode_lzw(%lx,%lu,%d,%lx,%lx,%lx,%lu,%d)\n",
       }
 
 
-      while (bit<bits && len) 
+      while (bit<bits && len)
 	 q|=((*s)<<bit),bit+=8,s++,len--;
    }
 #ifdef GIF_DEBUG
@@ -1825,16 +1825,16 @@ static void gif_deinterlace(rgb_group *s,
    n=0;
    for (y=0; y<ysize; y+=8)
       memcpy(s+y*xsize,tmp+n++*xsize,xsize*sizeof(rgb_group));
-   for (y=4; y<ysize; y+=8)		  
+   for (y=4; y<ysize; y+=8)
       memcpy(s+y*xsize,tmp+n++*xsize,xsize*sizeof(rgb_group));
-   for (y=2; y<ysize; y+=4)		  
+   for (y=2; y<ysize; y+=4)
       memcpy(s+y*xsize,tmp+n++*xsize,xsize*sizeof(rgb_group));
-   for (y=1; y<ysize; y+=2)		  
+   for (y=1; y<ysize; y+=2)
       memcpy(s+y*xsize,tmp+n++*xsize,xsize*sizeof(rgb_group));
-   
+
    free(tmp);
 }
-	
+
 void image_gif__decode(INT32 args)
 {
    struct array *a,*b=NULL;
@@ -1856,7 +1856,7 @@ void image_gif__decode(INT32 args)
    if (TYPEOF(sp[-1]) != T_ARRAY)
       Pike_error("Image.GIF._decode: internal error: "
 	    "illegal result from __decode\n");
-   
+
    a=sp[-1].u.array;
    if (a->size<5)
       Pike_error("Image.GIF._decode: given (__decode'd) array "
@@ -2046,13 +2046,13 @@ void image_gif__decode(INT32 args)
 **! method object decode(array _decoded)
 **! method object decode(array __decoded)
 **!	Decodes GIF data and creates an image object.
-**! 	
+**!
 **! see also: encode
 **!
 **! note
 **!	This function may throw errors upon illegal GIF data.
 **!	This function uses <ref>__decode</ref>, <ref>_decode</ref>,
-**!	<ref>Image.Image->paste</ref> and 
+**!	<ref>Image.Image->paste</ref> and
 **!	<ref>Image.Image->paste_alpha</ref> internally.
 **!
 **! returns the decoded image as an image object
@@ -2091,11 +2091,11 @@ void image_gif_decode(INT32 args)
    push_svalue(a->item+0);
    push_svalue(a->item+1);
    o=clone_object(image_program,2);
-   
+
    for (n=4; n<a->size; n++)
       if (TYPEOF(a->item[n]) == T_ARRAY
 	  && (b=a->item[n].u.array)->size==11
-	  && TYPEOF(b->item[0]) == T_INT 
+	  && TYPEOF(b->item[0]) == T_INT
 	  && b->item[0].u.integer==GIF_RENDER
           && TYPEOF(b->item[3]) == T_OBJECT
 	  && get_storage(b->item[3].u.object, image_program) )
@@ -2105,8 +2105,8 @@ void image_gif_decode(INT32 args)
                               image_program);
 	 else
 	    alpha=NULL;
-	     
-	 if (alpha) 
+
+	 if (alpha)
 	 {
 	    push_svalue(b->item+3);
 	    push_svalue(b->item+4);
@@ -2137,7 +2137,7 @@ void image_gif_decode(INT32 args)
 **! method object decode_layer(array _decoded)
 **!	Decodes GIF data and creates an array of layers
 **!	or the resulting layer.
-**! 	
+**!
 **! see also: encode, decode_map
 **!
 **! note
@@ -2191,8 +2191,8 @@ void image_gif_decode_layers(INT32 args)
                               image_program);
 	 else
 	    alpha=NULL;
-	     
-	 if (alpha) 
+
+	 if (alpha)
 	 {
 	    push_text("image");
 	    push_svalue(b->item+3);
@@ -2309,7 +2309,7 @@ void image_gif__encode_render(INT32 args)
    push_svalue(a->item+5); /* colortable */
    push_svalue(a->item+1); /* x */
    push_svalue(a->item+2); /* y */
-   
+
    push_int(localp);
 
    if (TYPEOF(a->item[4]) == T_OBJECT)
@@ -2343,7 +2343,7 @@ void image_gif__encode_render(INT32 args)
 	 push_int(0);
 	 push_int(0);
       }
-      
+
    }
 
    push_svalue(a->item+8); /* delay */
@@ -2438,9 +2438,9 @@ void image_gif__encode(INT32 args)
    n=0;
    pop_n_elems(args);
 
-   if (a->size<4) 
+   if (a->size<4)
       Pike_error("Image.GIF._encode: Given array too small\n");
-   
+
    push_svalue(a->item+0); /* xsize */
    push_svalue(a->item+1); /* ysize */
    push_svalue(a->item+2); /* colortable or void */
@@ -2476,7 +2476,7 @@ void image_gif__encode(INT32 args)
 	 free_array(a);
 	 Pike_error("Image.GIF._encode: Illegal array on array index %d\n",pos);
       }
-      
+
       if (b->item[0].u.integer==GIF_RENDER)
       {
 	 push_svalue(a->item+pos);
@@ -2518,13 +2518,13 @@ static void image_gif_lzw_encode(INT32 args)
 
    if (args>=3 && !UNSAFE_IS_ZERO(sp+2-args))
       lzw.reversebits=1;
-   
+
    image_gif_lzw_add(&lzw,
 		     (unsigned char *)sp[-args].u.string->str,
 		     sp[-args].u.string->len);
 
    image_gif_lzw_finish(&lzw);
-   
+
    if (lzw.broken) Pike_error("out of memory\n");
 
    pop_n_elems(args);
@@ -2588,8 +2588,8 @@ static void image_gif_lzw_decode(INT32 args)
       c[n].len=1;
       c[n].c = DO_NOT_WARN((unsigned short)n);
    }
-   c[clearcode].len=0; 
-   c[endcode].len=0;   
+   c[clearcode].len=0;
+   c[endcode].len=0;
 
    last_last_seq = c+clearcode;
 
@@ -2616,33 +2616,33 @@ static void image_gif_lzw_decode(INT32 args)
 #endif
 
       if (reversebits)
-	 n=(q>>(bit-bits))&mask; 
+	 n=(q>>(bit-bits))&mask;
       else
       {
-	 n=q&mask; 
+	 n=q&mask;
 	 q>>=bits;
       }
-      bit-=bits; 
+      bit-=bits;
 
 #ifdef GIF_DEBUG
       fprintf(stderr,"code=%3d 0x%02x bits=%d bit=%2d *s=0x%02x len=%d\n",n,n,bits,bit,*s,len);
 #endif
 
-      if (n==m) 
+      if (n==m)
       {
 	 c[n].prev = DO_NOT_WARN((unsigned short)last);
 	 c[n].c=last_last_seq->c;
 	 c[n].len=c[last].len+1;
       }
-      else if (n>=m) 
+      else if (n>=m)
       {
 #ifdef GIF_DEBUG
 	 fprintf(stderr,"cancel; illegal code, %d>=%d at %lx\n",n,m,s);
 #endif
 	 break; /* illegal code */
       }
-      if (!c[n].len) 
-	 if (n==clearcode) 
+      if (!c[n].len)
+	 if (n==clearcode)
 	 {
 	    bits=obits+1;
 	    mask=(1<<bits)-1;
@@ -2650,22 +2650,22 @@ static void image_gif_lzw_decode(INT32 args)
 	    last=clearcode;
 	    maxcode=1<<bits;
 	 }
-	 else 
+	 else
 	 {
 	    /* endcode */
 #ifdef GIF_DEBUG
 	    fprintf(stderr,"endcode at %lx\n",s);
 #endif
-	    break; 
+	    break;
 	 }
-      else 
+      else
       {
 	 struct lzwc *myc;
 	 unsigned char *d;
 	 unsigned short lc;
 	 myc=c+n;
-	 
-	 if (myc->len>dlen) 
+
+	 if (myc->len>dlen)
 	 {
 	    ptrdiff_t p;
 	    p = (dest - dest0);
@@ -2691,7 +2691,7 @@ static void image_gif_lzw_decode(INT32 args)
 
 	 d=(dest+=myc->len);
 	 dlen-=myc->len;
-	 
+
 	 for (;;)
 	 {
 	    lc=myc->c;
@@ -2720,12 +2720,12 @@ static void image_gif_lzw_decode(INT32 args)
 	       m--;
 	       bits=12;
 	    }
-	    else 
-	    { 
-	       bits++; 
+	    else
+	    {
+	       bits++;
 	       mask=(1<<bits)-1;
-	       maxcode<<=1; 
-	       if (maxcode>MAX_GIF_CODE) 
+	       maxcode<<=1;
+	       if (maxcode>MAX_GIF_CODE)
 	       {
 #ifdef GIF_DEBUG
 		  fprintf(stderr,"cancel; gif codes=%ld m=%ld\n",maxcode,m);
@@ -2737,10 +2737,10 @@ static void image_gif_lzw_decode(INT32 args)
       }
 
       if (reversebits)
-	 while (bit<bits && len) 
+	 while (bit<bits && len)
 	    q=(q<<8)|(*s),bit+=8,s++,len--;
       else
-	 while (bit<bits && len) 
+	 while (bit<bits && len)
 	    q|=((long)(*s)<<bit),bit+=8,s++,len--;
    }
    free(c);
@@ -2828,7 +2828,7 @@ PIKE_MODULE_INIT
 	       tFunc(tStr tOr(tInt,tVoid) tOr(tInt,tVoid), tStr), 0);
 
   /** constants **/
-   
+
   add_integer_constant("RENDER",GIF_RENDER,0);
   add_integer_constant("EXTENSION",GIF_EXTENSION,0);
 

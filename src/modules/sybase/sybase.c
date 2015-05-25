@@ -122,7 +122,7 @@ static void show_status(CS_RETCODE ret) {
       SHOW_STATUS("status",CS_END_RESULTS);
       SHOW_STATUS("status",CS_FAIL);
       SHOW_STATUS("status",CS_END_DATA);
-    default: 
+    default:
       sybdebug((stderr,"Unknown status: %d\n",(int)ret));
       break;
     }
@@ -156,7 +156,7 @@ static void show_severity(CS_INT severity) {
       SHOW_STATUS("severity",CS_SV_COMM_FAIL);
       SHOW_STATUS("severity",CS_SV_INTERNAL_FAIL);
       SHOW_STATUS("severity",CS_SV_FATAL);
-    }  
+    }
 }
 #else /* SYBDEBUG */
 #define show_status(X)
@@ -191,7 +191,7 @@ static void flush_results_queue(pike_sybase_connection *this) {
 #else
   cmd=this->cmd;
   for (j=0;j<100;j++) { /* safety valve, I don't want to loop forever */
-    
+
     sybdebug((stderr,"Getting results #%d\n",j));
     ret=ct_results(cmd,&rtype);
     show_status(ret);
@@ -205,7 +205,7 @@ static void flush_results_queue(pike_sybase_connection *this) {
       ret=ct_cancel(this->connection,NULL,CS_CANCEL_ALL);
       continue;
     }
-    
+
     /* I'd probably be getting a result back here. I don't need it, so
      * I'll just cancel */
     switch(rtype) {
@@ -224,7 +224,7 @@ static void flush_results_queue(pike_sybase_connection *this) {
 /*
  * returns 1 if there's any Pike_error
  * the same thread-safety rules as flush_results_queue apply
- * QUESTION: 
+ * QUESTION:
  * Should I explore all messages, and leave in this->error the
  * last one with an error-level severity?
  * or should we maybe only consider server messages?
@@ -233,7 +233,7 @@ static int handle_errors (pike_sybase_connection *this) {
   SQLCA message;
   CS_INT num,j, severity;
   CS_RETCODE ret;
-  
+
   sybdebug((stderr,"Handling errors\n"));
   ret=ct_diag(this->connection,CS_STATUS,CS_ALLMSG_TYPE,CS_UNUSED,&num);
   show_status(ret);
@@ -264,7 +264,7 @@ static int handle_errors (pike_sybase_connection *this) {
 
   this->had_error=1;
   ct_diag(this->connection,CS_CLEAR,SQLCA_TYPE,CS_UNUSED,NULL);
-  
+
   return 0;
 }
 
@@ -275,7 +275,7 @@ static int handle_errors (pike_sybase_connection *this) {
 
 static void sybase_create (struct object * o) {
   pike_sybase_connection *this=THIS;
-  
+
   sybdebug((stderr,"sybase_create()\n"));
   this->context=NULL;
   this->connection=NULL;
@@ -302,7 +302,7 @@ static void sybase_destroy (struct object * o) {
 
   if (this->busy > 0) {
     sybdebug((stderr,"We're busy while destroying. Trying to cancel\n"));
-    ret=ct_cancel(this->connection,NULL,CS_CANCEL_ALL); 
+    ret=ct_cancel(this->connection,NULL,CS_CANCEL_ALL);
     show_status(ret);
     /* we only have one active command, but what the hell.. */
     if (FAILED(ret)) {
@@ -312,7 +312,7 @@ static void sybase_destroy (struct object * o) {
     sybdebug((stderr,"Busy status: %d\n",this->busy));
     /* if we fail, it's useless anyways. Maybe we should Pike_fatal() */
   }
-  
+
   if (this->cmd) {
     sybdebug((stderr,"this->cmd still active. Dropping\n"));
     ret=ct_cmd_drop(this->cmd);
@@ -320,7 +320,7 @@ static void sybase_destroy (struct object * o) {
     if (FAILED(ret)) {
       sybdebug((stderr,"\tHm... failed\n"));
     }
-    this->cmd=NULL; 
+    this->cmd=NULL;
     /* if we fail, it's useless anyways. Maybe we should Pike_fatal() */
   }
 
@@ -375,7 +375,7 @@ static void sybase_destroy (struct object * o) {
 
   SYB_UNLOCK(mainlock);
   SYB_UNLOCK(this->lock);
-  
+
   THREADS_DISALLOW();
   SYB_MT_EXIT(THIS->lock);
 }
@@ -406,7 +406,7 @@ static void f_connect (INT32 args) {
   int usernamelen=0, passlen=0, hostnamelen=CS_UNUSED;
   pike_sybase_connection *this=THIS;
 
-  
+
   sybdebug((stderr,"sybase::connect(args=%d)\n",args));
   check_all_args("sybase->connect",args,
                  BIT_STRING|BIT_VOID,BIT_STRING|BIT_VOID,
@@ -431,14 +431,14 @@ static void f_connect (INT32 args) {
   }
 
   THREADS_ALLOW();
-  SYB_LOCK(mainlock); 
-  
+  SYB_LOCK(mainlock);
+
   /* It's OK not to lock here. It's just a check that should never happen.
    * if it happens, we're in deep sh*t already.*/
   if (!(context=this->context)) {
     err="Internal error: connection attempted, but no context available\n";
   }
-  
+
   if (!err) {
     sybdebug((stderr,"\tallocating context\n"));
     ret=ct_con_alloc(context,&connection); /*sybase says it's thread-safe..*/
@@ -448,7 +448,7 @@ static void f_connect (INT32 args) {
     }
   }
   errdebug(err);
-  
+
   if (!err) { /* initialize error-handling code */
     ret=ct_diag(connection,CS_INIT,CS_UNUSED,CS_UNUSED,NULL);
     show_status(ret);
@@ -501,7 +501,7 @@ static void f_connect (INT32 args) {
   errdebug(err);
 
   if (err) ct_con_drop(connection);
-      
+
   SYB_UNLOCK(mainlock);
   THREADS_DISALLOW();
 
@@ -512,7 +512,7 @@ static void f_connect (INT32 args) {
 
   pop_n_elems(args);
   sybdebug((stderr,"sybase::connect exiting\n"));
-  
+
 }
 
 /* create (host,database,username,password,port|options) */
@@ -522,14 +522,14 @@ static void f_create (INT32 args) {
   CS_CONTEXT *context;
   char* err=NULL;
   pike_sybase_connection *this=THIS;
-  
+
   sybdebug((stderr,"sybase::create(args=%d)\n",args));
 
   check_all_args("sybase->create",args,
                  BIT_STRING|BIT_VOID,BIT_STRING|BIT_VOID,
                  BIT_STRING|BIT_VOID,BIT_STRING|BIT_VOID,
                  BIT_INT|BIT_MAPPING|BIT_VOID, 0);
-  
+
   /* if connected, disconnect */
   if (this->context)
     sybase_destroy(Pike_fp->current_object);
@@ -542,7 +542,7 @@ static void f_create (INT32 args) {
   show_status(ret);
   if (FAILED(ret))
     err = "Cannot allocate context!\n";
-  
+
   context=this->context;
 
   /* initialize open client-library emulation */
@@ -565,7 +565,7 @@ static void f_create (INT32 args) {
 
   SYB_UNLOCK(mainlock);
   THREADS_DISALLOW();
-  
+
   if (err) Pike_error(err); /* throw the exception if appropriate */
 
   /* now connect */
@@ -586,7 +586,7 @@ static void f_create (INT32 args) {
 
 #define PS_NORESULT 1
 #define PS_RESULT_THIS 2
-#define PS_RESULT_STATUS 3 
+#define PS_RESULT_STATUS 3
 /* if function_result == PS_RESULT_STATUS, the value to be returned
    is *function_result */
 
@@ -602,9 +602,9 @@ static void f_big_query(INT32 args) {
   CS_INT *results_lengths;
   CS_SMALLINT *nulls;
   int toreturn=PS_NORESULT; /* one of the #defines here above */
-  
-  
-  
+
+
+
   /* check, get and pop args */
   check_all_args("sybase->big_query",args,BIT_STRING,0);
   query=sp[-args].u.string->str;
@@ -620,13 +620,13 @@ static void f_big_query(INT32 args) {
 
   THREADS_ALLOW();
   SYB_LOCK(this->lock);
-  
+
   if (cmd==NULL) {
     /* no sense in alloc-ing everytime */
     sybdebug((stderr,"Allocating command structure\n"));
     ret=ct_cmd_alloc(this->connection, &cmd);
     show_status(ret);
-    
+
     if (FAILED(ret)) {
       sybdebug((stderr,"\tUh oh... problems\n"));
       err="Error allocating command\n";
@@ -672,7 +672,7 @@ static void f_big_query(INT32 args) {
       err="Error while sending command\n";
     }
   }
-  
+
   if (err) { /* we can't be done yet */
     sybdebug((stderr,"Problems. Dropping command\n"));
     ct_cmd_drop(cmd);
@@ -684,14 +684,14 @@ static void f_big_query(INT32 args) {
 
   /* let's move the first part of a process here.
    */
-  
+
   while (!err && !done) {
     /* okay, let's see what we got */
     sybdebug((stderr,"Issuing results\n"));
     ret=ct_results(cmd,&rtype);
     show_status(ret);
     show_results_type(rtype);
-    
+
     switch(ret) {
     case CS_PENDING:
     case CS_BUSY:
@@ -746,7 +746,7 @@ static void f_big_query(INT32 args) {
       this->results=results;
       this->results_lengths=results_lengths;
       this->nulls=nulls;
-      
+
       /* these values are set for each column, since we're fetching
        * one row per cycle in fetch_row */
 /*       description.datatype=CS_TEXT_TYPE; */
@@ -771,7 +771,7 @@ static void f_big_query(INT32 args) {
         }
 
         sybdebug((stderr,"Binding column %d\n",j+1));
-        description.maxlength=length+EXTRA_COLUMN_SPACE; 
+        description.maxlength=length+EXTRA_COLUMN_SPACE;
         /* maxlength used to be MAX_RESULTS_SIZE-1. Let's make sure we don't
          * goof*/
         ret=ct_bind(cmd,j+1,&description,results[j],
@@ -808,10 +808,10 @@ static void f_big_query(INT32 args) {
         description.precision=CS_SRC_VALUE;
         description.count=1;
         description.locale=NULL;
-        
-        
+
+
         sybdebug((stderr,"Binding...\n"));
-        ret=ct_bind(cmd,1,&description,function_result,NULL,NULL); 
+        ret=ct_bind(cmd,1,&description,function_result,NULL,NULL);
         /* TODO: use binary strings */
 
         do {
@@ -820,11 +820,11 @@ static void f_big_query(INT32 args) {
           show_status(ret);
           sybdebug((stderr,"Got: %s\n",function_result));
         } while (OK(ret));
-        
-        
-        
+
+
+
         toreturn=PS_RESULT_STATUS;
-        
+
       } while (0);
       /* flush_results_queue(this); No need to. We'll loop in the while
        * cycle, and if there's some result we'll catch it elsewhere.
@@ -872,7 +872,7 @@ static void f_big_query(INT32 args) {
       break;
     }
   }
-        
+
   sybdebug((stderr,"Busy status: %d\n",this->busy));
 
   SYB_UNLOCK(this->lock);
@@ -1013,9 +1013,9 @@ static void f_num_fields(INT32 args) {
 
   SYB_UNLOCK(this->lock);
   THREADS_DISALLOW();
-  
+
   if (err) Pike_error(err);
-  
+
   push_int(cols);
 }
 
@@ -1027,7 +1027,7 @@ static void f_affected_rows(INT32 args) {
   pike_sybase_connection *this=THIS;
 
   pop_n_elems(args);
-  
+
   THREADS_ALLOW();
   SYB_LOCK(this->lock);
 
@@ -1039,9 +1039,9 @@ static void f_affected_rows(INT32 args) {
 
   SYB_UNLOCK(this->lock);
   THREADS_DISALLOW();
-  
+
   if (err) Pike_error(err);
-  
+
   push_int(rows);
 }
 
@@ -1061,7 +1061,7 @@ static void f_fetch_fields(INT32 args) {
 
   THREADS_ALLOW();
   SYB_LOCK(this->lock);
-  
+
   for (j=0;j<numcols;j++) {
     sybdebug((stderr,"Describing column %d\n",j+1));
     ret=ct_describe(this->cmd,j+1,&descs[j]);
@@ -1074,7 +1074,7 @@ static void f_fetch_fields(INT32 args) {
 
   SYB_UNLOCK(this->lock);
   THREADS_DISALLOW();
-  
+
   for(j=0;j<numcols;j++) {
     nflags=0;
     desc=&descs[j];
@@ -1159,7 +1159,7 @@ static void f_fetch_fields(INT32 args) {
       sybdebug((stderr,"No flags"));
       push_int(0);
     }
-    
+
     f_aggregate_mapping(2*4);
   }
 
@@ -1189,11 +1189,11 @@ PIKE_MODULE_INIT {
   set_exit_callback(sybase_destroy);
 
   /* function(void|string,void|string,void|string,void|string,int|void:void) */
-  ADD_FUNCTION("create",f_create,tFunc(tOr(tVoid,tStr) tOr(tVoid,tStr) 
+  ADD_FUNCTION("create",f_create,tFunc(tOr(tVoid,tStr) tOr(tVoid,tStr)
                                        tOr(tVoid,tStr) tOr(tVoid,tStr)
                                        tOr(tInt,tVoid), tVoid),
                0);
-  ADD_FUNCTION("connect",f_connect,tFunc(tOr(tVoid,tStr) tOr(tVoid,tStr) 
+  ADD_FUNCTION("connect",f_connect,tFunc(tOr(tVoid,tStr) tOr(tVoid,tStr)
                                          tOr(tVoid,tStr) tOr(tVoid,tStr)
                                          tOr(tInt,tVoid), tVoid),
                0);
@@ -1222,7 +1222,7 @@ PIKE_MODULE_INIT {
 
   sybase_program=end_program();
   add_program_constant("sybase",sybase_program,0);
-  
+
   SYB_MT_INIT(mainlock);
 }
 

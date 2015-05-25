@@ -277,7 +277,7 @@ AC_CHECK_HEADERS( signal.h netinet/in.h arpa/inet.h sys/types.h sys/stat.h \
 AC_CHECK_FUNCS( gethrtime sigaction )
 
 if test "x$with_GTK" = "xyes" ; then
-  
+
   PIKE_FEATURE_NODEP(GTK1)
   if test "x$with_GTK2" = "xyes" ; then
     MY_AC_PATH_PROG(PKG_CONFIG,${ac_tool_prefix}pkg-config,no)
@@ -296,7 +296,7 @@ AC_SUBST(have_gtk_120)
    if test x$have_gtk_120 = xno_gtk_120 ; then
      AM_PATH_GTK(1.1.13,[WITH_GTK=1],[WITH_GTK=0])
    else
-     WITH_GTK=1 
+     WITH_GTK=1
    fi
  else
    if ${ac_tool_prefix}pkg-config gtk+-2.0 2>/dev/null ; then
@@ -380,15 +380,15 @@ if test "x$WITH_GTK" = x1 ; then
 
  PGTK_CFLAGS="$GTK_CFLAGS"
  PGTK_LIBS="$GTK_LIBS"
- 
+
  CFLAGS="$CFLAGS $GTK_CFLAGS"
  LIBS="$MODULE_LDFLAGS $LIBS"
- 
+
  dnl Check for GL/MesaGL libraries
  AC_ARG_WITH(GL-prefix,  [  --with-GL-prefix=DIR    Prefix where GL/MesaGL is installed])
  AC_ARG_WITH(lib-GL,     [  --with-lib-GL           use '-lGL'])
  AC_ARG_WITH(lib-MesaGL, [  --with-lib-MesaGL       use '-lMesaGL'])
- 
+
  if test "x$with_GL_prefix" = "x" ; then
   GL_LDOPTS=""
   GL_CFLAGS=""
@@ -396,17 +396,17 @@ if test "x$WITH_GTK" = x1 ; then
   GL_LDOPTS="-L$with_GL_prefix/lib"
   GL_CFLAGS="-I$with_GL_prefix/include"
  fi
- 
+
  saved_LIBS="$LIBS"
- 
+
  PIKE_FEATURE_WITHOUT(Gnome)
  AC_ARG_WITH(gnome, [  --without-gnome         no support for gnome],[],[with_gnome=yes])
- 
+
  if test "x$with_gnome" = "xyes"; then
- 
+
  PIKE_FEATURE_NODEP(Gnome)
  MY_AC_PATH_PROG(GNOME_CONFIG,${ac_tool_prefix}gnome-config,no)
- 
+
  if test "$GNOME_CONFIG" = "no"; then
    :
  else
@@ -419,7 +419,7 @@ if test "x$WITH_GTK" = x1 ; then
  fi
 
  AC_MSG_CHECKING([gnome1])
- 
+
  if test "$GNOME_CONFIG" = "no"; then
    pgtk_has_gnome=nognome
    AC_MSG_RESULT(no);
@@ -430,7 +430,7 @@ if test "x$WITH_GTK" = x1 ; then
    AC_MSG_RESULT(yes);
    PIKE_FEATURE_OK(Gnome)
  fi
- 
+
  AC_MSG_CHECKING([gnome docklets])
  if test "$GNOME_CONFIG" = "no"; then
    pgtk_has_docklets=nodocklets
@@ -535,16 +535,16 @@ if test "x$WITH_GTK" = x1 ; then
      AC_DEFINE(HAVE_GNOME)
    fi
  fi
- 
+
  AC_MSG_CHECKING([if HAVE_SAVE_SESSION_SIGNAL is defined in applet-widget.h])
  AC_CACHE_VAL(pgtk_cv_defined_HAVE_SAVE_SESSION_SIGNAL,[
  AC_TRY_COMPILE([
-#include <applet-widget.h> 
- ], 
+#include <applet-widget.h>
+ ],
  [
    int i = HAVE_SAVE_SESSION_SIGNAL;
    exit(0);
- ], 
+ ],
  [pgtk_cv_defined_HAVE_SAVE_SESSION_SIGNAL='defined HAVE_SAVE_SESSION_SIGNAL'],
  [pgtk_cv_defined_HAVE_SAVE_SESSION_SIGNAL=''])
  ])
@@ -553,16 +553,16 @@ if test "x$WITH_GTK" = x1 ; then
  else
    AC_MSG_RESULT(yes)
  fi
- 
+
  AC_MSG_CHECKING([if HAVE_APPLET_BIND_EVENTS is defined in applet-widget.h])
  AC_CACHE_VAL(pgtk_cv_defined_HAVE_APPLET_BIND_EVENTS,[
  AC_TRY_COMPILE([
-#include <applet-widget.h> 
- ], 
+#include <applet-widget.h>
+ ],
  [
    int i = HAVE_APPLET_BIND_EVENTS;
    exit(0);
- ], 
+ ],
  [pgtk_cv_defined_HAVE_APPLET_BIND_EVENTS='defined HAVE_APPLET_BIND_EVENTS'],
  [pgtk_cv_defined_HAVE_APPLET_BIND_EVENTS=''])
  ])
@@ -571,17 +571,17 @@ if test "x$WITH_GTK" = x1 ; then
  else
    AC_MSG_RESULT(yes)
  fi
- 
- 
+
+
  AC_MSG_CHECKING([if HAVE_PANEL_PIXEL_SIZE is defined in applet-widget.h])
  AC_CACHE_VAL(pgtk_cv_defined_HAVE_PANEL_PIXEL_SIZE,[
  AC_TRY_COMPILE([
-#include <applet-widget.h> 
- ], 
+#include <applet-widget.h>
+ ],
  [
    int i = HAVE_PANEL_PIXEL_SIZE;
    exit(0);
- ], 
+ ],
  [pgtk_cv_defined_HAVE_PANEL_PIXEL_SIZE='defined HAVE_PANEL_PIXEL_SIZE'],
  [pgtk_cv_defined_HAVE_PANEL_PIXEL_SIZE=''])
  ])
@@ -590,16 +590,16 @@ if test "x$WITH_GTK" = x1 ; then
  else
    AC_MSG_RESULT(yes)
  fi
- 
+
  AC_MSG_CHECKING([if HAVE_PANEL_DRAW_SIGNAL is defined in applet-widget.h])
  AC_CACHE_VAL(pgtk_cv_defined_HAVE_PANEL_DRAW_SIGNAL,[
  AC_TRY_COMPILE([
-#include <applet-widget.h> 
- ], 
+#include <applet-widget.h>
+ ],
  [
    int i = HAVE_PANEL_DRAW_SIGNAL;
    exit(0);
- ], 
+ ],
  [pgtk_cv_defined_HAVE_PANEL_DRAW_SIGNAL='defined HAVE_PANEL_DRAW_SIGNAL'],
  [pgtk_cv_defined_HAVE_PANEL_DRAW_SIGNAL=''])
  ])
@@ -608,16 +608,16 @@ if test "x$WITH_GTK" = x1 ; then
  else
    AC_MSG_RESULT(yes)
  fi
- 
+
  AC_MSG_CHECKING([if HAVE_APPLET_QUEUE_RESIZE is defined in applet-widget.h])
  AC_CACHE_VAL(pgtk_cv_defined_HAVE_APPLET_QUEUE_RESIZE,[
  AC_TRY_COMPILE([
-#include <applet-widget.h> 
- ], 
+#include <applet-widget.h>
+ ],
  [
    int i = HAVE_APPLET_QUEUE_RESIZE;
    exit(0);
- ], 
+ ],
  [pgtk_cv_defined_HAVE_APPLET_QUEUE_RESIZE='defined HAVE_APPLET_QUEUE_RESIZE'],
  [pgtk_cv_defined_HAVE_APPLET_QUEUE_RESIZE=''])
  ])
@@ -626,20 +626,20 @@ if test "x$WITH_GTK" = x1 ; then
  else
    AC_MSG_RESULT(yes)
  fi
- 
+
  CFLAGS="$oCFLAGS"
- 
+
  AC_CHECK_HEADERS( X11/xpm.h )
  AC_CHECK_LIB(Xpm, XpmReadFileToXpmImage,,,`$ac_cv_path_GTK_CONFIG --libs`)
- 
+
  # End of gnome dependent stuff.
  fi
- 
+
  AC_CHECK_LIB(gtkdatabox, main,,,`$ac_cv_path_GTK_CONFIG --libs`)
  # This cache variable interferes with GTK2.
  unset ac_cv_header_gtkdatabox_h
  AC_CHECK_HEADERS(gtkdatabox.h)
- 
+
  AC_SUBST(pgtk_have_gtkdatabox)
  PIKE_FEATURE_NODEP(GTK1.Databox)
  AC_SUBST(DATABOX_LIBS)
@@ -750,14 +750,14 @@ if test "x$WITH_GTK" = x1 ; then
    CFLAGS="$CFLAGS $GTK_CFLAGS"
    AC_MSG_CHECKING([X11 in GDK using gdkx.h])
    AC_TRY_COMPILE([
-#include <gdk/gdk.h> 
-#include <gdk/gdkx.h> 
+#include <gdk/gdk.h>
+#include <gdk/gdkx.h>
 #include <gdk/gdkprivate.h>
- ], 
+ ],
  [
      GdkWindowPrivate *w = (GdkWindowPrivate *)0;
      &w->xwindow;
- ], 
+ ],
  [have_x11=x11],
  [have_x11=nox11])
   if test "x$have_x11" = "xx11" ; then
@@ -766,19 +766,19 @@ if test "x$WITH_GTK" = x1 ; then
    AC_MSG_RESULT(no)
   fi
   if test "x$have_x11" = "xx11" ; then
-  
+
    AC_MSG_CHECKING([X11 DPMS extension])
 
    AC_TRY_COMPILE([
-#include <gdk/gdk.h> 
-#include <gdk/gdkx.h> 
-#include <X11/extensions/dpms.h> 
- ], 
+#include <gdk/gdk.h>
+#include <gdk/gdkx.h>
+#include <X11/extensions/dpms.h>
+ ],
  [
      CARD16 state;
      BOOL dpms_off;
      DPMSInfo(GDK_DISPLAY(), &state, &dpms_off);
- ], 
+ ],
  [_res=1],
  [_res=0])
 
@@ -794,7 +794,7 @@ if test "x$WITH_GTK" = x1 ; then
   fi
 
   if test "x$WITH_GTK" = x1 -o "x$WITH_GTK" = x2 ; then
-    # On some systems, gtk-config et al points to uninstalled 
+    # On some systems, gtk-config et al points to uninstalled
     # libraries. Use this to be able to detect a faulty installation
     # of GTK, ie try a real link. If it fails, warn and don't try
     # to use GTK or the detected libs.
@@ -819,7 +819,7 @@ if test "x$WITH_GTK" = x1 ; then
       LIBGLADE_LIBS=""
       LIBS=""
       PIKE_FEATURE(GTK,[no (linking failed, erroneous installation?)])
-      PIKE_MSG_WARN([GTK found, but linking failed. Your installation seems to 
+      PIKE_MSG_WARN([GTK found, but linking failed. Your installation seems to
 be missing pieces. See .../post_modules/GTK/config.log.])
     fi
   fi

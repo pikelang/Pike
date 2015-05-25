@@ -101,7 +101,7 @@ MAKE_PUSH_TOKEN(2);
 static void do_free_arrayptr( struct array **x )
 {
   free_array( *x );
-}			   
+}
 
 /*! @decl array(array(string)|string) tokenize(string code)
  *!
@@ -126,7 +126,7 @@ static void f_tokenize( INT32 args )
   get_all_args("tokenize", args, "%W", &data);
 
   SET_ONERROR(tmp, do_free_arrayptr, &res);
-  
+
   switch(data->size_shift)
   {
     case 0:

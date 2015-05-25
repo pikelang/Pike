@@ -263,7 +263,7 @@ PMOD_EXPORT void o_cast_to_int(void)
 #endif
 #ifdef HAVE_ISNAN
 	isnan(sp[-1].u.float_number) ||
-#endif	
+#endif
 	0) {
       Pike_error("Can't cast infinites or NaN to int.\n");
     } else {
@@ -285,7 +285,7 @@ PMOD_EXPORT void o_cast_to_int(void)
       }
     }
     break;
-      
+
   case T_STRING:
     /* The generic function is rather slow, so I added this
      * code for benchmark purposes. :-) /per
@@ -302,7 +302,7 @@ PMOD_EXPORT void o_cast_to_int(void)
 
   case PIKE_T_INT:
     break;
-	    
+
   default:
     Pike_error("Cannot cast %s to int.\n", get_name_of_type(TYPEOF(sp[-1])));
     break;
@@ -355,7 +355,7 @@ PMOD_EXPORT void o_cast_to_string(void)
       }
     }
     return;
-	    
+
   case T_ARRAY:
     {
       int i, alen;
@@ -447,10 +447,10 @@ PMOD_EXPORT void o_cast_to_string(void)
       org = sp[-1].u.integer;
       *b-- = '\0';
       i = org;
-      
+
       if( org < 0 )
         i = -i;
-      
+
       goto jin;				       /* C as a macro assembler :-) */
       do
       {
@@ -458,7 +458,7 @@ PMOD_EXPORT void o_cast_to_string(void)
 jin:    *b-- = '0'+(i%10);
       }
       while( i >= 10 );
-      
+
       if( org < 0 )
         *b = '-';
       else
@@ -1060,7 +1060,7 @@ int low_check_soft_cast(struct svalue *s, struct pike_type *type)
     /* FIXME: Add code here. */
     return 1;
   }
-    
+
   return 0;
 }
 
@@ -1094,7 +1094,7 @@ void o_check_soft_cast(struct svalue *s, struct pike_type *type)
 
     t1 = describe_type(type);
     SET_ONERROR(tmp1, do_free_string, t1);
-	  
+
     free_type(sval_type);
 
     bad_arg_error(NULL, Pike_sp-1, 1, 1, t1->str, Pike_sp-1,
@@ -1473,7 +1473,7 @@ PMOD_EXPORT void f_add(INT32 args)
 
   types=0;
   for(e=-args;e<0;e++) types |= 1<<TYPEOF(sp[e]);
-    
+
   switch(types)
   {
   default:
@@ -1657,7 +1657,7 @@ PMOD_EXPORT void f_add(INT32 args)
     r=begin_wide_shared_string(size,max_shift);
     buf=MKPCHARP_STR(r);
     size=0;
-    
+
     for(e=-args;e<0;e++)
     {
       switch(TYPEOF(sp[e]))
@@ -1842,7 +1842,7 @@ PMOD_EXPORT void f_add(INT32 args)
   case BIT_ARRAY|BIT_INT:
     ADD_WITH_UNDEFINED (array, T_ARRAY, add_arrays, push_array);
     break;
-      
+
   case BIT_ARRAY:
     ADD (array, add_arrays, push_array);
     break;
@@ -1883,7 +1883,7 @@ static int generate_sum(node *n)
   case 2:
     first_arg=my_get_arg(&_CDR(n), 0);
     second_arg=my_get_arg(&_CDR(n), 1);
-    
+
     do_docode(CDR(n),DO_NOT_COPY_TOPLEVEL);
     if(first_arg[0]->type == float_type_string &&
        second_arg[0]->type == float_type_string)
@@ -1907,7 +1907,7 @@ static int generate_sum(node *n)
     first_arg = my_get_arg(&_CDR(n), 0);
     second_arg = my_get_arg(&_CDR(n), 1);
     third_arg = my_get_arg(&_CDR(n), 2);
-    
+
     if(first_arg[0]->type == float_type_string &&
        second_arg[0]->type == float_type_string)
     {
@@ -1945,7 +1945,7 @@ static int generate_sum(node *n)
     do_docode(*third_arg, 0);
     emit0(F_ADD);
     modify_stack_depth(-1);
-    
+
     return 1;
 
   default:
@@ -2123,7 +2123,7 @@ static node *optimize_binary(node *n)
 	)));
 	return ret;
       }
-      
+
       if((*second_arg)->token == F_APPLY &&
 	 CAR(*second_arg)->token == F_CONSTANT &&
 	 is_eq(& CAR(*second_arg)->u.sval, & CAR(n)->u.sval))
@@ -2274,9 +2274,9 @@ static int call_lfun(int left, int right)
   return 0;
 }
 
-struct mapping *merge_mapping_array_ordered(struct mapping *a, 
+struct mapping *merge_mapping_array_ordered(struct mapping *a,
 					    struct array *b, INT32 op);
-struct mapping *merge_mapping_array_unordered(struct mapping *a, 
+struct mapping *merge_mapping_array_unordered(struct mapping *a,
 					      struct array *b, INT32 op);
 
 PMOD_EXPORT void o_subtract(void)
@@ -2515,7 +2515,7 @@ PMOD_EXPORT void f_minus(INT32 args)
 	f_add(args);
 	break;
       }
-    
+
       push_svalue(s);
       for(e=1;e<args;e++)
       {
@@ -2551,7 +2551,7 @@ PMOD_EXPORT void o_and(void)
 {
   if(TYPEOF(sp[-1]) != TYPEOF(sp[-2]))
   {
-     if(call_lfun(LFUN_AND, LFUN_RAND)) 
+     if(call_lfun(LFUN_AND, LFUN_RAND))
 	return;
      else if (((TYPEOF(sp[-1]) == T_TYPE) || (TYPEOF(sp[-1]) == T_PROGRAM) ||
 	       (TYPEOF(sp[-1]) == T_FUNCTION)) &&
@@ -2573,7 +2573,7 @@ PMOD_EXPORT void o_and(void)
 	if (TYPEOF(sp[-1]) != T_TYPE)
 	{
 	   struct program *p = program_from_svalue(sp - 1);
-	   if (!p) 
+	   if (!p)
 	   {
 	      int args = 2;
 	      SIMPLE_BAD_ARG_ERROR("`&", 2, "type");
@@ -2583,7 +2583,7 @@ PMOD_EXPORT void o_and(void)
 	   free_svalue(sp - 1);
 	   SET_SVAL(sp[-1], T_TYPE, 0, type, pop_unfinished_type());
 	}
-     } 
+     }
      else if (TYPEOF(sp[-2]) == T_MAPPING)
         switch (TYPEOF(sp[-1]))
 	{
@@ -2624,7 +2624,7 @@ PMOD_EXPORT void o_and(void)
 	      SIMPLE_BAD_ARG_ERROR("`&", 2, "mapping");
 	   }
 	}
-     else 
+     else
      {
 	int args = 2;
 	SIMPLE_BAD_ARG_ERROR("`&", 2, get_name_of_type(TYPEOF(sp[-2])));
@@ -2636,7 +2636,7 @@ PMOD_EXPORT void o_and(void)
   case T_OBJECT:
     CALL_OPERATOR(LFUN_AND,2);
     break;
-    
+
   case T_INT:
     sp--;
     SET_SVAL(sp[-1], PIKE_T_INT, NUMBER_NUMBER, integer,
@@ -2666,7 +2666,7 @@ PMOD_EXPORT void o_and(void)
     push_multiset(l);
     return;
   }
-    
+
   case T_ARRAY:
   {
     struct array *a;
@@ -2697,7 +2697,7 @@ PMOD_EXPORT void o_and(void)
     if (!p) {
       int args = 2;
       SIMPLE_BAD_ARG_ERROR("`&", 1, "type");
-    }    
+    }
     type_stack_mark();
     push_object_type(0, p->id);
     a = pop_unfinished_type();
@@ -2706,7 +2706,7 @@ PMOD_EXPORT void o_and(void)
     if (!p) {
       int args = 2;
       SIMPLE_BAD_ARG_ERROR("`&", 2, "type");
-    }    
+    }
     type_stack_mark();
     push_object_type(0, p->id);
     b = pop_unfinished_type();
@@ -2964,7 +2964,7 @@ PMOD_EXPORT void o_or(void)
     push_multiset(l);
     return;
   }
-    
+
   case T_ARRAY:
   {
     if (sp[-1].u.array->size == 1) {
@@ -3220,7 +3220,7 @@ PMOD_EXPORT void o_xor(void)
     push_multiset(l);
     return;
   }
-    
+
   case T_ARRAY:
   {
     struct array *a;
@@ -3395,7 +3395,7 @@ PMOD_EXPORT void o_lsh(void)
 {
   if (sp[-1].u.integer < 0) {
     int args = 2;
-    SIMPLE_BAD_ARG_ERROR("`<<", 2, "int(0..)|object");    
+    SIMPLE_BAD_ARG_ERROR("`<<", 2, "int(0..)|object");
   }
   if ((TYPEOF(sp[-1]) == T_INT) && (TYPEOF(sp[-2]) == T_INT) &&
       INT_TYPE_LSH_OVERFLOW(sp[-2].u.integer, sp[-1].u.integer))
@@ -3471,7 +3471,7 @@ PMOD_EXPORT void o_rsh(void)
       SIMPLE_BAD_ARG_ERROR("`>>", 1, "int|object");
     SIMPLE_BAD_ARG_ERROR("`>>", 2, "int(0..)|object");
   }
-  
+
   if (sp[-1].u.integer < 0) {
     int args = 2;
     SIMPLE_BAD_ARG_ERROR("`>>", 2, "int(0..)|object");
@@ -3487,7 +3487,7 @@ PMOD_EXPORT void o_rsh(void)
     }
     return;
   }
-  
+
   sp--;
   SET_SVAL(sp[-1], T_INT, NUMBER_NUMBER, integer,
 	   sp[-1].u.integer >> sp->u.integer);
@@ -3695,7 +3695,7 @@ PMOD_EXPORT void o_multiply(void)
 
   case TWO_TYPES(T_INT,T_FLOAT):
     sp--;
-    sp[-1].u.float_number= 
+    sp[-1].u.float_number=
       (FLOAT_TYPE) sp[-1].u.integer * sp[0].u.float_number;
     SET_SVAL_TYPE(sp[-1], T_FLOAT);
     return;
@@ -3883,7 +3883,7 @@ PMOD_EXPORT void o_divide(void)
 	  len=-len;
 	  size=(ptrdiff_t)ceil( ((double)sp[-2].u.string->len) / len);
 	  a=allocate_array(size);
-	  
+
 	  for(last=sp[-2].u.string->len,e=0;e<size-1;e++)
 	  {
 	    pos=sp[-2].u.string->len - (ptrdiff_t)((e+1)*len+0.5);
@@ -3897,7 +3897,7 @@ PMOD_EXPORT void o_divide(void)
 	}else{
 	  size=(ptrdiff_t)ceil( ((double)sp[-2].u.string->len) / len);
 	  a=allocate_array(size);
-	  
+
 	  for(last=0,e=0;e<size-1;e++)
 	  {
 	    pos = DO_NOT_WARN((ptrdiff_t)((e+1)*len+0.5));
@@ -3914,7 +3914,7 @@ PMOD_EXPORT void o_divide(void)
 	push_array(a);
 	return;
       }
-	  
+
 
       case TWO_TYPES(T_ARRAY, T_INT):
       {
@@ -3930,7 +3930,7 @@ PMOD_EXPORT void o_divide(void)
 	  ref_push_array (&empty_array);
 	  return;
 	}
-	
+
 	if(len<0)
 	{
 	  len = -len;
@@ -3974,7 +3974,7 @@ PMOD_EXPORT void o_divide(void)
 	  len=-len;
 	  size = (ptrdiff_t)ceil( ((double)sp[-2].u.array->size) / len);
 	  a=allocate_array(size);
-	  
+
 	  for(last=sp[-2].u.array->size,e=0;e<size-1;e++)
 	  {
 	    pos=sp[-2].u.array->size - (ptrdiff_t)((e+1)*len+0.5);
@@ -3987,7 +3987,7 @@ PMOD_EXPORT void o_divide(void)
 	}else{
 	  size = (ptrdiff_t)ceil( ((double)sp[-2].u.array->size) / len);
 	  a=allocate_array(size);
-	  
+
 	  for(last=0,e=0;e<size-1;e++)
 	  {
 	    pos = (ptrdiff_t)((e+1)*len+0.5);
@@ -4004,7 +4004,7 @@ PMOD_EXPORT void o_divide(void)
 	return;
       }
     }
-      
+
     PIKE_ERROR("`/", "Division on different types.\n", sp, 2);
   }
 
@@ -4044,7 +4044,7 @@ PMOD_EXPORT void o_divide(void)
   case T_INT:
   {
     INT_TYPE tmp;
-    
+
     if (sp[-1].u.integer == 0)
       OP_DIVISION_BY_ZERO_ERROR("`/");
 
@@ -4067,7 +4067,7 @@ PMOD_EXPORT void o_divide(void)
     SET_SVAL(sp[-1], T_INT, NUMBER_NUMBER, integer, tmp);
     return;
   }
-    
+
   default:
     PIKE_ERROR("`/", "Bad argument 1.\n", sp, 2);
   }
@@ -4145,7 +4145,7 @@ PMOD_EXPORT void f_divide(INT32 args)
 {
   switch(args)
   {
-    case 0: 
+    case 0:
     case 1: SIMPLE_TOO_FEW_ARGS_ERROR("`/", 2);
     case 2: o_divide(); break;
     default:
@@ -4463,7 +4463,7 @@ PMOD_EXPORT void o_compl(void)
   case T_OBJECT:
     CALL_OPERATOR(LFUN_COMPL,1);
     break;
-    
+
   case T_INT:
     SET_SVAL(sp[-1], T_INT, NUMBER_NUMBER, integer, ~sp[-1].u.integer);
     break;
@@ -4589,7 +4589,7 @@ PMOD_EXPORT void o_negate(void)
   case T_FLOAT:
     sp[-1].u.float_number=-sp[-1].u.float_number;
     return;
-    
+
   case T_INT:
     if(INT_TYPE_NEG_OVERFLOW(sp[-1].u.integer))
     {
@@ -4599,7 +4599,7 @@ PMOD_EXPORT void o_negate(void)
     SET_SVAL(sp[-1], T_INT, NUMBER_NUMBER, integer, -sp[-1].u.integer);
     return;
 
-  default: 
+  default:
     PIKE_ERROR("`-", "Bad argument to unary minus.\n", sp, 1);
   }
 }
@@ -5396,7 +5396,7 @@ PMOD_EXPORT void f_arrow_assign(INT32 args)
  *! @decl int sizeof(mapping arg)
  *! @decl int sizeof(multiset arg)
  *! @decl int sizeof(object arg)
- *! 
+ *!
  *!   Size query.
  *!
  *! @returns
@@ -5754,7 +5754,7 @@ void init_operators(void)
 		 tFuncV(tSetvar(0,tMultiset),tSetvar(1,tMultiset),
 			tOr(tVar(0),tVar(1)))),
 	    OPT_TRY_OPTIMIZE,optimize_binary,generate_sum);
-  
+
   ADD_EFUN2("`-",f_minus,
 	    tOr7(tIfnot(tFuncV(tNone,tNot(tOr(tObj,tMix)),tMix),
 			tFuncV(tNone,tMix,tMix)),
@@ -5793,8 +5793,8 @@ multiset & mapping -> mapping
 	    tOr(tFunc(tSetvar(0,Z),tVar(0)),			\
 		tIfnot(tFuncV(tNone, tNot(Z), tMix),		\
 		       tFuncV(tSetvar(1,Z),tSetvar(2,Z),	\
-			      tOr(tVar(1),tVar(2)))))		
-			     
+			      tOr(tVar(1),tVar(2)))))
+
 
   ADD_EFUN2("`&",f_and,
 	    tOr4(
@@ -5802,7 +5802,7 @@ multiset & mapping -> mapping
 
 	       tOr(tFuncV(tMix tObj,tMix,tMix),
 		   tFuncV(tObj tMix,tMix,tMix)),
-	       
+
 	       tOr6( F_AND_TYPE(tInt),
 		     F_AND_TYPE(tArray),
 		     F_AND_TYPE(tMapping),
@@ -5815,7 +5815,7 @@ multiset & mapping -> mapping
 			     tOr3(tArray,tMultiset,tSetvar(4,tMapping)),
 			     tVar(4)) )
 	       ),
-	       
+
 	    OPT_TRY_OPTIMIZE,optimize_binary,generate_and);
 
 #define LOG_TYPE								\
@@ -5852,13 +5852,13 @@ multiset & mapping -> mapping
 	    "function(string*,string:string)|"
 	    "function(array(0=mixed),int:array(0))|"
 	    "function(array(0=mixed),float:array(0))|"
-	    "function(string,int:string) 
-	    "function(string,float:string) 
+	    "function(string,int:string)
+	    "function(string,float:string)
   */
   ADD_EFUN2("`*", f_multiply,
 	    tOr9(tIfnot(tFuncV(tNone,tNot(tOr(tObj,tMix)),tMix),
 			tFuncV(tNone,tOr(tMix,tVoid),tMix)),
-		 tFunc(tArr(tArr(tSetvar(1,tMix))) 
+		 tFunc(tArr(tArr(tSetvar(1,tMix)))
 		       tArr(tSetvar(1,tMix)),tArr(tVar(1))),
 		 tFuncV(tInt,tInt,tInt),
 		 tIfnot(tFuncV(tNone,tNot(tFlt),tMix),

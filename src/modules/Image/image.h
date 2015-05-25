@@ -13,8 +13,8 @@
 /* Various X86 dialects. */
 #define IMAGE_MMX   1
 #define IMAGE_SSE   2
-#define IMAGE_3DNOW 4 
-#define IMAGE_EMMX  8 
+#define IMAGE_3DNOW 4
+#define IMAGE_EMMX  8
 extern int image_cpuid;
 
 
@@ -89,13 +89,13 @@ static inline INT32 PIKE_UNUSED_ATTRIBUTE FLOAT_TO_COLORL(double X)
 
 #define FS_SCALE 1024
 
-typedef struct 
+typedef struct
 {
    COLORTYPE r,g,b;
 /*   COLORTYPE __padding_dont_use__;*/
 } rgb_group;
 
-typedef struct 
+typedef struct
 {
    COLORTYPE r,g,b,alpha;
 } rgba_group;
@@ -152,9 +152,9 @@ void image_paste_alpha_color(INT32 args);
 
 void image_add_layers(INT32 args);
 enum layer_method
-   { LAYER_NOP=0, LAYER_MAX=1, LAYER_MIN=2, 
+   { LAYER_NOP=0, LAYER_MAX=1, LAYER_MIN=2,
      LAYER_MULT=3, LAYER_ADD=4, LAYER_DIFF=5 };
-	 
+
 
 /* matrix.c */
 
@@ -181,7 +181,7 @@ void image_frompnm(INT32 args);
 /* x.c */
 
 void image_x_encode_pseudocolor(INT32 args);
- 
+
 /* pattern.c */
 
 void image_noise(INT32 args);
@@ -243,7 +243,7 @@ void image_orient4(INT32 args);
 
 int image_color_svalue(struct svalue *v,rgb_group *rgb_dest);
 int image_color_arg(int arg,rgb_group *rgb_dest);
-void _image_make_rgb_color(INT32 r,INT32 g,INT32 b); 
+void _image_make_rgb_color(INT32 r,INT32 g,INT32 b);
 
 /* search.c */
 

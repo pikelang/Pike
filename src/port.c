@@ -388,7 +388,7 @@ void own_gethrtime_init()
    hrtime_rtsc_last = hrtime_rtsc_base = hrtime_rtsc_zero;
 #ifdef RTSC_DEBUG
    fprintf(stderr,"init: %lld\n",hrtime_rtsc_zero);
-#endif   
+#endif
 
    do {
      fd = fd_open("/proc/cpuinfo", fd_RDONLY, 0);

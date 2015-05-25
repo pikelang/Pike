@@ -52,7 +52,7 @@ class oracle
     function(:array(mapping(string:mixed))) fetch_fields;
     function(int:void) seek;
 
-    // Convert to the standard result coding. 
+    // Convert to the standard result coding.
     protected string|int(0..0) compat_convert(mixed x)
     {
       if(!x && !intp(x)) return 0;

@@ -102,7 +102,7 @@ struct array *encode_stat(PIKE_STAT_T *s)
     stack_pop_to_no_free (ITEM(a) + 1);
     if (TYPEOF(ITEM(a)[1]) == T_OBJECT) a->type_field |= BIT_OBJECT;
     break;
-    
+
   case S_IFDIR: ITEM(a)[1].u.integer=-2; break;
 #ifdef S_IFLNK
   case S_IFLNK: ITEM(a)[1].u.integer=-3; break;
@@ -124,7 +124,7 @@ struct array *encode_stat(PIKE_STAT_T *s)
 
 #if defined(HAVE_FSETXATTR) && defined(HAVE_FGETXATTR) && defined(HAVE_FLISTXATTR)
 /*! @decl array(string) listxattr( string file, void|int(0..1) symlink )
- *! 
+ *!
  *! Return an array of all extended attributes set on the file
  */
 
@@ -200,7 +200,7 @@ static void f_listxattr(INT32 args)
   f_aggregate(1);
   o_subtract();
 
-  if (do_free) 
+  if (do_free)
     free(ptr);
 }
 
@@ -213,7 +213,7 @@ static void f_listxattr(INT32 args)
 #endif /* !HAVE_DARWIN_XATTR */
 
 /*! @decl string getxattr(string file, string attr, void|int(0..1) symlink)
- *! 
+ *!
  *! Return the value of a specified attribute, or 0 if it does not exist.
  */
 static void f_getxattr(INT32 args)
@@ -272,7 +272,7 @@ static void f_getxattr(INT32 args)
   }
 
   push_string( make_shared_binary_string( ptr, res ) );
-  if( do_free && ptr ) 
+  if( do_free && ptr )
     free( ptr );
 }
 
@@ -292,7 +292,7 @@ static void f_removexattr( INT32 args )
 {
   char *name, *file;
   int nofollow=0, rv;
-  
+
   get_all_args( "removexattr", args, "%s%s.%d", &file, &name, &nofollow );
 
   THREADS_ALLOW();
@@ -328,15 +328,15 @@ static void f_removexattr( INT32 args )
  *!
  *! Set the attribute @[attr] to the value @[value].
  *!
- *! The flags parameter can be used to refine the semantics of the operation.  
+ *! The flags parameter can be used to refine the semantics of the operation.
  *!
  *! @[Stdio.XATTR_CREATE] specifies a pure create, which
- *! fails if the named attribute exists already.  
+ *! fails if the named attribute exists already.
  *!
  *! @[Stdio.XATTR_REPLACE] specifies a pure replace operation, which
  *! fails if the named attribute does not already exist.
  *!
- *! By default (no flags), the extended attribute will be created if need be, 
+ *! By default (no flags), the extended attribute will be created if need be,
  *! or will simply replace the value if the attribute exists.
  *!
  *! @returns
@@ -345,7 +345,7 @@ static void f_removexattr( INT32 args )
 static void f_setxattr( INT32 args )
 {
   char *ind, *file;
-  struct pike_string *val;  
+  struct pike_string *val;
   int flags;
   int rv;
   int nofollow=0;
@@ -408,7 +408,7 @@ void f_file_stat(INT32 args)
   PIKE_STAT_T st;
   int i, l;
   struct pike_string *str;
-  
+
   if(args<1)
     SIMPLE_TOO_FEW_ARGS_ERROR("file_stat", 1);
   if((TYPEOF(sp[-args]) != T_STRING) || sp[-args].u.string->size_shift)
@@ -604,10 +604,10 @@ void f_filesystem_stat( INT32 args )
     p[2] = '\\';
     p[3] = 0;
   }
-  
-  if(!GetDiskFreeSpace( p, &sectors_per_cluster, 
+
+  if(!GetDiskFreeSpace( p, &sectors_per_cluster,
 			&bytes_per_sector,
-			&free_clusters, 
+			&free_clusters,
 			&total_clusters ))
   {
     pop_n_elems(args);
@@ -617,7 +617,7 @@ void f_filesystem_stat( INT32 args )
 
   free_sectors = sectors_per_cluster  * free_clusters;
   total_sectors = sectors_per_cluster * total_clusters;
-  
+
   pop_n_elems( args );
   push_text("blocksize");
   push_int(bytes_per_sector);
@@ -804,7 +804,7 @@ void f_filesystem_stat(INT32 args)
     f_aggregate_mapping(num_fields*2);
   }
 }
-  
+
 #endif /* HAVE_STATVFS || HAVE_STATFS || HAVE_USTAT */
 #endif /* __NT__ */
 
@@ -833,7 +833,7 @@ void f_rm(INT32 args)
     SIMPLE_BAD_ARG_ERROR("rm", 1, "string");
 
   str = sp[-args].u.string;
-  
+
   if (string_has_null(str)) {
     /* Filenames with NUL are not supported. */
     errno = ENOENT;
@@ -884,7 +884,7 @@ void f_rm(INT32 args)
 #endif
   }
   THREADS_DISALLOW_UID();
-      
+
   pop_n_elems(args);
   push_int(i);
 }
@@ -908,7 +908,7 @@ void f_mkdir(INT32 args)
   int mode;
   int i;
   char *s, *s_dup;
-  
+
   if(!args)
     SIMPLE_TOO_FEW_ARGS_ERROR("mkdir", 1);
 
@@ -945,7 +945,7 @@ void f_mkdir(INT32 args)
       s[str->len - 1] = '\0';
     }
   }
-  
+
 #if MKDIR_ARGS == 2
   THREADS_ALLOW_UID();
   i = mkdir(s, mode) != -1;
@@ -1005,10 +1005,10 @@ void f_mkdir(INT32 args)
     pike_threads_disallow_ext (cur_ts_ext COMMA_DLOC);
   }
 #endif
-  
+
   if (s_dup)
     free(s_dup);
-  
+
   pop_n_elems(args);
   push_int(i);
 }
@@ -1457,7 +1457,7 @@ void f_getcwd(INT32 args)
   THREADS_DISALLOW_UID();
 #endif
   if(!e) {
-    if (tmp) 
+    if (tmp)
       free(tmp);
     Pike_error("Failed to fetch current path.\n");
   }
@@ -1541,7 +1541,7 @@ void f_exece(INT32 args)
   }
 
   argv=xalloc((2+sp[1-args].u.array->size) * sizeof(char *));
-  
+
   argv[0]=sp[0-args].u.string->str;
 
   for(e=0;e<sp[1-args].u.array->size;e++)
@@ -1839,7 +1839,7 @@ void f_strerror(INT32 args)
   char *s;
   int err;
 
-  if(!args) 
+  if(!args)
     SIMPLE_TOO_FEW_ARGS_ERROR("strerror", 1);
   if(TYPEOF(sp[-args]) != T_INT)
     SIMPLE_BAD_ARG_ERROR("strerror", 1, "int");
@@ -2041,35 +2041,35 @@ void init_stdio_efuns(void)
 #endif
 
 #if defined(HAVE_STATVFS) || defined(HAVE_STATFS) || defined(HAVE_USTAT) || defined(__NT__)
-  
+
 /* function(string:mapping(string:string|int)) */
   ADD_EFUN("filesystem_stat", f_filesystem_stat,tFunc(tStr,tMap(tStr,tOr(tStr,tInt))), OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);
 #endif /* HAVE_STATVFS || HAVE_STATFS */
-  
+
 /* function(:int) */
   ADD_EFUN("errno",f_errno,tFunc(tNone,tInt),OPT_EXTERNAL_DEPEND);
-  
+
 /* function(string:int) */
   ADD_EFUN("rm",f_rm,tFunc(tStr,tInt),OPT_SIDE_EFFECT);
-  
+
 /* function(string,void|int:int) */
   ADD_EFUN("mkdir",f_mkdir,tFunc(tStr tOr(tVoid,tInt),tInt),OPT_SIDE_EFFECT);
-  
+
 /* function(string,string:int) */
   ADD_EFUN("mv", f_mv,tFunc(tStr tStr,tInt), OPT_SIDE_EFFECT);
-  
+
 /* function(string:string *) */
   ADD_EFUN("get_dir",f_get_dir,tFunc(tOr(tVoid,tStr),tArr(tStr)),OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);
-  
+
 /* function(string:int) */
   ADD_EFUN("cd",f_cd,tFunc(tStr,tInt),OPT_SIDE_EFFECT);
-  
+
 /* function(:string) */
   ADD_EFUN("getcwd",f_getcwd,tFunc(tNone,tStr),OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);
 
 #ifdef HAVE_EXECVE
 /* function(string,mixed*,void|mapping(string:string):int) */
-  ADD_EFUN("exece",f_exece,tFunc(tStr tArr(tMix) tOr(tVoid,tMap(tStr,tStr)),tInt),OPT_SIDE_EFFECT); 
+  ADD_EFUN("exece",f_exece,tFunc(tStr tArr(tMix) tOr(tVoid,tMap(tStr,tStr)),tInt),OPT_SIDE_EFFECT);
 #endif
 
 /* function(int:string) */

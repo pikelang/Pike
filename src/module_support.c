@@ -30,7 +30,7 @@ static int va_check_args(struct svalue *s,
 {
   res->error_type = ERR_NONE;
   res->expected = 0;
-  
+
   for (res->argno=0; res->argno < args_to_check; res->argno++)
   {
     if(!(res->expected & BIT_MANY))
@@ -70,7 +70,7 @@ PMOD_EXPORT int check_args(int args, ...)
 {
   va_list arglist;
   struct expect_result tmp;
-  
+
   va_start(arglist, args);
   va_check_args(sp - args, args, &tmp, arglist);
   va_end(arglist);
@@ -120,8 +120,8 @@ PMOD_EXPORT void check_all_args(const char *fnname, int args, ... )
 	strcat(buf, get_name_of_type(e));
       }
     }
-	
-    Pike_error("Bad argument %d to %s(), (expecting %s, got %s)\n", 
+
+    Pike_error("Bad argument %d to %s(), (expecting %s, got %s)\n",
 	  tmp.argno+1,
 	  fnname,
 	  buf,
@@ -134,7 +134,7 @@ PMOD_EXPORT void check_all_args(const char *fnname, int args, ... )
 /* get_args and get_all_args type specifiers:
  *
  *   %i: INT_TYPE
- *   %I: int or float -> INT_TYPE 
+ *   %I: int or float -> INT_TYPE
  *   %d: int (the c type "int" which may vary from INT_TYPE)
  *   %D: int of float -> int
  *   %+: positive int -> INT_TYPE
@@ -277,7 +277,7 @@ static int va_get_args_2(struct svalue *s,
 	/* FIXME: Range checks. */
 	*cast_arg(ptr, int *)=
 	  DO_NOT_WARN((int)s->u.float_number);
-      else 
+      else
       {
         ref_push_type_value(int_type_string);
         push_svalue( s );
@@ -301,7 +301,7 @@ static int va_get_args_2(struct svalue *s,
       else if(TYPEOF(*s) == T_FLOAT)
 	/* FIXME: Range checks. */
 	*cast_arg(ptr, INT_TYPE *) = DO_NOT_WARN((INT_TYPE)s->u.float_number);
-      else 
+      else
       {
 	/* FIXME: Error reporting for bignum objects. */
         ref_push_type_value(int_type_string);
@@ -394,7 +394,7 @@ static int va_get_args_2(struct svalue *s,
 	 *cast_arg(ptr, FLOAT_TYPE *)=s->u.float_number;
       else if(TYPEOF(*s) == T_INT)
 	 *cast_arg(ptr, FLOAT_TYPE *)=(FLOAT_TYPE)s->u.integer;
-      else 
+      else
       {
         ref_push_type_value(float_type_string);
         push_svalue( s );
@@ -464,7 +464,7 @@ static int va_get_args_2(struct svalue *s,
     case '*':
       *cast_arg(ptr, struct svalue **)=s;
       break;
-      
+
     default:
       Pike_fatal("Unknown format character %d.\n", *fmt);
     }
@@ -612,7 +612,7 @@ PMOD_EXPORT void get_all_args(const char *fname, INT32 args,
  * The code below assumes that dynamic modules are not
  * unloaded from memory...
  */
-   
+
 static struct mapping *exported_symbols;
 
 PMOD_EXPORT void pike_module_export_symbol(const char *name,

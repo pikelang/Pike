@@ -154,7 +154,7 @@ void wf_buffer_seek_w( struct buffer *b, unsigned int pos )
   }
   b->size = pos;
 }
-  
+
 void wf_buffer_clear( struct buffer *b )
 {
   if( !b->read_only && b->data )

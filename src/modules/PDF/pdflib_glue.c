@@ -47,8 +47,8 @@
 /*** PDF callabcks ******************************************************/
 
 static void pdf_error_handler(PDF *p, int type, const char* shortmsg)
-{   
-   Pike_error("PDF.PDFgen: %s\n",shortmsg);   
+{
+   Pike_error("PDF.PDFgen: %s\n",shortmsg);
 }
 
 /*** PDF object *********************************************************/
@@ -68,7 +68,7 @@ static void init_pdf(struct object *o)
 
 static void exit_pdf(struct object *o)
 {
-   if (THIS->pdf) 
+   if (THIS->pdf)
    {
       PDF *pdf=THIS->pdf;
       THIS->pdf=NULL;
@@ -303,7 +303,7 @@ static void pdf_setfont(INT32 args)
    if (!this->pdf) Pike_error("PDF not initiated\n");
 
    PDF_setfont(this->pdf,(int)n,(float)size);
-   
+
    pop_n_elems(args);
    ref_push_object(THISOBJ);
 }
@@ -315,7 +315,7 @@ static void pdf_show(INT32 args)
 {
    struct pdf_storage *this=THIS;
    struct pike_string *ps;
-   
+
    get_all_args("show",args,"%W",&ps);
    if (!this->pdf) Pike_error("PDF not initiated\n");
 
@@ -325,7 +325,7 @@ static void pdf_show(INT32 args)
    THREADS_ALLOW();
    PDF_show2(this->pdf,(char*)ps->str,(int)ps->len);
    THREADS_DISALLOW();
-   
+
    pop_n_elems(args);
    ref_push_object(THISOBJ);
 }
@@ -338,7 +338,7 @@ static void pdf_showxy(INT32 args)
    struct pdf_storage *this=THIS;
    struct pike_string *ps;
    FLOAT_TYPE x,y;
-   
+
    get_all_args("showxy",args,"%W%F%F",&ps,&x,&y);
    if (!this->pdf) Pike_error("PDF not initiated\n");
 
@@ -348,7 +348,7 @@ static void pdf_showxy(INT32 args)
    THREADS_ALLOW();
    PDF_show_xy2(this->pdf,(char*)ps->str,(int)ps->len,(float)x,(float)y);
    THREADS_DISALLOW();
-   
+
    pop_n_elems(args);
    ref_push_object(THISOBJ);
 }
@@ -360,7 +360,7 @@ static void pdf_continue_text(INT32 args)
 {
    struct pdf_storage *this=THIS;
    struct pike_string *ps;
-   
+
    get_all_args("continue_text",args,"%W",&ps);
    if (!this->pdf) Pike_error("PDF not initiated\n");
 
@@ -370,7 +370,7 @@ static void pdf_continue_text(INT32 args)
    THREADS_ALLOW();
    PDF_continue_text2(this->pdf,(char*)ps->str,(int)ps->len);
    THREADS_DISALLOW();
-   
+
    pop_n_elems(args);
    ref_push_object(THISOBJ);
 }

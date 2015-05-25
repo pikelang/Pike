@@ -190,18 +190,18 @@ struct layer
   struct buffer name;
 };
 
-static void decode_layers_and_masks( struct psd_image *dst, 
+static void decode_layers_and_masks( struct psd_image *dst,
                                      struct buffer *src )
 {
   short count, first_alpha_is_magic;
   struct layer *layer = NULL;
   ptrdiff_t exp_offset;
-  if(!src->len) 
+  if(!src->len)
     return;
 
   exp_offset = src->len-psd_read_int( src ); /* size of layer region */
   count = psd_read_short( src );
-  
+
   if( count < 0 )
   {
     if (DO_INT16_NEG_OVERFLOW(count, &count))
@@ -276,8 +276,8 @@ static void decode_layers_and_masks( struct psd_image *dst,
 
 
 static struct buffer
-packbitsdecode(struct buffer src, 
-               struct buffer dst, 
+packbitsdecode(struct buffer src,
+               struct buffer dst,
                size_t nbytes)
 {
   int n;
@@ -415,7 +415,7 @@ static void f_decode_image_data( INT32 args )
   struct object *io;
   unsigned char *source, *source2, *source3, *source4;
   rgb_group *dst;
-  get_all_args( "_decode_image_data",args, "%i%i%i%i%i%S%S", 
+  get_all_args( "_decode_image_data",args, "%i%i%i%i%i%S%S",
                 &w,&h,&d,&m,&c,&s,&ct);
 
   if(!ct->len) ct = NULL;
@@ -505,7 +505,7 @@ static struct psd_image low_psd_decode( struct buffer *b )
   SET_ONERROR( err, free_image, &i );
   i.num_channels = psd_read_ushort( b );
   i.rows = psd_read_uint( b );
-  i.columns = psd_read_uint( b ); 
+  i.columns = psd_read_uint( b );
   i.depth = psd_read_ushort( b );
   i.mode = psd_read_ushort( b );
   i.color_data = psd_read_string( b );
@@ -750,12 +750,12 @@ static void image_f_psd___decode( INT32 args )
     pop_n_elems( args-1 );
   if(s->len < 26+4+4+4 ) /* header+color mode+image res+layers */
     Pike_error("This is not a Photoshop PSD file (too short)\n");
-  if(s->str[0] != '8' || s->str[1] != 'B'  
+  if(s->str[0] != '8' || s->str[1] != 'B'
      || s->str[2] != 'P'  || s->str[3] != 'S' )
     Pike_error("This is not a Photoshop PSD file (invalid signature)\n");
   if(s->str[4] || s->str[5] != 1)
     Pike_error("This is not a Photoshop PSD file (invalid version)\n");
-    
+
   b.len = s->len-12;
   b.str = (unsigned char *)s->str+12;
   {

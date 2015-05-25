@@ -179,7 +179,7 @@ static void f_read( INT32 args )
   if(TYPEOF(*file) == T_OBJECT)
   {
     f = fd_from_object(file->u.object);
-    
+
     if(f == -1)
       Pike_error("File is not open.\n");
     my_fd = 0;
@@ -684,9 +684,9 @@ static void f_read( INT32 args )
 	  state = 34;
 	else if(cls == CLS_CRLF) {
 #ifdef DYNAMIC_BUF
-	  push_string( low_free_buf( &buf ) ); 
+	  push_string( low_free_buf( &buf ) );
 #else
-	  PUSHBUF(); 
+	  PUSHBUF();
 #endif
 	  state = 0;
 	} else if(cls == CLS_WSPACE) {
@@ -696,7 +696,7 @@ static void f_read( INT32 args )
 	  PUSHBUF();  /* path */
 #endif
 	  state = 35;
-	} else	
+	} else
 #ifdef DYNAMIC_BUF
 	  low_my_putchar( c, &buf );
 #else
@@ -717,16 +717,16 @@ static void f_read( INT32 args )
 	  state = 33;
 	} else if(cls == CLS_CRLF) {
 #ifdef DYNAMIC_BUF
-	  push_string( low_free_buf( &buf ) ); 
+	  push_string( low_free_buf( &buf ) );
 #else
-	  PUSHBUF(); 
+	  PUSHBUF();
 #endif
 	  state = 0;
 	} else {
 #ifdef DYNAMIC_BUF
-	  push_string( low_free_buf( &buf ) ); 
+	  push_string( low_free_buf( &buf ) );
 #else
-	  PUSHBUF(); 
+	  PUSHBUF();
 #endif
 	  push_text("HTTP/0.9");
 	  state = 10;
@@ -758,9 +758,9 @@ static void f_read( INT32 args )
      state == 8 || state == 9 ||
      state == 31 || state == 33 || state == 34) {
 #ifdef DYNAMIC_BUF
-    push_string( low_free_buf( &buf ) ); 
+    push_string( low_free_buf( &buf ) );
 #else
-    PUSHBUF(); 
+    PUSHBUF();
 #endif
   }
   if(sp == old_sp + 15) {
@@ -778,7 +778,7 @@ static void f_read( INT32 args )
      * want to free it.
      */
     fd_close(f);
-  pop_n_elems(sp-old_sp+args);  
+  pop_n_elems(sp-old_sp+args);
   push_int64(offs0);
 }
 

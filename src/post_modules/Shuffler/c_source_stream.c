@@ -173,7 +173,7 @@ struct source *source_stream_make( struct svalue *s,
   apply( s->u.object, "query_fd", 0 );
   res->fd = Pike_sp[-1].u.integer;
   pop_stack();
-  
+
   res->len = len;
   res->skip = start;
 

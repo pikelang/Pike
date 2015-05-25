@@ -365,7 +365,7 @@ static void f_create(INT32 args)
   }
 
   add_ref(PIKE_MYSQL_RES->connection = sp[-args].u.object);
-  
+
   pop_n_elems(args);
 }
 
@@ -471,7 +471,7 @@ static void f_eof(INT32 args)
  *! Returns a mapping with information about the current field, and
  *! advances the field cursor one step. Returns @expr{0@} (zero) if
  *! there are no more fields.
- *! 
+ *!
  *! The mapping contains the same entries as those returned by
  *! @[Mysql.mysql->list_fields()], except that the entry @expr{"default"@}
  *! is missing.
@@ -513,7 +513,7 @@ static void f_fetch_field(INT32 args)
  *!
  *! Returns an array with one mapping for every remaining field in the
  *! result table.
- *! 
+ *!
  *! The returned data is similar to the data returned by
  *! @[Mysql.mysql->list_fields()], except for that the entry
  *! @expr{"default"@} is missing.

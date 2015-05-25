@@ -79,7 +79,7 @@ static struct pike_string *colortable_string = NULL;
  * 0036 -	Colortable in BGRZ format.
  *
  * offs -	Image data
- */ 
+ */
 
 
 /*
@@ -146,7 +146,7 @@ static int parameter(struct svalue *map,struct pike_string *what,struct svalue *
 **! method string encode(object image,object colortable)
 **! method string encode(object image,int bpp)
 **!	Make a BMP. It default to a 24 bpp BMP file,
-**!	but if a colortable is given, it will be 8bpp 
+**!	but if a colortable is given, it will be 8bpp
 **!	with a palette entry.
 **!
 **!	<tt>option</tt> is a mapping that may contain:
@@ -157,7 +157,7 @@ static int parameter(struct svalue *map,struct pike_string *what,struct svalue *
 **!	"rle":        0|1                - run-length encode (default is 0)
 **!
 **      wizard options:
-** 	"fuji":       0|1                - fuji-jpeg mode (default is 0)    
+** 	"fuji":       0|1                - fuji-jpeg mode (default is 0)
 **!	</pre>
 **!
 **! arg object image
@@ -180,7 +180,7 @@ void img_bmp_encode(INT32 args)
    struct neo_colortable *nct=NULL;
    int n=0, bpp=0;
    ptrdiff_t size, offs;
-   struct pike_string *ps; 
+   struct pike_string *ps;
 
    int rle=0;
 
@@ -216,7 +216,7 @@ void img_bmp_encode(INT32 args)
 	       SIMPLE_BAD_ARG_ERROR("encode",2,"colortable object at index \"colortable\"");
 	    add_ref(oc);
 	 }
-      } 
+      }
       else if (TYPEOF(sp[1-args]) == T_INT)
       {
 	 bpp=sp[1-args].u.integer;
@@ -226,20 +226,20 @@ void img_bmp_encode(INT32 args)
    }
 
    if (bpp==0) {
-      if (!nct) 
+      if (!nct)
 	 bpp=24;
       else if (image_colortable_size(nct)<=2 && !rle)
 	 bpp=1;
       else if (image_colortable_size(nct)<=16)
-	 bpp=4; 
-      else 
+	 bpp=4;
+      else
 	 bpp=8;
    }
 
    switch (bpp)
    {
       case 1:
-	 if (rle) 
+	 if (rle)
 	    bad_arg_error("encode", sp-args, args, 2, "mapping",
 			  sp+2-1-args,
 			  "run-length encoding can only be done on a "
@@ -305,7 +305,7 @@ void img_bmp_encode(INT32 args)
       push_ubo_32bit(image_colortable_size(nct));
    else
       push_ubo_32bit(0);
-   
+
    push_ubo_32bit(0); /* number of important colors or zero */
    n=11;
 
@@ -359,8 +359,8 @@ void img_bmp_encode(INT32 args)
 	    s=(unsigned char*)ps->str;
 
 	    /* allocate worst case */
-	    ps=begin_shared_string((img->xsize+2)*img->ysize*2+2); 
-        
+	    ps=begin_shared_string((img->xsize+2)*img->ysize*2+2);
+
 	    d=(unsigned char*)ps->str;
 
 	    l=img->xsize;
@@ -370,7 +370,7 @@ void img_bmp_encode(INT32 args)
 	       while (m)
 	       {
 		  a=s[0];
-		  if (m>1) 
+		  if (m>1)
 		  {
 		     b=s[1];
 		     for (i=1; i<m && i<255; i++)
@@ -380,7 +380,7 @@ void img_bmp_encode(INT32 args)
 		     i=1;
 
 		  if (i>l) i=l;
-	       
+
 		  *(d++)=(unsigned char)i;
 		  *(d++)=(unsigned char)((a<<4)|b);
 
@@ -418,7 +418,7 @@ void img_bmp_encode(INT32 args)
 		   * (00 n x x x 00), n >= 3. */
 
 		  if (i>l) i=l;
-	       
+
 		  *(d++)=i;
 		  *(d++)=a;
 
@@ -448,7 +448,7 @@ void img_bmp_encode(INT32 args)
 	    pop_stack();
 
 	    n++;
-	    
+
 	    break;
 
 	 default:
@@ -483,7 +483,7 @@ void img_bmp_encode(INT32 args)
    }
 
    /* on stack:      source (nct) info*n image */
-   
+
    /* done */
    f_add(n);
 
@@ -491,7 +491,7 @@ void img_bmp_encode(INT32 args)
 
    /* "bitmapfileheader" */
    /* this is last, since we need to know the size of the file here */
-   
+
    size=sp[-1].u.string->len;
 
    push_text("BM");         /* "BM" */
@@ -501,7 +501,7 @@ void img_bmp_encode(INT32 args)
    push_ubo_32bit(offs+14);    /* offset to bitmap data */
 
    f_add(5);
-   
+
    /* on stack:      source (nct) info+image header */
 
    stack_swap();  /* source (nct) header info+image */
@@ -523,7 +523,7 @@ void img_bmp_encode(INT32 args)
 **! method object decode(string data,mapping options)
 **! method mapping _decode(string data,mapping options)
 **! method mapping decode_header(string data,mapping options)
-**!	Decode a BMP. 
+**!	Decode a BMP.
 **!
 **!	<ref>decode</ref> gives an image object,
 **!	<ref>_decode</ref> gives a mapping in the format
@@ -583,7 +583,7 @@ void i_img_bmp__decode(INT32 args,int header_only)
    olen=len;
 
    pop_n_elems(args-1);
-   
+
    if (len<20)
       Pike_error("Image.BMP.decode: not a BMP (file to short)\n");
 
@@ -628,7 +628,7 @@ void i_img_bmp__decode(INT32 args,int header_only)
 	 push_text("yres");
 	 push_int(int_from_32bit(s+14+4*6));
 	 n++;
-	 
+
 	 windows=1;
 
 	 switch (int_from_32bit(s+14))
@@ -729,7 +729,7 @@ void i_img_bmp__decode(INT32 args,int header_only)
 
       goto final;
    }
-   
+
    if (bpp!=24 && bpp!=16) /* get palette */
    {
       push_text("colortable");
@@ -839,7 +839,7 @@ void i_img_bmp__decode(INT32 args,int header_only)
 	 {
 	    d = img->img+img->xsize*y;
 	    i = img->xsize;
-	    if (i*2>j) i=j/2; 
+	    if (i*2>j) i=j/2;
 	    j-=i*2;
 	    while (i--)
 	    {
@@ -874,7 +874,7 @@ void i_img_bmp__decode(INT32 args,int header_only)
 	    d = img->img + img->xsize*y;
 
 	    j = len;
-	    
+
 	    while (j--)
 	    {
 	       if (!j--) break;
@@ -906,13 +906,13 @@ void i_img_bmp__decode(INT32 args,int header_only)
 		     }
 		     break;
 		  default:
-#ifdef RLE_DEBUG		     
-		     fprintf(stderr,"rle data     %02x %02x\n",s[0],s[1]);		     
+#ifdef RLE_DEBUG
+		     fprintf(stderr,"rle data     %02x %02x\n",s[0],s[1]);
 #endif
 		     for (i=0; i<s[0] && d<maxd; i++)
-			if (s[1] > nct->u.flat.numentries) 
+			if (s[1] > nct->u.flat.numentries)
 			   d++;
-			else 
+			else
 			   *(d++) = nct->u.flat.entries[s[1]].color;
 		     break;
 	       }
@@ -929,7 +929,7 @@ void i_img_bmp__decode(INT32 args,int header_only)
 	    {
 	       d = img->img+img->xsize*y;
 	       i = img->xsize;
-	       if (i>j) i=j; 
+	       if (i>j) i=j;
 	       j-=i;
 	       while (i--)
 		  *(d++)=nct->u.flat.entries[*(s++)].color;
@@ -956,7 +956,7 @@ void i_img_bmp__decode(INT32 args,int header_only)
 	    */
 
 	    j=len;
-	    
+
 	    while (j--)
 	    {
 	       if (!j--) break;
@@ -972,7 +972,7 @@ void i_img_bmp__decode(INT32 args,int header_only)
 #endif
 			   if (y>0) y--;
 			   d=img->img+img->xsize*y;
-			   
+
 			   break;
 			case 1:
 #ifdef RLE_DEBUG
@@ -1002,21 +1002,21 @@ void i_img_bmp__decode(INT32 args,int header_only)
 			   fprintf(stderr,"data         %5d %02x %02x [ ",
 				   j,s[0],s[1]);
 			   fflush(stderr);
-			   
+
 			   for (i=0; i<(s[1]+1)/2; i++)
 			      fprintf(stderr,"%02x ",s[2+i]);
 			   fprintf(stderr,"] %02x\n",s[2+i]);
 
 			   j-=2; s+=2;
 			   j-=i; s+=i;
-#endif 
+#endif
 
 			   break;
 		     }
 		     break;
 		  default:
-#ifdef RLE_DEBUG		     
-		     fprintf(stderr,"rle data     %02x %02x\n",s[0],s[1]);		     
+#ifdef RLE_DEBUG
+		     fprintf(stderr,"rle data     %02x %02x\n",s[0],s[1]);
 #endif
 		     for (i=0; i<s[0] && d<maxd; i++)
 		     {
@@ -1026,9 +1026,9 @@ void i_img_bmp__decode(INT32 args,int header_only)
 			else
 			   c=(s[1]>>4)&15;
 
-			if (c>nct->u.flat.numentries) 
+			if (c>nct->u.flat.numentries)
 			   d++;
-			else 
+			else
 			   *(d++)=nct->u.flat.entries[c].color;
 		     }
 		     break;

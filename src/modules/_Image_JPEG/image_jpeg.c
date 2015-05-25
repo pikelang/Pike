@@ -73,7 +73,7 @@
 #ifdef DYNAMIC_MODULE
 static struct program *image_program;
 #else
-extern struct program *image_program; 
+extern struct program *image_program;
 /* Image module is probably linked static too. */
 #endif
 
@@ -268,7 +268,7 @@ struct pike_string* my_result_and_clean(struct jpeg_compress_struct *cinfo)
       struct pike_string *ps;
       ps=make_shared_binary_string(dm->buf,
 				   (char*)dm->pub.next_output_byte-(char*)dm->buf);
-      
+
       free(dm->buf);
       dm->buf=NULL;
       return ps;
@@ -396,7 +396,7 @@ static int parameter_qt_d(struct svalue *map,struct pike_string *what,
 	       temp = table[i];
 	       /* limit the values to the valid range */
 	       if (temp <= 0L) temp = 1L;
-	       if (temp > 32767L) temp = 32767L; 
+	       if (temp > 32767L) temp = 32767L;
 	       (*qtblptr)->quantval[i] = (UINT16) temp;
 	    }
 
@@ -464,9 +464,9 @@ static int parameter_comment(struct svalue *map,struct pike_string *what,
       Pike_error("Image.JPEG.encode: illegal value of option comment;"
 		 " expected 8 bit string\n");
 
-   jpeg_write_marker(cinfo, JPEG_COM, 
+   jpeg_write_marker(cinfo, JPEG_COM,
 		     (const unsigned char *)v->u.string->str,
-		     v->u.string->len); 
+		     v->u.string->len);
 
    return 1;
 }
@@ -480,7 +480,7 @@ struct my_source_mgr
 static void my_init_source(struct jpeg_decompress_struct *cinfo)
 {
   struct my_source_mgr *sm = (struct my_source_mgr *)cinfo->src;
-  
+
   sm->pub.next_input_byte = (JOCTET*)sm->str->str;
   sm->pub.bytes_in_buffer = DO_NOT_WARN(sm->str->len);
 }
@@ -501,7 +501,7 @@ static void my_skip_input_data(struct jpeg_decompress_struct *cinfo,
 			       long num_bytes)
 {
    struct my_source_mgr *sm=(struct my_source_mgr *)cinfo->src;
- 
+
    if (((unsigned long)num_bytes)>sm->pub.bytes_in_buffer)
       num_bytes=sm->pub.bytes_in_buffer;
 
@@ -540,7 +540,7 @@ static int marker_exists_in_args(INT32 args, int which)
    return 0;
 }
 
-static void my_copy_jpeg_markers(INT32 args, 
+static void my_copy_jpeg_markers(INT32 args,
 				 struct my_decompress_struct *mds,
 				 j_compress_ptr cinfo)
 {
@@ -549,7 +549,7 @@ static void my_copy_jpeg_markers(INT32 args,
 	if (args < 2 || !marker_exists_in_args(args, mm->id)) {
 	  jpeg_write_marker(cinfo, mm->id,
 			    mm->data,
-			    mm->len); 
+			    mm->len);
 	}
 	mds->first_marker=mm->next;
 	free(mm);
@@ -607,13 +607,13 @@ void set_jpeg_transform_options(INT32 args, jpeg_transform_info *options)
 {
     int transform = 0;
     if (args > 1 && parameter_int(sp+1-args,param_transform,&transform) &&
-	((transform == JXFORM_FLIP_H) || 
-	(transform == JXFORM_FLIP_V) || 
-	(transform == JXFORM_NONE) || 
-	(transform == JXFORM_ROT_90) || 
-	(transform == JXFORM_ROT_180) || 
-	(transform == JXFORM_ROT_270) || 
-	(transform == JXFORM_TRANSPOSE) || 
+	((transform == JXFORM_FLIP_H) ||
+	(transform == JXFORM_FLIP_V) ||
+	(transform == JXFORM_NONE) ||
+	(transform == JXFORM_ROT_90) ||
+	(transform == JXFORM_ROT_180) ||
+	(transform == JXFORM_ROT_270) ||
+	(transform == JXFORM_TRANSPOSE) ||
 	(transform == JXFORM_TRANSVERSE))) {
 	options->transform = transform;
     } else {
@@ -728,35 +728,35 @@ static void image_jpeg_encode(INT32 args)
        /* Compression from Image.Image object */
        if (!img->img)
 	   Pike_error("Image.JPEG.encode: Given image is empty.\n");
-       
+
        tmp=malloc(img->xsize*3*8);
-       if (!tmp) 
+       if (!tmp)
 	   Pike_error("Image.JPEG.encode: out of memory\n");
        /* init jpeg library objects */
-       
+
        jpeg_std_error(&errmgr);
-       
+
        errmgr.error_exit=my_error_exit;
        errmgr.emit_message=my_emit_message;
        errmgr.output_message=my_output_message;
-       
+
        destmgr.pub.init_destination=my_init_destination;
        destmgr.pub.empty_output_buffer=my_empty_output_buffer;
        destmgr.pub.term_destination=my_term_destination;
-       
+
        cinfo.err=&errmgr;
-       
+
        jpeg_create_compress(&cinfo);
 
        cinfo.dest=(struct jpeg_destination_mgr*)&destmgr;
-       
+
        cinfo.image_width=img->xsize;
        cinfo.image_height=img->ysize;
        cinfo.input_components=3;     /* 1 */
        cinfo.in_color_space=JCS_RGB; /* JCS_GRAYSCALE */
-       
+
        jpeg_set_defaults(&cinfo);
-       
+
        cinfo.optimize_coding=(img->xsize*img->ysize)<50000;
    } else {
        /* "Compression" from JPEG block */
@@ -765,7 +765,7 @@ static void image_jpeg_encode(INT32 args)
        jvirt_barray_ptr *src_coef_arrays, *dst_coef_arrays;
 #else
        Pike_error("Image.JPEG.encode: Raw JPEG data transformation not allowed"
-                  " when Pike is compiled with this version of libjpeg.\n"); 
+                  " when Pike is compiled with this version of libjpeg.\n");
 #endif /*TRANSFORMS_SUPPORTED*/
 
        jpeg_std_error(&errmgr);
@@ -773,7 +773,7 @@ static void image_jpeg_encode(INT32 args)
        errmgr.error_exit=my_error_exit;
        errmgr.emit_message=my_emit_message;
        errmgr.output_message=my_output_message;
-       
+
        destmgr.pub.init_destination=my_init_destination;
        destmgr.pub.empty_output_buffer=my_empty_output_buffer;
        destmgr.pub.term_destination=my_term_destination;
@@ -841,7 +841,7 @@ static void image_jpeg_encode(INT32 args)
 	 cinfo.smoothing_factor=p;
       }
 
-      
+
       if (parameter_int(sp+1-args,param_x_density,&p) &&
 	  parameter_int(sp+1-args,param_y_density,&q))
       {
@@ -867,7 +867,7 @@ static void image_jpeg_encode(INT32 args)
 	      p==JDCT_ISLOW ||
 	      p==JDCT_FASTEST))
 	 cinfo.dct_method=p;
-      
+
       if (parameter_int(sp+1-args,param_progressive,&p) && p)
 	 jpeg_simple_progression(&cinfo);
 
@@ -888,17 +888,17 @@ static void image_jpeg_encode(INT32 args)
        /* Compression from Image.Image object */
        y=img->ysize;
        s=img->img;
-       
+
        THREADS_ALLOW();
        while (y)
 	   {
 	       int n,i,y2=y;
 	       if (y2>8) y2=8;
-	       n=img->xsize*y2; 
+	       n=img->xsize*y2;
 	       i=0;
 	       while (n--)
 		   tmp[i++]=s->r, tmp[i++]=s->g, tmp[i++]=s->b, s++;
-	       
+
 	       row_pointer[0]=tmp;
 	       row_pointer[1]=tmp+img->xsize*3;
 	       row_pointer[2]=tmp+img->xsize*3*2;
@@ -908,18 +908,18 @@ static void image_jpeg_encode(INT32 args)
 	       row_pointer[6]=tmp+img->xsize*3*6;
 	       row_pointer[7]=tmp+img->xsize*3*7;
 	       jpeg_write_scanlines(&cinfo, row_pointer, y2);
-	       
+
 	       y-=y2;
 	   }
        THREADS_DISALLOW();
-       
+
        free(tmp);
    } else {
        /* "Compression" from JPEG block */
 
    }
    jpeg_finish_compress(&cinfo);
-   
+
    pop_n_elems(args);
    push_string(my_result_and_clean(&cinfo));
 
@@ -1028,7 +1028,7 @@ static void img_jpeg_decode(INT32 args,int mode)
       Pike_error("Image.JPEG.decode: Illegal arguments\n");
 
    /* init jpeg library objects */
-   
+
    init_src(sp[-args].u.string, &errmgr, &srcmgr, &mds);
 
    if (mds.cinfo.jpeg_color_space == JCS_CMYK ||
@@ -1058,10 +1058,10 @@ static void img_jpeg_decode(INT32 args,int mode)
 
       if (parameter_int(sp+1-args,param_fancy_upsampling,&p))
 	 mds.cinfo.do_fancy_upsampling=!!p;
-      
+
       if (parameter_int(sp+1-args,param_block_smoothing,&p))
 	 mds.cinfo.do_block_smoothing=!!p;
-      
+
       if (parameter_int(sp+1-args,param_scale_denom,&p)
 	 &&parameter_int(sp+1-args,param_scale_num,&q))
 	 mds.cinfo.scale_num=q,
@@ -1229,7 +1229,7 @@ static void img_jpeg_decode(INT32 args,int mode)
 	 free_object(o);
 	 Pike_error("Image.JPEG.decode: out of memory\n");
       }
-   
+
       y=img->ysize;
       d=img->img;
 
@@ -1387,8 +1387,8 @@ void image_jpeg_quant_tables(INT32 args)
 
    cinfo.image_width=17;
    cinfo.image_height=17;
-   cinfo.input_components=3;     
-   cinfo.in_color_space=JCS_RGB; 
+   cinfo.input_components=3;
+   cinfo.in_color_space=JCS_RGB;
 
    if (args)
    {

@@ -42,14 +42,14 @@ static void *pcharp_extract_char_const(INT_TYPE *val,
   /* use of macros to keep similar to lexer.h: char_const */
 #define LOOK() (len>0?EXTRACT_PCHARP(str):0)
 #define GETC() ((len > 0)?(INC_PCHARP(str, 1), len--, INDEX_PCHARP(str, -1)):0)
-      
+
   switch (c=GETC())
   {
   case 0:
     return NULL;
 
   case '\n': return NULL;	/* Newline in character constant. */
-      
+
   case 'a': c = 7; break;       /* BEL */
   case 'b': c = 8; break;       /* BS */
   case 't': c = 9; break;       /* HT */
@@ -58,7 +58,7 @@ static void *pcharp_extract_char_const(INT_TYPE *val,
   case 'f': c = 12; break;      /* FF */
   case 'r': c = 13; break;      /* CR */
   case 'e': c = 27; break;      /* ESC */
-      
+
   case '0': case '1': case '2': case '3':
   case '4': case '5': case '6': case '7':
     /* Octal escape. */
@@ -66,7 +66,7 @@ static void *pcharp_extract_char_const(INT_TYPE *val,
     while(LOOK()>='0' && LOOK()<='8')
       c=c*8+(GETC()-'0');
     break;
-      
+
   case 'x':
     /* Hexadecimal escape. */
     c=0;
@@ -79,11 +79,11 @@ static void *pcharp_extract_char_const(INT_TYPE *val,
       case '8': case '9':
 	c=c*16+GETC()-'0';
 	continue;
-	    
+
       case 'a': case 'b': case 'c': case 'd': case 'e': case 'f':
 	c=c*16+GETC()-'a'+10;
 	continue;
-	    
+
       case 'A': case 'B': case 'C': case 'D': case 'E': case 'F':
 	c=c*16+GETC()-'A'+10;
 	continue;
@@ -137,7 +137,7 @@ static void *pcharp_to_svalue_percent_o(struct svalue *res,
     case ' ':  /* whitespace */
     case '\t':
     case '\n':
-    case '\r':  
+    case '\r':
       break;
 
     case '0': case '1': case '2': case '3': case '4':
@@ -185,7 +185,7 @@ static void *pcharp_to_svalue_percent_o(struct svalue *res,
 	      start.ptr = pcharp_extract_char_const(&val, str, len);
 	      if (!start.ptr) break;
 	      string_builder_putchar(&tmp, val);
-				     
+
 	      /* Continue parsing after the escaped character. */
 	      len -= LOW_SUBTRACT_PCHARP(start, str);
 	      cnt = 0;
@@ -235,7 +235,7 @@ static void *pcharp_to_svalue_percent_o(struct svalue *res,
 	return str.ptr;
       }
       return NULL;
-	    
+
       /* fixme: arrays, multisets, mappings */
     }
   }
@@ -1868,8 +1868,8 @@ void f___handle_sscanf_format(INT32 args)
     SIMPLE_ARG_TYPE_ERROR("__handle_sscanf_format", 4, "type(function)");
   }
 
-  MAKE_CONST_STRING(sscanf_format_string, "sscanf_format");  
-  MAKE_CONST_STRING(sscanf_76_format_string, "sscanf_76_format");  
+  MAKE_CONST_STRING(sscanf_format_string, "sscanf_format");
+  MAKE_CONST_STRING(sscanf_76_format_string, "sscanf_76_format");
 
   if (Pike_sp[-4].u.string != sscanf_format_string) {
     if (Pike_sp[-4].u.string != sscanf_76_format_string) {
@@ -1880,7 +1880,7 @@ void f___handle_sscanf_format(INT32 args)
   }
 
   fmt = Pike_sp[-3].u.string;
-  MAKE_CONST_STRING(attr, "sscanf_args");  
+  MAKE_CONST_STRING(attr, "sscanf_args");
 
 #if 0
   fprintf(stderr, "Checking sscanf format: \"%s\": ", fmt->str);

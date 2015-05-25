@@ -120,12 +120,12 @@ static void regexp_match(INT32 args)
 
   if(args < 1)
     SIMPLE_TOO_FEW_ARGS_ERROR("match", 1);
-  
+
   if(TYPEOF(Pike_sp[-args]) == T_STRING)
   {
     if(Pike_sp[-args].u.string->size_shift)
       SIMPLE_BAD_ARG_ERROR("match", 1, "string(8bit)");
-    
+
     i = pike_regexec(regexp, (char *)STR0(Pike_sp[-args].u.string));
     pop_n_elems(args);
     push_int(i);
@@ -141,7 +141,7 @@ static void regexp_match(INT32 args)
     for(i = n = 0; i < arr->size; i++)
     {
       struct svalue *sv = ITEM(arr) + i;
-      
+
       if(TYPEOF(*sv) != T_STRING || sv->u.string->size_shift)
 	SIMPLE_BAD_ARG_ERROR("match", 1, "string(8bit)");
 
@@ -151,7 +151,7 @@ static void regexp_match(INT32 args)
 	n++;
       }
     }
-    
+
     f_aggregate(n);
     stack_pop_n_elems_keep_top(args);
     return;

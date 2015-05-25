@@ -31,12 +31,12 @@ struct gif_lzw
 #ifdef GIF_LZW_LZ
    int skipone; /* lz marker for skip next code */
 #endif
-   
+
    unsigned long codes;
    unsigned long bits; /* initial encoding bits */
    unsigned long codebits; /* current encoding bits */
    unsigned long outpos,outbit;
-   struct gif_lzwc 
+   struct gif_lzwc
    {
       unsigned char c;
       lzwcode_t firstchild;

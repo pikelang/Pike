@@ -101,9 +101,9 @@ struct rle_state
   unsigned char value;
 };
 
-void get_rle_decoded_from_data( unsigned char *dest, struct buffer * source, 
+void get_rle_decoded_from_data( unsigned char *dest, struct buffer * source,
                                 int nelems,
-                                struct pcx_header *hdr, 
+                                struct pcx_header *hdr,
                                 struct rle_state *state )
 {
   if(!hdr->rle_encoded)
@@ -116,9 +116,9 @@ void get_rle_decoded_from_data( unsigned char *dest, struct buffer * source,
     return;
   }
 
-  while (nelems--) 
+  while (nelems--)
   {
-    if(state->nitems == 0) 
+    if(state->nitems == 0)
     {
       unsigned char nb;
       nb = get_char( source );
@@ -135,7 +135,7 @@ void get_rle_decoded_from_data( unsigned char *dest, struct buffer * source,
   }
 }
 
-static void load_rgb_pcx( struct pcx_header *hdr, struct buffer *b, 
+static void load_rgb_pcx( struct pcx_header *hdr, struct buffer *b,
                           rgb_group *dest )
 {
   unsigned char *line = xalloc(hdr->bytesperline*hdr->planes);
@@ -227,7 +227,7 @@ static void load_palette_pcx( struct pcx_header *hdr, struct buffer *b,
   unsigned char *line = xalloc(hdr->bytesperline*hdr->planes);
   struct rle_state state;
   /* It's at the end of the 'file' */
-  rgb_group * palette = (rgb_group *)(b->str+b->len-(256*3)); 
+  rgb_group * palette = (rgb_group *)(b->str+b->len-(256*3));
   int width, height;
   int x, y;
   THREADS_ALLOW();
@@ -294,7 +294,7 @@ static struct object *low_pcx_decode( struct pike_string *data )
   io = clone_object( image_program, 2 );
   dest = ((struct image*)get_storage( io, image_program ))->img;
   SET_ONERROR(onerr, do_free_object, io );
-  
+
   switch(pcx_header.bpp)
   {
    case 8:
@@ -450,13 +450,13 @@ static struct pike_string *encode_pcx_24( struct pcx_header *pcx_header,
   int x, y;
   char *buffer;
   rgb_group *s;
-  
+
   pcx_header->planes = 3;
 
   buffer = xalloc(data->xsize*data->ysize*3);
   push_string( make_shared_binary_string( (char *)pcx_header,
                                           sizeof(struct pcx_header) ) );
-  
+
   s = data->img;
   for(y=0; y<data->ysize; y++)
   {
@@ -554,7 +554,7 @@ static int parameter_int(struct svalue *map,struct pike_string *what,
 {
    struct svalue *v;
    v=low_mapping_string_lookup(map->u.mapping,what);
-   if (!v || TYPEOF(*v) != T_INT) 
+   if (!v || TYPEOF(*v) != T_INT)
      return 0;
    *p=v->u.integer;
    return 1;

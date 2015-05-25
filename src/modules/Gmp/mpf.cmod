@@ -327,7 +327,7 @@ PIKECLASS mpf
 	  return;
       }
     }
-  
+
   /*! @decl protected int(0..1) _is_type(string arg)
    *!   The Gmp.mpf object will claim to be a @expr{"float"@}.
    *! @fixme
@@ -361,7 +361,7 @@ PIKECLASS mpf
 #define get_mpf(X,Y,Z) \
   (debug_get_mpf((X),(Y),(Z)),( TYPEOF(*(X))==T_OBJECT? debug_malloc_touch((X)->u.object) :0 ),debug_get_mpf((X),(Y),(Z)))
 #else
-#define get_mpf debug_get_mpf 
+#define get_mpf debug_get_mpf
 #endif
 
   static struct object *get_mpf_with_prec(unsigned long int prec)
@@ -384,7 +384,7 @@ PIKECLASS mpf
 	default:
 	  MPF_ERROR("Wrong type of value, cannot convert to Gmp.mpf.\n");
 	  return 0;
-	  
+
 	case T_OBJECT:
 	  if(s->u.object->prog == mpf_program)
 	    return (MP_FLT *)s->u.object->storage;
@@ -418,7 +418,7 @@ PIKECLASS mpf
 	  prec=sizeof(s->u.float_number)*CHAR_BITS;
 	  break;
       }
-      
+
       o=get_mpf_with_prec(prec);
       get_new_mpf(OBTOMPF(o), s);
       free_svalue(s);
@@ -476,7 +476,7 @@ PIKECLASS mpf
       res = get_mpf_with_prec( add_convert_args(args) );
       mpf_set(OBTOMPF(res), THISMPF);
       add_args(OBTOMPF(res), args);
-      
+
       RETURN res;
     }
 
@@ -492,7 +492,7 @@ PIKECLASS mpf
 
       mpf_set(OBTOMPF(res), THISMPF);
       add_args(OBTOMPF(res), args);
-      
+
       RETURN res;
     }
 
@@ -507,7 +507,7 @@ PIKECLASS mpf
       mpf_set_prec(THISMPF, prec);
 
     add_args(THISMPF, args);
-    
+
     REF_RETURN fp->current_object;
   }
 
@@ -556,7 +556,7 @@ PIKECLASS mpf
       res = get_mpf_with_prec( add_convert_args(args) );
       mpf_set(OBTOMPF(res), THISMPF);
       mult_args(OBTOMPF(res), args);
-      
+
       RETURN res;
     }
 
@@ -594,9 +594,9 @@ PIKECLASS mpf
     flags ID_PROTECTED;
     {
       struct object *res;
-      
+
       res = get_mpf_with_prec( add_convert_args(args) );
-      
+
       if(args)
       {
 	mpf_set(OBTOMPF(res), THISMPF);
@@ -604,7 +604,7 @@ PIKECLASS mpf
       }else{
 	mpf_neg(OBTOMPF(res), THISMPF);
       }
-      
+
       RETURN res;
     }
 
@@ -658,7 +658,7 @@ PIKECLASS mpf
 	  mpf_div(OBTOMPF(res), OBTOMPF(res), OBTOMPF(sp[e-args].u.object));
 	}
       }
-      
+
       RETURN res;
     }
 
@@ -672,14 +672,14 @@ PIKECLASS mpf
       struct object *res = NULL;
       if(!mpf_sgn(THISMPF))
 	SIMPLE_DIVISION_BY_ZERO_ERROR ("``/");
-      
+
       a=get_mpf(sv,1,0);
 
       res = get_mpf_with_prec( MAXIMUM( mpf_get_prec(THISMPF),
 					mpf_get_prec(a) ));
 
       mpf_div(OBTOMPF(res), a, THISMPF);
-      
+
       RETURN res;
     }
 
@@ -687,7 +687,7 @@ PIKECLASS mpf
    * implement. Need it? Send me an implementation. /Hubbe
    */
 
-  
+
   /* defined as -1-x */
   /*! @decl protected Gmp.mpf `~()
    */
@@ -698,7 +698,7 @@ PIKECLASS mpf
       o=get_mpf_with_prec(mpf_get_prec(THISMPF));
       mpf_set_si(OBTOMPF(o), -1);
       mpf_sub(OBTOMPF(o),OBTOMPF(o), THISMPF);
-      
+
       RETURN o;
     }
 
@@ -706,7 +706,7 @@ PIKECLASS mpf
     ((TYPEOF(*q) != T_INT || TOOBIGTEST(0)) ?		\
        mpf_cmp(THISMPF, get_mpf(q, 1, 0)) OP 0 :	\
        mpf_cmp_ui(THISMPF, q->u.integer) OP 0)
-	
+
   /*! @decl protected int(0..1) `>(mixed q)
    */
   PIKEFUN int(0..1) `>(mixed q)

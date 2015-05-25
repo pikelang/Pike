@@ -52,31 +52,31 @@
 **!	<ref>paste_mask</ref>
 **!
 **!	getting subimages, scaling, rotating: <br>
-**!	<ref>autocrop</ref>, 
+**!	<ref>autocrop</ref>,
 **!	<ref>clone</ref>,
-**!	<ref>copy</ref>, 
+**!	<ref>copy</ref>,
 **!	<ref>dct</ref>,
-**!	<ref>mirrorx</ref>, 
+**!	<ref>mirrorx</ref>,
 **!	<ref>rotate</ref>,
 **!	<ref>rotate_ccw</ref>,
 **!	<ref>rotate_cw</ref>,
-**!	<ref>rotate_expand</ref>, 
-**!	<ref>scale</ref>, 
+**!	<ref>rotate_expand</ref>,
+**!	<ref>scale</ref>,
 **!	<ref>skewx</ref>,
 **!	<ref>skewx_expand</ref>,
 **!	<ref>skewy</ref>,
 **!	<ref>skewy_expand</ref>
 **!
 **!	calculation by pixels: <br>
-**!	<ref>apply_matrix</ref>, 
+**!	<ref>apply_matrix</ref>,
 **!	<ref>change_color</ref>,
 **!	<ref>color</ref>,
-**!	<ref>distancesq</ref>, 
+**!	<ref>distancesq</ref>,
 **!	<ref>grey</ref>,
-**!	<ref>invert</ref>, 
+**!	<ref>invert</ref>,
 **!	<ref>modify_by_intensity</ref>,
 **!	<ref>outline</ref>
-**!	<ref>select_from</ref>, 
+**!	<ref>select_from</ref>,
 **!	<ref>rgb_to_hsv</ref>,
 **!	<ref>hsv_to_rgb</ref>,
 **!	<ref>rgb_to_yuv</ref>,
@@ -280,9 +280,9 @@ static INLINE void getrgbl(rgbl_group *rgb,INT32 args_start,INT32 args,char *nam
 }
 
 static INLINE void img_line(INT32 x1,INT32 y1,INT32 x2,INT32 y2)
-{   
+{
    INT32 pixelstep,pos;
-   if (x1==x2) 
+   if (x1==x2)
    {
       if (y1>y2) y1^=y2,y2^=y1,y1^=y2;
       if (x1<0||x1>=THIS->xsize||
@@ -297,7 +297,7 @@ static INLINE void img_line(INT32 x1,INT32 y1,INT32 x2,INT32 y2)
       if (x1>x2) x1^=x2,x2^=x1,x1^=x2;
       if (y1<0||y1>=THIS->ysize||
 	  x2<0||x1>=THIS->xsize) return;
-      if (x1<0) x1=0; 
+      if (x1<0) x1=0;
       if (x2>=THIS->xsize) x2=THIS->xsize-1;
       for (;x1<=x2;x1++) setpixel_test(x1,y1);
       return;
@@ -369,11 +369,11 @@ static INLINE rgb_group _pixel_apply_matrix(struct image *img,
 	    sumg += DO_NOT_WARN((int)matrix[i+j*width].g);
 	    sumb += DO_NOT_WARN((int)matrix[i+j*width].b);
 	 }
-   if (sumr) res.r=testrange(default_rgb.r+r/(sumr*div)); 
+   if (sumr) res.r=testrange(default_rgb.r+r/(sumr*div));
    else res.r=testrange(r*qdiv+default_rgb.r);
-   if (sumg) res.g=testrange(default_rgb.g+g/(sumg*div)); 
+   if (sumg) res.g=testrange(default_rgb.g+g/(sumg*div));
    else res.g=testrange(g*qdiv+default_rgb.g);
-   if (sumb) res.b=testrange(default_rgb.g+b/(sumb*div)); 
+   if (sumb) res.b=testrange(default_rgb.g+b/(sumb*div));
    else res.b=testrange(b*qdiv+default_rgb.b);
 #ifdef MATRIX_DEBUG
    fprintf(stderr,"->%d,%d,%d\n",res.r,res.g,res.b);
@@ -417,7 +417,7 @@ THREADS_ALLOW();
    by=height/2;
    ex=width-bx;
    ey=height-by;
-   
+
 THREADS_DISALLOW();
 
    d=xalloc(sizeof(rgb_group)*img->xsize*img->ysize + RGB_VEC_PAD);
@@ -616,13 +616,13 @@ void img_read_get_channel(int arg,char *name,INT32 args,
 	 break;
       case T_OBJECT:
 	 img=get_storage(sp[arg-args-1].u.object,image_program);
-	 if (!img) 
+	 if (!img)
 	    Pike_error("create_method: argument %d (%s channel): "
 		  "not an image object\n",arg+1,name);
-	 if (!img->img) 
+	 if (!img->img)
 	    Pike_error("create_method: argument %d (%s channel): "
 		  "uninitialized image object\n",arg+1,name);
-	 if (img->xsize!=THIS->xsize || img->ysize!=THIS->ysize) 
+	 if (img->xsize!=THIS->xsize || img->ysize!=THIS->ysize)
 	    Pike_error("create_method: argument %d (%s channel): "
 		  "size is wrong, %"PRINTPIKEINT"dx%"PRINTPIKEINT"d;"
 		       " expected %"PRINTPIKEINT"dx%"PRINTPIKEINT"d\n",
@@ -936,7 +936,7 @@ void image_create_method(INT32 args)
       image_tuned_box(5);
       return;
    }
-   else 
+   else
       Pike_error("create_method: unknown method\n");
 
    /* on stack: "string" image */
@@ -966,7 +966,7 @@ void image_create(INT32 args)
                    "Bad arguments to create.\n");
 
    if (THIS->img) { free(THIS->img); THIS->img=NULL; }
-	
+
    THIS->xsize=sp[-args].u.integer;
    THIS->ysize=sp[1-args].u.integer;
 #if 0
@@ -985,7 +985,7 @@ void image_create(INT32 args)
       return ;
    }
    else
-      getrgb(THIS,2,args,args,"Image.Image->create()"); 
+      getrgb(THIS,2,args,args,"Image.Image->create()");
 
    THIS->img=xalloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+RGB_VEC_PAD);
 
@@ -1009,7 +1009,7 @@ void image_create(INT32 args)
 **!	<td>clone</td>
 **!	<td>clone(50,50)</td>
 **!	</tr></table>
-**!	
+**!
 **! returns the new object
 **! arg int xsize
 **! arg int ysize
@@ -1018,8 +1018,8 @@ void image_create(INT32 args)
 **! arg int r
 **! arg int g
 **! arg int b
-**!     current color of the new image, 
-**!     default is black. 
+**!     current color of the new image,
+**!     default is black.
 **!     Will also be the background color if the cloned image
 **!     is empty (no drawing area made).
 **! arg int alpha
@@ -1059,7 +1059,7 @@ void image_clone(INT32 args)
       img->ysize=sp[1-args].u.integer;
    }
 
-   getrgb(img,2,args,args,"Image.Image->clone()"); 
+   getrgb(img,2,args,args,"Image.Image->clone()");
 
    if (img->xsize<0) img->xsize=1;
    if (img->ysize<0) img->ysize=1;
@@ -1073,7 +1073,7 @@ void image_clone(INT32 args)
       else
 	 img_crop(img,THIS,
 		  0,0,img->xsize-1,img->ysize-1);
-	 
+
    }
    else
       img_clear(img->img,img->rgb,img->xsize*img->ysize);
@@ -1116,7 +1116,7 @@ void image_clear(INT32 args)
    img=(struct image*)(o->storage);
    *img=*THIS;
 
-   getrgb(img,0,args,args,"Image.Image->clear()"); 
+   getrgb(img,0,args,args,"Image.Image->clear()");
 
    img->img=malloc(sizeof(rgb_group)*img->xsize*img->ysize+RGB_VEC_PAD);
    if (!img->img)
@@ -1138,7 +1138,7 @@ void image_clear(INT32 args)
 **! method object copy(int x1,int y1,int x2,int y2,int r,int g,int b)
 **! method object copy(int x1,int y1,int x2,int y2,int r,int g,int b,int alpha)
 **! 	Copies this part of the image. The requested area can
-**!	be smaller, giving a cropped image, or bigger - 
+**!	be smaller, giving a cropped image, or bigger -
 **!	the new area will be filled with the given or current color.
 **!
 **!	<table><tr valign=center>
@@ -1154,7 +1154,7 @@ void image_clear(INT32 args)
 **! returns a new image object
 **!
 **! note
-**! 	<ref>clone</ref>(void) and <ref>copy</ref>(void) does the same 
+**! 	<ref>clone</ref>(void) and <ref>copy</ref>(void) does the same
 **!	operation
 **!
 **! arg int x1
@@ -1194,7 +1194,7 @@ void image_copy(INT32 args)
 
    if (!THIS->img) Pike_error("Called Image.Image object is not initialized\n");;
 
-   getrgb(THIS,4,args,args,"Image.Image->copy()"); 
+   getrgb(THIS,4,args,args,"Image.Image->copy()");
 
    o=clone_object(image_program,0);
    img=(struct image*)(o->storage);
@@ -1237,13 +1237,13 @@ static void image_change_color(INT32 args)
 
    if (!THIS->img) Pike_error("Called Image.Image object is not initialized\n");;
 
-   to=THIS->rgb;   
+   to=THIS->rgb;
    if (!(arg=getrgb(THIS,0,args,3,"Image.Image->change_color()")))
       SIMPLE_TOO_FEW_ARGS_ERROR("Image",1);
    from=THIS->rgb;
    if (getrgb(THIS,arg,args,args,"Image.Image->change_color()"))
       to=THIS->rgb;
-   
+
    o=clone_object(image_program,0);
    img=(struct image*)(o->storage);
    *img=*THIS;
@@ -1297,7 +1297,7 @@ static void image_change_color(INT32 args)
 **! arg int right
 **! arg int top
 **! arg int bottom
-**!	which borders to scan and cut the image; 
+**!	which borders to scan and cut the image;
 **!	a typical example is removing the top and bottom unneccesary
 **!	pixels:
 **!	<pre>img=img->autocrop(0, 0,0,1,1);</pre>
@@ -1344,18 +1344,18 @@ void img_find_autocrop(struct image *this,
    {
       done=0;
       if (left &&
-	  try_autocrop_vertical(this,x1,y1,y2,rgb_set,&rgb)) 
+	  try_autocrop_vertical(this,x1,y1,y2,rgb_set,&rgb))
 	 x1++,done=rgb_set=1;
       if (right &&
-	  x2>x1 && 
-	  try_autocrop_vertical(this,x2,y1,y2,rgb_set,&rgb)) 
+	  x2>x1 &&
+	  try_autocrop_vertical(this,x2,y1,y2,rgb_set,&rgb))
 	 x2--,done=rgb_set=1;
       if (top &&
-	  try_autocrop_horisontal(this,y1,x1,x2,rgb_set,&rgb)) 
+	  try_autocrop_horisontal(this,y1,x1,x2,rgb_set,&rgb))
 	 y1++,done=rgb_set=1;
       if (bottom &&
-	  y2>y1 && 
-	  try_autocrop_horisontal(this,y2,x1,x2,rgb_set,&rgb)) 
+	  y2>y1 &&
+	  try_autocrop_horisontal(this,y2,x1,x2,rgb_set,&rgb))
 	 y2--,done=rgb_set=1;
       if (!done) break;
    }
@@ -1380,7 +1380,7 @@ static void image_find_autocrop(INT32 args)
          bad_arg_error("find_autocrop",sp-args,args,0,"",sp-args,
                        "Bad arguments to find_autocrop.\n");
       else
-         border=sp[-args].u.integer; 
+         border=sp[-args].u.integer;
    }
 
    if (args>=5)
@@ -1415,13 +1415,13 @@ void image_autocrop(INT32 args)
    int left=1,right=1,top=1,bottom=1;
 
    if (args>=5)
-      getrgb(THIS,5,args,args,"Image.Image->autocrop()"); 
-   else 
-      getrgb(THIS,1,args,args,"Image.Image->autocrop()"); 
+      getrgb(THIS,5,args,args,"Image.Image->autocrop()");
+   else
+      getrgb(THIS,1,args,args,"Image.Image->autocrop()");
 
    image_find_autocrop(args);
    args++;
-   
+
    x1=sp[-1].u.array->item[0].u.integer;
    y1=sp[-1].u.array->item[1].u.integer;
    x2=sp[-1].u.array->item[2].u.integer;
@@ -1466,7 +1466,7 @@ void image_setcolor(INT32 args)
 **! method object setpixel(int x,int y,Image.Color c)
 **! method object setpixel(int x,int y,int r,int g,int b)
 **! method object setpixel(int x,int y,int r,int g,int b,int alpha)
-**!    
+**!
 **!	<table><tr valign=center>
 **!	<td><illustration> return lena(); </illustration></td>
 **!	<td><illustration> return lena()->copy()->setpixel(10,10,255,0,0); </illustration></td>
@@ -1495,7 +1495,7 @@ void image_setpixel(INT32 args)
        TYPEOF(sp[1-args]) != T_INT)
       bad_arg_error("setpixel",sp-args,args,0,"",sp-args,
                     "Bad arguments to setpixel.\n");
-   getrgb(THIS,2,args,args,"Image.Image->setpixel()");   
+   getrgb(THIS,2,args,args,"Image.Image->setpixel()");
    if (!THIS->img) return;
    x=sp[-args].u.integer;
    y=sp[1-args].u.integer;
@@ -1507,7 +1507,7 @@ void image_setpixel(INT32 args)
 
 /*
 **! method array(int) getpixel(int x,int y)
-**!    
+**!
 **! returns color of the requested pixel -- ({int red,int green,int blue})
 **!
 **! arg int x
@@ -1555,7 +1555,7 @@ void image_getpixel(INT32 args)
 **!	<td>original</td>
 **!	<td>->line<wbr>(50,10,<wbr>10,50,<wbr>255,0,0)</td>
 **!	</tr></table>
-**! 
+**!
 **! returns the object called
 **!
 **! arg int x1
@@ -1594,8 +1594,8 @@ void image_line(INT32 args)
 **! method object box(int x1,int y1,int x2,int y2)
 **! method object box(int x1,int y1,int x2,int y2,int r,int g,int b)
 **! method object box(int x1,int y1,int x2,int y2,int r,int g,int b,int alpha)
-**! 	Draws a filled rectangle on the image. 
-**! 
+**! 	Draws a filled rectangle on the image.
+**!
 **!	<table><tr valign=center>
 **!	<td><illustration> return lena(); </illustration></td>
 **!	<td><illustration> return lena()->copy()->box(40,10,10,80,0,255,0); </illustration></td>
@@ -1605,7 +1605,7 @@ void image_line(INT32 args)
 **!	<td>->box<wbr>(40,10,<wbr>10,80,<wbr>0,255,0)</td>
 **!	<td>->box<wbr>(40,10,<wbr>10,80,<wbr>255,0,0,75)</td>
 **!	</tr></table>
-**! 
+**!
 **! returns the object called
 **!
 **! arg int x1
@@ -1618,7 +1618,7 @@ void image_line(INT32 args)
 **! arg int b
 **!     color of the box
 **! arg int alpha
-**!     alpha value 
+**!     alpha value
 */
 void image_box(INT32 args)
 {
@@ -1645,7 +1645,7 @@ void image_box(INT32 args)
 **! method object circle(int x,int y,int rx,int ry,int r,int g,int b)
 **! method object circle(int x,int y,int rx,int ry,int r,int g,int b,int alpha)
 **! 	Draws a circle on the image. The circle is <i>not</i> antialiased.
-**! 
+**!
 **!	<table><tr valign=center>
 **!	<td><illustration> return lena(); </illustration></td>
 **!	<td><illustration> return lena()->copy()->circle(50,50,30,50,255,255); </illustration></td>
@@ -1653,7 +1653,7 @@ void image_box(INT32 args)
 **!	<td>original</td>
 **!	<td>->circle<wbr>(50,50,<wbr>30,50,<wbr>0,255,255)</td>
 **!	</tr></table>
-**! 
+**!
 **! returns the object called
 **!
 **! arg int x
@@ -1688,13 +1688,13 @@ void image_circle(INT32 args)
    y=sp[1-args].u.integer;
    rx=sp[2-args].u.integer;
    ry=sp[3-args].u.integer;
-   
+
    for (i=0; i<CIRCLE_STEPS; i++)
       img_line(x+circle_sin_mul(i,rx),
 	       y+circle_cos_mul(i,ry),
 	       x+circle_sin_mul(i+1,rx),
 	       y+circle_cos_mul(i+1,ry));
-   
+
    pop_n_elems(args);
    ref_push_object(THISOBJ);
 }
@@ -1724,7 +1724,7 @@ static INLINE int image_color_svalue_rgba(struct svalue *s,
       d->alpha=0;
       return 1;
    }
-   return 0; 
+   return 0;
 }
 
 static INLINE void
@@ -1797,10 +1797,10 @@ static INLINE void
 **!	</pre>
 **!	Default alpha channel value is 0 (opaque).
 */
-INLINE static void 
-image_tuned_box_leftright(const rgba_group left, const rgba_group right, 
-			  rgb_group *dest, 
-			  const int length, const int maxlength,  
+INLINE static void
+image_tuned_box_leftright(const rgba_group left, const rgba_group right,
+			  rgb_group *dest,
+			  const int length, const int maxlength,
 			  const int xsize,  const int height)
 {
   int x, y=height;
@@ -1812,15 +1812,15 @@ image_tuned_box_leftright(const rgba_group left, const rgba_group right,
     (dest+x)->g = DO_NOT_WARN((COLORTYPE)((((long)left.g)*(length-x)+((long)right.g)*(x))/length));
     (dest+x)->b = DO_NOT_WARN((COLORTYPE)((((long)left.b)*(length-x)+((long)right.b)*(x))/length));
   }
-  while(--y)  memcpy((dest+=xsize), from, maxlength*sizeof(rgb_group)); 
+  while(--y)  memcpy((dest+=xsize), from, maxlength*sizeof(rgb_group));
 }
 
 
 
-INLINE static void 
+INLINE static void
 image_tuned_box_topbottom(const rgba_group left, const rgba_group right,
-			  rgb_group *dest, 
-			  const int length, const int xsize, 
+			  rgb_group *dest,
+			  const int length, const int xsize,
 			  const int height,
 			  const int maxheight)
 {
@@ -1844,7 +1844,7 @@ image_tuned_box_topbottom(const rgba_group left, const rgba_group right,
       } else {
 	from = dest;
 	for(x=0; x<64; x++) *(dest++) = color;
-	for(;x<length-64;x+=64,dest+=64) 
+	for(;x<length-64;x+=64,dest+=64)
 	  memcpy(dest, from, 64*sizeof(rgb_group));
 	for(;x<length; x++) *(dest++) = color;
 	dest += xsize-length;
@@ -1933,24 +1933,24 @@ static void image_tuned_box(INT32 args)
 
   if (! (topleft.alpha||topright.alpha||bottomleft.alpha||bottomright.alpha))
     {
-      if(color_equal(topleft,bottomleft) && 
+      if(color_equal(topleft,bottomleft) &&
 	 color_equal(topright, bottomright))
 	{
-	  image_tuned_box_leftright(topleft, bottomright, 
-				    this->img+x1+this->xsize*y1, 
-				    xw+1, MINIMUM(xw+1, this->xsize-x1),  
+	  image_tuned_box_leftright(topleft, bottomright,
+				    this->img+x1+this->xsize*y1,
+				    xw+1, MINIMUM(xw+1, this->xsize-x1),
 				    this->xsize, MINIMUM(yw+1, this->ysize-y1));
 
-	} 
+	}
       else if(color_equal(topleft,topright) && color_equal(bottomleft,bottomright))
 	{
-	  image_tuned_box_topbottom(topleft, bottomleft, 
-				    this->img+x1+this->xsize*y1, 
-				    MINIMUM(xw+1, this->xsize-x1), this->xsize, 
+	  image_tuned_box_topbottom(topleft, bottomleft,
+				    this->img+x1+this->xsize*y1,
+				    MINIMUM(xw+1, this->xsize-x1), this->xsize,
 				    yw+1, MINIMUM(yw+1, this->ysize-y1));
-	} else 
+	} else
 	  goto ugly;
-    } else {  
+    } else {
     ugly:
       dxw = 1.0/(double)xw;
       dyw = 1.0/(double)yw;
@@ -2004,7 +2004,7 @@ static void image_tuned_box(INT32 args)
 		img->b=testrange(sum.b+0.5);
 		img+=this->xsize;
 	      }
-	 
+
 	}
     }
   THREADS_DISALLOW();
@@ -2118,7 +2118,7 @@ static void image_gradients(INT32 args)
       pop_n_elems(1);
    }
 
-   if (!first) 
+   if (!first)
       SIMPLE_TOO_FEW_ARGS_ERROR("Image.Image->gradients",1);
 
    THREADS_ALLOW();
@@ -2228,7 +2228,7 @@ static void image_test(INT32 args)
 
    for (i=0; i<5; i++)
    {
-      push_int(THIS->xsize); f_random(1); 
+      push_int(THIS->xsize); f_random(1);
       push_int(THIS->ysize); f_random(1);
       push_int((i!=0)?255:0); f_random(1);
       push_int((i!=1)?255:0); if (i!=4) f_random(1);
@@ -2338,7 +2338,7 @@ void image_grey(INT32 args)
 **! method object color(int value)
 **! method object color(Color color)
 **! method object color(int r,int g,int b)
-**!    Colorize an image. 
+**!    Colorize an image.
 **!
 **!    The red, green and blue values of the pixels are multiplied
 **!    with the given value(s). This works best on a grey image...
@@ -2416,7 +2416,7 @@ void image_color(INT32 args)
 #ifdef ASSEMBLY_OK
    if( (image_cpuid & IMAGE_MMX) && x>>2 )
    {
-     image_mult_buffer_mmx_x86asm( d,s,x>>2, RGB2ASMCOL( rgb ) ); 
+     image_mult_buffer_mmx_x86asm( d,s,x>>2, RGB2ASMCOL( rgb ) );
      s += x; x = x%4; s -= x;
    }
 #endif
@@ -2437,7 +2437,7 @@ void image_color(INT32 args)
 
 /*
 **! method object invert()
-**!    Invert an image. Each pixel value gets to be 255-x, where x 
+**!    Invert an image. Each pixel value gets to be 255-x, where x
 **!    is the old value.
 **!
 **!	<table><tr valign=center>
@@ -2503,7 +2503,7 @@ void image_invert(INT32 args)
 **! method object threshold(int level)
 **! method object threshold(int r,int g,int b)
 **! method object threshold(Color color)
-**! 	Makes a black-white image. 
+**! 	Makes a black-white image.
 **!
 **! 	If any of red, green, blue parts of a pixel
 **!    	is larger then the given value, the pixel will become
@@ -2594,7 +2594,7 @@ void image_threshold(INT32 args)
 	 d++;
 	 s++;
       }
-      
+
    THREADS_DISALLOW();
 
    pop_n_elems(args);
@@ -2701,7 +2701,7 @@ void image_hsv_to_rgb(INT32 args)
      h = (s->r/255.0)*(360.0/60.0);
      sat = s->g/255.0;
      v = s->b/255.0;
-     
+
      if(sat==0.0)
      {
        r = g = b = v;
@@ -2989,9 +2989,9 @@ void image_rgb_to_yuv(INT32 args)
 **! method object distancesq()
 **! method object distancesq(int r,int g,int b)
 **!    Makes an grey-scale image, for alpha-channel use.
-**!    
+**!
 **!    The given value (or current color) are used for coordinates
-**!    in the color cube. Each resulting pixel is the 
+**!    in the color cube. Each resulting pixel is the
 **!    distance from this point to the source pixel color,
 **!    in the color cube, squared, rightshifted 8 steps:
 **!
@@ -3153,7 +3153,7 @@ fprintf(stderr,"==> %d (",DISTANCE(rgb,src[x+y*xsize]));
 fprintf(stderr," %d,%d,%d)\n",src[x+y*xsize].r,src[x+y*xsize].g,src[x+y*xsize].b);
 #endif
       if ( dest[x+y*xsize].r || /* seen that */
-	   (j=DISTANCE(rgb,src[x+y*xsize])) >low_limit) 
+	   (j=DISTANCE(rgb,src[x+y*xsize])) >low_limit)
       {
 	 if (xr<x)
 	    isf_seek(ISF_LEFT*(xr==x1),ydir,low_limit,
@@ -3178,9 +3178,9 @@ fprintf(stderr," %d,%d,%d)\n",src[x+y*xsize].r,src[x+y*xsize].g,src[x+y*xsize].b
 **! method object select_from(int x,int y)
 **! method object select_from(int x,int y,int edge_value)
 **!    Makes an grey-scale image, for alpha-channel use.
-**!    
+**!
 **!    This is very close to a floodfill.
-**!    
+**!
 **!    The image is scanned from the given pixel,
 **!    filled with 255 if the color is the same,
 **!    or 255 minus distance in the colorcube, squared, rightshifted
@@ -3188,7 +3188,7 @@ fprintf(stderr," %d,%d,%d)\n",src[x+y*xsize].r,src[x+y*xsize].g,src[x+y*xsize].b
 **!
 **!    When the edge distance is reached, the scan is stopped.
 **!    Default edge value is 30.
-**!    This value is squared and compared with the square of the 
+**!    This value is squared and compared with the square of the
 **!    distance above.
 **!
 **!	<table><tr valign=center>
@@ -3235,13 +3235,13 @@ void image_select_from(INT32 args)
    if (!THIS->img)
      Pike_error("Called Image.Image object is not initialized\n");
 
-   if (args<2 
+   if (args<2
        || TYPEOF(sp[-args]) != T_INT
        || TYPEOF(sp[1-args]) != T_INT)
      bad_arg_error("select_from",sp-args,args,0,"",sp-args,
                    "Bad arguments to select_from.\n");
 
-   if (args>=3) 
+   if (args>=3)
       if (TYPEOF(sp[2-args]) != T_INT)
         SIMPLE_BAD_ARG_ERROR("select_from",3,"int");
       else
@@ -3261,7 +3261,7 @@ void image_select_from(INT32 args)
    }
    memset(img->img,0,sizeof(rgb_group)*img->xsize*img->ysize);
 
-   if (sp[-args].u.integer>=0 && sp[-args].u.integer<img->xsize 
+   if (sp[-args].u.integer>=0 && sp[-args].u.integer<img->xsize
        && sp[1-args].u.integer>=0 && sp[1-args].u.integer<img->ysize)
    {
       isf_seek(ISF_LEFT|ISF_RIGHT,1,low_limit,
@@ -3340,7 +3340,7 @@ void image_bitscale( INT32 args )
     } else if( TYPEOF(sp[-1]) == T_FLOAT ) {
       newx = DOUBLE_TO_INT(oldx * sp[-1].u.float_number);
       newy = DOUBLE_TO_INT(oldy * sp[-1].u.float_number);
-    } else 
+    } else
       Pike_error("The scale factor must be an integer less than 2^32, or a float\n");
   } else if( args == 2 ) {
     if( TYPEOF(sp[-1]) != TYPEOF(sp[-2]) )
@@ -3369,7 +3369,7 @@ void image_bitscale( INT32 args )
   push_int( newy );
   ro = clone_object( image_program, 2 );
   d=((struct image *)get_storage( ro, image_program))->img;
-  
+
   for( y = 0; y<newy; y++ )
   {
     s = THIS->img + (y * oldy / newy) * THIS->xsize;
@@ -3384,13 +3384,13 @@ void image_bitscale( INT32 args )
 **! method object apply_matrix(array(array(int|array(int))) matrix,int r,int g,int b)
 **! method object apply_matrix(array(array(int|array(int))) matrix,int r,int g,int b,int|float div)
 **!     Applies a pixel-transform matrix, or filter, to the image.
-**!    
+**!
 **!	<pre>
 **!                            2   2
-**!	pixel(x,y)= base+ k ( sum sum pixel(x+k-1,y+l-1)*matrix(k,l) ) 
-**!                           k=0 l=0 
+**!	pixel(x,y)= base+ k ( sum sum pixel(x+k-1,y+l-1)*matrix(k,l) )
+**!                           k=0 l=0
 **!     </pre>
-**!	
+**!
 **!	1/k is sum of matrix, or sum of matrix multiplied with div.
 **!	base is given by r,g,b and is normally black.
 **!
@@ -3415,7 +3415,7 @@ void image_bitscale( INT32 args )
 **!	</illustration>
 **!	</td></tr>
 **!	<tr><td></td><td>original</td></tr>
-**!	
+**!
 **!	<tr><td>
 **!     sharpen (k>8, preferably 12 or 16):
 **!	<pre>
@@ -3536,7 +3536,7 @@ CHRONO("apply_matrix");
 	 default_rgb.g=sp[1-args].u.integer;
 	 default_rgb.b=sp[1-args].u.integer;
       }
-   else 
+   else
    {
       default_rgb.r=0;
       default_rgb.g=0;
@@ -3556,7 +3556,7 @@ CHRONO("apply_matrix");
       if (!div) div=1;
    }
    else div=1;
-   
+
    height=sp[-args].u.array->size;
    width=-1;
    for (i=0; i<height; i++)
@@ -3638,14 +3638,14 @@ CHRONO("apply_matrix, end");
 **!     Makes an outline of this image, ie paints with the
 **!	given color around the non-background pixels.
 **!
-**!	Default is to paint above, below, to the left and the right of 
+**!	Default is to paint above, below, to the left and the right of
 **!	these pixels.
 **!
 **!	You can also run your own outline mask.
 **!
 **!	The outline_mask function gives the calculated outline as an
 **!	alpha channel image of white and black instead.
-**! 
+**!
 **!	<table><tr valign=center>
 **!	<td><illustration> return lena(); </illustration></td>
 **!	<td><illustration> return lena()*lena()->threshold(100,100,100)</illustration></td>
@@ -3655,8 +3655,8 @@ CHRONO("apply_matrix, end");
 **!	<td>masked<br>through<br>threshold</td>
 **!	<td>...and<br>outlined<br>with red</td>
 **!	</tr></table>
-**! 
-**!    
+**!
+**!
 **! returns the new image object
 **!
 **! arg array(array(int)) mask
@@ -3906,9 +3906,9 @@ void image_modify_by_intensity(INT32 args)
 
    if (!THIS->img)
      Pike_error("Called Image.Image object is not initialized\n");
-   if (args<5) 
+   if (args<5)
       SIMPLE_TOO_FEW_ARGS_ERROR("Image.Image->modify_by_intensity()",5);
-   
+
    getrgbl(&rgb,0,args,"Image.Image->modify_by_intensity()");
    div=rgb.r+rgb.g+rgb.b;
    if (!div) div=1;
@@ -3938,7 +3938,7 @@ void image_modify_by_intensity(INT32 args)
    }
 
    list=malloc(sizeof(rgb_group)*256+RGB_VEC_PAD);
-   if (!list) 
+   if (!list)
    {
       free(s);
       SIMPLE_OUT_OF_MEMORY_ERROR("modify_by_intensity",
@@ -3999,9 +3999,9 @@ void image_modify_by_intensity(INT32 args)
 **!  If only one curve is passed, use the same curve for red, green and blue.
 **!  If 'channel' is specified, the curve is only applied to the
 **!  specified channel.
-**! 
+**!
 **!  returns a new image object
-**! 
+**!
 **!  arg array(int(0..255)) curve_r
 **!  arg array(int(0..255)) curve_g
 **!  arg array(int(0..255)) curve_b
@@ -4026,7 +4026,7 @@ static void image_apply_curve_3( unsigned char curve[3][256] )
   o = clone_object( image_program, 2 );
   d = ((struct image*)get_storage( o, image_program ))->img;
   i = THIS->xsize*THIS->ysize;
-  
+
   THREADS_ALLOW();
   for( ; i>0; i-- )
   {
@@ -4061,8 +4061,8 @@ static void image_apply_curve_1( unsigned char curve[256] )
 }
 
 
-static void image_apply_curve_2( struct object *o, 
-                                 int channel, 
+static void image_apply_curve_2( struct object *o,
+                                 int channel,
                                  unsigned char curve[256] )
 {
   int i;
@@ -4071,7 +4071,7 @@ static void image_apply_curve_2( struct object *o,
   i = THIS->xsize*THIS->ysize;
 
   THREADS_ALLOW();
-  switch( channel ) 
+  switch( channel )
   {
    case 0: for( ; i>0; i--,d++ ) d->r = curve[d->r]; break;
    case 1: for( ; i>0; i--,d++ ) d->g = curve[d->g]; break;
@@ -4165,12 +4165,12 @@ static void image_apply_curve( INT32 args )
 	 Pike_error("Unknown channel in argument 1.\n");
 
        if( co )
-       { 
+       {
          push_int( THIS->xsize );
          push_int( THIS->ysize );
          o = clone_object( image_program, 2 );
-         memcpy( ((struct image*)get_storage(o,image_program))->img, 
-                 THIS->img, 
+         memcpy( ((struct image*)get_storage(o,image_program))->img,
+                 THIS->img,
                  THIS->xsize*THIS->ysize*sizeof(rgb_group) );
        }
        else
@@ -4310,7 +4310,7 @@ void image_gamma(INT32 args)
       img_make_gammatable(newg=_newg,gammag);
       img_make_gammatable(newb=_newb,gammab);
    }
-   
+
    o=clone_object(image_program,0);
    img=(struct image*)o->storage;
    *img=*THIS;
@@ -4369,7 +4369,7 @@ void image_write_lsb_rgb(INT32 args)
        || TYPEOF(sp[-args]) != T_STRING)
       bad_arg_error("write_lsb_rgb",sp-args,args,0,"",sp-args,
                     "Bad arguments to write_lsb_rgb.\n");
-   
+
    s=sp[-args].u.string->str;
    l=sp[-args].u.string->len;
 
@@ -4391,7 +4391,7 @@ void image_write_lsb_rgb(INT32 args)
    }
 
    pop_n_elems(args);
-   
+
    ref_push_object(THISOBJ);
 }
 
@@ -4440,7 +4440,7 @@ void image_write_lsb_grey(INT32 args)
        || TYPEOF(sp[-args]) != T_STRING)
      bad_arg_error("write_lsb_grey",sp-args,args,0,"",sp-args,
                    "Bad arguments to write_lsb_grey.\n");
-   
+
    s=sp[-args].u.string->str;
    l=sp[-args].u.string->len;
 
@@ -4453,13 +4453,13 @@ void image_write_lsb_grey(INT32 args)
    while (n--)
    {
       if (b==0) { b=128; l--; s++; }
-      if (l>0) 
+      if (l>0)
       {
-	 d->r=(d->r&254)|(((*s)&b)?1:0); 
-	 d->g=(d->g&254)|(((*s)&b)?1:0); 
-	 d->b=(d->b&254)|(((*s)&b)?1:0); 
+	 d->r=(d->r&254)|(((*s)&b)?1:0);
+	 d->g=(d->g&254)|(((*s)&b)?1:0);
+	 d->b=(d->b&254)|(((*s)&b)?1:0);
       }
-      else 
+      else
       {
 	 d->r&=254;
 	 d->g&=254;
@@ -4470,7 +4470,7 @@ void image_write_lsb_grey(INT32 args)
    }
 
    pop_n_elems(args);
-   
+
    ref_push_object(THISOBJ);
 }
 
@@ -4508,7 +4508,7 @@ void image_read_lsb_grey(INT32 args)
 /*
 **! method string|array cast(string type)
 **!	Cast the image to another datatype. Currently supported
-**!	are string ("rgbrgbrgb...") and array (double array 
+**!	are string ("rgbrgbrgb...") and array (double array
 **!	of <ref>Image.Color</ref> objects).
 **! see also: Image.Color,Image.X
 */
@@ -4574,7 +4574,7 @@ static void image__sprintf( INT32 args )
      push_int( THIS->xsize );
      push_int( THIS->ysize );
      push_float( DO_NOT_WARN((FLOAT_TYPE)((THIS->xsize * THIS->ysize) /
-					  1024.0 * 3.0)) ); 
+					  1024.0 * 3.0)) );
      f_sprintf( 4 );
      return;
    default:
@@ -4880,13 +4880,13 @@ static void image__size_object(INT32 UNUSED(args))
 void init_image_image(void)
 {
    int i;
-   for (i=0; i<CIRCLE_STEPS; i++) 
+   for (i=0; i<CIRCLE_STEPS; i++)
       circle_sin_table[i]=DOUBLE_TO_INT(4096*sin(((double)i)*2.0*
 						 3.141592653589793/
 						 (double)CIRCLE_STEPS));
 
    ADD_STORAGE(struct image);
-   
+
    ADD_FUNCTION("_sprintf", image__sprintf, tFunc(tInt , tString), 0 );
    ADD_FUNCTION("_size_object", image__size_object, tFunc(tVoid,tInt), 0);
 
@@ -4912,7 +4912,7 @@ void init_image_image(void)
 
 
    ADD_FUNCTION("copy",image_copy,
-		tFunc(tOr(tVoid,tInt) tOr(tVoid,tInt) tOr(tVoid,tInt) 
+		tFunc(tOr(tVoid,tInt) tOr(tVoid,tInt) tOr(tVoid,tInt)
 		      tOr(tVoid,tInt) tRGB,tObj),0);
    ADD_FUNCTION("autocrop",image_autocrop,
 		tFuncV(tNone,tOr(tVoid,tInt),tObj),0);
@@ -4995,7 +4995,7 @@ void init_image_image(void)
 
    ADD_FUNCTION("grey_blur",image_grey_blur,tFunc(tInt,tObj),0);
    ADD_FUNCTION("blur",image_blur,tFunc(tInt,tObj),0);
-   
+
    ADD_FUNCTION("outline",image_outline,
 		tOr5(tFunc(tOr(tVoid,tArr(tArr(tInt))),tObj),
 		     tFunc(tArr(tArr(tInt)) tInt tInt tInt tOr(tVoid,tInt),tObj),
@@ -5046,11 +5046,11 @@ void init_image_image(void)
 
    ADD_FUNCTION("noise",image_noise,
 		tFunc(tArr(tOr3(tInt,tFloat,tColor))
-		      tOr(tFlt,tVoid) tOr(tFlt,tVoid) 
+		      tOr(tFlt,tVoid) tOr(tFlt,tVoid)
 		      tOr(tFlt,tVoid) tOr(tFlt,tVoid),tObj),0);
    ADD_FUNCTION("turbulence",image_turbulence,
 		tFunc(tArr(tOr3(tInt,tFloat,tColor))
-		      tOr(tInt,tVoid) tOr(tFlt,tVoid) 
+		      tOr(tInt,tVoid) tOr(tFlt,tVoid)
 		      tOr(tFlt,tVoid) tOr(tFlt,tVoid) tOr(tFlt,tVoid),tObj),0);
    ADD_FUNCTION("random",image_random,
 		tFunc(tOr(tVoid,tInt),tObj),0);
@@ -5092,14 +5092,14 @@ void init_image_image(void)
 		tFunc(tNone,tArr(tInt)),0);
    ADD_FUNCTION("average",image_average,
 		tFunc(tNone,tArr(tInt)),0);
-  
+
    ADD_FUNCTION("find_min",image_find_min,
 		tOr(tFunc(tNone,tArr(tInt)),
 		    tFunc(tInt tInt tInt,tArr(tInt))),0);
    ADD_FUNCTION("find_max",image_find_max,
 		tOr(tFunc(tNone,tArr(tInt)),
 		    tFunc(tInt tInt tInt,tArr(tInt))),0);
-		
+
    ADD_FUNCTION("read_lsb_rgb",image_read_lsb_rgb,
 		tFunc(tNone,tString),0);
    ADD_FUNCTION("write_lsb_rgb",image_write_lsb_rgb,
@@ -5113,7 +5113,7 @@ void init_image_image(void)
 		tFunc(tNone,tArr(tObj)),0);
    ADD_FUNCTION("orient",image_orient,
 		tFunc(tNone,tObj),0);
-  
+
    ADD_FUNCTION("phaseh",image_phaseh,
 		tFunc(tNone,tObj),0);
    ADD_FUNCTION("phasev",image_phasev,
@@ -5143,13 +5143,13 @@ void init_image_image(void)
 		     tFunc(tOr(tInt,tFloat) tObj tObj tObj,tObj),
 		     tFunc(tOr(tInt,tFloat) tObj tObj tInt,tObj),
 		     tFunc(tOr(tInt,tFloat) tObj tObj tObj tObj tInt,tObj)),0);
-  
+
    ADD_FUNCTION("apply_max",image_apply_max,
 		tFuncV(tArr(tArr(tOr(tInt,tArr(tInt)))),
 		       tOr(tVoid,tInt),tObj),0);
    ADD_FUNCTION("make_ascii",image_make_ascii,
 		tFunc(tObj tObj tObj tObj tOr(tInt,tVoid),tStr),0);
-  
+
    ADD_FUNCTION("test",image_test,
 		tFunc(tOr(tVoid,tInt),tObj),0);
 
@@ -5188,6 +5188,6 @@ void init_image_image(void)
    s_tuned_box=0;
 }
 
-void exit_image_image(void) 
+void exit_image_image(void)
 {
 }

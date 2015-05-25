@@ -42,7 +42,7 @@ PRECOMPILER_ARGS=--api=3
 # documentation! This variable is prepended to the install path.
 # Please note that Pike will not work until moved into the proper
 # place.  -Hubbe
-# 
+#
 buildroot=
 
 prefix = @prefix@
@@ -294,14 +294,14 @@ framework: OCPikeInterpreter.o $(OBJ) modules/linker_options @STATIC_POST_MODULE
 	gcc -o Pike OCPikeInterpreter.o $(OBJ) `cat modules/linker_options @STATIC_POST_MODULES_LINKOPTS@` -framework Cocoa \
 	  -dynamiclib -Wl,-no_pie -mpic-no-dynamic -Wl,-single_module \
 	  -undefined dynamic_lookup -mmacosx-version-min=10.4 -current_version 7.9 -install_name @executable_path/../Frameworks/Pike.framework/Pike \
-	  -isysroot /Developer/SDKs/MacOSX10.6.sdk 
+	  -isysroot /Developer/SDKs/MacOSX10.6.sdk
 	ls -l Pike
 	if test -x Pike.framework ; then rm -rf Pike.framework; fi
 	mkdir Pike.framework
 	mkdir Pike.framework/Versions
 	mkdir Pike.framework/Versions/7.7
 	mkdir Pike.framework/Versions/7.7/Headers
-	mkdir Pike.framework/Versions/7.7/Resources	
+	mkdir Pike.framework/Versions/7.7/Resources
 	mkdir Pike.framework/Versions/7.7/Resources/lib
 	mv Pike Pike.framework/Versions/7.7
 	cd Pike.framework/Versions && ln -s 7.7 Current
@@ -387,7 +387,7 @@ pike@EXEEXT@ pike.lib: main.o $(OBJ) master-stamp pike.syms modules/linker_optio
 	else :; fi
 
 # gcov
-gcov: 
+gcov:
 	@for f in `cd "$(SRCDIR)" && find . -type f -name '*.c' -print`; do \
 	  if test -f `echo $$f | sed -e 's/\.$$/.bb/'`; then \
 	    for gf in `gcov $$f | sed -e 's/Creating \(.*\)\.gcov.*/\1.gcov/p' -ed`; do \
@@ -970,7 +970,7 @@ doc_build/lib: doc_build
 doc_build/images: doc_build
 	@test -d doc_build/images || mkdir doc_build/images
 
-doc_build/src/post_modules: doc_build/src 
+doc_build/src/post_modules: doc_build/src
 	@test -d doc_build/src/post_modules || \
 	  mkdir doc_build/src/post_modules
 
@@ -1027,7 +1027,7 @@ snapshot_export: source
 
 export: full_export
 
-bin_export: 
+bin_export:
 	@rm -f *.burk
 	@no_autodoc="--no-autodoc"; \
 	if [ -f autodoc.xml ]; then no_autodoc=""; fi; \

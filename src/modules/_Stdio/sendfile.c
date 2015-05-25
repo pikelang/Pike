@@ -295,7 +295,7 @@ static void call_callback_and_free(struct callback *cb, void *this_, void *UNUSE
 }
 
 /*
- * Code called in the threaded case. 
+ * Code called in the threaded case.
  */
 
 /* writev() without the IOV_MAX limit. */
@@ -405,7 +405,7 @@ void low_do_sendfile(struct pike_sendfile *this)
 		       &new_val, sizeof(new_val))<0) &&
 	   (errno == EINTR))
       ;
-  }  
+  }
 #endif /* TCP_CORK || TCP_NODELAY */
 #endif /* SOL_TCP */
 
@@ -565,7 +565,7 @@ void low_do_sendfile(struct pike_sendfile *this)
 
     SF_DFPRINTF((stderr, "sendfile: Sent %ld bytes so far.\n",
 		 DO_NOT_WARN((long)this->sent)));
-    
+
 #if defined(HAVE_SENDFILE) && !defined(HAVE_FREEBSD_SENDFILE) && !defined(HAVE_HPUX_SENDFILE) && !defined(HAVE_MACOSX_SENDFILE)
     SF_DFPRINTF((stderr,
 		 "sendfile: Sending file with sendfile() Linux & Solaris.\n"));
@@ -709,7 +709,7 @@ void low_do_sendfile(struct pike_sendfile *this)
   send_trailers:
     SF_DFPRINTF((stderr, "sendfile: Sent %ld bytes so far.\n",
 		 DO_NOT_WARN((long)this->sent)));
-    
+
     /* No more need for the buffer */
     free(this->buffer);
     this->buffer = NULL;
@@ -811,7 +811,7 @@ static void worker(void *this_)
     /* Paranoia */
     change_fd_for_box (&this->to->box, -1);
   }
-    
+
   /* Neither of the following can be done in our current context
    * so we do them from a backend callback.
    * * Call the callback.
@@ -839,7 +839,7 @@ static void worker(void *this_)
 
   /* We're gone... */
   num_threads--;
-    
+
   mt_unlock_interpreter();
 
   /* Die */

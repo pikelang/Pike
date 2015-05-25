@@ -80,7 +80,7 @@ case $method in
     LAST_PIKE=pike
   ;;
   QQQQQQQ)
-   if [ "x$UNIQPATH" = "x" ] ; then 
+   if [ "x$UNIQPATH" = "x" ] ; then
     UNIQPATH=""
     ifs_save="${IFS- 	}"
     IFS=" @PATH_SEPARATOR@"

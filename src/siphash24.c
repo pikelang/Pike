@@ -8,7 +8,7 @@
 /*
    SipHash reference C implementation
 
-   Written in 2012 by 
+   Written in 2012 by
    Jean-Philippe Aumasson <jeanphilippe.aumasson@gmail.com>
    Daniel J. Bernstein <djb@cr.yp.to>
 
@@ -57,7 +57,7 @@ static size_t low_hashmem_siphash24( const void *s, size_t len, size_t nbytes, s
 {
   const unsigned char * in = (const unsigned char*)s;
   unsigned long long inlen = MINIMUM(len, nbytes);
-  
+
   /* "somepseudorandomlygeneratedbytes" */
   unsigned INT64 v0 = 0x736f6d6570736575ULL;
   unsigned INT64 v1 = 0x646f72616e646f6dULL;

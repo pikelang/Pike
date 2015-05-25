@@ -72,7 +72,7 @@ static void MKNAME(_do_sort)(PTYPE bas,
 	ptrdiff_t howmany,x,y,z;
 	howmany=((((char *)last)-((char *)bas))/SIZE)+1;
 	if(howmany<2) return;
-	
+
 	for(x=PARENT(howmany-1);x>=0;x--)
 	{
 	  y=x;
@@ -86,7 +86,7 @@ static void MKNAME(_do_sort)(PTYPE bas,
 	    y=z;
 	  }
 	}
-	
+
 	for(x=howmany-1;x;x--)
 	{
 	  SWAP( STEP(bas,x), bas);
@@ -101,14 +101,14 @@ static void MKNAME(_do_sort)(PTYPE bas,
 	    y=z;
 	  }
 	}
-	
+
 #ifdef PIKE_DEBUG
 	if(d_flag>1)
 	  for(x=howmany-1;x;x--)
 	    if( CMP( STEP(bas,x-1), STEP(bas,x)  ) > 0)
 	      Pike_fatal("Sorting failed!\n");
 #endif
-	
+
 	return;
       }
 
@@ -151,7 +151,7 @@ static void MKNAME(_do_sort)(PTYPE bas,
       if( a != bas ) {
 	SWAP(a,bas);
 	DEC(a);
-      
+
 	if(  (char *)a - (char *)bas < (char *)last - (char *)b )
         {
 	  MKNAME(_do_sort)(bas,a,max_recursion XARGS);

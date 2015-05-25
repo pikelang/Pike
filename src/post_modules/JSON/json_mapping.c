@@ -15,7 +15,7 @@ static ptrdiff_t _parse_JSON_mapping(PCHARP str, ptrdiff_t p, ptrdiff_t pe, stru
     int c = 0;
     const int validate = !(state->flags&JSON_VALIDATE);
 
-    
+
 #line 20 "json_mapping.c"
 static const int JSON_mapping_start = 1;
 static const int JSON_mapping_first_final = 6;
@@ -35,14 +35,14 @@ static const int JSON_mapping_en_main = 1;
 	push_mapping(m);
     }
 
-    
+
 #line 40 "json_mapping.c"
 	{
 	cs = JSON_mapping_start;
 	}
 
 #line 83 "rl/json_mapping.rl"
-    
+
 #line 47 "json_mapping.c"
 	{
 	if ( p == pe )
@@ -171,11 +171,11 @@ case 6:
 #line 172 "json_mapping.c"
 	goto st0;
 	}
-	_test_eof2: cs = 2; goto _test_eof; 
-	_test_eof3: cs = 3; goto _test_eof; 
-	_test_eof4: cs = 4; goto _test_eof; 
-	_test_eof5: cs = 5; goto _test_eof; 
-	_test_eof6: cs = 6; goto _test_eof; 
+	_test_eof2: cs = 2; goto _test_eof;
+	_test_eof3: cs = 3; goto _test_eof;
+	_test_eof4: cs = 4; goto _test_eof;
+	_test_eof5: cs = 5; goto _test_eof;
+	_test_eof6: cs = 6; goto _test_eof;
 
 	_test_eof: {}
 	_out: {}

@@ -225,7 +225,7 @@ static void pgres_destroy (struct object * UNUSED(o))
  *! With no arguments, this function initializes (reinitializes if a connection
  *! had been previously set up) a connection to the Postgres backend.
  *! Since Postgres requires a database to be selected, it will try
- *! to connect to the default database. The connection may fail however for a 
+ *! to connect to the default database. The connection may fail however for a
  *! variety of reasons, in this case the most likely of all is because
  *! you don't have enough authority to connect to that database.
  *! So use of this particular syntax is discouraged.
@@ -335,7 +335,7 @@ static void f_select_db (INT32 args)
 	PQ_FETCH();
 
 	get_all_args("select_db",args,"%s", &db);
-	
+
 	if (!THIS->dblink)
 	  Pike_error ("Driver error. How can you possibly not be linked to a "
 		      "database already?\n");
@@ -416,7 +416,7 @@ static void f_big_query(INT32 args)
         int* paramLengths = 0;
         int* paramFormats = 0;
         int resultFormat = 0;
-        
+
 	PQ_FETCH();
 	docommit=dofetch=0;
 	lastcommit=THIS->lastcommit;
@@ -435,7 +435,7 @@ static void f_big_query(INT32 args)
             if(TYPEOF(Pike_sp[1-args]) == PIKE_T_ARRAY)
               bnds=Pike_sp[1-args].u.array;
 	    /* FALL_THROUGH */
-      
+
           case 1:
 	    query=" ";
 	    if(Pike_sp[-args].u.string->len)
@@ -447,7 +447,7 @@ static void f_big_query(INT32 args)
 	  struct svalue *item;
 
 	  nParams=cnt;
-	  
+
 	  paramValues = xalloc(nParams*sizeof*paramValues);
 	  paramLengths = xalloc(nParams*sizeof*paramLengths);
 	  paramFormats = xalloc(nParams*sizeof*paramFormats);
@@ -596,7 +596,7 @@ yupbegin:       res=PQexec(conn,"BEGIN");
 	if (notification!=NULL) {
 		pgdebug("Incoming notification: \"%s\"\n",notification->relname);
 		push_text(notification->relname);
-		apply_svalue(&THIS->notify_callback,1); 
+		apply_svalue(&THIS->notify_callback,1);
 		/* apply_svalue simply returns if the first argument is a PIKE_T_INT */
 		free (notification);
 	}
@@ -731,8 +731,8 @@ static void f_trace (INT32 args)
  *! put previously, and any polling cycle.
  *!
  *! With one argument, sets the notification callback (there can be only
- *! one for each sqlobject). 
- *! 
+ *! one for each sqlobject).
+ *!
  *! The callback function must return no value, and takes a string argument,
  *! which will be the name of the table on which the notification event
  *! has occurred. In future versions, support for user-specified arguments
@@ -905,7 +905,7 @@ PIKE_MODULE_INIT
 
   add_string_constant("version",PGSQL_VERSION,0);
 
-  pgresult_init(); 
+  pgresult_init();
 }
 
 PIKE_MODULE_EXIT

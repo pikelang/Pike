@@ -47,7 +47,7 @@
 
 static MUTEX_T aap_timeout_mutex;
 
-struct timeout 
+struct timeout
 {
   int raised;
   int when;
@@ -67,7 +67,7 @@ static struct timeout *new_timeout(THREAD_T thr, int secs) /* running locked */
   struct timeout *t = malloc(sizeof(struct timeout));
   num_timeouts++;
   t->thr = thr;
-  t->raised = 0;   
+  t->raised = 0;
   t->next = NULL;
   t->when = aap_get_time()+secs;
 

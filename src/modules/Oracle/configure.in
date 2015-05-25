@@ -80,7 +80,7 @@ if test x$with_oracle = xyes; then
   AC_MSG_CHECKING(for Oracle libraries)
 
   echo no > conftest
-      
+
   if test "x$pike_cv_sys_os" = "xWindows_NT"; then
     if test x"$pike_cv_oracle_oracle_home" = xno; then :; else
       echo "$pike_cv_oracle_oracle_home/oci/lib/msvc" > conftest
@@ -162,7 +162,7 @@ if test x$with_oracle = xyes; then
 
     else
       if test x"$pike_cv_oracle_oratab_file" = xno; then :; else
-  	
+
   	sed -e '/^#/d' < $pike_cv_oracle_oratab_file | while IFS=":" read sid dir bootstart; do
   	  if test -d "$dir/." -a -f "$dir/rdbms/demo/ocidfn.h"; then
   	    echo "$dir" > conftest
@@ -206,7 +206,7 @@ if test x$with_oracle = xyes; then
 
     else
       if test x"$pike_cv_oracle_oratab_file" = xno; then :; else
-      
+
         sed -e '/^#/d' < $pike_cv_oracle_oratab_file | while IFS=":" read sid dir bootstart; do
           if test -d "$dir/." -a -f "$dir/rdbms/lib/sysliblist"; then
   	    echo "$dir/rdbms/lib/sysliblist" > conftest

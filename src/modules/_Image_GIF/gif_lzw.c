@@ -129,7 +129,7 @@ static INLINE void lzw_add(struct gif_lzw *lzw,int c)
       for (i=0; i<(1L<<lzw->bits); i++)
 	 lzw->code[i].firstchild=LZWCNULL;
       lzw->codes=(1L<<lzw->bits)+2;
-      
+
       /* output clearcode, 1000... (bits) */
       lzw_output(lzw, (lzwcode_t)(1L<<lzw->bits));
 
@@ -154,7 +154,7 @@ static INLINE void lzw_add(struct gif_lzw *lzw,int c)
    lzw->code[lzw->current].firstchild=lno2;
 
    lzw->codes++;
-   if (lzw->codes+lzw->earlychange>(unsigned long)(1L<<lzw->codebits)) 
+   if (lzw->codes+lzw->earlychange>(unsigned long)(1L<<lzw->codebits))
       lzw->codebits++;
 
    lzw->current=c;

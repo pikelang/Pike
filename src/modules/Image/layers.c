@@ -193,7 +193,7 @@ struct layer_mode_desc
     "D=S*L applied with alpha, aD=aS"},
    {"divide",        lm_divide,        1, NULL,
     "D=S/L applied with alpha, aD=aS"},
-   {"negdivide",     lm_negdivide,     1, NULL, 
+   {"negdivide",     lm_negdivide,     1, NULL,
     "D=1.0-S/L applied with alpha, aD=aS"},
    {"modulo",        lm_modulo,        1, NULL,
     "D=S%L applied with alpha, aD=aS"},
@@ -292,7 +292,7 @@ struct layer_mode_desc
    {"overlay",       lm_overlay,       1, NULL,
     "(1-(1-a)*(1-b)-a*b)*a+a*b applied with alpha, aD=aS"},
    {"burn_alpha",    (lm_row_func*)lm_spec_burn_alpha, 1, NULL,
-    "aD=aL+aS applied with alpha, D=L+S;" 
+    "aD=aL+aS applied with alpha, D=L+S;"
     " experimental, may change or be removed"},
 
    {"equal",         lm_equal,         0, NULL,
@@ -584,8 +584,8 @@ static INLINE void hls_to_rgb(double h,double l,double s,rgb_group *rgb)
 }
 
 static INLINE void rgb_to_hls(rgb_group color,
-			      double *hue, 
-			      double *lightness, 
+			      double *hue,
+			      double *lightness,
 			      double *saturation)
 {
    int    r, g, b;
@@ -642,8 +642,8 @@ static INLINE void rgb_to_hls(rgb_group color,
    *hue        = h;
    *lightness  = l;
    *saturation = s;
-}       
-             
+}
+
 
 /*** helper ***********************************************/
 
@@ -1569,7 +1569,7 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
 #if defined(__ECL) && 0
 #define WARN_TRACE(X)	static char PIKE_CONCAT(foo__, X) (double d) { return (char)d; };
 #else /* !__ECL */
-#define WARN_TRACE(X) 
+#define WARN_TRACE(X)
 #endif /* __ECL */
 
 /* operators from template */
@@ -2075,7 +2075,7 @@ WARN_TRACE(26)
 
 #undef LM_HSV_DO
 
-/******************************************************************/ 
+/******************************************************************/
 
 #define LM_HLS_DO(HLS_X,S,L,D,A,V)                                       \
    do {									 \
@@ -2095,7 +2095,7 @@ WARN_TRACE(26)
       (D).b = MAXIMUM(MINIMUM(tb,255),0);                                \
    } while (0)
 
-	
+
 #define LM_FUNC lm_hls_replace
 #define L_CHANNEL_DO_V(S,L,D,A,V) LM_HLS_DO(sh=lh;sl=ll;ss=ls,S,L,D,A,V)
 #include "layer_channel.h"

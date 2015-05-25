@@ -20,7 +20,7 @@ class File
   }
 
   String.SplitIterator|Stdio.LineIterator line_iterator( int|void trim )
-  //! Returns an iterator that will loop over the lines in this file. 
+  //! Returns an iterator that will loop over the lines in this file.
   //! If trim is true, all @tt{'\r'@} characters will be removed from
   //! the input.
   {

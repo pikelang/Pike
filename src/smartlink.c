@@ -114,7 +114,7 @@ int main(int argc, char **argv)
 	    argv[0]);
     exit(0);
   }
-  
+
   if (putenv("LD_PXDB=/dev/null")) {
     fatal("Out of memory (1)!\n");
   }
@@ -262,7 +262,7 @@ int main(int argc, char **argv)
   }
 
 #ifndef USE_Wl
-  /* This code strips '-Wl,' from arguments if the 
+  /* This code strips '-Wl,' from arguments if the
    * linker is '*ld'
    */
   if(linking)

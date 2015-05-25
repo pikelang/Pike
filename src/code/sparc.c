@@ -422,7 +422,7 @@ static void sparc_incr_mark_sp(int delta)
   SPARC_ADD(SPARC_REG_PIKE_MARK_SP, SPARC_REG_PIKE_MARK_SP,
 	    sizeof(void *)*delta, 1);
   sparc_codegen_state |= SPARC_CODEGEN_MARK_SP_NEEDS_STORE;
-}    
+}
 
 static void sparc_mark(ptrdiff_t off)
 {
@@ -700,7 +700,7 @@ static void low_ins_f_byte(unsigned int b, int delay_ok)
   if(b>255)
     Pike_error("Instruction too big %d\n",b);
 #endif
-    
+
   addr = instrs[b].address;
 
 #ifdef PIKE_DEBUG

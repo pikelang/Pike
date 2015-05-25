@@ -78,7 +78,7 @@ PMOD_EXPORT int set_nonblocking(int fd,int which)
     Pike_fatal("File descriptor %d out of range.\n", fd);
 #endif
 
-  do 
+  do
   {
 #if defined(USE_IOCTL_FIONBIO) || defined(__NT__)
     ret=fd_ioctl(fd, FIONBIO, &which);
@@ -195,7 +195,7 @@ PMOD_EXPORT int set_close_on_exec(int fd, int which)
     if (which < 0) which = 0;
     else which &= ~FD_CLOEXEC;
   }
-  do 
+  do
   {
     ret=fcntl(fd, F_SETFD, which);
   } while (ret <0 && errno==EINTR );

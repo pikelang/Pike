@@ -74,7 +74,7 @@ struct cache_entry *new_cache_entry( )
   return res;
 }
 
-static void really_free_from_queue(void) 
+static void really_free_from_queue(void)
 /* Must have tofree lock and interpreter lock */
 {
   int i;
@@ -178,7 +178,7 @@ void aap_free_cache_entry(struct cache *c, struct cache_entry *e,
   if(e->refs<=0)
     Pike_fatal("Freeing free cache entry\n");
 #endif
-  if(!--e->refs) 
+  if(!--e->refs)
     really_free_cache_entry(c,e,prev,b);
 }
 
@@ -192,7 +192,7 @@ void simple_aap_free_cache_entry(struct cache *c, struct cache_entry *e)
     t = c->htable[ hv ];
     while(t)
     {
-      if( t == e ) 
+      if( t == e )
       {
 	really_free_cache_entry(c,t,p,hv);
 	break;
@@ -200,7 +200,7 @@ void simple_aap_free_cache_entry(struct cache *c, struct cache_entry *e)
       p=t;
       t=t->next;
     }
-  }  
+  }
   mt_unlock( &c->mutex );
 }
 
@@ -216,8 +216,8 @@ void aap_cache_insert(struct cache_entry *ce, struct cache *c)
     Pike_fatal("Cache insert running unlocked\n");
 #endif
   c->size += ce->data->len;
-  if((head = aap_cache_lookup(ce->url, ce->url_len, 
-                              ce->host, ce->host_len, c, 1, 
+  if((head = aap_cache_lookup(ce->url, ce->url_len,
+                              ce->host, ce->host_len, c, 1,
                               &p, &hv)))
   {
     c->size -= head->data->len;
@@ -238,7 +238,7 @@ void aap_cache_insert(struct cache_entry *ce, struct cache *c)
 }
 
 struct cache_entry *aap_cache_lookup(char *s, ptrdiff_t len,
-				     char *ho, ptrdiff_t hlen, 
+				     char *ho, ptrdiff_t hlen,
 				     struct cache *c, int nolock,
 				     struct cache_entry **p, size_t *hv)
 {
@@ -246,10 +246,10 @@ struct cache_entry *aap_cache_lookup(char *s, ptrdiff_t len,
   struct cache_entry *e, *prev=NULL;
 
   if( hv ) *hv = h;
-  if(!nolock) 
+  if(!nolock)
     mt_lock(&c->mutex);
 #ifdef DEBUG
-  else 
+  else
   {
     extern int d_flag;
     if((d_flag>2) && !mt_trylock( & c->mutex ))
@@ -260,8 +260,8 @@ struct cache_entry *aap_cache_lookup(char *s, ptrdiff_t len,
   e = c->htable[h];
   while(e)
   {
-    if(e->url_len == len && e->host_len == hlen 
-       && !memcmp(e->url,s,len) 
+    if(e->url_len == len && e->host_len == hlen
+       && !memcmp(e->url,s,len)
        && !memcmp(e->host,ho,hlen))
     {
       int t = aap_get_time();

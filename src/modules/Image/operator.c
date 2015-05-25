@@ -139,8 +139,8 @@ STANDARD_OPERATOR_HEADER("`-")
       s1++; d++;
    }
    THREADS_DISALLOW();
-   pop_n_elems(args);		   		   		
-   push_object(o);		   		   		
+   pop_n_elems(args);
+   push_object(o);
 }
 
 /*
@@ -171,17 +171,17 @@ STANDARD_OPERATOR_HEADER("`+")
        image_add_buffers_mmx_x86asm( d, s1, s2, (i*3)/8 );
        nleft = (i*3)%8;
        for( ; nleft; nleft-- )
-         ((unsigned char *)d)[i * 3 - nleft] = 
+         ((unsigned char *)d)[i * 3 - nleft] =
                     MINIMUM((((unsigned char *)s1)[i * 3 - nleft] +
                              ((unsigned char *)s2)[i * 3 - nleft]), 255 );
-     } else 
+     } else
 #endif
      while (i--)
      {
        d->r=MINIMUM(s1->r+s2->r,255);
        d->g=MINIMUM(s1->g+s2->g,255);
        d->b=MINIMUM(s1->b+s2->b,255);
-       s1++; s2++; d++; 
+       s1++; s2++; d++;
      }
    }
    else
@@ -218,8 +218,8 @@ STANDARD_OPERATOR_HEADER("`+")
      }
    }
    THREADS_DISALLOW();
-   pop_n_elems(args);		   		   		
-   push_object(o);		   		   		
+   pop_n_elems(args);
+   push_object(o);
 }
 
 /*
@@ -260,8 +260,8 @@ STANDARD_OPERATOR_HEADER("`*")
        image_mult_buffers_mmx_x86asm( d,s1,s2,(i*3)/4 );
        nleft =  (i*3)%4;
        for( ; nleft; nleft-- )
-         ((unsigned char *)d)[i-nleft-1]  = 
-                    (((unsigned char *)s1)[i-nleft-1] * 
+         ((unsigned char *)d)[i-nleft-1]  =
+                    (((unsigned char *)s1)[i-nleft-1] *
                      ((unsigned char *)s2)[i-nleft-1]) / 255;
      } else
 #endif
@@ -271,10 +271,10 @@ STANDARD_OPERATOR_HEADER("`*")
         d->r=(s1->r * s2->r) / 255;
         d->g=(s1->g * s2->g) / 255;
         d->b=(s1->b * s2->b) / 255;
-        s1++; s2++; d++; 
+        s1++; s2++; d++;
      }
   }
-   else if( (rgb.r < 256) && 
+   else if( (rgb.r < 256) &&
             (rgb.g < 256) &&
             (rgb.b < 256) )
    {
@@ -295,7 +295,7 @@ STANDARD_OPERATOR_HEADER("`*")
        d->r=(s1->r * rgb.r) / 255;
        d->g=(s1->g * rgb.g) / 255;
        d->b=(s1->b * rgb.b) / 255;
-       s1++; d++; 
+       s1++; d++;
      }
    }
    else
@@ -309,12 +309,12 @@ STANDARD_OPERATOR_HEADER("`*")
        d->r=MINIMUM(r,255);
        d->g=MINIMUM(g,255);
        d->b=MINIMUM(b,255);
-       s1++; d++; 
+       s1++; d++;
      }
    }
    THREADS_DISALLOW();
-   pop_n_elems(args);		   		   		
-   push_object(o);		   		   		
+   pop_n_elems(args);
+   push_object(o);
 }
 
 /*
@@ -351,7 +351,7 @@ STANDARD_OPERATOR_HEADER("`%%")
       d->r=s1->r%(s2->r?s2->r:1);
       d->g=s1->g%(s2->g?s2->g:1);
       d->b=s1->b%(s2->b?s2->b:1);
-      s1++; s2++; d++; 
+      s1++; s2++; d++;
    }
    else
    while (i--)
@@ -359,11 +359,11 @@ STANDARD_OPERATOR_HEADER("`%%")
       d->r=s1->r%(rgb.r?rgb.r:1);
       d->g=s1->g%(rgb.g?rgb.g:1);
       d->b=s1->b%(rgb.b?rgb.b:1);
-      s1++; d++; 
+      s1++; d++;
    }
    THREADS_DISALLOW();
-   pop_n_elems(args);		   		   		
-   push_object(o);		   		   		
+   pop_n_elems(args);
+   push_object(o);
 }
 
 void image_operator_divide(INT32 args)
@@ -395,7 +395,7 @@ void image_operator_divide(INT32 args)
 	d->r=testrange(floor(s1->r/(q*(s2->r+1))+0.5));
 	d->g=testrange(floor(s1->g/(q*(s2->g+1))+0.5));
 	d->b=testrange(floor(s1->b/(q*(s2->b+1))+0.5));
-	s1++; s2++; d++; 
+	s1++; s2++; d++;
       }
     else
       while (i--)
@@ -403,10 +403,10 @@ void image_operator_divide(INT32 args)
 	d->r=testrange(floor(s1->r/(q*(rgb.r+1))+0.5));
 	d->g=testrange(floor(s1->g/(q*(rgb.g+1))+0.5));
 	d->b=testrange(floor(s1->b/(q*(rgb.b+1))+0.5));
-	s1++; d++; 
+	s1++; d++;
       }
     THREADS_DISALLOW();
-    pop_n_elems(args);		   		   		
+    pop_n_elems(args);
     push_object(o);
   }
 }
@@ -417,7 +417,7 @@ void image_operator_divide(INT32 args)
 **! method object `|(array(int) color)
 **! method object `|(int value)
 **!	makes a new image out of the maximum pixels values
-**!	
+**!
 **! returns the new image object
 **!
 **! arg object operand
@@ -439,7 +439,7 @@ STANDARD_OPERATOR_HEADER("`| 'maximum'")
       d->r=MAXIMUM(s1->r,s2->r);
       d->g=MAXIMUM(s1->g,s2->g);
       d->b=MAXIMUM(s1->b,s2->b);
-      s1++; s2++; d++; 
+      s1++; s2++; d++;
    }
    else
    while (i--)
@@ -447,11 +447,11 @@ STANDARD_OPERATOR_HEADER("`| 'maximum'")
       d->r=MAXIMUM(s1->r,rgb.r);
       d->g=MAXIMUM(s1->g,rgb.g);
       d->b=MAXIMUM(s1->b,rgb.b);
-      s1++; s2++; d++; 
+      s1++; s2++; d++;
    }
    THREADS_DISALLOW();
-   pop_n_elems(args);		   		   		
-   push_object(o);		   		   		
+   pop_n_elems(args);
+   push_object(o);
 }
 
 /*
@@ -459,7 +459,7 @@ STANDARD_OPERATOR_HEADER("`| 'maximum'")
 **! method object `&(array(int) color)
 **! method object `&(int value)
 **!	makes a new image out of the minimum pixels values
-**!	
+**!
 **! returns the new image object
 **!
 **! arg object operand
@@ -481,7 +481,7 @@ STANDARD_OPERATOR_HEADER("`& 'minimum'")
       d->r=MINIMUM(s1->r,s2->r);
       d->g=MINIMUM(s1->g,s2->g);
       d->b=MINIMUM(s1->b,s2->b);
-      s1++; s2++; d++; 
+      s1++; s2++; d++;
    }
    else
    while (i--)
@@ -489,11 +489,11 @@ STANDARD_OPERATOR_HEADER("`& 'minimum'")
       d->r=MINIMUM(s1->r,rgb.r);
       d->g=MINIMUM(s1->g,rgb.g);
       d->b=MINIMUM(s1->b,rgb.b);
-      s1++; d++; 
+      s1++; d++;
    }
    THREADS_DISALLOW();
-   pop_n_elems(args);		   		   		
-   push_object(o);		   		   		
+   pop_n_elems(args);
+   push_object(o);
 }
 
 
@@ -509,8 +509,8 @@ STANDARD_OPERATOR_HEADER("`& 'minimum'")
 **! method int `>(int value)
 **!	Compares an image with another image or a color.
 **!
-**!	Comparision is strict and on pixel-by-pixel basis. 
-**!	(Means if not all pixel r,g,b values are 
+**!	Comparision is strict and on pixel-by-pixel basis.
+**!	(Means if not all pixel r,g,b values are
 **!	correct compared with the corresponding
 **!	pixel values, 0 is returned.)
 **!
@@ -526,10 +526,10 @@ STANDARD_OPERATOR_HEADER("`& 'minimum'")
 **!	equal to ({value,value,value}).
 **!
 **! see also: `-, `+, `|, `*, `&
-**!	
+**!
 **! note:
 **!	`&lt; or `> on empty ("no image") image objects or images
-**!	with different size will result in an error. 
+**!	with different size will result in an error.
 **!	`== is always true on two empty image objects and
 **!	always false if one and only one of the image objects
 **!	is empty or the images differs in size.
@@ -792,16 +792,16 @@ void image_operator_greater(INT32 args)
 **! method array(int) max()
 **! method array(int) sum()
 **! method array(float) sumf()
-**!     Gives back the average, minimum, maximum color value, 
+**!     Gives back the average, minimum, maximum color value,
 **!	and the sum of all pixel's color value.
 **!
 **! note:
 **!	sum() values can wrap! Most systems only have 31 bits
-**!	available for positive integers. (Meaning, be careful 
+**!	available for positive integers. (Meaning, be careful
 **!	with images that have more than 8425104 pixels.)
 **!
 **!	average() and sumf() may also wrap, but on a line basis.
-**!	(Meaning, be careful with images that are wider 
+**!	(Meaning, be careful with images that are wider
 **!      than 8425104 pixels.) These functions may have a precision
 **!	problem instead, during to limits in the 'double' C type and/or
 **!	'float' Pike type.
@@ -1021,7 +1021,7 @@ void image_find_min(INT32 args)
       div=1.0/(rgb.r+rgb.g+rgb.b);
    else
       div=1.0;
-   
+
    pop_n_elems(args);
 
    if (!THIS->img)
@@ -1069,7 +1069,7 @@ void image_find_max(INT32 args)
       div=1.0/(rgb.r+rgb.g+rgb.b);
    else
       div=1.0;
-   
+
    pop_n_elems(args);
 
    if (!THIS->img)

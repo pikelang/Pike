@@ -5,7 +5,7 @@
 #
 
 #
-# NOTE: 
+# NOTE:
 #   Prior to 3.20.0          		After 3.20.0
 #   -------------------------------------------------------------------
 #   /usr/local/mysql/mach-lib-threads	/usr/local/lib/mysql
@@ -497,7 +497,7 @@ int main(int argc, char *argv[])
       fi
       AC_MSG_RESULT($AC_CV_NAME)
     ])
-    
+
     PIKE_CHECK_MYSQL_FUNC(mysql_real_query)
     PIKE_CHECK_MYSQL_FUNC(mysql_fetch_lengths)
     PIKE_CHECK_MYSQL_FUNC(mysql_options)

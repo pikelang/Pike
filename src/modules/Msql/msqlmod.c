@@ -302,7 +302,7 @@ static void msql_mod_create (INT32 args)
 		THIS->db_selected=0;
 	}
 
-	/* msql won' support specifying a port number to connect to. 
+	/* msql won' support specifying a port number to connect to.
 	 * As far as I know, ':' is not a legal character in an hostname,
 	 * so we'll silently ignore it.
 	 */
@@ -586,7 +586,7 @@ static void do_query (INT32 args)
 		current_field=msqlFetchField(result);
 		if (!current_field)
 			Pike_error ("Huh? Weird! Null field returned at index %d.\n",j);
-		if (duplicate_names_map[j]) { 
+		if (duplicate_names_map[j]) {
 			/* If we have a clashing column name we need to prepend "tablename."*/
 			push_text (current_field->table);
 			push_text (".");
@@ -618,7 +618,7 @@ static void do_query (INT32 args)
 		push_mapping(this_result); /*we're putting mappings on the stack*/
 		free_array(this_row);
 	}
-	
+
 	/* Wrap it up and free the used memory */
 	f_aggregate(num_rows); /* aggregate and push the resulting array */
 	free_array(field_names);
@@ -669,7 +669,7 @@ static void do_host_info (INT32 args)
 		Pike_error ("Not connected.\n");
 	/*it's local to the client library. Not even worth allowing
 	 context switches*/
-	push_text(msqlGetHostInfo()); 
+	push_text(msqlGetHostInfo());
 	return;
 }
 
@@ -742,7 +742,7 @@ static void do_drop_db (INT32 args)
 	int dbresult;
 	char * dbname;
 	int socket;
-	
+
 	check_all_args("Msql->drop_db",args,BIT_STRING,0);
 
 	if (!THIS->connected)
@@ -822,7 +822,7 @@ static void do_list_fields (INT32 args)
 		report_error();
 		Pike_error ("No fields information.\n");
 	}
-	
+
 	fields = msqlNumFields(result);
 	if (!fields)
 		Pike_error ("No such table.\n");
@@ -831,7 +831,7 @@ static void do_list_fields (INT32 args)
 	{
 		int flagsnum=0;
 		field=msqlFetchField(result);
-    
+
     push_text("name");
 		push_text(field->name);
 		ref_push_string(literal_type_string);
@@ -971,7 +971,7 @@ PIKE_MODULE_INIT
 	       tFunc(tOr(tVoid,tStr) tOr(tVoid,tStr) tOr(tVoid,tStr)
 		     tOr(tVoid,tStr),tVoid), 0);
 
-  /* 1st arg: hostname or "localhost", 2nd arg: dbname or nothing 
+  /* 1st arg: hostname or "localhost", 2nd arg: dbname or nothing
    * CAN raise exception if there is no server listening, or no database
    * To connect using the UNIX socket instead of a localfunction use the
    * hostname "localhost", or use no argument. It will use UNIX sockets.

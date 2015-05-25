@@ -768,7 +768,7 @@ void describe_location(void *real_memblock,
 	}
       }
       break;
-      
+
     case T_PROGRAM:
     {
       ptrdiff_t e;
@@ -786,7 +786,7 @@ void describe_location(void *real_memblock,
 
       if(p->inherits &&
 	 ptr >= (char *)p->inherits  &&
-	 ptr < (char*)(p->inherits+p->num_inherits)) 
+	 ptr < (char*)(p->inherits+p->num_inherits))
       {
 	e=((char *)ptr - (char *)(p->inherits)) / sizeof(struct inherit);
 	fprintf(stderr,"%*s  **In p->inherits[%"PRINTPTRDIFFT"d] (%s)\n",indent,"",
@@ -812,7 +812,7 @@ void describe_location(void *real_memblock,
       }
 
 
-      if(p->identifiers && 
+      if(p->identifiers &&
 	 ptr >= (char *)p->identifiers  &&
 	 ptr < (char*)(p->identifiers+p->num_identifiers))
       {
@@ -832,7 +832,7 @@ void describe_location(void *real_memblock,
       fprintf(stderr,"%*s  **In p->" #NAME "[%"PRINTPTRDIFFT"d]\n",indent,"", \
 	      ((char *)ptr - (char *)(p->NAME)) / sizeof(TYPE));
 #include "program_areas.h"
-      
+
       break;
     }
 
@@ -866,12 +866,12 @@ void describe_location(void *real_memblock,
 	{
 	  struct inherit tmp=p->inherits[e];
 	  char *base=o->storage + tmp.storage_offset;
-	  
+
 	  for(d=0;d<(INT32)tmp.prog->num_identifiers;d++)
 	  {
 	    struct identifier *id=tmp.prog->identifiers+d;
 	    if(!IDENTIFIER_IS_VARIABLE(id->identifier_flags)) continue;
-	    
+
 	    if(location == (void *)(base + id->func.offset))
 	    {
 	      fprintf(stderr,"%*s  **In variable %s\n",indent,"",id->name->str);
@@ -886,7 +886,7 @@ void describe_location(void *real_memblock,
 	      fprintf(stderr," (%s)",tmp.name->str);
 	    fprintf(stderr,"\n");
 	  }
-	     
+
 	}
       }
       break;
@@ -1075,9 +1075,9 @@ static void dloc_gc_fatal (const char *file, INT_TYPE line,
 
 static void rec_stack_fatal (struct gc_rec_frame *DEBUGUSED(err),
                              const char *DEBUGUSED(err_name),
-                             struct gc_rec_frame *DEBUGUSED(p1), 
+                             struct gc_rec_frame *DEBUGUSED(p1),
                              const char *DEBUGUSED(p1n),
-                             struct gc_rec_frame *DEBUGUSED(p2), 
+                             struct gc_rec_frame *DEBUGUSED(p2),
                              const char *DEBUGUSED(p2n),
 			     const char *file, INT_TYPE line,
 			     const char *fmt, ...)
@@ -1540,7 +1540,7 @@ again:
 	fprintf (stderr, "%*s**Didn't find mapping for this data block!\n", indent, "");
       break;
     }
-    
+
     case T_MAPPING:
       if (((struct mapping *) a)->refs > 0)
 	debug_dump_mapping((struct mapping *)a);
@@ -2107,7 +2107,7 @@ PMOD_EXPORT void locate_references(void *a)
   d_flag=0;
 
   fprintf(stderr,"**Looking for references to %p:\n", a);
-  
+
   check_for=a;
   found_ref_count = 0;
 
@@ -4360,7 +4360,7 @@ void dump_gc_info(void)
   fprintf(stderr,"Avg allocs between gc      : %f\n",objects_alloced);
   fprintf(stderr,"Avg frees per gc           : %f\n",objects_freed);
   fprintf(stderr,"Garbage ratio in last gc   : %f\n", last_garbage_ratio);
-					     
+
   fprintf(stderr,"Avg "CPU_TIME_UNIT" between gc          : %f\n", non_gc_time);
   fprintf(stderr,"Avg "CPU_TIME_UNIT" in gc               : %f\n", gc_time);
   fprintf(stderr,"Avg time ratio in gc       : %f\n", gc_time / non_gc_time);

@@ -40,7 +40,7 @@ void NCTLU_FLAT_CUBICLES_NAME(rgb_group *s,
 CHRONO("init flat/cubicles");
 
       cub=cubs->cubicles=calloc(sizeof(struct nctlu_cubicle), n2);
-      
+
       if (!cub) Pike_error("out of memory\n");
 
       while (n2--) /* initiate all to empty */
@@ -91,13 +91,13 @@ CHRONO("begin flat/cubicles");
       }
 
       lc->src=*s;
-      
+
       r=((val.r*red+redm)>>8);
       g=((val.g*green+greenm)>>8);
       b=((val.b*blue+bluem)>>8);
 
       cub=cubs->cubicles+r+g*red+b*redgreen;
-      
+
       if (!cub->index) /* need to build that cubicle */
 	 _build_cubicle(nct,r,g,b,red,green,blue,cub);
 
@@ -107,13 +107,13 @@ CHRONO("begin flat/cubicles");
       ci=cub->index;
 
       mindist=256*256*100; /* max dist is 256²*3 */
-      
+
       while (m--)
       {
 	 int dist=sf.r*SQ(fe[*ci].color.r-val.r)+
 	          sf.g*SQ(fe[*ci].color.g-val.g)+
 	          sf.b*SQ(fe[*ci].color.b-val.b);
-	 
+
 	 if (dist<mindist)
 	 {
 	    lc->dest=fe[*ci].color;
@@ -121,7 +121,7 @@ CHRONO("begin flat/cubicles");
 	    lc->index=*ci;
 	    NCTLU_CACHE_HIT_WRITE;
 	 }
-	 
+
 	 ci++;
       }
 
@@ -178,7 +178,7 @@ void NCTLU_FLAT_FULL_NAME(rgb_group *s,
       ptrdiff_t m;
       struct nct_flat_entry *fe;
       struct lookupcache *lc;
-	 
+
       if (dither_encode)
       {
 	 rgbl_group val;
@@ -208,10 +208,10 @@ void NCTLU_FLAT_FULL_NAME(rgb_group *s,
       lc->src=*s;
 
       mindist=256*256*100; /* max dist is 256²*3 */
-      
+
       fe=feprim;
       m=mprim;
-      
+
       while (m--)
 	 if (fe->no!=-1)
 	 {
@@ -219,7 +219,7 @@ void NCTLU_FLAT_FULL_NAME(rgb_group *s,
 	       sf.r*SQ(fe->color.r-rgbr)+
 	       sf.g*SQ(fe->color.g-rgbg)+
 	       sf.b*SQ(fe->color.b-rgbb);
-	 
+
 	    if (dist<mindist)
 	    {
 	       lc->dest=fe->color;
@@ -227,7 +227,7 @@ void NCTLU_FLAT_FULL_NAME(rgb_group *s,
 	       lc->index = DO_NOT_WARN((int)fe->no);
 	       NCTLU_CACHE_HIT_WRITE;
 	    }
-	 
+
 	    fe++;
 	 }
 	 else fe++;
@@ -241,7 +241,7 @@ done_pixel:
 	 if (++rowcount==rowlen)
 	 {
 	    rowcount=0;
-	    if (dither_newline) 
+	    if (dither_newline)
 	       (dither_newline)NCTLU_LINE_ARGS;
 	 }
       }
@@ -291,7 +291,7 @@ void NCTLU_FLAT_RIGID_NAME(rgb_group *s,
    while (n--)
    {
       rgbl_group val;
-	 
+
       if (dither_encode)
       {
 	 val=dither_encode(dith,rowpos,*s);
@@ -316,7 +316,7 @@ void NCTLU_FLAT_RIGID_NAME(rgb_group *s,
         if (++rowcount==rowlen)
         {
           rowcount=0;
-          if (dither_newline) 
+          if (dither_newline)
             (dither_newline)NCTLU_LINE_ARGS;
         }
       }
@@ -382,7 +382,7 @@ void NCTLU_CUBE_NAME(rgb_group *s,
 	    if (++rowcount==rowlen)
 	    {
 	       rowcount=0;
-	       if (dither_newline) 
+	       if (dither_newline)
 		  (dither_newline)NCTLU_LINE_ARGS;
 	    }
 	 }
@@ -466,7 +466,7 @@ void NCTLU_CUBE_NAME(rgb_group *s,
 				sc->invsqvector);
 
 	       if (i<0) i=0; else if (i>=sc->steps) i=sc->steps-1;
-	       if (sc->no[i]>=nc) 
+	       if (sc->no[i]>=nc)
 	       {
 		  double f= i * sc->mqsteps;
 		  int drgbr = sc->low.r + DOUBLE_TO_INT(sc->vector.r*f);
@@ -486,9 +486,9 @@ void NCTLU_CUBE_NAME(rgb_group *s,
 		     NCTLU_CACHE_HIT_WRITE;
 		  }
 	       }
-	    
+
 	       nc+=sc->realsteps;
-	    
+
 	       sc=sc->next;
 	    }
 	 }
@@ -525,7 +525,7 @@ void (*NCTLU_SELECT_FUNCTION(struct neo_colortable *nct))
 {
    switch (nct->type)
    {
-      case NCT_CUBE: 
+      case NCT_CUBE:
 #ifdef COLORTABLE_DEBUG
 	 fprintf(stderr,
 		 "COLORTABLE " DEFINETOSTR(NCTLU_SELECT_FUNCTION) ":"

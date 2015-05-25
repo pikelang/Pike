@@ -6,7 +6,7 @@
 
 #include "global.h"
 #include "config.h"
-	  
+
 #include "machine.h"
 #include "mapping.h"
 #include "module_support.h"
@@ -170,7 +170,7 @@ void f_aap_scan_for_query(INT32 args)
 
   /*  [http://host:port]/[url[?query]] */
   work_area = malloc(len);
-  
+
   /* find '?' if any */
   for(j=i=0;i<len;i++)
   {
@@ -230,7 +230,7 @@ static void decode_x_url_mixed(char *in, ptrdiff_t l, struct mapping *v,
     {
      case '=': leq = dl; break;
      case '+': c = ' '; break;
-     case '&': 
+     case '&':
        if(leq)
        {
 	 VAR_MAP_INSERT();
@@ -334,7 +334,7 @@ void f_aap_index_op(INT32 args)
   struct pike_string *s;
   if (!args) Pike_error("HTTP C object->`[]: too few args\n");
   pop_n_elems(args-1);
-  if(!THIS->misc_variables) 
+  if(!THIS->misc_variables)
   {
     struct svalue s;
     object_index_no_free2(&s, Pike_fp->current_object, 0, sp-1);
@@ -350,10 +350,10 @@ void f_aap_index_op(INT32 args)
     assign_svalue_no_free( sp++, res );
     return;
   }
-  
+
   if(!THIS->request) Pike_error("Reply called. No data available\n");
   get_all_args("`[]", args, "%S", &s);
-  
+
   if(s == s_not_query || s==s_query )
   {
     f_aap_scan_for_query(0);
@@ -363,7 +363,7 @@ void f_aap_index_op(INT32 args)
 
   if(s == s_my_fd)
   {
-    /* 0x3800 is from modules/files/file.h, 
+    /* 0x3800 is from modules/files/file.h,
      * FILE_READ|FILE_WRITE|FILE_SET_CLOSE_ON_EXEC
      */
     push_object(file_make_object_from_fd
@@ -455,7 +455,7 @@ void f_aap_index_op(INT32 args)
     push_string(s_user_agent);
     if((tmp = low_mapping_lookup(THIS->done_headers, sp-1)))
       assign_svalue_no_free( sp-1, tmp );
-    else 
+    else
     {
       sp--;
       f_aggregate(0);
@@ -610,7 +610,7 @@ static void actually_send(struct send_args *a)
        */
       off = 0;
     }
-    
+
     if (sendfile(a->from_fd, a->to->fd, off, len,
 		 &headers, &sent, 0) < 0) {
       /* FIXME: We aren't looking very hard at the errno, since
@@ -748,7 +748,7 @@ static void actually_send(struct send_args *a)
   if(a->len > (65536*4))
     directio(a->from_fd, DIRECTIO_ON);
 #endif
-  
+
   /*
    * Ugly optimization...
    * Removes the sign-bit from the len.
@@ -804,7 +804,7 @@ static void actually_send(struct send_args *a)
     LOG(a->sent, a->to, atoi(foo));
     free_send_args( a );
 
-    if(!fail && 
+    if(!fail &&
        ((arg->res.protocol==s_http_11)||
         aap_get_header(arg, "connection", H_EXISTS, 0)))
     {
@@ -953,7 +953,7 @@ void f_low_aap_reqo__init(struct c_request_object *o)
   if(o->request->res.protocol)
     SINSERT(o->misc_variables, s_prot, o->request->res.protocol);
   IINSERT(o->misc_variables, s_time, aap_get_time());
-  TINSERT(o->misc_variables, s_rawurl, 
+  TINSERT(o->misc_variables, s_rawurl,
 	  o->request->res.url, o->request->res.url_len);
 }
 

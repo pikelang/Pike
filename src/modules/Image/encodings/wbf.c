@@ -143,7 +143,7 @@ static struct wbf_header decode_header( struct buffer *data )
      case 3: /* Array of parameter/value */
        {
          int q = 0x80;
-         
+
          while( q & 0x80 )
          {
            struct ext_header *eh;
@@ -183,7 +183,7 @@ static void low_image_f_wbf_decode_type0( struct wbf_header *wh,
   white.r = 255;
   white.g = 255;
   white.b = 255;
-  
+
   for( y = 0; y<wh->height; y++ )
   {
     unsigned char q = 0; /* avoid warning */
@@ -221,10 +221,10 @@ static void low_image_f_wbf_decode( int args, int mode )
 
   switch( wh.type )
   {
-   case 0: 
-     /* 
-        The only supported format. B/W uncompressed bitmap 
-      
+   case 0:
+     /*
+        The only supported format. B/W uncompressed bitmap
+
          No compresson.
          Colour: 1 = white, 0 = black.
          Depth: 1 bit.
@@ -242,12 +242,12 @@ static void low_image_f_wbf_decode( int args, int mode )
         push_text( "image" );
         low_image_f_wbf_decode_type0( &wh, &buff );
         map_num_elems++;
-        
+
       case 0: /* Header only */
         push_text( "format" );
         push_text( "image/x-wap.wbmp; type=0" );
         map_num_elems++;
-        
+
         push_text( "xsize" );
         push_int( wh.width );
         map_num_elems++;
@@ -269,7 +269,7 @@ static void low_image_f_wbf_decode( int args, int mode )
           push_int( wh.ext_header_field );
           map_num_elems++;
         }
-        
+
         if( wh.first_ext_header )
         {
           int num_headers = 0;
@@ -360,7 +360,7 @@ void push_wap_integer( unsigned int i )
   while( i )
   {
     data[pos] = (i&0x7f) | 0x80;
-    i>>=7; 
+    i>>=7;
     pos++;
   }
   data[0] &= 0x7f;
@@ -425,8 +425,8 @@ static void image_f_wbf_encode( int args )
   num_strings=0;
   push_wap_integer( 0 ); num_strings++; /* type */
   push_wap_integer( 0 ); num_strings++; /* extra header */
-  push_wap_integer( i->xsize ); num_strings++; 
-  push_wap_integer( i->ysize ); num_strings++; 
+  push_wap_integer( i->xsize ); num_strings++;
+  push_wap_integer( i->ysize ); num_strings++;
   push_wap_type0_image_data( i ); num_strings++;
   f_add( num_strings );
   if( options ) free_mapping( options );

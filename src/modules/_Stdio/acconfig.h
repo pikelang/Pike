@@ -102,13 +102,13 @@
 #undef UNIX_SOCKETS_WORKS_WITH_SHUTDOWN
 
 /* Buffer size to use on open sockets */
-#undef SOCKET_BUFFER_MAX 
+#undef SOCKET_BUFFER_MAX
 
 /* Number of args to mkdir() */
 #define MKDIR_ARGS 2
 
 /* With termios */
-#undef WITH_TERMIOS 
+#undef WITH_TERMIOS
 
 /* Define to path of pseudo terminal master device if available */
 #undef PTY_MASTER_PATHNAME

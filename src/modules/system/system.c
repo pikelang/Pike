@@ -408,7 +408,7 @@ void f_resolvepath(INT32 args)
   if (!(buf = alloca(buflen))) {
     Pike_error("resolvepath(): Out of memory\n");
   }
-  
+
   if ((buf = realpath(path, buf))) {
     len = strlen(buf);
   }
@@ -912,7 +912,7 @@ void f_innetgr(INT32 args)
 }
 #endif /* HAVE_INNETGR */
 
-#ifdef HAVE_SETUID 
+#ifdef HAVE_SETUID
 /*! @decl int setuid(int uid)
  *!
  *! Sets the real user ID, effective user ID and saved user ID to @[uid].
@@ -933,7 +933,7 @@ void f_setuid(INT32 args)
   INT_TYPE id;
 
   get_all_args("setuid", args, "%i", &id);
- 
+
   if(id == -1) {
     struct passwd *pw = getpwnam("nobody");
     if(pw==0)
@@ -974,7 +974,7 @@ void f_setgid(INT32 args)
   INT_TYPE id;
 
   get_all_args("setgid", args, "%i", &id);
- 
+
   if(id == -1) {
     struct passwd *pw = getpwnam("nobody");
     if(pw==0)
@@ -1012,7 +1012,7 @@ void f_seteuid(INT32 args)
   int err;
 
   get_all_args("seteuid", args, "%i", &id);
- 
+
   if(id == -1) {
     struct passwd *pw = getpwnam("nobody");
     if(pw==0)
@@ -1033,7 +1033,7 @@ void f_seteuid(INT32 args)
   push_int(err);
 }
 #endif /* HAVE_SETEUID || HAVE_SETRESUID */
- 
+
 #if defined(HAVE_SETEGID) || defined(HAVE_SETRESGID)
 /*! @decl int setegid(int egid)
  *!
@@ -1066,7 +1066,7 @@ void f_setegid(INT32 args)
   } else {
     id = sp[-args].u.integer;
   }
- 
+
   /* FIXME: Check return-code */
 #ifdef HAVE_SETEGID
   err = setegid(id);
@@ -1217,7 +1217,7 @@ void f_setsid(INT32 args)
  *!
  *! @note
  *!   This function is currently only available on some versions of Linux.
- */ 
+ */
 void f_dumpable(INT32 args)
 {
   int current = prctl(PR_GET_DUMPABLE);
@@ -1258,7 +1258,7 @@ void f_setresuid(INT32 args)
   int err;
 
   get_all_args("setresuid", args, "%i%i%i", &ruid,&euid,&suid);
- 
+
   err = setresuid(ruid,euid,suid);
 
   pop_n_elems(args);
@@ -1281,7 +1281,7 @@ void f_setresgid(INT32 args)
   int err;
 
   get_all_args("setresgid", args, "%i%i%i", &rgid,&egid,&sgid);
- 
+
   err = setresgid(rgid,egid,sgid);
 
   pop_n_elems(args);
@@ -1311,7 +1311,7 @@ f_get(f_getuid, getuid)
  */
 f_get(f_getgid, getgid)
 #endif
- 
+
 #ifdef HAVE_GETEUID
 /*! @decl int geteuid()
  *!   Get the effective user ID.
@@ -1345,7 +1345,7 @@ f_get(f_getpid, getpid)
  */
 f_get(f_getppid, getppid)
 #endif
- 
+
 #undef f_get
 
 #ifdef HAVE_CHROOT
@@ -1422,7 +1422,7 @@ void f_chroot(INT32 args)
 #endif /* HAVE_FCHROOT */
 }
 #endif /* HAVE_CHROOT */
- 
+
 #ifdef HAVE_SYSINFO
 #  ifdef SI_HOSTNAME
 #    define USE_SYSINFO
@@ -1547,28 +1547,28 @@ void f_uname(INT32 args)
 {
   struct svalue *old_sp;
   struct utsname foo;
- 
+
   pop_n_elems(args);
   old_sp = sp;
- 
+
   if(uname(&foo) < 0)
     Pike_error("uname() system call failed.\n");
- 
+
   push_text("sysname");
   push_text(foo.sysname);
- 
+
   push_text("nodename");
   push_text(foo.nodename);
- 
+
   push_text("release");
   push_text(foo.release);
- 
+
   push_text("version");
   push_text(foo.version);
- 
+
   push_text("machine");
   push_text(foo.machine);
- 
+
   f_aggregate_mapping(sp-old_sp);
 }
 #endif /* HAVE_UNAME */
@@ -1616,8 +1616,8 @@ void f_gethostname(INT32 args)
  * 2.2 Text Representation of Addresses
  *
  *  There are three conventional forms for representing IPv6 addresses
- *  as text strings: 
- * 
+ *  as text strings:
+ *
  *   1. The preferred form is x:x:x:x:x:x:x:x, where the 'x's are the
  *      hexadecimal values of the eight 16-bit pieces of the address.
  * 	Examples:
@@ -1924,7 +1924,7 @@ int get_inet_addr(PIKE_SOCKADDR *addr,char *name,char *service, INT_TYPE port,
     }
   }
 #endif /* HAVE_GETADDRINFO */
-  
+
   SOCKADDR_FAMILY(*addr) = AF_INET;
 #ifdef AF_INET6
   if (inet_flags & 2) {
@@ -2051,7 +2051,7 @@ int get_inet_addr(PIKE_SOCKADDR *addr,char *name,char *service, INT_TYPE port,
 static void describe_hostent(struct hostent *hp)
 {
   push_text(hp->h_name);
-  
+
 #ifdef HAVE_H_ADDR_LIST
   {
     char **p;
@@ -2064,7 +2064,7 @@ static void describe_hostent(struct hostent *hp)
       push_text(fd_inet_ntop(hp->h_addrtype, *p, buffer, sizeof(buffer)));
 #else
       struct in_addr in;
- 
+
       memcpy(&in.s_addr, *p, sizeof (in.s_addr));
       push_text(inet_ntoa(in));
 #endif
@@ -2072,7 +2072,7 @@ static void describe_hostent(struct hostent *hp)
     }
 
     f_aggregate(nelem);
- 
+
     nelem=0;
     for (p = hp->h_aliases; *p != 0; p++) {
       push_text(*p);
@@ -2125,7 +2125,7 @@ void f_gethostbyaddr(INT32 args)
   if ((int)(addr = inet_addr(name)) == -1) {
     Pike_error("gethostbyaddr(): IP-address must be of the form a.b.c.d\n");
   }
- 
+
   pop_n_elems(args);
 
   CALL_GETHOSTBYADDR((char *)&addr, sizeof (addr), AF_INET);
@@ -2135,9 +2135,9 @@ void f_gethostbyaddr(INT32 args)
     push_int(0);
     return;
   }
- 
+
   describe_hostent(ret);
-}  
+}
 
 /*! @decl array(string|array(string)) gethostbyname(string hostname)
  *!
@@ -2170,15 +2170,15 @@ void f_gethostbyname(INT32 args)
 
   CALL_GETHOSTBYNAME(name);
   INVALIDATE_CURRENT_TIME();
- 
+
   pop_n_elems(args);
-  
+
   if(!ret) {
     push_int(0);
     return;
   }
   describe_hostent(ret);
-}  
+}
 #endif /* HAVE_GETHOSTBYNAME */
 
 #if defined(GETHOSTBYNAME_MUTEX_EXISTS) || defined(GETSERVBYNAME_MUTEX_EXISTS)
@@ -2215,7 +2215,7 @@ extern void init_system_memory(void);
  *!   If you don't need it to be independant of the system clock, use
  *!   @[predef::sleep()] instead.
  *!
- *!   May not be present; only exists if the function exists in the 
+ *!   May not be present; only exists if the function exists in the
  *!   current system.
  *!
  *! @seealso
@@ -2238,7 +2238,7 @@ static void f_system_sleep(INT32 args)
 
 /*! @decl void usleep(int usec)
  *!
- *! Call the system usleep() function. 
+ *! Call the system usleep() function.
  *!
  *! This is not to be confused with the global function @[predef::sleep()]
  *! that does more elaborate things and can sleep with better precision
@@ -2252,7 +2252,7 @@ static void f_system_sleep(INT32 args)
  *!   If you don't need it to be independant of the system clock, use
  *!   @[predef::sleep()] instead.
  *!
- *!   May not be present; only exists if the function exists in the 
+ *!   May not be present; only exists if the function exists in the
  *!   current system.
  *!
  *! @seealso
@@ -2275,7 +2275,7 @@ static void f_system_usleep(INT32 args)
 
 /*! @decl float nanosleep(int|float seconds)
  *!
- *! Call the system nanosleep() function. 
+ *! Call the system nanosleep() function.
  *!
  *! This is not to be confused with the global function @[predef::sleep()]
  *! that does more elaborate things and can sleep with better precision
@@ -2287,7 +2287,7 @@ static void f_system_usleep(INT32 args)
  *!   @[predef::sleep()] @[sleep()] @[usleep()]
  *!
  *! @note
- *!   May not be present; only exists if the function exists in the 
+ *!   May not be present; only exists if the function exists in the
  *!   current system.
  */
 static void f_system_nanosleep(INT32 args)
@@ -2726,7 +2726,7 @@ void f_system_getitimer(INT32 args)
  *!
  *! @example
  *!   system.get_netinfo_property(".", "/locations/resolver", "domain");
- *!   ({ 
+ *!   ({
  *!      "idonex.se"
  *!   })
  *!
@@ -2742,7 +2742,7 @@ static void f_get_netinfo_property(INT32 args)
   ni_namelist  prop_list;
   ni_status    res;
   unsigned int i, num_replies;
-  
+
   get_all_args("get_netinfo_property", args, "%s%s%s",
 	       &domain_str, &path_str, &prop_str);
 
@@ -2765,7 +2765,7 @@ static void f_get_netinfo_property(INT32 args)
   } else {
     Pike_error("get_netinfo_property: error: %s\n", ni_error(res));
   }
-  
+
   /* make array of all replies; missing properties or invalid directory
      are simply returned as integer 0 */
   if (res == NI_OK)
@@ -2801,7 +2801,7 @@ void f_system_getloadavg(INT32 args)
   if (getloadavg(load, 3) == -1) {
     Pike_error("getloadavg failed.\n");
   }
-  
+
   for (i = 0; i <= 2; i++) {
     push_float((FLOAT_TYPE)load[i]);
   }
@@ -2840,7 +2840,7 @@ struct timeval
 /*! @decl array(int) gettimeofday()
  *! Calls gettimeofday(); the result is an array of
  *! seconds, microseconds, and possible tz_minuteswes, tz_dstttime
- *! as given by the gettimeofday(2) system call 
+ *! as given by the gettimeofday(2) system call
  *! (read the man page).
  *!
  *! @seealso
@@ -3034,7 +3034,7 @@ static void f_getrusage(INT32 args)
 		"System usage information not available.\n", Pike_sp, args);
 
    pop_n_elems(args);
-   
+
    push_text("utime");      push_int(rusage_values[n++]);
    push_text("stime");      push_int(rusage_values[n++]);
    push_text("maxrss");     push_int(rusage_values[n++]);
@@ -3096,25 +3096,25 @@ PIKE_MODULE_INIT
    * From this file:
    */
 #ifdef HAVE_LINK
-  
+
 /* function(string, string:void) */
   ADD_EFUN("hardlink", f_hardlink,tFunc(tStr tStr,tVoid), OPT_SIDE_EFFECT);
   ADD_FUNCTION2("hardlink", f_hardlink,tFunc(tStr tStr,tVoid), 0, OPT_SIDE_EFFECT);
 #endif /* HAVE_LINK */
 #ifdef HAVE_SYMLINK
-  
+
 /* function(string, string:void) */
   ADD_EFUN("symlink", f_symlink,tFunc(tStr tStr,tVoid), OPT_SIDE_EFFECT);
   ADD_FUNCTION2("symlink", f_symlink,tFunc(tStr tStr,tVoid), 0, OPT_SIDE_EFFECT);
 #endif /* HAVE_SYMLINK */
 #ifdef HAVE_READLINK
-  
+
 /* function(string:string) */
   ADD_EFUN("readlink", f_readlink,tFunc(tStr,tStr), OPT_EXTERNAL_DEPEND);
   ADD_FUNCTION2("readlink", f_readlink,tFunc(tStr,tStr), 0, OPT_EXTERNAL_DEPEND);
 #endif /* HAVE_READLINK */
 #if defined(HAVE_RESOLVEPATH) || defined(HAVE_REALPATH)
-  
+
 /* function(string:string) */
   ADD_EFUN("resolvepath", f_resolvepath,tFunc(tStr,tStr), OPT_EXTERNAL_DEPEND);
   ADD_FUNCTION2("resolvepath", f_resolvepath,tFunc(tStr,tStr), 0, OPT_EXTERNAL_DEPEND);
@@ -3147,24 +3147,24 @@ PIKE_MODULE_INIT
 #endif
 
 #ifdef HAVE_INITGROUPS
-  
+
 /* function(string, int:void) */
   ADD_EFUN("initgroups", f_initgroups,tFunc(tStr tInt,tVoid), OPT_SIDE_EFFECT);
   ADD_FUNCTION2("initgroups", f_initgroups,tFunc(tStr tInt,tVoid), 0, OPT_SIDE_EFFECT);
 #endif /* HAVE_INITGROUPS */
 #ifdef HAVE_SETGROUPS
-  
+
 /* function(:void) */
   ADD_EFUN("cleargroups", f_cleargroups,tFunc(tNone,tVoid), OPT_SIDE_EFFECT);
   ADD_FUNCTION2("cleargroups", f_cleargroups,tFunc(tNone,tVoid), 0, OPT_SIDE_EFFECT);
   /* NOT Implemented in Pike 0.5 */
-  
+
 /* function(array(int):void) */
   ADD_EFUN("setgroups", f_setgroups,tFunc(tArr(tInt),tVoid), OPT_SIDE_EFFECT);
   ADD_FUNCTION2("setgroups", f_setgroups,tFunc(tArr(tInt),tVoid), 0, OPT_SIDE_EFFECT);
 #endif /* HAVE_SETGROUPS */
 #ifdef HAVE_GETGROUPS
-  
+
 /* function(:array(int)) */
   ADD_EFUN("getgroups", f_getgroups,tFunc(tNone,tArr(tInt)), OPT_EXTERNAL_DEPEND);
   ADD_FUNCTION2("getgroups", f_getgroups,tFunc(tNone,tArr(tInt)), 0, OPT_EXTERNAL_DEPEND);
@@ -3179,25 +3179,25 @@ PIKE_MODULE_INIT
 	   0, OPT_EXTERNAL_DEPEND);
 #endif /* HAVE_INNETGR */
 #ifdef HAVE_SETUID
-  
+
 /* function(int:int) */
   ADD_EFUN("setuid", f_setuid,tFunc(tInt,tInt), OPT_SIDE_EFFECT);
   ADD_FUNCTION2("setuid", f_setuid,tFunc(tInt,tInt), 0, OPT_SIDE_EFFECT);
 #endif
 #ifdef HAVE_SETGID
-  
+
 /* function(int:int) */
   ADD_EFUN("setgid", f_setgid,tFunc(tInt,tInt), OPT_SIDE_EFFECT);
   ADD_FUNCTION2("setgid", f_setgid,tFunc(tInt,tInt), 0, OPT_SIDE_EFFECT);
 #endif
 #if defined(HAVE_SETEUID) || defined(HAVE_SETRESUID)
-  
+
 /* function(int:int) */
   ADD_EFUN("seteuid", f_seteuid,tFunc(tInt,tInt), OPT_SIDE_EFFECT);
   ADD_FUNCTION2("seteuid", f_seteuid,tFunc(tInt,tInt), 0, OPT_SIDE_EFFECT);
 #endif /* HAVE_SETEUID || HAVE_SETRESUID */
 #if defined(HAVE_SETEGID) || defined(HAVE_SETRESGID)
-  
+
 /* function(int:int) */
   ADD_EFUN("setegid", f_setegid,tFunc(tInt,tInt), OPT_SIDE_EFFECT);
   ADD_FUNCTION2("setegid", f_setegid,tFunc(tInt,tInt), 0, OPT_SIDE_EFFECT);
@@ -3214,41 +3214,41 @@ PIKE_MODULE_INIT
 #endif
 
 #ifdef HAVE_GETUID
-  
+
 /* function(:int) */
   ADD_EFUN("getuid", f_getuid,tFunc(tNone,tInt), OPT_EXTERNAL_DEPEND);
   ADD_FUNCTION2("getuid", f_getuid,tFunc(tNone,tInt), 0, OPT_EXTERNAL_DEPEND);
 #endif
 
 #ifdef HAVE_GETGID
-  
+
 /* function(:int) */
   ADD_EFUN("getgid", f_getgid,tFunc(tNone,tInt), OPT_EXTERNAL_DEPEND);
   ADD_FUNCTION2("getgid", f_getgid,tFunc(tNone,tInt), 0, OPT_EXTERNAL_DEPEND);
 #endif
- 
+
 #ifdef HAVE_GETEUID
-  
+
 /* function(:int) */
   ADD_EFUN("geteuid", f_geteuid,tFunc(tNone,tInt), OPT_EXTERNAL_DEPEND);
   ADD_FUNCTION2("geteuid", f_geteuid,tFunc(tNone,tInt), 0, OPT_EXTERNAL_DEPEND);
-  
+
 /* function(:int) */
   ADD_EFUN("getegid", f_getegid,tFunc(tNone,tInt), OPT_EXTERNAL_DEPEND);
   ADD_FUNCTION2("getegid", f_getegid,tFunc(tNone,tInt), 0, OPT_EXTERNAL_DEPEND);
 #endif /* HAVE_GETEUID */
- 
-  
+
+
 /* function(:int) */
 /* Also available as efun */
   ADD_FUNCTION2("getpid", f_getpid,tFunc(tNone,tInt), 0, OPT_EXTERNAL_DEPEND);
 #ifdef HAVE_GETPPID
-  
+
 /* function(:int) */
   ADD_EFUN("getppid", f_getppid,tFunc(tNone,tInt), OPT_EXTERNAL_DEPEND);
   ADD_FUNCTION2("getppid", f_getppid,tFunc(tNone,tInt), 0, OPT_EXTERNAL_DEPEND);
 #endif /* HAVE_GETPPID */
- 
+
 #ifdef HAVE_GETPGRP
 /* function(:int) */
   ADD_EFUN("getpgrp", f_getpgrp, tFunc(tOr(tInt, tVoid), tInt),
@@ -3284,51 +3284,51 @@ PIKE_MODULE_INIT
 #endif
 
 #ifdef HAVE_GETRLIMIT
-  ADD_FUNCTION2("getrlimit", f_getrlimit, tFunc(tString, tArr(tInt)), 
+  ADD_FUNCTION2("getrlimit", f_getrlimit, tFunc(tString, tArr(tInt)),
 		0, OPT_EXTERNAL_DEPEND);
-  ADD_FUNCTION2("getrlimits", f_getrlimits, 
-		tFunc(tNone, tMap(tStr,tArr(tInt))), 
+  ADD_FUNCTION2("getrlimits", f_getrlimits,
+		tFunc(tNone, tMap(tStr,tArr(tInt))),
 		0, OPT_EXTERNAL_DEPEND);
 #endif
 #ifdef HAVE_SETRLIMIT
-  ADD_FUNCTION2("setrlimit", f_setrlimit, tFunc(tString tInt tInt, tInt01), 
+  ADD_FUNCTION2("setrlimit", f_setrlimit, tFunc(tString tInt tInt, tInt01),
 		0, OPT_SIDE_EFFECT);
 #endif
 #ifdef HAVE_SETPROCTITLE
   ADD_FUNCTION2("setproctitle", f_setproctitle, tFuncV(tString, tMix, tVoid),
                 0, OPT_SIDE_EFFECT);
 #endif
-#ifdef HAVE_CHROOT 
-  
+#ifdef HAVE_CHROOT
+
 /* function(string|object:int) */
-  ADD_EFUN("chroot", f_chroot,tFunc(tOr(tStr,tObj),tInt), 
+  ADD_EFUN("chroot", f_chroot,tFunc(tOr(tStr,tObj),tInt),
            OPT_SIDE_EFFECT);
   ADD_FUNCTION2("chroot", f_chroot,tFunc(tOr(tStr,tObj),tInt), 0,
            OPT_SIDE_EFFECT);
 #endif /* HAVE_CHROOT */
- 
+
 #if defined(HAVE_UNAME) || defined(HAVE_SYSINFO)
-  
+
 /* function(:mapping) */
   ADD_EFUN("uname", f_uname,tFunc(tNone,tMapping), OPT_TRY_OPTIMIZE);
   ADD_FUNCTION2("uname", f_uname,tFunc(tNone,tMapping), 0, OPT_TRY_OPTIMIZE);
 #endif /* HAVE_UNAME */
- 
+
 #if defined(HAVE_GETHOSTNAME) || defined(HAVE_UNAME) || defined(HAVE_SYSINFO)
-  
+
 /* function(:string) */
   ADD_EFUN("gethostname", f_gethostname,tFunc(tNone,tStr),OPT_TRY_OPTIMIZE);
   ADD_FUNCTION2("gethostname", f_gethostname,tFunc(tNone,tStr), 0, OPT_TRY_OPTIMIZE);
 #endif /* HAVE_GETHOSTNAME || HAVE_UNAME */
 
 #ifdef GETHOST_DECLARE
-  
+
 /* function(string:array) */
   ADD_EFUN("gethostbyname", f_gethostbyname,tFunc(tStr,tArray),
            OPT_EXTERNAL_DEPEND);
   ADD_FUNCTION2("gethostbyname", f_gethostbyname,tFunc(tStr,tArray), 0,
            OPT_EXTERNAL_DEPEND);
-  
+
 /* function(string:array) */
   ADD_EFUN("gethostbyaddr", f_gethostbyaddr,tFunc(tStr,tArray),
            OPT_EXTERNAL_DEPEND);
@@ -3340,15 +3340,15 @@ PIKE_MODULE_INIT
    * From syslog.c:
    */
 #ifdef HAVE_SYSLOG
-  
+
 /* function(string,int,int:void) */
   ADD_EFUN("openlog", f_openlog,tFunc(tStr tInt tInt,tVoid), OPT_SIDE_EFFECT);
   ADD_FUNCTION("openlog", f_openlog,tFunc(tStr tInt tInt,tVoid), 0);
-  
+
 /* function(int,string:void) */
   ADD_EFUN("syslog", f_syslog,tFunc(tInt tStr,tVoid), OPT_SIDE_EFFECT);
   ADD_FUNCTION("syslog", f_syslog,tFunc(tInt tStr,tVoid), 0);
-  
+
 /* function(:void) */
   ADD_EFUN("closelog", f_closelog,tFunc(tNone,tVoid), OPT_SIDE_EFFECT);
   ADD_FUNCTION("closelog", f_closelog,tFunc(tNone,tVoid), 0);

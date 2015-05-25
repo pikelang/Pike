@@ -860,7 +860,7 @@ PIKEFUN string int2hex(int|object x)
   }
   while(n>65535) { n>>=16; len+=4; }
   while(n>15) { n>>=4; len++; }
-  
+
   s=begin_shared_string(len);
   if(!c)
   {
@@ -1803,7 +1803,7 @@ PIKEFUN mixed m_delete(object|mapping map, mixed index)
 
     if( id == -1 )
       SIMPLE_BAD_ARG_ERROR("m_delete", 1, "object containing the _m_delete method");
-    
+
     apply_low(map->u.object,
 	      id + p->inherits[SUBTYPEOF(*map)].identifier_level, 1);
     stack_swap();
@@ -1885,7 +1885,7 @@ PIKEFUN string function_name(program|function func)
     default:
       SIMPLE_BAD_ARG_ERROR("function_name", 1, "function|program");
       return; /* NOTREACHED */
-	
+
     case PIKE_T_PROGRAM:
     {
       p = func->u.program;
@@ -1897,7 +1897,7 @@ PIKEFUN string function_name(program|function func)
 	/* search constants in parent for this
 	 * program...
 	 */
-	
+
 	for(e = p->num_identifier_references; e--; )
 	{
 	  struct identifier *id;
@@ -1975,7 +1975,7 @@ PIKEFUN object function_object(function|program func)
   {
     case PIKE_T_PROGRAM:
       break;
-      
+
     case PIKE_T_FUNCTION:
       if(SUBTYPEOF(*func) == FUNCTION_BUILTIN) break;
       if(func->u.object->prog == pike_trampoline_program)
@@ -2024,7 +2024,7 @@ PIKEFUN program function_program(program|function func)
       func->u.program=p;
       return;
     }
-      
+
     case PIKE_T_FUNCTION:
       {
 	struct program *p;
@@ -2096,7 +2096,7 @@ PIKEFUN int random(int i)
   }
 #endif
   RETURN  my_rand() % i;
-}      
+}
 
 PMOD_EXPORT
 PIKEFUN float random(float f)
@@ -2105,7 +2105,7 @@ PIKEFUN float random(float f)
 #define N 1048576
   RETURN f * (my_rand()%N/((float)N)) +
     f * (my_rand()%N/( ((float)N) * ((float)N) ));
-		   
+
 }
 
 /*! @decl mixed random(array|multiset x)
@@ -2146,25 +2146,25 @@ PIKEFUN array random(mapping m)
   struct mapping_data *md=m->data;
   size_t bucket, count;
   struct keypair *k;
-  
+
   if(!m_sizeof(m))
     SIMPLE_BAD_ARG_ERROR("random", 1, "mapping with elements in it");
-  
+
   /* Find a random, nonempty bucket */
   bucket=my_rand() % md->hashsize;
   while(! md->hash[bucket] )
     if(++bucket > (size_t)md->hashsize)
       bucket=0;
-  
+
   /* Count entries in bucket */
   count=0;
   for(k=md->hash[bucket];k;k=k->next) count++;
-  
+
   /* Select a random entry in this bucket */
   count = my_rand() % count;
   k=md->hash[bucket];
   while(count-- > 0) k=k->next;
-  
+
   /* Push result and return */
   push_svalue(&k->ind);
   push_svalue(&k->val);
@@ -2519,7 +2519,7 @@ PIKECLASS backtrace_frame
       } else {
 	free_svalue(&THIS->_fun);
 	SET_SVAL(THIS->_fun, PIKE_T_INT, NUMBER_DESTRUCTED, integer, 0);
-	push_text("destructed_function(), ");	
+	push_text("destructed_function(), ");
       }
     } else if (TYPEOF(THIS->_fun) == PIKE_T_PROGRAM) {
       /* FIXME: Use the master? */
@@ -2983,7 +2983,7 @@ PIKECLASS Buffer
 	    f_Buffer_get( 0 );
 	}
 	return;
-	
+
       case 't':
 	RETURN make_shared_binary_string("Buffer",6);
     }
@@ -3023,7 +3023,7 @@ PIKECLASS Buffer
     pop_stack();
     push_undefined();
   }
-  
+
   /*! @decl String.Buffer `+( string|String.Buffer what )
    */
   PIKEFUN object `+( string|Buffer what )
@@ -3611,7 +3611,7 @@ PIKECLASS single_string_replace
   /*! @decl void _decode(array(string)|int(0..0) encoded)
    */
   PIKEFUN void _decode(array(string)|int(0..0) encoded_)
-  {    
+  {
     INT32 i = 0;
     if (TYPEOF(*encoded_) == PIKE_T_ARRAY) {
       struct array *encoded = encoded_->u.array;
@@ -3622,7 +3622,7 @@ PIKECLASS single_string_replace
       }
     }
     pop_stack();
-      
+
     f_single_string_replace_create(i);
   }
 }
@@ -3862,7 +3862,7 @@ PIKECLASS bootstring
    *!   should be the same as the base parameter.
    */
   PIKEFUN void create( int base, int tmin, int tmax,
-		       int skew, int damp, 
+		       int skew, int damp,
 		       int initial_bias, int initial_n,
 		       int delim, string digits )
     flags ID_PROTECTED;
@@ -3995,7 +3995,7 @@ PIKECLASS Timer
 {
   CVAR struct timeval last_time;
   CVAR int hard_update;
-  
+
   /*! @decl float peek()
    *!   Return the time in seconds since the last time @[get] was called.
    */
@@ -4027,7 +4027,7 @@ PIKECLASS Timer
   /*! @decl protected void create( int|void fast )
    *!   Create a new timer object. The timer keeps track of relative time
    *!   with sub-second precision.
-   *!   
+   *!
    *!   If @[fast] is specified, the timer will not do system calls to get
    *!   the current time but instead use the one maintained by pike. This
    *!   will result in faster but more or less inexact timekeeping.
@@ -4163,7 +4163,7 @@ static void low_automap(int d,
 	push_svalue(tmpargs+e);
       }
     }
-    
+
     if(d == depth)
       apply_svalue(fun,args);
     else
@@ -4385,7 +4385,7 @@ PIKECLASS Null
     pop_n_elems(args);
     push_int(17);
   }
-    
+
   PIKEFUN int `==(mixed other)
     flags ID_PROTECTED;
   {
@@ -5447,7 +5447,7 @@ PIKECLASS List
     GC_CHECK
     {
       gc_check_list_node_forward(THIS->cur, " held by an iterator");
-    }  
+    }
 
     /* These two functions perform the same thing,
      * but are optimized to minimize recursion.

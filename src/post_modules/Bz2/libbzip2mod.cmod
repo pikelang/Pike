@@ -175,9 +175,9 @@ PIKECLASS Deflate
     THIS->total_out_previous_buf = 0;
     THIS->compression_rate = compression_rate;
     THIS->work_factor = work_factor;
-    
-    retval = bzCompressInit(s,compression_rate,0,work_factor);  
-    
+
+    retval = bzCompressInit(s,compression_rate,0,work_factor);
+
     switch(retval){
     case BZ_PARAM_ERROR:
       Pike_error("Parameter error when initializing Bz2.Deflate object.\n");
@@ -194,7 +194,7 @@ PIKECLASS Deflate
   }
 
   /*! @decl void feed(string data)
-   *!	
+   *!
    *! This function feeds the data to the internal buffers of the
    *! Deflate object. All data is buffered until a read or a finish is
    *! done.
@@ -203,11 +203,11 @@ PIKECLASS Deflate
    *! @[Bz2.Deflate->read()]
    *! @[Bz2.Deflate->finish()]
    */
-  
+
   PIKEFUN void feed(string data){
 
     int retval = 0;
-    int i = 1; 
+    int i = 1;
     bz_stream *s;
     char* tmp = NULL;
 
@@ -216,20 +216,20 @@ PIKECLASS Deflate
     s->avail_in = data->len;
 
     while(1){
-      /* need to have a loop here in 
+      /* need to have a loop here in
 	 case the output-buffer is filled*/
       /* allocate out buffer */
       tmp = xcalloc(i, DEFL_BUF_SIZE);
       s->next_out = tmp;
       s->avail_out = i * DEFL_BUF_SIZE;
-      
+
       retval = bzCompress(s, BZ_RUN);
       if (retval != BZ_RUN_OK){
 	bzCompressEnd(s);
 	free(tmp);
 	Pike_error("Error when compressing in Bz2.feed().\n");
       }
-      
+
       if(TOTAL_OUT(s) - THIS->total_out_previous_buf > 0){
 	/*if something was written to the outbuffer, then buffer it internally*/
 	low_my_binary_strcat(tmp, TOTAL_OUT(s) - THIS->total_out_previous_buf,
@@ -244,26 +244,26 @@ PIKECLASS Deflate
       i = 2 * i;
     }
     pop_n_elems(args);
-    
+
   }
-  
+
   void do_deflate(struct pike_string *data, dynamic_buffer *retbuf,
 		  int mode){
     char *tmp = NULL;
     int retval;
     int total_out_old = 0;
     int i = 1;
-    
+
     bz_stream *s = &THIS->strm;
-    
+
     s->next_in = data->str;
     s->avail_in = data->len;
     s->next_out = retbuf->s.str;
     s->avail_out = DEFL_BUF_SIZE;
-    
-    while(1){    
+
+    while(1){
       retval = bzCompress(s, mode);
-    
+
       if(tmp != NULL){
 	low_my_binary_strcat(tmp, TOTAL_OUT(s)-total_out_old, retbuf);
 	free(tmp);
@@ -287,7 +287,7 @@ PIKECLASS Deflate
       }
     }
   }
-  
+
   /*! @decl string read(string data)
    *!
    *! This function feeds the data to the internal buffers of the
@@ -311,7 +311,7 @@ PIKECLASS Deflate
 
     low_make_buf_space(DEFL_BUF_SIZE, &retbuf);
     do_deflate(data, &retbuf, BZ_FLUSH);
-    
+
     if(TOTAL_OUT(s) - THIS->total_out_previous_flush > 0){
       if(THIS->total_out_previous_buf > THIS->total_out_previous_flush){
 	low_my_binary_strcat(retbuf.s.str,
@@ -320,7 +320,7 @@ PIKECLASS Deflate
 	retstr =
 	  make_shared_binary_string(THIS->buffer.s.str,
 				    TOTAL_OUT(s) - THIS->total_out_previous_flush);
-      }   
+      }
       else{
 	retstr =
 	  make_shared_binary_string(retbuf.s.str,
@@ -333,12 +333,12 @@ PIKECLASS Deflate
     else{
       retstr = make_shared_binary_string("",0);
     }
-    
+
     CALL_AND_UNSET_ONERROR(err);
 
     RETURN(retstr);
   }
-  
+
 
   /*! @decl string finish(string data)
    *!
@@ -351,7 +351,7 @@ PIKECLASS Deflate
    *! @[Bz2.Deflate->feed()]
    *! @[Bz2.Deflate->read()]
    */
-  
+
   PIKEFUN string finish(string data){
     struct pike_string *retstr;
     int retval = 0;
@@ -363,9 +363,9 @@ PIKECLASS Deflate
     SET_ONERROR(err, toss_buffer, &retbuf);
 
     low_make_buf_space(DEFL_BUF_SIZE, &retbuf);
-    
+
     do_deflate(data, &retbuf, BZ_FINISH);
-        
+
     /*use perhaps a better check?*/
     if(TOTAL_OUT(s) - THIS->total_out_previous_flush > 0){
       if(THIS->total_out_previous_buf > THIS->total_out_previous_flush){
@@ -375,7 +375,7 @@ PIKECLASS Deflate
 	retstr =
 	  make_shared_binary_string(THIS->buffer.s.str,
 				    TOTAL_OUT(s) - THIS->total_out_previous_flush);
-      }   
+      }
       else{
 	retstr =
 	  make_shared_binary_string(retbuf.s.str,
@@ -389,7 +389,7 @@ PIKECLASS Deflate
       /* something went wrong*/
       retstr = NULL;
     }
-    
+
     CALL_AND_UNSET_ONERROR(err);
 
     bzCompressEnd(s);
@@ -404,8 +404,8 @@ PIKECLASS Deflate
 
     THIS->total_out_previous_flush = 0;
     THIS->total_out_previous_buf = 0;
-        
-    retval = bzCompressInit(s,THIS->compression_rate,0,THIS->work_factor);  
+
+    retval = bzCompressInit(s,THIS->compression_rate,0,THIS->work_factor);
     if(retval < 0){
       Pike_error("Failed to reinitialize stream.\n");
     }
@@ -439,11 +439,11 @@ PIKECLASS Deflate
    *! @seealso
    *! @[Bz2.Inflate->inflate()]
    */
-  
+
   PIKEFUN string deflate(string data, int|void mode)
   {
     int flush_mode = BZ_FLUSH;
-    
+
     if(mode)
     {
       flush_mode = mode->u.integer;
@@ -517,10 +517,10 @@ PIKECLASS Inflate
   /*! @decl void create()
    */
   PIKEFUN void create(){
-     
+
     int retval;
     bz_stream *s = &THIS->strm;
-    
+
     if(THIS->buffer.bufsize)
       bzDecompressEnd(s);
 
@@ -529,14 +529,14 @@ PIKECLASS Inflate
     s->bzalloc = NULL;
     s->bzfree = NULL;
     s->opaque = NULL;
-    
+
     retval = bzDecompressInit(s, 0, 0);
-   
+
     /* make more detailed*/
     if(retval != BZ_OK){
       Pike_error("Unexpected error in Bz2.Inflate().\n");
     }
-    
+
     s->next_in = NULL;
     s->next_out = NULL;
     s->avail_in = 0;
@@ -556,7 +556,7 @@ PIKECLASS Inflate
    *!
    *! @example
    *! while(..){
-   *!   foo = compressed_data[i..i+9]; 
+   *!   foo = compressed_data[i..i+9];
    *!   uncompressed_concatenated_data += inflate_object->inflate(foo);
    *!   i = i+10;
    *! }
@@ -564,7 +564,7 @@ PIKECLASS Inflate
    *! @seealso
    *! @[Bz2.Deflate->deflate()]
    */
-  
+
   PIKEFUN string inflate(string data){
     struct pike_string *retstr;
     int i = 1;
@@ -575,9 +575,9 @@ PIKECLASS Inflate
     dynamic_buffer ret_buffer;
     dynamic_buffer *retbuf = &ret_buffer;
     bz_stream *s = &THIS->strm;
-    
+
     /*the incoming string has to be appended to the input buffer*/
-    
+
     if (s->avail_in > 0){
       tmp_internbuf = xalloc(s->avail_in);
       memcpy (tmp_internbuf, s->next_in, s->avail_in);
@@ -592,24 +592,24 @@ PIKECLASS Inflate
     }
     /*appending the new data*/
     low_my_binary_strcat(data->str,data->len,&THIS->buffer);
-    
+
     s->next_in = THIS->buffer.s.str;
     s->avail_in += data->len;
-    
+
     /* the input buffer is now provided, provide an output buffer*/
-    
+
     initialize_buf(retbuf);
     low_make_buf_space(INFL_BUF_SIZE, retbuf);
     s->next_out = retbuf->s.str;
     s->avail_out = INFL_BUF_SIZE;
-    
+
     while(1){
       /* This Loop runs bzDecompress and stores the result in retbuf,
 	 if retbuf is filled it makes retbuf bigger and calls
 	 decompress again until the whole input data string has been
 	 unpacked*/
       retval = bzDecompress(s); /* updates next_in, avail_in, total_in, next_out, avail_out, total_out*/
-      
+
       if(tmp != NULL){
 	low_my_binary_strcat(tmp,TOTAL_OUT(s)-total_out_old,&ret_buffer);
 	free(tmp);
@@ -618,15 +618,15 @@ PIKECLASS Inflate
       if(retval == BZ_STREAM_END && s->avail_in > 0){
 	bzDecompressEnd(s);
 	toss_buffer(&ret_buffer);
-	Pike_error("No data may follow after end of stream.\n"); 
+	Pike_error("No data may follow after end of stream.\n");
       }
       if((retval != BZ_STREAM_END) && (retval != BZ_OK)){
 	bzDecompressEnd(s);
 	toss_buffer(&ret_buffer);
 	Pike_error("Error when decompressing, probably because inflate "
 		   "is fed with invalid data.\n");
-      }    
-      
+      }
+
       /* If outputbuffer is not full, or input buffer is empty, or end
 	 of stream has been detected then compression has been done as
 	 far as possible*/
@@ -685,7 +685,7 @@ PIKECLASS Inflate
     toss_buffer(&ret_buffer);
     RETURN(retstr);
   }
-  
+
   INIT
     {
       bz_stream *s;
@@ -767,10 +767,10 @@ PIKECLASS File
    *! @param file
    *! The name of the file to be opened
    */
-  
+
   PIKEFUN int read_open(string file_name){
     FILE *tmp = NULL;
-    
+
     if( THIS->mode == NO_FILE_MODE){
       tmp = fopen(file_name->str,"rb");
     }
@@ -778,7 +778,7 @@ PIKECLASS File
       THIS->fp = tmp;
       THIS->file = bzReadOpen(&THIS->bzerror,tmp,0,0,NULL,0);
       THIS->mode = READ_MODE;
-      
+
       switch(THIS->bzerror){
       case BZ_OK:
 	break;
@@ -789,7 +789,7 @@ PIKECLASS File
 	  bzReadOpen(&THIS->bzerror,tmp,1,0,NULL,0);
 	  if(THIS->bzerror != BZ_OK){
 	    Pike_error("Bz2.File->read_open() failed.\n");
-	  }	    
+	  }
 	}
 	else{
 	  Pike_error("Bz2.File->read_open() out of memory.\n");
@@ -811,12 +811,12 @@ PIKECLASS File
    *! @param file
    *! The name of the file to be opened
    */
-  
+
   PIKEFUN int write_open(string file_name, int|void compression, int|void work){
     int work_factor = DEFAULT_WORK_FACTOR;
     int compression_rate = DEFAULT_COMPRESSION_RATE;
     FILE *tmp = NULL;
-    
+
     if(compression)
     {
 	compression_rate = compression->u.integer;
@@ -834,7 +834,7 @@ PIKECLASS File
                      "Bz2.File()->write_open().\n", work_factor);
         }
     }
-    
+
     if (THIS->mode == NO_FILE_MODE)
       tmp = fopen(file_name->str,"wb");
 
@@ -851,7 +851,7 @@ PIKECLASS File
       THIS->fp = tmp;
       THIS->mode = WRITE_MODE;
     }
-    
+
     if(tmp == NULL)
       RETURN(0);
 
@@ -866,7 +866,7 @@ PIKECLASS File
    *! Mode for the file operations. Can be either "r" (read)
    *! or "w". Read is default.
    */
-  
+
   PIKEFUN int open(string filename, string|void mode)
   {
     if (!mode)
@@ -894,7 +894,7 @@ PIKECLASS File
     Pike_error("Unknown open mode for file, "
                "should be either 'w' or 'r'.\n");
   }
-  
+
 
   /*! @decl void create()
    *! @decl void create(string filename, void|string mode)
@@ -910,7 +910,7 @@ PIKECLASS File
     THIS->mode = NO_FILE_MODE;
     THIS->file = NULL;
     THIS->fp = NULL;
-    
+
     if(args != 0){
       f_Bz2_File_open(args);
     }
@@ -918,13 +918,13 @@ PIKECLASS File
 
   /*! @decl int write(string data)
    *! Writes the data to the file.
-   *! @returns 
+   *! @returns
    *!  the number of bytes written to the file.
    */
 
   PIKEFUN int write(string data){
     int len =  data->len;
-    
+
     bzWrite(&THIS->bzerror, THIS->file, data->str,len);
     switch(THIS->bzerror){
     case BZ_OK:
@@ -932,10 +932,10 @@ PIKECLASS File
     default:
       Pike_error("Error in Bz2.File()->write().\n");
     }
-    
+
     RETURN(len);
   }
-  
+
   /*! @decl string read(int len)
    *! Reads len (uncompressed) bytes from the file.
    *! If len is omitted the whole file is read.
@@ -984,7 +984,7 @@ PIKECLASS File
 
 
   /*! @decl int(0..1) eof()
-   *! @returns 
+   *! @returns
    *!  1 if EOF has been reached,
    *!  0 otherwise
    */
@@ -1004,7 +1004,7 @@ PIKECLASS File
       THIS->mode = NO_FILE_MODE;
       THIS->file = NULL;
     }
-  
+
   EXIT
     gc_trivial;
     {
@@ -1056,7 +1056,7 @@ PIKE_MODULE_INIT
 PIKE_MODULE_EXIT
 {
 #ifdef HAVE_BZ2LIB
-#ifdef HAVE_BZLIB_H	
+#ifdef HAVE_BZLIB_H
   EXIT
 #endif
 #endif

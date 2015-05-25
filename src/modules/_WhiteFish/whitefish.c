@@ -99,7 +99,7 @@ static void handle_hit( Blob **blobs,
 	}
     }
   }
-  
+
   free( pos );
   free( nhits );
   free( hits );
@@ -147,7 +147,7 @@ static struct object *low_do_query_or( Blob **blobs,
   for( i = 0; i<65; i++ )
     if( field_c[i] > max_c )
       max_c = field_c[i];
-  
+
   for( i = 0; i<8; i++ )
     if( prox_c[i] > max_p )
       max_p = prox_c[i];
@@ -156,13 +156,13 @@ static struct object *low_do_query_or( Blob **blobs,
   {
     /* Time to do the real work. :-) */
     for( i = 0; i<nblobs; i++ ) /* Forward to first element */
-      wf_blob_next( blobs[i] );  
+      wf_blob_next( blobs[i] );
 
     /* Main loop: Find the smallest element in the blob array. */
     while( 1 )
     {
       unsigned int min = 0x7fffffff;
-    
+
       for( i = 0; i<nblobs; i++ )
 	if( !blobs[i]->eof && ((unsigned int)blobs[i]->docid) < min )
 	  min = blobs[i]->docid;
@@ -175,7 +175,7 @@ static struct object *low_do_query_or( Blob **blobs,
 	  tmp[j++] = blobs[i];
 
       handle_hit( tmp, j, res, min, &field_c, &prox_c, max_c, max_p, cutoff );
-    
+
       for( i = 0; i<j; i++ )
 	wf_blob_next( tmp[i] );
     }
@@ -187,7 +187,7 @@ static struct object *low_do_query_or( Blob **blobs,
   free_stuff( __f );
   return res;
 }
-				
+
 static void handle_phrase_hit( Blob **blobs,
 			       int nblobs,
 			       struct object *res,
@@ -200,7 +200,7 @@ static void handle_phrase_hit( Blob **blobs,
   unsigned char *first = nhits+nblobs;
   int matrix[65];
   double accum = 0.0;
-  
+
   memset(matrix, 0, sizeof(matrix) );
 
 
@@ -237,7 +237,7 @@ static void handle_phrase_hit( Blob **blobs,
       accum += add/mc;
   }
 
-  free( nhits );  
+  free( nhits );
 
   if( accum > 0.0 )
     wf_resultset_add( res, docid, (int)(accum*100) );
@@ -272,7 +272,7 @@ static struct object *low_do_query_phrase( Blob **blobs, int nblobs,
     while( 1 )
     {
       unsigned int min = 0x7fffffff;
-    
+
       for( i = 0; i<nblobs; i++ )
 	if( blobs[i]->eof )
 	  goto end;
@@ -287,7 +287,7 @@ static struct object *low_do_query_phrase( Blob **blobs, int nblobs,
 	  goto next;
 
       handle_phrase_hit( blobs, nblobs, res, min, &field_c, max_c );
-    
+
     next:
       for( i = 0; i<nblobs; i++ )
 	if( blobs[i]->docid == min )
@@ -302,7 +302,7 @@ end:
   free_stuff( __f );
   return res;
 }
-				
+
 static struct object *low_do_query_and( Blob **blobs, int nblobs,
 					double field_c[65],
 					double prox_c[8],
@@ -338,7 +338,7 @@ static struct object *low_do_query_and( Blob **blobs, int nblobs,
     while( 1 )
     {
       unsigned int min = 0x7fffffff;
-    
+
       for( i = 0; i<nblobs; i++ )
 	if( blobs[i]->eof )
 	  goto end;
@@ -354,7 +354,7 @@ static struct object *low_do_query_and( Blob **blobs, int nblobs,
 
       handle_hit( blobs, nblobs, res, min, &field_c,&prox_c, max_c,max_p,
 		  cutoff );
-    
+
     next:
       for( i = 0; i<nblobs; i++ )
 	if( blobs[i]->docid == min )
@@ -378,7 +378,7 @@ static void f_do_query_phrase( INT32 args )
  *!                          array(int) field_coefficients,       @
  *!                          function(string,int,int:string) blobfeeder)
  *! @param words
- *!       
+ *!
  *! Arrays of word ids. Note that the order is significant for the
  *! ranking.
  *!
@@ -395,7 +395,7 @@ static void f_do_query_phrase( INT32 args )
  *! @endarray
  *!
  *! @param blobfeeder
- *!     
+ *!
  *! This function returns a Pike string containing the word hits for a
  *! certain word. Call repeatedly until it returns @expr{0@}.
  */
@@ -445,7 +445,7 @@ static void f_do_query_and( INT32 args )
  *!                               int cutoff,			       @
  *!                               function(string,int,int:string) blobfeeder)
  *! @param words
- *!       
+ *!
  *! Arrays of word ids. Note that the order is significant for the
  *! ranking.
  *!
@@ -487,7 +487,7 @@ static void f_do_query_and( INT32 args )
  *! @endarray
  *!
  *! @param blobfeeder
- *!     
+ *!
  *! This function returns a Pike string containing the word hits for a
  *! certain word. Call repeatedly until it returns @expr{0@}.
  */
@@ -546,7 +546,7 @@ static void f_do_query_or( INT32 args )
  *!                              int cutoff,			      @
  *!                              function(string,int,int:string) blobfeeder)
  *! @param words
- *!       
+ *!
  *! Arrays of word ids. Note that the order is significant for the
  *! ranking.
  *!
@@ -588,7 +588,7 @@ static void f_do_query_or( INT32 args )
  *! @endarray
  *!
  *! @param blobfeeder
- *!     
+ *!
  *! This function returns a Pike string containing the word hits for a
  *! certain word. Call repeatedly until it returns @expr{0@}.
  */

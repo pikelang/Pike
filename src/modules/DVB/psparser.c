@@ -6,7 +6,7 @@
 
 /*
  *  DVB module, PES extractor
- * 
+ *
  *  Creator: Honza Petrous <hop@unibase.cz>
  *
  */

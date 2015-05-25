@@ -178,7 +178,7 @@ static void image_ft_face_write_char( INT32 args )
   push_text( "descender" ); push_int( TFACE->size->metrics.descender>>6 );
   push_text( "ascender" ); push_int( TFACE->size->metrics.ascender>>6 );
   push_text( "height" ); push_int( TFACE->size->metrics.height>>6 );
-  
+
   f_aggregate_mapping( 14 );
 }
 
@@ -343,7 +343,7 @@ static void image_ft_face_info( INT32 args )
  *! @param font
  *!   The path of the font file to use
  *! @param face_number
- *!   The face number within the font to load, if supported 
+ *!   The face number within the font to load, if supported
  *!   by the font format.
  */
 static void image_ft_face_create( INT32 args )
@@ -453,14 +453,14 @@ PIKE_MODULE_INIT
     ADD_FUNCTION("write_char",image_ft_face_write_char,tFunc(tInt,tObj),0);
     ADD_FUNCTION("get_kerning",image_ft_face_get_kerning,
                  tFunc(tInt tInt,tInt),0);
-    
+
     set_init_callback( image_ft_face_init );
     set_exit_callback( image_ft_face_free );
 
     face_program = end_program();
     add_program_constant("Face", face_program, 0 );
     add_integer_constant( "FACE_FLAG_SCALABLE", FT_FACE_FLAG_SCALABLE, 0 );
-    add_integer_constant( "FACE_FLAG_FIXED_WIDTH", FT_FACE_FLAG_FIXED_WIDTH ,0); 
+    add_integer_constant( "FACE_FLAG_FIXED_WIDTH", FT_FACE_FLAG_FIXED_WIDTH ,0);
     add_integer_constant( "FACE_FLAG_SFNT", FT_FACE_FLAG_SFNT, 0 );
     add_integer_constant( "FACE_FLAG_HORIZONTAL", FT_FACE_FLAG_HORIZONTAL, 0 );
     add_integer_constant( "FACE_FLAG_VERTICAL", FT_FACE_FLAG_VERTICAL, 0 );

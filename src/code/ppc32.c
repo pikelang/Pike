@@ -128,7 +128,7 @@ void ppc32_push_svalue(int reg, INT32 offs, int force_reftype)
       STW(0, PPC_REG_PIKE_SP, e);
     }
   }
- 
+
   /* lwz r0,offs(r) */
   LWZ(0, reg, offs);
   /* lwz r11,refs+offs(r) */
@@ -187,7 +187,7 @@ void ppc32_push_constant(INT32 arg)
       STW(0, PPC_REG_PIKE_SP, e);
     }
 
-    INCR_SP_REG(sizeof(struct svalue));  
+    INCR_SP_REG(sizeof(struct svalue));
 
     return;
   }
@@ -247,7 +247,7 @@ void ppc32_local_lvalue(INT32 arg)
   STW(0, PPC_REG_PIKE_SP, sizeof(struct svalue));
   /* stw r3,u.lval(pike_sp) */
   STW(PPC_REG_ARG1, PPC_REG_PIKE_SP, OFFSETOF(svalue,u.lval));
-  INCR_SP_REG(sizeof(struct svalue)*2);  
+  INCR_SP_REG(sizeof(struct svalue)*2);
 }
 
 void ppc32_push_global(INT32 arg)
@@ -256,7 +256,7 @@ void ppc32_push_global(INT32 arg)
   /* lwz r5,context(pike_fp) */
   LWZ(PPC_REG_ARG3, PPC_REG_PIKE_FP, OFFSETOF(pike_frame, context));
   /* lwz r4,current_object(pike_fp) */
-  LWZ(PPC_REG_ARG2, PPC_REG_PIKE_FP, 
+  LWZ(PPC_REG_ARG2, PPC_REG_PIKE_FP,
       OFFSETOF(pike_frame, current_object));
   /* lha r5,identifier_level(r5) */
   LHA(PPC_REG_ARG3, PPC_REG_ARG3, OFFSETOF(inherit, identifier_level));
@@ -270,7 +270,7 @@ void ppc32_push_global(INT32 arg)
     /* mr r3,pike_sp */
     ORI(PPC_REG_ARG1, PPC_REG_PIKE_SP, 0);
   } else {
-    /* lwz r3,stack_pointer(pike_interpreter) */ 
+    /* lwz r3,stack_pointer(pike_interpreter) */
     LWZ(PPC_REG_ARG1, PPC_REG_PIKE_INTERP,
 	OFFSETOF(Pike_interpreter_struct, stack_pointer));
   }
@@ -305,7 +305,7 @@ void ppc32_push_int(INT32 x, int s)
   if(x != MAKE_TYPE_WORD(PIKE_T_INT, s))
     SET_REG(0, MAKE_TYPE_WORD(PIKE_T_INT, s));
   STW(0, PPC_REG_PIKE_SP, 0);
-  INCR_SP_REG(sizeof(struct svalue));  
+  INCR_SP_REG(sizeof(struct svalue));
 }
 
 void ppc32_push_string(INT32 arg, int st)
@@ -314,7 +314,7 @@ void ppc32_push_string(INT32 arg, int st)
 
   LOAD_FP_REG();
   LOAD_SP_REG();
-  
+
   /* lwz r11,context(pike_fp) */
   LWZ(11, PPC_REG_PIKE_FP, OFFSETOF(pike_frame, context));
   /* lwz r11,prog(r11) */
@@ -333,7 +333,7 @@ void ppc32_push_string(INT32 arg, int st)
 
   /* lwz r11,offs(r11) */
   LWZ(11, 11, offs);
-  
+
   if(sizeof(struct svalue) > 8)
   {
     int e;
@@ -359,7 +359,7 @@ void ppc32_push_string(INT32 arg, int st)
   /* stw r0,0(r11) */
   STW(0, 11, 0);
 
-  INCR_SP_REG(sizeof(struct svalue));  
+  INCR_SP_REG(sizeof(struct svalue));
 }
 
 void ppc32_mark(void)
@@ -440,15 +440,15 @@ void ins_f_byte(unsigned int b)
    case F_CONST0 - F_OFFSET:
      ppc32_push_int(0, 0);
      return;
-     
+
    case F_CONST1 - F_OFFSET:
      ppc32_push_int(1, 0);
      return;
-     
+
    case F_CONST_1 - F_OFFSET:
      ppc32_push_int(-1, 0);
      return;
-     
+
   case F_MAKE_ITERATOR - F_OFFSET:
     {
       SET_REG(PPC_REG_ARG1, 1);
@@ -733,7 +733,7 @@ void ppc32_disassemble_code(void *addr, size_t bytes)
 {
   /*
     Short forms of multicharacter opcode forms:
-    
+
     F = XFX
     G = XFL
     L = XL
@@ -741,7 +741,7 @@ void ppc32_disassemble_code(void *addr, size_t bytes)
     S = SC
   */
   static const char *opname[] = {
-    NULL, NULL, NULL, "Dtwi", NULL, NULL, NULL, "Dmulli", 
+    NULL, NULL, NULL, "Dtwi", NULL, NULL, NULL, "Dmulli",
     "Dsubfic", NULL, "Dcmpli", "Dcmpi", "Daddic", "Daddic.", "Daddi", "Daddis",
     NULL, "Ssc", NULL, NULL, "Mrlwimi", "Mrlwinm", NULL, "Mrlwnm",
     "Dori", "Doris", "Dxori", "Dxoris", "Dandi.", "Dandis.", NULL, NULL,
@@ -859,7 +859,7 @@ void ppc32_disassemble_code(void *addr, size_t bytes)
 	int h;
 	xo = (instr>>1)&1023;
 	h = (xo^119)%19;
-	instr_name = (xo == opxo_19[h]? opname_19[h]:NULL);	
+	instr_name = (xo == opxo_19[h]? opname_19[h]:NULL);
       }
       break;
     case 31:
@@ -1047,7 +1047,7 @@ void ppc32_disassemble_code(void *addr, size_t bytes)
 	/* Maybe pretty-print BO/BI here? */
 	fprintf(stderr, "%s%s %d,%d\n", instr_name, ((instr&1)? "l":""),
 		(instr>>21)&31, (instr>>16)&31);
-      else if(xo&1) 
+      else if(xo&1)
 	fprintf(stderr, "%s crb%d,crb%d,crb%d\n", instr_name,
 		(instr>>21)&31, (instr>>16)&31, (instr>>11)&31);
       else

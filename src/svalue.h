@@ -56,7 +56,7 @@ struct processing
   struct processing *next;
   void *pointer_a, *pointer_b;
 };
-   
+
 struct ref_dummy;
 
 /** the union of possible types in an svalue.
@@ -406,7 +406,7 @@ struct svalue
  * reality. */
 #define BIT_UNFINISHED (1 << T_UNFINISHED)
 
-/** This is only used in typechecking to signify that this 
+/** This is only used in typechecking to signify that this
  * argument may be omitted.
  */
 #define BIT_VOID (1 << T_VOID)

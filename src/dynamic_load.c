@@ -378,7 +378,7 @@ static const char *dlerror(void)
 #endif
 
 #ifndef RTLD_GLOBAL
-#define RTLD_GLOBAL 0 
+#define RTLD_GLOBAL 0
 #endif
 
 #ifndef NO_PIKE_GUTS
@@ -473,10 +473,10 @@ void f_load_module(INT32 args)
   }
 
   /* Removing RTLD_GLOBAL breaks some PiGTK themes - Hubbe */
-  /* Using RTLD_LAZY is faster, but makes it impossible to 
+  /* Using RTLD_LAZY is faster, but makes it impossible to
    * detect linking problems at runtime..
    */
-  module=dlopen(module_name->str, 
+  module=dlopen(module_name->str,
                 RTLD_NOW /*|RTLD_GLOBAL*/  );
 
   if(!module)
@@ -642,7 +642,7 @@ void init_dynamic_load(void)
 {
 #ifdef USE_DYNAMIC_MODULES
   if (dlinit()) {
-  
+
     /* function(string:program) */
 
     ADD_EFUN("load_module", f_load_module,

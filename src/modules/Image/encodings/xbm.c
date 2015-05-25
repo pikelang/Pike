@@ -113,7 +113,7 @@ static struct object *load_xbm( struct pike_string *data )
   height = atoi(b->str);
   if(height <= 0)
     Pike_error("This is not a XBM image!\n");
-  
+
   if(!buf_search( b, '{' ))
     Pike_error("This is not a XBM image!\n");
 
@@ -181,7 +181,7 @@ static struct pike_string *save_xbm( struct image *i, struct pike_string *name )
   low_my_binary_strcat( size, strlen(size), &buf );
 
   ccat( "static char " );  cname();  ccat( "_bits[] = {\n" );
-  
+
   for(y=0; y<i->ysize; y++)
   {
     rgb_group *p = i->img+y*i->xsize;
@@ -205,7 +205,7 @@ static struct pike_string *save_xbm( struct image *i, struct pike_string *name )
 
 /*
 **! method object decode(string data)
-**! 	Decodes a XBM image. 
+**! 	Decodes a XBM image.
 **!
 **! note
 **!	Throws upon error in data.
@@ -257,9 +257,9 @@ static void image_xbm__decode( INT32 args )
   {
     if (TYPEOF(Pike_sp[1-args]) != PIKE_T_MAPPING)
       Pike_error("Image.XBM._decode: illegal argument 2\n");
-      
+
     push_svalue(Pike_sp+1-args);
-    ref_push_string(param_fg); 
+    ref_push_string(param_fg);
     f_index(2);
     if(!UNSAFE_IS_ZERO(Pike_sp-1))
     {
@@ -293,7 +293,7 @@ static void image_xbm__decode( INT32 args )
       bg = Pike_sp[-1].u.array;
     }
     Pike_sp--;
-    
+
     push_svalue(Pike_sp+1-args);
     ref_push_string(param_invert);
     f_index(2);
@@ -345,7 +345,7 @@ static void image_xbm__decode( INT32 args )
 
     apply( i, "paste_alpha_color", 4 );
   }
-  
+
   pop_n_elems(args);
   push_text( "alpha" );
   push_object( a );
@@ -363,7 +363,7 @@ static void image_xbm__decode( INT32 args )
 /*
 **! method string encode(object image)
 **! method string encode(object image, mapping options)
-**! 	Encodes a XBM image. 
+**! 	Encodes a XBM image.
 **!
 **!     The <tt>options</tt> argument may be a mapping
 **!	containing zero or more encoding options.
@@ -382,11 +382,11 @@ void image_xbm_encode( INT32 args )
   struct pike_string *name = NULL, *buf;
   if (!args)
     Pike_error("Image.XBM.encode: too few arguments\n");
-   
+
   if (TYPEOF(Pike_sp[-args]) != PIKE_T_OBJECT ||
       !(img=get_storage(Pike_sp[-args].u.object,image_program)))
     Pike_error("Image.XBM.encode: illegal argument 1\n");
-   
+
   if (!img->img)
     Pike_error("Image.XBM.encode: no image\n");
 
@@ -394,9 +394,9 @@ void image_xbm_encode( INT32 args )
   {
     if (TYPEOF(Pike_sp[1-args]) != PIKE_T_MAPPING)
       Pike_error("Image.XBM.encode: illegal argument 2\n");
-      
+
     push_svalue(Pike_sp+1-args);
-    ref_push_string(param_name); 
+    ref_push_string(param_name);
     f_index(2);
     if(TYPEOF(Pike_sp[-1]) == PIKE_T_STRING)
     {

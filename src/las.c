@@ -876,7 +876,7 @@ node *debug_mknode(int token, node *a, node *b)
 
   case F_POP_VALUE:
     copy_pike_type(res->type, void_type_string);
-    
+
     if(a) res->tree_info |= a->tree_info;
     if(b) res->tree_info |= b->tree_info;
     break;
@@ -898,7 +898,7 @@ node *debug_mknode(int token, node *a, node *b)
       state->new_program->flags |= PROGRAM_USES_PARENT | PROGRAM_NEEDS_PARENT;
       state=state->previous;
     }
-      
+
     break;
   }
 
@@ -1161,7 +1161,7 @@ node *debug_mktrampolinenode(int i, struct compiler_frame *frame)
 #endif
   res->u.trampoline.ident=i;
   res->u.trampoline.frame=frame;
-  
+
   for(f=Pike_compiler->compiler_frame;f != frame;f=f->previous)
     f->lexical_scope|=SCOPE_SCOPED;
   f->lexical_scope|=SCOPE_SCOPE_USED;
@@ -1330,7 +1330,7 @@ node *debug_mkcastnode(struct pike_type *type, node *n)
    *
    *        should have a result type of array(array(string)),
    *        rather than array(mixed).
-   */     
+   */
   copy_pike_type(res->type, type);
 
   if((type != zero_type_string) &&
@@ -1502,13 +1502,13 @@ void resolv_constant(node *n)
     }
 
     i = ID_FROM_INT(p, numid);
-    
+
     /* Warning:
      * This code doesn't produce function pointers for class constants,
      * which can be harmful...
      * /Hubbe
      */
-    
+
     if (IDENTIFIER_IS_ALIAS(i->identifier_flags)) {
       struct external_variable_context loc;
 
@@ -1564,7 +1564,7 @@ void resolv_class(node *n)
 	yyerror("Illegal program identifier");
       pop_stack();
       push_int(0);
-      
+
     case T_FUNCTION:
     case T_PROGRAM:
       break;
@@ -1597,13 +1597,13 @@ void resolv_program(node *n)
     case T_FUNCTION:
       if(program_from_function(Pike_sp-1))
 	break;
-      
+
     default:
       if (Pike_compiler->compiler_pass!=1)
 	yyerror("Illegal program identifier");
       pop_stack();
       push_int(0);
-      
+
     case T_PROGRAM:
       break;
   }
@@ -1722,7 +1722,7 @@ node *index_node(node *n, char *node_name, struct pike_string *id)
 	  STACK_LEVEL_DONE(1);
 	  UNSETJMP(recovery);
 	}
-      
+
 	if(TYPEOF(Pike_sp[-1]) == T_INT &&
 	   !Pike_sp[-1].u.integer &&
 	   SUBTYPEOF(Pike_sp[-1]) == NUMBER_UNDEFINED)
@@ -1896,7 +1896,7 @@ node *debug_mksvaluenode(struct svalue *s)
   {
   case T_ARRAY:
     return make_node_from_array(s->u.array);
-    
+
   case T_MULTISET:
     return make_node_from_multiset(s->u.multiset);
 
@@ -2515,7 +2515,7 @@ static struct used_vars *copy_vars(struct used_vars *a)
     dst = &((*dst)->next);
     *dst = NULL;
   }
-  
+
   ret->err = a->err;
   ret->ext_flags = a->ext_flags;
   return ret;
@@ -2787,7 +2787,7 @@ static void find_written_vars(node *n,
     case F_ARRAY_LVALUE:
     find_written_vars(CAR(n), p, 1);
     break;
-      
+
   case F_LVALUE_LIST:
     find_written_vars(CAR(n), p, 1);
     find_written_vars(CDR(n), p, 1);
@@ -2797,7 +2797,7 @@ static void find_written_vars(node *n,
     find_written_vars(CAR(n), p, 0);
     find_written_vars(CDR(n), p, 1);
     break;
-    
+
   default:
     if(car_is_node(n)) find_written_vars(CAR(n), p, 0);
     if(cdr_is_node(n)) find_written_vars(CDR(n), p, 0);
@@ -2903,7 +2903,7 @@ static int depend_p2(node *a, node *b)
 	    free_vars(&aa);
 	    free_vars(&bb);
 	    return 1;
-	  }	  
+	  }
 	}
       }
       aaa = aaa->next;
@@ -2930,7 +2930,7 @@ static int depend_p2(node *a, node *b)
 	}
       }
       aaa = aaa->next;
-    }    
+    }
   } else {
     /* Otherwise check for overlaps. */
     struct scope_info *aaa = aa.externals;
@@ -2948,7 +2948,7 @@ static int depend_p2(node *a, node *b)
 	    free_vars(&aa);
 	    free_vars(&bb);
 	    return 1;
-	  }	  
+	  }
 	}
       }
       aaa = aaa->next;
@@ -2963,13 +2963,13 @@ static int depend_p3(node *a,node *b)
 {
   if(!b || !a) return 0;
 #if 0
-  if(!(b->tree_info & OPT_SIDE_EFFECT) && 
+  if(!(b->tree_info & OPT_SIDE_EFFECT) &&
      (b->tree_info & OPT_EXTERNAL_DEPEND))
     return 1;
 #endif
 
   if((a->tree_info & OPT_EXTERNAL_DEPEND)) return 1;
-    
+
   return depend_p2(a,b);
 }
 
@@ -3098,7 +3098,7 @@ static struct pike_string *get_name_of_function(node *n)
 	      printf("\nf       : ");
 	      simple_describe_type(f);
 	      printf("\n");
-	      
+
 	      Pike_fatal("Type of external node is not matching it's identifier.\n");
 	    }
 #endif
@@ -3146,7 +3146,7 @@ static struct pike_string *get_name_of_function(node *n)
       MAKE_CONST_STRING(name, "returned value");
     }
     break;
-	  
+
   default:
     /* fprintf(stderr, "Node token: %s(%d)\n",
        get_f_name(n->token), n->token); */
@@ -3275,7 +3275,7 @@ void fix_type_field(node *n)
 #else /* !0 */
       if (!pike_types_le(CAR(n)->type, CDR(n)->type)) {
 	/* a["b"]=c and a->b=c can be valid when a is an array.
-	 *   
+	 *
 	 * FIXME: Exactly what case is the problem?
 	 *	/grubba 2005-02-15
 	 *
@@ -3520,7 +3520,7 @@ void fix_type_field(node *n)
       copy_pike_type(n->type, void_type_string);
       break;
     }
-    
+
     if(CADR(n)->type == CDDR(n)->type)
     {
       copy_pike_type(n->type, CADR(n)->type);
@@ -3644,7 +3644,7 @@ void fix_type_field(node *n)
       yyerror("Bad conditional expression do - while().");
     copy_pike_type(n->type, void_type_string);
     break;
-    
+
   case F_FOR:
     if (!CAR(n) || (CAR(n)->type == void_type_string)) {
       yyerror("for(): Conditional expression is void.");
@@ -3774,7 +3774,7 @@ void fix_type_field(node *n)
 	  /* Old-style foreach */
 	  struct pike_type *array_zero;
 	  MAKE_CONSTANT_TYPE(array_zero, tArr(tZero));
-	  
+
 	  if (!pike_types_le(array_zero, CAAR(n)->type)) {
 	    yytype_report(REPORT_ERROR,
 			  NULL, 0, array_zero,
@@ -3789,7 +3789,7 @@ void fix_type_field(node *n)
 			    0,
 			    "Argument 1 to foreach() is not always an array.");
 	    }
-	    
+
 	    if (!CDAR(n)) {
 	      /* No loop variable. Will be converted to a counted loop
 	       * by treeopt. */
@@ -3957,7 +3957,7 @@ static void zapp_try_optimize(node *n)
       n = CDR(n);
       continue;
     }
-    while (n->parent && 
+    while (n->parent &&
 	   (!cdr_is_node(n->parent) || (CDR(n->parent) == n))) {
       n = n->parent;
     }
@@ -4140,7 +4140,7 @@ static void find_usage(node *n, unsigned char *usage,
       find_usage(CAR(n), usage, switch_u, cont_u, break_u, catch_u);
       return;
     }
-    
+
   case F_DO:
     {
       unsigned char break_usage[MAX_LOCAL];
@@ -4198,7 +4198,7 @@ static void find_usage(node *n, unsigned char *usage,
       unsigned char break_usage[MAX_LOCAL];
       unsigned char continue_usage[MAX_LOCAL];
       int i;
-      
+
       memcpy(break_usage, usage, MAX_LOCAL);
 
       /* Find the usage from the loop */
@@ -4256,7 +4256,7 @@ static node *low_localopt(node *n,
 
   if (!n)
     return NULL;
-  
+
   switch(n->token) {
     /* FIXME: Does not support F_LOOP yet. */
   case F_ASSIGN:
@@ -4290,7 +4290,7 @@ static node *low_localopt(node *n,
   case F_SSCANF:
     {
       int i;
-      
+
       /* catch_usage is restored if sscanf throws an error. */
       for (i=0; i < MAX_LOCAL; i++) {
 	usage[i] |= catch_u[i];
@@ -4299,7 +4299,7 @@ static node *low_localopt(node *n,
       if (CAR(n)) {
 	cdr = low_localopt(CDAR(n), usage, switch_u, cont_u, break_u, catch_u);
 	car = low_localopt(CAAR(n), usage, switch_u, cont_u, break_u, catch_u);
-	
+
 	if (CDR(n)) {
 	  ADD_NODE_REF(CDR(n));
 	}
@@ -4357,7 +4357,7 @@ static node *low_localopt(node *n,
     return mknode(F_ARRAY_LVALUE, low_localopt(CAR(n), usage, switch_u, cont_u,
 					       break_u, catch_u), 0);
 
-    
+
 
   case F_CAST:
     return mkcastnode(n->type, low_localopt(CAR(n), usage, switch_u, cont_u,
@@ -4459,7 +4459,7 @@ static node *low_localopt(node *n,
       car = low_localopt(CAR(n), usage, switch_u, cont_u, break_u, catch_u);
       return mknode('?', car, cdr);
     }
-    
+
   case F_DO:
     {
       unsigned char break_usage[MAX_LOCAL];
@@ -4723,7 +4723,7 @@ static void optimize(node *n)
     if(cdr_is_node(n)) n->tree_info |= CDR(n)->tree_info;
 
     if(!n->parent) break;
-    
+
     if(n->tree_info & (OPT_NOT_CONST|
 		       OPT_SIDE_EFFECT|
 		       OPT_EXTERNAL_DEPEND|
@@ -4772,7 +4772,7 @@ static void optimize(node *n)
       fprintf(stderr,"Optimizing (tree info=%04x):",n->tree_info);
       print_tree(n);
     }
-#endif    
+#endif
 
     switch(n->token)
     {
@@ -4830,7 +4830,7 @@ static void optimize(node *n)
 	fputs("Result:    ", stderr);
 	print_tree(n);
       }
-#endif    
+#endif
       continue;
 
     }
@@ -4923,7 +4923,7 @@ ptrdiff_t eval_low(node *n,int print_error)
     tmp_callback=add_to_callback(&evaluator_callbacks,
 				 check_evaluation_time,
 				 (void *)&foo,0);
-				 
+
     if(apply_low_safe_and_stupid(Pike_compiler->fake_object, jump))
     {
       /* Assume the node will throw errors at runtime too. */
@@ -5004,7 +5004,7 @@ static node *eval(node *n)
 
   if(!is_const(n) || n->node_info & OPT_FLAG_NODE)
     return n;
-  
+
   args=eval_low(n,0);
 
   switch(args)
@@ -5150,7 +5150,7 @@ static struct svalue *is_stupid_func(node *n,
 
   if((count_arguments(n->type) < 0) == !vargs)
     return 0;
-  
+
   if(minimum_arguments(type) < minimum_arguments(n->type))
     return 0;
 
@@ -5182,7 +5182,7 @@ int dooptcode(struct pike_string *name,
 #endif
 
   args=count_arguments(type);
-  if(args < 0) 
+  if(args < 0)
   {
     args=~args;
     vargs=IDENTIFIER_VARARGS;
@@ -5219,7 +5219,7 @@ int dooptcode(struct pike_string *name,
     optimize(n);
 #endif /* SHARED_NODES && 0 */
     n = mknode(F_ARG_LIST, n, 0);
-    
+
     if((foo=is_stupid_func(n, args, vargs, type)))
     {
       if(TYPEOF(*foo) == T_FUNCTION && SUBTYPEOF(*foo) == FUNCTION_BUILTIN)
@@ -5253,7 +5253,7 @@ int dooptcode(struct pike_string *name,
 
     tmp.offset=PIKE_PC;
     Pike_compiler->compiler_frame->num_args=args;
-  
+
 #ifdef PIKE_DEBUG
     if(a_flag > 2)
     {
@@ -5270,7 +5270,7 @@ int dooptcode(struct pike_string *name,
       remove_clear_locals=0x7fffffff;
     }
   }
-  
+
   ret=define_function(name,
 		      type,
 		      (unsigned INT16)modifiers,

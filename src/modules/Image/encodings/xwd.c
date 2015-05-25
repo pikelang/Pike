@@ -8,7 +8,7 @@
 **! module Image
 **! submodule XWD
 **!
-**!	This submodule keeps the XWD (X Windows Dump) 
+**!	This submodule keeps the XWD (X Windows Dump)
 **!     decode capabilities of the <ref>Image</ref> module.
 **!
 **!	XWD is the output format for the xwd program.
@@ -86,9 +86,9 @@ void img_xwd__decode(INT32 args,int header_only,int skipcmap)
 
    struct pike_string *s;
 
-   struct 
+   struct
    {
-      unsigned long header_size;         
+      unsigned long header_size;
 
       unsigned long file_version;     /* = XWD_FILE_VERSION above */
       unsigned long pixmap_format;    /* ZPixmap or XYPixmap */
@@ -97,13 +97,13 @@ void img_xwd__decode(INT32 args,int header_only,int skipcmap)
       unsigned long pixmap_height;    /* Pixmap height */
       unsigned long xoffset;          /* Bitmap x offset, normally 0 */
       unsigned long byte_order;       /* of image data: MSBFirst, LSBFirst */
-				   
+
       unsigned long bitmap_unit;      /* scanline padding for bitmaps */
-				   
+
       unsigned long bitmap_bit_order; /* bitmaps only: MSBFirst, LSBFirst */
-				   
+
       unsigned long bitmap_pad;       /* scanline padding for pixmaps */
-				   
+
       unsigned long bits_per_pixel;   /* Bits per pixel */
 
       /* bytes_per_line is pixmap_width padded to bitmap_unit (bitmaps)
@@ -130,20 +130,20 @@ void img_xwd__decode(INT32 args,int header_only,int skipcmap)
 
    if (args<1 || TYPEOF(sp[-args]) != T_STRING)
       Pike_error("Image.XWD._decode(): Illegal arguments\n");
-   
+
    s=sp[-args].u.string;
 
    /* header_size = SIZEOF(XWDheader) + length of null-terminated
     * window name. */
 
-   if (s->len<4) 
+   if (s->len<4)
       Pike_error("Image.XWD._decode: header to small\n");
    header.header_size=CARD32n(s,0);
 
    if ((size_t)s->len < header.header_size || s->len<100)
       Pike_error("Image.XWD._decode: header to small\n");
 
-   header.file_version=CARD32n(s,1);     
+   header.file_version=CARD32n(s,1);
 
    if (header.file_version!=7)
       Pike_error("Image.XWD._decode: don't understand any other file format then 7\n");
@@ -153,30 +153,30 @@ void img_xwd__decode(INT32 args,int header_only,int skipcmap)
    SET_ONERROR(uwp,do_free_string,s);
 
    header.pixmap_format=CARD32n(s,2);
-   header.pixmap_depth=CARD32n(s,3);     
-   header.pixmap_width=CARD32n(s,4);     
-   header.pixmap_height=CARD32n(s,5);    
-   header.xoffset=CARD32n(s,6);          
-   header.byte_order=CARD32n(s,7);       
-   header.bitmap_unit=CARD32n(s,8);      
-   header.bitmap_bit_order=CARD32n(s,9); 
-   header.bitmap_pad=CARD32n(s,10);       
-   header.bits_per_pixel=CARD32n(s,11);   
-   header.bytes_per_line=CARD32n(s,12);   
-   header.visual_class=CARD32n(s,13);     
-   header.red_mask=CARD32n(s,14);         
-   header.green_mask=CARD32n(s,15);       
-   header.blue_mask=CARD32n(s,16);        
-   header.bits_per_rgb=CARD32n(s,17);     
-   header.colormap_entries=CARD32n(s,18); 
-   header.ncolors=CARD32n(s,19);          
-   header.window_width=CARD32n(s,20);     
-   header.window_height=CARD32n(s,21);    
-   header.window_x=CARD32n(s,22);         
-   header.window_y=CARD32n(s,23);         
-   header.window_bdrwidth=CARD32n(s,24);  
+   header.pixmap_depth=CARD32n(s,3);
+   header.pixmap_width=CARD32n(s,4);
+   header.pixmap_height=CARD32n(s,5);
+   header.xoffset=CARD32n(s,6);
+   header.byte_order=CARD32n(s,7);
+   header.bitmap_unit=CARD32n(s,8);
+   header.bitmap_bit_order=CARD32n(s,9);
+   header.bitmap_pad=CARD32n(s,10);
+   header.bits_per_pixel=CARD32n(s,11);
+   header.bytes_per_line=CARD32n(s,12);
+   header.visual_class=CARD32n(s,13);
+   header.red_mask=CARD32n(s,14);
+   header.green_mask=CARD32n(s,15);
+   header.blue_mask=CARD32n(s,16);
+   header.bits_per_rgb=CARD32n(s,17);
+   header.colormap_entries=CARD32n(s,18);
+   header.ncolors=CARD32n(s,19);
+   header.window_width=CARD32n(s,20);
+   header.window_height=CARD32n(s,21);
+   header.window_x=CARD32n(s,22);
+   header.window_y=CARD32n(s,23);
+   header.window_bdrwidth=CARD32n(s,24);
 
-   push_text("header_size"); 
+   push_text("header_size");
    push_int(header.header_size);
    push_text("file_version");
    push_int(header.file_version);
@@ -241,7 +241,7 @@ void img_xwd__decode(INT32 args,int header_only,int skipcmap)
    push_text("windowname");
    if (header.header_size>100)
       push_string(make_shared_binary_string(s->str+100,header.header_size-100-1));
-   else 
+   else
       push_int(0);
    n++;
 
@@ -249,7 +249,7 @@ void img_xwd__decode(INT32 args,int header_only,int skipcmap)
 
    /* NB: The cmap needs to be decoded if the image is to be decoded. */
    if (!skipcmap || !header_only ||
-       header.visual_class==3 || 
+       header.visual_class==3 ||
        header.visual_class==5)
    {
       push_text("colors");
@@ -283,7 +283,7 @@ void img_xwd__decode(INT32 args,int header_only,int skipcmap)
 	    push_int(int_from_16bit((unsigned char*)s->str+header.header_size+i*12 +8)>>8);
 	    f_aggregate(3);
 	 }
-      
+
 	 f_aggregate(header.ncolors);
 	 push_object(co=clone_object(image_colortable_program,1));
       }
@@ -397,7 +397,7 @@ static void image_xwd_decode(INT32 args)
    pop_n_elems(args-1);
    push_int(1);
    img_xwd__decode(2,0,1);
-   
+
    push_text("image");
    f_index(2);
 }

@@ -1030,7 +1030,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
       return;
 
     case F_CONSTANT:
-      /* 
+      /*
        * This would work nicely for all pike types, but we would
        * have to augment dumping
        *

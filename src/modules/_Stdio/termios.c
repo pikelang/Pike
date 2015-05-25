@@ -370,33 +370,33 @@ void file_tcsetattr(INT32 args)
   push_int(!tcsetattr(FD,optional_actions,&ti));
 }
 
-void file_tcflush(INT32 args)                               
-{                                                           
-  int action=TCIOFLUSH;                                     
+void file_tcflush(INT32 args)
+{
+  int action=TCIOFLUSH;
 
-  if(args)                                                  
-    {                                                         
+  if(args)
+    {
       struct pike_string *a, *s_tciflush, *s_tcoflush, *s_tcioflush;
-      MAKE_CONSTANT_SHARED_STRING( s_tciflush, "TCIFLUSH" );  
-      MAKE_CONSTANT_SHARED_STRING( s_tcoflush, "TCOFLUSH" );  
+      MAKE_CONSTANT_SHARED_STRING( s_tciflush, "TCIFLUSH" );
+      MAKE_CONSTANT_SHARED_STRING( s_tcoflush, "TCOFLUSH" );
       MAKE_CONSTANT_SHARED_STRING( s_tcioflush, "TCIOFLUSH" );
-      get_all_args( "tcflush", args, "%S", &a );              
-      if(a == s_tciflush )                                    
-	action=TCIFLUSH;                                      
-      else if(a == s_tcoflush )                               
-	action=TCOFLUSH;                                      
-      
-#ifdef TCIOFLUSH                                            
-      else if(a == s_tcioflush )                              
-	action=TCIOFLUSH;                                     
-#endif                                                      
-      free_string( s_tcoflush );                              
-      free_string( s_tciflush );                              
-      free_string( s_tcioflush );                             
+      get_all_args( "tcflush", args, "%S", &a );
+      if(a == s_tciflush )
+	action=TCIFLUSH;
+      else if(a == s_tcoflush )
+	action=TCOFLUSH;
+
+#ifdef TCIOFLUSH
+      else if(a == s_tcioflush )
+	action=TCIOFLUSH;
+#endif
+      free_string( s_tcoflush );
+      free_string( s_tciflush );
+      free_string( s_tcioflush );
       pop_stack();
-    }                                                         
-  push_int(!tcflush(FD, action));                           
-}                                                           
+    }
+  push_int(!tcflush(FD, action));
+}
 
 void file_tcsendbreak(INT32 args)
 {
@@ -406,7 +406,7 @@ void file_tcsendbreak(INT32 args)
   pop_stack();
   push_int(!tcsendbreak(FD, len));
 }
-  
+
 
 /* end of termios stuff */
 #endif

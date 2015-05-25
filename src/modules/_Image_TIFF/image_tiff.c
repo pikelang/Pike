@@ -50,18 +50,18 @@ static struct program *image_program=NULL;
 static struct program *image_colortable_program=NULL;
 #else
 /* The image module is probably linked static too... */
-extern struct program *image_program; 
+extern struct program *image_program;
 extern struct program *image_colortable_program;
 #endif
 
-struct buffer 
+struct buffer
 {
   char *str;
   ptrdiff_t len;	/* Buffer length. */
   ptrdiff_t offset;
   ptrdiff_t real_len;	/* File length. */
   int extendable;
-} *buffer_handle; 
+} *buffer_handle;
 
 struct imagealpha
 {
@@ -260,7 +260,7 @@ static const int default_tiff_compressions[] = {
   COMPRESSION_NONE,
 };
 
-void low_image_tiff_encode( struct buffer *buf, 
+void low_image_tiff_encode( struct buffer *buf,
                             struct imagealpha *img,
                             struct options *opts)
 {
@@ -309,7 +309,7 @@ void low_image_tiff_encode( struct buffer *buf,
   }
 
   SET_ONERROR(tmp, TIFFClose, tif);
-  
+
   TIFFSetField(tif, TIFFTAG_IMAGEWIDTH, (uint32)i->xsize);
   TIFFSetField(tif, TIFFTAG_IMAGELENGTH, (uint32)i->ysize);
   TIFFSetField(tif, TIFFTAG_BITSPERSAMPLE, (uint16)8);
@@ -354,7 +354,7 @@ void low_image_tiff_encode( struct buffer *buf,
       TIFFSetField (tif, TIFFTAG_PREDICTOR, (uint16)2);
 #endif
   }
-      
+
   b = buffer;
   is = i->img;
 
@@ -421,7 +421,7 @@ static const char *photoNames[] = {
     "CIE L*a*b*",				/* PHOTOMETRIC_CIELAB */
 };
 
-void low_image_tiff_decode( struct buffer *buf, 
+void low_image_tiff_decode( struct buffer *buf,
                             struct imagealpha *res,
                             int image_only)
 {
@@ -464,14 +464,14 @@ void low_image_tiff_decode( struct buffer *buf,
     da = ((struct image *)get_storage(res->alpha,image_program))->img;
   }
   di = ((struct image *)get_storage(res->img,image_program))->img;
-  
+
   for(i=0; i<h*w; i++)
   {
     uint32 p = *s;
     di->r = DO_NOT_WARN((unsigned char)(p & 255));
     di->g = DO_NOT_WARN((unsigned char)((p>>8) & 255));
     (di++)->b = DO_NOT_WARN((unsigned char)((p>>16) & 255));
-    if(!image_only) 
+    if(!image_only)
     {
       da->r = da->g = da->b = DO_NOT_WARN((unsigned char)((p>>24) & 255));
       da++;
@@ -497,12 +497,12 @@ void low_image_tiff_decode( struct buffer *buf,
 #ifdef HAVE_TIFFIOP_H
     char *tmp;
     TIFFDirectory *td = &tif->tif_dir;
-    if (TIFFFieldSet(tif,FIELD_RESOLUTION)) 
+    if (TIFFFieldSet(tif,FIELD_RESOLUTION))
     {
       push_text( "xres" );   push_float( td->td_xresolution );
       push_text( "yres" );   push_float( td->td_yresolution );
-      push_text( "unit" );  
-      if (TIFFFieldSet(tif,FIELD_RESOLUTIONUNIT)) 
+      push_text( "unit" );
+      if (TIFFFieldSet(tif,FIELD_RESOLUTIONUNIT))
       {
         switch(td->td_resolutionunit)
         {
@@ -519,21 +519,21 @@ void low_image_tiff_decode( struct buffer *buf,
            push_text( "xdpy" );   push_float( td->td_xresolution/2.5 );
            push_text( "ydpy" );   push_float( td->td_yresolution/2.5 );
            break;
-        } 
+        }
       } else
-        push_text( "unitless" );  
+        push_text( "unitless" );
     }
     if (TIFFFieldSet(tif,FIELD_POSITION))
     {
       push_text("xposition"); push_int(td->td_xposition);
       push_text("yposition"); push_int(td->td_yposition);
     }
-    if (TIFFFieldSet(tif,FIELD_PHOTOMETRIC)) 
+    if (TIFFFieldSet(tif,FIELD_PHOTOMETRIC))
     {
       push_text("photometric");
       if (td->td_photometric < (sizeof (photoNames) / sizeof (photoNames[0])))
         push_text( photoNames[td->td_photometric] );
-      else 
+      else
       {
         switch (td->td_photometric) {
 #ifdef PHOTOMETRIC_LOGL
@@ -553,12 +553,12 @@ void low_image_tiff_decode( struct buffer *buf,
       }
     }
 
-    if (TIFFFieldSet(tif,FIELD_EXTRASAMPLES) && td->td_extrasamples) 
+    if (TIFFFieldSet(tif,FIELD_EXTRASAMPLES) && td->td_extrasamples)
     {
       push_text( "extra_samples" );
-      for (i = 0; i < td->td_extrasamples; i++) 
+      for (i = 0; i < td->td_extrasamples; i++)
       {
-        switch (td->td_sampleinfo[i]) 
+        switch (td->td_sampleinfo[i])
         {
          case EXTRASAMPLE_UNSPECIFIED:
            push_text("unspecified");
@@ -577,7 +577,7 @@ void low_image_tiff_decode( struct buffer *buf,
       f_aggregate( td->td_extrasamples );
     }
 
-    if (TIFFFieldSet(tif,FIELD_THRESHHOLDING)) 
+    if (TIFFFieldSet(tif,FIELD_THRESHHOLDING))
     {
       push_text( "threshholding" );
       switch (td->td_threshholding) {
@@ -661,7 +661,7 @@ void low_image_tiff_decode( struct buffer *buf,
       f_aggregate(2);
     }
 
-    if (TIFFFieldSet(tif,FIELD_COLORMAP)) 
+    if (TIFFFieldSet(tif,FIELD_COLORMAP))
     {
       int l,n = 1L<<td->td_bitspersample;
       push_text("colormap");
@@ -690,7 +690,7 @@ void low_image_tiff_decode( struct buffer *buf,
         push_float(td->td_primarychromas[i]);
       f_aggregate(6);
     }
-    if (TIFFFieldSet(tif,FIELD_REFBLACKWHITE)) 
+    if (TIFFFieldSet(tif,FIELD_REFBLACKWHITE))
     {
       push_text("reference_black_white");
       for (i = 0; i < td->td_samplesperpixel; i++)
@@ -712,7 +712,7 @@ static void image_tiff_decode( INT32 args )
 {
   struct buffer buffer;
   struct imagealpha res;
-  if(!args) 
+  if(!args)
     Pike_error("Too few arguments to Image.TIFF.decode()\n");
 
   if(TYPEOF(sp[-args]) != T_STRING)
@@ -803,7 +803,7 @@ static void image_tiff__decode( INT32 args )
   struct buffer buffer;
   struct imagealpha res;
   struct svalue *osp=sp;
-  if(!args) 
+  if(!args)
     Pike_error("Too few arguments to Image.TIFF.decode()\n");
   if(TYPEOF(sp[-args]) != T_STRING)
     Pike_error("Invalid argument 1 to Image.TIFF.decode()\n");

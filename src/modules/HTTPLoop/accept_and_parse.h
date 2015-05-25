@@ -27,7 +27,7 @@ struct res
 
   char   *content;
   ptrdiff_t content_len;
-  
+
   char *leftovers;
   ptrdiff_t leftovers_len;
 
@@ -54,7 +54,7 @@ struct file_ret
   time_t mtime;
 };
 
-struct pstring 
+struct pstring
 {
   ptrdiff_t len;
   char *str;
@@ -91,7 +91,7 @@ struct cache
   int gone;
 };
 
-struct args 
+struct args
 {
   int fd;
   struct args *next;
@@ -106,7 +106,7 @@ struct args
   struct log *log;
 };
 
-struct log_entry 
+struct log_entry
 {
   struct log_entry *next;
   int t;
@@ -120,7 +120,7 @@ struct log_entry
   struct pike_string *protocol;
 };
 
-struct log 
+struct log
 {
   struct log *next;
   struct log_entry *log_head;

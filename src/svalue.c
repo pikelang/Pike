@@ -64,31 +64,31 @@ PMOD_EXPORT void really_free_short_svalue_ptr(void **s, TYPE_T type)
     case T_ARRAY:
       really_free_array(tmp.array);
       break;
-      
+
     case T_MAPPING:
       really_free_mapping(tmp.mapping);
       break;
-      
+
     case T_MULTISET:
       really_free_multiset(tmp.multiset);
       break;
-      
+
     case T_OBJECT:
       schedule_really_free_object(tmp.object);
       break;
-      
+
     case T_PROGRAM:
       really_free_program(tmp.program);
       break;
-      
+
     case T_STRING:
       really_free_string(tmp.string);
       break;
-      
+
     case T_TYPE:
       really_free_pike_type(tmp.type);
       break;
-      
+
 #ifdef PIKE_DEBUG
     default:
 	Pike_fatal("Bad type in free_short_svalue.\n");
@@ -107,15 +107,15 @@ PMOD_EXPORT void really_free_svalue(struct svalue *s)
   case T_ARRAY:
     really_free_array(tmp.u.array);
     break;
-    
+
   case T_MAPPING:
     really_free_mapping(tmp.u.mapping);
     break;
-    
+
   case T_MULTISET:
     really_free_multiset(tmp.u.multiset);
     break;
-    
+
   case T_FUNCTION:
     if(SUBTYPEOF(tmp) == FUNCTION_BUILTIN)
     {
@@ -123,15 +123,15 @@ PMOD_EXPORT void really_free_svalue(struct svalue *s)
       break;
     }
     /* fall through */
-    
+
   case T_OBJECT:
     schedule_really_free_object(tmp.u.object);
     return;
-    
+
   case T_PROGRAM:
     really_free_program(tmp.u.program);
     break;
-    
+
   case T_TYPE:
     /* Add back the reference, and call the normal free_type(). */
     add_ref(tmp.u.type);
@@ -144,7 +144,7 @@ PMOD_EXPORT void really_free_svalue(struct svalue *s)
 
   case PIKE_T_FREE:
     break;
-    
+
 #ifdef PIKE_DEBUG
   default:
     Pike_fatal("Bad type in really_free_svalue: %d.\n", TYPEOF(tmp));
@@ -634,7 +634,7 @@ PMOD_EXPORT int safe_svalue_is_true(const struct svalue *s)
   default:
     return 1;
   }
-    
+
 }
 
 #define TWO_TYPES(X,Y) (((X)<<8)|(Y))
@@ -660,7 +660,7 @@ PMOD_EXPORT int is_identical(const struct svalue *a, const struct svalue *b)
 
   case T_FUNCTION:
     return (SUBTYPEOF(*a) == SUBTYPEOF(*b) && a->u.object == b->u.object);
-      
+
   case T_FLOAT:
     return a->u.float_number == b->u.float_number;
 
@@ -687,7 +687,7 @@ PMOD_EXPORT int is_eq(const struct svalue *a, const struct svalue *b)
     {
     case TWO_TYPES(BIT_FUNCTION,BIT_PROGRAM):
       return program_from_function(a) == b->u.program;
-    
+
     case TWO_TYPES(BIT_PROGRAM,BIT_FUNCTION):
       return program_from_function(b) == a->u.program;
 
@@ -814,7 +814,7 @@ PMOD_EXPORT int is_eq(const struct svalue *a, const struct svalue *b)
 	      (a_tramp->frame == b_tramp->frame));
     }
     return 0;
-      
+
   case T_FLOAT:
     if (PIKE_ISUNORDERED(a->u.float_number, b->u.float_number)) {
       return 0;
@@ -913,7 +913,7 @@ PMOD_EXPORT int low_is_equal(const struct svalue *a,
 
     case T_MULTISET:
       return multiset_equal_p(a->u.multiset, b->u.multiset, proc);
-      
+
     default:
       Pike_fatal("Unknown type in is_equal.\n");
   }
@@ -1086,17 +1086,17 @@ static int complex_is_lt( const struct svalue *a, const struct svalue *b )
   {
     case T_OBJECT:
       goto a_is_object;
-      
+
     default:
       Pike_error("Cannot compare values of type %s.\n",
 		 get_name_of_type (TYPEOF(*a)));
-      
+
     case T_INT:
       return a->u.integer < b->u.integer;
-      
+
     case T_STRING:
       return my_quick_strcmp(a->u.string, b->u.string) < 0;
-      
+
     case T_FLOAT:
 #ifdef HAVE_ISLESS
       return isless(a->u.float_number, b->u.float_number);
@@ -1106,7 +1106,7 @@ static int complex_is_lt( const struct svalue *a, const struct svalue *b )
       }
       return a->u.float_number < b->u.float_number;
 #endif
-      
+
     case T_PROGRAM:
     case T_FUNCTION:
   compare_types:
@@ -1140,7 +1140,7 @@ static int complex_is_lt( const struct svalue *a, const struct svalue *b )
       free_type(bb.u.type);
       return res;
     }
-    
+
     /* At this point both a and b have type T_TYPE */
 #ifdef PIKE_DEBUG
     if ((TYPEOF(*a) != T_TYPE) || (TYPEOF(*b) != T_TYPE)) {
@@ -1195,7 +1195,7 @@ PMOD_EXPORT int is_le(const struct svalue *a, const struct svalue *b)
 	Pike_error("Bad argument to comparison.\n");
       }
     }
-    
+
     res = pike_types_le(a_type, b_type);
     free_type(a_type);
     free_type(b_type);
@@ -1278,7 +1278,7 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
   check_refs(s);
 
   /* fprintf(stderr, "Describing svalue: %s\n", get_name_of_type(s->type)); */
-    
+
   indent+=2;
   switch(TYPEOF(*s))
   {
@@ -1450,12 +1450,12 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 
 	      Pike_interpreter.trace_level=0;
 	      SET_CYCLIC_RET(1);
-	    
+
 	      ref_push_object(obj);
 	      SAFE_APPLY_MASTER("describe_module", 1);
-	    
+
 	      debug_malloc_touch(s->u.program);
-	    
+
 	      if(!SAFE_IS_ZERO(sp-1))
 		{
 		  if(TYPEOF(sp[-1]) != T_STRING)
@@ -1463,10 +1463,10 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 		      pop_stack();
 		      push_text("(master returned illegal value from describe_module)");
 		    }
-	      
+
 		  restore_buffer (&save_buf);
 		  Pike_interpreter.trace_level=save_t_flag;
-		
+
 		  dsv_add_string_to_buf( sp[-1].u.string );
 		  dsv_add_string_to_buf(name);
 
@@ -1551,16 +1551,16 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 	      int save_t_flag=Pike_interpreter.trace_level;
 	      dynamic_buffer save_buf;
 	      save_buffer (&save_buf);
-	      
+
 	      Pike_interpreter.trace_level=0;
 	      SET_CYCLIC_RET(1);
-	      
+
 	      debug_malloc_touch(obj);
 
 	      push_int('O');
 	      push_constant_text("indent");
 	      push_int(indent);
-	      f_aggregate_mapping(2);					      
+	      f_aggregate_mapping(2);
 	      safe_apply_low2(obj, fun + inh->identifier_level, 2,
 			      master_object?"_sprintf":NULL);
 
@@ -1591,7 +1591,7 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 	    }
 	    END_CYCLIC();
 	  }
-	  
+
 	  if (!BEGIN_CYCLIC(0, obj) && master_object) {
 	    /* We require some tricky coding to make this work
 	     * with tracing...
@@ -1602,14 +1602,14 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 
 	    Pike_interpreter.trace_level=0;
 	    SET_CYCLIC_RET(1);
-	    
+
 	    debug_malloc_touch(obj);
-	    
+
 	    ref_push_object_inherit(obj, SUBTYPEOF(*s));
 	    SAFE_APPLY_MASTER("describe_object", 1);
-	    
+
 	    debug_malloc_touch(obj);
-	    
+
 	    if(!SAFE_IS_ZERO(sp-1))
 	      {
 		if(TYPEOF(sp[-1]) != T_STRING)
@@ -1617,10 +1617,10 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 		    pop_stack();
 		    push_text("(master returned illegal value from describe_object)");
 		  }
-		
+
 		restore_buffer (&save_buf);
 		Pike_interpreter.trace_level=save_t_flag;
-		
+
 		dsv_add_string_to_buf( sp[-1].u.string );
 
 		pop_stack();
@@ -1681,14 +1681,14 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 
 	  Pike_interpreter.trace_level=0;
 	  SET_CYCLIC_RET(1);
-	    
+
 	  debug_malloc_touch(prog);
-	    
+
 	  ref_push_program(prog);
 	  SAFE_APPLY_MASTER("describe_program", 1);
-	    
+
 	  debug_malloc_touch(prog);
-	    
+
 	  if(!SAFE_IS_ZERO(sp-1))
 	    {
 	      if(TYPEOF(sp[-1]) != T_STRING)
@@ -1696,10 +1696,10 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 		  pop_stack();
 		  push_text("(master returned illegal value from describe_program)");
 		}
-	      
+
 	      restore_buffer (&save_buf);
 	      Pike_interpreter.trace_level=save_t_flag;
-		
+
 	      dsv_add_string_to_buf( sp[-1].u.string );
 
 	      pop_stack();
@@ -1906,10 +1906,10 @@ PMOD_EXPORT void copy_svalues_recursively_no_free(struct svalue *to,
   {
     struct svalue *tmp;
     int from_type = TYPEOF(*from);
-    
+
     check_svalue_type (from);
     check_refs(from);
-    
+
     if (from_type == T_ARRAY ||
 	from_type == T_MAPPING ||
 	from_type == T_MULTISET) {
@@ -1924,7 +1924,7 @@ PMOD_EXPORT void copy_svalues_recursively_no_free(struct svalue *to,
 	    allocated_here = 1;					\
 	    SET_ONERROR(err, do_free_mapping, m);		\
 	  } while (0)
-	  
+
 	if (from_type == T_ARRAY) {
 	  struct array *ar = from->u.array;
 	  ALLOC_DUPL_MAPPING(ar->type_field);
@@ -1945,7 +1945,7 @@ PMOD_EXPORT void copy_svalues_recursively_no_free(struct svalue *to,
       *to = *from;
       if (REFCOUNTED_TYPE(from_type)) add_ref(from->u.array);
     }
-    
+
     to++;
     from++;
   }
@@ -2111,7 +2111,7 @@ PMOD_EXPORT void real_gc_mark_external_svalues(const struct svalue *s, ptrdiff_t
     if (TYPEOF(*s) != PIKE_T_FREE)
       check_svalue((struct svalue *) s);
 #endif
-    
+
     gc_svalue_location=(void *)s;
 
     if(REFCOUNTED_TYPE(TYPEOF(*s)))
@@ -2594,7 +2594,7 @@ int svalues_are_constant(const struct svalue *s,
 	  for( ;p ;p=p->next)
 	    if(p->pointer_a == (void *)s->u.refs)
 	      return 1;
-	  
+
 	  switch(TYPEOF(*s))
 	  {
 	    case T_ARRAY:
@@ -2614,11 +2614,11 @@ int svalues_are_constant(const struct svalue *s,
 	  }
           break;
 	}
-	  
+
 	case T_FUNCTION:
 	  if(SUBTYPEOF(*s) == FUNCTION_BUILTIN) continue;
 	  /* Fall through */
-	  
+
 	case T_OBJECT:
 	  if(s->u.object -> next == s->u.object)
 	  {

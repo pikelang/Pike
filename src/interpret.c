@@ -348,9 +348,9 @@ PMOD_EXPORT void init_interpreter(void)
 
 /*
  * lvalues are stored in two svalues in one of these formats:
- * array[index]   : { array, index } 
- * mapping[index] : { mapping, index } 
- * multiset[index] : { multiset, index } 
+ * array[index]   : { array, index }
+ * mapping[index] : { mapping, index }
+ * multiset[index] : { multiset, index }
  * object[index] : { object, index } (external object indexing)
  * local variable : { svalue pointer (T_SVALUE_PTR), nothing (T_VOID) }
  * global variable : { object, identifier index (T_OBJ_INDEX) } (internal object indexing)
@@ -379,7 +379,7 @@ int lvalue_to_svalue_no_free(struct svalue *to, struct svalue *lval)
       UNSET_ONERROR(err);
       break;
     }
-      
+
     case T_SVALUE_PTR:
       dmalloc_touch_svalue(lval->u.lval);
       assign_svalue_no_free(to, lval->u.lval);
@@ -394,15 +394,15 @@ int lvalue_to_svalue_no_free(struct svalue *to, struct svalue *lval)
 	run_time_type = object_index_no_free(to, lval->u.object,
 					     SUBTYPEOF(*lval), lval+1);
       break;
-      
+
     case T_ARRAY:
       simple_array_index_no_free(to, lval->u.array, lval+1);
       break;
-      
+
     case T_MAPPING:
       mapping_index_no_free(to, lval->u.mapping, lval+1);
       break;
-      
+
     case T_MULTISET:
       if(multiset_member(lval->u.multiset,lval+1))
       {
@@ -411,7 +411,7 @@ int lvalue_to_svalue_no_free(struct svalue *to, struct svalue *lval)
 	SET_SVAL(*to, T_INT, NUMBER_UNDEFINED, integer, 0);
       }
       break;
-      
+
     default:
       if(SAFE_IS_ZERO(lval))
 	index_error(0,0,0,lval,lval+1,"Indexing the NULL value.\n");
@@ -470,7 +470,7 @@ PMOD_EXPORT void assign_lvalue(struct svalue *lval,struct svalue *from)
     else
       multiset_insert(lval->u.multiset, lval+1);
     break;
-    
+
   default:
    if(SAFE_IS_ZERO(lval))
      index_error(0,0,0,lval,lval+1,"Indexing the NULL value.\n");
@@ -491,7 +491,7 @@ union anything *get_pointer_if_this_type(struct svalue *lval, TYPE_T t)
   {
     case T_ARRAY_LVALUE:
       return 0;
-      
+
     case T_SVALUE_PTR:
       dmalloc_touch_svalue(lval->u.lval);
       if(TYPEOF(*(lval->u.lval)) == t) return & ( lval->u.lval->u );
@@ -500,15 +500,15 @@ union anything *get_pointer_if_this_type(struct svalue *lval, TYPE_T t)
     case T_OBJECT:
       /* FIXME: What about object subtypes? */
       return object_get_item_ptr(lval->u.object, SUBTYPEOF(*lval), lval+1, t);
-      
+
     case T_ARRAY:
       return array_get_item_ptr(lval->u.array,lval+1,t);
-      
+
     case T_MAPPING:
       return mapping_get_item_ptr(lval->u.mapping,lval+1,t);
 
     case T_MULTISET: return 0;
-      
+
     default:
       if(SAFE_IS_ZERO(lval))
 	index_error(0,0,0,lval,lval+1,"Indexing the NULL value.\n");
@@ -640,7 +640,7 @@ PMOD_EXPORT void find_external_context(struct external_variable_context *loc,
     if (!p)
       Pike_error("Attempting to access parent of destructed object.\n");
 
-#ifdef PIKE_DEBUG  
+#ifdef PIKE_DEBUG
     if(Pike_interpreter.trace_level>8)
       my_describe_inherit_structure(p);
 #endif
@@ -697,7 +697,7 @@ PMOD_EXPORT void find_external_context(struct external_variable_context *loc,
 	TRACE((5,"-   Following inherit->parent\n"));
 	loc->parent_identifier=inh->parent_identifier;
 	loc->o=inh->parent;
-#ifdef PIKE_DEBUG  
+#ifdef PIKE_DEBUG
 	TRACE((5, "-   parent_identifier: %d\n"
 	       "-   o: %p\n"
 	       "-   inh: %"PRINTPTRDIFFT"d\n",
@@ -722,7 +722,7 @@ PMOD_EXPORT void find_external_context(struct external_variable_context *loc,
 
 	loc->parent_identifier=LOW_PARENT_INFO(loc->o,p)->parent_identifier;
 	loc->o=LOW_PARENT_INFO(loc->o,p)->parent;
-#ifdef PIKE_DEBUG  
+#ifdef PIKE_DEBUG
 	TRACE((5, "-   parent_identifier: %d\n"
 	       "-   o: %p\n",
 	       loc->parent_identifier,
@@ -778,7 +778,7 @@ PMOD_EXPORT void find_external_context(struct external_variable_context *loc,
 	   loc->parent_identifier,
 	   p ? ID_FROM_INT(p, loc->parent_identifier)->name->str : "N/A",
 	   p ? DO_NOT_WARN((long)(loc->inherit - p->inherits)) : -1));
-    
+
 #ifdef DEBUG_MALLOC
     if (p && loc->inherit->storage_offset == 0x55555555) {
       fprintf(stderr, "The inherit %p has been zapped!\n", loc->inherit);
@@ -887,12 +887,12 @@ static INLINE void low_debug_instr_prologue (PIKE_INSTR_T instr)
   }
 
 #ifdef HAVE_COMPUTED_GOTO
-  if (instr) 
+  if (instr)
     ADD_RUNNED(instr);
   else
     Pike_fatal("NULL Instruction!\n");
 #else /* !HAVE_COMPUTED_GOTO */
-  if(instr + F_OFFSET < F_MAX_OPCODE) 
+  if(instr + F_OFFSET < F_MAX_OPCODE)
     ADD_RUNNED(instr);
 #endif /* HAVE_COMPUTED_GOTO */
 
@@ -962,7 +962,7 @@ static INLINE void low_debug_instr_prologue (PIKE_INSTR_T instr)
     if(Pike_mark_sp > Pike_interpreter.mark_stack &&
        Pike_mark_sp[-1] > Pike_sp)
       Pike_fatal("Stack error (underflow?)\n");
-      
+
     if(d_flag > 9) do_debug();
 
     debug_malloc_touch(Pike_fp->current_object);
@@ -2251,7 +2251,7 @@ void* low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
       if (!s->u.integer) {
 	PIKE_ERROR("0", "Attempt to call the NULL-value\n", Pike_sp, args);
       } else {
-	Pike_error("Attempt to call the value %"PRINTPIKEINT"d\n", 
+	Pike_error("Attempt to call the value %"PRINTPIKEINT"d\n",
 		   s->u.integer);
       }
       break;
@@ -2884,7 +2884,7 @@ int apply_low_safe_and_stupid(struct object *o, INT32 offset)
   new_frame->pc = 0;
   new_frame->current_storage=o->storage;
 
-#ifdef PIKE_DEBUG      
+#ifdef PIKE_DEBUG
   if (Pike_fp && (new_frame->locals < Pike_fp->locals)) {
     fatal("New locals below old locals: %p < %p\n",
 	  new_frame->locals, Pike_fp->locals);
@@ -2904,7 +2904,7 @@ int apply_low_safe_and_stupid(struct object *o, INT32 offset)
     new_frame->mark_sp_base=new_frame->save_mark_sp=Pike_mark_sp;
     tmp=eval_instruction(prog->program + offset);
     Pike_mark_sp=new_frame->save_mark_sp;
-    
+
 #ifdef PIKE_DEBUG
     if (tmp != -1)
       Pike_fatal ("Unexpected return value from eval_instruction: %d\n", tmp);
@@ -3402,7 +3402,7 @@ void gdb_backtrace (
 		      fputc ('"', stderr);
 		  }
 		  break;
-	      } 
+	      }
 	    }
 	    fputc ('"', stderr);
 	    if (i < arg->u.string->len)

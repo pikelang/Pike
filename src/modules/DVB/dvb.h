@@ -48,7 +48,7 @@
 
 #define P2P_LENGTH 2048
 
-enum{ 
+enum{
 	DVB_PES_TYPE_NOPES,
 	DVB_PES_TYPE_AUDIO,
 	DVB_PES_TYPE_VIDEO,

@@ -79,11 +79,11 @@ int NameN(init_hubbe_search)(struct hubbe_searcher *s,
   if(needlelen < 7)
     Pike_fatal("hubbe search does not work with search strings shorter than 7 characters!\n");
 #endif
-  
+
 #ifdef TUNAFISH
   hsize=52+(max_haystacklen >> 7)  - (needlelen >> 8);
   max  =13+(max_haystacklen >> 4)  - (needlelen >> 5);
-  
+
   if(hsize > (ptrdiff_t) NELEM(s->set))
   {
     hsize=NELEM(s->set);
@@ -103,18 +103,18 @@ int NameN(init_hubbe_search)(struct hubbe_searcher *s,
     linklen[e]=0;
   }
   hsize--;
-  
+
   if(max > (ptrdiff_t)needlelen) max=needlelen;
   max=(max-sizeof(INT32)+1) & ~(sizeof(INT32) - 1);
   if(max > MEMSEARCH_LINKS) max=MEMSEARCH_LINKS;
-  
+
   /* This assumes 512 buckets - Hubbe */
   maxlinklength = (INT32)sqrt((double)max/2)+1;
-  
+
   ptr=& s->links[0];
-  
+
   q=(NCHAR *)needle;
-  
+
 #if PIKE_BYTEORDER == 4321 && NSHIFT == 0
   for(tmp = e = 0; e < (ptrdiff_t)sizeof(INT32)-1; e++)
   {
@@ -122,7 +122,7 @@ int NameN(init_hubbe_search)(struct hubbe_searcher *s,
     tmp|=*(q++);
   }
 #endif
-	
+
   for(e=0;e<max;e++)
   {
 #if PIKE_BYTEORDER == 4321  && NSHIFT == 0
@@ -137,26 +137,26 @@ int NameN(init_hubbe_search)(struct hubbe_searcher *s,
     h+=h>>7;
     h+=h>>17;
     h&=hsize;
-    
+
     ptr->offset=e;
     ptr->key=tmp;
     ptr->next=s->set[h];
     s->set[h]=ptr;
     ptr++;
     linklen[h]++;
-    
+
     if(linklen[h] > maxlinklength)
     {
       return 0;
     }
-    
+
   }
   s->hsize=hsize;
   s->max=max;
 
   return 1;
 }
-			
+
 
 void NameN(init_boyer_moore_hubbe)(struct boyer_moore_hubbe_searcher *s,
 				   NCHAR *needle,
@@ -172,7 +172,7 @@ void NameN(init_boyer_moore_hubbe)(struct boyer_moore_hubbe_searcher *s,
   if(needlelen < 2)
     Pike_fatal("boyer-moore-hubbe search does not work with single-character search strings!\n");
 #endif
-  
+
 #ifdef TUNAFISH
   s->plen = 8 + ((max_haystacklen-needlelen) >> 5);
   if(s->plen>needlelen) s->plen=needlelen;
@@ -181,20 +181,20 @@ void NameN(init_boyer_moore_hubbe)(struct boyer_moore_hubbe_searcher *s,
   s->plen=BMLEN;
   if(s->plen>needlelen) s->plen=needlelen;
 #endif
-  
+
   for(e=0;e<(ptrdiff_t)NELEM(s->d1);e++) s->d1[e]=s->plen;
-  
+
   for(e=0;e<s->plen;e++)
   {
     s->d1[ PxC3(BMHASH,NSHIFT,0) (needle[e]) ]=s->plen-e-1;
     s->d2[e]=s->plen*2-e-1;
   }
-  
+
   for(e=0;e<s->plen;e++)
   {
     ptrdiff_t d;
     for(d=0;d<=e && needle[s->plen-1-d]==needle[e-d];d++);
-    
+
     if(d>e)
     {
       while(s->plen-1-d>=0)
@@ -293,7 +293,7 @@ SearchMojt NameN(compile_memsearcher)(NCHAR *needle,
     struct svalue *sval,stmp;
     struct pike_mem_searcher *s;
     struct object *o;
-    
+
     if(!hashkey)
       hashkey=NameN(make_shared_binary_string)(needle,len);
     else

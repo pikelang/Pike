@@ -25,8 +25,8 @@ class Plain
    {
       switch (error_no)
       {
-	 case ERROR.NOMATCH: 
-	    return UNDEFINED; 
+	 case ERROR.NOMATCH:
+	    return UNDEFINED;
 	 case ERROR.NOMEMORY:
 	    error("out of memory in exec() (ERROR.NOMEMORY)\n");
 	 default:
@@ -53,7 +53,7 @@ class Plain
 //! example:
 //! @code
 //! > Regexp.PCRE.Plain("i\(.*\) is \(.*\)u")->split2("pike is fun");
-//! Result: ({ 
+//! Result: ({
 //!              "ike is fu",
 //!              "ke",
 //!              "f"
@@ -63,7 +63,7 @@ class Plain
    {
       array(int)|int v=exec(subject,startoffset);
       if (intp(v)) return handle_exec_error([int]v);
-      return split_subject(subject,[array(int)]v); 
+      return split_subject(subject,[array(int)]v);
    }
 
 //! Matches a subject against the pattern,
@@ -79,7 +79,7 @@ class Plain
 //!                 "ke",
 //!                 "f"
 //!             })
-//! > Regexp.PCRE.Plain("is fun")->split("pike is fun"); 
+//! > Regexp.PCRE.Plain("is fun")->split("pike is fun");
 //! (4) Result: ({
 //!                 0
 //!             })
@@ -151,10 +151,10 @@ class Plain
 
       if (v[0]>i) res+=subject[i..v[0]-1];
 
-      if 
+      if
         (stringp(with)) res+=with;
-      else 
-      { 
+      else
+      {
         array substrings = ({});
         if(sizeof(v)>2)
         {
@@ -167,7 +167,7 @@ class Plain
           while(c<= (sizeof(v)-2));
         }
 
-        res += with(subject[v[0]..v[1]-1], @substrings, @args); 
+        res += with(subject[v[0]..v[1]-1], @substrings, @args);
       }
       if (i!=v[1]) i=v[1]; else res->add(subject[i..i++]);
     }
@@ -188,7 +188,7 @@ class Plain
       array(int)|int v=exec(subject,0);
       if (intp(v) && !handle_exec_error([int]v))
 	 return subject;
-      
+
       String.Buffer res=String.Buffer();
       if (v[0]>0) res->add(subject[0..v[0]-1]);
 
@@ -239,7 +239,7 @@ class Plain
       for (;;)
       {
 	 array(int)|int v=exec(subject,i);
-	 if (intp(v) && !handle_exec_error([int]v)) 
+	 if (intp(v) && !handle_exec_error([int]v))
 	    return this;
 	 callback(split_subject(subject,v),v);
          if (i!=v[1]) i=v[1]; else i++;
@@ -258,7 +258,7 @@ class Plain
 //!  example:
 //! @code
 //!   > Regexp.PCRE.Plain("my name is ([a-zA-Z]+)")
-//!       ->replace_positional("allow me to introduce myself: my name is john", 
+//!       ->replace_positional("allow me to introduce myself: my name is john",
 //!                           "%[0]s is my name");
 //!   (1) Result: "allow me to introduce myself: john is my name"
 //! @endcode
@@ -308,12 +308,12 @@ class Plain
 
          i=v[1];
       }
-       
+
       buf->add( subject[i..] );
-      
-      return buf->get();                
-   }            
-               
+
+      return buf->get();
+   }
+
 /**** "internal" ***********************************************/
 
    protected string _sprintf(int t,mapping fum)
@@ -324,7 +324,7 @@ class Plain
 
    protected string cast(string to)
    {
-      if (to=="string") return pattern; 
+      if (to=="string") return pattern;
       return UNDEFINED;
    }
 }
@@ -364,7 +364,7 @@ class Widestring
    {
       ::create(string_to_utf8(pattern),options|OPTION.UTF8,table);
    }
-   
+
    string _sprintf(int t,mapping fum)
    {
       if (t=='t') return "Regexp.PCRE.Widestring";
@@ -375,7 +375,7 @@ class Widestring
    {
       string subject_utf8=string_to_utf8(subject);
 
-      if (startoffset && subject_utf8!=subject) 
+      if (startoffset && subject_utf8!=subject)
 	 startoffset=char_number_to_utf8_byte_index(startoffset,subject);
 
       array(int)|int v=::exec(subject_utf8,startoffset);
@@ -388,19 +388,19 @@ class Widestring
       return res;
    }
 
-//! The exec function is wrapped to give the correct indexes for 
-//! the widestring. 
+//! The exec function is wrapped to give the correct indexes for
+//! the widestring.
    array(int)|int exec(string subject,void|int startoffset)
    {
       string subject_utf8=string_to_utf8(subject);
 
-      if (startoffset && subject_utf8!=subject) 
+      if (startoffset && subject_utf8!=subject)
 	 startoffset=char_number_to_utf8_byte_index(startoffset,subject);
 
       array(int)|int v=::exec(subject_utf8,startoffset);
 
       if (arrayp(v))
-	 if (subject_utf8!=subject) 
+	 if (subject_utf8!=subject)
 	    return utf8_byte_index_to_char_number(v,subject_utf8);
 	 else
 	    return v;
@@ -410,14 +410,14 @@ class Widestring
 }
 
 // really slow helper functions -- FIXME! and add to String or something
-protected array(int)|int 
+protected array(int)|int
    utf8_byte_index_to_char_number(array(int)|int c,string utf8)
 {
    if (arrayp(c)) return map(c,utf8_byte_index_to_char_number,utf8);
    return c && strlen(utf8_to_string(utf8[..c-1]));
 }
 
-protected array(int)|int 
+protected array(int)|int
    char_number_to_utf8_byte_index(array(int)|int c,string wide)
 {
    if (arrayp(c)) return map(c,char_number_to_utf8_byte_index,wide);

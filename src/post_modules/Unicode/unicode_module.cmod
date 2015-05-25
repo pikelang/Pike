@@ -83,17 +83,17 @@ PIKEFUN array(string) split_words_and_normalize( string input )
 /*! @decl string normalize( string data, string method );
  *!
  *! Normalize the given unicode string according to the specified method.
- *! 
+ *!
  *! The methods are:
  *!
  *!  NFC, NFD, NFKC and NFKD.
- *!  
+ *!
  *! The methods are described in detail in the UAX #15 document, which
  *! can currently be found at
  *! http://www.unicode.org/unicode/reports/tr15/tr15-21.html
  *!
  *! A short description:
- *! 
+ *!
  *! C and D specifies whether to decompose (D) complex characters to
  *! their parts, or compose (C) single characters to complex ones.
  *!
@@ -102,14 +102,14 @@ PIKEFUN array(string) split_words_and_normalize( string input )
  *! performed as well as the canonical transformations.
  *!
  *! @i{In the following text, 'X' denotes the single character 'X', even
- *!  if there is more than one character inside the quotation marks. 
+ *!  if there is more than one character inside the quotation marks.
  *!  The reson is that it's somewhat hard to describe unicode in
  *!  iso-8859-1.@}
  *!
  *! The Unicode Standard defines two equivalences between characters:
  *! canonical equivalence and compatibility equivalence. Canonical
  *! equivalence is a basic equivalency between characters or
- *! sequences of characters. 
+ *! sequences of characters.
  *!
  *! 'Å'  and  'A' '° (combining ring above)' are canonically equivalent.
  *!

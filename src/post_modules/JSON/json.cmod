@@ -581,7 +581,7 @@ void low_decode(struct pike_string *data, int flags) {
 /*! @decl int validate(string s)
  *!
  *! Checks if a string is valid JSON.
- *! 
+ *!
  *! @returns
  *! 	In case the string contains valid JSON @expr{-1@} is returned. It is then guaranteed to be parsed
  *! 	without errors by @[decode()].
@@ -594,7 +594,7 @@ PIKEFUN int validate(string data) {
 /*! @decl array|mapping|string|float|int|object decode(string s)
  *!
  *! Decodes a JSON string.
- *! 
+ *!
  *! @throws
  *! 	Throws an exception in case the data contained in @expr{s@} is not valid
  *! 	JSON.
@@ -606,7 +606,7 @@ PIKEFUN array|mapping|string|float|int|object decode(string data) {
 /*! @decl int validate_utf8(string s)
  *!
  *! Checks if a string is valid utf8 encoded JSON.
- *! 
+ *!
  *! @returns
  *! 	In case the string contains valid JSON @expr{-1@} is returned. It is then guaranteed to be parsed
  *! 	without errors by @[decode()].
@@ -624,7 +624,7 @@ PIKEFUN int validate_utf8(string data) {
  *!
  *! Decodes an utf8 encoded JSON string.
  *! Should give the same result as @expr{Standards.JSON.decode(utf8_to_string(s))@}.
- *! 
+ *!
  *! @throws
  *! 	Throws an exception in case the data contained in @expr{s@} is not valid
  *! 	JSON.

@@ -244,7 +244,7 @@ OPCODE1(F_NUMBER, "push int", I_UPDATE_SP, {
 #if SIZEOF_INT_TYPE > 4
 OPCODE2(F_NUMBER64, "push 64-bit int", I_UPDATE_SP, {
    push_int( (INT_TYPE)
-	     (( ((unsigned INT_TYPE)arg1) << 32) 
+	     (( ((unsigned INT_TYPE)arg1) << 32)
 	      | ((unsigned INT32)arg2)) );
 });
 #else
@@ -273,7 +273,7 @@ OPCODE2(F_REARRANGE,"rearrange",0,{
   memcpy(Pike_sp-arg2,Pike_sp,sizeof(struct svalue)*arg2);
 });
 
-/* The rest of the basic 'push value' instructions */	
+/* The rest of the basic 'push value' instructions */
 
 OPCODE1_TAIL(F_MARK_AND_STRING, "mark & string", I_UPDATE_SP|I_UPDATE_M_SP, {
   *(Pike_mark_sp++)=Pike_sp;
@@ -335,7 +335,7 @@ OPCODE2(F_TRAMPOLINE, "trampoline", I_UPDATE_SP, {
   while(arg2--) {
     DO_IF_DEBUG({
       if (!f->scope) {
-	Pike_fatal("F_TRAMPOLINE %d, %d: Missing %d levels of scope!\n", 
+	Pike_fatal("F_TRAMPOLINE %d, %d: Missing %d levels of scope!\n",
 	      arg1, arg2_, arg2+1);
       }
     });
@@ -405,7 +405,7 @@ OPCODE2(F_ASSIGN_PRIVATE_IF_DIRECT_GLOBAL,
        struct svalue *tmp;
        tmp = (struct svalue *)(co->storage + cx->storage_offset + arg1);
        assign_svalue(tmp,Pike_sp-1);
-      } 
+      }
    });
 
 OPCODE2(F_ASSIGN_PRIVATE_TYPED_GLOBAL_AND_POP, "assign global <private,typed> and pop", I_UPDATE_SP, {
@@ -2016,7 +2016,7 @@ OPCODE0(F_PUSH_ARRAY, "@", I_UPDATE_SP, {
   {
   default:
     PIKE_ERROR("@", "Bad argument.\n", Pike_sp, 1);
-    
+
   case PIKE_T_OBJECT:
     {
     int i;
@@ -2200,7 +2200,7 @@ OPCODE0(F_INDIRECT, "indirect", I_UPDATE_SP, {
   }
   print_return_value();
 });
-      
+
 OPCODE0(F_SIZEOF, "sizeof", 0, {
   INT_TYPE val = pike_sizeof(Pike_sp-1);
   pop_stack();

@@ -111,7 +111,7 @@ PMOD_EXPORT struct array *real_allocate_array(ptrdiff_t size,
   v->size = DO_NOT_WARN((INT32)size);
   INIT_PIKE_MEMOBJ(v, T_ARRAY);
   DOUBLELINK (first_array, v);
-  
+
   {
     struct svalue *item = ITEM(v);
     struct svalue *item_end = item + v->size;
@@ -205,8 +205,8 @@ PMOD_EXPORT struct array *array_set_flags(struct array *a, int flags)
 
 
 /**
- * Extract an svalue from an array. This function frees the contents of 
- * of the svalue 's' and replaces it with a copy of the 
+ * Extract an svalue from an array. This function frees the contents of
+ * of the svalue 's' and replaces it with a copy of the
  * contents from index 'index' in the array 'v'.
  *
  * @param index The index of the array to be extracted.
@@ -218,7 +218,7 @@ PMOD_EXPORT struct array *array_set_flags(struct array *a, int flags)
  * except that it adds debug and safety measures. Usually, this function
  * is not needed.
  *
- * @note If n is out of bounds, Pike will dump core. If Pike was compiled 
+ * @note If n is out of bounds, Pike will dump core. If Pike was compiled
  * with DEBUG, a message will be written first stating what the problem was.
  */
 PMOD_EXPORT void array_index(struct svalue *s,struct array *v,INT32 index)
@@ -311,7 +311,7 @@ PMOD_EXPORT void simple_array_index_no_free(struct svalue *s,
       SET_SVAL(*s, T_ARRAY, 0, array, array_column(a, ind, 0));
       break;
     }
-	
+
     default:
       {
 	struct svalue tmp;
@@ -630,7 +630,7 @@ PMOD_EXPORT struct array *resize_array(struct array *a, INT32 size)
 /**
  * Remove an index from an array and shrink the array destructively.
  * Because this function is destructive, and might free the region for 'v',
- * do not use this function on arrays that might have been sent to a 
+ * do not use this function on arrays that might have been sent to a
  * Pike function.
  *
  * @param v The array to operate on.
@@ -1364,7 +1364,7 @@ static INT32 low_lookup(struct array *v,
   {
     c=(a+b)/2;
     q=fun(ITEM(v)+c,s);
-    
+
     if(q < 0)
       a=c+1;
     else if(q > 0)
@@ -1388,7 +1388,7 @@ INT32 set_lookup(struct array *a, struct svalue *s)
     /* face it, it's not there */
     if( (((2 << TYPEOF(*s)) -1) & a->type_field) == 0)
       return -1;
-    
+
   /* face it, it's not there */
     if( ((BIT_MIXED << TYPEOF(*s)) & BIT_MIXED & a->type_field) == 0)
       return ~a->size;
@@ -1498,7 +1498,7 @@ PMOD_EXPORT void array_check_type_field(struct array *v)
   {
     if(TYPEOF(ITEM(v)[e]) > MAX_TYPE)
       Pike_fatal("Type is out of range.\n");
-      
+
     t |= 1 << TYPEOF(ITEM(v)[e]);
   }
 
@@ -1560,7 +1560,7 @@ INT32 * merge(struct array *a,struct array *b,INT32 opcode)
 {
   ONERROR r;
   INT32 ap,bp,i,*ret,*ptr;
-  
+
   ap=bp=0;
 #ifdef PIKE_DEBUG
   if(d_flag > 1)
@@ -1606,7 +1606,7 @@ INT32 * merge(struct array *a,struct array *b,INT32 opcode)
       i=opcode;
     else
       i=opcode >> 4;
-    
+
     if(i & PIKE_ARRAY_OP_A) *(ptr++)=ap;
     if(i & PIKE_ARRAY_OP_B) *(ptr++)=~bp;
     if(i & PIKE_ARRAY_OP_SKIP_A) ap++;
@@ -2045,7 +2045,7 @@ PMOD_EXPORT struct array *subtract_arrays(struct array *a, struct array *b)
   if( b->size == 1 )
     return subtract_array_svalue( a, ITEM(b) );
 
-  if(b->size && 
+  if(b->size &&
      ((a->type_field & b->type_field) ||
       ((a->type_field | b->type_field) & BIT_OBJECT)))
   {
@@ -2102,7 +2102,7 @@ node *make_node_from_array(struct array *a)
     return mkefuncallnode("aggregate",0);
   if (a->size == 1)
     return mkefuncallnode("aggregate", mksvaluenode(ITEM(a)));
-    
+
   if(array_fix_type_field(a) == BIT_INT)
   {
     debug_malloc_touch(a);
@@ -2128,14 +2128,14 @@ node *make_node_from_array(struct array *a)
 	if(e==a->size && ITEM(a)[0].u.integer==0)
 	  return mkefuncallnode("allocate",mkintnode(a->size));
 	break;
-	
+
       case BIT_STRING:
       case BIT_PROGRAM:
 	for(e=1; e<a->size; e++)
 	  if(ITEM(a)[e].u.refs != ITEM(a)[0].u.refs)
 	    break;
 	break;
-	
+
       case BIT_OBJECT:
       case BIT_FUNCTION:
 	for(e=1; e<a->size; e++)
@@ -2150,7 +2150,7 @@ node *make_node_from_array(struct array *a)
 					      mkintnode(a->size),
 					      mksvaluenode(ITEM(a))));
   }
-  
+
   if(array_is_constant(a,0))
   {
     debug_malloc_touch(a);
@@ -2353,7 +2353,7 @@ void assign_array_level_value( struct array *a, struct svalue *b, int level )
 typedef char *(* explode_searchfunc)(void *,void *,size_t);
 
 /** Explode a string into an array by a delimiter.
- * 
+ *
  * @param str the string to be split
  * @param del the string to split str by
  * @returns an array containing the elements of the split string
@@ -2382,7 +2382,7 @@ PMOD_EXPORT struct array *explode(struct pike_string *str,
     SearchMojt mojt;
     ONERROR uwp;
     explode_searchfunc f = (explode_searchfunc)0;
-    
+
     s=str->str;
     end=s+(str->len << str->size_shift);
 
@@ -2452,7 +2452,7 @@ PMOD_EXPORT struct array *explode(struct pike_string *str,
  * @param a The array containing elements to be imploded
  * @param del The delimiter used to separate the array's elements in the resulting string
  * @return The imploded string
- * 
+ *
  */
 PMOD_EXPORT struct pike_string *implode(struct array *a,
                                         struct pike_string *del)
@@ -2541,7 +2541,7 @@ PMOD_EXPORT struct array *copy_array_recursively(struct array *a,
   }
 
   ret=allocate_array_no_init(a->size,0);
-  
+
   if (m) {
     SET_SVAL(aa, T_ARRAY, 0, array, a);
     SET_SVAL(bb, T_ARRAY, 0, array, ret);
@@ -2634,7 +2634,7 @@ PMOD_EXPORT struct array *reverse_array(struct array *a, int start, int end)
     /* Reverse in-place. */
   {
     struct svalue *tmp0, *tmp1, swap;
-    
+
     tmp0 = ITEM(a) + start;
     tmp1 = ITEM(a) + end;
     while (tmp0 < tmp1) {
@@ -2644,13 +2644,13 @@ PMOD_EXPORT struct array *reverse_array(struct array *a, int start, int end)
     }
 
     /* FIXME: What about the flags field? */
-    
+
     add_ref(a);
     return a;
   }
 
   /* fprintf(stderr, "R"); */
-  
+
   ret=allocate_array_no_init(a->size,0);
   for(e=0;e<start;e++)
     assign_svalue_no_free(ITEM(ret)+e,ITEM(a)+e);
@@ -2721,7 +2721,7 @@ PMOD_EXPORT void check_array(struct array *a)
     if(! ( (1 << TYPEOF(ITEM(a)[e])) & (a->type_field) ) &&
        TYPEOF(ITEM(a)[e])<16)
       Pike_fatal("Type field lies.\n");
-    
+
     check_svalue(ITEM(a)+e);
   }
 }

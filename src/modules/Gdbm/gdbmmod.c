@@ -24,7 +24,7 @@
 
 #ifdef _REENTRANT
 static MUTEX_T gdbm_lock STATIC_MUTEX_INIT;
-#endif  
+#endif
 
 #define sp Pike_sp
 static struct program *iterator;
@@ -77,7 +77,7 @@ static int fixmods(char *mods)
       switch(mode) {
       default:
       case 0x0:
-	Pike_error("No mode given for gdbm->open()\n"); 
+	Pike_error("No mode given for gdbm->open()\n");
       case 0x1:	/* r */
 	return GDBM_READER;
       case 0x3:	/* rw */
@@ -176,9 +176,9 @@ void gdbmmod_fatal(const char *err)
  *!  calls exit() or returns from main(). You should therefore make sure
  *!  you call close or destruct your gdbm objects when exiting your
  *!  program.
- *! 
+ *!
  *!  @[atexit] might be useful.
- *! 
+ *!
  *!  This is very important if the database is used with the 'l' flag.
  */
 
@@ -299,15 +299,15 @@ static void gdbmmod_delete(INT32 args)
   ret=gdbm_delete(this->dbf, key);
   mt_unlock(& gdbm_lock);
   THREADS_DISALLOW();
-  
+
   pop_n_elems(args);
   push_int( ret==0 );
 }
 
 /*! @decl string(8bit) _m_delete( string(8bit) key )
- *! 
+ *!
  *! Provides overloading of the @[m_delete] function.
- *! 
+ *!
  *! Will return the value the key had before it was removed, if any
  *!
  *! If the key exists but deletion fails (usually due to a read only
@@ -360,7 +360,7 @@ static void gdbmmod_m_delete(INT32 args)
  *! Adding or removing keys will change the iteration order,
  *! this can cause keys to be skipped while iterating.
  *!
- *! 
+ *!
  *! @example
  *! @code
  *!  // Write the contents of the database
@@ -410,7 +410,7 @@ static void gdbmmod_firstkey(INT32 args)
  *!
  *! The database also works as an @[Iterator], and can be used as the
  *! first argument to @[foreach].
- *! 
+ *!
  *! @example
  *! @code
  *!  // Write the contents of the database
@@ -606,7 +606,7 @@ static void gdbmmod_iter_first(INT32 UNUSED(args))
 static void gdbmmod_iter_next(INT32 UNUSED(args))
 {
   struct gdbm_glue *this=THIS;
-  if(!this->iter) 
+  if(!this->iter)
   {
       push_undefined();
       return;
@@ -645,7 +645,7 @@ static void gdbmmod_iter_value(INT32 UNUSED(args))
   if( this->iter )
   {
     ref_push_string( this->iter );
-    gdbmmod_fetch(1);    
+    gdbmmod_fetch(1);
   }
   else
     push_undefined();
@@ -654,7 +654,7 @@ static void gdbmmod_iter_value(INT32 UNUSED(args))
 /*! @decl array(string(8bit)) _indices()
  *!
  *! Provides overloading of @[indices].
- *! 
+ *!
  *! @note
  *! Mainly useful when debugging, the returned list might not fit in
  *! memory for large databases.
@@ -677,7 +677,7 @@ static void gdbmmod_indices(INT32 UNUSED(args))
 /*! @decl array(string(8bit)) _values()
  *!
  *! Provides overloading of @[values].
- *! 
+ *!
  *! @note
  *! Mainly useful when debugging, the returned list might not fit in
  *! memory for large databases.
@@ -779,7 +779,7 @@ PIKE_MODULE_INIT
 #if defined(HAVE_GDBM_H) && defined(HAVE_LIBGDBM)
   start_new_program();
   ADD_STORAGE(struct gdbm_glue);
-  
+
   /* function(void|string,void|string:void) */
   ADD_FUNCTION("create", gdbmmod_create,
 	       tFunc(tOr(tVoid,tStr) tOr(tVoid,tStr), tVoid), ID_PROTECTED);

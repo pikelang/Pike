@@ -160,12 +160,12 @@ static unsigned int TOKENIZE(struct array **res, CHAR *data, unsigned int len)
 	else if( data[pos+1] == '=' ) pos++;
 	/* FALL_THROUGH */
 
-      case '*': case '%':  
+      case '*': case '%':
       case '^': case '!':  case '~':  case '=':
 	if( data[pos+1] == '=' )
 	  pos++;
 	break;
-	
+
       case ' ':
       case '\n':
       case '\r':
@@ -216,7 +216,7 @@ static unsigned int TOKENIZE(struct array **res, CHAR *data, unsigned int len)
 	if( pos >= len )
 	  goto failed_to_find_end;
 	break;
-	
+
       case '#':
 	pos++;
 	SKIPWHT();

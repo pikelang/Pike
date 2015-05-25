@@ -262,7 +262,7 @@ struct buffer *unicode_compose_buffer( struct buffer *source, int UNUSED(how) )
   int lastclass = get_canonical_class( startch )?256:0;
   unsigned int startpos = 0, comppos=1;
   unsigned int pos;
-  
+
   for( pos = 1; pos < source->size; pos++ )
   {
     int ch = source->data[ pos ];

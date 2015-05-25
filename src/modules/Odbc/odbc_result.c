@@ -115,7 +115,7 @@ static INLINE void odbc_check_error(const char *fun, const char *msg,
 /*
  * State maintenance
  */
- 
+
 static void init_res_struct(struct object *UNUSED(o))
 {
   memset(PIKE_ODBC_RES, 0, sizeof(struct precompiled_odbc_result));
@@ -123,7 +123,7 @@ static void init_res_struct(struct object *UNUSED(o))
   SET_SVAL(PIKE_ODBC_RES->null_value, PIKE_T_INT, NUMBER_UNDEFINED,
 	   integer, 0);
 }
- 
+
 static void exit_res_struct(struct object *UNUSED(o))
 {
   if (PIKE_ODBC_RES->hstmt != SQL_NULL_HSTMT) {
@@ -764,7 +764,7 @@ static void f_execute(INT32 args)
     push_int(num_fields);
   }
 }
- 
+
 static void f_list_tables(INT32 args)
 {
   struct pike_string *table_name_pattern = NULL;
@@ -811,7 +811,7 @@ static void f_list_tables(INT32 args)
     push_int(PIKE_ODBC_RES->num_fields);
   }
 }
- 
+
 /* int num_rows() */
 static void f_num_rows(INT32 args)
 {
@@ -833,7 +833,7 @@ static void f_fetch_fields(INT32 args)
 
   ref_push_array(PIKE_ODBC_RES->fields);
 }
- 
+
 /* int|array(string|float|int) fetch_row() */
 static void f_fetch_row(INT32 args)
 {
@@ -841,20 +841,20 @@ static void f_fetch_row(INT32 args)
   int i;
   unsigned int old_tds_kludge = PIKE_ODBC_RES->odbc->flags & PIKE_ODBC_OLD_TDS_KLUDGE;
   RETCODE code;
- 
+
   pop_n_elems(args);
 
   ODBC_ALLOW();
   code = SQLFetch(hstmt);
   ODBC_DISALLOW();
-  
+
   if (code == SQL_NO_DATA_FOUND) {
     /* No rows left in result */
     push_undefined();
   } else {
     odbc_check_error("odbc->fetch_row", "Couldn't fetch row",
 		     code, NULL, NULL);
- 
+
     for (i=0; i < PIKE_ODBC_RES->num_fields; i++) {
       SQLLEN len = PIKE_ODBC_RES->field_info[i].size;
       SWORD field_type = PIKE_ODBC_RES->field_info[i].type;
@@ -1065,7 +1065,7 @@ static void f_fetch_row(INT32 args)
     f_aggregate(PIKE_ODBC_RES->num_fields);
   }
 }
- 
+
 /* int|array(string|float|int|object) fetch_typed_row() */
 static void f_fetch_typed_row(INT32 args)
 {
@@ -1386,11 +1386,11 @@ static void f_seek(INT32 UNUSED(args))
 {
   Pike_error("odbc->seek(): Not implemented yet!\n");
 }
- 
+
 /*
  * Module linkage
  */
- 
+
 void init_odbc_res_programs(void)
 {
   start_new_program();
@@ -1402,7 +1402,7 @@ void init_odbc_res_programs(void)
 	       OFFSETOF(precompiled_odbc_result, fields), T_ARRAY);
   map_variable("_null_value", "mixed", 0,
 	       OFFSETOF(precompiled_odbc_result, null_value), T_MIXED);
- 
+
   /* function(object:void) */
   ADD_FUNCTION("create", f_create,tFunc(tObj,tVoid), ID_PUBLIC);
   /* function(string:int) */
@@ -1431,10 +1431,10 @@ void init_odbc_res_programs(void)
   ADD_FUNCTION("fetch_row", f_fetch_row,tFunc(tVoid,tOr(tInt,tArr(tOr3(tStr,tInt,tFlt)))), ID_PUBLIC);
 
   ADD_FUNCTION("next_result", f_next_result, tFunc(tNone,tObj), ID_PUBLIC);
- 
+
   set_init_callback(init_res_struct);
   set_exit_callback(exit_res_struct);
- 
+
   odbc_result_program = end_program();
   odbc_result_fun_num =
     add_program_constant("result", odbc_result_program, 0);
@@ -1472,7 +1472,7 @@ void init_odbc_res_programs(void)
   odbc_typed_result_fun_num =
     add_program_constant("typed_result", odbc_typed_result_program, 0);
 }
- 
+
 void exit_odbc_res(void)
 {
   if (odbc_typed_result_program) {

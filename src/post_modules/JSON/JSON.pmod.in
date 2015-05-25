@@ -66,7 +66,7 @@ class DecodeError {
 	if (reason)
 	    ::create(sprintf("Error decoding JSON at position %d %s: %s.\n",
 			     err_pos, err_str, reason), bt);
-	else 
+	else
 	    ::create(sprintf("Error decoding JSON at position %d %s\n",
 			     err_pos, err_str), bt);
     }

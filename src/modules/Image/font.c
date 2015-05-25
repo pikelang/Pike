@@ -45,7 +45,7 @@ extern const unsigned char image_default_font[];
  *!
  *!
  *!            	  On-disk syntax (everything in N.B.O), int is 4 bytes, a byte is 8 bits:
- *!            
+ *!
  *!            pos
  *!            	0   int cookie = 'FONT';     or 0x464f4e54
  *!            	4   int version = 2;         1 was the old version without the last four chars
@@ -56,30 +56,30 @@ extern const unsigned char image_default_font[];
  *!            21   char format;             Font format
  *!            22   char colortablep;        Colortable format
  *!            23   char kerningtablep;      Kerning table format
- *!            
+ *!
  *!            24   int offsets[numchars];   pointers into the data, realative to &cookie.
  *!            	    [colortable]
  *!            	    [kerningtable]
- *!            
+ *!
  *!            	  At each offset:
- *!            
- *!            
+ *!
+ *!
  *!            0   int width;               in pixels
  *!            4   int spacing;             in 1/1000:th of a pixels
  *!            8   char data[];             Enough data to plot width * font->height pixels
  *!            				    Please note that if width is 0, there is no data.
- *!            
+ *!
  *!            Font formats:
  *!            	id type
  *!            	 0 Raw 8bit data
  *!            	 1 RLE encoded data,  char length, char data,   70% more compact than raw data
  *!            	 2 ZLib compressed data                         60% more compact than RLE
- *!            
+ *!
  *!            Colortable types:
  *!            	 0 No colortable		 (the data is an alpha channel)
  *!            	 1 24bit RGB with alpha         (index->color, 256*4 bytes, rgba)
  *!            	 2 8bit Greyscale with alpha    (index->color, 256*2 bytes)
- *!            
+ *!
  *!            Kerningtable types:
  *!            	 0 No kerning table
  *!            	 1 numchars*numchars entries, each a signed char with the kerning value
@@ -149,7 +149,7 @@ extern struct program *image_program;
 #define THIS (*(struct font **)(Pike_fp->current_storage))
 #define THISOBJ (Pike_fp->current_object)
 
-struct font 
+struct font
 {
    unsigned long height;      /* height of character rectangles */
    unsigned long baseline;    /* baseline of characters */
@@ -165,7 +165,7 @@ struct font
     J_RIGHT,
     J_CENTER
   } justification;
-   struct _char      
+   struct _char
    {
       unsigned long width;   /* character rectangle has this width in pixels */
       unsigned long spacing; /* pixels to next character */
@@ -220,7 +220,7 @@ static INLINE int char_width(struct font *this, INT32 c)
 {
   if(c==0x20 || c==0x20+128)  return 0;
   return this->charinfo[c].width;
-}  
+}
 
 static INLINE ptrdiff_t my_read(int fd, void *t, size_t towrite)
 {
@@ -296,7 +296,7 @@ static INLINE void write_char(struct _char *ci,
 
 void font_load(INT32 args)
 {
-  struct file_head 
+  struct file_head
   {
     unsigned INT32 cookie;
     unsigned INT32 version;
@@ -347,7 +347,7 @@ void font_load(INT32 args)
 #ifdef FONT_DEBUG
 	  fprintf(stderr,"FONT Malloced %p (%d)\n", fh, size);
 #endif
-	  if (fh && (!my_read(fd, fh, size))) 
+	  if (fh && (!my_read(fd, fh, size)))
 	  {
 	    free(fh);
 	    fh = NULL;
@@ -592,7 +592,7 @@ void font_write(INT32 args)
       width_of[j]=max;
       if (max>maxwidth2) maxwidth2=max;
    }
-   
+
    o = clone_object(image_program,0);
    img = ((struct image*)o->storage);
    img->xsize = maxwidth2;
@@ -934,13 +934,13 @@ void init_image_font(void)
 
    /* function(void:int) */
    ADD_FUNCTION("baseline",font_baseline,tFunc(tNone,tInt),0);
-		
+
    /* function(string ...:array(int)) */
    ADD_FUNCTION("extents",font_text_extents,tFuncV(tNone,tStr,tArr(tInt)),0);
-		
+
    /* function(string ...:array(int)) */
    ADD_FUNCTION("text_extents",font_text_extents,tFuncV(tNone,tStr,tArr(tInt)),0);
-		
+
    /* function(float:void) */
    ADD_FUNCTION("set_x_spacing",font_set_xspacing_scale,tFunc(tFlt,tVoid),0);
 
@@ -960,6 +960,6 @@ void init_image_font(void)
    set_exit_callback(exit_font_struct);
 }
 
-void exit_image_font(void) 
+void exit_image_font(void)
 {
 }

@@ -80,7 +80,7 @@ struct words *unicode_split_words_pikestr0( struct pike_string *data )
   struct words *res = uc_words_new();
   p_wchar0 *ptr = STR0 (data);
   unsigned int sz = data->len;
-  
+
   for( i=0; i<sz; i++, ptr++ )
   {
     switch( _unicode_is_wordchar( *ptr ) )

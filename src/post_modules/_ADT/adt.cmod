@@ -20,7 +20,7 @@ PIKE_MODULE_INIT
 
 PIKE_MODULE_EXIT
 {
-  pike_exit_Sequence_module();  
-  pike_exit_CircularList_module();  
+  pike_exit_Sequence_module();
+  pike_exit_CircularList_module();
   EXIT;
-} 
+}

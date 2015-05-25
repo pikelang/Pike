@@ -1066,7 +1066,7 @@ PMOD_EXPORT void thread_table_insert(struct thread_state *s)
     s->hashlink->backlink = &s->hashlink;
   thread_table_chains[h] = s;
   s->backlink = &thread_table_chains[h];
-  mt_unlock( & thread_table_lock );  
+  mt_unlock( & thread_table_lock );
 }
 
 PMOD_EXPORT void thread_table_delete(struct thread_state *s)
@@ -1235,7 +1235,7 @@ PMOD_EXPORT void call_with_interpreter(void (*func)(void *ctx), void *ctx)
 
 PMOD_EXPORT void enable_external_threads(void)
 {
-  num_threads++;  
+  num_threads++;
 }
 
 PMOD_EXPORT void disable_external_threads(void)
@@ -1522,7 +1522,7 @@ static void check_threads(struct callback *UNUSED(cb), void *UNUSED(arg), void *
     static struct timeval         last_check = { 0, 0 };
     task_thread_times_info_data_t info;
     mach_msg_type_number_t        info_size = TASK_THREAD_TIMES_INFO_COUNT;
-    
+
     /* Before making an expensive call to task_info() we perform a
        preliminary check that at least 35 ms real time has passed. If
        not yet true we'll postpone the next check a full interval. */
@@ -1544,7 +1544,7 @@ static void check_threads(struct callback *UNUSED(cb), void *UNUSED(arg), void *
       real_time_last_check = tv;
 #endif
     }
-    
+
     /* Get user time and test if 50 ms has passed since last check. */
     if (task_info(mach_task_self(), TASK_THREAD_TIMES_INFO,
 		  (task_info_t) &info, &info_size) == 0) {
@@ -2121,7 +2121,7 @@ void f_mutex_lock(INT32 args)
     default:
       bad_arg_error("lock", Pike_sp-args, args, 2, "int(0..2)", Pike_sp+1-args,
                     "Unknown mutex locking style: %"PRINTPIKEINT"d\n",type);
-      
+
 
     case 0:
     case 2:
@@ -2244,7 +2244,7 @@ void f_mutex_trylock(INT32 args)
     m->key=o;
     i=1;
   }
-  
+
   pop_n_elems(args);
   if(i)
   {
@@ -2519,7 +2519,7 @@ void f_cond_wait(INT32 args)
     /* FIXME: Support bignum nanos. */
     get_all_args("wait", args, "%o%i%i", &key, &seconds, &nanos);
   }
-      
+
   if ((key->prog != mutex_key) ||
       (!(OB2KEY(key)->initialized)) ||
       (!(mut = OB2KEY(key)->mut))) {
@@ -2539,7 +2539,7 @@ void f_cond_wait(INT32 args)
   OB2KEY(key)->mut=0;
   OB2KEY(key)->mutex_obj = NULL;
   co_signal(& mut->condition);
-    
+
   /* Wait and allow mutex operations */
   SWAP_OUT_CURRENT_THREAD();
   c->wait_count++;
@@ -2550,7 +2550,7 @@ void f_cond_wait(INT32 args)
   }
   c->wait_count--;
   SWAP_IN_CURRENT_THREAD();
-    
+
   /* Lock mutex */
   mut->num_waiting++;
   while(mut->key) {
@@ -2571,7 +2571,7 @@ void f_cond_wait(INT32 args)
     Pike_error ("Mutex was destructed while waiting for lock.\n");
   }
 #endif
-      
+
   pop_stack();
   return;
 }
@@ -2887,7 +2887,7 @@ static void cleanup_thread_state (struct thread_state *th)
     if (!--num_pending_interrupts) {
       remove_callback(thread_interrupt_callback);
       thread_interrupt_callback = NULL;
-    }    
+    }
   }
 
   co_destroy(& THIS_THREAD->status_change);
@@ -3055,7 +3055,7 @@ void gc_check_thread_local (struct object *UNUSED(o))
  */
 
 /* Thread farm code by Per
- * 
+ *
  */
 static struct farmer {
   struct farmer *neighbour;
@@ -3238,7 +3238,7 @@ void th_init(void)
   ptrdiff_t mutex_key_offset;
 
 #ifdef UNIX_THREADS
-  
+
   ADD_EFUN("thread_set_concurrency",f_thread_set_concurrency,tFunc(tInt,tVoid), OPT_SIDE_EFFECT);
 #endif
 
@@ -3309,7 +3309,7 @@ void th_init(void)
   set_init_callback(init_cond_obj);
   set_exit_callback(exit_cond_obj);
   end_class("condition", 0);
-  
+
   {
     struct program *tmp;
     START_NEW_PROGRAM_ID(THREAD_DISABLE_THREADS);

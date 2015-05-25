@@ -81,7 +81,7 @@ PIKE_MODULE_INIT
    int i;
    DECLARE_INF
    DECLARE_NAN
-   
+
    for (i=0; i<(int)(sizeof(sub)/sizeof(sub[0])); i++)
    {
       struct program *p;

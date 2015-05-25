@@ -28,14 +28,14 @@
 #define PARSER_CLASS(name,init,exit,prog,id) \
     void init(void); void exit(void); struct program *prog;
 #define PARSER_SUBMODULE(name,init,exit)  \
-    void init(void); void exit(void); 
+    void init(void); void exit(void);
 #define PARSER_SUBMODMAG(name,init,exit) \
     void init(void); void exit(void);
 #define PARSER_FUNCTION(name,func,def0,def1) \
     void func(INT32 args);
 #include "initstuff.h"
 
-static struct 
+static struct
 {
    char *name;
    void (*init)(void);
@@ -48,14 +48,14 @@ static struct
 #undef PARSER_SUBMODULE
 #undef PARSER_FUNCTION
 #undef PARSER_SUBMODMAG
-#define PARSER_SUBMODMAG(a,b,c) 
+#define PARSER_SUBMODMAG(a,b,c)
 #define PARSER_FUNCTION(a,b,c,d)
 #define PARSER_CLASS(name,init,exit,prog,id) { name,init,exit,&prog,id },
 #define PARSER_SUBMODULE(a,b,c)
 #include "initstuff.h"
 };
 
-static struct 
+static struct
 {
    char *name;
    void (*init)(void);
@@ -70,7 +70,7 @@ static struct
   {0,0,0 }
 };
 
-static struct 
+static struct
 {
    char *name;
    void (*init)(void);
@@ -120,7 +120,7 @@ static void parser_magic_index(INT32 args)
 {
    int i;
 
-   if (args!=1) 
+   if (args!=1)
       Pike_error("Parser.`[]: Too few or too many arguments\n");
    if (TYPEOF(sp[-1]) != T_STRING)
       Pike_error("Parser.`[]: Illegal type of argument\n");
@@ -147,7 +147,7 @@ static void parser_magic_index(INT32 args)
 	    submagic[i].o=clone_object(p,0);
 	    free_program(p);
 	 }
-	 
+
 	 ref_push_object(submagic[i].o);
 	 return;
       }
@@ -222,7 +222,7 @@ PIKE_MODULE_INIT
       fprintf(stderr,"Parser: initiating submodule \"Parser.%s\"...\n",
 	      initsubmodule[i].name);
 #endif
-      
+
       start_new_program();
       (initsubmodule[i].init)();
       PARSER_CHECK_STACK(initsubmodule[i].name);

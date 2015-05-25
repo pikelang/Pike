@@ -288,12 +288,12 @@ static void memory__mmap(INT32 args,int complain,int private)
    off_t osize=0;
    size_t offset=0,size=0;
    char *mem;
-   int flags=0; 
+   int flags=0;
    int resflags=MEM_FREE_MUNMAP|MEM_WRITE|MEM_READ;
-  
+
    MEMORY_FREE(THIS); /* we expect this even on error */
 
-   if (args<1) 
+   if (args<1)
       SIMPLE_TOO_FEW_ARGS_ERROR("mmap",1);
 
    if (args>=2) {
@@ -331,7 +331,7 @@ static void memory__mmap(INT32 args,int complain,int private)
 	 if (complain)
 	    SIMPLE_BAD_ARG_ERROR("mmap",1,
 				 "(string or) Stdio.File (file not open)");
-	 else 
+	 else
 	    RETURN(0);
       }
 
@@ -343,7 +343,7 @@ static void memory__mmap(INT32 args,int complain,int private)
    {
       char *filename;
       get_all_args("mmap",args,"%s",&filename); /* 8 bit! */
-      
+
       THREADS_ALLOW();
       fd = fd_open(filename,fd_RDWR,0);
       if( fd < 0 )
@@ -363,7 +363,7 @@ static void memory__mmap(INT32 args,int complain,int private)
 
    if (osize<0)
    {
-      if (doclose) fd_close(fd); 					
+      if (doclose) fd_close(fd);
       if (!complain)
 	 RETURN(0);
       else
@@ -403,17 +403,17 @@ static void memory__mmap(INT32 args,int complain,int private)
       {
 	 case EBADF:  Pike_error("Memory.mmap(): error: not a valid fd\n");
 	 case EACCES: Pike_error("Memory.mmap(): error: no access\n");
-	 case EINVAL: 
+	 case EINVAL:
 	    Pike_error("Memory.mmap(): error: invalid parameters "
 		       "(probably non-aligned offset or size)\n");
 	 case EAGAIN: Pike_error("Memory.mmap(): error: file is locked\n");
-	 case ENOMEM: 
+	 case ENOMEM:
 	    Pike_error("Memory.mmap(): error: out of address space\n");
-	 default:     
+	 default:
 	    Pike_error("Memory.mmap(): unknown error: errno=%d\n",errno);
       }
    }
-   
+
 /* need to do this again, due to threads */
    MEMORY_FREE(THIS);
 
@@ -459,7 +459,7 @@ static void memory_allocate(INT32 args)
    /* just to be sure */
    if (size<0)
       SIMPLE_BAD_ARG_ERROR("allocate",1,"int(0..)");
-   
+
    pop_n_elems(args);
    if (size>1024*1024) /* threshold */
    {
@@ -539,7 +539,7 @@ static void memory_cast(INT32 args)
   pop_stack(); /* type have at least one more reference. */
 
   MEMORY_VALID(THIS,"Memory.cast");
-   
+
   if (type == literal_string_string)
   {
     push_string(make_shared_binary_string((char *)THIS->p, THIS->size));
@@ -705,8 +705,8 @@ MEMORY_PREADN(memory_pread32n,"Memory.pread32n",4,make_shared_binary_string2)
  *! @decl int pwrite16i(int(0..) pos,string data)
  *! @decl int pwrite32i(int(0..) pos,string data)
  *!
- *!	Write a string to the memory (and to the file, if it's mmap()ed). 
- *!	The 16 and 32 variants writes widestrings, 
+ *!	Write a string to the memory (and to the file, if it's mmap()ed).
+ *!	The 16 and 32 variants writes widestrings,
  *!	16 or 32 bits (2 or 4 bytes) wide,
  *!	the 'i' variants in intel byteorder, the other in network byteorder.
  *!
@@ -730,7 +730,7 @@ static void pwrite_n(INT32 args,int shift,int reverse,char *func)
    MEMORY_VALID(THIS,func);
    if (!(THIS->flags&MEM_WRITE))
       Pike_error("%s: can't write in this memory\n",func);
-   
+
    if (rpos+(rlen<<shift)>THIS->size)
       Pike_error("%s: writing outside allocation\n",func);
 
@@ -741,7 +741,7 @@ static void pwrite_n(INT32 args,int shift,int reverse,char *func)
 	   THIS->p,rpos,THIS->p+rpos,ps->str,ps->len,shift,ps->size_shift);
 #endif
 
-   if (rlen) 
+   if (rlen)
       switch (ps->size_shift*010 + shift)
       {
 	 case 022: /* 2 -> 2 */
@@ -819,10 +819,10 @@ static void memory_index(INT32 args)
 	 else
 	    rpos=(size_t)(DO_NOT_WARN((off_t)(THIS->size))+(off_t)pos);
       }
-      else 
+      else
       {
 	 rpos=(size_t)pos;
-      
+
 	 if (rpos>THIS->size)
 	    Pike_error("Memory.`[]: Index is out of range\n");
       }
@@ -840,7 +840,7 @@ static void memory_index(INT32 args)
 
 	 get_all_args("`[]",args,"%i%i",&pos1,&pos2);
 	 if (pos1<0) rpos1=0; else rpos1=(size_t)pos1;
-	 if ((size_t)pos2>=THIS->size) rpos2=THIS->size-1; 
+	 if ((size_t)pos2>=THIS->size) rpos2=THIS->size-1;
 	 else rpos2=(size_t)pos2;
 
 	 if (rpos2<rpos1)
@@ -868,15 +868,15 @@ static void memory_index_write(INT32 args)
       INT_TYPE pos,ch;
       size_t rpos = 0;
       get_all_args("`[]=",args,"%i%i",&pos,&ch);
-      if (pos<0) 
+      if (pos<0)
 	 if ((off_t)-pos>=DO_NOT_WARN((off_t)THIS->size))
 	    Pike_error("Memory.`[]=: Index is out of range\n");
 	 else
 	    rpos=(size_t)(DO_NOT_WARN((off_t)(THIS->size))+(off_t)pos);
-      else 
+      else
       {
 	 rpos=(size_t)pos;
-      
+
 	 if (rpos>THIS->size)
 	    Pike_error("Memory.`[]=: Index is out of range\n");
       }
@@ -912,7 +912,7 @@ static void memory_index_write(INT32 args)
 
 /*! @endmodule
  */
-  
+
 /*** module init & exit & stuff *****************************************/
 
 void init_system_memory(void)
@@ -924,10 +924,10 @@ void init_system_memory(void)
    start_new_program();
    ADD_STORAGE(struct memory_storage);
 
-   ADD_FUNCTION("create", 
-		memory_create,    
+   ADD_FUNCTION("create",
+		memory_create,
 		tOr3(tFunc(tVoid,tVoid),
-		     tFunc(tOr(tStr,tObj) 
+		     tFunc(tOr(tStr,tObj)
 			   tOr(tIntPos,tVoid) tOr(tIntPos,tVoid),tVoid),
 		     tFunc(tIntPos tOr(tByte,tVoid),tVoid)), 0);
 
@@ -937,10 +937,10 @@ void init_system_memory(void)
 
 #ifdef HAVE_MMAP
    ADD_FUNCTION("mmap",memory_mmap,
-		tFunc(tOr(tStr,tObj) 
+		tFunc(tOr(tStr,tObj)
 		      tOr(tIntPos,tVoid) tOr(tIntPos,tVoid),tInt),0);
    ADD_FUNCTION("mmap_private",memory_mmap_private,
-		tFunc(tOr(tStr,tObj) 
+		tFunc(tOr(tStr,tObj)
 		      tOr(tIntPos,tVoid) tOr(tIntPos,tVoid),tInt),0);
 #endif
 
@@ -949,7 +949,7 @@ void init_system_memory(void)
 
    ADD_FUNCTION("_size_object",memory__size_object,
                 tFunc(tVoid,tInt),0);
-   
+
    ADD_FUNCTION("free",memory_free,tFunc(tVoid,tVoid),0);
 
    ADD_FUNCTION("valid",memory_valid,tFunc(tVoid,tInt01),0);

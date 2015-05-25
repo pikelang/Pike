@@ -15,7 +15,7 @@ static ptrdiff_t _parse_JSON_array(PCHARP str, ptrdiff_t p, ptrdiff_t pe, struct
     int c = 0;
     const int validate = !(state->flags&JSON_VALIDATE);
 
-    
+
 #line 20 "json_array.c"
 static const int JSON_array_start = 1;
 static const int JSON_array_first_final = 4;
@@ -35,14 +35,14 @@ static const int JSON_array_en_main = 1;
 	push_array(a);
     }
 
-    
+
 #line 40 "json_array.c"
 	{
 	cs = JSON_array_start;
 	}
 
 #line 63 "rl/json_array.rl"
-    
+
 #line 47 "json_array.c"
 	{
 	if ( p == pe )
@@ -90,11 +90,11 @@ tr2:
 	state->level--;
 
 	if (state->flags&JSON_ERROR) {
-	    if (validate) { 
+	    if (validate) {
 		pop_stack();
 	    }
 	    return p;
-	} 
+	}
         if (validate) {
 	    Pike_sp[-2].u.array = a = array_insert(a, &(Pike_sp[-1]), c);
 	    pop_stack();
@@ -127,9 +127,9 @@ case 4:
 #line 128 "json_array.c"
 	goto st0;
 	}
-	_test_eof2: cs = 2; goto _test_eof; 
-	_test_eof3: cs = 3; goto _test_eof; 
-	_test_eof4: cs = 4; goto _test_eof; 
+	_test_eof2: cs = 2; goto _test_eof;
+	_test_eof3: cs = 3; goto _test_eof;
+	_test_eof4: cs = 4; goto _test_eof;
 
 	_test_eof: {}
 	_out: {}

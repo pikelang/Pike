@@ -277,7 +277,7 @@ long long gethrtime(void);
 #ifdef HAVE_UNION_INIT
 #define INFNAN_INDEX 0
 #define INFNAN_DATATYPE union
-#define INFNAN_INIT 
+#define INFNAN_INIT
 #else
 #define INFNAN_INDEX -1
 #define INFNAN_DATATYPE struct
@@ -319,7 +319,7 @@ long long gethrtime(void);
 
 #undef INFNAN_INDEX
 #undef INFNAN_DATATYPE
-#undef INFNAN_INIT 
+#undef INFNAN_INIT
 
 #define DECLARE_INF
 #define DECLARE_NAN

@@ -53,12 +53,12 @@ static void do_resize( gint *width, gint *height, gpointer user_data )
   struct mapping *opts = (struct mapping *)user_data;
   struct svalue *opt;
   int xsize=0;
-  
+
   if( !opts )
     return;
 
   /* Exact size specified */
-  
+
   if( (opt = simple_mapping_string_lookup( opts, "xsize" ))
       && TYPEOF(*opt) == PIKE_T_INT)
   {
@@ -106,7 +106,7 @@ static void low__decode( INT32 args, int header_only )
 
   if( args > 2 )
     Pike_error("Too many arguments.\n");
-  
+
   if( args == 2 )
   {
     if( TYPEOF(Pike_sp[-1]) != PIKE_T_MAPPING )
@@ -160,7 +160,7 @@ static void low__decode( INT32 args, int header_only )
     rsvg_handle_free( handle );
     Pike_error("Failed to decode SVG.\n");
   }
-  
+
   {
     struct svalue *osp = Pike_sp;
     struct object *ao=0, *io=0;
@@ -170,7 +170,7 @@ static void low__decode( INT32 args, int header_only )
     int ys = gdk_pixbuf_get_height( res );
     int span = gdk_pixbuf_get_rowstride( res );
     guchar *data = gdk_pixbuf_get_pixels( res );
-    
+
     push_text( "xsize" ); push_int( xs );
     push_text( "ysize" ); push_int( ys );
     ref_push_string( literal_type_string );  push_text( "image/svg");
@@ -487,7 +487,7 @@ static void f_decode( INT32 args )
   f_index( 2 );
 }
 #endif
-  
+
 PIKE_MODULE_INIT
 {
 #ifdef HAVE_SVG

@@ -6,7 +6,7 @@
 
 /* This file is incuded in search.c with the following defines set:
 NEIG                is 1, xz, xz+1 or xz-1
-IMAGE_PHASE image_phase(h|v|hv|vh)    Name of the function 
+IMAGE_PHASE image_phase(h|v|hv|vh)    Name of the function
  */
 
 void IMAGE_PHASE(INT32 args)
@@ -19,12 +19,12 @@ void IMAGE_PHASE(INT32 args)
   int y, x; /* for this & img */
   int yz, xz; /* for this & img */
   int ys, xs; /* for this & img */
-  
+
   if (!THIS->img) { Pike_error("no image\n");  return; }
   this=THIS;
   thisi=this->img;
 
-  
+
   push_int(this->xsize);
   push_int(this->ysize);
   o=clone_object(image_program,2);
@@ -33,7 +33,7 @@ void IMAGE_PHASE(INT32 args)
 
   pop_n_elems(args);
 
-THREADS_ALLOW();  
+THREADS_ALLOW();
      xz=this->xsize;
      yz=this->ysize;
 

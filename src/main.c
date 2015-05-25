@@ -227,20 +227,20 @@ static void find_lib_dir(int argc, char **argv)
   int e;
 
   TRACE((stderr, "find_lib_dir...\n"));
-  
+
   set_default_master(argv[0]);
 
   for(e=1; e<argc; e++)
   {
     TRACE((stderr, "Parse argument %d:\"%s\"...\n", e, argv[e]));
-  
+
     if(argv[e][0] != '-') break;
 
     switch(argv[e][1])
     {
     default:
       break;
-	  
+
     case 'm':
       if(argv[e][2])
       {
@@ -333,7 +333,7 @@ int main(int argc, char **argv)
 #endif /* HAVE_MALLOPT */
 
   TRACE((stderr, "Init master...\n"));
-  
+
   find_lib_dir(argc, argv);
 
 #ifdef LIBPIKE
@@ -369,7 +369,7 @@ int main(int argc, char **argv)
 #define init_pike_runtime init_pike_runtime_var
   LOOKUP(add_predefine);
 #define add_predefine add_predefine_var
-  
+
 #endif /* LIBPIKE */
 
   TRACE((stderr, "init_pike()\n"));
@@ -379,7 +379,7 @@ int main(int argc, char **argv)
   for(e=1; e<argc; e++)
   {
     TRACE((stderr, "Parse argument %d:\"%s\"...\n", e, argv[e]));
-  
+
     if(argv[e][0]=='-')
     {
       for(p=argv[e]+1; *p;)
@@ -390,7 +390,7 @@ int main(int argc, char **argv)
 	  add_predefine(p+1);
 	  p+=strlen(p);
 	  break;
-	  
+
 	case 'm':
 	  if(p[1])
 	  {
@@ -521,7 +521,7 @@ int main(int argc, char **argv)
 
 	case 'r':
 	more_r_flags:
-	  switch(p[1]) 
+	  switch(p[1])
           {
 	  case 't':
 	    set_pike_runtime_options(RUNTIME_CHECK_TYPES, RUNTIME_CHECK_TYPES);
@@ -650,7 +650,7 @@ int main(int argc, char **argv)
 
 	move_svalue (Pike_sp++, &throw_value);
 	mark_free_svalue (&throw_value);
-	err = 
+	err =
 	  get_storage (Pike_sp[-1].u.object, generic_error_program);
 
 	SET_SVAL(t, PIKE_T_STRING, 0, string, err->error_message);

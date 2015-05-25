@@ -34,11 +34,11 @@ static struct data get_data( struct source *src, off_t len )
 {
   struct sm_source *s = (struct sm_source *)src;
   struct data res;
-  
+
   res.do_free = 0;
   res.off = 0;
   res.data = s->mem->data + s->offset;
-  
+
   if( len > s->len )
   {
     len = s->len;
@@ -92,7 +92,7 @@ struct source *source_system_memory_make( struct svalue *s,
     free(res);
     return 0;
   }
-  
+
   res->s.free_source = free_source;
   res->s.get_data = get_data;
   res->obj = s->u.object;

@@ -32,14 +32,14 @@
 #define IMAGE_CLASS(name,init,exit,prog) \
     void init(void); void exit(void); struct program *prog;
 #define IMAGE_SUBMODULE(name,init,exit)  \
-    void init(void); void exit(void); 
+    void init(void); void exit(void);
 #define IMAGE_SUBMODMAG(name,init,exit) \
     void init(void); void exit(void);
 #define IMAGE_FUNCTION(name,func,def0,def1) \
     void func(INT32 args);
 #include "initstuff.h"
 
-static struct 
+static struct
 {
    char *name;
    void (*init)(void);
@@ -51,14 +51,14 @@ static struct
 #undef IMAGE_SUBMODULE
 #undef IMAGE_FUNCTION
 #undef IMAGE_SUBMODMAG
-#define IMAGE_SUBMODMAG(a,b,c) 
+#define IMAGE_SUBMODMAG(a,b,c)
 #define IMAGE_FUNCTION(a,b,c,d)
 #define IMAGE_CLASS(name,init,exit,prog) { name,init,exit,&prog },
 #define IMAGE_SUBMODULE(a,b,c)
 #include "initstuff.h"
 };
 
-static struct 
+static struct
 {
    char *name;
    void (*init)(void);
@@ -67,12 +67,12 @@ static struct
 {
 #undef IMAGE_CLASS
 #undef IMAGE_SUBMODULE
-#define IMAGE_CLASS(name,init,exit,prog) 
+#define IMAGE_CLASS(name,init,exit,prog)
 #define IMAGE_SUBMODULE(name,init,exit) { name,init,exit },
 #include "initstuff.h"
 };
 
-static struct 
+static struct
 {
    char *name;
    void (*init)(void);
@@ -144,7 +144,7 @@ static void image_magic_index(INT32 args)
 	    submagic[i].o=clone_object(p,0);
 	    free_program(p);
 	 }
-	 
+
 	 ref_push_object(submagic[i].o);
 	 return;
       }
@@ -202,19 +202,19 @@ static void init_cpuidflags( )
         if( d < 0x80000000 )
           goto normal_test;
         image_get_cpuid( 0x80000001, &a, &b, &c, &d );
-        
+
         if( b & 0x00800000 ) image_cpuid |= IMAGE_MMX;
         if( b & 0x02000000 ) image_cpuid |= IMAGE_SSE;
         if( b & 0x01000000 ) image_cpuid |= IMAGE_EMMX;
         if( b & 0x80000000 ) image_cpuid |= (IMAGE_3DNOW | IMAGE_MMX);
-      }   
-    } else { 
+      }
+    } else {
       /* It's an AMD cpu. */
       image_get_cpuid( 0x80000000, &a, &b, &c, &d );
       if( d < 0x80000000 )
         goto normal_test;
       image_get_cpuid( 0x80000001, &a, &b, &c, &d );
-      
+
       if( b & 0x00800000 ) image_cpuid |= IMAGE_MMX;
       if( b & 0x02000000 ) image_cpuid |= IMAGE_SSE;
       if( b & 0x80000000 ) image_cpuid |= (IMAGE_3DNOW | IMAGE_MMX);
@@ -241,7 +241,7 @@ PIKE_MODULE_INIT
 
 #undef IMAGE_FUNCTION
 #undef IMAGE_SUBMODMAG
-#define IMAGE_SUBMODMAG(name,init,exit) 
+#define IMAGE_SUBMODMAG(name,init,exit)
 #define IMAGE_FUNCTION(name,func,def0,def1) tOr(def0,"")
 #include "initstuff.h"
       tFunc(tStr,tMixed); /* this */
@@ -282,7 +282,7 @@ PIKE_MODULE_INIT
       fprintf(stderr,"Image: initiating submodule \"Image.%s\"...\n",
 	      initsubmodule[i].name);
 #endif
-      
+
       start_new_program();
       (initsubmodule[i].init)();
       IMAGE_CHECK_STACK(initsubmodule[i].name);

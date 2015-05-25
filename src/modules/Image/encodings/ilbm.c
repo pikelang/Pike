@@ -84,7 +84,7 @@ struct BMHD {
 **! method array __decode();
 **!     Decodes an ILBM image structure down to chunks and
 **!     returns an array containing the ILBM structure;
-**!	
+**!
 **!     <pre>
 **!	({int xsize,int ysize,      // 0: size of image drawing area
 **!	  string bitmapheader,      // 2: BMHD chunk
@@ -195,7 +195,7 @@ static void parse_bmhd(struct BMHD *bmhd, unsigned char *s, ptrdiff_t len)
 	  "xAspect = %d, yAspect = %d, pageWidth = %d, pageHeight = %d\n",
 	  bmhd->w, bmhd->h, bmhd->x, bmhd->y, bmhd->nPlanes, bmhd->masking,
 	  bmhd->compression, bmhd->pad1, bmhd->transparentColor, bmhd->xAspect,
-	  bmhd->yAspect, bmhd->pageWidth, bmhd->pageHeight);	  
+	  bmhd->yAspect, bmhd->pageWidth, bmhd->pageHeight);
 #endif
 }
 
@@ -377,7 +377,7 @@ static void parse_body(struct BMHD *bmhd, unsigned char *body, ptrdiff_t blen,
 	      break;
 	    }
 	} else {
-	  /* HAM5/HAM6 */	  
+	  /* HAM5/HAM6 */
 	  rgb_group hold;
 	  int clr;
 	  size_t numcolors = ctable->u.flat.numentries;
@@ -453,7 +453,7 @@ static void image_ilbm__decode(INT32 args)
     image_ilbm___decode(args);
     args = 1;
   }
-  
+
   get_all_args("_decode", args, "%a", &arr);
 
   if(args>1)
@@ -553,7 +553,7 @@ static void image_ilbm__decode(INT32 args)
 **! method object decode(array _decoded)
 **! method object decode(array __decoded)
 **!	Decodes ILBM data and creates an image object.
-**! 	
+**!
 **! see also: encode
 **!
 **! note
@@ -575,7 +575,7 @@ void img_ilbm_decode(INT32 args)
      image_ilbm__decode(args);
      args = 1;
    }
-     
+
    if (TYPEOF(sp[-args]) != T_MAPPING)
      Pike_error("Image.ILBM.decode: illegal argument\n");
 
@@ -599,7 +599,7 @@ void img_ilbm_decode(INT32 args)
 /*
 **! method string encode(object image)
 **! method string encode(object image, mapping options)
-**! 	Encodes an ILBM image. 
+**! 	Encodes an ILBM image.
 **!
 **!     The <tt>options</tt> argument may be a mapping
 **!	containing zero or more encoding options:

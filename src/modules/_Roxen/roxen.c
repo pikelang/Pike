@@ -132,7 +132,7 @@ static void f_hp_feed( INT32 args )
   /* FIXME: The below does not support lines terminated with just \r. */
   for( ep=(hp->pnt+str_len),pp=MAXIMUM(hp->headers,hp->pnt-3);
        pp<ep && slash_n<2; pp++ )
-    if( *pp == ' ' )  
+    if( *pp == ' ' )
     {
       spc++;
       slash_n = 0;
@@ -142,7 +142,7 @@ static void f_hp_feed( INT32 args )
       slash_n++;
       tot_slash_n++;
     }
-    else if( *pp != '\r' ) 
+    else if( *pp != '\r' )
     {
       slash_n=0;
     }
@@ -157,13 +157,13 @@ static void f_hp_feed( INT32 args )
   if( slash_n != 2 )
   {
     /* one newline, but less than 2 space,
-     *    --> HTTP/0.9 or broken request 
+     *    --> HTTP/0.9 or broken request
      */
     if( (spc < 2) && tot_slash_n )
     {
       push_empty_string();
       /* This includes (all eventual) \r\n etc. */
-      push_text((char *)hp->headers); 
+      push_text((char *)hp->headers);
       f_aggregate_mapping( 0 );
       f_aggregate( 3 );
       return;
@@ -171,7 +171,7 @@ static void f_hp_feed( INT32 args )
     push_int( 0 );
     return;
   }
-  
+
   /*leftovers*/
   push_string(make_shared_binary_string((char *)pp, hp->pnt - pp));
   headers = allocate_mapping( 5 );
@@ -213,7 +213,7 @@ static void f_hp_feed( INT32 args )
       do {
 	for(j=os;j<l;j++)	/* Find end of line */
 	  if( in[j] == '\n' || in[j]=='\r')
-	    break; 
+	    break;
 
 	push_string(make_shared_binary_string((char*)in+os,j-os));
 	val_cnt++;
@@ -240,7 +240,7 @@ static void f_hp_feed( INT32 args )
 	  f_add(2);
 	} else {
 	  ref_push_string(tmp->u.string);
-	  stack_swap(); 
+	  stack_swap();
 	  map_delete(headers, Pike_sp-3);
 	  f_aggregate(2);
 	}
@@ -492,7 +492,7 @@ static void f_html_encode_string( INT32 args )
 
   if( args != 1 )
     Pike_error("Wrong number of arguments to html_encode_string\n" );
-  
+
   switch( TYPEOF(Pike_sp[-1]) )
   {
     void o_cast_to_string();
@@ -500,7 +500,7 @@ static void f_html_encode_string( INT32 args )
     case PIKE_T_INT:
     case PIKE_T_FLOAT:
       /* Optimization, no need to check the resultstring for
-       * unsafe characters. 
+       * unsafe characters.
        */
       o_cast_to_string();
       return;

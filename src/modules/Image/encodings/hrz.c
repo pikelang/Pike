@@ -47,7 +47,7 @@ void image_hrz_f_decode(INT32 args)
   struct pike_string *s;
   int c;
   get_all_args( "decode", args, "%S", &s);
-  
+
   if(s->len != 256*240*3) Pike_error("This is not a HRZ file\n");
 
   push_int( 256 );
@@ -81,12 +81,12 @@ void image_hrz_f_encode(INT32 args )
   struct pike_string *s;
   int x,y;
   get_all_args( "encode", args, "%o", &io);
-  
+
   if(!(i = get_storage( io, image_program)))
     Pike_error("Wrong argument 1 to Image.HRZ.encode\n");
-  
+
   s = begin_shared_string( 256*240*3 );
-  
+
   memset(s->str, 0, s->len );
   for(y=0; y<240; y++)
     if(y < i->ysize)

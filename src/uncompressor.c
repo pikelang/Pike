@@ -115,10 +115,10 @@ void my_uncompress(char *file,int argc, char **argv)
 #ifdef DEBUG
     fprintf(stderr,"namelen=%d\n",len);
 #endif
-    
+
     gr(buffer, len);
     buffer[len]=0;
-    
+
 
 #ifdef DEBUG
     fprintf(stderr,"Type %c: %s\n",type,buffer);
@@ -139,7 +139,7 @@ void my_uncompress(char *file,int argc, char **argv)
 #endif
 	putenv(buffer);
 	break;
-	
+
       case 's': /* system */
 	/* We ignore error so that we can continue with
 	 * file deletion
@@ -172,7 +172,7 @@ void my_uncompress(char *file,int argc, char **argv)
 		  *(ptr++)='\\';
 		  *(ptr++)='"';
 		  break;
-#endif		  
+#endif
 		case '"':
 		  *(ptr++)='\\';
 		default:
@@ -188,7 +188,7 @@ void my_uncompress(char *file,int argc, char **argv)
 #endif
 	system(buffer);
 	break;
-	
+
       case 'd': /* dir */
 	/* We ignore mkdir errors and just assume that the
 	 * directory already exists
@@ -196,7 +196,7 @@ void my_uncompress(char *file,int argc, char **argv)
 	/* fprintf(stderr,"mkdir(%s)\n",buffer); */
 	mkdir(buffer, 0777);
 	break;
-	
+
       case 'f': /* file */
       {
 	FILE *f;
@@ -229,7 +229,7 @@ void my_uncompress(char *file,int argc, char **argv)
 	}
       }
       break;
-      
+
       case 'D':
 #ifdef DEBUG
 	fprintf(stderr,"unlink(%s)\n",buffer);
@@ -243,7 +243,7 @@ void my_uncompress(char *file,int argc, char **argv)
 /*	  exit(1); */
 	}
 	break;
-	
+
       default:
 	fprintf(stderr,"Wrong type (%c (%d))!\n",type,type);
 	exit(1);

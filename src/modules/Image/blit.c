@@ -127,7 +127,7 @@ void img_clear(rgb_group *dest, rgb_group rgb, ptrdiff_t size)
     rgb_group *from = dest;
     *(dest++)=rgb;
     size -= 1;
-    while (size>increment) 
+    while (size>increment)
     {
       memcpy(dest,from,increment*sizeof(rgb_group));
       size-=increment,dest+=increment;
@@ -162,12 +162,12 @@ void img_box_nocheck(INT32 x1,INT32 y1,INT32 x2,INT32 y2)
 	 if(!length)
 	   break;	/* Break to the while(0). */
 	 for(x=0; x<length; x++)  *(foo+x) = rgb;
-	 while(--y)  memcpy((foo+=xs), from, length*sizeof(rgb_group)); 
+	 while(--y)  memcpy((foo+=xs), from, length*sizeof(rgb_group));
        } while(0);
        THREADS_DISALLOW();
      }
-   } 
-   else 
+   }
+   else
    {
      THREADS_ALLOW();
      do {
@@ -239,20 +239,20 @@ void img_crop(struct image *dest,
    ys=MAXIMUM(0,y1);
 
    if( ! (( x2 < 0) || (y2 < 0) || (x1>=img->xsize) || (y1>=img->ysize))) {
-     
+
      if (x1<0) x1=0;
      if (y1<0) y1=0;
      if (x2>=img->xsize) x2=img->xsize-1;
      if (y2>=img->ysize) y2=img->ysize-1;
-     
+
      img_blit(new+xp+yp*dest->xsize,
 	      img->img+xs+(img->xsize)*ys,
 	      x2-x1+1,
 	      y2-y1+1,
 	      dest->xsize,
 	      img->xsize);
-     
-   }     
+
+   }
    dest->img=new;
 }
 
@@ -300,7 +300,7 @@ void image_paste(INT32 args)
 
    if (args>1)
    {
-      if (args<3 
+      if (args<3
 	  || TYPEOF(sp[1-args]) != T_INT
 	  || TYPEOF(sp[2-args]) != T_INT)
         bad_arg_error("paste",sp-args,args,0,"",sp-args,
@@ -315,7 +315,7 @@ void image_paste(INT32 args)
      pop_n_elems(args);
      ref_push_object(THISOBJ);
      return;
-   }   
+   }
    x2=x1+img->xsize-1;
    y2=y1+img->ysize-1;
 
@@ -324,10 +324,10 @@ void image_paste(INT32 args)
      pop_n_elems(args);
      ref_push_object(THISOBJ);
      return;
-   }   
+   }
    blitwidth=MINIMUM(x2,THIS->xsize-1)-MAXIMUM(x1,0)+1;
    blitheight=MINIMUM(y2,THIS->ysize-1)-MAXIMUM(y1,0)+1;
-   
+
    img_blit(THIS->img+MAXIMUM(0,x1)+(THIS->xsize)*MAXIMUM(0,y1),
 	    img->img+MAXIMUM(0,-x1)+(x2-x1+1)*MAXIMUM(0,-y1),
 	    blitwidth,
@@ -344,8 +344,8 @@ void image_paste(INT32 args)
 **! method object paste_alpha(object image,int alpha,int x,int y)
 **!    	Pastes a given image over the current image, with
 **!    	the specified alpha channel value.
-**!	
-**!    	An alpha channel value of 0 leaves nothing of the original 
+**!
+**!    	An alpha channel value of 0 leaves nothing of the original
 **!     image in the paste area, 255 is meaningless and makes the
 **!	given image invisible.
 **!
@@ -377,7 +377,7 @@ void image_paste_alpha(INT32 args)
    if (!THIS->img) return;
    if (!img->img) return;
    THIS->alpha=(unsigned char)(sp[1-args].u.integer);
-   
+
    if (args>=4)
    {
       if (TYPEOF(sp[2-args]) != T_INT
@@ -394,7 +394,7 @@ void image_paste_alpha(INT32 args)
      pop_n_elems(args);
      ref_push_object(THISOBJ);
      return;
-   }   
+   }
 
 /* tråda här nåndag.. Ok /Per */
 
@@ -427,8 +427,8 @@ void image_paste_alpha(INT32 args)
 **! method object paste_mask(object image,object mask)
 **! method object paste_mask(object image,object mask,int x,int y)
 **!    Pastes a given image over the current image,
-**!    using the given mask as opaque channel.  
-**!    
+**!    using the given mask as opaque channel.
+**!
 **!    A pixel value of 255 makes the result become a pixel
 **!    from the given image, 0 doesn't change anything.
 **!
@@ -470,7 +470,7 @@ CHRONO("image_paste_mask init");
 
    if (!mask->img) return;
    if (!img->img) return;
-   
+
    if (args>=4)
    {
       if (TYPEOF(sp[2-args]) != T_INT
@@ -529,11 +529,11 @@ CHRONO("image_paste_mask end");
 **! method object paste_alpha_color(object mask,Color color)
 **! method object paste_alpha_color(object mask,Color color,int x,int y)
 **!    Pastes a given color over the current image,
-**!    using the given mask as opaque channel.  
-**!    
+**!    using the given mask as opaque channel.
+**!
 **!    A pixel value of 255 makes the result become the color given,
 **!    0 doesn't change anything.
-**!    
+**!
 **!    The masks red, green and blue values are used separately.
 **!    If no color are given, the current is used.
 **!
@@ -573,7 +573,7 @@ void image_paste_alpha_color(INT32 args)
 
    if (args==6 || args==4 || args==2 || args==3) /* color at arg 2.. */
       arg=1+getrgb(THIS,1,args,3,"image->paste_alpha_color()\n");
-   if (args>arg+1) 
+   if (args>arg+1)
    {
       if (TYPEOF(sp[arg-args]) != T_INT
 	  || TYPEOF(sp[1+arg-args]) != T_INT)
@@ -582,7 +582,7 @@ void image_paste_alpha_color(INT32 args)
       y1=sp[1+arg-args].u.integer;
    }
    else x1=y1=0;
-   
+
    x2=MINIMUM(THIS->xsize-x1,mask->xsize);
    y2=MINIMUM(THIS->ysize-y1,mask->ysize);
 
@@ -624,7 +624,7 @@ CHRONO("image_paste_alpha_color end");
 }
 
 void img_box(INT32 x1,INT32 y1,INT32 x2,INT32 y2)
-{   
+{
    if (x1>x2) x1^=x2,x2^=x1,x1^=x2;
    if (y1>y2) y1^=y2,y2^=y1,y1^=y2;
    if (x2 >= THIS->xsize) x2 = THIS->xsize-1;

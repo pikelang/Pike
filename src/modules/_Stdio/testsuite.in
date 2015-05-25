@@ -75,7 +75,7 @@ cond_begin([[ Stdio.File()->proxy ]])
 test_any([[
   object o2,o=Stdio.File(); o2=o->pipe();
   object x2,x=Stdio.File(); x2=x->pipe();
-  
+
  x2->proxy(o);
  x2=0;
  switch(o2->write("test"))
@@ -92,7 +92,7 @@ test_any([[
 test_any([[
   object o2,o=Stdio.File(); o2=o->pipe(Stdio.PROP_IPC);
   object x2,x=Stdio.File(); x2=x->pipe();
-  
+
  x2->proxy(o);
  x2=0;
  switch(o2->write("test"))
@@ -108,7 +108,7 @@ test_any([[
 test_any([[
   object o2,o=Stdio.File(); o2=o->pipe();
   object x2,x=Stdio.File(); x2=x->pipe(Stdio.PROP_IPC);
-  
+
  x2->proxy(o);
  x2=0;
  switch(o2->write("test"))
@@ -124,7 +124,7 @@ test_any([[
 test_any([[
   object o2,o=Stdio.File(); o2=o->pipe(Stdio.PROP_IPC);
   object x2,x=Stdio.File(); x2=x->pipe(Stdio.PROP_IPC);
-  
+
  x2->proxy(o);
  x2=0;
  switch(o2->write("test"))

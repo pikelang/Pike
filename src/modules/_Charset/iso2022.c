@@ -198,7 +198,7 @@ static INT32 parse_esc(unsigned char *src, ptrdiff_t srclen,
   if(srclen<2)
     return 0;
 
-  if(src[1]>=0x40) 
+  if(src[1]>=0x40)
     switch(src[1]) {
     case 'n':
       /* LS2 */
@@ -942,7 +942,7 @@ static void eat_enc_string(struct pike_string *str, struct iso2022enc_stor *s,
 		index = 0x13;
 	      } else if(c < 0x200 || c >= 0x9fa1) {
 		mode = MODE_9494;
-		index = 0x14;		
+		index = 0x14;
 	      } else if((c >= 0x386 && c < 0x400) || c == 0x201b) {
 		mode = MODE_96;
 		index = 0x16;
@@ -963,7 +963,7 @@ static void eat_enc_string(struct pike_string *str, struct iso2022enc_stor *s,
 		switch(c) {
 		case 0x2039: case 0x203a: case 0x203e: case 0x223c:
 		case 0x22ef: case 0x2329: case 0x232a: case 0x2571:
-		case 0x2572: case 0x25ca: case 0x3004: case 0x30f8:	
+		case 0x2572: case 0x25ca: case 0x3004: case 0x30f8:
 		  index = 0x10;
 		  break;
 		default:
@@ -983,7 +983,7 @@ static void eat_enc_string(struct pike_string *str, struct iso2022enc_stor *s,
 		index = 0x13;
 		break;
 	      }
-	      break;		
+	      break;
 	    case VARIANT_JP:
 	      switch(c) {
 	      case 0x2013: case 0x2039: case 0x203a: case 0x203e:
@@ -1039,7 +1039,7 @@ static void eat_enc_string(struct pike_string *str, struct iso2022enc_stor *s,
 	      index = 0x13;
 	    } else {
 	      mode = MODE_9494;
-	      index = 0x14;		
+	      index = 0x14;
 	    }
 
 	  } else if(c<0x180) {
@@ -1365,7 +1365,7 @@ static void f_clear(INT32 args)
   }
 
   reset_string_builder(&s->strbuild);
-  
+
   push_object(this_object());
 }
 
@@ -1417,7 +1417,7 @@ static void f_enc_clear(INT32 args)
   s->g[0].index = 0x12;
 
   reset_string_builder(&s->strbuild);
-  
+
   push_object(this_object());
 }
 

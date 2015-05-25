@@ -100,7 +100,7 @@ static void f_blobs_add_words( INT32 args )
 /*! @decl void add_words( int docid, array(string) words, int field_id )
  *!
  *! Add all the words in the 'words' array to the blobs
- */ 
+ */
 {
   int docid;
   struct array *words;
@@ -108,7 +108,7 @@ static void f_blobs_add_words( INT32 args )
 
   int i;
   struct blobs *blbl = THIS;
-  
+
   get_all_args( "add_words", args, "%d%a%d",
 		&docid, &words, &field_id);
 

@@ -84,7 +84,7 @@ Disabling use of getaddrinfo.])
     ;;
   esac
 fi
-     
+
 AC_HAVE_FUNCS(syslog link symlink readlink resolvepath realpath chown lchown \
 	initgroups setgroups getgroups seteuid setresuid setegid setresgid \
         geteuid getpgrp getpgid getppid getuid getgid setuid setgid setpgrp \
@@ -269,7 +269,7 @@ struct hostent foo;
 foo.h_addr_list[0];
 ],pike_cv_struct_has_h_addr_list=yes,pike_cv_struct_has_h_addr_list=no)
 ])
- 
+
 if test "$pike_cv_struct_has_h_addr_list" = yes; then
   AC_MSG_RESULT(yes)
   AC_DEFINE(HAVE_H_ADDR_LIST)
@@ -290,7 +290,7 @@ AC_TRY_COMPILE([
   in_addr_t foo;
 ],pike_cv_type_in_addr_t=yes,pike_cv_type_in_addr_t=no)
 ])
- 
+
 if test "$pike_cv_type_in_addr_t" = yes; then
   AC_MSG_RESULT(yes)
   AC_DEFINE(HAVE_IN_ADDR_T)

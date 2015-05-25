@@ -26,13 +26,13 @@ if test x$with_svg = xyes ; then
     LIBS="$SVG_LIBS $LIBS"
 
     AC_TRY_LINK([
-#include <librsvg/rsvg.h> 
-], 
+#include <librsvg/rsvg.h>
+],
 [
   RsvgHandle *handle;
   handle = rsvg_handle_new();
-], 
-[svg_ok=yes], 
+],
+[svg_ok=yes],
 [svg_ok=no])
     if test yes = "$svg_ok" ; then
       AC_MSG_RESULT(yes)

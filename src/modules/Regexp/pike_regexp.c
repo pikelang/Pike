@@ -9,7 +9,7 @@
  *
  * DESCRIPTION
  *
- *	Underneath the reformatting and comment blocks which were added to 
+ *	Underneath the reformatting and comment blocks which were added to
  *	make it consistent with the rest of the code, you will find a
  *	modified version of Henry Specer's regular expression library.
  *	Henry's functions were modified to provide the minimal regular
@@ -47,7 +47,7 @@
  *
  * Also altered by Fredrik Hubinette to handle the + operator and
  * eight-bit chars. Mars 22 1996
- * 
+ *
  *
  * 	Beware that some of this code is subtly aware of the way operator
  * 	precedence is structured in regular expressions.  Serious changes in
@@ -58,7 +58,7 @@
  *     Mark H. Colburn, NAPS International (mark@jhereg.mn.org)
  *     Henry Spencer, University of Torronto (henry@utzoo.edu)
  *
- * Sponsored by The USENIX Association for public distribution. 
+ * Sponsored by The USENIX Association for public distribution.
  *
  */
 
@@ -150,7 +150,7 @@
  *		exists to make loop structures possible.
  *
  * STAR,KPLUS	Complex cases are implemented as circular BRANCH structures
- *		using BACK.  Simple cases (one character per match) are 
+ *		using BACK.  Simple cases (one character per match) are
  *		implemented with STAR or KPLUS for speed and to minimize
  *		recursive plunges.
  *
@@ -531,7 +531,7 @@ static char *regpiece(int *flagp)
       regoptail(ret, ret);	/* back */
       regtail(ret, regnode(BRANCH)); /* or */
       regtail(ret, regnode(NOTHING)); /* null. */
-    } 
+    }
   }
   else if(op == PLUS)
   {
@@ -556,11 +556,11 @@ static char *regpiece(int *flagp)
       regtail(ret, regnode(NOTHING));
     }
   }
-    
+
   regparse++;
   if (ISMULT(*regparse))
     FAIL("nested * or +");
-    
+
   return ret;
 }
 

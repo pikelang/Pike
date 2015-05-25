@@ -513,7 +513,7 @@ PIKECLASS Hash
 	Pike_error("State not properly initialized.\n");
 
       NO_WIDE_STRING(data);
-      
+
       /* Only thread this block for significant data size */
       if (data->len > HASH_THREADS_ALLOW_THRESHOLD) {
 	THREADS_ALLOW();
@@ -561,7 +561,7 @@ PIKECLASS Hash
 
 	  length = arg->u.integer;
 	}
-      
+
       digest = begin_shared_string(length);
       meta->digest(THIS->ctx, length, (uint8_t *)digest->str);
       push_string(end_shared_string(digest));

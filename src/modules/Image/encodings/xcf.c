@@ -120,7 +120,7 @@ static void f_substring__sprintf( INT32 args )
      push_int64( s->offset );
      f_sprintf( 4 );
      return;
-   default: 
+   default:
      push_int(0);
      return;
   }
@@ -183,7 +183,7 @@ static void f_substring_get_short( INT32 UNUSED(args) )
   push_int( res );
 }
 
-static void push_substring( struct pike_string *s, 
+static void push_substring( struct pike_string *s,
                             ptrdiff_t offset,
                             ptrdiff_t len )
 {
@@ -1335,7 +1335,7 @@ void image_xcf_f__decode_tiles( INT32 args )
          LOOP_INIT();
          pix = colortable[s[ind]];
          LOOP_EXIT();
-       } 
+       }
        else
        {
          LOOP_INIT();
@@ -1389,9 +1389,9 @@ void image_xcf_f__decode_tiles( INT32 args )
     }
 
     if( df )
-    { 
-      free(df); 
-      df=0; 
+    {
+      free(df);
+      df=0;
     }
     x += TILE_WIDTH;
 
@@ -1506,7 +1506,7 @@ void init_image_xcf(void)
 
 /*   set_init_callback(init_substring); */
   set_exit_callback(free_substring);
-  substring_program = end_program();  
+  substring_program = end_program();
 }
 
 

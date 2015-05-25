@@ -97,7 +97,7 @@
       function = new_frame->context->prog->identifiers + ref->identifier_offset;
       new_frame->fun = DO_NOT_WARN((unsigned INT16)fun);
 
-      
+
 #ifdef PIKE_DEBUG
 	if(Pike_interpreter.trace_level > 9)
 	{
@@ -157,7 +157,7 @@
 #endif /* PIKE_DEBUG */
 
       Pike_fp = new_frame;
-      
+
       if(Pike_interpreter.trace_level)
       {
 	dynamic_buffer save_buf;
@@ -193,13 +193,13 @@
       function->num_calls++;
       function->recur_depth++;
 #endif
-  
+
       if(function->func.offset == -1) {
 	new_frame->num_args = args;
 	generic_error(NULL, Pike_sp, args,
 		      "Calling undefined function.\n");
       }
-      
+
       switch(function->identifier_flags & (IDENTIFIER_TYPE_MASK|IDENTIFIER_ALIAS))
       {
       case IDENTIFIER_C_FUNCTION:
@@ -210,7 +210,7 @@
 	FAST_CHECK_THREADS_ON_CALL();
 	(*function->func.c_fun)(args);
 	break;
-	
+
       case IDENTIFIER_CONSTANT:
       {
 	struct svalue *s=&(Pike_fp->context->prog->

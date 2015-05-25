@@ -359,7 +359,7 @@
   set_close_on_exec(PIKE_CONCAT(pre,_fd)[0], 1);	\
   set_close_on_exec(PIKE_CONCAT(pre,_fd)[1], 1);	\
 }while(0)
-   
+
 #endif /* else NEED_SIGNAL_SAFE_FIFO */
 
 #ifndef SAFE_FIFO_DEBUG_END
@@ -969,13 +969,13 @@ static void f_signal(int args)
 	func=receive_sigchild;
 	break;
 #endif
-	
+
 #ifdef SIGPIPE
       case SIGPIPE:
 	func=(sigfunctype) SIG_IGN;
 	break;
 #endif
-	
+
       default:
 	if(default_signals[signum])
 	  func=receive_signal;
@@ -1198,7 +1198,7 @@ static RETSIGTYPE receive_sigchild(int UNUSED(signum))
  try_reap_again:
   /* We carefully reap what we saw */
   pid=MY_WAIT_ANY(&status, WNOHANG|WUNTRACED);
-  
+
   if(pid>0)
   {
     wait_data wd;
@@ -1657,9 +1657,9 @@ static void f_pid_status_wait(INT32 args)
     {
       switch(err)
       {
-      case EINTR: 
+      case EINTR:
 	break;
-	      
+
 #if defined(_REENTRANT) || defined(USE_SIGCHILD)
       case ECHILD:
 	/* If there is a SIGCHILD handler, it might have reaped
@@ -1703,7 +1703,7 @@ static void f_pid_status_wait(INT32 args)
 #endif /* HAVE_POLL */
 	  }
 	  THREADS_DISALLOW();
-	  if (killret && killerr == ESRCH) { 
+	  if (killret && killerr == ESRCH) {
 	    if (alreadydied)
 	      goto lostchild;	/* But if we already looped, punt */
 	    alreadydied = 1;	/* We try looping once, to cover for races */
@@ -1984,7 +1984,7 @@ static void f_trace_process_exit(INT32 args)
     Pike_error("Failed to exit process. errno:%d\n", err);
   }
   pop_n_elems(args);
-  push_int(0);  
+  push_int(0);
 }
 
 #if 0	/* Disabled for now. */
@@ -2078,7 +2078,7 @@ static BPTR get_amigados_handle(struct mapping *optional, char *name, int fd)
 #ifdef __ixemul__
   if((ext = fcntl(fd, F_EXTERNALIZE, 0)) < 0)
     Pike_error("File for %s can not be externalized.\n", name);
-  
+
   sprintf(buf, "IXPIPE:%lx", ext);
 
   /* It's a kind of magic... */
@@ -2134,15 +2134,15 @@ static HANDLE get_inheritable_handle(struct mapping *optional,
       if(!(fd_query_properties(fd, 0) & fd_INTERPROCESSABLE))
       {
 	void create_proxy_pipe(struct object *o, int for_reading);
-	
+
 	create_proxy_pipe(tmp->u.object, for_reading);
 	fd=fd_from_object(Pike_sp[-1].u.object);
-	
+
 	if(fd == -1)
 	  Pike_error("Proxy thread creation failed for %s.\n",name);
       }
-      
-      
+
+
       if(!DuplicateHandle(GetCurrentProcess(),	/* Source process */
 			  da_handle[fd],
 			  GetCurrentProcess(),	/* Target process */
@@ -2201,7 +2201,7 @@ static void free_perishables(struct perishables *storage)
   if(storage->env) free( storage->env );
   if(storage->argv) free( storage->argv );
 #ifdef HAVE_SETRLIMIT
-  while(storage->limits) 
+  while(storage->limits)
   {
     struct pike_limit *n = storage->limits->next;
     free( storage->limits );
@@ -2310,7 +2310,7 @@ static int set_priority( int pid, char *to )
       /* Permission denied, or no such process. */
       return 0;
     }
-    
+
     switch( prilevel )
     {
     case -1:
@@ -2330,10 +2330,10 @@ static int set_priority( int pid, char *to )
     case 2:            how = HIGH_PRIORITY_CLASS;     break;
     case 3:            how = REALTIME_PRIORITY_CLASS; break;
     }
-    
+
     if( SetPriorityClass( process, how ) )
       how = 1;
-    else 
+    else
       how = 0;
     CloseHandle( process );
     return how;
@@ -2446,7 +2446,7 @@ static int set_priority( int pid, char *to )
 #  endif
 #  ifdef HAVE_SETPRIORITY
   {
-    if(prilevel == 3) 
+    if(prilevel == 3)
       prilevel = 2;
     errno = 0;
     return setpriority( PRIO_PROCESS, pid, -prilevel*10 )!=-1 || errno==0;
@@ -2481,7 +2481,7 @@ void f_set_priority( INT32 args )
 
 #ifndef __amigaos__
 #ifdef HAVE_SETRLIMIT
-static void internal_add_limit( struct perishables *storage, 
+static void internal_add_limit( struct perishables *storage,
                                 int limit_resource,
                                 struct svalue *limit_value )
 {
@@ -2804,14 +2804,14 @@ void f_create_process(INT32 args)
     case 1: cmd=Pike_sp[-args].u.array;
       if(cmd->size < 1)
 	Pike_error("Too few elements in argument array.\n");
-      
+
       if( (cmd->type_field & ~BIT_STRING) &&
 	  (array_fix_type_field(cmd) & ~BIT_STRING) )
 	Pike_error("Bad argument 1 to Process().\n");
 
       for(e=0;e<cmd->size;e++)
 	if(ITEM(cmd)[e].u.string->size_shift)
-	  Pike_error("Argument is not an 8-bit string.\n");	
+	  Pike_error("Argument is not an 8-bit string.\n");
   }
 
 
@@ -2878,7 +2878,7 @@ void f_create_process(INT32 args)
                     numslash++;
                   }
                 if (d >= ITEM(cmd)[e].u.string->len)
-                  numslash *= 2; /* argument ends with backslashes, need to 
+                  numslash *= 2; /* argument ends with backslashes, need to
                                     double because we add a doubleqoute below */
                 else if (ITEM(cmd)[e].u.string->str[d] == '"')
                   numslash = 2*numslash + 1; /* escape backslashes and the
@@ -2909,7 +2909,7 @@ void f_create_process(INT32 args)
 	}
       }
       low_my_putchar(0, &buf);
-      
+
 /*      fprintf(stderr,"COM: %s\n",buf.s.str); */
 
       /* NOTE: buf isn't finalized, since CreateProcess performs destructive
@@ -2924,7 +2924,7 @@ void f_create_process(INT32 args)
 
     memset(&info,0,sizeof(info));
     info.cb=sizeof(info);
-    
+
     GetStartupInfo(&info);
 
     /* Protect inherit status for handles */
@@ -3018,7 +3018,7 @@ void f_create_process(INT32 args)
 		      &info,
 		      &proc);
     err=GetLastError();
-    
+
     THREADS_DISALLOW_UID();
 
     UNLOCK_IMUTEX(&handle_protection_mutex);
@@ -3030,7 +3030,7 @@ void f_create_process(INT32 args)
     if(t2 != DO_NOT_WARN(INVALID_HANDLE_VALUE)) CloseHandle(t2);
     if(t3 != DO_NOT_WARN(INVALID_HANDLE_VALUE)) CloseHandle(t3);
 #endif
-    
+
     if(ret)
     {
       CloseHandle(proc.hThread);
@@ -3071,7 +3071,7 @@ void f_create_process(INT32 args)
 	      low_my_putchar(STR0(ITEM(cmd)[e].u.string)[d], &storage.cmd_buf);
 	  }
 	}
-        low_my_putchar('"', &storage.cmd_buf);	
+        low_my_putchar('"', &storage.cmd_buf);
       } else
         low_my_binary_strcat(STR0(ITEM(cmd)[e].u.string),
 			     ITEM(cmd)[e].u.string->len,
@@ -4300,7 +4300,7 @@ void Pike_f_fork(INT32 args)
       });
     in_forked_child = 1;
   }
-  
+
   if(pid==-1) {
     Pike_error("Fork failed. errno:%d.\n", errno);
   }
@@ -4460,7 +4460,7 @@ static void f_kill(INT32 args)
   default:
     SIMPLE_BAD_ARG_ERROR("kill", 1, "int");
   }
-    
+
   if(TYPEOF(Pike_sp[1-args]) != PIKE_T_INT)
     SIMPLE_BAD_ARG_ERROR("kill", 2, "int");
 
@@ -4574,7 +4574,7 @@ static void f_kill(INT32 args)
   default:
     SIMPLE_BAD_ARG_ERROR("kill", 1, "int|object");
   }
-    
+
   if(TYPEOF(Pike_sp[1-args]) != PIKE_T_INT)
     SIMPLE_BAD_ARG_ERROR("kill", 2, "int");
 
@@ -4584,7 +4584,7 @@ static void f_kill(INT32 args)
       pop_n_elems(args);
       push_int(1);
       break;
-      
+
     case SIGKILL:
     {
       int i=TerminateProcess(proc,0xff);
@@ -4593,7 +4593,7 @@ static void f_kill(INT32 args)
       check_signals(0,0,0);
       break;
     }
-      
+
     default:
       errno=EINVAL;
       pop_n_elems(args);
@@ -4864,7 +4864,7 @@ PMOD_EXPORT void low_init_signals(void)
 
   /* Restore any custom signals if needed. */
   for(e=0;e<MAX_SIGNALS;e++) {
-    
+
     if ((TYPEOF(signal_callbacks[e]) != PIKE_T_INT) ||
 	default_signals[e])
     {
@@ -4987,11 +4987,11 @@ void init_signals(void)
 
   end_class("TraceProcess", 0);
 #endif /* HAVE_PTRACE */
-  
+
 /* function(string,int|void:int) */
   ADD_EFUN("set_priority",f_set_priority,tFunc(tStr tOr(tInt,tVoid),tInt),
            OPT_SIDE_EFFECT);
-  
+
   ADD_EFUN("signal",f_signal,
 	   tFunc(tInt tOr(tVoid,tFunc(tOr(tVoid,tInt),tVoid)),tMix),
 	   OPT_SIDE_EFFECT);
@@ -5008,10 +5008,10 @@ void init_signals(void)
 
 /* function(int:string) */
   ADD_EFUN("signame",f_signame,tFunc(tInt,tStr),0);
-  
+
 /* function(string:int) */
   ADD_EFUN("signum",f_signum,tFunc(tStr,tInt),0);
-  
+
 /* function(:int) */
   ADD_EFUN("getpid",f_getpid,tFunc(tNone,tInt),OPT_EXTERNAL_DEPEND);
 

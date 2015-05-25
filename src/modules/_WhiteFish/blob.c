@@ -223,7 +223,7 @@ static struct hash *find_hash( struct blob_data *d, int doc_id )
 {
   unsigned int r = ((unsigned int)doc_id) % HSIZE;
   struct hash *h = d->hash[ r ];
-  
+
   while( h )
   {
     if( h->doc_id == doc_id )
@@ -279,7 +279,7 @@ static void _append_blob( struct blob_data *d, struct pike_string *s )
      */
     wf_buffer_rewind_r( b, 5 );
     wf_buffer_rewind_w( h->data, -1 );
-    wf_buffer_memcpy( h->data, b, nhits*2+5 );    
+    wf_buffer_memcpy( h->data, b, nhits*2+5 );
   }
   wf_buffer_free( b );
 }

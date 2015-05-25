@@ -17,7 +17,7 @@
 /**
  * A Pike array is represented as a 'struct array' with all the
  * needed svalues malloced in the same block.
- * 
+ *
  * @see type_field
  */
 struct array
@@ -310,8 +310,8 @@ void assign_array_level( struct array *a, struct array *b, int level );
 
 
 /**
- * Sets an index in an array. 
- * 
+ * Sets an index in an array.
+ *
  * @param V the array to modify
  * @param I the index of the array to set
  * @param S the svalue to set

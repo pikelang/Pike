@@ -242,16 +242,16 @@ const struct keyword instr_names[]=
 #ifndef PIKE_PRECOMPILER
 #include "interpret_protos.h"
 #endif /* !PIKE_PRECOMPILER */
-{ "%=",			F_MOD_EQ,0 NULLADDR },	
-{ "&=",			F_AND_EQ,0 NULLADDR },	
-{ "|=",			F_OR_EQ,0 NULLADDR },	
-{ "*=",			F_MULT_EQ,0 NULLADDR },	
-{ "+=",			F_ADD_EQ,0 NULLADDR },	
-{ "-=",			F_SUB_EQ,0 NULLADDR },	
-{ "/=",			F_DIV_EQ,0 NULLADDR },	
-{ "<<=",		F_LSH_EQ,0 NULLADDR },	
-{ ">>=",		F_RSH_EQ,0 NULLADDR },	
-{ "^=",			F_XOR_EQ,0 NULLADDR },	
+{ "%=",			F_MOD_EQ,0 NULLADDR },
+{ "&=",			F_AND_EQ,0 NULLADDR },
+{ "|=",			F_OR_EQ,0 NULLADDR },
+{ "*=",			F_MULT_EQ,0 NULLADDR },
+{ "+=",			F_ADD_EQ,0 NULLADDR },
+{ "-=",			F_SUB_EQ,0 NULLADDR },
+{ "/=",			F_DIV_EQ,0 NULLADDR },
+{ "<<=",		F_LSH_EQ,0 NULLADDR },
+{ ">>=",		F_RSH_EQ,0 NULLADDR },
+{ "^=",			F_XOR_EQ,0 NULLADDR },
 { "arg+=1024",		F_PREFIX_1024,0 NULLADDR },
 { "arg+=256",		F_PREFIX_256,0 NULLADDR },
 { "arg+=256*X",		F_PREFIX_CHARX256,0 NULLADDR },
@@ -288,7 +288,7 @@ const struct keyword instr_names[]=
 { "pointer",		F_POINTER, I_ISPOINTER NULLADDR },
 { "data",		F_DATA, I_DATA NULLADDR },
 { "byte",		F_BYTE, I_DATA NULLADDR },
-{ "lvalue_list",	F_LVALUE_LIST,0 NULLADDR },	
+{ "lvalue_list",	F_LVALUE_LIST,0 NULLADDR },
 { "arg_list",		F_ARG_LIST, 0 NULLADDR },
 { "comma_expr",		F_COMMA_EXPR, 0 NULLADDR },
 { "val_lval",		F_VAL_LVAL, 0 NULLADDR },
@@ -319,7 +319,7 @@ size_t instrs_checksum;
 const char *low_get_f_name(int n, struct program *p)
 {
   static char buf[30];
-  
+
   if (n<F_MAX_OPCODE)
   {
     if ((n >= F_OFFSET) && instrs[n-F_OFFSET].name)

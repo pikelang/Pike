@@ -197,7 +197,7 @@ void f_tan(INT32 args)
  *!
  *! @seealso
  *!   @[tan()], @[asin()], @[acos()], @[atan2()]
- */ 
+ */
 void f_atan(INT32 args)
 {
   ARG_CHECK("atan");
@@ -212,7 +212,7 @@ void f_atan(INT32 args)
  *!
  *! @seealso
  *!   @[tan()], @[asin()], @[acos()], @[atan()]
- */ 
+ */
 void f_atan2(INT32 args)
 {
   if(args<2)
@@ -317,7 +317,7 @@ void f_tanh(INT32 args)
  *!
  *! @seealso
  *!   @[tanh()], @[asinh()], @[acosh()]
- */ 
+ */
 void f_atanh(INT32 args)
 {
   FLOAT_ARG_TYPE x;
@@ -360,7 +360,7 @@ void f_sqrt(INT32 args)
     unsigned INT_TYPE x=0;
 
     /* FIXME: Note: Regards i as an unsigned value. */
-    
+
     if(sp[-1].u.integer<0) Pike_error("math: sqrt(x) with (x < 0)\n");
     n=sp[-1].u.integer;
 
@@ -543,7 +543,7 @@ void f_limit(INT32 args)
 {
   INT32 minpos = 0;
 
-  if(args != 3) 
+  if(args != 3)
   {
       Pike_error("limit needs 3 arguments\n");
   }
@@ -551,7 +551,7 @@ void f_limit(INT32 args)
   /* -3  -2  -1 */
   /*  a < X < b */
   if( is_lt( Pike_sp-3,  Pike_sp-2 ) )      /* a < X */
-  { 
+  {
       if( is_lt( Pike_sp-2,  Pike_sp-1 ) )      /* X < b */
       {
 	  /* return X (-2) */
@@ -705,35 +705,35 @@ PIKE_MODULE_INIT
 #ifdef HAVE_FPSETFASTMODE
   fpsetfastmode(1);
 #endif /* HAVE_FPSETFASTMODE */
-  
+
   /* function(int|float:float) */
   ADD_EFUN("sin",f_sin,tFunc(tNUM,tFlt),0);
-  
+
   /* function(int|float:float) */
   ADD_EFUN("asin",f_asin,tFunc(tNUM,tFlt),0);
-  
+
   /* function(int|float:float) */
   ADD_EFUN("cos",f_cos,tFunc(tNUM,tFlt),0);
-  
+
   /* function(int|float:float) */
   ADD_EFUN("acos",f_acos,tFunc(tNUM,tFlt),0);
-  
+
   /* function(int|float:float) */
   ADD_EFUN("tan",f_tan,tFunc(tNUM,tFlt),0);
-  
+
   /* function(int|float:float) */
   ADD_EFUN("atan",f_atan,tFunc(tNUM,tFlt),0);
-  
+
   /* function(int|float,float:float) */
   ADD_EFUN("atan2",f_atan2,tFunc(tFlt tFlt,tFlt),0);
- 
+
   ADD_EFUN("sinh",f_sinh,tFunc(tNUM,tFlt),0);
   ADD_EFUN("asinh",f_asinh,tFunc(tNUM,tFlt),0);
   ADD_EFUN("cosh",f_cosh,tFunc(tNUM,tFlt),0);
   ADD_EFUN("acosh",f_acosh,tFunc(tNUM,tFlt),0);
   ADD_EFUN("tanh",f_tanh,tFunc(tNUM,tFlt),0);
   ADD_EFUN("atanh",f_atanh,tFunc(tNUM,tFlt),0);
- 
+
 /* function(float:float)|function(int:int) */
   ADD_EFUN("sqrt",f_sqrt,tOr3(tFunc(tFlt,tFlt),
 			      tFunc(tInt,tInt),
@@ -741,10 +741,10 @@ PIKE_MODULE_INIT
 
   /* function(int|float:float) */
   ADD_EFUN("log",f_log,tFunc(tNUM,tFlt),0);
-  
+
   /* function(int|float:float) */
   ADD_EFUN("exp",f_exp,tFunc(tNUM,tFlt),0);
-  
+
 /* function(float,float:float) */
   ADD_EFUN("pow",f_pow,
 	   tOr5(tFunc(tFlt tFlt,tFlt),
@@ -752,10 +752,10 @@ PIKE_MODULE_INIT
 		tFunc(tFlt tInt,tFlt),
 		tFunc(tInt tInt,tInt),
 		tFunc(tObj tOr3(tInt,tObj,tFlt),tMix)),0);
-  
+
   /* function(int|float:float) */
   ADD_EFUN("floor",f_floor,tFunc(tNUM,tFlt),0);
-  
+
   /* function(int|float:float) */
   ADD_EFUN("ceil",f_ceil,tFunc(tNUM,tFlt),0);
 
@@ -774,7 +774,7 @@ PIKE_MODULE_INIT
 
   ADD_EFUN("max",f_max,CMP_TYPE,0);
   ADD_EFUN("min",f_min,CMP_TYPE,0);
-  
+
   ADD_EFUN("limit",f_limit,
 	   tFunc(tSetvar(0,tOr3(tFlt,tInt,tObj))
 		 tSetvar(1,tOr3(tFlt,tInt,tObj))
@@ -783,7 +783,7 @@ PIKE_MODULE_INIT
 
 /* function(float|int|object:float|int|object) */
   ADD_EFUN("abs",f_abs,tFunc(tSetvar(0,tOr3(tFlt,tInt,tObj)),tVar(0)),0);
-  
+
 /* function(mixed,mixed|void:int) */
   ADD_EFUN("sgn",f_sgn,tFunc(tMix tOr(tMix,tVoid),tInt_11),0);
 }

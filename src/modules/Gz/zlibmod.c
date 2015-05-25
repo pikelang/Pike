@@ -612,12 +612,12 @@ static void gz_deflate(INT32 args)
 
   if (data.shift)
     Pike_error("Cannot input wide string to gz_deflate->deflate()\n");
-  
+
   if(args>1)
   {
     if(TYPEOF(sp[1-args]) != T_INT)
       Pike_error("Bad argument 2 to gz_deflate->deflate()\n");
-    
+
     flush=sp[1-args].u.integer;
 
     switch(flush)
@@ -643,7 +643,7 @@ static void gz_deflate(INT32 args)
   SET_ONERROR(err,toss_buffer,&buf);
   fail=do_deflate(&buf,this,flush);
   UNSET_ONERROR(err);
-  
+
   if(fail != Z_OK && fail != Z_STREAM_END)
   {
     toss_buffer(&buf);
@@ -855,7 +855,7 @@ static int do_inflate(dynamic_buffer *buf,
       fprintf(stderr,"INFLATE[%d]: mode=%d\n",fnord,
 	      this->gz.state ? *(int *)(this->gz.state) : -1);
 #endif
-	      
+
       ret=inflate(& this->gz, flush);
 #if 0
       fprintf(stderr,"Result [%d]: avail_out=%7d  avail_in=%7d  ret=%d\n",
@@ -1173,7 +1173,7 @@ static void gz_crc32(INT32 args)
 	 crc=(unsigned INT32)sp[1-args].u.integer;
    } else
       crc=0;
-	 
+
    crc=crc32(crc,
 	     (unsigned char*)sp[-args].u.string->str,
 	     DO_NOT_WARN((unsigned INT32)(sp[-args].u.string->len)));
@@ -1193,7 +1193,7 @@ static void gz_deflate_size( INT32 args )
      */
     push_int(
         /* internal_state structure, estimating alignment */
-        (47 * 4) + sizeof(void*)*16 + (4*HEAP_SIZE) + (4*121) + (4*(2*19+1)) + 16*2 + 
+        (47 * 4) + sizeof(void*)*16 + (4*HEAP_SIZE) + (4*121) + (4*(2*19+1)) + 16*2 +
         (2*L_CODES+1)*5 +
         /* d_buf <memlevel+6>, l_buf<memlevel+6>, window<windowbits>, hash<memlevel+7> */
         16384*2 + 16384*2 + 65536*2 + 32768*2);
@@ -1225,7 +1225,7 @@ PIKE_MODULE_INIT
 
   start_new_program();
   ADD_STORAGE(struct zipper);
-  
+
   /* function(int|void,int|void:void) */
   ADD_FUNCTION("create",gz_deflate_create,tFunc(tOr(tMapping, tOr(tInt,tVoid)) tOr(tInt,tVoid),tVoid),0);
   /* function(string(8bit)|String.Buffer|System.Memory|Stdio.Buffer,int|void:string(8bit)) */
@@ -1263,7 +1263,7 @@ PIKE_MODULE_INIT
 
   start_new_program();
   ADD_STORAGE(struct zipper);
-  
+
   /* function(int|void:void) */
   ADD_FUNCTION("create",gz_inflate_create,tFunc(tOr(tMapping,tOr(tInt,tVoid)),tVoid),0);
   /* function(string(8bit)|String.Buffer|System.Memory|Stdio.Buffer:string(8bit)) */

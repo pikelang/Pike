@@ -349,7 +349,7 @@ static void pike_mysql_set_options(struct mapping *options)
     /* Default to not allowed */
     unsigned int allowed = 0;
     mysql_options(PIKE_MYSQL->mysql, MYSQL_OPT_LOCAL_INFILE,
-		  (char *)&allowed);    
+		  (char *)&allowed);
   }
 #endif /* MYSQL_OPT_LOCAL_INFILE */
 #ifdef HAVE_MYSQL_SET_CHARSET_DIR
@@ -539,7 +539,7 @@ static void pike_mysql_reconnect (int reconnect)
     /* No longer needed */
     free(hostptr);
   }
-  
+
   if (!socket) {
     const char *err;
     MYSQL_ALLOW();
@@ -688,7 +688,7 @@ static void f_create(INT32 args)
   /* Default to not allowed */
   unsigned int allowed = 0;
   mysql_options(PIKE_MYSQL->mysql, MYSQL_OPT_LOCAL_INFILE,
-		(char *)&allowed);    
+		(char *)&allowed);
 #endif /* HAVE_MYSQL_OPTIONS && HAVE_MYSQL_OPT_LOCAL_INFILE */
 
   if (args >= 1) {
@@ -702,13 +702,13 @@ static void f_create(INT32 args)
       if (sp[1-args].u.string->len) {
 	add_ref(PIKE_MYSQL->database = sp[1-args].u.string);
       }
-      
+
       if (args >= 3) {
 	CHECK_8BIT_NONBINARY_STRING ("create", 3);
 	if (sp[2-args].u.string->len) {
 	  add_ref(PIKE_MYSQL->user = sp[2-args].u.string);
 	}
-	
+
 	if (args >= 4) {
 	  CHECK_8BIT_NONBINARY_STRING ("create", 4);
 	  if (sp[3-args].u.string->len) {
@@ -1303,7 +1303,7 @@ static void f_shutdown(INT32 args)
 
   if (mysql) {
     MYSQL_ALLOW();
-  
+
 #ifdef HAVE_SHUTDOWN_DEFAULT
     /* Mysql 4.1.3 added an extra shutdown_level argument. */
     tmp = mysql_shutdown(mysql, SHUTDOWN_DEFAULT);

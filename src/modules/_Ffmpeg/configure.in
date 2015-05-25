@@ -44,12 +44,12 @@ dnl      be libavcode + libav libraries together
 dnl my libavcodec needs libmp3lame that needs libm /Mirar
 
   AC_CHECK_LIB( m, pow, [
-    LIBS="${LIBS-} -lm" 
+    LIBS="${LIBS-} -lm"
   ])
 
   AC_CHECK_LIB( mp3lame, lame_get_copyright, [
     AC_DEFINE(HAVE_LIBMP3LAME)
-    LIBS="${LIBS-} -lmp3lame" 
+    LIBS="${LIBS-} -lmp3lame"
   ])
 
   AC_CHECK_LIB( avcodec, avcodec_init, [
@@ -92,7 +92,7 @@ dnl my libavcodec needs libmp3lame that needs libm /Mirar
 #endif
       ], [
     extern AVCodec *thecodec;
-  
+
     thecodec->type = 0;
       ], [
         pike_cv_ffmpeg_working=yes
@@ -109,7 +109,7 @@ dnl my libavcodec needs libmp3lame that needs libm /Mirar
 	              avcodec_decode_audio3 avcodec_decode_audio4 \
 		      av_codec_next avcodec_open avcodec_open2
 		    ])
-    else 
+    else
       PIKE_FEATURE(FFmpeg,[no (not working)])
     fi
 

@@ -247,7 +247,7 @@ PMOD_EXPORT struct svalue *low_mapping_lookup(struct mapping *m,
 PMOD_EXPORT struct svalue *low_mapping_string_lookup(struct mapping *m,
                                                      struct pike_string *p);
 
-/** A shortcut function for inserting an entry into a mapping for cases 
+/** A shortcut function for inserting an entry into a mapping for cases
   * where the key is a Pike string.
   *
   * @param m mapping to insert the new entry into
@@ -298,7 +298,7 @@ PMOD_EXPORT struct svalue *simple_mapping_string_lookup(struct mapping *m,
 							const char *p);
 
 /** First look up @b key1 in the passed mapping and check whether the returned
-  * value, if any, is a mapping itself. If it is a mapping, look it up using 
+  * value, if any, is a mapping itself. If it is a mapping, look it up using
   * @b key2 and return the retrieved entry's value, if any. If key1 lookup in
   * the @b m mapping doesn't return a mapping and @b create is not 0 allocate
   * a new mapping, insert it in @b m and use for lookup with @b key2. If @b key2
@@ -355,9 +355,9 @@ PMOD_EXPORT struct mapping *mkmapping(struct array *ind, struct array *val);
 PMOD_EXPORT struct mapping *copy_mapping(struct mapping *m);
 PMOD_EXPORT struct mapping *copy_mapping(struct mapping *m);
 PMOD_EXPORT struct mapping *merge_mappings(struct mapping *a, struct mapping *b, INT32 op);
-PMOD_EXPORT struct mapping *merge_mapping_array_ordered(struct mapping *a, 
+PMOD_EXPORT struct mapping *merge_mapping_array_ordered(struct mapping *a,
 					    struct array *b, INT32 op);
-PMOD_EXPORT struct mapping *merge_mapping_array_unordered(struct mapping *a, 
+PMOD_EXPORT struct mapping *merge_mapping_array_unordered(struct mapping *a,
 					      struct array *b, INT32 op);
 PMOD_EXPORT struct mapping *add_mappings(struct svalue *argp, INT32 args);
 PMOD_EXPORT int mapping_equal_p(struct mapping *a, struct mapping *b, struct processing *p);

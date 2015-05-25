@@ -147,7 +147,7 @@ PMOD_EXPORT struct object *low_clone(struct program *p)
 #endif
 
 #ifdef DEBUG_MALLOC
-  if(!debug_malloc_copy_names(o, p)) 
+  if(!debug_malloc_copy_names(o, p))
   {
     struct pike_string *tmp;
     INT_TYPE line;
@@ -213,11 +213,11 @@ PMOD_EXPORT struct object *low_clone(struct program *p)
 
 #define SET_FRAME_CONTEXT(X)						\
   LOW_SET_FRAME_CONTEXT(X)
-  
+
 #define LOW_UNSET_FRAME_CONTEXT()		\
   pike_frame->context = NULL;			\
   pike_frame->current_storage = NULL
-  
+
 
 #ifdef DEBUG
 #define CHECK_FRAME() do { \
@@ -440,7 +440,7 @@ struct object *decode_value_clone_object(struct svalue *prog)
   o=low_clone(p);
   SET_ONERROR(tmp, do_free_object, o);
   debug_malloc_touch(o);
-  
+
   if(TYPEOF(*prog) == T_FUNCTION)
   {
     parent=prog->u.object;
@@ -452,7 +452,7 @@ struct object *decode_value_clone_object(struct svalue *prog)
 
   if(p->flags & PROGRAM_USES_PARENT)
   {
-    
+
     PARENT_INFO(o)->parent=parent;
     if(parent) add_ref(parent);
     PARENT_INFO(o)->parent_identifier = DO_NOT_WARN((INT32)parent_identifier);
@@ -1899,11 +1899,11 @@ union anything *object_get_item_ptr(struct object *o,
     if(FIND_LFUN(p,f) != -1)
     {
       return 0;
-      
+
       /* Pike_error("Cannot do incremental operations on overloaded index (yet).\n");
        */
     }
-    
+
     f=find_shared_string_identifier(index->u.string, p);
     if (f >= 0) f += inh->identifier_level;
     break;
@@ -2031,7 +2031,7 @@ PMOD_EXPORT struct array *object_values(struct object *o, int inherit_number)
   struct array *a;
   int fun;
   int e;
-  
+
   p=o->prog;
   if(!p)
     Pike_error("values() on destructed object.\n");
@@ -2292,7 +2292,7 @@ PMOD_EXPORT void gc_mark_object_as_referenced(struct object *o)
 	for(e=p->num_inherits-1; e>=0; e--)
 	{
 	  int q;
-      
+
 	  LOW_SET_FRAME_CONTEXT(p->inherits + e);
 
 	  for(q=0;q<(int)pike_frame->context->prog->num_variable_index;q++)
@@ -2305,7 +2305,7 @@ PMOD_EXPORT void gc_mark_object_as_referenced(struct object *o)
 	    if (IDENTIFIER_IS_ALIAS(id_flags) || (rtt == PIKE_T_GET_SET) ||
 		(rtt == PIKE_T_FREE))
 	      continue;
-	
+
 	    if(rtt == T_MIXED)
 	    {
 	      struct svalue *s;
@@ -2358,7 +2358,7 @@ PMOD_EXPORT void real_gc_cycle_check_object(struct object *o, int weak)
       for(e=p->num_inherits-1; e>=0; e--)
       {
 	int q;
-      
+
 	LOW_SET_FRAME_CONTEXT(p->inherits + e);
 
 	for(q=0;q<(int)pike_frame->context->prog->num_variable_index;q++)
@@ -2367,11 +2367,11 @@ PMOD_EXPORT void real_gc_cycle_check_object(struct object *o, int weak)
 	  struct identifier *id = pike_frame->context->prog->identifiers + d;
 	  int id_flags = id->identifier_flags;
 	  int rtt = id->run_time_type;
-	
+
 	  if (IDENTIFIER_IS_ALIAS(id_flags) || (rtt == PIKE_T_GET_SET) ||
 	      (rtt == PIKE_T_FREE))
 	    continue;
-	
+
 	  if(rtt == T_MIXED)
 	  {
 	    struct svalue *s;
@@ -2397,7 +2397,7 @@ PMOD_EXPORT void real_gc_cycle_check_object(struct object *o, int weak)
 
 	LOW_UNSET_FRAME_CONTEXT();
       }
-    
+
       LOW_POP_FRAME();
 
       /* Even though it's essential that the program isn't freed
@@ -2429,7 +2429,7 @@ static void gc_check_object(struct object *o)
 	debug_gc_check (PARENT_INFO(o)->parent, " as parent of an object");
 
       LOW_PUSH_FRAME(o, p);
-    
+
       for(e=p->num_inherits-1; e>=0; e--)
       {
 	int q;
@@ -2441,11 +2441,11 @@ static void gc_check_object(struct object *o)
 	  struct identifier *id = pike_frame->context->prog->identifiers + d;
 	  int id_flags = id->identifier_flags;
 	  int rtt = id->run_time_type;
-	
+
 	  if (IDENTIFIER_IS_ALIAS(id_flags) || (rtt == PIKE_T_GET_SET) ||
 	      (rtt == PIKE_T_FREE))
 	    continue;
-	
+
 	  if(rtt == T_MIXED)
 	  {
 	    struct svalue *s;
@@ -2465,7 +2465,7 @@ static void gc_check_object(struct object *o)
 	      gc_check_short_svalue(u, rtt);
 	  }
 	}
-      
+
 	if(pike_frame->context->prog->event_handler)
 	  pike_frame->context->prog->event_handler(PROG_EVENT_GC_CHECK);
 
@@ -3510,14 +3510,14 @@ void check_object(struct object *o)
       describe(o);
       Pike_fatal("Object check: o->prev->next != o\n");
     }
-    
+
     if(o == first_object)
       Pike_fatal("Object check: o->prev !=0 && first_object == o\n");
   } else {
     if(first_object != o)
       Pike_fatal("Object check: o->prev ==0 && first_object != o\n");
   }
-  
+
   if(o->refs <= 0)
     Pike_fatal("Object refs <= zero.\n");
 

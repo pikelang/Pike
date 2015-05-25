@@ -203,14 +203,14 @@ CHRONO("scale begin");
    }
 
    dest->img=d=malloc(newx*newy*sizeof(rgb_group)+RGB_VEC_PAD);
-   if (d) 
+   if (d)
    {
 
 CHRONO("transfer begin");
 
      s=new;
      y=newx*newy;
-     while (y--) 
+     while (y--)
      {
        d->r = MINIMUM(DOUBLE_TO_INT(s->r+0.5),255);
        d->g = MINIMUM(DOUBLE_TO_INT(s->g+0.5),255);
@@ -888,8 +888,8 @@ CHRONO("skewy end\n");
 **! returns the new image object
 **! arg int x
 **!    the number of pixels
-**!	The "expand" variant of functions stretches the 
-**!	image border pixels rather then filling with 
+**!	The "expand" variant of functions stretches the
+**!	image border pixels rather then filling with
 **!	the given or current color.
 **! arg float yfactor
 **!    best described as: x=yfactor*this->ysize()
@@ -949,8 +949,8 @@ void image_skewx(INT32 args)
 **!	<td>->skewy_expand(15);</td>
 **!	</tr></table>
 **!
-**!	The "expand" variant of functions stretches the 
-**!	image border pixels rather then filling with 
+**!	The "expand" variant of functions stretches the
+**!	image border pixels rather then filling with
 **!	the given or current color.
 **! returns the new image object
 **! arg int y
@@ -1065,7 +1065,7 @@ void img_rotate(INT32 args,int xpn)
       bad_arg_error("rotate",sp-args,args,0,"",sp-args,
                     "Bad arguments to rotate.\n");
 
-   if (!THIS->img) 
+   if (!THIS->img)
       Pike_error("Called Image.Image object is not initialized\n");;
 
    dest2.img=d0.img=NULL;
@@ -1115,7 +1115,7 @@ void img_rotate(INT32 args,int xpn)
 **! method object rotate(int|float angle,int r,int g,int b)
 **! method object rotate_expand(int|float angle)
 **! method object rotate_expand(int|float angle,int r,int g,int b)
-**!	Rotates an image a certain amount of degrees (360° is 
+**!	Rotates an image a certain amount of degrees (360° is
 **!	a complete rotation) counter-clockwise:
 **!
 **!	<table><tr valign=center>
@@ -1128,8 +1128,8 @@ void img_rotate(INT32 args,int xpn)
 **!	<td>->rotate_expand(15);</td>
 **!	</tr></table>
 **!
-**!	The "expand" variant of functions stretches the 
-**!	image border pixels rather then filling with 
+**!	The "expand" variant of functions stretches the
+**!	image border pixels rather then filling with
 **!	the given or current color.
 **!
 **!	This rotate uses the <ref>skewx</ref>() and <ref>skewy</ref>() functions.

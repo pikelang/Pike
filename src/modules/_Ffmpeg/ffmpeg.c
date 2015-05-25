@@ -312,7 +312,7 @@ static void f_get_codec_status(INT32 args) {
     push_int(0);
     return;
   }
-  
+
   push_text("name");		push_text( THIS->codec->name );
   ref_push_string(literal_type_string);		push_int( THIS->codec->type );
   push_text("id");		push_int( THIS->codec->id );

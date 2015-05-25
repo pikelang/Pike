@@ -5,7 +5,7 @@ typedef struct _Blob
   struct pike_string *word;
   unsigned int docid;
   unsigned int eof;
-  
+
   struct buffer *b;
 } Blob;
 

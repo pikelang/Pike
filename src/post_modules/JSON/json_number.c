@@ -12,7 +12,7 @@ static ptrdiff_t _parse_JSON_number(PCHARP str, ptrdiff_t p, ptrdiff_t pe, struc
     int cs;
     int d = 0;
 
-    
+
 #line 17 "json_number.c"
 static const int JSON_number_start = 1;
 static const int JSON_number_first_final = 6;
@@ -23,14 +23,14 @@ static const int JSON_number_en_main = 1;
 
 #line 28 "rl/json_number.rl"
 
-    
+
 #line 28 "json_number.c"
 	{
 	cs = JSON_number_start;
 	}
 
 #line 30 "rl/json_number.rl"
-    
+
 #line 35 "json_number.c"
 	{
 	if ( p == pe )
@@ -183,15 +183,15 @@ case 10:
 		goto tr8;
 	goto st0;
 	}
-	_test_eof2: cs = 2; goto _test_eof; 
-	_test_eof6: cs = 6; goto _test_eof; 
-	_test_eof7: cs = 7; goto _test_eof; 
-	_test_eof3: cs = 3; goto _test_eof; 
-	_test_eof8: cs = 8; goto _test_eof; 
-	_test_eof4: cs = 4; goto _test_eof; 
-	_test_eof5: cs = 5; goto _test_eof; 
-	_test_eof9: cs = 9; goto _test_eof; 
-	_test_eof10: cs = 10; goto _test_eof; 
+	_test_eof2: cs = 2; goto _test_eof;
+	_test_eof6: cs = 6; goto _test_eof;
+	_test_eof7: cs = 7; goto _test_eof;
+	_test_eof3: cs = 3; goto _test_eof;
+	_test_eof8: cs = 8; goto _test_eof;
+	_test_eof4: cs = 4; goto _test_eof;
+	_test_eof5: cs = 5; goto _test_eof;
+	_test_eof9: cs = 9; goto _test_eof;
+	_test_eof10: cs = 10; goto _test_eof;
 
 	_test_eof: {}
 	_out: {}

@@ -9,7 +9,7 @@
 
 /*! @module Wnotify
  *!
- *! An interface to Windows filesystem change information. 
+ *! An interface to Windows filesystem change information.
  *!
  */
 
@@ -112,7 +112,7 @@ PIKECLASS NotificationHandle
   {
 /*
     BOOL res;
-*/	
+*/
     if(!THIS->triggered)
     {
       Pike_error("NotificationHandle.read_change(): no change event triggered.\n");
@@ -146,7 +146,7 @@ PIKECLASS EventPoller
   CVAR int handles_size;
   CVAR int handles_used;
 
-  /*! @decl void add_handle(NotificationHandle handle) 
+  /*! @decl void add_handle(NotificationHandle handle)
    */
   PIKEFUN void add_handle(object handle)
   {
@@ -185,7 +185,7 @@ PIKECLASS EventPoller
     {
       pop_stack();
       Pike_error("poll: no paths to monitor.\n");
-    }     
+    }
 
     if(!timeout || SAFE_IS_ZERO(timeout))
     {

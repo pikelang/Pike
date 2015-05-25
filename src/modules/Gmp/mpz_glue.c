@@ -408,7 +408,7 @@ int get_new_mpz(MP_INT *tmp, struct svalue *s,
     }
 #endif
     break;
-    
+
   case T_FLOAT:
     {
       double val = (double)s->u.float_number;
@@ -445,7 +445,7 @@ int get_new_mpz(MP_INT *tmp, struct svalue *s,
       mpz_set_si(tmp, 0);
     }
     break;
-#if 0    
+#if 0
   case T_STRING:
     mpz_set_str(tmp, s->u.string->str, 0);
     break;
@@ -621,7 +621,7 @@ struct pike_string *low_get_mpz_digits(MP_INT *mpz, int base)
 {
   struct pike_string *s = 0;   /* Make gcc happy. */
   ptrdiff_t len;
-  
+
   if (
 #ifdef HAVE_GMP5
       (base >= 2) && (base <= 62)
@@ -701,7 +701,7 @@ static void mpzmod_digits(INT32 args)
   DECLARE_THIS();
   INT32 base;
   struct pike_string *s;
-  
+
   if (!args)
   {
     base = 10;
@@ -729,7 +729,7 @@ static void mpzmod__sprintf(INT32 args)
   INT_TYPE flag_left, method;
 
   debug_malloc_touch(THIS_OBJECT);
-  
+
   if(args < 2)
     SIMPLE_TOO_FEW_ARGS_ERROR("_sprintf", 2);
   if(TYPEOF(sp[-args]) != T_INT)
@@ -744,7 +744,7 @@ static void mpzmod__sprintf(INT32 args)
     SIMPLE_ARG_ERROR ("_sprintf", 2,
 		      "The field \"precision\" doesn't hold an integer.");
   precision = (--sp)->u.integer;
-  
+
   push_svalue(&sp[1-args]);
   push_text("width");
   f_index(2);
@@ -818,7 +818,7 @@ static void mpzmod__sprintf(INT32 args)
     else
       s = low_get_mpz_digits(THIS, base);
     break;
-    
+
   case 'c':
   {
     INT_TYPE neg = mpz_sgn (THIS) < 0;
@@ -836,7 +836,7 @@ static void mpzmod__sprintf(INT32 args)
       s = make_shared_binary_string2(&ch, 1);
       break;
     }
-    
+
     if (neg)
     {
       mpz_init_set(tmp, THIS);
@@ -849,9 +849,9 @@ static void mpzmod__sprintf(INT32 args)
 
     if(width < 1)
       width = 1;
-    
+
     s = begin_shared_string(width);
-    
+
     if (!flag_left)
        dst = (unsigned char *)STR0(s) + width;
     else
@@ -879,12 +879,12 @@ static void mpzmod__sprintf(INT32 args)
 	       break;
 	 }
     }
-    
+
     if(neg)
     {
       mpz_clear(tmp);
     }
-    
+
     s = end_shared_string(s);
   }
   break;
@@ -996,7 +996,7 @@ double double_from_sval(struct svalue *s)
   {
     case T_INT: return (double)s->u.integer;
     case T_FLOAT: return (double)s->u.float_number;
-    case T_OBJECT: 
+    case T_OBJECT:
       if(IS_MPZ_OBJ (s->u.object))
 	return mpz_get_d(OBTOMPZ(s->u.object));
       /* Fallthrough */
@@ -1222,7 +1222,7 @@ static void mpzmod_sub(INT32 args)
   if (args)
     for (e = 0; e<args; e++)
       get_mpz(sp + e - args, 1, "`-", e + 1, args);
-  
+
   res = fast_clone_object(THIS_PROGRAM);
   mpz_set(OBTOMPZ(res), THIS);
 
@@ -1245,12 +1245,12 @@ static void mpzmod_rsub(INT32 args)
   DECLARE_THIS();
   struct object *res = NULL;
   MP_INT *a;
-  
+
   if(args!=1)
     SIMPLE_WRONG_NUM_ARGS_ERROR ("``-", 1);
 
   a=get_mpz(sp-1, 1, "``-", 1, 1);
-  
+
   res = fast_clone_object(THIS_PROGRAM);
 
   mpz_sub(OBTOMPZ(res), a, THIS);
@@ -1265,17 +1265,17 @@ static void mpzmod_div(INT32 args)
   DECLARE_THIS();
   INT32 e;
   struct object *res;
-  
+
   for(e=0;e<args;e++)
   {
     if(TYPEOF(sp[e-args]) != T_INT || sp[e-args].u.integer<=0)
       if (!mpz_sgn(get_mpz(sp+e-args, 1, "`/", e + 1, args)))
 	SIMPLE_DIVISION_BY_ZERO_ERROR ("`/");
   }
-  
+
   res = fast_clone_object(THIS_PROGRAM);
   mpz_set(OBTOMPZ(res), THIS);
-  for(e=0;e<args;e++)	
+  for(e=0;e<args;e++)
   {
     if(TYPEOF(sp[e-args]) == T_INT)
 #ifdef BIG_PIKE_INT
@@ -1318,7 +1318,7 @@ static void mpzmod_rdiv(INT32 args)
     SIMPLE_DIVISION_BY_ZERO_ERROR ("``/");
 
   a=get_mpz(sp-1, 1, "``/", 1, 1);
-  
+
   res=fast_clone_object(THIS_PROGRAM);
   mpz_fdiv_q(OBTOMPZ(res), a, THIS);
   pop_n_elems(args);
@@ -1332,14 +1332,14 @@ static void mpzmod_mod(INT32 args)
   DECLARE_THIS();
   INT32 e;
   struct object *res;
-  
+
   for(e=0;e<args;e++)
     if (!mpz_sgn(get_mpz(sp+e-args, 1, "`%", e + 1, args)))
       SIMPLE_DIVISION_BY_ZERO_ERROR ("`%");
 
   res = fast_clone_object(THIS_PROGRAM);
   mpz_set(OBTOMPZ(res), THIS);
-  for(e=0;e<args;e++)	
+  for(e=0;e<args;e++)
     mpz_fdiv_r(OBTOMPZ(res), OBTOMPZ(res), OBTOMPZ(sp[e-args].u.object));
 
   pop_n_elems(args);
@@ -1361,7 +1361,7 @@ static void mpzmod_rmod(INT32 args)
     SIMPLE_DIVISION_BY_ZERO_ERROR ("``%");
 
   a=get_mpz(sp-1, 1, "``%", 1, 1);
-  
+
   res=fast_clone_object(THIS_PROGRAM);
   mpz_fdiv_r(OBTOMPZ(res), a, THIS);
   pop_n_elems(args);
@@ -1392,7 +1392,7 @@ static void mpzmod_gcdext(INT32 args)
     SIMPLE_WRONG_NUM_ARGS_ERROR ("gcdext", 1);
 
   a = get_mpz(sp-1, 1, "gcdext", 1, 1);
-  
+
   g = fast_clone_object(THIS_PROGRAM);
   s = fast_clone_object(THIS_PROGRAM);
   t = fast_clone_object(THIS_PROGRAM);
@@ -1429,13 +1429,13 @@ static void mpzmod_gcdext2(INT32 args)
     SIMPLE_WRONG_NUM_ARGS_ERROR ("gcdext2", 1);
 
   a = get_mpz(sp-args, 1, "gcdext2", 1, 1);
-  
+
   g = fast_clone_object(THIS_PROGRAM);
   s = fast_clone_object(THIS_PROGRAM);
 
   mpz_gcdext(OBTOMPZ(g), OBTOMPZ(s), NULL, THIS, a);
   pop_n_elems(args);
-  PUSH_REDUCED(g); PUSH_REDUCED(s); 
+  PUSH_REDUCED(g); PUSH_REDUCED(s);
   f_aggregate(2);
 }
 
@@ -1685,7 +1685,7 @@ static void mpzmod_next_prime(INT32 args)
   struct object *o;
 
   pop_n_elems(args);
-  
+
   o = fast_clone_object(THIS_PROGRAM);
   mpz_nextprime(OBTOMPZ(o), THIS);
 
@@ -1728,7 +1728,7 @@ static void mpzmod_sqrtrem(INT32 args)
 {
   DECLARE_THIS();
   struct object *root = 0, *rem = 0;   /* Make gcc happy. */
-  
+
   pop_n_elems(args);
   if(mpz_sgn(THIS)<0)
     Pike_error("Gmp.mpz->sqrtrem() on negative number.\n");
@@ -1809,7 +1809,7 @@ static void mpzmod_rsh(INT32 args)
      {
 	res = fast_clone_object(THIS_PROGRAM);
 	mpz_fdiv_q_2exp(OBTOMPZ(res), THIS, sp[-1].u.integer);
-     } 
+     }
   }
   else
   {
@@ -1903,7 +1903,7 @@ static void mpzmod_powm(INT32 args)
   DECLARE_THIS();
   struct object *res = NULL;
   MP_INT *n, *e;
-  
+
   if(args != 2)
     SIMPLE_WRONG_NUM_ARGS_ERROR ("powm", 2);
 
@@ -1933,7 +1933,7 @@ static void mpzmod_pow(INT32 args)
   INT_TYPE i;
   MP_INT *mi;
   INT_TYPE size = (INT_TYPE)mpz_size(THIS);
-  
+
   if (args != 1)
     SIMPLE_WRONG_NUM_ARGS_ERROR ("pow", 1);
   if (TYPEOF(sp[-1]) == T_INT) {
@@ -2053,7 +2053,7 @@ static void mpzmod_random(INT32 args)
 }
 
 /*! @decl string(0..255) _encode()
- */  
+ */
 static void mpzmod__encode(INT32 args)
 {
   pop_n_elems(args);

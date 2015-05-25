@@ -55,7 +55,7 @@
 #define TYPE_BSON_DOCUMENT 0x03
 
 /* not supported. */
-#define TYPE_BSON_UNDEFINED x06 
+#define TYPE_BSON_UNDEFINED x06
 
 /*
 Types left to implement
@@ -145,32 +145,32 @@ struct mapping * decode_document(struct pike_string * pike_slist)
   slist = pike_slist->str;
   n = slist;
   end = n + (pike_slist->len -1);
-  
+
   left = pike_slist->len;
   if(left < 4)
     Pike_error("invalid BSON. not enough data.\n");
-    
+
   len = get_unaligned_le32(n);
-    
+
   left = pike_slist->len - (n - slist);
-    
+
   if(left < len)
   {
-    Pike_error("invalid BSON. not enough data left to form document: expected %d bytes, have %d.\n", len, left);  
+    Pike_error("invalid BSON. not enough data left to form document: expected %d bytes, have %d.\n", len, left);
   }
-  
+
   n += 4;
-  
+
   if((char)*end != 0x0)
-  { 
+  {
     char x = *end;
     Pike_error("invalid BSON, last byte of document must be NULL.\n");
   }
-  
+
   list = allocate_mapping(2);
 
   push_mapping(list);
-  
+
   while(n < end)
   {
     n = decode_next_value(pike_slist, n, list);
@@ -178,7 +178,7 @@ struct mapping * decode_document(struct pike_string * pike_slist)
 
   /* pop mapping off the stack, but keep a reference */
   Pike_sp--;
-  
+
   return list;
 }
 
@@ -200,11 +200,11 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
   switch(type)
   {
     case TYPE_BSON_DOUBLE:
-    {  
+    {
       struct pike_string * fstr;
       struct array * a;
       INT32 left;
-      left = pike_slist->len - (n - slist);      
+      left = pike_slist->len - (n - slist);
       if(8 > left)
         Pike_error("Invalid BSON. Not enough data.\n");
       fstr = make_shared_binary_string(n, 8);
@@ -255,9 +255,9 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
 
       break;
     }
-    
+
     case TYPE_BSON_INTEGER:
-    {  
+    {
       INT32 left = pike_slist->len - (n - slist);
       if(left < 4)
       {
@@ -293,7 +293,7 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
       n+=8;
       break;
     }
-    
+
     case TYPE_BSON_BOOLEAN:
     {
       INT8 t = n[0];
@@ -314,37 +314,37 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
       {
         Pike_error("Invalid value of boolean field.\n");
       }
-      break; 
+      break;
     }
-   
+
     case TYPE_BSON_MINKEY:
     {
       if(!MinKey)
         MinKey = lookup_object("Standards.BSON.MinKey");
       ref_push_object(MinKey);
-      break;  
+      break;
     }
-    
+
     case TYPE_BSON_MAXKEY:
     {
       if(!MaxKey)
         MaxKey = lookup_object("Standards.BSON.MaxKey");
       ref_push_object(MaxKey);
-      break;  
+      break;
     }
-    
+
     case TYPE_BSON_NULL:
     {
       if(!Null)
         Null = lookup_object("Val.null");
       ref_push_object(Null);
-      break;  
+      break;
     }
-    
+
     case TYPE_BSON_OBJECTID:
     {
       struct pike_string * str;
-      
+
       INT32 left = pike_slist->len - (n - slist);
       if(left < 12)
       {
@@ -357,11 +357,11 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
       ref_push_program(ObjectId);
       push_string(str);
       apply_svalue( Pike_sp-2, 1 );
-      stack_swap(); 
+      stack_swap();
       pop_stack();
-      break;  
+      break;
     }
-    
+
     case TYPE_BSON_TIMESTAMP:
     {
 #ifdef INT64
@@ -384,13 +384,13 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
       push_object(clone_object(bignum_program, 2));
 #endif
       n+=8;
-      
+
      apply_svalue( Pike_sp-2, 1);
-     stack_swap(); 
+     stack_swap();
      pop_stack();
-     break;  
+     break;
     }
-    
+
     case TYPE_BSON_SECOND:
     {
 #ifdef INT64
@@ -416,9 +416,9 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
 #endif
       n+=8;
       apply_svalue(Second, 2);
-      break;  
+      break;
     }
-    case TYPE_BSON_ARRAY:    
+    case TYPE_BSON_ARRAY:
     {
       struct pike_string * d;
       struct mapping * doc;
@@ -437,13 +437,13 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
         Pike_error("Invalid BSON. Not enough data.\n");
       }
       len = get_unaligned_le32(n);
-      
+
       left = pike_slist->len - (n - slist);
       if(left < len)
       {
         Pike_error("Invalid BSON. Not enough data.\n");
       }
-      
+
       d = make_shared_binary_string(n, len);
       push_string(d);
       doc = decode_document(d);
@@ -491,13 +491,13 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
         Pike_error("Invalid BSON. Not enough data.\n");
       }
       len = get_unaligned_le32(n);
-      
+
       left = pike_slist->len - (n - slist);
       if(left < len)
       {
         Pike_error("Invalid BSON. Not enough data.\n");
       }
-      
+
       d = make_shared_binary_string(n, len);
       doc = decode_document(d);
       free_string(d);
@@ -505,32 +505,32 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
       n += (len);
       break;
     }
-    
+
     case TYPE_BSON_REGEX:
     {
       char * reg;
       char * opt;
-      
+
       reg = (n);
       n += strlen(reg) + 1;
-      
+
       opt = (n);
       n += strlen(opt) + 1;
-      
+
       if(!Regex)
         Regex = lookup_program("Standards.BSON.Regex");
-        
+
       ref_push_program(Regex);
       push_text(reg);
       push_text(opt);
-      
+
       apply_svalue( Pike_sp-3, 2);
-      stack_swap(); 
+      stack_swap();
       pop_stack();
-      
+
       break;
     }
-    
+
     case TYPE_BSON_JAVASCRIPT:
     {
       struct pike_string * val;
@@ -542,7 +542,7 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
         Pike_error("Invalid BSON. Not enough data.\n");
       val = make_shared_binary_string(n, bump-1); /* length includes null. */
       n += (bump);
-      
+
       if(!Javascript)
         Javascript = lookup_program("Standards.BSON.Javascript");
 
@@ -551,12 +551,12 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
       f_utf8_to_string(1);
 
       apply_svalue( Pike_sp-2, 1);
-      stack_swap(); 
+      stack_swap();
       pop_stack();
 
       break;
     }
-    
+
     default:
       Pike_error("Unknown field type %d.\n", type);
   }
@@ -574,9 +574,9 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
 PIKEFUN mapping decode(string document)
 {
   struct mapping * doc;
-  
+
   doc = decode_document(document);
-  
+
   pop_stack();
   push_mapping(doc);
 }
@@ -600,7 +600,7 @@ PIKE_MODULE_INIT
   Timestamp = NULL;
 }
 
-PIKE_MODULE_EXIT 
+PIKE_MODULE_EXIT
 {
   if( True ) free_object(True);
   if( False ) free_object(False);

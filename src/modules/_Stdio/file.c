@@ -1509,7 +1509,7 @@ static void file_read(INT32 args)
  *!
  *! @note
  *!    The function may be interrupted prematurely
- *!    of the timeout (due to signals); 
+ *!    of the timeout (due to signals);
  *!    check the timing manually if this is imporant.
  */
 static void file_peek(INT32 args)
@@ -1761,7 +1761,7 @@ static void file_query_fs_event_flags(INT32 args)
 {
   short flags;
   pop_n_elems(args);
-  
+
   flags = get_fd_event_flags(THIS);
   push_int(flags);
 }
@@ -2861,7 +2861,7 @@ static void file_openpt(INT32 args)
 
 #ifdef HAVE_POSIX_OPENPT
   flags = parse((flag_str = Pike_sp[-args].u.string)->str);
-  
+
   if(!( flags &  (FILE_READ | FILE_WRITE)))
     Pike_error("Must open file for at least one of read and write.\n");
 
@@ -3456,7 +3456,7 @@ static void file_get_dir(INT32 args)
 /* All A-OK.*/
 
 /*! @decl array(string) listxattr( )
- *! 
+ *!
  *! Return an array of all extended attributes set on the file
  */
 static void file_listxattr(INT32 args)
@@ -3520,12 +3520,12 @@ static void file_listxattr(INT32 args)
   f_aggregate(1);
   o_subtract();
 
-  if( do_free ) 
+  if( do_free )
     free( ptr );
 }
 
 /*! @decl string getxattr(string attr)
- *! 
+ *!
  *! Return the value of a specified attribute, or 0 if it does not exist
  */
 static void file_getxattr(INT32 args)
@@ -3535,7 +3535,7 @@ static void file_getxattr(INT32 args)
   int mfd = FD, do_free = 0;
   ssize_t res;
   char *name;
-  
+
   get_all_args( "getxattr", args, "%s", &name );
 
   THREADS_ALLOW();
@@ -3583,7 +3583,7 @@ static void file_getxattr(INT32 args)
   }
 
   push_string( make_shared_binary_string( ptr, res ) );
-  if( do_free && ptr ) 
+  if( do_free && ptr )
     free( ptr );
 }
 
@@ -3623,15 +3623,15 @@ static void file_removexattr( INT32 args )
  *!
  *! Set the attribute @[attr] to the value @[value].
  *!
- *! The flags parameter can be used to refine the semantics of the operation.  
+ *! The flags parameter can be used to refine the semantics of the operation.
  *!
  *! @[Stdio.XATTR_CREATE] specifies a pure create, which
- *! fails if the named attribute exists already.  
+ *! fails if the named attribute exists already.
  *!
  *! @[Stdio.XATTR_REPLACE] specifies a pure replace operation, which
  *! fails if the named attribute does not already exist.
  *!
- *! By default (no flags), the extended attribute will be created if need be, 
+ *! By default (no flags), the extended attribute will be created if need be,
  *! or will simply replace the value if the attribute exists.
  *!
  *! @returns
@@ -4266,7 +4266,7 @@ retry_connect:
 #ifdef HAVE_AND_USE_POLL
       struct pollfd fds;
       int timeout = 1;
-	  
+
       fds.fd = socketpair_fd;
       fds.events = POLLIN;
       fds.revents = 0;
@@ -4285,7 +4285,7 @@ retry_connect:
       fd_select(socketpair_fd + 1, &fds, 0, 0, &tv);
 #endif
     }
-    
+
     sv[0]=fd_accept(socketpair_fd,(struct sockaddr *)&addr,&len3);
 
     if(sv[0] < 0) {
@@ -4429,7 +4429,7 @@ static void file_pipe(INT32 args)
     errno = ERRNO;
     push_int(0);
   }
-  else if (reverse) 
+  else if (reverse)
   {
     init_fd(inout[1], FILE_WRITE | (type&fd_BIDIRECTIONAL?FILE_READ:0) |
 	    fd_query_properties(inout[1], type), 0);
@@ -5005,7 +5005,7 @@ static void file_connect(INT32 args)
   int old_events;
   int e;
 
-  if (args < 4) 
+  if (args < 4)
   {
     get_all_args("connect", args, "%S%*", &dest_addr, &dest_port);
   }
@@ -5445,7 +5445,7 @@ static void low_file_lock(INT32 args, int flags)
 {
   int ret,fd=FD;
   struct object *o;
-  
+
   destruct_objects_to_destruct();
 
   if(FD < 0)

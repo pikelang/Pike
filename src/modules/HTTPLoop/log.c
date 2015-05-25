@@ -6,7 +6,7 @@
 
 #include "config.h"
 #include "global.h"
-	  
+
 #include "machine.h"
 #include "module_support.h"
 #include "object.h"
@@ -91,12 +91,12 @@ void f_aap_log_as_array(INT32 args)
   struct log *l = LTHIS->log;
   int n = 0;
   pop_n_elems(args);
-  
+
   mt_lock( &l->log_lock );
   le = l->log_head;
   l->log_head = l->log_tail = 0;
   mt_unlock( &l->log_lock );
-  
+
   while(le)
   {
     struct log_entry *l;
@@ -113,9 +113,9 @@ void f_aap_log_as_array(INT32 args)
 
 void f_aap_log_exists(INT32 UNUSED(args))
 {
-  if(LTHIS->log->log_head) 
+  if(LTHIS->log->log_head)
     push_int(1);
-  else 
+  else
     push_int(0);
 }
 
@@ -129,7 +129,7 @@ void f_aap_log_size(INT32 UNUSED(args))
     return;
   }
   mt_lock( &l->log_lock );
-  le = l->log_head; 
+  le = l->log_head;
   while((le = le->next))
     n++;
   mt_unlock( &l->log_lock );
@@ -166,7 +166,7 @@ void f_aap_log_as_commonlog_to_file(INT32 args)
   THREADS_ALLOW();
 
   mt_lock( &l->log_lock );
-  le = l->log_head; 
+  le = l->log_head;
   l->log_head = l->log_tail = 0;
   mt_unlock( &l->log_lock );
 

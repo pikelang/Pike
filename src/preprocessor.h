@@ -309,7 +309,7 @@ static ptrdiff_t low_cpp(struct cpp *this,
                   int e = 0;
                   string_builder_putchar(&tmp, '"');
                   for(e=0; e<l;) {
-                    if (WC_ISSPACE(INDEX_PCHARP(a,e)) || 
+                    if (WC_ISSPACE(INDEX_PCHARP(a,e)) ||
                         INDEX_PCHARP(a,e)=='"' || INDEX_PCHARP(a,e)=='\\') {
                       if (e) {
                         string_builder_append(&tmp, a, e);
