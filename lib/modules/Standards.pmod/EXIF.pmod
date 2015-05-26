@@ -979,7 +979,7 @@ protected mapping parse_tag(Stdio.File file, mapping tags, mapping exif_info,
      TAG_TYPE_INFO[tag_type];
 
   int tag_len=tag_type_len * tag_count;
-  
+
   int pos=file->tell();
   if(tag_len>4)
     exif_seek(file, long_value(file->read(4), order), exif_offset);
@@ -1021,14 +1021,14 @@ protected mapping parse_tag(Stdio.File file, mapping tags, mapping exif_info,
 
   if(tag_type==2) // ASCII
     tags[tag_name]=String.trim_whites(file->read(max(tag_count-1, 0)))-"\0";
-  
+
   if(tag_type==3 || tag_type==8) // (S)SHORT
   {
     if(tag_count>0xffff) return ([]); // Impossible amount of tags.
     array a=allocate(tag_count);
     for(int i=0; i<tag_count; i++)
       a[i]=short_value(file->read(2), order);
-    
+
     if(tag_format=="MAP")
       for(int i=0; i<tag_count; i++)
 	if(tag_map[a[i]])
@@ -1044,7 +1044,7 @@ protected mapping parse_tag(Stdio.File file, mapping tags, mapping exif_info,
     else
       tags[tag_name]=(array(string))a*", ";
   }
-  
+
   if(tag_type==4 || tag_type==9) // (S)LONG
     for(int i=0;i<tag_count; i++)
       tags[tag_name]=(string)long_value(file->read(4), order);
@@ -1073,14 +1073,14 @@ protected mapping parse_tag(Stdio.File file, mapping tags, mapping exif_info,
   	  else
   	    tags[tag_name] = "0.0";
   	  break;
-  	  
+
   	case "FLOAT":
   	  if(long2==0)
   	    tags[tag_name]="0";
   	  else
   	    tags[tag_name]=sprintf("%g", long1*1.0/long2);
   	  break;
-  	  
+
   	case "EXPOSURE":
   	  tags[tag_name] = sprintf("%d/%d", long1,long2);
 	  break;
@@ -1093,7 +1093,7 @@ protected mapping parse_tag(Stdio.File file, mapping tags, mapping exif_info,
 //    	    else
 //    	      tags[tag_name]=sprintf("1/%d", long1);
 //    	  break;
-  	  
+
   	default:
   	  tags[tag_name] = sprintf("%.2f", (float)long1/(float)long2);
   	  break;
