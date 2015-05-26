@@ -561,8 +561,14 @@ typedef struct p_wchar_p
 #ifndef PIKE_UNUSED_ATTRIBUTE
 # ifdef __GNUC__
 #  define PIKE_UNUSED_ATTRIBUTE  __attribute__((unused))
+#  if (__GNUC__ > 3) || (__GNUC__ == 3 && __GNUC_MINOR__ >= 4)
+#   define PIKE_WARN_UNUSED_RESULT_ATTRIBUTE  __attribute__((warn_unused_result))
+#  else /* GCC < 3.4 */
+#   define PIKE_WARN_UNUSED_RESULT_ATTRIBUTE
+#  endif
 # else
 #  define PIKE_UNUSED_ATTRIBUTE
+#  define PIKE_WARN_UNUSED_RESULT_ATTRIBUTE
 # endif
 #endif
 #ifndef PIKE_UNUSED

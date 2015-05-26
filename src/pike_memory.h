@@ -226,7 +226,7 @@ PMOD_EXPORT void memfill(char *to,
 	     INT32 fromlen,
 	     INT32 offset);
 */
-#define MALLOC_FUNCTION  ATTRIBUTE((malloc)) ATTRIBUTE((warn_unused_result))
+#define MALLOC_FUNCTION  ATTRIBUTE((malloc)) PIKE_WARN_UNUSED_RESULT_ATTRIBUTE
 
 PMOD_EXPORT void *debug_xalloc(size_t size) MALLOC_FUNCTION;
 PMOD_EXPORT void *debug_xmalloc(size_t s) MALLOC_FUNCTION;
