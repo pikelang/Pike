@@ -82,7 +82,7 @@ protected class Element {
   string name;
   array(function) content_matcher;
   mapping(string:array) attributes;
-  
+
   string _sprintf(int mode, mapping options)
   {
     return mode=='O' && sprintf("%O(%O)", this_program, name);
@@ -253,7 +253,7 @@ protected private array(function) compile_language(string|array l,
 }
 
 protected private string normalize_uri(string uri, mapping info)
-{  
+{
   catch {
     // NB: We don't care about this error.
     //     If it's relevant, it will be thrown again below.

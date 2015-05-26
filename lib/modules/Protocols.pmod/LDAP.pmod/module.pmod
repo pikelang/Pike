@@ -104,20 +104,20 @@ constant ldap_error_strings = ([
   LDAP_UNAVAILABLE_CRITICAL_EXTENSION: "Unavailable critical extension",
   LDAP_CONFIDENTIALITY_REQUIRED: "Confidentiality required",
   LDAP_SASL_BIND_IN_PROGRESS:	"SASL bind in progress",
-  
+
   LDAP_NO_SUCH_ATTRIBUTE:	"No such attribute",
   LDAP_UNDEFINED_TYPE:		"Undefined type",
   LDAP_INAPPROPRIATE_MATCHING:	"Inappropriate matching",
   LDAP_CONSTRAINT_VIOLATION:	"Constraint violation",
   LDAP_TYPE_OR_VALUE_EXISTS:	"Type or value exists",
   LDAP_INVALID_SYNTAX:		"Invalid syntax",
-  
+
   LDAP_NO_SUCH_OBJECT:		"No such object",
   LDAP_ALIAS_PROBLEM:		"Alias problem",
   LDAP_INVALID_DN_SYNTAX:	"Invalid DN syntax",
   LDAP_IS_LEAF:			"Is leaf",
   LDAP_ALIAS_DEREF_PROBLEM:	"Alias deref problem",
-  
+
   LDAP_INAPPROPRIATE_AUTH:	"Inappropriate auth",
   LDAP_INVALID_CREDENTIALS:	"Invalid credentials",
   LDAP_INSUFFICIENT_ACCESS:	"Insufficient access",
@@ -125,9 +125,9 @@ constant ldap_error_strings = ([
   LDAP_UNAVAILABLE:		"Unavailable",
   LDAP_UNWILLING_TO_PERFORM:	"Unwilling to perform",
   LDAP_LOOP_DETECT:		"Loop detect",
-  
+
   LDAP_SORT_CONTROL_MISSING:	"Sort control missing",
-  
+
   LDAP_NAMING_VIOLATION:	"Naming violation",
   LDAP_OBJECT_CLASS_VIOLATION:	"Object class violation",
   LDAP_NOT_ALLOWED_ON_NONLEAF:	"Not allowed on nonleaf",
@@ -136,7 +136,7 @@ constant ldap_error_strings = ([
   LDAP_NO_OBJECT_CLASS_MODS:	"No object class mods",
   LDAP_RESULTS_TOO_LARGE:	"Results too large",
   LDAP_AFFECTS_MULTIPLE_DSAS:	"Affects multiple DSAS",
-  
+
   LDAP_OTHER:			"Other str",
   LDAP_SERVER_DOWN:		"Server is down",
   LDAP_LOCAL_ERROR:		"Internal/local error",

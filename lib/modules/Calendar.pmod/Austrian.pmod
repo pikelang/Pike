@@ -3,8 +3,8 @@
 //! Same as the @[ISO] calendar,
 //! but with austrian as the default language.
 //!
-//! This calendar exist only for backwards compatible 
-//! purposes. 
+//! This calendar exist only for backwards compatible
+//! purposes.
 
 inherit Calendar.ISO;
 

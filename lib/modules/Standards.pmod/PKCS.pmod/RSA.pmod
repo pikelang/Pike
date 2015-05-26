@@ -78,7 +78,7 @@ Crypto.RSA.State parse_private_key(Sequence seq)
       || (sizeof(seq->elements->type_name - ({ "INTEGER" })))
       || seq->elements[0]->value)
     return UNDEFINED;
-  
+
   Crypto.RSA.State rsa = Crypto.RSA();
   rsa->set_public_key(seq->elements[1]->value, seq->elements[2]->value);
   rsa->set_private_key(seq->elements[3]->value, seq->elements[4..]->value);

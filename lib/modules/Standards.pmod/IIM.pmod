@@ -141,7 +141,7 @@ protected mapping(string:string|array(string)) decode_photoshop_data(string data
     string block_type_2;
     int block_length;
     string info;
-    
+
     if (block[0]) {
       // Photoshop 6.0 format with header description text of variable length.
       // The two bytes after the description text is zero padding, then comes

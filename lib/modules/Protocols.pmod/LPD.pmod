@@ -21,7 +21,7 @@ class client {
   {
     int a=random(10);
     // try to open one of the "official" local socket ports.
-    // not having one doesn't seem to be a problem with most LPD 
+    // not having one doesn't seem to be a problem with most LPD
     // servers, but we should at least try. will probably fail
     // if two try to open the same local port at once. ymmv.
     int res=conn->open_socket(721 + a);
@@ -43,8 +43,8 @@ class client {
   int set_job_type(string type)
   {
     type=lower_case(type);
-    
-    switch (type) { 
+
+    switch (type) {
      case "f":
      case "text":
       jobtype="f";
@@ -76,7 +76,7 @@ class client {
 //! @decl int start_queue(string queue)
 //! Start the queue @i{queue@} if not already printing.
 //! @returns
-//! Returns 0 if unable to connect, 1 otherwise. 
+//! Returns 0 if unable to connect, 1 otherwise.
   int start_queue(string queue)
   {
     if(!queue) return 0;
@@ -109,7 +109,7 @@ protected string make_control(int jn)
                  "N", jobname, "\n");
   }
   else
-  { 
+  {
     control->add("JPike LPD Client Job ", (string)jn, "\n",
                  "NPike LPD Client Job ", (string)jn, "\n");
   }
@@ -142,7 +142,7 @@ protected string make_control(int jn)
     }
 
     string control = make_control(jn);
-    
+
     werror("job file:\n\n" + control  + "\n\n");
 
     send("%c%d cfA%03d%s\n", 2, sizeof(control),

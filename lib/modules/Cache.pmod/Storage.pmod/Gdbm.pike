@@ -28,22 +28,22 @@ class Data {
   int _size=0;
   string _key=0;
   mixed _data=0;
-  
+
   int size() {
     return _size; //it's guarranteed to be set. See set()
   }
-  
+
   mixed data() {
     if (!_data)
       _data=decode_value(db[_key]);
     return _data;
   }
-  
+
   private inline string metadata_dump () {
     return encode_value( (["size":_size,"atime":atime,
                            "ctime":ctime,"etime":etime,"cost":cost]) );
   }
-  
+
   //dumps the metadata if necessary.
   void sync() {
     metadb[_key]=metadata_dump();
@@ -53,8 +53,8 @@ class Data {
     atime=time(1);
     sync();
   }
-  
-  protected void create(string key, Gdbm.gdbm data_db, 
+
+  protected void create(string key, Gdbm.gdbm data_db,
 		     Gdbm.gdbm metadata_db, string dumped_metadata) {
     mapping m=decode_value(dumped_metadata);
     _key=key;
@@ -66,7 +66,7 @@ class Data {
     etime=m->etime;
     cost=(float)(m->cost||1);
   }
-  
+
 }
 
 
@@ -115,7 +115,7 @@ void set(string key, mixed value,
     meta->dependants=dependants;
     have_dependants=1;
   }
-  
+
   metadb[key]=encode_value(meta);
 }
 
@@ -163,7 +163,7 @@ void delete(string key, void|int(0..1) hard) {
     //werror("Done chain-deleteing\n");
     return;                   // return so that reorg takes place at the end
   }
-  
+
   if (deletion_ops > CLUTTERED) {
     //werror("Reorganizing database\n");
     db->reorganize();

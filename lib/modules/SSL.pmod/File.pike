@@ -1445,7 +1445,7 @@ void set_accept_callback (function(void|object,void|mixed:int) accept)
 //!
 //! The callback function will be called with the File object and the
 //! additional id arguments (set with @[set_id]).
-//! 
+//!
 //! @note
 //! Like the read, write and close callbacks, installing this callback
 //! implies callback mode, even after the handshake is done.

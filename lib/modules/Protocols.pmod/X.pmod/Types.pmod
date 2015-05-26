@@ -18,7 +18,7 @@
  *
  *    You should have received a copy of the GNU General Public License
  *    along with this program; if not, write to the Free Software
- *    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA 
+ *    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  */
 
 #pike __REAL_VERSION__
@@ -442,7 +442,7 @@ class Drawable
 
     return r;
   }
-  
+
   //!
   void PutImage(object gc, int depth,
 		int tx, int ty, int width, int height, string data,
@@ -471,7 +471,7 @@ class Drawable
     if(sizeof(str)>255)
       error("ImageText8: string to long\n");
     object req = ImageText8_req(gc->id, x, y, str);
-    display->send_request(req);    
+    display->send_request(req);
   }
 
   //!
@@ -492,7 +492,7 @@ class Drawable
     if(sizeof(str)>510)
       error("ImageText16: string to long\n");
     object req = ImageText16_req(gc->id, x, y, str);
-    display->send_request(req);    
+    display->send_request(req);
   }
 }
 
@@ -544,7 +544,7 @@ class Window
       evnt->keysym = keysym;
     }
   }
-  
+
   //!
   object CreateWindow_req(int x, int y, int width, int height,
 			  int border_width, int depth, object visual)
@@ -599,7 +599,7 @@ class Window
     // object w = Window(display, req->wid);
     // werror(sprintf("CreateWindowRequest: %s\n",
     // 		   Crypto.string_to_hex(req->to_string())));
-    
+
     display->send_request(req);
     object w = new(display, req->wid, visual, this);
     w->depth = d||depth||this->rootDepth;
@@ -608,7 +608,7 @@ class Window
     w->attributes = attributes || ([]);
     return w;
   }
-    
+
   //!
   object CreateSimpleWindow(int x, int y, int width, int height,
 			    int border_width,int border, int background)
@@ -619,10 +619,10 @@ class Window
     req->attributes->BorderPixel = border;
 
     display->send_request(req);
-    
+
     // object w = Window(display, req->wid);
     object w = new(display, req->wid, 0, this);
-    
+
     w->visual = visual;
     w->currentInputMask = 0;
     return w;
@@ -682,7 +682,7 @@ class Window
       reverse(sort((event_callbacks[type] || ({ }) )
 		   + ({ ({ priority, f }) }) ));
   }
-  
+
   //!
   object SelectInput_req()
   {
@@ -696,7 +696,7 @@ class Window
   int event_mask_to_int(array(string) masks)
   {
     int mask = 0;
-    
+
     foreach(masks, string type)
       mask
 	|= ._Xlib.event_masks[type];
@@ -733,7 +733,7 @@ class Window
     // req->keyboardMode = 1;
     req->button = button;
     req->modifiers = modifiers || 0x8000;
-    
+
     return req;
   }
 
@@ -788,7 +788,7 @@ class Window
 
     if (!a[0])
       return 0;
-    
+
     a = a[1];
     for(int i = 0; i<sizeof(a); i++)
       {
@@ -820,7 +820,7 @@ class Window
   {
     display->send_request(ChangeProperty_req(property, type, format, data));
   }
-  
+
   //!
   object GetProperty_req(object property, object|void type)
   {
@@ -829,7 +829,7 @@ class Window
     req->property = property->id;
     if (type)
       req->type = type->id;
-    
+
     return req;
   }
 
@@ -869,7 +869,7 @@ class Window
   {
     display->send_request(ClearArea_req(x, y, width, height, exposures));
   }
-  
+
   // Shape extension
   //!
   void ShapeRectangles( string kind, int xo, int yo, string operation,
@@ -954,7 +954,7 @@ class RootWindow
     ::create(@args);
     autofree=0;
   }
-  
+
   object new(mixed ... args) /* Kludge */
   {
     return Window(@args);

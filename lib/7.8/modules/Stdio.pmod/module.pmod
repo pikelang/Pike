@@ -43,7 +43,7 @@ inherit Stdio.module;
 class File
 {
   optional inherit _Stdio.Fd_ref;
-  
+
 #if constant(predef::Stdio.file_open_places)
   /*static*/ int open_file_id = next_open_file_id++;
 #endif
@@ -277,7 +277,7 @@ class File
 #endif
     is_file = 0;
     debug_file = "socket";
-    debug_mode = host+":"+port; 
+    debug_mode = host+":"+port;
     debug_bits = 0;
     if(!client) {
       if (::connect(host, port)) {
@@ -298,7 +298,7 @@ class File
 #if constant(_Stdio.__HAVE_CONNECT_UNIX__)
   int connect_unix(string path)
   //! Open a UNIX domain socket connection to the specified destination.
-  //! 
+  //!
   //! @returns
   //!  Returns @expr{1@} on success, and @expr{0@} on failure.
   //!
@@ -354,7 +354,7 @@ class File
   }
 
   String.SplitIterator|LineIterator line_iterator( int|void trim )
-  //! Returns an iterator that will loop over the lines in this file. 
+  //! Returns an iterator that will loop over the lines in this file.
   //! If trim is true, all @tt{'\r'@} characters will be removed from
   //! the input.
   {
@@ -586,7 +586,7 @@ class File
       return;
     }
 
-    debug_file = file;  
+    debug_file = file;
     debug_mode = mode;
     debug_bits = bits;
     switch(file)
@@ -604,7 +604,7 @@ class File
 	__closed_backtrace=0;
 #endif
 	break;
-	
+
       case "stderr":
 	_fd=_stderr;
 #ifdef __STDIO_DEBUG
@@ -818,13 +818,13 @@ class File
 
   protected int __stdio_fs_event_callback(int event_mask)
   {
-    BE_WERR ("__stdio_fs_event_callback()");    
-    
+    BE_WERR ("__stdio_fs_event_callback()");
+
     if (!___fs_event_callback) return 0;
 
   	if(errno())
     	BE_WERR ("  got error " + strerror (errno()) + " from read()");
-    
+
     return ___fs_event_callback(___id, event_mask);
   }
 
@@ -1042,7 +1042,7 @@ class File
   //! @param event_mask
   //!  An event mask specifing bitwise OR of one or more event types to
   //!  monitor, selected from @[Stdio.NOTE_WRITE] and friends.
-  //! 
+  //!
   //! @note
   //!   These functions do not set the file nonblocking.
   //!
@@ -1066,7 +1066,7 @@ class File
   //! that the callbacks can be called immediately by the backend
   //! thread, so it might not be safe to continue using the stream in
   //! this thread.
-  //! 
+  //!
   //! Because of that, it's useful to talk about "callback mode" when
   //! any callback is installed. In callback mode the stream should be
   //! seen as "bound" to the backend thread. For instance, it's only
@@ -1199,7 +1199,7 @@ class File
     }
     else
     {
-      ::set_fs_event_callback(0, 0);      
+      ::set_fs_event_callback(0, 0);
     }
   }
 
@@ -1213,7 +1213,7 @@ class File
       }
     }
   }
-  
+
 
   function(mixed|void:int) query_close_callback() { return ___close_callback; }
 
@@ -1324,7 +1324,7 @@ class File
 #ifdef __STDIO_DEBUG
     if(mixed x=catch { ::set_nonblocking(); })
     {
-      x[0]+=(__closed_backtrace ? 
+      x[0]+=(__closed_backtrace ?
 	   sprintf("File was closed from:\n    %-=200s\n",__closed_backtrace) :
 	   "This file has never been open.\n" );
       throw(x);
@@ -1391,7 +1391,7 @@ class File
      CHECK_OPEN();
      ::set_nonblocking();
   }
-   
+
   protected void destroy()
   {
     BE_WERR("destroy()");
@@ -1507,7 +1507,7 @@ class FILE
   private array(string) cached_lines = ({});
 
   private function(string:string) output_conversion, input_conversion;
-  
+
   protected string _sprintf( int type, mapping flags )
   {
     return ::_sprintf( type, flags );
@@ -1526,7 +1526,7 @@ class FILE
       return 0;
     }
   }
- 
+
   inline private int get_data()
   {
     if( bpos )
@@ -1711,7 +1711,7 @@ class FILE
   array(string) ngets(void|int(1..) n, int(0..1)|void not_all)
   {
     array(string) res;
-    if (!n) 
+    if (!n)
     {
        res=read()/"\n";
        if (res[-1]=="" || not_all) return res[..<1];
@@ -1794,7 +1794,7 @@ class FILE
     }
   }
 #endif
-  
+
   int assign(File|FILE foo)
   {
     bpos=0; cached_lines=({}); lp=0;
@@ -1852,8 +1852,8 @@ class FILE
   {
     return lambda(){ return read( nbytes); };
   }
-    
-  //! Returns an iterator that will loop over the lines in this file. 
+
+  //! Returns an iterator that will loop over the lines in this file.
   //!
   //! @seealso
   //!   @[line_iterator()]
@@ -1866,7 +1866,7 @@ class FILE
   }
 
   object line_iterator( int|void trim )
-  //! Returns an iterator that will loop over the lines in this file. 
+  //! Returns an iterator that will loop over the lines in this file.
   //! If @[trim] is true, all @tt{'\r'@} characters will be removed
   //! from the input.
   //!
@@ -1877,7 +1877,7 @@ class FILE
   //! functions that read data with the line iterator, it will produce
   //! unexpected results since the internal buffer in the iterator will not
   //! contain sequential file-data in those cases.
-  //! 
+  //!
   //! @seealso
   //!   @[_get_iterator()]
   {

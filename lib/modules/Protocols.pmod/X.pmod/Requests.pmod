@@ -18,7 +18,7 @@
  *
  *    You should have received a copy of the GNU General Public License
  *    along with this program; if not, write to the Free Software
- *    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA 
+ *    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  */
 
 
@@ -55,7 +55,7 @@ class request
   string build_request(string req, void|int data)
   {
     req = ._Xlib.pad(req);
-    
+
     // Big requests extension. Will not work
     // if this extension is not present.
     if((sizeof(req)+1) > (65535*4))
@@ -166,7 +166,7 @@ class CreateWindow
 
   int depth;
   //!
-  
+
   int wid;
   int parent;
   //!
@@ -448,17 +448,17 @@ class GetProperty
   {
     mapping m = ([ "format" : reply->data1 ]);
     int length;
-    
+
     sscanf(reply->rest, "%4c%4c%4c",
 	   m->type, m->bytesAfter, length);
-    
+
     /* Match and Property errors (as in rfc-1013) are not used,
      * according to the official specification. For non-existent
      * properties, format == 0 is returned.
      *
      * If types doesn't match, format is non-zero, the actual type is
      * returned, but the data is empty (length = 0). */
-     
+
     if ( (!m->format) || (type && (type != m->type)))
       return 0;
     switch(m->format)
@@ -503,7 +503,7 @@ class GetProperty
 	error(sprintf("Requests.GetProperty->handle_error: "
 		      "Unexpected error '%s'\n",
 		      reply->errorCode));
-	
+
       }
   }
 }
@@ -649,7 +649,7 @@ class CreatePixmap
 
   int depth;
   //!
-  
+
   int pid;
   int drawable;
   //!
@@ -697,7 +697,7 @@ class ChangeGC
 
   string to_string()
   {
-    return build_request(sprintf("%4c%4c%s", gc, 
+    return build_request(sprintf("%4c%4c%s", gc,
 				 @build_value_list(attributes,
 						  ._Xlib.gc_attributes)));
   }
@@ -734,7 +734,7 @@ class PolyPoint
   int gc;
   array(object) points;
   //!
-  
+
   string to_string()
   {
     return build_request(sprintf("%4c%4c%@s", drawable, gc,
@@ -832,7 +832,7 @@ class PutImage
     data=0;
     return pad;
   }
-  
+
 }
 
 class ImageText8
@@ -914,7 +914,7 @@ class CopyArea
   object gc;
   object area;
   object src, dst;
-  int x,y; 
+  int x,y;
   //!
 
   string to_string()
@@ -952,7 +952,7 @@ class AllocColor
 
   string to_string()
   {
-    return build_request(sprintf("%4c%2c%2c%2c\0\0", 
+    return build_request(sprintf("%4c%2c%2c%2c\0\0",
 				 colormap, red, green, blue ));
   }
 
@@ -1075,5 +1075,5 @@ class ExtensionRequest
     else while((sizeof(data)+sizeof(pad))%4) pad += "\0";
     return build_request(data+pad, code);
   }
-  
+
 }

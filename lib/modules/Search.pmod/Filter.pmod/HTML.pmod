@@ -130,7 +130,7 @@ void parse_http_header(string header, string value, .Output res)
   {
     if(!m->name)
       return ({});
-    
+
     if(res->fields[m->name])
       res->fields[m->name] += " " + clean(c);
     else
@@ -138,7 +138,7 @@ void parse_http_header(string header, string value, .Output res)
     return ({});
   };
 #endif
-  
+
   array parse_meta(Parser.HTML p, mapping m, mapping e)
   {
     if (e->noindex)
@@ -335,11 +335,11 @@ void parse_http_header(string header, string value, .Output res)
   parser->add_containers( ([ "title":parse_title,
 			     "h1": parse_headline,
 			     "h2": parse_headline,
-			     "h3": parse_headline, 
+			     "h3": parse_headline,
 			     "noindex":  parse_noindex,
 			     "no-index": parse_noindex,
 			     "no_index": parse_noindex,  ]) );
-			     
+
   parser->add_tags( ([ "meta":parse_meta,
 		       "a":parse_a,
 		       "base": parse_base,
@@ -386,7 +386,7 @@ void parse_http_header(string header, string value, .Output res)
 				   }
 				 }
 			       });
-  
+
   res->fields->title="";
   res->fields->description="";
   res->fields->keywords="";

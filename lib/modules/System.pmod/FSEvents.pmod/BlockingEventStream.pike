@@ -25,7 +25,7 @@
 
 //!
   protected void create(array(string) paths, float latency, int|void since_when, int|void flags)
-  {  
+  {
 #if !constant(Pike.DefaultBackend.HAVE_CORE_FOUNDATION)
     throw(Error.Generic("Pike does not have support for Core Foundation. FSEvents will not function!\n"));
 #endif
@@ -39,7 +39,7 @@
   }
 
   //! wait for an event to be received, and return it.
-  //! 
+  //!
   //! @param timeout
   //!   an optional limit to the amount of time we're willing to wait
   mixed read_event(void|float timeout)
@@ -58,7 +58,7 @@
       {
         res = Pike.DefaultBackend(timeout);
       } while(floatp(res) && received_events->is_empty() && orig_timeout && (timeout = (timeout-res)) > 0.0);
-    }    
+    }
 
     if(received_events->is_empty())
       return 0;

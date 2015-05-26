@@ -80,7 +80,7 @@
   //!	  "copyright": int(0..1),
   //!	  "data": frame_data,
   //!	  "emphasis": emphasis,
-  //!	  "extension": 
+  //!	  "extension":
   //!	  "channels":0,
   //!	  "id":1,
   //!	  "layer":3,
@@ -90,7 +90,7 @@
   //!	  "sampling": int
   //!   ])
   //!
-  mapping|int get_frame() { 
+  mapping|int get_frame() {
     string data;
     int bitrate;
     int trate = 0;
@@ -126,7 +126,7 @@
 
         int getbits(int n) {
           int res = 0;
-    
+
           while( n-- ) {
             res <<= 1;
             if( header&(1<<31) )
@@ -146,12 +146,12 @@
 
 	prot = getbits(1);
 
-	bitrate = getbits(4); 
+	bitrate = getbits(4);
 	srate = getbits(2);
-      
+
 	if((layer>3) || (layer<2) ||  (bitrate>14) || (srate>2))
 	  continue;
-      
+
 	pad = getbits(1);
 	rv = ([ "private": getbits(1),
 		"channels": channels_map[ getbits(2) ],
@@ -209,7 +209,7 @@
 	    buffer->getbytes(1, 1);
 	    nlen++;
 	  }
-	} 
+	}
 	return nlen ? nlen+10 : 0;
   }
 

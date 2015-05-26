@@ -53,7 +53,7 @@ class PathPoint
 }
 
 class Path
-//! A path 
+//! A path
 {
 
   string name;

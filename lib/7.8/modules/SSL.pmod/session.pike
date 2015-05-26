@@ -120,7 +120,7 @@ protected string generate_key_block(string client_random, string server_random,
 protected void printKey(string name, string key) {
 
   string res="";
-  res+=sprintf("%s:  len:%d type:%d \t\t",name,sizeof(key),0); 
+  res+=sprintf("%s:  len:%d type:%d \t\t",name,sizeof(key),0);
   /* return; */
   for(int i=0;i<sizeof(key);i++) {
     int d=key[i];
@@ -177,16 +177,16 @@ array(string) generate_keys(string client_random, string server_random,
   printKey( "server_write_MAC_secret",keys[1]);
   printKey( "keys[2]",keys[2]);
   printKey( "keys[3]",keys[3]);
-  
+
   if(cipher_spec->iv_size) {
     printKey( "keys[4]",keys[4]);
     printKey( "keys[5]",keys[5]);
-    
+
   } else {
     werror("No IVs!!\n");
   }
 #endif
-  
+
   return keys;
 }
 
@@ -252,7 +252,7 @@ array(.state) new_client_states(string client_random, string server_random,
   .state write_state = .state(this);
   .state read_state = .state(this);
   array(string) keys = generate_keys(client_random, server_random,version);
-  
+
   if (cipher_spec->mac_algorithm)
   {
     read_state->mac = cipher_spec->mac_algorithm(keys[1]);

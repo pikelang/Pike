@@ -308,7 +308,7 @@ class Node
 	new_child->_set_owner_document(this);
       else
 	throw(DOMException(DOMException.WRONG_DOCUMENT_ERR));
-    
+
     if(new_child->get_node_type() == DOCUMENT_FRAGMENT_NODE) {
       array(Node) new_children = values(new_child->get_child_nodes());
       foreach(new_children, Node nc)
@@ -391,7 +391,7 @@ class DocumentFragment
 class Document
 {
   inherit Node;
-  
+
   protected program ElementImpl = Element;
   protected program DocumentFragmentImpl = DocumentFragment;
   protected program TextImpl = Text;
@@ -533,7 +533,7 @@ class CharacterData
     if(offset + count >= get_length())
       set_data(substring_data(0, offset));
     else
-      set_data(substring_data(0, offset) + 
+      set_data(substring_data(0, offset) +
 	       substring_data(offset+count, get_length()));
   }
 
@@ -545,7 +545,7 @@ class CharacterData
       set_data(substring_data(0, offset) + arg);
     else
       set_data(substring_data(0, offset) + arg +
-	       substring_data(offset+count, get_length()));    
+	       substring_data(offset+count, get_length()));
   }
 
   protected string cast(string to)
@@ -1032,26 +1032,26 @@ class ParseException
 }
 
 class InputSource {
-  
+
   protected string sysid, pubid, encoding;
   protected Stdio.File file;
-  
+
   string get_public_id() { return pubid; }
   string get_system_id() { return sysid; }
   string get_encoding() { return encoding; }
   void set_public_id(string id) { pubid = id; }
   void set_system_id(string id) { sysid = id; }
   void set_encoding(string enc) { encoding = enc; }
-  
+
   Stdio.File get_file() { return file; }
   void set_file(Stdio.File f) { file = f; }
-  
+
   string get_data()
   {
     string data = get_file()->read();
     return data;
   }
-  
+
   protected Stdio.File get_external_file(string sysid, string|void pubid)
   {
     Stdio.File f = Stdio.File();
@@ -1059,7 +1059,7 @@ class InputSource {
       throw(ParseException(sysid+": file not found", sysid, pubid));
     return f;
   }
-  
+
   protected void create(Stdio.File|string|void input)
   {
     if(input)
@@ -1143,7 +1143,7 @@ class AbstractDOMParser
          DocumentType doctype = document->get_implementation()->
 	   create_document_type(name, attributes->PUBLIC,
 				attributes->SYSTEM);
-	 
+
 	 current_node->append_child(doctype);
 
 	 if(contents)

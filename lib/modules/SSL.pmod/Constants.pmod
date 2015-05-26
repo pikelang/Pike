@@ -102,7 +102,7 @@ constant CIPHER_chacha20 = 13;
 
 //! Mapping from cipher algorithm to effective key length.
 constant CIPHER_effective_keylengths = ([
-  CIPHER_null:		0, 
+  CIPHER_null:		0,
   CIPHER_rc2_40:	16,	// A 64bit key in RC2 has strength ~34...
   CIPHER_rc4_40:	24,	// Estimated from plain rc4.
   CIPHER_des40:		32,	// A 56bit key in DES has strength ~40...
@@ -756,7 +756,7 @@ constant CIPHER_SUITES =
 ([
    // The following cipher suites are only intended for testing.
    SSL_null_with_null_null :    	({ 0, 0, 0 }),
-   SSL_rsa_with_null_md5 :      	({ KE_rsa_export, 0, HASH_md5 }), 
+   SSL_rsa_with_null_md5 :      	({ KE_rsa_export, 0, HASH_md5 }),
    SSL_rsa_with_null_sha :      	({ KE_rsa_export, 0, HASH_sha }),
    TLS_rsa_with_null_sha256 :      	({ KE_rsa_export, 0, HASH_sha256, MODE_cbc }),
 

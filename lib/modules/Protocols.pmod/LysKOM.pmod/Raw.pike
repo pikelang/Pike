@@ -7,7 +7,7 @@ import .Helper;
 // {
 //    call_out(f,0.5);
 
-//    if (!con) 
+//    if (!con)
 //       return;
 
 //    if (con->query_read_callback()!=recv)
@@ -64,7 +64,7 @@ class Send
    int ref;
    string request;
    function(string:void) callback;
-   
+
    void create(int rf,string r,function(string:void) c)
    {
       ref=rf;
@@ -139,7 +139,7 @@ mixed sync_do(int ref,string|void request)
    {
       array(int) o=(array(int))sendqueue;
       int j=search(o,ref);
-      if (j==-1) 
+      if (j==-1)
       {
 	 if (!async[ref])
 	    error("request ref %d not in queue, but no callback\n",ref);
@@ -159,7 +159,7 @@ mixed sync_do(int ref,string|void request)
    for (;;)
    {
       s=con->read(0x7fffffff,1);
-      if (s=="") 
+      if (s=="")
       {
 	 con->set_nonblocking(recv,0,0);
 	 connection_lost();
@@ -354,12 +354,12 @@ void create(string server,void|int port,void|string whoami)
    thread_create(call_thread);
 #ifdef LYSKOM_DEBUG
    werror("LysKOM running threaded\n");
-#endif   
+#endif
 #else
    con->set_nonblocking(recv,0,0);
 #ifdef LYSKOM_DEBUG
    werror("LysKOM running unthreaded\n");
-#endif   
+#endif
 #endif
    return;
 }
@@ -368,7 +368,7 @@ array(array(mixed)|int) try_parse(string what)
 {
    array res=({});
    int len=0;
-   
+
    array stack=({});
 
    while (sizeof(what)>1)
@@ -381,7 +381,7 @@ array(array(mixed)|int) try_parse(string what)
 	    // int, bitfield or hollerith
 
 	    if (sscanf(what,"%[0-9]%s",a,b)<2 ||
-		b=="") 
+		b=="")
 	       return ({0,0}); // incomplete
 
 	    if (b[0]=='H') // hollerith
@@ -459,7 +459,7 @@ array(array(mixed)|int) try_parse(string what)
 
 	    res=stack[0]+({res});
 	    stack=stack[1..];
-	    
+
 	    len+=2;
 
 	    switch (what[1])
@@ -481,7 +481,7 @@ array(array(mixed)|int) try_parse(string what)
 	    exit(-1);
       }
    }
-   
+
    return ({0,0}); // incomplete
 }
 
@@ -517,7 +517,7 @@ void delete_async(int ref)
 void add_async_callback(string which, function what, int dont_update)
 {
    int no=.ASync.name2no[which];
-   
+
    if (!no && !has_index(.ASync.name2no, which))
       throw(LysKOMError( -1,"LysKOM: unsupported async",
 			 sprintf("There is no supported async call named %O",
@@ -530,7 +530,7 @@ void add_async_callback(string which, function what, int dont_update)
 void remove_async_callback(string which, function what, void|int dont_update)
 {
    int no=.ASync.name2no[which];
-   
+
    if (!no && !has_index(.ASync.name2no, which))
       throw(LysKOMError( -1,"LysKOM: unsupported async",
 			 sprintf("There is no supported async call named %O",

@@ -765,7 +765,7 @@ string guess_subtype( string type )
 //! unless @[use_multiple] has been specified, in which case the contents will
 //! be arrays.
 //!
-array(mapping(string:string|array(string))|string|StringRange) 
+array(mapping(string:string|array(string))|string|StringRange)
   parse_headers(string|StringRange message, void|int(1..1) use_multiple)
 {
   string head, header, hname, hcontents;
@@ -791,7 +791,7 @@ array(mapping(string:string|array(string))|string|StringRange)
   }
   mapping(string:string|array) headers = ([ ]);
   foreach( replace(head, ({"\r", "\n ", "\n\t"}),
-		   ({"", " ", " "}))/"\n", header ) 
+		   ({"", " ", " "}))/"\n", header )
   {
     if(4==sscanf(header, "%[!-9;-~]%*[ \t]:%*[ \t]%s", hname, hcontents))
     {
@@ -1076,7 +1076,7 @@ class Message {
   {
     if(encoded_data && !decoded_data)
       decoded_data = getdata( );
-    headers["content-transfer-encoding"] = transfer_encoding = 
+    headers["content-transfer-encoding"] = transfer_encoding =
       lower_case( encoding );
     encoded_data = 0;
   }
@@ -1189,14 +1189,14 @@ class Message {
   {
     string data;
     object body_part;
-    
+
     if (dest_type != "string")
       return UNDEFINED;
-    
+
     data = getencoded( );
-    
+
     if (body_parts) {
-      
+
       if (!boundary) {
 	if (type != "multipart") {
 	  type = "multipart";
@@ -1204,13 +1204,13 @@ class Message {
 	}
 	setboundary( generate_boundary( ) );
       }
-      
+
       data += "\r\n";
       foreach( body_parts, body_part )
 	data += "--"+boundary+"\r\n"+((string)body_part)+"\r\n";
       data += "--"+boundary+"--\r\n";
     }
-    
+
     headers["content-length"] = ""+sizeof(data);
 
     return map( indices(headers),
@@ -1421,7 +1421,7 @@ class Message {
 	arr = arr2;
 	arr2 = 0;
       }
-      
+
       array(string|int) p;
       if(sizeof(arr[0])!=1 || !stringp(arr[0][0]))
       {

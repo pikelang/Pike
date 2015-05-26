@@ -90,7 +90,7 @@ mapping(string:int) parse_time(UTC asn1)
   if ( (m->mon <= 0 ) || (m->mon > 12) )
     return 0;
   m->mon--;
-  
+
   if ( (m->mday <= 0) || (m->mday > Calendar["ISO"]["Year"](m->year + 1900)
 			  ->month(m->mon + 1)->number_of_days()))
     return 0;
@@ -360,7 +360,7 @@ Verifier make_verifier(Object _keyinfo)
        || (keyinfo->elements[1]->type_name != "BIT STRING")
        || keyinfo->elements[1]->unused)
     return 0;
-  
+
   if (([object(Sequence)]keyinfo->elements[0])->elements[0]->get_der()
       == Identifiers.rsa_id->get_der())
   {
@@ -368,7 +368,7 @@ Verifier make_verifier(Object _keyinfo)
 	 || (([object(Sequence)]keyinfo->elements[0])->elements[1]->get_der()
 	     != Null()->get_der()))
       return 0;
-    
+
     return rsa_verifier()->init(([object(Sequence)]keyinfo->elements[1])
 				->value);
   }
@@ -387,12 +387,12 @@ class TBSCertificate
   //!
   string der;
 
-  //!  
+  //!
   int version;
 
   //!
   Gmp.mpz serial;
-  
+
   //!
   Sequence algorithm;  /* Algorithm Identifier */
 
@@ -416,7 +416,7 @@ class TBSCertificate
   //! @note
   //! optional
   BitString issuer_id;
-  
+
   //! @note
   //! optional
   BitString subject_id;
@@ -436,7 +436,7 @@ class TBSCertificate
 
     array(Object) a = ([object(Sequence)]asn1)->elements;
     X509_WERR("TBSCertificate: sizeof(a) = %d\n", sizeof(a));
-      
+
     if (sizeof(a) < 6)
       return 0;
 
@@ -462,7 +462,7 @@ class TBSCertificate
     serial = a[0]->value;
 
     X509_WERR("TBSCertificate: serial = %s\n", (string) serial);
-      
+
     if ((a[1]->type_name != "SEQUENCE")
 	|| !sizeof(a[1]->elements )
 	|| (a[1]->elements[0]->type_name != "OBJECT IDENTIFIER"))
@@ -487,7 +487,7 @@ class TBSCertificate
     not_before = parse_time(validity[0]);
     if (!not_before)
       return 0;
-      
+
     X509_WERR("TBSCertificate: not_before = %O\n", not_before);
 
     not_after = parse_time(validity[1]);
@@ -501,7 +501,7 @@ class TBSCertificate
     subject = a[4];
 
     X509_WERR("TBSCertificate: keyinfo = %O\n", a[5]);
-      
+
     public_key = make_verifier(a[5]);
 
     if (!public_key)
@@ -586,7 +586,7 @@ TBSCertificate verify_certificate(string s, mapping authorities)
   if (!tbs) return 0;
 
   object v;
-  
+
   if (tbs->issuer->get_der() == tbs->subject->get_der())
   {
     /* A self signed certificate */
@@ -603,10 +603,10 @@ TBSCertificate verify_certificate(string s, mapping authorities)
 }
 
 //! Decodes a certificate chain, checks the signatures. Verifies that the
-//! chain is unbroken, and that all certificates are in effect  
-//! (time-wise.) 
+//! chain is unbroken, and that all certificates are in effect
+//! (time-wise.)
 //!
-//! Returns a mapping with the following contents, depending 
+//! Returns a mapping with the following contents, depending
 //! on the verification of the certificate chain:
 //!
 //! @mapping
@@ -655,7 +655,7 @@ mapping verify_certificate_chain(array(string) cert_chain,
      object cert = Standards.ASN1.Decode.simple_der_decode(c);
      TBSCertificate tbs = decode_certificate(cert);
      if(!tbs)
-     { 
+     {
        m->error_code = CERT_INVALID;
        m->error_cert = idx;
        return m;
@@ -675,7 +675,7 @@ mapping verify_certificate_chain(array(string) cert_chain,
     //
     // if we are a CA certificate (we don't care about the end cert)
     // make sure the CA constraint is set.
-    // 
+    //
     // should we be considering self signed certificates?
     if(idx != (sizeof(chain_obj)-1))
     {
@@ -684,7 +684,7 @@ mapping verify_certificate_chain(array(string) cert_chain,
         if(tbs->extensions && sizeof(tbs->extensions))
         {
             werror("have extensions.\n");
-            foreach(tbs->extensions->elements[0]->elements, Sequence c)        
+            foreach(tbs->extensions->elements[0]->elements, Sequence c)
             {
                werror("checking each element...\n");
                if(c->elements[0] == Identifiers.ce_id->append(19))
@@ -699,7 +699,7 @@ mapping verify_certificate_chain(array(string) cert_chain,
                }
             }
         }
-        
+
         if(! caok)
         {
           X509_WERR("a CA certificate does not have the CA basic constraint.\n");
@@ -732,7 +732,7 @@ mapping verify_certificate_chain(array(string) cert_chain,
         X509_WERR("Self signed certificate\n");
 
         // always trust our own authority first, even if it is self signed.
-        if(!v) 
+        if(!v)
           v = tbs->public_key;
       }
     }
@@ -789,7 +789,7 @@ mapping verify_certificate_chain(array(string) cert_chain,
         // the authority.
         if(idx == 0)
           m->authority = tbs->issuer;
- 
+
         if(idx == sizeof(chain_cert)-1) m->cn = tbs->subject;
       }
       else

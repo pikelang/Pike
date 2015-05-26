@@ -1,14 +1,14 @@
 
-// 
+//
 // 			    Federal Information
 // 		   Processing Standards Publication 10-4
-// 
+//
 // 				 1995 April
 // 			Announcing the Standard for
-// 
+//
 // 	   COUNTRIES, DEPENDENCIES, AREAS OF SPECIAL SOVEREIGNTY,
 // 		AND THEIR PRINCIPAL ADMINISTRATIVE DIVISIONS
-// 
+//
 // Federal Information Processing Standards Publications (FIPS PUBS) are
 // issued by the National Institute of Standards and Technology after
 // approval by the Secretary of Commerce pursuant to Section 111(d) of

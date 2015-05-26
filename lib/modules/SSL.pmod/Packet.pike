@@ -118,7 +118,7 @@ void send(Stdio.Buffer output)
 {
   if (! PACKET_types[content_type] )
     error( "Invalid type" );
-  
+
   if (sizeof(fragment) > (PACKET_MAX_SIZE + marginal_size))
     error( "Maximum packet size exceeded\n" );
 

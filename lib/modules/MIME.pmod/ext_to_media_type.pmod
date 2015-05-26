@@ -17,7 +17,7 @@ protected mapping ext2type = ([
 // present from the IANA media types list on 2002-02-05, with the exception
 // of application types.
 //
-// the second portion of the list consists of registered and common 
+// the second portion of the list consists of registered and common
 // types as of 2012-04-17. The bulk of this list comes from the public
 // domain mime types list published by the Apache Software Foundation.
 

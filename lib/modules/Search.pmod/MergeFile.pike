@@ -43,14 +43,14 @@ array get_next_word_blob()
   string word = fd->read(length);
   sscanf(fd->read(4), "%4c", length);
   string blob = fd->read(length);
-  return ({ word, blob });  
+  return ({ word, blob });
 }
 
 //!
 void merge_mergefiles(Search.MergeFile a, Search.MergeFile b)
 {
   String.Buffer buf = String.Buffer();
-  
+
   int done = 0;
   int a_used=1, b_used=1;
   array blob_a, blob_b;

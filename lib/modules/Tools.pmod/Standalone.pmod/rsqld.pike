@@ -234,7 +234,7 @@ class Connection
 
   protected object get_query(string qid)
   {
-    return queries[qid] || 
+    return queries[qid] ||
       (error("Query ID has expired.\n"),0);
   }
 

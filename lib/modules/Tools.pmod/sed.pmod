@@ -54,7 +54,7 @@ protected array sedreplace(string s,object re,string with,
       else
 	 w=a[0];
    }
-   
+
    string t=
       replace(with,whatin[..sizeof(a)-first+lastmod-1],
 	      a[first..sizeof(a)+lastmod-1]);
@@ -64,11 +64,11 @@ protected array sedreplace(string s,object re,string with,
    s=(w||"")+t;
    if (flags["g"])
    {
-      if (lastmod) 
+      if (lastmod)
       {
 	 array wa;
 	 wa=sedreplace(a[-1],re,with,whatin,first,lastmod,flags);
-	 if (wa) 
+	 if (wa)
 	 {
 	    pr+=wa[0];
 	    s+=wa[1];
@@ -91,7 +91,7 @@ protected array scan_for_linenumber(string cmd,
    string what;
    object re;
 
-   while (cmd!="" && ((cmd[0]>='0' && cmd[0]<='9') 
+   while (cmd!="" && ((cmd[0]>='0' && cmd[0]<='9')
 		      || cmd[0]=='/' || cmd[0]=='+' || cmd[0]=='-'))
    {
       if (cmd[0]>='0' && cmd[0]<='9')
@@ -102,12 +102,12 @@ protected array scan_for_linenumber(string cmd,
       else if (cmd[0]=='+')
       {
 	 sscanf(cmd,"+%d%s",x,cmd);
-	 n+=x; 
+	 n+=x;
       }
       else if (cmd[0]=='-')
       {
 	 sscanf(cmd,"-%d%s",x,cmd);
-	 n-=x; 
+	 n-=x;
       }
       else if (sscanf(cmd,"/%s/%s",what,cmd)==2)
       {
@@ -145,16 +145,16 @@ string|array `()(string|array(string) commands,
    if (arrayp(commands)) e=commands;
    else e=commands/"\n";
 
-   start=0; 
+   start=0;
    stop=sizeof(in)-1;
 
    foreach (e, string cmd)
    {
-      if (cmd!="" && ((cmd[0]>='0' && cmd[0]<='9') 
+      if (cmd!="" && ((cmd[0]>='0' && cmd[0]<='9')
 		      || cmd[0]=='/' || cmd[0]=='+' || cmd[0]=='-'))
       {
 	 a1=scan_for_linenumber(cmd,in,start);
-	 stop=start=a1[0]; 
+	 stop=start=a1[0];
 	 cmd=a1[1];
       }
 
@@ -162,24 +162,24 @@ string|array `()(string|array(string) commands,
       else if (sscanf(cmd,",%s",cmd))
       {
 	 a1=scan_for_linenumber(cmd,in,start);
-	 stop=a1[0]; 
+	 stop=a1[0];
 	 cmd=a1[1];
       }
 
       if (stop>sizeof(in)-1) stop=sizeof(in)-1;
       if (start<0) start=0;
-      
+
       if (cmd=="") continue;
       switch (cmd[0])
       {
 	 case 's':
-	    div=cmd[1..1]; 
+	    div=cmd[1..1];
 	    if (div=="%") div="%%";
 	    inflags="";
 	    if (sscanf(cmd,"%*c"+div+"%s"+div+"%s"+div+"%s",
 		       what,with,inflags)<3) continue;
 	    flags=aggregate_multiset(@(inflags/""));
-	    
+
 	    int first=0,lastmod=0;
 	    if (what!="") // fix the regexp for working split
 	    {
@@ -201,11 +201,11 @@ string|array `()(string|array(string) commands,
 	       }
 	       start++;
 	    }
-	    
+
 	    break;
 
 	 case 'y':
-	    div=cmd[1..1]; 
+	    div=cmd[1..1];
 	    if (div=="%") div="%%";
 	    inflags="";
 	    if (sscanf(cmd,"%*c"+div+"%s"+div+"%s"+div+"%s",
@@ -215,7 +215,7 @@ string|array `()(string|array(string) commands,
 	       what=what[0..sizeof(with)-1];
 	       with=with[0..sizeof(what)-1];
 	    }
-	    
+
 	    a1=what/"",a2=with/"";
 
 	    while (start<=stop)
@@ -235,12 +235,12 @@ string|array `()(string|array(string) commands,
 	    if (stop>=start) stop++;
 	    break;
 
-	 case 'c': // change 
+	 case 'c': // change
 	    in=in[..start-1]+({cmd[1..]})+in[stop+1..];
 	    stop=start;
 	    break;
 
-	 case 'd': // delete 
+	 case 'd': // delete
 	    in=in[..start-1]+in[stop+1..];
 	    stop=start;
 	    break;
@@ -257,7 +257,7 @@ string|array `()(string|array(string) commands,
 	 case 'H': // appending copy
 	    hold+=in[start..stop];
 	    break;
-	    
+
 	 case 'i': // print text
 	    print+=({cmd[1..]});
 	    break;
@@ -275,15 +275,15 @@ string|array `()(string|array(string) commands,
 	    break;
 
 	 case 'q': // quit
-	    if (!suppress) 
+	    if (!suppress)
 	       return (arrayp(data)?(print+in):((print+in)*"\n"));
 	    return (arrayp(data)?(print):(print*"\n"));
-   
+
 	 default:
 	    // error? just ignore for now
       }
    }
-   if (!suppress) 
+   if (!suppress)
       return (arrayp(data)?(print+in):(print+in)*"\n");
    return (arrayp(data)?(print):(print*"\n"));
 }

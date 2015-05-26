@@ -18,7 +18,7 @@
 import .Constants;
 
 //! The server's default private key
-//! 
+//!
 //! @note
 //!   If SNI (Server Name Indication) is used and multiple keys
 //!   are available, this key will not be used, instead the appropriate
@@ -44,37 +44,37 @@ Crypto.RSA client_rsa;
 //! when client certificate authentication is requested.
 array(array(string)) client_certificates = ({});
 
-//! A function which will select an acceptable client certificate for 
+//! A function which will select an acceptable client certificate for
 //! presentation to a remote server. This function will receive
 //! the SSL context, an array of acceptable certificate types,
 //! and a list of DNs of acceptable certificate authorities. This function
 //! should return an array of strings containing a certificate chain,
 //! with the client certificate first, (and the root certificate last, if
-//! applicable.) 
+//! applicable.)
 function (.context,array(int),array(string):array(string))client_certificate_selector
   = internal_select_client_certificate;
 
-//! A function which will select an acceptable server certificate for 
+//! A function which will select an acceptable server certificate for
 //! presentation to a client. This function will receive
-//! the SSL context, and an array of server names, if provided by the 
-//! client. This function should return an array of strings containing a 
-//! certificate chain, with the client certificate first, (and the root 
-//! certificate last, if applicable.) 
+//! the SSL context, and an array of server names, if provided by the
+//! client. This function should return an array of strings containing a
+//! certificate chain, with the client certificate first, (and the root
+//! certificate last, if applicable.)
 //!
 //! The default implementation will select a certificate chain for a given server
 //! based on values contained in @[sni_certificates].
-function (.context,array(string):array(string)) select_server_certificate_func 
+function (.context,array(string):array(string)) select_server_certificate_func
   = internal_select_server_certificate;
 
-//! A function which will select an acceptable server key for 
+//! A function which will select an acceptable server key for
 //! presentation to a client. This function will receive
-//! the SSL context, and an array of server names, if provided by the 
+//! the SSL context, and an array of server names, if provided by the
 //! client. This function should return an object matching the certificate
 //! for the server hostname.
 //!
 //! The default implementation will select the key for a given server
 //! based on values contained in @[sni_keys].
-function (.context,array(string):object) select_server_key_func 
+function (.context,array(string):object) select_server_key_func
   = internal_select_server_key;
 
 //! Policy for client authentication. One of @[SSL.Constants.AUTHLEVEL_none],
@@ -84,13 +84,13 @@ int auth_level;
 //! Array of authorities that are accepted for client certificates.
 //! The server will only accept connections from clients whose certificate
 //! is signed by one of these authorities. The string is a DER-encoded certificate,
-//! which typically must be decoded using @[MIME.decode_base64] or 
+//! which typically must be decoded using @[MIME.decode_base64] or
 //! @[Tools.PEM.Msg] first.
-//! 
-//! Note that it is presumed that the issuer will also be trusted by the server. See 
+//!
+//! Note that it is presumed that the issuer will also be trusted by the server. See
 //! @[trusted_issuers] for details on specifying trusted issuers.
-//! 
-//! If empty, the server will accept any client certificate whose issuer is trusted by the 
+//!
+//! If empty, the server will accept any client certificate whose issuer is trusted by the
 //! server.
 void set_authorities(array(string) a)
 {
@@ -99,12 +99,12 @@ void set_authorities(array(string) a)
 }
 
 //! When set, require the chain to be known, even if the root is self signed.
-//! 
+//!
 //! Note that if set, and certificates are set to be verified, trusted issuers must be
 //! provided, or no connections will be accepted.
 int require_trust=0;
 
-//! Get the list of allowed authorities. See @[set_authorities]. 
+//! Get the list of allowed authorities. See @[set_authorities].
 array(string) get_authorities()
 {
   return authorities;
@@ -113,16 +113,16 @@ array(string) get_authorities()
 protected array(string) authorities = ({});
 array(Tools.X509.TBSCertificate) authorities_cache = ({});
 
-//! Sets the list of trusted certificate issuers. 
+//! Sets the list of trusted certificate issuers.
 //!
 //! @param a
 //!
 //! An array of certificate chains whose root is self signed (ie a root issuer), and whose
-//! final certificate is an issuer that we trust. The root of the certificate should be 
-//! first certificate in the chain. The string is a DER-encoded 
-//! certificate, which typically must be decoded using 
+//! final certificate is an issuer that we trust. The root of the certificate should be
+//! first certificate in the chain. The string is a DER-encoded
+//! certificate, which typically must be decoded using
 //! @[MIME.decode_base64] or @[Tools.PEM.Msg] first.
-//! 
+//!
 //! If this array is left empty, and the context is set to verify certificates,
 //! a certificate chain must have a root that is self signed.
 void set_trusted_issuers(array(array(string))  i)
@@ -131,7 +131,7 @@ void set_trusted_issuers(array(array(string))  i)
   update_trusted_issuers();
 }
 
-//! Get the list of trusted issuers. See @[set_trusted_issuers]. 
+//! Get the list of trusted issuers. See @[set_trusted_issuers].
 array(array(string)) get_trusted_issuers()
 {
   return trusted_issuers;
@@ -140,7 +140,7 @@ array(array(string)) get_trusted_issuers()
 protected array(array(string)) trusted_issuers = ({});
 array(array(Tools.X509.TBSCertificate)) trusted_issuers_cache = ({});
 
-//! Determines whether certificates presented by the peer are verified, or 
+//! Determines whether certificates presented by the peer are verified, or
 //! just accepted as being valid.
 int verify_certificates = 0;
 
@@ -387,10 +387,10 @@ private object internal_select_server_key(.context context,
 }
 
 // FIXME: we only really know that RSA and DSS keys will get caught here.
-private array(string) internal_select_client_certificate(.context context, 
+private array(string) internal_select_client_certificate(.context context,
   array(int) acceptable_types, array(string) acceptable_authority_dns)
 {
-  if(!context->client_certificates|| 
+  if(!context->client_certificates||
          ![int]sizeof((context->client_certificates)))
     return ({});
 

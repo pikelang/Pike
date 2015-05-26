@@ -207,7 +207,7 @@ void warn(string s, mixed ... args)
   error(s, @args);
 }
 
-multiset check_used = (<>); 
+multiset check_used = (<>);
 
 /* Strings declared with MK_STRING. */
 mapping(string:string) strings = ([
@@ -347,7 +347,7 @@ int parse_type(array t, int p)
 	    if("=" != t[p]) break;
 	  case "!":
 	    continue;
-	    
+
 	  case "object":
 	  case "program":
 	  case "function":
@@ -699,7 +699,7 @@ class PikeType
 	  return (may_be_void_or_zero (1, 2) == 1 ?
 		  "struct svalue *" : "FLOAT_TYPE");
 	case "string": return "struct pike_string *";
-	  
+
 	case "array":
 	case "multiset":
 	case "mapping":
@@ -741,7 +741,7 @@ class PikeType
 
 	case "&":
 	  return fiddle("tAnd",args->output_c_type());
-	  
+
 	case "|":
 	  array(PikeType) a = strip_zero_alt();
 	  if (sizeof (a) == 1) return a[0]->output_c_type();
@@ -930,7 +930,7 @@ class PikeType
       return PikeType(t, args->copy());
     }
 
-  /* 
+  /*
    * Copy and remove type assignments. Can also strip off an "|zero"
    * alternative on the top level.
    */
@@ -985,7 +985,7 @@ class PikeType
 	case "string":
 	  tok=convert_comments(PC.tokenize(split(tok),"piketype"));
 	  tok=PC.group(PC.hide_whitespaces(tok));
-	  
+
 	case "array":
 	  /* strip parenthesis */
 	  while(sizeof(tok) == 1 && arrayp(tok[0]))
@@ -1072,7 +1072,7 @@ class PikeType
 		  args=({PikeType("mixed"),PikeType("mixed")});
 		}
 		break;
-		
+
 	      case "function":
 		if(arrayp(q=tok[1]))
 		{
@@ -1106,7 +1106,7 @@ class PikeType
 		  args=({PikeType("mixed"),PikeType("any")});
 		}
 		return;
-		
+
 	      case "int":
 	      case "string":
 		string low = (string)(int)-0x80000000;
@@ -1266,7 +1266,7 @@ string make_pop(mixed howmany)
   {
     default:
       return "pop_n_elems("+howmany+");";
-      
+
     case "0": case 0: return "";
     case "1": case 1: return "pop_stack();";
   }
@@ -1281,7 +1281,7 @@ string make_pop(mixed howmany)
 array fix_return(array body, PikeType rettype, mixed args)
 {
   int pos=0;
-  
+
   while( (pos=search(body,PC.Token("RETURN",0),pos)) != -1)
   {
     int pos2=search(body,PC.Token(";",0),pos+1);
@@ -1378,7 +1378,7 @@ mapping parse_attributes(array attr, void|string location,
 	  array tmp=attr[1..];
 	  if(sizeof(tmp) == 1 && arrayp(tmp[0]) && tmp[0][0]=="(")
 	    tmp=tmp[0][1..sizeof(tmp[0])-2];
-	  
+
 	  attributes[(string)attr[0]]=merge(tmp);
       }
 
@@ -1461,7 +1461,7 @@ class FuncData
     {
       return sprintf("FuncData(%s)",define);
     }
-  
+
   int `==(mixed q)
     {
       return objectp(q) && q->name == name;
@@ -1553,7 +1553,7 @@ array generate_overload_func_for(array(FuncData) d,
   int best_method_value=evaluate_method(x);
 #ifdef PRECOMPILE_OVERLOAD_DEBUG
   werror("Value X: %d\n",best_method_value);
-#endif /* PRECOMPILE_OVERLOAD_DEBUG */    
+#endif /* PRECOMPILE_OVERLOAD_DEBUG */
 
   array(mapping(string:array(FuncData))) y;
   if(min_args >= 0)
@@ -1659,7 +1659,7 @@ array generate_overload_func_for(array(FuncData) d,
 
     if(min_possible_arg == max_possible_arg)
       argbase=(string) (-min_possible_arg);
-    
+
     out+=({PC.Token(sprintf("%*nswitch(TYPEOF(Pike_sp[%d%s])) {\n",
 			    indent,
 			    best_method,argbase)) });
@@ -2014,7 +2014,7 @@ sprintf("        } else {\n"
 	    mixed name=(string)x[npos];
 
 	    string define=make_unique_name("var",name,base,"defined");
-    
+
 	    thestruct+=IFDEF(define,x[e+1..pos-1]+({";"}));
 	    ret+=DEFINE(define);
 	    ret+=({ PC.Token("DECLARE_STORAGE") });
@@ -2048,7 +2048,7 @@ sprintf("        } else {\n"
 	    break;
 	  }
 	}
-      }      
+      }
 
       x=ret/({"PIKE_INTERNAL"});
       ret=x[0];
@@ -2100,7 +2100,7 @@ sprintf("        } else {\n"
 		   ev_handler+
 		   ({ "  default: break; \n"
 		      "  }\n}\n" }));
-	
+
 	addfuncs+=
 	  IFDEF(ev_handler_define,
 		({ PC.Token(sprintf("  pike_set_prog_event_callback(%s);\n",funcname)) }) +
@@ -2248,7 +2248,7 @@ static struct %s *%s_gdb_dummy_ptr;
 	string func_num=mkname("f", base,name,"fun_num");
 
 //    werror("FIX RETURN: %O\n",body);
-    
+
 //    werror("name=%s\n",name);
 //    werror("  rettype=%O\n",rettype);
 //    werror("  args=%O\n",args);
@@ -2638,7 +2638,7 @@ static struct %s *%s_gdb_dummy_ptr;
 				       argnum,argbase,
 				       argnum,argbase),arg->line())
 		    });
-	      
+
 		  }else{
 		    ret+=({
 		      PC.Token(sprintf("debug_malloc_pass(%s=Pike_sp[%d%s].u.%s);\n",
@@ -2674,8 +2674,8 @@ static struct %s *%s_gdb_dummy_ptr;
 
 	    argnum++;
 	  }
-    
-	  body=recursive(fix_return,body,rettype, num_arguments); 
+
+	  body=recursive(fix_return,body,rettype, num_arguments);
 	  if(sizeof(body))
 	    ret+=({body});
 	  ret+=({ "}\n" });

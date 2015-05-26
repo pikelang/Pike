@@ -118,7 +118,7 @@ void insert(string|array(int) key, mixed val)
       this_program new_o = ADT.Trie(key, split);
       new_o->trie = ([ o->path[split] : o ]);
       o = trie[key[offset]] = new_o;
-    }      
+    }
     o->insert(key, val);
   }
 }

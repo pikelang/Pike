@@ -22,14 +22,14 @@
  *
  *    You should have received a copy of the GNU General Public License
  *    along with this program; if not, write to the Free Software
- *    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA 
+ *    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  */
 
 #pike __REAL_VERSION__
 
 class Button
 //! A simple button. Steals and processes mousebutton events
-//! Can be inherited and then expanded the button_pressed function 
+//! Can be inherited and then expanded the button_pressed function
 {
   object window;
   constant style = 1;
@@ -38,7 +38,7 @@ class Button
   int inside;  // pointer is inside window
   int button;  // The number of the mouse button used
   //!
-  
+
   function(object, int, mapping:void) redraw_callback;
   function(object:void) clicked_callback;
 
@@ -47,7 +47,7 @@ class Button
   {
     redraw_callback(this, pressed && (!style || inside), event);
   }
-  
+
   //!
   mapping button_pressed(mapping event)
   {
@@ -57,7 +57,7 @@ class Button
 	pressed = 1;
 	inside = 1;
 	redraw_callback(this, 1, 0);
-	
+
 	return 0;
       }
     else
@@ -75,7 +75,7 @@ class Button
 	  clicked_callback(this);
 	return 0;
       }
-    else 
+    else
       return event;
   }
 
@@ -96,7 +96,7 @@ class Button
       redraw_callback(this, 0, 0);
     return 0;
   }
-  
+
   //!
   void create(object w, int|void b)
   {
@@ -114,7 +114,7 @@ class Button
     window->set_event_callback("LeaveNotify", window_left);
   }
 }
-  
+
 class Uglier_button
 {
   inherit Button;

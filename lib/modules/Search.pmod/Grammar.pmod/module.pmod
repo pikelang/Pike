@@ -260,7 +260,7 @@ protected void low_remove_stop_words(ParseNode node, array(string) stop_words) {
       foreach(node->children, ParseNode c)
 	remove_stop_words(c, stop_words);
       break;
-      
+
     case "text":
       node->plusWords  -= stop_words;
       node->minusWords -= stop_words;

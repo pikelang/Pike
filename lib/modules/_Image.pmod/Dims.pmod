@@ -59,7 +59,7 @@ protected int(0..65535) read_2_bytes_intel(Stdio.File f)
 protected int first_marker(Stdio.File f)
 {
   int c1, c2;
-    
+
   sscanf(f->read(2), "%c%c", c1, c2);
   if (c1==0xFF||c2==M_SOI) return 1;
   return 0;
@@ -106,7 +106,7 @@ array(int) get_JPEG(Stdio.File f)
 {
   if (!first_marker(f))
     return 0;
-    
+
   /* Scan miscellaneous markers until we reach SOS. */
   for (;;)
   {
@@ -140,13 +140,13 @@ array(int) get_JPEG(Stdio.File f)
       }
       return ({ image_width,image_height });
       break;
-	
+
     case M_SOS:			/* stop before hitting compressed data */
       return 0;
 
     case M_EOI:			/* in case it's a tables-only JPEG stream */
       return 0;
-	
+
     default:			/* Anything else just gets skipped */
       if(!skip_variable(f)) return 0; // we assume it has a parameter count...
       break;
@@ -199,9 +199,9 @@ array(int) get_TIFF(Stdio.File f)
  int val = 0;
  string bo2b;
  string bo4b;
- 
+
  buf = f->read(2);
- if(buf == "II") 
+ if(buf == "II")
  {
    /* Byte order for Little endian */
    bo2b = "%2-c";
@@ -213,37 +213,37 @@ array(int) get_TIFF(Stdio.File f)
    bo2b = "%2c";
    bo4b = "%4c";
  }
- else 
+ else
  {
    /* Not a TIFF */
    return 0;
  }
- 
+
  sscanf(f->read(2), bo2b, buf);
  if(buf != 42)
  {
    /* Wrong magic number */
    return 0;
  }
- 
+
  /* offset to first IFD */
  sscanf(f->read(4), bo4b, buf);
  f->seek(buf);
- 
+
  /* number of entries */
  sscanf(f->read(2), bo2b, entries);
- 
- for(int i = 0; i < entries; i++) 
+
+ for(int i = 0; i < entries; i++)
  {
    sscanf(f->read(2), bo2b, int tag);
-   if(tag == 256 || tag == 257) 
+   if(tag == 256 || tag == 257)
    {
      sscanf(f->read(2), bo2b, buf);
      /* Count value must be one(1) */
      sscanf(f->read(4), bo4b, int count);
-     if(count == 1) 
+     if(count == 1)
      {
-       if(buf == 3) 
+       if(buf == 3)
        {
 	 /* Type short */
 	 sscanf(f->read(2), bo2b, buf);
@@ -259,8 +259,8 @@ array(int) get_TIFF(Stdio.File f)
        {
 	 /* Wrong type */
 	 return 0;
-       }  
-     
+       }
+
        if(tag == 256)
        {
 	 /* ImageWidth */
@@ -284,7 +284,7 @@ array(int) get_TIFF(Stdio.File f)
        return 0;
      }
    }
-   else 
+   else
    {
      /* Skip to next entry */
      f->seek(f->tell() + 10);
@@ -300,11 +300,11 @@ array(int) get_PSD(Stdio.File f)
 {
   //  4 bytes signature + 2 bytes version
   if (f->read(6) != "8BPS\0\1") return 0;
-  
+
   //  6 bytes reserved
   //  2 bytes channel count
   f->read(8);
-  
+
   //  4 bytes height, 4 bytes width (big-endian)
   return reverse(array_sscanf(f->read(8), "%4c%4c"));
 }
@@ -352,7 +352,7 @@ array(int) get(string|Stdio.File file) {
     //  6 bytes reserved
     //  2 bytes channel count
     file->read(6 + 2);
-    
+
     //  4 bytes height, 4 bytes width (big-endian)
     return reverse(array_sscanf(file->read(8), "%4c%4c")) + ({ "psd" });
 
@@ -366,16 +366,16 @@ array(int) get(string|Stdio.File file) {
      {
        ret = get_TIFF(file);
        if(ret) return ret+({ "tiff" });
-       
+
      }
      else
      {
       ret = get_JPEG(file);
       if(ret) return ret+({ "jpeg" });
      }
-     
+
     if(!fn) return 0;
     file = Stdio.File(fn);
-    if(file) return get(file);   
+    if(file) return get(file);
   }
 }

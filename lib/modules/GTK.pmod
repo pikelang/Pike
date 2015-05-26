@@ -19,4 +19,4 @@ inherit GTK1;
 constant module_value = UNDEFINED;
 #endif
 
- 
+

@@ -693,13 +693,13 @@ string master_read_file(string file)
   {
     object h = fs_map[x];
     file = file[sizeof(x)+1..];
-          
+
     if(h = h->open(fakeroot(file),"r") )
     {
       string q = ([function(void : string)]h->read)();
       return q;
     }
-    // TODO: should we be falling back here, or is this a hidden problem?  
+    // TODO: should we be falling back here, or is this a hidden problem?
   }
 
   object o=Files()->Fd();
@@ -739,7 +739,7 @@ mapping(string:multiset(string)) dir_cache = ([]);
 
 array(string) master_get_dir(string|void x)
 {
-  string y = find_handler_for_path(file);      
+  string y = find_handler_for_path(file);
   if(y)
   {
     object h = fs_map[y];
@@ -803,7 +803,7 @@ Stat master_file_stat(string file)
   {
     object h = fs_map[x];
     file = file[sizeof(x)+1..];
-     
+
     return h->stat(file);
   }
   else return predef::file_stat(file);
@@ -816,8 +816,8 @@ array master_get_dir(string file)
   {
     object h = fs_map[x];
     file = file[sizeof(x)+1..];
-  
-    return h->get_dir(file);      
+
+    return h->get_dir(file);
   }
   else return predef::get_dir(file);
 }
@@ -857,7 +857,7 @@ string find_handler_for_path(string file)
     if(has_prefix(file, p))
       return path;
   }
-  
+
   return 0;
 }
 
@@ -1223,7 +1223,7 @@ protected int prio_from_filename(string fname)
   return 0;
 }
 
-//! Find the files in which @[mod] is defined, as they may be hidden away in 
+//! Find the files in which @[mod] is defined, as they may be hidden away in
 //! joinnodes and dirnodes
 //!
 //! @param mod
@@ -1240,7 +1240,7 @@ array(string) module_defined(object|program mod)
 
   array mods;
   if (mod->is_resolv_joinnode)
-    mods = mod->joined_modules; 
+    mods = mod->joined_modules;
   else
     mods = ({ mod });
 
@@ -1269,8 +1269,8 @@ void enable_source_cache()
 //! @returns
 //!   an AutoDoc object
 object show_doc(program|object|function obj)
-{ 
-  object doc_extractor = main_resolv("Tools.AutoDoc.PikeExtractor.extractClass"); 
+{
+  object doc_extractor = main_resolv("Tools.AutoDoc.PikeExtractor.extractClass");
   string child;
   program prog;
 
@@ -1299,7 +1299,7 @@ object show_doc(program|object|function obj)
       source = source_cache[prog];
     else
     {
-      array sourceref = array_sscanf(Builtin.program_defined(prog), 
+      array sourceref = array_sscanf(Builtin.program_defined(prog),
                                      "%s%[:]%[0-9]");
       source = master_read_file(sourceref[0]);
       if (sizeof(sourceref[1]) && sizeof(sourceref[2]))
@@ -1320,7 +1320,7 @@ object show_doc(program|object|function obj)
   }
 
   if (documentation[prog])
-  { 
+  {
     if (child)
       return documentation[prog]->findObject(child)||documentation[prog]->findChild(child);
     else
@@ -1609,7 +1609,7 @@ program low_cast_to_program(string pname,
   {
     program|NoValue prog = programs[pname];
     if ((!undefinedp(prog)) && (prog != no_value))
-    { 
+    {
       return prog;
     }
     pname=combine_path("",pname);
@@ -1642,7 +1642,7 @@ program low_cast_to_program(string pname,
 //! or a implict cast. In the future it might receive more arguments,
 //! to aid the master finding the right program.
 program cast_to_program(string pname,
-			string current_file, 
+			string current_file,
 			object|void handler)
 {
   resolv_debug ("cast_to_program(%O, %O)\n", pname, current_file);
@@ -2000,7 +2000,7 @@ class dirnode (string dirname, object|void compilation_handler,
     {
       resolv_debug ("dirnode(%O)->module_checker()->`!()\n",dirname);
 
-      if (mixed err = catch { 
+      if (mixed err = catch {
 	// Look up module.
 	if (module = cache["module"] || low_ind("module", 1)) {
 	  /* This allows for `[] to have side effects first time
@@ -2362,10 +2362,10 @@ class joinnode (array(object|mapping) joined_modules,
     INC_RESOLV_MSG_DEPTH();
 
     array(mixed) res = ({});
-    foreach(joined_modules, object|mapping o) 
+    foreach(joined_modules, object|mapping o)
     {
       mixed ret;
-      if (!undefinedp(ret = o[index])) 
+      if (!undefinedp(ret = o[index]))
       {
 	if (objectp(ret) &&
 	    (ret->is_resolv_dirnode || ret->is_resolv_joinnode))
@@ -2525,7 +2525,7 @@ joinnode handle_import(string path, string|void current_file,
 #endif /* 0 */
   joinnode node = joinnode(({}), current_handler);
 #ifdef PIKE_MODULE_RELOC
-  // If we have PIKE_MODULE_RELOC enabled, 
+  // If we have PIKE_MODULE_RELOC enabled,
   // we might need to map to multiple directories.
   if(path == "/${PIKE_MODULE_PATH}" ||
      has_prefix(path, "/${PIKE_MODULE_PATH}/")) {
@@ -2628,7 +2628,7 @@ mixed handle_import(string what, string|void current_file, object|void handler)
   }
   resolv_debug ("handle_import(%O, %O) => new dirnode\n", what, current_file);
 #ifdef PIKE_MODULE_RELOC
-  // If we have PIKE_MODULE_RELOC enabled, 
+  // If we have PIKE_MODULE_RELOC enabled,
   // we might need to map to a join node.
   // FIXME: Ought to use the non-relocate_module() fakeroot().
   if(path == "/${PIKE_MODULE_PATH}" ||
@@ -2639,7 +2639,7 @@ mixed handle_import(string what, string|void current_file, object|void handler)
       string s2 = fakeroot(sizeof(tmp)? combine_path(prefix, tmp) : prefix);
 
       // do we have a mounted zip?
-      if(fs_map[tmp]) 
+      if(fs_map[tmp])
 	tmp = combine_path(tmp, "modules");
 
       if(master_file_stat(s2))
@@ -2748,14 +2748,14 @@ class CompatResolver
   //! @[remove_module_path()]
   //!
   //! @param path
-  //!   a string containing a path to search for Pike modules. May be a 
-  //!   directory, or a path to a ZIP archive. If a ZIP archive path is 
+  //!   a string containing a path to search for Pike modules. May be a
+  //!   directory, or a path to a ZIP archive. If a ZIP archive path is
   //!   provided, modules will be loaded from a directory, "modules" within
   //!   the ZIP archive (see the subpath argument).
   //!
   //! @param subpath
-  //!   if path is a ZIP archive, this argument will determine the path within 
-  //!   the archive to be searched. 
+  //!   if path is a ZIP archive, this argument will determine the path within
+  //!   the archive to be searched.
   //!
   void add_module_path(string path, string|void subpath)
     {
@@ -3604,7 +3604,7 @@ void _main(array(string(0..255)) orig_argv)
   trace = predef::trace(trace);
   while(1)
   {
-    mixed err=catch 
+    mixed err=catch
     {
       while(1)
 	Builtin.__backend(3600.0);
@@ -4299,7 +4299,7 @@ string describe_function (function f)
     else
       name = trim_file_name(s);
   }
-  else 
+  else
     if (catch (name = function_name (f))) name = "function";
 
   object o = function_object([function(mixed...:void|mixed)]f);
@@ -4342,7 +4342,7 @@ string describe_backtrace(mixed trace, void|int linewidth)
   if(!linewidth)
   {
     linewidth=99999;
-    catch 
+    catch
     {
       linewidth=[int]Files()->_stdin->tcgetattr()->columns;
     };
@@ -4458,7 +4458,7 @@ string describe_backtrace(mixed trace, void|int linewidth)
 	    string desc="Unknown program";
 	    if(sizeof(tmp)>=3 && functionp(tmp[2]))
 	    {
-	      catch 
+	      catch
               {
 		if(mixed tmp=function_object([function(mixed...:
 						       void|mixed)]tmp[2]))

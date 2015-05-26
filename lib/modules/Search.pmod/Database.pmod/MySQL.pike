@@ -24,7 +24,7 @@ void create(string db_url, void|mapping _options)
   db=Sql.Sql(host=db_url);
   options = _options || ([]);
   mergefile_path = options->mergefiles;
-  
+
   if(!mergefile_path)
     mergefile_path = "/tmp/";
 
@@ -73,7 +73,7 @@ int supports_padded_blobs()
 void init_tables()
 {
   int use_padded_blobs = supports_padded_blobs();
-  
+
   db->query(
 #"create table if not exists uri (id          int unsigned primary key
                                      auto_increment not null,
@@ -90,12 +90,12 @@ void init_tables()
                          INDEX index_language (language),
                          INDEX index_uri_id (uri_id))"
 				       ); //FIXME: Remove index_language?
-  
+
   db->query("create table if not exists deleted_document (doc_id int unsigned not null primary key)");
 
 
 
-  
+
   db->query(
 #"create table if not exists word_hit (word        varchar("+DB_MAX_WORD_SIZE+#") binary not null,
                          first_doc_id   int not null, " +
@@ -104,7 +104,7 @@ void init_tables()
                          real_len       int not null, " : "") + #"
             	         hits           mediumblob not null,
                          primary key (word,first_doc_id))");
-  
+
   int has_padded_blobs_fields =
     sizeof(db->query("DESCRIBE word_hit used_len"));
   if (use_padded_blobs && !has_padded_blobs_fields) {
@@ -143,7 +143,7 @@ void init_tables()
                                   to_id    int not null,
   				  index index_from(from_id),
   				  index index_to(to_id))");
-  
+
   db->query(
 #"create table if not exists metadata (doc_id        int not null,
                          name          varchar(32) not null,
@@ -215,7 +215,7 @@ int get_document_id(string uri, void|string language, void|int do_not_create)
 
   if (!uri_id)
     return 0;
-  
+
   string s=sprintf("select id from document where "
 		   "uri_id='%d'", uri_id);
   if(language)
@@ -227,7 +227,7 @@ int get_document_id(string uri, void|string language, void|int do_not_create)
     return (int)a[0]->id;
 
   db->query("insert into document (uri_id, language) "
-	    "values (%d,"+(language?"%s":"NULL")+")", 
+	    "values (%d,"+(language?"%s":"NULL")+")",
 	    uri_id, language);
   return db->master_sql->insert_id();
 }
@@ -247,7 +247,7 @@ mapping get_uri_and_language(int|array(int) doc_id)
 		      "where uri.id=document.uri_id and document.id=%d",doc_id);
     if(!sizeof(a))
       return 0;
-    
+
     return (["uri":1,"language":1]) & a[0];
   }
 }
@@ -297,7 +297,7 @@ void remove_document(string|Standards.URI uri, void|string language)
 
   if(!sizeof(a))
     return;
-  
+
   db->query("delete from document where id in ("+a->id*","+")");
   db->query("insert into deleted_document (doc_id) values "+
 	    "("+a->id*"),("+")");
@@ -416,7 +416,7 @@ int get_field_id(string field, void|int do_not_create)
   // The one special case.
   if(field=="body")      return 0;
   if(field_cache[field]) return field_cache[field];
-  
+
   init_fields();
   string s=sprintf("select id from field where name='%s'",db->quote(field));
   array a=db->query(s);
@@ -460,18 +460,18 @@ void insert_words(Standards.URI|string uri, void|string language,
   // Remove long words that won't fit into the database.
   words = filter(words, lambda (string word)
 			{ return sizeof(string_to_utf8(word)) <= DB_MAX_WORD_SIZE; });
-      
+
   if(!sizeof(words))  return;
   init_fields();
 
   int doc_id   = get_document_id((string)uri, language);
   int field_id = get_field_id(field);
-  
+
   blobs->add_words( doc_id, words, field_id );
 #ifdef SEARCH_DEBUG
   blobs_dirty = 1;
 #endif
-  
+
   if(blobs->memsize() > MAXMEM)
     if(options->mergefiles)
       mergefile_sync();
@@ -530,13 +530,13 @@ string get_blob(string word, int num,
 	      "ORDER BY first_doc_id "
 	      "   LIMIT %d,%d",
 	      word, num, blobs_per_select);
-  
+
 #ifdef SEARCH_DEBUG
   int t1 = gethrtime()-t0;
   times[word] += t1;
   werror("word: %O  time accum: %.2f ms   delta_t: %.2f\n", word, times[word]/1000.0, t1/1000.0);
 #endif
-  
+
   blobcache[word] = ([]);
   if( sizeof( a ) < blobs_per_select )
     blobcache[word][-1]="";
@@ -560,7 +560,7 @@ string get_blob(string word, int num,
       if ((used_len < real_len) || (real_len != sizeof(m->hits)))
 	m->hits = m->hits[..(used_len - 1)];
     }
-    
+
     blobcache[word][num++] = m->hits;
   }
 
@@ -660,7 +660,7 @@ void set_metadata(Standards.URI|string uri, void|string language,
 		 return sprintf("(%d,'%s','%s')", doc_id,
 				a[0], a[1]);
 	       }) * ", ";
-  
+
   db->query("replace into metadata (doc_id, name, value) values "+s);
 }
 
@@ -686,14 +686,14 @@ void randomize_dates()
     db->query("replace into lastmodified (doc_id,at) values (%s,%d)",
 	      id,
 	      random(365*24*3600)+time()-365*24*3600);
-    
+
 }
 
 protected
 {
   _WhiteFish.DateSet dateset_cache;
   int dateset_cache_max_doc_id = -1;
-  
+
   int get_max_doc_id()
   {
     array a = db->query("select doc_id from lastmodified order by doc_id desc limit 1");
@@ -713,7 +713,7 @@ _WhiteFish.DateSet get_global_dateset()
   {
     array a = db->query("select doc_id,at from lastmodified where "
 			"doc_id > %d order by doc_id asc", dateset_cache_max_doc_id);
-    
+
     dateset_cache_max_doc_id = max_doc_id;
     if(!dateset_cache)
       dateset_cache = _WhiteFish.DateSet();
@@ -736,7 +736,7 @@ _WhiteFish.DateSet get_global_publ_dateset()
     return publ_dateset_cache;
   else
   {
-    array(mapping(string:mixed)) a = 
+    array(mapping(string:mixed)) a =
       db->query("SELECT doc_id, value FROM metadata "
 		" WHERE name = 'publish-time' "
 		"   AND doc_id > %d ORDER BY doc_id ASC",
@@ -761,9 +761,9 @@ void add_links(Standards.URI|string uri,
 {
   if(!links || !sizeof(links))
     return;
-  
+
   int doc_id = get_document_id((string)uri, language);
-  
+
   array(int) to_ids = map(links,
 			  lambda(Standards.URI|string uri)
 			  {
@@ -822,7 +822,7 @@ protected array(array(int|string)) split_blobs(int blob_size, string blob,
     | docid: 32 | nhits: 8 | hit: 16 | hit: 16 | hit: 16 |...
     +-----------+----------+---------+---------+---------+
   */
-  
+
   sscanf(blob, "%4c", int first_doc_id);
   int ptr = blob_size;
   int start = 0, end=0;
@@ -855,13 +855,13 @@ protected void store_to_db( void|string mergedfilename )
     mergedfile = Search.MergeFile(Stdio.File(mergedfilename, "r"));
 
   int use_padded_blobs = supports_padded_blobs();
-  
+
   int s = time();
   int q;
   Sql.Sql db = Sql.Sql( host );
-#ifdef SEARCH_DEBUG  
+#ifdef SEARCH_DEBUG
   werror("----------- sync() %4d docs --------------\n", docs);
-#endif  
+#endif
   db->query("LOCK TABLES word_hit LOW_PRIORITY WRITE");
 
   mixed err = catch {
@@ -883,7 +883,7 @@ protected void store_to_db( void|string mergedfilename )
       if(!word)
 	break;
       word = string_to_utf8(word);
-      
+
       //  Blob hits are grouped by docid but not sorted internally. We need
       //  to store in sorted form since the hit analysis depend on it. The
       //  data() method in Blob performs sorting so instantiate a temp blob
@@ -898,7 +898,7 @@ protected void store_to_db( void|string mergedfilename )
       db->query("UNLOCK TABLES");
       db->query("LOCK TABLES word_hit LOW_PRIORITY WRITE");
     }
-    
+
     //  NOTE: Concatenation of hits info is strictly speaking not correct in
     //  the general case since we may have the same docid repeated. In practice
     //  the only code path that adds words also invalidates the old docid and
@@ -915,7 +915,7 @@ protected void store_to_db( void|string mergedfilename )
 		  "     VALUES (%s, %d, %d, %d, %s)",
 		  word, first_doc_id, new_used_len, new_used_len, blob);
       }
-      
+
       //  Write final blob with padding
       [int first_doc_id, string blob] = new_blobs[-1];
       int new_used_len = sizeof(blob);
@@ -927,7 +927,7 @@ protected void store_to_db( void|string mergedfilename )
 		word, first_doc_id, new_used_len, new_real_len,
 		blob, space_count);
     };
-    
+
     void add_oldstyle_blobs(string word, array new_blobs)
     {
       //  Write all blobs as new entries
@@ -939,7 +939,7 @@ protected void store_to_db( void|string mergedfilename )
 		  word, first_doc_id, blob);
       }
     };
-    
+
     //  We only care about the most recent blob for the given word so look
     //  for the highest document ID.
     int first_doc_id;
@@ -962,7 +962,7 @@ protected void store_to_db( void|string mergedfilename )
       int used_len = (int) old[-1]->used_len;
       int real_len = use_padded_blobs ? ((int) old[-1]->real_len) : used_len;
       int first_doc_id = (int) old[-1]->first_doc_id;
-      
+
       //  Can the new blob fit in the existing padding space?
       //
       //  NOTE: This is never true for old-style blobs.
@@ -1006,7 +1006,7 @@ protected void store_to_db( void|string mergedfilename )
 	//  Need to split blobs
 	array new_blobs = split_blobs(used_len, blob, max_blob_size);
 	blob = new_blobs[0][1];
-	
+
 	if (use_padded_blobs) {
 	  //  Write the first chunk at the end of the existing blob and remove
 	  //  any left-over padding by giving a sufficiently bigger blob size
@@ -1030,7 +1030,7 @@ protected void store_to_db( void|string mergedfilename )
 		    "   AND first_doc_id = %d",
 		    blob, word, first_doc_id);
 	}
-	
+
 	//  Write remaining ones
 	if (use_padded_blobs)
 	  add_padded_blobs(word, new_blobs[1..]);
@@ -1064,11 +1064,11 @@ protected void store_to_db( void|string mergedfilename )
 	    sprintf("('%s', %d, '%s')",
 		    db->quote(word), first_doc_id, db->quote(blob));
 	}
-	
+
 	//  If aggregated query is too big we run the old one now
 	if (sizeof(multi_query) + sizeof(new_query) > 900 * 1024)
 	  db->query(multi_query->get());
-	
+
 	//  Append to delayed query
 	if (!sizeof(multi_query)) {
 	  multi_query->add("INSERT INTO word_hit ",
@@ -1091,10 +1091,10 @@ protected void store_to_db( void|string mergedfilename )
   mixed unlock_err = catch (db->query("UNLOCK TABLES"));
   if (err) throw (err);
   if (unlock_err) throw (unlock_err);
-  
+
   if( sync_callback )
     sync_callback();
-  
+
   if(mergedfilename)
   {
     mergedfile->close();
@@ -1103,7 +1103,7 @@ protected void store_to_db( void|string mergedfilename )
 #ifdef SEARCH_DEBUG
   werror("----------- sync() done %3ds %5dw -------\n", time()-s,q);
 #endif
-  
+
 #ifdef SEARCH_DEBUG
   blobs_dirty = 0;
 #endif
@@ -1117,10 +1117,10 @@ protected string get_mergefilename()
 
 protected void mergefile_sync()
 {
-#ifdef SEARCH_DEBUG  
+#ifdef SEARCH_DEBUG
   System.Timer t = System.Timer();
   werror("----------- mergefile_sync() %4d docs --------------\n", docs);
-#endif  
+#endif
   Search.MergeFile mergefile = Search.MergeFile(
     Stdio.File(get_mergefilename(), "wct"));
 
@@ -1140,7 +1140,7 @@ protected void mergefile_sync()
 
 protected string merge_mergefiles(array(string) mergefiles)
 {
-#ifdef SEARCH_DEBUG  
+#ifdef SEARCH_DEBUG
   werror("merge_mergefiles( %s )\n", mergefiles*", ");
 #endif
   if(sizeof(mergefiles)==1)
@@ -1165,7 +1165,7 @@ protected string merge_mergefiles(array(string) mergefiles)
   mergedfile->merge_mergefiles(Search.MergeFile(Stdio.File(mergefiles[0], "r")),
 			       Search.MergeFile(Stdio.File(mergefiles[1], "r")));
 
-#ifdef SEARCH_DEBUG  
+#ifdef SEARCH_DEBUG
   werror("Merging %s (%.1f MB) took %.1f s\n",
 	 mergedfile_fn, file_stat(mergedfile_fn)->size/(1024.0*1024.0),
 	 t->get());

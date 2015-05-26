@@ -65,7 +65,7 @@ int main(int argc, array(string) argv)
 
   argv=Getopt.get_args(argv);
 
-  if(sizeof(argv)>2) 
+  if(sizeof(argv)>2)
     exit(1, "Too many extra arguments!\n");
   else if(sizeof(argv)>1)
     argument = argv[1];
@@ -98,7 +98,7 @@ int main(int argc, array(string) argv)
         break;
       case "pmar":
         use_pmar = 1;
-        break;      
+        break;
       case "short":
         use_short = 1;
         break;
@@ -116,8 +116,8 @@ int main(int argc, array(string) argv)
     mkdir(builddir);
   else if (!fs->isdir)
     exit(1, "Build directory " + builddir + " is not a directory.\n");
-  
-  
+
+
   foreach(opts,array opt)
   {
     switch(opt[0])
@@ -144,7 +144,7 @@ int main(int argc, array(string) argv)
         function f;
         if(use_pmar)
           f = do_pmar_install;
-        else 
+        else
           f = do_install;
         if(argument)
           f(argument, my_version||UNDEFINED);
@@ -162,7 +162,7 @@ int main(int argc, array(string) argv)
   }
 
   if(!my_command)
-  { 
+  {
     werror("argument error: no command specified.\n");
   }
 
@@ -177,23 +177,23 @@ int(0..0) do_help()
 Usage: pike -x monger [options] modulename
 
 --list               list known modules in the repository, optionally
-                       limited to those whose name contains the last 
+                       limited to those whose name contains the last
                        argument in the argument list (modulename)
 --query              retrieves information about module modulename
 --show-urls          display download and other urls in query view
 --download           download the module modulename
 --install            install the module modulename
 --repository=url     sets the repository source to url
---builddir=path      sets the build directory to path, default is 
+--builddir=path      sets the build directory to path, default is
                        the $HOME/.monger
---force              force the performance of an action that might 
+--force              force the performance of an action that might
                        otherwise generate a warning
---source             use source control url to obtain module source, 
+--source             use source control url to obtain module source,
                        if available.
 --pmar               attempt to use pmar (pre-built archive), if available.
---short              when querying a module, don't show info about the 
+--short              when querying a module, don't show info about the
                        selected version.
---local              perform installation in a user's local rather than 
+--local              perform installation in a user's local rather than
                        system directory
 --version=ver        work with the specified version of the module
 ");
@@ -208,7 +208,7 @@ void do_query(string name, string|void version)
   mapping vi = get_module_info(name);
   if( !vi ) return;
   module_id = (int)vi->module_id;
-  
+
   write("Module: %s\n", vi->name);
   write("Description: %s\n", vi->description);
   write("Author/Owner: %s\n", vi->owner);
@@ -217,7 +217,7 @@ void do_query(string name, string|void version)
 
 
   array versions = get_module_versions(module_id);
-  
+
   if(sizeof(versions))
   {
     write("Current version: %s\n", versions[0]);
@@ -225,7 +225,7 @@ void do_query(string name, string|void version)
     if(rversion)
       write("Recommended version: %s (for Pike %s)\n", rversion, get_pike_version());
     else
-      write("No recommended version (for Pike %s)\n", get_pike_version());    
+      write("No recommended version (for Pike %s)\n", get_pike_version());
   }
   else
   {
@@ -237,14 +237,14 @@ void do_query(string name, string|void version)
     mapping svi;
     catch(svi = get_module_version_info(module_id, version));
 
-    if(!svi) 
+    if(!svi)
     {
       write("Version %s not available.\n", (string)version);
       return 0;
     }
-    
+
     if(rversion && rversion == version) svi->version_type = "recommended";
-    else 
+    else
     {
       array rvs = get_compatible_module_versions(module_id);
       if(rvs && search(rvs, version) != -1)
@@ -261,7 +261,7 @@ void do_query(string name, string|void version)
         write("Download URL: %s\n\n", svi->download);
       else if(arrayp(svi->download))
         foreach(svi->download;;string u)
-          write("Download URL: %s\n\n", u);   
+          write("Download URL: %s\n\n", u);
       if(stringp(svi->pmar_download))
         write("PMAR Download URL: %s\n\n", svi->pmar_download);
     }
@@ -272,11 +272,11 @@ void do_query(string name, string|void version)
       write("A prebuilt module archive (PMAR) is available for this version.\n");
   }
 
-  catch 
+  catch
   {
     string local_ver = master()->resolv(name)["__version"];
 
-    if(local_ver) write("Version %s of this module is currently installed.\n", 
+    if(local_ver) write("Version %s of this module is currently installed.\n",
                         local_ver);
   };
 }
@@ -290,7 +290,7 @@ object get_repository()
 
 string get_pike_version()
 {
-  return sprintf("%d.%d.%d", (int)__REAL_MAJOR__, 
+  return sprintf("%d.%d.%d", (int)__REAL_MAJOR__,
       (int)__REAL_MINOR__, (int)__REAL_BUILD__);
 }
 
@@ -298,7 +298,7 @@ mapping get_module_info(string name)
 {
   int module_id;
   mixed err;
-  
+
   err = catch {
     module_id = get_repository()->get_module_id(name);
   };
@@ -317,7 +317,7 @@ array get_compatible_module_versions(int|string module)
 {
   if(stringp(module))
     module = get_repository()->get_module_id(module);
-  
+
   array v = get_repository()->get_compatible_module_versions((int)module, get_pike_version());
 
   return v;
@@ -327,7 +327,7 @@ string get_recommended_module_version(int|string module)
 {
   if(stringp(module))
     module = get_repository()->get_module_id(module);
-  
+
   string v = get_repository()->get_recommended_module_version((int)module, get_pike_version());
 
   return v;
@@ -337,7 +337,7 @@ array(string) get_module_versions(int|string module)
 {
   if(stringp(module))
     module = get_repository()->get_module_id(module);
-  
+
   array v = get_repository()->get_module_versions((int)module);
 
   return v;
@@ -347,19 +347,19 @@ mapping get_module_version_info(int|string module, string version)
 {
   if(stringp(module))
     module = get_repository()->get_module_id(module);
-  
+
   mapping v = get_repository()->get_module_version_info((int)module, version);
 
   return v;
 }
 
-// 
+//
 mapping get_module_action_data(string name, string|void version)
 {
   string dv;
   mixed err;
   mapping info = get_module_info(name);
-  
+
   string v;
 
   err = catch {
@@ -372,10 +372,10 @@ mapping get_module_action_data(string name, string|void version)
   info->version_type="recommended";
 
   if(!v)
-    info->version_type = "not found";  
+    info->version_type = "not found";
   else if(version && version != v)
     info->version_type="not recommended";
-  
+
   if(version && use_force)
   {
     dv=my_version;
@@ -383,13 +383,13 @@ mapping get_module_action_data(string name, string|void version)
   else if(version && version!=v)
   {
     write("Requested version %s is not the recommended version.\n"
-          "use --force to force %s of this version.\n", 
+          "use --force to force %s of this version.\n",
           version, my_command);
-    return 0;    
+    return 0;
   }
   else if(version)
   {
-    write("Selecting requested and recommended version %s for %s.\n", 
+    write("Selecting requested and recommended version %s for %s.\n",
           v, my_command);
     dv=version;
   }
@@ -415,8 +415,8 @@ string get_file(mapping version_info, string|void path, int|void from_source)
   array rq;
   int have_path;
 
-  // NOTE: if we are re-using an existing source control clone or checkout, we 
-  // need to do some more work here, as it's probably not good to just do a 
+  // NOTE: if we are re-using an existing source control clone or checkout, we
+  // need to do some more work here, as it's probably not good to just do a
   // build from a directory that might have outdated build by-products left in
   // it. We should do a git clean or equivalent.
   if(from_source == SOURCE_CONTROL && version_info->source_control_url && sizeof( version_info->source_control_type))
@@ -433,7 +433,7 @@ string get_file(mapping version_info, string|void path, int|void from_source)
     {
       throw(Error.Generic(sprintf("get_file: repository path %s already exists, use --force to override.\n", lpath)));
     }
-	
+
     if(!Process.search_path(bin))
       throw(Error.Generic(sprintf("get_file: no %s found in PATH.\n", bin)));
     mapping res;
@@ -443,7 +443,7 @@ string get_file(mapping version_info, string|void path, int|void from_source)
     {
       case "svn":
         if(have_path)
-        {  
+        {
           write("updating from source control (%s)...\n", version_info->source_control_type);
           cd(lpath);
           res = Process.run(({"svn", "update"}));
@@ -460,7 +460,7 @@ string get_file(mapping version_info, string|void path, int|void from_source)
           werror(res->stdout);
           throw(Error.Generic(bin + " returned non-zero exit code (" + res->exitcode + ").\n"));
         }
-        break; 
+        break;
       case "hg":
         if(have_path)
         {
@@ -500,7 +500,7 @@ string get_file(mapping version_info, string|void path, int|void from_source)
         {
           werror(res->stderr);
           werror(res->stdout);
-          throw(Error.Generic(bin + " returned non-zero exit code (" + res->exitcode + ").\n"));        
+          throw(Error.Generic(bin + " returned non-zero exit code (" + res->exitcode + ").\n"));
         }
         break;
       default:
@@ -521,18 +521,18 @@ string get_file(mapping version_info, string|void path, int|void from_source)
       foreach(version_info->pmar_download;; string u)
       {
         rq = Protocols.HTTP.get_url_nice(u);
-        if(rq) break;  
+        if(rq) break;
       }
     else
       rq = Protocols.HTTP.get_url_nice(version_info->pmar_download);
-    if(!rq) 
+    if(!rq)
       throw(Error.Generic("download error: unable to access download url\n"));
     else
     {
       string lpath = version_info->filename;
       if(path) lpath = combine_path(path, lpath);
       Stdio.write_file(lpath, rq[1]);
-      
+
       write("wrote pmar to file %s (%d bytes)\n", lpath, sizeof(rq[1]));
       return lpath;
     }
@@ -544,23 +544,23 @@ string get_file(mapping version_info, string|void path, int|void from_source)
       foreach(version_info->download;; string u)
       {
         rq = Protocols.HTTP.get_url_nice(u);
-        if(rq) break;  
+        if(rq) break;
       }
     else
       rq = Protocols.HTTP.get_url_nice(version_info->download);
-    if(!rq) 
+    if(!rq)
       throw(Error.Generic("download error: unable to access download url\n"));
     else
     {
       string lpath = version_info->filename;
       if(path) lpath = combine_path(path, lpath);
       Stdio.write_file(lpath, rq[1]);
-      
+
       write("wrote module to file %s (%d bytes)\n", lpath, sizeof(rq[1]));
       return lpath;
     }
   }
-  else 
+  else
     return 0;
 }
 
@@ -590,7 +590,7 @@ void do_pmar_install(string name, string|void version)
 
   // TODO: if the repository returns the MD5 hash for the PMAR, we should pass that
   // along to the installer for verification.
-  
+
   object installer = Process.spawn_pike(args, ([]));
   int res = installer->wait();
 
@@ -598,7 +598,7 @@ void do_pmar_install(string name, string|void version)
 // because NT is stupid, we have to do all kinds of "exit the process" tactics
 // in order to free in-use files. therefore, the call to pmar_install will return
 // before it's actually finished doing its thing.
-// 
+//
 // it would probably be better if pmar_install signalled us in some way, but
 // that's a task for another day.
   write("PMAR install will run in this console for a few more seconds.\n"
@@ -626,7 +626,7 @@ void do_install(string name, string|void version)
 
   if(vi)
     fn = get_file(vi, builddir, use_source);
-  else 
+  else
     exit(1, "install error: no suitable download available.\n");
 
   cd(builddir);
@@ -654,7 +654,7 @@ void do_install(string name, string|void version)
     werror("working with tar file " + fn + "\n");
 
 	string workingdir = fn[0..sizeof(fn)-5];
-	
+
     if(file_stat(workingdir))
     {
        if(use_force)
@@ -673,11 +673,11 @@ void do_install(string name, string|void version)
       exit(1, "install error: no tar found in PATH.\n");
     else
       res = Process.system("tar xvf " + fn);
-    
+
     if(res)
       exit(1, "install error: untar failed.\n");
     else
-      created->dirs += ({workingdir});  
+      created->dirs += ({workingdir});
 
 
     // change directory to the module
@@ -711,17 +711,17 @@ void do_install(string name, string|void version)
     builder = Process.create_process(
       ({run_pike}) + pike_args + ({"-x", "module"}) + (({ j }) - ({""})));
     res = builder->wait();
-  
+
     if(res)
     {
       werror("install error: make %s failed.\n\n", j);
 
       if(created->file)
-        werror("the following files have been preserved in %s:\n\n%s\n\n", 
+        werror("the following files have been preserved in %s:\n\n%s\n\n",
              builddir, created->file * "\n");
 
       if(created->dirs)
-        werror("the following directories have been preserved in %s:\n\n%s\n\n", 
+        werror("the following directories have been preserved in %s:\n\n%s\n\n",
              builddir, created->dirs * "\n");
 
       exit(1);
@@ -763,10 +763,10 @@ void do_list(string|void name)
 
 #if 0
   if(name && strlen(name))
-    write("Found %d modules in the repository:\n\n", 
+    write("Found %d modules in the repository:\n\n",
       sizeof(results[0]));
   else
-    write("Found %d modules with a name containing %s:\n\n", 
+    write("Found %d modules with a name containing %s:\n\n",
       sizeof(results[0]), name);
 
 #endif
@@ -810,14 +810,14 @@ int uninstall(string name, int|void _local)
     werror("no components element found for this module. Unable to reliably uninstall.\n");
     return 0;
   }
-  
+
   low_uninstall(components, _local);
-  
+
   return 1;
 }
 
 void low_uninstall(array components, int _local)
-{    
+{
   string dir;
 
   if(_local)
@@ -830,7 +830,7 @@ void low_uninstall(array components, int _local)
   }
 
   array elems = reverse(Array.sort_array(components));
-  
+
   foreach(elems;; string comp)
   {
     string path = Stdio.append_path(dir, comp);
@@ -840,7 +840,7 @@ void low_uninstall(array components, int _local)
       werror("warning: %s does not exist.\n", path);
       continue;
     }
-    
+
     werror("deleting: " + path + " [%s]\n", (s->isdir?"dir":"file"));
     rm(path);
   }
@@ -856,7 +856,7 @@ string get_local_modulepath()
           "Please set HOME environment variable and retry.\n"));
   }
   dir = combine_path(dir, "lib/pike/modules");
- 
+
   return dir;
 }
 

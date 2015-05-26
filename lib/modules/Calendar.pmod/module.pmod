@@ -13,7 +13,7 @@ protected constant magic= // magic + indices(Calendar.ISO) without YMD
    "format_iso_short", "format_iso_tod", "YMD_Time", "parse", "dwim_day",
    "dwim_time", "datetime_name", "datetime_short_name", "format_day_iso",
    "format_day_iso_short", "SuperTimeRange",
-   "calendar_name", "calendar_object", "TimeRange", 
+   "calendar_name", "calendar_object", "TimeRange",
    "nulltimerange", "ruleset", "set_ruleset", "inano", "timezone",
    "set_language", "default_rules", "TimeofDay",
    "Second", "Fraction", "now", "Bahai" >);
@@ -33,7 +33,7 @@ array _indices()
 //!    form.
 //!
 //!A:  Calendar.dwim_day, or Calendar.dwim_time, should solve
-//!    your problem. 
+//!    your problem.
 //!
 //!      > Calendar.dwim_day("1/2/3");
 //!      Result: Day(Thu 2 Jan 2003)
@@ -44,15 +44,15 @@ array _indices()
 //!      Result: Minute(Wed 1 Aug 2001 23:14 EDT)
 //!      > Calendar.dwim_time("2001 2 3 23:14:23 UTC+9");
 //!      Result: Second(Sat 3 Feb 2001 23:14:23 UTC+9)
-//!    
+//!
 //!    If it doesn't, and it should, report the problem to me
 //!    and I'll see what I can do. Note that the timezones
 //!    are rather unpredictable - if it doesn't get it, you
 //!    will get the default (local) timezone.
 //!
-//!-------------------------------------------------------------------------  
+//!-------------------------------------------------------------------------
 //!
-//!Q:  The dwim_* functions are too slow. 
+//!Q:  The dwim_* functions are too slow.
 //!
 //!A:  They are not written to be fast, but to do good guessing.
 //!
@@ -63,9 +63,9 @@ array _indices()
 //!      Result: Minute(Thu 8 Nov 2040 2:46 CET)
 //!      > Calendar.parse("%Y w%W %e %h:%m %p %z","1913 w4 monday 2:14 pm CET");
 //!      Result: Minute(Mon 20 Jan 1913 14:14 CET)
-//!      
+//!
 //!    These are the format characters:
-//!     %Y absolute year 
+//!     %Y absolute year
 //!     %y dwim year (70-99 is 1970-1999, 0-69 is 2000-2069)
 //!     %M month (number, name or short name) (needs %y)
 //!     %W week (needs %y)
@@ -89,7 +89,7 @@ array _indices()
 //!    to do this faster, except possibly sscanf and manual calculations/
 //!    time object creation.
 //!
-//!-------------------------------------------------------------------------  
+//!-------------------------------------------------------------------------
 //!
 //!Q:  How do I get from unix time (time(2)) to a unit and back?
 //!
@@ -98,10 +98,10 @@ array _indices()
 //!
 //!      > Calendar.Day("unix",987654321);
 //!      Result: Day(Thu 19 Apr 2001)
-//!      > Calendar.Second("unix",987654321);  
+//!      > Calendar.Second("unix",987654321);
 //!      Result: Second(Thu 19 Apr 2001 6:25:21 CEST)
 //!
-//!      > Calendar.Day()->unix_time();   
+//!      > Calendar.Day()->unix_time();
 //!      Result: 979081200
 //!
 //!    Note that you will get the time for the start of the unit.
@@ -110,15 +110,15 @@ array _indices()
 //!    The day-of-time units (seconds, hours, etc) uses this
 //!    as internal representation of time.
 //!
-//!-------------------------------------------------------------------------  
+//!-------------------------------------------------------------------------
 //!
 //!Q:  I'm a mad astronomer, how do I do the same conversions with
 //!    julian day numbers?
 //!
 //!A:  Julian day numbers are used as the internal representation
 //!    for the day, and for most other bigger-then-time-of-day calculations.
-//!     
-//!      > Calendar.Day("julian",2454545);  
+//!
+//!      > Calendar.Day("julian",2454545);
 //!      Result: Day(Wed 19 Mar 2008)
 //!      > Calendar.Second("julian",2430122.0);
 //!      Result: Second(Tue 6 May 1941 13:00:00 CET)
@@ -136,7 +136,7 @@ array _indices()
 //!    compiled your Pike with --with-double-precision, this gives
 //!    you awkwardly low precision - 6 hours.
 //!
-//!-------------------------------------------------------------------------  
+//!-------------------------------------------------------------------------
 //!
 //!Q:  How do I convert a "Second(Sat 3 Feb 2001 23:14:23 UTC+9)" object
 //!    to my timezone?
@@ -146,12 +146,12 @@ array _indices()
 //!      > Calendar.dwim_time("2001 2 3 23:14:23 PST")
 //!      	  ->set_timezone("Europe/Stockholm");
 //!      Result: Second(Sun 4 Feb 2001 8:14:23 CET)
-//!      
+//!
 //!      > Calendar.dwim_time("2001 2 3 23:14:23 PST")
 //!      	  ->set_timezone("locale");
 //!      Result: Second(Sun 4 Feb 2001 8:14:23 CET)
 //!
-//!-------------------------------------------------------------------------  
+//!-------------------------------------------------------------------------
 //!
 //!Q:  How do I print my time object?
 //!
@@ -161,14 +161,14 @@ array _indices()
 //!
 //!      > Calendar.dwim_time("2001 2 3 23:14:23 PST")->format_nice();
 //!      Result: "3 Feb 2001 23:14:23"
-//!      > Calendar.Week()->format_nice();                            
+//!      > Calendar.Week()->format_nice();
 //!      Result: "w2 2001"
 //!      > Calendar.now()->format_nicez();
 //!      Result: "10 Jan 10:51:15.489603 CET"
 //!
 //!    or in a format not depending on the unit,
 //!
-//!      > Calendar.Week()->format_ymd();            
+//!      > Calendar.Week()->format_ymd();
 //!      Result: "2001-01-08"
 //!      > Calendar.Day()->format_time();
 //!      Result: "2001-01-10 00:00:00"
@@ -205,7 +205,7 @@ array _indices()
 //!    format_smtp           "Wed, 10 Jan 2001 10:49:57 +0100"
 //!    format_http           "Wed, 10 Jan 2001 09:49:57 GMT"
 //!
-//!-------------------------------------------------------------------------  
+//!-------------------------------------------------------------------------
 //!
 //!Q:  How old am I?
 //!
@@ -213,7 +213,7 @@ array _indices()
 //!
 //!      > object t=Calendar.dwim_time("1638 dec 23 7:02 pm")
 //!      	  ->distance(Calendar.now());
-//!      Result: Fraction(Thu 23 Dec 1638 19:02:00.000000 LMT - 
+//!      Result: Fraction(Thu 23 Dec 1638 19:02:00.000000 LMT -
 //!      		       Wed 10 Jan 2001 10:53:33.032856 CET)
 //!
 //!   Now, you can ask for instance how many years this is:
@@ -236,11 +236,11 @@ array _indices()
 //!        ->how_many(Calendar.Day());
 //!     Result: 8
 //!
-//!-------------------------------------------------------------------------  
+//!-------------------------------------------------------------------------
 //!
 //!Q:  In 983112378 days, what weekday will it be?
 //!
-//!A:  (this weekday + 983112378) % 7   ;) 
+//!A:  (this weekday + 983112378) % 7   ;)
 //!
 //!    or take this day, add the number, and ask the object:
 //!
@@ -249,12 +249,12 @@ array _indices()
 //!
 //!    "+int" will add this number of the unit to the unit;
 //!    this means that Calendar.Year()+2 will move two years
-//!    forward, but Calendar.now()+2 will not move at all 
+//!    forward, but Calendar.now()+2 will not move at all
 //!    - since now has zero size.
 //!
 //!    To add a number of another time unit, simply do that:
 //!
-//!      > Calendar.Day()+3*Calendar.Year();  
+//!      > Calendar.Day()+3*Calendar.Year();
 //!      Result: Day(Sat 10 Jan 2004)
 //!      > Calendar.Day()+3*Calendar.Minute()*134;
 //!      Result: Minute(Wed 10 Jan 2001 6:42 CET - Thu 11 Jan 2001 6:42 CET)
@@ -262,11 +262,11 @@ array _indices()
 //!    The last result here is because the resulting time still will
 //!    be as long as the first.
 //!
-//!-------------------------------------------------------------------------  
+//!-------------------------------------------------------------------------
 //!
 //!Q:  Are there other calendars?
 //!
-//!A:  Yes. 
+//!A:  Yes.
 //!
 //!    Calendar.Day is really a shortcut to Calendar.ISO.Day;
 //!    this is tuned in the localization.h file.
@@ -279,20 +279,20 @@ array _indices()
 //!	with the Gregorian calendar.
 //!    ISO
 //!	This inherits the Gregorian calendar to tweak it to
-//!	conform to the ISO standards. Most affected are weeks, 
+//!	conform to the ISO standards. Most affected are weeks,
 //!	which starts on Monday in the ISO calendar.
 //!	This is also the default calendar.
 //!    Discordian
 //!	The Discordian calendar as described in Principia Discordia
 //!	is in sync with the Gregorian calendar (although some claim
-//!	that it should be the Julian - I go with what I can read 
-//!	from my Principia Discordia). The module inherits and 
+//!	that it should be the Julian - I go with what I can read
+//!	from my Principia Discordia). The module inherits and
 //!	tweaks the Gregorian module.
 //!    Coptic
 //!	The Coptic calendar is by some sources ("St. Marks'
 //!	Coptic Orthodox Church" web pages) is for now on in sync with
 //!	the Gregorian Calendar, so this module too inherits
-//!	and tweaks the Gregorian module. It needs to be 
+//!	and tweaks the Gregorian module. It needs to be
 //!	adjusted for historical use.
 //!    Julian
 //!	This is the Julian calendar, with the small changes
@@ -303,30 +303,30 @@ array _indices()
 //!        calendar.
 //!
 //!    Islamic
-//!	This is the Islamic calendar, using the 'Calendrical 
+//!	This is the Islamic calendar, using the 'Calendrical
 //!	Calculations' rules for new moon. It is based
 //!	directly on the YMD module.
 //!    Stardate
 //!	This is the (TNG) Stardate calendar, which consists
-//!	of one time unit only, the Tick (1000 Tick is one earth year). 
+//!	of one time unit only, the Tick (1000 Tick is one earth year).
 //!	It is based directly on TimeRanges.
 //!
-//!-------------------------------------------------------------------------  
+//!-------------------------------------------------------------------------
 //!
 //!Q:  How do I convert between the calendars?
 //!
-//!A:  You give the unit to be converted to the constructor of 
+//!A:  You give the unit to be converted to the constructor of
 //!    the unit you want it to be.
 //!
 //!    > Calendar.Coptic.Day(Calendar.dwim_day("14 feb 1983"));
 //!    Result: Day(Mon 7 Ams 1699)
 //!    > Calendar.Islamic.Minute(Calendar.dwim_day("14 feb 1983"));
-//!    Result: Minute(aha 29 Rebîul-âchir 1403 AH 13:00 CET - 
+//!    Result: Minute(aha 29 Rebîul-âchir 1403 AH 13:00 CET -
 //!    		   ith 1 Djumâda'l-ûla 1403 AH 13:00 CET)
 //!    > Calendar.Day(Calendar.Stardate.Tick(4711));
 //!    Result: Day(Sat 17 Sep 2327 0:00 sharp)
 //!
-//!-------------------------------------------------------------------------  
+//!-------------------------------------------------------------------------
 //!
 //!Q:  Isn't there a <my country> calendar?
 //!
@@ -338,9 +338,9 @@ array _indices()
 //!
 //!      > t->set_language("pt")->format_ext_ymd();
 //!      Result: "Quarta-feira, 10 Janeiro 2001"
-//!      > t->set_language("roman")->format_ext_ymd();    
+//!      > t->set_language("roman")->format_ext_ymd();
 //!      Result: "Mercurii dies, X Ianuarius MMDCCLIII ab urbe condita"
-//!      
+//!
 //!    Note that all languages aren't supported. If you miss your
 //!    favourite language or I got it all wrong (or have some time over
 //!    to help me out), look in the Language.pmod file and send me an
@@ -350,11 +350,11 @@ array _indices()
 //!    (please start with Monday and January).
 //!
 //!    Currently, these languages are supported:
-//! 
-//!      name        code    
+//!
+//!      name        code
 //!      -------------------------------
 //!      ISO                 (default, aka English)
-//!     
+//!
 //!      Afrikaans   af afr   (South Africa),
 //!      Austrian    de_AT
 //!      Basque      eu eus   (Spain)
@@ -385,13 +385,13 @@ array _indices()
 //!      Slovenian   sl slv
 //!      Spanish     es spa
 //!      Swedish     sv swe
-//!      Turkish     tr 
+//!      Turkish     tr
 //!      Welsh       cy cym
 //!
 //!      Latin       la lat
 //!      Roman              (Roman Latin)
 //!
-//!-------------------------------------------------------------------------  
+//!-------------------------------------------------------------------------
 //!
 //!Q:  Isn't there a <whatever> calendar?
 //!
@@ -403,13 +403,13 @@ array _indices()
 //!
 //!      Chinese
 //!      Jewish or Hebreic
-//!      Maya      
+//!      Maya
 //!
 //!    Of these, the two first are based on astronomical events,
 //!    which I haven't had the time to look into yet, but the
 //!    last - Maya - is totally numeric.
 //!
-//!-------------------------------------------------------------------------  
+//!-------------------------------------------------------------------------
 //!
 //!Q:  I don't like that weeks starts on Mondays.
 //!    Every school kids knows that weeks start on Sundays.
@@ -421,23 +421,23 @@ array _indices()
 //!
 //!    Or use Calendar.Gregorian.Day, etc.
 //!
-//!-------------------------------------------------------------------------  
+//!-------------------------------------------------------------------------
 //!
 //!Q:  How do I find out which days are red in a specific region?
-//!   
-//!A:  Events.<region> 
-//!   
-//!    - contains the events for the region, as a SuperEvent. 
+//!
+//!A:  Events.<region>
+//!
+//!    - contains the events for the region, as a SuperEvent.
 //!    You can ask this object to filter out the holidays,
-//!   
+//!
 //!       Events.se->holidays();
-//!   
+//!
 //!    which will be a superevent containing only holidays.
-//!   
+//!
 //!    To use this information, you can for instance use ->scan,
 //!    here in an example to see what red days there are in Sweden
 //!    the current month:
-//!   
+//!
 //!      > Calendar.Events.se->filter_flag("h")->scan(Calendar.Month());
 //!      Result: ({ /* 6 elements */
 //!     		   Day(Sun 7 Jan 2001),
@@ -448,7 +448,7 @@ array _indices()
 //!     		   Day(Mon 1 Jan 2001)
 //!     	       })
 //!
-//!-------------------------------------------------------------------------  
+//!-------------------------------------------------------------------------
 //!
 //!Q:  How accurate are the events information?
 //!
@@ -467,7 +467,7 @@ array _indices()
 //!    Don't send me "the x region is all wrong!" mails without
 //!    telling me how it should look.
 //!
-//!-------------------------------------------------------------------------  
+//!-------------------------------------------------------------------------
 //!
 //!Q:  My timezone says it's DST. It's wrong.
 //!
@@ -479,7 +479,7 @@ array _indices()
 //!    o or you use the wrong timezone.
 //!
 //!    To make sure the right timezone is used, use the standard
-//!    timezone names. Those aren't "CET" or "PST", but 
+//!    timezone names. Those aren't "CET" or "PST", but
 //!    "Europe/Amsterdam" or "America/Dawson".
 //!
 //!    You can tune the default timezone by editing
@@ -487,7 +487,7 @@ array _indices()
 //!
 //!    OR this may be in the future and you have a changed DST
 //!    rule and uses an old Pike. Then you can either download
-//!    a new version or download new timezone data files from 
+//!    a new version or download new timezone data files from
 //!    the ftp address below (if the internet still is there).
 //!@endcode
 //!
@@ -514,7 +514,7 @@ protected mixed `[](string what)
       stage--;
       object tz=
 	 master()->resolv("Calendar")["Timezone"][default_timezone];
-      if (!tz) 
+      if (!tz)
 	 error("Failed to make default timezone %O\n",default_timezone);
       else
 	 default_rules->timezone=tz; // destructive!

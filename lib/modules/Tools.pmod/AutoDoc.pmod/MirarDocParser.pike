@@ -213,7 +213,7 @@ module : mapping <- moduleM
 	"see also" : array of references
 	"note" : mapping of "desc": text
 	"modules" : same as classes (below)
-	"classes" : mapping 
+	"classes" : mapping
 		class : mapping <- classM
 	        	"see also" : array of references
 			"desc" : text
@@ -451,7 +451,7 @@ string make_nice_reference(string what,string prefix,string stuff)
    {
       q=prefix+what;
    }
-   else 
+   else
       q=what;
 
    return "<ref to="+linkify(q)+">"+htmlify(stuff)+"</ref>";
@@ -1088,7 +1088,7 @@ void document(string enttype,
       string method_name;
       mapping method;
 
-      if (huh->methods) 
+      if (huh->methods)
 	 foreach (huh->methods,method)
 	    method_names|=(method->names=get_method_names(method->decl));
 

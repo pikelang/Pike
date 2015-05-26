@@ -12,7 +12,7 @@ protected Gmp.mpz d;  /* private exponent (if known) */
 protected int size;
 
 /* Extra info associated with a private key. Not currently used. */
-   
+
 protected Gmp.mpz p;
 protected Gmp.mpz q;
 
@@ -252,7 +252,7 @@ string sha_sign(string message, mixed|void r)
   string s = sprintf("%c%s%1H", 4, "sha1", Crypto.SHA1->hash([string(8bit)]message));
   return cooked_sign(s);r;
 }
-  
+
 //! @fixme
 //!   Document this function.
 int sha_verify(string message, string signature)
@@ -289,14 +289,14 @@ Gmp.mpz get_prime(int bits, function(int:string) r)
   int bit_to_set = 1 << ( (bits - 1) % 8);
 
   Gmp.mpz p;
-  
+
   do {
     string s = r(len);
     p = Gmp.mpz(sprintf("%c%s", (s[0] & (bit_to_set - 1))
 			      | bit_to_set, s[1..]),
 		      256)->next_prime();
   } while (p->size() > bits);
-  
+
   return p;
 }
 
@@ -320,7 +320,7 @@ this_program generate_key(int(128..) bits, function(int:string)|void r)
 
   int s1 = bits / 2; /* Size of the first prime */
   int s2 = 1 + bits - s1;
-  
+
   string msg = "This is a valid RSA key pair\n";
 
   do
@@ -348,7 +348,7 @@ this_program generate_key(int(128..) bits, function(int:string)|void r)
 
     if (gs[1] < 0)
       gs[1] += phi;
-    
+
     set_public_key(mod, pub);
     set_private_key(gs[1], ({ p, q }));
 

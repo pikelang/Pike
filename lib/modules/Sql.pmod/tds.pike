@@ -519,7 +519,7 @@ protected {
       p->put_raw(COLLATION, 4);		// collation
 
       p->put_string(hostname);		// hostname
-      
+
       if (domain) {
 	p->put_string("");
 	p->put_string("");
@@ -541,7 +541,7 @@ protected {
 	p->put_string("");
       }
       p->put_string("");
-      
+
       TDS_WERROR("Sending login packet.\n");
       return send_packet(p, 0x10, 1);
     }
@@ -1349,7 +1349,7 @@ protected {
 	    // Workaround for bugs in MSSQL 6.5 & 7.0 for TDS 4.2.
 	    product_version = (product_version & 0xffff00) | 0x800000000;
 	  }
-	  
+
 	  // TDS 5.0 reports 5 on success 6 on fail.
 	  // TDS 4.2 reports 1 on success and N/A on failure.
 	  if ((ack == 5) || (ack == 1)) ok = 1;
@@ -1392,7 +1392,7 @@ protected {
       p->put_byte(SYBNTEXT);
       p->put_int(sizeof(query->query_string));
       p->put_raw(COLLATION, sizeof(COLLATION));
-      p->put_int(sizeof(query->query_string));      
+      p->put_int(sizeof(query->query_string));
       p->put_raw(query->query_string, sizeof(query->query_string));
 
       int i;

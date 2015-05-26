@@ -149,7 +149,7 @@ Event.Event make_event(string source)
 	 if (sscanf(rule,
 		    "WDRel%*[ \t]%[A-z]%*[ \t]%d%*[ \t]%[^ \t]%*[ \t]"
 		    "%d%*[ \t]%d days",
-		    mn,md,wd,n,days)>=8 && 
+		    mn,md,wd,n,days)>=8 &&
 	     (m=month2n[mn]) && wd2n[wd])
 	 {
 	    m=(m%12)+1;
@@ -166,7 +166,7 @@ Event.Event make_event(string source)
 		    n,days)>=2)
 	    return Event.Easter_Relative(id,s,n);
 	 error("Events: rule error; unknown rule format:\n%O\n",source);
-	 
+
       case "Julian_Easter":
 	 if (sscanf(rule,"Julian_Easter%*[ \t]%d%*[ \t]%d days",
 		    n,days)>=2)
@@ -203,7 +203,7 @@ Event.Event make_event(string source)
 
       case "Null":
 	 return Event.NullEvent(id,s);
-	 
+
       default:
 	 error("Events: rule error; unknown rule id:\n%O\n",source);
    }
@@ -237,7 +237,7 @@ Event.Namedays find_namedays(string region)
 {
    string id="namedays/"+region;
    object res;
-   if ( (res=made_namedays[region]) ) 
+   if ( (res=made_namedays[region]) )
       return res;
    string all=read_all_namedays();
 
@@ -275,8 +275,8 @@ Event.Namedays find_namedays(string region)
 		    };
 	    break;
 	 case "period":
-	    if (names) 
-	       if (res) 
+	    if (names)
+	       if (res)
 		  res|=new_namedays_object(region,id,
 					   start,stop,leapdayshift,names);
 	       else
@@ -316,13 +316,13 @@ Event.Namedays find_namedays(string region)
       }
 #endif
    }
-   if (names) 
-      if (res) 
+   if (names)
+      if (res)
 	 res|=new_namedays_object(region,id||"?",
 				  start,stop,leapdayshift,names);
       else
 	 res=new_namedays_object(region,id||"?",start,stop,leapdayshift,names);
-   
+
    return res;
 }
 
@@ -338,7 +338,7 @@ Event.Event find_event(string s)
 
    int i=search(all_data,sprintf("Event %O",s));
    if (i==-1) return UNDEFINED;
-   
+
    int j=search(all_data,"\n",i);
    if (j==-1) j=0x7fffffff;
    return make_event(all_data[i..j]);
@@ -353,7 +353,7 @@ Event.Event find_region(string c)
 
    int i=search(all_data,sprintf("\nRegion %O",c));
    if (i==-1) return UNDEFINED;
-   
+
    int j=search(all_data,"\nRegion \"",i+1);
    if (j==-1) j=0x7fffffff;
 
@@ -370,7 +370,7 @@ Event.Event find_region(string c)
 	  whut!="" && whut[0]!='#')
 	 switch (whut)
 	 {
-	    case "Add": 
+	    case "Add":
 	       e=find_event(id);
 	       if (!e)
 		  error("Events: Adding undefined event\n%O\n",line);
@@ -379,7 +379,7 @@ Event.Event find_region(string c)
 			     (flagy[flags]=mkmultiset( (flags-"-")/"" )));
 	       events+=({e});
 	       break;
-	    case "Event": 
+	    case "Event":
 	       e=make_event(line);
 	       if (flags!="-")
 		  eflags[e]=(flagy[flags]||
@@ -450,12 +450,12 @@ Event.Event|Event.Namedays magic_event(string s)
    if (e=find_event(s)) return e;
    if (e=find_region(s)) return e;
 
-   if (!country_lookup) 
+   if (!country_lookup)
       country_lookup=master()->resolv("Geography.Countries");
    object c=country_lookup->from_name(s);
    if (c && (e=find_region(lower_case(c->iso2)))) return e;
-   
-   if (s=="tzshift") 
+
+   if (s=="tzshift")
       return loaded_events->tzshift=Event.TZShift_Event();
 
    return UNDEFINED;

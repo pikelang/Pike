@@ -119,18 +119,18 @@ string make_absolute_path(string path, string|void cwd)
   {
     string user, newpath;
     sscanf(path, "~%s/%s", user, newpath);
-    
+
     if(user && sizeof(user))
     {
       array a = getpwnam(user);
       if(a && sizeof(a) >= 7)
 	return combine_path(a[5], newpath);
     }
-    
+
     return combine_path(getenv("HOME"), path[2..]);
   }
 #endif
-  
+
   if(!sizeof(path) || path[0] != '/')
     return combine_path(cwd || getcwd(), "./", path);
 
@@ -209,7 +209,7 @@ class ProgressBar
     name = _name;
     max = _max;
     cur = _cur;
-    
+
     phase_base = _phase_base || 0.0;
     phase_size = _phase_size || 1.0 - phase_base;
   }
@@ -265,7 +265,7 @@ class Readline
     get_input_controller()->bind("^I", file_completion);
     string s = low_edit(@args);
     get_input_controller()->unbind("^I");
-    
+
     return s;
   }
 
@@ -273,11 +273,11 @@ class Readline
   string edit_directory(mixed ... args)
   {
     match_directories_only = 1;
-    
+
     get_input_controller()->bind("^I", file_completion);
     string s = low_edit(@args);
     get_input_controller()->unbind("^I");
-    
+
     return s;
   }
 
@@ -285,7 +285,7 @@ class Readline
   {
     string text = gettext();
     int pos = getcursorpos();
-    
+
     array(string) path = make_absolute_path(text[..pos-1], cwd)/"/";
     array(string) files =
       glob(path[-1]+"*",

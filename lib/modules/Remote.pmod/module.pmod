@@ -501,7 +501,7 @@ class Connection {
     {
       sscanf(read_buffer, "%4c%s", request_size, read_buffer);
     }
-  
+
     if (request_size && sizeof(read_buffer) >= request_size && !closed)
     {
       array data = decode_value(read_buffer[0..request_size-1]);
@@ -512,7 +512,7 @@ class Connection {
 
       case CTX_ERROR:
 	error( "Remote error: "+data[1]+"\n" );
-      
+
       case CTX_CALL_SYNC:
       case CTX_CALL_ASYNC:
 #if constant(thread_create)
@@ -742,7 +742,7 @@ class Context {
       DEBUGMSG(sprintf("id_for(%O) found in server_context: %s\n", thing, id));
       return id;
     }
-  
+
     val2id[thing] = id = (base+(counter++));
     id2val[id] = thing;
     DEBUGMSG(sprintf("id_for(%O) not found; added %s locally\n", thing, id));

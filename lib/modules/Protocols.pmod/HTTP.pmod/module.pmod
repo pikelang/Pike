@@ -283,7 +283,7 @@ constant response_codes =
   mapping default_headers = ([
     "user-agent" : "Mozilla/5.0 (compatible; MSIE 6.0; Pike HTTP client)"
     " Pike/" + __REAL_MAJOR__ + "." + __REAL_MINOR__ + "." + __REAL_BUILD__,
-    "host" : url->host + 
+    "host" : url->host +
     (url->port!=(url->scheme=="https"?443:80)?":"+url->port:"")]);
 
   if(url->user || url->password)
@@ -420,7 +420,7 @@ void do_async_method(string method,
   mapping default_headers = ([
     "user-agent" : "Mozilla/5.0 (compatible; MSIE 6.0; Pike HTTP client)"
     " Pike/" + __REAL_MAJOR__ + "." + __REAL_MINOR__ + "." + __REAL_BUILD__,
-    "host" : url->host + 
+    "host" : url->host +
     (url->port!=(url->scheme=="https"?443:80)?":"+url->port:"")]);
 
   if(url->user || url->password)
@@ -736,9 +736,9 @@ string post_url_data(string|Standards.URI url,
 //!
 //!	Example:
 //!	@pre{
-//!	> Protocols.HTTP.http_encode_query( (["anna":"eva","lilith":"blue"]) );  
+//!	> Protocols.HTTP.http_encode_query( (["anna":"eva","lilith":"blue"]) );
 //!     Result: "lilith=blue&anna=eva"
-//!     > Protocols.HTTP.http_encode_query( (["&amp;":"&","'=\"":"\0\0\0\u0434"]) );  
+//!     > Protocols.HTTP.http_encode_query( (["&amp;":"&","'=\"":"\0\0\0\u0434"]) );
 //!     Result: "%27%3D%22=%00%00%00%D0%B4&%26amp%3B=%26"
 //!	@}
 string http_encode_query(mapping(string:int|string|array(string)) variables)
@@ -750,7 +750,7 @@ string http_encode_query(mapping(string:int|string|array(string)) variables)
 			  return uri_encode(v[0]);
 		       if (arrayp(v[1]))
 			 return map(v[1], lambda (string val) {
-					    return 
+					    return
 					      uri_encode(v[0])+"="+
 					      uri_encode(val);
 					  })*"&";

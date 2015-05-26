@@ -719,7 +719,7 @@ array common_prefix(array(array) arrs)
 
   array arrs0 = arrs[0];
   int n, i;
-  
+
   catch
   {
     for(n = 0; n < sizeof(arrs0); n++)

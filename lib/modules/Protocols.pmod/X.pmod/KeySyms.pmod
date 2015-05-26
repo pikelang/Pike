@@ -1405,8 +1405,8 @@
      case XK_KP_9:      return "9";
 
      case XK_space..XK_at:     return sprintf("%c", keysym);
-     case XK_A..XK_Z: 
-     case XK_a..XK_z:  
+     case XK_A..XK_Z:
+     case XK_a..XK_z:
        keysym = keysym&0xdf;
        if(control) return sprintf("%c", (keysym-'A')+1);
        if(shift || caps_lock) return sprintf("%c",keysym);
@@ -1420,7 +1420,7 @@
 	 greek .. technical .. special .. publishing .. APL .. hebrew ..
 	 thai .. korean .. hangul .. */
     }
-  } 
+  }
 
 //!
   int _LookupCharacter( string str )
@@ -1431,7 +1431,7 @@
      // not found?
      else return -1;
 
-  } 
+  }
 
 
 //!
@@ -1492,7 +1492,7 @@
         int mod=0;
 	        foreach(display->key_mapping[i], int code)
         {
-         
+
           if(keysymtokeycode[code]) continue;
           else keysymtokeycode[code]=({i, mod});
           mod++;
@@ -1520,7 +1520,7 @@
     if(!compose_patterns) compose_patterns =  display->compose_patterns;
     switch(keysym)
     {
-     case XK_A..XK_Z: 
+     case XK_A..XK_Z:
      case XK_a..XK_z:
        keysym = keysym&0xdf;      // Upper..
        if(!shift && !caps_lock)  //

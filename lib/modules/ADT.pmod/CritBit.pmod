@@ -596,7 +596,7 @@ class MultiTree {
 	}
 	return ret;
     }
-	
+
     class MultiIterator {
 	array oit, it;
 

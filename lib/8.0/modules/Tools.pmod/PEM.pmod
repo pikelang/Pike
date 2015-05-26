@@ -71,7 +71,7 @@ class EncapsulatedMsg {
 	body = contents;
       }
   }
-  
+
   //! Returns decoded base64 encoded message body
   string decoded_body()
   {
@@ -127,12 +127,12 @@ class RFC934 {
 
 //!
   array(EncapsulatedMsg) encapsulated;
-  
+
   protected array(string) dash_split(string data)
   {
     // Find suspected encapsulation boundaries
     array(string) parts = data / "\n-";
-    
+
     // Put the newlines back
     for (int i; i < sizeof(parts) - 1; i++)
       parts[i]+= "\n";
@@ -142,7 +142,7 @@ class RFC934 {
   protected string dash_stuff(string msg)
   {
     array(string) parts = dash_split(msg);
-    
+
     if (sizeof(parts[0]) && (parts[0][0] == '-'))
       parts[0] = "- " + parts[0];
     return parts * "- -";
@@ -156,16 +156,16 @@ class RFC934 {
     int i = 0;
     string current = "";
     string boundary = 0;
-    
+
     encapsulated = ({ });
-    
+
     if (sizeof(parts[0]) && (parts[0][0] == '-'))
       parts[0] = parts[0][1..];
     else {
       current += parts[0];
       i++;
     }
-    
+
     // Now each element if parts[i..] is a possible encapsulation
     // boundary, with the initial "-" removed.
 
@@ -193,7 +193,7 @@ class RFC934 {
 	  encapsulated
 	    += ({ EncapsulatedMsg(boundary, current) });
 	}
-	
+
 	current = "";
 
 	int end = search(parts[i], "\n");
@@ -273,7 +273,7 @@ class Msg
 	if (!res)
 	  // Bad syntax. Return the parts decoded so far
 	  break;
-    
+
 #ifdef PEM_DEBUG
 	werror("Matched start of '%s'\n", res[0]);
 #endif
@@ -296,7 +296,7 @@ class Msg
 	if (!res || (res[0] != name))
 	  // Bad syntax. Return the parts decoded so far
 	  break;
-	
+
 	parts[name] = msg->encapsulated[i];
       }
    }

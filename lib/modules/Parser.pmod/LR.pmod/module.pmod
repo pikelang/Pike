@@ -114,13 +114,13 @@ class Rule
   //!
   //! @example
   //!   The rule
-  //! 
+  //!
   //!	   rule : nonterminal ":" symbols ";" { add_rule };
-  //! 
+  //!
   //!   might be created as
-  //! 
+  //!
   //!	   rule(4, ({ 9, ":", 5, ";" }), "add_rule");
-  //! 
+  //!
   //!   where 4 corresponds to the nonterminal "rule", 9 to "nonterminal"
   //!   and 5 to "symbols", and the function "add_rule" is too be called
   //!   when this rule is reduced.
@@ -389,7 +389,7 @@ class Parser
 	  if (!rules[r]) {
 
 	    Item new_item = Item();
-	
+
 	    new_item->r = r;
 	    new_item->item_id = r->number;
 
@@ -453,7 +453,7 @@ class Parser
 
 	if (!new_state) {
 	  known_states[kernel_hash] = new_state = Kernel();
-    
+
 	  foreach (indices(items), Item i) {
 	    int|string lookahead;
 
@@ -1030,7 +1030,7 @@ class Parser
 	   "Conflicts on (< %s >)",
 	   state_to_string(state),
 	   map(indices(conflicts), symbol_to_string) * ", ");
-  
+
     foreach (indices(conflicts), int|string symbol) {
       int reduce_count = 0;
       int shift_count = 0;
@@ -1269,7 +1269,7 @@ class Parser
 	conflict_set[symbol] = 1;
       }
     }
-  
+
     if (sizeof(indices(conflict_set))) {
       report(ERROR, "repair",
 	     "Still conflicts remaining in state\n%s\n"
@@ -1468,9 +1468,9 @@ class Parser
 	foreach (s_q->arr[index]->items, Item i) {
 	  if (i->offset == sizeof(i->r->symbols)) {
 	    /* Reduction item (always a master item) */
-	  
+
 	    /* Calculate Look-ahead for all items in look-back set */
-	
+
 	    i->direct_lookahead=`|(i->direct_lookahead,
 				   @indices(i->relation)->direct_lookahead);
 	  }
@@ -1484,7 +1484,7 @@ class Parser
       /* Check for conflicts */
       for (int index = 0; index < s_q->tail; index++) {
 	Kernel state = s_q->arr[index];
-    
+
 	conflicts = (<>);
 	symbols = (<>);
 

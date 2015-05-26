@@ -12,11 +12,11 @@ import ".";
 //
 // START           : query
 //                 ;
-// 
+//
 // query           : query 'or' expr0
 //                 | expr0
 //                 ;
-// 
+//
 // expr0           : expr0 expr1                 // imlicit AND
 //                 | expr0 'and' expr1           // (on this level)
 //                 | expr1
@@ -24,7 +24,7 @@ import ".";
 //
 // expr1           : expr2
 //                 ;
-// 
+//
 // expr2           : expr3
 //                 | field ':' expr3
 //                 | 'date' '>' date
@@ -41,7 +41,7 @@ import ".";
 //
 // NOTE: when looking for an operator here (expr3 - expr5), we have to check
 // that it is not followed by a "field:", or "(".
-// 
+//
 // expr3           : expr3 'or' expr4
 //                 | expr4
 //                 | <empty>
@@ -50,7 +50,7 @@ import ".";
 // expr4           : expr4 'and' expr5
 //                 | expr5
 //                 ;
-// 
+//
 // expr5           : expr5 expr6
 //                 | expr6
 //                 ;
@@ -59,7 +59,7 @@ import ".";
 //                 | '+' expr7
 //                 | expr7
 //                 ;
-// 
+//
 // expr7           : word
 //                 | phrase
 //                 ;
@@ -334,7 +334,7 @@ protected void parseExpr6(int prefix, TextNode node) {
       // ordinary search word that do support remining globs.
       if (sizeof(words) > 1)
 	words = filter(words, lambda(string w) { return (w - "*" - "?") == "" ? 0 : 1; });
-    
+
       if (sizeof(words) == 1)
 	switch (prefix) {
         case '+': node->plusWords += words;  break;

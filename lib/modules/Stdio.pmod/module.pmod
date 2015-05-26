@@ -512,7 +512,7 @@ class File
 #endif
     is_file = 0;
     debug_file = "socket";
-    debug_mode = host+":"+port; 
+    debug_mode = host+":"+port;
     debug_bits = 0;
     if (::connect(host, port, client, client_port))
     {
@@ -549,7 +549,7 @@ class File
 #if constant(_Stdio.__HAVE_CONNECT_UNIX__)
   int connect_unix(string path)
   //! Open a UNIX domain socket connection to the specified destination.
-  //! 
+  //!
   //! @returns
   //!  Returns @expr{1@} on success, and @expr{0@} on failure.
   //!
@@ -634,7 +634,7 @@ class File
   }
 
   String.SplitIterator|LineIterator line_iterator( int|void trim )
-  //! Returns an iterator that will loop over the lines in this file. 
+  //! Returns an iterator that will loop over the lines in this file.
   //! If trim is true, all @tt{'\r'@} characters will be removed from
   //! the input.
   {
@@ -860,7 +860,7 @@ class File
     if (undefinedp(file))
       return;
 
-    debug_file = file;  
+    debug_file = file;
     debug_mode = mode;
     debug_bits = bits;
     switch(file)
@@ -872,7 +872,7 @@ class File
       case "stdout":
 	create(1, mode, bits);
 	break;
-	
+
       case "stderr":
 	create(2, mode, bits);
 	break;
@@ -1401,7 +1401,7 @@ class File
   //! @param event_mask
   //!  An event mask specifing bitwise OR of one or more event types to
   //!  monitor, selected from @[Stdio.NOTE_WRITE] and friends.
-  //! 
+  //!
   //! @note
   //!   These functions do not set the file nonblocking.
   //!
@@ -1425,7 +1425,7 @@ class File
   //! that the callbacks can be called immediately by the backend
   //! thread, so it might not be safe to continue using the stream in
   //! this thread.
-  //! 
+  //!
   //! Because of that, it's useful to talk about "callback mode" when
   //! any callback is installed. In callback mode the stream should be
   //! seen as "bound" to the backend thread. For instance, it's only
@@ -1682,7 +1682,7 @@ class File
 #ifdef __STDIO_DEBUG
     if(mixed x=catch { ::set_nonblocking(); })
     {
-      x[0]+=(__closed_backtrace ? 
+      x[0]+=(__closed_backtrace ?
 	   sprintf("File was closed from:\n    %-=200s\n",__closed_backtrace) :
 	   "This file has never been open.\n" );
       throw(x);
@@ -1870,7 +1870,7 @@ class FILE
   private array(string) cached_lines = ({});
 
   private function(string:string) output_conversion, input_conversion;
-  
+
   protected string _sprintf( int type, mapping flags )
   {
     return ::_sprintf( type, flags );
@@ -1888,7 +1888,7 @@ class FILE
     }
     return 0;
   }
- 
+
   inline private int get_data()
   {
     if( bpos )
@@ -2075,7 +2075,7 @@ class FILE
   array(string) ngets(void|int(1..) n, int(0..1)|void not_all)
   {
     array(string) res;
-    if (!n) 
+    if (!n)
     {
        res=read()/"\n";
        if (res[-1]=="" || not_all) return res[..<1];
@@ -2207,8 +2207,8 @@ class FILE
              return read( nbytes);
            };
   }
-    
-  //! Returns an iterator that will loop over the lines in this file. 
+
+  //! Returns an iterator that will loop over the lines in this file.
   //!
   //! @seealso
   //!   @[line_iterator()]
@@ -2221,7 +2221,7 @@ class FILE
   }
 
   object line_iterator( int|void trim )
-  //! Returns an iterator that will loop over the lines in this file. 
+  //! Returns an iterator that will loop over the lines in this file.
   //! If @[trim] is true, all @tt{'\r'@} characters will be removed
   //! from the input.
   //!
@@ -2232,7 +2232,7 @@ class FILE
   //! functions that read data with the line iterator, it will produce
   //! unexpected results since the internal buffer in the iterator will not
   //! contain sequential file-data in those cases.
-  //! 
+  //!
   //! @seealso
   //!   @[_get_iterator()]
   {
@@ -2674,7 +2674,7 @@ int file_size(string filename)
 //! @decl string append_path(string absolute, string ... relative)
 //! @decl string append_path_unix(string absolute, string ... relative)
 //! @decl string append_path_nt(string absolute, string ... relative)
-//! 
+//!
 //!   Append @[relative] paths to an @[absolute] path and remove any
 //!   @expr{"//"@}, @expr{"../"@} or @expr{"/."@} to produce a
 //!   straightforward absolute path as a result.
@@ -2684,10 +2684,10 @@ int file_size(string filename)
 //!   (or so far created path).
 //!
 //!   @[append_path_nt()] fixes drive letter issues in @[relative]
-//!   by removing the colon separator @expr{":"@} if it exists (k:/fnord appends 
+//!   by removing the colon separator @expr{":"@} if it exists (k:/fnord appends
 //!   as k/fnord)
 //!
-//!   @[append_path_nt()] also makes sure that UNC path(s) in @[relative] is appended 
+//!   @[append_path_nt()] also makes sure that UNC path(s) in @[relative] is appended
 //!   correctly by removing any @expr{"\\"@} or @expr{"//"@} from the beginning.
 //!
 //!   @[append_path()] is equivalent to @[append_path_unix()] on UNIX-like
@@ -2815,16 +2815,16 @@ int exist(string path)
 
 //! Convert the mode_string string as returned by Stdio.Stat object
 //! to int suitable for chmod
-//!  
+//!
 //! @param mode_string
 //!   The string as return from Stdio.Stat()->mode_string
 //! @returns
-//!   An int matching the permission of the mode_string string suitable for 
+//!   An int matching the permission of the mode_string string suitable for
 //!   chmod
 int convert_modestring2int(string mode_string)
 {
   constant user_permissions_letters2value =
-    ([ 
+    ([
       "r": 0400,
       "w": 0200,
       "x": 0100,
@@ -2886,7 +2886,7 @@ int cp(string from, string to)
 //!   7.6 and earlier.
 {
   Stat stat = file_stat(from, 1);
-  if( !stat ) 
+  if( !stat )
      return 0;
 
   if(stat->isdir)
@@ -2929,7 +2929,7 @@ int cp(string from, string to)
       if(!data) return 0;
       if(w(data)!=sizeof(data)) return 0;
     }while(sizeof(data) == DATA_CHUNK_SIZE);
-  
+
     f->close();
     t->close();
 #endif
@@ -2961,7 +2961,7 @@ int file_equal (string file_1, string file_2)
   // Detect sym- or hardlinks to the same file.
   if( (s1->dev == s2->dev) && (s1->ino == s2->ino) )
     return 1;
-  
+
   function(int,int|void:string) f1_read = f1->read, f2_read = f2->read;
   string d1, d2;
   do {
@@ -3093,7 +3093,7 @@ int recursive_rm (string path)
   return rm (path);
 }
 
-//! Copy a file or a directory tree by copying and then 
+//! Copy a file or a directory tree by copying and then
 //! removing. Mode bits are preserved in the copy.
 //! It's not the fastest but works on every OS and
 //! works well across different file systems.
@@ -3478,7 +3478,7 @@ protected class nb_sendfile
       blocking_from = from->is_file ||
 	((!from->set_nonblocking) ||
 	 (from->mode && !(from->mode() & PROP_NONBLOCK)));
-	
+
       if (off >= 0) {
 	from->seek(off);
       }
@@ -3574,7 +3574,7 @@ object sendfile(array(string) headers,
 {
 #if !defined(DISABLE_FILES_SENDFILE) && constant(_Stdio.sendfile)
   // Try using files.sendfile().
-  
+
   mixed err = catch {
     return _Stdio.sendfile(headers, from, offset, len,
                            trailers, to, cb, @args);
@@ -3647,7 +3647,7 @@ class UDP
     _set_read_callback((callback = f) && _read_callback);
     return this;
   }
-   
+
   private void _read_callback()
   {
     mapping i;

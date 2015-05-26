@@ -33,7 +33,7 @@ protected function(string,int,int:string) blobfeeder(Search.Database.Base db,
            return db->get_blob(word, state[word][blob_stream_id]++, blobcache);
          };
 }
- 
+
 protected array(string) uniq_preserve_order(array(string) a) {
   array(string) result = ({});
   foreach (a, string s)
@@ -89,7 +89,7 @@ protected Search.ResultSet sort_resultset(Search.ResultSet resultset,
                                        search_order order,
                                        Search.Database.Base db)
 {
-  
+
 }
 
 
@@ -109,8 +109,8 @@ protected Search.ResultSet sort_resultset(Search.ResultSet resultset,
 //!       All wanted words in the query. (I.e. not the words that were
 //!       preceded by minus.)
 //!     @elem array(mapping) 2
-//!       All wanted globs in the query. (I.e. not the globs that were 
-//!       preceded by minus.)       
+//!       All wanted globs in the query. (I.e. not the globs that were
+//!       preceded by minus.)
 //!   @endarray
 //!
 array(Search.ResultSet|array(string)) execute(Search.Database.Base db,
@@ -125,7 +125,7 @@ array(Search.ResultSet|array(string)) execute(Search.Database.Base db,
     Search.Grammar.remove_stop_words(q, stop_words);
 
   q = Search.Grammar.optimize(q);
-  
+
   if (!q)                                        // The query was a null query
     return ({ Search.ResultSet(), ({}), ({}) }); // so return an empty resultset
 
@@ -158,7 +158,7 @@ array(Search.ResultSet|array(string)) execute(Search.Database.Base db,
           a+=({ word });
       return ({ a, b });
     }
-    
+
     protected constant ParseNode = Search.Grammar.ParseNode;
 
     protected array(array(string)|string) words = ({ });
@@ -238,7 +238,7 @@ array(Search.ResultSet|array(string)) execute(Search.Database.Base db,
 	      t_low  = year->unix_time();
 	      t_high = year->next()->unix_time()-1;
 	    };
-	  
+
 	  if(t_low <= 0 || t_high <= 0 ||
 	     object_program(t_low) || object_program(t_high))
 	    // Guard against out-of-bounds and bignums.
@@ -246,7 +246,7 @@ array(Search.ResultSet|array(string)) execute(Search.Database.Base db,
 	    push(_WhiteFish.DateSet());
 	    break;
 	  }
-	  
+
 	  _WhiteFish.DateSet restriction;
 	  switch(q->operator[1])
 	  {
@@ -274,7 +274,7 @@ array(Search.ResultSet|array(string)) execute(Search.Database.Base db,
 	  }
 	  push(restriction || _WhiteFish.DateSet());
           break;
-          
+
         case "text":
           {
             Search.RankingProfile ranking = defaultRanking;
@@ -305,7 +305,7 @@ array(Search.ResultSet|array(string)) execute(Search.Database.Base db,
 	      push(Search.ResultSet());
 	      break;
 	    }
-	    
+
             int hasPlus = sizeof(q->plusWords) || sizeof(q->plusPhrases);
             int hasOrdinary = sizeof(q->words) || sizeof(q->phrases);
             int hasMinus = sizeof(q->minusWords) || sizeof(q->minusPhrases);
@@ -327,10 +327,10 @@ array(Search.ResultSet|array(string)) execute(Search.Database.Base db,
 	      plusWordGlobs -= ({ "*" });
 	      ordinaryWordGlobs -= ({ "*" });
 	    }
-	    
+
 	    foreach (Array.uniq(plusWordGlobs | ordinaryWordGlobs), string w)
 	      glob_words += ({ ([ q->field : w]) });
-	    
+
             if(hasPlus)
             {
               int first = 1;
@@ -365,7 +365,7 @@ array(Search.ResultSet|array(string)) execute(Search.Database.Base db,
                 first = 0;
               }
             }
-            
+
             if(hasOrdinary)
             {
               int first = 1;
@@ -399,7 +399,7 @@ array(Search.ResultSet|array(string)) execute(Search.Database.Base db,
                 first = 0;
               }
             }
-            
+
             if(hasPlus && hasOrdinary)
             {
               Search.ResultSet r2 = pop();
@@ -408,7 +408,7 @@ array(Search.ResultSet|array(string)) execute(Search.Database.Base db,
               // it's ranking is increased.
               push(r1->add_ranking(r2));
             }
-            
+
             if((hasPlus || hasOrdinary || hasEverything) && hasMinus)
             {
               int first = 1;
@@ -456,7 +456,7 @@ array(Search.ResultSet|array(string)) execute(Search.Database.Base db,
 
   if(!order)
     order = RELEVANCE;
-  
+
   if(order!=NONE)
     switch(order)
     {
@@ -480,7 +480,7 @@ array(Search.ResultSet|array(string)) execute(Search.Database.Base db,
         else
           res[0]->sort_rev();
 
-	
+
       case NONE:
     }
 

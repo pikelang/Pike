@@ -41,7 +41,7 @@ void seek(int skip) {
 
 int|array(string|int) fetch_row() {
   array res;
-      
+
   if (index >= sizeof(master_res))
     return 0;
 

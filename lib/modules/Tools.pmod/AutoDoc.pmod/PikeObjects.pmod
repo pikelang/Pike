@@ -219,8 +219,8 @@ class StringType {
   }
   string xml(.Flags|void flags) {
     if (min||max)
-      return xmltag("string", 
-                    xmltag("min", min) + 
+      return xmltag("string",
+                    xmltag("min", min) +
                     xmltag("max", max));
     return xmltag("string");
   }

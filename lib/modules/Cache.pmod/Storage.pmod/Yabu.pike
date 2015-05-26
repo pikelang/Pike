@@ -26,22 +26,22 @@ class Data {
   string _key=0;
   mixed _data=0;
   private Yabu.Table db, metadb;
-  
+
   int size() {
     return _size;               // it's guarranteed to be computed in set()
   }
-  
+
   mixed data() {
-    if (!_data) 
+    if (!_data)
       _data=db->get(_key);
     return _data;
   }
-  
+
   private inline mapping metadata_dump () {
     return (["size":_size,"atime":atime,
              "ctime":ctime,"etime":etime,"cost":cost]);
   }
-  
+
   //dumps the metadata if necessary.
   void sync() {
     metadb->set(_key,metadata_dump());
@@ -52,7 +52,7 @@ class Data {
     sync();
   }
   //m contains the metadata
-  void create(string key, Yabu.Table data_db, Yabu.Table metadata_db, 
+  void create(string key, Yabu.Table data_db, Yabu.Table metadata_db,
               mapping m) {
     _key=key;
     db=data_db;
@@ -63,7 +63,7 @@ class Data {
     etime=m->etime;
     cost=m->cost||1.0;
   }
-  
+
 }
 
 
@@ -144,20 +144,20 @@ void aget(string key,
 void delete(string key, void|int(0..1) hard) {
 
   multiset dependants=0;
-  
+
   if (have_dependants) {
     mapping emeta=metadb->get(key);
     if (!emeta)
       return;
     dependants=emeta->dependants;
   }
-  
+
   if (keys)
     keys[key]=0;
   db->delete(key);              // maybe we should be transactional?
   metadb->delete(key);
   deletion_ops++;
-  
+
   if (have_dependants && dependants && sizeof(dependants)) {
     foreach((array)dependants, string chain) {
       //werror("chain-deleteing %s\n",chain);
@@ -166,7 +166,7 @@ void delete(string key, void|int(0..1) hard) {
     //werror("done chain-deleting\n");
     return;
   }
-  
+
   if (deletion_ops > CLUTTERED) {
     yabudb->reorganize();
     deletion_ops=0;

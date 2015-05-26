@@ -60,7 +60,7 @@ Layer decode_layer(mapping layer, mapping i)
   l->name = layer->name;
   l->mask_flags = layer->mask_flags;
   l->mask_default_color = layer->mask_default_color;
- 
+
   l->mask_width = layer->mask_right-layer->mask_left;
   l->mask_height = layer->mask_bottom-layer->mask_top;
   l->mask_xoffset = layer->mask_left;
@@ -84,20 +84,20 @@ Layer decode_layer(mapping layer, mapping i)
        switch( (int)c->id )
        {
         case 0:
-          mode = "red"; 
+          mode = "red";
           break;
         case 1:
-          mode = "green"; 
+          mode = "green";
           break;
         case 2:
-          mode = "blue"; 
+          mode = "blue";
           break;
        }
        if( mode )
        {
 //          int st = gethrtime();
          if( !sizeof(lays) )
-           lays += ({ 
+           lays += ({
              Image.Layer(___decode_image_channel(l->width,
 						 l->height,
                                                  c->data))
@@ -106,7 +106,7 @@ Layer decode_layer(mapping layer, mapping i)
            lays += (({ Image.Layer( ([
              "image":___decode_image_channel(l->width, l->height, c->data),
 //             "alpha_value":1.0,
-             "mode":mode, 
+             "mode":mode,
 	   ]) )
            }));
 //          werror(mode+" took %4.5f seconds\n", (gethrtime()-st)/1000000.0 );
@@ -180,10 +180,10 @@ Layer decode_layer(mapping layer, mapping i)
 			 x0 + l->image->xsize() - 1,
 			 y0 + l->image->ysize() - 1,
 			 @pad_color);
-	 
+
          if(l->mask_flags & 4) /* invert mask */
            tmp = tmp->invert();
-	 
+
          if(!l->alpha)
            l->alpha = tmp;
          else
@@ -201,7 +201,7 @@ Layer decode_layer(mapping layer, mapping i)
 }
 
 //! @decl mapping __decode(string|mapping data)
-//! 
+//!
 //! Decodes a PSD image to a mapping, defined as follows.
 //!
 //! @mapping
@@ -357,7 +357,7 @@ mapping __decode( mapping|string what, mapping|void options )
   mapping data;
   if(mappingp(what))
     data = what;
-  else 
+  else
     data = ___decode( what );
   what=0;
   array rl = ({});
@@ -373,7 +373,7 @@ array(object) decode_background( mapping data )
   object img;
 
   if( data->image_data )
-    img = ___decode_image_data(data->width,       data->height, 
+    img = ___decode_image_data(data->width,       data->height,
                                data->channels,    data->mode,
                                data->compression, data->image_data,
 
@@ -409,12 +409,12 @@ string translate_mode( string mode )
      return "multiply";
 
      // Exclusion. Not really difference, but very close.
-    case "smud":     
+    case "smud":
      return "difference";
 
      // Soft light. Not really supported yet. For now, use hardlight with lower
      // opacity. Gives a rather good aproximation.
-    case "sLit":     
+    case "sLit":
      return "hardlight";
 
    default:
@@ -454,7 +454,7 @@ array decode_layers( string|mapping what, mapping|void opts )
 
   if(!mappingp( what ) )
     what = __decode( what );
-  
+
   mapping lopts = ([ "tiled":1, ]);
 
   if( opts->background )
@@ -505,7 +505,7 @@ array decode_layers( string|mapping what, mapping|void opts )
 	  l->opacity /= 3;
 
 	l->image = 0; l->alpha = 0;
-        
+
 	if( l->opacity != 255 )
         {
 	  float lo =  l->opacity / 255.0;
@@ -593,7 +593,7 @@ mapping _decode( string|mapping what, mapping|void opts )
   if(!opts) opts = ([]);
   if(mappingp(what))
     data = what;
-  else 
+  else
     data = __decode( what );
   what=0;
 
@@ -602,7 +602,7 @@ mapping _decode( string|mapping what, mapping|void opts )
   Image.Image img = res->image();
   Image.Image alpha = res->alpha();
 
-  return 
+  return
   ([
     "image":img,
     "alpha":alpha,
@@ -622,7 +622,7 @@ Image.Image decode( string|mapping what, mapping|void opts )
   if(!opts) opts = ([]);
   if(mappingp(what))
     data = what;
-  else 
+  else
     data = __decode( what );
   what=0;
 

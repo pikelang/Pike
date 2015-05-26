@@ -66,17 +66,17 @@ int(0..1) case_convert;
 //!
 //! All input that is used in SQL-querys should be quoted to prevent
 //! SQL injections.
-//! 
+//!
 //! Consider this harmfull code:
 //! @code
 //!   string my_input = "rob' OR name!='rob";
 //!   string my_query = "DELETE FROM tblUsers WHERE name='"+my_input+"'";
 //!   my_db->query(my_query);
 //! @endcode
-//! 
+//!
 //! This type of problems can be avoided by quoting @tt{my_input@}.
-//! @tt{my_input@} would then probably read something like 
-//! @i{rob\' OR name!=\'rob@} 
+//! @tt{my_input@} would then probably read something like
+//! @i{rob\' OR name!=\'rob@}
 //!
 //! Usually this is done - not by calling quote explicitly - but through
 //! using a @[sprintf] like syntax
@@ -764,7 +764,7 @@ int|object big_typed_query(object|string q, mixed ... extraargs)
     else
       [q, bindings] = .sql_util.handle_extraargs(q, extraargs);
   }
-  
+
   object|array(mapping) pre_res;
 
   if (bindings) {
@@ -916,7 +916,7 @@ string host_info()
 {
   if (functionp(master_sql->host_info)) {
     return master_sql->host_info();
-  } 
+  }
   return "Unknown connection to host";
 }
 
@@ -927,7 +927,7 @@ string host_info()
 array(string) list_dbs(string|void wild)
 {
   array(string)|array(mapping(string:mixed))|object res;
-  
+
   if (functionp(master_sql->list_dbs)) {
     if (objectp(res = master_sql->list_dbs())) {
       res = res_obj_to_array(res);
@@ -956,7 +956,7 @@ array(string) list_dbs(string|void wild)
 array(string) list_tables(string|void wild)
 {
   array(string)|array(mapping(string:mixed))|object res;
-  
+
   if (functionp(master_sql->list_tables)) {
     if (objectp(res = master_sql->list_tables())) {
       res = res_obj_to_array(res);

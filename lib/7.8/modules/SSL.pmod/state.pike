@@ -104,7 +104,7 @@ Alert|.packet decrypt_packet(.packet packet, ProtocolVersion version)
   werror("SSL.state->decrypt_packet (3.%d, type: %d): data = %O\n",
 	 version, packet->content_type, packet->fragment);
 #endif
-  
+
   if (crypt)
   {
 #ifdef SSL3_DEBUG_CRYPT
@@ -160,7 +160,7 @@ Alert|.packet decrypt_packet(.packet packet, ProtocolVersion version)
     int length = sizeof(packet->fragment) - session->cipher_spec->hash_size;
     string digest = packet->fragment[length ..];
     packet->fragment = packet->fragment[.. length - 1];
-    
+
     if (digest != mac->hash(packet, seq_num))
       {
 #ifdef SSL3_DEBUG
@@ -198,7 +198,7 @@ Alert|.packet encrypt_packet(.packet packet, ProtocolVersion version)
 {
   string digest;
   packet->protocol_version = ({ PROTOCOL_major, version});
-  
+
   if (compress)
   {
     packet->fragment = [string]compress(packet->fragment);
@@ -239,7 +239,7 @@ Alert|.packet encrypt_packet(.packet packet, ProtocolVersion version)
   }
   else
     packet->fragment += digest;
-  
+
   return [object(Alert)]packet->check_size(version, 2048) || packet;
 }
 

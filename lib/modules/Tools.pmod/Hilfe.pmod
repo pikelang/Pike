@@ -310,15 +310,15 @@ protected class CommandExit {
 
 protected class CommandDoc {
   inherit Command;
-  string help(string what) 
-  { 
+  string help(string what)
+  {
     return #"Show documentation for pike modules and classes.
-Documentation for the symbol before the cursor is also accessible 
-by pressing F1."; 
+Documentation for the symbol before the cursor is also accessible
+by pressing F1.";
   }
 
   void exec(Evaluator e, string line, array(string) words,
-	    array(string) tokens) 
+	    array(string) tokens)
   {
     if (sizeof(tokens) > 3)
       output_doc(e, Parser.Pike.group(tokens[2..]));
@@ -880,7 +880,7 @@ protected constant types = (< "string", "int", "float", "array", "mapping",
                               "function", "void" >);
 
 // infix token may appear between two literals
-protected constant infix = (< "!=", "%", "%=", "&", "&=", "*", "*=", 
+protected constant infix = (< "!=", "%", "%=", "&", "&=", "*", "*=",
                               "+", "+=", ",", "-", "-=",
                               "->", "->=", "/", "/=",
                               "<", "<<", "<<=", "<=", "==",
@@ -2434,7 +2434,7 @@ array(object|array(string)) resolv(Evaluator e, array completable,
     if (base=base_objects(e)[completable[0]])
       return resolv(e, completable[1..], base, "object");
 
-    if (sizeof(completable) > 1 
+    if (sizeof(completable) > 1
         && (base=master()->root_module[completable[0]]))
       return resolv(e, completable[1..], base, "module");
     return ({ 0, completable, type });
@@ -2450,7 +2450,7 @@ array(object|array(string)) resolv(Evaluator e, array completable,
       if (typeof_token(completable[0]) == "symbol"
           && (newbase = base->findObject(completable[0])))
         return resolv(e, completable[1..], newbase, type);
-      else if (sizeof(completable) > 2 
+      else if (sizeof(completable) > 2
             && typeof_token(completable[0]) == "argumentgroup"
             && typeof_token(completable[1]) == "reference")
         return resolv(e, completable[2..], base, type);
@@ -2531,7 +2531,7 @@ class StdinHilfe
     readline = Stdio.Readline();
     write = readline->write;
     ::create();
-    
+
     add_constant("werror",do_write);
     add_constant("write",do_write);
 
@@ -2543,7 +2543,7 @@ class StdinHilfe
       readline->enable_history(512);
     readline->get_input_controller()->bind("\t", handle_completions);
     readline->get_input_controller()->bind("\\!k1", handle_doc);
-    
+
     signal(signum("SIGINT"),signal_trap);
 
     for(;;) {
@@ -2574,10 +2574,10 @@ class StdinHilfe
 
       if ( ( _tokentype == "reference" &&
              (!tokentype || tokentype == "symbol"))
-            || (_tokentype == "symbol" && (!tokentype 
+            || (_tokentype == "symbol" && (!tokentype
                  || (< "reference", "referencegroup",
                        "argumentgroup" >)[tokentype]))
-            || ( (<"argumentgroup", "referencegroup" >)[_tokentype] 
+            || ( (<"argumentgroup", "referencegroup" >)[_tokentype]
                  && (!tokentype || tokentype == "reference"))
          )
       {
@@ -2591,7 +2591,7 @@ class StdinHilfe
     }
 
     // keep the last whitespace
-    if (arrayp(tokens) && sizeof(tokens) && 
+    if (arrayp(tokens) && sizeof(tokens) &&
         typeof_token(tokens[-1]) == "whitespace")
       completable = ({ " " }) + completable;
     return reverse(completable);
@@ -2726,7 +2726,7 @@ class StdinHilfe
       array tokens = Parser.Pike.split(input);
       if (variables->DEBUG_COMPLETIONS)
           readline->message(sprintf("\n\ntokenize(%O): %O\n\n", input, tokens));
-      // drop the linebreak that split appends 
+      // drop the linebreak that split appends
       if (tokens[-1] == "\n")
         tokens = tokens[..<1];
       else if (tokens[-1][-1] == '\n')
@@ -2748,7 +2748,7 @@ class StdinHilfe
     string dir = dirname(path);
     string file = basename(path);
     catch
-    { 
+    {
       files += get_dir(dir);
     };
 
@@ -2788,7 +2788,7 @@ class StdinHilfe
   array|string get_module_completions(array completable)
   {
     array rest = completable;
-    object base; 
+    object base;
     string type;
     int(0..1) space;
 
@@ -2800,7 +2800,7 @@ class StdinHilfe
       space = true;
       completable = completable[..<1];
     }
-    
+
     if (sizeof(completable) > 1)
       [base, rest, type] = resolv(this, completable);
 
@@ -2813,9 +2813,9 @@ class StdinHilfe
       return completions;
   }
 
-  mapping reftypes = ([ "module":".", 
-                     "object":"->", 
-                     "mapping":"->", 
+  mapping reftypes = ([ "module":".",
+                     "object":"->",
+                     "mapping":"->",
                      "function":"(",
                      "program":"(",
                      "method":"(",
@@ -2905,7 +2905,7 @@ class StdinHilfe
 
       if (sizeof(completable) == 1)
       {
-          if (type == "autodoc" 
+          if (type == "autodoc"
               && typeof_token(completable[0]) == "argumentgroup")
             if (space)
               return (array)infix;
@@ -2946,7 +2946,7 @@ class StdinHilfe
             }
             else if (intp(base[module]) || floatp(base[module]) || stringp(base[module]) )
               return (array)infix;
-            else 
+            else
             {
               // FIXME: need to check if thismodule is something indexable
               thismodule = base[module];
@@ -2965,7 +2965,7 @@ class StdinHilfe
           else
             safe_write(sprintf("UNHANDLED CASE: completable: %O\nbase: %O\n", completable, base));
       }
-      
+
       return modules;
   }
 }

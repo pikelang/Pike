@@ -319,7 +319,7 @@ string nameprep(string s, int(0..1)|void allow_unassigned)
 
   // Mapping:  Table B.2 - Case folding for use with NFKC
   s = replace(s, stringprep_casefold_src, stringprep_casefold_dest);
-  
+
   // Normalize
   s = Unicode.normalize(s, "NFKC");
 

@@ -47,7 +47,7 @@ protected void create()
 
   if(tmp = [string]getenv("PIKE_LOCAL_PATH") ) {
     array to_add=reverse(tmp/":"); // preserve order
-    add_path( to_add[*] ); 
+    add_path( to_add[*] );
   }
 }
 

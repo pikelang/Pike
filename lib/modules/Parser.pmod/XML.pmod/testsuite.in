@@ -191,7 +191,7 @@ object x=Parser.XML.NSTree.parse_input(#"<?xml version=\"1.0\"?>
 <!-- all elements here are explicitly in the HTML namespace -->
 <html:html xmlns:html='http://www.w3.org/TR/REC-html40'>
   <html:head><html:title>Frobnostication</html:title></html:head>
-  <html:body><html:p>Moved to 
+  <html:body><html:p>Moved to
     <html:a href='http://frob.com'>here.</html:a></html:p></html:body>
 </html:html>");
 x=x[2];
@@ -266,7 +266,7 @@ return r;
 test_any_equal([[
 object x=Parser.XML.NSTree.parse_input(#"
 <!-- http://www.w3.org is bound to n1 and is the default -->
-<x xmlns:n1=\"http://www.w3.org\" 
+<x xmlns:n1=\"http://www.w3.org\"
    xmlns=\"http://www.w3.org\" >
     <good a=\"1\"     n1:a=\"2\" />
 </x>");
@@ -285,7 +285,7 @@ array args = ({
   "xmlns:soap='http://schemas.xmlsoap.org/soap/envelope/'",
   "xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'",
   "xmlns:xsd='http://www.w3.org/2001/XMLSchema'",
-  "xmlns:soapenc='http://schemas.xmlsoap.org/soap/encoding/'",                      
+  "xmlns:soapenc='http://schemas.xmlsoap.org/soap/encoding/'",
   "soap:encodingStyle='http://schemas.xmlsoap.org/soap/encoding/'" });
 for(int i; i<120; i++)
   Parser.XML.NSTree.parse_input("<soap:Envelope "+Array.permute(args,i)*" "+"/>");

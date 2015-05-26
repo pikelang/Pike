@@ -22,7 +22,7 @@
 /* Extract from RFC 1143:
  *
  * EXAMPLE STATE MACHINE FOR THE Q METHOD OF IMPLEMENTING
- * TELNET OPTION NEGOTIATION 
+ * TELNET OPTION NEGOTIATION
  *
  * There are two sides, we (us) and he (him).  We keep four variables:
  *
@@ -570,7 +570,7 @@ class protocol
 	  C2(IAC,SE);
     enable_write();
   }
-  
+
 
   //! Indicates whether we are in synch-mode or not.
   protected int synch = 0;
@@ -620,7 +620,7 @@ class protocol
     {
       case ' '..'z':
 	return C(s);
-	
+
       default:
 	return sprintf("\\0x%02x",s);
     }
@@ -1048,7 +1048,7 @@ protected class Low_Readline
       "ICANON": icanon,
       ]);
   }
-  
+
   protected void call_read_cb(string data)
   {
     if(read_cb)
@@ -1072,7 +1072,7 @@ protected class Low_Readline
       }
     }
   }
-  
+
   //! Set terminal attributes.
   //!
   //! Currently only the following attributes are supported:
@@ -1119,11 +1119,11 @@ protected class Low_Readline
   //     might start using the write callback in the future.
   //
   //	/grubba 2008-12-09
-  
+
   protected function(mixed,string:void) read_cb2;
   protected function(mixed|void:string) write_cb2;
   protected function(mixed:void) close_cb2;
-  
+
   protected void readline_callback(string data)
   {
     read_cb2(id,data+"\n");
@@ -1138,12 +1138,12 @@ protected class Low_Readline
       readline->write(data);
     }
   }
-  
+
   protected int readline_close_callback()
   {
     close_cb2(id);
   }
-  
+
   protected string prompt="";
   protected mixed call_callback(mixed what, mixed ... args)
   {
@@ -1181,7 +1181,7 @@ protected class Low_Readline
 	      }
 	    }
 	    break;
-	    
+
 	  case TELOPT_NAWS:
 	    if(sscanf(data[1..],"%2c%2c",width,height)==2)
 	      if(readline)
@@ -1206,7 +1206,7 @@ protected class Low_Readline
     }
     ::remote_option_callback(opt,onoff);
   }
-  
+
   protected void setup()
   {
     send_DO(TELOPT_SGA);

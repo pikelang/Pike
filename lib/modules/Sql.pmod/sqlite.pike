@@ -25,7 +25,7 @@ array list_fields(string n, string|void wild)
   // now, we weed out the ones that don't match wild, if provided
   if(wild)
   {
-    r = filter(r, lambda(mapping row) 
+    r = filter(r, lambda(mapping row)
               { return (search(row->name, wild) !=-1); }
           );
   }
@@ -38,9 +38,9 @@ array list_fields(string n, string|void wild)
 
     fld->name = f->name;
     fld->table = n;
-  
-    string t, l;   
- 
+
+    string t, l;
+
     if(!sscanf(f->type, "%s(%s)", t, l))
       t = f->type;
 
@@ -84,9 +84,9 @@ array list_tables(string|void n)
   string qry = "";
 
   if(n)
-    qry = "SELECT name FROM SQLITE_MASTER WHERE name like '" + n + "%' and TYPE='table'";  
+    qry = "SELECT name FROM SQLITE_MASTER WHERE name like '" + n + "%' and TYPE='table'";
   else
-    qry = "SELECT name FROM SQLITE_MASTER where TYPE='table'";  
+    qry = "SELECT name FROM SQLITE_MASTER where TYPE='table'";
 
   array r = query(qry);
   array out = ({});

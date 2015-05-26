@@ -28,7 +28,7 @@ object|function|program request_program=Request;
 //!   An optional SSL secret key, provided in binary format, such
 //!   as that created by @[Standards.PKCS.RSA.private_key()].
 //! @param certificate
-//!   An optional SSL certificate or chain of certificates with the host 
+//!   An optional SSL certificate or chain of certificates with the host
 //!   certificate first, provided in binary format.
 //! @param share
 //!   If true, the connection will be shared if possible. See

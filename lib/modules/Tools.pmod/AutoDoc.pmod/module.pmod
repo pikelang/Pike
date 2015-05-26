@@ -120,7 +120,7 @@ class SourcePosition {
     }
     this::filename = filename;
     this::firstline = firstline;
-    this::lastline = lastline; 
+    this::lastline = lastline;
   }
 
   //! @returns

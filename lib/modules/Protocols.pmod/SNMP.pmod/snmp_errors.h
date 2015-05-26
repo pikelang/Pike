@@ -3,7 +3,7 @@
 // Honza Petrous, hop@roxen.com
 //
 
-/* 
+/*
  * possible error codes we can return
  */
 

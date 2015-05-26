@@ -255,8 +255,8 @@ string get_dn_string(Sequence dnsequence)
       string v = val[1]->value;
 
       // we must escape characters now.
-      v = replace(v, 
-          ({",", "+", "\"", "\\", "<", ">", ";"}), 
+      v = replace(v,
+          ({",", "+", "\"", "\\", "<", ">", ";"}),
           ({"\\,", "\\+", "\\\"", "\\\\", "\\<", "\\>", "\\;"}) );
 
       if(v[0..0] == " ")
@@ -268,11 +268,11 @@ string get_dn_string(Sequence dnsequence)
          v=v[0..(sizeof(v)-2)] + "\\ ";
 
       rdns += ({ (t + "=" + v) });
-    }        
+    }
   }
-  
+
   dn = rdns * ",";
-  return dn;  
+  return dn;
 }
 
 class Attribute

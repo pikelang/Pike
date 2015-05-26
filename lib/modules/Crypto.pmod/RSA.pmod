@@ -28,7 +28,7 @@ class State {
   protected Gmp.mpz d;  /* private exponent (if known) */
 
   /* Extra info associated with a private key. Not currently used. */
-   
+
   protected Gmp.mpz p;
   protected Gmp.mpz q;
 
@@ -162,7 +162,7 @@ class State {
     int bit_to_set = 1 << ( (bits - 1) % 8);
 
     Gmp.mpz p;
-  
+
     do {
       string(8bit) s = r([int(0..)]len);
       p = Gmp.mpz(sprintf("%c%s", (s[0] & (bit_to_set - 1))

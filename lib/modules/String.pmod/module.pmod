@@ -70,7 +70,7 @@ string sillycaps(string str)
  * {
  *   if(!sizeof(strs))
  *     return "";
- *  
+ *
  *   for(int n = 0; n < sizeof(strs[0]); n++)
  *     for(int i = 1; i < sizeof(strs); i++)
  * 	if(sizeof(strs[i]) <= n || strs[i][n] != strs[0][n])
@@ -99,7 +99,7 @@ string common_prefix(array(string) strs)
   int n, i;
 
   int sz = min(@map(strs, sizeof));
-  
+
   for(n = 0; n < sz; n++)
     for(i = 1; i < sizeof(strs); i++)
       if(strs[i][n] != strs0[n])
@@ -217,7 +217,7 @@ int levenshtein_distance(string a, string b)
     // Thus lev_0[j] = j for j=0..|b|:
     int(0..2147483647) len = strlen(b);
 
-    if( len == 2147483647 ) 
+    if( len == 2147483647 )
         error("Too large string.\n");
 
     ++len;

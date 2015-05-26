@@ -20,7 +20,7 @@ string identify_peer(string peerid)
   if (old_azureus=="Azureus") return "Azureus 2.0.3.2";
 
    string bitcomet = peerid[..0+4-1];
-   if (bitcomet=="exbc") 
+   if (bitcomet=="exbc")
    {
       string name = "BitComet "
 	 +peerid[4]+"."
@@ -66,17 +66,17 @@ string identify_peer(string peerid)
       return "TurboBT " + peerid[7..7+5-1];
 
    string libtorrent = peerid[1..2];
-   if (libtorrent=="LT") 
+   if (libtorrent=="LT")
    {
       string version = peerid[3..3+4-1];
       string name = "LibTorrent "
 	 +version[..3]/1*".";
       return name;
    }
-      
+
    string btfans = peerid[4..4+6-1];
    if (btfans=="btfans") return "SimpleBT";
-      
+
    string xantorrent = peerid[..0+10-1];
    if (xantorrent=="DansClient") return "XanTorrent";
 
@@ -91,15 +91,15 @@ string identify_peer(string peerid)
 		     d->month_no(),
 		     d->month_day());
    }
-      
+
    int allZero = peerid[..11]=="\0"*12;
-   
+
    if (allZero)
    {
-      if ((peerid[12] == 97) && (peerid[13] == 97)) 
+      if ((peerid[12] == 97) && (peerid[13] == 97))
 	 return "Experimental 3.2.1b2";
 
-      if ((peerid[12] == 0) && (peerid[13] == 0)) 
+      if ((peerid[12] == 0) && (peerid[13] == 0))
 	 return "Experimental 3.1";
 
       return "Generic";
@@ -113,7 +113,7 @@ string identify_peer(string peerid)
    }
 
 #ifdef TORRENT_DEBUG
-   werror("unknown client: %O\n",peerid);   
+   werror("unknown client: %O\n",peerid);
 #endif
    return "unknown";
 }

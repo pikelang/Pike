@@ -31,7 +31,7 @@ optional class Fifo {
   inherit Condition : r_cond;
   inherit Condition : w_cond;
   inherit Mutex : lock;
-  
+
   array buffer;
   int ptr, num;
   int read_tres, write_tres;
@@ -241,10 +241,10 @@ optional class Fifo {
 optional class Queue {
   inherit Condition : r_cond;
   inherit Mutex : lock;
-  
+
   array buffer=allocate(16);
   int r_ptr, w_ptr;
-  
+
   //! This function returns the number of elements currently in the queue.
   //!
   //! @seealso
@@ -615,7 +615,7 @@ optional class Farm
     free_threads = free_threads[1..];
     return t;
   }
-        
+
 
   protected void dispatcher()
   {
@@ -782,10 +782,10 @@ optional class Farm
                          "  Current threads = %d\n"
                          "  Working threads = %d\n"
                          "  Jobs in queue   = %d\n\n",
-                         max_num_threads, sizeof(threads), 
+                         max_num_threads, sizeof(threads),
                          (sizeof(threads)-sizeof(free_threads)),
                          job_queue->size() );
-    
+
     foreach( threads, Handler t )
       res += t->debug_status();
     return res;
@@ -966,7 +966,7 @@ optional class Queue
 {
   array buffer=allocate(16);
   int r_ptr, w_ptr;
-  
+
   int size() {  return w_ptr - r_ptr;  }
 
   mixed read()

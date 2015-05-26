@@ -17,7 +17,7 @@ Tools.AutoDoc.Flags flags = Tools.AutoDoc.FLAG_NORMAL;
 
 int verbosity = Tools.AutoDoc.FLAG_VERBOSE; //NORMAL;
 
-function resolve_reference; 
+function resolve_reference;
 string image_path = "images/";
 string dest_path;
 string default_ns;
@@ -58,7 +58,7 @@ mapping lay = ([
 string image_prefix()
 {
   return image_path;
-} 
+}
 
 class Position {
   string file;
@@ -230,7 +230,7 @@ string parse_chapter(Node n, void|int noheader) {
   ret += low_parse_chapter(n, (int)n->get_attributes()->number);
 
   if(!noheader)
-    ret = ret + "</dd></dl>"; 
+    ret = ret + "</dd></dl>";
 
   return ret;
 }
@@ -257,7 +257,7 @@ string parse_appendix(Node n, void|int noheader) {
 #endif
 
   if(!noheader)
-    ret = ret + "</dd></dl>"; 
+    ret = ret + "</dd></dl>";
 
   return ret;
 }
@@ -313,7 +313,7 @@ string parse_namespace(Node n, void|int noheader)
   ret += parse_children(n, "module", parse_module, noheader);
 
   if(header)
-    ret += "</dd></dl>"; 
+    ret += "</dd></dl>";
 
   return ret;
 }
@@ -1571,7 +1571,7 @@ string layout_toploop(Node n, Git.Export|void exporter) {
       {
         cwd=getcwd();
         cd(dest_path);
-      }  
+      }
       Stdio.mkdirhier(c->get_attributes()->name);
       layout_toploop(c);
       if(cwd)
@@ -1592,7 +1592,7 @@ string layout_toploop(Node n, Git.Export|void exporter) {
       {
         cwd=getcwd();
         cd(dest_path);
-      }  
+      }
       Stdio.write_file( c->get_attributes()->name,
 			frame_html(layout_toploop(c)) );
       if(cwd)

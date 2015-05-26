@@ -234,7 +234,7 @@ class NSNode {
   string render_xml()
   {
     String.Buffer data = String.Buffer();
-	
+
     walk_preorder_2(
 		    lambda(Node n) {
 		      switch(n->get_node_type()) {
@@ -275,7 +275,7 @@ class NSNode {
 			  if (sizeof(n->get_tag_name()))
 			    data->add("</", n->get_xml_name(), ">");
 		    });
-	
+
     return (string)data;
   }
 
@@ -334,7 +334,7 @@ protected NSNode|int(0..0) parse_xml_callback(string type, string name,
 
   case ">":
     return extra[0]->pop();
-	
+
     //  We need to merge consecutive text
     //  children since two text elements can't be neighbors according to
     //  the W3 spec.
@@ -361,9 +361,9 @@ NSNode parse_input(string data, void|string default_ns)
 {
   .Simple xp = .Simple();
   Node mRoot;
-  
+
   xp->allow_rxml_entities(1);
-  
+
   // Construct tree from string
   mRoot = NSNode(XML_ROOT, "", ([ ]), "");
   mRoot->default_ns = default_ns;

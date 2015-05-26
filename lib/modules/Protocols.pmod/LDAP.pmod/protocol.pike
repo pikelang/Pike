@@ -23,7 +23,7 @@ import Protocols.LDAP;
 
 #include "ldap_globals.h"
 
-  // private variables 
+  // private variables
   int next_id = 1;				// message id counter
   int ldap_version = LDAP_DEFAULT_VERSION;	// actually used protocol vers.
   string ldap_rem_errstr = ldap_error_strings[LDAP_SUCCESS]; // last remote error description
@@ -179,7 +179,7 @@ int get_last_io_time() {return last_io_time;}
 
     if (readbuf[0] != '0')
       return 1;  // PDU has bad header -> forced execution
-    
+
     msglen = readbuf[1];
     if (msglen & 0x80) { // > 0x7f
       if (msglen == 0x80)
@@ -250,7 +250,7 @@ int get_last_io_time() {return last_io_time;}
     //`()();
 
     read_answer();
-    // now is all in 'readbuf'   
+    // now is all in 'readbuf'
 
     return readbuf;
 

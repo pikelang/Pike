@@ -77,7 +77,7 @@ void recurse(array(string) sources, string save_to,
 	Stdio.Stat stat = file_stat(builddir+fn);
 	if(!stat->isdir) continue;
 	recurse(({builddir+fn+"/"}), builddir+fn+"/.cache.xml", 0, flags);
-	
+
 	stat = file_stat(builddir+fn+"/.cache.xml");
 	if(stat) {
 	  files += ({ builddir+fn+"/.cache.xml" });
@@ -92,7 +92,7 @@ void recurse(array(string) sources, string save_to,
 	  mtime = max(mtime, stat->mtime);
 	}
       }
-      
+
       // Adding all *.xml files to the file queue
       if (verbosity > 0)
 	werror("Joining in %s\n", builddir);
@@ -179,7 +179,7 @@ string low_join_files(array(string) files, string save_to,
   int fail;
 
   foreach(files, string filename)
-  {    
+  {
     Node src;
     if (mixed err = catch {
 	if (verbosity > 1)

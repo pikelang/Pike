@@ -91,9 +91,9 @@ protected void modeswitch()
 
   if(sizeof(all_lists))
     foreach( sort(indices(all_lists)), object o )
-      if(o->modeswitch) 
+      if(o->modeswitch)
 	o->modeswitch();
-      else 
+      else
       {
 	all_lists[o]=0;
 	destruct(o);
@@ -620,7 +620,7 @@ class List {
   }
 }
 
-// Debug code 
+// Debug code
 protected int global_list_begin;
 
 //! A displaylist that is generated on demand.
@@ -793,7 +793,7 @@ class BaseTexture {
     width_u = (float)i_width / t_width;
     height_u = (float)i_height / t_height;
     texture_mem += _sizeof();
-    if(!nocreate) 
+    if(!nocreate)
       create_texture( imgs, flags, width, height );
   }
 
@@ -1011,7 +1011,7 @@ class BaseTexture {
   //! Paste the image @[i] with alpha channel @[a] at coordinates @[x]
   //! and @[y] in the current texture.
   void paste( Image.Image i, Image.Image a, int x, int y ) {
-#ifdef __NT__	
+#ifdef __NT__
     // We need backing store.  Why, you ask? Because when we switch
     // mode or somebody else does for us, all textures become invalid.
     if( backingstore->image && i && backingstore->image != i )
@@ -1168,7 +1168,7 @@ class BaseTexture {
   //! Set the contents (and size) of the texture from the supplied
   //! data. The @[data] is identical to what would normally be sent as
   //! the last argument to glTex[Sub]Image2D() or an Image.Image object.
-  //! 
+  //!
   //! If @[no_resize] is specified, it is assumed that the data will
   //! fit in the texture, otherwise the parts that extend beyond it
   //! will be discarded.
@@ -1224,7 +1224,7 @@ class BaseTexture {
       }
       if( nw!=i_width || nh!=i_height )
       {
-	if( texture_type == GL_TEXTURE_RECTANGLE_NV 
+	if( texture_type == GL_TEXTURE_RECTANGLE_NV
 	    || (nw > t_width) || (nh > t_height) ||
 	    (t_width>>1) >= nw || (t_height>>1) >= nh )
 	  do_create = 1;
@@ -1240,7 +1240,7 @@ class BaseTexture {
 	    }
 	  // It is not possible to use 'data' here since it's most
 	  // likely not a power of 2 large.
-	  if(texture_type == GL_TEXTURE_RECTANGLE_NV)	  
+	  if(texture_type == GL_TEXTURE_RECTANGLE_NV)
 	  {
 	    glTexImage2D( texture_type, 0, imode, 0, data );
 	    return;
@@ -1411,7 +1411,7 @@ class BaseDWIM {
 }
 
 //! Convenience version of the @[Texture] class.
-class Texture 
+class Texture
 {
   //! Texture base
   inherit BaseTexture;
@@ -1439,13 +1439,13 @@ BaseTexture make_texture(  mapping|Image.Image image, string|void name )
 }
 
 //! Create a texture with the specified image as contents.  Will try
-//! to use the TEXTURE_RECTANGLE_NV extension if available, otherwise 
+//! to use the TEXTURE_RECTANGLE_NV extension if available, otherwise
 //! normal textures will be used (like @[make_texture]).
 //! @seealso
 //!   @[make_texture]
 BaseTexture make_rect_texture( mapping|Image.Image image, string|void name )
 {
-  
+
 //   if( has_extension( "GL_NV_texture_rectangle") )
 //       return RectangleDWIMTexture( image, name );
   return Texture( image, name );
@@ -1582,10 +1582,10 @@ class Font
   //  code duplication of the texture allocation below.
   protected int robin = 10000;
 
-  // The current texture. 
+  // The current texture.
   protected BaseTexture current_txt;
 
-  // FIXME: Include all nonprintables here. 
+  // FIXME: Include all nonprintables here.
   protected constant nonprint = (multiset)enumerate( 33 ) +
   (multiset)enumerate( 33, 1, 0x80 ) + (< 0x7f, 0xad >);
 
@@ -1746,7 +1746,7 @@ class Font
 	  if( xp > mxs ) mxs = xp;
 	}
       }
-      else 
+      else
       {
 	if( xp == 100000000.0 ) // optimization
 	  continue;
@@ -1906,7 +1906,7 @@ protected void low_draw_box( int mode,
 
   glDisable( GL_TEXTURE_2D );
   if( one_col )
-    glColor( @c[0]->rgbf(), a[0] );    
+    glColor( @c[0]->rgbf(), a[0] );
 
   glBegin( mode );
   {
@@ -2002,7 +2002,7 @@ class SquareMesh
   }
 
   //! Return the normal for the surface at coordinates x,y.
-  //! Used internally. 
+  //! Used internally.
   Math.Matrix surface_normal( int x, int y )
   {
     if( x < 0 ) x=0;
@@ -2068,7 +2068,7 @@ class SquareMesh
   {
     light = do_lighting;
   }
-  
+
   //! Set the size of the mesh
   void set_size( int x, int y )
   {
@@ -2079,7 +2079,7 @@ class SquareMesh
     surface_normals = map(allocate( x+1, y+1 ),allocate);
     vertex_normals = map(allocate( x+1, y+1 ),allocate);
   }
-    
+
   //! The @[calculator] will be called for each corner and should
   //! return a 1x3 matrix describing the coordinates for the given
   //! spot om the surface.

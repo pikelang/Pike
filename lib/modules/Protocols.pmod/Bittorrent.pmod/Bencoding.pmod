@@ -15,7 +15,7 @@ array(string|int|array|mapping) _decode(string what)
 
    int i;
    string s;
-   
+
    switch (what[0])
    {
       case 'i': // integer
@@ -28,7 +28,7 @@ array(string|int|array|mapping) _decode(string what)
 	     strlen(s)<i)
 	    return ({UNDEFINED,what});
 	 return ({s[..i-1],s[i..]});
-	 
+
       case 'l': // list
 	 array res=({});
 	 s=what[1..];
@@ -37,7 +37,7 @@ array(string|int|array|mapping) _decode(string what)
 	    if (s[0]=='e')
 	       return ({res,s[1..]});
 	    array v=_decode(s);
-	    if (v[1]==s) 
+	    if (v[1]==s)
 		break;
 	    res+=v[..0];
 	    s=v[1];

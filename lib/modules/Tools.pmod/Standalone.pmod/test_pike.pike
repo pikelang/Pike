@@ -869,7 +869,7 @@ int main(int argc, array(string) argv)
 	  default:
 	    log_msg_cont(skip?"-":"+");
 	    break;
-		
+
 	  case 9:
 	  case 19:
 	  case 29:
@@ -911,7 +911,7 @@ int main(int argc, array(string) argv)
 	}
 
 	if(check > 1) _verify_internals();
-	
+
 	shift++;
 	string fname = testfile + ":" + testline + ": Test " + testno +
 	  " (shift " + (shift%3) + ")";
@@ -957,7 +957,7 @@ int main(int argc, array(string) argv)
 	}
 
 	// _optimizer_debug(5);
-	
+
 	if(verbose>9) print_code(to_compile);
 	WarningFlag wf;
 	switch(type)
@@ -994,7 +994,7 @@ int main(int argc, array(string) argv)
 	    successes++;
 	  }
 	  break;
-	
+
 	case "COMPILE_ERROR":
 	  master()->set_inhibit_compile_errors(1);
 	  _dmalloc_set_name(fname,0);
@@ -1080,7 +1080,7 @@ int main(int argc, array(string) argv)
 	  }
 	  master()->set_inhibit_compile_errors(0);
 	  break;
-	
+
 	default:
 	  if (err = catch{
 	    wf = WarningFlag();
@@ -1090,7 +1090,7 @@ int main(int argc, array(string) argv)
 	    _dmalloc_set_name();
 
 	    if(check > 1) _verify_internals();
-	
+
 	    a=b=0;
 	    if(t) trace(t);
 	    _dmalloc_set_name(fname,1);
@@ -1105,7 +1105,7 @@ int main(int argc, array(string) argv)
 	    {
 	      bt = gauge { b=o->b(); };
 	    }
-		
+
 	    _dmalloc_set_name();
 
 	    if(t) trace(0);
@@ -1149,7 +1149,7 @@ int main(int argc, array(string) argv)
 
 	  if(verbose>2)
 	    log_msg("Time in a(): %f, Time in b(): %O\n",at,bt);
-	
+
 	  switch(type)
 	  {
 	  case "FALSE":
@@ -1165,7 +1165,7 @@ int main(int argc, array(string) argv)
 	      successes++;
 	    }
 	    break;
-		
+
 	  case "TRUE":
 	    if(!a)
 	    {
@@ -1179,7 +1179,7 @@ int main(int argc, array(string) argv)
 	      successes++;
 	    }
 	    break;
-		
+
 	  case "PUSH_WARNING":
 	    if (!stringp(a)) {
 	      watchdog_show_last_test();
@@ -1190,7 +1190,7 @@ int main(int argc, array(string) argv)
 	      pushed_warnings[a]++;
 	    }
 	    break;
-		
+
 	  case "POP_WARNING":
 	    if (!stringp(a)) {
 	      watchdog_show_last_test();
@@ -1208,7 +1208,7 @@ int main(int argc, array(string) argv)
 	      log_msg_result("o->a(): %O not pushed!\n", a);
 	    }
 	    break;
-		
+
 	  case "RUN":
 	    successes++;
 	    break;
@@ -1266,7 +1266,7 @@ int main(int argc, array(string) argv)
 	      successes++;
 	    }
 	    break;
-		
+
 	  case "EQUAL":
 	    if(!equal(a,b))
 	    {
@@ -1291,7 +1291,7 @@ int main(int argc, array(string) argv)
 	      successes++;
 	    }
 	    break;
-		
+
 	  default:
 	    log_msg("%s: Unknown test type (%O).\n", fname, type);
 	    errors++;
@@ -1299,7 +1299,7 @@ int main(int argc, array(string) argv)
 	}
 
 	if(check > 2) _verify_internals();
-	
+
 	if(fail && errors)
 	  exit(EXIT_TEST_FAILED);
 
@@ -1307,7 +1307,7 @@ int main(int argc, array(string) argv)
 	{
 	  break testloop;
 	}
-	
+
 	a=b=0;
       }
 

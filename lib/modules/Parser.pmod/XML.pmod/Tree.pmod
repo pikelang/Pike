@@ -111,7 +111,7 @@ enum ParseFlags {
   // Negated flag for compatibility.
   PARSE_DISALLOW_RXML_ENTITIES =	0x8,
 #define PARSE_DISALLOW_RXML_ENTITIES	0x8
-  
+
   PARSE_COMPAT_ALLOW_ERRORS_7_2 =	0x10,
 #define PARSE_COMPAT_ALLOW_ERRORS_7_2	0x10
   PARSE_COMPAT_ALLOW_ERRORS_7_6 =	0x20,
@@ -274,7 +274,7 @@ class XMLNSParser {
 class AbstractSimpleNode {
   //  Private member variables
   /* protected */ array(AbstractSimpleNode) mChildren = ({ });
-  
+
   //! Returns all the nodes children.
   array(AbstractSimpleNode) get_children() { return (mChildren); }
 
@@ -304,7 +304,7 @@ class AbstractSimpleNode {
     else
       return (mChildren[-1]);
   }
-  
+
   //! The [] operator indexes among the node children, so
   //! @expr{node[0]@} returns the first node and @expr{node[-1]@} the last.
   //! @note
@@ -330,7 +330,7 @@ class AbstractSimpleNode {
   AbstractSimpleNode add_child(AbstractSimpleNode c)
   {
     mChildren += ({ c });
-	
+
     //  Let caller get the node back for easy chaining of calls
     return this;
   }
@@ -432,7 +432,7 @@ class AbstractSimpleNode {
       if (c->walk_preorder(callback, @args) == STOP_WALK)
 	return STOP_WALK;
   }
-  
+
   //! Traverse the node subtree in preorder, root node first, then
   //! subtrees from left to right. For each node we call @[cb_1]
   //! before iterating through children, and then @[cb_2]
@@ -445,7 +445,7 @@ class AbstractSimpleNode {
 		      mixed ... args)
   {
     int  res;
-	
+
     res = cb_1(this, @args);
     if (!res)
       foreach(mChildren, AbstractSimpleNode c)
@@ -504,7 +504,7 @@ class AbstractSimpleNode {
   array(AbstractSimpleNode) get_descendants(int(0..1) include_self)
   {
     array   res;
-	
+
     //  Walk subtrees in document order and add to resulting list
     res = include_self ? ({ this }) : ({ });
     foreach(mChildren, AbstractSimpleNode child) {
@@ -564,7 +564,7 @@ class AbstractNode {
   AbstractNode get_root()
   {
     AbstractNode  parent, node;
-    
+
     parent = this;
     while (node = parent->mParent)
       parent = node;
@@ -584,7 +584,7 @@ class AbstractNode {
   AbstractNode add_child(AbstractNode c)
   {
     c->mParent = ::add_child(c);
-	
+
     //  Let caller get the new node back for easy chaining of calls
     return (c);
   }
@@ -735,7 +735,7 @@ class AbstractNode {
   {
     array     res;
     AbstractNode  node;
-	
+
     //  Repeat until we reach the top
     res = include_self ? ({ this }) : ({ });
     node = this;
@@ -749,7 +749,7 @@ class AbstractNode {
   {
     AbstractNode   node, root, self;
     array      res = ({ });
-	
+
     //  Walk tree from root until we find ourselves and add all preceding
     //  nodes. We should return the nodes in reverse document order.
     self = this;
@@ -762,7 +762,7 @@ class AbstractNode {
 			  else
 			    res = ({ n }) + res;
 			});
-	
+
     //  Finally remove all of our ancestors
     root = this;
     while (node = root->get_parent()) {
@@ -778,7 +778,7 @@ class AbstractNode {
     array      siblings;
     AbstractNode   node;
     array      res = ({ });
-	
+
     //  Add subtrees from right-hand siblings and keep walking towards
     //  the root of the tree.
     node = this;
@@ -791,7 +791,7 @@ class AbstractNode {
 			   res += ({ n });
 			 });
       }
-	  
+
       node = node->get_parent();
     } while (node);
     return (res);
@@ -826,7 +826,7 @@ protected class VirtualNode {
   //  info for faster processing. Some use it for storing flags and others
   //  use it to cache reference objects.
   public mixed           mNodeData = 0;
-  
+
   //  Public methods
   //! Returns this nodes attributes, which can be altered
   //! destructivly to alter the nodes attributes.
@@ -870,7 +870,7 @@ protected class VirtualNode {
 
   //!
   void set_doc_order(int o)  { mDocOrder = o; }
-  
+
   //! Returns the name of the element node, or the nearest element above if
   //! an attribute node.
   string get_tag_name()
@@ -903,7 +903,7 @@ protected class VirtualNode {
   {
     return mNamespace + mTagName;
   }
-  
+
   string get_short_name()
   {
     return mShortNamespace + mTagName;
@@ -941,7 +941,7 @@ protected class VirtualNode {
       //  If attribute node we return attribute value. For text nodes we
       //  return (you guessed it!) text.
       return (mText);
-	
+
     default:
       //  Concatenate text children
       walk_preorder(lambda(Node n) {
@@ -1047,7 +1047,7 @@ protected class VirtualNode {
     case XML_ELEMENT:
       if (!sizeof(tagname = n->get_short_name()))
 	break;
-      
+
       data->add("<", tagname);
       if (mapping attr = n->get_short_attributes()) {
 	foreach(sort(indices(attr)), string a) {
@@ -1059,7 +1059,7 @@ protected class VirtualNode {
       else
 	data->add("/>");
       break;
-			
+
     case XML_HEADER:
       data->add("<?xml");
       if (mapping attr = n->get_attributes() + ([])) {
@@ -1086,7 +1086,7 @@ protected class VirtualNode {
 	data->add(" ", text);
       data->add("?>");
       break;
-			
+
     case XML_COMMENT:
       data->add("<!--", n->get_text(), "-->");
       break;
@@ -1131,7 +1131,7 @@ protected class VirtualNode {
       n->render_expression(data);
       data->add(" >\n");
       break;
-    } 
+    }
 
     // FIXME: The following code is probably only relevant to
     //        XML_ELEMENT and XML_DOCTYPE nodes. Consider moving
@@ -1399,7 +1399,7 @@ class Node
     //  Return if already computed
     if (mAttrNodes)
       return (mAttrNodes);
-	
+
     //  Only applicable for XML_ROOT and XML_ELEMENT
     if ((mNodeType != XML_ROOT) && (mNodeType != XML_ELEMENT))
       return ({ });
@@ -1417,7 +1417,7 @@ class Node
       mAttrNodes += ({ node });
     }
     return (mAttrNodes);
-  }  
+  }
 
   //  Override AbstractNode::`[]
   protected Node `[](string|int pos)
@@ -1426,7 +1426,7 @@ class Node
     if (stringp(pos)) {
       //  Make sure attribute node list is instantiated
       array(Node) attr = get_attribute_nodes();
-	  
+
       //  Find attribute name
       foreach(attr, Node n)
 	if (n->get_attr_name() == pos)
@@ -1493,12 +1493,12 @@ class XMLParser
       xp->compat_allow_errors ("7.2");
     else if (flags & PARSE_COMPAT_ALLOW_ERRORS_7_6)
       xp->compat_allow_errors ("7.6");
-  
+
     //  Init parser with predefined entities
     if (predefined_entities)
       foreach(indices(predefined_entities), string entity)
         xp->define_entity_raw(entity, predefined_entities[entity]);
-  
+
     // Construct tree from string
     mixed err = catch
     {
@@ -1747,7 +1747,7 @@ SimpleRootNode simple_parse_file(string path,
 {
   Stdio.File  file = Stdio.File(path, "r");
   string      data;
-  
+
   //  Try loading file and parse its contents
   if(catch {
     data = file->read();
@@ -1782,14 +1782,14 @@ RootNode parse_input(string data, void|int(0..1) no_fallback,
 
     return RootNode(data, predefined_entities, flags);
 }
-  
+
 //! Loads the XML file @[path], creates a node tree representation and
 //! returns the root node.
 Node parse_file(string path, int(0..1)|void parse_namespaces)
 {
   Stdio.File  file = Stdio.File(path, "r");
   string      data;
-  
+
   //  Try loading file and parse its contents
   if(catch {
     data = file->read();

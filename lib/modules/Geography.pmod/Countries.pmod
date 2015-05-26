@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 mapping _continents=
-([ 
+([
    "Europe":
    ({ "AD","AL","AT","BA","BE","BG","BY","CH","CZ",
       "DE","DK","EE","ES","FI","FO","FR","GB","GE","GI",
@@ -9,7 +9,7 @@ mapping _continents=
       "LV","MC","MD","MK","MT","NL","NO","PL","PT","RO",
       "RU","SE","SI","SJ","SK","SM","TM","UA","VA","YU",}),
 
-   "Africa": 
+   "Africa":
    ({ "AC","AO","BF","BI","BJ","BW","CF","CG","CG","CI",
       "CM","CV","DJ","DZ","EG","EH","ER","ET","GA","GH",
       "GM","GN","GQ","GW","KE","KM","LR","LS","LY",
@@ -331,7 +331,7 @@ class Country
    //!    ISO 2-character code aka domain name
 
    string fips10; // iso-2-character-code aka domain name
-   //!    FIPS 10-character code; 
+   //!    FIPS 10-character code;
    //!    "Federal Information Processing Standards 10-3" etc,
    //!    used by some goverments in the US.
 
@@ -374,7 +374,7 @@ class Country
 
    //! @decl string cast("string")
    //!	It is possible to cast a country to a string,
-   //!	which will be the same as performing 
+   //!	which will be the same as performing
    //!	@expr{country->name;@}.
    protected string cast(string to)
    {
@@ -464,7 +464,7 @@ Country from_name(string name)
 		  lambda(Country c)
 		  {
 		     if (c->aka && sizeof(c->aka))
-			return 
+			return
 		     ([lower_case(c->name):c])+
 			   (mapping)map(
 			      c->aka,
@@ -480,7 +480,7 @@ Country from_name(string name)
 }
 
 //! @decl mapping(string:array(Country)) continents()
-//!	Gives back a mapping from continent name to 
+//!	Gives back a mapping from continent name to
 //!	an array of the countries on that continent.
 //!
 //!	The continents are:
@@ -532,11 +532,11 @@ mapping(string:array(Country)) continents()
 //!	returns that country if possible:
 //!
 //! @code
-//! > Geography.Countries.se;    
+//! > Geography.Countries.se;
 //! Result: Country(Sweden)
 //! > Geography.Countries.djibouti;
 //! Result: Country(Djibouti)
-//! > Geography.Countries.com;     
+//! > Geography.Countries.com;
 //! Result: Country(United States)
 //! > Geography.Countries.wallis_and_futuna_islands->iso2;
 //! Result: "WF"

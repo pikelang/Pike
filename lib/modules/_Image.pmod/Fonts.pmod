@@ -16,7 +16,7 @@ constant BLACK  = 6;
 //! @note
 //!   This also implies @[BOLD].
 
-constant NO_FAKE  = 256; 
+constant NO_FAKE  = 256;
 //! Used in @[open_font]() to specify that no fake bold or italic
 //! should be attempted.
 
@@ -38,18 +38,18 @@ class FTFont
     inf->style = m_delete( inf, "style_flags" );
     return inf;
   }
-  
+
   void set_xspacing( int x )
   {
     xspacing = x;
   }
-  
+
   array text_extents( string what )
   {
     Image.Image o = write( what );
     return ({ o->xsize(), o->ysize() });
   }
-  
+
   int height( )
   {
     if( !line_height ) write_row( "fx1!" );
@@ -82,7 +82,7 @@ class FTFont
 
     tx  -= ({ 0 });
     chars  -= ({ 0 });
-    
+
     if( !sizeof( chars ) )
       return Image.Image(1,1);
 
@@ -105,7 +105,7 @@ class FTFont
     w += (int)(chars[-1]->img->xsize()+chars[-1]->x);
     ys = chars[0]->ascender-chars[0]->descender;
     line_height = (int)chars[0]->height;
-			   
+
     res = Image.Image( w, ys );
 
     for( int i = 0; i<sizeof( chars); i++ )
@@ -124,7 +124,7 @@ class FTFont
     if( m )
       return m->advance;
   }
-  
+
   Image.Image write( string ... text )
   {
     if( !sizeof( text ) )
@@ -132,9 +132,9 @@ class FTFont
 
     object key = lock->lock();
     face->set_size( 0, size );
-    
+
     text = map( (array(string))text, replace, "\240", "" );
-    
+
     array(Image.Image) res = map( text, write_row );
 
     Image.Image rr = Image.Image( max(0,@res->xsize()),
@@ -158,7 +158,7 @@ class FTFont
 
     if( (fn2=replace(fn,".pfa",".afm")) != fn && file_stat( fn2 ) )
       catch( face->attach_file( fn2 ) );
-    
+
   }
 }
 #endif
@@ -198,7 +198,7 @@ class TTFont
     in->style = translate_ttf_style( in->style );
     return in;
   }
-  
+
   int height() { return size; }
 
   void set_xspacing( int x ) { }
@@ -208,7 +208,7 @@ class TTFont
     Image.Image o = write( what );
     return ({ o->xsize(), o->ysize() });
   }
-  
+
   Image.Image write( string ... what )
   {
     if( !sizeof( what ) )
@@ -223,7 +223,7 @@ class TTFont
 
     Image.Image rr = Image.Image( max(0,@res->xsize()),
                                   abs(`+(0,@res->ysize())));
-    
+
     int start = 0;
     foreach( res, object r )
     {
@@ -272,7 +272,7 @@ class Font( protected string file,
       default:
 	if(file_stat(file+".properties"))
 	  Parser.HTML()
-	    ->add_container( "encoding", 
+	    ->add_container( "encoding",
 			     lambda(Parser.HTML p,
 				    mapping m, string enc) {
 			       codec=Charset.encoder(enc,"");
@@ -319,20 +319,20 @@ class Font( protected string file,
     return rr;
   }
 
-  
+
   int set_fake_bold( int fb )
   //! The amount of 'boldness' that should be added to the font when
-  //! text is rendered. 
+  //! text is rendered.
   {
     fake_bold = fb;
   }
-  
+
   int set_fake_italic( int(0..1) fi )
   //! If true, make the font italic.
   {
     fake_italic = fi;
   }
-  
+
   array(int) text_extents( string ... lines )
   //! Returns ({ xsize, ysize }) of the image that will result if
   //! @[lines] is sent as the argument to @[write].
@@ -363,8 +363,8 @@ class Font( protected string file,
       "line-height":font->height(),
     ]) | (font->info ? font->info() : ([]));
   }
-    
-  
+
+
   Image.Image write( string ... line )
   //! Render the text strings sent as line as an alpha-channel image.
   {
@@ -396,7 +396,7 @@ protected void rescan_fontlist()
 	  {
 	    if( !fontlist[ n->family ] )
 	      fontlist[ n->family ]  = ({});
-	  
+
 	    fontlist[ n->family ] += ({
 	      ([ "style":n->style,
 		 "file":n->file,
@@ -408,7 +408,7 @@ protected void rescan_fontlist()
     };
   }
 }
-  
+
 Font open_font( string fontname, int size, int flags, int|void force )
 //! Find a suitable font in the directories specified with
 //! @[set_font_dirs].
@@ -417,7 +417,7 @@ Font open_font( string fontname, int size, int flags, int|void force )
 //! @[NO_FAKE].
 //!
 //! @[fontname] is the human-readable name of the font.
-//! 
+//!
 //! If @[force] is true, a font is always returned (defaulting to arial
 //! or the pike builtin font), even if no suitable font is found.
 {

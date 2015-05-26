@@ -74,7 +74,7 @@ mixed pop(void|int val)
   } else {
     if(--ptr < 0)
 	error("Stack underflow\n");
-  
+
     ret = arr[ptr];
     arr[ptr]=0; /* Don't waste references */
   }

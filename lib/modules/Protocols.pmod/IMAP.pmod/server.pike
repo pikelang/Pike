@@ -48,7 +48,7 @@ void recv_command(string s)
   if (!sizeof(s))
     // Ignore empty lines.
     return;
-  
+
   object line = .parse_line(s);
 
   // trace(4711);
@@ -57,14 +57,14 @@ void recv_command(string s)
 
   if (debug_level)
     werror("Read tag: %O\n", tag);
-  
+
   if (!tag)
   {
     // werror("Foo!\n");
     send_bad_response(tag, "No tag");
     return;
   }
-  
+
   int state;
   int|function req;
 
@@ -79,12 +79,12 @@ void recv_command(string s)
 
     if (debug_level)
       werror("Read command: %O\n", command);
-    
+
     req = commands[lower_case(command)];
     if (intp(req)) {
       if (!req || state)
       {
-	send_bad_response(tag, upper_case(command)+" Unknown command");	
+	send_bad_response(tag, upper_case(command)+" Unknown command");
 	return;
       }
       state = req;
@@ -112,7 +112,7 @@ class recv_line
 class recv_literal
 {
   function handler;
-  
+
   void create(function h)
     {
       handler = h;
@@ -178,6 +178,6 @@ void create(object f, int timeout,
   ::create(f, timeout);
   debug_level = debug;
   request_callback = callback;
-  
+
   get_request();
 }

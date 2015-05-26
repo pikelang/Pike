@@ -41,7 +41,7 @@ class Service {
   private protected string get_flat_txt_record(void|string|array(string) txt)
   {
     string txt_flat;
-    
+
     if (txt && stringp(txt))
       txt = ({ txt });
     if (arrayp(txt) && sizeof(txt)) {
@@ -53,7 +53,7 @@ class Service {
     }
     return txt_flat;
   }
-  
+
   //!  Updates the TXT record for the service.
   //!
   //!  @param txt
@@ -68,7 +68,7 @@ class Service {
     //  Invoke C interface
     ::update_txt(txt_flat || "");
   }
-  
+
 
   //!  Registers a service on the local network.
   //!
@@ -105,10 +105,10 @@ class Service {
   {
     if (name)
       name = clip_utf8_str(name, 63);
-    
+
     //  Pack array of text message records
     string txt_flat = get_flat_txt_record(txt);
-    
+
     //  Invoke C code
     ::create(name || "", service, domain || "", port, txt_flat || "");
   }

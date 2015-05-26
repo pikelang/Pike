@@ -385,7 +385,7 @@ class protocol
      case T_A6:
        if( stringp( entry->a6 ) || !entry->a6 )
          return "\0"+make_raw_addr6(entry->a6);
-       return sprintf( "%c%s%s", 
+       return sprintf( "%c%s%s",
                        entry->a6->prefixlen,
                        make_raw_addr6(entry->a6->address)[entry->a6->prefixlen/8..],
                        entry->a6->prefixname||"");
@@ -511,14 +511,14 @@ class protocol
 	  if(next==-1) next=pos+1;
 	  n[0]=next;
 	  return ret*".";
-	  
+
 	case 1..63:
 	  pos+=len+1;
 	  ret+=({msg[pos-len..pos-1]});
 	  continue;
-	  
+
 	default:
-	  if((~len)&0xc0) 
+	  if((~len)&0xc0)
 	    error("Invalid message compression mode.\n");
 	  if(next==-1) next=pos+2;
 	  pos=((len&63)<<8) + msg[pos+1];
@@ -692,7 +692,7 @@ class protocol
       sscanf(s[next[0]..next[0]+10],
 	     "%2c%2c%4c%2c",
 	     m->type,m->cl,m->ttl,m->len);
-      
+
     next[0]+=10;
     int tmp=next[0];
     switch(m->type)
@@ -793,7 +793,7 @@ class protocol
 	m->spf = decode_string(s, next);
 	break;
     }
-    
+
     next[0]=tmp+m->len;
     ret+=({m});
     }
@@ -817,14 +817,14 @@ class protocol
     m->aa=(m->c1>>2)&1;
     m->opcode=(m->c1>>3)&15;
     m->qr=(m->c1>>7)&1;
-    
+
     m->rcode=m->c2&15;
     m->cd=(m->c2>>4)&1;
     m->ad=(m->c2>>5)&1;
     m->ra=(m->c2>>7)&1;
-    
+
     m->length=sizeof(s);
-    
+
     array(int) next=({12});
     m->qd = allocate(m->qdcount);
     for(int i=0; i<m->qdcount; i++) {
@@ -929,7 +929,7 @@ class server_base
   //! @param cb
   //!   Callback you can call with the result instead of returning it.
   //!   In that case, return @expr{0@} (zero).
-  //!  
+  //!
   //!
   //! Overload this function to implement the proper lookup.
   //!
@@ -1316,7 +1316,7 @@ class dual_server {
 #define RETRY_DELAY 5
 
 //! Synchronous DNS client.
-class client 
+class client
 {
   inherit protocol;
 
@@ -1405,15 +1405,15 @@ class client
   {
     if (!etc_hosts) {
       etc_hosts = ([ "localhost":"127.0.0.1" ]);
-	
+
       string raw = read_etc_file("hosts");
-	
+
       if (raw && sizeof(raw)) {
 	foreach(raw/"\n"-({""}), string line) {
 	  // Handle comments, and split the line on white-space
 	  line = lower_case(replace((line/"#")[0], "\t", " "));
 	  array arr = (line/" ") - ({ "" });
-	    
+
 	  if (sizeof(arr) > 1) {
 	    if (is_ip(arr[0])) {
 	      foreach(arr[1..], string name) {
@@ -1477,7 +1477,7 @@ class client
 	  } else {
 	    nameservers = ({});
 	  }
-	  
+
 	  if (domains = System->get_netinfo_property(".",
 						    "/locations/resolver",
 						    "domain")) {
@@ -1520,7 +1520,7 @@ class client
 	      rest = replace(rest, "\t", " ");
 	      domains += ((rest/" ") - ({""}));
 	      break;
-	      
+
 	    case "nameserver":
 	      if (!is_ip(rest)) {
 		// Not an IP-number!
@@ -1553,15 +1553,15 @@ class client
                                }
                                return d;
                              });
-    } 
-    else 
+    }
+    else
     {
-      if(arrayp(server))	
+      if(arrayp(server))
 	nameservers = server;
       else
 	nameservers = ({ server });
 
-      if(arrayp(domain))	
+      if(arrayp(domain))
 	domains = domain;
       else
 	if(stringp(domain))
@@ -1643,7 +1643,7 @@ class client
       return do_sync_query(mkquery(s, C_IN, type));
     }
   }
-  
+
   //! @decl array gethostbyname(string hostname)
   //!	Queries the host name from the default or given
   //!	DNS server. The result is an array with three elements,
@@ -1708,7 +1708,7 @@ class client
   //!   following six elements for each record. The array is
   //!   sorted according to the priority of each record.
   //!
-  //!   Each element of the array returned represents a service 
+  //!   Each element of the array returned represents a service
   //!   record. Each service record contains the following:
   //!
   //! @returns
@@ -1732,9 +1732,9 @@ class client
     if(!service) error("no service name specified.");
     if(!protocol) error("no service name specified.");
 
-    if(sizeof(domains) && !name) { 
+    if(sizeof(domains) && !name) {
       // we haven't provided a target domain to search on.
-      // we probably shouldn't do a searchdomains search, 
+      // we probably shouldn't do a searchdomains search,
       // as it might return ambiguous results.
       m = do_sync_query(
         mkquery("_" + service +"._"+ protocol + "." + name, C_IN, T_SRV));
@@ -1754,7 +1754,7 @@ class client
     if (!m) { // no entries.
       return ({});
     }
-    
+
     array res=({});
     foreach(m->an, mapping x)
     {
@@ -1970,7 +1970,7 @@ class async_client
       if(!catch { requests[lid]++; })
       {
 	string req=low_mkquery(lid,domain,cl,type);
-	
+
 	object r = Request(domain, req, callback, args);
 	requests[lid]=r;
 	udp::send(nameservers[0],53,r->req);
@@ -1978,14 +1978,14 @@ class async_client
 	return r;
       }
     }
-    
+
     /* We failed miserably to find a request id to use,
-     * so we create a second UDP port to be able to have more 
+     * so we create a second UDP port to be able to have more
      * requests 'in the air'. /Hubbe
      */
     if(!next_client)
       next_client=this_program(nameservers,domains);
-    
+
     return next_client->do_query(domain, cl, type, callback, @args);
   }
 

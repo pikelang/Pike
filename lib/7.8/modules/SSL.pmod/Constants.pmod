@@ -69,7 +69,7 @@ constant CIPHER_aes256	 = 10;
 
 //! Mapping from cipher algorithm to effective key length.
 constant CIPHER_algorithms = ([
-  CIPHER_null:		0, 
+  CIPHER_null:		0,
   CIPHER_rc4_40:	40,
   CIPHER_rc2:		40,
   CIPHER_des40:		40,
@@ -176,7 +176,7 @@ constant ALERT_descriptions = ([
   ALERT_bad_certificate_status_response: "Bad certificate status response.",
   ALERT_bad_certificate_hash_value: "Invalid certificate signature.",
 ]);
- 			      
+
 constant CONNECTION_client 	= 0;
 constant CONNECTION_server 	= 1;
 constant CONNECTION_client_auth = 2;
@@ -204,7 +204,7 @@ constant SSL_rsa_with_rc4_128_md5		= 0x0004;
 constant SSL_rsa_with_rc4_128_sha		= 0x0005;
 constant SSL_rsa_with_idea_cbc_sha		= 0x0007;
 constant SSL_rsa_with_des_cbc_sha		= 0x0009;
-constant SSL_rsa_with_3des_ede_cbc_sha		= 0x000a; 
+constant SSL_rsa_with_3des_ede_cbc_sha		= 0x000a;
 constant SSL_dh_dss_with_des_cbc_sha		= 0x000c;
 constant SSL_dh_dss_with_3des_ede_cbc_sha	= 0x000d;
 constant SSL_dh_rsa_with_des_cbc_sha		= 0x000f;
@@ -212,10 +212,10 @@ constant SSL_dh_rsa_with_3des_ede_cbc_sha	= 0x0010;
 constant SSL_dhe_dss_with_des_cbc_sha		= 0x0012;
 constant SSL_dhe_dss_with_3des_ede_cbc_sha	= 0x0013;
 constant SSL_dhe_rsa_with_des_cbc_sha		= 0x0015;
-constant SSL_dhe_rsa_with_3des_ede_cbc_sha	= 0x0016; 
+constant SSL_dhe_rsa_with_3des_ede_cbc_sha	= 0x0016;
 constant SSL_dh_anon_with_rc4_128_md5		= 0x0018;
 constant SSL_dh_anon_with_des_cbc_sha		= 0x001a;
-constant SSL_dh_anon_with_3des_ede_cbc_sha	= 0x001b; 
+constant SSL_dh_anon_with_3des_ede_cbc_sha	= 0x001b;
 
 /* SSLv3/TLS conflict */
 /* constant SSL_fortezza_dms_with_null_sha		= 0x001c; */
@@ -382,7 +382,7 @@ constant TLS_ecdhe_psk_with_null_sha384         = 0xc03b;
 
 constant CIPHER_SUITES =
 ([ SSL_null_with_null_null :    	({ 0, 0, 0 }),
-   SSL_rsa_with_null_md5 :      	({ KE_rsa, 0, HASH_md5 }), 
+   SSL_rsa_with_null_md5 :      	({ KE_rsa, 0, HASH_md5 }),
    SSL_rsa_with_null_sha :      	({ KE_rsa, 0, HASH_sha }),
    SSL_rsa_export_with_rc4_40_md5 :	({ KE_rsa, CIPHER_rc4_40, HASH_md5 }),
    SSL_dhe_dss_export_with_des40_cbc_sha :

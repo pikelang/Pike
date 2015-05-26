@@ -1454,11 +1454,11 @@ class LookupTable
   }
 }
 
-class LookupDB 
+class LookupDB
 //! This database is optimized for lots of very small data records (a
 //! few bytes each, usually), but the API is otherwise identical to
 //! the normal @[DB] API.
-//! 
+//!
 //! It will perform badly if used with big records.
 //! You also need to know in advance aproximately how many keys there
 //! will be, the performance will degrade if way more than the
@@ -1466,7 +1466,7 @@ class LookupDB
 {
   inherit DB;
   private int minx;
-  
+
   Table|LookupTable table(string handle)
   {
     LOCK();

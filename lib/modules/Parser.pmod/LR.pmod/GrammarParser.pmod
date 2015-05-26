@@ -115,7 +115,7 @@ protected private class Scan {
 	  return ":";
 	case ';':
 	  return ";";
-	case '\n': 
+	case '\n':
 	case '\r':
 	case ' ':
 	case '\t':

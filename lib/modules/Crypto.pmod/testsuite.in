@@ -197,7 +197,7 @@ cond_resolv( Nettle.Yarrow, [[
     r->update("\0"*32,0,256);
     return S(r->random_string(32));
   ]], "c31e0ef2059db21e39ec0d0a0c1f790246eee47afc4054d752b20d64e494225d" )
-]])  
+]])
 
 // Crypto.Random
 cond_resolv( Nettle.Fortuna, [[

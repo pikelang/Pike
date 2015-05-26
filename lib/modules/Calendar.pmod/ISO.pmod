@@ -10,7 +10,7 @@ inherit Calendar.Gregorian:Gregorian;
 
 string calendar_name() { return "ISO"; }
 
-#define WEEK_MAJORITY 4   
+#define WEEK_MAJORITY 4
 
 private protected mixed __initstuff=lambda()
 {
@@ -45,14 +45,14 @@ protected array(int) week_from_julian_day(int jd)
 
 //     werror("wjd %d: %O %O %O, %O %O %O\n",jd,y,yjd,yday,k,w,wjd);
 
-   if (!w) 
+   if (!w)
    {
 // handle the case that the day is in the previous year;
 // years previous to years staring on saturday,
 //              ...  and leap years starting on sunday
 
       y--;
-      w=52+( (k==WEEK_MAJORITY) || 
+      w=52+( (k==WEEK_MAJORITY) ||
 	     ( (k==WEEK_MAJORITY+1) && year_leap_year(y) ) );
    }
    else if (w==53 && k>=5-year_leap_year(y) && k<10-year_leap_year(y))
@@ -69,7 +69,7 @@ protected array(int) week_from_julian_day(int jd)
 
    int d4 = (jd+31741 - (jd %7))%146097 %36524 %1461;
    int L  = d4/1460;
-   int d1 = ((d4-L) % 365) + L; 
+   int d1 = ((d4-L) % 365) + L;
 
    int w = d1/7 + 1;
 

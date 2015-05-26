@@ -18,7 +18,7 @@
 		  "decoder": ({ "_Ffmpeg.ffmpeg", _Ffmpeg.CODEC_ID_PCM_S16LE })
 		])
 #endif
-  	
+
   ]);
 
 #if constant(_Ffmpeg.ffmpeg)

@@ -36,7 +36,7 @@ test_equal( NetUtils.ip_to_string( 4294967296 ), "::1:0:0" );
 test_equal(NetUtils.ip_to_string( 0xffffeeeeaaaa99998888777766665555 ),
                 "ffff:eeee:aaaa:9999:8888:7777:6666:5555");
 
-test_equal(NetUtils.ip_to_string( 0xffff0000000000000000000000005555 ), 
+test_equal(NetUtils.ip_to_string( 0xffff0000000000000000000000005555 ),
                 "ffff::5555");
 
 test_equal(NetUtils.ip_to_string( 0x00010000000000000000000000000000 ),
@@ -50,13 +50,13 @@ test_equal( NetUtils.cidr_to_netmask( "ff::/0" ), ({ 0,0 }) );
 
 test_equal( NetUtils.cidr_to_netmask( "255.255.255.255/32" ),
                  ({ 0xffffffff,NetUtils.IPV6_FULL_MASK }) );
-test_equal( NetUtils.cidr_to_netmask( "255.255.255.255/16" ), 
+test_equal( NetUtils.cidr_to_netmask( "255.255.255.255/16" ),
                  ({ 0xffff0000,NetUtils.IPV6_FULL_MASK^0xffff }) );
-test_equal( NetUtils.cidr_to_netmask( "255.255.255.255/0"  ), 
+test_equal( NetUtils.cidr_to_netmask( "255.255.255.255/0"  ),
                  ({ 0x00000000,NetUtils.IPV6_FULL_MASK^0xffffffff }) );
-test_equal( NetUtils.cidr_to_netmask( "::/0"  ), 
+test_equal( NetUtils.cidr_to_netmask( "::/0"  ),
                  ({ 0x00000000,0 }) );
-test_equal( NetUtils.cidr_to_netmask( "10.30.1.69/17"      ), 
+test_equal( NetUtils.cidr_to_netmask( "10.30.1.69/17"      ),
                  ({ 0x0a1e0000,NetUtils.IPV6_FULL_MASK^0x7fff }) );
 test_equal( NetUtils.cidr_to_netmask( "1:2:3:4:5:6:7:8/64"),
                  ({ 0x0001000200030004<<64,
@@ -1299,7 +1299,7 @@ cond([[ file_stat("/bin/cat") && file_stat("/dev/null") && (cpp("__NT__")/"\n")[
   test_false(Process.create_process(({"/bin/cat","/dev/null"}))->wait());
   test_false(Process.create_process(({"/bin/cat","/dev/null"}))->wait());
   test_false(Process.create_process(({"/bin/cat","/dev/null"}))->wait());
-  
+
   test_any([[
     object o=Process.create_process(({"/bin/cat","/dev/null"}));
     if(Process.create_process(({"/bin/cat","/dev/null"}))->wait()) return 99;

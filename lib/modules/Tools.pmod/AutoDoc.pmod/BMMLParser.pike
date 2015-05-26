@@ -119,7 +119,7 @@ string more_magic(string s, int quote)
     }
     accumulator+=rest+"\n";
   }
-  
+
   FLUSH();
 
   while(sizeof(ilevel)>1)
@@ -201,10 +201,10 @@ string html_unquote(string s)
 
 string url_quote(string s)
 {
-  return predef::replace(s, 
+  return predef::replace(s,
 		 ({" ","`","\"","%"}),
 		 ({"%20","%60","%22","%37"}));
-		 
+
 }
 
 string mkdocument(string s, string title, array(string)|void root)
@@ -268,10 +268,10 @@ string mkindex(string topic, int usehead)
     foreach(my_sort(m_indices(pages)),a)
       ret+="<li><a href='"+pages[a]+"'>"+strip_prefix(a)+"</a>"+short(a)+
 	"</li>\n";
-    
+
     ret+="</ul>\n";
     break;
-    
+
   case "programs":
     head="<b>Builtin programs:</b>\n";
     ret="<ul>\n";
@@ -281,11 +281,11 @@ string mkindex(string topic, int usehead)
       done(a);
       if(sscanf(a,"/precompiled/%s",string tmp))
 	done(capitalize(tmp));
-	
+
       ret+="<li><a href='"+pages[a]+"'>"+strip_prefix(a)+"</a>"+short(a)+
 	"</li>\n";
     }
-    
+
     ret+="</ul>\n";
     break;
 
@@ -299,10 +299,10 @@ string mkindex(string topic, int usehead)
       ret+="<li><a href='"+pages[a]+"'>"+strip_prefix(a)+"</a>"+short(a)+
 	"</li>\n";
     }
-    
+
     ret+="</ul>\n";
     break;
-    
+
   case "other":
     head="<b>Other pages</b>\n";
     ret="<ul>\n";
@@ -316,7 +316,7 @@ string mkindex(string topic, int usehead)
     }
     ret+="</ul>\n";
     break;
-    
+
   case "efuns":
     head="<b>All builtin functions:</b>\n";
     ret="<ul>\n";
@@ -335,7 +335,7 @@ string mkindex(string topic, int usehead)
     }
     ret+="</ul>\n";
     break;
-    
+
   default:
     if(!keywords[prefix+topic])
     {
@@ -436,7 +436,7 @@ string convert_page(string path, string fname,
       if(!strlen(part)) continue;
 
       sections=part/"\n\n";
-      
+
       /* Merge sections that do not have a header together */
       for(section=0;section<sizeof(sections);section++)
       {
@@ -475,7 +475,7 @@ string convert_page(string path, string fname,
 	  if (!partno) {
 	    module_path = section_path;
 	  }
-	  
+
 	  rest="\t<tt>"+part_name+"</tt> - "+b;
 
 	  part_names = ({ part_name });
@@ -642,31 +642,31 @@ string convert_page(string path, string fname,
     cont=predef::replace(cont,"$version",version());
     cont=html_quote(cont);
     sections=cont/"\n\n";
-    
+
     for(section=0;section<sizeof(sections);section++)
     {
       string tmp,pre,a,b;
       tmp=sections[section];
       sscanf(tmp,"%[\t ]",pre);
-      
+
       switch(pre)
       {
       case "":
 	title=tmp;
 	tmp="<h1><center>"+tmp+"</center></h1>";
 	break;
-	
+
       case " ":
 	sscanf(tmp," %s",tmp);
 	tmp="<h2>"+tmp+"</h2>";
 	break;
-	
+
       case "  ":
 	sscanf(tmp,"  %s",tmp);
 	tmp=predef::replace(tmp,"\n  ","\n");
 	tmp=more_magic(tmp,0);
 	break;
-	
+
       case "\t":
 	sscanf(tmp,"\t%s %s",pre, a);
 	switch(pre)
@@ -745,7 +745,7 @@ string convert_page(string path, string fname,
 	case '\t': p=1; sscanf(line,"\t%s",line); break;
 	default: p=2; break;
 	}
-	
+
 	if(p!=pre)
 	{
 	  switch(pre)
@@ -912,7 +912,7 @@ int main(int argc, array(string) argv)
   write("Writing html files.\n");
   //writepages=1;
   for(e=2;e<sizeof(argv);e++) dodocs(argv[e],e-2);
-    
+
   foreach(indices(keywords) - indices(indexes_done),np)
   {
     werror("Keywords never indexed: "+np+"\n");

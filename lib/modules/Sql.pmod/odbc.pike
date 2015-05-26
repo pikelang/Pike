@@ -12,7 +12,7 @@ constant dont_dump_program = 1;
 inherit Odbc.odbc;
 
 int|object big_query(object|string q, mapping(string|int:mixed)|void bindings)
-{  
+{
   if (!bindings)
     return ::big_query(q);
   return ::big_query(.sql_util.emulate_bindings(q, bindings, this));

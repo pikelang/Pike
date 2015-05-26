@@ -133,7 +133,7 @@ class MACmd5 {
   protected constant pad_1 =  "666666666666666666666666666666666666666666666666";
   protected constant pad_2 = ("\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\"
 			   "\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\");
-  
+
   protected Crypto.Hash algorithm = Crypto.MD5;
 }
 
@@ -190,11 +190,11 @@ class MAChmac_md5 {
 // Hashfn is either a Crypto.MD5 or Crypto.SHA
 protected string P_hash(Crypto.Hash hashfn, int hlen, string secret,
 		     string seed, int len) {
-   
+
   Crypto.HMAC hmac=Crypto.HMAC(hashfn);
   string temp=seed;
   string res="";
-  
+
   int noblocks=(int)ceil((1.0*len)/hlen);
 
   for(int i=0 ; i<noblocks ; i++) {
@@ -202,10 +202,10 @@ protected string P_hash(Crypto.Hash hashfn, int hlen, string secret,
     res+=hmac(secret)(temp+seed);
   }
   return res[..(len-1)];
-} 
+}
 
 //! The Pseudo Random Function used to derive the secret keys.
-string prf(string secret,string label,string seed,int len) { 
+string prf(string secret,string label,string seed,int len) {
 
   string s1=secret[..(int)(ceil(sizeof(secret)/2.0)-1)];
   string s2=secret[(int)(floor(sizeof(secret)/2.0))..];
@@ -276,10 +276,10 @@ class AES
 ADT.struct rsa_sign(object context, string cookie, ADT.struct struct)
 {
   /* Exactly how is the signature process defined? */
-  
+
   string params = cookie + struct->contents();
   string digest = Crypto.MD5->hash(params) + Crypto.SHA1->hash(params);
-      
+
   object s = context->rsa->raw_sign(digest);
 
   struct->put_bignum(s);
@@ -303,7 +303,7 @@ ADT.struct dsa_sign(object context, string cookie, ADT.struct struct)
 {
   /* NOTE: The details are not described in the SSL 3 spec. */
   string s = context->dsa->sign_ssl(cookie + struct->contents());
-  struct->put_var_string(s, 2); 
+  struct->put_var_string(s, 2);
   return struct;
 }
 
@@ -387,7 +387,7 @@ class DHKeyExchange
     our = parameters->g->powm(secret, parameters->p);
     return this;
   }
-  
+
   this_program set_other(Gmp.mpz o) {
     other = o;
     return this;
@@ -419,7 +419,7 @@ array lookup(int suite, ProtocolVersion|int version)
 {
   CipherSpec res = CipherSpec();
   int ke_method;
-  
+
   array algorithms = CIPHER_SUITES[suite];
   if (!algorithms)
     return 0;
@@ -458,7 +458,7 @@ array lookup(int suite, ProtocolVersion|int version)
     res->key_material = 8;
     res->iv_size = 8;
     res->key_bits = 40;
-    break;    
+    break;
   case CIPHER_null:
     res->bulk_cipher_algorithm = 0;
     res->cipher_type = CIPHER_stream;

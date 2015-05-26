@@ -66,7 +66,7 @@ private string program_name(program|object what)
 {
     if( pnc[what] ) return pnc[what];
     string p;
-    if( (p = search(master()->programs,what)) && p != "main") 
+    if( (p = search(master()->programs,what)) && p != "main")
         return pnc[what] = normalize_name(p);
     return pnc[what] = filter_obj_name(sprintf("%O",what)-".pike");
 }
@@ -124,7 +124,7 @@ private mapping low_get_prof_info( bool avoid_overhead )
 
     foreach(indices(tmp), string c)
     {
-        // if( has_prefix( c, "/master" ) ) 
+        // if( has_prefix( c, "/master" ) )
         //     continue;
         if( has_value( c, "Profiling" ) )
             continue;

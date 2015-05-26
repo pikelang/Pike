@@ -11,7 +11,7 @@
 //! This module is intended to be used for incremental scanning of
 //! a filesystem.
 //!
-//! Supports FSEvents on MacOS X and Inotify on Linux to provide low 
+//! Supports FSEvents on MacOS X and Inotify on Linux to provide low
 //! overhead monitoring; other systems use a less efficient polling approach.
 //!
 //! @seealso
@@ -459,7 +459,7 @@ protected class Monitor(string path,
   {
     int delta = max_dir_check_interval || global::max_dir_check_interval;
     this::st = st;
-    
+
     if (st) {
       //  Start with a delta proportional to the time since mtime/ctime,
       //  but bound this to the max setting. A stat in the future will be
@@ -479,12 +479,12 @@ protected class Monitor(string path,
     } else if (!st || !st->isdir) {
       delta *= file_interval_factor || global::file_interval_factor;
     }
-    
+
     if (!next_poll) {
       // Attempt to distribute polls evenly at startup.
       delta = 1 + random(delta);
     }
-    
+
     next_poll = time(1) + (delta || 1);
     monitor_queue->adjust(this);
   }
@@ -737,7 +737,7 @@ protected class Monitor(string path,
     } else {
       return 0;
     }
-    
+
     //  Note: ctime seems to change unexpectedly when running ImageMagick
     //        on NFS disk so we disable it for the moment [bug 5587].
     if (last_change != -0x7fffffff &&
@@ -761,8 +761,8 @@ protected class Monitor(string path,
 #ifdef HAVE_EVENTSTREAM
     else if(orig_flags & MF_RECURSE)
     {
-      // if using FSEvents, we won't receive the name of the file changed, 
-      // so we have to scan for it. 
+      // if using FSEvents, we won't receive the name of the file changed,
+      // so we have to scan for it.
       int caught;
       array(string) files = get_dir(path) || ({});
       this::files = files;
@@ -770,7 +770,7 @@ protected class Monitor(string path,
         file = canonic_path(Stdio.append_path(path, file));
  	if (monitors[file]) {
           if(check_monitor(monitors[file])) caught = 1;
-        } 
+        }
       }
       return caught;
     }
@@ -830,7 +830,7 @@ protected void create(int|void max_dir_check_interval,
   file->set_nonblocking();
   file->set_read_callback(inotify_parse);
 #endif
-  
+
   if (max_dir_check_interval > 0) {
     this::max_dir_check_interval = max_dir_check_interval;
   }
@@ -970,7 +970,7 @@ int filter_file(string path)
   array x = path/"/";
   foreach(x;; string pc)
     if(pc && strlen(pc) && pc[0]=='.') {/* werror("skipping %O\n", path); */ return 1; }
-    
+
   return 0;
 }
 

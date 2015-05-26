@@ -102,7 +102,7 @@ void create(string|object _server,void|mapping(string:mixed) _options)
 
    cmd->create(raw);
 
-   cmd->pass(options->pass||pass); 
+   cmd->pass(options->pass||pass);
    cmd->nick(options->nick);
    // If a connection object was passed as 'server' parameter to the
    // constructor, we just pretend to the other server that we reached it
@@ -230,7 +230,7 @@ void got_notify(string from,string type,
 	 break;
 
       case "352": // who list
-	 if (sizeof(extra)>2 && 
+	 if (sizeof(extra)>2 &&
 	     message && (c=channels[lower_case(message||"")]))
 	 {
 	    Person p=person(extra[3],extra[0]+"@"+extra[1]);
@@ -273,7 +273,7 @@ void got_notify(string from,string type,
 	    return;
 	 }
 	 break;
-	 
+
 
 	 /* --- */
 
@@ -336,7 +336,7 @@ void got_notify(string from,string type,
 
 	 foreach (values(channels),c)
 	    if (c)
-	       if (c->not_quit || c->not_part) 
+	       if (c->not_quit || c->not_part)
 		  (c->not_quit||c->not_part)(originator,message,originator);
 
 	 break;
@@ -405,13 +405,13 @@ object cmd=class
    {
       program prog;
       object ret;
-   	    
+
       void create(program p,object _ret)
       {
    	 prog=p;
    	 ret=_ret;
       }
-   
+
       mixed `()(mixed ...args)
       {
    	 mixed m;
@@ -421,16 +421,16 @@ object cmd=class
    	 else return m;
       }
    }
-   	 
+
    class AsyncRequest
    {
       program prog;
-   	    
+
       void create(program p)
       {
    	 prog=p;
       }
-   
+
       mixed `()(mixed ...args)
       {
    	 object req=prog();
@@ -438,16 +438,16 @@ object cmd=class
    	 return req;
       }
    }
-   
+
    class AsyncCBRequest
    {
       program prog;
-   
+
       void create(program p)
       {
    	 prog=p;
       }
-   
+
       mixed `()(function callback,mixed ...args)
       {
    	 object req=prog();
@@ -456,7 +456,7 @@ object cmd=class
    	 return req;
       }
    }
-   
+
    mixed `->(string request)
    {
       mixed|program p;

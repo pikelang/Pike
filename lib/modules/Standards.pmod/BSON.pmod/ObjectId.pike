@@ -46,7 +46,7 @@ protected void populate()
 }
 
 string get_id()
-{ 
+{
   return sprintf("%4c%3c%2c%3c", timestamp, host, pid, counter);
 }
 

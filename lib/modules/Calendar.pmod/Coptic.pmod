@@ -2,7 +2,7 @@
 
 //! This is the Coptic Orthodox Church calendar,
 //! that starts the 11th or 12th September and has
-//! 13 months. 
+//! 13 months.
 //!
 //! @note
 //! The (default) names of the months
@@ -45,7 +45,7 @@ protected array year_from_julian_day(int jd)
    int century_day=d-century_jd;
    int century_year=(100*century_day+75)/36525;
 
-   return 
+   return
    ({
       century*100+century_year+year_offset,
       start+century_year*365+century_year/4+century_jd,
@@ -58,8 +58,8 @@ protected int julian_day_from_year(int y)
    return start+y*365+y/4-y/100+y/400;
 }
 
-protected int year_leap_year(int y) 
-{ 
+protected int year_leap_year(int y)
+{
    y-=year_offset;
    werror("%O\n",y);
    return (!(((y)%4) || (!((y)%100) && ((y)%400))));

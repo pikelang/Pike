@@ -4,7 +4,7 @@
 // will be a Image.ANY.decode function, but this will do for now. It
 // decoded an image from a string and returns a mapping with the
 // image, and optinally the alpha channel.
-// 
+//
 // Currently supports most commonly used image formats, but only PNG
 // and GIF supports alpha channels
 //
@@ -131,7 +131,7 @@ class signal_handling
           werror("signal error: %s\n", describe_backtrace( err ) );
         }
     }
-  
+
     void create(function f, mixed|void a)
     {
       tocall = f;
@@ -165,7 +165,7 @@ class signal_handling
 
   void signal_broadcast( string signal, mixed ... args)
   {
-    if(signals[signal]) 
+    if(signals[signal])
     {
       signals[signal]-=({ 0 });
       signals[signal]( this, @args );

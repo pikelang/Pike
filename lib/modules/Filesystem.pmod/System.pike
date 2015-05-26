@@ -210,7 +210,7 @@ Stdio.File open(string filename, string mode)
 #endif
   filename = combine_path(wd, filename);
   if ( filename!="" && filename[0]=='/') filename=filename[1..];
-  
+
   Stdio.File f = Stdio.File();
 
   if( !f->open( combine_path("/",root,filename), mode) )

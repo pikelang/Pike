@@ -174,7 +174,7 @@ float eccentricity_squared() {
 //! equatorial radius and the second element is a float describing
 //! the polar radius.
 //!
-constant ellipsoids = 
+constant ellipsoids =
   ([ "Airy 1830" : ({ 6377563.396, 6356256.91 }),
      "ATS77" : ({ 6378135.0, 6356750.304922 }),
      "Australian National" : ({ 6378160.0, 6356774.719 }),
@@ -347,9 +347,9 @@ array(float) UTM_offset() {
   float A = cos(LatRad)*(LongRad-LongOriginRad);
 
   float M = equatorial_radius *
-    ((1 - ecc/4        - 3*ecc*ecc/64    - 5*ecc*ecc*ecc/256)*LatRad 
+    ((1 - ecc/4        - 3*ecc*ecc/64    - 5*ecc*ecc*ecc/256)*LatRad
      - (3*ecc/8        + 3*ecc*ecc/32    + 45*ecc*ecc*ecc/1024)*sin(2*LatRad)
-     + (15*ecc*ecc/256 + 45*ecc*ecc*ecc/1024)*sin(4*LatRad) 
+     + (15*ecc*ecc/256 + 45*ecc*ecc*ecc/1024)*sin(4*LatRad)
      - (35*ecc*ecc*ecc/3072)*sin(6*LatRad));
 
   float UTME = (k0*N*(A+(1-T+C)*A*A*A/6
@@ -395,7 +395,7 @@ void set_from_UTM(int zone_number, string zone_designator, float UTME, float UTM
   float M = UTMN / k0;
   float mu = M/(equatorial_radius*(1-ecc/4-3*ecc*ecc/64-5*ecc*ecc*ecc/256));
 
-  float phi1Rad = mu + (3*e1/2-27*e1*e1*e1/32)*sin(2*mu) 
+  float phi1Rad = mu + (3*e1/2-27*e1*e1*e1/32)*sin(2*mu)
     + (21*e1*e1/16-55*e1*e1*e1*e1/32)*sin(4*mu)
     +(151*e1*e1*e1/96)*sin(6*mu);
   float phi1 = phi1Rad * 180/Math.pi;

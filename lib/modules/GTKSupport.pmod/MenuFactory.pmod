@@ -101,7 +101,7 @@ class MenuDef
 
   void selected(mixed q, object widget, mixed ... args)
   {
-    if(callback) 
+    if(callback)
     {
       if(arrayp(arg))
 	callback( @arg, widget, @args );
@@ -192,12 +192,12 @@ class MenuDef
 	  modifier_table[o->menu_path] = shortcut_to_string( o->shortcut,
 							     o->modifiers );
       }
-    } else	      
+    } else
       modifier_table[menu_path]= shortcut_to_string( shortcut, modifiers );
     mbc( modifier_table );
   }
 
-  void install_accelerator(int i, object w, int flags, 
+  void install_accelerator(int i, object w, int flags,
                            mixed g, int k, int mods)
   {
     shortcut = k;
@@ -332,13 +332,13 @@ array(object) PopupMenuFactory( MenuDef ... definition )
 //!
 //! @example
 //! import GTK1.MenuFactory;
-//! [GTK1.MenuBar bar, GTK1.AcceleratorTable map] = 
-//!  MenuFactory( 
-//!    MenuDef( "File/New", new_file, 0, "A-N" ), 
-//!    MenuDef( "File/Open", new_file, 1, "A-O" ), 
-//!    MenuDef( "File/Save", save_file, 0, "A-S" ), 
+//! [GTK1.MenuBar bar, GTK1.AcceleratorTable map] =
+//!  MenuFactory(
+//!    MenuDef( "File/New", new_file, 0, "A-N" ),
+//!    MenuDef( "File/Open", new_file, 1, "A-O" ),
+//!    MenuDef( "File/Save", save_file, 0, "A-S" ),
 //!    MenuDef( "File/<separator>", 0, 0 ),
-//!    MenuDef( "File/Quit", _exit, 0, "A-Q" ), 
+//!    MenuDef( "File/Quit", _exit, 0, "A-Q" ),
 //!  );
 //!
 //! @returns

@@ -248,7 +248,7 @@ class ProfileCache (string db_name) {
     profile_stat[profile_id] = (int)res[0]->altered;
 
     // Query profile
-    if((int)res[0]->type == 2) 
+    if((int)res[0]->type == 2)
     {
       m_delete(value_cache, profile_id);
       foreach(indices(entry_cache), string id)
@@ -316,7 +316,7 @@ class ProfileCache (string db_name) {
   {
     /*
       if (time() - last_query_prof_stat < 5*60)
-      return indices(query_profile_names);*/    
+      return indices(query_profile_names);*/
     array res = get_db()->query("SELECT name, id FROM profile WHERE type=1");
     query_profile_names = mkmapping( res->name, (array(int)) res->id );
     if(sizeof(query_profile_names))
@@ -738,7 +738,7 @@ class Logger {
     if (t2 - t1 > 10) // More than 10 s is somewhat slow, report warning.
       report_warning("Search log purge took %d s.\n", t2-t1);
   }
-  
+
     //!
   void log_event( int code, string type, void|string extra, void|int log_profile ) {
     Sql.Sql db = get_db();
@@ -859,7 +859,7 @@ class Logger {
     1003: "Too large content file -- indexing metadata only. (%s)",
     1100: "Failed to connect to %s.",
   ]);
-    
+
 
   //!
   array(array(string|int)) get_log( int profile, array(string) types,

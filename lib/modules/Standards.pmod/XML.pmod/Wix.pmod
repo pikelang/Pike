@@ -435,7 +435,7 @@ class Directory
   {
     if (!parent) parent = "";
     parent += "/" + name;
-    
+
     mapping(string:string) attrs = ([
       "Name":short_name||name,
       "Id":id,

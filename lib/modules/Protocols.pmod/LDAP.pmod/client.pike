@@ -93,7 +93,7 @@ import Standards.ASN1.Types;
 
  //! Contains the client implementation of the LDAP protocol.
  //! All of the version 2 protocol features are implemented
- //! but only the base parts of the version 3. 
+ //! but only the base parts of the version 3.
 
   inherit .protocol;
 
@@ -765,14 +765,14 @@ void reset_options()
 #if constant(SSL.Cipher)
 
     // can we do this now?
-    if(ldapfd->context) 
+    if(ldapfd->context)
     {
       THROW(({"LDAP: TLS/SSL already established.\n",backtrace()}));
     }
 
     // NOTE: should we be on the lookout for requests in flight?
 
-    
+
 
     msgval = ASN1_APPLICATION_SEQUENCE(23, ({OctetString("1.3.6.1.4.1.1466.20037")}));
 
@@ -788,16 +788,16 @@ void reset_options()
     ldapfd = SSL.File(_f, context);
     return ldapfd->connect();
 #endif
-  return 0;    
+  return 0;
   }
 
   //!  Requests that a SSL/TLS session be negotiated on the connection.
   //!  If the connection is already secure, this call will fail.
   //!
   //!  @param context
-  //!    an optional SSL.context object to provide to the 
+  //!    an optional SSL.context object to provide to the
   //!    SSL/TLS connection client.
-  //!  
+  //!
   //!  Returns @expr{1@} on success, @expr{0@} otherwise.
   //!
   int start_tls (void|SSL.Context context) {
@@ -975,7 +975,7 @@ void reset_options()
 
     object msgval;
 
-    msgval = ASN1_APPLICATION_SEQUENCE(14, 
+    msgval = ASN1_APPLICATION_SEQUENCE(14,
 		({ OctetString(dn),
                    Sequence( ({ OctetString(attr), OctetString(value) }) )
 		})
@@ -1062,7 +1062,7 @@ void reset_options()
 	      });
     }
 
-    msgval = ASN1_APPLICATION_SEQUENCE(8, 
+    msgval = ASN1_APPLICATION_SEQUENCE(8,
 		({ OctetString(dn), Sequence(oatt) }));
 
     return do_op(msgval);
@@ -1083,7 +1083,7 @@ void reset_options()
   //!
   //! @returns
   //!  Returns @expr{1@} on success, @expr{0@} otherwise.
-  //!    
+  //!
   //! @note
   //!   The API change: the returning code was changed in Pike 7.3+
   //!	to follow his logic better.
@@ -1357,16 +1357,16 @@ object get_default_filter()
   //!     The index is the object identifier in string form for the
   //!     control type. There are constants in @[Protocols.LDAP] for
   //!     the object identifiers for some known controls.
-  //! 
+  //!
   //!     The mapping value is an array of two elements:
-  //! 
+  //!
   //!     @array
   //!     @elem int 0
   //!       The first element is an integer flag that specifies
   //!       whether the control is critical or not. If it is nonzero,
   //!       the server returns an error if it doesn't understand the
   //!       control. If it is zero, the server ignores it instead.
-  //! 
+  //!
   //!     @elem string|int(0..0) 1
   //!       The second element is the string value to pass with the
   //!       control. It may also be zero to not pass any value at all.
@@ -1546,7 +1546,7 @@ object get_default_filter()
 	      entries = entries[..<1];
 	    }
 	  }
-	    
+
 	},);
     } while (cookie);
 
@@ -1743,7 +1743,7 @@ string get_bind_password_hash() {return md5_password;}
     else
       if (!(<SCOPE_BASE, SCOPE_ONE, SCOPE_SUB>)[scope])
 	ERROR ("Invalid scope %O.\n", scope);
- 
+
     ldap_scope = scope;
     DWRITE_HI("client.SET_SCOPE = %O\n", scope);
     return old_scope;
@@ -1783,7 +1783,7 @@ string get_scope()
 	case 4: // LDAP_OPT_REFERRALS
 	default: return -1;
     }
-	
+
 
     return 0;
   }
@@ -1836,7 +1836,7 @@ mapping(string:mixed) get_parsed_url() {return lauth;}
       oatt += ({ Sequence( ({Enumerated((attropval[atype])[0]), o})) });
     } //foreach
 
-    msgval = ASN1_APPLICATION_SEQUENCE(6, 
+    msgval = ASN1_APPLICATION_SEQUENCE(6,
 		({ OctetString(dn), Sequence(oatt) }));
 
     return do_op(msgval);

@@ -51,7 +51,7 @@ Gmp.mpz hash(string msg)
 {
   return [object(Gmp.mpz)](Gmp.mpz(Crypto.SHA1.hash([string(8bit)]msg), 256) % q);
 }
-  
+
 protected Gmp.mpz random_number(Gmp.mpz n)
 {
   return [object(Gmp.mpz)](Gmp.mpz(random( [int(0..)](q->size() + 10 / 8)), 256) % n);
@@ -67,7 +67,7 @@ protected Gmp.mpz random_exponent()
 array(Gmp.mpz) raw_sign(Gmp.mpz h, void|Gmp.mpz k)
 {
   if(!k) k = random_exponent();
-  
+
   Gmp.mpz r = [object(Gmp.mpz)](g->powm(k, p) % q);
   Gmp.mpz s = [object(Gmp.mpz)]((k->invert(q) * (h + x*r)) % q);
 

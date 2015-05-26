@@ -8,7 +8,7 @@ constant implements = __builtin.program_implements;
 // documented in the C-code.
 string defined(program x,string|void y)
 {
-    if( !y ) 
+    if( !y )
         return __builtin.program_defined(x);
     return __builtin.program_identifier_defined(x,y);
 }

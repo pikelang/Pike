@@ -1400,7 +1400,7 @@ class NScope
       case "class":
       case "enum":
 	// FIXME: What about unnamed enums?
-	n = child->get_attributes()->name;	  
+	n = child->get_attributes()->name;
 	if (n) {
 	  if (child->get_any_name() == "namespace") {
 	    n += "::";

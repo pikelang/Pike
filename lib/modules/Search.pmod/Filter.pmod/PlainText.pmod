@@ -13,8 +13,8 @@ constant fields = ({ "body" });
 
   if(objectp(data))
     data=data->read();
-  
+
   res->fields->body=data;
 
-  return res;  
+  return res;
 }

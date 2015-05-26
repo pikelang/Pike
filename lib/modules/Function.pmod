@@ -113,7 +113,7 @@ function(mixed...:mixed) uncurry(function f)
 //! @code
 //!   Functions.call_callback(the_callback,some,arguments);
 //! @endcode
-//! equals 
+//! equals
 //! @code
 //!   {
 //!      mixed err=catch { if (the_callback) the_callback(some,arguments); };

@@ -156,7 +156,7 @@ protected private class Extractor {
 	    extractorErrorAt(token->currentPosition,
 			     "enum can not be grouped"
 			     " with other declarations");
-	
+
 	  if (contexts["inherit"])
 	    extractorErrorAt(token->currentPosition,
 			     "inherit can not be grouped"
@@ -204,7 +204,7 @@ protected private class Extractor {
           if (search(root->children, a[1]) < 0)
             root->AddChild([object(NameSpace)]a[1]);
           break;
-	  
+
         case "class":
         case "module":
         case "enum":

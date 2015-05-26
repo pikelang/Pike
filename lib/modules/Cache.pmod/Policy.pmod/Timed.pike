@@ -37,7 +37,7 @@ void expire(Cache.Storage.Base storage) {
     if (got->atime < limit ||
         (got->etime && got->etime < now) ) {
       CACHE_WERR("deleting %s (age: %d, now: %d, etime: %d)\n",
-		 key, now - got->atime, 
+		 key, now - got->atime,
 		 now, got->etime);
       storage->delete(key);
     }

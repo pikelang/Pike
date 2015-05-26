@@ -61,7 +61,7 @@ private int request_id = 1;
 private int next_id = 1;
 
 //! SNMP version
-//! 
+//!
 //! currently version 1 and 2 are supported.
 int snmp_version = SNMP_DEFAULT_VERSION;
 
@@ -76,7 +76,7 @@ string snmp_community = SNMP_DEFAULT_COMMUNITY;
 int snmp_errno = SNMP_SUCCESS;
 int ok;
 
-//: 
+//:
 //: msg pool
 //:
 private mapping msgpool = ([]);
@@ -473,7 +473,7 @@ int get_nextrequest(array(string) varlist, string|void rem_addr,
 //!   s->snmp_community="mysetcommunity";
 //!   mapping req=(["1.3.6.1.4.1.1882.2.1": ({"str", "blah"})]);
 //!   int id=s->set_request(req, "172.21.124.32");
-//!   
+//!
 int set_request(mapping varlist, string|void rem_addr,
                          int|void rem_port) {
   //: SetRequest-PDU low call
@@ -541,7 +541,7 @@ int set_request(mapping varlist, string|void rem_addr,
 //! @param remaddr
 //! @param remport
 //!   address and UDP to send trap to
-//! @returns 
+//! @returns
 //!   request id
 int trap(mapping varlist, string oid, int type, int spectype, int ticks,
          string|void locip, string|void remaddr, int|void remport) {
@@ -583,7 +583,7 @@ int trap(mapping varlist, string oid, int type, int spectype, int ticks,
 	    // optional vars
 	    Sequence(vararr)
 	  })
-		   
+
        );
 
   // now we have PDU ...

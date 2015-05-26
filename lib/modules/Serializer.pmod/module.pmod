@@ -41,7 +41,7 @@ class Encodeable
     mapping(string:mixed) _encode()
     {
         mapping res = ([]);;
-        _serialize( this, lambda( mixed val, string name, mixed type ) 
+        _serialize( this, lambda( mixed val, string name, mixed type )
                           {
                               res[name] = val;
                           });

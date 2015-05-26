@@ -242,7 +242,7 @@ Packet client_hello()
         ADT.struct hostname = ADT.struct();
         hostname->put_uint(0, 1); // hostname
         hostname->put_var_string(server_name, 2); // hostname
- 
+
         extension->put_var_string(hostname->pop_data(), 2);
       }
     }
@@ -250,7 +250,7 @@ Packet client_hello()
     SSL3_DEBUG_MSG("SSL.handshake: Adding Server Name extension.\n");
     extensions->put_uint(EXTENSION_server_name, 2);
     extensions->put_var_string(extension->pop_data(), 2);
-  } 
+  }
 
   if(have_extensions)
     struct->put_var_string(extensions->pop_data(), 2);
@@ -264,7 +264,7 @@ Packet client_hello()
 Packet server_key_exchange_packet()
 {
   ADT.struct struct;
-  
+
   switch (session->ke_method)
   {
   case KE_rsa:
@@ -273,7 +273,7 @@ Packet server_key_exchange_packet()
     if (temp_key)
     {
       /* Send a ServerKeyExchange message. */
-      
+
       SSL3_DEBUG_MSG("Sending a server key exchange-message, "
                      "with a %d-bits key.\n", temp_key->rsa_size());
       struct = ADT.struct();
@@ -293,7 +293,7 @@ Packet server_key_exchange_packet()
     /* werror("dh_params = %O\n", context->dh_params); */
     dh_state = .Cipher.DHKeyExchange(context->dh_params);
     dh_state->new_secret(context->random);
-    
+
     struct->put_bignum(context->dh_params->p);
     struct->put_bignum(context->dh_params->g);
     struct->put_bignum(dh_state->our);
@@ -334,7 +334,7 @@ Packet client_key_exchange_packet()
 
     if(version[1] >= PROTOCOL_TLS_1_0)
       data=sprintf("%2H", [string(0..255)]data);
-      
+
     break;
   case KE_dhe_dss:
   case KE_dhe_rsa:
@@ -365,7 +365,7 @@ Packet certificate_verify_packet()
 
   return handshake_packet (HANDSHAKE_certificate_verify,
 			  struct->pop_data());
-  
+
 }
 
 int(-1..0) reply_new_session(array(int) cipher_suites,
@@ -390,7 +390,7 @@ int(-1..0) reply_new_session(array(int) cipher_suites,
     send_packet(Alert(ALERT_fatal, ALERT_handshake_failure, version[1]));
     return -1;
   }
-  
+
   compression_methods &= context->preferred_compressors;
   if (sizeof(compression_methods))
     session->set_compression_method(compression_methods[0]);
@@ -399,9 +399,9 @@ int(-1..0) reply_new_session(array(int) cipher_suites,
     send_packet(Alert(ALERT_fatal, ALERT_handshake_failure, version[1]));
     return -1;
   }
-  
+
   send_packet(server_hello_packet());
-  
+
   /* Send Certificate, ServerKeyExchange and CertificateRequest as
    * appropriate, and then ServerHelloDone.
    */
@@ -414,7 +414,7 @@ int(-1..0) reply_new_session(array(int) cipher_suites,
   SSL3_DEBUG_MSG("Selected server key: %O\n", key);
 
   if(Program.implements(object_program(key), Crypto.DSA))
-  { 
+  {
     session->dsa = [object(Crypto.DSA)]key;
   }
   else
@@ -443,7 +443,7 @@ int(-1..0) reply_new_session(array(int) cipher_suites,
   {
     // we can send a certificate request packet, even if we don't have
     // any authorized issuers.
-    send_packet(certificate_request_packet(context)); 
+    send_packet(certificate_request_packet(context));
     certificate_state = CERT_requested;
   }
   send_packet(handshake_packet(HANDSHAKE_server_hello_done, ""));
@@ -491,7 +491,7 @@ Packet certificate_request_packet(SSL.context context)
     ADT.struct struct = ADT.struct();
     struct->put_var_uint_array(context->preferred_auth_methods, 1, 1);
 
-    int len; 
+    int len;
 
     // an empty certificate request is allowed.
     if(context->authorities_cache && sizeof(context->authorities_cache))
@@ -525,7 +525,7 @@ Packet certificate_packet(array(string) certificates)
 string server_derive_master_secret(string data)
 {
   string premaster_secret;
-  
+
   SSL3_DEBUG_MSG("server_derive_master_secret: ke_method %d\n",
                  session->ke_method);
   switch(session->ke_method)
@@ -619,14 +619,14 @@ string server_derive_master_secret(string data)
   if(version[1] == PROTOCOL_SSL_3_0) {
     foreach( ({ "A", "BB", "CCC" }), string cookie)
       res += md5->hash_raw(premaster_secret
-			   + sha->hash_raw(cookie + premaster_secret 
+			   + sha->hash_raw(cookie + premaster_secret
 					   + client_random + server_random));
   }
   else if(version[1] >= PROTOCOL_TLS_1_0) {
     res=.Cipher.prf(premaster_secret,"master secret",
 		    client_random+server_random,48);
   }
-  
+
   SSL3_DEBUG_MSG("master: %O\n", res);
   return res;
 }
@@ -643,13 +643,13 @@ string client_derive_master_secret(string premaster_secret)
   if(version[1] == PROTOCOL_SSL_3_0) {
     foreach( ({ "A", "BB", "CCC" }), string cookie)
       res += md5->hash_raw(premaster_secret
-			   + sha->hash_raw(cookie + premaster_secret 
+			   + sha->hash_raw(cookie + premaster_secret
 					   + client_random + server_random));
   }
   else if(version[1] >= PROTOCOL_TLS_1_0) {
     res+=.Cipher.prf(premaster_secret,"master secret",client_random+server_random,48);
   }
-  
+
   SSL3_DEBUG_MSG("bahmaster: %O\n", res);
   return res;
 }
@@ -689,8 +689,8 @@ int verify_certificate_chain(array(string) certs)
   if(!context->verify_certificates)
     return 1;
 
-  // if we're not requiring the certificate, and we don't provide one, 
-  // that should be okay. 
+  // if we're not requiring the certificate, and we don't provide one,
+  // that should be okay.
   if((context->auth_level < AUTHLEVEL_require) && !sizeof(certs))
     return 1;
 
@@ -726,9 +726,9 @@ int verify_certificate_chain(array(string) certs)
     }
   }
 
-  // ok, so we have a certificate chain whose client certificate is 
+  // ok, so we have a certificate chain whose client certificate is
   // issued by an authority known to us.
-  
+
   // next we must verify the chain to see if the chain is unbroken
 
   mapping auth=([]);
@@ -781,7 +781,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
      expect_change_cipher = certificate_state = 0;
      rsa_message_was_bad = 0;
      temp_key = 0;
-     
+
      handshake_messages = raw;
      server_random = sprintf("%4c%s", time(), context->random(28));
 
@@ -963,7 +963,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	if (!input->is_empty())
 	  werror("SSL.connection->handle_handshake: "
 		 "extra data in hello message ignored\n");
-      
+
 	if (sizeof(id))
 	  werror("SSL.handshake: Looking up session %O\n", id);
 #endif
@@ -994,11 +994,11 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	    send_packet(finished_packet("server finished"));
 
 	  expect_change_cipher = 1;
-	 
+
 	  handshake_state = STATE_server_wait_for_finish;
 	} else {
 	  /* New session, do full handshake. */
-	  
+
 	  int(-1..0) err = reply_new_session(cipher_suites,
 					     compression_methods);
 	  if (err)
@@ -1070,7 +1070,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	  cipher_suites = input->get_fix_uint_array(3, ci_len/3);
 	  input->get_fix_string(id_len);	// session.
 	  challenge = input->get_fix_string(ch_len);
-	} || !input->is_empty()) 
+	} || !input->is_empty())
 	{
 	  send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
 		      "SSL.session->handle_handshake: unexpected message\n",
@@ -1121,7 +1121,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
      {
        string my_digest;
        string digest;
-       
+
 	SSL3_DEBUG_MSG("SSL.session: FINISHED\n");
 
        if(version[1] == PROTOCOL_SSL_3_0) {
@@ -1148,7 +1148,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 			       backtrace()));
 	     return -1;
 	   }
-	 
+
 
        }
 
@@ -1169,7 +1169,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
        /* Handshake complete */
 
        client_verify_data = digest;
-       
+
        if (!reuse)
        {
 	 send_packet(change_cipher_packet());
@@ -1183,7 +1183,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
        handshake_state = STATE_server_wait_for_hello;
 
        return 1;
-     }   
+     }
     }
     break;
   case STATE_server_wait_for_client:
@@ -1216,7 +1216,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 						       server_random,version);
 	pending_read_state = res[0];
 	pending_write_state = res[1];
-	
+
         SSL3_DEBUG_MSG("certificate_state: %d\n", certificate_state);
       }
       // TODO: we need to determine whether the certificate has signing abilities.
@@ -1255,7 +1255,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	   certs += ({ input->get_var_string(3) });
 
 	  // we have the certificate chain in hand, now we must verify them.
-          if((!sizeof(certs) && context->auth_level == AUTHLEVEL_require) || 
+          if((!sizeof(certs) && context->auth_level == AUTHLEVEL_require) ||
                      !verify_certificate_chain(certs))
           {
 	     send_packet(Alert(ALERT_fatal, ALERT_bad_certificate, version[1],
@@ -1273,7 +1273,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 			   "SSL.session->handle_handshake: unexpected message\n",
 			   backtrace()));
 	 return -1;
-       }	
+       }
 
        if(session->peer_certificate_chain && sizeof(session->peer_certificate_chain))
           certificate_state = CERT_received;
@@ -1517,7 +1517,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
       {
         session->peer_certificate_chain = certs;
       }
-      
+
       mixed error=catch
       {
 	Tools.X509.Verifier public_key = Tools.X509.decode_certificate(
@@ -1548,7 +1548,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 			    backtrace()));
 	  return -1;
 	}
-      
+
       certificate_state = CERT_received;
       break;
       }
@@ -1607,11 +1607,11 @@ int(-1..1) handle_handshake(int type, string data, string raw)
             {
                     send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
                             "SSL.session->handle_handshake: Badly formed Certificate Request.\n",
-                            backtrace()));              
+                            backtrace()));
             }
             Standards.ASN1.Types.Sequence seq = [object(Standards.ASN1.Types.Sequence)]asn;
-            client_cert_distinguished_names += ({ (string)Standards.PKCS.Certificate.get_dn_string( 
-                                            seq ) }); 
+            client_cert_distinguished_names += ({ (string)Standards.PKCS.Certificate.get_dn_string(
+                                            seq ) });
             SSL3_DEBUG_MSG("got an authorized issuer: %O\n",
                            client_cert_distinguished_names[-1]);
            }
@@ -1631,11 +1631,11 @@ int(-1..1) handle_handshake(int type, string data, string raw)
       {
         // okay, we have a list of certificate types and dns that are
         // acceptable to the remote server. we should weed out the certs
-        // we have so that we only send certificates that match what they 
+        // we have so that we only send certificates that match what they
         // want.
 
-        array(string) certs = context->client_certificate_selector(context, 
-                                          client_cert_types, 
+        array(string) certs = context->client_certificate_selector(context,
+                                          client_cert_types,
                                           client_cert_distinguished_names);
         if(!certs || !sizeof(certs))
           certs = ({});
@@ -1684,7 +1684,7 @@ werror("sending certificate: " + Standards.PKCS.Certificate.get_dn_string(Tools.
 
       // FIXME: Certificate verify; we should redo this so it makes more sense
       if(certificate_state == CERT_received
-          && sizeof(context->client_certificates) && context->client_rsa) 
+          && sizeof(context->client_certificates) && context->client_rsa)
          // we sent a certificate, so we should send the verification.
       {
          send_packet(certificate_verify_packet());
@@ -1696,7 +1696,7 @@ werror("sending certificate: " + Standards.PKCS.Certificate.get_dn_string(Tools.
 	send_packet(finished_packet("CLNT"));
       else if(version[1] >= PROTOCOL_TLS_1_0)
 	send_packet(finished_packet("client finished"));
-      
+
       }
 	handshake_state = STATE_client_wait_for_finish;
 	expect_change_cipher = 1;

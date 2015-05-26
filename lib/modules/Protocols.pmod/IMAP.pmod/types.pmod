@@ -131,7 +131,7 @@ class imap_number
 
 /* Input types */
 
-// Returns -1 on error. 
+// Returns -1 on error.
 int string_to_number(string s)
 {
   if (!sizeof(s) || (sizeof(s)  > 9))
@@ -153,12 +153,12 @@ class imap_set
     {
       items = a;
     }
-  
+
   int|string string_to_number_star(string s)
     {
       return (s == "*") ? s : string_to_number(s);
     }
-  
+
   int|string|array string_to_subset(string s)
     {
       int i = search(s, ":");
@@ -186,7 +186,7 @@ class imap_set
       for(int i = 0; i<sizeof(items); i++)
       {
 	items[i] = string_to_subset(items[i]);
-	
+
 	if (intp(items[i]) && (items[i]<0))
 	  return 0;
       }
@@ -208,7 +208,7 @@ class imap_set
 
 	if (end < start)
 	  return ({ });
-	
+
 	array res = allocate(end - start + 1);
 	for(int i = start; i<= end; i++)
 	  res[i-start] = i;
@@ -218,7 +218,7 @@ class imap_set
       int i = replace_number(item, largest);
       return (i > largest) ? ({ }) : ({ i });
     }
-      
+
   /* Return a plain array of integers. LARGEST is the number to be
    * substituted for "*". Handles empty intervals, and cuts away
    * elements larger than LARGEST. Does not attempt to handle

@@ -16,7 +16,7 @@ protected Crypto.RSA.State compat_rsa;
 protected array(string(8bit)) compat_certificates;
 
 //! The servers default private RSA key.
-//! 
+//!
 //! Compatibility, don't use.
 //!
 //! @deprecated find_cert

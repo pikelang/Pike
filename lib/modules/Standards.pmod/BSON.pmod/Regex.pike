@@ -4,11 +4,11 @@
 
   string regex;
   string options;
-  
+
   //!
   protected void create(string _regex, string _options)
   {
     regex = _regex;
     options = _options;
   }
-  
+

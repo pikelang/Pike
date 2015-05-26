@@ -403,7 +403,7 @@ protected void update_mime_var(string name, string new)
 
 protected void parse_post()
 {
-  if ( request_headers["content-type"] && 
+  if ( request_headers["content-type"] &&
        has_prefix(request_headers["content-type"], "multipart/form-data") )
   {
     MIME.Message messg = MIME.Message(body_raw, request_headers, 0, 1);
@@ -616,7 +616,7 @@ string get_ip()
 }
 
 //! return a properly formatted response to the HTTP client
-//! @param m 
+//! @param m
 //! Contains elements for generating a response to the client.
 //! @mapping m
 //! @member string "data"
@@ -626,16 +626,16 @@ string get_ip()
 //! @member int "error"
 //!   HTTP error code
 //! @member int "length"
-//!   length of content returned. If @i{file@} is provided, @i{size@} 
+//!   length of content returned. If @i{file@} is provided, @i{size@}
 //!   bytes will be returned to client.
 //! @member string "modified"
 //!   contains optional modification date.
 //! @member string "type"
 //!   contains optional content-type
 //! @member mapping "extra_heads"
-//!   contains a mapping of additional headers to be 
+//!   contains a mapping of additional headers to be
 //! returned to client.
-//! @member string "server" 
+//! @member string "server"
 //!   contains the server identification header.
 //! @endmapping
 void response_and_finish(mapping m, function|void _log_cb)

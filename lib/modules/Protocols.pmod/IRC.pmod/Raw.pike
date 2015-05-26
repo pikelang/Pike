@@ -60,7 +60,7 @@ void con_read(mixed dummy,string what)
    buf=lines[-1];
    foreach (lines[..<1],string row)
    {
-      mixed err=catch 
+      mixed err=catch
       {
 	 handle_command(row);
       };
@@ -78,7 +78,7 @@ void con_write_callback()
       int j=con->write(write_buf[0]);
       if (j!=sizeof(write_buf[0]))
       {
-	 if (j==-1) 
+	 if (j==-1)
 	 {
 #ifdef IRC_DEBUG
 	    werror("<- (write error)\n");
@@ -115,7 +115,7 @@ void con_write(string s)
    int j=con->write(s);
    if (j!=sizeof(s))
    {
-      if (j==-1) 
+      if (j==-1)
       {
 #ifdef IRC_DEBUG
 	 werror("<- (write error; %O)\n",strerror(con->errno()));
@@ -143,7 +143,7 @@ void handle_command(string cmd)
 {
    string a,b;
    if (cmd=="") return;
-   if (cmd[0]==':') 
+   if (cmd[0]==':')
    {
       if (!notify_callback) return;
       if (sscanf(cmd,":%s :%s",a,b)==2)

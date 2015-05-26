@@ -128,7 +128,7 @@ mapping(string : array(string)) attributenames =
 mapping(string:array(string)) required_attributes =
 ([
   "param" : ({ "name" }),
-]);  
+]);
 
 protected constant standard = (<
   "note", "bugs", "example", "seealso", "deprecated", "fixme", "code",
@@ -291,7 +291,7 @@ protected array(Token) split(string s, SourcePosition pos) {
   return res;
 }
 
-//! Internal class for parsing documentation markup. 
+//! Internal class for parsing documentation markup.
 protected class DocParserClass {
 
   //!

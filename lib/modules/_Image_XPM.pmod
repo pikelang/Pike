@@ -187,7 +187,7 @@ string encode( object what, mapping|void options )
 
 
   TD("Encode color output");
-  string res = 
+  string res =
     "/* XPM */\n"+
     (options->comment?
      "/* "+replace(options->comment, ({"/*", "*/"}), ({"/", "/"}))+" */\n":"")+

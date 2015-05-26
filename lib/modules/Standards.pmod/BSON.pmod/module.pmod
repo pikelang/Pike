@@ -52,7 +52,7 @@ int getCounter()
   return ++counter;
 }
 
-//! Encode a data structure as a BSON document. 
+//! Encode a data structure as a BSON document.
 //!
 //! @param query_mode
 //!  if set to true, encoding will allow "$" and "." in key names, which
@@ -62,7 +62,7 @@ string encode(mapping m, int|void query_mode)
   String.Buffer buf = String.Buffer();
   low_encode(m, buf, query_mode);
   return sprintf("%-4c%s%c", sizeof(buf)+5, buf->get(), 0);
-} 
+}
 
 protected string toCString(string str)
 {
@@ -82,13 +82,13 @@ protected void low_encode(mapping m, String.Buffer buf, int|void allow_specials)
       ERROR("BSON keys may not contain '$' or '.' characters unless in query-mode.\n");
     key = string_to_utf8(key);
     encode_value(key, val, buf, allow_specials);
-  }	
+  }
 }
 
 protected void encode_value(string key, mixed value, String.Buffer buf, int|void allow_specials)
 {
    if(floatp(value))
-   { 
+   {
      buf->sprintf("%c%s%c%-8F", TYPE_FLOAT, key, 0, value);
    }
    else if(stringp(value))
@@ -143,19 +143,19 @@ protected void encode_value(string key, mixed value, String.Buffer buf, int|void
      string v = (string)value;
      v = string_to_utf8(v);
      buf->sprintf("%c%s%c%-4c%s%c", TYPE_SYMBOL, key, 0, sizeof(v)+1, v, 0);
-   } 
+   }
    // BSON.Javascript instance
    else if(objectp(value) && Program.inherits(object_program(value), .Javascript))
    {
      string v = (string)value;
      v = string_to_utf8(v);
      buf->sprintf("%c%s%c%-4c%s%c", TYPE_JAVASCRIPT, key, 0, sizeof(v)+1, v, 0);
-   } 
+   }
    // BSON.Regex instance
    else if(objectp(value) && Program.inherits(object_program(value), .Regex))
    {
      buf->sprintf("%c%s%c%s%s", TYPE_REGEX, key, 0, toCString(value->regex), toCString(value->options));
-   } 
+   }
    // Val.null
    else if(objectp(value) && value->is_val_null)
    {
@@ -189,12 +189,12 @@ protected void encode_value(string key, mixed value, String.Buffer buf, int|void
 string encode_array(array(mapping) documents)
 {
 	String.Buffer buf = String.Buffer();
-	
+
 	foreach(documents;;mixed document)
 	{
 		buf->add(encode(document));
 	}
-	
+
 	return buf->get();
 }
 
@@ -211,14 +211,14 @@ mixed decode(string bson)
     ERROR("Unable to read full data from BSON stream, expected %d, got %d.\n", len-4, sizeof(bson)-1);
   slist = bson[0..<1];
   mapping list = ([]);
-  
+
   while(sizeof(slist))
   {
     if(slist == "") break;
     slist = decode_next_value(slist, list);
-  } 
-  
-  return list;	
+  }
+
+  return list;
 }
 
 protected string decode_next_value(string slist, mapping list)
@@ -227,7 +227,7 @@ protected string decode_next_value(string slist, mapping list)
   mixed value;
 
   int type;
-  
+
   string document;
   int doclen;
 
@@ -243,7 +243,7 @@ protected string decode_next_value(string slist, mapping list)
          ERROR("Unable to read float from BSON stream.\n");
        if(sscanf(reverse(value), "%8F", value) != 1 )
          ERROR("Unable to read float from BSON stream.\n");
-      
+
        break;
      case TYPE_STRING:
        if(sscanf(slist, "%-4c%s", len, slist) != 2)
@@ -275,18 +275,18 @@ protected string decode_next_value(string slist, mapping list)
        break;
      case TYPE_REGEX:
        string regex, options;
-       
+
        if(sscanf(slist, "%s\0%s", regex, slist)!=2)
          ERROR("Unable to read regex from BSON stream.\n");
        regex = utf8_to_string(regex);
-       
+
        if(sscanf(slist, "%s\0%s", options, slist)!=2)
          ERROR("Unable to read regex options from BSON stream.\n");
        options = utf8_to_string(options);
        value = .Regex(regex, options);
-       break;     
-       
-     case TYPE_INT32:     
+       break;
+
+     case TYPE_INT32:
        if(sscanf(slist, "%-4c%s", value, slist) != 2)
          ERROR("Unable to read int32 from BSON stream.\n");
        break;
@@ -303,7 +303,7 @@ protected string decode_next_value(string slist, mapping list)
        if(sscanf(slist, "%-8c%s", value, slist) != 2)
          ERROR("Unable to read timestamp from BSON stream.\n");
        value = .Timestamp(value);
-       break;  
+       break;
      case TYPE_BOOLEAN:
        if(sscanf(slist, "%c%s", value, slist) != 2)
          ERROR("Unable to read boolean from BSON stream.\n");
@@ -349,7 +349,7 @@ protected string decode_next_value(string slist, mapping list)
      default:
        ERROR("Unknown BSON type " + type + ".\n");
   }
-  
+
   list[key] = value;
   return slist;
 }
@@ -366,7 +366,7 @@ array decode_array(string bsonarray)
   {
     string bson;
     int len;
-	
+
     if(sscanf(bsonarray, "%-4c", len)!=1)
       ERROR("Unable to read length from BSON stream.\n");
     if(sscanf(bsonarray, "%" + len + "s%s", bson, bsonarray) != 2)

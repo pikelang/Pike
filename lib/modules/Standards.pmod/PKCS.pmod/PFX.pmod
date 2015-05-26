@@ -56,7 +56,7 @@ class ContentInfo_meta
   class `()
     {
       inherit Standards.ASN1.Types.Sequence;
-  
+
       mapping element_types(int i, mapping t)
 	{
 	  switch(i)
@@ -69,7 +69,7 @@ class ContentInfo_meta
 	    error("Bad index\n");
 	  }
 	}
-      
+
       this_program set_types(mapping(string:function) types)
 	{
 	  content_types = types;
@@ -82,7 +82,7 @@ class ContentInfo_meta
 	    error("ContentInfo->end_decode_constructed: Bad index\n");
 	  return this;
 	}
-  
+
 #if 0
       object decode_constructed(array contents, string raw)
 	{
@@ -123,7 +123,7 @@ class ContentInfo_meta
 #endif
 
     }
-  
+
   void create(mapping|void types)
     {
       content_types = types;
@@ -131,7 +131,7 @@ class ContentInfo_meta
 }
 
 /* PFX definition, taken from the preview of PKCS#12 version 3
-   
+
    PFX ::= SEQUENCE {
    	       version         Version    -- V3(3) for this version.  This
                                           -- field is not optional.
@@ -139,8 +139,8 @@ class ContentInfo_meta
    			       -- SignedData in public-key integrity mode
    			       -- Data in password integrity mode
    	       macData         MacData OPTIONAL }
-   
-   
+
+
    MacData ::= SEQUENCE {
    	       mac      DigestInfo,    -- from PKCS #7 v1.5
    	       macSalt  OCTET STRING,
@@ -153,18 +153,18 @@ class ContentInfo_meta
    	       -- than 1 for any password-based encryption in the PDU that
    	       -- uses the same password as is used for password-based
    	       -- authentication
-   
+
    AuthenticatedSafes ::= 	SEQUENCE OF ContentInfo    -- from PKCS #7 v1.5
    			   -- Data if unencrypted
    			   -- EncryptedData if password-encrypted
    			   -- EnvelopedData if public-key-encrypted
-   
-   
+
+
    pkcs-12PbeParams ::= SEQUENCE {
    	       salt           OCTET STRING,
    	       iterationCount INTEGER }
-   
-   
+
+
    pkcs-12PbeIds OBJECT IDENTIFIER ::= { pkcs-12 1 }
    pbeWithSHA1And128BitRC4 OBJECT IDENTIFIER ::= { pkcs-12PbeIds 1 }
    pbeWithSHA1And40BitRC4 OBJECT IDENTIFIER ::= { pkcs-12PbeIds 2 }
@@ -181,51 +181,51 @@ class ContentInfo_meta
    -- size of 40 bits, as well as a 40-bit key
    pbeWithSHA1And40BitRC2-CBC OBJECT IDENTIFIER ::=
      { pkcs-12PbeIds 6 }
-   
-   
+
+
    SafeContents ::= SEQUENCE OF SafeBag
-   
+
    SafeBag ::= SEQUENCE {
    	       bagType       OBJECT IDENTIFIER,
    	       bagContent    [0] EXPLICIT ANY DEFINED BY bagType,
    	       bagAttributes Attributes OPTIONAL }
-   
-   
+
+
    Attributes ::= SET OF Attribute    -- from X.501
    -- in pre-1994 ASN.1, Attribute looks like:
    -- Attribute ::= SEQUENCE {
    --      type OBJECT IDENTIFIER,
    --      values SET OF ANY DEFINED BY type }
-   
-   
+
+
    FriendlyName ::= BMPString    -- a friendlyName has a single attr. value
    LocalKeyID   ::= OCTET STRING    -- a localKeyID has a single attr.
    value
-   
-   
+
+
    friendlyName OBJECT IDENTIFIER ::= { PKCS-9 20 }
    localKeyID   OBJECT IDENTIFIER ::= { PKCS-9 21 }
-   
-   
+
+
    KeyBag ::= PrivateKeyInfo    -- from PKCS #8 v1.2
-   
+
    PKCS-8ShroudedKeyBag ::= EncryptedPrivateKeyInfo    -- from PKCS #8 v1.2
-   
+
    CertBag   ::= SEQUENCE {
    	     certType    OBJECT IDENTIFIER,
    	     cert        EXPLICIT [0] ANY DEFINED BY certType }
-   
+
    CRLBag    ::= SEQUENCE {
    	     crlType     OBJECT IDENTIFIER,
    	     crl         EXPLICIT [0] ANY DEFINED BY crlType }
-   
+
    SecretBag ::= SEQUENCE {
    	     secretType  OBJECT IDENTIFIER,
    	     secret      EXPLICIT [0] ANY DEFINED BY secretType }
-   
+
    SafeContentsBag ::= SafeContents
-   
-   
+
+
    pkcs-12Version1      OBJECT IDENTIFIER ::= { pkcs-12 10 }
    pkcs-12BagIds        OBJECT IDENTIFIER ::= { pkcs-12Version1 1}
    keyBag               OBJECT IDENTIFIER ::= { pkcs-12BagIds 1 }
@@ -234,15 +234,15 @@ class ContentInfo_meta
    crlBag               OBJECT IDENTIFIER ::= { pkcs-12BagIds 4 }
    secretBag            OBJECT IDENTIFIER ::= { pkcs-12BagIds 5 }
    safeContentsBag      OBJECT IDENTIFIER ::= { pkcs-12BagIds 6 }
-   
-   
+
+
    certTypes       OBJECT IDENTIFIER ::= { PKCS-9 22 }
    X509Certificate                   ::= OCTET STRING
    SDSICertificate                   ::= IA5String
    x509Certificate OBJECT IDENTIFIER ::= { certTypes 1 }
    sdsiCertificate OBJECT IDENTIFIER ::= { certTypes 2 }
-   
-   
+
+
    crlTypes OBJECT IDENTIFIER ::= { PKCS-9 23 }
    X509Crl                    ::= OCTET STRING
    x509Crl  OBJECT IDENTIFIER ::= { crlTypes 1 }
@@ -268,7 +268,7 @@ class KeyBag
 }
 
 /* Defaults for generated MAC:s */
-   
+
 #define SALT_SIZE 17
 #define MAC_COUNT 1
 
@@ -293,7 +293,7 @@ class PFX
      * by a null character */
     return "\0" + (s/"") * "\0" + "\0\0";
   }
-  
+
   /* passwd is assumed to be latin 1 */
   void set_passwd(string s) {
     passwd = latin1_to_bmp(passwd);
@@ -310,7 +310,7 @@ class PFX
     }
     return d;
   }
-  
+
   string generate_key(string salt, int id, int count, int needed)
     { /* Supports only SHA-1 */
       string D = sprintf("%c", id) * 64;
@@ -336,7 +336,7 @@ class PFX
 	// Extract value from the data field
 	(elements[1]->elements[1]->value);
     }
-  
+
   string der_encode()
     {
       elements = allocate(2 + !!passwd);
@@ -353,7 +353,7 @@ class PFX
 	     OctetString(salt)
 	     /* , optional count, default = 1 */
 	  }) );
-	
+
       } else {
 	error("Only passwd authentication supported\n");
       }
@@ -363,7 +363,7 @@ class PFX
     {
       return elements[1]->elements[0] == data_id;
     }
-  
+
   int verify_passwd()
     {
       if (elements[2]->elements[0]->elements[0] != Identifiers.sha1_id)
@@ -391,7 +391,7 @@ Sequence make_safe_bag(object id, object contents, object|void attributes)
   return Sequence( ({ id, contents })
 		   + (attributes ? ({ attributes }) : ({ }) ));
 }
-  
+
 /* A SafeBag instance, with type of KeyBag */
 Sequence make_key_bag(array keys, object|void attributes)
 {
@@ -410,7 +410,7 @@ Sequence make_x509_cert_bag(string cert, object|void attributes)
 PFX simple_make_pfx(array bags, string passwd)
 {
   Sequence safe_contents = Sequence(bags);
-  
+
   PFX pfx = PFX(ContentInfo_meta()(data_id, String(safes->get_der())));
   pfx->set_passwd(passwd);
   return pfx;

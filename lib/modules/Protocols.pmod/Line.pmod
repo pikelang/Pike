@@ -59,7 +59,7 @@ class simple
   }
 
   //! This function is called when a timeout occurrs.
-  //! 
+  //!
   //! Overload this function as appropriate.
   //!
   //! The default action is to shut down the connection immediately.
@@ -173,7 +173,7 @@ class simple
     read_buffer += data;
 
     string line;
-    
+
     while( (line = read_line()) )
       _handle_command(line);
   }
@@ -231,7 +231,7 @@ class simple
     } else {
       // Failed to write!
       werror("write_callback(): write() failed!\n");
-		     
+
       con->set_write_callback(0);
       con->close();
       con = 0;
@@ -256,7 +256,7 @@ class simple
     con->set_write_callback(write_callback);
     con->set_read_callback(0);
   }
-    
+
   //! This function is called when the connection has been closed
   //! at the other end.
   //!

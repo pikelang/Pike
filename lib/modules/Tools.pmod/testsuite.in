@@ -55,7 +55,7 @@ define(test_hilfe_setup,[[
   test_hilfe_setup_low()
   test_hilfe(".", version() + " running Hilfe v3.5 (Incremental Pike Frontend)\n");
   test_hilfe([["set format sprintf \"%s\""]], "");
-]])  
+]])
 
 test_hilfe_setup()
 test_hilfe("1;", "1")
@@ -137,7 +137,7 @@ test_hilfe("i;", "1")
 
 test_hilfe("mixed x=\"bar\";", "")
 test_hilfe("void foo(mixed x){ x?werror(\"\"):werror(\"\");};","")
-test_hilfe("foo(1);", 
+test_hilfe("foo(1);",
   "Compiler Warning: 1: Returning a void expression. Converted to zero.\n"
   "0")
 

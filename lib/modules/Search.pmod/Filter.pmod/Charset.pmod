@@ -27,7 +27,7 @@ string low_decode_charset( string data, string charset )
     case "shiftjis":
     case "jis":
       return Charset.decoder("Shift_JIS")->feed(data)->drain();
-      
+
     default:
       catch {
 	return Charset.decoder( charset )->feed( data )->drain();
@@ -67,7 +67,7 @@ string decode_http( string data, mapping headers,
 	(lower_case(m["http-equiv"]||"")=="contenttype")  ||
 	(lower_case(m["httpequiv"]||"")=="contenttype") )
     {
-      if( (ct = m->content||m->data) 
+      if( (ct = m->content||m->data)
 	  && sscanf( ct, "%*scharset=%[^;]", ct ) == 2 )
       {
 	data=decode_charset( data, String.trim_all_whites( ct ));

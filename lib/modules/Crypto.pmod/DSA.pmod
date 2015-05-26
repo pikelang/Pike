@@ -343,7 +343,7 @@ class State {
     string(8bit) digest = h->hash(msg)[..q->size()/8-1];
     return [object(Gmp.mpz)](Gmp.mpz(digest, 256) % q);
   }
-  
+
   protected Gmp.mpz random_number(Gmp.mpz n)
   {
     return [object(Gmp.mpz)](Gmp.mpz(random( [int(0..)](q->size() + 10 / 8)),

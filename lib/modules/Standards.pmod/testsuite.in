@@ -15,7 +15,7 @@ class A {
       if(languages[symbol]) error("Overlap in symbol %s\n", symbol);
   }
 }(); )
-    
+
 
 // - Standards.PEM
 test_any_equal([[

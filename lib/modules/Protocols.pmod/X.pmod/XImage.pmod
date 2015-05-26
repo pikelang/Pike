@@ -18,7 +18,7 @@
  *
  *    You should have received a copy of the GNU General Public License
  *    along with this program; if not, write to the Free Software
- *    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA 
+ *    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  */
 
 #pike __REAL_VERSION__
@@ -108,26 +108,26 @@ class XImage
   object /*(Types.Colormap)*/ colormap;
   Image.Colortable ccol;
   object /*(Types.GC)*/ dgc;
-  //! 
+  //!
 
-  //! 
+  //!
   int best;
 
   int depth, bpp;
   function converter;
   int linepad, swapbytes;
   int rmask, gmask, bmask;
-  //! 
+  //!
 
   int offset_x, offset_y;
-  //! 
-  
+  //!
+
   void set_render(string type)
   {
     if(type == "best") best=1;
   }
 
-  //! 
+  //!
   Image.Colortable allocate_colortable()
   {
 //     werror("Allocating colortable\n");
@@ -137,7 +137,7 @@ class XImage
     else
       wanted = image->select_colors( 32 );
 
-    if(sizeof(wanted) < 10) 
+    if(sizeof(wanted) < 10)
     {
       object i = Image.Image(100,100);
       i->tuned_box(0,0, 100, 50,
@@ -176,13 +176,13 @@ class XImage
 //  werror(sprintf("colortable: %O\n", res));
     return ct;
   }
-  
+
   void clear_caches(int x, int y, int width, int height)
   {
     // no inteligence yet...
   }
 
-  //! 
+  //!
   void redraw(int x, int y, int width, int height)
   {
     int max_pixels = ((window->display->maxRequestSize - 64)*32) / bpp;
@@ -217,7 +217,7 @@ class XImage
       object mimg = image->copy(x,y,x+width-1,y+slice-1);
       if(rmask)
       {
-	string data = 
+	string data =
 	  converter(mimg,bpp,linepad,swapbytes,rmask,gmask,bmask,
 		    @(ccol?({ccol}):({})));
 
@@ -235,13 +235,13 @@ class XImage
     }
   }
 
-  //! 
+  //!
   void set_window(object w)
   {
     set_drawable(w);
   }
 
-  //! 
+  //!
   void set_drawable(object w)
   {
     window = w;
@@ -273,7 +273,7 @@ class XImage
       colormap = w->colormap;
     else
       colormap = root->defaultColorMap;
-    
+
     swapbytes = !w->display->imageByteOrder;
     rmask = visual->redMask;
     gmask = visual->greenMask;
@@ -288,7 +288,7 @@ class XImage
 	linepad = format->scanLinePad;
 	break;
       }
-    
+
     switch(_Xlib.visual_classes[visual->c_class])
     {
      case "StaticGray":
@@ -316,20 +316,20 @@ class XImage
        converter = Image.X.encode_truecolor_masks;
        break;
      case "DirectColor":
-       error("Cannot handle Direct Color visual yet."); 
+       error("Cannot handle Direct Color visual yet.");
        break;
     }
     dgc = window->CreateGC();
   }
 
-  //! 
+  //!
   void set_offset(int x, int y)
   {
     offset_x = x;
     offset_y = y;
   }
-}  
-  
+}
+
 // Steals a few callbacks from the window.
 
 class WindowImage
@@ -379,10 +379,10 @@ object MakeShapeMask(object in, object alpha)
   object shape = in->CreatePixmap(alpha->xsize(),alpha->ysize(),1);
   mapping f;
   foreach(in->display->formats, f) if(f->depth == 1) break;
-  shape->PutImage( shape->CreateGC(), 1, 0, 0, alpha->xsize(), alpha->ysize(), 
-		   Image.X.encode_truecolor( alpha->invert(), 
+  shape->PutImage( shape->CreateGC(), 1, 0, 0, alpha->xsize(), alpha->ysize(),
+		   Image.X.encode_truecolor( alpha->invert(),
 					     1, f->scanLinePad,
-					     !in->display->bitmapBitOrder, 
+					     !in->display->bitmapBitOrder,
 					     1, 0, 0, 0, 0, 0), 0);
   return shape;
 }
@@ -393,7 +393,7 @@ object SimplePixmapImage(object in, object color, int|void ocol)
 {
   int width = color->xsize();
   int height = color->ysize();
-  if(!ocol) 
+  if(!ocol)
     spcm = 0;
   object bgpm = in->CreatePixmap(width, height, in->depth);
   object pi = PixmapImage( bgpm, spcm );
@@ -406,7 +406,7 @@ object SimplePixmapImage(object in, object color, int|void ocol)
 //! Make the window @[in] display the image, with a mask shaped
 //! according to alpha, and optionally with a colored border aound the
 //! mask.
-void ShapedWindowImage(object in, object color, object|void alpha, 
+void ShapedWindowImage(object in, object color, object|void alpha,
 		       int|void contour)
 {
   int width = color->xsize();
@@ -420,10 +420,10 @@ void ShapedWindowImage(object in, object color, object|void alpha,
     mapping f;
     object shape = in->CreatePixmap(alpha->xsize(),alpha->ysize(),1);
     foreach(in->display->formats, f) if(f->depth == 1) break;
-    shape->PutImage( shape->CreateGC(), 1, 0, 0, alpha->xsize(), alpha->ysize(), 
-		     Image.X.encode_truecolor( alpha->invert(), 
+    shape->PutImage( shape->CreateGC(), 1, 0, 0, alpha->xsize(), alpha->ysize(),
+		     Image.X.encode_truecolor( alpha->invert(),
 					       1, f->scanLinePad,
-					       !in->display->bitmapBitOrder, 
+					       !in->display->bitmapBitOrder,
 					       1, 0, 0, 0, 0, 0), 0);
     in->ShapeMask("both", 0, 0, "set", shape);
     if(contour)
@@ -432,7 +432,7 @@ void ShapedWindowImage(object in, object color, object|void alpha,
       in->ShapeMask("bounding", -1, 1, "union", shape);
       in->ShapeMask("bounding", 1, -1, "union", shape);
       in->ShapeMask("bounding", 1, 1, "union", shape);
-    
+
       in->ShapeMask("bounding", 1, 0, "union", shape);
       in->ShapeMask("bounding", 0, 1, "union", shape);
       in->ShapeMask("bounding", -1, 0, "union", shape);

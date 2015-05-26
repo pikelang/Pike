@@ -9,7 +9,7 @@ private int     need_recount = 0;
 
 constant is_binary_relation = 1;
 
-//! Return true/false: does the relation "@[left] R @[right]" exist? 
+//! Return true/false: does the relation "@[left] R @[right]" exist?
 mixed contains(mixed left, mixed right)
 {
   return val[left] && val[left][right];
@@ -53,7 +53,7 @@ this_program remove(mixed left, mixed right)
 //! the returned array will have its elements in no particular
 //! order. If you need to know which relation entry produced which
 //! result in the array, you have to make that information part
-//! of the value that @[f] returns. 
+//! of the value that @[f] returns.
 array map(function f)
 {
   array a = ({});

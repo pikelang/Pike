@@ -10,7 +10,7 @@
 //! Optionally, one can provide a column type. The Table module can do a number
 //! of operations on a given table, like computing the sum of a column,
 //! grouping, sorting etc.
-//! 
+//!
 //! All column references are case insensitive. A column can be referred to by
 //! its position (starting from zero). All operations are non-destructive. That
 //! means that a new table object will be returned after, for example, a sort.
@@ -19,7 +19,7 @@
 class table {
   protected private mapping fieldmap;
   protected private array table, fields, types;
-  
+
   protected private array|int remap(array|string|int cs, int|void forgive)
   {
     array v = ({});
@@ -53,7 +53,7 @@ class table {
     mapping m = decode_value(s);
     return copy(m->table, m->fields, m->types);
   }
-  
+
   protected mixed cast(string type)
   {
     switch(type) {
@@ -70,14 +70,14 @@ class table {
   array(string) _indices()
   {
     return copy_value(fields);
-  }  
+  }
 
   //! This method returns the contents of a table as a two dimensional array.
   //! The format is an array of rows. Each row is an array of columns.
   array(array) _values()
   {
     return copy_value(table);
-  }  
+  }
 
   //! This method returns the number of rows in the table.
   int _sizeof()
@@ -91,7 +91,7 @@ class table {
   {
     return copy(predef::reverse(table), fields, types);
   }
-  
+
   //! This method returns the contents of a given column as an array.
   array col(int|string column)
   {
@@ -220,7 +220,7 @@ class table {
       f = mkmapping(args[0], allocate(sizeof(args[0]), f));
       args = args[1..];
     }
-    
+
     mapping m = ([]);
     array cs = remap(indices(f));
     f = mkmapping(cs, values(f));
@@ -319,7 +319,7 @@ class table {
   {
     return _sort(0, @columns);
   }
-  
+
   //! Like @[sort()], but in descending order.
   object rsort(int|string ... columns)
   {
@@ -419,7 +419,7 @@ class table {
 
 object Separated = class {
   protected private string _string(mixed x) { return (string)x; }
-  
+
   object decode(string s, void|mapping options)
   {
     string rowsep = options->rowsep||"\n";
@@ -427,7 +427,7 @@ object Separated = class {
     array t = Array.map(s/rowsep, `/, colsep);
     return table(t[1..], t[0], options->types);
   }
-  
+
   mixed encode(object t, void|mapping options)
   {
     options = options || ([]);
@@ -463,7 +463,7 @@ object ASCII = class {
     mapping sizes = ([]);
     array fields = indices(t);
     string indent = " " * options->indent;
-    
+
     t = t->copy(({ fields }) + values(t));
     for(int field = 0; field < sizeof(fields); field++)
       t = (t->map(lambda(mixed m, int field, mapping sizes)

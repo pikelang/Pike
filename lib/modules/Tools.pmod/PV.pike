@@ -22,7 +22,7 @@ void set_app_paintable(int flag) { (flag? set_flags:unset_flags)(GTK2.APP_PAINTA
 
 typedef Standards.URI|string|Image.Image|Image.Layer|array(Image.Layer) PVImage;
 //! The image types accepted. If the image is a string, it is assumed
-//! to be a filename of a image that can be loaded with Image.load. 
+//! to be a filename of a image that can be loaded with Image.load.
 //! This includes URLs.
 
 //! The alpha combination modes.
@@ -44,7 +44,7 @@ protected {
  Image.Color.Color alpha_color1 = Image.Color.grey,
                          alpha_color2 = Image.Color.darkgrey;
 
- Image.Image get_alpha_squares() 
+ Image.Image get_alpha_squares()
  {
    Image.Image alpha_sq = Image.Image( STEP*2, STEP*2, alpha_color1 );
    alpha_sq->setcolor( @alpha_color2->rgb() );
@@ -140,7 +140,7 @@ void set_image( PVImage i )
     else
       i = Image.load_layers( i );
   }
-  
+
   old_image = i;
   i = get_as_image( i );
   if( scale_factor != 1.0 )
@@ -172,7 +172,7 @@ void scale( float factor )
 }
 
 void save( string filename, string|void format )
-//! Write the image to a file. If no format is specified, PNG is used. 
+//! Write the image to a file. If no format is specified, PNG is used.
 //! The alpha combination is done on the image before it's saved.
 {
   Image.Image i = get_as_image( old_image );

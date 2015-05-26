@@ -294,7 +294,7 @@ private class ISO6937dec {
   {
     decoder->feed(s);
     return this;
-  }  
+  }
   this_program clear()
   {
     decoder->clear();
@@ -323,7 +323,7 @@ private class GSM03_38dec {
   {
     decoder->feed(s);
     return this;
-  }  
+  }
   this_program clear()
   {
     decoder->clear();
@@ -389,7 +389,7 @@ private class HZ_dec
       }
     }
     return this;
-  }  
+  }
   this_program clear()
   {
     decoder->clear();
@@ -737,7 +737,7 @@ private class ISO6937enc {
     }
     encoder->feed(s);
     return this;
-  }  
+  }
   this_program clear()
   {
     encoder->clear();
@@ -766,7 +766,7 @@ private class GSM03_38enc {
 		"\eÿ\e\u039b\e(\e)\e/\e<\e=\e>\e°\ee"/2);
     encoder->feed(s);
     return this;
-  }  
+  }
   this_program clear()
   {
     encoder->clear();
@@ -826,11 +826,11 @@ Encoder encoder(string name, string|void replacement,
     // FIXME: This doesn't accurately check the range of valid
     // characters according to the chosen charset.
     return ASCIIEnc(replacement, repcb);
-  
+
   if ((< "ascii", "us", "usascii", "isoir6", "iso646us", "iso646irv1991",
 	 "367", "ansix341968", "iso4873" >)[name])
     return USASCIIEnc(replacement, repcb);
-  
+
   if(has_prefix(name, "iso2022"))
     return ISO2022Enc(name[7..], replacement, repcb);
 

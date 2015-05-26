@@ -53,5 +53,5 @@ string get_home()
   if(home) return home;
 #endif
 
-  return 0;      
+  return 0;
 }

@@ -149,7 +149,7 @@ loop:
 	      break;
 	  case "symbols":
 	      tags = parse_mapping( raw[i][1..] );
-	      foreach(tags; string name; string revision ) 
+	      foreach(tags; string name; string revision )
 	      {
 		  if(revision == "1.1.1")
 		      branches[revision] = name; // the vendor branch
@@ -207,7 +207,7 @@ array parse_delta_sections(array raw)
 {
   string revision, ptr;
   revisions = ([]);
-  
+
   int i;
   Revision R;
 loop:
@@ -557,7 +557,7 @@ string get_contents_for_revision( string|Revision rev,
   if( stringp( rev ) ) rev = revisions[rev];
   if( !rev ) return 0;
   if( rev->text ) return rev->text;
-  
+
   //  Find first revision with expanded text content and apply subsequent
   //  diffs.
   string base;
@@ -572,7 +572,7 @@ string get_contents_for_revision( string|Revision rev,
   } while (cur && !base);
   if (!base)
     return 0;
-  
+
   Revision clear_in_next_iter = 0;
   foreach (reverse(diff_revs), Revision cur) {
     string diff = cur->rcs_text;
@@ -635,7 +635,7 @@ string get_contents_for_revision( string|Revision rev,
     }
     append( old[of..] );
     base = new->get();
-    
+
     //  Caller may request that intermediate revisions are not stored
     //  in memory longer than necessary.
     if (dont_cache_data) {
@@ -646,7 +646,7 @@ string get_contents_for_revision( string|Revision rev,
     }
     cur->text = base;
   }
-  
+
   //  Return for requested revision
   string res = rev->text;
   if (dont_cache_data)

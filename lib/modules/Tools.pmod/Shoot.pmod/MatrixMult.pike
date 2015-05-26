@@ -5,7 +5,7 @@ constant size = 100;
 constant name="Matrix multiplication ("+size+"x"+size+")";
 
 
-array(array(float)) mkmatrix(int rows, int cols) 
+array(array(float)) mkmatrix(int rows, int cols)
 {
    return map(enumerate(rows*cols,1,0),
 	      lambda(int f, float den)

@@ -438,11 +438,11 @@ void async_fetch_close()
 /****** utilities **************************************************/
 string headers_encode(mapping(string:array(string)|string) h)
 {
-    constant rfc_headers = ({ "accept-charset", "accept-encoding", "accept-language", 
-                              "accept-ranges", "cache-control", "content-length", 
-                              "content-type", "if-match", "if-modified-since", 
-                              "if-none-match", "if-range", "if-unmodified-since", 
-                              "max-forwards", "proxy-authorization", "transfer-encoding", 
+    constant rfc_headers = ({ "accept-charset", "accept-encoding", "accept-language",
+                              "accept-ranges", "cache-control", "content-length",
+                              "content-type", "if-match", "if-modified-since",
+                              "if-none-match", "if-range", "if-unmodified-since",
+                              "max-forwards", "proxy-authorization", "transfer-encoding",
                               "user-agent", "www-autenticate" });
    constant replace_headers = mkmapping(replace(rfc_headers[*],"-","_"),rfc_headers);
 
@@ -1243,7 +1243,7 @@ void async_fetch(function callback,mixed ... extra)
    }
 }
 
-//! Like @[async_fetch()], except with a timeout and a corresponding fail 
+//! Like @[async_fetch()], except with a timeout and a corresponding fail
 //! callback function.
 //!
 //! @seealso

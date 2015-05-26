@@ -18,7 +18,7 @@
  *
  *    You should have received a copy of the GNU General Public License
  *    along with this program; if not, write to the Free Software
- *    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA 
+ *    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  */
 
 #pike __REAL_VERSION__
@@ -95,7 +95,7 @@ class id_manager
   int next_id;
   int increment;
   mapping resources;
-  
+
   void create(int base, int mask)
   {
     next_id = base;
@@ -268,7 +268,7 @@ class Display
 	 * and write_callback() expects to be be able to write
 	 * at least one character. So don't call it yet. */
 #endif
-	write_callback( ); 
+	write_callback( );
       }
   }
 
@@ -286,7 +286,7 @@ class Display
     //     trace(0);
     return 1;
   }
-  
+
   void default_error_handler(object me, mapping e)
   {
     if(e->failed_request)
@@ -298,7 +298,7 @@ class Display
   {
     object w;
     array a;
-    
+
 //     werror(sprintf("Event: %s\n", event->type));
     if (event->wid && (w = lookup_id(event->wid))
 	&& (a = (w->event_callbacks[event->type])))
@@ -317,7 +317,7 @@ class Display
 //       else
 // 	werror(sprintf("Ignored event %s\n", event->type));
   }
-  
+
   mapping reply;  /* Partially read reply or event */
 
   void get_keyboard_mapping();
@@ -333,7 +333,7 @@ class Display
 	    int success;
 	    int len_reason;
 	    int length;
-	  
+
 	    sscanf(msg, "%c%c%2c%2c%2c",
 		   success, len_reason,
 		   majorVersion, minorVersion, length);
@@ -361,7 +361,7 @@ class Display
 	    ridBase = struct->read_int(4);
 	    ridMask = struct->read_int(4);
 	    id_manager::create(ridBase, ridMask);
-	    
+
 	    motionBufferSize = struct->read_int(4);
 	    nbytesVendor = struct->read_int(2);
 	    maxRequestSize = struct->read_int(2);
@@ -374,7 +374,7 @@ class Display
 	    minKeyCode = struct->read_int(1);
 	    maxKeyCode = struct->read_int(1);
 	    /* pad2 */ struct->read(4);
-	  
+
 	    vendor = struct->read(nbytesVendor);
 	    /* pad */ struct->read( (- nbytesVendor) % 4);
 
@@ -412,7 +412,7 @@ class Display
 		r->saveUnders = struct->read_int(1);
 		r->rootDepth = struct->read_int(1);
 		int nDepths = struct->read_int(1);
-	      
+
 		r->depths = ([ ]);
 		for (int j=0; j<nDepths; j++)
 		  {
@@ -421,7 +421,7 @@ class Display
 		    /* pad */ struct->read(1);
 		    int nVisuals = struct->read_int(2);
 		    /* pad */ struct->read(4);
-		  
+
 		    array visuals = allocate(nVisuals);
 		    for(int k=0; k<nVisuals; k++)
 		      {
@@ -490,7 +490,7 @@ class Display
 		// 	       msg));
 		reply = ([]);
 		int length;
-	      
+
 		sscanf(msg, "%*c%c%2c%4c%s",
 		       reply->data1, reply->sequenceNumber, length,
 		       reply->rest);
@@ -516,7 +516,7 @@ class Display
 			     "%2c%2c%2c%2c" "%2c%c",
 			     event->detail, event->sequenceNumber, event->time,
 			     root, event->wid, child,
-			     event->rootX, event->rootY, event->eventX, 
+			     event->rootX, event->rootY, event->eventX,
 			     event->eventY, event->state, event->sameScreen);
 		      event->root = lookup_id(root);
 		      event->event = lookup_id(event->wid);
@@ -558,7 +558,7 @@ class Display
 		      event->window = lookup_id(event->wid);
 		      break;
 		    }
-#if 0		
+#if 0
 		  case "GraphicsExpose":
 		    ...;
 		  case "NoExpose":
@@ -641,7 +641,7 @@ class Display
 		    ...;
 		  case "ClientMessage":
 		    ...;
-#endif		
+#endif
 		  case "MappingNotify":
 		    get_keyboard_mapping();
 		    event = ([ "type" : "MappingNotify",
@@ -657,7 +657,7 @@ class Display
 		  }
 		return ({ ACTION_EVENT, event });
 	      }
-	    break; 
+	    break;
 	  }
 	case STATE_WAIT_REPLY:
 	  reply->rest += msg;
@@ -734,7 +734,7 @@ class Display
 	exit(0);
     close();
   }
-  
+
   void process_pending_actions()
   {
     array a;
@@ -742,7 +742,7 @@ class Display
       handle_action(a);
     set_nonblocking(read_callback, write_callback, close_callback);
   }
-	  
+
   //! Connect to the specified display. The default is to use the
   //! value of the environment variable DISPLAY
   int open(string|void display)
@@ -750,7 +750,7 @@ class Display
     int async = !!connect_handler;
     int is_local;
     int display_number;
-    
+
     display = display || getenv("DISPLAY");
     if (!display)
       error("Xlib.pmod: $DISPLAY not set!\n");
@@ -791,7 +791,7 @@ class Display
 
     if (!auth_data)
       auth_data = ([ "name" : "", "data" : ""]);
-    
+
     /* Asynchronous connection */
     if (async)
     {
@@ -823,7 +823,7 @@ class Display
     pending_requests = ([]);
     pending_actions = ADT.Queue();
     sequence_number = 1;
-    
+
     /* Always uses network byteorder (big endian) */
     string msg = sprintf("B\0%2c%2c%2c%2c\0\0%s%s",
 			 11, 0,
@@ -840,7 +840,7 @@ class Display
       }
     if (!flush())
       return 0;
-    
+
     int result = 0;
     int done = 0;
 
@@ -927,7 +927,7 @@ class Display
 
     return ({ success, result });
   }
-  
+
   //!
   void send_async_request(.Requests.request req, function callback)
   {
@@ -1013,7 +1013,7 @@ class Display
     send_request(req);
     return .Types.Cursor(this, req->cid);
   }
-  
+
   //!
   object Bell_req(int volume)
   {
@@ -1021,7 +1021,7 @@ class Display
     req->percent=volume;
     return req;
   }
-  
+
   //!
   void Bell(int volume)
   {

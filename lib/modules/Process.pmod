@@ -439,7 +439,7 @@ protected array(string) runpike;
 //! @param options
 //!   Process creation options. See @[Process.Process] for details. May also
 //!   specify "add_predefines", "add_program_path", or "add_include_path" in
-//!   order to include these components in command path (module path is 
+//!   order to include these components in command path (module path is
 //!   included by default.)
 //!
 //! @param launcher
@@ -494,7 +494,7 @@ Process spawn_pike(array(string) argv, void|mapping(string:mixed) options,
   return Process(launcher + runpike + argv, options);
 }
 
-//! Easy and lazy way of using @[Process.Process] that runs a process 
+//! Easy and lazy way of using @[Process.Process] that runs a process
 //! and returns a mapping with the output and exit code without
 //! having to make sure you read nonblocking yourself.
 //!
@@ -505,7 +505,7 @@ Process spawn_pike(array(string) argv, void|mapping(string:mixed) options,
 //!   calling @[split_quoted_string()] in an operating
 //!   system dependant mode.
 //! @param modifiers
-//!   It takes all the modifiers @[Process.Process] accepts, with 
+//!   It takes all the modifiers @[Process.Process] accepts, with
 //!   the exception of stdout and stderr. Each must be either absent, or
 //!   a function accepting a string; if present, the functions will be called
 //!   whenever output is made on the corresponding stream, otherwise the data
@@ -528,9 +528,9 @@ Process spawn_pike(array(string) argv, void|mapping(string:mixed) options,
 //!       The process' exitcode.
 //!   @endmapping
 //!
-//! @note 
-//!   As the entire output of stderr and stdout is stored in the 
-//!   returned mapping it could potentially grow until memory runs out. 
+//! @note
+//!   As the entire output of stderr and stdout is stored in the
+//!   returned mapping it could potentially grow until memory runs out.
 //!   It is therefore advisable to set up rlimits if the output has a
 //!   potential to be very large, or else provide functions to handle
 //!   partial data.
@@ -553,7 +553,7 @@ mapping run(string|array(string) cmd, void|mapping modifiers)
     throw( ({ "Can not redirect stdout or stderr in Process.run, "
               "please use Process.Process instead.", backtrace() }) );
 
-  Stdio.File mystdout = Stdio.File(); 
+  Stdio.File mystdout = Stdio.File();
   Stdio.File mystderr = Stdio.File();
   Stdio.File mystdin;
 
@@ -562,14 +562,14 @@ mapping run(string|array(string) cmd, void|mapping modifiers)
   {
     mystdin = Stdio.File();
     stdin_str = modifiers->stdin;
-    p = Process(cmd, modifiers + ([ 
+    p = Process(cmd, modifiers + ([
                   "stdout":mystdout->pipe(),
                   "stderr":mystderr->pipe(),
                   "stdin":mystdin->pipe(Stdio.PROP_IPC|Stdio.PROP_REVERSE)
                 ]));
   }
   else
-    p = Process(cmd, modifiers + ([ 
+    p = Process(cmd, modifiers + ([
                   "stdout":mystdout->pipe(),
                   "stderr":mystderr->pipe(),
                 ]));
@@ -597,9 +597,9 @@ mapping run(string|array(string) cmd, void|mapping modifiers)
   mystdout->set_backend (backend);
   mystderr->set_backend (backend);
 
-  mystdout->set_read_callback( lambda( mixed i, string data) { 
+  mystdout->set_read_callback( lambda( mixed i, string data) {
                                  if (modifiers->stdout) modifiers->stdout(data);
-                                 else gotstdout += data; 
+                                 else gotstdout += data;
                                } );
   mystderr->set_read_callback( lambda( mixed i, string data) {
                                  if (modifiers->stderr) modifiers->stderr(data);
@@ -838,7 +838,7 @@ piece_loop:
       }
       last+=piece[1..];
       break;
-      
+
       case '\\':
       if(sizeof(piece)>1)
       {
@@ -854,7 +854,7 @@ piece_loop:
 	last+=x[++e];
       }
       break;
-      
+
       case ' ':
       case '\t':
       case '\n':
@@ -1017,8 +1017,8 @@ class Spawn
 
    private object low_spawn(array(Stdio.File) fdp,
 			    array(Stdio.File) fd_to_close,
-			    string cmd, void|array(string) args, 
-			    void|mapping(string:string) env, 
+			    string cmd, void|array(string) args,
+			    void|mapping(string:string) env,
 			    string|void cwd)
    {
       Stdio.File pie, pied; // interprocess communication
@@ -1045,12 +1045,12 @@ class Spawn
 	       if (objectp(f)) { f->close(); destruct(f); }
 	    pie->close();
 	    destruct(pie);
-	   
+
 	    pied->set_close_on_exec(1);
 
-	    if (env) 
+	    if (env)
 	       exece(cmd,args||({}),env);
-	    else 
+	    else
 	       exece(cmd,args||({}));
 
 	    error( "pike: failed to exece "+cmd+
@@ -1104,8 +1104,8 @@ class Spawn
 #if constant(kill)
    //!
    int kill(int signal)
-   { 
-      return predef::kill(pid,signal); 
+   {
+      return predef::kill(pid,signal);
    }
 #endif
 

@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// example HTTP proxy implementation 
+// example HTTP proxy implementation
 
 inherit Protocols.HTTP.Server.Port;
 
@@ -105,7 +105,7 @@ class Proxify
 				     "can't understand URL (not http?)"]) );
 	 return;
       }
-      
+
       string path=url->path;
       if(path=="") path="/";
 

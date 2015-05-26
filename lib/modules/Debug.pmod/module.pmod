@@ -126,7 +126,7 @@ string pp_memory_usage() {
             (trailer?
              format_row( ({ Array.sum( column(output,0) ), Array.sum( column(output,1) ), "total" }) ):"");
     };
-    return output_one(res,true) + 
+    return output_one(res,true) +
         "\nMalloc info:\n"+output_one(malloc,false);
 }
 

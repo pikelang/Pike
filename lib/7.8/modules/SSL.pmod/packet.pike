@@ -59,7 +59,7 @@ object|string recv(string data, ProtocolVersion version)
 
 #ifdef SSL3_FRAGDEBUG
   werror(" SSL.packet->recv: sizeof(data)="+sizeof(data)+"\n");
-#endif 
+#endif
 
 
   buffer += data;
@@ -126,7 +126,7 @@ string send()
 {
   if (! PACKET_types[content_type] )
     error( "Invalid type" );
-  
+
   if (protocol_version[0] != PROTOCOL_major)
     error( "Version %d is not supported\n", protocol_version[0] );
 #ifdef SSL3_DEBUG

@@ -160,7 +160,7 @@ class _Tar
     // Header description:
     //
     // Fieldno	Offset	len	Description
-    // 
+    //
     // 0	0	100	Filename
     // 1	100	8	Mode (octal)
     // 2	108	8	uid (octal)

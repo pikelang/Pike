@@ -41,7 +41,7 @@ protected class _CTR
     return global::name() + ".CTR";
   }
 
-  //! The state for the embedded algorithm 
+  //! The state for the embedded algorithm
   class State
   {
     inherit ::this_program;

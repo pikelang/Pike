@@ -199,13 +199,13 @@ string elite_word(string in, void|int(0..100) leetp, void|int(0..2) eightbit)
     error("argument 3: illegal value (expected eightbit 0..2)\n");
   }
 
-   
+
   multiset leet=(<>);
   multiset unleet=(<>);
   foreach (v;int i;array(string) d)
     if (!d || !sizeof(d)) unleet[i]=1;
     else leet[i]=1;
-   
+
   // lower leet level to target leetness
   while (100*sizeof(leet)/sizeof(in)>leetp)
   {
@@ -282,7 +282,7 @@ string elite_string(string in, void|int(0..100) leetp, void|int(0..1) eightbit)
     }
     in=res+in;
   }
-   
+
   in=map(in/" "-({""}),elite_word,leetp,eightbit)*" ";
 
   return in;

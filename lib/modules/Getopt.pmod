@@ -128,7 +128,7 @@ string|int(0..1) find_option(array(string) argv,
 
       string tmp=opt;
       sscanf(tmp, "%s=%s", tmp, value);
-	  
+
       if(has_value([array(string)]longform, tmp[2..])) {
 	argv[i]=0;
 
@@ -177,7 +177,7 @@ string|int(0..1) find_option(array(string) argv,
     foreach([array(string)]envvars, value)
       if(value && (value=[string]getenv([string]value)))
 	return value;
-  
+
   return def;
 }
 
@@ -358,7 +358,7 @@ array(array) find_all_options(array(string) argv,
 
 	  if(option[TYPE]!=NO_ARG) { // HAS_ARG or MAY_HAVE_ARG
 	    arg = opt[j+1..];
-	      
+
 	    if(option[TYPE]==HAS_ARG && arg=="") {
 	      if(e==sizeof(argv)-1)
 		my_error( sprintf("No argument to option -%c.\n", opt_letter),
@@ -382,7 +382,7 @@ array(array) find_all_options(array(string) argv,
       opt -= "\0";
       if (opt != "-")
 	argv[e] = opt;
-      else 
+      else
 	argv[e] = 0;
     }
   }

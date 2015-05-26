@@ -17,7 +17,7 @@
  *
  *    You should have received a copy of the GNU General Public License
  *    along with this program; if not, write to the Free Software
- *    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA 
+ *    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  */
 
 #pike __REAL_VERSION__
@@ -67,7 +67,7 @@ class ScreenSaver
 {
   inherit Extension;
   constant name = "MIT-SCREEN-SAVER";
-  
+
 
 }
 
@@ -79,7 +79,7 @@ class Shape
   constant name = "SHAPE";
   mapping shape_kind=([ "bounding":0, "clipping":1, "clip":1]);
   mapping shape_op=(["set":0,"union":1,"intersect":2,"subtract":3,"invert":4 ]);
-  
+
 
   void post_init()
   {
@@ -103,16 +103,16 @@ class Shape
   }
 
   //!
-  void ShapeMask( object window, int xo, int yo, 
+  void ShapeMask( object window, int xo, int yo,
 		  string kind, string operation,
 		  object|void source )
   {
     int k = shape_kind[kind];
     int o = shape_op[operation];
-    
+
     object req = .Requests.ExtensionRequest( major, 0, 0 );
     req->code = 2;
-    req->data = 
+    req->data =
       sprintf("%c%c\0\0%4c%2c%2c%4c",o,k,window->id,xo,yo,source?source->id:0);
     dpy->send_request( req );
   }
@@ -120,14 +120,14 @@ class Shape
 //   void ShapeCombine( object window, string kind, string operation,
 // 		     array (object) rectangles )
 //   {
-//    
+//
 //   }
 
   //!
   void ShapeOffset( object window, string kind, int xo, int yo )
   {
     int k = shape_kind[kind];
-    
+
     object req = .Requests.ExtensionRequest( major, 0, 0 );
     req->code = 4;
     req->data = sprintf("%c\0\0\0%4c%2c%2c", k, window->id, xo, yo);
@@ -136,7 +136,7 @@ class Shape
 
 //   mapping ShapeQueryExtents( object window )
 //   {
-    
+
 //   }
 
 //   void ShapeSelectInput( object window, int enable )
@@ -187,16 +187,16 @@ class XTEST
   {
 
   }
-  
+
   void XTestCompareCursor(object window, int cursor)
   {
-    
+
   }
 
   //! Send a synthetic event to an X server.
   //!
   //! @param event_type
-  //!   Type of event to send. Possible values: KeyPress: 2, KeyRelease: 3, 
+  //!   Type of event to send. Possible values: KeyPress: 2, KeyRelease: 3,
   //!   ButtonPress: 4, ButtonRelease: 5, MotionNotify: 6
   //!
   //! @param detail
@@ -209,7 +209,7 @@ class XTEST
   //!   For motion events, this is the relative X distance or absolute X coordinates.
   //! @param yloc
   //!   For motion events, this is the relative Y distance or absolute Y coordinates.
-  void XTestFakeInput(string event_type, int detail, int delay, 
+  void XTestFakeInput(string event_type, int detail, int delay,
 	object|void window, int|void xloc, int|void yloc)
   {
 
@@ -227,12 +227,12 @@ class XTEST
   }
 
   //! Cause the executing client to become impervious to server grabs.
-  //! That is, it can continue to execute requests even if another client 
+  //! That is, it can continue to execute requests even if another client
   //! grabs the server.
   //!
-  //! @param impervious 
-  //!   A true (non zero) value causes the client to perform as 
-  //!   described above. If false (zero), server returns to the normal 
+  //! @param impervious
+  //!   A true (non zero) value causes the client to perform as
+  //!   described above. If false (zero), server returns to the normal
   //!   state of  being susceptible to server grabs.
   void XTestGrabControl(int impervious)
   {

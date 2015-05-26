@@ -1,8 +1,8 @@
 START_MARKER
 
 dnl NOTE:
-dnl   *every* time the Calendar tests have failed, it's not the 
-dnl   Calendar module that had any errors. Please don't commit 
+dnl   *every* time the Calendar tests have failed, it's not the
+dnl   Calendar module that had any errors. Please don't commit
 dnl   your Pike until you've got Calendar to compile again. /Mirar
 
 test_true(Calendar.Day())

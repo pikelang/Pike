@@ -166,7 +166,7 @@ class YMD
    int m;   // [*] month of year (1..12?), like
    int md;  // [*] day of month (1..)
    int wy;  // [*] week year
-   int w;   // [*] week of week year (1..) 
+   int w;   // [*] week of week year (1..)
    int wd;  // [*] day of week (1..7?)
 
    int mnd=CALUNKNOWN;  // [*] days in current month
@@ -191,14 +191,14 @@ class YMD
    void create_unixtime_default(int unixtime)
    {
 // 1970-01-01 is julian day 2440588
-      create_julian_day( 2440588+unixtime/86400 ); 
+      create_julian_day( 2440588+unixtime/86400 );
 // we can't reuse this; it might not be start of day
       [int mutco,string mtzn]=rules->timezone->tz_ux(unixtime);
       int uxo=unixtime%86400-mutco;
       if (uxo<0)
-	 create_julian_day( 2440588+unixtime/86400-1 ); 
+	 create_julian_day( 2440588+unixtime/86400-1 );
       else if (uxo>=86400)
-	 create_julian_day( 2440588+unixtime/86400+1 ); 
+	 create_julian_day( 2440588+unixtime/86400+1 );
       else if (uxo==0)
 	 utco=mutco,tzn=mtzn; // reuse, it *is* start of day
    }
@@ -255,14 +255,14 @@ class YMD
    {
 // 1970-01-01 is julian day 2440588
       int ux=(jd-2440588)*86400;
-      if (utco==CALUNKNOWN) 
+      if (utco==CALUNKNOWN)
 	 [utco,tzn]=rules->timezone->tz_jd(jd);
       return ux+utco;
    }
 
    int utc_offset()
    {
-      if (utco==CALUNKNOWN) 
+      if (utco==CALUNKNOWN)
 	 [utco,tzn]=rules->timezone->tz_jd(jd);
       return utco;
    }
@@ -280,11 +280,11 @@ class YMD
       if (!(u%3600))
 	 return sprintf("UTC%+d",-u/3600);
       if (!(u%60))
-	 return 
+	 return
 	    (u<0)
 	    ?sprintf("UTC+%d:%02d",-u/3600,(-u/60)%60)
 	    :sprintf("UTC-%d:%02d",u/3600,(u/60)%60);
-      return 
+      return
 	 (u<0)
 	 ?sprintf("UTC+%d:%02d:%02d",-u/3600,(-u/60)%60,(-u)%60)
 	 :sprintf("UTC-%d:%02d:%02d",u/3600,(u/60)%60,u%60);
@@ -371,7 +371,7 @@ class YMD
    int minute_no() { return 0; }
    int second_no() { return 0; }
    float fraction_no() { return 0.0; }
-   
+
 //! method mapping datetime()
 //!     This gives back a mapping with the relevant
 //!	time information (representing the start of the period);
@@ -389,7 +389,7 @@ class YMD
 //!      // for compatibility:
 //!	    "hour":     0          // hour of day, including dst
 //!	    "minute":   0          // minute of hour
-//!	    "second":   0          // second of minute 
+//!	    "second":   0          // second of minute
 //!	    "fraction": 0.0        // fraction of second
 //!	 ]);
 //!	</pre>
@@ -397,7 +397,7 @@ class YMD
 //! note:
 //!	Day of week is compatible with old versions,
 //!	ie, 0 is sunday, 6 is saturday, so it shouldn't be
-//!	used to calculate the day of the week with the given 
+//!	used to calculate the day of the week with the given
 //!	week number. Year day is also backwards compatible,
 //!	ie, one (1) less then from the year_day() function.
 //!
@@ -478,7 +478,7 @@ class YMD
 //!	<pre>
 //!	iso_ymd        "2000-06-02 (Jun) -W22-5 (Fri)" [2]
 //!	ext_ymd        "Friday, 2 June 2000" [2]
-//!     ymd            "2000-06-02" 
+//!     ymd            "2000-06-02"
 //!     ymd_short      "20000602"
 //!     ymd_xshort     "000602" [1]
 //!	iso_week       "2000-W22"
@@ -491,12 +491,12 @@ class YMD
 //!	ext_time       "Friday, 2 June 2000, 00:00:00" [2]
 //!	ctime          "Fri Jun  2 00:00:00 2000\n" [2] [3]
 //!	http           "Fri, 02 Jun 2000 00:00:00 GMT" [4]
-//!     time           "2000-06-02 00:00:00" 
+//!     time           "2000-06-02 00:00:00"
 //!	time_short     "20000602 00:00:00"
 //!	time_xshort    "000602 00:00:00"
 //!	iso_short      "2000-06-02T00:00:00"
-//!     mtime          "2000-06-02 00:00" 
-//!     xtime          "2000-06-02 00:00:00.000000" 
+//!     mtime          "2000-06-02 00:00"
+//!     xtime          "2000-06-02 00:00:00.000000"
 //!     tod            "00:00:00"
 //!     tod_short      "000000"
 //!     todz           "00:00:00 CET"
@@ -737,7 +737,7 @@ class YMD
       if (t->is_year || t->is_month)
       {
 	 if (md==CALUNKNOWN) make_month();
-	 if (md==1) 
+	 if (md==1)
 	    return Month("ymd_yjmw",rules,y,yjd,jd,m,
 			 t->number_of_months()*n,wd,w,wy)
 	       ->autopromote();
@@ -830,7 +830,7 @@ class YMD
 	 }
 
       return map(enumerate(1+to-from,1,y+from-1),
-		 lambda(int x) 
+		 lambda(int x)
 		 { return Year("ymd_yn",rules,x,1); });
    }
 
@@ -848,7 +848,7 @@ class YMD
       error("Not in range (Year 1..%d exist)\n",
 	    number_of_years());
    }
-   
+
 
 // days
 
@@ -888,12 +888,12 @@ class YMD
       for (;;)
       {
 	 int rd=year_remaining_days(zy,zyd)+1;
-	 
+
 	 if (rd>0)
 	 {
 	    if (rd>to) rd=to;
 	    res+=map(enumerate(rd,1,zyd),
-		     lambda(int x) 
+		     lambda(int x)
 		     { return Day("ymd_yd",rules,zy,zyjd,zyjd+x-1,x,1); });
 	    if (rd==to) break;
 	    zjd+=rd;
@@ -934,11 +934,11 @@ class YMD
 
    int number_of_months();
 
-   array(cMonth) months(int ...range)   
+   array(cMonth) months(int ...range)
    {
       int from=1,n=number_of_months(),to=n;
 
-      if (sizeof(range)) 
+      if (sizeof(range))
 	 if (sizeof(range)<2)
 	    error("Illegal numbers of arguments to months()\n");
 	 else
@@ -951,17 +951,17 @@ class YMD
       if (md==CALUNKNOWN) make_month();
 
       return map(enumerate(1+to-from,1,from+m-1),
-		 lambda(int x) 
+		 lambda(int x)
 		 { return Month("ymd_ym",rules,y,x,1); });
    }
 
-   cMonth month(int ... mp) 
-   { 
+   cMonth month(int ... mp)
+   {
       if (md==CALUNKNOWN) make_month();
 
       if (!sizeof(mp))
 	 return Month("ymd_ym",rules,y,m,1);
-      
+
       int num=mp[0];
 
       if (num==-1 && !n)
@@ -979,11 +979,11 @@ class YMD
 
    int number_of_weeks();
 
-   array(cWeek) weeks(int ...range)   
+   array(cWeek) weeks(int ...range)
    {
       int from=1,n=number_of_weeks(),to=n;
 
-      if (sizeof(range)) 
+      if (sizeof(range))
 	 if (sizeof(range)<2)
 	    error("Illegal numbers of arguments to weeks()\n");
 	 else
@@ -996,12 +996,12 @@ class YMD
       if (wd==CALUNKNOWN) make_week();
 
       return map(enumerate(1+to-from,1,from+w-1),
-		 lambda(int x) 
+		 lambda(int x)
 		 { return Week("ymd_yw",rules,wy,x,1); });
    }
 
-   cWeek week(int ... mp) 
-   { 
+   cWeek week(int ... mp)
+   {
       if (wd==CALUNKNOWN) make_week();
 
       if (!sizeof(mp))
@@ -1039,7 +1039,7 @@ class YMD
    {
       int from=0,n=::`[]("number_of_"+unit)(),to=n-1;
 
-      if (sizeof(range)) 
+      if (sizeof(range))
 	 if (sizeof(range)<2)
 	    error("Illegal numbers of arguments to "+unit+"()\n");
 	 else
@@ -1048,7 +1048,7 @@ class YMD
 	    if (from>=n) return ({}); else if (from<0) from=0;
 	    if (to>=n) to=n-1; else if (to<from) return ({});
 	 }
-      
+
       from*=step;
       to*=step;
 
@@ -1119,41 +1119,41 @@ class YMD
    { return get_timeofday("hours",0,3600,Hour,@range); }
 
    int number_of_minutes() { return (number_of_seconds()+59)/60; }
-   cMinute minute(void|int n,int ... time) 
-   { 
+   cMinute minute(void|int n,int ... time)
+   {
       if (sizeof(time))
 	 return minute(n*60+time[0]);
-      return get_unit("minute",n); 
+      return get_unit("minute",n);
    }
    array(cMinute) minutes(int ...range)
    { return get_timeofday("minutes",0,60,Minute,@range); }
 
    int number_of_seconds() { return end()->unix_time()-unix_time(); }
-   cSecond second(void|int n,int ...time) 
-   { 
+   cSecond second(void|int n,int ...time)
+   {
       if (sizeof(time)==2)
       {
 	 return second(n*3600+time[0]*60+time[1]);
 //  	 return hour(n)->minute(time[0])->second(time[1]);
       }
-      return get_unit("second",n); 
+      return get_unit("second",n);
    }
    array(cSecond) seconds(int ...range)
    { return get_timeofday("seconds",0,1,Second,@range); }
 
    float number_of_fractions() { return (float)number_of_seconds(); }
-   cSecond fraction(void|float|int n) 
+   cSecond fraction(void|float|int n)
    {
       return fractions()[0];
    }
    array(cSecond) fractions(int|float ...range)
-   { 
+   {
       float from,to,n=number_of_fractions();
       if (sizeof(range)==2)
-	 from=(float)range[0],to=(float)range[1]; 
+	 from=(float)range[0],to=(float)range[1];
       else if (sizeof(range)==0)
 	 from=0.0,to=n;
-      else 
+      else
 	 error("Illegal arguments\n");
       if (from<0.0) from=0.0;
       if (to>n) to=n;
@@ -1163,7 +1163,7 @@ class YMD
    }
 
    TimeRange `*(int|float n)
-   {  
+   {
       if(intp(n))
         return set_size(n,this);
       else
@@ -1171,10 +1171,10 @@ class YMD
    }
 
    array(TimeRange) split(int|float n, void|function|TimeRange with)
-   {  
+   {
       if(!with)
         with=Second();
-      else if (functionp(with)) 
+      else if (functionp(with))
         with=promote_program(with);
 
       int length=(int)(how_many(with)/n);
@@ -1189,7 +1189,7 @@ class YMD
       array result=({});
       TimeRange next;
       while((next=start+with*(length+!!remains)) < end)
-      { 
+      {
         result += ({ start->distance(next) });
         start=next;
         if(remains)
@@ -1238,8 +1238,8 @@ class cYear
 
    constant is_year=1;
 
-// --- 
-   
+// ---
+
 //!
 //! method void create("unix",int unix_time)
 //! method void create("julian",int|float julian_day)
@@ -1326,12 +1326,12 @@ class cYear
    {
       return Year("ymd_y",rules,y,yjd,0);
    }
-   
+
    TimeRange end()
    {
       return Year("ymd_yn",rules,y+n,0);
    }
-   
+
 // ----------------
 
    protected string _sprintf(int t,mapping m)
@@ -1339,7 +1339,7 @@ class cYear
       switch (t)
       {
 	 case 'O':
-	    if (n!=1) 
+	    if (n!=1)
 	       return sprintf("Year(%s)",nice_print_period());
 	    return sprintf("Year(%s)",nice_print());
 	 case 't':
@@ -1369,7 +1369,7 @@ class cYear
 
    TimeRange _move(int m,YMD step)
    {
-      if (!step->n || !m) 
+      if (!step->n || !m)
 	 return this;
 
       if (step->is_year)
@@ -1386,7 +1386,7 @@ class cYear
 	 return Day("ymd_jd",rules,
 		    yjd+m*step->number_of_days(),number_of_days())
 	    ->autopromote();
-      
+
       error("_move: Incompatible type %O\n",step);
    }
 
@@ -1469,7 +1469,7 @@ class cYear
       error("distance: Incompatible type %O\n",to);
    }
 
-// ---   
+// ---
 
    int number_of_years()
    {
@@ -1492,10 +1492,10 @@ class cYear
 
    cMonth month(int|string ... mp)
    {
-      if (sizeof(mp) && 
+      if (sizeof(mp) &&
 	  stringp(mp[0]))
       {
-	 int num=((int)mp[0]) || 
+	 int num=((int)mp[0]) ||
 	    rules->language[f_month_number_from_name](mp[0]);
 	 if (!num)
 	    error("no such month %O in %O\n",mp[0],this);
@@ -1520,13 +1520,13 @@ class cYear
 //!	from <ref to=YMD.week>YMD</ref>().
 //!
 //!	This is useful, since the first week of a year
-//!	not always (about half the years, in the ISO calendar) 
+//!	not always (about half the years, in the ISO calendar)
 //!	is numbered '1'.
 //!
 
    cWeek week(int|string ... mp)
    {
-      if (sizeof(mp) && 
+      if (sizeof(mp) &&
 	  stringp(mp[0]))
       {
 	 int num;
@@ -1642,13 +1642,13 @@ class cMonth
    }
 
    protected string _sprintf(int t,mapping m)
-   { 
+   {
 //        return sprintf("month y=%d yjd=%d m=%d jd=%d yd=%d n=%d nd=%d",
 //  		     y,yjd,m,jd,yd,n,number_of_days());
       switch (t)
       {
 	 case 'O':
-	    if (n!=1) 
+	    if (n!=1)
 	       return sprintf("Month(%s)",nice_print_period());
 	    return sprintf("Month(%s)",nice_print());
 	 case 't':
@@ -1699,7 +1699,7 @@ class cMonth
    {
       if (to->is_timeofday)
 	 return hour()->distance(to);
-      
+
       if (to->is_ymd)
       {
 	 if (to->is_month || to->is_year)
@@ -1752,9 +1752,9 @@ class cMonth
 
    TimeRange place(TimeRange what,void|int force)
    {
-      if (what->is_year) 
+      if (what->is_year)
 	 return year()->place(what,force); // just fallback
-      
+
       if (what->is_day)
 	 return place_day(what->month_day(),what->n,force);
 
@@ -1767,7 +1767,7 @@ class cMonth
 
       if (what->is_timeofday)
 	 return place(what->day(),force)->place(what,force);
-      
+
       error("place: Incompatible type %O\n",what);
    }
 
@@ -1784,7 +1784,7 @@ class cMonth
    int number_of_days()
    {
       if (nd!=CALUNKNOWN) return nd;
-      
+
       [int y2,int m2,int nd2,int yd2]=year_month_from_month(y,m+n);
       return nd=julian_day_from_year(y2)+yd2-jd-1;
    }
@@ -1824,7 +1824,7 @@ class cMonth
 //!	calendar, it starts on a monday and ends on a sunday.
 //!
 //!	The week are might not be aligned to the year, and thus
-//!	the week may cross year borders and the year of 
+//!	the week may cross year borders and the year of
 //!	the week might not be the same as the year of all the
 //!	days in the week. The basic rule is that the week year
 //!	is the year that has the most days in the week, but
@@ -1839,7 +1839,7 @@ class cMonth
 //!	to a week, it falls back to using days.
 //!
 //!	When adding, moving or subtracting years,
-//!	if tries to place the moved week in the 
+//!	if tries to place the moved week in the
 //!	resulting year.
 //!
 //! inherits YMD
@@ -1949,13 +1949,13 @@ class cWeek
    }
 
    protected string _sprintf(int t,mapping m)
-   { 
+   {
 //        return sprintf("week y=%d yjd=%d w=%d jd=%d yd=%d n=%d nd=%d",
 //  		     y,yjd,w,jd,yd,n,number_of_days());
       switch (t)
       {
 	 case 'O':
-	    if (n!=1) 
+	    if (n!=1)
 	       return sprintf("Week(%s)",nice_print_period());
 	    return sprintf("Week(%s)",nice_print());
 	 case 't':
@@ -1979,7 +1979,7 @@ class cWeek
 
    string nice_print()
    {
-      return 
+      return
 	 sprintf("%s %s",
 		 week_name(),
 		 year_name());
@@ -1987,7 +1987,7 @@ class cWeek
 
    string format_nice()
    {
-      return 
+      return
 	 sprintf("%s %s",
 		 week_name(),
 		 year_name());
@@ -2024,7 +2024,7 @@ class cWeek
    {
       if (to->is_timeofday)
 	 return hour()->distance(to);
-      
+
       if (to->is_week)
       {
 	 int n1=weeks_to_week(to->wy,to->w);
@@ -2082,10 +2082,10 @@ class cWeek
 
    TimeRange place_day(int day,int day_n,int force)
    {
-      if (day>number_of_days()) 
-	 if (!force) 
+      if (day>number_of_days())
+	 if (!force)
 	    return 0;
-	 else 
+	 else
 	    return Day("ymd_jd",rules,jd+day-1,max(0,day_n-1))->autopromote();
       return Day("ymd_jd",rules,jd+day-1,day_n)->autopromote();
    }
@@ -2096,11 +2096,11 @@ class cWeek
 	 return what->mend_overlap(map(what->parts,place,force));
 //  	 return `|(@map(what->parts,place,force));
 
-      if (what->is_year) 
+      if (what->is_year)
 	 return year()->place(what,force); // just fallback
-      if (what->is_month) 
+      if (what->is_month)
 	 return month()->place(what,force); // just fallback
-      
+
       if (what->is_week)
 	 return Week("ymd_yw",rules,wy,w,what->number_of_weeks());
 
@@ -2126,7 +2126,7 @@ class cWeek
    int number_of_months()
    {
       if (!n) return 1;
-      
+
 // cheat
       return Day("ymd_jd",rules,jd,number_of_days())
 	 ->number_of_months();
@@ -2156,10 +2156,10 @@ class cWeek
 
    cDay day(int|string ... mp)
    {
-      if (sizeof(mp) && 
+      if (sizeof(mp) &&
 	  stringp(mp[0]))
       {
-	 int num=((int)mp[0]) || 
+	 int num=((int)mp[0]) ||
 	    rules->language[f_week_day_number_from_name](mp[0]);
 	 if (!num)
 	    error("no such day %O in %O\n",mp[0],this);
@@ -2259,33 +2259,33 @@ class cDay
 	       switch (sizeof(args))
 	       {
 		  case 1:
-		     if (intp(args[0])) 
+		     if (intp(args[0]))
 		     {
 			create_julian_day(args[0]);
 			return;
 		     }
 		     break;
 		  case 2:
-		     if (stringp(args[0])) 
+		     if (stringp(args[0]))
 			y=default_rules->language[f_year_number_from_name]
 			   (args[0]);
 		     else if (intp(args[0]))
 			y=args[0];
-		     else 
+		     else
 			break;
-		     if (!intp(args[1])) 
+		     if (!intp(args[1]))
 			break;
 		     yd=args[1];
 		     yjd=julian_day_from_year(y);
 		     jd=yjd+yd-1;
 		     return;
 		  case 3:
-		     if (stringp(args[0])) 
+		     if (stringp(args[0]))
 			y=default_rules->language[f_year_number_from_name]
 			   (args[0]);
 		     else if (intp(args[0]))
 			y=args[0];
-		     else 
+		     else
 			break;
 		     if (!intp(args[1]) ||
 			 !intp(args[2])) break;
@@ -2322,7 +2322,7 @@ class cDay
       {
 	 [y,yjd]=year_from_julian_day(jd=_jd);
 	 yd=1+jd-yjd;
-      }	 
+      }
    }
 
    protected string _sprintf(int t,mapping m)
@@ -2358,12 +2358,12 @@ class cDay
    {
       if (m==CALUNKNOWN) make_month();
       if (calendar()->Year()!=year())
-	 return 
+	 return
 	    sprintf("%s %s %s",
 		    month_day_name(),month_shortname(),
 		    year_name());
       else
-	 return 
+	 return
 	    sprintf("%s %s",
 		    month_day_name(),month_shortname());
    }
@@ -2454,7 +2454,7 @@ class cDay
 	    int u0=what->utc_offset()-what->day()->utc_offset();
 	    int u1=res->utc_offset()-utc_offset();
 //  	    werror("%O %O\n",u0,u1);
-	    if (u1-u0) 
+	    if (u1-u0)
 	       res=res->add(u1-u0,Second);
 	    else
 	       res=res->autopromote();
@@ -2472,17 +2472,17 @@ class cDay
 	 return res;
       }
 
-      if (what->is_year) 
+      if (what->is_year)
 	 return year()->place(what,force); // just fallback
-      if (what->is_month) 
+      if (what->is_month)
 	 return month()->place(what,force); // just fallback
-      if (what->is_week) 
+      if (what->is_week)
 	 return week()->place(what,force); // just fallback
 
-      if (what->is_day) 
+      if (what->is_day)
 	 return Day("ymd_jd",rules,jd,what->number_of_days())
 	    ->autopromote();
-	 
+
       error("place: Incompatible type %O\n",what);
    }
 
@@ -2555,7 +2555,7 @@ class YMD_Time
 	} while (0)
 
 #define RBASE (this->base || this->make_base())
-	
+
    cDay day(int ...n) { return RBASE->day(@n); }
    cDay number_of_days() { return RBASE->number_of_days(); }
    array(cDay) days(int ...r) { return RBASE->days(@r); }
@@ -2567,7 +2567,7 @@ class YMD_Time
    cWeek week(int ...n) { return RBASE->week(@n); }
    cWeek number_of_weeks() { return RBASE->number_of_weeks(); }
    array(cWeek) weeks(int ...r) { return RBASE->weeks(@r); }
-   
+
    cYear year(int ...n) { return RBASE->year(@n); }
    cYear number_of_years() { return RBASE->number_of_years(); }
    array(cYear) years(int ...r) { return RBASE->years(@r); }
@@ -2593,7 +2593,7 @@ class YMD_Time
    string format_ymd_short() { return RBASE->format_ymd_short(); }
    string format_ymd_xshort() { return RBASE->format_ymd_xshort(); }
    string format_iso_week() { return RBASE->format_iso_week(); }
-   string format_iso_week_short() 
+   string format_iso_week_short()
    { return RBASE->format_iso_week_short(); }
    string format_week() { return RBASE->format_week(); }
    string format_week_short() { return RBASE->format_week_short(); }
@@ -2740,7 +2740,7 @@ class cSuperTimeRange
 //!	where abc and def is matched, and %x is
 //!	one of those time units:
 //!	<pre>
-//!	%Y absolute year 
+//!	%Y absolute year
 //!	%y dwim year (70-99 is 1970-1999, 0-69 is 2000-2069)
 //!	%M month (number, name or short name) (needs %y)
 //!	%W week (needs %y)
@@ -2763,7 +2763,7 @@ class cSuperTimeRange
 //!
 //! note:
 //!	The zone will be a guess if it doesn't state an exact
-//!	regional timezone (like "Europe/Stockholm") - 
+//!	regional timezone (like "Europe/Stockholm") -
 //!	most zone abbriviations (like "CET") are used by more
 //!	then one region with it's own daylight saving rules.
 //!	Also beware that for instance CST can be up to four different zones,
@@ -2781,7 +2781,7 @@ class cSuperTimeRange
 //!	WST          Australia/Perth      [UTC+8]
 //!	</pre>
 //!
-//!	This mapping is modifiable in the ruleset, see 
+//!	This mapping is modifiable in the ruleset, see
 //!	<ref>Ruleset.set_abbr2zone</ref>.
 
 
@@ -2874,7 +2874,7 @@ protected TimeRange dwim_zone(TimeRange origin,string zonename,
 
 protected mapping(string:array) parse_format_cache=([]);
 
-protected mapping dwim_year=([ "past_lower":70, "past_upper":100, 
+protected mapping dwim_year=([ "past_lower":70, "past_upper":100,
                             "current_century":2000, "past_century":1900 ]);
 
 TimeRange parse(string fmt,string arg,void|TimeRange context)
@@ -2916,11 +2916,11 @@ TimeRange parse(string fmt,string arg,void|TimeRange context)
    int i=search(res,"");
    if (i!=-1 && i<sizeof(res)-1) return 0;
 
-   if (sizeof(res)<sizeof(q)) 
+   if (sizeof(res)<sizeof(q))
       return 0; // parse error
 
    mapping m=mkmapping(q,res);
-   if (i!=-1 && m->n!="") return 0; 
+   if (i!=-1 && m->n!="") return 0;
 
 //     werror("%O\n",m);
 
@@ -2940,7 +2940,7 @@ TimeRange parse(string fmt,string arg,void|TimeRange context)
 #endif
       if (m->n && m->n!="") return 0;
 
-      if (m->Y) 
+      if (m->Y)
 	 m->Y=default_rules->language[f_year_number_from_name](m->Y);
 
       if (!undefinedp(m->Y) && m->D && (int)m->M)
@@ -2950,13 +2950,13 @@ TimeRange parse(string fmt,string arg,void|TimeRange context)
       if (m->d)
       {
 	 int y,mo,d;
-      
+
 	 if (sizeof(m->d)==6)
 	 {
 	    [y,mo,d]=(array(int))(m->d/2);
-	    if (y<dwim_year->past_lower) 
-               y+=dwim_year->current_century; 
-            else 
+	    if (y<dwim_year->past_lower)
+               y+=dwim_year->current_century;
+            else
                y+=dwim_year->past_century;
 	 }
 	 else if (sizeof(m->d)==8)
@@ -2970,13 +2970,13 @@ TimeRange parse(string fmt,string arg,void|TimeRange context)
 	 if (!undefinedp(m->Y)) m->year=cal->Year(m->Y);
 	 else if (m->y)
 	 {
-	    if (sizeof(m->y)<3) 
+	    if (sizeof(m->y)<3)
 	    {
 	       m->y=(int)m->y;
                // FIXME? these should be adjustable for different calendars.
-	       if (m->y<dwim_year->past_lower) 
+	       if (m->y<dwim_year->past_lower)
                   m->y+=dwim_year->current_century;
-	       else if (m->y<dwim_year->past_upper) 
+	       else if (m->y<dwim_year->past_upper)
                   m->y+=dwim_year->past_century;
 	    }
 	    low=m->year=cal->Year(m->y);
@@ -3015,7 +3015,7 @@ TimeRange parse(string fmt,string arg,void|TimeRange context)
 		  d2=(y2-i)->place(m->day);
 		  if (d2 && d2->week()->day(m->e)==d2) break;
 	       }
-	       if (i==20) return 0; 
+	       if (i==20) return 0;
 	       low=m->day=d2;
 	    }
 	    else
@@ -3031,7 +3031,7 @@ TimeRange parse(string fmt,string arg,void|TimeRange context)
 		  d2=(m2-i)->place(m->day);
 		  if (d2 && d2->week()->day(m->e)==d2) break;
 	       }
-	       if (i==20) return 0; 
+	       if (i==20) return 0;
 	       low=m->day=d2;
 	    }
       }
@@ -3039,7 +3039,7 @@ TimeRange parse(string fmt,string arg,void|TimeRange context)
       int h=0,mi=0,s=0;
       float sub_second;
       string g=0;
-      
+
       if (m->t)
       {
 	 if (sizeof(m->t)==6)
@@ -3060,7 +3060,7 @@ TimeRange parse(string fmt,string arg,void|TimeRange context)
       {
 	 switch (lower_case(m->p)-".")
 	 {
-	    case "am": 
+	    case "am":
 	       if (h==12) h=0;
 	       break;
 	    case "pm":
@@ -3123,7 +3123,7 @@ TimeRange parse(string fmt,string arg,void|TimeRange context)
 
 Calendar.dwim_day("2000-03-20 (Mar) -W12-1 (Mon)");
 Calendar.dwim_day("20/3/2000");
-Calendar.dwim_day("20 mar 2000"); 
+Calendar.dwim_day("20 mar 2000");
 Calendar.dwim_day("20/3 -00");
 Calendar.dwim_day("Mon 20 Mar 2000" );
 Calendar.dwim_day("Mon 20/3 2000");
@@ -3176,7 +3176,7 @@ protected constant dwim_day_strings=
   "%e%*[- /]%D%*[- /]%M",
   "%e%*[- /]%M%*[- /]%D",
   "%e%*[- /wv]%W%*[ -/]%y",
-  "%e%*[- /wv]%W", 
+  "%e%*[- /wv]%W",
   "%d"
 });
 
@@ -3184,9 +3184,9 @@ cDay dwim_day(string day,void|TimeRange context)
 {
    cDay d;
 
-   foreach ( dwim_day_strings, 
+   foreach ( dwim_day_strings,
 	     string dayformat)
-      if ( (d=parse(dayformat+"%n",day,context)) ) 
+      if ( (d=parse(dayformat+"%n",day,context)) )
 	 return d;
 
    cDay t=context?context->day():Day();
@@ -3215,7 +3215,7 @@ cDay dwim_day(string day,void|TimeRange context)
       cDay d=dwim_day(day);
       return (d->week()+1)->place(d);
    }
-   
+
    error("Failed to dwim day from %O\n",day);
 }
 
@@ -3231,8 +3231,8 @@ TimeofDay dwim_time(string what,void|TimeRange cx)
 {
    TimeofDay t;
 
-// #define COLON "$*[ :]" 
-#define COLON ":" 
+// #define COLON "$*[ :]"
+#define COLON ":"
 #define SPACED(X) replace(X," ","%*[ ]")
 
    what = String.trim_all_whites(what);
@@ -3289,7 +3289,7 @@ TimeofDay dwim_time(string what,void|TimeRange cx)
 //  	 werror("try: %O\n     %O\n",
 //  		dayformat+"%*[ ,]"+todformat,
 //  		todformat+"%*[ ,]"+dayformat);
-	 if (dayformat=="") 
+	 if (dayformat=="")
 	 {
 	    if ( (t=parse(todformat+"%*[ ]%n",what,cx)) ) return t;
 	 }
@@ -3350,7 +3350,7 @@ TimeofDay http_time(string what, void|TimeRange cx)
 //!	    "julian":   float      // julian day
 //!	    "hour":     int(0..)   // hour of day, including dst
 //!	    "minute":   int(0..59) // minute of hour
-//!	    "second":   int(0..59) // second of minute 
+//!	    "second":   int(0..59) // second of minute
 //!	    "fraction": float      // fraction of second
 //!	    "timezone": int        // offset to utc, including dst
 //!	 ]);
@@ -3361,7 +3361,7 @@ TimeofDay http_time(string what, void|TimeRange cx)
 //! function string datetime_short_name(int|void unix_time)
 //!     Compat functions; same as <ref>format_iso</ref>
 //!	and <ref>format_iso_short</ref>.
-//!	
+//!
 //! function string format_iso(void|int unix_time)
 //! function string format_iso_short(void|int unix_time)
 //! function string format_iso_tod(void|int unix_time)

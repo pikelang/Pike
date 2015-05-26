@@ -57,7 +57,7 @@ string number(int num)
    case 2000..999999: return number(num/1000)+" tisoè "+number(num%1000);
    case 1000000..1999999:
      return "milijon "+number(num%1000000);
-   case 2000000..2999999: 
+   case 2000000..2999999:
      return number(num/1000000)+" milijona"+number(num%1000000);
    case 3000000..4999999:
      return number(num/1000000)+" milijone"+number(num%1000000);
@@ -118,13 +118,13 @@ string date(int timestamp, string|void m)
 
   if(t1["yday"] == t2["yday"] && t1["year"] == t2["year"])
     return "danes, "+ ctime(timestamp)[11..15];
-  
+
   if(t1["yday"]+1 == t2["yday"] && t1["year"] == t2["year"])
     return "vèeraj, "+ ctime(timestamp)[11..15];
-  
+
   if(t1["yday"]-1 == t2["yday"] && t1["year"] == t2["year"])
     return "danes, "+ ctime(timestamp)[11..15];
-  
+
   if(t1["year"] != t2["year"])
     return (month(t1["mon"]+1) + " " + (t1["year"]+1900));
 

@@ -228,7 +228,7 @@ mapping(string:string|mapping) decode(string s) {
      case 2:
        sscanf(s[i..i+3], "%4c", data_l);
        i+=4;
-       break;       
+       break;
      case 3:
        data_l = strlen(s)-i;
        break;
@@ -267,7 +267,7 @@ protected int(0..1) verify(Crypto.HashState hash, mapping sig, mapping key) {
   int csum;
   if(1 != sscanf(digest, "%2c", csum) || csum != sig->md_csum)
     return 0;
-    
+
   if(key->type == 1 && sig->digest_algorithm == 1)
     return key->key->raw_verify("0 0\14\6\10*\x86H\x86\xf7\15\2\5\5\0\4\20"+
 				digest, sig->digest);

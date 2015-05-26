@@ -9,60 +9,60 @@
 /* Attributes (from http://leangen.uninett.no:29659/~hta/ietf/oid/2.5.4.html):
    (by 1999-01-25, a better URL is http://www.alvestrand.no/objectid/top.html)
 
-   2.5.4.0 - id-at-objectClass 
-      2.5.4.1 - id-at-aliasedEntryName 
-      2.5.4.2 - id-at-knowldgeinformation 
-      2.5.4.3 - id-at-commonName 
-      2.5.4.4 - id-at-surname 
-      2.5.4.5 - id-at-serialNumber 
-      2.5.4.6 - id-at-countryName 
-      2.5.4.7 - id-at-localityName (1 more) 
-      2.5.4.8 - id-at-stateOrProvinceName (1 more) 
-      2.5.4.9 - id-at-streetAddress (1 more) 
-      2.5.4.10 - id-at-organizationName (1 more) 
-      2.5.4.11 - id-at-organizationalUnitName (1 more) 
-      2.5.4.12 - id-at-title 
-      2.5.4.13 - id-at-description 
-      2.5.4.14 - id-at-searchGuide 
-      2.5.4.15 - id-at-businessCategory 
-      2.5.4.16 - id-at-postalAddress (1 more) 
-      2.5.4.17 - id-at-postalCode (1 more) 
-      2.5.4.18 - id-at-postOfficeBox (1 more) 
-      2.5.4.19 - id-at-physicalDeliveryOfficeName (1 more) 
-      2.5.4.20 - id-at-telephoneNumber (1 more) 
-      2.5.4.21 - id-at-telexNumber (1 more) 
-      2.5.4.22 - id-at-teletexTerminalIdentifier (1 more) 
-      2.5.4.23 - id-at-facsimileTelephoneNumber (1 more) 
-      2.5.4.24 - id-at-x121Address 
-      2.5.4.25 - id-at-internationalISDNNumber (1 more) 
-      2.5.4.26 - id-at-registeredAddress 
-      2.5.4.27 - id-at-destinationIndicator 
-      2.5.4.28 - id-at-preferredDeliveryMethod 
-      2.5.4.29 - id-at-presentationAddress 
-      2.5.4.30 - id-at-supportedApplicationContext 
-      2.5.4.31 - id-at-member 
-      2.5.4.32 - id-at-owner 
-      2.5.4.33 - id-at-roleOccupant 
-      2.5.4.34 - id-at-seeAlso 
-      2.5.4.35 - id-at-userPassword 
-      2.5.4.36 - id-at-userCertificate 
+   2.5.4.0 - id-at-objectClass
+      2.5.4.1 - id-at-aliasedEntryName
+      2.5.4.2 - id-at-knowldgeinformation
+      2.5.4.3 - id-at-commonName
+      2.5.4.4 - id-at-surname
+      2.5.4.5 - id-at-serialNumber
+      2.5.4.6 - id-at-countryName
+      2.5.4.7 - id-at-localityName (1 more)
+      2.5.4.8 - id-at-stateOrProvinceName (1 more)
+      2.5.4.9 - id-at-streetAddress (1 more)
+      2.5.4.10 - id-at-organizationName (1 more)
+      2.5.4.11 - id-at-organizationalUnitName (1 more)
+      2.5.4.12 - id-at-title
+      2.5.4.13 - id-at-description
+      2.5.4.14 - id-at-searchGuide
+      2.5.4.15 - id-at-businessCategory
+      2.5.4.16 - id-at-postalAddress (1 more)
+      2.5.4.17 - id-at-postalCode (1 more)
+      2.5.4.18 - id-at-postOfficeBox (1 more)
+      2.5.4.19 - id-at-physicalDeliveryOfficeName (1 more)
+      2.5.4.20 - id-at-telephoneNumber (1 more)
+      2.5.4.21 - id-at-telexNumber (1 more)
+      2.5.4.22 - id-at-teletexTerminalIdentifier (1 more)
+      2.5.4.23 - id-at-facsimileTelephoneNumber (1 more)
+      2.5.4.24 - id-at-x121Address
+      2.5.4.25 - id-at-internationalISDNNumber (1 more)
+      2.5.4.26 - id-at-registeredAddress
+      2.5.4.27 - id-at-destinationIndicator
+      2.5.4.28 - id-at-preferredDeliveryMethod
+      2.5.4.29 - id-at-presentationAddress
+      2.5.4.30 - id-at-supportedApplicationContext
+      2.5.4.31 - id-at-member
+      2.5.4.32 - id-at-owner
+      2.5.4.33 - id-at-roleOccupant
+      2.5.4.34 - id-at-seeAlso
+      2.5.4.35 - id-at-userPassword
+      2.5.4.36 - id-at-userCertificate
       2.5.4.37 - id-at-cACertificate
 
-      2.5.4.38 - id-at-authorityRevocationList 
-      2.5.4.39 - id-at-certificateRevocationList 
-      2.5.4.40 - id-at-crossCertificatePair 
-      2.5.4.41 - id-at-name 
-      2.5.4.42 - id-at-givenName 
-      2.5.4.43 - id-at-initials 
-      2.5.4.44 - id-at-generationQualifier 
-      2.5.4.45 - id-at-uniqueIdentifier 
-      2.5.4.46 - id-at-dnQualifier 
-      2.5.4.47 - id-at-enhancedSearchGuide 
-      2.5.4.48 - id-at-protocolInformation 
-      2.5.4.49 - id-at-distinguishedName 
-      2.5.4.50 - id-at-uniqueMember 
-      2.5.4.51 - id-at-houseIdentifier 
-      2.5.4.52 - id-at-supportedAlgorithms 
+      2.5.4.38 - id-at-authorityRevocationList
+      2.5.4.39 - id-at-certificateRevocationList
+      2.5.4.40 - id-at-crossCertificatePair
+      2.5.4.41 - id-at-name
+      2.5.4.42 - id-at-givenName
+      2.5.4.43 - id-at-initials
+      2.5.4.44 - id-at-generationQualifier
+      2.5.4.45 - id-at-uniqueIdentifier
+      2.5.4.46 - id-at-dnQualifier
+      2.5.4.47 - id-at-enhancedSearchGuide
+      2.5.4.48 - id-at-protocolInformation
+      2.5.4.49 - id-at-distinguishedName
+      2.5.4.50 - id-at-uniqueMember
+      2.5.4.51 - id-at-houseIdentifier
+      2.5.4.52 - id-at-supportedAlgorithms
       2.5.4.53 - id-at-deltaRevocationList
 */
 
@@ -146,13 +146,13 @@ Identifier brainpool_p384t1 = ec_curve_ver1_id->append(12);
 Identifier brainpool_p521r1 = ec_curve_ver1_id->append(13);
 Identifier brainpool_p521t1 = ec_curve_ver1_id->append(14);
 
-/* For public key 
+/* For public key
         id-dsa ID ::= { iso(1) member-body(2) us(840) x9-57(10040)
                   x9cm(4) 1 }
 */
 Identifier dsa_id = Identifier(1, 2, 840, 10040, 4, 1);
 
-/* Signature algorithm 
+/* Signature algorithm
            id-dsa-with-sha1 ID  ::=  {
                    iso(1) member-body(2) us(840) x9-57 (10040)
                    x9cm(4) 3 }
@@ -196,7 +196,7 @@ mapping(Identifier:string(7bit)) short_name_ids =
 #define REVERSE(X) mkmapping(values(X),indices(X))
 
 mapping(string(7bit):Identifier) name_ids =
-([  
+([
   /* layman.asc says "commonUnitName". Typo? */
   "commonName" : at_id->append(3),        /* printable string */
   "countryName" : at_id->append(6),       /* printable string */
@@ -235,7 +235,7 @@ mapping(string(7bit):Identifier) at_ids =
 ([ /* All attribute values are a CHOICE of most string types,
     * including PrintableString, TeletexString (which in practice
     * means latin1) and UTF8String. */
-  "commonName" : at_id->append(3),       
+  "commonName" : at_id->append(3),
   "surname" : at_id->append(4),
   "countryName" : at_id->append(6),
   "localityName" : at_id->append(7),
@@ -250,7 +250,7 @@ mapping(string(7bit):Identifier) at_ids =
   /* What does this attribute mean? */
   "dnQualifier" : at_id->append(46),
   /* Obsolete, not recommended. */
-  "emailAddress" : pkcs_9_id->append(1)            /* IA5String */  
+  "emailAddress" : pkcs_9_id->append(1)            /* IA5String */
 ]);
 
 mapping(Identifier:string(7bit)) reverse_at_ids = REVERSE(at_ids);
