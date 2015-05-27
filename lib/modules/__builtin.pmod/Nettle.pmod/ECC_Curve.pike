@@ -25,10 +25,12 @@ class Point {
     return [int(16bit)]((size()+7)>>3);
   }
 
+  //! @decl void create()
   //! @decl void create(Gmp.mpz|int x, Gmp.mpz|int y)
   //! @decl void create(Stdio.Buffer|string(7bit) data)
   //!
-  //! Initialize to the selected point on the curve.
+  //! Initialize the object and optionally also select
+  //! a point on the curve.
   //!
   //! @note
   //!   Throws errors if the point isn't on the curve.
@@ -66,6 +68,10 @@ class Point {
     }
 
     set(x, y);
+  }
+
+  variant protected void create()
+  {
   }
 
   extern Gmp.mpz get_x();
