@@ -839,8 +839,39 @@ PIKECLASS ECC_Curve
     program_flags PROGRAM_USES_PARENT|PROGRAM_NEEDS_PARENT|PROGRAM_CLEAR_STORAGE;
   {
     /*! @decl inherit Point
+     *!
+     *! This point represents the public key.
      */
-    INHERIT Nettle_ECC_Curve_Point;
+    EXTRA
+    {
+      /* Perform an inherit of the Point class that our parent contains.
+       */
+      struct program *parent_prog = Pike_compiler->previous->new_program;
+      struct object *parent_obj = Pike_compiler->previous->fake_object;
+      int parent_Point_fun_num =
+	really_low_find_shared_string_identifier(MK_STRING("Point"),
+						 parent_prog,
+						 SEE_PROTECTED|SEE_PRIVATE);
+      if (parent_Point_fun_num >= 0) {
+	struct program *parent_Point_prog =
+	  low_program_from_function(parent_obj, parent_Point_fun_num);
+
+#ifdef PIKE_DEBUG
+	if (parent_Point_prog != Nettle_ECC_Curve_Point_program) {
+	  Pike_fatal("Unexpected Point program.\n");
+	}
+#endif
+
+	if (parent_Point_prog) {
+	  parent_Point_fun_num =
+	    really_low_reference_inherited_identifier(Pike_compiler->previous,
+						      0, parent_Point_fun_num);
+	  low_inherit(parent_Point_prog, 0,
+		      parent_Point_fun_num,
+		      1 + 42, 0, NULL);
+	}
+      }
+    }
 
     /*! @decl inherit __builtin.Nettle.Sign
      */
