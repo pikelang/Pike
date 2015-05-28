@@ -1768,6 +1768,7 @@ mapping verify_certificate_chain(array(string|.PKCS.Signature.Signed) cert_chain
       verifiers = ({ chain_obj[idx-1]->public_key });
     }
 
+    m->verified = 0;
     int verified;
     foreach(verifiers || ({}), Verifier v) {
       if( v->verify(chain_cert[idx][1],
