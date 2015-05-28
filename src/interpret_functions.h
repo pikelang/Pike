@@ -446,14 +446,14 @@ OPCODE2(F_PRIVATE_TYPED_GLOBAL, "global <private,typed>", I_UPDATE_SP, {
     if( arg2 < MIN_REF_TYPE )
     {
       DO_IF_ELSE_SIZEOF_FLOAT_INT(
+	SET_SVAL_TYPE_SUBTYPE(Pike_sp[0], arg2, 0);
+	Pike_sp[0].u.integer = *(INT_TYPE*)ptr;
+	Pike_sp++;
+      ,
 	if( UNLIKELY(arg2)==PIKE_T_INT )
 	  push_int( *(INT_TYPE*)ptr );
 	else
 	  push_float( *(FLOAT_TYPE*)ptr )
-	,
-	SET_SVAL_TYPE_SUBTYPE(Pike_sp[0],arg2,0);
-	Pike_sp[0].u.integer = *(INT_TYPE*)ptr;
-	Pike_sp++
       );
     }
     else
