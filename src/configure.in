@@ -7490,6 +7490,7 @@ AC_MSG_RESULT($SO)
 # -- "ld" on SunOS 4.x.x, "ld -G" on SunOS 5.x, "ld -shared" on IRIX 5
 AC_MSG_CHECKING(LDSHARED)
 if test -z "$LDSHARED" ; then
+  ldshared_is_cc=yes
   case "$pike_cv_sys_os" in
     AIX*)
       if test "$GCC" = yes ; then
@@ -7521,6 +7522,7 @@ if test -z "$LDSHARED" ; then
 	pike_cv_sys_dynamic_loading=no
 	LDSHARED="ld"
       fi
+      ldshared_is_cc=no
     ;;
     Darwin*)
       if test "$pike_cv_osx_twolevel_namespace" = yes ; then
@@ -7545,12 +7547,28 @@ if test -z "$LDSHARED" ; then
       if test "`uname -r`" -ge 6 ; then
         LDSHARED="$LDSHARED -woff 84,85,134"
       else :; fi
+      ldshared_is_cc=no
     ;;
-    SunOS*) LDSHARED="ld";;
-    Solaris) LDSHARED="/usr/ccs/bin/ld -G";;
-    hp*|HP*) LDSHARED="ld -b";;
-    OSF*) LDSHARED="ld -expect_unresolved '*' -shared -msym -O3";;
-    DYNIX/ptx*) LDSHARED="ld -G";;
+    SunOS*)
+      LDSHARED="ld"
+      ldshared_is_cc=no
+      ;;
+    Solaris)
+      LDSHARED="/usr/ccs/bin/ld -G"
+      ldshared_is_cc=no
+      ;;
+    hp*|HP*)
+      LDSHARED="ld -b"
+      ldshared_is_cc=no
+      ;;
+    OSF*)
+      LDSHARED="ld -expect_unresolved '*' -shared -msym -O3"
+      ldshared_is_cc=no
+      ;;
+    DYNIX/ptx*)
+      LDSHARED="ld -G"
+      ldshared_is_cc=no
+      ;;
     next*) LDSHARED="$REALCC $CFLAGS -nostdlib -r";;
     Linux*) LDSHARED="$REALCC -shared";;
     GNU/kFreeBSD*) LDSHARED="$REALCC -shared";;
@@ -7561,11 +7579,16 @@ if test -z "$LDSHARED" ; then
     BSD/OS*)
       case "`uname -r`" in
        [4-9].*) LDSHARED="$REALCC -shared";;
-        *) LDSHARED="shlicc -r";;
+        *) LDSHARED="shlicc -r"
+	   ldshared_is_cc=no
+	   ;;
       esac
     ;;
     SCO_SV*) LDSHARED="$REALCC -G -KPIC -Wl,-Bexport";;
-    UNIX_SV*) LDSHARED="ld -G";;
+    UNIX_SV*)
+      LDSHARED="ld -G"
+      ldshared_is_cc=no
+      ;;
     UnixWare*|OpenUNIX*)
       if test "$GCC" = yes ; then
         LDSHARED="$REALCC -G -fPIC"
@@ -7584,8 +7607,18 @@ if test -z "$LDSHARED" ; then
 	LDSHARED_MODULE_ARGS="$LDSHARED_MODULE_ARGS -pdb:\$\$modname.pdb"
       fi
     ;;
-    *) LDSHARED="ld";;
+    *)
+      LDSHARED="ld"
+      ldshared_is_cc=no
+      ;;
   esac
+  if test "$GCC:$ldshared_is_cc" = "yes:yes" ; then
+    # On some architectures gcc attempts to link the shared object with
+    # the standard startup files (crt0.o et al), which may fail due to
+    # relocation errors. The flag -nostartfiles exists in gcc since at
+    # least version 3.3.2 from 2003, so this should be safe.
+    LDSHARED="$LDSHARED -nostartfiles"
+  fi
 fi
 AC_MSG_RESULT($LDSHARED)
 
