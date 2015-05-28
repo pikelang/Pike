@@ -1789,7 +1789,10 @@ mapping verify_certificate_chain(array(string|.PKCS.Signature.Signed) cert_chain
       }
     }
     if (!verified)
+    {
       ERROR(CERT_BAD_SIGNATURE);
+      return m;
+    }
   }
   return m;
 
