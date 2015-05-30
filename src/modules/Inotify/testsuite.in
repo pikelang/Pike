@@ -32,7 +32,8 @@ test_any([[ // stole this from pikes Stdio.File testsuite.
   prefix += "conftest_pike_dir_";
   for(i = 0; i < 32; i++) {
     string testdir = prefix + i;
-    if (mkdir(testdir)) {
+    rm(testdir);
+    if (mkdir(testdir) || rm(testdir + "/conftest")) {
       add_constant("testdir", testdir + "/");
       add_constant("testfile", testdir + "/conftest");
       return 1;
