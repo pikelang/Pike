@@ -2698,8 +2698,9 @@ PMOD_EXPORT void visit_mapping (struct mapping *m, int action, void *extra)
     gc_free_svalue(&k->val);						\
   else if ((REMOVE = W_REC(&k->val, 1)))				\
     gc_free_svalue(&k->ind);						\
-  else									\
-    N_REC(&k->ind, 1);		/* Now we can recurse the index. */	\
+  else if (N_REC(&k->ind, 1)) /* Now we can recurse the index. */	\
+    Pike_fatal("Mapping: %s and %s don't agree.\n",			\
+	       TOSTR(N_TST), TOSTR(N_REC));				\
 } while (0)
 
 #define GC_REC_KP_BOTH(REMOVE, N_REC, W_REC, N_TST, W_TST) do {		\
@@ -2707,8 +2708,9 @@ PMOD_EXPORT void visit_mapping (struct mapping *m, int action, void *extra)
     gc_free_svalue(&k->val);						\
   else if ((REMOVE = W_REC(&k->val, 1)))				\
     gc_free_svalue(&k->ind);						\
-  else									\
-    W_REC(&k->ind, 1);		/* Now we can recurse the index. */	\
+  else if (W_REC(&k->ind, 1)) /* Now we can recurse the index. */	\
+    Pike_fatal("Mapping: %s and %s don't agree.\n",			\
+	       TOSTR(W_TST), TOSTR(W_REC));				\
 } while (0)
 
 void gc_mark_mapping_as_referenced(struct mapping *m)
