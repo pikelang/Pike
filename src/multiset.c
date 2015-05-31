@@ -3654,7 +3654,7 @@ void init_multiset()
 {
 #ifdef PIKE_DEBUG
   /* This test is buggy in GCC 4.0.1, hence the volatile. */
-  volatile union msnode test;
+  union msnode test;
 #define msnode_check(X) ((volatile union msnode *) (X))
   HDR (&test)->flags = 0;
   SET_SVAL(test.i.ind, (1 << 8) - 1, (1 << 16) - 1,
