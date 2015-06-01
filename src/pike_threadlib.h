@@ -103,6 +103,8 @@
 #endif /* FRAMEPOINTER_WAS_DEFINED */
 
 PMOD_EXPORT extern int threads_disabled;
+PMOD_EXPORT extern cpu_time_t threads_disabled_acc_time;
+PMOD_EXPORT extern cpu_time_t threads_disabled_start;
 PMOD_EXPORT extern ptrdiff_t thread_storage_offset;
 PMOD_EXPORT extern struct program *thread_id_prog;
 PMOD_EXPORT extern int num_threads;
