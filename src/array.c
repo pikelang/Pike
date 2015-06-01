@@ -2323,8 +2323,11 @@ void assign_array_level( struct array *a, struct array *b, int level )
             assign_array_level( a->item[i].u.array, b->item[i].u.array, level-1 );
         }
     }
-    else
-        assign_svalues( a->item, b->item, a->size, a->type_field|b->type_field );
+    else {
+      assign_svalues( a->item, b->item, a->size,
+		      a->type_field|b->type_field );
+      a->type_field = b->type_field;
+    }
 }
 
 /* Assign all elemnts in a at level to b.
@@ -2349,6 +2352,7 @@ void assign_array_level_value( struct array *a, struct svalue *b, int level )
         if( REFCOUNTED_TYPE(TYPEOF(*b)) )     *b->u.refs+=a->size;
         for( i=0; i<a->size; i++)
             a->item[i] = *b;
+	a->type_field = 1 << TYPEOF(*b);
     }
 }
 
