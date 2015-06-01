@@ -7706,6 +7706,46 @@ PMOD_EXPORT void f_gethrtime(INT32 args)
   }
 }
 
+/*! @decl int gethrdtime(void|int nsec)
+ *!
+ *! Return the high resolution real time spent with threads disabled
+ *! since the Pike interpreter was started. The time is normally
+ *! returned in microseconds, but if the optional argument @[nsec]
+ *! is nonzero it's returned in nanoseconds.
+ *!
+ *! @note
+ *!   The actual accuracy on many systems is significantly less than
+ *!   microseconds or nanoseconds. See @[System.REAL_TIME_RESOLUTION].
+ *!
+ *! @seealso
+ *!   @[_disable_threads()], @[gethrtime()]
+ */
+static void f_gethrdtime(INT32 args)
+{
+  int nsec = args && !UNSAFE_IS_ZERO(Pike_sp-args);
+  cpu_time_t time = threads_disabled_acc_time;
+  pop_n_elems(args);
+
+  if (threads_disabled) {
+    time += get_real_time() - threads_disabled_start;
+  }
+  if (nsec) {
+    push_int64(time);
+#ifndef LONG_CPU_TIME
+    push_int(1000000000 / CPU_TIME_TICKS);
+    o_multiply();
+#endif
+  } else {
+#if CPU_TIME_TICKS_LOW > 1000000
+    push_int64(time / (CPU_TIME_TICKS / 1000000));
+#else
+    push_int64 (time);
+    push_int (1000000 / CPU_TIME_TICKS);
+    o_multiply();
+#endif
+  }
+}
+
 #ifdef PROFILING
 /*! @decl array(int|mapping(string:array(int))) @
  *!           get_profiling_info(program prog)
@@ -9045,6 +9085,8 @@ void init_builtin_efuns(void)
   ADD_EFUN("gethrvtime",f_gethrvtime,
 	   tFunc(tOr(tInt,tVoid),tInt), OPT_EXTERNAL_DEPEND);
   ADD_EFUN("gethrtime", f_gethrtime,
+	   tFunc(tOr(tInt,tVoid),tInt), OPT_EXTERNAL_DEPEND);
+  ADD_EFUN("gethrdtime", f_gethrdtime,
 	   tFunc(tOr(tInt,tVoid),tInt), OPT_EXTERNAL_DEPEND);
 
 #ifdef PROFILING

@@ -935,6 +935,9 @@ void low_init_threads_disable(void)
  *! memory structures, since those are only destructed by the periodic
  *! gc. (This advice applies to mutex locks in general, for that
  *! matter.)
+ *!
+ *! @seealso
+ *!   @[gethrdtime()]
  */
 void init_threads_disable(struct object *UNUSED(o))
 {
