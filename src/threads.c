@@ -331,6 +331,8 @@ static void cleanup_thread_state (struct thread_state *th);
 static struct callback *threads_evaluator_callback=0;
 
 int th_running = 0;
+PMOD_EXPORT cpu_time_t threads_disabled_acc_time = 0;
+PMOD_EXPORT cpu_time_t threads_disabled_start = 0;
 #ifdef PIKE_DEBUG
 int debug_interpreter_is_locked = 0;
 THREAD_T debug_locking_thread;
@@ -436,6 +438,7 @@ void low_init_threads_disable(void)
 			"low_init_threads_disable(): Disabling threads.\n"));
 
     threads_disabled = 1;
+    threads_disabled_start = get_real_time();
 #ifdef PIKE_DEBUG
     threads_disabled_thread = th_self();
 #endif
@@ -493,6 +496,7 @@ void exit_threads_disable(struct object *o)
   if(threads_disabled) {
     if(!--threads_disabled) {
       IMUTEX_T *im = (IMUTEX_T *)interleave_list;
+      threads_disabled_acc_time += get_real_time() - threads_disabled_start;
 
       /* Order shouldn't matter for unlock, so no need to do it backwards. */
       while(im) {
