@@ -8478,6 +8478,8 @@ PMOD_EXPORT void f_map(INT32 args)
 	     }
 	   }
 	 }else{
+           struct pike_frame *frame = frame_init();
+           frame_setup_from_svalue(frame, mysp-2);
 	   for (i=0; i<n; i++)
 	   {
 	     push_svalue(ITEM(a)+i);
@@ -8485,15 +8487,17 @@ PMOD_EXPORT void f_map(INT32 args)
 	     {
 	       add_ref_svalue(mysp-1);
 	       push_array_items(mysp[-1].u.array);
-	       apply_svalue(mysp-2,1+splice);
 	     }
-	     else
-	     {
-	       apply_svalue(mysp-2,1);
-	     }
+             frame_prepare(frame, 1+splice);
+             frame_execute(frame);
+             // the frame can change here due to forms of recursion that
+             // replace the top level frame
+             frame = Pike_fp;
+             frame = frame_return(frame);
 	     stack_pop_to_no_free (ITEM(d) + i);
 	     types |= 1 << TYPEOF(ITEM(d)[i]);
 	   }
+           frame_pop(frame);
 	 }
 	 d->type_field = types;
 	 stack_pop_n_elems_keep_top(3); /* fun arr extra d -> d */
