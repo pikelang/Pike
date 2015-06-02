@@ -72,6 +72,21 @@ class State {
     return this;
   }
 
+  //! Sets the public key in this DSA object.
+  //!
+  //! @param params
+  //!   The finite-field diffie-hellman group parameters.
+  //! @param key
+  //!   The public key y parameter.
+  variant this_program set_public_key(Crypto.DH.Parameters params, Gmp.mpz key)
+  {
+    p = params->p;
+    q = params->q;
+    g = params->g;
+    y = key;
+    return this;
+  }
+
   //! Compares the public key in this object with that in the provided
   //! DSA object.
   int(0..1) public_key_equal(this_program dsa)
@@ -227,9 +242,21 @@ class State {
 
 #endif
 
+  //! Generates a public/private key pair with the specified
+  //! finite field diffie-hellman parameters.
+  variant this_program generate_key(Crypto.DH.Parameters params)
+  {
+    p = params->p;
+    g = params->g;
+    q = params->q;
+
+    [y, x] = params->generate_keypair(random);
+    return this;
+  }
+
   //! Generates a public/private key pair. Needs the public parameters
-  //! p, q and g set, either through @[set_public_key] or
-  //! @[generate_key(int,int)].
+  //! p, q and g set, through one of @[set_public_key],
+  //! @[generate_key(int,int)] or @[generate_key(params)].
   variant this_program generate_key()
   {
     /* x in { 2, 3, ... q - 1 } */
