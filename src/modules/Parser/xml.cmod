@@ -46,6 +46,8 @@ static struct svalue location_string_svalue;
 
 DECLARATIONS
 
+#undef CMOD_MAP_PROGRAM_IDS_DEFINED
+
 /* FIXME: Make all these functions available inside pike
  */
 /* FIXME: Ought to be generated from UnicodeData.txt. */

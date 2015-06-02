@@ -44,7 +44,11 @@
 #define sp Pike_sp
 #define fp Pike_fp
 
+#define DEFAULT_CMOD_STORAGE
+
 DECLARATIONS
+
+#undef CMOD_MAP_PROGRAM_IDS_DEFINED
 
 #define THISMPF (&(THIS->n))
 
