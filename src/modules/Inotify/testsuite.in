@@ -58,10 +58,10 @@ test_any([[
 	return a[3] == "conftest" && a[1] == System.Inotify.IN_CREATE;
 ]], 1)
 
-]]) // System.Inotify
-
 test_true(rm(testfile))
 test_do(add_constant("testfile"))
+
+]]) // System.Inotify
 
 cond([[ all_constants()->testdir ]],
 [[
