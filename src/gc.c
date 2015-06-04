@@ -4981,7 +4981,7 @@ static int mc_cycle_depth_from_obj (struct object *o)
 static void pass_lookahead_visit_ref (void *thing, int ref_type,
 				      visit_thing_fn *visit_fn, void *extra)
 {
-  struct mc_marker *ref_to = find_mc_marker (thing);
+  struct mc_marker *ref_to;
   int ref_from_flags, ref_to_flags, old_la_count, ref_to_la_count;
   int ref_added = 0, check_new_candidate = 0, la_count_handled = 0;
 
@@ -4994,10 +4994,14 @@ static void pass_lookahead_visit_ref (void *thing, int ref_type,
 
   if (mc_block_strings > 0 &&
       visit_fn == (visit_thing_fn *) &visit_string) {
+#ifdef MEMORY_COUNT_DEBUG
+    ref_to = find_mc_marker (thing);
+#endif
     MC_DEBUG_MSG (ref_to, "ignored string");
     return;
   }
 
+  ref_to = find_mc_marker (thing);
   ref_from_flags = mc_ref_from->flags;
 
   /* Create mc_marker if necessary. */
