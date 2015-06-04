@@ -3189,7 +3189,7 @@ static void visit_multiset_data (struct multiset_data *msd, int action,
 				 void *extra)
 {
   visit_enter(msd, T_MULTISET_DATA, extra);
-  switch (action) {
+  switch (action & VISIT_MODE_MASK) {
 #ifdef PIKE_DEBUG
     default:
       Pike_fatal ("Unknown visit action %d.\n", action);
@@ -3202,7 +3202,8 @@ static void visit_multiset_data (struct multiset_data *msd, int action,
       break;
   }
 
-  if (msd->root &&
+  if (!(action & VISIT_NO_REFS) &&
+      msd->root &&
       ((msd->ind_types | msd->val_types) &
        (action & VISIT_COMPLEX_ONLY ? BIT_COMPLEX : BIT_REF_TYPES))) {
     int ind_ref_type =
@@ -3220,7 +3221,7 @@ static void visit_multiset_data (struct multiset_data *msd, int action,
 PMOD_EXPORT void visit_multiset (struct multiset *l, int action, void *extra)
 {
   visit_enter(l, T_MULTISET, extra);
-  switch (action) {
+  switch (action & VISIT_MODE_MASK) {
 #ifdef PIKE_DEBUG
     default:
       Pike_fatal ("Unknown visit action %d.\n", action);

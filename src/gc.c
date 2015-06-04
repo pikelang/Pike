@@ -5743,6 +5743,10 @@ void f_count_memory (INT32 args)
       if (mc_ref_from->flags & MC_FLAG_INTERNAL) {
 	action = VISIT_COUNT_BYTES; /* Memory count this. */
 	MC_DEBUG_MSG (NULL, "enter with byte counting");
+	if (mc_lookahead < 0) {
+	  MC_DEBUG_MSG (NULL, "VISIT_NO_REFS mode");
+	  action |= VISIT_NO_REFS;
+	}
 
 	mc_ref_from->visit_fn (mc_ref_from->thing, action, mc_ref_from->extra);
 	count_visits++;

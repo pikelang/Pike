@@ -11108,7 +11108,7 @@ void cleanup_program(void)
 PMOD_EXPORT void visit_program (struct program *p, int action, void *extra)
 {
   visit_enter(p, T_PROGRAM, extra);
-  switch (action) {
+  switch (action & VISIT_MODE_MASK) {
 #ifdef PIKE_DEBUG
     default:
       Pike_fatal ("Unknown visit action %d.\n", action);

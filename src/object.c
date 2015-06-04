@@ -2114,7 +2114,7 @@ PMOD_EXPORT void visit_object (struct object *o, int action, void *extra)
   if (o->next == o) return; /* Fake object used by compiler */
 
   visit_enter(o, T_OBJECT, extra);
-  switch (action) {
+  switch (action & VISIT_MODE_MASK) {
 #ifdef PIKE_DEBUG
     default:
       Pike_fatal ("Unknown visit action %d.\n", action);
@@ -2142,31 +2142,32 @@ PMOD_EXPORT void visit_object (struct object *o, int action, void *extra)
 
     for (e = p->num_inherits - 1; e >= 0; e--) {
       struct program *inh_prog = inh[e].prog;
-      unsigned INT16 *inh_prog_var_idxs = inh_prog->variable_index;
-      struct identifier *inh_prog_ids = inh_prog->identifiers;
-      char *inh_storage = storage + inh[e].storage_offset;
+      if (!(action & VISIT_NO_REFS)) {
+	unsigned INT16 *inh_prog_var_idxs = inh_prog->variable_index;
+	struct identifier *inh_prog_ids = inh_prog->identifiers;
+	char *inh_storage = storage + inh[e].storage_offset;
 
-      int q, num_vars = (int) inh_prog->num_variable_index;
+	int q, num_vars = (int) inh_prog->num_variable_index;
 
-      for (q = 0; q < num_vars; q++) {
-	int d = inh_prog_var_idxs[q];
-	struct identifier *id = inh_prog_ids + d;
-	int id_flags = id->identifier_flags;
-	int rtt = id->run_time_type;
-	void *var;
-	union anything *u;
+	for (q = 0; q < num_vars; q++) {
+	  int d = inh_prog_var_idxs[q];
+	  struct identifier *id = inh_prog_ids + d;
+	  int id_flags = id->identifier_flags;
+	  int rtt = id->run_time_type;
+	  void *var;
+	  union anything *u;
 
-	if (IDENTIFIER_IS_ALIAS (id_flags))
-	  continue;
+	  if (IDENTIFIER_IS_ALIAS (id_flags))
+	    continue;
 
-	var = inh_storage + id->func.offset;
-	u = (union anything *) var;
+	  var = inh_storage + id->func.offset;
+	  u = (union anything *) var;
 #ifdef DEBUG_MALLOC
-	if (REFCOUNTED_TYPE(rtt))
-	  debug_malloc_touch (u->ptr);
+	  if (REFCOUNTED_TYPE(rtt))
+	    debug_malloc_touch (u->ptr);
 #endif
 
-	switch (rtt) {
+	  switch (rtt) {
 	  case T_MIXED: {
 	    struct svalue *s = (struct svalue *) var;
 	    dmalloc_touch_svalue (s);
@@ -2218,6 +2219,7 @@ PMOD_EXPORT void visit_object (struct object *o, int action, void *extra)
 	  default:
 	    Pike_fatal ("Invalid runtime type %d.\n", rtt);
 #endif
+	  }
 	}
       }
 

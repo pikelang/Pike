@@ -2181,7 +2181,7 @@ void count_memory_in_strings(size_t *num, size_t *size)
 PMOD_EXPORT void visit_string (struct pike_string *s, int action, void *extra)
 {
   visit_enter(s, T_STRING, extra);
-  switch (action) {
+  switch (action & VISIT_MODE_MASK) {
 #ifdef PIKE_DEBUG
     default:
       Pike_fatal ("Unknown visit action %d.\n", action);

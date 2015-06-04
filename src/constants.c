@@ -193,7 +193,7 @@ PMOD_EXPORT void quick_add_efun(const char *name, ptrdiff_t name_length,
 PMOD_EXPORT void visit_callable (struct callable *c, int action, void *extra)
 {
   visit_enter(c, T_STRUCT_CALLABLE, extra);
-  switch (action) {
+  switch (action & VISIT_MODE_MASK) {
 #ifdef PIKE_DEBUG
     default:
       Pike_fatal ("Unknown visit action %d.\n", action);
