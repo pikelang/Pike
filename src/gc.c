@@ -5241,18 +5241,29 @@ static void current_only_visit_ref (void *thing, int ref_type,
  * recurses through REF_TYPE_INTERNAL references. Note that most
  * fields in mc_marker aren't used. */
 {
-  struct mc_marker *ref_to = find_mc_marker (thing);
-  int ref_from_flags;
-
   assert (mc_pass);
   assert (mc_lookahead < 0);
 #ifdef PIKE_DEBUG
   assert (mc_ref_from != (void *) (ptrdiff_t) -1);
 #endif
 
+  int ref_from_flags;
+
   ref_from_flags = mc_ref_from->flags;
   assert (ref_from_flags & MC_FLAG_INTERNAL);
   assert (!(ref_from_flags & MC_FLAG_INT_VISITED));
+
+#ifndef MEMORY_COUNT_DEBUG
+  if (!(ref_type & REF_TYPE_INTERNAL)) {
+    /* Return before lookup (or much worse, allocation) in the
+       mc_marker hash table. The only reason to allocate a marker in
+       this case is, AFAICS, to get the tracing right with
+       MEMORY_COUNT_DEBUG enabled. That case is handled below. */
+    return;
+  }
+#endif
+
+  struct mc_marker *ref_to = find_mc_marker (thing);
 
   if (!ref_to) {
     ref_to = my_make_mc_marker (thing, visit_fn, extra);
@@ -5267,10 +5278,12 @@ static void current_only_visit_ref (void *thing, int ref_type,
   else
     MC_DEBUG_MSG (ref_to, "got old thing");
 
+#ifdef MEMORY_COUNT_DEBUG
   if (!(ref_type & REF_TYPE_INTERNAL)) {
     MC_DEBUG_MSG (ref_to, "ignored non-internal ref");
     return;
   }
+#endif
 
   ref_to->int_refs++;
   MC_DEBUG_MSG (ref_to, "added really internal ref");
