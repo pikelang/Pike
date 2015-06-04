@@ -683,6 +683,16 @@ PMOD_EXPORT extern visit_leave_cb *visit_leave;
  * mc_counted_bytes, then visit the refs. Never combined with
  * VISIT_COMPLEX_ONLY. */
 
+#define VISIT_MODE_MASK 0x0F
+/* Bitmask for visit mode selection. The rest is flags. */
+
+#define VISIT_NO_REFS 0x10
+/* Don't visit any refs. Typically set when lookahead is negative as
+   an optimization. */
+
+#define VISIT_FLAGS_MASK 0xF0
+/* Bitmask for visit flags. */
+
 /* Map between type and visit function for the standard ref types. */
 PMOD_EXPORT extern visit_thing_fn *const visit_fn_from_type[MAX_TYPE + 1];
 PMOD_EXPORT TYPE_T type_from_visit_fn (visit_thing_fn *fn);

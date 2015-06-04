@@ -2528,7 +2528,7 @@ static void visit_mapping_data (struct mapping_data *md, int action,
 				void *extra)
 {
   visit_enter(md, T_MAPPING_DATA, extra);
-  switch (action) {
+  switch (action & VISIT_MODE_MASK) {
 #ifdef PIKE_DEBUG
     default:
       Pike_fatal ("Unknown visit action %d.\n", action);
@@ -2541,7 +2541,8 @@ static void visit_mapping_data (struct mapping_data *md, int action,
       break;
   }
 
-  if ((md->ind_types | md->val_types) &
+  if (!(action & VISIT_NO_REFS) &&
+      (md->ind_types | md->val_types) &
       (action & VISIT_COMPLEX_ONLY ? BIT_COMPLEX : BIT_REF_TYPES)) {
     int ind_ref_type =
       md->flags & MAPPING_WEAK_INDICES ? REF_TYPE_WEAK : REF_TYPE_NORMAL;
@@ -2560,7 +2561,7 @@ static void visit_mapping_data (struct mapping_data *md, int action,
 PMOD_EXPORT void visit_mapping (struct mapping *m, int action, void *extra)
 {
   visit_enter(m, T_MAPPING, extra);
-  switch (action) {
+  switch (action & VISIT_MODE_MASK) {
 #ifdef PIKE_DEBUG
     default:
       Pike_fatal ("Unknown visit action %d.\n", action);

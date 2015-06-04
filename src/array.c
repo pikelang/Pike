@@ -2743,7 +2743,7 @@ void check_all_arrays(void)
 PMOD_EXPORT void visit_array (struct array *a, int action, void *extra)
 {
   visit_enter(a, T_ARRAY, extra);
-  switch (action) {
+  switch (action & VISIT_MODE_MASK) {
 #ifdef PIKE_DEBUG
     default:
       Pike_fatal ("Unknown visit action %d.\n", action);
@@ -2757,7 +2757,8 @@ PMOD_EXPORT void visit_array (struct array *a, int action, void *extra)
       break;
   }
 
-  if (a->type_field &
+  if (!(action & VISIT_NO_REFS) &&
+      a->type_field &
       (action & VISIT_COMPLEX_ONLY ? BIT_COMPLEX : BIT_REF_TYPES)) {
     size_t e, s = a->size;
     int ref_type = a->flags & ARRAY_WEAK_FLAG ? REF_TYPE_WEAK : REF_TYPE_NORMAL;

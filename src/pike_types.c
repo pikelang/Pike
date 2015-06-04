@@ -8956,7 +8956,7 @@ PMOD_EXPORT void *find_type(struct pike_type *t,
 PMOD_EXPORT void visit_type (struct pike_type *t, int action, void *extra)
 {
   visit_enter(t, PIKE_T_TYPE, extra);
-  switch (action) {
+  switch (action & VISIT_MODE_MASK) {
 #ifdef PIKE_DEBUG
     default:
       Pike_fatal ("Unknown visit action %d.\n", action);
