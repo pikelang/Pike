@@ -5248,13 +5248,14 @@ static void current_only_visit_ref (void *thing, int ref_type,
  * recurses through REF_TYPE_INTERNAL references. Note that most
  * fields in mc_marker aren't used. */
 {
+  int ref_from_flags;
+  struct mc_marker *ref_to;
+
   assert (mc_pass);
   assert (mc_lookahead < 0);
 #ifdef PIKE_DEBUG
   assert (mc_ref_from != (void *) (ptrdiff_t) -1);
 #endif
-
-  int ref_from_flags;
 
   ref_from_flags = mc_ref_from->flags;
   assert (ref_from_flags & MC_FLAG_INTERNAL);
@@ -5270,7 +5271,7 @@ static void current_only_visit_ref (void *thing, int ref_type,
   }
 #endif
 
-  struct mc_marker *ref_to = find_mc_marker (thing);
+  ref_to = find_mc_marker (thing);
 
   if (!ref_to) {
     ref_to = my_make_mc_marker (thing, visit_fn, extra);
