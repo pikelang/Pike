@@ -721,7 +721,7 @@ void describe_location(void *real_memblock,
 		       int flags)
 {
   struct program *p;
-  void *memblock=0, *descblock, *inblock;
+  void *memblock=0, *descblock, *inblock = NULL;
   if(!location) return;
 /*  fprintf(stderr,"**Location of (short) svalue: %p\n",location); */
 
@@ -1024,7 +1024,7 @@ static void debug_gc_fatal_va (void *DEBUGUSED(a), int DEBUGUSED(type), int DEBU
 
 #ifdef PIKE_DEBUG
   if (a) {
-    void *inblock;
+    void *inblock = NULL;
     /* Temporarily jumping out of gc to avoid being caught in debug
      * checks in describe(). */
     Pike_in_gc = 0;
