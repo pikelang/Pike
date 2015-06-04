@@ -177,8 +177,8 @@ PIKECLASS Decoder {
     push_int (1);
     apply (Pike_fp->current_object, "decode_chunk", 2);
   }
-    
-  PIKEFUN string decode_chunk (string data, void|int(0..1) flush)
+
+  PIKEFUN string decode_chunk (void|string data, void|int(0..1) flush)
   {
     char *in_buf = NULL;
     int in_buf_len = 0;
