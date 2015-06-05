@@ -1757,9 +1757,24 @@ PMOD_EXPORT void f_string_to_unicode(INT32 args)
   push_string(out);
 }
 
-/*! @decl string unicode_to_string(string(0..255) s)
+/*! @decl string unicode_to_string(string(0..255) s, int(0..2)|void byteorder)
  *!
  *!   Converts an UTF16 byte-stream into a string.
+ *!
+ *! @param s
+ *!   String to convert to UTF16.
+ *!
+ *! @param byteorder
+ *!   Default input byte-order. One of:
+ *!   @int
+ *!     @value 0
+ *!       Network (aka big-endian) byte-order (default).
+ *!     @value 1
+ *!       Little-endian byte-order.
+ *!     @value 2
+ *!       Native byte-order.
+ *!   @endint
+ *!   Note that this argument is disregarded if @[s] starts with a BOM.
  *!
  *! @note
  *!   This function did not decode surrogates in Pike 7.2 and earlier.
@@ -1773,14 +1788,41 @@ PMOD_EXPORT void f_unicode_to_string(INT32 args)
   struct pike_string *in;
   struct pike_string *out = NULL;
   ptrdiff_t len, i, num_surrogates = 0;
+  INT_TYPE byteorder = 0;
   int swab=0;
   p_wchar1 surr1, surr2, surrmask, *str0;
 
-  get_all_args("unicode_to_string", args, "%S", &in);
+  get_all_args("unicode_to_string", args, "%S.%i", &in, &byteorder);
 
   if (in->len & 1) {
     bad_arg_error("unicode_to_string", Pike_sp-args, args, 1, "string", Pike_sp-args,
 		  "String length is odd.\n");
+  }
+
+  if (byteorder >= 2) {
+    if (byteorder == 2) {
+#if PIKE_BYTEORDER == 1234
+      /* Little endian. */
+      byteorder = 1;
+#else
+      byteorder = 0;
+#endif
+    } else {
+      SIMPLE_BAD_ARG_ERROR("unicode_to_string", 2, "int(0..2)|void");
+    }
+  }
+
+  if (byteorder !=
+#if PIKE_BYTEORDER == 1234
+      1
+#else
+      0
+#endif
+      ) {
+    /* Need to swap as the wanted byte-order differs
+     * from the native byte-order.
+     */
+    swab = 1;
   }
 
   /* Check byteorder of UTF data */
@@ -1797,12 +1839,7 @@ PMOD_EXPORT void f_unicode_to_string(INT32 args)
     str0 ++;
     len -= 2;
   } else {
-    /* No byte order mark.  Need to swap unless big endian */
-#if (PIKE_BYTEORDER == 4321)
-    swab = 0;
-#else
-    swab = 1;
-#endif /* PIKE_BYTEORDER == 4321 */
+    /* No byte order mark.  Use the user-specified byte-order. */
   }
 
   /* Indentify surrogates by pre-swapped bitmasks, for efficiency */
@@ -9593,11 +9630,11 @@ void init_builtin_efuns(void)
   ADD_EFUN("string_to_unicode", f_string_to_unicode,
 	   tFunc(tStr tOr(tInt02,tVoid),tStr8), OPT_TRY_OPTIMIZE);
 
-  /* function(string(0..255):string) */
+  /* function(string(0..255),int(0..2)|void:string) */
   ADD_EFUN("unicode_to_string", f_unicode_to_string,
-	   tFunc(tStr8,tStr), OPT_TRY_OPTIMIZE);
-  
-/* function(string,int|void:string(0..255)) */
+	   tFunc(tStr8 tOr(tInt02,tVoid),tStr), OPT_TRY_OPTIMIZE);
+
+  /* function(string,int|void:string(0..255)) */
   ADD_EFUN("string_to_utf8", f_string_to_utf8,
 	   tFunc(tStr tOr(tInt,tVoid),tStr8), OPT_TRY_OPTIMIZE);
   
