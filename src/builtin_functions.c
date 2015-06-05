@@ -9293,7 +9293,7 @@ void f_enumerate(INT32 args)
          * false positives, but is much simpler to check than e.g. doing one check
          * for every iteration
          */
-        if (DO_INT_TYPE_MUL_OVERFLOW(n-1, step, &tmb) || INT_TYPE_ADD_OVERFLOW(tmp, start))
+        if (DO_INT_TYPE_MUL_OVERFLOW(n-1, step, &tmp) || INT_TYPE_ADD_OVERFLOW(tmp, start))
           goto slow_path;
       }
 
