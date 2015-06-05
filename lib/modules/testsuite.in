@@ -143,6 +143,7 @@ test_equal(Array.enumerate(5), ({ 0,1,2,3,4 }))
 test_equal(Array.enumerate(5,2), ({ 0,2,4,6,8 }))
 test_equal(Array.enumerate(5,2,7), ({ 7,9,11,13,15 }))
 test_equal(Array.enumerate(5,2,7,`-), ({ 7,5,3,1,-1 }))
+test_equal(Array.enumerate(5,1,Int.NATIVE_MAX-1), ({ Int.NATIVE_MAX-1, Int.NATIVE_MAX, Int.NATIVE_MAX+1, Int.NATIVE_MAX+2, Int.NATIVE_MAX+3 }))
 
 test_eq([[ Array.reduce(`>>, ({})) ]], 0)
 test_eq([[ Array.reduce(`==, ({}), 1) ]], 1)
