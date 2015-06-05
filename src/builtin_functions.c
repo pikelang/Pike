@@ -1585,9 +1585,23 @@ static int generate_zero_type(node *n)
  * Some wide-strings related functions
  */
 
-/*! @decl string(0..255) string_to_unicode(string s)
+/*! @decl string(0..255) string_to_unicode(string s, int(0..2)|void byteorder)
  *!
  *!   Converts a string into an UTF16 compliant byte-stream.
+ *!
+ *! @param s
+ *!   String to convert to UTF16.
+ *!
+ *! @param byteorder
+ *!   Byte-order for the output. One of:
+ *!   @int
+ *!     @value 0
+ *!       Network (aka big-endian) byte-order (default).
+ *!     @value 1
+ *!       Little-endian byte-order.
+ *!     @value 2
+ *!       Native byte-order.
+ *!   @endint
  *!
  *! @note
  *!   Throws an error if characters not legal in an UTF16 stream are
@@ -1606,8 +1620,22 @@ PMOD_EXPORT void f_string_to_unicode(INT32 args)
   struct pike_string *out = NULL;
   ptrdiff_t len;
   ptrdiff_t i;
+  unsigned INT_TYPE byteorder = 0;
 
-  get_all_args("string_to_unicode", args, "%W", &in);
+  get_all_args("string_to_unicode", args, "%W.%i", &in, &byteorder);
+
+  if (byteorder >= 2) {
+    if (byteorder == 2) {
+#if PIKE_BYTEORDER == 1234
+      /* Little endian. */
+      byteorder = 1;
+#else
+      byteorder = 0;
+#endif
+    } else {
+      SIMPLE_BAD_ARG_ERROR("string_to_unicode", 2, "int(0..2)|void");
+    }
+  }
 
   switch(in->size_shift) {
   case 0:
@@ -1628,7 +1656,7 @@ PMOD_EXPORT void f_string_to_unicode(INT32 args)
       }
 #endif /* PIKE_DEBUG */
       for(i = in->len; i--;) {
-	out->str[i * 2 + 1] = in->str[i];
+	out->str[i * 2 + 1 - byteorder] = in->str[i];
       }
     }
     out = end_shared_string(out);
@@ -1638,24 +1666,28 @@ PMOD_EXPORT void f_string_to_unicode(INT32 args)
     /* FIXME: Should we check for 0xfffe & 0xffff here too? */
     len = in->len * 2;
     out = begin_shared_string(len);
+    if (byteorder ==
 #if (PIKE_BYTEORDER == 4321)
-    /* Big endian -- We don't need to do much...
-     *
-     * FIXME: Future optimization: Check if refcount is == 1,
-     * and perform sufficient magic to be able to convert in place.
-     */
-    MEMCPY(out->str, in->str, len);
+	1	/* Little endian. */
 #else
-    /* Other endianness, may need to do byte-order conversion also. */
-    {
+	0	/* Big endian. */
+#endif
+	) {
+      /* Other endianness, may need to do byte-order conversion also. */
       p_wchar1 *str1 = STR1(in);
       for(i = in->len; i--;) {
 	unsigned INT32 c = str1[i];
-	out->str[i * 2 + 1] = c & 0xff;
-	out->str[i * 2] = c >> 8;
+	out->str[i * 2 + 1 - byteorder] = c & 0xff;
+	out->str[i * 2 + byteorder] = c >> 8;
       }
+    } else {
+      /* Native byte order -- We don't need to do much...
+       *
+       * FIXME: Future optimization: Check if refcount is == 1,
+       * and perform sufficient magic to be able to convert in place.
+       */
+      MEMCPY(out->str, in->str, len);
     }
-#endif
     out = end_shared_string(out);
     break;
   case 2:
@@ -1680,8 +1712,8 @@ PMOD_EXPORT void f_string_to_unicode(INT32 args)
 		  "is out of range (0x00000000..0x0010ffff).",
 		  str2[i], PTRDIFF_T_TO_LONG(i));
 	  }
-	  /* Extra wide characters take two unicode characters in space.
-	   * ie One unicode character extra.
+	  /* Extra wide characters take two UTF16 characters in space.
+	   * ie One UTF16 character extra.
 	   */
 	  len += 2;
 	}
@@ -1696,15 +1728,15 @@ PMOD_EXPORT void f_string_to_unicode(INT32 args)
 	if (c > 0xffff) {
 	  /* Use surrogates */
 	  c -= 0x10000;
-	  
-	  out->str[j + 1] = c & 0xff;
-	  out->str[j] = 0xdc | ((c >> 8) & 0x03);
+
+	  out->str[j + 1 - byteorder] = c & 0xff;
+	  out->str[j + byteorder] = 0xdc | ((c >> 8) & 0x03);
 	  j -= 2;
 	  c >>= 10;
 	  c |= 0xd800;
 	}
-	out->str[j + 1] = c & 0xff;
-	out->str[j] = c >> 8;
+	out->str[j + 1 - byteorder] = c & 0xff;
+	out->str[j + byteorder] = c >> 8;
       }
 #ifdef PIKE_DEBUG
       if (j) {
@@ -9556,12 +9588,12 @@ void init_builtin_efuns(void)
 	   0);
 
   /* Some Wide-string stuff */
-  
-/* function(string:string(0..255)) */
+
+  /* function(string,int(0..2)|void:string(0..255)) */
   ADD_EFUN("string_to_unicode", f_string_to_unicode,
-	   tFunc(tStr,tStr8), OPT_TRY_OPTIMIZE);
-  
-/* function(string(0..255):string) */
+	   tFunc(tStr tOr(tInt02,tVoid),tStr8), OPT_TRY_OPTIMIZE);
+
+  /* function(string(0..255):string) */
   ADD_EFUN("unicode_to_string", f_unicode_to_string,
 	   tFunc(tStr8,tStr), OPT_TRY_OPTIMIZE);
   
