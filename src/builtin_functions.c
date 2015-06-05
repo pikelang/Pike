@@ -8761,23 +8761,26 @@ void f_enumerate(INT32 args)
       INT_TYPE step,start;
 
       get_all_args("enumerate", args, "%+%i%i", &n, &step, &start);
+
+      {
+        INT_TYPE tmp;
+
+        /* this checks if
+         *      (n - 1) * step + start
+         * will overflow. if it does, we continue with the slow path. If it does not,
+         * adding step to start repeatedly will not overflow below. This check has
+         * false positives, but is much simpler to check than e.g. doing one check
+         * for every iteration
+         */
+        if (DO_INT_TYPE_MUL_OVERFLOW(n-1, step, &tmb) || INT_TYPE_ADD_OVERFLOW(tmp, start))
+          goto slow_path;
+      }
+
       pop_n_elems(args);
       push_array(d=allocate_array(n));
       for (i=0; i<n; i++)
       {
 	 ITEM(d)[i].u.integer=start;
-	 if ((step>0 && start+step<start) ||
-	     (step<0 && start+step>start)) /* overflow */
-	 {
-	    pop_stack();
-	    push_int(n);
-	    push_int(step);
-	    convert_stack_top_to_bignum();
-	    push_int(start);
-	    convert_stack_top_to_bignum();
-	    f_enumerate(3);
-	    return;
-	 }
 	 start+=step;
       }
       d->type_field = BIT_INT;
@@ -8802,7 +8805,9 @@ void f_enumerate(INT32 args)
    }
    else
    {
-      TYPE_FIELD types = 0;
+      TYPE_FIELD types;
+slow_path:
+      types = 0;
       get_all_args("enumerate", args, "%+", &n);
       if (args>4) pop_n_elems(args-4);
       push_array(d=allocate_array(n));
