@@ -727,10 +727,15 @@ void process_done(pid_t UNUSED(pid), const char *UNUSED(from)) { }
 #endif /* PIKE_DEBUG */
 
 
+static COND_T process_status_change;
+
 static void register_signal(int signum)
 {
   sig_push(signum);
   wake_up_backend();
+#ifdef USE_SIGCHILD
+  co_broadcast(& process_status_change);
+#endif
 }
 
 static RETSIGTYPE receive_signal(int signum)
@@ -1344,7 +1349,7 @@ static void report_child(int pid,
 	  if(WIFSTOPPED(status)) {
 	    p->sig = WSTOPSIG(status);
 	    p->state = PROCESS_STOPPED;
-
+	    co_broadcast(& process_status_change);
 	    /* Make sure we don't remove the entry from the mapping... */
 	    return;
 	  } else {
@@ -1396,11 +1401,11 @@ static void report_child(int pid,
 		    getpid(),pid,status));
     }
   }
+  co_broadcast(& process_status_change);
 }
 #endif
 
 #ifdef USE_WAIT_THREAD
-static COND_T process_status_change;
 static COND_T start_wait_thread;
 static MUTEX_T wait_thread_mutex;
 static int wait_thread_running = 0;
@@ -1632,126 +1637,15 @@ static void f_pid_status_wait(INT32 args)
   while((THIS->state == PROCESS_RUNNING) ||
 	(!wait_for_stopped && (THIS->state == PROCESS_STOPPED)))
   {
-#ifdef USE_WAIT_THREAD
     SWAP_OUT_CURRENT_THREAD();
-    co_wait_interpreter( & process_status_change);
+    /* Wait for the process status to change.
+     *
+     * It will either be changed by the wait_thread,
+     * or by report_child() called via receive_sigchild(),
+     * all of which signal on this condition.
+     */
+    co_wait_interpreter( &process_status_change);
     SWAP_IN_CURRENT_THREAD();
-#else
-    int err;
-    int pid = THIS->pid;
-    WAITSTATUSTYPE status;
-
-    PROC_FPRINTF((stderr, "[%d] wait(%d): Waiting for child...\n",
-		  getpid(), pid));
-
-    THREADS_ALLOW();
-    pid = WAITPID(pid, &status, 0|WUNTRACED);
-    err = errno;
-    THREADS_DISALLOW();
-
-    if(pid > 0)
-    {
-      report_child(pid, status, "->wait");
-    }
-    else if(pid<0)
-    {
-      switch(err)
-      {
-      case EINTR:
-	break;
-
-#if defined(_REENTRANT) || defined(USE_SIGCHILD)
-      case ECHILD:
-	/* If there is a SIGCHILD handler, it might have reaped
-	 * the child before the call to WAITPID() above.
-	 */
-	/* Linux stupidity...
-	 * child might be forked by another thread (aka process).
-	 *
-	 * SIGCHILD will be sent to all threads on Linux.
-	 * The sleep in the loop below will thus be awakened by EINTR.
-	 *
-	 * But not if there's a race or if Linux has gotten more
-	 * POSIX compliant (>= 2.4), so don't sleep too long
-	 * unless we can poll the wait data pipe. /mast
-	 */
-	pid = THIS->pid;
-	if ((THIS->state == PROCESS_RUNNING) ||
-	    (!wait_for_stopped && (THIS->state == PROCESS_STOPPED))) {
-	  struct pid_status *this = THIS;
-	  int killret, killerr;
-	  THREADS_ALLOW();
-	  while ((!(killret = kill(pid, 0), killerr = errno, killret)) &&
-		 (!wait_for_stopped || (this->state != PROCESS_STOPPED))) {
-	    PROC_FPRINTF((stderr, "[%d] wait(%d): Sleeping...\n",
-			  getpid(), pid));
-#ifdef HAVE_POLL
-	    {
-	      struct pollfd pfd[1];
-#ifdef NEED_SIGNAL_SAFE_FIFO
-	      pfd[0].fd = wait_fd[0];
-	      pfd[0].events = POLLIN;
-	      poll (pfd, 1, 10000);
-#else
-	      poll(pfd, 0, 100);
-#endif
-	    }
-#else /* !HAVE_POLL */
-	    /* FIXME: If this actually gets used then we really
-	     * ought to do better here. :P */
-	    sleep(1);
-#endif /* HAVE_POLL */
-	  }
-	  THREADS_DISALLOW();
-	  if (killret && killerr == ESRCH) {
-	    if (alreadydied)
-	      goto lostchild;	/* But if we already looped, punt */
-	    alreadydied = 1;	/* We try looping once, to cover for races */
-	  }
-	}
-	/* The process has died. */
-	PROC_FPRINTF((stderr, "[%d] wait(%d): Process dead.\n",
-		      getpid(), pid));
-
-	if ((THIS->state == PROCESS_RUNNING) ||
-	    (!wait_for_stopped && THIS->state == PROCESS_STOPPED)) {
-	  /* The child hasn't been reaped yet.
-	   * Try waiting some more, and if that
-	   * doesn't work, let the main loop complain.
-	   */
-	  PROC_FPRINTF((stderr, "[%d] wait(%d): ... but not officially, yet.\n"
-			"[%d] wait(%d): Sleeping some more...\n",
-			getpid(), pid, getpid(), pid));
-	  THREADS_ALLOW();
-#ifdef HAVE_POLL
-	  poll(NULL, 0, 100);
-#else /* !HAVE_POLL */
-	  sleep(1);
-#endif /* HAVE_POLL */
-	  THREADS_DISALLOW();
-
-	  /* We can get here if several threads are waiting on the
-	   * same process, or if the second sleep above wasn't enough
-	   * for receive_sigchild to put the entry into the wait_data
-	   * fifo. In either case we just loop and try again. */
-	  PROC_FPRINTF((stderr,
-			"[%d] wait(%d): Child isn't reaped yet, looping.\n",
-			getpid(), pid));
-	}
-	break;
-#endif /* _REENTRANT || USE_SIGCHILD */
-
-      default:
-lostchild:
-	Pike_error("Lost track of a child (pid %d, errno from wait %d).\n",
-		   THIS->pid, err);
-	break;
-      }
-    } else {
-      /* This should not happen! */
-      Pike_fatal("Pid = 0 in waitpid(%d)\n",pid);
-    }
-#endif
     check_threads_etc();
   }
 
@@ -4895,16 +4789,16 @@ void init_signals(void)
     SET_SVAL_SUBTYPE(signal_callbacks[e], NUMBER_NUMBER);
   }
 
+  co_init(& process_status_change);
+#ifdef USE_WAIT_THREAD
+  co_init(& start_wait_thread);
+  mt_init(& wait_thread_mutex);
+#endif
+
   low_init_signals();
 
 #ifdef USE_PID_MAPPING
   pid_mapping=allocate_mapping(2);
-#endif
-
-#ifdef USE_WAIT_THREAD
-  co_init(& process_status_change);
-  co_init(& start_wait_thread);
-  mt_init(& wait_thread_mutex);
 #endif
 
 #if 0
