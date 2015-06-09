@@ -1888,6 +1888,7 @@ PIKE_MODULE_INIT
 {
   INIT;
 
+#ifdef HAVE_MYSQL
 #ifdef HAVE_MYSQL_MYSQLD_ERNAME_H
   {
     struct mysqld_ername {
@@ -1916,6 +1917,7 @@ PIKE_MODULE_INIT
 #endif /* HAVE_MYSQL_PORT */
 
   init_mysql_res_programs();
+#endif /* HAVE_MYSQL */
 }
 
 PIKE_MODULE_EXIT
