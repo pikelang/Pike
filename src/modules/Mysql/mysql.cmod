@@ -1886,9 +1886,9 @@ PIKEFUN string(8bit) client_info()
 
 PIKE_MODULE_INIT
 {
+#ifdef HAVE_MYSQL
   INIT;
 
-#ifdef HAVE_MYSQL
 #ifdef HAVE_MYSQL_MYSQLD_ERNAME_H
   {
     struct mysqld_ername {
@@ -1917,6 +1917,8 @@ PIKE_MODULE_INIT
 #endif /* HAVE_MYSQL_PORT */
 
   init_mysql_res_programs();
+#else
+  HIDE_MODULE();
 #endif /* HAVE_MYSQL */
 }
 
@@ -1935,6 +1937,6 @@ PIKE_MODULE_EXIT
     mysql_error_program = NULL;
   }
 #endif
-#endif /* HAVE_MYSQL */
   EXIT;
+#endif /* HAVE_MYSQL */
 }
