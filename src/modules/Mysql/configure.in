@@ -21,7 +21,7 @@
 #
 
 
-AC_INIT(mysql.c)
+AC_INIT(mysql.cmod)
 AC_CONFIG_HEADER(config.h)
 
 AC_MODULE_INIT()
