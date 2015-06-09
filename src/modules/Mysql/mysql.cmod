@@ -96,15 +96,6 @@
 /* Local includes */
 #include "precompiled_mysql.h"
 
-/* NOTE: Same as the CVARs in result.cmod! */
-struct precompiled_mysql_result
-{
-  struct obejct *connection;
-  MYSQL_RES *result;
-  int eof;
-  int typed_mode;
-};
-
 /*
  * Globals
  */
@@ -166,9 +157,6 @@ static MUTEX_T stupid_port_lock;
 #define MYSQL_ALLOW()
 #define MYSQL_DISALLOW()
 #endif /* _REENTRANT */
-
-#define PIKE_MYSQL_FLAG_STORE_RESULT	1
-#define PIKE_MYSQL_FLAG_TYPED_RESULT	2
 
 #define CHECK_8BIT_NONBINARY_STRING(FUNC, ARG) do {			\
     if (TYPEOF(sp[ARG-1-args]) != T_STRING ||				\
@@ -1185,25 +1173,7 @@ static void low_query(INT32 args, char *name, int flags)
     push_int(0);
   } else {
     /* Return the result-object */
-    struct precompiled_mysql_result *res;
-    struct object *o;
-
-    /* Create the object */
-    ref_push_object(Pike_fp->current_object);
-    if (flags & PIKE_MYSQL_FLAG_TYPED_RESULT) {
-      push_int(1);
-      push_object(o = clone_object(Mysql_mysql_result_program, 2));
-    } else {
-      push_object(o = clone_object(Mysql_mysql_result_program, 1));
-    }
-
-    /* Set the result. */
-    if ((!(res = get_storage(o, Mysql_mysql_result_program))) ||
-        res->result) {
-      mysql_free_result(result);
-      Pike_error("%s(): Bad mysql result object!\n", name);
-    }
-    res->result = result;
+    push_object(make_mysql_result(Pike_fp->current_object, result, flags));
   }
 }
 
@@ -1563,23 +1533,8 @@ PIKEFUN object list_dbs(string|void wild)
 
   pop_n_elems(args);
 
-  {
-    /* Return the result-object */
-    struct precompiled_mysql_result *res;
-    struct object *o;
-
-    /* Create the object */
-    ref_push_object(Pike_fp->current_object);
-    push_object(o = clone_object(Mysql_mysql_result_program, 1));
-
-    /* Set the result. */
-    if ((!(res = get_storage(o, Mysql_mysql_result_program))) ||
-        res->result) {
-      mysql_free_result(result);
-      Pike_error("Mysql.mysql->list_dbs(): Bad mysql result object!\n");
-    }
-    res->result = result;
-  }
+  /* Return the result-object */
+  push_object(make_mysql_result(Pike_fp->current_object, result, 0));
 }
 
 /*! @decl object(Mysql.mysql_result) list_tables()
@@ -1635,23 +1590,8 @@ PIKEFUN object list_tables(string|void wild)
 
   pop_n_elems(args);
 
-  {
-    /* Return the result-object */
-    struct precompiled_mysql_result *res;
-    struct object *o;
-
-    /* Create the object */
-    ref_push_object(Pike_fp->current_object);
-    push_object(o = clone_object(Mysql_mysql_result_program, 1));
-
-    /* Set the result. */
-    if ((!(res = get_storage(o, Mysql_mysql_result_program))) ||
-        res->result) {
-      mysql_free_result(result);
-      Pike_error("Mysql.mysql->list_tables(): Bad mysql result object!\n");
-    }
-    res->result = result;
-  }
+  /* Return the result-object */
+  push_object(make_mysql_result(Pike_fp->current_object, result, 0));
 }
 
 /*! @decl array(int|mapping(string:mixed)) list_fields(string table)
@@ -1831,23 +1771,8 @@ PIKEFUN object list_processes()
     Pike_error("Mysql.mysql->list_processes(): Cannot list processes: %s\n", err);
   }
 
-  {
-    /* Return the result-object */
-    struct precompiled_mysql_result *res;
-    struct object *o;
-
-    /* Create the object */
-    ref_push_object(Pike_fp->current_object);
-    push_object(o = clone_object(Mysql_mysql_result_program, 1));
-
-    /* Set the result. */
-    if ((!(res = get_storage(o, Mysql_mysql_result_program))) ||
-        res->result) {
-      mysql_free_result(result);
-      Pike_error("Mysql.mysql->list_processes(): Bad mysql result object!\n");
-    }
-    res->result = result;
-  }
+  /* Return the result-object */
+  push_object(make_mysql_result(Pike_fp->current_object, result, 0));
 }
 
 /*! @decl int binary_data()

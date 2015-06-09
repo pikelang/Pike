@@ -103,8 +103,6 @@
 #define FIELD_TYPE_GEOMETRY 255
 #endif
 
-#define DEFAULT_CMOD_STORAGE
-
 /*
  * Globals
  */
@@ -364,6 +362,35 @@ PIKEFUN void create(object connection, int|void typed_mode)
   add_ref(PIKE_MYSQL_RES->connection = connection);
 
   pop_n_elems(args);
+}
+
+struct object *make_mysql_result(struct object *mysql,
+				 MYSQL_RES *result,
+				 int flags)
+{
+  /* Return the result-object */
+  struct Mysql_mysql_result_struct *res;
+  struct object *o;
+
+  /* Create the object */
+  ref_push_object(mysql);
+  if (flags & PIKE_MYSQL_FLAG_TYPED_RESULT) {
+    push_int(1);
+    o = clone_object(Mysql_mysql_result_program, 2);
+  } else {
+    o = clone_object(Mysql_mysql_result_program, 1);
+  }
+
+  /* Set the result. */
+  if ((!(res = get_storage(o, Mysql_mysql_result_program))) ||
+      res->result) {
+    mysql_free_result(result);
+    free_object(o);
+    Pike_error("Bad mysql result object!\n");
+  }
+  res->result = result;
+
+  return o;
 }
 
 /*! @decl int num_rows()

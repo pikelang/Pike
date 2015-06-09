@@ -44,13 +44,12 @@
 #endif
 #endif
 
-/* From the Pike-dist */
-
 /*
- * Globals
+ * Macros
  */
 
-extern struct program *Mysql_mysql_result_program;
+#define PIKE_MYSQL_FLAG_STORE_RESULT	1
+#define PIKE_MYSQL_FLAG_TYPED_RESULT	2
 
 /*
  * Prototypes
@@ -58,6 +57,9 @@ extern struct program *Mysql_mysql_result_program;
 
 /* From result.c */
 
+struct object *make_mysql_result(struct object *mysql,
+				 MYSQL_RES *result,
+				 int flags);
 void init_mysql_res_efuns(void);
 void init_mysql_res_programs(void);
 void exit_mysql_res(void);
