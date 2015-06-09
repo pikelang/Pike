@@ -10,7 +10,9 @@
 /make_variables
 /modlist_headers
 /modlist_segment
+/mysql.c
 /testsuite
 /remake
+/result.c
 /stamp-h
 /stamp-h.in

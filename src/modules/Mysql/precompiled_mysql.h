@@ -47,40 +47,10 @@
 /* From the Pike-dist */
 
 /*
- * Structures
- */
-
-struct precompiled_mysql {
-#ifdef PIKE_THREADS
-  DEFINE_MUTEX(lock);
-#endif /* PIKE_THREADS */
-
-  MYSQL		*mysql;
-  struct pike_string	*host, *database, *user, *password;	/* Reconnect */
-  struct mapping   *options;
-  struct pike_string *conn_charset;
-};
-
-struct precompiled_mysql_result {
-  struct object *connection;
-  MYSQL_RES	*result;
-  int eof;
-  int typed_mode;
-};
-
-/*
- * Defines
- */
-
-#define PIKE_MYSQL	((struct precompiled_mysql *)(Pike_fp->current_storage))
-#define PIKE_MYSQL_RES	((struct precompiled_mysql_result *)(Pike_fp->current_storage))
-
-/*
  * Globals
  */
 
-extern struct program *mysql_program;
-extern struct program *mysql_result_program;
+extern struct program *Mysql_mysql_result_program;
 
 /*
  * Prototypes

@@ -6,4 +6,9 @@ MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
 CONFIG_HEADERS=@CONFIG_HEADERS@
 
 @dynamic_module_makefile@
+
+$(srcdir)/mysql.c: mysql.cmod
+
+$(srcdir)/result.c: result.cmod
+
 @dependencies@

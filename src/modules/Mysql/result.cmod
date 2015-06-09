@@ -103,11 +103,13 @@
 #define FIELD_TYPE_GEOMETRY 255
 #endif
 
+#define DEFAULT_CMOD_STORAGE
+
 /*
  * Globals
  */
 
-struct program *mysql_result_program = NULL;
+DECLARATIONS;
 
 static struct svalue mpq_program = SVALUE_INIT_FREE;
 
@@ -115,16 +117,20 @@ static struct svalue mpq_program = SVALUE_INIT_FREE;
  * Functions
  */
 
+PIKECLASS mysql_result
+{
+  CVAR struct object *connection;
+  CVAR MYSQL_RES	*result;
+  CVAR int eof;
+  CVAR int typed_mode;
+
+#define PIKE_MYSQL_RES	THIS_MYSQL_MYSQL_RESULT
+
 /*
  * State maintenance
  */
 
-static void init_res_struct(struct object *UNUSED(o))
-{
-  memset(PIKE_MYSQL_RES, 0, sizeof(struct precompiled_mysql_result));
-}
-
-static void exit_res_struct(struct object *UNUSED(o))
+EXIT
 {
   if (PIKE_MYSQL_RES->result) {
     mysql_free_result(PIKE_MYSQL_RES->result);
@@ -333,25 +339,16 @@ void mysqlmod_parse_field(MYSQL_FIELD *field, int support_default)
  *!   @[Mysql.mysql->list_tables()], @[Mysql.mysql->list_processes()],
  *!   @[Mysql.mysql]
  */
-static void f_create(INT32 args)
+PIKEFUN void create(object connection, int|void typed_mode)
+  flags ID_PROTECTED;
 {
-  if (!args) {
-    Pike_error("Too few arguments to mysql_result()\n");
-  }
-  if (TYPEOF(sp[-args]) != T_OBJECT) {
-    Pike_error("Bad argument 1 to mysql_result()\n");
-  }
-
 #ifdef OLD_SQL_COMPAT
   PIKE_MYSQL_RES->typed_mode = 1;
 #else
   PIKE_MYSQL_RES->typed_mode = 0;
 #endif
-  if (args > 1) {
-    if (TYPEOF(sp[1-args]) != T_INT) {
-      Pike_error("Bad argument 2 to mysql_result()\n");
-    }
-    PIKE_MYSQL_RES->typed_mode = !!sp[1-args].u.integer;
+  if (typed_mode) {
+    PIKE_MYSQL_RES->typed_mode = !!typed_mode->u.integer;
   }
 
   if (PIKE_MYSQL_RES->result) {
@@ -364,7 +361,7 @@ static void f_create(INT32 args)
     free_object(PIKE_MYSQL_RES->connection);
   }
 
-  add_ref(PIKE_MYSQL_RES->connection = sp[-args].u.object);
+  add_ref(PIKE_MYSQL_RES->connection = connection);
 
   pop_n_elems(args);
 }
@@ -376,7 +373,7 @@ static void f_create(INT32 args)
  *! @seealso
  *!   @[num_fields()]
  */
-static void f_num_rows(INT32 args)
+PIKEFUN int num_rows()
 {
   pop_n_elems(args);
   if (PIKE_MYSQL_RES->result) {
@@ -393,7 +390,7 @@ static void f_num_rows(INT32 args)
  *! @seealso
  *!   @[num_rows()]
  */
-static void f_num_fields(INT32 args)
+PIKEFUN int num_fields()
 {
   pop_n_elems(args);
   if (PIKE_MYSQL_RES->result) {
@@ -422,18 +419,12 @@ static void f_num_fields(INT32 args)
  *! @seealso
  *!   @[fetch_field()], @[fetch_fields()]
  */
-static void f_field_seek(INT32 args)
+PIKEFUN void field_seek(int field_no)
 {
-  if (!args) {
-    Pike_error("Too few arguments to mysql->field_seek()\n");
-  }
-  if (TYPEOF(sp[-args]) != T_INT) {
-    Pike_error("Bad argument 1 to mysql->field_seek()\n");
-  }
   if (!PIKE_MYSQL_RES->result) {
     Pike_error("Can't seek in uninitialized result object.\n");
   }
-  mysql_field_seek(PIKE_MYSQL_RES->result, sp[-args].u.integer);
+  mysql_field_seek(PIKE_MYSQL_RES->result, field_no);
   pop_n_elems(args);
 }
 
@@ -449,7 +440,7 @@ static void f_field_seek(INT32 args)
  *! @seealso
  *!   @[fetch_row()]
  */
-static void f_eof(INT32 args)
+ PIKEFUN int(0..1) eof()
 {
   pop_n_elems(args);
   push_int(PIKE_MYSQL_RES->eof);
@@ -484,7 +475,7 @@ static void f_eof(INT32 args)
  *! @seealso
  *!   @[fetch_fields()], @[field_seek()], @[Mysql.mysql->list_fields()]
  */
-static void f_fetch_field(INT32 args)
+PIKFUN int|mapping(string:mixed) fetch_field()
 {
   MYSQL_FIELD *field;
   MYSQL_RES *res = PIKE_MYSQL_RES->result;
@@ -527,7 +518,7 @@ static void f_fetch_field(INT32 args)
  *! @seealso
  *!   @[fetch_field()], @[field_seek()], @[Mysql.mysql->list_fields()]
  */
-static void f_fetch_fields(INT32 args)
+PIKEFUN array(int|mapping(string:mixed)) fetch_fields()
 {
   MYSQL_FIELD *field;
   int i = 0;
@@ -557,11 +548,8 @@ static void f_fetch_fields(INT32 args)
  *! @seealso
  *!   @[fetch_row()]
  */
-static void f_seek(INT32 args)
+PIKEFUN void seek(int skip)
 {
-  INT_TYPE skip;
-  get_all_args("seek",args,"%+",&skip);
-
   if (!PIKE_MYSQL_RES->result)
     Pike_error("Can't seek in uninitialized result object.\n");
 
@@ -582,7 +570,7 @@ static void f_seek(INT32 args)
  *! @seealso
  *!   @[seek()]
  */
-static void f_fetch_row(INT32 args)
+PIKEFUN int|array(string) fetch_row()
 {
   int num_fields;
   MYSQL_ROW row;
@@ -841,7 +829,7 @@ static void json_escape(struct string_builder *res,
  *! @seealso
  *! @[Standards.JSON.encode]
  */
-static void f_fetch_json_result(INT32 args)
+PIKEFUN string fetch_json_result()
 {
   int num_fields;
   MYSQL_ROW row;
@@ -910,6 +898,7 @@ next_row:
   mysql_field_seek(PIKE_MYSQL_RES->result, 0);
 }
 
+}
 /*! @endclass
  */
 
@@ -920,50 +909,14 @@ next_row:
  * Module linkage
  */
 
-
 void init_mysql_res_programs(void)
 {
-  start_new_program();
-  ADD_STORAGE(struct precompiled_mysql_result);
-
-  /* function(object:void) */
-  ADD_FUNCTION("create", f_create,tFunc(tObj,tVoid), ID_PUBLIC);
-  /* function(void:int) */
-  ADD_FUNCTION("num_rows", f_num_rows,tFunc(tVoid,tInt), ID_PUBLIC);
-  /* function(void:int) */
-  ADD_FUNCTION("num_fields", f_num_fields,tFunc(tVoid,tInt), ID_PUBLIC);
-#ifdef SUPPORT_FIELD_SEEK
-  /* function(int:void) */
-  ADD_FUNCTION("field_seek", f_field_seek,tFunc(tInt,tVoid), ID_PUBLIC);
-#endif /* SUPPORT_FIELD_SEEK */
-  /* function(void:int) */
-  ADD_FUNCTION("eof", f_eof,tFunc(tVoid,tInt), ID_PUBLIC);
-#ifdef SUPPORT_FIELD_SEEK
-  /* function(void:int|mapping(string:mixed)) */
-  ADD_FUNCTION("fetch_field", f_fetch_field,tFunc(tVoid,tOr(tInt,tMap(tStr,tMix))), ID_PUBLIC);
-#endif /* SUPPORT_FIELD_SEEK */
-  /* function(void:array(int|mapping(string:mixed))) */
-  ADD_FUNCTION("fetch_fields", f_fetch_fields,tFunc(tVoid,tArr(tOr(tInt,tMap(tStr,tMix)))), ID_PUBLIC);
-  /* function(int:void) */
-  ADD_FUNCTION("seek", f_seek,tFunc(tInt,tVoid), ID_PUBLIC);
-  /* function(void:int|array(string|int|float)) */
-  ADD_FUNCTION("fetch_row", f_fetch_row,tFunc(tVoid,tOr(tInt,tArr(tOr3(tStr,tInt,tFlt)))), ID_PUBLIC);
-  /* function(void:int|string) */
-  ADD_FUNCTION("fetch_json_result", f_fetch_json_result,tFunc(tVoid,tStr), ID_PUBLIC);
-
-  set_init_callback(init_res_struct);
-  set_exit_callback(exit_res_struct);
-
-  mysql_result_program = end_program();
-  add_program_constant("mysql_result",mysql_result_program, 0);
+  INIT;
 }
 
 void exit_mysql_res(void)
 {
-  if (mysql_result_program) {
-    free_program(mysql_result_program);
-    mysql_result_program = NULL;
-  }
+  EXIT;
   free_svalue (&mpq_program);
 }
 
