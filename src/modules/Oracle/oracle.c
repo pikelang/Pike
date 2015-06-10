@@ -803,7 +803,7 @@ static void ora_error_handler(OCIError *err, sword rc, char *func)
   /* FIXME: we might need to do switch(rc) */
 #ifdef OCI_UTF16ID
   static text msgbuf[1024];
-  int i = 0;
+  int i;
 #else
   static text msgbuf[512];
 #endif
@@ -815,27 +815,25 @@ static void ora_error_handler(OCIError *err, sword rc, char *func)
 
   OCIErrorGet(err,1,0,&errcode,msgbuf,sizeof(msgbuf),OCI_HTYPE_ERROR);
 
-#ifdef OCI_UTF16ID
-  /* assumes only ascii errors messages */
-  while(i < 512 && !(msgbuf[i] == 0 && msgbuf[i+1] == 0)) {
-#if (PIKE_BYTEORDER == 1234)
-    msgbuf[i] = msgbuf[i*2];
-#else
-    msgbuf[i] = msgbuf[i*2+1];
-#endif
-    i++;
-  }
-#endif
-
 #ifdef ORACLE_DEBUG
   fprintf(stderr,"%s:code=%d:errcode=%d:%s\n",
 	  func?func:"Oracle", rc, errcode, msgbuf);
 #endif
 
+#ifdef OCI_UTF16ID
+  for (i = 0; msgbuf[i] && msgbuf[i+1]; i+= 2)
+    ;
+  push_string(make_binary_string(msgbuf, i));
+  push_int(2);
+  f_unicode_to_string(2);
+#else
+  push_text(msgbuf);
+#endif
+
   if(func)
-    Pike_error("%s:code=%d:%s",func,rc,msgbuf);
+    Pike_error("%s:code=%d:%S", func, rc, Pike_sp[-1].u.string);
   else
-    Pike_error("Oracle:code=%d:%s",rc,msgbuf);
+    Pike_error("Oracle:code=%d:%S", rc, Pike_sp[-1].u.string);
 }
 
 
