@@ -1498,7 +1498,7 @@ PIKEFUN object list_dbs(string|void wild)
   MYSQL *mysql = PIKE_MYSQL->mysql;
   MYSQL_RES *result = NULL;
 
-  if (args) {
+  if (wild) {
     CHECK_8BIT_NONBINARY_STRING ("Mysql.mysql->list_dbs", 1);
     if (wild->len > 80) {
       if (wild->len < 1024) {
@@ -1555,7 +1555,7 @@ PIKEFUN object list_tables(string|void wild)
   MYSQL *mysql = PIKE_MYSQL->mysql;
   MYSQL_RES *result = NULL;
 
-  if (args) {
+  if (wild) {
     CHECK_8BIT_NONBINARY_STRING ("Mysql.mysql->list_tables", 1);
     if (wild->len > 80) {
       if (wild->len < 1024) {
@@ -1686,7 +1686,7 @@ PIKEFUN array(int|mapping(string:mixed)) list_fields(string(8bit) table,
 		 DO_NOT_WARN((long)table->len));
     }
   }
-  if (args > 1) {
+  if (wild) {
     CHECK_8BIT_NONBINARY_STRING ("Mysql.mysql->list_fields", 2);
     if (wild->len + table->len > 125) {
       /* The length of the table name has already been checked. */
