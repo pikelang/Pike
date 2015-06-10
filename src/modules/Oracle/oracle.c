@@ -270,6 +270,7 @@ void *low_check_storage(void *storage, unsigned long magic, char *prog)
 #define DBQUERY_MAGIC	0xdb994711UL
 #define DBRESULT_MAGIC	0xdbe04711UL
 #define DBRESINFO_MAGIC	0xdbe14711UL
+#define DBLOB_MAGIC	0xdb104711UL
 #define DBDATE_MAGIC	0xdbda4711UL
 #define DBTS_MAGIC	0xdb754711UL
 #define THIS_DBCON ((struct dbcon *)check_storage(CURRENT_STORAGE,DBCON_MAGIC,"dbcon"))
@@ -279,6 +280,7 @@ void *low_check_storage(void *storage, unsigned long magic, char *prog)
 #define THIS_RESULT_QUERY ((struct dbquery *)check_storage(parent_storage(1, compile_query_program),DBQUERY_MAGIC,"dbquery"))
 #define THIS_RESULT ((struct dbresult *)check_storage(CURRENT_STORAGE,DBRESULT_MAGIC,"dbresult"))
 #define THIS_RESULTINFO ((struct dbresultinfo *)check_storage(CURRENT_STORAGE,DBRESINFO_MAGIC,"dbresultinfo"))
+#define THIS_DBLOB ((struct dblob *)check_storage(CURRENT_STORAGE,DBLOB_MAGIC,"dblob"))
 #define THIS_DBDATE ((struct dbdate *)check_storage(CURRENT_STORAGE,DBDATE_MAGIC,"dbdate"))
 #define THIS_DBNULL ((struct dbnull *)check_storage(CURRENT_STORAGE,DBNULL_MAGIC,"dbnull"))
 
@@ -286,6 +288,7 @@ static struct program *oracle_program = NULL;
 static struct program *compile_query_program = NULL;
 static struct program *big_typed_query_program = NULL;
 static struct program *dbresultinfo_program = NULL;
+static struct program *LOB_program = NULL;
 static struct program *Date_program = NULL;
 static struct program *NULL_program = NULL;
 
@@ -293,6 +296,7 @@ static int oracle_identifier;
 static int compile_query_identifier;
 static int big_typed_query_identifier;
 static int dbresultinfo_identifier;
+static int LOB_identifier;
 static int Date_identifier;
 
 static struct object *nullstring_object;
@@ -682,6 +686,33 @@ static void protect_dbresultinfo(INT32 args)
   Pike_error("You may not change variables in dbresultinfo objects.\n");
 }
 
+/****** dblob ******/
+
+struct dblob
+{
+#ifdef PIKE_DEBUG
+  unsigned long magic;
+#endif
+  int is_clob;
+  OCILobLocator *lob;
+  struct dbcon *dbcon;
+};
+
+static void init_dblob_struct(struct object *o)
+{
+#ifdef PIKE_DEBUG
+  ((unsigned long *)(Pike_fp->current_storage))[0]=0xdb104711UL;
+#endif
+}
+
+static void exit_dblob_struct(struct object *o) {
+  if (THIS_DBLOB->lob) {
+    OCIDescriptorFree(THIS_DBLOB->lob, OCI_DTYPE_LOB);
+    THIS_DBLOB->lob = NULL;
+  }
+}
+
+
 /****** dbdate ******/
 
 struct dbdate
@@ -926,12 +957,23 @@ static sb4 output_callback(struct inout *inout,
 #endif
       return OCI_CONTINUE;
 
-  case SQLT_CLOB:
-  case SQLT_BLOB:
-    *bufpp=inout->u.lob;
-    inout->xlen=sizeof(inout->u.lob); /* ? */
-    *piecep = OCI_ONE_PIECE;
-    return OCI_CONTINUE;
+    case SQLT_CLOB:
+    case SQLT_BLOB:
+      inout->u.lob = 0;
+      if (OCIDescriptorAlloc((dvoid *) get_oracle_environment(),
+			     (dvoid **) &inout->u.lob,
+			     (ub4)OCI_DTYPE_LOB,
+			     (size_t) 0,
+			     (dvoid **) 0)) {
+#ifdef ORACLE_DEBUG
+	fprintf(stderr,"OCIDescriptorAlloc failed!\n");
+#endif
+	inout->u.lob = 0;
+      }
+      *bufpp = inout->u.lob;
+      inout->xlen = -1;
+      *piecep = OCI_ONE_PIECE;
+      return OCI_CONTINUE;
 
     case SQLT_FLT:
       *bufpp=&inout->u.f;
@@ -1187,26 +1229,11 @@ static void f_fetch_fields(INT32 args)
 	  
       case SQLT_CLOB:
       case SQLT_BLOB:
-	if(type == SQLT_BLOB)
-	  type_name = "blob";
-	else
-	  type_name="clob";
-	info->data.u.lob = 0;
-	if ((rc = OCIDescriptorAlloc(
-				    (dvoid *) get_oracle_environment(),
-				    (dvoid **) &info->data.u.lob, 
-				    (ub4)OCI_DTYPE_LOB, 
-				    (size_t) 0, 
-				    (dvoid **) NULL)))
-	  {
-#ifdef ORACLE_DEBUG
-	    fprintf(stderr,"OCIDescriptorAlloc failed!\n");
-#endif
-	    info->data.u.lob = 0;
-	    info->define_handle = 0;
-	    ora_error_handler(dbcon->error_handle, rc, "OCIDescriptorAlloc");
-	  }
-	data_size=sizeof(info->data.u.lob); /* ? */
+        if(type == SQLT_BLOB)
+          type_name = "blob";
+        else
+          type_name="clob";
+        data_size=-1;
 	break;
 
 	case SQLT_RID:
@@ -1430,70 +1457,14 @@ static void push_inout_value(struct inout *inout,
 
     case SQLT_CLOB:
     case SQLT_BLOB:
-    {
-      if((ret = OCILobGetLength(dbcon->context, dbcon->error_handle,
-				inout->u.lob, &loblen)) 
-	 != OCI_SUCCESS) {
-#ifdef ORACLE_DEBUG
-	fprintf(stderr,"OCILobGetLength failed.\n");
-#endif
-	errfunc = "OCILobGetLength";
-      } else {
-#ifdef ORACLE_DEBUG
-	fprintf(stderr,"LOB length: %d\n",loblen);
-#endif
-	amtp = loblen;
-	if(loblen != 0) {
-	  if((bufp = malloc(loblen))) {
-	    if((ret = OCILobRead(dbcon->context,
-				 dbcon->error_handle,
-				 inout->u.lob, 
-				 &amtp, 
-				 1, 
-				 (dvoid *) bufp,
-				 loblen, 
-				 (dvoid *)0, 
-				 (sb4 (*)(dvoid *, CONST dvoid *, ub4, ub1)) 0,
-				 (ub2) 0, 
-				 (ub1) SQLCS_IMPLICIT)) 
-	       != OCI_SUCCESS) 
-	      {
-#ifdef ORACLE_DEBUG
-		fprintf(stderr,"OCILobRead failed\n");
-#endif
-		errfunc = "OCILobRead";
-	      }
-	  }
-	  else {
-	    ret = OCI_SUCCESS + 1;
-	    errfunc = "malloc";
-	  }
-	}
-      }
+      push_object(low_clone(LOB_program));
+      call_c_initializers(Pike_sp[-1].u.object);
+      ((struct dblob *)STORAGE(Pike_sp[-1].u.object))->is_clob =
+	(inout->ftype == SQLT_CLOB);
+      ((struct dblob *)STORAGE(Pike_sp[-1].u.object))->lob = inout->u.lob;
+      ((struct dblob *)STORAGE(Pike_sp[-1].u.object))->dbcon = dbcon;
+      break;
 
-      if(ret == OCI_SUCCESS) {
-	if(loblen == 0)
-          push_empty_string();
-	else
-	  push_string(make_shared_binary_string(bufp, loblen));
-      }
-      
-      if(bufp)
-	free(bufp);
-      
-      if(ret != OCI_SUCCESS)
-	ora_error_handler(dbcon->error_handle, ret, errfunc);
-      
-#if 0
-      /*  Handle automatically freed when environment handle is deallocated.
-	  Not needed according according to doc.*/
-      /* WARNING: Do not enable! */
-      if(inout->u.lob)
-	OCIDescriptorFree((dvoid *) inout->u.lob, (ub4) OCI_DTYPE_LOB);
-#endif
-    }
-    break;
-	
     case SQLT_DATE:
     case SQLT_ODT:
     case SQLT_DAT:
@@ -2522,7 +2493,181 @@ static void f_big_typed_query_create(INT32 args)
       DEBUG_CHECK_THREAD();
   }
 #endif
+}
 
+/*
+ * dblob
+ */
+
+static void dblob_sprintf(INT32 args)
+{
+  char tmp[100];
+  sprintf(tmp, "Oracle.LOB(%p)", THIS_DBLOB->lob);
+  pop_n_elems(args);
+  push_text(tmp);
+}
+
+static void dblob_read(INT32 args)
+{
+  sword ret;
+  ub4 loblen = ~0;
+  char *bufp;
+  char *errfunc = NULL;
+  ub4   amtp = 0;
+  int is_clob = THIS_DBLOB->is_clob;
+  struct dbcon *dbcon = THIS_DBLOB->dbcon;
+  ub2 charset = 0;
+
+  if (!THIS_DBLOB->lob) {
+    Pike_error("Attempt to read from an uninitialized LOB.\n");
+  }
+
+  pop_n_elems(args);
+
+  if((ret = OCILobGetLength(dbcon->context, dbcon->error_handle,
+			    THIS_DBLOB->lob, &loblen)) != OCI_SUCCESS) {
+#ifdef ORACLE_DEBUG
+    fprintf(stderr,"OCILobGetLength failed.\n");
+#endif
+    errfunc = "OCILobGetLength";
+  } else {
+    if(loblen) {
+      amtp = loblen;
+#ifdef OCI_UTF16ID
+      if (is_clob) {
+	loblen *= 2;
+	charset = OCI_UTF16ID;
+      }
+#endif
+      /* FIXME: Use begin_shared_string() + end_and_resize_shared_string(). */
+      if(bufp = malloc(loblen)) {
+	if((ret = OCILobRead(dbcon->context,
+			     dbcon->error_handle,
+			     THIS_DBLOB->lob,
+			     &amtp,
+			     1,
+			     (dvoid *) bufp,
+			     loblen,
+			     (dvoid *) NULL,
+			     (sb4 (*)(dvoid *, CONST dvoid *, ub4, ub1)) NULL,
+			     charset,
+			     (ub1) SQLCS_IMPLICIT)) != OCI_SUCCESS) {
+#ifdef ORACLE_DEBUG
+	  fprintf(stderr,"OCILobRead failed\n");
+#endif
+	  errfunc = "OCILobRead";
+	}
+      } else {
+	ret = 1;
+	errfunc = "malloc";
+      }
+    }
+  }
+#ifdef ORACLE_DEBUG
+  fprintf(stderr,"LOB length: %d bytes, is_clob: %d\n",
+	  loblen, is_clob);
+#endif
+  if(!loblen) {
+    push_empty_string();
+  } else {
+    if(ret != OCI_SUCCESS) {
+      if(bufp)
+	free(bufp);
+      ora_error_handler(dbcon->error_handle, ret, errfunc);
+    }
+
+    push_string(make_shared_binary_string(bufp, loblen));
+#ifdef OCI_UTF16ID
+    if(is_clob) {
+      push_int(2);
+      f_unicode_to_string(2);
+    }
+#endif
+    if(bufp)
+      free(bufp);
+  }
+}
+
+static void dblob_cast(INT32 args)
+{
+  char *s;
+
+  get_all_args("Oracle.LOB->cast",args,"%s",&s);
+
+  if(!strcmp(s,"string")) {
+    dblob_read(0);
+    return;
+  }
+
+  Pike_error("Cannot cast Oracle.LOB to %s\n",s);
+}
+
+static void dblob_write(INT32 args)
+{
+  sword ret;
+  char *bufp;
+  char *errfunc = NULL;
+  ub4   amtp = 0;
+  int is_clob = THIS_DBLOB->is_clob;
+  struct dbcon *dbcon = THIS_DBLOB->dbcon;
+  struct pike_string *data;
+
+  if (!THIS_DBLOB->lob) {
+    Pike_error("Attempt to write to an uninitialized LOB.\n");
+  }
+
+  if (args > 1) {
+    pop_n_elems(args - 1);
+    args = 1;
+  }
+
+#ifdef OCI_UTF16ID
+  if (is_clob && args) {
+    push_int(2);
+    f_string_to_unicode(2);
+  }
+#endif
+
+  /* NB: Also handles generating an error on zero arguments. */
+  get_all_args("write", args, "%N", &data);
+
+  /* Number of bytes. */
+  amtp = data->len;
+
+#ifdef OCI_UTF16ID
+  if (is_clob) {
+    /* Number of characters for CLOBs and fixed width character sets. */
+    amtp /= 2;
+  }
+#endif
+
+  ret = OCILobWrite(dbcon->context,
+                    dbcon->error_handle,
+                    THIS_DBLOB->lob,
+                    &amtp,
+                    1, /* offset */
+		    data->str,
+                    data->len, /* buflen */
+                    OCI_ONE_PIECE,
+                    NULL, /* *ctxp */
+                    NULL, /* OCICallbackLobWrite */
+                    0, /* csid */
+                    0 /* csfrm */  );
+
+  if(!IS_SUCCESS(ret))
+    ora_error_handler(dbcon->error_handle, ret, "OCILobWrite");
+
+  ret = OCILobTrim( dbcon->context,
+                    dbcon->error_handle,
+                    THIS_DBLOB->lob,
+                    amtp);
+
+  if(!IS_SUCCESS(ret))
+    ora_error_handler(dbcon->error_handle, ret, "OCILobTrim");
+
+  pop_stack();
+
+  push_int(0);
 }
 
 /*
@@ -2819,6 +2964,15 @@ PIKE_MODULE_INIT
     MY_END_CLASS(oracle);
   }
 
+  MY_START_CLASS(dblob); {
+    /* ADD_FUNCTION("create", dblob_create, tFunc(tOr(tStr,tInt),tVoid), ID_PROTECTED); */
+    ADD_FUNCTION("cast", dblob_cast, tFunc(tStr, tMix), ID_PROTECTED);
+    ADD_FUNCTION("_sprintf", dblob_sprintf, tFunc(tInt, tStr), ID_PROTECTED);
+    ADD_FUNCTION("read", dblob_read, tFunc(tVoid, tStr), 0);
+    ADD_FUNCTION("write", dblob_write, tFunc(tStr, tInt), 0);
+  }
+  MY_END_CLASS(LOB);
+
   MY_START_CLASS(dbdate); {
     ADD_FUNCTION("create",dbdate_create,tFunc(tOr(tStr,tInt),tVoid),0);
     ADD_FUNCTION("cast",dbdate_cast,tFunc(tStr, tMix),ID_PRIVATE);
@@ -2885,6 +3039,7 @@ PIKE_MODULE_EXIT
   FREE_PROG(compile_query_program);
   FREE_PROG(big_typed_query_program);
   FREE_PROG(dbresultinfo_program);
+  FREE_PROG(LOB_program);
   FREE_PROG(Date_program);
   FREE_PROG(NULL_program);
 
