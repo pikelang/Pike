@@ -2244,7 +2244,8 @@ static void f_big_typed_query_create(INT32 args)
 	  case T_OBJECT:
 	    if(value->u.object->prog == Date_program)
 	    {
-	      bind.bind[bind.bindnum].data.u.date=((struct dbdate *)STORAGE(value->u.object))->date;
+	      bind.bind[bind.bindnum].data.u.date =
+		((struct dbdate *)STORAGE(value->u.object))->date;
 	      addr = &bind.bind[bind.bindnum].data.u.date;
 	      rlen = len = sizeof(bind.bind[bind.bindnum].data.u.date);
 	      fty=SQLT_ODT;
