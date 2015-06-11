@@ -53,11 +53,18 @@
 
 #else
 
+#ifdef HAVE_SINF
+
 #define FL1(FN, ARG1) PIKE_CONCAT(FN,f) (ARG1)
 #define FL2(FN, ARG1, ARG2) PIKE_CONCAT(FN,f) (ARG1, ARG2)
 
 #define FA1(FN, ARG1) FN (ARG1)
 #define FA2(FN, ARG1, ARG2) FN (ARG1, ARG2)
+
+#else
+#define FL1(FN, ARG1) FN (ARG1)
+#define FL2(FN, ARG1, ARG2) FN (ARG1, ARG2)
+#endif
 
 #endif
 
