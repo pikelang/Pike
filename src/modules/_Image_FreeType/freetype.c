@@ -5,9 +5,6 @@
 */
 
 #include "config.h"
-#include "global.h"
-#include "module.h"
-#include "pike_error.h"
 
 #ifdef HAVE_LIBFT2
 #ifndef HAVE_FT_FT2BUILD
@@ -21,6 +18,13 @@
 #include FT_TRUETYPE_IDS_H
 #endif
 
+/* Freetype 2.6 defines a conflicting TYPEOF() macro. */
+#undef TYPEOF
+#endif /* HAVE_LIBFT2 */
+
+#include "global.h"
+#include "module.h"
+#include "pike_error.h"
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -34,7 +38,6 @@
 #include "module_support.h"
 #include "operators.h"
 #include "../Image/image.h"
-#endif /* HAVE_LIBFT2 */
 
 
 #ifdef HAVE_LIBFT2
