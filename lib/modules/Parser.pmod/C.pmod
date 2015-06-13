@@ -211,6 +211,15 @@ array(Token|array) group(array(string|Token) tokens,
 	ret=stack->pop()+({ ret + ({token}) });
     }
   }
+  while (sizeof(stack)) {
+    Token token = ret[0];
+    werror("%s:%d: Missing %O.\n",
+	   token->file||"-", token->line,
+	   groupings[(string)token]);
+    ret = stack->pop() +
+      ({ ret +
+	 ({ Token(groupings[(string)token], token->line, token->file) }) });
+  }
   return ret;
 }
 
