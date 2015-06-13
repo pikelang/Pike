@@ -8,4 +8,6 @@ CONFIG_HEADERS=@CONFIG_HEADERS@
 
 @dynamic_module_makefile@
 
+$(srcdir)/msqlmod.c: msqlmod.cmod
+
 @dependencies@
