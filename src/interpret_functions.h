@@ -3088,8 +3088,9 @@ OPCODE1(F_PROTECT_STACK, "protect_stack", 0, {
   });
 
 OPCODE2(F_FILL_STACK, "fill_stack", I_UPDATE_SP, {
-    INT32 tmp = (Pike_fp->locals + arg1) - Pike_sp;
+    ptrdiff_t tmp = (Pike_fp->locals + arg1) - Pike_sp;
     if (tmp > 0) {
+      check_stack(tmp);
       if (arg2) {
 	push_undefines(tmp);
       } else {
