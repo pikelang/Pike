@@ -776,7 +776,7 @@ static void ora_error_handler(OCIError *err, sword rc, char *func)
 #ifdef OCI_UTF16ID
   for (i = 0; msgbuf[i] && msgbuf[i+1]; i+= 2)
     ;
-  push_string(make_binary_string(msgbuf, i));
+  push_string(make_shared_binary_string((char *)msgbuf, i));
   push_int(2);
   f_unicode_to_string(2);
 #else
@@ -2227,12 +2227,12 @@ static void f_big_typed_query_create(INT32 args)
 	sword len, fty;
 	int mode=OCI_DATA_AT_EXEC;
 	long rlen=4000;
-	bind.bindnum++;
 
 #ifdef OCI_UTF16ID
 	int pushed_string = 0;
 
-	if(k->ind.type == T_STRING) {
+	bind.bindnum++;
+	if(TYPEOF(k->ind) == T_STRING) {
 	  push_svalue(&k->ind);
 	  push_int(2);
 	  f_string_to_unicode(2);
@@ -2242,6 +2242,7 @@ static void f_big_typed_query_create(INT32 args)
 	else
 	  assign_svalue_no_free(& bind.bind[bind.bindnum].ind, & k->ind );
 #else
+	bind.bindnum++;
 	assign_svalue_no_free(& bind.bind[bind.bindnum].ind, & k->ind);
 #endif
 	bind.bind[bind.bindnum].indicator=0;
@@ -2522,7 +2523,7 @@ static void dblob_read(INT32 args)
 {
   sword ret;
   ub4 loblen = ~0;
-  char *bufp;
+  char *bufp = NULL;
   char *errfunc = NULL;
   ub4   amtp = 0;
   int is_clob = THIS_DBLOB->is_clob;
@@ -2551,7 +2552,7 @@ static void dblob_read(INT32 args)
       }
 #endif
       /* FIXME: Use begin_shared_string() + end_and_resize_shared_string(). */
-      if(bufp = malloc(loblen)) {
+      if((bufp = malloc(loblen))) {
 	if((ret = OCILobRead(dbcon->context,
 			     dbcon->error_handle,
 			     THIS_DBLOB->lob,
@@ -3020,7 +3021,7 @@ PIKE_MODULE_INIT
   call_c_initializers(Pike_sp[-1].u.object);
   add_object_constant("NULLdate",nulldate_object=clone_object(NULL_program,1),0);
 #ifdef OCI_UTF16ID
-  add_integer_constant("UNICODE_SUPPORTED", 1);
+  add_integer_constant("UNICODE_SUPPORTED", 1, 0);
 #endif
 }
 
