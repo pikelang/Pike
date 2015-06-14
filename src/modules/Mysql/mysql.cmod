@@ -1914,9 +1914,11 @@ PIKE_MODULE_INIT
   }
 #endif
 
+#ifndef HAVE_MYSQL_REAL_CONNECT
 #ifdef HAVE_MYSQL_PORT
   STUPID_PORT_INIT();
 #endif /* HAVE_MYSQL_PORT */
+#endif /* !HAVE_MYSQL_REAL_CONNECT */
 
   init_mysql_res_programs();
 #else
@@ -1929,9 +1931,11 @@ PIKE_MODULE_EXIT
 #ifdef HAVE_MYSQL
   exit_mysql_res();
 
+#ifndef HAVE_MYSQL_REAL_CONNECT
 #ifdef HAVE_MYSQL_PORT
   STUPID_PORT_DESTROY();
 #endif /* HAVE_MYSQL_PORT */
+#endif /* !HAVE_MYSQL_REAL_CONNECT */
 
 #ifdef HAVE_MYSQL_MYSQLD_ERNAME_H
   if (mysql_error_program) {
