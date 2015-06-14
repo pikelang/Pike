@@ -2079,9 +2079,11 @@ PIKE_MODULE_INIT
   /* function(void:string) */
   ADD_FUNCTION("client_info", f_client_info,tFunc(tVoid,tStr), ID_PUBLIC);
 
+#ifndef HAVE_MYSQL_REAL_CONNECT
 #ifdef HAVE_MYSQL_PORT
   STUPID_PORT_INIT();
 #endif /* HAVE_MYSQL_PORT */
+#endif /* !HAVE_MYSQL_REAL_CONNECT */
 
   init_mysql_res_programs();
 #else
@@ -2095,9 +2097,11 @@ PIKE_MODULE_EXIT
 #ifdef HAVE_MYSQL
   exit_mysql_res();
 
+#ifndef HAVE_MYSQL_REAL_CONNECT
 #ifdef HAVE_MYSQL_PORT
   STUPID_PORT_DESTROY();
 #endif /* HAVE_MYSQL_PORT */
+#endif /* !HAVE_MYSQL_REAL_CONNECT */
 
   if (mysql_program) {
     free_program(mysql_program);
