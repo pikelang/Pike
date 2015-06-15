@@ -2574,7 +2574,7 @@ if test $ldflags_is_set = yes -a $cppflags_is_set = yes ; then :; else
     `echo "${p_site_prefixes_to_add}"|sed -e 's/:/ /g'` \
     `echo $exec_prefix | sed "s@^NONE@$prefix@g" | sed "s@^NONE@$with_root$ac_default_prefix@g"` \
     $with_root/usr \
-    $with_root/usr/local $with_root/sw/local $with_root/sw \
+    $with_root/usr/local $with_root/sw/local $with_root/sw $with_root/opt/local \
     $with_root/usr/gnu $with_root/opt/gnu $with_root/sw/gnu \
     $with_root/usr/freeware $with_root/usr/pkg \
     `echo $with_root/opt/gnome* | sort -r` \
