@@ -497,7 +497,7 @@ struct dbcon
   int resultobject_busy;
 };
 
-static void init_dbcon_struct(struct object *o)
+static void init_dbcon_struct(struct object *UNUSED(o))
 {
 #ifdef ORACLE_DEBUG
   fprintf(stderr,"%s\n",__FUNCTION__);
@@ -514,7 +514,7 @@ static void init_dbcon_struct(struct object *o)
   mt_init( & THIS_DBCON->lock );
 }
 
-static void exit_dbcon_struct(struct object *o)
+static void exit_dbcon_struct(struct object *UNUSED(o))
 {
 #ifdef ORACLE_DEBUG
   fprintf(stderr,"%s\n",__FUNCTION__);
@@ -556,7 +556,7 @@ struct dbquery
 };
 
 
-void init_dbquery_struct(struct object *o)
+void init_dbquery_struct(struct object *UNUSED(o))
 {
 #ifdef ORACLE_DEBUG
   fprintf(stderr,"%s\n",__FUNCTION__);
@@ -569,7 +569,7 @@ void init_dbquery_struct(struct object *o)
   mt_init(& THIS_QUERY->lock);
 }
 
-void exit_dbquery_struct(struct object *o)
+void exit_dbquery_struct(struct object *UNUSED(o))
 {
 #ifdef ORACLE_DEBUG
   fprintf(stderr,"%s\n",__FUNCTION__);
@@ -592,7 +592,7 @@ struct dbresult
 };
 
 
-static void init_dbresult_struct(struct object *o)
+static void init_dbresult_struct(struct object *UNUSED(o))
 {
 #ifdef ORACLE_DEBUG
   fprintf(stderr,"%s\n",__FUNCTION__);
@@ -605,7 +605,7 @@ static void init_dbresult_struct(struct object *o)
   THIS_RESULT_DBCON->resultobject_busy = 1;
 }
 
-static void exit_dbresult_struct(struct object *o)
+static void exit_dbresult_struct(struct object *UNUSED(o))
 {
   struct dbquery *dbquery=THIS_RESULT_QUERY;
 #ifdef ORACLE_DEBUG
@@ -651,7 +651,7 @@ struct dbresultinfo
 };
 
 
-static void init_dbresultinfo_struct(struct object *o)
+static void init_dbresultinfo_struct(struct object *UNUSED(o))
 {
 #ifdef ORACLE_DEBUG
   fprintf(stderr,"%s\n",__FUNCTION__);
@@ -663,7 +663,7 @@ static void init_dbresultinfo_struct(struct object *o)
   init_inout(& THIS_RESULTINFO->data);
 }
 
-static void exit_dbresultinfo_struct(struct object *o)
+static void exit_dbresultinfo_struct(struct object *UNUSED(o))
 {
 #ifdef ORACLE_DEBUG
   fprintf(stderr,"%s\n",__FUNCTION__);
@@ -676,13 +676,13 @@ static void exit_dbresultinfo_struct(struct object *o)
 }
 
 #ifdef ORACLE_DEBUG
-static void gc_dbresultinfo_struct(struct object *o)
+static void gc_dbresultinfo_struct(struct object *UNUSED(o))
 {
   THIS_RESULTINFO;
 }
 #endif
 
-static void protect_dbresultinfo(INT32 args)
+static void protect_dbresultinfo(INT32 UNUSED(args))
 {
   Pike_error("You may not change variables in dbresultinfo objects.\n");
 }
@@ -699,14 +699,14 @@ struct dblob
   struct dbcon *dbcon;
 };
 
-static void init_dblob_struct(struct object *o)
+static void init_dblob_struct(struct object *UNUSED(o))
 {
 #ifdef PIKE_DEBUG
   ((unsigned long *)(Pike_fp->current_storage))[0]=DBLOB_MAGIC;
 #endif
 }
 
-static void exit_dblob_struct(struct object *o) {
+static void exit_dblob_struct(struct object *UNUSED(o)) {
   if (THIS_DBLOB->lob) {
     OCIDescriptorFree(THIS_DBLOB->lob, OCI_DTYPE_LOB);
     THIS_DBLOB->lob = NULL;
@@ -724,13 +724,13 @@ struct dbdate
   OCIDate date;
 };
 
-static void init_dbdate_struct(struct object *o)
+static void init_dbdate_struct(struct object *UNUSED(o))
 {
 #ifdef PIKE_DEBUG
   ((unsigned long *)(Pike_fp->current_storage))[0]=DBDATE_MAGIC;
 #endif
 }
-static void exit_dbdate_struct(struct object *o) {}
+static void exit_dbdate_struct(struct object *UNUSED(o)) {}
 
 /****** dbnull ******/
 
@@ -742,13 +742,13 @@ struct dbnull
   struct svalue type;
 };
 
-static void init_dbnull_struct(struct object *o)
+static void init_dbnull_struct(struct object *UNUSED(o))
 {
 #ifdef PIKE_DEBUG
   ((unsigned long *)(Pike_fp->current_storage))[0]=DBNULL_MAGIC;
 #endif
 }
-static void exit_dbnull_struct(struct object *o) {}
+static void exit_dbnull_struct(struct object *UNUSED(o)) {}
 
 /************/
 
@@ -883,7 +883,7 @@ static void f_num_fields(INT32 args)
 }
 
 static sb4 output_callback(struct inout *inout,
-			   ub4 index,
+			   ub4 UNUSED(index),
 			   void **bufpp,
 			   ub4 **alenpp,
 			   ub1 *piecep,
@@ -1006,7 +1006,7 @@ static sb4 output_callback(struct inout *inout,
 
 /* NOTE: May be called by OCIStmtFetch() in a THREADS_ALLOW context. */
 static sb4 define_callback(dvoid *dbresultinfo,
-			   OCIDefine *def,
+			   OCIDefine *UNUSED(def),
 			   ub4 iter,
 			   dvoid **bufpp,
 			   ub4 **alenpp,
@@ -2047,13 +2047,13 @@ struct bind_block
 };
 
 static sb4 input_callback(void *vbind_struct,
-			   OCIBind *bindp,
-			   ub4 iter,
-			   ub4 index,
-			   void **bufpp,
-			   ub4 *alenp,
-			   ub1 *piecep,
-			   dvoid **indpp)
+			  OCIBind *UNUSED(bindp),
+			  ub4 UNUSED(iter),
+			  ub4 UNUSED(index),
+			  void **bufpp,
+			  ub4 *alenp,
+			  ub1 *piecep,
+			  dvoid **indpp)
 {
   struct bind * bind = (struct bind *)vbind_struct;
 #ifdef ORACLE_DEBUG
@@ -2072,9 +2072,9 @@ static sb4 input_callback(void *vbind_struct,
 }
 
 static sb4 bind_output_callback(void *vbind_struct,
-				OCIBind *bindp,
+				OCIBind *UNUSED(bindp),
 				ub4 iter,
-				ub4 index,
+				ub4 UNUSED(index),
 				void **bufpp,
 				ub4 **alenpp,
 				ub1 *piecep,
