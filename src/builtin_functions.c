@@ -7442,6 +7442,7 @@ PMOD_EXPORT void f__memory_usage(INT32 args)
 #elif HAVE_MALLINFO
   struct mallinfo mi = mallinfo();
 #endif
+
   pop_n_elems(args);
   ss=Pike_sp;
 
@@ -7454,6 +7455,16 @@ PMOD_EXPORT void f__memory_usage(INT32 args)
   push_text("num_malloc_blocks");
   push_ulongest(1 + mi.hblks);	/* 1 for the arena. */
   push_text("malloc_block_bytes");
+  if (mi.arena < 0) {
+    /* Kludge for broken Linux libc, where the fields are ints.
+     *
+     * 31-bit overflow, so perform an unsigned read.
+     */
+    size = (unsigned int)mi.arena;
+  } else {
+    /* On Solaris the fields are unsigned long (and may thus be 64-bit). */
+    size = mi.arena;
+  }
   /* NB: Kludge for glibc: hblkhd is intended for malloc overhead
    *     according to the Solaris manpages, but glibc keeps the
    *     amount of mmapped memory there, and uses the arena only
@@ -7463,22 +7474,45 @@ PMOD_EXPORT void f__memory_usage(INT32 args)
    *     small enough not to affect the total much, so no need
    *     for a special case.
    */
-  push_ulongest(mi.arena + mi.hblkhd);
+  if (mi.hblkhd < 0) {
+    size += (unsigned int)mi.hblkhd;
+  } else {
+    size += mi.hblkhd;
+  }
+  push_ulongest(size);
 
   push_text("num_malloc");
   push_ulongest(mi.ordblks + mi.smblks);
   push_text("malloc_bytes");
-  if (!mi.smblks) {
-    /* NB: Kludge for dlmalloc: usmblks contains the max uordblks value. */
-    push_ulongest(mi.uordblks);
+  if (mi.uordblks < 0) {
+    size = (unsigned int)mi.uordblks;
   } else {
-    push_ulongest(mi.usmblks + mi.uordblks);
+    size = mi.uordblks;
   }
+  if (mi.smblks) {
+    /* NB: Not dlmalloc where usmblks contains the max uordblks value. */
+    if (mi.usmblks < 0) {
+      size += (unsigned int)mi.usmblks;
+    } else {
+      size += mi.usmblks;
+    }
+  }
+  push_ulongest(size);
 
   push_text("num_free_blocks");
   push_int(1);
   push_text("free_block_bytes");
-  push_ulongest(mi.fsmblks + mi.fordblks);
+  if (mi.fsmblks < 0) {
+    size = (unsigned int)mi.fsmblks;
+  } else {
+    size = mi.fsmblks;
+  }
+  if (mi.fordblks < 0) {
+    size += (unsigned int)mi.fordblks;
+  } else {
+    size += mi.fordblks;
+  }
+  push_ulongest(size);
 
 #endif
 
