@@ -760,7 +760,7 @@ static void ora_error_handler(OCIError *err, sword rc, char *func)
 #else
   static text msgbuf[512];
 #endif
-  ub4 errcode;
+  sb4 errcode;
 
 #ifdef ORACLE_DEBUG
   fprintf(stderr,"%s\n",__FUNCTION__);
@@ -910,7 +910,7 @@ static sb4 output_callback(struct inout *inout,
   inout->has_output=1;
   *indpp = (dvoid *) &inout->indicator;
   *rcodepp=&inout->rcode;
-  *alenpp=&inout->xlen;
+  *alenpp= (ub4 *) &inout->xlen;
 
 #ifdef ORACLE_DEBUG
   fprintf(stderr, "  indicator:%p (%p), rcode: %d (%p), xlen: %d (%p)\n",
@@ -1542,7 +1542,7 @@ static void push_inout_value(struct inout *inout,
 
 	ret=OCINumberToText(dbcon->error_handle,
 			    &inout->u.num,
-			    FMT,
+			    (oratext *)FMT,
 			    FMT_LEN,
 			    0,
 			    0,
@@ -1550,7 +1550,7 @@ static void push_inout_value(struct inout *inout,
 			    buffer);
 	if(IS_SUCCESS(ret))
 	{
-	  push_string(make_shared_binary_string(buffer,buf_size));
+	  push_string(make_shared_binary_string((char *)buffer, buf_size));
 #ifdef OCI_UTF16ID
 	  push_int(2);
 	  f_unicode_to_string(2);
@@ -1899,10 +1899,10 @@ static void f_oracle_create(INT32 args)
     rc=OCILogon(ENVOF(dbcon),
 		dbcon->error_handle,
 		&dbcon->context,
-		uid->str, uid->len, 
-		(passwd? passwd->str:NULL), (passwd? passwd->len:-1),
-		(host? host->str:NULL), (host? host->len:-1));
-  
+		(oratext *)uid->str, uid->len,
+		(passwd? (oratext *)passwd->str:NULL), (passwd? passwd->len:-1),
+		(host? (oratext *)host->str:NULL), (host? host->len:-1));
+
   }while(0);
 
 #ifdef SERIALIZE_CONNECT
@@ -1986,7 +1986,7 @@ static void f_compile_query_create(INT32 args)
   {
     rc=OCIStmtPrepare(dbquery->statement,
 		      dbcon->error_handle,
-		      query->str,
+		      (oratext *)query->str,
 		      query->len,
 		      OCI_NTV_SYNTAX,
 		      OCI_DEFAULT);
@@ -2379,7 +2379,7 @@ static void f_big_typed_query_create(INT32 args)
 	  rc = OCIBindByName(dbquery->statement,
 			     & bind.bind[bind.bindnum].bind,
 			     dbcon->error_handle,
-			     bind.bind[bind.bindnum].ind.u.string->str,
+			     (oratext *)bind.bind[bind.bindnum].ind.u.string->str,
 			     bind.bind[bind.bindnum].ind.u.string->len,
 			     addr,
 			     rlen,
@@ -2697,7 +2697,7 @@ static void dbdate_create(INT32 args)
   {
     case T_STRING:
       rc=OCIDateFromText(get_global_error_handle(),
-			 Pike_sp[-args].u.string->str,
+			 (oratext *)Pike_sp[-args].u.string->str,
 			 Pike_sp[-args].u.string->len,
 			 0,
 			 0,
@@ -2722,7 +2722,7 @@ static void dbdate_sprintf(INT32 args)
 {
   char buffer[200];
   sword rc;
-  sb4 bsize=200;
+  ub4 bsize=200;
   int mode = 0;
   if(args>0 && TYPEOF(Pike_sp[-args]) == PIKE_T_INT)
     mode = Pike_sp[-args].u.integer;
@@ -2738,8 +2738,8 @@ static void dbdate_sprintf(INT32 args)
 		   0,
 		   0,
 		   &bsize,
-		   buffer);
-		
+		   (oratext *)buffer);
+
   if(!IS_SUCCESS(rc)) {
     if (mode == 'O') {
       /* Be fault tolerant in debug mode. */
