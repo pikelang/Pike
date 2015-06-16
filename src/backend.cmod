@@ -4222,7 +4222,6 @@ else
           cur_ts__ = Pike_interpreter.thread_state;  
           me->thread_state = cur_ts__; /* for use later. */
           pike_threads_allow (cur_ts__ COMMA_DLOC);
-          HIDE_GLOBAL_VARIABLES();
         }
         break;
 
@@ -4233,7 +4232,6 @@ else
         {
           cur_ts__ = me->thread_state;
           me->gil_released = 0;
-          REVEAL_GLOBAL_VARIABLES();
           pike_threads_disallow (cur_ts__ COMMA_DLOC);
           me->thread_state = 0;
         }
@@ -4244,7 +4242,6 @@ else
         {
           cur_ts__ = me->thread_state;
           me->gil_released = 0;
-          REVEAL_GLOBAL_VARIABLES();
           pike_threads_disallow (cur_ts__ COMMA_DLOC);
           me->thread_state = 0;
         }
