@@ -98,7 +98,7 @@
  *!  @endmixed
  *!
  *! @seealso
- *!   @[copy_value()]
+ *!   @[copy_value()], @[`==()]
  */
 PMOD_EXPORT void f_equal(INT32 args)
 {
