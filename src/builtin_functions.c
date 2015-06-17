@@ -223,25 +223,6 @@ static node *optimize_f_aggregate(node *n)
   return mkefuncallnode("`+", add_args);
 }
 
-/*! @decl int hash_7_4(string s)
- *! @decl int hash_7_4(string s, int max)
- *!
- *!   Return an integer derived from the string @[s]. The same string
- *!   always hashes to the same value, also between processes.
- *!
- *!   If @[max] is given, the result will be >= 0 and < @[max],
- *!   otherwise the result will be >= 0 and <= 0x7fffffff.
- *!
- *! @note
- *!   This function is provided for backward compatibility with
- *!   code written for Pike up and including version 7.4.
- *!
- *!   This function is byte-order dependant.
- *!
- *! @seealso
- *!   @[hash()], @[hash_7_0]
- */
-
 #define MK_HASHMEM(NAME, TYPE)		ATTRIBUTE((const))	\
   static INLINE size_t NAME(const TYPE *str, ptrdiff_t len, ptrdiff_t maxn) \
   {                                                                         \
@@ -267,18 +248,19 @@ MK_HASHMEM(simple_hashmem2, p_wchar2)
  *! @decl int hash_7_4(string s, int max)
  *!
  *!   Return an integer derived from the string @[s]. The same string
- *!   will always hash to the same value, also between processes.
+ *!   always hashes to the same value, also between processes.
  *!
  *!   If @[max] is given, the result will be >= 0 and < @[max],
  *!   otherwise the result will be >= 0 and <= 0x7fffffff.
  *!
  *! @note
- *!   This function is provided for backward compatibility reasons.
+ *!   This function is provided for backward compatibility with
+ *!   code written for Pike up and including version 7.4.
  *!
  *!   This function is byte-order dependant for wide strings.
  *!
  *! @seealso
- *!   @[predef::hash()], @[7.0::hash()]
+ *!   @[hash()], @[hash_7_0]
  */
 static void f_hash_7_4(INT32 args)
 {
@@ -387,11 +369,11 @@ static void f_hash_7_0( INT32 args )
  *!
  *! @note
  *!   The hash algorithm was changed in Pike 7.5. If you want a hash
- *!   that is compatible with Pike 7.4 and earlier, use @[7.4::hash()].
+ *!   that is compatible with Pike 7.4 and earlier, use @[hash_7_4()].
  *!   The difference only affects wide strings.
  *!
  *!   The hash algorithm was also changed in Pike 7.1. If you want a hash
- *!   that is compatible with Pike 7.0 and earlier, use @[7.0::hash()].
+ *!   that is compatible with Pike 7.0 and earlier, use @[hash_7_0()].
  *!
  *! @note
  *!   This hash function differs from the one provided by @[hash_value()],
