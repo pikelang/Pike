@@ -2916,7 +2916,8 @@ PMOD_EXPORT void f_allocate(INT32 args)
  *!
  *!   Returns the object we are currently evaluating in.
  *!
- *!   @[level] might be used to access the object of a surrounding
+ *! @param level
+ *!   @[level] may be used to access the object of a surrounding
  *!   class: The object at level 0 is the current object, the object
  *!   at level 1 is the one belonging to the class that surrounds
  *!   the class that the object comes from, and so on.
