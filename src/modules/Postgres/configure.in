@@ -1,5 +1,5 @@
 
-AC_INIT(postgres.c)
+AC_INIT(postgres.cmod)
 AC_CONFIG_HEADER(pgres_config.h)
 
 AC_MODULE_INIT()

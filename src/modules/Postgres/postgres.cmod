@@ -70,58 +70,9 @@ PIKE_MUTEX_T pike_postgres_mutex STATIC_MUTEX_INIT;
 static void pgdebug (char * UNUSED(a), ...) {}
 #endif
 
-struct program * postgres_program;
+#define DEFAULT_CMOD_STORAGE
 
-static void set_error (char * newerror)
-{
-	pgdebug("set_error(%s).\n",newerror);
-	if (THIS->last_error)
-		free_string(THIS->last_error);
-	THIS->last_error=make_shared_string(newerror);
-	return;
-}
-
-static void pgres_create (struct object * UNUSED(o)) {
-	pgdebug ("pgres_create().\n");
-	THIS->dblink=NULL;
-	THIS->last_error=NULL;
-	mark_free_svalue (&THIS->notify_callback);
-	THIS->docommit=0;
-	THIS->dofetch=0;
-	THIS->lastcommit=0;
-        THIS->last_rows=-1;
-#if defined(PIKE_THREADS) && defined(PQ_THREADSAFE)
-	mt_init(&THIS->mutex);
-#endif
-
-}
-
-static void pgres_destroy (struct object * UNUSED(o))
-{
-	PGconn * conn;
-	PQ_FETCH();
-	pgdebug ("pgres_destroy().\n");
-	if ((conn=THIS->dblink)) {
-		THREADS_ALLOW();
-		PQ_LOCK();
-		PQfinish(conn);
-		PQ_UNLOCK();
-		THREADS_DISALLOW();
-		THIS->dblink=NULL;
-	}
-	if(THIS->last_error) {
-		if (THIS->last_error)
-			free_string(THIS->last_error);
-		THIS->last_error=NULL;
-	}
-	if (TYPEOF(THIS->notify_callback) != PIKE_T_FREE) {
-		free_svalue(&THIS->notify_callback);
-		mark_free_svalue(&THIS->notify_callback);
-	}
-#if defined(PIKE_THREADS) && defined(PQ_THREADSAFE)
-	mt_destroy(&THIS->mutex);
-#endif
-}
+DECLARATIONS;
 
 /*! @module Postgres
  *!
@@ -213,6 +164,87 @@ static void pgres_destroy (struct object * UNUSED(o))
  *!   @[Sql.Sql], @[Sql.postgres], @[Sql.postgres_result]
  */
 
+PIKECLASS postgres
+{
+
+  CVAR PGconn *dblink;
+  CVAR struct pike_string *last_error;
+  CVAR struct svalue notify_callback;
+  CVAR int lastcommit;
+  CVAR int last_rows;
+#if defined(PIKE_THREADS) && defined(PQ_THREADSAFE)
+  CVAR PIKE_MUTEX_T mutex;
+#endif
+
+  DECLARE_STORAGE;
+
+static void set_error (char * newerror)
+{
+	pgdebug("set_error(%s).\n",newerror);
+	if (THIS->last_error)
+		free_string(THIS->last_error);
+	THIS->last_error=make_shared_string(newerror);
+	return;
+}
+
+  INIT
+  {
+	pgdebug ("pgres_create().\n");
+	THIS->dblink=NULL;
+	THIS->last_error=NULL;
+	mark_free_svalue (&THIS->notify_callback);
+	THIS->lastcommit=0;
+        THIS->last_rows=-1;
+#if defined(PIKE_THREADS) && defined(PQ_THREADSAFE)
+	mt_init(&THIS->mutex);
+#endif
+
+ }
+
+  EXIT
+  {
+	PGconn * conn;
+	PQ_FETCH();
+	pgdebug ("pgres_destroy().\n");
+	if ((conn=THIS->dblink)) {
+		THREADS_ALLOW();
+		PQ_LOCK();
+		PQfinish(conn);
+		PQ_UNLOCK();
+		THREADS_DISALLOW();
+		THIS->dblink=NULL;
+	}
+	if(THIS->last_error) {
+		if (THIS->last_error)
+			free_string(THIS->last_error);
+		THIS->last_error=NULL;
+	}
+	if (TYPEOF(THIS->notify_callback) != PIKE_T_FREE) {
+		free_svalue(&THIS->notify_callback);
+		mark_free_svalue(&THIS->notify_callback);
+	}
+#if defined(PIKE_THREADS) && defined(PQ_THREADSAFE)
+	mt_destroy(&THIS->mutex);
+#endif
+  }
+
+  PGconn *pike_get_pgconn(struct Postgres_postgres_struct *this)
+  {
+    return this->dblink;
+  }
+
+#if defined(PIKE_THREADS) && defined(PQ_THREADSAFE)
+  PIKE_MUTEX_T *pike_get_pgmux(struct Postgres_postgres_struct *this)
+  {
+    return &this->mutex;
+  }
+#endif
+
+  void pike_pg_set_lastcommit(struct Postgres_postgres_struct *this)
+  {
+    this->lastcommit = 1;
+  }
+
 /*! @decl string version
  *!
  *! Should you need to report a bug to the author, please submit along with
@@ -250,7 +282,14 @@ static void pgres_destroy (struct object * UNUSED(o))
  */
 
 /* create (host,database,username,password,port) */
-static void f_create (INT32 args)
+  /* That is: create(hostname,database,port)
+   * It depends on the environment variables:
+   * PGHOST, PGOPTIONS, PGPORT, PGTTY(don't use!), PGDATABASE
+   * Notice: Postgres _requires_ a database to be selected upon connection
+   */
+  PIKEFUN void create(string|void host_, string|void db_,
+		      string|void user_, string|void pass_,
+		      int|void port_no_, mapping|void options_)
 {
         /*port will be used as a string with a sprintf()*/
 	char * host=NULL, *db=NULL, *user=NULL, *pass=NULL, *port=NULL;
@@ -328,7 +367,7 @@ static void f_create (INT32 args)
  *!   create
  */
 
-static void f_select_db (INT32 args)
+PIKEFUN void select(string db_)
 {
 	char *host, *port, *options, *db;
 	PGconn * conn, *newconn;
@@ -402,14 +441,15 @@ static void f_select_db (INT32 args)
  *!  @[Sql.Sql], @[Sql.sql_result]
  */
 
-static void f_big_query(INT32 args)
+PIKEFUN object big_query(string query_)
 {
 	PGconn *conn = THIS->dblink;
 	PGresult * res;
 	PGnotify * notification;
         struct array *bnds = 0;
 	char *query = 0;
-	int lastcommit,docommit,dofetch;
+	int lastcommit;
+	unsigned int flags = 0;
         int cnt;
         int nParams = 0;
         const char** paramValues = 0;
@@ -418,7 +458,6 @@ static void f_big_query(INT32 args)
         int resultFormat = 0;
 
 	PQ_FETCH();
-	docommit=dofetch=0;
 	lastcommit=THIS->lastcommit;
 
 	check_all_args("Postgres->big_query",args,
@@ -541,7 +580,7 @@ yupbegin:       res=PQexec(conn,"BEGIN");
 	          res=PQexecParams(conn,nquery,nParams,0,
 		   paramValues,paramLengths,paramFormats,resultFormat);
 		  if(res && PQresultStatus(res)==PGRES_COMMAND_OK)
-		    docommit=1;
+		    flags |= PIKE_PG_COMMIT;
 		  else {
 		    PQclear(res);
 		    res=PQexec(conn,"COMMIT");
@@ -552,7 +591,7 @@ yupbegin:       res=PQexec(conn,"BEGIN");
 		} else
 		  break;
 	      case PGRES_COMMAND_OK:
-		dofetch=1;
+		flags |= PIKE_PG_FETCH;
 		PQclear(res);
 		res=PQexec(conn,FETCHCMD);
 		break;
@@ -584,8 +623,6 @@ yupbegin:       res=PQexec(conn,"BEGIN");
 	notification=PQnotifies(conn);
 	PQ_UNLOCK();
 	THREADS_DISALLOW();
-	THIS->docommit=docommit;
-	THIS->dofetch=dofetch;
 	THIS->lastcommit=lastcommit;
 
         if (bnds) {
@@ -615,7 +652,6 @@ yupbegin:       res=PQexec(conn,"BEGIN");
 		case PGRES_EMPTY_QUERY:
 		case PGRES_COMMAND_OK:
 			pgdebug("\tOk.\n");
-			THIS->last_result=NULL;
                         THIS->last_rows=atoi(PQcmdTuples(res));
 			PQclear(res);
 			push_int(0);
@@ -633,10 +669,11 @@ yupbegin:       res=PQexec(conn,"BEGIN");
 			Pike_error("Postgres error: %S\n", THIS->last_error);
 		case PGRES_TUPLES_OK:
 			pgdebug("\tResult.\n");
-			THIS->last_result=res;
                         THIS->last_rows=PQntuples(res);
+			push_object(make_postgres_result(Pike_fp->current_object,
+							 res, flags));
 			ref_push_object(this_object());
-			push_object(clone_object(pgresult_program,1));
+			push_object(clone_object(Postgres_postgres_result_program,1));
 			return;
 		default:
 			Pike_error ("Unimplemented server feature.\n");
@@ -656,7 +693,7 @@ yupbegin:       res=PQexec(conn,"BEGIN");
  *!   big_query
  */
 
-static void f_error (INT32 args)
+PIKEFUN string error()
 {
         pop_n_elems(args);
 
@@ -678,7 +715,7 @@ static void f_error (INT32 args)
  *! through the generic SQL-interface.
  */
 
-static void f_reset (INT32 args)
+PIKEFUN void reset()
 {
 	PGconn * conn;
 	PQ_FETCH();
@@ -703,7 +740,7 @@ static void f_reset (INT32 args)
 /* This was cut (for now) because of the difficulty of obtaining
  * a valid FILE * from a fileobject.
  */
-static void f_trace (INT32 args)
+PIKEFUN void trace(int trace_level)
 {
 	if (args!=1)
 		Pike_error ("Wrong args for trace().\n");
@@ -749,7 +786,7 @@ static void f_trace (INT32 args)
  *!   Sql.postgres
  */
 
-static void f_callback(INT32 args)
+PIKEFUN void _set_notify_callback(function|void cb)
 {
 	check_all_args("postgres->_set_notify_callback()",
 		       args, BIT_INT|BIT_FUNCTION, 0);
@@ -774,7 +811,7 @@ static void f_callback(INT32 args)
  *! and how (TCP/IP or UNIX sockets).
  */
 
-static void f_host_info (INT32 args)
+PIKEFUN string host_info()
 {
         pop_n_elems(args);
 
@@ -800,7 +837,7 @@ static void f_host_info (INT32 args)
  *! This function returns the number of rows affected by the last query.
  */
 
-static void f_affected_rows (INT32 args)
+PIKEFUN int affected_rows()
 {
   pop_n_elems(args);
   push_int(THIS->last_rows);
@@ -812,7 +849,7 @@ static void f_affected_rows (INT32 args)
  *! character encoding settings.
  */
 #if defined(HAVE_PQESCAPESTRINGCONN) || defined(HAVE_PQESCAPESTRING)
-static void f_quote(INT32 args)
+PIKEFUN string _quote(string s_)
 {
 	int err;
 	int len;
@@ -838,6 +875,7 @@ static void f_quote(INT32 args)
 }
 #endif /* HAVE_PQESCAPESTRINGCONN || HAVE_PQESCAPESTRING */
 
+}
 /*! @endclass
  *!
  *! @endmodule
@@ -845,63 +883,7 @@ static void f_quote(INT32 args)
 
 PIKE_MODULE_INIT
 {
-  start_new_program();
-  ADD_STORAGE(struct pgres_object_data);
-  set_init_callback(pgres_create);
-  set_exit_callback(pgres_destroy);
-
-  /* sql-interface compliant functions */
-  /* function(void|string,void|string,void|string,void|string,int|void:void) */
-  ADD_FUNCTION("create", f_create,
-	       tFunc(tOr(tVoid,tStr) tOr(tVoid,tStr) tOr(tVoid,tStr)
-		     tOr(tVoid,tStr) tOr(tInt,tVoid), tVoid), 0);
-
-  /* That is: create(hostname,database,port)
-   * It depends on the environment variables:
-   * PGHOST, PGOPTIONS, PGPORT, PGTTY(don't use!), PGDATABASE
-   * Notice: Postgres _requires_ a database to be selected upon connection
-   */
-  /* function(string:void) */
-  ADD_FUNCTION("select_db", f_select_db, tFunc(tStr,tVoid), 0);
-
-  /* function(string:int|object) */
-  ADD_FUNCTION("big_query", f_big_query,
-       tFunc(tStr tOr(tVoid,tArr(tOr3(tInt,tStr,tVoid))), tOr(tInt,tObj)), 0);
-
-  /* function(void:string) */
-  ADD_FUNCTION("error", f_error, tFunc(tVoid,tStr), 0);
-
-  /* function(void:string) */
-  ADD_FUNCTION("host_info", f_host_info, tFunc(tVoid,tStr), 0);
-
-  /* function(void:int) */
-  ADD_FUNCTION("affected_rows", f_affected_rows, tFunc(tVoid,tInt), 0);
-
-  /* function(string:string) */
-#if defined(HAVE_PQESCAPESTRINGCONN) || defined(HAVE_PQESCAPESTRING)
-  ADD_FUNCTION("_quote", f_quote, tFunc(tStr,tStr), 0);
-#endif
-
-
-  /* postgres-specific functions */
-  /* function(void:void) */
-  ADD_FUNCTION("reset", f_reset, tFunc(tVoid,tVoid), 0);
-
-#if 0
-  /* function(object|int:void) */
-  ADD_FUNCTION("trace", f_trace, tFunc(tOr(tObj,tInt),tVoid), 0);
-
-  /* If given a clone of /precompiled/file, traces to that file.
-   * If given 0, stops tracing.
-   * See note on the implementation.
-   */
-#endif
-  /* function(int|function(string:void):void) */
-  ADD_FUNCTION("_set_notify_callback", f_callback,
-	       tFunc(tOr(tInt,tFunc(tStr,tVoid)),tVoid), 0);
-
-  postgres_program = end_program();
-  add_program_constant("postgres",postgres_program,0);
+  INIT;
 
   add_string_constant("version",PGSQL_VERSION,0);
 
@@ -910,19 +892,9 @@ PIKE_MODULE_INIT
 
 PIKE_MODULE_EXIT
 {
-  extern struct program * pgresult_program;
+  EXIT;
 
-  if(postgres_program)
-  {
-    free_program(postgres_program);
-    postgres_program=0;
-  }
-
-  if(pgresult_program)
-  {
-    free_program(pgresult_program);
-    pgresult_program=0;
-  }
+  pgresult_exit();
 }
 
 #else /* HAVE_POSTGRES */

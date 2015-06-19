@@ -98,7 +98,7 @@
 
 #ifdef _REENTRANT
 # ifdef PQ_THREADSAFE
-#  define PQ_FETCH() PIKE_MUTEX_T *pg_mutex = &THIS->pgod->mutex;
+#  define PQ_FETCH() PIKE_MUTEX_T *pg_mutex = pike_get_pgmux(THIS->pgod);
 #  define PQ_LOCK() mt_lock(pg_mutex)
 #  define PQ_UNLOCK() mt_unlock(pg_mutex)
 # else
@@ -114,13 +114,12 @@ extern PIKE_MUTEX_T pike_postgres_mutex;
 #endif
 
 #include "pg_types.h"
+#include "pgresult.h"
 
 #ifndef BYTEAOID
 #define BYTEAOID        17
 #define BPCHAROID       1042
 #endif
-
-#define THIS ((struct postgres_result_object_data *) Pike_fp->current_storage)
 
 #ifdef PGRESDEBUG
 #define pgdebug printf
@@ -128,37 +127,9 @@ extern PIKE_MUTEX_T pike_postgres_mutex;
 static void pgdebug (char * UNUSED(a), ...) {}
 #endif
 
-void result_create (struct object * UNUSED(o)) {
-	pgdebug("result_create().\n");
-	THIS->result=NULL;
-	THIS->cursor=0;
-	THIS->pgod = NULL;
-	THIS->pgo = NULL;
-}
+#define DEFAULT_CMOD_STORAGE
 
-void result_destroy (struct object * UNUSED(o)) {
-	pgdebug("result_destroy().\n");
-	if(THIS->pgod && THIS->pgod->docommit) {
-	  PGconn * conn = THIS->pgod->dblink;
-	  PGresult * res=THIS->result;
-	  PQ_FETCH();
-	  PQclear(res);
-	  THIS->pgod->docommit=0;
-	  THREADS_ALLOW();
-	  PQ_LOCK();
-	  res=PQexec(conn,"COMMIT");
-	  PQ_UNLOCK();
-	  THREADS_DISALLOW();
-	  THIS->result=res;
-	  THIS->pgod->lastcommit=1;
-	}
-	THIS->pgod = NULL;
-	if (THIS->pgo) {
-	  free_object(THIS->pgo);
-	  THIS->pgo = NULL;
-	}
-	PQclear(THIS->result);
-}
+DECLARATIONS;
 
 /*! @module Postgres
  *!
@@ -170,6 +141,40 @@ void result_destroy (struct object * UNUSED(o)) {
  *!  Sql.postgres, Postgres.postgres, Sql.Sql, Sql.sql_result
  */
 
+PIKECLASS postgres_result
+{
+  CVAR PGresult *result;
+  CVAR struct Postgres_postgres_struct *pgod;
+  CVAR struct object *pgo;
+  CVAR int cursor;
+  CVAR unsigned int flags;
+  CVAR int rows;
+
+  DECLARE_STORAGE;
+
+  INIT
+  {
+	pgdebug("result_init().\n");
+	THIS->result=NULL;
+	THIS->cursor=0;
+	THIS->pgod = NULL;
+	THIS->pgo = NULL;
+	THIS->flags = 0;
+	THIS->rows = 0;
+  }
+
+  EXIT
+  {
+	pgdebug("result_exit().\n");
+	THIS->pgod = NULL;
+	if (THIS->pgo) {
+	  free_object(THIS->pgo);
+	  THIS->pgo = NULL;
+	}
+	PQclear(THIS->result);
+	THIS->result = NULL;
+  }
+
 /*! @decl void create(object o)
  *!
  *! You can't create istances of this object yourself.
@@ -177,19 +182,16 @@ void result_destroy (struct object * UNUSED(o)) {
  *! database.
  */
 
-static void f_create (INT32 args)
+PIKEFUN void create(object o)
+  flags ID_PROTECTED;
 {
 	char *storage;
 	check_all_args("postgres_result->create",args,BIT_OBJECT,0);
 	pgdebug("result->f_create(%d).\n",args);
 
-	storage=get_storage(Pike_sp[-args].u.object,postgres_program);
+	storage=get_storage(Pike_sp[-args].u.object, Postgres_postgres_program);
 	if (!storage)
 		Pike_error ("I need a Postgres object or an heir of it.\n");
-	THIS->result=
-	  (THIS->pgod=(struct pgres_object_data *)storage)->last_result;
-	((struct pgres_object_data *) Pike_sp[-args].u.object->storage)->last_result=NULL;
-	/* no fear of memory leaks, we've only moved the pointer from there to here */
 
 	pop_n_elems(args);
 	if (!THIS->result) /*this ensures we _DO_ have a result*/
@@ -199,13 +201,63 @@ static void f_create (INT32 args)
 #endif
 }
 
+  PIKEFUN void destroy()
+    flags ID_PROTECTED;
+  {
+    if (THIS->pgod) {
+      PGconn *conn = pike_get_pgconn(THIS->pgod);
+      if (THIS->result) {
+	PGresult *res = THIS->result;
+	THIS->result = NULL;
+	PQclear(res);
+      }
+      if (THIS->flags & PIKE_PG_COMMIT) {
+	PGresult *res;
+	PQ_FETCH();
+	THIS->flags &= ~PIKE_PG_COMMIT;
+	THREADS_ALLOW();
+	PQ_LOCK();
+	res=PQexec(conn,"COMMIT");
+	PQ_UNLOCK();
+	THREADS_DISALLOW();
+	PQclear(res);
+	pike_pg_set_lastcommit(THIS->pgod);
+      }
+    }
+  }
+
+struct object *make_postgres_result(struct object *postgres,
+				    PGresult *result,
+				    unsigned int flags)
+{
+  /* Return the result-object */
+  struct Postgres_postgres_result_struct *res;
+  struct object *o;
+
+  /* Create the object */
+  ref_push_object(postgres);
+  o = clone_object(Postgres_postgres_result_program, 1);
+
+  /* Set the result. */
+  if ((!(res = get_storage(o, Postgres_postgres_result_program))) ||
+      res->result) {
+    PQclear(result);
+    free_object(o);
+    Pike_error("Bad postgres result object!\n");
+  }
+  res->result = result;
+  res->flags = flags;
+
+  return o;
+}
+
 
 /*! @decl int num_rows()
  *!
  *! Returns the number of rows in the result.
  */
 
-static void f_num_rows (INT32 args)
+PIKEFUN int num_rows()
 {
         int rows;
 	check_all_args("postgres_result->num_rows",args,0);
@@ -214,7 +266,7 @@ static void f_num_rows (INT32 args)
 		return;
 	}
 	rows=PQntuples(THIS->result);
-	push_int(THIS->pgod->dofetch-1>rows?THIS->pgod->dofetch-1:rows);
+	push_int(THIS->rows>rows?THIS->rows:rows);
 	return;
 }
 
@@ -224,7 +276,7 @@ static void f_num_rows (INT32 args)
  *! Returns the number of fields in the result.
  */
 
-static void f_num_fields (INT32 args)
+PIKEFUN int num_fields()
 {
 	check_all_args("postgres_result->num_fields",args,0);
 	if (PQresultStatus(THIS->result)!=PGRES_TUPLES_OK) {
@@ -260,7 +312,7 @@ static void f_num_fields (INT32 args)
  *! when the driver is compiled (default behavior) it will cut such spaces.
  */
 
-static void f_fetch_fields (INT32 args)
+PIKEFUN array(mapping(string:mixed)) fetch_fields()
 {
 	int j, numfields, tmp;
 	PGresult * res=THIS->result;
@@ -294,18 +346,15 @@ static void f_fetch_fields (INT32 args)
 }
 
 
-/*! @decl void seek()
+/*! @decl void seek(int howmuch)
  *!
  *! Moves the result cursor (ahead or backwards) the specified number of
  *! rows. Notice that when you fetch a row, the cursor is automatically
  *! moved forward one slot.
  */
 
-static void f_seek (INT32 args)
+PIKEFUN void seek(int howmuch)
 {
-	int howmuch;
-	check_all_args("postgres_result->seek",args,BIT_INT,0);
-	howmuch=Pike_sp[-args].u.integer;
 	if (THIS->cursor+howmuch < 0)
 		Pike_error ("Cannot seek to negative result indexes!\n");
 	if (THIS->cursor+howmuch > PQntuples(THIS->result))
@@ -329,7 +378,7 @@ static void f_seek (INT32 args)
  *! @seealso
  *!   @[seek()]
  */
-static void f_fetch_row (INT32 args)
+PIKEFUN array(string) fetch_row()
 {
 	int j,numfields;
 
@@ -337,9 +386,9 @@ static void f_fetch_row (INT32 args)
 	pgdebug("f_fetch_row(); cursor=%d.\n",THIS->cursor);
 	if (THIS->cursor>=PQntuples(THIS->result)) {
 	  PGresult * res=THIS->result;
-	  if(THIS->pgod->dofetch) {
-	    PGconn * conn = THIS->pgod->dblink;
-	    int docommit=THIS->pgod->docommit;
+	  if(THIS->flags & PIKE_PG_FETCH) {
+	    PGconn * conn = pike_get_pgconn(THIS->pgod);
+	    int docommit = THIS->flags & PIKE_PG_COMMIT;
 	    int dofetch=1;
 	    PQ_FETCH();
 	    THIS->result = NULL;
@@ -350,8 +399,11 @@ static void f_fetch_row (INT32 args)
 	    res=PQexec(conn,FETCHCMD);
 	    if(!res || PQresultStatus(res)!=PGRES_TUPLES_OK
 	       || !PQntuples(res)) {
-	      if(!docommit) {
-		PQclear(res);
+	      PQclear(res);
+	      res = NULL;
+	      if(docommit) {
+		res=PQexec(conn,"COMMIT");
+	      } else {
 		res=PQexec(conn,"CLOSE "CURSORNAME);
 	      }
 	      dofetch=0;
@@ -360,7 +412,7 @@ static void f_fetch_row (INT32 args)
 	    THREADS_DISALLOW();
 	    THIS->result = res;
 	    if(!dofetch) {
-	      THIS->pgod->dofetch=0;
+	      THIS->flags &= ~(PIKE_PG_COMMIT|PIKE_PG_FETCH);
 	      goto badresult;
 	    }
 	    THIS->cursor=0;
@@ -407,47 +459,24 @@ badresult:
 	}
 	f_aggregate(numfields);
 	THIS->cursor++;
-	if(THIS->pgod->dofetch)
-	  THIS->pgod->dofetch++;
+	THIS->rows++;
 	return;
 }
 
+}
 /*! @endclass
  *!
  *! @endmodule
  */
 
-struct program * pgresult_program;
-
 void pgresult_init (void)
 {
-  start_new_program();
-  ADD_STORAGE(struct postgres_result_object_data);
-  set_init_callback(result_create);
-  set_exit_callback(result_destroy);
+  INIT;
+}
 
-  /* function(object:void) */
-  ADD_FUNCTION("create", f_create, tFunc(tObj,tVoid), 0);
-
-  /* function(void:int) */
-  ADD_FUNCTION("num_rows", f_num_rows, tFunc(tVoid,tInt), 0);
-
-  /* function(void:int) */
-  ADD_FUNCTION("num_fields", f_num_fields, tFunc(tVoid,tInt), 0);
-
-  /* function(void:void|array(mapping(string:mixed))) */
-  ADD_FUNCTION("fetch_fields", f_fetch_fields,
-	       tFunc(tVoid,tOr(tVoid,tArr(tMap(tStr,tMix)))), 0);
-
-  /* function(int:void) */
-  ADD_FUNCTION("seek", f_seek, tFunc(tInt,tVoid), 0);
-
-  /* function(void:void|array(mixed)) */
-  ADD_FUNCTION("fetch_row", f_fetch_row,
-	       tFunc(tVoid,tOr(tVoid,tArr(tMix))), 0);
-
-  pgresult_program=end_program();
-  add_program_constant("postgres_result",pgresult_program,0);
+void pgresult_exit(void)
+{
+  EXIT;
 }
 
 #else
