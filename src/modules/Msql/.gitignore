@@ -8,7 +8,7 @@
 /modlist_headers
 /modlist_segment
 /testsuite
-/mssqlmod.c
+/msqlmod.c
 /msql_config.h
 /msql_config.h.in
 /remake
