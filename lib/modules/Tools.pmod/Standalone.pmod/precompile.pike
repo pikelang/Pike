@@ -907,6 +907,20 @@ class PikeType
 
 	case "int":
         case "string":
+	  // Clamp the integer range to 32 bit signed.
+	  int low = limit(-0x80000000, (int)(string)(args[0]->t), 0x7fffffff);
+	  int high = limit(-0x80000000, (int)(string)(args[1]->t), 0x7fffffff);
+	  if (!low && !(high & (high + 1))) {
+	    if (!high) {
+	      if (ret == "int") return "zero";
+	      return sprintf("%s(zero)", ret);
+	    }
+
+	    int i;
+	    for (i = 0; high; high >>= 1, i++)
+	      ;
+	    return sprintf("%s(%dbit)", ret, i);
+	  }
 	  ret=sprintf("%s(%s..%s)",
 		      ret,
 		      args[0]->t == "-2147483648" ? "" : args[0]->t,
