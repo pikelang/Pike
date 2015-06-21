@@ -2505,6 +2505,41 @@ static struct %s *%s_gdb_dummy_ptr;
 
 	      switch(arg->realtype())
 	      {
+	      case "string":
+		array(PikeType) args = arg->type()->args || ({});
+		if (sizeof(args)) {
+		  // Clamp the integer range to 32 bit signed.
+		  int low = limit(-0x80000000,
+				  (int)(string)(args[0]->t),
+				  0x7fffffff);
+		  int high = limit(-0x80000000,
+				   (int)(string)(args[1]->t),
+				   0x7fffffff);
+		  if ((low >= 0) && (high <= 0xffff)) {
+		    // Narrow string.
+		    if (high <= 0xff) {
+		      ret += ({
+			PC.Token(sprintf("if((TYPEOF(Pike_sp[%d%s]) != PIKE_T_%s) || "
+					 "Pike_sp[%d%s].u.string->size_shift)",
+					 argnum, check_argbase,
+					 upper_case(arg->basetype()),
+					 argnum, check_argbase),
+				 arg->line()),
+		      });
+		    } else {
+		      ret += ({
+			PC.Token(sprintf("if((TYPEOF(Pike_sp[%d%s]) != PIKE_T_%s) || "
+					 "(Pike_sp[%d%s].u.string->size_shift > 1))",
+					 argnum, check_argbase,
+					 upper_case(arg->basetype()),
+					 argnum, check_argbase),
+				 arg->line()),
+		      });
+		    }
+		    break;
+		  }
+		}
+		// FALL_THROUGH
 	      default:
 		ret+=({
 		  PC.Token(sprintf("if(TYPEOF(Pike_sp[%d%s]) != PIKE_T_%s)",
