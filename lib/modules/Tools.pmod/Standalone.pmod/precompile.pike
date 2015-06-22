@@ -415,24 +415,56 @@ string cquote(string|object(PC.Token) n)
 
 
 /*
- * This function maps C types to the approperiate
- * pike type. Input and outputs are arrays of tokens
+ * This function maps C types to the appropriate
+ * pike type. It is used by the CTYPE syntax.
+ *
+ * @param tokens
+ *   An array of C tokens representing the C type.
+ *
+ * @returns
+ *   Returns the corresponding Pike type.
  */
-PikeType convert_ctype(array tokens)
+PikeType convert_ctype(array(PC.Token) tokens)
 {
-  switch((string)tokens[0])
-  {
+  int signed = 1;
+
+  while (1) {
+    switch((string)tokens[0]) {
+    case "unsigned":
+      signed = 0;
+      tokens = tokens[1..];
+      if (!sizeof(tokens))
+	return PikeType("int(0..)");
+      break;
+
+    case "signed":
+      signed = 1;
+      tokens = tokens[1..];
+      if (!sizeof(tokens))
+	return PikeType("int");
+      break;
+
     case "char": /* char* */
       if(sizeof(tokens) >1 && "*" == (string)tokens[1])
-	return PikeType("string");
+	return PikeType("string(8bit)");
+      else if (signed)
+	return PikeType("int(-128..127)");
+      else
+	return PikeType("int(8bit)");
 
     case "short":
+      if (signed)
+	return PikeType("int(-32768..32767)");
+      else
+	return PikeType("int(16bit)");
+
     case "int":
     case "long":
     case "size_t":
     case "ptrdiff_t":
     case "INT32":
-      return PikeType("int");
+      if (signed) return PikeType("int");
+      return PikeType("int(0..)");
 
     case "double":
     case "float":
@@ -440,6 +472,7 @@ PikeType convert_ctype(array tokens)
 
     default:
       error("Unknown C type.\n");
+    }
   }
 }
 
