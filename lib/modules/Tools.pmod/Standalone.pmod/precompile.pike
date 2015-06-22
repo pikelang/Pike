@@ -18,7 +18,9 @@ constant precompile_api_version = "3";
 
 constant want_args = 1;
 
-constant description = "Converts .pmod-files to .c files";
+//! Convert .cmod-files to .c files.
+
+constant description = "Converts .cmod-files to .c files";
 
 mapping map_types = ([]), need_obj_defines = ([]);
 
