@@ -3018,7 +3018,7 @@ PIKE_MODULE_INIT
 		     ID_PUBLIC);
 	
 #ifdef PROGRAM_USES_PARENT
-	Pike_compiler->new_program->flags|=PROGRAM_USES_PARENT;
+	Pike_compiler->new_program->flags|=PROGRAM_USES_PARENT|PROGRAM_NEEDS_PARENT;
 #endif
 	MY_END_CLASS(big_typed_query);
 	big_typed_query_program->flags|=PROGRAM_DESTRUCT_IMMEDIATE;
@@ -3040,13 +3040,13 @@ PIKE_MODULE_INIT
 	set_gc_check_callback(gc_dbresultinfo_struct);
 #endif
 #ifdef PROGRAM_USES_PARENT
-	Pike_compiler->new_program->flags|=PROGRAM_USES_PARENT;
+	Pike_compiler->new_program->flags|=PROGRAM_USES_PARENT|PROGRAM_NEEDS_PARENT;
 #endif
 	MY_END_CLASS(dbresultinfo);
       }
 
 #ifdef PROGRAM_USES_PARENT
-	Pike_compiler->new_program->flags|=PROGRAM_USES_PARENT;
+	Pike_compiler->new_program->flags|=PROGRAM_USES_PARENT|PROGRAM_NEEDS_PARENT;
 #endif
       MY_END_CLASS(compile_query);
     }
