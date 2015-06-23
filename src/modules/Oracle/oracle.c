@@ -151,7 +151,7 @@ DEFINE_MUTEX(oracle_serialization_mutex);
       /* NB: Steals a reference to X. */	\
       push_string(X);				\
       push_int(2);				\
-      f_unicode_to_string(1);			\
+      f_unicode_to_string(2);			\
       add_ref((X) = Pike_sp[-1].u.string);	\
       pop_stack();				\
     }						\
