@@ -775,7 +775,7 @@ static void ora_error_handler(OCIError *err, sword rc, char *func)
 #endif
 
 #ifdef OCI_UTF16ID
-  for (i = 0; msgbuf[i] && msgbuf[i+1]; i+= 2)
+  for (i = 0; msgbuf[i] || msgbuf[i+1]; i+= 2)
     ;
   push_string(make_shared_binary_string((char *)msgbuf, i));
   push_int(2);
@@ -784,10 +784,15 @@ static void ora_error_handler(OCIError *err, sword rc, char *func)
   push_text(msgbuf);
 #endif
 
+  /* Note that the error string as returned by Oracle ends with a linefeed,
+   * and is prefixed with sprintf("ORA-%05d: ", errcode).
+   */
   if(func)
-    Pike_error("%s:code=%d:%S", func, rc, Pike_sp[-1].u.string);
+    Pike_error("%s:code=%d:%S",
+	       func, rc, Pike_sp[-1].u.string);
   else
-    Pike_error("Oracle:code=%d:%S", rc, Pike_sp[-1].u.string);
+    Pike_error("Oracle:code=%d:OCI-%ld:%S",
+	       rc, Pike_sp[-1].u.string);
 }
 
 
