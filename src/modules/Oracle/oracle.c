@@ -2061,10 +2061,8 @@ static sb4 input_callback(void *vbind_struct,
 {
   struct bind * bind = (struct bind *)vbind_struct;
 #ifdef ORACLE_DEBUG
-  fprintf(stderr,"%s %ld %ld\n"
-	  "  bind{addr:%p, len:%d}",
-	  __FUNCTION__,(long)iter,(long)index,
-	  bind->addr, bind->len);
+  fprintf(stderr,"%s: bind{addr:%p, len:%d}",
+	  __FUNCTION__, bind->addr, bind->len);
 #endif
 
   *bufpp = bind->addr;
