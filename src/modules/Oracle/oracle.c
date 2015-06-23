@@ -151,6 +151,7 @@ DEFINE_MUTEX(oracle_serialization_mutex);
     if(X) {					\
       /* NB: Steals a reference to X. */	\
       push_string(X);				\
+      X = NULL;					\
       push_int(2);				\
       f_unicode_to_string(2);			\
       add_ref((X) = Pike_sp[-1].u.string);	\
