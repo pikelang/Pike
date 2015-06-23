@@ -790,7 +790,7 @@ static void ora_error_handler(OCIError *err, sword rc, char *func)
     Pike_error("%s:code=%d:%S",
 	       func, rc, Pike_sp[-1].u.string);
   else
-    Pike_error("Oracle:code=%d:OCI-%ld:%S",
+    Pike_error("Oracle:code=%d:%S",
 	       rc, Pike_sp[-1].u.string);
 }
 
