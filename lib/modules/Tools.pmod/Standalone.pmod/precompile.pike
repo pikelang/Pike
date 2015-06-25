@@ -1215,6 +1215,56 @@ class CType {
   }
 }
 
+// Used to find the declared upper and lower range for strings
+// in argument types.
+array(int) clamp_int_range(PikeType complex_type, string ranged_type)
+{
+  switch((string)complex_type->t) {
+  case "|":
+    {
+      array(int) res = UNDEFINED;
+      foreach(complex_type->args, PikeType arg) {
+	array(int) sub_res = clamp_int_range(arg, ranged_type);
+	if (!sub_res) continue;
+	if (!res) {
+	  res = sub_res;
+	  continue;
+	}
+	if (res[0] > sub_res[0]) res[0] = sub_res[0];
+	if (res[1] < sub_res[1]) res[1] = sub_res[1];
+      }
+      return res;
+    }
+  case "&":
+    {
+      array(int) res = ({ -0x80000000, 0x7fffffff });
+      foreach(complex_type->args, PikeType arg) {
+	array(int) sub_res = clamp_int_range(arg, ranged_type);
+	if (!sub_res) return UNDEFINED;
+	if (res[0] < sub_res[0]) res[0] = sub_res[0];
+	if (res[1] > sub_res[1]) res[1] = sub_res[1];
+      }
+      if (res[0] > res[1]) return UNDEFINED;
+      return res;
+    }
+  default:
+    if (((string)complex_type->t) == ranged_type) {
+      array(PikeType) args = complex_type->args;
+      if (sizeof(args) == 2) {
+	return ({ limit(-0x80000000,
+			(int)(string)(args[0]->t),
+			0x7fffffff),
+		  limit(-0x80000000,
+			(int)(string)(args[1]->t),
+			0x7fffffff),
+	});
+      }
+      return ({ -0x80000000, 0x7fffffff });
+    }
+    return UNDEFINED;
+  }
+}
+
 /*
  * This class is used to represent one function argument
  */
@@ -2555,38 +2605,35 @@ static struct %s *%s_gdb_dummy_ptr;
 	      switch(arg->realtype())
 	      {
 	      case "string":
-		array(PikeType) args = arg->type()->args || ({});
-		if (sizeof(args)) {
-		  // Clamp the integer range to 32 bit signed.
-		  int low = limit(-0x80000000,
-				  (int)(string)(args[0]->t),
-				  0x7fffffff);
-		  int high = limit(-0x80000000,
-				   (int)(string)(args[1]->t),
-				   0x7fffffff);
-		  if ((low >= 0) && (high <= 0xffff)) {
-		    // Narrow string.
-		    if (high <= 0xff) {
-		      ret += ({
-			PC.Token(sprintf("if((TYPEOF(Pike_sp[%d%s]) != PIKE_T_%s) || "
-					 "Pike_sp[%d%s].u.string->size_shift)",
-					 argnum, check_argbase,
-					 upper_case(arg->basetype()),
-					 argnum, check_argbase),
-				 arg->line()),
-		      });
-		    } else {
-		      ret += ({
-			PC.Token(sprintf("if((TYPEOF(Pike_sp[%d%s]) != PIKE_T_%s) || "
-					 "(Pike_sp[%d%s].u.string->size_shift > 1))",
-					 argnum, check_argbase,
-					 upper_case(arg->basetype()),
-					 argnum, check_argbase),
-				 arg->line()),
-		      });
-		    }
-		    break;
+		// Clamp the integer range to 32 bit signed.
+		[int low, int high] = clamp_int_range(arg->type(), "string");
+		ret += ({
+		  PC.Token(sprintf("/* low: %d high: %d */\n",
+				   low, high),
+			   arg->line()),
+		});
+		if ((low >= 0) && (high <= 0xffff)) {
+		  // Narrow string.
+		  if (high <= 0xff) {
+		    ret += ({
+		      PC.Token(sprintf("if((TYPEOF(Pike_sp[%d%s]) != PIKE_T_%s) || "
+				       "Pike_sp[%d%s].u.string->size_shift)",
+				       argnum, check_argbase,
+				       upper_case(arg->basetype()),
+				       argnum, check_argbase),
+			       arg->line()),
+		    });
+		  } else {
+		    ret += ({
+		      PC.Token(sprintf("if((TYPEOF(Pike_sp[%d%s]) != PIKE_T_%s) || "
+				       "(Pike_sp[%d%s].u.string->size_shift > 1))",
+				       argnum, check_argbase,
+				       upper_case(arg->basetype()),
+				       argnum, check_argbase),
+			       arg->line()),
+		    });
 		  }
+		  break;
 		}
 		// FALL_THROUGH
 	      default:
