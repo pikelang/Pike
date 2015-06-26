@@ -3322,16 +3322,24 @@ PMOD_EXPORT void f_destruct(INT32 args)
  *!
  *!   Return an array of all valid indices for the value @[x].
  *!
- *!   For strings and arrays this is simply an array of ascending
- *!   numbers.
+ *! @param x
+ *!   @mixed
+ *!     @type string
+ *!     @type array
+ *!       For strings and arrays this is simply an array of ascending
+ *!       numbers.
  *!
- *!   For mappings and multisets, the array might contain any value.
+ *!     @type mapping
+ *!     @type multiset
+ *!       For mappings and multisets, the array might contain any value.
  *!
- *!   For objects which define @[lfun::_indices()] that return value
- *!   is used.
+ *!     @type object
+ *!       For objects which define @[lfun::_indices()] that return value
+ *!       is used.
  *!
- *!   For other objects an array with all non-protected symbols is
- *!   returned.
+ *!       For other objects an array with the names of all non-protected
+ *!       symbols is returned.
+ *!  @endmixed
  *!
  *! @seealso
  *!   @[values()], @[types()], @[lfun::_indices()]
@@ -3618,21 +3626,29 @@ static node *fix_aggregate_mapping_type(node *n)
  *!   Return an array of all possible values from indexing the value
  *!   @[x].
  *!
- *!   For strings an array of int with the ISO10646 codes of the
- *!   characters in the string is returned.
+ *! @param x
+ *!   @mixed
+ *!     @type string
+ *!       For strings an array of int with the ISO10646 codes of the
+ *!       characters in the string is returned.
  *!
- *!   For a multiset an array filled with ones (@expr{1@}) is
- *!   returned.
+ *!     @type multiset
+ *!       For a multiset an array filled with ones (@expr{1@}) is
+ *!       returned.
  *!
- *!   For arrays a single-level copy of @[x] is returned.
+ *!     @type array
+ *!       For arrays a single-level copy of @[x] is returned.
  *!
- *!   For mappings the array may contain any value.
+ *!     @type mapping
+ *!       For mappings the array may contain any value.
  *!
- *!   For objects which define @[lfun::_values()] that return value
- *!   is used.
+ *!     @type object
+ *!       For objects which define @[lfun::_values()] that return value
+ *!       is used.
  *!
- *!   For other objects an array with the values of all non-protected
- *!   symbols is returned.
+ *!       For other objects an array with the values of all non-protected
+ *!       symbols is returned.
+ *!  @endmixed
  *!
  *! @seealso
  *!   @[indices()], @[types()], @[lfun::_values()]
@@ -3699,18 +3715,26 @@ PMOD_EXPORT void f_values(INT32 args)
 
 /*! @decl array(type(mixed)) types(string|array|mapping|multiset|object x)
  *!
- *!   Return an array of all valid indices for the value @[x].
+ *!   Return an array with the types of all valid indices for the value @[x].
  *!
- *!   For strings this is simply an array with @tt{int@}
+ *! @param x
+ *!   @mixed
+ *!     @type string
+ *!       For strings this is simply an array with @tt{int@}
  *!
- *!   For arrays, mappings and multisets this is simply
- *!   an array with @tt{mixed@}.
+ *!     @type array
+ *!     @type mapping
+ *!     @type multiset
+ *!       For arrays, mappings and multisets this is simply
+ *!       an array with @tt{mixed@}.
  *!
- *!   For objects which define @[lfun::_types()] that return value
- *!   is used.
+ *!     @type object
+ *!       For objects which define @[lfun::_types()] that return value
+ *!       is used.
  *!
- *!   For other objects an array with type types for all non-protected
- *!   symbols is returned.
+ *!       For other objects an array with type types for all non-protected
+ *!       symbols is returned.
+ *!   @endmixed
  *!
  *! @note
  *!   This function was added in Pike 7.9.
