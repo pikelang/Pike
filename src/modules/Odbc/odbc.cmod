@@ -7,7 +7,7 @@
 /*
  * Pike interface to ODBC compliant databases.
  *
- * Henrik Grubbström
+ * Henrik GrubbstrÃ¶m
  */
 
 /*
@@ -85,9 +85,58 @@ int odbc_driver_is_old_freetds(HDBC odbc_conn)
   return 0;
 }
 
+/*! @module Odbc
+ *!
+ *! Low-level interface to Open DataBase Connectivity SQL-drivers.
+ *!
+ *! @note
+ *!   You typically don't want to access this module directly, but
+ *!   instead use @[Sql.Sql()] with an @expr{"odbc://"@} or
+ *!   @expr{"dsn://"@} URL.
+ *!
+ *! @seealso
+ *!   @[Sql.Sql()]
+ */
+
+/*! @class odbc
+ *!
+ *! Low-level connection to an ODBC or DSN database.
+ *!
+ *! @note
+ *!   You typically don't want to access this module directly, but
+ *!   instead use the @[Sql.odbc] or @[Sql.dsn] created by @[Sql.Sql()].
+ *!
+ *! @seealso
+ *!   @[Sql.odbc], @[Sql.dsn]
+ */
+
+DECLARATIONS;
+
+PIKECLASS odbc
+{
+  CVAR SQLHDBC hdbc;
+  CVAR SQLLEN affected_rows;
+  CVAR unsigned int flags;
+  CVAR struct pike_string *last_error;
+
+  DECLARE_STORAGE;
+
 /*
  * Helper functions
  */
+
+  SQLHDBC pike_odbc_get_hdbc(struct Odbc_odbc_struct *odbc)
+  {
+    return odbc->hdbc;
+  }
+  void pike_odbc_set_affected_rows(struct Odbc_odbc_struct *odbc, SQLLEN rows)
+  {
+    odbc->affected_rows = rows;
+  }
+  unsigned int pike_odbc_get_flags(struct Odbc_odbc_struct *odbc)
+  {
+    return odbc->flags;
+  }
 
 struct pike_string *make_shared_binary_sqlwchar(SQLWCHAR *str,
 						size_t len)
@@ -103,7 +152,7 @@ void push_sqlwchar(SQLWCHAR *str, size_t len)
 }
 
 void odbc_error(const char *fun, const char *msg,
-		struct precompiled_odbc *odbc, SQLHSTMT hstmt,
+		struct Odbc_odbc_struct *odbc, SQLHSTMT hstmt,
 		RETCODE code, void (*clean)(void*), void *clean_arg);
 
 static INLINE void odbc_check_error(const char *fun, const char *msg,
@@ -116,7 +165,7 @@ static INLINE void odbc_check_error(const char *fun, const char *msg,
 }
 
 void odbc_error(const char *fun, const char *msg,
-		struct precompiled_odbc *odbc, SQLHSTMT hstmt,
+		struct Odbc_odbc_struct *odbc, SQLHSTMT hstmt,
 		RETCODE code, void (*clean)(void *), void *clean_arg)
 {
   RETCODE _code;
@@ -188,32 +237,7 @@ static void clean_last_error(void)
  * Glue functions
  */
 
-/*! @module Odbc
- *!
- *! Low-level interface to Open DataBase Connectivity SQL-drivers.
- *!
- *! @note
- *!   You typically don't want to access this module directly, but
- *!   instead use @[Sql.Sql()] with an @expr{"odbc://"@} or
- *!   @expr{"dsn://"@} URL.
- *!
- *! @seealso
- *!   @[Sql.Sql()]
- */
-
-/*! @class odbc
- *!
- *! Low-level connection to an ODBC or DSN database.
- *!
- *! @note
- *!   You typically don't want to access this module directly, but
- *!   instead use the @[Sql.odbc] or @[Sql.dsn] created by @[Sql.Sql()].
- *!
- *! @seealso
- *!   @[Sql.odbc], @[Sql.dsn]
- */
-
-static void init_odbc_struct(struct object *UNUSED(o))
+INIT
 {
   HDBC hdbc = SQL_NULL_HDBC;
   RETCODE code;
@@ -231,7 +255,7 @@ static void init_odbc_struct(struct object *UNUSED(o))
 		   code, NULL, NULL);
 }
 
-static void exit_odbc_struct(struct object *UNUSED(o))
+EXIT
 {
   SQLHDBC hdbc = PIKE_ODBC->hdbc;
 
@@ -257,19 +281,22 @@ static void exit_odbc_struct(struct object *UNUSED(o))
     PIKE_ODBC->hdbc = hdbc;
 
     if (err_msg)
-      /* NOTE: Potential recursion here! */
-      odbc_check_error("odbc_error", err_msg, code,
-		       (void (*)(void *))exit_odbc_struct, NULL);
+      odbc_check_error("odbc_error", err_msg, code, NULL, NULL);
   }
 
   clean_last_error();
+}
+
+EXTRA
+{
+  init_odbc_res_programs();
 }
 
 /*
  * Pike functions
  */
 
-static void f_error(INT32 args)
+PIKEFUN string error()
 {
   pop_n_elems(args);
 
@@ -280,12 +307,11 @@ static void f_error(INT32 args)
   }
 }
 
-static void f_create(INT32 args)
+PIKEFUN void create(string|void server, string|void database,
+		    string|void user, string|void pwd,
+		    mapping|int|void options)
+  flags ID_STATIC;
 {
-  struct pike_string *server = NULL;
-  struct pike_string *database = NULL;
-  struct pike_string *user = NULL;
-  struct pike_string *pwd = NULL;
   HDBC hdbc = PIKE_ODBC->hdbc;
   RETCODE code;
 
@@ -381,10 +407,8 @@ static void f_create(INT32 args)
   pop_n_elems(args);
 }
 
-static void f_create_dsn(INT32 args)
+PIKEFUN void create_dsn(string connectstring)
 {
-  struct pike_string *connectstring = NULL;
-
   SQLCHAR outconnectionstring[1024]; /* Smallest allowed buffer = 1024 */
   SQLSMALLINT stringlength2;
 
@@ -425,13 +449,13 @@ static void f_create_dsn(INT32 args)
 }
 
 
-static void f_affected_rows(INT32 args)
+PIKEFUN int affected_rows()
 {
   pop_n_elems(args);
   push_int64(PIKE_ODBC->affected_rows);
 }
 
-static void f_select_db(INT32 UNUSED(args))
+PIKEFUN void select_db(string db)
 {
   /**********************************************/
 }
@@ -444,15 +468,12 @@ static void odbc_free_string(struct pike_string *s)
   }
 }
 
-static void f_big_query(INT32 args)
+PIKEFUN object big_query(string q)
 {
   ONERROR ebuf;
-  struct pike_string *q = NULL;
 #ifdef PIKE_DEBUG
   struct svalue *save_sp = sp + 1 - args;
 #endif /* PIKE_DEBUG */
-
-  get_all_args("big_query", args, "%W", &q);
 
   add_ref(q);
   SET_ONERROR(ebuf, odbc_free_string, q);
@@ -512,15 +533,12 @@ static void f_big_query(INT32 args)
 #endif /* PIKE_DEBUG */
 }
 
-static void f_big_typed_query(INT32 args)
+PIKEFUN object big_typed_query(string q)
 {
   ONERROR ebuf;
-  struct pike_string *q = NULL;
 #ifdef PIKE_DEBUG
   struct svalue *save_sp = sp + 1 - args;
 #endif /* PIKE_DEBUG */
-
-  get_all_args("big_typed_query", args, "%W", &q);
 
   add_ref(q);
   SET_ONERROR(ebuf, odbc_free_string, q);
@@ -580,21 +598,19 @@ static void f_big_typed_query(INT32 args)
 #endif /* PIKE_DEBUG */
 }
 
-static void f_list_tables(INT32 args)
+PIKEFUN object list_tables(string|void pattern)
 {
 #ifdef PIKE_DEBUG
   struct svalue *save_sp = sp + 1 - args;
 #endif /* PIKE_DEBUG */
   ONERROR ebuf;
-  struct pike_string *pattern = NULL;
 
-  if (args) {
-    if ((TYPEOF(Pike_sp[-args]) != T_STRING) ||
-	(Pike_sp[-args].u.string->size_shift)) {
+  if (pattern) {
+    if (pattern->size_shift) {
       Pike_error("odbc->list_tables(): "
 		 "Bad argument 1. Expected 8-bit string.\n");
     }
-    copy_shared_string(pattern, Pike_sp[-args].u.string);
+    add_ref(pattern);
   }
 
   SET_ONERROR(ebuf, odbc_free_string, pattern);
@@ -640,26 +656,27 @@ static void f_list_tables(INT32 args)
 #endif /* PIKE_DEBUG */
 }
 
-static void f_create_db(INT32 UNUSED(args))
+PIKEFUN void create_db(string db)
 {
   /**************************************************/
 }
 
-static void f_drop_db(INT32 UNUSED(args))
+PIKEFUN void drop_db(string db)
 {
   /**************************************************/
 }
 
-static void f_shutdown(INT32 UNUSED(args))
+PIKEFUN void shutdown()
 {
   /**************************************************/
 }
 
-static void f_reload(INT32 UNUSED(args))
+PIKEFUN void reload()
 {
   /**************************************************/
 }
 
+}
 /*! @endclass
  */
 
@@ -667,7 +684,7 @@ static void f_reload(INT32 UNUSED(args))
  *!
  *! List the configured ODBC database sources.
  */
-static void f_list_dbs(INT32 args)
+PIKEFUN array(string) list_dbs()
 {
   static SQLWCHAR buf[SQL_MAX_DSN_LENGTH+1];
   static SQLWCHAR descr[256];
@@ -675,8 +692,6 @@ static void f_list_dbs(INT32 args)
   SQLSMALLINT descr_len = 0;
   int cnt = 0;
   RETCODE ret;
-
-  pop_n_elems(args);
 
   ODBC_ALLOW();
   ret = SQLDataSourcesW(odbc_henv, SQL_FETCH_FIRST,
@@ -719,11 +734,11 @@ static void f_list_dbs(INT32 args)
  *! setting is important to you then always set it explicitly.
  *! Hopefully most users don't need to bother with it.
  */
-static void f_connect_lock (INT32 args)
+PIKEFUN int(0..1) connect_lock(int|void enable)
 {
   int old = enable_connect_lock;
   if (args) {
-    enable_connect_lock = !UNSAFE_IS_ZERO (Pike_sp - args);
+    enable_connect_lock = !UNSAFE_IS_ZERO(enable);
     pop_n_elems (args);
   }
   push_int (old);
@@ -754,69 +769,7 @@ PIKE_MODULE_INIT
   mt_init (&connect_mutex);
 #endif
 
-  start_new_program();
-  ADD_STORAGE(struct precompiled_odbc);
-
-  /* function(void:int|string) */
-  ADD_FUNCTION("error", f_error,tFunc(tVoid,tOr(tInt,tStr)), ID_PUBLIC);
-  /* function(string|void, string|void, string|void, string|void:void) */
-  ADD_FUNCTION("create", f_create,tFunc(tOr(tStr,tVoid) tOr(tStr,tVoid) tOr(tStr,tVoid) tOr(tStr,tVoid),tVoid), ID_PUBLIC);
-  /* function(string:void) */
-  ADD_FUNCTION("create_dsn", f_create_dsn,tFunc(tStr,tVoid), ID_PUBLIC);
-  /* function(string:void) */
-  ADD_FUNCTION("select_db", f_select_db,tFunc(tStr,tVoid), ID_PUBLIC);
-  /* function(string:int|object) */
-  ADD_FUNCTION("big_query", f_big_query,tFunc(tStr,tOr(tInt,tObj)), ID_PUBLIC);
-  /* function(string:int|object) */
-  ADD_FUNCTION("big_typed_query", f_big_typed_query, tFunc(tStr,tOr(tInt,tObj)),
-	       ID_PUBLIC);
-  /* function(void:int) */
-  ADD_FUNCTION("affected_rows", f_affected_rows,tFunc(tVoid,tInt), ID_PUBLIC);
-  /* function(void|string:object) */
-  ADD_FUNCTION("list_tables", f_list_tables,tFunc(tOr(tVoid,tStr),tObj), ID_PUBLIC);
-  /* NOOP's: */
-  /* function(string:void) */
-  ADD_FUNCTION("create_db", f_create_db,tFunc(tStr,tVoid), ID_PUBLIC);
-  /* function(string:void) */
-  ADD_FUNCTION("drop_db", f_drop_db,tFunc(tStr,tVoid), ID_PUBLIC);
-  /* function(void:void) */
-  ADD_FUNCTION("shutdown", f_shutdown,tFunc(tVoid,tVoid), ID_PUBLIC);
-  /* function(void:void) */
-  ADD_FUNCTION("reload", f_reload,tFunc(tVoid,tVoid), ID_PUBLIC);
-#if 0
-  /* function(void:int) */
-  ADD_FUNCTION("insert_id", f_insert_id,tFunc(tVoid,tInt), ID_PUBLIC);
-  /* function(void:string) */
-  ADD_FUNCTION("statistics", f_statistics,tFunc(tVoid,tStr), ID_PUBLIC);
-  /* function(void:string) */
-  ADD_FUNCTION("server_info", f_server_info,tFunc(tVoid,tStr), ID_PUBLIC);
-  /* function(void:string) */
-  ADD_FUNCTION("host_info", f_host_info,tFunc(tVoid,tStr), ID_PUBLIC);
-  /* function(void:int) */
-  ADD_FUNCTION("protocol_info", f_protocol_info,tFunc(tVoid,tInt), ID_PUBLIC);
-  /* function(string, void|string:array(int|mapping(string:mixed))) */
-  ADD_FUNCTION("list_fields", f_list_fields,tFunc(tStr tOr(tVoid,tStr),tArr(tOr(tInt,tMap(tStr,tMix)))), ID_PUBLIC);
-  /* function(void|string:object) */
-  ADD_FUNCTION("list_processes", f_list_processes,tFunc(tOr(tVoid,tStr),tObj), ID_PUBLIC);
-
-  /* function(void:int) */
-  ADD_FUNCTION("binary_data", f_binary_data,tFunc(tVoid,tInt), ID_PUBLIC);
-#endif /* 0 */
-
-  set_init_callback(init_odbc_struct);
-  set_exit_callback(exit_odbc_struct);
-
-  init_odbc_res_programs();
-
-  odbc_program = end_program();
-  add_program_constant("odbc", odbc_program, 0);
-
-  /* function(void|string:array(string)) */
-  ADD_FUNCTION("list_dbs", f_list_dbs,tFunc(tOr(tVoid,tStr),tArr(tStr)), ID_PUBLIC);
-
-#ifdef PIKE_THREADS
-  ADD_FUNCTION ("connect_lock", f_connect_lock, tFunc(tOr(tVoid,tInt),tInt01), ID_PUBLIC);
-#endif
+  INIT;
 
 #else
   HIDE_MODULE();
@@ -832,17 +785,14 @@ PIKE_MODULE_EXIT
   mt_destroy (&connect_mutex);
 #endif
 
-  if (odbc_program) {
-    free_program(odbc_program);
-    odbc_program = NULL;
-  }
+  EXIT;
 
   if (odbc_henv != SQL_NULL_HENV) {
     RETCODE err = SQLFreeEnv(odbc_henv);
     odbc_henv = SQL_NULL_HENV;
 
     if ((err != SQL_SUCCESS) && (err != SQL_SUCCESS_WITH_INFO)) {
-      Pike_error("odbc_module_exit(): SQLFreeEnv() failed with code %08x\n", err);
+      my_yyerror("Odbc: SQLFreeEnv() failed with code %08x\n", err);
     }
   }
 #endif /* HAVE_ODBC */

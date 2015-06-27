@@ -121,30 +121,14 @@ struct field_info {
   field_factory_func factory;
 };
 
-struct precompiled_odbc {
-  SQLHDBC hdbc;
-  SQLLEN affected_rows;
-  unsigned int flags;
-  struct pike_string *last_error;
-};
-
-struct precompiled_odbc_result {
-  struct object *obj;
-  struct precompiled_odbc *odbc;
-  SQLHSTMT hstmt;
-  SWORD num_fields;
-  SQLLEN num_rows;
-  struct array *fields;
-  struct field_info *field_info;
-  struct svalue null_value;		/* NULL value for typed_queries. */
-};
+struct Odbc_odbc_struct;
 
 /*
  * Defines
  */
 
-#define PIKE_ODBC	((struct precompiled_odbc *)(Pike_fp->current_storage))
-#define PIKE_ODBC_RES	((struct precompiled_odbc_result *)(Pike_fp->current_storage))
+#define PIKE_ODBC	THIS_ODBC_ODBC
+#define PIKE_ODBC_RES	THIS_ODBC_RESULT
 
 /* Flags */
 #define PIKE_ODBC_CONNECTED      1
@@ -166,9 +150,12 @@ struct precompiled_odbc_result {
 /*
  * Prototypes
  */
+SQLHDBC pike_odbc_get_hdbc(struct Odbc_odbc_struct *odbc);
+void pike_odbc_set_affected_rows(struct Odbc_odbc_struct *odbc, SQLLEN rows);
+unsigned int pike_odbc_get_flags(struct Odbc_odbc_struct *odbc);
 void push_sqlwchar(SQLWCHAR *str, size_t num_bytes);
 void odbc_error(const char *fun, const char *msg,
-		struct precompiled_odbc *odbc, SQLHSTMT hstmt,
+		struct Odbc_odbc_struct *odbc, SQLHSTMT hstmt,
 		RETCODE code, void (*clean)(void *), void *clean_arg);
 
 void init_odbc_res_programs(void);

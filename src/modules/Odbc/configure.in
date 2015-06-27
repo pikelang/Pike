@@ -4,7 +4,7 @@
 # Henrik Grubbström
 #
 
-AC_INIT(odbc.c)
+AC_INIT(odbc.cmod)
 AC_CONFIG_HEADER(config.h)
 
 AC_MODULE_INIT()
