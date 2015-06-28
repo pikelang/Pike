@@ -2615,14 +2615,27 @@ static struct %s *%s_gdb_dummy_ptr;
 		if ((low >= 0) && (high <= 0xffff)) {
 		  // Narrow string.
 		  if (high <= 0xff) {
-		    ret += ({
-		      PC.Token(sprintf("if((TYPEOF(Pike_sp[%d%s]) != PIKE_T_%s) || "
-				       "Pike_sp[%d%s].u.string->size_shift)",
-				       argnum, check_argbase,
-				       upper_case(arg->basetype()),
-				       argnum, check_argbase),
-			       arg->line()),
-		    });
+		    if (low > 0) {
+		      ret += ({
+			PC.Token(sprintf("if((TYPEOF(Pike_sp[%d%s]) != PIKE_T_%s) || "
+					 "Pike_sp[%d%s].u.string->size_shift || "
+					 "string_has_null(Pike_sp[%d%s].u.string))",
+					 argnum, check_argbase,
+					 upper_case(arg->basetype()),
+					 argnum, check_argbase,
+					 argnum, check_argbase),
+				 arg->line()),
+		      });
+		    } else {
+		      ret += ({
+			PC.Token(sprintf("if((TYPEOF(Pike_sp[%d%s]) != PIKE_T_%s) || "
+					 "Pike_sp[%d%s].u.string->size_shift)",
+					 argnum, check_argbase,
+					 upper_case(arg->basetype()),
+					 argnum, check_argbase),
+				 arg->line()),
+		      });
+		    }
 		  } else {
 		    ret += ({
 		      PC.Token(sprintf("if((TYPEOF(Pike_sp[%d%s]) != PIKE_T_%s) || "
@@ -3225,6 +3238,13 @@ int main(int argc, array(string) argv)
     "#else /* */\n"
     "PMOD_EXPORT void set_program_id_to_id( int (*to)(int) );\n"
     "#endif /* !PIKE_UNUSED */\n"
+    "#if !defined(string_has_null) && !defined(STRING_CONTENT_CHECKED)\n"
+    "/* This symbol was added as a macro in Pike 7.7.20, and is an\n"
+    " * inline function in Pike 7.9.4 and later, at which time the\n"
+    " * flag STRING_CONTENT_CHECKED was added.\n"
+    " */\n"
+    "#define string_has_null(X) (strlen((X)->str)!=(size_t)(X)->len)\n"
+    "#endif\n"
     "\n\n",
 
     "#ifndef DEFAULT_CMOD_STORAGE\n"
