@@ -2607,11 +2607,6 @@ static struct %s *%s_gdb_dummy_ptr;
 	      case "string":
 		// Clamp the integer range to 32 bit signed.
 		[int low, int high] = clamp_int_range(arg->type(), "string");
-		ret += ({
-		  PC.Token(sprintf("/* low: %d high: %d */\n",
-				   low, high),
-			   arg->line()),
-		});
 		if ((low >= 0) && (high <= 0xffff)) {
 		  // Narrow string.
 		  if (high <= 0xff) {
