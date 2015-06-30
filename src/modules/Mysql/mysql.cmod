@@ -720,8 +720,8 @@ static void pike_mysql_reconnect (int reconnect)
  *!   cases it's possible that @[set_charset] works better (provided
  *!   the server is 4.1 or newer).
  */
-PIKEFUN void create(string(8bit)|void host, string(8bit)|void database,
-		    string(8bit)|void user, string(8bit)|void password,
+PIKEFUN void create(string(1..255)|void host, string(1..255)|void database,
+		    string(1..255)|void user, string(1..255)|void password,
 		    mapping|void options)
 {
 #if defined(HAVE_MYSQL_OPTIONS) && defined(HAVE_MYSQL_OPT_LOCAL_INFILE)
@@ -731,41 +731,26 @@ PIKEFUN void create(string(8bit)|void host, string(8bit)|void database,
 		(char *)&allowed);
 #endif /* HAVE_MYSQL_OPTIONS && HAVE_MYSQL_OPT_LOCAL_INFILE */
 
-  if (args >= 1) {
-    CHECK_8BIT_NONBINARY_STRING ("create", 1);
-    if (host && host->len) {
-      add_ref(PIKE_MYSQL->host = host);
-    }
-
-    if (args >= 2) {
-      CHECK_8BIT_NONBINARY_STRING ("create", 2);
-      if (sp[1-args].u.string->len) {
-	add_ref(PIKE_MYSQL->database = database);
+  if (host && host->len) {
+    add_ref(PIKE_MYSQL->host = host);
+  }
+  if (database && database->len) {
+    add_ref(PIKE_MYSQL->database = database);
+  }
+  if (user && user->len) {
+    add_ref(PIKE_MYSQL->user = user);
+  }
+  if (password && password->len) {
+    add_ref(PIKE_MYSQL->password = password);
+  }
+  if (args >= 5) {
+    if (TYPEOF(sp[4-args]) != T_MAPPING){
+      if (!UNSAFE_IS_ZERO(sp + 4 - args)) {
+	SIMPLE_BAD_ARG_ERROR ("create", 5, "mapping(string:mixed)");
       }
-
-      if (args >= 3) {
-	CHECK_8BIT_NONBINARY_STRING ("create", 3);
-	if (sp[2-args].u.string->len) {
-	  add_ref(PIKE_MYSQL->user = user);
-	}
-
-	if (args >= 4) {
-	  CHECK_8BIT_NONBINARY_STRING ("create", 4);
-	  if (sp[3-args].u.string->len) {
-	    add_ref(PIKE_MYSQL->password = password);
-	  }
-	  if (args >= 5) {
-	    if (TYPEOF(sp[4-args]) != T_MAPPING){
-	      if (!UNSAFE_IS_ZERO(sp + 4 - args)) {
-		SIMPLE_BAD_ARG_ERROR ("create", 5, "mapping(string:mixed)");
-	      }
-	    } else {
-	      add_ref(PIKE_MYSQL->options = options);
-	      pike_mysql_set_options(options);
-	    }
-	  }
-	}
-      }
+    } else {
+      add_ref(PIKE_MYSQL->options = options);
+      pike_mysql_set_options(options);
     }
   }
 
@@ -1049,12 +1034,10 @@ PIKEFUN string sqlstate()
  *! @seealso
  *!   @[create()], @[create_db()], @[drop_db()]
  */
-PIKEFUN void select_db(string(8bit) database)
+PIKEFUN void select_db(string(1..255) database)
 {
   MYSQL *mysql = PIKE_MYSQL->mysql;
   int tmp = -1;
-
-  CHECK_8BIT_NONBINARY_STRING ("select_db", 1);
 
   if (mysql) {
     MYSQL_ALLOW();
@@ -1212,12 +1195,11 @@ PIKEFUN object streaming_typed_query(string query)
  *!   @[select_db()], @[drop_db()]
  */
 #ifdef USE_OLD_FUNCTIONS
-PIKEFUN void create_db(string(8bit) database)
+PIKEFUN void create_db(string(1..255) database)
 {
   MYSQL *mysql = PIKE_MYSQL->mysql;
   int tmp = -1;
 
-  CHECK_8BIT_NONBINARY_STRING ("create_db", 1);
   if (database->len > 127) {
     if (database->len < 1024) {
       Pike_error("Database name \"%s\" is too long (max 127 characters)\n",
@@ -1252,12 +1234,11 @@ PIKEFUN void create_db(string(8bit) database)
  *! @seealso
  *!  @[create_db()], @[select_db()]
  */
-PIKEFUN void drop_db(string(8bit) database)
+PIKEFUN void drop_db(string(1..255) database)
 {
   MYSQL *mysql = PIKE_MYSQL->mysql;
   int tmp = -1;
 
-  CHECK_8BIT_NONBINARY_STRING ("drop_db", 1);
   if (database->len > 127) {
     if (database->len < 1024) {
       Pike_error("Database name \"%s\" is too long (max 127 characters)\n",
@@ -1495,13 +1476,12 @@ PIKEFUN int protocol_info()
  *!   @[list_tables()], @[list_fields()], @[list_processes()],
  *!   @[Mysql.mysql_result]
  */
-PIKEFUN object list_dbs(string|void wild)
+PIKEFUN object list_dbs(string(1..255)|void wild)
 {
   MYSQL *mysql = PIKE_MYSQL->mysql;
   MYSQL_RES *result = NULL;
 
   if (wild) {
-    CHECK_8BIT_NONBINARY_STRING ("Mysql.mysql->list_dbs", 1);
     if (wild->len > 80) {
       if (wild->len < 1024) {
 	Pike_error("Wildcard \"%s\" is too long (max 80 characters)\n",
@@ -1552,13 +1532,12 @@ PIKEFUN object list_dbs(string|void wild)
  *!   @[list_dbs()], @[list_fields()], @[list_processes()],
  *!   @[Mysql.mysql_result]
  */
-PIKEFUN object list_tables(string|void wild)
+PIKEFUN object list_tables(string(1..255)|void wild)
 {
   MYSQL *mysql = PIKE_MYSQL->mysql;
   MYSQL_RES *result = NULL;
 
   if (wild) {
-    CHECK_8BIT_NONBINARY_STRING ("Mysql.mysql->list_tables", 1);
     if (wild->len > 80) {
       if (wild->len < 1024) {
 	Pike_error("Wildcard \"%s\" is too long (max 80 characters)\n",
@@ -1670,15 +1649,14 @@ PIKEFUN object list_tables(string|void wild)
  *!   @[list_dbs()], @[list_tables()], @[list_processes()],
  *!   @[Mysql.mysql_result.fetch_field()]
  */
-PIKEFUN array(int|mapping(string:mixed)) list_fields(string(8bit) table,
-						     string(8bit)|void wild)
+PIKEFUN array(int|mapping(string:mixed)) list_fields(string(1..255) table,
+						     string(1..255)|void wild)
 {
   MYSQL *mysql = PIKE_MYSQL->mysql;
   MYSQL_RES *result = NULL;
   MYSQL_FIELD *field;
   int i = 0;
 
-  CHECK_8BIT_NONBINARY_STRING ("list_fields", 1);
   if (table->len > 125) {
     if (table->len < 1024) {
       Pike_error("Table name \"%s\" is too long (max 125 characters)\n",
@@ -1689,7 +1667,6 @@ PIKEFUN array(int|mapping(string:mixed)) list_fields(string(8bit) table,
     }
   }
   if (wild) {
-    CHECK_8BIT_NONBINARY_STRING ("Mysql.mysql->list_fields", 2);
     if (wild->len + table->len > 125) {
       /* The length of the table name has already been checked. */
       if (wild->len < 1024) {
