@@ -408,7 +408,7 @@ static void pike_mysql_set_options(struct mapping *options)
 #endif
 
     if (PIKE_MYSQL->conn_charset)
-      free (PIKE_MYSQL->conn_charset);
+      free_string (PIKE_MYSQL->conn_charset);
     copy_shared_string (PIKE_MYSQL->conn_charset, val->u.string);
   }
 }
