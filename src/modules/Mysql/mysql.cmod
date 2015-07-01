@@ -758,7 +758,7 @@ PIKEFUN void create(string(1..255)|void host, string(1..255)|void database,
 
   if (!PIKE_MYSQL->conn_charset) {
     /* Backward compat with Mysql 4.0 and earlier. */
-    PIKE_MYSQL->conn_charset = MK_STRING("latin1");
+    add_ref (PIKE_MYSQL->conn_charset = MK_STRING("latin1"));
   }
 
   pike_mysql_reconnect (0);
