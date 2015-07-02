@@ -737,9 +737,8 @@ PIKEFUN array(string) list_dbs()
 PIKEFUN int(0..1) connect_lock(int|void enable)
 {
   int old = enable_connect_lock;
-  if (args) {
+  if (enable) {
     enable_connect_lock = !UNSAFE_IS_ZERO(enable);
-    pop_n_elems (args);
   }
   push_int (old);
 }
