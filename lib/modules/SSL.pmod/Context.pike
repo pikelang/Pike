@@ -432,12 +432,17 @@ array(int) get_suites(int(-1..)|void min_keylength,
 		 }, min_keylength);
   }
 
-  if( !blacklisted_ciphers )
+  if( !blacklisted_ciphers || (max_version >= PROTOCOL_TLS_1_3))
   {
-    // Block export ciphers and DES because they are demonstrably
-    // broken. Block RC4 because it probably is (RFC 7465).
-    blacklisted_ciphers = (< CIPHER_rc4, CIPHER_des, CIPHER_rc4_40,
-                             CIPHER_rc2_40, CIPHER_des40 >);
+    // Block export ciphers and DES by default because they are
+    // demonstrably broken.
+    //
+    // Block RC4 because it probably is (RFC 7465).
+    //
+    // TLS 1.3 prohibits RC4.
+    if (!blacklisted_ciphers) blacklisted_ciphers = (<>);
+    blacklisted_ciphers |= (< CIPHER_rc4, CIPHER_des, CIPHER_rc4_40,
+			      CIPHER_rc2_40, CIPHER_des40 >);
   }
   if( sizeof(blacklisted_ciphers) )
       res = filter(res,
