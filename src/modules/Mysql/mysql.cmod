@@ -732,15 +732,27 @@ PIKEFUN void create(string(1..255)|void host, string(1..255)|void database,
 #endif /* HAVE_MYSQL_OPTIONS && HAVE_MYSQL_OPT_LOCAL_INFILE */
 
   if (host && host->len) {
+    if (PIKE_MYSQL->host) {
+      free_string(PIKE_MYSQL->host);
+    }
     add_ref(PIKE_MYSQL->host = host);
   }
   if (database && database->len) {
+    if (PIKE_MYSQL->database) {
+      free_string(PIKE_MYSQL->database);
+    }
     add_ref(PIKE_MYSQL->database = database);
   }
   if (user && user->len) {
+    if (PIKE_MYSQL->user) {
+      free_string(PIKE_MYSQL->user);
+    }
     add_ref(PIKE_MYSQL->user = user);
   }
   if (password && password->len) {
+    if (PIKE_MYSQL->password) {
+      free_string(PIKE_MYSQL->password);
+    }
     add_ref(PIKE_MYSQL->password = password);
   }
   if (args >= 5) {
