@@ -104,7 +104,7 @@ Drafts (in order of age, oldest first):
  [X] TLS Padding			draft-ietf-tls-padding
  [X] Negotiated FF-DHE Parameters	draft-ietf-tls-negotiated-ff-dhe
  [X] Session Hash and Extended MS	draft-ietf-tls-session-hash
- [/] SSL 3.4/TLS 1.3			draft-ietf-tls-tls13-04.txt
+ [/] SSL 3.4/TLS 1.3			draft-ietf-tls-tls13-06.txt
 
 The TLS parameters registry:
   http://www.iana.org/assignments/tls-parameters/tls-parameters.xhtml
@@ -205,7 +205,7 @@ Known Problems and Missing Features
 	session cache. (Overloading the session cache functionality in
 	Context is already easy to do)
 
-	The handshake message hash should be steaming and discard raw
+	The handshake message hash should be streaming and discard raw
 	data after each packet. Also, it is probably possible to find
 	only one place in the code where data can be fed to the
 	streaming hash.
