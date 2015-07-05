@@ -38,6 +38,8 @@ protected void create(ProtocolVersion version, void|int extra)
 protected variant void create(ProtocolVersion version,
                               int content_type, string(8bit) fragment)
 {
+  if (version >= PROTOCOL_TLS_1_3)
+    version = PROTOCOL_TLS_1_0; // TLS 1.3 record_version
   protocol_version = version;
   this::content_type = content_type;
   this::fragment = fragment;
