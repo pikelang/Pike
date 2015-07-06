@@ -185,7 +185,8 @@ protected Packet client_hello(string(8bit)|void server_name,
     return Buffer()->add_hstring(hostname, 2);
   };
 
-  ext (EXTENSION_application_layer_protocol_negotiation, !!(context->advertised_protocols))
+  ext (EXTENSION_application_layer_protocol_negotiation,
+       !!(context->advertised_protocols))
   {
     return Buffer()->add_string_array(context->advertised_protocols, 1, 2);
   };
@@ -775,6 +776,18 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
 	    break;
 	  case EXTENSION_server_name:
             break;
+
+	  case EXTENSION_application_layer_protocol_negotiation:
+	    array(string(8bit)) selected_prot =
+	      extension_data->read_string_array(1, 2);
+	    COND_FATAL((!context->advertised_protocols ||
+			(sizeof(selected_prot) != 1) ||
+			!has_value(context->advertised_protocols,
+				   selected_prot[0])),
+		       ALERT_handshake_failure,
+		       "Invalid ALPN.\n");
+	    application_protocol = selected_prot[0];
+	    break;
 
 	  case EXTENSION_heartbeat:
 	    {

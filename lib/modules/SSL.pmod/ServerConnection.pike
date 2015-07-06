@@ -10,10 +10,6 @@ import ".";
 import Constants;
 inherit Connection;
 
-// ALPN
-int has_application_layer_protocol_negotiation;
-string(8bit) application_protocol;
-
 multiset(int) remote_extensions = (<>);
 
 protected string _sprintf(int t)
@@ -113,8 +109,7 @@ protected Packet server_hello_packet()
     return Buffer();
   };
 
-  ext (EXTENSION_application_layer_protocol_negotiation,
-       application_protocol && has_application_layer_protocol_negotiation)
+  ext (EXTENSION_application_layer_protocol_negotiation, !!application_protocol)
   {
     return Buffer()->add_string_array(({application_protocol}), 1, 2);
   };
@@ -519,7 +514,7 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
 
           case EXTENSION_application_layer_protocol_negotiation:
             {
-              has_application_layer_protocol_negotiation = 1;
+              application_protocol = 0;
               if( !context->advertised_protocols )
                 break;
               multiset(string) protocols = (<>);
@@ -546,7 +541,6 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
               // Although the protocol list is sent in client
               // preference order, it is the server preference that
               // wins.
-              application_protocol = 0;
               foreach(context->advertised_protocols;; string(8bit) prot)
                 if( protocols[prot] )
                 {
