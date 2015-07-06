@@ -61,3 +61,15 @@ array(int) read_int_array(int item_size, int len)
     throw(.BufferError("Impossible uint array length value.\n"));
   return read_ints(elems, item_size);
 }
+
+//! Reads an array of strings as written by @[add_string_array]
+//! from the buffer.
+array(string(8bit)) read_string_array(int(0..) item_size, int(0..) len)
+{
+  Stdio.Buffer sub = read_hbuffer(len);
+  array(string(8bit)) res = ({});
+  while (sizeof(sub)) {
+    res += ({ sub->read_hstring(item_size) });
+  }
+  return res;
+}
