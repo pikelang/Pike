@@ -3427,7 +3427,7 @@ Region "se"
   Event "se/queens nameday"           f    "Queen's Nameday"          Fixed Aug  8
   Add   "c/easter monday"             h  # "Easter Monday"            Easter +1
   Add   "c/easter"                    hf # "Easter"                   Easter +0
-  Event "se/midsummer"                hf   "Midsummer's Day"          WDRel Jun 21 Sat +1
+  Event "se/midsummer"                hf   "Midsummer's Day"          WDRel Jun 19 Sat +1
   Add   "c/pentecost"                 hf # "Pentecost"                Easter +49
 # second day of pentecost is no longer a holiday starting 2005
   Add   "c/pentecost monday"          -  # "Pentecost Monday"         Easter +50
@@ -3470,14 +3470,14 @@ Region "se"
 
 
   Add   "c/pentecost eve"             -  # "Pentecost Eve"            Easter +48
-  Event "se/midsummers eve"           -    "Midsummer's Eve"          WDRel Jun 20 Fri +1
+  Event "se/midsummers eve"           v    "Midsummer's Eve"          WDRel Jun 18 Fri +1
   Add   "saints/john the baptist"     -  # "St. John the Baptist"     Fixed Jun 24
   Add   "halloween"                   -  # "Halloween"                Fixed Oct 31
   Add   "c/all saints"                -  # "All Saints Day"           Fixed Nov  1
   Event "se/fathers"                  -    "Father's Day"             WDRel Nov Sun 2nd
   Add   "saints/lucy"                 -  # "St. Lucy"                 Fixed Dec 13
-  Add   "c/christmas eve"             -  # "Christmas Eve"            Fixed Dec 24
-  Add   "new years eve"               -  # "New Year's Eve"           Fixed Dec 31
+  Add   "c/christmas eve"             v  # "Christmas Eve"            Fixed Dec 24
+  Add   "new years eve"               v  # "New Year's Eve"           Fixed Dec 31
 
   Add   "namedays/se"                 -  #  # # # # # # #
   Add   "sunday"                      h  # "Sun"                      Weekday ---
