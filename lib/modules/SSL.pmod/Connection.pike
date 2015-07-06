@@ -80,6 +80,19 @@ string(8bit) server_random;
 #define Packet .Packet
 #define Alert .Alert
 
+// RFC 7301 (ALPN) 3.1:
+//   Unlike many other TLS extensions, this extension does not establish
+//   properties of the session, only of the connection.  When session
+//   resumption or session tickets [RFC5077] are used, the previous
+//   contents of this extension are irrelevant, and only the values in the
+//   new handshake messages are considered.
+//! Selected ALPN (RFC 7301) protocol (if any).
+//!
+//! @note
+//!   Note that this is a connection property, and needs to be renegotiated
+//!   on session resumption.
+string(8bit) application_protocol;
+
 Alert alert(int(1..2) level, int(8bit) description,
             string|void message)
 {

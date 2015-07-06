@@ -150,7 +150,8 @@ Packet client_hello(string(8bit)|void server_name)
     return extension;
   };
 
-  ext (EXTENSION_application_layer_protocol_negotiation, !!(context->advertised_protocols))
+  ext (EXTENSION_application_layer_protocol_negotiation,
+       !!(context->advertised_protocols))
   {
     return ADT.struct()->put_var_string_array(context->advertised_protocols, 1, 2);
   };
@@ -407,6 +408,18 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	    break;
 	  case EXTENSION_server_name:
             break;
+
+	  case EXTENSION_application_layer_protocol_negotiation:
+	    ADT.struct alpn = ADT.struct(extension_data->get_var_string(2));
+	    string(8bit) selected_prot = alpn->get_var_string(1);
+	    if (!context->advertised_protocols || sizeof(alpn) ||
+		!has_value(context->advertised_protocols, selected_prot)) {
+	      send_packet(alert(ALERT_fatal, ALERT_handshake_failure,
+				"Invalid ALPN.\n"));
+	      return -1;
+	    }
+	    application_protocol = selected_prot;
+	    break;
 
 	  case EXTENSION_heartbeat:
 	    {
