@@ -812,7 +812,7 @@ array(CertificatePair) find_cert_domain(string(8bit) domain)
 
     // Return first matching chain that isn't a fallback certificate.
     foreach(cert_chains_domain; string g; array(CertificatePair) chains)
-      if( glob(g, domain) && (g != "*") )
+      if( (g != "*") && glob(g, domain) )
         return chains;
   }
 
