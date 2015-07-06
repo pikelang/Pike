@@ -1143,13 +1143,21 @@ static ptrdiff_t readstring_lit( struct cpp *this, const PCHARP data, ptrdiff_t 
 			     struct string_builder*nf, INT32 ec)
 {
   INT32 ch;
-  while(1)
-    if(++pos>=len)
+  while(1) {
+    if(++pos>=len) {
       cpp_error(this,"End of file in string.");
-    else if((ch=INDEX_PCHARP(data,pos)) == '#' && INDEX_PCHARP(data,pos+1)==ec)
+      break;
+    }
+    if((ch=INDEX_PCHARP(data,pos)) == '#' && INDEX_PCHARP(data,pos+1)==ec)
         return pos + 2;
-    else
+    else {
+        if (ch == '\n') {
+            this->current_line++;
+            PUTNL();
+        }
         string_builder_putchar(nf, ch);
+    }
+  }
   return pos;
 }
 
