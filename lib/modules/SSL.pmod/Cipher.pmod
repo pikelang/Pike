@@ -1621,7 +1621,7 @@ CipherSpec lookup(int suite, ProtocolVersion|int version,
     res->key_bits = 256;
     break;
 #endif
-#if constant(Crypto.ChaCha20)
+#if constant(Crypto.ChaCha20.POLY1305)
   case CIPHER_chacha20:
     if ((sizeof(algorithms) <= 3) || (algorithms[3] != MODE_poly1305)) {
       // Unsupported.
