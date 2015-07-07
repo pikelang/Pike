@@ -38,6 +38,18 @@ test_eq([[#"foo
 bar"]],[["foo\nbar"]]);
 test_eq([[#"foo\
 bar"]],[["foobar"]]);
+test_eq([[#(foo
+bar#)]],[["foo\nbar"]]);
+test_eq([[#(foo\
+bar#)]],[["foo\\\nbar"]]);
+test_eq([[#[foo
+bar#] ]],[["foo\nbar"]]);
+test_eq([[#[foo\
+bar#] ]],[["foo\\\nbar"]]);
+test_eq([[#{foo
+bar#}]],[["foo\nbar"]]);
+test_eq([[#{foo\
+bar#}]],[["foo\\\nbar"]]);
 test_true([[stringp(#string "Makefile")]]);
 test_any([[class Bar { array(int) foo = ({}); };
 	   class Foo { inherit Bar; array(int) foo = ({1}); };
