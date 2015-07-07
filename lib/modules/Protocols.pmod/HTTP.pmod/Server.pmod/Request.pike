@@ -609,7 +609,8 @@ Stdio.Buffer low_make_response_header(mapping m, Stdio.Buffer res)
 //! error, @[my_fd]@tt{->errno()@} will be set.
 string get_ip()
 {
-   string addr = my_fd?->query_address();
+   if (!my_fd) return 0;
+   string addr = my_fd->query_address();
    if (!addr) return 0;
    sscanf(addr,"%s ",addr);
    return addr;
