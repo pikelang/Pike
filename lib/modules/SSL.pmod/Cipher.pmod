@@ -157,8 +157,8 @@ class CipherSpec {
   int iv_size;
 
   //! The number of bytes of explicit data needed for initialization vectors.
-  //! This is used by AEAD ciphers, where there's a secret part of the iv
-  //! "salt" of length @[iv_size], and an explicit part that is sent in
+  //! This is used by AEAD ciphers in TLS 1.2, where there's a secret part of
+  //! the iv "salt" of length @[iv_size], and an explicit part that is sent in
   //! the clear.
   //!
   //! This is usually @expr{bulk_cipher_algorithm->iv_size() - iv_size@},
