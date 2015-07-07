@@ -2864,6 +2864,7 @@ int amd64_ins_f_jump(unsigned int op, int backward_jump)
       LABEL_A; /* Not an integer. */
       amd64_call_c_opcode(instrs[F_LOOP-F_OFFSET].address,
                           instrs[F_LOOP-F_OFFSET].flags );
+      amd64_load_sp_reg();
       jmp( &label_C );
 
       /* result in RAX */

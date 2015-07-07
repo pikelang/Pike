@@ -13691,4 +13691,18 @@ test_any_equal([[
 dnl This syntax error generates a Fatal with PIKE_DEBUG
 test_compile_error(object(foo bar) o;)
 
+test_do([[
+    class A(object ctx) {
+        this_program get(void|int level) {
+            this_program ret = this;
+
+            for (int i = 0; i < level; i++) ret = (ret && ret->ctx);
+
+            return ret || this;
+        }
+    };
+
+    return A(0)->get(UNDEFINED);
+]])
+
 END_MARKER
