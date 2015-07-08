@@ -27,6 +27,7 @@ if test "$ac_cv_header_gmp_h" = "yes" ; then
   echo >>confdefs.h '
 #include <gmp.h>'
 
+  PIKE_FEATURE_OK([Gmp (bignums)])
   AC_CHECK_SIZEOF(mp_limb_t, 0)
 
   # Side channel secure powm added in 5.0
