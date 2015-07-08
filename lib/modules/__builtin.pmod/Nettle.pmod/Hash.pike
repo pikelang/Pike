@@ -574,3 +574,29 @@ string P_hash(string password, string salt, int rounds, int bytes)
   }
   return res[..(bytes-1)];
 }
+
+//! This is the mask generation function @tt{MFG1@} from RFC 3447 B.2.1.
+//!
+//! @param seed
+//!   Seed from which the mask is to be generated.
+//!
+//! @param bytes
+//!   Length of output.
+//!
+//! @returns
+//!   Returns a pseudo-random string of length @[bytes].
+//!
+//! @note
+//!   This function is compatible with the mask generation functions
+//!   defined in PKCS #1, IEEE 1363-2000 and ANSI X9.44.
+string(8bit) mgf1(string(8bit) seed, int(0..) bytes)
+{
+  if ((bytes>>32) >= digest_size()) {
+    error("Mask too long.\n");
+  }
+  Stdio.Buffer t = Stdio.Buffer();
+  for (int counter = 0; sizeof(t) < bytes; counter++) {
+    t->add(hash(sprintf("%s%4c", seed, counter)));
+  }
+  return t->read(bytes);
+}
