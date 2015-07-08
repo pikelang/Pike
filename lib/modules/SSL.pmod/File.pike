@@ -496,6 +496,18 @@ array get_peer_certificates()
   return conn->session->peer_certificate_chain;
 }
 
+//! @returns
+//!   Returns the negotiated application level protocol (ALPN)
+//!   if any, and otherwise @expr{0@} (zero).
+//!
+//! @seealso
+//!   @[Context.advertised_protocols]
+string(8bit) query_application_protocol()
+{
+  if (!conn) error("No active connection.\n");
+  return conn->application_protocol;
+}
+
 //! Set the linger time on @[close()].
 int(0..1) linger(int(-1..65535)|void seconds)
 {
