@@ -1394,6 +1394,17 @@ enum HeartBeatMessageType {
   HEARTBEAT_MESSAGE_response = 2,
 };
 
+enum ALPNProtocol {
+  ALPN_http_1_1		= "http/1.1",		// RFC 7301
+  ALPN_spdy_1		= "spdy/1",		// RFC 7301
+  ALPN_spdy_2		= "spdy/2",		// RFC 7301
+  ALPN_spdy_3		= "spdy/3",		// RFC 7301
+  ALPN_turn		= "stun.turn",		// RFC 7443
+  ALPN_stun		= "stun.nat-discovery",	// RFC 7443
+  ALPN_http_2		= "h2",			// RFC 7540
+  ALPN_http_2_reserved	= "h2c",		// RFC 7540
+};
+
 protected mapping(string(8bit):array(HashAlgorithm|SignatureAlgorithm))
   pkcs_der_to_sign_alg = ([
   // RSA
