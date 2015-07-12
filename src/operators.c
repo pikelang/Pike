@@ -256,35 +256,26 @@ PMOD_EXPORT void o_cast_to_int(void)
 
     break;
 
-  case T_FLOAT:
-    if (
+  case T_FLOAT: {
+      FLOAT_TYPE f = sp[-1].u.float_number;
+
+      if (
 #ifdef HAVE_ISINF
-	isinf(sp[-1].u.float_number) ||
+          isinf(f) ||
 #endif
 #ifdef HAVE_ISNAN
-	isnan(sp[-1].u.float_number) ||
+          isnan(f) ||
 #endif
-	0) {
-      Pike_error("Can't cast infinites or NaN to int.\n");
-    } else {
-      int i=DO_NOT_WARN((int)(sp[-1].u.float_number));
-      if((i < 0 ? -i : i) < floor(fabs(sp[-1].u.float_number)))
-      {
-	/* Note: This includes the case when i = 0x80000000, i.e.
-	   the absolute value is not computable. */
-	convert_stack_top_to_bignum();
-	return;   /* FIXME: OK to return? Cast tests below indicates
-		     we have to do this, at least for now... /Noring */
-	/* Yes, it is ok to return, it is actually an optimization :)
-	 * /Hubbe
-	 */
+          0)
+        Pike_error("Can't cast infinites or NaN to int.\n");
+
+      if (UNLIKELY(f > MAX_INT_TYPE || f < MIN_INT_TYPE)) {
+        convert_stack_top_to_bignum();
+      } else {
+        SET_SVAL(sp[-1], T_INT, NUMBER_NUMBER, integer, f);
       }
-      else
-      {
-	SET_SVAL(sp[-1], T_INT, NUMBER_NUMBER, integer, i);
-      }
+      break;
     }
-    break;
 
   case T_STRING:
     /* The generic function is rather slow, so I added this
