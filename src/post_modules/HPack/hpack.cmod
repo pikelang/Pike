@@ -164,6 +164,7 @@ PIKEFUN string(8bit) huffman_decode(string(8bit) str)
 	    huffbuf |= c >> lostbits;
 	  }
 	}
+	if (huffbits < 5) break;
       }
     }
   }
@@ -176,6 +177,7 @@ PIKEFUN string(8bit) huffman_decode(string(8bit) str)
       huffbits = 0;
       break;
     }
+    if (huffbits < 5) break;
     entry = find_huffentry(huffbuf);
     if (entry->bits > huffbits) {
       /* BAD */
