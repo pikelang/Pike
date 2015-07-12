@@ -92,6 +92,20 @@ PIKEFUN string(8bit) huffman_encode(string(8bit) str)
   push_string(end_shared_string(res));
 }
 
+static const struct huffentry *find_huffentry(unsigned INT32 huffbuf)
+{
+  const struct huffentry *entry;
+  int low = 0;
+  int high = 256;
+  do {
+    int m = (low + high)>>1;
+    entry = &unpack_tab[m];
+    if (entry->code > huffbuf) high = m;
+    else low = m;
+  } while ((low + 1) != high);
+  return &unpack_tab[low];
+}
+
 /*! @decl string(8bit) huffman_decode(string(8bit) str)
  *!
  *! Decodes the string @[str] encoded with the static huffman code specified
@@ -129,16 +143,7 @@ PIKEFUN string(8bit) huffman_decode(string(8bit) str)
       huffbits = 32;
     extract:
       while(1) {
-	const struct huffentry *entry;
-	int low = 0;
-	int high = 256;
-	do {
-	  int m = (low + high)>>1;
-	  entry = &unpack_tab[m];
-	  if (entry->code > huffbuf) high = m;
-	  else low = m;
-	} while ((low + 1) != high);
-	entry = &unpack_tab[low];
+	const struct huffentry *entry = find_huffentry(huffbuf);
 	if (entry->bits > huffbits) {
 	  /* More bits needed. */
 	  break;
@@ -165,21 +170,13 @@ PIKEFUN string(8bit) huffman_decode(string(8bit) str)
 
   while (huffbits) {
     const struct huffentry *entry;
-    int low = 0;
-    int high = 256;
     huffbuf |= ((unsigned INT32)~0) >> huffbits;
     if (huffbuf == (unsigned INT32)~0) {
       /* EOS */
       huffbits = 0;
       break;
     }
-    do {
-      int m = (low + high)>>1;
-      entry = &unpack_tab[m];
-      if (entry->code > huffbuf) high = m;
-      else low = m;
-    } while ((low + 1) != high);
-    entry = &unpack_tab[low];
+    entry = find_huffentry(huffbuf);
     if (entry->bits > huffbits) {
       /* BAD */
       break;
