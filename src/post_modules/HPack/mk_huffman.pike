@@ -270,9 +270,8 @@ int main(int argc, array(string) argv)
   }
   // Build the result table and validate that there are no duplicates.
   mapping(int:int) seen = ([]);
-  array(array(int)) pack_tab = allocate(256);
+  array(array(int)) pack_tab = allocate(257);
   foreach(huffman_tab; int c; array(int) entry) {
-    if (c == 256) break;
     int code = entry[0] << (32 - entry[1]);
     if ((code > 0xffffffff)) {
       error("Wrong number of bits for entry #%d: 0x%x (%d bits).\n",
@@ -283,8 +282,9 @@ int main(int argc, array(string) argv)
 	    c, seen[code]);
     }
     seen[code] = c;
-    pack_tab[c] = ({ code, c, entry[1] });
+    pack_tab[c] = ({ code, c & 0xff, entry[1] });
   }
+
   Stdio.Buffer out = Stdio.Buffer();
   out->add(#"
 /* Huffman tables.
@@ -302,8 +302,6 @@ struct huffentry {
 /* Huffman table from RFC 7541 appendix B sorted on sym.
  *
  * The huffman code is preshifted to the most significant bits.
- *
- * NB: The EOS code point (30 consecutive 1 bits) is NOT in the table.
  */
 static const struct huffentry pack_tab[] = {\n");
   out->sprintf("%{  { 0x%08x, 0x%02x, %2d, },\n%}", pack_tab);
@@ -315,12 +313,32 @@ static const struct huffentry pack_tab[] = {\n");
 /* Huffman table from RFC 7541 appendix B sorted on code.
  *
  * The huffman code is preshifted to the most significant bits.
- *
- * NB: The EOS code point (30 consecutive 1 bits) is NOT in the table.
  */
 static const struct huffentry unpack_tab[] = {\n");
   out->sprintf("%{  { 0x%08x, 0x%02x, %2d, },\n%}", pack_tab);
   out->add("};\n");
+
+  array(int) pack_index = allocate(256);
+  int i = 0;
+  for (int j = 0; j < 256; j++) {
+    while ((pack_tab[i][0] >> 24) < j)
+      i++;
+    if ((pack_tab[i][0] >> 24) == j) {
+      pack_index[j] = i;
+    } else {
+      pack_index[j] = i-1;
+    }
+  }
+  out->add(#"
+/* Index table into unpack_tab above from the most significant
+ * 8 bits to the first entry that has a code that is ==, or the
+ * last entry that has a code that is <.
+ */
+static const unsigned int unpack_index[] = {\n");
+  out->sprintf("%{  %d,\n%}", pack_index);
+  out->add("  256,\n");
+  out->add("};\n");
+
   if (argc > 1) {
     Stdio.write_file(argv[1], out->read());
   } else {
