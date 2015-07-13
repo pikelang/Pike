@@ -10,13 +10,10 @@ struct _Buffer
   struct svalue output;
   struct pike_string *str;
 
-  struct {
-      unsigned char *ptr;
-      size_t len;
-  } stash;
 
-  INT_TYPE num_malloc, num_move; // debug mainly, for testsuite
+  INT_TYPE num_malloc, num_move; /* debug mainly, for testsuite*/
   INT32 locked, locked_move;
+  float max_waste;
   char malloced, output_triggered;
 };
 
