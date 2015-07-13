@@ -749,6 +749,9 @@ void finish(int clean)
      log_cb(this);
 
    remove_call_out(send_timeout);
+   remove_call_out(connection_timeout);
+
+   send_buf = 0;
 
    if (!clean
        || !my_fd
