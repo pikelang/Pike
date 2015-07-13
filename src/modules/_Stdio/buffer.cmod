@@ -120,9 +120,14 @@ PIKECLASS Buffer
       io_was_locked( );
   }
 
+  static void io_trim( Buffer *io )
+    ATTRIBUTE((noinline));
+
   static INT_TYPE io_consume( Buffer *io, int num )
   {
     io->offset += num;
+    if( UNLIKELY(io->allocated > (io_len(io) * io->max_waste)) )
+        io_trim(io);
     return io_len(io);
   }
 
@@ -143,6 +148,26 @@ PIKECLASS Buffer
     return 0;
   }
 
+  static void io_trim( Buffer *io )
+  {
+      if( io->malloced && (io->offset > 64 || io->len > 64))
+      {
+          if( io->offset > 64 && (!io->locked_move && (io->offset > io_len(io))))
+          {
+              memmove( io->buffer, io_read_pointer(io), io_len(io) );
+              io->len -= io->offset;
+              io->num_move++;
+              io->offset = 0;
+          }
+          if( io->len > 64 && ((io->allocated > (io->len)*(1.0+io->max_waste))))
+          {
+              io->buffer = xrealloc( io->buffer, io->len );
+              io->num_malloc++;
+              io->allocated = io->len;
+          }
+      }
+  }
+
   static void io_unlink_external_storage( Buffer *io )
     ATTRIBUTE((noclone,noinline));
 
@@ -159,73 +184,26 @@ PIKECLASS Buffer
       io->str = 0;
   }
 
-  static int io_unstash_malloc( Buffer *io )
-    ATTRIBUTE((noclone,noinline));
-
-  static int io_unstash_malloc( Buffer *io )
-  {
-    if( LIKELY(!io->stash.ptr) )
-      return 0;
-
-    if( io->stash.len >= io_len( io ) )
-    {
-      if( io_len(io) )
-      {
-          /* do not count this one, since it comes from add and would
-           * have been a copy normally.
-           */
-          memcpy( io->stash.ptr, io_read_pointer( io ), io_len(io) );
-      }
-      io->buffer = io->stash.ptr;
-      io->malloced = 1;
-      io->len = io_len(io);
-      io->offset = 0;
-      io->allocated = io->stash.len;
-      io_unlink_external_storage(io);
-    }
-    else
-      free( io->stash.ptr );
-    io->stash.ptr = 0;
-    io->stash.len = 0;
-    return io->malloced;
-  }
-
-  static void io_stash_malloc( Buffer *io )
-  {
-    if( io->malloced )
-    {
-      io->stash.ptr = io->buffer;
-      io->stash.len = io->allocated;
-      io->malloced = 0;
-      io->buffer = 0;
-      io->offset = 0;
-      io->len = 0;
-    }
-  }
-
   static void io_ensure_malloced( Buffer *io, size_t bytes )
   {
     if( UNLIKELY(!io->malloced) )
     {
       /* convert to malloced buffer from a shared one. */
-      if( !io_unstash_malloc(io) )
-      {
-          unsigned char *old = io->buffer;
+        unsigned char *old = io->buffer;
 
-          bytes += io->len;
+        bytes += io->len;
 
-          if (bytes < io->len || bytes + 100 < bytes)
+        if (bytes < io->len || bytes + 100 < bytes)
             Pike_error(msg_out_of_mem_2, bytes + 100);
 
-          bytes += 100;
+        bytes += 100;
 
-          io->buffer = xalloc( bytes );
-          io->malloced = 1;
-          io->allocated = bytes;
-          io->num_malloc++;
-          memcpy( io->buffer, old, io->len );
-          io_unlink_external_storage(io);
-      }
+        io->buffer = xalloc( bytes );
+        io->malloced = 1;
+        io->allocated = bytes;
+        io->num_malloc++;
+        memcpy( io->buffer, old, io->len );
+        io_unlink_external_storage(io);
     }
   }
 
@@ -249,35 +227,15 @@ PIKECLASS Buffer
      * offset, it makes sense to move now when we do not have to copy
      * as much.
      *
-     * However, if we are not going to add any more data it makes
-     * sense to not move.
-     *
-     * But, since the buffer is intended to be used mainly for
-     * bufering of files, it is very likely we will add more.
-     *
-
-     * In much the same way it might make sense to move the data if
-     * wthe data can be added without reallocation in that way, even if
-     * less than 50% of the buffer is wasted.
-     *
-     * However, that might lead to O(n) performance.
-     *
-     * So, for now this check is disabled:
-
-     if( io->len + bytes < io->allocated )
-        return io->buffer+io->len;
-
-     * And  this one:
-
-       || (io_len(io)+bytes < io->allocated
-           && io->len+bytes >= io->allocated)
-
      */
-
     if( LIKELY(!io->locked_move) )
     {
-      if( UNLIKELY((force && io->offset) || (io->offset > io->len>>1)) )
+      if( UNLIKELY((force && io->offset) || (io->offset > io->len)) )
       {
+        /* more than 50% of the buffer is available before the read pointer,
+         * and we can discard that data. Move the data to the beginning, making
+         * room for more data.
+         */
         memmove( io->buffer, io_read_pointer(io), io_len(io) );
         io->num_move++;
         io->len -= io->offset;
@@ -287,18 +245,23 @@ PIKECLASS Buffer
 
     if( UNLIKELY(io->len + bytes > io->allocated) )
     {
-      size_t new_len;
+      /* Actually grow the buffer. */
+      size_t growth =
+          (io->allocated>>1) +
+          (io->allocated>>3);/* io->allocated * 0.625 */
 
-#if SIZEOF_CHARP == 8
-      new_len = round_up64(io->len+bytes);
-#else
-      new_len = round_up32(io->len+bytes);
-#endif
-      if (!new_len) new_len = io->len + bytes;
+      if( growth < bytes )
+          growth = bytes + (bytes>>1);
 
-      io->buffer = xrealloc( io->buffer, new_len );
+      if( io->allocated + growth < io->allocated )
+      {
+          growth = bytes+1;
+          if( io->allocated + growth < io->allocated )
+              Pike_error("Overflow in buffer size calculations\n");
+      }
+      io->buffer = xrealloc( io->buffer, io->allocated + growth );
       io->num_malloc++;
-      io->allocated = new_len;
+      io->allocated += growth;
     }
     return io->buffer+io->len;
   }
@@ -954,7 +917,6 @@ PIKECLASS Buffer
     if( _once )
         once = _once->u.integer;
 
-
     if( (fd = get_storage( f, file_program )) )
     {
       while( 1 )
@@ -1206,7 +1168,7 @@ PIKECLASS Buffer
 
   PIKEFUN int(0..) _size_object( )
   {
-      RETURN THIS->malloced ? THIS->allocated : THIS->stash.len;
+      RETURN THIS->malloced ? THIS->allocated : 0;
   }
 
   /*! @decl Buffer add_padding( int(0..) nbytes, int(0..255)|void byte )
@@ -1265,9 +1227,6 @@ PIKECLASS Buffer
   {
     int i;
     Buffer *io = THIS;
-
-    if( args == 1 && !io_len( io ) )
-      io_stash_malloc( io );
 
     for(i=0; i<args; i++ )
       io_append_svalue( io, argp+i );
@@ -2072,6 +2031,22 @@ fail: CALL_AND_UNSET_ONERROR(e);
     io->offset = io->len = 0;
   }
 
+  /*! @decl void set_max_waste(float factor)
+   *!
+   *! Configure how much free space should be allowed, at most, as a
+   *! factor of the current buffer size.
+   *!
+   *! The default is 0.5, leaving at most half the buffer as waste.
+   *!
+   */
+  PIKEFUN void set_max_waste(float howmuch)
+  {
+      Buffer *io = THIS;
+      io->max_waste = howmuch;
+      io_add_space( io, 0, 1 );
+      io_consume( io, 0 );
+  }
+
   /*! @decl void trim()
    *!
    *! Frees unused memory.
@@ -2088,12 +2063,7 @@ fail: CALL_AND_UNSET_ONERROR(e);
     Buffer *io = THIS;
 
     io_add_space( io, 0, 1 );
-    if( io->allocated > io->len+32 )
-    {
-      io->buffer = xrealloc( io->buffer, io->len );
-      io->num_malloc++;
-      io->allocated = io->len;
-    }
+    io_trim(io);
   }
 
   /*! @decl int(0..)|int(-1..-1) consume( int(0..) n )
@@ -2526,6 +2496,7 @@ fail: CALL_AND_UNSET_ONERROR(e);
   INIT {
     Buffer *this = THIS;
     memset( this, 0, sizeof(Buffer));
+    this->max_waste = 0.615;
     this->this = Pike_fp->current_object;
   }
 
@@ -2536,7 +2507,6 @@ fail: CALL_AND_UNSET_ONERROR(e);
         free_program( this->error_mode );
     if( this->malloced )
       free( this->buffer );
-    free(this->stash.ptr);
   }
 
 
