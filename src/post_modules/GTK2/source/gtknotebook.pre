@@ -205,11 +205,19 @@ int get_tab_pos();
 //! Gets the edge at which the tabs are located.
 
 require gtk210;
+
 int get_tab_reorderable(GTK2.Widget child);
 //! Gets whether the tab can be reordered via drag and drop or not.
 
 int get_tab_detachable(GTK2.Widget child);
 //! Returns whether the tab contents can be detached.
+
+void set_tab_reorderable(GTK2.Widget child, int how);
+//! Gets whether the tab can be reordered via drag and drop or not.
+
+void set_tab_detachable(GTK2.Widget child, int how);
+//! Returns whether the tab contents can be detached.
+
 endrequire;
 
 mapping(string:int) query_tab_label_packing(GTK2.Widget page)
