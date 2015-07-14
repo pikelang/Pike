@@ -552,7 +552,9 @@ class Type
     switch( name )
     {
       case "uint":
-	return "int"+optp;
+	return "int(0..)"+optp;
+      case "bool":
+	return "int(0..1)"+optp;
       case "array":
 	if( array_type )
 	  return "array("+array_type->doc_type()+")"+optp;
@@ -594,7 +596,9 @@ class Type
     switch( name )
     {
       case "uint":
-	return "int"+optp;
+	return "int(0..)"+optp;
+      case "bool":
+        return "int(0..1)";
       case "array":
 	if( !nc && !c_inited )
 	  catch(c_init());
@@ -796,6 +800,7 @@ class Type
 
      case "int":
      case "uint":
+     case "bool":
        return sprintf( (_push = "  PGTK_PUSH_INT( %s );"), vv );
 
      case "float":
@@ -860,6 +865,11 @@ class Type
        if( name == "uint")
          declare = " guint a%[0]d = 0;\n";
        fetch = "  a%[0]d = (gint)PGTK_GETINT(&Pike_sp[%[0]d-args]);\n";
+       pass =  "a%[0]d";
+       break;
+     case "bool":
+       declare = "  gboolean a%[0]d = 0;\n";
+       fetch = " a%[0]d = !!(gint)PGTK_GETINT(&Pike_sp[%[0]d-args]);\n";
        pass =  "a%[0]d";
        break;
 
@@ -1504,6 +1514,7 @@ Type parse_type( mixed t )
    case "Stdio.File":
    case "Image.Image":
    case "Image.Color.Color":
+   case "bool":
      break;
    default:
      if( ty->name[0..0] != "G" && ty->name[0..0] != "P" && ty->name[0..0] != "A" )
