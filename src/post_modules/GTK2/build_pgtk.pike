@@ -595,6 +595,8 @@ class Type
       optp = "|void";
     switch( name )
     {
+      case "Stdio.Buffer":
+         return "object";
       case "uint":
 	return "int(0..)"+optp;
       case "bool":
@@ -817,7 +819,6 @@ class Type
     }
   }
 
-  
   protected void c_init()
   {
     c_inited = 1;
@@ -1023,7 +1024,7 @@ class Type
         free = "  if( args > %[0]d ) {\n"+ indent(free,2) +" }\n";
     } else if( declare )
       declare = replace( declare, " = 0", "");
-      
+
     if( star )  pass = "*"+pass;
     if( amp )   pass = "&"+pass;
   }
@@ -1042,7 +1043,6 @@ class Type
 	(!free || (pushed && !has_value (get_modifiers(), "free"))) )
       return sprintf( replace( declare, "CONST", "const" ), a );
     return sprintf( replace( declare, "CONST", "" ), a );
-           
   }
 
   string c_free( int a )
