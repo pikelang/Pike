@@ -421,7 +421,10 @@ PIKECLASS Buffer
     if( bytes > 0 )
     {
       ptrdiff_t l = 0;
-      struct pike_string *s = io_read_string( io,bytes );
+      struct pike_string *s;
+
+      io->locked_move++;
+      s = io_read_string( io,bytes );
 
       if( s )
       {
@@ -429,18 +432,23 @@ PIKECLASS Buffer
         push_string( s );
         apply_svalue( fun, 1 );
 	if (UNLIKELY(TYPEOF(Pike_sp[-1]) != PIKE_T_INT)) {
+          io->locked_move--;
 	  Pike_error("Invalid return value from write callback.\n");
 	}
         l = Pike_sp[-1].u.integer;
         pop_stack();
         if( l < 0 )
         {
+          io->locked_move--;
           io_rewind( io, bytes );
           return -1;
         }
         if( bytes > l )
+        {
           io_rewind( io, bytes-l );
+        }
       }
+      io->locked_move--;
       return l;
     }
     return -1;
