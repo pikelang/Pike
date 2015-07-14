@@ -1,6 +1,5 @@
 #!/usr/bin/env pike
 
-
 string destination_dir = "";
 
 /* Start of relevant parts of program_id.h */
@@ -231,7 +230,6 @@ class Function(Class parent,
      case "_index": names += ({ "`[]", "`->" }); break;
     }
 
-
     foreach( names, string n ) low_do_emit( n );
     return res;
   }
@@ -241,7 +239,6 @@ class Function(Class parent,
     if( c->c_name() == "" )
       return "pgtk";
     return "p"+c->c_name();
-    
   }
 
   string c_name( )
@@ -485,7 +482,7 @@ class Member( string name, Type type, int set,
     return fmt=='O' && sprintf("Member( %O /* %O */ )",name,type );
   }
 }
-  
+
 class Property( string name, Type type, int set,
 		string file, int line, Class parent )
 {
@@ -510,7 +507,7 @@ class Property( string name, Type type, int set,
 	  break;
 	default:
 	  break;
-      }     
+      }
       ret+=type->c_pass_to_function(0)+",NULL);\n  RETURN_THIS();\n}\n";
       return ret;
     } else {
@@ -536,10 +533,10 @@ class Type
 
   // Pushed variables aren't freed unless there's a "free" modifier.
   int pushed;
-  
+
   string name;
   string modifiers;
-  
+
   array _s_modifiers;
 
   string doc_type( )
@@ -613,7 +610,7 @@ class Type
       case "mixed":
       case "mixed...":
       case "mapping":
-      case "float": 
+      case "float":
       case "object":
 	return name+optp;
       case "sprintf_format":
@@ -729,7 +726,7 @@ class Type
       _s_modifiers[i] = Array.flatten(_s_modifiers[i])->text*"";
     return _s_modifiers;
   }
-  
+
   protected string declare, fetch, pass, free, _push;
   protected int consumed = 1;
   protected int c_inited, c_declared;
@@ -747,7 +744,7 @@ class Type
        if( !array_size )
          throw(sprintf("Cannot push array of unknown size (%O)",
                        this_object()));
-       if( !array_type )   throw("Cannot push array(mixed)"); 
+       if( !array_type )   throw("Cannot push array(mixed)");
        return
          "  {\n"
          "    int i;\n"
@@ -1097,7 +1094,7 @@ class Class( string name, string file, int line )
 
 
   int _class_id;
-  
+
   int class_id()
   {
     if( _class_id ) return _class_id;
@@ -1111,7 +1108,7 @@ class Class( string name, string file, int line )
 //     return "object("+(is?"is ":"implements ")+class_id()+")";
     return "object(implements "+class_id()+")";
   }
-  
+
   string doc_name()
   {
     return name;
@@ -1146,7 +1143,7 @@ class Class( string name, string file, int line )
                            "Not normally called directly, used by sprintf()",
                            file, line ) );
   }
-  
+
   void create_init_exit( )
   {
     if( !sizeof(inherits) && name != "_global" )
@@ -1332,14 +1329,12 @@ class Class( string name, string file, int line )
     if( star)  x = "*("+x+")";
     return push( x );
   }
-  
 
   protected string _sprintf(int fmt)
   {
     return fmt=='O' && sprintf("Class( %O /* %d funcs. */ )",name,
 			       sizeof(functions)+sizeof(members)+
 			       sizeof(properties));
-	
   }
 
   class Ref( string file, int line, Class c ) {  }
@@ -1357,13 +1352,13 @@ class Class( string name, string file, int line )
     signals[ s->name ] = s;
     return this_object();
   }
-  
+
   Class add_member( Member m )
   {
     members[ m->name ] = m;
     return this_object();
   }
-  
+
   Class add_property( Property p )
   {
     properties[ p->name ] = p;
@@ -1746,7 +1741,7 @@ string parse_pre_file( string file )
          GOBBLE();
          SEMICOLON("DISABLED");
          break;
-         
+
        case "add_global":
          tk = GOBBLE();
          if( !arrayp(tk) || tk[0] != "{" || tk[-1] != "}" )
@@ -1754,7 +1749,7 @@ string parse_pre_file( string file )
          SEMICOLON("add_global");
          global_pre += tk[1..sizeof(tk)-2];
          break;
-         
+
        case "inherit":
          NEED_CLASS("inherit");
          tk = GOBBLE();
