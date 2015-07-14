@@ -134,16 +134,10 @@ PIKEFUN string(8bit) huffman_decode(string(8bit) str)
 
   for (i = 0; i < str->len; i++, inbytes++) {
     unsigned int c = *inbytes;
-    unsigned INT32 lostbits = 0;
     huffbits += 8;
-    if (LIKELY(huffbits < 32)) {
-      huffbuf |= c << (32 - huffbits);
-      if (huffbits >= 30) goto extract;
-    } else {
-      lostbits = huffbits - 32;
-      huffbuf |= c >> lostbits;
-      huffbits = 32;
-    extract:
+    huffbuf |= c << (32 - huffbits);
+    if (huffbits > 24) {
+      /* Try to extract some characters. */
       while(1) {
 	const struct huffentry *entry = find_huffentry(huffbuf);
 	if (entry->bits > huffbits) {
@@ -154,19 +148,23 @@ PIKEFUN string(8bit) huffman_decode(string(8bit) str)
 	string_builder_putchar(&out, entry->sym);
 	huffbuf <<= entry->bits;
 	huffbits -= entry->bits;
-	if (lostbits) {
-	  /* Restore the lost bits. */
-	  huffbits += lostbits;
-	  if (huffbits < 32) {
-	    huffbuf |= c << (32 - huffbits);
-	    lostbits = 0;
-	  } else {
-	    lostbits = huffbits - 32;
-	    huffbits = 32;
-	    huffbuf |= c >> lostbits;
-	  }
-	}
 	if (huffbits < 5) break;
+      }
+
+      if (UNLIKELY(huffbits > 24) && LIKELY(i+1 < str->len)) {
+	/* We need to read more bits than will fit in huffbuf. */
+	const struct huffentry *entry;
+	unsigned INT32 lostbits = huffbits - 24;
+	inbytes++;
+	i++;
+	c = *inbytes;
+	huffbuf |= c >> lostbits;
+	huffbits = 32;
+	entry = find_huffentry(huffbuf);
+	ASSERT(entry->code == (huffbuf & ~((1<<(32 - entry->bits))-1)));
+	string_builder_putchar(&out, entry->sym);
+	huffbits -= entry->bits - lostbits;
+	huffbuf = c << (32 - huffbits);
       }
     }
   }
