@@ -1,0 +1,81 @@
+class GDK2.PixbufLoader;
+inherit G.Object;
+
+signal area_prepared;
+signal area_updated;
+signal closed;
+signal size_prepared;
+
+
+%{
+#include <gdk-pixbuf/gdk-pixbuf.h>
+%}
+
+void create();
+
+/*
+  Note: not a gobject
++GDK2.PixbufFormat get_format();
+*/
+
+void set_size(int width, int height);
+//! Causes the image to be scaled while it is loaded. Attempts to set
+//! the desired image size are ignored after the emission of the
+//! size-prepared signal. (once loading start)
+
+bool write(string|Stdio.Buffer data)
+//! This will cause a pixbuf loader to parse the more data for
+//! an image. It will return TRUE if the data was loaded successfully,
+//! and FALSE if an error occurred. In the latter case, the loader
+//! will be closed, and will not accept further writes.
+{
+  guchar *data;
+  gsize count;
+
+ if( TYPEOF(Pike_sp[-1]) == PIKE_T_STRING )
+ {
+   data = Pike_sp[-1].u.string->str;
+   count = Pike_sp[-1].u.string->len;
+  }
+  else if( TYPEOF(Pike_sp[-1]) == PIKE_T_OBJECT )
+  {
+    int shft;
+    if(!get_memory_object_memory( Pike_sp[-1].u.object,(void**)&data,&count,&shft ))
+      Pike_error("Not a memory buffer object\n");
+  }
+  else
+  {
+      Pike_error("Illegal argument\n");
+  }
+ push_int( !!gdk_pixbuf_loader_write( GDK_PIXBUF_LOADER(THIS->obj), data, count,
+                                      NULL) );
+}
+
+?GDK2.Pixbuf get_pixbuf();
+//! Queries the GdkPixbuf that a pixbuf loader is currently
+//! creating. In general it only makes sense to call this function
+//! after the "area-prepared" signal has been emitted by the loader;
+//! this means that enough data has been read to know the size of the
+//! image that will be allocated.
+//!
+//! If the loader has not received
+//! enough data via @[write](), then this function
+//! returns NULL. The returned pixbuf will be the same in all future
+//! calls to the loader, so you can just keep it around. Additionally,
+//! if the loader is an animation, it will return the "static image"
+//! of the animation (see @[GDK2.PixbufAnimation.get_static_image]).
+
+?GDK2.PixbufAnimation get_animation();
+//! Queries the GDK2.PixbufAnimation that a pixbuf loader is currently
+//! creating. In general it only makes sense to call this function
+//! after the "area-prepared" signal has been emitted by the
+//! loader. If the loader doesn't have enough bytes yet (hasn't
+//! emitted the "area-prepared" signal) this function will return
+//! NULL.
+
+bool close(null);
+//! informs a pixbuf loader that no further writes with write() will
+//! occur, so that it can free its internal loading structures. Also,
+//! tries to parse any data that hasn't yet been parsed; if the
+//! remaining data is partial or corrupt, FALSE will be returned.
+
