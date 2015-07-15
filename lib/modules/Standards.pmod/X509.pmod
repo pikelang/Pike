@@ -391,6 +391,15 @@ class TBSCertificate
     return low_get_sequence(1);
   }
 
+  //! Algorithm hash if known and supported.
+  //! Otherwise @[UNDEFINED].
+  Crypto.Hash `hash()
+  {
+    Sequence a = low_get_sequence(1);
+    if (sizeof(a) < 1) return UNDEFINED;
+    return algorithms[a[0]];
+  }
+
   //! Certificate issuer.
   void `issuer=(Sequence i)
   {
