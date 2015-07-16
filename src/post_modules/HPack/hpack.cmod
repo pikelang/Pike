@@ -105,6 +105,10 @@ static const struct huffentry *find_huffentry(unsigned INT32 huffbuf)
     if (entry->code > huffbuf) high = m;
     else low = m;
   }
+  if (UNLIKELY(low == 255) && UNLIKELY(huffbuf & 4)) {
+    /* Invalid encoding. EOS in stream. */
+    return NULL;
+  }
   return &unpack_tab[low];
 }
 
@@ -140,7 +144,7 @@ PIKEFUN string(8bit) huffman_decode(string(8bit) str)
       /* Try to extract some characters. */
       while(1) {
 	const struct huffentry *entry = find_huffentry(huffbuf);
-	if (entry->bits > huffbits) {
+	if (UNLIKELY(!entry) || (entry->bits > huffbits)) {
 	  /* More bits needed. */
 	  break;
 	}
@@ -161,6 +165,7 @@ PIKEFUN string(8bit) huffman_decode(string(8bit) str)
 	huffbuf |= c >> lostbits;
 	huffbits = 32;
 	entry = find_huffentry(huffbuf);
+	if (UNLIKELY(!entry)) break;
 	ASSERT(entry->code == (huffbuf & ~((1<<(32 - entry->bits))-1)));
 	string_builder_putchar(&out, entry->sym);
 	huffbits -= entry->bits - lostbits;
@@ -179,7 +184,7 @@ PIKEFUN string(8bit) huffman_decode(string(8bit) str)
     }
     if (huffbits < 5) break;
     entry = find_huffentry(huffbuf);
-    if (entry->bits > huffbits) {
+    if (UNLIKELY(!entry) || (entry->bits > huffbits)) {
       /* BAD */
       break;
     }
