@@ -92,8 +92,8 @@ class Context
 
   int dynamic_max_size = DEFAULT_HEADER_TABLE_SIZE;
 
-  mapping(string(8bit):int|mapping(string(8bit):int)) header_index =
-    static_header_index + ([]);
+  // mapping(string(8bit):int|mapping(string(8bit):int)) header_index =
+  //  static_header_index + ([]);
 
   void evict_dynamic_headers()
   {
