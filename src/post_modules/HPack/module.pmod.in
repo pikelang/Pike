@@ -1,0 +1,230 @@
+#require constant(@module@)
+
+inherit @module@;
+
+//! Table of static headers. RFC 7541 Appendix A, Table 1.
+//!
+//! @array
+//!   @item 0..60
+//!     @array
+//!       @item 0 string(8bit)
+//!         Header name.
+//!       @item 1 string(8bit)
+//!         Default value.
+//!     @endarray
+//! @endarray
+//!
+//! @note
+//!   Note that this table is indexed starting on @expr{0@} (zero),
+//!   while the corresponding table in RFC 7541 starts on @expr{1@} (one).
+constant static_header_tab = ({
+  ({ ":authority", "", }),
+  ({ ":method", "GET", }),
+  ({ ":method", "POST", }),
+  ({ ":path", "/", }),
+  ({ ":path", "/index.html", }),
+  ({ ":scheme", "http", }),
+  ({ ":scheme", "https", }),
+  ({ ":status", "200", }),
+  ({ ":status", "204", }),
+  ({ ":status", "206", }),
+  ({ ":status", "304", }),
+  ({ ":status", "400", }),
+  ({ ":status", "404", }),
+  ({ ":status", "500", }),
+  ({ "accept-charset", "", }),
+  ({ "accept-encoding", "gzip, deflate", }),
+  ({ "accept-language", "", }),
+  ({ "accept-ranges", "", }),
+  ({ "accept", "", }),
+  ({ "access-control-allow-origin", "", }),
+  ({ "age", "", }),
+  ({ "allow", "", }),
+  ({ "authorization", "", }),
+  ({ "cache-control", "", }),
+  ({ "content-disposition", "", }),
+  ({ "content-encoding", "", }),
+  ({ "content-language", "", }),
+  ({ "content-length", "", }),
+  ({ "content-location", "", }),
+  ({ "content-range", "", }),
+  ({ "content-type", "", }),
+  ({ "cookie", "", }),
+  ({ "date", "", }),
+  ({ "etag", "", }),
+  ({ "expect", "", }),
+  ({ "expires", "", }),
+  ({ "from", "", }),
+  ({ "host", "", }),
+  ({ "if-match", "", }),
+  ({ "if-modified-since", "", }),
+  ({ "if-none-match", "", }),
+  ({ "if-range", "", }),
+  ({ "if-unmodified-since", "", }),
+  ({ "last-modified", "", }),
+  ({ "link", "", }),
+  ({ "location", "", }),
+  ({ "max-forwards", "", }),
+  ({ "proxy-authenticate", "", }),
+  ({ "proxy-authorization", "", }),
+  ({ "range", "", }),
+  ({ "referer", "", }),
+  ({ "refresh", "", }),
+  ({ "retry-after", "", }),
+  ({ "server", "", }),
+  ({ "set-cookie", "", }),
+  ({ "strict-transport-security", "", }),
+  ({ "transfer-encoding", "", }),
+  ({ "user-agent", "", }),
+  ({ "vary", "", }),
+  ({ "via", "", }),
+  ({ "www-authenticate", "", }),
+});
+
+// Constant from RFC 7540 6.5.2.
+constant DEFAULT_HEADER_TABLE_SIZE = 4096;
+
+class Context
+{
+  array(array(string(8bit))) dynamic_headers = ({});
+  int dynamic_prefix;
+  int dynamic_size;
+
+  int dynamic_max_size = DEFAULT_HEADER_TABLE_SIZE;
+
+  mapping(string(8bit):int|mapping(string(8bit):int)) header_index =
+    static_header_index + ([]);
+
+  void evict_dynamic_headers()
+  {
+    while (dynamic_size > dynamic_max_size) {
+      int i = dynamic_prefix++;
+      array(string(8bit)) entry = dynamic_headers[i];
+      int sz = sizeof(entry[0]) + sizeof(entry[1]) + 32;
+      dynamic_size -= sz;
+      dynamic_headers[i] = UNDEFINED;
+    }
+  }
+
+  void add_header(string(8bit) header, string(8bit) value)
+  {
+    int sz = sizeof(header) + sizeof(value) + 32;
+    dynamic_size += sz;
+    dynamic_headers += ({ ({ header, value }) });
+    if (dynamic_size > dynamic_max_size) {
+      evict_dynamic_headers();
+      if (!dynamic_size) return;
+    }
+  }
+
+  array(string(8bit)) get_indexed_header(int index)
+  {
+    if (index <= sizeof(static_header_tab)) {
+      return static_header_tab[index - 1];
+    }
+    index = sizeof(dynamic_headers) + sizeof(static_header_tab) - index;
+    return dynamic_headers[index];
+  }
+
+  protected int get_long_int(Stdio.Buffer buf)
+  {
+    int shift;
+    int res;
+    int c;
+    do {
+      c = buf->read_int(1);
+      res |= (c & 0x7f)<<shift;
+      shift += 7;
+    } while(c & 0x80);
+    return res;
+  }
+
+  protected string(8bit) get_string(Stdio.Buffer buf)
+  {
+    // 5.2 String Literal Representation.
+
+    int c = buf->read_int(1);
+    int len = c & 0x7f;
+    if (len == 0x7f) {
+      len += get_long_int(buf);
+    }
+    string s = buf->read(len);
+    if (c & 0x80) {
+      // Huffman encoded.
+      return huffman_decode(s);
+    }
+    return s;
+  }
+
+  array(array(string(8bit))) decode(Stdio.Buffer buf)
+  {
+    array(array(string(8bit))) res = ({});
+    while (sizeof(buf)) {
+      int c = buf->read_int(1);
+      if (c & 0x80) {
+	// 6.1 Indexed Header Field Representation.
+	c &= 0x7f;
+	if (!c) {
+	  error("Invalid header: 0x80.\n");
+	}
+	if (c == 0x7f) {
+	  c += get_long_int(buf);
+	}
+	res += ({ get_indexed_header(c) });
+      } else if (c & 0x40) {
+	// 6.2.1 Literal Header Field with Incremental Indexing.
+	string(8bit) header;
+
+	c &= 0x3f;
+	if (!c) {
+	  // New name.
+	  header = get_string(buf);
+	} else {
+	  // Indexed.
+	  if (c == 0x3f) {
+	    c += get_long_int(buf);
+	  }
+	  header = get_indexed_header(c)[0];
+	}
+	
+	string(8bit) value = get_string(buf);
+	add_header(header, value);
+	res += ({ ({ header, value }) });
+      } else if (!(c & 0xe0)) {
+	// 6.2.2 Literal Header Field without Indexing.
+	// 6.2.3 Literal Header Field Never Indexed.
+	// NB: We ignore the difference for now.
+	string(8bit) header;
+	c &= 0x0f;
+	if (!c) {
+	  // New name.
+	  header = get_string(buf);
+	} else {
+	  // Indexed name.
+	  if (c == 0x0f) {
+	    c += get_long_int(buf);
+	  }
+	  header = get_indexed_header(c)[0];
+	}
+
+	string(8bit) value = get_string(buf);
+	res += ({ ({ header, value }) });
+      } else if (c & 0x20) {
+	// 6.3 Dynamic Table Size Update.
+	c &= 0x1f;
+	if (c == 0x1f) {
+	  c += get_long_int(buf);
+	}
+	// FIXME: MUST be less than the protocol specified limit.
+	dynamic_max_size = c;
+	if (dynamic_max_size < dynamic_size) {
+	  evict_dynamic_headers();
+	}
+      } else {
+	// NOT_REACHED
+	error("Invalid encoding.\n");
+      }
+    }
+    return res;
+  }
+}
