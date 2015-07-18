@@ -81,6 +81,36 @@ constant static_header_tab = ({
   ({ "www-authenticate", "", }),
 });
 
+protected void update_index(mapping(string(8bit):int|mapping(string(8bit):int)) index,
+			    int i, array(string(8bit)) val)
+{
+  if (!index[val[0]]) {
+    if (val[1] == "") {
+      index[val[0]] = i;
+    } else {
+      index[val[0]] = ([ val[1]:i ]);
+    }
+  } else {
+    if (intp(index[val[0]])) {
+      index[val[0]] = ([ "":index[val[0]] ]);
+    }
+    index[val[0]][val[1]] = i;
+  }
+}
+
+protected mapping(string(8bit):int|mapping(string(8bit):int)) create_index(array(array(string(8bit))) tab)
+{
+  mapping(string(8bit):int|mapping(string(8bit):int)) res = ([]);
+  foreach(tab; int i; array(string(8bit)) val) {
+    update_index(res, i+1, val);
+  }
+  return res;
+}
+
+// Note that the index here is offset by one!
+protected mapping(string(8bit):int|mapping(string(8bit):int))
+  static_header_index = create_index(static_header_tab);
+
 // Constant from RFC 7540 6.5.2.
 constant DEFAULT_HEADER_TABLE_SIZE = 4096;
 
@@ -92,8 +122,11 @@ class Context
 
   int dynamic_max_size = DEFAULT_HEADER_TABLE_SIZE;
 
-  // mapping(string(8bit):int|mapping(string(8bit):int)) header_index =
-  //  static_header_index + ([]);
+  // Positive indices offsetted by one for static_header_tab.
+  // Negative indices offsetted by sizeof(dynamic_headers) for
+  // dynamic_headers.
+  mapping(string(8bit):int|mapping(string(8bit):int)) header_index =
+    static_header_index + ([]);
 
   void evict_dynamic_headers()
   {
@@ -103,6 +136,14 @@ class Context
       int sz = sizeof(entry[0]) + sizeof(entry[1]) + 32;
       dynamic_size -= sz;
       dynamic_headers[i] = UNDEFINED;
+      mapping|int m;
+      if (mappingp(m = header_index[entry[0]])) {
+	m_delete(m, entry[1]);
+	if (sizeof(m)) {
+	  continue;
+	}
+      }
+      m_delete(header_index, entry[0]);
     }
   }
 
@@ -111,6 +152,7 @@ class Context
     int sz = sizeof(header) + sizeof(value) + 32;
     dynamic_size += sz;
     dynamic_headers += ({ ({ header, value }) });
+    update_index(header_index, -sizeof(dynamic_headers), dynamic_headers[0]);
     if (dynamic_size > dynamic_max_size) {
       evict_dynamic_headers();
       if (!dynamic_size) return;
@@ -226,5 +268,83 @@ class Context
       }
     }
     return res;
+  }
+
+  protected void put_int(Stdio.Buffer buf, int(0..255) bits, int(0..255) mask,
+			 int value)
+  {
+    if (value < mask) {
+      buf->add_int(bits | value, 1);
+      return;
+    }
+    buf->add_int(bits | mask, 1);
+    value -= mask;
+    while (value >= 0x80) {
+      buf->add_int(value | 0x80, 1);
+      value >>= 7;
+    }
+    buf->add_int(value, 1);
+  }
+
+  protected void put_string(Stdio.Buffer buf, string(8bit) str)
+  {
+    int flag = 0;
+    string(8bit) hstr = huffman_encode(str);
+    if (sizeof(hstr) < sizeof(str)) {
+      str = hstr;
+      flag = 0x80;
+    }
+    put_int(buf, flag, 0x7f, sizeof(hstr));
+    buf->add(str);
+  }
+
+  void encode(array(array(string(8bit))) headers, Stdio.Buffer buf)
+  {
+    foreach(headers, array(string(8bit)) header) {
+      int|mapping(string(8bit):int) entry =
+	header_index[header[0]];
+      if (entry) {
+	if (intp(entry)) {
+	  if (header[1] == "") {
+	    // 6.1 Indexed header.
+	    if (entry < 0) {
+	      entry += sizeof(static_header_tab) + sizeof(dynamic_headers) + 1;
+	    }
+	    put_int(buf, 0x80, 0x7f, entry);
+	    continue;
+	  }
+	} else if (entry[header[1]]) {
+	  entry = entry[header[1]];
+	  // 6.1 Indexed header.
+	  if (entry < 0) {
+	    entry += sizeof(static_header_tab) + sizeof(dynamic_headers) + 1;
+	  }
+	  put_int(buf, 0x80, 0x7f, entry);
+	  continue;
+	} else if (entry[""]) {
+	  entry = entry[""];
+	} else {
+	  entry = entry[sort(indices(entry))[0]];
+	}
+	// 6.2.1 Literal Header Field with Incremental Indexing.
+	if (entry < 0) {
+	  entry += sizeof(static_header_tab) + sizeof(dynamic_headers) + 1;
+	}
+	put_int(buf, 0x40, 0x3f, entry);
+      } else {
+	// 6.2.1 Literal Header Field with Incremental Indexing.
+	put_int(buf, 0x40, 0x3f, 0);
+	put_string(buf, header[0]);
+      }
+      put_string(buf, header[1]);
+      add_header(header[0], header[1]);
+    }
+  }
+
+  variant string(8bit) encode(array(array(string(8bit))) headers)
+  {
+    Stdio.Buffer buf = Stdio.Buffer();
+    encode(headers, buf);
+    return buf->read();
   }
 }
