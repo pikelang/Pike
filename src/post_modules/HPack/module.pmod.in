@@ -198,74 +198,118 @@ class Context
     return s;
   }
 
+  //! Decode a single HPack header.
+  //!
+  //! @param buf
+  //!   Input buffer.
+  //!
+  //! @returns
+  //!   Returns @[UNDEFINED] on empty buffer.
+  //!   Returns an array with a header and value otherwise:
+  //!   @array
+  //!     @item string(8bit) 0
+  //!       Name of the header. Under normal circumstances this is
+  //!       always lower-case, but no check is currently performed.
+  //!     @item string(8bit) 1
+  //!       Value of the header.
+  //!   @endarray
+  //!
+  //! @throws
+  //!   Throws on encoding errors.
+  //!
+  //! @note
+  //!   The returned array MUST NOT be modified.
+  //!
+  //! @note
+  //!   In future implementations the result array may get extended
+  //!   with a flag field.
+  //!
+  //! @note
+  //!   The in-band signalling of encoding table sizes is handled
+  //!   internally.
+  array(string(8bit)) decode_header(Stdio.Buffer buf)
+  {
+    if (!sizeof(buf)) return UNDEFINED;
+
+    int c = buf->read_int(1);
+    if (c & 0x80) {
+      // 6.1 Indexed Header Field Representation.
+      c &= 0x7f;
+      if (!c) {
+	error("Invalid header: 0x80.\n");
+      }
+      if (c == 0x7f) {
+	c += get_long_int(buf);
+      }
+      return get_indexed_header(c);
+    } else if (c & 0x40) {
+      // 6.2.1 Literal Header Field with Incremental Indexing.
+      string(8bit) header;
+
+      c &= 0x3f;
+      if (!c) {
+	// New name.
+	header = get_string(buf);
+      } else {
+	// Indexed.
+	if (c == 0x3f) {
+	  c += get_long_int(buf);
+	}
+	header = get_indexed_header(c)[0];
+      }
+
+      string(8bit) value = get_string(buf);
+      add_header(header, value);
+      return ({ header, value });
+    } else if (!(c & 0xe0)) {
+      // 6.2.2 Literal Header Field without Indexing.
+      // 6.2.3 Literal Header Field Never Indexed.
+      // NB: We ignore the difference for now.
+      string(8bit) header;
+      c &= 0x0f;
+      if (!c) {
+	// New name.
+	header = get_string(buf);
+      } else {
+	// Indexed name.
+	if (c == 0x0f) {
+	  c += get_long_int(buf);
+	}
+	header = get_indexed_header(c)[0];
+      }
+
+      string(8bit) value = get_string(buf);
+      return ({ header, value });
+    } else if (c & 0x20) {
+      // 6.3 Dynamic Table Size Update.
+      c &= 0x1f;
+      if (c == 0x1f) {
+	c += get_long_int(buf);
+      }
+      // FIXME: MUST be less than the protocol specified limit.
+      dynamic_max_size = c;
+      if (dynamic_max_size < dynamic_size) {
+	evict_dynamic_headers();
+      }
+      return decode_header(buf);
+    } else {
+      // NOT_REACHED
+      error("Invalid encoding.\n");
+    }
+  }
+
+  //! Decode a HPack header block.
+  //!
+  //! @param buf
+  //!   Input buffer.
+  //!
+  //! @returns
+  //!   Returns an array of headers. Cf @[decode_header()].
   array(array(string(8bit))) decode(Stdio.Buffer buf)
   {
     array(array(string(8bit))) res = ({});
     while (sizeof(buf)) {
-      int c = buf->read_int(1);
-      if (c & 0x80) {
-	// 6.1 Indexed Header Field Representation.
-	c &= 0x7f;
-	if (!c) {
-	  error("Invalid header: 0x80.\n");
-	}
-	if (c == 0x7f) {
-	  c += get_long_int(buf);
-	}
-	res += ({ get_indexed_header(c) });
-      } else if (c & 0x40) {
-	// 6.2.1 Literal Header Field with Incremental Indexing.
-	string(8bit) header;
-
-	c &= 0x3f;
-	if (!c) {
-	  // New name.
-	  header = get_string(buf);
-	} else {
-	  // Indexed.
-	  if (c == 0x3f) {
-	    c += get_long_int(buf);
-	  }
-	  header = get_indexed_header(c)[0];
-	}
-	
-	string(8bit) value = get_string(buf);
-	add_header(header, value);
-	res += ({ ({ header, value }) });
-      } else if (!(c & 0xe0)) {
-	// 6.2.2 Literal Header Field without Indexing.
-	// 6.2.3 Literal Header Field Never Indexed.
-	// NB: We ignore the difference for now.
-	string(8bit) header;
-	c &= 0x0f;
-	if (!c) {
-	  // New name.
-	  header = get_string(buf);
-	} else {
-	  // Indexed name.
-	  if (c == 0x0f) {
-	    c += get_long_int(buf);
-	  }
-	  header = get_indexed_header(c)[0];
-	}
-
-	string(8bit) value = get_string(buf);
-	res += ({ ({ header, value }) });
-      } else if (c & 0x20) {
-	// 6.3 Dynamic Table Size Update.
-	c &= 0x1f;
-	if (c == 0x1f) {
-	  c += get_long_int(buf);
-	}
-	// FIXME: MUST be less than the protocol specified limit.
-	dynamic_max_size = c;
-	if (dynamic_max_size < dynamic_size) {
-	  evict_dynamic_headers();
-	}
-      } else {
-	// NOT_REACHED
-	error("Invalid encoding.\n");
-      }
+      res += ({ decode_header(buf) });
     }
     return res;
   }
