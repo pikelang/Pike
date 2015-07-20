@@ -342,46 +342,74 @@ class Context
     buf->add(str);
   }
 
-  void encode(array(array(string(8bit))) headers, Stdio.Buffer buf)
+  //! Encode a single HPack header.
+  //!
+  //! @param buf
+  //!   Output buffer.
+  //!
+  //! @param header
+  //!   Name of header. This should under normal circumstances be a lower-case
+  //!   string, but this is currently not checked.
+  //!
+  //! @param value
+  //!  Header value.
+  //!
+  //! @seealso
+  //!   @[encode()], @[decode_header()]
+  void encode_header(Stdio.Buffer buf, string(8bit) header, string(8bit) value)
   {
-    foreach(headers, array(string(8bit)) header) {
-      int|mapping(string(8bit):int) entry =
-	header_index[header[0]];
-      if (entry) {
-	if (intp(entry)) {
-	  if (header[1] == "") {
-	    // 6.1 Indexed header.
-	    if (entry < 0) {
-	      entry += sizeof(static_header_tab) + sizeof(dynamic_headers) + 1;
-	    }
-	    put_int(buf, 0x80, 0x7f, entry);
-	    continue;
-	  }
-	} else if (entry[header[1]]) {
-	  entry = entry[header[1]];
+    int|mapping(string(8bit):int) entry = header_index[header];
+    if (entry) {
+      if (intp(entry)) {
+	if (value == "") {
 	  // 6.1 Indexed header.
 	  if (entry < 0) {
 	    entry += sizeof(static_header_tab) + sizeof(dynamic_headers) + 1;
 	  }
 	  put_int(buf, 0x80, 0x7f, entry);
-	  continue;
-	} else if (entry[""]) {
-	  entry = entry[""];
-	} else {
-	  entry = entry[sort(indices(entry))[0]];
+	  return;
 	}
-	// 6.2.1 Literal Header Field with Incremental Indexing.
+      } else if (entry[value]) {
+	entry = entry[value];
+	// 6.1 Indexed header.
 	if (entry < 0) {
 	  entry += sizeof(static_header_tab) + sizeof(dynamic_headers) + 1;
 	}
-	put_int(buf, 0x40, 0x3f, entry);
+	put_int(buf, 0x80, 0x7f, entry);
+	return;
+      } else if (entry[""]) {
+	entry = entry[""];
       } else {
-	// 6.2.1 Literal Header Field with Incremental Indexing.
-	put_int(buf, 0x40, 0x3f, 0);
-	put_string(buf, header[0]);
+	entry = entry[sort(indices(entry))[0]];
       }
-      put_string(buf, header[1]);
-      add_header(header[0], header[1]);
+      // 6.2.1 Literal Header Field with Incremental Indexing.
+      if (entry < 0) {
+	entry += sizeof(static_header_tab) + sizeof(dynamic_headers) + 1;
+      }
+      put_int(buf, 0x40, 0x3f, entry);
+    } else {
+      // 6.2.1 Literal Header Field with Incremental Indexing.
+      put_int(buf, 0x40, 0x3f, 0);
+      put_string(buf, header);
+    }
+    put_string(buf, value);
+    add_header(header, value);
+  }
+
+  //! Encode a full set of headers.
+  //!
+  //! @param headers
+  //!   An array of @tt{({ header, value })@}-tuples.
+  //!
+  //! @param buf
+  //!   Output buffer.
+  //!
+  //! @seealso
+  //!   @[encode_header()], @[decode()]
+  void encode(array(array(string(8bit))) headers, Stdio.Buffer buf)
+  {
+    foreach(headers, array(string(8bit)) header) {
+      encode_header(buf, header[0], header[1]);
     }
   }
 
