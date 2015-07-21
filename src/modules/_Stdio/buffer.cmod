@@ -254,6 +254,7 @@ PIKECLASS Buffer
     if( UNLIKELY(io->len + bytes > io->allocated) )
     {
       /* Actually grow the buffer. */
+      void *new_ptr;
       size_t growth =
           (io->allocated>>1) +
           (io->allocated>>3);/* io->allocated * 0.625 */
@@ -267,7 +268,7 @@ PIKECLASS Buffer
           if( io->allocated + growth < io->allocated )
               Pike_error("Overflow in buffer size calculations\n");
       }
-      void *new_ptr = xrealloc( io->buffer, io->allocated + growth );
+      new_ptr = xrealloc( io->buffer, io->allocated + growth );
       if( !new_ptr )
         Pike_error(msg_out_of_mem_2, io->allocated+growth );
       io->buffer = new_ptr;
