@@ -3739,7 +3739,7 @@ expr4: string
     else
     {
       fix_type_field( $1 );
-      if( $1->type )
+      if( $1 && $1->type )
       {
         $1->type->refs++;
 
