@@ -128,7 +128,7 @@ class Context
   mapping(string(8bit):int|mapping(string(8bit):int)) header_index =
     static_header_index + ([]);
 
-  void evict_dynamic_headers()
+  protected void evict_dynamic_headers()
   {
     while (dynamic_size > dynamic_max_size) {
       int i = dynamic_prefix++;
@@ -145,9 +145,29 @@ class Context
       }
       m_delete(header_index, entry[0]);
     }
+    // FIXME: Truncate dynamic_headers when dynamic_prefix grows large.
   }
 
-  void add_header(string(8bit) header, string(8bit) value)
+  //! Add a header to the table of known headers and to the header index.
+  //!
+  //! @param header
+  //!   Name of header to add.
+  //!
+  //! @param value
+  //!   Value of the header.
+  //!
+  //! @returns
+  //!   Returns @expr{0@} (zero) if the header was too large to store.
+  //!   Returns the encoding key for the header on success (this is always
+  //!   @expr{sizeof(static_header_tab + 1@} (ie @expr{62@}), as new headers
+  //!   are prepended to the dynamic header table.
+  //!
+  //! @note
+  //!   Adding a header may cause old headers to be evicted from the table.
+  //!
+  //! @seealso
+  //!   @[get_indexed_header()]
+  int(0..0)|int(62..62) add_header(string(8bit) header, string(8bit) value)
   {
     int sz = sizeof(header) + sizeof(value) + 32;
     dynamic_size += sz;
@@ -155,16 +175,38 @@ class Context
     update_index(header_index, -sizeof(dynamic_headers), dynamic_headers[0]);
     if (dynamic_size > dynamic_max_size) {
       evict_dynamic_headers();
-      if (!dynamic_size) return;
+      if (!dynamic_size) return 0;
     }
+    return 62;
   }
 
-  array(string(8bit)) get_indexed_header(int index)
+  //! Lookup a known header.
+  //!
+  //! @param index
+  //!   Encoding key for the header to retrieve.
+  //!
+  //! @returns
+  //! @returns
+  //!   Returns @[UNDEFINED] on unknown header.
+  //!   Returns an array with a header and value otherwise:
+  //!   @array
+  //!     @item string(8bit) 0
+  //!       Name of the header. Under normal circumstances this is
+  //!       always lower-case, but no check is currently performed.
+  //!     @item string(8bit) 1
+  //!       Value of the header.
+  //!   @endarray
+  //!
+  //! @seealso
+  //!   @[add_header()]
+  array(string(8bit)) get_indexed_header(int(1..) index)
   {
     if (index <= sizeof(static_header_tab)) {
+      if (index < 0) return UNDEFINED;
       return static_header_tab[index - 1];
     }
     index = sizeof(dynamic_headers) + sizeof(static_header_tab) - index;
+    if (index < dynamic_prefix) return UNDEFINED;
     return dynamic_headers[index];
   }
 
@@ -241,7 +283,11 @@ class Context
       if (c == 0x7f) {
 	c += get_long_int(buf);
       }
-      return get_indexed_header(c);
+      array(string(8bit)) tuple = get_indexed_header(c);
+      if (!tuple) {
+	error("Unknown header.\n");
+      }
+      return tuple;
     } else if (c & 0x40) {
       // 6.2.1 Literal Header Field with Incremental Indexing.
       string(8bit) header;
@@ -255,7 +301,11 @@ class Context
 	if (c == 0x3f) {
 	  c += get_long_int(buf);
 	}
-	header = get_indexed_header(c)[0];
+	array(string(8bit)) tuple = get_indexed_header(c);
+	if (!tuple) {
+	  error("Unknown header.\n");
+	}
+	header = tuple[0];
       }
 
       string(8bit) value = get_string(buf);
@@ -275,7 +325,11 @@ class Context
 	if (c == 0x0f) {
 	  c += get_long_int(buf);
 	}
-	header = get_indexed_header(c)[0];
+	array(string(8bit)) tuple = get_indexed_header(c);
+	if (!tuple) {
+	  error("Unknown header.\n");
+	}
+	header = tuple[0];
       }
 
       string(8bit) value = get_string(buf);
