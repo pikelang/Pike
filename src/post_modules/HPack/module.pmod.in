@@ -450,6 +450,23 @@ class Context
     add_header(header, value);
   }
 
+  //! Set the maximum size of the dynamic header lookup table.
+  //!
+  //! @param buf
+  //!   Output buffer.
+  //!
+  //! @param new_max_size
+  //!   New maximum size in bytes (as calculated by RFC 7541 section 4.1).
+  //!
+  //! @seealso
+  //!   @[encode_header()], @[encode()].
+  void set_dynamic_size(Stdio.Buffer buf, int(0..) new_max_size)
+  {
+    put_int(buf, 0x20, 0x1f, new_max_size);
+    dynamic_max_size = new_max_size;
+    evict_dynamic_headers();
+  }
+
   //! Encode a full set of headers.
   //!
   //! @param headers
