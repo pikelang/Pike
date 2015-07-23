@@ -122,11 +122,36 @@ class Context
 
   int dynamic_max_size = DEFAULT_HEADER_TABLE_SIZE;
 
-  // Positive indices offsetted by one for static_header_tab.
-  // Negative indices offsetted by sizeof(dynamic_headers) for
-  // dynamic_headers.
-  mapping(string(8bit):int|mapping(string(8bit):int)) header_index =
-    static_header_index + ([]);
+  //! Index into @[dynamic_headers] and @[static_headers].
+  //!
+  //! @mapping
+  //!   @elem mapping(string(8bit):int)|int "header_name"
+  //!     Indexed on the header name in lower-case. The value is one of:
+  //!     @mixed
+  //!       @type int
+  //!         Index value for the header value @expr{""@}.
+  //!       @type mapping(string(8bit):int)
+  //!         @mapping
+  //!           @elem mapping(string(8bit):int) "header_value"
+  //!             Index value for the corresponding header value.
+  //!         @endmapping
+  //!     @endmixed
+  //! @endmapping
+  //!
+  //! The index values in turn are coded as follows:
+  //! @int
+  //!   @value 1..
+  //!     Index into @[static_header_tab] offset by @expr{1@}.
+  //!   @value 0
+  //!     Not used.
+  //!   @value ..-1
+  //!     Inverted (@[`~()]) index into @[dynamic_headers].
+  //! @endint
+  //!
+  //! @seealso
+  //!   @[dynamic_headers], @[static_header_tab], @[add_header()]
+  protected mapping(string(8bit):int|mapping(string(8bit):int)) header_index =
+    copy_value(static_header_index);
 
   protected void evict_dynamic_headers()
   {
