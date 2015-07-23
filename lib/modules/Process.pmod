@@ -231,10 +231,11 @@ class Process
       }
       int bytes = process_fd->write(data);
       if (bytes != sizeof(data)) {
+	int fd_errno = process_fd->errno();
 	process_fd->close();
 	process_fd = UNDEFINED;
-	error("Failed to write spawn request (%d != %d).\n",
-	      bytes, sizeof(data));
+	error("Failed to write spawn request (%d != %d, errno: %d, errmsg: %s).\n",
+	      bytes, sizeof(data), fd_errno, strerror(fd_errno) || "?");
       }
       process_backend = Pike.SmallBackend();
       process_backend->add_file(process_fd);
