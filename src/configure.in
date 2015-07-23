@@ -4717,6 +4717,16 @@ MY_CHECK_FUNCTION(_isnan,
   exit(_isnan(0.0));
 ])
 #############################################################################
+# isfinite() is a macro on at least OS X and Linux which doesn't play well
+# with AC_CHECK_FUNCS().
+MY_CHECK_FUNCTION(isfinite,
+[
+#include <math.h>
+], [
+  int t = isfinite(0.0);
+  exit(0);
+])
+#############################################################################
 
 # FreeBSD 3.0 has broken F_SETFD when running with threads.
 

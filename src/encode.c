@@ -674,7 +674,10 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	      pike_ftype=Pike_FP_PZERO;
 	    else
 #endif
-#ifdef HAVE_FINITE
+#ifdef HAVE_ISFINITE
+	      if(!isfinite(d))
+		pike_ftype=Pike_FP_PINF;
+#elif HAVE_FINITE
 	      if(!finite(d))
 		pike_ftype=Pike_FP_PINF;
 #endif

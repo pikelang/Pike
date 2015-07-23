@@ -241,6 +241,9 @@
 /* Define if you have _isnan */
 #undef HAVE__ISNAN
 
+/* Define if you have isfinite */
+#undef HAVE_ISFINITE
+
 /* Define if you have fork */
 #undef HAVE_FORK
 
