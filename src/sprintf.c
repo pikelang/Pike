@@ -476,7 +476,10 @@ static void low_write_IEEE_float(char *b, double d, int sz)
     e = 0;
   else
 #endif
-#ifdef HAVE_FINITE
+#ifdef HAVE_ISFINITE
+  if(!isfinite(d))
+    e = maxexp;
+#elif HAVE_FINITE
   if(!finite(d))
     e = maxexp;
 #endif
