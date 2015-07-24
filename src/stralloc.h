@@ -25,14 +25,14 @@ enum size_shift {
 
 struct pike_string
 {
-  INT32 refs;
+  INT32 refs; /* must be first. */
+
   unsigned char flags;
-  enum size_shift  size_shift:8;
   unsigned char  min;
   unsigned char  max;
+  enum size_shift  size_shift:8;
+
   ptrdiff_t len; /* Not counting terminating NUL. */
-  size_t hval;
-  struct pike_string *next;
   char * str;			/* NUL terminated. */
 };
 
@@ -312,7 +312,6 @@ PMOD_EXPORT struct pike_string * debug_make_shared_pcharp(const PCHARP str);
 PMOD_EXPORT struct pike_string * debug_make_shared_binary_string0(const p_wchar0 *str,size_t len);
 PMOD_EXPORT struct pike_string * debug_make_shared_binary_string1(const p_wchar1 *str,size_t len);
 PMOD_EXPORT struct pike_string * debug_make_shared_binary_string2(const p_wchar2 *str,size_t len);
-PMOD_EXPORT struct pike_string * make_static_string(const char *str, size_t len, enum size_shift);
 PMOD_EXPORT struct pike_string * make_shared_static_string(const char *str, size_t len, enum size_shift);
 PMOD_EXPORT struct pike_string *debug_make_shared_string(const char *str);
 PMOD_EXPORT struct pike_string *debug_make_shared_string0(const p_wchar0 *str);
@@ -320,6 +319,7 @@ PMOD_EXPORT struct pike_string *debug_make_shared_string1(const p_wchar1 *str);
 PMOD_EXPORT struct pike_string *debug_make_shared_string2(const p_wchar2 *str);
 PMOD_EXPORT void check_string_range( struct pike_string *str, int loose,
                                      INT32 *min, INT32 *max );
+
 /* Returns true if str1 could contain str2. */
 PMOD_EXPORT int string_range_contains_string( struct pike_string *str1,
                                               struct pike_string *str2 );
