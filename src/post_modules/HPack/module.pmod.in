@@ -194,8 +194,19 @@ class Context
     }
   }
 
+  //! Evict dynamic headers until @[dynamic_size] goes below
+  //! @[dynamic_max_size].
   protected void evict_dynamic_headers()
   {
+    if (!dynamic_max_size) {
+      // Special case for the common way to empty the
+      // table of dynamic headers.
+      dynamic_headers = ({});
+      dynamic_prefix = 0;
+      dynamic_size = 0;
+      header_index = copy_value(static_header_index);
+      return;
+    }
     while (dynamic_size > dynamic_max_size) {
       int i = dynamic_prefix++;
       array(string(8bit)) entry = dynamic_headers[i];
@@ -211,7 +222,16 @@ class Context
       }
       m_delete(header_index, entry[0]);
     }
-    // FIXME: Truncate dynamic_headers when dynamic_prefix grows large.
+    if (dynamic_prefix*4 > sizeof(dynamic_headers)*3) {
+      // More than 3/4 of the dynamic headers are stale.
+      // Truncate the table.
+      header_index = copy_value(static_header_index);
+      dynamic_headers = dynamic_headers[dynamic_prefix..];
+      dynamic_prefix = 0;
+      foreach(dynamic_headers; int i; array(string(8bit)) entry) {
+	update_index(header_index, ~i, entry);
+      }
+    }
   }
 
   //! Add a header to the table of known headers and to the header index.
