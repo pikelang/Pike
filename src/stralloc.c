@@ -45,13 +45,8 @@ static unsigned int need_new_hashkey_depth=0;
 
 static size_t hashkey = 0;
 
-struct hentry {
-  size_t hval;
-  struct pike_string *str;
-};
-
 static struct {
-  struct hentry *table;
+  struct pike_string **__restrict__ table;
   size_t size;
   size_t limit; /* size * 0.8, aproximately. */
   size_t num_strings;
@@ -419,7 +414,7 @@ static void locate_problem(int (*isproblem)(const struct pike_string *))
 
   for(e=0;e<string_hash.size;e++)
   {
-    if( (s = string_table.table[e].str) )
+    if( (s = string_table.table[e]) )
     {
       if(isproblem(s))
       {
@@ -473,21 +468,16 @@ static struct pike_string *internal_findstring(const char *s,
   for(;;)
   {
     struct pike_string *probe;
-    if(!(probe=string_hash.table[h].str))
-      return NULL;
-    if(dist > probe_dist(string_hash.table[h].hval,h))
+    if(!(probe=string_hash.table[h]))
       return NULL;
 
-    if(string_hash.table[h].hval == hval)
-    {
-	if( len == probe->len &&
-	    size_shift == probe->size_shift &&
-	    (s == probe->str ||
-	     !memcmp(s,probe->str,len<<size_shift)))
-	  {
-	    return probe;
-	  }
-    }
+    if(size_shift == probe->size_shift
+       && len == probe->len
+       && !memcmp(s,probe->str,len<<size_shift))
+      return probe;
+
+    if(dist > probe_dist(string_hash.table[h]->hval,h))
+      return NULL;
     dist++;
     h = HMODULO(h+1);
   }
@@ -542,12 +532,12 @@ struct pike_string *findstring(const char *foo)
   return binary_findstring(foo, strlen(foo));
 }
 
-static void low_link_pike_string( struct hentry entry );
+static void low_link_pike_string( struct pike_string *entry );
 
-static void stralloc_rehash(void)
+static void stralloc_grow(void)
 {
   size_t old,h;
-  struct hentry *old_table;
+  struct pike_string **old_table;
 
   old=string_hash.size;
   old_table=string_hash.table;
@@ -557,16 +547,34 @@ static void stralloc_rehash(void)
     string_hash.size *= 2;
 
   string_hash.limit = (size_t)((double)string_hash.size*0.8);
-  string_hash.table = xcalloc(sizeof(struct hentry), string_hash.size);
+  string_hash.table = xcalloc(sizeof(struct pike_string**), string_hash.size);
   string_hash.mask = string_hash.size-1;
 /*   fprintf( stderr, "stralloc rehash: sz=%d, mask=0x%8x, limit=%d, num=%d\n", */
 /* 	   string_hash.size, string_hash.mask,string_hash.limit,string_hash.num_strings); */
 
   for(h=0;h<old;h++)
-    if(old_table[h].str)
+    if(old_table[h])
       low_link_pike_string(old_table[h]);
 
   free(old_table);
+}
+
+static void stralloc_rehash()
+{
+  /* rehash without resize, but new hvals for all strings. */
+  size_t h;
+  struct pike_string **ht = string_hash.table;
+  string_hash.table = malloc( sizeof(struct pike_string*) * string_hash.size );
+  for(h=0;h<string_hash.size;h++)
+  {
+    struct pike_string *tmp=ht[h];
+    if( !tmp )
+      continue;
+    /* rehash needed, since algorithm changed */
+    tmp->hval = do_hash(tmp);
+    low_link_pike_string( tmp );
+  }
+  free(ht);
 }
 
 /* Allocation of strings */
@@ -596,29 +604,31 @@ PMOD_EXPORT struct pike_string *debug_begin_shared_string(size_t len)
 }
 
 /* Insert a new strings. Note: Guaranteed to be new */
-static void low_link_pike_string( struct hentry cur )
+static void low_link_pike_string( struct pike_string *str )
 {
-  size_t h = HMODULO(cur.hval);
+  size_t hval = str->hval;
+  size_t h = HMODULO(hval);
   size_t dist = 0;
   size_t max_run = 0, length_issue=0;
 
   for(;;)
   {
     size_t existing_dist;
-    if( string_hash.table[h].str == 0 )
+    if( LIKELY(!string_hash.table[h]) )
     {
       /* empty slot. */
-      string_hash.table[h] = cur;
+      string_hash.table[h] = str;
       return;
     }
     
-    existing_dist = probe_dist(string_hash.table[h].hval, h);
+    existing_dist = probe_dist(string_hash.table[h]->hval, h);
 
-    /* This code is for the rehash heuristics. */
-    if( string_hash.table[h].hval == cur.hval )
+
+    /* ----- This code is for the rehash heuristics. */
+    if( string_hash.table[h]->hval == hval )
     {
       max_run++; 
-      if( cur.str->len > hash_prefix_len+8 )
+      if( str->len > hash_prefix_len+8 )
        length_issue++;
     }
     else
@@ -630,36 +640,26 @@ static void low_link_pike_string( struct hentry cur )
       max_run=0;
       length_issue=0;
     }
-    /* end heuristics. */
+    /* ----- end heuristics. */
 
     if( existing_dist < dist )
     {
-      struct hentry tmp = string_hash.table[h];
+      struct pike_string *tmp = string_hash.table[h];
       /* steal slot, then insert stolen one. */
-      string_hash.table[h] = cur;
-      cur = tmp;
+      string_hash.table[h] = str;
+      str = tmp;
       dist = existing_dist;
-/*       max_run=0; */
-/*       length_issue=0; */
+      /* inentionally not reassigning hval.  the max-run length
+       * heuristics are only for the "primary" string.
+      */
     }
-
     h = HMODULO(h + 1);
     dist++;
   }
 }
 
-static struct hentry make_hentry(size_t hval, struct pike_string *s )
+static void link_pike_string(struct pike_string *s)
 {
-  struct hentry tmp;
-  tmp.hval = hval;
-  tmp.str = s;
-  return tmp;
-}
-
-static void link_pike_string(struct pike_string *s, size_t hval)
-{
-  size_t h;
-
 #ifdef PIKE_DEBUG
   if (!(s->flags & STRING_NOT_SHARED)) {
     debug_dump_pike_string(s, 70);
@@ -669,64 +669,29 @@ static void link_pike_string(struct pike_string *s, size_t hval)
   if (PIKE_MEM_NOT_DEF_RANGE (s->str, (s->len + 1) << s->size_shift))
     Pike_fatal ("Got undefined contents in pike string %p.\n", s);
 #endif
-  s->flags &= ~STRING_NOT_SHARED;
-  if(++string_hash.num_strings > string_hash.limit)
-    stralloc_rehash();
 
-  low_link_pike_string( make_hentry(hval,s) );
+  s->flags &= ~STRING_NOT_SHARED;
+
+  if(UNLIKELY(++string_hash.num_strings > string_hash.limit))
+    stralloc_grow();
+
+  low_link_pike_string( s );
 
   /* These heuristics might require tuning! /Hubbe */
-  if((need_more_hash_prefix_depth > 8) ||
-     (need_new_hashkey_depth > 32))
+  if(UNLIKELY((need_more_hash_prefix_depth > 8) ||
+	      (need_new_hashkey_depth > 32)))
   {
-    /* Changed heuristic 2005-01-17:
-     *
-     *   Increase hash_prefix_len if there's some bucket containing
-     *   more than 4 strings that are longer
-     *   than hash_prefix_len.
-     * /grubba
-     *
-     * Changed heuristic 2011-12-30:
-     *
-     *   Generate a new hash key if there's some bucket containing
-     *   more than  16 strings. This ought to
-     *   suffice to alleviate the #hashdos vulnerability.
-     *
-     * /grubba
-     */
-
-    /* This could in theory have a pretty ugly complexity
-     * /Hubbe
-     */
-
     if (need_new_hashkey_depth > 32) {
       /* A simple mixing function. */
       hashkey ^= (hashkey << 5) ^ (current_time.tv_sec ^ current_time.tv_usec);
       need_new_hashkey_depth = 0;
     }
-
     if (need_more_hash_prefix_depth > 8)
     {
       hash_prefix_len=hash_prefix_len*2;
       need_more_hash_prefix_depth=0;
     }
-    
-    /* This could be done without allocating and freeing the whole table.
-       But doing so is a .. tad .. more complex with this implementation.
-
-       I guess the question is: is it needed?
-    */
-    struct hentry *ht = string_hash.table;
-    string_hash.table = malloc( sizeof(struct hentry) * string_hash.size );
-    for(h=0;h<string_hash.size;h++)
-    {
-      struct hentry *tmp=ht+h;
-      if( !tmp->str )
-	continue;
-      /* rehash needed, since algorithm changed */
-      low_link_pike_string( make_hentry(do_hash(tmp->str),tmp->str) );
-    }
-    free(ht);
+    stralloc_rehash();
   }
 }
 
@@ -796,7 +761,8 @@ PMOD_EXPORT struct pike_string * make_shared_static_string(const char *str, size
 
   if (!s) {
     s = make_static_string(str, len, shift);
-    link_pike_string(s, h);
+    s->hval = do_hash(s);
+    link_pike_string(s);
   } else {
 
     if (!string_is_static(s)) {
@@ -852,8 +818,8 @@ struct pike_string *low_end_shared_string(struct pike_string *s)
 #endif
 
   len = s->len;
-  h = do_hash(s);
-  s2 = internal_findstring(s->str, len, s->size_shift, h);
+  s->hval = do_hash(s);
+  s2 = internal_findstring(s->str, len, s->size_shift, s->hval);
 #ifdef PIKE_DEBUG
   if(s2==s) 
     Pike_fatal("end_shared_string called twice! (or something like that)\n");
@@ -865,7 +831,7 @@ struct pike_string *low_end_shared_string(struct pike_string *s)
     s = s2;
     add_ref(s);
   }else{
-    link_pike_string(s, h);
+    link_pike_string(s);
   }
 
   return s;
@@ -938,18 +904,21 @@ PMOD_EXPORT struct pike_string * debug_make_shared_binary_string(const char *str
 {
   ptrdiff_t h;
   struct pike_string *s;
+#if 0
   if( !len )
   {
     empty_pike_string->refs++;
     return empty_pike_string;
   }
+#endif
   h = low_do_hash(str, len,0);
   s = internal_findstring(str,len,0,h);
   if (!s) 
   {
     s=begin_shared_string(len);
     memcpy(s->str, str, len);
-    link_pike_string(s, h);
+    s->hval = h;
+    link_pike_string(s);
   } else {
     add_ref(s);
   }
@@ -1011,7 +980,8 @@ PMOD_EXPORT struct pike_string * debug_make_shared_binary_string1(const p_wchar1
   {
     s=begin_wide_shared_string(len,1);
     memcpy(s->str, str, len<<1);
-    link_pike_string(s, h);
+    s->hval = h;
+    link_pike_string(s);
   } else {
     add_ref(s);
   }
@@ -1046,7 +1016,8 @@ PMOD_EXPORT struct pike_string * debug_make_shared_binary_string2(const p_wchar2
   {
     s=begin_wide_shared_string(len,2);
     memcpy(s->str, str, len<<2);
-    link_pike_string(s, h);
+    s->hval = h;
+    link_pike_string(s);
   } else {
     add_ref(s);
   }
@@ -1079,26 +1050,27 @@ PMOD_EXPORT struct pike_string *debug_make_shared_string2(const p_wchar2 *str)
 
 /*** Free strings ***/
 
-static void unlink_pike_string(struct pike_string *s,size_t hval)
+static void unlink_pike_string(struct pike_string *s)
 {
-  size_t h = HMODULO(hval);
+  size_t h = HMODULO(s->hval);
+#ifdef PIKE_DEBUG
   size_t dist = 0;
-
+#endif
   string_hash.num_strings--;
   s->flags |= STRING_NOT_SHARED;
 
   for(;;)
   {
-    if(string_hash.table[h].str == s)
+    if(string_hash.table[h] == s)
     {
       size_t end = HMODULO(h+1);
       /* Found entry. Now maintain invariant. */
       for(;;)
       {
-	if(!string_hash.table[end].str ||
-	   !probe_dist(string_hash.table[end].hval,end))
+	if(!string_hash.table[end] ||
+	   !probe_dist(string_hash.table[end]->hval,end))
 	{
-	  string_hash.table[h].str = NULL;
+	  string_hash.table[h] = NULL;
 	  return;
 	}
 	string_hash.table[h] = string_hash.table[end];
@@ -1106,10 +1078,12 @@ static void unlink_pike_string(struct pike_string *s,size_t hval)
 	end = HMODULO(end+1);
       }
     }
-    if(!string_hash.table[h].str ||
-       (dist > probe_dist(string_hash.table[h].hval,h)))
+#ifdef PIKE_DEBUG
+    if(!string_hash.table[h] ||
+       (dist > probe_dist(string_hash.table[h]->hval,h)))
       Pike_fatal( "Failed to find string to unlink in table!\n");
     dist++;
+#endif
     h = HMODULO(h+1);
   }
 }
@@ -1142,7 +1116,7 @@ PMOD_EXPORT void really_free_string(struct pike_string *s)
   }
 #endif
   if (!(s->flags & STRING_NOT_SHARED))
-    unlink_pike_string(s,do_hash(s));
+    unlink_pike_string(s);
   if (s->flags & STRING_CLEAR_ON_EXIT)
     guaranteed_memset(s->str, 0, s->len<<s->size_shift);
   free_unlinked_pike_string(s);
@@ -1181,7 +1155,7 @@ struct pike_string *add_string_status(int verbose)
     struct pike_string *p;
     for(e=0;e<string_hash.size;e++)
     {
-      if( (p = string_hash.table[e].str) )
+      if( (p = string_hash.table[e]) )
       {
 	int key = p->size_shift;
 	num_distinct_strings[key]++;
@@ -1325,8 +1299,7 @@ PMOD_EXPORT void verify_shared_strings_tables(void)
 
   for(e=0;e<string_hash.size;e++)
   {
-    size_t hval = string_hash.table[e].hval;
-    struct pike_string *str = string_hash.table[e].str;
+    struct pike_string *str = string_hash.table[e];
     if(!str)
       continue;
     num++;
@@ -1349,7 +1322,7 @@ PMOD_EXPORT void verify_shared_strings_tables(void)
       locate_problem(improper_zero_termination);
       Pike_fatal("Shared string didn't end with a zero.\n");
     }
-    if(do_hash(s) != hval)
+    if(do_hash(s) != s->hval)
     {
       Pike_fatal("Illegal hash for string.\n");
     }
@@ -1364,7 +1337,7 @@ int safe_debug_findstring(struct pike_string *foo)
   if( !foo ) 
     return 0;
   for( e; e<string_hash.size; e++ )
-    if( foo == string_hash.table[e].str )
+    if( foo == string_hash.table[e] )
       return 1;
   return 0;
 }
@@ -1418,7 +1391,7 @@ void dump_stralloc_strings(void)
   struct pike_string *p;
   for(e=0;e<string_hash.size;e++)
   {
-    if(p=string_hash.table[e].str)
+    if(p=string_hash.table[e])
     {
       debug_dump_pike_string(p, 70);
 #ifdef DEBUG_MALLOC
@@ -1655,7 +1628,7 @@ static struct pike_string *realloc_shared_string(struct pike_string *a,
 {
   if(string_may_modify(a))
   {
-    unlink_pike_string(a,do_hash(a));
+    unlink_pike_string(a);
     return realloc_unlinked_string(a, size);
   }else{
     struct pike_string *r=begin_wide_shared_string(size,a->size_shift);
@@ -1806,19 +1779,18 @@ struct pike_string *modify_shared_string(struct pike_string *a,
   if(string_may_modify(a))
   {
     struct pike_string *old;
-    size_t hv = do_hash(a);
     /* One ref - destructive mode */
-    unlink_pike_string(a,hv);
+    unlink_pike_string(a);
     low_set_index(a, index, c);
     CLEAR_STRING_CHECKED(a);
 
-    old = internal_findstring(a->str, a->len, a->size_shift, hv);
+    old = internal_findstring(a->str, a->len, a->size_shift, a->hval);
     if (old) {
       /* The new string is equal to some old string. */
       free_string(a);
       add_ref(a = old);
     } else {
-      link_pike_string(a, hv);
+      link_pike_string(a);
     }
     return a;
   }else{
@@ -1959,7 +1931,7 @@ PMOD_EXPORT struct pike_string *string_slice(struct pike_string *s,
 	  DO_NOT_WARN((long)s->len));
   }
 #endif
-  if( len == 0)
+  if(len == 0)
   {
     add_ref(empty_pike_string);
     return empty_pike_string;
@@ -2103,7 +2075,7 @@ PMOD_EXPORT struct pike_string *string_replace(struct pike_string *str,
 /*** init/exit memory ***/
 void init_shared_string_table(void)
 {
-  stralloc_rehash();
+  stralloc_grow();
   empty_pike_string = make_shared_static_string("",0,0);
   empty_pike_string->flags |= STRING_CONTENT_CHECKED | STRING_IS_LOWERCASE | STRING_IS_UPPERCASE;
   empty_pike_string->min = empty_pike_string->max = 0;
@@ -2164,7 +2136,7 @@ void count_string_types() {
 
   for (e = 0; e < string_hash.size; e++) {
     struct pike_string * s;
-    if( (s = string_hash.table[e].str) )
+    if( (s = string_hash.table[e]) )
       switch (s->flags & STRING_ALLOC_MASK) {
           case STRING_ALLOC_BA:
               num_short ++;
@@ -2202,11 +2174,11 @@ void count_memory_in_strings(size_t *num, size_t *_size)
   size_t size = 0;
   *num = string_hash.num_strings;
 
-  size+=string_hash.size * sizeof(struct hentry);
+  size += string_hash.size * sizeof(struct pike_string *);
 
   for (e = 0; e < string_hash.size; e++) {
     struct pike_string *s;
-    if( (s = string_hash.table[e].str) )
+    if( (s = string_hash.table[e]) )
       size += count_memory_in_string(s);
   }
 
@@ -2239,7 +2211,7 @@ unsigned gc_touch_all_strings(void)
   for(e=0;e<string_hash.size;e++)
   {
     struct pike_string *p;
-    if((p = string_hash.table[e].str ))
+    if((p = string_hash.table[e]))
       debug_gc_touch(p), n++;
   }
   return n;
@@ -2251,7 +2223,7 @@ void gc_mark_all_strings(void)
   for(e=0;e<string_hash.size;e++)
   {
     struct pike_string *p;
-    if( (p = string_hash.table[e].str) )
+    if( (p = string_hash.table[e]) )
       gc_is_referenced(p);
   }
 }
@@ -2263,9 +2235,9 @@ struct pike_string *next_pike_string (struct pike_string *s)
   size_t e = 0;
   for(;;)
   {
-    if( string_hash.table[e].str && found )
-      return string_hash.table[e].str;
-    if( string_hash.table[e].str == s )
+    if( string_hash.table[e] && found )
+      return string_hash.table[e];
+    if( string_hash.table[e] == s )
       found=1;
     e = HMODULO(e+1);
   }
@@ -2302,7 +2274,7 @@ PMOD_EXPORT int init_string_builder_with_string (struct string_builder *s,
 {
   if (string_may_modify(str)) {
     /* Unlink the string and use it as buffer directly. */
-    unlink_pike_string (str,do_hash(str));
+    unlink_pike_string (str);
     str->flags = STRING_NOT_SHARED;
     s->s = str;
     s->malloced = str->len;

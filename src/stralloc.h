@@ -31,7 +31,7 @@ struct pike_string
   unsigned char  min;
   unsigned char  max;
   enum size_shift  size_shift:8;
-
+  size_t hval;
   ptrdiff_t len; /* Not counting terminating NUL. */
   char * str;			/* NUL terminated. */
 };
