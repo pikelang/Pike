@@ -117,6 +117,18 @@ protected mapping(string(8bit):int|mapping(string(8bit):int))
 //! This constant is taken from RFC 7540 section 6.5.2.
 constant DEFAULT_HEADER_TABLE_SIZE = 4096;
 
+//! Flags for @[Context()->encode_header()] et al.
+enum HPackFlags {
+  HEADER_INDEXED = 0,		//! Indexed header.
+  HEADER_NOT_INDEXED = 1,	//! Unindexed header.
+  HEADER_NEVER_INDEXED = 3,	//! Never indexed header.
+};
+
+//! Context for an HPack encoder or decoder.
+//!
+//! This class implements the majority of RFC 7541.
+//!
+//! Functions of interest are typically @[encode()] and @[decode()].
 class Context
 {
   //! Table of currently available dynamically defined headers.
@@ -340,7 +352,12 @@ class Context
   //!       always lower-case, but no check is currently performed.
   //!     @item string(8bit) 1
   //!       Value of the header.
+  //!     @item HPackFlags|void 2
+  //!       Optional encoding flags. Only set for fields having
+  //!       @[HEADER_NEVER_INDEXED].
   //!   @endarray
+  //!   The elements in the array are in the same order and compatible
+  //!   with the arguments to @[encode_header()].
   //!
   //! @throws
   //!   Throws on encoding errors.
@@ -355,7 +372,10 @@ class Context
   //! @note
   //!   The in-band signalling of encoding table sizes is handled
   //!   internally.
-  array(string(8bit)) decode_header(Stdio.Buffer buf)
+  //!
+  //! @seealso
+  //!   @[decode()], @[encode_header()]
+  array(string(8bit)|HPackFlags) decode_header(Stdio.Buffer buf)
   {
     if (!sizeof(buf)) return UNDEFINED;
 
@@ -400,7 +420,7 @@ class Context
     } else if (!(c & 0xe0)) {
       // 6.2.2 Literal Header Field without Indexing.
       // 6.2.3 Literal Header Field Never Indexed.
-      // NB: We ignore the difference for now.
+      HPackFlags flags = (c & 0x10) && HEADER_NEVER_INDEXED;
       string(8bit) header;
       c &= 0x0f;
       if (!c) {
@@ -419,6 +439,9 @@ class Context
       }
 
       string(8bit) value = get_string(buf);
+      if (flags) {
+	return ({ header, value, flags });
+      }
       return ({ header, value });
     } else if (c & 0x20) {
       // 6.3 Dynamic Table Size Update.
@@ -449,7 +472,10 @@ class Context
   //!
   //! @returns
   //!   Returns an array of headers. Cf @[decode_header()].
-  array(array(string(8bit))) decode(Stdio.Buffer buf)
+  //!
+  //! @seealso
+  //!   @[decode_header()], @[encode()]
+  array(array(string(8bit)|HPackFlags)) decode(Stdio.Buffer buf)
   {
     array(array(string(8bit))) res = ({});
     while (sizeof(buf)) {
@@ -496,11 +522,15 @@ class Context
   //!   string, but this is currently not checked.
   //!
   //! @param value
-  //!  Header value.
+  //!   Header value.
+  //!
+  //! @param flags
+  //!   Optional encoding flags.
   //!
   //! @seealso
   //!   @[encode()], @[decode_header()]
-  void encode_header(Stdio.Buffer buf, string(8bit) header, string(8bit) value)
+  void encode_header(Stdio.Buffer buf, string(8bit) header, string(8bit) value,
+		     HPackFlags|void flags)
   {
     int|mapping(string(8bit):int) entry = header_index[header];
     if (entry) {
@@ -513,7 +543,7 @@ class Context
 	  put_int(buf, 0x80, 0x7f, entry);
 	  return;
 	}
-      } else if (entry[value]) {
+      } else if (entry[value] && !(flags & HEADER_NOT_INDEXED)) {
 	entry = entry[value];
 	// 6.1 Indexed header.
 	if (entry < 0) {
@@ -526,14 +556,34 @@ class Context
       } else {
 	entry = entry[sort(indices(entry))[0]];
       }
-      // 6.2.1 Literal Header Field with Incremental Indexing.
       if (entry < 0) {
 	entry += sizeof(static_header_tab) + sizeof(dynamic_headers) + 1;
       }
-      put_int(buf, 0x40, 0x3f, entry);
+      if (flags & HEADER_NOT_INDEXED) {
+	if (flags & HEADER_NEVER_INDEXED) {
+	  // 6.2.3 Literal Header Field Never Indexed.
+	  put_int(buf, 0x10, 0x0f, entry);
+	} else {
+	  // 6.2.2 Literal Header Field without Incremental Indexing.
+	  put_int(buf, 0x00, 0x0f, entry);
+	}
+      } else {
+	// 6.2.1 Literal Header Field with Incremental Indexing.
+	put_int(buf, 0x40, 0x3f, entry);
+      }
     } else {
-      // 6.2.1 Literal Header Field with Incremental Indexing.
-      put_int(buf, 0x40, 0x3f, 0);
+      if (flags & HEADER_NOT_INDEXED) {
+	if (flags & HEADER_NEVER_INDEXED) {
+	  // 6.2.3 Literal Header Field Never Indexed.
+	  put_int(buf, 0x10, 0x0f, 0);
+	} else {
+	  // 6.2.2 Literal Header Field without Incremental Indexing.
+	  put_int(buf, 0x00, 0x0f, 0);
+	}
+      } else {
+	// 6.2.1 Literal Header Field with Incremental Indexing.
+	put_int(buf, 0x40, 0x3f, 0);
+      }
       put_string(buf, header);
     }
     put_string(buf, value);
