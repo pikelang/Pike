@@ -564,7 +564,7 @@ static void stralloc_rehash()
   /* rehash without resize, but new hvals for all strings. */
   size_t h;
   struct pike_string **ht = string_hash.table;
-  string_hash.table = malloc( sizeof(struct pike_string*) * string_hash.size );
+  string_hash.table = calloc( string_hash.size, sizeof(struct pike_string*) );
   for(h=0;h<string_hash.size;h++)
   {
     struct pike_string *tmp=ht[h];
