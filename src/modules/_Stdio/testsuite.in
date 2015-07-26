@@ -615,7 +615,9 @@ test_any( [[
   if( i->_size_object() == 0 )  return -5;
 
   i->add("zero copy");
-  if( !has_value(sprintf("%O",i), "string") )  return -6;
+
+  // NB: This was "string" in previous versions of Stdio.Buffer.
+  if( !has_value(sprintf("%O",i), "allocated") )  return -6;
 
   i->add(" indeed"); /* note: shorter than first string. */
   if( i->_size_object() == 0 )  return -7;
@@ -623,7 +625,7 @@ test_any( [[
   if( has_index(i,"num_malloc" ) )
     if( i->num_malloc != 1 ) return -8;
   /*
-  crete - no move
+  create - no move
   add - realloc + move
   read - no move (buffer now empty)
   add - point to str
