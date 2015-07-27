@@ -1671,15 +1671,19 @@ PIKECLASS Buffer
 
       case 's':
 	bytes = io_len(THIS);
+	THIS->locked_move++;
         push_string( io_read_string(THIS, bytes) );
 	io_rewind(THIS, bytes);
+	THIS->locked_move--;
         break;
 
       case 'q':
         push_text("%q");
 	bytes = io_len(THIS);
+	THIS->locked_move++;
         push_string( io_read_string(THIS, bytes) );
 	io_rewind(THIS, bytes);
+	THIS->locked_move--;
         f_sprintf(2);
         break;
       default:
