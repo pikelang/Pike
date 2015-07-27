@@ -150,7 +150,7 @@ PIKECLASS Buffer
 
   static void io_trim( Buffer *io )
   {
-      if( io->malloced && (io->offset > 64 || io->len > 64))
+      if( io->malloced && (io->offset > 64 || io->len > 64) && !io->locked)
       {
           if( io->offset > 64 && (!io->locked_move && (io->offset > io_len(io))))
           {
