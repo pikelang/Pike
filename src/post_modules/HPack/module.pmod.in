@@ -121,7 +121,8 @@ constant DEFAULT_HEADER_TABLE_SIZE = 4096;
 enum HPackFlags {
   HEADER_INDEXED = 0,		//! Indexed header.
   HEADER_NOT_INDEXED = 1,	//! Unindexed header.
-  HEADER_NEVER_INDEXED = 3,	//! Never indexed header.
+  HEADER_NEVER_INDEXED = 2,	//! Never indexed header.
+  HEADER_INDEXED_MASK = 3,	//! Bitmask for indexing mode.
 };
 
 //! Context for an HPack encoder or decoder.
@@ -543,7 +544,7 @@ class Context
 	  put_int(buf, 0x80, 0x7f, entry);
 	  return;
 	}
-      } else if (entry[value] && !(flags & HEADER_NOT_INDEXED)) {
+      } else if (entry[value] && !(flags & HEADER_INDEXED_MASK)) {
 	entry = entry[value];
 	// 6.1 Indexed header.
 	if (entry < 0) {
@@ -559,7 +560,7 @@ class Context
       if (entry < 0) {
 	entry += sizeof(static_header_tab) + sizeof(dynamic_headers) + 1;
       }
-      if (flags & HEADER_NOT_INDEXED) {
+      if (flags & HEADER_INDEXED_MASK) {
 	if (flags & HEADER_NEVER_INDEXED) {
 	  // 6.2.3 Literal Header Field Never Indexed.
 	  put_int(buf, 0x10, 0x0f, entry);
@@ -572,7 +573,7 @@ class Context
 	put_int(buf, 0x40, 0x3f, entry);
       }
     } else {
-      if (flags & HEADER_NOT_INDEXED) {
+      if (flags & HEADER_INDEXED_MASK) {
 	if (flags & HEADER_NEVER_INDEXED) {
 	  // 6.2.3 Literal Header Field Never Indexed.
 	  put_int(buf, 0x10, 0x0f, 0);
@@ -587,7 +588,9 @@ class Context
       put_string(buf, header);
     }
     put_string(buf, value);
-    add_header(header, value);
+    if (!(flags & HEADER_INDEXED_MASK)) {
+      add_header(header, value);
+    }
   }
 
   //! Set the dynamic maximum size of the dynamic header lookup table.
@@ -629,10 +632,10 @@ class Context
   //!
   //! @seealso
   //!   @[encode_header()], @[decode()]
-  void encode(array(array(string(8bit))) headers, Stdio.Buffer buf)
+  void encode(array(array(string(8bit)|HPackFlags)) headers, Stdio.Buffer buf)
   {
     foreach(headers, array(string(8bit)) header) {
-      encode_header(buf, header[0], header[1]);
+      encode_header(buf, @header);
     }
   }
 
