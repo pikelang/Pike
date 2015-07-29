@@ -203,7 +203,7 @@ class Context
   protected void create(int|void protocol_dynamic_max_size)
   {
     if (!zero_type(protocol_dynamic_max_size)) {
-      dynamic_max_size = this::static_max_size = static_max_size;
+      dynamic_max_size = this::static_max_size = protocol_dynamic_max_size;
     }
   }
 
