@@ -270,7 +270,7 @@ class Context
     int sz = sizeof(header) + sizeof(value) + 32;
     dynamic_size += sz;
     dynamic_headers += ({ ({ header, value }) });
-    update_index(header_index, -sizeof(dynamic_headers), dynamic_headers[0]);
+    update_index(header_index, -sizeof(dynamic_headers), dynamic_headers[-1]);
     if (dynamic_size > dynamic_max_size) {
       evict_dynamic_headers();
       if (!dynamic_size) return 0;
