@@ -683,6 +683,7 @@ PMOD_EXPORT void pike_threads_disallow_ext (struct thread_state *ts
 #define DEFINE_MUTEX(X)
 #define DEFINE_IMUTEX(X)
 #define init_interleave_mutex(X)
+#define exit_interleave_mutex(X)
 #define LOCK_IMUTEX(X)
 #define UNLOCK_IMUTEX(X)
 #define mt_init(X)
