@@ -162,7 +162,7 @@ string(8bit) hash_messages(string(8bit) sender, int|void len)
   }
   return session->cipher_spec->prf(session->master_secret, sender,
                                    session->cipher_spec->hash
-                                   ->hash((string(8bit))handshake_messages),
+                                   ->hash(handshake_messages),
                                    len || 12);
 }
 
@@ -184,7 +184,7 @@ Packet certificate_verify_packet(string(8bit)|void signature_context)
     session->cipher_spec->sign(session,
 			       signature_context +
 			       session->cipher_spec->hash
-			       ->hash((string(8bit))handshake_messages),
+                               ->hash(handshake_messages),
 			       struct);
   } else {
     session->cipher_spec->sign(session, (string(8bit))handshake_messages, struct);
