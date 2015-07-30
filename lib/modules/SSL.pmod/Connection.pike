@@ -774,7 +774,7 @@ protected int(-1..1) handle_alert(string s)
   return 0;
 }
 
-int handle_change_cipher(int c)
+int(-1..0) handle_change_cipher(int c)
 {
   COND_FATAL(!expect_change_cipher || (c != 1),
              ALERT_unexpected_message, "Unexpected change cipher!\n");
@@ -922,7 +922,7 @@ Stdio.Buffer alert_buffer = Stdio.Buffer();
 //!    @endmixed
 //!
 //! This function is intended to be called from an i/o read callback.
-string(8bit)|int got_data(string(8bit) data)
+string(8bit)|int(-1..1) got_data(string(8bit) data)
 {
   if (state & CONNECTION_peer_closed) {
     // The peer has closed the connection.
@@ -975,17 +975,21 @@ string(8bit)|int got_data(string(8bit) data)
         COND_FATAL(!sizeof(packet->fragment), ALERT_unexpected_message,
                    "Zero length Alert fragments not allowed.\n");
 
-        int err = 0;
+        int(-1..1) err = 0;
         alert_buffer->add( packet->fragment );
         while(!err && sizeof(alert_buffer)>1)
           err = handle_alert(alert_buffer->read(2));
 
         if (err)
+        {
           if (err > 0 && sizeof (res))
-            // If we get a close then we return the data we got so far.
+          {
+            // If we get a close then we return the data we got so
+            // far. state has CONNECTION_peer_closed at this point.
             return res;
-          else
-            return err;
+          }
+          return err;
+        }
         break;
       }
     case PACKET_change_cipher_spec:
@@ -1000,7 +1004,7 @@ string(8bit)|int got_data(string(8bit) data)
 
         foreach(packet->fragment;; int c)
         {
-          int err = handle_change_cipher(c);
+          int(-1..0) err = handle_change_cipher(c);
           SSL3_DEBUG_MSG("tried change_cipher: %d\n", err);
           if (err)
             return err;
@@ -1035,7 +1039,7 @@ string(8bit)|int got_data(string(8bit) data)
         COND_FATAL(expect_change_cipher && (version < PROTOCOL_TLS_1_3),
                    ALERT_unexpected_message, "Expected change cipher.\n");
 
-        int err;
+        int(-1..1) err;
         handshake_buffer->add( packet->fragment );
 
         while (sizeof(handshake_buffer) >= 4)
