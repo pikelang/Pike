@@ -753,4 +753,7 @@ PMOD_EXPORT extern int mc_pass;
 PMOD_EXPORT extern size_t mc_counted_bytes;
 PMOD_EXPORT int mc_count_bytes (void *thing);
 
+void init_mc(void);
+void exit_mc(void);
+
 #endif

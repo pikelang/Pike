@@ -70,6 +70,9 @@ static void init_builtin_modules(void)
 
   init_cpp();
 
+  TRACE((stderr, "Init memory counter...\n"));
+  init_mc();
+
   TRACE((stderr, "Init backend...\n"));
 
   init_backend();
@@ -145,6 +148,7 @@ static void exit_builtin_modules(void)
   cleanup_compiler();
   cleanup_error();
   exit_backend();
+  exit_mc();
   cleanup_gc();
   cleanup_pike_types();
 
