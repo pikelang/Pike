@@ -4573,6 +4573,8 @@ PMOD_EXPORT TYPE_FIELD real_visit_svalues (struct svalue *s, size_t num,
 
 #define MC_WQ_START_SIZE 1024
 
+static IMUTEX_T mc_mutex;
+
 PMOD_EXPORT int mc_pass;
 PMOD_EXPORT size_t mc_counted_bytes;
 
@@ -4683,6 +4685,18 @@ struct mc_marker
 #define EXIT_BLOCK(f)
 
 PTR_HASH_ALLOC_FILL_PAGES (mc_marker, 2)
+
+static void start_mc(void)
+{
+  LOCK_IMUTEX(&mc_mutex);
+  init_mc_marker_hash();
+}
+
+static void stop_mc(void)
+{
+  exit_mc_marker_hash();
+  UNLOCK_IMUTEX(&mc_mutex);
+}
 
 static struct mc_marker *my_make_mc_marker (void *thing,
 					    visit_thing_fn *visit_fn,
@@ -5615,7 +5629,7 @@ void f_count_memory (INT32 args)
       Pike_sp[-args].u.integer;
   }
 
-  init_mc_marker_hash();
+  start_mc();
 
   if (TYPEOF(pike_cycle_depth_str) == PIKE_T_FREE) {
     SET_SVAL_TYPE(pike_cycle_depth_str, T_STRING);
@@ -5625,7 +5639,7 @@ void f_count_memory (INT32 args)
   assert (mc_work_queue == NULL);
   mc_work_queue = malloc (MC_WQ_START_SIZE * sizeof (mc_work_queue[0]));
   if (!mc_work_queue) {
-    exit_mc_marker_hash();
+    stop_mc();
     SIMPLE_OUT_OF_MEMORY_ERROR ("Pike.count_memory",
 				MC_WQ_START_SIZE * sizeof (mc_work_queue[0]));
   }
@@ -5650,9 +5664,9 @@ void f_count_memory (INT32 args)
 	continue;
 
       else if (!REFCOUNTED_TYPE(TYPEOF(*s))) {
-	exit_mc_marker_hash();
 	free (mc_work_queue + 1);
 	mc_work_queue = NULL;
+	stop_mc();
 	SIMPLE_ARG_TYPE_ERROR (
 	  "count_memory", i + args + 1,
 	  "array|multiset|mapping|object|program|string|type|int");
@@ -5662,9 +5676,9 @@ void f_count_memory (INT32 args)
 	if (TYPEOF(*s) == T_FUNCTION) {
 	  struct svalue s2;
 	  if (!(s2.u.program = program_from_function (s))) {
-	    exit_mc_marker_hash();
 	    free (mc_work_queue + 1);
 	    mc_work_queue = NULL;
+	    stop_mc();
 	    SIMPLE_ARG_TYPE_ERROR (
 	      "count_memory", i + args + 1,
 	      "array|multiset|mapping|object|program|string|type|int");
@@ -5686,9 +5700,9 @@ void f_count_memory (INT32 args)
 	  if (!mc_block_pike_cycle_depth && TYPEOF(*s) == T_OBJECT) {
 	    int cycle_depth = mc_cycle_depth_from_obj (s->u.object);
 	    if (TYPEOF(throw_value) != PIKE_T_FREE) {
-	      exit_mc_marker_hash();
 	      free (mc_work_queue + 1);
 	      mc_work_queue = NULL;
+	      stop_mc();
 	      throw_severity = THROW_ERROR;
 	      pike_throw();
 	    }
@@ -5815,9 +5829,9 @@ void f_count_memory (INT32 args)
       }
 
       if (TYPEOF(throw_value) != PIKE_T_FREE) {
-	exit_mc_marker_hash();
 	free (mc_work_queue + 1);
 	mc_work_queue = NULL;
+	stop_mc();
 	throw_severity = THROW_ERROR;
 	pike_throw();
       }
@@ -6062,11 +6076,11 @@ void f_count_memory (INT32 args)
 	remove_mc_marker (mc_marker_hash_table[e]->thing);
   }
 #endif
-  exit_mc_marker_hash();
 
   assert (mc_wq_used == 1);
   free (mc_work_queue + 1);
   mc_work_queue = NULL;
+  stop_mc();
 
   pop_n_elems (args);
   push_ulongest (return_count ? count_internal : mc_counted_bytes);
@@ -6171,7 +6185,7 @@ void f_identify_cycle(INT32 args)
     SET_SVAL_TYPE(*s, T_OBJECT);
   }
 
-  init_mc_marker_hash();
+  start_mc();
 
   if (TYPEOF(pike_cycle_depth_str) == PIKE_T_FREE) {
     SET_SVAL_TYPE(pike_cycle_depth_str, T_STRING);
@@ -6181,7 +6195,7 @@ void f_identify_cycle(INT32 args)
   assert (mc_work_queue == NULL);
   mc_work_queue = malloc (MC_WQ_START_SIZE * sizeof (mc_work_queue[0]));
   if (!mc_work_queue) {
-    exit_mc_marker_hash();
+    stop_mc();
     SIMPLE_OUT_OF_MEMORY_ERROR ("Pike.count_memory",
 				MC_WQ_START_SIZE * sizeof (mc_work_queue[0]));
   }
@@ -6223,7 +6237,6 @@ void f_identify_cycle(INT32 args)
   mc_ref_from = (void *) (ptrdiff_t) -1;
 #endif
 
-  exit_mc_marker_hash();
   /* NB: 1-based indexing in mc_work_queue. */
   mc_work_queue++;
   free(mc_work_queue);
@@ -6253,6 +6266,8 @@ void f_identify_cycle(INT32 args)
 
   free_mapping(identify_loop_reverse);
 
+  stop_mc();
+
   if (!k) {
     push_undefined();
   } else {
@@ -6262,4 +6277,14 @@ void f_identify_cycle(INT32 args)
     f_aggregate(Pike_sp - (s + 1));
     f_reverse(1);
   }
+}
+
+void init_mc(void)
+{
+  init_interleave_mutex(&mc_mutex);
+}
+
+void exit_mc(void)
+{
+  exit_interleave_mutex(&mc_mutex);
 }
