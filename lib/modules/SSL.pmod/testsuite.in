@@ -1134,7 +1134,7 @@ object make_context(Crypto.ECC.Curve curve) {
 
   ctx->add_cert(ecdsa, ({ cert }));
 
-  ctx->preferred_suites = server_ctx->get_suites(-1, 2, (<>));
+  ctx->preferred_suites = ctx->get_suites(-1, 2, (<>));
   return ctx;
 }
 array(int) a() {
