@@ -151,17 +151,17 @@ int(0..) main(int num, array(string) args)
          total_pct += pct;
          if( isatty )
            write( color( pct ) );
-         write("%40s%s %5.1f%%\n",
-               dot(id,40,true,odd=!odd),
-               dot(res->readable,18,false,odd),
+         write("%42s%s %5.1f%%\n",
+               dot(id,42,true,odd=!odd),
+               dot(res->readable,16,false,odd),
                pct);
          if( isatty ) write( "\e[0m" );
        }
      }
      else
      {
-       write(dot(id,40,true,odd=!odd) +
-             dot(res->readable,19,false,odd)+"\n");
+       write(dot(id,42,true,odd=!odd) +
+             dot(res->readable,17,false,odd)+"\n");
      }
    }
    if( json )
@@ -174,5 +174,5 @@ int(0..) main(int num, array(string) args)
            total_pct / n_tests);
    }
    else
-     write("-"*58+"\n");
+     write("-"*59+"\n");
 }
