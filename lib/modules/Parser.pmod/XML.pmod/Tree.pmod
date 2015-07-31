@@ -633,8 +633,8 @@ class AbstractNode {
   void fix_tree()
   {
     foreach (mChildren, AbstractNode c)
-      if (c->mParent != this_object()) {
-	c->mParent = this_object();
+      if (c->mParent != this) {
+	c->mParent = this;
 	c->fix_tree();
       }
   }

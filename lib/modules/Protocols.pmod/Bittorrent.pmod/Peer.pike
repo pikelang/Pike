@@ -289,10 +289,10 @@ void drop(string how,void|string misc)
 void garb()
 {
    if (online || find_call_out(connect)!=-1) return;
-   parent->peers_ordered-=({this_object()});
-   parent->peers_unused-=({this_object()});
+   parent->peers_ordered-=({this});
+   parent->peers_unused-=({this});
    m_delete(parent->peers,id);
-   destruct(this_object());
+   destruct(this);
 }
 
 void connection_timeout()

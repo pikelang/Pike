@@ -301,24 +301,24 @@ class Process
       case "PID":
 	__pid = packet;
 	if (__status == -1) __status = 0;
-	if (__callback) __callback(this_object());
+	if (__callback) __callback(this);
 	break;
       case "SIGNAL":
 	__last_signal = packet;
 	break;
       case "START":
 	__status = 0;
-	if (__callback) __callback(this_object());
+	if (__callback) __callback(this);
 	break;
       case "STOP":
 	__status = 1;
-	if (__callback) __callback(this_object());
+	if (__callback) __callback(this);
 	break;
       case "EXIT":
 	__result = packet;
 	__status = 2;
 	do_close();
-	if (__callback) __callback(this_object());
+	if (__callback) __callback(this);
 	break;
       default:
 	__result = 255;

@@ -227,7 +227,7 @@ class Readline
   void trap_signal(int n)
   {
     werror("\r\nInterrupted, exit.\r\n");
-    destruct(this_object());
+    destruct(this);
     exit(1);
   }
 
@@ -245,7 +245,7 @@ class Readline
     {
       // ^D?
       werror("\nTerminal closed, exit.\n");
-      destruct(this_object());
+      destruct(this);
       exit(0);
     }
     return r;

@@ -118,7 +118,7 @@ class Socket {
       DEBUG_WERR("Closing fd:%O\n", query_fd());
       close();
       set_blocking();
-      destruct(this_object());
+      destruct(this);
     }
   }
 

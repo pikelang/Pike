@@ -123,12 +123,12 @@ class ProfileEntry {
 
     ADTSet add (string|int|float in) {
       vals[in] = 1;
-      return this_object();
+      return this;
     }
 
     ADTSet sub (string|int|float out) {
       m_delete(vals, out);
-      return this_object();
+      return this;
     }
 
     ADTSet `+(mixed in) {
@@ -136,7 +136,7 @@ class ProfileEntry {
 	add(in);
       else
 	map((array)in, add);
-      return this_object();
+      return this;
     }
 
     ADTSet `-(mixed out) {
@@ -144,7 +144,7 @@ class ProfileEntry {
 	sub(out);
       else
 	map((array)out, sub);
-      return this_object();
+      return this;
     }
 
     protected mixed cast(string to) {
@@ -379,7 +379,7 @@ class ProfileCache (string db_name) {
 	 up_to_datep(query)) return entry;
     }
 
-    entry = ProfileEntry( db, query, this_object() );
+    entry = ProfileEntry( db, query, this );
     return entry_cache[query +":"+ db] = entry;
   }
 

@@ -4,7 +4,7 @@ inherit GTK1.Ctree:ctree;
 
 class Node
 {
-   private protected program Prog=object_program(this_object());
+   private protected program Prog=this_program;
 
    private protected GTK1.CTreeNode node;
 

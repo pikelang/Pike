@@ -176,7 +176,7 @@ Packet certificate_verify_packet(string(8bit)|void signature_context)
 {
   SSL3_DEBUG_MSG("SSL.Connection: CERTIFICATE_VERIFY\n"
 		 "%O: handshake_messages: %d bytes.\n",
-		 this_object(), sizeof(handshake_messages));
+		 this, sizeof(handshake_messages));
   Buffer struct = Buffer();
 
   if (signature_context) {

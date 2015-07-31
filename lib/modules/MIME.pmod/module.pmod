@@ -113,9 +113,9 @@ protected class StringRange
     if (high < 0) high = 0;
     if (low > len) low = len;
     if (high > len) high = len;
-    if (!low && (high == len)) return this_object();
+    if (!low && (high == len)) return this;
     if ((high - low) < 65536) return data[start+low..start+high-1];
-    return StringRange(this_object(), low, high);
+    return StringRange(this, low, high);
   }
   protected int `[](int pos)
   {
@@ -157,7 +157,7 @@ protected class StringRange
     if (c == 'O')
       return sprintf("StringRange(%d bytes[%d..%d] %O)",
 		     data && sizeof(data), start, end-1, data && data[..40]);
-    return (string)this_object();
+    return (string)this;
   }
 }
 
@@ -1528,7 +1528,7 @@ class Message {
   {
     if (c == 'O')
       return sprintf("Message(%O)", disp_params);
-    return (string)this_object();
+    return (string)this;
   }
 }
 

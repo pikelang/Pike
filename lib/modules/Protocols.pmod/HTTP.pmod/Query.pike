@@ -345,7 +345,7 @@ void async_got_host(string server,int port)
    if (!server)
    {
       async_failed();
-      if (this_object()) {
+      if (this) {
 	//  we may be destructed here
 	close_connection();
       }
@@ -385,7 +385,7 @@ void async_fetch_read(mixed dummy,string data)
    {
       remove_call_out(async_timeout); // Bug 4773
       con->set_nonblocking(0,0,0);
-      request_ok(this_object(), @extra_args);
+      request_ok(this, @extra_args);
    }
 }
 
@@ -429,9 +429,9 @@ void async_fetch_close()
    close_connection();
    remove_call_out(async_timeout);
    if (errno) {
-     if (request_fail) (request_fail)(this_object(), @extra_args);
+     if (request_fail) (request_fail)(this, @extra_args);
    } else {
-     if (request_ok) (request_ok)(this_object(), @extra_args);
+     if (request_ok) (request_ok)(this, @extra_args);
    }
 }
 
@@ -1222,13 +1222,13 @@ void async_fetch(function callback,mixed ... extra)
       sizeof(buf)-datapos>=(int)headers["content-length"])
   {
     // FIXME: This is triggered erroneously for chunked transfer!
-    call_out(callback, 0, this_object(), @extra);
+    call_out(callback, 0, this, @extra);
     return;
   }
 
    if (!con)
    {
-      call_out(callback, 0, this_object(), @extra); // nothing to do, stupid...
+      call_out(callback, 0, this, @extra); // nothing to do, stupid...
       return;
    }
    extra_args=extra;
@@ -1255,14 +1255,14 @@ void timed_async_fetch(function(object, mixed ...:void) ok_callback,
   if (has_index (headers, "content-length") &&
       sizeof(buf)-datapos>=(int)headers["content-length"])
   {
-    call_out(ok_callback, 0, this_object(), @extra);
+    call_out(ok_callback, 0, this, @extra);
     return;
   }
 
   if (!con)
   {
     // nothing to do, stupid...
-    call_out(fail_callback, 0, this_object(), @extra);
+    call_out(fail_callback, 0, this, @extra);
     return;
   }
 

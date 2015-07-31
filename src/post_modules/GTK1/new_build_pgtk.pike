@@ -577,7 +577,7 @@ class Type
 	  else
 	    return (is ? classes[ name ]->pike_type(1) :
 		    (classes[ name ]->pike_type(0)+ "|zero"));
-	throw(sprintf("Unknown type %O", this_object()));
+	throw(sprintf("Unknown type %O", this));
 	return "mixed"+optp;
     }
   }
@@ -666,7 +666,7 @@ class Type
      case "array":
        if( !array_size )
          throw(sprintf("Cannot push array of unknown size (%O)",
-                       this_object()));
+                       this));
        if( !array_type )   throw("Cannot push array(mixed)"); 
        return
          "  {\n"
@@ -731,7 +731,7 @@ class Type
      default:
        if( classes[name] )
          return classes[name]->push( vv );
-       throw(sprintf("Cannot push %O, %s is not a class", this_object(),
+       throw(sprintf("Cannot push %O, %s is not a class", this,
                      name));
     }
   }
@@ -743,7 +743,7 @@ class Type
     if( subtypes )
     {
       throw(sprintf("Complex types cannot be handled automatically (%O)\n",
-                    this_object()));
+                    this));
     }
     if( Class c = classes[ name ] )
     {
@@ -764,7 +764,7 @@ class Type
        if( modifiers != "callback" )
        {
          throw(sprintf("Complex types cannot be handled automatically (%O)\n",
-                       this_object()));
+                       this));
        }
 
        /* Fallthrough */
@@ -889,7 +889,7 @@ class Type
          }
 //          if(!sub && !array_type)
 //          {
-//            throw( sprintf("Cannot push %O", this_object()) );
+//            throw( sprintf("Cannot push %O", this) );
 //          }
          declare = "  int _i%[0]d;\n  struct array *_a%[0]d = 0;\n  " +
                  "CONST "+sub+"\n";
@@ -1038,7 +1038,7 @@ class Class( string name, string file, int line )
   void create_default_sprintf( )
   {
     if( name == "_global" ) return 0;
-    add_function( Function(this_object(),
+    add_function( Function(this,
                            "_sprintf",
                            Type("string"), ({
                              Type("int"),
@@ -1194,25 +1194,25 @@ class Class( string name, string file, int line )
   Class add_function( object f )
   {
     functions[ f->name ] = f;
-    return this_object();
+    return this;
   }
 
   Class add_signal( Signal s )
   {
     signals[ s->name ] = s;
-    return this_object();
+    return this;
   }
   
   Class add_member( Member m )
   {
     members[ m->name ] = m;
-    return this_object();
+    return this;
   }
   
   Class add_ref( string f, int l, Class c )
   {
     references += ({ Ref( f, l, c ) });
-    return this_object();
+    return this;
   }
 }
 
@@ -1676,7 +1676,7 @@ void main(int argc, array argv)
   add_constant( "Constant", Constant );
   add_constant( "COMPOSE", Parser.Pike.reconstitute_with_line_numbers );
   object output_plugin = ((program)output)( source_dir, destination_dir,
-                                            this_object() );
+                                            this );
 
   if (string files = Stdio.read_file (destination_dir + "/files_to_compile")) {
     int ok = 1;

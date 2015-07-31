@@ -1363,7 +1363,7 @@ class FilterError
     error_message = msg;
     error_backtrace = backtrace();
     error_backtrace = error_backtrace[..<1];
-    throw (this_object());
+    throw (this);
   }
 }
 

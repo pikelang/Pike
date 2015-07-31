@@ -63,7 +63,7 @@ class Proxify
       {
 // 	 werror("%s: client close\n",rid->full_query);
 	 destruct(con);
-	 destruct(this_object());
+	 destruct(this);
       }
 
       void async_close()

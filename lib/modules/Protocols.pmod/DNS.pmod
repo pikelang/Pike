@@ -1906,7 +1906,7 @@ class client
     //! Cancel the current request.
     void cancel()
     {
-      remove(this_object());
+      remove(this);
     }
     mixed retry_co;
   };

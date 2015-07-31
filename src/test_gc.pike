@@ -30,11 +30,11 @@ array(int) a() {
       function(object:mixed) checkfn;
       void check_live (mapping(object:int) checked) {
 	//write (\"check_live %s\\n\", id);
-	checked[this_object()] = 1;
+	checked[this] = 1;
 	if (!get_nk1()) my_error (id + \"->nk1 got destructed too early.\\n\");
 	else if (!get_nk2()) my_error (id + \"->nk2 got destructed too early.\\n\");
 	else if (!get_wk1()) my_error (id + \"->wk1 got destructed too early.\\n\");
-	else if (functionp (checkfn) && !checkfn (this_object()))
+	else if (functionp (checkfn) && !checkfn (this))
 	  my_error (id + \"->checkfn failed.\\n\");
 	else {
 	  mixed v;
@@ -67,7 +67,7 @@ array(int) a() {
       {
 	inherit B_live;
 	void check_live (mapping(object:int) checked) {
-	  checked[this_object()] = 1;
+	  checked[this] = 1;
 	  if (catch (check_live_0 (checked)))
 	    my_error (\"Parent for %s got destructed too early.\\n\", id);
 	  else ::check_live (checked);
@@ -78,7 +78,7 @@ array(int) a() {
 	  inherit B_live;
 	  string id = \"live_nested[2]\";
 	  void check_live (mapping(object:int) checked) {
-	    checked[this_object()] = 1;
+	    checked[this] = 1;
 	    if (catch (check_live_1 (checked)))
 	      my_error (\"Parent for %s got destructed too early.\\n\", id);
 	    else ::check_live (checked);
@@ -89,7 +89,7 @@ array(int) a() {
 	  inherit B_live;
 	  string id = \"live_nested[3]\";
 	  void check_live (mapping(object:int) checked) {
-	    checked[this_object()] = 1;
+	    checked[this] = 1;
 	    if (catch (check_live_1 (checked)))
 	      my_error (\"Parent for %s got destructed too early.\\n\", id);
 	    else ::check_live (checked);
@@ -101,7 +101,7 @@ array(int) a() {
 	inherit B_live;
 	string id = \"live_nested[4]\";
 	void check_live (mapping(object:int) checked) {
-	  checked[this_object()] = 1;
+	  checked[this] = 1;
 	  if (catch (check_live_0 (checked)))
 	    my_error (\"Parent for %s got destructed too early.\\n\", id);
 	  else ::check_live (checked);
@@ -116,7 +116,7 @@ array(int) a() {
       {
 	inherit B_dead;
 	void check_live (mapping(object:int) checked) {
-	  checked[this_object()] = 1;
+	  checked[this] = 1;
 	  if (catch (check_live_0 (checked)))
 	    my_error (\"Parent for %s got destructed too early.\\n\", id);
 	  else ::check_live (checked);
@@ -126,7 +126,7 @@ array(int) a() {
 	{
 	  inherit B_dead;
 	  void check_live (mapping(object:int) checked) {
-	    checked[this_object()] = 1;
+	    checked[this] = 1;
 	    if (catch (check_live_1 (checked)))
 	      my_error (\"Parent for %s got destructed too early.\\n\", id);
 	    else ::check_live (checked);
@@ -136,7 +136,7 @@ array(int) a() {
 	{
 	  inherit B_dead;
 	  void check_live (mapping(object:int) checked) {
-	    checked[this_object()] = 1;
+	    checked[this] = 1;
 	    if (catch (check_live_1 (checked)))
 	      my_error (\"Parent for %s got destructed too early.\\n\", id);
 	    else ::check_live (checked);
@@ -147,7 +147,7 @@ array(int) a() {
       {
 	inherit B_dead;
 	void check_live (mapping(object:int) checked) {
-	  checked[this_object()] = 1;
+	  checked[this] = 1;
 	  if (catch (check_live_0 (checked)))
 	    my_error (\"Parent for %s got destructed too early.\\n\", id);
 	  else ::check_live (checked);

@@ -352,7 +352,7 @@ class Node
     data = get_parser()->finish( _data )->read();
 
     string path = raw_class_path();
-    refs[path] = this_object();
+    refs[path] = this;
 
     sort(class_children->name, class_children);
     sort(module_children->name, module_children);
@@ -419,8 +419,8 @@ class Node
 
   protected string parse_node(Parser.HTML p, mapping m, string c) {
     if(!m->name) error("Unnamed %O %O\n", p->tag_name(), m);
-    this_object()[p->tag_name()+"_children"] +=
-      ({ Node( p->tag_name(), m->name, c, this_object() ) });
+    this[p->tag_name()+"_children"] +=
+      ({ Node( p->tag_name(), m->name, c, this ) });
     return "";
   }
 
@@ -468,7 +468,7 @@ class Node
 	    else name = m->belongs + "." + name;
 	  }
 	  method_children +=
-	    ({ Node( "method", name, c, this_object() ) });
+	    ({ Node( "method", name, c, this ) });
 	  return ({ "" });
 	}
 
@@ -484,7 +484,7 @@ class Node
 	parser->finish(c);
 	foreach(Array.uniq(names) - ({ 0, "" }), string name) {
 	  method_children +=
-	    ({ Node( "method", name, c, this_object() ) });
+	    ({ Node( "method", name, c, this ) });
 	}
 	return ({ "" });
 	break;
@@ -493,7 +493,7 @@ class Node
 	if( m["homogen-name"] ) {
 	  string name = m["homogen-name"];
 	  directive_children +=
-	    ({ Node( "directive", name, c, this_object() ) });
+	    ({ Node( "directive", name, c, this ) });
 	  return ({ "" });
 	}
 
@@ -511,7 +511,7 @@ class Node
 	dirparser->finish(c);
 	foreach(Array.uniq(directives) - ({ 0, "" }), string name) {
 	  directive_children +=
-	    ({ Node( "directive", name, c, this_object() ) });
+	    ({ Node( "directive", name, c, this ) });
 	}
 	return ({ "" });
 	break;
@@ -526,25 +526,25 @@ class Node
 	    ( ([ "constant":
 		 lambda(Parser.HTML p, mapping m, string c) {
 		   string name = Parser.parse_html_entities(m->name);
-		   add_ref(path, "constant", name, "", this_object(), c);
+		   add_ref(path, "constant", name, "", this, c);
 		 },
 		 "variable":
 		 lambda(Parser.HTML p, mapping m, string c) {
 		   string name = Parser.parse_html_entities(m->name);
-		   add_ref(path, "variable", name, "", this_object(), c);
+		   add_ref(path, "variable", name, "", this, c);
 		 },
 		 "inherit":
 		 lambda(Parser.HTML p, mapping m, string c) {
 		   if (m->name) {
 		     string name = Parser.parse_html_entities(m->name);
-		     add_ref(path, "inherit", name, "", this_object(), c);
+		     add_ref(path, "inherit", name, "", this, c);
 		   }
 		 },
 	    ]) )->finish(c);
 	}
 	else
 	  add_ref(path, m["homogen-type"], m["homogen-name"],
-		  "", this_object(), c);
+		  "", this, c);
 	break;
 
       }
@@ -643,7 +643,7 @@ class Node
   array(Node) get_ancestors()
   {
     PROFILE();
-    array tmp = ({ this_object() }) + parent->get_ancestors();
+    array tmp = ({ this }) + parent->get_ancestors();
     ENDPROFILE("get_ancestors");
     return tmp;
   }
@@ -680,7 +680,7 @@ class Node
 	// Try cutting of the last section, and retry.
 	array(string) tmp = resolution/".";
 	if ((sizeof(tmp) > 1) && (res_obj = refs[tmp[..sizeof(tmp)-2]*"."])) {
-	  if (res_obj == this_object()) {
+	  if (res_obj == this) {
 	    return sprintf("<font face='courier'>" + _reference + "</font>");
 	  }
 	  return create_reference(make_filename(),
@@ -772,7 +772,7 @@ class Node
       string my_name = Parser.encode_html_entities(node->name);
       if(node->type=="method") {
 	my_name+="()";
-	if (node == this_object()) {
+	if (node == this) {
 	  my_name="<b>"+my_name+"</b>";
 	}
       } else if (node->type == "namespace") {
@@ -781,7 +781,7 @@ class Node
       else
 	my_name="<b>"+my_name+"</b>";
 
-      if(node==this_object())
+      if(node==this)
 	res->add( my_name, "<br />\n" );
       else
 	res->add( "<a href='", make_link(node, extra_levels), "'>",
@@ -804,7 +804,7 @@ class Node
       string my_class_path =
 	(node->is_TopNode)?"[Top]":node->make_class_path();
 
-      if(node == this_object())
+      if(node == this)
 	res += sprintf("<b>%s</b><br />\n",
 		       Parser.encode_html_entities(my_class_path));
       else
@@ -819,7 +819,7 @@ class Node
   {
     string res="";
 
-    res += make_hier_list(this_object(), extra_levels);
+    res += make_hier_list(this, extra_levels);
 
     res += low_make_classic_navbar(module_children, "Modules", extra_levels);
     res += low_make_classic_navbar(class_children, "Classes", extra_levels);
@@ -848,7 +848,7 @@ class Node
     if((type == "method") || (type == "directive"))
       return make_navbar_low(parent);
     else
-      return make_navbar_low(this_object());
+      return make_navbar_low(this);
   }
 
   string low_make_index_js(string name, array(Node) nodes)
@@ -942,7 +942,7 @@ class Node
   Node find_prev_node()
   {
     array(Node) siblings = find_siblings();
-    int index = search( siblings, this_object() );
+    int index = search( siblings, this );
 
     Node tmp;
 
@@ -963,7 +963,7 @@ class Node
       return find_children()[0];
 
     array(Node) siblings = find_siblings();
-    int index = search( siblings, this_object() );
+    int index = search( siblings, this );
 
     Node tmp;
     if(index==sizeof(siblings)-1)

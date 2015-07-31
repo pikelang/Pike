@@ -132,7 +132,7 @@ class ImageWindow
 
     set_image( q );
     queue_resize();
-    return this_object();
+    return this;
   }
 }
 

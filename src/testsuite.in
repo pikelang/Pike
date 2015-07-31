@@ -474,7 +474,7 @@ test_eval_error([[mixed x; return mkmapping(x,x)]]);
 
 test_eval_error([[class Foo {
   void bar() {}
-  void foo() {destruct(this_object());bar();}
+  void foo() {destruct(this);bar();}
 };
   Foo()->foo();
 ]])
@@ -751,40 +751,40 @@ test_type_error(int,array,({1,2,3}))
 test_type_error(int,mapping,([1:2,3:4]))
 test_type_error(int,multiset,(<1,2,3>))
 test_type_error(int,function,lambda() { return 17; })
-test_type_error(int,program,object_program(this_object()))
-test_type_error(int,object,this_object())
+test_type_error(int,program,this_program)
+test_type_error(int,object,this)
 
 test_type_error(float,int,17)
 test_type_error(float,array,({1,2,3}))
 test_type_error(float,mapping,([1:2,3:4]))
 test_type_error(float,multiset,(<1,2,3>))
 test_type_error(float,function,lambda() { return 17; })
-test_type_error(float,program,object_program(this_object()))
-test_type_error(float,object,this_object())
+test_type_error(float,program,this_program)
+test_type_error(float,object,this)
 
 test_type_error(array,int,17)
 test_type_error(array,float,17.23)
 test_type_error(array,mapping,([1:2,3:4]))
 test_type_error(array,multiset,(<1,2,3>))
 test_type_error(array,function,lambda() { return 17; })
-test_type_error(array,program,object_program(this_object()))
-test_type_error(array,object,this_object())
+test_type_error(array,program,this_program)
+test_type_error(array,object,this)
 
 test_type_error(mapping,int,17)
 test_type_error(mapping,float,17.23)
 test_type_error(mapping,array,({1,2,3}))
 test_type_error(mapping,multiset,(<1,2,3>))
 test_type_error(mapping,function,lambda() { return 17; })
-test_type_error(mapping,program,object_program(this_object()))
-test_type_error(mapping,object,this_object())
+test_type_error(mapping,program,this_program)
+test_type_error(mapping,object,this)
 
 test_type_error(multiset,int,17)
 test_type_error(multiset,float,17.23)
 test_type_error(multiset,array,({1,2,3}))
 test_type_error(multiset,mapping,([1:2,3:4]))
 test_type_error(multiset,function,lambda() { return 17; })
-test_type_error(multiset,program,object_program(this_object()))
-test_type_error(multiset,object,this_object())
+test_type_error(multiset,program,this_program)
+test_type_error(multiset,object,this)
 
 test_type_error(function,int,17)
 test_type_error(function,float,17.23)
@@ -1348,11 +1348,11 @@ test_any( [[
 // bug [1858] ------------------------------------------------------------
 // http://community/crunch/show_bug.cgi?id=1858
 string s=#"
-   constant foo=({this_object()});
+   constant foo=({this});
    int|string test()
    {
       if (!foo[0]) return sprintf(\"foo is %O\\n\",foo)-\"\\n\";
-      if (foo[0]==this_object()) return 1;
+      if (foo[0]==this) return 1;
       return sprintf(\"foo is %O\\n\",foo)-\"\\n\";
    }
 ";
@@ -2234,7 +2234,7 @@ test_program([[
     }
   }
   int a() {
-    return equal (A()->B()->f(), ({object_program (this_object()), A, A.B, A.B}));
+    return equal (A()->B()->f(), ({object_program (this), A, A.B, A.B}));
   }
 ]])
 
@@ -3074,7 +3074,7 @@ test_any([[
 
     int bar ()
     {
-      return (this_object()->gazonk == "foo") ? 1 : 0;
+      return (this->gazonk == "foo") ? 1 : 0;
     }
   };
 
@@ -3154,7 +3154,7 @@ test_compile_any([[class { object(Stdio.FILE) f; void create() { f=Stdio.FILE();
 test_eq([[compile_string("#define A(X) (X)\nint x() { return A \n\t(1); }")()->x()]],1)
 
 test_any([[class G { mapping t=([]);
- class tO { void init(string name) { t[name]=this_object(); }}
+ class tO { void init(string name) { t[name]=this; }}
  class W { inherit tO; void create() { init("foo"); }}
 }; object x=G(); x->W(); return objectp(x->t->foo)]],1)
 
@@ -4407,7 +4407,7 @@ test_any([[
 
 
 test_compile_error([[void foo() { 1++; }]])
-dnl test_compile_error([[void foo() { return destruct(this_object()); }]])
+dnl test_compile_error([[void foo() { return destruct(this); }]])
 test_any([[class foo { constant x=17; }; class bar { inherit foo; constant x=18; }; return bar()->x;]],18)
 test_program([[inline string foo(string s){ while(s[0] == ' ' || s[0] == '\t') s = s[1..]; return(s); } string a() { return foo("   bar"); }]])
 
@@ -4521,7 +4521,7 @@ test_any([[
   return x;
 ]], 5)
 
-test_true([[lambda(function f) {return 1;}(object_program(this_object()));]])
+test_true([[lambda(function f) {return 1;}(this_program);]])
 test_any([[
   function my_lambda;
 
@@ -5038,10 +5038,10 @@ test_any([[
 
 test_any([[
   object q=class {}();
-  object o=Debug.next(this_object());
+  object o=Debug.next(this);
   while(zero_type(o)) o=Debug.next(o);  /* skip destructed */
   catch { if(objectp(o) || object_program(o)) return 1;  };
-  o=Debug.prev(this_object());
+  o=Debug.prev(this);
   while(zero_type(o)) o=Debug.prev(o); /* skip destructed */
   catch { if(objectp(o) || object_program(o)) return 1;  };
   return 0;
@@ -5062,7 +5062,7 @@ test_any([[
   class Foo {  };
   return  (!function_object(object_program(Foo()))) &&
 	  (function_program(object_program(Foo())) ==
-	   object_program(this_object()));
+	   this_program);
 ]], 1)
 
 test_any([[
@@ -5091,7 +5091,7 @@ test_any([[
 test_any([[
   int q;
   return function_object( lambda() { return q; });
-]],[[this_object()]])
+]],[[this]])
 
 
 test_compile(class c { object(Stdio.File) foo=class foobar {} ();})
@@ -6240,7 +6240,7 @@ test_any([[
     object o = class Live {
       array g;
       array a = ({17});
-      void create() {g = ({this_object()});}
+      void create() {g = ({this});}
       void destroy() {all_constants()->kablutt = a;}
     }();
     o = 0;
@@ -6251,7 +6251,7 @@ test_any([[
     object o = class Live {
       array g;
       array a = set_weak_flag (({({17})}), 1);
-      void create() {g = ({this_object()});}
+      void create() {g = ({this});}
       void destroy() {
 	if (!equal (a, ({({17})})))
 	  error ("Contents in weak array zapped: %O.\n", a);
@@ -6264,7 +6264,7 @@ test_any([[
     object o = class Live {
       array g;
       array a = set_weak_flag (({({17})}), 1);
-      void create() {g = ({this_object()});}
+      void create() {g = ({this});}
       void destroy() {all_constants()->blatinka = a;}
     }();
     o = 0;
@@ -6353,8 +6353,8 @@ test_do(add_constant("blatinka");)
 
   test_any([[{
     class Foo {
-      array(Foo) f = ({this_object()});
-      multiset(Foo) g = set_weak_flag((<this_object()>), 1);
+      array(Foo) f = ({this});
+      multiset(Foo) g = set_weak_flag((<this>), 1);
     };
     multiset(Foo) x = set_weak_flag ((<Foo()>), 1);
     gc();
@@ -6362,8 +6362,8 @@ test_do(add_constant("blatinka");)
   }]], 1);
   test_any([[{
     class Foo {
-      array(Foo) f = ({this_object()});
-      multiset(Foo) g = set_weak_flag((<this_object()>), 1);
+      array(Foo) f = ({this});
+      multiset(Foo) g = set_weak_flag((<this>), 1);
       void destroy() {add_constant("beltbent_oblivion", 1);}
     };
     multiset(Foo) x = set_weak_flag ((<Foo()>), 1);
@@ -6386,7 +6386,7 @@ test_do(add_constant("blatinka");)
 
   test_any([[{
     gc();
-    array a = set_weak_flag (({0, this_object()}), 1);
+    array a = set_weak_flag (({0, this}), 1);
     a[0] = a;
     a = 0;
     return gc() >= 1;
@@ -6403,7 +6403,7 @@ test_do(add_constant("blatinka");)
   test_any([[{
     class Live {
       array a;
-      array g = ({this_object()});
+      array g = ({this});
       void create()
       {
 	a = set_weak_flag (({0}), 1);
@@ -6447,7 +6447,7 @@ test_do(add_constant("blatinka");)
       void create (Live _l)
       {
 	l = _l;
-	l->f = this_object();
+	l->f = this;
       }
       array a = allocate (2, Bar)();
     };
@@ -6633,7 +6633,7 @@ test_do(add_constant("blatinka");)
     {
       object o = class {}();
       array a = set_weak_flag (({o}), 1);
-      object this = this_object();
+      object this = this;
       void create() {destruct (o);}
     }();
     f = 0;
@@ -6644,7 +6644,7 @@ test_do(add_constant("blatinka");)
     {
       object o = class {}();
       mapping m = set_weak_flag (([1:o]), 1);
-      object this = this_object();
+      object this = this;
       void create() {destruct (o);}
     }();
     f = 0;
@@ -6655,7 +6655,7 @@ test_do(add_constant("blatinka");)
     {
       object o = class {}();
       mapping m = set_weak_flag (([o:1]), 1);
-      object this = this_object();
+      object this = this;
       void create() {destruct (o);}
     }();
     f = 0;
@@ -6666,7 +6666,7 @@ test_do(add_constant("blatinka");)
     {
       object o = class {}();
       multiset m = set_weak_flag ((<o>), 1);
-      object this = this_object();
+      object this = this;
       void create() {destruct (o);}
     }();
     f = 0;
@@ -6817,7 +6817,7 @@ test_do(add_constant("blatinka");)
       int test()
       {
 	object o = class {
-	    mapping a = ([1: this_object()]);
+	    mapping a = ([1: this]);
 	    void destroy() {x = a;}
 	  }();
 	o = 0;
@@ -6832,7 +6832,7 @@ test_do(add_constant("blatinka");)
       int test()
       {
 	object o = class {
-	    multiset a = (<this_object()>);
+	    multiset a = (<this>);
 	    void destroy() {x = a;}
 	  }();
 	o = 0;
@@ -6847,7 +6847,7 @@ test_do(add_constant("blatinka");)
       int test()
       {
 	object o = class {
-	    array a = ({this_object()});
+	    array a = ({this});
 	    void destroy() {x = a;}
 	  }();
 	o = 0;
@@ -6863,7 +6863,7 @@ test_do(add_constant("blatinka");)
       int test()
       {
 	object o = class {
-	    Obj a = Obj (this_object());
+	    Obj a = Obj (this);
 	    void destroy() {x = a;}
 	  }();
 	o = 0;
@@ -6879,7 +6879,7 @@ test_do(add_constant("blatinka");)
       int test()
       {
 	object o = class {
-	    Obj a = Obj (this_object());
+	    Obj a = Obj (this);
 	    void destroy() {x = a;}
 	  }();
 	o = 0;
@@ -8137,24 +8137,24 @@ test_true(1)
 test_true("")
 test_true(!0)
 test_true(!(!1))
-test_true(this_object())
+test_true(this)
 test_true(a) // a is the test function
 test_true(0.0)
 test_true(([]))
 test_true(({}))
 test_true((<>))
-test_true(object_program(this_object()))
+test_true(this_program)
 
 // testing !
 test_equal(!"",0)
-test_equal(!this_object(),0)
+test_equal(!this,0)
 
 // testing ==
 test_true(1==1)
 test_true(!(1==2))
 test_true(""=="")
 test_true(!(""=="foo"))
-test_true(this_object()==this_object())
+test_true(this==this)
 test_true(2.0==2.0)
 test_true(({})==({}))
 
@@ -8226,7 +8226,7 @@ test_eq((-1.0)+(-1),-2.0)
 test_equal(({1,2,3})+({4,5,6}),({1,2,3,4,5,6}))
 test_equal((<1,2,3,4>)+(<4,5,6>),(<1,2,3,4,4,5,6>))
 test_equal(([0:1,3:6])+([5:2,3:6]),([0:1,3:6,3:6,5:2]))
-test_eval_error(return this_object() + this_object())
+test_eval_error(return this + this)
 test_any(return((1+2+3)-(1+2-3)), 6)
 
 // testing F_APPEND_MAPPING
@@ -8507,13 +8507,13 @@ test_true(1?1:0)
 test_true(""?1:0)
 test_true(!0?1:0)
 test_true(!(!1)?1:0)
-test_true(this_object()?1:0)
+test_true(this?1:0)
 test_true(a?1:0) // a is the test function
 test_true(0.0?1:0)
 test_true(([])?1:0)
 test_true(({})?1:0)
 test_true((<>)?1:0)
-test_true(object_program(this_object())?1:0)
+test_true(this_program?1:0)
 test_eq(1 ? "a" : 1 ? "b" : 1, "a")
 test_eq(0 ? "a" : 1 ? "b" : 1 ? "c" : 1, "b")
 test_eq(0 ? "a" : 0 ? "b" : 1 ? "c" : 1, "c")
@@ -8561,7 +8561,7 @@ test_eq((<'f','o','o'>)['f'],1)
 test_eq((<'f','o','o'>)[random(0)+'b'],0)
 test_eq((<'f','o','o'>)[ [int](mixed)-1],0)
 
-test_eq([[class Z { mixed `->(mixed x) { return this_object()[x]; } int foo() { return 1; }}()->foo()]],1)
+test_eq([[class Z { mixed `->(mixed x) { return this[x]; } int foo() { return 1; }}()->foo()]],1)
 
 // Test some indexing opcodes.
 test_eval_error([[return ({1})[1];]])
@@ -8894,13 +8894,13 @@ test_any(if(1) return 1; else return 0,1)
 test_any(if("") return 1; else return 0,1)
 test_any(if(!0) return 1; else return 0,1)
 test_any(if(!(!1)) return 1; else return 0,1)
-test_any(if(this_object()) return 1; else return 0,1)
+test_any(if(this) return 1; else return 0,1)
 test_any(if(a) return 1; else return 0,1) dnl a is the test function
 test_any(if(0.0) return 1; else return 0,1)
 test_any(if(([])) return 1; else return 0,1)
 test_any(if(({})) return 1; else return 0,1)
 test_any(if((<>)) return 1; else return 0,1)
-test_any(if(object_program(this_object())) return 1; else return 0,1)
+test_any(if(this_program) return 1; else return 0,1)
 
 // break
 test_any(while(1) break; return 1,1)
@@ -9202,7 +9202,7 @@ test_switch4(17,18,19,20,21)
 test_switch4("a","b","c","d","e")
 test_switch4("a",0,"c","d","e")
 test_switch4(1.0,2.0,3.0,4.0,5.0)
-test_switch4(this_object(),"",0,4.0,1)
+test_switch4(this,"",0,4.0,1)
 
 test_any(int e;string t=""; for(e=0;e<10;e++) switch(e) { default: t+=e; case 4..8: } return t,"01239")
 
@@ -10389,12 +10389,12 @@ define(do_test_foop,[[
 test_eq($1 (17), !($2))
 test_eq($1 (1.7), !($2-1))
 test_eq($1 ("17"), !($2-2))
-test_eq($1 (this_object()), !($2-3))
+test_eq($1 (this), !($2-3))
 test_eq($1 (a), !($2-4)) // a is the test function
 test_eq($1 (({})), !($2-5))
 test_eq($1 (([])), !($2-6))
 test_eq($1 ((<>)), !($2-7))
-test_eq($1 (object_program(this_object())), !($2-8))
+test_eq($1 (this_program), !($2-8))
 test_eq($1 (typeof(1)), 0)
 ]])
 
@@ -10749,7 +10749,7 @@ cond_end // thread_create
 test_eq(copy_value(1),1)
 test_eq(copy_value(""),"")
 test_eq(copy_value(1.0),1.0)
-test_eq(copy_value(this_object()),this_object())
+test_eq(copy_value(this),this)
 test_eq(copy_value(a),a)
 test_eq(copy_value(typeof(true)),typeof(true))
 define(do_test_copy_value,[[
@@ -10900,7 +10900,7 @@ test_eq(function_name(a),"a")
 test_eq(function_name(function_name),0)
 
 // - function_object
-test_eq(function_object(a),this_object())
+test_eq(function_object(a),this)
 test_eq(function_name(function_object),0)
 
 // - function_program
@@ -11470,6 +11470,7 @@ cond([[all_constants()->mktime]],
 
 // - object_program
 test_true(programp(object_program(this_object())))
+test_true(object_program(this)==this_program)
 
 // - object_variablep
 // - openlog
@@ -12072,13 +12073,13 @@ test_program_eq([[
     class B {
       string _sprintf() {return "B";}
       mixed f() {
-	return sprintf ("%O%O%O%O",
-			this_object (2), this_object (1), this_object (0), this_object());
+	return sprintf ("%O%O%O%O%O",
+			this_object (2), this_object (1), this_object (0), this_object(), this);
       }
     }
   }
   string a() {return A()->B()->f();}
-]], "gABB")
+]], "gABBB")
 
 test_program_eq([[
   string _sprintf() {return "g";}
@@ -12368,7 +12369,7 @@ test_program_eq([[
     object o = compile_string ("inherit X;", 0, Handler())();
     return o->parent();
   }
-]], this_object())
+]], this)
 
 
 // - this_thread

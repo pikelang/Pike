@@ -1346,11 +1346,7 @@ class Connection {
          launch_functions(inputbuffer[..end]);
          if(lower_case(inputbuffer[..end]) == "quit")
          {
-#if constant(this)
            destruct(this);
-#else
-           destruct(this_object());
-#endif
            return;
          }
          pattern = "\r\n";

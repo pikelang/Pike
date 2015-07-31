@@ -190,7 +190,7 @@ class Node
   /*protected*/ Document _get_doc() {return owner_document;}
   /*protected*/ void _text_content (String.Buffer into);
   /*protected*/ void _xml_format (String.Buffer into);
-  /*protected*/ void _destruct_tree() {destruct (this_object());}
+  /*protected*/ void _destruct_tree() {destruct (this);}
 
 #define WS "%*[ \t\n\r]"
 #define NAME "%[^][ \t\n\r/@(){},=.]"
@@ -199,8 +199,7 @@ class Node
   {
     if (sizeof (args)) msg = sprintf (msg, @args);
     msg += sprintf ("%s node%s.\n", class_name,
-		    this_object()->node_name ?
-		    " " + this_object()->node_name : "");
+		    this->node_name ? " " + this->node_name : "");
     error (msg);
   };
 
@@ -258,7 +257,7 @@ class Node
 
 #define CHECK_CONTENT							\
   if (stringp (content))						\
-    content = sloppy_parse_fragment (content, this_object());
+    content = sloppy_parse_fragment (content, this);
 #define NODE_AT(POS) (stringp (content[POS]) ? make_node (POS) : content[POS])
 
 protected class NodeWithChildren
@@ -300,7 +299,7 @@ protected class NodeWithChildren
     if (arrayp (content))
       foreach (content, string|Node child)
 	if (objectp (child)) child->_destruct_tree();
-    destruct (this_object());
+    destruct (this);
   }
 
   /*protected*/ Node make_node (int pos)
@@ -328,7 +327,7 @@ protected class NodeWithChildren
     else
       node = Text (doc, text);
     content[pos] = node;
-    node->parent_node = this_object();
+    node->parent_node = this;
     node->pos_in_parent = pos;
     return node;
   }
@@ -506,8 +505,8 @@ protected class NodeWithChildElements
 	if (!sizeof (name))
 	  simple_path_error ("No attribute name after @ in ");
 
-	foreach (rec_search ? ({this_object()}) + get_descendant_elements() :
-		 ({this_object()}), NodeWithChildElements node) {
+	foreach (rec_search ? ({this}) + get_descendant_elements() :
+		 ({this}), NodeWithChildElements node) {
 	  mapping(string:string) attr = node->attributes;
 	  if (!mappingp (attr))
 	    simple_path_error ("Cannot access an attribute %O in ", name);
@@ -961,19 +960,19 @@ class Document
 #if 0
   // Disabled for now since the tree can't be manipulated anyway.
   Element create_element (string tag_name)
-    {return Element (this_object(), tag_name);}
+    {return Element (this, tag_name);}
   //DocumentFragment create_document_fragment();
   Text create_text_node (string data)
-    {return Text (this_object(), data);}
+    {return Text (this, data);}
   Comment create_comment (string data)
-    {return Comment (this_object(), data);}
+    {return Comment (this, data);}
   CDATASection create_cdata_section (string data)
-    {return CDATASection (this_object(), data);}
+    {return CDATASection (this, data);}
   ProcessingInstruction create_processing_instruction (string target, string data)
-    {return ProcessingInstruction (this_object(), target, data);}
+    {return ProcessingInstruction (this, target, data);}
   //Attr create_attribute (string name, string|void default_value);
   EntityReference create_entity_reference (string name)
-    {return EntityReference (this_object(), name);}
+    {return EntityReference (this, name);}
 #endif
 
   //NodeList get_elements_by_tag_name (string tagname);
@@ -1019,7 +1018,7 @@ class Document
   protected Element document_element = 0;
   /*protected*/ mapping(string:array(Node)) _lookup_mapping = ([]);
 
-  /*protected*/ Document _get_doc() {return this_object();}
+  /*protected*/ Document _get_doc() { return this; }
 
   /*protected*/ void _xml_format (String.Buffer into) {xml_format_children (into);}
 

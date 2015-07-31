@@ -294,7 +294,7 @@ class Directory
 
   Directory low_add_path(array(string) path, string|void dir_id)
   {
-    Directory d = this_object();
+    Directory d = this;
     foreach(path; int i; string dir) {
       if (dir == ".") continue;
       d = (d->sub_dirs[dir] ||
