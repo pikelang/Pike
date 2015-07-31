@@ -1392,6 +1392,13 @@ int gnapp(int t)
 
 array start()
 {
+  if ((uname()->sysname == "Linux") &&
+      (< "3.15", "3.16", "3.17", "3.18">)[uname()->release[..3] ]) {
+    // This test trigers a kernel bug in Linux kernels 3.15 - 3.18
+    // introduced in commit b3ab03160dfaf8ab78d476b670de319f4c1a5685,
+    // and fixed in commit 3245d6acab981a2388ffb877c7ecc97e763c59d4.
+    return ({});
+  }
   array a=({});
   for(int e=0;e<10;e++)
     a+=({thread_create(gnapp,e)});
