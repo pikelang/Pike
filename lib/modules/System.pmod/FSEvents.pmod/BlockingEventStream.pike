@@ -20,7 +20,7 @@
 
   protected void bfse_callback(string path, int flags, int event_id)
   {
-    received_events->write((["path": path, "flags": flags, "event_id": event_id]));
+    received_events->put((["path": path, "flags": flags, "event_id": event_id]));
   }
 
 //!
