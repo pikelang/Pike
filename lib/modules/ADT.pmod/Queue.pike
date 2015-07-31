@@ -22,7 +22,8 @@ protected array _values()
   return values(l);
 }
 
-void write(mixed ... items)
+//! @deprecated put
+__deprecated__ void write(mixed ... items)
 {
   l += items;
 }
@@ -30,21 +31,21 @@ void write(mixed ... items)
 //! @decl void write(mixed ... items)
 //! @decl void put(mixed ... items)
 //! Adds @[items] to the queue.
-//
 void put(mixed ... items)
 {
   l += items;
 }
 
-mixed read()
+//! @deprecated get
+__deprecated__ mixed read()
 {
   return get();
 }
 
 //! @decl mixed read()
 //! @decl mixed get()
-//! Returns the next element from the queue.
-//
+//! Returns the next element from the queue, or @expr{UNDEFINED@} if
+//! the queue is empty.
 mixed get()
 {
   if( !sizeof(l) ) return UNDEFINED;
@@ -53,15 +54,14 @@ mixed get()
   return res;
 }
 
-//! Returns the next element from the queue
-//! without removing it from the queue.
+//! Returns the next element from the queue without removing it from
+//! the queue. Returns @expr{0@} if the queue is empty.
 mixed peek()
 {
   return sizeof(l) && l[0];
 }
 
-//! Returns true if the queue is empty,
-//! otherwise zero.
+//! Returns true if the queue is empty, otherwise zero.
 int(0..1) is_empty()
 {
   return !sizeof(l);
