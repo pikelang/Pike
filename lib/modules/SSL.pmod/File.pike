@@ -1657,7 +1657,7 @@ int is_open()
   ENTER (0) {
     if (sizeof(user_read_buffer || "")) RETURN(1);
     if ((close_state == STREAM_OPEN || close_state == CLEAN_CLOSE) &&
-	stream && stream->is_open()) {
+	stream && stream->is_open() && conn) {
       // When close_state == STREAM_OPEN, we have to check if there's
       // a close packet waiting to be read. This is common in
       // keep-alive situations since the remote end might have sent a
@@ -1766,12 +1766,18 @@ protected int queue_write()
 		      sizeof (write_buffer));
       break loop;
     }
+    if (!conn) {
+      // conn has been destructed by some other thread.
+      // This is likely to have been done by that thread calling close().
+      return 1;
+    }
+
     res = 0;
   }
 
   if (!sizeof(write_buffer)) {
     if (stream) stream->set_write_callback(0);
-    if (!(conn->state & CONNECTION_handshaking)) {
+    if (conn && !(conn->state & CONNECTION_handshaking)) {
       SSL3_DEBUG_MSG("queue_write: Write buffer empty -- ask for some more data.\n");
       schedule_poll();
     }
