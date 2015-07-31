@@ -187,7 +187,7 @@ class simple
   //! @seealso
   //! @[send()], @[disconnect()]
   //!
-  object(ADT.Queue) send_q = ADT.Queue();
+  ADT.Queue send_q = ADT.Queue();
 
   protected string write_buffer = "";
   protected void write_callback(mixed ignored)
@@ -287,7 +287,7 @@ class simple
   //! @seealso
   //! @[touch_time()], @[do_timeout()]
   //!
-  void create(object(Stdio.File) con, int|void timeout)
+  void create(Stdio.File con, int|void timeout)
   {
     this::con = con;
     this::timeout = timeout;
