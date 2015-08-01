@@ -741,7 +741,7 @@ PIKE_MODULE_INIT
   ADD_EFUN("tanh",f_tanh,tFunc(tNUM,tFlt),0);
   ADD_EFUN("atanh",f_atanh,tFunc(tNUM,tFlt),0);
 
-/* function(float:float)|function(int:int) */
+  /* function(float:float)|function(int:int) */
   ADD_EFUN("sqrt",f_sqrt,tOr3(tFunc(tFlt,tFlt),
 			      tFunc(tInt,tInt),
 			      tFunc(tObj,tMix)),0);
@@ -752,7 +752,7 @@ PIKE_MODULE_INIT
   /* function(int|float:float) */
   ADD_EFUN("exp",f_exp,tFunc(tNUM,tFlt),0);
 
-/* function(float,float:float) */
+  /* function(float,float:float) */
   ADD_EFUN("pow",f_pow,
 	   tOr5(tFunc(tFlt tFlt,tFlt),
 		tFunc(tInt tFlt,tFlt),
@@ -775,7 +775,7 @@ PIKE_MODULE_INIT
        tFunc(tVoid,tInt0),						\
        tIfnot(tFuncV(tNone,tNot(tOr(tInt,tFloat)),tMix),		\
 	      tFuncV(tSetvar(0,tOr(tInt,tFloat)),			\
-		     tSetvar(1,tOr(tInt,tFloat)),tOr(tVar(0),tVar(1)))), \
+                     tSetvar(1,tOr(tInt,tFloat)),tOr(tVar(0),tVar(1)))),\
        tIfnot(tFuncV(tNone,tNot(tOr(tObj,tMix)),tMix),			\
 	      tFuncV(tMix,tMix,tMix)))
 
@@ -788,10 +788,10 @@ PIKE_MODULE_INIT
 		 tSetvar(2,tOr3(tFlt,tInt,tObj)),
 		 tOr3(tVar(0),tVar(1),tVar(2))),0);
 
-/* function(float|int|object:float|int|object) */
+  /* function(float|int|object:float|int|object) */
   ADD_EFUN("abs",f_abs,tFunc(tSetvar(0,tOr3(tFlt,tInt,tObj)),tVar(0)),0);
 
-/* function(mixed,mixed|void:int) */
+  /* function(mixed,mixed|void:int) */
   ADD_EFUN("sgn",f_sgn,tFunc(tMix tOr(tMix,tVoid),tInt_11),0);
 }
 
