@@ -485,6 +485,11 @@ class Context
     return res;
   }
 
+  variant array(array(string(8bit))) decode(string(8bit) str)
+  {
+    return decode(Stdio.Buffer(str));
+  }
+
   protected void put_int(Stdio.Buffer buf, int(0..255) bits, int(0..255) mask,
 			 int value)
   {
