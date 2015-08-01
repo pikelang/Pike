@@ -68,15 +68,7 @@ const INT32 hashprimes[32] =
 
 PMOD_EXPORT int my_log2(size_t x)
 {
-#if (defined(__x86_64) || defined(__i386__)) && defined(__GNUC__)
-    if( x == 0 ) return 0;
-#if SIZEOF_CHAR_P > 4
-    asm("bsrq %1, %0" :"+r"(x) :"rm"(x));
-#else
-    asm("bsrl %1, %0" :"+r"(x) :"rm"(x));
-#endif /* sizeof(char*) */
-    return x+1;
-#elif defined(HAS___BUILTIN_CLZL)
+#if defined(HAS___BUILTIN_CLZL)
     if( x == 0 ) return 0;
     return ((sizeof(unsigned long)*8)-__builtin_clzl(x))-1;
 #elif defined(HAS___BUILTIN_CLZ)
