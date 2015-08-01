@@ -819,18 +819,18 @@ PMOD_EXPORT void f_random_string(INT32 args)
 {
   struct pike_string *ret;
   INT_TYPE len, e = 0;
-  unsigned INT32 *str;
+  unsigned INT64 *str;
   get_all_args("random_string",args,"%+",&len);
   ret = begin_shared_string(len);
 
   /* Note: Assumes pike_string->str is aligned on a 4 byte boundary
    * (it is, currently)
    */
-  str = (unsigned INT32 *)ret->str;
+  str = (unsigned INT64 *)ret->str;
 
-  while( (e+=sizeof(INT32)) <= len )
+  while( (e+=sizeof(INT64)) <= len )
   {
-    str[0] = DO_NOT_WARN(my_rand());
+    str[0] = DO_NOT_WARN(my_rand64());
     str++;
   }
 

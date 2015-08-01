@@ -260,6 +260,7 @@ PMOD_EXPORT INT32 EXTRACT_INT_(const unsigned char *p);
 #endif
 
 PMOD_EXPORT unsigned INT32 my_rand(void);
+PMOD_EXPORT unsigned INT64 my_rand64(void);
 PMOD_EXPORT void my_srand(INT32 seed);
 
 PMOD_EXPORT void sysleep(double left);

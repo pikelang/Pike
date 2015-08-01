@@ -198,6 +198,29 @@ PMOD_EXPORT unsigned INT32 my_rand(void)
   return rndbuf[rnd_index] += rndbuf[rnd_index+RNDJUMP-(rnd_index<RNDBUF-RNDJUMP?0:RNDBUF)];
 }
 
+PMOD_EXPORT unsigned INT64 my_rand64(void)
+{
+#if HAS___BUILTIN_IA32_RDRAND32_STEP
+  if( use_rdrnd )
+  {
+    unsigned long long rnd;
+    unsigned int cnt = 0;
+    do{
+      /* We blindly trust that _builtin_ia32_rdrand64_step exists when
+         the 32 bit version does. */
+      if( __builtin_ia32_rdrand64_step( &rnd ) )
+        return rnd;
+    } while(cnt++ < 100);
+
+    /* hardware random unit most likely not healthy.
+       Switch to software random. */
+    rnd_index = 0;
+    use_rdrnd = 0;
+  }
+#endif
+  return ((INT64)my_rand()<<32) | my_rand();
+}
+
 PMOD_EXPORT void sysleep(double left)
 {
 #ifdef __NT__
