@@ -141,3 +141,139 @@ unsigned INT32 find_next_power(unsigned INT32 x)
     if( x == 0 ) return 1;
     return 1<<(my_log2(x-1)+1);
 }
+
+static unsigned INT32 RandSeed1 = 0x5c2582a4;
+static unsigned INT32 RandSeed2 = 0x64dff8ca;
+
+static unsigned INT32 slow_rand(void)
+{
+  RandSeed1 = ((RandSeed1 * 13 + 1) ^ (RandSeed1 >> 9)) + RandSeed2;
+  RandSeed2 = (RandSeed2 * RandSeed1 + 13) ^ (RandSeed2 >> 13);
+  return RandSeed1;
+}
+
+static void slow_srand(INT32 seed)
+{
+  RandSeed1 = (seed - 1) ^ 0xA5B96384UL;
+  RandSeed2 = (seed + 1) ^ 0x56F04021UL;
+}
+
+#define RNDBUF 250
+#define RNDSTEP 7
+#define RNDJUMP 103
+
+static unsigned INT32 rndbuf[ RNDBUF ];
+static unsigned int rnd_index;
+
+#if HAS___BUILTIN_IA32_RDRAND32_STEP
+static int use_rdrnd;
+#endif
+#define bit_RDRND_2 (1<<30)
+
+#if SIZEOF_CHAR_P == 4
+#define __cpuid(level, a, b, c, d)                      \
+    __asm__ ("pushl %%ebx      \n\t"                    \
+             "cpuid \n\t"                               \
+             "movl %%ebx, %1   \n\t"                    \
+             "popl %%ebx       \n\t"                    \
+             : "=a" (a), "=r" (b), "=c" (c), "=d" (d)   \
+             : "a" (level)                              \
+             : "cc")
+#else
+#define __cpuid(level, a, b, c, d)                      \
+    __asm__ ("push %%rbx      \n\t"			\
+             "cpuid \n\t"                               \
+             "movl %%ebx, %1   \n\t"                    \
+             "pop %%rbx       \n\t"			\
+             : "=a" (a), "=r" (b), "=c" (c), "=d" (d)   \
+             : "a" (level)                              \
+             : "cc")
+#endif
+
+PMOD_EXPORT void my_srand(INT32 seed)
+{
+#if HAS___BUILTIN_IA32_RDRAND32_STEP
+  unsigned int ignore, cpuid_ecx;
+  if( !use_rdrnd )
+  {
+    __cpuid( 0x1, ignore, ignore, cpuid_ecx, ignore );
+    if( cpuid_ecx & bit_RDRND_2 )
+      use_rdrnd = 1;
+  }
+  /* We still do the initialization here, since rdrnd might stop
+     working if the hardware random unit in the CPU fails (according
+     to intel documentation).
+
+
+     This is likely to be rather rare. But the cost is not exactly
+     high.
+
+     Source:
+
+     http://software.intel.com/en-us/articles/intel-digital-random-number-generator-drng-software-implementation-guide
+  */
+#endif
+  {
+    int e;
+    unsigned INT32 mask;
+
+    slow_srand(seed);
+
+    rnd_index = 0;
+    for (e=0;e < RNDBUF; e++) rndbuf[e]=slow_rand();
+
+    mask = (unsigned INT32) -1;
+
+    for (e=0;e< (int)sizeof(INT32)*8 ;e++)
+    {
+      int d = RNDSTEP * e + 3;
+      rndbuf[d % RNDBUF] &= mask;
+      mask>>=1;
+      rndbuf[d % RNDBUF] |= (mask+1);
+    }
+  }
+}
+
+PMOD_EXPORT unsigned INT32 my_rand(void)
+{
+#if HAS___BUILTIN_IA32_RDRAND32_STEP
+  if( use_rdrnd )
+  {
+    unsigned int cnt = 0;
+    do{
+      if( __builtin_ia32_rdrand32_step( &rnd_index ) )
+        return rnd_index;
+    } while(cnt++ < 100);
+
+    /* hardware random unit most likely not healthy.
+       Switch to software random. */
+    rnd_index = 0;
+    use_rdrnd = 0;
+  }
+#endif
+  if(++rnd_index == RNDBUF) rnd_index=0;
+  return rndbuf[rnd_index] += rndbuf[rnd_index+RNDJUMP-(rnd_index<RNDBUF-RNDJUMP?0:RNDBUF)];
+}
+
+PMOD_EXPORT unsigned INT64 my_rand64(void)
+{
+#if HAS___BUILTIN_IA32_RDRAND32_STEP
+  if( use_rdrnd )
+  {
+    unsigned long long rnd;
+    unsigned int cnt = 0;
+    do{
+      /* We blindly trust that _builtin_ia32_rdrand64_step exists when
+         the 32 bit version does. */
+      if( __builtin_ia32_rdrand64_step( &rnd ) )
+        return rnd;
+    } while(cnt++ < 100);
+
+    /* hardware random unit most likely not healthy.
+       Switch to software random. */
+    rnd_index = 0;
+    use_rdrnd = 0;
+  }
+#endif
+  return ((INT64)my_rand()<<32) | my_rand();
+}
