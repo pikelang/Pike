@@ -112,7 +112,7 @@ class ContentInfo_meta
       object init(object type, object contents)
 	{
 	  /* Neglects the valid_types field of meta_explicit */
-	  return ::init( ({ type, meta_explicit(0, 0)()->init(contents) }) );
+	  return ::init( ({ type, MetaExplicit(0, 0)()->init(contents) }) );
 	}
 
 #if 0
@@ -320,19 +320,19 @@ class PFX
       string A = D+I;
 
       for(int i; i<count; i++)
-	A = Crypto.sha()->update(A)->digest;
+	A = Crypto.SHA1.hash(A);
 
       if (sizeof(A)<needed)
 	error("PFX: Step 6c) of section 6.1 not implemented.\n");
 
-      return A[..ndeded-1];
+      return A[..needed-1];
     }
 
   string get_hmac(string salt, int count)
     {
       string key = generate_key(salt, 3, count, 20);
 
-      return Crypto.hmac(Crypto.sha)(key)
+      return Crypto.SHA1.HMAC(key)
 	// Extract value from the data field
 	(elements[1]->elements[1]->value);
     }
@@ -344,11 +344,11 @@ class PFX
       elements[1] = safes;
       if (passwd)
       {	/* Password-integrity mode */
-	salt = Crypto.Random.random_string(SALT_SIZE);
+	string salt = Crypto.Random.random_string(SALT_SIZE);
 
 	elements[2] = Sequence(
 	  ({ Sequence(
-	    ({ Identifiers.sha_id,
+	    ({ .Identifiers.sha1_id,
 	       OctetString(get_hmac(salt, MAC_COUNT)) }) ),
 	     OctetString(salt)
 	     /* , optional count, default = 1 */
@@ -366,7 +366,7 @@ class PFX
 
   int verify_passwd()
     {
-      if (elements[2]->elements[0]->elements[0] != Identifiers.sha1_id)
+      if (elements[2]->elements[0]->elements[0] != .Identifiers.sha1_id)
 	error("Unexpected hash algorithm\n");
       string salt = elements[2]->elements[1]->value;
       int count = (sizeof(elements[2]->elements) == 3)
@@ -409,9 +409,9 @@ Sequence make_x509_cert_bag(string cert, object|void attributes)
 /* Makes a PFX of unencrypted bags */
 PFX simple_make_pfx(array bags, string passwd)
 {
-  Sequence safe_contents = Sequence(bags);
+  Sequence safe = Sequence(bags);
 
-  PFX pfx = PFX(ContentInfo_meta()(data_id, String(safes->get_der())));
+  PFX pfx = PFX(ContentInfo_meta()(data_id, String(safe->get_der())));
   pfx->set_passwd(passwd);
   return pfx;
 }
