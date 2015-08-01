@@ -183,23 +183,18 @@ PMOD_EXPORT unsigned INT32 my_rand(void)
   if( use_rdrnd )
   {
     unsigned int cnt = 0;
-    unsigned int ok = 0;
     do{
-      ok = __builtin_ia32_rdrand32_step( &rnd_index );
-    } while(!ok && cnt++ < 100);
+      if( __builtin_ia32_rdrand32_step( &rnd_index ) )
+        return rnd_index;
+    } while(cnt++ < 100);
 
-    if( cnt > 99 )
-    {
-      /* hardware random unit most likely not healthy.
-         Switch to software random. */
-      rnd_index = 0;
-      use_rdrnd = 0;
-    }
-    else
-      return rnd_index;
+    /* hardware random unit most likely not healthy.
+       Switch to software random. */
+    rnd_index = 0;
+    use_rdrnd = 0;
   }
 #endif
-  if( ++rnd_index == RNDBUF) rnd_index=0;
+  if(++rnd_index == RNDBUF) rnd_index=0;
   return rndbuf[rnd_index] += rndbuf[rnd_index+RNDJUMP-(rnd_index<RNDBUF-RNDJUMP?0:RNDBUF)];
 }
 
