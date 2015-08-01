@@ -2331,8 +2331,8 @@ return 0;
     translit([pike_cv_builtin_$1], [A-Z], [a-z])="yes",
     translit([pike_cv_builtin_$1], [A-Z], [a-z])="no")
     ])
-    AC_MSG_RESULT($$translit([pike_cv_builtin_$1], [A-Z], [a-z]))
-    if test "$$translit([pike_cv_builtin_$1], [A-Z], [a-z])" = "yes"; then
+    AC_MSG_RESULT($translit([pike_cv_builtin_$1], [A-Z], [a-z]))
+    if test "$translit([pike_cv_builtin_$1], [A-Z], [a-z])" = "yes"; then
       AC_DEFINE(translit([HAS_$1], [a-z], [A-Z]), 1, [Whether $1 is available])
     fi
 ])
@@ -2351,8 +2351,8 @@ return 0;
     translit([pike_cv_builtin_$1], [A-Z], [a-z])="yes",
     translit([pike_cv_builtin_$1], [A-Z], [a-z])="no")
     ])
-    AC_MSG_RESULT($$translit([pike_cv_builtin_$1], [A-Z], [a-z]))
-    if test "$$translit([pike_cv_builtin_$1], [A-Z], [a-z])" = "yes"; then
+    AC_MSG_RESULT($translit([pike_cv_builtin_$1], [A-Z], [a-z]))
+    if test "$translit([pike_cv_builtin_$1], [A-Z], [a-z])" = "yes"; then
       AC_DEFINE(translit([HAS_$1], [a-z], [A-Z]), 1, [Whether $1 is available])
     fi
 ])
