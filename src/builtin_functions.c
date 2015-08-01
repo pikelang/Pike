@@ -834,7 +834,7 @@ PMOD_EXPORT void f_random_string(INT32 args)
     str++;
   }
 
-  for(e-=sizeof(INT32);e<len;e++)
+  for(e-=sizeof(INT64);e<len;e++)
   {
     ret->str[e] = DO_NOT_WARN((char)my_rand());
   }
