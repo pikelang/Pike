@@ -1,11 +1,8 @@
 
-#if 0 // This code is broken. (Missing mac identifier for sha)
+#if 1 // This code is broken. (Missing mac identifier for sha)
 
 /*
- * M$ Personal Exchange Syntax and Protocol Standard, aka PKCS#12
- *
- * Subsets of PKCS#12 and PKCS#7 needed to import keys and
- * certificates into Netscape and IE.
+ * PKCS #12: Personal Information Exchange Syntax v1.1, RFC 7292
  *
  */
 
@@ -13,36 +10,35 @@ import Standards.ASN1.Types;
 
 #pike __REAL_VERSION__
 
-object pkcs_7_id = .Identifiers.pkcs_id->append(7);
-object data_id = pkcs_7_id->append(1);
-object signed_data_id = pkcs_7_id->append(2);
-object enveloped_data_id = pkcs_7_id->append(3);
-object signed_and_enveloped_data_id = pkcs_7_id->append(4);
-object digested_data_id = pkcs_7_id->append(5);
-object encrypted_data_id = pkcs_7_id->append(7);
+Identifier pkcs_7_id = .Identifiers.pkcs_id->append(7);
+Identifier data_id = pkcs_7_id->append(1);
+Identifier signed_data_id = pkcs_7_id->append(2);
+Identifier enveloped_data_id = pkcs_7_id->append(3);
+Identifier signed_and_enveloped_data_id = pkcs_7_id->append(4);
+Identifier digested_data_id = pkcs_7_id->append(5);
+Identifier encrypted_data_id = pkcs_7_id->append(7);
 
-object pkcs_12_id = .Identifiers.pkcs_id->append(12);
-object pkcs_12_pbe_id = pkcs_12_id->append(1);
-object pbe_sha_rc4 = pkcs_12_pbe_id->append(1);
-object pbe_sha_rc4_weak = pkcs_12_pbe_id->append(2);
-object pbe_sha_3tripledes = pkcs_12_pbe_id->append(3);
-object pbe_sha_2triple_des = pkcs_12_pbe_id->append(4);
-object pbe_sha_rc2= pkcs_12_pbe_id->append(5);
-object pbe_sha_rc2_weak = pkcs_12_pbe_id->append(6);
+Identifier pkcs_12_id = .Identifiers.pkcs_id->append(12);
+Identifier pkcs_12_pbe_id = pkcs_12_id->append(1);
+Identifier pbe_sha1_128rc4 = pkcs_12_pbe_id->append(1);
+Identifier pbe_sha1_40rc4 = pkcs_12_pbe_id->append(2);
+Identifier pbe_sha1_3_3des_cbc = pkcs_12_pbe_id->append(3);
+Identifier pbe_sha1_2_3des_cbc = pkcs_12_pbe_id->append(4);
+Identifier pbe_sha1_128rc2= pkcs_12_pbe_id->append(5);
+Identifier pbe_sha1_40rc2 = pkcs_12_pbe_id->append(6);
 
-object pkcs_12_version1_id = pkcs_12_id->append(10);
-object pkcs_12_bag_id = pkcs_12_version1_id->append(1);
-object keybag_id = pkcs_12_bag_id->append(1);
-object pkcs_8_shroudedkeybag_id = pkcs_12_bag_id->append(2);
-object certbag_id = pkcs_12_bag_id->append(3);
-object crlbag_id = pkcs_12_bag_id->append(4);
-object secretbag_id = pkcs_12_bag_id->append(5);
-object safebag_id = pkcs_12_bag_id->append(6);
+Identifier pkcs_12_bagtypes_id = pkcs_12_id->append(10)->append(1);
+Identifier keybag_id = pkcs_12_bagtypes_id->append(1);
+Identifier pkcs_8_shroudedkeybag_id = pkcs_12_bagtypes_id->append(2);
+Identifier certbag_id = pkcs_12_bagtypes_id->append(3);
+Identifier crlbag_id = pkcs_12_bagtypes_id->append(4);
+Identifier secretbag_id = pkcs_12_bagtypes_id->append(5);
+Identifier safebag_id = pkcs_12_bagtypes_id->append(6);
 
-object pkcs_9_id = .Identifiers.pkcs_id->append(9);
+Identifier pkcs_9_id = .Identifiers.pkcs_id->append(9);
 
-object certTypes_id = pkcs_9_id->append(22);
-object x509Certificate_id = certTypes_id->append(1);
+Identifier certTypes_id = pkcs_9_id->append(22);
+Identifier x509Certificate_id = certTypes_id->append(1);
 
 /* Perhaps ContentInfo should be moved into a separate module, with
    other PKCS#7 stuff? */
