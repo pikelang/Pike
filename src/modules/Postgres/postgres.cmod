@@ -474,9 +474,10 @@ PIKEFUN object big_query(string query_, array|void bnds)
 
 	  nParams=cnt;
 
-	  paramValues = xalloc(nParams*sizeof*paramValues);
-	  paramLengths = xalloc(nParams*sizeof*paramLengths);
-	  paramFormats = xalloc(nParams*sizeof*paramFormats);
+	  /* NB: We assume that sizeof(char *) is >= sizeof(int). */
+	  paramValues = xalloc(nParams*sizeof(char *)*3);
+	  paramLengths = (int*)(paramValues + nParams);
+	  paramFormats = paramLengths + nParams;
 
 	  for (i=0,item=bnds->item; cnt--; item++,i++) {
 	    int sendbin=0;
