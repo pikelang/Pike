@@ -419,6 +419,8 @@ PIKEFUN void select(string db_)
 }
 
 /*! @decl object(Sql.postgres_result) big_query (string sqlquery)
+ *! @decl object(Sql.postgres_result) big_query (string sqlquery, @
+ *!                                              array bindings)
  *!
  *! This is the only provided interface which allows you to query the
  *! database. If you wish to use the simpler "query" function, you need to
@@ -441,13 +443,13 @@ PIKEFUN void select(string db_)
  *!  @[Sql.Sql], @[Sql.sql_result]
  */
 
-PIKEFUN object big_query(string query_)
+PIKEFUN object big_query(string query_, array|void bnds)
 {
 	PGconn *conn = THIS->dblink;
 	PGresult * res;
 	PGnotify * notification;
         struct array *bnds = 0;
-	char *query = 0;
+	char *query = " ";
 	int lastcommit;
 	unsigned int flags = 0;
         int cnt;
@@ -460,26 +462,11 @@ PIKEFUN object big_query(string query_)
 	PQ_FETCH();
 	lastcommit=THIS->lastcommit;
 
-	check_all_args("Postgres->big_query",args,
-	  BIT_STRING,
-	  BIT_VOID | BIT_ARRAY,
-	  0);
-
 	if (!conn)
 		Pike_error ("Not connected.\n");
 
-        switch(args)
-        {
-          default:
-            if(TYPEOF(Pike_sp[1-args]) == PIKE_T_ARRAY)
-              bnds=Pike_sp[1-args].u.array;
-	    /* FALL_THROUGH */
-
-          case 1:
-	    query=" ";
-	    if(Pike_sp[-args].u.string->len)
-		query=Pike_sp[-args].u.string->str;
-        }
+	if(query_->len)
+	  query = query_->str;
 
         if(bnds && (cnt=bnds->size)) {
           int i;
