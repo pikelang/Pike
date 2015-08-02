@@ -27,6 +27,7 @@
 #include "builtin_functions.h"
 #include "dmalloc.h"
 #include "operators.h"
+#include "stuff.h"
 #include "module_support.h"
 #include "pike_types.h"
 

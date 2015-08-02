@@ -15,6 +15,9 @@
 #include "object.h"
 #include "module_support.h"
 
+/* For my_rand() */
+#include "stuff.h"
+
 #include "nettle_config.h"
 
 #ifdef HAVE_LIBNETTLE

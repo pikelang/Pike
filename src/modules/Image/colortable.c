@@ -40,6 +40,7 @@
 #include "dmalloc.h"
 #include "bignum.h"
 #include "pike_types.h"
+#include "stuff.h"
 
 #include "image.h"
 #include "colortable.h"

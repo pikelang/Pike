@@ -15,6 +15,7 @@
 #include "array.h"
 #include "operators.h"
 #include "builtin_functions.h"
+#include "stuff.h"
 
 #include "dmalloc.h"
 

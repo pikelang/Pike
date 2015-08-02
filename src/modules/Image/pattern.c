@@ -21,6 +21,7 @@
 #include "pike_error.h"
 #include "threads.h"
 #include "builtin_functions.h"
+#include "stuff.h"
 
 #include "image.h"
 
