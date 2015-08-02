@@ -369,7 +369,7 @@ PIKECLASS ResObj
     ERR( sqlite3_prepare(THIS->db, q->str, q->len, &stmt, &tail),
 	 THIS->db);
     if( tail[0] )
-      Pike_error("Sql.SQLite->big_query: Trailing query data (\"%s\")\n",
+      Pike_error("Sql.SQLite->query: Trailing query data (\"%s\")\n",
 		 tail);
     pop_stack();
 
