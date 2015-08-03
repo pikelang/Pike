@@ -167,6 +167,7 @@ static unsigned int rnd_index;
 
 #if HAS___BUILTIN_IA32_RDRAND32_STEP
 static int use_rdrnd;
+static unsigned long long rnd_index64;
 #endif
 #define bit_RDRND_2 (1<<30)
 
@@ -260,13 +261,12 @@ PMOD_EXPORT unsigned INT64 my_rand64(void)
 #if HAS___BUILTIN_IA32_RDRAND32_STEP
   if( use_rdrnd )
   {
-    unsigned long long rnd;
     unsigned int cnt = 0;
     do{
       /* We blindly trust that _builtin_ia32_rdrand64_step exists when
          the 32 bit version does. */
-      if( __builtin_ia32_rdrand64_step( &rnd ) )
-        return rnd;
+      if( __builtin_ia32_rdrand64_step( &rnd_index64 ) )
+        return rnd_index64;
     } while(cnt++ < 100);
 
     /* hardware random unit most likely not healthy.
