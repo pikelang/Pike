@@ -35,9 +35,19 @@ test_eq( Standards.PKCS.RSA.signature_algorithm_id(Crypto.MD5)->get_der(),
          "0\r\6\t*\206H\206\367\r\1\1\4\5\0" )
 test_eq( Standards.PKCS.RSA.signature_algorithm_id(Crypto.SHA1)->get_der(),
          "0\r\6\t*\206H\206\367\r\1\1\5\5\0" )
+test_eq( Standards.PKCS.RSA.signature_algorithm_id(Crypto.SHA256)->get_der(),
+	 "0\r\6\t*\206H\206\367\r\1\1\v\5\0" )
+test_eq( Standards.PKCS.RSA.signature_algorithm_id(Crypto.SHA384)->get_der(),
+	 "0\r\6\t*\206H\206\367\r\1\1\f\5\0" )
+test_eq( Standards.PKCS.RSA.signature_algorithm_id(Crypto.SHA512)->get_der(),
+	 "0\r\6\t*\206H\206\367\r\1\1\r\5\0" )
 test_eq( Standards.PKCS.RSA.signature_algorithm_id(Crypto.MD4), 0 )
 test_eq( Standards.PKCS.DSA.signature_algorithm_id(Crypto.SHA1)->get_der(),
 	 "0\t\6\a*\206H\316""8\4\3" )
+test_eq( Standards.PKCS.DSA.signature_algorithm_id(Crypto.SHA224)->get_der(),
+	 "0\v\6\t`\206H\1e\3\4\3\1" )
+test_eq( Standards.PKCS.DSA.signature_algorithm_id(Crypto.SHA256)->get_der(),
+	 "0\v\6\t`\206H\1e\3\4\3\2" )
 test_eq( Standards.PKCS.DSA.signature_algorithm_id(Crypto.MD4), 0 )
 
 test_do( add_constant("R"); )
