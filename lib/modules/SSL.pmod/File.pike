@@ -289,14 +289,14 @@ protected int(0..0)|float backend_once(int|void nonwaiting_mode)
     while (1) {								\
       float|int(0..0) action;						\
 									\
-      if (conn->state & CONNECTION_peer_fatal) {			\
+      if (!conn || (conn->state & CONNECTION_peer_fatal)) {		\
 	SSL3_DEBUG_MSG ("Backend ended efter peer fatal.\n");		\
 	break;								\
       }									\
 									\
       action = backend_once(NONWAITING_MODE);				\
 									\
-      if (NONWAITING_MODE && !action) {					\
+      if (!conn || (NONWAITING_MODE && !action)) {			\
 	SSL3_DEBUG_MSG ("Nonwaiting local backend ended - nothing to do\n"); \
 	break;								\
       }									\
