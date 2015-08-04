@@ -448,7 +448,6 @@ PIKEFUN object big_query(string query_, array|void bnds)
 	PGconn *conn = THIS->dblink;
 	PGresult * res;
 	PGnotify * notification;
-        struct array *bnds = 0;
 	char *query = " ";
 	int lastcommit;
 	unsigned int flags = 0;
