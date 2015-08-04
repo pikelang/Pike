@@ -1,4 +1,5 @@
 /* -*- C -*- */
+require gtk28;
 
 class GDK2.PixbufSimpleAnim;
 inherit GDK2.PixbufAnimation;
@@ -22,3 +23,4 @@ bool get_loop();
 //! Returns if animation will loop indefinitely when it reaches
 //! the end.
 
+endrequire; /* gtk28 */
