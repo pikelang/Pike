@@ -450,6 +450,14 @@ protected void create(Context ctx)
   context = ctx;
 }
 
+//! Remove cyclic references as best we can.
+void shutdown()
+{
+  current_read_state = current_write_state = UNDEFINED;
+  pending_read_state = pending_write_state = ({});
+  ke = UNDEFINED;
+  alert_callback = UNDEFINED;
+}
 
 //
 // --- Old connection.pike below
@@ -638,6 +646,8 @@ int(-1..2) to_write(Stdio.Buffer output)
     if (packet->level == ALERT_fatal) {
       state = [int(0..0)|ConnectionState](state | CONNECTION_local_fatal |
 					  CONNECTION_peer_closed);
+      current_read_state = UNDEFINED;
+      pending_read_state = ({});
       // SSL3 5.4:
       // Alert messages with a level of fatal result in the immediate
       // termination of the connection. In this case, other
