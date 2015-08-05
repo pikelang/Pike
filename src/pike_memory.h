@@ -162,6 +162,32 @@ static INLINE void ATTRIBUTE((unused)) * guaranteed_memset(void * p, int c, size
     return (void *)p;
 }
 
+#ifdef __x86_64__
+/* it is faster to just do the unaligned operation. */
+static INLINE unsigned INT64 ATTRIBUTE((unused)) get_unaligned64(const void *ptr) {
+  return *(unsigned INT64*)ptr;
+}
+
+static INLINE unsigned INT32 ATTRIBUTE((unused)) get_unaligned32(const void *ptr) {
+  return *(unsigned INT32*)ptr;
+}
+
+static INLINE unsigned INT16 ATTRIBUTE((unused)) get_unaligned16(const void *ptr) {
+  return *(unsigned INT16*)ptr;
+}
+
+static INLINE void ATTRIBUTE((unused)) set_unaligned16(void *ptr,unsigned INT16 val) {
+  *(unsigned INT16*)ptr = val;
+}
+
+static INLINE void ATTRIBUTE((unused)) set_unaligned32(void *ptr,unsigned INT32 val) {
+  *(unsigned INT32*)ptr = val;
+}
+
+static INLINE void ATTRIBUTE((unused)) set_unaligned64(void *ptr,unsigned INT64 val) {
+  *(unsigned INT64*)ptr = val;
+}
+#else
 static INLINE unsigned INT64 ATTRIBUTE((unused)) get_unaligned64(const void * ptr) {
     unsigned INT64 v;
     memcpy(&v, ptr, 8);
@@ -191,6 +217,7 @@ static INLINE unsigned INT16 ATTRIBUTE((unused)) get_unaligned16(const void * pt
 static INLINE void ATTRIBUTE((unused)) set_unaligned16(void * ptr, unsigned INT16 v) {
     memcpy(ptr, &v, 2);
 }
+#endif
 
 #include "pike_search.h"
 
