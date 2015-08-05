@@ -755,25 +755,13 @@ PIKECLASS Buffer
 
   static void io_append_short_uc( Buffer *io, unsigned short shrt )
   {
-    if (((ptrdiff_t)(io->buffer + io->len)) & 1) {
-      /* Unaligned access. */
-      unsigned short tmp = htons(shrt);
-      memcpy(io->buffer+io->len, &tmp, 2);
-    } else {
-      *((short *)(io->buffer+io->len)) = htons(shrt);
-    }
+    set_unaligned16( io->buffer+io->len, htons(shrt));
     io->len+=2;
   }
 
   static void io_append_int_uc( Buffer *io, unsigned INT32 i )
   {
-    if (((ptrdiff_t)(io->buffer + io->len)) & 3) {
-      /* Unaligned access. */
-      unsigned INT32 tmp = htonl(i);
-      memcpy(io->buffer+io->len, &tmp, 4);
-    } else {
-      *((INT32 *)(io->buffer+io->len)) = htonl(i);
-    }
+    set_unaligned32( io->buffer+io->len, htonl(i));
     io->len+=4;
   }
 
