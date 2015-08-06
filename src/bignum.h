@@ -355,6 +355,7 @@ int is_bignum_object(struct object *o);
 PMOD_EXPORT int is_bignum_object_in_svalue(struct svalue *sv);
 PMOD_EXPORT struct object *make_bignum_object(void);
 PMOD_EXPORT struct object *bignum_from_svalue(struct svalue *s);
+PMOD_EXPORT struct object *create_double_bignum(INT_TYPE low, INT_TYPE high);
 PMOD_EXPORT void convert_svalue_to_bignum(struct svalue *s);
 
 #ifdef INT64
@@ -371,6 +372,7 @@ PMOD_EXPORT void reduce_stack_top_bignum(void);
 #endif /* INT64 */
 
 #define is_bignum_object(O) ((O)->prog == bignum_program)
+
 
 PMOD_EXPORT void push_ulongest(unsigned LONGEST i);
 PMOD_EXPORT int ulongest_from_bignum(unsigned LONGEST *i,

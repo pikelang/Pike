@@ -6,6 +6,7 @@
 #include "constants.h"
 #include "object.h"
 #include "builtin_functions.h"
+#include "bignum.h"
 
 /* These come from linux include files. */
 #ifdef REG_RBX
@@ -965,29 +966,27 @@ static void add_reg_reg( enum amd64_reg reg, enum amd64_reg reg2 )
   modrm( 3, reg2, reg );
 }
 
-/* reg *= reg2 */
-static void mul_reg_reg( enum amd64_reg reg, enum amd64_reg reg2 )
+/* reg *= reg2   res in rdx:rax */
+static void mul_rax_reg_reg128( enum amd64_reg reg )
 {
-#if 0
   /* 64b * 64b -> 128b
      This would actually not need an overflow check.
      instead, push high if not zero, push low, genreate gmp.
      but... Well.
    */
-  if( reg2 == P_REG_RAX )
-  {
-    rex(1,0,0,reg); /* imul r/m64 */
-    opcode( 0xf7 );
-    modrm( 3,5,reg );
-  }
-  else
-#endif
-  {
-    rex(1,reg,0,reg2);
-    opcode( 0xf );
-    opcode( 0xaf );
-    modrm( 3, reg, reg2 );
-  }
+  rex(1,0,0,reg); /* imul r/m64 */
+  opcode( 0xf7 );
+  modrm( 3,5,reg );
+}
+
+
+/* reg *= reg2 */
+static void mul_reg_reg( enum amd64_reg reg, enum amd64_reg reg2 )
+{
+  rex(1,reg,0,reg2);
+  opcode( 0xf );
+  opcode( 0xaf );
+  modrm( 3, reg, reg2 );
 }
 
 /* reg /= reg2 */
@@ -2115,17 +2114,25 @@ void ins_f_byte(unsigned int b)
   case F_MULTIPLY:
     {
       LABELS();
-      if_not_two_int(&label_A,1);
-      mul_reg_reg(P_REG_RBX,P_REG_RAX);
-      jo(&label_A);
-      mov_imm_mem(PIKE_T_INT, sp_reg, SVAL(-2).type);
-      mov_reg_mem(P_REG_RBX,  sp_reg, SVAL(-2).value);
+      if_not_two_int(&label_C,1);
       amd64_add_sp(-1);
+      mul_rax_reg_reg128(P_REG_RBX);
+      jo(&label_A);
+      mov_imm_mem(PIKE_T_INT, sp_reg, SVAL(-1).type); /* Only needed for UNDEFINED*x -> 0 */
       jmp(&label_B);
-   LABEL_A;
+   LABEL_C;
       amd64_call_c_opcode(addr, flags);
       amd64_load_sp_reg();
+      jmp(&label_D);
+   LABEL_A;
+      /* overflows signed. upper 64 in edx, lower in eax. */
+      mov_reg_reg( P_REG_RAX, ARG1_REG );
+      mov_reg_reg( P_REG_RDX, ARG2_REG ); /* (on unix, not generated, arg2 is rdx) */
+      amd64_call_c_function(create_double_bignum);
+      mov_imm_mem(PIKE_T_OBJECT, sp_reg, SVAL(-1).type);
    LABEL_B;
+      mov_reg_mem(P_REG_RAX,     sp_reg, SVAL(-1).value);
+   LABEL_D;
     }
     return;
 
