@@ -209,3 +209,20 @@ Known Problems and Missing Features
 	data after each packet. Also, it is probably possible to find
 	only one place in the code where data can be fed to the
 	streaming hash.
+
+	Currently Pike will always try to maximize the number of bits
+	used for certificates, key exchanges, cipher keys and
+	hashes. Another popular approach that should be supported is
+	to minimize the bits used, above the set threashold. The
+	rationale is that everything allowed is good enough and the
+	capability negotiation should optimize on consumed resources.
+
+	Servers with different certificates and parameters can sit on
+	the same port with different SNI, or with different ALPN. We
+	should make it possible to select Context based on negotiation
+	(made tricky, as the negotiation depends on the Context).
+
+	It should be possible to lazy load certificates to increase
+	startup time and reduce memory usage for servers with many
+	sites. Dynamic loading and unloaded could be part of the same
+	mechanism as the Context selection mentioned above.
