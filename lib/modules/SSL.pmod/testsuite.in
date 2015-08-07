@@ -1016,15 +1016,37 @@ array(int) a() {
   int successes;
   int tests;
   int skip;
-
+#ifndef __NT__
+  array(Stdio.File) results = ({});
+#endif
   for (int server_max = SSL.Constants.PROTOCOL_SSL_3_0;
        server_max <= SSL.Constants.PROTOCOL_TLS_MAX; server_max++) {
   for (int server_min = SSL.Constants.PROTOCOL_SSL_3_0;
        server_min <= server_max; server_min++) {
+
+    string server = sprintf("%s..%s",
+                            SSL.Constants.fmt_version(server_min),
+                            SSL.Constants.fmt_version(server_max));
+#ifndef __NT__
+  Stdio.File rin = Stdio.File();
+  Stdio.File rout = rin->pipe();
+  if( fork() )
+  {
+    rout->close();
+    results += ({ rin });
+    continue;
+  }
+  rin->close();
+#endif
   for (int client_max = SSL.Constants.PROTOCOL_SSL_3_0;
        client_max <= SSL.Constants.PROTOCOL_TLS_MAX; client_max++) {
   for (int client_min = SSL.Constants.PROTOCOL_SSL_3_0;
        client_min <= client_max; client_min++) {
+
+    string client = sprintf("%s..%s",
+			    SSL.Constants.fmt_version(client_min),
+			    SSL.Constants.fmt_version(client_max));
+
 
     __signal_watchdog();
 
@@ -1048,22 +1070,11 @@ array(int) a() {
       suites += aead_suites;
     }
 
-#if 0
-    if( `==(client_min, server_min, SSL.Constants.PROTOCOL_SSL_3_0) &&
-	(client_max == server_max) ) {
-      // Test all known cipher suites.
-      suites = server_ctx->get_suites(-1, 2, (<>));
-    }
-#endif
-
 #if constant(thread_create)
-    log_status("Testing %s..%s client with %s..%s server (threaded)...",
-	       SSL.Constants.fmt_version(client_min),
-	       SSL.Constants.fmt_version(client_max),
-	       SSL.Constants.fmt_version(server_min),
-	       SSL.Constants.fmt_version(server_max));
-
     foreach(suites, int suite) {
+    log_status("%s client against %s %s (threaded)...",
+	       client, server,
+	       SSL.Constants.fmt_cipher_suite(suite));
       int count = threaded_test_ssl_connection(client_min, client_max,
 					       server_min, server_max, exp_res,
 					       server_ctx, ({suite}) );
@@ -1074,12 +1085,6 @@ array(int) a() {
     skip += sizeof(suites);
 #endif /* constant(thread_create) */
 
-    log_status("Testing %s..%s client with %s..%s server...",
-	       SSL.Constants.fmt_version(client_min),
-	       SSL.Constants.fmt_version(client_max),
-	       SSL.Constants.fmt_version(server_min),
-	       SSL.Constants.fmt_version(server_max));
-
     int test_ffdhe;
 
     if( `==(client_min, server_min, SSL.Constants.PROTOCOL_SSL_3_0) &&
@@ -1088,8 +1093,11 @@ array(int) a() {
       suites = server_ctx->get_suites(-1, 2, (<>));
       test_ffdhe = 1;
     }
-
     foreach(suites, int suite) {
+    log_status("%s client against %s %s...",
+               client,server,
+	       SSL.Constants.fmt_cipher_suite(suite));
+
       int count = test_ssl_connection(client_min, client_max,
 				      server_min, server_max, exp_res,
 				      server_ctx, ({suite}) );
@@ -1099,9 +1107,14 @@ array(int) a() {
       if (exp_res && test_ffdhe &&
 	  (< SSL.Constants.KE_dhe_dss,
 	     SSL.Constants.KE_dhe_rsa,
-	     SSL.Constants.KE_dh_anon >)[SSL.Constants.CIPHER_SUITES[suite] ]) {
+	     SSL.Constants.KE_dh_anon >)[SSL.Constants.CIPHER_SUITES[suite] ])
 	// DHE.
-	foreach(server_ctx->ffdhe_groups, int group) {
+	foreach(server_ctx->ffdhe_groups, int group)
+        {
+    log_status("%s client against %s %s %s...",
+                client,server,
+	       SSL.Constants.fmt_cipher_suite(suite),
+	       "dhe"+((group-254)*1024+(group==260)&&1024));
 	  int count = test_ssl_connection(client_min, client_max,
 					   server_min, server_max, exp_res,
 					   server_ctx, ({suite}),
@@ -1109,10 +1122,24 @@ array(int) a() {
 	  successes += count;
 	  tests += count || 1;
 	  if (!count) skip += !!exp_res;	// Skipped resume.
-	}
-      }
-    }
-  }}}}
+        } // dhe
+    } // suites
+  }} // client
+#ifndef __NT__
+	rout->write(successes+" "+tests+" "+skip );
+        _exit(0);
+#endif
+}}
+#ifndef __NT__
+  foreach( results, Stdio.File rin )
+  {
+    int sa, ta, sk;
+    sscanf( rin->read(), "%d %d %d", sa, ta, sk );
+    successes += sa;
+    tests += ta;
+    skip += sk;
+  }
+#endif
   return ({ successes, tests-successes, skip });
 }
 ]])
@@ -1471,16 +1498,6 @@ test_do([[
 ]])
 
 cond_end
-
-dnl   test_do([[
-dnl     object p = Process.Process(RUNPIKE + " \"]]SRCDIR[[/https.pike\"");
-dnl     sleep(5); /* Wait a little for the server to startup */
-dnl     Protocols.HTTP.Query q = Protocols.HTTP.get_url("https://localhost:25678");
-dnl     if (q->status != 200 || search("html", q->data()) < 0)
-dnl       error("Failed\n");
-dnl     /* How to kill the process if running on windows? */
-dnl     p->kill(15);
-dnl   ]])
 
 test_do( add_constant("S") )
 
