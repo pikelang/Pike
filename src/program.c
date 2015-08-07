@@ -6926,9 +6926,7 @@ PMOD_EXPORT int low_find_lfun(struct program *p, ptrdiff_t lfun)
   struct pike_string *lfun_name;
   unsigned int flags = 0;
   int i;
-#if 0
   struct identifier *id;
-#endif
   if ((size_t)lfun >= NELEM(lfun_strings)) {
     return find_lfun_fatal(p, lfun);
   }
@@ -6939,7 +6937,6 @@ PMOD_EXPORT int low_find_lfun(struct program *p, ptrdiff_t lfun)
 					       dmalloc_touch(struct program *,
 							     p),
 					       SEE_PROTECTED);
-#if 0
   if (i < 0 || !(p->flags & PROGRAM_FIXED)) return i;
   id = ID_FROM_INT(p, i);
   if (IDENTIFIER_IS_PIKE_FUNCTION(id->identifier_flags) &&
@@ -6947,7 +6944,6 @@ PMOD_EXPORT int low_find_lfun(struct program *p, ptrdiff_t lfun)
     /* Function prototype. */
     return -1;
   }
-#endif /* 0 */
   return i;
 }
 
