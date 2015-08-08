@@ -304,11 +304,50 @@ array(int) get_PSD(Stdio.File f)
   return reverse(array_sscanf(f->read(8), "%4c%4c"));
 }
 
-//! Read dimensions from a JPEG, GIF, PNG, TIFF or PSD file and return an
-//! array with width and height, or if the file isn't a valid image,
-//! @expr{0@}. The argument @[file] should be file object or the data
-//! from a file. The offset pointer will be assumed to be at the start
-//! of the file data and will be modified by the function.
+//! Reads the dimensions from a WebP file and returns an array with
+//! width and height, or if the file isn't a valid image, 0.
+array(int) get_WebP(Stdio.File f)
+{
+  if (f->read(4) != "RIFF") return 0;
+  f->read(4);
+  if (f->read(4) != "WEBP") return 0;
+
+  switch(f->read(4))
+  {
+  case "VP8 ":
+    /* Lossy coding */
+    f->read(4); // Size of chunk. Not in Google documentation.
+    f->read(3); // Frame tag.
+    if(f->read(3)!="\x9d\x01\x2a") return 0;
+    // Ignore the scaling factor, as it is upscaling and not actual
+    // image information.
+    return array_sscanf(f->read(4), "%-2c%-2c")[*] & 0x3fff;
+    break;
+  case "VP8L":
+    /* Lossless coding */
+    f->read(4);
+    if( f->read(1) != "/" ) return 0;
+
+    string data = f->read(4);
+    int width = (data[0] | (data[1] & 0x3f)<<8) + 1;
+    int height = (data[1]>>6 | data[2]<<2 | (data[3] & 0x0f)<<10) + 1;
+    return ({ width, height });
+    break;
+  case "VP8X":
+    /* Extended VP8 */
+    f->read(4); // flags and reserved
+    return array_sscanf(f->read(3), "%-3c%-3c")[*]+1;
+    break;
+  }
+  return 0;
+}
+
+//! Read dimensions from a JPEG, GIF, PNG, WebP, TIFF or PSD file and
+//! return an array with width and height, or if the file isn't a
+//! valid image, @expr{0@}. The argument @[file] should be file object
+//! or the data from a file. The offset pointer will be assumed to be
+//! at the start of the file data and will be modified by the
+//! function.
 //!
 //! @returns
 //!   @array
@@ -318,7 +357,7 @@ array(int) get_PSD(Stdio.File f)
 //!       Image height.
 //!     @elem string 2
 //!       Image type. Any of @expr{"gif"@}, @expr{"png"@}, @expr{"tiff"@},
-//!       @expr{"jpeg"@} and @expr{"psd"@}.
+//!       @expr{"jpeg"@}, @expr{"webp"@} and @expr{"psd"@}.
 //!   @endarray
 array(int) get(string|Stdio.File file) {
 
@@ -361,6 +400,13 @@ array(int) get(string|Stdio.File file) {
     ret = get_JPEG(file);
     if(ret) return ret+({ "jpeg" });
     break;
+
+  case "RI":
+    file->seek(file->tell()-2);
+    ret = get_WebP(file);
+    if(ret) return ret+({ "webp" });
+    break;
   }
 
+  return 0;
 }
