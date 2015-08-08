@@ -335,8 +335,9 @@ array(int) get_WebP(Stdio.File f)
     break;
   case "VP8X":
     /* Extended VP8 */
+    f->read(4);
     f->read(4); // flags and reserved
-    return array_sscanf(f->read(3), "%-3c%-3c")[*]+1;
+    return array_sscanf(f->read(6), "%-3c%-3c")[*]+1;
     break;
   }
   return 0;
