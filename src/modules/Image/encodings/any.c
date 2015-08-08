@@ -34,6 +34,7 @@
  */
 
 #define sp Pike_sp
+#define CHAR2(a,b) ((((unsigned char)(a))<<8)|((unsigned char)(b)))
 
 /* PNG module uses "type" for something else than what we want to use
    it for.  Rename "type" to "_type", and insert our own "type"...  */
@@ -88,7 +89,6 @@ void image_any__decode(INT32 args)
    if (sp[-args].u.string->len<4)
       Pike_error("Image.ANY.decode: too short string\n");
 
-#define CHAR2(a,b) ((((unsigned char)(a))<<8)|((unsigned char)(b)))
    /* ok, try the heuristics */
    switch (CHAR2(sp[-args].u.string->str[0],sp[-args].u.string->str[1]))
    {
@@ -154,7 +154,7 @@ void image_any__decode(INT32 args)
       case CHAR2('I','I'):	/* Little endian. */
       case CHAR2('M','M'):	/* Big endian. */
 	/* TIFF */
-	push_text("Image.TIFF._decode");
+        push_text("Image.TIFF._decode");
 	SAFE_APPLY_MASTER("resolv_or_error",1);
 	stack_swap();
 	f_call_function(2);
@@ -251,7 +251,6 @@ void image_any_decode_header(INT32 args)
    if (sp[-args].u.string->len<4)
       Pike_error("Image.ANY.decode_header: too short string\n");
 
-#define CHAR2(a,b) ((((unsigned char)(a))<<8)|((unsigned char)(b)))
    /* ok, try the heuristics */
    switch (CHAR2(sp[-args].u.string->str[0],sp[-args].u.string->str[1]))
    {
@@ -357,6 +356,59 @@ unknown_format:
 
 void image_any_decode(INT32 args)
 {
+  char *resolve = NULL;
+
+  if (args!=1 || TYPEOF(sp[-args]) != T_STRING)
+      Pike_error("Image.ANY.decode: illegal arguments\n");
+
+   if (sp[-args].u.string->len<4)
+      Pike_error("Image.ANY.decode: too short string\n");
+
+   /* Heuristics for code with image only decoder, for increased
+      efficiency and safety. */
+   switch (CHAR2(sp[-args].u.string->str[0],sp[-args].u.string->str[1]))
+   {
+   case CHAR2(255,216):
+     /* JFIF */
+     resolve = "Image.JPEG.decode";
+     break;
+
+   case CHAR2('g','i'):
+     /* XCF */
+     resolve = "Image.XCF.decode";
+     break;
+
+   case CHAR2('G','I'):
+     /* GIF */
+     resolve = "Image.GIF.decode";
+     break;
+
+   case CHAR2(137,'P'):
+     /* PNG */
+     resolve = "Image.PNG.decode";
+     break;
+
+   case CHAR2('8','B'):
+     /* Photoshop (8BPS) */
+     resolve = "Image.PSD.decode";
+     break;
+
+   case CHAR2('I','I'):	/* Little endian. */
+   case CHAR2('M','M'):	/* Big endian. */
+     /* TIFF */
+     resolve = "Image.TIFF.decode";
+     break;
+   }
+
+   if(resolve)
+   {
+     push_text(resolve);
+     SAFE_APPLY_MASTER("resolv_or_error",1);
+     stack_swap();
+     f_call_function(2);
+     return;
+   }
+
    image_any__decode(args);
    push_text("image");
    f_index(2);
