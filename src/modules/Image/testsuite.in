@@ -699,6 +699,30 @@ test_false( Image.Colortable(Image.Image(10,10,255,0,0))->greyp() )
 
 dnl #### Encodings
 
+define(test_image_any,[[
+  test_any([[
+    return Image.ANY.decode(Image.$1.encode(Image.Image(10,10)))->xsize();
+  ]],10)
+  test_any([[
+    mapping m=Image.ANY._decode(Image.$1.encode(Image.Image(10,10)));
+    if(!m->image || !m->type) return -1;
+    if(!has_prefix(m->type, "image/")) return -2;
+    return 1;
+  ]], 1)
+]])
+
+; Missing tests for XCF, PSD, TIM, XWD
+test_image_any(PNM)
+test_image_any(JPEG)
+test_image_any(PNG)
+test_image_any(GIF)
+test_image_any(ILBM)
+test_image_any(BMP)
+test_image_any(RAS)
+test_image_any(PVR)
+test_image_any(PCX)
+
+
 define(test_encoding,[[
   cond( (master()->resolv("Image.$1")||([]))->encode,[[
     test_any([[
@@ -782,7 +806,7 @@ cond( (master()->resolv("Image.JPEG")||([]))->encode,[[
   test_any([[
     object img=Image.Image(100,100)->test(43);
     object img1=Image.JPEG.decode(Image.JPEG.encode(img,(["quality":100])));
-    return img-img1<10;
+    return img-img1<20;
   ]],1)
 ]])
 
