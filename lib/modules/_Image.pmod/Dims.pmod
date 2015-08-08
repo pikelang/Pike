@@ -317,9 +317,6 @@ array(int) get_PSD(Stdio.File f)
 //! from a file. The offset pointer will be assumed to be at the start
 //! of the file data and will be modified by the function.
 //!
-//! As a compatibility measure, if the @[file] is a path to an image
-//! file, it will be loaded and processed once the processing of the
-//! path as data has failed.
 //! @returns
 //!   @array
 //!     @elem int 0
@@ -331,11 +328,9 @@ array(int) get_PSD(Stdio.File f)
 //!       @expr{"jpeg"@} and @expr{"psd"@}.
 //!   @endarray
 array(int) get(string|Stdio.File file) {
-  string fn;
-  if(stringp(file)) {
-    fn = file;
+
+  if(stringp(file))
     file = Stdio.FakeFile(file);
-  }
 
   switch(file->read(6)) {
 
@@ -376,11 +371,6 @@ array(int) get(string|Stdio.File file) {
       if(ret) return ret+({ "jpeg" });
      }
 
-    if(!fn) return 0;
-    if(sizeof(fn)>1000) return 0;
-
-    // This is really dumb.
-    catch { file = Stdio.File(fn); };
-    if(file) return get(file);
+     return 0;
   }
 }
