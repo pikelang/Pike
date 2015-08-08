@@ -101,9 +101,7 @@ static MUTEX_T mainlock;
 #define FAILED(status) (status!=CS_SUCCEED)
 #define OK(status) (status==CS_SUCCEED)
 
-#define THIS ((pike_sybase_connection *) (Pike_fp->current_storage))
-
-
+DECLARATIONS;
 
 /*************/
 /* Utilities */
@@ -163,6 +161,32 @@ static void show_severity(CS_INT severity) {
 #define show_results_type(X)
 #define show_severity(X)
 #endif
+
+PIKECLASS sybase
+{
+  CVAR CS_CONTEXT *context;
+  CVAR CS_CONNECTION *connection;
+  CVAR CS_COMMAND *cmd;
+  CVAR char busy; /* only one pending command per connection */
+
+  CVAR char had_error; /* non-zero if had error */
+  CVAR char error[256]; /* The last error string. The size is determined by the */
+                    /* sybase API */
+
+  CVAR char **results;
+  CVAR CS_INT *results_lengths;
+  CVAR CS_SMALLINT *nulls;
+
+  CVAR int numcols; /* the number of columns */
+
+#ifdef _REENTRANT
+  CVAR MUTEX_T lock;
+#endif
+
+  DECLARE_STORAGE;
+
+  typedef struct sybase_sybase_struct pike_sybase_connection;
+
 
 /*
  * Must be called in a MT-safe fashion
@@ -273,7 +297,8 @@ static int handle_errors (pike_sybase_connection *this) {
 /* low_level stuff */
 /*******************/
 
-static void sybase_create (struct object * o) {
+INIT
+{
   pike_sybase_connection *this=THIS;
 
   sybdebug((stderr,"sybase_create()\n"));
@@ -290,7 +315,8 @@ static void sybase_create (struct object * o) {
 }
 
 
-static void sybase_destroy (struct object * o) {
+EXIT
+{
   pike_sybase_connection *this=THIS;
   CS_RETCODE ret;
   int j;
@@ -384,7 +410,8 @@ static void sybase_destroy (struct object * o) {
 /* exported functions */
 /**********************/
 
-static void f_error(INT32 args) {
+PIKEFUN string error()
+{
   pike_sybase_connection *this=THIS;
 
   pop_n_elems(args);
@@ -398,7 +425,10 @@ static void f_error(INT32 args) {
 
 /* void connect(host, database, username, password, port) */
 /*  The port and database arguments are silently ignored  */
-static void f_connect (INT32 args) {
+PIKEFUN void connect(string|void hostname_, string|void database_,
+		     string|void username_, string|void pass_,
+		     int|void port_)
+{
   CS_RETCODE ret;
   CS_CONTEXT *context;
   CS_CONNECTION *connection;
@@ -516,7 +546,10 @@ static void f_connect (INT32 args) {
 }
 
 /* create (host,database,username,password,port|options) */
-static void f_create (INT32 args) {
+PIKEFUN void create(string|void host_, string|void db_,
+		    string|void user_, string|void pass_,
+		    int|mapping(string:mixed)|void options_)
+{
   char *host,*db,*user,*pass;
   CS_RETCODE ret;
   CS_CONTEXT *context;
@@ -590,7 +623,8 @@ static void f_create (INT32 args) {
 /* if function_result == PS_RESULT_STATUS, the value to be returned
    is *function_result */
 
-static void f_big_query(INT32 args) {
+PIKEFUN object|string big_query(string query_)
+{
   pike_sybase_connection *this=THIS;
   char *query, *err=NULL, *function_result=NULL;
   int querylen, numcols,j, done=0;
@@ -918,7 +952,8 @@ static void f_big_query(INT32 args) {
  * code.
  */
 /* void|array(mix) fetch_row() */
-static void f_fetch_row(INT32 args) {
+PIKEFUN array(mixed) fetch_row()
+{
   pike_sybase_connection *this=THIS;
   CS_RETCODE ret;
   CS_COMMAND *cmd=this->cmd;
@@ -991,7 +1026,8 @@ static void f_fetch_row(INT32 args) {
 }
 
 /* int num_fields() */
-static void f_num_fields(INT32 args) {
+PIKEFUN int num_fields()
+{
   CS_INT cols;
   CS_RETCODE ret;
   char* err=NULL;
@@ -1020,7 +1056,8 @@ static void f_num_fields(INT32 args) {
 }
 
 /* int affected_rows() */
-static void f_affected_rows(INT32 args) {
+PIKEFUN int affected_rows()
+{
   CS_INT rows;
   CS_RETCODE ret;
   char *err=NULL;
@@ -1047,7 +1084,8 @@ static void f_affected_rows(INT32 args) {
 
 
 #define desc_type(X,Y) case X: push_text(#Y);sybdebug((stderr,"type is %s\n",#Y)); break
-static void f_fetch_fields(INT32 args) {
+PIKEFUN array(mapping(string:mixed)) fetch_fields()
+{
   pike_sybase_connection *this=THIS;
   int j, nflags, numcols=this->numcols;
   CS_DATAFMT descs[numcols], *desc;
@@ -1168,60 +1206,27 @@ static void f_fetch_fields(INT32 args) {
 
 }
 
+  /* TODO */
+  /* int num_rows() */ /* looks like sybase doesn't support this one.. */
+  /* void seek(int skip) */ /*implemented in pike. Inefficient but simple */
+  /* mapping* fetch_fields() */
+}
 
 /********/
 /* Glue */
 /********/
 
-static struct program* sybase_program;
 PIKE_MODULE_EXIT {
+  EXIT;
+
   SYB_MT_EXIT(mainlock);
-  if(sybase_program) free_program(sybase_program);
 }
 
 PIKE_MODULE_INIT {
 
   sybdebug((stderr,"sybase driver release " SYBASE_DRIVER_VERSION "\n"));
 
-  start_new_program();
-  ADD_STORAGE(pike_sybase_connection);
-  set_init_callback(sybase_create);
-  set_exit_callback(sybase_destroy);
-
-  /* function(void|string,void|string,void|string,void|string,int|void:void) */
-  ADD_FUNCTION("create",f_create,tFunc(tOr(tVoid,tStr) tOr(tVoid,tStr)
-                                       tOr(tVoid,tStr) tOr(tVoid,tStr)
-                                       tOr(tInt,tVoid), tVoid),
-               0);
-  ADD_FUNCTION("connect",f_connect,tFunc(tOr(tVoid,tStr) tOr(tVoid,tStr)
-                                         tOr(tVoid,tStr) tOr(tVoid,tStr)
-                                         tOr(tInt,tVoid), tVoid),
-               0);
-  ADD_FUNCTION("error",f_error,tFunc(tVoid,tOr(tVoid,tStr)),
-	       0);
-
-  ADD_FUNCTION("big_query",f_big_query,tFunc(tString,tOr(tInt,tObj)),
-	       0);
-
-  ADD_FUNCTION("fetch_row", f_fetch_row,
-               tFunc(tVoid,tOr(tVoid,tArr(tMix))), 0);
-
-  ADD_FUNCTION("num_fields", f_num_fields,
-               tFunc(tVoid,tInt), 0);
-
-  ADD_FUNCTION("affected_rows", f_affected_rows,
-               tFunc(tVoid,tInt), 0);
-
-  ADD_FUNCTION("fetch_fields", f_fetch_fields,
-               tFunc(tVoid,tArr(tOr(tInt,tMap(tStr,tMix)))), ID_PUBLIC);
-
-  /* TODO */
-  /* int num_rows() */ /* looks like sybase doesn't support this one.. */
-  /* void seek(int skip) */ /*implemented in pike. Inefficient but simple */
-  /* mapping* fetch_fields() */
-
-  sybase_program=end_program();
-  add_program_constant("sybase",sybase_program,0);
+  INIT;
 
   SYB_MT_INIT(mainlock);
 }

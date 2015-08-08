@@ -2,7 +2,7 @@ dnl This file is part of the Sybase driver for the Pike programming language
 dnl by Francesco Chemolli <kinkie@roxen.com> 10/12/1999
 
 
-AC_INIT(sybase.c)
+AC_INIT(sybase.cmod)
 AC_CONFIG_HEADER(sybase_config.h)
 
 AC_MODULE_INIT()
