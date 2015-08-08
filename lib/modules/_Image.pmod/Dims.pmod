@@ -40,13 +40,6 @@ protected int(0..65535) read_2_bytes(Stdio.File f)
   return c;
 }
 
-protected int(0..65535) read_2_bytes_intel(Stdio.File f)
-{
-  int c;
-  sscanf( f->read(2), "%-2c", c);
-  return c;
-}
-
 
 /*
  * Read the initial marker, which should be SOI.
@@ -332,45 +325,42 @@ array(int) get(string|Stdio.File file) {
   if(stringp(file))
     file = Stdio.FakeFile(file);
 
-  switch(file->read(6)) {
+  array ret;
+  switch(file->read(2))
+  {
+  case "GI":
+    if( (< "F87a", "F89a" >)[file->read(4)] )
+      return array_sscanf(file->read(4), "%-2c%-2c") + ({ "gif" });
+    break;
 
-  case "GIF87a":
-  case "GIF89a":
-    return array_sscanf(file->read(4), "%-2c%-2c") + ({ "gif" });
+  case "\x89P":
+    if(file->read(4)=="NG\r\n")
+    {
+      file->read(6+4);
+      return array_sscanf(file->read(8), "%4c%4c") + ({ "png" });
+    }
+    break;
 
-  case "\x89PNG\r\n":
-    file->read(6+4); // offset+IHDR
-    return array_sscanf(file->read(8), "%4c%4c") + ({ "png" });
+  case "8B":
+    if(file->read(4)=="PS\0\1")
+    {
+      file->read(6+2);
+      return reverse(array_sscanf(file->read(8), "%4c%4c")) + ({ "psd" });
+    }
+    break;
 
-  case "8BPS\0\1":
-    //  Photoshop PSD
-    //
-    //  4 bytes signature + 2 bytes version
-    //  6 bytes reserved
-    //  2 bytes channel count
-    file->read(6 + 2);
+  case "II":
+  case "MM":
+    file->seek(file->tell()-2);
+    ret = get_TIFF(file);
+    if(ret) return ret+({ "tiff" });
+    break;
 
-    //  4 bytes height, 4 bytes width (big-endian)
-    return reverse(array_sscanf(file->read(8), "%4c%4c")) + ({ "psd" });
-
-  default:
-     string buf;
-     array ret;
-     file->seek(file->tell()-6);
-     buf = file->read(2);
-     file->seek(file->tell()-2);
-     if(buf == "II" || buf== "MM")
-     {
-       ret = get_TIFF(file);
-       if(ret) return ret+({ "tiff" });
-
-     }
-     else
-     {
-      ret = get_JPEG(file);
-      if(ret) return ret+({ "jpeg" });
-     }
-
-     return 0;
+  case "\xff\xd8":
+    file->seek(file->tell()-2);
+    ret = get_JPEG(file);
+    if(ret) return ret+({ "jpeg" });
+    break;
   }
+
 }
