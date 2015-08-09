@@ -133,8 +133,10 @@ struct svalue
   union anything u; /**< contains the value */
 };
 
-#define TYPEOF(SVAL)	((SVAL).tu.t.type)
-#define SUBTYPEOF(SVAL)	((SVAL).tu.t.subtype)
+#define PIKE_TYPEOF(SVAL)	((SVAL).tu.t.type)
+#define PIKE_SUBTYPEOF(SVAL)	((SVAL).tu.t.subtype)
+#define TYPEOF(SVAL)		PIKE_TYPEOF(SVAL)
+#define SUBTYPEOF(SVAL)		PIKE_SUBTYPEOF(SVAL)
 
 #define SET_SVAL_TYPE(SVAL, TYPE)	(TYPEOF(SVAL) = (TYPE))
 #define SET_SVAL_SUBTYPE(SVAL, TYPE)	(SUBTYPEOF(SVAL) = (TYPE))
@@ -145,8 +147,8 @@ struct svalue
  * with one write with them.
  */
 #define SET_SVAL_TYPE_SUBTYPE(SVAL, TYPE, SUBTYPE)	\
-  ((TYPEOF(SVAL) = (TYPE)),				\
-   (SUBTYPEOF(SVAL) = (SUBTYPE)))
+  ((PIKE_TYPEOF(SVAL) = (TYPE)),				\
+   (PIKE_SUBTYPEOF(SVAL) = (SUBTYPE)))
 /* Used when we don't care if the subtype gets set or not. */
 #define SET_SVAL_TYPE_DC(SVAL, TYPE)	SET_SVAL_TYPE(SVAL, TYPE)
 #else
@@ -453,20 +455,21 @@ extern PMOD_EXPORT struct svalue svalue_int_one;
 /* SAFE_IS_ZERO is compatible with the old IS_ZERO, but you should
  * consider using UNSAFE_IS_ZERO instead, since exceptions thrown from
  * `! functions will be propagated correctly then. */
-#define UNSAFE_IS_ZERO(X) (TYPEOF(*(X))==PIKE_T_INT?(X)->u.integer==0:(1<<TYPEOF(*(X)))&(BIT_OBJECT|BIT_FUNCTION)?!complex_svalue_is_true(X):0)
-#define SAFE_IS_ZERO(X) (TYPEOF(*(X))==PIKE_T_INT?(X)->u.integer==0:(1<<TYPEOF(*(X)))&(BIT_OBJECT|BIT_FUNCTION)?!safe_svalue_is_true(X):0)
+#define UNSAFE_IS_ZERO(X) (PIKE_TYPEOF(*(X))==PIKE_T_INT?(X)->u.integer==0:(1<<PIKE_TYPEOF(*(X)))&(BIT_OBJECT|BIT_FUNCTION)?!complex_svalue_is_true(X):0)
+#define SAFE_IS_ZERO(X) (PIKE_TYPEOF(*(X))==PIKE_T_INT?(X)->u.integer==0:(1<<PIKE_TYPEOF(*(X)))&(BIT_OBJECT|BIT_FUNCTION)?!safe_svalue_is_true(X):0)
 
-#define IS_UNDEFINED(X) (check_svalue (X), TYPEOF(*(X))==PIKE_T_INT&&SUBTYPEOF(*(X))==NUMBER_UNDEFINED)
+#define IS_UNDEFINED(X) (check_svalue (X), PIKE_TYPEOF(*(X))==PIKE_T_INT&&PIKE_SUBTYPEOF(*(X))==NUMBER_UNDEFINED)
 
 #define IS_DESTRUCTED(X)                                                \
-((TYPEOF(*(X)) == PIKE_T_OBJECT && !(X)->u.object->prog) ||             \
- (TYPEOF(*(X)) == PIKE_T_FUNCTION && SUBTYPEOF(*(X)) != FUNCTION_BUILTIN\
+  ((PIKE_TYPEOF(*(X)) == PIKE_T_OBJECT && !(X)->u.object->prog) ||	\
+ (PIKE_TYPEOF(*(X)) == PIKE_T_FUNCTION &&				\
+  PIKE_SUBTYPEOF(*(X)) != FUNCTION_BUILTIN				\
   && (!(X)->u.object->prog                                              \
       || ((X)->u.object->prog == pike_trampoline_program                \
           && !((struct pike_trampoline *)(X)->u.object->storage)        \
           ->frame->current_object->prog                                 \
-          && SUBTYPEOF(*(X)) == QUICK_FIND_LFUN(pike_trampoline_program,\
-                                                LFUN_CALL)))))
+          && PIKE_SUBTYPEOF(*(X)) ==					\
+	  QUICK_FIND_LFUN(pike_trampoline_program, LFUN_CALL)))))
 
 #define check_destructed(S)			\
   do{						\
@@ -514,7 +517,7 @@ PMOD_EXPORT extern const char msg_assign_svalue_error[];
 
 #define check_svalue_type(S) do {					\
     const struct svalue *sval_ = (S);					\
-    TYPE_T typ_ = TYPEOF(*sval_);					\
+    TYPE_T typ_ = PIKE_TYPEOF(*sval_);					\
     if (IS_INVALID_TYPE (typ_)) debug_svalue_type_error (sval_);	\
   } while (0)
 
@@ -533,8 +536,8 @@ void low_thorough_check_short_svalue (const union anything *u, TYPE_T type);
     struct svalue *sval_ = (S);						\
     check_svalue (sval_);						\
     if (d_flag <= 50) /* Done directly by check_svalue otherwise. */	\
-      if (REFCOUNTED_TYPE(TYPEOF(*sval_)))				\
-	low_thorough_check_short_svalue (&sval_->u, TYPEOF(*sval_));	\
+      if (REFCOUNTED_TYPE(PIKE_TYPEOF(*sval_)))				\
+	low_thorough_check_short_svalue (&sval_->u, PIKE_TYPEOF(*sval_)); \
   } while (0)
 
 void check_short_svalue(const union anything *u, TYPE_T type);
@@ -546,8 +549,9 @@ PMOD_EXPORT void real_gc_mark_external_svalues(const struct svalue *s, ptrdiff_t
 					       const char *place);
 
 PMOD_EXPORT extern const char msg_sval_obj_wo_refs[];
-#define check_refs(S) do {\
- if(REFCOUNTED_TYPE(TYPEOF(*(S))) && (!(S)->u.refs || (S)->u.refs[0] < 0)) { \
+#define check_refs(S) do {						\
+    if(REFCOUNTED_TYPE(PIKE_TYPEOF(*(S))) &&				\
+       (!(S)->u.refs || (S)->u.refs[0] < 0)) {				\
    fprintf (stderr, "%s", msg_sval_obj_wo_refs);			\
    describe((S)->u.refs);						\
    Pike_fatal("%s", msg_sval_obj_wo_refs);				\
@@ -567,7 +571,7 @@ if(REFCOUNTED_TYPE(T) && (S)->refs && (S)->refs[0] <= 0) {\
 #ifdef DEBUG_MALLOC
 static INLINE struct svalue PIKE_UNUSED_ATTRIBUTE *dmalloc_check_svalue(struct svalue *s, char *l)
 {
-  if(s && REFCOUNTED_TYPE(TYPEOF(*s)))
+  if(s && REFCOUNTED_TYPE(PIKE_TYPEOF(*s)))
     debug_malloc_update_location(s->u.refs,l);
   return s;
 }
@@ -673,18 +677,18 @@ static INLINE struct callable PIKE_UNUSED_ATTRIBUTE *pass_callable (struct calla
 #define free_svalue(X) do {				\
   struct svalue *_s=(X);					\
   DO_IF_DEBUG (							\
-    if (TYPEOF(*_s) != PIKE_T_FREE) {				\
+    if (PIKE_TYPEOF(*_s) != PIKE_T_FREE) {			\
       check_svalue_type(_s);					\
       check_refs(_s);						\
     }								\
   );								\
-  if (!REFCOUNTED_TYPE(TYPEOF(*_s)))				\
+  if (!REFCOUNTED_TYPE(PIKE_TYPEOF(*_s)))			\
     assert_free_svalue (_s);					\
   else {							\
     DO_IF_DEBUG (						\
       DO_IF_PIKE_CLEANUP (					\
 	if (gc_external_refs_zapped)				\
-	  gc_check_zapped (_s->u.ptr, TYPEOF(*_s), __FILE__, __LINE__))); \
+	  gc_check_zapped (_s->u.ptr, PIKE_TYPEOF(*_s), __FILE__, __LINE__))); \
     if (sub_ref(_s->u.dummy) <=0)				\
       really_free_svalue(_s);					\
     else							\
@@ -710,12 +714,12 @@ static INLINE struct callable PIKE_UNUSED_ATTRIBUTE *pass_callable (struct calla
 #define add_ref_svalue(X) do {				\
   struct svalue *_tmp=(X);					\
   DO_IF_DEBUG (							\
-    if (TYPEOF(*_tmp) != PIKE_T_FREE) {				\
+    if (PIKE_TYPEOF(*_tmp) != PIKE_T_FREE) {			\
       check_svalue_type(_tmp);					\
       check_refs(_tmp);						\
     }								\
   );								\
-  if(REFCOUNTED_TYPE(TYPEOF(*_tmp))) add_ref(_tmp->u.dummy);	\
+  if(REFCOUNTED_TYPE(PIKE_TYPEOF(*_tmp))) add_ref(_tmp->u.dummy);	\
 }while(0)
 
 /* Handles PIKE_T_FREE. */
@@ -723,7 +727,7 @@ static INLINE struct callable PIKE_UNUSED_ATTRIBUTE *pass_callable (struct calla
   struct svalue *_to=(X);				\
   const struct svalue *_from=(Y);			\
   DO_IF_DEBUG (						\
-    if (TYPEOF(*_from) != PIKE_T_FREE) {		\
+    if (PIKE_TYPEOF(*_from) != PIKE_T_FREE) {		\
       check_svalue_type(_from);				\
       check_refs(_from);				\
     }							\
@@ -731,7 +735,7 @@ static INLINE struct callable PIKE_UNUSED_ATTRIBUTE *pass_callable (struct calla
       Pike_fatal(msg_assign_svalue_error, _to);		\
   );							\
   *_to=*_from;						\
-  if(REFCOUNTED_TYPE(TYPEOF(*_to))) add_ref(_to->u.dummy); \
+  if(REFCOUNTED_TYPE(PIKE_TYPEOF(*_to))) add_ref(_to->u.dummy); \
 }while(0)
 
 /* Handles PIKE_T_FREE. */
@@ -875,11 +879,11 @@ int svalues_are_constant(const struct svalue *s,
 			 struct processing *p);
 
 static INLINE TYPE_FIELD PIKE_UNUSED_ATTRIBUTE BITOF(struct svalue sv) {
-    if (TYPEOF(sv) >= sizeof(TYPE_FIELD) * 8) {
+    if (PIKE_TYPEOF(sv) >= sizeof(TYPE_FIELD) * 8) {
         return BIT_MIXED | BIT_UNFINISHED;
     }
 
-    return 1 << TYPEOF(sv);
+    return 1 << PIKE_TYPEOF(sv);
 }
 
 #define gc_cycle_check_without_recurse gc_mark_without_recurse
