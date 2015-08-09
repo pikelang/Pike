@@ -44,8 +44,7 @@ mixed push(int pri, mixed val)
 //! that the element with the smallest priority value will be at the top.
 void adjust_pri(mixed handle, int new_pri)
 {
-  handle->pri=new_pri;
-  ::adjust(handle);
+  handle->set_pri(new_pri);
 }
 
 //! Removes and returns the item on top of the heap,
