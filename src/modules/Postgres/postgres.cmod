@@ -612,8 +612,8 @@ yupbegin:       res=PQexec(conn,"BEGIN");
 	THREADS_DISALLOW();
 	THIS->lastcommit=lastcommit;
 
-        if (bnds) {
-	  xfree(paramValues); xfree(paramLengths); xfree(paramFormats);
+        if (paramValues) {
+	  xfree(paramValues);
         }
 
 	pop_n_elems(args);
