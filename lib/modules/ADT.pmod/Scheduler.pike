@@ -81,6 +81,8 @@ class Consumer {
     } else if (normalization_offset) {
       pri -= (float)normalization_offset;
     }
+
+    offset = normalization_offset;
   }
 
   protected void adjust()
