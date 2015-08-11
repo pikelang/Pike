@@ -120,8 +120,8 @@ class Consumer {
   //! Get the weight of the consumer.
   int|float `weight() { return weight_; }
 
-  int `<(object o) { return pri<o->pri; }
-  int `>(object o) { return pri>o->pri; }
+  protected int `<(object o) { return pri<o->pri; }
+  protected int `>(object o) { return pri>o->pri; }
 
   protected string _sprintf(int c)
   {
