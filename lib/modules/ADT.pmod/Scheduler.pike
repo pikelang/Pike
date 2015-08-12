@@ -27,10 +27,11 @@ protected int normalization_offset = 0;
 protected void renormalize_priorities()
 {
   int i;
+  normalization_offset += 256;
   for (i = 0; i < Heap::num_values; i++) {
-    Heap::values[i]->pri -= 2.0;
+    Heap::values[i]->pri -= 256.0;
+    Heap::values[i]->offset = normalization_offset;
   }
-  normalization_offset += 2;
 }
 
 protected enum ConsumerState
@@ -53,7 +54,7 @@ class Consumer {
   // actual quotas.
   //
 
-  float pri;
+  float pri = 0.0;
   //! Accumulated deltas and initial priority.
   //!
   //! Typically in the range @expr{0.0 .. 2.0@}, but may temporarily
@@ -103,7 +104,7 @@ class Consumer {
     float old_pri = pri;
     pri += delta / weight_;
     adjust();
-    if (pri > 2.0) {
+    if (pri > 256.0) {
       renormalize_priorities();
     }
   }
