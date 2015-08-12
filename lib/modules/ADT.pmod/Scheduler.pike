@@ -64,21 +64,25 @@ class Consumer {
 
   ConsumerState state;
 
+  // NB: Negative and zero quanta indicate that it should be recalculated.
+  float quanta = 0.0;
+
   //!
   protected void create(int|float weight, mixed v)
   {
     weight_ = weight;
     value = v;
+    quanta = 1.0/weight;
 
     // Initialize to half a quanta.
-    pri = 1.0/(2.0 * weight);
+    pri = quanta/2.0;
     if (Heap::_sizeof()) {
       // Adjust the priority as if we've been active from the beginning.
       // Otherwise we'll get an unfair amount of the resource until
       // we reach this point. The element on the top of the heap is
       // representative of the accumulated consumption so far.
       Consumer c = Heap::peek();
-      pri += c->pri - 1.0/(2.0 * c->weight);
+      pri += c->pri - c->quanta/2.0;
     } else if (normalization_offset) {
       pri -= (float)normalization_offset;
     }
@@ -101,8 +105,7 @@ class Consumer {
   //! This causes the consumer to be reprioritized.
   void consume(float delta)
   {
-    float old_pri = pri;
-    pri += delta / weight_;
+    pri += delta * quanta;
     adjust();
     if (pri > 256.0) {
       renormalize_priorities();
@@ -112,9 +115,10 @@ class Consumer {
   //! The weight of the consumer.
   void `weight=(int|float weight)
   {
-    int|float old = weight_;
+    int|float old_quanta = quanta;
     weight_ = weight;
-    pri += 1.0/(2.0 * weight_) - 1.0/(2.0 * old);
+    quanta = 1.0/weight;
+    pri += (quanta - old_quanta)/2.0;
     adjust();
   }
 
@@ -126,8 +130,8 @@ class Consumer {
 
   protected string _sprintf(int c)
   {
-    return sprintf("Consumer(%O [pri: %O], %O)",
-		   weight_, pri, value);
+    return sprintf("Consumer(%O [pri: %O, q: %O, s:%s], %O)",
+		   weight_, pri, quanta, (state & STATE_ACTIVE)?"A":"", value);
   }
 }
 
