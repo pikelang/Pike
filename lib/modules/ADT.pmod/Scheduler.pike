@@ -142,14 +142,14 @@ Consumer add(Consumer c)
     error("Attempt to add the same consumer twice.\n");
   }
   c->pri -= (float)(normalization_offset - c->offset);
+  c->offset = normalization_offset;
   c->state |= STATE_ACTIVE;
   Heap::push(c);
   return c;
 }
 
-//! Push an element @[val] into the priority queue and assign a priority value
-//! @[pri] to it. The priority queue will automatically sort itself so that
-//! the element with the highest priority will be at the top.
+//! Create a @[Consumer] with the weight @[weight] for the value @[val],
+//! and add it to the Scheduler.
 variant Consumer add(int|float weight, mixed val)
 {
   return add(Consumer(weight, val));
@@ -180,7 +180,6 @@ void remove(Consumer c)
     if(Heap::num_values * 3 + 10 < sizeof(Heap::values))
       Heap::values = Heap::values[..num_values+10];
 
-    c->offset = normalization_offset;
     c->state &= ~STATE_ACTIVE;
   }
 }
