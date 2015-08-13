@@ -71,6 +71,9 @@ protected int adjust_up(int elem)
 
 //! Push an element onto the heap. The heap will automatically sort itself
 //! so that the smallest value will be at the top.
+//!
+//! @seealso
+//!   @[pop()], @[remove()]
 void push(mixed value)
 {
   if(num_values >= sizeof(values))
@@ -94,6 +97,12 @@ void adjust(mixed value)
 
 //! Removes and returns the item on top of the heap,
 //! which also is the smallest value in the heap.
+//!
+//! @throws
+//!   Throws an error if the heap is empty.
+//!
+//! @seealso
+//!   @[peek()], @[push()], @[remove()]
 mixed pop()
 {
   mixed ret;
@@ -120,6 +129,13 @@ int _sizeof() { return num_values; }
 
 //! Returns the item on top of the heap (which is also the smallest value
 //! in the heap) without removing it.
+//!
+//! @returns
+//!   Returns the smallest value on the heap if any, and
+//!   @expr{UNDEFINED@} otherwise.
+//!
+//! @seealso
+//!   @[pop()]
 mixed peek()
 {
   if (!num_values)
