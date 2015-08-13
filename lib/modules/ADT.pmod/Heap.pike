@@ -136,3 +136,24 @@ mixed peek()
 
   return values[0];
 }
+
+//! Remove a value from the heap.
+//!
+//! @param value
+//!   Value to remove.
+//!
+//! @seealso
+//!   @[push()], @[pop()]
+void remove(mixed value)
+{
+  int pos = search(values, value);
+  if ((pos < 0) || (pos >= num_values)) return;
+
+  values[pos] = values[--num_values];
+  values[num_values] = 0;
+  if (pos < num_values) {
+    if (!adjust_up(pos))
+      adjust_down(pos);
+  }
+  verify_heap();
+}
