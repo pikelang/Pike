@@ -162,5 +162,9 @@ void remove(mixed value)
     if (!adjust_up(pos))
       adjust_down(pos);
   }
+
+  if(num_values * 3 + 10 < sizeof(values))
+    values=values[..num_values+10];
+
   verify_heap();
 }
