@@ -38,4 +38,9 @@ class BufferError
 {
   inherit Error.Generic;
   constant buffer_error = 1;
+
+  protected void create(string msg, void|Stdio.Buffer buf)
+  {
+    ::create(msg);
+  }
 }
