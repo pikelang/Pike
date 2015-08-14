@@ -293,9 +293,9 @@ static void encode_truecolor_generic(int rbits, int rshift, int gbits,
        while (x--)
        {
          unsigned long b =
-           ((((s->r&rfmask)>>rzshift)<<rfshift)|
-            (((s->g&gfmask)>>gzshift)<<gfshift)|
-            (((s->b&bfmask)>>bzshift)<<bfshift))<<bpshift;
+           ((unsigned long)((((s->r&rfmask)>>rzshift)<<rfshift)|
+			    (((s->g&gfmask)>>gzshift)<<gfshift)|
+			    (((s->b&bfmask)>>bzshift)<<bfshift)))<<bpshift;
          bp = bpp;
          while (bp>8-bit)
          {
