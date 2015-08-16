@@ -9,18 +9,18 @@ inherit .Heap;
 //! The priority queue is realized as a (min-)heap.
 
 class elem {
-  int pri;
+  int|float pri;
   mixed value;
 
-  void create(int a, mixed b) { pri=a; value=b; }
+  void create(int|float a, mixed b) { pri=a; value=b; }
 
-  void set_pri(int p)
+  void set_pri(int|float p)
     {
       pri=p;
       adjust(this);
     }
 
-  int get_pri() { return pri; }
+  int|float get_pri() { return pri; }
 
   int `<(object o) { return pri<o->pri; }
   int `>(object o) { return pri>o->pri; }
@@ -30,7 +30,7 @@ class elem {
 //! Push an element @[val] into the priority queue and assign a priority value
 //! @[pri] to it. The priority queue will automatically sort itself so that
 //! the element with the smallest priority will be at the top.
-mixed push(int pri, mixed val)
+mixed push(int|float pri, mixed val)
 {
   mixed handle;
 
@@ -42,7 +42,7 @@ mixed push(int pri, mixed val)
 //! Adjust the priority value @[new_pri] of an element @[handle] in the
 //! priority queue. The priority queue will automatically sort itself so
 //! that the element with the smallest priority value will be at the top.
-void adjust_pri(mixed handle, int new_pri)
+void adjust_pri(mixed handle, int|float new_pri)
 {
   handle->set_pri(new_pri);
 }
