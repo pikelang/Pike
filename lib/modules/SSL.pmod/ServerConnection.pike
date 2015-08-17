@@ -1147,6 +1147,10 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
       if (version >= PROTOCOL_TLS_1_3) {
         // The client will use the main keys from this point on.
         handle_change_cipher(1);
+      } else {
+	send_packet(change_cipher_packet());
+	// We've already received the CCS from the peer.
+	expect_change_cipher--;
       }
 
       if (!reuse)
@@ -1216,7 +1220,8 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
       else
       {
 	handshake_state = STATE_wait_for_finish;
-	send_packet(change_cipher_packet());
+	// We expect a CCS next.
+	expect_change_cipher++;
       }
 
       break;
@@ -1272,7 +1277,8 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
 	derive_master_secret(session->master_secret);
       }
 
-      send_packet(change_cipher_packet());
+      // We expect a CCS next.
+      expect_change_cipher++;
 
       // NB TLS 1.3: From this point on we can send application data.
     }
