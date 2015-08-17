@@ -171,6 +171,14 @@ void image_any__decode(INT32 args)
 	 push_text("image/x-sun-raster");
 	 goto simple_image;
 
+      case CHAR2('R','I'):
+        // RIFF. Might be WebP.
+	push_text("_Image_WebP._decode");
+	APPLY_MASTER("resolv_or_error",1);
+	stack_swap();
+	f_call_function(2);
+        return;
+
       case CHAR2('P','V'):
       case CHAR2('G','B'):
 	 /* PVR */
@@ -323,6 +331,14 @@ void image_any_decode_header(INT32 args)
 	 /* PVR */
 	 image_pvr_f_decode_header(1);
 	 return;
+
+      case CHAR2('R','I'):
+        // RIFF. Might be WebP.
+	push_text("_Image_WebP._decode");
+	APPLY_MASTER("resolv_or_error",1);
+	stack_swap();
+	f_call_function(2);
+        break;
 
       case CHAR2(0x10,0):
 	 /* TIM */
