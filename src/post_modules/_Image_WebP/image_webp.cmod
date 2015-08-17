@@ -269,7 +269,7 @@ PIKEFUN mapping(string:object(Image.Image)|string) _decode( string data )
     *(ip++) = *(rp++); // B
     av = *(rp++);
 
-    if( av && ap )
+    if( ap )
     {
       *(ap++) = av; // A
       *(ap++) = av;
