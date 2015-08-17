@@ -60,6 +60,14 @@ static void fix_png_mapping(void)
 }
 
 
+static void call_resolved( const char *function )
+{
+  push_text(function);
+  APPLY_MASTER("resolv_or_error",1);
+  stack_swap();
+  f_call_function(2);
+}
+
 /*! @decl mapping _decode(string data)
  *! @decl object decode(string data)
  *! @decl object decode_alpha(string data)
@@ -106,43 +114,28 @@ void image_any__decode(INT32 args)
 
       case CHAR2(255,216):
 	 /* JFIF */
-	 push_text("Image.JPEG._decode");
-	 SAFE_APPLY_MASTER("resolv_or_error",1);
-	 stack_swap();
-	 f_call_function(2);
+         call_resolved("Image.JPEG._decode");
 	 return;
 
       case CHAR2('g','i'):
 	 /* XCF */
-	 push_text("Image.XCF._decode");
-	 SAFE_APPLY_MASTER("resolv_or_error",1);
-	 stack_swap();
-	 f_call_function(2);
+         call_resolved("Image.XCF._decode");
 	 return;
 
       case CHAR2(137,'P'):
 	 /* PNG */
-	 push_text("Image.PNG._decode");
-	 SAFE_APPLY_MASTER("resolv_or_error",1);
-	 stack_swap();
-	 f_call_function(2);
+	 call_resolved("Image.PNG._decode");
 	 fix_png_mapping();
 	 return;
 
       case CHAR2('G','I'):
 	 /* GIF */
-	 push_text("Image.GIF.decode_map");
-	 SAFE_APPLY_MASTER("resolv_or_error", 1);
-	 stack_swap();
-	 f_call_function(2);
+	 call_resolved("Image.GIF.decode_map");
 	 return;
 
       case CHAR2('8','B'):
 	/* Photoshop (8BPS) */
-	push_text("Image.PSD._decode");
-	SAFE_APPLY_MASTER("resolv_or_error",1);
-	stack_swap();
-	f_call_function(2);
+	call_resolved("Image.PSD._decode");
 	return;
 
       case CHAR2('F','O'):
@@ -154,11 +147,13 @@ void image_any__decode(INT32 args)
       case CHAR2('I','I'):	/* Little endian. */
       case CHAR2('M','M'):	/* Big endian. */
 	/* TIFF */
-        push_text("Image.TIFF._decode");
-	SAFE_APPLY_MASTER("resolv_or_error",1);
-	stack_swap();
-	f_call_function(2);
+        call_resolved("Image.TIFF._decode");
 	return;
+
+       case CHAR2('R','I'):
+        /* RIFF, used for WebP */
+        call_resolved("Image.WebP._decode");
+        return;
 
       case CHAR2('B','M'):
 	 /* BMP */
@@ -221,7 +216,6 @@ simple_image:
 }
 
 
-
 /*! @decl mapping decode_header(string data)
  *!
  *! Tries heuristics to find the correct method
@@ -265,35 +259,23 @@ void image_any_decode_header(INT32 args)
 
       case CHAR2(255,216):
 	 /* JFIF */
-	 push_text("Image.JPEG.decode_header");
-	 SAFE_APPLY_MASTER("resolv_or_error",1);
-	 stack_swap();
-	 f_call_function(2);
-	 return;
+        call_resolved("Image.JPEG.decode_header");
+        return;
 
       case CHAR2(137,'P'):
 	 /* PNG */
-	 push_text("Image.PNG.decode_header");
-	 SAFE_APPLY_MASTER("resolv_or_error",1);
-	 stack_swap();
-	 f_call_function(2);
+         call_resolved("Image.PNG.decode_header");
 	 fix_png_mapping();
 	 return;
 
       case CHAR2('g','i'):
 	 /* XCF */
-	 push_text("Image.XCF._decode");
-	 SAFE_APPLY_MASTER("resolv_or_error",1);
-	 stack_swap();
-	 f_call_function(2);
+         call_resolved("Image.XCF._decode");
 	 return;
 
       case CHAR2('G','I'):
 	 /* GIF */
-	 push_text("Image.GIF.decode_map");
-	 SAFE_APPLY_MASTER("resolv_or_error", 1);
-	 stack_swap();
-	 f_call_function(2);
+         call_resolved("Image.GIF.decode_map");
 	 return;
 
       case CHAR2('F','O'):
@@ -302,11 +284,13 @@ void image_any_decode_header(INT32 args)
       case CHAR2('I','I'):	/* Little endian. */
       case CHAR2('M','M'):	/* Big endian. */
 	/* TIFF */
-	push_text("Image.TIFF.decode_header");
-	SAFE_APPLY_MASTER("resolv_or_error",1);
-	stack_swap();
-	f_call_function(2);
+        call_resolved("Image.TIFF.decode_header");
 	return;
+
+       case CHAR2('R','I'):
+           /* RIFF, used for WebP */
+        call_resolved("Image.WebP._decode");
+        return;
 
       case CHAR2('B','M'):
 	 /* BMP */
@@ -331,11 +315,8 @@ void image_any_decode_header(INT32 args)
       case CHAR2(0xc5, 0xd0):
       case CHAR2('%','!'):
 	/* PS */
-	push_text("Image.PS.decode_header");
-	SAFE_APPLY_MASTER("resolv_or_error",1);
-	stack_swap();
-	f_call_function(2);
-	break;
+        call_resolved("Image.PS.decode_header");
+        return;
 
       case CHAR2(0,0):
 	 switch (CHAR2(sp[-args].u.string->str[2],sp[-args].u.string->str[3]))
@@ -378,6 +359,11 @@ void image_any_decode(INT32 args)
      resolve = "Image.XCF.decode";
      break;
 
+   case CHAR2('R','I'):
+     /* RIFF */
+     resolve = "Image.WebP.decode";
+     break;
+
    case CHAR2('G','I'):
      /* GIF */
      resolve = "Image.GIF.decode";
@@ -402,10 +388,7 @@ void image_any_decode(INT32 args)
 
    if(resolve)
    {
-     push_text(resolve);
-     SAFE_APPLY_MASTER("resolv_or_error",1);
-     stack_swap();
-     f_call_function(2);
+     call_resolved( resolve );
      return;
    }
 
