@@ -165,10 +165,9 @@ array(int) preferred_suites;
 array(int) ecc_curves = reverse(sort(indices(ECC_CURVES)));
 
 //! Supported DH groups for DHE key exchanges, in order of preference.
-//! Defaults to MODP Group 24 (2048/256 bits) from RFC 5114 section
-//! 2.3.
+//! Defaults to FFDHE-2048.
 array(Crypto.DH.Parameters) dh_groups = ({
-  Crypto.DH.MODPGroup24, // MODP Group 24 (2048/256 bits).
+  Crypto.DH.FFDHE2048,
 });
 
 
