@@ -494,7 +494,7 @@ void img_bmp_encode(INT32 args)
 
    size=sp[-1].u.string->len;
 
-   push_text("BM");         /* "BM" */
+   push_static_text("BM");         /* "BM" */
    push_ubo_32bit(size+14); /* "size of file" */
    push_ubo_16bit(0);       /* reserved */
    push_ubo_16bit(0);       /* reserved */
@@ -601,31 +601,31 @@ void i_img_bmp__decode(INT32 args,int header_only)
 	    Pike_error("Image.BMP.decode: unexpected EOF in header (at byte %ld)\n",
 		  PTRDIFF_T_TO_LONG(len));
 
-	 push_text("xsize");
+	 push_static_text("xsize");
 	 push_int(xsize=int_from_32bit(s+14+4*1));
 	 n++;
 
-	 push_text("ysize");
+	 push_static_text("ysize");
 	 push_int(abs(ysize=int_from_32bit(s+14+4*2)));
 	 n++;
 
-	 push_text("target_planes");
+	 push_static_text("target_planes");
 	 push_int(int_from_16bit(s+14+4*3));
 	 n++;
 
-	 push_text("bpp");
+	 push_static_text("bpp");
 	 push_int(bpp=int_from_16bit(s+14+4*3+2));
 	 n++;
 
-	 push_text("compression");
+	 push_static_text("compression");
 	 push_int(comp=int_from_32bit(s+14+4*4));
 	 n++;
 
-	 push_text("xres");
+	 push_static_text("xres");
 	 push_int(int_from_32bit(s+14+4*5));
 	 n++;
 
-	 push_text("yres");
+	 push_static_text("yres");
 	 push_int(int_from_32bit(s+14+4*6));
 	 n++;
 
@@ -634,11 +634,11 @@ void i_img_bmp__decode(INT32 args,int header_only)
 	 switch (int_from_32bit(s+14))
 	 {
 	    case 40:
-	       push_text("windows");
+	       push_static_text("windows");
 	       push_int(1);
 	       break;
 	    case 68:
-	       push_text("fuji");
+	       push_static_text("fuji");
 	       push_int(1);
 	       break;
 	 }
@@ -656,23 +656,23 @@ void i_img_bmp__decode(INT32 args,int header_only)
 	    Pike_error("Image.BMP.decode: unexpected EOF in header (at byte %ld)\n",
 		  DO_NOT_WARN((long)len));
 
-	 push_text("xsize");
+	 push_static_text("xsize");
 	 push_int(xsize=int_from_16bit(s+14+4));
 	 n++;
 
-	 push_text("ysize");
+	 push_static_text("ysize");
 	 push_int(abs(ysize=int_from_16bit(s+14+6)));
 	 n++;
 
-	 push_text("target_planes");
+	 push_static_text("target_planes");
 	 push_int(int_from_16bit(s+14+8));
 	 n++;
 
-	 push_text("bpp");
+	 push_static_text("bpp");
 	 push_int(bpp=int_from_16bit(s+14+10));
 	 n++;
 
-	 push_text("compression");
+	 push_static_text("compression");
 	 push_int(comp=0);
 	 n++;
 
@@ -688,7 +688,7 @@ void i_img_bmp__decode(INT32 args,int header_only)
    }
 
    ref_push_string(literal_type_string);
-   push_text("image/x-MS-bmp");
+   push_static_text("image/x-MS-bmp");
    n++;
 
    if (header_only)
@@ -706,16 +706,16 @@ void i_img_bmp__decode(INT32 args,int header_only)
       if (i < 0 || olen < i)
 	 Pike_error("Image.BMP.decode: unexpected EOF in JFIF data\n");
 
-      push_text("image");
+      push_static_text("image");
 
-      push_text("Image.JPEG.decode");
+      push_static_text("Image.JPEG.decode");
       SAFE_APPLY_MASTER("resolv_or_error",1);
 
       push_string(make_shared_binary_string((char *)os+i,olen-i));
 
-      push_text("quant_tables");
+      push_static_text("quant_tables");
 
-      push_text("Image.JPEG.quant_tables");
+      push_static_text("Image.JPEG.quant_tables");
       SAFE_APPLY_MASTER("resolv_or_error",1);
 
       push_int(quality);
@@ -732,7 +732,7 @@ void i_img_bmp__decode(INT32 args,int header_only)
 
    if (bpp!=24 && bpp!=16) /* get palette */
    {
-      push_text("colortable");
+      push_static_text("colortable");
 
       if (windows)
       {
@@ -764,7 +764,7 @@ void i_img_bmp__decode(INT32 args,int header_only)
       n++;
    }
 
-   push_text("image");
+   push_static_text("image");
 
    push_int(xsize);
    push_int(abs(ysize));
@@ -1093,7 +1093,7 @@ final:
        /* This is more expensive than actually correctly decoding the
           image in the first place, but for now keep it like this
           since it minimizes the needed changes. */
-       push_text("image");
+       push_static_text("image");
        apply(o,"mirrory",0);
        mapping_string_insert( Pike_sp[-3].u.mapping,
                               Pike_sp[-2].u.string,
@@ -1119,7 +1119,7 @@ void img_bmp_decode_header(INT32 args)
 void img_bmp_decode(INT32 args)
 {
    img_bmp__decode(args);
-   push_text("image");
+   push_static_text("image");
    f_index(2);
 }
 

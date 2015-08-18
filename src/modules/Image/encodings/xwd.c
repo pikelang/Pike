@@ -176,69 +176,69 @@ void img_xwd__decode(INT32 args,int header_only,int skipcmap)
    header.window_y=CARD32n(s,23);
    header.window_bdrwidth=CARD32n(s,24);
 
-   push_text("header_size");
+   push_static_text("header_size");
    push_int(header.header_size);
-   push_text("file_version");
+   push_static_text("file_version");
    push_int(header.file_version);
-   push_text("pixmap_format");
+   push_static_text("pixmap_format");
    push_int(header.pixmap_format);
-   push_text("pixmap_depth");
+   push_static_text("pixmap_depth");
    push_int(header.pixmap_depth);
-   push_text("pixmap_width");
+   push_static_text("pixmap_width");
    push_int(header.pixmap_width);
 
-   push_text("pixmap_height");
+   push_static_text("pixmap_height");
    push_int(header.pixmap_height);
-   push_text("xoffset");
+   push_static_text("xoffset");
    push_int(header.xoffset);
-   push_text("byte_order");
+   push_static_text("byte_order");
    push_int(header.byte_order);
-   push_text("bitmap_unit");
+   push_static_text("bitmap_unit");
    push_int(header.bitmap_unit);
-   push_text("bitmap_bit_order");
+   push_static_text("bitmap_bit_order");
    push_int(header.bitmap_bit_order);
 
-   push_text("bitmap_pad");
+   push_static_text("bitmap_pad");
    push_int(header.bitmap_pad);
-   push_text("bits_per_pixel");
+   push_static_text("bits_per_pixel");
    push_int(header.bits_per_pixel);
-   push_text("bytes_per_line");
+   push_static_text("bytes_per_line");
    push_int(header.bytes_per_line);
-   push_text("visual_class");
+   push_static_text("visual_class");
    push_int(header.visual_class);
-   push_text("red_mask");
+   push_static_text("red_mask");
    push_int(header.red_mask);
 
-   push_text("green_mask");
+   push_static_text("green_mask");
    push_int(header.green_mask);
-   push_text("blue_mask");
+   push_static_text("blue_mask");
    push_int(header.blue_mask);
-   push_text("bits_per_rgb");
+   push_static_text("bits_per_rgb");
    push_int(header.bits_per_rgb);
-   push_text("colormap_entries");
+   push_static_text("colormap_entries");
    push_int(header.colormap_entries);
-   push_text("ncolors");
+   push_static_text("ncolors");
    push_int(header.ncolors);
 
-   push_text("window_width");
+   push_static_text("window_width");
    push_int(header.window_width);
-   push_text("window_height");
+   push_static_text("window_height");
    push_int(header.window_height);
-   push_text("window_x");
+   push_static_text("window_x");
    push_int(header.window_x);
-   push_text("window_y");
+   push_static_text("window_y");
    push_int(header.window_y);
-   push_text("window_bdrwidth");
+   push_static_text("window_bdrwidth");
    push_int(header.window_bdrwidth);
 
    n+=25;
 
    ref_push_string(literal_type_string);
-   push_text("image/x-xwd");
+   push_static_text("image/x-xwd");
    n++;
 
    /* the size of the header is 100 bytes, name is null-terminated */
-   push_text("windowname");
+   push_static_text("windowname");
    if (header.header_size>100)
       push_string(make_shared_binary_string(s->str+100,header.header_size-100-1));
    else
@@ -252,7 +252,7 @@ void img_xwd__decode(INT32 args,int header_only,int skipcmap)
        header.visual_class==3 ||
        header.visual_class==5)
    {
-      push_text("colors");
+      push_static_text("colors");
       if (s->len-header.header_size>=12*header.ncolors)
       {
 	 unsigned long i;
@@ -274,7 +274,7 @@ void img_xwd__decode(INT32 args,int header_only,int skipcmap)
 	    f_aggregate(header.ncolors);
 	 }
 
-	 push_text("colortable");
+	 push_static_text("colortable");
 
 	 for (i=0; i<header.ncolors; i++)
 	 {
@@ -290,7 +290,7 @@ void img_xwd__decode(INT32 args,int header_only,int skipcmap)
       else
       {
 	 f_aggregate(0); /* no room for colors */
-	 push_text("colortable");
+	 push_static_text("colortable");
 	 push_int(0);
       }
       n+=2;
@@ -300,7 +300,7 @@ void img_xwd__decode(INT32 args,int header_only,int skipcmap)
    if (!header_only)
    {
       n++;
-      push_text("image");
+      push_static_text("image");
 
       if (s->len-(int)(header.header_size+header.ncolors*12)<0)
 	 push_empty_string();
@@ -398,7 +398,7 @@ static void image_xwd_decode(INT32 args)
    push_int(1);
    img_xwd__decode(2,0,1);
 
-   push_text("image");
+   push_static_text("image");
    f_index(2);
 }
 

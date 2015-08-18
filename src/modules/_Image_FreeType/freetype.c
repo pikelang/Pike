@@ -174,13 +174,13 @@ static void image_ft_face_write_char( INT32 args )
   } else
     Pike_error("Unhandled bitmap format received from renderer\n");
 
-  push_text( "img" ); push_object( o );
-  push_text( "x" )  ; push_int( slot->bitmap_left );
-  push_text( "y" )  ; push_int( slot->bitmap_top );
-  push_text( "advance" )  ; push_int( (slot->advance.x+62) >> 6 );
-  push_text( "descender" ); push_int( TFACE->size->metrics.descender>>6 );
-  push_text( "ascender" ); push_int( TFACE->size->metrics.ascender>>6 );
-  push_text( "height" ); push_int( TFACE->size->metrics.height>>6 );
+  push_static_text( "img" ); push_object( o );
+  push_static_text( "x" )  ; push_int( slot->bitmap_left );
+  push_static_text( "y" )  ; push_int( slot->bitmap_top );
+  push_static_text( "advance" )  ; push_int( (slot->advance.x+62) >> 6 );
+  push_static_text( "descender" ); push_int( TFACE->size->metrics.descender>>6 );
+  push_static_text( "ascender" ); push_int( TFACE->size->metrics.ascender>>6 );
+  push_static_text( "height" ); push_int( TFACE->size->metrics.height>>6 );
 
   f_aggregate_mapping( 14 );
 }
@@ -244,7 +244,7 @@ static void image_ft_face_list_encodings( INT32 args )
     if(e == ft_encoding_none)
       push_int( 0 );
     else {
-      push_text( "%4c" );
+      push_static_text( "%4c" );
       push_int( e );
       f_sprintf( 2 );
     }
@@ -294,20 +294,20 @@ static void image_ft_face_info( INT32 args )
   int element_count = 10;
 
   pop_n_elems( args );
-  push_text( "family" );
+  push_static_text( "family" );
   if( TFACE->family_name )
     push_text( TFACE->family_name );
   else
-    push_text( "unknown" );
-  push_text( "face_count" );
+    push_static_text( "unknown" );
+  push_static_text( "face_count" );
   push_int(TFACE->num_faces);
-  push_text( "style" );
+  push_static_text( "style" );
   if( TFACE->style_name )
     push_text( TFACE->style_name );
   else
-    push_text( "unknown" );
-  push_text( "face_flags" );  push_int( TFACE->face_flags );
-  push_text( "style_flags" );  push_int( TFACE->style_flags );
+    push_static_text( "unknown" );
+  push_static_text( "face_flags" );  push_int( TFACE->face_flags );
+  push_static_text( "style_flags" );  push_int( TFACE->style_flags );
 
   if (1) /* get ps_name attribute also, if possible */
   {
@@ -331,7 +331,7 @@ static void image_ft_face_info( INT32 args )
 
       memcpy(ps_name, name.string, len);
       ps_name[len] = 0;
-      push_text("ps_name");
+      push_static_text("ps_name");
       push_text(ps_name);
       element_count += 2;
       break;

@@ -409,7 +409,7 @@ static void odbc_fix_fields(void)
 	    name_len, sql_type, precision, scale, nullable);
 #endif /* ODBC_DEBUG */
     /* Create the mapping */
-    push_text("name");
+    push_static_text("name");
     push_sqlwchar(buf, name_len);
     ref_push_string(literal_type_string);
 #ifdef ODBC_DEBUG
@@ -432,27 +432,27 @@ static void odbc_fix_fields(void)
       ref_push_string(literal_string_string);
       break;
     case SQL_NUMERIC:	/* INT128 + scale + sign */
-      push_text("numeric");
+      push_static_text("numeric");
       field_info[i].size += 3;	/* Sign, leading zero and decimal characters. */
       field_info[i].bin_type = SQL_C_NUMERIC;
       field_info[i].bin_size = sizeof(SQL_NUMERIC_STRUCT);
       field_info[i].factory = push_numeric;
       break;
     case SQL_DECIMAL:	/* INT128 + scale + sign */
-      push_text("decimal");
+      push_static_text("decimal");
       field_info[i].size += 3;	/* Sign, leading zero and decimal characters. */
       field_info[i].bin_type = SQL_C_NUMERIC;
       field_info[i].bin_size = sizeof(SQL_NUMERIC_STRUCT);
       field_info[i].factory = push_numeric;
       break;
     case SQL_INTEGER:	/* INT32 */
-      push_text("integer");
+      push_static_text("integer");
       field_info[i].size++;	/* Allow for a sign character. */
       field_info[i].bin_size = 4;
       field_info[i].factory = push_sql_int;
       break;
     case SQL_SMALLINT:	/* INT16 */
-      push_text("short");
+      push_static_text("short");
       field_info[i].size++;	/* Allow for a sign character. */
       field_info[i].bin_size = 2;
       field_info[i].factory = push_sql_int;
@@ -465,14 +465,14 @@ static void odbc_fix_fields(void)
       field_info[i].factory = push_sql_float;
       break;
     case SQL_REAL:	/* float */
-      push_text("real");
+      push_static_text("real");
       field_info[i].size += 3;	/* Sign, leading zero and decimal characters. */
       field_info[i].bin_type = SQL_C_DOUBLE;
       field_info[i].bin_size = sizeof(SQLDOUBLE);
       field_info[i].factory = push_sql_float;
       break;
     case SQL_DOUBLE:	/* double */
-      push_text("double");
+      push_static_text("double");
       field_info[i].size += 3;	/* Sign, leading zero and decimal characters. */
       field_info[i].bin_type = SQL_C_DOUBLE;
       field_info[i].bin_size = sizeof(SQLDOUBLE);
@@ -482,19 +482,19 @@ static void odbc_fix_fields(void)
 #ifdef SQL_WVARCHAR
     case SQL_WVARCHAR:
 #endif
-      push_text("var string");
+      push_static_text("var string");
       field_info[i].type = SQL_C_WCHAR;
       field_info[i].size = 0;	/* Variable length */
       break;
 #ifdef SQL_GUID
     case SQL_GUID:
-      push_text("uuid");
+      push_static_text("uuid");
       field_info[i].bin_size = sizeof(SQLGUID);
       field_info[i].factory = push_uuid;
       break;
 #endif
     case SQL_DATE:
-      push_text("date");
+      push_static_text("date");
       field_info[i].type = SQL_C_WCHAR;
       /* NOTE: Field size is in characters, while SQLGetData()
        *       wants bytes.
@@ -511,7 +511,7 @@ static void odbc_fix_fields(void)
        */
       /* FALL_THROUGH */
     case SQL_TIME:
-      push_text("time");
+      push_static_text("time");
       field_info[i].type = SQL_C_WCHAR;
       /* NOTE: Field size is in characters, while SQLGetData()
        *       wants bytes.
@@ -529,7 +529,7 @@ static void odbc_fix_fields(void)
        */
       /* FALL_THROUGH */
     case SQL_TIMESTAMP:
-      push_text("timestamp");
+      push_static_text("timestamp");
       field_info[i].type = SQL_C_WCHAR;
       /* NOTE: Field size is in characters, while SQLGetData()
        *       wants bytes.
@@ -548,7 +548,7 @@ static void odbc_fix_fields(void)
       break;
     case SQL_SS_XML:
       /* This corresponds to MSSQL xml. */
-      push_text("xml");
+      push_static_text("xml");
       field_info[i].type = SQL_C_WCHAR;
       field_info[i].size = 0;	/* Variable length */
       break;
@@ -556,19 +556,19 @@ static void odbc_fix_fields(void)
 #ifdef SQL_WLONGVARCHAR
     case SQL_WLONGVARCHAR:
 #endif
-      push_text("var string");
+      push_static_text("var string");
       field_info[i].type = SQL_C_WCHAR;
       field_info[i].size = 0;	/* Variable length */
       break;
     case SQL_BINARY:
-      push_text("binary");
+      push_static_text("binary");
 #ifdef ODBC_DEBUG
       fprintf(stderr, "SQL_C_BINARY\n");
 #endif /* ODBC_DEBUG */
       field_info[i].type = SQL_C_BINARY;
       break;
     case SQL_VARBINARY:
-      push_text("blob");
+      push_static_text("blob");
 #ifdef ODBC_DEBUG
       fprintf(stderr, "SQL_C_BINARY\n");
 #endif /* ODBC_DEBUG */
@@ -576,7 +576,7 @@ static void odbc_fix_fields(void)
       field_info[i].size = 0;	/* Variable length */
       break;
     case SQL_LONGVARBINARY:
-      push_text("long blob");
+      push_static_text("long blob");
 #ifdef ODBC_DEBUG
       fprintf(stderr, "SQL_C_BINARY\n");
 #endif /* ODBC_DEBUG */
@@ -584,21 +584,21 @@ static void odbc_fix_fields(void)
       field_info[i].size = 0;	/* Variable length */
       break;
     case SQL_BIGINT:	/* INT64 */
-      push_text("long integer");
+      push_static_text("long integer");
       field_info[i].size++;	/* Allow for a sign character. */
       field_info[i].bin_type = SQL_C_SBIGINT;
       field_info[i].bin_size = sizeof(SQLBIGINT);
       field_info[i].factory = push_sql_int;
       break;
     case SQL_TINYINT:	/* INT8 */
-      push_text("tiny integer");
+      push_static_text("tiny integer");
       field_info[i].size++;	/* Allow for a sign character. */
       field_info[i].bin_type = SQL_C_SLONG;
       field_info[i].bin_size = sizeof(SQLINTEGER);
       field_info[i].factory = push_sql_int;
       break;
     case SQL_BIT:	/* INT1 */
-      push_text("bit");
+      push_static_text("bit");
       field_info[i].bin_type = SQL_C_SLONG;
       field_info[i].bin_size = sizeof(SQLINTEGER);
       field_info[i].factory = push_sql_int;
@@ -611,7 +611,7 @@ static void odbc_fix_fields(void)
        *                             &out_bytes)
        *        to get the actual type.
        */
-      push_text("user-defined");
+      push_static_text("user-defined");
       field_info[i].type = SQL_C_BINARY;
       field_info[i].factory = push_user_defined;
       {
@@ -632,7 +632,7 @@ static void odbc_fix_fields(void)
 			 SQL_CA_SS_UDT_ASSEMBLY_TYPE_NAME,
 			 NULL, 0, &user_type_len);
 	if (user_type_len) {
-	  push_text("user_type");
+	  push_static_text("user_type");
 	  if (sizeof(SQLWCHAR) == 4) {
 	    user_type = begin_wide_shared_string(user_type_len, 2);
 	  } else {
@@ -651,15 +651,15 @@ static void odbc_fix_fields(void)
 
       break;
     case SQL_SS_VARIANT:
-      push_text("variant");
+      push_static_text("variant");
       field_info[i].type = SQL_C_BINARY;
       break;
     case SQL_SS_TABLE:
-      push_text("table");
+      push_static_text("table");
       field_info[i].type = SQL_C_BINARY;
       break;
     default:
-      push_text("unknown");
+      push_static_text("unknown");
       field_info[i].type = SQL_C_WCHAR;
       /* NOTE: Field size is in characters, while SQLGetData()
        *       wants bytes.
@@ -667,18 +667,18 @@ static void odbc_fix_fields(void)
       field_info[i].size *= (ptrdiff_t)sizeof(SQLWCHAR);
       break;
     }
-    push_text("length"); push_int64(precision);
-    push_text("decimals"); push_int(scale);
-    push_text("flags");
+    push_static_text("length"); push_int64(precision);
+    push_static_text("decimals"); push_int(scale);
+    push_static_text("flags");
     nbits = 0;
     if (nullable == SQL_NULLABLE) {
       nbits++;
-      push_text("nullable");
+      push_static_text("nullable");
     }
     if ((sql_type == SQL_LONGVARCHAR) ||
 	(sql_type == SQL_LONGVARBINARY)) {
       nbits++;
-      push_text("blob");
+      push_static_text("blob");
     }
     f_aggregate_multiset(nbits);
 

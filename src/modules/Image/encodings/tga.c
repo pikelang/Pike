@@ -842,17 +842,17 @@ void image_tga__decode( INT32 args )
 
   pop_n_elems(args);
 
-  push_text( "alpha" );
+  push_static_text( "alpha" );
   push_object( i.ao );
-  push_text( "image" );
+  push_static_text( "image" );
   push_object( i.io );
 
   ref_push_string( literal_type_string );
-  push_text( "image/x-targa" );
+  push_static_text( "image/x-targa" );
 
-  push_text( "xsize" );
+  push_static_text( "xsize" );
   push_int( i.img->xsize );
-  push_text( "ysize" );
+  push_static_text( "ysize" );
   push_int( i.img->ysize );
 
   f_aggregate_mapping( 10 );

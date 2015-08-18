@@ -728,13 +728,13 @@ static void f_read( INT32 args )
 #else
 	  PUSHBUF();
 #endif
-	  push_text("HTTP/0.9");
+	  push_static_text("HTTP/0.9");
 	  state = 10;
 	}
 	break;
       case 35:
 	if(cls == CLS_QUOTE) {
-	  push_text("HTTP/0.9");
+	  push_static_text("HTTP/0.9");
 	  state = 10;
 	} else if(cls >= CLS_TOKEN) {
 #ifdef DYNAMIC_BUF

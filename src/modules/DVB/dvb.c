@@ -330,37 +330,37 @@ static void f_fe_status(INT32 args) {
   if(ret < 0)
     push_int(0);
   else {
-    push_text("signal"); push_int(!!(status & ~FE_HAS_SIGNAL));
-    push_text("carrier"); push_int(!!(status & ~FE_HAS_CARRIER));
-    push_text("viterbi"); push_int(!!(status & ~FE_HAS_VITERBI));
-    push_text("lock"); push_int(!!(status & ~FE_HAS_LOCK));
-    push_text("sync"); push_int(!!(status & ~FE_HAS_SYNC));
+    push_static_text("signal"); push_int(!!(status & ~FE_HAS_SIGNAL));
+    push_static_text("carrier"); push_int(!!(status & ~FE_HAS_CARRIER));
+    push_static_text("viterbi"); push_int(!!(status & ~FE_HAS_VITERBI));
+    push_static_text("lock"); push_int(!!(status & ~FE_HAS_LOCK));
+    push_static_text("sync"); push_int(!!(status & ~FE_HAS_SYNC));
     cnt = 5;
     /*push_text("spectrum_inverse"); push_int(status & ~FE_HAS_SPECTRUM_INV);*/
 #if HAVE_DVB < 30
-    push_text("power"); push_int(!!(status & ~FE_HAS_POWER));
-    push_text("tuner_lock"); push_int(!!(status & ~FE_TUNER_HAS_LOCK));
+    push_static_text("power"); push_int(!!(status & ~FE_HAS_POWER));
+    push_static_text("tuner_lock"); push_int(!!(status & ~FE_TUNER_HAS_LOCK));
     cnt += 2;
 #endif
     THREADS_ALLOW();
     ret = ioctl(dvb->fefd, FE_READ_BER, &status);
     THREADS_DISALLOW();
     if(ret > -1) {
-      push_text("ber"); push_int(status);
+      push_static_text("ber"); push_int(status);
       cnt++;
     }
     THREADS_ALLOW();
     ret = ioctl(dvb->fefd, FE_READ_SNR, &status);
     THREADS_DISALLOW();
     if(ret > -1) {
-      push_text("snr"); push_int(status);
+      push_static_text("snr"); push_int(status);
       cnt++;
     }
     THREADS_ALLOW();
     ret = ioctl(dvb->fefd, FE_READ_SIGNAL_STRENGTH, &status);
     THREADS_DISALLOW();
     if(ret > -1) {
-      push_text("signal_strength"); push_int(status);
+      push_static_text("signal_strength"); push_int(status);
       cnt++;
     }
 
@@ -389,23 +389,23 @@ static void f_fe_info(INT32 args) {
   if(ret < 0)
     push_int(0);
   else {
-    push_text("frequency");
-      push_text("min");
+    push_static_text("frequency");
+      push_static_text("min");
       push_int(info.minFrequency);
-      push_text("max");
+      push_static_text("max");
       push_int(info.maxFrequency);
       f_aggregate_mapping(2 * 2);
-    push_text("sr");
-      push_text("min");
+    push_static_text("sr");
+      push_static_text("min");
       push_int(info.minSymbolRate);
-      push_text("max");
+      push_static_text("max");
       push_int(info.maxSymbolRate);
       f_aggregate_mapping(2 * 2);
-    push_text("hardware");
+    push_static_text("hardware");
       ref_push_string(literal_type_string);
       push_int(info.hwType);
 #if HAVE_DVB < 30
-      push_text("version");
+      push_static_text("version");
       push_int(info.hwVersion);
       f_aggregate_mapping(2 * 2);
 #else
@@ -643,15 +643,15 @@ static void f_get_pids(INT32 args) {
   }
 
   if(DVB->cardn != -1) {
-    push_text("audio");		push_int( pids[DMX_PES_AUDIO] & 0x1fff );
+    push_static_text("audio");		push_int( pids[DMX_PES_AUDIO] & 0x1fff );
     cnt++;
-    push_text("video");		push_int( pids[DMX_PES_VIDEO] & 0x1fff );
+    push_static_text("video");		push_int( pids[DMX_PES_VIDEO] & 0x1fff );
     cnt++;
-    push_text("teletext");	push_int( pids[DMX_PES_TELETEXT] & 0x1fff );
+    push_static_text("teletext");	push_int( pids[DMX_PES_TELETEXT] & 0x1fff );
     cnt++;
-    push_text("subtitle");	push_int( pids[DMX_PES_SUBTITLE] & 0x1fff );
+    push_static_text("subtitle");	push_int( pids[DMX_PES_SUBTITLE] & 0x1fff );
     cnt++;
-    push_text("pcr");		push_int( pids[DMX_PES_PCR] & 0x1fff );
+    push_static_text("pcr");		push_int( pids[DMX_PES_PCR] & 0x1fff );
     cnt++;
     f_aggregate_mapping( 2 * cnt );
   } else
@@ -1061,29 +1061,29 @@ static void f_parse_pmt(INT32 args)
   {
     cnt = 0;
     pid = ((buffer[index+1] & 0x1f) << 8) + buffer[index+2];
-    push_text("pid"); push_int(pid); cnt++;
+    push_static_text("pid"); push_int(pid); cnt++;
 
     switch(buffer[index]) {
       case 2:
         ref_push_string(literal_type_string); push_int(DMX_PES_VIDEO); cnt++;
-        push_text("desc"); push_text("video"); cnt++;
+        push_static_text("desc"); push_static_text("video"); cnt++;
 	break;
       case 3:
       case 4:
         ref_push_string(literal_type_string); push_int(DMX_PES_AUDIO); cnt++;
-        push_text("desc"); push_text("audio"); cnt++;
+        push_static_text("desc"); push_static_text("audio"); cnt++;
 	break;
       case 6:
         ref_push_string(literal_type_string); push_int(DMX_PES_TELETEXT); cnt++;
-        push_text("desc"); push_text("teletext"); cnt++;
+        push_static_text("desc"); push_static_text("teletext"); cnt++;
 	break;
       case 129:
         ref_push_string(literal_type_string); push_int(_DMX_PES_RDS); cnt++;
-        push_text("desc"); push_text("_rds"); cnt++;
+        push_static_text("desc"); push_static_text("_rds"); cnt++;
 	break;
       default:
-        push_text("unknown_type"); push_int(buffer[index]); cnt++;
-        push_text("desc"); push_text("unknown"); cnt++;
+        push_static_text("unknown_type"); push_int(buffer[index]); cnt++;
+        push_static_text("desc"); push_static_text("unknown"); cnt++;
     }
 
     data_len = ((buffer[index+3] & 0x0F) << 8) + buffer[index+4];
@@ -1096,7 +1096,7 @@ static void f_parse_pmt(INT32 args)
         {
           case 0x0a:
             if (buffer[index]==3 || buffer[index]==4) {
-	      push_text("lang");
+	      push_static_text("lang");
 	      push_string(make_shared_binary_string((char *)&buffer[i+2], 3)); cnt++;
             }
             break;
@@ -1196,28 +1196,28 @@ static void f__sprintf(INT32 args) {
   pop_n_elems(args);
   switch (x) {
     case 'O':
-            n++; push_text("DVB.dvb(");
+            n++; push_static_text("DVB.dvb(");
             n++; push_text(mk_devname(DVB->cardn, DEMUXDEVICE));
-	    n++; push_text(": ");
+	    n++; push_static_text(": ");
 	    cnt = 0;
 	    while(st != NULL) {
 	      n++; push_int(st->pid);
-	      n++; push_text("/");
+	      n++; push_static_text("/");
 	      n++; switch(st->stype) {
-		     case DMX_PES_AUDIO: push_text("a"); break;
-		     case DMX_PES_VIDEO: push_text("v"); break;
-		     case DMX_PES_TELETEXT: push_text("t"); break;
-		     case DMX_PES_SUBTITLE: push_text("s"); break;
-		     case DMX_PES_OTHER: push_text("o"); break;
-		     default: push_text("?");
+		     case DMX_PES_AUDIO: push_static_text("a"); break;
+		     case DMX_PES_VIDEO: push_static_text("v"); break;
+		     case DMX_PES_TELETEXT: push_static_text("t"); break;
+		     case DMX_PES_SUBTITLE: push_static_text("s"); break;
+		     case DMX_PES_OTHER: push_static_text("o"); break;
+		     default: push_static_text("?");
 		   }
 	      cnt++;
 	      if(cnt < sl_count(DVB)) {
-		n++; push_text(",");
+		n++; push_static_text(",");
 	      }
 	      st = st->next;
 	    }
-            n++; push_text(")");
+            n++; push_static_text(")");
             f_add(n);
             return;
      default:
@@ -1557,37 +1557,37 @@ static void f_audio_status(INT32 args) {
   if(ret < 0)
     push_int(0);
   else {
-    push_text("av_sync"); push_int(status.AVSyncState);
-    push_text("mute"); push_int(status.muteState);
-    push_text("state");
+    push_static_text("av_sync"); push_int(status.AVSyncState);
+    push_static_text("mute"); push_int(status.muteState);
+    push_static_text("state");
       switch(status.playState) {
-	case AUDIO_STOPPED: push_text("stopped");
+	case AUDIO_STOPPED: push_static_text("stopped");
 			    break;
-	case AUDIO_PLAYING: push_text("playing");
+	case AUDIO_PLAYING: push_static_text("playing");
 			    break;
-	case AUDIO_PAUSED: push_text("paused");
+	case AUDIO_PAUSED: push_static_text("paused");
 			    break;
-	default: push_text("unknown");
+	default: push_static_text("unknown");
       }
-    push_text("source");
+    push_static_text("source");
       switch(status.streamSource) {
-	case AUDIO_SOURCE_DEMUX: push_text("demux");
+	case AUDIO_SOURCE_DEMUX: push_static_text("demux");
 			    break;
-	case AUDIO_SOURCE_MEMORY: push_text("memory");
+	case AUDIO_SOURCE_MEMORY: push_static_text("memory");
 			    break;
-	default: push_text("unknown");
+	default: push_static_text("unknown");
       }
-    push_text("channels");
+    push_static_text("channels");
       switch(status.channelSelect) {
-	case AUDIO_STEREO: push_text("stereo");
+	case AUDIO_STEREO: push_static_text("stereo");
 			    break;
-	case AUDIO_MONO_LEFT: push_text("left");
+	case AUDIO_MONO_LEFT: push_static_text("left");
 			    break;
-	case AUDIO_MONO_RIGHT: push_text("right");
+	case AUDIO_MONO_RIGHT: push_static_text("right");
 			    break;
-	default: push_text("unknown");
+	default: push_static_text("unknown");
       }
-    push_text("bypass"); push_int(status.bypassMode);
+    push_static_text("bypass"); push_int(status.bypassMode);
     f_aggregate_mapping( 2 * 6 );
   }
 

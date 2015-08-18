@@ -155,7 +155,7 @@ static void pdf_magic_index(INT32 args)
    {
       pop_stack();
       stack_dup();
-      push_text("_PDF_");
+      push_static_text("_PDF_");
       stack_swap();
       f_add(2);
       SAFE_APPLY_MASTER("resolv",1);
@@ -164,7 +164,7 @@ static void pdf_magic_index(INT32 args)
    {
       pop_stack();
       stack_dup();
-      push_text("_PDF");
+      push_static_text("_PDF");
       SAFE_APPLY_MASTER("resolv",1);
       stack_swap();
       f_index(2);

@@ -1083,7 +1083,7 @@ PIKEFUN int affected_rows()
 }
 
 
-#define desc_type(X,Y) case X: push_text(#Y);sybdebug((stderr,"type is %s\n",#Y)); break
+#define desc_type(X,Y) case X: push_static_text(#Y);sybdebug((stderr,"type is %s\n",#Y)); break
 PIKEFUN array(mapping(string:mixed)) fetch_fields()
 {
   pike_sybase_connection *this=THIS;
@@ -1116,7 +1116,7 @@ PIKEFUN array(mapping(string:mixed)) fetch_fields()
   for(j=0;j<numcols;j++) {
     nflags=0;
     desc=&descs[j];
-    push_text("name");
+    push_static_text("name");
     push_text(desc->name);
     sybdebug((stderr,"name is %s\n",desc->name));
     ref_push_string(literal_type_string);
@@ -1148,46 +1148,46 @@ PIKEFUN array(mapping(string:mixed)) fetch_fields()
       desc_type(CS_VOID_TYPE,void);
       desc_type(CS_USHORT_TYPE,ushort);
     default:
-      push_text("unknown");
+      push_static_text("unknown");
     }
-    push_text("max_length");
+    push_static_text("max_length");
     push_int(desc->maxlength);
     sybdebug((stderr,"max_length is %d\n",desc->maxlength));
 
-    push_text("flags");
+    push_static_text("flags");
     if (!(desc->status & CS_CANBENULL)) {
       sybdebug((stderr,"Flag: not null\n"));
-      push_text("not_null");
+      push_static_text("not_null");
       nflags++;
     }
     if (desc->status & CS_HIDDEN) {
       sybdebug((stderr,"Flag: hidden\n"));
-      push_text("hidden");
+      push_static_text("hidden");
       nflags++;
     }
     if (desc->status & CS_IDENTITY) {
       sybdebug((stderr,"Flag: identity\n"));
-      push_text("identity");
+      push_static_text("identity");
       nflags++;
     }
     if (desc->status & CS_KEY) {
       sybdebug((stderr,"Flag: key\n"));
-      push_text("key");
+      push_static_text("key");
       nflags++;
     }
     if (desc->status & CS_VERSION_KEY) {
       sybdebug((stderr,"Flag: version_key\n"));
-      push_text("version_key");
+      push_static_text("version_key");
       nflags++;
     }
     if (desc->status & CS_TIMESTAMP) {
       sybdebug((stderr,"Flag: timestamp\n"));
-      push_text("timestamp");
+      push_static_text("timestamp");
       nflags++;
     }
     if (desc->status & CS_UPDATABLE) {
       sybdebug((stderr,"Flag: updatable\n"));
-      push_text("updatable");
+      push_static_text("updatable");
       nflags++;
     }
     if (nflags) {

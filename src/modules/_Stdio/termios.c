@@ -184,14 +184,14 @@ void file_tcgetattr(INT32 args)
       }
    }
 
-   push_text("ospeed");
+   push_static_text("ospeed");
    push_int(termios_bauds(cfgetospeed(&ti)));
-   push_text("ispeed");
+   push_static_text("ispeed");
    push_int(termios_bauds(cfgetispeed(&ti)));
    n++;
 
 #ifdef CSIZE
-   push_text("csize");
+   push_static_text("csize");
    switch (ti.c_cflag&CSIZE)
    {
 #ifdef CS8
@@ -217,10 +217,10 @@ void file_tcgetattr(INT32 args)
       struct winsize winsize;
       if (!ioctl(FD,TIOCGWINSZ,&winsize))
       {
-	 push_text("rows");
+	 push_static_text("rows");
 	 push_int(winsize.ws_row);
 	 n++;
-	 push_text("columns");
+	 push_static_text("columns");
 	 push_int(winsize.ws_col);
 	 n++;
       }

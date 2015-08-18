@@ -209,7 +209,7 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
         Pike_error("Invalid BSON. Not enough data.\n");
       fstr = make_shared_binary_string(n, 8);
       push_string(fstr);
-      push_text("%-8F");
+      push_static_text("%-8F");
       f_sscanf(2);
       if(TYPEOF(Pike_sp[-1]) != PIKE_T_ARRAY)
         Pike_error("Unable to parse float.\n");
@@ -403,7 +403,7 @@ char * decode_next_value(struct pike_string * pike_slist, char * n, struct mappi
       }
       if(!Second)
         Second = lookup_svalue("Calendar.Second");
-      push_text("unix");
+      push_static_text("unix");
 #ifdef INT64
       sec = get_unaligned_le64(n);
       push_int64(sec/1000);

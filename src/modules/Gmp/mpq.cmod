@@ -466,7 +466,7 @@ PIKECLASS mpq
       /* If the denominator contains other factors we still need to
        * display it. */
       if (mpz_cmp_ui (den, 1u)) {
-	push_text ("/");
+	push_static_text ("/");
 	push_string (low_get_mpz_digits (den, 10));
 	strings += 2;
       }
@@ -579,9 +579,9 @@ PIKECLASS mpq
 	  return;
 
 	case 'O':
-	  push_text ("Gmp.mpq(");
+	  push_static_text ("Gmp.mpq(");
 	  format_string (THISMPQ, 1);
-	  push_text (")");
+	  push_static_text (")");
 	  f_add (3);
 	  return;
 

@@ -468,7 +468,7 @@ static void image_ilbm__decode(INT32 args)
 
   parse_bmhd(&bmhd, STR0(ITEM(arr)[2].u.string), ITEM(arr)[2].u.string->len);
 
-  push_text("image");
+  push_static_text("image");
   push_int(bmhd.w);
   push_int(bmhd.h);
   o=clone_object(image_program,2);
@@ -477,7 +477,7 @@ static void image_ilbm__decode(INT32 args)
   n++;
 
   if(bmhd.masking != mskNone) {
-    push_text("alpha");
+    push_static_text("alpha");
     push_int(bmhd.w);
     push_int(bmhd.h);
     o=clone_object(image_program,2);
@@ -494,12 +494,12 @@ static void image_ilbm__decode(INT32 args)
   }
 
   if((camg & CAMG_HAM)) {
-    push_text("ham");
+    push_static_text("ham");
     push_int(1);
     n++;
   }
   if((camg & CAMG_EHB)) {
-    push_text("ehb");
+    push_static_text("ehb");
     push_int(1);
     n++;
   }
@@ -515,7 +515,7 @@ static void image_ilbm__decode(INT32 args)
       mcol >>= 1;
     if(ncol>mcol)
       ncol = mcol;
-    push_text("palette");
+    push_static_text("palette");
     for(col=0; col<ncol; col++) {
       push_int(*pal++);
       push_int(*pal++);

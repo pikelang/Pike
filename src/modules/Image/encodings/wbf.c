@@ -105,9 +105,9 @@ static int wbf_read_int( struct buffer *from )
 
 static void push_ext_header( struct ext_header *eh )
 {
-  push_text( "identifier" );
+  push_static_text( "identifier" );
   push_string( make_shared_binary_string( eh->name, eh->name_len ) );
-  push_text( "value" );
+  push_static_text( "value" );
   push_string( make_shared_binary_string( eh->value, eh->value_len ) );
   f_aggregate_mapping( 4 );
 }
@@ -239,33 +239,33 @@ static void low_image_f_wbf_decode( int args, int mode )
         return;
 
       case 1: /* Image and header */
-        push_text( "image" );
+        push_static_text( "image" );
         low_image_f_wbf_decode_type0( &wh, &buff );
         map_num_elems++;
 
       case 0: /* Header only */
-        push_text( "format" );
-        push_text( "image/x-wap.wbmp; type=0" );
+        push_static_text( "format" );
+        push_static_text( "image/x-wap.wbmp; type=0" );
         map_num_elems++;
 
-        push_text( "xsize" );
+        push_static_text( "xsize" );
         push_int( wh.width );
         map_num_elems++;
 
-        push_text( "ysize" );
+        push_static_text( "ysize" );
         push_int( wh.height );
         map_num_elems++;
 
         if( wh.fix_header_field )
         {
-          push_text( "fix_header_field" );
+          push_static_text( "fix_header_field" );
           push_int( wh.fix_header_field );
           map_num_elems++;
         }
 
         if( wh.ext_header_field )
         {
-          push_text( "ext_header_field" );
+          push_static_text( "ext_header_field" );
           push_int( wh.ext_header_field );
           map_num_elems++;
         }

@@ -347,9 +347,9 @@ static void image_xbm__decode( INT32 args )
   }
 
   pop_n_elems(args);
-  push_text( "alpha" );
+  push_static_text( "alpha" );
   push_object( a );
-    push_text( "image" );
+    push_static_text( "image" );
   if(i)
     push_object( i );
   else

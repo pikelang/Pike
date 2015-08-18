@@ -499,38 +499,38 @@ void low_image_tiff_decode( struct buffer *buf,
     TIFFDirectory *td = &tif->tif_dir;
     if (TIFFFieldSet(tif,FIELD_RESOLUTION))
     {
-      push_text( "xres" );   push_float( td->td_xresolution );
-      push_text( "yres" );   push_float( td->td_yresolution );
-      push_text( "unit" );
+      push_static_text( "xres" );   push_float( td->td_xresolution );
+      push_static_text( "yres" );   push_float( td->td_yresolution );
+      push_static_text( "unit" );
       if (TIFFFieldSet(tif,FIELD_RESOLUTIONUNIT))
       {
         switch(td->td_resolutionunit)
         {
          case RESUNIT_NONE:
-           push_text("unitless");
+           push_static_text("unitless");
            break;
          case RESUNIT_INCH:
-           push_text("pixels/inch");
-           push_text( "xdpy" );   push_float( td->td_xresolution );
-           push_text( "ydpy" );   push_float( td->td_yresolution );
+           push_static_text("pixels/inch");
+           push_static_text( "xdpy" );   push_float( td->td_xresolution );
+           push_static_text( "ydpy" );   push_float( td->td_yresolution );
            break;
          case RESUNIT_CENTIMETER:
-           push_text("pixels/cm");
-           push_text( "xdpy" );   push_float( td->td_xresolution/2.5 );
-           push_text( "ydpy" );   push_float( td->td_yresolution/2.5 );
+           push_static_text("pixels/cm");
+           push_static_text( "xdpy" );   push_float( td->td_xresolution/2.5 );
+           push_static_text( "ydpy" );   push_float( td->td_yresolution/2.5 );
            break;
         }
       } else
-        push_text( "unitless" );
+        push_static_text( "unitless" );
     }
     if (TIFFFieldSet(tif,FIELD_POSITION))
     {
-      push_text("xposition"); push_int(td->td_xposition);
-      push_text("yposition"); push_int(td->td_yposition);
+      push_static_text("xposition"); push_int(td->td_xposition);
+      push_static_text("yposition"); push_int(td->td_yposition);
     }
     if (TIFFFieldSet(tif,FIELD_PHOTOMETRIC))
     {
-      push_text("photometric");
+      push_static_text("photometric");
       if (td->td_photometric < (sizeof (photoNames) / sizeof (photoNames[0])))
         push_text( photoNames[td->td_photometric] );
       else
@@ -538,16 +538,16 @@ void low_image_tiff_decode( struct buffer *buf,
         switch (td->td_photometric) {
 #ifdef PHOTOMETRIC_LOGL
          case PHOTOMETRIC_LOGL:
-           push_text("CIE Log2(L)");
+           push_static_text("CIE Log2(L)");
            break;
 #endif /* PHOTOMETRIC_LOGL */
 #ifdef PHOTOMETRIC_LOGLUV
          case PHOTOMETRIC_LOGLUV:
-           push_text("CIE Log2(L) (u',v')");
+           push_static_text("CIE Log2(L) (u',v')");
            break;
 #endif /* PHOTOMETRIC_LOGLUV */
          default:
-           push_text("unkown");
+           push_static_text("unkown");
            break;
         }
       }
@@ -555,19 +555,19 @@ void low_image_tiff_decode( struct buffer *buf,
 
     if (TIFFFieldSet(tif,FIELD_EXTRASAMPLES) && td->td_extrasamples)
     {
-      push_text( "extra_samples" );
+      push_static_text( "extra_samples" );
       for (i = 0; i < td->td_extrasamples; i++)
       {
         switch (td->td_sampleinfo[i])
         {
          case EXTRASAMPLE_UNSPECIFIED:
-           push_text("unspecified");
+           push_static_text("unspecified");
            break;
          case EXTRASAMPLE_ASSOCALPHA:
-           push_text("assoc-alpha");
+           push_static_text("assoc-alpha");
            break;
          case EXTRASAMPLE_UNASSALPHA:
-           push_text("unassoc-alpha");
+           push_static_text("unassoc-alpha");
            break;
          default:
            push_int( td->td_sampleinfo[i] );
@@ -579,25 +579,25 @@ void low_image_tiff_decode( struct buffer *buf,
 
     if (TIFFFieldSet(tif,FIELD_THRESHHOLDING))
     {
-      push_text( "threshholding" );
+      push_static_text( "threshholding" );
       switch (td->td_threshholding) {
        case THRESHHOLD_BILEVEL:
-         push_text( "bilevel art scan" );
+         push_static_text( "bilevel art scan" );
          break;
        case THRESHHOLD_HALFTONE:
-         push_text( "halftone or dithered scan" );
+         push_static_text( "halftone or dithered scan" );
          break;
        case THRESHHOLD_ERRORDIFFUSE:
-         push_text( "error diffused" );
+         push_static_text( "error diffused" );
          break;
        default:
-         push_text( "unknown" );
+         push_static_text( "unknown" );
          break;
       }
     }
     if (TIFFFieldSet(tif,FIELD_HALFTONEHINTS))
     {
-      push_text( "halftone_hints" );
+      push_static_text( "halftone_hints" );
       push_int(td->td_halftonehints[0]);
       push_int(td->td_halftonehints[1]);
       f_aggregate(2);
@@ -605,57 +605,57 @@ void low_image_tiff_decode( struct buffer *buf,
 
     if(td->td_artist)
     {
-      push_text("artist");
+      push_static_text("artist");
       push_text(td->td_artist);
     }
     if(td->td_datetime)
     {
-      push_text("datetime");
+      push_static_text("datetime");
       push_text(td->td_datetime);
     }
     if(td->td_hostcomputer)
     {
-      push_text("hostcomputer");
+      push_static_text("hostcomputer");
       push_text(td->td_hostcomputer);
     }
     if(td->td_software)
     {
-      push_text("software");
+      push_static_text("software");
       push_text(td->td_software);
     }
     if(td->td_documentname)
     {
-      push_text("name");
+      push_static_text("name");
       push_text(td->td_documentname);
     }
 
     if(td->td_imagedescription)
     {
-      push_text("comment");
+      push_static_text("comment");
       push_text(td->td_imagedescription);
     }
 
     if(td->td_make)
     {
-      push_text("make");
+      push_static_text("make");
       push_text(td->td_make);
     }
 
     if(td->td_model)
     {
-      push_text("model");
+      push_static_text("model");
       push_text(td->td_model);
     }
 
     if(td->td_pagename)
     {
-      push_text("page_name");
+      push_static_text("page_name");
       push_text(td->td_pagename);
     }
 
     if(TIFFFieldSet(tif,FIELD_PAGENUMBER))
     {
-      push_text("page_number");
+      push_static_text("page_number");
       push_int(td->td_pagenumber[0]);
       push_int(td->td_pagenumber[1]);
       f_aggregate(2);
@@ -664,7 +664,7 @@ void low_image_tiff_decode( struct buffer *buf,
     if (TIFFFieldSet(tif,FIELD_COLORMAP))
     {
       int l,n = 1L<<td->td_bitspersample;
-      push_text("colormap");
+      push_static_text("colormap");
       for (l = 0; l < n; l++)
       {
         push_int( td->td_colormap[0][l] );
@@ -678,21 +678,21 @@ void low_image_tiff_decode( struct buffer *buf,
 #ifdef COLORIMETRY_SUPPORT
     if (TIFFFieldSet(tif,FIELD_WHITEPOINT))
     {
-      push_text("whitepoint");
+      push_static_text("whitepoint");
       push_float(td->td_whitepoint[0]);
       push_float(td->td_whitepoint[1]);
       f_aggregate(2);
     }
     if (TIFFFieldSet(tif,FIELD_PRIMARYCHROMAS))
     {
-      push_text("primary_chromaticities");
+      push_static_text("primary_chromaticities");
       for(i=0;i<6;i++)
         push_float(td->td_primarychromas[i]);
       f_aggregate(6);
     }
     if (TIFFFieldSet(tif,FIELD_REFBLACKWHITE))
     {
-      push_text("reference_black_white");
+      push_static_text("reference_black_white");
       for (i = 0; i < td->td_samplesperpixel; i++)
       {
         push_float(td->td_refblackwhite[2*i+0]);
@@ -815,9 +815,9 @@ static void image_tiff__decode( INT32 args )
   buffer.offset = 0;
 
   low_image_tiff_decode( &buffer, &res, 0 );
-  push_text( "image" );
+  push_static_text( "image" );
   push_object( res.img );
-  push_text( "alpha" );
+  push_static_text( "alpha" );
   push_object( res.alpha );
   f_aggregate_mapping( sp-osp );
   {

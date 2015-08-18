@@ -228,10 +228,10 @@ static void f_codec_info(INT32 args) {
 
   pop_n_elems(args);
   if(THIS->codec) {
-    push_text("name");		push_text( THIS->codec->name );
+    push_static_text("name");		push_text( THIS->codec->name );
     ref_push_string(literal_type_string);		push_int( THIS->codec->type );
-    push_text("id");		push_int( THIS->codec->id );
-    push_text("encoder_flg");	push_int( encoder_flg(THIS->codec) );
+    push_static_text("id");		push_int( THIS->codec->id );
+    push_static_text("encoder_flg");	push_int( encoder_flg(THIS->codec) );
     f_aggregate_mapping( 2*4 );
   } else
     push_int(0);
@@ -313,11 +313,11 @@ static void f_get_codec_status(INT32 args) {
     return;
   }
 
-  push_text("name");		push_text( THIS->codec->name );
+  push_static_text("name");		push_text( THIS->codec->name );
   ref_push_string(literal_type_string);		push_int( THIS->codec->type );
-  push_text("id");		push_int( THIS->codec->id );
-  push_text("encoder_flg");	push_int( encoder_flg(THIS->codec) );
-  push_text("flags");		push_int( THIS->codec_context.flags );
+  push_static_text("id");		push_int( THIS->codec->id );
+  push_static_text("encoder_flg");	push_int( encoder_flg(THIS->codec) );
+  push_static_text("flags");		push_int( THIS->codec_context.flags );
   cnt = 5;
 
 #ifdef USE_AVMEDIA_TYPE_ENUM
@@ -326,8 +326,8 @@ static void f_get_codec_status(INT32 args) {
   if(THIS->codec->type == CODEC_TYPE_AUDIO) {
 #endif
     /* audio only */
-    push_text("sample_rate");	push_int( THIS->codec_context.sample_rate );
-    push_text("channels");	push_int( THIS->codec_context.channels );
+    push_static_text("sample_rate");	push_int( THIS->codec_context.sample_rate );
+    push_static_text("channels");	push_int( THIS->codec_context.channels );
     cnt += 2;
   }
 
@@ -337,7 +337,7 @@ static void f_get_codec_status(INT32 args) {
   if(THIS->codec->type == CODEC_TYPE_VIDEO) {
 #endif
     /* video only */
-    push_text("frame_rate");
+    push_static_text("frame_rate");
 #ifdef HAVE_AVCODECCONTEXT_FRAME_RATE
     /* avcodec.h 1.392 (LIBAVCODEC_BUILD 4753) and earlier. */
     push_int(THIS->codec_context.frame_rate);
@@ -346,7 +346,7 @@ static void f_get_codec_status(INT32 args) {
     push_int(THIS->codec_context.time_base.den/
 	     THIS->codec_context.time_base.num);
 #endif /* HAVE_AVCODECCONTEXT_FRAME_RATE */
-    push_text("width");		push_int( THIS->codec_context.width );
+    push_static_text("width");		push_int( THIS->codec_context.width );
     cnt += 2;
   }
 
@@ -440,9 +440,9 @@ static void f_decode(INT32 args) {
   if(samples_size > 0) {
     /* frame was decoded */
     pop_n_elems(args);
-    push_text("data");
+    push_static_text("data");
     push_string(make_shared_binary_string((char *)THIS->outbuf, samples_size));
-    push_text("decoded");
+    push_static_text("decoded");
     push_int(len);
     f_aggregate_mapping( 2*2 );
     return;
@@ -490,10 +490,10 @@ static void f_list_codecs(INT32 args) {
   codec = NULL;
   while ((codec = av_codec_next(codec))) {
     cnt++;
-    push_text("name");		push_text( codec->name );
+    push_static_text("name");		push_text( codec->name );
     ref_push_string(literal_type_string);		push_int( codec->type );
-    push_text("id");		push_int( codec->id );
-    push_text("encoder_flg");	push_int( encoder_flg(codec) );
+    push_static_text("id");		push_int( codec->id );
+    push_static_text("encoder_flg");	push_int( encoder_flg(codec) );
     f_aggregate_mapping( 2*4 );
   }
 #else /* !HAVE_AV_CODEC_NEXT */
@@ -505,10 +505,10 @@ static void f_list_codecs(INT32 args) {
   codec = first_avcodec;
   while(codec != NULL) {
     cnt++;
-    push_text("name");		push_text( codec->name );
+    push_static_text("name");		push_text( codec->name );
     ref_push_string(literal_type_string);		push_int( codec->type );
-    push_text("id");		push_int( codec->id );
-    push_text("encoder_flg");	push_int( encoder_flg(codec) );
+    push_static_text("id");		push_int( codec->id );
+    push_static_text("encoder_flg");	push_int( encoder_flg(codec) );
     codec = codec->next;
     f_aggregate_mapping( 2*4 );
   }

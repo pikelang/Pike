@@ -1554,19 +1554,19 @@ void f_uname(INT32 args)
   if(uname(&foo) < 0)
     Pike_error("uname() system call failed.\n");
 
-  push_text("sysname");
+  push_static_text("sysname");
   push_text(foo.sysname);
 
-  push_text("nodename");
+  push_static_text("nodename");
   push_text(foo.nodename);
 
-  push_text("release");
+  push_static_text("release");
   push_text(foo.release);
 
-  push_text("version");
+  push_static_text("version");
   push_text(foo.version);
 
-  push_text("machine");
+  push_static_text("machine");
   push_text(foo.machine);
 
   f_aggregate_mapping(sp-old_sp);
@@ -3035,35 +3035,35 @@ static void f_getrusage(INT32 args)
 
    pop_n_elems(args);
 
-   push_text("utime");      push_int(rusage_values[n++]);
-   push_text("stime");      push_int(rusage_values[n++]);
-   push_text("maxrss");     push_int(rusage_values[n++]);
-   push_text("ixrss");      push_int(rusage_values[n++]);
-   push_text("idrss");      push_int(rusage_values[n++]);
-   push_text("isrss");      push_int(rusage_values[n++]);
-   push_text("minflt");     push_int(rusage_values[n++]);
-   push_text("majflt");     push_int(rusage_values[n++]);
-   push_text("nswap");      push_int(rusage_values[n++]);
-   push_text("inblock");    push_int(rusage_values[n++]);
-   push_text("oublock");    push_int(rusage_values[n++]);
-   push_text("msgsnd");     push_int(rusage_values[n++]);
-   push_text("msgrcv");     push_int(rusage_values[n++]);
-   push_text("nsignals");   push_int(rusage_values[n++]);
-   push_text("nvcsw");      push_int(rusage_values[n++]);
-   push_text("nivcsw");     push_int(rusage_values[n++]);
-   push_text("sysc");       push_int(rusage_values[n++]);
-   push_text("ioch");       push_int(rusage_values[n++]);
-   push_text("rtime");      push_int(rusage_values[n++]);
-   push_text("ttime");      push_int(rusage_values[n++]);
-   push_text("tftime");     push_int(rusage_values[n++]);
-   push_text("dftime");     push_int(rusage_values[n++]);
-   push_text("kftime");     push_int(rusage_values[n++]);
-   push_text("ltime");      push_int(rusage_values[n++]);
-   push_text("slptime");    push_int(rusage_values[n++]);
-   push_text("wtime");      push_int(rusage_values[n++]);
-   push_text("stoptime");   push_int(rusage_values[n++]);
-   push_text("brksize");    push_int(rusage_values[n++]);
-   push_text("stksize");    push_int(rusage_values[n++]);
+   push_static_text("utime");      push_int(rusage_values[n++]);
+   push_static_text("stime");      push_int(rusage_values[n++]);
+   push_static_text("maxrss");     push_int(rusage_values[n++]);
+   push_static_text("ixrss");      push_int(rusage_values[n++]);
+   push_static_text("idrss");      push_int(rusage_values[n++]);
+   push_static_text("isrss");      push_int(rusage_values[n++]);
+   push_static_text("minflt");     push_int(rusage_values[n++]);
+   push_static_text("majflt");     push_int(rusage_values[n++]);
+   push_static_text("nswap");      push_int(rusage_values[n++]);
+   push_static_text("inblock");    push_int(rusage_values[n++]);
+   push_static_text("oublock");    push_int(rusage_values[n++]);
+   push_static_text("msgsnd");     push_int(rusage_values[n++]);
+   push_static_text("msgrcv");     push_int(rusage_values[n++]);
+   push_static_text("nsignals");   push_int(rusage_values[n++]);
+   push_static_text("nvcsw");      push_int(rusage_values[n++]);
+   push_static_text("nivcsw");     push_int(rusage_values[n++]);
+   push_static_text("sysc");       push_int(rusage_values[n++]);
+   push_static_text("ioch");       push_int(rusage_values[n++]);
+   push_static_text("rtime");      push_int(rusage_values[n++]);
+   push_static_text("ttime");      push_int(rusage_values[n++]);
+   push_static_text("tftime");     push_int(rusage_values[n++]);
+   push_static_text("dftime");     push_int(rusage_values[n++]);
+   push_static_text("kftime");     push_int(rusage_values[n++]);
+   push_static_text("ltime");      push_int(rusage_values[n++]);
+   push_static_text("slptime");    push_int(rusage_values[n++]);
+   push_static_text("wtime");      push_int(rusage_values[n++]);
+   push_static_text("stoptime");   push_int(rusage_values[n++]);
+   push_static_text("brksize");    push_int(rusage_values[n++]);
+   push_static_text("stksize");    push_int(rusage_values[n++]);
 
    f_aggregate_mapping(n*2);
 }

@@ -616,17 +616,17 @@ static void decode_resources( struct buffer *b )
       case 0x03f0: /* caption */
 	{
 	  struct buffer b = psd_read_pstring( &data );
-	  push_text( "caption" );
+	  push_static_text( "caption" );
 	  push_buffer( &b );
 	}
 	break;
 
       case 0x0400: /* layer state info */
-	push_text( "active_layer" );
+	push_static_text( "active_layer" );
 	push_int( psd_read_short( &data ) );
 	break;
       case 0x0408: /* guides */
-	push_text( "guides" );
+	push_static_text( "guides" );
 	{
 	  int i,num_guides;
 	  short magic1, magic2, magic3, magic4, magic5, magic6; /*from gimp.*/
@@ -648,8 +648,8 @@ static void decode_resources( struct buffer *b )
 	      p = (ptrdiff_t)((((double)p) * (magic4>>8)) / ((double)(magic4&255)));
 	    else
 	      p = (ptrdiff_t)((((double)p) * (magic6>>8)) / ((double)(magic6&255)));
-	    push_text( "pos" );      push_int64( p );
-	    push_text( "vertical" ); push_int( !h );
+	    push_static_text( "pos" );      push_int64( p );
+	    push_static_text( "vertical" ); push_int( !h );
 	    f_aggregate_mapping( 4 );
 	  }
 	  f_aggregate( num_guides );
@@ -658,20 +658,20 @@ static void decode_resources( struct buffer *b )
       case 0x040b: /* URL */
 	{
 	  struct buffer b = psd_read_pstring( &data );
-	  push_text( "url" );
+	  push_static_text( "url" );
 	  push_buffer( &b );
 	}
 	break;
       case 0x03ed: /* res. info. */
-	push_text( "resinfo" );
+	push_static_text( "resinfo" );
 
-	push_text( "hres" );       push_int(psd_read_int( &data ) );
-	push_text( "hres_unit" );  push_int(psd_read_short( &data ) );
-	push_text( "width_unit" ); push_int(psd_read_short( &data ) );
+	push_static_text( "hres" );       push_int(psd_read_int( &data ) );
+	push_static_text( "hres_unit" );  push_int(psd_read_short( &data ) );
+	push_static_text( "width_unit" ); push_int(psd_read_short( &data ) );
 
-	push_text( "vres" );       push_int(psd_read_int( &data ) );
-	push_text( "vres_unit" );  push_int(psd_read_short( &data ) );
-	push_text( "height_unit" );push_int(psd_read_short( &data ) );
+	push_static_text( "vres" );       push_int(psd_read_int( &data ) );
+	push_static_text( "vres_unit" );  push_int(psd_read_short( &data ) );
+	push_static_text( "height_unit" );push_int(psd_read_short( &data ) );
 
 	f_aggregate_mapping( 12 );
 	break;

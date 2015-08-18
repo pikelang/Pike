@@ -522,7 +522,7 @@ range_do_clone:
 	    push_string(finish_string_builder(&s));
 	    return;
 	}
-	push_text("");
+	push_static_text("");
     }
 
     DOCSTART() @decl key_ptype first()

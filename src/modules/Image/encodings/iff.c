@@ -100,7 +100,7 @@ struct pike_string *make_iff(char *id, struct array *chunks)
   struct pike_string *res;
   INT32 i;
 
-  push_text("FORM");
+  push_static_text("FORM");
   push_text(id);
   if(chunks->size > 0) {
     for(i=0; i<chunks->size; i++)

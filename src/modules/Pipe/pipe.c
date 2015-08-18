@@ -1188,7 +1188,7 @@ static void pipe_close_input_callback(INT32 args)
 static void pipe_version(INT32 args)
 {
    pop_n_elems(args);
-   push_text("PIPE ver 2.0");
+   push_static_text("PIPE ver 2.0");
 }
 
 /********** init/exit *******************************************************/

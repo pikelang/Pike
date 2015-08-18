@@ -89,7 +89,7 @@ static rgba_group decode_color( struct buffer *s )
   }
   if(!parse_color)
   {
-    push_text("Image.Color");
+    push_static_text("Image.Color");
     SAFE_APPLY_MASTER( "resolv_or_error", 1 );
     _parse_color = sp[-1];
     parse_color = &_parse_color;

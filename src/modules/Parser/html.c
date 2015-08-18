@@ -4691,7 +4691,7 @@ static void html__inspect(INT32 args)
 
    pop_n_elems(args);
 
-   push_text("feed");
+   push_static_text("feed");
    m=0;
 
    st=THIS->stack;
@@ -4700,7 +4700,7 @@ static void html__inspect(INT32 args)
       o=0;
       p=0;
 
-      push_text("feed");
+      push_static_text("feed");
 
       f=st->local_feed;
 
@@ -4714,19 +4714,19 @@ static void html__inspect(INT32 args)
       f_aggregate(p);
       o++;
 
-      push_text("position");
+      push_static_text("position");
       push_int(DO_NOT_WARN(st->c));
       o++;
 
-      push_text("byteno");
+      push_static_text("byteno");
       push_int(st->pos.byteno);
       o++;
 
-      push_text("lineno");
+      push_static_text("lineno");
       push_int(st->pos.lineno);
       o++;
 
-      push_text("linestart");
+      push_static_text("linestart");
       push_int(st->pos.linestart);
       o++;
 
@@ -4739,7 +4739,7 @@ static void html__inspect(INT32 args)
    f_aggregate(m);
    n++;
 
-   push_text("data_cb_feed");
+   push_static_text("data_cb_feed");
    for (f = THIS->data_cb_feed, p = 0; f; f = f->next) {
      ref_push_string (f->s);
      p++;
@@ -4747,7 +4747,7 @@ static void html__inspect(INT32 args)
    f_aggregate(p);
    n++;
 
-   push_text("outfeed");
+   push_static_text("outfeed");
    p=0;
    of=THIS->out;
    while (of)
@@ -4759,42 +4759,42 @@ static void html__inspect(INT32 args)
    f_aggregate(p);
    n++;
 
-   push_text("tags");
+   push_static_text("tags");
    ref_push_mapping(THIS->maptag);
    n++;
 
-   push_text("containers");
+   push_static_text("containers");
    ref_push_mapping(THIS->mapcont);
    n++;
 
-   push_text("entities");
+   push_static_text("entities");
    ref_push_mapping(THIS->mapentity);
    n++;
 
-   push_text("quote_tags");
+   push_static_text("quote_tags");
    ref_push_mapping(THIS->mapqtag);
    n++;
 
-   push_text("splice_arg");
+   push_static_text("splice_arg");
    if (THIS->splice_arg)
      ref_push_string(THIS->splice_arg);
    else
      push_int(0);
    n++;
 
-   push_text("callback__tag");
+   push_static_text("callback__tag");
    push_svalue(&(THIS->callback__tag));
    n++;
 
-   push_text("callback__entity");
+   push_static_text("callback__entity");
    push_svalue(&(THIS->callback__entity));
    n++;
 
-   push_text("callback__data");
+   push_static_text("callback__data");
    push_svalue(&(THIS->callback__data));
    n++;
 
-   push_text("flags");
+   push_static_text("flags");
    push_int(THIS->flags);
    n++;
 

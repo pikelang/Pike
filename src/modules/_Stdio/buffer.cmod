@@ -326,12 +326,12 @@ PIKECLASS Buffer
       struct object *err;
       if( howmuch > 0 )
       {
-        push_text("Trying to read %d bytes outside allowed range\n");
+        push_static_text("Trying to read %d bytes outside allowed range\n");
         push_int(howmuch);
         f_sprintf(2);
       }
       else
-        push_text("Illegal arguments\n");
+        push_static_text("Illegal arguments\n");
 
       if( io->error_mode != buffer_error_program )
       {
@@ -1650,7 +1650,7 @@ PIKECLASS Buffer
     {
       case 'O':
         {
-          push_text("%O(%d bytes, read=[..%d] data=[%d..%d] free=[%d..%d] %s%s)");
+          push_static_text("%O(%d bytes, read=[..%d] data=[%d..%d] free=[%d..%d] %s%s)");
           ref_push_program(Pike_fp->current_object->prog);
           /* io_len [..offset] [offset..len] [..allocated] */
           push_int(io_len(THIS));
@@ -1660,11 +1660,11 @@ PIKECLASS Buffer
           push_int(THIS->len-1);
           push_int(THIS->len);
           push_int(THIS->allocated);
-          push_text( (THIS->str ? "string" : THIS->malloced ? "allocated" : "subbuffer" ) );
+          push_static_text( (THIS->str ? "string" : THIS->malloced ? "allocated" : "subbuffer" ) );
           if( THIS->locked )
-            push_text(" (read only)");
+            push_static_text(" (read only)");
           else
-            push_text("");
+            push_static_text("");
           f_sprintf(10);
         }
         break;
@@ -1678,7 +1678,7 @@ PIKECLASS Buffer
         break;
 
       case 'q':
-        push_text("%q");
+        push_static_text("%q");
 	bytes = io_len(THIS);
 	THIS->locked_move++;
         push_string( io_read_string(THIS, bytes) );

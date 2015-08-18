@@ -150,158 +150,158 @@ void mysqlmod_parse_field(MYSQL_FIELD *field, int support_default)
     int nbits = 0;
     struct svalue *save_sp = Pike_sp;
 
-    push_text("name"); push_text(field->name);
-    push_text("table"); push_text(field->table);
+    push_static_text("name"); push_text(field->name);
+    push_static_text("table"); push_text(field->table);
     if (support_default) {
-      push_text("default");
+      push_static_text("default");
       if (field->def) {
 	push_text(field->def);
       } else {
 	push_int(0);
       }
     }
-    push_text("type");
+    push_static_text("type");
     switch(field->type) {
     case FIELD_TYPE_DECIMAL:
-      push_text("decimal");
+      push_static_text("decimal");
       break;
     case FIELD_TYPE_CHAR:	/* Same as FIELD_TYPE_TINY. */
-      push_text("char");
+      push_static_text("char");
       break;
     case FIELD_TYPE_SHORT:
-      push_text("short");
+      push_static_text("short");
       break;
     case FIELD_TYPE_LONG:
-      push_text("long");
+      push_static_text("long");
       break;
     case FIELD_TYPE_FLOAT:
-      push_text("float");
+      push_static_text("float");
       break;
     case FIELD_TYPE_DOUBLE:
-      push_text("double");
+      push_static_text("double");
       break;
     case FIELD_TYPE_NULL:
-      push_text("null");
+      push_static_text("null");
       break;
     case FIELD_TYPE_TIMESTAMP:
-      push_text("timestamp");
+      push_static_text("timestamp");
       break;
     case FIELD_TYPE_LONGLONG:
-      push_text("longlong");
+      push_static_text("longlong");
       break;
     case FIELD_TYPE_INT24:
-      push_text("int24");
+      push_static_text("int24");
       break;
     case FIELD_TYPE_DATE:
-      push_text("date");
+      push_static_text("date");
       break;
     case FIELD_TYPE_TIME:
-      push_text("time");
+      push_static_text("time");
       break;
     case FIELD_TYPE_DATETIME:
-      push_text("datetime");
+      push_static_text("datetime");
       break;
     case FIELD_TYPE_YEAR:
-      push_text("year");
+      push_static_text("year");
       break;
     case FIELD_TYPE_NEWDATE:
-      push_text("newdate");
+      push_static_text("newdate");
       break;
     case FIELD_TYPE_BIT:
-      push_text("bit");
+      push_static_text("bit");
       break;
     case FIELD_TYPE_NEWDECIMAL:
-      push_text ("newdecimal");
+      push_static_text ("newdecimal");
       break;
     case FIELD_TYPE_ENUM:
-      push_text("enum");
+      push_static_text("enum");
       break;
     case FIELD_TYPE_SET:
-      push_text("set");
+      push_static_text("set");
       break;
     case FIELD_TYPE_TINY_BLOB:
-      push_text("tiny blob");
+      push_static_text("tiny blob");
       break;
     case FIELD_TYPE_MEDIUM_BLOB:
-      push_text("medium blob");
+      push_static_text("medium blob");
       break;
     case FIELD_TYPE_LONG_BLOB:
-      push_text("long blob");
+      push_static_text("long blob");
       break;
     case FIELD_TYPE_BLOB:
-      push_text("blob");
+      push_static_text("blob");
       break;
     case FIELD_TYPE_VAR_STRING:
-      push_text("var string");
+      push_static_text("var string");
       break;
     case FIELD_TYPE_STRING:
-      push_text("string");
+      push_static_text("string");
       break;
     case FIELD_TYPE_GEOMETRY:
-      push_text("geometry");
+      push_static_text("geometry");
       break;
     default:
-      push_text("unknown");
+      push_static_text("unknown");
       break;
     }
-    push_text("length"); push_int64(field->length);
-    push_text("max_length"); push_int(field->max_length);
+    push_static_text("length"); push_int64(field->length);
+    push_static_text("max_length"); push_int(field->max_length);
 
-    push_text("flags");
+    push_static_text("flags");
     if (IS_PRI_KEY(field->flags)) {
       nbits++;
-      push_text("primary_key");
+      push_static_text("primary_key");
     }
     if (field->flags & UNIQUE_KEY_FLAG) {
-      push_text("unique");
+      push_static_text("unique");
       nbits++;
     }
     if (field->flags & MULTIPLE_KEY_FLAG) {
-      push_text("multiple_key");
+      push_static_text("multiple_key");
       nbits++;
     }
     if (IS_NOT_NULL(field->flags)) {
       nbits++;
-      push_text("not_null");
+      push_static_text("not_null");
     }
     if (IS_BLOB(field->flags)) {
       nbits++;
-      push_text("blob");
+      push_static_text("blob");
     }
     if (field->flags & ZEROFILL_FLAG) {
       nbits++;
-      push_text("zerofill");
+      push_static_text("zerofill");
     }
     if (field->flags & BINARY_FLAG) {
       nbits++;
-      push_text("binary");
+      push_static_text("binary");
     }
     if (field->flags & AUTO_INCREMENT_FLAG) {
       nbits++;
-      push_text("auto_increment");
+      push_static_text("auto_increment");
     }
     if (field->flags & ENUM_FLAG) {
       nbits++;
-      push_text("enum");
+      push_static_text("enum");
     }
     if (field->flags & SET_FLAG) {
       nbits++;
-      push_text("set");
+      push_static_text("set");
     }
     if (field->flags & UNSIGNED_FLAG) {
       nbits++;
-      push_text("unsigned");
+      push_static_text("unsigned");
     }
     if (field->flags & NUM_FLAG) {
       nbits++;
-      push_text("numeric");
+      push_static_text("numeric");
     }
     f_aggregate_multiset(nbits);
 
-    push_text("decimals"); push_int(field->decimals);
+    push_static_text("decimals"); push_int(field->decimals);
 
 #ifdef HAVE_MYSQL_FIELD_CHARSETNR
-    push_text ("charsetnr"); push_int (field->charsetnr);
+    push_static_text ("charsetnr"); push_int (field->charsetnr);
 #endif
 
     f_aggregate_mapping (Pike_sp - save_sp);
@@ -701,7 +701,7 @@ PIKEFUN int|array(string) fetch_row()
 	    /* Fixed-point number with fraction part. Make an mpq. */
 
 	    if (TYPEOF(mpq_program) == PIKE_T_FREE) {
-	      push_text ("Gmp.mpq");
+	      push_static_text ("Gmp.mpq");
 	      SAFE_APPLY_MASTER ("resolv", 1);
 	      if (TYPEOF(Pike_sp[-1]) == T_PROGRAM)
 		move_svalue (&mpq_program, --Pike_sp);

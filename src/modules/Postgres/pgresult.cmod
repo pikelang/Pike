@@ -321,7 +321,7 @@ PIKEFUN array(mapping(string:mixed)) fetch_fields()
 	numfields=PQnfields(res);
 	for (j=0;j<numfields;j++)
 	{
-		push_text("name");
+		push_static_text("name");
 		push_text(PQfname(res,j));
 		/* no table information is available */
 		/* no default value information is available */
@@ -333,7 +333,7 @@ PIKEFUN array(mapping(string:mixed)) fetch_fields()
 		 * The internal encoding is well defined for the standard
 		 * types (big endian).  The problem are the extended types.
 		 */
-		push_text("length");
+		push_static_text("length");
 		tmp=PQfsize(res,j);
 		if (tmp>=0)
 			push_int(tmp);

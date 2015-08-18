@@ -316,7 +316,7 @@ static void memory__mmap(INT32 args,int complain,int private)
    {
       struct object *o=sp[-args].u.object;
       ref_push_object(o);
-      push_text("query_fd");
+      push_static_text("query_fd");
       f_index(2);
       if (TYPEOF(sp[-1]) == T_INT)
 	 SIMPLE_BAD_ARG_ERROR("mmap",1,

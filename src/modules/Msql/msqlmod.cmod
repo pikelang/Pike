@@ -624,7 +624,7 @@ PIKEFUN array(mapping(string:mixed)) query(string sqlquery)
 		if (duplicate_names_map[j]) {
 			/* If we have a clashing column name we need to prepend "tablename."*/
 			push_text (current_field->table);
-			push_text (".");
+			push_static_text (".");
 			push_text(current_field->name);
 			f_add(3);
 		}
@@ -679,7 +679,7 @@ PIKEFUN string server_info()
 	pop_n_elems(args);
 	if (!THIS->connected)
 		Pike_error ("Not connected.\n");
-	push_text("msql/");
+	push_static_text("msql/");
 	THREADS_ALLOW();
 	MSQL_LOCK();
 	info=msqlGetServerInfo();
@@ -868,30 +868,30 @@ PIKEFUN mapping(string:mapping(string:mixed)) list_fields(string table,
 		int flagsnum=0;
 		field=msqlFetchField(result);
 
-    push_text("name");
+    push_static_text("name");
 		push_text(field->name);
 		ref_push_string(literal_type_string);
-		push_text(decode_msql_type(field->type));
-		push_text("length");
+		push_static_text(decode_msql_type(field->type));
+		push_static_text("length");
 		push_int(field->length);
-		push_text("table");
+		push_static_text("table");
 		push_text(field->table);
-		push_text("flags");
+		push_static_text("flags");
 #ifdef IS_UNIQUE
 		if (IS_UNIQUE(field->flags)) {
-			push_text("unique");
+			push_static_text("unique");
 			flagsnum++;
 		}
 #endif
 #ifdef IS_NOT_NULL
 		if (IS_NOT_NULL(field->flags)) {
-			push_text("not_null");
+			push_static_text("not_null");
 			flagsnum++;
 		}
 #endif
 #ifdef IS_PRI_KEY
 		if (IS_PRI_KEY(field->flags)) {
-			push_text("primary_key");
+			push_static_text("primary_key");
 			flagsnum++;
 		}
 #endif

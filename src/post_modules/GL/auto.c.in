@@ -166,7 +166,7 @@ static void check_img_arg(struct svalue *a, struct zimage *img,
   static struct program *image_program=NULL;
 
   if(image_program == NULL) {
-    push_text("Image.Image");
+    push_static_text("Image.Image");
     SAFE_APPLY_MASTER("resolv",1);
     image_program=program_from_svalue(sp-1);
     pop_stack();
@@ -204,7 +204,7 @@ static void check_img_arg(struct svalue *a, struct zimage *img,
     if( (v=simple_mapping_string_lookup(a->u.mapping, "mem" )) ) {
 
       if(shm_program == NULL) {
-	push_text("System.Memory");
+	push_static_text("System.Memory");
 	SAFE_APPLY_MASTER("resolv",1);
 	shm_program=program_from_svalue(sp-1);
 	pop_stack();
@@ -348,7 +348,7 @@ static void *get_mem_object( struct svalue *x )
 
   if(shm_program == NULL)
   {
-    push_text("System.Memory");
+    push_static_text("System.Memory");
     SAFE_APPLY_MASTER("resolv",1);
     shm_program=program_from_svalue(sp-1);
     pop_stack();

@@ -4262,14 +4262,14 @@ void f__gc_status(INT32 args)
   push_int64(DO_NOT_WARN((INT64) gc_time));
   size++;
 
-  push_text ("last_garbage_strategy");
+  push_static_text ("last_garbage_strategy");
   switch (last_garbage_strategy) {
     case GARBAGE_RATIO_LOW:
-      push_text ("garbage_ratio_low"); break;
+      push_static_text ("garbage_ratio_low"); break;
     case GARBAGE_RATIO_HIGH:
-      push_text ("garbage_ratio_high"); break;
+      push_static_text ("garbage_ratio_high"); break;
     case GARBAGE_MAX_INTERVAL:
-      push_text ("garbage_max_interval"); break;
+      push_static_text ("garbage_max_interval"); break;
 #ifdef PIKE_DEBUG
     default:
       Pike_fatal ("Unknown last_garbage_strategy %d\n", last_garbage_strategy);
@@ -4281,7 +4281,7 @@ void f__gc_status(INT32 args)
   push_int64(last_gc);
   size++;
 
-  push_text ("total_gc_cpu_time");
+  push_static_text ("total_gc_cpu_time");
   push_int64 (auto_gc_time);
 #ifndef LONG_CPU_TIME
   push_int (1000000000 / CPU_TIME_TICKS);
@@ -4289,7 +4289,7 @@ void f__gc_status(INT32 args)
 #endif
   size++;
 
-  push_text ("total_gc_real_time");
+  push_static_text ("total_gc_real_time");
   push_int64 (auto_gc_real_time);
 #ifndef LONG_CPU_TIME
   push_int (1000000000 / CPU_TIME_TICKS);
@@ -4298,15 +4298,15 @@ void f__gc_status(INT32 args)
   size++;
 
 #ifdef PIKE_DEBUG
-  push_text ("max_rec_frames");
+  push_static_text ("max_rec_frames");
   push_int64 (DO_NOT_WARN ((INT64) tot_max_rec_frames));
   size++;
 
-  push_text ("max_link_frames");
+  push_static_text ("max_link_frames");
   push_int64 (DO_NOT_WARN ((INT64) tot_max_link_frames));
   size++;
 
-  push_text ("max_free_extra_frames");
+  push_static_text ("max_free_extra_frames");
   push_int64 (DO_NOT_WARN ((INT64) tot_max_free_extra_frames));
   size++;
 #endif

@@ -848,14 +848,14 @@ void udp_read(INT32 args)
   /* Now comes the interresting part.
    * make a nice mapping from this stuff..
    */
-  push_text("data");
+  push_static_text("data");
   push_string( make_shared_binary_string(buffer, res) );
 
-  push_text("ip");
+  push_static_text("ip");
 #ifdef fd_inet_ntop
   if (!fd_inet_ntop( SOCKADDR_FAMILY(from), SOCKADDR_IN_ADDR(from),
 		     buffer, sizeof(buffer) )) {
-    push_text("UNSUPPORTED");
+    push_static_text("UNSUPPORTED");
   } else {
     /* NOTE: IPv6-mapped IPv4 addresses may only
      *       connect to other IPv4 addresses.

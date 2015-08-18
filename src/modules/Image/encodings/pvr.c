@@ -1045,7 +1045,7 @@ void img_pvr_decode(INT32 args,int header_only)
    if(len >= 12 && !strncmp((char *)s, "GBIX", 4)) {
      INT32 l = s[4]|(s[5]<<8)|(s[6]<<16)|(s[7]<<24);
      if(l>=4 && l<=len-8) {
-       push_text("global_index");
+       push_static_text("global_index");
        push_int((INT32)(s[8]|(s[9]<<8)|(s[10]<<16)|(s[11]<<24)));
        n++;
        len -= l+8;
@@ -1065,7 +1065,7 @@ void img_pvr_decode(INT32 args,int header_only)
    }
 
    ref_push_string(literal_type_string);
-   push_text("image/x-pvr");
+   push_static_text("image/x-pvr");
    n++;
 
    attr = s[8]|(s[9]<<8)|(s[10]<<16)|(s[11]<<24);
@@ -1080,13 +1080,13 @@ void img_pvr_decode(INT32 args,int header_only)
    s += 16;
    len -= 16;
 
-   push_text("attr");
+   push_static_text("attr");
    push_int(attr);
    n++;
-   push_text("xsize");
+   push_static_text("xsize");
    push_int(w);
    n++;
-   push_text("ysize");
+   push_static_text("ysize");
    push_int(h);
    n++;
 
@@ -1171,7 +1171,7 @@ void img_pvr_decode(INT32 args,int header_only)
 
      s += (bpp*mipmap)>>compress;
 
-     push_text("image");
+     push_static_text("image");
      push_int(w);
      push_int(h);
      o=clone_object(image_program,2);
@@ -1194,7 +1194,7 @@ void img_pvr_decode(INT32 args,int header_only)
 
      if(hasalpha) {
 
-       push_text("alpha");
+       push_static_text("alpha");
        push_int(w);
        push_int(h);
        o=clone_object(image_program,2);

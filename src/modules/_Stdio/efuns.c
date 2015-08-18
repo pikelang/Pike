@@ -619,13 +619,13 @@ void f_filesystem_stat( INT32 args )
   total_sectors = sectors_per_cluster * total_clusters;
 
   pop_n_elems( args );
-  push_text("blocksize");
+  push_static_text("blocksize");
   push_int(bytes_per_sector);
-  push_text("blocks");
+  push_static_text("blocks");
   push_int(total_sectors);
-  push_text("bfree");
+  push_static_text("bfree");
   push_int(free_sectors);
-  push_text("bavail");
+  push_static_text("bavail");
   push_int(free_sectors);
   f_aggregate_mapping( 8 );
 }
@@ -739,50 +739,50 @@ void f_filesystem_stat(INT32 args)
     int num_fields = 0;
 #ifdef HAVE_STATVFS
 #if 0
-    push_text("id");         push_int(st.f_fsid);
+    push_static_text("id");         push_int(st.f_fsid);
     num_fields++;
 #endif
-    push_text("blocksize");  push_int(st.f_frsize);
-    push_text("blocks");     push_int(st.f_blocks);
-    push_text("bfree");      push_int(st.f_bfree);
-    push_text("bavail");     push_int(st.f_bavail);
-    push_text("files");      push_int(st.f_files);
-    push_text("ffree");      push_int(st.f_ffree);
-    push_text("favail");     push_int(st.f_favail);
+    push_static_text("blocksize");  push_int(st.f_frsize);
+    push_static_text("blocks");     push_int(st.f_blocks);
+    push_static_text("bfree");      push_int(st.f_bfree);
+    push_static_text("bavail");     push_int(st.f_bavail);
+    push_static_text("files");      push_int(st.f_files);
+    push_static_text("ffree");      push_int(st.f_ffree);
+    push_static_text("favail");     push_int(st.f_favail);
     num_fields += 7;
 #ifdef HAVE_STATVFS_F_FSTR
-    push_text("fsname");     push_text(st.f_fstr);
+    push_static_text("fsname");     push_text(st.f_fstr);
     num_fields++;
 #endif /* HAVE_STATVFS_F_FSTR */
 #ifdef HAVE_STATVFS_F_BASETYPE
-    push_text("fstype");     push_text(st.f_basetype);
+    push_static_text("fstype");     push_text(st.f_basetype);
     num_fields++;
 #endif /* HAVE_STATVFS_F_BASETYPE */
 #else /* !HAVE_STATVFS */
 #ifdef HAVE_STATFS
 #ifdef HAVE_STRUCT_STATFS
 #if 0 && HAVE_STATFS_F_FSID
-    push_text("id");           push_int(st.f_fsid);
+    push_static_text("id");           push_int(st.f_fsid);
     num_fields++;
 #endif
-    push_text("blocksize");    push_int(st.f_bsize);
-    push_text("blocks");       push_int(st.f_blocks);
-    push_text("bfree");        push_int(st.f_bfree);
-    push_text("files");        push_int(st.f_files);
-    push_text("ffree");        push_int(st.f_ffree);
-    push_text("favail");       push_int(st.f_ffree);
+    push_static_text("blocksize");    push_int(st.f_bsize);
+    push_static_text("blocks");       push_int(st.f_blocks);
+    push_static_text("bfree");        push_int(st.f_bfree);
+    push_static_text("files");        push_int(st.f_files);
+    push_static_text("ffree");        push_int(st.f_ffree);
+    push_static_text("favail");       push_int(st.f_ffree);
     num_fields += 6;
 #ifdef HAVE_STATFS_F_BAVAIL
-    push_text("bavail");       push_int(st.f_bavail);
+    push_static_text("bavail");       push_int(st.f_bavail);
     num_fields++;
 #endif /* HAVE_STATFS_F_BAVAIL */
 #else /* !HAVE_STRUCT_STATFS */
 #ifdef HAVE_STRUCT_FS_DATA
     /* ULTRIX */
-    push_text("blocksize");    push_int(st.fd_bsize);
-    push_text("blocks");       push_int(st.fd_btot);
-    push_text("bfree");        push_int(st.fd_bfree);
-    push_text("bavail");       push_int(st.fd_bfreen);
+    push_static_text("blocksize");    push_int(st.fd_bsize);
+    push_static_text("blocks");       push_int(st.fd_btot);
+    push_static_text("bfree");        push_int(st.fd_bfree);
+    push_static_text("bavail");       push_int(st.fd_bfreen);
     num_fields += 4;
 #else /* !HAVE_STRUCT_FS_DATA */
     /* Should not be reached */
@@ -791,9 +791,9 @@ void f_filesystem_stat(INT32 args)
 #endif /* HAVE_STRUCT_STATFS */
 #else /* !HAVE_STATFS */
 #ifdef HAVE_USTAT
-    push_text("bfree");      push_int(st.f_tfree);
-    push_text("ffree");      push_int(st.f_tinode);
-    push_text("fsname");     push_text(st.f_fname);
+    push_static_text("bfree");      push_int(st.f_tfree);
+    push_static_text("ffree");      push_int(st.f_tinode);
+    push_static_text("fsname");     push_text(st.f_fname);
     num_fields += 3;
 #else
     /* Should not be reached */
@@ -1060,7 +1060,7 @@ void f_get_dir(INT32 args)
   get_all_args("get_dir",args,".%T",&str);
 
   if(!str) {
-    push_text(".");
+    push_static_text(".");
     str = Pike_sp[-1].u.string;
     args++;
   }
@@ -1345,7 +1345,7 @@ void f_get_dir(INT32 args)
 #if defined(__amigaos4__)
     push_empty_string();
 #else
-    push_text(".");
+    push_static_text(".");
 #endif
     str = Pike_sp[-1].u.string;
     args++;
@@ -1565,7 +1565,7 @@ void f_exece(INT32 args)
 
     NEW_MAPPING_LOOP(en->data) {
       ref_push_string(k->ind.u.string);
-      push_text("=");
+      push_static_text("=");
       ref_push_string(k->val.u.string);
       f_add(3);
       env[i++]=sp[-1].u.string->str;
@@ -1858,7 +1858,7 @@ void f_strerror(INT32 args)
   if(s)
     push_text(s);
   else {
-    push_text("Error ");
+    push_static_text("Error ");
     push_int(err);
     f_add(2);
   }

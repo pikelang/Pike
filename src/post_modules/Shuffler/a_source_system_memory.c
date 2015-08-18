@@ -67,7 +67,7 @@ struct source *source_system_memory_make( struct svalue *s,
     return 0;
 
   if (!shm_program) {
-    push_text("System.Memory");
+    push_static_text("System.Memory");
     SAFE_APPLY_MASTER("resolv", 1);
     shm_program = program_from_svalue(Pike_sp - 1);
     if (!shm_program) {

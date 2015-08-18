@@ -312,9 +312,9 @@ PIKECLASS mpf
 	  return;
 
 	case 'O':
-	  push_text ("Gmp.mpf(");
+	  push_static_text ("Gmp.mpf(");
 	  f_mpf_get_string(0);
-	  push_text (")");
+	  push_static_text (")");
 	  f_add (3);
 	  return;
 

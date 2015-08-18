@@ -2507,17 +2507,17 @@ static void file_grantpt( INT32 args )
 {
   pop_n_elems(args);
 #if defined(USE_PT_CHMOD) || defined(USE_CHGPT)
-  push_text("Process.Process");
+  push_static_text("Process.Process");
   APPLY_MASTER("resolv", 1);
 
 #ifdef USE_PT_CHMOD
   /* pt_chmod wants to get the fd number as the first argument. */
   push_text(USE_PT_CHMOD);
-  push_text("4");
+  push_static_text("4");
   f_aggregate(2);
 
   /* Send the pty as both fd 3 and fd 4. */
-  push_text("fds");
+  push_static_text("fds");
   ref_push_object(Pike_fp->current_object);
   ref_push_object(Pike_fp->current_object);
   f_aggregate(2);
@@ -2528,7 +2528,7 @@ static void file_grantpt( INT32 args )
   f_aggregate(1);
 
   /* chgpt wants to get the pty on fd 0. */
-  push_text("stdin");
+  push_static_text("stdin");
   ref_push_object(Pike_fp->current_object);
   f_aggregate_mapping(2);
 #endif /* USE_PT_CHMOD */
@@ -5974,7 +5974,7 @@ static void fd__sprintf(INT32 args)
 
     case 't':
     {
-      push_text("Fd");
+      push_static_text("Fd");
       return;
     }
   }
@@ -6041,7 +6041,7 @@ static void f_gethostip(INT32 args) {
 
 	push_text( ifr->ifr_name );
 
-	push_text( "ips" );
+	push_static_text( "ips" );
 	memcpy( &addr, &ifr->ifr_addr, sizeof(ifr->ifr_addr) );
 	push_text( inet_ntoa( addr.sin_addr ) );
 	f_aggregate(1);

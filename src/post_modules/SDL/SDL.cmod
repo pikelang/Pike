@@ -470,13 +470,13 @@ PIKECLASS Rect {
       push_int(THIS->rect.h);
       f_aggregate(4);
     } else if( type == literal_mapping_string ) {
-      push_text("x");
+      push_static_text("x");
       push_int(THIS->rect.x);
-      push_text("y");
+      push_static_text("y");
       push_int(THIS->rect.y);
-      push_text("w");
+      push_static_text("w");
       push_int(THIS->rect.w);
-      push_text("h");
+      push_static_text("h");
       push_int(THIS->rect.h);
       f_aggregate_mapping(8);
     }
@@ -857,9 +857,9 @@ PIKECLASS PixelFormat {
     Uint8 r, g, b, a;
     SDL_GetRGBA((Uint32)pixel, THIS->fmt, &r, &g, &b, &a);
     pop_n_elems(args);
-    push_text("color");
+    push_static_text("color");
     push_object(image_make_rgb_color(r, g, b));
-    push_text("alpha");
+    push_static_text("alpha");
     push_int(CONVERT_ALPHA(a));
     f_aggregate_mapping(4);
   }

@@ -188,7 +188,7 @@ void img_tim_decode(INT32 args, int header_only)
   s += 4; len -= 4;
 
   ref_push_string(literal_type_string);
-  push_text("image/x-tim");
+  push_static_text("image/x-tim");
   n++;
 
   attr = s[0]|(s[1]<<8)|(s[2]<<16)|(s[3]<<24);
@@ -197,7 +197,7 @@ void img_tim_decode(INT32 args, int header_only)
 
   s += 4; len -= 4;
 
-  push_text("attr");
+  push_static_text("attr");
   push_int(attr);
   n++;
 
@@ -265,10 +265,10 @@ void img_tim_decode(INT32 args, int header_only)
      Pike_error("unknown TIM format\n");
   }
 
-  push_text("xsize");
+  push_static_text("xsize");
   push_int(w);
   n++;
-  push_text("ysize");
+  push_static_text("ysize");
   push_int(h);
   n++;
 
@@ -283,7 +283,7 @@ void img_tim_decode(INT32 args, int header_only)
     if(len < (INT32)(bitpp*(h*w)/8))
       Pike_error("short pixel data\n");
 
-    push_text("image");
+    push_static_text("image");
     push_int(w);
     push_int(h);
     o=clone_object(image_program,2);
@@ -294,7 +294,7 @@ void img_tim_decode(INT32 args, int header_only)
     tim_decode_rect(attr, s, img->img, clut, h, w);
 
     if(hasalpha) {
-      push_text("alpha");
+      push_static_text("alpha");
       push_int(w);
       push_int(h);
       o=clone_object(image_program,2);

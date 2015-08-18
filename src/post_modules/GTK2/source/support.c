@@ -506,10 +506,10 @@ static int pgtk2_push_gdk_event_param(const GValue *a) {
 
 static int pgtk2_push_gdk_rectangle_param(const GValue *a) {
   GdkRectangle *r = (GdkRectangle *) g_value_get_boxed(a);
-  push_text("x"); push_int(r->x);
-  push_text("y"); push_int(r->y);
-  push_text("width"); push_int(r->width);
-  push_text("height"); push_int(r->height);
+  push_static_text("x"); push_int(r->x);
+  push_static_text("y"); push_int(r->y);
+  push_static_text("width"); push_int(r->width);
+  push_static_text("height"); push_int(r->height);
   f_aggregate_mapping(8);
   return PUSHED_VALUE;
 }
