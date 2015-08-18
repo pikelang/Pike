@@ -168,18 +168,7 @@ void adjust_weight(Consumer c, int new_weight)
 void remove(Consumer c)
 {
   if (c->state & STATE_ACTIVE) {
-    int pos = search(Heap::values, c);
-    if (pos < 0) error("Active consumer not found in heap.\n");
-    Heap::num_values--;
-    if (Heap::num_values > pos) {
-      Heap::values[pos] = Heap::values[Heap::num_values];
-      Heap::adjust_down(pos);
-    }
-    Heap::values[Heap::num_values] = 0;
-
-    if(Heap::num_values * 3 + 10 < sizeof(Heap::values))
-      Heap::values = Heap::values[..num_values+10];
-
+    Heap::remove(c);
     c->state &= ~STATE_ACTIVE;
   }
 }
