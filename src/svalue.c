@@ -1461,7 +1461,7 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 		  if(TYPEOF(sp[-1]) != T_STRING)
 		    {
 		      pop_stack();
-		      push_text("(master returned illegal value from describe_module)");
+		      push_static_text("(master returned illegal value from describe_module)");
 		    }
 
 		  restore_buffer (&save_buf);
@@ -1571,7 +1571,7 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 		  if(TYPEOF(sp[-1]) != T_STRING)
 		    {
 		      pop_stack();
-		      push_text("(object returned illegal value from _sprintf)");
+		      push_static_text("(object returned illegal value from _sprintf)");
 		    }
 
 		  restore_buffer (&save_buf);
@@ -1615,7 +1615,7 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 		if(TYPEOF(sp[-1]) != T_STRING)
 		  {
 		    pop_stack();
-		    push_text("(master returned illegal value from describe_object)");
+		    push_static_text("(master returned illegal value from describe_object)");
 		  }
 
 		restore_buffer (&save_buf);
@@ -1694,7 +1694,7 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 	      if(TYPEOF(sp[-1]) != T_STRING)
 		{
 		  pop_stack();
-		  push_text("(master returned illegal value from describe_program)");
+		  push_static_text("(master returned illegal value from describe_program)");
 		}
 
 	      restore_buffer (&save_buf);

@@ -22,20 +22,18 @@ enum size_shift {
     thirtytwobit=2,
 };
 
-#define PIKE_STRING_CONTENTS			    \
-  INT32 refs;					    \
-  unsigned char  flags;					  \
-  enum size_shift  size_shift:8;					\
-  unsigned char  min;							\
-  unsigned char  max;							\
-  ptrdiff_t len; /* Not counting terminating NUL. */			\
-  size_t hval;								\
-  struct pike_string *next
 
 struct pike_string
 {
-  PIKE_STRING_CONTENTS;
-  char str[1];			/* NUL terminated. */
+  INT32 refs;
+  unsigned char flags;
+  enum size_shift  size_shift:8;
+  unsigned char  min;
+  unsigned char  max;
+  ptrdiff_t len; /* Not counting terminating NUL. */
+  size_t hval;
+  struct pike_string *next;
+  char * str;			/* NUL terminated. */
 };
 
 struct string_builder
@@ -48,14 +46,22 @@ struct string_builder
 /* Flags used in pike_string->flags. */
 #define STRING_NOT_HASHED	    1	/* Hash value is invalid. */
 #define STRING_NOT_SHARED	    2	/* String not shared. */
-#define STRING_IS_SHORT		    4	/* String is blockalloced. */
-#define STRING_CLEAR_ON_EXIT    8   /* Overwrite before free. */
+#define STRING_CLEAR_ON_EXIT        4   /* Overwrite before free. */
 
-#define STRING_CONTENT_CHECKED 16 /* if true, min and max are valid */
-#define STRING_IS_LOWERCASE    32
-#define STRING_IS_UPPERCASE    64
+#define STRING_CONTENT_CHECKED      8 /* if true, min and max are valid */
+#define STRING_IS_LOWERCASE        16
+#define STRING_IS_UPPERCASE        32
 
-#define CLEAR_STRING_CHECKED(X) do{(X)->flags &= 15;}while(0)
+#define STRING_CHECKED_MASK (STRING_IS_UPPERCASE|STRING_IS_LOWERCASE|STRING_CONTENT_CHECKED)
+
+#define STRING_ALLOC_STATIC         0
+#define STRING_ALLOC_MALLOC        64
+#define STRING_ALLOC_BA	          128 /* String is blockalloced. */
+
+
+#define STRING_ALLOC_MASK          (STRING_ALLOC_BA|STRING_ALLOC_MALLOC|STRING_ALLOC_STATIC)
+
+#define CLEAR_STRING_CHECKED(X) do{(X)->flags &= ~STRING_CHECKED_MASK;}while(0)
 
 /* Flags used by string_builder_append_integer() */
 #define APPEND_SIGNED		1	/* Value is signed */
@@ -204,7 +210,7 @@ PMOD_EXPORT extern struct shared_string_location *all_shared_string_locations;
 #define MAKE_CONST_STRING(var, text) do {		\
   static struct shared_string_location str_;		\
   if(!str_.s) { 					\
-    str_.s=make_shared_binary_string((text),CONSTANT_STRLEN(text)); \
+    str_.s=make_shared_static_string((text),CONSTANT_STRLEN(text), eightbit); \
     str_.next=all_shared_string_locations;		\
     all_shared_string_locations=&str_;			\
   }							\
@@ -231,7 +237,7 @@ PMOD_EXPORT extern struct shared_string_location *all_shared_string_locations;
 
 #define MAKE_CONST_STRING(var, text)						\
  do { static struct pike_string *str_;                                          \
-    if(!str_) str_=make_shared_binary_string((text),CONSTANT_STRLEN(text));     \
+    if(!str_) str_=make_shared_static_string((text),CONSTANT_STRLEN(text), eightbit);     \
     var = str_;									\
  }while(0)
 
@@ -281,7 +287,9 @@ PMOD_EXPORT extern struct pike_string *empty_pike_string;
 
 /* Prototypes begin here */
 void low_set_index(struct pike_string *s, ptrdiff_t pos, int value);
-PMOD_EXPORT struct pike_string *debug_check_size_shift(const struct pike_string *a,int shift);
+#ifdef PIKE_DEBUG
+PMOD_EXPORT struct pike_string *debug_check_size_shift(struct pike_string *a,int shift);
+#endif
 CONVERT(0,1)
 CONVERT(0,2)
 CONVERT(1,0)
@@ -310,6 +318,8 @@ PMOD_EXPORT struct pike_string * debug_make_shared_pcharp(const PCHARP str);
 PMOD_EXPORT struct pike_string * debug_make_shared_binary_string0(const p_wchar0 *str,size_t len);
 PMOD_EXPORT struct pike_string * debug_make_shared_binary_string1(const p_wchar1 *str,size_t len);
 PMOD_EXPORT struct pike_string * debug_make_shared_binary_string2(const p_wchar2 *str,size_t len);
+PMOD_EXPORT struct pike_string * make_static_string(const char *str, size_t len, enum size_shift);
+PMOD_EXPORT struct pike_string * make_shared_static_string(const char *str, size_t len, enum size_shift);
 PMOD_EXPORT struct pike_string *debug_make_shared_string(const char *str);
 PMOD_EXPORT struct pike_string *debug_make_shared_string0(const p_wchar0 *str);
 PMOD_EXPORT struct pike_string *debug_make_shared_string1(const p_wchar1 *str);
@@ -371,8 +381,9 @@ PMOD_EXPORT struct pike_string *string_replace(struct pike_string *str,
 				   struct pike_string *to);
 void init_shared_string_table(void);
 void cleanup_shared_string_table(void);
-void count_memory_in_short_pike_strings(size_t *num, size_t *size);
+void count_string_types();
 void count_memory_in_strings(size_t *num, size_t *size);
+size_t count_memory_in_string(const struct pike_string *s);
 PMOD_EXPORT void visit_string (struct pike_string *s, int action, void *extra);
 void gc_mark_string_as_referenced (struct pike_string *s);
 unsigned gc_touch_all_strings(void);
@@ -512,7 +523,10 @@ static INLINE int PIKE_UNUSED_ATTRIBUTE string_has_null( struct pike_string *x )
  ((struct pike_string *)debug_malloc_pass(debug_make_shared_binary_pcharp((X),(Y))))
 
 #else
-#define make_shared_string debug_make_shared_string
+#define make_shared_string(s) (__builtin_constant_p(s)                                  \
+                               ? make_shared_static_string(s, strlen(s), eightbit)       \
+                               : debug_make_shared_string(s))
+
 #define make_shared_binary_string debug_make_shared_binary_string
 
 #define make_shared_string0 debug_make_shared_string0
