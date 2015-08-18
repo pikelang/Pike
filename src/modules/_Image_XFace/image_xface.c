@@ -457,12 +457,12 @@ static void image_xface_decode_header(INT32 args)
   pop_n_elems(args);
 
   ref_push_string(literal_type_string);
-  push_text("image/x-xface");
+  push_static_text("image/x-xface");
 
-  push_text("xsize");
+  push_static_text("xsize");
   push_int(48);
 
-  push_text("ysize");
+  push_static_text("ysize");
   push_int(48);
 
   f_aggregate_mapping(6);
@@ -478,7 +478,7 @@ PIKE_MODULE_EXIT
 PIKE_MODULE_INIT
 {
 #ifdef DYNAMIC_MODULE
-   push_text("Image.Image");
+   push_static_text("Image.Image");
    SAFE_APPLY_MASTER("resolv",1);
    if (TYPEOF(sp[-1]) == T_PROGRAM)
       image_program=program_from_svalue(sp-1);

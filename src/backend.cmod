@@ -887,11 +887,7 @@ PIKECLASS Backend
     push_static_text("num_call_outs");
     push_int(me->num_pending_calls);
 
-<<<<<<< HEAD
-    push_text("call_out_bytes");
-=======
-    push_static_text("call_out_bytes");     
->>>>>>> arne/string_alloc
+    push_static_text("call_out_bytes");
     push_int64(me->call_heap_size * sizeof(struct Backend_CallOut_struct **)+
 	       me->num_pending_calls * sizeof(struct Backend_CallOut_struct));
 
@@ -2052,7 +2048,7 @@ PIKECLASS Backend
    PIKEFUN string _sprintf(int type, mapping flags)
    {
      if (type == 'O') {
-       push_text ("Pike.Backend(%d)");
+       push_static_text ("Pike.Backend(%d)");
        push_int (THIS->id);
        f_sprintf (2);
        stack_pop_n_elems_keep_top (args);

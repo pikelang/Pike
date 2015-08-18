@@ -159,7 +159,7 @@ PIKECLASS _pcre
 	    return;
 
 	 case 'O':
-	    push_text ("%t(%O)");
+	    push_static_text ("%t(%O)");
 	    ref_push_object(Pike_fp->current_object);
 	    if (THIS->pattern)
 	       ref_push_string(THIS->pattern);
@@ -176,7 +176,7 @@ PIKECLASS _pcre
 	    return;
 
 	 case 't':
-	    push_text("Regexp.PCRE._pcre");
+	    push_static_text("Regexp.PCRE._pcre");
 	    return;
       }
    }
@@ -315,26 +315,26 @@ PIKECLASS _pcre
 	 pop_n_elems(args);
 	 save_sp = Pike_sp;
 
-	 push_text("backrefmax");   	push_int(backrefmax);
-	 push_text("capturecount"); 	push_int(capturecount);
+	 push_static_text("backrefmax");   	push_int(backrefmax);
+	 push_static_text("capturecount"); 	push_int(capturecount);
 #ifdef PCRE_INFO_FIRSTBYTE
-	 push_text("firstbyte"); 	push_int(firstbyte);
+	 push_static_text("firstbyte"); 	push_int(firstbyte);
 #endif /* PCRE_INFO_FIRSTBYTE */
-	 push_text("firsttable"); 	push_int(0); /* FIXME: table */
-	 push_text("lastliteral"); 	push_int(lastliteral);
+	 push_static_text("firsttable"); 	push_int(0); /* FIXME: table */
+	 push_static_text("lastliteral"); 	push_int(lastliteral);
 #ifdef PCRE_INFO_NAMECOUNT
-	 push_text("namecount"); 	push_int(namecount);
+	 push_static_text("namecount"); 	push_int(namecount);
 #endif /* PCRE_INFO_NAMECOUNT */
 #ifdef PCRE_INFO_NAMEENTRYSIZE
-	 push_text("nameentrysize"); 	push_int(nameentrysize);
+	 push_static_text("nameentrysize"); 	push_int(nameentrysize);
 #endif /* PCRE_INFO_NAMEENTRYSIZE */
 #ifdef PCRE_INFO_NAMETABLE
-	 push_text("nametable"); 	push_int(0); /* FIXME: table */
+	 push_static_text("nametable"); 	push_int(0); /* FIXME: table */
 #endif /* PCRE_INFO_NAMETABLE */
-	 push_text("options");		push_int(options);
-	 push_text("size"); 		push_int(size);
+	 push_static_text("options");		push_int(options);
+	 push_static_text("size"); 		push_int(size);
 #ifdef PCRE_INFO_STUDYSIZE
-	 push_text("studysize"); 	push_int(studysize);
+	 push_static_text("studysize"); 	push_int(studysize);
 #endif /* PCRE_INFO_STUDYSIZE */
 	 f_aggregate_mapping(Pike_sp - save_sp);
       }

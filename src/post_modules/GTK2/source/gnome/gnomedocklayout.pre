@@ -64,15 +64,15 @@ mapping position()
   switch( i->placement )
   {
    default:
-     push_text( "band_num" ); push_int( i->position.docked.band_num );
-     push_text( "band_position" ); push_int( i->position.docked.band_position );
-     push_text( "offset" ); push_int( i->position.docked.offset );
+     push_static_text( "band_num" ); push_int( i->position.docked.band_num );
+     push_static_text( "band_position" ); push_int( i->position.docked.band_position );
+     push_static_text( "offset" ); push_int( i->position.docked.offset );
      f_aggregate_mapping( 6 );
      break;
    case GNOME_DOCK_FLOATING:
-     push_text( "x" ); push_int( i->position.floating.x );
-     push_text( "y" ); push_int( i->position.floating.y );
-     push_text( "orientation" ); push_int( i->position.floating.orientation );
+     push_static_text( "x" ); push_int( i->position.floating.x );
+     push_static_text( "y" ); push_int( i->position.floating.y );
+     push_static_text( "orientation" ); push_int( i->position.floating.orientation );
      f_aggregate_mapping( 6 );
      break;
   }

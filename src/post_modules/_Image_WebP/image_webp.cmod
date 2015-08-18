@@ -88,7 +88,7 @@ static program *image_program()
 {
   if( !img_program )
   {
-    push_text("Image.Image");
+    push_static_text("Image.Image");
     SAFE_APPLY_MASTER("resolv",1);
     img_program = Pike_sp[-1].u.program;
     Pike_sp--;
@@ -280,16 +280,16 @@ PIKEFUN mapping(string:object(Image.Image)|string) _decode( string data )
 
   pop_n_elems(args);
 
-  push_text( "image" );  push_object( i );
-  push_text( "img" );  ref_push_object( i );
-  push_text( "alpha" );
+  push_static_text( "image" );  push_object( i );
+  push_static_text( "img" );  ref_push_object( i );
+  push_static_text( "alpha" );
   if( a )
     push_object( a );
   else
     push_undefined( );
-  push_text("format"); push_text("image/webp");
-  push_text( "xsize" ); push_int( width );
-  push_text( "ysize" ); push_int( height );
+  push_static_text("format"); push_text("image/webp");
+  push_static_text( "xsize" ); push_int( width );
+  push_static_text( "ysize" ); push_int( height );
   f_aggregate_mapping( 12 );
 }
 

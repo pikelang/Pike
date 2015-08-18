@@ -48,13 +48,13 @@ static void fix_png_mapping(void)
      * the stack, as mapping_insert might rehash, which would lead to a
      * use after free.
      */
-    push_text("_type");
+    push_static_text("_type");
     push_svalue(s);
     mapping_insert(sp[-3].u.mapping, &sp[-2], &sp[-1]);
     pop_n_elems(2);
   }
   ref_push_string(literal_type_string);
-  push_text("image/png");
+  push_static_text("image/png");
   mapping_insert(sp[-3].u.mapping, &sp[-2], &sp[-1]);
   pop_n_elems(2);
 }
@@ -109,7 +109,7 @@ void image_any__decode(INT32 args)
       case CHAR2('P','7'):
 	 /* ok, a PNM */
 	 img_pnm_decode(1);
-	 push_text("image/x-pnm");
+	 push_static_text("image/x-pnm");
 	 goto simple_image;
 
       case CHAR2(255,216):
@@ -141,7 +141,7 @@ void image_any__decode(INT32 args)
       case CHAR2('F','O'):
 	 /* ILBM (probably) */
 	 img_ilbm_decode(1);
-	 push_text("image/x-ilbm");
+	 push_static_text("image/x-ilbm");
 	 goto simple_image;
 
       case CHAR2('I','I'):	/* Little endian. */
@@ -163,7 +163,7 @@ void image_any__decode(INT32 args)
       case CHAR2(0x59,0xa6):
 	 /* RAS */
 	 img_ras_decode(1);
-	 push_text("image/x-sun-raster");
+	 push_static_text("image/x-sun-raster");
 	 goto simple_image;
 
       case CHAR2('P','V'):
@@ -197,7 +197,7 @@ void image_any__decode(INT32 args)
 	if( sp[-args].u.string->str[0] == 10 ) {
 	  /* PCX */
 	  image_pcx_decode(1);
-	  push_text("image/x-pcx");
+	  push_static_text("image/x-pcx");
 	  goto simple_image;
 	}
 unknown_format:
@@ -207,7 +207,7 @@ unknown_format:
 simple_image:
    /* on stack: object image,string type */
    f_aggregate(2);
-   push_text("image");
+   push_static_text("image");
    ref_push_string(literal_type_string);
    f_aggregate(2);
    stack_swap();
@@ -393,14 +393,14 @@ void image_any_decode(INT32 args)
    }
 
    image_any__decode(args);
-   push_text("image");
+   push_static_text("image");
    f_index(2);
 }
 
 void image_any_decode_alpha(INT32 args)
 {
    image_any__decode(args);
-   push_text("alpha");
+   push_static_text("alpha");
    f_index(2);
 }
 

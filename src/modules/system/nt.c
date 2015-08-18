@@ -3016,7 +3016,7 @@ static struct array *encode_acl(PACL acl)
       switch(((ACE_HEADER *)ace)->AceType)
       {
 	case ACCESS_ALLOWED_ACE_TYPE:
-	  push_text("allow");
+	  push_static_text("allow");
 	  push_int(((ACE_HEADER *)ace)->AceFlags);
 	  push_int( ((ACCESS_ALLOWED_ACE *)ace)->Mask );
 	  SAFE_PUSH_SID( & ((ACCESS_ALLOWED_ACE *)ace)->SidStart );
@@ -3024,7 +3024,7 @@ static struct array *encode_acl(PACL acl)
 	  break;
 
 	case ACCESS_DENIED_ACE_TYPE:
-	  push_text("deny");
+	  push_static_text("deny");
 	  push_int(((ACE_HEADER *)ace)->AceFlags);
 	  push_int( ((ACCESS_DENIED_ACE *)ace)->Mask );
 	  SAFE_PUSH_SID( & ((ACCESS_DENIED_ACE *)ace)->SidStart );
@@ -3032,7 +3032,7 @@ static struct array *encode_acl(PACL acl)
 	  break;
 
 	case SYSTEM_AUDIT_ACE_TYPE:
-	  push_text("audit");
+	  push_static_text("audit");
 	  push_int(((ACE_HEADER *)ace)->AceFlags);
 	  push_int( ((SYSTEM_AUDIT_ACE *)ace)->Mask );
 	  SAFE_PUSH_SID( & ((SYSTEM_AUDIT_ACE *)ace)->SidStart );
@@ -3040,7 +3040,7 @@ static struct array *encode_acl(PACL acl)
 	  break;
 
 	default:
-	  push_text("unknown");
+	  push_static_text("unknown");
 	  f_aggregate(1);
 	  break;
 
@@ -3260,25 +3260,25 @@ static void f_GetNamedSecurityInfo(INT32 args)
 
     if(owner)
     {
-      push_text("owner");
+      push_static_text("owner");
       SAFE_PUSH_SID(owner);
       tmp++;
     }
     if(group)
     {
-      push_text("group");
+      push_static_text("group");
       SAFE_PUSH_SID(group);
       tmp++;
     }
     if(sacl)
     {
-      push_text("sacl");
+      push_static_text("sacl");
       push_array( encode_acl( sacl ));
       tmp++;
     }
     if(dacl)
     {
-      push_text("dacl");
+      push_static_text("dacl");
       push_array( encode_acl( dacl ));
       tmp++;
     }
@@ -3312,7 +3312,7 @@ static void f_nt_uname(INT32 args)
   GetSystemInfo(&sysinfo);
 
   n+=2;
-  push_text("architecture");
+  push_static_text("architecture");
   switch(sysinfo.wProcessorArchitecture)
   {
     case PROCESSOR_ARCHITECTURE_INTEL:
@@ -3322,17 +3322,17 @@ static void f_nt_uname(INT32 args)
       break;
 
     case PROCESSOR_ARCHITECTURE_MIPS:
-      push_text("mips");
+      push_static_text("mips");
       machine = "mips";
       break;
 
     case PROCESSOR_ARCHITECTURE_ALPHA:
-      push_text("alpha");
+      push_static_text("alpha");
       machine = "alpha";
       break;
 
     case PROCESSOR_ARCHITECTURE_PPC:
-      push_text("ppc");
+      push_static_text("ppc");
       machine = "ppc";
       break;
 
@@ -3342,17 +3342,17 @@ static void f_nt_uname(INT32 args)
       switch (sysinfo.dwProcessorType) {
       case PROCESSOR_HITACHI_SH3:
       case PROCESSOR_SHx_SH3:
-        push_text("sh3");
+        push_static_text("sh3");
 	break;
       case PROCESSOR_HITACHI_SH3E:
-        push_text("sh3e");
+        push_static_text("sh3e");
 	break;
       case PROCESSOR_HITACHI_SH4:
       case PROCESSOR_SHx_SH4:
-        push_text("sh4");
+        push_static_text("sh4");
 	break;
       default:
-	push_text("shx");
+	push_static_text("shx");
 	break;
       }
       break;
@@ -3363,22 +3363,22 @@ static void f_nt_uname(INT32 args)
       machine = "arm";
       switch (sysinfo.dwProcessorType) {
       case PROCESSOR_STRONGARM:
-	push_text("strongarm");
+	push_static_text("strongarm");
 	break;
       case PROCESSOR_ARM720:
-	push_text("arm720");
+	push_static_text("arm720");
 	break;
       case PROCESSOR_ARM820:
-	push_text("arm820");
+	push_static_text("arm820");
 	break;
       case PROCESSOR_ARM920:
-	push_text("arm920");
+	push_static_text("arm920");
 	break;
       case PROCESSOR_ARM_7TDMI:
-	push_text("arm7tdmi");
+	push_static_text("arm7tdmi");
 	break;
       default:
-	push_text("arm");
+	push_static_text("arm");
 	break;
       }
       break;
@@ -3387,53 +3387,53 @@ static void f_nt_uname(INT32 args)
 #ifdef PROCESSOR_ARCHITECTURE_IA64
     case PROCESSOR_ARCHITECTURE_IA64:
       machine = "ia64";
-      push_text("ia64");
+      push_static_text("ia64");
       break;
 #endif /* PROCESSOR_ARCHITECTURE_IA64 */
 
 #ifdef PROCESSOR_ARCHITECTURE_ALPHA64
     case PROCESSOR_ARCHITECTURE_ALPHA64:
       machine = "alpha64";
-      push_text("alpha64");
+      push_static_text("alpha64");
       break;
 #endif /* PROCESSOR_ARCHITECTURE_ALPHA64 */
 
 #ifdef PROCESSOR_ARCHITECTURE_AMD64
     case PROCESSOR_ARCHITECTURE_AMD64:
       machine = "amd64";
-      push_text("amd64");
+      push_static_text("amd64");
       break;
 #endif
 
 #ifdef PROCESSOR_ARCHITECTURE_MSIL
     case PROCESSOR_ARCHITECTURE_MSIL:
       machine = "msil";
-      push_text("msil");
+      push_static_text("msil");
       break;
 #endif /* PROCESSOR_ARCHITECTURE_MSIL */
 
     default:
     case PROCESSOR_ARCHITECTURE_UNKNOWN:
       machine = "unknown";
-      push_text("unknown");
+      push_static_text("unknown");
       break;
   }
 
   n+=2;
-  push_text("machine");
+  push_static_text("machine");
   push_text(machine);
 
   n+=2;
-  push_text("sysname");
+  push_static_text("sysname");
   switch(osversion.dwPlatformId)
   {
     case VER_PLATFORM_WIN32s:
       version = "3.1";
-      push_text("Win32s");
+      push_static_text("Win32s");
       break;
 
     case VER_PLATFORM_WIN32_WINDOWS:
-      push_text("Win32");
+      push_static_text("Win32");
       switch(osversion.dwMinorVersion)
       {
       case 0:
@@ -3449,7 +3449,7 @@ static void f_nt_uname(INT32 args)
       break;
 
     case VER_PLATFORM_WIN32_NT:
-      push_text("Win32");
+      push_static_text("Win32");
       switch(osversion.dwMajorVersion)
       {
       case 3:
@@ -3475,7 +3475,7 @@ static void f_nt_uname(INT32 args)
       break;
 
     default:
-      push_text("Win32");
+      push_static_text("Win32");
       break;
   }
 
@@ -3486,15 +3486,15 @@ static void f_nt_uname(INT32 args)
 	  osversion.dwBuildNumber & 0xffff);
 
   n+=2;
-  push_text("release");
+  push_static_text("release");
   push_text(buf);
 
   n+=2;
-  push_text("version");
+  push_static_text("version");
   push_text(osversion.szCSDVersion);
 
   n+=2;
-  push_text("nodename");
+  push_static_text("nodename");
   gethostname(buf, sizeof(buf));
   push_text(buf);
 

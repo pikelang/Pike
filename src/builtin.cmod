@@ -2957,7 +2957,7 @@ PIKECLASS Buffer
 	{
 	  struct pike_string *res;
 	  struct Buffer_struct *str = THIS;
-	  push_text( "Buffer(%d /* %d */)" );
+	  push_static_text( "Buffer(%d /* %d */)" );
 	  if( str->str.s )
 	  {
 	    push_int(str->str.s->len);
@@ -5871,7 +5871,7 @@ static struct object *val_module;
 static void get_val_module(void)
 {
   assert (!val_module);
-  push_text ("Val");
+  push_static_text ("Val");
   APPLY_MASTER ("resolv", 1);
   if (TYPEOF(Pike_sp[-1]) != T_OBJECT)
     Pike_error ("\"Val\" didn't resolve to a module object.\n");

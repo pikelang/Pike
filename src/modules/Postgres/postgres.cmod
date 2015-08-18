@@ -810,7 +810,7 @@ PIKEFUN string host_info()
 		if(PQhost(THIS->dblink))
 			push_text(PQhost(THIS->dblink));
 		else
-			push_text("<unknown>");
+			push_static_text("<unknown>");
 		pgdebug("done\n");
 		f_add(2);
 		return;

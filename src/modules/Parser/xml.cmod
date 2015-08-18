@@ -965,11 +965,11 @@ PIKECLASS Simple
 
   INIT
   {
-    push_text("lt");    push_text("&#60;");
-    push_text("gt");    push_text(">");
-    push_text("amp");   push_text("&#38;");
-    push_text("apos");  push_text("'");
-    push_text("quot");  push_text("\"");
+    push_static_text("lt");    push_static_text("&#60;");
+    push_static_text("gt");    push_static_text(">");
+    push_static_text("amp");   push_static_text("&#38;");
+    push_static_text("apos");  push_static_text("'");
+    push_static_text("quot");  push_static_text("\"");
 
     f_aggregate_mapping(10);
     THIS->entities=sp[-1].u.mapping;
@@ -1219,22 +1219,7 @@ static int gobble(char *s)
 
 #define STRIP_SPACES() do {			\
     IF_XMLDEBUG(fprintf(stderr,"STRIPPING SPACES (%s)\n",sp[-1].u.string->str));       \
-    push_text("\n");			\
-    push_text("\r");			\
-    push_text("\t");			\
-    f_aggregate(3);				\
-    push_text(" ");			\
-    push_text(" ");			\
-    push_text(" ");			\
-    f_aggregate(3);				\
-    f_replace(3);				\
-    push_text(" ");			\
-    o_divide();					\
-    push_empty_string();			\
-    f_aggregate(1);                             \
-    o_subtract();				\
-    push_text(" ");			\
-    o_multiply();				\
+    f_string_normalize_space(1);                                              \
     IF_XMLDEBUG(fprintf(stderr,"SPACES STRIPPED (%s)\n",sp[-1].u.string->str));       \
   } while(0)
 
@@ -1533,7 +1518,7 @@ static void sys(void)
 
 static void xmlerror(char *desc, struct pike_string *tag_name)
 {
-  push_text("error");
+  push_constant_text("error");
   if (tag_name) {
     ref_push_string(tag_name);	/* Name of tag that triggered the error. */
   } else {
@@ -1555,7 +1540,7 @@ static void xmlerror(char *desc, struct pike_string *tag_name)
       READ(1); /* this is '%' */
       IF_XMLDEBUG( fprintf(stderr, "SMEG reference found.\n") );
 
-      push_text("%");
+      push_constant_text("%");
       SIMPLE_READNAME();
 
       add_ref(name=sp[-1].u.string);
@@ -3184,7 +3169,7 @@ static int low_parse_xml(struct pike_string *end)
       if (i->next) {
 	UPDATE_LOCATION(i->next->pos, i->next->callbackinfo);
 	i->callbackinfo = copy_mapping(i->next->callbackinfo);
-	push_constant_text("previous");
+	push_static_text("previous");
 	ref_push_mapping(i->next->callbackinfo);
 	mapping_insert(i->callbackinfo, sp-2, sp-1);
 	pop_n_elems(2);
@@ -3442,16 +3427,16 @@ PIKEFUN string autoconvert(string s)
 	  }
 	  /* <?xml version = "1.0" encoding = "encname." */
 
-	  push_constant_text("Charset.decoder");
+	  push_static_text("Charset.decoder");
 	  APPLY_MASTER("resolv",1);
 	  push_string(make_shared_binary_string0(STR0(s)+encstart,
 						 pos-encstart));
 	  f_call_function(2);
-	  push_constant_text("feed");
+	  push_static_text("feed");
 	  f_index(2);
 	  stack_swap();
 	  f_call_function(2);
-	  push_constant_text("drain");
+	  push_static_text("drain");
 	  f_index(2);
 	  f_call_function(1);
 	  return;
@@ -3474,7 +3459,7 @@ PIKEFUN string autoconvert(string s)
 
 void init_parser_xml(void)
 {
-  push_text("location");
+  push_static_text("location");
   location_string_svalue=sp[-1];
   sp--;
 

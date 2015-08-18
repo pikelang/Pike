@@ -336,7 +336,7 @@ PIKEFUN void create(string|void server, string|void database,
     /* NB: Potential but very unlikely leak of pwd here
      *     if "CENSORED" fails to allocate.
      */
-    push_text("CENSORED");
+    push_static_text("CENSORED");
     push_string(pwd);	/* Let the stack hold the reference. */
     args = 5;
   }
@@ -355,7 +355,7 @@ PIKEFUN void create(string|void server, string|void database,
 
   if (!database || !database->len) {
     if (!server || !server->len) {
-      push_text("default");
+      push_static_text("default");
       database = sp[-1].u.string;
       args++;
     } else {

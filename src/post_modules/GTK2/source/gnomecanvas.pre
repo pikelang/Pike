@@ -72,10 +72,10 @@ mapping(string:int) get_scroll_region()
     double x1,y1,x2,y2;
     gnome_canvas_get_scroll_region(GNOME_CANVAS(THIS->obj),
 			&x1,&y1,&x2,&y2);
-    push_text("x1"); push_float(x1);
-    push_text("y1"); push_float(y1);
-    push_text("x2"); push_float(x2);
-    push_text("y2"); push_float(y2);
+    push_static_text("x1"); push_float(x1);
+    push_static_text("y1"); push_float(y1);
+    push_static_text("x2"); push_float(x2);
+    push_static_text("y2"); push_float(y2);
     f_aggregate_mapping(8);
   }
 }

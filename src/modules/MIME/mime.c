@@ -756,7 +756,7 @@ static void low_tokenize( const char *funname, INT32 args, int mode )
       if (l>0) {
 	/* Yup.  It's an encoded word, so it must be an atom.  */
 	if(mode)
-	  push_text("encoded-word");
+	  push_static_text("encoded-word");
 	push_string( make_shared_binary_string( (char *)src, l ) );
 	if(mode)
 	  f_aggregate(2);
@@ -771,7 +771,7 @@ static void low_tokenize( const char *funname, INT32 args, int mode )
     case CT_RPAR:
       /* Individual special character, push as a char (= int) */
       if(mode)
-	push_text("special");
+	push_static_text("special");
       push_int( *src++ );
       if(mode)
 	f_aggregate(2);
@@ -786,7 +786,7 @@ static void low_tokenize( const char *funname, INT32 args, int mode )
 	  break;
 
       if(mode)
-	push_text("word");
+	push_static_text("word");
       push_string( make_shared_binary_string( (char *)src, l ) );
       if(mode)
 	f_aggregate(2);
@@ -809,7 +809,7 @@ static void low_tokenize( const char *funname, INT32 args, int mode )
 
       /* Push the resulting string */
       if(mode)
-	push_text("word");
+	push_static_text("word");
 
       if (e) {
 	/* l is the distance to the ending ", and e is the number of	\
@@ -847,7 +847,7 @@ static void low_tokenize( const char *funname, INT32 args, int mode )
       if (l >= cnt) {
 	/* No ]; seems that this was no domain literal after all... */
 	if(mode)
-	  push_text("special");
+	  push_static_text("special");
 	push_int( *src++ );
 	if(mode)
 	  f_aggregate(2);
@@ -866,7 +866,7 @@ static void low_tokenize( const char *funname, INT32 args, int mode )
 
       /* Push the resulting string */
       if(mode)
-	push_text("domain-literal");
+	push_static_text("domain-literal");
       push_string( end_shared_string( str ) );
       if(mode)
 	f_aggregate(2);
@@ -894,7 +894,7 @@ static void low_tokenize( const char *funname, INT32 args, int mode )
 	  }
 
       if(mode) {
-	push_text("comment");
+	push_static_text("comment");
 
 	str = begin_shared_string( l-e-1 );
 

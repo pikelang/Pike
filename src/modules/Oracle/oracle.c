@@ -2816,10 +2816,10 @@ static void dbnull_sprintf(INT32 args)
   }
   switch(TYPEOF(THIS_DBNULL->type))
   {
-    case T_INT: push_text("Oracle.NULLint"); break;
-    case T_STRING: push_text("Oracle.NULLstring"); break;
-    case T_FLOAT: push_text("Oracle.NULLfloat"); break;
-    case T_OBJECT: push_text("Oracle.NULLdate"); break;
+    case T_INT: push_static_text("Oracle.NULLint"); break;
+    case T_STRING: push_static_text("Oracle.NULLstring"); break;
+    case T_FLOAT: push_static_text("Oracle.NULLfloat"); break;
+    case T_OBJECT: push_static_text("Oracle.NULLdate"); break;
 
   }
 

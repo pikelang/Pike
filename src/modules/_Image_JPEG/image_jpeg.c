@@ -1078,16 +1078,16 @@ static void img_jpeg_decode(INT32 args,int mode)
       /* standard header info */
 
       ref_push_string(literal_type_string); n++;
-      push_text("image/jpeg");
+      push_static_text("image/jpeg");
 
-      push_text("xsize"); n++;
+      push_static_text("xsize"); n++;
       push_int(mds.cinfo.image_width);
 
-      push_text("ysize"); n++;
+      push_static_text("ysize"); n++;
       push_int(mds.cinfo.image_height);
 
-      push_text("xdpi"); n++;
-      push_text("ydpi"); n++;
+      push_static_text("xdpi"); n++;
+      push_static_text("ydpi"); n++;
       switch (mds.cinfo.density_unit)
       {
 	 default:
@@ -1107,31 +1107,31 @@ static void img_jpeg_decode(INT32 args,int mode)
 
       /* JPEG special header */
 
-      push_text("num_components"); n++;
+      push_static_text("num_components"); n++;
       push_int(mds.cinfo.num_components);
 
-      push_text("color_space"); n++;
+      push_static_text("color_space"); n++;
       switch (mds.cinfo.jpeg_color_space)
       {
-	 case JCS_UNKNOWN:	push_text("UNKNOWN"); break;
-	 case JCS_GRAYSCALE:	push_text("GRAYSCALE"); break;
-	 case JCS_RGB:		push_text("RGB"); break;
-	 case JCS_YCbCr:	push_text("YUV"); break;
-	 case JCS_CMYK:		push_text("CMYK"); break;
-	 case JCS_YCCK:		push_text("YCCK"); break;
-	 default:		push_text("?"); break;
+	 case JCS_UNKNOWN:	push_static_text("UNKNOWN"); break;
+	 case JCS_GRAYSCALE:	push_static_text("GRAYSCALE"); break;
+	 case JCS_RGB:		push_static_text("RGB"); break;
+	 case JCS_YCbCr:	push_static_text("YUV"); break;
+	 case JCS_CMYK:		push_static_text("CMYK"); break;
+	 case JCS_YCCK:		push_static_text("YCCK"); break;
+	 default:		push_static_text("?"); break;
       }
 
-      push_text("density_unit"); n++;
+      push_static_text("density_unit"); n++;
       push_int(mds.cinfo.density_unit);
 
-      push_text("x_density"); n++;
+      push_static_text("x_density"); n++;
       push_int(mds.cinfo.X_density);
 
-      push_text("y_density"); n++;
+      push_static_text("y_density"); n++;
       push_int(mds.cinfo.Y_density);
 
-      push_text("adobe_marker"); n++;
+      push_static_text("adobe_marker"); n++;
       push_int(mds.cinfo.saw_Adobe_marker);
 
       ref_push_string(param_marker); n++;
@@ -1281,7 +1281,7 @@ static void img_jpeg_decode(INT32 args,int mode)
       {
 	 int i,m,j;
 
-	 push_text("quant_tables");
+	 push_static_text("quant_tables");
 	 for (i=m=0; i<NUM_QUANT_TBLS; i++)
 	 {
 	    if (mds.cinfo.quant_tbl_ptrs[i])
@@ -1312,7 +1312,7 @@ static void img_jpeg_decode(INT32 args,int mode)
 	       else if (w>q) a=++c;
 	       else b=c;
 	    }
-	    push_text("quality");
+	    push_static_text("quality");
 	    push_int(c);
 	    n++;
 	 }
@@ -1330,7 +1330,7 @@ static void img_jpeg_decode(INT32 args,int mode)
    }
    else if (mode==IMG_DECODE_MUCH)
    {
-      push_text("image");
+      push_static_text("image");
       push_object(o);
       n++;
    }

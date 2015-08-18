@@ -633,7 +633,7 @@ PIKEFUN array|mapping|string|float|int|object decode_utf8(string data) {
     if (data->size_shift) {
 	ref_push_string(data);
 	push_int(0);
-	push_text("Strings wider than 1 byte are NOT valid UTF-8.");
+	push_static_text("Strings wider than 1 byte are NOT valid UTF-8.");
 	apply (Pike_fp->current_object, "decode_error", 3);
     }
 

@@ -1371,7 +1371,7 @@ static void img_png_decode(INT32 args, int mode)
 	    for(i=0; i<32; i+=4)
 	      push_float((float)int_from_32bit(data+i)/100000.0);
 	    f_aggregate(8);
-	    push_text("chroma");
+	    push_static_text("chroma");
 	    mapping_insert(m,sp-1,sp-2);
 	    pop_n_elems(2);
 	  }
@@ -1386,7 +1386,7 @@ static void img_png_decode(INT32 args, int mode)
 	    for(i=0; i<len; i++)
 	      push_int(data[i]);
 	    f_aggregate(len);
-	    push_text("sbit");
+	    push_static_text("sbit");
 	    mapping_insert(m,sp-1,sp-2);
 	    pop_n_elems(2);
 	  }
@@ -1395,7 +1395,7 @@ static void img_png_decode(INT32 args, int mode)
           case 0x67414d41: /* gAMA */
             if(mode==MODE_IMAGE_ONLY) break;
 	    if(len!=4) break;
-	    push_text("gamma");
+	    push_static_text("gamma");
 	    push_float((float)int_from_32bit(data)/100000.0);
 	    mapping_insert(m,sp-2,sp-1);
 	    pop_n_elems(2);
@@ -1416,7 +1416,7 @@ static void img_png_decode(INT32 args, int mode)
 	    push_int(tmp1);
 	    push_int(tmp2);
 	    f_aggregate(3);
-	    push_text("physical");
+	    push_static_text("physical");
 	    mapping_insert(m,sp-1,sp-2);
 	    pop_n_elems(2);
 	    break;
@@ -1435,7 +1435,7 @@ static void img_png_decode(INT32 args, int mode)
 	    push_int(tmp1);
 	    push_int(tmp2);
 	    f_aggregate(3);
-	    push_text("offset");
+	    push_static_text("offset");
 	    mapping_insert(m,sp-1,sp-2);
 	    pop_n_elems(2);
 	    break;
@@ -1450,7 +1450,7 @@ static void img_png_decode(INT32 args, int mode)
 	    push_int(data[5]);
 	    push_int(data[6]);
 	    f_aggregate(6);
-	    push_text("time");
+	    push_static_text("time");
 	    mapping_insert(m,sp-1,sp-2);
 	    pop_n_elems(2);
 	    break;
@@ -1565,12 +1565,12 @@ static void img_png_decode(INT32 args, int mode)
      mapping_string_insert(m, param_bpp, sp-1);
      pop_stack();
 
-     push_text("xsize");
+     push_static_text("xsize");
      push_int(ihdr.width);
      mapping_insert(m,sp-2,sp-1);
      pop_n_elems(2);
 
-     push_text("ysize");
+     push_static_text("ysize");
      push_int(ihdr.height);
      mapping_insert(m,sp-2,sp-1);
      pop_n_elems(2);
@@ -1887,7 +1887,7 @@ static void image_png_decode(INT32 args)
      SIMPLE_TOO_FEW_ARGS_ERROR("decode", 1);
 
    img_png_decode(args, MODE_IMAGE_ONLY);
-   push_text("image");
+   push_static_text("image");
    f_index(2);
 }
 
@@ -1908,16 +1908,16 @@ static void image_png_decode_alpha(INT32 args)
 
    image_png__decode(args);
    assign_svalue_no_free(&s,sp-1);
-   push_text("alpha");
+   push_static_text("alpha");
    f_index(2);
 
    if (TYPEOF(sp[-1]) == T_INT)
    {
       push_svalue(&s);
-      push_text("xsize");
+      push_static_text("xsize");
       f_index(2);
       push_svalue(&s);
-      push_text("ysize");
+      push_static_text("ysize");
       f_index(2);
       push_int(255);
       push_int(255);
@@ -1957,7 +1957,7 @@ void init_image_png(void)
    if(crc32 && zlibmod_pack && zlibmod_unpack)
      gz = 1;
 #else
-   push_text("Gz.inflate");
+   push_static_text("Gz.inflate");
    SAFE_APPLY_MASTER("resolv",1);
    if( TYPEOF(Pike_sp[-1]) == T_PROGRAM )
      gz = 1;

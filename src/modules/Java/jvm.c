@@ -3416,7 +3416,7 @@ static void f_create(INT32 args)
       j->classpath_string = make_shared_string(classpath);
   }
   if(classpath != NULL) {
-    push_text("-Djava.class.path=");
+    push_static_text("-Djava.class.path=");
     push_string(j->classpath_string);
     j->classpath_string = NULL;
     f_add(2);

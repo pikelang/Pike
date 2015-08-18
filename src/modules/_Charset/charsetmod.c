@@ -166,7 +166,7 @@ static void DECLSPEC(noreturn) transcode_error_va (
 
   if (encode) {
     if (TYPEOF(encode_err_prog) == T_INT) {
-      push_text ("Charset.EncodeError");
+      push_static_text ("Charset.EncodeError");
       SAFE_APPLY_MASTER ("resolv", 1);
       if (TYPEOF(sp[-1]) != T_PROGRAM && TYPEOF(sp[-1]) != T_FUNCTION)
 	Pike_error ("Failed to resolve Charset.EncodeError "
@@ -178,7 +178,7 @@ static void DECLSPEC(noreturn) transcode_error_va (
 
   else {
     if (TYPEOF(decode_err_prog) == T_INT) {
-      push_text ("Charset.DecodeError");
+      push_static_text ("Charset.DecodeError");
       SAFE_APPLY_MASTER ("resolv", 1);
       if (TYPEOF(sp[-1]) != T_PROGRAM && TYPEOF(sp[-1]) != T_FUNCTION)
 	Pike_error ("Failed to resolve Charset.DecodeError "

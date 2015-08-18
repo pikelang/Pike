@@ -67,23 +67,23 @@ mapping get()
                               &r16, &g16, &b16, &a16 );
 
   pop_n_elems( args );
-  push_text( "d" );
-  push_text( "r" ); push_float( r );
-  push_text( "g" ); push_float( g );
-  push_text( "b" ); push_float( b );
-  push_text( "a" ); push_float( a );
+  push_static_text( "d" );
+  push_static_text( "r" ); push_float( r );
+  push_static_text( "g" ); push_float( g );
+  push_static_text( "b" ); push_float( b );
+  push_static_text( "a" ); push_float( a );
   f_aggregate_mapping( 8 );
-  push_text( "i8" );
-  push_text( "r" ); push_int( r8 );
-  push_text( "g" ); push_int( g8 );
-  push_text( "b" ); push_int( b8 );
-  push_text( "a" ); push_int( a8 );
+  push_static_text( "i8" );
+  push_static_text( "r" ); push_int( r8 );
+  push_static_text( "g" ); push_int( g8 );
+  push_static_text( "b" ); push_int( b8 );
+  push_static_text( "a" ); push_int( a8 );
   f_aggregate_mapping( 8 );
-  push_text( "i16" );
-  push_text( "r" ); push_int( r16 );
-  push_text( "g" ); push_int( g16 );
-  push_text( "b" ); push_int( b16 );
-  push_text( "a" ); push_int( a16 );
+  push_static_text( "i16" );
+  push_static_text( "r" ); push_int( r16 );
+  push_static_text( "g" ); push_int( g16 );
+  push_static_text( "b" ); push_int( b16 );
+  push_static_text( "a" ); push_int( a16 );
   f_aggregate_mapping( 8 );
   f_aggregate_mapping( 6 );
 }

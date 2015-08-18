@@ -493,7 +493,7 @@ void f_load_module(INT32 args)
 	push_text (err);
     }
     else
-      push_text ("Unknown reason");
+      push_static_text ("Unknown reason");
 
     add_ref (LOADERR_STRUCT (err_obj)->path = Pike_sp[-args - 1].u.string);
     add_ref (LOADERR_STRUCT (err_obj)->reason = Pike_sp[-1].u.string);

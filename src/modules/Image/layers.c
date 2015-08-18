@@ -1433,17 +1433,17 @@ static void image_layer_cast(INT32 args)
   {
     int n=0;
 
-    push_text("xsize");       push_int(THIS->xsize);         n++;
-    push_text("ysize");       push_int(THIS->ysize);         n++;
-    push_text("image");       image_layer_image(0);          n++;
-    push_text("alpha");       image_layer_alpha(0);          n++;
-    push_text("xoffset");     push_int(THIS->xoffs);         n++;
-    push_text("yoffset");     push_int(THIS->yoffs);         n++;
-    push_text("alpha_value"); push_float(THIS->alpha_value); n++;
-    push_text("fill");        image_layer_fill(0);           n++;
-    push_text("fill_alpha");  image_layer_fill_alpha(0);     n++;
-    push_text("tiled");       push_int(THIS->tiled);         n++;
-    push_text("mode");        image_layer_mode(0);           n++;
+    push_static_text("xsize");       push_int(THIS->xsize);         n++;
+    push_static_text("ysize");       push_int(THIS->ysize);         n++;
+    push_static_text("image");       image_layer_image(0);          n++;
+    push_static_text("alpha");       image_layer_alpha(0);          n++;
+    push_static_text("xoffset");     push_int(THIS->xoffs);         n++;
+    push_static_text("yoffset");     push_int(THIS->yoffs);         n++;
+    push_static_text("alpha_value"); push_float(THIS->alpha_value); n++;
+    push_static_text("fill");        image_layer_fill(0);           n++;
+    push_static_text("fill_alpha");  image_layer_fill_alpha(0);     n++;
+    push_static_text("tiled");       push_int(THIS->tiled);         n++;
+    push_static_text("mode");        image_layer_mode(0);           n++;
 
     f_aggregate_mapping(n*2);
   }
@@ -3250,10 +3250,10 @@ static void image_layer__sprintf( INT32 args )
   switch( x )
   {
    case 't':
-     push_text("Image.Layer");
+     push_static_text("Image.Layer");
      return;
    case 'O':
-     push_text( "Image.Layer(%O i=%O a=%O)" );
+     push_static_text( "Image.Layer(%O i=%O a=%O)" );
      image_layer_mode(0);
      if( THIS->image ) ref_push_object( THIS->image ); else push_int( 0 );
      if( THIS->alpha ) ref_push_object( THIS->alpha ); else push_int( 0 );

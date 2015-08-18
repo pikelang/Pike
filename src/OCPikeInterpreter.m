@@ -188,7 +188,7 @@ void shared_interpreter_cleanup(int exitcode)
 - (struct program *)compileString: (id)code
 {
   struct program * p = NULL;
-  push_text([code UTF8String]);
+  push_static_text([code UTF8String]);
   f_utf8_to_string(1);
   f_compile(1);
   if(Pike_sp[-1].type==T_PROGRAM)

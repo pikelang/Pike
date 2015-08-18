@@ -662,7 +662,7 @@ static void image_color_hex(INT32 args)
    pop_n_elems(args);
    if (i<1)
    {
-      push_text("#");  /* stupid */
+      push_static_text("#");  /* stupid */
       return;
    }
    else if (i!=sizeof(COLORTYPE)*2)
@@ -795,7 +795,7 @@ static void image_color__sprintf(INT32 args)
 
    pop_n_elems(args-2);
 
-   push_text("precision");
+   push_static_text("precision");
    f_index(2);
    if (TYPEOF(sp[-1]) != T_INT)
       SIMPLE_BAD_ARG_ERROR("_sprintf",1,"mapping(\"precision\":int)");
@@ -808,13 +808,13 @@ static void image_color__sprintf(INT32 args)
 /*       case 'c': */
 /*       case 'd': */
       case 't':
-	 push_text("Image.Color.Color");
+	 push_static_text("Image.Color.Color");
 	 return;
       case 'O':
 	 if (!THIS->name) try_find_name(THIS);
 	 if (THIS->name==no_name)
 	 {
-	    push_text("Image.Color(\"");
+	    push_static_text("Image.Color(\"");
 	    if (prec)
 	    {
 	       push_int(prec);
@@ -822,13 +822,13 @@ static void image_color__sprintf(INT32 args)
 	    }
 	    else
 	       image_color_hex(0);
-	    push_text("\")");
+	    push_static_text("\")");
 	    f_add(3);
 	    return;
 	 }
 	 else
 	 {
-	    push_text("Image.Color.");
+	    push_static_text("Image.Color.");
 	    ref_push_string(THIS->name);
 	    f_add(2);
 	    return;
@@ -1323,7 +1323,7 @@ static void image_get_color(INT32 args)
       {
 	 /* @h,s,v; h=0..359, s,v=0..100 */
 	 stack_dup();
-	 push_text("@%f,%f,%f\n");
+	 push_static_text("@%f,%f,%f\n");
 	 f_sscanf(2);
 	 if (TYPEOF(sp[-1]) == T_ARRAY &&
 	     sp[-1].u.array->size==3)
@@ -1349,7 +1349,7 @@ static void image_get_color(INT32 args)
       {
 	 /* @c,m,y,k; 0..100 */
 	 stack_dup();
-	 push_text("%%%f,%f,%f,%f\n");
+	 push_static_text("%%%f,%f,%f,%f\n");
 	 f_sscanf(2);
 	 if (TYPEOF(sp[-1]) == T_ARRAY &&
 	     sp[-1].u.array->size==4)
@@ -1383,7 +1383,7 @@ static void image_get_color(INT32 args)
       {
 	 /* greyx; x=0..99 */
 	 stack_dup();
-	 push_text("gr%*[ea]y%f\n");
+	 push_static_text("gr%*[ea]y%f\n");
 	 f_sscanf(2);
 	 if (TYPEOF(sp[-1]) == T_ARRAY &&
 	     sp[-1].u.array->size==1)
@@ -1418,7 +1418,7 @@ static void image_guess_color(INT32 args)
                    "Bad arguments to guess.\n");
 
    f_lower_case(1);
-   push_text(" ");
+   push_static_text(" ");
    o_subtract();
 
    stack_dup();
@@ -1430,7 +1430,7 @@ static void image_guess_color(INT32 args)
       return;
    }
    pop_stack();
-   push_text("#");
+   push_static_text("#");
    stack_swap();
    f_add(2);
 
@@ -1684,7 +1684,7 @@ static void image_make_html_color(INT32 args)
       image_get_color(1);
    else
    {
-      push_text("#");
+      push_static_text("#");
       stack_swap();
       f_add(2);
       image_get_color(1);

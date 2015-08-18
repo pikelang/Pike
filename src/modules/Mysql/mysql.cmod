@@ -443,9 +443,9 @@ static void connection_set_charset (struct pike_string *charset)
    * charset. We emulate it by setting the charset ourselves. Note
    * that this doesn't work with mysql_real_escape_string, but that
    * function isn't used. */
-  push_text ("SET NAMES '");
+  push_static_text ("SET NAMES '");
   ref_push_string (charset);	/* FIXME: Quote? */
-  push_text ("'");
+  push_static_text ("'");
   f_add (3);
   low_query (1, "set_charset", PIKE_MYSQL_FLAG_STORE_RESULT);
   pop_stack();
@@ -807,11 +807,11 @@ PIKEFUN string _sprintf(int type, void|mapping flags)
 	/* MYSQL_ALLOW(); */
 	info = mysql_get_host_info(mysql);
 	/* MYSQL_DISALLOW(); */
-	push_text("mysql(/*%s%s*/)");
+	push_static_text("mysql(/*%s%s*/)");
 	push_text(info ? info : "");
 #ifdef HAVE_MYSQL_SSL
 	if (PIKE_MYSQL->mysql->options.use_ssl) {
-	  push_text(", SSL");
+	  push_static_text(", SSL");
 	}
 	else
 	  push_empty_string();
@@ -821,7 +821,7 @@ PIKEFUN string _sprintf(int type, void|mapping flags)
 	f_sprintf(3);
       }
       else
-	push_text ("mysql()");
+	push_static_text ("mysql()");
 
       return;
     }
@@ -1380,7 +1380,7 @@ PIKEFUN string server_info()
 
   pop_n_elems(args);
 
-  push_text("mysql/");
+  push_static_text("mysql/");
 
   MYSQL_ALLOW();
 
@@ -1806,7 +1806,7 @@ PIKEFUN string(8bit) get_charset()
   if (PIKE_MYSQL->conn_charset)
     ref_push_string (PIKE_MYSQL->conn_charset);
   else
-    push_text ("latin1");
+    push_static_text ("latin1");
 }
 
 PIKEFUN int(0..1) _can_send_as_latin1(string str)
@@ -1862,7 +1862,7 @@ PIKEFUN string(8bit) client_info()
 #define MYSQL_COMPILATION_COMMENT "MySQL (Copyright Abandoned)"
 #endif
 
-  push_text(MYSQL_COMPILATION_COMMENT "/" MYSQL_SERVER_VERSION);
+  push_static_text(MYSQL_COMPILATION_COMMENT "/" MYSQL_SERVER_VERSION);
 }
 
 /*! @endmodule

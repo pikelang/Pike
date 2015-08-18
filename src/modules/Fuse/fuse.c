@@ -428,12 +428,12 @@ static int pf_lock( const char *path, struct fuse_file_info *fi, int cmd, struct
   push_text( path );
   push_int( cmd );
 
-  push_text("owner"); push_int( fi->lock_owner );
+  push_static_text("owner"); push_int( fi->lock_owner );
   ref_push_string(literal_type_string);  push_int( lck->l_type );
-  push_text("whence");push_int( lck->l_whence );
-  push_text("start");   push_int( lck->l_start );
-  push_text("len");   push_int( lck->l_len );
-  push_text("pid");   push_int( lck->l_pid );
+  push_static_text("whence");push_int( lck->l_whence );
+  push_static_text("start");   push_int( lck->l_start );
+  push_static_text("len");   push_int( lck->l_len );
+  push_static_text("pid");   push_int( lck->l_pid );
   f_aggregate_mapping( 6 * 2 );
   apply( global_fuse_obj, "lock", 3 );
 

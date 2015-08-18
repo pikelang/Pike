@@ -7629,7 +7629,7 @@ PMOD_EXPORT void f_replace_master(INT32 args)
     bad_arg_error("replace_master", Pike_sp-args, args, 1, "object", Pike_sp-args,
 		  "Subtyped master objects are not supported yet.\n");
 
-  push_text ("is_pike_master");
+  push_static_text ("is_pike_master");
   args++;
   object_set_index (new_master, 0, Pike_sp - 1, (struct svalue *) &svalue_int_one);
 

@@ -2390,7 +2390,7 @@ static ptrdiff_t calcC(struct cpp *this, PCHARP data, ptrdiff_t len,
 	  }
 	  if(OUTP()) {
 	    push_string (func_name);
-	    push_text (".");
+	    push_static_text (".");
 	    push_string (ind_name);
 	    f_add(3);
 	    func_name = Pike_sp[-1].u.string;
@@ -3386,8 +3386,7 @@ void f_cpp(INT32 args)
       struct keypair *k;
       int e, sprintf_args = 0;
       if (TYPEOF(sp[-1]) != T_MAPPING) {
-	push_text ("Invalid return value from get_predefines\n");
-	push_text ("Invalid return value from get_predefines, got %O\n");
+	push_static_text ("Invalid return value from get_predefines, got %O\n");
 	push_svalue (sp - 3);
 	sprintf_args = 2;
       }
@@ -3395,8 +3394,7 @@ void f_cpp(INT32 args)
 	predefs = copy_mapping (sp[-1].u.mapping);
 	NEW_MAPPING_LOOP (predefs->data) {
 	  if (TYPEOF(k->ind) != T_STRING || !k->ind.u.string->len) {
-	    push_text ("Expected nonempty string as predefine name\n");
-	    push_text ("Expected nonempty string as predefine name, got %O\n");
+	    push_static_text ("Expected nonempty string as predefine name, got %O\n");
 	    push_svalue (&k->ind);
 	    sprintf_args = 2;
 	    free_mapping (predefs);
@@ -3407,9 +3405,7 @@ void f_cpp(INT32 args)
 		   && TYPEOF(k->val) != T_FUNCTION
 		   && TYPEOF(k->val) != T_OBJECT) {
 
-	     push_text ("expected zero, string or function value for"
-				 " predefine\n");
-	     push_text ("expected zero, string or function value for"
+	     push_static_text ("expected zero, string or function value for"
 				 " predefine %O\n");
 	     push_svalue (&k->ind);
 	     sprintf_args = 2;

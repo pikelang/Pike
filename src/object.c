@@ -752,7 +752,7 @@ static void call_destroy(struct object *o, enum object_destruct_reason reason)
 	  if (!SETJMP (jmp)) {
 	    push_svalue (&err);
 	    push_int (0);
-	    push_text ("Got error during final cleanup:\n");
+	    push_static_text ("Got error during final cleanup:\n");
 	    push_svalue (&err);
 	    push_int (0);
 	    o_index();
@@ -3288,7 +3288,7 @@ static struct sysmem *system_memory(struct object *o)
 {
   if( !shm_program )
   {
-    push_text("System.Memory");
+    push_static_text("System.Memory");
     SAFE_APPLY_MASTER("resolv", 1);
     shm_program = program_from_svalue(Pike_sp - 1);
     if (!shm_program)
@@ -3302,7 +3302,7 @@ static struct string_builder *string_buffer(struct object *o)
 {
   if( !sbuf_program )
   {
-    push_text("String.Buffer");
+    push_static_text("String.Buffer");
     SAFE_APPLY_MASTER("resolv", 1);
     sbuf_program = program_from_svalue(Pike_sp - 1);
     if (!sbuf_program)
@@ -3318,7 +3318,7 @@ static Buffer *io_buffer(struct object *o)
 {
   if( !iobuf_program )
   {
-    push_text("Stdio.Buffer");
+    push_static_text("Stdio.Buffer");
     SAFE_APPLY_MASTER("resolv", 1);
     iobuf_program = program_from_svalue(Pike_sp - 1);
     if (!iobuf_program)

@@ -399,93 +399,93 @@ static void _stat_index(INT_TYPE code)
       switch (THIS_STAT->s.st_mode & S_IFMT)
       {
         case S_IFREG:
-          push_text("-");
+          push_static_text("-");
           break;
         case S_IFDIR:
-          push_text("d");
+          push_static_text("d");
           break;
         case S_IFLNK:
-          push_text("l");
+          push_static_text("l");
           break;
         case S_IFCHR:
-          push_text("c");
+          push_static_text("c");
           break;
         case S_IFBLK:
-          push_text("b");
+          push_static_text("b");
           break;
         case S_IFIFO:
-          push_text("f");
+          push_static_text("f");
           break;
         case S_IFSOCK:
-          push_text("s");
+          push_static_text("s");
           break;
         default:
-          push_text("?");
+          push_static_text("?");
           break;
       }
 
       if ( (THIS_STAT->s.st_mode & S_IRUSR) )
-        push_text("r");
+        push_static_text("r");
       else
-        push_text("-");
+        push_static_text("-");
 
       if ( (THIS_STAT->s.st_mode & S_IWUSR) )
-        push_text("w");
+        push_static_text("w");
       else
-        push_text("-");
+        push_static_text("-");
 
       if ( (THIS_STAT->s.st_mode & S_ISUID) )
         if ( (THIS_STAT->s.st_mode & S_IXUSR) )
-          push_text("s");
+          push_static_text("s");
         else
-          push_text("S");
+          push_static_text("S");
       else
         if ( (THIS_STAT->s.st_mode & S_IXUSR) )
-          push_text("x");
+          push_static_text("x");
         else
-          push_text("-");
+          push_static_text("-");
 
       if ( (THIS_STAT->s.st_mode & S_IRGRP) )
-        push_text("r");
+        push_static_text("r");
       else
-        push_text("-");
+        push_static_text("-");
 
       if ( (THIS_STAT->s.st_mode & S_IWGRP) )
-        push_text("w");
+        push_static_text("w");
       else
-        push_text("-");
+        push_static_text("-");
 
       if ( (THIS_STAT->s.st_mode & S_ISGID) )
         if ( (THIS_STAT->s.st_mode & S_IXGRP) )
-          push_text("s");
+          push_static_text("s");
         else
-          push_text("S");
+          push_static_text("S");
       else
         if ( (THIS_STAT->s.st_mode & S_IXGRP) )
-          push_text("x");
+          push_static_text("x");
         else
-          push_text("-");
+          push_static_text("-");
 
       if ( (THIS_STAT->s.st_mode & S_IROTH) )
-        push_text("r");
+        push_static_text("r");
       else
-        push_text("-");
+        push_static_text("-");
 
       if ( (THIS_STAT->s.st_mode & S_IWOTH) )
-        push_text("w");
+        push_static_text("w");
       else
-        push_text("-");
+        push_static_text("-");
 
       if ( (THIS_STAT->s.st_mode & S_ISVTX) )
         if ( (THIS_STAT->s.st_mode & S_IXOTH) )
-          push_text("t");
+          push_static_text("t");
         else
-          push_text("T");
+          push_static_text("T");
       else
         if ( (THIS_STAT->s.st_mode & S_IXOTH) )
-          push_text("x");
+          push_static_text("x");
         else
-          push_text("-");
+          push_static_text("-");
 
       f_add(10);
       break;
@@ -837,7 +837,7 @@ static void stat__sprintf(INT32 args)
    switch (x)
    {
       case 'O':
-        push_text("Stat(%s %db)");
+        push_static_text("Stat(%s %db)");
         _stat_index(STAT_MODE_STRING);
         _stat_index(STAT_SIZE);
         f_sprintf(3);

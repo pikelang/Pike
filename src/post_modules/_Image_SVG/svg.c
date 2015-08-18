@@ -171,9 +171,9 @@ static void low__decode( INT32 args, int header_only )
     int span = gdk_pixbuf_get_rowstride( res );
     guchar *data = gdk_pixbuf_get_pixels( res );
 
-    push_text( "xsize" ); push_int( xs );
-    push_text( "ysize" ); push_int( ys );
-    ref_push_string( literal_type_string );  push_text( "image/svg");
+    push_static_text( "xsize" ); push_int( xs );
+    push_static_text( "ysize" ); push_int( ys );
+    ref_push_string( literal_type_string );  push_static_text( "image/svg");
     if( !header_only )
     {
       push_text( "Image.Image" );
@@ -214,10 +214,10 @@ static void low__decode( INT32 args, int header_only )
 	  }
 	}
       }
-      push_text( "image" ); push_object( io );
+      push_static_text( "image" ); push_object( io );
       if( ao )
       {
-	push_text( "alpha" ); push_object( ao );
+	push_static_text( "alpha" ); push_object( ao );
       }
     }
     f_aggregate_mapping( Pike_sp - osp );
@@ -244,9 +244,9 @@ static void low__decode( INT32 args, int header_only )
     do_resize(&width, &height, (void *)opts);
     _do_free_mapping(opts);
 
-    push_text( "xsize" ); push_int( width );
-    push_text( "ysize" ); push_int( height );
-    ref_push_string( literal_type_string );  push_text( "image/svg");
+    push_static_text( "xsize" ); push_int( width );
+    push_static_text( "ysize" ); push_int( height );
+    ref_push_string( literal_type_string );  push_static_text( "image/svg");
     if( !header_only )
     {
       struct svalue *image_image;
@@ -261,7 +261,7 @@ static void low__decode( INT32 args, int header_only )
       size_t stride;
       int x, y;
 
-      push_text( "Image.Image" );
+      push_static_text( "Image.Image" );
       APPLY_MASTER( "resolv", 1 );
 
       image_image = Pike_sp - 1;
@@ -285,8 +285,8 @@ static void low__decode( INT32 args, int header_only )
        *     here on failure to allocate the strings "image"
        *     or "alpha".
        */
-      push_text( "image" ); push_object( io );
-      push_text( "alpha" ); push_object( ao );
+      push_static_text( "image" ); push_object( io );
+      push_static_text( "alpha" ); push_object( ao );
 
       surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, width, height);
       cr = cairo_create(surface);
@@ -450,7 +450,7 @@ static void f_decode_layers( INT32 args )
 {
   low__decode( args, 0 );
   /* stack: mapping */
-  push_text( "Image.Layer" );
+  push_static_text( "Image.Layer" );
   APPLY_MASTER( "resolv", 1 );
   /* stack: mapping Image.Layer */
   stack_swap();
@@ -483,7 +483,7 @@ static void f_decode( INT32 args )
  */
 {
   low__decode( args, 0 );
-  push_text( "image" );
+  push_static_text( "image" );
   f_index( 2 );
 }
 #endif

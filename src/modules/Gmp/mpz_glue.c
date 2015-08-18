@@ -798,9 +798,9 @@ static void mpzmod__sprintf(INT32 args)
 
   case 'O':
     if (THIS_PROGRAM == mpzmod_program) {
-      push_text ("Gmp.mpz(");
+      push_static_text ("Gmp.mpz(");
       push_string (low_get_mpz_digits (THIS, 10));
-      push_text (")");
+      push_static_text (")");
       f_add (3);
       s = (--sp)->u.string;
       break;

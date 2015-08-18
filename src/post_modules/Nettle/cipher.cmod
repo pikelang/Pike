@@ -252,7 +252,7 @@ PIKECLASS Cipher
     /* Generate a random string of length @[size] on top of the stack. */
     static void low_make_key(INT32 size)
     {
-      push_text("Crypto.Random");
+      push_static_text("Crypto.Random");
       APPLY_MASTER("resolv",1);
       if(TYPEOF(Pike_sp[-1]) != T_OBJECT)
 	Pike_error("Failed to resolv Crypto.Random.\n");
@@ -1268,9 +1268,9 @@ PIKECLASS BlockCipher
       PIKEFUN string(0..255) name()
 	optflags OPT_TRY_OPTIMIZE;
       {
-	push_text("CBC(");
+	push_static_text("CBC(");
 	apply(THIS->object, "name", 0);
-	push_text(")");
+	push_static_text(")");
 	f_add(3);
       }
 
@@ -1609,7 +1609,7 @@ PIKECLASS BlockCipher
     {
       apply_external(1,  Nettle_BlockCipher_Nettle_BufferedCipher_inh_offset +
 		     f_Nettle_Cipher_name_fun_num, args);
-      push_text(".CFB");
+      push_static_text(".CFB");
       f_add(2);
     }
 
@@ -1792,9 +1792,9 @@ PIKECLASS BlockCipher
       PIKEFUN string(0..255) name()
 	optflags OPT_TRY_OPTIMIZE;
       {
-	push_text("CFB(");
+	push_static_text("CFB(");
 	apply(THIS->object, "name", 0);
-	push_text(")");
+	push_static_text(")");
 	f_add(3);
       }
 
@@ -2091,7 +2091,7 @@ PIKECLASS BlockCipher
     {
       apply_external(1,  Nettle_BlockCipher_Nettle_BufferedCipher_inh_offset +
 		     f_Nettle_Cipher_name_fun_num, args);
-      push_text(".CTR");
+      push_static_text(".CTR");
       f_add(2);
     }
 
@@ -2272,9 +2272,9 @@ PIKECLASS BlockCipher
       PIKEFUN string(0..255) name()
 	optflags OPT_TRY_OPTIMIZE;
       {
-	push_text("CTR(");
+	push_static_text("CTR(");
 	apply(THIS->object, "name", 0);
-	push_text(")");
+	push_static_text(")");
 	f_add(3);
       }
 
@@ -2486,7 +2486,7 @@ PIKECLASS BlockCipher
     {
       apply_external(1,  Nettle_BlockCipher_Nettle_BufferedCipher_inh_offset +
 		     f_Nettle_Cipher_name_fun_num, args);
-      push_text(".OFB");
+      push_static_text(".OFB");
       f_add(2);
     }
 
@@ -2667,9 +2667,9 @@ PIKECLASS BlockCipher
       PIKEFUN string(0..255) name()
 	optflags OPT_TRY_OPTIMIZE;
       {
-	push_text("OFB(");
+	push_static_text("OFB(");
 	apply(THIS->object, "name", 0);
-	push_text(")");
+	push_static_text(")");
 	f_add(3);
       }
 
@@ -3001,7 +3001,7 @@ PIKECLASS BlockCipher16
       optflags OPT_TRY_OPTIMIZE;
     {
       apply_external(1, f_Nettle_Cipher_name_fun_num, args);
-      push_text(".CCM");
+      push_static_text(".CCM");
       f_add(2);
     }
 
@@ -3137,7 +3137,7 @@ PIKECLASS BlockCipher16
       PIKEFUN string(8bit) name()
       {
 	apply(THIS->ctr->object, "name", args);
-	push_text(".CCM");
+	push_static_text(".CCM");
 	f_add(2);
       }
 
@@ -3518,7 +3518,7 @@ PIKECLASS BlockCipher16
     PIKEFUN string(7bit) name()
     {
       apply_external(1, f_Nettle_Cipher_name_fun_num, args);
-      push_text(".CCM8");
+      push_static_text(".CCM8");
       f_add(2);
     }
 
@@ -3578,7 +3578,7 @@ PIKECLASS BlockCipher16
       optflags OPT_TRY_OPTIMIZE;
     {
       apply_external(1, f_Nettle_Cipher_name_fun_num, args);
-      push_text(".EAX");
+      push_static_text(".EAX");
       f_add(2);
     }
 
@@ -3736,7 +3736,7 @@ PIKECLASS BlockCipher16
       PIKEFUN string(8bit) name()
       {
 	apply(THIS->object, "name", args);
-	push_text(".EAX");
+	push_static_text(".EAX");
 	f_add(2);
       }
 
@@ -4030,7 +4030,7 @@ PIKECLASS BlockCipher16
       optflags OPT_TRY_OPTIMIZE;
     {
       apply_external(1, f_Nettle_Cipher_name_fun_num, args);
-      push_text(".GCM");
+      push_static_text(".GCM");
       f_add(2);
     }
 
@@ -4209,7 +4209,7 @@ PIKECLASS BlockCipher16
 	optflags OPT_TRY_OPTIMIZE;
       {
 	apply(THIS->object, "name", 0);
-	push_text(".GCM");
+	push_static_text(".GCM");
 	f_add(2);
       }
 
@@ -5320,7 +5320,7 @@ pike_des3_set_key(void *c,
   switch( length ) {
   case 7+7:
     push_string(make_shared_binary_string(key, length));
-    push_text("1234567");
+    push_static_text("1234567");
     f_add(2);
     f_Nettle_DES3_fix_parity(1);
 
