@@ -1147,14 +1147,15 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
       if (version >= PROTOCOL_TLS_1_3) {
         // The client will use the main keys from this point on.
         handle_change_cipher(1);
-      } else {
-	send_packet(change_cipher_packet());
-	// We've already received the CCS from the peer.
-	expect_change_cipher--;
       }
 
       if (!reuse)
       {
+	if (version < PROTOCOL_TLS_1_3) {
+	  send_packet(change_cipher_packet());
+	  // We've already received the CCS from the peer.
+	  expect_change_cipher--;
+	}
         if(version == PROTOCOL_SSL_3_0)
           send_packet(finished_packet("SRVR"));
         else if(version < PROTOCOL_TLS_1_3)
