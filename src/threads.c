@@ -1892,7 +1892,7 @@ int num_lwps = 1;
 /*! @class Thread
  */
 
-/*! @decl void create(function(mixed...:void) f, mixed ... args)
+/*! @decl void create(function(mixed...:mixed|void) f, mixed ... args)
  *!
  *! This function creates a new thread which will run simultaneously
  *! to the rest of the program. The new thread will call the function
@@ -3360,7 +3360,7 @@ void th_init(void)
   PIKE_MAP_VARIABLE("result", OFFSETOF(thread_state, result),
 		    tMix, T_MIXED, 0);
   ADD_FUNCTION("create",f_thread_create,
-	       tFuncV(tNone,tMixed,tVoid),
+	       tFuncV(tMixed,tMixed,tVoid),
 	       ID_PROTECTED);
   ADD_FUNCTION("backtrace",f_thread_backtrace,tFunc(tNone,tArray),0);
   ADD_FUNCTION("wait",f_thread_id_result,tFunc(tNone,tMix),0);
