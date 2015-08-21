@@ -5,10 +5,10 @@
 // Marcus Comstedt 1996-1999
 
 
-//! RFC1521, the @b{Multipurpose Internet Mail Extensions@} memo, defines a
+//! @rfc{1521@}, the @b{Multipurpose Internet Mail Extensions@} memo, defines a
 //! structure which is the base for all messages read and written by
 //! modern mail and news programs.  It is also partly the base for the
-//! HTTP protocol.  Just like RFC822, MIME declares that a message should
+//! HTTP protocol.  Just like @rfc{822@}, MIME declares that a message should
 //! consist of two entities, the headers and the body.  In addition, the
 //! following properties are given to these two entities:
 //!
@@ -270,7 +270,7 @@ string encode( string data, string encoding, void|string filename,
 }
 
 //! Extracts the textual content and character set from an @i{encoded word@}
-//! as specified by RFC1522.  The result is an array where the first element
+//! as specified by @rfc{1522@}.  The result is an array where the first element
 //! is the raw text, and the second element the name of the character set.
 //! If the input string is not an encoded word, the result is still an array,
 //! but the char set element will be set to 0.
@@ -303,7 +303,7 @@ array(string) decode_word( string word )
     return ({ word, 0 });
 }
 
-//! Create an @i{encoded word@} as specified in RFC1522 from an array
+//! Create an @i{encoded word@} as specified in @rfc{1522@} from an array
 //! containing a raw text string and a char set name.
 //!
 //! The text will be transfer encoded according to the encoding argument,
@@ -404,7 +404,7 @@ array(array(string)) decode_words_text( string txt )
 //! Like @[MIME.decode_words_text()], but the extracted strings are
 //! also remapped from their specified character encoding into UNICODE,
 //! and then pasted together.  The result is thus a string in the original
-//! text format, without RFC1522 escapes, and with all characters in UNICODE
+//! text format, without @rfc{1522@} escapes, and with all characters in UNICODE
 //! encoding.
 //!
 //! @seealso
@@ -437,7 +437,7 @@ array(array(string)|int) decode_words_tokenized( string phrase, int|void flags )
 //! Like @[MIME.decode_words_tokenized()], but the extracted atoms are
 //! also remapped from their specified character encoding into UNICODE.
 //! The result is thus identical to that of @[MIME.tokenize()], but
-//! without RFC1522 escapes, and with all characters in UNICODE encoding.
+//! without @rfc{1522@} escapes, and with all characters in UNICODE encoding.
 //!
 //! @seealso
 //! @[MIME.decode_words_tokenized_labled_remapped]
@@ -496,7 +496,7 @@ decode_words_tokenized_labled( string phrase, int|void flags )
 //! Like @[MIME.decode_words_tokenized_labled()], but the extracted words are
 //! also remapped from their specified character encoding into UNICODE.
 //! The result is identical to that of @[MIME.tokenize_labled()], but
-//! without RFC1522 escapes, and with all characters in UNICODE encoding.
+//! without @rfc{1522@} escapes, and with all characters in UNICODE encoding.
 //!
 array(array(string|int))
 decode_words_tokenized_labled_remapped(string phrase, int|void flags)
@@ -715,7 +715,7 @@ string encode_words_quoted_labled_remapped(array(array(string|int)) phrase,
 
 //! Provide a reasonable default for the subtype field.
 //!
-//! Some pre-RFC1521 mailers provide only a type and no subtype in the
+//! Some pre-@rfc{1521@} mailers provide only a type and no subtype in the
 //! Content-Type header field.  This function can be used to obtain a
 //! reasonable default subtype given the type of a message.  (This is done
 //! automatically by the @[MIME.Message] class.)
