@@ -587,6 +587,14 @@ string parse_text(Node n, void|String.Buffer ret) {
       ret->add("<font face='courier'>", ref, "</font>");
       break;
 
+    case "rfc":
+      string rfc = parse_text(c);
+      sscanf(rfc, "%[0-9]", rfc);
+      if (sizeof(rfc) < 4) rfc = ("0000" + rfc)[<3..];
+      ret->add("<b><a href='http://pike.lysator.liu.se/docs/ietf/rfc/",
+	       rfc[..<2], "/rfc", rfc, ".xml'>RFC ", rfc, "</a></b>");
+      break;
+
     case "dl":
       ret->add("<dl>", map(c->get_elements("group"), parse_text)*"", "</dl>");
       break;

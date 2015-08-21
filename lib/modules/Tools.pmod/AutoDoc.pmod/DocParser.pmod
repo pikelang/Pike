@@ -75,6 +75,7 @@ mapping(string : DocTokenType) keywordtype =
   "sub" : BRACEKEYWORD,
   "sup" : BRACEKEYWORD,
   "ref" : BRACEKEYWORD,
+  "rfc" : BRACEKEYWORD,
   "xml" : BRACEKEYWORD,  // well, not really, but....
   "expr" : BRACEKEYWORD,
   "image" : BRACEKEYWORD,
