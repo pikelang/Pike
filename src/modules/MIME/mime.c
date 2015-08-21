@@ -5,7 +5,7 @@
 */
 
 /*
- * RFC1521 functionality for Pike
+ * @rfc{1521@} functionality for Pike
  *
  * Marcus Comstedt 1996-1999
  */
@@ -930,7 +930,7 @@ static void low_tokenize( const char *funname, INT32 args, int mode )
 
 /*! @decl array(string|int) tokenize(string header, int|void flags)
  *!
- *! A structured header field, as specified by RFC822, is constructed from
+ *! A structured header field, as specified by @rfc{822@}, is constructed from
  *! a sequence of lexical elements.
  *!
  *! @param header
@@ -973,10 +973,10 @@ static void low_tokenize( const char *funname, INT32 args, int mode )
  *! domain-literal @tt{[127.0.0.1]@} from the quoted-string
  *! @tt{"[127.0.0.1]"@}. Hopefully this won't cause any problems.
  *! Domain-literals are used seldom, if at all, anyway...
- *! 
- *! The set of special-characters is the one specified in RFC1521
+ *!
+ *! The set of special-characters is the one specified in @rfc{1521@}
  *! (i.e. @expr{"<", ">", "@@", ",", ";", ":", "\", "/", "?", "="@}),
- *! and not the set specified in RFC822.
+ *! and not the set specified in @rfc{822@}.
  *!
  *! @seealso
  *!   @[MIME.quote()], @[tokenize_labled()],
