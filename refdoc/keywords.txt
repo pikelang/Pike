@@ -654,6 +654,17 @@ Examples:     My favourite class is @ref{Vanilla.Ice.Cream@}, it
 XML:          <ref>...</ref>
 _______________________________________________________________________________
 
+Keyword:      @rfc{ ... @}
+Description:  A reference to an RFC.
+Children:     RFC number.
+Groups with:  -
+
+Examples:
+              The @[MIME] module implements @rfc{1521@}.
+
+XML:          <rfc>...</rfc>
+_______________________________________________________________________________
+
 Keyword:      @section - @endsection
 Description:  Begin a new section in the text. Sections cannot be nested.
 Arguments:    <title>
