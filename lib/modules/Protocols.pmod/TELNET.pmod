@@ -14,10 +14,10 @@
 #define DWRITE(X ...)
 #endif /* TELNET_DEBUG */
 
-//! Implements TELNET as described by RFC 764 and RFC 854
+//! Implements TELNET as described by @rfc{764@} and @rfc{854@}.
 //!
 //! Also implements the Q method of TELNET option negotiation
-//! as specified by RFC 1143.
+//! as specified by @rfc{1143@}.
 
 /* Extract from RFC 1143:
  *
@@ -331,7 +331,7 @@ class protocol
   protected constant OPPOSITE = 8;
 
   //! Negotiation states of all WILL/WON'T options.
-  //! See RFC 1143 for a description of the states.
+  //! See @rfc{1143@} for a description of the states.
   protected array(int) remote_options = allocate(256,NO);
   protected array(int) local_options = allocate(256,NO);
 

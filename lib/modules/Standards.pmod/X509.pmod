@@ -2,7 +2,7 @@
 #require constant(Crypto.Hash)
 //#pragma strict_types
 
-//! Functions to generate and validate RFC2459 style X.509 v3
+//! Functions to generate and validate @rfc{2459@} style X.509 v3
 //! certificates.
 
 constant dont_dump_module = 1;
@@ -917,7 +917,7 @@ class TBSCertificate
   //
 
   //! Set if the certificate contains a valid basicConstraints
-  //! extension. RFC3280 4.2.1.10.
+  //! extension. @rfc{3280@} 4.2.1.10.
   int(0..1) ext_basicConstraints;
 
   //! If set, the certificate may be used as a CA certificate, i.e.
@@ -925,11 +925,11 @@ class TBSCertificate
   int(0..1) ext_basicConstraints_cA;
 
   //! The maximum number of certificates that may follow this
-  //! certificate in a certificate chain. @expr{0@} in case no limit is
-  //! imposed. Note that this variable is off by one compared to the
-  //! RFC 3280 definition, which only counts intermediate certificates
-  //! (i.e. 0 intermediates means this variable would be 1, as in one
-  //! following certificate).
+  //! certificate in a certificate chain. @expr{0@} in case no limit
+  //! is imposed. Note that this variable is off by one compared to
+  //! the @rfc{3280@} definition, which only counts intermediate
+  //! certificates (i.e. 0 intermediates means this variable would be
+  //! 1, as in one following certificate).
   int ext_basicConstraints_pathLenConstraint;
 
   protected int(0..1) parse_basicConstraints(Object o)
@@ -968,7 +968,7 @@ class TBSCertificate
   }
 
   //! Set if the certificate contains a valid authorityKeyIdentifier
-  //! extension. RFC3280 4.2.1.1.
+  //! extension. @rfc{3280@} 4.2.1.1.
   int(0..1) ext_authorityKeyIdentifier;
 
   //! Set to the KeyIdentifier, if set in the extension.
@@ -1008,7 +1008,8 @@ class TBSCertificate
   }
 
   //! Set to the value of the SubjectKeyIdentifier if the certificate
-  //! contains the subjectKeyIdentifier extension. RFC3280 4.2.1.2.
+  //! contains the subjectKeyIdentifier extension. @rfc{3280@}
+  //! 4.2.1.2.
   string ext_subjectKeyIdentifier;
 
   protected int(0..1) parse_subjectKeyIdentifier(Object o)
@@ -1019,8 +1020,8 @@ class TBSCertificate
     return 1;
   }
 
-  //! Set to the value of the KeyUsage if the certificate
-  //! contains the keyUsage extension. RFC3280 4.2.1.3.
+  //! Set to the value of the KeyUsage if the certificate contains the
+  //! keyUsage extension. @rfc{3280@} 4.2.1.3.
   keyUsage ext_keyUsage;
 
   protected int(0..1) parse_keyUsage(Object o)
@@ -1044,7 +1045,7 @@ class TBSCertificate
   //! Set to the list of extended key usages from anyExtendedKeyUsage,
   //! if the certificate contains the extKeyUsage extensions. These
   //! Identifier objects are typically found in
-  //! @[.PKCS.Identifiers.reverse_kp_ids]. RFC3280 4.2.1.13.
+  //! @[.PKCS.Identifiers.reverse_kp_ids]. @rfc{3280@} 4.2.1.13.
   array(Identifier) ext_extKeyUsage;
 
   protected int(0..1) parse_extKeyUsage(Object o)
@@ -1108,7 +1109,7 @@ class TBSCertificate
 
 }
 
-//! Creates the ASN.1 TBSCertificate sequence (see RFC2459 section
+//! Creates the ASN.1 TBSCertificate sequence (see @rfc{2459@} section
 //! 4.1) to be signed (TBS) by the CA. version is explicitly set to
 //! v3, and @[extensions] is optionally added to the sequence.
 //! issuerUniqueID and subjectUniqueID are not supported.
@@ -1128,11 +1129,11 @@ TBSCertificate make_tbs(Sequence issuer, Sequence algorithm,
   return tbs;
 }
 
-//! Creates the ASN.1 TBSCertificate sequence (see RFC2459 section
+//! Creates the ASN.1 TBSCertificate sequence (see @rfc{2459@} section
 //! 4.1) to be signed (TBS) by the CA. version is explicitly set to
 //! v3, validity is calculated based on time and @[ttl], and
-//! @[extensions] is optionally added to the sequence.
-//! issuerUniqueID and subjectUniqueID are not supported.
+//! @[extensions] is optionally added to the sequence.  issuerUniqueID
+//! and subjectUniqueID are not supported.
 //!
 //! @note
 //!   Prior to Pike 8.0 this function returned a plain @[Sequence] object.

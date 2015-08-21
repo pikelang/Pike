@@ -4,7 +4,7 @@
 
 //! Support for the Domain Name System protocol.
 //!
-//! RFC 1034, RFC 1035 and RFC 2308
+//! Implements @rfc{1034@}, @rfc{1035@} and @rfc{2308@}.
 
 protected void send_reply(mapping r, mapping q, mapping m, Stdio.UDP udp);
 
@@ -88,10 +88,11 @@ enum EntryType
   //! Type - mail rename domain name (Obsolete)
   T_MR=9,
 
-  //! Type - null RR (Obsolete RFC 1035)
+  //! Type - null RR (Obsolete @rfc{1035@})
   T_NULL=10,
 
-  //! Type - well known service description (Obsolete RFC 1123, RFC 1127)
+  //! Type - well known service description (Obsolete @rfc{1123@} and
+  //! @rfc{1127@})
   T_WKS=11,
 
   //! Type - domain name pointer
@@ -112,44 +113,44 @@ enum EntryType
   //! Type - Responsible Person
   T_RP=17,
 
-  //! Type - AFC database record (RFC 1183)
+  //! Type - AFC database record (@rfc{1183@})
   T_AFSDB=18,
 
-  //! Type - X25 PSDN address (RFC 1183)
+  //! Type - X25 PSDN address (@rfc{1183@})
   T_X25=19,
 
-  //! Type - ISDN address (RFC 1183)
+  //! Type - ISDN address (@rfc{1183@})
   T_ISDN=20,
 
-  //! Type - Route Through (RFC 1183)
+  //! Type - Route Through (@rfc{1183@})
   T_RT=21,
 
-  //! Type - OSI Network Service Access Protocol (RFC 1348, RFC 1637,
-  //!                                             RFC 1706)
+  //! Type - OSI Network Service Access Protocol (@rfc{1348@},
+  //! @rfc{1637@} and @rfc{1706@})
   T_NSAP=22,
 
-  //! Type - OSI NSAP Pointer (RFC 1348, Obsolete RFC 1637)
+  //! Type - OSI NSAP Pointer (@rfc{1348@} and Obsolete @rfc{1637@})
   T_NSAP_PTR=23,
 
-  //! Type - Signature (RFC 2535)
+  //! Type - Signature (@rfc{2535@})
   T_SIG=24,
 
-  //! Type - Key record (RFC 2535 and RFC 2930)
+  //! Type - Key record (@rfc{2535@} and @rfc{2930@})
   T_KEY=25,
 
-  //! Type - Pointer to X.400 mapping information (RFC 1664)
+  //! Type - Pointer to X.400 mapping information (@rfc{1664@})
   T_PX=26,
 
-  //! Type - Global Position (RFC 1712 Obsolete use LOC).
+  //! Type - Global Position (@rfc{1712@} Obsolete use LOC).
   T_GPOS=27,
 
-  //! Type - IPv6 address record (RFC 1886)
+  //! Type - IPv6 address record (@rfc{1886@})
   T_AAAA=28,
 
-  //! Type - Location Record (RFC 1876)
+  //! Type - Location Record (@rfc{1876@})
   T_LOC=29,
 
-  //! Type - Next (RFC 2065, Obsolete RFC 3755)
+  //! Type - Next (@rfc{2065@} and Obsolete @rfc{3755@})
   T_NXT=30,
 
   //! Type - Nimrod Endpoint IDentifier (draft)
@@ -158,70 +159,70 @@ enum EntryType
   //! Type - Nimrod Locator (draft)
   T_NIMLOC=32,
 
-  //! Type - Service location record (RFC 2782)
+  //! Type - Service location record (@rfc{2782@})
   T_SRV=33,
 
   //! Type - ATM End System Address (af-saa-0069.000)
   T_ATMA=34,
 
-  //! Type - NAPTR (RFC 3403)
+  //! Type - NAPTR (@rfc{3403@})
   T_NAPTR=35,
 
-  //! Type - Key eXchanger record (RFC 2230)
+  //! Type - Key eXchanger record (@rfc{2230@})
   T_KX=36,
 
-  //! Type - Certificate Record (RFC 4398)
+  //! Type - Certificate Record (@rfc{4398@})
   T_CERT=37,
 
-  //! Type - IPv6 address record (RFC 2874 Obsolete RFC 6563)
+  //! Type - IPv6 address record (@rfc{2874@} and Obsolete @rfc{6563@})
   T_A6=38,
 
-  //! Type - Delegation Name (RFC 2672)
+  //! Type - Delegation Name (@rfc{2672@})
   T_DNAME=39,
 
   //! Type - Kitchen Sink (draft)
   T_SINK=40,
 
-  //! Type - Option (RFC 2671)
+  //! Type - Option (@rfc{2671@})
   T_OPT=41,
 
-  //! Type - Address Prefix List (RFC 3123)
+  //! Type - Address Prefix List (@rfc{3123@})
   T_APL=42,
 
-  //! Type - Delegation Signer (RFC 4034)
+  //! Type - Delegation Signer (@rfc{4034@})
   T_DS=43,
 
-  //! Type - SSH Public Key Fingerprint (RFC 4255)
+  //! Type - SSH Public Key Fingerprint (@rfc{4255@})
   T_SSHFP=44,
 
-  //! Type - IPsec Key (RFC 4025)
+  //! Type - IPsec Key (@rfc{4025@})
   T_IPSECKEY=45,
 
-  //! Type - DNSSEC signature (RFC 4034)
+  //! Type - DNSSEC signature (@rfc{4034@})
   T_RRSIG=46,
 
-  //! Type - Next-Secure record (RFC 4034)
+  //! Type - Next-Secure record (@rfc{4034@})
   T_NSEC=47,
 
-  //! Type - DNS Key record (RFC 4034)
+  //! Type - DNS Key record (@rfc{4034@})
   T_DNSKEY=48,
 
-  //! Type - DHCP identifier (RFC 4701)
+  //! Type - DHCP identifier (@rfc{4701@})
   T_DHCID=49,
 
-  //! Type - NSEC record version 3 (RFC 5155)
+  //! Type - NSEC record version 3 (@rfc{5155@})
   T_NSEC3=50,
 
-  //! Type - NSEC3 parameters (RFC 5155)
+  //! Type - NSEC3 parameters (@rfc{5155@})
   T_NSEC3PARAM=51,
 
-  //! Type - TLSA certificate association (RFC 6698)
+  //! Type - TLSA certificate association (@rfc{6698@})
   T_TLSA=52,
 
-  //! Type - Host Identity Protocol (RFC 5205)
+  //! Type - Host Identity Protocol (@rfc{5205@})
   T_HIP=55,
 
-  //! Type - SPF - Sender Policy Framework (RFC 4408)
+  //! Type - SPF - Sender Policy Framework (@rfc{4408@})
   T_SPF=99,
 
   // UserDB via DNS?
@@ -230,16 +231,16 @@ enum EntryType
   T_GID=102,
   T_UNSPEC=103,
 
-  //! Type - Secret key record (RFC 2930)
+  //! Type - Secret key record (@rfc{2930@})
   T_TKEY=249,
 
-  //! Type - Transaction Signature (RFC 2845)
+  //! Type - Transaction Signature (@rfc{2845@})
   T_TSIG=250,
 
-  //! Type - Incremental Zone Transfer (RFC 1996)
+  //! Type - Incremental Zone Transfer (@rfc{1996@})
   T_IXFR=251,
 
-  //! Type - Authoritative Zone Transfer (RFC 1035)
+  //! Type - Authoritative Zone Transfer (@rfc{1035@})
   T_AXFR=252,
 
   //! Type - Mail Box (MB, MG or MR) (Obsolete - use MX)
@@ -251,13 +252,13 @@ enum EntryType
   //! Type - ANY - A request for all records
   T_ANY=255,
 
-  //! Type - Certificate Authority Authorization (RFC 6844)
+  //! Type - Certificate Authority Authorization (@rfc{6844@})
   T_CAA=257,
 
   //! Type - DNSSEC Trust Authorities (draft)
   T_TA=32768,
 
-  //! Type - DNSSEC Lookaside Validation Record (RFC 4431)
+  //! Type - DNSSEC Lookaside Validation Record (@rfc{4431@})
   T_DLV=32769,
 };
 
@@ -270,31 +271,31 @@ enum DNSKEY_Flags {
 //! DNSSEC Protocol types.
 //!
 //! @note
-//!   RFC 4034 obsoleted all but @[DNSSEC_DNSSEC].
+//!   @rfc{4034@} obsoleted all but @[DNSSEC_DNSSEC].
 enum DNSSEC_Protocol {
   DNSSEC_TLS		= 1,	//! Reserved for use by TLS.
   DNSSEC_EMAIL		= 2,	//! Reserved for use by SMTP et al.
-  DNSSEC_DNSSEC		= 3,	//! Key for use by DNSSEC. RFC 4034 2.1.2.
+  DNSSEC_DNSSEC		= 3,	//! Key for use by DNSSEC. @rfc{4034@} 2.1.2.
   DNSSEC_IPSEC		= 4,	//! Reserved for use by IPSEC.
   DNSSEC_ALL		= 255,	//! Any use. Discouraged.
 };
 
 //! DNSSEC Algorithm types.
 enum DNSSES_Algorithm {
-  DNSSEC_RSAMD5		= 1,	//! RSA/MD5 RFC 2537.
-  DNSSEC_DH		= 2,	//! Diffie-Hellman RFC 2539.
-  DNSSEC_DSA		= 3,	//! DSA/SHA1 RFC 2536.
+  DNSSEC_RSAMD5		= 1,	//! RSA/MD5 @rfc{2537@}.
+  DNSSEC_DH		= 2,	//! Diffie-Hellman @rfc{2539@}.
+  DNSSEC_DSA		= 3,	//! DSA/SHA1 @rfc{2536@}.
   DNSSEC_ECC		= 4,
-  DNSSEC_RSASHA1	= 5,	//! RSA/SHA1 RFC 3110.
+  DNSSEC_RSASHA1	= 5,	//! RSA/SHA1 @rfc{3110@}.
 
   DNSSEC_INDIRECT	= 252,
-  DNSSEC_PRIVATEDNS	= 253,	//! Private algorithm DNS-based RFC 4035 A.1.1.
-  DNSSEC_PRIVATEOID	= 254,	//! Private algorithm OID-based RFC 4035 A.1.1.
+  DNSSEC_PRIVATEDNS	= 253,	//! Private algorithm DNS-based @rfc{4035@} A.1.1.
+  DNSSEC_PRIVATEOID	= 254,	//! Private algorithm OID-based @rfc{4035@} A.1.1.
 };
 
 //! DNSSEC Digest types.
 enum DNSSEC_Digests {
-  DNSSEC_SHA1		= 1,	//! SHA1 digest RFC 4035 A.2.
+  DNSSEC_SHA1		= 1,	//! SHA1 digest @rfc{4035@} A.2.
 };
 
 int safe_bind(Stdio.UDP udp, string|int port, string|void device)
@@ -608,7 +609,7 @@ class protocol
   //!             @member string "os"
   //!           @endmapping
   //!         @value T_SRV
-  //!           RFC 2052 and RFC 2782.
+  //!           @rfc{2052@} and @rfc{2782@}.
   //!           @mapping
   //!             @member int "priority"
   //!             @member int "weight"
@@ -652,7 +653,7 @@ class protocol
   //!             @member int "minimum"
   //!               Note: For historical reasons this entry is named
   //!               @expr{"minimum"@}, but it contains the TTL for
-  //!               negative answers (RFC 2308).
+  //!               negative answers (@rfc{2308@}).
   //!           @endmapping
   //!         @value T_NAPTR
   //!           @mapping
@@ -1703,10 +1704,10 @@ class client
     });
   }
 
-  //!	Queries the service record (RFC 2782) from the default or given
-  //!	DNS server. The result is an array of arrays with the
-  //!   following six elements for each record. The array is
-  //!   sorted according to the priority of each record.
+  //!	Queries the service record (@rfc{2782@}) from the default or
+  //!	given DNS server. The result is an array of arrays with the
+  //!	following six elements for each record. The array is sorted
+  //!	according to the priority of each record.
   //!
   //!   Each element of the array returned represents a service
   //!   record. Each service record contains the following:

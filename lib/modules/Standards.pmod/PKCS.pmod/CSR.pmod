@@ -1,4 +1,5 @@
-//! Handling of Certificate Signing Requests (PKCS-10, RFC 2314, RFC 2986)
+//! Handling of Certificate Signing Requests (PKCS-10, @rfc{2314@},
+//! @rfc{2986@})
 
 #pike __REAL_VERSION__
 // #pragma strict_types

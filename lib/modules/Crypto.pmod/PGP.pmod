@@ -1,5 +1,5 @@
 
-//! PGP stuff. See RFC 4880.
+//! PGP stuff. See @rfc{4880@}.
 
 #pike __REAL_VERSION__
 #require constant(Crypto.HashState)

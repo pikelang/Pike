@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 //! This class implements URI parsing and resolving of relative references to
-//! absolute form, as defined in RFC 2396 and RFC 3986.
+//! absolute form, as defined in @rfc{2396@} and @rfc{3986@}.
 
 // Implemented by Johan Sundström and Johan Schön.
 
@@ -10,7 +10,7 @@
 //! Scheme component of URI
 string scheme;
 
-//! Authority component of URI (formerly called net_loc, from RFC 2396
+//! Authority component of URI (formerly called net_loc, from @rfc{2396@}
 //! known as authority)
 string authority;
 
@@ -571,13 +571,13 @@ string http_encode(string in)
   return replace(in, [array(string)]url_from, [array(string)]url_to);
 }
 
-//! Return the query part, coded according to RFC 1738, or zero.
+//! Return the query part, coded according to @rfc{1738@}, or zero.
 string get_http_query() {
   return query;
 }
 
-//! Return the path and query part of the URI, coded according to RFC
-//! 1738.
+//! Return the path and query part of the URI, coded according to
+//! @rfc{1738@}.
 string get_http_path_query() {
   string q = get_http_query();
   return http_encode(((path||"")/"/")[*])*"/" + (q?"?"+q:"");

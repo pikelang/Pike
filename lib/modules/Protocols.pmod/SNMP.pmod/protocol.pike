@@ -2,20 +2,9 @@
 
 //:
 //: Honza Petrous, 2000-10-07 (on the 'coding party' after user conference :)
-//! SNMP protocol implementation for Pike
-//!
-//! RFCs:
-//!
-//!  implemented (yet):
-//!      1155-7 : v1
-//!
-//!      1901-4 : v2/community (Bulk ops aren't implemented!)
-//!
-//!  planned:
-//!	 2742   : agentX
-//!
-//!      2570   : v3 description
-//!
+
+//! SNMP protocol implementation for Pike, implementing @rfc{1155@}
+//! and @rfc{1901@}.
 
 #include "snmp_globals.h"
 #include "snmp_errors.h"

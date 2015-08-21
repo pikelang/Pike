@@ -9,7 +9,7 @@
 
 #pike __REAL_VERSION__
 
-//! Contains all UDP ports assigned for private use as of RFC 1700
+//! Contains all UDP ports assigned for private use as of @rfc{1700@}.
 constant private_udp = ([
   "mail":              24,	//    any private mail system
   "printer":           35,	//    any private printer server
@@ -20,7 +20,7 @@ constant private_udp = ([
   "terminal-link":     87,	//    any private terminal link
 ]);
 
-//! Contains all TCP ports assigned for private use as of RFC 1700
+//! Contains all TCP ports assigned for private use as of @rfc{1700@}.
 constant private_tcp = ([
   "mail":              24,	//    any private mail system
   "printer":           35,	//    any private printer server
@@ -31,7 +31,7 @@ constant private_tcp = ([
   "terminal-link":     87,	//    any private terminal link
 ]);
 
-//! Contains all non-private UDP port assignments as of RFC 1700
+//! Contains all non-private UDP port assignments as of @rfc{1700@}.
 constant udp = ([
   "tcpmux":             1,	//    TCP Port Service Multiplexer
   "compressnet-mgmt":   2,	//    Management Utility
@@ -708,7 +708,7 @@ constant udp = ([
   "isode-dua":      17007,	//
 ]);
 
-//! Contains all non-private TCP port assignments as of RFC 1700
+//! Contains all non-private TCP port assignments as of @rfc{1700@}.
 //! Extended with some non-official.
 constant tcp = ([
   "tcpmux":           	1,	//    TCP Port Service Multiplexer

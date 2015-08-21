@@ -3,7 +3,7 @@
 #require constant(Nettle.MD2)
 
 //! MD2 is a message digest function constructed by Burton Kaliski,
-//! and is described in RFC 1319. It outputs message digests of 128
+//! and is described in @rfc{1319@}. It outputs message digests of 128
 //! bits, or 16 octets.
 
 inherit Nettle.MD2;

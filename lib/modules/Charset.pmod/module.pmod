@@ -10,7 +10,7 @@ protected private inherit _Charset;
 //! character case is ignored, as are the most common non-alaphanumeric
 //! characters appearing in character set names. E.g. @expr{"iso-8859-1"@}
 //! works just as well as @expr{"ISO_8859_1"@}. All encodings specified in
-//! RFC 1345 are supported.
+//! @rfc{1345@} are supported.
 //!
 //! First of all the Charset module is capable of handling the following
 //! encodings of Unicode:
@@ -455,7 +455,7 @@ void set_decoder(string name, Decoder decoder)
 //!   "latin1", "l1", "ansi_x3.4-1968", "iso_646.irv:1991", "iso646-us",
 //!   "iso-ir-6", "us", "us-ascii", "ascii", "cp367", "ibm367", "cp819",
 //!   "ibm819", "iso-2022" (of various kinds), "utf-7", "utf-8" and
-//!   various encodings as described by RFC1345.
+//!   various encodings as described by @rfc{1345@}.
 //! @throws
 //!   If the asked-for @[name] was not supported, an error is thrown.
 Decoder decoder(string name)
@@ -792,7 +792,7 @@ void set_encoder(string name, Encoder encoder)
 //!   "latin1", "l1", "ansi_x3.4-1968", "iso_646.irv:1991", "iso646-us",
 //!   "iso-ir-6", "us", "us-ascii", "ascii", "cp367", "ibm367", "cp819",
 //!   "ibm819", "iso-2022" (of various kinds), "utf-7", "utf-8" and
-//!   various encodings as described by RFC1345.
+//!   various encodings as described by @rfc{1345@}.
 //!
 //! @param replacement
 //!   The string to use for characters that cannot be represented in

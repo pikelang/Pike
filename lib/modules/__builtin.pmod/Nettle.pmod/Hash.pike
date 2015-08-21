@@ -81,7 +81,7 @@ variant string hash(Stdio.File|Stdio.Buffer|String.Buffer|System.Memory source,
 //!
 //! HMAC (Hashing for Message Authenticity Control) for the hash algorithm.
 //!
-//! RFC 2104.
+//! @rfc{2104@}.
 //!
 //! @seealso
 //!   @[Crypto.HMAC]
@@ -371,7 +371,7 @@ string crypt_hash(string password, string salt, int rounds)
   return (string)ret;
 }
 
-//! Password Based Key Derivation Function #1 from RFC 2898. This
+//! Password Based Key Derivation Function #1 from @rfc{2898@}. This
 //! method is compatible with the one from PKCS#5 v1.5.
 //!
 //! @param password
@@ -389,9 +389,9 @@ string crypt_hash(string password, string salt, int rounds)
 //!   Returns the derived key.
 //!
 //! @note
-//!   RFC 2898 does not recommend this function for anything else than
-//!   compatibility with existing applications, due to the limits in
-//!   the length of the generated keys.
+//!   @rfc{2898@} does not recommend this function for anything else
+//!   than compatibility with existing applications, due to the limits
+//!   in the length of the generated keys.
 //!
 //! @seealso
 //!   @[hkdf()], @[pbkdf2()], @[openssl_pbkdf()], @[crypt_password()]
@@ -414,7 +414,7 @@ string pbkdf1(string password, string salt, int rounds, int bytes)
   return res[..bytes-1];
 }
 
-//! Password Based Key Derivation Function #2 from RFC 2898, PKCS#5
+//! Password Based Key Derivation Function #2 from @rfc{2898@}, PKCS#5
 //! v2.0.
 //!
 //! @param password
@@ -456,12 +456,13 @@ string pbkdf2(string password, string salt, int rounds, int bytes)
   return res[..bytes-1];
 }
 
-//! HMAC-based Extract-and-Expand Key Derivation Function, HKDF, RFC
-//! 5869. This is very similar to @[pbkdf2], with a few important
-//! differences. HKDF can use an "info" string that binds a generated
-//! password to a specific use or application (e.g. port number or
-//! cipher suite). It does not however support multiple rounds of
-//! hashing to add computational cost to brute force attacks.
+//! HMAC-based Extract-and-Expand Key Derivation Function, HKDF,
+//! @rfc{5869@}. This is very similar to @[pbkdf2], with a few
+//! important differences. HKDF can use an "info" string that binds a
+//! generated password to a specific use or application (e.g. port
+//! number or cipher suite). It does not however support multiple
+//! rounds of hashing to add computational cost to brute force
+//! attacks.
 //!
 //! @param password
 //!   Password for the keygenerator.
@@ -509,7 +510,7 @@ string hkdf(string password, string salt, string info, int bytes)
 //! @fixme
 //!   Derived from OpenSSL. Is there any proper specification?
 //!
-//!   It seems to be related to PBKDF1 from RFC2898.
+//!   It seems to be related to PBKDF1 from @rfc{2898@}.
 //!
 //! @seealso
 //!   @[pbkdf1()], @[pbkdf2()], @[crypt_password()]
@@ -575,7 +576,8 @@ string P_hash(string password, string salt, int rounds, int bytes)
   return res[..(bytes-1)];
 }
 
-//! This is the mask generation function @tt{MFG1@} from RFC 3447 B.2.1.
+//! This is the mask generation function @tt{MFG1@} from @rfc{3447@}
+//! B.2.1.
 //!
 //! @param seed
 //!   Seed from which the mask is to be generated.

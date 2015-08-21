@@ -34,7 +34,8 @@ Crypto.ECC.Curve parse_ec_parameters(string ec_parameters)
 //! @param ecdsa
 //!   @[Crypto.ECC.Curve()->ECDSA] object.
 //! @returns
-//!   ASN.1 coded ECPrivateKey structure as specified in RFC 5915 section 3.
+//!   ASN.1 coded ECPrivateKey structure as specified in @rfc{5915@}
+//!   section 3.
 string(8bit) private_key(Crypto.ECC.SECP_521R1.ECDSA ecdsa)
 {
   // ECPrivateKey ::= SEQUENCE {
@@ -56,7 +57,7 @@ string(8bit) private_key(Crypto.ECC.SECP_521R1.ECDSA ecdsa)
 //! Get an initialized ECDSA object from an ECC curve and
 //! an ASN.1 ec private key sequence.
 //!
-//! As specified in RFC 5915 section 3.
+//! As specified in @rfc{5915@} section 3.
 Crypto.ECC.SECP_521R1.ECDSA parse_private_key(Sequence a,
 					      Crypto.ECC.Curve|void c)
 {
@@ -86,7 +87,7 @@ Crypto.ECC.SECP_521R1.ECDSA parse_private_key(Sequence a,
 //! Get an initialized ECDSA object from an ECC curve and
 //! an ASN.1 DER encoded ec private key.
 //!
-//! As specified in RFC 5915 section 3.
+//! As specified in @rfc{5915@} section 3.
 variant Crypto.ECC.SECP_521R1.ECDSA parse_private_key(string(8bit) ec_private_key,
 						      Crypto.ECC.Curve|void c)
 {

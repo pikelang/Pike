@@ -85,7 +85,7 @@ private constant Alert = .Alert;
 //   resumption or session tickets [RFC5077] are used, the previous
 //   contents of this extension are irrelevant, and only the values in the
 //   new handshake messages are considered.
-//! Selected ALPN (RFC 7301) protocol (if any).
+//! Selected ALPN (@rfc{7301@}) protocol (if any).
 //!
 //! @note
 //!   Note that this is a connection property, and needs to be renegotiated

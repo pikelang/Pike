@@ -1454,7 +1454,7 @@ class KeyShareECDHE
 
 //! Key exchange for @[KE_krb].
 //!
-//! @[KeyExchange] that uses Kerberos (RFC 2712).
+//! @[KeyExchange] that uses Kerberos (@rfc{2712@}).
 class KeyExchangeKRB
 {
   inherit KeyExchange;

@@ -12,7 +12,7 @@ inherit .Scheduler;
 //! Active consumers closer to the root will receive the resource
 //! before their children.
 //!
-//! Implements most of RFC 7540 section 5.3.
+//! Implements most of @rfc{7540@} section 5.3.
 //!
 //! @seealso
 //!   @[Scheduler]
@@ -147,7 +147,7 @@ class Consumer
   //!   to take our place in depending on our old parent.
   //!
   //! @note
-  //!   To perform the exclusive mode reparent from RFC 7540
+  //!   To perform the exclusive mode reparent from @rfc{7540@}
   //!   figure 5, call @[reparent_siblings()] after this function.
   //!
   //! @seealso

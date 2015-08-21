@@ -6,8 +6,7 @@
 //! XML parser that generates node-trees.
 //!
 //! Has some support for XML namespaces
-//! @url{http://www.w3.org/TR/REC-xml-names/@}
-//! RFC 2518 23.4.
+//! @url{http://www.w3.org/TR/REC-xml-names/@} @rfc{2518@} 23.4.
 //!
 //! @note
 //!   This module defines two sets of node trees;

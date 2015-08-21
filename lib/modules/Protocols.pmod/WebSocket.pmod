@@ -8,7 +8,8 @@
 
 constant websocket_id = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 
-//! This module implements the WebSocket protocol as described in RFC 6455.
+//! This module implements the WebSocket protocol as described in
+//! @rfc{6455@}.
 
 protected string MASK(string data, string mask) {
     return data ^ (mask * (sizeof(data)/(float)sizeof(mask)));

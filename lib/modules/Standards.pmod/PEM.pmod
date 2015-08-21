@@ -1,15 +1,15 @@
 #pike __REAL_VERSION__
 #pragma strict_types
 
-//! Support for parsing PEM-style messages, defined in RFC1421.
-//! Encapsulation defined in RFC934.
+//! Support for parsing PEM-style messages, defined in @rfc{1421@}.
+//! Encapsulation defined in @rfc{934@}.
 
 //! Key derivation function used in PEM.
 //!
 //! @fixme
 //!   Derived from OpenSSL. Is there any proper specification?
 //!
-//!   It seems to be related to PBKDF1 from RFC2898.
+//!   It seems to be related to PBKDF1 from @rfc{2898@}.
 string(8bit) derive_key(string(8bit) password, string(8bit) salt, int bytes)
 {
   string(8bit) out = "";
@@ -81,7 +81,7 @@ class Message
   //! The decode message body.
   string body;
 
-  //! Message trailer, like RFC4880 checksum.
+  //! Message trailer, like @rfc{4880@} checksum.
   string trailer;
 
   protected void create(string|array(string) data)
@@ -246,7 +246,7 @@ string simple_decode(string pem)
 //!   pairs.
 //!
 //! @param checksum
-//!   Optional checksum string, added as per RFC4880.
+//!   Optional checksum string, added as per @rfc{4880@}.
 string build(string tag, string data,
              void|mapping(string:string) headers,
              void|string checksum)

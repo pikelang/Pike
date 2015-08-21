@@ -74,8 +74,8 @@ class Server {
    //! @decl void create(array(string) _domains, void|int port,@
    //!        void|string ip, function _cb_mailfrom,@
    //!        function _cb_rcptto, function _cb_data)
-   //!  Create a receiving LMTP server. It implements RFC 2821, 2822, 2033 and
-   //!  1854.
+   //!  Create a receiving LMTP server. It implements @rfc{2821@},
+   //!  @rfc{2822@}, @rfc{2033@} and @rfc{1854@}.
    //!
    //! @param domain
    //!   Domains name this server relay, you need to provide at least one

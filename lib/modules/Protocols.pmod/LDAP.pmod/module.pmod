@@ -219,10 +219,10 @@ string ldap_encode_string (string str)
 //! Quote characters in the given string as necessary for use as a
 //! string literal in filters and various composite LDAP attributes.
 //!
-//! The quoting is compliant with RFCs 2252 (section 4.3) and 2254
-//! (section 4). All characters that can be special in those RFCs are
-//! quoted using the @expr{\xx@} syntax, but the set might be
-//! extended.
+//! The quoting is compliant with @rfc{2252@} (section 4.3) and
+//! @rfc{2254@} (section 4). All characters that can be special in
+//! those RFCs are quoted using the @expr{\xx@} syntax, but the set
+//! might be extended.
 //!
 //! @seealso
 //!   @[ldap_decode_string], @[Protocols.LDAP.client.search]
@@ -263,7 +263,7 @@ string encode_dn_value (string str)
 //! Encode the given string for use as an attribute value in a
 //! distinguished name (on string form).
 //!
-//! The encoding is according to RFC 2253 section 2.4 with the
+//! The encoding is according to @rfc{2253@} section 2.4 with the
 //! exception that characters above @expr{0x7F@} aren't UTF-8 encoded.
 //! UTF-8 encoding can always be done afterwards on the complete DN,
 //! which also is done internally by the @[Protocols.LDAP] functions
@@ -287,9 +287,9 @@ string canonicalize_dn (string dn, void|int strict)
 //! binary attribute values, and sorting the RDN parts separated by
 //! "+".
 //!
-//! The returned string follows RFC 2253. The input string may
+//! The returned string follows @rfc{2253@}. The input string may
 //! use legacy LDAPv2 syntax and is treated according to section 4 in
-//! RFC 2253.
+//! @rfc{2253@}.
 //!
 //! If @[strict] is set then errors will be thrown if the given DN is
 //! syntactically invalid. Otherwise the invalid parts remain
@@ -431,9 +431,9 @@ parse_loop:
 // LDAP controls
 
 constant LDAP_CONTROL_MANAGE_DSA_IT = "2.16.840.1.113730.3.4.2";
-//! LDAP control: Manage DSA IT LDAPv3 control (RFC 3296): Control to
-//! indicate that the operation is intended to manage objects within
-//! the DSA (server) Information Tree.
+//! LDAP control: Manage DSA IT LDAPv3 control (@rfc{3296@}): Control
+//! to indicate that the operation is intended to manage objects
+//! within the DSA (server) Information Tree.
 
 constant LDAP_CONTROL_VLVREQUEST = "2.16.840.1.113730.3.4.9";
 //! LDAP control: LDAP Extensions for Scrolling View Browsing of
@@ -574,7 +574,7 @@ constant SYNTAX_OCTET_STR = "1.3.6.1.4.1.1466.115.121.1.40"; // RFC 2256, 6.4
 constant SYNTAX_TELETEX_TERMINAL_ID = "1.3.6.1.4.1.1466.115.121.1.51"; // RFC 2256, 6.5
 constant SYNTAX_TELETEX_NUM = "1.3.6.1.4.1.1466.115.121.1.52"; // RFC 2256, 6.6
 constant SYNTAX_SUPPORTED_ALGORITHM = "1.3.6.1.4.1.1466.115.121.1.49"; // RFC 2256, 6.7
-//! LDAP syntax: Standard syntaxes from RFC 2256.
+//! LDAP syntax: Standard syntaxes from @rfc{2256@}.
 
 //constant SYNTAX_ACI_ITEM = "1.3.6.1.4.1.1466.115.121.1.1";
 //constant SYNTAX_ACCESS_POINT = "1.3.6.1.4.1.1466.115.121.1.2";
@@ -1377,8 +1377,8 @@ object make_filter (string filter, void|int ldap_version)
 //! can be used repeatedly to avoid reparsing the filter string.
 //!
 //! @param filter
-//!   The filter to parse, according to the syntax specified in RFC
-//!   2254. The syntax is extended a bit to allow and ignore
+//!   The filter to parse, according to the syntax specified in
+//!   @rfc{2254@}. The syntax is extended a bit to allow and ignore
 //!   whitespace everywhere except inside and next to the filter
 //!   values.
 //!

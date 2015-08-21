@@ -1,5 +1,5 @@
 
-//! HMAC, defined by RFC-2104
+//! HMAC, defined by @rfc{2104@}.
 
 #pike __REAL_VERSION__
 #pragma strict_types

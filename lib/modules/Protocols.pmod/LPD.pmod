@@ -8,7 +8,7 @@
 #pike __REAL_VERSION__
 
 //! A client for communicating with printers and print spoolers that
-//! support the BSD lpd protocol (RFC 1179).
+//! support the BSD lpd protocol (@rfc{1179@}).
 class client {
   string host;
   int port;
@@ -239,7 +239,7 @@ protected string make_control(int jn)
 //! if not provided, defaults to @i{localhost@}.
 //! @param portnum
 //! Contains the port the print host is listening on.
-//! if not provided, defaults to port @i{515@}, the RFC 1179 standard.
+//! if not provided, defaults to port @i{515@}, the @rfc{1179@} standard.
   void create(string|void hostname, int|void portnum)
   {
     host=hostname || "localhost";

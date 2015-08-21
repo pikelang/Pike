@@ -8,16 +8,18 @@
 //!   @[Context]
 enum ProtocolVersion {
   PROTOCOL_SSL_3_0	= 0x300, //! SSL 3.0 - The original SSL3 draft version.
-  PROTOCOL_TLS_1_0	= 0x301, //! TLS 1.0 - The RFC 2246 version of TLS.
-  PROTOCOL_TLS_1_1	= 0x302, //! TLS 1.1 - The RFC 4346 version of TLS.
-  PROTOCOL_TLS_1_2	= 0x303, //! TLS 1.2 - The RFC 5246 version of TLS.
+  PROTOCOL_TLS_1_0	= 0x301, //! TLS 1.0 - The @rfc{2246@} version of TLS.
+  PROTOCOL_TLS_1_1	= 0x302, //! TLS 1.1 - The @rfc{4346@} version of TLS.
+  PROTOCOL_TLS_1_2	= 0x303, //! TLS 1.2 - The @rfc{5246@} version of TLS.
   PROTOCOL_TLS_1_3      = 0x304, //! TLS 1.3 - draft
 
-  PROTOCOL_DTLS_1_0	= 0xfeff, //! DTLS 1.0 - The RFC 4347 version of DTLS.
-				  //! This is essentially TLS 1.1 over UDP.
+  PROTOCOL_DTLS_1_0	= 0xfeff, //! DTLS 1.0 - The @rfc{4347@}
+				  //! version of DTLS.  This is
+				  //! essentially TLS 1.1 over UDP.
 
-  PROTOCOL_DTLS_1_2	= 0xfefd, //! DTLS 1.2 - The RFC 6347 version of DTLS.
-				  //! This is essentially TLS 1.2 over UDP.
+  PROTOCOL_DTLS_1_2	= 0xfefd, //! DTLS 1.2 - The @rfc{6347@}
+				  //! version of DTLS.  This is
+				  //! essentially TLS 1.2 over UDP.
 }
 
 //! Max supported TLS version.
@@ -118,7 +120,7 @@ constant CIPHER_effective_keylengths = ([
   CIPHER_chacha20:	256,
 ]);
 
-//! Hash algorithms as per RFC 5246 7.4.1.4.1.
+//! Hash algorithms as per @rfc{5246@} 7.4.1.4.1.
 enum HashAlgorithm {
   HASH_none	= 0,
   HASH_md5	= 1,
@@ -210,8 +212,8 @@ constant KE_Anonymous = (<
 //! Compression methods.
 enum CompressionType {
   COMPRESSION_null = 0,		//! No compression.
-  COMPRESSION_deflate = 1,	//! Deflate compression. RFC 3749
-  COMPRESSION_lzs = 64,		//! LZS compression. RFC 3943
+  COMPRESSION_deflate = 1,	//! Deflate compression. @rfc{3749@}
+  COMPRESSION_lzs = 64,		//! LZS compression. @rfc{3943@}
 }
 
 /* Signature context strings. */
@@ -1313,7 +1315,7 @@ enum FragmentLength {
   FRAGMENT_4096	= 4,
 }
 
-//! Certificate format types as per RFC 6091 and RFC 7250.
+//! Certificate format types as per @rfc{6091@} and @rfc{7250@}.
 enum CertificateType {
   CERTTYPE_x509 = 0,		// RFC 6091
   CERTTYPE_openpgp = 1,		// RFC 6091

@@ -15,7 +15,7 @@
 //! password hashing schemes. The @[hash] can be on any
 //! of the following formats.
 //!
-//! LDAP-style (RFC2307) hashes:
+//! LDAP-style (@rfc{2307@}) hashes:
 //! @string
 //!   @value "{SHA}XXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 //!     The @expr{XXX@} string is taken to be a @[MIME.encode_base64]

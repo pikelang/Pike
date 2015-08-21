@@ -175,10 +175,10 @@ mapping(int(508..511):Crypto.DH.Parameters) private_ffdhe_groups = ([]);
 //! to get rid of combinations not supported by the runtime.
 //!
 //! @note
-//!   According to RFC 5246 7.4.2 all certificates needs to be signed
-//!   by any of the supported signature algorithms. To be forward
-//!   compatible this list needs to be limited to the combinations
-//!   that have existing PKCS identifiers.
+//!   According to @rfc{5246@} 7.4.2 all certificates needs to be
+//!   signed by any of the supported signature algorithms. To be
+//!   forward compatible this list needs to be limited to the
+//!   combinations that have existing PKCS identifiers.
 //!
 //! @seealso
 //!   @[get_signature_algorithms()]
@@ -555,7 +555,7 @@ void filter_weak_suites(int min_keylength)
 //! Configure the context for Suite B compliant operation.
 //!
 //! This restricts the context to the cipher suites
-//! specified by RFC 6460 in strict mode.
+//! specified by @rfc{6460@} in strict mode.
 //!
 //! Additional suites may be enabled, but they will only be
 //! selected if a Suite B suite isn't available.
@@ -570,11 +570,11 @@ void filter_weak_suites(int min_keylength)
 //!     @value 2..
 //!       Strict mode.
 //!
-//!       Allow only the Suite B suites from RFC 6460 and TLS 1.2.
+//!       Allow only the Suite B suites from @rfc{6460@} and TLS 1.2.
 //!     @value 1
 //!       Transitional mode.
 //!
-//!       Also allow the transitional suites from RFC 5430 for use
+//!       Also allow the transitional suites from @rfc{5430@} for use
 //!       with TLS 1.0 and 1.1.
 //!     @value 0
 //!       Permissive mode (default).

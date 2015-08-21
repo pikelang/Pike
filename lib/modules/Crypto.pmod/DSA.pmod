@@ -277,8 +277,8 @@ class State {
 #define Integer Standards.ASN1.Types.Integer
 #define BitString Standards.ASN1.Types.BitString
 
-  //! Returns the AlgorithmIdentifier as defined in RFC5280 section
-  //! 4.1.1.2 including the DSA parameters.
+  //! Returns the AlgorithmIdentifier as defined in @rfc{5280@}
+  //! section 4.1.1.2 including the DSA parameters.
   Sequence pkcs_algorithm_identifier()
   {
     return
@@ -311,7 +311,7 @@ class State {
   }
 
   //! Creates a SubjectPublicKeyInfo ASN.1 sequence for the object.
-  //! See RFC 5280 section 4.1.2.7.
+  //! See @rfc{5280@} section 4.1.2.7.
   Sequence pkcs_public_key()
   {
     return Sequence(({

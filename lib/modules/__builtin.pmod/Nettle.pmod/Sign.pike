@@ -53,6 +53,6 @@ Sequence pkcs_signature_algorithm_id(.Hash hash);
 Sequence pkcs_algorithm_identifier();
 
 //! Creates a SubjectPublicKeyInfo ASN.1 sequence for the object.
-//! See RFC 5280 section 4.1.2.7.
+//! See @rfc{5280@} section 4.1.2.7.
 Sequence pkcs_public_key();
 #undef Sequence

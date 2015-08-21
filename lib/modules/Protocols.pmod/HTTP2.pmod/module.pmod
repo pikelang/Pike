@@ -1,7 +1,7 @@
 //!
 //! HTTP/2 protocol.
 //!
-//! RFC 7540.
+//! @rfc{7540@}.
 //!
 
 constant client_connection_preface = "PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n";
@@ -53,7 +53,7 @@ enum Setting {
   SETTINGS_max_header_list_size		= 6,
 };
 
-//! RFC 7540 Appendix A.
+//! @rfc{7540@} Appendix A.
 constant TLS_CIPHER_SUITE_BLACK_LIST = (<
   SSL.Constants.SSL_null_with_null_null,
   SSL.Constants.SSL_rsa_with_null_md5,

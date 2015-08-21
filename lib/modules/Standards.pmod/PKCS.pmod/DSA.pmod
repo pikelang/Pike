@@ -1,4 +1,4 @@
-//! DSA operations as defined in RFC-2459.
+//! DSA operations as defined in @rfc{2459@}.
 
 /* NOTE: Unlike the functions in RSA.pmod, this function returns
  * an object rather than a string. */
@@ -9,7 +9,7 @@
 
 import Standards.ASN1.Types;
 
-//! Returns the AlgorithmIdentifier as defined in RFC5280 section
+//! Returns the AlgorithmIdentifier as defined in @rfc{5280@} section
 //! 4.1.1.2. Optionally the DSA parameters are included, if a DSA
 //! object is given as argument.
 Sequence algorithm_identifier(Crypto.DSA|void dsa)
@@ -19,7 +19,7 @@ Sequence algorithm_identifier(Crypto.DSA|void dsa)
     : Sequence( ({ .Identifiers.dsa_id, Null() }) );
 }
 
-//! Generates the DSAPublicKey value, as specified in RFC2459.
+//! Generates the DSAPublicKey value, as specified in @rfc{2459@}.
 string public_key(Crypto.DSA dsa)
 {
   return Integer(dsa->get_y())->get_der();
@@ -86,7 +86,7 @@ variant Crypto.DSA parse_private_key(string key)
 }
 
 //! Creates a SubjectPublicKeyInfo ASN.1 sequence for the given @[dsa]
-//! object. See RFC 5280 section 4.1.2.7.
+//! object. See @rfc{5280@} section 4.1.2.7.
 Sequence build_public_key(Crypto.DSA dsa)
 {
   return Sequence(({
@@ -96,7 +96,7 @@ Sequence build_public_key(Crypto.DSA dsa)
 }
 
 //! Creates a PrivateKeyInfo ASN.1 sequence for the given @[rsa]
-//! object. See RFC 5208 section 5.
+//! object. See @rfc{5208@} section 5.
 Sequence build_private_key(Crypto.DSA dsa)
 {
   return Sequence(({

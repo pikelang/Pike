@@ -46,9 +46,9 @@ Poly1305 POLY1305 = Poly1305();
 #if constant(Nettle.UMAC32_AES)
 
 //! @module UMAC32
-//! UMAC is a familty of message digest functions based on universal hashing
-//! and @[AES] that is specified in RFC 4418. They differ mainly in the size
-//! of the resulting digest.
+//! UMAC is a familty of message digest functions based on universal
+//! hashing and @[AES] that is specified in @rfc{4418@}. They differ
+//! mainly in the size of the resulting digest.
 //!
 //! @[UMAC32] outputs a digest of 32 bits or 4 octets.
 //!
@@ -82,9 +82,9 @@ _UMAC32 UMAC32 = _UMAC32();
 #if constant(Nettle.UMAC64_AES)
 
 //! @module UMAC64
-//! UMAC is a familty of message digest functions based on universal hashing
-//! and @[AES] that is specified in RFC 4418. They differ mainly in the size
-//! of the resulting digest.
+//! UMAC is a familty of message digest functions based on universal
+//! hashing and @[AES] that is specified in @rfc{4418@}. They differ
+//! mainly in the size of the resulting digest.
 //!
 //! @[UMAC64] outputs a digest of 64 bits or 8 octets.
 //!
@@ -118,9 +118,9 @@ _UMAC64 UMAC64 = _UMAC64();
 #if constant(Nettle.UMAC96_AES)
 
 //! @module UMAC96
-//! UMAC is a familty of message digest functions based on universal hashing
-//! and @[AES] that is specified in RFC 4418. They differ mainly in the size
-//! of the resulting digest.
+//! UMAC is a familty of message digest functions based on universal
+//! hashing and @[AES] that is specified in @rfc{4418@}. They differ
+//! mainly in the size of the resulting digest.
 //!
 //! @[UMAC96] outputs a digest of 96 bits or 12 octets.
 //!
@@ -154,9 +154,9 @@ _UMAC96 UMAC96 = _UMAC96();
 #if constant(Nettle.UMAC128_AES)
 
 //! @module UMAC128
-//! UMAC is a familty of message digest functions based on universal hashing
-//! and @[AES] that is specified in RFC 4418. They differ mainly in the size
-//! of the resulting digest.
+//! UMAC is a familty of message digest functions based on universal
+//! hashing and @[AES] that is specified in @rfc{4418@}. They differ
+//! mainly in the size of the resulting digest.
 //!
 //! @[UMAC128] outputs a digest of 128 bits or 16 octets.
 //!

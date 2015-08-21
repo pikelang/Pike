@@ -4,8 +4,9 @@
 //! Secure Socket Layer (SSL) version 3.0 and
 //! Transport Layer Security (TLS) versions 1.0 - 1.2.
 //!
-//! RFC 2246 (TLS 1.0): "The primary goal of the TLS Protocol is to provide
-//! privacy and data integrity between two communicating applications."
+//! @rfc{2246@} (TLS 1.0): "The primary goal of the TLS Protocol is to
+//! provide privacy and data integrity between two communicating
+//! applications."
 //!
 //! The classes that typical users need to use are
 //! @dl

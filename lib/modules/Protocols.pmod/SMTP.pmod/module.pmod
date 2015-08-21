@@ -63,7 +63,8 @@ class ClientHelper
     return tokens*"";
   }
 
-  //! Return an RFC2822 date-time string suitable for the @tt{Date:@} header.
+  //! Return an @rfc{2822@} date-time string suitable for the
+  //! @tt{Date:@} header.
   string rfc2822date_time(int ts)
   {
     mapping(string:int) lt = localtime(ts);
@@ -1464,7 +1465,8 @@ class Server {
    //! @decl void create(array(string) _domains, void|int port,@
    //! 				void|string ip, function _cb_mailfrom,@
    //!				function _cb_rcptto, function _cb_data)
-   //!	Create a receiving SMTP server. It implements RFC 2821, 2822 and 1854.
+   //!	Create a receiving SMTP server. It implements @rfc{2821@},
+   //!	@rfc{2822@} and @rfc{1854@}.
    //!
    //! @param domain
    //!   Domains name this server relay, you need to provide at least one

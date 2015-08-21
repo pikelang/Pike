@@ -7,7 +7,7 @@
 
 import Standards.ASN1.Types;
 
-//! Returns the AlgorithmIdentifier as defined in RFC5280 section
+//! Returns the AlgorithmIdentifier as defined in @rfc{5280@} section
 //! 4.1.1.2.
 Sequence algorithm_identifier()
 {
@@ -100,7 +100,7 @@ variant Crypto.RSA.State parse_private_key(string key)
 }
 
 //! Creates a SubjectPublicKeyInfo ASN.1 sequence for the given @[rsa]
-//! object. See RFC 5280 section 4.1.2.7.
+//! object. See @rfc{5280@} section 4.1.2.7.
 Sequence build_public_key(Crypto.RSA rsa)
 {
   return Sequence(({
@@ -110,7 +110,7 @@ Sequence build_public_key(Crypto.RSA rsa)
 }
 
 //! Creates a PrivateKeyInfo ASN.1 sequence for the given @[rsa]
-//! object. See RFC 5208 section 5.
+//! object. See @rfc{5208@} section 5.
 Sequence build_private_key(Crypto.RSA rsa)
 {
   return Sequence(({

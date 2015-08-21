@@ -1037,7 +1037,7 @@ array(NetworkType) _connectable_network_types( bool v6, bool v4, bool has_teredo
     return res;
 }
 
-//! Returns network types in priority order according to RFC 3484.
+//! Returns network types in priority order according to @rfc{3484@}.
 //!
 //! This function assumes a network category (ipv4 or ipv6) is
 //! available if the local host has a configured address (excluding
