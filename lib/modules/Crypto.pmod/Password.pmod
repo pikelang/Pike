@@ -224,7 +224,7 @@ int verify(string(8bit) password, string(8bit) hash)
 //!
 //!   @endstring
 //!
-//!   LDAP (RFC2307)-style. Don't use these if you can avoid it,
+//!   LDAP (@rfc{2307@})-style. Don't use these if you can avoid it,
 //!   since they are suspectible to attacks. In particular avoid
 //!   the unsalted variants at all costs:
 //!   @string
