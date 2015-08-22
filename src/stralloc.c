@@ -751,6 +751,7 @@ PMOD_EXPORT struct pike_string *debug_begin_wide_shared_string(size_t len, int s
 {
   struct pike_string *t = NULL;
   size_t bytes = (len+1) << shift;
+  ONERROR fe;
 #ifdef PIKE_DEBUG
   if(d_flag>10)
     verify_shared_strings_tables();
@@ -760,22 +761,17 @@ PMOD_EXPORT struct pike_string *debug_begin_wide_shared_string(size_t len, int s
       Pike_fatal("Unsupported string shift: %d\n", shift);
 #endif /* PIKE_DEBUG */
   t=(struct pike_string *)ba_alloc(&string_allocator);
-  /* we mark the string as static here, to avoid double free if the allocations
-   * fail
+  /* we mark the string as static here, to avoid double free if the
+   * allocations fail
    */
   t->flags = STRING_NOT_HASHED|STRING_NOT_SHARED|STRING_ALLOC_STATIC;
-  if (bytes <= sizeof(struct pike_string)) {
-    /* FIXME: This can fail with an exception, which would leak
-     * the string t. We should have ba_alloc and ba_xalloc, really.
-     */
+  SET_ONERROR(fe,free_unlinked_pike_string,t);
+  if (bytes <= sizeof(struct pike_string))
+  {
     t->str = ba_alloc(&string_allocator);
     t->flags |= STRING_ALLOC_BA;
   } else {
-    t->str = malloc(bytes);
-    if (!t->str) {
-        ba_free(&string_allocator, t);
-        Pike_error("Out of memory.\n");
-    }
+    t->str = xalloc(bytes);
     t->flags |= STRING_ALLOC_MALLOC;
   }
   t->refs = 0;
@@ -783,12 +779,14 @@ PMOD_EXPORT struct pike_string *debug_begin_wide_shared_string(size_t len, int s
   add_ref(t);	/* For DMALLOC */
   t->len=len;
   DO_IF_DEBUG(t->next = NULL);
+  UNSET_ONERROR(&fe);
   low_set_index(t,len,0);
   return t;
 }
 
-PMOD_EXPORT struct pike_string * make_static_string(const char * str, size_t len,
-                                                    enum size_shift shift) {
+static struct pike_string * make_static_string(const char * str, size_t len,
+                                               enum size_shift shift)
+{
   struct pike_string * t = ba_alloc(&string_allocator);
 
   t->flags = STRING_NOT_HASHED|STRING_NOT_SHARED|STRING_ALLOC_STATIC;
@@ -813,7 +811,6 @@ PMOD_EXPORT struct pike_string * make_shared_static_string(const char *str, size
     s = make_static_string(str, len, shift);
     link_pike_string(s, h);
   } else {
-
     if (!string_is_static(s)) {
         if (string_is_block_allocated(s)) {
             ba_free(&string_allocator, s->str);
@@ -824,7 +821,6 @@ PMOD_EXPORT struct pike_string * make_shared_static_string(const char *str, size
         s->flags |= STRING_ALLOC_STATIC;
         s->str = str;
     }
-
     add_ref(s);
   }
 
@@ -898,7 +894,7 @@ PMOD_EXPORT struct pike_string *end_shared_string(struct pike_string *s)
 {
   struct pike_string *s2;
 
-  switch(s->size_shift)
+  switch(UNLIKELY(s->size_shift))
   {
     default:
 #ifdef PIKE_DEBUG
@@ -1089,18 +1085,27 @@ PMOD_EXPORT struct pike_string *debug_make_shared_string2(const p_wchar2 *str)
 
 /*** Free strings ***/
 
-PMOD_EXPORT void unlink_pike_string(struct pike_string *s)
+static void unlink_pike_string(struct pike_string *s)
 {
-  size_t h;
-  h= HMODULO(s->hval);
-  propagate_shared_string(s,h);
-#ifdef PIKE_DEBUG
-  if (base_table[h] != s) {
-    Pike_fatal("propagate_shared_string() failed. Probably got bogus pike_string.\n");
+  size_t h = HMODULO(s->hval);
+  struct pike_string *tmp = base_table[h], *p = NULL;
+
+  while( tmp )
+  {
+    if( tmp == s )
+    {
+      if( p )
+        p->next = s->next;
+      else
+        base_table[h] = s->next;
+      break;
+    }
+    p = tmp;
+    tmp = tmp->next;
   }
-#endif /* PIKE_DEBUG */
-  base_table[h]=s->next;
 #ifdef PIKE_DEBUG
+  if( !tmp )
+    Pike_fatal("unlink on non-shared string\n");
   s->next=(struct pike_string *)(ptrdiff_t)-1;
 #endif
   num_strings--;
@@ -1404,47 +1409,10 @@ int safe_debug_findstring(const struct pike_string *foo)
   return 0;
 }
 
+/* for once, this is actually a debug function! */
 struct pike_string *debug_findstring(const struct pike_string *foo)
 {
-  struct pike_string *tmp;
-  tmp=propagate_shared_string(foo, HMODULO(foo->hval));
-
-#if 0
-  if(!tmp)
-  {
-    unsigned INT32 e;
-    struct pike_string *tmp2;
-    fprintf(stderr,"String %p %ld %ld %s\n",
-	    foo,
-	    (long)foo->hval,
-	    (long)foo->len,
-	    foo->str);
-
-    fprintf(stderr,"------ %p %ld\n",
-	    base_table[HMODULO(foo->hval)],
-	    foo->hval);
-    for(tmp2=base_table[HMODULO(foo->hval)];tmp2;tmp2=tmp2->next)
-    {
-      if(tmp2 == tmp)
-	fprintf(stderr,"!!%p!!->",tmp2);
-      else
-	fprintf(stderr,"%p->",tmp2);
-    }
-    fprintf(stderr,"0\n");
-
-    for(e=0;e<htable_size;e++)
-    {
-      for(tmp2=base_table[e];tmp2;tmp2=tmp2->next)
-      {
-	if(tmp2 == tmp)
-	  fprintf(stderr,"String found in hashbin %ld (not %ld)\n",
-		  (long)e,
-		  (long)HMODULO(foo->hval));
-      }
-    }
-  }
-#endif /* 0 */
-  return tmp;
+  return propagate_shared_string(foo, HMODULO(foo->hval));
 }
 
 PMOD_EXPORT void debug_dump_pike_string(const struct pike_string *s, INT32 max)
@@ -1617,10 +1585,7 @@ struct pike_string *realloc_unlinked_string(struct pike_string *a,
 
   switch ((a->flags & STRING_ALLOC_MASK) | (nbytes <= sizeof(struct pike_string))) {
   case STRING_ALLOC_MALLOC:
-      s=realloc(a->str, nbytes);
-      if (!s) 
-        Pike_error("Out of memory in realloc_unlinked_string. Could not allocate %"PRINTSIZET" bytes.\n", 
-                   nbytes);
+      s=xrealloc(a->str, nbytes);
       break;
   case STRING_ALLOC_BA: // old string was short
       s = xalloc(nbytes);
@@ -1715,7 +1680,6 @@ struct pike_string *modify_shared_string(struct pike_string *a,
   if(index<0 || index>=a->len)
     Pike_fatal("Index out of range in modify_shared_string()\n");
 #endif
-
 
   old_value=index_shared_string(a,index);
   if(old_value==c) return a;
