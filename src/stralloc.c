@@ -58,20 +58,24 @@ PMOD_EXPORT struct pike_string *empty_pike_string = 0;
 #define low_do_hash(STR,LEN,SHIFT) low_hashmem( (STR), (LEN)<<(SHIFT), hash_prefix_len<<(SHIFT), hashkey )
 #define do_hash(STR) low_do_hash(STR->str,STR->len,STR->size_shift)
 
-static INLINE int __attribute((unused)) string_is_block_allocated(const struct pike_string * s) {
-    return (s->flags & STRING_ALLOC_MASK) == STRING_ALLOC_BA;
+static INLINE int string_is_block_allocated(const struct pike_string * s) {
+  return (s->alloc_type == STRING_ALLOC_BA);
 }
 
-static INLINE int __attribute((unused)) string_is_malloced(const struct pike_string * s) {
-    return (s->flags & STRING_ALLOC_MASK) == STRING_ALLOC_MALLOC;
+static INLINE int string_is_malloced(const struct pike_string * s) {
+ return (s->alloc_type == STRING_ALLOC_MALLOC);
 }
 
-static INLINE int __attribute((unused)) string_is_static(const struct pike_string * s) {
-    return (s->flags & STRING_ALLOC_MASK) == STRING_ALLOC_STATIC;
+static INLINE int string_is_static(const struct pike_string * s) {
+    return s->alloc_type == STRING_ALLOC_STATIC;
 }
 
-static INLINE int __attribute((unused)) string_may_modify(const struct pike_string * s) {
-    return !string_is_static(s) && s->refs == 1;
+static INLINE int string_is_substring(const struct pike_string * s) {
+    return s->alloc_type == STRING_ALLOC_SUBSTRING;
+}
+
+static INLINE int string_may_modify(const struct pike_string * s) {
+   return !string_is_static(s) && !string_is_substring(s) && s->refs == 1;
 }
 
 
@@ -610,17 +614,30 @@ static void stralloc_rehash(void)
 
 #define STRING_BLOCK	2048
 
+
+struct substring_pike_string {
+  struct pike_string str;
+  struct pike_string *parent;
+};
+
 static struct block_allocator string_allocator = BA_INIT(sizeof(struct pike_string), STRING_BLOCK);
+static struct block_allocator substring_allocator = BA_INIT(sizeof(struct substring_pike_string), STRING_BLOCK>>2);
 
-static void free_unlinked_pike_string(struct pike_string * s) {
-
-    switch (s->flags & STRING_ALLOC_MASK) {
-    case STRING_ALLOC_MALLOC:
+static void free_unlinked_pike_string(struct pike_string * s)
+{
+    switch (s->alloc_type)
+    {
+      case STRING_ALLOC_MALLOC:
         free(s->str);
         break;
-    case STRING_ALLOC_BA:
+      case STRING_ALLOC_BA:
         ba_free(&string_allocator, s->str);
         break;
+      case STRING_ALLOC_SUBSTRING:
+        if( ((struct substring_pike_string*)s)->parent )
+          free_string(((struct substring_pike_string*)s)->parent);
+        ba_free(&substring_allocator, s);
+        return;
     }
 
     ba_free(&string_allocator, s);
@@ -734,15 +751,16 @@ PMOD_EXPORT struct pike_string *debug_begin_wide_shared_string(size_t len, int s
   /* we mark the string as static here, to avoid double free if the
    * allocations fail
    */
-  t->flags = STRING_NOT_HASHED|STRING_NOT_SHARED|STRING_ALLOC_STATIC;
+  t->flags = STRING_NOT_HASHED|STRING_NOT_SHARED;
+  t->alloc_type = STRING_ALLOC_STATIC;
   SET_ONERROR(fe,free_unlinked_pike_string,t);
   if (bytes <= sizeof(struct pike_string))
   {
     t->str = ba_alloc(&string_allocator);
-    t->flags |= STRING_ALLOC_BA;
+    t->alloc_type = STRING_ALLOC_BA;
   } else {
     t->str = xalloc(bytes);
-    t->flags |= STRING_ALLOC_MALLOC;
+    t->alloc_type = STRING_ALLOC_MALLOC;
   }
   t->refs = 0;
   t->size_shift=shift;
@@ -759,7 +777,8 @@ static struct pike_string * make_static_string(const char * str, size_t len,
 {
   struct pike_string * t = ba_alloc(&string_allocator);
 
-  t->flags = STRING_NOT_HASHED|STRING_NOT_SHARED|STRING_ALLOC_STATIC;
+  t->flags = STRING_NOT_HASHED|STRING_NOT_SHARED;
+  t->alloc_type = STRING_ALLOC_STATIC; 
   t->str = (char *)str;
   t->refs = 0;
   t->len = len;
@@ -784,11 +803,16 @@ PMOD_EXPORT struct pike_string * make_shared_static_string(const char *str, size
     if (!string_is_static(s)) {
         if (string_is_block_allocated(s)) {
             ba_free(&string_allocator, s->str);
-        } else {
+        } else if(string_is_substring(s)) {
+          if( ((struct substring_pike_string *)s)->parent )
+            free_string( ((struct substring_pike_string *)s)->parent );
+          s->str = (char*)str;
+        }
+        else
+        {
             free(s->str);
         }
-        s->flags &= ~STRING_ALLOC_MASK;
-        s->flags |= STRING_ALLOC_STATIC;
+        s->alloc_type = STRING_ALLOC_STATIC;
         s->str = (char*)str;
     }
     add_ref(s);
@@ -1554,46 +1578,46 @@ struct pike_string *realloc_unlinked_string(struct pike_string *a,
   size_t nbytes = (size_t)(size+1) << a->size_shift;
   size_t obytes = (size_t)(a->len+1) << a->size_shift;
 
-  switch ((a->flags & STRING_ALLOC_MASK) | (nbytes <= sizeof(struct pike_string)))
+#define TWO(A,B) ((A<<8)|B)
+
+
+  switch (TWO(a->alloc_type, (nbytes <= sizeof(struct pike_string))) )
   {
-  case STRING_ALLOC_MALLOC:
+    case TWO(STRING_ALLOC_MALLOC,0): // malloc->malloc
       s=xrealloc(a->str, nbytes);
       break;
-  case STRING_ALLOC_BA: // old string was short
+    case TWO(STRING_ALLOC_BA,0): // short->malloc
       s = xalloc(nbytes);
-      a->flags &= ~STRING_ALLOC_MASK;
-      a->flags |= STRING_ALLOC_MALLOC;
+      a->alloc_type = STRING_ALLOC_MALLOC;
       memcpy(s, a->str, obytes);
       ba_free(&string_allocator, a->str);
       break;
-  case STRING_ALLOC_MALLOC|1:
+    case TWO(STRING_ALLOC_MALLOC,1): // malloc -> short
       s = ba_alloc(&string_allocator);
-      a->flags &= ~STRING_ALLOC_MASK;
-      a->flags |= STRING_ALLOC_BA;
+      a->alloc_type = STRING_ALLOC_BA;
       memcpy(s, a->str, nbytes);
       free(a->str);
       break;
-  case STRING_ALLOC_BA|1: // both are short
+    case TWO(STRING_ALLOC_BA,1): // both are short
       goto done;
-  case STRING_ALLOC_STATIC:
+    case TWO(STRING_ALLOC_STATIC,0): // static -> malloc
       s = xalloc(nbytes);
-      a->flags &= ~STRING_ALLOC_MASK;
-      a->flags |= STRING_ALLOC_MALLOC;
+      a->alloc_type = STRING_ALLOC_MALLOC;
       memcpy(s, a->str, obytes);
       break;
-  case STRING_ALLOC_STATIC|1:
+    case TWO(STRING_ALLOC_STATIC,1): // static -> short
       s = ba_alloc(&string_allocator);
-      a->flags &= ~STRING_ALLOC_MASK;
-      a->flags |= STRING_ALLOC_BA;
+      a->alloc_type = STRING_ALLOC_BA;
       memcpy(s, a->str, obytes);
       break;
-#ifdef PIKE_DEBUG
+  case TWO(STRING_ALLOC_SUBSTRING,0):
+  case TWO(STRING_ALLOC_SUBSTRING,1):
+      Pike_fatal("This should not happen, substrings are never unlinked.\n");
   default:
       Pike_fatal("encountered string with unknown allocation type %d\n",
-                 a->flags & STRING_ALLOC_MASK);
-#endif
+                 a->alloc_type);
   }
-
+#undef TWO
   a->str = s;
 done:
   a->len=size;
@@ -1909,6 +1933,40 @@ PMOD_EXPORT ptrdiff_t string_search(struct pike_string *haystack,
   return (r-haystack->str)>>haystack->size_shift;
 }
 
+static struct pike_string *make_shared_substring0( struct pike_string *s,
+                                                   ptrdiff_t start,
+                                                   ptrdiff_t len)
+{
+  struct pike_string *existing;
+  struct substring_pike_string *res;
+  if( (existing = binary_findstring( s->str+start, len )) )
+  {
+    add_ref(existing);
+    return existing;
+  }
+  res = ba_alloc(&substring_allocator);
+  res->parent = s;
+  add_ref(s);
+  existing = &res->str;
+
+  existing->flags = STRING_NOT_HASHED|STRING_NOT_SHARED;
+  existing->alloc_type = STRING_ALLOC_SUBSTRING;
+  existing->str = s->str+start;
+  existing->len = len;
+#ifdef PIKE_DEBUG
+  if( existing->len + start != s->len )
+    Pike_fatal("Substrings must be terminated at end of string for now.\n");
+#endif
+  existing->refs = 0;
+  existing->size_shift = 0;
+  add_ref(existing);
+  link_pike_string(existing,
+                   StrHash(existing->str,existing->len));
+
+  return (struct pike_string *)existing;
+}
+
+
 PMOD_EXPORT struct pike_string *string_slice(struct pike_string *s,
 					     ptrdiff_t start,
 					     ptrdiff_t len)
@@ -1932,6 +1990,29 @@ PMOD_EXPORT struct pike_string *string_slice(struct pike_string *s,
   {
     add_ref(s);
     return s;
+  }
+
+  /* Actually create a substring. */
+
+  /* If the string to take a substring of is
+     a substring, take from the original. */
+  if( s->alloc_type == STRING_ALLOC_SUBSTRING )
+  {
+    struct pike_string *pr= ((struct substring_pike_string*)s)->parent;
+    if( pr )
+    {
+      /* Note: If substrings are ever anywhere except at the end,
+         this might need to change.
+      */
+      start += s->str-pr->str;
+      s = pr;
+    }
+  }
+
+  if( (len+start == s->len) && !s->size_shift )
+  {
+    if( start < (s->len >>1) ) /* <50% waste. */
+      return make_shared_substring0( s, start, len );
   }
 
   switch(s->size_shift)
@@ -2132,32 +2213,40 @@ void cleanup_shared_string_table(void)
 
 void count_string_types() {
   unsigned INT32 e;
-  size_t num_static = 0, num_short = 0;
+  size_t num_static = 0, num_short = 0, num_substring = 0;
 
   for (e = 0; e < htable_size; e++) {
       struct pike_string * s;
 
       for (s = base_table[e]; s; s = s->next)
-          switch (s->flags & STRING_ALLOC_MASK) {
+          switch (s->alloc_type) {
           case STRING_ALLOC_BA:
               num_short ++;
               break;
           case STRING_ALLOC_STATIC:
               num_static ++;
               break;
+          case STRING_ALLOC_SUBSTRING:
+              num_substring ++;
+              break;
           }
   }
 
-  push_static_text("num_short_pike_strings");
+  push_static_text("num_short_strings");
   push_ulongest(num_short);
-  push_static_text("num_static_pike_strings");
+  push_static_text("num_static_strings");
   push_ulongest(num_static);
+  push_static_text("num_substrings");
+  push_ulongest(num_substring);
 }
 
 size_t count_memory_in_string(const struct pike_string * s) {
   size_t size = sizeof(struct pike_string);
 
-  switch (s->flags & STRING_ALLOC_MASK) {
+  switch (s->alloc_type) {
+  case STRING_ALLOC_SUBSTRING:
+      size += sizeof( struct pike_string *);
+      break;
   case STRING_ALLOC_BA:
       size += sizeof(struct pike_string);
       break;
