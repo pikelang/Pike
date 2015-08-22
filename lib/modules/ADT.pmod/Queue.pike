@@ -28,7 +28,6 @@ __deprecated__ void write(mixed ... items)
   l += items;
 }
 
-//! @decl void write(mixed ... items)
 //! @decl void put(mixed ... items)
 //! Adds @[items] to the queue.
 void put(mixed ... items)
@@ -42,7 +41,6 @@ __deprecated__ mixed read()
   return get();
 }
 
-//! @decl mixed read()
 //! @decl mixed get()
 //! Returns the next element from the queue, or @expr{UNDEFINED@} if
 //! the queue is empty.
