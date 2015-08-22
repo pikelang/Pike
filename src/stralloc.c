@@ -1554,7 +1554,8 @@ struct pike_string *realloc_unlinked_string(struct pike_string *a,
   size_t nbytes = (size_t)(size+1) << a->size_shift;
   size_t obytes = (size_t)(a->len+1) << a->size_shift;
 
-  switch ((a->flags & STRING_ALLOC_MASK) | (nbytes <= sizeof(struct pike_string))) {
+  switch ((a->flags & STRING_ALLOC_MASK) | (nbytes <= sizeof(struct pike_string)))
+  {
   case STRING_ALLOC_MALLOC:
       s=xrealloc(a->str, nbytes);
       break;
