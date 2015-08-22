@@ -5,11 +5,11 @@ inherit @module@;
 //! Table of static headers. @rfc{7541@} Appendix A, Table 1.
 //!
 //! @array
-//!   @item 0..60
+//!   @elem array 0..60
 //!     @array
-//!       @item 0 string(8bit)
+//!       @elem string(8bit) 0
 //!         Header name.
-//!       @item 1 string(8bit)
+//!       @elem string(8bit) 1
 //!         Default value.
 //!     @endarray
 //! @endarray
@@ -163,14 +163,14 @@ class Context
   //! Index into @[dynamic_headers] and @[static_headers].
   //!
   //! @mapping
-  //!   @elem mapping(string(8bit):int)|int "header_name"
+  //!   @member mapping(string(8bit):int)|int "header_name"
   //!     Indexed on the header name in lower-case. The value is one of:
   //!     @mixed
   //!       @type int
   //!         Index value for the header value @expr{""@}.
   //!       @type mapping(string(8bit):int)
   //!         @mapping
-  //!           @elem mapping(string(8bit):int) "header_value"
+  //!           @member mapping(string(8bit):int) "header_value"
   //!             Index value for the corresponding header value.
   //!         @endmapping
   //!     @endmixed
@@ -286,14 +286,13 @@ class Context
   //!   Encoding key for the header to retrieve.
   //!
   //! @returns
-  //! @returns
   //!   Returns @[UNDEFINED] on unknown header.
   //!   Returns an array with a header and value otherwise:
   //!   @array
-  //!     @item string(8bit) 0
+  //!     @elem string(8bit) 0
   //!       Name of the header. Under normal circumstances this is
   //!       always lower-case, but no check is currently performed.
-  //!     @item string(8bit) 1
+  //!     @elem string(8bit) 1
   //!       Value of the header.
   //!   @endarray
   //!
@@ -349,12 +348,12 @@ class Context
   //!   Returns @[UNDEFINED] on empty buffer.
   //!   Returns an array with a header and value otherwise:
   //!   @array
-  //!     @item string(8bit) 0
+  //!     @elem string(8bit) 0
   //!       Name of the header. Under normal circumstances this is
   //!       always lower-case, but no check is currently performed.
-  //!     @item string(8bit) 1
+  //!     @elem string(8bit) 1
   //!       Value of the header.
-  //!     @item HPackFlags|void 2
+  //!     @elem HPackFlags|void 2
   //!       Optional encoding flags. Only set for fields having
   //!       @[HEADER_NEVER_INDEXED].
   //!   @endarray
