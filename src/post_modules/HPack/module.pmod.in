@@ -2,7 +2,7 @@
 
 inherit @module@;
 
-//! Table of static headers. RFC 7541 Appendix A, Table 1.
+//! Table of static headers. @rfc{7541@} Appendix A, Table 1.
 //!
 //! @array
 //!   @item 0..60
@@ -16,7 +16,8 @@ inherit @module@;
 //!
 //! @note
 //!   Note that this table is indexed starting on @expr{0@} (zero),
-//!   while the corresponding table in RFC 7541 starts on @expr{1@} (one).
+//!   while the corresponding table in @rfc{7541@} starts on @expr{1@}
+//!   (one).
 constant static_header_tab = ({
   ({ ":authority", "", }),
   ({ ":method", "GET", }),
@@ -114,7 +115,7 @@ protected mapping(string(8bit):int|mapping(string(8bit):int))
 //! This is the default static maximum size of the
 //! dynamic header table.
 //!
-//! This constant is taken from RFC 7540 section 6.5.2.
+//! This constant is taken from @rfc{7540@} section 6.5.2.
 constant DEFAULT_HEADER_TABLE_SIZE = 4096;
 
 //! Flags for @[Context()->encode_header()] et al.
@@ -127,7 +128,7 @@ enum HPackFlags {
 
 //! Context for an HPack encoder or decoder.
 //!
-//! This class implements the majority of RFC 7541.
+//! This class implements the majority of @rfc{7541@}.
 //!
 //! Functions of interest are typically @[encode()] and @[decode()].
 class Context
@@ -194,7 +195,7 @@ class Context
   //!
   //! @param static_max_size
   //!   This is the static maximum size in bytes (as calculated by
-  //!   RFC 7541 section 4.1) of the dynamic header table.
+  //!   @rfc{7541@} section 4.1) of the dynamic header table.
   //!   It defaults to @[DEFAULT_HEADER_TABLE_SIZE], and is the
   //!   upper limit for @[set_dynamic_size()].
   //!
@@ -604,8 +605,8 @@ class Context
   //!   Output buffer.
   //!
   //! @param new_max_size
-  //!   New dynamic maximum size in bytes (as calculated by RFC 7541
-  //!   section 4.1).
+  //!   New dynamic maximum size in bytes (as calculated by
+  //!   @rfc{7541@} section 4.1).
   //!
   //! @note
   //!   This function can be used to clear the dynamic header table

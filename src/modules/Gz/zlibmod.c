@@ -437,14 +437,14 @@ void zlibmod_pack(struct pike_string *data, dynamic_buffer *buf,
  *!                             void|int(8..15) window_size)
  *!
  *! Encodes and returns the input @[data] according to the deflate
- *! format defined in RFC 1951.
+ *! format defined in @rfc{1951@}.
  *!
  *! @param data
  *!   The data to be encoded.
  *!
  *! @param raw
  *!   If set, the data is encoded without the header and footer
- *!   defined in RFC 1950. Example of uses is the ZIP container
+ *!   defined in @rfc{1950@}. Example of uses is the ZIP container
  *!   format.
  *!
  *! @param level
@@ -955,7 +955,7 @@ void zlibmod_unpack(struct pike_string *data, dynamic_buffer *buf, int raw)
  *!
  *! Uncompresses the @[data] and returns it. The @[raw] parameter
  *! tells the decoder that the indata lacks the data header and footer
- *! defined in RFC 1950.
+ *! defined in @rfc{1950@}.
  */
 static void gz_uncompress(INT32 args)
 {

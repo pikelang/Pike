@@ -393,7 +393,7 @@ static void json_encode_recur (struct encode_context *ctx, struct svalue *val)
  *!   be escaped. The flag value is 1.
  *!
  *!   Characters above U+FFFF are encoded using escaped surrogate
- *!   pairs, as per RFC 4627.
+ *!   pairs, as per @rfc{4627@}.
  *!
  *! @item Standards.JSON.HUMAN_READABLE
  *!   Pretty print with indentation to make the result easier on human

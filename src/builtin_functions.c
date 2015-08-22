@@ -2257,7 +2257,7 @@ PMOD_EXPORT void f_string_to_utf8(INT32 args)
  *!   Throws an error if the stream is not a legal UTF-8 byte-stream.
  *!
  *! @note
- *!   In conformance with RFC 3629 and Unicode 3.1 and later,
+ *!   In conformance with @rfc{3629@} and Unicode 3.1 and later,
  *!   non-shortest forms are not decoded. An error is thrown instead.
  *!
  *! @seealso
