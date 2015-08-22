@@ -318,13 +318,11 @@ PMOD_EXPORT struct pike_string * debug_make_shared_pcharp(const PCHARP str);
 PMOD_EXPORT struct pike_string * debug_make_shared_binary_string0(const p_wchar0 *str,size_t len);
 PMOD_EXPORT struct pike_string * debug_make_shared_binary_string1(const p_wchar1 *str,size_t len);
 PMOD_EXPORT struct pike_string * debug_make_shared_binary_string2(const p_wchar2 *str,size_t len);
-PMOD_EXPORT struct pike_string * make_static_string(const char *str, size_t len, enum size_shift);
 PMOD_EXPORT struct pike_string * make_shared_static_string(const char *str, size_t len, enum size_shift);
 PMOD_EXPORT struct pike_string *debug_make_shared_string(const char *str);
 PMOD_EXPORT struct pike_string *debug_make_shared_string0(const p_wchar0 *str);
 PMOD_EXPORT struct pike_string *debug_make_shared_string1(const p_wchar1 *str);
 PMOD_EXPORT struct pike_string *debug_make_shared_string2(const p_wchar2 *str);
-PMOD_EXPORT void unlink_pike_string(struct pike_string *s);
 
 PMOD_EXPORT void check_string_range( struct pike_string *str, int loose,
                                      INT32 *min, INT32 *max );
@@ -467,9 +465,6 @@ PMOD_EXPORT p_wchar2 *require_wstring2(const struct pike_string *s,
                                        char **to_free);
 /* Prototypes end here */
 
-/* Compat alias. */
-#define do_really_free_pike_string do_free_unlinked_pike_string
-
 static INLINE void PIKE_UNUSED_ATTRIBUTE string_builder_binary_strcat(struct string_builder *s,
 						const char *str, ptrdiff_t len)
 {
@@ -484,8 +479,6 @@ static INLINE int PIKE_UNUSED_ATTRIBUTE string_has_null( struct pike_string *x )
     check_string_range(x,0,&min,0);
     return min <= 0;
 }
-
-#define ISCONSTSTR(X,Y) c_compare_string((X),Y,sizeof(Y)-sizeof(""))
 
 #define visit_string_ref(S, REF_TYPE, EXTRA)			\
   visit_ref (pass_string (S), (REF_TYPE),			\
