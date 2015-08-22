@@ -559,36 +559,6 @@ struct pike_string *findstring(const char *foo)
   return binary_findstring(foo, strlen(foo));
 }
 
-/*
- * find a string that is already shared and move it to the head
- * of that list in the hastable
- */
-static struct pike_string *propagate_shared_string(const struct pike_string *s,
-						   ptrdiff_t h)
-{
-  struct pike_string *curr, **prev, **base;
-
-  for(base = prev = base_table + h;( curr=*prev ); prev=&curr->next)
-  {
-    if (curr == s) /* found it */
-    {
-      *prev=curr->next;
-      curr->next=*base;
-      *base=curr;
-      return curr;
-    }
-#ifdef PIKE_DEBUG
-    if(curr->refs<1)
-    {
-      debug_dump_pike_string(curr, 70);
-      locate_problem(has_zero_refs);
-      Pike_fatal("String with no references.\n");
-    }
-#endif
-  }
-  return 0; /* not found */
-}
-
 /*** rehash ***/
 
 static void rehash_string_backwards(struct pike_string *s)
@@ -779,7 +749,7 @@ PMOD_EXPORT struct pike_string *debug_begin_wide_shared_string(size_t len, int s
   add_ref(t);	/* For DMALLOC */
   t->len=len;
   DO_IF_DEBUG(t->next = NULL);
-  UNSET_ONERROR(&fe);
+  UNSET_ONERROR(fe);
   low_set_index(t,len,0);
   return t;
 }
@@ -790,7 +760,7 @@ static struct pike_string * make_static_string(const char * str, size_t len,
   struct pike_string * t = ba_alloc(&string_allocator);
 
   t->flags = STRING_NOT_HASHED|STRING_NOT_SHARED|STRING_ALLOC_STATIC;
-  t->str = str;
+  t->str = (char *)str;
   t->refs = 0;
   t->len = len;
   t->size_shift = shift;
@@ -819,7 +789,7 @@ PMOD_EXPORT struct pike_string * make_shared_static_string(const char *str, size
         }
         s->flags &= ~STRING_ALLOC_MASK;
         s->flags |= STRING_ALLOC_STATIC;
-        s->str = str;
+        s->str = (char*)str;
     }
     add_ref(s);
   }
@@ -1103,11 +1073,12 @@ static void unlink_pike_string(struct pike_string *s)
     p = tmp;
     tmp = tmp->next;
   }
-#ifdef PIKE_DEBUG
+
   if( !tmp )
     Pike_fatal("unlink on non-shared string\n");
+
   s->next=(struct pike_string *)(ptrdiff_t)-1;
-#endif
+
   num_strings--;
   s->flags |= STRING_NOT_SHARED;
 }
@@ -1412,7 +1383,7 @@ int safe_debug_findstring(const struct pike_string *foo)
 /* for once, this is actually a debug function! */
 struct pike_string *debug_findstring(const struct pike_string *foo)
 {
-  return propagate_shared_string(foo, HMODULO(foo->hval));
+  return safe_debug_finstring(foo) ? foo : 0;
 }
 
 PMOD_EXPORT void debug_dump_pike_string(const struct pike_string *s, INT32 max)
