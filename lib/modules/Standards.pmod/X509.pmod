@@ -917,7 +917,7 @@ class TBSCertificate
   //
 
   //! Set if the certificate contains a valid basicConstraints
-  //! extension. @rfc{3280@} 4.2.1.10.
+  //! extension. @rfc{3280:4.2.1.10@}.
   int(0..1) ext_basicConstraints;
 
   //! If set, the certificate may be used as a CA certificate, i.e.
@@ -968,7 +968,7 @@ class TBSCertificate
   }
 
   //! Set if the certificate contains a valid authorityKeyIdentifier
-  //! extension. @rfc{3280@} 4.2.1.1.
+  //! extension. @rfc{3280:4.2.1.1@}.
   int(0..1) ext_authorityKeyIdentifier;
 
   //! Set to the KeyIdentifier, if set in the extension.
@@ -1008,8 +1008,8 @@ class TBSCertificate
   }
 
   //! Set to the value of the SubjectKeyIdentifier if the certificate
-  //! contains the subjectKeyIdentifier extension. @rfc{3280@}
-  //! 4.2.1.2.
+  //! contains the subjectKeyIdentifier
+  //! extension. @rfc{3280:4.2.1.2@}.
   string ext_subjectKeyIdentifier;
 
   protected int(0..1) parse_subjectKeyIdentifier(Object o)
@@ -1021,7 +1021,7 @@ class TBSCertificate
   }
 
   //! Set to the value of the KeyUsage if the certificate contains the
-  //! keyUsage extension. @rfc{3280@} 4.2.1.3.
+  //! keyUsage extension. @rfc{3280:4.2.1.3@}.
   keyUsage ext_keyUsage;
 
   protected int(0..1) parse_keyUsage(Object o)
@@ -1045,7 +1045,7 @@ class TBSCertificate
   //! Set to the list of extended key usages from anyExtendedKeyUsage,
   //! if the certificate contains the extKeyUsage extensions. These
   //! Identifier objects are typically found in
-  //! @[.PKCS.Identifiers.reverse_kp_ids]. @rfc{3280@} 4.2.1.13.
+  //! @[.PKCS.Identifiers.reverse_kp_ids]. @rfc{3280:4.2.1.13@}.
   array(Identifier) ext_extKeyUsage;
 
   protected int(0..1) parse_extKeyUsage(Object o)

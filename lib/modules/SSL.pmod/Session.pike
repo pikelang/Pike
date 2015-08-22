@@ -62,7 +62,7 @@ Crypto.Sign.State peer_public_key;
 int max_packet_size = PACKET_MAX_SIZE;
 
 //! Indicates that the packet HMACs should be truncated
-//! to the first 10 bytes (80 bits). Cf @rfc{3546@} 3.5.
+//! to the first 10 bytes (80 bits). Cf @rfc{3546:3.5@}.
 int(0..1) truncated_hmac;
 
 //! Indicates that the connection uses the Extended Master Secret method
@@ -80,14 +80,14 @@ protected void create(string(8bit)|void id)
  * Extensions provided by the peer.
  */
 
-//! @rfc{6066@} 3.1 (SNI)
+//! @rfc{6066:3.1@} (SNI)
 string(8bit) server_name;
 
 //! The set of <hash, signature> combinations supported by the peer.
 //!
 //! Only used with TLS 1.2 and later.
 //!
-//! Defaults to the settings from @rfc{5246@} 7.4.1.4.1.
+//! Defaults to the settings from @rfc{5246:7.4.1.4.1@}.
 array(array(int)) signature_algorithms = ({
   // RFC 5246 7.4.1.4.1:
   // Note: this is a change from TLS 1.1 where there are no explicit

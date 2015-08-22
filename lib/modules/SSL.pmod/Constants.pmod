@@ -120,7 +120,7 @@ constant CIPHER_effective_keylengths = ([
   CIPHER_chacha20:	256,
 ]);
 
-//! Hash algorithms as per @rfc{5246@} 7.4.1.4.1.
+//! Hash algorithms as per @rfc{5246:7.4.1.4.1@}.
 enum HashAlgorithm {
   HASH_none	= 0,
   HASH_md5	= 1,

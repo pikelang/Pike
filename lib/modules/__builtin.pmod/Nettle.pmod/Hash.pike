@@ -576,8 +576,8 @@ string P_hash(string password, string salt, int rounds, int bytes)
   return res[..(bytes-1)];
 }
 
-//! This is the mask generation function @tt{MFG1@} from @rfc{3447@}
-//! B.2.1.
+//! This is the mask generation function @tt{MFG1@} from
+//! @rfc{3447:B.2.1@}.
 //!
 //! @param seed
 //!   Seed from which the mask is to be generated.

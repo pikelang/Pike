@@ -588,11 +588,28 @@ string parse_text(Node n, void|String.Buffer ret) {
       break;
 
     case "rfc":
-      string rfc = parse_text(c);
-      sscanf(rfc, "%[0-9]", rfc);
-      if (sizeof(rfc) < 4) rfc = ("0000" + rfc)[<3..];
-      ret->add("<b><a href='http://pike.lysator.liu.se/docs/ietf/rfc/",
-	       rfc[..<2], "/rfc", rfc, ".xml'>RFC ", rfc, "</a></b>");
+      {
+        string rfc = upper_case(parse_text(c));
+        string section;
+        sscanf(rfc, "%[0-9]:%[.A-Z0-9]", rfc, section);
+        if (sizeof(rfc) < 4) rfc = ("0000" + rfc)[<3..];
+        ret->add("<b><a href='http://pike.lysator.liu.se/docs/ietf/rfc/",
+                 rfc[..<2], "/rfc", rfc, ".xml");
+        if( section && sizeof(section) )
+          ret->add("#", section);
+        else
+          section = 0;
+        ret->add("'>RFC ", rfc);
+        if( section )
+        {
+          if( section[0] > '9' )
+            ret->add(" appendix ");
+          else
+            ret->add(" section ");
+          ret->add(section);
+        }
+        ret->add("</a></b>");
+      }
       break;
 
     case "dl":

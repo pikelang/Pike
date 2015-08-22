@@ -275,7 +275,7 @@ enum DNSKEY_Flags {
 enum DNSSEC_Protocol {
   DNSSEC_TLS		= 1,	//! Reserved for use by TLS.
   DNSSEC_EMAIL		= 2,	//! Reserved for use by SMTP et al.
-  DNSSEC_DNSSEC		= 3,	//! Key for use by DNSSEC. @rfc{4034@} 2.1.2.
+  DNSSEC_DNSSEC		= 3,	//! Key for use by DNSSEC. @rfc{4034:2.1.2@}.
   DNSSEC_IPSEC		= 4,	//! Reserved for use by IPSEC.
   DNSSEC_ALL		= 255,	//! Any use. Discouraged.
 };
@@ -289,13 +289,13 @@ enum DNSSES_Algorithm {
   DNSSEC_RSASHA1	= 5,	//! RSA/SHA1 @rfc{3110@}.
 
   DNSSEC_INDIRECT	= 252,
-  DNSSEC_PRIVATEDNS	= 253,	//! Private algorithm DNS-based @rfc{4035@} A.1.1.
-  DNSSEC_PRIVATEOID	= 254,	//! Private algorithm OID-based @rfc{4035@} A.1.1.
+  DNSSEC_PRIVATEDNS	= 253,	//! Private algorithm DNS-based @rfc{4035:A.1.1@}.
+  DNSSEC_PRIVATEOID	= 254,	//! Private algorithm OID-based @rfc{4035:A.1.1@}.
 };
 
 //! DNSSEC Digest types.
 enum DNSSEC_Digests {
-  DNSSEC_SHA1		= 1,	//! SHA1 digest @rfc{4035@} A.2.
+  DNSSEC_SHA1		= 1,	//! SHA1 digest @rfc{4035:A.2@}.
 };
 
 int safe_bind(Stdio.UDP udp, string|int port, string|void device)

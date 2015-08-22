@@ -886,7 +886,7 @@ class VisibleString {
 
 //! UTCTime
 //!
-//! @rfc{2459@} 4.1.2.5.1
+//! @rfc{2459:4.1.2.5.1@}
 class UTC
 {
   inherit String;
@@ -1157,7 +1157,7 @@ class MetaExplicit
 //! of several optional fields are present.
 //!
 //! @example
-//!   Eg @rfc{5915@} section 3:
+//!   Eg @rfc{5915:3@}:
 //!   @code
 //!     ECPrivateKey ::= SEQUENCE {
 //!       version        INTEGER { ecPrivkeyVer1(1) } (ecPrivkeyVer1),

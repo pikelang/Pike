@@ -53,7 +53,7 @@ enum Setting {
   SETTINGS_max_header_list_size		= 6,
 };
 
-//! @rfc{7540@} Appendix A.
+//! @rfc{7540:A@}.
 constant TLS_CIPHER_SUITE_BLACK_LIST = (<
   SSL.Constants.SSL_null_with_null_null,
   SSL.Constants.SSL_rsa_with_null_md5,

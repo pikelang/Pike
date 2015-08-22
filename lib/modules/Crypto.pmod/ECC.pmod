@@ -33,7 +33,7 @@ class Curve {
   }
 
   //! Returns the PKCS-1 elliptic curve identifier for the curve.
-  //! cf @rfc{5480@} 2.1.1.
+  //! cf @rfc{5480:2.1.1@}.
   Identifier pkcs_named_curve_id()
   {
     switch(name()) {
@@ -52,14 +52,13 @@ class Curve {
   }
 
   //! Returns the PKCS-1 elliptic curve parameters for the curve.
-  //! cf @rfc{5480@} 2.1.1.
+  //! cf @rfc{5480:2.1.1@}.
   Identifier pkcs_ec_parameters()
   {
     return pkcs_named_curve_id();
   }
 
-  //! Returns the AlgorithmIdentifier as defined in @rfc{5480@}
-  //! section 2.
+  //! Returns the AlgorithmIdentifier as defined in @rfc{5480:2@}.
   Sequence pkcs_algorithm_identifier()
   {
     return
@@ -246,15 +245,15 @@ class Curve {
       return 0;
     }
 
-    //! Returns the AlgorithmIdentifier as defined in @rfc{5480@}
-    //! section 2.1.1 including the ECDSA parameters.
+    //! Returns the AlgorithmIdentifier as defined in
+    //! @rfc{5480:2.1.1@} including the ECDSA parameters.
     Sequence pkcs_algorithm_identifier()
     {
       return Curve::pkcs_algorithm_identifier();
     }
 
     //! Creates a SubjectPublicKeyInfo ASN.1 sequence for the object.
-    //! See @rfc{5280@} section 4.1.2.7.
+    //! See @rfc{5280:4.1.2.7@}.
     Sequence pkcs_public_key()
     {
       return Sequence(({

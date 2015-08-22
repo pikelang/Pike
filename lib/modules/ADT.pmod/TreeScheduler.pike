@@ -12,7 +12,7 @@ inherit .Scheduler;
 //! Active consumers closer to the root will receive the resource
 //! before their children.
 //!
-//! Implements most of @rfc{7540@} section 5.3.
+//! Implements most of @rfc{7540:5.3@}.
 //!
 //! @seealso
 //!   @[Scheduler]

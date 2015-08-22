@@ -776,7 +776,7 @@ string percent_encode (string s)
 //! Encodes the given string using @tt{%XX@} encoding, except that URI
 //! unreserved chars are not encoded. The unreserved chars are
 //! @tt{A-Z@}, @tt{a-z@}, @tt{0-9@}, @tt{-@}, @tt{.@}, @tt{_@}, and
-//! @tt{~@} (see @rfc{2396@} section 2.3).
+//! @tt{~@} (see @rfc{2396:2.3@}).
 //!
 //! 8-bit chars are encoded straight, and wider chars are not allowed.
 //! That means this encoding is applicable if @[s] is a binary octet
@@ -816,14 +816,13 @@ string uri_encode (string s)
 //! component part in a URI. This means that all URI reserved and
 //! excluded characters are encoded, i.e. everything except @tt{A-Z@},
 //! @tt{a-z@}, @tt{0-9@}, @tt{-@}, @tt{.@}, @tt{_@}, and @tt{~@} (see
-//! @rfc{2396@} section 2.3).
+//! @rfc{2396:2.3@}).
 //!
 //! 8-bit chars and wider are encoded using UTF-8 followed by
-//! percent-encoding. This follows @rfc{3986@} section 2.5, the
-//! IRI-to-URI conversion method in the IRI standard (@rfc{3987@}) and
-//! appendix B.2 in the HTML 4.01 standard. It should work regardless
-//! of the charset used in the XML document the URI might be inserted
-//! into.
+//! percent-encoding. This follows @rfc{3986:2.5@}, the IRI-to-URI
+//! conversion method in the IRI standard (@rfc{3987@}) and appendix
+//! B.2 in the HTML 4.01 standard. It should work regardless of the
+//! charset used in the XML document the URI might be inserted into.
 //!
 //! @seealso
 //! @[uri_decode], @[uri_encode_invalids], @[iri_encode]
@@ -836,15 +835,15 @@ string uri_encode_invalids (string s)
 //! encoding, so that it can be included as a URI in an HTTP message
 //! or header field. This includes control chars, space and various
 //! delimiter chars except those in the URI @tt{reserved@} set
-//! (@rfc{2396@} section 2.2).
+//! (@rfc{2396:2.2@}).
 //!
 //! Since this function doesn't touch the URI @tt{reserved@} chars nor
 //! the escape char @tt{%@}, it can be used on a complete formatted
 //! URI or IRI.
 //!
 //! 8-bit chars and wider are encoded using UTF-8 followed by
-//! percent-encoding. This follows @rfc{3986@} section 2.5, the IRI
-//! standard (@rfc{3987@}) and appendix B.2 in the HTML 4.01 standard.
+//! percent-encoding. This follows @rfc{3986:2.5@}, the IRI standard
+//! (@rfc{3987@}) and appendix B.2 in the HTML 4.01 standard.
 //!
 //! @note
 //! The characters in the URI @tt{reserved@} set are: @tt{:@},
@@ -938,8 +937,8 @@ string iri_normalize (string s)
 
 string quoted_string_encode (string s)
 //! Encodes the given string quoted to be used as content inside a
-//! @tt{quoted-string@} according to @rfc{2616@} section 2.2. The
-//! returned string does not include the surrounding @tt{"@} chars.
+//! @tt{quoted-string@} according to @rfc{2616:2.2@}. The returned
+//! string does not include the surrounding @tt{"@} chars.
 //!
 //! @note
 //! The @tt{quoted-string@} quoting rules in @rfc{2616@} have several
@@ -966,8 +965,8 @@ string quoted_string_encode (string s)
 
 string quoted_string_decode (string s)
 //! Decodes the given string which has been encoded as a
-//! @tt{quoted-string@} according to @rfc{2616@} section 2.2. @[s] is
-//! assumed to not include the surrounding @tt{"@} chars.
+//! @tt{quoted-string@} according to @rfc{2616:2.2@}. @[s] is assumed
+//! to not include the surrounding @tt{"@} chars.
 //!
 //! @seealso
 //! @[quoted_string_encode]

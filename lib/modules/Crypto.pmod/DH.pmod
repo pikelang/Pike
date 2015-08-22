@@ -73,7 +73,7 @@ class Parameters
 
 //! MODP Group 1 (768 bit) (aka First Oakley Group (aka ORM96 group 1)).
 //!
-//! @rfc{2409@} 6.1
+//! @rfc{2409:6.1@}
 //!
 //! @note
 //!   Not allowed for use with FIPS 140.
@@ -87,7 +87,7 @@ Parameters MODPGroup1 =
 
 //! MODP Group 2 (1024 bit) (aka Second Oakley Group (aka ORM96 group 2)).
 //!
-//! @rfc{2409@} 6.2
+//! @rfc{2409:6.2@}
 //!
 //! @note
 //!   Not allowed for use with FIPS 140.
@@ -102,7 +102,7 @@ Parameters MODPGroup2 =
 
 //! MODP Group 5 (1536 bit).
 //!
-//! @rfc{3526@} 2
+//! @rfc{3526:2@}
 //!
 //! @note
 //!   Not allowed for use with FIPS 140.
@@ -120,7 +120,7 @@ Parameters MODPGroup5 =
 
 //! MODP Group 14 (2048 bit).
 //!
-//! @rfc{3526@} 3
+//! @rfc{3526:3@}
 Parameters MODPGroup14 =
   /* p = 2^2048 - 2^1984 - 1 + 2^64 * floor( 2^1918 Pi + 124476 ) */
   Parameters(Gmp.mpz("FFFFFFFF FFFFFFFF C90FDAA2 2168C234 C4C6628B 80DC1CD1"
@@ -137,7 +137,7 @@ Parameters MODPGroup14 =
 
 //! MODP Group 15 (3072 bit).
 //!
-//! @rfc{3526@} 3
+//! @rfc{3526:4@}
 Parameters MODPGroup15 =
   /* p = 2^3072 - 2^3008 - 1 + 2^64 * floor( 2^2942 Pi + 1690314 ) */
   Parameters(Gmp.mpz("FFFFFFFF FFFFFFFF C90FDAA2 2168C234 C4C6628B 80DC1CD1"
@@ -160,7 +160,7 @@ Parameters MODPGroup15 =
 
 //! MODP Group 16 (4096 bit).
 //!
-//! @rfc{3526@} 5
+//! @rfc{3526:5@}
 Parameters MODPGroup16 =
   /* p = 2^4096 - 2^4032 - 1 + 2^64 * floor( 2^3966 Pi + 240904 ) */
   Parameters(Gmp.mpz("FFFFFFFF FFFFFFFF C90FDAA2 2168C234 C4C6628B 80DC1CD1"
@@ -188,7 +188,7 @@ Parameters MODPGroup16 =
 
 //! MODP Group 17 (6144 bit).
 //!
-//! @rfc{3526@} 6
+//! @rfc{3526:6@}
 Parameters MODPGroup17 =
   /* p = 2^6144 - 2^6080 - 1 + 2^64 * floor( 2^6014 Pi + 929484 ) */
   Parameters(
@@ -223,7 +223,7 @@ Parameters MODPGroup17 =
 
 //! MODP Group 18 (8192 bit).
 //!
-//! @rfc{3526@} 7
+//! @rfc{3526:7@}
 Parameters MODPGroup18 =
   /* p = 2^8192 - 2^8128 - 1 + 2^64 * floor( 2^8062 Pi + 4743158 ) */
   Parameters(Gmp.mpz("FFFFFFFF FFFFFFFF C90FDAA2 2168C234 C4C6628B 80DC1CD1"
@@ -272,7 +272,7 @@ Parameters MODPGroup18 =
 
 //! MODP Group 22 (1024-bit with 160-bit Subgroup).
 //!
-//! @rfc{5114@} 2.1
+//! @rfc{5114:2.1@}
 Parameters MODPGroup22 =
   Parameters(Gmp.mpz("B10B8F96 A080E01D DE92DE5E AE5D54EC 52C99FBC FB06A3C6"
                      "9A6A9DCA 52D23B61 6073E286 75A23D18 9838EF1E 2EE652C0"
@@ -290,7 +290,7 @@ Parameters MODPGroup22 =
 
 //! MODP Group 23 (2048-bit with 224-bit Subgroup).
 //!
-//! @rfc{5114@} 2.2
+//! @rfc{5114:2.2@}
 Parameters MODPGroup23 =
   Parameters(Gmp.mpz("AD107E1E 9123A9D0 D660FAA7 9559C51F A20D64E5 683B9FD1"
                      "B54B1597 B61D0A75 E6FA141D F95A56DB AF9A3C40 7BA1DF15"
@@ -319,7 +319,7 @@ Parameters MODPGroup23 =
 
 //! MODP Group 24 (2048-bit with 256-bit Subgroup).
 //!
-//! @rfc{5114@} 2.3
+//! @rfc{5114:2.3@}
 Parameters MODPGroup24 =
   Parameters(Gmp.mpz("87A8E61D B4B6663C FFBBD19C 65195999 8CEEF608 660DD0F2"
                      "5D2CEED4 435E3B00 E00DF8F1 D61957D4 FAF7DF45 61B2AA30"

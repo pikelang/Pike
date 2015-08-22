@@ -825,11 +825,10 @@ PIKECLASS BufferedCipher
        *!     non-payload data last.
        *!   @value Crypto.PAD_TLS
        *!   @value Crypto.PAD_SSL
-       *!     Pads according to @rfc{5246@} section 6.2.3.2, meaning
-       *!     that all extra space is filled with the size of the
-       *!     padding. Note that this size has an off by one
-       *!     difference to the other schemas, so 0 means 1 byte of
-       *!     padding.
+       *!     Pads according to @rfc{5246:6.2.3.2@}, meaning that all
+       *!     extra space is filled with the size of the padding. Note
+       *!     that this size has an off by one difference to the other
+       *!     schemas, so 0 means 1 byte of padding.
        *!   @value Crypto.PAD_ANSI_X923
        *!     Pads according to ANSI X.923, which means filling all extra
        *!     space with zero and putting the size of the non-payload data
