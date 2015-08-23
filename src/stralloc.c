@@ -280,7 +280,7 @@ void low_set_index(struct pike_string *s, ptrdiff_t pos, int value)
 }
 
 #ifdef PIKE_DEBUG
-PMOD_EXPORT struct pike_string *debug_check_size_shift(struct pike_string *a, int shift)
+PMOD_EXPORT struct pike_string *debug_check_size_shift(const struct pike_string *a, int shift)
 {
   if(a->size_shift != shift)
     Pike_fatal("Wrong STRX macro used!\n");
@@ -1381,9 +1381,9 @@ int safe_debug_findstring(const struct pike_string *foo)
 }
 
 /* for once, this is actually a debug function! */
-struct pike_string *debug_findstring(const struct pike_string *foo)
+const struct pike_string *debug_findstring(const struct pike_string *foo)
 {
-  return safe_debug_finstring(foo) ? foo : 0;
+  return safe_debug_findstring(foo) ? foo : 0;
 }
 
 PMOD_EXPORT void debug_dump_pike_string(const struct pike_string *s, INT32 max)
