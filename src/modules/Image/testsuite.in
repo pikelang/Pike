@@ -8,6 +8,57 @@ test_eq([[ Image.GIF.decode(MIME.decode_base64(
   "R0lGODlhBQAFAIAAAAAAAP///ywAAAAABQAFAAACCAxwEWrY8BwoADs=")) ]],
 Image.PNM.decode("P4\n5 5\nx\00шиш№") )
 
+dnl netpbm wikipedia examples
+test_do(add_constant("IMAGE",lambda(string in) { return decode_value(Gz.uncompress(String.hex2string(in))); }))
+test_eq(Image.PNM.decode(#{P1
+# This is an example bitmap of the letter "J"
+6 10
+0 0 0 0 1 0
+0 0 0 0 1 0
+0 0 0 0 1 0
+0 0 0 0 1 0
+0 0 0 0 1 0
+0 0 0 0 1 0
+1 0 0 0 1 0
+0 1 1 1 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+#}), IMAGE("78dadb969d6a90fc9423e1010713071bdb86ff48808181e13f2aa0ae08b2389ccd0003ff89060072d39782"))
+
+test_eq(Image.PNM.decode(#{P2
+# Shows the word "FEEP" (example from Netpbm man page on PGM)
+24 7
+15
+0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0
+0  3  3  3  3  0  0  7  7  7  7  0  0 11 11 11 11  0  0 15 15 15 15  0
+0  3  0  0  0  0  0  7  0  0  0  0  0 11  0  0  0  0  0 15  0  0 15  0
+0  3  3  3  0  0  0  7  7  7  0  0  0 11 11 11  0  0  0 15 15 15 15  0
+0  3  0  0  0  0  0  7  0  0  0  0  0 11  0  0  0  0  0 15  0  0  0  0
+0  3  0  0  0  0  0  7  7  7  7  0  0 11 11 11 11  0  0 15  0  0  0  0
+0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0
+#}), IMAGE("78dadb969d6a90fc9423e101870807b31bc31706ea01632400112947021091dd480022f21f09c0cd413319ae1d0ee0dae100ae1dd91c64c720bb07d91c64c7d0c23dc8e183690e31e1c34003000052ea5e1c"))
+
+test_eq(Image.PNM.decode(#{P3
+# The P3 means colors are in ASCII, then 3 columns and 2 rows,
+# then 255 for max color, then RGB triplets
+3 2
+255
+255   0   0     0 255   0     0   0 255
+255 255   0   255 255 255     0   0   0
+#}), IMAGE("78dadb969d6a90fc9423e1c18b156c7cff191818c0f8ff7f3066600000dfef0de3"))
+
+test_eq(Image.PNM.decode(#{P3
+# The same image with width 3 and height 2,
+# using 0 or 1 per color (red, green, blue)
+3 2 1
+1 0 0   0 1 0   0 0 1
+1 1 0   1 1 1   0 0 0
+#}), IMAGE("78dadb969d6a90fc9423e1c18b156c7cff191818c0f8ff7f3066600000dfef0de3"))
+
+test_eq(Image.PNM.decode("P3 3 2 1  1 0 0   0 1 0   0 0 1  1 1 0   1 1 1   0 0 0"), IMAGE("78dadb969d6a90fc9423e1c18b156c7cff191818c0f8ff7f3066600000dfef0de3"))
+
+test_do(add_constant("IMAGE"))
+
 test_true( objectp(Image.Image()) )
 test_false( Image.Image()->xsize() )
 test_false( Image.Image()->ysize() )
