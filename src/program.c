@@ -10746,7 +10746,7 @@ PMOD_EXPORT int pike_add_function2(const char *name, void (*cfun)(INT32),
   return ret;
 }
 
-PMOD_EXPORT int low_quick_add_function(const struct pike_string * name_tmp,
+PMOD_EXPORT int low_quick_add_function(struct pike_string * name_tmp,
 				   void (*cfun)(INT32),
 				   const char *type,
 				   int UNUSED(type_length),
