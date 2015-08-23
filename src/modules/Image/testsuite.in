@@ -8,6 +8,8 @@ test_eq([[ Image.GIF.decode(MIME.decode_base64(
   "R0lGODlhBQAFAIAAAAAAAP///ywAAAAABQAFAAACCAxwEWrY8BwoADs=")) ]],
 Image.PNM.decode("P4\n5 5\nx\00шиш№") )
 
+test_eval_error(Image.PNM.decode("P2 1 1 0 0"))
+
 test_true( objectp(Image.Image()) )
 test_false( Image.Image()->xsize() )
 test_false( Image.Image()->ysize() )
