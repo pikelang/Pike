@@ -229,7 +229,25 @@ static unsigned int TOKENIZE(struct array **res, CHAR *data, unsigned int len)
 	  if (pos >= len)
 	    goto failed_to_find_end;
 	  break;
-	}
+        }
+        {
+          char end = 0;
+          if( (data[pos] == '(' && (end=')')) ||
+              (data[pos] == '[' && (end=']')) ||
+              (data[pos] == '{' && (end='}')) )
+          {
+            for (pos++; pos<len-1; pos++)
+              if (data[pos] == '#' && data[pos+1] == end)
+              {
+                pos++;
+                end=0;
+                break;
+              }
+            if (end)
+              goto failed_to_find_end;
+            break;
+          }
+        }
 	if( data[pos] == 's' &&
 	    data[pos+1] == 't' &&
 	    data[pos+2] == 'r' &&
