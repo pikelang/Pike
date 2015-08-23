@@ -1,6 +1,14 @@
+/Makefile
+/make_variables
 /config.h.in
+/config.h
+/config.log
+/config.status
 /configure
 /dependencies
+/pike_SQLite.feature
+/propagated_variables
 /sqlite.c
 /sqlite.cmod.compiled
 /stamp-h.in
+/stamp-h
