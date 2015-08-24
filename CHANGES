@@ -14,6 +14,8 @@ Removed features and modules
 
 o Compatibility for Pike versions before 7.8 is no longer available.
 
+o GTK1 library is deprected, so glue code is removed.
+
 Building and installing
 -----------------------
 
