@@ -1105,6 +1105,16 @@ protected mapping parse_tag(Stdio.File file, mapping tags, mapping exif_info,
   return tags;
 }
 
+protected int read_marker(Stdio.File f)
+{
+  string x;
+  do {
+    x = f->read(1);
+    if(!sizeof(x)) return 0;
+  } while( x == "\xff" );
+  return x[0];
+}
+
 //! Retrieve the EXIF properties of the given file.
 //! @param file
 //!   The Stdio.File object containing wanted EXIF properties.
@@ -1112,19 +1122,26 @@ protected mapping parse_tag(Stdio.File file, mapping tags, mapping exif_info,
 //!   A mapping with all found EXIF properties.
 mapping get_properties(Stdio.File file)
 {
-  int exif_offset=12;
-
-  string skip=file->read(12);  // skip the jpeg header
-
-  if (skip[sizeof(skip)-6..]!="Exif\0\0")
+ loop: while(1)
   {
-     skip=file->read(100);
-     int z=search(skip,"Exif\0\0");
-     if (z==-1) return ([]); // no exif header?
-     exif_offset=z+18;
-     file->seek(z+18);
+    int marker = read_marker(file);
+    switch(marker)
+    {
+    case 0: // read_marker EOF
+    case 0xd9: // End of Image
+    case 0xda: // Start of Scan
+      return ([]);
+    case 0xd8: // Start of Image
+      continue;
+    default:
+      int size = short_value(file->read(2), "MM")-2;
+      if( marker==0xe1 && file->read(6) == "Exif\0\0" ) break loop;
+      file->read(size);
+      continue;
+    }
   }
 
+  int exif_offset = file->tell();
   string order=file->read(2);  // tiff order magic
   string code=file->read(2);   // tiff magic 42
   mapping tags=([]);
