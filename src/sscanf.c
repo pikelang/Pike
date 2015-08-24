@@ -566,6 +566,22 @@ static INLINE INT32 TO_INT32(ptrdiff_t x)
 #define TO_INT32(x)	((INT32)(x))
 #endif /* __ECL */
 
+static struct pike_string *get_string_slice( void *input, int shift,
+                                             ptrdiff_t offset, ptrdiff_t len,
+                                             struct pike_string *str )
+{
+    if( str )
+    {
+        return string_slice( str, offset, len );
+    }
+    else
+    {
+        struct pike_string *res = begin_wide_shared_string( len, shift );
+        memcpy( res->str, ((char *)input) + (offset<<shift), len<<shift);
+        return end_shared_string( res );
+    }
+}
+
 /* INT32 very_low_sscanf_{0,1,2}_{0,1,2}(p_wchar *input, ptrdiff_t input_len,
  *					 p_wchar *match, ptrdiff_t match_len,
  *					 ptrdiff_t *chars_matched,
@@ -595,7 +611,8 @@ static INT32 PIKE_CONCAT4(very_low_sscanf_,INPUT_SHIFT,_,MATCH_SHIFT)(	 \
 			 PIKE_CONCAT(p_wchar, MATCH_SHIFT) *match,	 \
 			 ptrdiff_t match_len,				 \
 			 ptrdiff_t *chars_matched,			 \
-			 int *success)                                  \
+			 int *success,                                   \
+                         struct pike_string *pstr)                       \
 {									 \
   struct svalue sval;							 \
   INT32 matches, arg;							 \
@@ -724,7 +741,7 @@ static INT32 PIKE_CONCAT4(very_low_sscanf_,INPUT_SHIFT,_,MATCH_SHIFT)(	 \
 			 match+cnt+1,					 \
 			 e-cnt-2,					 \
 			 &tmp,						 \
-			 &yes);                                         \
+                         &yes,0);                                        \
 	    if(yes && tmp)						 \
 	    {								 \
 	      f_aggregate(TO_INT32(sp-save_sp));			 \
@@ -988,10 +1005,9 @@ INPUT_IS_WIDE(								 \
 	    if (no_assign) {						 \
 	      no_assign = 2;						 \
 	    } else {							 \
-	      SET_SVAL(sval, T_STRING, 0, string,			 \
-		       PIKE_CONCAT(make_shared_binary_string,		 \
-				   INPUT_SHIFT)(input+eye,		 \
-						field_length));		 \
+              SET_SVAL(sval, T_STRING, 0, string,                        \
+                       get_string_slice(input,INPUT_SHIFT,eye,           \
+                                        field_length,pstr));             \
 	    }								 \
 	    eye+=field_length;						 \
 	    break;							 \
@@ -1002,10 +1018,9 @@ INPUT_IS_WIDE(								 \
 	    if (no_assign) {						 \
 	      no_assign = 2;						 \
 	    } else {							 \
-	      SET_SVAL(sval, T_STRING, 0, string,			 \
-		       PIKE_CONCAT(make_shared_binary_string,		 \
-				   INPUT_SHIFT)(input+eye,		 \
-						input_len-eye));	 \
+               SET_SVAL(sval, T_STRING, 0, string,                       \
+                        get_string_slice(input,INPUT_SHIFT,eye,          \
+                                         input_len-eye,pstr));           \
 	    }								 \
 	    eye=input_len;						 \
 	    break;							 \
@@ -1108,10 +1123,9 @@ INPUT_IS_WIDE(								 \
 	      if (no_assign) {						 \
 		no_assign = 2;						 \
 	      } else {							 \
-		SET_SVAL(sval, T_STRING, 0, string,			 \
-			 PIKE_CONCAT(make_shared_binary_string,		 \
-				     INPUT_SHIFT)(input+eye,		 \
-						  input_len-eye));	 \
+                SET_SVAL(sval, T_STRING, 0, string,                      \
+                         get_string_slice(input,INPUT_SHIFT,eye,         \
+                                          input_len-eye,pstr));          \
 	      }								 \
 	      eye=input_len;						 \
 	      break;							 \
@@ -1156,10 +1170,9 @@ INPUT_IS_WIDE(								 \
 	    if (no_assign) {						 \
 	      no_assign = 2;						 \
 	    } else {							 \
-	      SET_SVAL(sval, T_STRING, 0, string,			 \
-		       PIKE_CONCAT(make_shared_binary_string,		 \
-				   INPUT_SHIFT)(input+start,		 \
-						eye-start));		 \
+              SET_SVAL(sval, T_STRING, 0, string,                        \
+                       get_string_slice(input,INPUT_SHIFT,start,         \
+                                        eye-start,pstr));                \
 	    }								 \
 									 \
 	    cnt=end_str_end-match-1;					 \
@@ -1216,9 +1229,9 @@ INPUT_IS_WIDE(								 \
 	  if (no_assign) {						 \
 	    no_assign = 2;						 \
 	  } else {							 \
-	    SET_SVAL(sval, T_STRING, 0, string,				 \
-		     PIKE_CONCAT(make_shared_binary_string,		 \
-				 INPUT_SHIFT)(input+e,eye-e));		 \
+            SET_SVAL(sval, T_STRING, 0, string,                          \
+                     get_string_slice(input,INPUT_SHIFT,e,               \
+                                       eye-e,pstr));                     \
 	  }								 \
 	  break;							 \
 									 \
@@ -1331,31 +1344,31 @@ INT32 low_sscanf_pcharp(PCHARP input, ptrdiff_t len,
   {
     case 0:
       return very_low_sscanf_0_0(input.ptr, len,format.ptr, format_len,
-                                 chars_matched, &ok);
+                                 chars_matched, &ok,0);
     case 1:
       return very_low_sscanf_0_1(input.ptr, len, format.ptr, format_len,
-                                 chars_matched, &ok);
+                                 chars_matched, &ok,0);
     case 2:
       return very_low_sscanf_0_2(input.ptr, len, format.ptr, format_len,
-                                 chars_matched, &ok);
+                                 chars_matched, &ok,0);
     case 3:
       return very_low_sscanf_1_0(input.ptr, len, format.ptr, format_len,
-                                 chars_matched, &ok);
+                                 chars_matched, &ok,0);
     case 4:
       return very_low_sscanf_1_1(input.ptr, len, format.ptr, format_len,
-                                 chars_matched, &ok);
+                                 chars_matched, &ok,0);
     case 5:
       return very_low_sscanf_1_2(input.ptr, len, format.ptr, format_len,
-                                 chars_matched, &ok);
+                                 chars_matched, &ok,0);
     case 6:
       return very_low_sscanf_2_0(input.ptr, len, format.ptr, format_len,
-                                 chars_matched, &ok);
+                                 chars_matched, &ok,0);
     case 7:
       return very_low_sscanf_2_1(input.ptr, len, format.ptr, format_len,
-                                 chars_matched, &ok);
+                                 chars_matched, &ok,0);
     case 8:
       return very_low_sscanf_2_2(input.ptr, len, format.ptr, format_len,
-                                 chars_matched, &ok);
+                                 chars_matched, &ok,0);
     default:
       Pike_error("impossible");
   }
@@ -1382,55 +1395,55 @@ INT32 low_sscanf(struct pike_string *data, struct pike_string *format)
     /*      0      :      0 */
     i = very_low_sscanf_0_0(STR0(data), data->len,
 			    STR0(format), format->len,
-			    &matched_chars, &x);
+			    &matched_chars, &x,data);
     break;
   case 1:
     /*      0      :      1 */
     i = very_low_sscanf_0_1(STR0(data), data->len,
 			    STR1(format), format->len,
-			    &matched_chars, &x);
+			    &matched_chars, &x,data);
     break;
   case 2:
     /*      0      :      2 */
     i = very_low_sscanf_0_2(STR0(data), data->len,
 			    STR2(format), format->len,
-			    &matched_chars, &x);
+			    &matched_chars, &x,data);
     break;
   case 3:
     /*      1      :      0 */
     i = very_low_sscanf_1_0(STR1(data), data->len,
 			    STR0(format), format->len,
-			    &matched_chars, &x);
+			    &matched_chars, &x,data);
     break;
   case 4:
     /*      1      :      1 */
     i = very_low_sscanf_1_1(STR1(data), data->len,
 			    STR1(format), format->len,
-			    &matched_chars, &x);
+			    &matched_chars, &x,data);
     break;
   case 5:
     /*      1      :      2 */
     i = very_low_sscanf_1_2(STR1(data), data->len,
 			    STR2(format), format->len,
-			    &matched_chars, &x);
+			    &matched_chars, &x,data);
     break;
   case 6:
     /*      2      :      0 */
     i = very_low_sscanf_2_0(STR2(data), data->len,
 			    STR0(format), format->len,
-			    &matched_chars, &x);
+			    &matched_chars, &x,data);
     break;
   case 7:
     /*      2      :      1 */
     i = very_low_sscanf_2_1(STR2(data), data->len,
 			    STR1(format), format->len,
-			    &matched_chars, &x);
+			    &matched_chars, &x,data);
     break;
   case 8:
     /*      2      :      2 */
     i = very_low_sscanf_2_2(STR2(data), data->len,
 			    STR2(format), format->len,
-			    &matched_chars, &x);
+			    &matched_chars, &x,data);
     break;
   }
   return i;
