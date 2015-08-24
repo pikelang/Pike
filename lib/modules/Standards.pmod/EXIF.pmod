@@ -968,8 +968,11 @@ protected mapping parse_tag(TIFF file, mapping tags, mapping exif_info)
   if(tag_len>4)
     file->exif_seek(file->read_long());
 
-  if(tag_type==1 || tag_type==6 || tag_type==7)
+  switch(tag_type)
   {
+  case 1: // BYTE
+  case 6: // SBYTE
+  case 7: // UNDEF
     if(tag_count==1)
       tags[tag_name]=(string)file->read(1)[0];
     else if(tag_format == "TAGS")
@@ -1001,40 +1004,45 @@ protected mapping parse_tag(TIFF file, mapping tags, mapping exif_info)
       else
 	tags[tag_name]=format_bytes(str);
     }
-  }
+    break;
 
-  if(tag_type==2) // ASCII
+  case 2: // ASCII
     tags[tag_name]=String.trim_whites(file->read(max(tag_count-1, 0)))-"\0";
+    break;
 
-  if(tag_type==3 || tag_type==8) // (S)SHORT
-  {
-    if(tag_count>0xffff) return ([]); // Impossible amount of tags.
-    array a=allocate(tag_count);
-    for(int i=0; i<tag_count; i++)
-      a[i]=file->read_short();
-
-    if(tag_format=="MAP")
+  case 3: // SHORT
+  case 8: // SSHORT
+    {
+      if(tag_count>0xffff) return ([]); // Impossible amount of tags.
+      array a=allocate(tag_count);
       for(int i=0; i<tag_count; i++)
-	if(tag_map[a[i]])
-	  tags[tag_name]=tag_map[a[i]];
-	else
-	{
-	  make = tags["Make"];
-	  model = tags["Model"];
-	  tags[tag_name]= tag_map[make+"_"+model] || tag_map[make] || (string)a[i];
-	}
-    else if(tag_format=="CUSTOM")
-      tags|=tag_map(a);
-    else
-      tags[tag_name]=(array(string))a*", ";
-  }
+        a[i]=file->read_short();
 
-  if(tag_type==4 || tag_type==9) // (S)LONG
+      if(tag_format=="MAP")
+        for(int i=0; i<tag_count; i++)
+          if(tag_map[a[i]])
+            tags[tag_name]=tag_map[a[i]];
+          else
+          {
+            make = tags["Make"];
+            model = tags["Model"];
+            tags[tag_name]= tag_map[make+"_"+model] || tag_map[make] || (string)a[i];
+          }
+      else if(tag_format=="CUSTOM")
+        tags|=tag_map(a);
+      else
+        tags[tag_name]=(array(string))a*", ";
+    }
+    break;
+
+  case 4: // LONG
+  case 9: // SLONG
     for(int i=0;i<tag_count; i++)
       tags[tag_name]=(string)file->read_long();
+    break;
 
-  if(tag_type==5 || tag_type==10) // (S)RATIONAL
-  {
+  case 5: // RATIONAL
+  case 10: // SRATIONAL
     for(int i=0;i<tag_count; i++)
     {
       int long1=file->read_long();
@@ -1049,25 +1057,25 @@ protected mapping parse_tag(TIFF file, mapping tags, mapping exif_info)
       }
       switch(tag_format)
       {
-  	case "BIAS":
-  	  if(long1>0)
-  	    tags[tag_name] = sprintf("+%3.1f", long1*1.0/long2);
-  	  else if(long1 < 0)
-  	    tags[tag_name] = sprintf("-%3.1f", -long1*1.0/long2);
-  	  else
-  	    tags[tag_name] = "0.0";
-  	  break;
+      case "BIAS":
+        if(long1>0)
+          tags[tag_name] = sprintf("+%3.1f", long1*1.0/long2);
+        else if(long1 < 0)
+          tags[tag_name] = sprintf("-%3.1f", -long1*1.0/long2);
+        else
+          tags[tag_name] = "0.0";
+        break;
 
-  	case "FLOAT":
-  	  if(long2==0)
-  	    tags[tag_name]="0";
-  	  else
-  	    tags[tag_name]=sprintf("%g", long1*1.0/long2);
-  	  break;
+      case "FLOAT":
+        if(long2==0)
+          tags[tag_name]="0";
+        else
+          tags[tag_name]=sprintf("%g", long1*1.0/long2);
+        break;
 
-  	case "EXPOSURE":
-  	  tags[tag_name] = sprintf("%d/%d", long1,long2);
-	  break;
+      case "EXPOSURE":
+        tags[tag_name] = sprintf("%d/%d", long1,long2);
+        break;
 //  	  break;
 //    	  if(long1>=long2)
 //    	    tags[tag_name]=sprintf("%g", long1*1.0/long2);
@@ -1078,11 +1086,12 @@ protected mapping parse_tag(TIFF file, mapping tags, mapping exif_info)
 //    	      tags[tag_name]=sprintf("1/%d", long1);
 //    	  break;
 
-  	default:
-  	  tags[tag_name] = sprintf("%.2f", (float)long1/(float)long2);
-  	  break;
+      default:
+        tags[tag_name] = sprintf("%.2f", (float)long1/(float)long2);
+        break;
       }
     }
+    break;
   }
 
   file->seek(pos+4);
