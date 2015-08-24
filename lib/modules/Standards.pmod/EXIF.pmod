@@ -264,7 +264,9 @@ protected mapping CANON_D30_MAKERNOTE = ([
   0x0008:	({"MN_ImageNumber", 	    	}),
   0x0009:	({"MN_OwnerName", 	    	}),
   0x000C:	({"MN_CameraSerialNumber",  	}),
-  //  0x000F:       ({"MN_CustomFunctions",         "CUSTOM", canon_custom }),
+  0x000D:       ({"MN_CameraInfo",              }),
+  0x000F:       ({"MN_CustomFunctions",         }),
+  0x0010:       ({"MN_ModelID",                 }),
 ]);
 
 protected mapping NIKON_D_MAKERNOTE = ([
@@ -942,12 +944,22 @@ protected mapping parse_tag(Stdio.File file, mapping tags, mapping exif_info,
   int tag_count=long_value(file->read(4), order);
   string make,model;
 
+  // Attempt to fix files with incorrect byteorder.
   if(!TAG_TYPE_INFO[tag_type]) {
-    tag_id = Int.swap_word(tag_id);
     tag_type = Int.swap_word(tag_type);
+    if(!TAG_TYPE_INFO[tag_type]) return ([]);
+    tag_id = Int.swap_word(tag_id);
     tag_count = Int.swap_long(tag_count);
   }
 
+  [string tag_type_name, int tag_type_len] =
+     TAG_TYPE_INFO[tag_type];
+
+  int tag_len=tag_type_len * tag_count;
+
+  // Using the tag id, now look up how we should interpret the
+  // data. Note that the tag format is our own invention: MAKE_MODEL,
+  // TAGS, MAP, CUSTOM, BIAS, FLOAT, EXPOSURE.
   string tag_name, tag_format;
   mapping|function tag_map;
   array temp = exif_info[tag_id];
@@ -974,11 +986,6 @@ protected mapping parse_tag(Stdio.File file, mapping tags, mapping exif_info,
     else
       [tag_format,tag_map]=tag_map[""];
   }
-
-  [string tag_type_name, int tag_type_len] =
-     TAG_TYPE_INFO[tag_type];
-
-  int tag_len=tag_type_len * tag_count;
 
   int pos=file->tell();
   if(tag_len>4)
