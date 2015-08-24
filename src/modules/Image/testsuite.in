@@ -59,6 +59,10 @@ test_eq(Image.PNM.decode("P3 3 2 1  1 0 0   0 1 0   0 0 1  1 1 0   1 1 1   0 0 0
 
 test_eval_error(Image.PNM.decode("P2 1 1 0 0"))
 
+test_eq(Image.PNM.decode("P4\n"
+ "3 3\n"
+ "\240@\240"), IMAGE("78dadb969d6a90fc9423e1c10b7d3671060686ffffff63250165b1116f"))
+
 test_do(add_constant("IMAGE"))
 
 test_true( objectp(Image.Image()) )
