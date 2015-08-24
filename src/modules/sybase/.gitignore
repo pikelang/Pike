@@ -13,3 +13,4 @@
 /stamp-h.in
 /sybase_config.h
 /sybase_config.h.in
+/sybase.c

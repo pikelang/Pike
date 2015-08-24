@@ -36,17 +36,25 @@ test_eq(-9223372036854775808*-1, -9223372036854775808/-1);
 test_true([[1.0e-40]]);
 test_eq([[#"foo
 bar"]],[["foo\nbar"]]);
+test_eq([[# "foo
+bar"]],[["foo\nbar"]]);
 test_eq([[#"foo\
 bar"]],[["foobar"]]);
 test_eq([[#(foo
+bar#) - "\r"]],[["foo\nbar"]]);
+test_eq([[# (foo
 bar#) - "\r"]],[["foo\nbar"]]);
 test_eq([[#(foo\
 bar#) - "\r"]],[["foo\\\nbar"]]);
 test_eq([[#[foo
 bar#] - "\r"]],[["foo\nbar"]]);
+test_eq([[# [foo
+bar#] - "\r"]],[["foo\nbar"]]);
 test_eq([[#[foo\
 bar#] - "\r"]],[["foo\\\nbar"]]);
 test_eq([[#{foo
+bar#} - "\r"]],[["foo\nbar"]]);
+test_eq([[# {foo
 bar#} - "\r"]],[["foo\nbar"]]);
 test_eq([[#{foo\
 bar#} - "\r"]],[["foo\\\nbar"]]);

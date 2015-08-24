@@ -214,7 +214,7 @@ array(string) output( mapping(string:Class) classes,
     {
       initfun += sprintf("\n  /* %O */\n", str);
       initfun += "  pgtk2_pstr_vector[" + idx + "] = make_shared_static_string(" +
-        S(str,0,2) + "," + sizeof(str) + ",0);\n";
+        S(str,1,2) + "," + sizeof(str) + ",0);\n";
     }
     exitfun += #"
   {

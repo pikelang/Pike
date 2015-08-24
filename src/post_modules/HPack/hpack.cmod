@@ -1,8 +1,8 @@
 /*! @module HPack
  *!
- *! Implementation of the HPACK (RFC 7541) header packing standard.
+ *! Implementation of the HPACK (@rfc{7541@}) header packing standard.
  *!
- *! This is the header packing system that is used in HTTP/2 (RFC 7540).
+ *! This is the header packing system that is used in HTTP/2 (@rfc{7540@}).
  */
 
 #include "global.h"
@@ -31,7 +31,7 @@ DECLARATIONS;
 /*! @decl string(8bit) huffman_encode(string(8bit) str)
  *!
  *! Encodes the string @[str] with the static huffman code specified
- *! in RFC 7541 appendix B.
+ *! in @rfc{7541:B@}.
  *!
  *! @param str
  *!   String to encode.
@@ -115,7 +115,7 @@ static const struct huffentry *find_huffentry(unsigned INT32 huffbuf)
 /*! @decl string(8bit) huffman_decode(string(8bit) str)
  *!
  *! Decodes the string @[str] encoded with the static huffman code specified
- *! in RFC 7541 appendix B.
+ *! in @rfc{7541:B@}.
  *!
  *! @param str
  *!   String to decode.

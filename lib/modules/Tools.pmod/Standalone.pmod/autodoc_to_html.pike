@@ -593,8 +593,7 @@ string parse_text(Node n, void|String.Buffer ret) {
         string section;
         sscanf(rfc, "%[0-9]:%[.A-Z0-9]", rfc, section);
         if (sizeof(rfc) < 4) rfc = ("0000" + rfc)[<3..];
-        ret->add("<b><a href='http://pike.lysator.liu.se/docs/ietf/rfc/",
-                 rfc[..<2], "/rfc", rfc, ".xml");
+        ret->add("<b><a href='http://pike.lysator.liu.se/rfc", rfc, ".xml");
         if( section && sizeof(section) )
           ret->add("#", section);
         else

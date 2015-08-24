@@ -152,7 +152,11 @@ void img_pnm_decode(INT32 args)
    if (x<=0||y<=0)
       Pike_error("Image.PNM.decode(): given pnm data has illegal size\n");
    if (type=='3'||type=='2'||type=='6'||type=='5')
+   {
       maxval=getnextnum(s,&pos);
+      if (maxval==0)
+        Pike_error("Image.PNM.decode(): Color maxvalue was 0.\n");
+   }
 
    push_int(x);
    push_int(y);
