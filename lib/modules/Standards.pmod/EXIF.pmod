@@ -307,27 +307,9 @@ protected mapping NIKON_D_MAKERNOTE = ([
 protected mapping|string nikon_D70_makernote(string data, mapping real_tags) {
   object f = Stdio.FakeFile(data);
   if(f->read(10)!="Nikon\0\2\20\0\0") return data;
-  object tiff = TIFF(f);
-  if(!tiff->is_valid()) return data;
 
-  mapping tags = ([]);
-  int offset=tiff->read_long();
-  while(offset>0)
-  {
-    tiff->exif_seek(offset);
-    int num_entries=tiff->read_short();
-    for(int i=0; i<num_entries; i++)
-      tags|=parse_tag(f, tags, NIKON_D_MAKERNOTE);
-
-    offset=tiff->read_long();
-
-    if(offset == 0)
-      if(tags["ExifOffset"])
-      {
-	offset=(int)tags["ExifOffset"];
-	m_delete(tags, "ExifOffset");
-      }
-  }
+  mapping tags = low_get_properties(f, NIKON_D_MAKERNOTE);
+  if(!tags) return data;
 
   foreach(tags; string name; mixed value)
     if(has_prefix(name, "MN_"))
@@ -1155,7 +1137,8 @@ protected int read_marker(Stdio.File f)
   return x[0];
 }
 
-//! Retrieve the EXIF properties of the given file.
+//! Parse through the JPEG segments until one containing EXIF is
+//! found, and then retrieve all the EXIF properties.
 //! @param file
 //!   The Stdio.File object containing wanted EXIF properties.
 //! @returns
@@ -1186,10 +1169,15 @@ mapping get_properties(Stdio.File file)
     }
   }
 
-  TIFF tiff = TIFF(file);
-  if(!tiff->is_valid()) return ([]);
+  return low_get_properties(file, TAG_INFO) || ([]);
+}
 
-  mapping tags=([]);
+protected mapping low_get_properties(Stdio.File file, mapping tags)
+{
+  TIFF tiff = TIFF(file);
+  if(!tiff->is_valid()) return 0;
+
+  mapping ret = ([]);
 
   int offset=tiff->read_long();
   while(offset>0)
@@ -1197,17 +1185,13 @@ mapping get_properties(Stdio.File file)
     tiff->exif_seek(offset);
     int num_entries=tiff->read_short();
     for(int i=0; i<num_entries; i++)
-      tags|=parse_tag(tiff, tags, TAG_INFO);
+      ret|=parse_tag(tiff, ret, tags);
 
     offset=tiff->read_long();
 
-    if(offset == 0)
-      if(tags["ExifOffset"])
-      {
-        offset=(int)tags["ExifOffset"];
-        m_delete(tags, "ExifOffset");
-      }
+    if(offset == 0 && ret["ExifOffset"])
+      offset=(int)m_delete(ret, "ExifOffset");
   }
 
-  return tags;
+  return ret;
 }
