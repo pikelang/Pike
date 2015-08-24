@@ -307,20 +307,19 @@ protected mapping NIKON_D_MAKERNOTE = ([
 protected mapping|string nikon_D70_makernote(string data, mapping real_tags) {
   object f = Stdio.FakeFile(data);
   if(f->read(10)!="Nikon\0\2\20\0\0") return data;
-  string order = f->read(2);
-  string code = f->read(2);
-  if(sizeof(code)!=2 || short_value(code, order)!=42) return data;
+  object tiff = TIFF(f);
+  if(!tiff->is_valid()) return data;
 
   mapping tags = ([]);
-  int offset=long_value(f->read(4), order);
+  int offset=tiff->read_long();
   while(offset>0)
   {
-    exif_seek(f,offset,10);
-    int num_entries=short_value(f->read(2), order);
+    tiff->exif_seek(offset);
+    int num_entries=tiff->read_short();
     for(int i=0; i<num_entries; i++)
-      tags|=parse_tag(f, tags, NIKON_D_MAKERNOTE, 10, order);
+      tags|=parse_tag(f, tags, NIKON_D_MAKERNOTE);
 
-    offset=long_value(f->read(4), order);
+    offset=tiff->read_long();
 
     if(offset == 0)
       if(tags["ExifOffset"])
@@ -910,38 +909,16 @@ protected mapping TAG_TYPE_INFO =
 	       12:	({"DOUBLE",	8}),
 	     ]);
 
-protected int short_value(string str, string order)
-{
-  if(order=="MM")
-    return (str[0]<<8)|str[1];
-  else
-    return (str[1]<<8)|str[0];
-}
-
-protected int long_value(string str, string order)
-{
-  if(order=="MM")
-    return (str[0]<<24)|(str[1]<<16)|(str[2]<<8)|str[3];
-  else
-    return (str[3]<<24)|(str[2]<<16)|(str[1]<<8)|str[0];
-}
-
-protected void exif_seek(Stdio.File file, int offset, int exif_offset)
-{
-  file->seek(offset+exif_offset);
-}
-
 protected string format_bytes(string str)
 {
   return str;
 }
 
-protected mapping parse_tag(Stdio.File file, mapping tags, mapping exif_info,
-		  int exif_offset, string order)
+protected mapping parse_tag(TIFF file, mapping tags, mapping exif_info)
 {
-  int tag_id=short_value(file->read(2), order);
-  int tag_type=short_value(file->read(2), order);
-  int tag_count=long_value(file->read(4), order);
+  int tag_id=file->read_short();
+  int tag_type=file->read_short();
+  int tag_count=file->read_long();
   string make,model;
 
   // Attempt to fix files with incorrect byteorder.
@@ -989,7 +966,7 @@ protected mapping parse_tag(Stdio.File file, mapping tags, mapping exif_info,
 
   int pos=file->tell();
   if(tag_len>4)
-    exif_seek(file, long_value(file->read(4), order), exif_offset);
+    file->exif_seek(file->read_long());
 
   if(tag_type==1 || tag_type==6 || tag_type==7)
   {
@@ -997,10 +974,10 @@ protected mapping parse_tag(Stdio.File file, mapping tags, mapping exif_info,
       tags[tag_name]=(string)file->read(1)[0];
     else if(tag_format == "TAGS")
     {
-      int num_entries=short_value(file->read(2), order);
+      int num_entries=file->read_short();
       for(int i=0; i<num_entries; i++) {
 	catch {
-	  tags|=parse_tag(file, tags, tag_map, exif_offset, order);
+          tags|=parse_tag(file, tags, tag_map);
 	};
       }
     }
@@ -1034,7 +1011,7 @@ protected mapping parse_tag(Stdio.File file, mapping tags, mapping exif_info,
     if(tag_count>0xffff) return ([]); // Impossible amount of tags.
     array a=allocate(tag_count);
     for(int i=0; i<tag_count; i++)
-      a[i]=short_value(file->read(2), order);
+      a[i]=file->read_short();
 
     if(tag_format=="MAP")
       for(int i=0; i<tag_count; i++)
@@ -1054,14 +1031,14 @@ protected mapping parse_tag(Stdio.File file, mapping tags, mapping exif_info,
 
   if(tag_type==4 || tag_type==9) // (S)LONG
     for(int i=0;i<tag_count; i++)
-      tags[tag_name]=(string)long_value(file->read(4), order);
+      tags[tag_name]=(string)file->read_long();
 
   if(tag_type==5 || tag_type==10) // (S)RATIONAL
   {
     for(int i=0;i<tag_count; i++)
     {
-      int long1=long_value(file->read(4), order);
-      int long2=long_value(file->read(4), order);
+      int long1=file->read_long();
+      int long2=file->read_long();
       if (!long2) {
 	if (long1 < 0) {
 	  tags[tag_name] = "-Inf";
@@ -1112,6 +1089,53 @@ protected mapping parse_tag(Stdio.File file, mapping tags, mapping exif_info,
   return tags;
 }
 
+protected class TIFF
+{
+  protected int start, order;
+  protected Stdio.File file;
+
+  protected int read_number(int size)
+  {
+    string data = file->read(size);
+    if(sizeof(data)!=size) error("End of file.\n");
+    int ret;
+    if(order)
+      sscanf(data, "%-"+size+"c", ret);
+    else
+      sscanf(data, "%"+size+"c", ret);
+    return ret;
+  }
+
+  int read_short() { return read_number(2); }
+  int read_long() { return read_number(4); }
+
+  protected void create(Stdio.File f)
+  {
+    file = f;
+    start = f->tell();
+    string o = f->read(2);
+
+    switch(o)
+    {
+    case "MM": order = 0; break; // big endian
+    case "II": order = 1; break; // little endian
+    default: file = 0; return;
+    }
+
+    // TIFF magic number
+    if(read_short() != 42)
+      file = 0;
+  }
+
+  int is_valid() { return !!file; }
+
+  string read(int len) { return file->read(len); }
+  int tell() { return file->tell(); }
+  void seek(int position) { file->seek(position); }
+
+  void exif_seek(int position) { file->seek(start+position); }
+}
+
 protected int read_marker(Stdio.File f)
 {
   string x;
@@ -1141,37 +1165,35 @@ mapping get_properties(Stdio.File file)
     case 0xd8: // Start of Image
       continue;
     default:
-      int size = short_value(file->read(2), "MM")-2;
+      int size;
+      sscanf(file->read(2), "%2c", size);
       if( marker==0xe1 && file->read(6) == "Exif\0\0" ) break loop;
-      file->read(size);
+      file->read(size-2);
       continue;
     }
   }
 
-  int exif_offset = file->tell();
-  string order=file->read(2);  // tiff order magic
-  string code=file->read(2);   // tiff magic 42
+  TIFF tiff = TIFF(file);
+  if(!tiff->is_valid()) return ([]);
+
   mapping tags=([]);
 
-  if(sizeof(code)==2 && short_value(code, order)==42)
+  int offset=tiff->read_long();
+  while(offset>0)
   {
-    int offset=long_value(file->read(4), order);
-    while(offset>0)
-    {
-      exif_seek(file,offset,exif_offset);
-      int num_entries=short_value(file->read(2), order);
-      for(int i=0; i<num_entries; i++)
-	tags|=parse_tag(file, tags, TAG_INFO, exif_offset, order);
+    tiff->exif_seek(offset);
+    int num_entries=tiff->read_short();
+    for(int i=0; i<num_entries; i++)
+      tags|=parse_tag(tiff, tags, TAG_INFO);
 
-      offset=long_value(file->read(4), order);
+    offset=tiff->read_long();
 
-      if(offset == 0)
-	if(tags["ExifOffset"])
-	{
-	  offset=(int)tags["ExifOffset"];
-	  m_delete(tags, "ExifOffset");
-	}
-    }
+    if(offset == 0)
+      if(tags["ExifOffset"])
+      {
+        offset=(int)tags["ExifOffset"];
+        m_delete(tags, "ExifOffset");
+      }
   }
 
   return tags;
