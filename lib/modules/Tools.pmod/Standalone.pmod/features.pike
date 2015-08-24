@@ -204,13 +204,6 @@ int main(int num, array(string) args) {
   write("\nGSSAPI\n");
   M(GSSAPI.Context);
 
-  write("\nGTK1\n");
-  M(GTK1.gtk_init);
-  F(GTK1.Databox);
-  F(GTK1.GladeXML);
-  F(GTK1.GLArea);
-  F(GTK1.HandleBox);
-
   write("\nGTK2\n");
   M(GTK2.gtk_init);
   F(GTK2.Databox);
