@@ -1176,7 +1176,11 @@ mapping get_properties(Stdio.File file)
     default:
       int size;
       sscanf(file->read(2), "%2c", size);
-      if( marker==0xe1 && file->read(6) == "Exif\0\0" ) break loop;
+      if( marker==0xe1 && file->read(6) == "Exif\0\0" )
+      {
+        file = Stdio.FakeFile(file->read(size-2-6));
+        break loop;
+      }
       file->read(size-2);
       continue;
     }
