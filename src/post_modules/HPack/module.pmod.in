@@ -5,7 +5,7 @@ inherit @module@;
 //! Table of static headers. @rfc{7541:A@}, Table 1.
 //!
 //! @array
-//!   @elem array 0..60
+//!   @elem array(string(8bit)) 0..60
 //!     @array
 //!       @elem string(8bit) 0
 //!         Header name.
