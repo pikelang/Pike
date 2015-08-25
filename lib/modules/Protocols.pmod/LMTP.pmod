@@ -58,6 +58,8 @@ class Connection {
 
 //! A LMTP server. It has been fairly well tested against Postfix client.
 //! Actually this module is only an extention to the @[SMTP] server.
+//!
+//! It implements @rfc{2821@}, @rfc{2822@}, @rfc{2033@} and @rfc{1854@}.
 class Server {
    protected object fdport;
    Configuration config;
@@ -74,8 +76,7 @@ class Server {
    //! @decl void create(array(string) _domains, void|int port,@
    //!        void|string ip, function _cb_mailfrom,@
    //!        function _cb_rcptto, function _cb_data)
-   //!  Create a receiving LMTP server. It implements @rfc{2821@},
-   //!  @rfc{2822@}, @rfc{2033@} and @rfc{1854@}.
+   //!  Create a receiving LMTP server.
    //!
    //! @param domain
    //!   Domains name this server relay, you need to provide at least one
