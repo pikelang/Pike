@@ -701,9 +701,10 @@ optional string(8bit) get_psk(string(8bit) id);
 // types, hash/signature algorithms.
 //
 // The client/server potentially has a set of trusted issuers
-// certificate (root certificates) that are used to validate the
-// server/client sent certificate. These are stored in a cache from
-// subject der to Verifier object. FIXME: Should use key identifier.
+// certificates (root certificates) that are used to validate the
+// server/client sent certificate. These are stored in trusted_issuers
+// and in a cache from subject der to Verifier object. FIXME: Should
+// use key identifier.
 
 //! Policy for client authentication. One of
 //! @[SSL.Constants.AUTHLEVEL_none], @[SSL.Constants.AUTHLEVEL_ask]
