@@ -308,7 +308,7 @@ protected mapping|string nikon_D70_makernote(string data, mapping real_tags) {
   object f = Stdio.FakeFile(data);
   if(f->read(10)!="Nikon\0\2\20\0\0") return data;
 
-  mapping tags = low_get_properties(f, NIKON_D_MAKERNOTE);
+  mapping tags = low_get_properties(f, NIKON_D_MAKERNOTE, 0);
   if(!tags) return data;
 
   foreach(tags; string name; mixed value)
@@ -896,7 +896,8 @@ protected string format_bytes(string str)
   return str;
 }
 
-protected mapping parse_tag(TIFF file, mapping tags, mapping exif_info)
+protected mapping parse_tag(TIFF file, mapping tags, mapping exif_info,
+                            int discard_unknown)
 {
   int tag_id=file->read_short();
   int tag_type=file->read_short();
@@ -906,7 +907,7 @@ protected mapping parse_tag(TIFF file, mapping tags, mapping exif_info)
   // Attempt to fix files with incorrect byteorder.
   if(!TAG_TYPE_INFO[tag_type]) {
     tag_type = Int.swap_word(tag_type);
-    if(!TAG_TYPE_INFO[tag_type]) return ([]);
+    if(!TAG_TYPE_INFO[tag_type]) return tags;
     tag_id = Int.swap_word(tag_id);
     tag_count = Int.swap_long(tag_count);
   }
@@ -923,6 +924,11 @@ protected mapping parse_tag(TIFF file, mapping tags, mapping exif_info)
   mapping|function tag_map;
   array temp = exif_info[tag_id];
   if(!temp || !sizeof(temp)) {
+    if( discard_unknown )
+    {
+      file->read(4);
+      return tags;
+    }
     tag_name = sprintf("%s0x%04x", (exif_info->prefix||"Tag"), tag_id);
     tag_format = 0;
     tag_map = ([]);
@@ -962,7 +968,7 @@ protected mapping parse_tag(TIFF file, mapping tags, mapping exif_info)
       int num_entries=file->read_short();
       for(int i=0; i<num_entries; i++) {
 	catch {
-          tags|=parse_tag(file, tags, tag_map);
+          tags|=parse_tag(file, tags, tag_map, discard_unknown);
 	};
       }
     }
@@ -1137,13 +1143,15 @@ protected int read_marker(Stdio.File f)
   return x[0];
 }
 
-//! Parse through the JPEG segments until one containing EXIF is
-//! found, and then retrieve all the EXIF properties.
+//! Parses and returns all EXIF properties.
 //! @param file
-//!   The Stdio.File object containing wanted EXIF properties.
+//!   A JFIF file positioned at the start.
+//! @param tags
+//!   An optional list of tags to process. If given, all unknown tags
+//!   will be ignored.
 //! @returns
 //!   A mapping with all found EXIF properties.
-mapping get_properties(Stdio.File file)
+mapping(string:mixed) get_properties(Stdio.File file, void|mapping tags)
 {
  loop: while(1)
   {
@@ -1169,10 +1177,17 @@ mapping get_properties(Stdio.File file)
     }
   }
 
-  return low_get_properties(file, TAG_INFO) || ([]);
+  int discard_unknown = 0;
+  if( tags )
+    discard_unknown = 1;
+  else
+    tags = TAG_INFO;
+
+  return low_get_properties(file, tags, discard_unknown) || ([]);
 }
 
-protected mapping low_get_properties(Stdio.File file, mapping tags)
+protected mapping low_get_properties(Stdio.File file, mapping tags,
+                                     int discard_unknown)
 {
   TIFF tiff = TIFF(file);
   if(!tiff->is_valid()) return 0;
@@ -1185,7 +1200,7 @@ protected mapping low_get_properties(Stdio.File file, mapping tags)
     tiff->exif_seek(offset);
     int num_entries=tiff->read_short();
     for(int i=0; i<num_entries; i++)
-      ret|=parse_tag(tiff, ret, tags);
+      ret|=parse_tag(tiff, ret, tags, discard_unknown);
 
     offset=tiff->read_long();
 
