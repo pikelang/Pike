@@ -27,6 +27,7 @@
 #define M_EOI   0xD9		/* End Of Image (end of datastream) */
 #define M_SOS   0xDA		/* Start Of Scan (begins compressed data) */
 #define M_COM   0xFE		/* COMment */
+#define M_APP1  0xE1
 
 protected int(0..255) read_1_byte(Stdio.File f)
 {
@@ -100,6 +101,8 @@ array(int) get_JPEG(Stdio.File f)
   if (!first_marker(f))
     return 0;
 
+  mapping exif;
+
   /* Scan miscellaneous markers until we reach SOS. */
   for (;;)
   {
@@ -119,21 +122,27 @@ array(int) get_JPEG(Stdio.File f)
     case M_SOF15:		/* Differential lossless, arithmetic */
       int image_height, image_width;
       sscanf(f->read(7), "%*3s%2c%2c", image_height, image_width);
-      if (f->seek(0) == 0)
+      if( exif && has_value(exif, "Orientation") &&
+          (< "5", "6", "7", "8" >)[exif->Orientation] )
       {
-        catch {
-          mapping exif = Standards.EXIF.get_properties(f);
-          if ((< "5", "6", "7", "8" >)[exif->Orientation])
-          {
-            // Picture has been rotated/flipped 90 or 270 degrees, so
-            // exchange width and height to reflect that.
-            int tmp = image_height;
-            image_height = image_width;
-            image_width = tmp;
-          }
-      };
+        // Picture has been rotated/flipped 90 or 270 degrees, so
+        // exchange width and height to reflect that.
+        int tmp = image_height;
+        image_height = image_width;
+        image_width = tmp;
       }
       return ({ image_width,image_height });
+      break;
+
+    case M_APP1:
+      int pos = f->tell();
+      f->seek(pos-2);
+      catch {
+        exif = Standards.EXIF.get_properties(f, ([ 0x0112 :
+                                                   ({ "Orientation" }) ]));
+      };
+      f->seek(pos);
+      if(!skip_variable(f)) return 0;
       break;
 
     case M_SOS:			/* stop before hitting compressed data */
