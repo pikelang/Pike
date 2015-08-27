@@ -494,8 +494,9 @@ array(object) spair(int type)
   object sock1,sock2;
   sock1=Stdio.File();
   DO_IF_BACKEND(sock1->set_backend(backend));
-  if(!type)
-  {
+
+  switch(type) {
+  case 0:
     sock1->connect(LOOPBACK, portno2);
     sock2=port2::accept();
     if(!sock2)
@@ -503,7 +504,8 @@ array(object) spair(int type)
       fd_fail("Accept returned 0, errno: %d, %O\n",
 	      port2::errno(), strerror(port2::errno()));
     }
-  }else{
+    break;
+  case 1:
     sock2=sock1->pipe(Stdio.PROP_BIDIRECTIONAL |
 		      Stdio.PROP_NONBLOCK |
 		      Stdio.PROP_SHUTDOWN);
@@ -512,6 +514,12 @@ array(object) spair(int type)
       fd_fail("File->pipe() failed 0, errno: %d, %O\n",
 	      sock1->errno(), strerror(sock1->errno()));
     }
+    break;
+  case 2:
+    sock1 = Stdio.FakePipe();
+    DO_IF_BACKEND(sock1->set_backend(backend));
+    sock2 = sock1->get_other();
+    break;
   }
   DO_IF_BACKEND(sock2->set_backend(backend));
   return ({sock1,sock2});
@@ -578,28 +586,37 @@ void finish(program Socket)
 	keeper=socks;
 	break;
 
-      case 5..13:
-	tests=(_tests-2)*2;
+      case 5:
+	log_status("Testing uni-directional shutdown on fake pipe");
+	socks=spair(2);
+	num_running=1;
+	socks[1]->set_nonblocking(lambda() {},lambda(){},Function.curry(finish)(Socket));
+	socks[0]->close("w");
+	keeper=socks;
+	break;
+
+      case 6..14:
+	tests=(_tests-3)*2;
 	log_status("Testing "+(tests*2)+" sockets");
 	for(int e=0;e<tests;e++) stdtest(Socket);
 	stdtest(Socket);
 	break;
 
-      case 14..26:
+      case 15..27:
 	if (max_fds > 64) {
 	  /* These tests require mare than 64 open fds. */
-	  tests=(_tests-2)*2;
+	  tests=(_tests-3)*2;
 	  log_status("Testing "+(tests*2)+" sockets");
 	  for(int e=0;e<tests;e++) stdtest(Socket);
 	  stdtest(Socket);
 	  break;
 	}
 	/* Too few available fds; advance to the next set of tests. */
-	_tests = 27;
+	_tests = 28;
 	/* FALL_THROUGH */
 
-      case 27..48:
-	tests=_tests-25;
+      case 28..49:
+	tests=_tests-26;
 	log_status("Copying "+((tests/2)*(2<<(tests/2))*11)+" bytes of data on "+(tests&~1)+" "+(tests&1?"pipes":"sockets"));
 	for(int e=0;e<tests/2;e++)
 	{
@@ -614,16 +631,37 @@ void finish(program Socket)
 	  }
 	  sock1=Socket(sock1);
 	  sock2=Socket(sock2);
-	  
+
 	  sock1->output_buffer=data1;
 	  sock2->expected_data=data1;
-	  
+
 	  sock2->output_buffer=data2;
 	  sock1->expected_data=data2;
 	}
 	break;
 
-      case 49: {
+      case 50..55:
+	tests=_tests-48;
+	log_status("Copying "+(tests*(2<<tests)*11)+" bytes of data on "+(tests*2)+" fake pipes");
+	for(int e=0;e<tests;e++)
+	{
+	  string data1 = random_string(6 * (2<<tests));
+	  string data2 = random_string(6 * (2<<tests));
+	  socks=spair(2);
+	  sock1=socks[0];
+	  sock2=socks[1];
+	  sock1=Socket(sock1);
+	  sock2=Socket(sock2);
+
+	  sock1->output_buffer=data1;
+	  sock2->expected_data=data1;
+
+	  sock2->output_buffer=data2;
+	  sock1->expected_data=data2;
+	}
+	break;
+
+      case 56: {
 	log_status ("Testing leak in write()");
 	string data1=random_string(6*20);
 	string data2=random_string(6*20);
@@ -636,17 +674,17 @@ void finish(program Socket)
 	}
 	sock1=Socket(sock1);
 	sock2=Socket(sock2);
-	  
+
 	sock1->output_buffer=data1;
 	sock2->expected_data=data1;
-	  
+
 	sock2->output_buffer=data2;
 	sock1->expected_data=data2;
 	break;
       }
 
 #if constant(Stdio.__OOB__)
-    case 50:
+    case 57:
       if (Stdio.__OOB__ >= 3) {
 	log_status("Testing out-of-band data");
 	start();
@@ -659,7 +697,7 @@ void finish(program Socket)
 		oob_originator,
 		oob_loopback);
 #endif /* OOB_DEBUG */
-      
+
 	socks[0]->set_nonblocking(0,0,0,got_oob0,send_oob0);
 	socks[1]->set_nonblocking(0,0,0,got_oob1,0);
 	break;
