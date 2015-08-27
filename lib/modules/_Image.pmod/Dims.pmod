@@ -369,7 +369,7 @@ array(int) get_WebP(Stdio.File f)
 //!       Image type. Any of @expr{"gif"@}, @expr{"png"@}, @expr{"tiff"@},
 //!       @expr{"jpeg"@}, @expr{"webp"@} and @expr{"psd"@}.
 //!   @endarray
-array(int) get(string|Stdio.File file) {
+array(int|string) get(string|Stdio.File file) {
 
   if(stringp(file))
     file = Stdio.FakeFile(file);
