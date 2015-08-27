@@ -232,9 +232,13 @@ static unsigned int TOKENIZE(struct array **res, CHAR *data, unsigned int len)
         }
         {
           char end = 0;
-          if( (data[pos] == '(' && (end=')')) ||
-              (data[pos] == '[' && (end=']')) ||
-              (data[pos] == '{' && (end='}')) )
+          switch( data[pos] )
+          {
+          case '(': end=')'; break;
+          case '[': end=']'; break;
+          case '{': end='}'; break;
+          }
+          if(end)
           {
             for (pos++; pos<len-1; pos++)
               if (data[pos] == '#' && data[pos+1] == end)
