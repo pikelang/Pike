@@ -82,24 +82,36 @@ constant static_header_tab = ({
   ({ "www-authenticate", "", }),
 });
 
+//! Update the specified encoder lookup index.
+//!
+//! @param index
+//!   Lookup index to add an entry to.
+//!
+//! @param key
+//!   Lookup key to add.
+//!
+//! @param i
+//!   Value to store in the index for the key.
 protected void update_index(mapping(string(8bit):int|mapping(string(8bit):int)) index,
-			    int i, array(string(8bit)) val)
+			    int i, array(string(8bit)) key)
 {
-  if (!index[val[0]]) {
-    if (val[1] == "") {
-      index[val[0]] = i;
+  if (!index[key[0]]) {
+    if (key[1] == "") {
+      index[key[0]] = i;
     } else {
-      index[val[0]] = ([ val[1]:i ]);
+      index[key[0]] = ([ key[1]:i ]);
     }
   } else {
-    if (intp(index[val[0]])) {
-      index[val[0]] = ([ "":index[val[0]] ]);
+    if (intp(index[key[0]])) {
+      index[key[0]] = ([ "":index[key[0]] ]);
     }
-    index[val[0]][val[1]] = i;
+    index[key[0]][key[1]] = i;
   }
 }
 
-protected mapping(string(8bit):int|mapping(string(8bit):int)) create_index(array(array(string(8bit))) tab)
+//! Helper function used to create the @[static_header_index].
+protected mapping(string(8bit):int|mapping(string(8bit):int))
+  create_index(array(array(string(8bit))) tab)
 {
   mapping(string(8bit):int|mapping(string(8bit):int)) res = ([]);
   foreach(tab; int i; array(string(8bit)) val) {
@@ -108,7 +120,18 @@ protected mapping(string(8bit):int|mapping(string(8bit):int)) create_index(array
   return res;
 }
 
-// Note that the index here is offset by one!
+//! Index for @[static_header_tab].
+//!
+//! @note
+//!   Note that the indices are offset by @expr{1@} (one).
+//!
+//! @note
+//!   This variable should be regarded as a constant.
+//!
+//! This variable is used to initialize the header index in the @[Context].
+//!
+//! @seealso
+//!   @[static_header_tab], @[Context()->header_index]
 protected mapping(string(8bit):int|mapping(string(8bit):int))
   static_header_index = create_index(static_header_tab);
 
@@ -490,6 +513,19 @@ class Context
     return decode(Stdio.Buffer(str));
   }
 
+  //! Encode an integer with the HPack integer encoding.
+  //!
+  //! @param buf
+  //!   Output buffer.
+  //!
+  //! @param bits
+  //!   Bits that should always be set in the first byte of output.
+  //!
+  //! @param mask
+  //!   Bitmask for the value part of the first byte of output.
+  //!
+  //! @param value
+  //!   Integer value to encode.
   protected void put_int(Stdio.Buffer buf, int(0..255) bits, int(0..255) mask,
 			 int value)
   {
@@ -506,6 +542,16 @@ class Context
     buf->add_int(value, 1);
   }
 
+  //! Encode a string with the HPack string encoding.
+  //!
+  //! @param buf
+  //!   Output buffer.
+  //!
+  //! @param str
+  //!   String to output.
+  //!
+  //! The encoder will @[huffman_encode()] the string if that
+  //! renders a shorter encoding than the verbatim string.
   protected void put_string(Stdio.Buffer buf, string(8bit) str)
   {
     int flag = 0;
@@ -644,6 +690,13 @@ class Context
     }
   }
 
+  //! Convenience variant of @[encode()].
+  //!
+  //! @param headers
+  //!   An array of @tt{({ header, value })@}-tuples.
+  //!
+  //! @returns
+  //!   Returns the corresponding HPack encoding.
   variant string(8bit) encode(array(array(string(8bit))) headers)
   {
     Stdio.Buffer buf = Stdio.Buffer();
