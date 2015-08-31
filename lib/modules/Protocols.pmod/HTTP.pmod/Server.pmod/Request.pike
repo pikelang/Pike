@@ -553,9 +553,9 @@ Stdio.Buffer low_make_response_header(mapping m, Stdio.Buffer res)
 	 break;
       default:
          if(Protocols.HTTP.response_codes[(int)m->error])
-            radd(protocol,' ', Protocols.HTTP.response_codes[(int)m->error]);
+            radd(protocol," ", Protocols.HTTP.response_codes[(int)m->error]);
          else
-            radd(protocol,' ',m->error," ERROR");
+            radd(protocol," ",m->error," ERROR");
          break;
    }
 
