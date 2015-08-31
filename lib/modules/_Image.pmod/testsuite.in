@@ -34,6 +34,7 @@ test_do([[
   add_constant("JPEG");
   add_constant("WebP_lossy");
   add_constant("WebP_lossless");
+  add_constant("WebP_alpha");
 ]])
 
 dnl Missing test for JPEG with EXIF rotation data.
