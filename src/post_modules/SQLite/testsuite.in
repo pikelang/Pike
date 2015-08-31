@@ -23,12 +23,12 @@ cond_resolv( SQLite.SQLite, [[
   test_equal( db->list_tables(), ({ "test" }) )
   test_equal( db->list_fields("test"),[[
 #define P(X,Y) (["name":#X,"type":#Y,"table":"test", \
-	"default":"","flags":(<>),"length":0])
+	"default":0,"flags":(<>),"length":0])
  ({ P(aa,INTEGER), P(bb,FLOAT), P(cc,TEXT), P(dd,BLOB) })
 ]])
 
   test_eq( db->big_query("INSERT INTO test (aa,bb,cc,dd) VALUES (1,4.5,'xyz','xyz')")->fetch_row();, 0 )
-  test_equal( db->big_query("SELECT * FROM test WHERE aa=1")->fetch_row();, ({"1","4.5","xyz","xyz"}) )
+  test_equal( db->big_query("SELECT * FROM test WHERE aa=1")->fetch_row();, ({1,4.5,"xyz","xyz"}) )
 
   test_eq( db->big_query("INSERT INTO test (aa,cc,dd) VALUES (2,'blå','blå')")->fetch_row();, 0 )
   test_equal( db->big_query("SELECT cc,dd FROM test WHERE aa=2")->fetch_row();, ({"blå","blå"}) )
@@ -40,7 +40,7 @@ cond_resolv( SQLite.SQLite, [[
   test_equal( db->big_query("SELECT cc,dd FROM test WHERE aa=4")->fetch_row();, ({"f\x103456","f\x103456"}) )
 
   test_eq( db->big_query("INSERT INTO test (aa,bb,cc,dd) VALUES (:1,:2,:3,:4)",([1:11,2:4.5,3:"xyz",4:"xyz"]))->fetch_row();, 0 )
-  test_equal( db->big_query("SELECT * FROM test WHERE aa=11")->fetch_row();, ({"11","4.5","xyz","xyz"}) )
+  test_equal( db->big_query("SELECT * FROM test WHERE aa=11")->fetch_row();, ({11,4.5,"xyz","xyz"}) )
 
   test_eq( db->big_query("INSERT INTO test (aa,cc,dd) VALUES (:1,:2,:3)", ([ 1:12,2:"blå",3:"blå"]) )->fetch_row();, 0 )
   test_equal( db->big_query("SELECT cc,dd FROM test WHERE aa=12")->fetch_row();, ({"blå","blå"}) )
