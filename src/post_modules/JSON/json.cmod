@@ -265,8 +265,11 @@ static void json_encode_recur (struct encode_context *ctx, struct svalue *val)
     }
 
     case PIKE_T_INT:
-      string_builder_append_integer (&ctx->buf, val->u.integer,
-				     10, APPEND_SIGNED, 0, 0);
+      if(SUBTYPEOF(*val))
+          string_builder_strcat(&ctx->buf,"null");
+      else
+          string_builder_append_integer (&ctx->buf, val->u.integer,
+                                         10, APPEND_SIGNED, 0, 0);
       break;
 
     case PIKE_T_FLOAT: {
