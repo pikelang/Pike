@@ -1013,6 +1013,7 @@ test_do([[
 dnl client_min, client_max, server_min, server_max, exp
 test_tests([[
 array(int) a() {
+#define __NT__
   int successes;
   int tests;
   int skip;
