@@ -1097,7 +1097,7 @@ array(string) _sort_addresses(array(string) addresses,
 }
 
 //! Given a list of addresses, sort them according to connectable
-//! priority order (RFC 3484).
+//! priority order (@rfc{3484@}).
 //!
 //! If @[exclude_types] is specified, addresses that match any of the
 //! network types (({"local", "localhost"}) for the local network as an example)

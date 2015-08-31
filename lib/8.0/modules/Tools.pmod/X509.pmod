@@ -2,7 +2,7 @@
 //#pragma strict_types
 #pragma no_deprecation_warnings
 
-//! Functions to generate and validate RFC2459 style X.509 v3
+//! Functions to generate and validate @rfc{2459@} style X.509 v3
 //! certificates.
 //! @deprecated Standards.X509
 

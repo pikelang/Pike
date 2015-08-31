@@ -332,7 +332,7 @@ private class GSM03_38dec {
   }
 }
 
-// Decode HZ encoding of EUC-CN. RFC 1843.
+// Decode HZ encoding of EUC-CN. @rfc{1843@}.
 private class HZ_dec
 {
   protected Decoder decoder = EUCDec("gb2312", "euccn");

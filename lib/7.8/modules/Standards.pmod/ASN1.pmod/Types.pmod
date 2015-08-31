@@ -725,7 +725,7 @@ int(1..1) asn1_utf8_valid (string s)
 //!
 //! Character set: ISO/IEC 10646-1 (compatible with Unicode).
 //!
-//! Variable width encoding, see rfc2279.
+//! Variable width encoding, see @rfc{2279@}.
 class UTF8String
 {
   inherit String;
@@ -1292,7 +1292,7 @@ class VisibleString {
 
 //! UTCTime
 //!
-//! RFC 2459 4.1.2.5.1
+//! @rfc{2459:4.1.2.5.1@}.
 class UTC
 {
   inherit String;
@@ -1501,7 +1501,7 @@ class MetaExplicit
 //! of several optional fields are present.
 //!
 //! @example
-//!   Eg RFC 5915 section 3:
+//!   Eg @rfc{5915:3@}:
 //!   @code
 //!     ECPrivateKey ::= SEQUENCE {
 //!       version        INTEGER { ecPrivkeyVer1(1) } (ecPrivkeyVer1),

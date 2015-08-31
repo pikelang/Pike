@@ -31,10 +31,10 @@ constant PROTOCOL_minor = 2;
 //!   @[SSL.sslfile()->create()], @[SSL.handshake()->create()]
 enum ProtocolVersion {
   PROTOCOL_SSL_3_0	= 0,	//! SSL 3.0 - The original SSL3 draft version.
-  PROTOCOL_SSL_3_1	= 1,	//! SSL 3.1 - The RFC 2246 version of SSL.
-  PROTOCOL_TLS_1_0	= 1,	//! TLS 1.0 - The RFC 2246 version of TLS.
-  PROTOCOL_SSL_3_2	= 2,	//! SSL 3.2 - The RFC 4346 version of SSL.
-  PROTOCOL_TLS_1_1	= 2,	//! TLS 1.1 - The RFC 4346 version of TLS.
+  PROTOCOL_SSL_3_1	= 1,	//! SSL 3.1 - The @rfc{2246@} version of SSL.
+  PROTOCOL_TLS_1_0	= 1,	//! TLS 1.0 - The @rfc{2246@} version of TLS.
+  PROTOCOL_SSL_3_2	= 2,	//! SSL 3.2 - The @rfc{4346@} version of SSL.
+  PROTOCOL_TLS_1_1	= 2,	//! TLS 1.1 - The @rfc{4346@} version of TLS.
 }
 
 /* Packet types */

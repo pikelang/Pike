@@ -113,7 +113,7 @@ class EncapsulatedMsg {
   }
 }
 
-//! Represents an RFC934 text message.
+//! Represents an @rfc{934@} text message.
 class RFC934 {
 
 //!
@@ -148,7 +148,7 @@ class RFC934 {
     return parts * "- -";
   }
 
-  //! Decodes an RFC 934 encoded message.
+  //! Decodes an @rfc{934@} encoded message.
   void create(string data)
   {
     array(string) parts = dash_split(data);
