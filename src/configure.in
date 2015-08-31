@@ -3210,7 +3210,7 @@ AC_HEADER_STDC
 # conflict. Thus check for winsock2.h before anything else in case
 # winsock.h is included indirectly.
 AC_CHECK_HEADERS(winsock2.h sys/rusage.h time.h sys/time.h sys/types.h \
-		 unistd.h stdlib.h memory.h values.h string.h strings.h \
+		 memory.h values.h strings.h \
 		 fcntl.h sys/filio.h sys/sockio.h crypt.h locale.h \
 		 sys/select.h net/socket.h sys/param.h stdio.h wchar.h io.h \
 		 sys/mman.h setjmp.h sys/user.h limits.h pthread.h \
