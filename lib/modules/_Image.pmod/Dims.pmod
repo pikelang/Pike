@@ -90,7 +90,7 @@ protected int skip_variable(Stdio.File f)
   int length = read_2_bytes(f);
   if (length < 2) return 0;  // Length includes itself, so must be at least 2.
   length -= 2;
-  f->seek(f->tell()+length);
+  f->seek(length, Stdio.SEEK_CUR);
   return 1;
 }
 
@@ -176,9 +176,8 @@ array(int) get_JPEG(Stdio.File f)
 //! width and height, or if the file isn't a valid image, 0.
 array(int) get_GIF(Stdio.File f)
 {
-  int offs=f->tell();
   if(f->read(3)!="GIF") return 0;
-  f->seek(offs+6);
+  f->seek(3, Stdio.SEEK_CUR);
   return array_sscanf(f->read(4), "%-2c%-2c");
 }
 
@@ -187,9 +186,8 @@ array(int) get_GIF(Stdio.File f)
 array(int) get_PNG(Stdio.File f)
 {
   int offs=f->tell();
-  f->seek(offs+1);
-  if(f->read(3)!="PNG") return 0;
-  f->seek(offs+12);
+  if(f->read(6)!="\211PNG\r\n") return 0;
+  f->seek(6, Stdio.SEEK_CUR);
   if(f->read(4)!="IHDR") return 0;
   return array_sscanf(f->read(8), "%4c%4c");
 }
@@ -252,7 +250,7 @@ array(int) get_TIFF(Stdio.File f)
 	 /* Type short */
 	 sscanf(f->read(2), bo2b, buf);
 	 /* Skip to the end of the entry */
-	 f->seek(f->tell() + 2);
+         f->seek(2, Stdio.SEEK_CUR);
        }
        else if(buf == 4)
        {
@@ -291,7 +289,7 @@ array(int) get_TIFF(Stdio.File f)
    else
    {
      /* Skip to next entry */
-     f->seek(f->tell() + 10);
+     f->seek(10, Stdio.SEEK_CUR);
    }
  }
  /* ImageWidth and ImageLength not found */
@@ -400,19 +398,19 @@ array(int|string) get(string|Stdio.File file) {
 
   case "II":
   case "MM":
-    file->seek(file->tell()-2);
+    file->seek(-2, Stdio.SEEK_CUR);
     ret = get_TIFF(file);
     if(ret) return ret+({ "tiff" });
     break;
 
   case "\xff\xd8":
-    file->seek(file->tell()-2);
+    file->seek(-2, Stdio.SEEK_CUR);
     ret = get_JPEG(file);
     if(ret) return ret+({ "jpeg" });
     break;
 
   case "RI":
-    file->seek(file->tell()-2);
+    file->seek(-2, Stdio.SEEK_CUR);
     ret = get_WebP(file);
     if(ret) return ret+({ "webp" });
     break;
