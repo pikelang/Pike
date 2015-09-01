@@ -1,0 +1,369 @@
+subject: Pike 7.8: Multiple fixes:
+from: 73e172fc98160bed8abcfe1acfbae7da7dc90557
+to: e13646135023847a634c92c47091472e0cc3a447
+originator: wellhardh@roxen.com
+depends: 2015-01-23T145012
+restart: true
+
+Multiple fixes:
+
+  * Pad signature to the same size as the key.
+
+  * Graphics.Graph.create_graph: Cleaned up some code.
+
+  * Graphics.Graph.create_graph: Fixed legend color box border.
+    
+    The bottom left corner was off by one pixel to the right.
+    
+    Fixes [bug 1826].
+
+  * Sql.tds: Added support for SYBDECIMAL.
+    
+    This is the type used by MSSQL for fields declared "decimal".
+
+  * Sql.tds: Added support for SYBUNIQUE.
+    
+    This is the type used by MSSQL for fields declared "uniqueidentifier".
+
+  * Sql.tds: Added support for SYBFLTN.
+    
+    This is the type used by MSSQL for fields declared "float" or "real".
+
+  * ODBC: Allow space for a sign character in numeric fields.
+    
+    Fixes failure to fetch negative values in MSSQL NUMERIC(1,0) fields.
+
+  * SQL.tds: Fixed support for fetching negative NUMERIC and DECIMAL.
+
+  * ODBC: Fixed typo in comment.
+
+  * ODBC: Unifdef SQL_WCHAR.
+    
+    SQL_WCHAR has been available in all ODBC implementations
+    for the last 10 years.
+
+  * Gmp.mpz: Support import/export from reversed network byte order.
+
+  * ODBC: Odbc.odbc_result is now Odbc.odbc.result.
+    
+    This allows for overloading of the result class, and is in preparation
+    for implementing big_typed_query().
+
+  * ODBC: odbc_fix_fields() now knows about SQL_GUID.
+
+  * ODBC: odbc_fix_fields() now knows about SQL_SS_UDT.
+
+  * release number bumped to 916 by export.pike
+
+  * release number bumped to 917 by export.pike
+
+  * ODBC: odbc_fix_fields() now knows about the remaining SQL_SS_* types.
+
+  * ODBC: Got rid of temporary arrays in odbc_fix_fields().
+    
+    This reduces the complexity of the code somewhat, and
+    allows for adding more stuff to struct field_info.
+
+  * Updated to tzdata2015a.
+
+  * Odbc: Added typed_result.
+    
+    This class will be used to implement {,big_}typed_query().
+
+  * Odbc: Added big_typed_query().
+    
+    Note that the typed_result objects that this function returns
+    still behave as the untyped result objects. This will be fixed
+    soon.
+
+  * Odbc: Emulate bindings in big_typed_query().
+
+  * Odbc: typed_result->fetch_row() now returns Val.null for NULL.
+
+  * Odbc: Default the field type to SQL_C_CHAR in odbc_fix_fields().
+    
+    This allows for removing the fix-up loop at the end of odbc_fix_fields().
+
+  * Odbc: Added support for value factories.
+    
+    Adds some more fields to struct field_info.
+    
+    These are intended to be used to convert binary data from
+    the SQL server to appropriate values to in turn be returned
+    by typed_result()->fetch_row().
+
+  * Odbc: big_typed_query() now knows about integer types.
+
+  * Odbc: big_typed_query() now knows about floating point values.
+
+  * Odbc: Code cleanup in typed_result()->fetch_row().
+
+  * Bignums: get_auto_bignum_program{,_or_zero}() now actually work...
+    
+    program_from_function() wants an svalue that contains a function,
+    but the auto_bignum_program svalue typically contains a program...
+
+  * Odbc: big_typed_query() now knows about numeric/decimal values.
+
+  * Stdio.exece(): Don't give away refs to members from the env mapping
+    
+    Because it's not too good in the case we fail to exec(), at least.
+    
+    Conflicts:
+    	src/modules/files/efuns.c
+
+  * Odbc: big_typed_query() now knows about timestamps and dates.
+
+  * Odbc: big_typed_query() now knows about time values.
+
+  * Odbc: big_typed_query() now knows about UUID values.
+
+  * Odbc: Added some more space for decimal values.
+    
+    Floating point and fixed point values needed additional space
+    for the leading zero and decimal characters.
+
+  * Stdio.Sendfile: Don't attempt nonblocking I/O on plain files.
+    
+    Potential fix for "This file does not support nonblocking operation."
+    in Stdio.Sendfile->writer_done().
+
+  * release number bumped to 918 by export.pike
+
+  * release number bumped to 919 by export.pike
+
+  * Odbc: Use the typedefs instead of the struct tags.
+    
+    The <sqltypes.h> header file doesn't declare struct tagSQLGUID
+    when GUID_DEFINED is defined, so use the typedef instead.
+    
+    Do the same for the rest of the related structs just in case.
+    
+    Fixes compilation on NT.
+
+  * Odbc: Push an INT64 instead of a SQLBIGINT.
+    
+    They're usually the same, but in some circumstances the latter
+    may be a struct of the same size.
+    
+    Fixes compilation issues on RHEL 5/x86.
+
+  * release number bumped to 920 by export.pike
+
+  * release number bumped to 921 by export.pike
+
+  * Java [NT]: Improved dll-search for jvm.
+    
+    In some installations "HKCU\SOFTWARE\JavaSoft\Java Runtime Environment"
+    exists but doesn't contain a JVM, so retry with the corresponding HKLM
+    key in that case.
+    
+    Fixes testsuite issue in Roxen's build farm.
+
+  * release number bumped to 922 by export.pike
+
+  * release number bumped to 923 by export.pike
+
+  * Postgres: Fixed some reference-counting issues.
+    
+    Each successful call (returning a result set) of big_query()
+    caused one reference to the connection object to be lost.
+    
+    The result object would reference freed memory if the
+    connection object was destructed before it.
+    
+    Potential fix for [bug 6464] (and probably others).
+
+  * Postgres: Improved error message.
+    
+    Thanks to Petter Larsson <petterl@home.se> for the suggestion.
+    
+    Fixes [bug 3107].
+
+  * Image: Fixed one-byte buffer read overrun in phasehv().
+    
+    phasehv() read one (uninitialized) byte before the source imagebuffer.
+
+  * Fix negated test that broke native sendfile() for Stdio.File objects.
+
+  * Protocols.DNS: Remove the retry call_out on done.
+    
+    Fixes remainder of [bug 6285].
+
+  * Export: gzip enters interactive mode if the destination exists.
+    
+    This can cause the export to hang and/or fail.
+
+  * Odbc: list_tables() now seems to work.
+
+  * Updated to tzdata2015c.
+
+  * Image: Fixed typo in factor 1/2 scaling.
+    
+    For odd-width source images, the left-most line of pixels had the
+    blue-channel in the green-channel, and zeros in the blue-channel.
+    
+    Fixes [CID 1294692].
+
+  * Parser.XML: Fixed some parser bugs.
+    
+    Fixes [CID 742608], [CID 742609], [CID 742610] and [CID 742612].
+
+  * Image.PCX: Added missing break. Fixes [CID 742629].
+    
+    Decoding of single-bitplane pcx files always failed.
+
+  * IS_DESTRUCTED(): detect trampolines in destructed objects
+
+  * IS_DESTRUCTED(): only detect LFUN_CALL as destructed in trampolines
+
+  * IS_DESTRUCTED(): fix brackets.
+    
+    Sorry about that.
+
+  * destructedp, zero_type: detect trampolines referencing destructed objects
+
+  * Threads: Keep track of the time spent with threads disabled.
+
+  * Added gethrdtime().
+
+  * Build: Survive precompilation with Pike 8.0.
+
+  * release number bumped to 924 by export.pike
+
+  * release number bumped to 925 by export.pike
+
+  * enumerate(): fixed integer overflow handling
+    
+    This change fixes two bugs
+    1) the overflow checks were incorrect, because signed integers do not
+       overflow
+    2) when overflow was actually detected, the code fell back to the
+       slow path (using f_add) with the last array element as the new start
+       value, which led to wrong results
+
+  * Compiler: Improved cycle detection in implements() and is_compatible().
+    
+    Under some circumstances the new cache entries could be overwritten
+    before the functions had completed, leading to infinite recursion.
+    
+    Fixes [InfoKOM 775534].
+    
+    Compiler: Added some missing END_CYCLIC().
+    
+    All execution branches from a BEGIN_CYCLIC() must either
+    END_CYCLIC() or throw an error before DECLARE_CYCLIC()
+    falls out of scope.
+    
+    Potential fix for [LysLysKOM 20940558] (Pike developer list).
+
+  * FreeType: Fix compilation with Freetype 2.6.
+
+  * Oracle: Added commit function to connection object.
+
+  * Oracle: Increase BLOCKSIZE to 8KB.
+    
+    This reduces the overhead for large variable-length records somewhat.
+
+  * Oracle: Disable POLLING_FETCH
+    
+    This is a workaround for Oracle bug 4523125: intermittent "ORA-03106:
+    fatal two-task communication protocol error" with Oracle 10.2.0.2 and
+    earlier.
+
+  * Oracle: Perform queries in unicode mode with OCI 9 and later.
+    
+    When OCI supports UTF16 (Oracle 9 and later) switch to performing
+    queries and retrieving results in unicode mode.
+
+  * Oracle: Support unicode error messages.
+
+  * Oracle: Return LOBs as objects.
+
+  * Oracle: Cosmetic cleanup.
+
+  * Replaced magic hard coded value with define
+
+  * Enable static buffers to avoid two task communication failure with oracle 11
+
+  * Enable dynamic fetch for CLOBs and BLOBs when using static bugger to work around segv problem
+
+  * Git: Added mailmap to handle some obsolete addresses.
+
+  * Parser.C: Improved diagnostics from group().
+    
+    Don't drop the grouping stack on the floor if there are missing ungroupings.
+    
+    Fixes loss of initial code in precompiler if braces are missing at
+    the end of classes.
+
+  * Oracle: Fixed some compilation issues.
+    
+    Fixes some typos, a C9x-ism and an uninitialized variable.
+
+  * Oracle: Improved support for recent versions of Oracle.
+    
+    Search for libclntsh in addition to libcommon.
+    
+    Also adds support for Gentoo-style installation, which doesn't have
+    an /etc/oratab, but instead has a file in /etc/env.d/.
+
+  * Debug.memory_usage(): Added kludge for Linux libc.
+    
+    The fields in struct mallinfo in Linux libc (as of glibc 2.20) are
+    declared as int, and will thus overflow into negative when the values
+    get larger than 0x3fffffff. This commit interprets negative mallinfo
+    values as 32-bit unsigned values.
+
+  * Oracle: Fixed truncated error messages.
+
+  * Oracle: PROGRAM_NEEDS_PARENT is needed to access the parent during destruct.
+    
+    Fixes fatal error during destruction of the result object.
+
+  * string_to_unicode: Support outputting UTF8LE.
+    
+    Adds an optional second argument to string_to_unicode() to
+    specify the wanted byte order.
+
+  * unicode_to_string: Support UTF8LE without BOM.
+    
+    Adds an optional second argument to unicode_to_string() to
+    specify the default byte order (an initial BOM in the input
+    string overrides this argument).
+
+  * Oracle: Fixed typo in error generation.
+    
+    Fixes fatal error on connection errors.
+
+  * Oracle: Fixed bug in macro ORACLE_UNICODE_DECODE().
+    
+    It helps if you send the correct number of arguments...
+
+  * Oracle: dbresultinfo neither uses nor needs its parent.
+    
+    Fixes "Parent lost, cannot clone program.".
+
+  * Oracle: Added some paranoia.
+    
+    Fixes loss of reference if unicode_to_string() throws an error.
+
+  * release number bumped to 926 by export.pike
+
+  * release number bumped to 927 by export.pike
+
+  * ZXID: Survive zxid from before 20121020-142800.
+    
+    The number of arguments to zxid_parse_cgi() changed in version
+    20121020-142800.
+
+  * release number bumped to 928 by export.pike
+
+  * release number bumped to 929 by export.pike
+
+  * free -> free_string in pike_mysql_set_options.
+    
+    Fixes incorrect free that would occur when "mysql_charset_name" is
+    provided in the options mapping.
+
+  * release number bumped to 930 by export.pike
