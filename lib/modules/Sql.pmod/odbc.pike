@@ -20,6 +20,7 @@ int|object big_query(object|string q, mapping(string|int:mixed)|void bindings)
   return ::big_query(.sql_util.emulate_bindings(q, bindings, this));
 }
 
+#if constant(Odbc.odbc.typed_result)
 int|object big_typed_query(object|string q,
 			   mapping(string|int:mixed)|void bindings)
 {
@@ -27,9 +28,11 @@ int|object big_typed_query(object|string q,
     return ::big_typed_query(q);
   return ::big_typed_query(.sql_util.emulate_bindings(q, bindings, this));
 }
+#endif /* Odbc.odbc.typed_result */
 
 constant list_dbs = Odbc.list_dbs;
 
+#if constant(Odbc.odbc.typed_result)
 //!
 class typed_result
 {
@@ -120,6 +123,7 @@ class typed_result
     return Standards.UUID.UUID(raw_uuid);
   }
 }
+#endif /* Odbc.odbc.typed_result */
 
 #else
 constant this_program_does_not_exist=1;
