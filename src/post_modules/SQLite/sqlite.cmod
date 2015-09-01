@@ -136,6 +136,29 @@ static void bind_arguments(sqlite3 *db,
   }
 }
 
+static void push_field(sqlite3_stmt *stmt, int field)
+{
+  switch( sqlite3_column_type(stmt, field) ) {
+  case SQLITE_INTEGER:
+    push_int64( sqlite3_column_int64(stmt, field) );
+    break;
+  case SQLITE_FLOAT:
+    push_float( sqlite3_column_double(stmt, field) );
+    break;
+  case SQLITE_BLOB:
+  case SQLITE_TEXT:
+    push_string( make_shared_binary_string
+                 ( sqlite3_column_blob(stmt, field),
+                   sqlite3_column_bytes(stmt, field) ) );
+    if( sqlite3_column_type(stmt, field)==SQLITE_TEXT )
+      f_utf8_to_string(1);
+    break;
+  case SQLITE_NULL:
+    push_int(0); /* Val.Null instead? */
+    break;
+  }
+}
+
 /*! @class SQLite
  *! @appears predef::Sql.sqlite
  *!
@@ -284,13 +307,8 @@ PIKECLASS ResObj
       ResObj_handle_error();
     }
 
-    for(i=0; i<THIS->columns; i++) {
-      push_string( make_shared_binary_string
-		   ( sqlite3_column_blob(stmt, i),
-		     sqlite3_column_bytes(stmt, i) ) );
-      if( sqlite3_column_type(stmt, i)==SQLITE_TEXT )
-	f_utf8_to_string(1);
-    }
+    for(i=0; i<THIS->columns; i++)
+      push_field(stmt, i);
     f_aggregate(THIS->columns);
   }
 
@@ -399,14 +417,10 @@ PIKECLASS ResObj
 
 	case SQLITE_ROW:
 	  for(i=0; i<columns; i++) {
-		push_text(sqlite3_column_name(stmt, i));
-		f_utf8_to_string(1);
-	    push_string( make_shared_binary_string
-			 ( sqlite3_column_blob(stmt, i),
-			   sqlite3_column_bytes(stmt, i) ) );
-	    if( sqlite3_column_type(stmt, i)==SQLITE_TEXT )
-	      f_utf8_to_string(1);
-	  }
+            push_text(sqlite3_column_name(stmt, i));
+            f_utf8_to_string(1);
+            push_field(stmt, i);
+          }
 	  f_aggregate_mapping(columns*2);
 	  DO_AGGREGATE_ARRAY(100);
 	  break;
@@ -625,6 +639,11 @@ PIKECLASS ResObj
     }
   }
 
+}
+
+PIKEFUN string library_version()
+{
+    push_text(sqlite3_libversion());
 }
 
 /*! @endclass

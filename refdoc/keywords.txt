@@ -655,12 +655,17 @@ XML:          <ref>...</ref>
 _______________________________________________________________________________
 
 Keyword:      @rfc{ ... @}
-Description:  A reference to an RFC.
-Children:     RFC number.
+Description:  Reference to an RFC and optionally a section or appendix.
+Children:     RFC number and optionally a colon followed by section number
+              or appendix letter.
 Groups with:  -
 
 Examples:
               The @[MIME] module implements @rfc{1521@}.
+
+              See @rfc{7540:5.3@} for details about @[ADT.TreeScheduler].
+
+              The list of static headers for HPack is defined in @rfc{7541:A@}.
 
 XML:          <rfc>...</rfc>
 _______________________________________________________________________________

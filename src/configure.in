@@ -3210,13 +3210,13 @@ AC_HEADER_STDC
 # conflict. Thus check for winsock2.h before anything else in case
 # winsock.h is included indirectly.
 AC_CHECK_HEADERS(winsock2.h sys/rusage.h time.h sys/time.h sys/types.h \
-		 unistd.h stdlib.h memory.h values.h string.h strings.h \
+		 memory.h strings.h \
 		 fcntl.h sys/filio.h sys/sockio.h crypt.h locale.h \
-		 sys/select.h net/socket.h sys/param.h stdio.h wchar.h io.h \
+		 sys/select.h net/socket.h sys/param.h stdio.h io.h \
 		 sys/mman.h setjmp.h sys/user.h limits.h pthread.h \
-		 crt/signal.h sys/id.h mach-o/dyld.h sys/ptrace.h \
+		 sys/id.h mach-o/dyld.h sys/ptrace.h \
 		 thread.h dlfcn.h dld.h dl.h sys/times.h sched.h \
-		 sys/procfs.h sys/ioct.h sys/socket.h sys/uio.h fcntl.h \
+		 sys/procfs.h sys/socket.h sys/uio.h fcntl.h \
 		 malloc.h netinet/in.h sys/wait.h windows.h grp.h pwd.h \
 		 passwd.h group.h winsock.h signal.h sys/file.h poll.h \
 		 sys/poll.h socket.h ieeefp.h fp_class.h floatingpoint.h \
@@ -3226,7 +3226,7 @@ AC_CHECK_HEADERS(winsock2.h sys/rusage.h time.h sys/time.h sys/types.h \
 		 sys/prctl.h sys/ioctl.h mach/task_info.h mach/task.h \
 		 mach/mach_init.h syscall.h sys/syscall.h devices/timer.h \
 		 direct.h CoreServices/CoreServices.h execinfo.h \
-		 mach/mach.h mach/thread_act.h mach/clock.h urcu.h,,,[
+		 mach/mach.h mach/thread_act.h mach/clock.h,,,[
 #if (defined(__WINNT__) || defined(__WIN32__)) && !defined(__NT__)
 #define __NT__
 #endif
@@ -3619,8 +3619,6 @@ if test x"$pike_cv_sys_os" = xWindows_NT ; then
     LIBS="-lshell32 -lkernel32 -lws2_32 -ladvapi32 $LIBS"
   fi
 fi
-
-AC_CHECK_LIB(urcu, rcu_init_mb)
 
 AC_CHECK_LIB(nsl, gethostbyname)
 AC_CHECK_LIB(rt, nanosleep)

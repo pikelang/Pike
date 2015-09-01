@@ -494,7 +494,7 @@ Stdio.Buffer low_make_response_header(mapping m, Stdio.Buffer res)
 {
    void radd( mixed ... args )
    {
-      res->add(@args,"\r\n");
+      res->add(@(array(string))args,"\r\n");
    };
 
    if (protocol!="HTTP/1.0")
@@ -553,9 +553,9 @@ Stdio.Buffer low_make_response_header(mapping m, Stdio.Buffer res)
 	 break;
       default:
          if(Protocols.HTTP.response_codes[(int)m->error])
-            radd(protocol,' ', Protocols.HTTP.response_codes[(int)m->error]);
+            radd(protocol," ", Protocols.HTTP.response_codes[(int)m->error]);
          else
-            radd(protocol,' ',m->error," ERROR");
+            radd(protocol," ",m->error," ERROR");
          break;
    }
 
@@ -715,7 +715,7 @@ void response_and_finish(mapping m, function|void _log_cb)
    if (m->stop) m->size=1+m->stop-m->start;
    if (m->start) {
       if( m->file )
-         m->file->seek(m->start+m->tell());
+         m->file->seek(m->start, Stdio.SEEK_CUR);
       else if( m->data )
          m->data = ((string)m->data)[m->start..];
    }

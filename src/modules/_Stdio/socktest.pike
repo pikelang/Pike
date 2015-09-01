@@ -96,7 +96,9 @@ void fd_fail (string msg, mixed... args)
 }
 
 class Socket {
-  inherit Stdio.File;
+  Stdio.File o;
+
+  int errno() { return o->errno(); }
 
   int num=num_running;
 
@@ -115,10 +117,10 @@ class Socket {
     if(input_finished && output_finished)
     {
       finish(this_program);
-      DEBUG_WERR("Closing fd:%O\n", query_fd());
-      close();
-      set_blocking();
-      destruct(this);
+      DEBUG_WERR("Closing fd:%O\n", o->query_fd());
+      o->close();
+      o->set_blocking();
+      destruct(o);
     }
   }
 
@@ -130,8 +132,8 @@ class Socket {
 
   void close_callback()
   {
-    int err=errno();
-    DEBUG_WERR("close_callback[%O]\n", query_fd());
+    int err=o->errno();
+    DEBUG_WERR("close_callback[%O]\n", o->query_fd());
     got_callback();
     if(input_buffer != expected_data)
     {
@@ -148,13 +150,13 @@ class Socket {
 
   void write_callback()
   {
-    DO_IF_BACKEND(set_backend(backend));
+    DO_IF_BACKEND(o->set_backend(backend));
     got_callback();
     DEBUG_WERR("write_callback[%O]: output_buffer: %O\n",
-	       query_fd(), output_buffer);
+	       o->query_fd(), output_buffer);
     if(sizeof(output_buffer))
     {
-      int tmp=write(output_buffer);
+      int tmp=o->write(output_buffer);
       DEBUG_WERR("write_callback(): Wrote %d bytes.\n", tmp /*, output_buffer*/);
       if(tmp >= 0)
       {
@@ -164,8 +166,8 @@ class Socket {
 	exit_test(1);
       }
     }else{
-      set_write_callback(0);
-      close("w");
+      o->set_write_callback(0);
+      o->close("w");
       output_finished++;
       cleanup();
     }
@@ -174,7 +176,7 @@ class Socket {
   void read_callback(mixed id, string foo)
   {
     got_callback();
-    DEBUG_WERR("read_callback[%O]: Got %O\n", query_fd(), foo);
+    DEBUG_WERR("read_callback[%O]: Got %O\n", o->query_fd(), foo);
     if( !sizeof(foo) )
       fd_fail("Got empty read callback.\n");
     input_buffer+=foo;
@@ -183,7 +185,7 @@ class Socket {
   void read_oob_callback(mixed id, string foo)
   {
     got_callback();
-    fd_fail("Got unexpected out of band data on %O: %O", query_fd(), foo);
+    fd_fail("Got unexpected out of band data on %O: %O", o->query_fd(), foo);
   }
 
   void create(object|void o)
@@ -192,19 +194,18 @@ class Socket {
     start();
     if(o)
     {
-      o->set_id(0);
-      assign(o);
-      destruct(o);
+      this_program::o = o;
     }else{
-      if(!open_socket(0, ANY))
+      this_program::o = o = Stdio.File();
+      if(!o->open_socket(0, ANY))
       {
-	fd_fail("Failed to open socket: "+strerror(errno())+"\n");
+	fd_fail("Failed to open socket: "+strerror(o->errno())+"\n");
       }
     }
-    DO_IF_BACKEND(set_backend(backend));
-    set_id(0);
-    set_nonblocking(read_callback,write_callback,close_callback,
-		    read_oob_callback, UNDEFINED);
+    DO_IF_BACKEND(o->set_backend(backend));
+    o->set_id(0);
+    o->set_nonblocking(read_callback,write_callback,close_callback,
+		       read_oob_callback, UNDEFINED);
   }
 };
 
@@ -218,7 +219,7 @@ class Socket2
     if(sizeof(output_buffer))
     {
       int prerefs = Debug.refs ("%s");
-      int tmp=write(({"%s"}), output_buffer);
+      int tmp=o->write(({"%s"}), output_buffer);
       if (Debug.refs ("%s") != prerefs) {
 	log_msg ("Format string leak from %d to %d.\n",
 		 prerefs, Debug.refs ("%s"));
@@ -232,8 +233,8 @@ class Socket2
 	exit_test(1);
       }
     }else{
-      set_write_callback(0);
-      close("w");
+      o->set_write_callback(0);
+      o->close("w");
       output_finished++;
       cleanup();
     }
@@ -248,15 +249,15 @@ class BufferSocket {
     DO_IF_BACKEND(set_backend(backend));
     got_callback();
     DEBUG_WERR("write_callback[%O]: output_buffer: %O\n",
-	       query_fd(), output_buffer);
+	       o->query_fd(), output_buffer);
     if(sizeof(output_buffer))
     {
       out->add(output_buffer);
       output_buffer = "";
     }else{
       if (!sizeof(out)) {
-          set_write_callback(0);
-          close("w");
+          o->set_write_callback(0);
+          o->close("w");
           output_finished++;
           cleanup();
       }
@@ -266,7 +267,7 @@ class BufferSocket {
   void read_callback(mixed id, Stdio.Buffer in)
   {
     got_callback();
-    DEBUG_WERR("read_callback[%O]: Got %O\n", query_fd(), in);
+    DEBUG_WERR("read_callback[%O]: Got %O\n", o->query_fd(), in);
     if( !sizeof(in) )
       fd_fail("Got empty read callback.\n");
     input_buffer+=in->read();
@@ -275,13 +276,13 @@ class BufferSocket {
   void read_oob_callback(mixed id, string foo)
   {
     got_callback();
-    fd_fail("Got unexpected out of band data on %O: %O", query_fd(), foo);
+    fd_fail("Got unexpected out of band data on %O: %O", o->query_fd(), foo);
   }
 
   void create(object|void o)
   {
     ::create(o);
-    set_buffer_mode(Stdio.Buffer(), Stdio.Buffer());
+    o->set_buffer_mode(Stdio.Buffer(), Stdio.Buffer());
   }
 };
 
@@ -421,7 +422,7 @@ array(object) stdtest(program Socket)
   {
     got_callback();
     DEBUG_WERR("Connecting to %O port %d...\n", LOOPBACK, portno2);
-    if (sock->connect(LOOPBACK, portno2)) {
+    if (sock->o->connect(LOOPBACK, portno2)) {
       protocol_supported = 1;
       break;
     }
@@ -493,8 +494,9 @@ array(object) spair(int type)
   object sock1,sock2;
   sock1=Stdio.File();
   DO_IF_BACKEND(sock1->set_backend(backend));
-  if(!type)
-  {
+
+  switch(type) {
+  case 0:
     sock1->connect(LOOPBACK, portno2);
     sock2=port2::accept();
     if(!sock2)
@@ -502,7 +504,8 @@ array(object) spair(int type)
       fd_fail("Accept returned 0, errno: %d, %O\n",
 	      port2::errno(), strerror(port2::errno()));
     }
-  }else{
+    break;
+  case 1:
     sock2=sock1->pipe(Stdio.PROP_BIDIRECTIONAL |
 		      Stdio.PROP_NONBLOCK |
 		      Stdio.PROP_SHUTDOWN);
@@ -511,6 +514,12 @@ array(object) spair(int type)
       fd_fail("File->pipe() failed 0, errno: %d, %O\n",
 	      sock1->errno(), strerror(sock1->errno()));
     }
+    break;
+  case 2:
+    sock1 = Stdio.FakePipe();
+    DO_IF_BACKEND(sock1->set_backend(backend));
+    sock2 = sock1->get_other();
+    break;
   }
   DO_IF_BACKEND(sock2->set_backend(backend));
   return ({sock1,sock2});
@@ -544,7 +553,7 @@ void finish(program Socket)
       case 1:
         log_status("Beginning tests for Socket type %O", Socket);
 	log_status("Testing dup & assign");
-	sock1=stdtest(Socket)[0];
+	sock1=stdtest(Socket)[0]->o;
 	sock1->assign(sock1->dup());
 	break;
 	
@@ -554,7 +563,7 @@ void finish(program Socket)
 	for(int e=0;e<10;e++)
 	{
 	  sock1=Socket();
-	  sock1->connect(LOOPBACK, portno1);
+	  sock1->o->connect(LOOPBACK, portno1);
 	  sock1->output_buffer=data1;
 	}
 	break;
@@ -577,28 +586,37 @@ void finish(program Socket)
 	keeper=socks;
 	break;
 
-      case 5..13:
-	tests=(_tests-2)*2;
+      case 5:
+	log_status("Testing uni-directional shutdown on fake pipe");
+	socks=spair(2);
+	num_running=1;
+	socks[1]->set_nonblocking(lambda() {},lambda(){},Function.curry(finish)(Socket));
+	socks[0]->close("w");
+	keeper=socks;
+	break;
+
+      case 6..14:
+	tests=(_tests-3)*2;
 	log_status("Testing "+(tests*2)+" sockets");
 	for(int e=0;e<tests;e++) stdtest(Socket);
 	stdtest(Socket);
 	break;
 
-      case 14..26:
+      case 15..27:
 	if (max_fds > 64) {
 	  /* These tests require mare than 64 open fds. */
-	  tests=(_tests-2)*2;
+	  tests=(_tests-3)*2;
 	  log_status("Testing "+(tests*2)+" sockets");
 	  for(int e=0;e<tests;e++) stdtest(Socket);
 	  stdtest(Socket);
 	  break;
 	}
 	/* Too few available fds; advance to the next set of tests. */
-	_tests = 27;
+	_tests = 28;
 	/* FALL_THROUGH */
 
-      case 27..48:
-	tests=_tests-25;
+      case 28..49:
+	tests=_tests-26;
 	log_status("Copying "+((tests/2)*(2<<(tests/2))*11)+" bytes of data on "+(tests&~1)+" "+(tests&1?"pipes":"sockets"));
 	for(int e=0;e<tests/2;e++)
 	{
@@ -613,16 +631,37 @@ void finish(program Socket)
 	  }
 	  sock1=Socket(sock1);
 	  sock2=Socket(sock2);
-	  
+
 	  sock1->output_buffer=data1;
 	  sock2->expected_data=data1;
-	  
+
 	  sock2->output_buffer=data2;
 	  sock1->expected_data=data2;
 	}
 	break;
 
-      case 49: {
+      case 50..55:
+	tests=_tests-48;
+	log_status("Copying "+(tests*(2<<tests)*11)+" bytes of data on "+(tests*2)+" fake pipes");
+	for(int e=0;e<tests;e++)
+	{
+	  string data1 = random_string(6 * (2<<tests));
+	  string data2 = random_string(6 * (2<<tests));
+	  socks=spair(2);
+	  sock1=socks[0];
+	  sock2=socks[1];
+	  sock1=Socket(sock1);
+	  sock2=Socket(sock2);
+
+	  sock1->output_buffer=data1;
+	  sock2->expected_data=data1;
+
+	  sock2->output_buffer=data2;
+	  sock1->expected_data=data2;
+	}
+	break;
+
+      case 56: {
 	log_status ("Testing leak in write()");
 	string data1=random_string(6*20);
 	string data2=random_string(6*20);
@@ -635,17 +674,17 @@ void finish(program Socket)
 	}
 	sock1=Socket(sock1);
 	sock2=Socket(sock2);
-	  
+
 	sock1->output_buffer=data1;
 	sock2->expected_data=data1;
-	  
+
 	sock2->output_buffer=data2;
 	sock1->expected_data=data2;
 	break;
       }
 
 #if constant(Stdio.__OOB__)
-    case 50:
+    case 57:
       if (Stdio.__OOB__ >= 3) {
 	log_status("Testing out-of-band data");
 	start();
@@ -658,7 +697,7 @@ void finish(program Socket)
 		oob_originator,
 		oob_loopback);
 #endif /* OOB_DEBUG */
-      
+
 	socks[0]->set_nonblocking(0,0,0,got_oob0,send_oob0);
 	socks[1]->set_nonblocking(0,0,0,got_oob1,0);
 	break;

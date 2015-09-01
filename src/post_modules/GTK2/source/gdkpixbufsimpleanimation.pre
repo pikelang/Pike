@@ -15,6 +15,7 @@ void add_frame(GDK2.Pixbuf frame);
 //! Adds a new frame to animation . The pixbuf must have the
 //! dimensions specified when the animation was constructed.
 
+require gtk218;
 void set_loop(bool loop);
 //! Sets whether animation should loop indefinitely when it reaches
 //! the end.
@@ -22,5 +23,6 @@ void set_loop(bool loop);
 bool get_loop();
 //! Returns if animation will loop indefinitely when it reaches
 //! the end.
+endrequire; /* gtk218 */
 
 endrequire; /* gtk28 */
