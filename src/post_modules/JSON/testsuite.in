@@ -55,7 +55,7 @@ test_dec_enc_canon("0", 0)
 test_dec_enc_canon("1", 1)
 test_dec_enc_canon((string) (Int.NATIVE_MAX + 1), Int.NATIVE_MAX+1)
 test_dec_enc_canon((string) (Int.NATIVE_MIN - 1), Int.NATIVE_MIN-1)
-test_enc(UNDEFINED, "0")
+test_enc(UNDEFINED, "null")
 
 test_dec_enc_canon("-1.0", -1.0)
 test_dec_enc_canon("0.0", 0.0)
