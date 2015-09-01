@@ -7,7 +7,9 @@
 
 //! Dummy HTTPS server
 
+#ifndef PORT
 #define PORT 25678
+#endif
 
 #if constant(SSL.Cipher.CipherAlgorithm)
 
@@ -117,8 +119,8 @@ void my_accept_callback(object f)
 int main()
 {
 #ifdef SSL3_DEBUG
-  werror("Cert: '%s'\n", Crypto.string_to_hex(my_certificate));
-  werror("Key:  '%s'\n", Crypto.string_to_hex(my_key));
+  werror("Cert: '%s'\n", String.string2hex(my_certificate));
+  werror("Key:  '%s'\n", String.string2hex(my_key));
 //  werror("Decoded cert: %O\n", SSL.asn1.ber_decode(my_certificate)->get_asn1());
 #endif
 #if 0
