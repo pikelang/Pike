@@ -132,6 +132,7 @@ test_any([[
   return q->pop();
 ]], "b")
 
+dnl - ADT.Scheduler
 
 dnl - ADT.Stack
 
@@ -376,6 +377,44 @@ test_equal((array)ADT.Table.table(
      ({ "a", "5.3" }),
      ({ "c", "4711" }) }))
 
+dnl  - ADT.TreeScheduler
+
+test_do( add_constant("Test", ([
+  "Consumers":({}),
+  "Scheduler":ADT.TreeScheduler(),
+])); )
+
+dnl weight, label, [parent]
+define(test_ts_add,[[
+  test_do([[
+    mapping m = all_constants()->Test;
+    m->Consumers += ({ Test.Scheduler.add($1, $2, $3) });
+  ]])
+]])
+
+test_ts_add(4, "4A")
+test_ts_add(8, "8A")
+test_ts_add(4, "4B", Test.Consumers[1])
+test_ts_add(8, "8B", Test.Consumers[1])
+
+test_eq(sizeof(Test.Consumers[1]->children), 2)
+test_equal(Test.Consumers->weight, ({ 4, 8, 4, 8 }))
+test_equal(Test.Consumers->pri, ({ 1.5, 0.75, 2.25, 1.125 }))
+test_eq(Test.Scheduler.get()->value, "8A");
+
+test_do(Test.Scheduler.remove(Test.Consumers[1]))
+test_eq(Test.Scheduler.get()->value, "8B");
+
+test_do(Test.Consumers[1]->reparent_siblings())
+test_eq(Test.Scheduler.get()->value, "8B");
+test_eq(sizeof(Test.Consumers[1]->children), 3)
+test_equal(Test.Consumers->weight, ({ 6.0, 8, 4, 8 }))
+test_equal(Test.Consumers->pri, ({ 1.5, 0.5, 2.25, 1.125 }))
+
+test_do(destruct(Test.Scheduler);)
+test_equal(Test.Consumers, ({ 0, 0, 0, 0 }))
+
+test_do( add_constant("Test"); )
 
 dnl  - ADT.struct
 
