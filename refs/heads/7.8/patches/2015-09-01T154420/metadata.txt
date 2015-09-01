@@ -1,0 +1,21 @@
+subject: Pike 7.8: Multiple fixes:
+from: e13646135023847a634c92c47091472e0cc3a447
+to: d599e333252922ab6398c56c3fe99851d24d6b82
+originator: wellhardh@roxen.com
+depends: 2015-09-01T135226|pike/7.8.930
+restart: true
+
+Multiple fixes:
+
+  * release number bumped to 931 by export.pike
+
+  * Sql.odbc: Survive old Odbc module.
+    
+    The Pike patches for Roxen typically don't patch the pike binary, so
+    make sure that the module compiles even without Odbc.odbc.typed_result.
+
+  * Updated to tzdata2015d.
+
+  * Updated to tzdata2015e.
+
+  * Updated to tzdata2015f.
