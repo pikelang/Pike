@@ -50,16 +50,14 @@ class MyContext
 #ifndef HTTPS_CLIENT
 SSL.Port port;
 
-void my_accept_callback(object f)
+void my_accept_callback(SSL.File f)
 {
   Conn(port->accept());
 }
 #endif
 
-class Conn {
-
-  object sslfile;
-
+class Conn (SSL.File sslfile)
+{
   string message =
     "HTTP/1.0 200 Ok\r\n"
     "Connection: close\r\n"
@@ -93,9 +91,8 @@ class Conn {
     sslfile->set_write_callback(write_callback);
   }
 
-  protected void create(object f)
+  protected void create()
   {
-    sslfile = f;
     sslfile->set_nonblocking(read_callback, 0, 0);
   }
 }
