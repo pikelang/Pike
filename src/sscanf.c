@@ -570,16 +570,10 @@ static struct pike_string *get_string_slice( void *input, int shift,
                                              ptrdiff_t offset, ptrdiff_t len,
                                              struct pike_string *str )
 {
-    if( str )
-    {
+    if( !shift && str )
         return string_slice( str, offset, len );
-    }
-    else
-    {
-        struct pike_string *res = begin_wide_shared_string( len, shift );
-        memcpy( res->str, ((char *)input) + (offset<<shift), len<<shift);
-        return end_shared_string( res );
-    }
+    return make_shared_binary_pcharp(MKPCHARP(((char *)input)+(offset<<shift),shift),
+                                     len);
 }
 
 /* INT32 very_low_sscanf_{0,1,2}_{0,1,2}(p_wchar *input, ptrdiff_t input_len,
