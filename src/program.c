@@ -7074,14 +7074,14 @@ PMOD_EXPORT int find_identifier(const char *name,const struct program *prog)
 int store_prog_string(struct pike_string *str)
 {
   unsigned int i;
-
-  for (i=0;i<Pike_compiler->new_program->num_strings;i++)
-    if (Pike_compiler->new_program->strings[i] == str)
-      return i;
+  if( str->refs > 1 )
+      for (i=0;i<Pike_compiler->new_program->num_strings;i++)
+          if (Pike_compiler->new_program->strings[i] == str)
+              return i;
 
   reference_shared_string(str);
   add_to_strings(str);
-  return i;
+  return Pike_compiler->new_program->num_strings-1;
 }
 
 /* NOTE: O(n²)! */
@@ -7098,6 +7098,19 @@ int store_constant(const struct svalue *foo,
     /* Assume that if `==() throws an error, the svalues aren't equal. */
     e = Pike_compiler->new_program->num_constants;
   } else {
+    if(!equal &&
+       (TYPEOF(*foo) == PIKE_T_MAPPING ||
+        TYPEOF(*foo) == PIKE_T_MULTISET ||
+        TYPEOF(*foo) == PIKE_T_STRING ||
+        TYPEOF(*foo) == PIKE_T_ARRAY )) /* no possibility of comparator. Check refs first. */
+    {
+        if(*foo->u.refs == 1 )
+        {
+            e = Pike_compiler->new_program->num_constants;
+            goto not_present;
+        }
+    }
+
     for(e=0;e<Pike_compiler->new_program->num_constants;e++)
     {
       struct program_constant *c = Pike_compiler->new_program->constants+e;
@@ -7126,6 +7139,7 @@ int store_constant(const struct svalue *foo,
       }
     }
   }
+not_present:
   UNSETJMP(jmp);
   assign_svalue_no_free(&tmp.sval,foo);
 #if 0
