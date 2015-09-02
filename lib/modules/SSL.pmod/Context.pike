@@ -130,14 +130,18 @@ Alert alert_factory(object con,
 //! default set to @[Crypto.Random.random_string].
 function(int(0..):string(8bit)) random = Crypto.Random.random_string;
 
-//! Attempt to enable encrypt-then-mac mode.
-int encrypt_then_mac = 1;
+//! Attempt to enable encrypt-then-mac mode. Defaults to @expr{1@}.
+int(0..1) encrypt_then_mac = 1;
 
 //! Cipher suites we want to support, in order of preference, best
-//! first.
+//! first. By default set to all suites with at least 128 bits cipher
+//! key length, excluding RC4, and ephemeral and non-ephemeral
+//! certificate based key exchange.
 array(int) preferred_suites;
 
-//! Supported elliptical curve cipher curves in order of preference.
+//! Supported elliptical curve cipher curves in order of
+//! preference. Defaults to all supported curves, ordered with the
+//! largest curves first.
 array(int) ecc_curves = reverse(sort(indices(ECC_CURVES)));
 
 //! Supported FFDHE groups for DHE key exchanges, in order of preference,
@@ -351,7 +355,7 @@ array(int) sort_suites(array(int) suites)
 //!     @value 1
 //!       Also allow certificate based key exchanges.
 //!     @value 2
-//!       Allow anonymous server key exchange. Note that this
+//!       Also allow anonymous server key exchange. Note that this
 //!       allows for man in the middle attacks.
 //!   @endint
 //!
@@ -378,7 +382,7 @@ array(int) sort_suites(array(int) suites)
 //!   the actual keylength for old ciphers where there
 //!   are known attacks.
 array(int) get_suites(int(-1..)|void min_keylength,
-		      int(0..2)|void ke_flags,
+                      int(0..2)|void ke_mode,
 		      multiset(int)|void blacklisted_ciphers,
 		      multiset(KeyExchangeType)|void blacklisted_kes,
 		      multiset(HashAlgorithm)|void blacklisted_hashes,
@@ -392,7 +396,7 @@ array(int) get_suites(int(-1..)|void min_keylength,
     KE_ecdhe_rsa, KE_ecdhe_ecdsa,
   >);
 
-  if (ke_flags) {
+  if (ke_mode) {
     // Static certificate based key exchange methods.
     kes |= (<
       KE_rsa, KE_rsa_export, KE_rsa_fips,
@@ -402,7 +406,7 @@ array(int) get_suites(int(-1..)|void min_keylength,
       KE_ecdh_ecdsa,
 #endif
     >);
-    if (ke_flags == 2) {
+    if (ke_mode == 2) {
       // Unsigned key exchange methods.
       kes |= (< KE_null, KE_dh_anon,
 #if constant(Crypto.ECC.Curve)
