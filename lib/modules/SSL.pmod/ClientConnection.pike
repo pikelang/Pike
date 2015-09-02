@@ -155,6 +155,7 @@ protected Packet client_hello(string(8bit)|void server_name,
   };
 
   ext (EXTENSION_extended_master_secret,
+       context->extended_master_secret &&
        context->min_version < PROTOCOL_TLS_1_3) {
     // draft-ietf-tls-session-hash
     // NB: This extension is implicit in TLS 1.3.

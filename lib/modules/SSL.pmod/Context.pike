@@ -137,6 +137,9 @@ int(0..1) encrypt_then_mac = 1;
 //! @expr{0@}.
 int(0..1) truncated_hmac = 0;
 
+//! Support extended master secret. Defaults to @expr{0@},
+int(0..1) extended_master_secret = 0;
+
 //! Cipher suites we want to support, in order of preference, best
 //! first. By default set to all suites with at least 128 bits cipher
 //! key length, excluding RC4, and ephemeral and non-ephemeral

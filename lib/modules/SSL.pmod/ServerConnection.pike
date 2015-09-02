@@ -600,8 +600,10 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
                          ALERT_illegal_parameter,
                          "Extended-master-secret: Invalid extension.\n");
 
-              SSL3_DEBUG_MSG("Extended-master-secret: Enabled.\n");
-              session->extended_master_secret = 1;
+              if (context->extended_master_secret) {
+                SSL3_DEBUG_MSG("Extended-master-secret: Enabled.\n");
+                session->extended_master_secret = 1;
+              }
             }
             break;
 
