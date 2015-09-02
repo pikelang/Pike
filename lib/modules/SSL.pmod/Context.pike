@@ -133,6 +133,10 @@ function(int(0..):string(8bit)) random = Crypto.Random.random_string;
 //! Attempt to enable encrypt-then-mac mode. Defaults to @expr{1@}.
 int(0..1) encrypt_then_mac = 1;
 
+//! Support truncated HMAC extension, @rfc{3546:3.5@}. Defaults to
+//! @expr{0@}.
+int(0..1) truncated_hmac = 0;
+
 //! Cipher suites we want to support, in order of preference, best
 //! first. By default set to all suites with at least 128 bits cipher
 //! key length, excluding RC4, and ephemeral and non-ephemeral

@@ -226,3 +226,8 @@ Known Problems and Missing Features
 	startup time and reduce memory usage for servers with many
 	sites. Dynamic loading and unloaded could be part of the same
 	mechanism as the Context selection mentioned above.
+
+	Truncated HMAC is only supported on the server side. It has
+	however been mentioned on the IETF TLS mailing list that there
+	are security issues with truncated HMAC, so this is only
+	lacking for completeness.

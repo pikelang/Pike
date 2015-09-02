@@ -477,13 +477,14 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
             }
             SSL3_DEBUG_MSG("Maximum frame size %O.\n", session->max_packet_size);
             break;
+
           case EXTENSION_truncated_hmac:
             // RFC 3546 3.5 "Truncated HMAC"
             COND_FATAL(sizeof(extension_data),
                        ALERT_illegal_parameter,
                        "Invalid trusted HMAC extension.\n");
 
-            session->truncated_hmac = 1;
+            session->truncated_hmac = context->truncated_hmac;
             SSL3_DEBUG_MSG("Trucated HMAC\n");
             break;
 
