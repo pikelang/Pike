@@ -2016,7 +2016,8 @@ void f_thread_set_concurrency(INT32 args)
 PMOD_EXPORT void f_this_thread(INT32 args)
 {
   pop_n_elems(args);
-  if (Pike_interpreter.thread_state) {
+  if (Pike_interpreter.thread_state &&
+      Pike_interpreter.thread_state->thread_obj) {
     ref_push_object(Pike_interpreter.thread_state->thread_obj);
   } else {
     /* Threads not enabled yet/anylonger */
