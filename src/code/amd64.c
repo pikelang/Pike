@@ -1526,16 +1526,13 @@ static void amd64_pop_mark(void)
 
 static void amd64_push_string(int strno, int subtype)
 {
-  amd64_load_fp_reg();
+  struct pike_string *str = Pike_compiler->new_program->strings[strno];
   amd64_load_sp_reg();
-  mov_mem_reg(fp_reg, OFFSETOF(pike_frame, context), P_REG_RAX);
-  mov_mem_reg(P_REG_RAX, OFFSETOF(inherit, prog), P_REG_RAX);
-  mov_mem_reg(P_REG_RAX, OFFSETOF(program, strings), P_REG_RAX);
-  mov_mem_reg(P_REG_RAX, strno * sizeof(struct pike_string *),  P_REG_RAX);
-  mov_imm_mem((subtype<<16) | PIKE_T_STRING, sp_reg,
-	      OFFSETOF(svalue, tu.t.type));
-  mov_reg_mem(P_REG_RAX, sp_reg,(INT32)OFFSETOF(svalue, u.string));
-  add_imm_mem( 1, P_REG_RAX, OFFSETOF(pike_string, refs));
+
+  mov_imm_reg((INT64)str,P_REG_RAX);
+  mov_imm_mem((subtype<<16) | PIKE_T_STRING, sp_reg, SVAL(0).type);
+  mov_reg_mem(P_REG_RAX,sp_reg,SVAL(0).value);
+  add_imm_mem(1, P_REG_RAX,OFFSETOF(pike_string, refs));
 
   amd64_add_sp(1);
 }
