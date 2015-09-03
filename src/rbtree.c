@@ -264,11 +264,9 @@ static struct rb_node_hdr *rebalance_after_add (struct rb_node_hdr *node,
 
   while (parent->flags & RB_RED) {
     /* Since the root always is black we know there's a grandparent. */
-    if (UNLIKELY(!grandparent)) rb_fatal (
 #ifdef PIKE_DEBUG
-                                          parent,
+    if (UNLIKELY(!grandparent)) rb_fatal (parent, "No parent for red node.\n");
 #endif
-                                          "No parent for red node.\n");
 #ifdef RB_STATS
     rb_add_rebalance_cnt++;
 #endif
