@@ -1575,7 +1575,7 @@ class KeyExchangeKRB
 
   Stdio.Buffer parse_server_key_exchange(Stdio.Buffer input)
   {
-    SSL3_DEBUG_MSG("KE_RSA\n");
+    SSL3_DEBUG_MSG("KE_KRB\n");
     error("Invalid message.\n");
   }
 }
