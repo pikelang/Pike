@@ -139,7 +139,7 @@ class Consumer {
 Consumer add(Consumer c)
 {
   if (c->state & STATE_ACTIVE) {
-    error("Attempt to add the same consumer twice.\n");
+    return c;
   }
   c->pri -= (float)(normalization_offset - c->offset);
   c->offset = normalization_offset;
