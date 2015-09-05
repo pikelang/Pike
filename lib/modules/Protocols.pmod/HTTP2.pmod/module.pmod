@@ -45,12 +45,12 @@ enum Error {
 };
 
 enum Setting {
-  SETTINGS_header_table_size		= 1,
-  SETTINGS_enable_push			= 2,
-  SETTINGS_max_concurrent_streams	= 3,
-  SETTINGS_initial_window_size		= 4,
-  SETTINGS_max_frame_size		= 5,
-  SETTINGS_max_header_list_size		= 6,
+  SETTING_header_table_size		= 1,
+  SETTING_enable_push			= 2,
+  SETTING_max_concurrent_streams	= 3,
+  SETTING_initial_window_size		= 4,
+  SETTING_max_frame_size		= 5,
+  SETTING_max_header_list_size		= 6,
 };
 
 //! @rfc{7540:A@}.
@@ -218,14 +218,14 @@ constant TLS_CIPHER_SUITE_BLACK_LIST = (<
   SSL.Constants.TLS_ecdh_anon_with_aes_128_cbc_sha,
   SSL.Constants.TLS_ecdh_anon_with_aes_256_cbc_sha,
   SSL.Constants.TLS_srp_sha_with_3des_ede_cbc_sha,
-  SSL.Constants.TLS_srp_sha_rsa_with_3DES_ede_cbc_sha,
-  SSL.Constants.TLS_srp_sha_dss_with_3DES_ede_cbc_sha,
+  SSL.Constants.TLS_srp_sha_rsa_with_3des_ede_cbc_sha,
+  SSL.Constants.TLS_srp_sha_dss_with_3des_ede_cbc_sha,
   SSL.Constants.TLS_srp_sha_with_aes_128_cbc_sha,
-  SSL.Constants.TLS_srp_sha_rsa_with_AES_128_cbc_sha,
-  SSL.Constants.TLS_srp_sha_dss_with_AES_128_cbc_sha,
+  SSL.Constants.TLS_srp_sha_rsa_with_aes_128_cbc_sha,
+  SSL.Constants.TLS_srp_sha_dss_with_aes_128_cbc_sha,
   SSL.Constants.TLS_srp_sha_with_aes_256_cbc_sha,
-  SSL.Constants.TLS_srp_sha_rsa_with_AES_256_cbc_sha,
-  SSL.Constants.TLS_srp_sha_dss_with_AES_256_cbc_sha,
+  SSL.Constants.TLS_srp_sha_rsa_with_aes_256_cbc_sha,
+  SSL.Constants.TLS_srp_sha_dss_with_aes_256_cbc_sha,
   SSL.Constants.TLS_ecdhe_ecdsa_with_aes_128_cbc_sha256,
   SSL.Constants.TLS_ecdhe_ecdsa_with_aes_256_cbc_sha384,
   SSL.Constants.TLS_ecdh_ecdsa_with_aes_128_cbc_sha256,
