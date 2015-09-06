@@ -2247,7 +2247,7 @@ static int push_sprintf_argument_types(PCHARP format,
       }
 
       case 'm':
-	if ('.' < min_char) min_char = '.';
+	if (' ' < min_char) min_char = ' ';
 	if ('z' > max_char) max_char = 'z';
 	break;
       case '%':
