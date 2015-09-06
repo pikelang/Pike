@@ -3772,13 +3772,33 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
   case F_CONSTANT:
     ins_debug_instr_prologue(a-F_OFFSET, b, 0);
     amd64_load_fp_reg();
-    amd64_load_sp_reg();
+    amd64_load_sp_reg(); 
+#if 0
     mov_mem_reg( fp_reg, OFFSETOF(pike_frame,context), P_REG_RCX );
     mov_mem_reg( P_REG_RCX, OFFSETOF(inherit,prog), P_REG_RCX );
     mov_mem_reg( P_REG_RCX, OFFSETOF(program,constants), P_REG_RCX );
     add_reg_imm( P_REG_RCX, b*sizeof(struct program_constant) +
                  OFFSETOF(program_constant,sval) );
     amd64_push_svaluep( P_REG_RCX );
+    /* ~14 instructions total */
+#else
+    {
+      struct svalue *cval = &Pike_compiler->new_program->constants[b].sval;
+      mov_imm_mem(cval->tu.type_subtype, sp_reg, SVAL(0).type);
+      if( TYPEOF(*cval) >= MIN_REF_TYPE )
+      {
+	mov_imm_reg(cval->u.integer, P_REG_RCX);
+	mov_reg_mem(P_REG_RCX, sp_reg, SVAL(0).value);
+	add_imm_mem( 1, P_REG_RCX, OFFSETOF(pike_string, refs));
+      }
+      else
+      {
+	mov_imm_mem(cval->u.integer, sp_reg, SVAL(0).value);
+      }
+      amd64_add_sp(1);
+    }
+    /* 2 or 4 instructions total */
+#endif
     return;
 
   case F_GLOBAL_LVALUE:
