@@ -7,6 +7,8 @@
 #include "global.h"
 #include "interpret.h"
 #include "array.h"
+#include "mapping.h"
+#include "multiset.h"
 #include "stralloc.h"
 #include "pike_error.h"
 #include "fd_control.h"
@@ -19,101 +21,13 @@
 #include "sscanf.h"
 #include "bitvector.h"
 
+#include <ctype.h>
+
 #define sp Pike_sp
 
 /*
  * helper functions for sscanf %O
  */
-
-/* Calling convention:
- *   val: Integer to fill in.
- *   str: string to parse.
- *   len: length of the string.
- *
- * Returns:
- *   NULL on failure.
- *   continuation point in str on success.
- */
-static void *pcharp_extract_char_const(INT_TYPE *val,
-				       PCHARP str, ptrdiff_t len)
-{
-  int c;
-
-  /* use of macros to keep similar to lexer.h: char_const */
-#define LOOK() (len>0?EXTRACT_PCHARP(str):0)
-#define GETC() ((len > 0)?(INC_PCHARP(str, 1), len--, INDEX_PCHARP(str, -1)):0)
-
-  switch (c=GETC())
-  {
-  case 0:
-    return NULL;
-
-  case '\n': return NULL;	/* Newline in character constant. */
-
-  case 'a': c = 7; break;       /* BEL */
-  case 'b': c = 8; break;       /* BS */
-  case 't': c = 9; break;       /* HT */
-  case 'n': c = 10; break;      /* LF */
-  case 'v': c = 11; break;      /* VT */
-  case 'f': c = 12; break;      /* FF */
-  case 'r': c = 13; break;      /* CR */
-  case 'e': c = 27; break;      /* ESC */
-
-  case '0': case '1': case '2': case '3':
-  case '4': case '5': case '6': case '7':
-    /* Octal escape. */
-    c-='0';
-    while(LOOK()>='0' && LOOK()<='8')
-      c=c*8+(GETC()-'0');
-    break;
-
-  case 'x':
-    /* Hexadecimal escape. */
-    c=0;
-    while(1)
-    {
-      switch(LOOK())
-      {
-      case '0': case '1': case '2': case '3':
-      case '4': case '5': case '6': case '7':
-      case '8': case '9':
-	c=c*16+GETC()-'0';
-	continue;
-
-      case 'a': case 'b': case 'c': case 'd': case 'e': case 'f':
-	c=c*16+GETC()-'a'+10;
-	continue;
-
-      case 'A': case 'B': case 'C': case 'D': case 'E': case 'F':
-	c=c*16+GETC()-'A'+10;
-	continue;
-      }
-      break;
-    }
-    break;
-
-  case 'd':
-    /* Decimal escape. */
-    c=0;
-    while(1)
-    {
-      switch(LOOK())
-      {
-      case '0': case '1': case '2': case '3':
-      case '4': case '5': case '6': case '7':
-      case '8': case '9':
-	c=c*10+GETC()-'0';
-	continue;
-      }
-      break;
-    }
-    break;
-#undef LOOK
-#undef GETC
-  }
-  *val = c;
-  return str.ptr;
-}
 
 /* Calling convention:
  *   res: svalue to fill in.
@@ -124,120 +38,360 @@ static void *pcharp_extract_char_const(INT_TYPE *val,
  *   NULL on failure.
  *   continuation point in str on success.
  */
+
+#define CONSUME(X) do{if(*len>=X){INC_PCHARP(*str,X);*len-=X;}}while(0)
+static p_wchar2 next_char( PCHARP *str, ptrdiff_t *len )
+{
+  p_wchar2 res = *len ? EXTRACT_PCHARP(*str) : 0;
+  CONSUME(1);
+  return res;
+}
+#define READ() next_char(str,len)
+
+
+static int pcharp_isspace( PCHARP *str )
+{
+  return WIDE_ISSPACE(EXTRACT_PCHARP(*str));
+}
+
+static void skip_space( PCHARP *str, ptrdiff_t *len )
+{
+  while(*len && WIDE_ISSPACE(READ()))
+    ;
+  CONSUME(-1);
+}
+
+static void skip_comment( PCHARP *str, ptrdiff_t *len )
+{
+  CONSUME(1); // Start '/' 
+  switch(READ())
+  {
+    case '*':
+      while(*len)
+      {
+	while( READ() != '*' )
+	  ;
+	if( READ() == '/' )
+	  return;
+      }
+      break;
+
+    case '/':
+      while( *len && READ()!= '\n' )
+	;
+  }
+}
+
+static void skip_to_token( PCHARP *str, ptrdiff_t *len )
+{
+  int worked;
+  do
+  {
+    worked=0;
+    if(pcharp_isspace(str))
+    {
+      skip_space(str,len);
+      worked=1;
+    }
+    if( EXTRACT_PCHARP(*str) == '/' )
+    {
+      skip_comment(str,len);
+      worked=1;
+    }
+  }while(worked);
+}
+
+/* Note: Serious code-duplication from the lexer. */
+static int pcharp_to_svalue_rec(PCHARP *str,
+				ptrdiff_t *len)
+{
+  extern int parse_esc_seq_pcharp (PCHARP buf, p_wchar2 *chr, ptrdiff_t *len);
+  struct svalue *begin = Pike_sp;
+  PCHARP start = *str;
+  check_stack(100);
+
+  while(1)
+  {
+    skip_to_token(str,len);
+
+    switch( READ() )
+    {
+      default: goto fail;
+
+      case '1': case '2': case '3': case '4':
+      case '5': case '6': case '7': case '8': case '9':
+      {
+	int base = 10;
+	CONSUME(-1);
+	goto read_number;
+
+      case '0': 
+	switch( EXTRACT_PCHARP(*str) )
+	{
+	  case 'x':case 'X': base = 16; CONSUME(1); break;
+	  case 'b':case 'B': base = 2;  CONSUME(1); break;
+	  case '.':
+	    CONSUME(-1);
+	    goto read_float;
+	  case 'e':case 'E':
+	    CONSUME(-1);
+	    push_float(0.0);
+	    return 1;
+	  default:
+	    base = 8;
+	    CONSUME(-1);
+	    break;
+	}
+      read_number:
+
+	/* Integer or float. */
+	push_int(0);
+	if( pcharp_to_svalue_inumber(Pike_sp-1,*str,str,base,*len) )
+	{
+	  if( (EXTRACT_PCHARP(*str) == '.' || EXTRACT_PCHARP(*str)=='e'|| EXTRACT_PCHARP(*str)=='E') )
+	  {
+	  read_float:
+	    {
+	      void *integer_parse = str->ptr;
+	      double res;
+	      res = STRTOD_PCHARP(start,str);
+	      if( integer_parse < str->ptr )
+	      {
+		pop_stack();
+		push_float(res);
+	      }
+	    }
+	  *len -= SUBTRACT_PCHARP(*str,start);
+	  if( *len < 0 )
+	    /* this is possible for floats combined with %<len>O format. */
+	    goto fail;
+	  }
+	  return 1;
+	}
+      }
+      goto fail;
+
+    case '\'':
+      // single character. 
+    {
+      unsigned int l = 0;
+      struct svalue res = svalue_int_zero;
+      ptrdiff_t used;
+      MP_INT bigint;
+      while(1)
+      {
+	p_wchar2 tmp;
+	switch( (tmp=READ()) )
+	{
+	  case 0:
+	    goto fail;
+
+	  case '\\':
+	    if( parse_esc_seq_pcharp(*str,&tmp,&used) )
+	      return 0;
+	    CONSUME(used);
+	    /* fallthrough. */
+	  default:
+	    l++;
+	    if( l == sizeof(INT_TYPE)-1 )
+	    {
+	      /* overflow possible. Switch to bignums. */
+	      mpz_init(&bigint);
+	      mpz_set_ui(&bigint,res.u.integer);
+	      TYPEOF(res) = PIKE_T_OBJECT;
+	    }
+
+	    if( l >= sizeof(INT_TYPE)-1 )
+	    {
+	      mpz_mul_2exp(&bigint,&bigint,8);
+	      mpz_add_ui(&bigint,&bigint,tmp);
+	    }
+	    else
+	    {
+	      res.u.integer <<= 8;
+	      res.u.integer |= tmp;
+	    }
+	    break;
+
+	  case '\'':
+	    if( TYPEOF(res) == PIKE_T_OBJECT )
+	    {
+	      push_bignum( &bigint );
+	      mpz_clear(&bigint);
+	      reduce_stack_top_bignum();
+	      return 1;
+	    }
+	    *Pike_sp++ = res;
+	    return 1;
+	}
+      }
+    }
+
+    case '"':
+    {
+      struct string_builder tmp;
+      PCHARP start;
+      int cnt;
+      init_string_builder(&tmp,0);
+
+      start = *str;
+      cnt = 0;
+      for (;*len;)
+      {
+	switch(READ())
+	{
+	  case '\"':
+	    /* End of string -- done. */
+	    if (cnt) string_builder_append(&tmp, start, cnt);
+	    push_string(finish_string_builder(&tmp));
+	    return 1;
+
+	  case '\\':
+	  {
+	    /* Escaped character */
+	    p_wchar2 val=0;
+	    ptrdiff_t consumed;
+	    if( !parse_esc_seq_pcharp(*str,&val,&consumed) )
+	      CONSUME(consumed);
+	    if (cnt) string_builder_append(&tmp, start, cnt);
+	    string_builder_putchar(&tmp, val);
+	    *str=start;
+	  }
+	  continue;
+
+	  case '\n':
+	    free_string_builder(&tmp);
+	    goto fail;
+
+	  default:
+	    cnt++;
+	    continue;
+	}
+      }
+      /* Unterminated string -- fail. */
+      free_string_builder(&tmp);
+      goto fail;
+    }
+
+    case '(':
+      // container.
+    {
+      int num=0;
+      p_wchar2 tmp;
+
+#define CHECK_STACK_ADD(ADD) do{		\
+	if(Pike_sp-begin > 100 ) {		\
+	  ADD(Pike_sp-begin);			\
+	  begin= Pike_sp;			\
+	  num++;				\
+	}					\
+      }while(0)
+
+#define FINISH(ADD) do {					\
+	num++;							\
+	ADD(Pike_sp-begin);					\
+	goto container_finished;				\
+      } while(0)
+
+      switch( READ() )
+      {
+	case '[':
+	  while(1)
+	  {
+	    skip_to_token(str,len);
+	    if(EXTRACT_PCHARP(*str) == ']' )
+	    {
+	      CONSUME(1);
+	      FINISH(f_aggregate_mapping);
+	    }
+	    if( !pcharp_to_svalue_rec(str,len) )
+	      goto fail;
+	    skip_to_token(str,len);
+	    if( READ() != ':' )
+	      goto fail;
+	    if(!pcharp_to_svalue_rec(str,len))
+	      goto fail;
+	    skip_to_token(str,len);
+	    tmp = READ();
+	    if( tmp == ']' )
+	      FINISH(f_aggregate_mapping);
+	    if( tmp != ',' )
+	      goto fail;
+	    CHECK_STACK_ADD(f_aggregate_mapping);
+	  }
+	  break;
+
+	case '{':
+	  while(1)
+	  {
+	    skip_to_token(str,len);
+	    if(EXTRACT_PCHARP(*str)=='}' )
+	    {
+	      CONSUME(1);
+	      FINISH(f_aggregate);
+	    }
+	    if( !pcharp_to_svalue_rec(str,len) )
+	      goto fail;
+	    skip_to_token(str,len);
+	    tmp=READ();
+	    if(tmp == '}' )
+	      FINISH(f_aggregate);
+	    if( tmp != ',' )
+	      goto fail;
+	    CHECK_STACK_ADD(f_aggregate);
+	  }
+	  break;
+	case '<':
+	  while(1)
+	  {
+	    skip_to_token(str,len);
+	    if(EXTRACT_PCHARP(*str)=='>' )
+	    {
+	      CONSUME(1);
+	      FINISH(f_aggregate_multiset);
+	    }
+	    pcharp_to_svalue_rec(str,len);
+	    skip_to_token(str,len);
+	    tmp=READ();
+	    if(tmp == '>' )
+	      FINISH(f_aggregate_multiset);
+	    if( tmp != ',' )
+	      goto fail;
+	    CHECK_STACK_ADD(f_aggregate_multiset);
+	  }
+	  break;
+	default:
+	  /* Not a valid container. */
+	  goto fail;
+      }
+#undef FINISH
+#undef CHECK_STACK_ADD
+    /* end of container. */
+    container_finished:
+      if( READ() != ')' )
+	goto fail;
+      if(num > 1 )
+	f_add(num);
+      return 1;
+    }
+    }
+  }
+
+ fail:
+  pop_n_elems(Pike_sp-begin);
+  return 0;
+}
+
+
 static void *pcharp_to_svalue_percent_o(struct svalue *res,
 					PCHARP str,
 					ptrdiff_t len)
 {
   SET_SVAL(*res, T_INT, NUMBER_UNDEFINED, integer, 0);
-
-  for (;len>0; INC_PCHARP(str, 1), len--)
+  if( pcharp_to_svalue_rec( &str, &len ) )
   {
-    switch (EXTRACT_PCHARP(str))
-    {
-    case ' ':  /* whitespace */
-    case '\t':
-    case '\n':
-    case '\r':
-      break;
-
-    case '0': case '1': case '2': case '3': case '4':
-    case '5': case '6': case '7': case '8': case '9':
-      {
-	/* fixme: grok floats */
-	if (!pcharp_to_svalue_inumber(res, str, &str, 0, len)) {
-	  return NULL;
-	}
-	return str.ptr;
-      }
-
-    case '\"':
-      {
-	struct string_builder tmp;
-	PCHARP start;
-	int cnt;
-	init_string_builder(&tmp,0);
-
-	INC_PCHARP(str, 1);	/* Skip the quote. */
-	len--;
-
-	start = str;
-	cnt = 0;
-	for (;len;)
-	{
-	  switch(EXTRACT_PCHARP(str))
-	  {
-	  case '\"':
-	    /* End of string -- done. */
-	    INC_PCHARP(str, 1);	/* Skip the quote. */
-
-	    if (cnt) string_builder_append(&tmp, start, cnt);
-	    SET_SVAL(*res, T_STRING, 0, string, finish_string_builder(&tmp));
-	    return str.ptr;
-
-	  case '\\':
-	    {
-	      /* Escaped character */
-	      INT_TYPE val;
-
-	      if (cnt) string_builder_append(&tmp, start, cnt);
-	      INC_PCHARP(str, 1);
-	      len--;
-	      start.ptr = pcharp_extract_char_const(&val, str, len);
-	      if (!start.ptr) break;
-	      string_builder_putchar(&tmp, val);
-
-	      /* Continue parsing after the escaped character. */
-	      len -= LOW_SUBTRACT_PCHARP(start, str);
-	      cnt = 0;
-	      str = start;
-	    }
-	    continue;
-
-	  case '\n':
-	    /* Newline in string -- fail. */
-	    break;
-
-	  default:
-	    len--;
-	    cnt++;
-	    INC_PCHARP(str, 1);
-	    continue;
-	  }
-	  break;
-	}
-	/* Unterminated string -- fail. */
-	free_string_builder(&tmp);
-	return NULL; /* end of data */
-      }
-
-    case '\'':
-      if (len>2)
-      {
-	INC_PCHARP(str, 1);	/* Skip the quote. */
-
-	SET_SVAL(*res, T_INT, NUMBER_NUMBER, integer, EXTRACT_PCHARP(str));
-	INC_PCHARP(str, 1);
-
-	len -= 2;
-
-	if (res->u.integer == '\\')
-	{
-	  PCHARP tmp;
-	  tmp.ptr = pcharp_extract_char_const(&res->u.integer, str, len);
-	  if (!tmp.ptr) return NULL;
-	  tmp.shift = str.shift;
-	  len -= LOW_SUBTRACT_PCHARP(tmp, str);
-	  str.ptr = tmp.ptr;
-	}
-	if (!len || (EXTRACT_PCHARP(str) != '\''))
-	  return NULL;
-	INC_PCHARP(str, 1);	/* Skip the ending quote. */
-	return str.ptr;
-      }
-      return NULL;
-
-      /* fixme: arrays, multisets, mappings */
-    }
+    *res = *--Pike_sp;
+    return str.ptr;
   }
   return NULL;
 }
