@@ -23,11 +23,19 @@ enum size_shift {
 };
 
 
+enum string_type {
+    STRING_ALLOC_STATIC   =0,
+    STRING_ALLOC_MALLOC   =1,
+    STRING_ALLOC_BA       =2,
+    STRING_ALLOC_SUBSTRING=3,
+};
+
 struct pike_string
 {
   INT32 refs;
   unsigned char flags;
-  enum size_shift  size_shift:8;
+  enum size_shift  size_shift:2;
+  enum string_type alloc_type:6;
   unsigned char  min;
   unsigned char  max;
   ptrdiff_t len; /* Not counting terminating NUL. */
@@ -53,13 +61,6 @@ struct string_builder
 #define STRING_IS_UPPERCASE        32
 
 #define STRING_CHECKED_MASK (STRING_IS_UPPERCASE|STRING_IS_LOWERCASE|STRING_CONTENT_CHECKED)
-
-#define STRING_ALLOC_STATIC         0
-#define STRING_ALLOC_MALLOC        64
-#define STRING_ALLOC_BA	          128 /* String is blockalloced. */
-
-
-#define STRING_ALLOC_MASK          (STRING_ALLOC_BA|STRING_ALLOC_MALLOC|STRING_ALLOC_STATIC)
 
 #define CLEAR_STRING_CHECKED(X) do{(X)->flags &= ~STRING_CHECKED_MASK;}while(0)
 
