@@ -618,7 +618,7 @@ int close (void|string how, void|int clean_close, void|int dont_throw)
       }
       else if( err != System.EPIPE )
 	// Errors are normally thrown from close().
-        error ("Failed to close SSL connection: %s\n", strerror (err));
+        error ("Failed to close SSL connection: %s.\n", strerror (err));
     }
 
     if (stream && (stream->query_read_callback() || stream->query_write_callback())) {
@@ -811,7 +811,7 @@ string read (void|int length, void|int(0..1) not_all)
 
     if (read_errno && !sizeof(user_read_buffer)) {
       local_errno = read_errno;
-      SSL3_DEBUG_MSG ("SSL.File->read: Propagating old callback error: %s\n",
+      SSL3_DEBUG_MSG ("SSL.File->read: Propagating old callback error: %s.\n",
 		      strerror (local_errno));
       RETURN (0);
     }
@@ -865,7 +865,7 @@ string read (void|int length, void|int(0..1) not_all)
     if (res == "") {
       if (read_errno) {
 	local_errno = read_errno;
-	SSL3_DEBUG_MSG ("SSL.File->read: Propagating callback error: %s\n",
+        SSL3_DEBUG_MSG ("SSL.File->read: Propagating callback error: %s.\n",
 			strerror (local_errno));
 	RETURN (0);
       }
@@ -920,7 +920,7 @@ int write (string|array(string) data, mixed... args)
     if (write_errno) {
       local_errno = write_errno;
 
-      SSL3_DEBUG_MSG ("SSL.File->write: Propagating old callback error: %s\n",
+      SSL3_DEBUG_MSG ("SSL.File->write: Propagating old callback error: %s.\n",
 		      strerror (local_errno));
       RETURN (-1);
     }
@@ -1022,7 +1022,7 @@ int renegotiate()
     if (read_errno) {
       local_errno = read_errno;
       SSL3_DEBUG_MSG ("SSL.File->renegotiate: "
-		      "Propagating old callback error: %s\n",
+                      "Propagating old callback error: %s.\n",
 		      strerror (local_errno));
       RETURN (0);
     }
@@ -1959,7 +1959,7 @@ protected int ssl_write_callback (int ignored)
 	  else
 #endif
 	    write_errno = stream->errno();
-	  SSL3_DEBUG_MSG ("ssl_write_callback: Write failed: %s\n",
+          SSL3_DEBUG_MSG ("ssl_write_callback: Write failed: %s.\n",
 			  strerror (write_errno));
 
 	  // Make sure the local backend exits after this, so that the
@@ -2090,7 +2090,7 @@ protected int ssl_close_callback (int ignored)
     // If we've arrived here due to an error, let it override any
     // older errno from an earlier callback.
     if (int new_errno = stream->errno()) {
-      SSL3_DEBUG_MSG ("ssl_close_callback: Got error %s\n", strerror (new_errno));
+      SSL3_DEBUG_MSG ("ssl_close_callback: Got error %s.\n", strerror (new_errno));
       cleanup_on_error();
       close_errno = new_errno;
     }

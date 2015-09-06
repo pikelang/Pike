@@ -10,9 +10,9 @@ inherit _Stdio;
 
 //#define BACKEND_DEBUG
 #ifdef BACKEND_DEBUG
-#define BE_WERR(X) werror("FD %O: %s\n", _fd, X)
+#define BE_WERR(X ...) werror("FD %O: %s\n", _fd, sprintf(X))
 #else
-#define BE_WERR(X)
+#define BE_WERR(X ...)
 #endif
 
 // TRACK_OPEN_FILES is a debug tool to track down where a file is
@@ -894,8 +894,7 @@ class File
 	if(query_num_arg()<3) bits=0666;
 	if(!mode) mode="r";
 	if (!::open(file,mode,bits))
-	   error("Failed to open %O mode %O : %s\n",
-		 file,mode,strerror(errno()));
+           error("Failed to open %O mode %O : %m.\n", file, mode);
 	register_open_file (file, open_file_id, backtrace());
         break;
     }
@@ -1130,16 +1129,16 @@ class File
       if (s) {
 	if(sizeof(s))
 	{
-	  BE_WERR(sprintf("  calling read callback with %O", s));
+          BE_WERR("  calling read callback with %O", s);
 	  return ___read_callback(___id||this, s);
 	}
 	BE_WERR ("  got eof");
       }
       else
-	BE_WERR ("  got error " + strerror (errno()) + " from read()");
+        BE_WERR ("  got error %m from read()");
     }
     else
-      BE_WERR ("  got error " + strerror (errno()) + " from backend");
+      BE_WERR ("  got error %m from backend");
 
     return __read_callback_error();
   }
@@ -1151,7 +1150,7 @@ class File
     if (!___fs_event_callback) return 0;
 
   	if(errno())
-    	BE_WERR ("  got error " + strerror (errno()) + " from read()");
+        BE_WERR ("  got error %m from read()");
 
     return ___fs_event_callback(___id||this, event_mask);
   }
@@ -1180,7 +1179,7 @@ class File
     {
 #ifdef BACKEND_DEBUG
       if (errno())
-	BE_WERR ("  got error " + strerror (errno()) + " from backend");
+        BE_WERR ("  got error %m from backend");
       else
 	BE_WERR ("  got eof");
 #endif
@@ -1219,7 +1218,7 @@ class File
       return ___write_callback(___id||this);
     }
 
-    BE_WERR ("  got error " + strerror (errno()) + " from backend");
+    BE_WERR ("  got error %m from backend");
     // Don't need to report the error to ___close_callback here - we
     // know it isn't installed. If it were, either
     // __stdio_read_callback or __stdio_close_callback would be
@@ -1247,7 +1246,7 @@ class File
     if(s)
     {
       if (sizeof(s)) {
-	BE_WERR (sprintf ("  calling read oob callback with %O", s));
+        BE_WERR ("  calling read oob callback with %O", s);
 	return ___read_oob_callback(___id||this, s);
       }
 
@@ -1262,7 +1261,7 @@ class File
     }
 
     else {
-      BE_WERR ("  got error " + strerror (errno()) + " from read_oob()");
+      BE_WERR ("  got error %m from read_oob()");
 
 #if constant(System.EWOULDBLOCK)
       if (errno() == System.EWOULDBLOCK) {
@@ -1522,7 +1521,7 @@ class File
 
   void set_read_callback(read_callback_t read_cb)
   {
-    BE_WERR(sprintf("setting read_callback to %O\n", read_cb));
+    BE_WERR("setting read_callback to %O\n", read_cb);
     ::set_read_callback(((___read_callback = read_cb) &&
 			 __stdio_read_callback) ||
 			(___close_callback && __stdio_close_callback));
@@ -1536,7 +1535,7 @@ class File
 #define CBFUNC(TYPE, X)					\
   void set_##X (TYPE l##X)				\
   {							\
-    BE_WERR(sprintf("setting " #X " to %O\n", l##X));	\
+    BE_WERR("setting " #X " to %O\n", l##X);            \
     SET( X , l##X );					\
   }							\
 							\
@@ -2466,7 +2465,7 @@ string(0..255) read_file(string filename,void|int start,void|int len)
     if (f->errno() == System.ENOENT)
       return 0;
     else
-      error ("Failed to open %O: %s\n", filename, strerror (f->errno()));
+      error ("Failed to open %O: %s.\n", filename, strerror (f->errno()));
   }
 
   // Disallow devices and directories.
@@ -2480,7 +2479,7 @@ string(0..255) read_file(string filename,void|int start,void|int len)
   case 1:
     ret=f->read();
     if (!ret)
-      error ("Failed to read %O: %s\n", filename, strerror (f->errno()));
+      error ("Failed to read %O: %s.\n", filename, strerror (f->errno()));
     break;
 
   case 3:
@@ -2491,7 +2490,7 @@ string(0..255) read_file(string filename,void|int start,void|int len)
     while(start--) {
       if (!f->gets())
 	if (int err = f->errno())
-	  error ("Failed to read %O: %s\n", filename, strerror (err));
+          error ("Failed to read %O: %s.\n", filename, strerror (err));
 	else
 	  return "";		// EOF reached.
     }
@@ -2509,7 +2508,7 @@ string(0..255) read_file(string filename,void|int start,void|int len)
 	buf->add(tmp, "\n");
       else
 	if (int err = f->errno())
-	  error ("Failed to read %O: %s\n", filename, strerror (err));
+          error ("Failed to read %O: %s.\n", filename, strerror (err));
 	else
 	  break;		// EOF reached.
     }
@@ -2554,7 +2553,7 @@ string(0..255) read_bytes(string filename, void|int start,void|int len)
     if (f->errno() == System.ENOENT)
       return 0;
     else
-      error ("Failed to open %O: %s\n", filename, strerror (f->errno()));
+      error ("Failed to open %O: %s.\n", filename, strerror (f->errno()));
   }
 
   // Disallow devices and directories.
@@ -2572,11 +2571,11 @@ string(0..255) read_bytes(string filename, void|int start,void|int len)
   case 2:
     if(start)
       if (f->seek(start) < 0)
-	error ("Failed to seek in %O: %s\n", filename, strerror(f->errno()));
+        error ("Failed to seek in %O: %s.\n", filename, strerror(f->errno()));
   }
   ret = len ? f->read(len) : f->read();
   if (!ret)
-    error ("Failed to read %O: %s\n", filename, strerror (f->errno()));
+    error ("Failed to read %O: %s.\n", filename, strerror (f->errno()));
   f->close();
   return ret;
 }
@@ -2604,12 +2603,12 @@ int write_file(string filename, string str, int|void access)
     access = 0666;
 
   if(!f->open(filename, "twc", access))
-    error("Couldn't open %O: %s\n", filename, strerror(f->errno()));
+    error("Couldn't open %O: %s.\n", filename, strerror(f->errno()));
 
   while (ret < sizeof (str)) {
     int bytes = f->write(str[ret..]);
     if (bytes <= 0) {
-      error ("Couldn't write to %O: %s\n", filename, strerror (f->errno()));
+      error ("Couldn't write to %O: %s.\n", filename, strerror (f->errno()));
     }
     ret += bytes;
   }
@@ -2640,12 +2639,12 @@ int append_file(string filename, string str, int|void access)
     access = 0666;
 
   if(!f->open(filename, "awc", access))
-    error("Couldn't open %O: %s\n", filename, strerror(f->errno()));
+    error("Couldn't open %O: %s.\n", filename, strerror(f->errno()));
 
   while (ret < sizeof (str)) {
     int bytes = f->write(str[ret..]);
     if (bytes <= 0) {
-      error ("Couldn't write to %O: %s\n", filename, strerror (f->errno()));
+      error ("Couldn't write to %O: %s.\n", filename, strerror (f->errno()));
     }
     ret += bytes;
   }
@@ -2747,7 +2746,7 @@ string simplify_path(string path)
 //!
 void perror(string s)
 {
-  stderr->write(s+": "+strerror(predef::errno())+"\n");
+  stderr->write("%s: %m.\n", s);
 }
 
 /*

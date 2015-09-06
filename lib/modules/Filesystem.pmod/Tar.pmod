@@ -555,8 +555,8 @@ class _Tar
 
 	      if (r->isdir) {
 		if (!mkdirhier(destpath))
-		  error ("Failed to create directory %q: %s\n",
-			 destpath, strerror (errno()));
+                  error ("Failed to create directory %q: %m.\n",
+                         destpath);
 
 		// Set bits etc afterwards on dirs.
 		if (do_extract_bits)
@@ -566,8 +566,8 @@ class _Tar
 	      else {
 		string dest_dir = (destpath / "/")[..<1] * "/";
 		if (!mkdirhier(dest_dir))
-		  error ("Failed to create directory %q: %s\n",
-			 destpath, strerror (errno()));
+                  error ("Failed to create directory %q: %m.\n",
+                         destpath);
 
 		if (r->isreg) {
 		  Stdio.File o = Stdio.File();
@@ -580,7 +580,7 @@ class _Tar
 			if (!do_extract_bits)
 			  restore_bits[destpath] = st;
 		      } || !o->open (destpath, "wct")) {
-		      error ("Failed to create %q: %s\n",
+                      error ("Failed to create %q: %s.\n",
 			     destpath, strerror (o->errno()));
 		    }
 		  }
@@ -590,7 +590,7 @@ class _Tar
 		    string data = i->read (1024 * 1024);
 		    if (data == "") break;
 		    if (o->write (data) != sizeof (data))
-		      error ("Failed to write %q: %s\n",
+                      error ("Failed to write %q: %s.\n",
 			     destpath, strerror (o->errno()));
 		  } while (1);
 

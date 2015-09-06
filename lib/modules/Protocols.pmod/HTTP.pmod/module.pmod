@@ -316,7 +316,7 @@ constant response_codes =
 
   if (!con->ok) {
     if (con->errno)
-      error ("I/O error: %s\n", strerror (con->errno));
+      error ("I/O error: %s.\n", strerror (con->errno));
     return 0;
   }
   return con;

@@ -135,8 +135,7 @@ void load_metainfo(string filename)
 {
    string s=Stdio.read_file(filename);
    if (!s)
-      error("Failed to read metainfo file %O: %s\n",
-	    filename,strerror(errno()));
+      error("Failed to read metainfo file %O: %m\n",filename);
    catch {
      s = utf8_to_string(s);
    };
@@ -206,14 +205,14 @@ class Target(string base,int length,int offset,void|array path)
       {
 	 Stdio.mkdirhier(combine_path(filename,".."));
 	 if (!fd->open(filename,datamode+"c",0666))
-	    error("failed to create target file %O: %s\n",
+            error("failed to create target file %O: %s.\n",
 		  filename,strerror(fd->errno()));
 	 created=1;
       }
       else
       {
 	 if (!fd->open(filename,datamode))
-	    error("failed to open target file %O: %s\n",
+            error("failed to open target file %O: %s.\n",
 		  filename,strerror(fd->errno()));
 	 created=0;
       }
@@ -257,7 +256,7 @@ class Target(string base,int length,int offset,void|array path)
 
       fd->seek(off-offset);
       if (fd->write(data)<strlen(data))
-	 error("failed to write %d bytes to %O: %s\n",
+         error("failed to write %d bytes to %O: %s.\n",
 	       strlen(data),filename,strerror(fd->errno()));
    }
 
@@ -296,7 +295,7 @@ class Target(string base,int length,int offset,void|array path)
       if (fd->stat()->size>=length) return; // done
       fd->seek(length-1);
       if (fd->write("\0")<1)
-	 error("failed to write last byte to %O: %s\n",
+         error("failed to write last byte to %O: %s.\n",
 	       filename,strerror(fd->errno()));
    }
 
@@ -631,7 +630,7 @@ void update_tracker(void|string event,void|int contact)
 	 if (errno()==0)
 	    warning("tracker request timeout\n");
 	 else
-	    warning("tracker request failed, %s\n",strerror(errno()));
+            warning("tracker request failed, %m\n");
       });
 }
 

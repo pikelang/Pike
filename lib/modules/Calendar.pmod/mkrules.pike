@@ -670,7 +670,7 @@ void collect_rules(string file)
    string s=Stdio.read_bytes(file),t;
    if (!s)
    {
-      werror("%s:-: Failed to open file: %s\n",file,strerror(errno()));
+      werror("%s:-: Failed to open file: %m.\n",file);
       return;
    }
 

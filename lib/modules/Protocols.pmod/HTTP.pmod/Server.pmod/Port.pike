@@ -23,7 +23,7 @@ void create(function(.Request:void) callback,
   this::interface=interface;
   port=Stdio.Port();
   if (!port->bind(portno,new_connection,interface,share))
-    error("HTTP.Server.Port: failed to bind port %s%d: %s\n",
+    error("HTTP.Server.Port: failed to bind port %s%d: %s.\n",
           interface?interface+":":"",
           portno,strerror(port->errno()));
 }

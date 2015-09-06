@@ -314,7 +314,7 @@ array(int) low_run_script (array(string) command, mapping opts)
 			   Stdio.PROP_BIDIRECTIONAL);
 #endif /* __NT__ */
   if(!p2) {
-    werror("Failed to create pipe: %s\n", strerror (p->errno()));
+    werror("Failed to create pipe: %m.\n");
     return ({0, 1, 0});
   }
 
@@ -349,7 +349,7 @@ array(int) low_run_script (array(string) command, mapping opts)
       {
 	all_constants()->__signal_watchdog();
 	if (p->errno()) {
-	  werror ("Error reading output from subprocess: %s\n",
+          werror ("Error reading output from subprocess: %s.\n",
 		  strerror (p->errno()));
 	  failed++;
 	}

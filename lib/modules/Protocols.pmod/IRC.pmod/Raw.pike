@@ -118,7 +118,7 @@ void con_write(string s)
       if (j==-1)
       {
 #ifdef IRC_DEBUG
-	 werror("<- (write error; %O)\n",strerror(con->errno()));
+         werror("<- (write error; %s)\n",strerror(con->errno()));
 #endif
 	 return; // connection broken?
       }

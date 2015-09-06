@@ -41,8 +41,7 @@ protected void new_connection()
 
    if (!fd)
    {
-      parent->warning("failed to accept() (out of fds?): %s\n",
-		      strerror(errno()));
+      parent->warning("failed to accept() (out of fds?): %m.\n");
       return;
    }
 

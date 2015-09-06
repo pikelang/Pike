@@ -113,7 +113,7 @@ class Client
     if (bytes > 0) {
       sent += bytes;
     } else if (sent < 0) {
-      exit(1, "Failed to write data: %s\n", strerror(ssl->errno()));
+      exit(1, "Failed to write data: %s.\n", strerror(ssl->errno()));
     }
     if (sent == sizeof(request)) {
       ssl->set_write_callback(UNDEFINED);
@@ -158,7 +158,7 @@ int main()
 #ifdef HTTPS_CLIENT
   Stdio.File con = Stdio.File();
   if (!con->connect(HOST, PORT))
-    exit(1, "Failed to connect to server: %s\n", strerror(con->errno()));
+    exit(1, "Failed to connect to server: %s.\n", strerror(con->errno()));
 
   Client(con);
   return -1;

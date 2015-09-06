@@ -254,7 +254,7 @@ protected {
 
 	string data = socket->read(len);
 	if (!data || sizeof(data) < len) {
-	  tds_error("Failed to read packet data (%d bytes), got %O (%d bytes), %s\n",
+          tds_error("Failed to read packet data (%d bytes), got %O (%d bytes), %s.\n",
 		    len, data, sizeof(data||""), strerror(socket->errno()));
 	}
 	TDS_WERROR("Read packet with %d bytes.\n%s\n",

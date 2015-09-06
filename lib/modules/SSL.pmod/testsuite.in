@@ -785,7 +785,7 @@ test_do([[
     SSL.File client;
 
     if (!server_con) {
-      return ({ sprintf("Failed to create pipe: %s\n",
+      return ({ sprintf("Failed to create pipe: %s.\n",
 			strerror(client_con->errno())) });
     }
 

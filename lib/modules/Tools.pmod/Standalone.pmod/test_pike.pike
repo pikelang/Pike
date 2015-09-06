@@ -259,7 +259,7 @@ class Watchdog
   void stdin_close (mixed ignored)
   {
     if (stdin->errno()) {
-      WATCHDOG_MSG ("Error reading stdin pipe: %s\n",
+      WATCHDOG_MSG ("Error reading stdin pipe: %s.\n",
 		    strerror (stdin->errno()));
     }
     _exit(EXIT_OK);
@@ -622,7 +622,7 @@ int main(int argc, array(string) argv)
       Stdio.File pipe_2 = pipe_1->pipe(Stdio.PROP_IPC | Stdio.PROP_NONBLOCK);
 #endif /* __NT__ */
       if (!pipe_2) {
-	log_msg ("Failed to create pipe for watchdog: %s\n",
+        log_msg ("Failed to create pipe for watchdog: %s.\n",
 		 strerror (pipe_1->errno()));
 	exit(EXIT_WATCHDOG_FAILED);
       }
