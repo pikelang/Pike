@@ -1613,9 +1613,11 @@ struct pike_string *realloc_unlinked_string(struct pike_string *a,
   case TWO(STRING_ALLOC_SUBSTRING,0):
   case TWO(STRING_ALLOC_SUBSTRING,1):
       Pike_fatal("This should not happen, substrings are never unlinked.\n");
+      break;
   default:
       Pike_fatal("encountered string with unknown allocation type %d\n",
                  a->alloc_type);
+      break;
   }
 #undef TWO
   a->str = s;
