@@ -2090,11 +2090,8 @@ PIKEFUN int random(int i)
 {
   if(i <= 0) RETURN 0;
 #if SIZEOF_INT_TYPE > 4
-  if(i >> 31) {
-    unsigned INT_TYPE a = my_rand();
-    unsigned INT_TYPE b = my_rand();
-    RETURN (INT_TYPE)(((a<<32)|b) % i);
-  }
+  if(i >> 31)
+    RETURN my_rand64() % i;
 #endif
   RETURN  my_rand() % i;
 }
