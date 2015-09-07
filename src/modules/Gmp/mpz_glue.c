@@ -2061,10 +2061,12 @@ static void mpzmod_random(INT32 args)
   /* We add four to assure reasonably uniform randomness */
   push_int(mpz_size(THIS)*sizeof(mp_limb_t) + 4);
   f_random_string(1);
+#ifdef PIKE_DEBUG
   if (TYPEOF(sp[-1]) != T_STRING) {
     Pike_error("random_string(%ld) returned non string.\n",
 	       mpz_size(THIS)*sizeof(mp_limb_t) + 4);
   }
+#endif
   get_mpz_from_digits(OBTOMPZ(res), sp[-1].u.string, 256);
   pop_stack();
   mpz_fdiv_r(OBTOMPZ(res), OBTOMPZ(res), THIS); /* modulo */
