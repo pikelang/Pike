@@ -520,6 +520,16 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
             SSL3_DEBUG_MSG("Renego extension: %O\n", renegotiated_connection);
             break;
 
+          case EXTENSION_next_protocol_negotiation:
+            COND_FATAL(sizeof(extension_data), ALERT_handshake_failure,
+                       "Invalid NPN extension.\n");
+            break;
+
+          case EXTENSION_signed_certificate_timestamp:
+            COND_FATAL(sizeof(extension_data), ALERT_handshake_failure,
+                       "Invalid signed certificate timestamp extension.\n");
+            break;
+
           case EXTENSION_application_layer_protocol_negotiation:
             {
               application_protocol = 0;
