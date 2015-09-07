@@ -109,6 +109,7 @@ static int pcharp_to_svalue_rec(PCHARP *str,
   struct svalue *begin = Pike_sp;
   PCHARP start = *str;
   check_stack(100);
+  check_c_stack(1000);
 
   while(1)
   {
