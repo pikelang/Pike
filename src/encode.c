@@ -278,12 +278,6 @@ static void code_entry(int tag, INT64 num, struct encode_data *data)
 
   switch(t)
   {
-#if 0
-  case 7: addchar(DO_NOT_WARN((char)((num >> 56)&0xff)));
-  case 6: addchar(DO_NOT_WARN((char)((num >> 48)&0xff)));
-  case 5: addchar(DO_NOT_WARN((char)((num >> 40)&0xff)));
-  case 4: addchar(DO_NOT_WARN((char)((num >> 32)&0xff)));
-#endif /* 0 */
   case 3: addchar(DO_NOT_WARN((char)((num >> 24)&0xff)));
   case 2: addchar(DO_NOT_WARN((char)((num >> 16)&0xff)));
   case 1: addchar(DO_NOT_WARN((char)((num >> 8)&0xff)));
@@ -728,25 +722,12 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 		    "Encoding float... tmp: %10g, x: 0x%016llx, y: %d\n",
 		    tmp, x, y));
 
-#if 0
-	if (x && !(x & 0xffffffffUL)) {
-#endif /* 0 */
-	  x >>= 32;
-	  y += 32;
+        x >>= 32;
+        y += 32;
 
-	  EDB(2,fprintf(stderr,
+        EDB(2,fprintf(stderr,
 		      "Reducing float... x: 0x%08llx, y: %d\n",
 		      x, y));
-#if 0
-	}
-#endif /* 0 */
-#if 0
-	while(x && y && !(x&1))
-	{
-	  x>>=1;
-	  y++;
-	}
-#endif
 	code_entry(TAG_FLOAT,x,data);
 	code_entry(TAG_FLOAT,y,data);
       }
@@ -1035,10 +1016,6 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 
 	      ref_push_program(p);
 	      f_function_name(1);
-#if 0
-	      if(TYPEOF(Pike_sp[-1]) == PIKE_T_INT)
-		Pike_error("Cannot encode C programs.\n");
-#endif
 	      encode_value2(Pike_sp-1, data, 0);
 
 	      pop_n_elems(2);
@@ -1049,9 +1026,6 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	    }
 	    if( p->event_handler )
 	      Pike_error("Cannot encode programs with event handlers.\n");
-#if 0
-	    Pike_error("Cannot encode C programs.\n");
-#endif
 	  } else {
 	    EDB(1, fprintf(stderr,
 			   "%*sencode: encoding program overloading a C program.\n",
@@ -1690,19 +1664,10 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	    encode_value2(&p->constants[d].sval, data, 0);
 
 	    /* name */
-#if 0
-	    if (p->constants[d].name) {
-	      str_sval.u.string = p->constants[d].name;
-	      encode_value2(&str_sval, data, 0);
-	    } else {
-#endif /* 0 */
 	      push_int(0);
 	      encode_value2(Pike_sp-1, data, 0);
 	      dmalloc_touch_svalue(Pike_sp-1);
 	      Pike_sp--;
-#if 0
-	    }
-#endif /* 0 */
 	  }
 	}
       }else{
@@ -1941,11 +1906,6 @@ struct decode_data
 #ifdef ENCODE_DEBUG
   int debug, depth;
 #endif
-#if TWO_PASS_DECODE_WORKS
-  /* The delay stuff can trig a second pass through the decoder,
-   * but it doesn't seem to really handle that. /mast */
-  struct Supporter supporter;
-#endif
 };
 
 static struct object *decoder_codec (struct decode_data *data)
@@ -2099,10 +2059,6 @@ static DECLSPEC(noreturn) void decode_error (
 
 static void restore_type_stack(struct pike_type **old_stackp)
 {
-#if 0
-  fprintf(stderr, "Restoring type-stack: %p => %p\n",
-	  Pike_compiler->type_stackp, old_stackp);
-#endif /* 0 */
 #ifdef PIKE_DEBUG
   if (old_stackp > Pike_compiler->type_stackp) {
     Pike_fatal("type stack out of sync!\n");
@@ -2115,10 +2071,6 @@ static void restore_type_stack(struct pike_type **old_stackp)
 
 static void restore_type_mark(struct pike_type ***old_type_mark_stackp)
 {
-#if 0
-  fprintf(stderr, "Restoring type-mark: %p => %p\n",
-	  Pike_compiler->pike_type_mark_stackp, old_type_mark_stackp);
-#endif /* 0 */
 #ifdef PIKE_DEBUG
   if (old_type_mark_stackp > Pike_compiler->pike_type_mark_stackp) {
     Pike_fatal("type Pike_interpreter.mark_stack out of sync!\n");
@@ -3021,26 +2973,6 @@ static void decode_value2(struct decode_data *data)
 
 	  data->delay_counter++;
 
-#if 0
-	  /* Is this necessary? In that case, how do we pass an
-	   * adequate context to __register_new_program so that it
-	   * knows which program is being decoded? */
-	    ref_push_program (p);
-	    apply (decoder_codec (data), "__register_new_program", 1);
-
-	    /* Returns a placeholder. */
-	    if (TYPEOF(Pike_sp[-1]) == T_OBJECT) {
-	      if (Pike_sp[-1].u.object->prog != null_program)
-		decode_error (data, NULL, "Placeholder object is not "
-			      "a null_program clone.\n");
-	    }
-	    else if (TYPEOF(Pike_sp[-1]) != T_INT ||
-		     Pike_sp[-1].u.integer)
-	      decode_error (data, NULL, "Expected placeholder object or zero "
-			    "from __register_new_program.\n");
-	    pop_stack();
-#endif
-
 	  break;
 	}
 
@@ -3126,11 +3058,6 @@ static void decode_value2(struct decode_data *data)
 	  /* Start the new program. */
 	  low_start_new_program(p, 1, NULL, 0, NULL);
 	  p = Pike_compiler->new_program;
-#if TWO_PASS_DECODE_WORKS
-	  if(! data->supporter.prog)
-	    data->supporter.prog = p;
-#endif
-
 	  p->flags = p_flags;
 
 	  /* Kludge to get end_first_pass() to free the program. */
@@ -3307,29 +3234,11 @@ static void decode_value2(struct decode_data *data)
 	    }
 	    /* name */
 	    decode_value2(data);
-#if 0
-	    if (TYPEOF(Pike_sp[-1]) == T_STRING) {
-	      constant->name = Pike_sp[-1].u.string;
-	    } else if ((TYPEOF(Pike_sp[-1]) == T_INT) &&
-		       !Pike_sp[-1].u.integer) {
-	      constant->name = NULL;
-	    } else {
-	      ref_push_program (p);
-	      decode_error(data, Pike_sp - 1,
-			   "Name of constant is not a string: %O\n",
-			   Pike_sp - 2);
-	    }
-	    constant->sval = Pike_sp[-2];
-	    dmalloc_touch_svalue(Pike_sp-1);
-	    dmalloc_touch_svalue(Pike_sp-2);
-	    Pike_sp -= 2;
-#else /* !0 */
 	    constant->offset = -1;
 	    pop_stack();
 	    constant->sval = Pike_sp[-1];
 	    dmalloc_touch_svalue(Pike_sp-1);
 	    Pike_sp -= 1;
-#endif /* 0 */
 	    decode_number(entry_type, data);
 	  }
 
@@ -3843,29 +3752,11 @@ static void decode_value2(struct decode_data *data)
 	    decode_value2(data);
 	    /* name */
 	    decode_value2(data);
-#if 0
-	    if (TYPEOF(Pike_sp[-1]) == T_STRING) {
-	      constant->name = Pike_sp[-1].u.string;
-	    } else if ((TYPEOF(Pike_sp[-1]) == T_INT) &&
-		       !Pike_sp[-1].u.integer) {
-	      constant->name = NULL;
-	    } else {
-	      ref_push_program (p);
-	      decode_error(data, Pike_sp - 1,
-			   "Name of constant is not a string: %O\n",
-			   Pike_sp - 2);
-	    }
-	    constant->sval = Pike_sp[-2];
-	    dmalloc_touch_svalue(Pike_sp-1);
-	    dmalloc_touch_svalue(Pike_sp-2);
-	    Pike_sp -= 2;
-#else /* !0 */
 	    constant->offset = -1;
 	    pop_stack();
 	    constant->sval = Pike_sp[-1];
 	    dmalloc_touch_svalue(Pike_sp-1);
 	    Pike_sp -= 1;
-#endif /* 0 */
 	    EDB(5,
 		fprintf(stderr, "%*sDecoded constant %d to a %s\n",
 			data->depth, "",
@@ -4050,44 +3941,11 @@ static void low_do_decode (struct decode_data *data)
   }
 }
 
-#if TWO_PASS_DECODE_WORKS
-/* Run pass2 */
-int re_decode(struct decode_data *data, int ignored)
-{
-  JMP_BUF recovery;
-  struct svalue orig_thrown;
-  move_svalue (&orig_thrown, &throw_value);
-  mark_free_svalue (&throw_value);
-
-  if (SETJMP (recovery)) {
-    UNSETJMP (recovery);
-    call_handle_error();
-    move_svalue (&throw_value, &orig_thrown);
-    free_decode_data (data, 0, 1);
-    return 0;
-  }
-
-  else {
-    data->next = current_decode;
-    low_do_decode (data);
-    UNSETJMP (recovery);
-    move_svalue (&throw_value, &orig_thrown);
-    free_decode_data (data, 0, 0);
-    return 1;
-  }
-}
-#endif
-
 static void error_free_decode_data (struct decode_data *data)
 {
   int delay;
   debug_malloc_touch (data);
-#if TWO_PASS_DECODE_WORKS
-  delay=unlink_current_supporter(&data->supporter);
-  call_dependants(& data->supporter, 1);
-#else
   delay = 0;
-#endif
   free_decode_data (data, delay, 1);
 }
 
@@ -4168,22 +4026,11 @@ static INT32 my_decode(struct pike_string *tmp,
 #endif
   SET_ONERROR(err, error_free_decode_data, data);
 
-#if TWO_PASS_DECODE_WORKS
-  init_supporter(& data->supporter,
-		 (supporter_callback *) re_decode,
-		 (void *)data);
-#endif
-
   low_do_decode (data);
 
   {
     int delay;
-#if TWO_PASS_DECODE_WORKS
-    delay=unlink_current_supporter(&data->supporter);
-    call_dependants(& data->supporter, 1);
-#else
     delay = 0;
-#endif
     free_decode_data (data, delay, 0);
   }
 
