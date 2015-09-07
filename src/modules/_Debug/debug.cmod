@@ -391,8 +391,6 @@ PIKEFUN int(0..) compiler_trace(int(0..) yyd)
 
 #endif /* YYDEBUG */
 
-#if defined(PIKE_PORTABLE_BYTECODE)
-
 /*! @decl void disassemble(function fun)
  *!
  *!   Disassemble a Pike function to @[Stdio.stderr].
@@ -447,8 +445,6 @@ PIKEFUN void disassemble(function fun)
   pop_n_elems(args);
   push_int(0);
 }
-
-#endif /*  PIKE_PORTABLE_BYTECODE */
 
 #endif /* PIKE_DEBUG */
 

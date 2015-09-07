@@ -1524,12 +1524,6 @@ MY_AC_ARG_WITH(keypair-loop,
 	       [AC_DEFINE(PIKE_MAPPING_KEYPAIR_LOOP)],[],
 	       [])
 
-MY_AC_ARG_WITH(portable-bytecode,
-	MY_DESCR([--without-portable-bytecode],
-		 [disable portable bytecode support.]),
-	       [AC_DEFINE(PIKE_PORTABLE_BYTECODE)],[],
-	       [AC_DEFINE(PIKE_PORTABLE_BYTECODE)])
-
 if test "x$with_pike_type" = "xno"; then
   PIKE_MSG_WARN([Disabling of USE_PIKE_TYPE is no longer supported.])
 fi

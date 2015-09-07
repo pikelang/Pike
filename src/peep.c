@@ -175,9 +175,7 @@ INT32 assemble(int store_linenumbers)
   INT32 *labels, *jumps, *uses, *aliases;
   ptrdiff_t e, length;
   p_instr *c;
-#ifdef PIKE_PORTABLE_BYTECODE
   struct pike_string *tripples = NULL;
-#endif /* PIKE_PORTABLE_BYTECODE */
 #ifdef PIKE_DEBUG
   INT32 max_pointer=-1;
   int synch_depth = 0;
@@ -209,7 +207,6 @@ INT32 assemble(int store_linenumbers)
   }
 #endif
 
-#ifdef PIKE_PORTABLE_BYTECODE
   /* No need to do this for constant evaluations. */
   if (store_linenumbers) {
     p_wchar2 *current_tripple;
@@ -280,8 +277,6 @@ INT32 assemble(int store_linenumbers)
 #endif /* PIKE_DEBUG */
     tripples = end_shared_string(tripples);
   }
-
-#endif /* PIKE_PORTABLE_BYTECODE */
 
   for(e=0;e<length;e++,c++) {
     if(c->opcode == F_LABEL) {
@@ -479,7 +474,6 @@ INT32 assemble(int store_linenumbers)
   START_NEW_FUNCTION(store_linenumbers);
 #endif
 
-#ifdef PIKE_PORTABLE_BYTECODE
 #ifdef ALIGN_PIKE_FUNCTION_BEGINNINGS
   while( ( (((INT32) PIKE_PC)+4) & (ALIGN_PIKE_JUMPS-1)))
     ins_byte(0);
@@ -491,12 +485,6 @@ INT32 assemble(int store_linenumbers)
   } else {
     ins_data(0);
   }
-#else
-#ifdef ALIGN_PIKE_FUNCTION_BEGINNINGS
-  while( ( ((INT32) PIKE_PC) & (ALIGN_PIKE_JUMPS-1)))
-    ins_byte(0);
-#endif
-#endif /* PIKE_PORTABLE_BYTECODE */
 
   entry_point = PIKE_PC;
 

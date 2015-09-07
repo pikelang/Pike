@@ -1105,46 +1105,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 
 	/* Byte-code method
 	 */
-#ifdef PIKE_PORTABLE_BYTECODE
 	code_number(PIKE_BYTECODE_PORTABLE, data);
-#else /* !PIKE_PORTABLE_BYTECODE */
-	code_number(PIKE_BYTECODE_METHOD, data);
-#ifdef PIKE_USE_MACHINE_CODE
-	/* Add the checksum of the instrs array. */
-	code_number(instrs_checksum, data);
-#endif /* PIKE_USE_MACHINE_CODE */
-
-	/* program */
-#ifdef ENCODE_PROGRAM
-#ifdef PIKE_DEBUG
-	{
-	  ptrdiff_t bufpos = data->buf.s.len;
-#endif /* PIKE_DEBUG */
-	  ENCODE_PROGRAM(p, &(data->buf));
-#ifdef PIKE_DEBUG
-	  if (p->num_program * sizeof(p->program[0]) !=
-	      data->buf.s.len - bufpos) {
-	    Pike_fatal("ENCODE_PROGRAM() failed:\n"
-		  "Encoded data len: %ld\n"
-		  "Expected data len: %ld\n",
-		  DO_NOT_WARN((long)(p->num_program * sizeof(p->program[0]))),
-		  DO_NOT_WARN((long)(data->buf.s.len - bufpos)));
-	  }
-	}
-#endif /* PIKE_DEBUG */
-#else /* !ENCODE_PROGRAM */
-	adddata2(p->program, p->num_program);
-#endif /* ENCODE_PROGRAM */
-
-	/* relocations */
-	for(d=0; d<(int)p->num_relocations; d++) {
-	  code_number(p->relocations[d], data);
-	}
-
-	/* linenumbers */
-	adddata2(p->linenumbers, p->num_linenumbers);
-
-#endif /* PIKE_PORTABLE_BYTECODE */
 
 	{
 	  struct svalue str_sval;
@@ -1158,7 +1119,6 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 
 	EDB(5, dump_program_tables(p, data->depth));
 
-#ifdef PIKE_PORTABLE_BYTECODE
 	/* Encode the efun constants since they are needed by the optimizer. */
 	{
 	  struct svalue str_sval;
@@ -1180,22 +1140,13 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	    encode_value2(&p->constants[d].sval, data, 0);
 
 	    /* name */
-#if 0
-	    if (p->constants[d].name) {
-	      str_sval.u.string = p->constants[d].name;
-	      encode_value2(&str_sval, data, 0);
-	    } else {
-#endif /* 0 */
 	      push_int(0);
 	      encode_value2(Pike_sp-1, data, 0);
 	      dmalloc_touch_svalue(Pike_sp-1);
 	      Pike_sp--;
-#if 0
-	    }
-#endif /* 0 */
 	  }
 	}
-#endif /* PIKE_PORTABLE_BYTECODE */
+
 	/* Dump the identifiers in a portable manner... */
 	{
 	  int inherit_num = 1;
@@ -1509,7 +1460,6 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 		  code_number(id->identifier_flags, data);
 
 		  /* func */
-#ifdef PIKE_PORTABLE_BYTECODE
 		  if (id->func.offset >= 0) {
 		    /* Code the number of the string containing
 		     * the raw bytecode.
@@ -1520,9 +1470,6 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 		    /* Prototype */
 		    code_number(-1, data);
 		  }
-#else /* !PIKE_PORTABLE_BYTECODE */
-		  code_number(id->func.offset, data);
-#endif /* PIKE_PORTABLE_BYTECODE */
 
 		  /* opt_flags */
 		  code_number(id->opt_flags, data);
@@ -1732,14 +1679,13 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 		fprintf(stderr, "%*sencode: encoding constant #%d\n",
 			data->depth, "", d));
 
-#ifdef PIKE_PORTABLE_BYTECODE
 	    if (((TYPEOF(p->constants[d].sval) == T_FUNCTION) &&
 		 (SUBTYPEOF(p->constants[d].sval) == FUNCTION_BUILTIN)) ||
 		(TYPEOF(p->constants[d].sval) == T_TYPE)) {
 	      /* Already encoded above. */
 	      continue;
 	    }
-#endif /* PIKE_PORTABLE_BYTECODE */
+
 	    /* value */
 	    encode_value2(&p->constants[d].sval, data, 0);
 
@@ -3278,78 +3224,10 @@ static void decode_value2(struct decode_data *data)
 
 	  /* Byte-code method */
 	  decode_number(bytecode_method, data);
-	  if (bytecode_method == PIKE_BYTECODE_PORTABLE) {
-	  } else if (bytecode_method != PIKE_BYTECODE_METHOD) {
+	  if (bytecode_method != PIKE_BYTECODE_PORTABLE) {
 	    decode_error(data, NULL, "Unsupported byte-code method: %d\n",
 			 bytecode_method);
-	  } else {
-
-#ifdef PIKE_PORTABLE_BYTECODE
-	    fprintf(stderr, "Warning: Decoding non-portable bytecode.\n");
-#endif /* PIKE_PORTABLE_BYTECODE */
-
-#ifdef PIKE_USE_MACHINE_CODE
-	    {
-	      size_t csum;
-	      /* Check the checksum of the instrs array. */
-	      decode_number(csum, data);
-	      if (csum != instrs_checksum) {
-		decode_error(data, NULL,
-			     "Bad instruction checksum: %d (expected %d)\n",
-			     csum, instrs_checksum);
-	      }
-	    }
-#endif /* PIKE_USE_MACHINE_CODE */
-
-	    /* Decode program */
-	    if (SIZE_T_MUL_OVERFLOW(local_num_program, sizeof(PIKE_OPCODE_T)) ||
-                local_num_program * sizeof(PIKE_OPCODE_T) >= (size_t)(data->len - data->ptr)) {
-	      decode_error(data, NULL,
-			   "Failed to decode program (string too short).\n");
-	    }
-	    low_add_many_to_program(Pike_compiler,
-				    (PIKE_OPCODE_T *)(data->data + data->ptr),
-				    local_num_program);
-	    data->ptr += local_num_program * sizeof(PIKE_OPCODE_T);
-
-	    /* Decode relocations */
-	    for (e=0; e<(int)local_num_relocations; e++) {
-	      size_t reloc;
-	      decode_number(reloc, data);
-	      CHECK_RELOC(reloc, (size_t) local_num_program);
-	      add_to_relocations(reloc);
-	    }
-
-	    /* Perform relocation. */
-#ifdef DECODE_PROGRAM
-	    DECODE_PROGRAM(p);
-#endif /* DECODE_PROGRAM */
-	    make_program_executable(p);
-
-	    /* Decode linenumbers */
-	    if (local_num_linenumbers >= (size_t)(data->len - data->ptr)) {
-	      decode_error(data, NULL, "Failed to decode linenumbers "
-			   "(string too short).\n");
-	    }
-	    for (e=0; e<(int)local_num_linenumbers; e++) {
-	      char lineno_info;
-	      lineno_info = *(data->data + data->ptr++);
-	      add_to_linenumbers(lineno_info);
-	    }
-
-	    /* Now with the linenumber info in place it gets useful to
-	     * include the program in error messages. */
-
-	    EDB(2,
-		fprintf(stderr, "%*sThe program is: ", data->depth, "");
-		push_program (p);
-		print_svalue (stderr, --Pike_sp);
-		fputc('\n', stderr));
 	  }
-
-	  /* identifier_index & variable_index are created by
-	   * fixate_program() and optimize_program().
-	   */
 
 	  /* Decode strings */
 	  for (e=0; e<local_num_strings; e++) {
@@ -3594,8 +3472,7 @@ static void decode_value2(struct decode_data *data)
 
 		/* func */
 		decode_number(func.offset, data);
-		if (bytecode_method == PIKE_BYTECODE_PORTABLE &&
-		    func.offset != -1) {
+		if (func.offset != -1) {
 #ifdef ENCODE_DEBUG
 		  int old_a_flag;
 #endif
@@ -3930,12 +3807,10 @@ static void decode_value2(struct decode_data *data)
 	  check_program (p);
 #endif
 
-	  if (bytecode_method == PIKE_BYTECODE_PORTABLE) {
-	    /* We've regenerated p->program, so these may be off. */
-	    local_num_program = p->num_program;
-	    local_num_relocations = p->num_relocations;
-	    local_num_linenumbers = p->num_linenumbers;
-	  }
+          /* We've regenerated p->program, so these may be off. */
+          local_num_program = p->num_program;
+          local_num_relocations = p->num_relocations;
+          local_num_linenumbers = p->num_linenumbers;
 
 	  /* Verify... */
 #define FOO(NUMTYPE,TYPE,ARGTYPE,NAME)					\

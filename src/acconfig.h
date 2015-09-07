@@ -76,9 +76,6 @@
 /* Define this to use the new keypair loop. */
 #undef PIKE_MAPPING_KEYPAIR_LOOP
 
-/* Define this to get portable dumped bytecode. */
-#undef PIKE_PORTABLE_BYTECODE
-
 /* Enable profiling */
 #undef PROFILING
 
