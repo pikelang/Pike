@@ -2394,7 +2394,9 @@ void init_mutex_key_obj(struct object *UNUSED(o))
   THIS_KEY->mut=0;
   THIS_KEY->mutex_obj = NULL;
   THIS_KEY->owner = Pike_interpreter.thread_state;
-  add_ref(THIS_KEY->owner_obj = Pike_interpreter.thread_state->thread_obj);
+  THIS_KEY->owner_obj = Pike_interpreter.thread_state->thread_obj;
+  if (THIS_KEY->owner_obj)
+    add_ref(THIS_KEY->owner_obj);
   THIS_KEY->initialized=1;
 }
 
