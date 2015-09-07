@@ -314,7 +314,7 @@ array(int) low_run_script (array(string) command, mapping opts)
 			   Stdio.PROP_BIDIRECTIONAL);
 #endif /* __NT__ */
   if(!p2) {
-    werror("Failed to create pipe: %m.\n");
+    werror("Failed to create pipe: %s.\n", strerror (p->errno()));
     return ({0, 1, 0});
   }
 
