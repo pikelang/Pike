@@ -425,21 +425,32 @@ static INLINE int bv_get(struct bitvector * bv, size_t n) {
 }
 
 static size_t bv_ctz(struct bitvector * bv, size_t n) {
-    size_t bit = n % BV_LENGTH;
-    size_t c = n / BV_LENGTH;
-    bv_int_t * _v = bv->v + c;
-    bv_int_t V = *_v & (~BV_NIL << bit);
+    size_t bit;
+    size_t c;
+    bv_int_t * _v;
+    bv_int_t V;
 
-    bit = c * BV_LENGTH;
+    if (n < bv->length) {
+        bit = n % BV_LENGTH;
+        c = n / BV_LENGTH;
+        _v = bv->v + c;
+        V = *_v & (~BV_NIL << bit);
 
-    while (1) {
-        if (V) return bit + BV_CTZ(V);
+        bit = c * BV_LENGTH;
 
-        bit += BV_LENGTH;
+        while (1) {
+            if (V) {
+                bit += BV_CTZ(V);
+                if (bit >= bv->length) break;
+                return bit;
+            }
 
-        if (bit >= bv->length) break;
+            bit += BV_LENGTH;
 
-        V = *(++_v);
+            if (bit >= bv->length) break;
+
+            V = *(++_v);
+        }
     }
 
     return (size_t)-1;
