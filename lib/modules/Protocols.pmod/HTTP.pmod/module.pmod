@@ -46,6 +46,7 @@ constant HTTP_UNSUPP_MEDIA	= 415; // RFC 2616 10.4.16: Unsupported Media Type
 constant HTTP_BAD_RANGE		= 416; // RFC 2616 10.4.17: Requested Range Not Satisfiable
 constant HTTP_EXPECT_FAILED	= 417; // RFC 2616 10.4.18: Expectation Failed
 constant HTCPCP_TEAPOT		= 418; // RFC 2324 2.3.2: I'm a teapot
+constant HTTP_MISDIRECTED_REQ	= 421; // RFC 7540 9.1.2: Misdirected Request
 constant DAV_UNPROCESSABLE	= 422; // RFC 2518 10.3: Unprocessable Entry
 constant DAV_LOCKED		= 423; // RFC 2518 10.4: Locked
 constant DAV_FAILED_DEP		= 424; // RFC 2518 10.5: Failed Dependency
@@ -113,6 +114,7 @@ constant response_codes =
   416:"416 Requested range not statisfiable",
   417:"417 Expectation Failed",
   418:"418 I'm a teapot", // Ha ha
+  421:"421 Misdirected Request",
   422:"422 Unprocessable Entity", // WebDAV
   423:"423 Locked", // WebDAV
   424:"424 Failed Dependency", // WebDAV
