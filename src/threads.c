@@ -59,6 +59,8 @@
  */
 static struct Pike_interpreter_struct static_pike_interpreter;
 
+static cpu_time_t thread_quanta = 0;
+
 PMOD_EXPORT struct Pike_interpreter_struct *
 #if defined(__GNUC__) && __GNUC__ >= 3
     __restrict
@@ -572,6 +574,7 @@ PMOD_EXPORT void pike_init_thread_state (struct thread_state *ts)
   ts->id = th_self();
   ts->status = THREAD_RUNNING;
   ts->swapped = 0;
+  ts->interval_start = get_real_time();
 #ifdef PIKE_DEBUG
   ts->debug_flags = 0;
   thread_swaps++;
@@ -711,12 +714,57 @@ PMOD_EXPORT void pike_debug_check_thread (DLOC_DECL)
 
 #endif	/* PIKE_DEBUG */
 
+/*! @class MasterObject
+ */
+
+/*! @decl void thread_quanta_exceeded(Thread.Thread thread, int ns)
+ *!
+ *! Function called when a thread has exceeded the thread quanta.
+ *!
+ *! @param thread
+ *!   Thread that exceeded the thread quanta.
+ *!
+ *! @param ns
+ *!   Number of nanoseconds that the thread executed before allowing
+ *!   other threads to run.
+ *!
+ *! The default master prints a diagnostic and the thread backtrace
+ *! to @[Stdio.stderr].
+ *!
+ *! @note
+ *!   This function runs in a signal handler context, and should thus
+ *!   avoid handling of mutexes, etc.
+ *!
+ *! @seealso
+ *!   @[get_thread_quanta()], @[set_thread_quanta()]
+ */
+
+/*! @endclass
+ */
+
 PMOD_EXPORT void pike_threads_allow (struct thread_state *ts COMMA_DLOC_DECL)
 {
 #ifdef DO_PIKE_CLEANUP
   /* Might get here after th_cleanup() when reporting leaks. */
   if (!ts) return;
 #endif
+
+  if (UNLIKELY(thread_quanta > 0)) {
+    cpu_time_t now = get_real_time();
+
+    if (UNLIKELY((now - ts->interval_start) > thread_quanta) &&
+	LIKELY(ts->thread_obj)) {
+      ref_push_object(ts->thread_obj);
+      push_int64(now - ts->interval_start);
+      ts->interval_start = now;
+#ifndef LONG_CPU_TIME
+      push_int(1000000000 / CPU_TIME_TICKS);
+      o_multiply();
+#endif
+      SAFE_APPLY_MASTER("thread_quanta_exceeded", 2);
+      pop_stack();
+    }
+  }
 
 #ifdef PIKE_DEBUG
   pike_debug_check_thread (DLOC_ARGS_OPT);
@@ -758,6 +806,10 @@ PMOD_EXPORT void pike_threads_disallow (struct thread_state *ts COMMA_DLOC_DECL)
     pike_swap_in_thread (ts COMMA_DLOC_ARGS_OPT);
   }
 
+  if (UNLIKELY(thread_quanta)) {
+    ts->interval_start = get_real_time();
+  }
+
 #ifdef PIKE_DEBUG
   ts->debug_flags &= ~THREAD_DEBUG_LOOSE;
   pike_debug_check_thread (DLOC_ARGS_OPT);
@@ -771,6 +823,23 @@ PMOD_EXPORT void pike_threads_allow_ext (struct thread_state *ts
   /* Might get here after th_cleanup() when reporting leaks. */
   if (!ts) return;
 #endif
+
+  if (UNLIKELY(thread_quanta > 0)) {
+    cpu_time_t now = get_real_time();
+
+    if (UNLIKELY((now - ts->interval_start) > thread_quanta) &&
+	LIKELY(ts->thread_obj)) {
+      ref_push_object(ts->thread_obj);
+      push_int64(now - ts->interval_start);
+      ts->interval_start = now;
+#ifndef LONG_CPU_TIME
+      push_int(1000000000 / CPU_TIME_TICKS);
+      o_multiply();
+#endif
+      SAFE_APPLY_MASTER("thread_quanta_exceeded", 2);
+      pop_stack();
+    }
+  }
 
 #ifdef PIKE_DEBUG
   pike_debug_check_thread (DLOC_ARGS_OPT);
@@ -819,6 +888,10 @@ PMOD_EXPORT void pike_threads_disallow_ext (struct thread_state *ts
     co_broadcast (&live_threads_change);
     if (threads_disabled) threads_disabled_wait (DLOC_ARGS_OPT);
     pike_swap_in_thread (ts COMMA_DLOC_ARGS_OPT);
+  }
+
+  if (UNLIKELY(thread_quanta)) {
+    ts->interval_start = get_real_time();
   }
 
 #ifdef PIKE_DEBUG
@@ -2022,6 +2095,76 @@ PMOD_EXPORT void f_this_thread(INT32 args)
   } else {
     /* Threads not enabled yet/anylonger */
     push_undefined();
+  }
+}
+
+/*! @decl int(0..) get_thread_quanta()
+ *!
+ *! @returns
+ *!   Returns the current thread quanta in nanoseconds.
+ *!
+ *! @seealso
+ *!   @[set_thread_quanta()], @[gethrtime()]
+ */
+static void f_get_thread_quanta(INT32 args)
+{
+  pop_n_elems(args);
+  push_int64(thread_quanta);
+#ifndef LONG_CPU_TIME_T
+  /* Convert from ticks. */
+  push_int(1000000000 / CPU_TIME_TICKS);
+  o_multiply();
+#endif
+}
+
+/*! @decl int(0..) set_thread_quanta(int(0..) ns)
+ *!
+ *! Set the thread quanta.
+ *!
+ *! @param ns
+ *!   New thread quanta in nanoseconds.
+ *!   A value of zero (default) disables the thread quanta checks.
+ *!
+ *! When enabled @[MasterObject.thread_quanta_exceeded()] will
+ *! be called when a thread has spent more time than the quanta
+ *! without allowing another thread to run.
+ *!
+ *! @note
+ *!   Setting a non-zero value that is too small to allow for
+ *!   @[MasterObject.thread_quanta_exceeded()] to run is NOT a
+ *!   good idea.
+ *!
+ *! @returns
+ *!   Returns the previous thread quanta in nanoseconds.
+ *!
+ *! @seealso
+ *!   @[set_thread_quanta()], @[gethrtime()]
+ */
+static void f_set_thread_quanta(INT32 args)
+{
+  LONGEST ns = 0;
+
+#ifndef LONG_CPU_TIME_T
+  /* Convert to ticks. */
+  push_int(1000000000 / CPU_TIME_TICKS);
+  o_divide();
+#endif
+  get_all_args("set_thread_quanta", args, "%l", &ns);
+  pop_n_elems(args);
+
+  push_int64(thread_quanta);
+#ifndef LONG_CPU_TIME_T
+  /* Convert from ticks. */
+  push_int(1000000000 / CPU_TIME_TICKS);
+  o_multiply();
+#endif
+
+  if (ns <= 0) ns = 0;
+
+  thread_quanta = ns;
+
+  if (Pike_interpreter.thread_state) {
+    Pike_interpreter.thread_state->interval_start = get_real_time();
   }
 }
 
@@ -3382,6 +3525,14 @@ void th_init(void)
 
   ADD_EFUN("all_threads",f_all_threads,
 	   tFunc(tNone,tArr(tObjIs_THREAD_ID)),
+	   OPT_EXTERNAL_DEPEND);
+
+  ADD_EFUN("get_thread_quanta", f_get_thread_quanta,
+	   tFunc(tNone, tInt),
+	   OPT_EXTERNAL_DEPEND);
+
+  ADD_EFUN("set_thread_quanta", f_set_thread_quanta,
+	   tFunc(tInt, tInt),
 	   OPT_EXTERNAL_DEPEND);
 
   /* Some constants... */

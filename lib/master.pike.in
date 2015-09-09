@@ -4650,6 +4650,14 @@ array get_backtrace (object|array err)
   return bt;
 }
 
+void thread_quanta_exceeded(object thread, int ns)
+{
+  werror("Thread quanta exceeded for %O (%d ns):\n"
+	 "%s\n",
+	 thread, ns,
+	 describe_backtrace(thread->backtrace()));
+}
+
 
 #ifdef ENCODE_DEBUG
 #  define ENC_MSG(X...) do werror (X); while (0)
