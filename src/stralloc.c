@@ -804,9 +804,16 @@ PMOD_EXPORT struct pike_string * make_shared_static_string(const char *str, size
         if (string_is_block_allocated(s)) {
             ba_free(&string_allocator, s->str);
         } else if(string_is_substring(s)) {
-          if( ((struct substring_pike_string *)s)->parent )
+          if( ((struct substring_pike_string *)s)->parent ) {
             free_string( ((struct substring_pike_string *)s)->parent );
+	    ((struct substring_pike_string *)s)->parent = NULL;
+	  }
           s->str = (char*)str;
+	  /* NOTE: We MUST NOT change the alloc_type, since that
+	   *       would associate s with the wrong block allocator,
+	   *       and cause a crash when s is eventually freed.
+	   */
+	  goto done;
         }
         else
         {
@@ -815,6 +822,7 @@ PMOD_EXPORT struct pike_string * make_shared_static_string(const char *str, size
         s->alloc_type = STRING_ALLOC_STATIC;
         s->str = (char*)str;
     }
+  done:
     add_ref(s);
   }
 
