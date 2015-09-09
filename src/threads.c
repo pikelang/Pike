@@ -50,6 +50,8 @@ PMOD_EXPORT int threads_disabled = 0;
 #include <sys/time.h>
 #endif
 
+cpu_time_t thread_quanta = 0;
+
 PMOD_EXPORT int live_threads = 0;
 PMOD_EXPORT COND_T live_threads_change;
 PMOD_EXPORT COND_T threads_disabled_change;
@@ -379,6 +381,24 @@ PMOD_EXPORT const char msg_thr_allow_in_disabled[] =
 PMOD_EXPORT const char msg_global_dynbuf_in_use[] =
   "Threads allowed while the global dynamic buffer is in use.\n";
 #endif
+
+PMOD_EXPORT void check_thread_quanta(struct thread_state *ts)
+{
+  cpu_time_t now = get_real_time();
+
+  if (((now - ts->interval_start) > thread_quanta) &&
+      (ts->thread_obj)) {
+    ref_push_object(ts->thread_obj);
+    push_int64(now - ts->interval_start);
+    ts->interval_start = now;
+#ifndef LONG_CPU_TIME
+    push_int(1000000000 / CPU_TIME_TICKS);
+    o_multiply();
+#endif
+    SAFE_APPLY_MASTER("thread_quanta_exceeded", 2);
+    pop_stack();
+  }
+}
 
 struct thread_local
 {
@@ -1330,6 +1350,76 @@ PMOD_EXPORT void f_this_thread(INT32 args)
   } else {
     /* Threads not enabled yet/anylonger */
     push_undefined();
+  }
+}
+
+/*! @decl int(0..) get_thread_quanta()
+ *!
+ *! @returns
+ *!   Returns the current thread quanta in nanoseconds.
+ *!
+ *! @seealso
+ *!   @[set_thread_quanta()], @[gethrtime()]
+ */
+static void f_get_thread_quanta(INT32 args)
+{
+  pop_n_elems(args);
+  push_int64(thread_quanta);
+#ifndef LONG_CPU_TIME_T
+  /* Convert from ticks. */
+  push_int(1000000000 / CPU_TIME_TICKS);
+  o_multiply();
+#endif
+}
+
+/*! @decl int(0..) set_thread_quanta(int(0..) ns)
+ *!
+ *! Set the thread quanta.
+ *!
+ *! @param ns
+ *!   New thread quanta in nanoseconds.
+ *!   A value of zero (default) disables the thread quanta checks.
+ *!
+ *! When enabled @[MasterObject.thread_quanta_exceeded()] will
+ *! be called when a thread has spent more time than the quanta
+ *! without allowing another thread to run.
+ *!
+ *! @note
+ *!   Setting a non-zero value that is too small to allow for
+ *!   @[MasterObject.thread_quanta_exceeded()] to run is NOT a
+ *!   good idea.
+ *!
+ *! @returns
+ *!   Returns the previous thread quanta in nanoseconds.
+ *!
+ *! @seealso
+ *!   @[set_thread_quanta()], @[gethrtime()]
+ */
+static void f_set_thread_quanta(INT32 args)
+{
+  LONGEST ns = 0;
+
+#ifndef LONG_CPU_TIME_T
+  /* Convert to ticks. */
+  push_int(1000000000 / CPU_TIME_TICKS);
+  o_divide();
+#endif
+  get_all_args("set_thread_quanta", args, "%l", &ns);
+  pop_n_elems(args);
+
+  push_int64(thread_quanta);
+#ifndef LONG_CPU_TIME_T
+  /* Convert from ticks. */
+  push_int(1000000000 / CPU_TIME_TICKS);
+  o_multiply();
+#endif
+
+  if (ns <= 0) ns = 0;
+
+  thread_quanta = ns;
+
+  if (Pike_interpreter.thread_state) {
+    Pike_interpreter.thread_state->interval_start = get_real_time();
   }
 }
 
@@ -2654,6 +2744,14 @@ void th_init(void)
 
   ADD_EFUN("all_threads",f_all_threads,
 	   tFunc(tNone,tArr(tObjIs_THREAD_ID)),
+	   OPT_EXTERNAL_DEPEND);
+
+  ADD_EFUN("get_thread_quanta", f_get_thread_quanta,
+	   tFunc(tNone, tInt),
+	   OPT_EXTERNAL_DEPEND);
+
+  ADD_EFUN("set_thread_quanta", f_set_thread_quanta,
+	   tFunc(tInt, tInt),
 	   OPT_EXTERNAL_DEPEND);
 
   /* Some constants... */

@@ -465,6 +465,8 @@ PMOD_EXPORT extern PIKE_MUTEX_T interpreter_lock;
 PMOD_EXPORT extern COND_T live_threads_change;		/* Used by _disable_threads */
 PMOD_EXPORT extern COND_T threads_disabled_change;		/* Used by _disable_threads */
 
+PMOD_EXPORT extern cpu_time_t thread_quanta;
+
 #define THREAD_TABLE_SIZE 127  /* Totally arbitrary prime */
 
 extern PIKE_MUTEX_T thread_table_lock;
@@ -830,12 +832,16 @@ PMOD_EXPORT extern dynamic_buffer pike_global_buffer;
 #endif
 #endif
 
+PMOD_EXPORT void check_thread_quanta(struct thread_state *ts);
 PMOD_EXPORT extern int Pike_in_gc;
 #define THREADS_ALLOW() do { \
      struct thread_state *_tmp = Pike_interpreter.thread_state; \
      DO_IF_PIKE_CLEANUP (					\
        /* Might get here after th_cleanup() when reporting leaks. */	\
        if (_tmp) {)						\
+     if (thread_quanta > 0) {					\
+       check_thread_quanta(_tmp);				\
+     }								\
      DEBUG_CHECK_THREAD();					\
      DO_IF_DEBUG({ \
        if (Pike_in_gc > 50 && Pike_in_gc < 300) \
@@ -873,6 +879,9 @@ PMOD_EXPORT extern int Pike_in_gc;
        if (threads_disabled) threads_disabled_wait(); \
        SWAP_IN_THREAD(_tmp);\
      } \
+     if (thread_quanta) { \
+       _tmp->interval_start = get_real_time(); \
+     } \
      DO_IF_DEBUG(_tmp->debug_flags &= ~THREAD_DEBUG_LOOSE;) \
      DEBUG_CHECK_THREAD(); \
      DO_IF_PIKE_CLEANUP (}) \
@@ -892,6 +901,9 @@ PMOD_EXPORT extern int Pike_in_gc;
      DO_IF_PIKE_CLEANUP (					\
        /* Might get here after th_cleanup() when reporting leaks. */	\
        if (_tmp_uid) {)						\
+     if (thread_quanta > 0) {					\
+       check_thread_quanta(_tmp_uid);				    \
+     }								    \
      DEBUG_CHECK_THREAD();					    \
      DO_IF_DEBUG({ \
        if ((Pike_in_gc > 50) && (Pike_in_gc < 300)) { \
@@ -933,6 +945,9 @@ PMOD_EXPORT extern int Pike_in_gc;
        co_broadcast(&live_threads_change); \
        if (threads_disabled) threads_disabled_wait(); \
        SWAP_IN_THREAD(_tmp_uid);\
+     } \
+     if (thread_quanta) { \
+       _tmp_uid->interval_start = get_real_time(); \
      } \
      DO_IF_DEBUG(_tmp_uid->debug_flags &= ~THREAD_DEBUG_LOOSE;) \
      DEBUG_CHECK_THREAD(); \
