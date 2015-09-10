@@ -641,6 +641,10 @@ char *crypt(const char *, const char *);
  */
 #define Pike_error_present
 
+/* Forward compat with Pike 8.0 and later precompiler. */
+#define DEFAULT_CMOD_STORAGE
+#define set_program_id_to_id(X)
+
 /* Compatibility... */
 #define USE_PIKE_TYPE	2
 
