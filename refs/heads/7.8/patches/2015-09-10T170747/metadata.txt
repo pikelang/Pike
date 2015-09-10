@@ -1,0 +1,36 @@
+subject: Pike 7.8: Multiple fixes:
+from: d599e333252922ab6398c56c3fe99851d24d6b82
+to: f034f8c4e78308591c7548b9f4db16ff28bb55b4
+originator: wellhardh@roxen.com
+depends: 2015-09-01T154420
+restart: true
+
+Multiple fixes:
+
+  * SSL.https: Support setting the PORT via -D.
+    
+    Feature backported from Pike 8.0.
+
+  * Threads: Added support for setting a thread time quanta.
+    
+    This is mostly intended to be used to identify code that
+    inhibits other threads from running.
+
+  * Build: Improved forward compatibility with Pike 8.0 precompiler.
+    
+    The precompiler in Pike 8.0 and later defaults to declaring PIKECLASS
+    programs static. This conflicts with Pike 7.8's header files which
+    declares several of the programs extern.
+    
+    Also adds a work-around for some versions of the Pike 8.0 precompiler
+    where the guard for using set_program_id_to_id() had false positives.
+
+  * ADT.Heap: Added ADT.Heap.Element.
+    
+    This adds one level of indirection, but is needed to get a
+    reasonable performance in code that needs to call adjust().
+    
+    Also corresponding updates to ADT.Priority_queue.
+    
+    Also removes the LFUN::`==() operator from ADT.Priority_queue.elem,
+    as it doesn't serve any purpose.
