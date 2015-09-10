@@ -1,0 +1,5 @@
+Modified files:
+  pike/lib/master.pike.in
+  pike/lib/modules/ADT.pmod/Heap.pike
+  pike/lib/modules/ADT.pmod/Priority_queue.pike
+  pike/lib/modules/SSL.pmod/https.pike
