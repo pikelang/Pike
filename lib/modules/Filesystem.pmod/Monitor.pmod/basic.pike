@@ -239,6 +239,8 @@ protected class Monitor(string path,
 			int file_interval_factor,
 			int stable_time)
 {
+  inherit ADT.Heap.Element;
+
   int next_poll;
   Stdio.Stat st;
   int last_change = 0x7fffffff;	// Future...
@@ -253,6 +255,7 @@ protected class Monitor(string path,
 
   void create()
   {
+    Element::create(this);
 #if HAVE_EVENTSTREAM
     int already_added = 0;
     foreach(eventstream_paths;;string p)
