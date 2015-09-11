@@ -545,11 +545,11 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
                          "ALPN: Length mismatch.\n");
 
               while (sizeof(extension_data)) {
-                string server_name = extension_data->read_hstring(1);
-                COND_FATAL(sizeof(server_name)<2, ALERT_handshake_failure,
+                string protocol_name = extension_data->read_hstring(1);
+                COND_FATAL(sizeof(protocol_name)<2, ALERT_handshake_failure,
                            "ALPN: Protocol name too short.\n");
 
-                protocols[ server_name ] = 1;
+                protocols[ protocol_name ] = 1;
               }
 
               COND_FATAL(!sizeof(protocols), ALERT_handshake_failure,
