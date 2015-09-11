@@ -175,7 +175,7 @@ test_tests([[
 	  fno++;
 	  break;
 #endif
-#if constant(Crypto.ChaCha20.POLY1305)
+#if constant(Crypto.ChaCha20.POLY1305) && defined(NOT_BROKEN)
 	case "poly1305":
 	  mode = MODE_poly1305;
 	  fno++;
