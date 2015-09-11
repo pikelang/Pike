@@ -542,19 +542,14 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
 
               while (sizeof(extension_data)) {
                 string server_name = extension_data->read_hstring(1);
-                COND_FATAL(sizeof(server_name)==0, ALERT_handshake_failure,
-                           "ALPN: Empty protocol.\n");
+                COND_FATAL(sizeof(server_name)<2, ALERT_handshake_failure,
+                           "ALPN: Protocol name too short.\n");
 
                 protocols[ server_name ] = 1;
               }
 
-              if( !sizeof(protocols) )
-              {
-                // FIXME: What does an empty list mean? Ignore, no
-                // protocol failure or handshake failure? Currently it
-                // will hit the no compatible protocol fatal alert
-                // below.
-              }
+              COND_FATAL(!sizeof(protocols), ALERT_handshake_failure,
+                         "ALPN: Empty list of protocols.\n");
 
               // Although the protocol list is sent in client
               // preference order, it is the server preference that
@@ -565,6 +560,7 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
                   application_protocol = prot;
                   break;
                 }
+
               COND_FATAL(!application_protocol,
                          ALERT_no_application_protocol,
                          "ALPN: No compatible protocol.\n");
