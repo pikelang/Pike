@@ -410,6 +410,11 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
                            fmt_signature_pairs(session->signature_algorithms));
             break;
           case EXTENSION_elliptic_curves:
+            // FIXME: We are sorting the named groups in reverse order
+            // of enumeration under the assumption that the strongest
+            // one is defined last, and that we want to select the
+            // strongest one. This should be controlled from the
+            // context.
             array(int) named_groups =
               reverse(sort(extension_data->read_int_array(2, 2)));
             session->ecc_curves = filter(named_groups, ECC_CURVES);
@@ -470,8 +475,7 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
             break;
           case EXTENSION_max_fragment_length:
             // RFC 3546 3.2 "Maximum Fragment Length Negotiation"
-            int mfsz = sizeof(extension_data) &&
-              extension_data->read_int(1);
+            int mfsz = extension_data->read_int(1);
             if (sizeof(extension_data)) mfsz = 0;
             switch(mfsz) {
             case FRAGMENT_512:  session->max_packet_size = 512; break;
