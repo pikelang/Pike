@@ -338,7 +338,7 @@ constant TLS_CIPHER_SUITE_BLACK_LIST = (<
   SSL.Constants.SSL_rsa_oldfips_with_des_cbc_sha,
   SSL.Constants.SSL_rsa_oldfips_with_3des_ede_cbc_sha,
   SSL.Constants.SSL_rsa_with_rc2_cbc_md5,
-  SSL.Constants.SSL_rsa_with_ideacbc_md5,
+  SSL.Constants.SSL_rsa_with_idea_cbc_md5,
   SSL.Constants.SSL_rsa_with_des_cbc_md5,
   SSL.Constants.SSL_rsa_with_3des_ede_cbc_md5,
 >);
