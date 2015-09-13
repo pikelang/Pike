@@ -6,6 +6,7 @@
 
 #include "global.h"
 #include "stuff.h"
+#include "bitvector.h"
 
 /* Used by is8bitalnum in pike_macros.h. */
 PMOD_EXPORT const char Pike_is8bitalnum_vector[] =
@@ -68,56 +69,8 @@ const INT32 hashprimes[32] =
 
 PMOD_EXPORT int my_log2(size_t x)
 {
-#if defined(HAS___BUILTIN_CLZL)
     if( x == 0 ) return 0;
-    return ((sizeof(unsigned long)*8)-__builtin_clzl(x))-1;
-#elif defined(HAS___BUILTIN_CLZ)
-    /* on arm32 only this one exists. Happily enough sizeof(int) is
-     * sizeof(size_t).
-     */
-    if( x == 0 ) return 0;
-    return ((sizeof(int)*8)-__builtin_clz(x))-1;
-#else
-  static const signed char bit[256] =
-  {
-    -1, 0, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3,
-     4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-     5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
-     5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
-     6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
-     6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
-     6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
-     6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
-     7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
-     7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
-     7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
-     7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
-     7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
-     7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
-     7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
-     7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
-  };
-  size_t tmp;
-  if( x == 0 ) return 0;
-#if SIZEOF_CHAR_P > 4
-  if((tmp=(x>>32)))
-  {
-    if((x=(tmp>>16))) {
-      if((tmp=(x>>8))) return bit[tmp]+56;
-      return bit[x]+48;
-    }
-    if((x=(tmp>>8))) return bit[x]+40;
-    return bit[tmp]+32;
-  }
-#endif /* SIZEOF_CHAP_P > 4 */
-  if((tmp=(x>>16)))
-  {
-    if((x=(tmp>>8))) return bit[x]+24;
-    return bit[tmp]+16;
-  }
-  if((tmp=(x>>8))) return bit[tmp]+8;
-  return bit[x];
-#endif
+    return log2_u32(x);
 }
 
 
