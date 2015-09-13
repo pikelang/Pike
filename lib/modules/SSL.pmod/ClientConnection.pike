@@ -406,6 +406,9 @@ protected void create(Context ctx, string(8bit)|void server_name,
 //! Sends a @[client_hello] to force a new round of handshaking.
 void send_renegotiate()
 {
+  if (!context->enable_renegotiation) {
+    error("Renegotiation disabled in context.\n");
+  }
   send_packet(client_hello(session->server_name), PRI_application);
 }
 

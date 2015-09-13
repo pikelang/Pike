@@ -176,6 +176,9 @@ protected Packet certificate_request_packet(Context context)
 //! Sends a @[hello_request] to force a new round of handshaking.
 void send_renegotiate()
 {
+  if (!context->enable_renegotiation) {
+    error("Renegotiation disabled in context.\n");
+  }
   send_packet(hello_request(), PRI_application);
 }
 

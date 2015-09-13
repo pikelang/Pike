@@ -83,6 +83,15 @@ array(int) preferred_compressors = ({
 #endif
  });
 
+//! If set enable SSL/TLS protocol renegotiation.
+//!
+//! Defaults to @expr{1@} (enabled).
+//!
+//! @note
+//!   @rfc{7540:9.2.1@} requires this to be turned off after
+//!   @[Protocols.HTTP2] communication has started.
+int(0..1) enable_renegotiation = 1;
+
 //! If set, the other peer will be probed for the heartbleed bug
 //! during handshake. If heartbleed is found the connection is closed
 //! with insufficient security fatal error.

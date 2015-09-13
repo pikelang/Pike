@@ -1036,6 +1036,10 @@ string(8bit)|int(-1..1) got_data(string(8bit) data)
                    !secure_renegotiation, ALERT_no_renegotiation,
                    "Renegotiation not supported in unsecure mode.\n");
 
+	COND_FATAL(!(state & CONNECTION_handshaking) &&
+		   !context->enable_renegotiation, ALERT_no_renegotiation,
+		   "Renegotiation disabled by context.\n");
+
         /* No change_cipher message was received */
         // FIXME: There's a bug somewhere since expect_change_cipher
         // often remains set after the handshake is completed. The
