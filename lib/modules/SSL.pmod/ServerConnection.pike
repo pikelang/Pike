@@ -416,6 +416,8 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
           case EXTENSION_signature_algorithms:
             // RFC 5246
             string bytes = extension_data->read_hstring(2);
+            COND_FATAL( sizeof(bytes)&1, ALERT_handshake_failure,
+                        "Corrupt signature algorithms.\n" );
             // Pairs of <hash_alg, signature_alg>.
             session->signature_algorithms = ((array(int))bytes)/2;
             SSL3_DEBUG_MSG("New signature_algorithms:\n"+
