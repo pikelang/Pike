@@ -20,6 +20,10 @@ static const char logTable[256] = {
 };
 #undef LT
 
+/**
+ * Counts the number of leading zeros in a 32-bit unsigned
+ * integer. Returns a value between 0 and 32.
+ */
 static INLINE unsigned INT32 PIKE_UNUSED_ATTRIBUTE clz32(unsigned INT32 i) {
 #ifdef HAS___BUILTIN_CLZ
     return i ? __builtin_clz(i) : 32;
@@ -51,6 +55,10 @@ static INLINE unsigned INT32 PIKE_UNUSED_ATTRIBUTE clz32(unsigned INT32 i) {
 #define clz16(i) (clz32(i) - 16)
 #define clz8(i) (clz32(i) - 24)
 
+/**
+ * Counts the number of trailing zeros in a 32-bit unsigned
+ * integer. Returns a value between 0 and 32.
+ */
 static INLINE unsigned INT32 PIKE_UNUSED_ATTRIBUTE ctz32(unsigned INT32 i) {
 #ifdef HAS___BUILTIN_CTZ
     return i ? __builtin_ctz(i) : 32;
@@ -76,7 +84,9 @@ static INLINE unsigned INT32 PIKE_UNUSED_ATTRIBUTE ctz32(unsigned INT32 i) {
 #define ctz16(i) (i ? ctz32(i) : 16)
 #define ctz8(i) (i ? ctz32(i) : 8)
 
-
+/**
+ * Reverses the bytes in the 32-bit integer x.
+ */
 static INLINE unsigned INT32 PIKE_UNUSED_ATTRIBUTE bswap32(unsigned INT32 x) {
 #ifdef HAS___BUILTIN_BSWAP32
     return __builtin_bswap32(x);
@@ -92,6 +102,10 @@ static INLINE unsigned INT32 PIKE_UNUSED_ATTRIBUTE bswap32(unsigned INT32 x) {
 
 #ifdef INT64
 
+/**
+ * Counts the number of leading zeros in a 64-bit unsigned
+ * integer. Returns a value between 0 and 64.
+ */
 static INLINE unsigned INT32 PIKE_UNUSED_ATTRIBUTE clz64(unsigned INT64 i) {
 # if SIZEOF_LONG == 8 && defined(HAS___BUILTIN_CLZL)
     return i ? __builtin_clzl(i) : 64;
@@ -127,6 +141,10 @@ static INLINE unsigned INT32 PIKE_UNUSED_ATTRIBUTE clz64(unsigned INT64 i) {
 # endif
 }
 
+/**
+ * Counts the number of trailing zeros in a 64-bit unsigned
+ * integer. Returns a value between 0 and 64.
+ */
 static INLINE unsigned INT32 PIKE_UNUSED_ATTRIBUTE ctz64(unsigned INT64 i) {
 # if SIZEOF_LONG == 8 && defined(HAS___BUILTIN_CTZL)
     return i ? __builtin_ctzl(i) : 64;
@@ -151,6 +169,9 @@ static INLINE unsigned INT32 PIKE_UNUSED_ATTRIBUTE ctz64(unsigned INT64 i) {
 # endif
 }
 
+/**
+ * Reverses the bytes in the 64-bit integer x.
+ */
 static INLINE unsigned INT64 PIKE_UNUSED_ATTRIBUTE bswap64(unsigned INT64 x) {
 #ifdef HAS___BUILTIN_BSWAP64
     return __builtin_bswap64(x);
@@ -175,20 +196,32 @@ static INLINE unsigned INT64 PIKE_UNUSED_ATTRIBUTE round_up64(unsigned INT64 v) 
     return (unsigned INT64)1 << (64 - i);
 }
 
+/**
+ * Returns one plus the index of the least significant 1-bit of x.
+ */
 static INLINE unsigned INT32 PIKE_UNUSED_ATTRIBUTE ffs64(unsigned INT64 v) {
     return ctz64(v) + 1;
 }
 
+/**
+ * Returns one plus the index of the most significant 1-bit of x.
+ */
 static INLINE unsigned INT32 PIKE_UNUSED_ATTRIBUTE fls64(unsigned INT64 v) {
     return 64 - clz64(v);
 }
 
-/* returns -1 for 0 */
+/**
+ * Returns the integer 2 log of the 32-bit integer v. Returns -1 for 0.
+ */
 static INLINE unsigned INT32 PIKE_UNUSED_ATTRIBUTE log2_u64(unsigned INT64 v) {
     return fls64(v) - 1;
 }
 #endif /* INT64 */
 
+/**
+ * Rounds the 32-bit integer v up to the nearest binary magnitude. If
+ * v > (1<<31) 0 will be returned.
+ */
 static INLINE unsigned INT32 PIKE_UNUSED_ATTRIBUTE round_up32(unsigned INT32 v) {
     unsigned INT32 i;
 
@@ -201,15 +234,23 @@ static INLINE unsigned INT32 PIKE_UNUSED_ATTRIBUTE round_up32(unsigned INT32 v) 
     return 1U << (32 - i);
 }
 
+/**
+ * Returns one plus the index of the least significant 1-bit of x.
+ */
 static INLINE unsigned INT32 PIKE_UNUSED_ATTRIBUTE ffs32(unsigned INT32 v) {
     return ctz32(v) + 1;
 }
 
+/**
+ * Returns one plus the index of the most significant 1-bit of x.
+ */
 static INLINE unsigned INT32 PIKE_UNUSED_ATTRIBUTE fls32(unsigned INT32 v) {
     return 32 - clz32(v);
 }
 
-/* returns -1 for 0 */
+/**
+ * Returns the integer 2 log of the 32-bit integer v. Returns -1 for 0.
+ */
 static INLINE unsigned INT32 PIKE_UNUSED_ATTRIBUTE log2_u32(unsigned INT32 v) {
     return fls32(v) - 1;
 }
