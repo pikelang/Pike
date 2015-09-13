@@ -364,8 +364,12 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
 
       Stdio.Buffer early_data = Stdio.Buffer();
       int missing_secure_renegotiation = secure_renegotiation;
-      if (extensions) {
+      if (extensions)
+      {
+        // FIXME: Control Safari workaround detection from the
+        // context.
         int maybe_safari_10_8 = 1;
+
         while (sizeof(extensions)) {
           int extension_type = extensions->read_int(2);
           string(8bit) raw = extensions->read_hstring(2);
@@ -379,28 +383,33 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
 
           remote_extensions[extension_type] = 1;
 
-          switch(extension_type)
+          if (maybe_safari_10_8)
           {
-          case EXTENSION_signature_algorithms:
-            if (!remote_extensions[EXTENSION_ec_point_formats] ||
-                (raw != "\0\12\5\1\4\1\2\1\4\3\2\3") ||
-                (client_version != PROTOCOL_TLS_1_2))
-              maybe_safari_10_8 = 0;
-            break;
-          case EXTENSION_elliptic_curves:
-            if (!remote_extensions[EXTENSION_server_name] ||
-                (raw != "\0\6\0\x17\0\x18\0\x19"))
-              maybe_safari_10_8 = 0;
-            break;
-          case EXTENSION_ec_point_formats:
-            if (!remote_extensions[EXTENSION_elliptic_curves] ||
-                (raw != "\1\0"))
-              maybe_safari_10_8 = 0;
-            break;
-          case EXTENSION_server_name:
-            if (sizeof(remote_extensions) != 1)
-              maybe_safari_10_8 = 0;
-            break;
+            // FIXME: OpenSSL is more strict here and don't allow any
+            // other extensions in the hello message.
+            switch(extension_type)
+            {
+            case EXTENSION_signature_algorithms:
+              if (!remote_extensions[EXTENSION_ec_point_formats] ||
+                  (raw != "\0\12\5\1\4\1\2\1\4\3\2\3") ||
+                  (client_version != PROTOCOL_TLS_1_2))
+                maybe_safari_10_8 = 0;
+              break;
+            case EXTENSION_elliptic_curves:
+              if (!remote_extensions[EXTENSION_server_name] ||
+                  (raw != "\0\6\0\x17\0\x18\0\x19"))
+                maybe_safari_10_8 = 0;
+              break;
+            case EXTENSION_ec_point_formats:
+              if (!remote_extensions[EXTENSION_elliptic_curves] ||
+                  (raw != "\1\0"))
+                maybe_safari_10_8 = 0;
+              break;
+            case EXTENSION_server_name:
+              if (sizeof(remote_extensions) != 1)
+                maybe_safari_10_8 = 0;
+              break;
+            }
           }
 
           switch(extension_type) {
