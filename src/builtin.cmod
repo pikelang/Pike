@@ -2084,14 +2084,6 @@ PIKEFUN mixed random(object o)
  *!   @[random_seed()]
  */
 
-/*! @decl float random(float max)
- *!
- *!   This function returns a random number in the range @expr{0 .. @[max]-ɛ@}.
- *!
- *! @seealso
- *!   @[random_seed()]
- */
-
 PMOD_EXPORT
 PIKEFUN int random(int i)
 {
@@ -2103,14 +2095,21 @@ PIKEFUN int random(int i)
   RETURN  my_rand() % i;
 }
 
+/*! @decl float random(float max)
+ *!
+ *!   This function returns a random number in the range @expr{0 .. @[max]-ɛ@}.
+ *!
+ *! @seealso
+ *!   @[random_seed()]
+ */
+
 PMOD_EXPORT
 PIKEFUN float random(float f)
 {
   if(f<=0.0) RETURN 0.0;
-#define N 1048576
-  RETURN f * (my_rand()%N/((float)N)) +
-    f * (my_rand()%N/( ((float)N) * ((float)N) ));
 
+#define MASK ((1L<<32)-1)
+  RETURN (float)(f * (((my_rand()&MASK)-1) / (double)MASK));
 }
 
 /*! @decl mixed random(array|multiset x)
