@@ -1,4 +1,4 @@
-/* -*- c -*-
+/* -*- mode: c; encoding: utf-8; -*-
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
@@ -2076,9 +2076,16 @@ PIKEFUN mixed random(object o)
 }
 
 /*! @decl int random(int max)
- *! @decl float random(float max)
  *!
- *!   This function returns a random number in the range 0 - @[max]-1.
+ *!   This function returns a random number in the range @expr{0 .. @[max]-1@}.
+ *!
+ *! @seealso
+ *!   @[random_seed()]
+ */
+
+/*! @decl float random(float max)
+ *!
+ *!   This function returns a random number in the range @expr{0 .. @[max]-ɛ@}.
  *!
  *! @seealso
  *!   @[random_seed()]
