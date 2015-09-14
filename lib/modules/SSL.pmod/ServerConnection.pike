@@ -385,29 +385,30 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
 
           if (maybe_safari_10_8)
           {
-            // FIXME: OpenSSL is more strict here and don't allow any
-            // other extensions in the hello message.
-            switch(extension_type)
+            switch( sizeof(remote_extensions) )
             {
-            case EXTENSION_signature_algorithms:
-              if (!remote_extensions[EXTENSION_ec_point_formats] ||
-                  (raw != "\0\12\5\1\4\1\2\1\4\3\2\3") ||
-                  (client_version != PROTOCOL_TLS_1_2))
+            case 1: // First extension is always SNI
+              if( extension_type != EXTENSION_server_name )
                 maybe_safari_10_8 = 0;
               break;
-            case EXTENSION_elliptic_curves:
-              if (!remote_extensions[EXTENSION_server_name] ||
-                  (raw != "\0\6\0\x17\0\x18\0\x19"))
+            case 2: // followed by signature algorithms
+              if( extension_type != EXTENSION_signature_algorithms ||
+                  raw != "\0\12\5\1\4\1\2\1\4\3\2\3" )
                 maybe_safari_10_8 = 0;
               break;
-            case EXTENSION_ec_point_formats:
-              if (!remote_extensions[EXTENSION_elliptic_curves] ||
-                  (raw != "\1\0"))
+            case 3: // TLS 1.2 also have elliptic curves
+              if( client_version != PROTOCOL_TLS_1_2 ||
+                  extension_type != EXTENSION_elliptic_curves ||
+                  raw != "\0\6\0\x17\0\x18\0\x19" )
                 maybe_safari_10_8 = 0;
               break;
-            case EXTENSION_server_name:
-              if (sizeof(remote_extensions) != 1)
+            case 4: // followed by ec point formats
+              if( extension_type != EXTENSION_ec_point_formats ||
+                  raw != "\1\0" )
                 maybe_safari_10_8 = 0;
+                break;
+            default: // Any more extensions and it's not Safari.
+              maybe_safari_10_8 = 0;
               break;
             }
           }
@@ -656,36 +657,22 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
             break;
           }
         }
+
         if (maybe_safari_10_8) {
           // According to OpenSSL (ssl/t1_lib.c:ssl_check_for_safari()),
           // the Safari browser versions 10.8.0..10.8.3 have broken
           // support for ECDHE_ECDSA, but advertise such suites
           // anyway. We attempt to fingerprint Safari 10.8 above by
           // the set of extensions and the order it sends them in.
-          SSL3_DEBUG_MSG("Client version: %s\n"
-                         "Number of extensions: %d\n",
-                         fmt_version(client_version),
-                         sizeof(remote_extensions));
-          if (((client_version == PROTOCOL_TLS_1_2) &&
-               ((sizeof(remote_extensions) != 4) ||
-                !remote_extensions[EXTENSION_signature_algorithms])) ||
-              ((client_version < PROTOCOL_TLS_1_2) &&
-               ((sizeof(remote_extensions) != 3) ||
-                !remote_extensions[EXTENSION_ec_point_formats]))) {
-            maybe_safari_10_8 = 0;
-          }
-          if (maybe_safari_10_8) {
-            SSL3_DEBUG_MSG("Safari 10.8 (or similar) detected.\n");
-            cipher_suites = filter(cipher_suites,
-                                   lambda(int suite) {
-                                     return CIPHER_SUITES[suite] &&
-                                       (CIPHER_SUITES[suite][0] !=
-                                        KE_ecdhe_ecdsa);
-                                   });
-            SSL3_DEBUG_MSG("Remaining cipher suites:\n"
-                           "%s\n",
-                           fmt_cipher_suites(cipher_suites));
-          }
+          SSL3_DEBUG_MSG("Safari 10.8 (or similar) detected.\n");
+          cipher_suites = filter(cipher_suites,
+            lambda(int suite) {
+              return CIPHER_SUITES[suite] &&
+                (CIPHER_SUITES[suite][0] != KE_ecdhe_ecdsa);
+            });
+          SSL3_DEBUG_MSG("Remaining cipher suites:\n"
+                         "%s\n",
+                         fmt_cipher_suites(cipher_suites));
         }
       }
 
