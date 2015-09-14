@@ -90,9 +90,9 @@ low_traditional:
 
 always:
 
-images: $(BUILDDIR)/doc_build/src/post_modules/GTK/refdoc/images
-	@cp ../src/post_modules/GTK/refdoc/images/*.png \
-	  $(BUILDDIR)/doc_build/src/post_modules/GTK/refdoc/images
+images: $(BUILDDIR)/doc_build/src/post_modules/GTK2/refdoc/images
+	@cp ../src/post_modules/GTK2/refdoc/images/*.png \
+	  $(BUILDDIR)/doc_build/src/post_modules/GTK2/refdoc/images
 
 # Directories
 

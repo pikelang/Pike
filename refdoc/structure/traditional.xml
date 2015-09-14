@@ -107,7 +107,6 @@
   <file>
     <chapter title="Graphic User Interface">
       <insert-move entity="GTK"/>
-      <insert-move entity="GTK1"/>
       <insert-move entity="GTK2"/>
     </chapter>
   </file>
