@@ -342,3 +342,32 @@ constant TLS_CIPHER_SUITE_BLACK_LIST = (<
   SSL.Constants.SSL_rsa_with_des_cbc_md5,
   SSL.Constants.SSL_rsa_with_3des_ede_cbc_md5,
 >);
+
+//! HTTP/2 frame.
+protected class Frame(FrameType frame_type,
+
+		      Flag flags,
+
+		      //! Data length for received packets,
+		      //! and payload for packets to send.
+		      //!
+		      //! NB: To avoid frame reordering issues with HPack,
+		      //!     this is the set of headers for @[FRAME_header]
+		      //!     and @[FRAME_push_promise].
+		      int|Stdio.Buffer|array(array(string(8bit))) payload,
+
+		      //! Stream identifier.
+		      int|void stream_id,
+
+		      //! Only used with @[FRAME_push_promise], and
+		      //! overrides @[stream_id].
+		      int|void promised_stream_id
+		      )
+{
+  protected string _sprintf(int c)
+  {
+    return sprintf("%O(%d, 0x%04x, %O, %d(%d))",
+		   this_program, frame_type, flags,
+		   payload, stream_id, promised_stream_id);
+  }
+}
