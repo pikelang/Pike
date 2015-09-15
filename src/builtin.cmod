@@ -2108,8 +2108,7 @@ PIKEFUN float random(float f)
 {
   if(f<=0.0) RETURN 0.0;
 
-#define MASK ((1L<<32)-1)
-  RETURN (float)(f * (((my_rand()&MASK)-1) / (double)MASK));
+  RETURN (FLOAT_TYPE)ldexp((double)f * my_rand64(), -64);
 }
 
 /*! @decl mixed random(array|multiset x)
