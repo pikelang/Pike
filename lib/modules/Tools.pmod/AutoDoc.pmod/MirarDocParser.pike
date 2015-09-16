@@ -1166,7 +1166,8 @@ string make_doc_files(string builddir, string imgdest, string|void namespace)
       }
       string read() {
 	 return string_to_utf8("<?xml version='1.0' encoding='utf-8'?>\n"
-			       "<autodoc>\n" + doc + "</autodoc>\n");
+			       "<autodoc>\n" + string_to_utf8(doc) +
+			       "</autodoc>\n");
       }
    }();
 

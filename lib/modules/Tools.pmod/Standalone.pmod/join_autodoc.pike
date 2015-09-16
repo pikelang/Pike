@@ -237,7 +237,7 @@ string low_join_files(array(string) files, string save_to,
 			      dest,
 			      SimpleTextNode("\n"),
 			   }));
-    string res = root->html_of_node();
+    string res = root->render_xml();
     sub_cache[save_to] = dest;
     return res;
   }

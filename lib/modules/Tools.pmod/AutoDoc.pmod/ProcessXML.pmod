@@ -204,10 +204,14 @@ string extractXML(string filename, int|void pikeMode, string|void type,
     if (has_suffix(namespace, "::")) {
       namespace = namespace[..<2];
     }
+    // FIXME: Ought to handle emacs-style encoding directives.
+    catch { contents = utf8_to_string(contents); };
     object m = .CExtractor.extract(contents, filename, namespace, flags);
     return m->xml(flags);
   }
   else if(stylePike && has_value(contents, "//!")) {
+    // FIXME: Ought to handle #charset.
+    catch { contents = utf8_to_string(contents); };
     if(has_suffix(filename, ".pmod.in")) {
       contents = replace(contents, "@module@",
 			 "\"___" + (parentModules[1..] + ({ name }))*"." +"\"");
