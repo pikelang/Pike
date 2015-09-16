@@ -3384,23 +3384,41 @@ static int generate_xor(node *n)
 
 PMOD_EXPORT void o_lsh(void)
 {
-  if (sp[-1].u.integer < 0) {
-    int args = 2;
+  int args = 2;
+  if ((TYPEOF(sp[-2]) == T_OBJECT) ||
+      (TYPEOF(sp[-1]) == T_OBJECT))
+    goto call_lfun;
+
+  if ((TYPEOF(sp[-1]) != T_INT) || (sp[-1].u.integer < 0)) {
     SIMPLE_BAD_ARG_ERROR("`<<", 2, "int(0..)|object");
   }
-  if ((TYPEOF(sp[-1]) == T_INT) && (TYPEOF(sp[-2]) == T_INT) &&
-      INT_TYPE_LSH_OVERFLOW(sp[-2].u.integer, sp[-1].u.integer))
+
+  switch(TYPEOF(sp[-2])) {
+  case T_INT:
+    if (!INT_TYPE_LSH_OVERFLOW(sp[-2].u.integer, sp[-1].u.integer))
+      break;
     convert_stack_top_to_bignum();
 
-  if(TYPEOF(sp[-1]) != T_INT || TYPEOF(sp[-2]) != T_INT)
-  {
-    int args = 2;
+    /* FALL_THROUGH */
+
+  case T_OBJECT:
+  call_lfun:
     if(call_lfun(LFUN_LSH, LFUN_RLSH))
       return;
 
     if(TYPEOF(sp[-2]) != T_INT)
-      SIMPLE_BAD_ARG_ERROR("`<<", 1, "int|object");
+      SIMPLE_BAD_ARG_ERROR("`<<", 1, "int|float|object");
     SIMPLE_BAD_ARG_ERROR("`<<", 2, "int(0..)|object");
+    break;
+
+  case T_FLOAT:
+    sp--;
+    sp[-1].u.float_number = ldexp(sp[-1].u.float_number, sp->u.integer);
+    return;
+
+  default:
+    SIMPLE_BAD_ARG_ERROR("`<<", 1, "int|float|object");
+    break;
   }
 
   sp--;
@@ -3408,9 +3426,10 @@ PMOD_EXPORT void o_lsh(void)
 	   sp[-1].u.integer << sp->u.integer);
 }
 
-/*! @decl int `<<(int arg1, int arg2)
- *! @decl mixed `<<(object arg1, int|object arg2)
+/*! @decl int `<<(int arg1, int(0..) arg2)
+ *! @decl mixed `<<(object arg1, int(0..)|object arg2)
  *! @decl mixed `<<(int arg1, object arg2)
+ *! @decl mixed `<<(float arg1, int(0..) arg2)
  *!
  *!   Left shift.
  *!
@@ -3423,6 +3442,9 @@ PMOD_EXPORT void o_lsh(void)
  *!
  *!   If @[arg2] is an object that implements @[lfun::``<<()], that
  *!   function will be called with @[arg1] as the single argument.
+ *!
+ *!   If @[arg1] is a float and @[arg2] is a non-negative integer,
+ *!   @[arg1] will be multiplied by @expr{1<<@[arg2]@}.
  *!
  *!   Otherwise @[arg1] will be shifted @[arg2] bits left.
  *!
@@ -3453,9 +3475,9 @@ static int generate_lsh(node *n)
 
 PMOD_EXPORT void o_rsh(void)
 {
-  if(TYPEOF(sp[-2]) != T_INT || TYPEOF(sp[-1]) != T_INT)
+  int args = 2;
+  if ((TYPEOF(sp[-2]) == T_OBJECT) || (TYPEOF(sp[-1]) == T_OBJECT))
   {
-    int args = 2;
     if(call_lfun(LFUN_RSH, LFUN_RRSH))
       return;
     if(TYPEOF(sp[-2]) != T_INT)
@@ -3463,30 +3485,39 @@ PMOD_EXPORT void o_rsh(void)
     SIMPLE_BAD_ARG_ERROR("`>>", 2, "int(0..)|object");
   }
 
-  if (sp[-1].u.integer < 0) {
-    int args = 2;
+  if ((TYPEOF(sp[-1]) != T_INT) || (sp[-1].u.integer < 0)) {
     SIMPLE_BAD_ARG_ERROR("`>>", 2, "int(0..)|object");
   }
 
-  if( INT_TYPE_RSH_OVERFLOW(sp[-2].u.integer, sp[-1].u.integer) )
-  {
-    sp--;
-    if (sp[-1].u.integer < 0) {
-      SET_SVAL(sp[-1], T_INT, NUMBER_NUMBER, integer, -1);
-    } else {
-      SET_SVAL(sp[-1], T_INT, NUMBER_NUMBER, integer, 0);
+  sp--;
+  switch(TYPEOF(sp[-1])) {
+  case T_INT:
+    if( INT_TYPE_RSH_OVERFLOW(sp[-1].u.integer, sp->u.integer) )
+    {
+      if (sp[-1].u.integer < 0) {
+	SET_SVAL(sp[-1], T_INT, NUMBER_NUMBER, integer, -1);
+      } else {
+	SET_SVAL(sp[-1], T_INT, NUMBER_NUMBER, integer, 0);
+      }
+      return;
     }
+    break;
+  case T_FLOAT:
+    sp[-1].u.float_number = ldexp(sp[-1].u.float_number, -sp->u.integer);
     return;
+  default:
+    SIMPLE_BAD_ARG_ERROR("`>>", 1, "int|float|object");
+    break;
   }
 
-  sp--;
   SET_SVAL(sp[-1], T_INT, NUMBER_NUMBER, integer,
 	   sp[-1].u.integer >> sp->u.integer);
 }
 
-/*! @decl int `>>(int arg1, int arg2)
- *! @decl mixed `>>(object arg1, int|object arg2)
+/*! @decl int `>>(int arg1, int(0..) arg2)
+ *! @decl mixed `>>(object arg1, int(0..)|object arg2)
  *! @decl mixed `>>(int arg1, object arg2)
+ *! @decl float `>>(float arg1, int(0..) arg2)
  *!
  *!   Right shift.
  *!
@@ -3499,6 +3530,9 @@ PMOD_EXPORT void o_rsh(void)
  *!
  *!   If @[arg2] is an object that implements @[lfun::``>>()], that
  *!   function will be called with @[arg1] as the single argument.
+ *!
+ *!   If @[arg1] is a float and @[arg2] is a non-negative integer,
+ *!   @[arg1] will be divided by @expr{1<<@[arg2]@}.
  *!
  *!   Otherwise @[arg1] will be shifted @[arg2] bits right.
  *!
@@ -5824,11 +5858,12 @@ multiset & mapping -> mapping
   ADD_EFUN2("`^",f_xor,LOG_TYPE,OPT_TRY_OPTIMIZE,optimize_binary,generate_xor);
 
 #define SHIFT_TYPE							\
-  tOr3(tIfnot(tFuncV(tNone, tNot(tObj), tMix),				\
+  tOr4(tIfnot(tFuncV(tNone, tNot(tObj), tMix),				\
 	      tOr(tFunc(tMix tObj,tMix),				\
 		  tFunc(tObj tMix,tMix))),				\
        tIfnot(tFuncV(tNone, tNot(tInt), tMix),				\
 	      tFunc(tInt tInt, tInt)),					\
+       tFunc(tFloat tIntPos, tFloat),					\
        tFunc(tIntPos tIntPos, tIntPos))
 
   ADD_EFUN2("`<<", f_lsh, SHIFT_TYPE, OPT_TRY_OPTIMIZE,
