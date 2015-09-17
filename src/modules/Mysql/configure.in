@@ -155,6 +155,18 @@ else
 	esac
 	shift
       done
+
+      if echo " $MARIADB_LIBS" | grep -i iconv >/dev/null; then :; else
+	# NB: Sometimes iconv doesn't get listed by mariadb_config.
+	AC_CHECK_LIB(iconv, iconv_open, [
+	  MARIADB_LIBS="${MARIADB_LIBS} -liconv"
+	], [
+	  AC_CHECK_LIB(iconv, libiconv_open, [
+	    MARIADB_LIBS="${MARIADB_LIBS} -liconv"
+	  ])
+	])
+      fi
+
       echo "Adding `${MARIADB_CONFIG} --include` to CPPFLAGS."
       CPPFLAGS="`${MARIADB_CONFIG} --include` ${CPPFLAGS}"
   fi
