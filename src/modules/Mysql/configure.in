@@ -378,18 +378,20 @@ fi
   if test "x${MARIADB_CONFIG}" = "xno"; then :; else
     # Try the MariaDB client libraries.
     # NB: These are distributed separately from the MariaDB server.
+    # NB: We link with them twice to make sure that symbols in them
+    #     (like 'hash_insert') aren't resolved against Pike...
     TRY_MYSQLCLIENT="no"
     AC_CHECK_SQLLIB(mariadbclient_r, [
-      LIBS="-lmariadbclient_r $LIBS"
+      LIBS="-lmariadbclient_r -lmariadbclient_r $LIBS"
     ], [
       AC_CHECK_SQLLIB(mariadbclient, [
-	LIBS="-lmariadbclient $LIBS"
+	LIBS="-lmariadbclient -lmariadbclient $LIBS"
       ], [
 	AC_CHECK_SQLLIB(mariadb_r, [
-	  LIBS="-lmariadb_r $LIBS"
+	  LIBS="-lmariadb_r -lmariadb_r $LIBS"
 	], [
 	  AC_CHECK_SQLLIB(mariadb, [
-	    LIBS="-lmariadb $LIBS"
+	    LIBS="-lmariadb -lmariadb $LIBS"
 	  ], [
 	    # Fallback to using the MySQL client libraries.
 	    # NB: These are distributed together with the MariaDB server.
