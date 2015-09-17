@@ -128,7 +128,7 @@ Element adjust(mixed value)
   if (objectp(value) && value->is_adt_heap_element) {
     pos = value->pos;
   } else {
-    pos = search(values->value, value);
+    pos = search(values && values->value, value);
   }
   Element ret;
   if(pos>=0) {
@@ -198,7 +198,7 @@ void remove(mixed value)
   if (objectp(value) && value->is_adt_heap_element) {
     pos = value->pos;
   } else {
-    pos = search(values->value, value);
+    pos = search(values && values->value, value);
   }
   if ((pos < 0) || (pos >= num_values)) return;
 
