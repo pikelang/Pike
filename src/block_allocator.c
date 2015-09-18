@@ -123,7 +123,7 @@ static void ba_free_empty_pages(struct block_allocator * a) {
     }
 }
 
-PMOD_EXPORT void ba_low_init_aligned(struct block_allocator * a) {
+static void ba_low_init_aligned(struct block_allocator * a) {
     unsigned INT32 block_size = MAXIMUM(a->l.block_size, sizeof(struct ba_block_header));
 
     PIKE_MEMPOOL_CREATE(a);
