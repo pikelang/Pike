@@ -1159,7 +1159,7 @@ int check(int|void max_wait, int|void max_cnt,
     int ret = max_dir_check_interval;
     int cnt;
     int t = time();
-    if (sizeof(monitors)) {
+    if (sizeof(monitor_queue)) {
       Monitor m;
       while ((m = monitor_queue->peek()) && (m->next_poll <= t)) {
 	cnt += check_monitor(m);
