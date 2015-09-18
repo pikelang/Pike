@@ -1,9 +1,11 @@
-subject: Pike 7.8:   * ADT.Heap: Fixed NULL-deref.
+subject: Pike 7.8: ADT.Heap
 from: f034f8c4e78308591c7548b9f4db16ff28bb55b4
 to: f310e91e718d4f522cac75a1b710e6a83f95f276
 originator: wellhardh@roxen.com
 depends: 2015-09-10T170747
 restart: true
+
+Multiple fixes:
 
   * ADT.Heap: Fixed NULL-deref.
     
