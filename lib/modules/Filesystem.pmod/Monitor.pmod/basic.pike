@@ -832,6 +832,9 @@ protected void create(int|void max_dir_check_interval,
 #elseif HAVE_INOTIFY
   instance = System.Inotify._Instance();
   file = Stdio.File();
+  // NB: The backend is typically not set here, but as this class is intended
+  //     to be overloaded it can not be known for sure.
+  if (backend) file->set_backend(backend);
   file->assign(instance->fd());
   file->set_nonblocking();
   file->set_read_callback(inotify_parse);
@@ -1215,6 +1218,13 @@ void set_backend(Pike.Backend|void backend)
   int was_nonblocking = !!co_id;
   set_blocking();
   this::backend = backend;
+#if HAVE_INOTIFY
+  if (backend) {
+    file->set_backend(backend);
+  } else {
+    file->set_backend(Pike.DefaultBackend);
+  }
+#endif
   if (was_nonblocking) {
     set_nonblocking();
   }
