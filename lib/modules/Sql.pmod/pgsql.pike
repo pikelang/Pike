@@ -617,9 +617,10 @@ final void _processloop(.pgsql_util.conxion ci) {
         _connectfail();
       else
         destruct(waitforauthready);
-    } else	      // Do not flush at this point, PostgreSQL 9.4 disapproves
-      procmessage();
-  }
+      return;
+    }
+  }		      // Do not flush at this point, PostgreSQL 9.4 disapproves
+  procmessage();
 }
 
 private void procmessage() {
