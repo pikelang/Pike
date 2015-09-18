@@ -1081,6 +1081,10 @@ private void procmessage() {
           warningscollected++;
           lastmessage=({sprintf("%s %s: %s",
                                   msgresponse.S,msgresponse.C,msgresponse.M)});
+          if(has_prefix(msgresponse.C,"53")||has_prefix(msgresponse.C,"57P")) {
+            preplastmessage(msgresponse);
+            PD(a2nls(lastmessage));throw(0);      // Some warnings are fatal
+          }
           break;
         }
         case 'A': {
