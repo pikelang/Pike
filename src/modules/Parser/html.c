@@ -1835,10 +1835,10 @@ static int scan_for_string (struct parser_html_storage *UNUSED(this),
     return 1;
   }
 
-#define LOOP(TYPE) {							\
-    p_wchar2 look_for = (p_wchar2) ((TYPE *) str->str)[0];		\
+#define LOOP(SHIFT) {							\
+      p_wchar2 look_for = INDEX_CHARP(str->str, 0, SHIFT);              \
     for (;;) {								\
-      TYPE *p, *e;							\
+      PIKE_CONCAT(p_wchar, SHIFT) *p, *e;                               \
       struct piece *dst;						\
       ptrdiff_t cdst;							\
       if (!scan_forward (feed, c, &feed, &c, &look_for, 1)) {		\
@@ -1847,8 +1847,8 @@ static int scan_for_string (struct parser_html_storage *UNUSED(this),
 	return 0;							\
       }									\
 									\
-      p = (TYPE *) str->str + 1;					\
-      e = (TYPE *) str->str + str->len;					\
+      p = ((PIKE_CONCAT(p_wchar, SHIFT) *) str->str) + 1;               \
+      e = ((PIKE_CONCAT(p_wchar, SHIFT) *) str->str) + str->len;        \
       dst = feed;							\
       cdst = c + 1;							\
       for (; p < e; p++, cdst++) {					\
@@ -1863,22 +1863,22 @@ static int scan_for_string (struct parser_html_storage *UNUSED(this),
 	}								\
 	if ((p_wchar2) *p !=						\
 	    INDEX_CHARP (dst->s->str, cdst, dst->s->size_shift))	\
-	  goto PIKE_CONCAT (cont, TYPE);				\
+          goto PIKE_CONCAT(cont, SHIFT);				\
       }									\
 									\
       *destp = feed;							\
       *d_p = c;								\
       return 1;								\
 									\
-    PIKE_CONCAT (cont, TYPE):						\
+    PIKE_CONCAT(cont, SHIFT):						\
       c++;								\
     }									\
   }
 
   switch (str->size_shift) {
-    case 0: LOOP (p_wchar0); break;
-    case 1: LOOP (p_wchar1); break;
-    case 2: LOOP (p_wchar2); break;
+    case 0: LOOP (0); break;
+    case 1: LOOP (1); break;
+    case 2: LOOP (2); break;
 #ifdef PIKE_DEBUG
     default: Pike_fatal ("Unknown width of string.\n");
 #endif
