@@ -79,7 +79,7 @@ static struct ba_page * ba_alloc_page(struct block_allocator * a, int i) {
      * happens if ba_get_layout overflows
      */
     if (a->l.offset > l.offset || n < l.offset) {
-        Pike_error("Overflow.\n");
+        Pike_error(msg_out_of_mem_2, a->l.offset);
     }
 
     if (l.alignment) {
@@ -129,10 +129,12 @@ static void ba_low_init_aligned(struct block_allocator * a) {
     PIKE_MEMPOOL_CREATE(a);
 
     if (a->l.alignment) {
+#if PIKE_DEBUG
 	if (a->l.alignment & (a->l.alignment - 1))
 	    Pike_fatal("Block allocator a->l.alignment is not a power of 2.\n");
 	if (block_size & (a->l.alignment-1))
 	    Pike_fatal("Block allocator block size is not aligned.\n");
+#endif
 	a->l.doffset = PIKE_ALIGNTO(sizeof(struct ba_page), a->l.alignment);
     } else {
 	a->l.doffset = sizeof(struct ba_page);
@@ -233,7 +235,7 @@ static void ba_low_alloc(struct block_allocator * a) {
     }
 
     if (a->size == (sizeof(a->pages)/sizeof(a->pages[0]))) {
-        Pike_error("Out of memory.\n");
+        Pike_error(msg_out_of_mem_2, a->l.offset);
     }
     a->pages[a->size] = ba_alloc_page(a, a->size);
     a->alloc = a->size;
@@ -335,7 +337,7 @@ found:
 #ifdef PIKE_DEBUG
 	print_allocator(a);
 #endif
-	Pike_fatal("ptr %p not in any page.\n", ptr);
+	Pike_error("Trying to free unknown block %p.\n", ptr);
     }
     PIKE_MEMPOOL_FREE(a, ptr, a->l.block_size);
 }
