@@ -49,33 +49,33 @@
 
   void inotify_parse(mixed id, string data)
   {
-        while (sizeof(data)) {
-	  array a;
-	  mixed err = catch {
+    while (sizeof(data)) {
+      array a;
+      mixed err = catch {
 	  a = System.Inotify.parse_event(data);
 	};
 
-        if (err) {
-	  // TODO: might have a partial event struct here which gets completed
-	  // by the next call?? maybe add an internal buffer.
-  	  werror("Could not parse inotify event: %s\n", describe_error(err));
-	  return;
-	}
-        string path;
-        path = a[3];
-        if(path && monitors[path])
-        {
-          monitors[path]->check(0);
-        }
-        else
+      if (err) {
+	// TODO: might have a partial event struct here which gets completed
+	// by the next call?? maybe add an internal buffer.
+	werror("Could not parse inotify event: %s\n", describe_error(err));
+	return;
+      }
+      string path;
+      path = a[3];
+      if(path && monitors[path])
+      {
+	monitors[path]->check(0);
+      }
+      else
       {
 	// No need to look at the other entries if we're going to do
 	// a full scan.
 	check_all();
-	  return;
-        }
+	return;
+      }
 
-	data = data[a[4]..];
+      data = data[a[4]..];
     }
   }
 
