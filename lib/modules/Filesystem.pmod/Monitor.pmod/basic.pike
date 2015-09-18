@@ -881,10 +881,7 @@ protected void update_monitor(Monitor m, Stdio.Stat st)
 //!   @[release()]
 protected void release_monitor(Monitor m)
 {
-  m->next_poll = -1000;
-  adjust_monitor(m);
-  while (monitor_queue->peek() < 0)
-    monitor_queue->pop();
+  monitor_queue->remove(m);
 }
 
 //! Update the position in the @[monitor_queue] for the monitor @[m]
