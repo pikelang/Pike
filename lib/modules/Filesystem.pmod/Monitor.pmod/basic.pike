@@ -17,70 +17,6 @@
 //! @seealso
 //!  @[System.FSEvents], @[System.Inotify]
 
-//
-// some necessary setup activities for systems that provide filesystem event monitoring
-//
-#if constant(System.FSEvents.EventStream)
-#define HAVE_EVENTSTREAM 1
-#endif
-
-#if constant(System.Inotify)
-#define HAVE_INOTIFY 1
-#endif
-
-#if HAVE_EVENTSTREAM
-  System.FSEvents.EventStream eventstream = System.FSEvents.EventStream(({}), 3.0, System.FSEvents.kFSEventStreamEventIdSinceNow, System.FSEvents.kFSEventStreamCreateFlagNone);
-  array eventstream_paths = ({});
-
-  // This function is called when the FSEvents EventStream detects a change in one of the monitored directories.
-  void eventstream_callback(string path, int flags, int event_id)
-  {
-    if(path[-1] == '/') path = path[0..<1];
-    if(monitors[path])
-    {
-      monitors[path]->check(0);
-    }
-    else check_all();
-  }
-#elseif HAVE_INOTIFY
-
-  object instance;
-  object file;
-
-  void inotify_parse(mixed id, string data)
-  {
-    while (sizeof(data)) {
-      array a;
-      mixed err = catch {
-	  a = System.Inotify.parse_event(data);
-	};
-
-      if (err) {
-	// TODO: might have a partial event struct here which gets completed
-	// by the next call?? maybe add an internal buffer.
-	werror("Could not parse inotify event: %s\n", describe_error(err));
-	return;
-      }
-      string path;
-      path = a[3];
-      if(path && monitors[path])
-      {
-	monitors[path]->check(0);
-      }
-      else
-      {
-	// No need to look at the other entries if we're going to do
-	// a full scan.
-	check_all();
-	return;
-      }
-
-      data = data[a[4]..];
-    }
-  }
-
-#endif /* HAVE_EVENTSTREAM */
-
 //! The default maximum number of seconds between checks of directories
 //! in seconds.
 //!
@@ -252,9 +188,29 @@ protected class Monitor(string path,
 				// let the stat stabilize).
   array(string) files;
 
-#ifdef HAVE_INOTIFY
-  int wd;
-#endif
+  //! Register the @[Monitor] with the monitoring system.
+  //!
+  //! @param initial
+  //!   Indicates that the @[Monitor] is newly created.
+  protected void register_path(int|void initial)
+  {
+    if (initial) {
+      // We need to be polled...
+      monitor_queue->push(this);
+    }
+  }
+
+  //! Unregister the @[Monitor] from the monitoring system.
+  //!
+  //! @param dying
+  //!   Indicates that the @[Monitor] is being destructed.
+  protected void unregister_path(int|void dying)
+  {
+    if (!dying) {
+      // We now need to be polled...
+      monitor_queue->remove(this);
+    }
+  }
 
   int `<(mixed m) { return next_poll < m; }
   int `>(mixed m) { return next_poll > m; }
@@ -262,35 +218,7 @@ protected class Monitor(string path,
   void create()
   {
     Element::create(this);
-#if HAVE_EVENTSTREAM
-    int already_added = 0;
-    foreach(eventstream_paths;;string p)
-    {
-      if(has_prefix(path, p))
-        already_added = 1;
-    }
-    if(already_added) return;
-    eventstream_paths += ({path});
-    if(eventstream->is_started())
-      eventstream->stop();
-    eventstream->add_path(path);
-    eventstream->start();
-#elseif HAVE_INOTIFY
-  wd = instance->add_watch(path,
-		System.Inotify.IN_MOVED_FROM | System.Inotify.IN_UNMOUNT |
-                System.Inotify.IN_MOVED_TO | System.Inotify.IN_MASK_ADD |
-                System.Inotify.IN_MOVE_SELF | System.Inotify.IN_DELETE |
-		System.Inotify.IN_MOVE | System.Inotify.IN_MODIFY |
-                System.Inotify.IN_ATTRIB | System.Inotify.IN_DELETE_SELF |
-                System.Inotify.IN_CREATE);
-#endif
-  }
-
-  void destroy()
-  {
-#if HAVE_INOTIFY
-    instance->rm_watch(wd);
-#endif /* HAVE_INOTIFY */
+    register_path(1);
   }
 
   //! Call a notification callback.
@@ -352,6 +280,7 @@ protected class Monitor(string path,
   //! path is checked (and only if it exists).
   protected void file_exists(string path, Stdio.Stat st)
   {
+    register_path();
     int t = time(1);
     call_callback(global::file_exists, path, st);
     if (st->mtime + (stable_time || global::stable_time) >= t) {
@@ -374,6 +303,7 @@ protected class Monitor(string path,
   //! Called by @[check()] and @[check_monitor()].
   protected void file_created(string path, Stdio.Stat st)
   {
+    register_path();
     call_callback(global::file_created, path, st);
   }
 
@@ -393,6 +323,7 @@ protected class Monitor(string path,
   //! Called by @[check()] and @[check_monitor()].
   protected void file_deleted(string path, Stdio.Stat|void old_st)
   {
+    unregister_path();
     call_callback(global::file_deleted, path);
   }
 
@@ -764,26 +695,197 @@ protected class Monitor(string path,
       update(st);
       return 1;
     }
-#ifdef HAVE_EVENTSTREAM
-    else if(orig_flags & MF_RECURSE)
-    {
-      // if using FSEvents, we won't receive the name of the file changed,
+    return 0;
+  }
+}
+
+//
+// Some necessary setup activities for systems that provide
+// filesystem event monitoring
+//
+#if constant(System.FSEvents.EventStream)
+#define HAVE_EVENTSTREAM 1
+#endif
+
+#if constant(System.Inotify)
+#define HAVE_INOTIFY 1
+#endif
+
+#if HAVE_EVENTSTREAM
+protected System.FSEvents.EventStream eventstream;
+protected array(string) eventstream_paths = ({});
+
+//! This function is called when the FSEvents EventStream detects a change
+//! in one of the monitored directories.
+protected void eventstream_callback(string path, int flags, int event_id)
+{
+  if(path[-1] == '/') path = path[0..<1];
+  if(monitors[path])
+  {
+    monitors[path]->check(0);
+  }
+  else check_all();
+}
+
+//! FSEvents EventStream-accellerated @[Monitor].
+protected class EventStreamMonitor
+{
+  inherit Monitor;
+
+  constant accellerated = 1;
+
+  protected void register_path(int|void initial)
+  {
+    if (!initial) return;
+
+    if (!eventstream) {
+      eventstream =
+	System.FSEvents.EventStream(({}), 3.0,
+				    System.FSEvents.kFSEventStreamEventIdSinceNow,
+				    System.FSEvents.kFSEventStreamCreateFlagNone);
+      eventstream->callback_func = eventstream_callback;
+    } else {
+      int already_added = 0;
+      foreach(eventstream_paths;;string p) {
+	if((path == p) || has_prefix(path, p + "/")) {
+	  already_added = 1;
+	  break;
+	}
+      }
+      if(already_added) return;
+    }
+
+    eventstream_paths += ({path});
+    if(eventstream->is_started())
+      eventstream->stop();
+    eventstream->add_path(path);
+    eventstream->start();
+  }
+
+  int(0..1) check(MonitorFlags|void flags)
+  {
+    int orig_flags = this::flags;
+
+    int(0..1) ret = ::check(flags);
+    if (ret) return ret;
+
+    if(orig_flags & MF_RECURSE) {
+      // If using FSEvents, we won't receive the name of the file changed,
       // so we have to scan for it.
-      int caught;
       array(string) files = get_dir(path) || ({});
       this::files = files;
       foreach(files, string file) {
         file = canonic_path(Stdio.append_path(path, file));
  	if (monitors[file]) {
-          if(check_monitor(monitors[file])) caught = 1;
+          if(check_monitor(monitors[file])) ret++;
         }
       }
-      return caught;
     }
-#endif /* HAVE_EVENTSTREAM */
-    return 0;
+    return ret;
   }
 }
+
+#elseif HAVE_INOTIFY
+
+protected System.Inotify._Instance instance;
+protected Stdio.File file;
+
+//! Read callback for events on the Inotify file.
+protected void inotify_parse(mixed id, string data)
+{
+  while (sizeof(data)) {
+    array a;
+    mixed err = catch {
+	a = System.Inotify.parse_event(data);
+      };
+
+    if (err) {
+      // TODO: might have a partial event struct here which gets completed
+      // by the next call?? maybe add an internal buffer.
+      werror("Could not parse inotify event: %s\n", describe_error(err));
+      return;
+    }
+    string path;
+    path = a[3];
+    if(path && monitors[path]) {
+      monitors[path]->check(0);
+    } else {
+      // No need to look at the other entries if we're going to do
+      // a full scan.
+      check_all();
+      return;
+    }
+
+    data = data[a[4]..];
+  }
+}
+
+//! Inotify-accellerated @[Monitor].
+protected class InotifyMonitor
+{
+  inherit Monitor;
+
+  protected int wd = -1;
+  int `accellerated() { return wd != -1; }
+
+  protected void register_path(int|void initial)
+  {
+    if (wd != -1) return;
+
+    if (initial && !instance) {
+      instance = System.Inotify._Instance();
+      file = Stdio.File();
+      if (backend) file->set_backend(backend);
+      file->assign(instance->fd());
+      file->set_nonblocking();
+      file->set_read_callback(inotify_parse);
+    }
+
+    catch {
+      int new_wd = instance->add_watch(path,
+				       System.Inotify.IN_MOVED_FROM |
+				       System.Inotify.IN_UNMOUNT |
+				       System.Inotify.IN_MOVED_TO |
+				       System.Inotify.IN_MASK_ADD |
+				       System.Inotify.IN_MOVE_SELF |
+				       System.Inotify.IN_DELETE |
+				       System.Inotify.IN_MOVE |
+				       System.Inotify.IN_MODIFY |
+				       System.Inotify.IN_ATTRIB |
+				       System.Inotify.IN_DELETE_SELF |
+				       System.Inotify.IN_CREATE);
+
+      if (new_wd != -1) {
+	// We shouldn't need to be polled.
+	if (!initial) {
+	  release_monitor(this);
+	}
+	wd = new_wd;
+	return;
+      }
+    };
+    ::register_path(initial);
+  }
+
+  protected void unregister_path(int|void dying)
+  {
+    if (wd != -1) {
+      instance->rm_watch(wd);
+      wd = -1;
+      if (!dying) {
+	// We now need to be polled...
+	monitor_queue->push(this);
+      }
+    }
+    ::unregister_path(dying);
+  }
+
+  protected void destroy()
+  {
+    unregister_path(1);
+  }
+}
+#endif /* HAVE_EVENTSTREAM || HAVE_INOTIFY */
 
 //! Canonicalize a path.
 //!
@@ -808,7 +910,7 @@ protected string canonic_path(string path)
 //!   case is maintained.
 protected mapping(string:Monitor) monitors = ([]);
 
-//! Heap containing all active @[Monitor]s.
+//! Heap containing active @[Monitor]s that need polling.
 //!
 //! The heap is sorted on @[Monitor()->next_poll].
 protected ADT.Heap monitor_queue = ADT.Heap();
@@ -827,19 +929,6 @@ protected void create(int|void max_dir_check_interval,
 		      int|void file_interval_factor,
 		      int|void stable_time)
 {
-#if HAVE_EVENTSTREAM
-  eventstream->callback_func = eventstream_callback;
-#elseif HAVE_INOTIFY
-  instance = System.Inotify._Instance();
-  file = Stdio.File();
-  // NB: The backend is typically not set here, but as this class is intended
-  //     to be overloaded it can not be known for sure.
-  if (backend) file->set_backend(backend);
-  file->assign(instance->fd());
-  file->set_nonblocking();
-  file->set_read_callback(inotify_parse);
-#endif
-
   if (max_dir_check_interval > 0) {
     this::max_dir_check_interval = max_dir_check_interval;
   }
@@ -861,6 +950,11 @@ void clear()
 {
   monitors = ([]);
   monitor_queue = ADT.Heap();
+#if HAVE_EVENTSTREAM
+  eventstream = 0;
+#elseif HAVE_INOTIFY
+  instance = 0;
+#endif
 }
 
 //! Calculate a suitable time for the next poll of this monitor.
@@ -884,6 +978,7 @@ protected void update_monitor(Monitor m, Stdio.Stat st)
 //!   @[release()]
 protected void release_monitor(Monitor m)
 {
+  if (m->accellerated) return;
   monitor_queue->remove(m);
 }
 
@@ -891,6 +986,7 @@ protected void release_monitor(Monitor m)
 //! to account for an updated next_poll value.
 protected void adjust_monitor(Monitor m)
 {
+  if (m->accellerated) return;
   monitor_queue->adjust(m);
 }
 
@@ -899,7 +995,8 @@ protected void adjust_monitor(Monitor m)
 //! This function is called by @[monitor()] to create a new @[Monitor]
 //! object.
 //!
-//! The default implementation just calls @[Monitor()] with the same
+//! The default implementation just calls @[Monitor()] (or one of
+//! @[EventStreamMonitor] or @[InotifyMonitor]) with the same
 //! arguments.
 //!
 //! @seealso
@@ -909,8 +1006,16 @@ protected Monitor monitor_factory(string path, MonitorFlags|void flags,
 				  int(0..)|void file_interval_factor,
 				  int(0..)|void stable_time)
 {
+#if HAVE_EVENTSTREAM
+  return EventStreamMonitor(path, flags, max_dir_check_interval,
+			    file_interval_factor, stable_time);
+#elseif HAVE_INOTIFY
+  return InotifyMonitor(path, flags, max_dir_check_interval,
+			file_interval_factor, stable_time);
+#else /* !HAVE_EVENTSTREAM && !HAVE_INOTIFY */
   return Monitor(path, flags, max_dir_check_interval,
 		 file_interval_factor, stable_time);
+#endif /* HAVE_EVENTSTREAM || HAVE_INOTIFY */
 }
 
 
@@ -974,7 +1079,8 @@ void monitor(string path, MonitorFlags|void flags,
     m = monitor_factory(path, flags, max_dir_check_interval,
 			file_interval_factor, stable_time);
     monitors[path] = m;
-    monitor_queue->push(m);
+    // NB: Registering with the monitor_queue is done as
+    //     needed by register_path() as called by create().
   }
 }
 
@@ -1282,22 +1388,23 @@ protected void backend_check()
 void set_nonblocking(int|void t)
 {
   if (co_id) return;
+  // NB: Other stuff than plain files may be used with the monitoring
+  //     system, so the call_out may be needed even with accellerators.
+  //
+  // NB: Also note that Inotify doesn't support monitoring of non-existing
+  //     paths, so it still needs the call_out-loop.
   if (undefinedp(t)) {
-    Monitor m = monitor_queue->peek();
-    t = (m && m->next_poll - time(1)) || max_dir_check_interval;
+    if (sizeof(monitor_queue)) {
+      Monitor m = monitor_queue->peek();
+      t = (m && m->next_poll - time(1)) || max_dir_check_interval;
+    } else {
+      t = max_dir_check_interval;
+    }
     if (t > max_dir_check_interval) t = max_dir_check_interval;
     if (t < 0) t = 0;
   }
-#if HAVE_EVENTSTREAM
-  // If we are using FSEvents, we don't need any call_outs.
-  co_id = 1;
-#elseif HAVE_INOTIFY
-  // If we are using Inotify, we don't need any call_outs.
-  co_id = 1;
-#else
   if (backend) co_id = backend->call_out(backend_check, t);
   else co_id = call_out(backend_check, t);
-#endif /* HAVE_EVENTSTREAM */
 }
 
 //! Set the @[default_max_dir_check_interval].
