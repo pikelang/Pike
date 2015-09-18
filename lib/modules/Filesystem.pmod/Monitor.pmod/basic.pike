@@ -777,7 +777,7 @@ protected class EventStreamMonitor
       foreach(files, string file) {
         file = canonic_path(Stdio.append_path(path, file));
  	if (monitors[file]) {
-          if(check_monitor(monitors[file])) ret++;
+          if(check_monitor(monitors[file])) ret = 1;
         }
       }
     }
