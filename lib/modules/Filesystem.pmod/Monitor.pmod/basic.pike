@@ -1009,9 +1009,9 @@ void release(string path, MonitorFlags|void flags)
 {
   path = canonic_path(path);
   Monitor m = m_delete(monitors, path);
-  if (m) {
-    release_monitor(m);
-  }
+  if (!m) return;
+
+  release_monitor(m);
   if (flags && m->st && m->st->isdir) {
     if (!sizeof(path) || path[-1] != '/') {
       path += "/";
