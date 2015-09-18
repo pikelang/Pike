@@ -11,6 +11,9 @@
 #define BA_LASTBLOCK(l, p) ((struct ba_block_header*)((char*)(p) + (l).doffset + (l).offset))
 #define BA_CHECK_PTR(l, p, ptr)	((size_t)((char*)(ptr) - (char*)(p)) <= (l).offset + (l).doffset)
 
+#define BA_PAGE_SIZE            4096
+#define BA_MALLOC_OVERHEAD      sizeof(void*)
+
 #define BA_ONE	((struct ba_block_header *)1)
 #define BA_FLAG_SORTED 1u
 
@@ -95,7 +98,7 @@ static struct ba_page * ba_alloc_page(struct block_allocator * a, int i) {
 	    exit(17);
 	}
 #else
-	p = xalloc(n);
+        p = xalloc(n);
 #endif
     }
     ba_clear_page(a, p, &a->l);
@@ -125,6 +128,7 @@ static void ba_free_empty_pages(struct block_allocator * a) {
 
 static void ba_low_init_aligned(struct block_allocator * a) {
     unsigned INT32 block_size = MAXIMUM(a->l.block_size, sizeof(struct ba_block_header));
+    size_t bytes;
 
     PIKE_MEMPOOL_CREATE(a);
 
@@ -140,10 +144,13 @@ static void ba_low_init_aligned(struct block_allocator * a) {
 	a->l.doffset = sizeof(struct ba_page);
     }
 
-    if (a->l.blocks & (a->l.blocks - 1)) {
-        unsigned INT32 tmp = round_up32(a->l.blocks);
-        if (tmp) a->l.blocks = tmp;
-    } else if (!a->l.blocks) a->l.blocks = 1;
+    if (!a->l.blocks) a->l.blocks = 1;
+
+    bytes = a->l.doffset + block_size * a->l.blocks;
+
+    bytes = PIKE_ALIGNTO(bytes + BA_MALLOC_OVERHEAD, BA_PAGE_SIZE) - BA_MALLOC_OVERHEAD;
+
+    a->l.blocks = (bytes - a->l.doffset) / block_size;
     a->l.block_size = block_size;
     a->l.offset = block_size * (a->l.blocks-1);
 }
