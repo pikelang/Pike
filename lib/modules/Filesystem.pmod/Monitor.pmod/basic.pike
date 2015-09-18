@@ -40,7 +40,7 @@
     {
       monitors[path]->check(0);
     }
-    else check(0);
+    else check_all();
   }
 #elseif HAVE_INOTIFY
 
@@ -68,7 +68,10 @@
           monitors[path]->check(0);
         }
         else
-        { check(0); // no need to look at the others if we're going to do a full scan.
+      {
+	// No need to look at the other entries if we're going to do
+	// a full scan.
+	check_all();
 	  return;
         }
 
@@ -1067,6 +1070,39 @@ protected int(0..1) check_monitor(Monitor m, MonitorFlags|void flags)
   return m->check(flags);
 }
 
+//! Check all monitors for changes.
+//!
+//! @param ret_stats
+//!   Optional mapping that will be filled with statistics (see below).
+//!
+//! All monitored paths will be checked for changes.
+//!
+//! @note
+//!   You typically don't want to call this function, but instead
+//!   @[check()].
+//!
+//! @note
+//!   Any callbacks will be called from the same thread as the one
+//!   calling @[check()].
+//!
+//! @seealso
+//!   @[check()], @[monitor()]
+void check_all(mapping(string:int)|void ret_stats)
+{
+  int cnt;
+  int scanned_cnt;
+  foreach(monitors; string path; Monitor m) {
+    scanned_cnt++;
+    cnt += check_monitor(m);
+  }
+  if (ret_stats) {
+    ret_stats->num_monitors = sizeof(monitors);
+    ret_stats->scanned_monitors = scanned_cnt;
+    ret_stats->updated_monitors = cnt;
+    ret_stats->idle_time = 0;
+  }
+}
+
 //! Check for changes.
 //!
 //! @param max_wait
@@ -1106,7 +1142,7 @@ protected int(0..1) check_monitor(Monitor m, MonitorFlags|void flags)
 //!   calling @[check()].
 //!
 //! @seealso
-//!   @[monitor()]
+//!   @[check_all()], @[monitor()]
 int check(int|void max_wait, int|void max_cnt,
 	  mapping(string:int)|void ret_stats)
 {
