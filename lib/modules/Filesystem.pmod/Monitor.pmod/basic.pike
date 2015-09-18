@@ -440,7 +440,7 @@ protected class Monitor(string path,
       next_poll = now + seconds;
     else if (next_poll > now)
       next_poll -= (next_poll - now) / 2;
-    monitor_queue->adjust(this);
+    adjust_monitor(this);
 
     if ((flags & MF_RECURSE) && st->isdir && files) {
       // Bump the files in the directory as well.
@@ -492,7 +492,7 @@ protected class Monitor(string path,
     }
 
     next_poll = time(1) + (delta || 1);
-    monitor_queue->adjust(this);
+    adjust_monitor(this);
   }
 
   //! Check if this monitor should be removed automatically.
@@ -680,7 +680,7 @@ protected class Monitor(string path,
 	    if (monitors[file]) {
 	      // Adjust next_poll, so that the monitor will be checked soon.
 	      monitors[file]->next_poll = time(1)-1;
-	      monitor_queue->adjust(monitors[file]);
+	      adjust_monitor(monitors[file]);
 	      delay = 1;
 	    }
 	  }
@@ -689,7 +689,7 @@ protected class Monitor(string path,
 	  // Delay the notification until the submonitors have notified.
 	  st = old_st;
 	  next_poll = time(1);
-	  monitor_queue->adjust(this);
+	  adjust_monitor(this);
 	} else {
 	  if (st) {
 	    // Avoid race when a file has been replaced with a directory
@@ -698,7 +698,7 @@ protected class Monitor(string path,
 
 	    // We will catch the new file at the next poll.
 	    next_poll = time(1);
-	    monitor_queue->adjust(this);
+	    adjust_monitor(this);
 	  } else {
 	    // The monitor no longer has a link from its parent directory.
 	    this::flags &= ~MF_HARD;
@@ -882,9 +882,16 @@ protected void update_monitor(Monitor m, Stdio.Stat st)
 protected void release_monitor(Monitor m)
 {
   m->next_poll = -1000;
-  monitor_queue->adjust(m);
+  adjust_monitor(m);
   while (monitor_queue->peek() < 0)
     monitor_queue->pop();
+}
+
+//! Update the position in the @[monitor_queue] for the monitor @[m]
+//! to account for an updated next_poll value.
+protected void adjust_monitor(Monitor m)
+{
+  monitor_queue->adjust(m);
 }
 
 //! Create a new @[Monitor] for a @[path].
@@ -956,7 +963,7 @@ void monitor(string path, MonitorFlags|void flags,
       m->file_interval_factor = file_interval_factor;
       m->stable_time = stable_time;
       m->next_poll = 0;
-      monitor_queue->adjust(m);
+      adjust_monitor(m);
     }
     if (flags & MF_HARD) {
       m->flags |= MF_HARD;
