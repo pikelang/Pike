@@ -968,7 +968,7 @@ TLS_ecdhe_ecdsa_with_aes_256_ccm_8 :	({ KE_ecdhe_ecdsa, CIPHER_aes256, HASH_sha2
 #endif /* Crypto.Camellia */
 #endif /* Crypto.AES.GCM */
 
-#if constant(Crypto.ChaCha20.POLY1305)
+#if constant(Crypto.ChaCha20.POLY1305) && defined(NOT_BROKEN)
 #if constant(Crypto.ECC.Curve)
    // Draft.
    TLS_ecdhe_rsa_with_chacha20_poly1305_sha256: ({ KE_ecdhe_rsa, CIPHER_chacha20, HASH_sha256, MODE_poly1305 }),
