@@ -1,6 +1,10 @@
 //!
 //! Public-Key Cryptography Standards (PKCS).
 //!
+//! This is the Pike API for dealing with a set of standards
+//! initially published by RSA Security Inc, and later by IETF
+//! and others in various RFCs.
+//!
 //! @seealso
 //!   @[Standards.ASN1], @[Crypto],
 //!   @rfc{2314@}, @rfc{2459@}, @rfc{2986@}, @rfc{3279@}, @rfc{3280@},
