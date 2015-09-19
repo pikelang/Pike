@@ -484,7 +484,7 @@ o NetUtils
   This module contains a lot of functions useful for the storage and
   processing of network addresses, it supports IPv4 and IPv6.
 
-o Added ADT.CritBit module
+o ADT.CritBit
 
   Mapping-like key-sorted data structures for string, int and
   float-keys (ADT.CritBit.Tree, ADT.CritBit.IntTree,
@@ -1123,8 +1123,6 @@ o SSL support for lots of new cipher suites added:
   + AEADs and modes:
 
     - CCM and CCM-8
-
-    - CHACH20-POLY1305
 
     - GCM
 
