@@ -1318,7 +1318,7 @@ class Node
       string index = make_index_filename() + ".js";
       if (exporter) {
         exporter->filemodify(Git.MODE_FILE, path + "/" + index);
-        exporter->data(index_js);
+        exporter->data(string_to_utf8(index_js));
       } else {
         Stdio.mkdirhier(combine_path(path + "/" + index, "../"));
         Stdio.write_file(path + "/" + index, string_to_utf8(index_js));
@@ -1328,7 +1328,7 @@ class Node
       string load_index = make_load_index_filename();
       if (exporter) {
         exporter->filemodify(Git.MODE_FILE, path + "/" + load_index);
-        exporter->data(load_index_js);
+        exporter->data(string_to_utf8(load_index_js));
       } else {
         Stdio.mkdirhier(combine_path(path + "/" + load_index, "../"));
         Stdio.write_file(path + "/" + load_index, string_to_utf8(load_index_js));
@@ -1356,12 +1356,12 @@ class Node
 		  "$dotdot$": extra_prefix,
 		  "$imagedir$":imagedir,
 		  "$filename$": _Roxen.html_encode_string(index),
-		  "$extra_headers$": "",
+		  "$extra_headers$": "<meta charset='utf-8' />\n",
 		]));
 
       if (exporter) {
         exporter->filemodify(Git.MODE_FILE, path + "/" + index);
-        exporter->data(index_html);
+        exporter->data(string_to_utf8(index_html));
       } else {
           Stdio.write_file(path + "/" + index, string_to_utf8(index_html));
       }
@@ -1392,6 +1392,7 @@ class Node
     }
 
     string extra_headers =
+      "<meta charset='utf-8' />\n" +
       sprintf("<style type='text/css'>\n"
 	      "svg line { stroke:#343434; stroke-width:2; }\n"
 	      "svg text { fill:#343434; }\n"
@@ -1436,7 +1437,7 @@ class Node
 
     if (exporter) {
       exporter->filemodify(Git.MODE_FILE, path + "/" + make_filename());
-      exporter->data(res);
+      exporter->data(string_to_utf8(res));
     } else {
       Stdio.mkdirhier(combine_path(path+"/"+make_filename(), "../"));
       Stdio.write_file(path+"/"+make_filename(), string_to_utf8(res));
@@ -1585,7 +1586,7 @@ class TopNode {
     PROFILE();
     if (exporter) {
       exporter->filemodify(Git.MODE_FILE, path + "/navigation.js");
-      exporter->data(navigation_js);
+      exporter->data(string_to_utf8(navigation_js));
     } else {
       Stdio.mkdirhier(path);
       Stdio.write_file(path + "/navigation.js", string_to_utf8(navigation_js));
