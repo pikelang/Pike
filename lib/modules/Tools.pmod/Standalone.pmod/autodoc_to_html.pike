@@ -1575,7 +1575,8 @@ string parse_children(Node n, string tag, function cb, mixed ... args) {
 string manual_title = "Pike Reference Manual";
 string frame_html(string res, void|string title) {
   title = title || manual_title;
-  return "<html><head><title>" + quote(title) + "</title></head>\n"
+  return "<html><head><title>" + quote(title) + "</title>\n"
+    "<meta charset='utf-8' /></head>\n"
     "<body bgcolor='white' text='black'>\n" + res +
     "</body></html>";
 }
@@ -1609,7 +1610,7 @@ string layout_toploop(Node n, Git.Export|void exporter) {
       if (exporter) {
 	string html = frame_html(layout_toploop(c));
 	exporter->filemodify(Git.MODE_FILE, c->get_attributes()->name);
-	exporter->data(html);
+	exporter->data(string_to_utf8(html));
 	break;
       }
       if(dest_path)
@@ -1618,7 +1619,7 @@ string layout_toploop(Node n, Git.Export|void exporter) {
         cd(dest_path);
       }  
       Stdio.write_file( c->get_attributes()->name,
-			frame_html(layout_toploop(c)) );
+			string_to_utf8(frame_html(layout_toploop(c))) );
       if(cwd)
         cd(cwd);
       break;
