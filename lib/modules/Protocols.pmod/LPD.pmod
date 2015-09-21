@@ -1,6 +1,6 @@
-//
-// LPD.pmod: an implementation of the BSD lpd protocol (RFC 1179).
-// This is a module for pike.
+//!
+//! An implementation of the BSD lpd protocol (@rfc{1179@}).
+//!
 // 3 July 1998 <hww3@riverweb.com> Bill Welliver
 // 2 August 2012 <bill@welliver.org> Bill Welliver>
 //
