@@ -30,6 +30,13 @@ Crypto.ECC.Curve parse_ec_parameters(string ec_parameters)
   return curve_lookup[ec_parameters];
 }
 
+//!
+variant Crypto.ECC.Curve parse_ec_paramaters(Identifier|void named_curve)
+{
+  if (!named_curve) return UNDEFINED;
+  return parse_ec_parameters(named_curve->get_der());
+}
+
 //! Create a DER-coded ECPrivateKey structure
 //! @param ecdsa
 //!   @[Crypto.ECC.Curve()->ECDSA] object.
