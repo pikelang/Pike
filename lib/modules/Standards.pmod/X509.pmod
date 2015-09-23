@@ -1819,12 +1819,16 @@ Crypto.Sign.State parse_private_key(Sequence seq)
     return Standards.PKCS.DSA.parse_private_key(seq);
   case 9:
     return Standards.PKCS.RSA.parse_private_key(seq);
-#if constant(Nettle.ECC_Curve)
   case 2:
     // ECDSA, implicit curve. Not supported yet.
     return UNDEFINED;
   case 3:
   case 4:
+    // Either PKCS#8 or ECDSA.
+    Crypto.Sign res = Standards.PKCS.parse_private_key(seq);
+    if (res) return res;
+#if constant(Nettle.ECC_Curve)
+    // EDCSA
     return Standards.PKCS.ECDSA.parse_private_key(seq);
 #endif
   }
