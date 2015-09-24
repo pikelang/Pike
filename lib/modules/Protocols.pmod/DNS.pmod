@@ -1913,8 +1913,8 @@ class async_client
       }
     }
 
-    send(nameservers[nsno],53,r->req);
     r->retry_co = call_out(retry, RETRY_DELAY, r, nsno+1);
+    udp::send(nameservers[nsno], 53, r->req);
   }
 
   //! Enqueue a new raw DNS request.
@@ -1936,9 +1936,9 @@ class async_client
 	string req=low_mkquery(lid,domain,cl,type);
 	
 	object r = Request(domain, req, callback, args);
-	requests[lid]=r;
-	udp::send(nameservers[0],53,r->req);
 	r->retry_co = call_out(retry, RETRY_DELAY, r, 1);
+	requests[lid] = r;
+	udp::send(nameservers[0], 53, req);
 	return r;
       }
     }
