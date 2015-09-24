@@ -1,0 +1,15 @@
+subject: Pike 7.8: Protocols.DNS: Reduce race-condition window in do_query().
+from: f310e91e718d4f522cac75a1b710e6a83f95f276
+to: f93b6fe3c8660468dfc028b873ada16716c24e99
+originator: wellhardh@roxen.com
+depends: 2015-09-18T143948
+restart: true
+
+Protocols.DNS: Reduce race-condition window in do_query().
+
+When executing do_query() in another thread than the backend thread,
+there was a risk that the answer would be received and handled by
+the backend thread before the retry call_out was installed. This
+could cause do_query() to fail with "Lookup in destructed object."
+
+Potential fix for [bug 7460].
