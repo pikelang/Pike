@@ -168,6 +168,7 @@ Alert alert_factory(object con,
 //!     terminators for certain sizes of client handshake messages.
 //! @endint
 //!
+//! The following supported values are not included by default.
 //! @int
 //!   @value Constant.EXTENSION_truncated_hmac
 //!     This extension allows for the HMAC to be truncated for a small
