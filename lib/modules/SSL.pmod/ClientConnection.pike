@@ -83,7 +83,7 @@ protected Packet client_hello(string(8bit)|void server_name,
 
   void ext(int id, int condition, function(void:Buffer) code)
   {
-    if(condition)
+    if(context->extensions[id] && condition)
     {
       extensions->add_int(id, 2);
       extensions->add_hstring(code(), 2);
@@ -149,7 +149,7 @@ protected Packet client_hello(string(8bit)|void server_name,
     return Buffer()->add_int(HEARTBEAT_MODE_peer_allowed_to_send, 1);
   };
 
-  ext (EXTENSION_encrypt_then_mac, context->encrypt_then_mac) {
+  ext (EXTENSION_encrypt_then_mac, 1) {
     // draft-ietf-tls-encrypt-then-mac
     return Buffer();
   };
@@ -737,6 +737,13 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
                      ALERT_decode_error, "Same extension sent twice.\n");
 
           remote_extensions[extension_type] = 1;
+
+          if( !context->extensions[extension_type] )
+          {
+            SSL3_DEBUG_MSG("Ignored extension %O (%d bytes)\n",
+                           extension_type, sizeof(extension_data));
+            continue;
+          }
 
 	  switch(extension_type) {
 	  case EXTENSION_renegotiation_info:

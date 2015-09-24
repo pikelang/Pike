@@ -94,7 +94,8 @@ int(0..1) enable_renegotiation = 1;
 
 //! If set, the other peer will be probed for the heartbleed bug
 //! during handshake. If heartbleed is found the connection is closed
-//! with insufficient security fatal error.
+//! with insufficient security fatal error. Requires
+//! @expr{Constant.EXTENSION_heartbeat@} to be set in @[extensions].
 int(0..1) heartbleed_probe = 0;
 
 //! @decl Alert alert_factory(SSL.Connection con, int level, int description, @
@@ -128,6 +129,72 @@ Alert alert_factory(object con,
   return Alert(level, description, version, message);
 }
 
+//! A list of all extensions that will be considered in the handshake
+//! process. Extensions not listed will not be sent, and will be
+//! ignored if received.
+//!
+//! The following values are included by default.
+//! @int
+//!   @value Constant.EXTENSION_renegotiation_info
+//!     Protection against renegotiation attack.
+//!   @value Constant.EXTENSION_max_fragment_length
+//!     Allows negotiation of the maximum fragment size.
+//!   @value Constant.EXTENSION_encrypt_then_mac
+//!     Attempts to address attacks against block
+//!     ciphers. Experimental.
+//!   @value Constant.EXTENSION_application_layer_protocol_negotiation
+//!     Required to support more than one protocol on the same TLS
+//!     port.
+//!   @value Constant.EXTENSION_signature_algorithms
+//!     Required to select which out of several certificates to use.
+//!   @value Constant.EXTENSION_ec_point_formats
+//!     Required for elliptic curve key exchange.
+//!   @value Constant.EXTENSION_elliptic_curves
+//!     Required for elliptic curve key exchange.
+//!   @value Constant.EXTENSION_server_name
+//!     Allows the client to select which of several domains hosted on
+//!     the same server it wants to connect to. Required by many
+//!     websites.
+//!   @value Constant.EXTENSION_next_protocol_negotiation
+//!     Not supported by Pike. The server side will just check that
+//!     the client packets are correctly formatted.
+//!   @value Constant.EXTENSION_signed_certificate_timestamp
+//!     Not supported by Pike. The server side will just check that
+//!     the client packets are correctly formatted.
+//!   @value Constant.EXTENSION_early_data
+//!     Needed for TLS 1.3 0-RTT handshake.
+//!   @value Constant.EXTENSION_padding
+//!     This extension is required to avoid a bug in some f5 SSL
+//!     terminators for certain sizes of client handshake messages.
+//! @endint
+//!
+//! @int
+//!   @value Constant.EXTENSION_truncated_hmac
+//!     This extension allows for the HMAC to be truncated for a small
+//!     win in payload size. Not widely implemented and may be a
+//!     security risk.
+//!   @value Constant.EXTENSION_heartbeat
+//!     This extension allows the client and server to send heartbeats
+//!     over the connection. Intended to keep TCP connections
+//!     alive. Required to be set to use @[heartbleed_probe].
+//!   @value Constant.EXTENSION_extended_master_secret
+//!     Binds the master secret to important session parameters to
+//!     protect against man in the middle attacks.
+//! @endint
+multiset(int) extensions = (<
+  EXTENSION_renegotiation_info,
+  EXTENSION_max_fragment_length,
+  EXTENSION_ec_point_formats,
+  EXTENSION_encrypt_then_mac,
+  EXTENSION_application_layer_protocol_negotiation,
+  EXTENSION_signature_algorithms,
+  EXTENSION_elliptic_curves,
+  EXTENSION_server_name,
+  EXTENSION_next_protocol_negotiation,
+  EXTENSION_signed_certificate_timestamp,
+  EXTENSION_early_data,
+  EXTENSION_padding,
+>);
 
 //
 // --- Cryptography
@@ -138,16 +205,6 @@ Alert alert_factory(object con,
 //! number generator is not used for generating the master_secret. By
 //! default set to @[Crypto.Random.random_string].
 function(int(0..):string(8bit)) random = Crypto.Random.random_string;
-
-//! Attempt to enable encrypt-then-mac mode. Defaults to @expr{1@}.
-int(0..1) encrypt_then_mac = 1;
-
-//! Support truncated HMAC extension, @rfc{3546:3.5@}. Defaults to
-//! @expr{0@}.
-int(0..1) truncated_hmac = 0;
-
-//! Support extended master secret. Defaults to @expr{0@},
-int(0..1) extended_master_secret = 0;
 
 //! Cipher suites we want to support, in order of preference, best
 //! first. By default set to all suites with at least 128 bits cipher
@@ -1098,4 +1155,20 @@ __deprecated__ void `verify_certificates=(int i)
 __deprecated__ int `verify_certificates()
 {
   return auth_level >= AUTHLEVEL_ask;
+}
+
+//! @decl int(0..1) encrypt_then_mac
+//!
+//! Attempt to enable encrypt-then-mac mode. Defaults to @expr{1@}.
+//!
+//! @deprecated extensions
+
+__deprecated__ void `encrypt_then_mac=(int(0..1) i)
+{
+  extensions[EXTENSION_encrypt_then_mac] = 1;
+}
+
+__deprecated__ int(0..1) `encrypt_then_mac()
+{
+  return !!extensions[EXTENSION_encrypt_then_mac];
 }

@@ -47,7 +47,7 @@ protected Packet server_hello_packet()
 
   void ext(int id, int condition, function(void:Buffer) code)
   {
-    if(condition)
+    if(context->extensions[id] && condition)
     {
       extensions->add_int(id, 2);
       extensions->add_hstring(code(), 2);
@@ -413,6 +413,13 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
             }
           }
 
+          if( !context->extensions[extension_type] )
+          {
+            SSL3_DEBUG_MSG("Ignored extension %O (%d bytes)\n",
+                           extension_type, sizeof(extension_data));
+            continue;
+          }
+
           switch(extension_type) {
           case EXTENSION_signature_algorithms:
             // RFC 5246
@@ -510,7 +517,7 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
                        ALERT_illegal_parameter,
                        "Invalid trusted HMAC extension.\n");
 
-            session->truncated_hmac = context->truncated_hmac;
+            session->truncated_hmac = 1;
             SSL3_DEBUG_MSG("Trucated HMAC\n");
             break;
 
@@ -617,12 +624,8 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
                          ALERT_illegal_parameter,
                          "Encrypt-then-MAC: Invalid extension.\n");
 
-              if (context->encrypt_then_mac) {
-                SSL3_DEBUG_MSG("Encrypt-then-MAC: Tentatively enabled.\n");
-                session->encrypt_then_mac = 1;
-              } else {
-                SSL3_DEBUG_MSG("Encrypt-then-MAC: Rejected.\n");
-              }
+              SSL3_DEBUG_MSG("Encrypt-then-MAC: Tentatively enabled.\n");
+              session->encrypt_then_mac = 1;
             }
             break;
 
@@ -632,10 +635,8 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
                          ALERT_illegal_parameter,
                          "Extended-master-secret: Invalid extension.\n");
 
-              if (context->extended_master_secret) {
-                SSL3_DEBUG_MSG("Extended-master-secret: Enabled.\n");
-                session->extended_master_secret = 1;
-              }
+              SSL3_DEBUG_MSG("Extended-master-secret: Enabled.\n");
+              session->extended_master_secret = 1;
             }
             break;
 
@@ -651,9 +652,7 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
             break;
 
           default:
-            SSL3_DEBUG_MSG("Unhandled extension %O (%d bytes)\n",
-                           (string)extension_data,
-                           sizeof(extension_data));
+            SSL3_DEBUG_MSG("Unhandled extension %O.\n", extension_type);
             break;
           }
         }
