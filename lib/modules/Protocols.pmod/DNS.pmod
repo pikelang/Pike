@@ -1533,9 +1533,9 @@ class async_client
 	nsno = 0;
       }
     }
-    
-    send(nameservers[nsno],53,r->req);
+
     r->retry_co = call_out(retry, RETRY_DELAY, r, nsno+1);
+    udp::send(nameservers[nsno], 53, r->req);
   }
 
   void do_query(string domain, int cl, int type,
@@ -1555,9 +1555,9 @@ class async_client
 	r->callback=callback;
 	r->args=args;
 	r->timestamp=time();
-	requests[lid]=r;
-	udp::send(nameservers[0],53,r->req);
 	r->retry_co = call_out(retry, RETRY_DELAY, r, 1);
+	requests[lid] = r;
+	udp::send(nameservers[0], 53, req);
 	return;
       }
     }
