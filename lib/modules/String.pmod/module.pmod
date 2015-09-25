@@ -308,8 +308,8 @@ string int2size( int size )
   if(size==1) return "1 byte";
   int oldmask = -1;
   int mask = -1024;
-  int no;
-  int val = size;
+  int(0..) no;
+  int(0..) val = [int(0..)]size;
   while (size & mask) {
     if (++no == sizeof(prefix))
       return sprintf("%d %s", val, prefix[-1]);
@@ -322,9 +322,9 @@ string int2size( int size )
   if (!(decimal = (size & ~oldmask))) return sprintf("%d %s", val, prefix[no]);
 
   // Convert the decimal to base 10.
-  decimal += 1<<(no*10 - 4);	// Rounding.
+  decimal += 1<<[int(6..)](no*10 - 4);	// Rounding.
   decimal *= 5;
-  decimal >>= no*10 - 1;
+  decimal >>= [int(9..)](no*10 - 1);
 
   if (decimal == 10) {
     val++;
