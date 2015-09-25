@@ -3,7 +3,6 @@
  */
 
 #pike 7.8
-#pragma strict_types
 #require constant(Crypto.Hash)
 
 protected Gmp.mpz n;  /* modulo */

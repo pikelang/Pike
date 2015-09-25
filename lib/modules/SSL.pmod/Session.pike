@@ -276,7 +276,7 @@ private array(CertificatePair)
   int h_max = 0;
   foreach(cipher_suites, int suite) {
     if (CIPHER_SUITES[suite]) {
-      ke_mask |= 1 << [int](CIPHER_SUITES[suite][0]);
+      ke_mask |= 1 << [int(0..22)](CIPHER_SUITES[suite][0]);
       Crypto.Hash hash =
 	[object(Crypto.Hash)]HASH_lookup[CIPHER_SUITES[suite][2]];
       if (hash && (hash->digest_size() > h_max)) {

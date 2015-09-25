@@ -405,7 +405,7 @@ class Real
                                         Object) decoder,
                                mapping(int:program(Object))|void types) {
     if( contents=="" ) { value = 0.0; return this; }
-    int first = contents[0];
+    int(0..255) first = contents[0];
     switch( first )
     {
       // SpecialRealValues
@@ -437,7 +437,7 @@ class Real
     default: error("Unknown real base.\n");
     }
 
-    int scaling = (first & 0b00001100) >> 2;
+    int(0..3) scaling = [int(0..3)]((first & 0b00001100) >> 2);
 
     int exp;
     int num;
@@ -482,7 +482,7 @@ class BitString
   //! value of object
   string(0..255) value;
 
-  int unused = 0;
+  int(0..7) unused = 0;
 
   this_program init(string(0..255) s)
   {
@@ -500,7 +500,7 @@ class BitString
   this_program set_from_ascii(string(0..255) s)
   {
     array v = array_sscanf(s, "%8b"*(sizeof(s)/8)+"%b");
-    v[-1] = v[-1]<<((-sizeof(s))%8);
+    v[-1] = v[-1]<<[int(0..7)]((-sizeof(s))%8);
     value = (string(0..255))v;
     set_length(sizeof(s));
     return this;
@@ -512,7 +512,7 @@ class BitString
     if (len)
     {
       value = value[..(len + 7)/8];
-      unused = (- len) % 8;
+      unused = [int(0..7)]((- len) % 8);
       value[-1] &= 256-(1<<unused);
     } else {
       unused = 0;
@@ -528,11 +528,11 @@ class BitString
 				mapping(int:program(Object))|void types) {
     if (!sizeof(contents))
       return 0;
-    unused = contents[0];
 
-    if (unused >= 8)
+    if (contents[0] >= 8)
       return 0;
 
+    unused = [int(0..7)]contents[0];
     value = contents[1..];
 
     // Unused bits should be zero. I can't find anything in X.690 that
