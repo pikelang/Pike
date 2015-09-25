@@ -7059,7 +7059,7 @@ struct pike_type *new_get_return_type(struct pike_type *fun_type,
   case T_NOT:
     if (!(res = new_get_return_type(fun_type->car, flags))) {
       copy_pike_type(res, mixed_type_string);
-    } else if (res->type == T_INT) {
+    } else if (res->type == T_NOT) {
       tmp = res;
       copy_pike_type(res, tmp->car);
       free_type(tmp);
