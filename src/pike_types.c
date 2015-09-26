@@ -6947,7 +6947,59 @@ struct pike_type *low_new_check_call(struct pike_type *fun_type,
 				   , 0
 #endif
 				   ))) {
-    return NULL;
+    struct pike_type *tmp2;
+    if (!(flags & CALL_STRICT) || (arg_type->type != T_INT) ||
+	(CAR_TO_INT(arg_type) >= 0) || (CDR_TO_INT(arg_type) <= 0)) {
+      return NULL;
+    }
+    /* KLUDGE: Special case for integers spanning zero.
+     *
+     * Try splitting the argument at zero. The proper fix would be
+     * to split at all the integer range limits for the first
+     * declared argument to the function.
+     *
+     * Test the most likely problematic range first (ie negative).
+     */
+    type_stack_mark();
+    push_int_type(CAR_TO_INT(arg_type), -1);
+    tmp2 = pop_unfinished_type();
+    if (!(tmp = lower_new_check_call(fun_type, tmp2,
+				     flags & ~CALL_WEAK_VOID, sval
+#ifdef PIKE_TYPE_DEBUG
+				     , 0
+#endif
+				     ))) {
+      free_type(tmp2);
+      return NULL;
+    }
+    free_type(tmp2);
+
+    type_stack_mark();
+    push_finished_type(tmp);
+    free_type(tmp);
+
+    /* Then the positive range. */
+    type_stack_mark();
+    push_int_type(1, CDR_TO_INT(arg_type));
+    tmp2 = pop_unfinished_type();
+    if (!(tmp = lower_new_check_call(fun_type, tmp2,
+				     flags & ~CALL_WEAK_VOID, sval
+#ifdef PIKE_TYPE_DEBUG
+				     , 0
+#endif
+				     ))) {
+      free_type(tmp2);
+      free_type(pop_unfinished_type());
+      return NULL;
+    }
+    free_type(tmp2);
+
+    push_finished_type(tmp);
+    free_type(tmp);
+
+    /* NB: Zero always succeeds. */
+    push_type(T_OR);
+    tmp = pop_unfinished_type();
   }
   return tmp;
 }
