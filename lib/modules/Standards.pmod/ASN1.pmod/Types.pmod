@@ -23,18 +23,18 @@
 //!   The combined tag.
 //! @seealso
 //!  @[extract_tag], @[extract_cls]
-int make_combined_tag(int cls, int tag)
-{ return tag << 2 | cls; }
+int(4..) make_combined_tag(int(0..3) cls, int(1..) tag)
+{ return [int(4..)](tag << 2 | cls); }
 
 //! Extract ASN1 type tag from a combined tag.
 //! @seealso
 //!  @[make_combined_tag]
-int extract_tag(int i) { return i >> 2; }
+int(0..) extract_tag(int(0..) i) { return i >> 2; }
 
 //! Extract ASN1 type class from a combined tag.
 //! @seealso
 //!  @[make_combined_tag]
-int(0..3) extract_cls(int i) { return [int(0..3)](i & 3); }
+int(0..3) extract_cls(int(0..) i) { return [int(0..3)](i & 3); }
 
 
 // Class definitions
@@ -46,8 +46,8 @@ int(0..3) extract_cls(int i) { return [int(0..3)](i & 3); }
 //! Generic, abstract base class for ASN1 data types.
 class Object
 {
-  int cls = 0;
-  int tag = 0;
+  int(0..3) cls = 0;
+  int(1..) tag = 0;
   constant constructed = 0;
 
   constant type_name = "";
@@ -61,19 +61,19 @@ class Object
   //!
   //! @returns
   //!   The class of this object.
-  int get_cls() { return cls; }
+  int(0..3) get_cls() { return cls; }
 
   //! Get the tag for this object.
   //!
   //! @returns
   //!   The tag for this object.
-  int get_tag() { return tag; }
+  int(1..) get_tag() { return tag; }
 
   //! Get the combined tag (tag + class) for this object.
   //!
   //! @returns
   //!   the combined tag header
-  int get_combined_tag() {
+  int(1..) get_combined_tag() {
     return make_combined_tag(get_cls(), get_tag());
   }
 
@@ -208,7 +208,9 @@ class Compound
 
   void _decode(array(int|array(Object)) x)
   {
-    [ cls, tag, elements ] = x;
+    cls = [int(0..3)]x[0];
+    tag = [int(1..)]x[1];
+    elements = [array(Object)]x[2];
   }
 }
 
@@ -262,7 +264,7 @@ class Boolean
 {
   inherit Object;
 
-  int tag = 1;
+  int(1..) tag = 1;
   constant type_name = "BOOLEAN";
 
   //! value of object
@@ -304,7 +306,7 @@ class Integer
 {
   inherit Object;
 
-  int tag = 2;
+  int(1..) tag = 2;
   constant type_name = "INTEGER";
 
   //! value of object
@@ -364,7 +366,7 @@ class Integer
 class Enumerated
 {
   inherit Integer;
-  int tag = 10;
+  int(1..) tag = 10;
   constant type_name = "ENUMERATED";
 }
 
@@ -372,7 +374,7 @@ class Real
 {
   inherit Object;
 
-  int tag = 9;
+  int(1..) tag = 9;
   constant type_name = "REAL";
 
   float value;
@@ -476,7 +478,7 @@ class Real
 class BitString
 {
   inherit Object;
-  int tag = 3;
+  int(1..) tag = 3;
   constant type_name = "BIT STRING";
 
   //! value of object
@@ -578,7 +580,10 @@ class BitString
 
   void _decode(array(int|string(8bit)) x)
   {
-    [ cls, tag, value, unused ] = x;
+    cls = [int(0..3)]x[0];
+    tag = [int(1..)]x[1];
+    value = [string(8bit)]x[2];
+    unused = [int(0..7)]x[3];
   }
 }
 
@@ -586,7 +591,7 @@ class BitString
 class OctetString
 {
   inherit String;
-  int tag = 4;
+  int(1..) tag = 4;
   constant type_name = "OCTET STRING";
 }
 
@@ -594,7 +599,7 @@ class OctetString
 class Null
 {
   inherit Object;
-  int tag = 5;
+  int(1..) tag = 5;
   constant type_name = "NULL";
 
   this_program decode_primitive(string(0..255) contents,
@@ -612,7 +617,8 @@ class Null
 
   void _decode(array(int) x)
   {
-    [ cls, tag ] = x;
+    cls = [int(0..3)]x[0];
+    tag = [int(1..)]x[1];
   }
 }
 
@@ -620,7 +626,7 @@ class Null
 class Identifier
 {
   inherit Object;
-  int tag = 6;
+  int(1..) tag = 6;
   constant type_name = "OBJECT IDENTIFIER";
 
   //! value of object
@@ -695,7 +701,11 @@ class Identifier
     if( sizeof(x)!=3 || intp(x[2]) )
       id = [array(int)]x; // Compat with old codec that didn't save cls/tag.
     else
-      [ cls, tag, id ] = x;
+    {
+      cls = [int(0..3)]x[0];
+      tag = [int(1..)]x[1];
+      id = [array(int)]x[2];
+    }
   }
 
   protected int __hash()
@@ -738,7 +748,7 @@ int(1..1) asn1_utf8_valid (string s)
 class UTF8String
 {
   inherit String;
-  int tag = 12;
+  int(1..) tag = 12;
   constant type_name = "UTF8String";
 
   string(0..255) get_der_content()
@@ -765,7 +775,7 @@ class UTF8String
 class Sequence
 {
   inherit Compound;
-  int tag = 16;
+  int(1..) tag = 16;
   constant type_name = "SEQUENCE";
 
   string(0..255) get_der_content()
@@ -795,7 +805,7 @@ class Sequence
 class Set
 {
   inherit Compound;
-  int tag = 17;
+  int(1..) tag = 17;
   constant type_name = "SET";
 
   int(-1..1) compare_octet_strings(string r, string s)
@@ -836,7 +846,7 @@ int(0..1) asn1_printable_valid (string s) {
 class PrintableString
 {
   inherit String;
-  int tag = 19;
+  int(1..) tag = 19;
   constant type_name = "PrintableString";
 }
 
@@ -873,14 +883,14 @@ int(0..1) asn1_IA5_valid (string s)
 class IA5String
 {
   inherit String;
-  int tag = 22;
+  int(1..) tag = 22;
   constant type_name = "IA5STRING";
 }
 
 //!
 class VisibleString {
   inherit String;
-  int tag = 26;
+  int(1..) tag = 26;
   constant type_name = "VisibleString";
 }
 
@@ -890,7 +900,7 @@ class VisibleString {
 class UTC
 {
   inherit String;
-  int tag = 23;
+  int(1..) tag = 23;
   constant type_name = "UTCTime";
 
   this_program init(int|string|Calendar.ISO_UTC.Second t)
@@ -951,7 +961,7 @@ class UTC
 class GeneralizedTime
 {
   inherit UTC;
-  int tag = 24;
+  int(1..) tag = 24;
   constant type_name = "GeneralizedTime";
 
   // We are currently not doing any management of fractions. X690
@@ -1002,7 +1012,7 @@ int(0..0) asn1_universal_valid (string s)
 class UniversalString
 {
   inherit OctetString;
-  int tag = 28;
+  int(1..) tag = 28;
   constant type_name = "UniversalString";
 
   string get_der_content() {
@@ -1033,7 +1043,7 @@ int(0..1) asn1_bmp_valid (string s)
 class BMPString
 {
   inherit OctetString;
-  int tag = 30;
+  int(1..) tag = 30;
   constant type_name = "BMPString";
 
   string get_der_content() {
@@ -1060,8 +1070,8 @@ class BMPString
 //!   Compound c = m(Integer(3));
 class MetaExplicit
 {
-  int real_tag;
-  int real_cls;
+  int(0..3) real_cls;
+  int(1..) real_tag;
 
   mapping(int:program(Object)) valid_types;
 
@@ -1070,8 +1080,8 @@ class MetaExplicit
     constant type_name = "EXPLICIT";
     constant constructed = 1;
 
-    int get_tag() { return real_tag; }
-    int get_cls() { return real_cls; }
+    int(0..3) get_cls() { return real_cls; }
+    int(1..) get_tag() { return real_tag; }
 
     Object contents;
 
@@ -1128,12 +1138,14 @@ class MetaExplicit
 
     void _decode(array(int|Object) x)
     {
-      [ real_cls, real_tag, contents ] = x;
+      real_cls = [int(0..3)]x[0];
+      real_tag = [int(1..)]x[1];
+      contents = [object(Object)]x[2];
     }
   }
 
   //!
-  protected void create(int cls, int tag,
+  protected void create(int(0..3) cls, int(1..) tag,
 			mapping(int:program(Object))|void types) {
     real_cls = cls;
     real_tag = tag;
@@ -1147,7 +1159,9 @@ class MetaExplicit
 
   void _decode(array(int|mapping(int:program(Object))) x)
   {
-    [ real_cls, real_tag, valid_types ] = x;
+    real_cls = [int(0..3)]x[0];
+    real_tag = [int(1..)]x[1];
+    valid_types = [mapping(int:program(Object))]x[2];
   }
 }
 
