@@ -96,8 +96,8 @@ protected BitString build_keyUsage(keyUsage i)
 //! X.509v2 (deprecated).
 class IssuerId {
   inherit BitString;
-  int cls = 2;
-  int tag = 1;
+  int(0..3) cls = 2;
+  int(1..) tag = 1;
 }
 
 //! Unique identifier for the certificate subject.
@@ -105,8 +105,8 @@ class IssuerId {
 //! X.509v2 (deprecated).
 class SubjectId {
   inherit BitString;
-  int cls = 2;
-  int tag = 2;
+  int(0..3) cls = 2;
+  int(1..) tag = 2;
 }
 
 protected {
