@@ -102,7 +102,7 @@ protected array(int) read_identifier(Stdio.Buffer data)
   int len = data->read_int8();
   // if( !cls && !constructed && !tag && !len )
   //   error("End-of-contents not supported.\n");
-  if( !tag )
+  if( !cls && !tag )
     error("Tag 0 reserved for BER encoding.\n");
   if (len & 0x80)
   {
