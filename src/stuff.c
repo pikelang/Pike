@@ -7,6 +7,7 @@
 #include "global.h"
 #include "stuff.h"
 #include "bitvector.h"
+#include "pike_cpulib.h"
 
 /* Used by is8bitalnum in pike_macros.h. */
 PMOD_EXPORT const char Pike_is8bitalnum_vector[] =
@@ -127,27 +128,7 @@ static unsigned int rnd_index;
 #if HAS___BUILTIN_IA32_RDRAND32_STEP
 static int use_rdrnd;
 static unsigned long long rnd_index64;
-#endif
 #define bit_RDRND_2 (1<<30)
-
-#if SIZEOF_CHAR_P == 4
-#define __cpuid(level, a, b, c, d)                      \
-    __asm__ ("pushl %%ebx      \n\t"                    \
-             "cpuid \n\t"                               \
-             "movl %%ebx, %1   \n\t"                    \
-             "popl %%ebx       \n\t"                    \
-             : "=a" (a), "=r" (b), "=c" (c), "=d" (d)   \
-             : "a" (level)                              \
-             : "cc")
-#else
-#define __cpuid(level, a, b, c, d)                      \
-    __asm__ ("push %%rbx      \n\t"			\
-             "cpuid \n\t"                               \
-             "movl %%ebx, %1   \n\t"                    \
-             "pop %%rbx       \n\t"			\
-             : "=a" (a), "=r" (b), "=c" (c), "=d" (d)   \
-             : "a" (level)                              \
-             : "cc")
 #endif
 
 PMOD_EXPORT void my_srand(INT32 seed)
@@ -156,8 +137,9 @@ PMOD_EXPORT void my_srand(INT32 seed)
   unsigned int ignore, cpuid_ecx;
   if( !use_rdrnd )
   {
-    __cpuid( 0x1, ignore, ignore, cpuid_ecx, ignore );
-    if( cpuid_ecx & bit_RDRND_2 )
+    INT32 cpuid[4];
+    x86_get_cpuid (1, cpuid);
+    if( cpuid[2] & bit_RDRND_2 )
       use_rdrnd = 1;
   }
   /* We still do the initialization here, since rdrnd might stop
