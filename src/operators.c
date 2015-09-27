@@ -5921,9 +5921,10 @@ multiset & mapping -> mapping
 	    "function(array(0=mixed),int:array(0))|"
 	    "!function(int,int:mixed)&function(int|float,int|float:float) */
   ADD_EFUN2("`%", f_mod,
-	    tOr6(tFunc(tMix tObj,tMix),
+	    tOr7(tFunc(tMix tObj,tMix),
 		 tFunc(tObj tMix,tMix),
-		 tFunc(tInt tInt,tInt),
+		 tFunc(tInt tIntPos, tIntPos),
+		 tFunc(tInt tIntNeg, tIntNeg),
 		 tFunc(tStr tInt,tStr),
 		 tFunc(tArr(tSetvar(0,tMix)) tInt,tArr(tVar(0))),
 		 tIfnot(tFuncV(tNone, tNot(tFlt), tMix),
@@ -5932,8 +5933,9 @@ multiset & mapping -> mapping
 
   /* function(object:mixed)|function(int:int)|function(float:float)|function(string:string) */
   ADD_EFUN2("`~",f_compl,
-	    tOr6(tFunc(tObj,tMix),
-		 tFunc(tInt,tInt),
+	    tOr7(tFunc(tObj,tMix),
+		 tFunc(tIntPos,tIntMinus),
+		 tFunc(tIntMinus,tIntPos),
 		 tFunc(tFlt,tFlt),
 		 tFunc(tStr,tStr),
 		 tFunc(tType(tSetvar(0, tMix)), tType(tNot(tVar(0)))),
