@@ -3402,7 +3402,6 @@ PMOD_EXPORT void f_indices(INT32 args)
     SIMPLE_BAD_ARG_ERROR("indices", 1,
 			 "string|array|mapping|"
 			 "multiset|object|program|function");
-    return; /* make apcc happy */
   }
   pop_n_elems(args);
   push_array(a);
@@ -3708,7 +3707,6 @@ PMOD_EXPORT void f_values(INT32 args)
     SIMPLE_BAD_ARG_ERROR("values", 1,
 			 "string|array|mapping|multiset|"
 			 "object|program|function");
-    return;  /* make apcc happy */
   }
   pop_n_elems(args);
   push_array(a);
@@ -3805,7 +3803,6 @@ PMOD_EXPORT void f_types(INT32 args)
     SIMPLE_BAD_ARG_ERROR("types", 1,
 			 "string|array|mapping|"
 			 "multiset|object|program|function");
-    return; /* make apcc happy */
   }
   pop_n_elems(args);
   push_array(a);
