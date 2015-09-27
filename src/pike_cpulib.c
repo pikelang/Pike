@@ -17,8 +17,8 @@
 PMOD_EXPORT void x86_get_cpuid(int oper, INT32 *cpuid_ptr)
 /* eax -> cpuid_ptr[0]
  * ebx -> cpuid_ptr[1]
- * edx -> cpuid_ptr[2]
- * ecx -> cpuid_ptr[3] */
+ * ecx -> cpuid_ptr[2]
+ * edx -> cpuid_ptr[3] */
 {
 #ifdef HAVE_X86_64_ASM
 #define cpuid_supported 1
