@@ -21,7 +21,7 @@ Arguments:
 --json, -j
   Output result as JSON instead of human readable text
 
---compare, -c
+--compare=<file>, -c <file>
   Read a result previously created by saving the output of --json and
   print relative results
 ";
