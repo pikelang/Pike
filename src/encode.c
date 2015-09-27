@@ -320,9 +320,7 @@ static void encode_type(struct pike_type *t, struct encode_data *data)
   switch(t->type) {
     default:
       Pike_fatal("error in type tree: %d.\n", t->type);
-      /*NOTREACHED*/
-
-      break;
+      UNREACHABLE(break);
 
     case PIKE_T_ATTRIBUTE:	/* FIXME: Strip this in compat mode. */
     case PIKE_T_NAME:
@@ -2096,8 +2094,7 @@ static void low_decode_type(struct decode_data *data)
   {
     default:
       decode_error(data, NULL, "Error in type string (%d).\n", tmp);
-      /*NOTREACHED*/
-      break;
+      UNREACHABLE(break);
 
     case T_ASSIGN:
       tmp = GETC();

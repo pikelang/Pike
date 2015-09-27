@@ -215,6 +215,12 @@ struct timeval;
 # define LIKELY(X) X
 #endif
 
+#ifdef HAS___BUILTIN_UNREACHABLE
+# define UNREACHABLE(X) __builtin_unreachable()
+#else
+# define UNREACHABLE(X) X
+#endif
+
 #ifndef HAVE_WORKING_REALLOC_NULL
 #define realloc(PTR, SZ)	pike_realloc(PTR,SZ)
 #endif

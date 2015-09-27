@@ -1395,7 +1395,7 @@ PMOD_EXPORT int object_index_no_free2(struct svalue *to,
   if(!o || !(p=o->prog))
   {
     Pike_error("Lookup in destructed object.\n");
-    return T_VOID; /* make gcc happy */
+    UNREACHABLE(return T_VOID);
   }
 
   p = (inh = p->inherits + inherit_number)->prog;
@@ -1444,7 +1444,7 @@ PMOD_EXPORT int object_index_no_free(struct svalue *to,
   if(!o || !(p=o->prog))
   {
     Pike_error("Lookup in destructed object.\n");
-    return T_VOID; /* make gcc happy */
+    UNREACHABLE(return T_VOID);
   }
 
   p = (inh = p->inherits + inherit_number)->prog;
@@ -1652,7 +1652,7 @@ PMOD_EXPORT void object_low_set_index(struct object *o,
     if(!o || !(p=o->prog))
     {
       Pike_error("Lookup in destructed object.\n");
-      return; /* make gcc happy */
+      UNREACHABLE(return);
     }
 
     debug_malloc_touch(o);
@@ -1744,7 +1744,7 @@ PMOD_EXPORT void object_set_index2(struct object *o,
   if(!o || !(p=o->prog))
   {
     Pike_error("Lookup in destructed object.\n");
-    return; /* make gcc happy */
+    UNREACHABLE(return);
   }
 
   p = (inh = p->inherits + inherit_number)->prog;
@@ -1794,7 +1794,7 @@ PMOD_EXPORT void object_set_index(struct object *o,
   if(!o || !(p=o->prog))
   {
     Pike_error("Lookup in destructed object.\n");
-    return; /* make gcc happy */
+    UNREACHABLE(return);
   }
 
   p = (inh = p->inherits + inherit_number)->prog;
@@ -1829,7 +1829,7 @@ static union anything *object_low_get_item_ptr(struct object *o,
   if(!o || !(p=o->prog))
   {
     Pike_error("Lookup in destructed object.\n");
-    return 0; /* make gcc happy */
+    UNREACHABLE(return 0);
   }
 
   debug_malloc_touch(p);
@@ -1886,7 +1886,7 @@ union anything *object_get_item_ptr(struct object *o,
   if(!o || !(p=o->prog))
   {
     Pike_error("Lookup in destructed object.\n");
-    return 0; /* make gcc happy */
+    UNREACHABLE(return 0);
   }
 
   p = (inh = p->inherits + inherit_number)->prog;

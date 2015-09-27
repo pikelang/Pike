@@ -1091,9 +1091,9 @@ void o_check_soft_cast(struct svalue *s, struct pike_type *type)
     bad_arg_error(NULL, Pike_sp-1, 1, 1, t1->str, Pike_sp-1,
 		  "%s(): Soft cast failed.\n%S",
 		  fname, s.s);
-    /* NOT_REACHED */
-    CALL_AND_UNSET_ONERROR(tmp1);
-    CALL_AND_UNSET_ONERROR(tmp0);
+
+    UNREACHABLE(CALL_AND_UNSET_ONERROR(tmp1));
+    UNREACHABLE(CALL_AND_UNSET_ONERROR(tmp0));
   }
 }
 

@@ -666,7 +666,7 @@ PMOD_EXPORT int is_identical(const struct svalue *a, const struct svalue *b)
 
   default:
     Pike_fatal("Unknown type %x\n", TYPEOF(*a));
-    return 0; /* make gcc happy */
+    UNREACHABLE(return 0);
   }
 
 }
@@ -825,7 +825,7 @@ PMOD_EXPORT int is_eq(const struct svalue *a, const struct svalue *b)
 #ifdef PIKE_DEBUG
     Pike_fatal("Unknown type %x\n", TYPEOF(*a));
 #endif
-    return 0; /* make gcc happy */
+    UNREACHABLE(return 0);
   }
 }
 
@@ -2566,7 +2566,6 @@ PMOD_EXPORT INT_TYPE pike_sizeof(const struct svalue *s)
     }
   default:
     Pike_error("Bad argument 1 to sizeof().\n");
-    return 0; /* make apcc happy */
   }
 }
 

@@ -2486,8 +2486,7 @@ void image_colortable_operator_plus(INT32 args)
       else {
 	bad_arg_error("`+",sp-args,args,0,"",sp-args,
                       "Bad arguments to `+.\n");
-	/* Not reached, but keeps the compiler happy. */
-	src = NULL;
+        UNREACHABLE(src = NULL);
       }
 
       _img_add_colortable(dest,src);
@@ -4161,10 +4160,7 @@ void image_colortable_ordered(INT32 args)
       {
 	 bad_arg_error("ordered",sp-args,args,0,"",sp-args,
                        "Bad arguments to ordered.\n");
-	 /* Not reached, but keep the compiler happy */
-	 r = 0;
-	 g = 0;
-	 b = 0;
+         UNREACHABLE(r=g=b=0);
       }
       else
       {

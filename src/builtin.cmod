@@ -1885,7 +1885,7 @@ PIKEFUN string function_name(program|function func)
   {
     default:
       SIMPLE_BAD_ARG_ERROR("function_name", 1, "function|program");
-      return; /* NOTREACHED */
+      UNREACHABLE(return);
 
     case PIKE_T_PROGRAM:
     {
@@ -2618,9 +2618,8 @@ PIKECLASS backtrace_frame
 			"Bad argument 1 to backtrace_frame->`[](): "
 			"Expected int(0..%d)\n",
 			numargs + 2);
-	}
-        /* NOT_REACHED */
-        break;
+        }
+        UNREACHABLE(break);
       }
     }
     if (end_or_none)

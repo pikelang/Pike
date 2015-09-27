@@ -45,7 +45,7 @@ struct program *resultset_program;
 struct object *wf_not_resultset( struct object *o )
 {
   fatal("%p is not a resultset!\n", o );
-  return 0; /* not reached */
+  UNREACHABLE(return 0);
 }
 #else
 static struct program *resultset_program;

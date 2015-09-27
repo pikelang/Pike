@@ -5811,12 +5811,12 @@ static int compat_box_dispatcher (struct fd_callback_box *box, int event)
 		      cbox->box.backend->id, cbox->fs_event,
 		      cbox->fs_event_data));
       return cbox->fs_event (cbox->box.fd, cbox->fs_event_data);
-    default:
 #ifdef PIKE_DEBUG
+    default:
       Pike_fatal ("Unexpected event type %d.\n", event);
 #endif
-      return 0;			/* To keep gcc happy. */
   }
+  UNREACHABLE(return 0);
 }
 
 #define WRAP(CB, EVENT_BIT)						\

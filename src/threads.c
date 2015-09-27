@@ -1954,8 +1954,7 @@ TH_RETURN_TYPE new_thread_func(void *data)
   /* FIXME: What about threads_disable? */
   mt_unlock_interpreter();
   th_exit(0);
-  /* NOT_REACHED, but removes a warning */
-  return 0;
+  UNREACHABLE(return 0);
 }
 
 #ifdef UNIX_THREADS
@@ -3279,8 +3278,7 @@ static TH_RETURN_TYPE farm(void *_a)
     mt_unlock( &rosie );
 /*     fprintf(stderr, "farm_endwait %p\n", me); */
   } while(1);
-  /* NOT_REACHED */
-  return 0;/* Keep the compiler happy. */
+  UNREACHABLE(return 0);
 }
 
 int th_num_idle_farmers(void)

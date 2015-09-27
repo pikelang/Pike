@@ -166,8 +166,7 @@ void image_orient(INT32 args)
       mag=sp[-args].u.float_number;
     else {
       SIMPLE_BAD_ARG_ERROR("orient",1,"int|float");
-      /* Not reached, but keeps the compiler happy. */
-      mag = 0.0;
+      UNREACHABLE(mag=0.0);
     }
   }
   else mag=1.0;

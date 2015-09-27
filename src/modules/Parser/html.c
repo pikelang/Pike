@@ -2565,8 +2565,7 @@ static newstate handle_result(struct parser_html_storage *this,
 	 Pike_error("Parser.HTML: illegal result from callback: "
 		    "not 0, string or array\n");
    }
-   /* NOT_REACHED */
-   return STATE_DONE;
+   UNREACHABLE(return STATE_DONE);
 }
 
 static void clear_start(struct parser_html_storage *this)

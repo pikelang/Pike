@@ -567,8 +567,7 @@ void (*NCTLU_SELECT_FUNCTION(struct neo_colortable *nct))
 	 Pike_fatal("lookup select (%s:%d) couldn't find the lookup mode\n",
 	       __FILE__,__LINE__);
    }
-   /* NOT_REACHED */
-   return 0;
+   UNREACHABLE(return 0);
 }
 
 int NCTLU_EXECUTE_FUNCTION(struct neo_colortable *nct,

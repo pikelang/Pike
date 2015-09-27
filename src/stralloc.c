@@ -989,8 +989,7 @@ PMOD_EXPORT struct pike_string * debug_make_shared_binary_pcharp(const PCHARP st
       Pike_fatal("Unknown string width!\n");
 #endif
   }
-  /* NOT REACHED */
-  return NULL; /* Keep the compiler happy */
+  UNREACHABLE(return NULL);
 }
 
 PMOD_EXPORT struct pike_string * debug_make_shared_pcharp(const PCHARP str)
@@ -3220,7 +3219,7 @@ PMOD_EXPORT PCHARP MEMCHR_PCHARP(const PCHARP ptr, int chr, ptrdiff_t len)
 #ifdef PIKE_DEBUG
   Pike_fatal("Illegal shift in MEMCHR_PCHARP.\n");
 #endif
-  return MKPCHARP(0,0); /* make wcc happy */
+  UNREACHABLE(MKPCHARP(0,0));
 }
 
 #define DIGIT(x)	(WIDE_ISDIGIT(x) ? (x) - '0' : \

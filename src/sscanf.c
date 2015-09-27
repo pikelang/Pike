@@ -865,7 +865,7 @@ static INT32 PIKE_CONCAT4(very_low_sscanf_,INPUT_SHIFT,_,MATCH_SHIFT)(	 \
 	    if(e>=match_len)						 \
 	    {								 \
 	      Pike_error("Missing %%} in format string.\n");		 \
-	      break;		/* UNREACHED */				 \
+              UNREACHABLE(break);                                        \
 	    }								 \
 	    if(match[e]=='%')						 \
 	    {								 \
@@ -1208,7 +1208,7 @@ INPUT_IS_WIDE(								 \
 									 \
 		case 's':						 \
 		  Pike_error("Illegal to have two adjecent %%s.\n");	 \
-		  return 0;		/* make gcc happy */		 \
+                  UNREACHABLE(return 0);                                 \
 									 \
 	  /* sscanf("foo-bar","%s%d",a,b) might not work as expected */	 \
 		case 'd':						 \

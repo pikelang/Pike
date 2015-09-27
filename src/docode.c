@@ -2775,7 +2775,7 @@ static int do_docode2(node *n, int flags)
 
   default:
     Pike_fatal("Infernal compiler error (unknown parse-tree-token %d).\n", n->token);
-    return 0;			/* make gcc happy */
+    UNREACHABLE(return 0);
   }
 }
 

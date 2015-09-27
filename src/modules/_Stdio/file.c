@@ -2486,7 +2486,7 @@ static int do_close(int flags)
 
   default:
     Pike_fatal("Bug in switch implementation!\n");
-    return 0; /* Make CC happy */
+    UNREACHABLE(return 0);
   }
 }
 
