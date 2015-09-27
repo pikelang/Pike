@@ -30,12 +30,19 @@ enum string_type {
     STRING_ALLOC_SUBSTRING=3,
 };
 
+
+enum struct_type {
+    STRING_STRUCT_STRING    =0,
+    STRING_STRUCT_SUBSTRING =1,
+};
+
 struct pike_string
 {
   INT32 refs;
   unsigned char flags;
-  enum size_shift  size_shift:2;
-  enum string_type alloc_type:6;
+  enum size_shift   size_shift:2;
+  enum string_type  alloc_type:5;
+  enum struct_type struct_type:1;
   unsigned char  min;
   unsigned char  max;
   ptrdiff_t len; /* Not counting terminating NUL. */
@@ -48,7 +55,7 @@ struct string_builder
 {
   struct pike_string *s;
   ptrdiff_t malloced;
-  INT32 known_shift;
+  enum size_shift known_shift;
 };
 
 /* Flags used in pike_string->flags. */
@@ -181,7 +188,7 @@ static INLINE ptrdiff_t PIKE_UNUSED_ATTRIBUTE SAL(ptrdiff_t a, unsigned int b) {
 #define COMPARE_PCHARP(X,CMP,Y) LOW_COMPARE_PCHARP((X),CMP,(Y))
 #endif
 
-static INLINE PCHARP PIKE_UNUSED_ATTRIBUTE MKPCHARP(const void *ptr, int shift)
+static INLINE PCHARP PIKE_UNUSED_ATTRIBUTE MKPCHARP(const void *ptr, enum size_shift shift)
 {
   PCHARP tmp;
   tmp.ptr=(void*)ptr;
@@ -289,7 +296,7 @@ PMOD_EXPORT extern struct pike_string *empty_pike_string;
 /* Prototypes begin here */
 void low_set_index(struct pike_string *s, ptrdiff_t pos, int value);
 #ifdef PIKE_DEBUG
-PMOD_EXPORT struct pike_string *debug_check_size_shift(const struct pike_string *a,int shift);
+PMOD_EXPORT struct pike_string *debug_check_size_shift(const struct pike_string *a,enum size_shift shift);
 #endif
 CONVERT(0,1)
 CONVERT(0,2)
@@ -309,7 +316,7 @@ struct pike_string *binary_findstring_pcharp(PCHARP foo, ptrdiff_t l);
 struct pike_string *findstring(const char *foo);
 
 PMOD_EXPORT struct pike_string *debug_begin_shared_string(size_t len) ATTRIBUTE((malloc));
-PMOD_EXPORT struct pike_string *debug_begin_wide_shared_string(size_t len, int shift)  ATTRIBUTE((malloc));
+PMOD_EXPORT struct pike_string *debug_begin_wide_shared_string(size_t len, enum size_shift shift)  ATTRIBUTE((malloc));
 PMOD_EXPORT struct pike_string *low_end_shared_string(struct pike_string *s);
 PMOD_EXPORT struct pike_string *end_shared_string(struct pike_string *s);
 PMOD_EXPORT struct pike_string *end_and_resize_shared_string(struct pike_string *str, ptrdiff_t len) ;
@@ -360,7 +367,7 @@ PMOD_EXPORT ptrdiff_t my_quick_strcmp(const struct pike_string *a,
 				      const struct pike_string *b) ATTRIBUTE((pure));
 struct pike_string *realloc_unlinked_string(struct pike_string *a,
                                             ptrdiff_t size);
-struct pike_string *new_realloc_shared_string(struct pike_string *a, INT32 size, int shift) ATTRIBUTE((malloc));
+struct pike_string *new_realloc_shared_string(struct pike_string *a, INT32 size, enum size_shift shift) ATTRIBUTE((malloc));
 struct pike_string *modify_shared_string(struct pike_string *a,
                                          INT32 position,
                                          INT32 c);
@@ -443,13 +450,13 @@ int wide_string_to_svalue_inumber(struct svalue *r,
 					      void *ptr,
 					      int base,
 					      ptrdiff_t maxlength,
-                          int shift);
+                          enum size_shift shift);
 int safe_wide_string_to_svalue_inumber(struct svalue *r,
 				       void * str,
 				       void *ptr,
 				       int base,
 				       ptrdiff_t maxlength,
-				       int shift);
+				       enum size_shift shift);
 PMOD_EXPORT int pcharp_to_svalue_inumber(struct svalue *r,
 					 PCHARP str,
 					 PCHARP *ptr,
