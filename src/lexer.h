@@ -938,8 +938,7 @@ unknown_directive:
       }
       if (((c = INDEX_CHARP(lex->pos, 0, SHIFT)) <= '9') &&
 	  (c >= '0')) {
-	/* FIXME: Only in Pike 7.7 and later mode? */
-	lex->pos -= (1<<SHIFT);
+        lex->pos -= (1<<SHIFT);
 	goto read_float;
       }
       return '.';
