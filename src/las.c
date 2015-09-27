@@ -281,7 +281,7 @@ static int low_count_args(node *n)
     if(n->type == void_type_string) return 0;
     return 1;
   }
-  /* NOT_REACHED */
+  UNREACHABLE();
 }
 
 INT32 count_args(node *n)

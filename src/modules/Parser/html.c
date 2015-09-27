@@ -1481,7 +1481,7 @@ static void put_out_feed_range(struct parser_html_storage *this,
       pop_stack();
       head=head->next;
    }
-   /* NOT_REACHED */
+   UNREACHABLE();
 }
 
 /* ------------------------ */
@@ -3889,7 +3889,7 @@ static void try_feed(int finished)
 	    break;
       }
    }
-   /* NOT_REACHED */
+   UNREACHABLE();
 }
 
 /****** feed ****************************************/
