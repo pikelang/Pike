@@ -139,7 +139,7 @@ PMOD_EXPORT void my_srand(INT32 seed)
   {
     INT32 cpuid[4];
     x86_get_cpuid (1, cpuid);
-    if( cpuid[2] & bit_RDRND_2 )
+    if( cpuid[3] & bit_RDRND_2 )
       use_rdrnd = 1;
   }
   /* We still do the initialization here, since rdrnd might stop

@@ -3362,13 +3362,13 @@ void low_th_init(void)
   {
     INT32 cpuid[4];
     x86_get_cpuid (1, cpuid);
-    use_tsc_for_slices = cpuid[3] & 0x10; /* TSC exists */
+    use_tsc_for_slices = cpuid[2] & 0x10; /* TSC exists */
 #if 0
     /* Skip tsc invariant check - the current tsc interval method
      * should be robust enough to cope with variable tsc rates. */
     if (use_tsc_for_slices) {
       x86_get_cpuid (0x80000007, cpuid);
-      use_tsc_for_slices = cpuid[3] & 0x100; /* TSC is invariant */
+      use_tsc_for_slices = cpuid[2] & 0x100; /* TSC is invariant */
     }
 #endif
   }
