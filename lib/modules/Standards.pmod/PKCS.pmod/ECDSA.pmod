@@ -31,7 +31,7 @@ Crypto.ECC.Curve parse_ec_parameters(string ec_parameters)
 }
 
 //!
-variant Crypto.ECC.Curve parse_ec_paramaters(Identifier|void named_curve)
+variant Crypto.ECC.Curve parse_ec_parameters(Standards.ASN1.Types.Identifier|void named_curve)
 {
   if (!named_curve) return UNDEFINED;
   return parse_ec_parameters(named_curve->get_der());
