@@ -104,8 +104,6 @@ unsigned INT32 find_next_power(unsigned INT32 x)
 
 #if HAS___BUILTIN_IA32_RDRAND32_STEP
 static int use_rdrnd;
-static unsigned int rnd_index;
-static unsigned long long rnd_index64;
 #define bit_RDRND_2 (1<<30)
 #endif
 
@@ -168,10 +166,11 @@ PMOD_EXPORT unsigned INT32 my_rand(void)
 #if HAS___BUILTIN_IA32_RDRAND32_STEP
   if( use_rdrnd )
   {
+    unsigned int rnd;
     unsigned int cnt = 0;
     do{
-      if( __builtin_ia32_rdrand32_step( &rnd_index ) )
-        return rnd_index;
+      if( __builtin_ia32_rdrand32_step( &rnd ) )
+        return rnd;
     } while(cnt++ < 100);
 
     /* hardware random unit most likely not healthy.
@@ -187,12 +186,13 @@ PMOD_EXPORT unsigned INT64 my_rand64(void)
 #if HAS___BUILTIN_IA32_RDRAND32_STEP
   if( use_rdrnd )
   {
+    unsigned long long rnd;
     unsigned int cnt = 0;
     do{
       /* We blindly trust that _builtin_ia32_rdrand64_step exists when
          the 32 bit version does. */
-      if( __builtin_ia32_rdrand64_step( &rnd_index64 ) )
-        return rnd_index64;
+      if( __builtin_ia32_rdrand64_step( &rnd ) )
+        return rnd;
     } while(cnt++ < 100);
 
     /* hardware random unit most likely not healthy.
