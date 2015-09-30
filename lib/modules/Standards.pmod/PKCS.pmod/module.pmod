@@ -13,7 +13,7 @@
 
 import Standards.ASN1.Types;
 
-private object ecdsa;
+private object ECDSA;
 
 //! Parse a PKCS#8 PrivateKeyInfo (cf @rfc{5208:5@}).
 //!
@@ -44,11 +44,11 @@ Crypto.Sign.State parse_private_key(Sequence seq)
   if ((alg_id == .Identifiers.ec_id) ||
       (alg_id == .Identifiers.ec_dh_id) ||
       (alg_id == .Identifiers.ec_mqw_id)) {
-    if(!ecdsa)
-      ecdsa = master()->resolv("Standards.PKCS.ECDSA");
+    if(!ECDSA)
+      ECDSA = master()->resolv("Standards.PKCS.ECDSA");
     Crypto.ECC.Curve curve =
-      ecdsa->parse_ec_parameters(seq->elements[1]->elements[1]);
-    return ecdsa->parse_private_key(seq->elements[2]->value, curve);
+      ECDSA.parse_ec_parameters(seq->elements[1]->elements[1]);
+    return ECDSA.parse_private_key(seq->elements[2]->value, curve);
   }
 #endif /* Crypto.ECC.Curve */
   return UNDEFINED;
