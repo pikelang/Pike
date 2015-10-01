@@ -460,11 +460,15 @@ PikeType convert_ctype(array(PC.Token) tokens)
 
     case "int":
     case "long":
-    case "size_t":
-    case "ptrdiff_t":
     case "INT32":
       if (signed) return PikeType("int");
       return PikeType("int(0..)");
+
+    case "size_t":
+      return PikeType("int(0..)");
+
+    case "ptrdiff_t":
+      return PikeType("int");
 
     case "double":
     case "float":
