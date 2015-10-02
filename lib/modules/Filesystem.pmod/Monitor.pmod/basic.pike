@@ -1092,7 +1092,7 @@ int filter_file(string path)
 {
   array x = path/"/";
   foreach(x;; string pc)
-    if(pc && strlen(pc) && pc[0]=='.') {/* werror("skipping %O\n", path); */ return 1; }
+    if(pc && strlen(pc) && pc[0]=='.' && pc != "..") {/* werror("skipping %O\n", path); */ return 1; }
     
   return 0;
 }
