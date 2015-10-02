@@ -870,7 +870,11 @@ protected class InotifyMonitor
   protected void unregister_path(int|void dying)
   {
     if (wd != -1) {
-      instance->rm_watch(wd);
+      // NB: instance may be null if the main object has been destructed
+      //     and we've been called via a destroy().
+      if (instance) {
+	instance->rm_watch(wd);
+      }
       wd = -1;
       if (!dying) {
 	// We now need to be polled...
@@ -1325,10 +1329,12 @@ void set_backend(Pike.Backend|void backend)
   set_blocking();
   this::backend = backend;
 #if HAVE_INOTIFY
-  if (backend) {
-    file->set_backend(backend);
-  } else {
-    file->set_backend(Pike.DefaultBackend);
+  if (file) {
+    if (backend) {
+      file->set_backend(backend);
+    } else {
+      file->set_backend(Pike.DefaultBackend);
+    }
   }
 #endif
   if (was_nonblocking) {
