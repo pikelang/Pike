@@ -912,6 +912,11 @@ protected class InotifyMonitor
 	  release_monitor(this);
 	}
 	wd = new_wd;
+	if (initial) {
+	  // NB: Inotify seems to not notify on preexisting paths,
+	  //     so we need to strap it along.
+	  check();
+	}
 	return;
       }
     };
