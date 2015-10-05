@@ -845,6 +845,36 @@ protected class InotifyMonitor
   protected int wd = -1;
   int `accellerated() { return wd != -1; }
 
+  protected void file_exists(string path, Stdio.Stat st)
+  {
+    ::file_exists(path, st);
+    if ((last_change != 0x7fffffff) && (wd != -1)) {
+      // Not stable yet.
+      int t = time(1) - last_change;
+      if (t < 0) t = 0;
+      (backend || Pike.DefaultBackend)->
+	call_out(check, (stable_time || global::stable_time) + 1 - t);
+    }
+  }
+
+  protected void file_created(string path, Stdio.Stat st)
+  {
+    if (wd != -1) {
+      (backend || Pike.DefaultBackend)->
+	call_out(check, (stable_time || global::stable_time) + 1);
+    }
+    ::file_created(path, st);
+  }
+
+  protected void attr_changed(string path, Stdio.Stat st)
+  {
+    if (wd != -1) {
+      (backend || Pike.DefaultBackend)->
+	call_out(check, (stable_time || global::stable_time) + 1);
+    }
+    ::attr_changed(path, st);
+  }
+
   protected void register_path(int|void initial)
   {
     if (wd != -1) return;
