@@ -714,6 +714,22 @@ protected class Monitor(string path,
   }
 }
 
+//! @class DefaultMonitor
+//! This symbol evaluates to the @[Monitor] class used by
+//! the default implementation of @[monitor_factory()].
+//!
+//! It is currently one of the values @[Monitor], @[EventStreamMonitor]
+//! or @[InotifyMonitor].
+//!
+//! @seealso
+//!   @[monitor_factory()]
+
+// NB: See further below for the actual definitions.
+
+//! @decl inherit Monitor
+
+//! @endclass
+
 //
 // Some necessary setup activities for systems that provide
 // filesystem event monitoring
@@ -799,6 +815,8 @@ protected class EventStreamMonitor
     return ret;
   }
 }
+
+constant DefaultMonitor = EventStreamMonitor;
 
 #elseif HAVE_INOTIFY
 
@@ -946,6 +964,13 @@ protected class InotifyMonitor
     ::unregister_path(dying);
   }
 }
+
+constant DefaultMonitor = InotifyMonitor;
+
+#else
+
+constant DefaultMonitor = Monitor;
+
 #endif /* HAVE_EVENTSTREAM || HAVE_INOTIFY */
 
 //! Canonicalize a path.
@@ -1056,27 +1081,18 @@ protected void adjust_monitor(Monitor m)
 //! This function is called by @[monitor()] to create a new @[Monitor]
 //! object.
 //!
-//! The default implementation just calls @[Monitor()] (or one of
-//! @[EventStreamMonitor] or @[InotifyMonitor]) with the same
-//! arguments.
+//! The default implementation just calls @[DefaultMonitor] with the
+//! same arguments.
 //!
 //! @seealso
-//!   @[monitor()]
-protected Monitor monitor_factory(string path, MonitorFlags|void flags,
-				  int(0..)|void max_dir_check_interval,
-				  int(0..)|void file_interval_factor,
-				  int(0..)|void stable_time)
+//!   @[monitor()], @[DefaultMonitor]
+protected DefaultMonitor monitor_factory(string path, MonitorFlags|void flags,
+					 int(0..)|void max_dir_check_interval,
+					 int(0..)|void file_interval_factor,
+					 int(0..)|void stable_time)
 {
-#if HAVE_EVENTSTREAM
-  return EventStreamMonitor(path, flags, max_dir_check_interval,
-			    file_interval_factor, stable_time);
-#elseif HAVE_INOTIFY
-  return InotifyMonitor(path, flags, max_dir_check_interval,
+  return DefaultMonitor(path, flags, max_dir_check_interval,
 			file_interval_factor, stable_time);
-#else /* !HAVE_EVENTSTREAM && !HAVE_INOTIFY */
-  return Monitor(path, flags, max_dir_check_interval,
-		 file_interval_factor, stable_time);
-#endif /* HAVE_EVENTSTREAM || HAVE_INOTIFY */
 }
 
 
