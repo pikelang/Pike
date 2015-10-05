@@ -879,6 +879,7 @@ protected class InotifyMonitor
   {
     if (wd != -1) return;
 
+#ifndef INHIBIT_INOTIFY_MONITOR
     if (initial && !instance) {
       MON_WERR("Creating Inotify monitor instance.\n");
       instance = System.Inotify._Instance();
@@ -920,6 +921,7 @@ protected class InotifyMonitor
 	return;
       }
     };
+#endif /* !INHIBIT_INOTIFY_MONITOR */
     MON_WERR("Registering %O for polling.\n", path);
     ::register_path(initial);
   }
