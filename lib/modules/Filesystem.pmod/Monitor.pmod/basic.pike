@@ -866,13 +866,13 @@ protected class InotifyMonitor
     ::file_created(path, st);
   }
 
-  protected void data_changed(string path, Stdio.Stat st)
+  protected void attr_changed(string path, Stdio.Stat st)
   {
     if (wd != -1) {
       (backend || Pike.DefaultBackend)->
 	call_out(check, (stable_time || global::stable_time) + 1);
     }
-    ::data_changed(path, st);
+    ::attr_changed(path, st);
   }
 
   protected void register_path(int|void initial)
