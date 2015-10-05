@@ -17,6 +17,11 @@ void stable_data_change(string path, Stdio.Stat st) {
   werror("stable_data_change(%O, %O)\r\n", path, st);
 }
 
+//! Return the set of active monitors.
+mapping(string:Monitor) get_monitors()
+{
+  return monitors + ([]);
+}
 
 int check(int|void max_wait, int|void max_cnt,
 	  mapping(string:int)|void ret_stats)
