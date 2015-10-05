@@ -952,7 +952,12 @@ protected class InotifyMonitor
       //     and we've been called via a destroy().
       if (instance) {
 	MON_WERR("### Unregistering from inotify.\n");
-	instance->rm_watch(wd);
+	catch {
+	  // FIXME: For some reason Inotify often complains
+	  //        when we call rm_watch() with what appears
+	  //        to be correct descriptors (Linux 3.17.2).
+	  instance->rm_watch(wd);
+	};
       }
       wd = -1;
       if (!dying) {
