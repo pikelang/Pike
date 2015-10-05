@@ -17,6 +17,12 @@
 //! @seealso
 //!  @[System.FSEvents], @[System.Inotify]
 
+#ifdef FILESYSTEM_MONITOR_DEBUG
+#define MON_WERR(X...)	werror(X)
+#else
+#define MON_WERR(X...)
+#endif
+
 //! The default maximum number of seconds between checks of directories
 //! in seconds.
 //!
@@ -196,6 +202,7 @@ protected class Monitor(string path,
   {
     if (initial) {
       // We need to be polled...
+      MON_WERR("Registering %O for polling.\n", path);
       monitor_queue->push(this);
     }
   }
@@ -206,8 +213,10 @@ protected class Monitor(string path,
   //!   Indicates that the @[Monitor] is being destructed.
   protected void unregister_path(int|void dying)
   {
-    if (!dying) {
-      // We now need to be polled...
+    if (dying) {
+      // We are going away permanently, so remove ourselves from
+      // from the monitor_queue.
+      MON_WERR("Unregistering %O from polling.\n", path);
       monitor_queue->remove(this);
     }
   }
@@ -564,6 +573,7 @@ protected class Monitor(string path,
   //!   @[file_deleted()], @[stable_data_change()]
   int(0..1) check(MonitorFlags|void flags)
   {
+    MON_WERR("Checking monitor %O...\n", this);
     Stdio.Stat st = file_stat(path, 1);
     Stdio.Stat old_st = this::st;
     int orig_flags = this::flags;
@@ -697,6 +707,11 @@ protected class Monitor(string path,
     }
     return 0;
   }
+
+  protected void destroy()
+  {
+    unregister_path(1);
+  }
 }
 
 //
@@ -793,6 +808,7 @@ protected Stdio.File file;
 //! Read callback for events on the Inotify file.
 protected void inotify_parse(mixed id, string data)
 {
+  MON_WERR("inotify_parse(%O, %O)...\n", id, data);
   while (sizeof(data)) {
     array a;
     mixed err = catch {
@@ -802,9 +818,10 @@ protected void inotify_parse(mixed id, string data)
     if (err) {
       // TODO: might have a partial event struct here which gets completed
       // by the next call?? maybe add an internal buffer.
-      werror("Could not parse inotify event: %s\n", describe_error(err));
+      MON_WERR("Could not parse inotify event: %s\n", describe_error(err));
       return;
     }
+    MON_WERR("### Event: %O\n", a);
     string path;
     path = a[3];
     if(path && monitors[path]) {
@@ -833,12 +850,14 @@ protected class InotifyMonitor
     if (wd != -1) return;
 
     if (initial && !instance) {
+      MON_WERR("Creating Inotify monitor instance.\n");
       instance = System.Inotify._Instance();
       file = Stdio.File();
       if (backend) file->set_backend(backend);
       file->assign(instance->fd());
       file->set_nonblocking();
       file->set_read_callback(inotify_parse);
+      MON_WERR("File: %O\n", file);
     }
 
     catch {
@@ -855,38 +874,39 @@ protected class InotifyMonitor
 				       System.Inotify.IN_DELETE_SELF |
 				       System.Inotify.IN_CREATE);
 
+      MON_WERR("Registered %O with %O ==> %d.\n", path, instance, new_wd);
       if (new_wd != -1) {
 	// We shouldn't need to be polled.
 	if (!initial) {
+	  MON_WERR("Unregistering from polling.\n");
 	  release_monitor(this);
 	}
 	wd = new_wd;
 	return;
       }
     };
+    MON_WERR("Registering %O for polling.\n", path);
     ::register_path(initial);
   }
 
   protected void unregister_path(int|void dying)
   {
+    MON_WERR("Unregistering %O...\n", path);
     if (wd != -1) {
       // NB: instance may be null if the main object has been destructed
       //     and we've been called via a destroy().
       if (instance) {
+	MON_WERR("### Unregistering from inotify.\n");
 	instance->rm_watch(wd);
       }
       wd = -1;
       if (!dying) {
 	// We now need to be polled...
+	MON_WERR("Registering for polling.\n");
 	monitor_queue->push(this);
       }
     }
     ::unregister_path(dying);
-  }
-
-  protected void destroy()
-  {
-    unregister_path(1);
   }
 }
 #endif /* HAVE_EVENTSTREAM || HAVE_INOTIFY */
@@ -1092,7 +1112,10 @@ int filter_file(string path)
 {
   array x = path/"/";
   foreach(x;; string pc)
-    if(pc && strlen(pc) && pc[0]=='.' && pc != "..") {/* werror("skipping %O\n", path); */ return 1; }
+    if(pc && strlen(pc) && pc[0]=='.' && pc != "..") {
+      MON_WERR("skipping %O\n", path);
+      return 1;
+    }
     
   return 0;
 }
