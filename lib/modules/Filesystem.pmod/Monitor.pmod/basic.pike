@@ -882,6 +882,12 @@ constant DefaultMonitor = EventStreamMonitor;
 protected System.Inotify._Instance instance;
 protected Stdio.File file;
 
+protected string(8bit) inotify_cookie(int wd)
+{
+  // NB: Prefix with a NUL to make sure not to conflict with real paths.
+  return sprintf("\0%8c", wd);
+}
+
 //! Read callback for events on the Inotify file.
 protected void inotify_parse(mixed id, string data)
 {
@@ -899,14 +905,29 @@ protected void inotify_parse(mixed id, string data)
       return;
     }
     MON_WERR("### Event: %O\n", a);
+    string(8bit) cookie = inotify_cookie(a[0]);
     string path;
     path = a[3];
-    if(path && monitors[path]) {
-      monitors[path]->check(0);
+    Monitor m;
+    if((m = monitors[cookie])) {
+      if (a[1] == System.Inotify.IN_IGNORED) {
+	// This Inotify watch has been removed
+	// (either by us or automatically).
+	MON_WERR("### Monitor watch descriptor %d is no more.\n", a[0]);
+	m_delete(monitors, cookie);
+      }
+      mixed err = catch {
+	  m->check(0);
+	};
+      if (err) {
+	master()->handler_error(err);
+      }
     } else {
+      // Unknown monitor. Perform a full scan.
+      MON_WERR("### Unknown monitor! Performing full scan.\n");
+      check_all();
       // No need to look at the other entries if we're going to do
       // a full scan.
-      check_all();
       return;
     }
 
@@ -990,6 +1011,7 @@ protected class InotifyMonitor
 	  release_monitor(this);
 	}
 	wd = new_wd;
+	monitors[inotify_cookie(wd)] = this;
 	if (initial) {
 	  // NB: Inotify seems to not notify on preexisting paths,
 	  //     so we need to strap it along.
