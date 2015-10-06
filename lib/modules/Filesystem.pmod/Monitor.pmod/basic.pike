@@ -763,34 +763,59 @@ protected class EventStreamMonitor
 {
   inherit Monitor;
 
-  constant accellerated = 1;
+  int(0..1) accellerated;
 
   protected void register_path(int|void initial)
   {
+    if (backend) {
+      // CFRunLoop only works with the primary backend.
+      ::register_path(initial);
+      return;
+    }
     if (!initial) return;
 
     if (!eventstream) {
+      // Make sure that the main backend is in CF-mode.
+      Pike.DefaultBackend.enable_core_foundation(1);
+
+      MON_WERR("Creating event stream.\n");
       eventstream =
 	System.FSEvents.EventStream(({}), 3.0,
 				    System.FSEvents.kFSEventStreamEventIdSinceNow,
 				    System.FSEvents.kFSEventStreamCreateFlagNone);
       eventstream->callback_func = eventstream_callback;
     } else {
-      int already_added = 0;
+      string found;
       foreach(eventstream_paths;;string p) {
+	if (path == p) {
+	  // Unlikely, but...
+	  // NB: Eventstream doesn't notify on the monitored path;
+	  //     only on its contents.
+	  MON_WERR("Path %O already monitored.\n", path);
+	  ::register_path(initial);
+	  return;
+	}
 	if((path == p) || has_prefix(path, p + "/")) {
-	  already_added = 1;
-	  break;
+	  MON_WERR("Path %O already monitored via path %O.\n", path, p);
+	  found = p;
 	}
       }
-      if(already_added) return;
+      if (found) {
+	MON_WERR("Path %O is accellerated via %O.\n", path, found);
+	accellerated = 1;
+	return;
+      }
     }
 
+    MON_WERR("Adding %O to the set of monitored paths.\n", path);
     eventstream_paths += ({path});
     if(eventstream->is_started())
       eventstream->stop();
     eventstream->add_path(path);
     eventstream->start();
+    // NB: Eventstream doesn't notify on the monitored path;
+    //     only on its contents.
+    ::register_path(initial);
   }
 
   int(0..1) check(MonitorFlags|void flags)
@@ -988,6 +1013,11 @@ constant DefaultMonitor = Monitor;
 //!   i.e. no trailing slashes.
 protected string canonic_path(string path)
 {
+#if HAVE_EVENTSTREAM
+  if (!backend) {
+    path = System.resolvepath(path);
+  }
+#endif
   return combine_path(path, ".");
 }
 
