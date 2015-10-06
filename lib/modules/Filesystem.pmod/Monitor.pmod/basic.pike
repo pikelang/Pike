@@ -859,8 +859,6 @@ protected class EventStreamMonitor
     int orig_flags = this::flags;
 
     int(0..1) ret = ::check(flags);
-    if (ret) return ret;
-
     if(orig_flags & MF_RECURSE) {
       // If using FSEvents, we won't receive the name of the file changed,
       // so we have to scan for it.
@@ -1475,7 +1473,18 @@ void set_backend(Pike.Backend|void backend)
   int was_nonblocking = !!co_id;
   set_blocking();
   this::backend = backend;
-#if HAVE_INOTIFY
+#if HAVE_EVENTSTREAM
+#if 0 /* FIXME: The following does NOT work properly. */
+  if (eventstream && backend) {
+    foreach(monitors; string path; Monitor m) {
+      if (m->accellerated) {
+	m->accellerated = 0;
+	monitor_queue->push(m);
+      }
+    }
+  }
+#endif
+#elif HAVE_INOTIFY
   if (file) {
     if (backend) {
       file->set_backend(backend);
