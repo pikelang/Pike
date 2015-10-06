@@ -1031,14 +1031,19 @@ protected class InotifyMonitor
     if (wd != -1) {
       // NB: instance may be null if the main object has been destructed
       //     and we've been called via a destroy().
-      if (instance) {
+      if (instance && dying) {
 	MON_WERR("### Unregistering from inotify.\n");
-	catch {
-	  // FIXME: For some reason Inotify often complains
-	  //        when we call rm_watch() with what appears
-	  //        to be correct descriptors (Linux 3.17.2).
-	  instance->rm_watch(wd);
-	};
+	// NB: Inotify automatically removes watches for deleted files,
+	//     and will complain if we attempt to remove them too.
+	//
+	//     Since we have no idea if there's already a queued ID_IGNORED
+	//     pending we just throw away any error here.
+	mixed err = catch {
+	    instance->rm_watch(wd);
+	  };
+	if (err) {
+	  MON_WERR("### Failed: %s\n", describe_backtrace(err));
+	}
       }
       wd = -1;
       if (!dying) {
@@ -1377,7 +1382,12 @@ void check_all(mapping(string:int)|void ret_stats)
   int scanned_cnt;
   foreach(monitors; string path; Monitor m) {
     scanned_cnt++;
-    cnt += check_monitor(m);
+    mixed err = catch {
+	cnt += check_monitor(m);
+      };
+    if (err) {
+      master()->handle_error(err);
+    }
   }
   if (ret_stats) {
     ret_stats->num_monitors = sizeof(monitors);
