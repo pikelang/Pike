@@ -805,6 +805,7 @@ protected class EventStreamMonitor
       ::register_path(initial);
       return;
     }
+#ifndef INHIBIT_EVENTSTREAM_MONITOR
     if (!initial) return;
 
     if (!eventstream) {
@@ -846,6 +847,7 @@ protected class EventStreamMonitor
       eventstream->stop();
     eventstream->add_path(path);
     eventstream->start();
+#endif /* !INHIBIT_EVENTSTREAM_MONITOR */
     // NB: Eventstream doesn't notify on the monitored path;
     //     only on its contents.
     ::register_path(initial);
