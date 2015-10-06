@@ -750,12 +750,15 @@ protected array(string) eventstream_paths = ({});
 //! in one of the monitored directories.
 protected void eventstream_callback(string path, int flags, int event_id)
 {
+  MON_WERR("eventstream_callback(%O, 0x%08x, %O)\n", path, flags, event_id);
   if(path[-1] == '/') path = path[0..<1];
-  if(monitors[path])
-  {
+  MON_WERR("Normalized path: %O\n", path);
+  if(monitors[path]) {
     monitors[path]->check(0);
+  } else {
+    MON_WERR("No monitor found for path %O. Checking all monitors...\n", path);
+    check_all();
   }
-  else check_all();
 }
 
 //! FSEvents EventStream-accellerated @[Monitor].
@@ -764,6 +767,36 @@ protected class EventStreamMonitor
   inherit Monitor;
 
   int(0..1) accellerated;
+
+  protected void file_exists(string path, Stdio.Stat st)
+  {
+    ::file_exists(path, st);
+    if ((last_change != 0x7fffffff) && accellerated) {
+      // Not stable yet.
+      int t = time(1) - last_change;
+      if (t < 0) t = 0;
+      (backend || Pike.DefaultBackend)->
+	call_out(check, (stable_time || global::stable_time) + 1 - t);
+    }
+  }
+
+  protected void file_created(string path, Stdio.Stat st)
+  {
+    if (accellerated) {
+      (backend || Pike.DefaultBackend)->
+	call_out(check, (stable_time || global::stable_time) + 1);
+    }
+    ::file_created(path, st);
+  }
+
+  protected void attr_changed(string path, Stdio.Stat st)
+  {
+    if (accellerated) {
+      (backend || Pike.DefaultBackend)->
+	call_out(check, (stable_time || global::stable_time) + 1);
+    }
+    ::attr_changed(path, st);
+  }
 
   protected void register_path(int|void initial)
   {
@@ -820,6 +853,7 @@ protected class EventStreamMonitor
 
   int(0..1) check(MonitorFlags|void flags)
   {
+    MON_WERR("Checking path %O...\n", path);
     int orig_flags = this::flags;
 
     int(0..1) ret = ::check(flags);
