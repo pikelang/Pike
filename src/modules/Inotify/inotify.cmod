@@ -26,6 +26,7 @@
 #include "pike_types.h"
 #include "builtin_functions.h"
 #include "fdlib.h"
+#include "fd_control.h"
 #include "pike_threadlib.h"
 
 #ifdef HAVE_SYS_INOTIFY_H
@@ -165,8 +166,18 @@ PIKEFUN array(string|int) parse_event(string data) {
  *!     @[System.Inotify.Instance]
  */
 PIKECLASS _Instance {
-    CVAR int fd;
-    CVAR struct object * fd_object;
+    CVAR struct fd_callback_box box;
+    CVAR struct string_builder buf;
+
+    /*! @decl private function(int, int, int, string:void) event_callback
+     *!
+     *! Callback function that is called when an event is triggered.
+     *!
+     *! @seealso
+     *!   @[set_event_callback()], @[query_event_callback()]
+     */
+    PIKEVAR function(int, int, int, string:void) event_callback
+      flags ID_PRIVATE;
 
     /*! @decl int add_watch(string file, int mask)
      *! Add a watch for a certain file or directory and specific events.
@@ -198,7 +209,7 @@ PIKECLASS _Instance {
 	if (file->size_shift)
 	    Pike_error("Widestring filenames are not allowed.\n");
 
-	err = inotify_add_watch(THIS->fd, file->str, (INT32)mask);
+	err = inotify_add_watch(THIS->box.fd, file->str, mask);
 
 	if (err == -1)
 	    Pike_error("inotify_add_watch failed: %s\n",
@@ -215,9 +226,10 @@ PIKECLASS _Instance {
      *!	    Use @[fd()] instead.
      */
     PIKEFUN int get_fd() {
-	push_int(THIS->fd);
+	push_int(THIS->box.fd);
     }
 
+#if 0
     /*! @decl object fd()
      *! @returns
      *!	    Returns a instance of @[Stdio.Fd] corresponding to the inotify instance. This can passed to
@@ -226,6 +238,7 @@ PIKECLASS _Instance {
     PIKEFUN object fd() {
 	ref_push_object(THIS->fd_object);
     }
+#endif
 
     /*! @decl int rm_watch(int wd)
      *! Remove a watch.
@@ -235,7 +248,7 @@ PIKECLASS _Instance {
     PIKEFUN void rm_watch(int wd) {
 	INT32 err;
 
-	err = inotify_rm_watch(THIS->fd, wd);
+	err = inotify_rm_watch(THIS->box.fd, wd);
 
 	if (!err || (errno == EINVAL)) {
 	    /* NB: EINVAL typically means that the watch descriptor is
@@ -251,40 +264,200 @@ PIKECLASS _Instance {
 	Pike_error("Unexpected error: %d.\n", errno);
     }
 
-    INIT {
-	struct object * o;
-	THIS->fd = inotify_init();
-	THIS->fd_object = NULL;
+    /*! @decl void set_event_callback(function(int, int, int, string:void) cb)
+     *!
+     *! Set the @[event_callback].
+     *!
+     *! @seealso
+     *!   @[get_event_callback()], @[event_callback], @[poll()]
+     */
+    PIKEFUN void set_event_callback(function(int, int, int, string:void) cb)
+    {
+      assign_svalue(&THIS->event_callback, cb);
+    }
 
-	if (THIS->fd == -1) switch (errno) {
-	case EMFILE:
-	    Pike_error("User limit on inotify instances reached.\n");
-	case ENFILE:
-	    Pike_error("User limit on file descriptors reached.\n");
-	case ENOMEM:
-	    Pike_error("No free kernel memory available.\n");
+    /*! @decl function(int, int, int, string:void) get_event_callback()
+     *!
+     *! Get the current @[event_callback].
+     *!
+     *! @seealso
+     *!   @[set_event_callback()], @[event_callback], @[poll()]
+     */
+    PIKEFUN function(int, int, int, string:void) get_event_callback()
+    {
+      push_svalue(&THIS->event_callback);
+    }
+
+    /*! @decl void set_backend(Pike.Backend backend)
+     *!
+     *! Set the backend used for callbacks.
+     *!
+     *! @seealso
+     *!   @[set_event_callback()], @[set_nonblocking()], @[poll()]
+     */
+    PIKEFUN void set_backend(object backend_object)
+    {
+	struct Backend_struct *backend =
+	    get_storage(backend_object, Backend_program);
+	if (!backend)
+	    SIMPLE_BAD_ARG_ERROR("set_backend", 1, "Pike.Backend");
+	change_backend_for_box(&THIS->box, backend);
+    }
+
+    /*! @decl void set_nonblocking()
+     *!
+     *! Enable backend callback mode.
+     *!
+     *! The configured backend will call @[poll()] automatically
+     *! as soon as there are events pending.
+     *!
+     *! @seealso
+     *!   @[set_blocking()], @[poll()]
+     */
+    PIKEFUN void set_nonblocking()
+    {
+      set_fd_callback_events(&THIS->box, PIKE_BIT_FD_READ, 0);
+    }
+
+    /*! @decl void set_blocking()
+     *!
+     *! Disable backend callback mode.
+     *!
+     *! The configured backend will stop calling @[poll()], so
+     *! @[poll()] will need to be called by hand.
+     *!
+     *! @seealso
+     *!   @[set_blocking()], @[poll()]
+     */
+    PIKEFUN void set_blocking()
+    {
+      set_fd_callback_events(&THIS->box, 0, 0);
+    }
+
+    /*! @decl void poll()
+     *!
+     *! Check for any pending events.
+     *!
+     *! Any pending events will be read and parsed, and @[event_callback] will
+     *! be called once for each event. The arguments to the @[event_callback]
+     *! will be:
+     *! @array
+     *!   @elem int 1
+     *!     The watch descriptor that was triggered.
+     *!   @elem int 2
+     *!     The event that was triggerend (one of @tt{IN_*@}).
+     *!   @elem int 3
+     *!     An integer cookie used to identify grouped events.
+     *!   @elem string 4
+     *!     The name of the path segment (if any).
+     *! @endarray
+     *!
+     *! @note
+     *!   This function is called by the backend when there are events
+     *!   pending.
+     *!
+     *! @seealso
+     *!   @[set_event_callback()]
+     */
+    PIKEFUN void poll()
+    {
+	ptrdiff_t off = 0;
+	ptrdiff_t bytes;
+	do {
+	    string_build_mkspace(&THIS->buf, 1024, 0);
+	    do {
+		bytes = read(THIS->box.fd,
+			     THIS->buf.s->str + THIS->buf.s->len,
+			     1024);
+	    } while ((bytes == -1) && (errno == EINTR));
+	    if (bytes > 0) {
+	      THIS->buf.s->len += bytes;
+	      fprintf(stderr, "poll: Got %d bytes of inotify data.\n",
+		      (int)bytes);
+	    }
+	    while (THIS->buf.s->len >=
+		   (off + (ptrdiff_t)sizeof(struct inotify_event))) {
+		struct inotify_event *e = (void *)(THIS->buf.s->str + off);
+		const char *path = (char *)(e + 1);
+		if ((off + (ptrdiff_t)sizeof(struct inotify_event) + e->len) >
+		    THIS->buf.s->len) {
+		    /* Not enough data for the filename yet. */
+		    break;
+		}
+		off += sizeof(struct inotify_event) + e->len;
+
+		push_int(e->wd);
+		push_int(e->mask);
+		push_int(e->cookie);
+		push_string(make_shared_binary_string(path,
+						      strnlen(path, e->len)));
+		safe_apply_svalue(&THIS->event_callback, 4, 1);
+		pop_stack();
+	    }
+	    if (off == THIS->buf.s->len) {
+		/* End of data reached. Restart at beginning of buffer. */
+		off = THIS->buf.s->len = 0;
+	    }
+	} while (bytes > 0);
+	if (off) {
+	    /* Unlikely, but... */
+	    THIS->buf.s->len -= off;
+	    memmove(THIS->buf.s->str, THIS->buf.s->str + off,
+		    THIS->buf.s->len);
 	}
+	fprintf(stderr, "poll: %d bytes left in buffer.\n",
+		(int)THIS->buf.s->len);
+    }
 
-	o = file_make_object_from_fd(THIS->fd, FILE_READ, fd_CAN_NONBLOCK);
-	/* We will close the inotify fd on EXIT */
-	((struct my_file *)(o->storage + o->prog->inherits->storage_offset))->flags |= FILE_NO_CLOSE_ON_DESTRUCT;
-	THIS->fd_object = o;
+    static int got_inotify_event(struct fd_callback_box *box, int UNUSED(event))
+    {
+	apply(box->ref_obj, "poll", 0);
+	pop_stack();
+	return 0;
+    }
+
+    INIT {
+	THIS->box.fd = -1;
+	init_string_builder_alloc(&THIS->buf, 1024, 0);
+	INIT_FD_CALLBACK_BOX(&THIS->box, default_backend,
+			     Pike_fp->current_object,
+			     inotify_init(), 0, got_inotify_event, 0);
+
+	if (THIS->box.fd == -1) {
+	  switch (errno) {
+	  case EMFILE:
+	    Pike_error("User limit on inotify instances reached.\n");
+	    break;
+	  case ENFILE:
+	    Pike_error("User limit on file descriptors reached.\n");
+	    break;
+	  case ENOMEM:
+	    Pike_error("No free kernel memory available.\n");
+	    break;
+	  default:
+	    Pike_error("Failed to initialize.\n");
+	    break;
+	  }
+	}
+	set_nonblocking(THIS->box.fd, 1);
     }
 
     EXIT {
-	if (THIS->fd_object) {
-	    free_object(THIS->fd_object);
-	    THIS->fd_object = NULL;
-	}
-	if (THIS->fd != -1) {
-	    int fd = THIS->fd;
+	if (THIS->box.fd != -1) {
+	    int fd = THIS->box.fd;
+	    set_fd_callback_events(&THIS->box, 0, 0);
+	    change_fd_for_box(&THIS->box, -1);
+	    unhook_fd_callback_box(&THIS->box);
 	    /*
-	     * currently (linux 3.4.9) closing an inotify fd takes in the order of 100 ms
+	     * Currently (linux 3.4.9) closing an inotify fd takes
+	     * on the order of 100 ms
 	     */
 	    THREADS_ALLOW();
-	    close(fd);
+	    while ((close(fd) == -1) && (errno == EINTR))
+	      ;
 	    THREADS_DISALLOW();
 	}
+	free_string_builder(&THIS->buf);
     }
 }
 
