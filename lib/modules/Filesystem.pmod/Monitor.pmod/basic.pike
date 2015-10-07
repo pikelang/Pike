@@ -880,7 +880,6 @@ constant DefaultMonitor = EventStreamMonitor;
 #elseif HAVE_INOTIFY
 
 protected System.Inotify._Instance instance;
-protected Stdio.File file;
 
 protected string(8bit) inotify_cookie(int wd)
 {
@@ -888,50 +887,32 @@ protected string(8bit) inotify_cookie(int wd)
   return sprintf("\0%8c", wd);
 }
 
-//! Read callback for events on the Inotify file.
-protected void inotify_parse(mixed id, string data)
+//! Event callback for Inotify.
+protected void inotify_event(int wd, int event, int cookie, string(8bit) path)
 {
-  MON_WERR("inotify_parse(%O, %O)...\n", id, data);
-  while (sizeof(data)) {
-    array a;
+  MON_WERR("inotify_event(%O, %s, %O, %O)...\n",
+	   wd, System.Inotify.describe_mask(event), cookie, path);
+  string(8bit) icookie = inotify_cookie(wd);
+  Monitor m;
+  if((m = monitors[icookie])) {
+    if (event == System.Inotify.IN_IGNORED) {
+      // This Inotify watch has been removed
+      // (either by us or automatically).
+      MON_WERR("### Monitor watch descriptor %d is no more.\n", wd);
+      m_delete(monitors, icookie);
+    }
     mixed err = catch {
-	a = System.Inotify.parse_event(data);
+	m->check(0);
       };
-
     if (err) {
-      // TODO: might have a partial event struct here which gets completed
-      // by the next call?? maybe add an internal buffer.
-      MON_WERR("Could not parse inotify event: %s\n", describe_error(err));
-      return;
+      master()->handler_error(err);
     }
-    MON_WERR("### Event: %O\n", a);
-    string(8bit) cookie = inotify_cookie(a[0]);
-    string path;
-    path = a[3];
-    Monitor m;
-    if((m = monitors[cookie])) {
-      if (a[1] == System.Inotify.IN_IGNORED) {
-	// This Inotify watch has been removed
-	// (either by us or automatically).
-	MON_WERR("### Monitor watch descriptor %d is no more.\n", a[0]);
-	m_delete(monitors, cookie);
-      }
-      mixed err = catch {
-	  m->check(0);
-	};
-      if (err) {
-	master()->handler_error(err);
-      }
-    } else {
-      // Unknown monitor. Perform a full scan.
-      MON_WERR("### Unknown monitor! Performing full scan.\n");
-      check_all();
-      // No need to look at the other entries if we're going to do
-      // a full scan.
-      return;
-    }
-
-    data = data[a[4]..];
+  } else {
+    // Unknown monitor. Perform a full scan.
+    MON_WERR("### Unknown monitor! Performing full scan.\n");
+    check_all();
+    // No need to look at the other entries if we're going to do
+    // a full scan.
   }
 }
 
@@ -981,12 +962,12 @@ protected class InotifyMonitor
     if (initial && !instance) {
       MON_WERR("Creating Inotify monitor instance.\n");
       instance = System.Inotify._Instance();
-      file = Stdio.File();
-      if (backend) file->set_backend(backend);
-      file->assign(instance->fd());
-      file->set_nonblocking();
-      file->set_read_callback(inotify_parse);
-      MON_WERR("File: %O\n", file);
+      if (backend) instance->set_backend(backend);
+      instance->set_event_callback(inotify_event);
+      if (co_id) {
+	MON_WERR("Turning on nonblocking mode for Inotify.\n");
+	instance->set_nonblocking();
+      }
     }
 
     catch {
@@ -1517,12 +1498,8 @@ void set_backend(Pike.Backend|void backend)
   }
 #endif
 #elif HAVE_INOTIFY
-  if (file) {
-    if (backend) {
-      file->set_backend(backend);
-    } else {
-      file->set_backend(Pike.DefaultBackend);
-    }
+  if (instance) {
+    instance->set_backend(backend || Pike.DefaultBackend);
   }
 #endif
   if (was_nonblocking) {
@@ -1541,6 +1518,11 @@ void set_blocking()
     else remove_call_out(co_id);
     co_id = 0;
   }
+#if HAVE_INOTIFY
+  if (instance) {
+    instance->set_blocking();
+  }
+#endif
 }
 
 //! Backend check callback function.
@@ -1581,6 +1563,11 @@ protected void backend_check()
 //!   @[set_blocking()], @[check()].
 void set_nonblocking(int|void t)
 {
+#if HAVE_INOTIFY
+  if (instance) {
+    instance->set_nonblocking();
+  }
+#endif
   if (co_id) return;
   // NB: Other stuff than plain files may be used with the monitoring
   //     system, so the call_out may be needed even with accellerators.
