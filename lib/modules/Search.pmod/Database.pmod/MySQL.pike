@@ -10,9 +10,12 @@ inherit .Base;
 
 protected
 {
-// This is the database object that all queries will be made to.
-  Sql.Sql db;
+  // This is the database object that all queries will be made to.
   string host;
+  Sql.Sql get_db()
+  {
+    return Sql.Sql(host);
+  }
   mapping options;
   string mergefile_path;
   int mergefile_counter = 0;
@@ -21,7 +24,7 @@ protected
 
 void create(string db_url, void|mapping _options)
 {
-  db=Sql.Sql(host=db_url);
+  Sql.Sql(host=db_url);
   options = _options || ([]);
   mergefile_path = options->mergefiles;
   
@@ -73,7 +76,8 @@ int supports_padded_blobs()
 void init_tables()
 {
   int use_padded_blobs = supports_padded_blobs();
-  
+
+  Sql.Sql db = get_db();
   db->query(
 #"create table if not exists uri (id          int unsigned primary key
                                      auto_increment not null,
@@ -159,6 +163,7 @@ void init_tables()
 
 void clear()
 {
+  Sql.Sql db = get_db();
   db->query("delete from word_hit");
   db->query("delete from uri");
   db->query("delete from document");
@@ -195,6 +200,7 @@ protected string to_md5(string url)
 
 int get_uri_id(string uri, void|int do_not_create)
 {
+  Sql.Sql db = get_db();
   string s=sprintf("select id from uri where uri_md5='%s'", to_md5(uri));
   array a=db->query(s);
   if(sizeof(a))
@@ -216,6 +222,7 @@ int get_document_id(string uri, void|string language, void|int do_not_create)
   if (!uri_id)
     return 0;
   
+  Sql.Sql db = get_db();
   string s=sprintf("select id from document where "
 		   "uri_id='%d'", uri_id);
   if(language)
@@ -234,6 +241,7 @@ int get_document_id(string uri, void|string language, void|int do_not_create)
 
 mapping get_uri_and_language(int|array(int) doc_id)
 {
+  Sql.Sql db = get_db();
   if(arrayp(doc_id))
   {
     array a=db->query("select document.id,document.language, uri.uri from document, uri "
@@ -254,11 +262,13 @@ mapping get_uri_and_language(int|array(int) doc_id)
 
 void remove_uri(string|Standards.URI uri)
 {
+  Sql.Sql db = get_db();
   db->query("delete from uri where uri_md5=%s", to_md5((string)uri));
 }
 
 void remove_uri_prefix(string|Standards.URI uri)
 {
+  Sql.Sql db = get_db();
   string uri_string = (string)uri;
   db->query("delete from uri where uri like '" + db->quote(uri_string) + "%%'");
 }
@@ -278,6 +288,7 @@ void remove_document(string|Standards.URI uri, void|string language)
 
   if(!uri_id)
     return;
+  Sql.Sql db = get_db();
   array a;
   if(language) {
     //  Need to remove this particular language fork as well as any
@@ -305,6 +316,7 @@ void remove_document(string|Standards.URI uri, void|string language)
 
 void remove_document_prefix(string|Standards.URI uri)
 {
+  Sql.Sql db = get_db();
   array a =
     db->query("SELECT document.id AS id"
 	      "  FROM document, uri "
@@ -329,6 +341,7 @@ Search.ResultSet get_deleted_documents()
 {
   // FIXME: Make something better
 
+  Sql.Sql db = get_db();
   array a = db->query("select max(doc_id) as m, count(*) as c from deleted_document");
   int max_id = (int)a[0]->m;
   int count = (int)a[0]->c;
@@ -347,6 +360,7 @@ Search.ResultSet get_deleted_documents()
 
 Search.ResultSet get_all_documents()
 {
+  Sql.Sql db = get_db();
   array ids =
     (array(int)) db->query("SELECT id FROM document ORDER BY id")->id;
   return Search.ResultSet(ids);
@@ -375,6 +389,7 @@ mapping(string:int) list_fields()
   if(list_fields_cache)
     return list_fields_cache;
   init_fields();
+  Sql.Sql db = get_db();
   array a=db->query("select name,id from field") + ({ (["name":"body",
 							"id": "0"]) });
   return list_fields_cache=mkmapping(a->name, (array(int))a->id);
@@ -386,6 +401,7 @@ int allocate_field_id(string field)
     init_fields();
   if(field=="body")
     return 0;
+  Sql.Sql db = get_db();
   array a =db->query("select id from field where name=%s", field);
   if(sizeof(a))
     return (int)a[0]->id;
@@ -418,6 +434,7 @@ int get_field_id(string field, void|int do_not_create)
   if(field_cache[field]) return field_cache[field];
   
   init_fields();
+  Sql.Sql db = get_db();
   string s=sprintf("select id from field where name='%s'",db->quote(field));
   array a=db->query(s);
   if(sizeof(a))
@@ -437,6 +454,7 @@ void remove_field(string field)
   init_fields();
   m_delete(field_cache, field);
   list_fields_cache=0;
+  Sql.Sql db = get_db();
   db->query("delete from field where name=%s", field);
 }
 
@@ -482,6 +500,7 @@ void insert_words(Standards.URI|string uri, void|string language,
 array(string) expand_word_glob(string g, void|int max_hits)
 {
   g = replace( string_to_utf8(g), ({ "*", "?" }), ({ "%", "_" }) );
+  Sql.Sql db = get_db();
   if(max_hits)
     return map(db->query("select distinct word from word_hit where word like %s limit %d",
 			 g, max_hits)->word,utf8_to_string);
@@ -522,6 +541,7 @@ string get_blob(string word, int num,
 #endif
 
   int use_padded_blobs = supports_padded_blobs();
+  Sql.Sql db = get_db();
   array a =
     db->query("  SELECT hits, first_doc_id " +
 	      (use_padded_blobs ? ", used_len, real_len " : "") +
@@ -577,11 +597,13 @@ void remove_metadata(Standards.URI|string uri, void|string language)
   int doc_id;
   if(!intp(uri))
     doc_id = get_document_id((string)uri, language, 1);
+  Sql.Sql db = get_db();
   db->query("delete from metadata where doc_id = %d", doc_id);
 }
 
 protected string make_fields_sql(void|array(string) wanted_fields)
 {
+  Sql.Sql db = get_db();
   if(wanted_fields && sizeof(wanted_fields))
     return " and name IN ('"+map(wanted_fields,db->quote)*"','"+"')";
   else
@@ -597,6 +619,7 @@ mapping(string:string) get_metadata(int|Standards.URI|string uri,
     doc_id=uri;
   else
     doc_id = get_document_id((string)uri, language);
+  Sql.Sql db = get_db();
   array a=db->query("select name,value from metadata where doc_id=%d"+
 		    make_fields_sql(wanted_fields),
 		    doc_id);
@@ -615,6 +638,7 @@ mapping(string:string) get_metadata(int|Standards.URI|string uri,
 mapping(int:string) get_special_metadata(array(int) doc_ids,
 					  string wanted_field)
 {
+  Sql.Sql db = get_db();
   array a=db->query("select doc_id,value from metadata where doc_id IN ("+
 		    ((array(string))doc_ids)*","+") and name = %s",
 		    wanted_field);
@@ -653,6 +677,7 @@ void set_metadata(Standards.URI|string uri, void|string language,
     if(ind!="body")
       md[ind]=string_to_utf8(md[ind]);
 
+  Sql.Sql db = get_db();
   string s=map(Array.transpose( ({ map(indices(md),db->quote),
 				   map(values(md), db->quote) }) ),
 	       lambda(array a)
@@ -669,12 +694,14 @@ void set_lastmodified(Standards.URI|string uri,
 		      int when)
 {
   int doc_id   = get_document_id((string)uri, language);
+  Sql.Sql db = get_db();
   db->query("replace into lastmodified (doc_id, at) values (%d,%d)", doc_id, when);
 }
 
 int get_lastmodified(Standards.URI|string|array(Standards.URI|string) uri, void|string language)
 {
   int doc_id   = get_document_id((string)uri, language);
+  Sql.Sql db = get_db();
   array q = db->query("select at from lastmodified where doc_id=%d", doc_id);
   if( sizeof( q ) )
       return (int)q[0]->at;
@@ -682,6 +709,7 @@ int get_lastmodified(Standards.URI|string|array(Standards.URI|string) uri, void|
 
 void randomize_dates()
 {
+  Sql.Sql db = get_db();
   foreach(db->query("select id from document")->id, string id)
     db->query("replace into lastmodified (doc_id,at) values (%s,%d)",
 	      id,
@@ -696,6 +724,7 @@ protected
   
   int get_max_doc_id()
   {
+    Sql.Sql db = get_db();
     array a = db->query("select doc_id from lastmodified order by doc_id desc limit 1");
     if(!sizeof(a))
       return 0;
@@ -711,6 +740,7 @@ _WhiteFish.DateSet get_global_dateset()
     return dateset_cache;
   else
   {
+    Sql.Sql db = get_db();
     array a = db->query("select doc_id,at from lastmodified where "
 			"doc_id > %d order by doc_id asc", dateset_cache_max_doc_id);
     
@@ -736,6 +766,7 @@ _WhiteFish.DateSet get_global_publ_dateset()
     return publ_dateset_cache;
   else
   {
+    Sql.Sql db = get_db();
     array(mapping(string:mixed)) a = 
       db->query("SELECT doc_id, value FROM metadata "
 		" WHERE name = 'publish-time' "
@@ -777,6 +808,7 @@ void add_links(Standards.URI|string uri,
 	{
 	  return sprintf("(%d, %d)", doc_id, to_id);
 	}) * ", ";
+  Sql.Sql db = get_db();
   db->query(res);
 }
 
@@ -785,11 +817,13 @@ void remove_links(Standards.URI|string uri,
 {
   int doc_id = get_document_id((string)uri, language, 1);
 
+  Sql.Sql db = get_db();
   db->query("delete from link where from_id=%d", doc_id);
 }
 
 array(int) get_broken_links()
 {
+  Sql.Sql db = get_db();
   db->query("select 'Not yet done :-)'");
 }
 
@@ -858,7 +892,7 @@ protected void store_to_db( void|string mergedfilename )
   
   int s = time();
   int q;
-  Sql.Sql db = Sql.Sql( host );
+  Sql.Sql db = get_db();
 #ifdef SEARCH_DEBUG  
   werror("----------- sync() %4d docs --------------\n", docs);
 #endif  
@@ -1209,18 +1243,21 @@ int memsize()
 
 mapping(string|int:int) get_language_stats()
 {
+  Sql.Sql db = get_db();
   array a=db->query("select count(id) as c,language from document group by language");
   return mkmapping( a->language, a->c);
 }
 
 int get_num_words()
 {
+  Sql.Sql db = get_db();
   return (int)(db->query("select count(distinct word) as c from word_hit") +
 	       ({ (["c": 0]) }))[0]->c;
 }
 
 int get_database_size()
 {
+  Sql.Sql db = get_db();
   int size;
   foreach(db->query("show table status"), mapping table)
     size += (int)table->Data_length + (int)table->Index_length;
@@ -1229,6 +1266,7 @@ int get_database_size()
 
 int get_num_deleted_documents()
 {
+  Sql.Sql db = get_db();
   return (int)db->query("select count(*) as c from deleted_document")[0]->c;
 }
 
@@ -1239,6 +1277,7 @@ protected string my_denormalize(string in)
 
 array(array) get_most_common_words(void|int count)
 {
+  Sql.Sql db = get_db();
   array a =
     db->query("   SELECT word, " +
 	      (supports_padded_blobs() ?
@@ -1258,6 +1297,7 @@ array(array) get_most_common_words(void|int count)
 
 void list_url_by_prefix(string url_prefix, function(string:void) cb)
 {
+  Sql.Sql db = get_db();
   Sql.sql_result q =
     db->big_query("SELECT uri "
 		  "  FROM uri "
