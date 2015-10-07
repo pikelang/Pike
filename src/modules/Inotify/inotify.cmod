@@ -237,15 +237,18 @@ PIKECLASS _Instance {
 
 	err = inotify_rm_watch(THIS->fd, wd);
 
-	if (err == 0) {
+	if (!err || (errno == EINVAL)) {
+	    /* NB: EINVAL typically means that the watch descriptor is
+	     *     invalid, and is often triggered by the descriptor
+	     *     having been automatically removed.
+	     */
 	    return;
 	}
 
-	if (errno == EINVAL) {
-	    Pike_error("Wrong argument to rm_watch().\n");
-	} else if (errno == EBADF) {
+	if (errno == EBADF) {
 	    Pike_error("Oups. I feel funny inside.\n");
 	}
+	Pike_error("Unexpected error: %d.\n", errno);
     }
 
     INIT {
