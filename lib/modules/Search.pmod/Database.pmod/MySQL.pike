@@ -10,7 +10,7 @@ inherit .Base;
 
 protected
 {
-  // This is the database object that all queries will be made to.
+  // This is the database that all queries will be made to.
   string host;
   Sql.Sql get_db()
   {
@@ -24,7 +24,8 @@ protected
 
 void create(string db_url, void|mapping _options)
 {
-  Sql.Sql(host=db_url);
+  host = db_url;
+  get_db();
   options = _options || ([]);
   mergefile_path = options->mergefiles;
 
@@ -47,7 +48,8 @@ void destroy()
 
 string _sprintf()
 {
-  return sprintf("Search.Database.MySQL(%O,%O)", host, mergefile_path);
+  return sprintf("Search.Database.MySQL(%O,%O)",
+		 Sql.censor_sql_url(host), mergefile_path);
 }
 
 
