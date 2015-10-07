@@ -229,17 +229,6 @@ PIKECLASS _Instance {
 	push_int(THIS->box.fd);
     }
 
-#if 0
-    /*! @decl object fd()
-     *! @returns
-     *!	    Returns a instance of @[Stdio.Fd] corresponding to the inotify instance. This can passed to
-     *!	    @[Stdio.File()->assign()].
-     */
-    PIKEFUN object fd() {
-	ref_push_object(THIS->fd_object);
-    }
-#endif
-
     /*! @decl int rm_watch(int wd)
      *! Remove a watch.
      *! @param wd
