@@ -384,14 +384,18 @@ PIKECLASS _Instance {
 	    }
 	    while (THIS->buf.s->len >=
 		   (off + (ptrdiff_t)sizeof(struct inotify_event))) {
+	        /* NB: Assumes that e->len has a valid alignment
+		 *     for the struct. This could cause problems
+		 *     on non-x86 systems and injected data.
+		 */
 		struct inotify_event *e = (void *)(THIS->buf.s->str + off);
 		const char *path = (char *)(e + 1);
-		if ((off + (ptrdiff_t)sizeof(struct inotify_event) + e->len) >
-		    THIS->buf.s->len) {
+		ptrdiff_t new_off = off + sizeof(struct inotify_event) + e->len;
+		if (new_off > THIS->buf.s->len) {
 		    /* Not enough data for the filename yet. */
 		    break;
 		}
-		off += sizeof(struct inotify_event) + e->len;
+		off = new_off;
 
 		push_int(e->wd);
 		push_int(e->mask);
