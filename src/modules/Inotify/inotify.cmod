@@ -381,8 +381,6 @@ PIKECLASS _Instance {
 	    } while ((bytes == -1) && (errno == EINTR));
 	    if (bytes > 0) {
 	      THIS->buf.s->len += bytes;
-	      fprintf(stderr, "poll: Got %d bytes of inotify data.\n",
-		      (int)bytes);
 	    }
 	    while (THIS->buf.s->len >=
 		   (off + (ptrdiff_t)sizeof(struct inotify_event))) {
@@ -414,8 +412,6 @@ PIKECLASS _Instance {
 	    memmove(THIS->buf.s->str, THIS->buf.s->str + off,
 		    THIS->buf.s->len);
 	}
-	fprintf(stderr, "poll: %d bytes left in buffer.\n",
-		(int)THIS->buf.s->len);
     }
 
     static int got_inotify_event(struct fd_callback_box *box, int UNUSED(event))
