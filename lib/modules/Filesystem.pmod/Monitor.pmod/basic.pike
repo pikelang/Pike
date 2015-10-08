@@ -1421,6 +1421,12 @@ void check_all(mapping(string:int)|void ret_stats)
 int check(int|void max_wait, int|void max_cnt,
 	  mapping(string:int)|void ret_stats)
 {
+#if HAVE_INOTIFY
+  if (instance) {
+    /* FIXME: No statistics currently available. */
+    instance->poll();
+  }
+#endif
   int scan_cnt = max_cnt;
   int scan_wait = max_wait;
   while(1) {
