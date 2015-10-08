@@ -178,6 +178,22 @@ PIKECLASS _Instance {
      */
     PIKEVAR function(int, int, int, string:void) event_callback
       flags ID_PRIVATE;
+    static int event_callback_fun_num;
+
+    EXTRA
+    {
+      /* NB: Inlined isidentifier() due to it not being exported. */
+      event_callback_fun_num =
+	really_low_find_shared_string_identifier(MK_STRING("event_callback"),
+						 Pike_compiler->new_program,
+						 SEE_PROTECTED|SEE_PRIVATE);
+      if (event_callback_fun_num == -1) {
+	Pike_fatal("Inotify: Event callback variable not mapped!\n");
+      }
+      /* We don't want to count references to ourselves. */
+      ID_FROM_INT(Pike_compiler->new_program, event_callback_fun_num)->
+	identifier_flags |= IDENTIFIER_NO_THIS_REF;
+    }
 
     /*! @decl int add_watch(string file, int mask)
      *! Add a watch for a certain file or directory and specific events.
@@ -262,7 +278,11 @@ PIKECLASS _Instance {
      */
     PIKEFUN void set_event_callback(function(int, int, int, string:void) cb)
     {
-      assign_svalue(&THIS->event_callback, cb);
+      /* Use object indexing to handle circular reference counting correctly. */
+      object_low_set_index(Pike_fp->current_object,
+			   Pike_fp->context->identifier_level +
+			   event_callback_fun_num,
+			   cb);
     }
 
     /*! @decl function(int, int, int, string:void) get_event_callback()
