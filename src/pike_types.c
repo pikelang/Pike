@@ -324,6 +324,28 @@ PMOD_EXPORT void count_memory_in_pike_types(size_t *n, size_t *s) {
 struct pike_type **pike_type_hash = NULL;
 size_t pike_type_hash_size = 0;
 
+static void unlink_type(struct pike_type *t)
+{
+  unsigned INT32 hash = t->hash & pike_type_hash_size;
+  struct pike_type **t2 = pike_type_hash + hash;
+
+#ifdef PIKE_DEBUG
+  /* PIKE_DEBUG code */
+  if (hash > pike_type_hash_size) {
+    Pike_fatal("Modulo operation failed for hash:%u, index:%u, size:%u.\n",
+	       t->hash, hash, pike_type_hash_size);
+  }
+    /* End PIKE_DEBUG code */
+#endif
+  while (*t2) {
+    if (*t2 == t) {
+      *t2 = t->next;
+      break;
+    }
+    t2 = &((*t2)->next);
+  }
+}
+
 void debug_free_type(struct pike_type *t)
 {
 #ifdef DEBUG_MALLOC
@@ -331,27 +353,14 @@ void debug_free_type(struct pike_type *t)
     Pike_fatal("Freeing dead type.\n");
   }
 #endif /* DEBUG_MALLOC */
- loop:
-  if (!sub_ref(t)) {
-    unsigned INT32 hash = t->hash & pike_type_hash_size;
-    struct pike_type **t2 = pike_type_hash + hash;
+  while(1) {
     struct pike_type *car, *cdr;
     unsigned INT32 type;
-#ifdef PIKE_DEBUG
-    /* PIKE_DEBUG code */
-    if (hash > pike_type_hash_size) {
-      Pike_fatal("Modulo operation failed for hash:%u, index:%u, size:%u.\n",
-		 t->hash, hash, pike_type_hash_size);
-    }
-    /* End PIKE_DEBUG code */
-#endif
-    while (*t2) {
-      if (*t2 == t) {
-	*t2 = t->next;
-	break;
-      }
-      t2 = &((*t2)->next);
-    }
+    const struct pike_type_def *def;
+
+    if (!t || sub_ref(t)) return;
+
+    unlink_type(t);
 
     car = t->car;
     cdr = t->cdr;
@@ -359,70 +368,44 @@ void debug_free_type(struct pike_type *t)
 
     really_free_pike_type((struct pike_type*)debug_malloc_pass(t));
 
-    /* FIXME: Recursion: Should we use a stack? */
-    switch(type) {
-    case T_FUNCTION:
-    case T_MANY:
-    case T_TUPLE:
-    case T_MAPPING:
-    case T_OR:
-    case T_AND:
-    case PIKE_T_RING:
-      /* Free car & cdr */
-      free_type(car);
-      t = (struct pike_type *) cdr;
-      debug_free_type_preamble (t);
-      goto loop;
-
-    case T_ARRAY:
-    case T_MULTISET:
-    case T_NOT:
-    case T_TYPE:
-    case T_PROGRAM:
-    case T_STRING:
-      /* Free car */
-      t = (struct pike_type *) car;
-      debug_free_type_preamble (t);
-      goto loop;
-
-    case T_SCOPE:
-    case T_ASSIGN:
-      /* Free cdr */
-      t = (struct pike_type *) cdr;
-      debug_free_type_preamble (t);
-      goto loop;
-
-    case PIKE_T_ATTRIBUTE:
-    case PIKE_T_NAME:
-      free_string((struct pike_string *)car);
-      t = (struct pike_type *) cdr;
-      debug_free_type_preamble (t);
-      goto loop;
+    def = pike_type_defs[type];
 
 #ifdef PIKE_DEBUG
-    case '0':
-    case '1':
-    case '2':
-    case '3':
-    case '4':
-    case '5':
-    case '6':
-    case '7':
-    case '8':
-    case '9':
-    case T_FLOAT:
-    case T_MIXED:
-    case T_VOID:
-    case T_ZERO:
-    case PIKE_T_UNKNOWN:
-    case T_INT:
-    case T_OBJECT:
-      break;
-
-    default:
+    if (!def) {
       Pike_fatal("free_type(): Unhandled type-node: %d\n", type);
-      break;
+    }
 #endif /* PIKE_DEBUG */
+
+    if (def->free_type_car) {
+      (def->free_type_car)(car);
+    }
+
+    if (def->free_type_cdr) {
+      (def->free_type_cdr)(cdr);
+    }
+
+    /* FIXME: Recursion: Should we use a stack? */
+    switch(def->flags) {
+    case TYPE_FLAG_IS_LEAF:
+      return;
+    case TYPE_FLAG_CAR_IS_TYPE:
+      t = car;
+      debug_free_type_preamble(t);
+      continue;
+    case TYPE_FLAG_BOTH_ARE_TYPES:
+      if (car) {
+	if (!cdr) {
+	  t = car;
+	  debug_free_type_preamble(t);
+	  continue;
+	}
+	free_type(car);
+      }
+      /* FALL_THROUGH */
+    case TYPE_FLAG_CDR_IS_TYPE:
+      t = cdr;
+      debug_free_type_preamble(t);
+      continue;
     }
   }
 }
@@ -528,65 +511,24 @@ static inline struct pike_type *debug_mk_type(unsigned INT32 type,
 #endif /* PIKE_EXTRA_DEBUG */
     if ((t->hash == hash) && (t->type == type) &&
 	(t->car == car) && (t->cdr == cdr)) {
-      /* Free car & cdr as appropriate. */
-      switch(type) {
-      case T_FUNCTION:
-      case T_MANY:
-      case T_TUPLE:
-      case T_MAPPING:
-      case T_OR:
-      case T_AND:
-      case PIKE_T_RING:
-	/* Free car & cdr */
-	free_type((struct pike_type *)debug_malloc_pass(car));
-	free_type((struct pike_type *)debug_malloc_pass(cdr));
-	break;
-
-      case T_ARRAY:
-      case T_MULTISET:
-      case T_NOT:
-      case T_TYPE:
-      case T_PROGRAM:
-      case T_STRING:
-	/* Free car */
-	free_type((struct pike_type *)debug_malloc_pass(car));
-	break;
-
-      case T_SCOPE:
-      case T_ASSIGN:
-	/* Free cdr */
-	free_type((struct pike_type *)debug_malloc_pass(cdr));
-	break;
-
-      case PIKE_T_ATTRIBUTE:
-      case PIKE_T_NAME:
-	free_string((struct pike_string *)debug_malloc_pass(car));
-	free_type((struct pike_type *)debug_malloc_pass(cdr));
-	break;
+      /* Found! -- Free car & cdr as appropriate. */
+      const struct pike_type_def *def = pike_type_defs[type];
 #ifdef PIKE_DEBUG
-      case '0':
-      case '1':
-      case '2':
-      case '3':
-      case '4':
-      case '5':
-      case '6':
-      case '7':
-      case '8':
-      case '9':
-      case T_FLOAT:
-      case T_MIXED:
-      case T_VOID:
-      case T_ZERO:
-      case PIKE_T_UNKNOWN:
-      case T_INT:
-      case T_OBJECT:
-	break;
-
-      default:
+      if (!def) {
 	Pike_fatal("mk_type(): Unhandled type-node: %d\n", type);
-	break;
+      }
 #endif /* PIKE_DEBUG */
+      if (def->free_type_car) {
+	def->free_type_car(car);
+      }
+      if (def->free_type_cdr) {
+	def->free_type_cdr(cdr);
+      }
+      if (def->flags & TYPE_FLAG_CAR_IS_TYPE) {
+	free_type(car);
+      }
+      if (def->flags & TYPE_FLAG_CDR_IS_TYPE) {
+	free_type(cdr);
       }
       add_ref((struct pike_type *)debug_malloc_pass(t));
       return t;
@@ -8821,6 +8763,7 @@ static const struct pike_type_def pike_marker_type_def = {
 
 static const struct pike_type_def pike_attribute_type_def = {
   .flags = TYPE_FLAG_CDR_IS_TYPE,
+  .free_type_car = (void (*)(void *))do_free_string,
 };
 
 /* Ring */
@@ -8833,6 +8776,7 @@ static const struct pike_type_def pike_ring_type_def = {
 
 static const struct pike_type_def pike_name_type_def = {
   .flags = TYPE_FLAG_CDR_IS_TYPE,
+  .free_type_car = (void (*)(void *))do_free_string,
 };
 
 /* Scope */

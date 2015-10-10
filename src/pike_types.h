@@ -44,6 +44,17 @@ struct pike_type_def
 {
   /* TYPE_FLAG_* */
   enum type_flag flags:8;
+
+  /* Padding. */
+  unsigned INT8 pad0;
+  unsigned INT16 pad1;
+  unsigned INT32 pad2;
+
+  /* Free non-type car field of the type [optional]. */
+  void (*free_type_car)(void *a);
+
+  /* Free non-type cdr field of the type [optional]. */
+  void (*free_type_cdr)(void *a);
 };
 
 extern struct pike_type **pike_type_hash;
