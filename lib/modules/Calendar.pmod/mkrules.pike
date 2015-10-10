@@ -670,7 +670,9 @@ void collect_rules(string file)
    string s=Stdio.read_bytes(file),t;
    if (!s)
    {
-      werror("%s:-: Failed to open file: %m.\n",file);
+      // NB: This file is often used with the system Pike, so
+      //     it can't use %m yet.
+      werror("%s:-: Failed to open file: %s.\n", file, strerror(errno()));
       return;
    }
 
