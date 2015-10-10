@@ -32,6 +32,20 @@ struct pike_type
   struct pike_type *cdr;
 };
 
+enum type_flag {
+  TYPE_FLAG_IS_LEAF = 0,
+  TYPE_FLAG_CAR_IS_TYPE = 1,
+  TYPE_FLAG_CDR_IS_TYPE = 2,
+  TYPE_FLAG_BOTH_ARE_TYPES = 3,
+};
+
+/* The definition of a type node type. */
+struct pike_type_def
+{
+  /* TYPE_FLAG_* */
+  enum type_flag flags:8;
+};
+
 extern struct pike_type **pike_type_hash;
 extern size_t pike_type_hash_size;
 
@@ -83,6 +97,8 @@ extern size_t pike_type_hash_size;
  * soft_cast() flags
  */
 #define SOFT_WEAKER	0x0001	/* Soft cast to a weaker type. */
+
+PMOD_EXPORT void register_pike_type(int type, const struct pike_type_def *def);
 
 void debug_free_type(struct pike_type *t);
 #ifdef DEBUG_MALLOC

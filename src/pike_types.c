@@ -34,6 +34,19 @@
 #define PIKE_TYPE_DEBUG
 #endif /* PIKE_DEBUG */
 
+/* Type definitions. */
+static const struct pike_type_def *pike_type_defs[256];
+
+PMOD_EXPORT void register_pike_type(int type, const struct pike_type_def *def)
+{
+#ifdef PIKE_DEBUG
+  if (pike_type_defs[type]) {
+    Pike_fatal("Type %d registered twice!\n", type);
+  }
+#endif
+  pike_type_defs[type] = def;
+}
+
 /*
  * Flags used by low_match_types().
  */
@@ -8716,8 +8729,201 @@ static struct callback *pike_type_gc_callback = NULL;
 static int type_stack_mmap, pike_type_mark_stack_mmap;
 #endif
 
+/*
+ * Type definitions.
+ */
+
+/* Int */
+
+static const struct pike_type_def pike_int_type_def = {
+  .flags = TYPE_FLAG_IS_LEAF,
+};
+
+/* Float */
+
+static const struct pike_type_def pike_float_type_def = {
+  .flags = TYPE_FLAG_IS_LEAF,
+};
+
+/* Array */
+
+static const struct pike_type_def pike_array_type_def = {
+  .flags = TYPE_FLAG_CAR_IS_TYPE,
+};
+
+/* Mapping */
+
+static const struct pike_type_def pike_mapping_type_def = {
+  .flags = TYPE_FLAG_BOTH_ARE_TYPES,
+};
+
+/* Multiset */
+
+static const struct pike_type_def pike_multiset_type_def = {
+  .flags = TYPE_FLAG_CAR_IS_TYPE,
+};
+
+/* Object */
+
+static const struct pike_type_def pike_object_type_def = {
+  .flags = TYPE_FLAG_IS_LEAF,
+};
+
+/* Function */
+
+static const struct pike_type_def pike_function_type_def = {
+  .flags = TYPE_FLAG_BOTH_ARE_TYPES,
+};
+
+/* Program */
+
+static const struct pike_type_def pike_program_type_def = {
+  .flags = TYPE_FLAG_CAR_IS_TYPE,
+};
+
+/* String */
+
+static const struct pike_type_def pike_string_type_def = {
+  .flags = TYPE_FLAG_CAR_IS_TYPE,
+};
+
+/* Type */
+
+static const struct pike_type_def pike_type_type_def = {
+  .flags = TYPE_FLAG_CAR_IS_TYPE,
+};
+
+/* Zero */
+
+static const struct pike_type_def pike_zero_type_def = {
+  .flags = TYPE_FLAG_IS_LEAF,
+};
+
+/* Void */
+
+static const struct pike_type_def pike_void_type_def = {
+  .flags = TYPE_FLAG_IS_LEAF,
+};
+
+/* Many */
+
+static const struct pike_type_def pike_many_type_def = {
+  .flags = TYPE_FLAG_BOTH_ARE_TYPES,
+};
+
+/* Marker */
+
+static const struct pike_type_def pike_marker_type_def = {
+  .flags = TYPE_FLAG_IS_LEAF,
+};
+
+/* Attribute */
+
+static const struct pike_type_def pike_attribute_type_def = {
+  .flags = TYPE_FLAG_CDR_IS_TYPE,
+};
+
+/* Ring */
+
+static const struct pike_type_def pike_ring_type_def = {
+  .flags = TYPE_FLAG_BOTH_ARE_TYPES,
+};
+
+/* Name */
+
+static const struct pike_type_def pike_name_type_def = {
+  .flags = TYPE_FLAG_CDR_IS_TYPE,
+};
+
+/* Scope */
+
+static const struct pike_type_def pike_scope_type_def = {
+  .flags = TYPE_FLAG_CDR_IS_TYPE,
+};
+
+/* Tuple */
+
+static const struct pike_type_def pike_tuple_type_def = {
+  .flags = TYPE_FLAG_BOTH_ARE_TYPES,
+};
+
+/* Assign */
+
+static const struct pike_type_def pike_assign_type_def = {
+  .flags = TYPE_FLAG_CDR_IS_TYPE,
+};
+
+/* Unknown */
+
+static const struct pike_type_def pike_unknown_type_def = {
+  .flags = TYPE_FLAG_IS_LEAF,
+};
+
+/* Mixed */
+
+static const struct pike_type_def pike_mixed_type_def = {
+  .flags = TYPE_FLAG_IS_LEAF,
+};
+
+/* Not */
+
+static const struct pike_type_def pike_not_type_def = {
+  .flags = TYPE_FLAG_CAR_IS_TYPE,
+};
+
+/* And */
+
+static const struct pike_type_def pike_and_type_def = {
+  .flags = TYPE_FLAG_BOTH_ARE_TYPES,
+};
+
+/* Or */
+
+static const struct pike_type_def pike_or_type_def = {
+  .flags = TYPE_FLAG_BOTH_ARE_TYPES,
+};
+
+/*
+ * Initialization.
+ */
+
 void init_types(void)
 {
+  register_pike_type(PIKE_T_INT, &pike_int_type_def);
+  register_pike_type(PIKE_T_FLOAT, &pike_float_type_def);
+  register_pike_type(PIKE_T_ARRAY, &pike_array_type_def);
+  register_pike_type(PIKE_T_MAPPING, &pike_mapping_type_def);
+  register_pike_type(PIKE_T_MULTISET, &pike_multiset_type_def);
+  register_pike_type(PIKE_T_OBJECT, &pike_object_type_def);
+  register_pike_type(PIKE_T_FUNCTION, &pike_function_type_def);
+  register_pike_type(PIKE_T_PROGRAM, &pike_program_type_def);
+  register_pike_type(PIKE_T_STRING, &pike_string_type_def);
+  register_pike_type(PIKE_T_TYPE, &pike_type_type_def);
+  register_pike_type(T_ZERO, &pike_zero_type_def);
+  register_pike_type(T_VOID, &pike_void_type_def);
+  register_pike_type(T_MANY, &pike_many_type_def);
+  register_pike_type('0', &pike_marker_type_def);
+  register_pike_type('1', &pike_marker_type_def);
+  register_pike_type('2', &pike_marker_type_def);
+  register_pike_type('3', &pike_marker_type_def);
+  register_pike_type('4', &pike_marker_type_def);
+  register_pike_type('5', &pike_marker_type_def);
+  register_pike_type('6', &pike_marker_type_def);
+  register_pike_type('7', &pike_marker_type_def);
+  register_pike_type('8', &pike_marker_type_def);
+  register_pike_type('9', &pike_marker_type_def);
+  register_pike_type(PIKE_T_ATTRIBUTE, &pike_attribute_type_def);
+  register_pike_type(PIKE_T_RING, &pike_ring_type_def);
+  register_pike_type(PIKE_T_NAME, &pike_name_type_def);
+  register_pike_type(PIKE_T_SCOPE, &pike_scope_type_def);
+  register_pike_type(PIKE_T_TUPLE, &pike_tuple_type_def);
+  register_pike_type(T_ASSIGN, &pike_assign_type_def);
+  register_pike_type(PIKE_T_UNKNOWN, &pike_unknown_type_def);
+  register_pike_type(PIKE_T_MIXED, &pike_mixed_type_def);
+  register_pike_type(T_NOT, &pike_not_type_def);
+  register_pike_type(T_AND, &pike_and_type_def);
+  register_pike_type(T_OR, &pike_or_type_def);
+
   /* Initialize hashtable here. */
   pike_type_hash = xcalloc(sizeof(struct pike_type *),
                            (PIKE_TYPE_HASH_SIZE+1));
