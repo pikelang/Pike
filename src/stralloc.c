@@ -3031,16 +3031,8 @@ PMOD_EXPORT void string_builder_vsprintf(struct string_builder *s,
 	  continue;
 
 	case 'T':	/* struct pike_type */
-	  {
-	    /* FIXME: Doesn't care about field or integer widths yet. */
-	    dynamic_buffer old_buf;
-	    init_buf(&old_buf);
-	    my_describe_type(va_arg(args, struct pike_type *));
-	    string_builder_binary_strcat(s, pike_global_buffer.s.str,
-					 pike_global_buffer.s.len);
-	    toss_buffer(&pike_global_buffer);
-	    restore_buffer(&old_buf);
-	  }
+	  /* FIXME: Doesn't care about field or integer widths yet. */
+	  low_describe_type(s, va_arg(args, struct pike_type *));
 	  break;
 
 	case 'O':
