@@ -2925,6 +2925,44 @@ static LONGEST pike_va_int(VA_LIST_PTR args, int flags)
   return 0;
 }
 
+/* Standard formats supported by string_builder_{v,}sprintf():
+ *
+ *   '%'	Insert %.
+ *   'a'	Insert double.
+ *   'c'	Insert character.
+ *   'd'	Insert decimal integer.
+ *   'e'	Insert double.
+ *   'f'	Insert double.
+ *   'g'	Insert double.
+ *   'o'	Insert octal integer.
+ *   's'	Insert string.
+ *   'u'	Insert unsigned decimal integer.
+ *   'x'	Insert lower-case hexadecimal integer.
+ *   'E'	Insert double.
+ *   'G'	Insert double.
+ *   'X'	Insert upper-case hexadecimal integer.
+ *
+ * Format modifiers supported by string_builder_{v,}sprintf():
+ *
+ *   '+'	Explicit sign for non-negative numeric values.
+ *   '-'	Align left.
+ *   '0'	Zero pad.
+ *   '0'..'9'	Field width.
+ *   '.'	Precision field width follows.
+ *   'h'	Half-width input.
+ *   'l'	Long(-er) input.
+ *   't'	Pointer-width input (ptrdiff_t).
+ *   'w'	Wide input (same as 'l', but only for strings).
+ *   'z'	Pointer-width input (size_t).
+ *
+ * Extended formats supported by string_builder_{v,}sprintf():
+ *
+ *   'b'	Insert binary integer.
+ *   'O'	Insert description of svalue.
+ *   'S'	Insert pike_string.
+ *   'T'	Insert pike_type.
+ */
+
 /* Values used internally in string_builder_vsprintf() */
 #define STATE_MIN_WIDTH	1
 #define STATE_PRECISION 2
@@ -3136,7 +3174,7 @@ PMOD_EXPORT void string_builder_vsprintf(struct string_builder *s,
 	    if (val < 0.0) {
 	      string_builder_putchar(s, '-');
 	      val = -val;
-	    } else if (flags & APPEND_SIGNED) {
+	    } else if (flags & APPEND_POSITIVE) {
 	      string_builder_putchar(s, '+');
 	    }
 	    if ((val+val == val) && (val > 0.0)) {
