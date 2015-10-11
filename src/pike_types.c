@@ -2533,18 +2533,6 @@ void low_describe_type(struct string_builder *s, struct pike_type *t)
   }
 }
 
-/* Legacy: Do not use. */
-void my_describe_type(struct pike_type *type)
-{
-  struct string_builder s;
-  ONERROR err;
-  init_string_builder(&s, 0);
-  SET_ONERROR(err, free_string_builder, &s);
-  low_describe_type(&s, type);
-  my_binary_strcat(s.s->str, s.s->len);
-  CALL_AND_UNSET_ONERROR(err);
-}
-
 struct pike_string *describe_type(struct pike_type *type)
 {
   struct string_builder s;
@@ -3230,70 +3218,58 @@ static struct pike_type *low_match_types(struct pike_type *a,
   char *s;
 
   if (l_flag>2) {
-    dynamic_buffer save_buf;
-    init_buf(&save_buf);
-    for(e=0;e<indent;e++) my_strcat("  ");
-    my_strcat("low_match_types(");
-    my_describe_type(a);
-    my_strcat(",\n");
-    for(e=0;e<indent;e++) my_strcat("  ");
-    my_strcat("                ");
-    my_describe_type(b);
-    my_strcat(",\n");
-    for(e=0;e<indent;e++) my_strcat("  ");
-    my_strcat("                ");
+    fprintf(stderr, "%*slow_match_types(", indent*2, "");
+    simple_describe_type(a);
+    fprintf(stderr, ",\n");
+    fprintf(stderr, "%*s%s", indent*2, "", "                ");
+    simple_describe_type(b);
+    fprintf(stderr, ",\n");
+    fprintf(stderr, "%*s%s", indent*2, "", "                ");
 
     if (flags) {
       int f = 0;
       if (flags & A_EXACT) {
-	my_strcat("A_EXACT");
+	fprintf(stderr, "A_EXACT");
 	f = 1;
       }
       if (flags & B_EXACT) {
 	if (f) {
-	  my_strcat(" | ");
+	  fprintf(stderr, " | ");
 	}
-	my_strcat("B_EXACT");
+	fprintf(stderr, "B_EXACT");
 	f = 1;
       }
       if (flags & NO_MAX_ARGS) {
 	if (f) {
-	  my_strcat(" | ");
+	  fprintf(stderr," | ");
 	}
-	my_strcat("NO_MAX_ARGS");
+	fprintf(stderr, "NO_MAX_ARGS");
 	f = 1;
       }
       if (flags & NO_SHORTCUTS) {
 	if (f) {
-	  my_strcat(" | ");
+	  fprintf(stderr, " | ");
 	}
-	my_strcat("NO_SHORTCUTS");
+	fprintf(stderr, "NO_SHORTCUTS");
 	f = 1;
       }
     } else {
-      my_strcat("0");
+      fputc('0', stderr);
     }
-    my_strcat(");\n");
-    fprintf(stderr,"%s",(s=simple_free_buf(&save_buf)));
-    free(s);
+    fprintf(stderr, ");\n");
     indent++;
   }
 
   a = low_match_types2(a, b, flags);
 
   if (l_flag>2) {
-    dynamic_buffer save_buf;
     indent--;
-    init_buf(&save_buf);
-    for(e=0;e<indent;e++) my_strcat("  ");
-    my_strcat("= ");
+    fprintf(stderr, "%*s= ", indent*2, "");
     if(a)
-      my_describe_type(a);
+      simple_describe_type(a);
     else
-      my_strcat("NULL");
-    my_strcat("\n");
-    fprintf(stderr,"%s",(s=simple_free_buf(&save_buf)));
-    free(s);
+      fprintf(stderr, "NULL");
+    fputc('\n', stderr);
   }
   return a;
 }
@@ -3368,18 +3344,10 @@ static struct pike_type *low_match_types2(struct pike_type *a,
 
 #ifdef PIKE_TYPE_DEBUG
 	if (l_flag>2) {
-	  dynamic_buffer save_buf;
-	  char *s;
-	  int e;
-	  init_buf(&save_buf);
-	  for(e=0;e<indent;e++) my_strcat("  ");
-	  my_strcat("a_markers[");
-	  my_putchar((char)(m+'0'));
-	  my_strcat("]=");
-	  my_describe_type(a_markers[m]);
-	  my_strcat("\n");
-	  fprintf(stderr,"%s",(s=simple_free_buf(&save_buf)));
-	  free(s);
+	  fprintf(stderr, "%*sa_markers[%d]=",
+		  indent*2, "", m);
+	  simple_describe_type(a_markers[m]);
+	  fputc('\n', stderr);
 	}
 #endif
 #ifdef PIKE_DEBUG
@@ -3471,18 +3439,10 @@ static struct pike_type *low_match_types2(struct pike_type *a,
 	b_markers[m] = pop_unfinished_type();
 #ifdef PIKE_TYPE_DEBUG
 	if (l_flag>2) {
-	  dynamic_buffer save_buf;
-	  char *s;
-	  int e;
-	  init_buf(&save_buf);
-	  for(e=0;e<indent;e++) my_strcat("  ");
-	  my_strcat("b_markers[");
-	  my_putchar((char)(m+'0'));
-	  my_strcat("]=");
-	  my_describe_type(b_markers[m]);
-	  my_strcat("\n");
-	  fprintf(stderr,"%s",(s=simple_free_buf(&save_buf)));
-	  free(s);
+	  fprintf(stderr, "%*sb_markers[%d]=",
+		  indent*2, "", m);
+	  simple_describe_type(b_markers[m]);
+	  fputc('\n', stderr);
 	}
 #endif
 #ifdef PIKE_DEBUG
