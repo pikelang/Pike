@@ -645,9 +645,8 @@ typedef mapping(string:ResultAttributeValue) ResultEntry;
   //!
   //! @param url
   //!  LDAP server URL on the form
-  //!  @expr{"ldap://hostname/basedn?attrlist?scope?ext"@}. See RFC
-  //!  2255. It can also be a mapping as returned by
-  //!  @[Protocol.LDAP.parse_ldap_url].
+  //!  @expr{"ldap://hostname/basedn?attrlist?scope?ext"@}. See @rfc{2255@}.
+  //!  It can also be a mapping as returned by @[Protocol.LDAP.parse_ldap_url].
   //!
   //! @param context
   //!  TLS context of connection
@@ -1334,7 +1333,7 @@ object get_default_filter()
   //!
   //! @param filter
   //!   Search filter to override the one from the LDAP URL. It's
-  //!   either a string with the format specified in RFC 2254, or an
+  //!   either a string with the format specified in @rfc{2254@}, or an
   //!   object returned by @[Protocols.LDAP.make_filter].
   //!
   //! @param attrs
@@ -2312,7 +2311,7 @@ protected mapping(string:mapping(string:mixed)) attr_type_descrs;
 mapping(string:mixed) get_attr_type_descr (string attr, void|int standard_attrs)
 //! Returns the attribute type description for the given attribute,
 //! which includes the name, object identifier, syntax, etc (see
-//! section 4.2 in RFC 2252 for details).
+//! @rfc{2252:4.2@} for details).
 //!
 //! This might do a query to the server, but results are cached.
 //!
@@ -2372,7 +2371,7 @@ mapping(string:mixed) get_attr_type_descr (string attr, void|int standard_attrs)
 //!   @member string "SUBSTR"
 //!     The value is the name or oid of a matching rule.
 //!   @member string "syntax_oid"
-//!     The value is the oid of the syntax (RFC 2252, section 4.3.2).
+//!     The value is the oid of the syntax (@rfc{2252:4.3.2@}).
 //!     (This is extracted from the @expr{"SYNTAX"@} term.)
 //!   @member string "syntax_len"
 //!     Optional suggested minimum upper bound of the number of

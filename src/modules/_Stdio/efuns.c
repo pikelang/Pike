@@ -677,7 +677,6 @@ void f_filesystem_stat(INT32 args)
   /* Probably only ULTRIX has this name for the struct */
   struct fs_data st;
 #else /* !HAVE_STRUCT_FS_DATA */
-    /* Should not be reached */
 #error No struct to hold statfs() data.
 #endif /* HAVE_STRUCT_FS_DATA */
 #endif /* HAVE_STRUCT_STATFS */
@@ -686,7 +685,6 @@ void f_filesystem_stat(INT32 args)
   PIKE_STAT_T statbuf;
   struct ustat st;
 #else /* !HAVE_USTAT */
-  /* Should not be reached */
 #error No stat function for filesystems.
 #endif /* HAVE_USTAT */
 #endif /* HAVE_STATFS */
@@ -725,7 +723,6 @@ void f_filesystem_stat(INT32 args)
     i = ustat(statbuf.st_rdev, &st);
   }
 #else
-  /* Should not be reached */
 #error No stat function for filesystems.
 #endif /* HAVE_USTAT */
 #endif /* HAVE_STATFS */
@@ -785,7 +782,6 @@ void f_filesystem_stat(INT32 args)
     push_static_text("bavail");       push_int(st.fd_bfreen);
     num_fields += 4;
 #else /* !HAVE_STRUCT_FS_DATA */
-    /* Should not be reached */
 #error No struct to hold statfs() data.
 #endif /* HAVE_STRUCT_FS_DATA */
 #endif /* HAVE_STRUCT_STATFS */
@@ -796,7 +792,6 @@ void f_filesystem_stat(INT32 args)
     push_static_text("fsname");     push_text(st.f_fname);
     num_fields += 3;
 #else
-    /* Should not be reached */
 #error No stat function for filesystems.
 #endif /* HAVE_USTAT */
 #endif /* HAVE_STATFS */

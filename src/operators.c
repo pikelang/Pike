@@ -4365,22 +4365,26 @@ do_lfun_modulo:
  *!   For numbers, this means that
  *!   @ol
  *!     @item
- *!       a % b always has the same sign as b (typically b is positive;
- *!       array size, rsa modulo, etc, and a varies a lot more than b).
+ *!       @expr{a % b@} always has the same sign as @expr{b@}
+ *!       (typically @expr{b@} is positive;
+ *!       array size, rsa modulo, etc, and @expr{a@} varies a
+ *!       lot more than @expr{b@}).
  *!     @item
- *!       The function f(x) = x % n behaves in a sane way; as x increases,
- *!       f(x) cycles through the values 0,1, ..., n-1, 0, .... Nothing
+ *!       The function @expr{f(x) = x % n@} behaves in a sane way;
+ *!       as @expr{x@} increases, @expr{f(x)@} cycles through the
+ *!       values @expr{0,1, ..., n-1, 0, ...@}. Nothing
  *!       strange happens when you cross zero.
  *!     @item
- *!       The % operator implements the binary "mod" operation, as defined
- *!       by Donald Knuth (see the Art of Computer Programming, 1.2.4). It
- *!       should be noted that Pike treats %-by-0 as an error rather than
- *!       returning 0, though.
+ *!       The @expr{%@} operator implements the binary "mod" operation,
+ *!       as defined by Donald Knuth (see the Art of Computer Programming,
+ *!       1.2.4). It should be noted that Pike treats %-by-0 as an error
+ *!       rather than returning 0, though.
  *!     @item
- *!       / and % are compatible, so that a = b*(a/b) + a%b for all a and b.
+ *!       @expr{/@} and @expr{%@} are compatible, so that
+ *!       @expr{a == b*@[floor](a/b) + a%b@} for all @expr{a@} and @expr{b@}.
  *!   @endol
  *! @seealso
- *!   @[`/]
+ *!   @[`/], @[floor()]
  */
 PMOD_EXPORT void f_mod(INT32 args)
 {

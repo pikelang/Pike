@@ -448,7 +448,6 @@ static char *reg(int paren,int *flagp)
     }
     else
       FAIL("junk on end");/* "Can't happen". */
-    /* NOTREACHED */
   }
 
   return ret;
@@ -1000,7 +999,6 @@ static int regmatch(char *prog)
             scan = regnext(scan);
           } while (scan != NULL && OP(scan) == BRANCH);
           return 0;
-          /* NOTREACHED */
         }
       }
       break;
@@ -1114,7 +1112,6 @@ static size_t regrepeat(const char *node)
     return 0;		/* Best compromise. */
     break;
   }
-  /* NOREACHED */
 }
 
 

@@ -1126,7 +1126,6 @@ int set_svalue_cmpfun(const struct svalue *a, const struct svalue *b)
       if(a->u.refs > b->u.refs) return 1;
       return 0;
   }
-  /* NOT REACHED */
 }
 
 static int switch_svalue_cmpfun(const struct svalue *a, const struct svalue *b)
@@ -1159,7 +1158,6 @@ static int switch_svalue_cmpfun(const struct svalue *a, const struct svalue *b)
       if(a->u.refs > b->u.refs) return 1;
       return 0;
   }
-  /* NOT REACHED */
 }
 
 int alpha_svalue_cmpfun(const struct svalue *a, const struct svalue *b)
@@ -1232,7 +1230,6 @@ int alpha_svalue_cmpfun(const struct svalue *a, const struct svalue *b)
       if(a->u.ptr > b->u.ptr) return 1;
       return 0;
   }
-  /* NOT REACHED */
 }
 
 #define CMP(X,Y) alpha_svalue_cmpfun(X,Y)

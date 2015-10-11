@@ -460,11 +460,15 @@ PikeType convert_ctype(array(PC.Token) tokens)
 
     case "int":
     case "long":
-    case "size_t":
-    case "ptrdiff_t":
     case "INT32":
       if (signed) return PikeType("int");
       return PikeType("int(0..)");
+
+    case "size_t":
+      return PikeType("int(0..)");
+
+    case "ptrdiff_t":
+      return PikeType("int");
 
     case "double":
     case "float":
@@ -856,6 +860,8 @@ class PikeType
 	    } else if ((low == -0x80000000) && (high == 0x7fffffff)) {
 	      return "tStr";
 	    }
+	    // NOTE! This piece of code KNOWS that the serialized
+	    //       value of PIKE_T_INT is 8!
 	    return sprintf("tNStr(%s)",
 			   stringify(sprintf("\010%4c%4c", low, high)));
 	  }
@@ -1271,15 +1277,18 @@ array(int) clamp_int_range(PikeType complex_type, string ranged_type)
 class Argument
 {
   /* internal */
-  string _name;
-  PikeType _type;
-  string _c_type;
-  string _basetype;
+  string _name;		// Name of argument.
+  PikeType _type;	// Declared Pike type.
+  int _line;		// Line number in CMOD.
+  string _file;		// Filename of CMOD.
+
   int _is_c_type;
-  int _line;
-  string _file;
-  string _typename;
-  string _realtype;
+
+  // The following are cached values.
+  string _c_type;	// _type->c_storage_type().
+  string _basetype;	// _type->basetype().
+  string _typename;	// Pretty-printed Pike type (used in error messages).
+  string _realtype;	// _type->realtype().
 
   int is_c_type() { return _is_c_type; }
   int may_be_void_or_zero (int may_be_void, int may_be_zero)
@@ -2590,6 +2599,7 @@ static struct %s *%s_gdb_dummy_ptr;
 	  check_arg: {
 	    if(arg->is_c_type() && arg->basetype() == "string")
 	    {
+	      // FIXME: Probably dead code!
 	      /* Special case for 'char *' */
 	      /* This will have to be amended when we want to support
 	       * wide strings

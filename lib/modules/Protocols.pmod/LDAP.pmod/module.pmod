@@ -561,10 +561,10 @@ constant SYNTAX_PHONE_NUM = "1.3.6.1.4.1.1466.115.121.1.50"; // RFC 2252, 6.30
 constant SYNTAX_UTC_TIME = "1.3.6.1.4.1.1466.115.121.1.53"; // RFC 2252, 6.31
 constant SYNTAX_LDAP_SYNTAX_DESCR = "1.3.6.1.4.1.1466.115.121.1.54"; // RFC 2252, 6.32
 constant SYNTAX_DIT_STRUCTURE_RULE_DESCR = "1.3.6.1.4.1.1466.115.121.1.17"; // RFC 2252, 6.33
-//! LDAP syntax: Standard syntaxes from RFC 2252.
+//! LDAP syntax: Standard syntaxes from @rfc{2252@}.
 
 constant SYNTAX_CASE_EXACT_STR = SYNTAX_DIRECTORY_STR;
-//! @expr{"caseExactString"@} is an alias used in e.g. RFC 2079.
+//! @expr{"caseExactString"@} is an alias used in e.g. @rfc{2079@}.
 
 constant SYNTAX_DELIVERY_METHOD = "1.3.6.1.4.1.1466.115.121.1.14"; // RFC 2256, 6.1
 constant SYNTAX_ENHANCED_GUIDE = "1.3.6.1.4.1.1466.115.121.1.21"; // RFC 2256, 6.2

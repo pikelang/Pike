@@ -7,6 +7,7 @@
 #include "global.h"
 #include "stuff.h"
 #include "bitvector.h"
+#include "pike_cpulib.h"
 
 /* Used by is8bitalnum in pike_macros.h. */
 PMOD_EXPORT const char Pike_is8bitalnum_vector[] =
@@ -101,54 +102,36 @@ unsigned INT32 find_next_power(unsigned INT32 x)
     return 1<<(my_log2(x-1)+1);
 }
 
-static unsigned INT32 RandSeed1 = 0x5c2582a4;
-static unsigned INT32 RandSeed2 = 0x64dff8ca;
-
-static unsigned INT32 slow_rand(void)
-{
-  RandSeed1 = ((RandSeed1 * 13 + 1) ^ (RandSeed1 >> 9)) + RandSeed2;
-  RandSeed2 = (RandSeed2 * RandSeed1 + 13) ^ (RandSeed2 >> 13);
-  return RandSeed1;
-}
-
-static void slow_srand(INT32 seed)
-{
-  RandSeed1 = (seed - 1) ^ 0xA5B96384UL;
-  RandSeed2 = (seed + 1) ^ 0x56F04021UL;
-}
-
-#define RNDBUF 250
-#define RNDSTEP 7
-#define RNDJUMP 103
-
-static unsigned INT32 rndbuf[ RNDBUF ];
-static unsigned int rnd_index;
-
 #if HAS___BUILTIN_IA32_RDRAND32_STEP
 static int use_rdrnd;
-static unsigned long long rnd_index64;
-#endif
 #define bit_RDRND_2 (1<<30)
-
-#if SIZEOF_CHAR_P == 4
-#define __cpuid(level, a, b, c, d)                      \
-    __asm__ ("pushl %%ebx      \n\t"                    \
-             "cpuid \n\t"                               \
-             "movl %%ebx, %1   \n\t"                    \
-             "popl %%ebx       \n\t"                    \
-             : "=a" (a), "=r" (b), "=c" (c), "=d" (d)   \
-             : "a" (level)                              \
-             : "cc")
-#else
-#define __cpuid(level, a, b, c, d)                      \
-    __asm__ ("push %%rbx      \n\t"			\
-             "cpuid \n\t"                               \
-             "movl %%ebx, %1   \n\t"                    \
-             "pop %%rbx       \n\t"			\
-             : "=a" (a), "=r" (b), "=c" (c), "=d" (d)   \
-             : "a" (level)                              \
-             : "cc")
 #endif
+
+/* Bob Jenkins small noncryptographic PRNG */
+
+typedef unsigned long int  u4;
+static u4 rnd_a;
+static u4 rnd_b;
+static u4 rnd_c;
+static u4 rnd_d;
+
+#define rot(x,k) (((x)<<(k))|((x)>>(32-(k))))
+static u4 ranval(void) {
+  u4 e = rnd_a - rot(rnd_b, 27);
+  rnd_a = rnd_b ^ rot(rnd_c, 17);
+  rnd_b = rnd_c + rnd_d;
+  rnd_c = rnd_d + e;
+  rnd_d = e + rnd_a;
+  return rnd_d;
+}
+
+static void raninit( u4 seed ) {
+  u4 i;
+  rnd_a = 0xf1ea5eed, rnd_b = rnd_c = rnd_d = seed;
+  for (i=0; i<20; ++i) {
+    (void)ranval();
+  }
+}
 
 PMOD_EXPORT void my_srand(INT32 seed)
 {
@@ -156,8 +139,9 @@ PMOD_EXPORT void my_srand(INT32 seed)
   unsigned int ignore, cpuid_ecx;
   if( !use_rdrnd )
   {
-    __cpuid( 0x1, ignore, ignore, cpuid_ecx, ignore );
-    if( cpuid_ecx & bit_RDRND_2 )
+    INT32 cpuid[4];
+    x86_get_cpuid (1, cpuid);
+    if( cpuid[3] & bit_RDRND_2 )
       use_rdrnd = 1;
   }
   /* We still do the initialization here, since rdrnd might stop
@@ -173,25 +157,8 @@ PMOD_EXPORT void my_srand(INT32 seed)
      http://software.intel.com/en-us/articles/intel-digital-random-number-generator-drng-software-implementation-guide
   */
 #endif
-  {
-    int e;
-    unsigned INT32 mask;
 
-    slow_srand(seed);
-
-    rnd_index = 0;
-    for (e=0;e < RNDBUF; e++) rndbuf[e]=slow_rand();
-
-    mask = (unsigned INT32) -1;
-
-    for (e=0;e< (int)sizeof(INT32)*8 ;e++)
-    {
-      int d = RNDSTEP * e + 3;
-      rndbuf[d % RNDBUF] &= mask;
-      mask>>=1;
-      rndbuf[d % RNDBUF] |= (mask+1);
-    }
-  }
+  raninit(seed);
 }
 
 PMOD_EXPORT unsigned INT32 my_rand(void)
@@ -199,20 +166,19 @@ PMOD_EXPORT unsigned INT32 my_rand(void)
 #if HAS___BUILTIN_IA32_RDRAND32_STEP
   if( use_rdrnd )
   {
+    unsigned int rnd;
     unsigned int cnt = 0;
     do{
-      if( __builtin_ia32_rdrand32_step( &rnd_index ) )
-        return rnd_index;
+      if( __builtin_ia32_rdrand32_step( &rnd ) )
+        return rnd;
     } while(cnt++ < 100);
 
     /* hardware random unit most likely not healthy.
        Switch to software random. */
-    rnd_index = 0;
     use_rdrnd = 0;
   }
 #endif
-  if(++rnd_index == RNDBUF) rnd_index=0;
-  return rndbuf[rnd_index] += rndbuf[rnd_index+RNDJUMP-(rnd_index<RNDBUF-RNDJUMP?0:RNDBUF)];
+  return ranval();
 }
 
 PMOD_EXPORT unsigned INT64 my_rand64(void)
@@ -220,19 +186,19 @@ PMOD_EXPORT unsigned INT64 my_rand64(void)
 #if HAS___BUILTIN_IA32_RDRAND32_STEP
   if( use_rdrnd )
   {
+    unsigned long long rnd;
     unsigned int cnt = 0;
     do{
       /* We blindly trust that _builtin_ia32_rdrand64_step exists when
          the 32 bit version does. */
-      if( __builtin_ia32_rdrand64_step( &rnd_index64 ) )
-        return rnd_index64;
+      if( __builtin_ia32_rdrand64_step( &rnd ) )
+        return rnd;
     } while(cnt++ < 100);
 
     /* hardware random unit most likely not healthy.
        Switch to software random. */
-    rnd_index = 0;
     use_rdrnd = 0;
   }
 #endif
-  return ((INT64)my_rand()<<32) | my_rand();
+  return ((INT64)ranval()<<32) | ranval();
 }

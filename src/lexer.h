@@ -917,7 +917,7 @@ unknown_directive:
         free_svalue( &res );
         return TOK_NUMBER;
       }
-      /* notreached. */
+      UNREACHABLE();
     case '"':
     {
       struct pike_string *s=readstring(lex);

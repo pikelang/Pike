@@ -12251,7 +12251,7 @@ void string_builder_explain_not_implements(struct string_builder *s,
 			       Pike_sp-1);
       } else {
 	string_builder_sprintf(s,
-			       "Type of identifier %S is not strictly compatible.",
+			       "Type of identifier %S is not strictly compatible."
 			       "Expected: %O.\n"
 			       "Got     : %O.\n",
 			       bid->name,

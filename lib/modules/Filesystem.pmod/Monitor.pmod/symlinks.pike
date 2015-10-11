@@ -128,10 +128,10 @@ inherit "basic.pike" : basic;
 //!
 //! @seealso
 //!   @[monitor()]
-protected class Monitor
+protected class DefaultMonitor
 {
-  //! Based on @[Filesystem.Monitor.basic.Monitor].
-  inherit basic::Monitor;
+  //! Based on @[Filesystem.Monitor.basic.DefaultMonitor].
+  inherit basic::DefaultMonitor;
 
   //! Mask of symlink ids that can reach this monitor.
   int symlinks;

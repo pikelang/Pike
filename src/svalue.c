@@ -1288,7 +1288,11 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
       break;
 
     case T_TYPE:
-      my_describe_type(s->u.type);
+      {
+	struct pike_string *t = describe_type(s->u.type);
+	my_binary_strcat(t->str, t->len);
+	free_string(t);
+      }
       break;
 
     case T_STRING:
