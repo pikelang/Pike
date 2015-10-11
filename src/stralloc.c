@@ -17,6 +17,7 @@
 #include "interpret.h"
 #include "operators.h"
 #include "pike_float.h"
+#include "pike_types.h"
 #include "block_allocator.h"
 
 #include <errno.h>
@@ -2990,6 +2991,19 @@ PMOD_EXPORT void string_builder_vsprintf(struct string_builder *s,
 	case 'z':	/* size_t */
 	  flags = (flags & ~APPEND_WIDTH_MASK) | APPEND_WIDTH_PTR;
 	  continue;
+
+	case 'T':	/* struct pike_type */
+	  {
+	    /* FIXME: Doesn't care about field or integer widths yet. */
+	    dynamic_buffer old_buf;
+	    init_buf(&old_buf);
+	    my_describe_type(va_arg(args, struct pike_type *));
+	    string_builder_binary_strcat(s, pike_global_buffer.s.str,
+					 pike_global_buffer.s.len);
+	    toss_buffer(&pike_global_buffer);
+	    restore_buffer(&old_buf);
+	  }
+	  break;
 
 	case 'O':
 	  {
