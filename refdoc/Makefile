@@ -17,22 +17,23 @@ caudium.net: modref caudium_modref traditional
 # These are the actual build targets for making manuals...
 
 modref: $(BUILDDIR)/modref.xml structure/modref.css structure/modref.html \
-	  presentation/make_html.pike presentation/tree-split-autodoc.pike
+	  structure/dev.js presentation/make_html.pike presentation/tree-split-autodoc.pike
 	@$(MAKE) PIKE="$(PIKE)" BUILDDIR="$(BUILDDIR)" DESTDIR="$(DESTDIR)" low_modref
 
 module_modref: $(BUILDDIR)/module_modref.xml structure/modref.css structure/module_modref.html \
-	  presentation/make_html.pike presentation/tree-split-autodoc.pike
+	  structure/dev.js presentation/make_html.pike presentation/tree-split-autodoc.pike
 	@$(MAKE) PIKE="$(PIKE)" BUILDDIR="$(BUILDDIR)" DESTDIR="$(DESTDIR)" low_module_modref
 
 low_module_modref:
 	-rm -rf $(DESTDIR)modref
 	@mkdir $(DESTDIR)modref
 	@cp structure/modref.css $(DESTDIR)modref/style.css
+	@cp structure/dev.js $(DESTDIR)modref/site.js
 	@$(PIKE) presentation/tree-split-autodoc.pike \
 	  $(BUILDDIR)/module_modref.xml structure/module_modref.html $(DESTDIR)modref predef
 	@mkdir $(DESTDIR)modref/images
 	-cp $(BUILDDIR)/doc_build/images/* $(DESTDIR)modref/images
-	@for file in pike_logo.gif next.gif prev.gif unit.gif \
+	@for file in pike-logo.svg next.gif prev.gif unit.gif \
           pike_line_left.gif pike_line_middle.gif pike_line_right.gif ; do \
 	  cp src_images/$$file $(DESTDIR)modref/images/ ; done
 
@@ -40,11 +41,12 @@ low_modref:
 	-rm -rf $(DESTDIR)modref
 	@test -d $(DESTDIR)modref || mkdir modref
 	@cp structure/modref.css modref/style.css
+	@cp structure/dev.js $(DESTDIR)modref/site.js
 	@$(PIKE) presentation/tree-split-autodoc.pike \
 	  $(BUILDDIR)/modref.xml structure/modref.html $(DESTDIR)modref predef
 	@test -d $(DESTDIR)modref/images || mkdir $(DESTDIR)modref/images
 	-cp $(BUILDDIR)/doc_build/images/* $(DESTDIR)modref/images
-	@for file in pike_logo.gif next.gif prev.gif unit.gif \
+	@for file in pike-logo.svg next.gif prev.gif unit.gif \
           pike_line_left.gif pike_line_middle.gif pike_line_right.gif ; do \
 	  cp src_images/$$file $(DESTDIR)modref/images/ ; done
 

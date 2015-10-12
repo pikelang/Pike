@@ -310,12 +310,11 @@ string create_reference(string from, string to, string text,
     error("Bad reference: %O\n", to);
   }
   if (!xlink_namespace_prefix) xlink_namespace_prefix = "";
-  return "<a style='font-family:courier;' " +
+  return "<a class='monospace reference' " +
     xlink_namespace_prefix +
     "href='" +
     "../"*max(sizeof(from/"/") - 2, 0) + map(a, cquote)*"/" + ".html'>" +
-    text +
-    "</a>";
+    text + "</a>";
 }
 
 multiset missing = (< "foreach", "catch", "throw", "sscanf", "gauge", "typeof" >);
@@ -655,7 +654,8 @@ class Node
       _reference = _reference[sizeof(default_namespace)+2..];
 
     if(vars->param)
-      return "<font face='courier'>" + _reference + "</font>";
+      return "<span class='monospace reference param'>" + _reference +
+             "</span>";
 
     if (resolved) {
       foreach (resolved, string resolution) {
@@ -668,7 +668,8 @@ class Node
 	  if (!res_obj && verbosity) {
 	    werror("Found no page to link to for reference %O (%O)\n",
 		   _reference, resolution);
-	    return sprintf("<font face='courier'>" + _reference + "</font>");
+	    return "<span class='monospace reference nolink'>" + _reference +
+                   "</span>";
 	  }
 	  // FIXME: Assert that the reference is correct?
 	  return create_reference(make_filename(),
@@ -681,7 +682,8 @@ class Node
 	array(string) tmp = resolution/".";
 	if ((sizeof(tmp) > 1) && (res_obj = refs[tmp[..sizeof(tmp)-2]*"."])) {
 	  if (res_obj == this) {
-	    return sprintf("<font face='courier'>" + _reference + "</font>");
+	    return "<span class='monospace reference paramref'>" + _reference +
+                   "</span>";
 	  }
 	  return create_reference(make_filename(),
 				  res_obj->raw_class_path(),
@@ -710,7 +712,8 @@ class Node
       }
       unresolved++;
     }
-    return "<font face='courier'>" + _reference + "</font>";
+    return "<span class='monospace reference unresolved'>" + _reference +
+           "</span>";
   }
 
   string _make_class_path;
@@ -764,7 +767,7 @@ class Node
     if(!sizeof(children)) return "";
 
     String.Buffer res = String.Buffer(3000);
-    res->add("<br /><b>", what, "</b>\n"
+    res->add("<b class='head'>", what, "</b>\n"
 	     "<div style='margin-left:0.5em;'>\n");
 
     foreach(children, Node node)
@@ -773,7 +776,7 @@ class Node
       if(node->type=="method") {
 	my_name+="()";
 	if (node == this) {
-	  my_name="<b>"+my_name+"</b>";
+	  my_name="<b class='head'>"+my_name+"</b>";
 	}
       } else if (node->type == "namespace") {
 	my_name="<b>"+my_name+"::</b>";
@@ -782,7 +785,7 @@ class Node
 	my_name="<b>"+my_name+"</b>";
 
       if(node==this)
-	res->add( my_name, "<br />\n" );
+	res->add(my_name);
       else
 	res->add( "<a href='", make_link(node, extra_levels), "'>",
 		  my_name, "</a><br />\n" );
@@ -802,15 +805,28 @@ class Node
       res += make_hier_list(node->parent, extra_levels);
 
       string my_class_path =
-	(node->is_TopNode)?"[Top]":node->make_class_path();
+	(node->is_TopNode)?"Top":node->make_class_path();
 
-      if(node == this)
-	res += sprintf("<b>%s</b><br />\n",
+      string eclass = node->is_TopNode ? "top" : "";
+
+//werror("my_class_path: %s\n", my_class_path);
+
+      if(node == this) {
+        if (eclass == "")
+          eclass = "selected";
+
+	res += sprintf("<b class='%s head'>%s</b>\n", eclass,
 		       Parser.encode_html_entities(my_class_path));
-      else
-	res += sprintf("<a href='%s'><b>%s</b></a><br />\n",
-		       make_link(node, extra_levels),
+      }
+      else {
+        if (eclass != "")
+          eclass = " class='" + eclass + " head'";
+        else
+          eclass = " class='head'";
+	res += sprintf("<a href='%s'><b%s>%s</b></a>\n",
+		       make_link(node, extra_levels), eclass,
 		       Parser.encode_html_entities(my_class_path));
+      }
     }
     return res;
   }
@@ -1045,20 +1061,20 @@ class Node
       name = Parser.encode_html_entities(name);
 #ifdef NO_SVG
       if (ref == this_ref) {
-	name = "<b style='font-family:courier;'>" + name + "</b>";
+	name = "<b style='font-family:monospace;'>" + name + "</b>";
       } else if (refs[ref]) {
 	name = create_reference(make_filename(), ref, name);
       } else {
-	name = "<span style='font-family:courier;'>" + name + "</span>";
+	name = "<span style='font-family:monospace;'>" + name + "</span>";
       }
 #else
       if (ref == this_ref) {
-	name = "<tspan style='font-family:courier; font-weight:bold;'>" +
+	name = "<tspan style='font-family:monospace; font-weight:bold;'>" +
 	  name + "</tspan>";
       } else if (refs[ref]) {
 	name = create_reference(make_filename(), ref, name, "xlink:");
       } else {
-	name = "<tspan style='font-family:courier;'>" + name + "</tspan>";
+	name = "<tspan style='font-family:monospace;'>" + name + "</tspan>";
       }
 #endif
       names[ref] = name;
@@ -1267,9 +1283,9 @@ class Node
   {
     String.Buffer res = String.Buffer(3500);
     foreach(children, Node node)
-      res->add("&nbsp;<a href='", make_link(node, extra_levels), "'>",
+      res->add("<li><a href='", make_link(node, extra_levels), "'>",
 	       Parser.encode_html_entities(node->name),
-	       "()</a><br />\n");
+	       "()</a></li>\n");
     return (string)res;
   }
 
@@ -1283,16 +1299,18 @@ class Node
 	    array(Node) children) {
 
       if (children && sizeof(children)) {
+        #if 0
 	if (sizeof(contents)) {
 	  contents += "<tr><td colspan='4'><hr /></td></tr>\n";
 	}
+        #endif
 
-	contents += "<tr>\n";
+	//contents += "<tr>\n";
 	foreach(children/( sizeof(children)/4.0 ), array(Node) children) {
-	  contents += "<td nowrap='nowrap' valign='top'>" +
-	    make_link_list(children, extra_levels) + "</td>";
+	  contents += //"<td nowrap='nowrap' valign='top'>" +
+	    make_link_list(children, extra_levels);// + "</td>";
 	}
-	contents += "</tr>\n";
+	//contents += "</tr>\n";
       }
     }
 
@@ -1304,9 +1322,9 @@ class Node
     string contents = low_make_index_page(extra_levels);
     if (sizeof(contents)) {
       contents =
-	"<nav><table class='sidebar' style='width:100%;'>\n" +
+	"<nav><ul class='multicol'>\n" +
 	contents +
-	"</table></nav>";
+	"</ul></nav>";
     }
     return contents;
   }
@@ -1340,6 +1358,7 @@ class Node
       int num_segments = sizeof(index/"/")-1;
       string extra_prefix = "../"*num_segments;
       string style = low_make_link("style.css", 1);
+      string script = low_make_link("site.js", 1);
       string imagedir = low_make_link(low_image_prefix(), 1);
 
       index_html =
@@ -1353,6 +1372,7 @@ class Node
 		  "$type$": String.capitalize("Index of " + type),
 		  "$title$": _Roxen.html_encode_string(make_class_path(1)),
 		  "$style$": style,
+                  "$script$": script,
 		  "$dotdot$": extra_prefix,
 		  "$imagedir$":imagedir,
 		  "$filename$": _Roxen.html_encode_string(index),
@@ -1377,6 +1397,7 @@ class Node
 
     int num_segments = sizeof(make_filename()/"/")-1;
     string style = ("../"*num_segments)+"style.css";
+    string script = ("../"*num_segments)+"site.js";
     extra_prefix = "../"*num_segments;
 
     Node prev = find_prev_node();
@@ -1392,7 +1413,6 @@ class Node
     }
 
     string extra_headers =
-      "<meta charset='utf-8' />\n" +
       sprintf("<style type='text/css'>\n"
 	      "svg line { stroke:#343434; stroke-width:2; }\n"
 	      "svg text { fill:#343434; }\n"
@@ -1405,17 +1425,17 @@ class Node
 				     "link":make_filename()
 				  ])),
                       ({ "&", "<", ">" }), ({ "&amp;", "&lt;", "&gt;" }))) +
-      sprintf("<script language='javascript' src='%s'>\n"
+      sprintf("<script language='javascript' src='%s'>"
 	      "</script>\n",
 	      low_make_link("navigation.js")) +
-      sprintf("<script language='javascript' src='%s'>\n"
+      sprintf("<script language='javascript' src='%s'>"
 	      "</script>\n",
 	      low_make_link(make_parent_index_filename() + ".js")) +
       sprintf("<script language='javascript'>\n"
 	      "siblings = children;\n"
 	      "clear_children();\n"
 	      "</script>\n") +
-      sprintf("<script language='javascript' src='%s'>\n"
+      sprintf("<script language='javascript' src='%s'>"
 	      "</script>\n",
 	      low_make_link(make_load_index_filename()));
 
@@ -1429,6 +1449,7 @@ class Node
 	"$type$": String.capitalize(type),
 	"$title$": _Roxen.html_encode_string(make_class_path(1)),
 	"$style$": style,
+        "$script$": script,
 	"$dotdot$": extra_prefix,
 	"$imagedir$":image_prefix(),
 	"$filename$": _Roxen.html_encode_string(make_filename()),

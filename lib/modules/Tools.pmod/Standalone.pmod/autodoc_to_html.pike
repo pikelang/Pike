@@ -24,33 +24,34 @@ string default_ns;
 
 //! Layout template headers and trailers.
 mapping lay = ([
- "docgroup" : "\n\n<hr clear='all' size='1' noshadow='noshadow' />\n<dl>",
+
+ "docgroup" : "\n\n<hr />\n<dl class='group--doc'>",
  "_docgroup" : "</dl>\n",
  "ndochead" : "<dd><p>",
  "_ndochead" : "</p></dd>\n",
 
- "dochead" : "\n<dt style='font-family: sans-serif'>",
+ "dochead" : "\n<dt class='head--doc'>",
  "_dochead" : "</dt>\n",
- "typehead" : "\n<dt style='font-family: sans-serif'>",
+ "typehead" : "\n<dt class='head--type'>",
  "_typehead" : "</dt>\n",
- "docbody" : "<dd style='font-family: sans-serif'>",
+ "docbody" : "<dd class='body--doc'>",
  "_docbody" : "</dd>",
- "fixmehead" : "<dt style='font-family: sans-serif; color: red'>",
+ "fixmehead" : "<dt class='head--fixme'>",
  "_fixmehead" : "</dt>\n",
- "fixmebody" : "<dd style='font-family: sans-serif; color: red'>",
+ "fixmebody" : "<dd class='body--fixme'>",
  "_fixmebody" : "</dd>",
 
- "parameter" : "<tt><font color='#8000F0'>",
- "_parameter" : "</font></tt>",
- "example" : "<dd><pre>",
+ "parameter" : "<code class='parameter'>",
+ "_parameter" : "</code>",
+ "example" : "<dd class='example'><pre>",
  "_example" : "</pre></dd>",
 
- "pre" : "<font face='courier'><pre>",
- "_pre" : "</pre></font>",
- "code" : "<font face='courier'><pre><code>",
- "_code" : "</code></pre></font>",
- "expr" : "<font face='courier'><code>",
- "_expr" : "</code></font>",
+ "pre" : "<pre>",
+ "_pre" : "</pre>",
+ "code" : "<pre><code>",
+ "_code" : "</code></pre>",
+ "expr" : "<code class='expr'>",
+ "_expr" : "</code>",
 
 ]);
 
@@ -124,7 +125,8 @@ string low_parse_chapter(Node n, int chapter) {
       break;
 
     case "example":
-      ret += "<p><pre>" + quote(c->value_of_node()) + "</pre></p>\n";
+      ret += "<p></p><pre>" + quote(c->value_of_node()) +
+             "</pre><p></p>\n";
       break;
 
     case "ul":
@@ -375,7 +377,7 @@ string parse_class(Node n, void|int noheader) {
   }
 
   ret += parse_children(n, "docgroup", parse_docgroup);
-  ret += parse_children(n, "enum", parse_enum);
+  ret += parse_children(n, "enum", parse_enum, noheader);
   ret += parse_children(n, "class", parse_class, noheader);
   ret += parse_children(n, "module", parse_module, noheader);
 
@@ -387,13 +389,14 @@ string parse_class(Node n, void|int noheader) {
 
 string parse_enum(Node n, void|int noheader) {
   string ret ="";
-  if(!noheader)
+  if(!noheader) {
     ret += "<dl><dt>"
       "<table width='100%' cellpadding='3' cellspacing='0' border='0'><tr>"
       "<td bgcolor='#EEEEEE'><font size='+3'>&nbsp; ENUM <b><font color='#005080'>" +
       n->get_attributes()->class_path + n->get_attributes()->name +
       "</font></b></font></td></tr></table><br />\n"
       "</dt><dd>";
+  }
 
   Node c = n->get_first_element("doc");
 
@@ -414,8 +417,10 @@ string parse_enum(Node n, void|int noheader) {
 }
 
 string layout_matrix( array(array(string)) rows ) {
+
   string ret = "<table bgcolor='black' border='0' cellspacing='0' cellpadding='0'><tr><td>\n"
     "<table cellspacing='1' cellpadding='3' border='0' bgcolor='black'>\n";
+
 
   int dim;
   foreach(rows, array row)
@@ -431,12 +436,13 @@ string layout_matrix( array(array(string)) rows ) {
     ret += "</tr>\n";
   }
 
-  return ret + "</table></td></tr></table><br />\n";
+  return ret + "</table></td></tr></table><br>\n";
 }
 
 // ({  ({ array(string)+, void|string  })* })
 void nicebox(array rows, String.Buffer ret) {
-  ret->add( "<table bgcolor='black' border='0' cellspacing='0' cellpadding='0'><tr><td>\n"
+        /*
+  ret->add( "NICEBOX<table bgcolor='black' border='0' cellspacing='0' cellpadding='0'><tr><td>\n"
 	    "<table cellspacing='1' cellpadding='3' border='0' bgcolor='black'>\n" );
 
   int dim;
@@ -466,9 +472,48 @@ void nicebox(array rows, String.Buffer ret) {
   }
 
   ret->add( "</table></td></tr></table><br />\n" );
+  */
+
+  ret->add("<table class='box'>");
+
+  int dim;
+  foreach (rows, array row) {
+    dim = max(dim, sizeof(row));
+  }
+
+  foreach (rows, array row) {
+    if (sizeof(row) == 1) {
+      if (stringp(row[0])) {
+        ret->add("<tr><td colspan='", (string)dim, "'>", row[0], "</td></tr>\n");
+      }
+      else {
+        foreach (row[0], string elem) {
+          ret->add("<tr><td><tt>", elem, "</tt></td>",
+                   (dim == 2 ? "<td>&nbsp;</td>" : ""), "</tr>\n");
+        }
+      }
+    }
+    else if (sizeof(row[0]) == 1) {
+      ret->add("<tr><td><tt>", row[0][0], "</tt></td>",
+               "<td>", row[1], "</td></tr>\n");
+    }
+    else {
+      ret->add("<tr><td><tt>", row[0][0], "</tt></td>",
+               "<td rowspan='", (string)sizeof(row[0]), "'>",
+               row[1], "</td></tr>\n");
+      foreach (row[0][1..], string elem) {
+        ret->add("<tr><td><tt>", elem, "</tt></td></tr>\n");
+      }
+    }
+  }
+
+  ret->add("</table>");
 }
 
 void build_box(Node n, String.Buffer ret, string first, string second, function layout, void|string header) {
+
+        //werror("build_box: %O\n", n);
+
   array rows = ({});
   if(header) rows += ({ ({ header }) });
   foreach(n->get_elements(first), Node d) {
@@ -508,13 +553,76 @@ string range_type( string type, Node min, Node max )
     return type+"("+low+".."+high+")";
 }
 
+Tools.Standalone.pike_to_html code_highlighter;
+
+// Normalizes indentation of @code ... @endcode blocks.
+// Also tries to syntax highlight code that looks like Pike.
+string parse_code(Node n, void|String.Buffer ret)
+{
+  string text;
+  if (n->get_tag_name() != "code") {
+    return parse_text(n, ret);
+  }
+
+  array(string) lines = n->get_children()[0]->get_children()->value_of_node();
+
+  if (!sizeof(lines)) {
+    return parse_text(n, ret);
+  }
+
+  if (sizeof(lines) && lines[-1] == "\n") {
+    lines[0..<1];
+  }
+
+  if (sizeof(lines) > 1) {
+    for (int i = 0; i < sizeof(lines); i++) {
+      string ln = map(lines[i]/"\n", lambda (string s) {
+        if (has_prefix(s, " "))
+          s = s[1..];
+        return s;
+      }) * "\n";
+
+      if (!has_suffix(ln, "\n"))
+        ln += "\n";
+
+      lines[i] = ln;
+    }
+
+    text = lines*"";
+  }
+  else {
+    text = lines*"";
+  }
+
+  if (sizeof(text) && text[-1] == '\n');
+    text = text[..<1];
+
+  while (text[-1] == '\n')
+    text = text[..<1];
+
+  if (search(text, "{") > -1) {
+    if (!code_highlighter) {
+      code_highlighter = Tools.Standalone.pike_to_html();
+    }
+
+    if (catch(text = code_highlighter->convert(text))) {
+      text = text;
+    }
+  }
+
+  if (ret) {
+    ret->add(text);
+  }
+  else return quote(text);
+}
+
 //! Typically called with a <group/> node or a sub-node that is a container.
 string parse_text(Node n, void|String.Buffer ret) {
   if(n->get_node_type()==XML_TEXT && n->get_text()) {
     if(ret)
-      ret->add(quote(n->get_text()));
+      ret->add("parse_text:#1:", quote(n->get_text()));
     else
-      return quote(n->get_text());
+      return quote("parse_text:#1:" + n->get_text());
   }
 
   int cast;
@@ -568,7 +676,7 @@ string parse_text(Node n, void|String.Buffer ret) {
 
     case "code":
       ret->add(lay->code);
-      parse_text(c, ret);
+      parse_code(c, ret);
       ret->add(lay->_code);
       break;
 
@@ -584,7 +692,7 @@ string parse_text(Node n, void|String.Buffer ret) {
       string ref;
       //ref = c->get_attributes()->resolved;
       if(!ref) ref = parse_text(c);
-      ret->add("<font face='courier'>", ref, "</font>");
+      ret->add("<span class='ms'>", ref, "</span>");
       break;
 
     case "rfc":
@@ -777,9 +885,9 @@ string parse_text(Node n, void|String.Buffer ret) {
       break;
 
     case "fixme":
-      ret->add("<font color='red'>FIXME: ");
+      ret->add("<span class='fixme'>FIXME: ");
       parse_text(c, ret);
-      ret->add("</font>");
+      ret->add("</span>");
       break;
 
     // Not really allowed
@@ -899,18 +1007,19 @@ string parse_type(Node n, void|string debug) {
   case "object":
     if(n->count_children()) {
       if (resolve_reference) {
-	ret += "<font color='#005080'>" +
+	ret += "<span class='ms object resolved'>" +
 	  resolve_reference(n->value_of_node(), n->get_attributes()) +
-	  "</font>";
+	  "</span>";
       } else {
-	ret += "<font color='#005080'>" + n->value_of_node() + "</font>";
+	ret += "<span class='ms object unresolved'>" +
+               n->value_of_node() + "</span>";
       }
     } else
-      ret += "<font color='#202020'>object</font>";
+      ret += "<span class='ms datatype'>object</span>";
     break;
 
   case "type":
-    ret += "<font color='#202020'>type</font>";
+    ret += "<span class='ms type'>type</span>";
     if (n->count_children() && (c = get_first_element(n)) &&
 	(c->get_any_name() != "mixed")) {
       ret += "(" + parse_type(c) + ")";
@@ -918,19 +1027,19 @@ string parse_type(Node n, void|string debug) {
     break;
 
   case "multiset":
-    ret += "<font color='#202020'>multiset</font>";
+    ret += "<span class='ms datatype'>multiset</span>";
     c = n->get_first_element("indextype");
     if(c) ret += "(" + parse_type( get_first_element(c) ) + ")";
     break;
 
   case "array":
-    ret += "<font color='#202020'>array</font>";
+    ret += "<span class='ms datatype'>array</span>";
     c = n->get_first_element("valuetype");
     if(c) ret += "(" + parse_type( get_first_element(c) ) + ")";
     break;
 
   case "mapping":
-    ret += "<font color='#202020'>mapping</font>";
+    ret += "<span class='ms datatype'>mapping</span>";
     c = n->get_first_element("indextype");
     d = n->get_first_element("valuetype");
     if(c && d)
@@ -943,7 +1052,7 @@ string parse_type(Node n, void|string debug) {
     break;
 
   case "function":
-    ret += "<font color='#202020'>function</font>";
+    ret += "<span class='ms datatype'>function</span>";
     array(Node) args = n->get_elements("argtype");
     d = n->get_first_element("returntype");
     // Doing different than the XSL here. Must both
@@ -953,7 +1062,7 @@ string parse_type(Node n, void|string debug) {
       if(args) ret += map(args->get_children() * ({}), parse_type)*", ";
       ret += ":";
       if(d) ret += parse_type( get_first_element(d) );
-      else ret += "<font color='#202020'>void</font>";
+      else ret += "<span class='ms datatype void'>void</span>";
       ret += ")";
     }
     break;
@@ -975,16 +1084,16 @@ string parse_type(Node n, void|string debug) {
 
   case "void": case "program": case "mixed": case "float":
   case "zero":
-    ret += "<font color='#202020'>" + n->get_any_name() + "</font>";
+    ret += "<span class='ms datatype'>" + n->get_any_name() + "</span>";
     break;
 
   case "string":
   case "int":
-      ret += ("<font color='#202020'>" +
+      ret += ("<span class='ms datatype'>" +
               range_type( n->get_any_name(),
                           n->get_first_element("min"),
                           n->get_first_element("max")) +
-              "</font>");
+              "</span>");
     break;
 
   case "attribute":
@@ -993,12 +1102,14 @@ string parse_type(Node n, void|string debug) {
       parse_type(n->get_first_element("subtype")->get_first_element());
     if (n->get_first_element("prefix")) {
       if (attr == "\"deprecated\"") {
-	ret += "<font color='#600000'>__deprecated__</font> " + subtype;
+	ret += "<span class='ms deprecated'>__deprecated__</span> " +
+               subtype;
       } else {
 	ret += sprintf("__attribute__(%s) %s", attr, subtype);
       }
     } else if (attr == "\"deprecated\"") {
-      ret += "<font color='#600000'>__deprecated__</font>(" + subtype + ")";
+      ret += "<span class='ms deprecated'>__deprecated__</span>(" +
+             subtype + ")";
     } else {
       ret += sprintf("__attribute__(%s, %s)", attr, subtype);
     }
@@ -1006,31 +1117,31 @@ string parse_type(Node n, void|string debug) {
 
     // Modifiers:
   case "extern": // Not in XSLT
-    ret += "extern ";
+    ret += "<span class='ms modifier'>extern</span> ";
     break;
   case "final": // Not in XSLT
   case "nomask": // Not in XSLT
-    ret += "final ";
+    ret += "<span class='ms modifier'>final</span> ";
     break;
   case "inline": // Not in XSLT
   case "local": // Not in XSLT
-    ret += "local ";
+    ret += "<span class='ms modifier'>local</span> ";
     break;
   case "optional": // Not in XSLT
-    ret += "optional ";
+    ret += "<span class='ms modifier'>optional</span> ";
     break;
   case "private": // Not in XSLT
-    ret += "private ";
+    ret += "<span class='ms modifier'>private</span> ";
     break;
   case "protected": // Not in XSLT
   case "static": // Not in XSLT
-    ret += "protected ";
+    ret += "<span class='ms modifier'>protected</span> ";
     break;
   case "public": // Not in XSLT
     // Ignored.
     break;
   case "variant": // Not in XSLT
-    ret += "variant ";
+    ret += "<span class='ms modifier'>variant</span> ";
     break;
 
   default:
@@ -1213,7 +1324,7 @@ string parse_not_doc(Node n) {
       continue;
 
     case "method":
-      if(method++) ret += "<br />\n";
+      if(method++) ret += "<br>\n";
 #if 0
       if(!c->get_first_element("returntype"))
 	error( "No returntype element in method element.\n" );
@@ -1227,7 +1338,7 @@ string parse_not_doc(Node n) {
           ret += parse_type(get_first_element(c->get_first_element("returntype")));
           ret += " ";
           ret += c->get_attributes()->class_path;
-          ret += "<b><font color='#000066'>" + c->get_attributes()->name + "</font>(</b>";
+          ret += "<b><span class='method'>" + c->get_attributes()->name + "</span>(</b>";
           ret += parse_not_doc( c->get_first_element("arguments") );
           ret += "<b>)</b>";
           ret += "</tt>";
@@ -1239,7 +1350,8 @@ string parse_not_doc(Node n) {
       else switch( string method = c->get_attributes()->name )
       {
         case "_get_iterator":
-          ret += "<tt><font color='#202020'>"+class_name+"</font> <font color='#000066'>a</font>;<br/>\n";
+          ret += "<tt><span class='class'>"+class_name+"</span> "
+                 "<span class='method'>a</span>;<br>\n";
           /* NOTE: We could get index and value types from the
              iterator type here.  Doing so might be somewhat hard,
              however.
@@ -1250,13 +1362,13 @@ string parse_not_doc(Node n) {
 
         case "pow":
           ret += "<tt>"+parse_type(get_first_element(c->get_first_element("returntype")));
-          ret += " res = "+method+"(<font color='#000066'>["+class_name+"]a</font>, b) or <br></tt>";
+          ret += " res = "+method+"([<span class='class'>"+class_name+"</span>]a, b) or <br></tt>";
           emit_default_func();
           break;
 
         case "sqrt":
           ret += "<tt>"+parse_type(get_first_element(c->get_first_element("returntype")));
-          ret += " res = "+method+"(<font color='#000066'>["+class_name+"]a</font>) or <br></tt>";
+          ret += " res = "+method+"([<span class='class'>"+class_name+"</span>]a) or <br></tt>";
           emit_default_func();
           break;
 /*
@@ -1268,9 +1380,9 @@ string parse_not_doc(Node n) {
           break;
 */
 	case "create":
-	  ret += "<tt>" +class_name; // Check for more children
-	  ret += " ";
-	  ret += class_name+"<b>(</b>";
+	  ret += "<tt><span class='object'>" +class_name; // Check for more children
+	  ret += "</span> <span class='class'>";
+	  ret += class_name+"</span><b>(</b>";
 	  ret += parse_not_doc( c->get_first_element("arguments") );
 	  ret += "<b>)</b></tt>";
 	  break;
@@ -1287,9 +1399,9 @@ string parse_not_doc(Node n) {
           ret += "<tt>";
           ret += parse_type(get_first_element(c->get_first_element("returntype")));
           ret += " ";
-          ret += "<b><font color='#000066'>"+method[1..]+"</font>(</b> ";
-          ret += "<font color='#202020'>"+class_name+"</font> <font color='#f000f0'>arg</font>";
-          ret += " <b>)</b>";
+          ret += "<b><span class='method'>"+method[1..]+"</span>(</b> ";
+          ret += "<span class='class'>"+class_name+"</span> <span class='argument'>arg</span>";
+          ret += " <b>)</b></tt>";
           break;
 
         case "_m_delete":
@@ -1297,43 +1409,45 @@ string parse_not_doc(Node n) {
         case "_search":
           ret += "<tt>";
           ret += parse_type(get_first_element(c->get_first_element("returntype")));
-          ret += " <b><font color='#000066'>"+method[1..];
-          ret += "</font>(</b>"+class_name+" <font color='#F000F0'>from</font>, ";
+          ret += " <b><span class='method'>"+method[1..];
+          ret += "</span>(</b><span class='class'>"+class_name+"</span> "
+                 "<span class='argument'>from</span>, ";
           ret += parse_not_doc( c->get_first_element("arguments") );
           ret += "<b>)</b></tt>";
           break;
 
         case "_sprintf":
-          ret += "<tt>";
-          ret += "<font color='#202020'>string</font> ";
-          ret += ("<b><font color='#000066'>sprintf</font>("
-                  "</b><font color='#202020'>string</font> "
-                  "<font color='#F000F0'>format</font>, ... <font color='#202020'>"
-                  +class_name+"</font> <font color='#F000F0'>"
-                  "arg</font> ... <b>)</b>");
+          //ret += "<tt>";
+          ret += "<tt><span class='datatype'>string</span> ";
+          ret += ("<b><span class='method'>sprintf</span>("
+                  "</b><span class='datatype'>string</span> "
+                  "<span class='constant'>format</span>, ... <span class='class'>"
+                  +class_name+"</span> <span class='constant'>"
+                  "arg</span> ... <b>)</b></tt>");
           break;
 
         case "_decode":
           ret += "<tt>";
-          ret += "<font color='#202020'>"+class_name+"</font> ";
-          ret += ("<b><font color='#000066'>decode_value</font>("
-                  "</b><font color='#202020'>string(8bit)</font> "
-                  "<font color='#F000F0'>data</font>)</b>");
+          ret += "<span class='class'>"+class_name+"</span> ";
+          ret += ("<b><span class='method'>decode_value</span>("
+                  "</b><span class='datatype'>string(8bit)</span> "
+                  "<span class='argument'>data</span>)</b></tt>");
           break;
         case "_encode":
           ret += "<tt>";
-          ret += "<font color='#202020'>string(8bit)</font> ";
-          ret += ("<b><font color='#000066'>encode_value</font>("
-                  "</b><font color='#202020'>"+class_name+"</font> "
-                  "<font color='#F000F0'>data</font>)</b>");
+          ret += "<span class='datatype'>string(8bit)</span> ";
+          ret += ("<b><span class='method'>encode_value</span>("
+                  "</b><span class='class'>"+class_name+"</span> "
+                  "<span class='argument'>data</span>)</b></tt>");
           break;
 
         case "cast":
           {
-            ret += "<tt>";
+            //ret += "<tt>";
 
             string base =
-              "<b>(</b>_@_TYPE_@_<b>)</b><font color='#202020'>"+class_name+"</font>()";
+              "<b>(</b><span class='ms datatype'>_@_TYPE_@_</span>"
+              "<b>)</b><span class='ms class'>"+class_name+"</span>()";
 
             multiset seen = (<>);
             void add_typed( string type )
@@ -1390,7 +1504,8 @@ string parse_not_doc(Node n) {
           {
             Node a = c->get_first_element("arguments") ;
             array(Node) args = a->get_elements("argument");
-            mapping repl = (["OBJ":"<font color='#000066'>"+class_name+"()</font>"]);
+            mapping repl = (["OBJ":"<span class='ms class'>"+
+                                   class_name+"()</span>"]);
             /* there are a few cases:  obj OP arg - we do not want types
                RET func(op,ARG) - we do want types.
 
@@ -1399,21 +1514,23 @@ string parse_not_doc(Node n) {
             */
             if( sizeof(args) > 0 )
             {
-              repl->x = "<font color='#005080'>"+args[0]->get_attributes()->name+"</font>";
+              repl->x = "<span class='ms class'>"+
+                        args[0]->get_attributes()->name+"</span>";
             }
             if( sizeof(args) > 1 )
             {
-              repl->y = "<font color='#005080'>"+args[1]->get_attributes()->name+"</font>";
+              repl->y = "<span class='ms class'>"+
+                        args[1]->get_attributes()->name+"</span>";
             }
 
-            ret += "<tt>";
+            //ret += "<tt>";
             if( method != "`+=" && method != "`[]=" && method != "`->=")
             {
               ret += parse_type(get_first_element(c->get_first_element("returntype")));
               ret += " res = ";
             }
             ret += replace( pat, repl );
-            ret += "</tt>";
+            //ret += "</tt>";
             break;
           }
           emit_default_func( );
@@ -1424,74 +1541,74 @@ string parse_not_doc(Node n) {
     case "argument":
       if(argument++) ret += ", ";
       cc = c->get_first_element("value");
-      if(cc) ret += "<font color='green'>" + cc->value_of_node() + "</font>";
+      if(cc) ret += "<span class='ms argument'>" + cc->value_of_node() + "</span>";
       else if( !c->count_children() );
       else if( get_first_element(c)->get_any_name()=="type") {
 	ret += parse_type(get_first_element(get_first_element(c)));
 	if(c->get_attributes()->name)
-	  ret += " <font color='#005080'>" +
-	    c->get_attributes()->name + "</font>";
+	  ret += " <span class='ms argument'>" +
+	    c->get_attributes()->name + "</span>";
       }
       else
 	error( "Malformed argument element.\n" + c->html_of_node() + "\n" );
       break;
 
     case "variable":
-      if(variable++) ret += "<br />\n";
+      if(variable++) ret += "<br>\n";
       ret += "<tt>";
       cc = c->get_first_element("modifiers");
       if(cc) ret += map(cc->get_children(), parse_type)*" " + " ";
       if (c->get_first_element("type")) {
 	ret += parse_type(get_first_element(c->get_first_element("type")),
 			  "variable") + " " +
-	  c->get_attributes()->class_path + "<b><font color='#F000F0'>" +
-	  c->get_attributes()->name + "</font></b></tt>";
+	  c->get_attributes()->class_path + "<b><span class='variable'>" +
+	  c->get_attributes()->name + "</span></b></tt>";
       } else
 	error("Malformed variable element.\n" + c->html_of_node() + "\n");
       break;
 
     case "constant":
       if(num_const++) ret += "<br />\n";
-      ret += "<tt>";
+      ret += "<span class='ms datatype'>";
       cc = c->get_first_element("modifiers");
       if(cc) ret += map(cc->get_children(), parse_type)*" " + " ";
-      ret += "constant ";
+      ret += "constant</span> ";
       if (Node type = c->get_first_element ("type"))
 	ret += parse_type (get_first_element (type), "constant") + " ";
       ret += c->get_attributes()->class_path;
-      ret += "<font color='#F000F0'>" + c->get_attributes()->name + "</font>";
+      ret += "<span class='ms constant'>" + c->get_attributes()->name + "</span>";
       cc = c->get_first_element("typevalue");
-      if(cc) ret += " = " + parse_type(get_first_element(cc));
-      ret += "</tt>";
+      if(cc) ret += " <tt>=</tt> <tt class='value'>" + parse_type(get_first_element(cc)) + "</tt>";
+      //ret += "</tt>";
       break;
 
     case "typedef":
       if(typedf++) ret += "<br />\n";
-      ret += "<tt>";
+      ret += "<span class='ms datatype'>";
       cc = c->get_first_element("modifiers");
       if(cc) ret += map(cc->get_children(), parse_type)*" " + " ";
-      ret += "typedef ";
+      ret += "typedef</span> ";
       ret += parse_type(get_first_element(c->get_first_element("type")), "typedef") + " " +
-	c->get_attributes()->class_path + "<font color='#F000F0'>" + c->get_attributes()->name +
-	"</font></tt>";
+	c->get_attributes()->class_path + "<span class='ms typedef'>" + c->get_attributes()->name +
+	"</span>";
       break;
 
     case "inherit":
-      ret += "<font face='courier'>";
+      ret += "<span class='ms datatype'>";
       cc = c->get_first_element("modifiers");
       if(cc) ret += map(cc->get_children(), parse_type)*" " + " ";
       ret += "inherit ";
       Node n = c->get_first_element("classname");
       if (resolve_reference) {
-	ret += "</font>" +
+	ret += "</span>" +
 	  resolve_reference(n->value_of_node(), n->get_attributes());
       } else {
-	ret += Parser.encode_html_entities(n->value_of_node()) + "</font>";
+	ret += Parser.encode_html_entities(n->value_of_node()) + "</span>";
       }
       if (c->get_attributes()->name) {
-	ret += "<font face='courier'> : " + "<font color='#F000F0'>" +
+	ret += "<span class='ms'> : " + "<span class='ms inherit'>" +
 	  Parser.encode_html_entities(c->get_attributes()->name) +
-	  "</font></font>";
+	  "</span></span>";
       }
       break;
 
@@ -1501,8 +1618,8 @@ string parse_not_doc(Node n) {
 
     case "directive":
       if(cppdir++) ret += "<br />\n";
-      ret += "<tt><font color='#006666'>" + quote(c->get_attributes()->name) +
-	"</font></tt>";
+      ret += "<span class='ms directive'>" + quote(c->get_attributes()->name) +
+	"</span>";
       break;
 
     default:
@@ -1528,13 +1645,13 @@ string parse_docgroup(Node n) {
   if(lay->typehead) {
     ret += lay->typehead;
     if(m["homogen-type"]) {
-      string type = "<font face='Helvetica'>" +
+      string type = "<span class='homogen--type'>" +
 	quote(String.capitalize(m["homogen-type"])) +
-	"</font>\n";
+	"</span>\n";
       if(m["homogen-name"]) {
-	ret += type + "<font size='+1'><b>" +
+	ret += type + "<span class='homogen--name'><b>" +
 	  quote((m->belongs?m->belongs+" ":"") + m["homogen-name"]) +
-	  "</b></font>\n";
+	  "</b></span>\n";
       } else {
 	array(string) names =
 	  Array.uniq(map(n->get_elements(m["homogen-type"]),
@@ -1544,7 +1661,7 @@ string parse_docgroup(Node n) {
 			 }));
 	foreach(names, string name)
 	  ret += type +
-	    "<font size='+1'><b>" + quote(name) + "</b></font><br />\n";
+	    "<span class='homogen--name'><b>" + quote(name) + "</b></span><br>\n";
       }
     }
     else
@@ -1575,9 +1692,9 @@ string parse_children(Node n, string tag, function cb, mixed ... args) {
 string manual_title = "Pike Reference Manual";
 string frame_html(string res, void|string title) {
   title = title || manual_title;
-  return "<html><head><title>" + quote(title) + "</title>\n"
+  return "<!doctype html><html><head><title>" + quote(title) + "</title>\n"
     "<meta charset='utf-8' /></head>\n"
-    "<body bgcolor='white' text='black'>\n" + res +
+    "<body>\n" + res +
     "</body></html>";
 }
 
