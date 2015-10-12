@@ -1,13 +1,5 @@
-/*
-  Author: Pontus Östlund <https://profiles.google.com/poppanator>
-
-  Permission to copy, modify, and distribute this source for any legal
-  purpose granted as long as my name is still attached to it. More
-  specifically, the GPL, LGPL and MPL licenses apply to this software.
-*/
-
 //! Instantiates the default Github API.
-//! See @[WebApi.Api()] for further information about the arguments
+//! See @[Web.Api.Api()] for further information about the arguments
 //!
 //! @param client_id
 //!  Your application key/id
@@ -26,9 +18,9 @@ this_program `()(string client_id, string client_secret,
 
 class V1
 {
-  inherit WebApi.Api : parent;
+  inherit Web.Api.Api : parent;
 
-  protected constant AuthClass = Auth.Linkedin;
+  protected constant AuthClass = Web.Auth.Linkedin;
 
   //! The base uri to the API
   constant API_URI = "https://api.linkedin.com/v1";
@@ -114,7 +106,7 @@ class V1
   // Just a convenience class
   protected class Method
   {
-    inherit WebApi.Api.Method;
+    inherit Web.Api.Api.Method;
 
     //! Internal convenience method
     public mixed get(string s, void|ParamsArg p, void|Callback cb)

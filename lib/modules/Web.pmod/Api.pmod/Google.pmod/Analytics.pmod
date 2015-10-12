@@ -1,13 +1,5 @@
-/*
-  Author: Pontus Östlund <https://profiles.google.com/poppanator>
-
-  Permission to copy, modify, and distribute this source for any legal
-  purpose granted as long as my name is still attached to it. More
-  specifically, the GPL, LGPL and MPL licenses apply to this software.
-*/
-
 //! Instantiates the default Analytics API.
-//! See @[WebApi.Api()] for further information about the arguments
+//! See @[Web.Api.Api()] for further information.
 //!
 //! @param client_id
 //!  Your application key/id
@@ -26,9 +18,9 @@ this_program `()(string client_id, string client_secret,
 
 class V3
 {
-  inherit WebApi.Google.Api : parent;
+  inherit Web.Api.Google.Api : parent;
 
-  protected constant AuthClass = Auth.Google.Analytics;
+  protected constant AuthClass = Web.Auth.Google.Analytics;
 
   //! API base URI.
   protected constant API_URI = "https://www.googleapis.com/analytics/v3";

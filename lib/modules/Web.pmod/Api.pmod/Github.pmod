@@ -1,13 +1,5 @@
-/*
-  Author: Pontus Östlund <https://profiles.google.com/poppanator>
-
-  Permission to copy, modify, and distribute this source for any legal
-  purpose granted as long as my name is still attached to it. More
-  specifically, the GPL, LGPL and MPL licenses apply to this software.
-*/
-
 //! Instantiates the default Github API.
-//! See @[WebApi.Api()] for further information about the arguments
+//! See @[Web.Api.Api()] for further information.
 //!
 //! @param client_id
 //!  Your application key/id
@@ -26,9 +18,9 @@ this_program `()(string client_id, string client_secret,
 
 class Github
 {
-  inherit WebApi.Api : parent;
+  inherit Web.Api.Api : parent;
 
-  protected constant AuthClass = Auth.Github;
+  protected constant AuthClass = Web.Auth.Github;
 
   //! The base uri to the Github API
   constant API_URI = "https://api.github.com";
@@ -104,7 +96,7 @@ class Github
   // Just a convenience class
   protected class Method
   {
-    inherit WebApi.Api.Method;
+    inherit Web.Api.Api.Method;
 
     //! Internal convenience method
     public mixed get(string s, void|ParamsArg p, void|Callback cb)

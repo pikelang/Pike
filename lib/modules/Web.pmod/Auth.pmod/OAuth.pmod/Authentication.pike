@@ -1,17 +1,9 @@
-/*
-  Author: Pontus Östlund <https://profiles.google.com/poppanator>
-
-  Permission to copy, modify, and distribute this source for any legal
-  purpose granted as long as my name is still attached to it. More
-  specifically, the GPL, LGPL and MPL licenses apply to this software.
-*/
-
 //! The purpose of this class is to streamline OAuth1 with OAuth2.
 //! This class will not do much on it's own, since its purpose is to
 //! be inherited by some other class implementing a specific authorization
 //! service.
 
-inherit Auth.OAuth2.Client : oauth2;
+inherit Web.Auth.OAuth2.Client : oauth2;
 inherit .Client : oauth;
 
 #include "oauth.h"
@@ -214,7 +206,7 @@ string call(string|Standards.URI url, void|mapping|.Params args,
 
   Protocols.HTTP.Query q = r->submit();
 
-  TRACE("Auth.OAuth.Authentication()->call(%O) : %O : %s\n",
+  TRACE("Web.Auth.OWeb.Auth.Authentication()->call(%O) : %O : %s\n",
         q, q->headers, q->data());
 
   if (q->status != 200) {

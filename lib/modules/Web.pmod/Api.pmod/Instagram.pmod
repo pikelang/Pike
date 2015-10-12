@@ -1,7 +1,7 @@
 //! Instagram API implementation.
 
 //! Instantiates the default Instagram API.
-//! See @[WebApi.Api()] for further information about the arguments
+//! See @[Web.Api.Api()] for further information.
 //!
 //! @param client_id
 //!  Your application key/id
@@ -21,9 +21,9 @@ this_program `()(string client_id, string client_secret,
 //! Class for communicating with version 1 of the Instagram API.
 class V1
 {
-  inherit WebApi.Api : parent;
+  inherit Web.Api.Api : parent;
 
-  protected constant AuthClass = Auth.Instagram;
+  protected constant AuthClass = Web.Auth.Instagram;
 
   //! Getter for the @[Users] object which has methods for all @expr{users@}
   //! related Instagram API methods.
@@ -168,7 +168,7 @@ class V1
   //! Internal convenience class.
   protected class Method
   {
-    inherit WebApi.Api.Method;
+    inherit Web.Api.Api.Method;
 
     //! Internal convenience method
     protected mixed _get(string s, void|ParamsArg p, void|Callback cb)

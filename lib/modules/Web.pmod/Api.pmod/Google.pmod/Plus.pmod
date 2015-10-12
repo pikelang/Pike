@@ -1,13 +1,5 @@
-/*
-  Author: Pontus Östlund <https://profiles.google.com/poppanator>
-
-  Permission to copy, modify, and distribute this source for any legal
-  purpose granted as long as my name is still attached to it. More
-  specifically, the GPL, LGPL and MPL licenses apply to this software.
-*/
-
 //! Instantiates the default Google+ API.
-//! See @[WebApi.Api()] for further information about the arguments
+//! See @[Web.Api.Api()] for further information.
 //!
 //! @param client_id
 //!  Your application key/id
@@ -26,12 +18,12 @@ this_program `()(string client_id, string client_secret,
 
 class V1
 {
-  inherit WebApi.Google.Api;
+  inherit Web.Api.Google.Api;
 
   //! API base URI.
   protected constant API_URI = "https://www.googleapis.com/plus/v1";
 
-  protected constant AuthClass = Auth.Google.Plus;
+  protected constant AuthClass = Web.Auth.Google.Plus;
 
 
   //! Getter for the @[People] object which has methods for all @expr{people@}
