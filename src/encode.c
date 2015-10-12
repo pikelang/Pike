@@ -4119,14 +4119,6 @@ static void free_decode_data (struct decode_data *data, int delay,
 
 #ifdef PIKE_DEBUG
   if (!free_after_error) {
-    NEW_MAPPING_LOOP (data->decoded->data) {
-      if (TYPEOF(k->val) == T_PROGRAM &&
-	  !(k->val.u.program->flags & PROGRAM_FINISHED)) {
-	decode_error (data, NULL,
-		      "Got unfinished program <%O> after decode: %O\n",
-		      &k->ind, &k->val);
-      }
-    }
     if(data->unfinished_programs)
       Pike_fatal("We have unfinished programs left in decode()!\n");
     if(data->unfinished_objects)
@@ -4136,9 +4128,7 @@ static void free_decode_data (struct decode_data *data, int delay,
   }
 #endif
 
-  free_string (data->data_str);
   if (data->codec) free_object (data->codec);
-  free_mapping(data->decoded);
 
   while(data->unfinished_programs)
   {
@@ -4169,6 +4159,30 @@ static void free_decode_data (struct decode_data *data, int delay,
   free_object (data->thread_obj);
 #endif
 
+#ifdef PIKE_DEBUG
+  if (!free_after_error) {
+    NEW_MAPPING_LOOP (data->decoded->data) {
+      if (TYPEOF(k->val) == T_PROGRAM &&
+	  !(k->val.u.program->flags & PROGRAM_FINISHED)) {
+	ONERROR err;
+	/* Move some references to the stack so that they
+	 * will be freed when decode_error() throws, but
+	 * still be available to decode_error().
+	 */
+	push_string(data->data_str);
+	push_mapping(data->decoded);
+	SET_ONERROR(err, data, free);
+
+	decode_error (data, NULL,
+		      "Got unfinished program <%O> after decode: %O\n",
+		      &k->ind, &k->val);
+	UNSET_ONERROR(err);
+      }
+    }
+  }
+#endif
+  free_string(data->data_str);
+  free_mapping(data->decoded);
   free( (char *) data);
 }
 
