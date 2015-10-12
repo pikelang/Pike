@@ -34,13 +34,13 @@ class Params
   }
 
   //! Parameter keys
-  array(string) _indices()
+  protected array(string) _indices()
   {
     return params->get_name();
   }
 
   //! Parameter values
-  array(string) _values()
+  protected array(string) _values()
   {
     return params->get_value();
   }
@@ -92,7 +92,7 @@ class Params
   //!
   //! @returns
   //!  A new @[Params] object
-  this_program `+(Param|this_program p)
+  protected this_program `+(Param|this_program p)
   {
     if (mappingp(p)) {
       foreach (p; string k; string v) {
@@ -113,7 +113,7 @@ class Params
   //! Remove @[p] from the @[Param]eters array of the current object.
   //!
   //! @param p
-  this_program `-(Param|this_program p)
+  protected this_program `-(Param|this_program p)
   {
     if (!p) return this;
 
@@ -130,7 +130,7 @@ class Params
   //!
   //! @param key
   //! The name of a @[Param]erter to find.
-  Param `[](string key)
+  protected Param `[](string key)
   {
     foreach (params, Param p)
       if (p->get_name() == key)
@@ -148,7 +148,7 @@ class Params
   //! String format method
   //!
   //! @param t
-  string _sprintf(int t)
+  protected string _sprintf(int t)
   {
     return t == 'O' && sprintf("%O(%O)", object_program(this), params);
   }
@@ -156,12 +156,13 @@ class Params
   //! Casting method
   //!
   //! @param how
-  mixed cast(string how)
+  protected mixed cast(string how)
   {
     switch (how) {
       case "mapping": return to_mapping();
       case "string": return to_query();
     }
+    error("Cant cast %O() to %O\n", this_program, how);
   }
 }
 
@@ -235,7 +236,7 @@ class Param
   //! Comparer method. Checks if @[other] equals this object
   //!
   //! @param other
-  int(0..1) `==(mixed other)
+  protected int(0..1) `==(mixed other)
   {
     if (!INSTANCE_OF(this, other)) return 0;
     if (name == other->get_name())
@@ -247,7 +248,7 @@ class Param
   //! Checks if this object is greater than @[other]
   //!
   //! @param other
-  int(0..1) `>(mixed other)
+  protected int(0..1) `>(mixed other)
   {
     if (!INSTANCE_OF(this, other)) return 0;
     if (name == other->get_name())
@@ -259,7 +260,7 @@ class Param
   //! Checks if this object is less than @[other]
   //!
   //! @param other
-  int(0..1) `<(mixed other)
+  protected int(0..1) `<(mixed other)
   {
     if (!INSTANCE_OF(this, other)) return 0;
     if (name == other->get_name())
@@ -271,12 +272,12 @@ class Param
   //! String format method
   //!
   //! @param t
-  string _sprintf(int t)
+  protected string _sprintf(int t)
   {
     return t == 'O' && sprintf("%O(%O,%O)", object_program(this), name, value);
   }
 
-  mixed cast(string how)
+  protected mixed cast(string how)
   {
     switch (how)
     {

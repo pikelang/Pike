@@ -13,9 +13,9 @@
 //!  The redirect URI after an authentication
 //! @param scope
 //!  The application scopes to grant access to
-this_program `()(string client_id, string client_secret,
-                 void|string redirect_uri,
-                 void|string|array(string)|multiset(string) scope)
+protected this_program `()(string client_id, string client_secret,
+                           void|string redirect_uri,
+                           void|string|array(string)|multiset(string) scope)
 {
   return V1(client_id, client_secret, redirect_uri, scope);
 }

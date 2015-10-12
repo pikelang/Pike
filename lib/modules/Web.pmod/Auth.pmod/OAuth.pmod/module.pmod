@@ -162,8 +162,8 @@ class Request
   //! @param _http_method
   //!  The HTTP method to use. Either @[Request.GET] or @[Request.POST]
   //! @param _params
-  void create(string|Standards.URI _uri, string http_method,
-              void|Params _params)
+  protected void create(string|Standards.URI _uri, string http_method,
+                        void|Params _params)
   {
     uri    = ASSURE_URI(_uri);
     method = upper_case(http_method);
@@ -273,7 +273,7 @@ class Request
   //!
   //! @param how
   //!  Only supports @tt{string@}
-  mixed cast(string how)
+  protected string cast(string how)
   {
     if (how != "string") {
       ARG_ERROR("how", "%O can not be casted to \"%s\", only to \"string\"\n",
@@ -283,8 +283,7 @@ class Request
     return (method == "GET" ? normalize_uri(uri) + "?" : "")+(string)params;
   }
 
-  //! String format
-  string _sprintf(int t)
+  protected string _sprintf(int t)
   {
     return t == 'O' && sprintf("%O(%O, %O, %O)", object_program(this),
                                (string)uri, base_string, params);
@@ -309,14 +308,14 @@ class Consumer
   //! @param _secret
   //! @param _callback
   //!  NOTE: Has no effect in this implementation
-  void create(string _key, string _secret, void|string|Standards.URI _callback)
+  protected void create(string _key, string _secret, void|string|Standards.URI _callback)
   {
     key      = _key;
     secret   = _secret;
     callback = ASSURE_URI(_callback);
   }
 
-  string _sprintf(int t)
+  protected string _sprintf(int t)
   {
     return t == 'O' && sprintf("%O(%O, %O, %O)", object_program(this),
                                key, secret, callback);
@@ -336,7 +335,7 @@ class Token
   //!
   //! @param key
   //! @param secret
-  void create(string _key, string _secret)
+  protected void create(string _key, string _secret)
   {
     key = _key;
     secret = _secret;
@@ -347,7 +346,7 @@ class Token
   //! of the object
   //!
   //! @param how
-  mixed cast(string how)
+  protected string cast(string how)
   {
     switch (how) {
       case "string":
@@ -358,8 +357,7 @@ class Token
     error("Can't cast %O() to %O\n", object_program(this), how);
   }
 
-  //! String format.
-  string _sprintf(int t)
+  protected string _sprintf(int t)
   {
     return t == 'O' && sprintf("%O(%O, %O)", object_program(this),
                                key, secret);
@@ -381,7 +379,7 @@ class Param
   //!
   //! @param _name
   //! @param _value
-  void create(string _name, mixed _value)
+  protected void create(string _name, mixed _value)
   {
     name = _name;
     value = (string)_value;
@@ -417,7 +415,7 @@ class Param
   //! Comparer method. Checks if @[other] equals this object
   //!
   //! @param other
-  int(0..1) `==(mixed other)
+  protected int(0..1) `==(mixed other)
   {
     if (object_program(other) != Param) return 0;
     if (name == other->get_name())
@@ -429,7 +427,7 @@ class Param
   //! Checks if this object is greater than @[other]
   //!
   //! @param other
-  int(0..1) `>(mixed other)
+  protected int(0..1) `>(mixed other)
   {
     if (object_program(other) != Param) return 0;
     if (name == other->get_name())
@@ -441,7 +439,7 @@ class Param
   //! Index lookup
   //!
   //! @param key
-  object `[](string key)
+  protected object `[](string key)
   {
     if (key == name)
       return this;
@@ -449,7 +447,7 @@ class Param
     return 0;
   }
 
-  string _sprintf(int t)
+  protected string _sprintf(int t)
   {
     return t == 'O' && sprintf("%O(%O, %O)", object_program(this), name, value);
   }
@@ -466,7 +464,7 @@ class Params
   //!
   //! @param _params
   //!  Arbitrary number of @[Param] objects
-  void create(Param ... _params)
+  protected void create(Param ... _params)
   {
     params = _params||({});
   }
@@ -536,7 +534,7 @@ class Params
   //! Casting method. Only supports casting to @tt{mapping@}.
   //!
   //! @param how
-  mixed cast(string how)
+  protected mapping cast(string how)
   {
     switch (how)
     {
@@ -556,7 +554,7 @@ class Params
   //!
   //! @returns
   //!  The object being called
-  object add_mapping(mapping args)
+  this_program add_mapping(mapping args)
   {
     foreach (args; string k; string v)
       params += ({ Param(k, v) });
@@ -570,7 +568,7 @@ class Params
   //!
   //! @returns
   //!  The object being called
-  object `+(Param|Params p)
+  protected this_program `+(Param|Params p)
   {
     params += object_program(p) == Params ? values(p) : ({ p });
     return this_object();
@@ -582,7 +580,7 @@ class Params
   //!
   //! @returns
   //!  The object being called
-  object `-(Param p)
+  protected this_program `-(Param p)
   {
     foreach (params, Param pm) {
       if (pm == p) {
@@ -603,7 +601,7 @@ class Params
   //!  If multiple @[Param]s with name @[key] is found a new @[Params] object
   //!  with the found params will be retured.
   //!  If only one @[Param] is found that param will be returned.
-  mixed `[](string key)
+  protected mixed `[](string key)
   {
     array(Param) p = params[key]-({0});
     if (!p) return 0;
@@ -611,20 +609,19 @@ class Params
   }
 
   //! Returns the @[params]
-  mixed _values()
+  protected mixed _values()
   {
     sort(params);
     return params;
   }
 
   //! Returns the size of the @[params] array
-  int _sizeof()
+  protected int _sizeof()
   {
     return sizeof(params);
   }
 
-  //! String format
-  string _sprintf(int t)
+  protected string _sprintf(int t)
   {
     return t == 'O' && sprintf("%O(%O)", object_program(this), params);
   }

@@ -646,7 +646,7 @@ class Base
   //! be returned.
   //!
   //! @param how
-  mixed cast(string how)
+  protected mixed cast(string how)
   {
     switch (how) {
       case "string":  return gettable->access_token;
@@ -658,7 +658,7 @@ class Base
   }
 
   //! String formatting method
-  string _sprintf(int t)
+  protected string _sprintf(int t)
   {
     switch (t) {
       case 's': return gettable->access_token;

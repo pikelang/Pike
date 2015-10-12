@@ -324,10 +324,7 @@ private mixed handle_response(Protocols.HTTP.Query req)
   return Standards.JSON.decode(unescape_forward_slashes(req->data()));
 }
 
-//! String format
-//!
-//! @param t
-string _sprintf(int t)
+protected string _sprintf(int t)
 {
   return sprintf("%O(authorized:%O)", this_program,
                  (_auth && !!_auth->access_token));
