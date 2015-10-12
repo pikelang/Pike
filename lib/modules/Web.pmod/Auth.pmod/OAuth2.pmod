@@ -1,7 +1,7 @@
 //! OAuth2 client
 //!
 //! A base OAuth2 class can be instantiated either via @[`()]
-//! (@tt{Auth.OAuth2(params...)@}) or via @[Auth.OAuth2.Base()].
+//! (@tt{Web.Auth.OAuth2(params...)@}) or via @[Web.Auth.OAuth2.Base()].
 
 #ifdef SOCIAL_REQUEST_DEBUG
 # define TRACE(X...) werror("%s:%d: %s", basename(__FILE__),__LINE__,sprintf(X))
@@ -383,27 +383,29 @@ class Base
   //!  Additional argument.
   string get_auth_uri(string auth_uri, void|mapping args)
   {
-    Auth.Params p = Auth.Params(Auth.Param("client_id",     _client_id),
-                                Auth.Param("response_type", _response_type));
+    Web.Auth.Params p;
+    p = Web.Auth.Params(Web.Auth.Param("client_id",     _client_id),
+                        Web.Auth.Param("response_type", _response_type));
 
     if (args && args->redirect_uri || _redirect_uri)
-      p += Auth.Param("redirect_uri",
+      p += Web.Auth.Param("redirect_uri",
                       args && args->redirect_uri || _redirect_uri);
 
     if (STATE)
-      p += Auth.Param("state", (string) Standards.UUID.make_version4());
+      p += Web.Auth.Param("state", (string) Standards.UUID.make_version4());
 
     if (args && args->scope || _scope) {
       string sc = get_valid_scopes(args && args->scope || _scope);
 
       if (sc && sizeof(sc)) {
         _scope = sc;
-        p += Auth.Param("scope", sc);
+        p += Web.Auth.Param("scope", sc);
       }
     }
 
     if (args && args->access_type || _access_type) {
-      p += Auth.Param("access_type", args && args->access_type || _access_type);
+      p += Web.Auth.Param("access_type", args &&
+                                         args->access_type || _access_type);
 
       if (!_access_type && args && args->access_type)
         _access_type = args->access_type;
@@ -441,7 +443,7 @@ class Base
   //!
   //! @returns
   //!  If @expr{OK@} a Pike encoded mapping (i.e it's a string) is returned
-  //!  which can be used to populate an @[Auth.OAuth2] object at a later time.
+  //!  which can be used to populate an @[Web.Auth.OAuth2] object at a later time.
   //!
   //!  The mapping looks like
   //!  @mapping
@@ -459,8 +461,8 @@ class Base
   {
     TRACE("request_access_token: %O, %O\n", oauth_token_uri, code);
 
-    Auth.Params p = get_default_params();
-    p += Auth.Param("code", code);
+    Web.Auth.Params p = get_default_params();
+    p += Web.Auth.Param("code", code);
 
     if (async_cb) {
       do_query(oauth_token_uri, p, async_cb);
@@ -493,8 +495,8 @@ class Base
     if (!gettable->refresh_token)
       error("No refresh_token in object! ");
 
-    Auth.Params p = get_default_params(GRANT_TYPE_REFRESH_TOKEN);
-    p += Auth.Param("refresh_token", gettable->refresh_token);
+    Web.Auth.Params p = get_default_params(GRANT_TYPE_REFRESH_TOKEN);
+    p += Web.Auth.Param("refresh_token", gettable->refresh_token);
 
     if (async_cb) {
       do_query(oauth_token_uri, p, async_cb);
@@ -521,7 +523,7 @@ class Base
   //!  successfull or not. The second argument will be a string. If the request
   //!  failed it will be an error message. If it succeeded it will be the result
   //!  as a string encoded with @[predef::encode_value()].
-  protected string do_query(string oauth_token_uri, Auth.Params p,
+  protected string do_query(string oauth_token_uri, Web.Auth.Params p,
                             void|function(bool,string:void) async_cb)
   {
     int qpos = 0;
@@ -570,6 +572,10 @@ class Base
       Protocols.HTTP.Session.Request q;
       q = sess->post_url(oauth_token_uri, p->to_mapping());
 
+      if (!q) {
+        error("Unable to create request!\n");
+      }
+
       TRACE("Query OK: %O : %O : %s\n", q, q->status(), q->data());
 
       string c = q && q->data();
@@ -594,23 +600,23 @@ class Base
   //! Returns a set of default parameters
   //!
   //! @param grant_type
-  protected Auth.Params get_default_params(void|string grant_type)
+  protected Web.Auth.Params get_default_params(void|string grant_type)
   {
-    Auth.Params p;
-    p = Auth.Params(Auth.Param("client_id",     _client_id),
-                    Auth.Param("redirect_uri",  _redirect_uri),
-                    Auth.Param("client_secret", _client_secret),
-                    Auth.Param("grant_type",    grant_type || _grant_type));
+    Web.Auth.Params p;
+    p = Web.Auth.Params(Web.Auth.Param("client_id",     _client_id),
+                    Web.Auth.Param("redirect_uri",  _redirect_uri),
+                    Web.Auth.Param("client_secret", _client_secret),
+                    Web.Auth.Param("grant_type",    grant_type || _grant_type));
     if (STATE) {
-      p += Auth.Param("state", (string)Standards.UUID.make_version4());
+      p += Web.Auth.Param("state", (string)Standards.UUID.make_version4());
     }
 
     return p;
   }
 
   //! Checks if the authorization is renewable. This is true if the
-  //! @[Auth.OAuth2.Base()] object has been populated from
-  //! @[Auth.OAuth2.Base()->set_from_cookie()], i.e the user has been
+  //! @[Web.Auth.OAuth2.Base()] object has been populated from
+  //! @[Web.Auth.OAuth2.Base()->set_from_cookie()], i.e the user has been
   //! authorized but the session has expired.
   int(0..1) is_renewable()
   {
@@ -727,8 +733,8 @@ class Base
   ]);
 
   protected constant json_decode = Standards.JSON.decode;
-  protected constant Params      = Auth.Params;
-  protected constant Param       = Auth.Param;
+  protected constant Params      = Web.Auth.Params;
+  protected constant Param       = Web.Auth.Param;
 
   protected mapping gettable = ([ "access_token"  : 0,
                                   "refresh_token" : 0,

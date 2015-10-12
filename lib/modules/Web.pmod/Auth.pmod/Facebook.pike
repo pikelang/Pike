@@ -1,14 +1,6 @@
-/*
-  Author: Pontus Östlund <https://profiles.google.com/poppanator>
-
-  Permission to copy, modify, and distribute this source for any legal
-  purpose granted as long as my name is still attached to it. More
-  specifically, the GPL, LGPL and MPL licenses apply to this software.
-*/
-
 //! This class is used to OAuth2 authenticate agains Facebook
 
-inherit Auth.OAuth2.Client;
+inherit .OAuth2.Client;
 
 constant OAUTH_AUTH_URI  = "https://graph.facebook.com/oauth/authorize";
 constant OAUTH_TOKEN_URI = "https://graph.facebook.com/oauth/access_token";

@@ -1,13 +1,5 @@
-/*
-  Author: Pontus Östlund <https://profiles.google.com/poppanator>
-
-  Permission to copy, modify, and distribute this source for any legal
-  purpose granted as long as my name is still attached to it. More
-  specifically, the GPL, LGPL and MPL licenses apply to this software.
-*/
-
 //! Instantiates the default Twitter API.
-//! See @[WebApi.Api()] for further information about the arguments
+//! See @[Web.Api.Api()] for further information.
 //!
 //! @param client_id
 //!  Your application key/id
@@ -26,11 +18,11 @@ this_program `()(string client_id, string client_secret,
 
 class V1_1
 {
-  inherit WebApi.Api : parent;
+  inherit Web.Api.Api : parent;
 
   constant API_URI = "https://api.twitter.com/1.1/";
 
-  protected constant AuthClass = Auth.Twitter;
+  protected constant AuthClass = Web.Auth.Twitter;
 
   //! Getter for the @[Any] object which is a generic object for making request
   //! to the Twitter API
@@ -109,7 +101,7 @@ class V1_1
   // Just a convenience class
   protected class Method
   {
-    inherit WebApi.Api.Method;
+    inherit Web.Api.Api.Method;
 
     //! Internal convenience method
     public mixed get(string s, void|ParamsArg p, void|Callback cb)

@@ -1,20 +1,12 @@
-/*
-  Author: Pontus Östlund <https://profiles.google.com/poppanator>
-
-  Permission to copy, modify, and distribute this source for any legal
-  purpose granted as long as my name is still attached to it. More
-  specifically, the GPL, LGPL and MPL licenses apply to this software.
-*/
-
 //! Internal class ment to be inherited by other Google API's
 class Api
 {
-  inherit WebApi.Api : parent;
+  inherit Web.Api.Api : parent;
 
   // Just a convenience class
   protected class Method
   {
-    inherit WebApi.Api.Method;
+    inherit Web.Api.Api.Method;
 
     //! Internal convenience method
     protected mixed _get(string s, void|ParamsArg p, void|Callback cb)

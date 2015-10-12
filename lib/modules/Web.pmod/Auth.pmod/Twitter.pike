@@ -1,12 +1,6 @@
-/*
-  Author: Pontus Östlund <https://profiles.google.com/poppanator>
+//! Twitter authentication class
 
-  Permission to copy, modify, and distribute this source for any legal
-  purpose granted as long as my name is still attached to it. More
-  specifically, the GPL, LGPL and MPL licenses apply to this software.
-*/
-
-inherit Auth.OAuth.Authentication;
+inherit Web.Auth.OAuth.Authentication;
 
 //! The endpoint to send request for a request token
 constant REQUEST_TOKEN_URL = "https://api.twitter.com/oauth/request_token";

@@ -4,7 +4,7 @@
 //! For more info see @url{https://developers.google.com/+/web/api/rest/oauth@}
 class Authorization
 {
-  inherit Auth.OAuth2.Client;
+  inherit Web.Auth.OAuth2.Client;
 
   //!
   constant OAUTH_AUTH_URI  = "https://accounts.google.com/o/oauth2/auth";

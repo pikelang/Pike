@@ -1,12 +1,11 @@
-
 //! Base class for implementing a @tt{(RESTful) WebApi@} like Facebook's
 //! Graph API, Instagram's API, Twitter's API and so on.
 //!
 //! @b{Note:@} This class is useless in it self, and is intended to be
-//! inherited by classes implementing a given @tt{WebApi@}.
+//! inherited by classes implementing a given @tt{Web.Api@}.
 //!
-//! Look at the code in @[WebApi.Github], @[WebApi.Instagram],
-//! @[WebApi.Linkedin] etc to see some examples of implementations.
+//! Look at the code in @[Web.Api.Github], @[Web.Api.Instagram],
+//! @[Web.Api.Linkedin] etc to see some examples of implementations.
 
 #if defined(SOCIAL_REQUEST_DEBUG) || defined(SOCIAL_REQUEST_DATA_DEBUG)
 # define TRACE(X...) werror("%s:%d: %s",basename(__FILE__),__LINE__,sprintf(X))
@@ -34,16 +33,16 @@ public int(0..1) utf8_decode = DECODE_UTF8;
 typedef function(mapping,Protocols.HTTP.Query:void) Callback;
 
 //! Typef for a parameter argument
-typedef mapping|Auth.Params ParamsArg;
+typedef mapping|Web.Auth.Params ParamsArg;
 
 //! Authorization object.
 //!
 //! @seealso
-//!  @[Auth.OAuth2]
-protected Auth.OAuth2.Client _auth;
+//!  @[Web.Auth.OAuth2]
+protected Web.Auth.OAuth2.Client _auth;
 
 //! Authentication class to use
-protected constant AuthClass = Auth.OAuth2.Client;
+protected constant AuthClass = Web.Auth.OAuth2.Client;
 
 protected mapping(string:string) default_headers = ([
   "user-agent" : .USER_AGENT
@@ -72,11 +71,11 @@ protected void create(string client_id, string client_secret,
 }
 
 //! Getter for the authentication object. Most likely this will be a class
-//! derived from @[Auth.OAuth2.Client].
+//! derived from @[Web.Auth.OAuth2.Client].
 //!
 //! @seealso
-//!  @[Auth.OAuth2.Client] or @[Auth.OAuth.Client]
-Auth.OAuth2.Client `auth()
+//!  @[Web.Auth.OAuth2.Client] or @[Web.Auth.OWeb.Auth.Client]
+Web.Auth.OAuth2.Client `auth()
 {
   return _auth;
 }
@@ -85,12 +84,12 @@ Auth.OAuth2.Client `auth()
 //! Many API returns stuff like:
 //!
 //! @code
-//!  {
-//!    ...
-//!    "pagination" : {
-//!      "next" : "/api/v1/method/path?some=variables&page=2&per_page=20"
-//!    }
-//!  }
+//! {
+//!   ...
+//!   "pagination" : {
+//!     "next" : "/api/v1/method/path?some=variables&page=2&per_page=20"
+//!   }
+//! }
 //! @endcode
 //!
 //! If @tt{pagination->next@} is passed to this method it will return a path
@@ -228,14 +227,14 @@ mixed call(string api_method, void|ParamsArg params,
            void|string http_method, void|string data, void|Callback cb)
 {
   http_method = upper_case(http_method || "get");
-  Auth.Params p = Auth.Params();
+  Web.Auth.Params p = Web.Auth.Params();
   p->add_mapping(default_params());
 
   if (params) p += params;
 
   if (_auth && !_auth->is_expired()) {
     if (string a = _auth->access_token) {
-      p += Auth.Param(ACCESS_TOKEN_PARAM_NAME, a);
+      p += Web.Auth.Param(ACCESS_TOKEN_PARAM_NAME, a);
     }
   }
 
@@ -394,7 +393,7 @@ class Method
   //! Hidden constructor. This class can not be instantiated directly
   protected void create()
   {
-    if (this_program == WebApi.Api.Method)
+    if (this_program == Web.Api.Api.Method)
       error("This class can not be instantiated directly! ");
   }
 
