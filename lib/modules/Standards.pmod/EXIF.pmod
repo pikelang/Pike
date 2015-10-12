@@ -1193,8 +1193,10 @@ protected mapping low_get_properties(Stdio.File file, mapping tags,
   if(!tiff->is_valid()) return 0;
 
   mapping ret = ([]);
+  multiset seent = (<>);
 
   int offset=tiff->read_long();
+  seent[offset]=1;
   while(offset>0)
   {
     tiff->exif_seek(offset);
@@ -1206,6 +1208,9 @@ protected mapping low_get_properties(Stdio.File file, mapping tags,
 
     if(offset == 0 && ret["ExifOffset"])
       offset=(int)m_delete(ret, "ExifOffset");
+
+    if( seent[offset] ) return ret;
+    seent[offset]=1;
   }
 
   return ret;
