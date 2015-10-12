@@ -10,22 +10,22 @@ inherit .Client : oauth;
 
 #include "oauth.h"
 
-//! The endpoint to send request for a request token
+//! The endpoint to send request for a request token.
 constant REQUEST_TOKEN_URL = 0;
 
-//! The endpoint to send request for an access token
+//! The endpoint to send request for an access token.
 constant ACCESS_TOKEN_URL = 0;
 
-//! The enpoint to redirect to when authorize an application
+//! The enpoint to redirect to when authorize an application.
 constant USER_AUTH_URL = 0;
 
-//! Creates an OAuth object
+//! Creates an OAuth object.
 //!
 //! @param client_id
-//!  The application ID
+//!  The application ID.
 //!
 //! @param client_secret
-//!  The application secret
+//!  The application secret.
 //!
 //! @param redirect_uri
 //!  Where the authorization page should redirect back to. This must be a
@@ -44,10 +44,7 @@ protected void create(string client_id, string client_secret,
                 .Token(0, 0));
 }
 
-//! Set authentication
-//!
-//! @param key
-//!
+//! Set authentication.
 void set_authentication(string key, void|string secret)
 {
   token->key = key;
@@ -55,6 +52,7 @@ void set_authentication(string key, void|string secret)
   oauth2::access_token = key;
 }
 
+//! Returns true if authenticated.
 int(0..1) is_authenticated()
 {
   return !!token->key && !!token->secret && !oauth2::is_expired();
@@ -63,10 +61,8 @@ int(0..1) is_authenticated()
 //! Populate this object with the result from
 //! @[request_access_token()].
 //!
-//! @param encoded_value
-//!
 //! @returns
-//!  The object being called
+//!  The object being called.
 this_program set_from_cookie(string encoded_value)
 {
   mixed e = catch {
@@ -82,10 +78,10 @@ this_program set_from_cookie(string encoded_value)
   error("Unable to decode cookie! %s. ", describe_error(e));
 }
 
-//! Fetches a request token
+//! Fetches a request token.
 //!
 //! @param callback_uri
-//!  Overrides the callback uri in the application settings
+//!  Overrides the callback uri in the application settings.
 //! @param force_login
 //!  If @tt{1@} forces the user to provide its credentials at the Twitter
 //!  login page.
@@ -112,9 +108,7 @@ this_program set_from_cookie(string encoded_value)
   return token;
 }
 
-//! Fetches an access token
-//!
-//! @param oauth_verifier
+//! Fetches an access token.
 protected string low_get_access_token(void|string oauth_verifier)
 {
   if (!token)
@@ -132,9 +126,7 @@ protected string low_get_access_token(void|string oauth_verifier)
   return ctoken;
 }
 
-//! Fetches an access token
-//!
-//! @param oauth_verifier
+//! Fetches an access token.
 .Token get_access_token(void|string oauth_verifier)
 {
   string ctoken = low_get_access_token(oauth_verifier);
@@ -146,8 +138,8 @@ protected string low_get_access_token(void|string oauth_verifier)
   return token;
 }
 
-//! Same as @[get_access_token] except this returns a string
-//! to comply with the OAuth2 authentication process
+//! Same as @[get_access_token] except this returns a string to comply
+//! with the OAuth2 authentication process.
 string request_access_token(string code)
 {
   string ctoken = low_get_access_token(code);
@@ -159,6 +151,7 @@ string request_access_token(string code)
   return encode_value(p);
 }
 
+//!
 string get_auth_uri(void|mapping args)
 {
   if (!args) args = ([]);
@@ -168,13 +161,13 @@ string get_auth_uri(void|mapping args)
                  (token && token->key)||"");
 }
 
-//! Does the low level HTTP call to Twitter.
+//! Does the low level HTTP call to a service.
 //!
 //! @throws
 //!  An error if HTTP status != 200
 //!
 //! @param url
-//!  The full address to the Twitter service e.g:
+//!  The full address to the service e.g:
 //!  @tt{http://twitter.com/direct_messages.xml@}
 //! @param args
 //!  Arguments to send with the request
@@ -201,7 +194,7 @@ string call(string|Standards.URI url, void|mapping|.Params args,
 
   Protocols.HTTP.Query q = r->submit();
 
-  TRACE("Web.Auth.OWeb.Auth.Authentication()->call(%O) : %O : %s\n",
+  TRACE("Web.Auth.OAuth.Authentication()->call(%O) : %O : %s\n",
         q, q->headers, q->data());
 
   if (q->status != 200) {
@@ -214,9 +207,7 @@ string call(string|Standards.URI url, void|mapping|.Params args,
   return q->data();
 }
 
-//! Normalizes and verifies the HTTP method to be used in a HTTP call
-//!
-//! @param method
+//! Normalizes and verifies the HTTP method to be used in a HTTP call.
 protected string normalize_method(string method)
 {
   method = upper_case(method||"GET");
@@ -228,9 +219,7 @@ protected string normalize_method(string method)
 
 import Parser.XML.Tree;
 
-//! Parses an error xml tree
-//!
-//! @param xml
+//! Parses an error xml tree.
 //!
 //! @returns
 //!  A mapping:
@@ -252,23 +241,15 @@ mapping parse_error_xml(string xml)
   return m;
 }
 
-//! Returns the first @tt{XML_ELEMENT@} node in an XML tree.
-//!
-//! @param xml
-//!  Either an XML tree as a string or a node object.
+// Returns the first @tt{XML_ELEMENT@} node in an XML tree.
+//
+// @param xml
+//  Either an XML tree as a string or a node object.
 private Node get_xml_root(string|Node xml)
 {
   catch {
     if (stringp(xml))
       xml = parse_input(xml);
-
-    foreach (xml->get_children(), Node n) {
-      if (n->get_node_type() == XML_ELEMENT) {
-        xml = n;
-        break;
-      }
-    }
-
-    return objectp(xml) && xml;
   };
+  return xml->get_first_element();
 }

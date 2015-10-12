@@ -26,46 +26,42 @@
 //! Verion
 constant VERSION = "1.0";
 
-//! Query string variable name for the consumer key
+//! Query string variable name for the consumer key.
 constant CONSUMER_KEY_KEY = "oauth_consumer_key";
 
-//! Query string variable name for a callback URL
+//! Query string variable name for a callback URL.
 constant CALLBACK_KEY = "oauth_callback";
 
-//! Query string variable name for the version
+//! Query string variable name for the version.
 constant VERSION_KEY = "oauth_version";
 
-//! Query string variable name for the signature method
+//! Query string variable name for the signature method.
 constant SIGNATURE_METHOD_KEY = "oauth_signature_method";
 
-//! Query string variable name for the signature
+//! Query string variable name for the signature.
 constant SIGNATURE_KEY = "oauth_signature";
 
-//! Query string variable name for the timestamp
+//! Query string variable name for the timestamp.
 constant TIMESTAMP_KEY = "oauth_timestamp";
 
-//! Query string variable name for the nonce
+//! Query string variable name for the nonce.
 constant NONCE_KEY = "oauth_nonce";
 
-//! Query string variable name for the token key
+//! Query string variable name for the token key.
 constant TOKEN_KEY = "oauth_token";
 
-//! Query string variable name for the token secret
+//! Query string variable name for the token secret.
 constant TOKEN_SECRET_KEY = "oauth_token_secret";
 
 #include "oauth.h"
 
-//! Helper method to create a @[Request] object
+//! Helper method to create a @[Request] object.
 //!
 //! @throws
-//!  An error if @[consumer] is null
+//!  An error if @[consumer] is null.
 //!
-//! @param consumer
-//! @param token
-//! @param uri
-//! @param params
 //! @param http_method
-//!  Defaults to GET
+//!  Defaults to GET.
 Request request(string|Standards.URI uri, Consumer consumer, Token token,
                 void|Params params, void|string http_method)
 {
@@ -81,10 +77,7 @@ Request request(string|Standards.URI uri, Consumer consumer, Token token,
   return Request(uri, http_method||"GET", dparams);
 }
 
-//! Returns the default params for authentication/signing
-//!
-//! @param consumer
-//! @param token
+//! Returns the default params for authentication/signing.
 Params get_default_params(Consumer consumer, Token token)
 {
   Params p = Params(
@@ -102,8 +95,6 @@ Params get_default_params(Consumer consumer, Token token)
 
 
 //! Converts a query string, or a mapping, into a @[Params] object.
-//!
-//! @param q
 Params query_to_params(string|Standards.URI|mapping q)
 {
   if (objectp(q))
@@ -134,31 +125,31 @@ Params query_to_params(string|Standards.URI|mapping q)
   return ret;
 }
 
-//! Class for building a signed request and querying the remote service
+//! Class for building a signed request and querying the remote
+//! service.
 class Request
 {
-  //! The remote endpoint
+  //! The remote endpoint.
   protected Standards.URI uri;
 
-  //! The signature basestring
+  //! The signature basestring.
   protected string base_string;
 
-  //! String representation of the HTTP method
+  //! String representation of the HTTP method.
   protected string method;
 
-  //! The parameters to send
+  //! The parameters to send.
   protected Params params;
 
-  //! Creates a new @[Request]
+  //! Creates a new @[Request.]
   //!
   //! @seealso
   //!  @[request()]
   //!
   //! @param uri
-  //!  The uri to request
+  //!  The uri to request.
   //! @param http_method
-  //!  The HTTP method to use. Either @[Request.GET] or @[Request.POST]
-  //! @param params
+  //!  The HTTP method to use. Either @expr{"GET"@} or @expr{"POST"@}.
   protected void create(string|Standards.URI uri, string http_method,
                         void|Params params)
   {
@@ -172,34 +163,27 @@ class Request
       ARG_ERROR("http_method", "Must be one of \"GET\" or \"POST\".");
   }
 
-  //! Add a param
-  //!
-  //! @param name
-  //! @param value
+  //! Add a param.
   //!
   //! @returns
-  //!  The object being called
-  object add_param(Param|string name, void|string value)
+  //!  The object being called.
+  this_program add_param(Param|string name, void|string value)
   {
     if (objectp(name))
       params += name;
     else
       params += Param(name, value);
 
-    return this_object();
+    return this;
   }
 
   //! Add a @[Params] object.
-  //!
-  //! @param params
   void add_params(Params params)
   {
     this::params += params;
   }
 
-  //! Get param with name @[name]
-  //!
-  //! @param name
+  //! Get param with name @[name].
   Param get_param(string name)
   {
     foreach (values(params), Param p)
@@ -209,18 +193,16 @@ class Request
     return 0;
   }
 
-  //! Returns the @[Params] collection
+  //! Returns the @[Params] collection.
   Params get_params()
   {
     return params;
   }
 
-  //! Signs the request
+  //! Signs the request.
   //!
   //! @param signature_type
-  //!  One of the types in @[Signature]
-  //! @param consumer
-  //! @param token
+  //!  One of the types in @[Signature].
   void sign_request(int signature_type, Consumer consumer, Token token)
   {
     object sig = .Signature.get_object(signature_type);
@@ -228,7 +210,7 @@ class Request
     params += Param(SIGNATURE_KEY, sig->build_signature(this, consumer, token));
   }
 
-  //! Generates a signature base
+  //! Generates a signature base.
   string get_signature_base()
   {
     TRACE("+++ get_signature_base(%s, %s, %s)\n\n",
@@ -241,9 +223,7 @@ class Request
     }) * "&";
   }
 
-  //! Send the request to the remote endpoint
-  //!
-  //! @param extra_headers
+  //! Send the request to the remote endpoint.
   Protocols.HTTP.Query submit(void|mapping extra_headers)
   {
     mapping args = params->get_variables();
@@ -266,10 +246,8 @@ class Request
     return Protocols.HTTP.do_method(method, uri, args, extra_headers);
   }
 
-  //! Casting method
-  //!
-  //! @param how
-  //!  Only supports @tt{string@}
+  //! It is possible to case the Request object to a string, which
+  //! will be the request URL.
   protected string cast(string how)
   {
     if (how != "string") {
@@ -299,12 +277,10 @@ class Consumer
   //! Callback url that the remote verifying page will return to.
   string|Standards.URI callback;
 
-  //! Creates a new @[Consumer] object
+  //! Creates a new @[Consumer] object.
   //!
-  //! @param key
-  //! @param secret
   //! @param callback
-  //!  NOTE: Has no effect in this implementation
+  //!  NOTE: Has no effect in this implementation.
   protected void create(string key, string secret, void|string|Standards.URI callback)
   {
     this::key      = key;
@@ -322,11 +298,8 @@ class Consumer
 //! Token class.
 class Token (string key, string secret)
 {
-  //! Casting method.
-  //! NOTE! Only supports casting to string wich will return a query string
-  //! of the object
-  //!
-  //! @param how
+  //! Only supports casting to string wich will return a query string
+  //! of the object.
   protected string cast(string how)
   {
     switch (how) {
@@ -345,7 +318,7 @@ class Token (string key, string secret)
   }
 }
 
-//! Represents a query string parameter, i.e. @tt{key=value@}
+//! Represents a query string parameter, i.e. @tt{key=value@}.
 class Param
 {
   //! Param name
@@ -356,48 +329,43 @@ class Param
 
   protected int(0..1) is_null = 1;
 
-  //! Creates a new @[Param]
-  //!
-  //! @param name
-  //! @param value
+  //! Creates a new @[Param].
   protected void create(string name, mixed value)
   {
     this::name = name;
     set_value(value);
   }
 
-  //! Getter for the name attribute
+  //! Getter for the name attribute.
   string get_name() { return name; }
 
-  //! Setter for the value attribute
+  //! Setter for the value attribute.
   void set_name(string value) { name = value; }
 
-  //! Getter for the value attribute
+  //! Getter for the value attribute.
   string get_value() { return value; }
 
-  //! Setter for the value attribute
+  //! Setter for the value attribute.
   void set_value(mixed _value)
   {
     value = (string)_value;
     is_null = !_value;
   }
 
-  //! Returns the value encoded
+  //! Returns the value encoded.
   string get_encoded_value()
   {
     return value && Protocols.HTTP.uri_encode(value);
   }
 
-  //! Returns the name and value for usage in a signature string
+  //! Returns the name and value for usage in a signature string.
   string get_signature()
   {
     return name && value && Protocols.HTTP.uri_encode(name) + "=" +
       Protocols.HTTP.uri_encode(value);
   }
 
-  //! Comparer method. Checks if @[other] equals this object
-  //!
-  //! @param other
+  //! Comparer method. Checks if @[other] equals this object.
   protected int(0..1) `==(mixed other)
   {
     if (object_program(other) != Param) return 0;
@@ -407,9 +375,7 @@ class Param
     return 0;
   }
 
-  //! Checks if this object is greater than @[other]
-  //!
-  //! @param other
+  //! Checks if this object is greater than @[other].
   protected int(0..1) `>(mixed other)
   {
     if (object_program(other) != Param) return 0;
@@ -419,9 +385,7 @@ class Param
     return name > other->get_name();
   }
 
-  //! Index lookup
-  //!
-  //! @param key
+  //! Index lookup.
   protected object `[](string key)
   {
     if (key == name)
@@ -440,19 +404,19 @@ class Param
 //! Collection of @[Param]
 class Params
 {
-  //! Storage for @[Param]s of this object
+  //! Storage for @[Param]s of this object.
   private array(Param) params;
 
   //! Create a new @[Params]
   //!
   //! @param params
-  //!  Arbitrary number of @[Param] objects
+  //!  Arbitrary number of @[Param] objects.
   protected void create(Param ... params)
   {
     this::params = params||({});
   }
 
-  //! Returns the params for usage in an authentication header
+  //! Returns the params for usage in an authentication header.
   string get_auth_header()
   {
     array a = ({});
@@ -469,7 +433,7 @@ class Params
     return a*",";
   }
 
-  //! Returns the parameters as a mapping
+  //! Returns the parameters as a mapping.
   mapping get_variables()
   {
     mapping m = ([]);
@@ -482,7 +446,7 @@ class Params
     return m;
   }
 
-  //! Returns the parameters as a query string
+  //! Returns the parameters as a query string.
   string get_query_string()
   {
     array s = ({});
@@ -493,7 +457,7 @@ class Params
     return s*"&";
   }
 
-  //! Returns the parameters as a mapping with encoded values
+  //! Returns the parameters as a mapping with encoded values.
   //!
   //! @seealso
   //!  @[get_variables()]
@@ -508,15 +472,14 @@ class Params
     return m;
   }
 
-  //! Returns the parameters for usage in a signature base string
+  //! Returns the parameters for usage in a signature base string.
   string get_signature()
   {
     return ((sort(params)->get_signature()) - ({ 0 })) * "&";
   }
 
-  //! Casting method. Only supports casting to @tt{mapping@}.
-  //!
-  //! @param how
+  //! Supports casting to @tt{mapping@}, which will map parameter
+  //! names to their values.
   protected mapping cast(string how)
   {
     switch (how)
@@ -531,12 +494,10 @@ class Params
     }
   }
 
-  //! Append mapping @[args] as @[Param] objects
-  //!
-  //! @param args
+  //! Append mapping @[args] as @[Param] objects.
   //!
   //! @returns
-  //!  The object being called
+  //!  The object being called.
   this_program add_mapping(mapping args)
   {
     foreach (args; string k; string v)
@@ -545,24 +506,20 @@ class Params
     return this_object;
   }
 
-  //! Append @[p] to the internal array
-  //!
-  //! @param p
+  //! Append @[p] to the internal array.
   //!
   //! @returns
-  //!  The object being called
+  //!  The object being called.
   protected this_program `+(Param|Params p)
   {
     params += object_program(p) == Params ? values(p) : ({ p });
     return this_object();
   }
 
-  //! Removes @[p] from the internal array
-  //!
-  //! @param p
+  //! Removes @[p] from the internal array.
   //!
   //! @returns
-  //!  The object being called
+  //!  The object being called.
   protected this_program `-(Param p)
   {
     foreach (params, Param pm) {
@@ -577,8 +534,6 @@ class Params
 
   //! Index lookup
   //!
-  //! @param key
-  //!
   //! @returns
   //!  If no @[Param] is found returns @tt{0@}.
   //!  If multiple @[Param]s with name @[key] is found a new @[Params] object
@@ -591,15 +546,15 @@ class Params
     return sizeof(p) == 1 ? p[0] : Params(@p);
   }
 
-  //! Returns the @[params]
+  //! Returns the @[params].
   protected mixed _values()
   {
     sort(params);
     return params;
   }
 
-  //! Returns the size of the @[params] array
-  protected int _sizeof()
+  //! Returns the size of the @[params] array.
+  protected int(0..) _sizeof()
   {
     return sizeof(params);
   }
@@ -613,7 +568,7 @@ class Params
 //! Normalizes @[uri]
 //!
 //! @param uri
-//!  A @tt{string@} or @[Standards.URI]
+//!  A @tt{string@} or @[Standards.URI].
 string normalize_uri(string|Standards.URI uri)
 {
   uri = ASSURE_URI(uri);
@@ -625,7 +580,7 @@ string normalize_uri(string|Standards.URI uri)
   return nuri + uri->path;
 }
 
-//! Generates a @tt{nonce@}
+//! Generates a @tt{nonce@}.
 string nonce()
 {
   return MIME.encode_base64(random_string(15),1);
