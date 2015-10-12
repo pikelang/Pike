@@ -112,7 +112,7 @@ protected class HmacSha1
     string sigbase = request->get_signature_base();
     string key = sprintf("%s&%s", Protocols.HTTP.uri_encode(consumer->secret),
                                   Protocols.HTTP.uri_encode(token->secret||""));
-    return MIME.encode_base64(Crypto.SHA1.HMAC(key)(sigbase));
+    return MIME.encode_base64(Crypto.SHA1.HMAC(key)(sigbase),1);
   }
 }
 
