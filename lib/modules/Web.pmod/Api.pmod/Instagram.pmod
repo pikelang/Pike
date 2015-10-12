@@ -1,3 +1,5 @@
+#pike __REAL_VERSION__
+
 //! Instagram API implementation.
 
 //! Instantiates the default Instagram API.

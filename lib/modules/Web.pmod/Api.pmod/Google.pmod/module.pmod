@@ -1,3 +1,5 @@
+#pike __REAL_VERSION__
+
 //! Internal class ment to be inherited by other Google API's
 class Api
 {

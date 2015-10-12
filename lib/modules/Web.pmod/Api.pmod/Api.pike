@@ -1,3 +1,5 @@
+#pike __REAL_VERSION__
+
 //! Base class for implementing a @tt{(RESTful) WebApi@} like Facebook's
 //! Graph API, Instagram's API, Twitter's API and so on.
 //!

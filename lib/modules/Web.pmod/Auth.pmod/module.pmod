@@ -1,3 +1,5 @@
+#pike __REAL_VERSION__
+
 //! Various authentication modules and classes.
 
 // Checks if A is an instance of B (either directly or by inheritance)

@@ -1,3 +1,5 @@
+#pike __REAL_VERSION__
+
 //! Instantiates the default Google+ API.
 //! See @[Web.Api.Api()] for further information.
 //!

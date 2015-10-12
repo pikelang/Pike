@@ -1,3 +1,5 @@
+#pike __REAL_VERSION__
+
 //! Instantiates the default Twitter API.
 //! See @[Web.Api.Api()] for further information.
 //!

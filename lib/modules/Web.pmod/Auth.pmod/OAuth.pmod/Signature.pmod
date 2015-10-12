@@ -1,3 +1,5 @@
+#pike __REAL_VERSION__
+
 //! Module for creating OAuth signatures
 
 #include "oauth.h"

@@ -1,3 +1,5 @@
+#pike __REAL_VERSION__
+
 //! OAuth2 client
 //!
 //! A base OAuth2 class can be instantiated either via @[`()]

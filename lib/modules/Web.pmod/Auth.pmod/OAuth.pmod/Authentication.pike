@@ -1,3 +1,5 @@
+#pike __REAL_VERSION__
+
 //! The purpose of this class is to streamline OAuth1 with OAuth2.
 //! This class will not do much on it's own, since its purpose is to
 //! be inherited by some other class implementing a specific authorization
