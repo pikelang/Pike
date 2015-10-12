@@ -192,7 +192,7 @@ class Param
   //! @param value
   protected void create(string name, mixed value)
   {
-    this:name = name;
+    this::name = name;
     set_value(value);
   }
 
@@ -207,7 +207,7 @@ class Param
   //! @param name
   void set_name(string name)
   {
-    this:name = name;
+    this::name = name;
   }
 
   //! Getter for the parameter value

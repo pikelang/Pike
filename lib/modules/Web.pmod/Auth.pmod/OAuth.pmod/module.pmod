@@ -165,9 +165,9 @@ class Request
   protected void create(string|Standards.URI uri, string http_method,
                         void|Params params)
   {
-    this:uri = ASSURE_URI(uri);
+    this::uri = ASSURE_URI(uri);
     method = upper_case(http_method);
-    this:params = query_to_params(uri);
+    this::params = query_to_params(uri);
 
     if (params) add_params(params);
 
@@ -197,7 +197,7 @@ class Request
   //! @param params
   void add_params(Params params)
   {
-    this:params += params;
+    this::params += params;
   }
 
   //! Get param with name @[name]
@@ -310,9 +310,9 @@ class Consumer
   //!  NOTE: Has no effect in this implementation
   protected void create(string key, string secret, void|string|Standards.URI callback)
   {
-    this:key      = key;
-    this:secret   = secret;
-    this:callback = ASSURE_URI(callback);
+    this::key      = key;
+    this::secret   = secret;
+    this::callback = ASSURE_URI(callback);
   }
 
   protected string _sprintf(int t)
@@ -365,7 +365,7 @@ class Param
   //! @param value
   protected void create(string name, mixed value)
   {
-    this:name = name;
+    this::name = name;
     set_value(value);
   }
 
@@ -452,7 +452,7 @@ class Params
   //!  Arbitrary number of @[Param] objects
   protected void create(Param ... params)
   {
-    this:params = params||({});
+    this::params = params||({});
   }
 
   //! Returns the params for usage in an authentication header

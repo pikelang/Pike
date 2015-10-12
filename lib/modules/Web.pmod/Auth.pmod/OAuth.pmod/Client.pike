@@ -36,8 +36,8 @@ protected string user_auth_url;
 //!  This class must be inherited
 protected void create(Consumer consumer, Token token)
 {
-  this:consumer = consumer;
-  this:token    = token;
+  this::consumer = consumer;
+  this::token    = token;
 }
 
 //! Returns the @[consumer]
