@@ -1,6 +1,12 @@
 #pike __REAL_VERSION__
 
 //! Instagram API implementation.
+//! https://instagram.com/developer/
+
+// FIXME?: Missing support for
+// /media/shortcode/
+// /geographies/
+// /subscriptions/
 
 //! Instantiates the default Instagram API.
 //! See @[Web.Api.Api()] for further information.
@@ -492,12 +498,10 @@ class V1
       return _get("search", ([ "q" : normalize_tag(tag_name) ]), cb);
     }
 
-    // Normalize the tag, ie remove any eventual leading #.
+    // Normalize the tag, ie remove any leading #.
     private string normalize_tag(string t)
     {
-      if (t && sizeof(t) && t[0] == '#')
-        t = t[1..];
-
+      sscanf(t, "#%s", t);
       return t;
     }
   }
