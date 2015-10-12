@@ -13,6 +13,8 @@
 
 import Standards.ASN1.Types;
 
+private object RSA;
+private object DSA;
 private object ECDSA;
 
 //! Parse a PKCS#8 PrivateKeyInfo (cf @rfc{5208:5@}).
@@ -34,10 +36,14 @@ Crypto.Sign.State parse_private_key(Sequence seq)
   // FIXME: Care about the attribute set (element 4)?
   Identifier alg_id = seq->elements[1]->elements[0];
   if (alg_id == .Identifiers.rsa_id) {
-    return .RSA.parse_private_key(seq->elements[2]->value);
+    if(!RSA)
+      RSA = master()->resolv("Standards.PKCS.RSA");
+    return RSA.parse_private_key(seq->elements[2]->value);
   }
   if (alg_id == .Identifiers.dsa_id) {
-    return .DSA.parse_private_key(seq->elements[2]->value);
+    if(!DSA)
+      DSA = master()->resolv("Standards.PKCS.DSA");
+    return DSA.parse_private_key(seq->elements[2]->value);
   }
 #if constant(Crypto.ECC.Curve)
   // RFC 5915:1a.
