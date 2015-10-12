@@ -5,7 +5,7 @@
 //! @b{Example@}
 //!
 //! @code
-//!  import Security.OAuth;
+//!  import Web.Auth.OAuth;
 //!
 //!  string endpoint = "http://twitter.com/users/show.xml";
 //!
@@ -53,9 +53,6 @@ constant TOKEN_KEY = "oauth_token";
 //! Query string variable name for the token secret
 constant TOKEN_SECRET_KEY = "oauth_token_secret";
 
-//! Chars that shouldn't be URL encoded
-constant UNRESERVED_CHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUV"
-                            "WXYZ0123456789-_.~"/1;
 #include "oauth.h"
 
 //! Helper method to create a @[Request] object
