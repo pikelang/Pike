@@ -208,8 +208,8 @@ class Base
       claim->sub = sub;
     }
 
-    string s = base64url_encode(Standards.JSON.encode(header));
-    s += "." + base64url_encode(Standards.JSON.encode(claim));
+    string s = MIME.encode_base64url(Standards.JSON.encode(header));
+    s += "." + MIME.encode_base64url(Standards.JSON.encode(claim));
 
     string key =
       Standards.PEM.simple_decode(j->private_key);
@@ -223,7 +223,7 @@ class Base
     state = Standards.PKCS.RSA.parse_private_key(x->elements[-1]->value);
     ss = state->pkcs_sign(s, Crypto.SHA256);
 
-    s += "." + base64url_encode(ss);
+    s += "." + MIME.encode_base64url(ss);
 
     string body = "grant_type="+Protocols.HTTP.uri_encode(GRANT_TYPE_JWT)+"&"+
                   "assertion="+Protocols.HTTP.uri_encode(s);
@@ -272,13 +272,6 @@ class Base
       error("Bad status (%d) in response: %s! ",
             q->status, ee||"Unknown error");
     }
-  }
-
-  protected string base64url_encode(string s)
-  {
-    s = MIME.encode_base64(s, 1);
-    s = replace(s, ([ "==" : "", "+" : "-", "-" : "_" ]));
-    return s;
   }
 
   //! Setter for the redirect uri
@@ -825,14 +818,11 @@ class Base
   //! @param sign
   protected mapping parse_signed_request(string sign)
   {
-    sscanf(sign, "%s.%s", string sig, string payload);
+    if( sscanf(sign, "%s.%s", string sig, string payload)!=2 )
+      error("Illegal signature format.\n");
 
-    function url_decode = lambda (string s) {
-      return MIME.decode_base64(replace(s, ({ "-", "_" }), ({ "+", "/" })));
-    };
-
-    sig = url_decode(sig);
-    mapping data = json_decode(url_decode(payload));
+    sig = MIME.decode_base64url(sig);
+    mapping data = json_decode(MIME.decode_base64url(payload));
 
     if (upper_case(data->algorithm) != "HMAC-SHA256")
       error("Unknown algorithm. Expected HMAC-SHA256");
