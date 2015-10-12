@@ -19,14 +19,6 @@ constant ACCESS_TOKEN_URL = 0;
 //! The enpoint to redirect to when authorize an application
 constant USER_AUTH_URL = 0;
 
-/*
-#ifdef OAUTH_DEBUG
-  #define TRACE(X...)werror("%s:%d: %s",basename(__FILE__),__LINE__,sprintf(X))
-#else
-  #define TRACE(X...)0
-#endif
-*/
-
 //! Creates an OAuth object
 //!
 //! @param client_id
@@ -43,8 +35,9 @@ constant USER_AUTH_URL = 0;
 //! @param scope
 //!  Extended permissions to use for this authentication. This can be
 //!  set/overridden in @[get_auth_uri()].
-void create(string client_id, string client_secret, void|string redir,
-            void|string|array(string)|multiset(string) scope)
+protected void create(string client_id, string client_secret,
+                      void|string redir,
+                      void|string|array(string)|multiset(string) scope)
 {
   oauth2::create(client_id, client_secret, redir, scope);
   oauth::create(.Consumer(client_id, client_secret),
@@ -64,7 +57,7 @@ void set_authentication(string key, void|string secret)
 
 int(0..1) is_authenticated()
 {
-  return !!token->key && !!token->secret &&  !oauth2::is_expired();
+  return !!token->key && !!token->secret && !oauth2::is_expired();
 }
 
 //! Populate this object with the result from
