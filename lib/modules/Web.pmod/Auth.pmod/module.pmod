@@ -30,7 +30,9 @@ class Params
   //!  The API secret
   string sign(string secret)
   {
-    return md5(sort(params)->name_value()*"" + secret);
+    // We could stream all the values through MD5, but that is
+    // probably not faster due to call overhead.
+    return String.string2hex(Crypto.MD5.hash(sort(params)->name_value()*"" + secret));
   }
 
   //! Parameter keys
@@ -61,7 +63,8 @@ class Params
   {
     array o = ({});
     foreach (params, Param p)
-      o += ({ urlencode(p->get_name()) + "=" + urlencode(p->get_value()) });
+      o += ({ Protocols.HTTP.uri_encode(p->get_name()) + "=" +
+              Protocols.HTTP.uri_encode(p->get_value()) });
 
     return o*"&";
   }
@@ -230,7 +233,8 @@ class Param
   //! Same as @[name_value()] except this URL encodes the value.
   string name_value_encoded()
   {
-    return urlencode(name) + "=" + urlencode(value);
+    return Protocols.HTTP.uri_encode(name) + "=" +
+      Protocols.HTTP.uri_encode(value);
   }
 
   //! Comparer method. Checks if @[other] equals this object
@@ -303,34 +307,6 @@ class Param
   }
 }
 
-//! Same as @[Protocols.HTTP.uri_encode()] except this turns spaces into
-//! @tt{+@} instead of @tt{%20@}.
-//!
-//! @param s
-string urlencode(string s)
-{
-#if constant(Protocols.HTTP.uri_encode)
-  return Protocols.HTTP.uri_encode(s);
-#elif constant(Protocols.HTTP.http_encode_string)
-  return Protocols.HTTP.http_encode_string(s);
-#endif
-}
-
-//! Same as @[Protocols.HTTP.uri_decode()] except this turns spaces into
-//! @tt{+@} instead of @tt{%20@}.
-//!
-//! @param s
-string urldecode(string s)
-{
-#if constant(Protocols.HTTP.uri_decode)
-  return Protocols.HTTP.uri_decode(s);
-#elif constant(Protocols.HTTP.http_decode_string)
-  return Protocols.HTTP.http_decode_string(s);
-#else
-  return s;
-#endif
-}
-
 //! Turns a query string into a mapping
 //!
 //! @param query
@@ -345,20 +321,8 @@ mapping query_to_mapping(string query)
 
   foreach (query/"&", string p) {
     sscanf (p, "%s=%s", string k, string v);
-    m[k] = urldecode(v);
+    m[k] = Protocols.HTTP.uri_decode(v); // FIXME: Shouldn't k be decoded?
   }
 
   return m;
-}
-
-//! MD5 routine
-//!
-//! @param s
-string md5(string s)
-{
-#if constant(Crypto.MD5)
-  return String.string2hex(Crypto.MD5.hash(s));
-#else
-  return Crypto.string_to_hex(Crypto.md5()->update(s)->digest());
-#endif
 }

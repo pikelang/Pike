@@ -239,8 +239,8 @@ class Request
 
     return ({
       method,
-      uri_encode(normalize_uri(uri)),
-      uri_encode(params->get_signature())
+      Protocols.HTTP.uri_encode(normalize_uri(uri)),
+      Protocols.HTTP.uri_encode(params->get_signature())
     }) * "&";
   }
 
@@ -404,12 +404,12 @@ class Param
   }
 
   //! Returns the value encoded
-  string get_encoded_value() { return value && uri_encode(value); }
+  string get_encoded_value() { return value && Protocols.HTTP.uri_encode(value); }
 
   //! Returns the name and value for usage in a signature string
   string get_signature()
   {
-    return name && value && uri_encode(name) + "=" + uri_encode(value);
+    return name && value && Protocols.HTTP.uri_encode(name) + "=" + Protocols.HTTP.uri_encode(value);
   }
 
   //! Comparer method. Checks if @[other] equals this object
@@ -505,7 +505,7 @@ class Params
     array s = ({});
     foreach (params, Param p)
       if (!has_prefix(p->get_name(), "oauth_"))
-        s += ({ p->get_name() + "=" + uri_encode(p->get_value()) });
+        s += ({ p->get_name() + "=" + Protocols.HTTP.uri_encode(p->get_value()) });
 
     return s*"&";
   }
@@ -520,7 +520,7 @@ class Params
 
     foreach (params, Param p)
       if (!has_prefix(p->get_name(), "oauth_"))
-        m[p->get_name()] = uri_encode(p->get_value());
+        m[p->get_name()] = Protocols.HTTP.uri_encode(p->get_value());
 
     return m;
   }
@@ -627,35 +627,6 @@ class Params
   }
 }
 
-//! Encode string according to OAuth specs
-//!
-//! @param s
-string uri_encode(string s)
-{
-#if constant(Protocols.HTTP.uri_encode)
-  return Protocols.HTTP.uri_encode(s);
-#else
-  if (String.width(s) >= 8)
-    catch (s = utf8_to_string(s));
-
-  String.Buffer b = String.Buffer();
-  function add = b->add;
-  foreach (s/1, string c) {
-    if (has_value(UNRESERVED_CHARS, c))
-      add(c);
-    else {
-#if constant(String.string2hex)
-      add("%" + upper_case(String.string2hex(c)));
-#else /* Pike 7.4 compat cludge */
-      add("%" + upper_case(Crypto.string_to_hex(c)));
-#endif
-    }
-  }
-
-  return b->get();
-#endif /* constant(Protocols.HTTP.uri_encode) */
-}
-
 //! Normalizes @[uri]
 //!
 //! @param uri
@@ -674,10 +645,6 @@ string normalize_uri(string|Standards.URI uri)
 //! Generates a @tt{nonce@}
 string nonce()
 {
-#if constant(Standards.UUID)
   return ((string)Standards.UUID.make_version4())-"-";
-#else
-  return (string)time();
-#endif
 }
 

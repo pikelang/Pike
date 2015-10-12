@@ -34,7 +34,7 @@ constant SIGTYPE = ([
 //! @param type
 //!  Either @[PLAINTEXT], @[HMAC_SHA1] or
 //!  @[RSA_SHA1].
-object get_object(int type)
+Base get_object(int type)
 {
   switch (type)
   {
@@ -90,7 +90,7 @@ protected class Plaintext
   //! @param token
   string build_signature(Request request, Consumer consumer, Token token)
   {
-    return uri_encode(sprintf("%s&%s", consumer->secret, token->secret));
+    return Protocols.HTTP.uri_encode(sprintf("%s&%s", consumer->secret, token->secret));
   }
 }
 
@@ -110,15 +110,9 @@ protected class HmacSha1
   {
     if (!token) token = Token("","");
     string sigbase = request->get_signature_base();
-    string key = sprintf("%s&%s", uri_encode(consumer->secret),
-                                  uri_encode(token->secret||""));
-    return MIME.encode_base64(
-#if constant(Crypto.HMAC) && constant(Crypto.SHA1)
-      Crypto.HMAC(Crypto.SHA1)(key)(sigbase)
-#else
-      MY_HMAC_SHA1(Crypto.sha)(key)(sigbase)
-#endif
-    );
+    string key = sprintf("%s&%s", Protocols.HTTP.uri_encode(consumer->secret),
+                                  Protocols.HTTP.uri_encode(token->secret||""));
+    return MIME.encode_base64(Crypto.SHA1.HMAC(key)(sigbase));
   }
 }
 
@@ -139,50 +133,3 @@ protected class RsaSha1
     error("%s is not implemented.\n", CLASS_NAME(this));
   }
 }
-
-#if !(constant(Crypto.HMAC) && constant(Crypto.SHA1))
-// Compat class for Pike 7.4
-// This is a mashup of the 7.4 Crypto.hmac and 7.8 Crypto.HMAC
-class MY_HMAC_SHA1
-{
-  function H;
-  int B;
-
-  void create(function h, int|void b)
-  {
-    H = h;
-    B = b || 64;
-  }
-
-  string raw_hash(string s)
-  {
-    return H()->update(s)->digest();
-  }
-
-  string pkcs_digest(string s)
-  {
-    return Standards.PKCS.Signature.build_digestinfo(s, H());
-  }
-
-  class `()
-  {
-    string ikey, okey;
-
-    void create(string passwd)
-    {
-      if (sizeof(passwd) > B)
-        passwd = raw_hash(passwd);
-      if (sizeof(passwd) < B)
-        passwd = passwd + "\0" * (B - sizeof(passwd));
-
-      ikey = passwd ^ ("6" * B);
-      okey = passwd ^ ("\\" * B);
-    }
-
-    string `()(string text)
-    {
-      return raw_hash(okey + raw_hash(ikey + text));
-    }
-  }
-}
-#endif

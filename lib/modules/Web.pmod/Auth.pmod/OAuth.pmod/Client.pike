@@ -88,7 +88,7 @@ string get_user_auth_url()
 //! Generates a cache key
 string get_cache_key(string key)
 {
-  return MD5(consumer->secret + key);
+  return String.string2hex(Crypto.MD5.hash(consumer->secret + key));
 }
 
 //! Tries to find the entry @[key] in the cache

@@ -27,8 +27,9 @@
 //! @param scope
 //!  Extended permissions to use for this authentication. This can be
 //!  set/overridden in @[Base()->get_auth_uri()].
-Base `()(string client_id, string client_secret, void|string redirect_uri,
-         void|string|array(string)|multiset(string) scope)
+protected Base `()(string client_id, string client_secret,
+                   void|string redirect_uri,
+                   void|string|array(string)|multiset(string) scope)
 {
   return Base(client_id, client_secret, redirect_uri, scope);
 }
@@ -171,8 +172,6 @@ class Base
     _grant_type = type;
   }
 
-  #if constant(Crypto.RSA.State) // Pike 8.0
-
   //! Get an @tt{access_token@} from a JWT.
   //! @url{http://jwt.io/@}
   //!
@@ -213,26 +212,16 @@ class Base
     s += "." + base64url_encode(Standards.JSON.encode(claim));
 
     string key =
-  //#if constant(Standards.PEM)
       Standards.PEM.simple_decode(j->private_key);
-  //#else
-  //    Tools.PEM.Msg(j->private_key)->parts["PRIVATE KEY"]->decoded_body();
-  //#endif
 
     object x = [object(Standards.ASN1.Types.Sequence)]
                   Standards.ASN1.Decode.simple_der_decode(key);
 
     string ss;
 
-  //#if constant(Crypto.RSA.State)
     Crypto.RSA.State state;
     state = Standards.PKCS.RSA.parse_private_key(x->elements[-1]->value);
     ss = state->pkcs_sign(s, Crypto.SHA256);
-  //#else /* Pike 7.8 cludge */
-  //  Crypto.RSA rsa = Standards.PKCS.RSA.parse_private_key(x->elements[-1]->value);
-  //  Gmp.mpz sign = rsa->sign(s, Crypto.SHA256);
-  //  ss = sign->digits(256);
-  //#endif
 
     s += "." + base64url_encode(ss);
 
@@ -284,7 +273,6 @@ class Base
             q->status, ee||"Unknown error");
     }
   }
-  #endif /* Crypto.RSA.State */
 
   protected string base64url_encode(string s)
   {
@@ -849,17 +837,8 @@ class Base
     if (upper_case(data->algorithm) != "HMAC-SHA256")
       error("Unknown algorithm. Expected HMAC-SHA256");
 
-    string expected_sig;
-
-  #if constant(Crypto.HMAC)
-  # if constant(Crypto.SHA256)
-    expected_sig = Crypto.HMAC(Crypto.SHA256)(payload)(_client_secret);
-  # else
-    error("No Crypto.SHA256 available in this Pike build! ");
-  # endif
-  #else
-    error("Not implemented in this Pike version! ");
-  #endif
+    // FIXME: Shouldn't payload and _client_secret be swapped?
+    string expected_sig = Crypto.SHA256.HMAC(payload)(_client_secret);
 
     if (sig != expected_sig)
       error("Badly signed signature. ");
@@ -892,14 +871,12 @@ class Client
     ::create(client_id, client_secret, redirect_uri, scope);
   }
 
-#if constant(Crypto.RSA.State)
   //! Make an JWT (JSON Web Token) authentication
   string get_token_from_jwt(string jwt, void|string sub,
                             void|function(bool,string:void) async_cb)
   {
     return ::get_token_from_jwt(jwt, OAUTH_TOKEN_URI, sub, async_cb);
   }
-#endif
 
   //! Returns an authorization URI.
   //!
