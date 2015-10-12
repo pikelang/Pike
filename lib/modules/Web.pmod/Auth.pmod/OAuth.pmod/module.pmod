@@ -157,19 +157,19 @@ class Request
   //! @seealso
   //!  @[request()]
   //!
-  //! @param _uri
+  //! @param uri
   //!  The uri to request
-  //! @param _http_method
+  //! @param http_method
   //!  The HTTP method to use. Either @[Request.GET] or @[Request.POST]
-  //! @param _params
-  protected void create(string|Standards.URI _uri, string http_method,
-                        void|Params _params)
+  //! @param params
+  protected void create(string|Standards.URI uri, string http_method,
+                        void|Params params)
   {
-    uri    = ASSURE_URI(_uri);
+    this:uri = ASSURE_URI(uri);
     method = upper_case(http_method);
-    params = query_to_params(uri);
+    this:params = query_to_params(uri);
 
-    if (_params) params += _params;
+    if (params) add_params(params);
 
     if (!(< "GET", "POST" >)[method])
       ARG_ERROR("http_method", "Must be one of \"GET\" or \"POST\".");
@@ -194,10 +194,10 @@ class Request
 
   //! Add a @[Params] object.
   //!
-  //! @param _params
-  void add_params(Params _params)
+  //! @param params
+  void add_params(Params params)
   {
-    params += _params;
+    this:params += params;
   }
 
   //! Get param with name @[name]
@@ -304,15 +304,15 @@ class Consumer
 
   //! Creates a new @[Consumer] object
   //!
-  //! @param _key
-  //! @param _secret
-  //! @param _callback
+  //! @param key
+  //! @param secret
+  //! @param callback
   //!  NOTE: Has no effect in this implementation
-  protected void create(string _key, string _secret, void|string|Standards.URI _callback)
+  protected void create(string key, string secret, void|string|Standards.URI callback)
   {
-    key      = _key;
-    secret   = _secret;
-    callback = ASSURE_URI(_callback);
+    this:key      = key;
+    this:secret   = secret;
+    this:callback = ASSURE_URI(callback);
   }
 
   protected string _sprintf(int t)
@@ -323,24 +323,8 @@ class Consumer
 }
 
 //! Token class.
-class Token
+class Token (string key, string secret)
 {
-  //! The token key
-  string key;
-
-  //! The token secret
-  string secret;
-
-  //! Creates a new @[Token]
-  //!
-  //! @param key
-  //! @param secret
-  protected void create(string _key, string _secret)
-  {
-    key = _key;
-    secret = _secret;
-  }
-
   //! Casting method.
   //! NOTE! Only supports casting to string wich will return a query string
   //! of the object
@@ -377,14 +361,12 @@ class Param
 
   //! Creates a new @[Param]
   //!
-  //! @param _name
-  //! @param _value
-  protected void create(string _name, mixed _value)
+  //! @param name
+  //! @param value
+  protected void create(string name, mixed value)
   {
-    name = _name;
-    value = (string)_value;
-
-    if (_value) is_null = 0;
+    this:name = name;
+    set_value(value);
   }
 
   //! Getter for the name attribute
@@ -400,16 +382,20 @@ class Param
   void set_value(mixed _value)
   {
     value = (string)_value;
-    is_null = !(!!_value);
+    is_null = !_value;
   }
 
   //! Returns the value encoded
-  string get_encoded_value() { return value && Protocols.HTTP.uri_encode(value); }
+  string get_encoded_value()
+  {
+    return value && Protocols.HTTP.uri_encode(value);
+  }
 
   //! Returns the name and value for usage in a signature string
   string get_signature()
   {
-    return name && value && Protocols.HTTP.uri_encode(name) + "=" + Protocols.HTTP.uri_encode(value);
+    return name && value && Protocols.HTTP.uri_encode(name) + "=" +
+      Protocols.HTTP.uri_encode(value);
   }
 
   //! Comparer method. Checks if @[other] equals this object
@@ -462,11 +448,11 @@ class Params
 
   //! Create a new @[Params]
   //!
-  //! @param _params
+  //! @param params
   //!  Arbitrary number of @[Param] objects
-  protected void create(Param ... _params)
+  protected void create(Param ... params)
   {
-    params = _params||({});
+    this:params = params||({});
   }
 
   //! Returns the params for usage in an authentication header

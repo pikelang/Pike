@@ -34,10 +34,10 @@ protected string user_auth_url;
 //!
 //! @note
 //!  This class must be inherited
-protected void create(Consumer _consumer, Token _token)
+protected void create(Consumer consumer, Token token)
 {
-  consumer = _consumer;
-  token    = _token;
+  this:consumer = consumer;
+  this:token    = token;
 }
 
 //! Returns the @[consumer]

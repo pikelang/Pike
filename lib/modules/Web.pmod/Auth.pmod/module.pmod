@@ -188,12 +188,12 @@ class Param
 
   //! Creates a new instance of @[Param]
   //!
-  //! @param _name
-  //! @param _value
-  protected void create(string _name, mixed _value)
+  //! @param name
+  //! @param value
+  protected void create(string name, mixed value)
   {
-    name = _name;
-    low_set_value((string)_value);
+    this:name = name;
+    set_value(value);
   }
 
   //! Getter for the parameter name
@@ -204,10 +204,10 @@ class Param
 
   //! Setter for the parameter name
   //!
-  //! @param _name
-  void set_name(string _name)
+  //! @param name
+  void set_name(string name)
   {
-    name = _name;
+    this:name = name;
   }
 
   //! Getter for the parameter value
@@ -218,10 +218,10 @@ class Param
 
   //! Setter for the parameter value
   //!
-  //! @param _value
-  void set_value(mixed _value)
+  //! @param value
+  void set_value(mixed value)
   {
-    low_set_value((string)_value);
+    low_set_value((string)value);
   }
 
   //! Returns the name and value as querystring key/value pair
@@ -298,6 +298,8 @@ class Param
   {
     value = v;
 
+    // FIXME: String.width can never be less than 8, this this code is
+    // redudant or buggy.
     if (String.width(value) < 8) {
       if (mixed e = catch(value = string_to_utf8(value))) {
         werror("Warning: Auth.low_set_value(%O): string_to_utf8() failed. "
