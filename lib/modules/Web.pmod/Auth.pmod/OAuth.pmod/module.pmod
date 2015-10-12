@@ -628,6 +628,6 @@ string normalize_uri(string|Standards.URI uri)
 //! Generates a @tt{nonce@}
 string nonce()
 {
-  return ((string)Standards.UUID.make_version4())-"-";
+  return MIME.encode_base64(random_string(15),1);
 }
 
