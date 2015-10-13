@@ -179,6 +179,13 @@ static void udp_close(INT32 args)
  *!
  *! Binds a port for receiving or transmitting UDP.
  *!
+ *! @param port
+ *!   Either a port number or the name of a service as listed in
+ *!   @tt{/etc/services@}.
+ *!
+ *! @param address
+ *!   Local address to bind to.
+ *!
  *! @param no_reuseaddr
  *! 	If set to @expr{1@}, Pike will not set the @expr{SO_REUSEADDR@} option
  *! 	on the UDP port.
@@ -225,7 +232,8 @@ static void udp_bind(INT32 args)
   {
     fd = FD;
     change_fd_for_box (&THIS->box, -1);
-    fd_close(fd);
+    while (fd_close(fd) && errno == EINTR)
+      ;
   }
 
   THIS->inet_flags &= ~PIKE_INET_FLAG_IPV6;
@@ -265,8 +273,9 @@ static void udp_bind(INT32 args)
      && fd_setsockopt(fd, SOL_SOCKET,SO_REUSEADDR,
 		      (char *)&o, sizeof(int)) < 0)
   {
-    fd_close(fd);
     THIS->my_errno=errno;
+    while (fd_close(fd) && errno == EINTR)
+      ;
     Pike_error("Stdio.UDP->bind: setsockopt SO_REUSEADDR failed\n");
   }
 
@@ -315,8 +324,9 @@ static void udp_bind(INT32 args)
 
   if(tmp)
   {
-    fd_close(fd);
     THIS->my_errno=errno;
+    while (fd_close(fd) && errno == EINTR)
+      ;
     Pike_error("Stdio.UDP->bind: failed to bind to port %d\n",
 	       (unsigned INT16)Pike_sp[-args].u.integer);
     return;
@@ -324,8 +334,8 @@ static void udp_bind(INT32 args)
 
   if(!Pike_fp->current_object->prog)
   {
-    if (fd >= 0)
-      while (fd_close(fd) && errno == EINTR) {}
+    while (fd_close(fd) && errno == EINTR)
+      ;
     Pike_error("Object destructed in Stdio.UDP->bind()\n");
   }
 
