@@ -901,7 +901,7 @@ next_row:
 #ifdef HAVE_MYSQL_FETCH_LENGTHS
 	json_escape(&res, (unsigned char *) row[i], row_lengths[i]);
 #else
-	json_escape(&res, (unsigned char *) row[i], strlen([i]));
+	json_escape(&res, (unsigned char *) row[i], strlen(row[i]));
 #endif /* HAVE_MYSQL_FETCH_LENGTHS */
 	string_builder_putchar(&res, '\"');
       } else {
