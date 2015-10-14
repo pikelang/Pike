@@ -1587,9 +1587,9 @@ PIKECLASS Name
     if (!got_hash) {
       unsigned INT32 h;
 #if SIZEOF_CHAR_P > 4
-      h=DO_NOT_WARN((unsigned INT32)(PTR_TO_INT(Pike_fp->current_object) >> 2));
+      h=(unsigned INT32)(PTR_TO_INT(Pike_fp->current_object) >> 2);
 #else
-      h=DO_NOT_WARN((unsigned INT32)(PTR_TO_INT(Pike_fp->current_object)));
+      h=(unsigned INT32)(PTR_TO_INT(Pike_fp->current_object));
 #endif
       RETURN h;
     }

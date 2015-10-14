@@ -80,7 +80,7 @@ static void pike_crypt_func(void *object, pike_nettle_size_t length,
   get_all_args("crypt", 1, "%n", &str);
   if (str->len != (ptrdiff_t)length) {
     Pike_error("Bad string length %ld returned from crypt()\n",
-	       DO_NOT_WARN((long)str->len));
+               (long)str->len);
   }
   memcpy(dst, str->str, length);
   pop_stack();
@@ -767,7 +767,7 @@ PIKECLASS BufferedCipher
 	      Pike_error("crypt() did not return string\n");
 	    if (Pike_sp[-1].u.string->len != THIS->block_size)
 	      Pike_error("Unexpected string length %ld\n",
-			 DO_NOT_WARN((long)Pike_sp[-1].u.string->len));
+                         (long)Pike_sp[-1].u.string->len);
 	    strings++;
 	  } else {
 	    memcpy(THIS->backlog + THIS->backlog_len,
@@ -792,7 +792,7 @@ PIKECLASS BufferedCipher
 	    Pike_error("crypt() did not return string.\n");
 	  if (Pike_sp[-1].u.string->len != len)
 	    Pike_error("crypt() Unexpected string length %ld.\n",
-		       DO_NOT_WARN((long)Pike_sp[-1].u.string->len));
+                       (long)Pike_sp[-1].u.string->len);
 
 	  strings++;
 	}
@@ -886,7 +886,7 @@ PIKECLASS BufferedCipher
 	    break;
 	  case PAD_ISO_10126:
 	    /* ISO 10126 */
-	    THIS->backlog[i] = DO_NOT_WARN((unsigned char)(my_rand() & 0xff));
+            THIS->backlog[i] = (unsigned char)(my_rand() & 0xff);
 	    break;
 	  case PAD_ANSI_X923:
 	    /* ANSI X.923 */
@@ -894,7 +894,7 @@ PIKECLASS BufferedCipher
 	    break;
 	  case PAD_PKCS7:
 	    /* PKCS7 / RFC 3852 */
-	    THIS->backlog[i] = DO_NOT_WARN((unsigned char)size);
+            THIS->backlog[i] = (unsigned char)size;
 	    break;
 	  case PAD_ZERO:
 	    /* Null only */
@@ -902,7 +902,7 @@ PIKECLASS BufferedCipher
 	    break;
 	  }
 
-	THIS->backlog[THIS->block_size - 1] = DO_NOT_WARN((unsigned char)size);
+        THIS->backlog[THIS->block_size - 1] = (unsigned char)size;
 	push_string(make_shared_binary_string((const char *)THIS->backlog, THIS->block_size));
 
 	THIS->backlog_len = 0;
@@ -955,7 +955,7 @@ PIKECLASS BufferedCipher
 	  Pike_error("crypt() did not return string.\n");
 	if (Pike_sp[-1].u.string->len != len)
 	  Pike_error("crypt() Unexpected string length %ld.\n",
-		     DO_NOT_WARN((long)Pike_sp[-1].u.string->len));
+                     (long)Pike_sp[-1].u.string->len);
 	str = Pike_sp[-1].u.string;
 
 	bytes = STR0(str)[len - 1];
@@ -3224,7 +3224,7 @@ PIKECLASS BlockCipher16
 	NO_WIDE_STRING(mac_mask);
 	if (mac_mask->len != 16) {
 	  Pike_error("Bad string length %ld returned from crypt()\n",
-		     DO_NOT_WARN((long)mac_mask->len));
+                     (long)mac_mask->len);
 	}
 	if (THIS->mac_mask) free_string(THIS->mac_mask);
 	add_ref(THIS->mac_mask = mac_mask);
