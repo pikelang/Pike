@@ -52,13 +52,13 @@ Token get_token()
   return token;
 }
 
-//! @decl set_token(Token token)
-//! @decl set_token(string token_key, string token_secret)
+//! @decl void set_token(Token token)
+//! @decl void set_token(string token_key, string token_secret)
 //!
 //! Set the Token.
 //!
 //! @param key
-//!  Either a @[Token()] object or a token key.
+//!  Either a @[Token] object or a token key.
 //! @param secret
 //!  The token secret if @[key] is a token key.
 void set_token(Token|string key, void|string secret)
