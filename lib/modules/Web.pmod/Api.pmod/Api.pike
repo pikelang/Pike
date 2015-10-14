@@ -1,3 +1,5 @@
+#pike __REAL_VERSION__
+
 //! Base class for implementing a @tt{(RESTful) WebApi@} like Facebook's
 //! Graph API, Instagram's API, Twitter's API and so on.
 //!
@@ -249,10 +251,10 @@ mixed call(string api_method, void|ParamsArg params,
   //Request req;
   Protocols.HTTP.Query req = Protocols.HTTP.Query();
 
-  #ifdef SOCIAL_REQUEST_DEBUG
+#ifdef SOCIAL_REQUEST_DEBUG
     TRACE("\n> Request: %s %s?%s\n", http_method, api_method, (string) p);
     if (data) TRACE("> data: %s\n", data);
-  #endif
+#endif
 
   if (cb) {
     req->set_callbacks(
@@ -285,9 +287,9 @@ private mixed handle_response(Protocols.HTTP.Query req)
   if ((< 301, 302 >)[req->status])
     return req->headers;
 
-  #ifdef SOCIAL_REQUEST_DATA_DEBUG
+#ifdef SOCIAL_REQUEST_DATA_DEBUG
     TRACE("Data: [%s]\n\n", req->data()||"(empty)");
-  #endif
+#endif
 
   if (req->status != 200) {
     string d = req->data();
@@ -322,10 +324,7 @@ private mixed handle_response(Protocols.HTTP.Query req)
   return Standards.JSON.decode(unescape_forward_slashes(req->data()));
 }
 
-//! String format
-//!
-//! @param t
-string _sprintf(int t)
+protected string _sprintf(int t)
 {
   return sprintf("%O(authorized:%O)", this_program,
                  (_auth && !!_auth->access_token));
