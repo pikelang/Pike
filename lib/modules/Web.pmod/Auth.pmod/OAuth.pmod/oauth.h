@@ -17,10 +17,4 @@
 #define ARG_ERROR(ARG, MSG...) \
   error("Argument exception (%s): %s\n", (ARG), sprintf(MSG))
 
-#if constant(Crypto.MD5)
-# define MD5(S) String.string2hex(Crypto.MD5.hash((S)))
-#else
-# define MD5(S) Crypto.string_to_hex(Crypto.md5()->update((S))->digest())
-#endif
-
 #endif /* _OAUTH_H */

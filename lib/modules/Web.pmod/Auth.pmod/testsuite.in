@@ -1,0 +1,11 @@
+START_MARKER
+
+test_true(Web.Auth.Facebook)
+test_true(Web.Auth.Github)
+test_true(Web.Auth.Google.Analytics)
+test_true(Web.Auth.Google.Plus)
+test_true(Web.Auth.Instagram)
+test_true(Web.Auth.Linkedin)
+test_true(Web.Auth.Twitter)
+
+END_MARKER

@@ -1,3 +1,5 @@
+#pike __REAL_VERSION__
+
 //! Various authentication modules and classes.
 
 // Checks if A is an instance of B (either directly or by inheritance)
@@ -28,17 +30,19 @@ class Params
   //!  The API secret
   string sign(string secret)
   {
-    return md5(sort(params)->name_value()*"" + secret);
+    // We could stream all the values through MD5, but that is
+    // probably not faster due to call overhead.
+    return String.string2hex(Crypto.MD5.hash(sort(params)->name_value()*"" + secret));
   }
 
   //! Parameter keys
-  array(string) _indices()
+  protected array(string) _indices()
   {
     return params->get_name();
   }
 
   //! Parameter values
-  array(string) _values()
+  protected array(string) _values()
   {
     return params->get_value();
   }
@@ -59,7 +63,8 @@ class Params
   {
     array o = ({});
     foreach (params, Param p)
-      o += ({ urlencode(p->get_name()) + "=" + urlencode(p->get_value()) });
+      o += ({ Protocols.HTTP.uri_encode(p->get_name()) + "=" +
+              Protocols.HTTP.uri_encode(p->get_value()) });
 
     return o*"&";
   }
@@ -90,7 +95,7 @@ class Params
   //!
   //! @returns
   //!  A new @[Params] object
-  this_program `+(Param|this_program p)
+  protected this_program `+(Param|this_program p)
   {
     if (mappingp(p)) {
       foreach (p; string k; string v) {
@@ -111,7 +116,7 @@ class Params
   //! Remove @[p] from the @[Param]eters array of the current object.
   //!
   //! @param p
-  this_program `-(Param|this_program p)
+  protected this_program `-(Param|this_program p)
   {
     if (!p) return this;
 
@@ -128,7 +133,7 @@ class Params
   //!
   //! @param key
   //! The name of a @[Param]erter to find.
-  Param `[](string key)
+  protected Param `[](string key)
   {
     foreach (params, Param p)
       if (p->get_name() == key)
@@ -146,7 +151,7 @@ class Params
   //! String format method
   //!
   //! @param t
-  string _sprintf(int t)
+  protected string _sprintf(int t)
   {
     return t == 'O' && sprintf("%O(%O)", object_program(this), params);
   }
@@ -154,12 +159,13 @@ class Params
   //! Casting method
   //!
   //! @param how
-  mixed cast(string how)
+  protected mixed cast(string how)
   {
     switch (how) {
       case "mapping": return to_mapping();
       case "string": return to_query();
     }
+    error("Cant cast %O() to %O\n", this_program, how);
   }
 }
 
@@ -182,12 +188,12 @@ class Param
 
   //! Creates a new instance of @[Param]
   //!
-  //! @param _name
-  //! @param _value
-  protected void create(string _name, mixed _value)
+  //! @param name
+  //! @param value
+  protected void create(string name, mixed value)
   {
-    name = _name;
-    low_set_value((string)_value);
+    this::name = name;
+    set_value(value);
   }
 
   //! Getter for the parameter name
@@ -198,10 +204,10 @@ class Param
 
   //! Setter for the parameter name
   //!
-  //! @param _name
-  void set_name(string _name)
+  //! @param name
+  void set_name(string name)
   {
-    name = _name;
+    this::name = name;
   }
 
   //! Getter for the parameter value
@@ -212,10 +218,10 @@ class Param
 
   //! Setter for the parameter value
   //!
-  //! @param _value
-  void set_value(mixed _value)
+  //! @param value
+  void set_value(mixed value)
   {
-    low_set_value((string)_value);
+    low_set_value((string)value);
   }
 
   //! Returns the name and value as querystring key/value pair
@@ -227,13 +233,14 @@ class Param
   //! Same as @[name_value()] except this URL encodes the value.
   string name_value_encoded()
   {
-    return urlencode(name) + "=" + urlencode(value);
+    return Protocols.HTTP.uri_encode(name) + "=" +
+      Protocols.HTTP.uri_encode(value);
   }
 
   //! Comparer method. Checks if @[other] equals this object
   //!
   //! @param other
-  int(0..1) `==(mixed other)
+  protected int(0..1) `==(mixed other)
   {
     if (!INSTANCE_OF(this, other)) return 0;
     if (name == other->get_name())
@@ -245,7 +252,7 @@ class Param
   //! Checks if this object is greater than @[other]
   //!
   //! @param other
-  int(0..1) `>(mixed other)
+  protected int(0..1) `>(mixed other)
   {
     if (!INSTANCE_OF(this, other)) return 0;
     if (name == other->get_name())
@@ -257,7 +264,7 @@ class Param
   //! Checks if this object is less than @[other]
   //!
   //! @param other
-  int(0..1) `<(mixed other)
+  protected int(0..1) `<(mixed other)
   {
     if (!INSTANCE_OF(this, other)) return 0;
     if (name == other->get_name())
@@ -269,12 +276,12 @@ class Param
   //! String format method
   //!
   //! @param t
-  string _sprintf(int t)
+  protected string _sprintf(int t)
   {
     return t == 'O' && sprintf("%O(%O,%O)", object_program(this), name, value);
   }
 
-  mixed cast(string how)
+  protected mixed cast(string how)
   {
     switch (how)
     {
@@ -291,6 +298,8 @@ class Param
   {
     value = v;
 
+    // FIXME: String.width can never be less than 8, this this code is
+    // redudant or buggy.
     if (String.width(value) < 8) {
       if (mixed e = catch(value = string_to_utf8(value))) {
         werror("Warning: Auth.low_set_value(%O): string_to_utf8() failed. "
@@ -298,34 +307,6 @@ class Param
       }
     }
   }
-}
-
-//! Same as @[Protocols.HTTP.uri_encode()] except this turns spaces into
-//! @tt{+@} instead of @tt{%20@}.
-//!
-//! @param s
-string urlencode(string s)
-{
-#if constant(Protocols.HTTP.uri_encode)
-  return Protocols.HTTP.uri_encode(s);
-#elif constant(Protocols.HTTP.http_encode_string)
-  return Protocols.HTTP.http_encode_string(s);
-#endif
-}
-
-//! Same as @[Protocols.HTTP.uri_decode()] except this turns spaces into
-//! @tt{+@} instead of @tt{%20@}.
-//!
-//! @param s
-string urldecode(string s)
-{
-#if constant(Protocols.HTTP.uri_decode)
-  return Protocols.HTTP.uri_decode(s);
-#elif constant(Protocols.HTTP.http_decode_string)
-  return Protocols.HTTP.http_decode_string(s);
-#else
-  return s;
-#endif
 }
 
 //! Turns a query string into a mapping
@@ -342,20 +323,8 @@ mapping query_to_mapping(string query)
 
   foreach (query/"&", string p) {
     sscanf (p, "%s=%s", string k, string v);
-    m[k] = urldecode(v);
+    m[k] = Protocols.HTTP.uri_decode(v); // FIXME: Shouldn't k be decoded?
   }
 
   return m;
-}
-
-//! MD5 routine
-//!
-//! @param s
-string md5(string s)
-{
-#if constant(Crypto.MD5)
-  return String.string2hex(Crypto.MD5.hash(s));
-#else
-  return Crypto.string_to_hex(Crypto.md5()->update(s)->digest());
-#endif
 }

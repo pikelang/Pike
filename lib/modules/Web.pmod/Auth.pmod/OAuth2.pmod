@@ -1,3 +1,5 @@
+#pike __REAL_VERSION__
+
 //! OAuth2 client
 //!
 //! A base OAuth2 class can be instantiated either via @[`()]
@@ -12,10 +14,10 @@
 //! Instantiate a generic OAuth2 @[Base] class.
 //!
 //! @param client_id
-//!  The application ID
+//!  The application ID.
 //!
 //! @param client_secret
-//!  The application secret
+//!  The application secret.
 //!
 //! @param redirect_uri
 //!  Where the authorization page should redirect back to. This must be a
@@ -25,8 +27,9 @@
 //! @param scope
 //!  Extended permissions to use for this authentication. This can be
 //!  set/overridden in @[Base()->get_auth_uri()].
-Base `()(string client_id, string client_secret, void|string redirect_uri,
-         void|string|array(string)|multiset(string) scope)
+protected Base `()(string client_id, string client_secret,
+                   void|string redirect_uri,
+                   void|string|array(string)|multiset(string) scope)
 {
   return Base(client_id, client_secret, redirect_uri, scope);
 }
@@ -34,13 +37,13 @@ Base `()(string client_id, string client_secret, void|string redirect_uri,
 //! Generic OAuth2 client class.
 class Base
 {
-  //! Creates an OAuth2 object
+  //! Creates an OAuth2 object.
   //!
   //! @param client_id
-  //!  The application ID
+  //!  The application ID.
   //!
   //! @param client_secret
-  //!  The application secret
+  //!  The application secret.
   //!
   //! @param redirect_uri
   //!  Where the authorization page should redirect back to. This must be a
@@ -61,7 +64,7 @@ class Base
     _scope         = scope || _scope;
   }
 
-  //! Grant types
+  //! Grant types.
   enum GrantType {
     //!
     GRANT_TYPE_AUTHORIZATION_CODE = "authorization_code",
@@ -82,7 +85,7 @@ class Base
     GRANT_TYPE_REFRESH_TOKEN = "refresh_token"
   }
 
-  //! Response types
+  //! Response types.
   enum ResponseType {
     //!
     RESPONSE_TYPE_CODE  = "code",
@@ -91,7 +94,7 @@ class Base
     RESPONSE_TYPE_TOKEN = "token"
   }
 
-  //! Getter for @expr{access_token@}
+  //! Getter for @expr{access_token@}.
   string `access_token()
   {
     return gettable->access_token;
@@ -107,25 +110,25 @@ class Base
     gettable->expires = time() + (3600);
   }
 
-  //! Getter for @expr{refresh_token@}
+  //! Getter for @expr{refresh_token@}.
   string `refresh_token()
   {
     return gettable->refresh_token;
   }
 
-  //! Getter for @expr{token_type@}
+  //! Getter for @expr{token_type@}.
   string `token_type()
   {
     return gettable->token_type;
   }
 
-  //! Getter for when the authentication @expr{expires@}
+  //! Getter for when the authentication @expr{expires@}.
   Calendar.Second `expires()
   {
     return gettable->expires && Calendar.Second("unix", gettable->expires);
   }
 
-  //! Getter for when the authentication was @expr{created@}
+  //! Getter for when the authentication was @expr{created@}.
   Calendar.Second `created()
   {
     return Calendar.Second("unix", gettable->created);
@@ -137,7 +140,7 @@ class Base
     return gettable->user;
   }
 
-  //! Returns the application ID
+  //! Returns the application ID.
   string get_client_id()
   {
     return _client_id;
@@ -149,43 +152,39 @@ class Base
     return _client_secret;
   }
 
-  //! Returns the redirect uri
+  //! Returns the redirect uri.
   string get_redirect_uri()
   {
     return _redirect_uri;
   }
 
-  //! Returns the @expr{grant_type@} of the object
+  //! Returns the @expr{grant_type@} of the object.
   string get_grant_type()
   {
     return _grant_type;
   }
 
-  //! Set the grant type to use
-  //!
-  //! @param type
+  //! Set the grant type to use.
   void set_grant_type(GrantType type)
   {
     _grant_type = type;
   }
 
-  #if constant(Crypto.RSA.State) // Pike 8.0
-
   //! Get an @tt{access_token@} from a JWT.
   //! @url{http://jwt.io/@}
   //!
   //! @param jwt
-  //!  JSON string
+  //!  JSON string.
   //! @param token_endpoint
-  //!  URI to the request access_token endpoint
+  //!  URI to the request access_token endpoint.
   //! @param sub
-  //!  Email/id of the requesting user
+  //!  Email/id of the requesting user.
   //! @param async_callback
-  //!  If given the request will be made asynchronously.
-  //!  The signature is:  @tt{callback(bool, string)@}.
-  //!  If successful the second argument will be the result encoded
-  //!  with @[predef::encode_value()], which can be stored and later used to
-  //!  populate an instance via @[set_from_cookie()].
+  //!  If given the request will be made asynchronously.  The
+  //!  signature is @tt{callback(bool, string)@}.  If successful the
+  //!  second argument will be the result encoded with
+  //!  @[predef::encode_value()], which can be stored and later used
+  //!  to populate an instance via @[set_from_cookie()].
   string get_token_from_jwt(string jwt, string token_endpoint, string|void sub,
                             void|function(bool,string:void) async_cb)
   {
@@ -207,32 +206,22 @@ class Base
       claim->sub = sub;
     }
 
-    string s = base64url_encode(Standards.JSON.encode(header));
-    s += "." + base64url_encode(Standards.JSON.encode(claim));
+    string s = MIME.encode_base64url(Standards.JSON.encode(header));
+    s += "." + MIME.encode_base64url(Standards.JSON.encode(claim));
 
     string key =
-  //#if constant(Standards.PEM)
       Standards.PEM.simple_decode(j->private_key);
-  //#else
-  //    Tools.PEM.Msg(j->private_key)->parts["PRIVATE KEY"]->decoded_body();
-  //#endif
 
     object x = [object(Standards.ASN1.Types.Sequence)]
                   Standards.ASN1.Decode.simple_der_decode(key);
 
     string ss;
 
-  //#if constant(Crypto.RSA.State)
     Crypto.RSA.State state;
     state = Standards.PKCS.RSA.parse_private_key(x->elements[-1]->value);
     ss = state->pkcs_sign(s, Crypto.SHA256);
-  //#else /* Pike 7.8 cludge */
-  //  Crypto.RSA rsa = Standards.PKCS.RSA.parse_private_key(x->elements[-1]->value);
-  //  Gmp.mpz sign = rsa->sign(s, Crypto.SHA256);
-  //  ss = sign->digits(256);
-  //#endif
 
-    s += "." + base64url_encode(ss);
+    s += "." + MIME.encode_base64url(ss);
 
     string body = "grant_type="+Protocols.HTTP.uri_encode(GRANT_TYPE_JWT)+"&"+
                   "assertion="+Protocols.HTTP.uri_encode(s);
@@ -282,30 +271,20 @@ class Base
             q->status, ee||"Unknown error");
     }
   }
-  #endif /* Crypto.RSA.State */
 
-  protected string base64url_encode(string s)
-  {
-    s = MIME.encode_base64(s, 1);
-    s = replace(s, ([ "==" : "", "+" : "-", "-" : "_" ]));
-    return s;
-  }
-
-  //! Setter for the redirect uri
-  //!
-  //! @param uri
+  //! Setter for the redirect uri.
   void set_redirect_uri(string uri)
   {
     _redirect_uri = uri;
   }
 
-  //! Returns the valid scopes
+  //! Returns the valid scopes.
   multiset list_valid_scopes()
   {
     return valid_scopes;
   }
 
-  //! Set access_type explicilty
+  //! Set access_type explicilty.
   //!
   //! @param access_type
   //!  Like: offline
@@ -314,13 +293,13 @@ class Base
     _access_type = access_type;
   }
 
-  //! Getter for the access type, if any
+  //! Getter for the access type, if any.
   string get_access_type()
   {
     return _access_type;
   }
 
-  //! Set scopes
+  //! Set scopes.
   void set_scope(string scope)
   {
     _scope = scope;
@@ -332,9 +311,7 @@ class Base
     return _scope;
   }
 
-  //! Check if @[scope] exists in this object
-  //!
-  //! @param scope
+  //! Check if @[scope] exists in this object.
   int(0..1) has_scope(string scope)
   {
     if (!_scope || !sizeof(_scope))
@@ -357,7 +334,7 @@ class Base
   //!  @[refresh_access_token()].
   //!
   //! @returns
-  //!  The object being called
+  //!  The object being called.
   this_program set_from_cookie(string encoded_value)
   {
     mixed e = catch {
@@ -422,7 +399,7 @@ class Base
     return auth_uri + "?" + p->to_query();
   }
 
-  //! Requests an access token
+  //! Requests an access token.
   //!
   //! @throws
   //!  An error if the access token request fails.
@@ -434,16 +411,18 @@ class Base
   //!  The code returned from the authorization page via @[get_auth_url()].
   //!
   //! @param async_cb
-  //!  If given an async request will be made and this function will be called
-  //!  when the request is finished. The first argument passed to the callback
-  //!  will be @expr{true@} or @expr{false@} depending on if the request was
-  //!  successfull or not. The second argument will be a string. If the request
-  //!  failed it will be an error message. If it succeeded it will be the result
-  //!  as a string encoded with @[predef::encode_value()].
+  //!  If given an async request will be made and this function will
+  //!  be called when the request is finished. The first argument
+  //!  passed to the callback will be @expr{true@} or @expr{false@}
+  //!  depending on if the request was successfull or not. The second
+  //!  argument will be a string. If the request failed it will be an
+  //!  error message. If it succeeded it will be the result as a
+  //!  string encoded with @[predef::encode_value()].
   //!
   //! @returns
-  //!  If @expr{OK@} a Pike encoded mapping (i.e it's a string) is returned
-  //!  which can be used to populate an @[Web.Auth.OAuth2] object at a later time.
+  //!  If @expr{OK@} a Pike encoded mapping (i.e it's a string) is
+  //!  returned which can be used to populate an @[Web.Auth.OAuth2]
+  //!  object at a later time.
   //!
   //!  The mapping looks like
   //!  @mapping
@@ -476,17 +455,18 @@ class Base
     }
   }
 
-  //! Refreshes the access token, if a refresh token exists in the object
+  //! Refreshes the access token, if a refresh token exists in the object.
   //!
   //! @param oauth_token_uri
-  //!  Endpoint of the authentication service
+  //!  Endpoint of the authentication service.
   //! @param async_cb
-  //!  If given an async request will be made and this function will be called
-  //!  when the request is finished. The first argument passed to the callback
-  //!  will be @expr{true@} or @expr{false@} depending on if the request was
-  //!  successfull or not. The second argument will be a string. If the request
-  //!  failed it will be an error message. If it succeeded it will be the result
-  //!  as a string encoded with @[predef::encode_value()].
+  //!  If given an async request will be made and this function will
+  //!  be called when the request is finished. The first argument
+  //!  passed to the callback will be @expr{true@} or @expr{false@}
+  //!  depending on if the request was successfull or not. The second
+  //!  argument will be a string. If the request failed it will be an
+  //!  error message. If it succeeded it will be the result as a
+  //!  string encoded with @[predef::encode_value()].
   string refresh_access_token(string oauth_token_uri,
                               void|function(bool,string:void) async_cb)
   {
@@ -514,15 +494,14 @@ class Base
 
   //! Send a request to @[oauth_token_uri] with params @[p]
   //!
-  //! @param oauth_token_uri
-  //! @param p
   //! @param async_cb
-  //!  If given an async request will be made and this function will be called
-  //!  when the request is finished. The first argument passed to the callback
-  //!  will be @expr{true@} or @expr{false@} depending on if the request was
-  //!  successfull or not. The second argument will be a string. If the request
-  //!  failed it will be an error message. If it succeeded it will be the result
-  //!  as a string encoded with @[predef::encode_value()].
+  //!  If given an async request will be made and this function will
+  //!  be called when the request is finished. The first argument
+  //!  passed to the callback will be @expr{true@} or @expr{false@}
+  //!  depending on if the request was successfull or not. The second
+  //!  argument will be a string. If the request failed it will be an
+  //!  error message. If it succeeded it will be the result as a
+  //!  string encoded with @[predef::encode_value()].
   protected string do_query(string oauth_token_uri, Web.Auth.Params p,
                             void|function(bool,string:void) async_cb)
   {
@@ -597,9 +576,7 @@ class Base
     }
   }
 
-  //! Returns a set of default parameters
-  //!
-  //! @param grant_type
+  //! Returns a set of default parameters.
   protected Web.Auth.Params get_default_params(void|string grant_type)
   {
     Web.Auth.Params p;
@@ -623,7 +600,7 @@ class Base
     return !!gettable->refresh_token;
   }
 
-  //! Checks if this authorization has expired
+  //! Checks if this authorization has expired.
   int(0..1) is_expired()
   {
     // This means no expiration date was set from the API
@@ -633,18 +610,16 @@ class Base
     return gettable->expires ? time() > gettable->expires : 1;
   }
 
-  //! Do we have a valid authentication
+  //! Do we have a valid authentication.
   int(0..1) is_authenticated()
   {
     return !!gettable->access_token && !is_expired();
   }
 
-  //! Cast method. If casted to @tt{string@} the @tt{access_token@} will be
-  //! returned. If casted to @tt{int@} the @tt{expires@} timestamp will
-  //! be returned.
-  //!
-  //! @param how
-  mixed cast(string how)
+  //! If casted to @tt{string@} the @tt{access_token@} will be
+  //! returned. If casted to @tt{int@} the @tt{expires@} timestamp
+  //! will be returned.
+  protected mixed cast(string how)
   {
     switch (how) {
       case "string":  return gettable->access_token;
@@ -655,8 +630,7 @@ class Base
     error("Can't cast %O to %s! ", object_program(this), how);
   }
 
-  //! String formatting method
-  string _sprintf(int t)
+  protected string _sprintf(int t)
   {
     switch (t) {
       case 's': return gettable->access_token;
@@ -676,31 +650,31 @@ class Base
     The internal API can be used by other classes inheriting this class
   */
 
-  //! A mapping of valid scopes for the API
+  //! A mapping of valid scopes for the API.
   protected multiset(string) valid_scopes = (<>);
 
-  //! Version of this implementation
+  //! Version of this implementation.
   protected constant VERSION = "1.0";
 
-  //! User agent string
+  //! User agent string.
   protected constant USER_AGENT  = "Mozilla 4.0 (Pike OAuth2 Client " +
                                    VERSION + ")";
 
-  //! Some OAuth2 verifiers need the STATE parameter. If this is not @tt{0@}
-  //! a random string will be generated and the @tt{state@} parameter will be
-  //! added to the request
+  //! Some OAuth2 verifiers need the STATE parameter. If this is not
+  //! @tt{0@} a random string will be generated and the @tt{state@}
+  //! parameter will be added to the request.
   protected constant STATE = 0;
 
-  //! The application ID
+  //! The application ID.
   protected string _client_id;
 
-  //! The application secret
+  //! The application secret.
   protected string _client_secret;
 
-  //! Where the authorization page should redirect to
+  //! Where the authorization page should redirect to.
   protected string _redirect_uri;
 
-  //! The scope of the authorization. Limits the access
+  //! The scope of the authorization. Limits the access.
   protected string|array(string)|multiset(string) _scope;
 
   //! Access type of the request.
@@ -726,7 +700,7 @@ class Base
   //! @endul
   protected string _response_type = RESPONSE_TYPE_CODE;
 
-  //! Default request headers
+  //! Default request headers.
   protected mapping request_headers = ([
     "User-Agent"   : USER_AGENT,
     "Content-Type" : "application/x-www-form-urlencoded"
@@ -743,11 +717,10 @@ class Base
                                   "token_type"    : 0 ]);
 
   //! Returns a space separated list of all valid scopes in @[s].
-  //! @[s] can be a comma or space separated string or an array or multiset of
-  //! strings. Each element in @[s] will be matched against the valid scopes
-  //! set in the module inheriting this class.
-  //!
-  //! @param s
+  //! @[s] can be a comma or space separated string or an array or
+  //! multiset of strings. Each element in @[s] will be matched
+  //! against the valid scopes set in the module inheriting this
+  //! class.
   protected string get_valid_scopes(string|array(string)|multiset(string) s)
   {
     if (!s) return "";
@@ -771,9 +744,9 @@ class Base
     return r*" ";
   }
 
-  //! Decode the response from an authentication call. If the response was ok
-  //! the internal mapping @[gettable] will be populated with the
-  //! members/variables in @[r].
+  //! Decode the response from an authentication call. If the response
+  //! was ok the internal mapping @[gettable] will be populated with
+  //! the members/variables in @[r].
   //!
   //! @param r
   //!  The response from @[do_query()]
@@ -816,8 +789,8 @@ class Base
     return 1;
   }
 
-  //! Try to get an error message from @[data]. Only successful if @[data]
-  //! is a JSON string and contains the key @tt{error@}.
+  //! Try to get an error message from @[data]. Only successful if
+  //! @[data] is a JSON string and contains the key @tt{error@}.
   private mixed try_get_error(string data)
   {
     catch {
@@ -827,37 +800,23 @@ class Base
   }
 
   #if 0
-  //! Parses a signed request
-  //!
-  //! @throws
-  //!  An error if the signature doesn't match the expected signature
-  //!
-  //! @param sign
+  // Parses a signed request.
+  //
+  // @throws
+  //  An error if the signature doesn't match the expected signature.
   protected mapping parse_signed_request(string sign)
   {
-    sscanf(sign, "%s.%s", string sig, string payload);
+    if( sscanf(sign, "%s.%s", string sig, string payload)!=2 )
+      error("Illegal signature format.\n");
 
-    function url_decode = lambda (string s) {
-      return MIME.decode_base64(replace(s, ({ "-", "_" }), ({ "+", "/" })));
-    };
-
-    sig = url_decode(sig);
-    mapping data = json_decode(url_decode(payload));
+    sig = MIME.decode_base64url(sig);
+    mapping data = json_decode(MIME.decode_base64url(payload));
 
     if (upper_case(data->algorithm) != "HMAC-SHA256")
       error("Unknown algorithm. Expected HMAC-SHA256");
 
-    string expected_sig;
-
-  #if constant(Crypto.HMAC)
-  # if constant(Crypto.SHA256)
-    expected_sig = Crypto.HMAC(Crypto.SHA256)(payload)(_client_secret);
-  # else
-    error("No Crypto.SHA256 available in this Pike build! ");
-  # endif
-  #else
-    error("Not implemented in this Pike version! ");
-  #endif
+    // FIXME: Shouldn't payload and _client_secret be swapped?
+    string expected_sig = Crypto.SHA256.HMAC(payload)(_client_secret);
 
     if (sig != expected_sig)
       error("Badly signed signature. ");
@@ -867,19 +826,19 @@ class Base
   #endif
 }
 
-//! This class is intended to be extended by classes implementing different
-//! OAuth2 services
+//! This class is intended to be extended by classes implementing
+//! different OAuth2 services.
 class Client
 {
   inherit Base;
 
-  //! Authorization URI
+  //! Authorization URI.
   constant OAUTH_AUTH_URI = 0;
 
-  //! Request access token URI
+  //! Request access token URI.
   constant OAUTH_TOKEN_URI = 0;
 
-  //! Scope to set if none is set
+  //! Scope to set if none is set.
   protected constant DEFAULT_SCOPE = 0;
 
   protected void create(string client_id,
@@ -890,14 +849,12 @@ class Client
     ::create(client_id, client_secret, redirect_uri, scope);
   }
 
-#if constant(Crypto.RSA.State)
-  //! Make an JWT (JSON Web Token) authentication
+  //! Make an JWT (JSON Web Token) authentication.
   string get_token_from_jwt(string jwt, void|string sub,
                             void|function(bool,string:void) async_cb)
   {
     return ::get_token_from_jwt(jwt, OAUTH_TOKEN_URI, sub, async_cb);
   }
-#endif
 
   //! Returns an authorization URI.
   //!
@@ -913,7 +870,7 @@ class Client
     return ::get_auth_uri(OAUTH_AUTH_URI, args);
   }
 
-  //! Requests an access token
+  //! Requests an access token.
   //!
   //! @throws
   //!  An error if the access token request fails.
@@ -922,16 +879,18 @@ class Client
   //!  The code returned from the authorization page via @[get_auth_url()].
   //!
   //! @param async_cb
-  //!  If given an async request will be made and this function will be called
-  //!  when the request is finished. The first argument passed to the callback
-  //!  will be @expr{true@} or @expr{false@} depending on if the request was
-  //!  successfull or not. The second argument will be a string. If the request
-  //!  failed it will be an error message. If it succeeded it will be the result
-  //!  as a string encoded with @[predef::encode_value()].
+  //!  If given an async request will be made and this function will
+  //!  be called when the request is finished. The first argument
+  //!  passed to the callback will be @expr{true@} or @expr{false@}
+  //!  depending on if the request was successfull or not. The second
+  //!  argument will be a string. If the request failed it will be an
+  //!  error message. If it succeeded it will be the result as a
+  //!  string encoded with @[predef::encode_value()].
   //!
   //! @returns
-  //!  If @expr{OK@} a Pike encoded mapping (i.e it's a string) is returned
-  //!  which can be used to populate an @[Base] object at a later time.
+  //!  If @expr{OK@} a Pike encoded mapping (i.e it's a string) is
+  //!  returned which can be used to populate an @[Base] object at a
+  //!  later time.
   //!
   //!  The mapping looks like
   //!  @mapping
@@ -942,23 +901,25 @@ class Client
   //!   @member string "token_type"
   //!  @endmapping
   //!
-  //!  Depending on the authorization service it might also contain more
-  //!  members.
+  //!  Depending on the authorization service it might also contain
+  //!  more members.
   string request_access_token(string code,
                               void|function(bool,string:void) async_cb)
   {
     return ::request_access_token(OAUTH_TOKEN_URI, code, async_cb);
   }
 
-  //! Refreshes the access token, if a refresh token exists in the object
+  //! Refreshes the access token, if a refresh token exists in the
+  //! object.
   //!
   //! @param async_cb
-  //!  If given an async request will be made and this function will be called
-  //!  when the request is finished. The first argument passed to the callback
-  //!  will be @expr{true@} or @expr{false@} depending on if the request was
-  //!  successfull or not. The second argument will be a string. If the request
-  //!  failed it will be an error message. If it succeeded it will be the result
-  //!  as a string encoded with @[predef::encode_value()].
+  //!  If given an async request will be made and this function will
+  //!  be called when the request is finished. The first argument
+  //!  passed to the callback will be @expr{true@} or @expr{false@}
+  //!  depending on if the request was successfull or not. The second
+  //!  argument will be a string. If the request failed it will be an
+  //!  error message. If it succeeded it will be the result as a
+  //!  string encoded with @[predef::encode_value()].
   string refresh_access_token(void|function(bool,string:void) async_cb)
   {
     return ::refresh_access_token(OAUTH_TOKEN_URI, async_cb);

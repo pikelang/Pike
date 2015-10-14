@@ -1,3 +1,5 @@
+#pike __REAL_VERSION__
+
 //! Twitter authentication class
 
 inherit Web.Auth.OAuth.Authentication;

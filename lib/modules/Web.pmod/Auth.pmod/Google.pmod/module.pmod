@@ -1,3 +1,5 @@
+#pike __REAL_VERSION__
+
 //! Google authentication classes.
 
 //! Default Google authorization class

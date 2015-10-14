@@ -1,3 +1,5 @@
+#pike __REAL_VERSION__
+
 //! This class is used to OAuth2 authenticate against Github
 
 inherit .OAuth2.Client;

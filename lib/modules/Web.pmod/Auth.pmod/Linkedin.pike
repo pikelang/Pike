@@ -1,3 +1,5 @@
+#pike __REAL_VERSION__
+
 //! This class is used to OAuth2 authenticate against LinkedIn
 
 inherit .OAuth2.Client;
