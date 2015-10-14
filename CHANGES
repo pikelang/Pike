@@ -428,7 +428,8 @@ o The old low-level 'files' module has been renamed to _Stdio
 
 o The old _PGsql helper module has been removed.
 
-o 'GTK' is now GTK2, not GTK1 unless the system has no GTK2 support.
+o 'GTK' is now GTK2 if GTK2 support is available, earlier it defaulted
+  to GTK1 as a preference over GTK2.
 
 o Locale.Charset
 
