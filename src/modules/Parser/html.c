@@ -445,7 +445,7 @@ static int quote_tag_lookup (struct parser_html_storage *this,
 #ifdef __ECL
 static inline long TO_LONG(ptrdiff_t x)
 {
-  return DO_NOT_WARN((long)x);
+  return (long)x;
 }
 #else /* !__ECL */
 #define TO_LONG(x)	((long)(x))
@@ -462,7 +462,7 @@ static void debug_mark_spot(char *desc,struct piece *feed,int c)
    l=strlen(desc)+1;
    if (l<40) l=40;
    m=75-l; if (m<10) m=10;
-   fprintf(stderr,"%-*s `",DO_NOT_WARN((int)l),desc);
+   fprintf(stderr,"%-*s `",(int)l,desc);
    i=c-m/2;
    if (i+m>=feed->s->len) i=feed->s->len-m;
    if (i<0) i=0;
@@ -477,12 +477,8 @@ static void debug_mark_spot(char *desc,struct piece *feed,int c)
    }
 
    sprintf(buf,"(%ld) %p:%d/%ld    ^",
-	   DO_NOT_WARN((long)i0),
-	   (void *)feed, c,
-	   DO_NOT_WARN((long)feed->s->len));
-   fprintf(stderr,"`\n%*s\n",
-	   DO_NOT_WARN((int)(l+c-i0+3)),
-	   buf);
+           (long)i0, (void *)feed, c, (long)feed->s->len);
+   fprintf(stderr,"`\n%*s\n", (int)(l+c-i0+3), buf);
 }
 
 static void debug_print_chars (const p_wchar2 *chars, size_t numchars)
@@ -4714,7 +4710,7 @@ static void html__inspect(INT32 args)
       o++;
 
       push_static_text("position");
-      push_int(DO_NOT_WARN(st->c));
+      push_int(st->c);
       o++;
 
       push_static_text("byteno");

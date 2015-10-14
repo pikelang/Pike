@@ -114,9 +114,9 @@ struct array *encode_stat(PIKE_STAT_T *s)
     ITEM(a)[1].u.integer=-4;
     break;
   }
-  ITEM(a)[2].u.integer = DO_NOT_WARN ((INT_TYPE) s->st_atime);
-  ITEM(a)[3].u.integer = DO_NOT_WARN ((INT_TYPE) s->st_mtime);
-  ITEM(a)[4].u.integer = DO_NOT_WARN ((INT_TYPE) s->st_ctime);
+  ITEM(a)[2].u.integer = (INT_TYPE) s->st_atime;
+  ITEM(a)[3].u.integer = (INT_TYPE) s->st_mtime;
+  ITEM(a)[4].u.integer = (INT_TYPE) s->st_ctime;
   ITEM(a)[5].u.integer=s->st_uid;
   ITEM(a)[6].u.integer=s->st_gid;
   return a;
@@ -496,19 +496,19 @@ void f_file_truncate(INT32 args)
     HANDLE h = CreateFile(str->str, GENERIC_WRITE,
 			  FILE_SHARE_READ|FILE_SHARE_WRITE,
 			  NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-    if(h == DO_NOT_WARN(INVALID_HANDLE_VALUE)) {
+    if(h == INVALID_HANDLE_VALUE) {
       errno = GetLastError();
       res=-1;
     } else {
       LONG high;
       DWORD err;
 #ifdef INT64
-      high = DO_NOT_WARN ((LONG) (len >> 32));
+      high = (LONG) (len >> 32);
       len &= ((INT64) 1 << 32) - 1;
 #else
       high = 0;
 #endif
-      if (SetFilePointer(h, DO_NOT_WARN ((LONG) len), &high, FILE_BEGIN) ==
+      if (SetFilePointer(h, (LONG) len, &high, FILE_BEGIN) ==
 	  INVALID_SET_FILE_POINTER &&
 	  (err = GetLastError()) != NO_ERROR) {
 	errno = err;
@@ -1097,7 +1097,7 @@ void f_get_dir(INT32 args)
 
   free_string_builder(&sb);
 
-  if (dir == DO_NOT_WARN(INVALID_HANDLE_VALUE)) {
+  if (dir == INVALID_HANDLE_VALUE) {
     int err = GetLastError();
 #ifdef READDIR_DEBUG
     fprintf(stderr, "  INVALID_HANDLE_VALUE, error %d\n", err);

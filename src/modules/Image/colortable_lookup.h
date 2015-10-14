@@ -224,7 +224,7 @@ void NCTLU_FLAT_FULL_NAME(rgb_group *s,
 	    {
 	       lc->dest=fe->color;
 	       mindist=dist;
-	       lc->index = DO_NOT_WARN((int)fe->no);
+               lc->index = (int)fe->no;
 	       NCTLU_CACHE_HIT_WRITE;
 	    }
 
@@ -353,9 +353,9 @@ void NCTLU_CUBE_NAME(rgb_group *s,
    green=cube->g;	hgreen=green/2;  greenm=green-1;
    blue=cube->b; 	hblue=blue/2;    bluem=blue-1;
 
-   redf = DO_NOT_WARN((float)(255.0/redm));
-   greenf = DO_NOT_WARN((float)(255.0/greenm));
-   bluef = DO_NOT_WARN((float)(255.0/bluem));
+   redf = (float)(255.0/redm);
+   greenf = (float)(255.0/greenm);
+   bluef = (float)(255.0/bluem);
 
    CHRONO("begin cube map");
 

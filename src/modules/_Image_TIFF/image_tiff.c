@@ -468,12 +468,12 @@ void low_image_tiff_decode( struct buffer *buf,
   for(i=0; i<h*w; i++)
   {
     uint32 p = *s;
-    di->r = DO_NOT_WARN((unsigned char)(p & 255));
-    di->g = DO_NOT_WARN((unsigned char)((p>>8) & 255));
-    (di++)->b = DO_NOT_WARN((unsigned char)((p>>16) & 255));
+    di->r = (unsigned char)(p & 255);
+    di->g = (unsigned char)((p>>8) & 255);
+    (di++)->b = (unsigned char)((p>>16) & 255);
     if(!image_only)
     {
-      da->r = da->g = da->b = DO_NOT_WARN((unsigned char)((p>>24) & 255));
+      da->r = da->g = da->b = (unsigned char)((p>>24) & 255);
       da++;
     }
     s++;

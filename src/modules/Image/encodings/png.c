@@ -73,10 +73,10 @@ static struct pike_string *param_zstrategy;
 static INLINE void push_nbo_32bit(size_t x)
 {
    char buf[4];
-   buf[0] = DO_NOT_WARN((char)(x>>24));
-   buf[1] = DO_NOT_WARN((char)(x>>16));
-   buf[2] = DO_NOT_WARN((char)(x>>8));
-   buf[3] = DO_NOT_WARN((char)(x));
+   buf[0] = (char)(x>>24);
+   buf[1] = (char)(x>>16);
+   buf[2] = (char)(x>>8);
+   buf[3] = (char)(x);
    push_string(make_shared_binary_string(buf,4));
 }
 
@@ -96,11 +96,11 @@ static INLINE COLORTYPE _png_c16(unsigned long z,int bpp)
 {
    switch (bpp)
    {
-      case 16: return DO_NOT_WARN((COLORTYPE)(z>>8));
-      case 4:  return DO_NOT_WARN((COLORTYPE)(z*17));
-      case 2:  return DO_NOT_WARN((COLORTYPE)(z*0x55));
-      case 1:  return DO_NOT_WARN((COLORTYPE)(z*255));
-      default: return DO_NOT_WARN((COLORTYPE)z);
+      case 16: return (COLORTYPE)(z>>8);
+      case 4:  return (COLORTYPE)(z*17);
+      case 2:  return (COLORTYPE)(z*0x55);
+      case 1:  return (COLORTYPE)(z*255);
+      default: return (COLORTYPE)z;
    }
 }
 

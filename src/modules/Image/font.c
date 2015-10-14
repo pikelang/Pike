@@ -806,7 +806,7 @@ void font_text_extents(INT32 args)
 
   pop_n_elems(args);
   push_int(maxwidth2);
-  push_int64(DO_NOT_WARN((INT64)(args * THIS->height * THIS->yspacing_scale)));
+  push_int64((INT64)(args * THIS->height * THIS->yspacing_scale));
   f_aggregate(2);
 }
 

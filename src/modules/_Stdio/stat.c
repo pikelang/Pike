@@ -241,11 +241,11 @@ static int stat_compat_set (INT_TYPE pos, INT64 val)
 {
   if (pos < 0) pos += 7;
   switch (pos) {
-    case 0: DO_NOT_WARN(THIS_STAT->s.st_mode = (int) val); break;
+    case 0: THIS_STAT->s.st_mode = (int) val; break;
     case 1:
       if (val >= 0) {
 	THIS_STAT->s.st_mode = (THIS_STAT->s.st_mode & ~S_IFMT) | S_IFREG;
-	THIS_STAT->s.st_size = DO_NOT_WARN ((off_t) val);
+        THIS_STAT->s.st_size = (off_t) val;
       }
       else {
 	THIS_STAT->s.st_size = 0;
@@ -257,11 +257,11 @@ static int stat_compat_set (INT_TYPE pos, INT64 val)
 	  THIS_STAT->s.st_mode = THIS_STAT->s.st_mode & ~S_IFMT;
       }
       break;
-    case 2: THIS_STAT->s.st_atime = DO_NOT_WARN ((time_t) val); break;
-    case 3: THIS_STAT->s.st_mtime = DO_NOT_WARN ((time_t) val); break;
-    case 4: THIS_STAT->s.st_ctime = DO_NOT_WARN ((time_t) val); break;
-    case 5: DO_NOT_WARN(THIS_STAT->s.st_uid = (int) val); break;
-    case 6: DO_NOT_WARN(THIS_STAT->s.st_gid = (int) val); break;
+    case 2: THIS_STAT->s.st_atime = (time_t) val; break;
+    case 3: THIS_STAT->s.st_mtime = (time_t) val; break;
+    case 4: THIS_STAT->s.st_ctime = (time_t) val; break;
+    case 5: THIS_STAT->s.st_uid = (int) val; break;
+    case 6: THIS_STAT->s.st_gid = (int) val; break;
     default: return 0;
   }
   return 1;
@@ -705,26 +705,26 @@ static void _stat_index_set (INT_TYPE code, struct svalue *val, int got_int_val,
         BAD_ARG_2("integer");
 
       switch (code) {
-        case STAT_DEV: DO_NOT_WARN(THIS_STAT->s.st_dev = (int) int_val); break;
-        case STAT_INO: DO_NOT_WARN(THIS_STAT->s.st_ino = (int) int_val); break;
-        case STAT_MODE: DO_NOT_WARN(THIS_STAT->s.st_mode = (int) int_val); break;
-        case STAT_NLINK: DO_NOT_WARN(THIS_STAT->s.st_nlink = (int) int_val); break;
-        case STAT_UID: DO_NOT_WARN(THIS_STAT->s.st_uid = (int) int_val); break;
-        case STAT_GID: DO_NOT_WARN(THIS_STAT->s.st_gid = (int) int_val); break;
-        case STAT_RDEV: DO_NOT_WARN(THIS_STAT->s.st_rdev = (int) int_val); break;
-        case STAT_SIZE: THIS_STAT->s.st_size = DO_NOT_WARN ((off_t) int_val); break;
+        case STAT_DEV: THIS_STAT->s.st_dev = (int) int_val; break;
+        case STAT_INO: THIS_STAT->s.st_ino = (int) int_val; break;
+        case STAT_MODE: THIS_STAT->s.st_mode = (int) int_val; break;
+        case STAT_NLINK: THIS_STAT->s.st_nlink = (int) int_val; break;
+        case STAT_UID: THIS_STAT->s.st_uid = (int) int_val; break;
+        case STAT_GID: THIS_STAT->s.st_gid = (int) int_val; break;
+        case STAT_RDEV: THIS_STAT->s.st_rdev = (int) int_val; break;
+        case STAT_SIZE: THIS_STAT->s.st_size = (off_t) int_val; break;
 #ifdef HAVE_STRUCT_STAT_BLOCKS
-        case STAT_BLKSIZE: DO_NOT_WARN(THIS_STAT->s.st_blksize = int_val); break;
-        case STAT_BLOCKS: DO_NOT_WARN(THIS_STAT->s.st_blocks = int_val); break;
+        case STAT_BLKSIZE: THIS_STAT->s.st_blksize = int_val; break;
+        case STAT_BLOCKS: THIS_STAT->s.st_blocks = int_val; break;
 #endif
-        case STAT_ATIME: THIS_STAT->s.st_atime = DO_NOT_WARN ((time_t) int_val); break;
-        case STAT_MTIME: THIS_STAT->s.st_mtime = DO_NOT_WARN ((time_t) int_val); break;
-        case STAT_CTIME: THIS_STAT->s.st_ctime = DO_NOT_WARN ((time_t) int_val); break;
+        case STAT_ATIME: THIS_STAT->s.st_atime = (time_t) int_val; break;
+        case STAT_MTIME: THIS_STAT->s.st_mtime = (time_t) int_val; break;
+        case STAT_CTIME: THIS_STAT->s.st_ctime = (time_t) int_val; break;
 
 #ifdef HAVE_STRUCT_STAT_NSEC
-        case STAT_ATIME_NSEC: THIS_STAT->s.st_atim.tv_nsec = DO_NOT_WARN ((time_t) int_val); break;
-        case STAT_MTIME_NSEC: THIS_STAT->s.st_mtim.tv_nsec = DO_NOT_WARN ((time_t) int_val); break;
-        case STAT_CTIME_NSEC: THIS_STAT->s.st_ctim.tv_nsec = DO_NOT_WARN ((time_t) int_val); break;
+        case STAT_ATIME_NSEC: THIS_STAT->s.st_atim.tv_nsec = (time_t) int_val; break;
+        case STAT_MTIME_NSEC: THIS_STAT->s.st_mtim.tv_nsec = (time_t) int_val; break;
+        case STAT_CTIME_NSEC: THIS_STAT->s.st_ctim.tv_nsec = (time_t) int_val; break;
 #endif
       }
   }

@@ -390,11 +390,11 @@ PIKEFUN void create(string|void server, string|void database,
     if (lock_enabled) mt_lock (&connect_mutex);
 #endif
     code = SQLConnect(hdbc, (unsigned char *)database->str,
-		      DO_NOT_WARN((SQLSMALLINT)database->len),
+		      (SQLSMALLINT)database->len,
 		      (unsigned char *)user->str,
-		      DO_NOT_WARN((SQLSMALLINT)user->len),
+		      (SQLSMALLINT)user->len,
 		      (unsigned char *)pwd->str,
-		      DO_NOT_WARN((SQLSMALLINT)pwd->len));
+		      (SQLSMALLINT)pwd->len);
 #ifdef PIKE_THREADS
     if (lock_enabled) mt_unlock (&connect_mutex);
   }
@@ -438,9 +438,9 @@ PIKEFUN void create_dsn(string connectstring)
     SQLDriverConnect(PIKE_ODBC->hdbc,
       NULL,
       (unsigned char *)connectstring->str,
-      DO_NOT_WARN((SQLSMALLINT)connectstring->len),
+      (SQLSMALLINT)connectstring->len,
       outconnectionstring,
-      DO_NOT_WARN((SQLSMALLINT)1024),
+      (SQLSMALLINT)1024,
       &stringlength2,
       SQL_DRIVER_NOPROMPT),
 		   NULL, NULL);

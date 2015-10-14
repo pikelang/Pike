@@ -92,7 +92,7 @@ static struct
 #ifdef __ECL
 static inline long TO_LONG(ptrdiff_t x)
 {
-  return DO_NOT_WARN((long)x);
+  return (long)x;
 }
 #else /* !__ECL */
 #define TO_LONG(x)	((long)(x))

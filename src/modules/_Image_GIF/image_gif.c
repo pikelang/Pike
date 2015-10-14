@@ -258,7 +258,7 @@ void image_gif_header_block(INT32 args)
 
    if (numcolors+alphaentry>256)
       Pike_error("Image.GIF.header_block(): too many colors (%ld%s)\n",
-	    DO_NOT_WARN((long)(numcolors + alphaentry)),
+            (long)(numcolors + alphaentry),
 	    alphaentry?" including alpha channel color":"");
 
    while ((1<<bpp)<numcolors+alphaentry) bpp++;
@@ -563,7 +563,7 @@ CHRONO("gif _render_block push of packed data begin");
       else
       {
 	 ps=begin_shared_string(lzw.outpos-i+2);
-	 ps->str[0] = DO_NOT_WARN((char)(lzw.outpos-i));
+         ps->str[0] = (char)(lzw.outpos-i);
 	 memcpy(ps->str+1,lzw.out+i,lzw.outpos-i);
 	 ps->str[lzw.outpos-i+1]=0;
 	 push_string(end_shared_string(ps));
@@ -758,7 +758,7 @@ CHRONO("gif render_block begin");
    else if (numcolors>256)
       Pike_error("Image.GIF.render_block(): too many colors in given colortable: "
 	    "%ld (256 is max)\n",
-	    DO_NOT_WARN((long)numcolors));
+            (long)numcolors);
 
    if (args>=5)
    {
@@ -894,7 +894,7 @@ CHRONO("render_block index end");
       while (n2--)
       {
 	 if (!(a->r||a->g||a->b))
-	    *d = DO_NOT_WARN((unsigned char)alphaidx);
+            *d = (unsigned char)alphaidx;
 	 d++;
 	 a++;
       }
@@ -1326,7 +1326,7 @@ static void _decode_get_extension(unsigned char **s,
    if (!n)
       push_empty_string();
    else
-      f_add(DO_NOT_WARN(n));
+      f_add(n);
 
    f_aggregate(3);
 }
@@ -2410,7 +2410,7 @@ void image_gif__encode_extension(INT32 args)
       else
       {
 	 d=begin_shared_string(s->len-i+2);
-	 d->str[0] = DO_NOT_WARN(s->len - i);
+         d->str[0] = s->len - i;
 	 memcpy(d->str+1, s->str+i, d->len-i);
 	 d->str[d->len-i+1]=0;
 	 push_string(end_shared_string(d));
@@ -2586,7 +2586,7 @@ static void image_gif_lzw_decode(INT32 args)
    for (n=0; n<clearcode; n++) {
       c[n].prev=0xffff;
       c[n].len=1;
-      c[n].c = DO_NOT_WARN((unsigned short)n);
+      c[n].c = (unsigned short)n;
    }
    c[clearcode].len=0;
    c[endcode].len=0;
@@ -2630,7 +2630,7 @@ static void image_gif_lzw_decode(INT32 args)
 
       if (n==m)
       {
-	 c[n].prev = DO_NOT_WARN((unsigned short)last);
+         c[n].prev = (unsigned short)last;
 	 c[n].c=last_last_seq->c;
 	 c[n].len=c[last].len+1;
       }
@@ -2704,7 +2704,7 @@ static void image_gif_lzw_decode(INT32 args)
 
 	 if (last!=clearcode)
 	 {
-	    c[m].prev = DO_NOT_WARN((unsigned short)last);
+            c[m].prev = (unsigned short)last;
 	    c[m].len=c[last].len+1;
 	    c[m].c=lc;
 	 }

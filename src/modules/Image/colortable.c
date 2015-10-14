@@ -346,7 +346,7 @@ static ptrdiff_t reduce_recurse(struct nct_flat_entry *src,
  	    if (src_size > 10240) {
 	       mmul = 10240;
 	    } else {
-	       mmul = DO_NOT_WARN((nct_weight_t)src_size);
+               mmul = (nct_weight_t)src_size;
 	    }
 
 	    for (i=0; i<src_size; i++)
@@ -391,11 +391,11 @@ static ptrdiff_t reduce_recurse(struct nct_flat_entry *src,
 	    }
 
 	    dest->color.r =
-	      DO_NOT_WARN((COLORTYPE)(max.r*position.r+min.r*(1-position.r)));
+              (COLORTYPE)(max.r*position.r+min.r*(1-position.r));
 	    dest->color.g =
-	      DO_NOT_WARN((COLORTYPE)(max.g*position.g+min.g*(1-position.g)));
+              (COLORTYPE)(max.g*position.g+min.g*(1-position.g));
 	    dest->color.b =
-	      DO_NOT_WARN((COLORTYPE)(max.b*position.b+min.b*(1-position.b)));
+              (COLORTYPE)(max.b*position.b+min.b*(1-position.b));
 	    dest->weight=tot;
 	    dest->no=-1;
 #ifdef COLORTABLE_REDUCE_DEBUG
@@ -1399,7 +1399,7 @@ rerun_rehash_add_1:
       }
 
       mark->no=en->no;
-      mark->pixels += DO_NOT_WARN((unsigned long)en->weight);
+      mark->pixels += (unsigned long)en->weight;
 
       i--;
       en++;
@@ -1454,7 +1454,7 @@ rerun_rehash_add_2:
       else
       {
 	 if (!mark->pixels) mark->no=no++;
-	 mark->pixels += DO_NOT_WARN((unsigned long)en->weight);
+         mark->pixels += (unsigned long)en->weight;
       }
 
       i--;
@@ -1587,7 +1587,7 @@ rerun_rehash_add_1:
       }
 
       mark->no=en->no;
-      mark->pixels += DO_NOT_WARN((unsigned long)en->weight);
+      mark->pixels += (unsigned long)en->weight;
 
       i--;
       en++;
@@ -1709,12 +1709,12 @@ static void dither_floyd_steinberg_got(struct nct_dither *dith,
    rgbd_group *er=dith->u.floyd_steinberg.errors;
    rgbd_group err;
 
-   err.r = DO_NOT_WARN((float)((DOUBLE_TO_INT(d.r)-DOUBLE_TO_INT(s.r)) +
-			       er[rowpos].r+0.5));
-   err.g = DO_NOT_WARN((float)((DOUBLE_TO_INT(d.g)-DOUBLE_TO_INT(s.g)) +
-			       er[rowpos].g+0.5));
-   err.b = DO_NOT_WARN((float)((DOUBLE_TO_INT(d.b)-DOUBLE_TO_INT(s.b)) +
-			       er[rowpos].b+0.5));
+   err.r = (float)((DOUBLE_TO_INT(d.r)-DOUBLE_TO_INT(s.r)) +
+                   er[rowpos].r+0.5);
+   err.g = (float)((DOUBLE_TO_INT(d.g)-DOUBLE_TO_INT(s.g)) +
+                   er[rowpos].g+0.5);
+   err.b = (float)((DOUBLE_TO_INT(d.b)-DOUBLE_TO_INT(s.b)) +
+                   er[rowpos].b+0.5);
 
    ner[rowpos].r+=err.r*dith->u.floyd_steinberg.down;
    ner[rowpos].g+=err.g*dith->u.floyd_steinberg.down;
@@ -1814,9 +1814,9 @@ static void dither_floyd_steinberg_firstline(struct nct_dither *dith,
    er=dith->u.floyd_steinberg.errors;
    for (i=0; i<dith->rowlen; i++)
    {
-      er[i].r = DO_NOT_WARN((float)((my_rand()&65535)*(1.0/65536)-0.49999));
-      er[i].g = DO_NOT_WARN((float)((my_rand()&65535)*(1.0/65536)-0.49999));
-      er[i].b = DO_NOT_WARN((float)((my_rand()&65535)*(1.0/65536)-0.49999));
+      er[i].r = (float)((my_rand()&65535)*(1.0/65536)-0.49999);
+      er[i].g = (float)((my_rand()&65535)*(1.0/65536)-0.49999);
+      er[i].b = (float)((my_rand()&65535)*(1.0/65536)-0.49999);
    }
 
    er=dith->u.floyd_steinberg.nexterrors;
@@ -3135,7 +3135,7 @@ static INLINE void _build_cubicle(struct neo_colortable *nct,
 	     (int)fe->color.g>=gmin && (int)fe->color.g<=gmax &&
 	     (int)fe->color.b>=bmin && (int)fe->color.b<=bmax)
 	 {
-	    *pp = DO_NOT_WARN((int)fe->no);
+            *pp = (int)fe->no;
 	    pp++; i++;
 	 }
 
@@ -3306,15 +3306,15 @@ void build_rigid(struct neo_colortable *nct)
 #ifdef __ECL
 static inline unsigned char TO_UCHAR(ptrdiff_t val)
 {
-  return DO_NOT_WARN((unsigned char)val);
+  return (unsigned char)val;
 }
 static inline unsigned short TO_USHORT(ptrdiff_t val)
 {
-  return DO_NOT_WARN((unsigned short)val);
+  return (unsigned short)val;
 }
 static inline unsigned INT32 TO_UINT32(ptrdiff_t val)
 {
-  return DO_NOT_WARN((unsigned INT32)val);
+  return (unsigned INT32)val;
 }
 #else /* !__ECL */
 #define TO_UCHAR(x)	((unsigned char)x)
@@ -3787,10 +3787,10 @@ void image_colortable_floyd_steinberg(INT32 args)
    if (fabs(sum)<1e-10) sum=1.0;
    sum/=factor;
 
-   THIS->du.floyd_steinberg.forward = DO_NOT_WARN((float)(forward/sum));
-   THIS->du.floyd_steinberg.downforward = DO_NOT_WARN((float)(downforward/sum));
-   THIS->du.floyd_steinberg.down = DO_NOT_WARN((float)(down/sum));
-   THIS->du.floyd_steinberg.downback = DO_NOT_WARN((float)(downback/sum));
+   THIS->du.floyd_steinberg.forward = (float)(forward/sum);
+   THIS->du.floyd_steinberg.downforward = (float)(downforward/sum);
+   THIS->du.floyd_steinberg.down = (float)(down/sum);
+   THIS->du.floyd_steinberg.downback = (float)(downback/sum);
 
    THIS->dither_type = NCTD_FLOYD_STEINBERG;
 
@@ -3801,10 +3801,10 @@ void image_colortable_floyd_steinberg(INT32 args)
 /* called by GIF encoder */
 void image_colortable_internal_floyd_steinberg(struct neo_colortable *nct)
 {
-   nct->du.floyd_steinberg.forward = DO_NOT_WARN((float)(0.95*(7.0/16)));
-   nct->du.floyd_steinberg.downforward = DO_NOT_WARN((float)(0.95*(1.0/16)));
-   nct->du.floyd_steinberg.down = DO_NOT_WARN((float)(0.95*(5.0/16)));
-   nct->du.floyd_steinberg.downback = DO_NOT_WARN((float)(0.95*(3.0/16)));
+   nct->du.floyd_steinberg.forward = (float)(0.95*(7.0/16));
+   nct->du.floyd_steinberg.downforward = (float)(0.95*(1.0/16));
+   nct->du.floyd_steinberg.down = (float)(0.95*(5.0/16));
+   nct->du.floyd_steinberg.downback = (float)(0.95*(3.0/16));
 
    nct->dither_type=NCTD_FLOYD_STEINBERG;
 }
@@ -4057,7 +4057,7 @@ static int *ordered_make_diff(int *errors,int sz,int err)
    d=dest=calloc(sizeof(int), sz);
    if (!d) return d;
 
-   if (sz!=1) q = DO_NOT_WARN(1.0/(sz-1)); else q=1.0;
+   if (sz!=1) q = 1.0/(sz-1); else q=1.0;
 
    while (n--)
       *(d++) = DOUBLE_TO_INT((*(errors++)*q-0.5)*2*err);

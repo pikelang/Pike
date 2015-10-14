@@ -90,10 +90,10 @@ static INLINE void push_ubo_32bit(size_t x)
 {
    char buf[4];
 
-   buf[0] = DO_NOT_WARN((char)(x));
-   buf[1] = DO_NOT_WARN((char)(x>>8));
-   buf[2] = DO_NOT_WARN((char)(x>>16));
-   buf[3] = DO_NOT_WARN((char)(x>>24));
+   buf[0] = (char)(x);
+   buf[1] = (char)(x>>8);
+   buf[2] = (char)(x>>16);
+   buf[3] = (char)(x>>24);
    push_string(make_shared_binary_string(buf,4));
 }
 
@@ -265,7 +265,7 @@ void img_bmp_encode(INT32 args)
 			  "colortable must have at most %d colors "
 			  "(has %ld colors)\n",
 			  1<<bpp,
-			  DO_NOT_WARN((long)image_colortable_size(nct)));
+                          (long)image_colortable_size(nct));
 	 /* FALL_THROUGH */
       case 24:
 	 break;
@@ -654,7 +654,7 @@ void i_img_bmp__decode(INT32 args,int header_only)
 
 	 if (len<54)
 	    Pike_error("Image.BMP.decode: unexpected EOF in header (at byte %ld)\n",
-		  DO_NOT_WARN((long)len));
+                  (long)len);
 
 	 push_static_text("xsize");
 	 push_int(xsize=int_from_16bit(s+14+4));

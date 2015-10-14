@@ -806,7 +806,7 @@ static void ttf_please_translate_8bit(TT_Face face,
    TT_CharMap charMap;
 
    ttf_get_nice_charmap(face,&charMap,where);
-   (*dlen) = DO_NOT_WARN(s->len);
+   (*dlen) = s->len;
    ttf_translate_8bit(charMap,(unsigned char*)(s->str),dest,*dlen,base);
 }
 
@@ -819,7 +819,7 @@ static void ttf_please_translate_16bit(TT_Face face,
    TT_CharMap charMap;
 
    ttf_get_nice_charmap(face,&charMap,where);
-   (*dlen) = DO_NOT_WARN(s->len);
+   (*dlen) = s->len;
    ttf_translate_16bit(charMap,(unsigned short*)(s->str),dest,*dlen,base);
 }
 
@@ -1034,13 +1034,13 @@ static void image_ttf_faceinstance_write(INT32 args)
        case 0:
 	 ttf_translate_8bit(charMap,(unsigned char*)sp[a-args].u.string->str,
 			    sstr+a,
-			    DO_NOT_WARN(slen[a]=sp[a-args].u.string->len),
+                            slen[a]=sp[a-args].u.string->len,
 			    base);
 	 break;
        case 1:
 	 ttf_translate_16bit(charMap,(unsigned short*)sp[a-args].u.string->str,
 			     sstr+a,
-			     DO_NOT_WARN(slen[a]=sp[a-args].u.string->len),
+                             slen[a]=sp[a-args].u.string->len,
 			     base);
 	 break;
        case 2:

@@ -2351,7 +2351,7 @@ static int really_low_parse_dtd(void)
 		    if(sp<save)
 		      Pike_fatal("Stack underflow.\n");
 #endif
-		    f_aggregate(DO_NOT_WARN(sp - save));
+                    f_aggregate(sp - save);
 		    SKIPSPACE();
 		    save=sp;
 		    switch(PEEK(0))
@@ -2469,7 +2469,7 @@ static int really_low_parse_dtd(void)
 		    if(sp<save)
 		      Pike_fatal("Stack underflow.\n");
 #endif
-		    f_aggregate(DO_NOT_WARN(sp - save));
+                    f_aggregate(sp - save);
 		    f_aggregate(2);
 		    assign_lvalue(sp-3, sp-1);
 		    pop_n_elems(2);
@@ -2668,7 +2668,7 @@ static int low_parse_dtd(void)
 #ifdef VERBOSE_XMLDEBUG
   fprintf(stderr,"Exiting low_parse_dtd %p %p\n",sp,save_sp);
 #endif
-  f_aggregate(DO_NOT_WARN(sp - save_sp));
+  f_aggregate(sp - save_sp);
 #ifdef VERBOSE_XMLDEBUG
   fprintf(stderr,"Exiting low_parse_dtd done\n");
 #endif
@@ -3095,7 +3095,7 @@ static int low_parse_xml(struct pike_string *end)
   if(sp<save_sp)
     Pike_fatal("Stack underflow.\n");
 #endif
-  f_aggregate(DO_NOT_WARN(sp - save_sp));
+  f_aggregate(sp - save_sp);
   /* There is now one value on the stack */
   return !!end;
 }

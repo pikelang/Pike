@@ -355,9 +355,9 @@ static INLINE rgb_group _pixel_apply_matrix(struct image *img,
       for (yp=y-by,j=0; j<height; j++,yp++)
 	 if (xp>=0 && xp<img->xsize && yp>=0 && yp<img->ysize)
 	 {
-	    r += DO_NOT_WARN((int)(matrix[i+j*width].r*img->img[xp+yp*img->xsize].r));
-	    g += DO_NOT_WARN((int)(matrix[i+j*width].g*img->img[xp+yp*img->xsize].g));
-	    b += DO_NOT_WARN((int)(matrix[i+j*width].b*img->img[xp+yp*img->xsize].b));
+            r += (int)(matrix[i+j*width].r*img->img[xp+yp*img->xsize].r);
+            g += (int)(matrix[i+j*width].g*img->img[xp+yp*img->xsize].g);
+            b += (int)(matrix[i+j*width].b*img->img[xp+yp*img->xsize].b);
 #ifdef MATRIX_DEBUG
 	    fprintf(stderr,"%d,%d %d,%d->%d,%d,%d\n",
 		    i,j,xp,yp,
@@ -365,9 +365,9 @@ static INLINE rgb_group _pixel_apply_matrix(struct image *img,
 		    img->img[x+i+(y+j)*img->xsize].g,
 		    img->img[x+i+(y+j)*img->xsize].b);
 #endif
-	    sumr += DO_NOT_WARN((int)matrix[i+j*width].r);
-	    sumg += DO_NOT_WARN((int)matrix[i+j*width].g);
-	    sumb += DO_NOT_WARN((int)matrix[i+j*width].b);
+            sumr += (int)matrix[i+j*width].r;
+            sumg += (int)matrix[i+j*width].g;
+            sumb += (int)matrix[i+j*width].b;
 	 }
    if (sumr) res.r=testrange(default_rgb.r+r/(sumr*div));
    else res.r=testrange(r*qdiv+default_rgb.r);
@@ -609,8 +609,8 @@ void img_read_get_channel(int arg,char *name,INT32 args,
 	    Pike_error("create_method: argument %d (%s channel): "
 		  "string is %ld characters, expected %ld\n",
 		  arg+1, name,
-		  DO_NOT_WARN((long)sp[arg-args-1].u.string->len),
-		  DO_NOT_WARN((long)(THIS->xsize*THIS->ysize)));
+                  (long)sp[arg-args-1].u.string->len,
+                  (long)(THIS->xsize*THIS->ysize));
 	 *s=(unsigned char *)sp[arg-args-1].u.string->str;
 	 *m=1;
 	 break;
@@ -1736,10 +1736,10 @@ static INLINE void
    *	This code MUST be MT-SAFE! (but also fast /per)
    */
 /*   HIDE_GLOBAL_VARIABLES(); */
-   sum->r = DO_NOT_WARN((float)(sum->r + rgba.r*factor));
-   sum->g = DO_NOT_WARN((float)(sum->g + rgba.g*factor));
-   sum->b = DO_NOT_WARN((float)(sum->b + rgba.b*factor));
-   sum->alpha = DO_NOT_WARN((float)(sum->alpha + rgba.alpha*factor));
+   sum->r = (float)(sum->r + rgba.r*factor);
+   sum->g = (float)(sum->g + rgba.g*factor);
+   sum->b = (float)(sum->b + rgba.b*factor);
+   sum->alpha = (float)(sum->alpha + rgba.alpha*factor);
 /*    REVEAL_GLOBAL_VARIABLES(); */
 }
 
@@ -1752,9 +1752,9 @@ static INLINE void
    *	This code MUST be MT-SAFE! (but also fast /per)
    */
 /*   HIDE_GLOBAL_VARIABLES(); */
-   sum->r = DO_NOT_WARN((float)(sum->r+rgba.r*factor));
-   sum->g = DO_NOT_WARN((float)(sum->g+rgba.g*factor));
-   sum->b = DO_NOT_WARN((float)(sum->b+rgba.b*factor));
+   sum->r = (float)(sum->r+rgba.r*factor);
+   sum->g = (float)(sum->g+rgba.g*factor);
+   sum->b = (float)(sum->b+rgba.b*factor);
 /*    REVEAL_GLOBAL_VARIABLES(); */
 }
 
@@ -1808,9 +1808,9 @@ image_tuned_box_leftright(const rgba_group left, const rgba_group right,
   if(!xsize || !height) return;
   for(x=0; x<maxlength; x++)
   {
-    (dest+x)->r = DO_NOT_WARN((COLORTYPE)((((long)left.r)*(length-x)+((long)right.r)*(x))/length));
-    (dest+x)->g = DO_NOT_WARN((COLORTYPE)((((long)left.g)*(length-x)+((long)right.g)*(x))/length));
-    (dest+x)->b = DO_NOT_WARN((COLORTYPE)((((long)left.b)*(length-x)+((long)right.b)*(x))/length));
+    (dest+x)->r = (COLORTYPE)((((long)left.r)*(length-x)+((long)right.r)*(x))/length);
+    (dest+x)->g = (COLORTYPE)((((long)left.g)*(length-x)+((long)right.g)*(x))/length);
+    (dest+x)->b = (COLORTYPE)((((long)left.b)*(length-x)+((long)right.b)*(x))/length);
   }
   while(--y)  memcpy((dest+=xsize), from, maxlength*sizeof(rgb_group));
 }
@@ -1834,9 +1834,9 @@ image_tuned_box_topbottom(const rgba_group left, const rgba_group right,
   {
     for(y=0; y<maxheight; y++)
     {
-      color.r = DO_NOT_WARN((COLORTYPE)((((long)left.r)*(height-y)+((long)right.r)*(y))/height));
-      color.g = DO_NOT_WARN((COLORTYPE)((((long)left.g)*(height-y)+((long)right.g)*(y))/height));
-      color.b = DO_NOT_WARN((COLORTYPE)((((long)left.b)*(height-y)+((long)right.b)*(y))/height));
+      color.r = (COLORTYPE)((((long)left.r)*(height-y)+((long)right.r)*(y))/height);
+      color.g = (COLORTYPE)((((long)left.g)*(height-y)+((long)right.g)*(y))/height);
+      color.b = (COLORTYPE)((((long)left.b)*(height-y)+((long)right.b)*(y))/height);
       if(y && color_equal(old, color))
       {
 	memcpy(dest,dest-xsize,length*sizeof(rgb_group));
@@ -1854,9 +1854,9 @@ image_tuned_box_topbottom(const rgba_group left, const rgba_group right,
   } else {
     for(y=0; y<maxheight; y++)
     {
-      color.r = DO_NOT_WARN((COLORTYPE)((((long)left.r)*(height-y)+((long)right.r)*(y))/height));
-      color.g = DO_NOT_WARN((COLORTYPE)((((long)left.g)*(height-y)+((long)right.g)*(y))/height));
-      color.b = DO_NOT_WARN((COLORTYPE)((((long)left.b)*(height-y)+((long)right.b)*(y))/height));
+      color.r = (COLORTYPE)((((long)left.r)*(height-y)+((long)right.r)*(y))/height);
+      color.g = (COLORTYPE)((((long)left.g)*(height-y)+((long)right.g)*(y))/height);
+      color.b = (COLORTYPE)((((long)left.b)*(height-y)+((long)right.b)*(y))/height);
       if(y && color_equal(old, color))
       {
 	memcpy(dest,dest-xsize,length*sizeof(rgb_group));
@@ -1976,11 +1976,11 @@ static void image_tuned_box(INT32 args)
 					     (tfy=tune_factor(yw-y,dyw))*tfx1);
 		add_to_rgbda_sum_with_factor(&sum, bottomright, tfy*tfx2);
 
-		sum.alpha *= DO_NOT_WARN((float)(1.0/255.0));
+                sum.alpha *= (float)(1.0/255.0);
 
-		rgb.r = DO_NOT_WARN((float)(sum.r*(1.0-sum.alpha)+img->r*sum.alpha));
-		rgb.g = DO_NOT_WARN((float)(sum.g*(1.0-sum.alpha)+img->g*sum.alpha));
-		rgb.b = DO_NOT_WARN((float)(sum.b*(1.0-sum.alpha)+img->b*sum.alpha));
+                rgb.r = (float)(sum.r*(1.0-sum.alpha)+img->r*sum.alpha);
+                rgb.g = (float)(sum.g*(1.0-sum.alpha)+img->g*sum.alpha);
+                rgb.b = (float)(sum.b*(1.0-sum.alpha)+img->b*sum.alpha);
 
 		img->r = testrange(rgb.r+0.5);
 		img->g = testrange(rgb.g+0.5);
@@ -2423,9 +2423,9 @@ void image_color(INT32 args)
 #endif
    while (x--)
    {
-      d->r = DO_NOT_WARN((COLORTYPE)( (((long)rgb.r*s->r)/255) ));
-      d->g = DO_NOT_WARN((COLORTYPE)( (((long)rgb.g*s->g)/255) ));
-      d->b = DO_NOT_WARN((COLORTYPE)( (((long)rgb.b*s->b)/255) ));
+      d->r = (COLORTYPE)( (((long)rgb.r*s->r)/255) );
+      d->g = (COLORTYPE)( (((long)rgb.g*s->g)/255) );
+      d->b = (COLORTYPE)( (((long)rgb.b*s->b)/255) );
       d++;
       s++;
    }
@@ -3952,9 +3952,9 @@ void image_modify_by_intensity(INT32 args)
       r=p2-p1;
       for (y=0; y<r; y++)
       {
-	 list[y+p1].r = DO_NOT_WARN((COLORTYPE)((((long)s[x].r)*(r-y)+((long)s[x+1].r)*(y))/r));
-	 list[y+p1].g = DO_NOT_WARN((COLORTYPE)((((long)s[x].g)*(r-y)+((long)s[x+1].g)*(y))/r));
-	 list[y+p1].b = DO_NOT_WARN((COLORTYPE)((((long)s[x].b)*(r-y)+((long)s[x+1].b)*(y))/r));
+         list[y+p1].r = (COLORTYPE)((((long)s[x].r)*(r-y)+((long)s[x+1].r)*(y))/r);
+         list[y+p1].g = (COLORTYPE)((((long)s[x].g)*(r-y)+((long)s[x+1].g)*(y))/r);
+         list[y+p1].b = (COLORTYPE)((((long)s[x].b)*(r-y)+((long)s[x+1].b)*(y))/r);
       }
    }
    list[255]=s[x];
@@ -4573,8 +4573,8 @@ static void image__sprintf( INT32 args )
      push_static_text( "Image.Image( %d x %d /* %.1fKb */)" );
      push_int( THIS->xsize );
      push_int( THIS->ysize );
-     push_float( DO_NOT_WARN((FLOAT_TYPE)((THIS->xsize * THIS->ysize) /
-					  1024.0 * 3.0)) );
+     push_float( (FLOAT_TYPE)((THIS->xsize * THIS->ysize) /
+                              1024.0 * 3.0) );
      f_sprintf( 4 );
      return;
    default:

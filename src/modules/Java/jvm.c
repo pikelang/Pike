@@ -665,7 +665,7 @@ static void make_jargs(jvalue *jargs, INT32 args, char *dorelease, char *sig,
 	jargs->j = sv->u.integer;
 	break;
       case 'F':
-	jargs->f = DO_NOT_WARN((float)sv->u.integer);
+        jargs->f = (float)sv->u.integer;
 	break;
       case 'D':
 	jargs->d = sv->u.integer;
@@ -680,16 +680,16 @@ static void make_jargs(jvalue *jargs, INT32 args, char *dorelease, char *sig,
 	jargs->z = sv->u.float_number!=0;
 	break;
       case 'B':
-	jargs->b = DO_NOT_WARN((char)sv->u.float_number);
+        jargs->b = (char)sv->u.float_number;
 	break;
       case 'C':
-	jargs->c = DO_NOT_WARN((unsigned short)sv->u.float_number);
+        jargs->c = (unsigned short)sv->u.float_number;
 	break;
       case 'S':
-	jargs->s = DO_NOT_WARN((short)sv->u.float_number);
+        jargs->s = (short)sv->u.float_number;
 	break;
       case 'I':
-	jargs->i = DO_NOT_WARN((long)sv->u.float_number);
+        jargs->i = (long)sv->u.float_number;
 	break;
       case 'J':
 	jargs->j = sv->u.float_number;

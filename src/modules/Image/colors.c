@@ -507,9 +507,9 @@ static void image_color_hsvf(INT32 args)
    h *= 60; /* now in degrees. */
    if(h<0) h+=360;
 
-   push_float(DO_NOT_WARN((FLOAT_TYPE)h));
-   push_float(DO_NOT_WARN((FLOAT_TYPE)s));
-   push_float(DO_NOT_WARN((FLOAT_TYPE)v));
+   push_float((FLOAT_TYPE)h);
+   push_float((FLOAT_TYPE)s);
+   push_float((FLOAT_TYPE)v);
    f_aggregate(3);
 }
 
@@ -544,10 +544,10 @@ static void image_color_cmyk(INT32 args)
    m=1.0-g-k;
    y=1.0-b-k;
 
-   push_float(DO_NOT_WARN((FLOAT_TYPE)(c*100.0)));
-   push_float(DO_NOT_WARN((FLOAT_TYPE)(m*100.0)));
-   push_float(DO_NOT_WARN((FLOAT_TYPE)(y*100.0)));
-   push_float(DO_NOT_WARN((FLOAT_TYPE)(k*100.0)));
+   push_float((FLOAT_TYPE)(c*100.0));
+   push_float((FLOAT_TYPE)(m*100.0));
+   push_float((FLOAT_TYPE)(y*100.0));
+   push_float((FLOAT_TYPE)(k*100.0));
    f_aggregate(4);
 }
 
@@ -1075,10 +1075,9 @@ static void image_color_light(INT32 args)
    sp--;
    dmalloc_touch_svalue(sp);
    push_array_items(sp->u.array); /* frees */
-   sp[-1].u.float_number += DO_NOT_WARN((FLOAT_TYPE)0.2);
+   sp[-1].u.float_number += (FLOAT_TYPE)0.2;
    if (((double)sp[-1].u.float_number) >= 1.0)
-      sp[-2].u.float_number -= DO_NOT_WARN((FLOAT_TYPE)(sp[-1].u.float_number -
-							1.0));
+      sp[-2].u.float_number -= (FLOAT_TYPE)(sp[-1].u.float_number - 1.0);
 
    image_make_hsv_color(3);
 }
@@ -1131,12 +1130,12 @@ static void image_color_dull(INT32 args)
 
    if (sp[-2].u.float_number==0.0)
    {
-      sp[-1].u.float_number -= DO_NOT_WARN((FLOAT_TYPE)0.2);
+      sp[-1].u.float_number -= (FLOAT_TYPE)0.2;
    }
    else
    {
-      sp[-2].u.float_number -= DO_NOT_WARN((FLOAT_TYPE)0.2);
-      sp[-1].u.float_number -= DO_NOT_WARN((FLOAT_TYPE)0.2);
+      sp[-2].u.float_number -= (FLOAT_TYPE)0.2;
+      sp[-1].u.float_number -= (FLOAT_TYPE)0.2;
    }
    image_make_hsv_color(3);
 }
@@ -1368,7 +1367,7 @@ static void image_get_color(INT32 args)
 	 if (sp[-1].u.string->len>(ptrdiff_t)strlen(callables[n]) &&
 	     memcmp(sp[-1].u.string->str,callables[n],strlen(callables[n]))==0)
 	 {
-	    push_int(DO_NOT_WARN((INT32)strlen(callables[n])));
+            push_int((INT32)strlen(callables[n]));
 	    push_int(1000000);
 	    f_index(3);
 	    image_get_color(1);
@@ -1392,7 +1391,7 @@ static void image_get_color(INT32 args)
 	    f = sp[-1].u.array->item[0].u.float_number;
 	    pop_stack();
 	    pop_stack();
-	    push_int( DO_NOT_WARN((int)(255*f/100)) );
+            push_int( (int)(255*f/100) );
                  /* grey100 is white, grey0 is black */
 	    stack_dup();
 	    stack_dup();

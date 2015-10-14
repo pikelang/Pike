@@ -480,7 +480,7 @@ static void img_ras_encode(INT32 args)
     unsigned char *tmp;
     rs.ras_depth = 8;
     rs.ras_maptype = RMT_EQUAL_RGB;
-    rs.ras_maplength = DO_NOT_WARN((INT32)n*3);
+    rs.ras_maplength = (INT32)n*3;
     cts = begin_shared_string(rs.ras_maplength+(rs.ras_maplength&1));
     if(rs.ras_maplength & 1) {
       STR0(cts)[rs.ras_maplength] = '\0';
@@ -578,7 +578,7 @@ static void img_ras_encode(INT32 args)
     if(pklen<rs.ras_length) {
       do_free_unlinked_pike_string(res2);
       res2 = make_shared_binary_string((char *)pkdata, pklen);
-      rs.ras_length = DO_NOT_WARN((INT32)pklen);
+      rs.ras_length = (INT32)pklen;
       rs.ras_type = RT_BYTE_ENCODED;
     } else
       res2 = end_shared_string(res2);

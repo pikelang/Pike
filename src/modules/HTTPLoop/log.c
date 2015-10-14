@@ -214,7 +214,7 @@ void f_aap_log_as_commonlog_to_file(INT32 args)
 	      tm.tm_hour, tm.tm_min, tm.tm_sec, /* date */
 	      le->raw.str, /* request line */
 	      le->reply, /* reply code */
-	      DO_NOT_WARN((long)le->sent_bytes)); /* bytes transfered */
+              (long)le->sent_bytes); /* bytes transfered */
     } else
 #endif /* fd_inet_ntop */
     fprintf(foo,
@@ -228,7 +228,7 @@ void f_aap_log_as_commonlog_to_file(INT32 args)
 	    tm.tm_hour, tm.tm_min, tm.tm_sec, /* date */
 	    le->raw.str, /* request line */
 	    le->reply, /* reply code */
-	    DO_NOT_WARN((long)le->sent_bytes)); /* bytes transfered */
+            (long)le->sent_bytes); /* bytes transfered */
     free_log_entry( le );
     n++;
     le = l;

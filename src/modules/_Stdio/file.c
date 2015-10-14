@@ -1906,7 +1906,7 @@ static void file_write(INT32 args)
       if (a->item[i].u.string->size_shift)
 	Pike_error("Bad argument 1 to file->write().\n"
 		   "Element %ld is a wide string.\n",
-		   DO_NOT_WARN((long)i));
+                   (long)i);
 
 #ifdef HAVE_WRITEV
     if (args > 1) {
@@ -5916,7 +5916,7 @@ static void file___init_ref(struct object *UNUSED(o))
 #ifdef __ECL
 static inline long TO_LONG(ptrdiff_t x)
 {
-  return DO_NOT_WARN((long)x);
+  return (long)x;
 }
 #else /* !__ECL */
 #define TO_LONG(x)	((long)(x))

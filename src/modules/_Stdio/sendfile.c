@@ -310,8 +310,7 @@ static ptrdiff_t send_iov(int fd, struct iovec *iov, int iovcnt)
     int cnt;
     for(cnt = 0; cnt < iovcnt; cnt++) {
       SF_DFPRINTF((stderr, "sendfile: %4d: iov_base: %p, iov_len: %ld\n",
-		   cnt, iov[cnt].iov_base,
-		   DO_NOT_WARN((long)iov[cnt].iov_len)));
+                   cnt, iov[cnt].iov_base, (long)iov[cnt].iov_len));
     }
   }
 #endif /* SF_DEBUG */
@@ -340,7 +339,7 @@ static ptrdiff_t send_iov(int fd, struct iovec *iov, int iovcnt)
       /* Error or file closed at other end. */
       SF_DFPRINTF((stderr, "sendfile: send_iov(): writev() failed with errno:%d.\n"
 		   "sendfile: Sent %ld bytes so far.\n",
-		   errno, DO_NOT_WARN((long)sent)));
+                   errno, (long)sent));
       return sent;
     } else {
       sent += bytes;
@@ -564,7 +563,7 @@ void low_do_sendfile(struct pike_sendfile *this)
     }
 
     SF_DFPRINTF((stderr, "sendfile: Sent %ld bytes so far.\n",
-		 DO_NOT_WARN((long)this->sent)));
+                 (long)this->sent));
 
 #if defined(HAVE_SENDFILE) && !defined(HAVE_FREEBSD_SENDFILE) && !defined(HAVE_HPUX_SENDFILE) && !defined(HAVE_MACOSX_SENDFILE)
     SF_DFPRINTF((stderr,
@@ -683,7 +682,7 @@ void low_do_sendfile(struct pike_sendfile *this)
 	len = this->buf_size;
       }
       else
-	len = DO_NOT_WARN ((ptrdiff_t) this->len);
+        len = (ptrdiff_t) this->len;
       while ((buflen = fd_read(this->from_fd, this->buffer, len)) > 0) {
 	char *buf = this->buffer;
 	this->len -= buflen;
@@ -703,12 +702,12 @@ void low_do_sendfile(struct pike_sendfile *this)
 	  len = this->buf_size;
 	}
 	else
-	  len = DO_NOT_WARN ((ptrdiff_t) this->len);
+          len = (ptrdiff_t) this->len;
       }
     }
   send_trailers:
     SF_DFPRINTF((stderr, "sendfile: Sent %ld bytes so far.\n",
-		 DO_NOT_WARN((long)this->sent)));
+                 (long)this->sent));
 
     /* No more need for the buffer */
     free(this->buffer);

@@ -41,19 +41,19 @@ extern int image_cpuid;
 #ifdef __ECL
 static inline int DOUBLE_TO_INT(double d)
 {
-  return DO_NOT_WARN((int)d);
+  return (int)d;
 }
 static inline char DOUBLE_TO_CHAR(double d)
 {
-  return DO_NOT_WARN((char)d);
+  return (char)d;
 }
 static inline COLORTYPE DOUBLE_TO_COLORTYPE(double d)
 {
-  return DO_NOT_WARN((COLORTYPE)d);
+  return (COLORTYPE)d;
 }
 static inline COLORTYPE FLOAT_TO_COLOR(double X)
 {
-  return DO_NOT_WARN((COLORTYPE)((X)*((double)COLORMAX+0.4)));
+  return (COLORTYPE)((X)*((double)COLORMAX+0.4));
 }
 #else /* !__ECL */
 #define DOUBLE_TO_INT(D)	((int)(D))
@@ -74,7 +74,7 @@ static inline INT32 PIKE_UNUSED_ATTRIBUTE FLOAT_TO_COLORL(double X)
    */
   unsigned INT32 tmp = X * ((double)COLORLMAX + 1.0);
   if (UNLIKELY(tmp > (unsigned INT32)COLORLMAX)) return COLORLMAX;
-  return DO_NOT_WARN((INT32)tmp);
+  return (INT32)tmp;
 }
 
 #ifdef USE_VALGRIND

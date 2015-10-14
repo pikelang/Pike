@@ -1218,7 +1218,7 @@ PIKEFUN void create_db(string(1..255) database)
 		 database->str);
     } else {
       Pike_error("Database name (length %ld) is too long (max 127 characters)\n",
-		 DO_NOT_WARN((long)database->len));
+		 (long)database->len);
     }
   }
 
@@ -1257,7 +1257,7 @@ PIKEFUN void drop_db(string(1..255) database)
 		 database->str);
     } else {
       Pike_error("Database name (length %ld) is too long (max 127 characters)\n",
-		 DO_NOT_WARN((long)database->len));
+		 (long)database->len);
     }
   }
 
@@ -1500,7 +1500,7 @@ PIKEFUN object list_dbs(string(1..255)|void wild)
 		   wild->str);
       } else {
 	Pike_error("Wildcard (length %ld) is too long (max 80 characters)\n",
-		   DO_NOT_WARN((long)wild->len));
+		   (long)wild->len);
       }
     }
   }
@@ -1556,7 +1556,7 @@ PIKEFUN object list_tables(string(1..255)|void wild)
 		   wild->str);
       } else {
 	Pike_error("Wildcard (length %ld) is too long (max 80 characters)\n",
-		   DO_NOT_WARN((long)wild->len));
+		   (long)wild->len);
       }
     }
   }
@@ -1675,7 +1675,7 @@ PIKEFUN array(int|mapping(string:mixed)) list_fields(string(1..255) table,
 		 table->str);
     } else {
       Pike_error("Table name (length %ld) is too long (max 125 characters)\n",
-		 DO_NOT_WARN((long)table->len));
+		 (long)table->len);
     }
   }
   if (wild) {
@@ -1688,8 +1688,7 @@ PIKEFUN array(int|mapping(string:mixed)) list_fields(string(1..255) table,
       } else {
 	Pike_error("Wildcard (length %ld) + table name \"%s\" is too long "
 		   "(max 125 characters)\n",
-		   DO_NOT_WARN((long)wild->len),
-		   table->str);
+		   (long)wild->len, table->str);
       }
     }
   }

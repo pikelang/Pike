@@ -247,7 +247,7 @@ void f_sinh(INT32 args)
   x=sp[-1].u.float_number;
 
   sp[-1].u.float_number =
-    DO_NOT_WARN ((FLOAT_TYPE) (0.5*(FA1(exp,x)-FA1(exp,-x))));
+    (FLOAT_TYPE) (0.5*(FA1(exp,x)-FA1(exp,-x)));
 }
 
 /*! @decl float asinh(int|float f)
@@ -264,7 +264,7 @@ void f_asinh(INT32 args)
   x=sp[-1].u.float_number;
 
   sp[-1].u.float_number =
-    DO_NOT_WARN ((FLOAT_TYPE) (FA1(log,x+FA1(sqrt,1+x*x))));
+    (FLOAT_TYPE) (FA1(log,x+FA1(sqrt,1+x*x)));
 }
 
 /*! @decl float cosh(int|float f)
@@ -281,7 +281,7 @@ void f_cosh(INT32 args)
   x=sp[-1].u.float_number;
 
   sp[-1].u.float_number =
-    DO_NOT_WARN ((FLOAT_TYPE) (0.5*(FA1(exp,x)+FA1(exp,-x))));
+    (FLOAT_TYPE) (0.5*(FA1(exp,x)+FA1(exp,-x)));
 }
 
 /*! @decl float acosh(int|float f)
@@ -298,7 +298,7 @@ void f_acosh(INT32 args)
   x=sp[-1].u.float_number;
 
   sp[-1].u.float_number =
-    DO_NOT_WARN ((FLOAT_TYPE) (2*FA1(log,FA1(sqrt,0.5*(x+1))+FA1(sqrt,0.5*(x-1)))));
+    (FLOAT_TYPE) (2*FA1(log,FA1(sqrt,0.5*(x+1))+FA1(sqrt,0.5*(x-1))));
 }
 
 /*! @decl float tanh(int|float f)
@@ -315,7 +315,7 @@ void f_tanh(INT32 args)
   x=sp[-1].u.float_number;
 
   sp[-1].u.float_number =
-    DO_NOT_WARN ((FLOAT_TYPE) ((FA1(exp,x)-FA1(exp,-x))/(FA1(exp,x)+FA1(exp,-x))));
+    (FLOAT_TYPE) ((FA1(exp,x)-FA1(exp,-x))/(FA1(exp,x)+FA1(exp,-x)));
 }
 
 /*! @decl float atanh(int|float f)
@@ -332,7 +332,7 @@ void f_atanh(INT32 args)
   x=sp[-1].u.float_number;
 
   sp[-1].u.float_number =
-    DO_NOT_WARN ((FLOAT_TYPE) (0.5*(FA1(log,1+x)-FA1(log,1-x))));
+    (FLOAT_TYPE) (0.5*(FA1(log,1+x)-FA1(log,1-x)));
 }
 
 /*! @decl float sqrt(float f)

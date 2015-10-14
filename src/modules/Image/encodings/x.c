@@ -759,8 +759,7 @@ void image_x_encode_pseudocolor(INT32 args)
       else if (sp[5-args].u.string->len!=((vbpp>8)?2:1)<<vbpp)
 	 Pike_error("Image.X.encode_pseudocolor: illegal argument 6 "
 	       "(expected translate string of length %d, not %ld)\n",
-	       ((vbpp>8)?2:1)<<vbpp,
-	       DO_NOT_WARN((long)sp[5-args].u.string->len));
+               ((vbpp>8)?2:1)<<vbpp, (long)sp[5-args].u.string->len);
       else
 	 translate=sp[5-args].u.string->str;
    }

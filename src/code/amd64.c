@@ -2950,7 +2950,7 @@ int amd64_ins_f_jump(unsigned int op, int backward_jump)
     case F_BRANCH:
       START_JUMP();
       add_to_program(0xe9);
-      ret=DO_NOT_WARN( (INT32) PIKE_PC );
+      ret=(INT32) PIKE_PC;
       PUSH_INT(0);
       return ret;
   }
@@ -2969,7 +2969,7 @@ int amd64_ins_f_jump(unsigned int op, int backward_jump)
     skip = (INT32)PIKE_PC;
     amd64_ins_branch_check_threads_etc(0);
     add_to_program (0xe9);	/* jmp rel32 */
-    ret = DO_NOT_WARN ((INT32) PIKE_PC);
+    ret = (INT32) PIKE_PC;
     PUSH_INT (0);
     /* Adjust the skip for the relative jump. */
     Pike_compiler->new_program->program[skip-1] = ((INT32)PIKE_PC - skip);
@@ -2977,7 +2977,7 @@ int amd64_ins_f_jump(unsigned int op, int backward_jump)
   else {
     add_to_program (0x0f);	/* jnz rel32 */
     add_to_program (0x85);
-    ret = DO_NOT_WARN ((INT32) PIKE_PC);
+    ret = (INT32) PIKE_PC;
     PUSH_INT (0);
   }
 

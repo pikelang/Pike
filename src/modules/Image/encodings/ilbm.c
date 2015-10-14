@@ -532,7 +532,7 @@ static void image_ilbm__decode(INT32 args)
       }
       ncol <<= 1;
     }
-    f_aggregate(DO_NOT_WARN((INT32)ncol));
+    f_aggregate((INT32)ncol);
     push_object(clone_object(image_colortable_program,1));
     ctable=get_storage(sp[-1].u.object,
 					       image_colortable_program);

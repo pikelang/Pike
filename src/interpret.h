@@ -189,7 +189,7 @@ PMOD_EXPORT extern const char Pike_check_c_stack_errmsg[];
     if (Pike_sp != save_stack_level + (depth)) {			\
       Pike_fatal("Unexpected stack level! "				\
 		 "Actual: %d, expected: %d\n",				\
-		 DO_NOT_WARN((int)(Pike_sp - save_stack_level)),	\
+                 (int)(Pike_sp - save_stack_level),                     \
 		 (depth));						\
     }									\
   } while(0)

@@ -99,8 +99,7 @@ static char *psd_read_data( struct buffer * from, size_t len )
 {
   char *res;
   if( from->len < len )
-    Pike_error("Not enough space for %lu bytes\n",
-	  DO_NOT_WARN((unsigned long)len));
+    Pike_error("Not enough space for %lu bytes\n", (unsigned long)len);
   res = (char *)from->str;
   from->str += len;
   from->len -= len;
@@ -316,7 +315,7 @@ packbitsdecode(struct buffer src,
   }
   if(dst.len)
     fprintf(stderr, "%ld bytes left to write! (should be 0)\n",
-	    DO_NOT_WARN((long)dst.len));
+            (long)dst.len);
   return src;
 }
 
@@ -554,7 +553,7 @@ void push_layer( struct layer  *l)
     f_aggregate_mapping( 4 );
   }
   f_aggregate( l->num_channels );
-  f_aggregate_mapping(DO_NOT_WARN((INT32)(sp - osp)));
+  f_aggregate_mapping((INT32)(sp - osp));
 }
 
 
@@ -580,8 +579,8 @@ void push_psd_image( struct psd_image *i )
     push_layer( l );
     l = l->next;
   }
-  f_aggregate(DO_NOT_WARN((INT32)(sp - tsp)));
-  f_aggregate_mapping(DO_NOT_WARN((INT32)(sp - osp)));
+  f_aggregate((INT32)(sp - tsp));
+  f_aggregate_mapping((INT32)(sp - osp));
 }
 
 static void decode_resources( struct buffer *b )
@@ -738,7 +737,7 @@ static void decode_resources( struct buffer *b )
 	break;
     }
   }
-  f_aggregate_mapping( DO_NOT_WARN((int)(sp-osp)) );
+  f_aggregate_mapping( (int)(sp-osp) );
 }
 
 static void image_f_psd___decode( INT32 args )

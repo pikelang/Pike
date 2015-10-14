@@ -582,7 +582,7 @@ INT32 ppc64_ins_f_jump(unsigned int a, int backward_jump)
     if(pos_)
       Pike_compiler->new_program->program[pos_-1] += 4*(PIKE_PC-pos_);
   }
-  ret=DO_NOT_WARN( (INT32) PIKE_PC );
+  ret=(INT32) PIKE_PC;
   /* b . */
   B(0);
   return ret;

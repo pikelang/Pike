@@ -369,7 +369,7 @@ void img_xwd__decode(INT32 args,int header_only,int skipcmap)
 
    free_string(s);
 
-   f_aggregate_mapping(DO_NOT_WARN(n*2));
+   f_aggregate_mapping(n*2);
 
    UNSET_ONERROR(uwp);
 }

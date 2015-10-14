@@ -78,8 +78,7 @@ void image_avs_f__decode(INT32 args)
 
   if((size_t)w*h*4 != (size_t)(s->len-8))
     Pike_error("This is not an AVS file (w=%d; h=%d; s=%ld)\n",
-	  w, h,
-	  DO_NOT_WARN((long)s->len));
+          w, h, (long)s->len);
 
   push_int( w );
   push_int( h );

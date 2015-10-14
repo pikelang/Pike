@@ -1576,7 +1576,7 @@ static void push_inout_value(struct inout *inout,
 
     case SQLT_FLT:
       /* We might need to push a Matrix here */
-      push_float(DO_NOT_WARN((FLOAT_TYPE)inout->u.f));
+      push_float((FLOAT_TYPE)inout->u.f);
       break;
 
     default:

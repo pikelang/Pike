@@ -765,8 +765,8 @@ static void regtail(char *p, const char *val)
     offset = scan - val;
   else
     offset = val - scan;
-  *(scan + 1) = DO_NOT_WARN((offset >> 8) & 0377);
-  *(scan + 2) = DO_NOT_WARN(offset & 0377);
+  *(scan + 1) = (offset >> 8) & 0377;
+  *(scan + 2) = offset & 0377;
 }
 
 /*
@@ -1148,14 +1148,14 @@ void regdump(regexp *r)
     while (op != END) {		/* While that wasn't END last time... */
 	op = OP(s);
 	printf("%2ld%s",	/* Where, what. */
-	       DO_NOT_WARN((long)(s - r->program)),
+               (long)(s - r->program),
 	       regprop(s));
 	next = regnext(s);
 	if (next == NULL)	/* next ptr. */
 	    printf("(0)");
 	else
 	    printf("(%ld)",
-		   DO_NOT_WARN((long)( (s - r->program) + (next - s))));
+                   (long)( (s - r->program) + (next - s)));
 	s += 3;
 	if (op == ANYOF || op == ANYBUT || op == EXACTLY) {
 	    /* Literal string, where present. */

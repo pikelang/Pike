@@ -636,7 +636,7 @@ static void gz_deflate(INT32 args)
   }
 
   this->gz.next_in=(Bytef *)data.ptr;
-  this->gz.avail_in = DO_NOT_WARN((unsigned INT32)(data.len));
+  this->gz.avail_in = (unsigned INT32)(data.len);
 
   initialize_buf(&buf);
 
@@ -899,7 +899,7 @@ void low_zlibmod_unpack(struct memobj data, dynamic_buffer *buf, int raw)
   z.gz.zfree = Z_NULL;
 
   z.gz.next_in=(Bytef *)data.ptr;
-  z.gz.avail_in = DO_NOT_WARN((unsigned INT32)(data.len));
+  z.gz.avail_in = (unsigned INT32)(data.len);
 
   if( raw )
     ret = inflateInit2(&z.gz, -15);
@@ -1071,7 +1071,7 @@ static void gz_inflate(INT32 args)
     Pike_error("Cannot input wide string to gz_inflate->inflate()\n");
 
   this->gz.next_in=(Bytef *)data.ptr;
-  this->gz.avail_in = DO_NOT_WARN((unsigned INT32)(data.len));
+  this->gz.avail_in = (unsigned INT32)(data.len);
 
   initialize_buf(&buf);
 
@@ -1176,7 +1176,7 @@ static void gz_crc32(INT32 args)
 
    crc=crc32(crc,
 	     (unsigned char*)sp[-args].u.string->str,
-	     DO_NOT_WARN((unsigned INT32)(sp[-args].u.string->len)));
+             (unsigned INT32)(sp[-args].u.string->len));
 
    pop_n_elems(args);
    push_int((INT32)crc);

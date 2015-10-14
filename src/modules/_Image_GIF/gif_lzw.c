@@ -146,7 +146,7 @@ static INLINE void lzw_add(struct gif_lzw *lzw,int c)
    lzw_output(lzw,lzw->current);
 
    lno=lzw->code[lzw->current].firstchild;
-   lno2 = DO_NOT_WARN((lzwcode_t)lzw->codes);
+   lno2 = (lzwcode_t)lzw->codes;
    l=lzw->code+lno2;
    l->next=lno;
    l->firstchild=LZWCNULL;
@@ -202,10 +202,10 @@ void image_gif_lzw_finish(struct gif_lzw *lzw)
    if (lzw->outbit)
    {
       if (lzw->reversebits)
-	 lzw->out[lzw->outpos++] = DO_NOT_WARN((lzwcode_t)(lzw->lastout<<
-							   (8-lzw->outbit)));
+         lzw->out[lzw->outpos++] = (lzwcode_t)(lzw->lastout<<
+                                               (8-lzw->outbit));
       else
-	 lzw->out[lzw->outpos++] = DO_NOT_WARN((lzwcode_t)lzw->lastout);
+         lzw->out[lzw->outpos++] = (lzwcode_t)lzw->lastout;
    }
 }
 

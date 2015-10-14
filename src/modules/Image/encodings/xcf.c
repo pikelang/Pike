@@ -87,8 +87,7 @@ static void f_substring_index( INT32 args )
 
   if( i < 0 ) i = s->len + i;
   if( i >= s->len ) {
-    Pike_error("Index out of bounds, %ld > %ld\n", i,
-	  DO_NOT_WARN((long)s->len-1) );
+    Pike_error("Index out of bounds, %ld > %ld\n", i, (long)s->len-1 );
   }
   push_int( ((unsigned char *)s->s->str)[s->offset+i] );
 }
@@ -321,8 +320,7 @@ static char *read_data( struct buffer *from, size_t len )
 {
   char *res;
   if( from->len < len )
-    Pike_error("Not enough space for %lu bytes\n",
-	  DO_NOT_WARN((unsigned long)len));
+    Pike_error("Not enough space for %lu bytes\n", (unsigned long)len);
   res = (char *)from->str;
   from->str += len;
   from->len -= len;
@@ -775,7 +773,7 @@ static void push_properties( struct property *p )
     f_aggregate_mapping( 4 );
     p = p->next;
   }
-  f_aggregate(DO_NOT_WARN((INT32)(sp - osp)));
+  f_aggregate((INT32)(sp - osp));
 }
 
 static void push_tile( struct tile *t )
@@ -802,8 +800,8 @@ static void push_hierarchy( struct hierarchy * h )
     push_tile( t );
     t=t->next;
   }
-  f_aggregate(DO_NOT_WARN((INT32)(sp - tsp)));
-  f_aggregate_mapping(DO_NOT_WARN((INT32)(sp - osp)));
+  f_aggregate((INT32)(sp - tsp));
+  f_aggregate_mapping((INT32)(sp - osp));
 }
 
 static void push_layer_mask(struct layer_mask *i)
@@ -816,7 +814,7 @@ static void push_layer_mask(struct layer_mask *i)
   ref_push_string( s_name );  push_buffer( &i->name );
   ref_push_string( s_image_data );
   push_hierarchy( &i->image_data );
-  f_aggregate_mapping(DO_NOT_WARN((INT32)(sp-osp)));
+  f_aggregate_mapping((INT32)(sp-osp));
 }
 
 static void push_channel(struct channel *i)
@@ -829,7 +827,7 @@ static void push_channel(struct channel *i)
   ref_push_string( s_name );  push_buffer( &i->name );
   ref_push_string( s_image_data );
   push_hierarchy( &i->image_data );
-  f_aggregate_mapping(DO_NOT_WARN((INT32)(sp-osp)));
+  f_aggregate_mapping((INT32)(sp-osp));
 }
 
 static void push_layer(struct layer *i)
@@ -848,7 +846,7 @@ static void push_layer(struct layer *i)
     ref_push_string( s_mask );
     push_layer_mask( i->mask );
   }
-  f_aggregate_mapping(DO_NOT_WARN((INT32)(sp - osp)));
+  f_aggregate_mapping((INT32)(sp - osp));
 }
 
 
@@ -883,7 +881,7 @@ static void push_image( struct gimp_image *i )
     c = c->next;
   }
   f_aggregate( nitems );
-  f_aggregate_mapping(DO_NOT_WARN((INT32)(sp-osp)));
+  f_aggregate_mapping((INT32)(sp-osp));
 }
 
 

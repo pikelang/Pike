@@ -167,8 +167,7 @@ static struct image_alpha load_image(struct pike_string *str)
   buffer.len = str->len;
 
   if(buffer.len < ((sizeof(struct tga_footer)+sizeof(struct tga_header))))
-    Pike_error("Data (%ld bytes) is too short\n",
-	  DO_NOT_WARN((long)buffer.len));
+    Pike_error("Data (%ld bytes) is too short\n", (long)buffer.len);
 
 
 /*   memcpy(&footer, (buffer.str+(buffer.len-sizeof(struct tga_footer))), */
@@ -382,7 +381,7 @@ static ptrdiff_t rle_fwrite (guchar *buf, size_t datasize, size_t nelems,
          or close to the end of the buffer. */
 
       /* Write out the run. */
-      if (std_fputc(DO_NOT_WARN((int)(count - 1))|RLE_PACKETSIZE, fp) == EOF ||
+      if (std_fputc((int)(count - 1)|RLE_PACKETSIZE, fp) == EOF ||
 	  std_fwrite(begin, datasize, 1, fp) != 1)
         return 0;
 
@@ -406,7 +405,7 @@ static ptrdiff_t rle_fwrite (guchar *buf, size_t datasize, size_t nelems,
          or at the end of the buffer. */
 
       /* Write out the raw packet. */
-      if (std_fputc(DO_NOT_WARN((int)(count - 1)), fp) == EOF ||
+      if (std_fputc((int)(count - 1), fp) == EOF ||
           std_fwrite(begin, datasize, count, fp) != count)
         return 0;
     }
@@ -755,7 +754,7 @@ static struct buffer save_tga(struct image *img, struct image *alpha,
   hdr.heightHi = (height >> 8);
 
   /* Mark our save ID. */
-  hdr.idLength = DO_NOT_WARN((unsigned INT32)strlen(SAVE_ID_STRING));
+  hdr.idLength = (unsigned INT32)strlen(SAVE_ID_STRING);
 
   buf.len = width*height*(alpha?4:3)+strlen(SAVE_ID_STRING)+sizeof(hdr)+65535;
   buf.str = xalloc(buf.len);

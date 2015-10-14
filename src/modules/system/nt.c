@@ -222,7 +222,7 @@ static void push_regvalue(DWORD type, char* buffer, DWORD len)
       type =
 	ExpandEnvironmentStrings((LPCTSTR)buffer,
 				 buffer+len,
-				 DO_NOT_WARN((DWORD)(sizeof(buffer)-len-1)));
+                                 (DWORD)(sizeof(buffer)-len-1));
       if(type>sizeof(buffer)-len-1 || !type)
 	Pike_error("RegGetValue: Failed to expand data.\n");
       push_text(buffer+len);
@@ -934,13 +934,13 @@ void f_LogonUser(INT32 args)
 
 static void init_token(struct object *o)
 {
-  THIS_TOKEN = DO_NOT_WARN(INVALID_HANDLE_VALUE);
+  THIS_TOKEN = INVALID_HANDLE_VALUE;
 }
 
 static void exit_token(struct object *o)
 {
   CloseHandle(THIS_TOKEN);
-  THIS_TOKEN = DO_NOT_WARN(INVALID_HANDLE_VALUE);
+  THIS_TOKEN = INVALID_HANDLE_VALUE;
 }
 
 static void low_encode_user_info_0(USER_INFO_0 *tmp)

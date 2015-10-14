@@ -376,7 +376,7 @@ static INLINE void polyfill_slant_add(double *buf,
    }
    else if (xmin_i>=0)
    {
-      double dx = DO_NOT_WARN(1.0 - (xmin-((double)xmin_i)));
+      double dx = 1.0 - (xmin-((double)xmin_i));
       buf[xmin_i] += lot*(y1+dy*dx/2.0)*dx;
       y1 += dy*dx;
       for (i=xmin_i+1; i<xmax_i; i++) {
@@ -500,8 +500,7 @@ static int polyfill_event(double xmin,
 		 c->above->x,c->above->y,c->below->x,c->below->y,
 		 xmin,y1,xmax,y2,(tog?-1.0:1.0)*((y1+y2)/2.0-yp));
 #endif
-	 polyfill_slant_add(buf,xmin,xmax,
-			    DO_NOT_WARN(tog?-1.0:1.0),
+         polyfill_slant_add(buf,xmin,xmax,tog?-1.0:1.0,
 			    (yp+1)-y1,-c->dy);
 	 tog=!tog;
       }
@@ -638,7 +637,7 @@ static void polyfill_some(struct image *img,
 
 	 /* shift to get next event */
 	 xmin = xmax;
-	 xmax = DO_NOT_WARN(xmin - 1.0);
+         xmax = xmin - 1.0;
       }
 
 
@@ -756,9 +755,7 @@ static INLINE struct vertex *polyfill_add(struct vertex **top,
 
 #define POINT(A,N) ((TYPEOF((A)->item[N]) == T_FLOAT)?((A)->item[N].u.float_number):((FLOAT_TYPE)((A)->item[N].u.integer)))
 
-   last = first = vertex_new(DO_NOT_WARN(POINT(a,0)),
-			     DO_NOT_WARN(POINT(a,1)),
-			     top);
+   last = first = vertex_new(POINT(a,0), POINT(a,1), top);
 
    if (!last) {
       return NULL;
@@ -766,9 +763,7 @@ static INLINE struct vertex *polyfill_add(struct vertex **top,
 
    for (n=2; n+1<a->size; n+=2)
    {
-      cur = vertex_new(DO_NOT_WARN(POINT(a,n)),
-		       DO_NOT_WARN(POINT(a,n+1)),
-		       top);
+      cur = vertex_new(POINT(a,n), POINT(a,n+1), top);
       if (!cur) {
 	 return NULL;
       }

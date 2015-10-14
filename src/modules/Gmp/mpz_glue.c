@@ -150,9 +150,9 @@ PMOD_EXPORT void reduce_stack_top_bignum (void)
 
 PMOD_EXPORT void push_int64 (INT64 i)
 {
-  if(i == DO_NOT_WARN((INT_TYPE)i))
+  if(i == (INT_TYPE)i)
   {
-    push_int(DO_NOT_WARN((INT_TYPE)i));
+    push_int((INT_TYPE)i);
   }
   else
   {
@@ -202,7 +202,7 @@ PMOD_EXPORT int int64_from_bignum (INT64 *i, struct object *bignum)
 #elif INT64_BITS < GMP_NUMB_BITS
     mp_limb_t val = mpz_getlimbn (mpz, 0) & GMP_NUMB_MASK;
     if (val >= (mp_limb_t) 1 << INT64_BITS) goto overflow;
-    res = DO_NOT_WARN ((INT64) val);
+    res = (INT64) val;
 #else
     res = 0;
     for (;; pos--) {
@@ -234,7 +234,7 @@ overflow:
 PMOD_EXPORT void push_ulongest (unsigned LONGEST i)
 {
   if (i <= MAX_INT_TYPE) {
-    push_int(DO_NOT_WARN((INT_TYPE)i));
+    push_int((INT_TYPE)i);
   }
   else {
     MP_INT *mpz;
@@ -275,7 +275,7 @@ PMOD_EXPORT int ulongest_from_bignum (unsigned LONGEST *i, struct object *bignum
     res = mpz_getlimbn (mpz, 0) & GMP_NUMB_MASK;
 #elif ULONGEST_BITS < GMP_NUMB_BITS
     mp_limb_t val = mpz_getlimbn (mpz, 0) & GMP_NUMB_MASK;
-    res = DO_NOT_WARN ((unsigned LONGEST) val);
+    res = (unsigned LONGEST) val;
     if (val != res) return 0;
 #else
     res = 0;
@@ -886,7 +886,7 @@ static void mpzmod__sprintf(INT32 args)
       if (!flag_left)
 	 for(i = 0; i < (INT_TYPE)sizeof(mp_limb_t); i++)
 	 {
-	    *(--dst) = DO_NOT_WARN((unsigned char)((neg ? ~x : x) & 0xff));
+            *(--dst) = (unsigned char)((neg ? ~x : x) & 0xff);
 	    x >>= 8;
 	    if(!--width)
 	       break;
@@ -894,7 +894,7 @@ static void mpzmod__sprintf(INT32 args)
       else
 	 for(i = 0; i < (INT_TYPE)sizeof(mp_limb_t); i++)
 	 {
-	    *(dst++) = DO_NOT_WARN((unsigned char)((neg ? ~x : x) & 0xff));
+            *(dst++) = (unsigned char)((neg ? ~x : x) & 0xff);
 	    x >>= 8;
 	    if(!--width)
 	       break;
@@ -960,9 +960,9 @@ static void mpzmod_size(INT32 args)
   pop_n_elems(args);
 
   if (base == 256 || base == -256)
-    push_int(DO_NOT_WARN((INT32)((mpz_sizeinbase(THIS, 2) + 7) / 8)));
+    push_int((INT32)((mpz_sizeinbase(THIS, 2) + 7) / 8));
   else
-    push_int(DO_NOT_WARN((INT32)(mpz_sizeinbase(THIS, base))));
+    push_int((INT32)(mpz_sizeinbase(THIS, base)));
 }
 
 /*! @decl string|int|float cast(string type)

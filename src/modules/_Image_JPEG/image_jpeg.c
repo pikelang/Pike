@@ -248,7 +248,7 @@ static boolean my_empty_output_buffer(struct jpeg_compress_struct *cinfo)
 
    dm->buf = new;
    dm->len += BUF_INCREMENT;
-   dm->pub.free_in_buffer = DO_NOT_WARN(dm->len - pos);
+   dm->pub.free_in_buffer = dm->len - pos;
    dm->pub.next_output_byte = (JOCTET*)new + pos;
 
    return TRUE;
@@ -482,7 +482,7 @@ static void my_init_source(struct jpeg_decompress_struct *cinfo)
   struct my_source_mgr *sm = (struct my_source_mgr *)cinfo->src;
 
   sm->pub.next_input_byte = (JOCTET*)sm->str->str;
-  sm->pub.bytes_in_buffer = DO_NOT_WARN(sm->str->len);
+  sm->pub.bytes_in_buffer = sm->str->len;
 }
 
 static boolean my_fill_input_buffer(struct jpeg_decompress_struct *cinfo)
@@ -1099,9 +1099,9 @@ static void img_jpeg_decode(INT32 args,int mode)
 	    push_float( mds.cinfo.Y_density );
 	    break;
 	 case 2:
-	    push_float( DO_NOT_WARN((FLOAT_TYPE)(mds.cinfo.X_density/2.54)) );
+            push_float( (FLOAT_TYPE)(mds.cinfo.X_density/2.54) );
 	    stack_swap();
-	    push_float( DO_NOT_WARN((FLOAT_TYPE)(mds.cinfo.Y_density/2.54)) );
+            push_float( (FLOAT_TYPE)(mds.cinfo.Y_density/2.54) );
 	    break;
       }
 

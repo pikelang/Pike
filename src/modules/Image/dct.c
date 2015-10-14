@@ -83,8 +83,8 @@ void image_dct(INT32 args)
 
 #ifdef DCT_DEBUG
    fprintf(stderr,"%lu bytes, %lu bytes\n",
-	   DO_NOT_WARN((unsigned long)(sizeof(rgbd_group)*THIS->xsize*THIS->ysize)),
-	   DO_NOT_WARN((unsigned long)(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)));
+           (unsigned long)(sizeof(rgbd_group)*THIS->xsize*THIS->ysize),
+           (unsigned long)(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1));
 #endif
 
    area=xalloc(sizeof(rgbd_group)*THIS->xsize*THIS->ysize+1);
@@ -192,9 +192,9 @@ void image_dct(INT32 args)
 	    {
 	       double z;
 	       z = (u?1:c0) * costbl[u] * z0;
-	       sum.r += DO_NOT_WARN((float)(val->r*z));
-	       sum.g += DO_NOT_WARN((float)(val->g*z));
-	       sum.b += DO_NOT_WARN((float)(val->b*z));
+               sum.r += (float)(val->r*z);
+               sum.g += (float)(val->g*z);
+               sum.b += (float)(val->b*z);
 	       val++;
 	    }
 	 }

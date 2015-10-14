@@ -217,7 +217,7 @@ static INLINE void output_try_write_some(struct object *obj);
 static void push_callback(ptrdiff_t no)
 {
   SET_SVAL(*Pike_sp, T_FUNCTION,
-	   DO_NOT_WARN(no + Pike_fp->context->identifier_level),
+           no + Pike_fp->context->identifier_level,
 	   object, THISOBJ);
   add_ref(THISOBJ);
   Pike_sp++;
@@ -1335,13 +1335,13 @@ void port_setup_program(void);
 void f__pipe_debug(INT32 args)
 {
   pop_n_elems(args);
-  push_int(DO_NOT_WARN(noutputs));
-  push_int(DO_NOT_WARN(ninputs));
-  push_int(DO_NOT_WARN(nstrings));
-  push_int(DO_NOT_WARN(nobjects));
-  push_int(DO_NOT_WARN(mmapped));
-  push_int(DO_NOT_WARN(nbuffers));
-  push_int(DO_NOT_WARN(sbuffers));
+  push_int(noutputs);
+  push_int(ninputs);
+  push_int(nstrings);
+  push_int(nobjects);
+  push_int(mmapped);
+  push_int(nbuffers);
+  push_int(sbuffers);
   f_aggregate(7);
 }
 
