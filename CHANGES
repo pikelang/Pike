@@ -587,6 +587,32 @@ o __builtin
   provide a suitable namespace for code written in Pike intended for
   being inherited from modules written in C (cf precompile).
 
+o Web.Auth
+
+  Support for federated authentication with OAuth (Web.Auth.OAuth and
+  Web.Auth.OAuth2). There are several ready to go modules for some big
+  OAuth authentication service providers:
+
+  + Web.Auth.Facebook
+  + Web.Auth.Github
+  + Web.Auth.Google
+  + Web.Auth.Instagram
+  + Web.Auth.Linkedin
+  + Web.Auth.Twitter
+
+o Web.Api
+
+  Modules and classes for communicating with various RESTful web
+  api's. Currently with ready to go modules for these services:
+
+  + Web.Api.Facebook
+  + Web.Api.Github
+  + Web.Api.Google.Analytics
+  + Web.Api.Google.Plus
+  + Web.Api.Instagram
+  + Web.Api.Linkedin
+  + Web.Api.Twitter
+
 
 Extensions and new functions
 ----------------------------
