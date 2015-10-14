@@ -3338,7 +3338,7 @@ void dump_program_desc(struct program *p)
 
     for(d=0;d<p->inherits[e].inherit_level;d++) fprintf(stderr,"  ");
     fprintf(stderr,"storage_offset: %ld\n",
-	    DO_NOT_WARN((long)p->inherits[e].storage_offset));
+            (long)p->inherits[e].storage_offset);
 
     for(d=0;d<p->inherits[e].inherit_level;d++) fprintf(stderr,"  ");
     fprintf(stderr,"parent: %p\n",p->inherits[e].parent);
@@ -4274,8 +4274,7 @@ PMOD_EXPORT size_t low_add_storage(size_t size, size_t alignment,
   }
 
   if(Pike_compiler->new_program->alignment_needed<alignment)
-    Pike_compiler->new_program->alignment_needed =
-      DO_NOT_WARN((unsigned INT8)alignment);
+    Pike_compiler->new_program->alignment_needed = (unsigned INT8)alignment;
 
 #ifdef PIKE_DEBUG
   if(offset < Pike_compiler->new_program->storage_needed)
@@ -4283,10 +4282,10 @@ PMOD_EXPORT size_t low_add_storage(size_t size, size_t alignment,
 
   if( (offset /* + OFFSETOF(object,storage) */ - modulo_orig ) % alignment )
     Pike_fatal("add_storage failed horribly(2) %ld %ld %ld %ld!\n",
-	  DO_NOT_WARN((long)offset),
+          (long)offset,
 	  (long)0 /* + OFFSETOF(object,storage) */,
-	  DO_NOT_WARN((long)modulo_orig),
-	  DO_NOT_WARN((long)alignment));
+          (long)modulo_orig),
+          (long)alignment);
 
 #endif
 
@@ -7658,10 +7657,10 @@ void store_linenumber(INT_TYPE current_line, struct pike_string *current_file)
       insert_small_number(store_prog_string(current_file));
       copy_shared_string(Pike_compiler->last_file, current_file);
     }
-    insert_small_number(DO_NOT_WARN((INT32)(PIKE_PC-Pike_compiler->last_pc)));
+    insert_small_number((INT32)(PIKE_PC-Pike_compiler->last_pc));
     insert_small_number(current_line-Pike_compiler->last_line);
     Pike_compiler->last_line = current_line;
-    Pike_compiler->last_pc = DO_NOT_WARN((INT32)PIKE_PC);
+    Pike_compiler->last_pc = (INT32)PIKE_PC;
   }
 }
 

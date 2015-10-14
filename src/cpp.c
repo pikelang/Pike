@@ -2242,7 +2242,7 @@ static ptrdiff_t calcC(struct cpp *this, PCHARP data, ptrdiff_t len,
     if(COMPARE_PCHARP(p1,>,p2))
     {
       if(OUTP())
-	push_float(DO_NOT_WARN((FLOAT_TYPE)f));
+        push_float((FLOAT_TYPE)f);
       pos = SUBTRACT_PCHARP(p1,data);
     }else{
       if(OUTP())

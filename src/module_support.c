@@ -47,7 +47,7 @@ static int va_check_args(struct svalue *s,
 	!(res->expected & BIT_ZERO &&
 	  TYPEOF(s[res->argno]) == T_INT && s[res->argno].u.integer == 0))
     {
-      res->got = DO_NOT_WARN((unsigned char)TYPEOF(s[res->argno]));
+      res->got = (unsigned char)TYPEOF(s[res->argno]);
       res->error_type = ERR_BAD_ARG;
       return 0;
     }
@@ -275,8 +275,7 @@ static int va_get_args_2(struct svalue *s,
 	 *cast_arg(ptr, int *)=s->u.integer;
       else if(TYPEOF(*s) == T_FLOAT)
 	/* FIXME: Range checks. */
-	*cast_arg(ptr, int *)=
-	  DO_NOT_WARN((int)s->u.float_number);
+        *cast_arg(ptr, int *)=(int)s->u.float_number;
       else
       {
         ref_push_type_value(int_type_string);
@@ -287,8 +286,7 @@ static int va_get_args_2(struct svalue *s,
 	  *cast_arg(ptr, int *)=sp[-1].u.integer;
 	else if(TYPEOF(*s) == T_FLOAT)
 	  /* FIXME: Range checks. Btw, does this case occur? */
-	  *cast_arg(ptr, int *)=
-	    DO_NOT_WARN((int)sp[-1].u.float_number);
+          *cast_arg(ptr, int *)=(int)sp[-1].u.float_number;
 	else
 	  Pike_error("Cast to int failed.\n");
         pop_stack();
@@ -300,7 +298,7 @@ static int va_get_args_2(struct svalue *s,
 	 *cast_arg(ptr, INT_TYPE *)=s->u.integer;
       else if(TYPEOF(*s) == T_FLOAT)
 	/* FIXME: Range checks. */
-	*cast_arg(ptr, INT_TYPE *) = DO_NOT_WARN((INT_TYPE)s->u.float_number);
+        *cast_arg(ptr, INT_TYPE *) = (INT_TYPE)s->u.float_number;
       else
       {
 	/* FIXME: Error reporting for bignum objects. */
@@ -311,8 +309,7 @@ static int va_get_args_2(struct svalue *s,
 	  *cast_arg(ptr, INT_TYPE *)=sp[-1].u.integer;
 	else if(TYPEOF(*s) == T_FLOAT)
 	  /* FIXME: Range checks. Btw, does this case occur? */
-	  *cast_arg(ptr, INT_TYPE *)=
-	    DO_NOT_WARN((INT_TYPE)sp[-1].u.float_number);
+          *cast_arg(ptr, INT_TYPE *)=(INT_TYPE)sp[-1].u.float_number;
 	else
 	  Pike_error("Cast to int failed.\n");
         pop_stack();

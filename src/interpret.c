@@ -553,7 +553,7 @@ void my_describe_inherit_structure(struct program *p)
       fprintf(stderr,
 	      "[%ld]%*s parent{ offset=%d ident=%d id=%d } "
 	      "id{ level=%d } prog=%d\n",
-	      DO_NOT_WARN((long)(last - p->inherits)),
+              (long)(last - p->inherits),
 	      last->inherit_level*2,"",
 	      last->parent_offset,
 	      last->parent_identifier,
@@ -602,7 +602,7 @@ PMOD_EXPORT void find_external_context(struct external_variable_context *loc,
   struct program *p;
 
   TRACE((4, "-find_external_context(%d, inherit=%ld)\n", depth,
-	 DO_NOT_WARN((long)(loc->o->prog ? loc->inherit - loc->o->prog->inherits : 0))));
+         (long)(loc->o->prog ? loc->inherit - loc->o->prog->inherits : 0)));
 
 #ifdef PIKE_DEBUG
   if(!loc->o)
@@ -777,7 +777,7 @@ PMOD_EXPORT void find_external_context(struct external_variable_context *loc,
     TRACE((5,"-   Parent identifier = %d (%s), inherit # = %ld\n",
 	   loc->parent_identifier,
 	   p ? ID_FROM_INT(p, loc->parent_identifier)->name->str : "N/A",
-	   p ? DO_NOT_WARN((long)(loc->inherit - p->inherits)) : -1));
+           p ? (long)(loc->inherit - p->inherits) : -1));
 
 #ifdef DEBUG_MALLOC
     if (p && loc->inherit->storage_offset == 0x55555555) {
@@ -1068,9 +1068,8 @@ PMOD_EXPORT void dump_backlog(void)
       {
 	fprintf(stderr,"(%ld)", (long)backlog[e].arg);
       }
-      fprintf(stderr," %ld, %ld\n",
-	      DO_NOT_WARN((long)backlog[e].stack),
-	      DO_NOT_WARN((long)backlog[e].mark_stack));
+      fprintf(stderr," %ld, %ld\n", (long)backlog[e].stack,
+              (long)backlog[e].mark_stack);
 #endif /* HAVE_COMPUTED_GOTO */
       free_string(file);
     }
@@ -1850,7 +1849,7 @@ static void do_trace_func_return (int got_retval, struct object *o, int fun)
     if (o->prog) {
       struct identifier *id = ID_FROM_INT (o->prog, fun);
       char buf[50];
-      sprintf(buf, "%lx->", DO_NOT_WARN((long) PTR_TO_INT (o)));
+      sprintf(buf, "%lx->", (long) PTR_TO_INT (o));
       my_strcat(buf);
       if (id->name->size_shift)
 	my_strcat ("[widestring function name]");
@@ -2079,7 +2078,7 @@ void *lower_mega_apply( INT32 args, struct object *o, ptrdiff_t fun )
           add_ref(new_frame->current_object = o);
           add_ref(new_frame->current_program = p);
           new_frame->context = context;
-          new_frame->fun = DO_NOT_WARN((unsigned INT16)fun);
+          new_frame->fun = (unsigned INT16)fun;
           new_frame->expendible = new_frame->locals = save_sp;
           new_frame->args = args;
           new_frame->save_sp = save_sp;
@@ -2124,7 +2123,7 @@ void *lower_mega_apply( INT32 args, struct object *o, ptrdiff_t fun )
               char buf[50];
 
               init_buf(&save_buf);
-              sprintf(buf, "%lx->", DO_NOT_WARN((long) PTR_TO_INT (o)));
+              sprintf(buf, "%lx->", (long) PTR_TO_INT (o));
               my_strcat(buf);
               if (function->name->size_shift)
                 my_strcat ("[widestring function name]");

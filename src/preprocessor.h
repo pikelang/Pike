@@ -1168,7 +1168,7 @@ static ptrdiff_t low_cpp(struct cpp *this,
                                 check_stack(2);
                                 push_string(finish_string_builder(&str));
                                 init_string_builder(&str, 0);
-                                push_int(DO_NOT_WARN(e | extra));
+                                push_int(e | extra);
                                 extra=0;
                                 break;
                               }

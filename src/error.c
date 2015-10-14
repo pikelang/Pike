@@ -75,7 +75,7 @@ PMOD_EXPORT void check_recovery_context(void)
      TESTILITEST > 0) {
     fprintf(stderr, "Recoveries is out biking (Pike_interpreter.recoveries=%p, Pike_sp=%p, %ld)!\n",
 	    Pike_interpreter.recoveries, &foo,
-	    DO_NOT_WARN((long)TESTILITEST));
+            (long)TESTILITEST);
     fprintf(stderr, "Last recovery was added at %s:%d\n",
 	    Pike_interpreter.recoveries->file,
 	    Pike_interpreter.recoveries->line);
@@ -86,7 +86,7 @@ PMOD_EXPORT void check_recovery_context(void)
     pop_stack();
     Pike_fatal("Recoveries is out biking (Pike_interpreter.recoveries=%p, C sp=%p, %ld)!\n",
 	  Pike_interpreter.recoveries, &foo,
-	  DO_NOT_WARN((long)TESTILITEST));
+          (long)TESTILITEST);
   }
 
   /* Add more stuff here when required */
@@ -1070,7 +1070,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void resource_error(
   size_t howmuch_,
   const char *desc, ...) ATTRIBUTE((noreturn))
 {
-  INT_TYPE howmuch = DO_NOT_WARN((INT_TYPE)howmuch_);
+  INT_TYPE howmuch = (INT_TYPE)howmuch_;
   INIT_ERROR(resource);
   ERROR_COPY(resource, howmuch);
   ERROR_STRUCT(resource,o)->resource_type=make_shared_string(resource_type);

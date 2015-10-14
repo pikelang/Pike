@@ -196,7 +196,7 @@ INT32 assemble(int store_linenumbers)
     for (e = 0; e < length; e++) {
       if (c[e].opcode == F_POP_SYNCH_MARK) synch_depth--;
       fprintf(stderr, "~~~%4ld %4lx %*s", (long)c[e].line,
-	      DO_NOT_WARN((unsigned long)e), synch_depth, "");
+              (unsigned long)e, synch_depth, "");
       dump_instr(c+e);
       fprintf(stderr,"\n");
       if (c[e].opcode == F_SYNCH_MARK) synch_depth++;
@@ -301,7 +301,7 @@ INT32 assemble(int store_linenumbers)
     for(e=0;e<length;e++,c++) {
       if (c->opcode == F_POP_SYNCH_MARK) synch_depth--;
       fprintf(stderr, " * %4ld %4lx ",
-	      (long)c->line, DO_NOT_WARN((unsigned long)e));
+              (long)c->line, (unsigned long)e);
       dump_instr(c);
       if ((instrs[c->opcode - F_OFFSET].flags & I_POINTER) &&
 	  (c->arg > max_label)) {
@@ -341,14 +341,14 @@ INT32 assemble(int store_linenumbers)
     for(e=0;e<length;e++)
       if(c[e].opcode == F_LABEL && c[e].arg>=0) {
 	INT32 l = c[e].arg;
-	labels[l]=DO_NOT_WARN((INT32)e);
+        labels[l]=(INT32)e;
 	while (e+1 < length &&
 	       c[e+1].opcode == F_LABEL && c[e+1].arg >= 0) {
 	  /* aliases is used to compact several labels at the same
 	   * position to one label. That's necessary for some peep
 	   * optimizations to work well. */
 	  e++;
-	  labels[c[e].arg] = DO_NOT_WARN((INT32)e);
+          labels[c[e].arg] = (INT32)e;
 	  aliases[c[e].arg] = l;
 	}
       }
@@ -506,7 +506,7 @@ INT32 assemble(int store_linenumbers)
     {
       if (c->opcode == F_POP_SYNCH_MARK) synch_depth--;
       fprintf(stderr, "===%4ld %4lx %*s", (long)c->line,
-	      DO_NOT_WARN((unsigned long)PIKE_PC), synch_depth, "");
+              (unsigned long)PIKE_PC, synch_depth, "");
       dump_instr(c);
       fprintf(stderr,"\n");
       if (c->opcode == F_SYNCH_MARK) synch_depth++;
@@ -565,7 +565,7 @@ INT32 assemble(int store_linenumbers)
 	Pike_fatal("Duplicate label!\n");
 #endif
       FLUSH_CODE_GENERATOR_STATE();
-      labels[c->arg] = DO_NOT_WARN((INT32)PIKE_PC);
+      labels[c->arg] = (INT32)PIKE_PC;
       if ((e+1 < length) &&
 	  (c[1].opcode != F_LABEL) &&
 	  (c[1].opcode != F_BYTE) &&
@@ -586,7 +586,7 @@ INT32 assemble(int store_linenumbers)
       if(c->arg > max_label || c->arg < 0)
 	Pike_fatal("Jump to unknown label?\n");
 #endif
-      tmp = DO_NOT_WARN((INT32)PIKE_PC);
+      tmp = (INT32)PIKE_PC;
       ins_pointer(jumps[c->arg]);
       jumps[c->arg]=tmp;
       break;
@@ -611,7 +611,7 @@ INT32 assemble(int store_linenumbers)
 	if(c->arg > max_label || c->arg < 0)
 	  Pike_fatal("Jump to unknown label?\n");
 #endif
-	tmp = DO_NOT_WARN((INT32)PIKE_PC);
+        tmp = (INT32)PIKE_PC;
 	ins_pointer(jumps[c->arg]);
 	jumps[c->arg]=tmp;
 	break;
@@ -1097,9 +1097,7 @@ static int asm_opt(void)
 #ifdef PIKE_DEBUG
     if(a_flag>6) {
       int e;
-      fprintf(stderr, "#%ld,%ld:",
-              DO_NOT_WARN((long)eye),
-              stack_depth);
+      fprintf(stderr, "#%ld,%ld:", (long)eye, stack_depth);
       for(e = 4;e--;) {
         fprintf(stderr," ");
         dump_instr(instr(e));

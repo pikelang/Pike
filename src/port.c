@@ -86,7 +86,7 @@ void GETTIMEOFDAY(struct timeval *t)
 PMOD_EXPORT void sysleep(double left)
 {
 #ifdef __NT__
-  Sleep(DO_NOT_WARN((int)(left*1000+0.5)));
+  Sleep((int)(left*1000+0.5));
 #elif defined(HAVE_NANOSLEEP)
   {
     struct timespec req;

@@ -50,8 +50,7 @@
       if(fun>=(int)p->num_identifier_references)
       {
 	fprintf(stderr, "Function index out of range. %ld >= %d\n",
-		DO_NOT_WARN((long)fun),
-		(int)p->num_identifier_references);
+                (long)fun, (int)p->num_identifier_references);
 	fprintf(stderr,"########Program is:\n");
 	describe(p);
 	fprintf(stderr,"########Object is:\n");
@@ -95,7 +94,7 @@
       new_frame->context = p->inherits + ref->inherit_offset;
 
       function = new_frame->context->prog->identifiers + ref->identifier_offset;
-      new_frame->fun = DO_NOT_WARN((unsigned INT16)fun);
+      new_frame->fun = (unsigned INT16)fun;
 
 
 #ifdef PIKE_DEBUG
@@ -112,7 +111,7 @@
 		  new_frame->context->identifier_level,
 		  new_frame->context->parent_identifier,
 		  new_frame->context->parent_offset,
-		  DO_NOT_WARN((long)new_frame->context->storage_offset),
+                  (long)new_frame->context->storage_offset,
 		  new_frame->context->name ? new_frame->context->name->str  : "NULL");
 	  if(Pike_interpreter.trace_level>19)
 	  {
@@ -164,7 +163,7 @@
 	char buf[50];
 
 	init_buf(&save_buf);
-	sprintf(buf, "%lx->", DO_NOT_WARN((long) PTR_TO_INT (o)));
+        sprintf(buf, "%lx->", (long) PTR_TO_INT (o));
 	my_strcat(buf);
 	if (function->name->size_shift)
 	  my_strcat ("[widestring function name]");

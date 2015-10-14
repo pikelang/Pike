@@ -343,8 +343,7 @@ void generic_memcpy(PCHARP to,
 {
 #ifdef PIKE_DEBUG
   if(len<0)
-    Pike_fatal("Cannot copy %ld bytes!\n",
-	  DO_NOT_WARN((long)len));
+    Pike_fatal("Cannot copy %ld bytes!\n", (long)len);
 #endif
 
   switch(TWO_SIZES(from.shift,to.shift))
@@ -1226,8 +1225,7 @@ struct pike_string *add_string_status(int verbose)
        }
 
        overhead_bytes[e] =
-         DO_NOT_WARN((long)sizeof(struct pike_string) *
-                     num_distinct_strings[e]);
+         (long)sizeof(struct pike_string) * num_distinct_strings[e];
 
        alloced_strings[e|3] += alloced_strings[e];
        alloced_bytes[e|3] += alloced_bytes[e];
@@ -1427,10 +1425,10 @@ PMOD_EXPORT void debug_dump_pike_string(const struct pike_string *s, INT32 max)
   fprintf(stderr,"0x%p: %ld refs, len=%ld, size_shift=%d, hval=%lux (%lx)\n",
          s,
          (long)s->refs,
-         DO_NOT_WARN((long)s->len),
+         (long)s->len,
          s->size_shift,
-         DO_NOT_WARN((unsigned long)s->hval),
-         DO_NOT_WARN((unsigned long)StrHash(s->str, s->len)));
+         (unsigned long)s->hval,
+         (unsigned long)StrHash(s->str, s->len));
   fprintf(stderr," \"");
   for(e=0;e<s->len && max>0;e++)
   {
@@ -1974,9 +1972,7 @@ PMOD_EXPORT struct pike_string *string_slice(struct pike_string *s,
   if(start < 0 || len<0 || start+len>s->len )
   {
     Pike_fatal("string_slice, start = %ld, len = %ld, s->len = %ld\n",
-	  DO_NOT_WARN((long)start),
-	  DO_NOT_WARN((long)len),
-	  DO_NOT_WARN((long)s->len));
+          (long)start, (long)len, (long)s->len);
   }
 #endif
   if( len == 0)

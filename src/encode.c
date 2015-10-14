@@ -278,10 +278,10 @@ static void code_entry(int tag, INT64 num, struct encode_data *data)
 
   switch(t)
   {
-  case 3: addchar(DO_NOT_WARN((char)((num >> 24)&0xff)));
-  case 2: addchar(DO_NOT_WARN((char)((num >> 16)&0xff)));
-  case 1: addchar(DO_NOT_WARN((char)((num >> 8)&0xff)));
-  case 0: addchar(DO_NOT_WARN((char)(num&0xff)));
+  case 3: addchar((char)((num >> 24)&0xff));
+  case 2: addchar((char)((num >> 16)&0xff));
+  case 1: addchar((char)((num >> 8)&0xff));
+  case 0: addchar((char)(num&0xff));
   }
 }
 
@@ -289,8 +289,7 @@ static void code_number(ptrdiff_t num, struct encode_data *data)
 {
   EDB(5, fprintf(stderr, "%*scode_number(%d)\n",
 		 data->depth, "", num));
-  code_entry(DO_NOT_WARN(num & 15),
-	     num >> 4, data);
+  code_entry(num & 15, num >> 4, data);
 }
 
 /* NOTE: Take care to encode it exactly as the corresponing
@@ -713,7 +712,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	double tmp;
 
 	tmp = frexp(d, &y);
-	x = DO_NOT_WARN((INT64)((((INT64)1)<<(sizeof(INT64)*8 - 2))*tmp));
+        x = (INT64)((((INT64)1)<<(sizeof(INT64)*8 - 2))*tmp);
 	y -= sizeof(INT64)*8 - 2;
 
 	EDB(2,fprintf(stderr,
@@ -2555,15 +2554,15 @@ static void decode_value2(struct decode_data *data)
 	{
 	  case Pike_FP_SNAN: /* Signal Not A Number */
 	  case Pike_FP_QNAN: /* Quiet Not A Number */
-	    push_float(DO_NOT_WARN((FLOAT_TYPE)MAKE_NAN()));
+            push_float((FLOAT_TYPE)MAKE_NAN());
 	    break;
 
 	  case Pike_FP_NINF: /* Negative infinity */
-	    push_float(DO_NOT_WARN((FLOAT_TYPE)MAKE_INF(-1)));
+            push_float((FLOAT_TYPE)MAKE_INF(-1));
 	    break;
 
 	  case Pike_FP_PINF: /* Positive infinity */
-	    push_float(DO_NOT_WARN((FLOAT_TYPE)MAKE_INF(1)));
+            push_float((FLOAT_TYPE)MAKE_INF(1));
 	    break;
 
 	  case Pike_FP_NZERO: /* Negative Zero */
@@ -2571,13 +2570,13 @@ static void decode_value2(struct decode_data *data)
 	    break;
 
 	  default:
-	    push_float(DO_NOT_WARN((FLOAT_TYPE)ldexp(res, num)));
+            push_float((FLOAT_TYPE)ldexp(res, num));
 	    break;
 	}
 	break;
       }
 
-      push_float(DO_NOT_WARN((FLOAT_TYPE)ldexp(res, num)));
+      push_float((FLOAT_TYPE)ldexp(res, num));
       break;
     }
 
@@ -4280,13 +4279,13 @@ static void rec_restore_value(char **v, ptrdiff_t *l)
   switch(i)
   {
   case TAG_INT:
-    push_int(DO_NOT_WARN(t));
+    push_int(t);
     return;
 
   case TAG_FLOAT:
     if(sizeof(ptrdiff_t) < sizeof(FLOAT_TYPE))  /* FIXME FIXME FIXME FIXME */
       decode_error(current_decode, NULL, "Float architecture not supported.\n");
-    push_int(DO_NOT_WARN(t)); /* WARNING! */
+    push_int(t);
     SET_SVAL_TYPE(Pike_sp[-1], T_FLOAT);
     return;
 
@@ -4310,7 +4309,7 @@ static void rec_restore_value(char **v, ptrdiff_t *l)
 			 "length of array is negative.\n");
     check_stack(t);
     for(i=0;i<t;i++) rec_restore_value(v,l);
-    f_aggregate(DO_NOT_WARN(t)); /* FIXME: Unbounded stack consumption. */
+    f_aggregate(t); /* FIXME: Unbounded stack consumption. */
     return;
 
   case TAG_MULTISET:
@@ -4318,7 +4317,7 @@ static void rec_restore_value(char **v, ptrdiff_t *l)
 			 "length of multiset is negative.\n");
     check_stack(t);
     for(i=0;i<t;i++) rec_restore_value(v,l);
-    f_aggregate_multiset(DO_NOT_WARN(t)); /* FIXME: Unbounded stack consumption. */
+    f_aggregate_multiset(t); /* FIXME: Unbounded stack consumption. */
     return;
 
   case TAG_MAPPING:
@@ -4330,7 +4329,7 @@ static void rec_restore_value(char **v, ptrdiff_t *l)
       rec_restore_value(v,l);
       rec_restore_value(v,l);
     }
-    f_aggregate_mapping(DO_NOT_WARN(t*2)); /* FIXME: Unbounded stack consumption. */
+    f_aggregate_mapping(t*2); /* FIXME: Unbounded stack consumption. */
     return;
 
   case TAG_OBJECT:

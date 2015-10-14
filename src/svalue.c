@@ -410,9 +410,9 @@ PMOD_EXPORT void assign_short_svalue(union anything *to,
 
 static INLINE unsigned INT32 hash_ptr(void * ptr) {
 #if SIZEOF_CHAR_P > 4
-  return DO_NOT_WARN((unsigned INT32)(PTR_TO_INT(ptr) >> 2));
+  return (unsigned INT32)(PTR_TO_INT(ptr) >> 2);
 #else
-  return DO_NOT_WARN((unsigned INT32)(PTR_TO_INT(ptr)));
+  return (unsigned INT32)(PTR_TO_INT(ptr));
 #endif
 }
 
@@ -2544,7 +2544,7 @@ PMOD_EXPORT INT_TYPE pike_sizeof(const struct svalue *s)
   switch(TYPEOF(*s))
   {
   case T_STRING:
-    return DO_NOT_WARN((INT32)s->u.string->len);
+    return (INT32)s->u.string->len;
   case T_ARRAY: return s->u.array->size;
   case T_MAPPING: return m_sizeof(s->u.mapping);
   case T_MULTISET: return l_sizeof(s->u.multiset);

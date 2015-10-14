@@ -424,10 +424,10 @@ static inline struct pike_type *debug_mk_type(unsigned INT32 type,
    */
   struct pike_type *t;
   unsigned INT32 index,
-    hash = DO_NOT_WARN((unsigned INT32)
-                       ((ptrdiff_t)type*0x10204081)^
-                       (0x8003*PTR_TO_INT(car))^
-                       ~(0x10001*PTR_TO_INT(cdr)));
+    hash = (unsigned INT32)
+    ((ptrdiff_t)type*0x10204081)^
+    (0x8003*PTR_TO_INT(car))^
+    ~(0x10001*PTR_TO_INT(cdr));
 
   hash ^= (hash >> 20) ^ (hash >> 12);
   hash ^= (hash >> 7) ^ (hash >> 4);

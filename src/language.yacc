@@ -588,7 +588,7 @@ constant_name: TOK_IDENTIFIER '=' safe_expr0
 	    yyerror("Error in constant definition.");
 	    push_undefined();
 	  }else{
-	    pop_n_elems(DO_NOT_WARN((INT32)(tmp - 1)));
+            pop_n_elems((INT32)(tmp - 1));
 	  }
 	} else {
 	  push_undefined();
@@ -1907,7 +1907,7 @@ local_constant_name: TOK_IDENTIFIER '=' safe_expr0
       {
 	yyerror("Error in constant definition.");
       }else{
-	pop_n_elems(DO_NOT_WARN((INT32)(tmp - 1)));
+        pop_n_elems((INT32)(tmp - 1));
 	if($3) free_node($3);
 	$3=mksvaluenode(Pike_sp-1);
 	type=$3->type;
@@ -2862,7 +2862,7 @@ enum_def: /* EMPTY */
 	      yyerror("Error in enum definition.");
 	      push_int(0);
 	    }else{
-	      pop_n_elems(DO_NOT_WARN((INT32)(tmp - 1)));
+              pop_n_elems((INT32)(tmp - 1));
 	    }
 	  } else {
 	    push_int(0);

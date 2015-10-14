@@ -2047,8 +2047,7 @@ PMOD_EXPORT void *debug_malloc(size_t s, LOCATION location)
 
   if(verbose_debug_malloc)
     fprintf(stderr, "malloc(%ld) => %p  (%s)\n",
-	    DO_NOT_WARN((long)s),
-	    m, LOCATION_NAME(location));
+            (long)s, m, LOCATION_NAME(location));
 
   mt_unlock(&debug_malloc_mutex);
   return m;
@@ -2062,9 +2061,7 @@ PMOD_EXPORT void *debug_calloc(size_t a, size_t b, LOCATION location)
 
   if(verbose_debug_malloc)
     fprintf(stderr, "calloc(%ld, %ld) => %p  (%s)\n",
-	    DO_NOT_WARN((long)a),
-	    DO_NOT_WARN((long)b),
-	    m, LOCATION_NAME(location));
+            (long)a, (long)b, m, LOCATION_NAME(location));
 
   return m;
 }
@@ -2097,9 +2094,7 @@ PMOD_EXPORT void *debug_realloc(void *p, size_t s, LOCATION location)
   }
   if(verbose_debug_malloc)
     fprintf(stderr, "realloc(%p, %ld) => %p  (%s)\n",
-	    p,
-	    DO_NOT_WARN((long)s),
-	    m, LOCATION_NAME(location));
+            p, (long)s, m, LOCATION_NAME(location));
   mt_unlock(&debug_malloc_mutex);
   return m;
 }

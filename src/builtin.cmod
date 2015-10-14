@@ -1225,10 +1225,9 @@ PIKEFUN mapping(string:mixed) gc_parameters (void|mapping(string:mixed) params)
 	  set->u.float_number < 0.0 || set->u.float_number > 1.0)	\
 	SIMPLE_BAD_ARG_ERROR ("gc_parameters", 1,			\
 			      "float between 0.0 and 1.0 for " NAME);	\
-      VAR = DO_NOT_WARN ((double) set->u.float_number);			\
+      VAR = (double) set->u.float_number;                               \
     }, {								\
-      SET_SVAL(get, T_FLOAT, 0, float_number,				\
-	       DO_NOT_WARN ((FLOAT_TYPE) VAR));				\
+      SET_SVAL(get, T_FLOAT, 0, float_number, (FLOAT_TYPE) VAR);        \
     });
 
   HANDLE_PARAM ("enabled", {
@@ -1422,7 +1421,7 @@ PIKEFUN int string_count(string haystack, string needle)
        }
        break;
    }
-   RETURN DO_NOT_WARN((INT_TYPE)c);
+   RETURN (INT_TYPE)c;
 }
 
 /*! @decl string trim_whites (string s)
@@ -2800,8 +2799,8 @@ void low_backtrace(struct Pike_interpreter_struct *i)
     }
 
     if (f->locals) {
-      INT32 numargs = DO_NOT_WARN((INT32) MINIMUM(f->num_args,
-						  stack_top - f->locals));
+      INT32 numargs = (INT32) MINIMUM(f->num_args,
+                                      stack_top - f->locals);
       INT32 varargs = 0;
 
       if(of && of->locals) {
@@ -2812,7 +2811,7 @@ void low_backtrace(struct Pike_interpreter_struct *i)
 	 *  /arne
 	 * */
 
-	numargs = DO_NOT_WARN((INT32)MINIMUM(f->num_args,of->locals - f->locals));
+        numargs = (INT32)MINIMUM(f->num_args,of->locals - f->locals);
       }
 
       numargs = MAXIMUM(numargs, 0);
@@ -3735,7 +3734,7 @@ PIKECLASS bootstring
 	    INT_TYPE p = output.s->len;
 	    while (--p>i)
 	      s[p] = s[p-1];
-	    s[p] = DO_NOT_WARN ((p_wchar0) n);
+            s[p] = (p_wchar0) n;
 	  }
 	  break;
 	case 1:
@@ -3744,7 +3743,7 @@ PIKECLASS bootstring
 	    INT_TYPE p = output.s->len;
 	    while (--p>i)
 	      s[p] = s[p-1];
-	    s[p] = DO_NOT_WARN ((p_wchar1) n);
+            s[p] = (p_wchar1) n;
 	  }
 	  break;
 	case 2:
@@ -3753,7 +3752,7 @@ PIKECLASS bootstring
 	    INT_TYPE p = output.s->len;
 	    while (--p>i)
 	      s[p] = s[p-1];
-	    s[p] = DO_NOT_WARN ((p_wchar2) n);
+            s[p] = (p_wchar2) n;
 	  }
 	  break;
 #ifdef PIKE_DEBUG

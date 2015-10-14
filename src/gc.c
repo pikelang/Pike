@@ -4238,28 +4238,28 @@ void f__gc_status(INT32 args)
   size++;
 
   push_static_text("projected_garbage");
-  push_float(DO_NOT_WARN((FLOAT_TYPE)(objects_freed * (double) num_allocs /
-				      (double) alloc_threshold)));
+  push_float((FLOAT_TYPE)(objects_freed * (double) num_allocs /
+                          (double) alloc_threshold));
   size++;
 
   push_static_text("objects_alloced");
-  push_int64(DO_NOT_WARN((INT64)objects_alloced));
+  push_int64((INT64)objects_alloced);
   size++;
 
   push_static_text("objects_freed");
-  push_int64(DO_NOT_WARN((INT64)objects_freed));
+  push_int64((INT64)objects_freed);
   size++;
 
   push_static_text("last_garbage_ratio");
-  push_float(DO_NOT_WARN((FLOAT_TYPE) last_garbage_ratio));
+  push_float((FLOAT_TYPE) last_garbage_ratio);
   size++;
 
   push_static_text("non_gc_time");
-  push_int64(DO_NOT_WARN((INT64) non_gc_time));
+  push_int64((INT64) non_gc_time);
   size++;
 
   push_static_text("gc_time");
-  push_int64(DO_NOT_WARN((INT64) gc_time));
+  push_int64((INT64) gc_time);
   size++;
 
   push_static_text ("last_garbage_strategy");
@@ -4299,15 +4299,15 @@ void f__gc_status(INT32 args)
 
 #ifdef PIKE_DEBUG
   push_static_text ("max_rec_frames");
-  push_int64 (DO_NOT_WARN ((INT64) tot_max_rec_frames));
+  push_int64 ((INT64) tot_max_rec_frames);
   size++;
 
   push_static_text ("max_link_frames");
-  push_int64 (DO_NOT_WARN ((INT64) tot_max_link_frames));
+  push_int64 ((INT64) tot_max_link_frames);
   size++;
 
   push_static_text ("max_free_extra_frames");
-  push_int64 (DO_NOT_WARN ((INT64) tot_max_free_extra_frames));
+  push_int64 ((INT64) tot_max_free_extra_frames);
   size++;
 #endif
 

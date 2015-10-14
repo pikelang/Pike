@@ -353,8 +353,8 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
 #ifdef PIKE_DEBUG
     if (sizeof(table) != (F_MAX_OPCODE-F_OFFSET)*sizeof(void *))
       Pike_fatal("opcode_to_label out of sync: 0x%08lx != 0x%08lx\n",
-	    DO_NOT_WARN((long)sizeof(table)),
-	    DO_NOT_WARN((long)((F_MAX_OPCODE-F_OFFSET)*sizeof(void *))));
+            (long)sizeof(table),
+            (long)((F_MAX_OPCODE-F_OFFSET)*sizeof(void *)));
 #endif /* PIKE_DEBUG */
     fcode_to_opcode = table;
     opcode_to_fcode = lookup;

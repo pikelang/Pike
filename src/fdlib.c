@@ -213,7 +213,7 @@ static INLINE time_t convert_filetime_to_time_t(FILETIME *tmp)
 
   /* 1s == 10000000 * 100ns. */
   t/=10000000.0;
-  return DO_NOT_WARN((long)floor(t));
+  return (long)floor(t);
 #endif
 }
 
@@ -713,7 +713,7 @@ PMOD_EXPORT FD debug_fd_open(const char *file, int open_mode, int create_mode)
 	       NULL);
 
 
-  if(x == DO_NOT_WARN(INVALID_HANDLE_VALUE))
+  if(x == INVALID_HANDLE_VALUE)
   {
     unsigned long err = GetLastError();
     if (err == ERROR_INVALID_NAME)
@@ -974,7 +974,7 @@ PMOD_EXPORT int debug_fd_connect (FD fd, struct sockaddr *a, int len)
   ret=connect(ret,a,len);
   if(ret == SOCKET_ERROR) set_errno_from_win32_error (WSAGetLastError());
   FDDEBUG(fprintf(stderr, "connect returned %d (%d)\n",ret,errno));
-  return DO_NOT_WARN((int)ret);
+  return (int)ret;
 }
 
 PMOD_EXPORT int debug_fd_close(FD fd)
@@ -1046,9 +1046,7 @@ PMOD_EXPORT ptrdiff_t debug_fd_write(FD fd, void *buf, ptrdiff_t len)
   {
     case FD_SOCKET:
       {
-	ptrdiff_t ret = send((SOCKET)handle, buf,
-			     DO_NOT_WARN((int)len),
-			     0);
+        ptrdiff_t ret = send((SOCKET)handle, buf, (int)len, 0);
 	if(ret<0)
 	{
 	  set_errno_from_win32_error (WSAGetLastError());
@@ -1068,9 +1066,7 @@ PMOD_EXPORT ptrdiff_t debug_fd_write(FD fd, void *buf, ptrdiff_t len)
     case FD_PIPE:
       {
 	DWORD ret = 0;
-	if(!WriteFile(handle, buf,
-		      DO_NOT_WARN((DWORD)len),
-		      &ret,0) && ret<=0)
+        if(!WriteFile(handle, buf, (DWORD)len, &ret,0) && ret<=0)
 	{
 	  set_errno_from_win32_error (GetLastError());
 	  FDDEBUG(fprintf(stderr, "Write on %d failed (%d)\n", fd, errno));
@@ -1108,9 +1104,7 @@ PMOD_EXPORT ptrdiff_t debug_fd_read(FD fd, void *to, ptrdiff_t len)
   switch(ret)
   {
     case FD_SOCKET:
-      rret=recv((SOCKET)handle, to,
-		DO_NOT_WARN((int)len),
-		0);
+      rret=recv((SOCKET)handle, to, (int)len, 0);
       if(rret<0)
       {
 	set_errno_from_win32_error (WSAGetLastError());
@@ -1124,9 +1118,8 @@ PMOD_EXPORT ptrdiff_t debug_fd_read(FD fd, void *to, ptrdiff_t len)
     case FD_FILE:
     case FD_PIPE:
       ret=0;
-      while(len && !ReadFile(handle, to,
-			     DO_NOT_WARN((DWORD)len),
-			     &ret,0) && ret<=0) {
+      while(len && !ReadFile(handle, to, (DWORD)len, &ret, 0) && ret<=0)
+      {
 	unsigned int err = GetLastError();
 	set_errno_from_win32_error (err);
 	switch(err)
@@ -1220,10 +1213,10 @@ PMOD_EXPORT PIKE_OFF_T debug_fd_lseek(FD fd, PIKE_OFF_T pos, int where)
     ret = li_ret.QuadPart;
 #else /* !HAVE_SETFILEPOINTEREX */
     /* Windows 9x based. */
-    LONG high = DO_NOT_WARN((LONG)(pos >> 32));
+    LONG high = (LONG)(pos >> 32);
     DWORD err;
     pos &= ((INT64) 1 << 32) - 1;
-    ret = SetFilePointer(h, DO_NOT_WARN((LONG)pos), &high, where);
+    ret = SetFilePointer(h, (LONG)pos, &high, where);
     if (ret == INVALID_SET_FILE_POINTER &&
 	(err = GetLastError()) != NO_ERROR) {
       set_errno_from_win32_error (err);
@@ -1276,13 +1269,13 @@ PMOD_EXPORT int debug_fd_ftruncate(FD fd, PIKE_OFF_T len)
   }
 
 #ifdef INT64
-  len_hi = DO_NOT_WARN ((LONG) (len >> 32));
+  len_hi = (LONG) (len >> 32);
   len &= ((INT64) 1 << 32) - 1;
 #else
   len_hi = 0;
 #endif
 
-  if (SetFilePointer (h, DO_NOT_WARN ((LONG) len), &len_hi, FILE_BEGIN) ==
+  if (SetFilePointer (h, (LONG) len, &len_hi, FILE_BEGIN) ==
       INVALID_SET_FILE_POINTER &&
       (err = GetLastError()) != NO_ERROR) {
     SetFilePointer(h, oldfp_lo, &oldfp_hi, FILE_BEGIN);
@@ -1695,7 +1688,7 @@ PMOD_EXPORT DIR *opendir(char *dir)
 
   /* This may require appending a slash and a star... */
   ret->h=FindFirstFile( (LPCTSTR) foo, & ret->find_data);
-  if(ret->h == DO_NOT_WARN(INVALID_HANDLE_VALUE))
+  if(ret->h == INVALID_HANDLE_VALUE)
   {
     errno=ENOENT;
     free(ret);

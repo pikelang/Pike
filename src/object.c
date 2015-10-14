@@ -405,7 +405,7 @@ PMOD_EXPORT struct object *parent_clone_object(struct program *p,
   if(p->flags & PROGRAM_USES_PARENT)
   {
     add_ref( PARENT_INFO(o)->parent=parent );
-    PARENT_INFO(o)->parent_identifier = DO_NOT_WARN((INT32)parent_identifier);
+    PARENT_INFO(o)->parent_identifier = (INT32)parent_identifier;
   }
   call_c_initializers(o);
   call_pike_initializers(o,args);
@@ -455,7 +455,7 @@ struct object *decode_value_clone_object(struct svalue *prog)
 
     PARENT_INFO(o)->parent=parent;
     if(parent) add_ref(parent);
-    PARENT_INFO(o)->parent_identifier = DO_NOT_WARN((INT32)parent_identifier);
+    PARENT_INFO(o)->parent_identifier = (INT32)parent_identifier;
   }
   call_c_initializers(o);
   UNSET_ONERROR(tmp);
@@ -483,11 +483,11 @@ struct pike_string *low_read_file(const char *file)
       Pike_fatal ("low_read_file(%s): File too large: %"PRINTPIKEOFFT"d b.\n",
 		  file, len);
 
-    s = begin_shared_string (DO_NOT_WARN ((ptrdiff_t) len));
+    s = begin_shared_string ((ptrdiff_t) len);
 
     while(pos<len)
     {
-      tmp = fd_read(f,s->str+pos, DO_NOT_WARN ((ptrdiff_t) len) - pos);
+      tmp = fd_read(f,s->str+pos, (ptrdiff_t) len - pos);
       if(tmp<=0)
       {
 	if (tmp < 0) {
@@ -1164,7 +1164,7 @@ static void assign_svalue_from_ptr_no_free(struct svalue *to,
 
   case T_OBJ_INDEX:
     {
-      SET_SVAL(*to, T_FUNCTION, DO_NOT_WARN(func.offset), object, o);
+      SET_SVAL(*to, T_FUNCTION, func.offset, object, o);
       add_ref(o);
       break;
     }
@@ -1305,7 +1305,7 @@ PMOD_EXPORT int low_object_index_no_free(struct svalue *to,
   case IDENTIFIER_C_FUNCTION:
     ref->func.offset = f;
     ref->run_time_type = T_OBJ_INDEX;
-    SET_SVAL(*to, T_FUNCTION, DO_NOT_WARN(f), object, o);
+    SET_SVAL(*to, T_FUNCTION, f, object, o);
     add_ref(o);
     break;
 
@@ -1317,7 +1317,7 @@ PMOD_EXPORT int low_object_index_no_free(struct svalue *to,
 	if(TYPEOF(*s) == T_PROGRAM &&
 	   (s->u.program->flags & PROGRAM_USES_PARENT))
 	{
-	  SET_SVAL(*to, T_FUNCTION, DO_NOT_WARN(f), object, o);
+          SET_SVAL(*to, T_FUNCTION, f, object, o);
 	  add_ref(o);
 	}else{
 	  if (p->flags & PROGRAM_OPTIMIZED) {

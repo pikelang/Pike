@@ -1487,7 +1487,7 @@ void resolv_constant(node *n)
 	    yyerror("Expected constant, got void expression.");
 	  }else{
 	    yyerror("Possible internal error!!!");
-	    pop_n_elems(DO_NOT_WARN(args-1));
+            pop_n_elems(args-1);
 	    return;
 	  }
 	} else {
@@ -5170,7 +5170,7 @@ int dooptcode(struct pike_string *name,
 #ifdef PIKE_DEBUG
   if((a_flag > 1) || (c->lex.pragmas & ID_DISASSEMBLE))
     fprintf(stderr, "Doing function '%s' at %lx\n", name->str,
-	    DO_NOT_WARN((unsigned long)PIKE_PC));
+            (unsigned long)PIKE_PC);
 #endif
 
   args=count_arguments(type);

@@ -1349,7 +1349,7 @@ PMOD_EXPORT void f_all_threads(INT32 args)
 	ref_push_object(o);
       }
     });
-  f_aggregate(DO_NOT_WARN(Pike_sp - oldsp));
+  f_aggregate(Pike_sp - oldsp);
 }
 
 #ifdef PIKE_DEBUG

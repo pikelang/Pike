@@ -828,8 +828,8 @@ PIKECLASS Backend
       case T_FLOAT:
 	{
 	  FLOAT_TYPE tmp = seconds->u.float_number;
-	  new->tv.tv_sec = DO_NOT_WARN((long)floor(tmp));
-	  new->tv.tv_usec = DO_NOT_WARN((long)(1000000.0 * (tmp - floor(tmp))));
+          new->tv.tv_sec = (long)floor(tmp);
+          new->tv.tv_usec = (long)(1000000.0 * (tmp - floor(tmp)));
 	  break;
 	}
 
@@ -4290,9 +4290,9 @@ else
     if (timeout.tv_sec < 0)
       push_int (0);
     else
-      push_float (DO_NOT_WARN ((FLOAT_TYPE)
-			       (DO_NOT_WARN ((double) timeout.tv_sec) +
-				DO_NOT_WARN ((double) timeout.tv_usec) / 1e6)));
+      push_float ( (FLOAT_TYPE)
+                   ( (double) timeout.tv_sec +
+                     (double) timeout.tv_usec / 1e6));
   }
 
 #ifdef BACKEND_USES_CFRUNLOOP
@@ -5045,9 +5045,9 @@ PIKECLASS PollBackend
     if (timeout.tv_sec < 0)
       push_int (0);
     else
-      push_float (DO_NOT_WARN ((FLOAT_TYPE)
-			       (DO_NOT_WARN ((double) timeout.tv_sec) +
-				DO_NOT_WARN ((double) timeout.tv_usec) / 1e6)));
+      push_float ( (FLOAT_TYPE)
+                   ( (double) timeout.tv_sec +
+                     (double) timeout.tv_usec / 1e6));
   }
 
   EXTRA
@@ -5580,9 +5580,9 @@ PIKECLASS SelectBackend
     if (timeout.tv_sec < 0)
       push_int (0);
     else
-      push_float (DO_NOT_WARN ((FLOAT_TYPE)
-			       (DO_NOT_WARN ((double) timeout.tv_sec) +
-				DO_NOT_WARN ((double) timeout.tv_usec) / 1e6)));
+      push_float ( (FLOAT_TYPE)
+                   ( (double) timeout.tv_sec +
+                     (double) timeout.tv_usec / 1e6));
   }
 
   EXTRA

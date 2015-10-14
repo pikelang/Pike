@@ -341,8 +341,8 @@ static void f_hash_7_0( INT32 args )
     return;
   }
 
-  i = DO_NOT_WARN((unsigned int)hashstr( (unsigned char *)s->str,
-					 MINIMUM(100,s->len)));
+  i = (unsigned int)hashstr( (unsigned char *)s->str,
+                             MINIMUM(100,s->len));
   if(args > 1)
   {
     if(TYPEOF(Pike_sp[1-args]) != T_INT)
@@ -831,13 +831,13 @@ PMOD_EXPORT void f_random_string(INT32 args)
 
   while( (e+=sizeof(INT64)) <= len )
   {
-    str[0] = DO_NOT_WARN(my_rand64());
+    str[0] = my_rand64();
     str++;
   }
 
   for(e-=sizeof(INT64);e<len;e++)
   {
-    ret->str[e] = DO_NOT_WARN((char)my_rand());
+    ret->str[e] = (char)my_rand();
   }
 
   pop_n_elems(args);
@@ -2215,7 +2215,7 @@ PMOD_EXPORT void f_string_to_utf8(INT32 args)
       out->str[j++] = 0x80 | (c & 0x3f);
     } else {
       /* 32 - 36bit */
-      out->str[j++] = DO_NOT_WARN((char)0xfe);
+      out->str[j++] = (char)0xfe;
       out->str[j++] = 0x80 | ((c >> 30) & 0x3f);
       out->str[j++] = 0x80 | ((c >> 24) & 0x3f);
       out->str[j++] = 0x80 | ((c >> 18) & 0x3f);
@@ -3367,7 +3367,7 @@ PMOD_EXPORT void f_indices(INT32 args)
     while(--size>=0)
     {
       /* Elements are already integers. */
-      ITEM(a)[size].u.integer = DO_NOT_WARN((INT_TYPE)size);
+      ITEM(a)[size].u.integer = (INT_TYPE)size;
     }
     a->type_field = BIT_INT;
     break;
@@ -4143,7 +4143,7 @@ int find_longest_prefix(char *str,
 static int replace_sortfun(struct replace_many_tupel *a,
 			   struct replace_many_tupel *b)
 {
-  return DO_NOT_WARN((int)my_quick_strcmp(a->ind, b->ind));
+  return (int)my_quick_strcmp(a->ind, b->ind);
 }
 
 void free_replace_many_context(struct replace_many_context *ctx)
@@ -7403,7 +7403,7 @@ PMOD_EXPORT void f__memory_usage(INT32 args)
 
   call_callback(&memory_usage_callback, NULL);
 
-  f_aggregate_mapping(DO_NOT_WARN(Pike_sp - ss));
+  f_aggregate_mapping(Pike_sp - ss);
 }
 
 /* Estimate the size of an svalue, not including objects.

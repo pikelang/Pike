@@ -41,7 +41,7 @@ HCHAR *NameNH(memchr_search)(void *data,
 				    ptrdiff_t haystacklen)
 {
   return NameNH(MEMCHR)(haystack,
-			DO_NOT_WARN((NCHAR)(ptrdiff_t) PTR_TO_INT(data)),
+                        (NCHAR)(ptrdiff_t) PTR_TO_INT(data),
 			haystacklen);
 }
 

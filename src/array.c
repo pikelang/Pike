@@ -106,9 +106,9 @@ PMOD_EXPORT struct array *real_allocate_array(ptrdiff_t size,
     v->type_field = 0;
   v->flags=0;
 
-  v->malloced_size = DO_NOT_WARN((INT32)(size + extra_space));
+  v->malloced_size = (INT32)(size + extra_space);
   v->item=v->real_item;
-  v->size = DO_NOT_WARN((INT32)size);
+  v->size = (INT32)size;
   INIT_PIKE_MEMOBJ(v, T_ARRAY);
   DOUBLELINK (first_array, v);
 
@@ -617,7 +617,7 @@ PMOD_EXPORT struct array *resize_array(struct array *a, INT32 size)
       struct array *ret;
       ret = array_set_flags(low_allocate_array(size, size + 1), a->flags);
       memcpy(ITEM(ret), ITEM(a), sizeof(struct svalue)*a->size);
-      ret->type_field = DO_NOT_WARN((TYPE_FIELD)(a->type_field | BIT_INT));
+      ret->type_field = (TYPE_FIELD)(a->type_field | BIT_INT);
       a->size=0;
       free_array(a);
       return ret;
@@ -1147,7 +1147,7 @@ static int switch_svalue_cmpfun(const struct svalue *a, const struct svalue *b)
       return 0;
 
     case T_STRING:
-      return DO_NOT_WARN((int)my_quick_strcmp(a->u.string, b->u.string));
+      return (int)my_quick_strcmp(a->u.string, b->u.string);
 
     case T_OBJECT:
     case T_FUNCTION:
@@ -1184,7 +1184,7 @@ int alpha_svalue_cmpfun(const struct svalue *a, const struct svalue *b)
       return 0;
 
     case T_STRING:
-      return DO_NOT_WARN((int)my_quick_strcmp(a->u.string, b->u.string));
+      return (int)my_quick_strcmp(a->u.string, b->u.string);
 
     case T_ARRAY:
       if(a==b) return 0;
@@ -1613,7 +1613,7 @@ INT32 * merge(struct array *a,struct array *b,INT32 opcode)
   if((opcode >> 8) & PIKE_ARRAY_OP_A) while(ap<a->size) *(ptr++)=ap++;
   if(opcode & PIKE_ARRAY_OP_B) while(bp<b->size) *(ptr++)=~(bp++);
 
-  *ret = DO_NOT_WARN((INT32)(ptr-ret-1));
+  *ret = (INT32)(ptr-ret-1);
 
   UNSET_ONERROR(r);
 
@@ -2574,7 +2574,7 @@ PMOD_EXPORT void apply_array(struct array *a, INT32 args, int flags)
   check_stack(args);
   check_array_for_destruct(a);
   for (e=0; e<args; e++)
-    hash = hash * 33 + DO_NOT_WARN ((INT32) PTR_TO_INT (Pike_sp[-e-1].u.ptr));
+    hash = hash * 33 + (INT32) PTR_TO_INT (Pike_sp[-e-1].u.ptr);
 
   if (!(cycl = (struct array *)BEGIN_CYCLIC(a, (ptrdiff_t)hash))) {
     TYPE_FIELD new_types = 0;

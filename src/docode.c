@@ -576,9 +576,9 @@ static void emit_apply_builtin(char *func)
 			  n->name);
       if(TYPEOF(n->u.sval) == T_FUNCTION &&
 	 SUBTYPEOF(n->u.sval) == FUNCTION_BUILTIN)
-	emit1(F_CALL_BUILTIN, DO_NOT_WARN((INT32)tmp1));
+        emit1(F_CALL_BUILTIN, (INT32)tmp1);
       else
-	emit1(F_APPLY, DO_NOT_WARN((INT32)tmp1));
+        emit1(F_APPLY, (INT32)tmp1);
       break;
 
     default:
@@ -640,7 +640,7 @@ static void emit_builtin_svalue(char *func)
 			  (!(n->tree_info & OPT_EXTERNAL_DEPEND)) &&
 			  (TYPEOF(n->u.sval) != T_TYPE),
 			  n->name);
-      emit1(F_CONSTANT, DO_NOT_WARN((INT32)tmp1));
+      emit1(F_CONSTANT, (INT32)tmp1);
       break;
 
     default:
@@ -785,7 +785,7 @@ static int emit_ltosval_call_and_assign( node *lval, node *func, node *args )
   while ((arg = my_get_arg(&args, ++no)) && *arg) {
      do_docode(*arg, 0);
    }
-   emit1(F_LTOSVAL_CALL_BUILTIN_AND_ASSIGN, DO_NOT_WARN((INT32)tmp1));
+   emit1(F_LTOSVAL_CALL_BUILTIN_AND_ASSIGN, (INT32)tmp1);
    POP_AND_DONT_CLEANUP;
    return 1;
 }
@@ -1199,9 +1199,9 @@ static int do_docode2(node *n, int flags)
     if(!CDDR(n))
     {
       tmp1=alloc_label();
-      do_jump_when_zero(CAR(n), DO_NOT_WARN((INT32)tmp1));
+      do_jump_when_zero(CAR(n), (INT32)tmp1);
       DO_CODE_BLOCK(CADR(n));
-      low_insert_label( DO_NOT_WARN((INT32)tmp1));
+      low_insert_label( (INT32)tmp1 );
       current_switch.jumptable = prev_switch_jumptable;
       return 0;
     }
@@ -1209,22 +1209,22 @@ static int do_docode2(node *n, int flags)
     if(!CADR(n))
     {
       tmp1=alloc_label();
-      do_jump_when_non_zero(CAR(n), DO_NOT_WARN((INT32)tmp1));
+      do_jump_when_non_zero(CAR(n), (INT32)tmp1);
       DO_CODE_BLOCK(CDDR(n));
-      low_insert_label( DO_NOT_WARN((INT32)tmp1));
+      low_insert_label( (INT32)tmp1 );
       current_switch.jumptable = prev_switch_jumptable;
       return 0;
     }
 
     tmp1=alloc_label();
-    do_jump_when_zero(CAR(n), DO_NOT_WARN((INT32)tmp1));
+    do_jump_when_zero(CAR(n), (INT32)tmp1);
 
     adroppings=do_docode(CADR(n), flags);
     tmp3=emit1(F_POP_N_ELEMS,0);
 
     /* Else */
     tmp2=do_branch(-1);
-    low_insert_label( DO_NOT_WARN((INT32)tmp1));
+    low_insert_label( (INT32)tmp1 );
 
     bdroppings=do_docode(CDDR(n), flags);
     if(adroppings < bdroppings)
@@ -1234,12 +1234,11 @@ static int do_docode2(node *n, int flags)
 
     if(adroppings > bdroppings)
     {
-      update_arg(DO_NOT_WARN((INT32)tmp3),
-		 adroppings - bdroppings);
+      update_arg((INT32)tmp3, adroppings - bdroppings);
       adroppings=bdroppings;
     }
 
-    low_insert_label( DO_NOT_WARN((INT32)tmp2));
+    low_insert_label( (INT32)tmp2 );
 
     current_switch.jumptable = prev_switch_jumptable;
     return adroppings;
@@ -1256,7 +1255,7 @@ static int do_docode2(node *n, int flags)
       if(tmp1 & 1)
 	Pike_fatal("Very internal compiler error.\n");
 #endif
-      emit1(F_ARRAY_LVALUE, DO_NOT_WARN((INT32)(tmp1>>1)));
+      emit1(F_ARRAY_LVALUE, (INT32)(tmp1>>1) );
       emit0(F_MARK);
       PUSH_CLEANUP_FRAME(do_pop_mark, 0);
       do_docode(CAR(n), 0);
@@ -1478,14 +1477,14 @@ static int do_docode2(node *n, int flags)
     tmp1=alloc_label();
     if(flags & DO_POP)
     {
-      do_cond_jump(CAR(n), DO_NOT_WARN((INT32)tmp1), n->token == F_LOR, DO_POP);
+      do_cond_jump(CAR(n), (INT32)tmp1, n->token == F_LOR, DO_POP);
       DO_CODE_BLOCK(CDR(n));
-      low_insert_label( DO_NOT_WARN((INT32)tmp1));
+      low_insert_label( (INT32)tmp1 );
       return 0;
     }else{
-      do_cond_jump(CAR(n), DO_NOT_WARN((INT32)tmp1), n->token == F_LOR, 0);
+      do_cond_jump(CAR(n), (INT32)tmp1, n->token == F_LOR, 0);
       code_expression(CDR(n), flags, n->token == F_LOR ? "||" : "&&");
-      low_insert_label( DO_NOT_WARN((INT32)tmp1));
+      low_insert_label( (INT32)tmp1 );
       return 1;
     }
 
@@ -1497,7 +1496,7 @@ static int do_docode2(node *n, int flags)
 #endif
 	do_docode (CDR (n), DO_NOT_COPY);
       emit_range (n DO_IF_DEBUG (COMMA num_args));
-      return DO_NOT_WARN((INT32)tmp1);
+      return (INT32)tmp1;
     }
 
     /* The special bound type nodes are simply ignored when the
@@ -1652,7 +1651,7 @@ static int do_docode2(node *n, int flags)
     }else{
       tmp2=ins_label(-1);
     }
-    do_jump_when_non_zero(CAR(n), DO_NOT_WARN((INT32)tmp2));
+    do_jump_when_non_zero(CAR(n), (INT32)tmp2);
     ins_label(current_label->break_label);
 
     current_switch.jumptable = prev_switch_jumptable;
@@ -1706,13 +1705,13 @@ static int do_docode2(node *n, int flags)
       /* Doubt it's necessary to use a label separate from
        * current_label->break_label, but I'm playing safe. /mast */
       tmp3 = alloc_label();
-      do_jump(F_FOREACH_START, DO_NOT_WARN((INT32) tmp3));
+      do_jump(F_FOREACH_START, (INT32) tmp3);
       tmp1=ins_label(-1);
       DO_CODE_BLOCK(CDR(n));
       ins_label(current_label->continue_label);
-      do_jump(F_FOREACH_LOOP, DO_NOT_WARN((INT32)tmp1));
+      do_jump(F_FOREACH_LOOP, (INT32)tmp1);
       ins_label(current_label->break_label);
-      low_insert_label( DO_NOT_WARN((INT32)tmp3));
+      low_insert_label( (INT32)tmp3 );
 
       current_switch.jumptable = prev_switch_jumptable;
       POP_STATEMENT_LABEL;
@@ -1752,7 +1751,7 @@ static int do_docode2(node *n, int flags)
 	/* The value is negative. replace it with zero. */
 	emit0(F_POP_VALUE);
 	emit0(F_CONST0);
-	low_insert_label(DO_NOT_WARN((INT32)tmp1));
+        low_insert_label((INT32)tmp1);
 	goto foreach_arg_pushed;
       }
     }
@@ -1771,8 +1770,8 @@ static int do_docode2(node *n, int flags)
     tmp1=ins_label(-1);
     DO_CODE_BLOCK(CDR(n));
     ins_label(current_label->continue_label);
-    low_insert_label( DO_NOT_WARN((INT32)tmp3));
-    do_jump(n->token, DO_NOT_WARN((INT32)tmp1));
+    low_insert_label( (INT32)tmp3 );
+    do_jump(n->token, (INT32)tmp1);
     ins_label(current_label->break_label);
 
     current_switch.jumptable = prev_switch_jumptable;
@@ -1802,8 +1801,8 @@ static int do_docode2(node *n, int flags)
 
     DO_CODE_BLOCK(CDR(n));
     ins_label(current_label->continue_label);
-    low_insert_label( DO_NOT_WARN((INT32)tmp3));
-    do_jump(n->token, DO_NOT_WARN((INT32)tmp1));
+    low_insert_label( (INT32)tmp3 );
+    do_jump(n->token, (INT32)tmp1);
     ins_label(current_label->break_label);
 
     current_switch.jumptable = prev_switch_jumptable;
@@ -1843,7 +1842,7 @@ static int do_docode2(node *n, int flags)
     tmp2=ins_label(-1);
     DO_CODE_BLOCK(CAR(n));
     ins_label(current_label->continue_label);
-    do_jump_when_non_zero(CDR(n), DO_NOT_WARN((INT32)tmp2));
+    do_jump_when_non_zero(CDR(n), (INT32)tmp2);
     ins_label(current_label->break_label);
 
     current_switch.jumptable = prev_switch_jumptable;
@@ -1872,7 +1871,7 @@ static int do_docode2(node *n, int flags)
 	emit0(F_CONST0);
       else {
 	if(tmp1>1)
-	  do_pop(DO_NOT_WARN((INT32)(tmp1-1)));
+          do_pop((INT32)(tmp1-1));
 	emit0(F_CAST_TO_INT);
       }
       return 1;
@@ -1882,7 +1881,7 @@ static int do_docode2(node *n, int flags)
       if(!tmp1)
 	emit0(F_CONST0);
       else if(tmp1>1)
-	do_pop(DO_NOT_WARN((INT32)(tmp1-1)));
+        do_pop((INT32)(tmp1-1));
       emit0(F_CAST_TO_STRING);
       return 1;
     default:
@@ -1891,7 +1890,7 @@ static int do_docode2(node *n, int flags)
 	if(!tmp1)
 	  emit0(F_CONST0);
 	else if(tmp1>1)
-	  do_pop(DO_NOT_WARN((INT32)(tmp1-1)));
+          do_pop((INT32)(tmp1-1));
 	return 1;
       }
     }
@@ -1899,12 +1898,12 @@ static int do_docode2(node *n, int flags)
       struct svalue sv;
       SET_SVAL(sv, T_TYPE, 0, type, n->type);
       tmp1 = store_constant(&sv, 0, n->name);
-      emit1(F_CONSTANT, DO_NOT_WARN((INT32)tmp1));
+      emit1(F_CONSTANT, (INT32)tmp1);
     }
 
     tmp1=do_docode(CAR(n),0);
     if(!tmp1) { emit0(F_CONST0); tmp1=1; }
-    if(tmp1>1) do_pop(DO_NOT_WARN((INT32)(tmp1-1)));
+    if(tmp1>1) do_pop((INT32)(tmp1-1));
 
     emit0(F_CAST);
     return 1;
@@ -1915,16 +1914,16 @@ static int do_docode2(node *n, int flags)
 	struct svalue sv;
 	SET_SVAL(sv, T_TYPE, 0, type, n->type);
 	tmp1 = store_constant(&sv, 0, n->name);
-	emit1(F_CONSTANT, DO_NOT_WARN((INT32)tmp1));
+        emit1(F_CONSTANT, (INT32)tmp1);
       }
       tmp1 = do_docode(CAR(n), 0);
       if (!tmp1) { emit0(F_CONST0); tmp1 = 1; }
-      if (tmp1 > 1) do_pop(DO_NOT_WARN((INT32)(tmp1 - 1)));
+      if (tmp1 > 1) do_pop((INT32)(tmp1 - 1));
       emit0(F_SOFT_CAST);
       return 1;
     }
     tmp1 = do_docode(CAR(n), flags);
-    if (tmp1 > 1) do_pop(DO_NOT_WARN((INT32)(tmp1 - 1)));
+    if (tmp1 > 1) do_pop((INT32)(tmp1 - 1));
     return !!tmp1;
 
   case F_APPLY:
@@ -1944,14 +1943,14 @@ static int do_docode2(node *n, int flags)
 	      tmp1=store_constant(& CAR(n)->u.sval,
 				  !(CAR(n)->tree_info & OPT_EXTERNAL_DEPEND),
 				  CAR(n)->name);
-	      emit1(F_CALL_BUILTIN1, DO_NOT_WARN((INT32)tmp1));
+              emit1(F_CALL_BUILTIN1, (INT32)tmp1);
 #ifdef USE_APPLY_N
 	    }else if(args>0){
 	      do_docode(CDR(n),0);
 	      tmp1=store_constant(& CAR(n)->u.sval,
 				  !(CAR(n)->tree_info & OPT_EXTERNAL_DEPEND),
 				  CAR(n)->name);
-	      emit2(F_CALL_BUILTIN_N, DO_NOT_WARN((INT32)tmp1), args);
+              emit2(F_CALL_BUILTIN_N, (INT32)tmp1, args);
 #endif
 	    }else{
 	      emit0(F_MARK);
@@ -1960,7 +1959,7 @@ static int do_docode2(node *n, int flags)
 	      tmp1=store_constant(& CAR(n)->u.sval,
 				  !(CAR(n)->tree_info & OPT_EXTERNAL_DEPEND),
 				  CAR(n)->name);
-	      emit1(F_CALL_BUILTIN, DO_NOT_WARN((INT32)tmp1));
+              emit1(F_CALL_BUILTIN, (INT32)tmp1);
 	      POP_AND_DONT_CLEANUP;
 	    }
 	  }
@@ -1982,7 +1981,7 @@ static int do_docode2(node *n, int flags)
         tmp1=store_constant(& CAR(n)->u.sval,
                             !(CAR(n)->tree_info & OPT_EXTERNAL_DEPEND),
                             CAR(n)->name);
-        emit1(F_APPLY, DO_NOT_WARN((INT32)tmp1));
+        emit1(F_APPLY, (INT32)tmp1);
         POP_AND_DONT_CLEANUP;
       }
 #ifdef USE_APPLY_N
@@ -1992,7 +1991,7 @@ static int do_docode2(node *n, int flags)
         tmp1=store_constant(& CAR(n)->u.sval,
                             !(CAR(n)->tree_info & OPT_EXTERNAL_DEPEND),
                             CAR(n)->name);
-        emit2(F_APPLY_N, DO_NOT_WARN((INT32)tmp1), args);
+        emit2(F_APPLY_N, (INT32)tmp1, args);
       }
 #endif
       return 1;
@@ -2044,7 +2043,7 @@ static int do_docode2(node *n, int flags)
 	}else{
 	  /* We might want to put "predef::"+foo->name here /Hubbe */
 	  tmp1=store_constant(& foo->u.sval, 1, foo->name);
-	  emit1(F_APPLY, DO_NOT_WARN((INT32)tmp1));
+          emit1(F_APPLY, (INT32)tmp1);
 	}
       }
       free_node(foo);
@@ -2100,7 +2099,7 @@ static int do_docode2(node *n, int flags)
       /* Restore root->parent. */
       root->parent = parent;
     }
-    return DO_NOT_WARN((INT32)tmp1);
+    return (INT32)tmp1;
 
 
     /* Switch:
@@ -2152,7 +2151,7 @@ static int do_docode2(node *n, int flags)
 
     for(e=1; e<cases*2+2; e++)
     {
-      jumptable[e] = DO_NOT_WARN((INT32)emit1(F_POINTER, 0));
+      jumptable[e] = (INT32)emit1(F_POINTER, 0);
       current_switch.jumptable[e]=-1;
     }
     emit0(F_NOTREACHED);
@@ -2215,8 +2214,7 @@ static int do_docode2(node *n, int flags)
     for(e=1; e<cases*2+2; e++)
       update_arg(jumptable[e], current_switch.jumptable[e]);
 
-    update_arg(DO_NOT_WARN((INT32)tmp1),
-	       store_constant(Pike_sp-1,1,0));
+    update_arg((INT32)tmp1, store_constant(Pike_sp-1,1,0));
 
     pop_stack();
     free(jumptable);
@@ -2458,7 +2456,7 @@ static int do_docode2(node *n, int flags)
   case F_SSCANF:
     tmp1=do_docode(CAR(n),DO_NOT_COPY);
     tmp2=do_docode(CDR(n),DO_NOT_COPY | DO_LVALUE);
-    emit1(F_SSCANF, DO_NOT_WARN((INT32)(tmp1+tmp2)));
+    emit1(F_SSCANF, (INT32)(tmp1+tmp2));
     return 1;
 
   case F_CATCH: {
@@ -2492,7 +2490,7 @@ static int do_docode2(node *n, int flags)
      *     that requires the entry code to have run.
      */
     emit0(F_ENTRY);
-    ins_label(DO_NOT_WARN((INT32)tmp1));
+    ins_label((INT32)tmp1);
 
     POP_AND_DONT_CLEANUP;
     return 1;
@@ -2508,7 +2506,7 @@ static int do_docode2(node *n, int flags)
       if(tmp1 & 1)
 	Pike_fatal("Very internal compiler error.\n");
 #endif
-      emit1(F_ARRAY_LVALUE, DO_NOT_WARN((INT32)(tmp1>>1)));
+      emit1(F_ARRAY_LVALUE, (INT32)(tmp1>>1));
       return 2;
 
   case F_ARROW:
@@ -2534,7 +2532,7 @@ static int do_docode2(node *n, int flags)
 	  emit0(F_COPY_VALUE);
       }
     }
-    return DO_NOT_WARN((INT32)tmp1);
+    return (INT32)tmp1;
 
   case F_INDEX:
     if(flags & WANT_LVALUE)
@@ -2574,7 +2572,7 @@ static int do_docode2(node *n, int flags)
 	  emit0(F_COPY_VALUE);
       }
     }
-    return DO_NOT_WARN((INT32)tmp1);
+    return (INT32)tmp1;
 
   case F_CONSTANT:
     switch(TYPEOF(n->u.sval))
@@ -2604,7 +2602,7 @@ static int do_docode2(node *n, int flags)
 
     case T_STRING:
       tmp1=store_prog_string(n->u.sval.u.string);
-      emit1(F_STRING, DO_NOT_WARN((INT32)tmp1));
+      emit1(F_STRING, (INT32)tmp1);
       return 1;
 
     case T_FUNCTION:
@@ -2652,12 +2650,12 @@ static int do_docode2(node *n, int flags)
       tmp1=store_constant(&(n->u.sval),
 			  !(n->tree_info & OPT_EXTERNAL_DEPEND),
 			  n->name);
-      emit1(F_CONSTANT, DO_NOT_WARN((INT32)tmp1));
+      emit1(F_CONSTANT, (INT32)tmp1);
       return 1;
 
     case T_TYPE:
       tmp1 = store_constant(&(n->u.sval), 0, n->name);
-      emit1(F_CONSTANT, DO_NOT_WARN((INT32)tmp1));
+      emit1(F_CONSTANT, (INT32)tmp1);
       return 1;
 
     case T_ARRAY:
@@ -2666,7 +2664,7 @@ static int do_docode2(node *n, int flags)
       tmp1=store_constant(&(n->u.sval),
 			  !(n->tree_info & OPT_EXTERNAL_DEPEND),
 			  n->name);
-      emit1(F_CONSTANT, DO_NOT_WARN((INT32)tmp1));
+      emit1(F_CONSTANT, (INT32)tmp1);
 
       /* copy now or later ? */
       if(!(flags & DO_NOT_COPY) && !(n->tree_info & OPT_EXTERNAL_DEPEND))

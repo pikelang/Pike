@@ -151,9 +151,9 @@ PMOD_EXPORT p_wchar2 index_shared_string(const struct pike_string *s, ptrdiff_t 
 
 #define SET_INDEX_CHARP(PTR,IND,SHIFT,VAL) \
   (LIKELY((SHIFT)==0)?                                                  \
-   (((p_wchar0 *)(PTR))[(IND)] = DO_NOT_WARN ((p_wchar0) (VAL))):	\
-  LIKELY((SHIFT)==1)?(((p_wchar1 *)(PTR))[(IND)] = DO_NOT_WARN ((p_wchar1) (VAL))): \
-   (((p_wchar2 *)(PTR))[(IND)] = DO_NOT_WARN ((p_wchar2) (VAL))))
+   (((p_wchar0 *)(PTR))[(IND)] = (p_wchar0) (VAL)):	\
+  LIKELY((SHIFT)==1)?(((p_wchar1 *)(PTR))[(IND)] = (p_wchar1) (VAL)): \
+   (((p_wchar2 *)(PTR))[(IND)] = (p_wchar2) (VAL)))
 
 
 /* arithmetic left shift. compilers will understand this

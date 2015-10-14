@@ -1175,7 +1175,7 @@ OPCODE1(F_ASSIGN_ALL_INDICES, "assign[*]", I_UPDATE_SP, {
 OPCODE2(F_APPLY_ASSIGN_LOCAL_AND_POP,
 	"apply, assign local and pop", I_UPDATE_SP|I_UPDATE_M_SP, {
   apply_svalue(&((Pike_fp->context->prog->constants + arg1)->sval),
-	       DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp)));
+               (INT32)(Pike_sp - *--Pike_mark_sp));
   free_svalue(Pike_fp->locals+arg2);
   move_svalue (Pike_fp->locals + arg2, Pike_sp - 1);
   Pike_sp--;
@@ -1183,7 +1183,7 @@ OPCODE2(F_APPLY_ASSIGN_LOCAL_AND_POP,
 
 OPCODE2(F_APPLY_ASSIGN_LOCAL, "apply, assign local", I_UPDATE_ALL, {
   apply_svalue(&((Pike_fp->context->prog->constants + arg1)->sval),
-	       DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp)));
+               (INT32)(Pike_sp - *--Pike_mark_sp));
   assign_svalue(Pike_fp->locals+arg2, Pike_sp-1);
 });
 
@@ -2228,7 +2228,7 @@ OPCODE1_ALIAS(F_SSCANF, "sscanf", I_UPDATE_SP, o_sscanf);
 			I_UPDATE_ALL, {					\
                           LOCAL_VAR(PIKE_OPCODE_T *addr);               \
 JUMP_SET_TO_PC_AT_NEXT (Pike_fp->return_addr);				\
-if((addr=low_mega_apply(TYPE,DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp)), \
+ if((addr=low_mega_apply(TYPE,(INT32)(Pike_sp - *--Pike_mark_sp),       \
                       ARG2, ARG3)))                                           \
 {									   \
   Pike_fp->flags |= PIKE_FRAME_RETURN_INTERNAL;				   \
@@ -2243,7 +2243,7 @@ else {									\
 			I_UPDATE_ALL, {					\
                           LOCAL_VAR(PIKE_OPCODE_T *addr);               \
   JUMP_SET_TO_PC_AT_NEXT (Pike_fp->return_addr);			\
-  if((addr=low_mega_apply(TYPE, DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp)), \
+  if((addr=low_mega_apply(TYPE, (INT32)(Pike_sp - *--Pike_mark_sp), \
                         ARG2, ARG3)))                                         \
   {									   \
     Pike_fp->flags |= PIKE_FRAME_RETURN_INTERNAL | PIKE_FRAME_RETURN_POP;  \
@@ -2258,8 +2258,7 @@ PIKE_CONCAT(OP,_RETURN)(PIKE_CONCAT3(F_,OPCODE,_AND_RETURN),		   \
 			NAME " & return",				   \
 			I_UPDATE_ALL, {					   \
                           LOCAL_VAR(PIKE_OPCODE_T *addr);                  \
-  if((addr = low_mega_apply(TYPE,DO_NOT_WARN(				   \
-				 (INT32)(Pike_sp - *--Pike_mark_sp)),      \
+  if((addr = low_mega_apply(TYPE, (INT32)(Pike_sp - *--Pike_mark_sp),      \
                           ARG2,ARG3)))                                     \
   {									   \
     DO_IF_DEBUG(Pike_fp->next->pc=0);					   \
@@ -2325,7 +2324,7 @@ PIKE_CONCAT(OP,_RETURN)(PIKE_CONCAT3(F_MARK_,OPCODE,_AND_RETURN),	   \
 OPCODE1_JUMP(F_CALL_LFUN , "call lfun", I_UPDATE_ALL, {
         LOCAL_VAR(PIKE_OPCODE_T *addr);
         JUMP_SET_TO_PC_AT_NEXT (Pike_fp->return_addr);
-        if((addr = lower_mega_apply(DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp)),
+        if((addr = lower_mega_apply((INT32)(Pike_sp - *--Pike_mark_sp),
                             Pike_fp->current_object,
                                     (arg1+Pike_fp->context->identifier_level) )))
         {
@@ -2357,7 +2356,7 @@ OPCODE2_JUMP(F_CALL_LFUN_N , "call lfun <n>", I_UPDATE_ALL, {
 OPCODE1_JUMP(F_CALL_LFUN_AND_POP, "call lfun & pop", I_UPDATE_ALL, {
         LOCAL_VAR(PIKE_OPCODE_T *addr);
         JUMP_SET_TO_PC_AT_NEXT (Pike_fp->return_addr);
-        if((addr = lower_mega_apply(DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp)),
+        if((addr = lower_mega_apply((INT32)(Pike_sp - *--Pike_mark_sp),
                                          Pike_fp->current_object,
                                     (arg1+Pike_fp->context->identifier_level))))
         {
@@ -2373,7 +2372,7 @@ OPCODE1_JUMP(F_CALL_LFUN_AND_POP, "call lfun & pop", I_UPDATE_ALL, {
 
 OPCODE1_RETURN(F_CALL_LFUN_AND_RETURN , "call lfun & return", I_UPDATE_ALL, {
         LOCAL_VAR(PIKE_OPCODE_T *addr);
-        if((addr = lower_mega_apply(DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp)),
+        if((addr = lower_mega_apply((INT32)(Pike_sp - *--Pike_mark_sp),
                             Pike_fp->current_object,
                                     (arg1+Pike_fp->context->identifier_level))))
         {
@@ -2434,7 +2433,7 @@ MKAPPLY2(OPCODE1,APPLY,"apply",APPLY_SVALUE_STRICT,
 MKAPPLY(OPCODE0,CALL_FUNCTION,"call function",APPLY_STACK, 0,0);
 
 OPCODE1_JUMP(F_CALL_OTHER,"call other", I_UPDATE_ALL, {
-  INT32 args=DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp));
+  INT32 args=(INT32)(Pike_sp - *--Pike_mark_sp);
   LOCAL_VAR(struct svalue *s);
   s = Pike_sp-args;
   JUMP_SET_TO_PC_AT_NEXT (Pike_fp->return_addr);
@@ -2492,7 +2491,7 @@ OPCODE1_JUMP(F_CALL_OTHER,"call other", I_UPDATE_ALL, {
 });
 
 OPCODE1_JUMP(F_CALL_OTHER_AND_POP,"call other & pop", I_UPDATE_ALL, {
-  INT32 args=DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp));
+  INT32 args=(INT32)(Pike_sp - *--Pike_mark_sp);
   LOCAL_VAR(struct svalue *s);
   s = Pike_sp-args;
   JUMP_SET_TO_PC_AT_NEXT (Pike_fp->return_addr);
@@ -2554,7 +2553,7 @@ OPCODE1_JUMP(F_CALL_OTHER_AND_POP,"call other & pop", I_UPDATE_ALL, {
 });
 
 OPCODE1_RETURN(F_CALL_OTHER_AND_RETURN,"call other & return", I_UPDATE_ALL, {
-  INT32 args=DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp));
+  INT32 args=(INT32)(Pike_sp - *--Pike_mark_sp);
   LOCAL_VAR(struct svalue *s);
   s = Pike_sp - args;
   if(TYPEOF(*s) == T_OBJECT)
@@ -2681,18 +2680,18 @@ OPCODE1_RETURN(F_CALL_OTHER_AND_RETURN,"call other & return", I_UPDATE_ALL, {
 
 OPCODE1(F_CALL_BUILTIN, "call builtin", I_UPDATE_ALL, {
   FAST_CHECK_THREADS_ON_CALL();
-  DO_CALL_BUILTIN(DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp)));
+  DO_CALL_BUILTIN((INT32)(Pike_sp - *--Pike_mark_sp));
 });
 
 OPCODE1(F_CALL_BUILTIN_AND_POP,"call builtin & pop", I_UPDATE_ALL, {
   FAST_CHECK_THREADS_ON_CALL();
-  DO_CALL_BUILTIN(DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp)));
+  DO_CALL_BUILTIN((INT32)(Pike_sp - *--Pike_mark_sp));
   pop_stack();
 });
 
 OPCODE1_RETURN(F_CALL_BUILTIN_AND_RETURN,"call builtin & return", I_UPDATE_ALL, {
   FAST_CHECK_THREADS_ON_CALL();
-  DO_CALL_BUILTIN(DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp)));
+  DO_CALL_BUILTIN((INT32)(Pike_sp - *--Pike_mark_sp));
   DO_DUMB_RETURN;
 });
 
@@ -2737,7 +2736,7 @@ OPCODE1(F_CALL_BUILTIN1_AND_POP, "call builtin1 & pop", I_UPDATE_ALL, {
 
 OPCODE1(F_LTOSVAL_CALL_BUILTIN_AND_ASSIGN, "ltosval, call builtin & assign",
 	I_UPDATE_ALL, {
-  INT32 args = DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp));
+  INT32 args = (INT32)(Pike_sp - *--Pike_mark_sp);
   ONERROR uwp;
 
   /* Give other threads a chance to run now, before we temporarily
@@ -2783,7 +2782,7 @@ OPCODE1(F_LTOSVAL_CALL_BUILTIN_AND_ASSIGN, "ltosval, call builtin & assign",
 
 OPCODE1(F_LTOSVAL_CALL_BUILTIN_AND_ASSIGN_POP,
 	"ltosval, call builtin, assign & pop", I_UPDATE_ALL, {
-  INT32 args = DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp));
+  INT32 args = (INT32)(Pike_sp - *--Pike_mark_sp);
   ONERROR uwp;
 
   /* Give other threads a chance to run now, before we temporarily
@@ -2830,7 +2829,7 @@ OPCODE1(F_LTOSVAL_CALL_BUILTIN_AND_ASSIGN_POP,
 #define DO_RECUR(XFLAGS) do{						   \
   PIKE_OPCODE_T *addr;							   \
   struct pike_frame *new_frame;                                            \
-  INT32 args = DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp));		   \
+  INT32 args = (INT32)(Pike_sp - *--Pike_mark_sp);                         \
 									   \
   FAST_CHECK_THREADS_ON_CALL();						   \
   check_stack(256);							   \
@@ -2916,7 +2915,7 @@ OPCODE1_PTRJUMP(F_COND_RECUR, "recur if not overloaded", I_UPDATE_ALL, {
     ptrdiff_t num_locals;
     PIKE_OPCODE_T *faddr;
     PIKE_OPCODE_T *addr2;
-    INT32 args = DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp));
+    INT32 args = (INT32)(Pike_sp - *--Pike_mark_sp);
     JUMP_SET_TO_PC_AT_NEXT (faddr);
     faddr += GET_JUMP();
 
@@ -2949,7 +2948,7 @@ OPCODE0_PTRJUMP(F_RECUR_AND_POP, "recur & pop", I_UPDATE_ALL, {
 /* FIXME: adjust Pike_mark_sp */
 OPCODE0_PTRJUMP(F_TAIL_RECUR, "tail recursion", I_UPDATE_ALL, {
   PIKE_OPCODE_T *addr;
-  INT32 args = DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp));
+  INT32 args = (INT32)(Pike_sp - *--Pike_mark_sp);
 
   FAST_CHECK_THREADS_ON_CALL();
 

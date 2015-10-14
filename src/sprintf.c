@@ -1687,7 +1687,7 @@ cont_2:
 	switch(l) {
 	case 4:
 	  {
-	    float f = DO_NOT_WARN((float)tf);
+            float f = (float)tf;
 #if SIZEOF_FLOAT_TYPE > 4
 	    /* Some paranoia in case libc doesn't handle
 	     * conversion to denormalized floats. */

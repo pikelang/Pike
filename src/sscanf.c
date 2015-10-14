@@ -715,7 +715,7 @@ static double extract_double_le(const char * x) {
 #ifdef __ECL
 static INLINE INT32 TO_INT32(ptrdiff_t x)
 {
-  return DO_NOT_WARN((INT32)x);
+  return (INT32)x;
 }
 #else /* !__ECL */
 #define TO_INT32(x)	((INT32)(x))
@@ -1816,7 +1816,7 @@ PMOD_EXPORT void f_sscanf(INT32 args)
 
   i = low_sscanf(sp[-args].u.string, sp[1-args].u.string);
 
-  a = aggregate_array(DO_NOT_WARN(sp - save_sp));
+  a = aggregate_array(sp - save_sp);
   pop_n_elems(args);
   push_array(a);
 }

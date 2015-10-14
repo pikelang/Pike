@@ -3925,7 +3925,7 @@ PMOD_EXPORT void o_divide(void)
 
 	  for(last=0,e=0;e<size-1;e++)
 	  {
-	    pos = DO_NOT_WARN((ptrdiff_t)((e+1)*len+0.5));
+            pos = (ptrdiff_t)((e+1)*len+0.5);
 	    SET_SVAL(a->item[e], T_STRING, 0, string,
 		     string_slice(sp[-2].u.string, last, pos-last));
 	    last=pos;
@@ -4273,10 +4273,9 @@ do_lfun_modulo:
     if(sp[-1].u.float_number == 0.0)
       OP_MODULO_BY_ZERO_ERROR("`%");
     sp--;
-    foo = DO_NOT_WARN((FLOAT_TYPE)(sp[-1].u.float_number /
-				   sp[0].u.float_number));
-    foo = DO_NOT_WARN((FLOAT_TYPE)(sp[-1].u.float_number -
-				   sp[0].u.float_number * floor(foo)));
+    foo = (FLOAT_TYPE)(sp[-1].u.float_number / sp[0].u.float_number);
+    foo = (FLOAT_TYPE)(sp[-1].u.float_number -
+                       sp[0].u.float_number * floor(foo));
     sp[-1].u.float_number=foo;
     return;
   }
