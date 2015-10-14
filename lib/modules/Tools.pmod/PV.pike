@@ -2,6 +2,8 @@
 
 //! Display a image on the screen. Requires GTK.
 
+constant dont_dump_program = 1;
+
 #if constant(GTK2.Window)
 // Toplevel compat for GTK2
 constant GTK = GTK2;
