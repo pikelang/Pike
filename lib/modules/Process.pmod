@@ -1195,7 +1195,7 @@ void daemon(int nochdir, int noclose,
 //!
 //!   /* Do not change working directory. Write stdout to a file called
 //!      access.log and stderr to error.log. */
-//!   Process.daemon(1, 0, ([ "stdout": "/var/log/access.log", "stderr": "/var/log/error.log" ]) );
+//!   Process.daemon(1, 0, ([ "stdout": "access.log", "stderr": "error.log" ]) );
 {
     array(Stdio.File) opened = ({});
     Stdio.File getfd(string|object f)
