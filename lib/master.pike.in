@@ -1012,12 +1012,16 @@ program compile_file(string filename,
 		     void|object o)
 {
   AUTORELOAD_CHECK_FILE(filename);
-  return compile(cpp(master_read_file(filename),
-		     filename,
-		     1,
-		     handler,
-		     compat_major,
-		     compat_minor),
+  string code = cpp(master_read_file(filename),
+		    filename,
+		    1,
+		    handler,
+		    compat_major,
+		    compat_minor);
+  if (!code) {
+    error("Required feature missing.\n");
+  }
+  return compile(code,
 		 handler,
 		 compat_major,
 		 compat_minor,
