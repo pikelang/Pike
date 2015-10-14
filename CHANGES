@@ -559,7 +559,7 @@ o Parser.CSV
 o ZXID
 
   ZXID is a library that implements SAML 2.0, Liberty ID-WSF 2.0
-  and XACML 2.0.
+  and XACML 2.0. Used for single sign-on.
 
   This module implements a wrapper for ZXID. The interface is similar
   to the C one, but using generally accepted Pike syntax.
