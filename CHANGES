@@ -613,6 +613,11 @@ o Web.Api
   + Web.Api.Linkedin
   + Web.Api.Twitter
 
+o VCDiff
+
+  Glue for the open-vcdiff differential compression library. More
+  information can be found on http://code.google.com/p/open-vcdiff/
+
 
 Extensions and new functions
 ----------------------------
