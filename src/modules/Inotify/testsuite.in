@@ -45,16 +45,15 @@ test_any([[ // stole this from pikes Stdio.File testsuite.
 
 test_any([[
 	object i = System.Inotify._Instance();
-	object file = Stdio.File();
-	file->assign(i->fd());
+	array a;
+	i->set_event_callback(lambda(mixed ... args) { a = args; });
 #if constant(testdir)
 	i->add_watch(testdir, System.Inotify.IN_CREATE);
 #else
 	i->add_watch(".", System.Inotify.IN_CREATE);
 #endif
 	Stdio.write_file(testfile, "test");
-	array a = System.Inotify.parse_event(file->read(4096, 1));
-
+	i->poll();
 	return a[3] == "conftest" && a[1] == System.Inotify.IN_CREATE;
 ]], 1)
 
