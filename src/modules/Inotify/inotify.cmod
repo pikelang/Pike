@@ -235,13 +235,11 @@ PIKECLASS _Instance {
     }
 
 
-    /*! @decl object get_fd()
+    /*! @decl int query_fd()
      *! @returns
      *!	    Returns the file descriptor associated with this inotify instance.
-     *! @note
-     *!	    Use @[fd()] instead.
      */
-    PIKEFUN int get_fd() {
+    PIKEFUN int query_fd() {
 	push_int(THIS->box.fd);
     }
 
