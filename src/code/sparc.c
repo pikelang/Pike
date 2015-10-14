@@ -645,6 +645,7 @@ static void ins_sparc_debug()
 
 static void low_ins_call(void *addr, int delay_ok, int i_flags)
 {
+  LOAD_PIKE_INTERPRETER();
   SPARC_FLUSH_UNSTORED();
 
   {
