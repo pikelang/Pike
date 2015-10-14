@@ -60,8 +60,8 @@ class Base
   {
     _client_id     = client_id;
     _client_secret = client_secret;
-    _redirect_uri  = redirect_uri;
-    _scope         = scope;
+    _redirect_uri  = redirect_uri || _redirect_uri;
+    _scope         = scope || _scope;
   }
 
   //! Grant types.
