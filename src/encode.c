@@ -1482,6 +1482,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 		  break;
 
 		case IDENTIFIER_PIKE_FUNCTION:
+		encode_pike_function:
 		  EDB(3,
 		      fprintf(stderr, "%*sencode: encoding function\n",
 			      data->depth, ""));
@@ -1533,7 +1534,10 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 
 		case IDENTIFIER_C_FUNCTION:
 		  if (is_variant_dispatcher(p, d)) {
-		    /* This is handled by end_first_pass() et all. */
+		    int k;
+		    int j;
+		    struct identifier *other = NULL;
+		    /* This is handled by end_first_pass() et al. */
 		    /* NB: This can be reached even though id_dumped
 		     *     for it gets set by the variant functions,
 		     *     if it is overriding an old definition.
@@ -1546,7 +1550,41 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 		     * dispatcher as marker for whether the first
 		     * variant has been added or not.
 		     */
-		    continue;
+		    EDB(3,
+		      fprintf(stderr, "%*sencode: encoding variant dispatcher\n",
+			      data->depth, ""));
+
+		    for(k = 0; k < p->num_identifiers; k++) {
+		      other = p->identifiers + k;
+		      if (other->name == id->name) break;
+		    }
+		    if (other >= id) {
+		      /* variant before termination function. */
+		      break;
+		    }
+		    if ((other->identifier_flags & IDENTIFIER_TYPE_MASK) ==
+			IDENTIFIER_PIKE_FUNCTION) {
+		      struct reference *r = NULL;
+		      for (j = 0; j < p->num_identifier_references; j++) {
+			r = p->identifier_references + j;
+			if (!r->inherit_offset && (r->identifier_offset == k)) {
+			  /* Found the override. */
+			  break;
+			}
+		      }
+		      if ((j != p->num_identifier_references) && (j > d)) {
+			/* We have a termination function at identifier k,
+			 * that was overridden by the variant dispatcher.
+			 *
+			 * We need to encode it here at its original place.
+			 */
+			id_dumped[k] = 1;
+			gs_flags = r->id_flags & ref->id_flags;
+			id = other;
+			ref = r;
+			goto encode_pike_function;
+		      }
+		    }
 		  }
 		  /* Not supported. */
 		  Pike_error("Cannot encode functions implemented in C "
@@ -3661,7 +3699,8 @@ static void decode_value2(struct decode_data *data)
 		      p->identifier_references[no].inherit_offset != 0))) {
 		  ref_push_program (p);
 		  decode_error(data, Pike_sp - 1,
-			       "Bad function identifier offset: %d\n", no);
+			       "Bad function identifier offset for %S:%T: %d != %d\n",
+			       Pike_sp[-3].u.string, Pike_sp[-2].u.type, n, no);
 		}
 
 		pop_n_elems(2);
