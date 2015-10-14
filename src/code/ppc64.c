@@ -900,11 +900,12 @@ void ppc64_disassemble_code(void *addr, size_t bytes)
       case 4:
 	h = (xo^98)%26;
 	instr_name = (xo == opxo_31_100[h]? opname_31_100[h]:NULL);
-	if(instr & (1<<20))
+	if(instr & (1<<20)) {
 	  if(xo == 144)
 	    instr_name = "Fmtocrf";
 	  else if(xo == 19)
 	    instr_name = "Fmfocrf";
+	}
 	break;
       case 5:
 	h = (xo^67)%99;
@@ -1070,7 +1071,7 @@ void ppc64_disassemble_code(void *addr, size_t bytes)
 	  if((xo & 479)==274)
 	    fprintf(stderr, "%s r%d,%d\n", instr_name,
 		    (instr>>11)&31, (instr>>21)&1);
-	  else (xo & 32)
+	  else if(xo & 32)
 	    fprintf(stderr, "%s r%d\n", instr_name, (instr>>11)&31);
 	  else if(xo == 595)
 	    fprintf(stderr, "%s r%d,%d\n", instr_name,
