@@ -493,7 +493,7 @@ o ADT.CritBit
 
 o Standards.BSON
 
-  A new module for working with BSON serialized data. See
+  A module for working with BSON serialized data. See
   http://bsonspec.org/
 
 o Geography.GeoIP
