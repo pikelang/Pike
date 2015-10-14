@@ -2223,101 +2223,104 @@ OPCODE1(F_SIZEOF_LOCAL_STRING, "sizeof local string", I_UPDATE_SP, {
 
 OPCODE1_ALIAS(F_SSCANF, "sscanf", I_UPDATE_SP, o_sscanf);
 
-#define MKAPPLY(OP,OPCODE,NAME,TYPE,  ARG2, ARG3)			   \
-  PIKE_CONCAT(OP,_JUMP)(PIKE_CONCAT(F_,OPCODE),NAME,			\
-			I_UPDATE_ALL, {					\
-                          LOCAL_VAR(PIKE_OPCODE_T *addr);               \
-JUMP_SET_TO_PC_AT_NEXT (Pike_fp->return_addr);				\
- if((addr=low_mega_apply(TYPE,(INT32)(Pike_sp - *--Pike_mark_sp),       \
-                      ARG2, ARG3)))                                           \
-{									   \
-  Pike_fp->flags |= PIKE_FRAME_RETURN_INTERNAL;				   \
-  DO_JUMP_TO(addr);                                                        \
-}									   \
-else {									\
-  DO_JUMP_TO_NEXT;							\
-}									\
-});									   \
-									   \
-  PIKE_CONCAT(OP,_JUMP)(PIKE_CONCAT3(F_,OPCODE,_AND_POP),NAME " & pop", \
-			I_UPDATE_ALL, {					\
-                          LOCAL_VAR(PIKE_OPCODE_T *addr);               \
+#define MKAPPLY(OP,OPCODE,NAME,TYPE,  ARG2, ARG3)                       \
+PIKE_CONCAT(OP,_JUMP)(PIKE_CONCAT(F_,OPCODE),NAME,I_UPDATE_ALL,         \
+{                                                                       \
+  LOCAL_VAR(PIKE_OPCODE_T *addr);                                       \
+  JUMP_SET_TO_PC_AT_NEXT (Pike_fp->return_addr);                        \
+  if((addr=low_mega_apply(TYPE,(INT32)(Pike_sp - *--Pike_mark_sp),      \
+                          ARG2, ARG3)))                                 \
+  {                                                                     \
+    Pike_fp->flags |= PIKE_FRAME_RETURN_INTERNAL;                       \
+    DO_JUMP_TO(addr);                                                   \
+  }                                                                     \
+  else {                                                                \
+    DO_JUMP_TO_NEXT;							\
+  }									\
+ });                                                                    \
+                                                                        \
+PIKE_CONCAT(OP,_JUMP)(PIKE_CONCAT3(F_,OPCODE,_AND_POP),NAME " & pop",   \
+                      I_UPDATE_ALL,                                     \
+{                                                                       \
+  LOCAL_VAR(PIKE_OPCODE_T *addr);                                       \
   JUMP_SET_TO_PC_AT_NEXT (Pike_fp->return_addr);			\
-  if((addr=low_mega_apply(TYPE, (INT32)(Pike_sp - *--Pike_mark_sp), \
-                        ARG2, ARG3)))                                         \
-  {									   \
-    Pike_fp->flags |= PIKE_FRAME_RETURN_INTERNAL | PIKE_FRAME_RETURN_POP;  \
-    DO_JUMP_TO(addr);                                                      \
-  }else{								   \
-    pop_stack();							   \
-    DO_JUMP_TO_NEXT;							   \
-  }									   \
-});									   \
-									   \
-PIKE_CONCAT(OP,_RETURN)(PIKE_CONCAT3(F_,OPCODE,_AND_RETURN),		   \
-			NAME " & return",				   \
-			I_UPDATE_ALL, {					   \
-                          LOCAL_VAR(PIKE_OPCODE_T *addr);                  \
-  if((addr = low_mega_apply(TYPE, (INT32)(Pike_sp - *--Pike_mark_sp),      \
-                          ARG2,ARG3)))                                     \
-  {									   \
-    DO_IF_DEBUG(Pike_fp->next->pc=0);					   \
-    unlink_previous_frame();						   \
-    DO_JUMP_TO(addr);							   \
-  }else{								   \
-    DO_DUMB_RETURN;							   \
-  }									   \
+  if((addr=low_mega_apply(TYPE, (INT32)(Pike_sp - *--Pike_mark_sp),     \
+                          ARG2, ARG3)))                                 \
+  {                                                                     \
+    Pike_fp->flags |= PIKE_FRAME_RETURN_INTERNAL | PIKE_FRAME_RETURN_POP; \
+    DO_JUMP_TO(addr);                                                   \
+  }                                                                     \
+  else {                                                                \
+    pop_stack();                                                        \
+    DO_JUMP_TO_NEXT;                                                    \
+  }                                                                     \
+});								        \
+                                                                        \
+PIKE_CONCAT(OP,_RETURN)(PIKE_CONCAT3(F_,OPCODE,_AND_RETURN),		\
+                        NAME " & return",I_UPDATE_ALL,                  \
+{                                                                       \
+  LOCAL_VAR(PIKE_OPCODE_T *addr);                                       \
+  if((addr = low_mega_apply(TYPE, (INT32)(Pike_sp - *--Pike_mark_sp),   \
+                            ARG2,ARG3)))                                \
+  {                                                                     \
+    DO_IF_DEBUG(Pike_fp->next->pc=0);                                   \
+    unlink_previous_frame();                                            \
+    DO_JUMP_TO(addr);                                                   \
+  }                                                                     \
+  else {                                                                \
+    DO_DUMB_RETURN;                                                     \
+  }                                                                     \
 })
 
 
-#define MKAPPLY2(OP,OPCODE,NAME,TYPE,  ARG2, ARG3)			   \
-									   \
-MKAPPLY(OP,OPCODE,NAME,TYPE,  ARG2, ARG3);			           \
-									   \
-PIKE_CONCAT(OP,_JUMP)(PIKE_CONCAT(F_MARK_,OPCODE),"mark, " NAME,	   \
-		      I_UPDATE_ALL, {					   \
-                          LOCAL_VAR(PIKE_OPCODE_T *addr);                  \
-  JUMP_SET_TO_PC_AT_NEXT (Pike_fp->return_addr);			   \
-  if((addr=low_mega_apply(TYPE, 0,					   \
-                        ARG2, ARG3)))					   \
-  {									   \
-    Pike_fp->flags |= PIKE_FRAME_RETURN_INTERNAL;			   \
-    DO_JUMP_TO(addr);						   	   \
-  }									   \
-  else {								   \
-    DO_JUMP_TO_NEXT;							   \
-  }									   \
-});									   \
-									   \
+#define MKAPPLY2(OP,OPCODE,NAME,TYPE,  ARG2, ARG3)			\
+                                                                        \
+MKAPPLY(OP,OPCODE,NAME,TYPE,  ARG2, ARG3);			        \
+                                                                        \
+PIKE_CONCAT(OP,_JUMP)(PIKE_CONCAT(F_MARK_,OPCODE),"mark, " NAME,	\
+                      I_UPDATE_ALL,                                     \
+{                                                                       \
+  LOCAL_VAR(PIKE_OPCODE_T *addr);                                       \
+  JUMP_SET_TO_PC_AT_NEXT (Pike_fp->return_addr);                        \
+  if((addr=low_mega_apply(TYPE, 0, ARG2, ARG3)))                        \
+  {								        \
+    Pike_fp->flags |= PIKE_FRAME_RETURN_INTERNAL;                       \
+    DO_JUMP_TO(addr);                                                   \
+  }                                                                     \
+  else {                                                                \
+    DO_JUMP_TO_NEXT;                                                    \
+  }                                                                     \
+});                                                                     \
+                                                                        \
 PIKE_CONCAT(OP,_JUMP)(PIKE_CONCAT3(F_MARK_,OPCODE,_AND_POP),		\
-		      "mark, " NAME " & pop",				\
-		      I_UPDATE_ALL, {					\
-                          LOCAL_VAR(PIKE_OPCODE_T *addr);               \
+                      "mark, " NAME " & pop",I_UPDATE_ALL,              \
+{                                                                       \
+  LOCAL_VAR(PIKE_OPCODE_T *addr);                                       \
   JUMP_SET_TO_PC_AT_NEXT (Pike_fp->return_addr);			\
-  if((addr=low_mega_apply(TYPE, 0,                                         \
-                        ARG2, ARG3)))					   \
-  {									   \
-    Pike_fp->flags |= PIKE_FRAME_RETURN_INTERNAL | PIKE_FRAME_RETURN_POP;  \
-    DO_JUMP_TO(addr);						   	   \
-  }else{								   \
-    pop_stack();							   \
-    DO_JUMP_TO_NEXT;							   \
-  }									   \
-});									   \
-									   \
-PIKE_CONCAT(OP,_RETURN)(PIKE_CONCAT3(F_MARK_,OPCODE,_AND_RETURN),	   \
-			"mark, " NAME " & return",			\
-			I_UPDATE_ALL, {			\
-                         LOCAL_VAR(PIKE_OPCODE_T *pc);                 \
-  if((pc=low_mega_apply(TYPE, 0,                       \
-                        ARG2,ARG3)))                                       \
-  {									   \
-    DO_IF_DEBUG(Pike_fp->next->pc=0);					   \
-    unlink_previous_frame();						   \
-    DO_JUMP_TO(pc);							   \
-  }else{								   \
-    DO_DUMB_RETURN;							   \
-  }									   \
+  if((addr=low_mega_apply(TYPE, 0, ARG2, ARG3)))                        \
+  {									\
+    Pike_fp->flags |= PIKE_FRAME_RETURN_INTERNAL | PIKE_FRAME_RETURN_POP; \
+    DO_JUMP_TO(addr);                                                   \
+  }                                                                     \
+  else {                                                                \
+    pop_stack();                                                        \
+    DO_JUMP_TO_NEXT;                                                    \
+  }                                                                     \
+});                                                                     \
+                                                                        \
+PIKE_CONCAT(OP,_RETURN)(PIKE_CONCAT3(F_MARK_,OPCODE,_AND_RETURN),	\
+                        "mark, " NAME " & return",I_UPDATE_ALL,         \
+{                                                                       \
+  LOCAL_VAR(PIKE_OPCODE_T *pc);                                         \
+  if((pc=low_mega_apply(TYPE, 0, ARG2, ARG3)))                          \
+  {									\
+    DO_IF_DEBUG(Pike_fp->next->pc=0);                                   \
+    unlink_previous_frame();                                            \
+    DO_JUMP_TO(pc);                                                     \
+  }                                                                     \
+  else {                                                                \
+    DO_DUMB_RETURN;                                                     \
+  }                                                                     \
 })
 
 
