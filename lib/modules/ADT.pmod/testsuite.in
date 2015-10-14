@@ -400,13 +400,13 @@ test_ts_add(8, "8B", Test.Consumers[1])
 test_eq(sizeof(Test.Consumers[1]->children), 2)
 test_equal(Test.Consumers->weight, ({ 4, 8, 4, 8 }))
 test_equal(Test.Consumers->pri, ({ 1.5, 0.75, 2.25, 1.125 }))
-test_eq(Test.Scheduler.get()->value, "8A");
+test_eq(Test.Scheduler.get(), "8A");
 
 test_do(Test.Scheduler.remove(Test.Consumers[1]))
-test_eq(Test.Scheduler.get()->value, "8B");
+test_eq(Test.Scheduler.get(), "8B");
 
 test_do(Test.Consumers[1]->reparent_siblings())
-test_eq(Test.Scheduler.get()->value, "8B");
+test_eq(Test.Scheduler.get(), "8B");
 test_eq(sizeof(Test.Consumers[1]->children), 3)
 test_equal(Test.Consumers->weight, ({ 6.0, 8, 4, 8 }))
 test_equal(Test.Consumers->pri, ({ 1.5, 0.5, 2.25, 1.125 }))

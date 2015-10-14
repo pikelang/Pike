@@ -43,6 +43,8 @@ protected enum ConsumerState
 //!
 //! Active consumers are kept in a (min-)@[Heap].
 class Consumer {
+  inherit Element;
+
   mixed value;
   //! The value set in @[create()].
 
