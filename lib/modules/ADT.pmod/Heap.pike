@@ -29,7 +29,7 @@ void verify_heap()
     if (values[e]->pos != e)
       error("Error in HEAP: Element %d has invalid position: %d.\n",
 	    e, values[e]->pos);
-    if(values[(e-1)/2] > values[e])
+    if(e && (values[(e-1)/2] > values[e]))
       error("Error in HEAP (%d, %d) num_values=%d\n",
 	    (e-1)/2, e, num_values);
   }
