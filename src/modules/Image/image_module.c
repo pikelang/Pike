@@ -88,21 +88,11 @@ static struct
 #include "initstuff.h"
 };
 
-/* Avoid loss of precision warnings. */
-#ifdef __ECL
-static inline long TO_LONG(ptrdiff_t x)
-{
-  return (long)x;
-}
-#else /* !__ECL */
-#define TO_LONG(x)	((long)(x))
-#endif /* __ECL */
-
 #ifdef PIKE_DEBUG
 #define IMAGE_CHECK_STACK(X)	do { \
     if (save_sp != sp) { \
       Pike_fatal("%s:%d: %ld droppings on stack! previous init: %s\n", \
-            __FILE__, __LINE__, TO_LONG(sp - save_sp), X); \
+            __FILE__, __LINE__, PTRDIFF_T_TO_LONG(sp - save_sp), X); \
     } \
   } while(0)
 #else

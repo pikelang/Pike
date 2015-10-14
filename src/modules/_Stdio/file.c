@@ -5912,16 +5912,6 @@ static void file___init_ref(struct object *UNUSED(o))
   SET_SVAL(REF, PIKE_T_OBJECT, 0, object, file_make_object_from_fd(-1, 0, 0));
 }
 
-/* Avoid loss of precision warnings. */
-#ifdef __ECL
-static inline long TO_LONG(ptrdiff_t x)
-{
-  return (long)x;
-}
-#else /* !__ECL */
-#define TO_LONG(x)	((long)(x))
-#endif /* __ECL */
-
 #ifdef PIKE_DEBUG
 void check_static_file_data(struct callback *UNUSED(a), void *UNUSED(b),
                             void *UNUSED(c))
@@ -5933,7 +5923,7 @@ void check_static_file_data(struct callback *UNUSED(a), void *UNUSED(b),
        PIKE_CONCAT(Y,_function_number)>			    \
        file_program->num_identifier_references)		    \
       Pike_fatal(#Y "_function_number is incorrect: %ld\n", \
-		 TO_LONG(PIKE_CONCAT(Y,_function_number)));
+                 PTRDIFF_T_TO_LONG(PIKE_CONCAT(Y,_function_number)));
 #include "file_functions.h"
   }
 }
