@@ -1057,7 +1057,9 @@ protected string canonic_path(string path)
 {
 #if HAVE_EVENTSTREAM
   if (!backend) {
-    path = System.resolvepath(path);
+    catch {
+      path = System.resolvepath(path);
+    };
   }
 #endif
   return combine_path(path, ".");
