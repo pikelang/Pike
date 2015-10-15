@@ -3532,8 +3532,7 @@ PIKECLASS PollDeviceBackend
     if (numevts >= 0)
       this_backend->event_count = numevts;
     else
-      Pike_error("kevent failure in noteEvents for fd %d (errno: %d).\n",
-                 fd, errno);
+      this_backend->event_count = 0;
   }
 #endif /* BACKEND_USES_CFRUNLOOP */
 
