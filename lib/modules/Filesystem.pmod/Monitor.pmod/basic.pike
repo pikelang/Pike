@@ -1106,6 +1106,14 @@ protected void create(int|void max_dir_check_interval,
   clear();
 }
 
+protected void destroy()
+{
+  // Destruct monitors before we're destructed ourselves, since they
+  // will attempt to unregister with us.
+  foreach (monitors;; Monitor m)
+    destruct (m);
+}
+
 //! Clear the set of monitored files and directories.
 //!
 //! @note
