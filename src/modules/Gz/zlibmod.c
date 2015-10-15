@@ -28,6 +28,7 @@
 #include "threads.h"
 #include "dynamic_buffer.h"
 #include "operators.h"
+#include "bignum.h"
 
 #include <zlib.h>
 
@@ -1179,7 +1180,7 @@ static void gz_crc32(INT32 args)
              (unsigned INT32)(sp[-args].u.string->len));
 
    pop_n_elems(args);
-   push_int((INT32)crc);
+   push_int64((INT64)crc);
 }
 
 static void gz_deflate_size( INT32 args )
@@ -1301,7 +1302,7 @@ PIKE_MODULE_INIT
 #endif
 
   /* function(string(8bit),void|int:int) */
-  ADD_FUNCTION("crc32",gz_crc32,tFunc(tStr8 tOr(tVoid,tInt),tInt),0);
+  ADD_FUNCTION("crc32",gz_crc32,tFunc(tStr8 tOr(tVoid,tInt),tIntPos),0);
 
   /* function(string(8bit)|String.Buffer|System.Memory|Stdio.Buffer,void|int(0..1),void|int,void|int:string(8bit)) */
   ADD_FUNCTION("compress",gz_compress,tFunc(tOr(tStr8,tObj) tOr(tVoid,tInt01) tOr(tVoid,tInt09) tOr(tVoid,tInt) tOr(tVoid,tInt),tStr8),0);

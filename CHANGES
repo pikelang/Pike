@@ -9,6 +9,11 @@ o Unlimited character constant size.
   There is no longer any limit to the size of character constants,
   e.g. 'acdefghijk' creates the bignum 0x61636465666768696a6b.
 
+Incompatible changes
+--------------------
+
+o Gz.crc32 now only returns positive results.
+
 Removed features and modules
 ----------------------------
 

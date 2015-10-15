@@ -86,7 +86,9 @@ cond_resolv(Gz.crc32,
 [[
   dnl Some known collisions taken from http://blog.trungson.com/?p=99
   test_eq(Gz.crc32("a1sellers"), Gz.crc32("advertees"))
+  test_eq(Gz.crc32("a1sellers"), 3605292603)
   test_eq(Gz.crc32("fc0591"), Gz.crc32("123rainerbommert"))
+  test_eq(Gz.crc32("fc0591"), 1009521187)
   test_not_eq(Gz.crc32("a1sellers"), Gz.crc32("123rainerbommert"))
 ]])
 END_MARKER
