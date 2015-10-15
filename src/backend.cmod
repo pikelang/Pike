@@ -3522,13 +3522,18 @@ PIKECLASS PollDeviceBackend
     struct timespec tv;
     struct PollDeviceBackend_struct * this_backend;
     int fd;
+    int numevts;
 	
     tv.tv_sec = 0;
     tv.tv_nsec = 0;
     this_backend = (struct PollDeviceBackend_struct *)info;
     fd = CFFileDescriptorGetNativeDescriptor(fdref);
-    kevent(fd, NULL, 0, this_backend->poll_fds, POLL_SET_SIZE, &tv);
-    this_backend->event_count = POLL_SET_SIZE;
+    numevts = kevent(fd, NULL, 0, this_backend->poll_fds, POLL_SET_SIZE, &tv);
+    if (numevts >= 0)
+      this_backend->event_count = numevts;
+    else
+      Pike_error("kevent failure in noteEvents for fd %d (errno: %d).\n",
+                 fd, errno);
   }
 #endif /* BACKEND_USES_CFRUNLOOP */
 
