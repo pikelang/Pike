@@ -685,7 +685,7 @@ protected string fmt_cipher_suites(array(int) s)
     if( has_prefix(id, "SSL_") || has_prefix(id, "TLS_") )
       ciphers[.Constants[id]] = id;
   foreach(s, int c)
-    b->sprintf("   %-6d: %s\n", c, ciphers[c]||"unknown");
+    b->add(sprintf("   %-6d: %s\n", c, ciphers[c]||"unknown"));
   return (string)b;
 }
 
