@@ -753,12 +753,27 @@ protected void eventstream_callback(string path, int flags, int event_id)
   MON_WERR("eventstream_callback(%O, 0x%08x, %O)\n", path, flags, event_id);
   if(path[-1] == '/') path = path[0..<1];
   MON_WERR("Normalized path: %O\n", path);
-  if(monitors[path]) {
-    monitors[path]->check(0);
-  } else {
-    MON_WERR("No monitor found for path %O. Checking all monitors...\n", path);
-    check_all();
+
+  int monitor_flags;
+
+  if (flags & System.FSEvents.kFSEventStreamEventFlagMustScanSubDirs)
+    monitor_flags &= MF_RECURSE;
+
+  int found;
+  string checkpath = path;
+  for (int i = 0; i <= 1; i++) {
+    MON_WERR("Looking up monitor for path %O.\n", checkpath);
+    if(Monitor m = monitors[checkpath]) {
+      MON_WERR("Found monitor %O for path %O.\n", m, checkpath);
+      m->check(monitor_flags);
+      found = 1;
+      break;
+    }
+    checkpath = dirname (checkpath);
   }
+
+  if (!found)
+    MON_WERR("No monitor found for path %O.\n", path);
 }
 
 //! FSEvents EventStream-accellerated @[Monitor].
@@ -813,10 +828,16 @@ protected class EventStreamMonitor
       Pike.DefaultBackend.enable_core_foundation(1);
 
       MON_WERR("Creating event stream.\n");
+#if constant (System.FSEvents.kFSEventStreamCreateFlagFileEvents)
+      int flags = System.FSEvents.kFSEventStreamCreateFlagFileEvents;
+#else
+      int flags = System.FSEvents.kFSEventStreamCreateFlagNone;
+#endif
+
       eventstream =
 	System.FSEvents.EventStream(({}), 1.0,
 				    System.FSEvents.kFSEventStreamEventIdSinceNow,
-				    System.FSEvents.kFSEventStreamCreateFlagNone);
+                                    flags);
       eventstream->callback_func = eventstream_callback;
     } else {
       string found;
@@ -851,27 +872,6 @@ protected class EventStreamMonitor
     // NB: Eventstream doesn't notify on the monitored path;
     //     only on its contents.
     ::register_path(initial);
-  }
-
-  int(0..1) check(MonitorFlags|void flags)
-  {
-    MON_WERR("Checking path %O...\n", path);
-    int orig_flags = this::flags;
-
-    int(0..1) ret = ::check(flags);
-    if(orig_flags & MF_RECURSE) {
-      // If using FSEvents, we won't receive the name of the file changed,
-      // so we have to scan for it.
-      array(string) files = get_dir(path) || ({});
-      this::files = files;
-      foreach(files, string file) {
-        file = canonic_path(Stdio.append_path(path, file));
- 	if (monitors[file]) {
-          if(check_monitor(monitors[file])) ret = 1;
-        }
-      }
-    }
-    return ret;
   }
 }
 
