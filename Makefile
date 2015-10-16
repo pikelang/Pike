@@ -399,6 +399,8 @@ gitclean: srcclean distclean docclean
 	-rm -rf build
 	-rm -f export_result.txt
 	-rm -f Pike*.tar.gz
+	-rm -rf xenofarm_result
+	-rm -f xenofarm_result.tar
 
 docclean:
 	cd refdoc ; $(DO_MAKE) clean
