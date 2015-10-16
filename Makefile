@@ -390,8 +390,8 @@ distclean:
 
 srcclean:
 	for d in `find src -type d -print`; do \
-	  if test -f "$$d/.cvsignore"; then \
-	    (cd "$$d" && rm -f `cat ".cvsignore"`); \
+	  if test -f "$$d/.gitignore"; then \
+	    (cd "$$d" && rm -f `cat ".gitignore"`); \
 	  else :; fi; \
 	done
 
@@ -399,8 +399,6 @@ gitclean: srcclean distclean docclean
 	-rm -rf build
 	-rm -f export_result.txt
 	-rm -f Pike*.tar.gz
-
-cvsclean: gitclean
 
 docclean:
 	cd refdoc ; $(DO_MAKE) clean
