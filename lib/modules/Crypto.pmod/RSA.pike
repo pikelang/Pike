@@ -231,12 +231,29 @@ Gmp.mpz sign(string message, .Hash h)
   return raw_sign(Standards.PKCS.Signature.build_digestinfo(message, h));
 }
 
+//! Signs the @[message] with a PKCS-1 signature using hash
+//! algorithm @[h]. This is equivalent to
+//! I2OSP(RSASP1(OS2IP(RSAES-PKCS1-V1_5-ENCODE(message)))) in PKCS#1
+//! v2.2.
+string pkcs_sign(string message, .Hash h)
+{
+  return cooked_sign(Standards.PKCS.Signature.build_digestinfo(message, h));
+}
+
 //! Verify PKCS-1 signature @[sign] of message @[msg] using hash
 //! algorithm @[h].
 int(0..1) verify(string msg, .Hash h, Gmp.mpz sign)
 {
   string s = Standards.PKCS.Signature.build_digestinfo(msg, h);
   return raw_verify(s, sign);
+}
+
+//! Verify PKCS-1 signature @[sign] of message @[msg] using hash
+//! algorithm @[h].
+int(0..1) pkcs_verify(string msg, .Hash h, Gmp.mpz sign)
+{
+  if (sizeof(sign) != size) return 0;
+  return verify(msg, h, sign);
 }
 
 //! @fixme

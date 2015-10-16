@@ -59,9 +59,10 @@ this_program set_random(function(int:string) r)
 }
 
 //! Makes a DSA hash of the messge @[msg].
-Gmp.mpz hash(string msg)
+Gmp.mpz hash(string msg, .Hash|void h)
 {
-  return [object(Gmp.mpz)](Gmp.mpz(.SHA1.hash(msg), 256) % q);
+  if (!h) h = .SHA1;
+  return [object(Gmp.mpz)](Gmp.mpz(h->hash(msg), 256) % q);
 }
   
 protected Gmp.mpz random_number(Gmp.mpz n)
@@ -122,15 +123,15 @@ int(0..1) verify_rsaref(string msg, string s)
 }
 
 //! Make an SSL signatrue of message @[msg].
-string sign_ssl(string msg)
+string pkcs_sign(string msg, .Hash h)
 {
   return Standards.ASN1.Types.Sequence(
-    Array.map(raw_sign(hash(msg)),
+    Array.map(raw_sign(hash(msg, h)),
 	      Standards.ASN1.Types.Integer))->get_der();
 }
 
 //! Verify an SSL signature @[s] of message @[msg].
-int(0..1) verify_ssl(string msg, string s)
+int(0..1) pkcs_verify(string msg, .Hash h, string s)
 {
 #define Object Standards.ASN1.Types.Object
   Object a = Standards.ASN1.Decode.simple_der_decode(s);
@@ -142,11 +143,23 @@ int(0..1) verify_ssl(string msg, string s)
 		  ({ "INTEGER" }))))
     return 0;
 
-  return raw_verify(hash(msg),
+  return raw_verify(hash(msg, h),
 		    [object(Gmp.mpz)]([array(object(Object))]a->elements)[0]->
 		      value,
 		    [object(Gmp.mpz)]([array(object(Object))]a->elements)[1]->
 		      value);
+}
+
+//! Make an SSL signatrue of message @[msg].
+string sign_ssl(string msg)
+{
+  return pkcs_sign(msg, .SHA1);
+}
+
+//! Verify an SSL signature @[s] of message @[msg].
+int(0..1) verify_ssl(string msg, string s)
+{
+  return pkcs_verify(msg, .SHA1, s);
 }
 
 
