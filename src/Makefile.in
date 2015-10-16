@@ -979,7 +979,8 @@ doc_build/src/post_modules/GTK2/refdoc/images: doc_build/src/post_modules
 	  mkdir doc_build/src/post_modules/GTK2/refdoc/images
 
 doc_clean:
-	-rm -f onepage.xml traditional.xml modref.xml autodoc.xml resolution.log
+	-rm -f onepage.xml traditional.xml modref.xml autodoc.xml \
+		autodoc.xml.stamp resolution.log
 	-rm -rf doc_build
 
 
