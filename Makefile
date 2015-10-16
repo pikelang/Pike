@@ -395,27 +395,15 @@ srcclean:
 	  else :; fi; \
 	done
 
-gitclean: srcclean distclean docspotless
+gitclean: srcclean distclean docclean
 	-rm -rf build
 	-rm -f export_result.txt
 	-rm -f Pike*.tar.gz
 
 cvsclean: gitclean
 
-delete_docs:
-	-rm -rf "$(BUILDDIR)/doc_build"
-	-rm -f "$(BUILDDIR)/autodoc.xml"
-	-rm -f "$(BUILDDIR)/modref.xml"
-	-rm -f "$(BUILDDIR)/onepage.xml"
-	-rm -f "$(BUILDDIR)/traditional.xml"
-
 docclean:
-	@$(DO_MAKE) delete_docs
-
-docspotless: docclean
-	if test -f "refdoc/Makefile"; then \
-	  cd refdoc; $(DO_MAKE) spotless; \
-	else :; fi
+	cd refdoc ; $(DO_MAKE) clean
 
 depend:
 	@if test -d build; then \
