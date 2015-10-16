@@ -116,4 +116,4 @@ touch-mirardoc:
 # Cleanup
 
 clean:
-	-rm -r modref onepage traditional_manual pelix_modref autodoc.xml
+	-rm -fr modref onepage traditional_manual pelix_modref
