@@ -294,11 +294,6 @@ array(.state) new_server_states(string client_random, string server_random,
     read_state->crypt->set_decrypt_key(keys[2]);
     write_state->crypt = cipher_spec->bulk_cipher_algorithm();
     write_state->crypt->set_encrypt_key(keys[3]);
-    if (cipher_spec->cipher_type == CIPHER_block)
-    { // Crypto.Buffer takes care of splitting input into blocks
-      read_state->crypt = Crypto.Buffer(read_state->crypt);
-      write_state->crypt = Crypto.Buffer(write_state->crypt);
-    }
     if (cipher_spec->iv_size)
     {
       if (version[1] >= (PROTOCOL_TLS_1_1 & 0xff)) {
@@ -307,6 +302,11 @@ array(.state) new_server_states(string client_random, string server_random,
       }
       read_state->crypt->set_iv(keys[4]);
       write_state->crypt->set_iv(keys[5]);
+    }
+    if (cipher_spec->cipher_type == CIPHER_block)
+    { // Crypto.Buffer takes care of splitting input into blocks
+      read_state->crypt = Crypto.Buffer(read_state->crypt);
+      write_state->crypt = Crypto.Buffer(write_state->crypt);
     }
   }
   return ({ read_state, write_state });
@@ -340,11 +340,6 @@ array(.state) new_client_states(string client_random, string server_random,
     read_state->crypt->set_decrypt_key(keys[3]);
     write_state->crypt = cipher_spec->bulk_cipher_algorithm();
     write_state->crypt->set_encrypt_key(keys[2]);
-    if (cipher_spec->cipher_type == CIPHER_block)
-    { // Crypto.Buffer takes care of splitting input into blocks
-      read_state->crypt = Crypto.Buffer(read_state->crypt);
-      write_state->crypt = Crypto.Buffer(write_state->crypt);
-    }
     if (cipher_spec->iv_size)
     {
       if (version[1] >= (PROTOCOL_TLS_1_1 & 0xff)) {
@@ -353,6 +348,11 @@ array(.state) new_client_states(string client_random, string server_random,
       }
       read_state->crypt->set_iv(keys[5]);
       write_state->crypt->set_iv(keys[4]);
+    }
+    if (cipher_spec->cipher_type == CIPHER_block)
+    { // Crypto.Buffer takes care of splitting input into blocks
+      read_state->crypt = Crypto.Buffer(read_state->crypt);
+      write_state->crypt = Crypto.Buffer(write_state->crypt);
     }
   }
   return ({ read_state, write_state });

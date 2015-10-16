@@ -75,6 +75,14 @@ enum ProtocolVersion {
   PROTOCOL_TLS_1_2	= 0x0303, //! TLS 1.2 - The RFC 5246 version of TLS.
 }
 
+#if __BUILD__ < 931
+// Pike 7.8.930 and earlier have a Crypto.Buffer without set_iv(), so
+// they can't support TLS 1.1 and later in a reasonably simple way.
+constant PROTOCOL_SSL_MAX = PROTOCOL_TLS_1_0;
+constant PROTOCOL_TLS_MAX = PROTOCOL_TLS_1_0;
+constant PROTOCOL_major = 3;
+constant PROTOCOL_minor = 1;
+#else
 //! Max supported SSL version.
 constant PROTOCOL_SSL_MAX = PROTOCOL_TLS_1_2;
 constant PROTOCOL_TLS_MAX = PROTOCOL_TLS_1_2;
@@ -82,6 +90,7 @@ constant PROTOCOL_TLS_MAX = PROTOCOL_TLS_1_2;
 //! Max supported SSL version.
 constant PROTOCOL_major = 3;
 constant PROTOCOL_minor = 3;
+#endif
 
 /* Packet types */
 constant PACKET_change_cipher_spec = 20;
