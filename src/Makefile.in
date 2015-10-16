@@ -685,7 +685,7 @@ spotless: clean_here clean_pike
 	-rm -f Makefile config.* make_variables specs pike.syms
 	-rm -f .pure stamp-h
 	-rm -f lexical.c mon.out *.ln
-	-rm -f pike pike.exe pike.old pike.old.exe l.outa* num_files_to_install
+	-rm -f pike.old pike.old.exe l.outa* num_files_to_install
 	-rm -f *.msm *.msi
 	-rm -f precompile.sh precompile.sh-stamp smartlink
 	-rm -rf tlib extra_tests lib precompile
