@@ -814,7 +814,7 @@ protected class EventStreamMonitor
 
       MON_WERR("Creating event stream.\n");
       eventstream =
-	System.FSEvents.EventStream(({}), 3.0,
+	System.FSEvents.EventStream(({}), 1.0,
 				    System.FSEvents.kFSEventStreamEventIdSinceNow,
 				    System.FSEvents.kFSEventStreamCreateFlagNone);
       eventstream->callback_func = eventstream_callback;
