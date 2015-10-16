@@ -404,6 +404,7 @@ cvsclean: gitclean
 
 docclean:
 	cd refdoc ; $(DO_MAKE) clean
+	@$(DO_MAKE) "METATARGET=doc_clean" _make_in_builddir
 
 depend:
 	@if test -d build; then \
