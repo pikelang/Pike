@@ -9,7 +9,7 @@ inherit @module@;
 //! @appears Standards.JSON module
 //!
 //! Tools for handling the JSON structured data format. See
-//! @url{http://www.json.org/@} and RFC 4627.
+//! @url{http://www.json.org/@} and @rfc{4627@}.
 
 //! @ignore
 // Use getters and Val-> to ensure dynamic resolving in case the
