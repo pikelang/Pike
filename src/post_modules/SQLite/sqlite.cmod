@@ -119,11 +119,7 @@ static void bind_arguments(sqlite3 *db,
 	       db);
 	  pop_stack();
 	  break;
-#ifdef PIKE_DEBUG
-	default:
-	  Pike_error("Unknown size_shift.\n");
-#endif
-	}
+        }
       }
       break;
     case T_FLOAT:

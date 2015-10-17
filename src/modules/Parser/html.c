@@ -1613,9 +1613,6 @@ static INLINE void skip_piece_range(struct location *loc,
      case 1: LOOP (p_wchar1); break;
      case 2: LOOP (p_wchar2); break;
 #undef LOOP
-#ifdef PIKE_DEBUG
-     default: Pike_fatal("unknown width of string\n");
-#endif
    }
    loc->byteno=b;
 }
@@ -1739,11 +1736,7 @@ static int scan_forward(struct piece *feed,
 		  case 1: LOOP (p_wchar1); break;
 		  case 2: LOOP (p_wchar2); break;
 #undef LOOP
-#ifdef PIKE_DEBUG
-		  default:
-		     Pike_fatal("unknown width of string\n");
-#endif
-	       }
+               }
 	       if (!feed->next) break;
 	       c=0;
 	       feed=feed->next;
@@ -1779,11 +1772,7 @@ static int scan_forward(struct piece *feed,
 	       case 1: LOOP (p_wchar1); break;
 	       case 2: LOOP (p_wchar2); break;
 #undef LOOP
-#ifdef PIKE_DEBUG
-	       default:
-		  Pike_fatal("unknown width of string\n");
-#endif
-	    }
+            }
 	    if (!feed->next) break;
 	    c=0;
 	    feed=feed->next;
@@ -1865,9 +1854,6 @@ static int scan_for_string (struct parser_html_storage *UNUSED(this),
     case 0: LOOP(0); break;
     case 1: LOOP(1); break;
     case 2: LOOP(2); break;
-#ifdef PIKE_DEBUG
-    default: Pike_fatal ("Unknown width of string.\n");
-#endif
   }
 
 #undef LOOP
@@ -2391,10 +2377,7 @@ static int quote_tag_lookup (struct parser_html_storage *this,
 	  case 0: LOOP (p_wchar0); break;
 	  case 1: LOOP (p_wchar1); break;
 	  case 2: LOOP (p_wchar2); break;
-#ifdef PIKE_DEBUG
-	  default: Pike_fatal ("Unknown width of string.\n");
-#endif
-	}
+        }
 
 #undef LOOP
 

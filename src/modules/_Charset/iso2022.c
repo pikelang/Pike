@@ -1254,11 +1254,6 @@ static void eat_enc_string(struct pike_string *str, struct iso2022enc_stor *s,
       }
     }
     break;
-#ifdef PIKE_DEBUG
-  default:
-    Pike_fatal("Illegal shift size!\n");
-    break;
-#endif
   }
 }
 

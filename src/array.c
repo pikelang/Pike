@@ -2401,9 +2401,6 @@ PMOD_EXPORT struct array *explode(struct pike_string *str,
       case 0: f=(explode_searchfunc)mojt.vtab->func0; break;
       case 1: f=(explode_searchfunc)mojt.vtab->func1; break;
       case 2: f=(explode_searchfunc)mojt.vtab->func2; break;
-#ifdef PIKE_DEBUG
-      default: Pike_fatal("Illegal shift.\n");
-#endif
     }
 
     while((tmp = f(mojt.data, s, (end-s)>> str->size_shift)))

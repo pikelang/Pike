@@ -417,8 +417,7 @@ PMOD_EXPORT p_wchar2 generic_extract (const void *str, int size, ptrdiff_t pos)
     case 1: return ((p_wchar1 *)str)[pos];
     case 2: return ((p_wchar2 *)str)[pos];
   }
-  Pike_fatal("Unsupported string shift: %d\n", size);
-  return 0;
+  UNREACHABLE(return 0);
 }
 
 static void locate_problem(int (*isproblem)(const struct pike_string *))
@@ -904,12 +903,7 @@ PMOD_EXPORT struct pike_string *end_shared_string(struct pike_string *s)
 
   switch(UNLIKELY(s->size_shift))
   {
-    default:
-#ifdef PIKE_DEBUG
-      Pike_fatal("ARGHEL! size_shift:%d\n", s->size_shift);
-
     case 2:
-#endif
       switch(find_magnitude2(STR2(s),s->len))
       {
        case 0:
@@ -984,10 +978,6 @@ PMOD_EXPORT struct pike_string * debug_make_shared_binary_pcharp(const PCHARP st
       return make_shared_binary_string1((p_wchar1 *)(str.ptr),  len);
     case 2:
       return make_shared_binary_string2((p_wchar2 *)(str.ptr),  len);
-#ifdef PIKE_DEBUG
-    default:
-      Pike_fatal("Unknown string width!\n");
-#endif
   }
   UNREACHABLE(return NULL);
 }
@@ -2024,10 +2014,7 @@ PMOD_EXPORT struct pike_string *string_slice(struct pike_string *s,
     case 2:
       return make_shared_binary_string2(STR2(s)+start,len);
   }
-#ifdef PIKE_DEBUG
-  Pike_fatal("Illegal shift size!\n");
-#endif
-  return 0;
+  UNREACHABLE(return 0);
 }
 
 /*** replace function ***/
@@ -2083,9 +2070,6 @@ PMOD_EXPORT struct pike_string *string_replace(struct pike_string *str,
       case 0: f=(replace_searchfunc)mojt.vtab->func0; break;
       case 1: f=(replace_searchfunc)mojt.vtab->func1; break;
       case 2: f=(replace_searchfunc)mojt.vtab->func2; break;
-#ifdef PIKE_DEBUG
-      default: Pike_fatal("Illegal shift.\n");
-#endif
     }
 
   }else{
@@ -2101,9 +2085,6 @@ PMOD_EXPORT struct pike_string *string_replace(struct pike_string *str,
       case 0: f=(replace_searchfunc)mojt.vtab->func0; break;
       case 1: f=(replace_searchfunc)mojt.vtab->func1; break;
       case 2: f=(replace_searchfunc)mojt.vtab->func2; break;
-#ifdef PIKE_DEBUG
-      default: Pike_fatal("Illegal shift.\n");
-#endif
     }
 
     while((s = f(mojt.data, s, (end-s)>>str->size_shift)))
@@ -2476,10 +2457,6 @@ PMOD_EXPORT void string_builder_binary_strcat0(struct string_builder *s,
     case 0: convert_0_to_0(STR0(s->s)+s->s->len,str,len); break;
     case 1: convert_0_to_1(STR1(s->s)+s->s->len,str,len); break;
     case 2: convert_0_to_2(STR2(s->s)+s->s->len,str,len); break;
-#ifdef PIKE_DEBUG
-    default:
-      Pike_fatal ("Illegal magnitude! (%d)\n", s->s->size_shift);
-#endif
   }
   s->s->len+=len;
 }
@@ -3256,9 +3233,6 @@ PMOD_EXPORT PCHARP MEMCHR_PCHARP(const PCHARP ptr, int chr, ptrdiff_t len)
     case 1: return MKPCHARP(MEMCHR1((p_wchar1 *)ptr.ptr,chr,len),1);
     case 2: return MKPCHARP(MEMCHR2((p_wchar2 *)ptr.ptr,chr,len),2);
   }
-#ifdef PIKE_DEBUG
-  Pike_fatal("Illegal shift in MEMCHR_PCHARP.\n");
-#endif
   UNREACHABLE(MKPCHARP(0,0));
 }
 
@@ -3707,13 +3681,8 @@ PMOD_EXPORT p_wchar0 *require_wstring0(const struct pike_string *s,
     case 1:
     case 2:
       return 0;
-
-#ifdef PIKE_DEBUG
-    default:
-      Pike_fatal("Illegal shift size in string.\n");
-#endif
   }
-  return 0;
+  UNREACHABLE(return 0);
 }
 
 PMOD_EXPORT p_wchar1 *require_wstring1(const struct pike_string *s,
@@ -3732,13 +3701,8 @@ PMOD_EXPORT p_wchar1 *require_wstring1(const struct pike_string *s,
 
     case 2:
       return 0;
-
-#ifdef PIKE_DEBUG
-    default:
-      Pike_fatal("Illegal shift size in string.\n");
-#endif
   }
-  return 0;
+  UNREACHABLE(return 0);
 }
 
 
@@ -3760,11 +3724,6 @@ PMOD_EXPORT p_wchar2 *require_wstring2(const struct pike_string *s,
     case 2:
       *to_free=0;
       return STR2(s);
-
-#ifdef PIKE_DEBUG
-    default:
-      Pike_fatal("Illegal shift size in string.\n");
-#endif
   }
-  return 0;
+  UNREACHABLE(return 0);
 }

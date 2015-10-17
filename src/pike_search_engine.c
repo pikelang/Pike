@@ -37,7 +37,6 @@ PCHARP PxC3(NAME,NSHIFT,N)(void *s,	\
     INTERCASE(NAME,1);				\
     INTERCASE(NAME,2);				\
   }                                             \
-  Pike_fatal("Illegal shift\n");                     \
   UNREACHABLE(return haystack);                 \
 }						\
 						\

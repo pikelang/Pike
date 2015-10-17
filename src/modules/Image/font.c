@@ -584,10 +584,6 @@ void font_write(INT32 args)
 	   }
 	 }
 	 break;
-#ifdef PIKE_DEBUG
-       default:
-	 Pike_fatal("Illegal shift size!\n");
-#endif
       }
       width_of[j]=max;
       if (max>maxwidth2) maxwidth2=max;
@@ -692,10 +688,6 @@ void font_write(INT32 args)
 	}
 	/* THREADS_DISALLOW(); */
 	break;
-#ifdef PIKE_DEBUG
-      default:
-	Pike_fatal("Illegal shift size!\n");
-#endif
      }
    }
    CALL_AND_UNSET_ONERROR(err);
@@ -796,10 +788,6 @@ void font_text_extents(INT32 args)
 	  if (xsize > max) max=xsize;
 	}
 	break;
-#ifdef PIKE_DEBUG
-      default:
-	Pike_fatal("Illegal shift size!\n");
-#endif
      }
      if (max>maxwidth2) maxwidth2=max;
   }

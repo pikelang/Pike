@@ -3168,7 +3168,7 @@ PIKECLASS Buffer
         case 1:
           str=make_shared_binary_string1((p_wchar1 *)d,len);
           break;
-        default:
+        case 2:
           str=make_shared_binary_string2((p_wchar2 *)d,len);
           break;
       }
@@ -3548,9 +3548,6 @@ PIKECLASS single_string_replace
       case 0: f = (replace_searchfunc)THIS->mojt.vtab->func0; break;
       case 1: f = (replace_searchfunc)THIS->mojt.vtab->func1; break;
       case 2: f = (replace_searchfunc)THIS->mojt.vtab->func2; break;
-#ifdef PIKE_DEBUG
-      default: Pike_fatal("Illegal shift.\n");
-#endif
       }
 
       if(del->len == to->len)
@@ -3755,11 +3752,7 @@ PIKECLASS bootstring
             s[p] = (p_wchar2) n;
 	  }
 	  break;
-#ifdef PIKE_DEBUG
-	default:
-	  Pike_fatal("Illegal shift size!\n");
-#endif
-	}
+        }
       i++;
     }
 

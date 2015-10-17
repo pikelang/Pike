@@ -2373,7 +2373,7 @@ static LPWSTR get_wstring(struct svalue *s)
       /* we never get here, but the "return (LPWSTR)0" makes the compiler
        * stop complaining about our not returning a value here.
        */
-      return (LPWSTR)0;
+      UNRECHABLE(return (LPWSTR)0);
   }
 }
 

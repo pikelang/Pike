@@ -1518,9 +1518,8 @@ INT32 low_sscanf_pcharp(PCHARP input, ptrdiff_t len,
     case 8:
       return very_low_sscanf_2_2(input.ptr, len, format.ptr, format_len,
                                  chars_matched, &ok,0);
-    default:
-      Pike_error("impossible");
   }
+  UNREACHABLE();
 }
 
 /* Simplified interface to very_low_sscanf_{0,1,2}_{0,1,2}(). */
@@ -1528,74 +1527,68 @@ INT32 low_sscanf(struct pike_string *data, struct pike_string *format)
 {
   ptrdiff_t matched_chars;
   int x;
-  INT32 i;
 
   check_c_stack(sizeof(struct sscanf_set)*2 + 512);
 
   switch(data->size_shift*3 + format->size_shift) {
-  default:
-#ifdef PIKE_DEBUG
-    Pike_fatal("Unsupported shift-combination to low_sscanf(): %d:%d\n",
-	       data->size_shift, format->size_shift);
-    break;
-#endif
     /* input_shift : match_shift */
   case 0:
     /*      0      :      0 */
-    i = very_low_sscanf_0_0(STR0(data), data->len,
-			    STR0(format), format->len,
-			    &matched_chars, &x,data);
+    return very_low_sscanf_0_0(STR0(data), data->len,
+                               STR0(format), format->len,
+                               &matched_chars, &x,data);
     break;
   case 1:
     /*      0      :      1 */
-    i = very_low_sscanf_0_1(STR0(data), data->len,
-			    STR1(format), format->len,
-			    &matched_chars, &x,data);
+    return very_low_sscanf_0_1(STR0(data), data->len,
+                               STR1(format), format->len,
+                               &matched_chars, &x,data);
     break;
   case 2:
     /*      0      :      2 */
-    i = very_low_sscanf_0_2(STR0(data), data->len,
-			    STR2(format), format->len,
-			    &matched_chars, &x,data);
+    return very_low_sscanf_0_2(STR0(data), data->len,
+                               STR2(format), format->len,
+                               &matched_chars, &x,data);
     break;
   case 3:
     /*      1      :      0 */
-    i = very_low_sscanf_1_0(STR1(data), data->len,
-			    STR0(format), format->len,
-			    &matched_chars, &x,data);
+    return very_low_sscanf_1_0(STR1(data), data->len,
+                               STR0(format), format->len,
+                               &matched_chars, &x,data);
     break;
   case 4:
     /*      1      :      1 */
-    i = very_low_sscanf_1_1(STR1(data), data->len,
-			    STR1(format), format->len,
-			    &matched_chars, &x,data);
+    return very_low_sscanf_1_1(STR1(data), data->len,
+                               STR1(format), format->len,
+                               &matched_chars, &x,data);
     break;
   case 5:
     /*      1      :      2 */
-    i = very_low_sscanf_1_2(STR1(data), data->len,
-			    STR2(format), format->len,
-			    &matched_chars, &x,data);
+    return very_low_sscanf_1_2(STR1(data), data->len,
+                               STR2(format), format->len,
+                               &matched_chars, &x,data);
     break;
   case 6:
     /*      2      :      0 */
-    i = very_low_sscanf_2_0(STR2(data), data->len,
-			    STR0(format), format->len,
-			    &matched_chars, &x,data);
+    return very_low_sscanf_2_0(STR2(data), data->len,
+                               STR0(format), format->len,
+                               &matched_chars, &x,data);
     break;
   case 7:
     /*      2      :      1 */
-    i = very_low_sscanf_2_1(STR2(data), data->len,
-			    STR1(format), format->len,
-			    &matched_chars, &x,data);
+    return very_low_sscanf_2_1(STR2(data), data->len,
+                               STR1(format), format->len,
+                               &matched_chars, &x,data);
     break;
   case 8:
     /*      2      :      2 */
-    i = very_low_sscanf_2_2(STR2(data), data->len,
-			    STR2(format), format->len,
-			    &matched_chars, &x,data);
+    return very_low_sscanf_2_2(STR2(data), data->len,
+                               STR2(format), format->len,
+                               &matched_chars, &x,data);
     break;
   }
-  return i;
+
+  UNREACHABLE();
 }
 
 /*! @decl int sscanf(string data, string format, mixed ... lvalues)

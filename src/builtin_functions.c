@@ -405,11 +405,6 @@ PMOD_EXPORT void f_hash(INT32 args)
   case 2:
     i = simple_hashmem2(STR2(s), s->len, 100);
     break;
-#ifdef PIKE_DEBUG
-  default:
-    Pike_fatal("hash(): Unsupported string shift: %d\n", s->size_shift);
-    break;
-#endif
   }
 
   if(args > 1)
@@ -1020,12 +1015,6 @@ PMOD_EXPORT void f_search(INT32 args)
 	  }
 	}
 	break;
-#ifdef PIKE_DEBUG
-      default:
-	Pike_fatal("search(): Unsupported string shift: %d!\n",
-	      haystack->size_shift);
-	break;
-#endif
       }
       if (start >= haystack->len) {
 	start = -1;
@@ -1248,10 +1237,6 @@ PMOD_EXPORT void f_has_prefix(INT32 args)
     CASE_SHIFT(1,0);
     CASE_SHIFT(2,0);
     CASE_SHIFT(2,1);
-  default:
-    Pike_error("Unexpected string shift combination: a:%d, b:%d!\n",
-	  a->size_shift, b->size_shift);
-    break;
   }
 #undef CASE_SHIFT
 #undef TWO_SHIFTS
@@ -1322,10 +1307,6 @@ PMOD_EXPORT void f_has_suffix(INT32 args)
     CASE_SHIFT(1,0);
     CASE_SHIFT(2,0);
     CASE_SHIFT(2,1);
-  default:
-    Pike_error("Unexpected string shift combination: a:%d, b:%d!\n",
-	  a->size_shift, b->size_shift);
-    break;
   }
 #undef CASE_SHIFT
 #undef TWO_SHIFTS
@@ -1829,11 +1810,6 @@ PMOD_EXPORT void f_string_to_unicode(INT32 args)
       out = end_shared_string(out);
     }
     break;
-#ifdef PIKE_DEBUG
-  default:
-    Pike_fatal("string_to_unicode(): Bad string shift: %d!\n", in->size_shift);
-    break;
-#endif
   }
   pop_n_elems(args);
   push_string(out);

@@ -141,10 +141,6 @@ static void f_tokenize( INT32 args )
       left = tokenize2(&res,STR2(data), data->len);
       left_s = make_shared_binary_string2(STR2(data)+left, data->len-left);
       break;
-#ifdef PIKE_DEBUG
-    default:
-      Pike_error("Unknown shift size %d.\n", data->size_shift);
-#endif
   }
 
   UNSET_ONERROR(tmp);
