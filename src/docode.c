@@ -2814,7 +2814,7 @@ INT32 do_code_block(node *n)
     if (!sval) {
       yyerror("predef::aggregate() is missing.\n");
       Pike_fatal("No aggregate!\n");
-      return 0;
+      UNREACHABLE(return 0);
     }
     aggregate_cnum = store_constant(sval, 0, NULL);
     emit1(F_CALL_BUILTIN, aggregate_cnum);

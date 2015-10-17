@@ -2713,7 +2713,6 @@ PMOD_EXPORT void check_array(struct array *a)
   if(a->refs <=0 )
     Pike_fatal("Array has zero refs.\n");
 
-
   for(e=0;e<a->size;e++)
   {
     if(! ( (1 << TYPEOF(ITEM(a)[e])) & (a->type_field) ) &&

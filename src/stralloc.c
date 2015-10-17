@@ -2895,7 +2895,7 @@ static LONGEST pike_va_int(VA_LIST_PTR args, int flags)
   }
   Pike_fatal("string_builder_append_integerv(): Unsupported flags: 0x%04x\n",
 	     flags);
-  return 0;
+  UNREACHABLE(return 0);
 }
 
 /* Standard formats supported by string_builder_{v,}sprintf():

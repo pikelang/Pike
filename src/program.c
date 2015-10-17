@@ -6949,7 +6949,7 @@ PMOD_EXPORT int low_find_lfun(struct program *p, ptrdiff_t lfun)
 PMOD_EXPORT int find_lfun_fatal(struct program *UNUSED(p), ptrdiff_t lfun)
 {
   Pike_fatal("Invalid lfun number: %d\n", lfun);
-  return -1;
+  UNREACHABLE(return -1);
 }
 
 int lfun_lookup_id(struct pike_string *lfun_name)
