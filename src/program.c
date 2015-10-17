@@ -4284,7 +4284,7 @@ PMOD_EXPORT size_t low_add_storage(size_t size, size_t alignment,
     Pike_fatal("add_storage failed horribly(2) %ld %ld %ld %ld!\n",
           (long)offset,
 	  (long)0 /* + OFFSETOF(object,storage) */,
-          (long)modulo_orig),
+          (long)modulo_orig,
           (long)alignment);
 
 #endif
