@@ -16,7 +16,6 @@
 #include "builtin_functions.h"
 
 #ifdef _REENTRANT
-#include <stdlib.h>
 #include <errno.h>
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>

@@ -15,8 +15,6 @@
 #include "pike_error.h"
 #include "rbtree_low.h"
 
-#include <stdlib.h>
-
 #if defined (PIKE_DEBUG) || defined (TEST_MULTISET)
 
 DECLSPEC(noreturn) static void debug_rb_fatal (

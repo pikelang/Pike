@@ -5,8 +5,6 @@
 #include "block_allocator.h"
 #include "bitvector.h"
 
-#include <stdlib.h>
-
 #define BA_BLOCKN(l, p, n) ((struct ba_block_header *)((char*)(p) + (l).doffset + (n)*((l).block_size)))
 #define BA_LASTBLOCK(l, p) ((struct ba_block_header*)((char*)(p) + (l).doffset + (l).offset))
 #define BA_CHECK_PTR(l, p, ptr)	((size_t)((char*)(ptr) - (char*)(p)) <= (l).offset + (l).doffset)

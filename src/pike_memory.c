@@ -25,8 +25,6 @@
 #include <fcntl.h>
 #endif
 
-#include <stdlib.h>
-
 #include <errno.h>
 
 int page_size;

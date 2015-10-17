@@ -21,7 +21,6 @@
 #include "fdlib.h"
 #include "builtin_functions.h"
 
-#include <stdlib.h>
 #include <errno.h>
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>

@@ -11,6 +11,7 @@
  *
  */
 
+#include "global.h"
 #include "config.h"
 
 #include "interpret.h"
@@ -26,7 +27,6 @@
 
 #ifdef HAVE_WORKING_LIBFFMPEG
 
-#include <stdlib.h>
 #include <string.h>
 #include <math.h>
 
