@@ -29,7 +29,6 @@ DECLARATIONS
 #include <nettle/umac.h>
 #endif
 
-#include <stdarg.h>
 #include "fdlib.h"
 
 /*! @module Nettle */

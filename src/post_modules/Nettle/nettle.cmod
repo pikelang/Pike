@@ -19,8 +19,6 @@
 #include <nettle/yarrow.h>
 #include <nettle/knuth-lfib.h>
 
-#include <stdarg.h>
-
 DECLARATIONS
 
 /*! @module Nettle

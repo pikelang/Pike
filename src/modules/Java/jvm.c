@@ -37,7 +37,6 @@
 
 #ifdef HAVE_JAVA
 
-#include <stdarg.h>
 #include <locale.h>
 
 #ifdef HAVE_JNI_H

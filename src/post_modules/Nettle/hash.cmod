@@ -36,7 +36,6 @@ DECLARATIONS
 #include <nettle/gosthash94.h>
 #endif
 
-#include <stdarg.h>
 #include "fdlib.h"
 
 /*! @module Nettle */

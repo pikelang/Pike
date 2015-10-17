@@ -13,7 +13,6 @@
 #include "global.h"
 
 #include <stdlib.h>
-#include <stdarg.h>
 
 int _Image_TIFF_dummy_dum_dum(FILE *fp, const char *fmt, va_list ap)
 {
