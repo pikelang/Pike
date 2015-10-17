@@ -10,7 +10,7 @@ if test "${ac_cv_lib_m}" = "no" -a "${pike_cv_sys_os}" = "Linux"; then
   LIBS="${LIBS} -lc -lm"
 fi
 
-AC_CHECK_HEADERS(math.h ieeefp.h fp_class.h floatingpoint.h)
+AC_CHECK_HEADERS(ieeefp.h fp_class.h floatingpoint.h)
 
 AC_CHECK_FUNCS(sinf fpsetmask fpsetround fpsetfastmode)
 
