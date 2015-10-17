@@ -34,9 +34,7 @@
 #include <signal.h>
 #include <errno.h>
 
-#ifdef HAVE_LIMITS_H
 #include <limits.h>
-#endif /* HAVE_LIMITS_H */
 
 #include "dmalloc.h"
 

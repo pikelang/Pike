@@ -3206,7 +3206,7 @@ AC_CHECK_HEADERS(winsock2.h sys/rusage.h time.h sys/time.h sys/types.h \
 		 memory.h strings.h \
 		 fcntl.h sys/filio.h sys/sockio.h crypt.h locale.h \
 		 sys/select.h net/socket.h sys/param.h stdio.h io.h \
-		 sys/mman.h setjmp.h sys/user.h limits.h pthread.h \
+		 sys/mman.h setjmp.h sys/user.h pthread.h \
 		 sys/id.h mach-o/dyld.h sys/ptrace.h \
 		 thread.h dlfcn.h dld.h dl.h sys/times.h sched.h \
 		 sys/procfs.h sys/socket.h sys/uio.h fcntl.h \
