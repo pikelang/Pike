@@ -300,6 +300,9 @@ void *alloca();
 #include <stdarg.h>
 #include <stdlib.h>
 #include <stddef.h>
+#include <string.h>
+#include <limits.h>
+#include <float.h>
 
 #ifdef HAVE_MALLOC_H
 #if !defined(__FreeBSD__) && !defined(__OpenBSD__)
@@ -312,9 +315,6 @@ void *alloca();
 #include <unistd.h>
 #endif
 
-#include <string.h>
-#include <limits.h>
-
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
@@ -326,8 +326,6 @@ void *alloca();
 #ifdef HAVE_WINDOWS_H
 #include <windows.h>
 #endif
-
-#include <float.h>
 
 /* Get INT64, INT32, INT16, INT8, et al. */
 #include "pike_int_types.h"

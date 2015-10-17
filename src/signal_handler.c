@@ -23,7 +23,10 @@
 #include "builtin_functions.h"
 #include "main.h"
 #include "time_stuff.h"
+
 #include <signal.h>
+#include <string.h>
+#include <errno.h>
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -61,8 +64,6 @@
 #include <strings.h>
 #endif
 
-#include <string.h>
-
 #ifdef HAVE_FCNTL_H
 #include <fcntl.h>
 #endif
@@ -70,8 +71,6 @@
 #ifdef HAVE_SYS_IOCTL_H
 #include <sys/ioctl.h>
 #endif
-
-#include <errno.h>
 
 #ifdef HAVE_POLL
 #ifdef HAVE_POLL_H
