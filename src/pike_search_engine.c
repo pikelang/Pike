@@ -27,9 +27,9 @@
 
 
 #define INTERMEDIATE(NAME)			\
-PCHARP PxC3(NAME,NSHIFT,N)(void *s,	\
-		   PCHARP haystack,		\
-		   ptrdiff_t haystacklen)		\
+PCHARP PxC3(NAME,NSHIFT,N)(void *s,	        \
+                           PCHARP haystack,	\
+                           ptrdiff_t haystacklen)       \
 {						\
   switch(haystack.shift)			\
   {						\
@@ -42,9 +42,9 @@ PCHARP PxC3(NAME,NSHIFT,N)(void *s,	\
 						\
 static const struct SearchMojtVtable PxC3(NAME,NSHIFT,_vtable) = {	\
   (SearchMojtFunc0)PxC3(NAME,NSHIFT,0),		\
-  (SearchMojtFunc1)PxC3(NAME,NSHIFT,1),			\
-  (SearchMojtFunc2)PxC3(NAME,NSHIFT,2),			\
-  (SearchMojtFuncN)PxC3(NAME,NSHIFT,N),			\
+  (SearchMojtFunc1)PxC3(NAME,NSHIFT,1),		\
+  (SearchMojtFunc2)PxC3(NAME,NSHIFT,2),		\
+  (SearchMojtFuncN)PxC3(NAME,NSHIFT,N),		\
 };
 
 
@@ -226,8 +226,8 @@ void NameN(init_memsearch)(
       s->mojt.vtab=& PxC3(memchr_search,NSHIFT,_vtable);
       return;
 
-#define MMCASE(X)							\
-    case X:								\
+#define MMCASE(X)						\
+    case X:							\
       s->mojt.data=(void *) needle;				\
       s->mojt.vtab=& PxC4(memchr_memcmp,X,NSHIFT,_vtable);	\
       return
