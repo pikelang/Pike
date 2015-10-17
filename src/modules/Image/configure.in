@@ -7,7 +7,7 @@ AC_MODULE_INIT()
 
 AC_FUNC_MMAP
 
-AC_CHECK_HEADERS(sys/fcntl.h fcntl.h stdlib.h netinet/in.h winsock.h winsock2.h)
+AC_CHECK_HEADERS(sys/fcntl.h fcntl.h netinet/in.h winsock.h winsock2.h)
 
 AC_CHECK_LIB(m, abs, [], [])
 

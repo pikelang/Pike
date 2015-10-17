@@ -298,11 +298,7 @@ void *alloca();
 
 #include <stdio.h>
 #include <stdarg.h>
-
-#ifdef HAVE_STDLIB_H
 #include <stdlib.h>
-#endif
-
 #include <stddef.h>
 
 #ifdef HAVE_MALLOC_H
