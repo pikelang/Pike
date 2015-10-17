@@ -3202,7 +3202,7 @@ AC_HEADER_STDC
 # Note: winsock2.h has to be included before winsock.h to avoid
 # conflict. Thus check for winsock2.h before anything else in case
 # winsock.h is included indirectly.
-AC_CHECK_HEADERS(winsock2.h sys/rusage.h time.h sys/time.h sys/types.h \
+AC_CHECK_HEADERS(winsock2.h sys/rusage.h sys/time.h sys/types.h \
 		 memory.h strings.h \
 		 fcntl.h sys/filio.h sys/sockio.h crypt.h \
 		 sys/select.h net/socket.h sys/param.h io.h \
@@ -3378,9 +3378,7 @@ AC_CACHE_VAL(pike_cv_sys_resource_h, [
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif /* HAVE_SYS_TYPES_H */
-#ifdef HAVE_TIME_H
 #include <time.h>
-#endif /* HAVE_TIME_H */
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif /* HAVE_SYS_TIME_H */
@@ -7082,9 +7080,7 @@ AC_CACHE_VAL(pike_cv_func_gettimeofday_has_two_args,
 # if HAVE_SYS_TIME_H
 #  include <sys/time.h>
 # else
-#  if HAVE_TIME_H
 #   include <time.h>
-#  endif
 # endif
 #endif
 
@@ -7112,9 +7108,7 @@ int main() {
 # if HAVE_SYS_TIME_H
 #  include <sys/time.h>
 # else
-#  if HAVE_TIME_H
 #   include <time.h>
-#  endif
 # endif
 #endif
 

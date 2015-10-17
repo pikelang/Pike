@@ -42,6 +42,7 @@
 
 #include <errno.h>
 #include <math.h>
+#include <time.h>
 
 #ifdef HAVE_SYS_PRCTL_H
 #include <sys/prctl.h>
@@ -49,9 +50,6 @@
 
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
-#endif
-#ifdef HAVE_TIME_H
-#include <time.h>
 #endif
 
 /* This is used for strapping the interpreter before the threads

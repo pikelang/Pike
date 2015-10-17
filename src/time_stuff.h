@@ -16,9 +16,7 @@
 # if HAVE_SYS_TIME_H
 #  include <sys/time.h>
 # else
-#  if HAVE_TIME_H
 #   include <time.h>
-#  endif
 # endif
 #endif
 
