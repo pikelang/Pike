@@ -319,7 +319,7 @@ if test "x$with_java" = xyes; then
     AC_SYS_COMPILER_FLAG(-DMACOSX, define_macosx, CPPFLAGS)
   ])
 
-  AC_CHECK_HEADERS(jni.h winbase.h setjmp.h ffi.h ffi/ffi.h libffi/ffi.h)
+  AC_CHECK_HEADERS(jni.h winbase.h ffi.h ffi/ffi.h libffi/ffi.h)
   AC_CHECK_TYPES([ffi_arg, ffi_sarg],,,[#ifdef HAVE_FFI_H
 #include <ffi.h>
 #else
@@ -460,9 +460,7 @@ if test "x$with_java" = xyes; then
       AC_TRY_RUN([#ifdef HAVE_JNI_H
 #include <jni.h>
 #endif
-#ifdef HAVE_SETJMP_H
 #include <setjmp.h>
-#endif
 #include <stdio.h>
 #ifdef __NT__
 #include <windows.h>

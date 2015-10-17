@@ -24,11 +24,7 @@ static inline void Pike_fatal (const char *fmt, ...)
 #else  /* !CONFIGURE_TEST */
 
 #include "global.h"
-
-#ifdef HAVE_SETJMP_H
 #include <setjmp.h>
-#undef HAVE_SETJMP_H
-#endif
 
 #if defined(HAVE_SIGSETJMP) && defined(HAVE_SIGLONGJMP)
 #define HAVE_AND_USE_SIGSETJMP
