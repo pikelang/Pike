@@ -222,6 +222,17 @@ PMOD_EXPORT char *get_name_of_type(TYPE_T t)
     case T_ZERO:	return "zero";
     case T_VOID:	return "void";
     case T_MIXED:	return "mixed";
+    case '0':		return "$0";
+    case '1':		return "$1";
+    case '2':		return "$2";
+    case '3':		return "$3";
+    case '4':		return "$4";
+    case '5':		return "$5";
+    case '6':		return "$6";
+    case '7':		return "$7";
+    case '8':		return "$8";
+    case '9':		return "$9";
+    case PIKE_T_UNKNOWN:
     default:		return "unknown";
 
 #ifdef PIKE_DEBUG
@@ -2204,288 +2215,39 @@ void simple_describe_type(struct pike_type *s)
 
 void low_describe_type(struct string_builder *s, struct pike_type *t)
 {
-  check_c_stack(1024);
-  switch(t->type)
-  {
-    case '0': case '1': case '2': case '3': case '4':
-    case '5': case '6': case '7': case '8': case '9':
-      string_builder_putchar(s, t->type);
-      break;
+  const struct pike_type_def *def = pike_type_defs[t->type];
 
-    case T_ASSIGN:
-      string_builder_sprintf(s, "(%c=%T)", '0' + CAR_TO_INT(t), t->cdr);
-      break;
-
-    case T_SCOPE:
-      string_builder_sprintf(s, "scope(%c,%T)", '0' + CAR_TO_INT(t), t->cdr);
-      break;
-
-    case T_TUPLE:
-      string_builder_sprintf(s, "[%T,%T]", t->car, t->cdr);
-      break;
-
-    case T_VOID: string_builder_strcat(s, "void"); break;
-    case T_ZERO: string_builder_strcat(s, "zero"); break;
-    case T_MIXED: string_builder_strcat(s, "mixed"); break;
-    case PIKE_T_UNKNOWN: string_builder_strcat(s, "unknown"); break;
-    case T_INT:
-    {
-      INT32 min=CAR_TO_INT(t);
-      INT32 max=CDR_TO_INT(t);
-
-      if (!min && max && max != MAX_INT32 && !(max & (max+1))) {
-	int j = 0;
-	while (max) {
-	  max >>= 1;
-	  j++;
-	}
-	string_builder_sprintf(s, "int(%dbit)", j);
-      } else if(min!=MIN_INT32 || max!=MAX_INT32) {
-	string_builder_sprintf(s, "int(%ld..%ld)", (long)min, (long)max);
-      } else {
-	string_builder_strcat(s, "int");
-      }
-      break;
-    }
-    case T_FLOAT: string_builder_strcat(s, "float"); break;
-    case T_PROGRAM:
-      if ((t->car->type == T_OBJECT) &&
-	  (!t->car->cdr)) {
-	string_builder_strcat(s, "program");
-      } else {
-	string_builder_sprintf(s, "program(%T)", t->car);
-      }
-      break;
-    case T_OBJECT:
-      if (t->cdr)
-      {
-	struct svalue sval;
-	if (t->car) {
-	  string_builder_strcat(s, "object(is ");
-	} else {
-	  string_builder_strcat(s, "object(implements ");
-	}
-	/* We need to save the global buffer, in case id_to_program()
-	 * starts running Pike code. */
-	sval.u.program = id_to_program(CDR_TO_INT(t));
-	if (sval.u.program) {
-	  SET_SVAL_TYPE(sval, T_PROGRAM);
-	  SET_SVAL_SUBTYPE(sval, 0);
-	  string_builder_sprintf(s, "%O)", &sval);
-	} else {
-	  string_builder_sprintf(s, "%"PRINTPTRDIFFT"d)", CDR_TO_INT(t));
-	}
-      }else{
-	string_builder_strcat(s, "object");
-      }
-      break;
-
-    case T_STRING:
-      {
-	INT32 min;
-	INT32 max;
-	t = t->car;
-	if (t->type == T_ZERO) {
-	  string_builder_strcat(s, "string(zero)");
-	} else if (t != int_type_string) {
-	  string_builder_strcat(s, "string(");
-	  while (t->type == T_OR) {
-	    struct pike_type *char_type = t->car;
-	    while(char_type->type == T_ASSIGN) {
-	      char_type = char_type->cdr;
-	    }
-	    if (char_type->type != T_INT) {
-	      low_describe_type(s, char_type);
-	    } else {
-	      min = CAR_TO_INT(char_type);
-	      max = CDR_TO_INT(char_type);
-	      if (!min && max && max != MAX_INT32 && !(max & (max+1))) {
-		int j = 0;
-		while (max) {
-		  max >>= 1;
-		  j++;
-		}
-		string_builder_sprintf(s, "%dbit", j);
-	      } else {
-		if (min != MIN_INT32) {
-		  string_builder_sprintf(s, "%d", min);
-		}
-		string_builder_strcat(s, "..");
-		if (max != MAX_INT32) {
-		  string_builder_sprintf(s, "%d", max);
-		}
-	      }
-	    }
-	    string_builder_strcat(s, " | ");
-	    t = t->cdr;
-	  }
-	  while(t->type == T_ASSIGN) {
-	    t = t->cdr;
-	  }
-	  if (t->type != T_INT) {
-	    low_describe_type(s, t);
-	  } else {
-	    min = CAR_TO_INT(t);
-	    max = CDR_TO_INT(t);
-	    if (!min && max && max != MAX_INT32 && !(max & (max+1))) {
-	      int j = 0;
-	      while (max) {
-		max >>= 1;
-		j++;
-	      }
-	      string_builder_sprintf(s, "%dbit", j);
-	    } else {
-	      if (min != MIN_INT32) {
-		string_builder_sprintf(s, "%d", min);
-	      }
-	      string_builder_strcat(s, "..");
-	      if (max != MAX_INT32) {
-		string_builder_sprintf(s, "%d", max);
-	      }
-	    }
-	  }
-	  string_builder_putchar(s, ')');
-	} else {
-	  string_builder_strcat(s, "string");
-	}
-	break;
-      }
-    case T_TYPE:
-      string_builder_sprintf(s, "type(%T)", t->car);
-      break;
-
-    case PIKE_T_NAME:
-      string_builder_sprintf(s, "{ %S = %T }",
-			     (struct pike_string *)t->car, t->cdr);
-      break;
-
-    case PIKE_T_ATTRIBUTE:
-      {
-	struct pike_string *deprecated;
-	MAKE_CONST_STRING(deprecated, "deprecated");
-	if (((struct pike_string *)t->car) == deprecated) {
-	  string_builder_sprintf(s, "__deprecated__(%T)", t->cdr);
-	} else {
-	  struct svalue sval;
-	  SET_SVAL(sval, PIKE_T_STRING, 0, string,
-		   (struct pike_string *)t->car);
-	  string_builder_sprintf(s, "__attribute__(%O, %T)", &sval, t->cdr);
-	}
-      }
-      break;
-
-    case T_FUNCTION:
-    case T_MANY:
-    {
-      if(t->type == T_MANY &&
-	 t->cdr->type == T_OR &&
-	 ((t->cdr->car->type == T_MIXED && t->cdr->cdr->type == T_VOID) ||
-	  (t->cdr->cdr->type == T_MIXED && t->cdr->car->type == T_VOID)) &&
-	 (t->car->type == T_ZERO ||
-	  (t->car->type == T_OR &&
-	   ((t->car->car->type == T_ZERO && t->car->cdr->type == T_VOID) ||
-	    (t->car->cdr->type == T_ZERO && t->car->car->type == T_VOID)))))
-      {
-	/* function == function(zero...:mixed|void) or
-	 *             function(zero|void...:mixed|void)
-	 */
-	string_builder_strcat(s, "function");
-	/* done */
-	break;
-      } else {
-	int arg = 0;
-	string_builder_strcat(s, "function(");
-	while(t->type != T_MANY)
-	{
-	  if(arg++) string_builder_strcat(s, ", ");
-	  low_describe_type(s, t->car);
-	  t = t->cdr;
-	  while(t->type == T_ASSIGN) {
-	    string_builder_sprintf(s, "%c=", '0' + CAR_TO_INT(t));
-	    t = t->cdr;
-	  }
-	}
-	if(t->car->type != T_VOID)
-	{
-	  if(arg++) string_builder_strcat(s, ", ");
-	  low_describe_type(s, t->car);
-	  string_builder_strcat(s, " ...");
-	}
-	string_builder_sprintf(s, " : %T)", t->cdr);
-      }
-      break;
-    }
-
-    case T_ARRAY:
-      if(t->car->type != T_MIXED) {
-	string_builder_sprintf(s, "array(%T)", t->car);
-      } else {
-	string_builder_strcat(s, "array");
-      }
-      break;
-
-    case T_MULTISET:
-      if(t->car->type != T_MIXED) {
-	string_builder_sprintf(s, "multiset(%T)", t->car);
-      } else {
-	string_builder_strcat(s, "multiset");
-      }
-      break;
-
-    case T_NOT:
-      if (t->car->type > T_NOT) {
-	string_builder_sprintf(s, "!(%T)", t->car);
-      } else {
-	string_builder_sprintf(s, "!%T", t->car);
-      }
-      break;
-
-    case PIKE_T_RING:
-      /* FIXME: Should be renumbered for correct parenthesing. */
-      string_builder_sprintf(s, "(%T)\260(%T)", t->car, t->cdr);
-      break;
-
-    case T_OR:
-      if (t->car->type > T_OR) {
-	string_builder_sprintf(s, "(%T)", t->car);
-      } else {
-	low_describe_type(s, t->car);
-      }
-      string_builder_strcat(s, " | ");
-      if (t->cdr->type > T_OR) {
-	string_builder_sprintf(s, "(%T)", t->cdr);
-      } else {
-	low_describe_type(s, t->cdr);
-      }
-      break;
-
-    case T_AND:
-      if (t->car->type > T_AND) {
-	string_builder_sprintf(s, "(%T)", t->car);
-      } else {
-	low_describe_type(s, t->car);
-      }
-      string_builder_strcat(s, " & ");
-      if (t->cdr->type > T_AND) {
-	string_builder_sprintf(s, "(%T)", t->cdr);
-      } else {
-	low_describe_type(s, t->cdr);
-      }
-      break;
-
-    case T_MAPPING:
-      if(t->car->type != T_MIXED || t->cdr->type != T_MIXED) {
-	string_builder_sprintf(s, "mapping(%T:%T)", t->car, t->cdr);
-      } else {
-	string_builder_strcat(s, "mapping");
-      }
-      break;
-    default:
-      {
-	string_builder_sprintf(s, "unknown code(%d)", t->type);
-	break;
-      }
+  if (!def) {
+    string_builder_sprintf(s, "unknown code(%d)", t->type);
+    return;
   }
+
+  check_c_stack(1024);
+
+  if (def->describe_type) {
+    def->describe_type(s, t);
+    return;
+  }
+
+  /* The generic case. */
+
+  string_builder_strcat(s, get_name_of_type(t->type));
+  if (def->flags == TYPE_FLAG_IS_LEAF) return;
+  if ((def->flags == TYPE_FLAG_CAR_IS_TYPE) &&
+      (t->car->type == T_MIXED)) {
+    return;
+  }
+  string_builder_putchar(s, '(');
+  if (def->flags & TYPE_FLAG_CAR_IS_TYPE) {
+    low_describe_type(s, t->car);
+    if (def->flags & TYPE_FLAG_CDR_IS_TYPE) {
+      string_builder_putchar(s, ',');
+    }
+  }
+  if (def->flags & TYPE_FLAG_CDR_IS_TYPE) {
+    low_describe_type(s, t->cdr);
+  }
+  string_builder_putchar(s, ')');
 }
 
 struct pike_string *describe_type(struct pike_type *type)
@@ -8574,8 +8336,53 @@ static int type_stack_mmap, pike_type_mark_stack_mmap;
 
 /* Int */
 
+/* NB: This function is used both for integers and for strings. */
+static void describe_int_type_range(struct string_builder *s,
+				    struct pike_type *t)
+{
+  INT32 min = CAR_TO_INT(t);
+  INT32 max = CDR_TO_INT(t);
+  if (!min && !max) {
+    string_builder_strcat(s, "zero");
+    return;
+  }
+  if ((min != MIN_INT32) || (max != MAX_INT32)) {
+    string_builder_strcat(s, "(");
+    if (!min && (max != MAX_INT32) && !(max & (max + 1))) {
+      int j = 0;
+      while(max) {
+	max >>= 1;
+	j++;
+      }
+      string_builder_sprintf(s, "%dbit", j);
+    } else {
+      if (min != MIN_INT32) {
+	string_builder_sprintf(s, "%d", min);
+      }
+      string_builder_strcat(s, "..");
+      if (max != MAX_INT32) {
+	string_builder_sprintf(s, "%d", max);
+      }
+    }
+    string_builder_strcat(s, ")");
+  }
+}
+
+static void describe_int_type(struct string_builder *s, struct pike_type *t)
+{
+  INT32 min = CAR_TO_INT(t);
+  INT32 max = CDR_TO_INT(t);
+  if (!min && !max) {
+    string_builder_strcat(s, "zero");
+    return;
+  }
+  string_builder_strcat(s, "int");
+  describe_int_type_range(s, t);
+}
+
 static const struct pike_type_def pike_int_type_def = {
   .flags = TYPE_FLAG_IS_LEAF,
+  .describe_type = describe_int_type,
 };
 
 /* Float */
@@ -8592,8 +8399,19 @@ static const struct pike_type_def pike_array_type_def = {
 
 /* Mapping */
 
+static void describe_mapping_type(struct string_builder *s,
+				  struct pike_type *t)
+{
+  if ((t->car->type == T_MIXED) && (t->cdr->type == T_MIXED)) {
+    string_builder_strcat(s, "mapping");
+    return;
+  }
+  string_builder_sprintf(s, "mapping(%T:%T)", t->car, t->cdr);
+}
+
 static const struct pike_type_def pike_mapping_type_def = {
   .flags = TYPE_FLAG_BOTH_ARE_TYPES,
+  .describe_type = describe_mapping_type,
 };
 
 /* Multiset */
@@ -8604,26 +8422,132 @@ static const struct pike_type_def pike_multiset_type_def = {
 
 /* Object */
 
+static void describe_object_type(struct string_builder *s,
+				 struct pike_type *t)
+{
+  int implements_or_is = CAR_TO_INT(t);
+  int program_id = CDR_TO_INT(t);
+  struct svalue sval;
+  if (!program_id) {
+    string_builder_strcat(s, "object");
+    return;
+  }
+  if (implements_or_is) {
+    string_builder_strcat(s, "object(is ");
+  } else {
+    string_builder_strcat(s, "object(implements ");
+  }
+  SET_SVAL(sval, T_PROGRAM, 0, program, id_to_program(program_id));
+  if (sval.u.program) {
+    string_builder_sprintf(s, "%O", &sval);
+  } else {
+    string_builder_sprintf(s, "%d", program_id);
+  }
+  string_builder_putchar(s, ')');
+}
+
 static const struct pike_type_def pike_object_type_def = {
   .flags = TYPE_FLAG_IS_LEAF,
+  .describe_type = describe_object_type,
 };
 
 /* Function */
 
+static void describe_function_type(struct string_builder *s,
+				   struct pike_type *t)
+{
+  int arg = 0;
+  if ((t->type == T_MANY) &&
+      (t->cdr->type == T_OR) &&
+      (((t->cdr->car->type == T_MIXED) && (t->cdr->cdr->type == T_VOID)) ||
+	((t->cdr->car->type == T_VOID) && (t->cdr->cdr->type == T_MIXED))) &&
+      ((t->car->type == T_ZERO) ||
+       ((t->car->type == T_OR) &&
+	(((t->car->car->type == T_ZERO) && (t->car->cdr->type == T_VOID)) ||
+	 ((t->car->car->type == T_VOID) && (t->car->cdr->type == T_ZERO)))))) {
+    /* Function == function(zero...:mixed|void) or
+     *             function(zero|void...:mixed|void)
+     */
+    string_builder_strcat(s, "function");
+    /* done */
+    return;
+  }
+  string_builder_strcat(s, "function(");
+  while (t->type != T_MANY) {
+    if (arg++) string_builder_strcat(s, ", ");
+    low_describe_type(s, t->car);
+    t = t->cdr;
+    while(t->type == T_ASSIGN) {
+      string_builder_sprintf(s, "%c=", '0' + CAR_TO_INT(t));
+      t = t->cdr;
+    }
+  }
+  if (t->car->type != T_VOID) {
+    if(arg++) string_builder_strcat(s, ", ");
+    low_describe_type(s, t->car);
+    string_builder_strcat(s, "...");
+  }
+  string_builder_sprintf(s, " : %T)", t->cdr);
+}
+
 static const struct pike_type_def pike_function_type_def = {
   .flags = TYPE_FLAG_BOTH_ARE_TYPES,
+  .describe_type = describe_function_type,
 };
 
 /* Program */
 
+static void describe_program_type(struct string_builder *s,
+				  struct pike_type *t)
+{
+  if ((t->car->type == T_OBJECT) && (!t->car->cdr)) {
+    string_builder_strcat(s, "program");
+  } else {
+    string_builder_sprintf(s, "program(%T)", t->car);
+  }
+}
+
 static const struct pike_type_def pike_program_type_def = {
   .flags = TYPE_FLAG_CAR_IS_TYPE,
+  .describe_type = describe_program_type,
 };
 
 /* String */
 
+static void describe_string_type(struct string_builder *s,
+				 struct pike_type *t)
+{
+  string_builder_strcat(s, "string");
+  t = t->car;
+  if (t == int_type_string) return;
+  string_builder_putchar(s, '(');
+  while(t->type == T_OR) {
+    struct pike_type *c = t->car;
+    while (c->type == T_ASSIGN) {
+      c = c->cdr;
+    }
+    if (c->type == T_INT) {
+      describe_int_type_range(s, c);
+    } else {
+      low_describe_type(s, c);
+    }
+    string_builder_strcat(s, " | ");
+    t = t->cdr;
+  }
+  while (t->type == T_ASSIGN) {
+    t = t->cdr;
+  }
+  if (t->type == T_INT) {
+    describe_int_type_range(s, t);
+  } else {
+    low_describe_type(s, t);
+  }
+  string_builder_putchar(s, ')');
+}
+
 static const struct pike_type_def pike_string_type_def = {
   .flags = TYPE_FLAG_CAR_IS_TYPE,
+  .describe_type = describe_string_type,
 };
 
 /* Type */
@@ -8648,6 +8572,7 @@ static const struct pike_type_def pike_void_type_def = {
 
 static const struct pike_type_def pike_many_type_def = {
   .flags = TYPE_FLAG_BOTH_ARE_TYPES,
+  .describe_type = describe_function_type,
 };
 
 /* Marker */
@@ -8658,40 +8583,93 @@ static const struct pike_type_def pike_marker_type_def = {
 
 /* Attribute */
 
+static void describe_attribute_type(struct string_builder *s,
+				    struct pike_type *t)
+{
+  struct pike_string *deprecated;
+  MAKE_CONST_STRING(deprecated, "deprecated");
+  if (((struct pike_string *)t->car) == deprecated) {
+    string_builder_sprintf(s, "__deprecated__(%T)", t->cdr);
+  } else {
+    struct svalue sval;
+    SET_SVAL(sval, PIKE_T_STRING, 0, string,
+	     (struct pike_string *)t->car);
+    string_builder_sprintf(s, "__attribute__(%O, %T)", &sval, t->cdr);
+  }
+}
+
 static const struct pike_type_def pike_attribute_type_def = {
   .flags = TYPE_FLAG_CDR_IS_TYPE,
   .free_type_car = (void (*)(void *))do_free_string,
+  .describe_type = describe_attribute_type,
 };
 
 /* Ring */
 
+static void describe_ring_type(struct string_builder *s,
+			       struct pike_type *t)
+{
+  /* FIXME: Should be renumbered for correct parenthesing. */
+  string_builder_sprintf(s, "(%T)\260(%T)", t->car, t->cdr);
+}
+
 static const struct pike_type_def pike_ring_type_def = {
   .flags = TYPE_FLAG_BOTH_ARE_TYPES,
+  .describe_type = describe_ring_type,
 };
 
 /* Name */
 
+static void describe_name_type(struct string_builder *s,
+			       struct pike_type *t)
+{
+  string_builder_sprintf(s, "{ %S = %T }",
+			 (struct pike_string *)t->car, t->cdr);
+}
+
 static const struct pike_type_def pike_name_type_def = {
   .flags = TYPE_FLAG_CDR_IS_TYPE,
   .free_type_car = (void (*)(void *))do_free_string,
+  .describe_type = describe_name_type,
 };
 
 /* Scope */
 
+static void describe_scope_type(struct string_builder *s,
+				struct pike_type *t)
+{
+  string_builder_sprintf(s, "scope(%c,%T)", '0' + CAR_TO_INT(t), t->cdr);
+}
+
 static const struct pike_type_def pike_scope_type_def = {
   .flags = TYPE_FLAG_CDR_IS_TYPE,
+  .describe_type = describe_scope_type,
 };
 
 /* Tuple */
 
+static void describe_tuple_type(struct string_builder *s,
+				struct pike_type *t)
+{
+  string_builder_sprintf(s, "[%T,%T]", t->car, t->cdr);
+}
+
 static const struct pike_type_def pike_tuple_type_def = {
   .flags = TYPE_FLAG_BOTH_ARE_TYPES,
+  .describe_type = describe_tuple_type,
 };
 
 /* Assign */
 
+static void describe_assign_type(struct string_builder *s,
+				 struct pike_type *t)
+{
+  string_builder_sprintf(s, "(%c=%T)", '0' + CAR_TO_INT(t), t->cdr);
+}
+
 static const struct pike_type_def pike_assign_type_def = {
   .flags = TYPE_FLAG_CDR_IS_TYPE,
+  .describe_type = describe_assign_type,
 };
 
 /* Unknown */
@@ -8708,20 +8686,65 @@ static const struct pike_type_def pike_mixed_type_def = {
 
 /* Not */
 
+static void describe_not_type(struct string_builder *s,
+			      struct pike_type *t)
+{
+  if (t->car->type > T_NOT) {
+    string_builder_sprintf(s, "!(%T)", t->car);
+  } else {
+    string_builder_sprintf(s, "!%T", t->car);
+  }
+}
+
 static const struct pike_type_def pike_not_type_def = {
   .flags = TYPE_FLAG_CAR_IS_TYPE,
+  .describe_type = describe_not_type,
 };
 
 /* And */
 
+static void describe_and_type(struct string_builder *s,
+			      struct pike_type *t)
+{
+  if (t->car->type > T_AND) {
+    string_builder_sprintf(s, "(%T)", t->car);
+  } else {
+    low_describe_type(s, t->car);
+  }
+  string_builder_strcat(s, " & ");
+  if (t->cdr->type > T_AND) {
+    string_builder_sprintf(s, "(%T)", t->cdr);
+  } else {
+    low_describe_type(s, t->cdr);
+  }
+}
+
 static const struct pike_type_def pike_and_type_def = {
   .flags = TYPE_FLAG_BOTH_ARE_TYPES,
+  .describe_type = describe_and_type,
 };
 
 /* Or */
 
+static void describe_or_type(struct string_builder *s,
+			     struct pike_type *t)
+{
+  if (t->car->type > T_OR) {
+    string_builder_sprintf(s, "(%T)", t->car);
+  } else {
+    low_describe_type(s, t->car);
+  }
+  string_builder_strcat(s, " | ");
+  if (t->cdr->type > T_OR) {
+    string_builder_sprintf(s, "(%T)", t->cdr);
+  } else {
+    low_describe_type(s, t->cdr);
+  }
+}
+
 static const struct pike_type_def pike_or_type_def = {
   .flags = TYPE_FLAG_BOTH_ARE_TYPES,
+  .describe_type = describe_or_type,
 };
 
 /*

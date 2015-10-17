@@ -55,6 +55,9 @@ struct pike_type_def
 
   /* Free non-type cdr field of the type [optional]. */
   void (*free_type_cdr)(void *a);
+
+  /* Describe. */
+  void (*describe_type)(struct string_builder *s, struct pike_type *t);
 };
 
 extern struct pike_type **pike_type_hash;
