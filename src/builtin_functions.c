@@ -1238,10 +1238,12 @@ PMOD_EXPORT void f_has_prefix(INT32 args)
     CASE_SHIFT(1,0);
     CASE_SHIFT(2,0);
     CASE_SHIFT(2,1);
+#ifdef PIKE_DEBUG
   default:
     Pike_error("Unexpected string shift combination: a:%d, b:%d!\n",
 	  a->size_shift, b->size_shift);
     break;
+#endif
   }
 #undef CASE_SHIFT
 #undef TWO_SHIFTS
@@ -1312,10 +1314,12 @@ PMOD_EXPORT void f_has_suffix(INT32 args)
     CASE_SHIFT(1,0);
     CASE_SHIFT(2,0);
     CASE_SHIFT(2,1);
+#ifdef PIKE_DEBUG
   default:
     Pike_error("Unexpected string shift combination: a:%d, b:%d!\n",
 	  a->size_shift, b->size_shift);
     break;
+#endif
   }
 #undef CASE_SHIFT
 #undef TWO_SHIFTS
