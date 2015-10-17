@@ -1392,7 +1392,7 @@ PIKECLASS string_split_iterator
   static void find_next(struct string_split_iterator_struct *ssi)
     {
       int offset = ssi->offset;
-      int end;
+      int end = 0;
       if (ssi->current) {
 	free_string(ssi->current);
       }
