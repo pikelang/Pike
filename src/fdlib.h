@@ -12,9 +12,7 @@
 
 #include "pike_netlib.h"
 
-#ifdef HAVE_ERRNO_H
 #include <errno.h>
-#endif
 
 #ifdef HAVE_SYS_SELECT_H
 #include <sys/select.h>

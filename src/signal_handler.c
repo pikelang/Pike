@@ -72,9 +72,7 @@
 #include <sys/ioctl.h>
 #endif
 
-#ifdef HAVE_ERRNO_H
 #include <errno.h>
-#endif
 
 #ifdef HAVE_POLL
 #ifdef HAVE_POLL_H
