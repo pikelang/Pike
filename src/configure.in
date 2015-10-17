@@ -4108,10 +4108,8 @@ int main()
     AC_CACHE_VAL(pike_cv_thread_t_type, [
       AC_TRY_COMPILE([
 #include <sys/types.h>
-#ifdef STDC_HEADERS
 #include <stdlib.h>
 #include <stddef.h>
-#endif
 #include <pthread.h>
 extern pthread_t bar;
       ], [
@@ -6058,10 +6056,8 @@ AC_CACHE_VAL(ac_cv_type_sig_atomic_t,
 #include <crt/signal.h>
 #endif
 #include <sys/types.h>
-#if STDC_HEADERS
 #include <stdlib.h>
 #include <stddef.h>
-#endif
   ], ac_cv_type_sig_atomic_t=yes, ac_cv_type_sig_atomic_t=no)
 ])
 AC_MSG_RESULT($ac_cv_type_sig_atomic_t)
@@ -6077,10 +6073,8 @@ AC_CACHE_VAL(pike_cv_sys_signal_oneshot,
   AC_TRY_RUN([
 #include <signal.h>
 #include <sys/types.h>
-#if STDC_HEADERS
 #include <stdlib.h>
 #include <stddef.h>
-#endif
 #ifdef HAVE_POLL_H
 #include <poll.h>
 #endif
