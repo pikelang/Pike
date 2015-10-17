@@ -12,9 +12,8 @@
 #ifdef HAVE_LIBINTL_H
 #include <libintl.h>
 #endif
-#ifdef HAVE_LOCALE_H
+
 #include <locale.h>
-#endif
 
 #include "stralloc.h"
 #include "pike_error.h"

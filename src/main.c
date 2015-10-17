@@ -51,10 +51,7 @@
 #endif
 
 #include <errno.h>
-
-#ifdef HAVE_LOCALE_H
 #include <locale.h>
-#endif
 
 #include "time_stuff.h"
 

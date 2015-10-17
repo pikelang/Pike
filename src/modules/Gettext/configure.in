@@ -3,7 +3,7 @@ AC_CONFIG_HEADER(config.h)
 
 AC_MODULE_INIT()
 
-AC_HAVE_HEADERS(locale.h libintl.h iconv.h)
+AC_HAVE_HEADERS(libintl.h iconv.h)
 
 ########################################################################
 #   gettext checking (localization)
