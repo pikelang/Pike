@@ -30,10 +30,7 @@
 #endif /* !TESTING */
 
 #include <errno.h>
-
-#ifdef HAVE_STRING_H
 #include <string.h>
-#endif /* HAVE_STRING_H */
 
 #if !defined(HAVE_DLOPEN) || defined(USE_SEMIDYNAMIC_MODULES)
 

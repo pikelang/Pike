@@ -312,10 +312,7 @@ void *alloca();
 #include <unistd.h>
 #endif
 
-#ifdef HAVE_STRING_H
 #include <string.h>
-#endif
-
 #include <limits.h>
 
 #ifdef HAVE_SYS_TYPES_H

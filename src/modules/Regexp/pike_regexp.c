@@ -65,9 +65,7 @@
 /* Headers */
 #include "global.h"
 #include <ctype.h>
-#ifdef HAVE_STRING_H
 #include <string.h>
-#endif /* HAVE_STRING_H */
 #include "pike_regexp.h"
 #include "pike_memory.h"
 #include "pike_error.h"

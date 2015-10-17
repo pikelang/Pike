@@ -21,9 +21,8 @@
 #include "libbzip2mod_config.h"
 
 #include <stdio.h>
-#ifdef HAVE_STRING_H
 #include <string.h>
-#endif
+
 #ifdef HAVE_STRINGS_H
 #include <strings.h>
 #endif

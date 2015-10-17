@@ -597,7 +597,7 @@ if test "x$pike_cv_sys_os" = xWindows_NT; then
   PIKE_FUNCS_NEED_DECLS(yes)
 fi
 
-AC_CHECK_HEADERS(string.h unistd.h sys/stat.h sys/types.h sys/errno.h)
+AC_CHECK_HEADERS(unistd.h sys/stat.h sys/types.h sys/errno.h)
 
 if test "$GCC" = "yes"; then :; else
 #
@@ -6276,13 +6276,7 @@ AC_MSG_CHECKING(if __func__ exists and works)
 AC_CACHE_VAL(pike_cv_have_working___func__,
 [
   AC_TRY_RUN([
-#ifdef HAVE_STRING_H
 #include <string.h>
-#else /* !HAVE_STRING_H */
-#ifdef HAVE_STRINGS_H
-#include <strings.h>
-#endif /* HAVE_STRIGNS_H */
-#endif /* HAVE_STRING_H */
 int main()
 {
   exit(strcmp("main", __func__));
@@ -6301,13 +6295,7 @@ AC_MSG_CHECKING(if __FUNCTION__ exists and works)
 AC_CACHE_VAL(pike_cv_have_working___FUNCTION__,
 [
   AC_TRY_RUN([
-#ifdef HAVE_STRING_H
 #include <string.h>
-#else /* !HAVE_STRING_H */
-#ifdef HAVE_STRINGS_H
-#include <strings.h>
-#endif /* HAVE_STRIGNS_H */
-#endif /* HAVE_STRING_H */
 int main()
 {
   exit(strcmp("main", __FUNCTION__));
