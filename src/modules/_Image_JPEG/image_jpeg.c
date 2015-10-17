@@ -27,9 +27,6 @@
 #include "operators.h"
 #include "pike_types.h"
 
-
-#include <stdio.h>
-
 #ifdef HAVE_JPEGLIB_H
 
 /* NOTE: INT32 and INT16 are redefined by <jmorecfg.h>. */

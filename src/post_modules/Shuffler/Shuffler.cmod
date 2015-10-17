@@ -27,7 +27,6 @@
 DECLARATIONS
 
 #if 0
-#include <stdio.h>
 #define SHUFFLE_DEBUG1(fmt, arg1)			fprintf(stderr,"Shuffle[%p]:" fmt, arg1)
 #define SHUFFLE_DEBUG2(fmt, arg1, arg2)			fprintf(stderr,"Shuffle[%p]:" fmt, arg1, arg2)
 #define SHUFFLE_DEBUG3(fmt, arg1, arg2, arg3)		fprintf(stderr,"Shuffle[%p]:" fmt, arg1, arg2, arg3)

@@ -19,10 +19,6 @@
 
 /* #define MSQL_DEBUG 1 */
 
-#ifdef MSQL_DEBUG
-#include <stdio.h>
-#endif
-
 #endif /*HAVE_MSQL*/
 
 #include <string.h>

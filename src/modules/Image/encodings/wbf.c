@@ -7,7 +7,6 @@
 #include "global.h"
 
 #include <math.h>
-#include <stdio.h>
 #include <ctype.h>
 
 #include "stralloc.h"

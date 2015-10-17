@@ -53,7 +53,6 @@ DECLARATIONS
 #include <nettle/cbc.h>
 #include <nettle/ctr.h>
 
-#include <stdio.h>
 #include <stdarg.h>
 
 /*! @module Nettle

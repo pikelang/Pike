@@ -16,7 +16,6 @@
 #include "bignum.h"
 
 #include "threads.h"
-#include <stdio.h>
 #include <fcntl.h>
 
 

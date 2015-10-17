@@ -27,7 +27,6 @@
 #ifdef HAVE_WORKING_LIBFFMPEG
 
 #include <stdlib.h>
-#include <stdio.h>
 #include <string.h>
 #include <math.h>
 

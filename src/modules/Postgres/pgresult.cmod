@@ -66,8 +66,6 @@
 
 #define CUT_TRAILING_SPACES
 
-#include <stdio.h>
-
 /* Pike includes */
 #include "stralloc.h"
 #include "object.h"

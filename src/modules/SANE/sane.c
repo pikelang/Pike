@@ -12,7 +12,6 @@
 #elif defined(HAVE_SANE_H)
 #include <sane.h>
 #endif
-#include <stdio.h>
 
 #include "global.h"
 #include "stralloc.h"
