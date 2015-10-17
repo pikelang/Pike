@@ -303,9 +303,7 @@ void *alloca();
 #include <stdlib.h>
 #endif
 
-#ifdef HAVE_STDDEF_H
 #include <stddef.h>
-#endif
 
 #ifdef HAVE_MALLOC_H
 #if !defined(__FreeBSD__) && !defined(__OpenBSD__)

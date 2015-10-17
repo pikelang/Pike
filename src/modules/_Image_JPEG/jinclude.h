@@ -37,9 +37,7 @@
  * You can remove those references if you want to compile without <stdio.h>.
  */
 
-#ifdef HAVE_STDDEF_H
 #include <stddef.h>
-#endif
 
 #ifdef HAVE_STDLIB_H
 #include <stdlib.h>
