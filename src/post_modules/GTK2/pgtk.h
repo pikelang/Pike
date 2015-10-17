@@ -42,9 +42,9 @@
 #ifdef HAVE_GTKEXTRA_GTKEXTRA_H
 # include <gtkextra/gtkextra.h>
 #endif
-#ifdef HAVE_SIGNAL_H
+
 #include <signal.h>
-#endif
+
 #ifdef HAVE_NETINET_IN_H
 #include <netinet/in.h>
 #endif
