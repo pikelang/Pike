@@ -66,11 +66,6 @@
 /* Local includes */
 #include "precompiled_mysql.h"
 
-/* System includes */
-#ifdef HAVE_MEMORY_H
-#include <memory.h>
-#endif
-
 #define sp Pike_sp
 
 /* Define this to get support for field->default. NOT SUPPORTED */

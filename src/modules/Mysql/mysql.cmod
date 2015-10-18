@@ -76,11 +76,6 @@
 #include "bignum.h"
 #include "module_support.h"
 
-/* System includes */
-#ifdef HAVE_MEMORY_H
-#include <memory.h>
-#endif
-
 #ifdef HAVE_POLL_H
 #include <poll.h>
 #endif
