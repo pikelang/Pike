@@ -8,9 +8,6 @@
 #include "config.h"
 
 #if defined(HAVE_RPCSVC_YPCLNT_H) && defined(HAVE_RPCSVC_YP_PROT_H)
-#ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif /* HAVE_SYS_TYPES_H */
 #ifdef HAVE_RPC_TYPES_H
 #include <rpc/types.h>
 #endif /* HAVE_RPC_TYPES_H */

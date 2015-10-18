@@ -19,7 +19,6 @@
 #include "builtin_functions.h"
 #include "fdlib.h"
 
-#include <sys/types.h>
 #include <sys/stat.h>
 
 #ifdef HAVE_SYS_FILE_H

@@ -1,6 +1,5 @@
 #ifndef CB_KEY_PTR_H
 #define CB_KEY_PTR_H
-#include <sys/types.h>
 #include "global.h"
 #include "pike_int_types.h"
 

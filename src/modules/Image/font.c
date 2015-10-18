@@ -94,7 +94,6 @@ extern const unsigned char image_default_font[];
 
 #include "image_machine.h"
 
-#include <sys/types.h>
 #include <sys/stat.h>
 
 #ifdef HAVE_FCNTL_H

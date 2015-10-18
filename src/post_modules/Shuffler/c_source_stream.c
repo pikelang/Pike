@@ -13,7 +13,6 @@
 #include "fd_control.h"
 #include "backend.h"
 
-#include <sys/types.h>
 #include <sys/stat.h>
 
 #include "shuffler.h"

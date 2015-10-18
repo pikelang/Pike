@@ -50,10 +50,6 @@
 #include <sys/param.h>
 #endif /* HAVE_SYS_PARAM_H */
 
-#ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif /* HAVE_SYS_TYPES_H */
-
 #include <sys/stat.h>
 
 #ifdef HAVE_SYS_SOCKET_H

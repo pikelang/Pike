@@ -24,7 +24,6 @@
 #include <sys/mman.h>
 #endif
 
-#include <sys/types.h>
 #include <sys/stat.h>
 
 #ifdef HAVE_FCNTL_H

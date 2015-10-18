@@ -36,9 +36,6 @@
 #include <ctype.h>
 
 #ifdef HAVE_MMAP
-#ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif
 
 #ifdef HAVE_SYS_MMAN_H
 #include <sys/mman.h>

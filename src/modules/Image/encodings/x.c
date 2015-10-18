@@ -21,7 +21,6 @@
 
 #include "stralloc.h"
 
-#include <sys/types.h>
 #include <sys/stat.h>
 #ifdef HAVE_NETINET_IN_H
 #include <netinet/in.h>

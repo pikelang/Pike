@@ -22,11 +22,6 @@
  */
 #include <signal.h>
 
-#ifdef HAVE_SYS_TYPES_H
-/* Needed for pthread_t on OSF/1 */
-#include <sys/types.h>
-#endif /* HAVE_SYS_TYPES_H */
-
 #ifdef PIKE_THREADS
 
 /* The fp macro conflicts with Solaris's <pthread.h>. */

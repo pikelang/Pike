@@ -32,10 +32,6 @@
 #include "threads.h"
 #include "program_id.h"
 
-#ifdef HAVE_SYS_TYPE_H
-#include <sys/types.h>
-#endif /* HAVE_SYS_TYPE_H */
-
 #include <sys/stat.h>
 #ifdef HAVE_SYS_PARAM_H
 #include <sys/param.h>

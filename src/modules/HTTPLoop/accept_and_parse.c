@@ -45,7 +45,6 @@
 
 #ifdef _REENTRANT
 #include <errno.h>
-#include <sys/types.h>
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif

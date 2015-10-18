@@ -43,10 +43,6 @@
 #include "pike_netlib.h"
 #include "pike_cpulib.h"
 
-#ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif /* HAVE_SYS_TYPES_H */
-
 #include <errno.h>
 
 #ifdef HAVE_PWD_H

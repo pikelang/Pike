@@ -17,10 +17,6 @@
 #include "pike_error.h"
 #include "pike_macros.h"
 
-#ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif
-
 #ifdef __MINGW32__
 #ifdef HAVE_SYS_STAT_H
 #include <sys/stat.h>

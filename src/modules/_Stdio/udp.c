@@ -31,10 +31,6 @@
 #include "builtin_functions.h"
 #include "file.h"
 
-#ifdef HAVE_SYS_TYPE_H
-#include <sys/types.h>
-#endif
-
 #include <sys/stat.h>
 #ifdef HAVE_SYS_PARAM_H
 #include <sys/param.h>
