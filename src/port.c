@@ -30,7 +30,6 @@
 #include <ctype.h>
 #include <math.h>
 #include <errno.h>
-#include <float.h>
 #include <time.h>
 
 #ifdef sun

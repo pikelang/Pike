@@ -21,7 +21,6 @@
 #include "block_allocator.h"
 
 #include <errno.h>
-#include <float.h>
 #include <ctype.h>
 #include <math.h>
 
