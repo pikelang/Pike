@@ -27,9 +27,6 @@
 #ifdef HAVE_SYS_RESOURCE_H
 #include <sys/resource.h>
 #endif
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
 #ifdef HAVE_MACH_MACH_H
 #include <mach/mach.h>
 #ifdef HAVE_PTHREAD_MACH_THREAD_NP

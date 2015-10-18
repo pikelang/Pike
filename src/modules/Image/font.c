@@ -126,9 +126,7 @@ extern const unsigned char image_default_font[];
 #include "module_support.h"
 
 #include "image.h"
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
+
 #ifdef HAVE_MMAP
 #include <sys/mman.h>
 #endif

@@ -31,7 +31,6 @@
 
 #include <sys/inotify.h>
 #include <errno.h>
-#include <unistd.h>
 
 /* Autoconf helpfully litters generated files with colliding defines. */
 #undef PACKAGE_BUGREPORT

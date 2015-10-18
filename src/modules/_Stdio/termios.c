@@ -10,7 +10,6 @@
 #if defined(HAVE_TERMIOS_H)
 
 #include <termios.h>
-#include <unistd.h>
 #include <errno.h>
 #include <sys/ioctl.h>
 

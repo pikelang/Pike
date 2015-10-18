@@ -44,11 +44,6 @@
 #define NO_PIKE_SHORTHAND
 
 #include "global.h"
-
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"

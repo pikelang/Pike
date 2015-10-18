@@ -8,11 +8,6 @@
 #define PIKE_RUSAGE_H
 
 #include "global.h"
-
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-
 #include <time.h>
 
 #if defined (_POSIX_TIMERS)

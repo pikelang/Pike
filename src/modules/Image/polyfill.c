@@ -13,10 +13,6 @@
 extern double floor(double);
 #endif
 
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-
 #include <math.h>
 
 #include "image_machine.h"

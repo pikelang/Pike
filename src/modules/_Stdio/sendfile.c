@@ -54,10 +54,6 @@
 #include <sys/types.h>
 #endif /* HAVE_SYS_TYPES_H */
 
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif /* HAVE_UNISTD_H */
-
 #include <sys/stat.h>
 
 #ifdef HAVE_SYS_SOCKET_H
