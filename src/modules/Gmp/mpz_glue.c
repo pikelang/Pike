@@ -31,8 +31,6 @@
 #include "operators.h"
 #include "gc.h"
 
-#include <limits.h>
-
 #if GMP_NUMB_BITS != SIZEOF_MP_LIMB_T * CHAR_BIT
 #error Cannot cope with GMP using nail bits.
 #endif

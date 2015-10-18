@@ -9,7 +9,6 @@
 #include "global.h"
 #include "config.h"
 
-
 #include "machine.h"
 
 #include <sys/types.h>
@@ -17,7 +16,6 @@
 #include <fcntl.h>
 #include <ctype.h>
 #include <time.h>
-#include <limits.h>
 
 #include "fdlib.h"
 #include "stralloc.h"
