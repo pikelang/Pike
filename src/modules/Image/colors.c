@@ -204,7 +204,6 @@
 #include "array.h"
 #include "mapping.h"
 #include "builtin_functions.h"
-#include "dmalloc.h"
 #include "operators.h"
 #include "module_support.h"
 #include "sscanf.h"

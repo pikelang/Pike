@@ -130,8 +130,6 @@ extern const unsigned char image_default_font[];
 #include <sys/mman.h>
 #endif
 
-#include "dmalloc.h"
-
 #include "fdlib.h"
 
 #include "bignum.h"

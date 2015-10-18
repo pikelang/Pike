@@ -40,8 +40,6 @@
 
 #include <sys/stat.h>
 
-#include "dmalloc.h"
-
 #define sp Pike_sp
 
 /* #define GC_VERBOSE */

@@ -59,7 +59,6 @@
 #ifdef HAVE_SYS_UN_H
 #include <sys/un.h>
 #endif
-#include "dmalloc.h"
 
 #if !defined(SOL_TCP) && defined(IPPROTO_TCP)
     /* SOL_TCP isn't defined in Solaris. */

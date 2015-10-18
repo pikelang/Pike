@@ -31,8 +31,6 @@
 #include <signal.h>
 #include <errno.h>
 
-#include "dmalloc.h"
-
 #ifdef HAVE_PROCESS_H
 #include <process.h>
 #endif

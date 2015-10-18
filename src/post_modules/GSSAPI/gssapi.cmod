@@ -37,7 +37,6 @@
 
 #include "bignum.h"
 #include "builtin_functions.h"
-#include "dmalloc.h"
 #include "interpret.h"
 #include "mapping.h"
 #include "module.h"

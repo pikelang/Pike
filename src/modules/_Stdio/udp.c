@@ -124,8 +124,6 @@
 #include <netdb.h>
 #endif
 
-#include "dmalloc.h"
-
 struct udp_storage {
   struct fd_callback_box box;	/* Must be first. */
   int my_errno;

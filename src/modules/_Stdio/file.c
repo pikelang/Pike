@@ -116,9 +116,6 @@
 #include <net/netdb.h>
 #endif /* HAVE_NET_NETDB_H */
 
-#include "dmalloc.h"
-
-
 #undef THIS
 #define THIS ((struct my_file *)(Pike_fp->current_storage))
 #define FD (THIS->box.fd)

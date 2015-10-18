@@ -10,7 +10,6 @@
 #include "pike_macros.h"
 #include "gc.h"
 #include "fd_control.h"
-#include "dmalloc.h"
 #include "block_allocator.h"
 
 #ifdef HAVE_SYS_MMAN_H

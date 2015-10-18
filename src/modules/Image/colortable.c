@@ -37,7 +37,6 @@
 #include "pike_error.h"
 #include "module_support.h"
 #include "operators.h"
-#include "dmalloc.h"
 #include "bignum.h"
 #include "pike_types.h"
 #include "stuff.h"

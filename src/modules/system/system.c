@@ -103,9 +103,6 @@
 #include <sys/loadavg.h>
 #endif
 
-#include "dmalloc.h"
-
-
 #define sp Pike_sp
 
 #ifndef NGROUPS_MAX
