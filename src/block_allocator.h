@@ -4,7 +4,6 @@
 #include "global.h"
 #include "pike_error.h"
 #include "pike_memory.h"
-#include "pike_int_types.h"
 
 struct ba_layout {
     unsigned INT32 offset;

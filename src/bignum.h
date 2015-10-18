@@ -15,7 +15,6 @@ extern "C++" {
 };
 #endif
 #include "global.h"
-#include "pike_int_types.h"
 
 /* Note: These functions assume some properties of the CPU. */
 

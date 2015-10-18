@@ -5,7 +5,6 @@
 */
 
 #include "global.h"
-
 #include "config.h"
 
 #ifdef HAVE_GL
