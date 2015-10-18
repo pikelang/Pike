@@ -22,10 +22,6 @@
 #include <stdint.h>
 #endif
 
-#ifdef HAVE_WINDOWS_H
-#include <windows.h>
-#endif
-
 #include <sqlite3.h>
 #include <time.h>
 

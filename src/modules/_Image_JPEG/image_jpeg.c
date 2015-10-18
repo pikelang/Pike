@@ -38,14 +38,11 @@
 #endif
 
 #ifdef HAVE_JCONFIG_H_HAVE_BOOLEAN
-#ifdef HAVE_WINDOWS_H
-#include <windows.h>
 #ifdef HAVE_WTYPES_H
 /* jconfig.h has probably been compiled without WIN32_LEAN_AND_MEAN...
  * So we need this one to get the boolean typedef.
  */
 #include <wtypes.h>
-#endif
 #endif
 #endif
 

@@ -7,9 +7,6 @@
 #include "global.h"
 #include "pike_macros.h"
 
-#ifdef HAVE_WINDOWS_H
-#include <windows.h>
-#endif
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <errno.h>

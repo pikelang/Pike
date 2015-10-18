@@ -23,7 +23,6 @@
 #else
 #include <winsock.h>
 #endif
-#include <windows.h>
 #include <accctrl.h>
 #include <lm.h>
 #define SECURITY_WIN32

@@ -20,9 +20,6 @@
 #undef INT16
 #undef INT8
 
-#ifdef HAVE_WINDEF_H
-#include <windows.h>
-#endif /* HAVE_WINDEF_H */
 #ifdef HAVE_GL_GL_H
 #include <GL/gl.h>
 #endif /* HAVE_GL_GL_H */

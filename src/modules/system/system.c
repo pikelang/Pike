@@ -19,10 +19,6 @@
 #include "system_machine.h"
 #include "system.h"
 
-#ifdef HAVE_WINDOWS_H
-#include <windows.h>
-#endif
-
 #ifdef HAVE_IO_H
 #include <io.h>
 #endif

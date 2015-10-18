@@ -299,7 +299,6 @@ PMOD_EXPORT extern pthread_attr_t small_pattr;
 #ifdef NT_THREADS
 
 #include <process.h>
-#include <windows.h>
 
 #define LOW_THREAD_CHECK_ZERO_ERROR(CALL) do {			\
     if (!(CALL))						\
