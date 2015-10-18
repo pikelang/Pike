@@ -45,6 +45,7 @@ struct statement_label_name
   struct statement_label_name *next;
   struct pike_string *str;
   INT_TYPE line_number;
+  int used;
 };
 
 struct statement_label
@@ -2324,8 +2325,10 @@ static int do_docode2(node *n, int flags)
       struct statement_label_name *lbl_name;
       for (label = current_label; label; label = label->prev)
 	for (lbl_name = label->name; lbl_name; lbl_name = lbl_name->next)
-	  if (lbl_name->str == name)
+	  if (lbl_name->str == name) {
+	    lbl_name->used = 1;
 	    goto label_found_1;
+	  }
       my_yyerror("No surrounding statement labeled %S.", name);
       return 0;
 
@@ -2383,6 +2386,7 @@ static int do_docode2(node *n, int flags)
     PUSH_STATEMENT_LABEL;
     name.str = CAR(n)->u.sval.u.string;
     name.line_number = n->line_number;
+    name.used = 0;
 
     for (label = current_label; label; label = label->prev) {
       struct statement_label_name *lbl_name;
@@ -2413,6 +2417,11 @@ static int do_docode2(node *n, int flags)
     DO_CODE_BLOCK(CDR(n));
     if (!name.next && current_label->emit_break_label)
       low_insert_label(current_label->break_label);
+    if (!name.used) {
+      low_yyreport(REPORT_WARNING, n->current_file, n->line_number,
+		   parser_system_string, 0,
+		   "Label %S not used.\n", name.str);
+    }
     POP_STATEMENT_LABEL;
     BLOCK_END;
     return 0;

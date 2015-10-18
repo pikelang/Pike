@@ -892,6 +892,16 @@ test_compile_warning([[
  };
 ]])
 
+test_compile_warning([[
+  class A {
+    int foo;
+    protected void create(int foo)
+    {
+      // Intentional common typo below.
+      this:foo = foo;
+    }
+  };
+]])
 //
 
 test_any([[
