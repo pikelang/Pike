@@ -21,8 +21,6 @@
 
 #endif /*HAVE_MSQL*/
 
-#include <string.h>
-
 #include "global.h"
 #include "module.h"
 #include "program.h"

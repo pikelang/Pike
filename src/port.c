@@ -31,7 +31,6 @@
 #include <math.h>
 #include <errno.h>
 #include <float.h>
-#include <string.h>
 #include <time.h>
 
 #ifdef sun

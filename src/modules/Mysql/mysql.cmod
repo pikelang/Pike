@@ -58,7 +58,6 @@
 #endif /* HAVE_MYSQL_ERRMSG_H */
 #endif /* HAVE_ERRMGS_H */
 
-
 #endif /* HAVE_MYSQL */
 
 /* From the Pike-dist */
@@ -78,7 +77,6 @@
 #include "module_support.h"
 
 /* System includes */
-#include <string.h>
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif

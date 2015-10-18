@@ -24,10 +24,8 @@
 #include "module_support.h"
 #include "builtin_functions.h"
 
-
 #ifdef HAVE_WORKING_LIBFFMPEG
 
-#include <string.h>
 #include <math.h>
 
 /* ffmpeg includes typedef's these */

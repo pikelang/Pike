@@ -26,7 +26,6 @@
 /* Attempt to use FUSE API version 2.9 (if possible). */
 #define FUSE_USE_VERSION 29
 #include <fuse.h>
-#include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <dirent.h>

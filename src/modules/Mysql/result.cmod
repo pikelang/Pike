@@ -48,7 +48,6 @@
 #endif
 #endif
 
-
 /* From the Pike-dist */
 #include "svalue.h"
 #include "mapping.h"
@@ -68,7 +67,6 @@
 #include "precompiled_mysql.h"
 
 /* System includes */
-#include <string.h>
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif

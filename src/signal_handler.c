@@ -25,7 +25,6 @@
 #include "time_stuff.h"
 
 #include <signal.h>
-#include <string.h>
 #include <errno.h>
 
 #ifdef HAVE_PASSWD_H

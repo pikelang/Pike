@@ -20,8 +20,6 @@
 #include "builtin_functions.h"
 #include "libbzip2mod_config.h"
 
-#include <string.h>
-
 #ifdef HAVE_BZLIB_H
 #include <bzlib.h>
 #endif

@@ -16,7 +16,6 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <ctype.h>
-#include <string.h>
 #include <time.h>
 #include <limits.h>
 

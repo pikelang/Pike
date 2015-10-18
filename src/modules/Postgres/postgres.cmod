@@ -22,9 +22,6 @@
 
 /* #define PGDEBUG */
 
-/* System includes */
-#include <string.h>
-
 /* Pike includes */
 #include "svalue.h"
 #include "las.h"

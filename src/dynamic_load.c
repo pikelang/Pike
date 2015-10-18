@@ -26,11 +26,11 @@
 #else /* TESTING */
 
 #include <stdio.h>
+#include <string.h>
 
 #endif /* !TESTING */
 
 #include <errno.h>
-#include <string.h>
 
 #if !defined(HAVE_DLOPEN) || defined(USE_SEMIDYNAMIC_MODULES)
 
