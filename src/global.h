@@ -134,7 +134,7 @@ struct timeval;
 #define ORIG_PACKAGE_URL PACKAGE_URL
 #undef PACKAGE_URL
 #endif
-#endif
+#endif /* PIKE_CORE */
 
 #include "machine.h"
 
@@ -169,9 +169,9 @@ struct timeval;
 #define PACKAGE_URL ORIG_PACKAGE_URL
 #undef ORIG_PACKAGE_URL
 #endif
-#endif
+#endif /* PIKE_CORE */
 
-#endif
+#endif /* CONFIGURE_TEST */
 
 /* Some identifiers used as flags in the machine.h defines. */
 #define PIKE_YES	1
