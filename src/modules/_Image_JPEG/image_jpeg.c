@@ -1161,7 +1161,7 @@ static void img_jpeg_decode(INT32 args,int mode)
 		  * Remove the extra reference from above.
 		  */
 		 free_array(old);
-		 continue;
+		 goto next_marker;
 	       }
 	       /* The reference we added to old has migrated to new.
 		* Pass it along to the stack.
@@ -1183,6 +1183,7 @@ static void img_jpeg_decode(INT32 args,int mode)
 	 } else {
 	    pop_n_elems(2);
 	 }
+      next_marker:
 	 mds.first_marker=mm->next;
 	 free(mm);
       }
