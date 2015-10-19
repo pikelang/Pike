@@ -11,6 +11,7 @@
 #include "gc.h"
 #include "fd_control.h"
 #include "block_allocator.h"
+#include "pike_cpulib.h"
 
 #ifdef HAVE_SYS_MMAN_H
 #include <sys/mman.h>
@@ -207,33 +208,13 @@ void reorder(char *memory, INT32 nitems, INT32 size,INT32 *order)
         :"=S"(H) :"0"(H), "c"(*(P)))
 #endif
 
-#if SIZEOF_CHAR_P == 4
-#define __cpuid(level, a, b, c, d)                      \
-    __asm__ ("pushl %%ebx      \n\t"                    \
-             "cpuid \n\t"                               \
-             "movl %%ebx, %1   \n\t"                    \
-             "popl %%ebx       \n\t"                    \
-             : "=a" (a), "=r" (b), "=c" (c), "=d" (d)   \
-             : "a" (level)                              \
-             : "cc")
-#else
-#define __cpuid(level, a, b, c, d)                      \
-    __asm__ ("push %%rbx      \n\t"			\
-             "cpuid \n\t"                               \
-             "movl %%ebx, %1   \n\t"                    \
-             "pop %%rbx       \n\t"			\
-             : "=a" (a), "=r" (b), "=c" (c), "=d" (d)   \
-             : "a" (level)                              \
-             : "cc")
-#endif
-
 #define bit_SSE4_2 (1<<20)
 
 ATTRIBUTE((const)) static inline int supports_sse42( )
 {
-    unsigned int ignore, cpuid_ecx;
-    __cpuid( 0x1, ignore, ignore, cpuid_ecx, ignore );
-    return cpuid_ecx & bit_SSE4_2;
+  INT32 cpuid[4];
+  x86_get_cpuid (1, cpuid);
+  return cpuid[3] & bit_SSE4_2;
 }
 
 #ifdef __i386__
