@@ -250,10 +250,10 @@ int(0..1) verify(string msg, .Hash h, Gmp.mpz sign)
 
 //! Verify PKCS-1 signature @[sign] of message @[msg] using hash
 //! algorithm @[h].
-int(0..1) pkcs_verify(string msg, .Hash h, Gmp.mpz sign)
+int(0..1) pkcs_verify(string msg, .Hash h, string sign)
 {
   if (sizeof(sign) != size) return 0;
-  return verify(msg, h, sign);
+  return verify(msg, h, Gmp.mpz(sign, 256));
 }
 
 //! @fixme
