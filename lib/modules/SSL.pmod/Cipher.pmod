@@ -101,7 +101,7 @@ class TLSSigner
     return struct;
   }
 
-  int(0..1) verify(object context, string cookie, ADT.struct struct,
+  int(0..1) verify(object session, string cookie, ADT.struct struct,
 		   ADT.struct input)
   {
     int hash_id = input->get_uint(1);
@@ -111,12 +111,12 @@ class TLSSigner
     Crypto.Hash hash = HASH_lookup[hash_id];
     if (!hash) return 0;
 
-    if ((sign_id == SIGNATURE_rsa) && context->rsa) {
-      return context->rsa->pkcs_verify(cookie + struct->contents(),
+    if ((sign_id == SIGNATURE_rsa) && session->rsa) {
+      return session->rsa->pkcs_verify(cookie + struct->contents(),
 				       hash, sign);
     }
-    if ((sign_id == SIGNATURE_dsa) && context->dsa) {
-      return context->dsa->pkcs_verify(cookie + struct->contents(),
+    if ((sign_id == SIGNATURE_dsa) && session->dsa) {
+      return session->dsa->pkcs_verify(cookie + struct->contents(),
 				       hash, sign);
     }
     return 0;
