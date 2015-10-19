@@ -39,7 +39,7 @@ struct pike_frame;
 struct thread_state {
   struct Pike_interpreter_struct state;
   struct object *thread_obj;	/* NOTE: Not ref-counted! */
-  struct mapping *thread_local;
+  struct mapping *thread_locals;
   struct thread_state *hashlink, **backlink;
   struct svalue result;
   COND_T status_change;
@@ -64,7 +64,7 @@ PMOD_EXPORT int low_nt_create_thread(unsigned stack_size,
 				     void *arg,
 				     unsigned *id);
 struct thread_starter;
-struct thread_local;
+struct thread_local_var;
 void low_init_threads_disable(void);
 void init_threads_disable(struct object *o);
 void exit_threads_disable(struct object *o);

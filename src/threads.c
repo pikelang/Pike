@@ -404,7 +404,7 @@ static int live_threads = 0;
 static COND_T live_threads_change;
 static COND_T threads_disabled_change;
 
-struct thread_local
+struct thread_local_var
 {
   INT32 id;
 };
@@ -1904,9 +1904,9 @@ TH_RETURN_TYPE new_thread_func(void *data)
 
   DEBUG_CHECK_THREAD();
 
-  if(thread_state->thread_local != NULL) {
-    free_mapping(thread_state->thread_local);
-    thread_state->thread_local = NULL;
+  if(thread_state->thread_locals != NULL) {
+    free_mapping(thread_state->thread_locals);
+    thread_state->thread_locals = NULL;
   }
 
   co_broadcast(&thread_state->status_change);
@@ -3027,7 +3027,7 @@ void init_thread_obj(struct object *UNUSED(o))
   THIS_THREAD->waiting = 0;
   SET_SVAL(THIS_THREAD->result, T_INT, NUMBER_UNDEFINED, integer, 0);
   co_init(& THIS_THREAD->status_change);
-  THIS_THREAD->thread_local=NULL;
+  THIS_THREAD->thread_locals=NULL;
 #ifdef CPU_TIME_MIGHT_BE_THREAD_LOCAL
   THIS_THREAD->auto_gc_time = 0;
 #endif
@@ -3062,9 +3062,9 @@ void exit_thread_obj(struct object *UNUSED(o))
 
   cleanup_thread_state (THIS_THREAD);
 
-  if(THIS_THREAD->thread_local != NULL) {
-    free_mapping(THIS_THREAD->thread_local);
-    THIS_THREAD->thread_local = NULL;
+  if(THIS_THREAD->thread_locals != NULL) {
+    free_mapping(THIS_THREAD->thread_locals);
+    THIS_THREAD->thread_locals = NULL;
   }
 }
 
@@ -3074,15 +3074,15 @@ void exit_thread_obj(struct object *UNUSED(o))
 static void thread_was_recursed(struct object *UNUSED(o))
 {
   struct thread_state *tmp=THIS_THREAD;
-  if(tmp->thread_local != NULL)
-    gc_recurse_mapping(tmp->thread_local);
+  if(tmp->thread_locals != NULL)
+    gc_recurse_mapping(tmp->thread_locals);
 }
 
 static void thread_was_checked(struct object *UNUSED(o))
 {
   struct thread_state *tmp=THIS_THREAD;
-  if(tmp->thread_local != NULL)
-    debug_gc_check (tmp->thread_local,
+  if(tmp->thread_locals != NULL)
+    debug_gc_check (tmp->thread_locals,
 		    " as mapping for thread local values in thread");
 
 #ifdef PIKE_DEBUG
@@ -3110,7 +3110,7 @@ static void thread_was_checked(struct object *UNUSED(o))
 void f_thread_local_create( INT32 args )
 {
   static INT32 thread_local_id = 0;
-  ((struct thread_local *)CURRENT_STORAGE)->id =
+  ((struct thread_local_var *)CURRENT_STORAGE)->id =
     thread_local_id++;
   pop_n_elems(args);
   push_int(0);
@@ -3138,10 +3138,10 @@ void f_thread_local_get(INT32 args)
   struct svalue key;
   struct mapping *m;
   SET_SVAL(key, T_INT, NUMBER_NUMBER, integer,
-	   ((struct thread_local *)CURRENT_STORAGE)->id);
+	   ((struct thread_local_var *)CURRENT_STORAGE)->id);
   pop_n_elems(args);
   if(Pike_interpreter.thread_state != NULL &&
-     (m = Pike_interpreter.thread_state->thread_local) != NULL)
+     (m = Pike_interpreter.thread_state->thread_locals) != NULL)
     mapping_index_no_free(Pike_sp++, m, &key);
   else {
     push_undefined();
@@ -3172,7 +3172,7 @@ void f_thread_local_set(INT32 args)
   struct svalue key;
   struct mapping *m;
   SET_SVAL(key, T_INT, NUMBER_NUMBER, integer,
-	   ((struct thread_local *)CURRENT_STORAGE)->id);
+	   ((struct thread_local_var *)CURRENT_STORAGE)->id);
   if(args>1)
     pop_n_elems(args-1);
   else if(args<1)
@@ -3181,8 +3181,8 @@ void f_thread_local_set(INT32 args)
   if(Pike_interpreter.thread_state == NULL)
     Pike_error("Trying to set Thread.Local without thread!\n");
 
-  if((m = Pike_interpreter.thread_state->thread_local) == NULL)
-    m = Pike_interpreter.thread_state->thread_local =
+  if((m = Pike_interpreter.thread_state->thread_locals) == NULL)
+    m = Pike_interpreter.thread_state->thread_locals =
       allocate_mapping(4);
 
   mapping_insert(m, &key, &Pike_sp[-1]);
@@ -3197,11 +3197,11 @@ void gc_check_thread_local (struct object *UNUSED(o))
     struct thread_state *s;
 
     SET_SVAL(key, T_INT, NUMBER_NUMBER, integer,
-	     ((struct thread_local *)CURRENT_STORAGE)->id);
+	     ((struct thread_local_var *)CURRENT_STORAGE)->id);
 
     FOR_EACH_THREAD (s, {
-	if (s->thread_local &&
-	    (val = low_mapping_lookup(s->thread_local, &key)))
+	if (s->thread_locals &&
+	    (val = low_mapping_lookup(s->thread_locals, &key)))
 	  debug_gc_check_svalues (val, 1,
 				  " as thread local value in Thread.Local object"
 				  " (indirect ref)");
@@ -3486,7 +3486,7 @@ void th_init(void)
   }
 
   START_NEW_PROGRAM_ID(THREAD_LOCAL);
-  ADD_STORAGE(struct thread_local);
+  ADD_STORAGE(struct thread_local_var);
   ADD_FUNCTION("get",f_thread_local_get,tFunc(tNone,tMix),0);
   ADD_FUNCTION("set",f_thread_local_set,tFunc(tSetvar(1,tMix),tVar(1)),0);
   ADD_FUNCTION("create", f_thread_local_create,
