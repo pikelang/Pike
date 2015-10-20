@@ -895,6 +895,15 @@ protected void inotify_event(int wd, int event, int cookie, string(8bit) path)
   string(8bit) icookie = inotify_cookie(wd);
   Monitor m;
   if((m = monitors[icookie])) {
+    if (sizeof (path)) {
+      string full_path = canonic_path (combine_path (m->path, path));
+      // We're interested in the sub monitor, if it exists.
+      if (Monitor submon = monitors[full_path])
+	m = submon;
+    }
+  }
+
+  if (m) {
     if (event == System.Inotify.IN_IGNORED) {
       // This Inotify watch has been removed
       // (either by us or automatically).
@@ -902,17 +911,16 @@ protected void inotify_event(int wd, int event, int cookie, string(8bit) path)
       m_delete(monitors, icookie);
     }
     mixed err = catch {
+	if (event & System.Inotify.IN_CLOSE_WRITE)
+	  // File marked as stable immediately.
+	  m->last_change = -0x7fffffff;
 	m->check(0);
       };
     if (err) {
       master()->handler_error(err);
     }
   } else {
-    // Unknown monitor. Perform a full scan.
-    MON_WERR("### Unknown monitor! Performing full scan.\n");
-    check_all();
-    // No need to look at the other entries if we're going to do
-    // a full scan.
+    MON_WERR("No monitor found for path %O.\n", path);
   }
 }
 
@@ -970,37 +978,51 @@ protected class InotifyMonitor
       }
     }
 
-    catch {
-      int new_wd = instance->add_watch(path,
-				       System.Inotify.IN_MOVED_FROM |
-				       System.Inotify.IN_UNMOUNT |
-				       System.Inotify.IN_MOVED_TO |
-				       System.Inotify.IN_MASK_ADD |
-				       System.Inotify.IN_MOVE_SELF |
-				       System.Inotify.IN_DELETE |
-				       System.Inotify.IN_MOVE |
-				       System.Inotify.IN_MODIFY |
-				       System.Inotify.IN_ATTRIB |
-				       System.Inotify.IN_DELETE_SELF |
-				       System.Inotify.IN_CREATE);
+    Stdio.Stat st = file_stat (path, 1);
+    if (st && st->isdir) {
+      // Note: We only want to add watchers on directories. File
+      // notifications will take place on the directory watch
+      // descriptors. Expansion of the path to cover notifications
+      // on individual files is handled in the inotify_event
+      // callback.
 
-      MON_WERR("Registered %O with %O ==> %d.\n", path, instance, new_wd);
-      if (new_wd != -1) {
-	// We shouldn't need to be polled.
-	if (!initial) {
-	  MON_WERR("Unregistering from polling.\n");
-	  release_monitor(this);
-	}
-	wd = new_wd;
-	monitors[inotify_cookie(wd)] = this;
-	if (initial) {
-	  // NB: Inotify seems to not notify on preexisting paths,
-	  //     so we need to strap it along.
-	  check();
-	}
-	return;
+      if (mixed err = catch {
+	  int new_wd = instance->add_watch(path,
+					   System.Inotify.IN_MOVED_FROM |
+					   System.Inotify.IN_UNMOUNT |
+					   System.Inotify.IN_MOVED_TO |
+					   System.Inotify.IN_MASK_ADD |
+					   System.Inotify.IN_MOVE_SELF |
+					   System.Inotify.IN_DELETE |
+					   System.Inotify.IN_MOVE |
+					   System.Inotify.IN_MODIFY |
+					   System.Inotify.IN_ATTRIB |
+					   System.Inotify.IN_DELETE_SELF |
+					   System.Inotify.IN_CREATE |
+					   System.Inotify.IN_CLOSE_WRITE);
+
+	  if (new_wd != -1) {
+	    MON_WERR("Registered %O with %O ==> %d.\n", path, instance, new_wd);
+	    // We shouldn't need to be polled.
+	    if (!initial) {
+	      MON_WERR("Unregistering from polling.\n");
+	      release_monitor(this);
+	    }
+	    wd = new_wd;
+	    monitors[inotify_cookie(wd)] = this;
+	    if (initial) {
+	      // NB: Inotify seems to not notify on preexisting paths,
+	      //     so we need to strap it along.
+	      check();
+	    }
+	  }
+	}) {
+	master()->handle_error (err);
       }
-    };
+    }
+
+    return;
+
 #endif /* !INHIBIT_INOTIFY_MONITOR */
     MON_WERR("Registering %O for polling.\n", path);
     ::register_path(initial);
