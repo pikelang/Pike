@@ -4210,7 +4210,7 @@ static void free_decode_data (struct decode_data *data, int delay,
 	 */
 	push_string(data->data_str);
 	push_mapping(data->decoded);
-	SET_ONERROR(err, data, free);
+	SET_ONERROR(err, free, data);
 
 	decode_error (data, NULL,
 		      "Got unfinished program <%O> after decode: %O\n",
