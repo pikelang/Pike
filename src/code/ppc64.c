@@ -34,10 +34,10 @@
     SET_REG64(11, (func_+32768)&~0xffff);	\
     if ((func_ &= 0xffff) > 32767)		\
       func_ -= 65536;				\
-    /* ld r0,%lo(func)(r11) */			\
-    LD(0, 11, func_);				\
-    /* ld r2,%lo(func+8)(r11) */		\
-    LD(2, 11, func_+8);				\
+    /* ldu r0,%lo(func)(r11) */			\
+    LDU(0, 11, func_);				\
+    /* ld r2,%8(r11) */				\
+    LD(2, 11, 8);				\
     /* mtlr r0 */				\
     MTSPR(0, PPC_SPREG_LR);			\
     /* blrl */					\
