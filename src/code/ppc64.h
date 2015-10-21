@@ -37,6 +37,7 @@
 #define STW(S,A,d) PPC_INSTR_D_FORM(36,S,A,d)
 #define LHA(D,A,d) PPC_INSTR_D_FORM(42,D,A,d)
 #define LD(D,A,ds) PPC_INSTR_DS_FORM(58,D,A,ds,0)
+#define LDU(D,A,ds) PPC_INSTR_DS_FORM(58,D,A,ds,1)
 #define STD(S,A,ds) PPC_INSTR_DS_FORM(62,S,A,ds,0)
 
 #define RLWINM(S,A,SH,MB,ME) PPC_INSTR_M_FORM(21,S,A,SH,MB,ME,0)
