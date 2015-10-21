@@ -979,6 +979,7 @@ protected class InotifyMonitor
     }
 
     Stdio.Stat st = file_stat (path, 1);
+    mixed err;
     if (st && st->isdir) {
       // Note: We only want to add watchers on directories. File
       // notifications will take place on the directory watch
@@ -986,7 +987,7 @@ protected class InotifyMonitor
       // on individual files is handled in the inotify_event
       // callback.
 
-      if (mixed err = catch {
+      if (err = catch {
 	  int new_wd = instance->add_watch(path,
 					   System.Inotify.IN_MOVED_FROM |
 					   System.Inotify.IN_UNMOUNT |
@@ -1021,7 +1022,9 @@ protected class InotifyMonitor
       }
     }
 
-    return;
+    if (st && !err)
+      return; // Return early if setup was successful, i.e. avoid
+              // registering a polling monitor.
 
 #endif /* !INHIBIT_INOTIFY_MONITOR */
     MON_WERR("Registering %O for polling.\n", path);
