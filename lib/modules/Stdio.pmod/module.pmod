@@ -3578,6 +3578,11 @@ protected class nb_sendfile
 //! associated with @[to] will be used rather than the default backend.
 //! Note that you usually will want @[from] to have the same backend as @[to].
 //!
+//! @note
+//! The low-level sending may be performed with blocking I/O calls, and
+//! thus trigger the process being killed with @tt{SIGPIPE@} when the
+//! peer closes the other end. Add a call to @[signal()] to avoid this.
+//!
 //! @bugs
 //! FIXME: Support for timeouts?
 //!

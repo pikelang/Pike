@@ -876,6 +876,11 @@ static void worker(void *this_)
  *!   In Pike 7.7 and later the @[callback] function will be called
  *!   from the backend associated with @[to].
  *!
+ *! @note
+ *!   May use blocking I/O and thus trigger process being killed
+ *!   with @tt{SIGPIPE@} when the other end closes the connection.
+ *!   Add a call to @[signal()] to avoid this.
+ *!
  *! @seealso
  *!   @[Stdio.sendfile()]
  */
