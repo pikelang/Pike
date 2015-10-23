@@ -4856,75 +4856,88 @@ void f_atexit(INT32 args)
   pop_n_elems(args);
 }
 
+/* This function may be called from modules that may have thrashed
+ * the signal handler for a specific signal. eg MariaDB and SIGPIPE.
+ */
+PMOD_EXPORT void restore_signal_handler(int sig)
+{
+  if ((TYPEOF(signal_callbacks[sig]) != PIKE_T_INT) || default_signals[sig])
+  {
+    sigfunctype func = receive_signal;
+#ifdef USE_SIGCHILD
+    if (sig == SIGCHLD) {
+      func = receive_sigchild;
+    }
+#endif
+    my_signal(sig, func);
+  } else {
+    switch(sig) {
+      /* SIGCHLD */
+#ifdef SIGCHLD
+    case SIGCHLD:
+#ifdef USE_SIGCHILD
+      my_signal(sig, receive_sigchild);
+#else
+      my_signal(sig, SIG_DFL);
+#endif
+      break;
+#endif
+
+      /* SIGFPE */
+#ifdef SIGFPE
+    case SIGFPE:
+#ifdef IGNORE_SIGFPE
+      my_signal(sig, SIG_IGN);
+#else
+      my_signal(sig, SIG_DFL);
+#endif
+      break;
+#endif
+
+      /* SIGPIPE */
+#ifdef SIGPIPE
+    case SIGPIPE:
+      my_signal(sig, SIG_IGN);
+      break;
+#endif
+
+  /* The Java JVM has a tendency to mess with the following... */
+#ifdef SIGSEGV
+    case SIGSEGV:
+      my_signal(sig, SIG_DFL);
+      break;
+#endif
+#ifdef SIGBUS
+    case SIGBUS:
+      my_signal(sig, SIG_DFL);
+      break;
+#endif
+#ifdef SIGXFSZ
+    case SIGXFSZ:
+      my_signal(sig, SIG_DFL);
+      break;
+#endif
+#ifdef SIGILL
+    case SIGILL:
+      my_signal(SIGILL, SIG_DFL);
+      break;
+#endif
+
+    default:
+      break;
+    }
+  }
+}
+
 /* This fuction may be called from modules that may have thrashed
  * the signal handler state on load. eg the Java module.
  */
 PMOD_EXPORT void low_init_signals(void)
 {
   int e;
-
-  /* SIGCHLD */
-#ifdef USE_SIGCHILD
-  my_signal(SIGCHLD, receive_sigchild);
-#elif defined(SIGCHLD)
-  my_signal(SIGCHLD, SIG_DFL);
-#endif
-
-  /* SIGPIPE */
-#ifdef SIGPIPE
-  my_signal(SIGPIPE, SIG_IGN);
-#endif
-
-  /* The Java JVM has a tendency to mess with the following... */
-#ifdef SIGSEGV
-  my_signal(SIGSEGV, SIG_DFL);
-#endif
-#ifdef SIGBUS
-  my_signal(SIGBUS, SIG_DFL);
-#endif
-#ifdef SIGXFSZ
-  my_signal(SIGXFSZ, SIG_DFL);
-#endif
-#ifdef SIGILL
-  my_signal(SIGILL, SIG_DFL);
-#endif
-
-  /* SIGFPE */
-#ifdef IGNORE_SIGFPE
-  my_signal(SIGFPE, SIG_IGN);
-#elif defined(SIGFPE)
-  my_signal(SIGFPE, SIG_DFL);
-#endif
-
-  /* SIGPIPE */
-#ifdef SIGPIPE
-#ifdef PIKE_EXTRA_DEBUG
-  set_pike_debug_options(DEBUG_SIGNALS, DEBUG_SIGNALS);
-#endif
-  if (set_pike_debug_options(0,0) & DEBUG_SIGNALS) {
-    if (sizeof(void *) == 8) {
-      /* 64-bit Solaris 10 in Xenofarm fails with SIGPIPE.
-       * Force a core dump.
-       */
-      my_signal(SIGPIPE, (sigfunctype) abort);
-    }
-  }
-#endif
-
   /* Restore any custom signals if needed. */
   for(e=0;e<MAX_SIGNALS;e++) {
-    
-    if ((TYPEOF(signal_callbacks[e]) != PIKE_T_INT) ||
-	default_signals[e])
-    {
-      sigfunctype func = receive_signal;
-#ifdef USE_SIGCHILD
-      if (e == SIGCHLD) {
-	func = receive_sigchild;
-      }
-#endif
-      my_signal(e, func);
-    }
+    restore_signal_handler(e);
   }
 }
 
