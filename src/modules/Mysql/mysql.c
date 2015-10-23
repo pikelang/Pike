@@ -75,6 +75,7 @@
 #include "fd_control.h"
 #include "mapping.h"
 #include "bignum.h"
+#include "signal_handler.h"
 #include "module_support.h"
 
 /* System includes */
@@ -193,6 +194,17 @@ static void init_mysql_struct(struct object *UNUSED(o))
   PIKE_MYSQL->mysql = mysql_init(NULL);
   if (!PIKE_MYSQL->mysql)
     Pike_error ("Out of memory when initializing mysql connection.\n");
+#ifdef SIGPIPE
+  /* Restore lost signal handler.
+   *
+   * NB: mysql_init() in MariaDB zaps the SIGPIPE handler if
+   *     mysql->client_flag hasn't set CLIENT_IGNORE_SIGPIPE.
+   *     Unfortunately, it also calls bzero(3BSD) on the struct
+   *     before checking the flag, so it in effect unconditionally
+   *     always zaps the SIGPIPE handler.
+   */
+  restore_signal_handler(SIGPIPE);
+#endif
 }
 
 static void exit_mysql_struct(struct object *UNUSED(o))
