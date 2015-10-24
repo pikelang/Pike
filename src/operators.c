@@ -5705,7 +5705,7 @@ void init_operators(void)
   ADD_EFUN ("`[]", f_index,
 	    tOr9(tFunc(tObj tMix tOr(tVoid,tMix), tMix),
 		 tFunc(tInt tString, tFunction),
-		 tFunc(tStr tInt, tInt),
+		 tFunc(tNStr(tSetvar(0,tInt)) tInt, tVar(0)),
 		 tFunc(tArr(tSetvar(0,tMix)) tMix, tVar(0)),
 		 tFunc(tMap(tMix,tSetvar(1,tMix)) tMix, tVar(1)),
 		 tFunc(tMultiset tMix, tInt01),
