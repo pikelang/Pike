@@ -4,8 +4,8 @@
 //! string. Returns @expr{UNDEFINED@} if the data is incomplete.
 string|int|array|mapping decode(Stdio.Buffer buf)
 {
-  // Decode strings. Returns -1 if the declared size is smaller than
-  // the rest of the buffer.
+  // Decode strings. Returns UNDEFINED if the declared size is smaller
+  // than the rest of the buffer.
   if( array a = buf->sscanf("%d:") )
     return buf->read(a[0]) || UNDEFINED;
 
