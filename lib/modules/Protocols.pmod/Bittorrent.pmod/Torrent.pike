@@ -529,7 +529,7 @@ void update_tracker(void|string event,void|int contact)
 	 if ( (< "gzip", "x-gzip" >)[ r->headers()["content-encoding"] ])
 	 {
 #if constant(Gz.File)
-	    data=Gz.File(Stdio.FakeFile(data))->read();
+           data=Gz.uncompress(data);
 #else /* !constant(Gz.File) */
 	    warning("tracker request failed: encoding %O not supported.\n",
 		    r->headers()["content-encoding"]);
