@@ -95,7 +95,7 @@ int(0..1) enable_renegotiation = 1;
 //! If set, the other peer will be probed for the heartbleed bug
 //! during handshake. If heartbleed is found the connection is closed
 //! with insufficient security fatal error. Requires
-//! @expr{Constant.EXTENSION_heartbeat@} to be set in @[extensions].
+//! @expr{Constants.EXTENSION_heartbeat@} to be set in @[extensions].
 int(0..1) heartbleed_probe = 0;
 
 //! @decl Alert alert_factory(SSL.Connection con, int level, int description, @
@@ -135,50 +135,50 @@ Alert alert_factory(object con,
 //!
 //! The following values are included by default.
 //! @int
-//!   @value Constant.EXTENSION_renegotiation_info
+//!   @value Constants.EXTENSION_renegotiation_info
 //!     Protection against renegotiation attack.
-//!   @value Constant.EXTENSION_max_fragment_length
+//!   @value Constants.EXTENSION_max_fragment_length
 //!     Allows negotiation of the maximum fragment size.
-//!   @value Constant.EXTENSION_encrypt_then_mac
+//!   @value Constants.EXTENSION_encrypt_then_mac
 //!     Attempts to address attacks against block
 //!     ciphers. Experimental.
-//!   @value Constant.EXTENSION_application_layer_protocol_negotiation
+//!   @value Constants.EXTENSION_application_layer_protocol_negotiation
 //!     Required to support more than one protocol on the same TLS
 //!     port.
-//!   @value Constant.EXTENSION_signature_algorithms
+//!   @value Constants.EXTENSION_signature_algorithms
 //!     Required to select which out of several certificates to use.
-//!   @value Constant.EXTENSION_ec_point_formats
+//!   @value Constants.EXTENSION_ec_point_formats
 //!     Required for elliptic curve key exchange.
-//!   @value Constant.EXTENSION_elliptic_curves
+//!   @value Constants.EXTENSION_elliptic_curves
 //!     Required for elliptic curve key exchange.
-//!   @value Constant.EXTENSION_server_name
+//!   @value Constants.EXTENSION_server_name
 //!     Allows the client to select which of several domains hosted on
 //!     the same server it wants to connect to. Required by many
 //!     websites.
-//!   @value Constant.EXTENSION_next_protocol_negotiation
+//!   @value Constants.EXTENSION_next_protocol_negotiation
 //!     Not supported by Pike. The server side will just check that
 //!     the client packets are correctly formatted.
-//!   @value Constant.EXTENSION_signed_certificate_timestamp
+//!   @value Constants.EXTENSION_signed_certificate_timestamp
 //!     Not supported by Pike. The server side will just check that
 //!     the client packets are correctly formatted.
-//!   @value Constant.EXTENSION_early_data
+//!   @value Constants.EXTENSION_early_data
 //!     Needed for TLS 1.3 0-RTT handshake.
-//!   @value Constant.EXTENSION_padding
+//!   @value Constants.EXTENSION_padding
 //!     This extension is required to avoid a bug in some f5 SSL
 //!     terminators for certain sizes of client handshake messages.
 //! @endint
 //!
 //! The following supported values are not included by default.
 //! @int
-//!   @value Constant.EXTENSION_truncated_hmac
+//!   @value Constants.EXTENSION_truncated_hmac
 //!     This extension allows for the HMAC to be truncated for a small
 //!     win in payload size. Not widely implemented and may be a
 //!     security risk.
-//!   @value Constant.EXTENSION_heartbeat
+//!   @value Constants.EXTENSION_heartbeat
 //!     This extension allows the client and server to send heartbeats
 //!     over the connection. Intended to keep TCP connections
 //!     alive. Required to be set to use @[heartbleed_probe].
-//!   @value Constant.EXTENSION_extended_master_secret
+//!   @value Constants.EXTENSION_extended_master_secret
 //!     Binds the master secret to important session parameters to
 //!     protect against man in the middle attacks.
 //! @endint
