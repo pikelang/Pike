@@ -4,13 +4,13 @@
 //! @returns
 //!   @array
 //!     @elem string|int|array|mapping data
-//!       The decoded data. UNDEFINED if no data could be decoded.
+//!       The decoded data. @expr{0@} if no data could be decoded.
 //!     @elem string remainder
 //!       The trailing data that wasn't decoded.
 //!   @endarray
 array(string|int|array|mapping) _decode(string what)
 {
-   if (what=="") return ({UNDEFINED,what});
+   if (what=="") return ({0,what});
    if (what==0) error("Cannot decode 0 (zero)\n");
 
    int i;
@@ -20,13 +20,13 @@ array(string|int|array|mapping) _decode(string what)
    {
       case 'i': // integer
 	 if (sscanf(what,"i%de%s",i,what)<2)
-	    return ({UNDEFINED,what});
+	    return ({0,what});
 	 return ({i,what});
 
       case '0'..'9': // string
 	 if (sscanf(what,"%d:%s",i,s)<2 ||
 	     strlen(s)<i)
-	    return ({UNDEFINED,what});
+	    return ({0,what});
 	 return ({s[..i-1],s[i..]});
 
       case 'l': // list
@@ -42,7 +42,7 @@ array(string|int|array|mapping) _decode(string what)
 	    res+=v[..0];
 	    s=v[1];
 	 }
-	 return ({UNDEFINED,what});
+	 return ({0,what});
 
       case 'd': // dictionary
 	 array keys=({});
@@ -62,7 +62,7 @@ array(string|int|array|mapping) _decode(string what)
 	    values+=v[..0];
 	    s=v[1];
 	 }
-	 return ({UNDEFINED,what});
+	 return ({0,what});
 
       default:
 	 error("Error in Bencoding: unknown prefix %O...\n",
@@ -71,7 +71,7 @@ array(string|int|array|mapping) _decode(string what)
 }
 
 //! Decodes a Bittorrent bencoded data chunk and ignores the remaining
-//! string. Returns UNDEFINED if the data is incomplete.
+//! string. Returns @expr{UNDEFINED@} if the data is incomplete.
 string|int|array|mapping decode(string what)
 {
    array v=_decode(what);
