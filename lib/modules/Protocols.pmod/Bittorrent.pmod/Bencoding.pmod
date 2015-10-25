@@ -1,82 +1,71 @@
 #pike __REAL_VERSION__
 
-//! Decodes a Bittorrent bencoded data chunk.
-//! @returns
-//!   @array
-//!     @elem string|int|array|mapping data
-//!       The decoded data. @expr{0@} if no data could be decoded.
-//!     @elem string remainder
-//!       The trailing data that wasn't decoded.
-//!   @endarray
-array(string|int|array|mapping) _decode(string what)
-{
-   if (what=="") return ({0,what});
-   if (what==0) error("Cannot decode 0 (zero)\n");
-
-   int i;
-   string s;
-
-   switch (what[0])
-   {
-      case 'i': // integer
-	 if (sscanf(what,"i%de%s",i,what)<2)
-	    return ({0,what});
-	 return ({i,what});
-
-      case '0'..'9': // string
-	 if (sscanf(what,"%d:%s",i,s)<2 ||
-	     strlen(s)<i)
-	    return ({0,what});
-	 return ({s[..i-1],s[i..]});
-
-      case 'l': // list
-	 array res=({});
-	 s=what[1..];
-	 while (s!="")
-	 {
-	    if (s[0]=='e')
-	       return ({res,s[1..]});
-	    array v=_decode(s);
-	    if (v[1]==s)
-		break;
-	    res+=v[..0];
-	    s=v[1];
-	 }
-	 return ({0,what});
-
-      case 'd': // dictionary
-	 array keys=({});
-	 array values=({});
-	 s=what[1..];
-	 while (s!="")
-	 {
-	    if (s[0]=='e') return ({mkmapping(keys,values),s[1..]});
-
-	    array v=_decode(s);
-	    if (v[1]==s) break;
-	    keys+=v[..0];
-	    s=v[1];
-
-	    v=_decode(s);
-	    if (v[1]==s) break;
-	    values+=v[..0];
-	    s=v[1];
-	 }
-	 return ({0,what});
-
-      default:
-	 error("Error in Bencoding: unknown prefix %O...\n",
-	       what[..10]);
-   }
-}
-
 //! Decodes a Bittorrent bencoded data chunk and ignores the remaining
 //! string. Returns @expr{UNDEFINED@} if the data is incomplete.
-string|int|array|mapping decode(string what)
+string|int|array|mapping decode(Stdio.Buffer buf)
 {
-   array v=_decode(what);
-   if (v[1]==what) return UNDEFINED;
-   return v[0];
+  // Decode strings. Returns -1 if the declared size is smaller than
+  // the rest of the buffer.
+  if( array a = buf->sscanf("%d:") )
+    return buf->read(a[0]) || UNDEFINED;
+
+  mixed prefix;
+  switch(prefix=buf->read(1))
+  {
+  case "":
+  case 0:
+    // End of buffer
+    return UNDEFINED;
+
+  case "e":
+    // End of list
+    return UNDEFINED;
+
+  case "i":
+    // Integer
+    // 0-prefixed integers are illegal, but we don't check for
+    // that. Also -0 is illegal, and not checked for.
+    return buf->sscanf("%de")[0];
+
+  case "l":
+    // List
+    array list = ({});
+    while(1)
+    {
+      mixed item = decode(buf);
+      if( undefinedp(item) )
+        return list;
+      list += ({ item });
+    };
+
+  case "d":
+    // Dictionary
+    mapping dic = ([]);
+    while(1)
+    {
+      // Keys must be strings and appear in sorted order. We don't
+      // check for these restrictions.
+      mixed ind = decode(buf);
+      if( undefinedp(ind) ) return dic;
+      mixed val = decode(buf);
+      if( undefinedp(val) ) return dic;
+      dic[ind] = val;
+    }
+
+  default:
+    error("Error in Bencoding: unknown prefix %O...\n", prefix);
+  }
+}
+
+variant string|int|array|mapping decode(string what)
+{
+  return decode(Stdio.Buffer(what));
+}
+
+__deprecated__ array(string|int|array|mapping) _decode(string what)
+{
+  Stdio.Buffer b = Stdio.Buffer(what);
+  return ({ decode(b), b->read() });
 }
 
 //! Encodes a Bittorrent bencoded data chunk.
