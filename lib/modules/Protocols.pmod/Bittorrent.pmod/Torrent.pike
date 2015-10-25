@@ -242,9 +242,6 @@ class Target(string base,int length,int offset,void|array path)
 
    void pwrite(int off,string data)
    {
-//       werror("%O: pwrite(%O,%d bytes) =%O..%O of %O\n",
-// 	     this,off,strlen(data),
-// 	     off-offset,off-offset+strlen(data),length);
       if (off>offset+length) return; // noop
       int end=off+strlen(data);
       if (end<=offset) return; // noop
@@ -264,10 +261,6 @@ class Target(string base,int length,int offset,void|array path)
    {
       if (off>offset+length) return ""; // noop
       int end=off+bytes;
-
-//       werror("%O: pread(%O,%d bytes) =%O..%O of %O\n",
-// 	     this,off,bytes,
-// 	     off-offset,off-offset+bytes,length);
 
       if (off<offset)
 	 bytes-=(offset-off),off=offset;
@@ -352,8 +345,7 @@ int fix_targets(void|int(-1..2) allocate, void|string base_filename,
       int offset=0;
       foreach (info->files;;mapping m)
       {
-// 	 werror("%O\n",m);
-	 targets+=({Target(base_filename,m->length,
+         targets+=({Target(base_filename,m->length,
 			   offset,m->path)});
 	 offset+=m->length;
       }
@@ -853,16 +845,11 @@ int download_one_more()
 	sizeof(file_want) == sizeof(file_got))) // first seed
       from_peers&=completed_peers_avail;
 
-//    werror("%O\n",from_peers);
-
    if (!sizeof(from_peers))
    {
       werror("NO SOURCE!!\n");
       return 0; // no source
    }
-
-//    if (sizeof(lost_in_space))
-//       werror("lost_in_space=%O\n",lost_in_space);
 
    for (int i=!sizeof(lost_in_space); i<2 && !sizeof(choices); i++)
    {
@@ -888,8 +875,6 @@ int download_one_more()
       int n=choices[i][0];
 
       .Peer peer=v[random(sizeof(v))];
-
-//       werror("download piece %O from %O\n",n,peer);
 
       if (lost_in_space[n])
       {
@@ -997,8 +982,6 @@ class PieceDownload
       {
 	 int z=min(size-i,download_chunk_size);
 	 expect_chunks[i]=z;
-
-// 	 werror("expect p=%d o=%d %d bytes\n",piece,i,z);
       }
 
       queue_chunks();
@@ -1022,7 +1005,7 @@ class PieceDownload
    {
       more_peers+=({p2});
 
-// queue a random part that we haven't got yet
+      // queue a random part that we haven't got yet
       array v=indices(expect_chunks)-indices(chunks);
       int i=v[random(sizeof(v))];
 
@@ -1051,7 +1034,7 @@ class PieceDownload
       }
    }
 
-// seconds before aborting if choked and not unchoked
+  // seconds before aborting if choked and not unchoked
    constant choke_abort_delay=45;
 
    void got_data(int n,int i,string data,object from)
@@ -1096,9 +1079,7 @@ class PieceDownload
 
       if (piece==n && expect_chunks[i]==strlen(data))
       {
-// 	 werror("got piece %d off %d bytes %d\n",n,i,strlen(data));
-
-	 chunks[i]=data;
+         chunks[i]=data;
 	 m_delete(queued_chunks,i);
 
 	 if (sizeof(expect_chunks-chunks))
@@ -1154,16 +1135,16 @@ class PieceDownload
       {
 	 if (!peer) return; // we're already lost in space, wtf?
 
-   // ok, put us in the queue-to-fill
+         // ok, put us in the queue-to-fill
 	 lost_in_space[piece]=this;
 
-   // cancel outstanding
+         // cancel outstanding
 #ifdef TORRENT_PIECEDOWNLOAD_DEBUG
 	 werror("%O %O->cancel\n",this,peer);
 #endif
 	 if (peer->online) peer->cancel_requests(0);
 
-   // reset some stuff
+         // reset some stuff
 	 disjoin();
 	 handed_over=0; // if we ever were
 
@@ -1206,8 +1187,6 @@ class PieceDownload
 	 error("destruction of download still in structs:\n"
 		"download: %O\ndownloads: %O\nhandovers: %O\n",
 		this,downloads,handovers);
-
-// 	 werror("%s\n",master()->describe_backtrace(backtrace()));
       }
 
       more_peers->cancel_requests(0);
@@ -1325,7 +1304,7 @@ void got_piece(int piece,string data)
        find_call_out(update_tracker_loop)!=-1)
       update_tracker("completed");
 
-// open up interested peers for requests
+   // open up interested peers for requests
    if (sizeof(file_want)==sizeof(file_got)-1)
       foreach (peers_ordered;;.Peer p)
 	 if (p->peer_interested)
@@ -1337,8 +1316,7 @@ void got_piece(int piece,string data)
 
 void got_piece_drop_interest()
 {
-// drop interest for now uninteresting peers
-
+  // drop interest for now uninteresting peers
    foreach (peers_ordered;;.Peer p)
       if (p->were_interested)
       {
@@ -1352,7 +1330,7 @@ void got_piece_drop_interest()
 
 void destroy()
 {
-// some clean-up
+  // some clean-up
    if (targets) map(targets,destruct);
    map(peers_ordered,destruct);
    map(peers_unused,destruct);
