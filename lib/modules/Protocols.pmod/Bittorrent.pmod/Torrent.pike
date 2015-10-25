@@ -133,14 +133,10 @@ Protocols.DNS.async_client dns_async=Protocols.DNS.async_client();
 //! Loads the metainfo from a file.
 void load_metainfo(string filename)
 {
-   string s=Stdio.read_file(filename);
-   if (!s)
-      error("Failed to read metainfo file %O: %m\n",filename);
-   catch {
-     s = utf8_to_string(s);
-   };
+   Stdio.Buffer buf=Stdio.Buffer();
+   buf->input_from(Stdio.File(filename));
    mixed err=catch {
-     decode_metainfo(s);
+     decode_metainfo(buf);
    };
    if (!err) return;
 
@@ -148,10 +144,10 @@ void load_metainfo(string filename)
    throw(err);
 }
 
-void decode_metainfo(string s)
+void decode_metainfo(Stdio.Buffer buf)
 {
    mixed err=catch {
-      metainfo=decode(s);
+      metainfo=decode(buf);
       if (!mappingp(metainfo))
 	 error("Metainfo file does not contain a dictionary (%t)\n",metainfo);
       info=metainfo->info;
