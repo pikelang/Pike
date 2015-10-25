@@ -1740,7 +1740,7 @@ PIKECLASS Buffer
     }
   }
 
-  /*! @decl string(8bit) read_cstring( )
+  /*! @decl string(8bit) read_cstring(void|int sentinel)
    *!
    *! Reads a \0 terminated C-string and returns the
    *! string excluding the terminating \0.
@@ -1748,13 +1748,19 @@ PIKECLASS Buffer
    *! If there is not enough data available return UNDEFINED.
    *!
    *! Note that pike string can not be longer than 0x7fffffff bytes (~2Gb).
+   *!
+   *! @param sentinel
+   *! A different character can be used as end sentinel of the string.
    */
-  PIKEFUN string(0..255) read_cstring( )
+  PIKEFUN string(0..255) read_cstring(void|int sentinel)
   {
     LONGEST len;
     Buffer *io = THIS;
     struct pike_string *s;
     ONERROR e;
+    int end = 0;
+    if( sentinel )
+      end = sentinel->u.integer;
 
     io_rewind_on_error( io, &e );
     len = 0;
@@ -1762,20 +1768,20 @@ PIKECLASS Buffer
       /* search the amount of data we know we have for each call to io_avail */
       while( io_len(io) )
       {
-        if( !io_read_byte_uc(io) )
-          goto found_null;
+        if( io_read_byte_uc(io)==end )
+          goto found_end;
         len++;
       }
     }
     while( io_avail( io, 1 ) );
     goto fail;
 
-  found_null:
+  found_end:
     io_rewind( io, len+1 );
     s = io_read_string( io, len );
 
     if( LIKELY(s) ) {
-      io_read_byte_uc(io);		  /* consume the terminating \0 byte */
+      io_read_byte_uc(io);		  /* consume the terminating byte */
       io_unset_rewind_on_error( io, &e );
       push_string(s);
     } else {

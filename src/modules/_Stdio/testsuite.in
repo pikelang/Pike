@@ -915,4 +915,15 @@ test_any([[
   return !!k;
 ]], 0)
 
+test_any([[
+  Stdio.Buffer b = Stdio.Buffer("\0\0a\0bb\nccc");
+  if( b->read_cstring()!="" ) return 1;
+  if( b->read_cstring()!="" ) return 2;
+  if( b->read_cstring()!="a" ) return 3;
+  if( b->read_cstring('\n')!="bb" ) return 4;
+  if( !undefinedp(b->read_cstring()) ) return 5;
+  if( b->read()!="ccc" ) return 6;
+  return -1;
+]], -1)
+
 END_MARKER
