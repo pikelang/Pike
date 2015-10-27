@@ -158,7 +158,8 @@ string(8bit) hash_messages(string(8bit) sender, int|void len)
   else if(version <= PROTOCOL_TLS_1_1) {
     return session->cipher_spec->prf(session->master_secret, sender,
 				     Crypto.MD5.hash(handshake_messages)+
-				     Crypto.SHA1.hash(handshake_messages), 12);
+				     Crypto.SHA1.hash(handshake_messages),
+				     len || 12);
   }
   return session->cipher_spec->prf(session->master_secret, sender,
                                    session->cipher_spec->hash
