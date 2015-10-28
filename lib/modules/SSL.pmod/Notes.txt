@@ -90,8 +90,10 @@ The TLS 1.2 Protocol is specified in the following RFCs:
  [X] AES-CCM ECC Suites for TLS		RFC 7251
  [X] TLS ALPN Extension			RFC 7301
  [X] TLS Encrypt-then-MAC		RFC 7366
+ [ ] Known Attacks on TLS and DTLS	RFC 7457
  [X] Prohibit RC4			RFC 7465
  [X] TLS Fallback SCSV			RFC 7507
+ [ ] Recommendations for TLS and DTLS	TFC 7525
  [/] Session Hash and Extended MS	RFC 7627
  [X] TLS Padding			RFC 7685
 
