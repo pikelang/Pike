@@ -42,9 +42,21 @@ else
 
     # md4 is available in later versions of nettle
     # camellia is available in Nettle 2.1 and later.
+    # ripemd160 is available in Nettle 2.3 and later.
+    # sha3 and gosthash94 are available in Nettle 2.6 and later.
+    # gcm is available in Nettle 2.2 and later.
     AC_CHECK_HEADERS(nettle/camellia.h nettle/md4.h nettle/sha3.h \
                      nettle/ripemd160.h nettle/gosthash94.h nettle/gcm.h)
-    AC_CHECK_FUNCS(nettle_md4_init)
+    # Check that the libraries match.
+    #
+    # Note that there can be false positives in the test above
+    # when multiple versions of Nettle are installed concurrently.
+    AC_CHECK_FUNCS(nettle_md4_init \
+		   nettle_camellia128_crypt \
+		   nettle_gcm_encrypt \
+		   nettle_ripemd160_init \
+		   nettle_sha3_256_init nettle_gosthash94_init \
+		   )
 
     AC_MSG_CHECKING([for idea.c])
     # Have the patent-encumbered idea files been purged?
