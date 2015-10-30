@@ -1322,6 +1322,17 @@ enum CertificateType {
   CERTTYPE_raw_public_key = 2,	// RFC 7250
 };
 
+//! Values used for @tt{supp_data_type@} in @tt{SupplementalDataEntry@}
+//! (cf @rfc{4681:3@}).
+enum SupplementalDataType {
+  SDT_user_mapping_data = 0,	// RFC 4681
+};
+
+//! @rfc{4681:6@}.
+enum UserMappingType {
+  UMT_upn_domain_hint = 64,	// RFC 4681
+};
+
 constant EXTENSION_server_name			= 0;		// RFC 6066
 constant EXTENSION_max_fragment_length		= 1;		// RFC 6066
 constant EXTENSION_client_certificate_url	= 2;		// RFC 6066
