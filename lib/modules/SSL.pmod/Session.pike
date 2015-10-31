@@ -673,11 +673,14 @@ array(State) new_server_states(.Connection con,
 
   if (cipher_spec->mac_algorithm)
   {
+    SSL3_DEBUG_CRYPT_MSG("MAC algorithm: %O\n", cipher_spec->mac_algorithm);
     read_state->mac = cipher_spec->mac_algorithm(keys[0]);
     write_state->mac = cipher_spec->mac_algorithm(keys[1]);
   }
   if (cipher_spec->bulk_cipher_algorithm)
   {
+    SSL3_DEBUG_CRYPT_MSG("Bulk cipher algorithm: %O\n",
+			 cipher_spec->bulk_cipher_algorithm);
     read_state->crypt = cipher_spec->bulk_cipher_algorithm();
     read_state->crypt->set_decrypt_key(keys[2]);
     write_state->crypt = cipher_spec->bulk_cipher_algorithm();
