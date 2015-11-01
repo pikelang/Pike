@@ -85,15 +85,15 @@ Alert|Packet decrypt_packet(Packet packet)
     // is smaller.
     packet->set_encrypted(data);
 
-    if (mac->hash_packet(packet, seq_num, hmac_size)[..hmac_size-1] != digest) {
+    if (mac->hash_packet(packet, seq_num)[..hmac_size-1] !=
+	digest) {
       // Bad digest.
       SSL3_DEBUG_MSG("Failed MAC-verification!!\n");
       SSL3_DEBUG_CRYPT_MSG("Expected digest: %O\n"
                            "Calculated digest: %O\n"
                            "Seqence number: %O\n",
                            digest,
-                           mac->hash_packet(packet, seq_num,
-                                            hmac_size)[..hmac_size-1],
+                           mac->hash_packet(packet, seq_num)[..hmac_size-1],
                            seq_num);
       return alert(ALERT_fatal, ALERT_bad_record_mac,
 		   "Bad MAC-verification.\n");
@@ -376,7 +376,7 @@ Alert|Packet encrypt_packet(Packet packet, Context ctx)
 
   if (hmac_size) {
     // Encrypt-then-MAC mode.
-    data += mac->hash_packet(packet, seq_num, hmac_size)[..hmac_size-1];
+    data += mac->hash_packet(packet, seq_num)[..hmac_size-1];
 
     // Set HMAC protected data.
     res = [object(Alert)]packet->set_encrypted(data);
