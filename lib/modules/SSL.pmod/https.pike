@@ -197,7 +197,8 @@ int main()
   werror("Generating ECDSA certificate (%d bits)...\n", 521);
 
   key = Crypto.ECC.SECP_521R1.ECDSA()->generate_key();
-  make_certificate(ctx, key);
+  make_certificate(ctx, key, Crypto.SHA512);
+  make_certificate(ctx, key, Crypto.SHA256);
 
   // Compat with OLD clients.
   //
