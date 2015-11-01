@@ -289,8 +289,7 @@ class CipherSpec {
   }
 
   void set_hash(int max_hash_size,
-                array(array(int)) signature_algorithms,
-                int wanted_hash_id)
+                array(array(int)) signature_algorithms)
   {
     // Stay with SHA1 for requests without signature algorithms
     // extensions (RFC 5246 7.4.1.4.1) and anonymous requests.
@@ -302,11 +301,6 @@ class CipherSpec {
                    max_hash_size, fmt_signature_pairs(signature_algorithms));
     foreach(signature_algorithms, array(int) pair) {
       if ((pair[1] == signature_alg) && HASH_lookup[pair[0]]) {
-        if (pair[0] == wanted_hash_id) {
-          // Use the required hash from Suite B if available.
-          hash_id = wanted_hash_id;
-          break;
-        }
         if (max_hash_size < HASH_lookup[pair[0]]->digest_size()) {
           // Eg RSA has a maximum block size and the digest is too large.
           continue;
@@ -1159,11 +1153,10 @@ class KeyExchangeECDHE
       c = GROUP_secp521r1;
       break;
     case 129..256:
-      // Suite B requires SECP384r1/SHA256 for AES-256
+      // Suite B requires SECP384r1
       c = GROUP_secp384r1;
       break;
     case ..128:
-      // Suite B requires SECP256r1/SHA256 for AES-128
       c = GROUP_secp256r1;
       break;
     }
@@ -2278,19 +2271,7 @@ CipherSpec lookup(int suite, ProtocolVersion|int version,
 
   if (version >= PROTOCOL_TLS_1_2)
   {
-    int wanted_hash_id;
-    if( res->signature_alg == SIGNATURE_ecdsa )
-    {
-      if (res->key_bits < 256) {
-	// Suite B requires SHA256 with AES-128.
-	wanted_hash_id = HASH_sha256;
-      } else if (res->key_bits < 384) {
-	// Suite B requires SHA384 with AES-256.
-	wanted_hash_id = HASH_sha384;
-      }
-    }
-
-    res->set_hash(max_hash_size, signature_algorithms, wanted_hash_id);
+    res->set_hash(max_hash_size, signature_algorithms);
   }
 
   if (res->is_exportable && res->bulk_cipher_algorithm &&

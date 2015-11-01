@@ -1242,22 +1242,10 @@ define(test_suite_b, [[
   ]])
 ]])
 
-test_suite_b(0x303, 192, 2, 0x303, 192, 2,
+test_suite_b(0x303, 256, 2, 0x303, 256, 2,
 	     TLS_ecdhe_ecdsa_with_aes_256_gcm_sha384)
-test_suite_b(0x303, 192, 2, 0x303, 128, 2,
-	     TLS_ecdhe_ecdsa_with_aes_256_gcm_sha384)
-test_suite_b(0x303, 128, 2, 0x303, 192, 2,
-	     TLS_ecdhe_ecdsa_with_aes_256_gcm_sha384)
-test_suite_b(0x303, 128, 2, 0x303, 128, 2,
-	     TLS_ecdhe_ecdsa_with_aes_128_gcm_sha256)
-test_suite_b(0x302, 192, 1, 0x302, 192, 1,
+test_suite_b(0x302, 256, 1, 0x302, 256, 1,
 	     TLS_ecdhe_ecdsa_with_aes_256_cbc_sha)
-test_suite_b(0x302, 192, 1, 0x302, 128, 1,
-	     TLS_ecdhe_ecdsa_with_aes_256_cbc_sha)
-test_suite_b(0x302, 128, 1, 0x302, 192, 1,
-	     TLS_ecdhe_ecdsa_with_aes_256_cbc_sha)
-test_suite_b(0x302, 128, 1, 0x302, 128, 1,
-	     TLS_ecdhe_ecdsa_with_aes_128_cbc_sha)
 
 ]]) dnl Crypto.ECC
 

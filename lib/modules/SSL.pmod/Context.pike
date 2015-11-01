@@ -673,18 +673,12 @@ void filter_weak_suites(int min_keylength)
 void configure_suite_b(int(128..)|void min_keylength,
 		       int(0..)|void strictness_level)
 {
-  if (min_keylength < 128) min_keylength = 128;
+  if (min_keylength!=256)
+    error("Only keylength 256 supported.\n");
 
-  if (min_keylength > 128) {
-    preferred_suites = ({
-      TLS_ecdhe_ecdsa_with_aes_256_gcm_sha384,
-    });
-  } else {
-    preferred_suites = ({
-      TLS_ecdhe_ecdsa_with_aes_128_gcm_sha256,
-      TLS_ecdhe_ecdsa_with_aes_256_gcm_sha384,
-    });
-  }
+  preferred_suites = ({
+    TLS_ecdhe_ecdsa_with_aes_256_gcm_sha384,
+  });
 
   max_version = PROTOCOL_TLS_MAX;
   min_version = PROTOCOL_TLS_1_2;
@@ -696,18 +690,9 @@ void configure_suite_b(int(128..)|void min_keylength,
     min_version = PROTOCOL_TLS_1_0;
 
     // First add the transitional suites.
-    if (min_keylength > 128) {
-      // Transitional Suite B Combination 2
-      preferred_suites += ({
-	TLS_ecdhe_ecdsa_with_aes_256_cbc_sha,
-      });
-    } else {
-      // Transitional Suite B Combination 1
-      preferred_suites += ({
-	TLS_ecdhe_ecdsa_with_aes_128_cbc_sha,
-	TLS_ecdhe_ecdsa_with_aes_256_cbc_sha,
-      });
-    }
+    preferred_suites += ({
+      TLS_ecdhe_ecdsa_with_aes_256_cbc_sha,
+    });
 
     if (strictness_level < 1) {
       // Permissive mode. Add the remaining suites of

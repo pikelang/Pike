@@ -972,11 +972,10 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
           wanted_group = GROUP_secp521r1;
           break;
         case 129..256:
-          // Suite B requires SECP384r1/SHA256 for AES-256
+          // Suite B requires SECP384r1
           wanted_group = GROUP_secp384r1;
           break;
         case ..128:
-          // Suite B requires SECP256r1/SHA256 for AES-128
           wanted_group = GROUP_secp256r1;
           break;
         }
