@@ -188,7 +188,7 @@ class CipherSpec {
   Crypto.Hash hash;
 
   //! The hash algorithm used for key exchange signatures.
-  HashAlgorithm signature_hash = HASH_sha;
+  HashAlgorithm signature_hash = HASH_sha1;
 
   //! The signature algorithm used for key exchange signatures.
   SignatureAlgorithm signature_alg;
@@ -2038,7 +2038,7 @@ CipherSpec lookup(int suite, ProtocolVersion|int version,
     res->mac_algorithm = MAChmac_sha256;
     res->hash_size = 32;
     break;
-  case HASH_sha:
+  case HASH_sha1:
     if(version >= PROTOCOL_TLS_1_0)
       res->mac_algorithm = MAChmac_sha;
     else
@@ -2073,7 +2073,7 @@ CipherSpec lookup(int suite, ProtocolVersion|int version,
     case HASH_none:
       break;
     case HASH_md5:
-    case HASH_sha:
+    case HASH_sha1:
     case HASH_sha224:
       // These old suites are all upgraded to using SHA256.
     case HASH_sha256:

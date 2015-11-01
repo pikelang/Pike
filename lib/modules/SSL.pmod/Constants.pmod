@@ -124,7 +124,7 @@ constant CIPHER_effective_keylengths = ([
 enum HashAlgorithm {
   HASH_none	= 0,
   HASH_md5	= 1,
-  HASH_sha	= 2,
+  HASH_sha1	= 2,
   HASH_sha224	= 3,
   HASH_sha256	= 4,
   HASH_sha384	= 5,
@@ -152,7 +152,7 @@ constant HASH_lookup = ([
 #if constant(Crypto.SHA224)
   HASH_sha224: Crypto.SHA224,
 #endif
-  HASH_sha:    Crypto.SHA1,
+  HASH_sha1:   Crypto.SHA1,
   HASH_md5:    Crypto.MD5,
 ]);
 
@@ -749,7 +749,7 @@ string fmt_version(ProtocolVersion version)
 //!     @[CIPHER_aes].
 //!   @elem HashAlgorithm 2
 //!     The hash algorithm to be used for this suite, or 0. E.g.
-//!     @[HASH_sha].
+//!     @[HASH_sha1].
 //!   @elem CipherModes 3
 //!     Optionally for TLS 1.2 and later cipher suites the mode of
 //!     operation. E.g. @[MODE_cbc].
@@ -759,7 +759,7 @@ constant CIPHER_SUITES =
    // The following cipher suites are only intended for testing.
    SSL_null_with_null_null :    	({ 0, 0, 0 }),
    SSL_rsa_with_null_md5 :      	({ KE_rsa_export, 0, HASH_md5 }),
-   SSL_rsa_with_null_sha :      	({ KE_rsa_export, 0, HASH_sha }),
+   SSL_rsa_with_null_sha :      	({ KE_rsa_export, 0, HASH_sha1 }),
    TLS_rsa_with_null_sha256 :      	({ KE_rsa_export, 0, HASH_sha256, MODE_cbc }),
 
    // NB: The export suites are obsolete in TLS 1.1 and later.
@@ -771,113 +771,113 @@ constant CIPHER_SUITES =
    SSL_rsa_export_with_rc4_40_md5 :
       ({ KE_rsa_export, CIPHER_rc4_40, HASH_md5 }),
    SSL_dhe_dss_export_with_des40_cbc_sha :
-      ({ KE_dhe_dss, CIPHER_des40, HASH_sha }),
+      ({ KE_dhe_dss, CIPHER_des40, HASH_sha1 }),
    SSL_dhe_rsa_export_with_des40_cbc_sha :
-      ({ KE_dhe_rsa, CIPHER_des40, HASH_sha }),
+      ({ KE_dhe_rsa, CIPHER_des40, HASH_sha1 }),
    SSL_dh_dss_export_with_des40_cbc_sha :
-      ({ KE_dh_dss, CIPHER_des40, HASH_sha }),
+      ({ KE_dh_dss, CIPHER_des40, HASH_sha1 }),
    SSL_dh_rsa_export_with_des40_cbc_sha :
-      ({ KE_dh_rsa, CIPHER_des40, HASH_sha }),
+      ({ KE_dh_rsa, CIPHER_des40, HASH_sha1 }),
    SSL_rsa_export_with_des40_cbc_sha :
-      ({ KE_rsa_export, CIPHER_des40, HASH_sha }),
+      ({ KE_rsa_export, CIPHER_des40, HASH_sha1 }),
 
    // NB: The IDEA and DES suites are obsolete in TLS 1.2 and later.
 #if constant(Crypto.IDEA)
-   SSL_rsa_with_idea_cbc_sha :		({ KE_rsa, CIPHER_idea, HASH_sha }),
-   TLS_rsa_with_idea_cbc_sha :          ({ KE_rsa, CIPHER_idea, HASH_sha }),
+   SSL_rsa_with_idea_cbc_sha :		({ KE_rsa, CIPHER_idea, HASH_sha1 }),
+   TLS_rsa_with_idea_cbc_sha :          ({ KE_rsa, CIPHER_idea, HASH_sha1 }),
    SSL_rsa_with_idea_cbc_md5 :		({ KE_rsa, CIPHER_idea, HASH_md5 }),
 #endif
-   SSL_rsa_with_des_cbc_sha :		({ KE_rsa, CIPHER_des, HASH_sha }),
-   TLS_rsa_with_des_cbc_sha :           ({ KE_rsa, CIPHER_des, HASH_sha }),
+   SSL_rsa_with_des_cbc_sha :		({ KE_rsa, CIPHER_des, HASH_sha1 }),
+   TLS_rsa_with_des_cbc_sha :           ({ KE_rsa, CIPHER_des, HASH_sha1 }),
    SSL_rsa_with_des_cbc_md5 :		({ KE_rsa, CIPHER_des, HASH_md5 }),
-   SSL_dhe_dss_with_des_cbc_sha :	({ KE_dhe_dss, CIPHER_des, HASH_sha }),
-   TLS_dhe_dss_with_des_cbc_sha :       ({ KE_dhe_dss, CIPHER_des, HASH_sha }),
-   SSL_dhe_rsa_with_des_cbc_sha :	({ KE_dhe_rsa, CIPHER_des, HASH_sha }),
-   TLS_dhe_rsa_with_des_cbc_sha :       ({ KE_dhe_rsa, CIPHER_des, HASH_sha }),
-   SSL_dh_dss_with_des_cbc_sha :	({ KE_dh_dss, CIPHER_des, HASH_sha }),
-   TLS_dh_dss_with_des_cbc_sha :        ({ KE_dh_dss, CIPHER_des, HASH_sha }),
-   SSL_dh_rsa_with_des_cbc_sha :	({ KE_dh_rsa, CIPHER_des, HASH_sha }),
-   TLS_dh_rsa_with_des_cbc_sha :        ({ KE_dh_rsa, CIPHER_des, HASH_sha }),
+   SSL_dhe_dss_with_des_cbc_sha :	({ KE_dhe_dss, CIPHER_des, HASH_sha1 }),
+   TLS_dhe_dss_with_des_cbc_sha :       ({ KE_dhe_dss, CIPHER_des, HASH_sha1 }),
+   SSL_dhe_rsa_with_des_cbc_sha :	({ KE_dhe_rsa, CIPHER_des, HASH_sha1 }),
+   TLS_dhe_rsa_with_des_cbc_sha :       ({ KE_dhe_rsa, CIPHER_des, HASH_sha1 }),
+   SSL_dh_dss_with_des_cbc_sha :	({ KE_dh_dss, CIPHER_des, HASH_sha1 }),
+   TLS_dh_dss_with_des_cbc_sha :        ({ KE_dh_dss, CIPHER_des, HASH_sha1 }),
+   SSL_dh_rsa_with_des_cbc_sha :	({ KE_dh_rsa, CIPHER_des, HASH_sha1 }),
+   TLS_dh_rsa_with_des_cbc_sha :        ({ KE_dh_rsa, CIPHER_des, HASH_sha1 }),
 
-   SSL_rsa_with_rc4_128_sha :		({ KE_rsa, CIPHER_rc4, HASH_sha }),
+   SSL_rsa_with_rc4_128_sha :		({ KE_rsa, CIPHER_rc4, HASH_sha1 }),
    SSL_rsa_with_rc4_128_md5 :		({ KE_rsa, CIPHER_rc4, HASH_md5 }),
-   TLS_dhe_dss_with_rc4_128_sha :	({ KE_dhe_dss, CIPHER_rc4, HASH_sha }),
+   TLS_dhe_dss_with_rc4_128_sha :	({ KE_dhe_dss, CIPHER_rc4, HASH_sha1 }),
 
    // These suites were used to test the TLS 1.0 key derivation
    // before TLS 1.0 was released.
-   SSL_rsa_fips_with_des_cbc_sha :	({ KE_rsa_fips, CIPHER_des, HASH_sha }),
-   SSL_rsa_fips_with_3des_ede_cbc_sha :	({ KE_rsa_fips, CIPHER_3des, HASH_sha }),
-   SSL_rsa_oldfips_with_des_cbc_sha :	({ KE_rsa_fips, CIPHER_des, HASH_sha }),
-   SSL_rsa_oldfips_with_3des_ede_cbc_sha :	({ KE_rsa_fips, CIPHER_3des, HASH_sha }),
+   SSL_rsa_fips_with_des_cbc_sha :	({ KE_rsa_fips, CIPHER_des, HASH_sha1 }),
+   SSL_rsa_fips_with_3des_ede_cbc_sha :	({ KE_rsa_fips, CIPHER_3des, HASH_sha1 }),
+   SSL_rsa_oldfips_with_des_cbc_sha :	({ KE_rsa_fips, CIPHER_des, HASH_sha1 }),
+   SSL_rsa_oldfips_with_3des_ede_cbc_sha :	({ KE_rsa_fips, CIPHER_3des, HASH_sha1 }),
 
    // Some anonymous diffie-hellman variants.
    SSL_dh_anon_export_with_rc4_40_md5:	({ KE_dh_anon, CIPHER_rc4_40, HASH_md5 }),
-   SSL_dh_anon_export_with_des40_cbc_sha: ({ KE_dh_anon, CIPHER_des40, HASH_sha }),
+   SSL_dh_anon_export_with_des40_cbc_sha: ({ KE_dh_anon, CIPHER_des40, HASH_sha1 }),
    SSL_dh_anon_with_rc4_128_md5:	({ KE_dh_anon, CIPHER_rc4, HASH_md5 }),
-   SSL_dh_anon_with_des_cbc_sha:	({ KE_dh_anon, CIPHER_des, HASH_sha }),
-   TLS_dh_anon_with_des_cbc_sha:        ({ KE_dh_anon, CIPHER_des, HASH_sha }),
-   SSL_dh_anon_with_3des_ede_cbc_sha:	({ KE_dh_anon, CIPHER_3des, HASH_sha }),
-   TLS_dh_anon_with_aes_128_cbc_sha:	({ KE_dh_anon, CIPHER_aes, HASH_sha }),
-   TLS_dh_anon_with_aes_256_cbc_sha:	({ KE_dh_anon, CIPHER_aes256, HASH_sha }),
+   SSL_dh_anon_with_des_cbc_sha:	({ KE_dh_anon, CIPHER_des, HASH_sha1 }),
+   TLS_dh_anon_with_des_cbc_sha:        ({ KE_dh_anon, CIPHER_des, HASH_sha1 }),
+   SSL_dh_anon_with_3des_ede_cbc_sha:	({ KE_dh_anon, CIPHER_3des, HASH_sha1 }),
+   TLS_dh_anon_with_aes_128_cbc_sha:	({ KE_dh_anon, CIPHER_aes, HASH_sha1 }),
+   TLS_dh_anon_with_aes_256_cbc_sha:	({ KE_dh_anon, CIPHER_aes256, HASH_sha1 }),
    TLS_dh_anon_with_aes_128_cbc_sha256: ({ KE_dh_anon, CIPHER_aes, HASH_sha256, MODE_cbc }),
    TLS_dh_anon_with_aes_256_cbc_sha256: ({ KE_dh_anon, CIPHER_aes256, HASH_sha256, MODE_cbc }),
 #if constant(Crypto.ECC.Curve)
-   TLS_ecdh_anon_with_null_sha:		({ KE_ecdh_anon, 0, HASH_sha }),
-   TLS_ecdh_anon_with_rc4_128_sha:	({ KE_ecdh_anon, CIPHER_rc4, HASH_sha }),
-   TLS_ecdh_anon_with_3des_ede_cbc_sha:	({ KE_ecdh_anon, CIPHER_3des, HASH_sha }),
-   TLS_ecdh_anon_with_aes_128_cbc_sha:	({ KE_ecdh_anon, CIPHER_aes, HASH_sha }),
-   TLS_ecdh_anon_with_aes_256_cbc_sha:	({ KE_ecdh_anon, CIPHER_aes256, HASH_sha }),
+   TLS_ecdh_anon_with_null_sha:		({ KE_ecdh_anon, 0, HASH_sha1 }),
+   TLS_ecdh_anon_with_rc4_128_sha:	({ KE_ecdh_anon, CIPHER_rc4, HASH_sha1 }),
+   TLS_ecdh_anon_with_3des_ede_cbc_sha:	({ KE_ecdh_anon, CIPHER_3des, HASH_sha1 }),
+   TLS_ecdh_anon_with_aes_128_cbc_sha:	({ KE_ecdh_anon, CIPHER_aes, HASH_sha1 }),
+   TLS_ecdh_anon_with_aes_256_cbc_sha:	({ KE_ecdh_anon, CIPHER_aes256, HASH_sha1 }),
 #endif /* Crypto.ECC.Curve */
 
    // Required by TLS 1.0 RFC 2246 9.
-   SSL_dhe_dss_with_3des_ede_cbc_sha :	({ KE_dhe_dss, CIPHER_3des, HASH_sha }),
+   SSL_dhe_dss_with_3des_ede_cbc_sha :	({ KE_dhe_dss, CIPHER_3des, HASH_sha1 }),
 
    // Required by TLS 1.1 RFC 4346 9.
-   SSL_rsa_with_3des_ede_cbc_sha :	({ KE_rsa, CIPHER_3des, HASH_sha }),
+   SSL_rsa_with_3des_ede_cbc_sha :	({ KE_rsa, CIPHER_3des, HASH_sha1 }),
 
    // Required by TLS 1.2 RFC 5246 9.
-   TLS_rsa_with_aes_128_cbc_sha :	({ KE_rsa, CIPHER_aes, HASH_sha }),
+   TLS_rsa_with_aes_128_cbc_sha :	({ KE_rsa, CIPHER_aes, HASH_sha1 }),
 
    SSL_rsa_with_3des_ede_cbc_md5 :	({ KE_rsa, CIPHER_3des, HASH_md5 }),
-   SSL_dhe_rsa_with_3des_ede_cbc_sha :	({ KE_dhe_rsa, CIPHER_3des, HASH_sha }),
-   SSL_dh_dss_with_3des_ede_cbc_sha :	({ KE_dh_dss, CIPHER_3des, HASH_sha }),
-   SSL_dh_rsa_with_3des_ede_cbc_sha :	({ KE_dh_rsa, CIPHER_3des, HASH_sha }),
+   SSL_dhe_rsa_with_3des_ede_cbc_sha :	({ KE_dhe_rsa, CIPHER_3des, HASH_sha1 }),
+   SSL_dh_dss_with_3des_ede_cbc_sha :	({ KE_dh_dss, CIPHER_3des, HASH_sha1 }),
+   SSL_dh_rsa_with_3des_ede_cbc_sha :	({ KE_dh_rsa, CIPHER_3des, HASH_sha1 }),
 
-   TLS_dhe_dss_with_aes_128_cbc_sha :	({ KE_dhe_dss, CIPHER_aes, HASH_sha }),
-   TLS_dhe_rsa_with_aes_128_cbc_sha :	({ KE_dhe_rsa, CIPHER_aes, HASH_sha }),
-   TLS_dh_dss_with_aes_128_cbc_sha :	({ KE_dh_dss, CIPHER_aes, HASH_sha }),
-   TLS_dh_rsa_with_aes_128_cbc_sha :	({ KE_dh_rsa, CIPHER_aes, HASH_sha }),
-   TLS_rsa_with_aes_256_cbc_sha :	({ KE_rsa, CIPHER_aes256, HASH_sha }),
-   TLS_dhe_dss_with_aes_256_cbc_sha :	({ KE_dhe_dss, CIPHER_aes256, HASH_sha }),
-   TLS_dhe_rsa_with_aes_256_cbc_sha :	({ KE_dhe_rsa, CIPHER_aes256, HASH_sha }),
-   TLS_dh_dss_with_aes_256_cbc_sha :	({ KE_dh_dss, CIPHER_aes256, HASH_sha }),
-   TLS_dh_rsa_with_aes_256_cbc_sha :	({ KE_dh_rsa, CIPHER_aes256, HASH_sha }),
+   TLS_dhe_dss_with_aes_128_cbc_sha :	({ KE_dhe_dss, CIPHER_aes, HASH_sha1 }),
+   TLS_dhe_rsa_with_aes_128_cbc_sha :	({ KE_dhe_rsa, CIPHER_aes, HASH_sha1 }),
+   TLS_dh_dss_with_aes_128_cbc_sha :	({ KE_dh_dss, CIPHER_aes, HASH_sha1 }),
+   TLS_dh_rsa_with_aes_128_cbc_sha :	({ KE_dh_rsa, CIPHER_aes, HASH_sha1 }),
+   TLS_rsa_with_aes_256_cbc_sha :	({ KE_rsa, CIPHER_aes256, HASH_sha1 }),
+   TLS_dhe_dss_with_aes_256_cbc_sha :	({ KE_dhe_dss, CIPHER_aes256, HASH_sha1 }),
+   TLS_dhe_rsa_with_aes_256_cbc_sha :	({ KE_dhe_rsa, CIPHER_aes256, HASH_sha1 }),
+   TLS_dh_dss_with_aes_256_cbc_sha :	({ KE_dh_dss, CIPHER_aes256, HASH_sha1 }),
+   TLS_dh_rsa_with_aes_256_cbc_sha :	({ KE_dh_rsa, CIPHER_aes256, HASH_sha1 }),
 
 #if constant(Crypto.ECC.Curve)
    // Suites from RFC 4492 (TLSECC)
-   TLS_ecdh_ecdsa_with_null_sha : ({ KE_ecdh_ecdsa, 0, HASH_sha }),
-   TLS_ecdh_ecdsa_with_rc4_128_sha : ({ KE_ecdh_ecdsa, CIPHER_rc4, HASH_sha }),
-   TLS_ecdh_ecdsa_with_3des_ede_cbc_sha : ({ KE_ecdh_ecdsa, CIPHER_3des, HASH_sha }),
-   TLS_ecdh_ecdsa_with_aes_128_cbc_sha : ({ KE_ecdh_ecdsa, CIPHER_aes, HASH_sha }),
-   TLS_ecdh_ecdsa_with_aes_256_cbc_sha : ({ KE_ecdh_ecdsa, CIPHER_aes256, HASH_sha }),
+   TLS_ecdh_ecdsa_with_null_sha : ({ KE_ecdh_ecdsa, 0, HASH_sha1 }),
+   TLS_ecdh_ecdsa_with_rc4_128_sha : ({ KE_ecdh_ecdsa, CIPHER_rc4, HASH_sha1 }),
+   TLS_ecdh_ecdsa_with_3des_ede_cbc_sha : ({ KE_ecdh_ecdsa, CIPHER_3des, HASH_sha1 }),
+   TLS_ecdh_ecdsa_with_aes_128_cbc_sha : ({ KE_ecdh_ecdsa, CIPHER_aes, HASH_sha1 }),
+   TLS_ecdh_ecdsa_with_aes_256_cbc_sha : ({ KE_ecdh_ecdsa, CIPHER_aes256, HASH_sha1 }),
 
-   TLS_ecdhe_ecdsa_with_null_sha :	({ KE_ecdhe_ecdsa, 0, HASH_sha }),
-   TLS_ecdhe_ecdsa_with_rc4_128_sha :	({ KE_ecdhe_ecdsa, CIPHER_rc4, HASH_sha }),
-   TLS_ecdhe_ecdsa_with_3des_ede_cbc_sha : ({ KE_ecdhe_ecdsa, CIPHER_3des, HASH_sha }),
-   TLS_ecdhe_ecdsa_with_aes_128_cbc_sha : ({ KE_ecdhe_ecdsa, CIPHER_aes, HASH_sha }),
-   TLS_ecdhe_ecdsa_with_aes_256_cbc_sha : ({ KE_ecdhe_ecdsa, CIPHER_aes256, HASH_sha }),
+   TLS_ecdhe_ecdsa_with_null_sha :	({ KE_ecdhe_ecdsa, 0, HASH_sha1 }),
+   TLS_ecdhe_ecdsa_with_rc4_128_sha :	({ KE_ecdhe_ecdsa, CIPHER_rc4, HASH_sha1 }),
+   TLS_ecdhe_ecdsa_with_3des_ede_cbc_sha : ({ KE_ecdhe_ecdsa, CIPHER_3des, HASH_sha1 }),
+   TLS_ecdhe_ecdsa_with_aes_128_cbc_sha : ({ KE_ecdhe_ecdsa, CIPHER_aes, HASH_sha1 }),
+   TLS_ecdhe_ecdsa_with_aes_256_cbc_sha : ({ KE_ecdhe_ecdsa, CIPHER_aes256, HASH_sha1 }),
 
-   TLS_ecdh_rsa_with_null_sha : ({ KE_ecdh_rsa, 0, HASH_sha }),
-   TLS_ecdh_rsa_with_rc4_128_sha : ({ KE_ecdh_rsa, CIPHER_rc4, HASH_sha }),
-   TLS_ecdh_rsa_with_3des_ede_cbc_sha : ({ KE_ecdh_rsa, CIPHER_3des, HASH_sha }),
-   TLS_ecdh_rsa_with_aes_128_cbc_sha : ({ KE_ecdh_rsa, CIPHER_aes, HASH_sha }),
-   TLS_ecdh_rsa_with_aes_256_cbc_sha : ({ KE_ecdh_rsa, CIPHER_aes256, HASH_sha }),
+   TLS_ecdh_rsa_with_null_sha : ({ KE_ecdh_rsa, 0, HASH_sha1 }),
+   TLS_ecdh_rsa_with_rc4_128_sha : ({ KE_ecdh_rsa, CIPHER_rc4, HASH_sha1 }),
+   TLS_ecdh_rsa_with_3des_ede_cbc_sha : ({ KE_ecdh_rsa, CIPHER_3des, HASH_sha1 }),
+   TLS_ecdh_rsa_with_aes_128_cbc_sha : ({ KE_ecdh_rsa, CIPHER_aes, HASH_sha1 }),
+   TLS_ecdh_rsa_with_aes_256_cbc_sha : ({ KE_ecdh_rsa, CIPHER_aes256, HASH_sha1 }),
 
-   TLS_ecdhe_rsa_with_null_sha :	({ KE_ecdhe_rsa, 0, HASH_sha }),
-   TLS_ecdhe_rsa_with_rc4_128_sha :	({ KE_ecdhe_rsa, CIPHER_rc4, HASH_sha }),
-   TLS_ecdhe_rsa_with_3des_ede_cbc_sha : ({ KE_ecdhe_rsa, CIPHER_3des, HASH_sha }),
-   TLS_ecdhe_rsa_with_aes_128_cbc_sha :	({ KE_ecdhe_rsa, CIPHER_aes, HASH_sha }),
-   TLS_ecdhe_rsa_with_aes_256_cbc_sha :	({ KE_ecdhe_rsa, CIPHER_aes256, HASH_sha }),
+   TLS_ecdhe_rsa_with_null_sha :	({ KE_ecdhe_rsa, 0, HASH_sha1 }),
+   TLS_ecdhe_rsa_with_rc4_128_sha :	({ KE_ecdhe_rsa, CIPHER_rc4, HASH_sha1 }),
+   TLS_ecdhe_rsa_with_3des_ede_cbc_sha : ({ KE_ecdhe_rsa, CIPHER_3des, HASH_sha1 }),
+   TLS_ecdhe_rsa_with_aes_128_cbc_sha :	({ KE_ecdhe_rsa, CIPHER_aes, HASH_sha1 }),
+   TLS_ecdhe_rsa_with_aes_256_cbc_sha :	({ KE_ecdhe_rsa, CIPHER_aes256, HASH_sha1 }),
 
    // Suites from RFC 7251
    // These are AEAD suites, and thus not valid for TLS prior to TLS 1.2.
@@ -929,16 +929,16 @@ TLS_ecdhe_ecdsa_with_aes_256_ccm_8 :	({ KE_ecdhe_ecdsa, CIPHER_aes256, HASH_sha2
 
 #if constant(Crypto.Camellia)
    // Camellia Suites:
-   TLS_rsa_with_camellia_128_cbc_sha:	({ KE_rsa, CIPHER_camellia128, HASH_sha }),
-   TLS_dhe_dss_with_camellia_128_cbc_sha: ({ KE_dhe_dss, CIPHER_camellia128, HASH_sha }),
-   TLS_dhe_rsa_with_camellia_128_cbc_sha: ({ KE_dhe_rsa, CIPHER_camellia128, HASH_sha }),
-   TLS_dh_dss_with_camellia_128_cbc_sha: ({ KE_dh_dss, CIPHER_camellia128, HASH_sha }),
-   TLS_dh_rsa_with_camellia_128_cbc_sha: ({ KE_dh_rsa, CIPHER_camellia128, HASH_sha }),
-   TLS_rsa_with_camellia_256_cbc_sha:	({ KE_rsa, CIPHER_camellia256, HASH_sha }),
-   TLS_dhe_dss_with_camellia_256_cbc_sha: ({ KE_dhe_dss, CIPHER_camellia256, HASH_sha }),
-   TLS_dhe_rsa_with_camellia_256_cbc_sha: ({ KE_dhe_rsa, CIPHER_camellia256, HASH_sha }),
-   TLS_dh_dss_with_camellia_256_cbc_sha: ({ KE_dh_dss, CIPHER_camellia256, HASH_sha }),
-   TLS_dh_rsa_with_camellia_256_cbc_sha: ({ KE_dh_rsa, CIPHER_camellia256, HASH_sha }),
+   TLS_rsa_with_camellia_128_cbc_sha:	({ KE_rsa, CIPHER_camellia128, HASH_sha1 }),
+   TLS_dhe_dss_with_camellia_128_cbc_sha: ({ KE_dhe_dss, CIPHER_camellia128, HASH_sha1 }),
+   TLS_dhe_rsa_with_camellia_128_cbc_sha: ({ KE_dhe_rsa, CIPHER_camellia128, HASH_sha1 }),
+   TLS_dh_dss_with_camellia_128_cbc_sha: ({ KE_dh_dss, CIPHER_camellia128, HASH_sha1 }),
+   TLS_dh_rsa_with_camellia_128_cbc_sha: ({ KE_dh_rsa, CIPHER_camellia128, HASH_sha1 }),
+   TLS_rsa_with_camellia_256_cbc_sha:	({ KE_rsa, CIPHER_camellia256, HASH_sha1 }),
+   TLS_dhe_dss_with_camellia_256_cbc_sha: ({ KE_dhe_dss, CIPHER_camellia256, HASH_sha1 }),
+   TLS_dhe_rsa_with_camellia_256_cbc_sha: ({ KE_dhe_rsa, CIPHER_camellia256, HASH_sha1 }),
+   TLS_dh_dss_with_camellia_256_cbc_sha: ({ KE_dh_dss, CIPHER_camellia256, HASH_sha1 }),
+   TLS_dh_rsa_with_camellia_256_cbc_sha: ({ KE_dh_rsa, CIPHER_camellia256, HASH_sha1 }),
 
    TLS_rsa_with_camellia_128_cbc_sha256:	({ KE_rsa, CIPHER_camellia128, HASH_sha256, MODE_cbc }),
    TLS_dhe_dss_with_camellia_128_cbc_sha256: ({ KE_dhe_dss, CIPHER_camellia128, HASH_sha256, MODE_cbc }),
@@ -952,8 +952,8 @@ TLS_ecdhe_ecdsa_with_aes_256_ccm_8 :	({ KE_ecdhe_ecdsa, CIPHER_aes256, HASH_sha2
    TLS_dh_rsa_with_camellia_256_cbc_sha256: ({ KE_dh_rsa, CIPHER_camellia256, HASH_sha256, MODE_cbc }),
 
    // Anonymous variants:
-   TLS_dh_anon_with_camellia_128_cbc_sha: ({ KE_dh_anon, CIPHER_camellia128, HASH_sha }),
-   TLS_dh_anon_with_camellia_256_cbc_sha: ({ KE_dh_anon, CIPHER_camellia256, HASH_sha }),
+   TLS_dh_anon_with_camellia_128_cbc_sha: ({ KE_dh_anon, CIPHER_camellia128, HASH_sha1 }),
+   TLS_dh_anon_with_camellia_256_cbc_sha: ({ KE_dh_anon, CIPHER_camellia256, HASH_sha1 }),
    TLS_dh_anon_with_camellia_128_cbc_sha256: ({ KE_dh_anon, CIPHER_camellia128, HASH_sha256, MODE_cbc }),
    TLS_dh_anon_with_camellia_256_cbc_sha256: ({ KE_dh_anon, CIPHER_camellia256, HASH_sha256, MODE_cbc }),
 
@@ -1057,11 +1057,11 @@ TLS_ecdhe_ecdsa_with_aes_256_ccm_8 :	({ KE_ecdhe_ecdsa, CIPHER_aes256, HASH_sha2
 #endif /* Crypto.ChaCha20.POLY1305 */
 
    // PSK without any KE
-   TLS_psk_with_null_sha : ({ KE_psk, 0, HASH_sha }),
-   TLS_psk_with_rc4_128_sha : ({ KE_psk, CIPHER_rc4, HASH_sha }),
-   TLS_psk_with_3des_ede_cbc_sha : ({ KE_psk, CIPHER_3des, HASH_sha }),
-   TLS_psk_with_aes_128_cbc_sha : ({ KE_psk, CIPHER_aes, HASH_sha }),
-   TLS_psk_with_aes_256_cbc_sha : ({ KE_psk, CIPHER_aes256, HASH_sha }),
+   TLS_psk_with_null_sha : ({ KE_psk, 0, HASH_sha1 }),
+   TLS_psk_with_rc4_128_sha : ({ KE_psk, CIPHER_rc4, HASH_sha1 }),
+   TLS_psk_with_3des_ede_cbc_sha : ({ KE_psk, CIPHER_3des, HASH_sha1 }),
+   TLS_psk_with_aes_128_cbc_sha : ({ KE_psk, CIPHER_aes, HASH_sha1 }),
+   TLS_psk_with_aes_256_cbc_sha : ({ KE_psk, CIPHER_aes256, HASH_sha1 }),
 #if constant(Crypto.AES.GCM)
    TLS_psk_with_aes_128_gcm_sha256 : ({ KE_psk, CIPHER_aes, HASH_sha256, MODE_gcm }),
 #if constant(Crypto.SHA384)
@@ -1092,11 +1092,11 @@ TLS_ecdhe_ecdsa_with_aes_256_ccm_8 :	({ KE_ecdhe_ecdsa, CIPHER_aes256, HASH_sha2
    TLS_psk_with_aes_256_ccm_8 : ({ KE_psk, CIPHER_aes256, HASH_sha256, MODE_ccm_8 }),
 
    // PSK with DHE
-   TLS_dhe_psk_with_null_sha : ({ KE_dhe_psk, 0, HASH_sha }),
-   TLS_dhe_psk_with_rc4_128_sha : ({ KE_dhe_psk, CIPHER_rc4, HASH_sha }),
-   TLS_dhe_psk_with_3des_ede_cbc_sha : ({ KE_dhe_psk, CIPHER_3des, HASH_sha }),
-   TLS_dhe_psk_with_aes_128_cbc_sha : ({ KE_dhe_psk, CIPHER_aes, HASH_sha }),
-   TLS_dhe_psk_with_aes_256_cbc_sha : ({ KE_dhe_psk, CIPHER_aes256, HASH_sha }),
+   TLS_dhe_psk_with_null_sha : ({ KE_dhe_psk, 0, HASH_sha1 }),
+   TLS_dhe_psk_with_rc4_128_sha : ({ KE_dhe_psk, CIPHER_rc4, HASH_sha1 }),
+   TLS_dhe_psk_with_3des_ede_cbc_sha : ({ KE_dhe_psk, CIPHER_3des, HASH_sha1 }),
+   TLS_dhe_psk_with_aes_128_cbc_sha : ({ KE_dhe_psk, CIPHER_aes, HASH_sha1 }),
+   TLS_dhe_psk_with_aes_256_cbc_sha : ({ KE_dhe_psk, CIPHER_aes256, HASH_sha1 }),
 #if constant(Crypto.AES.GCM)
    TLS_dhe_psk_with_aes_128_gcm_sha256 : ({ KE_dhe_psk, CIPHER_aes, HASH_sha256, MODE_gcm }),
 #if constant(Crypto.SHA384)
@@ -1129,11 +1129,11 @@ TLS_ecdhe_ecdsa_with_aes_256_ccm_8 :	({ KE_ecdhe_ecdsa, CIPHER_aes256, HASH_sha2
    TLS_psk_dhe_with_aes_256_ccm_8 : ({ KE_dhe_psk, CIPHER_aes256, HASH_sha256, MODE_ccm_8 }),
 
    // PSK with RSA
-   TLS_rsa_psk_with_null_sha : ({ KE_rsa_psk, 0, HASH_sha }),
-   TLS_rsa_psk_with_rc4_128_sha : ({ KE_rsa_psk, CIPHER_rc4, HASH_sha }),
-   TLS_rsa_psk_with_3des_ede_cbc_sha : ({ KE_rsa_psk, CIPHER_3des, HASH_sha }),
-   TLS_rsa_psk_with_aes_128_cbc_sha : ({ KE_rsa_psk, CIPHER_aes, HASH_sha }),
-   TLS_rsa_psk_with_aes_256_cbc_sha : ({ KE_rsa_psk, CIPHER_aes256, HASH_sha }),
+   TLS_rsa_psk_with_null_sha : ({ KE_rsa_psk, 0, HASH_sha1 }),
+   TLS_rsa_psk_with_rc4_128_sha : ({ KE_rsa_psk, CIPHER_rc4, HASH_sha1 }),
+   TLS_rsa_psk_with_3des_ede_cbc_sha : ({ KE_rsa_psk, CIPHER_3des, HASH_sha1 }),
+   TLS_rsa_psk_with_aes_128_cbc_sha : ({ KE_rsa_psk, CIPHER_aes, HASH_sha1 }),
+   TLS_rsa_psk_with_aes_256_cbc_sha : ({ KE_rsa_psk, CIPHER_aes256, HASH_sha1 }),
 #if constant(Crypto.AES.GCM)
    TLS_rsa_psk_with_aes_128_gcm_sha256 : ({ KE_rsa_psk, CIPHER_aes, HASH_sha256, MODE_gcm }),
 #if constant(Crypto.SHA384)
@@ -1163,15 +1163,15 @@ TLS_ecdhe_ecdsa_with_aes_256_ccm_8 :	({ KE_ecdhe_ecdsa, CIPHER_aes256, HASH_sha2
 
    // PSK with ECDHE
 #if constant(Crypto.ECC.Curve)
-   TLS_ecdhe_psk_with_null_sha : ({ KE_ecdhe_psk, 0, HASH_sha }),
+   TLS_ecdhe_psk_with_null_sha : ({ KE_ecdhe_psk, 0, HASH_sha1 }),
    TLS_ecdhe_psk_with_null_sha256 : ({ KE_ecdhe_psk, 0, HASH_sha256, MODE_cbc }),
 #if constant(Crypto.SHA384)
    TLS_ecdhe_psk_with_null_sha384 : ({ KE_ecdhe_psk, 0, HASH_sha384, MODE_cbc }),
 #endif /* Crypto.SHA384 */
-   TLS_ecdhe_psk_with_rc4_128_sha : ({ KE_ecdhe_psk, CIPHER_rc4, HASH_sha }),
-   TLS_ecdhe_psk_with_3des_ede_cbc_sha : ({ KE_ecdhe_psk, CIPHER_3des, HASH_sha }),
-   TLS_ecdhe_psk_with_aes_128_cbc_sha : ({ KE_ecdhe_psk, CIPHER_aes, HASH_sha }),
-   TLS_ecdhe_psk_with_aes_256_cbc_sha : ({ KE_ecdhe_psk, CIPHER_aes256, HASH_sha }),
+   TLS_ecdhe_psk_with_rc4_128_sha : ({ KE_ecdhe_psk, CIPHER_rc4, HASH_sha1 }),
+   TLS_ecdhe_psk_with_3des_ede_cbc_sha : ({ KE_ecdhe_psk, CIPHER_3des, HASH_sha1 }),
+   TLS_ecdhe_psk_with_aes_128_cbc_sha : ({ KE_ecdhe_psk, CIPHER_aes, HASH_sha1 }),
+   TLS_ecdhe_psk_with_aes_256_cbc_sha : ({ KE_ecdhe_psk, CIPHER_aes256, HASH_sha1 }),
    TLS_ecdhe_psk_with_aes_128_cbc_sha256 : ({ KE_ecdhe_psk, CIPHER_aes, HASH_sha256, MODE_cbc }),
 #if constant(Crypto.SHA384)
    TLS_ecdhe_psk_with_aes_256_cbc_sha384 : ({ KE_ecdhe_psk, CIPHER_aes256, HASH_sha384, MODE_cbc }),
@@ -1424,7 +1424,7 @@ protected mapping(string(8bit):array(HashAlgorithm|SignatureAlgorithm))
   Standards.PKCS.Identifiers.rsa_md5_id->get_der():
   ({ HASH_md5, SIGNATURE_rsa }),
   Standards.PKCS.Identifiers.rsa_sha1_id->get_der():
-  ({ HASH_sha, SIGNATURE_rsa }),
+  ({ HASH_sha1, SIGNATURE_rsa }),
   Standards.PKCS.Identifiers.rsa_sha256_id->get_der():
   ({ HASH_sha256, SIGNATURE_rsa }),
   Standards.PKCS.Identifiers.rsa_sha384_id->get_der():
@@ -1434,7 +1434,7 @@ protected mapping(string(8bit):array(HashAlgorithm|SignatureAlgorithm))
 
   // DSA
   Standards.PKCS.Identifiers.dsa_sha_id->get_der():
-  ({ HASH_sha, SIGNATURE_dsa }),
+  ({ HASH_sha1, SIGNATURE_dsa }),
   Standards.PKCS.Identifiers.dsa_sha224_id->get_der():
   ({ HASH_sha224, SIGNATURE_dsa }),
   Standards.PKCS.Identifiers.dsa_sha256_id->get_der():
@@ -1442,7 +1442,7 @@ protected mapping(string(8bit):array(HashAlgorithm|SignatureAlgorithm))
 
   // ECDSA
   Standards.PKCS.Identifiers.ecdsa_sha1_id->get_der():
-  ({ HASH_sha, SIGNATURE_ecdsa }),
+  ({ HASH_sha1, SIGNATURE_ecdsa }),
   Standards.PKCS.Identifiers.ecdsa_sha224_id->get_der():
   ({ HASH_sha224, SIGNATURE_ecdsa }),
   Standards.PKCS.Identifiers.ecdsa_sha256_id->get_der():

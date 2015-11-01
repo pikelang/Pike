@@ -188,7 +188,7 @@ test_tests([[
 	([
 	  "null":HASH_none,
 	  "md5":HASH_md5,
-	  "sha":HASH_sha,
+	  "sha":HASH_sha1,
 	  "sha256":HASH_sha256,
 	  "sha384":HASH_sha384,
 	  "sha512":HASH_sha512,

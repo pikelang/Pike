@@ -285,10 +285,10 @@ array(array(int)) signature_algorithms = ({
   ({ HASH_sha224, SIGNATURE_dsa }),
 #endif
 #if constant(Crypto.ECC.Curve)
-  ({ HASH_sha, SIGNATURE_ecdsa }),
+  ({ HASH_sha1, SIGNATURE_ecdsa }),
 #endif
-  ({ HASH_sha, SIGNATURE_dsa }),
-  ({ HASH_sha, SIGNATURE_rsa }),
+  ({ HASH_sha1, SIGNATURE_dsa }),
+  ({ HASH_sha1, SIGNATURE_rsa }),
 });
 
 //! Get the (filtered) set of locally supported signature algorithms.

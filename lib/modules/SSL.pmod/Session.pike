@@ -93,9 +93,9 @@ array(array(int)) signature_algorithms = ({
   // Note: this is a change from TLS 1.1 where there are no explicit
   // rules, but as a practical matter one can assume that the peer
   // supports MD5 and SHA-1.
-  ({ HASH_sha, SIGNATURE_rsa }),
-  ({ HASH_sha, SIGNATURE_dsa }),
-  ({ HASH_sha, SIGNATURE_ecdsa }),
+  ({ HASH_sha1, SIGNATURE_rsa }),
+  ({ HASH_sha1, SIGNATURE_dsa }),
+  ({ HASH_sha1, SIGNATURE_ecdsa }),
 });
 
 //! Supported finite field diffie-hellman groups in order of preference.
