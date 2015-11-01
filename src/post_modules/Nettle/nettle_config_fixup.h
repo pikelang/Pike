@@ -35,7 +35,7 @@
 #endif
 
 /* GCM */
-#ifndef HAVE_NETTLE_GCM_CRYPT
+#ifndef HAVE_NETTLE_GCM_ENCRYPT
 #undef HAVE_NETTLE_GCM_H
 #endif
 
