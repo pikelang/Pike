@@ -179,6 +179,7 @@ protected void close_connection()
 
 #if constant(SSL.Cipher)
 SSL.Context context;
+SSL.Session ssl_session;
 #endif
 
 void start_tls(int|void blocking, int|void async)
@@ -199,7 +200,7 @@ void start_tls(int|void blocking, int|void async)
     ssl->set_blocking();
   }
 
-  if (!ssl->connect(real_host)) {
+  if (!(ssl_session = ssl->connect(real_host, ssl_session))) {
     error("HTTPS connection failed.\n");
   }
 
