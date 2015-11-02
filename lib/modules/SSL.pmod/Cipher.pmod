@@ -250,8 +250,7 @@ class CipherSpec {
       int sign_id = input->read_int(1);
       string sign = input->read_hstring(2);
 
-      if( hash_id != signature_hash ||
-          sign_id != signature_alg )
+      if( sign_id != signature_alg )
       {
         SSL3_DEBUG_MSG("Signature pair <%d,%d> doesn't match "
                        "negotiated <%d,%d>\n", hash_id, sign_id,
