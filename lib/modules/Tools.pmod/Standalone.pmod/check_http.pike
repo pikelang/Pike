@@ -50,9 +50,10 @@ void display_usage()
   Stdio.stdout.write(replace(doc, "\xa0", " "));
 }
 
-void do_timeout()
+void do_timeout(int timeout)
 {
-  Stdio.stdout.write("CRITICAL: Timeout.\n");
+  Stdio.stdout.write("CRITICAL: Timeout. | timeout=%d\n",
+		     timeout);
   exit(RET_CRITICAL);
 }
 
@@ -161,6 +162,6 @@ int main(int argc, array(string) argv)
 
   Protocols.HTTP.do_async_method(method, url, UNDEFINED, UNDEFINED,
 				 q, post_data);
-  call_out(do_timeout, timeout);
+  call_out(do_timeout, timeout, timeout);
   return -1;
 }
