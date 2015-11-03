@@ -86,7 +86,7 @@ void request_ok(Protocols.HTTP.Query q)
 	   mkmapping(indices(session), values(session)));
 #endif
     data += sprintf(";ssl=%s;suite=%s",
-		    SSL.Constants.fmt_version(session->version),
+		    SSL.Constants.fmt_version(session->version) - " ",
 		    SSL.Constants.fmt_cipher_suite(session->cipher_suite));
     array(Standards.X509.TBSCertificate) certs =
       session->cert_data->certificates;
