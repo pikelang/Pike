@@ -52,7 +52,7 @@ void display_usage()
 
 void do_timeout()
 {
-  Stdio.stdout.write("CRITIAL: Timeout.\n");
+  Stdio.stdout.write("CRITICAL: Timeout.\n");
   exit(RET_CRITICAL);
 }
 
