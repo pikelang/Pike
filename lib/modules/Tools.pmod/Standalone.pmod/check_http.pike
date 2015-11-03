@@ -12,6 +12,7 @@ constant options = ({
   ({ "help", Getopt.NO_ARG, ({ "-h", "--help" }) }),
   ({ "version", Getopt.NO_ARG, ({ "-V", "--version" }) }),
   ({ "min_ssl", Getopt.HAS_ARG, ({ "-S", "--ssl" }) }),
+  ({ "min_ttl", Getopt.HAS_ARG, ({ "-C", "--certificate" }) }),
   ({ "method", Getopt.HAS_ARG, ({ "-j", "--method" }) }),
   ({ "post_data", Getopt.HAS_ARG, ({ "-P", "--post" }) }),
   ({ "timeout", Getopt.HAS_ARG, ({ "-t", "--timeout" }) }),
@@ -25,6 +26,8 @@ enum RetCode {
 }
 
 int start_time;
+
+int cert_min_ttl = -1;	// Disabled by default.
 
 void display_version()
 {
@@ -85,6 +88,32 @@ void request_ok(Protocols.HTTP.Query q)
     data += sprintf(";ssl=%s;suite=%s",
 		    SSL.Constants.fmt_version(session->version),
 		    SSL.Constants.fmt_cipher_suite(session->cipher_suite));
+    array(Standards.X509.TBSCertificate) certs =
+      session->cert_data->certificates;
+    if (sizeof(certs || ({}))) {
+      Standards.X509.TBSCertificate cert = certs[-1];
+      data += sprintf(";cn=%s;serial=%d;not_before=%d;not_after=%d",
+		      cert->subject_str(), cert->serial,
+		      cert->not_before, cert->not_after);
+      if (cert_min_ttl >= 0) {
+	int now = time();
+	if (cert->not_after < now) {
+	  Stdio.stdout.write("CRITICAL: Certificate expired. | %s\n",
+			     data);
+	  exit(RET_CRITICAL);
+	}
+	if (cert->not_after < now + cert_min_ttl) {
+	  Stdio.stdout.write("WARNING: Certificate expires soon. | %s\n",
+			     data);
+	  exit(RET_WARNING);
+	}
+	if (cert->not_before > now) {
+	  Stdio.stdout.write("WARNING: Certificate not valid yet. | %s\n",
+			     data);
+	  exit(RET_WARNING);
+	}
+      }
+    }
   }
 
   if (q->status > 399) {
@@ -139,6 +168,12 @@ int main(int argc, array(string) argv)
 	q->context->min_version = SSL.Constants.PROTOCOL_TLS_1_2;
 	break;
       }
+      break;
+    case "min_ttl":
+      // Convert from days to seconds.
+      cert_min_ttl = ((int)opt[1]) * 24 * 3600;
+      // Turn on verification of certificates.
+      q->context->verify_certificates = 1;
       break;
     case "method":
       method = upper_case(opt[1]);
