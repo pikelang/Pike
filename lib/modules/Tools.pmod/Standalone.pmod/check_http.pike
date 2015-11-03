@@ -24,6 +24,8 @@ enum RetCode {
   RET_UNKNOWN	= 3,
 }
 
+int start_time;
+
 void display_version()
 {
   Stdio.stdout.write("Check HTTP/Pike v%d.%d.%d\n",
@@ -50,22 +52,29 @@ void display_usage()
   Stdio.stdout.write(replace(doc, "\xa0", " "));
 }
 
+string fmt_runtime()
+{
+  int delta = gethrtime() - start_time;
+  return sprintf("runtime=%d.%06d", delta/1000000, delta%1000000);
+}
+
 void do_timeout(int timeout)
 {
-  Stdio.stdout.write("CRITICAL: Timeout. | timeout=%d\n",
-		     timeout);
+  Stdio.stdout.write("CRITICAL: Timeout. | timeout=%d;%s\n",
+		     timeout, fmt_runtime());
   exit(RET_CRITICAL);
 }
 
 void request_fail(Protocols.HTTP.Query q)
 {
-  Stdio.stdout.write("CRITICAL: Connection failed. | errno=%d\n", q->errno);
+  Stdio.stdout.write("CRITICAL: Connection failed. | errno=%d;%s\n",
+		     q->errno, fmt_runtime());
   exit(RET_CRITICAL);
 }
 
 void request_ok(Protocols.HTTP.Query q)
 {
-  string data = sprintf("code=%d", q->status);
+  string data = sprintf("code=%d;%s", q->status, fmt_runtime());
 
   SSL.Session session = q->ssl_session;
   if (session) {
@@ -159,6 +168,8 @@ int main(int argc, array(string) argv)
     // know that we will be using ssl/tls.
     q->context->trusted_issuers_cache = Standards.X509.load_authorities();
   }
+
+  start_time = gethrtime();
 
   Protocols.HTTP.do_async_method(method, url, UNDEFINED, UNDEFINED,
 				 q, post_data);
