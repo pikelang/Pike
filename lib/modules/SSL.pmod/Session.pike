@@ -652,8 +652,8 @@ array(State) new_server_states(.Connection con,
     //   report a fatal decompression failure error.
     read_state->compress = Gz.inflate()->inflate;
     write_state->compress =
-      class(function(string, int:string) _deflate) {
-	string deflate(string s) {
+      class(function(string(8bit), int:string(8bit)) _deflate) {
+	string(8bit) deflate(string(8bit) s) {
 	  // RFC 3749 2:
 	  //   All data that was submitted for compression MUST be
 	  //   included in the compressed output, with no data
