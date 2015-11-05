@@ -440,7 +440,7 @@ PMOD_EXPORT struct array *array_insert(struct array *v,struct svalue *s,INT32 in
 /*
  * lval += ({ @args });
  *
- * Stack is lvalue followed by arguments.
+ * Stack is lvalue followed by a zero placeholder followed by arguments.
  */
 void o_append_array(INT32 args)
 {
