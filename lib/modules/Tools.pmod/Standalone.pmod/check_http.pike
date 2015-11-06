@@ -1,7 +1,7 @@
 #charset utf-8
 
-//
-// Check http connectivity to a host.
+constant description = "Check HTTP/HTTPS connectivity to a host.";
+
 //
 // Return codes are compatible with Nagios 3.
 //
