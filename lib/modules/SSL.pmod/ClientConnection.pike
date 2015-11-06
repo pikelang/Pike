@@ -150,7 +150,7 @@ protected Packet client_hello(string(8bit)|void server_name,
   };
 
   ext (EXTENSION_encrypt_then_mac, 1) {
-    // draft-ietf-tls-encrypt-then-mac
+    // RFC 7366
     return Buffer();
   };
 

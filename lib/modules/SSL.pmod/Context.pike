@@ -141,7 +141,7 @@ Alert alert_factory(object con,
 //!     Allows negotiation of the maximum fragment size.
 //!   @value Constants.EXTENSION_encrypt_then_mac
 //!     Attempts to address attacks against block
-//!     ciphers. Experimental.
+//!     ciphers (@rfc{7366@}).
 //!   @value Constants.EXTENSION_application_layer_protocol_negotiation
 //!     Required to support more than one protocol on the same TLS
 //!     port.
