@@ -4117,7 +4117,7 @@ test_any([[
   class Y {
     inherit X;
     protected void create(int yyy) {
-      x = yyy + 2;
+      X::x = yyy + 2;
     }
   };
   return Y(5)->x;
