@@ -50,7 +50,7 @@ class State
   //!
   //! @returns
   //!   The digest.
-  string digest(int|void length);
+  string(8bit) digest(int|void length);
 
   //! Returns a human readable name for the algorithm.
   string name()

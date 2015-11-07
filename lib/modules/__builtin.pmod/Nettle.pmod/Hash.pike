@@ -24,7 +24,7 @@ State `()() { return State(); }
 //!
 //! @seealso
 //!   @[Stdio.File], @[State()->update()] and @[State()->digest()].
-string hash(string data)
+string(8bit) hash(string data)
 {
   return State(data)->digest();
 }
@@ -42,7 +42,7 @@ string hash(string data)
 //!   is hashed.
 //!
 //! @[Stdio.File], @[Stdio.Buffer], @[String.Buffer], @[System.Memory]
-variant string hash(Stdio.File|Stdio.Buffer|String.Buffer|System.Memory source,
+variant string(8bit) hash(Stdio.File|Stdio.Buffer|String.Buffer|System.Memory source,
                     int|void bytes)
 {
   function(int|void:string) f;
