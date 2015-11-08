@@ -1494,6 +1494,11 @@ TBSCertificate verify_ca_certificate(string|TBSCertificate tbs)
   return tbs;
 }
 
+protected mapping(string:mapping(string:array(Verifier)))
+  authorities_cache = ([]);
+protected mapping(string:int)
+  authorities_cache_expire = ([]);
+
 //! Convenience function for loading known root certificates.
 //!
 //! @param root_cert_dirs
@@ -1502,6 +1507,12 @@ TBSCertificate verify_ca_certificate(string|TBSCertificate tbs)
 //!   @expr{"/etc/ssl/certs"@}, @expr{"/etc/pki/tls/certs"@} and
 //!   @expr{"/System/Library/OpenSSL/certs"@}, which seem to be the most
 //!   common locations.
+//!
+//! @param cache
+//!   A flag to control if the answer should be given from an internal
+//!   cache or always scan the directories. If a cache is used, it
+//!   will refresh when any certificate expires (which typically is
+//!   measured in years) or when asked for in unchached mode.
 //!
 //! @returns
 //!   Returns a mapping from DER-encoded issuer to @[Verifier]s
@@ -1515,8 +1526,18 @@ TBSCertificate verify_ca_certificate(string|TBSCertificate tbs)
 //!
 //! @seealso
 //!   @[verify_certificate()], @[verify_certificate_chain()]
-mapping(string:array(Verifier)) load_authorities(string|array(string)|void root_cert_dirs)
+mapping(string:array(Verifier))
+  load_authorities(string|array(string)|void root_cert_dirs,
+                   int(0..1)|void cache)
 {
+  string key = "";
+  if(stringp(root_cert_dirs))
+    key = root_cert_dirs;
+  else if(arrayp(root_cert_dirs))
+    key = root_cert_dirs*":";
+  if( cache && authorities_cache_expire[key] > time() )
+    return authorities_cache[key];
+
   root_cert_dirs = root_cert_dirs || ({
     // These directories have with some minor modifications
     // been taken from the list at
@@ -1584,6 +1605,14 @@ mapping(string:array(Verifier)) load_authorities(string|array(string)|void root_
     root_cert_dirs = ({ root_cert_dirs });
   }
   mapping(string:array(Verifier)) res = ([]);
+  int expire;
+  void update_expire(TBSCertificate tbs)
+  {
+    if(!expire) expire=tbs->not_after;
+    expire = min(expire, tbs->not_after);
+    if(tbs->not_before > time(1))
+      expire = min(expire, tbs->not_before);
+  };
 
   foreach(root_cert_dirs, string dir) {
     string pem = Stdio.read_bytes(combine_path(dir, "ca-certificates.crt"));
@@ -1594,7 +1623,10 @@ mapping(string:array(Verifier)) load_authorities(string|array(string)|void root_
 	if (!tbs) continue;
         string subj = tbs->subject->get_der();
         if( !res[subj] || !has_value(res[subj], tbs->public_key ) )
-            res[subj] += ({ tbs->public_key });
+        {
+          update_expire(tbs);
+          res[subj] += ({ tbs->public_key });
+        }
       }
       continue;
     }
@@ -1613,8 +1645,17 @@ mapping(string:array(Verifier)) load_authorities(string|array(string)|void root_
       if (!tbs) continue;
       string subj = tbs->subject->get_der();
       if( !res[subj] || !has_value(res[subj], tbs->public_key ) )
+      {
+        update_expire(tbs);
         res[subj] += ({ tbs->public_key });
+      }
     }
+  }
+
+  if( authorities_cache_expire[key] || cache )
+  {
+    authorities_cache[key] = res;
+    authorities_cache_expire[key] = expire;
   }
   return res;
 }
