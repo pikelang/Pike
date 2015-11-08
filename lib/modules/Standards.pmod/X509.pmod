@@ -1673,8 +1673,8 @@ mapping verify_certificate_chain(array(string|.PKCS.Signature.Signed) cert_chain
 {
   mapping m = ([ ]);
 
-#define ERROR(X) do { \
-    DBG("Error " #X "\n"); \
+#define ERROR(X) do {                                     \
+    DBG("Error " #X "\n");                                \
     m->verified=0; m->error_code|=(X); m->error_cert=idx; \
     } while(0)
 #define FATAL(X) do { ERROR(X); return m; } while(0)
@@ -1691,13 +1691,13 @@ mapping verify_certificate_chain(array(string|.PKCS.Signature.Signed) cert_chain
     .PKCS.Signature.Signed cert;
     if( stringp(c) )
       cert = .PKCS.Signature.decode_signed(c);
-     TBSCertificate tbs = decode_certificate(c);
-     if(!tbs)
-       FATAL(CERT_INVALID);
+    TBSCertificate tbs = decode_certificate(c);
+    if(!tbs)
+      FATAL(CERT_INVALID);
 
-     int idx = len-idx-1;
-     chain_cert[idx] = cert;
-     chain_obj[idx] = tbs;
+    int idx = len-idx-1;
+    chain_cert[idx] = cert;
+    chain_obj[idx] = tbs;
   }
   m->certificates = chain_obj;
 
