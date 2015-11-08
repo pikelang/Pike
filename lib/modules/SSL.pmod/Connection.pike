@@ -277,6 +277,8 @@ private array(Standards.X509.TBSCertificate)
 
   // See if the issuer of the certificate is acceptable. This means
   // the issuer of the certificate must be one of the authorities.
+  // NOTE: This code is only relevant when acting as a server dealing
+  // with client certificates.
   if(sizeof(context->authorities_cache))
   {
     string r=Standards.X509.decode_certificate(certs[-1])->issuer
@@ -297,15 +299,14 @@ private array(Standards.X509.TBSCertificate)
     }
   }
 
-  // ok, so we have a certificate chain whose client certificate is
-  // issued by an authority known to us.
-
-  // next we must verify the chain to see if the chain is unbroken
-
-  mapping result =
-    Standards.X509.verify_certificate_chain(certs,
+  // Decode the chain, verify each certificate and verify that the
+  // chain is unbroken.
+  mapping result = ([]);
+  catch {
+    result = Standards.X509.verify_certificate_chain(certs,
                                             context->trusted_issuers_cache,
                                             context->require_trust);
+  };
 
   // This data isn't actually used internally.
   session->cert_data = result;
