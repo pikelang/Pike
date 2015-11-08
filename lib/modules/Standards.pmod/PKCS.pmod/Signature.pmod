@@ -146,8 +146,9 @@ Signed sign(Sequence tbs, Crypto.Sign sign, Crypto.Hash hash)
 Signed decode_signed(string|Sequence signed,
 		     mapping(int:program(Object))|void asn1_types)
 {
-  if (stringp(signed)) {
+  if (stringp(signed))
     signed = Standards.ASN1.Decode.secure_der_decode(signed, asn1_types);
-  }
-  return Signed(signed);
+  if (signed)
+    return Signed(signed);
+  return 0;
 }
