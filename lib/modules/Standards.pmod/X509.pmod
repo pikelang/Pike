@@ -1636,7 +1636,7 @@ mapping(string:array(Verifier)) load_authorities(string|array(string)|void root_
 //!
 //! @mapping
 //!   @member int "error_code"
-//!     Error describing type of verification failurew, if
+//!     Error describing type of verification failures, if
 //!     verification failed. May be one of the following, OR:ed
 //!     together: @[CERT_TOO_NEW], @[CERT_TOO_OLD],
 //!     @[CERT_ROOT_UNTRUSTED], @[CERT_BAD_SIGNATURE], @[CERT_INVALID]
@@ -1768,6 +1768,8 @@ mapping verify_certificate_chain(array(string|.PKCS.Signature.Signed) cert_chain
 
     else // otherwise, we make sure the chain is unbroken.
     {
+      // FIXME: We should use identifiers instead of issuer/subject.
+
       // is the issuer of this certificate the subject of the previous
       // (more rootward) certificate?
       if(tbs->issuer->get_der() != chain_obj[idx-1]->subject->get_der())
