@@ -305,13 +305,13 @@ private array(Standards.X509.TBSCertificate)
   mapping result =
     Standards.X509.verify_certificate_chain(certs,
                                             context->trusted_issuers_cache,
-					    context->require_trust);
+                                            context->require_trust);
+
+  // This data isn't actually used internally.
+  session->cert_data = result;
+
   if(result->verified)
-  {
-    // This data isn't actually used internally.
-    session->cert_data = result;
     return [array(Standards.X509.TBSCertificate)]result->certificates;
-  }
 
   return 0;
 }
