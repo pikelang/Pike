@@ -29,16 +29,23 @@ int start_time;
 
 int cert_min_ttl = -1;	// Disabled by default.
 
-void display_version()
+void exit(RetCode err, string msg, mixed ... args)
 {
-  Stdio.stdout.write("Check HTTP/Pike v%d.%d.%d\n",
-		     __REAL_MAJOR__, __REAL_MINOR__, __BUILD__);
+  string prefix = ([ RET_WARNING : "WARNING: ",
+                     RET_CRITICAL : "CRITICAL: " ])[err] || "";
+  msg = prefix+msg;
+  Stdio.stdout.write(msg, @args);
+  predef::exit(err);
 }
 
-void display_usage()
+string version()
 {
-  display_version();
-  Stdio.stdout.write("\nUsage:\n");
+  return sprintf("Check HTTP/Pike v%d.%d.%d\n",
+                 __REAL_MAJOR__, __REAL_MINOR__, __BUILD__);
+}
+
+string usage()
+{
   string prefix = "  pike -x check_http";
   string doc = "";
   foreach(options, array(string|int|array(string)) opt) {
@@ -49,10 +56,11 @@ void display_usage()
     doc += "\xa0]";
   }
   doc += " <url>";
-  doc = sprintf("%#*s%-=*s\n",
-		sizeof(prefix), prefix,
-		70 - sizeof(prefix), doc)[1..];
-  Stdio.stdout.write(replace(doc, "\xa0", " "));
+  doc = version() + "\nUsage:\n" +
+    sprintf("%#*s%-=*s\n",
+            sizeof(prefix), prefix,
+            70 - sizeof(prefix), doc)[1..];
+  return replace(doc, "\xa0", " ");
 }
 
 string fmt_runtime()
@@ -63,16 +71,13 @@ string fmt_runtime()
 
 void do_timeout(int timeout)
 {
-  Stdio.stdout.write("CRITICAL: Timeout. | timeout=%d;%s\n",
-		     timeout, fmt_runtime());
-  exit(RET_CRITICAL);
+  exit(RET_CRITICAL, "Timeout. | timeout=%d;%s\n", timeout, fmt_runtime());
 }
 
 void request_fail(Protocols.HTTP.Query q)
 {
-  Stdio.stdout.write("CRITICAL: Connection failed. | errno=%d;%s\n",
-		     q->errno, fmt_runtime());
-  exit(RET_CRITICAL);
+  exit(RET_CRITICAL, "Connection failed. | errno=%d;%s\n",
+       q->errno, fmt_runtime());
 }
 
 void request_ok(Protocols.HTTP.Query q)
@@ -90,6 +95,7 @@ void request_ok(Protocols.HTTP.Query q)
 		    SSL.Constants.fmt_cipher_suite(session->cipher_suite));
     array(Standards.X509.TBSCertificate) certs =
       session->cert_data->certificates;
+
     if (sizeof(certs || ({}))) {
       Standards.X509.TBSCertificate cert = certs[-1];
       data += sprintf(";cn=%s;serial=%d;not_before=%d;not_after=%d",
@@ -97,37 +103,27 @@ void request_ok(Protocols.HTTP.Query q)
 		      cert->not_before, cert->not_after);
       if (cert_min_ttl >= 0) {
 	int now = time();
-	if (cert->not_after < now) {
-	  Stdio.stdout.write("CRITICAL: Certificate expired. | %s\n",
-			     data);
-	  exit(RET_CRITICAL);
-	}
-	if (cert->not_after < now + cert_min_ttl) {
-	  Stdio.stdout.write("WARNING: Certificate expires soon. | %s\n",
-			     data);
-	  exit(RET_WARNING);
-	}
-	if (cert->not_before > now) {
-	  Stdio.stdout.write("WARNING: Certificate not valid yet. | %s\n",
-			     data);
-	  exit(RET_WARNING);
-	}
+        if (cert->not_after < now)
+          exit(RET_CRITICAL, "Certificate expired. | %s\n", data);
+
+        if (cert->not_after < now + cert_min_ttl)
+          exit(RET_WARNING, "Certificate expires soon. | %s\n", data);
+
+        if (cert->not_before > now)
+          exit(RET_CRITICAL, "Certificate not valid yet. | %s\n", data);
       }
     }
   }
 
-  if (q->status > 399) {
-    Stdio.stdout.write("FAIL: Bad status code: %s(%d). | %s\n",
-		       q->status_desc, q->status, data);
-    exit(RET_CRITICAL);
-  }
-  if (q->status > 299) {
-    Stdio.stdout.write("WARNING: Bad status code: %s(%d). | %s\n",
-		       q->status_desc, q->status, data);
-    exit(RET_WARNING);
-  }
-  Stdio.stdout.write("OK: Success. | %s\n", data);
-  exit(RET_OK);
+  if (q->status > 399)
+    exit(RET_CRITICAL, "Bad status code: %s(%d). | %s\n",
+         q->status_desc, q->status, data);
+
+  if (q->status > 299)
+    exit(RET_WARNING, "Bad status code: %s(%d). | %s\n",
+         q->status_desc, q->status, data);
+
+  exit(RET_OK, "OK: Success. | %s\n", data);
 }
 
 int main(int argc, array(string) argv)
@@ -143,11 +139,9 @@ int main(int argc, array(string) argv)
   foreach(Getopt.find_all_options(argv, options, 1), array(string) opt) {
     switch(opt[0]) {
     case "help":
-      display_usage();
-      exit(0);
+      exit(RET_OK, usage());
     case "version":
-      display_version();
-      exit(0);
+      exit(RET_OK, version());
     case "min_ssl":
       url->scheme = "https";
       switch(lower_case(opt[1])) {
@@ -181,25 +175,22 @@ int main(int argc, array(string) argv)
       break;
     case "timeout":
       timeout = (int)opt[1];
-      if (timeout <= 0) {
-	werror("Invalid timeout.\n");
-	exit(RET_UNKNOWN);
-      }
+      if (timeout <= 0)
+        exit(RET_UNKNOWN, "Invalid timeout.\n");
       break;
     }
   }
   argv = Getopt.get_args(argv, 1);
-  if (sizeof(argv) != 2) {
-    Stdio.stdout.write("Invalid arguments.\n\n");
-    display_usage();
-    exit(RET_UNKNOWN);
-  }
+  if (sizeof(argv) != 2)
+    exit(RET_UNKNOWN, "Invalid arguments.\n\n"+usage());
+
   url = Standards.URI(argv[1], url);
 
   if (url->scheme == "https") {
     // Delay loading of the certificates until we
     // know that we will be using ssl/tls.
     q->context->trusted_issuers_cache = Standards.X509.load_authorities();
+    q->context->auth_level = SSL.Constants.AUTHLEVEL_require;
   }
 
   start_time = gethrtime();
