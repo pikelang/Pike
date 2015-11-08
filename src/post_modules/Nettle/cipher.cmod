@@ -651,8 +651,6 @@ PIKECLASS BufferedCipher
 	THIS->backlog_len = 0;
 
 	add_ref(THIS->object = o);
-
-	pop_n_elems(2);
       }
 
       /*! @decl string(0..255) name()
@@ -1255,8 +1253,6 @@ PIKECLASS BlockCipher
 	} else {
 	  THIS->crypt_state = NULL;
 	}
-
-	pop_n_elems(2);
       }
 
       /*! @decl string(0..255) name()
@@ -1779,8 +1775,6 @@ PIKECLASS BlockCipher
 	THIS->mode = 0;
 
 	add_ref(THIS->object = o);
-
-	pop_n_elems(2);
       }
 
       /*! @decl string(0..255) name()
@@ -2259,8 +2253,6 @@ PIKECLASS BlockCipher
 	THIS->block_size = block_size;
 
 	add_ref(THIS->object = o);
-
-	pop_n_elems(2);
       }
 
       /*! @decl string(0..255) name()
@@ -2654,8 +2646,6 @@ PIKECLASS BlockCipher
 	THIS->block_size = block_size;
 
 	add_ref(THIS->object = o);
-
-	pop_n_elems(2);
       }
 
       /*! @decl string(0..255) name()
@@ -3722,8 +3712,6 @@ PIKECLASS BlockCipher16
 	  THIS->crypt_state = NULL;
 	}
 
-	pop_n_elems(2);
-
 	THIS->mode = 0;
       }
 
@@ -4194,8 +4182,6 @@ PIKECLASS BlockCipher16
 	  THIS->crypt_state = NULL;
 	}
 
-	pop_n_elems(2);
-
 	THIS->mode = -1;
       }
 
@@ -4384,8 +4370,6 @@ PIKECLASS BlockCipher16
 
 	if (data->len & (GCM_BLOCK_SIZE - 1))
 	  THIS->dmode |= NO_ADATA;
-
-	pop_n_elems(args);
       }
 
       /*! @decl string(0..255) crypt(string(0..255) data)

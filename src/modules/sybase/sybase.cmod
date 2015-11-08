@@ -539,9 +539,7 @@ PIKEFUN void connect(string|void hostname_, string|void database_,
     Pike_error(err);
   }
 
-  pop_n_elems(args);
   sybdebug((stderr,"sybase::connect exiting\n"));
-
 }
 
 /* create (host,database,username,password,port|options) */
@@ -605,7 +603,6 @@ PIKEFUN void create(string|void host_, string|void db_,
     f_connect(args);
 
   sybdebug((stderr,"sybase::create exiting\n"));
-  /* the args are popped in f_connect */
 }
 
 /* TODO: should I cancel a pending query instead of throwing errors?

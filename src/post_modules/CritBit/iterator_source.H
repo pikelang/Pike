@@ -211,9 +211,7 @@
 		}
 		THIS->lastnode = t;
 	    }
-
-	    pop_n_elems(args);
-	}
+        }
 
 	PIKEFUN object _get_iterator() {
 	    ref_push_object(Pike_fp->current_object);

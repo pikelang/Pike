@@ -76,7 +76,6 @@ PIKECLASS Encoder {
     } else {
       Pike_error ("Initializing dictionary failed.\n");
     }
-    pop_n_elems (args);
   }
 
   PIKEFUN string encode (string data)
@@ -175,7 +174,6 @@ PIKECLASS Decoder {
     THIS->vcdecoder = vcdiff_init_decoder (THIS->dict_str, THIS->dict_len);
 
     THIS->decoder_state = 2;
-    pop_n_elems (args);
   }
 
   PIKEFUN string decode (string data)

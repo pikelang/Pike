@@ -293,7 +293,6 @@ PIKEFUN int(0..) assembler_debug(int(0..) l)
 PIKEFUN void dump_program_tables(program p, int(0..)|void indent)
 {
   dump_program_tables(p, indent?indent->u.integer:0);
-  pop_n_elems(args);
 }
 
 /*! @decl mixed locate_references(string|array|mapping| @
@@ -347,7 +346,6 @@ PIKEFUN mixed describe(mixed x)
 PIKEFUN void gc_set_watch(array|multiset|mapping|object|function|program|string x)
 {
   gc_watch(&Pike_sp[-1]);
-  pop_stack();
 }
 
 /*! @decl void dump_backlog()
@@ -442,8 +440,6 @@ PIKEFUN void disassemble(function fun)
       fprintf(stderr, "Prototype.\n");
     }
   }
-  pop_n_elems(args);
-  push_int(0);
 }
 
 #endif /* PIKE_DEBUG */

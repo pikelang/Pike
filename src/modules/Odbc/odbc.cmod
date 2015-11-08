@@ -404,7 +404,6 @@ PIKEFUN void create(string|void server, string|void database,
   PIKE_ODBC->flags |= PIKE_ODBC_CONNECTED;
   if(odbc_driver_is_old_freetds(hdbc))
     PIKE_ODBC->flags |= PIKE_ODBC_OLD_TDS_KLUDGE;
-  pop_n_elems(args);
 }
 
 PIKEFUN void create_dsn(string connectstring)
@@ -445,13 +444,11 @@ PIKEFUN void create_dsn(string connectstring)
       SQL_DRIVER_NOPROMPT),
 		   NULL, NULL);
   PIKE_ODBC->flags |= PIKE_ODBC_CONNECTED;
-  pop_n_elems(args);
 }
 
 
 PIKEFUN int affected_rows()
 {
-  pop_n_elems(args);
   push_int64(PIKE_ODBC->affected_rows);
 }
 

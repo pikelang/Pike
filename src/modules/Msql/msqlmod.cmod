@@ -193,8 +193,6 @@ PIKEFUN void shutdown()
 	 through the source to find how to report errors.*/
 {
 	int status=0,socket=THIS->socket;
-	check_all_args("Msql->shutdown",args,0);
-	pop_n_elems(args);
 
 	if (!THIS->connected)
 		Pike_error ("Not connected to any server.\n");
@@ -231,9 +229,7 @@ PIKEFUN void reload_acl()
 /* Undocumented mSQL function. */
 {
 	int socket,status=0;
-	check_all_args("Msql->reload_acl",args,0);
-	pop_n_elems(args);
-	if (!THIS->connected)
+        if (!THIS->connected)
 		Pike_error ("Not connected to any server.\n");
 
 	socket=THIS->socket;
@@ -353,7 +349,6 @@ PIKEFUN void create(void|string dbserver, void|string dbname,
 	THIS->connected=1;
 	if (arg2)
 	  do_select_db(arg2->str);
-	pop_n_elems(args);
 }
 
 /*! @decl array(string) list_dbs(void|string wild)
@@ -489,7 +484,6 @@ PIKEFUN void select_db(string dbname)
 		Pike_error ("Not connected.\n");
 	arg=sp[-args].u.string;
 	do_select_db(arg->str);
-	pop_n_elems(args);
 }
 
 /*! @decl array(mapping(string:mixed)) query (string sqlquery)
@@ -753,7 +747,6 @@ PIKEFUN void create_db(string dbname)
 		report_error();
 		Pike_error ("Could not create database.\n");
 	}
-	pop_n_elems(args);
 }
 
 /*! @decl void drop_db(string dbname)
@@ -786,8 +779,6 @@ PIKEFUN void drop_db(string dbname)
 		report_error();
 		Pike_error ("Could not drop database.\n");
 	}
-	pop_n_elems(args);
-	return;
 }
 
 /*! @decl mapping(string:mapping(string:mixed)) list_fields(string table, void|string glob)

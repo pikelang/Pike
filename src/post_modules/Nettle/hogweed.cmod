@@ -276,7 +276,6 @@ program_flags PROGRAM_CLEAR_STORAGE;
 			     NULL, NULL, p_bits, q_bits)) {
       Pike_error("Illegal parameter value.\n");
     }
-    pop_n_elems(args);
   }
 
   /*! @decl array(Gmp.mpz) generate_keypair(function(int(0..):string(8bit)) rnd)

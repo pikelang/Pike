@@ -70,42 +70,26 @@ PIKECLASS NotificationHandle
     add_ref(path);
     THIS->watch_subtree = watch_subtree;
     THIS->filter = filter;
+
     if(string_has_null(path))
-    {
-      pop_n_elems(args);
       Pike_error("NotificationHandle: path cannot contain null.\n");
-    }
-    if((1 << path->size_shift)>1)
-    {
-      pop_n_elems(args);
+    if(path->size_shift)
       Pike_error("NotificationHandle: path cannot be a wide string.\n");
-    }
     if(THIS->path->len > MAX_LEN)
-    {
-      pop_n_elems(args);
       Pike_error("NotificationHandle: length of path is too long.\n");
-    }
+
     h = FindFirstChangeNotification(path->str, (BOOL)THIS->watch_subtree, (DWORD)THIS->filter);
     if(h == INVALID_HANDLE_VALUE)
-    {
-      pop_n_elems(args);
       Pike_error("NotificationHandle: failed to create handle.\n");
-    }
     else
       THIS->handle = h;
-    pop_n_elems(args);
-    return;
   }
 
   /*! @decl int get_error()
    */
   PIKEFUN int get_error()
   {
-    DWORD e;
-
-    e = GetLastError();
-
-    push_int(e);
+    RETURN GetLastError();
   }
 
   PIKEFUN void read_change()
@@ -155,10 +139,7 @@ PIKECLASS EventPoller
 
     h = get_storage(handle, Wnotify_NotificationHandle_program);
     if(!h)
-    {
-      pop_stack();
       Pike_error("add_handle: invalid object type.\n");
-    }
 
     THIS->phandles = append_array(THIS->phandles, &Pike_sp[-args]);
     nh = OBJ2_WNOTIFY_NOTIFICATIONHANDLE(handle)->handle;
@@ -170,8 +151,6 @@ PIKECLASS EventPoller
     }
 
     THIS->handles[THIS->handles_used++] = nh;
-
-    pop_stack();
   }
 
   /*! @decl NotificationHandle|int poll(void|float timeout)
@@ -182,10 +161,7 @@ PIKECLASS EventPoller
     DWORD to;
 
     if(THIS->handles_used < 1)
-    {
-      pop_stack();
       Pike_error("poll: no paths to monitor.\n");
-    }
 
     if(!timeout || SAFE_IS_ZERO(timeout))
     {
@@ -213,7 +189,6 @@ PIKECLASS EventPoller
       OBJ2_WNOTIFY_NOTIFICATIONHANDLE(sv->u.object)->triggered = 1;
       push_svalue(&ITEM(THIS->phandles)[res]);
       FindNextChangeNotification(THIS->handles+res);
-
     }
     else if(res >= WAIT_ABANDONED_0 && res <= (WAIT_ABANDONED_0 + THIS->handles_used - 1))
     {
@@ -228,9 +203,7 @@ PIKECLASS EventPoller
 
   INIT
   {
-    struct array * a;
-    a = allocate_array(0);
-   THIS->phandles = a;
+    THIS->phandles = allocate_array(0);
   }
 
   EXIT

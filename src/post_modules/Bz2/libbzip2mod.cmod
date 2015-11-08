@@ -182,7 +182,6 @@ PIKECLASS Deflate
     default:
       Pike_error("Failed to initialize Bz2.Deflate object.\n");
     }
-    pop_n_elems(args);
   }
 
   /*! @decl void feed(string data)
@@ -196,8 +195,8 @@ PIKECLASS Deflate
    *! @[Bz2.Deflate->finish()]
    */
 
-  PIKEFUN void feed(string data){
-
+  PIKEFUN void feed(string data)
+  {
     int retval = 0;
     int i = 1;
     bz_stream *s;
@@ -235,8 +234,6 @@ PIKECLASS Deflate
       }
       i = 2 * i;
     }
-    pop_n_elems(args);
-
   }
 
   void do_deflate(struct pike_string *data, dynamic_buffer *retbuf,
@@ -508,8 +505,8 @@ PIKECLASS Inflate
 
   /*! @decl void create()
    */
-  PIKEFUN void create(){
-
+  PIKEFUN void create()
+  {
     int retval;
     bz_stream *s = &THIS->strm;
 
@@ -536,7 +533,6 @@ PIKECLASS Inflate
 
     /*reset the counted bytes*/
     THIS->total_out_previous_flush = 0;
-    pop_n_elems(args);
   }
 
   /*! @decl string inflate(string data)

@@ -514,7 +514,6 @@ PIKECLASS Sequence
       free_array(THIS->a);
       add_ref(THIS->a=arg->u.array);
     }
-    pop_n_elems(args);
   }
 
 
@@ -586,8 +585,7 @@ PIKECLASS Sequence
 
       if (sequence->prog != Sequence_program)
       {
-	SIMPLE_BAD_ARG_ERROR("create",1,"ADT.Sequence");
-
+        SIMPLE_BAD_ARG_ERROR("create",1,"ADT.Sequence");
       }
       else
       {

@@ -183,9 +183,6 @@ PIKECLASS Shuffle
       debug_malloc_touch(THIS->throttler);
       Pike_sp--;
     }
-    else
-      pop_stack();
-    push_int(0);
   }
 
   PIKEFUN int sent_data()
@@ -622,7 +619,6 @@ PIKECLASS Shuffle
 	}
       }
       change_fd_for_box(&THIS->box, Pike_sp[-1].u.integer);
-      pop_stack();
     }
 
     if( THIS->box.fd >= 0 )
@@ -641,11 +637,7 @@ PIKECLASS Shuffle
       push_int( 0 ); /* write */
       push_int( 0 ); /* close */
       safe_apply( THIS->file_obj, "set_nonblocking", 3 );
-      pop_stack();
     }
-
-    pop_n_elems( args );
-    push_int(0);
   }
 
   PIKEFUN void start()
@@ -733,11 +725,7 @@ PIKECLASS Shuffle
         rlength = length->u.integer;
 
       if( rlength == 0 )
-      {
-	pop_n_elems(args);
-	push_int(0);
-	return;
-      }
+        return;
     }
     debug_malloc_touch( source );
 
@@ -759,8 +747,6 @@ PIKECLASS Shuffle
     else {
       THIS->current_source = THIS->last_source = res;
     }
-    pop_n_elems(args);
-    push_int(0);
   }
 }
 
@@ -809,7 +795,6 @@ PIKECLASS Shuffler
     THIS->backend = b;
     debug_malloc_touch( THIS->backend );
     Pike_sp--;
-    push_int(0);
   }
 
   PIKEFUN void set_throttler( object|void t )
@@ -824,7 +809,6 @@ PIKECLASS Shuffler
       free_object( THIS->throttler );
     debug_malloc_pass( THIS->throttler = t );
     Pike_sp--;
-    push_int(0);
   }
 
   PIKEFUN void pause()
@@ -870,7 +854,6 @@ PIKECLASS Shuffler
     THIS->sources = Pike_sp[-1].u.array;
     debug_malloc_touch( THIS->sources );
     Pike_sp--;
-    push_int(0);
   }
 
   PIKEFUN object shuffle( object destination )

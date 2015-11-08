@@ -343,7 +343,6 @@ static void set_error (char * newerror)
 		conn=NULL;
 	}
 	THIS->dblink=conn;
-	pop_n_elems(args);
 }
 
 
@@ -378,10 +377,8 @@ PIKEFUN void select(string db_)
 	/* This is an optimization, but people may want to reset a connection
 	 * by re-selecting its database.
 	 */
-	if (!strcmp(db, PQdb(conn))) {
-		pop_n_elems(args);
-		return;
-	}
+        if (!strcmp(db, PQdb(conn)))
+                return;
 #endif
 	THREADS_ALLOW();
 	PQ_LOCK();
@@ -410,7 +407,6 @@ PIKEFUN void select(string db_)
 		conn=NULL;
 	}
 	THIS->dblink=conn;
-	pop_n_elems(args);
 }
 
 /*! @decl object(Sql.postgres_result) big_query (string sqlquery)
@@ -702,9 +698,7 @@ PIKEFUN void reset()
 	PGconn * conn;
 	PQ_FETCH();
 
-	pop_n_elems(args);
-
-	if (!THIS->dblink)
+        if (!THIS->dblink)
 		Pike_error ("Not connected.\n");
 	conn=THIS->dblink;
 	THREADS_ALLOW();
@@ -778,12 +772,10 @@ PIKEFUN void _set_notify_callback(function|void cb)
 			free_svalue(&THIS->notify_callback);
 			mark_free_svalue (&THIS->notify_callback);
 		}
-		pop_n_elems(args);
-		return;
+                return;
 	}
 	/*let's assume it's a function otherwise*/
 	assign_svalue(&THIS->notify_callback,Pike_sp-args);
-	pop_n_elems(args);
 }
 
 

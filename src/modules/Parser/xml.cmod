@@ -786,8 +786,6 @@ PIKECLASS Simple
     push_int(1); args++;
     assign_svalue(mapping_mapping_lookup(THIS->is_cdata,
 					 sp-args, sp+1-args, 1), sp+2-args);
-    pop_n_elems(args);
-    push_undefined();
   }
 
   PIKEFUN mapping(string:int(0..1)) get_tag_attribute_cdata(string tag)
@@ -807,8 +805,6 @@ PIKECLASS Simple
   {
     assign_svalue(mapping_mapping_lookup(THIS->attributes,
 					 sp-args, sp+1-args, 1), sp+2-args);
-    pop_n_elems(args);
-    push_undefined();
   }
 
   PIKEFUN mapping(string:string) get_default_attributes(string tag)
@@ -865,9 +861,7 @@ PIKECLASS Simple
       sp--;
     }else{
       mapping_insert(THIS->entities, sp-2, sp-1);
-      pop_n_elems(args);
     }
-    push_undefined();
   }
 
   /*! @decl void define_entity(string entity, string s, @
@@ -920,8 +914,6 @@ PIKECLASS Simple
       THIS->flags &= ~ALLOW_RXML_ENTITIES;
     else
       THIS->flags |= ALLOW_RXML_ENTITIES;
-    pop_n_elems(args);
-    push_int(0);
   }
 
   /*! @decl void compat_allow_errors(string version)
@@ -957,9 +949,6 @@ PIKECLASS Simple
     } else {
       Pike_error ("Got unknown version string.\n");
     }
-
-    pop_n_elems(args);
-    push_int(0);
   }
 
 
@@ -3181,9 +3170,6 @@ static int low_parse_xml(struct pike_string *end)
 				     MK_STRING("context"), context);
       }
       CHECK_INPUT(THIS->input);
-
-      pop_n_elems(args);
-      push_undefined();
     }
 
     /*! @decl void create(string s, string context, int flags, @

@@ -268,7 +268,6 @@ PIKECLASS FFT
 	THIS->r_rc_plan = rfftw_create_plan(n, FFTW_REAL_TO_COMPLEX, t);
 	THIS->r_cr_plan = rfftw_create_plan(n, FFTW_COMPLEX_TO_REAL, t);
       }
-    pop_n_elems(args);
   }
 
   INIT

@@ -473,7 +473,6 @@ PIKECLASS CircularList
     SET_SVAL(ind, T_INT, NUMBER_NUMBER, integer, THIS->pos);
     simple_set_index(THIS->a, &ind, value);
     THIS->size++;
-    pop_n_elems(args);
   }
 
   /*! @decl void allocate(int elements)
@@ -530,7 +529,6 @@ PIKECLASS CircularList
       THIS->a=a;
       THIS->pos=0;
     }
-    pop_n_elems(args);
   }
 
 /*! @decl array cast(string type)
@@ -795,7 +793,6 @@ PIKECLASS CircularList
     SET_SVAL(ind, T_INT, NUMBER_NUMBER, integer, THIS->pos);
     simple_set_index(THIS->a, &ind, value);
     THIS->size++;
-    pop_n_elems(args);
   }
 
 
@@ -816,8 +813,6 @@ PIKECLASS CircularList
       add_ref(THIS->a=arg->u.array);
       THIS->size=THIS->a->size;
     }
-
-    pop_n_elems(args);
   }
 
   /*! @decl CircularListIterator _get_iterator(void|int ind)
@@ -894,8 +889,7 @@ PIKECLASS CircularList
 
       if (list->prog != CircularList_program)
       {
-	SIMPLE_BAD_ARG_ERROR("create",1,"ADT.CircularList");
-
+        SIMPLE_BAD_ARG_ERROR("create",1,"ADT.CircularList");
       }
       else
       {
@@ -917,7 +911,6 @@ PIKECLASS CircularList
 	  THIS->pos = 0;
 	}
       }
-      pop_n_elems(args);
     }
 
     /*! @decl int index()

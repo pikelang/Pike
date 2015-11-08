@@ -347,7 +347,6 @@ PIKECLASS ResObj
     f_string_to_utf8(1);
     /* FIXME: Does the following work if THIS->db is already open? */
     ERR( sqlite3_open(path->str, &THIS->db), THIS->db );
-    pop_stack();
   }
 
   /*! @decl array|int query(string query, @

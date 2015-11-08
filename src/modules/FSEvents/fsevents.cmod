@@ -186,10 +186,6 @@ PIKEFUN void create(array paths, float latency, int|void sinceWhen, int|void fla
       cnt++;
     }
   }
-
-  pop_n_elems(args);
-
-  return;
 }
 
 /*! @decl void add_path(string path)
@@ -216,7 +212,6 @@ PIKEFUN void add_path(string path)
     size = CFArrayGetCount(THIS->_paths);
     CFArrayInsertValueAtIndex( (CFMutableArrayRef)THIS->_paths, size, str);
   }
-  pop_stack();
 }
 
 /*! @decl void set_callback(function callback)
@@ -229,7 +224,6 @@ PIKEFUN void add_path(string path)
 PIKEFUN void set_callback(function callback)
 {
   assign_svalue(&THIS->callback_func, callback);
-  pop_stack();
 }
 
 /*

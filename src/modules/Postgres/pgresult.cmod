@@ -191,8 +191,7 @@ PIKEFUN void create(object o)
 	if (!storage)
 		Pike_error ("I need a Postgres object or an heir of it.\n");
 
-	pop_n_elems(args);
-	if (!THIS->result) /*this ensures we _DO_ have a result*/
+        if (!THIS->result) /*this ensures we _DO_ have a result*/
 		Pike_error ("Bad result.\n");
 #ifdef PGRESDEBUG
 	pgdebug("Got %d tuples.\n",PQntuples(THIS->result));
@@ -357,9 +356,7 @@ PIKEFUN void seek(int howmuch)
 		Pike_error ("Cannot seek to negative result indexes!\n");
 	if (THIS->cursor+howmuch > PQntuples(THIS->result))
 		Pike_error ("Cannot seek past result's end!.\n");
-	pop_n_elems(args);
-	THIS->cursor += howmuch;
-	return;
+        THIS->cursor += howmuch;
 }
 
 

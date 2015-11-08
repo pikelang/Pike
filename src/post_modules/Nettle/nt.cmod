@@ -83,7 +83,6 @@ PIKECLASS CryptContext
 	break;
       }
     }
-    pop_n_elems(args);
   }
 
   /*! @decl string(0..255) read(int size, string(0..255)|void init)
