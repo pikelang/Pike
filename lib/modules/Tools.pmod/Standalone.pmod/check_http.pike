@@ -100,17 +100,27 @@ void request_ok(Protocols.HTTP.Query q)
       Standards.X509.TBSCertificate cert = certs[-1];
       data += sprintf(";cn=%s;serial=%d;not_before=%d;not_after=%d",
 		      cert->subject_str(), cert->serial,
-		      cert->not_before, cert->not_after);
+                      cert->not_before, cert->not_after);
+
+      int err = session->cert_data->error_code;
+      if( err & Standards.X509.CERT_TOO_NEW )
+        exit(RET_CRITICAL, "Certificate not valid yet. | %s\n", data);
+      if( err & Standards.X509.CERT_TOO_OLD )
+        exit(RET_CRITICAL, "Certificate expired. | %s\n", data);
+      if( err & Standards.X509.CERT_ROOT_UNTRUSTED )
+        exit(RET_CRITICAL, "Certificate chain root untrusted | %s\n", data);
+      if( err & Standards.X509.CERT_BAD_SIGNATURE )
+        exit(RET_CRITICAL, "Certificate signature not valid | %s\n", data);
+      if( err & Standards.X509.CERT_INVALID )
+        exit(RET_CRITICAL, "Certificate structurally wrong | %s\n", data);
+      if( err & Standards.X509.CERT_CHAIN_BROKEN )
+        exit(RET_CRITICAL, "Certificate chain broken | %s\n", data);
+
       if (cert_min_ttl >= 0) {
-	int now = time();
-        if (cert->not_after < now)
-          exit(RET_CRITICAL, "Certificate expired. | %s\n", data);
-
-        if (cert->not_after < now + cert_min_ttl)
-          exit(RET_WARNING, "Certificate expires soon. | %s\n", data);
-
-        if (cert->not_before > now)
-          exit(RET_CRITICAL, "Certificate not valid yet. | %s\n", data);
+        int now = time();
+        foreach(certs, cert)
+          if (cert->not_after < now + cert_min_ttl)
+            exit(RET_WARNING, "Certificate expires soon. | %s\n", data);
       }
     }
   }
