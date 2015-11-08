@@ -72,6 +72,8 @@ test_true( Standards.PKCS.PFX )
 test_true( Standards.PKCS.RSA )
 test_true( Standards.PKCS.Signature )
 
+test_false( Standards.PKCS.Signature.decode_signed("0\0z") )
+
 test_do( add_constant("PKCS") )
 
 END_MARKER
