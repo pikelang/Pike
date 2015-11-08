@@ -4323,9 +4323,8 @@ PIKEFUN int enable_core_foundation(int enable)
       exit_external_cfrl(THIS);
     exit_cf(THIS);
   }
-  pop_stack();
 
-  push_int(x);
+  RETURN x;
 }
 
 /*! @decl int query_core_foundation_enabled()
@@ -4339,10 +4338,7 @@ PIKEFUN int enable_core_foundation(int enable)
  */
 PIKEFUN int query_core_foundation_enabled()
 {
-  int x = THIS->go_cf;
-
-  push_int(x);
-  return;
+  RETURN THIS->go_cf;
 }
 
 /*! @decl int enable_external_runloop(int(0..1) enable)
@@ -4380,9 +4376,8 @@ PIKEFUN int enable_external_runloop(int enable)
     THIS->external_run = 0;
     exit_external_cfrl(THIS);
   }
-  pop_stack();
 
-  push_int(x);
+  RETURN x;
 }
 
 #endif /* BACKEND_USES_CFRUNLOOP */
