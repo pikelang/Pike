@@ -420,7 +420,7 @@ PIKECLASS TM
         }
     }
 
-    PIKEFUN void _sprintf( int flag, mapping options )
+    PIKEFUN string _sprintf( int flag, mapping options )
     {
         int post_sum = 1;
         switch( flag )
@@ -2090,7 +2090,7 @@ PIKEFUN int random(int i)
   if(i >> 31)
     RETURN my_rand64() % i;
 #endif
-  RETURN  my_rand() % i;
+  RETURN my_rand() % i;
 }
 
 /*! @decl float random(float max)
@@ -2436,9 +2436,7 @@ PIKECLASS backtrace_frame
    */
   PIKEFUN int(0..1) _is_type(string t)
   {
-    INT_TYPE res = (t == findstring("array"));
-    pop_n_elems(args);
-    push_int(res);
+    RETURN (t == findstring("array"));
   }
 
   static void fill_in_file_and_line()
@@ -3304,8 +3302,9 @@ PIKECLASS multi_string_replace
       RETURN res;
   }
 
-  /*! @decl void create(array(string)|mapping(string:string)|void from, @
-   *!                   array(string)|string|void to)
+  /*! @decl void create()
+   *! @decl void create(mapping(string:string))
+   *! @decl void create(array(string) from, array(string)|string to)
    */
   PIKEFUN void create(array(string)|mapping(string:string)|void from_arg,
 		      array(string)|string|void to_arg)
@@ -3321,31 +3320,19 @@ PIKECLASS multi_string_replace
     if (THIS->ctx.v)
       free_replace_many_context(&THIS->ctx);
 
-    if (!args) {
-      push_int(0);
+    switch(args)
+    {
+    case 0:
       return;
-    }
-    if (from_arg && TYPEOF(*from_arg) == T_MAPPING) {
-      if (to_arg) {
-	Pike_error("Bad number of arguments to create().\n");
-      }
+
+    case 1:
+      if (TYPEOF(*from_arg) != T_MAPPING)
+        Pike_error("Illegal arguments to create().\n");
       THIS->from = mapping_indices(from_arg->u.mapping);
       THIS->to = mapping_values(from_arg->u.mapping);
-      pop_n_elems(args);
-      args = 0;
-    } else {
-      /* FIXME: Why is from declared |void, when it isn't allowed
-       *        to be void?
-       *        /grubba 2004-09-02
-       *
-       * It probably has to do with the "if (!args)" above: It should
-       * be possible to create an empty instance. /mast
-       */
-      if (!from_arg || !to_arg) {
-	Pike_error("Bad number of arguments to create().\n");
-      }
-      pop_n_elems(args-2);
-      args = 2;
+      break;
+
+    case 2:
       if (TYPEOF(*from_arg) != T_ARRAY) {
 	SIMPLE_BAD_ARG_ERROR("replace", 1,
 			     "array(string)|mapping(string:string)");
@@ -3367,8 +3354,6 @@ PIKECLASS multi_string_replace
 
     if (!THIS->from->size) {
       /* Enter no-op mode. */
-      pop_n_elems(args);
-      push_int(0);
       return;
     }
 
@@ -3382,9 +3367,6 @@ PIKECLASS multi_string_replace
       SIMPLE_BAD_ARG_ERROR("replace", 2, "array(string)|string");
 
     compile_replace_many(&THIS->ctx, THIS->from, THIS->to, 1);
-
-    pop_n_elems(args);
-    push_int(0);
   }
 
   /*! @decl string `()(string str)
@@ -3421,11 +3403,8 @@ PIKECLASS multi_string_replace
   PIKEFUN void _decode(array(array(string)) encoded)
   {
     INT32 i;
-    for (i=0; i < encoded->size; i++) {
+    for (i=0; i < encoded->size; i++)
       push_svalue(encoded->item + i);
-      stack_swap();
-    }
-    pop_stack();
 
     f_multi_string_replace_create(i);
   }
@@ -3613,12 +3592,9 @@ PIKECLASS single_string_replace
     if (TYPEOF(*encoded_) == PIKE_T_ARRAY) {
       struct array *encoded = encoded_->u.array;
 
-      for (i=0; i < encoded->size; i++) {
+      for (i=0; i < encoded->size; i++)
 	push_svalue(encoded->item + i);
-	stack_swap();
-      }
     }
-    pop_stack();
 
     f_single_string_replace_create(i);
   }
@@ -4255,9 +4231,8 @@ PIKECLASS Setter
       Pike_error("Uninitialized Setter!\n");
     }
     object_low_set_index(THIS->o, THIS->f, Pike_sp-1);
-    pop_n_elems(args);
-    push_int(0);
   }
+
   PIKEFUN string _sprintf(int c, mapping|void opts)
     flags ID_PROTECTED;
   {
@@ -4375,18 +4350,14 @@ PIKECLASS Null
   PIKEFUN int __hash()
     flags ID_PROTECTED;
   {
-    pop_n_elems(args);
-    push_int(17);
+    RETURN 17;
   }
 
   PIKEFUN int `==(mixed other)
     flags ID_PROTECTED;
   {
-    if (TYPEOF(*other) != T_OBJECT) {
-      pop_stack();
-      push_int(0);
-      return;
-    }
+    if (TYPEOF(*other) != T_OBJECT)
+      RETURN 0;
 
     /* Look for the is_val_null constant directly in the program of
      * other, without going through its `[]. When this is called in a
@@ -4560,8 +4531,6 @@ PIKECLASS Serializable
 		tMix tStr tType(tMix), tVoid);
   {
     f_call_function(args);
-    pop_stack();
-    push_int(0);
   }
 
   /*! @decl protected void _serialize(object o, @
@@ -4609,8 +4578,6 @@ PIKECLASS Serializable
     }
     low_serialize(SUBTYPEOF(Pike_sp[-args]), serializer, 0,
 		  f_Serializable_cq__serialize_variable_fun_num);
-    pop_n_elems(args);
-    push_int(0);
   }
 
   static void *find_program_from_object_type_cb(struct pike_type *t)
@@ -4705,8 +4672,6 @@ PIKECLASS Serializable
       return;
     }
     f_call_function(args);
-    pop_stack();
-    push_int(0);
   }
 
   /*! @decl protected void _deserialize(object o, @
@@ -4756,8 +4721,6 @@ PIKECLASS Serializable
     }
     low_serialize(SUBTYPEOF(Pike_sp[-args]), deserializer, 1,
 		  f_Serializable_cq__deserialize_variable_fun_num);
-    pop_n_elems(args);
-    push_int(0);
   }
 }
 /*! @endclass
@@ -5343,7 +5306,6 @@ PIKECLASS List
       free_list_node(node = new_node);
       THIS->num_elems++;
     }
-    push_int(0);
   }
 
   /*! @decl void insert(mixed ... values)
@@ -5363,7 +5325,6 @@ PIKECLASS List
       free_list_node(node = new_node);
       THIS->num_elems++;
     }
-    push_int(0);
   }
 
   /*! @decl void flush()
@@ -5555,8 +5516,7 @@ PIKECLASS List
     PIKEFUN int(0..1) `!()
       flags ID_PROTECTED;
     {
-      pop_n_elems(args);
-      push_int(!THIS->cur->next || !THIS->cur->prev);
+      RETURN (!THIS->cur->next || !THIS->cur->prev);
     }
 
     PIKEFUN int(0..) index()
@@ -5635,14 +5595,10 @@ PIKECLASS List
 	free_list_node(THIS->cur);
 	add_ref(THIS->cur = next);
 	THIS->ind++;
-	if (next->next) {
-	  pop_n_elems(args);
-	  push_int(1);
-	  return;
-	}
+        if (next->next)
+          RETURN 1;
       }
-      pop_n_elems(args);
-      push_int(0);
+      RETURN 0;
     }
 
     /*! @decl int(0..1) prev()
@@ -5663,14 +5619,10 @@ PIKECLASS List
 	free_list_node(THIS->cur);
 	add_ref(THIS->cur = prev);
 	THIS->ind--;
-	if (prev->prev) {
-	  pop_n_elems(args);
-	  push_int(1);
-	  return;
-	}
+        if (prev->prev)
+          RETURN 1;
       }
-      pop_n_elems(args);
-      push_int(0);
+      RETURN 0;
     }
 
     /*! @decl Iterator `+=(int steps)
@@ -5717,8 +5669,6 @@ PIKECLASS List
       free_list_node(THIS->cur);
       THIS->cur = new_node;
       List__get_iterator_find_parent()->num_elems++;
-      pop_n_elems(args);
-      push_int(0);
     }
 
     /*! @decl void append(mixed val)
@@ -5739,8 +5689,6 @@ PIKECLASS List
       append_list_node(THIS->cur, new_node);
       free_list_node(new_node);
       List__get_iterator_find_parent()->num_elems++;
-      pop_n_elems(args);
-      push_int(0);
     }
 
     /*! @decl void delete()
@@ -5772,8 +5720,6 @@ PIKECLASS List
       }
       free_list_node(THIS->cur);
       THIS->cur = next;
-      pop_n_elems(args);
-      push_int(0);
     }
 
     /*! @decl void set(mixed val)
@@ -5789,8 +5735,6 @@ PIKECLASS List
 	Pike_error("Attempt to set a sentinel.\n");
       }
       assign_svalue(&THIS->cur->val, val);
-      pop_n_elems(args);
-      push_int(0);
     }
   }
   /*! @endclass
