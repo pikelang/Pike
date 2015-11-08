@@ -602,3 +602,188 @@ string(8bit) mgf1(string(8bit) seed, int(0..) bytes)
   }
   return t->read(bytes);
 }
+
+//! This is the signature digest algorithm used in RSASSA-PSS
+//! (@rfc{3447:9.1.1@}).
+//!
+//! @param message
+//!   Message to sign.
+//!
+//! @param bits
+//!   Number of bits in result.
+//!
+//! @param salt
+//!   Random string to salt the signature.
+//!   Defaults to the empty string.
+//!
+//! @param mgf
+//!   Mask generation function to use.
+//!   Defaults to @[mgf1()].
+//!
+//! @returns
+//!   Returns the signature digest on success and @expr{0@} (zero)
+//!   on failure (typically too few bits to represent the result).
+//!
+//! @seealso
+//!   @[emsa_pss_verify()], @[mgf1()].
+string(8bit) emsa_pss_encode(string(8bit) message, int(1..) bits,
+			     string(8bit)|void salt,
+			     function(string(8bit), int(0..):
+				      string(8bit))|void mgf)
+{
+  if (!mgf) mgf = mgf1;
+  if (!salt) salt = "";
+
+  // 1. If the length of M is greater than the input limitation for the
+  //    hash function (2^61 - 1 octets for SHA-1), output "message too
+  //    long" and stop.
+  /* N/A */
+
+  int emlen = (bits+7)/8;
+
+  // 3. If emLen < hLen + sLen + 2, output "encoding error" and stop.
+  if (emlen < sizeof(salt) + digest_size() + 2) return 0;
+
+  // 2. Let mHash = Hash(M), an octet string of length hLen.
+  string(8bit) mhash = hash(message);
+
+  // 4. Generate a random octet string salt of length sLen; if sLen = 0,
+  //    then salt is the empty string.
+  /* N/A - Passed as argument. */
+
+  // 5. Let
+  //
+  //    M' = (0x)00 00 00 00 00 00 00 00 || mHash || salt;
+  //    M' is an octet string of length 8 + hLen + sLen with eight initial
+  //    zero octets.
+  string(8bit) m = "\0\0\0\0\0\0\0\0" + mhash + salt;
+
+  // 6. Let H = Hash(M'), an octet string of length hLen.
+  string(8bit) h = hash(m);
+
+  // 7. Generate an octet string PS consisting of emLen - sLen - hLen - 2
+  //    zero octets. The length of PS may be 0.
+  string(8bit) ps = "\0" * (emlen - (sizeof(salt) + sizeof(h) + 2));
+
+  // 8. Let DB = PS || 0x01 || salt; DB is an octet string of length
+  //    emLen - hLen - 1.
+  string(8bit) db = ps + "\1" + salt;
+
+  // 9. Let dbMask = MGF(H, emLen - hLen - 1).
+  string(8bit) dbmask = mgf(h, [int(1..)](emlen - (sizeof(h) + 1)));
+
+  // 10. Let maskedDB = DB \xor dbMask.
+  string(8bit) maskeddb = [string(8bit)](db ^ dbmask);
+
+  // 11. Set the leftmost 8emLen - emBits bits of the leftmost octet in
+  //     maskedDB to zero.
+  if (bits & 0x07) {
+    int(0..255) mask = [int(0..255)]((1 << (bits & 0x07)) - 1);
+    maskeddb = sprintf("%c%s", maskeddb[0] & mask, maskeddb[1..]);
+  }
+
+  // 12. Let EM = maskedDB || H || 0xbc.
+  // 13. Output EM.
+  return maskeddb + h + "\xbc";
+}
+
+//! This is the algorithm used to verify in RSASSA-PSS (@rfc{3447:9.1.2@}).
+//!
+//! @param message
+//!   Message that was signed.
+//!
+//! @param sign
+//!   Signature digest to verify.
+//!
+//! @param bits
+//!   Number of significant bits in @[sign].
+//!
+//! @param saltlen
+//!   Length of the salt used.
+//!
+//! @param mgf
+//!   Mask generation function to use.
+//!   Defaults to @[mgf1()].
+//!
+//! @returns
+//!   Returns @expr{1@} on success and @expr{0@} (zero) on failure.
+//!
+//! @seealso
+//!   @[emsa_pss_verify()], @[mgf1()].
+int(0..1) emsa_pss_verify(string(8bit) message, string(8bit) sign,
+			  int(1..) bits, int(0..)|void saltlen,
+			  function(string(8bit), int(0..):
+				   string(8bit))|void mgf)
+{
+  if (!mgf) mgf = mgf1;
+
+  // 1. If the length of M is greater than the input limitation for
+  //    the hash function (2^61 - 1 octets for SHA-1), output
+  //    "inconsistent" and stop.
+  /* N/A */
+
+  // 3. If emLen < hLen + sLen + 2, output "inconsistent" and stop.
+  if (sizeof(sign) < digest_size() + saltlen + 2) {
+    return 0;
+  }
+
+  // 4. If the rightmost octet of EM does not have hexadecimal value
+  //    0xbc, output "inconsistent" and stop.
+  if (sign[-1] != 0xbc) {
+    return 0;
+  }
+
+  // 2. Let mHash = Hash(M), an octet string of length hLen.
+  string(8bit) mhash = hash(message);
+
+  // 5. Let maskedDB be the leftmost emLen - hLen - 1 octets of EM,
+  //    and let H be the next hLen octets.
+  string(8bit) maskeddb = sign[..sizeof(sign) - (sizeof(mhash)+2)];
+  string(8bit) h = sign[sizeof(sign) - (sizeof(mhash)+1)..sizeof(sign)-2];
+
+  // 6. If the leftmost 8emLen - emBits bits of the leftmost octet in
+  //    maskedDB are not all equal to zero, output "inconsistent" and stop.
+  if (bits & 0x07) {
+    int(0..255) mask = [int(0..255)]((1 << (bits & 0x07)) - 1);
+    if (maskeddb[0] & ~mask) {
+      return 0;
+    }
+  }
+
+  // 7. Let dbMask = MGF(H, emLen - hLen - 1).
+  string(8bit) dbmask = mgf(h, [int(1..)](sizeof(sign) - (sizeof(mhash)+1)));
+
+  // 8. Let DB = maskedDB \xor dbMask.
+  string(8bit) db = [string(8bit)](maskeddb ^ dbmask);
+
+  // 9. Set the leftmost 8emLen - emBits bits of the leftmost octet
+  //    in DB to zero.
+  if (bits & 0x07) {
+    int(0..255) mask = [int(0..255)]((1 << (bits & 0x07)) - 1);
+    db = sprintf("%c%s", db[0] & mask, db[1..]);
+  }
+
+  // 10. If the emLen - hLen - sLen - 2 leftmost octets of DB are
+  //     not zero or if the octet at position emLen - hLen - sLen - 1
+  //     (the leftmost position is "position 1") does not have
+  //     hexadecimal value 0x01, output "inconsistent" and stop.
+  string(8bit) ps = db[..sizeof(sign) -(sizeof(mhash) + saltlen + 3)];
+  if ((ps != "\0"*sizeof(ps)) || (db[sizeof(ps)] != 0x01)) {
+	   String.string2hex(ps), String.string2hex(db));
+    return 0;
+  }
+
+  // 11. Let salt be the last sLen octets of DB.
+  string(8bit) salt = db[sizeof(db) - saltlen..];
+
+  // 12. Let
+  //
+  //     M' = (0x)00 00 00 00 00 00 00 00 || mHash || salt ;
+  //     M' is an octet string of length 8 + hLen + sLen with eight
+  //     initial zero octets.
+  string(8bit) m = "\0\0\0\0\0\0\0\0" + mhash + salt;
+
+  // 13. Let H' = Hash(M'), an octet string of length hLen.
+  // 14. If H = H', output "consistent." Otherwise, output "inconsistent."
+  return h == hash(m);
+}
