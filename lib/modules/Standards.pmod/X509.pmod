@@ -1639,8 +1639,9 @@ mapping(string:array(Verifier)) load_authorities(string|array(string)|void root_
 //!     Error describing type of verification failures, if
 //!     verification failed. May be one of the following, OR:ed
 //!     together: @[CERT_TOO_NEW], @[CERT_TOO_OLD],
-//!     @[CERT_ROOT_UNTRUSTED], @[CERT_BAD_SIGNATURE], @[CERT_INVALID]
-//!     or @[CERT_CHAIN_BROKEN].
+//!     @[CERT_ROOT_UNTRUSTED], @[CERT_BAD_SIGNATURE],
+//!     @[CERT_INVALID], @[CERT_CHAIN_BROKEN], @[CERT_UNAUTHORIZED_CA]
+//!     or @[CERT_EXCEEDED_PATH_LENGTH].
 //!   @member int "error_cert"
 //!     Index number of the certificate that caused the verification failure.
 //!   @member int(0..1) "self_signed"
