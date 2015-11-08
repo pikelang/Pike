@@ -810,7 +810,7 @@ array(string(8bit)) authorities_cache = ({});
 
 //! Sets the list of trusted certificate issuers.
 //!
-//! @param a
+//! @param issuers
 //!
 //! An array of certificate chains whose root is self signed (ie a
 //! root issuer), and whose final certificate is an issuer that we
@@ -822,9 +822,9 @@ array(string(8bit)) authorities_cache = ({});
 //! If this array is left empty, and the context is set to verify
 //! certificates, a certificate chain must have a root that is self
 //! signed.
-void set_trusted_issuers(array(array(string))  i)
+void set_trusted_issuers(array(array(string)) issuers)
 {
-  trusted_issuers = i;
+  trusted_issuers = issuers;
   update_trusted_issuers();
 }
 
