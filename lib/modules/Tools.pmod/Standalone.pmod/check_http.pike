@@ -115,6 +115,19 @@ void request_ok(Protocols.HTTP.Query q)
         exit(RET_CRITICAL, "Certificate structurally wrong | %s\n", data);
       if( err & Standards.X509.CERT_CHAIN_BROKEN )
         exit(RET_CRITICAL, "Certificate chain broken | %s\n", data);
+      if( err & Standards.X509.CERT_UNAUTHORIZED_CA )
+        exit(RET_CRITICAL, "Invalid signer in certificate chain | %s\n", data);
+      if( err & Standards.X509.CERT_EXCEEDED_PATH_LENGTH )
+        exit(RET_CRITICAL, "Certificate chain too long | %s\n", data);
+      if( err & ~(Standards.X509.CERT_TOO_NEW &
+                  Standards.X509.CERT_TOO_OLD &
+                  Standards.X509.CERT_ROOT_UNTRUSTED &
+                  Standards.X509.CERT_BAD_SIGNATURE &
+                  Standards.X509.CERT_INVALID &
+                  Standards.X509.CERT_CHAIN_BROKEN &
+                  Standards.X509.CERT_UNAUTHORIZED_CA &
+                  Standards.X509.CERT_EXCEEDED_PATH_LENGTH) )
+        exit(RET_UNKNOWN, "Unknown certificate error | %s\n", data);
 
       if (cert_min_ttl >= 0) {
         int now = time();
