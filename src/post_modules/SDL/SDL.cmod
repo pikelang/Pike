@@ -156,13 +156,13 @@ PIKEFUN void init(int flags) {
   }
 }
 
-/*! @decl void|string get_error()
+/*! @decl string get_error()
  *!
  *! Get the last internal SDL error.
  *! @returns
  *!   The error string, or zero if there was no error.
  */
-PIKEFUN void|string get_error() {
+PIKEFUN string get_error() {
   const char *err = SDL_GetError();
   pop_n_elems(args);
   if(err != NULL) {
@@ -1782,7 +1782,7 @@ PIKEFUN int set_gamma(float red, float green, float blue) {
   RETURN SDL_SetGamma(red, green, blue);
 }
 
-/*! @decl void|object get_video_surface()
+/*! @decl object get_video_surface()
  *!
  *! Returns the current display surface.
  *!
@@ -1795,7 +1795,7 @@ PIKEFUN int set_gamma(float red, float green, float blue) {
  *! @seealso
  *!   @[SDL.set_video_mode()]
  */
-PIKEFUN void|object get_video_surface()
+PIKEFUN object get_video_surface()
 {
   SDL_Surface *screen = SDL_GetVideoSurface();
   if(screen != NULL) {
@@ -1809,14 +1809,14 @@ PIKEFUN void|object get_video_surface()
   push_int(0);
 }
 
-/*! @decl void|object get_video_info()
+/*! @decl object get_video_info()
  *!
  *! @returns
  *!  Returns an @[SDL.VideoInfo] object, which holds information about the video
  *!  hardware, or 0 if the video device has not yet been initialized (with a
  *!  call to @[SDL.init()]).
  */
-PIKEFUN void|object get_video_info()
+PIKEFUN object get_video_info()
 {
   const SDL_VideoInfo *vidinfo = SDL_GetVideoInfo();
   if(vidinfo != NULL) {
@@ -2039,7 +2039,7 @@ PIKEFUN int blit_surface(object src, object dst,
 			 OBJ2_SURFACE(dst)->_s, dstrect);
 }
 
-/*! @decl void|string video_driver_name()
+/*! @decl string video_driver_name()
  *!
  *! Obtains the name of the video driver.  This is a simple one-word identifier
  *! such as 'x11' or 'windib'.
@@ -2048,7 +2048,7 @@ PIKEFUN int blit_surface(object src, object dst,
  *!  The name of the video driver, or 0 if video has not yet been initialized
  *!  (with a call to @[SDL.init()]).
  */
-PIKEFUN void|string video_driver_name() {
+PIKEFUN string video_driver_name() {
   char tmp[256];
   tmp[0] = 0;
   SDL_VideoDriverName(tmp, 255);
