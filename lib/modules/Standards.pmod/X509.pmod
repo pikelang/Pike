@@ -1392,17 +1392,13 @@ string make_root_certificate(Crypto.Sign.State c, int ttl, mapping|array name,
 TBSCertificate decode_certificate(string|.PKCS.Signature.Signed cert)
 {
   if (stringp (cert))
+  {
     cert = .PKCS.Signature.decode_signed(cert, x509_types);
+    if(!cert)
+      return NULL("ASN.1 had trailing data.\n");
+  }
 
-  TBSCertificate tbs=TBSCertificate([object(.PKCS.Signature.Signed)]cert->tbs);
-
-  // FIXME: The re-encoding and algorithm checks are more appropriate
-  // in verify_certificate, but the full certificate doesn't reach
-  // there.
-  if (!tbs)
-    return NULL("Failed to generate TBSCertificate.\n");
-
-  return tbs;
+  return TBSCertificate([object(.PKCS.Signature.Signed)]cert->tbs);
 }
 
 //! Decodes a certificate, checks the signature. Returns the
