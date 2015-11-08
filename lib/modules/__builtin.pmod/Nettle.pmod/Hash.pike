@@ -769,7 +769,6 @@ int(0..1) emsa_pss_verify(string(8bit) message, string(8bit) sign,
   //     hexadecimal value 0x01, output "inconsistent" and stop.
   string(8bit) ps = db[..sizeof(sign) -(sizeof(mhash) + saltlen + 3)];
   if ((ps != "\0"*sizeof(ps)) || (db[sizeof(ps)] != 0x01)) {
-	   String.string2hex(ps), String.string2hex(db));
     return 0;
   }
 
