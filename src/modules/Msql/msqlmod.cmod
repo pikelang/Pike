@@ -106,7 +106,7 @@ PIKECLASS msql
 static char * decode_msql_type (int msql_type)
 {
 	switch (msql_type) {
-		case MSQL_INT_TYPE: return "int";
+                case MSQL_INT_TYPE: return "int";
 		case CHAR_TYPE: return "char";
 		case REAL_TYPE: return "real";
 		case IDENT_TYPE: return "ident";
@@ -813,7 +813,7 @@ PIKEFUN mapping(string:mapping(string:mixed)) list_fields(string table,
 		int flagsnum=0;
 		field=msqlFetchField(result);
 
-    push_static_text("name");
+                push_static_text("name");
 		push_text(field->name);
 		ref_push_string(literal_type_string);
 		push_static_text(decode_msql_type(field->type));
@@ -843,9 +843,8 @@ PIKEFUN mapping(string:mapping(string:mixed)) list_fields(string table,
 		f_aggregate_multiset(flagsnum);
 		f_aggregate_mapping(10);
 	}
-  f_aggregate(fields);
-
-	msqlFreeResult(result);
+        f_aggregate(fields);
+        msqlFreeResult(result);
 }
 
 #ifdef MSQL_VERSION_2
