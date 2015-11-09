@@ -585,6 +585,102 @@ dnl Same as above, but one digit to few.
 test_eq( RSA->rsa_unpad(Gmp.mpz(865312297808908525818041211045691652263021981338030239382613559009423092255830129031114825283158618114598683455296519802501297523645834139180728),2), 0 )
 test_do( add_constant("RSA") )
 
+// RSASSA-PSS
+// Modulo (n), Exponent (e), Private Key (d), Message, Salt, Hash, Signature
+define(test_pss, [[
+test_do( add_constant("RSA", Crypto.RSA()) )
+test_do( RSA->set_public_key(Gmp.mpz(H(#"$1" - " " - "\n" - "\r"), 256),
+			     Gmp.mpz(H(#"$2" - " " - "\n" - "\r"), 256)) )
+test_do( RSA->set_private_key(Gmp.mpz(H(#"$3" - " " - "\n" - "\r"), 256)) )
+test_do( add_constant("M", H(#"$4" - " " - "\n" - "\r")) )
+test_eq( RSA->pss_sign(M, $6, H(#"$5" - " " - "\n" - "\r")),
+	 H(#"$7" - " " - "\n" - "\r") )
+test_true( RSA->pss_verify(M, $6, H(#"$7" - " " - "\n" - "\r"),
+			   sizeof(H(#"$5" - " " - "\n" - "\r"))) )
+test_do( add_constant("M") )
+test_do( add_constant("RSA") )
+]])
+
+// Vectors from RSA Labs.
+// RSASSA-PSS Signature Example 1.1
+test_pss(
+a5 6e 4a 0e 70 10 17 58 9a 51 87 dc 7e a8 41 d1
+56 f2 ec 0e 36 ad 52 a4 4d fe b1 e6 1f 7a d9 91
+d8 c5 10 56 ff ed b1 62 b4 c0 f2 83 a1 2a 88 a3
+94 df f5 26 ab 72 91 cb b3 07 ce ab fc e0 b1 df
+d5 cd 95 08 09 6d 5b 2b 8b 6d f5 d6 71 ef 63 77
+c0 92 1c b2 3c 27 0a 70 e2 59 8e 6f f8 9d 19 f1
+05 ac c2 d3 f0 cb 35 f2 92 80 e1 38 6b 6f 64 c4
+ef 22 e1 e1 f2 0d 0c e8 cf fb 22 49 bd 9a 21 37,
+01 00 01,
+33 a5 04 2a 90 b2 7d 4f 54 51 ca 9b bb d0 b4 47
+71 a1 01 af 88 43 40 ae f9 88 5f 2a 4b be 92 e8
+94 a7 24 ac 3c 56 8c 8f 97 85 3a d0 7c 02 66 c8
+c6 a3 ca 09 29 f1 e8 f1 12 31 88 44 29 fc 4d 9a
+e5 5f ee 89 6a 10 ce 70 7c 3e d7 e7 34 e4 47 27
+a3 95 74 50 1a 53 26 83 10 9c 2a ba ca ba 28 3c
+31 b4 bd 2f 53 c3 ee 37 e3 52 ce e3 4f 9e 50 3b
+d8 0c 06 22 ad 79 c6 dc ee 88 35 47 c6 a3 b3 25,
+cd c8 7d a2 23 d7 86 df 3b 45 e0 bb bc 72 13 26
+d1 ee 2a f8 06 cc 31 54 75 cc 6f 0d 9c 66 e1 b6
+23 71 d4 5c e2 39 2e 1a c9 28 44 c3 10 10 2f 15
+6a 0d 8d 52 c1 f4 c4 0b a3 aa 65 09 57 86 cb 76
+97 57 a6 56 3b a9 58 fe d0 bc c9 84 e8 b5 17 a3
+d5 f5 15 b2 3b 8a 41 e7 4a a8 67 69 3f 90 df b0
+61 a6 e8 6d fa ae e6 44 72 c0 0e 5f 20 94 57 29
+cb eb e7 7f 06 ce 78 e0 8f 40 98 fb a4 1f 9d 61
+93 c0 31 7e 8b 60 d4 b6 08 4a cb 42 d2 9e 38 08
+a3 bc 37 2d 85 e3 31 17 0f cb f7 cc 72 d0 b7 1c
+29 66 48 b3 a4 d1 0f 41 62 95 d0 80 7a a6 25 ca
+b2 74 4f d9 ea 8f d2 23 c4 25 37 02 98 28 bd 16
+be 02 54 6f 13 0f d2 e3 3b 93 6d 26 76 e0 8a ed
+1b 73 31 8b 75 0a 01 67 d0,
+de e9 59 c7 e0 64 11 36 14 20 ff 80 18 5e d5 7f
+3e 67 76 af,
+Crypto.SHA1,
+90 74 30 8f b5 98 e9 70 1b 22 94 38 8e 52 f9 71
+fa ac 2b 60 a5 14 5a f1 85 df 52 87 b5 ed 28 87
+e5 7c e7 fd 44 dc 86 34 e4 07 c8 e0 e4 36 0b c2
+26 f3 ec 22 7f 9d 9e 54 63 8e 8d 31 f5 05 12 15
+df 6e bb 9c 2f 95 79 aa 77 59 8a 38 f9 14 b5 b9
+c1 bd 83 c4 e2 f9 f3 82 a0 d0 aa 35 42 ff ee 65
+98 4a 60 1b c6 9e b2 8d eb 27 dc a1 2c 82 c2 d4
+c3 f6 6c d5 00 f1 ff 2b 99 4d 8a 4e 30 cb b3 3c)
+// RSASSA-PSS Signature Example 1.2
+test_pss(
+a5 6e 4a 0e 70 10 17 58 9a 51 87 dc 7e a8 41 d1
+56 f2 ec 0e 36 ad 52 a4 4d fe b1 e6 1f 7a d9 91
+d8 c5 10 56 ff ed b1 62 b4 c0 f2 83 a1 2a 88 a3
+94 df f5 26 ab 72 91 cb b3 07 ce ab fc e0 b1 df
+d5 cd 95 08 09 6d 5b 2b 8b 6d f5 d6 71 ef 63 77
+c0 92 1c b2 3c 27 0a 70 e2 59 8e 6f f8 9d 19 f1
+05 ac c2 d3 f0 cb 35 f2 92 80 e1 38 6b 6f 64 c4
+ef 22 e1 e1 f2 0d 0c e8 cf fb 22 49 bd 9a 21 37,
+01 00 01,
+33 a5 04 2a 90 b2 7d 4f 54 51 ca 9b bb d0 b4 47
+71 a1 01 af 88 43 40 ae f9 88 5f 2a 4b be 92 e8
+94 a7 24 ac 3c 56 8c 8f 97 85 3a d0 7c 02 66 c8
+c6 a3 ca 09 29 f1 e8 f1 12 31 88 44 29 fc 4d 9a
+e5 5f ee 89 6a 10 ce 70 7c 3e d7 e7 34 e4 47 27
+a3 95 74 50 1a 53 26 83 10 9c 2a ba ca ba 28 3c
+31 b4 bd 2f 53 c3 ee 37 e3 52 ce e3 4f 9e 50 3b
+d8 0c 06 22 ad 79 c6 dc ee 88 35 47 c6 a3 b3 25,
+85 13 84 cd fe 81 9c 22 ed 6c 4c cb 30 da eb 5c
+f0 59 bc 8e 11 66 b7 e3 53 0c 4c 23 3e 2b 5f 8f
+71 a1 cc a5 82 d4 3e cc 72 b1 bc a1 6d fc 70 13
+22 6b 9e,
+ef 28 69 fa 40 c3 46 cb 18 3d ab 3d 7b ff c9 8f
+d5 6d f4 2d,
+Crypto.SHA1,
+3e f7 f4 6e 83 1b f9 2b 32 27 41 42 a5 85 ff ce
+fb dc a7 b3 2a e9 0d 10 fb 0f 0c 72 99 84 f0 4e
+f2 9a 9d f0 78 07 75 ce 43 73 9b 97 83 83 90 db
+0a 55 05 e6 3d e9 27 02 8d 9d 29 b2 19 ca 2c 45
+17 83 25 58 a5 5d 69 4a 6d 25 b9 da b6 60 03 c4
+cc cd 90 78 02 19 3b e5 17 0d 26 14 7d 37 b9 35
+90 24 1b e5 1c 25 05 5f 47 ef 62 75 2c fb e2 14
+18 fa fe 98 c2 2c 4d 4d 47 72 4f db 56 69 e8 43)
+
 // Crypto.DSA
 
 test_any([[
