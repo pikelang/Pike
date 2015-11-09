@@ -180,7 +180,6 @@ static void do_select_db(char * dbname)
 		Pike_error("Could not select database.\n");
 	}
 	THIS->db_selected=1;
-	return;
 }
 
 /*! @decl void shutdown()
@@ -292,12 +291,7 @@ PIKEFUN void create(void|string dbserver, void|string dbname,
 	int sock, status;
 	char *colon;
 
-	check_all_args("Msql->create",args,
-		       BIT_STRING|BIT_VOID, BIT_STRING|BIT_VOID,
-		       BIT_STRING|BIT_VOID, BIT_STRING|BIT_VOID,
-		       BIT_MAPPING|BIT_INT|BIT_VOID, 0);
-
-	if (args)
+        if (args)
 	  if (sp[-args].u.string->len)
 	    arg1=sp[-args].u.string;
 	if (args >1)
@@ -365,9 +359,7 @@ PIKEFUN array(string) list_dbs(string|void wild)
 	m_row row;
 	int fields,numrows=0,socket=THIS->socket;
 
-	check_all_args("Msql->list_dbs",args,BIT_STRING|BIT_VOID,0);
-
-	if (!THIS->connected)
+        if (!THIS->connected)
 		Pike_error ("Not connected.\n");
 	if (args>0 && sp[-args].u.string->len)
 		/* We have a glob. We should pop the arg and push it again for a later
@@ -397,7 +389,6 @@ PIKEFUN array(string) list_dbs(string|void wild)
 	msqlFreeResult(result);
 	if (args)
 		f_glob(2);
-	return;
 }
 
 /*! @decl array(string) list_tables(void|string wild)
@@ -417,9 +408,7 @@ PIKEFUN array(string) list_dbs(string|void wild)
 	m_row row;
 	int fields,numrows=0,socket=THIS->socket;
 
-	check_all_args ("Msql->list_tables",args,BIT_STRING|BIT_VOID,0);
-
-	if (!THIS->db_selected)
+        if (!THIS->db_selected)
 		Pike_error ("No database selected.\n");
 
 	if (args>0 && sp[-args].u.string->len)
@@ -450,7 +439,6 @@ PIKEFUN array(string) list_dbs(string|void wild)
 	msqlFreeResult(result);
 	if (args)
 		f_glob(2);
-	return;
 }
 
 /*! @decl void select_db(string dbname)
@@ -476,14 +464,9 @@ PIKEFUN array(string) list_dbs(string|void wild)
 
 PIKEFUN void select_db(string dbname)
 {
-	struct pike_string * arg;
-	int status;
-
-	check_all_args("Msql->select_db",args,BIT_STRING,0);
-	if (!THIS->connected)
+        if (!THIS->connected)
 		Pike_error ("Not connected.\n");
-	arg=sp[-args].u.string;
-	do_select_db(arg->str);
+        do_select_db(dbname->str);
 }
 
 /*! @decl array(mapping(string:mixed)) query (string sqlquery)
@@ -535,15 +518,13 @@ PIKEFUN array(mapping(string:mixed)) query(string sqlquery)
 	struct array *field_names, *retval;
 	char * query, ** names;
 
-	check_all_args("Msql->query",args,BIT_STRING,0);
-
-	if (!THIS->connected)
+        if (!THIS->connected)
 		Pike_error("Must connect to database server before querying it.\n");
 	if (!THIS->db_selected)
 		Pike_error("Must select database before querying it.\n");
 
 	tmp_socket=THIS->socket;
-	query=sp[-args].u.string->str;
+        query=sqlquery->str;
 
 #ifdef MSQL_DEBUG
 	printf ("MSQLMod: Query is\"%s\"\n",query);
@@ -662,8 +643,7 @@ PIKEFUN string server_info()
 {
 	char * info;
 
-	check_all_args("Msql->info",args,0);
-	pop_n_elems(args);
+        pop_n_elems(args);
 	if (!THIS->connected)
 		Pike_error ("Not connected.\n");
 	push_static_text("msql/");
@@ -674,7 +654,6 @@ PIKEFUN string server_info()
 	THREADS_DISALLOW();
 	push_text(info);
 	f_add(2);
-	return;
 }
 
 /*! @decl string host_info()
@@ -685,14 +664,11 @@ PIKEFUN string server_info()
 
 PIKEFUN string host_info()
 {
-	check_all_args("Msql->host_info",args,0);
-	pop_n_elems(args);
-	if (!THIS->connected)
+        if (!THIS->connected)
 		Pike_error ("Not connected.\n");
 	/*it's local to the client library. Not even worth allowing
 	 context switches*/
 	push_text(msqlGetHostInfo());
-	return;
 }
 
 /*! @decl string error()
@@ -708,13 +684,10 @@ PIKEFUN string host_info()
 
 PIKEFUN string error()
 {
-	check_all_args("Msql->error",args,0);
-	pop_n_elems(args);
-	if (THIS->error_msg)
+        if (THIS->error_msg)
 		ref_push_string(THIS->error_msg);
 	else
 	        push_int(0);
-	return;
 }
 
 /*! @decl void create_db(string dbname)
@@ -729,18 +702,14 @@ PIKEFUN string error()
 PIKEFUN void create_db(string dbname)
 {
 	int dbresult;
-	char * dbname;
-	int socket;
+        int socket;
 
-	check_all_args("Msql->create_db",args,BIT_STRING,0);
-
-	if (!THIS->connected)
+        if (!THIS->connected)
 		Pike_error("Not connected.\n");
-	dbname = sp[-args].u.string->str;
-	socket=THIS->socket;
+        socket=THIS->socket;
 	THREADS_ALLOW();
 	MSQL_LOCK();
-	dbresult=msqlCreateDB(socket,dbname);
+        dbresult=msqlCreateDB(socket,dbname->str);
 	MSQL_UNLOCK();
 	THREADS_DISALLOW();
 	if (dbresult==-1) {
@@ -761,18 +730,14 @@ PIKEFUN void create_db(string dbname)
 PIKEFUN void drop_db(string dbname)
 {
 	int dbresult;
-	char * dbname;
-	int socket;
+        int socket;
 
-	check_all_args("Msql->drop_db",args,BIT_STRING,0);
-
-	if (!THIS->connected)
+        if (!THIS->connected)
 		Pike_error("Not connected.\n");
-	dbname = sp[-args].u.string->str;
-	socket=THIS->socket;
+        socket=THIS->socket;
 	THREADS_ALLOW();
 	MSQL_LOCK();
-	dbresult=msqlDropDB(socket,dbname);
+        dbresult=msqlDropDB(socket,dbname->str);
 	MSQL_UNLOCK();
 	THREADS_DISALLOW();
 	if (dbresult==-1) {
@@ -781,12 +746,11 @@ PIKEFUN void drop_db(string dbname)
 	}
 }
 
-/*! @decl mapping(string:mapping(string:mixed)) list_fields(string table, void|string glob)
+/*! @decl mapping(string:mapping(string:mixed)) list_fields(string table)
  *!
  *! Returns a mapping describing the fields of a table in the database.
  *! The returned value is a mapping, indexed on the column name,
- *! of mappings.The glob argument, if present, filters out the fields
- *! not matching the glob. These contain currently the fields:
+ *! of mappings. These contain currently the fields:
  *!
  *! @mapping
  *!   @member string "type"
@@ -814,26 +778,23 @@ PIKEFUN void drop_db(string dbname)
  */
 
 PIKEFUN mapping(string:mapping(string:mixed)) list_fields(string table,
-							  void|string glob)
+                                                          void|string glob)
 {
 	m_result * result;
 	m_field * field;
-	char * table;
-	int fields, j, socket=THIS->socket;
+        int fields, j, socket=THIS->socket;
 
-	check_all_args("Msql->list_fields",args,BIT_STRING,0);
-	if (!THIS->connected)
+        if (!THIS->connected)
 		Pike_error ("Not connected.\n");
 	if (!THIS->db_selected)
 		Pike_error ("Must select a db first.\n");
-	table=sp[-args].u.string->str;
 #ifdef MSQL_DEBUG
 	printf ("list_fields: table=%s(%d)\n",sp[-args].u.string->str,sp[-args].u.string->len);
 #endif
 
 	THREADS_ALLOW();
 	MSQL_LOCK();
-	result=msqlListFields(socket,table);
+        result=msqlListFields(socket,table->str);
 	MSQL_UNLOCK();
 	THREADS_DISALLOW();
 	pop_n_elems(args);
@@ -885,7 +846,6 @@ PIKEFUN mapping(string:mapping(string:mixed)) list_fields(string table,
   f_aggregate(fields);
 
 	msqlFreeResult(result);
-	return;
 }
 
 #ifdef MSQL_VERSION_2
@@ -907,10 +867,8 @@ PIKEFUN mapping(string:mapping(string:mixed)) list_fields(string table,
 
 PIKEFUN int affected_rows()
 {
-	check_all_args("Msql->affected_rows",args,0);
-	pop_n_elems(args);
+        pop_n_elems(args);
 	push_int(THIS->affected);
-	return;
 }
 
 /*! @decl array list_index(string tablename, string indexname)
@@ -933,20 +891,16 @@ PIKEFUN int affected_rows()
 
 PIKEFUN array list_index(string tablename, string indexname)
 {
-	char * arg1, *arg2;
-	m_result * result;
+        m_result * result;
 	m_row row;
 	int sock, rows, j;
 
-	check_all_args("Msql->list_index",args,BIT_STRING,BIT_STRING,0);
-	if (!THIS->db_selected)
+        if (!THIS->db_selected)
 		Pike_error ("No database selected.\n");
-	arg1=sp[-args].u.string->str;
-	arg2=sp[1-args].u.string->str;
-	sock=THIS->socket;
+        sock=THIS->socket;
 	THREADS_ALLOW();
 	MSQL_LOCK();
-	result=msqlListIndex(sock,arg1,arg2);
+        result=msqlListIndex(sock,tablename->str,indexname->str);
 	MSQL_UNLOCK();
 	THREADS_DISALLOW();
 	pop_n_elems(args);
@@ -962,7 +916,6 @@ PIKEFUN array list_index(string tablename, string indexname)
 		push_text(row[0]);
 	}
 	f_aggregate(rows);
-	return;
 }
 #endif
 
