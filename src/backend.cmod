@@ -2027,7 +2027,6 @@ PIKECLASS Backend
   {
     ref_push_object (Pike_fp->current_object);
     apply (f, "set_backend", 1);
-    pop_stack();
   }
 
 
@@ -3294,7 +3293,6 @@ PIKECLASS PollDeviceBackend
     EV_SET(ev, signum, MY_POLLSIGNAL, EV_ADD, 0, 0, 0);
     q = kevent(THIS->set, ev, 1, NULL, 0, NULL);
 #endif
-    pop_n_elems(args);
   }
 
   /*

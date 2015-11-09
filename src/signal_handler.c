@@ -1948,8 +1948,6 @@ static void f_trace_process_cont(INT32 args)
     }
   }
 #endif /* __FreeBSD__ */
-  pop_n_elems(args);
-  push_int(0);
 }
 
 /*! @decl void exit()
