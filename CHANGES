@@ -21,6 +21,16 @@ o Compatibility for Pike versions before 7.8 is no longer available.
 
 o GTK1 library is deprected, so glue code is removed.
 
+C-level API changes
+-------------------
+
+o The contract for functions is now changed so that a function is no
+  longer required to clean the stack. The topmost value of the stack
+  will be regarded as the return value and the rest of the items on
+  the stack, compared to before the function arguments were pushed,
+  will be popped and discarded. Efuns still have to clean their stack
+  as previously.
+
 Building and installing
 -----------------------
 
