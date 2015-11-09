@@ -315,22 +315,13 @@ PIKEFUN void create(string|void server, string|void database,
   HDBC hdbc = PIKE_ODBC->hdbc;
   RETCODE code;
 
-  check_all_args("odbc->create", args,
-		 BIT_STRING|BIT_INT|BIT_VOID, BIT_STRING|BIT_INT|BIT_VOID,
-		 BIT_STRING|BIT_INT|BIT_VOID, BIT_STRING|BIT_VOID|BIT_INT,
-		 BIT_MAPPING|BIT_INT|BIT_VOID, 0);
-
-#define GET_ARG(VAR, ARG) do {					\
-    if ((args > (ARG)) && (TYPEOF(sp[(ARG)-args]) == T_STRING)) {	\
-      VAR = sp[(ARG)-args].u.string;				\
-      if (VAR->size_shift) {					\
-	SIMPLE_ARG_TYPE_ERROR("create", (ARG), "string(8bit)");	\
-      }								\
-    }								\
+#define NO_WIDE_STRING(s)	do {				\
+    if ((s)->size_shift)					\
+       Pike_error("Bad argument. Must be 8-bit string.\n");	\
   } while(0)
 
-  GET_ARG(pwd, 3);
   if (pwd) {
+    NO_WIDE_STRING(pwd);
     add_ref(pwd);
     pop_n_elems(args-3);
     /* NB: Potential but very unlikely leak of pwd here
@@ -340,9 +331,9 @@ PIKEFUN void create(string|void server, string|void database,
     push_string(pwd);	/* Let the stack hold the reference. */
     args = 5;
   }
-  GET_ARG(user, 2);
-  GET_ARG(database, 1);
-  GET_ARG(server, 0);
+  if(user) NO_WIDE_STRING(user);
+  if(database) NO_WIDE_STRING(database);
+  if(server) NO_WIDE_STRING(server);
 
 #undef GET_ARG
 
@@ -357,21 +348,14 @@ PIKEFUN void create(string|void server, string|void database,
     if (!server || !server->len) {
       push_static_text("default");
       database = sp[-1].u.string;
-      args++;
     } else {
       database = server;
     }
   }
-  if (!user) {
-    push_empty_string();
-    user = sp[-1].u.string;
-    args++;
-  }
-  if (!pwd) {
-    push_empty_string();
-    pwd = sp[-1].u.string;
-    args++;
-  }
+  if (!user)
+    add_ref(user = empty_pike_string);
+  if (!pwd)
+    add_ref(pwd = empty_pike_string);
   if (PIKE_ODBC->flags & PIKE_ODBC_CONNECTED) {
     PIKE_ODBC->flags &= ~PIKE_ODBC_CONNECTED;
     ODBC_ALLOW();
@@ -410,8 +394,6 @@ PIKEFUN void create_dsn(string connectstring)
 {
   SQLCHAR outconnectionstring[1024]; /* Smallest allowed buffer = 1024 */
   SQLSMALLINT stringlength2;
-
-  get_all_args("create_dsn", args, "%S", &connectstring);
 
   if (!connectstring->len) {
     Pike_error("odbc->create_dsn connection string empty.\n");
