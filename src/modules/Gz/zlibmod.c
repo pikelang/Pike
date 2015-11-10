@@ -1201,7 +1201,7 @@ static void gz_adler32(INT32 args)
       else
 	 crc=(unsigned INT32)sp[1-args].u.integer;
    } else
-      crc=0;
+      crc=1;
 
    crc=adler32(crc,
                (unsigned char*)sp[-args].u.string->str,
