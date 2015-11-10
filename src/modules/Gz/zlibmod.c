@@ -1155,7 +1155,7 @@ static void exit_gz_inflate(struct object *UNUSED(o))
 /*! @endclass
  */
 
-/*! @decl int crc32(string(8bit) data, void|int start_value)
+/*! @decl int crc32(string(8bit) data, void|int(0..) start_value)
  *!
  *!   This function calculates the standard ISO3309 Cyclic Redundancy Check.
  */
@@ -1178,6 +1178,34 @@ static void gz_crc32(INT32 args)
    crc=crc32(crc,
 	     (unsigned char*)sp[-args].u.string->str,
              (unsigned INT32)(sp[-args].u.string->len));
+
+   pop_n_elems(args);
+   push_int64((INT64)crc);
+}
+
+/*! @decl int adler32(string(8bit) data, void|int(0..) start_value)
+ *!
+ *!   This function calculates the Adler-32 Cyclic Redundancy Check.
+ */
+static void gz_adler32(INT32 args)
+{
+   unsigned INT32 crc;
+   if (!args || TYPEOF(sp[-args]) != T_STRING)
+      Pike_error("Gz.adler32: illegal or missing argument 1 (expected string)\n");
+  if (sp[-args].u.string->size_shift)
+    Pike_error("Cannot input wide string to Gz.adler32\n");
+
+   if (args>1) {
+      if (TYPEOF(sp[1-args]) != T_INT)
+         Pike_error("Gz.adler32: illegal argument 2 (expected integer)\n");
+      else
+	 crc=(unsigned INT32)sp[1-args].u.integer;
+   } else
+      crc=0;
+
+   crc=adler32(crc,
+               (unsigned char*)sp[-args].u.string->str,
+               (unsigned INT32)(sp[-args].u.string->len));
 
    pop_n_elems(args);
    push_int64((INT64)crc);
@@ -1302,7 +1330,8 @@ PIKE_MODULE_INIT
 #endif
 
   /* function(string(8bit),void|int:int) */
-  ADD_FUNCTION("crc32",gz_crc32,tFunc(tStr8 tOr(tVoid,tInt),tIntPos),0);
+  ADD_FUNCTION("crc32",gz_crc32,tFunc(tStr8 tOr(tVoid,tIntPos),tIntPos),0);
+  ADD_FUNCTION("adler32",gz_adler32,tFunc(tStr8 tOr(tVoid,tIntPos),tIntPos),0);
 
   /* function(string(8bit)|String.Buffer|System.Memory|Stdio.Buffer,void|int(0..1),void|int,void|int:string(8bit)) */
   ADD_FUNCTION("compress",gz_compress,tFunc(tOr(tStr8,tObj) tOr(tVoid,tInt01) tOr(tVoid,tInt09) tOr(tVoid,tInt) tOr(tVoid,tInt),tStr8),0);
