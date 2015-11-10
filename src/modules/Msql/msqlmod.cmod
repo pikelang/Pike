@@ -283,20 +283,20 @@ PIKEFUN void reload_acl()
    * and is provided only for generic-interface compliancy
    */
 
-PIKEFUN void create(void|string dbserver, void|string dbname,
-		    void|string username, void|string passwd,
+PIKEFUN void create(void|string(1..255) dbserver, void|string(1..255) dbname,
+		    void|string(1..255) username, void|string(1..255) passwd,
 		    mapping|int|void options)
 {
 	struct pike_string * arg1=NULL, *arg2=NULL;
 	int sock, status;
 	char *colon;
 
-        if (args)
-	  if (sp[-args].u.string->len)
-	    arg1=sp[-args].u.string;
-	if (args >1)
-	  if (sp[1-args].u.string->len)
-	    arg2=sp[1-args].u.string;
+	if (dbserver)
+	  if (dbserver->len)
+	    arg1 = dbserver;
+	if (dbname)
+	  if (dbname->len)
+	    arg2 = dbname;
 
 	/*Okay. We had one or two arguments, and we must connect to a server
 	and if needed select a database.
@@ -353,7 +353,7 @@ PIKEFUN void create(void|string dbserver, void|string dbname,
  *! whose name matches the given glob.
  */
 
-PIKEFUN array(string) list_dbs(string|void wild)
+PIKEFUN array(string) list_dbs(string(1..255)|void wild)
 {
 	m_result * result;
 	m_row row;
@@ -361,13 +361,13 @@ PIKEFUN array(string) list_dbs(string|void wild)
 
         if (!THIS->connected)
 		Pike_error ("Not connected.\n");
-	if (args>0 && sp[-args].u.string->len)
+	if (wild && !wild->len)
+	  wild = NULL;
+	else {
 		/* We have a glob. We should pop the arg and push it again for a later
 		 * call to glob() */
-		;
-	else {
-		pop_n_elems(args);
-		args=0; /*Let's use args as a flag. If args==0, no globbing.*/
+		pop_n_elems(args-1);	/* Paranoia. */
+		args = 1;
 	}
 
 	THREADS_ALLOW();
@@ -387,7 +387,7 @@ PIKEFUN array(string) list_dbs(string|void wild)
 	}
 	f_aggregate(numrows);
 	msqlFreeResult(result);
-	if (args)
+	if (wild)
 		f_glob(2);
 }
 
@@ -400,7 +400,7 @@ PIKEFUN array(string) list_dbs(string|void wild)
  *! whose name matches the given glob.
  */
 
- PIKEFUN array(string) list_tables(void|string wild)
+PIKEFUN array(string) list_tables(void|string(1..255) wild)
 	/* ARGH! There's much code duplication here... but the subtle differences
 	 * between the various functions make it impervious to try to generalize..*/
 {
@@ -411,13 +411,13 @@ PIKEFUN array(string) list_dbs(string|void wild)
         if (!THIS->db_selected)
 		Pike_error ("No database selected.\n");
 
-	if (args>0 && sp[-args].u.string->len)
+	if (wild && !wild->len)
+	  wild = NULL;
+	else {
 		/* We have a glob. We should pop the arg and push it again for a later
 		 * call to glob() */
-		;
-	else {
-		pop_n_elems(args);
-		args=0; /*Let's use args as a flag. If args==0, no globbing.*/
+		pop_n_elems(args-1);	/* Paranoia. */
+		args = 1;
 	}
 
 	THREADS_ALLOW();
@@ -437,7 +437,7 @@ PIKEFUN array(string) list_dbs(string|void wild)
 	}
 	f_aggregate(numrows);
 	msqlFreeResult(result);
-	if (args)
+	if (wild)
 		f_glob(2);
 }
 
@@ -462,7 +462,7 @@ PIKEFUN array(string) list_dbs(string|void wild)
  * an host.
  */
 
-PIKEFUN void select_db(string dbname)
+PIKEFUN void select_db(string(1..255) dbname)
 {
         if (!THIS->connected)
 		Pike_error ("Not connected.\n");
@@ -509,7 +509,7 @@ PIKEFUN void select_db(string dbname)
  * CAN raise exceptions if there's no active database.
  */
 
-PIKEFUN array(mapping(string:mixed)) query(string sqlquery)
+PIKEFUN array(mapping(string:mixed)) query(string(1..255) sqlquery)
 {
 	int status, num_fields,num_rows,j,k,tmp_socket,*duplicate_names_map;
 	m_result * result;
@@ -699,7 +699,7 @@ PIKEFUN string error()
  *!   @[drop_db]
  */
 
-PIKEFUN void create_db(string dbname)
+PIKEFUN void create_db(string(1..255) dbname)
 {
 	int dbresult;
         int socket;
@@ -727,7 +727,7 @@ PIKEFUN void create_db(string dbname)
  *!   @[create_db]
  */
 
-PIKEFUN void drop_db(string dbname)
+PIKEFUN void drop_db(string(1..255) dbname)
 {
 	int dbresult;
         int socket;
@@ -777,8 +777,8 @@ PIKEFUN void drop_db(string dbname)
  *!   @[query]
  */
 
-PIKEFUN mapping(string:mapping(string:mixed)) list_fields(string table,
-                                                          void|string glob)
+PIKEFUN mapping(string:mapping(string:mixed)) list_fields(string(1..255) table,
+							  void|string glob)
 {
 	m_result * result;
 	m_field * field;
@@ -789,7 +789,7 @@ PIKEFUN mapping(string:mapping(string:mixed)) list_fields(string table,
 	if (!THIS->db_selected)
 		Pike_error ("Must select a db first.\n");
 #ifdef MSQL_DEBUG
-	printf ("list_fields: table=%s(%d)\n",sp[-args].u.string->str,sp[-args].u.string->len);
+	printf("list_fields: table=%s(%d)\n", table->str, table->len);
 #endif
 
 	THREADS_ALLOW();
@@ -888,7 +888,7 @@ PIKEFUN int affected_rows()
  *!  @[Msql.msql] programs.
  */
 
-PIKEFUN array list_index(string tablename, string indexname)
+PIKEFUN array list_index(string(1..255) tablename, string(1..255) indexname)
 {
         m_result * result;
 	m_row row;
