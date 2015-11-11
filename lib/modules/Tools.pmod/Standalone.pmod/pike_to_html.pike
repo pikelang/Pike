@@ -174,15 +174,24 @@ final int(0..1) main(int argc, array(string) argv)
 //! The following css classes will be used:
 //!
 //! @ul
-//!  @item Delimiters:        delim
-//!  @item Reserved words:    lang
-//!  @item Data types:        types
-//!  @item Constants:         const
-//!  @item Modifiers:         mods
-//!  @item Root namespaces:   ns
-//!  @item Strings:           string
-//!  @item Comments:          comment
-//!  @item Macros:            macro
+//!  @item
+//!   Delimiters:        delim
+//!  @item
+//!   Reserved words:    lang
+//!  @item
+//!   Data types:        types
+//!  @item
+//!   Constants:         const
+//!  @item
+//!   Modifiers:         mods
+//!  @item
+//!   Root namespaces:   ns
+//!  @item
+//!   Strings:           string
+//!  @item
+//!   Comments:          comment
+//!  @item
+//!   Macros:            macro
 //! @endul
 //!
 //! @param code
@@ -262,9 +271,12 @@ protected string make_html(array(string) tokens)
               ADDTAG("string");
             }
             else {
-              array(string) ntoks = Parser.Pike.split(tok[1..<1]);
+              array(string) ntoks = Parser.Pike.split(tok[1..]);
               tok = "#" + ntoks[0];
               ADDTAG("macro");
+
+              if (ntoks[-1] == "\n")
+                ntoks = ntoks[..<1];
 
               if (sizeof(ntoks) > 2 && (< "<", "\"" >)[ntoks[2]]) {
                 tok = ntoks[2..]*"";
@@ -275,7 +287,7 @@ protected string make_html(array(string) tokens)
                 tok = ntoks[1..]*"";
                 ADDTAG("macro");
               }
-              else {
+              else if (sizeof(ntoks) > 1) {
                 add("<span class='nested'>", make_html(ntoks[1..]), "</span>");
               }
             }
