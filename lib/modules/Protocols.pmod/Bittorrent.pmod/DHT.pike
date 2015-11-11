@@ -237,7 +237,7 @@ class Routingtable {
 	if (n->state == DHTNode.DHT_BAD) {
 	  nodes -= ({ n });
 	  m_delete(nodes_by_hash, n->node_id);
-	  m_delete(nodes_by_endpoint, sprintf("%s:%d", n->address, n->port));
+	  m_delete(nodes_by_endpoint, n->node_endpoint());
 	  destruct(n);
 	}
       }
@@ -245,7 +245,7 @@ class Routingtable {
 	if (n->state == DHTNode.DHT_BAD) {
 	  candidates -= ({ n });
 	  m_delete(nodes_by_hash, n->node_id);
-	  m_delete(nodes_by_endpoint, sprintf("%s:%d", n->address, n->port));
+	  m_delete(nodes_by_endpoint, n->node_endpoint());
 	  destruct(n);
 	}
       }
