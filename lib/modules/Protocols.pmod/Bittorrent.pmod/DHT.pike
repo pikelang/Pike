@@ -120,7 +120,7 @@ class Routingtable {
     //! Adds a node to the bucket as a candidate with the option of
     //! suppressing notifications. Returns 0 on success.
     protected int low_add_candidate(DHTNode n, void|int dont_notify) {
-      if (sizeof(candidates) < BUCKET_SIZE) {
+      if (sizeof(candidates) <= BUCKET_SIZE) {
 	candidates += ({ n });
 	nodes_by_hash[n->node_id] = n;
 	if (!dont_notify && functionp(candidate_added_cb)) {
