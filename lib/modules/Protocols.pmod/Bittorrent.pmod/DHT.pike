@@ -143,7 +143,6 @@ class Routingtable {
 	nodes += ({ n });
 	nodes_by_hash[n->node_id] = n;
 	nodes_by_endpoint[n->node_endpoint()] = n;
-	// dwerror("Added %O to %O\n", n, this);
 	if (!dont_notify && functionp(node_added_cb)) {
 	  mixed err = catch {
 	      node_added_cb(n, this);
@@ -266,11 +265,9 @@ class Routingtable {
   //! pass can be inhibited by setting dont_promote to 1.
   int split_bucket(Bucket b, void|int dont_promote) {
     if (sizeof(buckets) >= MAX_BUCKETS) {
-      // dwerror("Unable to split further\n");
       return -1;
     }
 
-    // dwerror("Splitting bucket %O\n", b);
     // Add a new bucket to the tree
     Bucket nb = Bucket();
     buckets += ({ nb });
@@ -295,9 +292,6 @@ class Routingtable {
       nb->promote_nodes();
     }
 
-
-    // dwerror("Rebalanced buckets: %d / %d\n", sizeof(b->nodes), sizeof(nb->nodes));
-
     return 0;
   }
 
@@ -315,7 +309,6 @@ class Routingtable {
       n = n->node_id;
     }
     int target_bucket_index = bucket_index_for(n);
-    // dwerror("Target bucket index: %d\n", target_bucket_index);
     Bucket target_bucket = buckets[target_bucket_index];
     return target_bucket;
   }
@@ -729,7 +722,6 @@ class DHTNode {
     }
 
     check_node_callout = call_out(check_node, check_interval / 2 + random(check_interval));
-    // dwerror("Checking node %s\n", node_id && String.string2hex(node_id) || "<unknown hash>");
     ping();
   }
 
@@ -887,9 +879,6 @@ class DHTOperation(string target_hash, function done_cb, mixed ... done_cb_args)
   //! expected to contain peer hash, peer ip, peer port.
   private void do_query_peer(Node peer) {
     mapping q = generate_query();
-
-    // dwerror("Querying peer %s @ distance %d\n", peer[1], distance_exp(target_hash, peer->hash_id));
-
     string txid = send_dht_query(peer->address, peer->port, q, got_response_cb);
     if (!txid) {
       dwerror("Failed to send query to remote node %s:%d\n", peer->address, peer->port);
@@ -920,7 +909,6 @@ class DHTOperation(string target_hash, function done_cb, mixed ... done_cb_args)
 	done();
 	return;
       }
-      // dwerror("Not done yet\n");
 
       // Check that we have not hit the request limit
       if (max_outstanding_requests &&
@@ -938,14 +926,12 @@ class DHTOperation(string target_hash, function done_cb, mixed ... done_cb_args)
 
       // Ignore nodes we already asked to avoid loops
       if (seen_nodes[next_peer->node_id]) {
-	// dwerror("We've already seen peer 0x%s\n", String.string2hex(next_peer[0]));
 	continue;
       }
 
       if (want_more_results()) {
 	do_query_peer(next_peer);
       } else {
-	// dwerror("We don't need more results!\n");
       }
     } while(1);
   }
@@ -965,13 +951,11 @@ class DHTOperation(string target_hash, function done_cb, mixed ... done_cb_args)
 
     // We are waiting for responses to transactions in flight.
     if (want_more_results() && sizeof(transactions_in_flight)) {
-      // dwerror("Not done because we have transactions in flight %d\n", sizeof(result));
       res = 0;
     }
 
     // If we want more results and have more nodes to query, we are not done.
     if (want_more_results() && sizeof(nodes_to_query)) {
-      // dwerror("Not done because we have more nodes to query    %d\n", desired_results);
       res = 0;
     }
 
@@ -988,8 +972,6 @@ class DHTOperation(string target_hash, function done_cb, mixed ... done_cb_args)
   //! level callback but in some cases it can also be used to modify
   //! the result before calling the application callback.
   protected void done() {
-    // dwerror("get peers took %ds\n", time(1) - start_time);
-    // dwerror("%s\n", describe_backtrace(backtrace()));
     i_am_done = 1;
     if (functionp(done_cb)) {
       done_cb && done_cb(this, @done_cb_args);
@@ -1010,10 +992,6 @@ class DHTOperation(string target_hash, function done_cb, mixed ... done_cb_args)
       object b = rt->bucket_for(target_hash);
       nodes_to_query += b->nodes + b->candidates;
     }
-    /*
-    dwerror("%O\n", b);
-    dwerror("nodes to query: %O\n", nodes_to_query);
-    */
     run();
     return this;
   }
@@ -1057,7 +1035,6 @@ class FindNode {
       return;
     }
 
-    // dwerror("response: %O\n", resp);
     if (resp->r->nodes) {
       // If we get nodes, the peer didn't know the target hash so it
       // just gave us it's routing bucket for the target hash.
@@ -1354,7 +1331,6 @@ string send_ping(string ip, int port, function(mapping, string, int:void) cb) {
 //! Note: The timeout is not propagated to higher levels, so callers
 //! cannot rely on the send_dht_query() callback to propagate this.
 protected void read_timeout(string txid) {
-  // dwerror("LOWLEVEL TIMEOUT\n");
   m_delete(request_timeouts, txid);
   [function cb, array args] = m_delete(callbacks_by_txid, txid);
   functionp(cb) && cb(([
@@ -1418,7 +1394,6 @@ protected void read_callback(mapping(string:int|string) datagram, mixed ... extr
 
   case "q": // Query
     do {
-      // dwerror("INCOMING QUERY: %O\n", decoded_data);
       function cmd_handler = command_handlers[decoded_data->q];
       if (functionp(cmd_handler)) {
 	cmd_handler(decoded_data, datagram->ip, datagram->port);
@@ -1484,12 +1459,10 @@ class Token {
   int valid_for(string ip, int port) {
     // Verify that all parameters match
     if (ip != this_program::ip) {
-      // dwerror("IP %s does not match expected %s\n", ip, this_program::ip);
       return 0;
     }
 
     if (port != this_program::port) {
-      // dwerror("Port %d does not match expected %d\n", port, this_program::port);
       return 0;
     }
 
@@ -1761,7 +1734,6 @@ void handle_find_node(mapping data, string ip, int req_port) {
     array(DHTNode) tmp = b->nodes;
     array(string) nodes = tmp->compact_node_info();
     resp->r->nodes = nodes * "";
-    // dwerror("Sending response with %d nodes\n", sizeof(nodes));
   }
 
   stats->find_node++;
@@ -1771,7 +1743,6 @@ void handle_find_node(mapping data, string ip, int req_port) {
 //
 //! Handles PONG responses to incoming PINGs.
 void handle_ping(mapping data, string ip, int port) {
-  // dwerror("Sending PONG to %s:%d\n", ip, port);
   stats->ping++;
   send_dht_request(ip, port,
 		   ([
@@ -1820,7 +1791,6 @@ protected void announce_to(string peer_ip, int peer_port, string token,
 		     "a" : data,
 		   ]),
 		   lambda(mapping r) {
-		     // dwerror("Response: %O\n", r);
 		   });
     dwerror("Sent announce to %s:%d TXID: %s\n", peer_ip, peer_port, String.string2hex(txid));
 }
