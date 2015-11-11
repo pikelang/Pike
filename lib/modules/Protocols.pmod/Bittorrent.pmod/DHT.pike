@@ -990,7 +990,7 @@ class DHTOperation(string target_hash, function done_cb, mixed ... done_cb_args)
   //! Execute the DHTOperation by ensuring there are nodes in the
   //! nodes_to_query array as well as calling @[run]. If this method
   //! is overridden, it should always call the parent execute methods!
-  void execute() {
+  this_program execute() {
     start_time = time(1);
 
     // If we don't have any nodes in the nodes_to_query array, we add
@@ -1004,6 +1004,7 @@ class DHTOperation(string target_hash, function done_cb, mixed ... done_cb_args)
     dwerror("nodes to query: %O\n", nodes_to_query);
     */
     run();
+    return this;
   }
 } /* DHTOperation */
 
@@ -1069,13 +1070,14 @@ class FindNode {
 
   //
   //! Execute method that also checks if we have the targets in our routing table.
-  void execute() {
+  this_program execute() {
     if (rt->nodes_by_hash[target_hash]) {
-      result += ({ rt->nodes_by_hash[target_hash] });
+      object res = rt->nodes_by_hash[target_hash];
+      result += ({ res });
       result_count = sizeof(result);
     }
 
-    ::execute();
+    return ::execute();
   }
 } /* FindNode */
 
