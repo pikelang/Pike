@@ -55,7 +55,8 @@ man_prefix = @mandir@
 include_prefix = @includedir@/pike
 
 # Arguments for test_pike.pike used by the verify targets.
-# TESTARGS = -F -a
+TESTARGS_NOFORK = -a -a$(SRCDIR) -a$(LIBDIR_SRC) -v
+TESTARGS_FORK = -F $(TESTARGS_NOFORK)
 
 # Arguments for install.pike used by the install targets.
 INSTALLARGS = --new-style
@@ -713,12 +714,12 @@ testsuites:
 	   --destdir=extra_tests --bindir=$(TMP_BINDIR) ) ; fi;
 
 just_verify: testsuites master-stamp
-	if test "x$(TESTARGS)" = x ; then args="-F -a -v" ; \
+	if test "x$(TESTARGS)" = x ; then args="$(TESTARGS_FORK)" ; \
 	else args="$(TESTARGS)" ; fi; \
 	$(RUNPIKE) -x test_pike $$args
 
 valgrind_just_verify: testsuites master-stamp
-	if test "x$(TESTARGS)" = x ; then args="-a -v" ; \
+	if test "x$(TESTARGS)" = x ; then args="$(TESTARGS_NOFORK)" ; \
 	else args="$(TESTARGS)" ; fi; \
 	$(VALGRIND) $(VALGRINDARGS) $(RUNPIKE) -x test_pike --subproc-start="$(VALGRIND) $(VALGRINDARGS)" $$args
 
@@ -767,7 +768,7 @@ just-tinstall: master-stamp
 
 verify: testsuites tinstall
 	PIKE_MODULE_PATH=""; PIKE_INCLUDE_PATH=""; \
-	if test "$(TESTARGS)" = "" ; then args="-F -a -v" ; else \
+	if test "$(TESTARGS)" = "" ; then args="$(TESTARGS_FORK)" ; else \
 	  args="$(TESTARGS)" ; fi; \
 	if test -f ./test-pike ; then \
 	  ./test-pike -DNOT_INSTALLED $(PIKEOPTS) -x test_pike $$args ; \
@@ -781,7 +782,7 @@ verify: testsuites tinstall
 
 valgrind_verify: testsuites tinstall
 	PIKE_MODULE_PATH=""; PIKE_INCLUDE_PATH=""; \
-	if test "$(TESTARGS)" = "" ; then args="-a -v" ; else \
+	if test "$(TESTARGS)" = "" ; then args="$(TESTARGS_NOFORK)" ; else \
 	  args="$(TESTARGS)" ; fi; \
 	if test -f ./test-pike ; then \
 	  $(VALGRIND) $(VALGRINDARGS) ./test-pike -DNOT_INSTALLED $(PIKEOPTS) -x test_pike --subproc-start="$(VALGRIND) $(VALGRINDARGS)" $$args ; \
@@ -801,7 +802,7 @@ bench: tinstall
 	fi
 
 verify_installed: testsuites master-stamp
-	if test "$(TESTARGS)" = "" ; then args="-F -a -v" ; else \
+	if test "$(TESTARGS)" = "" ; then args="$(TESTARGS_FORK)" ; else \
 	  args="$(TESTARGS)" ; fi; \
 	$(bindir)/pike $(PIKEOPTS) -x test_pike $$args
 
@@ -811,8 +812,8 @@ sure: verify
 
 # verify / debug verbose
 verbose_verify: testsuites master-stamp
-	if test "$(TESTARGS)" = "" ; then args="-F -a" ; else args="$(TESTARGS)" ; fi; \
-	$(RUNPIKE) -x test_pike -v -v $$args
+	if test "$(TESTARGS)" = "" ; then args="$(TESTARGS_FORK)" ; else args="$(TESTARGS)" ; fi; \
+	$(RUNPIKE) -x test_pike -v $$args
 
 # verify & debug VERBOSE
 gdb_verify: testsuites master-stamp
@@ -825,7 +826,7 @@ gdb_verify: testsuites master-stamp
 	else :; fi
 	@echo >>.gdbinit break debug_fatal
 	@echo >>.gdbinit break pike_gdb_breakpoint
-	@if test "$(TESTARGS)" = "" ; then args="-a -v -v" ; else \
+	@if test "$(TESTARGS)" = "" ; then args="$(TESTARGS_NOFORK) -v" ; else \
 	  args="$(TESTARGS)" ; fi;  \
 	echo >>.gdbinit set args \
 	  -m`echo "$(TMP_BUILDDIR)/master.pike" | ./posix_to_native.sh` \
@@ -850,7 +851,7 @@ gdb_hilfe: master.pike
 # fast test
 fast_verify_testsuite: testsuite
 	PIKE_MODULE_PATH=""; PIKE_INCLUDE_PATH=""; \
-	if test "$(TESTARGS)" = "" ; then args="-F -a" ; \
+	if test "$(TESTARGS)" = "" ; then args="$(TESTARGS_FORK)" ; \
 	else args="$(TESTARGS)" ; fi; \
 	if test -f ./test-pike ; then \
 	  ./test-pike -DNOT_INSTALLED $(PIKEOPTS) -x test_pike $$args ; \
