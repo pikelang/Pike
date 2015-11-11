@@ -142,6 +142,7 @@ class Routingtable {
       if (!is_full()) {
 	nodes += ({ n });
 	nodes_by_hash[n->node_id] = n;
+	nodes_by_endpoint[n->node_endpoint()] = n;
 	// dwerror("Added %O to %O\n", n, this);
 	if (!dont_notify && functionp(node_added_cb)) {
 	  mixed err = catch {
