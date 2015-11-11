@@ -301,14 +301,20 @@ class Routingtable {
     return 0;
   }
 
+
+  int bucket_index_for(string hash) {
+    int target_bucket_index = distance_exp(my_node_id, hash);
+    target_bucket_index = min(MAX_BUCKETS-1 - target_bucket_index, sizeof(buckets)-1);
+    return target_bucket_index;
+  }
+
   //! Calculate and return the bucket in which DHTNode n should belong
   //! to.
   Bucket bucket_for(string|DHTNode n) {
     if (objectp(n)) {
       n = n->node_id;
     }
-    int target_bucket_index = distance_exp(my_node_id, n);
-    target_bucket_index = min(MAX_BUCKETS-1 - target_bucket_index, sizeof(buckets)-1);
+    int target_bucket_index = bucket_index_for(n);
     // dwerror("Target bucket index: %d\n", target_bucket_index);
     Bucket target_bucket = buckets[target_bucket_index];
     return target_bucket;
