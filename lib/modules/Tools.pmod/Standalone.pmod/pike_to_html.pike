@@ -118,7 +118,7 @@ ZXID
 _Ffmpeg
 __builtin";
 
-protected mapping(string:int(1..1)) delims, reserved, types, consts, ns, mods;
+protected multiset(string) delims, reserved, types, consts, ns, mods;
 
 final int(0..1) main(int argc, array(string) argv)
 {
@@ -197,20 +197,12 @@ final int(0..1) main(int argc, array(string) argv)
 //! @param code
 string convert(string code)
 {
-  delims   = ([]);
-  reserved = ([]);
-  types    = ([]);
-  consts   = ([]);
-  ns       = ([]);
-  mods     = ([]);
-
-  map(delimiters/1,    lambda (string s) { delims[s]   = 1; });
-  map(res_words/"|",   lambda (string s) { reserved[s] = 1; });
-  map(type/"|",        lambda (string s) { types[s]    = 1; });
-  map(constants/"|",   lambda (string s) { consts[s]   = 1; });
-  map(namespaces/"\n", lambda (string s) { ns[s]       = 1; });
-  map(modifiers/"|",   lambda (string s) { mods[s]     = 1; });
-
+  delims   = (multiset)(delimiters/1);
+  reserved = (multiset)(res_words/"|");
+  types    = (multiset)(type/"|");
+  consts   = (multiset)(constants/"|");
+  ns       = (multiset)(namespaces/"\n");
+  mods     = (multiset)(modifiers/"|");
   return make_html(Parser.Pike.split(code));
 }
 
