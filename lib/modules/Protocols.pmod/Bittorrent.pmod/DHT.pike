@@ -174,10 +174,11 @@ class Routingtable {
     //! notification of the event.
     //! Returns 0 if the node was successfully removed.
     int remove_node(DHTNode n, void|int dont_notify) {
-	nodes -= ({ n });
-	m_delete(nodes_by_hash, n->node_id);
+      m_delete(nodes_by_hash, n->node_id);
+      m_delete(nodes_by_endpoint, n->node_endpoint());
 
       if (has_value(nodes, n)) {
+	nodes -= ({ n });
 	// Make sure we cancel the check node callout
 	n->cancel_check_node();
 
@@ -189,7 +190,6 @@ class Routingtable {
 	return 0;
       } else if (has_value(candidates, n)) {
 	candidates -= ({ n });
-	m_delete(nodes_by_hash, n->node_id);
 
 	// Make sure we cancel the check node callout
 	n->cancel_check_node();
