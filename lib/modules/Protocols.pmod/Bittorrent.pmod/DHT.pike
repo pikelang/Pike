@@ -114,7 +114,7 @@ class Routingtable {
     }
 
     string _sprintf(int t) {
-      return sprintf("Bucket(%d/%d)", sizeof(nodes), sizeof(candidates));
+      return sprintf("Bucket(%d/%d %s)", sizeof(nodes), sizeof(candidates), uuid);
     }
 
     //! Adds a node to the bucket as a candidate with the option of
