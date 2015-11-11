@@ -533,12 +533,12 @@ int main(int argc, array(string) argv)
         case "asm": asmdebug+=foo(opt[1]); break;
 	case "mem": mem=1; break;
 
-	case "auto":
-	  if(stringp(opt[1]))
-	    testsuites=find_testsuites(opt[1]);
-	  else
-	    testsuites=find_testsuites(".");
-	  break;
+        case "auto":
+          if(stringp(opt[1]))
+            testsuites+=find_testsuites(opt[1]);
+          else
+            testsuites+=find_testsuites(".");
+          break;
 
         case "regression":
 	  add_constant("regression", 1);
