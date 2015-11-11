@@ -142,7 +142,7 @@ class Routingtable {
       if (!is_full()) {
 	nodes += ({ n });
 	nodes_by_hash[n->node_id] = n;
-	nodes_by_endpoint[n->node_endpoint()] = n;
+	nodes_by_endpoint[n->endpoint()] = n;
 	if (!dont_notify && functionp(node_added_cb)) {
 	  mixed err = catch {
 	      node_added_cb(n, this);
@@ -174,7 +174,7 @@ class Routingtable {
     //! Returns 0 if the node was successfully removed.
     int remove_node(DHTNode n, void|int dont_notify) {
       m_delete(nodes_by_hash, n->node_id);
-      m_delete(nodes_by_endpoint, n->node_endpoint());
+      m_delete(nodes_by_endpoint, n->endpoint());
 
       if (has_value(nodes, n)) {
 	nodes -= ({ n });
@@ -236,7 +236,7 @@ class Routingtable {
 	if (n->state == DHTNode.DHT_BAD) {
 	  nodes -= ({ n });
 	  m_delete(nodes_by_hash, n->node_id);
-	  m_delete(nodes_by_endpoint, n->node_endpoint());
+	  m_delete(nodes_by_endpoint, n->endpoint());
 	  destruct(n);
 	}
       }
@@ -244,7 +244,7 @@ class Routingtable {
 	if (n->state == DHTNode.DHT_BAD) {
 	  candidates -= ({ n });
 	  m_delete(nodes_by_hash, n->node_id);
-	  m_delete(nodes_by_endpoint, n->node_endpoint());
+	  m_delete(nodes_by_endpoint, n->endpoint());
 	  destruct(n);
 	}
       }
@@ -495,7 +495,7 @@ class Node {
 
   //
   //! Returns just the IP and port as an 8-bit string.
-  string node_endpoint_compact() {
+  string endpoint_compact() {
     array tmp = array_sscanf(address,"%d.%d.%d.%d");
     string ret = sprintf("%c%c%c%c%2c",
 			 @tmp,
@@ -505,13 +505,13 @@ class Node {
 
   //
   //! Returns the node endpoint as plain text
-  string node_endpoint() {
+  string endpoint() {
     return sprintf("%s:%d", address, port);
   }
 
   protected string _sprintf(int t) {
     return sprintf("Node(%s %s)",
-		   node_endpoint(),
+		   endpoint(),
 		   (node_id?String.string2hex(node_id):"<unknown hash>"));
   }
 
@@ -1655,7 +1655,7 @@ void handle_get_peers(mapping data, string ip, int port) {
 
   if (mapping known_peers = peers_by_hash[target_hash]) {
     // We know of peers for this hash, so return what we know.
-    array peers = known_peers->peers->node_endpoint_compact();
+    array peers = known_peers->peers->endpoint_compact();
     resp->r->values = peers*"";
   } else {
     // We don't know of peers for this hash, so return nodes we know
