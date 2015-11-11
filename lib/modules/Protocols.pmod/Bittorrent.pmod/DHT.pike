@@ -366,6 +366,8 @@ class Routingtable {
     target_bucket->promote_nodes();
     if (target_bucket == buckets[-1] && target_bucket->is_full()) {
       split_bucket(target_bucket);
+      // Recalculate the target bucket
+      target_bucket = bucket_for(n);
     }
     if (target_bucket->add_node(n)) {
       return UNDEFINED;
