@@ -794,6 +794,7 @@ class DHTOperation(string target_hash, function done_cb, mixed ... done_cb_args)
   protected mapping(string:mapping) transactions_in_flight = ([]); // Outstanding transactions
   protected array(Node) nodes_to_query = ({});                     // Nodes in line to be queried
 
+  protected int i_am_done = 0;                                     // Indicates that the Op is done
 
   //
   // This method should be overridden by the actual handlers for the
@@ -989,6 +990,7 @@ class DHTOperation(string target_hash, function done_cb, mixed ... done_cb_args)
   protected void done() {
     // dwerror("get peers took %ds\n", time(1) - start_time);
     // dwerror("%s\n", describe_backtrace(backtrace()));
+    i_am_done = 1;
     if (functionp(done_cb)) {
       done_cb && done_cb(this, @done_cb_args);
       done_cb = UNDEFINED;
