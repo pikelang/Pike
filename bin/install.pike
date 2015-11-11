@@ -1043,6 +1043,7 @@ void install_dir(string from, string to, int dump)
     if(file[..1]==".#") continue;
     if(file[0]=='#' && file[-1]=='#') continue;
     if(file[-1]=='~') continue;
+    if(has_suffix(file, ".test")) continue;
     mixed stat=file_stat(combine_path(from,file));
     if (stat) {
       if(stat[1]==-2) {

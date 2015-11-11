@@ -68,8 +68,11 @@ array(string) find_testsuites(string dir)
       string name = combine_path(dir, file);
       if(Stdio.is_dir(name))
 	ret += find_testsuites(name);
-      else if(file=="testsuite")
+      else if(file=="testsuite") {
 	ret += ({ combine_path(dir, file) });
+      } else if(has_suffix(file, ".test")) {
+	ret += ({ combine_path(dir, file) });
+      }
     }
   }
   return ret;
@@ -84,6 +87,20 @@ array(string|array(string)) read_tests( string fn ) {
   }
 
   string pike_compat;
+
+  string test_type = "legacy";
+  sscanf(tests, "%*sTEST:%*[ \t]%s%*[ \t\n]", test_type);
+  if (test_type == "RUN-AS-PIKE-SCRIPT") {
+    // Fake a test that will execute the script
+    array ret =
+      ({ 0, ({
+	sprintf(#"%s:0: test 1, expected result: RUNCT
+   array a() { return Tools.Testsuite.run_script (({ %q })); }", fn, fn) }),
+    });
+
+    return ret;
+  }
+
   if(sscanf (tests, "START%s\n%s", pike_compat, tests) == 2) {
     if(!has_suffix(tests, "END\n"))
       log_msg("%s: Missing end marker.\n", fn);
