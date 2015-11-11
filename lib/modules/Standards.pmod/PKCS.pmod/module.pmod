@@ -15,7 +15,9 @@ import Standards.ASN1.Types;
 
 private object RSA;
 private object DSA;
+#if constant(Crypto.ECC.Curve)
 private object ECDSA;
+#endif /* Crypto.ECC.Curve */
 
 //! Parse a PKCS#8 PrivateKeyInfo (cf @rfc{5208:5@}).
 //!
