@@ -1032,7 +1032,7 @@ class FindNode {
   inherit DHTOperation;
 
   //! Override the default number of desired results
-  int desired_results = 50;
+  int desired_results = 1;
 
   //
   //! Callback called by parent to generate the query for this
