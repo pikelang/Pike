@@ -1890,6 +1890,10 @@ void set_node_id(string my_node_id) {
 }
 
 //
+//! Allows outsiders to examine the node id of this instance.
+string get_node_id() { return my_node_id; };
+
+//
 //! Start up the DHT instance.
 void start(int port, void|string bind_address) {
   if (is_running) return 0;
