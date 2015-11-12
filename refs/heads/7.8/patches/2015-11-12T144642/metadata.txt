@@ -1,0 +1,556 @@
+subject: Pike 7.8: Multiple fixes:
+from: f93b6fe3c8660468dfc028b873ada16716c24e99
+to: fcfd31bcdb41270c86636cc7b45c14a9c9a019f1
+originator: wellhardh@roxen.com
+depends: 2015-09-24T145113
+restart: true
+
+Multiple fixes:
+
+  * Updated to tzdata2015g.
+
+  * Avoid throwing an error in close if the error is that the file is already closed.
+
+  * Nettle: Let the IV be set through Nettle.Proxy (aka Crypto.Buffer).
+
+  * SSL: Parameterized the SSL protocol version.
+    
+    Backported from Pike 8.0.
+
+  * SSL: Prepare for versions newer than TLS 1.0 (aka SSL 3.1).
+
+  * SSL: Support TLS 1.1 IVs.
+
+  * SSL: TLS 1.1 (aka SSL 3.2) is now supported!
+
+  * SSL: Added some more SSL3_DEBUG and SSL3_DEBUG_CRYPT.
+
+  * SSL.https: Protected some more LFUNs.
+
+  * SSL.Cipher: Protected some more LFUNs.
+
+  * SSL: Fixed bug in handling of the callback in SSL.sslport()->listen_fd().
+
+  * SSL: Fixed typo in new_client_states().
+
+  * SSL: Validate the server handshake in client mode.
+
+  * SSL: Fixed support for downgrading in client mode.
+
+  * SSL: Added symbolic constants for the SSL versions.
+
+  * SSL.Constants: ALERT_descriptions is now a mapping, and now contains all known alerts.
+
+  * SSL: Added support for specifying the minimum and maximum versions of SSL.
+    
+    The minimum and maximum accepted SSL/TLS versions are
+    configured by setting the corresponding variables in the
+    context object.
+    
+    This is in line with how other SSL parameters are configured.
+
+  * SSL: Added tests that client and server are compatible.
+
+  * SSL: Moved cond to proper place in the testsuite.
+
+  * SSL: Added context()->filter_weak_suites().
+    
+    Both context()->{rsa,dhe_dss}_mode() now take an optional argument and call filter_weak_suites().
+    Also moved the default sets of preferred cipher suites to Constants.preferred_*_suites.
+    SSL.Constants.CIPHER_algorithms is now a mapping (was a multiset).
+
+  * SSL: Fixed some strict-types warnings.
+
+  * By default, require >=128 bit ciphers.
+
+  * Simplified some debug.
+
+  * Updated list of TLS extensions from IANA.
+
+  * Print out actual cipher suites and extensions by name in debug mode.
+
+  * Fixed some warnings, simplified cipher suite selection code, bugfixed compressor selection code.
+
+  * SSL.handshake: Fixed Pike 8.0-ism in fmt_cipher_suites().
+
+  * SSL: Updated with constants from RFC 5932, 6209, 6367 and 6655.
+    
+    These RFCs define cipher suites for ARIA, CAMELLIA and AES-CCM.
+    
+    Also adds notes about relevant RFCs.
+
+  * SSL: Adjusted the estimated effective keylengths.
+    
+    The effective keylengths for DES and DES3 are much less
+    than the respective full keylengths.
+    
+    Also renamed CIPHER_algorithms to CIPHER_effective_keylengths
+    to better indicate what it is.
+
+  * SSL: Added HashAlgorithm enum.
+
+  * SSL: Added some more notes about required cipher suites.
+
+  * SSL: Fixed multiple bugs in the DHE handshakes.
+    
+    The server support for the DHE_RSA handshake now seems to work.
+
+  * SSL: Define and enable the DHE_RSA cipher suites.
+    
+    NB: This will probably break the testsuite, since the DHE_RSA
+    key exchange isn't supported in the SSL client yet.
+
+  * SHA256 not supported yet.
+
+  * SSL: Support DHE on the client side.
+
+  * SSL: Add support for some CAMELLIA cipher suites.
+
+  * Crypto: compatibility with older nettle versions
+    
+    SALSA20, CAMELLIA, SHA384 and SHA512 are not available in older nettle versions
+
+  * SSL.handshake: Fixed warning.
+
+  * SSL: Test all supported cipher suites.
+    
+    This currently breaks the testsuite, since the client
+    code for the ciphers rc4_40 and null seem to be broken.
+
+  * Use cond_begin/cond_end instead of cond_resolv, since it breaks with larger input.
+
+  * SSL.session: Added fields for the active RSA and DSA keys.
+
+  * SSL: Support exportable cipher suites in the client.
+
+  * SSL.handshake: Fixed documentation typo.
+
+  * SSL: The debug code now knows about SSL 2.0.
+    
+    SSL 2.0 constants may show up in HANDSHAKE_hello_v2 messages,
+    so make sure the debug code can display them properly.
+
+  * Compilation fix
+
+  * Testsuite [SSL]: Use less random random to speed things up.
+
+  * Set a sensible default random function in the context.
+
+  * Added another cipher suite debug printout.
+
+  * Close the client and server connections in the SSL test
+    
+    We were running out of FD:s on OSX, where the default max is 256
+
+  * SSL: Added parsing of the server_name extension from RFC 4366 3.1.
+
+  * SSL: Add support for Server Name Indication (SNI) based selection of
+    keys and certs.
+
+  * SSL/Protocols.HTTP: Add client support for SNI (server name indication)
+
+  * SSL: some servers reply to SNI with a like extension. It's sort of pointless, but no reason to throw a fatal.
+
+  * Fixed switch-on-object warning.
+
+  * SSL: Made the packet size configurable.
+    
+    Setting the size to 1400 improves conditions when there are packet
+    loss, as it avoids block-of-line for the integrity check of the TLS
+    record. The tradeoff is more overhead.
+
+  * SSL: Made client_random more random.
+    
+    Added a padding extension to survive f5 terminators with old firmware.
+
+  * Made the debug a bit more readable. Fixed a warning.
+
+  * SSL: Got rid of some variables.
+
+  * SSL.Cipher.KeyExchange: Split out from SSL.handshake.
+    
+    First step in cleaning up the key exchange code.
+    This mainly moves code (essentially unmodified) from SSL.handshake to
+    the new SSL.Cipher.KeyExchange.
+
+  * SSL: Renamed flag rsa_message_was_bad to message_was_bad.
+
+  * SSL.Cipher: Added KeyExchangeRSA and KeyExchangeGeneric.
+    
+    KeyExchangeRSA is a key exchanger that only handles KE_rsa.
+    
+    Also changed server_derive_master_secret() to use derive_master_secret()
+    to avoid code duplication.
+
+  * SSL.Cipher.KeyExchange: Reduced amount of duplicated code a bit more.
+
+  * SSL.Cipher: Added KeyExchangeDH and KeyExchangeDHE.
+    
+    The only thing KeyExchangeGeneric is used for now is KE_none (when
+    enabled)...
+
+  * SSL.Cipher: Added KeyExchangeNULL.
+    
+    The SSL_null_with_null_null cipher suite now works (when enabled).
+    
+    Removes KeyExchangeGeneric, since it is no longer in use.
+
+  * SSL.Cipher.KeyExchange: Improve argument order consistency.
+    
+    The arguments client_random and server_random now come in
+    this order everywhere.
+
+  * SSL.Cipher.KeyExchange: Added some Autodoc markup.
+
+  * SSL.Cipher.KeyExchange: Some clenups in derive_master_secret().
+    
+    Also adds P_sha256 from TLS 1.2 so that stuff compiles again.
+
+  * SSL.https: Display the port number at start.
+
+  * Comment fixes.
+
+  * SSL.Cipher: Centralize PRF handling.
+    
+    Some preparations for TLS 1.2.
+    
+    CipherSpec now contains the PRF to use for the session (as per TLS 1.2).
+    
+    Renamed SSL.Cipher.prf() SSL.Cipher.prf_tls_1_0().
+    
+    Added PRFs with similar naming for SSL 3.0 and TLS 1.2.
+    
+    Selection of the PRF to use is now done by SSL.Cipher.lookup().
+
+  * SSL.Cipher: Changed the API for rsa_verify().
+    
+    This is in preparation for TLS 1.2 where the signature format has
+    changed.
+
+  * Crypto: Backported Crypto.[DR]SA()->pkcs_{sign,verify}() from Pike 8.0.
+
+  * SSL.Cipher: Added verification of DSA signatures.
+
+  * SSL.Cipher: Enable support for TLS 1.2.
+    
+    This mainly adds some minimal support for TLS 1.2 signatures,
+    with which all the requirements for TLS are fulfilled.
+    
+    Seems to interoperate with gnutls:
+      - Description: (TLS1.2-PKIX)-(DHE-RSA-1024)-(CAMELLIA-256-CBC)-(SHA1)
+      - Session ID: 52:93:96:96:50:69:6B:65:53:53:4C:33:00:00:00:1F
+      - Ephemeral Diffie-Hellman parameters
+       - Using prime: 1024 bits
+       - Secret key: 1020 bits
+       - Peer's public key: 1024 bits
+      - Version: TLS1.2
+      - Key Exchange: DHE-RSA
+      - Server Signature: RSA-SHA1
+      - Cipher: CAMELLIA-256-CBC
+      - MAC: SHA1
+      - Compression: NULL
+      - Handshake was completed
+
+  * SSL: Improved compat with Pike 7.8.930 and earlier.
+    
+    Pike 7.8.930 and earlier have a Crypto.Buffer without set_iv(), so
+    they can't support TLS 1.1 and later in a reasonably simple way.
+
+  * SSL.handshake: Improved robustness.
+    
+    Apparently ke may be uninitialized in HANDSHAKE_finished under some
+    circumstanses. Triggered by eg gnutls-debug.
+
+  * SSL.handshake: Support EXTENSION_signature_algorithms.
+
+  * SSL.Cipher: Changed the verify API again.
+    
+    The verifier now reads the signature data itself.
+    
+    Also fixes broken DSA verifier and inverted test
+    in the client cert verifier.
+    
+    SSL.session()->has_required_certificates() now knows
+    about SSL.Cipher.TLSSigner.
+    
+    Fixes client side TLS 1.2 support.
+
+  * SSL.Cipher: Get rid of a few warnings.
+
+  * Crypto.RSA: Fixed API for pkcs_{sign,verify}().
+    
+    Now seems to work.
+
+  * Crypto: Added SHA 224, 384 and 512.
+    
+    Also adjusts the ASN.1 identifier for SHA256 to make Pike 8.0 happy.
+
+  * SSL.handshake: Send EXTENSION_signature_algorithms.
+    
+    The TLS 1.2 client now informs the server about what
+    signature algorithms it supports.
+
+  * SSL.Cipher: Support HMAC using SHA256.
+    
+    Also adds a few cipher suites using this HMAC.
+
+  * SSL.Constants: Added some SHA256 cipher suites.
+    
+    Also reduces priority of the rsa_with_idea_cbc_sha suite,
+    and adds some comments about when suites went obsolete.
+
+  * SSL.Constants: Fixed TLS_dhe_rsa_with_aes_256_cbc_sha256.
+
+  * SSL.Cipher: Filter suites obsoleted in TLS 1.1 and 1.2.
+    
+    For compliance with TLS 1.1 and 1.2 certain obsolete cipher
+    suites MUST NOT be negotiated in the TLS 1.1 and 1.2 modes.
+
+  * SSL: Update testsuite to test TLS 1.2.
+
+  * Testsuite: Don't attempt to use obsolete suites with recent TLS.
+
+  * SSL.https: Added client mode.
+
+  * SSL.Cipher: Renamed variable to match reality.
+    
+    The first argument to verify() is the SSL.Session; NOT the SSL.Context.
+
+  * SSL.https: Modern browsers want MIME headers...
+
+  * SSL.Cipher: Added a few more DES-40 cipher suites.
+
+  * Handle weak DES/DES3 keys better.
+
+  * SSL.Constants: Added KE_fortezza for completeness.
+
+  * SSL.Cipher: Added HMAC SHA384 and HMAC SHA512.
+    
+    These aren't used by any of Pikes cipher suites yet, but will be
+    useful when support for eg the GCM-suites is implemented.
+
+  * SSL.Constants: Reduce the estimated strength of DES40.
+
+  * SSL.context: Added get_suites().
+    
+    Generate the cipher suite selection from CIPHER_SUITES, so
+    that it always is up to date, and has the correct order.
+    
+    This gets rid of the hard-coded tables preferred_rsa_suites and
+    preferred_dhe_dss_suites.
+    
+    Pike 7.8 only: preferred_rsa_suites and preferred_dhe_dss_suites
+    have been replaced with getters generating the same content.
+
+  * SSL.https: Added some more diagnostics.
+    
+    The active cipher suites are now listed symbolically
+    at start in debug mode.
+
+  * Stop sending timestamp in server_random.
+
+  * Testsuite [SSL]: Use SSL.Context()->get_suites().
+
+  * Moving cond_end and reindent.
+
+  * Cut test time by 90% by only testing each cipher for each negotiated SSL/TLS version.
+
+  * Change CAMELLIA to Camellia to be consistent with other non-acronym ciphers.
+
+  * SSL: Some support dhe_dss_mode().
+    
+    Currently disabled as Tools.X509.decode_certificate() doesn't
+    support DSA certificates.
+
+  * Nettle: Added Galois Counter Mode (GCM)
+    
+    This is in large parts a rewrite of the Pike 8.0 implementation.
+
+  * SSL: Add support for AEAD ciphers.
+    
+    Implements the TLS 1.2 protocol-level support for AEAD cipher suites.
+    
+    No AEAD cipher suites have been added yet.
+
+  * SSL.Constants: Added some AES-GCM cipher suites.
+
+  * Documentation [Stdio.sendfile]: Document risk of SIGPIPE.
+    
+    Make sure that users of sendfile() are aware of [bug 7582] behavior.
+
+  * SSL.Cipher: Added prf_sha384().
+    
+    This prf is needed for ciphers with key sizes that are on the order
+    of 256 bits (since prf_tls_1_2() only has 256 bits of state).
+    
+    Also updates the P_hash() API to support hashes with blocksizes other
+    than 64.
+
+  * SSL.Cipher: Altering the prf also alters the hash.
+    
+    Fixes support for cipher suites using prf_sha384.
+
+  * SSL.Constants: Added some more AES-GCM cipher suites.
+
+  * SSL: Don't attempt AEAD algorithms before TLS 1.2.
+    
+    TLS 1.1 and earlier does not support AEAD algorithms,
+    so don't attempt to use them in that case.
+
+  * SSL.Cipher: Improved TLS 1.2 compatibility.
+    
+    The TLS 1.2 prf is now derived from the hash function used for
+    the MAC for the suite, as this seems to be the convention for
+    all the suites that have been defined after TLS 1.2.
+    
+    This simplifies implementation of the prf selection behaviour
+    specified eg for the suites defined in RFC 6367 3.3:
+    
+      When used with TLS versions prior to 1.2 (TLS 1.0 and TLS 1.1),
+      the PRF is calculated as specified in the appropriate version
+      of the TLS specification.
+
+  * SSL.Constants: Removed some dead code.
+
+  * SSL: KeyExchange protocols may need the connection object.
+    
+    Information from protocol extensions are often connection
+    specific, and thus stored in the connection object.
+    
+    Note that this introduces a circularity that needs to be broken.
+    We break the circularity on error and when a master key has
+    been successfully negotiated.
+
+  * SSL: Added some constants from RFC 4492.
+    
+    Also adds some related low-level support for ECC key exchanges.
+
+  * SSL.handshake: Added the ECC extensions from RFC 4492.
+    
+    These extensions are required to be able to support ECDH and ECDSA.
+
+  * SSL.handshake: Only use extensions the client has asked for.
+    
+    This fixes some of the complaints from gnutls-cli-debug.
+
+  * SSL.Cipher: Support KeyExchange using ECDHE.
+
+  * SSL.context: Improve compatibility with old Nettle.
+
+  * SSL: Fix priorities for anonymous cipher suites.
+    
+    Anonymous key exchange suffers from man in the middle attackability,
+    so make sure that they are only chosen when there are no supported
+    authenticated suites.
+
+  * Unused local variable
+
+  * Runtime: Added low-level API restore_signal_handler().
+    
+    This function is intended to be used by modules that use libraries
+    that zap some known signal handlers.
+    
+    A typical example is the MariaDB native client, which zaps the
+    SIGPIPE handler unconditionally on each new connection object.
+    
+    Also removes some obsolete PIKE_EXTRA_DEBUG.
+
+  * Mysql: Restore the SIGPIPE signal handler.
+    
+    Potential fix for [bug 7582].
+
+  * SSL.Constants: Added some curves from RFC 7027.
+
+  * SSL.Constants: Reordered EXTENSION symbols somewhat.
+
+  * SSL.connection: Implement 1/(n-1) measure against BEAST.
+    
+    Improve resilience against the BEAST client-side attack,
+    by splitting the first data packet into two, where the
+    first only contains a single byte of payload.
+
+  * SSL.context: Added sort_suites().
+
+  * SSL.handshake: Added a note about TLS vs SSLv2 compat.
+
+  * SSL.Constants: Applied errata to RFC 6367.
+    
+    The constant TLS_psk_with_camellia_128_gcm_sha256 had a typo in the RFC,
+    which made it conflict with TLS_ecdh_rsa_with_camellia_256_gcm_sha384.
+
+  * SSL.Constants: Added some missing CCM constants from RFC 6655.
+
+  * Fix a an exception for client hello packages close to 512 bytes.
+
+  * New temp assignment for padding extension. Added some RFC references.
+
+  * SSL.Constants: Renumber the CipherModes.
+    
+    Attempt to have a the cipher modes in approximate order of strength,
+    so that cipher_suite_sort_key() doesn't need to get more complicated.
+
+  * SSL: Protocol version handling cleanup.
+    
+    The protocol version is now represented the same way everywhere;
+    a 16-bit integer with the major (ie 3) in the high 8 bits, and
+    the minor in the low 8 bits.
+    
+    Previously there was a mix between having a two element array,
+    and just keeping track of the minor.
+    
+    Also strengthens the types of version variables in a few places.
+
+  * Crypto.DH: Added module.
+    
+    This module currently just contains the DH.Parameters class and
+    the MODP groups from RFC 2409, RFC 3526 and RFC 5114. Actual
+    Diffie-Hellman key-exchange is not implemented here (yet).
+
+  * Crypto.DH.Parameters: Added generate_keypair().
+    
+    Also: Crypto.DH.DHParams now uses Nettle.DH_Params if available.
+
+  * SSL.Cipher: Reduced DH overhead by a factor ~8.
+    
+    The DH secret was generated ~8 times larger than needed and
+    then reduced to the required size. This provided for an
+    excellent distribution at a cost of quite a bit of overhead.
+    
+    As this wasn't the intended behaviour of the code, it has
+    now been changed to just generate the required number of bits
+    plus a fixed overhead of 128 bits, which ought to be enough to
+    reduce the bias to a minimum.
+
+  * SSL.Cipher: Use Crypto.DH for Diffie-Hellman KEX.
+    
+    Now that Crypto.DH.DHParameters exists, there's no need for
+    a custom copy in SSL.Cipher.
+
+  * release number bumped to 932 by export.pike
+
+  * release number bumped to 933 by export.pike
+
+  * Build [Nettle]: Survive shadowing with older nettle.
+    
+    Correct erroneous configuration results.
+    A typical cause of such is shadowing a more recent system nettle
+    with an older local version, where configure will find headerfiles
+    belonging to the system version if the header files aren't present
+    in the (intended) older version.
+
+  * release number bumped to 934 by export.pike
+
+  * release number bumped to 935 by export.pike
+
+  * Cpp: Rename some of the hashtable functions.
+    
+    This is to avoid clashes with other libraries (in particular
+    mariadb-connector-c 2.2 which has (and uses) a hash_insert()).
+    
+    Fixes [bug 7560].
+
+  * release number bumped to 936 by export.pike
+
+  * release number bumped to 937 by export.pike
+
+  * GCM works again.
