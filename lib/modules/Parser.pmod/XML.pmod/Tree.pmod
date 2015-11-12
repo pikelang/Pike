@@ -196,9 +196,21 @@ class XMLNSParser {
     foreach(attrs; string attr; string val) {
       if (attr == "xmlns") {
 	if (val == "") error("Bad namespace specification (%O=\"\")\n", attr);
+	if ((val == "http://www.w3.org/2000/xmlns/") ||
+	    (val == "http://www.w3.org/XML/1998/namespace")) {
+	  error("Invalid namespace declaration.\n");
+	}
 	namespaces[0] = val;
       } else if (has_prefix(attr, "xmlns:")) {
 	if (val == "") error("Bad namespace specification (%O=\"\")\n", attr);
+	if ((val == "http://www.w3.org/2000/xmlns/") ||
+	    (val == "http://www.w3.org/XML/1998/namespace") ||
+	    (attr == "xmlns:xml") || (attr == "xmlns:xmlns")) {
+	  if ((attr != "xmlns:xml") ||
+	      (val != "http://www.w3.org/XML/1998/namespace")) {
+	    error("Invalid namespace declaration.\n");
+	  }
+	}
 	namespaces[attr[6..]] = val;
       }
     }
