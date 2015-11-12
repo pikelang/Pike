@@ -1,4 +1,4 @@
-subject: Pike 7.8: Multiple fixes:
+subject: Pike 7.8: Parser.XML: Namespace fixes
 from: fcfd31bcdb41270c86636cc7b45c14a9c9a019f1
 to: 2721aae3d0c7d748100cf0eade44a2fc41965a21
 originator: wellhardh@roxen.com
@@ -15,5 +15,3 @@ Multiple fixes:
     Fixes some of [bug 7591].
 
   * Parser.XML.Tree: Increased strictness of namespace parser.
-
-  * Testsuite [Parser.XML.Tree]: Added some more namespace tests.
