@@ -1,4 +1,4 @@
-subject: Pike 7.8: Multiple fixes:
+subject: Pike 7.8: Timezone data, SSL fixes,  
 from: f93b6fe3c8660468dfc028b873ada16716c24e99
 to: fcfd31bcdb41270c86636cc7b45c14a9c9a019f1
 originator: wellhardh@roxen.com
@@ -10,8 +10,6 @@ Multiple fixes:
   * Updated to tzdata2015g.
 
   * Avoid throwing an error in close if the error is that the file is already closed.
-
-  * Nettle: Let the IV be set through Nettle.Proxy (aka Crypto.Buffer).
 
   * SSL: Parameterized the SSL protocol version.
     
@@ -48,10 +46,6 @@ Multiple fixes:
     context object.
     
     This is in line with how other SSL parameters are configured.
-
-  * SSL: Added tests that client and server are compatible.
-
-  * SSL: Moved cond to proper place in the testsuite.
 
   * SSL: Added context()->filter_weak_suites().
     
@@ -112,13 +106,6 @@ Multiple fixes:
 
   * SSL.handshake: Fixed warning.
 
-  * SSL: Test all supported cipher suites.
-    
-    This currently breaks the testsuite, since the client
-    code for the ciphers rc4_40 and null seem to be broken.
-
-  * Use cond_begin/cond_end instead of cond_resolv, since it breaks with larger input.
-
   * SSL.session: Added fields for the active RSA and DSA keys.
 
   * SSL: Support exportable cipher suites in the client.
@@ -132,15 +119,9 @@ Multiple fixes:
 
   * Compilation fix
 
-  * Testsuite [SSL]: Use less random random to speed things up.
-
   * Set a sensible default random function in the context.
 
   * Added another cipher suite debug printout.
-
-  * Close the client and server connections in the SSL test
-    
-    We were running out of FD:s on OSX, where the default max is 256
 
   * SSL: Added parsing of the server_name extension from RFC 4366 3.1.
 
@@ -306,10 +287,6 @@ Multiple fixes:
     For compliance with TLS 1.1 and 1.2 certain obsolete cipher
     suites MUST NOT be negotiated in the TLS 1.1 and 1.2 modes.
 
-  * SSL: Update testsuite to test TLS 1.2.
-
-  * Testsuite: Don't attempt to use obsolete suites with recent TLS.
-
   * SSL.https: Added client mode.
 
   * SSL.Cipher: Renamed variable to match reality.
@@ -348,12 +325,6 @@ Multiple fixes:
     at start in debug mode.
 
   * Stop sending timestamp in server_random.
-
-  * Testsuite [SSL]: Use SSL.Context()->get_suites().
-
-  * Moving cond_end and reindent.
-
-  * Cut test time by 90% by only testing each cipher for each negotiated SSL/TLS version.
 
   * Change CAMELLIA to Camellia to be consistent with other non-acronym ciphers.
 
@@ -445,20 +416,6 @@ Multiple fixes:
 
   * Unused local variable
 
-  * Runtime: Added low-level API restore_signal_handler().
-    
-    This function is intended to be used by modules that use libraries
-    that zap some known signal handlers.
-    
-    A typical example is the MariaDB native client, which zaps the
-    SIGPIPE handler unconditionally on each new connection object.
-    
-    Also removes some obsolete PIKE_EXTRA_DEBUG.
-
-  * Mysql: Restore the SIGPIPE signal handler.
-    
-    Potential fix for [bug 7582].
-
   * SSL.Constants: Added some curves from RFC 7027.
 
   * SSL.Constants: Reordered EXTENSION symbols somewhat.
@@ -525,32 +482,3 @@ Multiple fixes:
     
     Now that Crypto.DH.DHParameters exists, there's no need for
     a custom copy in SSL.Cipher.
-
-  * release number bumped to 932 by export.pike
-
-  * release number bumped to 933 by export.pike
-
-  * Build [Nettle]: Survive shadowing with older nettle.
-    
-    Correct erroneous configuration results.
-    A typical cause of such is shadowing a more recent system nettle
-    with an older local version, where configure will find headerfiles
-    belonging to the system version if the header files aren't present
-    in the (intended) older version.
-
-  * release number bumped to 934 by export.pike
-
-  * release number bumped to 935 by export.pike
-
-  * Cpp: Rename some of the hashtable functions.
-    
-    This is to avoid clashes with other libraries (in particular
-    mariadb-connector-c 2.2 which has (and uses) a hash_insert()).
-    
-    Fixes [bug 7560].
-
-  * release number bumped to 936 by export.pike
-
-  * release number bumped to 937 by export.pike
-
-  * GCM works again.
