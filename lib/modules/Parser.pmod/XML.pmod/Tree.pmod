@@ -182,7 +182,11 @@ class XMLNSParser {
 
   void create()
   {
-    namespace_stack->push(([]));	// Sentinel.
+    // Sentinel and default namespaces.
+    namespace_stack->push(([
+			    "xml":"http://www.w3.org/XML/1998/namespace",
+			    "xmlns":"http://www.w3.org/2000/xmlns/",
+			  ]));
   }
 
   //! Check @[attrs] for namespaces.
@@ -1164,8 +1168,14 @@ protected class VirtualNode {
   {
     if (!mTagName) return;
     if (!forward_lookup) {
-      forward_lookup = ([]);
-      backward_lookup = ([]);
+      forward_lookup = ([
+	"http://www.w3.org/XML/1998/namespace":"xml:",
+	"http://www.w3.org/2000/xmlns/":"xmlns:",
+      ]);
+      backward_lookup = ([
+	"xml:":"http://www.w3.org/XML/1998/namespace",
+	"xmlns:":"http://www.w3.org/2000/xmlns/",
+      ]);
     } else {
       // Make sure changes aren't propagated backwards...
       forward_lookup += ([]);
