@@ -115,28 +115,45 @@ test_eq([[Parser.XML.Tree.simple_parse_input(xmlblob, UNDEFINED,
 
 // Test of implicit xml: namespace.
 test_do([[add_constant("xmlblob", "<?xml version='1.0' encoding='utf-8'?><foo xml:lang='bar' xmlns='gazonk:'/>");]])
+test_eq([[Parser.XML.Tree.simple_parse_input(xmlblob)->render_xml()]], xmlblob)
+test_eq([[Parser.XML.Tree.simple_parse_input(xmlblob, UNDEFINED,
+	 Parser.XML.Tree.PARSE_ENABLE_NAMESPACES)->render_xml()]], xmlblob)
+
+// Test InfoKOM 803815.
+test_do([[add_constant("xmlblob", #"<?xml version='1.0' encoding='UTF-8'?><foo xmlns='http://bar.com/test' xmlns:bar='http://foo.com/bar/'>
+  <hej bar:gazonk='hopp' xml:lang='sv-SE'>
+    <tag>test</tag>
+  </hej>
+</foo>");]])
+test_eq([[Parser.XML.Tree.simple_parse_input(xmlblob)->render_xml()]], xmlblob)
 test_eq([[Parser.XML.Tree.simple_parse_input(xmlblob, UNDEFINED,
 	 Parser.XML.Tree.PARSE_ENABLE_NAMESPACES)->render_xml()]], xmlblob)
 
 // Test of explicit xml: namespace.
 test_do([[add_constant("xmlblob", "<?xml version='1.0' encoding='utf-8'?><foo xml:lang='bar' xmlns='gazonk:' xmlns:xml='http://www.w3.org/XML/1998/namespace'/>");]])
+test_eq([[Parser.XML.Tree.simple_parse_input(xmlblob)->render_xml()]], xmlblob)
 test_eq([[Parser.XML.Tree.simple_parse_input(xmlblob, UNDEFINED,
 	 Parser.XML.Tree.PARSE_ENABLE_NAMESPACES)->render_xml()]], xmlblob)
 
 // Test detection of invalid namespaces.
 test_do([[add_constant("xmlblob", "<?xml version='1.0' encoding='utf-8'?><foo xml:lang='bar' xmlns='gazonk:' xmlns:xml='http://www.w3.org/XML/1998/invalid'/>");]])
+test_eq([[Parser.XML.Tree.simple_parse_input(xmlblob)->render_xml()]], xmlblob)
 test_eval_error([[Parser.XML.Tree.simple_parse_input(xmlblob, UNDEFINED,
 		  Parser.XML.Tree.PARSE_ENABLE_NAMESPACES);]])
 test_do([[add_constant("xmlblob", "<?xml version='1.0' encoding='utf-8'?><foo xml:lang='bar' xmlns='gazonk:' xmlns:invalid='http://www.w3.org/XML/1998/namespace'/>");]])
+test_eq([[Parser.XML.Tree.simple_parse_input(xmlblob)->render_xml()]], xmlblob)
 test_eval_error([[Parser.XML.Tree.simple_parse_input(xmlblob, UNDEFINED,
 		  Parser.XML.Tree.PARSE_ENABLE_NAMESPACES);]])
 test_do([[add_constant("xmlblob", "<?xml version='1.0' encoding='utf-8'?><foo xml:lang='bar' xmlns='gazonk:' xmlns:xmlns='http://www.w3.org/2000/xmlns/'/>");]])
+test_eq([[Parser.XML.Tree.simple_parse_input(xmlblob)->render_xml()]], xmlblob)
 test_eval_error([[Parser.XML.Tree.simple_parse_input(xmlblob, UNDEFINED,
 		  Parser.XML.Tree.PARSE_ENABLE_NAMESPACES);]])
 test_do([[add_constant("xmlblob", "<?xml version='1.0' encoding='utf-8'?><foo xml:lang='bar' xmlns='gazonk:' xmlns:xmlns='http://www.w3.org/2000/invalid/'/>");]])
+test_eq([[Parser.XML.Tree.simple_parse_input(xmlblob)->render_xml()]], xmlblob)
 test_eval_error([[Parser.XML.Tree.simple_parse_input(xmlblob, UNDEFINED,
 		  Parser.XML.Tree.PARSE_ENABLE_NAMESPACES);]])
 test_do([[add_constant("xmlblob", "<?xml version='1.0' encoding='utf-8'?><foo xml:lang='bar' xmlns='gazonk:' xmlns:invalid='http://www.w3.org/2000/xmlns/'/>");]])
+test_eq([[Parser.XML.Tree.simple_parse_input(xmlblob)->render_xml()]], xmlblob)
 test_eval_error([[Parser.XML.Tree.simple_parse_input(xmlblob, UNDEFINED,
 		  Parser.XML.Tree.PARSE_ENABLE_NAMESPACES);]])
 
