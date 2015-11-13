@@ -1305,7 +1305,7 @@ protected class VirtualNode {
 	      while(backward_lookup[prefix = ("NS"+i+":")]) {
 		i++;
 	      }
-	      backward_lookup[mShortNamespace] = ns;
+	      backward_lookup[prefix] = ns;
 	      forward_lookup[mNamespace] = prefix;
 	      attrs["xmlns:NS"+i] = ns;
 	      short_attrs["xmlns:NS"+i] = ns;
