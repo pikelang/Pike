@@ -244,7 +244,7 @@ class XMLNSParser {
       key = name[..i-1];
       name = name[i+1..];
     }
-    if (has_prefix(key||"", "xml") || (name == "xmlns")) {
+    if ((key || name) == "xmlns") {
       if (key) name = key + ":" + name;
       return name;
     }
