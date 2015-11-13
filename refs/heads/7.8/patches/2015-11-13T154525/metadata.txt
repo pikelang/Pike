@@ -1,0 +1,28 @@
+subject: Pike 7.8: Multiple fixes:
+from: 2721aae3d0c7d748100cf0eade44a2fc41965a21
+to: 009ea2b8cb1413e4ab6b36acc7159ebe5abe94ce
+originator: wellhardh@roxen.com
+depends: 2015-11-12T145539
+restart: true
+
+Multiple fixes:
+
+  * release number bumped to 938 by export.pike
+
+  * release number bumped to 939 by export.pike
+
+  * Parser.XML.Tree: Added some more (disabled) name space debug.
+
+  * Parser.XML.Tree: Fixed probable copy-paste typo.
+
+  * Parser.XML.Tree: Fixed handling of namespaced attributes some more.
+    
+    Also adds some more tests.
+    
+    COMPAT WARNING:
+      Attribute namespaces starting with "xml" (except for "xmlns")
+      are now handled just like any other attribute namespaces. This
+      means that eg the attribute "xml:lang" will be expanded to
+      "http://www.w3.org/XML/1998/namespacelang" in the mapping
+      returned by get_attributes(), and not kept as "xml:lang" when
+      namespace handling is enabled.
