@@ -1235,10 +1235,18 @@ protected class VirtualNode {
 	  }
 
 	  if (found) {
+#if 0
+	    werror("Found: NS: %O <%s%s/>\n",
+		   found, forward_lookup[found], full_name[sizeof(found)..]);
+#endif /* 0 */
 	    mTagName = full_name[sizeof(found)..];
 	    mNamespace = found;
 	    mShortNamespace = forward_lookup[found];
 	  } else {
+#if 0
+	    werror("No suitable namespace found for %O.\n",
+		   full_name);
+#endif /* 0 */
 	    // We need to allocate a short namespace symbol.
 	    // FIXME: This is O(n²).
 	    int i;
@@ -1252,6 +1260,11 @@ protected class VirtualNode {
 	  }
 	}
       }
+#if 0
+      werror("attrs: %O\n"
+	     "short attrs: %O\n",
+	     attrs, short_attrs);
+#endif /* 0 */
       // Then set the short namespaces for any attributes.
       foreach(indices(attrs), string attr_name) {
 	if (!has_prefix(attr_name, "xmlns:")) {
@@ -1283,6 +1296,10 @@ protected class VirtualNode {
 
 	    if (!(prefix = forward_lookup[ns])) {
 	      // We need to allocate a short namespace symbol.
+#if 0
+	      werror("Namespace %O not found in %O\n",
+		     ns, forward_lookup);
+#endif /* 0 */
 	      // FIXME: This is O(n²).
 	      int i;
 	      while(backward_lookup[prefix = ("NS"+i+":")]) {
@@ -1292,6 +1309,15 @@ protected class VirtualNode {
 	      forward_lookup[mNamespace] = prefix;
 	      attrs["xmlns:NS"+i] = ns;
 	      short_attrs["xmlns:NS"+i] = ns;
+#if 0
+	      werror("New namespace: %O %O\n", prefix, ns);
+	      werror("Forward_lookup: %O\n"
+		     "Backward_lookup: %O\n"
+		     "mNamespace:%O\n",
+		     forward_lookup,
+		     backward_lookup,
+		     mNamespace);
+#endif /* 0 */
 	    }
 	    m_delete(short_attrs, attr_name);
 	    short_attrs[prefix + attr_name[i+1..]] = attrs[attr_name];
