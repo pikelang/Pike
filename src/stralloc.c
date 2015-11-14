@@ -2191,7 +2191,7 @@ void cleanup_shared_string_table(void)
 
 void count_string_types() {
   unsigned INT32 e;
-  size_t num_static = 0, num_short = 0, num_substring = 0;
+  size_t num_static = 0, num_short = 0, num_substring = 0, num_malloc = 0;
 
   for (e = 0; e < htable_size; e++) {
       struct pike_string * s;
@@ -2207,6 +2207,9 @@ void count_string_types() {
           case STRING_ALLOC_SUBSTRING:
               num_substring ++;
               break;
+          case STRING_ALLOC_MALLOC:
+              num_malloc ++;
+              break;
           }
   }
 
@@ -2216,6 +2219,8 @@ void count_string_types() {
   push_ulongest(num_static);
   push_static_text("num_substrings");
   push_ulongest(num_substring);
+  push_static_text("num_malloced_strings");
+  push_ulongest(num_malloc);
 }
 
 size_t count_memory_in_string(const struct pike_string * s) {
@@ -2230,6 +2235,8 @@ size_t count_memory_in_string(const struct pike_string * s) {
       break;
   case STRING_ALLOC_MALLOC:
       size += PIKE_ALIGNTO(((s->len + 1) << s->size_shift), 4);
+      break;
+  case STRING_ALLOC_STATIC:
       break;
   }
 
