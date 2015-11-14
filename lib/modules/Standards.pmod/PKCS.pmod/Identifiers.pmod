@@ -5,6 +5,10 @@
 #pragma strict_types
 
 //! Various ASN.1 identifiers used by PKCS.
+//!
+//! @seealso
+//!   @rfc{2459@}, @rfc{3279@}, @rfc{3280@}, @rfc{3447@}, @rfc{4055@},
+//!   @rfc{4985@}, @rfc{5480@}, @rfc{5639@}
 
 /* Attributes (from http://leangen.uninett.no:29659/~hta/ietf/oid/2.5.4.html):
    (by 1999-01-25, a better URL is http://www.alvestrand.no/objectid/top.html)
@@ -88,7 +92,10 @@ Identifier rsa_sha512_id = pkcs_1_id->append(13);
 Identifier rsa_sha224_id = pkcs_1_id->append(14);
 
 // RFC 4055 2.2:
-Identifier mfg1_id = pkcs_1_id->append(8);
+Identifier mgf1_id = pkcs_1_id->append(8);
+
+// RFC 3447 a.2.1:
+Identifier pspecified_id = pkcs_1_id->append(9);
 
 // RFC 4055 3.1:
 Identifier rsassa_pss_id = pkcs_1_id->append(10);
