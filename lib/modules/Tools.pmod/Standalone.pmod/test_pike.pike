@@ -399,6 +399,8 @@ string find_test(string ts)
   string try;
   if(Stdio.is_file(try="tlib/modules/"+replace(ts, ".", ".pmod/")+".pmod/testsuite"))
     return try;
+  if(Stdio.is_file(try="../../lib/modules/"+replace(ts, ".", ".pmod/")+".test"))
+    return try;
   if(Stdio.is_file(try="modules/"+ts+"/testsuite")) return try;
   if(Stdio.is_file(try="post_modules/"+ts+"/testsuite")) return try;
   return ts;
