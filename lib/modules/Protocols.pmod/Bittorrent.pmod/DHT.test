@@ -230,6 +230,9 @@ constant random_hashes = ({ /* 20 elements */
 array(mapping) dhts = ({});
 mapping(string:object) dhts_by_id = ([]);
 
+System.Timer timer = System.Timer();
+int good, bad;
+
 object mt;
 
 mixed state;
@@ -243,7 +246,7 @@ void run_tests() {
       "nodes" : dhts->dht,
     ]);
     test_state++;
-    Tools.Testsuite.log_msg("Testing bootstrap node searches...");
+    Tools.Testsuite.log_status("Testing bootstrap node searches...");
 
   case 1: // Run find_nodes on a few instances
     if (sizeof(state->nodes)) {
@@ -253,13 +256,13 @@ void run_tests() {
 				lambda(object q) {
 				  if (!q || !sizeof(q->result)) {
 				    // Query failed somehow
-				    Tools.Testsuite.report_result(0,1);
+                                    bad++;
 				    Tools.Testsuite.log_msg("Failed to perform bootstrap request on node %s\n",
 							    String.string2hex(dht->get_node_id()));
 				    run_tests();
 				  }
 				  state->op = 0;
-				  Tools.Testsuite.report_result(1,0);
+                                  good++;
 				  run_tests();
 				})->execute();
       break;
@@ -272,7 +275,7 @@ void run_tests() {
       "hashes" : String.hex2string(random_hashes[*]),
     ]);
     test_state++;
-    Tools.Testsuite.log_msg("Announcing hashes to nodes...");
+    Tools.Testsuite.log_status("Announcing hashes to nodes...");
 
   case 3:
     // As long as we have a hash to announce, we pick a random
@@ -293,11 +296,17 @@ void run_tests() {
       "nodes" : dhts->dht,
     ]);
     test_state++;
-    Tools.Testsuite.log_msg("Attempting to lookup hashes from all nodes...");
 
 
   case 5:
-    // We want to test all hashes from all nodes, so reset the hashes and pick the next node
+    // We want to test all hashes from all nodes, so reset the hashes
+    // and pick the next node
+    if( timer->peek() > 1.0 )
+    {
+      timer->get();
+      Tools.Testsuite.log_status("Attempting to lookup hashes from all nodes."
+                                 " %d left.", sizeof(state->nodes));
+    }
     if (sizeof(state->nodes)) {
       state->hashes = String.hex2string(random_hashes[*]);
       state->node = state->nodes[0];
@@ -318,14 +327,14 @@ void run_tests() {
 					lambda(object q) {
 					  if (!q || !sizeof(q->result)) {
 					    // Query failed somehow
-					    Tools.Testsuite.report_result(0,1);
+                                            bad++;
 					    Tools.Testsuite.log_msg("Failed to perform peer lookup on %s for hash %s\n",
 								    state->node->get_node_id(),
 								    hash);
 					    run_tests();
 					  }
 					  state->op = 0;
-					  Tools.Testsuite.report_result(1,0);
+                                          good++;
 					  run_tests();
 					})->execute();
     } else {
@@ -339,6 +348,7 @@ void run_tests() {
   case 999:
 
   default:
+    Tools.Testsuite.report_result(good,bad);
     exit(0);
   }
 }
@@ -377,7 +387,7 @@ int main(int argc, array(string) argv) {
     dhts_by_id[node_id] = tmp->dht;
   }
 
-
+  Tools.Testsuite.log_status("Binding ports for all DHT instances.");
   // Go thru all the nodes and install the routing table.
   foreach(dhts, mapping di){
     object dht = di->dht;
@@ -392,8 +402,6 @@ int main(int argc, array(string) argv) {
       exit(4);
     }
   }
-  Tools.Testsuite.log_msg("Bound ports for all DHT instances\n");
-  Tools.Testsuite.report_result(1,0);
 
   // At this point, we have a private DHT cloud we can work with.
 
