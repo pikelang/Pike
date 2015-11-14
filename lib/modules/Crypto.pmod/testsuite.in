@@ -593,10 +593,10 @@ test_do( RSA->set_public_key(Gmp.mpz(H(#"$1" - " " - "\n" - "\r"), 256),
 			     Gmp.mpz(H(#"$2" - " " - "\n" - "\r"), 256)) )
 test_do( RSA->set_private_key(Gmp.mpz(H(#"$3" - " " - "\n" - "\r"), 256)) )
 test_do( add_constant("M", H(#"$4" - " " - "\n" - "\r")) )
-test_eq( RSA->pss_sign(M, $6, H(#"$5" - " " - "\n" - "\r")),
-	 H(#"$7" - " " - "\n" - "\r") )
-test_true( RSA->pss_verify(M, $6, H(#"$7" - " " - "\n" - "\r"),
-			   sizeof(H(#"$5" - " " - "\n" - "\r"))) )
+test_eq( RSA.PSS.pkcs_sign(M, $6, H(#"$5" - " " - "\n" - "\r")),
+			   H(#"$7" - " " - "\n" - "\r") )
+test_true( RSA.PSS.pkcs_verify(M, $6, H(#"$7" - " " - "\n" - "\r"),
+			       sizeof(H(#"$5" - " " - "\n" - "\r"))) )
 test_do( add_constant("M") )
 test_do( add_constant("RSA") )
 ]])

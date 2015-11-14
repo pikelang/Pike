@@ -11,8 +11,8 @@ inherit Crypto.Sign;
 //! Returns the string @expr{"RSA"@}.
 string(8bit) name() { return "RSA"; }
 
-class State {
-  inherit ::this_program;
+protected class LowState {
+  inherit Sign::State;
 
   protected string _sprintf(int t)
   {
@@ -239,140 +239,197 @@ class State {
 
 #endif
 
-  //
-  // --- RSASSA-PSS methods temporary API.
-  //
-
-  //! Signs the @[message] with a RSASSA-PSS signature using hash
-  //! algorithm @[h].
-  //!
-  //! @note
-  //!   This API will most likely be changed before release of
-  //!   Pike 8.2. Do not use unless you know what you are doing.
-  //!
-  //! @seealso
-  //!   @rfc{3447:8.1.1@}
-  string(8bit) pss_sign(string(8bit) message, .Hash h,
-			string(8bit)|int(0..) salt)
-  {
-    //    1. EMSA-PSS encoding: Apply the EMSA-PSS encoding operation (Section
-    //       9.1.1) to the message M to produce an encoded message EM of length
-    //       \ceil ((modBits - 1)/8) octets such that the bit length of the
-    //       integer OS2IP (EM) (see Section 4.2) is at most modBits - 1, where
-    //       modBits is the length in bits of the RSA modulus n:
-    //
-    //       EM = EMSA-PSS-ENCODE (M, modBits - 1).
-    //
-    //       Note that the octet length of EM will be one less than k if
-    //       modBits - 1 is divisible by 8 and equal to k otherwise. If the
-    //       encoding operation outputs "message too long," output "message
-    //       too long" and stop. If the encoding operation outputs "encoding
-    //       error," output "encoding error" and stop.
-    if (intp(salt)) {
-      salt = random([int(0..)]salt);
-    }
-    string(8bit) em =
-      h->emsa_pss_encode(message, [int(1..)](n->size()-1), [string(8bit)]salt);
-
-    // RSA signature:
-    //   a. Convert the encoded message EM to an integer message
-    //      representative m (see Section 4.2):
-    //
-    //      m = OS2IP (EM).
-    Gmp.mpz m = Gmp.smpz(em, 256);
-
-    //   b. Apply the RSASP1 signature primitive (Section 5.2.1) to the RSA
-    //      private key K and the message representative m to produce an
-    //      integer signature representative s:
-    //
-    //      s = RSASP1 (K, m).
-    Gmp.mpz s = m->powm(d, n);
-
-    //   c. Convert the signature representative s to a signature S of
-    //      length k octets (see Section 4.1):
-    //
-    //      S = I2OSP (s, k).
-    //
-    // Output the signature S.
-    return [string(8bit)]sprintf("%*c", n->size(256), s);
-  }
-
-  //! Verify RSASSA-PSS signature @[sign] of message @[message] using hash
-  //! algorithm @[h].
-  //!
-  //! @note
-  //!   This API will most likely be changed before release of
-  //!   Pike 8.2. Do not use unless you know what you are doing.
-  //!
-  //! @seealso
-  //!   @rfc{3447:8.1.2@}
-  int(0..1) pss_verify(string(8bit) message, .Hash h, string(8bit) sign,
-		       int(0..)|void saltlen)
-  {
-    // 1. Length checking: If the length of the signature S is not k
-    //    octets, output "invalid signature" and stop.
-    if (sizeof(sign) != n->size(256)) {
-      werror("Bad size\n");
-      return 0;
-    }
-
-    // 2. RSA verification:
-    //    a. Convert the signature S to an integer signature representative
-    //       s (see Section 4.2):
-    //
-    //       s = OS2IP (S).
-    Gmp.mpz s = Gmp.smpz(sign, 256);
-
-    //    b. Apply the RSAVP1 verification primitive (Section 5.2.2) to the
-    //       RSA public key (n, e) and the signature representative s to
-    //       produce an integer message representative m:
-    //
-    //       m = RSAVP1 ((n, e), s).
-    Gmp.mpz m = s->powm(e, n);
-
-    //       If RSAVP1 output "signature representative out of range," output
-    //       "invalid signature" and stop.
-    if (m >= n) {
-      werror("Out of range\n");
-      return 0;
-    }
-
-    //    c. Convert the message representative m to an encoded message EM
-    //       of length emLen = \ceil ((modBits - 1)/8) octets, where modBits
-    //       is the length in bits of the RSA modulus n (see Section 4.1):
-    //
-    //       EM = I2OSP (m, emLen).
-    string(8bit) em =
-      [string(8bit)]sprintf("%*c", [int(0..)]((n->size()+6)/8), m);
-
-    //       Note that emLen will be one less than k if modBits - 1 is
-    //       divisible by 8 and equal to k otherwise. If I2OSP outputs
-    //       "integer too large," output "invalid signature" and stop.
-    /* FIXME: Is this needed? */
-
-    // 3. EMSA-PSS verification: Apply the EMSA-PSS verification operation
-    //    (Section 9.1.2) to the message M and the encoded message EM to
-    //    determine whether they are consistent:
-    //
-    //    Result = EMSA-PSS-VERIFY (M, EM, modBits - 1).
-    //
-    // 4. If Result = "consistent," output "valid signature." Otherwise,
-    //    output "invalid signature."
-    return h->emsa_pss_verify(message, em, [int(1..)](n->size() - 1), saltlen);
-  }
-
-  //
-  // --- PKCS methods
-  //
+  this_program `PSS();
+  this_program `PKCS1_5();
+}
 
 #define Sequence Standards.ASN1.Types.Sequence
 
-  private class PKCS_RSA_class {
-    Sequence signature_algorithm_id(.Hash);
-    Sequence build_public_key(global::State);
+private class PKCS_RSA_class {
+  Sequence signature_algorithm_id(.Hash);
+  Sequence build_public_key(global::State);
+}
+private object(PKCS_RSA_class) PKCS_RSA =
+  [object(PKCS_RSA_class)]Standards.PKCS["RSA"];
+
+//! RSA PSS signatures (@rfc{3447:8.1@}).
+//!
+//! @seealso
+//!   @[PKCS1_5State]
+class PSSState {
+  inherit LowState;
+
+  local {
+    //! Get the PSS signature state.
+    this_program `PSS() { return this_program::this; }
+
+    protected int(0..) default_salt_size = 20;
+
+    string(7bit) name() { return "RSASSA-PSS"; }
+
+    int(0..) salt_size() { return default_salt_size; }
+
+    void set_salt_size(int(0..) salt_size) { default_salt_size = salt_size; }
+
+    int(0..1) _equal(mixed x)
+    {
+      return objectp(x) && (object_program(x) == this_program) &&
+	(salt_size == ([object(this_program)]x)->salt_size) &&
+	::_equal(x);
+    }
+
+    //! Signs the @[message] with a RSASSA-PSS signature using hash
+    //! algorithm @[h].
+    //!
+    //! @param message
+    //!   Message to sign.
+    //!
+    //! @param h
+    //!   Hash algorithm to use.
+    //!
+    //! @param salt
+    //!   Either of
+    //!   @mixed
+    //!     @type int(0..)
+    //!       Use a @[random] salt of this length for the signature.
+    //!     @type zero|void
+    //!       Use a @[random] salt of length @[salt_size()].
+    //!     @type string(8bit)
+    //!       Use this specific salt.
+    //!   @endmixed
+    //!
+    //! @returns
+    //!   Returns the signature on success, and @expr{0@} (zero)
+    //!   on failure (typically that the hash + salt combo is too
+    //!   large for the RSA modulo).
+    //!
+    //! @seealso
+    //!   @[pkcs_verify()], @[salt_size()], @rfc{3447:8.1.1@}
+    string(8bit) pkcs_sign(string(8bit) message, .Hash h,
+			   string(8bit)|int(0..)|void salt)
+    {
+      if (undefinedp(salt)) salt = default_salt_size;
+
+      //    1. EMSA-PSS encoding: Apply the EMSA-PSS encoding operation
+      //       (Section 9.1.1) to the message M to produce an encoded
+      //       message EM of length \ceil ((modBits - 1)/8) octets such
+      //       that the bit length of the integer OS2IP (EM) (see
+      //       Section 4.2) is at most modBits - 1, where modBits is
+      //       the length in bits of the RSA modulus n:
+      //
+      //       EM = EMSA-PSS-ENCODE (M, modBits - 1).
+      //
+      //       Note that the octet length of EM will be one less than
+      //       k if modBits - 1 is divisible by 8 and equal to k
+      //       otherwise. If the encoding operation outputs "message
+      //       too long," output "message too long" and stop. If the
+      //       encoding operation outputs "encoding error," output
+      //       "encoding error" and stop.
+      if (intp(salt)) {
+	salt = random([int(0..)]salt);
+      }
+      string(8bit) em =
+	h->emsa_pss_encode(message, [int(1..)](n->size()-1),
+			   [string(8bit)]salt);
+
+      // RSA signature:
+      //   a. Convert the encoded message EM to an integer message
+      //      representative m (see Section 4.2):
+      //
+      //      m = OS2IP (EM).
+      Gmp.mpz m = Gmp.smpz(em, 256);
+
+      //   b. Apply the RSASP1 signature primitive (Section 5.2.1) to the RSA
+      //      private key K and the message representative m to produce an
+      //      integer signature representative s:
+      //
+      //      s = RSASP1 (K, m).
+      Gmp.mpz s = m->powm(d, n);
+
+      //   c. Convert the signature representative s to a signature S of
+      //      length k octets (see Section 4.1):
+      //
+      //      S = I2OSP (s, k).
+      //
+      // Output the signature S.
+      return [string(8bit)]sprintf("%*c", n->size(256), s);
+    }
+
+    //! Verify RSASSA-PSS signature @[sign] of message @[message] using hash
+    //! algorithm @[h].
+    //!
+    //! @seealso
+    //!   @rfc{3447:8.1.2@}
+    int(0..1) pkcs_verify(string(8bit) message, .Hash h, string(8bit) sign,
+			  int(0..)|void saltlen)
+    {
+      if (undefinedp(saltlen)) saltlen = default_salt_size;
+
+      // 1. Length checking: If the length of the signature S is not k
+      //    octets, output "invalid signature" and stop.
+      if (sizeof(sign) != n->size(256)) {
+	werror("Bad size\n");
+	return 0;
+      }
+
+      // 2. RSA verification:
+      //    a. Convert the signature S to an integer signature representative
+      //       s (see Section 4.2):
+      //
+      //       s = OS2IP (S).
+      Gmp.mpz s = Gmp.smpz(sign, 256);
+
+      //    b. Apply the RSAVP1 verification primitive (Section 5.2.2) to the
+      //       RSA public key (n, e) and the signature representative s to
+      //       produce an integer message representative m:
+      //
+      //       m = RSAVP1 ((n, e), s).
+      Gmp.mpz m = s->powm(e, n);
+
+      //       If RSAVP1 output "signature representative out of range," output
+      //       "invalid signature" and stop.
+      if (m >= n) {
+	werror("Out of range\n");
+	return 0;
+      }
+
+      //    c. Convert the message representative m to an encoded message EM
+      //       of length emLen = \ceil ((modBits - 1)/8) octets, where modBits
+      //       is the length in bits of the RSA modulus n (see Section 4.1):
+      //
+      //       EM = I2OSP (m, emLen).
+      string(8bit) em =
+	[string(8bit)]sprintf("%*c", [int(0..)]((n->size()+6)/8), m);
+
+      //       Note that emLen will be one less than k if modBits - 1 is
+      //       divisible by 8 and equal to k otherwise. If I2OSP outputs
+      //       "integer too large," output "invalid signature" and stop.
+      /* FIXME: Is this needed? */
+
+      // 3. EMSA-PSS verification: Apply the EMSA-PSS verification operation
+      //    (Section 9.1.2) to the message M and the encoded message EM to
+      //    determine whether they are consistent:
+      //
+      //    Result = EMSA-PSS-VERIFY (M, EM, modBits - 1).
+      //
+      // 4. If Result = "consistent," output "valid signature." Otherwise,
+      //    output "invalid signature."
+      return h->emsa_pss_verify(message, em,
+				[int(1..)](n->size() - 1), saltlen);
+    }
   }
-  private object(PKCS_RSA_class) PKCS_RSA =
-    [object(PKCS_RSA_class)]Standards.PKCS["RSA"];
+}
+
+//! PKCS#1 1.5 encryption (@rfc{3447:7.2@}) and signatures (@rfc{3447:8.2@}).
+//!
+//! @seealso
+//!    @[PSSState]
+class PKCS1_5State
+{
+  inherit PSSState;
+
+  //! Get the PKCS#1 1.5 state.
+  this_program `PKCS1_5() { return this_program::this; }
 
   //! Calls @[Standards.PKCS.RSA.signatue_algorithm_id] with the
   //! provided @[hash].
@@ -551,6 +608,12 @@ class State {
   {
     return Gmp.smpz(s)->powm(e, n) == rsa_pad(digest, 1, 0);
   }
+}
+
+//!
+class State
+{
+  inherit PKCS1_5State;
 }
 
 //! Calling `() will return a @[State] object.
