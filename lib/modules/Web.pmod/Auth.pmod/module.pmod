@@ -1,6 +1,99 @@
 #pike __REAL_VERSION__
 
 //! Various authentication modules and classes.
+//!
+//! @code
+//! constant GOOGLE_KEY = "some-key-911bnn5s.apps.googleusercontent.com";
+//! constant GOOGLE_SECRET = "5arQDOugDrtIOVklkIet2q2i";
+//!
+//! Web.Auth.Google.Authorization auth;
+//!
+//! int main(int argc, array(string) argv)
+//! {
+//!   auth = Web.Auth.Google.Authorization(GOOGLE_KEY, GOOGLE_SECRET,
+//!                                        "http://localhost");
+//!
+//!   // The generated access token will be saved on disk.
+//!   string progname = replace(sprintf("%O", object_program(auth)), ".", "_");
+//!   string cookie = progname + ".cookie";
+//!
+//!   // If the cookie exists, set the authentication from the saved values
+//!   if (Stdio.exist(cookie)) {
+//!     auth->set_from_cookie(Stdio.read_file(cookie));
+//!   }
+//!
+//!   // Not authenticated, can mean no previous authentication is done, or that
+//!   // the authentication has expired. Some services have persistent access tokens
+//!   // some don't
+//!   if (!auth->is_authenticated()) {
+//!     // Try to renew the access token of it's renewable
+//!     if (auth->is_renewable()) {
+//!       write("Trying to refresh token...\n");
+//!       string data = auth->refresh_access_token();
+//!       Stdio.write_file(cookie, data);
+//!     }
+//!     else {
+//!       // No argument, start the authentication process
+//!       if (argc == 1) {
+//!         // Get the uri to the authentication page
+//!         string uri = auth->get_auth_uri();
+//!
+//!         write("Opening \"%s\" in browser.\nCopy the contents of the address "
+//!               "bar into here: ", Standards.URI(uri));
+//!
+//!         sleep(1);
+//!
+//!         string open_app;
+//!
+//!         // Mac
+//!         if (Process.run(({ "which", "open" }))->exitcode == 0) {
+//!           open_app = "open";
+//!         }
+//!         // Linux
+//!         else if (Process.run(({ "which", "xdg-open" }))->exitcode == 0) {
+//!           open_app = "xdg-open";
+//!         }
+//!         // ???
+//!         else {
+//!           open_app = "open";
+//!         }
+//!
+//!         Process.create_process(({ open_app, uri }));
+//!
+//!         // Wait for the user to paste the string from the address bar
+//!         string resp = Stdio.Readline()->read();
+//!         mapping p = Web.Auth.query_to_mapping(Standards.URI(resp)->query);
+//!         string code;
+//!
+//!         // This is if the service is OAuth1
+//!         if (p->oauth_token) {
+//!           auth->set_authentication(p->oauth_token);
+//!           code = p->oauth_verifier;
+//!         }
+//!         // OAuth2
+//!         else {
+//!           code = p->code;
+//!         }
+//!         // Get the access token and save the response to disk for later use.
+//!         string data = auth->request_access_token(code);
+//!         Stdio.write_file(cookie, data);
+//!       }
+//!       // If the user gives the access code from command line.
+//!       else {
+//!         string data = auth->request_access_token(argv[1]);
+//!         Stdio.write_file(cookie, data);
+//!       }
+//!     }
+//!   }
+//!
+//!   if (!auth->is_authenticated()) {
+//!     werror("Authentication failed");
+//!   }
+//!   else {
+//!     write("Congratulations you are now authenticated\n");
+//!   }
+//! }
+//! @endcode
 
 // Checks if A is an instance of B (either directly or by inheritance)
 #define INSTANCE_OF(A,B) (object_program((A)) == object_program((B)) || \
