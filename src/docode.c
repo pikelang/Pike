@@ -2420,7 +2420,7 @@ static int do_docode2(node *n, int flags)
     if (!name.used) {
       low_yyreport(REPORT_WARNING, n->current_file, n->line_number,
 		   parser_system_string, 0,
-		   "Label %S not used.\n", name.str);
+                   "Label %S not used.", name.str);
     }
     POP_STATEMENT_LABEL;
     BLOCK_END;
