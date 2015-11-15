@@ -236,11 +236,8 @@ dnl - getcwd
 test_true(stringp(getcwd()))
 
 dnl strerror
-cond([[all_constants()->strerror]],
-[[
 test_do(return strerror(1))
 test_true(stringp(strerror(2)||""))
-]])
 
 
 test_do(object o=Stdio.File(); if(!o->open(testfile,"wct")) return -1; o->write("foo\n" * 100); o->close();)
@@ -298,7 +295,7 @@ test_true(rm(testfile))
 
 test_do(add_constant("testfile"));
 
-cond([[ all_constants()->testdir ]],
+ifefun(testdir,
 [[
   test_true(rm(testdir));
   test_do(add_constant("testdir"));

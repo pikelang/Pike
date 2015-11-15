@@ -7,7 +7,7 @@ test_compile_any([[#pike 8.0]])
 test_compile_any([[#pike 8.1]])
 test_compile_any([[#pike 8.2]])
 
-cond([[all_constants()->_verify_internals]],
+ifefun(_verify_internals,
 [[
   test_do(_verify_internals())
 ]]);
@@ -2355,7 +2355,7 @@ test_eval_error([[ class Z { int destroy() { return 1/y; } }(); ]])
 test_any([[ class X { int y; class Z { protected void destroy() { y++; } } }; X x=X(); destruct(x->Z()); return x->y;]],1)
 test_any([[ class X { int y; class Z { protected void create() { y++; } } }; X x=X(); destruct(x->Z()); return x->y;]],1)
 
-cond([[all_constants()->_debug]],
+ifefun(_debug,
 [[
   test_do(_debug(_debug(0)))
 ]])
@@ -5154,7 +5154,7 @@ test_program([[int b=1,c; int a() { c=b+2; return c==3; }]])
 test_true([[ ("foobar"/"o") & ({ "foo" }) ]])
 test_any([[ array a="foo bar"/" "; return sizeof(a & ({"foo"}))]],1)
 
-cond([[all_constants()->_verify_internals]],
+ifefun(_verify_internals,
 [[
   test_do(_verify_internals())
 ]])
@@ -7752,7 +7752,7 @@ test_any([[int k=10->pow(30); int j=k+1;
 	   array b=({j+13,j+11,j-1,j+8,j+16,j+15,j+12});
            return sizeof( a-b )]],0);
 
-cond([[all_constants()->_verify_internals]],
+ifefun(_verify_internals,
 [[
   test_do(_verify_internals())
 ]])
@@ -9496,7 +9496,7 @@ foo:
   });
 ]])
 
-cond([[all_constants()->_verify_internals]],
+ifefun(_verify_internals,
 [[
   test_do(_verify_internals())
 ]])
@@ -10470,7 +10470,7 @@ return 0;
 // - _typeof
 
 // - _verify_internals
-cond([[all_constants()->_verify_internals]],
+ifefun(_verify_internals,
 [[
   test_do(_verify_internals())
 ]])
@@ -10569,7 +10569,7 @@ test_true(mappingp(all_constants()))
 test_eq(all_constants()["all_constants"],all_constants)
 
 // - all_threads
-cond([[all_constants()->thread_create]],
+ifefun(thread_create,
 [[
   test_true(arrayp(all_threads()))
   test_true(sizeof(all_threads()))
@@ -11263,7 +11263,7 @@ test_equal(mkmultiset(indices(class{constant a="a"; constant b="b";}())),
 // - load_module
 
 // - localtime
-cond([[all_constants()->localtime]],[[
+ifefun(localtime,[[
   test_true(mappingp(localtime(0)))
   test_do([[int t = -1; catch(localtime(t));]])
 ]])
@@ -11433,7 +11433,7 @@ test_equal(mkmultiset(({0})), (<0>))
 test_equal(mkmultiset(({(<>)})), (<(<>)>))
 
 // - mktime
-cond([[all_constants()->mktime]],
+ifefun(mktime,
 [[
   test_true([[mktime( ([
   "sec":58,
@@ -12727,7 +12727,7 @@ test_any([[string s="foo"; s[2]=0777; s[1]--; return s;]],"fn\777")
 test_any([[string s="foo"; s[2]=07777777; s[1]--; return s;]],"fn\7777777")
 test_any([[string s="foo"; s[2]='t'; catch (s[10]='x'); return s;]], "fot")
 
-cond([[all_constants()->_verify_internals]],
+ifefun(_verify_internals,
 [[
   test_do(_verify_internals())
 ]])

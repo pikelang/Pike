@@ -1186,7 +1186,7 @@ array(int) a() {
 ]])
 
 dnl --- THREAD TEST ---
-cond([[all_constants()->thread_create]]), [[
+ifefun(thread_create, [[
 test_any([[
   return threaded_test_ssl_connection(SSL.Constants.PROTOCOL_TLS_1_0,
 	SSL.Constants.PROTOCOL_TLS_1_0,

@@ -62,7 +62,7 @@ test_do(add_constant("testfile"))
 
 ]]) // System.Inotify
 
-cond([[ all_constants()->testdir ]],
+ifefun(testdir ]],
 [[
   test_true(rm(testdir));
   test_do(add_constant("testdir"));
