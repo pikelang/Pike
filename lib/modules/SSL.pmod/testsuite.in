@@ -668,16 +668,20 @@ test_do([[
     server_ctx->min_version = server_min;
     server_ctx->max_version = server_max;
 
-    int exp_version = server_max;
-    if (exp_version > client_max) {
-      exp_version = client_max;
+    int exp_version = PROTOCOL_SSL_3_0;
+
+    foreach(suites, int suite)
+    {
+      if( obsoleted_suites[suite] )
+	exp_version = max(exp_version, obsoleted_suites[suite]);
+      else
+      {
+	exp_version = PROTOCOL_TLS_MAX;
+	break;
+      }
     }
 
-    //FIXME
-    if (obsoleted_suites[suites[0] ] &&
-        (exp_version > obsoleted_suites[suites[0] ])) {
-      exp_version = obsoleted_suites[suites[0] ];
-    }
+    exp_version = min(exp_version, server_max, client_max);
 
     if ((exp_version < server_min) ||
 	(exp_version < client_min)) {
@@ -902,14 +906,20 @@ test_do([[
     server_ctx->min_version = server_min;
     server_ctx->max_version = server_max;
 
-    int exp_version = server_max;
-    if (exp_version > client_max) {
-      exp_version = client_max;
+    int exp_version = PROTOCOL_SSL_3_0;
+
+    foreach(suites, int suite)
+    {
+      if( obsoleted_suites[suite] )
+	exp_version = max(exp_version, obsoleted_suites[suite]);
+      else
+      {
+	exp_version = PROTOCOL_TLS_MAX;
+	break;
+      }
     }
-    if (obsoleted_suites[suites[0] ] &&
-        (exp_version > obsoleted_suites[suites[0] ])) {
-      exp_version = obsoleted_suites[suites[0] ];
-    }
+
+    exp_version = min(exp_version, server_max, client_max);
 
     if ((exp_version < server_min) ||
 	(exp_version < client_min)) {
