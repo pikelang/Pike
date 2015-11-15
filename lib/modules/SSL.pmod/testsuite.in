@@ -225,7 +225,7 @@ test_tests([[
 	  log_msg("Cipher suite lookup table error for suite %s.\n"
 		  "Got: ({ %{%d, %}}).\n"
 		  "Exp: ({ %{%d, %})).\n",
-		  sym, SSL.Constants.CIPHER_SUITES[SSL.Constants[sym] ],
+		  sym, CIPHER_SUITES[SSL.Constants[sym] ],
 		  expected);
 	}
       } else {
@@ -432,74 +432,73 @@ test_do([[
 ]])
 
 test_do([[
+  import SSL.Constants;
   add_constant("log_ssl_failure",
 	       lambda(int cmin, int cmax, int smin, int smax,
 		      string failure, array(int) suites)
 	       {
 		 log_msg("%s..%s client with %s..%s server failed.\n",
-			 SSL.Constants.fmt_version(cmin),
-			 SSL.Constants.fmt_version(cmax),
-			 SSL.Constants.fmt_version(smin),
-			 SSL.Constants.fmt_version(smax));
-		 log_msg("Cipher_suite: %s",
-			 SSL.Constants.fmt_cipher_suites(suites));
+			 fmt_version(cmin), fmt_version(cmax),
+			 fmt_version(smin), fmt_version(smax));
+		 log_msg("Cipher_suite: %s", fmt_cipher_suites(suites));
 		 log_msg("%s", failure);
 	       });
 ]])
 
 test_do([[
-  int TLS_1_0 = SSL.Constants.PROTOCOL_TLS_1_0;
-  int TLS_1_1 = SSL.Constants.PROTOCOL_TLS_1_1;
+  import SSL.Constants;
+  int TLS_1_0 = PROTOCOL_TLS_1_0;
+  int TLS_1_1 = PROTOCOL_TLS_1_1;
 
   // Mapping from suite to the last TLS version it was valid in (if any).
   mapping obsoleted_suites = ([
 #if 0
     // Duplicates. Listed further below under their SSL_* names.
-    SSL.Constants.TLS_rsa_with_idea_cbc_sha: TLS_1_1,
-    SSL.Constants.TLS_rsa_with_des_cbc_sha: TLS_1_1,
-    SSL.Constants.TLS_dh_dss_with_des_cbc_sha: TLS_1_1,
-    SSL.Constants.TLS_dh_rsa_with_des_cbc_sha: TLS_1_1,
-    SSL.Constants.TLS_dhe_dss_with_des_cbc_sha: TLS_1_1,
-    SSL.Constants.TLS_dhe_rsa_with_des_cbc_sha: TLS_1_1,
-    SSL.Constants.TLS_dh_anon_with_des_cbc_sha: TLS_1_1,
+    TLS_rsa_with_idea_cbc_sha: TLS_1_1,
+    TLS_rsa_with_des_cbc_sha: TLS_1_1,
+    TLS_dh_dss_with_des_cbc_sha: TLS_1_1,
+    TLS_dh_rsa_with_des_cbc_sha: TLS_1_1,
+    TLS_dhe_dss_with_des_cbc_sha: TLS_1_1,
+    TLS_dhe_rsa_with_des_cbc_sha: TLS_1_1,
+    TLS_dh_anon_with_des_cbc_sha: TLS_1_1,
 #endif
 
     // Obsoleted in TLS 1.1:
-    SSL.Constants.SSL_dhe_dss_export_with_des40_cbc_sha: TLS_1_0,
-    SSL.Constants.SSL_dhe_rsa_export_with_des40_cbc_sha: TLS_1_0,
-    SSL.Constants.SSL_dh_dss_export_with_des40_cbc_sha: TLS_1_0,
-    SSL.Constants.SSL_dh_rsa_export_with_des40_cbc_sha: TLS_1_0,
-    SSL.Constants.SSL_dh_anon_export_with_des40_cbc_sha: TLS_1_0,
-    SSL.Constants.SSL_dh_anon_export_with_rc4_40_md5: TLS_1_0,
-    SSL.Constants.SSL_rsa_export_with_rc4_40_md5: TLS_1_0,
-    SSL.Constants.SSL_rsa_export_with_rc2_cbc_40_md5: TLS_1_0,
-    SSL.Constants.SSL_rsa_export_with_des40_cbc_sha: TLS_1_0,
-    SSL.Constants.SSL_null_with_null_null: TLS_1_0,
+    SSL_dhe_dss_export_with_des40_cbc_sha: TLS_1_0,
+    SSL_dhe_rsa_export_with_des40_cbc_sha: TLS_1_0,
+    SSL_dh_dss_export_with_des40_cbc_sha: TLS_1_0,
+    SSL_dh_rsa_export_with_des40_cbc_sha: TLS_1_0,
+    SSL_dh_anon_export_with_des40_cbc_sha: TLS_1_0,
+    SSL_dh_anon_export_with_rc4_40_md5: TLS_1_0,
+    SSL_rsa_export_with_rc4_40_md5: TLS_1_0,
+    SSL_rsa_export_with_rc2_cbc_40_md5: TLS_1_0,
+    SSL_rsa_export_with_des40_cbc_sha: TLS_1_0,
+    SSL_null_with_null_null: TLS_1_0,
 
     // Obsoleted in TLS 1.2:
-    SSL.Constants.SSL_rsa_with_idea_cbc_md5: TLS_1_1,
-    SSL.Constants.SSL_rsa_with_idea_cbc_sha: TLS_1_1,
-    SSL.Constants.SSL_dhe_rsa_with_des_cbc_sha: TLS_1_1,
-    SSL.Constants.SSL_dh_anon_with_des_cbc_sha: TLS_1_1,
-    SSL.Constants.SSL_rsa_with_des_cbc_md5: TLS_1_1,
-    SSL.Constants.SSL_rsa_with_des_cbc_sha: TLS_1_1,
-    SSL.Constants.SSL_dh_rsa_with_des_cbc_sha: TLS_1_1,
-    SSL.Constants.SSL_dh_dss_with_des_cbc_sha: TLS_1_1,
-    SSL.Constants.SSL_dhe_dss_with_des_cbc_sha: TLS_1_1,
-    SSL.Constants.SSL_rsa_fips_with_des_cbc_sha: TLS_1_1,
-    SSL.Constants.SSL_rsa_oldfips_with_des_cbc_sha: TLS_1_1,
+    SSL_rsa_with_idea_cbc_md5: TLS_1_1,
+    SSL_rsa_with_idea_cbc_sha: TLS_1_1,
+    SSL_dhe_rsa_with_des_cbc_sha: TLS_1_1,
+    SSL_dh_anon_with_des_cbc_sha: TLS_1_1,
+    SSL_rsa_with_des_cbc_md5: TLS_1_1,
+    SSL_rsa_with_des_cbc_sha: TLS_1_1,
+    SSL_dh_rsa_with_des_cbc_sha: TLS_1_1,
+    SSL_dh_dss_with_des_cbc_sha: TLS_1_1,
+    SSL_dhe_dss_with_des_cbc_sha: TLS_1_1,
+    SSL_rsa_fips_with_des_cbc_sha: TLS_1_1,
+    SSL_rsa_oldfips_with_des_cbc_sha: TLS_1_1,
   ]);
 
-  foreach(SSL.Constants.CIPHER_SUITES; int suite; array(int) def) {
+  foreach(CIPHER_SUITES; int suite; array(int) def) {
     if (obsoleted_suites[suite]) continue;
-    if ((sizeof(def) < 4) || (def[3] == SSL.Constants.MODE_cbc)) {
+    if ((sizeof(def) < 4) || (def[3] == MODE_cbc)) {
       // CBC and RC4 suites obsoleted in TLS 1.3.
-      obsoleted_suites[suite] = SSL.Constants.PROTOCOL_TLS_1_2;
+      obsoleted_suites[suite] = PROTOCOL_TLS_1_2;
     }
-    if (!(< SSL.Constants.KE_dhe_dss, SSL.Constants.KE_dhe_rsa, SSL.Constants.KE_dh_anon,
-	    SSL.Constants.KE_ecdhe_ecdsa, SSL.Constants.KE_ecdhe_rsa, SSL.Constants.KE_ecdh_anon >)[def[0] ]) {
+    if (!(< KE_dhe_dss, KE_dhe_rsa, KE_dh_anon,
+	    KE_ecdhe_ecdsa, KE_ecdhe_rsa, KE_ecdh_anon >)[def[0] ]) {
       // Only DHE and ECDHE are valid key exchanges in TLS 1.3.
-      obsoleted_suites[suite] = SSL.Constants.PROTOCOL_TLS_1_2;
+      obsoleted_suites[suite] = PROTOCOL_TLS_1_2;
     }
   }
 
@@ -980,26 +979,27 @@ test_do([[
 ]])
 
 test_do([[
+  import SSL.Constants;
   // Default suite for TLS 1.1 and earlier.
   // Default to just testing all key exchanges with a cipher
   // suite that is mostly valid in all versions prior to TLS 1.3.
   add_constant("legacy_suites", ({
     // These two are used to test cipher suite protocol downgrade.
-    SSL.Constants.SSL_rsa_export_with_des40_cbc_sha,	// <= TLS 1.0.
-    SSL.Constants.SSL_rsa_with_des_cbc_md5,		// <= TLS 1.1.
+    SSL_rsa_export_with_des40_cbc_sha,	// <= TLS 1.0.
+    SSL_rsa_with_des_cbc_md5,		// <= TLS 1.1.
 
-    SSL.Constants.SSL_dh_anon_with_3des_ede_cbc_sha,
-    SSL.Constants.SSL_rsa_with_3des_ede_cbc_sha,
-    SSL.Constants.SSL_dhe_rsa_with_3des_ede_cbc_sha,
-    SSL.Constants.SSL_dhe_dss_with_3des_ede_cbc_sha,
-    SSL.Constants.SSL_dh_rsa_with_3des_ede_cbc_sha,
-    SSL.Constants.SSL_dh_dss_with_3des_ede_cbc_sha,
+    SSL_dh_anon_with_3des_ede_cbc_sha,
+    SSL_rsa_with_3des_ede_cbc_sha,
+    SSL_dhe_rsa_with_3des_ede_cbc_sha,
+    SSL_dhe_dss_with_3des_ede_cbc_sha,
+    SSL_dh_rsa_with_3des_ede_cbc_sha,
+    SSL_dh_dss_with_3des_ede_cbc_sha,
 #if constant(Crypto.ECC.Curve)
-    SSL.Constants.TLS_ecdh_anon_with_3des_ede_cbc_sha,
-    SSL.Constants.TLS_ecdhe_rsa_with_3des_ede_cbc_sha,
-    SSL.Constants.TLS_ecdhe_ecdsa_with_3des_ede_cbc_sha,
-    SSL.Constants.TLS_ecdh_rsa_with_3des_ede_cbc_sha,
-    SSL.Constants.TLS_ecdh_ecdsa_with_3des_ede_cbc_sha,
+    TLS_ecdh_anon_with_3des_ede_cbc_sha,
+    TLS_ecdhe_rsa_with_3des_ede_cbc_sha,
+    TLS_ecdhe_ecdsa_with_3des_ede_cbc_sha,
+    TLS_ecdh_rsa_with_3des_ede_cbc_sha,
+    TLS_ecdh_ecdsa_with_3des_ede_cbc_sha,
 #endif
   }));
 
@@ -1007,15 +1007,15 @@ test_do([[
   // TLS 1.3 all other suites will be removed.
   // Try some AEAD suites that are available with most versions of Nettle.
   add_constant("aead_suites", ({
-    SSL.Constants.TLS_dhe_rsa_with_aes_128_ccm,
+    TLS_dhe_rsa_with_aes_128_ccm,
 #if constant(Crypto.ECC.Curve)
-    SSL.Constants.TLS_ecdhe_ecdsa_with_aes_128_ccm,
+    TLS_ecdhe_ecdsa_with_aes_128_ccm,
 #endif
 #if constant(Crypto.AES.GCM)
-    SSL.Constants.TLS_dh_anon_with_aes_128_gcm_sha256,
-    SSL.Constants.TLS_dhe_dss_with_aes_256_gcm_sha384,
+    TLS_dh_anon_with_aes_128_gcm_sha256,
+    TLS_dhe_dss_with_aes_256_gcm_sha384,
 #if constant(Crypto.ECC.Curve)
-    SSL.Constants.TLS_ecdhe_rsa_with_aes_256_gcm_sha384
+    TLS_ecdhe_rsa_with_aes_256_gcm_sha384
 #endif
 #endif
   }));
@@ -1025,6 +1025,7 @@ dnl --- PROTOCOL VERSION MATCH TEST ---
 dnl Run through the different permutations of client and server ranges
 dnl and see that they can connect properly.
 test_tests([[
+import SSL.Constants;
 array(int) a() {
 #define __NT__
   int successes;
@@ -1033,9 +1034,9 @@ array(int) a() {
 #ifndef __NT__
   array(Stdio.File) results = ({});
 #endif
-  for (int server_max = SSL.Constants.PROTOCOL_SSL_3_0;
-       server_max <= SSL.Constants.PROTOCOL_TLS_MAX; server_max++) {
-  for (int server_min = SSL.Constants.PROTOCOL_SSL_3_0;
+  for (int server_max = PROTOCOL_SSL_3_0;
+       server_max <= PROTOCOL_TLS_MAX; server_max++) {
+  for (int server_min = PROTOCOL_SSL_3_0;
        server_min <= server_max; server_min++) {
 
   string trim(string i) {
@@ -1045,8 +1046,8 @@ array(int) a() {
   };
 
   string server = sprintf("%s..%s",
-			  SSL.Constants.fmt_version(server_min),
-			  trim(SSL.Constants.fmt_version(server_max)));
+			  fmt_version(server_min),
+			  trim(fmt_version(server_max)));
 #ifndef __NT__
   Stdio.File rin = Stdio.File();
   Stdio.File rout = rin->pipe();
@@ -1058,14 +1059,14 @@ array(int) a() {
   }
   rin->close();
 #endif
-  for (int client_max = SSL.Constants.PROTOCOL_SSL_3_0;
-       client_max <= SSL.Constants.PROTOCOL_TLS_MAX; client_max++) {
-  for (int client_min = SSL.Constants.PROTOCOL_SSL_3_0;
+  for (int client_max = PROTOCOL_SSL_3_0;
+       client_max <= PROTOCOL_TLS_MAX; client_max++) {
+  for (int client_min = PROTOCOL_SSL_3_0;
        client_min <= client_max; client_min++) {
 
   string client = sprintf("%s..%s",
-			    SSL.Constants.fmt_version(client_min),
-			    trim(SSL.Constants.fmt_version(client_max)));
+			  fmt_version(client_min),
+			  trim(fmt_version(client_max)));
 
   __signal_watchdog();
 
@@ -1074,7 +1075,7 @@ array(int) a() {
     exp_res = UNDEFINED;
   }
 
-  array(int) suites = ({ SSL.Constants.SSL_null_with_null_null });
+  array(int) suites = ({ SSL_null_with_null_null });
 
   log_status("%s client against %s", client, server);
 
@@ -1126,6 +1127,7 @@ dnl --- CIPHER TEST ---
 dnl Iterate over all Protocol versions and attempt to connection with
 dnl all suites defined for that version.
 test_tests([[
+import SSL.Constants;
 array(int) a() {
 #define __NT__
   int successes;
@@ -1134,8 +1136,8 @@ array(int) a() {
 #ifndef __NT__
   array(Stdio.File) results = ({});
 #endif
-  for (int version = SSL.Constants.PROTOCOL_SSL_3_0;
-       version <= SSL.Constants.PROTOCOL_TLS_MAX; version++) {
+  for (int version = PROTOCOL_SSL_3_0;
+       version <= PROTOCOL_TLS_MAX; version++) {
 
 #ifndef __NT__
   Stdio.File rin = Stdio.File();
@@ -1152,13 +1154,12 @@ array(int) a() {
   __signal_watchdog();
 
   array(int) suites = server_ctx->get_suites(-1, 2, (<>));
+
   // Null cipher tested in PROTOCOL VERSION MATCH TEST.
-  suites -= ({ SSL.Constants.SSL_null_with_null_null });
+  suites -= ({ SSL_null_with_null_null });
 
   foreach(suites, int suite) {
-    log_status("%s : %s",
-	       SSL.Constants.fmt_version(version),
-	       SSL.Constants.fmt_cipher_suite(suite));
+    log_status("%s : %s", fmt_version(version), fmt_cipher_suite(suite));
 
     int res = test_ssl_connection(version, version,
 				  version, version, client_msg,
