@@ -101,7 +101,6 @@ test_tests([[
       if (!has_prefix(sym, "SSL_") && !has_prefix(sym, "TLS_")) continue;
       array(string) fields = sym/"_";
       int fno = 1;
-
       int ke = -1;
 
       [ke, fno] = parse_fields(fields, fno, KE_mapping);
@@ -393,39 +392,39 @@ test_do([[
 ]])
 
 test_any([[
-    Stdio.File client_con = Stdio.File();
-    Stdio.File server_con =
-      client_con->pipe(Stdio.PROP_NONBLOCK | Stdio.PROP_BIDIRECTIONAL);
+  Stdio.File client_con = Stdio.File();
+  Stdio.File server_con =
+    client_con->pipe(Stdio.PROP_NONBLOCK | Stdio.PROP_BIDIRECTIONAL);
 
-    SSL.Context server_ctx = TestContext();
-    SSL.File server = SSL.File(server_con, server_ctx);
+  SSL.Context server_ctx = TestContext();
+  SSL.File server = SSL.File(server_con, server_ctx);
 
-    if (!server->accept()) return 0;
+  if (!server->accept()) return 0;
 
-    void dummy() { };
-    server->set_nonblocking(dummy, dummy, dummy);
-    string cb_data;
-    void alert_cb(object p, object s, string data)
-    {
-      cb_data = data;
-    };
-    server->set_alert_callback(alert_cb);
+  void dummy() { };
+  server->set_nonblocking(dummy, dummy, dummy);
+  string cb_data;
+  void alert_cb(object p, object s, string data)
+  {
+    cb_data = data;
+  };
+  server->set_alert_callback(alert_cb);
 
-    Stdio.Buffer out = Stdio.Buffer("GET / HTTP/1.0\r\n\r\n");
+  Stdio.Buffer out = Stdio.Buffer("GET / HTTP/1.0\r\n\r\n");
 
-    void my_write()
-    {
-      if(!sizeof(out))
-        return;
-      client_con->write(out->read(1));
-      my_write();
-    };
-    Thread.Thread(my_write);
+  void my_write()
+  {
+    if(!sizeof(out))
+      return;
+    client_con->write(out->read(1));
+    my_write();
+  };
+  Thread.Thread(my_write);
 
-    while(!cb_data)
-      Pike.DefaultBackend(0.005);
+  while(!cb_data)
+    Pike.DefaultBackend(0.005);
 
-    return has_prefix("GET / HTTP/1.0\r\n\r\n", cb_data);
+  return has_prefix("GET / HTTP/1.0\r\n\r\n", cb_data);
 ]], 1)
 
 test_do([[
@@ -673,6 +672,8 @@ test_do([[
     if (exp_version > client_max) {
       exp_version = client_max;
     }
+
+    //FIXME
     if (obsoleted_suites[suites[0] ] &&
         (exp_version > obsoleted_suites[suites[0] ])) {
       exp_version = obsoleted_suites[suites[0] ];
@@ -1010,7 +1011,9 @@ test_do([[
   }));
 ]])
 
-dnl client_min, client_max, server_min, server_max, exp
+dnl --- PROTOCOL VERSION MATCH TEST ---
+dnl Run through the different permutations of client and server ranges
+dnl and see that they can connect properly.
 test_tests([[
 array(int) a() {
 #define __NT__
@@ -1054,82 +1057,22 @@ array(int) a() {
 			    SSL.Constants.fmt_version(client_min),
 			    trim(SSL.Constants.fmt_version(client_max)));
 
-    __signal_watchdog();
+  __signal_watchdog();
 
-    int exp_protocol = min(client_max, server_max);
+  string exp_res = client_msg;
+  if ((client_max < server_min) || (server_max < client_min)) {
+    exp_res = UNDEFINED;
+  }
 
-    string exp_res = client_msg;
-    if ((client_max < server_min) || (server_max < client_min)) {
-      exp_res = UNDEFINED;
-    }
+  array(int) suites = ({ SSL.Constants.SSL_null_with_null_null });
 
-    array(int) suites = legacy_suites;
+  log_status("%s client against %s", client, server);
 
-    if ((server_max >= SSL.Constants.PROTOCOL_TLS_1_2) ||
-	(client_max >= SSL.Constants.PROTOCOL_TLS_1_2)) {
-      // Try some AEAD suites too.
-      if (client_min >= SSL.Constants.PROTOCOL_TLS_1_3) {
-        // None of the legacy suites are valid in TLS 1.3 (not AEAD),
-	// and will never be sent by a TLS 1.3-only client.
-	suites = ({});
-      }
-      suites += aead_suites;
-    }
-
-#if constant(thread_create)
-    foreach(suites, int suite) {
-    log_status("%s client against %s %s (threaded)...",
-	       client, server,
-	       SSL.Constants.fmt_cipher_suite(suite));
-      int count = threaded_test_ssl_connection(client_min, client_max,
-					       server_min, server_max, exp_res,
-					       server_ctx, ({suite}) );
-      successes += count;
-      tests += count || 1;
-    }
-#else
-    skip += sizeof(suites);
-#endif /* constant(thread_create) */
-
-    int test_ffdhe;
-
-    if( `==(client_min, server_min, SSL.Constants.PROTOCOL_SSL_3_0) &&
-	(client_max == server_max) ) {
-      // Test all known cipher suites.
-      suites = server_ctx->get_suites(-1, 2, (<>));
-      test_ffdhe = 1;
-    }
-    foreach(suites, int suite) {
-    log_status("%s client against %s %s...",
-               client,server,
-	       SSL.Constants.fmt_cipher_suite(suite));
-
-      int count = test_ssl_connection(client_min, client_max,
-				      server_min, server_max, exp_res,
-				      server_ctx, ({suite}) );
-      successes += count;
-      tests += count || 1;
-      if (!count) skip += !!exp_res;	// Skipped resume.
-      if (exp_res && test_ffdhe &&
-	  (< SSL.Constants.KE_dhe_dss,
-	     SSL.Constants.KE_dhe_rsa,
-	     SSL.Constants.KE_dh_anon >)[SSL.Constants.CIPHER_SUITES[suite] ])
-	// DHE.
-	foreach(server_ctx->ffdhe_groups, int group)
-        {
-    log_status("%s client against %s %s %s...",
-                client,server,
-	       SSL.Constants.fmt_cipher_suite(suite),
-	       "dhe"+((group-254)*1024+(group==260)&&1024));
-	  int count = test_ssl_connection(client_min, client_max,
-					   server_min, server_max, exp_res,
-					   server_ctx, ({suite}),
-					   UNDEFINED, ({ group }) );
-	  successes += count;
-	  tests += count || 1;
-	  if (!count) skip += !!exp_res;	// Skipped resume.
-        } // dhe
-    } // suites
+  int res = test_ssl_connection(client_min, client_max,
+				server_min, server_max, exp_res,
+				server_ctx, suites );
+  successes += res;
+  tests += res || 1;
   }} // client
 #ifndef __NT__
 	rout->write(successes+" "+tests+" "+skip );
@@ -1148,6 +1091,79 @@ array(int) a() {
 #endif
   return ({ successes, tests-successes, skip });
 }
+]])
+
+dnl --- CIPHER TEST ---
+dnl Iterate over all Protocol versions and attempt to connection with
+dnl all suites defined for that version.
+test_tests([[
+array(int) a() {
+#define __NT__
+  int successes;
+  int tests;
+  int skip;
+#ifndef __NT__
+  array(Stdio.File) results = ({});
+#endif
+  for (int version = SSL.Constants.PROTOCOL_SSL_3_0;
+       version <= SSL.Constants.PROTOCOL_TLS_MAX; version++) {
+
+#ifndef __NT__
+  Stdio.File rin = Stdio.File();
+  Stdio.File rout = rin->pipe();
+  if( fork() )
+  {
+    rout->close();
+    results += ({ rin });
+    continue;
+  }
+  rin->close();
+#endif
+
+  __signal_watchdog();
+
+  array(int) suites = server_ctx->get_suites(-1, 2, (<>));
+  suites -= ({ SSL.Constants.SSL_null_with_null_null });
+
+  foreach(suites, int suite) {
+    log_status("%s : %s",
+	       SSL.Constants.fmt_version(version),
+	       SSL.Constants.fmt_cipher_suite(suite));
+
+    int res = test_ssl_connection(version, version,
+				  version, version, client_msg,
+				  server_ctx, ({ suite }) );
+    successes += res;
+    tests += res || 1;
+  } // suites
+#ifndef __NT__
+	rout->write(successes+" "+tests+" "+skip );
+        _exit(0);
+#endif
+}
+#ifndef __NT__
+  foreach( results, Stdio.File rin )
+  {
+    int sa, ta, sk;
+    sscanf( rin->read(), "%d %d %d", sa, ta, sk );
+    successes += sa;
+    tests += ta;
+    skip += sk;
+  }
+#endif
+  return ({ successes, tests-successes, skip });
+}
+]])
+
+cond_resolv(thread_create, [[
+test_any([[
+  return threaded_test_ssl_connection(SSL.Constants.PROTOCOL_TLS_1_0,
+	SSL.Constants.PROTOCOL_TLS_1_0,
+	SSL.Constants.PROTOCOL_TLS_1_0,
+	SSL.Constants.PROTOCOL_TLS_1_0,
+	client_msg, server_ctx,
+	({ SSL.Constants.TLS_rsa_with_aes_128_cbc_sha }) );
+]], 1)
 ]])
 
 cond_resolv(Crypto.ECC, [[
