@@ -239,6 +239,28 @@ protected class LowState {
 
 #endif
 
+  //
+  // Prototypes for functions in PKCS1_5State.
+  //
+  // These are needed to keep the type checker happy when we
+  // return this_program, and assign to variables declared as State.
+  //
+  string(8bit) encrypt(string(8bit) s, function(int:string(8bit))|void r);
+  string(8bit) decrypt(string(8bit) s);
+  this_program set_encrypt_key(array(Gmp.mpz) key);
+  this_program set_decrypt_key(array(Gmp.mpz) key);
+  string(8bit) crypt(string(8bit) s);
+  int block_size();
+  int(0..) key_size();
+  Gmp.mpz rsa_pad(string(8bit) message, int(1..2) type,
+		  function(int(0..):string(8bit))|void random);
+  string(8bit) rsa_unpad(Gmp.mpz block, int type);
+  Gmp.mpz raw_sign(string(8bit) digest);
+  int(0..1) raw_verify(string(8bit) digest, Gmp.mpz s);
+
+  //
+  // Prototypes for switching between different signature methods.
+  //
   this_program `PSS();
   this_program `PKCS1_5();
 }
@@ -267,11 +289,14 @@ class PSSState {
 
     string(7bit) name() { return "RSASSA-PSS"; }
 
-    int(0..) salt_size() { return default_salt_size; }
+    optional int(0..) salt_size() { return default_salt_size; }
 
-    void set_salt_size(int(0..) salt_size) { default_salt_size = salt_size; }
+    optional void set_salt_size(int(0..) salt_size)
+    {
+      default_salt_size = salt_size;
+    }
 
-    int(0..1) _equal(mixed x)
+    protected int(0..1) _equal(mixed x)
     {
       return objectp(x) && (object_program(x) == this_program) &&
 	(salt_size == ([object(this_program)]x)->salt_size) &&
@@ -431,7 +456,7 @@ class PKCS1_5State
   //! Get the PKCS#1 1.5 state.
   this_program `PKCS1_5() { return this_program::this; }
 
-  //! Calls @[Standards.PKCS.RSA.signatue_algorithm_id] with the
+  //! Calls @[Standards.PKCS.RSA.signature_algorithm_id] with the
   //! provided @[hash].
   Sequence pkcs_signature_algorithm_id(.Hash hash)
   {
@@ -446,6 +471,9 @@ class PKCS1_5State
   }
 
 #undef Sequence
+
+  //! Returns the string @expr{"RSA"@}.
+  string(8bit) name() { return "RSA"; }
 
   //! Signs the @[message] with a PKCS-1 signature using hash
   //! algorithm @[h]. This is equivalent to
