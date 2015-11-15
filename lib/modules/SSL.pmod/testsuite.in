@@ -1155,6 +1155,7 @@ array(int) a() {
 }
 ]])
 
+dnl --- THREAD TEST ---
 cond_resolv(thread_create, [[
 test_any([[
   return threaded_test_ssl_connection(SSL.Constants.PROTOCOL_TLS_1_0,
@@ -1168,6 +1169,8 @@ test_any([[
 
 cond_resolv(Crypto.ECC, [[
 
+dnl --- ECC CURVES TEST ---
+dnl Attempt to connect, supporting only one curve at a time.
 test_tests([[
 object make_context(Crypto.ECC.Curve curve) {
   SSL.Context ctx = TestContext();
@@ -1270,6 +1273,8 @@ test_suite_b(0x302, 256, 1, 0x302, 256, 1,
 
 ]]) dnl Crypto.ECC
 
+dnl --- CERTIFICATE MODE TESTS ---
+dnl Test the semantics of the different auth_level:s.
 test_tests([[
   import SSL.Constants;
 
@@ -1343,6 +1348,9 @@ dnl FIXME: Test TLS 1.2 and earlier server and client (separately)
 dnl	   without EXTENSION_encrypt_then_mac.
 dnl Hmm... This might be already be tested with SSL 3.0 (client-side only).
 
+dnl --- PSK TESTS ---
+dnl Connect using all the different PSK handshakes, with and without
+dnl ciphers and with and without certificate.
 test_do([[
   import SSL.Constants;
 
