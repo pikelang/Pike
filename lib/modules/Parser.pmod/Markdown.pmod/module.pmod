@@ -1,3 +1,5 @@
+#require Regexp.PCRE
+
 //! Markdown module.
 //!
 //! For a description on Markdown, go to the web page of the inventor of
