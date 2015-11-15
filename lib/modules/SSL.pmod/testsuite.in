@@ -1025,9 +1025,15 @@ array(int) a() {
   for (int server_min = SSL.Constants.PROTOCOL_SSL_3_0;
        server_min <= server_max; server_min++) {
 
-    string server = sprintf("%s..%s",
-                            SSL.Constants.fmt_version(server_min),
-                            SSL.Constants.fmt_version(server_max));
+  string trim(string i) {
+    sscanf(i, "TLS %s", i);
+    sscanf(i, "SSL %s", i);
+    return i;
+  };
+
+  string server = sprintf("%s..%s",
+			  SSL.Constants.fmt_version(server_min),
+			  trim(SSL.Constants.fmt_version(server_max)));
 #ifndef __NT__
   Stdio.File rin = Stdio.File();
   Stdio.File rout = rin->pipe();
@@ -1044,10 +1050,9 @@ array(int) a() {
   for (int client_min = SSL.Constants.PROTOCOL_SSL_3_0;
        client_min <= client_max; client_min++) {
 
-    string client = sprintf("%s..%s",
+  string client = sprintf("%s..%s",
 			    SSL.Constants.fmt_version(client_min),
-			    SSL.Constants.fmt_version(client_max));
-
+			    trim(SSL.Constants.fmt_version(client_max)));
 
     __signal_watchdog();
 
