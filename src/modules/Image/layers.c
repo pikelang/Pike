@@ -2223,7 +2223,7 @@ static void lm_dissolve(rgb_group *s,rgb_group *l,rgb_group *d,
       else
 	 while (len--)
 	 {
-	    if ((my_rand()%(255*255)) <
+            if (my_rand(255*255) <
 		(unsigned)(la->r*87 + la->g*127 + la->b*41))
 	       *d=*l,*da=white;
 	    else
@@ -2237,7 +2237,7 @@ static void lm_dissolve(rgb_group *s,rgb_group *l,rgb_group *d,
       if (!la)  /* no layer alpha => full opaque */
 	 while (len--)
 	 {
-	    if ((my_rand()&255) < (unsigned)v)
+            if (my_rand(256) < (unsigned)v)
 	       *d=*l,*da=white;
 	    else
 	       *d=*s,*da=*sa;
@@ -2247,7 +2247,7 @@ static void lm_dissolve(rgb_group *s,rgb_group *l,rgb_group *d,
       {
 	 while (len--)
 	 {
-	    if ((my_rand()%(255*255)) <
+            if (my_rand(255*255) <
 		(unsigned)((la->r*87 + la->g*127 + la->b*41)>>8)*v)
 	       *d=*l,*da=white;
 	    else

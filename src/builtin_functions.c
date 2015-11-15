@@ -826,13 +826,13 @@ PMOD_EXPORT void f_random_string(INT32 args)
 
   while( (e+=sizeof(INT64)) <= len )
   {
-    str[0] = my_rand64();
+    str[0] = my_rand64(0);
     str++;
   }
 
   for(e-=sizeof(INT64);e<len;e++)
   {
-    ret->str[e] = (char)my_rand();
+    ret->str[e] = (char)my_rand(0);
   }
 
   pop_n_elems(args);
@@ -3204,11 +3204,8 @@ PMOD_EXPORT void f_crypt(INT32 args)
       return;
     }
   } else {
-    unsigned int foo; /* Sun CC wants this :( */
-    foo=my_rand();
-    salt[0] = choise[foo % (size_t) strlen(choise)];
-    foo=my_rand();
-    salt[1] = choise[foo % (size_t) strlen(choise)];
+    salt[0] = choise[my_rand(strlen(choise))];
+    salt[1] = choise[my_rand(strlen(choise))];
     saltp=salt;
     if (args > 1) {
       pop_n_elems(args-1);

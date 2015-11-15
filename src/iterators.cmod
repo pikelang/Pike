@@ -404,20 +404,20 @@ PIKECLASS mapping_iterator
   PIKEFUN object _random()
     {
 #ifdef PIKE_MAPPING_KEYPAIR_LOOP
-      size_t k = my_rand() % THIS->md->size;
+      size_t k = my_rand(THIS->md->size);
       THIS->current = MD_KEYPAIRS(THIS->md, THIS->md->hashsize) + k;
 #else /* !PIKE_MAPPING_KEYPAIR_LOOP */
       if(THIS->md && THIS->md->hashsize)
       {
 	size_t k;
 	struct keypair *tmp;
-	THIS->bucket=my_rand() % THIS->md->hashsize;
+        THIS->bucket=my_rand(THIS->md->hashsize);
 	k=0;
 	for(tmp=THIS->md->hash[THIS->bucket];tmp;tmp=tmp->next) k++;
 	tmp=THIS->md->hash[THIS->bucket];
 	if(k)
 	{
-	  k = my_rand() % k;
+          k = my_rand(k);
 	  while(k--) tmp=tmp->next;
 	}
 	THIS->current=tmp;
@@ -573,7 +573,7 @@ PIKECLASS array_iterator
   PIKEFUN object _random()
     {
       if(THIS->a && THIS->a->size)
-	THIS->pos=my_rand() % THIS->a->size;
+        THIS->pos=my_rand(THIS->a->size);
       else
 	THIS->pos=0;
       REF_RETURN Pike_fp->current_object;
@@ -763,7 +763,7 @@ PIKECLASS multiset_iterator
       }
       if (!multiset_is_empty (THIS->l))
 	THIS->nodepos =
-	  multiset_get_nth (THIS->l, my_rand() % multiset_sizeof (THIS->l));
+          multiset_get_nth (THIS->l, my_rand(multiset_sizeof (THIS->l)));
       REF_RETURN Pike_fp->current_object;
     }
 
@@ -918,7 +918,7 @@ PIKECLASS string_iterator
   PIKEFUN object _random()
     {
       if(THIS->s->len)
-	THIS->pos=my_rand() % THIS->s->len;
+        THIS->pos=my_rand(THIS->s->len);
       else
 	THIS->pos=0;
       REF_RETURN Pike_fp->current_object;

@@ -1813,9 +1813,9 @@ static void dither_floyd_steinberg_firstline(struct nct_dither *dith,
    er=dith->u.floyd_steinberg.errors;
    for (i=0; i<dith->rowlen; i++)
    {
-      er[i].r = (float)((my_rand()&65535)*(1.0/65536)-0.49999);
-      er[i].g = (float)((my_rand()&65535)*(1.0/65536)-0.49999);
-      er[i].b = (float)((my_rand()&65535)*(1.0/65536)-0.49999);
+      er[i].r = (float)(my_rand(65536)*(1.0/65536)-0.49999);
+      er[i].g = (float)(my_rand(65536)*(1.0/65536)-0.49999);
+      er[i].b = (float)(my_rand(65536)*(1.0/65536)-0.49999);
    }
 
    er=dith->u.floyd_steinberg.nexterrors;
@@ -1844,11 +1844,11 @@ static rgbl_group dither_randomcube_encode(struct nct_dither *dith,
 {
    rgbl_group rgb;
    int i;
-   i=(int)(s.r-(my_rand()%(dith->u.randomcube.r*2-1))+dith->u.randomcube.r+1);
+   i=(int)(s.r-my_rand(dith->u.randomcube.r*2-1)+dith->u.randomcube.r+1);
    rgb.r=i<0?0:(i>255?255:i);
-   i=(int)(s.g-(my_rand()%(dith->u.randomcube.g*2-1))+dith->u.randomcube.g+1);
+   i=(int)(s.g-my_rand(dith->u.randomcube.g*2-1)+dith->u.randomcube.g+1);
    rgb.g=i<0?0:(i>255?255:i);
-   i=(int)(s.b-(my_rand()%(dith->u.randomcube.b*2-1))+dith->u.randomcube.b+1);
+   i=(int)(s.b-my_rand(dith->u.randomcube.b*2-1)+dith->u.randomcube.b+1);
    rgb.b=i<0?0:(i>255?255:i);
    return rgb;
 }
@@ -1859,7 +1859,7 @@ static rgbl_group dither_randomgrey_encode(struct nct_dither *dith,
 {
    rgbl_group rgb;
    int i;
-   int err = -(int)((my_rand()%(dith->u.randomcube.r*2-1))+
+   int err = -(int)(my_rand(dith->u.randomcube.r*2-1)+
 		    dith->u.randomcube.r+1);
    i=(int)(s.r+err);
    rgb.r=i<0?0:(i>255?255:i);

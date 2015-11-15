@@ -262,7 +262,7 @@ DOCEND()
 
 	if (THIS->tree.root) {
 	    node = cb_get_nth(THIS->tree.root,
-			      my_rand() % THIS->tree.root->size);
+                              my_rand(THIS->tree.root->size));
 	    if (node) {
 		CB_PUSH_TRANSFORM_KEY(node->key);
 		push_svalue(&node->value);

@@ -161,7 +161,7 @@ PMOD_EXPORT void my_srand(INT32 seed)
   raninit(seed);
 }
 
-PMOD_EXPORT unsigned INT32 my_rand(void)
+static unsigned INT32 low_rand(void)
 {
 #if HAS___BUILTIN_IA32_RDRAND32_STEP
   if( use_rdrnd )
@@ -181,7 +181,7 @@ PMOD_EXPORT unsigned INT32 my_rand(void)
   return ranval();
 }
 
-PMOD_EXPORT unsigned INT64 my_rand64(void)
+static unsigned INT32 low_rand64(void)
 {
 #if HAS___BUILTIN_IA32_RDRAND32_STEP
   if( use_rdrnd )
@@ -201,4 +201,18 @@ PMOD_EXPORT unsigned INT64 my_rand64(void)
   }
 #endif
   return ((INT64)ranval()<<32) | ranval();
+}
+
+PMOD_EXPORT unsigned INT32 my_rand(unsigned INT32 limit)
+{
+  if(!limit)
+    return low_rand();
+  return low_rand()%limit;
+}
+
+PMOD_EXPORT unsigned INT64 my_rand64(unsigned INT64 limit)
+{
+  if(!limit)
+    return low_rand64();
+  return low_rand64()%limit;
 }

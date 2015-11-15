@@ -881,7 +881,7 @@ PIKECLASS BufferedCipher
 	    break;
 	  case PAD_ISO_10126:
 	    /* ISO 10126 */
-            THIS->backlog[i] = (unsigned char)(my_rand() & 0xff);
+            THIS->backlog[i] = (unsigned char)my_rand(256);
 	    break;
 	  case PAD_ANSI_X923:
 	    /* ANSI X.923 */

@@ -2088,9 +2088,9 @@ PIKEFUN int random(int i)
   if(i <= 0) RETURN 0;
 #if SIZEOF_INT_TYPE > 4
   if(i >> 31)
-    RETURN my_rand64() % i;
+    RETURN my_rand64(i);
 #endif
-  RETURN my_rand() % i;
+  RETURN my_rand(i);
 }
 
 /*! @decl float random(float max)
@@ -2106,7 +2106,7 @@ PIKEFUN float random(float f)
 {
   if(f<=0.0) RETURN 0.0;
 
-  RETURN (FLOAT_TYPE)ldexp((double)f * my_rand64(), -64);
+  RETURN (FLOAT_TYPE)ldexp((double)f * my_rand64(0), -64);
 }
 
 /*! @decl mixed random(array|multiset x)
@@ -2119,7 +2119,7 @@ PIKEFUN mixed random(array a)
 {
   if(!a->size)
     SIMPLE_BAD_ARG_ERROR("random", 1, "array with elements in it");
-  push_svalue(a->item + (my_rand() % a->size));
+  push_svalue(a->item + (my_rand(a->size)));
   stack_swap();
   pop_stack();
 }
@@ -2130,8 +2130,7 @@ PIKEFUN mixed random(multiset m)
 {
   if(multiset_is_empty (m))
     SIMPLE_BAD_ARG_ERROR("random", 1, "multiset with elements in it");
-  push_multiset_index (m, multiset_get_nth (m, my_rand() %
-					    multiset_sizeof (m)));
+  push_multiset_index (m, multiset_get_nth (m, my_rand(multiset_sizeof (m))));
   sub_msnode_ref (m);
   stack_swap();
   pop_stack();
@@ -2152,7 +2151,7 @@ PIKEFUN array random(mapping m)
     SIMPLE_BAD_ARG_ERROR("random", 1, "mapping with elements in it");
 
   /* Find a random, nonempty bucket */
-  bucket=my_rand() % md->hashsize;
+  bucket=my_rand(md->hashsize);
   while(! md->hash[bucket] )
     if(++bucket > (size_t)md->hashsize)
       bucket=0;
@@ -2162,7 +2161,7 @@ PIKEFUN array random(mapping m)
   for(k=md->hash[bucket];k;k=k->next) count++;
 
   /* Select a random entry in this bucket */
-  count = my_rand() % count;
+  count = my_rand(count);
   k=md->hash[bucket];
   while(count-- > 0) k=k->next;
 
