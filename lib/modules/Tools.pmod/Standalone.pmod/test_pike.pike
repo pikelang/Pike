@@ -412,7 +412,7 @@ string find_test(string ts)
 
 int main(int argc, array(string) argv)
 {
-  int watchdog_pid, subprocess;
+  int watchdog_pid, subprocess, failed_cond;
   int e, verbose, prompt, successes, errors, t, check, asmdebug;
   int skipped;
   array(string) tests;
@@ -483,6 +483,7 @@ int main(int argc, array(string) argv)
 #endif
     ({"regression",Getopt.NO_ARG,({"-r","--regression"})}),
     ({"subprocess", Getopt.NO_ARG, ({"--subprocess"})}),
+    ({"cond",Getopt.NO_ARG,({"--failed-cond","--failed-conditionals"})}),
     )),array opt)
     {
       switch(opt[0])
@@ -548,7 +549,11 @@ int main(int argc, array(string) argv)
 
 	case "subprocess":
 	  subprocess = 1;
-	  break;
+          break;
+
+        case "cond":
+          failed_cond = 1;
+          break;
 
 #ifdef HAVE_DEBUG
 	case "debug":
@@ -809,7 +814,7 @@ int main(int argc, array(string) argv)
 	    }
 
 	    if (tmp != 1) {
-	      if ((verbose > 1) && !err) {
+              if ((verbose > 1 || failed_cond) && !err) {
 		log_msg("Conditional %d%s failed:\n",
 			e+1, testline?" (line "+testline+")":"");
 		print_code( condition );
@@ -829,8 +834,8 @@ int main(int argc, array(string) argv)
 	  if(tmp==-1)
 	  {
 	    if(verbose>1)
-	      log_msg("Not doing test "+(e+1)+"\n");
-	    successes++;
+              log_msg("Not doing test "+(e+1)+"\n");
+            successes++;
 	    skipped++;
 	    skip=1;
 	  }
@@ -1460,4 +1465,5 @@ Usage: test_pike [args] [testfiles]
 -a, --auto[=dir]    Let the test program find the testsuites automatically.
 -T, --notty         Format output for non-tty.
 -d, --debug         Opens a debug port.
+--failed-cond       Outputs failing test conditionals.
 ";
