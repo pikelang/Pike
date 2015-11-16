@@ -1305,24 +1305,6 @@ test_compile_any([[
   }
 ]])
 
-cond( [[ master()->resolv("Pike")->Security ]],[[
-  test_any( [[
-  // bug [2830] ------------------------------------------------------------
-  // http://community/crunch/show_bug.cgi?id=2830
-  class User{};
-
-  object luser = User();
-
-  object luser_creds = Pike.Security.Creds(luser, 0, 0);
-  return !catch {
-    return !!Pike.Security.call_with_creds(luser_creds, Stdio.File,
-        "/dev/null");
-  };
-
-  return 0;
-  ]], 0 )
-]])
-
 test_any( [[
 // bug [1996] ------------------------------------------------------------
 // http://community/crunch/show_bug.cgi?id=1996

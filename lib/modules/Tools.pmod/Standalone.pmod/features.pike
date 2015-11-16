@@ -283,9 +283,6 @@ int main(int num, array(string) args) {
 
   // Perl
 
-  write("\nPike\n");
-  F(Pike.Security);
-
   // Pipe
 
   write("\nProcess\n");
