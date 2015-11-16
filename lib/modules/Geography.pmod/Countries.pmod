@@ -243,7 +243,7 @@ array(Country) countries=
    Country("MH","Marshall Islands","RM"),
    Country("MK","Macedonia","MK",
            (["aka":({"The former Yugoslav Republic of Macedonia",
-                     "Republicof Macedonia"})])),
+                     "Republic of Macedonia"})])),
    Country("ML","Mali","ML"),
    Country("MM","Myanmar","BM",
 	   (["aka":({"Burma"})])),
