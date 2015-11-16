@@ -1284,7 +1284,8 @@ static void f_create_sjise(INT32 args)
    * quirky inherit structure. /mast */
   REF_MAKE_CONST_STRING (*(struct pike_string **) (fp->current_storage +
 						   rfc_charset_name_offs),
-			 "shiftjis");
+                         "shiftjis");
+  f_create(args);
 }
 
 static void f_create_euce(INT32 args)
