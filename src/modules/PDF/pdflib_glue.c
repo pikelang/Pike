@@ -86,8 +86,6 @@ static void pdf_create(INT32 args)
 {
    PDF *pdf;
 
-   pop_n_elems(args);
-
    THREADS_ALLOW();
 
    pdf=PDF_new2(
@@ -101,8 +99,6 @@ static void pdf_create(INT32 args)
 
    if (THIS->pdf) PDF_delete(THIS->pdf);
    THIS->pdf=pdf;
-
-   push_int(0);
 }
 
 /*! @decl int open_file(string filename);
