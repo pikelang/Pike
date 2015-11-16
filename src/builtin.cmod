@@ -2106,7 +2106,7 @@ PIKEFUN float random(float f)
 {
   if(f<=0.0) RETURN 0.0;
 
-  RETURN (FLOAT_TYPE)ldexp((double)f * my_rand64(0), -64);
+  RETURN (FLOAT_TYPE)ldexp((double)f * my_rand64(0xffffffffffffffff), -64);
 }
 
 /*! @decl mixed random(array|multiset x)

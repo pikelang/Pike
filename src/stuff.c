@@ -205,14 +205,14 @@ static unsigned INT32 low_rand64(void)
 
 PMOD_EXPORT unsigned INT32 my_rand(unsigned INT32 limit)
 {
-  if(!limit)
+  if(limit==0xffffffff)
     return low_rand();
   return low_rand()%limit;
 }
 
 PMOD_EXPORT unsigned INT64 my_rand64(unsigned INT64 limit)
 {
-  if(!limit)
+  if(limit==0xffffffffffffffff)
     return low_rand64();
   return low_rand64()%limit;
 }

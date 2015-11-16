@@ -4534,7 +4534,7 @@ void test_multiset (void)
     for (i = max, v = 0; i > 0; i--) {
       if (!(i % 10000)) fprintf (stderr, "grow %s %d, %d duplicates         \r",
 				 pass ? "cmp_less" : "internal", i, v);
-      push_int (my_rand(0));
+      push_int (my_rand(0xffffffff));
       if (multiset_find_eq (l, sp - 1) >= 0) {
 	v++;
 	sub_msnode_ref (l);
@@ -4583,7 +4583,7 @@ void test_multiset (void)
     for (i = max; i > 0; i--) {
       if (!(i % 10000)) fprintf (stderr, "shrink %s %d                   \r",
 				 pass ? "cmp_less" : "internal", i);
-      push_int (my_rand(0));
+      push_int (my_rand(0xffffffff));
       if (!multiset_delete (l, sp - 1))
 	Pike_fatal ("Pseudo-random sequence didn't repeat.\n");
       pop_stack();
@@ -4661,7 +4661,7 @@ void test_multiset (void)
 
     my_srand (0);
     for (i = 5000; i >= 0; i--, action = action % 6 + 1) {
-      int nr = my_rand(0) & INT_MAX; /* Assumes we keep within one period. */
+      int nr = my_rand(0xffffffff) & INT_MAX; /* Assumes we keep within one period. */
 
       if (!(i % 100)) fprintf (stderr, "merge %d         \r", i);
 

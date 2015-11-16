@@ -826,13 +826,13 @@ PMOD_EXPORT void f_random_string(INT32 args)
 
   while( (e+=sizeof(INT64)) <= len )
   {
-    str[0] = my_rand64(0);
+    str[0] = my_rand64(0xffffffffffffffff);
     str++;
   }
 
   for(e-=sizeof(INT64);e<len;e++)
   {
-    ret->str[e] = (char)my_rand(0);
+    ret->str[e] = (char)my_rand(0xffffffff);
   }
 
   pop_n_elems(args);

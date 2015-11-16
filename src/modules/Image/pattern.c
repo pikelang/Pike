@@ -541,9 +541,9 @@ void image_random(INT32 args)
    n=img->xsize*img->ysize;
    while (n--)
    {
-      d->r=(COLORTYPE)my_rand(0);
-      d->g=(COLORTYPE)my_rand(0);
-      d->b=(COLORTYPE)my_rand(0);
+      d->r=(COLORTYPE)my_rand(0xffffffff);
+      d->g=(COLORTYPE)my_rand(0xffffffff);
+      d->b=(COLORTYPE)my_rand(0xffffffff);
       d++;
    }
 
@@ -571,7 +571,7 @@ void image_randomgrey(INT32 args)
    n=img->xsize*img->ysize;
    while (n--)
    {
-      d->r=d->g=d->b=(COLORTYPE)my_rand(0);
+      d->r=d->g=d->b=(COLORTYPE)my_rand(0xffffffff);
       d++;
    }
 
