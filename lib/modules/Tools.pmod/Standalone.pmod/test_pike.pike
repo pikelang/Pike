@@ -622,6 +622,7 @@ int main(int argc, array(string) argv)
     if (mem) forked += ({ "--memory" });
     // auto already handled.
     if (all_constants()->regression) forked += ({ "--regression" });
+    if (failed_cond) forked += ({ "--failed-cond" });
     forked += ({"--subprocess"});
     // debug port not propagated.
     //log_msg("forked:%O\n", forked);
@@ -813,7 +814,7 @@ int main(int argc, array(string) argv)
 	      tmp = -1;
 	    }
 
-	    if (tmp != 1) {
+            if (tmp != 1) {
               if ((verbose > 1 || failed_cond) && !err) {
 		log_msg("Conditional %d%s failed:\n",
 			e+1, testline?" (line "+testline+")":"");
