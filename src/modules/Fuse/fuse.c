@@ -48,8 +48,6 @@ static void f_fuse_cmd_process( INT32 UNUSED(args) )
 {
     struct svalue *sp = Pike_sp;
     fuse_process_cmd(THISC->f, THISC->cmd);
-    pop_n_elems( Pike_sp-sp );
-    push_int(0);
 }
 
 static struct object *global_fuse_obj; // There Can Be Only One

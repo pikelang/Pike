@@ -772,9 +772,7 @@ static void pipe_input(INT32 args)
 	 /* Mark the pages as sequential read only access... */
 	 madvise(m, len, MADV_SEQUENTIAL);
 #endif
-	 pop_n_elems(args);
-	 push_int(0);
-	 return;
+         return;
        }
      }
    }
@@ -819,7 +817,6 @@ static void pipe_input(INT32 args)
      push_int(0);
      push_callback(offset_input_close_callback);
      apply_low(i->u.obj,i->set_nonblocking_offset,3);
-     pop_stack();
    }
    else
    {
@@ -828,11 +825,7 @@ static void pipe_input(INT32 args)
      push_int(0);
      push_callback(offset_input_close_callback);
      apply_low(i->u.obj,i->set_nonblocking_offset,3);
-     pop_stack();
    }
-
-   pop_n_elems(args);
-   push_int(0);
 }
 
 /*! @decl void write(string bytes)
@@ -934,7 +927,6 @@ static void pipe_output(INT32 args)
 	 THIS->pos=0; */
       push_int(0);
       apply(sp[-args-2].u.object,"set_id", 1);
-      pop_n_elems(args+2);	/* ... and from apply x 2  */
       return;
     }
     pop_stack();		/* from apply */
@@ -986,9 +978,6 @@ static void pipe_output(INT32 args)
   push_callback(offset_output_write_callback);
   push_callback(offset_output_close_callback);
   apply_low(o->obj,o->set_nonblocking_offset,3);
-  pop_stack();
-
-  pop_n_elems(args-1);
 }
 
 /*! @decl void set_done_callback(void|function(mixed:mixed) done_cb, @
@@ -1017,7 +1006,6 @@ static void pipe_set_done_callback(INT32 args)
 
   free_svalue(&THIS->done_callback);
   assign_svalue_no_free(&(THIS->done_callback),sp-args);
-  pop_n_elems(args-1);
 }
 
 /*! @decl void set_output_closed_callback(void|function(mixed, object:mixed) close_cb, @
@@ -1045,7 +1033,6 @@ static void pipe_set_output_closed_callback(INT32 args)
   }
   free_svalue(&THIS->output_closed_callback);
   assign_svalue_no_free(&(THIS->output_closed_callback),sp-args);
-  pop_n_elems(args-1);
 }
 
 /*! @decl void finish()
@@ -1054,8 +1041,6 @@ static void pipe_set_output_closed_callback(INT32 args)
  */
 static void pipe_finish(INT32 args)
 {
-   pop_n_elems(args);
-   push_int(0);
    pipe_done();
 }
 
@@ -1066,8 +1051,6 @@ static void pipe_finish(INT32 args)
 static void pipe_start(INT32 args) /* force start */
 {
   low_start();
-  if(args)
-    pop_n_elems(args-1);
 }
 
 /*! @decl int bytes_sent()
@@ -1094,7 +1077,6 @@ static void pipe_write_output_callback(INT32 args)
 
    debug_malloc_touch(sp[-args].u.object);
    output_try_write_some(sp[-args].u.object);
-   pop_n_elems(args-1);
 }
 
 static void pipe_close_output_callback(INT32 args)
@@ -1118,7 +1100,6 @@ static void pipe_close_output_callback(INT32 args)
   }
 
   output_finish(sp[-args].u.object);
-  pop_n_elems(args-1);
 }
 
 static void pipe_read_input_callback(INT32 args)
@@ -1148,7 +1129,6 @@ static void pipe_read_input_callback(INT32 args)
   }
 
   low_start();
-  pop_n_elems(args-1);
 }
 
 static void pipe_close_input_callback(INT32 args)
@@ -1176,8 +1156,6 @@ static void pipe_close_input_callback(INT32 args)
    i->type=I_NONE;
 
    input_finish();
-   if(args)
-     pop_n_elems(args-1);
 }
 
 /*! @decl string version()

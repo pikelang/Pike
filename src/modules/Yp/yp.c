@@ -131,8 +131,6 @@ static void f_create(INT32 args)
   err = yp_bind( this->domain );
 
   YPERROR( err );
-
-  pop_n_elems(args);
 }
 
 /*! @decl mapping(string:string) all(string map)
@@ -212,8 +210,6 @@ static void f_map(INT32 args)
 
   if(err != YPERR_NOMORE)
     YPERROR( err );
-
-  pop_n_elems(args);
 }
 
 /*! @decl int order(string map)

@@ -366,7 +366,6 @@ static void f_create(INT32 args)
   err = start_service(THIS, name, service, domain, port, txt, txtlen);
   if (IS_ERR(err))
     raise_error("Could not register service.", err);
-  pop_n_elems(args);
 }
 
 

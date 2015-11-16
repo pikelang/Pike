@@ -1926,13 +1926,9 @@ static void f_oracle_create(INT32 args)
   debug_malloc_touch(dbcon->error_handle);
   debug_malloc_touch(dbcon->context);
 
-  pop_n_elems(args);
-
 #ifdef ORACLE_DEBUG
   fprintf(stderr,"oracle.create error_handle -> %p\n",dbcon->error_handle);
 #endif
-
-  return;
 }
 
 static void f_commit(INT32 args)
@@ -1942,8 +1938,6 @@ static void f_commit(INT32 args)
   ret = OCITransCommit(dbcon->context, dbcon->error_handle, 0); 
   if(ret != OCI_SUCCESS)
     ora_error_handler(dbcon->error_handle, ret, "OCITransCommit");
-  pop_n_elems(args);
-  push_int(0);
 }
 
 static void f_compile_query_create(INT32 args)
@@ -2028,9 +2022,6 @@ static void f_compile_query_create(INT32 args)
 
   if(rc != OCI_SUCCESS)
     ora_error_handler(dbcon->error_handle, rc, 0);
-
-  pop_n_elems(args);
-  push_int(0);
 }
 
 struct bind

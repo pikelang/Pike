@@ -1784,9 +1784,6 @@ static void file__enable_callbacks(INT32 args)
 
     ADD_FD_EVENTS (f, cb_events);
   }
-
-  pop_n_elems(args);
-  push_int(0);
 }
 
 static void file__disable_callbacks(INT32 args)
@@ -1799,9 +1796,6 @@ static void file__disable_callbacks(INT32 args)
 #endif
 
   SUB_FD_EVENTS (f, ~0);
-
-  pop_n_elems(args);
-  push_int(0);
 }
 
 
@@ -3762,8 +3756,6 @@ static void file_set_backend (INT32 args)
   else
     INIT_FD_CALLBACK_BOX (&f->box, backend, f->box.ref_obj,
 			  f->box.fd, 0, got_fd_event, f->box.flags);
-
-  pop_n_elems (args - 1);
 }
 
 /*! @decl Pike.Backend query_backend()
@@ -3810,8 +3802,6 @@ static void file_set_nonblocking(INT32 args)
   }
 
   THIS->open_mode |= FILE_NONBLOCKING;
-
-  pop_n_elems(args);
 }
 
 /*! @decl void set_blocking()
@@ -3830,7 +3820,6 @@ static void file_set_blocking(INT32 args)
     set_nonblocking(FD,0);
     THIS->open_mode &=~ FILE_NONBLOCKING;
   }
-  pop_n_elems(args);
 }
 
 /*! @decl void set_close_on_exec(int(0..1) yes_no)
@@ -3859,7 +3848,6 @@ static void file_set_close_on_exec(INT32 args)
   }else{
     my_set_close_on_exec(FD,1);
   }
-  pop_n_elems(args);
 }
 
 /*! @decl int is_open()
@@ -3930,7 +3918,6 @@ static void file_take_fd(INT32 args)
   if (TYPEOF(Pike_sp[-args]) != PIKE_T_INT)
     SIMPLE_BAD_ARG_ERROR ("take_fd", 0, "int");
   change_fd_for_box(&THIS->box, Pike_sp[-args].u.integer);
-  pop_n_elems(args);
 }
 
 PMOD_EXPORT struct object *file_make_object_from_fd(int fd, int mode, int guess)
@@ -4049,7 +4036,6 @@ static void file_set_buffer(INT32 args)
   }else{
     flags=FILE_READ | FILE_WRITE;
   }
-  pop_n_elems(args);
 
 #ifdef SOCKET_BUFFER_MAX
 #if SOCKET_BUFFER_MAX
@@ -5387,8 +5373,6 @@ void file_proxy(INT32 args)
   }
 
   th_destroy(& id);
-  pop_n_elems(args);
-  push_int(0);
 }
 
 PMOD_EXPORT void create_proxy_pipe(struct object *o, int for_reading)

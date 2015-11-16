@@ -3610,9 +3610,6 @@ static void f_sctx_create(INT32 args)
     Pike_error("AcquireCreds failed: 0x%08x\n", ss);
   }
   sctx->hcred_alloced = 1;
-
-  pop_n_elems(args);
-  push_int(0);
 }
 
 

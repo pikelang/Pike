@@ -211,8 +211,6 @@ static void image_ft_face_attach_file( INT32 args )
   get_all_args( "attach_file", args, "%s", &path );
   if ((errcode = FT_Attach_File( TFACE, path )))
     image_ft_error("Failed to attach file", errcode);
-  pop_n_elems( args );
-  push_int( 0 );
 }
 
 /*! @decl Face set_size(int width, int height)
@@ -269,7 +267,6 @@ static void image_ft_face_select_encoding( INT32 args )
     p_wchar0 *s = STR0(sp[-args].u.string);
     FT_ENC_TAG( e, s[0], s[1], s[2], s[3] );
   }
-  pop_n_elems( args );
   er = FT_Select_Charmap(TFACE, e);
   if( er )
     image_ft_error("Character encoding not available in this font", er);
@@ -399,8 +396,6 @@ static void image_ft_face_create( INT32 args )
   if( er )
     Pike_error("Failed to set a character map for the font %S\n",
 	       sp[-args].u.string);
-  pop_n_elems( args );
-  push_int( 0 );
 }
 
 /*! @endclass */

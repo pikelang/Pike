@@ -561,7 +561,6 @@ static void f_method_create(INT32 args)
     Pike_error("Bad argument 3 to create().\n");
 
   if((env = jvm_procure_env(c->jvm))==NULL) {
-    pop_n_elems(args);
     destruct(Pike_fp->current_object);
     return;
   }
@@ -573,7 +572,6 @@ static void f_method_create(INT32 args)
   jvm_vacate_env(c->jvm, env);
 
   if(m->method == 0) {
-    pop_n_elems(args);
     destruct(Pike_fp->current_object);
     return;
   }
@@ -582,8 +580,6 @@ static void f_method_create(INT32 args)
   copy_shared_string(m->name, name);
   copy_shared_string(m->sig, sig);
   add_ref(class);
-  pop_n_elems(args);
-  push_int(0);
 
   m->nargs = 0;
   m->rettype = 0;
@@ -1195,7 +1191,6 @@ static void f_field_create(INT32 args)
   if(name == NULL || sig == NULL) {
     f->class = class;
     add_ref(class);
-    pop_n_elems(args);
     f->type = 0;
     return;
   }
@@ -1210,7 +1205,6 @@ static void f_field_create(INT32 args)
   }
 
   if(f->field == 0) {
-    pop_n_elems(args);
     destruct(Pike_fp->current_object);
     return;
   }
@@ -1219,8 +1213,6 @@ static void f_field_create(INT32 args)
   copy_shared_string(f->name, name);
   copy_shared_string(f->sig, sig);
   add_ref(class);
-  pop_n_elems(args);
-  push_int(0);
 
   if((f->type = sig->str[0])=='[')
     f->subtype = sig->str[1];
@@ -2592,7 +2584,6 @@ static void f_natives_create(INT32 args)
     Pike_error("create() called twice in Java.natives object.\n");
 
   if(!arr->size) {
-    pop_n_elems(args);
     return;
   }
 
@@ -2637,8 +2628,6 @@ static void f_natives_create(INT32 args)
     rc = (*env)->RegisterNatives(env, c->jobj, n->jnms, n->num_methods);
     jvm_vacate_env(c->jvm, env);
   }
-
-  pop_n_elems(args);
 
   if(rc<0)
     destruct(Pike_fp->current_object);
@@ -2703,9 +2692,6 @@ static void f_throw_new(INT32 args)
 
     jvm_vacate_env(jo->jvm, env);
   }
-
-  pop_n_elems(args);
-  push_int(0);
 }
 
 static void f_alloc(INT32 args)
@@ -2843,8 +2829,6 @@ static void f_javathrow(INT32 args)
   struct jobj_storage *jo = THIS_JOBJ;
   JNIEnv *env;
 
-  pop_n_elems(args);
-
   if((env = jvm_procure_env(jo->jvm))) {
     if((*env)->Throw(env, jo->jobj)<0) {
       jvm_vacate_env(jo->jvm, env);
@@ -2852,7 +2836,6 @@ static void f_javathrow(INT32 args)
     }
     jvm_vacate_env(jo->jvm, env);
   }
-  push_int(0);
 }
 
 
@@ -3365,8 +3348,6 @@ static void f_monitor_create(INT32 args)
 
   m->obj = obj;
   add_ref(obj);
-  pop_n_elems(args);
-  return;
 }
 
 
@@ -3508,11 +3489,7 @@ static void f_create(INT32 args)
     j->tl_env = Pike_sp[-1].u.object;
     add_ref(j->tl_env);
   }
-  pop_n_elems(args+1);
-#else
-  pop_n_elems(args);
 #endif /* _REENTRANT */
-  push_int(0);
 }
 
 static void init_jvm_struct(struct object *PIKE_UNUSED(o))
@@ -3677,12 +3654,10 @@ static void f_exception_describe(INT32 args)
 {
   JNIEnv *env;
 
-  pop_n_elems(args);
   if((env = jvm_procure_env(Pike_fp->current_object))) {
     (*env)->ExceptionDescribe(env);
     jvm_vacate_env(Pike_fp->current_object, env);
   }
-  push_int(0);
 }
 
 static void f_exception_clear(INT32 args)
@@ -3707,8 +3682,6 @@ static void f_javafatal(INT32 args)
     (*env)->FatalError(env, msg);
     jvm_vacate_env(Pike_fp->current_object, env);
   }
-  pop_n_elems(args);
-  push_int(0);
 }
 
 static void f_new_boolean_array(INT32 args)

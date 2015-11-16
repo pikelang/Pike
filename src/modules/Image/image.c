@@ -863,38 +863,28 @@ void image_create_method(INT32 args)
 
    if (sp[-args].u.string==s_grey)
    {
-      img_read_grey(args-1);
-      pop_n_elems(2);
-      ref_push_object(THISOBJ);
-      return;
+     img_read_grey(args-1);
+     return;
    }
    if (sp[-args].u.string==s_rgb)
    {
-      img_read_rgb(args-1);
-      pop_n_elems(2);
-      ref_push_object(THISOBJ);
-      return;
+     img_read_rgb(args-1);
+     return;
    }
    if (sp[-args].u.string==s_cmyk)
    {
-      img_read_cmyk(args-1);
-      pop_n_elems(2);
-      ref_push_object(THISOBJ);
-      return;
+     img_read_cmyk(args-1);
+     return;
    }
    if (sp[-args].u.string==s_adjusted_cmyk)
    {
-      img_read_adjusted_cmyk(args-1);
-      pop_n_elems(2);
-      ref_push_object(THISOBJ);
-      return;
+     img_read_adjusted_cmyk(args-1);
+     return;
    }
    if (sp[-args].u.string==s_cmy)
    {
-      img_read_cmy(args-1);
-      pop_n_elems(2);
-      ref_push_object(THISOBJ);
-      return;
+     img_read_cmy(args-1);
+     return;
    }
 
    if (sp[-args].u.string==s_test)
@@ -944,8 +934,6 @@ void image_create_method(INT32 args)
    img=get_storage(sp[-1].u.object,image_program);
    THIS->img=img->img;
    img->img=NULL;
-   pop_n_elems(2);
-   ref_push_object(THISOBJ);
 }
 
 void image_create(INT32 args)
@@ -981,16 +969,13 @@ void image_create(INT32 args)
       /* don't try method "lightblue", etc */
    {
       image_create_method(args-2);
-      pop_n_elems(3);
       return ;
    }
    else
       getrgb(THIS,2,args,args,"Image.Image->create()");
 
    THIS->img=xalloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+RGB_VEC_PAD);
-
    img_clear(THIS->img,THIS->rgb,THIS->xsize*THIS->ysize);
-   pop_n_elems(args);
 }
 
 /*
@@ -1085,9 +1070,9 @@ void image_clone(INT32 args)
 
 
 /*
-**! method void clear()
-**! method void clear(int r,int g,int b)
-**! method void clear(int r,int g,int b,int alpha)
+**! method object clear()
+**! method object clear(int r,int g,int b)
+**! method object clear(int r,int g,int b,int alpha)
 **! 	gives a new, cleared image with the same size of drawing area
 **!
 **!	<table><tr valign=center>
@@ -4862,7 +4847,6 @@ void image__decode( INT32 args )
     THIS->img = xalloc( sizeof(rgb_group)*w*h+RGB_VEC_PAD );
 
     memcpy( THIS->img, a->item[2].u.string->str, a->item[2].u.string->len );
-    pop_stack();
 }
 
 static void image__size_object(INT32 UNUSED(args))

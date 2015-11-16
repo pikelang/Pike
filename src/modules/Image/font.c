@@ -490,7 +490,6 @@ void font_load(INT32 args)
 void font_create(INT32 args)
 {
    font_load(args);
-   pop_stack();
 }
 
 /*! @decl Image.Image write(string text, string ... more_text_lines)
@@ -811,7 +810,6 @@ void font_set_xspacing_scale(INT32 args)
 
   if(f < 0.0) f=0.1;
   THIS->xspacing_scale = (double)f;
-  pop_n_elems(args);
 }
 
 
@@ -824,7 +822,6 @@ void font_set_yspacing_scale(INT32 args)
 
   if(f <= 0.0) f=0.1;
   THIS->yspacing_scale = (double)f;
-  pop_n_elems(args);
 }
 
 
@@ -853,7 +850,6 @@ void font_baseline(INT32 args)
 
 void font_set_center(INT32 args)
 {
-  pop_n_elems(args);
   if(THIS) THIS->justification=J_CENTER;
 }
 
@@ -865,7 +861,6 @@ void font_set_center(INT32 args)
 
 void font_set_right(INT32 args)
 {
-  pop_n_elems(args);
   if(THIS) THIS->justification=J_RIGHT;
 }
 
@@ -877,7 +872,6 @@ void font_set_right(INT32 args)
 
 void font_set_left(INT32 args)
 {
-  pop_n_elems(args);
   if(THIS) THIS->justification=J_LEFT;
 }
 

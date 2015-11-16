@@ -248,7 +248,6 @@ LVL_CHECK:
   THIS->gz.zfree=Z_NULL;
   THIS->gz.opaque=(void *)THIS;
 
-  pop_n_elems(args);
 /*   mt_lock(& THIS->lock); */
   do {
     tmp=deflateInit2(&THIS->gz, THIS->level, Z_DEFLATED, wbits, 9, strategy );
@@ -771,7 +770,7 @@ static void gz_inflate_create(INT32 args)
   }
   else
   {
-    if( args  && TYPEOF(Pike_sp[-1]) == PIKE_T_INT )
+    if( args && TYPEOF(Pike_sp[-1]) == PIKE_T_INT )
     {
       tmp=inflateInit2(& THIS->gz, Pike_sp[-1].u.integer);
     }
@@ -780,7 +779,6 @@ static void gz_inflate_create(INT32 args)
       tmp=inflateInit( &THIS->gz );
     }
   }
-  pop_n_elems(args);
 
 /*    mt_lock(& THIS->lock);  */
 /*    mt_unlock(& THIS->lock); */

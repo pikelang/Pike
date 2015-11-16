@@ -268,9 +268,6 @@ done_made:
    }
    else
       SIMPLE_BAD_ARG_ERROR(PNAME,1,"array|int");
-
-   pop_n_elems(args);
-   push_int(0);
 }
 
 

@@ -171,7 +171,6 @@ static void memory_create(INT32 args)
    else
    {
       MEMORY_FREE(THIS);
-      push_int(0);
    }
 }
 
@@ -451,7 +450,6 @@ static void memory_allocate(INT32 args)
    if (size<0)
       SIMPLE_BAD_ARG_ERROR("allocate",1,"int(0..)");
 
-   pop_n_elems(args);
    if (size>1024*1024) /* threshold */
    {
       THREADS_ALLOW();
@@ -478,8 +476,6 @@ static void memory_allocate(INT32 args)
  */
 static void memory_free(INT32 args)
 {
-   pop_n_elems(args);
-   push_int(0);
    MEMORY_FREE(THIS);
 }
 

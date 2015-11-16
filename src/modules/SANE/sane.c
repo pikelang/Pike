@@ -350,8 +350,6 @@ static void f_scanner_set_option( INT32 args )
     int_value = 1;
     sane_control_option( THIS->h, no, SANE_ACTION_SET_AUTO, &int_value, &tmp );
   }
-  pop_n_elems( args );
-  push_int( 0 );
 }
 
 
@@ -601,8 +599,6 @@ static void f_scanner_row_scan( INT32 args )
     pop_stack();
   }
   free_object( o );
-  pop_n_elems( args );
-  push_int( 0 );
 }
 
 struct row_scan_struct
@@ -740,7 +736,6 @@ static void f_scanner_nonblocking_row_scan( INT32 UNUSED(args) )
   }
   set_read_callback( fd, (file_callback)nonblocking_row_scan_callback,
 		     (void*)rsp );
-  push_int( 0 );
 }
 
 /*! @decl void cancel_scan()

@@ -1260,8 +1260,6 @@ static void udp_set_backend (INT32 args)
   else
     INIT_FD_CALLBACK_BOX (&u->box, backend, u->box.ref_obj,
 			  u->box.fd, 0, got_udp_event, 0);
-
-  pop_n_elems (args - 1);
 }
 
 /*! @decl Pike.Backend query_backend()
@@ -1362,7 +1360,6 @@ static void udp_set_buffer(INT32 args)
       }
     } while( *c++ );
   }
-  pop_n_elems(args);
 
 #ifdef SOCKET_BUFFER_MAX
 #if SOCKET_BUFFER_MAX

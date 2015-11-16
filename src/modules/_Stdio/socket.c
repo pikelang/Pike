@@ -478,7 +478,6 @@ static void bind_unix(INT32 args)
  */
 static void port_close (INT32 args)
 {
-  pop_n_elems (args);
   do_close (THIS);
 }
 
@@ -506,7 +505,7 @@ static void port_create(INT32 args)
 	(Pike_sp[-args].u.string->len != 5 ||
 	 strcmp("stdin",Pike_sp[-args].u.string->str))))
     {
-      port_bind(args); /* pops stack */
+      port_bind(args);
       return;
     }else{
       struct port *p = THIS;
@@ -527,7 +526,6 @@ static void port_create(INT32 args)
       }
     }
   }
-  pop_n_elems(args);
 }
 
 extern struct program *file_program;
@@ -701,8 +699,6 @@ static void port_set_backend (INT32 args)
   else
     INIT_FD_CALLBACK_BOX (&p->box, backend, p->box.ref_obj,
 			  p->box.fd, 0, got_port_event, 0);
-
-  pop_n_elems (args - 1);
 }
 
 /*! @decl Pike.Backend query_backend()

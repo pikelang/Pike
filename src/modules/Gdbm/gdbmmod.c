@@ -224,7 +224,6 @@ static void gdbmmod_create(INT32 args)
     }
     this->dbf=tmp;
 
-    pop_n_elems(args);
     if(!this->dbf)
       Pike_error("Failed to open GDBM database: %d: %s.\n",
 		 gdbm_errno, gdbm_strerror(gdbm_errno));
@@ -589,7 +588,6 @@ static void gdbmmod_sync(INT32 UNUSED(args))
   gdbm_sync(this->dbf);
   mt_unlock(& gdbm_lock);
   THREADS_DISALLOW();
-  push_int(0);
 }
 
 
@@ -719,10 +717,7 @@ static void gdbmmod_get_iterator(INT32 UNUSED(args))
 
 static void gdbmmod_close(INT32 args)
 {
-  pop_n_elems(args);
-
   do_free();
-  push_int(0);
 }
 
 static void init_gdbm_glue(struct object *UNUSED(o))

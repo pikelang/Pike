@@ -792,8 +792,6 @@ static void f_apply_cmap( INT32 args )
     d->b = cmap->str[i+512];
   }
   THREADS_DISALLOW();
-  pop_n_elems(args);
-  push_int(0);
 }
 
 static struct program *image_encoding_psd_program=NULL;

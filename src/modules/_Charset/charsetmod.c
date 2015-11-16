@@ -123,9 +123,6 @@ static void f_create(INT32 args)
 
   if(args>1 && TYPEOF(sp[1-args]) == T_FUNCTION)
     assign_svalue(&s->repcb, &sp[1-args]);
-
-  pop_n_elems(args);
-  push_int(0);
 }
 
 static void f_set_repcb(INT32 args)
@@ -137,8 +134,6 @@ static void f_set_repcb(INT32 args)
 
   if(args>0)
     assign_svalue(&s->repcb, &sp[-args]);
-
-  pop_n_elems(args);
 }
 
 static int call_repcb(struct svalue *repcb, p_wchar2 ch)
@@ -920,9 +915,6 @@ static void f_create_euc(INT32 args)
   }
 
   copy_shared_string (s->name, sp[1-args].u.string);
-
-  pop_n_elems(args);
-  push_int(0);
 }
 
 static void f_create_multichar(INT32 args)
@@ -946,9 +938,6 @@ static void f_create_multichar(INT32 args)
   s->is_gb18030 = (def == multichar_map);
 
   copy_shared_string (s->name, sp[-args].u.string);
-
-  pop_n_elems(args);
-  push_int(0);
 }
 
 #include "gb18030.h"
@@ -1296,9 +1285,6 @@ static void f_create_sjise(INT32 args)
   REF_MAKE_CONST_STRING (*(struct pike_string **) (fp->current_storage +
 						   rfc_charset_name_offs),
 			 "shiftjis");
-
-  f_create(args);
-  push_int(0);
 }
 
 static void f_create_euce(INT32 args)
@@ -1379,8 +1365,6 @@ static void f_create_euce(INT32 args)
 		      sp[1-args].u.string);
 
   f_create(args-2);
-  pop_stack();
-  push_int(0);
 }
 
 static struct std8e_stor *push_std_8bite(int args, int allargs, int lo, int hi)

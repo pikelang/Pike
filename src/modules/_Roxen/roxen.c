@@ -277,8 +277,6 @@ static void f_hp_create( INT32 args )
   THP->hsize = 8192;
   THP->left = 8192;
   THP->spc = THP->slash_n = 0;
-  pop_n_elems(args);
-  push_int(0);
 }
 
 /*! @endclass

@@ -1351,8 +1351,6 @@ static void image_layer_create(INT32 args)
       try_parameter_pair("xoffset","yoffset",image_layer_set_offset);
       try_parameter_pair("fill","fill_alpha",image_layer_set_fill);
       try_parameter("tiled",image_layer_set_tiled);
-      pop_stack();
-      return;
    }
    else if (TYPEOF(Pike_sp[-args]) == T_INT && args>1
 	    && TYPEOF(Pike_sp[1-args]) == T_INT)
@@ -1384,8 +1382,6 @@ static void image_layer_create(INT32 args)
       push_object(clone_object(image_program,5));
 
       image_layer_set_image(2);
-
-      pop_n_elems(args);
    }
    else if (TYPEOF(Pike_sp[-args]) == T_OBJECT || args>1)
    {
@@ -1396,7 +1392,6 @@ static void image_layer_create(INT32 args)
 	 args=2;
       }
       image_layer_set_image(args);
-      pop_stack();
    }
    else
       SIMPLE_BAD_ARG_ERROR("create",1,"mapping|int|Image.Image");
