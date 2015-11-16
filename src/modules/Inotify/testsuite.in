@@ -1,5 +1,6 @@
-// Only do the following tests if we have System.Inotify.
-cond([[ master()->resolv("System")["Inotify"] ]], [[
+START_MARKER
+
+cond_resolv(System.Inotify, [[
 
 test_true(functionp(System.Inotify.parse_event));
 test_true(programp(System.Inotify._Instance));
@@ -62,8 +63,10 @@ test_do(add_constant("testfile"))
 
 ]]) // System.Inotify
 
-ifefun(testdir ]],
+ifefun(testdir,
 [[
   test_true(rm(testdir));
   test_do(add_constant("testdir"));
 ]])
+
+END_MARKER
