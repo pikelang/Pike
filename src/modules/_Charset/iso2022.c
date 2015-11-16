@@ -1464,9 +1464,6 @@ static void f_create(INT32 args)
 
   if(args>2 && TYPEOF(sp[2-args]) == T_FUNCTION)
     assign_svalue(&s->repcb, &sp[2-args]);
-
-  pop_n_elems(args);
-  push_int(0);
 }
 
 static void f_set_repcb(INT32 args)
@@ -1478,8 +1475,6 @@ static void f_set_repcb(INT32 args)
 
   if(args>0)
     assign_svalue(&s->repcb, &sp[-args]);
-
-  pop_n_elems(args);
 }
 
 static void init_stor(struct object *UNUSED(o))

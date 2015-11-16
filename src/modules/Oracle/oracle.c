@@ -2969,7 +2969,6 @@ PIKE_MODULE_INIT
   }
 
   MY_START_CLASS(dblob); {
-    /* ADD_FUNCTION("create", dblob_create, tFunc(tOr(tStr,tInt),tVoid), ID_PROTECTED); */
     ADD_FUNCTION("cast", dblob_cast, tFunc(tStr, tMix), ID_PROTECTED);
     ADD_FUNCTION("_sprintf", dblob_sprintf, tFunc(tInt, tStr), ID_PROTECTED);
     ADD_FUNCTION("read", dblob_read, tFunc(tVoid, tStr), 0);
