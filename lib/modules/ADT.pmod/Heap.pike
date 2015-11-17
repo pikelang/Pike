@@ -7,7 +7,7 @@
 //! Heap element.
 class Element (mixed value)
 {
-  int pos;
+  int pos = -1;
 
   constant is_adt_heap_element = 1;
 
@@ -145,11 +145,11 @@ Element adjust(mixed value)
 //! which also is the smallest value in the heap.
 mixed pop()
 {
-  mixed ret;
   if(!num_values)
     error("Heap underflow!\n");
 
-  ret = values[0]->value;
+  Element value = values[0];
+  value->pos = -1;
   num_values--;
   if(num_values)
   {
@@ -161,7 +161,7 @@ mixed pop()
   }
   values[num_values]=0;
   verify_heap();
-  return ret;
+  return value->value;
 }
 
 //! Returns the number of elements in the heap.
@@ -204,8 +204,10 @@ void remove(mixed value)
   }
   if ((pos < 0) || (pos >= num_values)) return;
 
+  value = values[pos];
   values[pos] = values[--num_values];
   values[num_values] = 0;
+  value->pos = -1;
   if (pos < num_values) {
     if (!adjust_up(pos))
       adjust_down(pos);
