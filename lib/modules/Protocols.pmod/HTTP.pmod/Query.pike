@@ -189,6 +189,7 @@ void start_tls(int|void blocking, int|void async)
   if( !context )
   {
     context = SSL.Context();
+    context->trusted_issuers_cache = Standards.X509.load_authorities(0,1);
   }
 
   object read_callback=con->query_read_callback();
