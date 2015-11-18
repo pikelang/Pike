@@ -1,8 +1,8 @@
-subject: Pike 7.8: release number bumped to 940 by export.pike
+subject: Pike 7.8: Sync with 5.4.94-r3
 from: 009ea2b8cb1413e4ab6b36acc7159ebe5abe94ce
 to: 2c9e1b80d969d3130b622f00a9f2aa9f24987de2
 originator: wellhardh@roxen.com
 depends: 2015-11-13T154525
 restart: true
 
-release number bumped to 940 by export.pike
+Sync with 5.4.94-r3
