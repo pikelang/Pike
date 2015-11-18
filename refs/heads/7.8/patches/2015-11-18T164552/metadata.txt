@@ -1,11 +1,9 @@
-subject: Pike 7.8:   * release number bumped to 941 by export.pike
+subject: Pike 7.8: ADT.Heap: Improved robustness.
 from: 2c9e1b80d969d3130b622f00a9f2aa9f24987de2
 to: f0ab29dcbc2d9092c95084dd98c2f2f5d0496573
 originator: wellhardh@roxen.com
 depends: 2015-11-18T161954|pike/7.8.940
 restart: true
-
-  * release number bumped to 941 by export.pike
 
   * ADT.Heap: Improved robustness.
     
