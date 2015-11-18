@@ -835,6 +835,13 @@ array(array(string)) get_trusted_issuers()
 }
 
 protected array(array(string)) trusted_issuers = ({});
+
+//! Mapping from DER-encoded issuer to @[Standards.X509.Verifier]s
+//! compatible with eg @[Standards.X509.verify_certificate()] and
+//! @[Standards.X509.load_authorities()].
+//!
+//! @seealso
+//!   @[get_trusted_issuers()], @[set_trusted_issuers()]
 mapping(string:array(Standards.X509.Verifier)) trusted_issuers_cache = ([]);
 
 //! For client authentication. Used only if auth_level is AUTH_ask or
