@@ -136,25 +136,26 @@ Alert alert_factory(object con,
 //! The following values are included by default.
 //! @int
 //!   @value Constants.EXTENSION_renegotiation_info
-//!     Protection against renegotiation attack.
+//!     Protection against renegotiation attack (@rfc{5746@}).
 //!   @value Constants.EXTENSION_max_fragment_length
-//!     Allows negotiation of the maximum fragment size.
+//!     Allows negotiation of the maximum fragment size (@rfc{6066:4@}).
 //!   @value Constants.EXTENSION_encrypt_then_mac
 //!     Attempts to address attacks against block
 //!     ciphers (@rfc{7366@}).
 //!   @value Constants.EXTENSION_application_layer_protocol_negotiation
 //!     Required to support more than one protocol on the same TLS
-//!     port.
+//!     port (@rfc{7639@}).
 //!   @value Constants.EXTENSION_signature_algorithms
-//!     Required to select which out of several certificates to use.
+//!     Required to select which out of several certificates to use
+//!     (@rfc{5246:7.4.1.4.1@}).
 //!   @value Constants.EXTENSION_ec_point_formats
-//!     Required for elliptic curve key exchange.
+//!     Required for elliptic curve key exchange (@rfc{4492:5.1.2@}).
 //!   @value Constants.EXTENSION_elliptic_curves
-//!     Required for elliptic curve key exchange.
+//!     Required for elliptic curve key exchange (@rfc{4492:5.1.1@}).
 //!   @value Constants.EXTENSION_server_name
 //!     Allows the client to select which of several domains hosted on
 //!     the same server it wants to connect to. Required by many
-//!     websites.
+//!     websites (@rfc{6066:3@}).
 //!   @value Constants.EXTENSION_next_protocol_negotiation
 //!     Not supported by Pike. The server side will just check that
 //!     the client packets are correctly formatted.
@@ -162,7 +163,7 @@ Alert alert_factory(object con,
 //!     Not supported by Pike. The server side will just check that
 //!     the client packets are correctly formatted.
 //!   @value Constants.EXTENSION_early_data
-//!     Needed for TLS 1.3 0-RTT handshake.
+//!     Needed for TLS 1.3 0-RTT handshake. EXPERIMENTAL.
 //!   @value Constants.EXTENSION_padding
 //!     This extension is required to avoid a bug in some f5 SSL
 //!     terminators for certain sizes of client handshake messages.
@@ -173,15 +174,19 @@ Alert alert_factory(object con,
 //!   @value Constants.EXTENSION_truncated_hmac
 //!     This extension allows for the HMAC to be truncated for a small
 //!     win in payload size. Not widely implemented and may be a
-//!     security risk.
+//!     security risk (@rfc{6066:7@}).
 //!   @value Constants.EXTENSION_heartbeat
 //!     This extension allows the client and server to send heartbeats
 //!     over the connection. Intended to keep TCP connections
-//!     alive. Required to be set to use @[heartbleed_probe].
+//!     alive. Required to be set to use @[heartbleed_probe]
+//!     (@rfc{6520@}).
 //!   @value Constants.EXTENSION_extended_master_secret
 //!     Binds the master secret to important session parameters to
-//!     protect against man in the middle attacks.
+//!     protect against man in the middle attacks (@rfc{7627@}).
 //! @endint
+//!
+//! @seealso
+//!   @rfc{6066@}
 multiset(int) extensions = (<
   EXTENSION_renegotiation_info,
   EXTENSION_max_fragment_length,
