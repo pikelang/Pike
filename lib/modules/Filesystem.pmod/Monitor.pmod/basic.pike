@@ -842,14 +842,6 @@ protected class EventStreamMonitor
     } else {
       string found;
       foreach(eventstream_paths;;string p) {
-	if (path == p) {
-	  // Unlikely, but...
-	  // NB: Eventstream doesn't notify on the monitored path;
-	  //     only on its contents.
-	  MON_WERR("Path %O already monitored.\n", path);
-	  ::register_path(initial);
-	  return;
-	}
 	if((path == p) || has_prefix(path, p + "/")) {
 	  MON_WERR("Path %O already monitored via path %O.\n", path, p);
 	  found = p;
@@ -858,16 +850,28 @@ protected class EventStreamMonitor
       if (found) {
 	MON_WERR("Path %O is accellerated via %O.\n", path, found);
 	accellerated = 1;
+        check();
 	return;
       }
     }
 
-    MON_WERR("Adding %O to the set of monitored paths.\n", path);
-    eventstream_paths += ({path});
-    if(eventstream->is_started())
-      eventstream->stop();
-    eventstream->add_path(path);
-    eventstream->start();
+    mixed err = catch {
+        MON_WERR("Adding %O to the set of monitored paths.\n", path);
+        eventstream_paths += ({path});
+        if(eventstream->is_started())
+          eventstream->stop();
+        eventstream->add_path(path);
+        eventstream->start();
+      };
+
+    if (!err) {
+      check();
+      return;
+    }
+
+    werror (describe_backtrace (err));
+    // Note: falling through to ::register_path() below.
+
 #endif /* !INHIBIT_EVENTSTREAM_MONITOR */
     // NB: Eventstream doesn't notify on the monitored path;
     //     only on its contents.
