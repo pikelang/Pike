@@ -202,7 +202,7 @@ string combine_uri_path(string base, string rel)
 //! Reparse the URI with respect to a new base URI. If
 //! no base_uri was supplied, the old base_uri is thrown away.
 //! The resolving is performed according to the guidelines
-//! outlined by RFC 2396, Uniform Resource Identifiers (URI): Generic Syntax.
+//! outlined by @rfc{2396@}, Uniform Resource Identifiers (URI): Generic Syntax.
 //! @param base_uri
 //!   Set the new base URI to this.
 //! @throws
