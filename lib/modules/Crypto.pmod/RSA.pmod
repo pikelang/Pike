@@ -269,6 +269,7 @@ protected class LowState {
 
 private class PKCS_RSA_class {
   Sequence signature_algorithm_id(.Hash);
+  Sequence pss_signature_algorithm_id(.Hash, int(0..)|void saltlen);
   Sequence build_public_key(global::State);
 }
 private object(PKCS_RSA_class) PKCS_RSA =
@@ -286,6 +287,21 @@ class PSSState {
     this_program `PSS() { return this_program::this; }
 
     protected int(0..) default_salt_size = 20;
+
+    //! Calls @[Standards.PKCS.RSA.pss_signature_algorithm_id] with the
+    //! provided @[hash] and @[saltlen].
+    //!
+    //! @param hash
+    //!   Hash algorithm for the signature.
+    //!
+    //! @param saltlen
+    //!   Length of the salt for the signature. Defaults to the
+    //!   value returned by @[salt_size()].
+    Sequence pkcs_signature_algorithm_id(.Hash hash, int(0..)|void saltlen)
+    {
+      if (undefinedp(saltlen)) saltlen = default_salt_size;
+      return PKCS_RSA->pss_signature_algorithm_id(hash, saltlen);
+    }
 
     string(7bit) name() { return "RSASSA-PSS"; }
 
