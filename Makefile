@@ -440,7 +440,3 @@ pikefun_TAGS:
 	`find . -type f -name '*.[ch]' -print`
 	cd lib/modules && ../../bin/pike_etags.sh \
 	  `find . -type f '(' -name '*.pmod' -o -name '*.pike' ')' -print`
-
-test:
-	echo CONFIGUREARGS:"$(CONFIGUREARGS)"
-	echo "$${CONFIGUREARGS}"
