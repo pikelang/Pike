@@ -29,3 +29,41 @@ typedef struct _Buffer Buffer;
 
 extern void init_stdio_buffer(void);
 extern void exit_stdio_buffer(void);
+
+PMOD_EXPORT void io_ensure_malloced( Buffer *io, size_t bytes );
+PMOD_EXPORT unsigned char *io_add_space_do_something( Buffer *io, size_t bytes, int force );
+PMOD_EXPORT Buffer *io_buffer_from_object(struct object *o);
+PMOD_EXPORT void io_trim( Buffer *io );
+
+PIKE_UNUSED_ATTRIBUTE
+static size_t io_len( Buffer *io )
+{
+  return io->len-io->offset;
+}
+
+PIKE_UNUSED_ATTRIBUTE
+static unsigned char *io_read_pointer(Buffer *io)
+{
+  return io->buffer + io->offset;
+}
+
+PIKE_UNUSED_ATTRIBUTE
+static unsigned char *io_add_space( Buffer *io, size_t bytes, int force )
+{
+  if( io->len == io->offset )
+    io->offset = io->len = 0;
+  if( !force && io->malloced && !io->locked && io->len+bytes < io->allocated &&
+      (!bytes || io->len+bytes > io->len))
+    return io->buffer+io->len;
+  return io_add_space_do_something( io, bytes, force );
+}
+
+PIKE_UNUSED_ATTRIBUTE
+static INT_TYPE io_consume( Buffer *io, int num )
+{
+  io->offset += num;
+  if( UNLIKELY(io->allocated > (io_len(io) * io->max_waste)) )
+      io_trim(io);
+  return io_len(io);
+}
+

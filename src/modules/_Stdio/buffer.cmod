@@ -90,10 +90,10 @@ PIKECLASS Buffer
     io->error_mode = m;
   }
 
-  static size_t io_len( Buffer *io )
-  {
-    return io->len-io->offset;
+  PMOD_EXPORT Buffer *io_buffer_from_object(struct object *o) {
+    return get_storage(o, Buffer_program);
   }
+
 
   static void io_unlock( Buffer *io )
   {
@@ -120,21 +120,8 @@ PIKECLASS Buffer
       io_was_locked( );
   }
 
-  static void io_trim( Buffer *io )
+  PMOD_EXPORT void io_trim( Buffer *io )
     ATTRIBUTE((noinline));
-
-  static INT_TYPE io_consume( Buffer *io, int num )
-  {
-    io->offset += num;
-    if( UNLIKELY(io->allocated > (io_len(io) * io->max_waste)) )
-        io_trim(io);
-    return io_len(io);
-  }
-
-  static unsigned char *io_read_pointer(Buffer *io)
-  {
-    return io->buffer + io->offset;
-  }
 
   static int io_is_whitespace( Buffer *io, size_t pos )
   {
@@ -148,7 +135,7 @@ PIKECLASS Buffer
     return 0;
   }
 
-  static void io_trim( Buffer *io )
+  PMOD_EXPORT void io_trim( Buffer *io )
   {
       if( io->malloced && (io->offset > 64 || io->len > 64) && !io->locked)
       {
@@ -184,7 +171,7 @@ PIKECLASS Buffer
       io->str = 0;
   }
 
-  static void io_ensure_malloced( Buffer *io, size_t bytes )
+  PMOD_EXPORT void io_ensure_malloced( Buffer *io, size_t bytes )
   {
     if( UNLIKELY(!io->malloced) )
     {
@@ -207,9 +194,9 @@ PIKECLASS Buffer
     }
   }
 
-  static unsigned char *io_add_space_do_something( Buffer *io, size_t bytes, int force )
+  PMOD_EXPORT unsigned char *io_add_space_do_something( Buffer *io, size_t bytes, int force )
     ATTRIBUTE((noclone,noinline));
-  static unsigned char *io_add_space_do_something( Buffer *io, size_t bytes, int force )
+  PMOD_EXPORT unsigned char *io_add_space_do_something( Buffer *io, size_t bytes, int force )
   {
     if( bytes && io->len+bytes < io->len )
       Pike_error("Too large buffer, can not have more than %lu bytes",
@@ -264,16 +251,6 @@ PIKECLASS Buffer
       io->allocated += growth;
     }
     return io->buffer+io->len;
-  }
-
-  static unsigned char *io_add_space( Buffer *io, size_t bytes, int force )
-  {
-    if( io->len == io->offset )
-      io->offset = io->len = 0;
-    if( !force && io->malloced && !io->locked && io->len+bytes < io->allocated &&
-        (!bytes || io->len+bytes > io->len))
-      return io->buffer+io->len;
-    return io_add_space_do_something( io, bytes, force );
   }
 
   /*! @decl protected bool range_error( int howmuch )
