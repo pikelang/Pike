@@ -2116,6 +2116,25 @@ PIKECLASS Buffer
       push_int64( io_consume( THIS, n ) );
   }
 
+  /*! @decl int(0..)|int(-1..-1) truncate( int(0..) n )
+   *!
+   *! Truncates the buffer to a length of @[n] bytes.
+   *!
+   *! Returns -1 on error and the number of bytes removed otherwise.
+   */
+  PIKEFUN int(-1..) truncate( int(0..) n )
+  {
+    Buffer *io = THIS;
+    ptrdiff_t diff = io_len(io) - n;
+    Pike_sp--;
+
+    if( diff < 0 || io_len(io) < (size_t)diff )
+      push_int(-1);
+    else {
+      io->len -= diff;
+      push_int64( diff );
+    }
+  }
 
   /*! @decl int(0..)|int(-1..-1) unread( int(0..) n )
    *!
