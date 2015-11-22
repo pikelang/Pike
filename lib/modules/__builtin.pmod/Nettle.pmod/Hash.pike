@@ -603,6 +603,174 @@ string(8bit) mgf1(string(8bit) seed, int(0..) bytes)
   return t->read(bytes);
 }
 
+//! This is the encoding algorithm used in RSAES-OAEP
+//! (@rfc{3447:7.1.1@}).
+//!
+//! @param message
+//!   Message to encode.
+//!
+//! @param bytes
+//!   Number of bytes of destination encoding.
+//!
+//! @param seed
+//!   A string of random bytes at least @[digest_size()] long.
+//!
+//! @param label
+//!   An optional encoding label. Defaults to @expr{""@}.
+//!
+//! @param mgf
+//!   The mask generation function to use. Defaults to @[mgf1()].
+//!
+//! @returns
+//!   Returns the encoded string on success and @expr{0@} (zero)
+//!   on failure (typically too few bytes to represent the result).
+//!
+//! @seealso
+//!   @[eme_oaep_decode()]
+string(8bit) eme_oaep_encode(string(8bit) message,
+			     int(1..) bytes,
+			     string(8bit) seed,
+			     string(8bit)|void label,
+			     function(string(8bit), int(0..):
+				      string(8bit))|void mgf)
+{
+  int(0..) hlen = digest_size();
+
+  if ((bytes < (2 + 2*hlen + sizeof(message))) ||
+      (sizeof(seed) < hlen)) {
+    return 0;
+  }
+  if (!mgf) mgf = mgf1;
+
+  // EME-OAEP encoding (see Figure 1 below):
+  // a. If the label L is not provided, let L be the empty string. Let
+  //    lHash = Hash(L), an octet string of length hLen (see the note below).
+  if (!label) label = "";
+  string(8bit) lhash = hash(label);
+
+  // b. Generate an octet string PS consisting of k - mLen - 2hLen - 2
+  //    zero octets. The length of PS may be zero.
+  string(8bit) ps = "\0" * (bytes - (sizeof(message) + 2*hlen + 2));
+
+  // c. Concatenate lHash, PS, a single octet with hexadecimal value
+  //    0x01, and the message M to form a data block DB of length
+  //    k - hLen - 1 octets as
+  //
+  //    DB = lHash || PS || 0x01 || M.
+  string(8bit) db = lhash + ps + "\1" + message;
+
+  // d. Generate a random octet string seed of length hLen.
+  /* Supplied by caller. */
+  if (sizeof(seed) > hlen) seed = seed[..hlen-1];
+
+  // e. Let dbMask = MGF(seed, k - hLen - 1).
+  string(8bit) dbmask = mgf(seed, [int(0..)](bytes - (hlen + 1)));
+
+  // f. Let maskedDB = DB \xor dbMask.
+  string(8bit) maskeddb = [string(8bit)](db ^ dbmask);
+
+  // g. Let seedMask = MGF(maskedDB, hLen).
+  string(8bit) seedmask = mgf(maskeddb, hlen);
+
+  // h. Let maskedSeed = seed \xor seedMask.
+  string(8bit) maskedseed = [string(8bit)](seed ^ seedmask);
+
+  // i. Concatenate a single octet with hexadecimal value 0x00,
+  //    maskedSeed, and maskedDB to form an encoded message EM
+  //    of length k octets as
+  //
+  //    EM = 0x00 || maskedSeed || maskedDB.
+  return "\0" + maskedseed + maskeddb;
+}
+
+//! Decode an EME-OAEP encoded string.
+//!
+//! @param message
+//!   Message to decode.
+//!
+//! @param label
+//!   Label that was used when the message was encoded.
+//!   Defaults to @expr{""@}.
+//!
+//! @param mgf
+//!   Mask generation function to use. Defaults to @[mgf1()].
+//!
+//! @returns
+//!   Returns the decoded message on success, and @expr{0@} (zero)
+//!   on failure.
+//!
+//! @note
+//!   The decoder attempts to take a constant amount of time on failure.
+//!
+//! @seealso
+//!   @[eme_oaep_encode()], @rfc{3447:7.1.2@}
+string(8bit) eme_oaep_decode(string(8bit) message,
+			     string(8bit)|void label,
+			     function(string(8bit), int(0..):
+				      string(8bit))|void mgf)
+{
+  int(0..) hlen = digest_size();
+
+  if (sizeof(message) < (2*hlen + 2)) {
+    return 0;
+  }
+  if (!mgf) mgf = mgf1;
+
+  // EME-OAEP decoding:
+  // a. If the label L is not provided, let L be the empty string. Let
+  //    lHash = Hash(L), an octet string of length hLen (see the note
+  //    in Section 7.1.1).
+  if (!label) label = "";
+  string(8bit) lhash = hash(label);
+
+  // b. Separate the encoded message EM into a single octet Y, an octet
+  //    string maskedSeed of length hLen, and an octet string maskedDB
+  //    of length k - hLen - 1 as
+  //
+  //    EM = Y || maskedSeed || maskedDB.
+  string(8bit) maskedseed = message[1..hlen];
+  string(8bit) maskeddb = message[hlen+1..];
+
+  // c. Let seedMask = MGF(maskedDB, hLen).
+  string(8bit) seedmask = mgf(maskeddb, hlen);
+
+  // d. Let seed = maskedSeed \xor seedMask.
+  string(8bit) seed = [string(8bit)](maskedseed ^ seedmask);
+
+  // e. Let dbMask = MGF(seed, k - hLen - 1).
+  string(8bit) dbmask = mgf(seed, sizeof(maskeddb));
+
+  // f. Let DB = maskedDB \xor dbMask.
+  string(8bit) db = [string(8bit)](maskeddb ^ dbmask);
+
+  // g. Separate DB into an octet string lHash' of length hLen, a
+  //    (possibly empty) padding string PS consisting of octets with
+  //    hexadecimal value 0x00, and a message M as
+  //
+  //    DB = lHash' || PS || 0x01 || M.
+  //
+  //    If there is no octet with hexadecimal value 0x01 to separate PS
+  //    from M, if lHash does not equal lHash', or if Y is nonzero, output
+  //    "decryption error" and stop. (See the note below.)
+  int problem = message[0];
+  int found = 0;
+  for(int i = 0; i < sizeof(db); i++) {
+    if (i < hlen) {
+      problem |= db[i] ^ lhash[i];
+    } else {
+      problem |= (db[i] & 0xfe) & ~found;
+      found |= -(db[i] & 1);
+    }
+  }
+  problem |= ~found;
+  if (problem) return 0;
+  for (int i = hlen; i < sizeof(db); i++) {
+    if (db[i] == 1) return db[i+1..];
+  }
+  // NOT REACHED.
+  return 0;	// Paranoia.
+}
+
 //! This is the signature digest algorithm used in RSASSA-PSS
 //! (@rfc{3447:9.1.1@}).
 //!
