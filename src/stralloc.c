@@ -757,8 +757,14 @@ static void link_pike_string(struct pike_string *s, size_t hval)
 PMOD_EXPORT struct pike_string *debug_begin_wide_shared_string(size_t len, enum size_shift shift)
 {
   struct pike_string *t = NULL;
-  size_t bytes = (len+1) << shift;
+  size_t bytes;
   ONERROR fe;
+
+  if ((ptrdiff_t)len < 0 || DO_SIZE_T_ADD_OVERFLOW(len, 1, &bytes) ||
+      DO_SIZE_T_MUL_OVERFLOW(bytes, 1 << shift, &bytes)) {
+    Pike_error("String is too large.\n");
+  }
+
 #ifdef PIKE_DEBUG
   if(d_flag>10)
     verify_shared_strings_tables();
