@@ -1,0 +1,162 @@
+#pike __REAL_VERSION__
+#require constant(@module@)
+
+//! @ignore
+inherit @module@;
+//! @endignore
+
+//! Function prototype for decode extension handlers. The first argument
+//! is the extension type identifier. The second argument is a @[Stdio.Buffer] containing
+//! the payload.
+//! 
+//! @seealso
+//!     @[decode], @[decode_from]
+typedef function(int(-127..128),Stdio.Buffer:mixed) decode_handler;
+
+//! Function prototype for encode extension handlers. The first argument is
+//! the @[Stdio.Buffer], the second the value to encode. Use @[add_extension_header] to
+//! generate the correct extension header.
+//! 
+//! @seealso
+//!     @[decode], @[decode_from]
+typedef function(Stdio.Buffer, mixed:void) encode_handler;
+
+//! Error thrown when MsgPack decoding fails.
+class DecodeError {
+    inherit Error.Generic;
+
+    constant error_type = "msgpack_decode";
+    constant is_msgpack_decode_error = 1;
+
+    //! The data which failed to be decoded.
+    Stdio.Buffer buffer;
+
+    //! The failing position in @[buffer].
+    int err_pos;
+
+    protected void create(Stdio.Buffer buffer, int err_pos, void|string reason, void|array bt) {
+        this::buffer = buffer;
+        this::err_pos = err_pos;
+
+        if (reason) {
+            ::create(sprintf("Error decoding MsgPack at position %d: %s.\n", err_pos, reason), bt);
+        } else {
+            ::create(sprintf("Error decoding MsgPack at position %d.\n", err_pos), bt);
+        }
+    }
+}
+
+void decode_error(Stdio.Buffer buffer, int err_pos, void|string reason, void|mixed ... args) {
+    if (sizeof(args)) reason = sprintf(reason, @args);
+    throw(DecodeError(buffer, err_pos, reason, backtrace()[..<1]));
+}
+
+//! @appears Standards.MsgPack module
+//! 
+//! Tools for handling the MsgPack data format. MsgPack is a binary serialization format with applications
+//! similar to JSON. However, MsgPack is more versatile and is able to serialize arbitrary objects using an
+//! extension format. The following table shows how some special Pike data types are encoded in the MsgPack
+//! format. All basic types, namely @expr{int@}, @expr{string@}, @expr{float@}, @expr{array@} and
+//! @expr{mapping@} are mapped onto their natural MsgPack counterparts. Note that the encoder does not
+//! use all integer and floating point lengths and in particular integers are never encoded as unsigned.
+//!
+//! @ul
+//!     @item binary
+//!         @[Stdio.Buffer]
+//!     @item nil
+//!         @[Val.null]
+//!     @item true
+//!         @[Val.true]
+//!     @item false
+//!         @[Val.false]
+//! @endul
+//! 
+//! All other types can be encoded and decoded using extension handlers.
+
+//! Default encoding handler. Encodes @[Val.null], @[Val.true] and
+//! @[Val.false].
+void default_handler(Stdio.Buffer b, function|object|program v) {
+    if (objectp(v)) {
+        if (v->is_val_null) {
+            b->add_int8(0xc0);
+            return;
+        } else if (v->is_val_false) {
+            b->add_int8(0xc2);
+            return;
+        } else if (v->is_val_true) {
+            b->add_int8(0xc3);
+            return;
+        }
+    }
+
+    error("Cannot encode %O\n", v);
+}
+
+//! Adds an extension header to @expr{b@} for given type and payload length.
+void add_extension_header(Stdio.Buffer b, int(-128..127) type, int(0..) len) {
+    switch (len) {
+    case 1:
+        b->add_int8(0xd4);
+        break;
+    case 2:
+        b->add_int8(0xd5);
+        break;
+    case 4:
+        b->add_int8(0xd6);
+        break;
+    case 8:
+        b->add_int8(0xd7);
+        break;
+    case 16:
+        b->add_int8(0xd8);
+        break;
+    default:
+        if (len < 256) {
+            b->add_int8(0xc7);
+            b->add_int8(len);
+        } else if (len < 65536) {
+            b->add_int8(0xc8);
+            b->add_int16(len);
+        } else {
+            b->add_int8(0xc9);
+            b->add_int32(len);
+        }
+        break;
+    }
+    // this relies on the fact that add_int8() will ignore the sign
+    // and that we are on a 2's complement machine. ugh
+    b->add_int8(type);
+}
+
+//! Encode @expr{v@} into a string.
+string(8bit) encode(mixed v, void|encode_handler|object handler) {
+    Stdio.Buffer buf = Stdio.Buffer();
+
+    ::encode_to(buf, v, handler || default_handler);
+
+    return buf->read();
+}
+
+//! Encode @expr{v@} into @expr{buf@}. If @expr{handler@} is not specified,
+//! it defaults to @[default_handler].
+void encode_to(Stdio.Buffer buf, mixed v, void|encode_handler|object handler) {
+    int len = sizeof(buf);
+    mixed err = catch(::encode_to(buf, v, handler || default_handler));
+    if (err) {
+        buf->truncate(len);
+        throw(err);
+    }
+}
+
+//! Decode one MsgPack encoded value from the @expr{buffer@}.
+mixed decode_from(Stdio.Buffer buffer, void|decode_handler|object handler) {
+    Stdio.Buffer.RewindKey key = buffer->rewind_on_error();
+    mixed v = ::decode_from(buffer, handler);
+    destruct(key);
+    return v;
+}
+
+//! Decode one MsgPack encoded value from @expr{data@}.
+mixed decode(string(8bit) data, void|decode_handler|object handler) {
+    return ::decode_from(Stdio.Buffer(data), handler);
+}
