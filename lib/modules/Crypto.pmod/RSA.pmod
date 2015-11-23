@@ -239,6 +239,37 @@ protected class LowState {
 
 #endif
 
+
+  //
+  // --- Block cipher compatibility.
+  //
+
+  protected int encrypt_mode; // For block cipher compatible functions
+
+  //! Sets the public key to @[key] and the mode to encryption.
+  //! @seealso
+  //!   @[set_decrypt_key], @[crypt]
+  this_program set_encrypt_key(array(Gmp.mpz) key)
+  {
+    set_public_key(key[0], key[1]);
+    encrypt_mode = 1;
+    return this;
+  }
+
+  //! Sets the public key to @[key]and the mod to decryption.
+  //! @seealso
+  //!   @[set_encrypt_key], @[crypt]
+  this_program set_decrypt_key(array(Gmp.mpz) key)
+  {
+    set_public_key(key[0], key[1]);
+    set_private_key(key[2]);
+    encrypt_mode = 0;
+    return this;
+  }
+
+  //! Returns the size of the key in terms of number of bits.
+  int(0..) key_size() { return n->size(); }
+
   //
   // Prototypes for functions in PKCS1_5State.
   //
@@ -247,11 +278,8 @@ protected class LowState {
   //
   string(8bit) encrypt(string(8bit) s, function(int:string(8bit))|void r);
   string(8bit) decrypt(string(8bit) s);
-  this_program set_encrypt_key(array(Gmp.mpz) key);
-  this_program set_decrypt_key(array(Gmp.mpz) key);
   string(8bit) crypt(string(8bit) s);
   int block_size();
-  int(0..) key_size();
   Gmp.mpz rsa_pad(string(8bit) message, int(1..2) type,
 		  function(int(0..):string(8bit))|void random);
   string(8bit) rsa_unpad(Gmp.mpz block, int type);
@@ -262,6 +290,7 @@ protected class LowState {
   // Prototypes for switching between different signature methods.
   //
   this_program `PSS();
+  this_program `OAEP();
   this_program `PKCS1_5();
 }
 
@@ -275,12 +304,91 @@ private class PKCS_RSA_class {
 private object(PKCS_RSA_class) PKCS_RSA =
   [object(PKCS_RSA_class)]Standards.PKCS["RSA"];
 
+//! Implementation of RSAES-OAEP (Optimal Asymmetric Encryption Padding).
+//!
+//! @seealso
+//!   @rfc{3447:7.1@}
+class OAEPState {
+  inherit LowState;
+
+  local {
+    //! Get the OAEP encryption state.
+    this_program `OAEP() { return this_program::this; }
+
+    string(7bit) name() { return "RSAES-OEAP"; }
+
+    protected .Hash hash_alg = .SHA1;
+
+    .Hash get_hash_algorithm()
+    {
+      return hash_alg;
+    }
+
+    void set_hash_algorithm(.Hash h)
+    {
+      if ((h->digest_size() * 2 + 2) >= n->size(256)) {
+	error("Too large hash digest (%d, max: %d) for modulo.\n",
+	      h->digest_size(), n->size(256)/2 - 3);
+      }
+      hash_alg = h;
+    }
+
+    //! Encrypt or decrypt depending on set mode.
+    //! @seealso
+    //!   @[set_encrypt_key], @[set_decrypt_key]
+    string(8bit) crypt(string(8bit) s, string(8bit)|void label)
+    {
+      return (encrypt_mode ? encrypt(s, UNDEFINED, label) : decrypt(s, label));
+    }
+
+    //! Returns the crypto block size, in bytes, or zero if not yet set.
+    int block_size()
+    {
+      // FIXME: This can be both zero and negative...
+      return n->size(256) - 2*(hash_alg->digest_size() + 1);
+    }
+
+    string(8bit) encrypt(string(8bit) s,
+			 function(int(0..):string(8bit))|void r,
+			 string(8bit)|void label)
+    {
+      if (!r) r = random;
+      string(8bit) em =
+	hash_alg->eme_oaep_encode(s, n->size(256),
+				  r(hash_alg->digest_size()),
+				  label);
+      if (!em) error("Message too long.\n");
+      return [string(8bit)]sprintf("%*c",
+				   n->size(256), Gmp.mpz(em, 256)->powm(e, n));
+    }
+
+    string(8bit) decrypt(string(8bit) s, string(8bit)|void label)
+    {
+      if (sizeof(s) != n->size(256)) {
+	error("Decryption error.\n");
+      }
+      Gmp.mpz c = Gmp.mpz(s, 256);
+      if (c >= n) {
+	error("Decryption error.\n");
+      }
+      string(8bit) m =
+	hash_alg->eme_oaep_decode([string(8bit)]
+				  sprintf("%*c", n->size(256), c->powm(d, n)),
+				  label);
+      if (!m) {
+	error("Decryption error.\n");
+      }
+      return m;
+    }
+  }
+}
+
 //! RSA PSS signatures (@rfc{3447:8.1@}).
 //!
 //! @seealso
 //!   @[PKCS1_5State]
 class PSSState {
-  inherit LowState;
+  inherit OAEPState;
 
   local {
     //! Get the PSS signature state.
@@ -533,29 +641,6 @@ class PKCS1_5State
   // --- Block cipher compatibility.
   //
 
-  protected int encrypt_mode; // For block cipher compatible functions
-
-  //! Sets the public key to @[key] and the mode to encryption.
-  //! @seealso
-  //!   @[set_decrypt_key], @[crypt]
-  this_program set_encrypt_key(array(Gmp.mpz) key)
-  {
-    set_public_key(key[0], key[1]);
-    encrypt_mode = 1;
-    return this;
-  }
-
-  //! Sets the public key to @[key]and the mod to decryption.
-  //! @seealso
-  //!   @[set_encrypt_key], @[crypt]
-  this_program set_decrypt_key(array(Gmp.mpz) key)
-  {
-    set_public_key(key[0], key[1]);
-    set_private_key(key[2]);
-    encrypt_mode = 0;
-    return this;
-  }
-
   //! Encrypt or decrypt depending on set mode.
   //! @seealso
   //!   @[set_encrypt_key], @[set_decrypt_key]
@@ -570,10 +655,6 @@ class PKCS1_5State
     // FIXME: This can be both zero and negative...
     return n->size(256) - 3;
   }
-
-  //! Returns the size of the key in terms of number of bits.
-  int(0..) key_size() { return n->size(); }
-
 
   //
   //  --- Below are methods for RSA applied in other standards.
