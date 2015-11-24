@@ -152,7 +152,7 @@ Sequence signature_algorithm_id(Crypto.Hash hash)
 //! provided hash algorithm and saltlen.
 //!
 //! @seealso
-//!   @rfc{3447:C@}
+//!   @rfc{3447:A.2.3@}
 Sequence pss_signature_algorithm_id(Crypto.Hash hash,
 				    int(0..)|void saltlen)
 {
@@ -186,4 +186,40 @@ Sequence pss_signature_algorithm_id(Crypto.Hash hash,
    * params += ({ TaggedType3(Integer(1)) });
    */
   return Sequence(({ .Identifiers.rsassa_pss_id, Sequence(params), }));
+}
+
+//! Returns the PKCS-1 algorithm identifier for RSAES-OAEP and the
+//! provided hash algorithm and label.
+//!
+//! @seealso
+//!   @rfc{3447:A.2.1@}
+Sequence oaep_algorithm_id(Crypto.Hash hash, string(8bit)|void label)
+{
+  if (!label) label = "";
+  array params = ({});
+  if (hash->name() != "sha1") {
+    array hash_alg = ({ hash->pkcs_hash_id() });
+    if (has_prefix(hash->name(), "md")) {
+      // RFC 3447 Appendix C:
+      //
+      //   When id-md2 and id-md5 are used in an AlgorithmIdentifier the
+      //   parameters MUST be present and MUST be NULL.
+      //
+      //   When id-sha1, id-sha256, id-sha384 and id-sha512 are used in an
+      //   AlgorithmIdentifier the parameters (which are optional) SHOULD
+      //   be omitted. However, an implementation MUST also accept
+      //   AlgorithmIdentifier values where the parameters are NULL.
+      hash_alg += ({ Null() });
+    }
+    params = ({ TaggedType0(Sequence(hash_alg)),
+		TaggedType1(Sequence(({ .Identifiers.mgf1_id,
+					Sequence(hash_alg), }))),
+    });
+  }
+  if (label != "") {
+    params += ({ TaggedType2(Sequence(({ .Identifiers.pspecified_id,
+					 OctetString(label) }))),
+    });
+  }
+  return Sequence(({ .Identifiers.rsaes_oaep_id, Sequence(params), }));
 }
