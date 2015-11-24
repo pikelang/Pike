@@ -694,35 +694,43 @@ static void mpack_low_encode(const struct mpack_encode_context *ctx,
             break;
         case PIKE_T_OBJECT:
             {
-                Buffer *bin = io_buffer_from_object(value->u.object);
+                void *src;
+                size_t dlen;
+                int shift;
+                enum memobj_type type = get_memory_object_memory(value->u.object, &src, &dlen, &shift); 
 
-                if (bin) {
-                    /* binary */
-                    size_t dlen = io_len(bin);
+                if (type != MEMOBJ_NONE) {
+                    if (type != MEMOBJ_STRING_BUFFER) {
+                        /* binary */
 
-                    if (dlen < MAX_UINT8) {
-                        dst = io_add_space(io, dlen + 2, 0);
-                        io->len += dlen + 2;
-                        *(dst++) = 0xc4;
-                        *(dst++) = dlen;
-                    } else if (dlen < MAX_UINT16) {
-                        dst = io_add_space(io, dlen + 3, 0);
-                        io->len += dlen + 3;
-                        *(dst++) = 0xc5;
-                        set_unaligned_be16(dst, dlen);
-                        dst += 2; 
-                    } else if (dlen < MAX_UINT32) {
-                        dst = io_add_space(io, 5, 0);
-                        io->len += 5;
-                        *(dst++) = 0xc6;
-                        set_unaligned_be32(dst, dlen);
-                        dst += 4;
-                        dst = io_add_space(io, dlen, 0);
-                        io->len += dlen;
-                    } else Pike_error("Too large binary data.\n");
+                        if (dlen < MAX_UINT8) {
+                            dst = io_add_space(io, dlen + 2, 0);
+                            io->len += dlen + 2;
+                            *(dst++) = 0xc4;
+                            *(dst++) = dlen;
+                        } else if (dlen < MAX_UINT16) {
+                            dst = io_add_space(io, dlen + 3, 0);
+                            io->len += dlen + 3;
+                            *(dst++) = 0xc5;
+                            set_unaligned_be16(dst, dlen);
+                            dst += 2; 
+                        } else if (dlen < MAX_UINT32) {
+                            dst = io_add_space(io, 5, 0);
+                            io->len += 5;
+                            *(dst++) = 0xc6;
+                            set_unaligned_be32(dst, dlen);
+                            dst += 4;
+                            dst = io_add_space(io, dlen, 0);
+                            io->len += dlen;
+                        } else Pike_error("Too large binary data.\n");
 
-                    memcpy(dst, io_read_pointer(bin), dlen);
-                    dst += dlen;
+                        memcpy(dst, src, dlen);
+                        dst += dlen;
+                    } else {
+                        push_string(make_shared_binary_pcharp(MKPCHARP(src, shift), dlen));
+                        mpack_low_encode(ctx, Pike_sp-1, 1);
+                        pop_stack();
+                    }
 
                     break;
                 }

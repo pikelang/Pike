@@ -7,6 +7,10 @@ define(test_dec,[[
   test_enc_dec($2);
 ]])
 
+define(test_enc,[[
+  test_equal(Standards.MsgPack.decode(Standards.MsgPack.encode(([[$1]]))), [[$2]])
+]])
+
 test_dec("\xc0", Val.null)
 test_dec("\xc2", Val.false)
 test_dec("\xc3", Val.true)
@@ -26,3 +30,4 @@ test_dec("\x80", ([]))
 test_dec("\x8f\x00\x00\x01\x01\x02\x02\x03\x03\x04\x04\x05\x05\x06\x06\x07\x07\x08\x08\t\t\n\n\x0b\x0b\x0c\x0c\r\r\x0e\x0e", mkmapping(enumerate(15), enumerate(15)))
 test_dec("\xde\x00\x10\x00\x00\x01\x01\x02\x02\x03\x03\x04\x04\x05\x05\x06\x06\x07\x07\x08\x08\t\t\n\n\x0b\x0b\x0c\x0c\r\r\x0e\x0e\x0f\x0f", mkmapping(enumerate(16), enumerate(16)))
 test_enc_dec(enumerate(1000, 1, -500));
+test_enc((lambda() { object b = String.Buffer(); b->add("foobar"); return b; })(), "foobar")
