@@ -474,7 +474,7 @@ static void memory_allocate(INT32 args)
  *!
  *!	Free the allocated or <tt>mmap</tt>ed memory.
  */
-static void memory_free(INT32 args)
+static void memory_free(INT32 UNUSED(args))
 {
    MEMORY_FREE(THIS);
 }

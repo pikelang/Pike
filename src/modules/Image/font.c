@@ -848,7 +848,7 @@ void font_baseline(INT32 args)
  *!   Document this function.
  */
 
-void font_set_center(INT32 args)
+void font_set_center(INT32 UNUSED(args))
 {
   if(THIS) THIS->justification=J_CENTER;
 }
@@ -859,7 +859,7 @@ void font_set_center(INT32 args)
  *!   Document this function.
  */
 
-void font_set_right(INT32 args)
+void font_set_right(INT32 UNUSED(args))
 {
   if(THIS) THIS->justification=J_RIGHT;
 }
@@ -870,7 +870,7 @@ void font_set_right(INT32 args)
  *!   Document this function.
  */
 
-void font_set_left(INT32 args)
+void font_set_left(INT32 UNUSED(args))
 {
   if(THIS) THIS->justification=J_LEFT;
 }

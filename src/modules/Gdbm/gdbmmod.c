@@ -715,7 +715,7 @@ static void gdbmmod_get_iterator(INT32 UNUSED(args))
  *! example)
  */
 
-static void gdbmmod_close(INT32 args)
+static void gdbmmod_close(INT32 UNUSED(args))
 {
   do_free();
 }

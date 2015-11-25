@@ -2824,7 +2824,7 @@ static void f_register_natives(INT32 args)
 /* Throwables */
 
 
-static void f_javathrow(INT32 args)
+static void f_javathrow(INT32 PIKE_UNUSED(args))
 {
   struct jobj_storage *jo = THIS_JOBJ;
   JNIEnv *env;
@@ -3650,7 +3650,7 @@ static void f_exception_occurred(INT32 args)
     push_int(0);
 }
 
-static void f_exception_describe(INT32 args)
+static void f_exception_describe(INT32 PIKE_UNUSED(args))
 {
   JNIEnv *env;
 

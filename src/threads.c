@@ -2736,7 +2736,7 @@ void f_cond_wait(INT32 args)
  *! @seealso
  *!   @[broadcast()]
  */
-void f_cond_signal(INT32 args)
+void f_cond_signal(INT32 UNUSED(args))
 {
   co_signal(&(THIS_COND->cond));
 }
@@ -2748,7 +2748,7 @@ void f_cond_signal(INT32 args)
  *! @seealso
  *!   @[signal()]
  */
-void f_cond_broadcast(INT32 args)
+void f_cond_broadcast(INT32 UNUSED(args))
 {
   co_broadcast(&(THIS_COND->cond));
 }
@@ -3092,7 +3092,7 @@ static void thread_was_checked(struct object *UNUSED(o))
  */
 
 /* FIXME: Why not use an init callback()? */
-void f_thread_local_create( INT32 args )
+void f_thread_local_create( INT32 UNUSED(args) )
 {
   static INT32 thread_local_id = 0;
   ((struct thread_local_var *)CURRENT_STORAGE)->id =

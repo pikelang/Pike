@@ -1931,7 +1931,7 @@ static void f_oracle_create(INT32 args)
 #endif
 }
 
-static void f_commit(INT32 args)
+static void f_commit(INT32 UNUSED(args))
 {
   sword ret = 0;
   struct dbcon *dbcon=THIS_DBCON;

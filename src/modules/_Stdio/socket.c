@@ -476,7 +476,7 @@ static void bind_unix(INT32 args)
  *!
  *! Closes the socket.
  */
-static void port_close (INT32 args)
+static void port_close (INT32 UNUSED(args))
 {
   do_close (THIS);
 }

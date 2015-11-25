@@ -1760,7 +1760,7 @@ static void file_query_fs_event_flags(INT32 args)
 }
 
 
-static void file__enable_callbacks(INT32 args)
+static void file__enable_callbacks(INT32 UNUSED(args))
 {
   struct my_file *f = THIS;
   size_t ev;
@@ -1786,7 +1786,7 @@ static void file__enable_callbacks(INT32 args)
   }
 }
 
-static void file__disable_callbacks(INT32 args)
+static void file__disable_callbacks(INT32 UNUSED(args))
 {
   struct my_file *f = THIS;
 
@@ -3785,7 +3785,7 @@ static void file_query_backend (INT32 args)
  *! @seealso
  *!   @[set_blocking()]
  */
-static void file_set_nonblocking(INT32 args)
+static void file_set_nonblocking(INT32 UNUSED(args))
 {
   if(FD < 0) Pike_error("File not open.\n");
 
@@ -3813,7 +3813,7 @@ static void file_set_nonblocking(INT32 args)
  *! @seealso
  *!   @[set_nonblocking()]
  */
-static void file_set_blocking(INT32 args)
+static void file_set_blocking(INT32 UNUSED(args))
 {
   if(FD >= 0)
   {

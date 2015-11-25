@@ -1039,7 +1039,7 @@ static void pipe_set_output_closed_callback(INT32 args)
  *!
  *! Terminate and reinitialize the pipe.
  */
-static void pipe_finish(INT32 args)
+static void pipe_finish(INT32 UNUSED(args))
 {
    pipe_done();
 }
@@ -1048,7 +1048,7 @@ static void pipe_finish(INT32 args)
  *!
  *! Start sending the input(s) to the output(s).
  */
-static void pipe_start(INT32 args) /* force start */
+static void pipe_start(INT32 UNUSED(args)) /* force start */
 {
   low_start();
 }
@@ -1131,7 +1131,7 @@ static void pipe_read_input_callback(INT32 args)
   low_start();
 }
 
-static void pipe_close_input_callback(INT32 args)
+static void pipe_close_input_callback(INT32 UNUSED(args))
 {
    struct input *i;
    i=THIS->firstinput;

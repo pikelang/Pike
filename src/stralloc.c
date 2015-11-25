@@ -67,7 +67,7 @@ static INLINE int string_is_block_allocated(const struct pike_string * s) {
   return (s->alloc_type == STRING_ALLOC_BA);
 }
 
-static INLINE int string_is_malloced(const struct pike_string * s) {
+static INLINE int PIKE_UNUSED_ATTRIBUTE string_is_malloced(const struct pike_string * s) {
  return (s->alloc_type == STRING_ALLOC_MALLOC);
 }
 
