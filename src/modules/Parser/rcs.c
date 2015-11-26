@@ -64,10 +64,12 @@ static void tokenize( struct pike_string *s )
     int in_string = 0;
     unsigned int ts=0, i, len=s->len;
     const char *data = s->str;
-    struct svalue *osp = Pike_sp;
-    push_array( allocate_array_no_init( 0, 100 ) );
-    for( i=0; i<len; i++ )
-    {
+    check_stack(200);
+    BEGIN_AGGREGATE_ARRAY(1024) {
+      // NB: An rcs file typically begins with "head 1.111;"
+      push_array( allocate_array_no_init( 0, 2 ) );
+      for( i=0; i<len; i++ )
+      {
 	if( in_string )
 	{
 	    if( (data[i]=='@') )
@@ -95,13 +97,30 @@ static void tokenize( struct pike_string *s )
 		case ';':
 		    if( ts < i ) push_token( data, ts, i-1 );
 		    ts=i+1;
-		    push_array( allocate_array_no_init( 0, 10 ) );
+		    // NB: We perform the incremental aggregate here
+		    //     (just before we push a new token array),
+		    //     to ensure that the active token array is
+		    //     always at the top of the stack.
+		    DO_AGGREGATE_ARRAY(100);
+		    // NB: Typical histogram of array lengths (116 revisions):
+		    //
+		    //     1: 138
+		    //     2: 399
+		    //     3: 134
+		    //     4: 0
+		    //     5: 1
+		    // [...]: 0
+		    //   667: 1
+		    //
+		    // We therefore start with a tentative length of 2,
+		    // and let resize_array() handle the special cases.
+		    push_array( allocate_array_no_init( 0, 2 ) );
 		    break;
 	    }
 	}
-    }
-    if( ts < len ) push_token( data, ts, len-1 );
-    f_aggregate( Pike_sp-osp );
+      }
+      if( ts < len ) push_token( data, ts, len-1 );
+    } END_AGGREGATE_ARRAY;
 }
 
 static void f_tokenize( INT32 args )
