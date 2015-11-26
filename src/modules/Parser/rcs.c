@@ -38,7 +38,8 @@
 static void push_token( const char * from, int start, int end )
 {
     struct array *a = Pike_sp[-1].u.array;
-    struct pike_string *token = make_shared_binary_string(from+start, end-start+1);
+    struct pike_string *token =
+      make_shared_binary_string(from+start, end-start+1);
     if( a->malloced_size < a->size+1 )
     {
 	Pike_sp[-1].u.array = a = resize_array( a, a->size+1 );
