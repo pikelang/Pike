@@ -1,0 +1,10 @@
+subject: Pike 7.8: SSL.context: TLS 1.1 and before don't support hashes other than md5 and sha1.
+from: f0ab29dcbc2d9092c95084dd98c2f2f5d0496573
+to: 6919a83e97a2d978a9362c70b455257c1822bd59
+originator: wellhardh@roxen.com
+depends: 2015-11-18T164552
+restart: true
+
+SSL.context: TLS 1.1 and before don't support hashes other than md5 and sha1.
+
+Improves interoperation with some versions of OpenSSL.
