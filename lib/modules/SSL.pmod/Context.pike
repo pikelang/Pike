@@ -460,6 +460,21 @@ array(int) get_suites(int(-1..)|void min_keylength,
 		 }, blacklisted_ciphermodes);
   }
 
+  switch(max_version) {
+  case PROTOCOL_TLS_1_1:
+  case PROTOCOL_TLS_1_0:
+  case PROTOCOL_SSL_3_0:
+    res = filter(res,
+		 lambda(int suite) {
+		   array(int) info = [array(int)]CIPHER_SUITES[suite];
+		   // AEAD suites are not supported in TLS versions
+		   // prior to TLS 1.2.
+		   // Hashes other than md5 or sha1 are not supported
+		   // prior to TLS 1.2.
+		   return (sizeof(info) < 4) && (info[2] <= HASH_sha);
+		 });
+    break;
+  }
   // Sort and return.
   return sort_suites(res);
 }
