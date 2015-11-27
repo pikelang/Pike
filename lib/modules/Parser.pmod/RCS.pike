@@ -114,7 +114,7 @@ void create(string|void file_name, string|int(0..0)|void file_contents,
     if(!file_contents)
       error("Couldn't read %s\n", file_name);
   }
-  parse(tokenize(file_contents), max_revisions);
+  parse(tokenize(file_contents), 0, max_revisions);
 }
 
 //! Lower-level API function for parsing only the admin section (the
