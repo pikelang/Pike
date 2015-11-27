@@ -225,15 +225,15 @@ PMOD_EXPORT DECLSPEC(noreturn) void pike_throw(void) ATTRIBUTE((noreturn))
   if (Pike_interpreter.catch_ctx &&
       &Pike_interpreter.catch_ctx->recovery == Pike_interpreter.recoveries) {
     /* This is a phony recovery made in F_CATCH that hasn't been passed
-     * to setjmp. The real jmpbuf is in catching_eval_instruction. */
+     * to LOW_SETJMP. The real jmpbuf is in catching_eval_instruction. */
 #ifdef PIKE_DEBUG
     if (!Pike_interpreter.catching_eval_jmpbuf)
       Pike_fatal ("Got phony F_CATCH recovery but no catching_eval_jmpbuf.\n");
 #endif
-    longjmp(*Pike_interpreter.catching_eval_jmpbuf, 1);
+    LOW_LONGJMP (*Pike_interpreter.catching_eval_jmpbuf, 1);
   }
   else
-    longjmp(Pike_interpreter.recoveries->recovery, 1);
+    LOW_LONGJMP(Pike_interpreter.recoveries->recovery,1);
 }
 
 PMOD_EXPORT void push_error(const char *description)
