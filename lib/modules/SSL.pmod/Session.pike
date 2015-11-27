@@ -237,6 +237,11 @@ int(0..1) is_supported_suite(int suite, int ke_mask, ProtocolVersion version)
       // Variant cipher-suite dependent prfs are not supported prior to TLS 1.2.
       return 0;
     }
+    if (suite_info[2] > HASH_sha1) {
+      // Hash algorithms other than md5 and sha1 are not supported
+      // prior to TLS 1.2.
+      return 0;
+    }
     // FIXME: Check hash size >= cert hash size.
   }
 
