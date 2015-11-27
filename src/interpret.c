@@ -2645,7 +2645,7 @@ void unlink_previous_frame(void)
 #endif /* PROFILING */
 }
 
-static void restore_catching_eval_jmpbuf (LOW_JMP_BUF *p)
+static void restore_catching_eval_jmpbuf (jmp_buf *p)
 {
   Pike_interpreter.catching_eval_jmpbuf = p;
 }
@@ -2653,9 +2653,9 @@ static void restore_catching_eval_jmpbuf (LOW_JMP_BUF *p)
 PMOD_EXPORT void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 {
   /* Save and clear Pike_interpreter.catching_eval_jmpbuf so that the
-   * following eval_instruction will install a LOW_JMP_BUF of its
-   * own to handle catches. */
-  LOW_JMP_BUF *saved_jmpbuf = Pike_interpreter.catching_eval_jmpbuf;
+   * following eval_instruction will install a jmp_buf of its own to
+   * handle catches. */
+  jmp_buf *saved_jmpbuf = Pike_interpreter.catching_eval_jmpbuf;
   ONERROR uwp;
   Pike_interpreter.catching_eval_jmpbuf = NULL;
   SET_ONERROR (uwp, restore_catching_eval_jmpbuf, saved_jmpbuf);
@@ -2680,9 +2680,9 @@ PMOD_EXPORT void mega_apply(enum apply_type type, INT32 args, void *arg1, void *
 PMOD_EXPORT void mega_apply_low(INT32 args, void *arg1, ptrdiff_t arg2)
 {
   /* Save and clear Pike_interpreter.catching_eval_jmpbuf so that the
-   * following eval_instruction will install a LOW_JMP_BUF of its
-   * own to handle catches. */
-  LOW_JMP_BUF *saved_jmpbuf = Pike_interpreter.catching_eval_jmpbuf;
+   * following eval_instruction will install a jmp_buf of its own to
+   * handle catches. */
+  jmp_buf *saved_jmpbuf = Pike_interpreter.catching_eval_jmpbuf;
   ONERROR uwp;
   Pike_interpreter.catching_eval_jmpbuf = NULL;
   SET_ONERROR (uwp, restore_catching_eval_jmpbuf, saved_jmpbuf);
@@ -2709,13 +2709,13 @@ PMOD_EXPORT void mega_apply_low(INT32 args, void *arg1, ptrdiff_t arg2)
  */
 static int catching_eval_instruction (PIKE_OPCODE_T *pc)
 {
-  LOW_JMP_BUF jmpbuf;
+  jmp_buf jmpbuf;
 #ifdef PIKE_DEBUG
   if (Pike_interpreter.catching_eval_jmpbuf)
     Pike_fatal ("catching_eval_jmpbuf already active.\n");
 #endif
   Pike_interpreter.catching_eval_jmpbuf = &jmpbuf;
-  if (LOW_SETJMP (jmpbuf))
+  if (setjmp (jmpbuf))
   {
     Pike_interpreter.catching_eval_jmpbuf = NULL;
 #ifdef PIKE_DEBUG
@@ -2830,7 +2830,7 @@ int apply_low_safe_and_stupid(struct object *o, INT32 offset)
   volatile int use_dummy_reference = 1;
   struct program *prog = o->prog;
   int p_flags = prog->flags;
-  LOW_JMP_BUF *saved_jmpbuf;
+  jmp_buf *saved_jmpbuf;
   int fun = -1;
 
   /* Search for a function that belongs to the current program,

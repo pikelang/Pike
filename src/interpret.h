@@ -39,7 +39,7 @@ struct Pike_interpreter_struct {
   char *stack_top;
 
   struct catch_context *catch_ctx;
-  LOW_JMP_BUF *catching_eval_jmpbuf;
+  jmp_buf *catching_eval_jmpbuf;
 
   int svalue_stack_margin;
   int c_stack_margin;
