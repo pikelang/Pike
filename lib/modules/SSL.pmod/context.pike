@@ -370,12 +370,15 @@ array(int) get_suites(int sign, int min_keylength, int|void max_version)
 		 }, min_keylength);
   }
 
-  if (!zero_type(max_version) && (max_version < PROTOCOL_TLS_1_2)) {
+  if ((PROTOCOL_TLS_MAX < PROTOCOL_TLS_1_2) ||
+      (!zero_type(max_version) && (max_version < PROTOCOL_TLS_1_2))) {
     // AEAD protocols are not supported prior to TLS 1.2.
     // Variant cipher-suite dependent prfs are not supported prior to TLS 1.2.
+    // Hashes other than md5 or sha1 are not supported prior to TLS 1.2.
     res = filter(res,
 		 lambda(int suite) {
-		   return (sizeof(CIPHER_SUITES[suite]) < 4);
+		   return (sizeof(CIPHER_SUITES[suite]) < 4) &&
+		     (CIPHER_SUITES[suite][2] <= HASH_sha);
 		 });
   }
 
