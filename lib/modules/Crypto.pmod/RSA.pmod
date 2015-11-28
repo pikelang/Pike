@@ -319,12 +319,12 @@ class OAEPState {
 
     protected .Hash hash_alg = .SHA1;
 
-    .Hash get_hash_algorithm()
+    optional .Hash get_hash_algorithm()
     {
       return hash_alg;
     }
 
-    void set_hash_algorithm(.Hash h)
+    optional void set_hash_algorithm(.Hash h)
     {
       if ((h->digest_size() * 2 + 2) >= n->size(256)) {
 	error("Too large hash digest (%d, max: %d) for modulo.\n",
