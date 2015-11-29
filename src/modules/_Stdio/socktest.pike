@@ -282,7 +282,8 @@ class BufferSocket {
   void create(object|void o)
   {
     ::create(o);
-    o->set_buffer_mode(Stdio.Buffer(), Stdio.Buffer());
+    if(o)
+      o->set_buffer_mode(Stdio.Buffer(), Stdio.Buffer());
   }
 };
 
