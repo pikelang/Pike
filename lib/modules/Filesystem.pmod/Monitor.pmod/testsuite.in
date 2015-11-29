@@ -147,6 +147,11 @@ test_true([[
               Stdio.write_file (test_basedir + "bar/fie/gaz", "12347");
               return test_mon->wait_for_stable_event (test_basedir + "bar/fie/gaz");
             }();
-            ]])
+	    ]])
+
+test_do([[
+  add_constant("test_mon");
+  add_constant("test_basedir");
+]])
 
 END_MARKER
