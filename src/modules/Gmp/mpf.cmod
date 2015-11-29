@@ -182,7 +182,11 @@ PIKECLASS mpf
 	  } else if (sp[1-args].u.integer > 0x10000) {
 	    Pike_error("Bad argument 2 to Gmp.mpf, must be <= 0x10000.\n");
 	  }
-	  mpf_set_prec(THISMPF, sp[1-args].u.integer);
+	  if (sp[1-args].u.integer<2) {
+	    mpf_set_prec(THISMPF, 2);
+	  } else {
+	    mpf_set_prec(THISMPF, sp[1-args].u.integer);
+	  }
 	}
 	/* FALL_THROUGH */
 
@@ -370,6 +374,7 @@ PIKECLASS mpf
   static struct object *get_mpf_with_prec(unsigned long int prec)
     {
       struct object *o=clone_object(mpf_program,0);
+      if (prec < 2) prec = 2;
       mpf_set_prec(OBTOMPF(o), prec);
       return o;
     }
@@ -506,7 +511,8 @@ PIKECLASS mpf
   {
     unsigned long int prec;
     prec=add_convert_args(args);
-    if(prec > mpf_get_prec(THISMPF))
+    /* NB: mpfr_prec_t is signed and mp_bitcnt_t is unsigned. */
+    if(prec > (unsigned long int)mpf_get_prec(THISMPF))
       mpf_set_prec(THISMPF, prec);
 
     add_args(THISMPF, args);
@@ -526,6 +532,7 @@ PIKECLASS mpf
       } else if (prec > 0x10000) {
 	Pike_error("Precision must be less than or equal to 0x10000.\n");
       }
+      if (prec < 2) prec = 2;
       mpf_set_prec(THISMPF, prec);
       REF_RETURN fp->current_object;
     }
