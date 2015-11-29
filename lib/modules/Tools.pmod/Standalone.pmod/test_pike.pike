@@ -3,10 +3,7 @@
 
 constant description = "Executes tests according to testsuite files.";
 
-constant log_msg = Tools.Testsuite.log_msg;
-constant log_msg_cont = Tools.Testsuite.log_msg_cont;
-constant log_msg_result = Tools.Testsuite.log_msg_result;
-constant log_status = Tools.Testsuite.log_status;
+import Tools.Testsuite;
 
 protected enum exit_codes {
   EXIT_OK,
@@ -19,8 +16,10 @@ protected enum exit_codes {
 #define _verify_internals()
 #endif
 
-#if !constant(_dmalloc_set_name)
+#if !constant(Debug.dmalloc_set_name)
 void _dmalloc_set_name(mixed ... args) {}
+#else
+#define _dmalloc_set_name Debug.demalloc_set_name
 #endif
 
 int foo(string opt)
@@ -94,7 +93,7 @@ array(string|array(string)) read_tests( string fn ) {
     // Fake a test that will execute the script
     array ret =
       ({ 0, ({
-	sprintf(#"%s:0: test 1, expected result: RUNCT
+        sprintf(#"%s:0: test 1, expected result: RUNCT
    array a() { return Tools.Testsuite.run_script (({ %q })); }", fn, fn) }),
     });
 
@@ -212,7 +211,7 @@ class Watchdog
   int verbose, timeout_phase;
   int start_time = time();
 
-  protected inherit Tools.Testsuite.WatchdogFilterStream;
+  protected inherit WatchdogFilterStream;
 
   string format_timestamp()
   {
@@ -415,7 +414,6 @@ int main(int argc, array(string) argv)
   int watchdog_pid, subprocess, failed_cond;
   int e, verbose, prompt, successes, errors, t, check, asmdebug;
   int skipped;
-  array(string) tests;
   array(string) forked;
   int start, fail, mem;
   int loop=1;
@@ -481,7 +479,6 @@ int main(int argc, array(string) argv)
 #ifdef HAVE_DEBUG
     ({"debug",Getopt.MAY_HAVE_ARG,({"-d","--debug"})}),
 #endif
-    ({"regression",Getopt.NO_ARG,({"-r","--regression"})}),
     ({"subprocess", Getopt.NO_ARG, ({"--subprocess"})}),
     ({"cond",Getopt.NO_ARG,({"--failed-cond","--failed-conditionals"})}),
     )),array opt)
@@ -543,11 +540,7 @@ int main(int argc, array(string) argv)
             testsuites+=find_testsuites(".");
           break;
 
-        case "regression":
-	  add_constant("regression", 1);
-	  break;
-
-	case "subprocess":
+        case "subprocess":
 	  subprocess = 1;
           break;
 
@@ -584,7 +577,7 @@ int main(int argc, array(string) argv)
   putenv ("TEST_VERBOSITY", (string) verbose);
   putenv ("TEST_ON_TTY", (string) (maybe_tty && Stdio.Terminfo.is_tty()));
 
-  Tools.Testsuite.log_start (verbose, maybe_tty && Stdio.Terminfo.is_tty());
+  log_start (verbose, maybe_tty && Stdio.Terminfo.is_tty());
 
   if (watchdog_pid) {
 #if defined(__NT__) && !constant(thread_create)
@@ -621,7 +614,6 @@ int main(int argc, array(string) argv)
     if (asmdebug) forked += ({ "--asm=" + asmdebug });
     if (mem) forked += ({ "--memory" });
     // auto already handled.
-    if (all_constants()->regression) forked += ({ "--regression" });
     if (failed_cond) forked += ({ "--failed-cond" });
     forked += ({"--subprocess"});
     // debug port not propagated.
@@ -723,7 +715,7 @@ int main(int argc, array(string) argv)
       foreach(testsuites, string testsuite) {
 	int failure;
 	array(int) subres =
-	  Tools.Testsuite.low_run_script (forked + ({ testsuite }), ([]));
+          low_run_script (forked + ({ testsuite }), ([]));
 	if (!subres) {
 	  errors++;
 	  failure = 1;
@@ -752,6 +744,7 @@ int main(int argc, array(string) argv)
   testloop:
     foreach(testsuites, string testsuite)
     {
+      array(string) tests;
       [string pike_compat, tests] = read_tests( testsuite );
 
       if (!sizeof (tests))
@@ -846,7 +839,7 @@ int main(int argc, array(string) argv)
 	sscanf(test, "%s\n%s", type, test);
 
 	string testfile;
-	sscanf(type, "%s: test %d, expected result: %s", testfile, testno, type);
+        sscanf(type, "%s: test %d, expected result: %s", testfile, testno, type);
 
 	if (testfile) {
 	  array split = testfile / ":";
@@ -961,7 +954,7 @@ int main(int argc, array(string) argv)
 	}
 	string linetester="int __cpp_line=__LINE__; int __rtl_line=([array(array(int))]backtrace())[-1][1];\n";
 
-	string to_compile = test + linetester + widener;
+        string to_compile = test + linetester + widener;
 
 	if((shift/6)&1)
 	{
@@ -1158,7 +1151,7 @@ int main(int argc, array(string) argv)
 	    break;
 	  }
 
-	  if( o->__cpp_line != o->__rtl_line ||
+          if( o->__cpp_line != o->__rtl_line ||
 	      ( computed_line && computed_line!=o->__cpp_line))
 	    {
 	      log_msg(fname + " Line numbering failed.\n");
@@ -1357,7 +1350,6 @@ int main(int argc, array(string) argv)
     if(mem)
     {
       int total;
-      tests=0;
       gc();
       mapping tmp=_memory_usage();
       log_msg("%-10s: %6s %10s\n","Category","num","bytes");
@@ -1396,7 +1388,7 @@ int main(int argc, array(string) argv)
     // test.
     watchdog_start_new_test ("");
 
-    Tools.Testsuite.report_result (successes, errors, skipped);
+    report_result (successes, errors, skipped);
   }
 
 #if 1
@@ -1408,7 +1400,6 @@ int main(int argc, array(string) argv)
   }
 #endif
 
-  add_constant("regression");
   add_constant("_verbose");
   add_constant("__signal_watchdog");
   add_constant("RUNPIKE");
