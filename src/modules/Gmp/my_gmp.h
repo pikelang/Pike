@@ -9,6 +9,12 @@
 
 #include <gmp.h>
 
+#if defined(HAVE_MPFR_H) && defined(HAVE_MPF2MPFR_H)
+#include <mpfr.h>
+#include <mpf2mpfr.h>
+#define USE_MPFR
+#endif
+
 #ifdef PIKE_GMP_LIMB_BITS_INVALID
 /* Attempt to repair the header file... */
 #undef GMP_LIMB_BITS
@@ -55,7 +61,11 @@ PMOD_EXPORT extern struct program *bignum_program;
 /*
  * This is where we break abstraction layers.
  */
-#define MP_FLT __mpf_struct
+#ifdef USE_MPFR
+#define MP_FLT	__mpfr_struct
+#else
+#define MP_FLT	__mpf_struct
+#endif
 /* Number of allocated limbs. */
 #define ALIMBS(X) ((X)->_mp_alloc)
 /* Number of limbs in use + sign. */
@@ -65,7 +75,7 @@ PMOD_EXPORT extern struct program *bignum_program;
 
 #define OBTOMPZ(o) ((MP_INT *)(o->storage))
 #define OBTOMPQ(o) ((MP_RAT *)(o->storage))
-#define OBTOMPF(o) ((MP_FLT *)(o->storage))
+#define OBTOMPF(o) ((mpf_ptr)(o->storage))
 
 #define IS_MPZ_OBJ(O) ((O)->prog == bignum_program || (O)->prog == mpzmod_program || ((O)->storage && get_storage((O),mpzmod_program)==(O)->storage))
 #ifndef GMP_NUMB_BITS

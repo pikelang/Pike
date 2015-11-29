@@ -93,6 +93,10 @@ DECLARATIONS
  *! to IEEE P754 arithmetic. In particular results obtained on one
  *! computer often differ from the results on a computer with a
  *! different word size.
+ *!
+ *! @note
+ *!   This class will use mpfr if available, in which case the precision
+ *!   will be exact and IEEE rules will be followed.
  */
 
 /*  id PROG_GMP_MPF_ID; */
@@ -779,6 +783,10 @@ PIKECLASS mpf
 void pike_init_mpf_module(void)
 {
   INIT
+
+#ifdef USE_MPFR
+  add_integer_constant("MPF_IS_IEEE", 1, 0);
+#endif /* USE_MPFR */
 }
 
 void pike_exit_mpf_module(void)

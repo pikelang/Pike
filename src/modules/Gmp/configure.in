@@ -7,8 +7,9 @@ AC_MODULE_INIT()
 
 PIKE_FEATURE_NODEP([Gmp (bignums)])
 
-ORIG_CHECK_HEADERS(gmp.h)
+ORIG_CHECK_HEADERS(gmp.h mpfr.h mpf2mpfr.h)
 AC_CHECK_LIB(gmp, main)
+AC_CHECK_LIB(mpfr, mpfr_init)
 AC_TRY_LINK([
 #include <gmp.h>
 ], [mpz_import], [], [
