@@ -252,7 +252,7 @@ class BufferSocket {
 	       o->query_fd(), output_buffer);
     if(sizeof(output_buffer))
     {
-      out->add(output_buffer);
+      if(out) out->add(output_buffer);
       output_buffer = "";
     }else{
       if (!sizeof(out)) {
