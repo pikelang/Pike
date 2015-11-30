@@ -1851,6 +1851,7 @@ int get_inet_addr(PIKE_SOCKADDR *addr,char *name,char *service, INT_TYPE port,
 #endif /* HAVE_GETADDRINFO */
 
   int udp = inet_flags & 1;
+  int err;
 
   MEMSET((char *)addr,0,sizeof(PIKE_SOCKADDR));
   if(name && !strcmp(name,"*"))
