@@ -929,16 +929,17 @@ int main(int argc, array(string) argv)
 
         if(source[-1]!='\n') source+="\n";
 
-	int computed_line=sizeof(source/"\n");
-	array gnapp= source/"#";
-	for(int e=1;e<sizeof(gnapp);e++)
-	{
-	  if(sscanf(gnapp[e],"%*d"))
+        int computed_line=sizeof(source/"\n");
+        foreach((source/"#")[1..], string cpp)
+        {
+          // FIXME: We could calculate the offset from this value.
+          if(sscanf(cpp,"%*d"))
 	  {
 	    computed_line=0;
 	    break;
 	  }
-	}
+        }
+
 	string linetester="int __cpp_line=__LINE__; int __rtl_line=([array(array(int))]backtrace())[-1][1];\n";
 
         string to_compile = source + linetester + widener;
@@ -961,13 +962,11 @@ int main(int argc, array(string) argv)
 	  to_compile=replace(to_compile,"\n","\r\n");
 	}
 
-	// _optimizer_debug(5);
-
-	if(verbose>9) print_code(to_compile);
-	WarningFlag wf;
-	switch(test->type)
+        if(verbose>9) print_code(to_compile);
+        switch(test->type)
         {
-	  mixed at,bt;
+          WarningFlag wf;
+          mixed at,bt;
 	  mixed err;
 	case "COMPILE":
 	  wf = WarningFlag();
