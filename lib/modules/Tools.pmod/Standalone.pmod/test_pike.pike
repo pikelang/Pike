@@ -114,7 +114,7 @@ array(string|array(Test)) read_tests( string fn ) {
 
 mapping(string:int) pushed_warnings = ([]);
 
-class adjust_line( int amount )
+class AdjustLine( int amount )
 {
   void compile_error(string file, int line, string text) {
     log_msg("%s:%d: %s\n", file,line+amount-1,text);
@@ -755,7 +755,6 @@ int main(int argc, array(string) argv)
 		subprocess && ("pid " + getpid())}) * ", ");
       int qmade, qskipped, qmadep, qskipp;
 
-      int testline;
       for(e=start;e<sizeof(tests);e++)
       {
 	if (!((e-start) % 10))
@@ -777,10 +776,10 @@ int main(int argc, array(string) argv)
 	}
 
         Test test = tests[e];
-#define COMPILE(X) \
+#define COMPILE(X,Y)                                                    \
         (master()->get_inhibit_compile_errors()                         \
          ? compile_string((X),testsuite)                                \
-         : compile_string((X),testsuite,adjust_line(testline)))
+         : compile_string((X),testsuite,AdjustLine(Y)))
 
 	// Is there a condition for this test?
         if( sizeof(test->conditions) )
@@ -795,16 +794,14 @@ int main(int argc, array(string) argv)
 	  if(!(tmp=cond_cache[condition]))
 	  {
 	    mixed err = catch {
-               tmp=!!(COMPILE("mixed c() { return "+condition+"; }")()->c());
+              tmp=!!(COMPILE("mixed c() { return "+condition+"; }",0)()->c());
 	    };
 
 	    if(err) {
 	      if (err && err->is_cpp_or_compilation_error)
-		log_msg( "Conditional %d%s failed.\n",
-			 e+1, testline?" (line "+testline+")":"");
+                log_msg( "Conditional %d failed.\n", e+1);
 	      else
-		log_msg( "Conditional %d%s failed:\n"
-			 "%s\n", e+1, testline?" (line "+testline+")":"",
+                log_msg( "Conditional %d failed:\n%s\n", e+1,
 			 describe_backtrace(err) );
               print_code( condition );
 	      errors++;
@@ -813,13 +810,11 @@ int main(int argc, array(string) argv)
 
             if (tmp != 1) {
               if ((verbose > 1 || failed_cond) && !err) {
-		log_msg("Conditional %d%s failed:\n",
-			e+1, testline?" (line "+testline+")":"");
+                log_msg("Conditional %d failed:\n", e+1);
 		print_code( condition );
 	      }
 	    } else if (verbose > 5) {
-	      log_msg("Conditional %d%s succeeded.\n",
-		      e+1, testline?" (line "+testline+")":"");
+              log_msg("Conditional %d succeeded.\n", e+1);
 	      if (verbose > 9) {
 		print_code( condition );
 	      }
@@ -933,7 +928,7 @@ int main(int argc, array(string) argv)
         foreach((source/"#")[1..], string cpp)
         {
           // FIXME: We could calculate the offset from this value.
-          if(sscanf(cpp,"%*d"))
+          if(has_prefix(cpp,"line") || sscanf(cpp,"%*d"))
 	  {
 	    computed_line=0;
 	    break;
@@ -972,7 +967,7 @@ int main(int argc, array(string) argv)
 	  wf = WarningFlag();
 	  master()->set_inhibit_compile_errors(wf);
 	  _dmalloc_set_name(fname,0);
-	  if(mixed err = catch(COMPILE(to_compile)))
+          if(mixed err = catch(COMPILE(to_compile, test->line)))
 	  {
 	    _dmalloc_set_name();
 	    master()->set_inhibit_compile_errors(0);
@@ -1002,7 +997,7 @@ int main(int argc, array(string) argv)
 	case "COMPILE_ERROR":
 	  master()->set_inhibit_compile_errors(1);
 	  _dmalloc_set_name(fname,0);
-	  if(mixed err = catch(COMPILE(to_compile)))
+          if(mixed err = catch(COMPILE(to_compile, test->line)))
 	  {
 	    if (objectp (err) && err->is_cpp_or_compilation_error) {
 	      _dmalloc_set_name();
@@ -1030,7 +1025,7 @@ int main(int argc, array(string) argv)
 	  wf = WarningFlag();
 	  master()->set_inhibit_compile_errors(wf);
 	  _dmalloc_set_name(fname,0);
-	  if(mixed err = catch(COMPILE(to_compile)))
+          if(mixed err = catch(COMPILE(to_compile, test->line)))
 	  {
 	    _dmalloc_set_name();
 	    if (objectp (err) && err->is_cpp_or_compilation_error)
@@ -1064,7 +1059,7 @@ int main(int argc, array(string) argv)
 	      // Yes, apparently it is. There are tests that don't
 	      // care whether the error is caught during compilation
 	      // or evaluation. /mast
-	      a = COMPILE(to_compile)()->a();
+                a = COMPILE(to_compile, test->line)()->a();
 	    };
 	  };
 	  if(err)
@@ -1090,7 +1085,7 @@ int main(int argc, array(string) argv)
 	    wf = WarningFlag();
 	    master()->set_inhibit_compile_errors(wf);
 	    _dmalloc_set_name(fname,0);
-	    o=COMPILE(to_compile)();
+            o=COMPILE(to_compile, test->line)();
 	    _dmalloc_set_name();
 
 	    if(check > 1) _verify_internals();
