@@ -416,3 +416,106 @@ array(int) low_run_script (array(string) command, mapping opts)
 
   return ({subresult->succeeded, subresult->failed, subresult->skipped});
 }
+
+//! Rerpesents a test in a testsuite.
+class Test
+{
+  //! The file the testsuite (source) resides in.
+  string file;
+
+  //! The line number offset to this test in the file.
+  int(1..) line;
+
+  //! The test number in this file.
+  int(1..) number;
+
+  //! The type of the test. Any of
+  //! @string
+  //!   @value "COMPILE"
+  //!     Compiles the source and make verifies there are no warnings
+  //!     or errors.
+  //!   @value "COMPILE_ERROR"
+  //!     Compiles the source and expects to get a compilation error.
+  //!   @value "COMPILE_WARNING"
+  //!     Compiles the source and expects to get a compilation warning.
+  //!   @value "EVAL_ERROR"
+  //!     Evaluates the method a of the source source and expects an
+  //!     evaluation error.
+  //!   @value "FALSE"
+  //!     Verifies that the response from method a of the source is false.
+  //!   @value "TRUE"
+  //!     Verifies that the response from method a of the source is true.
+  //!   @value "PUSH_WARNING"
+  //!     Evaluate the method a and take the resulting string and push
+  //!     it to the set of ignored warnings. The same warning can be
+  //!     pushed multiple times, but must be popped multiple times.
+  //!   @value "POP_WARNING"
+  //!     Evaluate the method a and take the resulting string and pop
+  //!     the warning from the set of ignored warnings. When popped
+  //!     the same number of times as it has been pushed, the warning
+  //!     is no longer ignored.
+  //!   @value "RUN"
+  //!     Compiles and evaluates method a of the source, but ignores
+  //!     the result.
+  //!   @value "RUNCT"
+  //!     Compiles and evaluates method a od source, and expects an
+  //!     array(int) of two or three elements back.
+  //!     @array
+  //!       @elem int 0
+  //!         The number of successful tests performed.
+  //!       @elem int 1
+  //!         The number of failed tests,
+  //!       @elem int 2
+  //!         Optionally the number of skipped tests.
+  //!     @endarray
+  //!   @value "EQ"
+  //!     Compares the result of the method a and b with @[==].
+  //!   @value "EQUAL"
+  //!     Compares the result of the method a and b with @[equal].
+  //! @endstring
+  string type;
+
+  //! The list of conditions that has to be met for this test to not
+  //! be skipped. Each condition should be an expression.
+  array(string) conditions = ({});
+
+  //! The source code that is to be compiled and evaluated.
+  string source;
+
+  //!
+  optional void create(string file, int line, int number, string type,
+                       string source, void|array(string) cond)
+  {
+    this::file = file;
+    this::line = line;
+    this::number = number;
+    this::type = type;
+    this::source = source;
+    if( cond )
+      conditions = cond;
+  }
+}
+
+//! Represents a test case from a "testsuite" file, after m4
+//! processing.
+class M4Test
+{
+  inherit Test;
+
+  //! The data from a testsuite file, after start/stop markers have
+  //! been stripped and the file splitted on "...." tokens. From this
+  //! the conditions, file, line, number, type and source will be
+  //! parsed.
+  void create(string data)
+  {
+    if( sscanf(data, "COND %s\n%s", string cond, data)==2 )
+      conditions += ({ cond });
+    if( sscanf(data, "%s:%d: test %d, expected result: %s\n%s",
+               file, line, number, type, data)!=5 )
+      {
+        sscanf(data, "%s\n", data);
+        error("Illegal format. %O\n", data);
+      }
+    source = data;
+  }
+}
