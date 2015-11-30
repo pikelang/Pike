@@ -87,7 +87,7 @@
  *
  * These are NOT to be renumbered unless the file-format version is changed!
  */
-/* Current encoding: ¶ke0
+/* Current encoding: \266ke0
  *
  * +---+-+-+-------+
  * |s z|s|n| t a g |

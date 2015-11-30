@@ -139,7 +139,7 @@ static const int lock_depth = 1;
  * things down a bit if the hit/miss rate is not fairly high.
  * For normal applications, the hitrate is most likely well over 90%,
  * but that should be verified.
- * - Holistiska Centralbyrån (Hubbe)
+ * - Hubbe
  */
 
 /* Define the size of the cache that is used for method lookup. */

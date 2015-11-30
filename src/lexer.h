@@ -6,9 +6,6 @@
 
 /*
  * Lexical analyzer template.
- * Based on lex.c 1.62
- *
- * Henrik Grubbström 1999-02-20
  */
 
 #ifndef SHIFT
