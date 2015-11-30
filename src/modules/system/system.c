@@ -1880,9 +1880,26 @@ int get_inet_addr(PIKE_SOCKADDR *addr,char *name,char *service, INT_TYPE port,
 #endif
   }
   hints.ai_protocol = (udp? IPPROTO_UDP:IPPROTO_TCP);
-  if(!service)
-    sprintf(servnum_buf, "%"PRINTPIKEINT"d", (port<0? 0:port));
-  if(!getaddrinfo(name, (service? service : servnum_buf), &hints, &res)) {
+  if (!service && (port > 0) && (port & 0xffff)) {
+    /* NB: MacOS X doesn't like the combination of AI_NUMERICSERV and port #0.
+     *     cf [bug 7599] and https://bugs.python.org/issue17269 .
+     */
+#ifdef AI_NUMERICSERV
+    hints.ai_flags |= AI_NUMERICSERV;
+#endif
+    sprintf(service = servnum_buf, "%"PRINTPIKEINT"d", port & 0xffff);
+  }
+
+  if( (err=getaddrinfo(name, service, &hints, &res)) )
+  {
+    /* Try again without AI_NUMERICHOST. */
+#ifdef AI_NUMERICHOST
+    hints.ai_flags &= ~AI_NUMERICHOST;
+    err=getaddrinfo(name, service, &hints, &res);
+#endif
+  }
+  if(!err)
+  {
     struct addrinfo *p, *found = NULL;
     size_t addr_len=0;
     for(p=res; p; p=p->ai_next) {
