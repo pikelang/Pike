@@ -19,7 +19,7 @@ protected enum exit_codes {
 #if !constant(Debug.dmalloc_set_name)
 void _dmalloc_set_name(mixed ... args) {}
 #else
-#define _dmalloc_set_name Debug.demalloc_set_name
+#define _dmalloc_set_name Debug.dmalloc_set_name
 #endif
 
 int foo(string opt)
