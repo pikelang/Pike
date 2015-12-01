@@ -73,15 +73,9 @@ int packet_max_size = PACKET_MAX_SIZE;
 
 //! Lists the supported compression algorithms in order of preference.
 //!
-//! Defaults to @expr{({ COMPRESSION_null, COMPRESSION_deflate })@}
-//! (ie avoid compression unless the client requires it) due to
-//! SSL attacks that target compression.
-array(int) preferred_compressors = ({
-  COMPRESSION_null,
-#if constant(Gz)
-  COMPRESSION_deflate,
-#endif
- });
+//! Defaults to @expr{({ COMPRESSION_null })@} due to SSL attacks that
+//! target compression.
+array(int) preferred_compressors = ({ COMPRESSION_null });
 
 //! If set enable SSL/TLS protocol renegotiation.
 //!

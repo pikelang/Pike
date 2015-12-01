@@ -290,20 +290,21 @@ test_do([[
 ]])
 
 test_do([[
+  import SSL.Constants;
   class TestContext {
     inherit SSL.Context;
 
     int(0..1) expect_fail;
     SSL.Alert alert_factory(SSL.Connection con,
 			    int level, int description,
-			    SSL.Constants.ProtocolVersion version,
+			    ProtocolVersion version,
 			    string|void message)
     {
       if (message && !expect_fail &&
-          (description != SSL.Constants.ALERT_close_notify)) {
+	  (description != ALERT_close_notify)) {
 	log_msg("ALERT [%s: %d: %s]: %s",
-	        SSL.Constants.fmt_version(version), level,
-	        SSL.Constants.fmt_constant(description, "ALERT"), message);
+		fmt_version(version), level,
+		fmt_constant(description, "ALERT"), message);
       }
       return ::alert_factory(con, level, description, version, message);
     }
@@ -317,14 +318,18 @@ test_do([[
     protected void create()
     {
       // Test support for private FFDHE groups with the weakest MODP group.
-      private_ffdhe_groups[SSL.Constants.GROUP_ffdhe_private0] =
-	Crypto.DH.MODPGroup1;
+      private_ffdhe_groups[GROUP_ffdhe_private0] = Crypto.DH.MODPGroup1;
     }
   };
   add_constant("TestContext", TestContext);
   SSL.Context ctx = TestContext();
   ctx->random = random_string;
-  ctx->ffdhe_groups += ({ SSL.Constants.GROUP_ffdhe_private0 });
+  ctx->ffdhe_groups += ({ GROUP_ffdhe_private0 });
+  ctx->preferred_compressors = ({ COMPRESSION_null,
+#if constant(Gz)
+    COMPRESSION_deflate,
+#endif
+  });
   add_constant("server_ctx", ctx);
 ]])
 
