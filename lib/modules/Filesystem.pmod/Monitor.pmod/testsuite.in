@@ -149,4 +149,9 @@ test_true([[
             }();
             ]])
 
+test_do([[
+  add_constant("test_mon");
+  add_constant("test_basedir");
+]])
+
 END_MARKER
