@@ -1,5 +1,7 @@
 #charset utf-8
 
+constant description = "Check HTTP/HTTPS connectivity to a host.";
+
 //
 // Check http connectivity to a host.
 //
