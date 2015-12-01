@@ -771,6 +771,26 @@ array(State) new_client_states(.Connection con,
       write_state->crypt->set_iv(keys[4]);
     }
   }
+
+  switch(compression_algorithm) {
+  case COMPRESSION_deflate:
+#if constant(Gz)
+    read_state->compress = Gz.inflate()->inflate;
+    write_state->compress =
+      class(function(string(8bit), int:string(8bit)) _deflate) {
+	string(8bit) deflate(string(8bit) s) {
+	  // RFC 3749 2:
+	  //   All data that was submitted for compression MUST be
+	  //   included in the compressed output, with no data
+	  //   retained to be included in a later output payload.
+	  //   Flushing ensures that each compressed packet payload
+	  //   can be decompressed completely.
+	  return _deflate(s, Gz.SYNC_FLUSH);
+	}
+      }(Gz.deflate()->deflate)->deflate;
+#endif
+    break;
+  }
   return ({ read_state, write_state });
 }
 
