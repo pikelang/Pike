@@ -899,20 +899,33 @@ static const char hexchar[] = {
 
 static const unsigned char hexdecode[256] =
 {
-  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+  16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,
+  16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,
 
   /* '0' - '9' */
   0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
 
-  0,0,0,0,0,0,0,
+  16,16,16,16,16,16,16,
 
   /* 'A' - 'F' */
   10,  11,  12,  13,  14,  15,
 
-  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+  16,16,16,16,16,16,16,16,16,16,16,16,16,
+  16,16,16,16,16,16,16,16,16,16,16,16,16,
+
   /* 'a' - 'f' */
   10,  11,  12,  13,  14,  15,
+
+  16,16,16,16,16,16,16,16,16,
+  16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,
+  16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,
+  16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,
+  16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,
+  16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,
+  16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,
+  16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,
+  16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,
+  16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,
 };
 
 PMOD_EXPORT
@@ -939,10 +952,12 @@ PMOD_EXPORT
   RETURN end_shared_string(hex);
 }
 
-/*! @decl string hex2string(string hex)
+/*! @decl string(8bit) hex2string(string(8bit) hex)
  *! @appears String.hex2string
  *!
- *! Convert a string of hexadecimal digits to binary data.
+ *! Convert a string of hexadecimal digits to binary
+ *! data. Non-hexadecimal characters will be ignored when between
+ *! tuples. Eg. "00 00" is ok, but "0 000" isn't.
  *!
  *! @seealso
  *!   @[string2hex()]
@@ -954,18 +969,28 @@ PIKEFUN string(0..255) hex2string(string hex)
   struct pike_string *s;
   int tmp, i;
   unsigned char *p, *q = (unsigned char *)hex->str;
-  int l = hex->len>>1;
-  if(hex->size_shift) Pike_error("Only hex digits allowed.\n");
-  if(hex->len&1) Pike_error("Can't have odd number of digits.\n");
+  int l = i = hex->len;
+  if(hex->size_shift) Pike_error("Wide strings are not allowed.\n");
 
-  s = begin_shared_string(l);
+  s = begin_shared_string(l>>1);
   p = (unsigned char *)s->str;
-  for (i=0; i<l; i++)
+  while( l > 1 )
   {
     tmp = hexdecode[*q++];
-    *p++ = (tmp<<4) | hexdecode[*q++];
+    if( tmp==16 ) { l--; i--; continue; }
+    *p = tmp<<4;
+    tmp = hexdecode[*q++];
+    if( tmp==16 ) Pike_error("Illegal hex format.\n");
+    *p++ |= tmp;
+    l -= 2;
   }
-  RETURN end_shared_string(s);
+  if( l && hexdecode[*q]!=16 )
+    Pike_error("Illegal hex format.\n");
+
+  if( hex->len>>1 == i>>1 )
+    RETURN end_shared_string(s);
+  else
+    RETURN end_and_resize_shared_string(s, i>>1);
 }
 
 /*! @decl array(int) range(string s)

@@ -237,8 +237,12 @@ test_eval_error(return String.string2hex("x\xfff"))
 
 test_eq(String.hex2string(""), "")
 test_eq(String.hex2string("ab00"), "\xab\0")
+test_eq(String.hex2string("ab 00"), "\xab\0")
+test_eq(String.hex2string("ab  00"), "\xab\0")
+test_eq(String.hex2string("ab 00 "), "\xab\0")
+test_eq(String.hex2string("ab 00  "), "\xab\0")
 test_eval_error(return String.hex2string("ab0"))
-dnl test_eval_error(return String.hex2string("ax"))
+test_eval_error(return String.hex2string("ax"))
 
 test_eq([[ String.implode_nicely( ({ "1","2","3" }) ) ]],[[ "1, 2 and 3" ]])
 test_eq([[ String.implode_nicely( ({ "1","2","3" }), "och" ) ]],[[ "1, 2 och 3" ]])
