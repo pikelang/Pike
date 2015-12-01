@@ -99,14 +99,19 @@ array(string|array(Test)) read_tests( string fn ) {
     return ret;
   }
 
+  tests = String.trim_all_whites(tests);
+  if(!sizeof(tests)) return ({ 0, ({}) });
+
   if(sscanf (tests, "START%s\n%s", pike_compat, tests) == 2) {
-    if(!has_suffix(tests, "END\n"))
+    if(!has_suffix(tests, "END"))
       log_msg("%s: Missing end marker.\n", fn);
     else
-      tests = tests[..<sizeof ("END\n")];
+      tests = tests[..<sizeof ("END")];
     pike_compat = String.trim_whites (pike_compat);
     if (pike_compat == "") pike_compat = 0;
   }
+  else
+    log_msg("%s: Missing start marker.\n", fn);
 
   tests = tests/"\n....\n";
   return ({pike_compat, map(tests[..<1], M4Test)});

@@ -1,4 +1,5 @@
 dnl -*- coding: utf-8; -*-
+START_MARKER
 
 test_compile_error( H )
 test_compile_error( S )
@@ -201,3 +202,5 @@ test_do(add_constant("E"))
 test_do(add_constant("D"))
 test_do(add_constant("S"))
 test_do(add_constant("H"))
+
+END_MARKER
