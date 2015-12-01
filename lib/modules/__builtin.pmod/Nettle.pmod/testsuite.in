@@ -1,7 +1,7 @@
 START_MARKER
 
 test_do(add_constant("S",String.string2hex))
-test_do(add_constant("H",lambda(string s){ return String.hex2string(s-" "-"\n"); }))
+test_do(add_constant("H",String.hex2string))
 
 test_do([[
 class HASH(object alg)

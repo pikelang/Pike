@@ -3,8 +3,7 @@ START_MARKER
 
 test_compile_error( H )
 test_compile_error( S )
-test_do( add_constant( "H", lambda(string s) {
-  return String.hex2string(s-" "-"\n"-"\t"); } ) )
+test_do( add_constant( "H", String.hex2string ) )
 test_do( add_constant( "S", String.string2hex ) )
 
 dnl First some tests that the huffman codec works.

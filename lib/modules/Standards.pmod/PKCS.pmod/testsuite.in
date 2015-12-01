@@ -70,14 +70,14 @@ test_eq( sizeof(PKCS.Identifiers.ad_ids), sizeof(PKCS.Identifiers.reverse_ad_ids
 
 // Vector from RFC 3447 Appendix C.
 test_eq( Standards.PKCS.Identifiers.pkcs_1_id->get_der(),
-	 String.hex2string("06 08 2A 86 48 86 F7 0D 01 01"-" ") )
+	 String.hex2string("06 08 2A 86 48 86 F7 0D 01 01") )
 
 test_true( Standards.PKCS.PFX )
 test_true( Standards.PKCS.RSA )
 
 // Vector from RFC 3447 Appendix C.
 test_eq( Standards.PKCS.RSA.pss_signature_algorithm_id(Crypto.SHA1)->get_der(),
-	 String.hex2string("30 0D 06 09 2A 86 48 86 F7 0D 01 01 0A 30 00"-" ") )
+	 String.hex2string("30 0D 06 09 2A 86 48 86 F7 0D 01 01 0A 30 00") )
 
 test_true( Standards.PKCS.Signature )
 

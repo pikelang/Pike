@@ -57,7 +57,7 @@ string decrypt_body(string(8bit) dek_info, string(8bit) body, string(8bit) passw
     "aes-128-cbc": 16,
     "aes-256-cbc": 32,
   ])[method] || 24;
-  string(8bit) iv = String.hex2string(String.trim_all_whites(d[1]));
+  string(8bit) iv = String.hex2string(d[1]);
   key = derive_key(key, iv[..7], key_size);
   Crypto.AES.CBC.Buffer.State decoder = cipher();
   decoder->set_decrypt_key(key);

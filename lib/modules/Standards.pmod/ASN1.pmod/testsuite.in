@@ -21,11 +21,11 @@ test_do( add_constant("P", lambda(object o)
 test_eval_error(Standards.ASN1.Decode.simple_der_decode(""))
 
 define(test_decode,[[
-  test_eq(P(Standards.ASN1.Decode.simple_der_decode(String.hex2string($1-" "))),$2)
-  test_eq(Standards.ASN1.Decode.simple_der_decode(String.hex2string($1-" "))->get_der(),
-          String.hex2string($1-" "))
+  test_eq(P(Standards.ASN1.Decode.simple_der_decode(String.hex2string($1))),$2)
+  test_eq(Standards.ASN1.Decode.simple_der_decode(String.hex2string($1))->get_der(),
+	  String.hex2string($1))
   test_eq(decode_value(encode_value(Standards.ASN1.Decode.simple_der_decode(String.hex2string($1-" "))))->get_der(),
-          String.hex2string($1-" "))
+	  String.hex2string($1))
 ]])
 
 test_decode("1f 7f 00", "Decode.Primitive(508)")
@@ -47,9 +47,9 @@ test_decode("010100","Boolean(FALSE)")
 test_decode("0101ff","Boolean(TRUE)")
 test_eval_error(Standards.ASN1.Decode.simple_der_decode("\1\0"))
 
-test_eq(P(Standards.ASN1.Decode.simple_der_decode(String.hex2string("090380fb05"-" "))),"Real(0.15625)")
-test_eq(P(Standards.ASN1.Decode.simple_der_decode(String.hex2string("090390fe0a"-" "))),"Real(0.15625)")
-test_eq(P(Standards.ASN1.Decode.simple_der_decode(String.hex2string("0903acfe05"-" "))),"Real(0.15625)")
+test_eq(P(Standards.ASN1.Decode.simple_der_decode(String.hex2string("090380fb05"))),"Real(0.15625)")
+test_eq(P(Standards.ASN1.Decode.simple_der_decode(String.hex2string("090390fe0a"))),"Real(0.15625)")
+test_eq(P(Standards.ASN1.Decode.simple_der_decode(String.hex2string("0903acfe05"))),"Real(0.15625)")
 
 test_decode("180f31393932303532313030303030305a", "GeneralizedTime(19920521000000Z)")
 test_decode("180f31393932303632323132333432315a", "GeneralizedTime(19920622123421Z)")
@@ -62,15 +62,15 @@ dnl
 
 dnl 5.4
 test_decode("03 04 06 6e 5d c0", "BitString(18 011011100101110111)")
-test_false(Standards.ASN1.Decode.simple_der_decode(String.hex2string("03 04 06 6e 5d e0"-" ")))
-test_eq(P(Standards.ASN1.Decode.simple_der_decode(String.hex2string("03 81 04 06 6e 5d c0"-" "))), "BitString(18 011011100101110111)")
-test_eq(P(Standards.ASN1.Decode.simple_der_decode(String.hex2string("23 09 03 03 00 6e 5d 03 02 06 c0"-" "))), "BitString(18 011011100101110111)")
+test_false(Standards.ASN1.Decode.simple_der_decode(String.hex2string("03 04 06 6e 5d e0")))
+test_eq(P(Standards.ASN1.Decode.simple_der_decode(String.hex2string("03 81 04 06 6e 5d c0"))), "BitString(18 011011100101110111)")
+test_eq(P(Standards.ASN1.Decode.simple_der_decode(String.hex2string("23 09 03 03 00 6e 5d 03 02 06 c0"))), "BitString(18 011011100101110111)")
 
 dnl 5.6
 test_decode("16 0d 74 65 73 74 31 40 72 73 61 2e 63 6f 6d",
             "IA5STRING(test1@rsa.com)")
-test_eq(P(Standards.ASN1.Decode.simple_der_decode(String.hex2string("16 81 0d 74 65 73 74 31 40 72 73 61 2e 63 6f 6d"-" "))), "IA5STRING(test1@rsa.com)")
-test_eq(P(Standards.ASN1.Decode.simple_der_decode(String.hex2string("36 13 16 05 74 65 73 74 31 16 01 40 16 07 72 73 61 2e 63 6f 6d"-" "))), "IA5STRING(test1@rsa.com)")
+test_eq(P(Standards.ASN1.Decode.simple_der_decode(String.hex2string("16 81 0d 74 65 73 74 31 40 72 73 61 2e 63 6f 6d"))), "IA5STRING(test1@rsa.com)")
+test_eq(P(Standards.ASN1.Decode.simple_der_decode(String.hex2string("36 13 16 05 74 65 73 74 31 16 01 40 16 07 72 73 61 2e 63 6f 6d"))), "IA5STRING(test1@rsa.com)")
 
 dnl 5.6
 test_decode("02 01 00", "Integer(0)")
@@ -82,7 +82,7 @@ test_decode("02 02 ff 7f", "Integer(8 -129)")
 
 dnl 5.8
 test_decode("05 00", "Null()")
-test_eq(P(Standards.ASN1.Decode.simple_der_decode(String.hex2string("05 81 00"-" "))), "Null()")
+test_eq(P(Standards.ASN1.Decode.simple_der_decode(String.hex2string("05 81 00"))), "Null()")
 test_eq( Types.Null()->get_der(), "\5\0" )
 
 dnl 5.9
@@ -92,28 +92,28 @@ test_eq(Types.Identifier(1,2,840,113549)->get_der(),
 
 dnl 5.10
 test_decode("04 08 01 23 45 67 89 ab cd ef", "OCTET STRING(\1#Eg\211\253\315\357)")
-test_eq(P(Standards.ASN1.Decode.simple_der_decode(String.hex2string("04 81 08 01 23 45 67 89 ab cd ef"-" "))), "OCTET STRING(\1#Eg\211\253\315\357)")
-test_eq(P(Standards.ASN1.Decode.simple_der_decode(String.hex2string("24 0c 04 04 01 23 45 67 04 04 89 ab cd ef"-" "))), "OCTET STRING(\1#Eg\211\253\315\357)")
+test_eq(P(Standards.ASN1.Decode.simple_der_decode(String.hex2string("04 81 08 01 23 45 67 89 ab cd ef"))), "OCTET STRING(\1#Eg\211\253\315\357)")
+test_eq(P(Standards.ASN1.Decode.simple_der_decode(String.hex2string("24 0c 04 04 01 23 45 67 04 04 89 ab cd ef"))), "OCTET STRING(\1#Eg\211\253\315\357)")
 
 dnl 5.11
 test_decode("13 0b 54 65 73 74 20 55 73 65 72 20 31", "PrintableString(Test User 1)")
-test_eq(P(Standards.ASN1.Decode.simple_der_decode(String.hex2string("13 81 0b 54 65 73 74 20 55 73 65 72 20 31"-" "))), "PrintableString(Test User 1)")
-test_eq(P(Standards.ASN1.Decode.simple_der_decode(String.hex2string("33 0f 13 05 54 65 73 74 20 13 06 55 73 65 72 20 31"-" "))), "PrintableString(Test User 1)")
+test_eq(P(Standards.ASN1.Decode.simple_der_decode(String.hex2string("13 81 0b 54 65 73 74 20 55 73 65 72 20 31"))), "PrintableString(Test User 1)")
+test_eq(P(Standards.ASN1.Decode.simple_der_decode(String.hex2string("33 0f 13 05 54 65 73 74 20 13 06 55 73 65 72 20 31"))), "PrintableString(Test User 1)")
 
 dnl 5.16
 dnl dnl FIXME: T61 is not encoded
 dnl dnl test_decode("14 0f 63 6c c2 65 73 20 70 75 62 6c 69 71 75 65 73", "TeletexString(cl\351s publiques)")
-dnl test_eq(P(Standards.ASN1.Decode.simple_der_decode(String.hex2string("14 81 0f 63 6c c2 65 73 20 70 75 62 6c 69 71 75 65 73"-" "))), "TeletexString(cl\351s publiques)")
-dnl test_eq(P(Standards.ASN1.Decode.simple_der_decode(String.hex2string("34 15 14 05 63 6c c2 65 73 14 01 20 14 09 70 75 62 6c 69 71 75 65 73"-" "))), "TeletexString(cl\351s publiques)")
+dnl test_eq(P(Standards.ASN1.Decode.simple_der_decode(String.hex2string("14 81 0f 63 6c c2 65 73 20 70 75 62 6c 69 71 75 65 73"))), "TeletexString(cl\351s publiques)")
+dnl test_eq(P(Standards.ASN1.Decode.simple_der_decode(String.hex2string("34 15 14 05 63 6c c2 65 73 14 01 20 14 09 70 75 62 6c 69 71 75 65 73"))), "TeletexString(cl\351s publiques)")
 dnl
 test_decode("14 0e 63 6c e9 73 20 70 75 62 6c 69 71 75 65 73", "TeletexString(cl\351s publiques)")
-test_eq(P(Standards.ASN1.Decode.simple_der_decode(String.hex2string("14 81 0e 63 6c e9 73 20 70 75 62 6c 69 71 75 65 73"-" "))), "TeletexString(cl\351s publiques)")
-test_eq(P(Standards.ASN1.Decode.simple_der_decode(String.hex2string("34 14 14 04 63 6c e9 73 14 01 20 14 09 70 75 62 6c 69 71 75 65 73"-" "))), "TeletexString(cl\351s publiques)")
+test_eq(P(Standards.ASN1.Decode.simple_der_decode(String.hex2string("14 81 0e 63 6c e9 73 20 70 75 62 6c 69 71 75 65 73"))), "TeletexString(cl\351s publiques)")
+test_eq(P(Standards.ASN1.Decode.simple_der_decode(String.hex2string("34 14 14 04 63 6c e9 73 14 01 20 14 09 70 75 62 6c 69 71 75 65 73"))), "TeletexString(cl\351s publiques)")
 
 dnl 5.17
 test_decode("17 0d 39 31 30 35 30 36 32 33 34 35 34 30 5a", "UTCTime(910506234540Z)")
 dnl FIXME: Should time be normalized?
-dnl test_eq(P(Standards.ASN1.Decode.simple_der_decode(String.hex2string("17 11 39 31 30 35 30 36 31 36 34 35 34 30 2D 30 37 30 30"-" "))), "UTCTime(910506234540Z)")
+dnl test_eq(P(Standards.ASN1.Decode.simple_der_decode(String.hex2string("17 11 39 31 30 35 30 36 31 36 34 35 34 30 2D 30 37 30 30"))), "UTCTime(910506234540Z)")
 
 dnl
 dnl --- END tests from
