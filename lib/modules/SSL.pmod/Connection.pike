@@ -270,6 +270,11 @@ private array(Standards.X509.TBSCertificate)
   if((context->auth_level < AUTHLEVEL_require) && !sizeof(certs))
     return ({});
 
+  // If we are not verifying the certificates, we only need to decode
+  // the leaf certificate for its public key.
+  if(context->auth_level == AUTHLEVEL_none)
+    return ({ Standards.X509.decode_certificate(certs[0]) });
+
   // A lack of certificates when we reqiure and must verify the
   // certificates is probably a failure.
   if(!sizeof(certs))
