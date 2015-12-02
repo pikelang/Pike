@@ -703,6 +703,9 @@ static void mpack_low_encode(const struct mpack_encode_context *ctx,
                     if (type != MEMOBJ_STRING_BUFFER) {
                         /* binary */
 
+                        if (ctx->buffer == value->u.object)
+                            Pike_error("Cannot encode itself.\n");
+
                         if (dlen < MAX_UINT8) {
                             dst = io_add_space(io, dlen + 2, 0);
                             io->len += dlen + 2;
