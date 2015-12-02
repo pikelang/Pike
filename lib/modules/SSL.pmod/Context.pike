@@ -1162,7 +1162,7 @@ __deprecated__ int `verify_certificates()
 
 __deprecated__ void `encrypt_then_mac=(int(0..1) i)
 {
-  extensions[EXTENSION_encrypt_then_mac] = 1;
+  extensions[EXTENSION_encrypt_then_mac] = !!i;
 }
 
 __deprecated__ int(0..1) `encrypt_then_mac()
