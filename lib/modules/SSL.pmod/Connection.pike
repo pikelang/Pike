@@ -263,6 +263,9 @@ int verify_certificate_chain(array(string) certs)
                                             context->trusted_issuers_cache,
 					    context->require_trust);
 
+  // This data isn't actually used internally.
+  session->cert_data = result;
+
   if(result->verified)
   {
     if (session->server_name) {
@@ -274,17 +277,9 @@ int verify_certificate_chain(array(string) certs)
       if (cert->ext_subjectAltName_dNSName) {
 	globs += cert->ext_subjectAltName_dNSName;
       }
-      result->server_name_verified = 0;
-      foreach(globs, string g) {
-	if (glob(g, session->server_name)) {
-	  result->server_name_verified = 1;
-	  break;
-	}
-      }
+      result->verified = glob(globs, session->server_name);
     }
-    // This data isn't actually used internally.
-    session->cert_data = result;
-    return 1;
+    return [int(0..1)](result->verified);
   }
 
  return 0;
