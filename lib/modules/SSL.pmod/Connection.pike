@@ -322,13 +322,7 @@ private array(Standards.X509.TBSCertificate)
     if (cert->ext_subjectAltName_dNSName) {
       globs += cert->ext_subjectAltName_dNSName;
     }
-    result->server_name_verified = 0;
-    foreach(globs, string g) {
-      if (glob(g, session->server_name)) {
-	result->server_name_verified = 1;
-	break;
-      }
-    }
+    result->verified = glob(globs, session->server_name);
   }
 
   // This data isn't actually used internally.

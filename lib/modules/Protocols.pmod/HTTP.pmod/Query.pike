@@ -304,20 +304,6 @@ protected void async_write()
    con->set_nonblocking(async_read,0,async_close);
 }
 
-protected void async_ssl_connected()
-{
-  if (context->verify_certificates &&
-      (context->auth_level >= SSL.Constants.AUTHLEVEL_require)) {
-    mapping cert_data = con->get_peer_certificate_info();
-    if (!cert_data->server_name_verified) {
-      DBG("Certificate name mismatch.\n");
-      async_failed();
-      return;
-    }
-  }
-  async_connected();
-}
-
 protected void async_connected()
 {
    con->set_nonblocking(async_read,async_write,async_close);
