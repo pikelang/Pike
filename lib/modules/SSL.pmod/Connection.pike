@@ -318,7 +318,7 @@ private array(Standards.X509.TBSCertificate)
       [array(Standards.X509.TBSCertificate)](result->certificates);
     Standards.X509.TBSCertificate cert = certs[-1];
     array(string) globs = Standards.PKCS.Certificate.
-      decode_distinguished_name(cert->subject)->commonNmae - ({ 0 });
+      decode_distinguished_name(cert->subject)->commonName - ({ 0 });
     if (cert->ext_subjectAltName_dNSName) {
       globs += cert->ext_subjectAltName_dNSName;
     }
