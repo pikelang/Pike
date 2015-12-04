@@ -267,7 +267,7 @@ int verify_certificate_chain(array(string) certs)
   session->cert_data = result;
 
   if(result->verified && session->server_name &&
-     sizeof(result->certificates || ({}))) {
+     sizeof([array](result->certificates || ({})))) {
     array(Standards.X509.TBSCertificate) certs =
       [array(Standards.X509.TBSCertificate)](result->certificates);
     Standards.X509.TBSCertificate cert = certs[-1];
