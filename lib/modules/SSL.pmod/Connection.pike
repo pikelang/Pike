@@ -277,7 +277,8 @@ int verify_certificate_chain(array(string) certs)
       if (cert->ext_subjectAltName_dNSName) {
 	globs += cert->ext_subjectAltName_dNSName;
       }
-      result->verified = glob(globs, session->server_name);
+      result->verified = glob(map(globs, lower_case),
+			      lower_case(session->server_name));
     }
     return [int(0..1)](result->verified);
   }
