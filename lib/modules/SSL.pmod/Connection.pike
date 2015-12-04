@@ -322,7 +322,8 @@ private array(Standards.X509.TBSCertificate)
     if (cert->ext_subjectAltName_dNSName) {
       globs += cert->ext_subjectAltName_dNSName;
     }
-    result->verified = glob(globs, session->server_name);
+    result->verified = glob(map(globs, lower_case),
+			    lower_case(session->server_name));
   }
 
   // This data isn't actually used internally.
