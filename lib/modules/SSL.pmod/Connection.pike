@@ -266,24 +266,21 @@ int verify_certificate_chain(array(string) certs)
   // This data isn't actually used internally.
   session->cert_data = result;
 
-  if(result->verified)
-  {
-    if (session->server_name) {
-      array(Standards.X509.TBSCertificate) certs =
-	[array(Standards.X509.TBSCertificate)](result->certificates);
-      Standards.X509.TBSCertificate cert = certs[-1];
-      array(string) globs = Standards.PKCS.Certificate.
-	    decode_distinguished_name(cert->subject)->commonName - ({ 0 });
-      if (cert->ext_subjectAltName_dNSName) {
-	globs += cert->ext_subjectAltName_dNSName;
-      }
-      result->verified = glob(map(globs, lower_case),
-			      lower_case(session->server_name));
+  if(result->verified && session->server_name &&
+     sizeof(result->certificates || ({}))) {
+    array(Standards.X509.TBSCertificate) certs =
+      [array(Standards.X509.TBSCertificate)](result->certificates);
+    Standards.X509.TBSCertificate cert = certs[-1];
+    array(string) globs = Standards.PKCS.Certificate.
+      decode_distinguished_name(cert->subject)->commonName - ({ 0 });
+    if (cert->ext_subjectAltName_dNSName) {
+      globs += cert->ext_subjectAltName_dNSName;
     }
-    return [int(0..1)](result->verified);
+    result->verified = glob(map(globs, lower_case),
+			    lower_case(session->server_name));
   }
 
- return 0;
+  return [int(0..1)](result->verified);
 }
 
 //! Do handshake processing. Type is one of HANDSHAKE_*, data is the
