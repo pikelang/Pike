@@ -323,6 +323,11 @@ protected void low_async_failed(int errno)
 
 protected void async_failed()
 {
+  DBG("** Async connection failure.\n");
+  if (!status) {
+    status = 502;	// HTTP_BAD_GW
+    status_desc = "Bad Gateway";
+  }
 #if constant(System.EHOSTUNREACH)
   low_async_failed(con?con->errno():System.EHOSTUNREACH);
 #else
@@ -333,6 +338,10 @@ protected void async_failed()
 protected void async_timeout()
 {
    DBG("** TIMEOUT\n");
+   if (!status) {
+     status = 504;	// HTTP_GW_TIMEOUT
+     status_desc = "Gateway timeout";
+   }
    close_connection();
 #if constant(System.ETIMEDOUT)
    low_async_failed(System.ETIMEDOUT);
