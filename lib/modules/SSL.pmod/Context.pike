@@ -774,7 +774,8 @@ optional string(8bit) get_psk(string(8bit) id);
 // use key identifier.
 
 //! Policy for client authentication. One of
-//! @[SSL.Constants.AUTHLEVEL_none], @[SSL.Constants.AUTHLEVEL_ask]
+//! @[SSL.Constants.AUTHLEVEL_none],
+//! @[SSL.Constants.AUTHLEVEL_verify], @[SSL.Constants.AUTHLEVEL_ask]
 //! and @[SSL.Constants.AUTHLEVEL_require].
 int auth_level;
 
@@ -1145,13 +1146,13 @@ __deprecated__ void `verify_certificates=(int i)
 {
   if(!i)
     auth_level = AUTHLEVEL_none;
-  else if(auth_level < AUTHLEVEL_ask)
-    auth_level = AUTHLEVEL_ask;
+  else if(auth_level < AUTHLEVEL_verify)
+    auth_level = AUTHLEVEL_verify;
 }
 
 __deprecated__ int `verify_certificates()
 {
-  return auth_level >= AUTHLEVEL_ask;
+  return auth_level >= AUTHLEVEL_verify;
 }
 
 //! @decl int(0..1) encrypt_then_mac
