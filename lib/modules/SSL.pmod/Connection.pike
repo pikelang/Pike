@@ -313,7 +313,7 @@ private array(Standards.X509.TBSCertificate)
                                             context->require_trust);
   };
 
-  if (session->server_name && sizeof(result->certificates || ({}))) {
+  if (session->server_name && sizeof([array](result->certificates || ({})))) {
     array(Standards.X509.TBSCertificate) certs =
       [array(Standards.X509.TBSCertificate)](result->certificates);
     Standards.X509.TBSCertificate cert = certs[-1];
