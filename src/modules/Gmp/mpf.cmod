@@ -762,6 +762,172 @@ PIKECLASS mpf
       RETURN !mpf_sgn(THISMPF);
     }
 
+#ifdef USE_MPFR
+#cmod_define UNARY_OP(SYM)					\
+  PIKEFUN mpf SYM()						\
+  {								\
+    struct object *res = NULL;					\
+    res = get_mpf_with_prec(mpf_get_prec(THISMPF));		\
+    cmod_CONCAT(mpfr_,SYM)(OBTOMPF(res), THISMPF, MPFR_RNDN);	\
+    RETURN res;							\
+  }
+
+#cmod_define BINARY_OP(SYM)					\
+  PIKEFUN mpf SYM(int|float|object arg)				\
+  {								\
+    struct object *res = NULL;					\
+    MP_FLT *a = get_mpf(arg, 1, 0);				\
+    res = get_mpf_with_prec(MAXIMUM(mpf_get_prec(THISMPF),	\
+				    mpf_get_prec(a)));		\
+    cmod_CONCAT(mpfr_,SYM)(OBTOMPF(res), THISMPF, a, MPFR_RNDN);\
+    RETURN res;							\
+  }
+
+  /*! @decl mpf pow(int|float|Gmp.mpz|Gmp.mpf exp)
+   */
+  BINARY_OP(pow);
+
+  /*! @decl mpf sqrt()
+   */
+  UNARY_OP(sqrt);
+
+  /*! @decl mpf sqr()
+   */
+  UNARY_OP(sqr);
+
+  /*! @decl mpf log()
+   */
+  UNARY_OP(log);
+
+  /*! @decl mpf log2()
+   */
+  UNARY_OP(log2);
+
+  /*! @decl mpf log10()
+   */
+  UNARY_OP(log10);
+
+  /*! @decl mpf exp()
+   */
+  UNARY_OP(exp);
+
+  /*! @decl mpf exp2()
+   */
+  UNARY_OP(exp2);
+
+  /*! @decl mpf exp10()
+   */
+  UNARY_OP(exp10);
+
+  /*! @decl mpf rint()
+   */
+  UNARY_OP(rint);
+
+  /*! @decl mpf round()
+   */
+  PIKEFUN mpf round()
+  {
+    struct object *res = NULL;
+    res = get_mpf_with_prec(mpf_get_prec(THISMPF));
+    mpfr_round(OBTOMPF(res), THISMPF);
+    RETURN res;
+  }
+
+  /*! @decl mpf trunc()
+   */
+  PIKEFUN mpf trunc()
+  {
+    struct object *res = NULL;
+    res = get_mpf_with_prec(mpf_get_prec(THISMPF));
+    mpfr_trunc(OBTOMPF(res), THISMPF);
+    RETURN res;
+  }
+
+  /*! @decl mpf ceil()
+   */
+  PIKEFUN mpf ceil()
+  {
+    struct object *res = NULL;
+    res = get_mpf_with_prec(mpf_get_prec(THISMPF));
+    mpfr_ceil(OBTOMPF(res), THISMPF);
+    RETURN res;
+  }
+
+  /*! @decl mpf floor()
+   */
+  PIKEFUN mpf floor()
+  {
+    struct object *res = NULL;
+    res = get_mpf_with_prec(mpf_get_prec(THISMPF));
+    mpfr_floor(OBTOMPF(res), THISMPF);
+    RETURN res;
+  }
+
+  /*! @decl mpf frac()
+   */
+  UNARY_OP(frac);
+
+  UNARY_OP(atanh);
+  UNARY_OP(acosh);
+  UNARY_OP(asinh);
+  UNARY_OP(cosh);
+  UNARY_OP(sinh);
+  UNARY_OP(tanh);
+  UNARY_OP(sech);
+  UNARY_OP(csch);
+  UNARY_OP(coth);
+
+  UNARY_OP(acos);
+  UNARY_OP(asin);
+  UNARY_OP(atan);
+  UNARY_OP(sin);
+  UNARY_OP(cos);
+  UNARY_OP(tan);
+  UNARY_OP(sec);
+  UNARY_OP(csc);
+  UNARY_OP(cot);
+
+  /*! @decl mpf pi
+   */
+  PIKEFUN mpf `pi()
+  {
+    struct object *res = NULL;
+    res = get_mpf_with_prec(mpf_get_prec(THISMPF));
+    mpfr_const_pi(OBTOMPF(res), MPFR_RNDN);
+    RETURN res;
+  }
+
+  /*! @decl mpf ln2
+   */
+  PIKEFUN mpf `ln2()
+  {
+    struct object *res = NULL;
+    res = get_mpf_with_prec(mpf_get_prec(THISMPF));
+    mpfr_const_log2(OBTOMPF(res), MPFR_RNDN);
+    RETURN res;
+  }
+
+  /*! @decl mpf euler
+   */
+  PIKEFUN mpf `euler()
+  {
+    struct object *res = NULL;
+    res = get_mpf_with_prec(mpf_get_prec(THISMPF));
+    mpfr_const_euler(OBTOMPF(res), MPFR_RNDN);
+    RETURN res;
+  }
+
+  /*! @decl mpf catalan
+   */
+  PIKEFUN mpf `catalan()
+  {
+    struct object *res = NULL;
+    res = get_mpf_with_prec(mpf_get_prec(THISMPF));
+    mpfr_const_catalan(OBTOMPF(res), MPFR_RNDN);
+    RETURN res;
+  }
+#endif /* USE_MPFR */
+
   INIT
     {
       mpf_init(THISMPF);
