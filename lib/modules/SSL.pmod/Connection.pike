@@ -309,8 +309,8 @@ private array(Standards.X509.TBSCertificate)
   mapping result = ([]);
   catch {
     result = Standards.X509.verify_certificate_chain(certs,
-                                            context->trusted_issuers_cache,
-                                            context->require_trust);
+                                     context->trusted_issuers_cache,
+                                     context->auth_level >= AUTHLEVEL_require);
   };
 
   if (session->server_name && sizeof([array](result->certificates || ({})))) {

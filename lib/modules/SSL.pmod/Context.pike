@@ -777,6 +777,8 @@ optional string(8bit) get_psk(string(8bit) id);
 //! @[SSL.Constants.AUTHLEVEL_none],
 //! @[SSL.Constants.AUTHLEVEL_verify], @[SSL.Constants.AUTHLEVEL_ask]
 //! and @[SSL.Constants.AUTHLEVEL_require].
+//!
+//! Defaults to SSL.Constants.AUTHLEVEL_none.
 int auth_level;
 
 //! Array of authorities that are accepted for client certificates.
@@ -796,13 +798,6 @@ void set_authorities(array(string) a)
   authorities = a;
   update_authorities();
 }
-
-//! When set, require the chain to be known, even if the root is self
-//! signed.
-//!
-//! Note that if set, and certificates are set to be verified, trusted
-//! issuers must be provided, or no connections will be accepted.
-int require_trust=0;
 
 //! Get the list of allowed authorities. See @[set_authorities].
 array(string) get_authorities()
@@ -1153,6 +1148,29 @@ __deprecated__ void `verify_certificates=(int i)
 __deprecated__ int `verify_certificates()
 {
   return auth_level >= AUTHLEVEL_verify;
+}
+
+//! @decl int require_trust
+//!
+//! When set, require the chain to be known, even if the root is self
+//! signed.
+//!
+//! Note that if set, and certificates are set to be verified, trusted
+//! issuers must be provided, or no connections will be accepted.
+//!
+//! @deprecated auth_level
+
+__deprecated__ void `require_trust=(int i)
+{
+  if(i)
+    auth_level = AUTHLEVEL_require;
+  else if(auth_level > AUTHLEVEL_verify)
+    auth_level = AUTHLEVEL_verify;
+}
+
+__deprecated__ int `require_trust()
+{
+  return auth_level >= AUTHLEVEL_require;
 }
 
 //! @decl int(0..1) encrypt_then_mac
