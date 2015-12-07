@@ -90,7 +90,7 @@ void request_ok(Protocols.HTTP.Query q)
     data += sprintf(";ssl=%s;suite=%s",
 		    SSL.Constants.fmt_version(session->version) - " ",
 		    SSL.Constants.fmt_cipher_suite(session->cipher_suite));
-    array(Standards.X509.TBSCertificate) certs =
+    array(Standards.X509.TBSCertificate) certs = session->cert_data &&
       session->cert_data->certificates;
     if (sizeof(certs || ({}))) {
       Standards.X509.TBSCertificate cert = certs[-1];
@@ -176,6 +176,8 @@ int main(int argc, array(string) argv)
       cert_min_ttl = ((int)opt[1]) * 24 * 3600;
       // Turn on verification of certificates.
       q->context->verify_certificates = 1;
+      q->context->require_trust = 1;
+      q->context->auth_level = SSL.Constants.AUTHLEVEL_require;
       break;
     case "method":
       method = upper_case(opt[1]);
