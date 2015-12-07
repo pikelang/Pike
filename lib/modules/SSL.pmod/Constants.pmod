@@ -1207,17 +1207,17 @@ constant HANDSHAKE_next_protocol	= 67;	// draft-agl-tls-nextprotoneg
 
 
 //! Don't request nor check any certificate.
-constant AUTHLEVEL_none		= 1;
+constant AUTHLEVEL_none		= 0;
 
 //! Don't request, but verify any certificate.
-constant AUTHLEVEL_verify       = 2;
+constant AUTHLEVEL_verify       = 1;
 
 //! As a server, request a certificate, but don't require a response.
 //! This AUTHLEVEL is not relevant for clients.
-constant AUTHLEVEL_ask		= 3;
+constant AUTHLEVEL_ask		= 2;
 
 //! Require other party to send a valid certificate.
-constant AUTHLEVEL_require	= 4;
+constant AUTHLEVEL_require	= 3;
 
 
 /* FIXME: CERT_* would be better names for these constants */

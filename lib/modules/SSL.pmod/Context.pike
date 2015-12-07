@@ -779,7 +779,7 @@ optional string(8bit) get_psk(string(8bit) id);
 //! and @[SSL.Constants.AUTHLEVEL_require].
 //!
 //! Defaults to SSL.Constants.AUTHLEVEL_none.
-int auth_level;
+int auth_level = AUTHLEVEL_none;
 
 //! Array of authorities that are accepted for client certificates.
 //! The server will only accept connections from clients whose
