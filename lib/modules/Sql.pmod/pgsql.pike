@@ -320,11 +320,13 @@ private .pgsql_util.conxion getsocket(void|int nossl) {
   PD("Closetrace %O\n",backtrace());
 #endif
   if(c) {
-    .pgsql_util.conxion plugbuffer=c->start(1);
-    foreach(qportals->peek_array();;int|.pgsql_util.sql_result portal)
-      if(objectp(portal))
-        portal->_closeportal(plugbuffer);
-    plugbuffer->sendcmd(SENDOUT);
+    .pgsql_util.conxion plugbuffer;
+    if(!catch(plugbuffer=c->start(1))) {
+      foreach(qportals->peek_array();;int|.pgsql_util.sql_result portal)
+        if(objectp(portal))
+          portal->_closeportal(plugbuffer);
+      plugbuffer->sendcmd(SENDOUT);
+    }
   }
 }
 
@@ -1843,7 +1845,9 @@ private inline void throwdelayederror(object parent) {
   if(!forcetext && forcecache==1
         || forcecache!=0
          && (sizeof(q)>=MINPREPARELENGTH || .pgsql_util.cachealways[q])) {
-    object plugbuffer=c->start();
+    object plugbuffer;
+    while(catch(plugbuffer=c->start()))
+      reconnect();
     if(tp=_prepareds[q]) {
       if(tp.preparedname) {
 #ifdef PG_STATS
