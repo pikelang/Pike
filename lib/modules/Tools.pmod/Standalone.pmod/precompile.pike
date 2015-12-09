@@ -2370,10 +2370,11 @@ static struct %s *%s_gdb_dummy_ptr;
                            arg->line()),
               });
 	      if (arg->c_type() == "struct object *") {
-		ret += ({
-                  PC.Token(sprintf("int %s_inh_num;\n", arg->name()),
-                           arg->line()),
-		});
+                  if( has_value( merge(body),"_inh_num"))
+                      ret += ({
+                          PC.Token(sprintf("int %s_inh_num;\n", arg->name()),
+                                   arg->line()),
+                      });
 	      }
 	    }
 
@@ -2638,11 +2639,12 @@ static struct %s *%s_gdb_dummy_ptr;
 				       arg->basetype()),arg->line())
 		    });
 		    if (arg->c_type() == "struct object *") {
-		      ret += ({
-			PC.Token(sprintf("%s_inh_num = SUBTYPEOF(Pike_sp[%d%s]);\n",
-					 arg->name(),
-					 argnum,argbase),arg->line())
-		      });
+                        if( has_value( merge(body),"_inh_num"))
+                            ret += ({
+                              PC.Token(sprintf("%s_inh_num = SUBTYPEOF(Pike_sp[%d%s]);\n",
+                                               arg->name(),
+                                               argnum,argbase),arg->line())
+                            });
 		    }
 		  }
 
