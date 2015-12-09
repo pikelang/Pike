@@ -1,0 +1,20 @@
+subject: Pike 7.8: Multiple fixes:
+from: 6919a83e97a2d978a9362c70b455257c1822bd59
+to: 157e196cd51bb198bb637c8a0b72f4ce7b1e3e87
+originator: wellhardh@roxen.com
+depends: 2015-11-27T155717
+restart: true
+
+Multiple fixes:
+
+  * System: Added workaround in get_inet_addr() for bugs in MacOS X.
+    
+    The call getaddrinfo("hostname", "0", AI_NUMERICSERV, &res) causes a
+    NULL-dereference in libsystem_info.dylib:mdns_addrinfo(). Apple bug
+    radar 13058317.
+    
+    Potential fix for [bug 7599].
+
+  * System: Added declaration missing in previous commit.
+
+  * SSL.Constants: Reduce estimated strength of RC4 to 38 bits.
