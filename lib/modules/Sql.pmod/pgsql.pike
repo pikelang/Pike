@@ -76,7 +76,7 @@ private mapping(string:array(mixed)) notifylist=([]);
 final mapping(string:string) _runtimeparameter;
 final mapping(string:mapping(string:mixed)) _prepareds=([]);
 private int pstmtcount;
-private int ptstmtcount;	// Periodically one would like to reset this
+private int ptstmtcount;	// Periodically one would like to reset these
 				// but checking when this is safe to do
 				// probably is more costly than the gain
 final int _pportalcount;
@@ -1871,7 +1871,6 @@ private inline void throwdelayederror(object parent) {
 	}
       if(forcecache!=1 && .pgsql_util.createprefix->match(q)) {
 	invalidatecache=1;			// Flush cache on CREATE
-        pstmtcount=0;			// Reset prepared statementnos
         tp=UNDEFINED;
       } else
 	_prepareds[q]=tp=([]);
