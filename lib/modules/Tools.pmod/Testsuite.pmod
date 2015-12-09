@@ -508,6 +508,34 @@ class Test
       compile_string(src, file) :
       compile_string(src, file, AdjustLine());
   }
+
+  array(Plugin) plugins = ({});
+  void add_plugin(Plugin p)
+  {
+    if( p->active(this) )
+      plugins += ({ p });
+  }
+
+  string prepare_source()
+  {
+    string src = source;
+    foreach(plugins;; Plugin plugin)
+      src = plugin->preprocess(src);
+    return src;
+  }
+
+  variant program compile()
+  {
+    return compile(prepare_source());
+  }
+
+  string name()
+  {
+    string n = file + ":" + line + ": Test " + number;
+    foreach(plugins;; Plugin plugin)
+      n = plugin->process_name(n);
+    return n;
+  }
 }
 
 //! Represents a test case from a "testsuite" file, after m4
@@ -546,4 +574,12 @@ class M4Test
       compile_string(src, real_file) :
       compile_string(src, real_file, AdjustLine());
   }
+}
+
+class Plugin
+{
+  int(0..1) active(Test t) { return 1; }
+  string process_name(string name) { return name; }
+  string preprocess(string source) { return source; }
+  int(0..1) inspect(Test t, object o) { return 1; }
 }

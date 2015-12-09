@@ -403,6 +403,130 @@ string find_test(string ts)
 }
 
 //
+// Plugins
+//
+
+class CompatPlugin(string pike_compat)
+{
+  inherit Plugin;
+  string preprocess(string source)
+  {
+    return "#pike " + pike_compat + "\n" +
+      "#pragma no_deprecation_warnings\n" +
+      source;
+  }
+}
+
+class WidenerPlugin
+{
+  inherit Plugin;
+  int shift;
+
+  int(0..1) active(Test t)
+  {
+    shift = t->number % 3;
+    return !!shift;
+  }
+
+  string process_name(string name)
+  {
+    return sprintf("%s (shift %d)", name, shift);
+  }
+
+  string preprocess(string source)
+  {
+    string widener = ([ 0:"",
+                        1:"\nint \x30c6\x30b9\x30c8=0;\n",
+                        2:"\nint \x10001=0;\n" ])[shift];
+    return source + "\n" + widener;
+  }
+}
+
+class SaveParentPlugin
+{
+  inherit Plugin;
+
+  int(0..1) active(Test t)
+  {
+    if( has_value("don't save parent", t->source) ) return 0;
+    return (t->number/6)&1;
+  }
+
+  string process_name(string name, string source)
+  {
+    return name + " (save parent)";
+  }
+
+  string preprocess(string source)
+  {
+    return "#pragma save_parent\n# 1\n" + source;
+  }
+}
+
+class CRLNPlugin
+{
+  inherit Plugin;
+
+  int(0..1) active(Test t)
+  {
+    return (t->number/3)&1;
+  }
+
+  string process_name(string name)
+  {
+    return name + " (CRNL)";
+  }
+
+  string preprocess(string source)
+  {
+    return replace(source, "\n", "\r\n");
+  }
+}
+
+class LinePlugin
+{
+  inherit Plugin;
+  string preprocess(string source)
+  {
+    if(source[-1]!='\n') source+="\n";
+
+    int computed_line=sizeof(source/"\n");
+    foreach((source/"#")[1..], string cpp)
+    {
+      // FIXME: We could calculate the offset from this value.
+      if(has_prefix(cpp,"line") || sscanf(cpp,"%*d"))
+      {
+        computed_line=0;
+        break;
+      }
+    }
+
+    return source +
+      "int __cpp_line=__LINE__; "
+      "int __rtl_line=([array(array(int))]backtrace())[-1][1]; "
+      "int __computed_line="+computed_line+";\n";
+  }
+
+  int(0..1) inspect(Test t, object o)
+  {
+    if( o->__cpp_line != o->__rtl_line ||
+        ( o->__computed_line && o->__computed_line!=o->__cpp_line))
+    {
+      log_msg(t->name() + " Line numbering failed.\n");
+      print_code(t->prepare_source());
+      log_msg("   Preprocessed:\n");
+      print_code(cpp(t->prepare_source(), t->file));
+      log_msg("   CPP lines: %d\n",o->__cpp_line);
+      log_msg("   RTL lines: %d\n",o->__rtl_line);
+      if(o->__computed_line)
+        log_msg("Actual lines: %d\n",o->__computed_line);
+      return 0;
+    }
+    return 1;
+  }
+}
+
+//
 // Main program
 //
 
@@ -416,7 +540,6 @@ int main(int argc, array(string) argv)
   int loop=1;
   int end=0x7fffffff;
   string extra_info="";
-  int shift;
 
 #if constant(System.getrlimit)
   // Attempt to enable coredumps.
@@ -885,11 +1008,12 @@ int main(int argc, array(string) argv)
 	}
 	if(skip) continue;
 
-	if (pike_compat) {
-	  source = "#pike " + pike_compat + "\n" +
-	    "#pragma no_deprecation_warnings\n" +
-	    source;
-	}
+        if (pike_compat)
+          test->add_plugin( CompatPlugin(pike_compat) );
+        test->add_plugin( WidenerPlugin() );
+        //        test->add_plugin( SaveParentPlugin() );
+        test->add_plugin( CRLNPlugin() );
+        test->add_plugin( LinePlugin() );
 
 	if (prompt) {
 	  if (Stdio.Readline()->
@@ -908,48 +1032,8 @@ int main(int argc, array(string) argv)
 
 	if(check > 1) _verify_internals();
 
-	shift++;
-        string fname = test->file + ":" + test->line + ": Test " +
-          test->number + " (shift " + (shift%3) + ")";
-
-	string widener = ([ 0:"",
-			    1:"\nint \x30c6\x30b9\x30c8=0;\n",
-			    2:"\nint \x10001=0;\n" ])[shift%3];
-
-        if(source[-1]!='\n') source+="\n";
-
-        int computed_line=sizeof(source/"\n");
-        foreach((source/"#")[1..], string cpp)
-        {
-          // FIXME: We could calculate the offset from this value.
-          if(has_prefix(cpp,"line") || sscanf(cpp,"%*d"))
-	  {
-	    computed_line=0;
-	    break;
-	  }
-        }
-
-	string linetester="int __cpp_line=__LINE__; int __rtl_line=([array(array(int))]backtrace())[-1][1];\n";
-
-        string to_compile = source + linetester + widener;
-
-	if((shift/6)&1)
-	{
-	  if(search("don't save parent",to_compile) != -1)
-	  {
-	    fname+=" (save parent)";
-	    to_compile=
-	      "#pragma save_parent\n"
-	      "# 1\n"
-	      +to_compile;
-	  }
-	}
-
-	if((shift/3)&1)
-	{
-	  fname+=" (CRNL)";
-	  to_compile=replace(to_compile,"\n","\r\n");
-	}
+        string fname = test->name();
+        string to_compile = test->prepare_source();
 
         if(verbose>9) print_code(to_compile);
         switch(test->type)
@@ -1124,21 +1208,11 @@ int main(int argc, array(string) argv)
 	    print_code(source);
 	    errors++;
 	    break;
-	  }
+          }
 
-          if( o->__cpp_line != o->__rtl_line ||
-	      ( computed_line && computed_line!=o->__cpp_line))
-	    {
-	      log_msg(fname + " Line numbering failed.\n");
-	      print_code(to_compile);
-	      log_msg("   Preprocessed:\n");
-	      print_code(cpp(to_compile, testsuite));
-	      log_msg("   CPP lines: %d\n",o->__cpp_line);
-	      log_msg("   RTL lines: %d\n",o->__rtl_line);
-	      if(computed_line)
-		log_msg("Actual lines: %d\n",computed_line);
-	      errors++;
-	    }
+          foreach(test->plugins;; Plugin plugin)
+            if( !plugin->inspect(test, o) )
+              errors++;
 
 	  if(verbose>2)
 	    log_msg("Time in a(): %f, Time in b(): %O\n",at,bt);
