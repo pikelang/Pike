@@ -114,17 +114,10 @@ array(string|array(Test)) read_tests( string fn ) {
     log_msg("%s: Missing start marker.\n", fn);
 
   tests = tests/"\n....\n";
-  return ({pike_compat, map(tests[..<1], M4Test)});
+  return ({pike_compat, map(tests[..<1], M4Test, fn)});
 }
 
 mapping(string:int) pushed_warnings = ([]);
-
-class AdjustLine( int amount )
-{
-  void compile_error(string file, int line, string text) {
-    log_msg("%s:%d: %s\n", file,line+amount-1,text);
-  }
-}
 
 class WarningFlag {
   int(0..1) warning;
@@ -781,10 +774,6 @@ int main(int argc, array(string) argv)
 	}
 
         Test test = tests[e];
-#define COMPILE(X,Y)                                                    \
-        (master()->get_inhibit_compile_errors()                         \
-         ? compile_string((X),testsuite)                                \
-         : compile_string((X),testsuite,AdjustLine(Y)))
 
 	// Is there a condition for this test?
         if( sizeof(test->conditions) )
@@ -799,7 +788,7 @@ int main(int argc, array(string) argv)
 	  if(!(tmp=cond_cache[condition]))
 	  {
 	    mixed err = catch {
-              tmp=!!(COMPILE("mixed c() { return "+condition+"; }",0)()->c());
+              tmp=!!(test->compile("mixed c() { return "+condition+"; }")()->c());
 	    };
 
 	    if(err) {
@@ -972,7 +961,7 @@ int main(int argc, array(string) argv)
 	  wf = WarningFlag();
 	  master()->set_inhibit_compile_errors(wf);
 	  _dmalloc_set_name(fname,0);
-          if(mixed err = catch(COMPILE(to_compile, test->line)))
+          if(mixed err = catch(test->compile(to_compile)))
 	  {
 	    _dmalloc_set_name();
 	    master()->set_inhibit_compile_errors(0);
@@ -1002,7 +991,7 @@ int main(int argc, array(string) argv)
 	case "COMPILE_ERROR":
 	  master()->set_inhibit_compile_errors(1);
 	  _dmalloc_set_name(fname,0);
-          if(mixed err = catch(COMPILE(to_compile, test->line)))
+          if(mixed err = catch(test->compile(to_compile)))
 	  {
 	    if (objectp (err) && err->is_cpp_or_compilation_error) {
 	      _dmalloc_set_name();
@@ -1030,7 +1019,7 @@ int main(int argc, array(string) argv)
 	  wf = WarningFlag();
 	  master()->set_inhibit_compile_errors(wf);
 	  _dmalloc_set_name(fname,0);
-          if(mixed err = catch(COMPILE(to_compile, test->line)))
+          if(mixed err = catch(test->compile(to_compile)))
 	  {
 	    _dmalloc_set_name();
 	    if (objectp (err) && err->is_cpp_or_compilation_error)
@@ -1064,7 +1053,7 @@ int main(int argc, array(string) argv)
 	      // Yes, apparently it is. There are tests that don't
 	      // care whether the error is caught during compilation
 	      // or evaluation. /mast
-                a = COMPILE(to_compile, test->line)()->a();
+                a = test->compile(to_compile)()->a();
 	    };
 	  };
 	  if(err)
@@ -1090,7 +1079,7 @@ int main(int argc, array(string) argv)
 	    wf = WarningFlag();
 	    master()->set_inhibit_compile_errors(wf);
 	    _dmalloc_set_name(fname,0);
-            o=COMPILE(to_compile, test->line)();
+            o=test->compile(to_compile)();
 	    _dmalloc_set_name();
 
 	    if(check > 1) _verify_internals();

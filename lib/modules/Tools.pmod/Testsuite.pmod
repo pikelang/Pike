@@ -494,6 +494,20 @@ class Test
     if( cond )
       conditions = cond;
   }
+
+  protected class AdjustLine()
+  {
+    void compile_error(string file, int _line, string text) {
+      log_msg("%s:%d: %s\n", file, _line+line-1, text);
+    }
+  }
+
+  program compile(string src)
+  {
+    return master()->get_inhibit_compile_errors() ?
+      compile_string(src, file) :
+      compile_string(src, file, AdjustLine());
+  }
 }
 
 //! Represents a test case from a "testsuite" file, after m4
@@ -502,12 +516,19 @@ class M4Test
 {
   inherit Test;
 
+  string real_file;
+
+  //! @param data
   //! The data from a testsuite file, after start/stop markers have
   //! been stripped and the file splitted on "...." tokens. From this
   //! the conditions, file, line, number, type and source will be
   //! parsed.
-  void create(string data)
+  //!
+  //! @param real_file
+  //! The testsuite file, i.e. not the testsuite.in file.
+  void create(string data, string real_file)
   {
+    this::real_file = real_file;
     if( sscanf(data, "COND %s\n%s", string cond, data)==2 )
       conditions += ({ cond });
     if( sscanf(data, "%s:%d: test %d, expected result: %s\n%s",
@@ -517,5 +538,12 @@ class M4Test
         error("Illegal format. %O\n", data);
       }
     source = data;
+  }
+
+  program compile(string src)
+  {
+    return master()->get_inhibit_compile_errors() ?
+      compile_string(src, real_file) :
+      compile_string(src, real_file, AdjustLine());
   }
 }
