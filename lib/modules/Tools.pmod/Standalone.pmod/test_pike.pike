@@ -16,12 +16,6 @@ protected enum exit_codes {
 #define _verify_internals()
 #endif
 
-#if !constant(Debug.dmalloc_set_name)
-void _dmalloc_set_name(mixed ... args) {}
-#else
-#define _dmalloc_set_name Debug.dmalloc_set_name
-#endif
-
 int foo(string opt)
 {
   if(opt=="" || !opt) return 1;
@@ -1043,12 +1037,10 @@ int main(int argc, array(string) argv)
 	case "COMPILE":
 	  wf = WarningFlag();
 	  master()->set_inhibit_compile_errors(wf);
-          _dmalloc_set_name(fname,0);
           test->compile();
           if(test->compilation_error)
 	  {
-	    _dmalloc_set_name();
-	    master()->set_inhibit_compile_errors(0);
+            master()->set_inhibit_compile_errors(0);
             if (test->compilation_error->is_cpp_or_compilation_error)
 	      log_msg ("%s failed.\n", fname);
 	    else
@@ -1058,8 +1050,7 @@ int main(int argc, array(string) argv)
 	    errors++;
 	  }
 	  else {
-	    _dmalloc_set_name();
-	    master()->set_inhibit_compile_errors(0);
+            master()->set_inhibit_compile_errors(0);
 
 	    if(wf->warning) {
 	      log_msg (fname + " produced warning.\n");
@@ -1075,17 +1066,14 @@ int main(int argc, array(string) argv)
 
 	case "COMPILE_ERROR":
 	  master()->set_inhibit_compile_errors(1);
-          _dmalloc_set_name(fname,0);
           test->compile();
           if(test->compilation_error)
 	  {
             if (test->compilation_error->is_cpp_or_compilation_error) {
-	      _dmalloc_set_name();
-	      successes++;
+              successes++;
 	    }
 	    else {
-	      _dmalloc_set_name();
-	      log_msg ("%s failed.\n"
+              log_msg ("%s failed.\n"
 		       "Expected compile error, got another kind of error:\n%s",
                        fname, describe_backtrace (test->compilation_error));
 	      print_code(source);
@@ -1093,8 +1081,7 @@ int main(int argc, array(string) argv)
 	    }
 	  }
 	  else {
-	    _dmalloc_set_name();
-	    log_msg (fname + " failed (expected compile error).\n");
+            log_msg (fname + " failed (expected compile error).\n");
 	    print_code(source);
 	    errors++;
 	  }
@@ -1104,11 +1091,9 @@ int main(int argc, array(string) argv)
 	case "COMPILE_WARNING":
 	  wf = WarningFlag();
 	  master()->set_inhibit_compile_errors(wf);
-          _dmalloc_set_name(fname,0);
           test->compile();
           if(test->compilation_error)
 	  {
-	    _dmalloc_set_name();
             if (test->compilation_error->is_cpp_or_compilation_error)
 	      log_msg ("%s failed.\n", fname);
 	    else
@@ -1118,8 +1103,7 @@ int main(int argc, array(string) argv)
 	    errors++;
 	  }
 	  else {
-	    _dmalloc_set_name();
-	    if( wf->warning )
+            if( wf->warning )
 	      successes++;
 	    else {
 	      log_msg(fname + " failed (expected compile warning).\n");
@@ -1132,7 +1116,6 @@ int main(int argc, array(string) argv)
 
 	case "EVAL_ERROR":
 	  master()->set_inhibit_compile_errors(1);
-	  _dmalloc_set_name(fname,0);
 
 	  at = gauge {
 	    err=catch {
@@ -1146,15 +1129,13 @@ int main(int argc, array(string) argv)
 	  };
 	  if(err)
 	  {
-	    _dmalloc_set_name();
-	    successes++;
+            successes++;
 	    if(verbose>3)
 	      log_msg("Time in a(): %f\n",at);
 	  }
 	  else {
 	    watchdog_show_last_test();
-	    _dmalloc_set_name();
-	    log_msg("%s failed (expected eval error).\n"
+            log_msg("%s failed (expected eval error).\n"
 		    "Got %O\n", fname, a);
 	    print_code(source);
 	    errors++;
@@ -1166,15 +1147,13 @@ int main(int argc, array(string) argv)
 	  if (err = catch{
 	    wf = WarningFlag();
 	    master()->set_inhibit_compile_errors(wf);
-	    _dmalloc_set_name(fname,0);
             o=test->compile()();
-	    _dmalloc_set_name();
 
 	    if(check > 1) _verify_internals();
 
 	    a=b=0;
 	    if(t) trace(t);
-	    _dmalloc_set_name(fname,1);
+
 	    if(functionp(o->a))
 	    {
 	      // trace(10);
@@ -1186,8 +1165,6 @@ int main(int argc, array(string) argv)
 	    {
 	      bt = gauge { b=o->b(); };
 	    }
-
-	    _dmalloc_set_name();
 
 	    if(t) trace(0);
 	    if(check > 1) _verify_internals();

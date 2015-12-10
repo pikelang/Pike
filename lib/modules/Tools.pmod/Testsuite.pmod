@@ -524,13 +524,25 @@ class Test
     return src;
   }
 
+  protected void dmalloc_name(int set)
+  {
+#if constant(Debug.dmalloc_set_name)
+    if( set )
+      Debug.dmalloc_set_name(name(),1);
+    else
+      Debug.dmalloc_set_name();
+#endif
+  }
+
   Error.Compilation compilation_error;
   variant program compile()
   {
     program ret;
+    dmalloc_name(1);
     compilation_error = catch {
         ret = compile(prepare_source());
       };
+    dmalloc_name(0);
     return ret;
   }
 
