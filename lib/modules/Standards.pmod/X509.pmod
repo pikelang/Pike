@@ -1660,7 +1660,7 @@ mapping(string:array(Verifier))
   return res;
 }
 
-//! Decodes a certificate chain, oredered from leaf to root, and
+//! Decodes a certificate chain, ordered from leaf to root, and
 //! checks the signatures. Verifies that the chain can be decoded
 //! correctly, is unbroken, and that all certificates are in effect
 //! (time-wise.) and allowed to sign it's child certificate.
