@@ -1120,11 +1120,11 @@ int main(int argc, array(string) argv)
 	      // considered success too? /mast
 	      // Yes, apparently it is. There are tests that don't
 	      // care whether the error is caught during compilation
-	      // or evaluation. /mast
+              // or evaluation. /mast
                 a = test->compile()()->a();
-	    };
-	  };
-	  if(err)
+            };
+          };
+          if(err)
 	  {
             successes++;
 	    if(verbose>3)
@@ -1144,6 +1144,8 @@ int main(int argc, array(string) argv)
 	    wf = WarningFlag();
             test->inhibit_errors = wf;
             o=test->compile()();
+            if(test->compilation_error)
+              throw(test->compilation_error);
 
 	    if(check > 1) _verify_internals();
 
@@ -1173,7 +1175,7 @@ int main(int argc, array(string) argv)
           }) {
 	    if(t) trace(0);
             watchdog_show_last_test();
-            if (test->compilation_error->is_cpp_or_compilation_error)
+            if (test->compilation_error?->is_cpp_or_compilation_error)
 	      log_msg ("%s failed.\n", fname);
 	    else
               log_msg ("%s failed:\n%s\n", fname,
