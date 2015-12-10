@@ -32,15 +32,14 @@ mapping(string:int) cond_cache=([]);
 
 void print_code(string test)
 {
-  array lines = Charset.encoder("iso-8859-1", 0,
-                                lambda(string s) {
-                                  return sprintf("\\%o", s[0]);
-                                })->feed(test)->drain()/"\n";
-  foreach(lines; int r; string line) {
+  test = Charset.encoder("iso-8859-1", 0,
+                         lambda(string s) {
+                           return sprintf("\\%o", s[0]);
+                         })->feed(test)->drain();
+  foreach(test/"\n"; int r; string line) {
     log_msg("%3d: %s\n", r+1, line);
   }
   log_msg("\n");
-  return;
 }
 
 void report_size()
@@ -122,6 +121,13 @@ class WarningFlag {
     if (sizeof(filter(indices(pushed_warnings), glob, text))) return;
     warnings += ({ sprintf("%s:%d: %s", file, line, text) });
     warning = 1;
+  }
+
+  void write_warnings(string fname, string source)
+  {
+    log_msg("%s produced warning.\n"
+            "%{%s\n%}", fname, warnings);
+    print_code(source);
   }
 
   void compile_error(string file, int line, string text) {
@@ -1051,10 +1057,8 @@ int main(int argc, array(string) argv)
           else
           {
             if(wf->warning) {
-	      log_msg (fname + " produced warning.\n");
-	      log_msg ("%{%s\n%}", wf->warnings);
-	      print_code(source);
-	      errors++;
+              wf->write_warnings(fname, source);
+              errors++;
 	      break;
 	    }
 
@@ -1164,11 +1168,9 @@ int main(int argc, array(string) argv)
 	    if(t) trace(0);
 	    if(check > 1) _verify_internals();
 
-	    if(wf->warning) {
-	      log_msg("%s produced warning.\n"
-		      "%{%s\n%}", fname, wf->warnings);
-	      print_code(source);
-	      errors++;
+            if(wf->warning) {
+              wf->write_warnings(fname, source);
+              errors++;
 	      break;
 	    }
           }) {
