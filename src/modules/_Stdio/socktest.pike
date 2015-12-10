@@ -41,7 +41,7 @@ Pike.BACKEND backend = Pike.BACKEND();
 // RTL debug enabled Pike.
 #define SOCKTEST_TIMEOUT	60
 #else
-#define SOCKTEST_TIMEOUT	20
+#define SOCKTEST_TIMEOUT	2
 #endif
 #endif
 
