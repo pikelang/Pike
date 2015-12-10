@@ -524,9 +524,14 @@ class Test
     return src;
   }
 
+  Error.Compilation compilation_error;
   variant program compile()
   {
-    return compile(prepare_source());
+    program ret;
+    compilation_error = catch {
+        ret = compile(prepare_source());
+      };
+    return ret;
   }
 
   string name()

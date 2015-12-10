@@ -1043,15 +1043,17 @@ int main(int argc, array(string) argv)
 	case "COMPILE":
 	  wf = WarningFlag();
 	  master()->set_inhibit_compile_errors(wf);
-	  _dmalloc_set_name(fname,0);
-          if(mixed err = catch(test->compile()))
+          _dmalloc_set_name(fname,0);
+          test->compile();
+          if(test->compilation_error)
 	  {
 	    _dmalloc_set_name();
 	    master()->set_inhibit_compile_errors(0);
-	    if (objectp (err) && err->is_cpp_or_compilation_error)
+            if (test->compilation_error->is_cpp_or_compilation_error)
 	      log_msg ("%s failed.\n", fname);
 	    else
-	      log_msg ("%s failed:\n%s", fname, describe_backtrace (err));
+              log_msg ("%s failed:\n%s", fname,
+                       describe_backtrace (test->compilation_error));
 	    print_code(source);
 	    errors++;
 	  }
@@ -1073,10 +1075,11 @@ int main(int argc, array(string) argv)
 
 	case "COMPILE_ERROR":
 	  master()->set_inhibit_compile_errors(1);
-	  _dmalloc_set_name(fname,0);
-          if(mixed err = catch(test->compile()))
+          _dmalloc_set_name(fname,0);
+          test->compile();
+          if(test->compilation_error)
 	  {
-	    if (objectp (err) && err->is_cpp_or_compilation_error) {
+            if (test->compilation_error->is_cpp_or_compilation_error) {
 	      _dmalloc_set_name();
 	      successes++;
 	    }
@@ -1084,7 +1087,7 @@ int main(int argc, array(string) argv)
 	      _dmalloc_set_name();
 	      log_msg ("%s failed.\n"
 		       "Expected compile error, got another kind of error:\n%s",
-		       fname, describe_backtrace (err));
+                       fname, describe_backtrace (test->compilation_error));
 	      print_code(source);
 	      errors++;
 	    }
@@ -1101,14 +1104,16 @@ int main(int argc, array(string) argv)
 	case "COMPILE_WARNING":
 	  wf = WarningFlag();
 	  master()->set_inhibit_compile_errors(wf);
-	  _dmalloc_set_name(fname,0);
-          if(mixed err = catch(test->compile()))
+          _dmalloc_set_name(fname,0);
+          test->compile();
+          if(test->compilation_error)
 	  {
 	    _dmalloc_set_name();
-	    if (objectp (err) && err->is_cpp_or_compilation_error)
+            if (test->compilation_error->is_cpp_or_compilation_error)
 	      log_msg ("%s failed.\n", fname);
 	    else
-	      log_msg ("%s failed:\n%s", fname, describe_backtrace (err));
+              log_msg ("%s failed:\n%s", fname,
+                       describe_backtrace (test->compilation_error));
 	    print_code(source);
 	    errors++;
 	  }
@@ -1200,10 +1205,11 @@ int main(int argc, array(string) argv)
 	    if(t) trace(0);
 	    master()->set_inhibit_compile_errors(0);
 	    watchdog_show_last_test();
-	    if (objectp (err) && err->is_cpp_or_compilation_error)
+            if (test->compilation_error->is_cpp_or_compilation_error)
 	      log_msg ("%s failed.\n", fname);
 	    else
-	      log_msg ("%s failed:\n%s\n", fname, describe_backtrace (err));
+              log_msg ("%s failed:\n%s\n", fname,
+                       describe_backtrace (test->compilation_error||err));
 	    print_code(source);
 	    errors++;
 	    break;
