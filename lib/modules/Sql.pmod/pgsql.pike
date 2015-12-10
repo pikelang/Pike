@@ -618,7 +618,7 @@ final void _processloop(.pgsql_util.conxion ci) {
       if(_options && _options.reconnect)	// FIXME why can _options be 0?
         _connectfail();
       else
-        destruct(waitforauthready);
+        catch(destruct(waitforauthready));      // FIXME why can it be 0?
       return;
     }
   }		      // Do not flush at this point, PostgreSQL 9.4 disapproves
