@@ -312,6 +312,7 @@ private array(Standards.X509.TBSCertificate)
                                      context->trusted_issuers_cache,
                                      context->auth_level >= AUTHLEVEL_require);
   };
+  if( !result ) return 0;
 
   if (session->server_name && sizeof([array](result->certificates || ({})))) {
     array(Standards.X509.TBSCertificate) certs =
