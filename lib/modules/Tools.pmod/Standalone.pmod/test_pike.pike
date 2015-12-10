@@ -1067,7 +1067,6 @@ int main(int argc, array(string) argv)
 	  break;
 
 	case "COMPILE_ERROR":
-          test->inhibit_errors = 1;
           test->compile();
           if(test->compilation_error)
 	  {
@@ -1115,9 +1114,7 @@ int main(int argc, array(string) argv)
           break;
 
 	case "EVAL_ERROR":
-          test->inhibit_errors = 1;
-
-	  at = gauge {
+          at = gauge {
 	    err=catch {
 	      // Is it intentional that compilation errors are
 	      // considered success too? /mast

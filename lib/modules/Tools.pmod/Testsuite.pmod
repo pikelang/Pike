@@ -534,7 +534,7 @@ class Test
 #endif
   }
 
-  int(0..1)|object inhibit_errors;
+  int(0..1)|object inhibit_errors = 1;
 
   Error.Compilation compilation_error;
   variant program compile()
