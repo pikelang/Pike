@@ -77,8 +77,8 @@
 #define PT_IS_MARKER	4	/* The node is a marker. */
 
 /* Number of entries in the struct pike_type hash-table. */
-#define PIKE_TYPE_HASH_SIZE	65535
-
+/* 256Kb */
+#define PIKE_TYPE_HASH_SIZE	32767
 
 #ifdef PIKE_TYPE_DEBUG
 static int indent=0;
@@ -8622,8 +8622,11 @@ void init_types(void)
 
   /* if possible, use mmap with on-demand allocation */
 #if defined(MAP_ANONYMOUS)
+#ifndef MAP_NORESERVE
+#define MAP_NORESERVE 0
+#endif
   type_stack = mmap( NULL, sizeof(struct pike_type *)*PIKE_TYPE_STACK_SIZE,
-		     PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_PRIVATE, -1, 0);
+		     PROT_READ|PROT_WRITE, MAP_NORESERVE|MAP_ANONYMOUS|MAP_PRIVATE, -1, 0);
   if( type_stack != MAP_FAILED ) {
     type_stack_mmap = 1;
   } else {
@@ -8631,7 +8634,7 @@ void init_types(void)
   }
   pike_type_mark_stack =
     mmap( NULL, sizeof(struct pike_type **)*PIKE_TYPE_STACK_SIZE>>2,
-	  PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_PRIVATE, -1, 0);
+	  PROT_READ|PROT_WRITE, MAP_NORESERVE|MAP_ANONYMOUS|MAP_PRIVATE, -1, 0);
   if( pike_type_mark_stack != MAP_FAILED ) {
     pike_type_mark_stack_mmap = 1;
   } else {
