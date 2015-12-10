@@ -823,6 +823,14 @@ protected class EventStreamMonitor
 #ifndef INHIBIT_EVENTSTREAM_MONITOR
     if (!initial) return;
 
+    if (Pike.DefaultBackend.executing_thread() != Thread.this_thread()) {
+      // eventstream stuff (especially start()) must be called from
+      // the backend thread, otherwise events will be fired in
+      // CFRunLoop contexts where noone listens.
+      call_out (register_path, 0, initial);
+      return;
+    }
+
     if (!eventstream) {
       // Make sure that the main backend is in CF-mode.
       Pike.DefaultBackend.enable_core_foundation(1);
