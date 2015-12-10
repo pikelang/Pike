@@ -534,15 +534,19 @@ class Test
 #endif
   }
 
+  int(0..1)|object inhibit_errors;
+
   Error.Compilation compilation_error;
   variant program compile()
   {
     program ret;
+    master()->set_inhibit_compile_errors(inhibit_errors);
     dmalloc_name(1);
     compilation_error = catch {
         ret = compile(prepare_source());
       };
     dmalloc_name(0);
+    master()->set_inhibit_compile_errors(0);
     return ret;
   }
 

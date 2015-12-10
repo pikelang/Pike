@@ -1036,11 +1036,10 @@ int main(int argc, array(string) argv)
 	  mixed err;
 	case "COMPILE":
 	  wf = WarningFlag();
-	  master()->set_inhibit_compile_errors(wf);
+          test->inhibit_errors = wf;
           test->compile();
           if(test->compilation_error)
 	  {
-            master()->set_inhibit_compile_errors(0);
             if (test->compilation_error->is_cpp_or_compilation_error)
 	      log_msg ("%s failed.\n", fname);
 	    else
@@ -1049,10 +1048,9 @@ int main(int argc, array(string) argv)
 	    print_code(source);
 	    errors++;
 	  }
-	  else {
-            master()->set_inhibit_compile_errors(0);
-
-	    if(wf->warning) {
+          else
+          {
+            if(wf->warning) {
 	      log_msg (fname + " produced warning.\n");
 	      log_msg ("%{%s\n%}", wf->warnings);
 	      print_code(source);
@@ -1065,7 +1063,7 @@ int main(int argc, array(string) argv)
 	  break;
 
 	case "COMPILE_ERROR":
-	  master()->set_inhibit_compile_errors(1);
+          test->inhibit_errors = 1;
           test->compile();
           if(test->compilation_error)
 	  {
@@ -1085,12 +1083,11 @@ int main(int argc, array(string) argv)
 	    print_code(source);
 	    errors++;
 	  }
-	  master()->set_inhibit_compile_errors(0);
-	  break;
+          break;
 
 	case "COMPILE_WARNING":
 	  wf = WarningFlag();
-	  master()->set_inhibit_compile_errors(wf);
+          test->inhibit_errors = wf;
           test->compile();
           if(test->compilation_error)
 	  {
@@ -1111,11 +1108,10 @@ int main(int argc, array(string) argv)
 	      errors++;
 	    }
 	  }
-	  master()->set_inhibit_compile_errors(0);
-	  break;
+          break;
 
 	case "EVAL_ERROR":
-	  master()->set_inhibit_compile_errors(1);
+          test->inhibit_errors = 1;
 
 	  at = gauge {
 	    err=catch {
@@ -1140,13 +1136,12 @@ int main(int argc, array(string) argv)
 	    print_code(source);
 	    errors++;
 	  }
-	  master()->set_inhibit_compile_errors(0);
-	  break;
+          break;
 
 	default:
 	  if (err = catch{
 	    wf = WarningFlag();
-	    master()->set_inhibit_compile_errors(wf);
+            test->inhibit_errors = wf;
             o=test->compile()();
 
 	    if(check > 1) _verify_internals();
@@ -1176,12 +1171,9 @@ int main(int argc, array(string) argv)
 	      errors++;
 	      break;
 	    }
-	    master()->set_inhibit_compile_errors(0);
-
-	  }) {
+          }) {
 	    if(t) trace(0);
-	    master()->set_inhibit_compile_errors(0);
-	    watchdog_show_last_test();
+            watchdog_show_last_test();
             if (test->compilation_error->is_cpp_or_compilation_error)
 	      log_msg ("%s failed.\n", fname);
 	    else
