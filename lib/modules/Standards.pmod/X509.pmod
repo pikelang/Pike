@@ -1843,9 +1843,9 @@ mapping verify_certificate_chain(array(string|.PKCS.Signature.Signed) cert_chain
       ERROR(CERT_BAD_SIGNATURE);
       return m;
     }
-    else if (zero_type(m->error_code)) // only if no error occured...
-      m->verified = verified;
   }
+  if (zero_type(m->error_code)) // only if no error occured...
+    m->verified = verified;
   return m;
 
 #undef ERROR
