@@ -816,7 +816,7 @@ PIKECLASS Simple
       push_mapping(m);
     } else {
       pop_n_elems(args);
-      push_mapping(allocate_mapping(10));
+      push_mapping(allocate_mapping(0));
     }
   }
 
