@@ -574,6 +574,11 @@ class M4Test
       compile_string(src, real_file) :
       compile_string(src, real_file, AdjustLine());
   }
+
+  variant program compile()
+  {
+    return ::compile();
+  }
 }
 
 class Plugin

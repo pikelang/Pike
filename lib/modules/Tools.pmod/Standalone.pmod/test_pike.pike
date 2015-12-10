@@ -1033,9 +1033,8 @@ int main(int argc, array(string) argv)
 	if(check > 1) _verify_internals();
 
         string fname = test->name();
-        string to_compile = test->prepare_source();
 
-        if(verbose>9) print_code(to_compile);
+        if(verbose>9) print_code(test->prepare_source());
         switch(test->type)
         {
           WarningFlag wf;
@@ -1045,7 +1044,7 @@ int main(int argc, array(string) argv)
 	  wf = WarningFlag();
 	  master()->set_inhibit_compile_errors(wf);
 	  _dmalloc_set_name(fname,0);
-          if(mixed err = catch(test->compile(to_compile)))
+          if(mixed err = catch(test->compile()))
 	  {
 	    _dmalloc_set_name();
 	    master()->set_inhibit_compile_errors(0);
@@ -1075,7 +1074,7 @@ int main(int argc, array(string) argv)
 	case "COMPILE_ERROR":
 	  master()->set_inhibit_compile_errors(1);
 	  _dmalloc_set_name(fname,0);
-          if(mixed err = catch(test->compile(to_compile)))
+          if(mixed err = catch(test->compile()))
 	  {
 	    if (objectp (err) && err->is_cpp_or_compilation_error) {
 	      _dmalloc_set_name();
@@ -1103,7 +1102,7 @@ int main(int argc, array(string) argv)
 	  wf = WarningFlag();
 	  master()->set_inhibit_compile_errors(wf);
 	  _dmalloc_set_name(fname,0);
-          if(mixed err = catch(test->compile(to_compile)))
+          if(mixed err = catch(test->compile()))
 	  {
 	    _dmalloc_set_name();
 	    if (objectp (err) && err->is_cpp_or_compilation_error)
@@ -1137,7 +1136,7 @@ int main(int argc, array(string) argv)
 	      // Yes, apparently it is. There are tests that don't
 	      // care whether the error is caught during compilation
 	      // or evaluation. /mast
-                a = test->compile(to_compile)()->a();
+                a = test->compile()()->a();
 	    };
 	  };
 	  if(err)
@@ -1163,7 +1162,7 @@ int main(int argc, array(string) argv)
 	    wf = WarningFlag();
 	    master()->set_inhibit_compile_errors(wf);
 	    _dmalloc_set_name(fname,0);
-            o=test->compile(to_compile)();
+            o=test->compile()();
 	    _dmalloc_set_name();
 
 	    if(check > 1) _verify_internals();
