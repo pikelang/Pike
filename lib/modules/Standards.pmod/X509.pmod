@@ -1827,7 +1827,7 @@ mapping verify_certificate_chain(array(string|.PKCS.Signature.Signed) cert_chain
           && tbs)
       {
         DBG("signature is verified..\n");
-        m->verified = verified = 1;
+        verified = 1;
 
         // if we're the root of the chain and we've verified, this is
         // the authority.
@@ -1843,6 +1843,8 @@ mapping verify_certificate_chain(array(string|.PKCS.Signature.Signed) cert_chain
       ERROR(CERT_BAD_SIGNATURE);
       return m;
     }
+    else if (zero_type(m->error_code)) // only if no error occured...
+      m->verified = verified;
   }
   return m;
 
