@@ -627,9 +627,9 @@ static void stralloc_rehash(void)
 
 
 static struct block_allocator string_allocator =
-  BA_INIT(sizeof(struct pike_string), STRING_BLOCK);
+  BA_INIT_PAGES(sizeof(struct pike_string), 2);
 static struct block_allocator substring_allocator =
-  BA_INIT(sizeof(struct substring_pike_string), STRING_BLOCK>>2);
+  BA_INIT_PAGES(sizeof(struct substring_pike_string), 1);
 
 static void free_string_content(struct pike_string * s)
 {
