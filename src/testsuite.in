@@ -3846,10 +3846,9 @@ test_equal([[
     mixed f (string p) {return ({global::p, p});}")()->f ("l");
 ]], ({"g", "l"}))
 
-test_eval_error([[
-  compile_string (#"
-    string pp = \"g\";
-    mixed f (string p) {return global::p;}");
+test_compile_error([[
+  string pp = "g";
+  mixed f (string p) {return global::p;}
 ]])
 
 test_equal([[
@@ -10341,7 +10340,12 @@ test_compile_warning([[
 ]])
 
 // <<<<<<<
-test_eval_error( cpp("<<<<<<<") )
+test_any([[
+  master()->set_inhibit_compile_errors(1);
+  int x = !!catch(cpp("<<<<<<<"));
+  master()->set_inhibit_compile_errors(0);
+  return x;
+]], 1)
 test_compile_error([[
 #if 0
 <<<<<<<
