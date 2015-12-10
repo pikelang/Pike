@@ -3752,6 +3752,7 @@ test_program([[
   int a() {return X()->Y()->f() == 18;}
 ]])
 
+ignore_warning("Attempt to override a non local variable s with a non-variable.",[[
 test_program([[
   class A {
     string s = "A";
@@ -3770,10 +3771,9 @@ test_program([[
   }
 
   int a() {
-    // Ignore the warning we get from overloading a constant with a string.
-    master()->get_inhibit_compile_errors()->warning=0;
     return X()->Y()->f() == "XAYBB";
   }
+]])
 ]])
 
 test_program([[
