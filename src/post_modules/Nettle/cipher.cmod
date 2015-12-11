@@ -1437,7 +1437,7 @@ PIKECLASS BlockCipher
   PIKECLASS _PCBC
     program_flags PROGRAM_NEEDS_PARENT|PROGRAM_USES_PARENT;
   {
-    /*! @decl inherit _CBC
+    /*! @decl inherit CBC
      */
     static int f_pcbc_inh_cbc_state_program_fun_num = -1;
 
@@ -1466,7 +1466,7 @@ PIKECLASS BlockCipher
     PIKECLASS State
       program_flags PROGRAM_NEEDS_PARENT|PROGRAM_USES_PARENT;
     {
-      DOCSTART() @decl inherit _CBC::State
+      DOCSTART() @decl inherit CBC::State
 	DOCEND()
 
       static int f_pcbc_state_inh_cbc_state_crypt_fun_num = -1;
@@ -1505,7 +1505,7 @@ PIKECLASS BlockCipher
        *! Encrypt/decrypt @[data] and return the result. @[data] must
        *! be an integral number of blocks.
        *!
-       *! Neither the input or output data is not automatically memory
+       *! Neither the input nor the output data is automatically memory
        *! scrubbed, unless @[String.secure] has been called on the data.
        */
       PIKEFUN string(0..255) crypt(string(0..255) data)
