@@ -181,7 +181,7 @@ static unsigned INT32 low_rand(void)
   return ranval();
 }
 
-static unsigned INT32 low_rand64(void)
+static unsigned INT64 low_rand64(void)
 {
 #if HAS___BUILTIN_IA32_RDRAND32_STEP
   if( use_rdrnd )
