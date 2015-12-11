@@ -11523,6 +11523,16 @@ test_eval_error([[ return random( ({}) ) ]])
 test_eval_error([[ return random( (<>) ) ]])
 test_eval_error([[ return random( ([]) ) ]])
 test_eq([[ random( class() { int _random() { return 17; }}()) ]], 17)
+test_any([[
+  string x = "\377"*16;
+  for(int i; i<100; i++) x &= random_string(16);
+  return x;
+]], "\0"*16)
+test_any([[
+  string x = "\377"*16;
+  for(int i; i<100; i++) x &= ~random_string(16);
+  return x;
+]], "\0"*16)
 
 // - random_seed
 test_do(int p; foreach(({1,2,3,4,5}),p) random_seed(p))
