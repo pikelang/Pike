@@ -66,6 +66,10 @@
 	    if (THIS->lastrev == *THIS->revv) {
 		t = THIS->lastnode;
 	    } else {
+                struct object * tree = TREE_CLASSIFY(_get_iterator_find_parent)();
+
+                if (!tree->prog) return 0;
+
 		THIS->lastrev = * THIS->revv;
 
 		if (THIS->tree) {
@@ -138,14 +142,15 @@
 			    void|mixed stop) {
 	    cb_node_t t = NULL;
 	    struct object * tree = TREE_CLASSIFY(_get_iterator_find_parent)();
+            TREE_T *T = GET_TREE_STORAGE(tree);
 	    INT32 encode_fun;
-	    THIS->revv = &(cmod_OBJ2_TREE(tree)->rev);
-	    THIS->tree = cmod_OBJ2_TREE(tree)->tree.root;
+	    THIS->revv = &(T->rev);
+	    THIS->tree = T->tree.root;
 
 	    THIS->stop.len.chars = 0;
 	    THIS->stop.len.bits = 0;
 
-	    encode_fun = cmod_OBJ2_TREE(tree)->encode_fun;
+	    encode_fun = T->encode_fun;
 
 	    if (THIS->tree) {
 		if (!step) {
@@ -229,7 +234,8 @@
 	PIKEFUN key_ptype index() {
 	    if (THIS->lastnode) {
 		struct object * tree = TREE_CLASSIFY(_get_iterator_find_parent)();
-		INT32 fun = cmod_OBJ2_TREE(tree)->decode_fun;
+                TREE_T *T = GET_TREE_STORAGE(tree);
+		INT32 fun = T->decode_fun;
 		CB_PUSH_KEY(THIS->lastkey);
 		if (fun >= 0)
 		    apply_low(tree, fun, 1);

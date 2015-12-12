@@ -6,45 +6,47 @@
 #endif
 
     INIT {
+        struct program *prog = Pike_fp->current_object->prog;
 	THIS->tree.root = NULL;
-	THIS->encode_fun = find_identifier
-		("encode_key", Pike_fp->current_object->prog);
-	THIS->decode_fun=find_identifier
-		("decode_key", Pike_fp->current_object->prog);
-	THIS->copy_fun = find_identifier ("copy", Pike_fp->current_object->prog);
-	THIS->insert_fun = find_identifier ("`[]=", Pike_fp->current_object->prog);
-	if (find_identifier("copy", TREE_CLASSIFY(_program)) == THIS->copy_fun) {
-	    THIS->copy_fun = -1;
-	}
+	THIS->encode_fun = find_identifier("encode_key", prog);
+	THIS->decode_fun = find_identifier("decode_key", prog);
+	THIS->copy_fun = find_identifier("copy", prog);
+	THIS->insert_fun = find_identifier("`[]=", prog);
 
-	if (find_identifier("`[]=", TREE_CLASSIFY(_program)) == THIS->insert_fun) {
-	    THIS->insert_fun = -1;
-	}
+        if (THIS->copy_fun != -1 && identifier_is_native(prog, TREE_CLASSIFY(_program), THIS->copy_fun))
+            THIS->copy_fun = -1;
+
+        if (THIS->insert_fun != -1 && identifier_is_native(prog, TREE_CLASSIFY(_program), THIS->insert_fun))
+            THIS->insert_fun = -1;
     }
-static inline void TREE_CLASSIFY(_copy_node)(struct object *o, cb_node_t node) {
-    if (THIS->copy_fun != -1 && THIS->insert_fun != -1) {
+
+static inline void TREE_CLASSIFY(_copy_node)(struct object *o, TREE_T *T, cb_node_t node) {
+    if (T->insert_fun != -1) {
 	CB_PUSH_TRANSFORM_KEY(node->key);
 	CB_PUSH_VALUE(node->value);
-	apply_low(o, THIS->insert_fun, 2);
+	apply_low(o, T->insert_fun, 2);
 	pop_stack();
-    } else cb_insert(& cmod_OBJ2_TREE(o)->tree, node->key, &node->value);
+    } else cb_insert(& T->tree, node->key, &node->value);
 }
 
-static inline void TREE_CLASSIFY(_copy_tree)(struct object *o, cb_node_t node) {
-	if (THIS->copy_fun != -1 && THIS->insert_fun != -1) {
-	    WALK_FORWARD(node, {
-		if (CB_HAS_VALUE(_)) {
-		    CB_PUSH_TRANSFORM_KEY(node->key);
-		    push_svalue(&node->value);
-		    apply_low(o, THIS->insert_fun, 2);
-		    pop_stack();
-		}
-	    });
-	} else cb_copy_tree(& cmod_OBJ2_TREE(o)->tree, node);
+static inline void TREE_CLASSIFY(_copy_tree)(struct object *o, TREE_T *T, cb_node_t node) {
+    if (T->insert_fun != -1) {
+        int i = 0;
+        WALK_FORWARD(node, {
+            if (CB_HAS_VALUE(_)) {
+                cb_node_t n = _; 
+                i++;
+                CB_PUSH_TRANSFORM_KEY(n->key);
+                push_svalue(&n->value);
+                apply_low(o, T->insert_fun, 2);
+                pop_stack();
+            }
+        });
+    } else cb_copy_tree(& T->tree, node);
 }
 
 static inline struct object *
-TREE_CLASSIFY(_clone_object)(const struct object *o) {
+TREE_CLASSIFY(_clone_object)(struct object *o) {
     struct object * t = NULL;
     if (THIS->copy_fun != -1) {
 	apply_low(o, THIS->copy_fun, 0);
@@ -55,7 +57,7 @@ TREE_CLASSIFY(_clone_object)(const struct object *o) {
 	pop_stack();
     } else {
 	t = clone_object(Pike_fp->current_object->prog, 0);
-	cb_copy_tree(& cmod_OBJ2_TREE(t)->tree, cmod_OBJ2_TREE(o)->tree.root);
+	cb_copy_tree(& GET_TREE_STORAGE(t)->tree, GET_TREE_STORAGE(o)->tree.root);
     }
     return t;
 }
@@ -300,7 +302,7 @@ DOCEND()
 	    && o->u.object->prog == Pike_fp->current_object->prog) {
 	    cb_node_t tree1, tree2;
 	    tree1 = THIS->tree.root;
-	    tree2 = cmod_OBJ2_TREE(o->u.object)->tree.root;
+	    tree2 = GET_TREE_STORAGE(o->u.object)->tree.root;
 
 	    if (tree1 == tree2) {
 		push_int(1);
@@ -332,22 +334,25 @@ DOCEND()
 	struct object * res;
 	cb_node_t node, tree = NULL;
 
-	if (TYPEOF(*o) != PIKE_T_OBJECT || -1
-	    == low_get_storage(o->u.object->prog, TREE_CLASSIFY(_program))) {
+        TREE_T *T;
+
+	if (TYPEOF(*o) != PIKE_T_OBJECT || !(T = GET_TREE_STORAGE(o->u.object))) {
 	    SIMPLE_BAD_ARG_ERROR("`-", 1, "CritBit." cmod_STRFY_EVAL(tree_class));
 	}
 
-	node = cmod_OBJ2_TREE(o->u.object)->tree.root;
+	node = T->tree.root;
 
 	if (THIS->tree.root) {
 	    if (node) {
 		cb_node_t t = THIS->tree.root;
+                TREE_T *dst;
 		res = clone_object(Pike_fp->current_object->prog, 0);
+                dst = GET_TREE_STORAGE(res);
 
 		if (node != THIS->tree.root)
 		    WALK_FORWARD(t, {
 			if (CB_HAS_VALUE(_) && !cb_index(node, _->key))
-			    COPY_NODE(res, _);
+			    COPY_NODE(res, dst, _);
 		    });
 	    } else res = CLONE_OBJECT(Pike_fp->current_object);
 	} else res = clone_object(Pike_fp->current_object->prog, 0);
@@ -364,16 +369,17 @@ DOCEND()
      */
     PIKEFUN mixed `+(mixed o) {
 	cb_node_t tree1, tree2;
+        TREE_T *T;
 
-	if (TYPEOF(*o) != PIKE_T_OBJECT || -1
-	    == low_get_storage(o->u.object->prog, TREE_CLASSIFY(_program))) {
+	if (TYPEOF(*o) != PIKE_T_OBJECT || !(T = GET_TREE_STORAGE(o->u.object))) {
 	    SIMPLE_BAD_ARG_ERROR("`+", 1, "inherits(CritBit." cmod_STRFY_EVAL(tree_class) ")");
 	}
 	tree1 = THIS->tree.root;
-	tree2 = cmod_OBJ2_TREE(o->u.object)->tree.root;
+	tree2 = T->tree.root;
 
 	if (tree1 && tree2) {
-	    struct object * res = NULL;
+	    struct object * res;
+            TREE_T *dst;
 	    if (tree1->size < tree2->size) {
 		tree1 = tree2;
 		tree2 = THIS->tree.root;
@@ -381,10 +387,12 @@ DOCEND()
 	    } else
 		res = CLONE_OBJECT(Pike_fp->current_object);
 
+            dst = GET_TREE_STORAGE(res);
+
 	    if (tree1 != tree2) {
-		if (CB_HAS_VALUE(tree2)) COPY_NODE(res, tree2);
+		if (CB_HAS_VALUE(tree2)) COPY_NODE(res, dst, tree2);
 		WALK_FORWARD(tree2, {
-		    if (CB_HAS_VALUE(_)) COPY_NODE(res, _);
+		    if (CB_HAS_VALUE(_)) COPY_NODE(res, dst, _);
 		});
 	    }
 	    push_object(res);
@@ -405,6 +413,7 @@ DOCEND()
 	struct object * o = NULL;
 
 	if (THIS->tree.root) {
+            TREE_T *dst;
 	    cb_node_t start = NULL, stop = NULL;
 
 	    switch (atype & (INDEX_FROM_BEG | INDEX_FROM_END | OPEN_BOUND)) {
@@ -432,19 +441,20 @@ DOCEND()
 	    }
 
 	    o = clone_object(Pike_fp->current_object->prog, 0);
+            dst = GET_TREE_STORAGE(o);
 
 	    if (!stop) goto range_do_clone;
 
 	    if (start == stop) {
-		COPY_NODE(o, start);
+		COPY_NODE(o, dst, start);
 		goto range_do_clone;
 	    }
 
 	    if (CB_KEY_LT(start->key, stop->key)) {
-		COPY_NODE(o, start);
+		COPY_NODE(o, dst, start);
 		WALK_FORWARD(start, {
 		    if (CB_HAS_VALUE(_))
-			COPY_NODE(o, _);
+			COPY_NODE(o, dst, _);
 		    if (_ == stop) break;
 		});
 	    }
@@ -468,6 +478,7 @@ illegal_index:
 	struct object * o = NULL;
 
 	if (THIS->tree.root) {
+            TREE_T *dst;
 	    cb_node_t start = NULL, stop = NULL;
 
 	    if (TYPEOF(*a) == PIKE_T_INT && !a->u.integer) {
@@ -487,19 +498,20 @@ illegal_index:
 	    }
 
 	    o = clone_object(Pike_fp->current_object->prog, 0);
+            dst = GET_TREE_STORAGE(o);
 
 	    if (!stop) goto range_do_clone;
 
 	    if (start == stop) {
-		COPY_NODE(o, start);
+		COPY_NODE(o, dst, start);
 		goto range_do_clone;
 	    }
 
 	    if (CB_KEY_LT(start->key, stop->key)) {
-		COPY_NODE(o, start);
+		COPY_NODE(o, dst, start);
 		WALK_FORWARD(start, {
 		    if (CB_HAS_VALUE(_))
-			COPY_NODE(o, _);
+			COPY_NODE(o, dst, _);
 		    if (_ == stop) break;
 		});
 	    }
@@ -628,7 +640,7 @@ range_do_clone:
     PIKEFUN object copy() {
 	struct object * copy;
 	copy = clone_object(Pike_fp->current_object->prog, 0);
-	cb_copy_tree(& cmod_OBJ2_TREE(copy)->tree, THIS->tree.root);
+	cb_copy_tree(& GET_TREE_STORAGE(copy)->tree, THIS->tree.root);
 	push_object(copy);
     }
 
@@ -639,6 +651,7 @@ range_do_clone:
     PIKEFUN object get_subtree(void|mixed key) {
 	struct object * sub;
 	cb_node_t node = NULL;
+        TREE_T *dst;
 
 	if (THIS->tree.root) {
 	    if (key == NULL || IS_UNDEFINED(key))
@@ -647,12 +660,13 @@ range_do_clone:
 		node = cb_subtree_prefix(THIS->tree.root,
 					 CB_LOW_KEY_FROM_SVALUE(key));
 	}
-	sub = clone_object(Pike_fp->current_object->prog, 0);
-
 	pop_n_elems(args);
 
+	sub = clone_object(Pike_fp->current_object->prog, 0);
+        dst = GET_TREE_STORAGE(sub);
+
 	if (node) {
-	    COPY_TREE(sub, node);
+	    COPY_TREE(sub, dst, node);
 	}
 
 	push_object(sub);
@@ -663,6 +677,7 @@ range_do_clone:
 	    cb_free_node(& THIS->tree, THIS->tree.root);
 	    THIS->tree.root = NULL;
 	}
+        THIS->rev++;
     }
 
     /* keys are always non-complex, so we dont have to check them with the gc */

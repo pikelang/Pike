@@ -28,3 +28,16 @@
 #define CB_INLINE
 #define CB_SOURCE
 #define CB_NAMESPACE
+
+static int identifier_is_native(struct program *p, struct program *origp, int fun_num) {
+    struct reference *ref;
+    struct inherit *inh;
+
+    ref = PTR_FROM_INT(p, fun_num);
+    inh = INHERIT_FROM_PTR(p, ref);
+
+    if (inh->prog != origp) return 0;
+
+    return 1;
+}
+

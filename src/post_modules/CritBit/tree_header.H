@@ -115,6 +115,12 @@ static inline void TREE_CLASSIFY(_assign_svalue_key)(const cb_key key,
     }
 }
 cmod_DEFINE_EVAL(CB_ASSIGN_SVALUE_KEY, TREE_CLASSIFY(_assign_svalue_key))
+cmod_DEFINE_EVAL(TREE_T, struct TREE_CLASSIFY(_struct))
+
+static TREE_T *TREE_CLASSIFY(_get_storage)(struct object *o) {
+    return (TREE_T*)get_storage(o, TREE_CLASSIFY(_program));
+}
+cmod_DEFINE_EVAL(GET_TREE_STORAGE, TREE_CLASSIFY(_get_storage))
 /*
  * GCC-BUG!!! we use the inline instead!
 #undef CB_ASSIGN_SVALUE_KEY
