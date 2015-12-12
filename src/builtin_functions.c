@@ -4754,7 +4754,7 @@ PMOD_EXPORT void f_functionp(INT32 args)
   push_int(res);
 }
 
-static int callablep(struct svalue *s)
+PMOD_EXPORT int callablep(struct svalue *s)
 {
   int ret = 0;
   DECLARE_CYCLIC();
