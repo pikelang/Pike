@@ -106,6 +106,7 @@ PMOD_EXPORT void f_replace(INT32 args);
 PMOD_EXPORT void f_compile(INT32 args);
 PMOD_EXPORT void f_objectp(INT32 args);
 PMOD_EXPORT void f_functionp(INT32 args);
+PMOD_EXPORT int callablep(struct svalue *s);
 PMOD_EXPORT void f_callablep(INT32 args);
 PMOD_EXPORT void f_sleep(INT32 args);
 PMOD_EXPORT void f_delay(INT32 args);
