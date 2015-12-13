@@ -153,6 +153,8 @@ static int mpack_decode_extension(struct svalue *dst, signed char type,
         
         ctx->cb(dst, type, src, src_len, ctx);
 
+        if (!ctx->buffer->prog) Pike_error("Buffer object has been destructed.\n");
+
         return 1;
     }
 
@@ -745,6 +747,7 @@ static void mpack_low_encode(const struct mpack_encode_context *ctx,
             push_svalue(value);
             apply_svalue(ctx->handler, 2);
             pop_stack();
+            if (!ctx->buffer->prog) Pike_error("Buffer object was destructed.\n");
             break;
         }
     }
@@ -798,6 +801,7 @@ PIKEFUN mixed decode_from(object buffer, void|function|object handler) {
         push_int(src - io_read_pointer(io));
         push_text("EOF");
 	apply (Pike_fp->current_object, "decode_error", 3);
+        return;
     }
 
     /* NOTE: possible overflow? */
