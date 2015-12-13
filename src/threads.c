@@ -1994,12 +1994,9 @@ void f_thread_create(INT32 args)
   if (args < 1) {
     SIMPLE_TOO_FEW_ARGS_ERROR("create", 1);
   }
-  push_svalue(Pike_sp - args);
-  f_callablep(1);
-  if (UNSAFE_IS_ZERO(Pike_sp - 1)) {
+  if (!callablep(Pike_sp - args)) {
     SIMPLE_BAD_ARG_ERROR("create", 1, "function");
   }
-  pop_stack();
 
   if (thread_state->status != THREAD_NOT_STARTED) {
     Pike_error("Threads can not be restarted (status:%d).\n",
