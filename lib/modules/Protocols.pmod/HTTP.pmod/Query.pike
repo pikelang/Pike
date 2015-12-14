@@ -175,8 +175,8 @@ protected void close_connection()
   con->close();
 }
 
-object context;
-object ssl_session;
+object/*SSL.Context*/ context;
+object/*SSL.Session*/ ssl_session;
 
 void start_tls(int|void blocking, int|void async)
 {
@@ -194,7 +194,7 @@ void start_tls(int|void blocking, int|void async)
   object write_callback=con->query_write_callback();
   object close_callback=con->query_close_callback();
 
-  object ssl = RUNTIME_RESOLVE(SSL.File)(con, context);
+  object/*SSL.File*/ ssl = RUNTIME_RESOLVE(SSL.File)(con, context);
   if (blocking) {
     ssl->set_blocking();
   }
@@ -485,7 +485,7 @@ string headers_encode(mapping(string:array(string)|string) h)
 //!
 mapping hostname_cache=([]);
 
-protected object async_dns;
+protected object/*Protocols.DNS.async_client*/ async_dns;
 protected int last_async_dns;
 protected mixed async_id;
 
@@ -1053,7 +1053,7 @@ int total_bytes()
 //!     @elem string 1
 //!       Data
 //!     @elem string 2
-//!       Protool
+//!       Protocol
 //!     @elem int 3
 //!       Status
 //!     @elem string 4
