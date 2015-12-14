@@ -135,9 +135,6 @@ class BlockCipher16
 //! Convenience function that accesses the crypt function of a
 //! substitution object keyed to perform standard ROT13 (de)ciphering.
 
-function(string(8bit):string(8bit)) rot13 =
-  Crypto.Substitution()->set_rot_key()->crypt;
-
 constant PAD_SSL       = Nettle.PAD_SSL;
 constant PAD_ISO_10126 = Nettle.PAD_ISO_10126;
 constant PAD_ANSI_X923 = Nettle.PAD_ANSI_X923;
