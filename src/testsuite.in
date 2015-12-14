@@ -10629,7 +10629,11 @@ test_false( callablep( 0 ) )
 test_false( callablep( 7 ) )
 test_true( callablep( ({ ({ 0, 1, time }) }) ) )
 test_false( callablep( ({ ({ 0, "" }) }) ) )
-
+test_any([[
+  array a = ({ 0, 0 });
+  a[1] = 1;
+  return callablep(a);
+]], 1)
 
 // - cd
 
