@@ -870,7 +870,7 @@ protected void create()
 	// IPv4 is present.
 	array(string) a = udp2->query_address()/" ";
 	int port = (int)a[1];
-	string key = Crypto.Random.random_string(16);
+	string key = random_string(16);
 	udp2->set_nonblocking();
 
 	// We shouldn't get any lost packets, since we're on the loop-back,
