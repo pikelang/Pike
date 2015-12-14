@@ -24,6 +24,7 @@
 #include "pikecode.h"
 #include "pike_compiler.h"
 
+int store_portable_bytecode;
 #ifdef PIKE_DEBUG
 static int hasarg(int opcode)
 {
@@ -207,7 +208,7 @@ INT32 assemble(int store_linenumbers)
 #endif
 
   /* No need to do this for constant evaluations. */
-  if (store_linenumbers) {
+  if (store_linenumbers && store_portable_bytecode) {
     p_wchar2 *current_tripple;
     struct pike_string *previous_file = NULL;
     INT_TYPE previous_line = 0;
@@ -478,7 +479,7 @@ INT32 assemble(int store_linenumbers)
     ins_byte(0);
 #endif
 
-  if (store_linenumbers) {
+  if (store_linenumbers && store_portable_bytecode) {
     ins_data(store_prog_string(tripples));
     free_string(tripples);
   } else {

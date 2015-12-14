@@ -2352,6 +2352,7 @@ static INT32 decode_portable_bytecode(struct decode_data *data, INT32 string_no)
   INT_TYPE current_line = 0;
   int e;
   ONERROR err;
+  extern int store_portable_bytecode;
 
   debug_malloc_touch(p);
   if ((string_no < 0) || (string_no >= p->num_strings)) {
@@ -2361,7 +2362,6 @@ static INT32 decode_portable_bytecode(struct decode_data *data, INT32 string_no)
   }
 
   bytecode = p->strings[string_no];
-
   if (bytecode->len % 3) {
     decode_error(data, NULL, "Bad bytecode string length: "
 		 "%td (expected multiple of 3).\n", bytecode->len);
@@ -2445,6 +2445,13 @@ static INT32 decode_portable_bytecode(struct decode_data *data, INT32 string_no)
 #undef EMIT_BYTECODE2
   }
   UNSET_ONERROR(err);
+  if(!store_portable_bytecode)
+  {
+    fprintf(stderr, "free bytecode %d %d\n", bytecode->len<<bytecode->size_shift, bytecode->refs);
+    free_string(bytecode);
+    p->strings[string_no] = empty_pike_string;
+    empty_pike_string->refs++;
+  }
   return assemble(1);
 }
 

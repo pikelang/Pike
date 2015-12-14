@@ -71,9 +71,10 @@ class Codec
 
 void _main(array(string) argv, array(string) env)
 {
+  enable_program_dumping(1);
   foreach(argv[1..sizeof(argv)-2], string f)
     sscanf(f, "--fakeroot=%s", fr);
-    
+
   program p=compile_file(argv[-1]);
   string s=encode_value(p, Codec());
   _static_modules._Stdio()->Fd(fakeroot(argv[-1]) + ".o","wct")->write(s);

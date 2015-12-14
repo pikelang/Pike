@@ -84,7 +84,7 @@
 #ifndef MAXPATHLEN
 #define MAXPATHLEN 32768
 #endif
-
+extern int store_portable_bytecode;
 static const char _master_location[MAXPATHLEN+CONSTANT_STRLEN(MASTER_COOKIE)] = MASTER_COOKIE;
 static const char *master_file_location = _master_location + CONSTANT_STRLEN(MASTER_COOKIE);
 
@@ -508,7 +508,9 @@ int main(int argc, char **argv)
 				      WINDOWS_ERROR_DIALOGS);
 	      p++;
 	      goto more_d_flags;
-
+            case 'd':
+              store_portable_bytecode = 1;
+              break;
 	    default:
 	      d_flag += (p[0] == 'd');
 	      p++;

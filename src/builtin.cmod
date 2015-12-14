@@ -1053,6 +1053,24 @@ PIKEFUN multiset(1) mkmultiset(array(1=mixed) a)
   RETURN mkmultiset(a);
 }
 
+/*! @decl void enable_program_dumping(bool yes)
+ *!
+ *! If enabled, a portable version of the program code will be kept
+ *! after compilation.
+ *!
+ *! This, together with some support code, enables encode_value to
+ *! encode program code.
+ *!
+ *! This is equivalent to starting pike with the -dd option.
+ */
+PIKEFUN void enable_program_dumping(int how)
+  efun;
+{
+  extern int store_portable_bytecode;
+  store_portable_bytecode = how;
+}
+
+
 /*! @decl int trace(int level, void|string facility, void|int all_threads)
  *!
  *! This function changes the trace level for the subsystem identified
