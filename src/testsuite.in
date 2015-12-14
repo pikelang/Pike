@@ -10611,28 +10611,42 @@ test_eq(1,call_function(intp,1))
 // - call_out_info
 
 // - callablep
-test_true( callablep(time) )
-test_true( callablep(String.Buffer) )
-test_true( callablep( class { void `()() { } }() ) )
-test_false( callablep(String.Buffer()) )
-test_true( callablep( ({}) ) )
-test_true( callablep( ({ 0,0 }) ) )
-test_true( callablep( ({ 0,1 }) ) )
-test_true( callablep( ({ time }) ) )
-test_true( callablep( ({ time, 0 }) ) )
-test_false( callablep( ({ "a", time }) ) )
-test_false( callablep( ({ "" }) ) )
-test_false( callablep( "" ) )
-test_false( callablep( 3.14 ) )
-test_false( callablep( (< time >) ) )
-test_false( callablep( 0 ) )
-test_false( callablep( 7 ) )
-test_true( callablep( ({ ({ 0, 1, time }) }) ) )
-test_false( callablep( ({ ({ 0, "" }) }) ) )
+define(test_callablep,[[
+  test_eq( callablep($1), $2)
+  test_any([[
+    mixed x  = $1;
+    mixed e = catch { x(); };
+    return $2 ^ !!e;
+  ]], 1)
+]])
+
+test_callablep(time, 1)
+test_callablep(String.Buffer, 1)
+test_callablep( class { void `()() { } }(), 1)
+test_callablep(String.Buffer(), 0)
+test_callablep( ({}), 1 )
+test_callablep( ({ 0,0 }), 1 )
+test_callablep( ({ 0,1 }), 1 )
+test_callablep( ({ time }), 1 )
+test_callablep( ({ time, 0 }), 1 )
+test_callablep( ({ "a", time }), 0 )
+test_callablep( ({ "" }), 0 )
+test_callablep( "", 0 )
+test_callablep( 3.14, 0 )
+test_callablep( (< time >), 0 )
+test_callablep( 0, 0 )
+test_callablep( 7, 0 )
+test_callablep( ({ ({ 0, 1, time }) }), 1 )
+test_callablep( ({ ({ 0, "" }) }), 0 )
 test_any([[
   array a = ({ 0, 0 });
-  a[1] = 1;
+  a[1] = a;
   return callablep(a);
+]], 1)
+test_any([[
+  array a = ({ 0, 0 });
+  a[1] = a;
+  return equal(a(), a);
 ]], 1)
 
 // - cd
