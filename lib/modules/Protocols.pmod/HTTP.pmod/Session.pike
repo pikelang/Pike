@@ -18,6 +18,8 @@ typedef string|Standards.URI|SessionURL URL;
 //!	@[Request.follow_redirects]
 int follow_redirects=20;
 
+#define RUNTIME_RESOLV(X) master().resolv(#X)
+
 //! Default HTTP headers.
 mapping default_headers = ([
    "user-agent":"Mozilla/5.0 (compatible; MSIE 6.0; Pike HTTP client)"
@@ -411,7 +413,7 @@ class Cookie
 	    "Cookie(%O: %O=%O; expires=%s; path=%O; domain=%O; secure=%d)",
 			site,
 			key,data,
-			Calendar.ISO.Second(expires)->format_http(),
+                        RUNTIME_RESOLVE(Calendar.ISO.Second)(expires)->format_http(),
 			path,domain,secure);
    }
 
@@ -434,8 +436,8 @@ class Cookie
 	 {
 	    case "expires":
 	       expires=
-		  (Calendar.ISO.parse("%e, %D %M %Y %h:%m:%s %z",value)||
-		   Calendar.ISO.parse("%e, %D-%M-%y %h:%m:%s %z",value) )
+		  (RUNTIME_RESOLV(Calendar.ISO.parse)("%e, %D %M %Y %h:%m:%s %z",value)||
+		   RUNTIME_RESOLV(Calendar.ISO.parse)("%e, %D-%M-%y %h:%m:%s %z",value) )
 		  ->unix_time();
 	       break;
 

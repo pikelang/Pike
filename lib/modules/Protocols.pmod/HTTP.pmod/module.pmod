@@ -197,7 +197,6 @@ constant response_codes =
     url->port = proxy->port;
     query_variables = url->query = 0;
     url->path = web_url;
-#if constant(SSL.File)
   } else if (url->scheme == "https") {
 #ifdef HTTP_QUERY_DEBUG
     werror("Proxied SSL request.\n");
@@ -222,7 +221,6 @@ constant response_codes =
       con->start_tls(1);
     }
     proxy_headers = request_headers;
-#endif /* constant(SSL.File) */
   } else {
     error("Can't handle proxying of %O.\n", url->scheme);
   }
@@ -269,18 +267,11 @@ constant response_codes =
   if(!con)
     con = .Query();
 
-#if constant(SSL.File)
   if(url->scheme!="http" && url->scheme!="https")
     error("Can't handle %O or any other protocols than HTTP or HTTPS.\n",
 	  url->scheme);
 
   con->https = (url->scheme=="https")? 1 : 0;
-#else
-  if(url->scheme!="http")
-    error("Can't handle %O or any other protocol than HTTP "
-	  "(HTTPS requires Nettle support).\n",
-	  url->scheme);
-#endif /* constant(SSL.File) */
 
   mapping default_headers = ([
     "user-agent" : "Mozilla/5.0 (compatible; MSIE 6.0; Pike HTTP client)"
@@ -405,17 +396,11 @@ void do_async_method(string method,
     error("Asynchronous httpu or httpmu not yet supported.\n");
   }
 
-#if constant(SSL.File)
   if(url->scheme!="http" && url->scheme!="https")
     error("Can't handle %O or any other protocols than HTTP or HTTPS.\n",
 	  url->scheme);
 
   con->https = (url->scheme=="https")? 1 : 0;
-#else
-  if(url->scheme!="http")
-    error("Can't handle %O or any other protocol than HTTP.\n",
-	  url->scheme);
-#endif /* constant(SSL.File) */
 
   if(!request_headers)
     request_headers = ([]);
@@ -569,7 +554,6 @@ void do_async_proxied_method(string|Standards.URI proxy,
     url->port = proxy->port;
     query_variables = url->query = 0;
     url->path = web_url;
-#if constant(SSL.File)
   } else if(url->scheme == "https") {
 #ifdef HTTP_QUERY_DEBUG
     werror("Proxied SSL request.\n");
@@ -600,7 +584,6 @@ void do_async_proxied_method(string|Standards.URI proxy,
     } else {
       proxy_headers = request_headers;
     }
-#endif
   } else {
     error("Can't handle proxying of %O.\n", url->scheme);
   }
@@ -745,19 +728,19 @@ string post_url_data(string|Standards.URI url,
 //!	@}
 string http_encode_query(mapping(string:int|string|array(string)) variables)
 {
-   return Array.map((array)variables,
-		    lambda(array(string|int|array(string)) v)
-		    {
-		       if (intp(v[1]))
-			  return uri_encode(v[0]);
-		       if (arrayp(v[1]))
-			 return map(v[1], lambda (string val) {
-					    return
-					      uri_encode(v[0])+"="+
-					      uri_encode(val);
-					  })*"&";
-		       return uri_encode(v[0])+"="+ uri_encode(v[1]);
-		    })*"&";
+   return map((array)variables,
+              lambda(array(string|int|array(string)) v)
+              {
+                if (intp(v[1]))
+                  return uri_encode(v[0]);
+                if (arrayp(v[1]))
+                  return map(v[1], lambda (string val) {
+                                     return
+                                       uri_encode(v[0])+"="+
+                                       uri_encode(val);
+                                   })*"&";
+                return uri_encode(v[0])+"="+ uri_encode(v[1]);
+              })*"&";
 }
 
 protected local constant gen_delims = ":/?#[]@" // RFC 3986, section 2.2
@@ -900,42 +883,6 @@ string iri_encode (string s)
 		  sprintf ("%c", ((array(int)) replace_chars)[*]),
 		  sprintf ("%%%02X", ((array(int)) replace_chars)[*]));
 }
-
-#if 0
-// These functions are disabled since I haven't found a way to
-// implement them even remotely efficiently using pike only. /mast
-
-string uri_normalize (string s)
-//! Normalizes the URI-style @tt{%XX@} encoded string @[s] by decoding
-//! all URI @tt{unreserved@} chars, i.e. US-ASCII digits, letters,
-//! @tt{-@}, @tt{.@}, @tt{_@}, and @tt{~@}.
-//!
-//! Since only unreserved chars are decoded, the result is always
-//! semantically equivalent to the input. It's therefore safe to use
-//! this on a complete formatted URI.
-//!
-//! @seealso
-//! @[uri_decode], @[uri_encode], @[iri_normalize]
-{
-  // FIXME
-}
-
-string iri_normalize (string s)
-//! Normalizes the IRI-style UTF-8 and @tt{%XX@} encoded string @[s]
-//! by decoding all IRI @tt{unreserved@} chars, i.e. everything except
-//! the URI @tt{reserved@} chars and control chars.
-//!
-//! Since only unreserved chars are decoded, the result is always
-//! semantically equivalent to the input. It's therefore safe to use
-//! this on a complete formatted IRI.
-//!
-//! @seealso
-//! @[iri_decode], @[uri_normalize]
-{
-  // FIXME
-}
-
-#endif
 
 string quoted_string_encode (string s)
 //! Encodes the given string quoted to be used as content inside a

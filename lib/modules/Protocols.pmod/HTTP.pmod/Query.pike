@@ -31,6 +31,7 @@
 #define DBG(X ...)
 #endif
 
+#define RUNTIME_RESOLVE(X) master().resolv(#X)
 /****** variables **************************************************/
 
 // open
@@ -61,9 +62,6 @@ int data_timeout = 120;	// seconds
 int timeout = 120;	// seconds
 
 // internal
-#if constant(SSL.Cipher)
- import SSL.Constants;
-#endif
 int(0..1) https = 0;
 
 //! Connected host and port.
@@ -177,26 +175,26 @@ protected void close_connection()
   con->close();
 }
 
-#if constant(SSL.Cipher)
-SSL.Context context;
-SSL.Session ssl_session;
-#endif
+object context;
+object ssl_session;
 
 void start_tls(int|void blocking, int|void async)
 {
   DBG("start_tls(%d,%d)\n", blocking, async);
-#if constant(SSL.Cipher)
+
   if( !context )
   {
-    context = SSL.Context();
-    context->trusted_issuers_cache = Standards.X509.load_authorities(0,1);
+    context = RUNTIME_RESOLVE(SSL.Context)();
+    if(!context)
+      error("Can not handle HTTPs queries, pike compiled without crypto support\n");
+    context->trusted_issuers_cache = RUNTIME_RESOLVE(Standards.X509.load_authorities)(0,1);
   }
 
   object read_callback=con->query_read_callback();
   object write_callback=con->query_write_callback();
   object close_callback=con->query_close_callback();
 
-  SSL.File ssl = SSL.File(con, context);
+  object ssl = RUNTIME_RESOLVE(SSL.File)(con, context);
   if (blocking) {
     ssl->set_blocking();
   }
@@ -215,9 +213,6 @@ void start_tls(int|void blocking, int|void async)
       ssl->set_close_callback(close_callback);
     }
   }
-#else
-  error ("HTTPS not supported (Nettle support is required).\n");
-#endif
 }
 
 protected void connect(string server,int port,int blocking)
@@ -490,7 +485,7 @@ string headers_encode(mapping(string:array(string)|string) h)
 //!
 mapping hostname_cache=([]);
 
-protected Protocols.DNS.async_client async_dns;
+protected object async_dns;
 protected int last_async_dns;
 protected mixed async_id;
 
@@ -547,7 +542,7 @@ void dns_lookup_async(string hostname,function callback,mixed ...extra)
    }
 
    if (!async_dns) {
-     async_dns = Protocols.DNS.async_client();
+     async_dns = RUNTIME_RESOLVE(Protocols.DNS.async_client)();
    }
    async_dns->host_to_ip(hostname, dns_lookup_callback, callback, @extra);
    last_async_dns = time(1);
@@ -569,7 +564,7 @@ string dns_lookup(string hostname)
        (id=hostname_cache[hostname]))
       return id;
 
-   array hosts = Protocols.DNS.client()->gethostbyname( hostname );
+   array hosts = gethostbyname(hostname);//RUNTIME_RESOLVE(Protocols.DNS.client)()->gethostbyname( hostname );
    if (array ip = hosts && hosts[1])
      if (sizeof(ip)) {
        //  Prefer IPv4 addresses
@@ -669,7 +664,7 @@ this_program thread_request(string server, int port, string query,
    if (!headers) headers="";
    else if (mappingp(headers))
    {
-      headers=mkmapping(Array.map(indices(headers),lower_case),
+      headers=mkmapping(map(indices(headers),lower_case),
 			values(headers));
 
       if (data!="") headers["content-length"]=sizeof(data);
@@ -1058,7 +1053,7 @@ int total_bytes()
 //!     @elem string 1
 //!       Data
 //!     @elem string 2
-//!       Protocol
+//!       Protool
 //!     @elem int 3
 //!       Status
 //!     @elem string 4
