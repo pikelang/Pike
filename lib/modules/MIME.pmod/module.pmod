@@ -412,7 +412,7 @@ array(array(string)) decode_words_text( string txt )
 //!
 string decode_words_text_remapped( string txt )
 {
-  return Array.map(decode_words_text(txt), remap)*"";
+  return map(decode_words_text(txt), remap)*"";
 }
 
 //! Tokenizes a header value just like @[MIME.tokenize()], but also
@@ -428,7 +428,7 @@ string decode_words_text_remapped( string txt )
 //!
 array(array(string)|int) decode_words_tokenized( string phrase, int|void flags )
 {
-  return Array.map(tokenize(phrase, flags),
+  return map(tokenize(phrase, flags),
 		   lambda(string|int item) {
 		     return intp(item)? item : decode_word(item);
 		   });
@@ -446,7 +446,7 @@ array(array(string)|int) decode_words_tokenized( string phrase, int|void flags )
 array(string|int) decode_words_tokenized_remapped( string phrase,
 						   int|void flags )
 {
-  return Array.map(decode_words_tokenized(phrase, flags),
+  return map(decode_words_tokenized(phrase, flags),
 		   lambda(array(string)|int item) {
 		     return intp(item)? item : remap(item);
 		   });
@@ -478,7 +478,7 @@ array(string|int) decode_words_tokenized_remapped( string phrase,
 array(array(string|int|array(array(string))))
 decode_words_tokenized_labled( string phrase, int|void flags )
 {
-  return Array.map( tokenize_labled( phrase, flags ),
+  return map( tokenize_labled( phrase, flags ),
 		    lambda(array(string|int) item) {
 		      switch(item[0]) {
 		      case "encoded-word":
@@ -501,13 +501,13 @@ decode_words_tokenized_labled( string phrase, int|void flags )
 array(array(string|int))
 decode_words_tokenized_labled_remapped(string phrase, int|void flags)
 {
-  return Array.map(decode_words_tokenized_labled(phrase, flags),
+  return map(decode_words_tokenized_labled(phrase, flags),
 		   lambda(array(string|int|array(array(string|int))) item) {
 		     switch(item[0]) {
 		     case "word":
 		       return ({ "word", remap(item[1..]) });
 		     case "comment":
-		       return ({ "comment", Array.map(item[1], remap)*"" });
+		       return ({ "comment", map(item[1], remap)*"" });
 		     default:
 		       return item;
 		     }
@@ -609,7 +609,7 @@ string encode_words_text_remapped(string text, string encoding,
 //!
 string encode_words_quoted(array(array(string)|int) phrase, string encoding)
 {
-  return quote(Array.map(phrase, lambda(array(string)|int item) {
+  return quote(map(phrase, lambda(array(string)|int item) {
 				   return intp(item)? item :
 				     encode_word(item, encoding);
 				 }));
@@ -655,7 +655,7 @@ string encode_words_quoted_remapped(array(string|int) phrase, string encoding,
 string encode_words_quoted_labled(array(array(string|int|array(string|array(string)))) phrase, string encoding)
 {
   return
-    quote_labled(Array.map(phrase,
+    quote_labled(map(phrase,
 			   lambda(array(string|int|array(string)) item) {
 			     switch(item[0]) {
 			     case "word":
@@ -1598,7 +1598,7 @@ int|object reconstruct_partial(array(object) collection)
     mapping(string:string) enclosing_headers = parts[1]->headers;
 
     object reconstructed =
-      Message(`+(@Array.map(sort(indices(parts)),
+      Message(`+(@map(sort(indices(parts)),
 			    lambda(int i, mapping(int:object) parts){
 	return parts[i]->getencoded();
       }, parts)));
