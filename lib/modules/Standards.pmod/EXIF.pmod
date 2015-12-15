@@ -1020,7 +1020,7 @@ protected mapping parse_tag(Stdio.File file, mapping tags, mapping exif_info,
   }
 
   if(tag_type==2) // ASCII
-    tags[tag_name]=String.trim_whites(file->read(tag_count-1))-"\0";
+    tags[tag_name]=String.trim_whites(file->read(max(tag_count-1, 0)))-"\0";
   
   if(tag_type==3 || tag_type==8) // (S)SHORT
   {
