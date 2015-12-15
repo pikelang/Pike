@@ -995,7 +995,7 @@ protected mapping parse_tag(TIFF file, mapping tags, mapping exif_info,
     break;
 
   case 2: // ASCII
-    tags[tag_name]=String.trim_whites(file->read(tag_count-1))-"\0";
+    tags[tag_name]=String.trim_whites(file->read(max(tag_count-1, 0)))-"\0";
     break;
 
   case 3: // SHORT
@@ -1003,6 +1003,7 @@ protected mapping parse_tag(TIFF file, mapping tags, mapping exif_info,
     {
       if(tag_count>0xffff) return ([]); // Impossible amount of tags.
       array a=allocate(tag_count);
+
       for(int i=0; i<tag_count; i++)
         a[i]=file->read_short();
 
