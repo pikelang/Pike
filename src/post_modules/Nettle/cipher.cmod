@@ -1583,6 +1583,8 @@ PIKECLASS BlockCipher
   /*! @module IGE
    *! Implementation of Infinite Garble Extension (IGE).
    *!
+   *! This is a mode of operation suggested in 1977 by C. Cambell.
+   *!
    *! @seealso
    *!   @[CBC], @[GCM], @[CFB]
    */
