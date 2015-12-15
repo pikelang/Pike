@@ -232,7 +232,7 @@ static INLINE int PIKE_UNUSED_ATTRIBUTE DO_U ## type ## _SUB_OVERFLOW(unsigned t
   _GEN_OF2(INT ## s1, INT ## s2, utype2, s1)            \
   GENERIC_OVERFLOW_CHECKS(INT ## s1)
 
-#if PIKE_CLANG_BUILTIN(__builtin_uadd_overflow)
+#if PIKE_CLANG_BUILTIN(__builtin_uadd_overflow) || __GNUC__ >= 5
 #define DO_CLANG_OF(name, type, builtin)                \
 static INLINE int PIKE_UNUSED_ATTRIBUTE name(type a, type b, type * res) {    \
     type tmp;                                           \
