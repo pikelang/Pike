@@ -585,7 +585,11 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 
         // it is a fatal handshake_failure alert for an anonymous server to
         // request client authentication.
-        if(ke->anonymous)
+	//
+	// RFC 5246 7.4.4:
+	//   A non-anonymous server can optionally request a certificate from
+	//   the client, if appropriate for the selected cipher suite.
+        if(session->cipher_spec->signature_alg == SIGNATURE_anonymous)
         {
 	  send_packet(alert(ALERT_fatal, ALERT_handshake_failure,
 			    "Anonymous server requested authentication by "
