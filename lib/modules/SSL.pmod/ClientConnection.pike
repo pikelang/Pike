@@ -3,7 +3,6 @@
 #require constant(SSL.Cipher)
 
 //! Client-side connection state.
-
 #ifdef SSL3_DEBUG
 #define SSL3_DEBUG_MSG(X ...)  werror(X)
 #else
@@ -581,6 +580,9 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 
     case HANDSHAKE_certificate_request:
       {
+
+        ke = ke || session->cipher_spec->ke_factory(context, session, this, client_version);
+
         SSL3_DEBUG_MSG("SSL.ClientConnection: CERTIFICATE_REQUEST\n");
 
         // it is a fatal handshake_failure alert for an anonymous server to
