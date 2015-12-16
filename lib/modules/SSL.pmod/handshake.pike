@@ -1622,6 +1622,9 @@ int(-1..1) handle_handshake(int type, string data, string raw)
       }
 
     case HANDSHAKE_certificate_request:
+
+      ke = ke || session->cipher_spec->ke_factory(context, session, this, client_version);
+
       SSL3_DEBUG_MSG("SSL.session: CERTIFICATE_REQUEST\n");
 
         // it is a fatal handshake_failure alert for an anonymous server to
