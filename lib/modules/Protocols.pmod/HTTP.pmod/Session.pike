@@ -413,7 +413,7 @@ class Cookie
 	    "Cookie(%O: %O=%O; expires=%s; path=%O; domain=%O; secure=%d)",
 			site,
 			key,data,
-                        RUNTIME_RESOLVE(Calendar.ISO.Second)(expires)->format_http(),
+                        RUNTIME_RESOLV(Calendar.ISO.Second)(expires)->format_http(),
 			path,domain,secure);
    }
 
