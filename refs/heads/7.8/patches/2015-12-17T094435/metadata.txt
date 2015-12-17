@@ -1,0 +1,10 @@
+subject: Pike 7.8: EXIF: Avoid trying to read a negative amount of ascii characters.
+from: 157e196cd51bb198bb637c8a0b72f4ce7b1e3e87
+to: 9b03469fd9768a024e02b775ac3ba11747c4a8d4
+originator: wellhardh@roxen.com
+depends: 2015-12-09T140512
+restart: true
+
+EXIF: Avoid trying to read a negative amount of ascii characters.
+
+Some EXIF ascii tags apparently have a zero tag_count value.
