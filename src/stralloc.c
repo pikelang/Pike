@@ -1392,17 +1392,16 @@ PMOD_EXPORT void verify_shared_strings_tables(void)
 
 int safe_debug_findstring(const struct pike_string *foo)
 {
-  unsigned INT32 e;
+  size_t h;
+  struct pike_string *p;
+
   if(!base_table) return 0;
-  for(e=0;e<htable_size;e++)
+  h = HMODULO(foo->hval);
+  for(p=base_table[h];p;p=p->next)
   {
-    struct pike_string *p;
-    for(p=base_table[e];p;p=p->next)
+    if(p==foo)
     {
-      if(p==foo)
-      {
-       return 1;
-      }
+      return 1;
     }
   }
   return 0;
