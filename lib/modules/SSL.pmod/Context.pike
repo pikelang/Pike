@@ -767,6 +767,10 @@ optional string(8bit) get_psk(string(8bit) id);
 // which later may fail when verified against supported certificate
 // types, hash/signature algorithms.
 //
+// FIXME: There is no need to allow the same context object to be used
+// both for client and server side, so we could join
+// cert_chains_domain and cert_chains_issuer into one system.
+//
 // The client/server potentially has a set of trusted issuers
 // certificates (root certificates) that are used to validate the
 // server/client sent certificate. These are stored in trusted_issuers
@@ -822,19 +826,19 @@ array(string(8bit)) authorities_cache = ({});
 //! If this array is left empty, and the context is set to verify
 //! certificates, a certificate chain must have a root that is self
 //! signed.
-void set_trusted_issuers(array(array(string)) issuers)
+void set_trusted_issuers(array(array(string(8bit))) issuers)
 {
   trusted_issuers = issuers;
   update_trusted_issuers();
 }
 
 //! Get the list of trusted issuers. See @[set_trusted_issuers].
-array(array(string)) get_trusted_issuers()
+array(array(string(8bit))) get_trusted_issuers()
 {
   return trusted_issuers;
 }
 
-protected array(array(string)) trusted_issuers = ({});
+protected array(array(string(8bit))) trusted_issuers = ({});
 
 //! Mapping from DER-encoded issuer to @[Standards.X509.Verifier]s
 //! compatible with eg @[Standards.X509.verify_certificate()] and
@@ -842,7 +846,7 @@ protected array(array(string)) trusted_issuers = ({});
 //!
 //! @seealso
 //!   @[get_trusted_issuers()], @[set_trusted_issuers()]
-mapping(string:array(Standards.X509.Verifier)) trusted_issuers_cache = ([]);
+mapping(string(8bit):array(Standards.X509.Verifier)) trusted_issuers_cache = ([]);
 
 //! For client authentication. Used only if auth_level is AUTH_ask or
 //! AUTH_require.
@@ -858,7 +862,8 @@ protected mapping(string(8bit):array(CertificatePair)) cert_chains_issuer = ([])
 protected mapping(string(8bit):array(CertificatePair)) cert_chains_domain = ([]);
 
 //! Look up a suitable set of certificates for the specified issuer.
-//! @[UNDEFIEND] if no certificate was found.
+//! @[UNDEFIEND] if no certificate was found. Called only by the
+//! ClientConnection as a response to a certificate request.
 array(CertificatePair) find_cert_issuer(array(string) ders)
 {
   // Return the first matching issuer. FIXME: Should we merge if
@@ -873,7 +878,8 @@ array(CertificatePair) find_cert_issuer(array(string) ders)
 }
 
 //! Look up a suitable set of certificates for the specified domain.
-//! @[UNDEFINED] if no certificate was found.
+//! @[UNDEFINED] if no certificate was found. Called only by the
+//! Server.
 array(CertificatePair) find_cert_domain(string(8bit) domain)
 {
   if( domain )
