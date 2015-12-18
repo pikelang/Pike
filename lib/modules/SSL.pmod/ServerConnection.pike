@@ -161,7 +161,7 @@ protected Packet certificate_request_packet(Context context)
 {
     /* Send a CertificateRequest message */
     Buffer struct = Buffer();
-    struct->add_int_array(context->preferred_auth_methods, 1, 1);
+    struct->add_int_array(context->client_auth_methods, 1, 1);
     if (version >= PROTOCOL_TLS_1_2) {
       // TLS 1.2 has var_uint_array of hash and sign pairs here.
       struct->add_hstring(get_signature_algorithms(), 2);

@@ -1421,7 +1421,7 @@ enum ALPNProtocol {
   ALPN_http_2_reserved	= "h2c",		// RFC 7540
 };
 
-protected mapping(string(8bit):array(HashAlgorithm|SignatureAlgorithm))
+mapping(string(8bit):array(HashAlgorithm|SignatureAlgorithm))
   pkcs_der_to_sign_alg = ([
   // RSA
   Standards.PKCS.Identifiers.rsa_md5_id->get_der():
