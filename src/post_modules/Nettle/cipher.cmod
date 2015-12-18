@@ -101,6 +101,29 @@ static unsigned char *pike_memxor3(unsigned char *dst, const unsigned char *a,
 #define memxor3(D, A, B, N)	pike_memxor3((D), (A), (B), (N))
 #endif
 
+/* Rotate src left and xor to destination. */
+static unsigned char *pike_memroxl(unsigned char *dst, const unsigned char *src,
+				   size_t shift, size_t n)
+{
+  /* FIXME: Could be optimized by reading larger quantities on
+   *        big-endian architectures.
+   */
+  unsigned char prev_overflow;
+  size_t i;
+  if (!n) return;
+  if (shift >= 8) Pike_fatal("Unsupported shift: %ld\n", (long) shift);
+  prev_overflow = src[0]>>(8 - shift);
+  while (n--) {
+    /* NB: Supports src == dst, but no other overlaps. */
+    unsigned char next_overflow = src[n]>>(8 - shift);
+    dst[n] ^= (src[n]<<shift) | prev_overflow;
+    prev_overflow = next_overflow;
+  }
+  return dst;
+}
+
+#define memroxl(D, S, L, N)	pike_memroxl((D), (S), (L), (N))
+
 /* Calls Pike_error on errors */
 typedef void (*pike_nettle_set_key_func)(void *ctx,
 					 ptrdiff_t length, const char *key,
