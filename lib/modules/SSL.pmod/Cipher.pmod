@@ -48,8 +48,8 @@ protected bool validate_dh(Crypto.DH.Parameters dh, object session)
   mapping pmap = valid_dh[dh->p];
   if( pmap )
   {
-    if( has_value(pmap, dh->q) )
-      return pmap[dh->q] > effort;
+    if( has_index(pmap, dh->q) )
+      return pmap[dh->q] >= effort;
   }
   else
     valid_dh[dh->p] = ([]);
