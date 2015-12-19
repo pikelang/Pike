@@ -1319,10 +1319,12 @@ test_tests([[
     int tests;
     array suites = server_ctx->get_suites(128, 2);
     server_ctx->preferred_suites = suites;
+    array authlevels = ({
+      AUTHLEVEL_none, AUTHLEVEL_verify, AUTHLEVEL_ask, AUTHLEVEL_require,
+    });
 
     // First without any client certs.
-    foreach(({ AUTHLEVEL_none, AUTHLEVEL_ask, AUTHLEVEL_require, }),
-	    server_ctx->auth_level) {
+    foreach(authlevels, server_ctx->auth_level) {
       log_status("Client certificates: NONE, %s",
 		 fmt_constant(server_ctx->auth_level, "AUTHLEVEL"));
 
@@ -1339,8 +1341,7 @@ test_tests([[
     // servers own certificates, but they are not backed by any
     // (client) root certificate on the server side.
     array(CertificatePair) certs = server_ctx->get_certificates();
-    foreach(({ AUTHLEVEL_none, AUTHLEVEL_ask, AUTHLEVEL_require, }),
-	    server_ctx->auth_level) {
+    foreach(authlevels, server_ctx->auth_level) {
       log_status("Client certificates: INVALID, %s",
 		 fmt_constant(server_ctx->auth_level, "AUTHLEVEL"));
 
@@ -1358,8 +1359,7 @@ test_tests([[
     // as a root certificate, technically signing it.
     foreach(certs, CertificatePair cp) {
       server_ctx->set_authorities(({ cp->certs[0] }));
-      foreach(({ AUTHLEVEL_none, AUTHLEVEL_ask, AUTHLEVEL_require, }),
-		 server_ctx->auth_level) {
+      foreach(authlevels, server_ctx->auth_level) {
 	log_status("Client certificates: %s(%d bits), %s",
 		   fmt_constant(cp->cert_type, "AUTH"),
 		   cp->key->key_size(),
