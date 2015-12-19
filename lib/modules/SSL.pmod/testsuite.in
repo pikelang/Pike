@@ -1328,16 +1328,16 @@ test_tests([[
 
       string exp = client_msg;
       if (server_ctx->auth_level == AUTHLEVEL_require) exp = UNDEFINED;
-      for (int ver = PROTOCOL_SSL_3_0; ver <= PROTOCOL_TLS_MAX; ver++) {
-	int count = test_ssl_connection(PROTOCOL_SSL_3_0, ver,
-					PROTOCOL_SSL_3_0, PROTOCOL_TLS_MAX,
-					exp, server_ctx, suites);
-	successes += count;
-	tests += count || 1;
-      }
+      int count = test_ssl_connection(PROTOCOL_SSL_3_0, PROTOCOL_TLS_MAX,
+				      PROTOCOL_SSL_3_0, PROTOCOL_TLS_MAX,
+				      exp, server_ctx, suites);
+      successes += count;
+      tests += count || 1;
     }
 
-    // Then with client certs, but none accepted.
+    // Then with client certs, but none accepted. We're using the
+    // servers own certificates, but they are not backed by any
+    // (client) root certificate on the server side.
     array(CertificatePair) certs = server_ctx->get_certificates();
     foreach(({ AUTHLEVEL_none, AUTHLEVEL_ask, AUTHLEVEL_require, }),
 	    server_ctx->auth_level) {
@@ -1346,16 +1346,16 @@ test_tests([[
 
       string exp = client_msg;
       if (server_ctx->auth_level == AUTHLEVEL_require) exp = UNDEFINED;
-      for (int ver = PROTOCOL_SSL_3_0; ver <= PROTOCOL_TLS_MAX; ver++) {
-	int count = test_ssl_connection(PROTOCOL_SSL_3_0, ver,
-					PROTOCOL_SSL_3_0, PROTOCOL_TLS_MAX,
-					exp, server_ctx, suites, certs);
-	successes += count;
-	tests += count || 1;
-      }
+      int count = test_ssl_connection(PROTOCOL_SSL_3_0, PROTOCOL_TLS_MAX,
+				      PROTOCOL_SSL_3_0, PROTOCOL_TLS_MAX,
+				      exp, server_ctx, suites, certs);
+      successes += count;
+      tests += count || 1;
     }
 
-    // Then with correct but selfsigned certs, one at a time.
+    // Then with correct but selfsigned certs, one at a time. Again,
+    // using the servers selfsigned certificates, but now also adding it
+    // as a root certificate, technically signing it.
     foreach(certs, CertificatePair cp) {
       server_ctx->set_authorities(({ cp->certs[0] }));
       foreach(({ AUTHLEVEL_none, AUTHLEVEL_ask, AUTHLEVEL_require, }),
