@@ -19,6 +19,11 @@ constant next = _next;
 constant prev = _prev;
 constant next_object = predef::next_object;
 
+#if constant(Builtin._get_program_layout)
+constant get_program_layout = Builtin._get_program_layout;
+constant map_all_programs = Builtin._map_all_programs;
+#endif
+
 #if constant(_debug)
 // These functions require --with-rtldebug.
 constant HAVE_DEBUG = 1;
@@ -1184,3 +1189,104 @@ int describe_encoded_value(string data)
 
   return state->decode();
 }
+
+#if constant(Builtin._get_program_layout)
+
+string get_perf_map(program p, mapping|void m) {
+    string perf_quote(string s) {
+        return sprintf("%O", s)[1..<1];
+    };
+
+    if (!m) m = get_program_layout(p);
+
+    string pname= sprintf("%O", p);
+
+    int total = m_delete(m, 0);
+    array k = indices(m), v = values(m), l = allocate(sizeof(k));
+    int i;
+
+    sort(v, k);
+
+    for (i = 1; i < sizeof(k); i++) {
+        l[i-1] = v[i]-v[i-1];
+    }
+
+    if (sizeof(k)) {
+        l[i-1] = total - v[i-1];
+        for (i = 0; i < sizeof(v); i++) {
+            v[i] = ({ v[i], l[i] });
+        }
+        object buf = Stdio.Buffer();
+
+        foreach (v; int i; array(int) a) {
+          string name = k[i];
+          name = replace(name, "\0", ":");
+          buf->sprintf("%x %x %s#%s\n", a[0], a[1], perf_quote(pname),
+                       perf_quote(name));
+        }
+
+        return buf->read();
+    }
+
+    return 0;
+}
+
+object perf_map_tree;
+
+//! Generates a @expr{perf@} map file of all Pike code and writes it to
+//! @expr{/tmp/perf-<pid>.map@}. This is useful only if pike has been
+//! compiled with machine code support. It allows the linux perf tool to
+//! determine the correct name of Pike functions that were compiled to
+//! machine code by pike.
+void generate_perf_map() {
+  // Avoid ADT.CritBit compile time dependency to Debug module
+  perf_map_tree = master()->resolv("ADT.CritBit.IntTree")();
+  array programs = ({ });
+  map_all_programs(lambda(program prog) {
+    programs += ({ prog });
+  });
+  foreach (programs;; program p) {
+    mapping layout = get_program_layout(p);
+    string perf_map = get_perf_map(p, layout);
+    if (!perf_map) continue;
+    perf_map_tree[min(@values(layout))] = perf_map;
+  }
+
+  Stdio.File o = Stdio.File(sprintf("/tmp/perf-%d.map", getpid()), "wct");
+
+  o->write(values(perf_map_tree));
+  o->close();
+}
+
+//! Updates the perf map file with new program @expr{p@}.
+//! @seealso
+//!     @[generate_perf_map()]
+//! @note
+//!     Expects @[generate_perf_map()] to have been called before.
+void add_to_perf_map(program p) {
+  if (!perf_map_tree) error("Need to call generate_perf_map() first.\n");
+  mapping layout = get_program_layout(p);
+  string perf_map = get_perf_map(p, layout);
+  if (!perf_map) return;
+  perf_map_tree[min(@values(layout))] = perf_map;
+
+  Stdio.File n = Stdio.File(sprintf("/tmp/perf-%d.map.tmp", getpid()), "wct");
+  n->write(values(perf_map_tree));
+  n->close();
+  mv(sprintf("/tmp/perf-%d.map.tmp", getpid()),
+     sprintf("/tmp/perf-%d.map", getpid()));
+}
+
+//! Removed @expr{p@} from the perf map file.
+void remove_from_perf_map(program p) {
+  if (!perf_map_tree) error("Need to call generate_perf_map() first.\n");
+  m_delete(perf_map_tree, p);
+
+  Stdio.File n = Stdio.File(sprintf("/tmp/perf-%d.map.tmp", getpid()), "wct");
+  n->write(values(perf_map_tree));
+  n->close();
+  mv(sprintf("/tmp/perf-%d.map.tmp", getpid()),
+     sprintf("/tmp/perf-%d.map", getpid()));
+}
+
+#endif /* constant(get_program_layout) */

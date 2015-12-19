@@ -2446,6 +2446,90 @@ PIKEFUN void _disassemble(function fun)
 
 #endif /* PIKE_DEBUG && PIKE_PORTABLE_BYTECODE */
 
+/*! @module Debug
+ */
+
+/*! @decl mapping(string:int) get_program_layout(program p)
+ *! Returns a mapping which describes the layout of compiled machine
+ *! code in the program @expr{p@}. The indices of the returned mapping
+ *! are function names, the values the starting address of the compiled
+ *! function. The total size of the program code is stored with index
+ *! @expr{0@}.
+ */
+PIKEFUN mapping _get_program_layout(program p) {
+  size_t i;
+  struct mapping *m = allocate_mapping(64);
+
+  if(p->flags & PROGRAM_FINISHED) {
+    for (i = 0; i < p->num_identifier_references; i++) {
+      struct reference *ref = p->identifier_references + i;
+      struct identifier *id = ID_FROM_PTR(p, ref);
+
+      if ((id->identifier_flags & IDENTIFIER_TYPE_MASK)
+            == IDENTIFIER_PIKE_FUNCTION
+          && !ref->inherit_offset) {
+        PIKE_OPCODE_T *pc = p->program + id->func.offset;
+        struct svalue sv;
+        SET_SVAL(sv, PIKE_T_INT, NUMBER_NUMBER, integer, PTR_TO_INT(pc));
+        mapping_string_insert(m, id->name, &sv);
+      }
+    }
+
+    {
+      struct svalue key, value;
+
+      SET_SVAL(key, PIKE_T_INT, NUMBER_NUMBER, integer, 0);
+      /* FIXME: this could overflow.. typewise, at least. */
+      SET_SVAL(value, PIKE_T_INT, NUMBER_NUMBER, integer,
+               PTR_TO_INT(p->program + p->num_program));
+      mapping_insert(m, &key, &value);
+    }
+  }
+
+  RETURN m;
+}
+
+/*! @decl int(0..) map_all_programs(function(program:void) cb)
+ *!
+ *! Call cb for all programs that currently exist.
+ *!
+ *! Programs might be missed if @[cb] creates new programs.
+ *!
+ *! This function is only intended to be used for debug purposes.
+ *!
+ *! @returns
+ *!   The total number of programs
+ *!
+ *! @seealso
+ *!   @[map_all_objects()]
+ */
+PIKEFUN int(0..) _map_all_programs(function(program:void) cb)
+{
+  struct program *p = first_program;
+  INT32 total = 0;
+
+
+  while( p )
+  {
+    struct program *next;
+
+    if (p->flags & PROGRAM_FINISHED) {
+      add_ref(p);
+      ref_push_program( p );
+      safe_apply_svalue( Pike_sp-2, 1, 1 );
+      pop_stack();
+      total++;
+      next = p->next;
+      sub_ref(p);
+    } else next = p->next;
+    p = next;
+  }
+  RETURN total;
+}
+
+/*! @endmodule Debug
+ */
+
 /*
  * Backtrace handling.
  */
