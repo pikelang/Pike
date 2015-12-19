@@ -1243,3 +1243,9 @@ void remove_from_perf_map(program p) {
   mv(sprintf("/tmp/perf-%d.map.tmp", getpid()),
      sprintf("/tmp/perf-%d.map", getpid()));
 }
+
+void enable_perf_maps() {
+  generate_perf_map();
+  master()->register_compile_cb(add_to_perf_map);
+  master()->register_program_unload(remove_from_perf_map);
+}

@@ -659,6 +659,22 @@ do{ \
   safe_apply_low2(master_ob, fun_, ARGS, FUN); \
 }while(0)
 
+#define SAFE_TRY_APPLY_MASTER(FUN,ARGS) \
+do{ \
+  static int fun_, master_cnt=0; \
+  struct object *master_ob=master(); \
+  if(master_cnt != master_ob->prog->id) \
+  { \
+    fun_=find_identifier(FUN,master_ob->prog); \
+    master_cnt = master_ob->prog->id; \
+  } \
+  if (fun_ != -1) safe_apply_low2(master_ob, fun_, ARGS, FUN); \
+  else { \
+      pop_n_elems(ARGS); \
+      push_undefined(); \
+  } \
+}while(0)
+
 #define SAFE_APPLY_HANDLER(FUN, HANDLER, COMPAT, ARGS) do {	\
     static int h_fun_=-1, h_id_=0;				\
     static int c_fun_=-1, c_fun_id_=0;				\

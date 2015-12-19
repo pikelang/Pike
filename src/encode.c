@@ -3872,6 +3872,11 @@ decode_done:;
 #ifdef ENCODE_DEBUG
   data->depth -= 2;
 #endif
+  if (TYPEOF(Pike_sp[-1]) == PIKE_T_PROGRAM && get_master()) {
+      push_svalue(Pike_sp - 1);
+      SAFE_TRY_APPLY_MASTER("compile_event", 1);
+      pop_stack();
+  }
 }
 
 static struct decode_data *current_decode = NULL;

@@ -685,6 +685,32 @@ program compile_string(string source, void|string filename,
   return ret;
 }
 
+function compile_cb, unload_cb;
+
+void register_compile_cb(function f) {
+    compile_cb = f;
+}
+
+void register_program_unload(function f) {
+    unload_cb = f;
+}
+
+// called from the compiler. you should never call this.
+void compile_event(program p) {
+  if (compile_cb)
+    compile_cb(p);
+}
+
+int master_append_file(string name, string data) {
+  object o=Files()->Fd();
+  int w;
+
+  o->open(name, "awc");
+  w = o->write(data);
+  destruct(o);
+  return w;
+}
+
 //!
 string master_read_file(string file)
 {
@@ -1533,6 +1559,7 @@ protected program low_findprog(string pname,
 //
 void unregister(program p)
 {
+  if (unload_cb) unload_cb(p);
   // werror("Unregistering %O...\n", p);
   if(string fname=rev_programs[p] || search(programs,p)) {
     resolv_debug("unregister %s\n", fname);

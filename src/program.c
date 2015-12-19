@@ -9751,9 +9751,14 @@ static void f_compilation_compile(INT32 args)
     verify_supporters();
   }
   pop_n_elems(args);
-  if (ret)
+  if (ret) {
+      if (get_master()) {
+          ref_push_program(ret);
+          SAFE_TRY_APPLY_MASTER("compile_event", 1);
+          pop_stack();
+      }
     ref_push_program(ret);
-  else
+  } else
     push_int(0);
 }
 
@@ -10679,6 +10684,11 @@ struct program *compile(struct pike_string *aprog,
     /* finish later */
     add_ref(c->p);
     verify_supporters();
+    if (get_master()) {
+      ref_push_program(c->p);
+      SAFE_TRY_APPLY_MASTER("compile_event", 1);
+      pop_stack();
+    }
     return c->p; /* freed later */
   }else{
     CDFPRINTF((stderr, "th(%ld) %p compile() finish now\n",
@@ -10710,6 +10720,11 @@ struct program *compile(struct pike_string *aprog,
 			 "Compilation failed.\n");
     }
     debug_malloc_touch(ret);
+    if (get_master()) {
+      ref_push_program(ret);
+      SAFE_TRY_APPLY_MASTER("compile_event", 1);
+      pop_stack();
+    }
 #ifdef PIKE_DEBUG
     if (a_flag > 2) {
       dump_program_tables(ret, 0);
