@@ -16,7 +16,7 @@
 //! (1) Result: 0
 //! > abs(s);
 //! `<(0)
-//! _sprintf(79, ([ "indent":2 ]))
+//! _sprintf(79, ([ ]))
 //! (2) Result: Debug.Subject
 //! > abs(class { inherit Debug.Subject; int `<(mixed ... args) { return 1; } }());
 //! create()
@@ -107,13 +107,14 @@ string _sprintf(int|void t, mapping|void opt, mixed ... x)
   string args = "";
   if(t)
     args += sprintf("'%c'", t);
-  if(opt == ([]))
-    args += ", ([])";
-  else if(opt)
+  if(opt)
   {
     string tmp = sprintf("%O", opt);
-    sscanf(tmp, "([ /*%*s*/\n  %s\n])", tmp);
-    args += sprintf(", ([ %s ])", replace(tmp, "\n ", ""));
+    string a,b; int c;
+    if( sscanf(tmp, "%s /* 1 element */%s", a, b)==2 ||
+        sscanf(tmp, "%s /* %d elements */%s", a, c, b)==3 )
+      tmp = a+b;
+    args += sprintf(", %s", String.normalize_space(tmp));
   }
   string tmp = sprintf("%{%O, %}", x);
   if(has_suffix(tmp, ", "))
