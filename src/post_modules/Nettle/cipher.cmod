@@ -134,8 +134,8 @@ static unsigned char *pike_memrolx(unsigned char *dst, const unsigned char *src,
     unsigned char prev_overflow = src[0]>>(8 - shift);
     size_t i = n;
     while (i--) {
-      if (!(k--)) k = n - 1;
       unsigned char next_overflow = src[i]>>(8 - shift);
+      if (!(k--)) k = n - 1;
       dst[k] ^= (src[i]<<shift) | prev_overflow;
       prev_overflow = next_overflow;
     }
