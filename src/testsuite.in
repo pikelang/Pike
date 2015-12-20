@@ -13722,6 +13722,20 @@ test_object_sprintf("s")
 test_object_sprintf("q")
 test_do(add_constant("OBJ"))
 
+test_any_equal([[
+  class A {
+    mapping m;
+    string _sprintf(int t, mapping args)
+    {
+      m = args;
+      return "";
+    }
+  };
+  A a = A();
+  string s = sprintf("%-2.3O", a);
+  return a->m || s;
+]], ([ "flag_left":1, "width":2, "precision":3 ]))
+
 dnl / : ; ^ _ > hasn't been tested
 test_eval_error(return sprintf("%d");)
 
