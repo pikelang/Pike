@@ -944,7 +944,7 @@ class TimeRange
    }
 
 
-   protected string _sprintf(int t,mapping m)
+   protected string _sprintf(int t)
    {
       switch (t)
       {
@@ -1138,7 +1138,7 @@ class cSuperTimeRange
       return predef::`+(@map(parts,"__hash"));
    }
 
-   protected string _sprintf(int t,mapping m)
+   protected string _sprintf(int t)
    {
       switch (t)
       {
@@ -1149,7 +1149,7 @@ class cSuperTimeRange
 	    return "SuperTimeRange("+
 	       map(parts,"_sprintf",'t')*", "+")";
       }
-      return ::_sprintf(t,m);
+      return ::_sprintf(t);
    }
 
    TimeRange set_timezone(string|Calendar.Rule.Timezone tz)
@@ -1259,13 +1259,13 @@ protected class cNullTimeRange
       return 1;
    }
 
-   protected string _sprintf(int t,mapping m)
+   protected string _sprintf(int t)
    {
       switch (t)
       {
 	 case 'O': return "NullTimeRange";
 	 case 't': return "Calendar."+calendar_name()+".NullTimeRange";
-	 default: return ::_sprintf(t,m);
+         default: return ::_sprintf(t);
       }
    }
 }

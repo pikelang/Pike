@@ -379,7 +379,7 @@ class DeltatextIterator
     callback_args = progress_callback_args;
   }
 
-  protected string _sprintf(int|void type, mapping|void options)
+  protected string _sprintf(int type)
   {
     string name = "DeltatextIterator";
     if(type == 't')
@@ -872,7 +872,7 @@ class Revision
   //!   @[get_contents_for_revision()], @[rcs_text]
   string text;
 
-  protected string _sprintf(int|void type)
+  protected string _sprintf(int type)
   {
     if(type == 't')
       return "Revision";

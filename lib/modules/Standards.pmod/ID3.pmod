@@ -631,7 +631,7 @@ class Tagv2 {
     build_frame_map();
   }
 
-  string _sprintf(int t, mapping args) {
+  string _sprintf(int t) {
     if(t!='O') return 0;
     if(!header) return sprintf("ID3v2()");
     return sprintf("ID3v%d.%d.%d(%d)", header->major_version,
@@ -1361,7 +1361,7 @@ class Tag {
      return rv;
    }
 
-  protected string _sprintf(int t, mapping args) {
+  protected string _sprintf(int t) {
     return t=='O' && sprintf("Tag(%O)", tag);
   }
 

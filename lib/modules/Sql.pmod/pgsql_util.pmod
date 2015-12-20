@@ -402,7 +402,7 @@ outer:
     catch(connectfail(err));
   }
 
-  private string _sprintf(int type, void|mapping flags) {
+  private string _sprintf(int type) {
     string res=UNDEFINED;
     switch(type) {
       case 'O':
@@ -470,7 +470,7 @@ class sql_result {
   private function(:void) gottimeout;
   private int timeout;
 
-  private string _sprintf(int type, void|mapping flags) {
+  private string _sprintf(int type) {
     string res=UNDEFINED;
     switch(type) {
       case 'O':

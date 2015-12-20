@@ -83,7 +83,7 @@ protected class Element {
   array(function) content_matcher;
   mapping(string:array) attributes;
 
-  string _sprintf(int mode, mapping options)
+  string _sprintf(int mode)
   {
     return mode=='O' && sprintf("%O(%O)", this_program, name);
   }

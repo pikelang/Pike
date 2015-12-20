@@ -1204,14 +1204,14 @@ class YMD
 // ----------------------------------------
 
    string nice_print();
-   protected string _sprintf(int t,mapping m)
+   protected string _sprintf(int t)
    {
       switch (t)
       {
 	 case 't':
 	    return "Calendar."+calendar_name()+".YMD";
 	 default:
-	    return ::_sprintf(t,m);
+            return ::_sprintf(t);
       }
    }
 
@@ -1334,7 +1334,7 @@ class cYear
 
 // ----------------
 
-   protected string _sprintf(int t,mapping m)
+   protected string _sprintf(int t)
    {
       switch (t)
       {
@@ -1345,7 +1345,7 @@ class cYear
 	 case 't':
 	    return "Calendar."+calendar_name()+".Year";
 	 default:
-	    return ::_sprintf(t,m);
+            return ::_sprintf(t);
       }
    }
 
@@ -1641,7 +1641,7 @@ class cMonth
       }
    }
 
-   protected string _sprintf(int t,mapping m)
+   protected string _sprintf(int t)
    {
 //        return sprintf("month y=%d yjd=%d m=%d jd=%d yd=%d n=%d nd=%d",
 //  		     y,yjd,m,jd,yd,n,number_of_days());
@@ -1654,7 +1654,7 @@ class cMonth
 	 case 't':
 	    return "Calendar."+calendar_name()+".Month";
 	 default:
-	    return ::_sprintf(t,m);
+            return ::_sprintf(t);
       }
    }
 
@@ -1948,7 +1948,7 @@ class cWeek
       }
    }
 
-   protected string _sprintf(int t,mapping m)
+   protected string _sprintf(int t)
    {
 //        return sprintf("week y=%d yjd=%d w=%d jd=%d yd=%d n=%d nd=%d",
 //  		     y,yjd,w,jd,yd,n,number_of_days());
@@ -1961,7 +1961,7 @@ class cWeek
 	 case 't':
 	    return "Calendar."+calendar_name()+".Week";
 	 default:
-	    return ::_sprintf(t,m);
+            return ::_sprintf(t);
       }
    }
 
@@ -2325,7 +2325,7 @@ class cDay
       }
    }
 
-   protected string _sprintf(int t,mapping m)
+   protected string _sprintf(int t)
    {
       switch (t)
       {
@@ -2339,7 +2339,7 @@ class cDay
 	 case 't':
 	    return "Calendar."+calendar_name()+".Day";
 	 default:
-	    return ::_sprintf(t,m);
+            return ::_sprintf(t);
       }
    }
 

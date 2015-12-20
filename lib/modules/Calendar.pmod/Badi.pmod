@@ -544,7 +544,7 @@ class Vahid
       return sprintf("v%d", v);
    }
 
-   protected string _sprintf(int t,mapping m)
+   protected string _sprintf(int t)
    {
       switch (t)
       {
@@ -555,7 +555,7 @@ class Vahid
          case 't':
             return "Calendar."+calendar_name()+".Vahid";
          default:
-            return ::_sprintf(t,m);
+            return ::_sprintf(t);
       }
    }
 

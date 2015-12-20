@@ -1220,11 +1220,11 @@ class cSuperTimeRange
       return parts[0]->distance(z)->format_elapsed();
    }
 
-   protected string _sprintf(int t,mapping m)
+   protected string _sprintf(int t)
    {
       if (t=='t')
 	 return "Calendar."+calendar_name()+".TimeofDay";
-      return ::_sprintf(t,m);
+      return ::_sprintf(t);
    }
 }
 
@@ -1300,7 +1300,7 @@ class cHour
    }
 
 
-   protected string _sprintf(int t,mapping m)
+   protected string _sprintf(int t)
    {
       if (catch {
       switch (t)
@@ -1316,7 +1316,7 @@ class cHour
 	 case 't':
 	    return "Calendar."+calendar_name()+".Hour";
 	 default:
-	    return ::_sprintf(t,m);
+            return ::_sprintf(t);
       }
       })
 	 return "error";
@@ -1412,7 +1412,7 @@ class cMinute
       return Minute("timeofday",rules,ux+n*m,len)->autopromote();
    }
 
-   protected string _sprintf(int t,mapping m)
+   protected string _sprintf(int t)
    {
       switch (t)
       {
@@ -1427,7 +1427,7 @@ class cMinute
 	 case 't':
 	    return "Calendar."+calendar_name()+".Minute";
 	 default:
-	    return ::_sprintf(t,m);
+            return ::_sprintf(t);
       }
    }
 
@@ -1511,7 +1511,7 @@ class cSecond
       return Second("timeofday",rules,ux+n*m,len)->autopromote();
    }
 
-   protected string _sprintf(int t,mapping m)
+   protected string _sprintf(int t)
    {
       switch (t)
       {
@@ -1526,7 +1526,7 @@ class cSecond
 	 case 't':
 	    return "Calendar."+calendar_name()+".Second";
 	 default:
-	    return ::_sprintf(t,m);
+            return ::_sprintf(t);
       }
    }
 
@@ -1769,7 +1769,7 @@ class cFraction
       ls=CALUNKNOWN;
    }
 
-   protected string _sprintf(int t,mapping m)
+   protected string _sprintf(int t)
    {
       switch (t)
       {
@@ -1784,7 +1784,7 @@ class cFraction
 	 case 't':
 	    return "Calendar."+calendar_name()+".Fraction";
 	 default:
-	    return ::_sprintf(t,m);
+            return ::_sprintf(t);
       }
    }
 

@@ -56,7 +56,7 @@ class DOMException(int code) {
     }
   }
 
-  protected string _sprintf(int mode, mapping options)
+  protected string _sprintf(int mode)
   {
     return mode == 'O' && sprintf("%O(%s)", this_program,
 				  (string)(symbolic[code]||code) );
@@ -352,7 +352,7 @@ class Node
     throw(DOMException(DOMException.NOT_SUPPORTED_ERR));
   }
 
-  protected string _sprintf(int mode, mapping options)
+  protected string _sprintf(int mode)
   {
     return mode == 'O' &&
       sprintf("%O(%s)", this_program, get_node_name());
@@ -1014,7 +1014,7 @@ class ParseException
     }
   }
 
-  protected string _sprintf(int mode, mapping options)
+  protected string _sprintf(int mode)
   {
     return mode == 'O' &&
       sprintf("%O(%O /* %O char %d */)",

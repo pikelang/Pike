@@ -234,7 +234,7 @@ class cTick
       return Tick("stardate",r,t,len);
    }
 
-   protected string _sprintf(int t, mapping m)
+   protected string _sprintf(int t)
    {
       switch (t)
       {

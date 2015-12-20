@@ -108,7 +108,7 @@ final Thread.Mutex _shortmux;
 final Thread.Condition _readyforcommit;
 final int _waittocommit, _readyforquerycount;
 
-private string _sprintf(int type, void|mapping flags) {
+private string _sprintf(int type) {
   string res=UNDEFINED;
   switch(type) {
     case 'O':

@@ -265,7 +265,7 @@ class NetMask
 
     }
 
-    protected string _sprintf( int flag, mapping opt )
+    protected string _sprintf( int flag )
     {
         switch( flag )
         {
