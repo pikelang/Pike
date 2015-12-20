@@ -13735,6 +13735,8 @@ test_any_equal([[
   string s = sprintf("%-2.3O", a);
   return a->m || s;
 ]], ([ "flag_left":1, "width":2, "precision":3 ]))
+test_eq( sprintf("%*f",([ "precision":2, "width":5, "flag_left":1 ]),Math.pi),
+  "3.14 " )
 
 dnl / : ; ^ _ > hasn't been tested
 test_eval_error(return sprintf("%d");)
