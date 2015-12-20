@@ -105,19 +105,40 @@ static unsigned char *pike_memxor3(unsigned char *dst, const unsigned char *a,
 static unsigned char *pike_memrolx(unsigned char *dst, const unsigned char *src,
 				   size_t shift, size_t n)
 {
-  /* FIXME: Could be optimized by reading larger quantities on
+  /* FIXME: Could be possibly optimized by reading larger quantities on
    *        big-endian architectures.
    */
-  unsigned char prev_overflow;
-  size_t i;
+  size_t i, k;
+
   if (!n) return dst;
-  if (shift >= 8) Pike_fatal("Unsupported shift: %ld\n", (long) shift);
-  prev_overflow = src[0]>>(8 - shift);
-  while (n--) {
-    /* NB: Supports src == dst, but no other overlaps. */
-    unsigned char next_overflow = src[n]>>(8 - shift);
-    dst[n] ^= (src[n]<<shift) | prev_overflow;
-    prev_overflow = next_overflow;
+
+  /* Calculate the number of full bytes to rotate. */
+  k = (shift >> 3);
+  if (k > n) {
+    k %= n;
+  }
+  k = n - k;
+
+  shift = shift & 0x07;
+  if (!shift) {
+    size_t i = n;
+    if (!k || (k == n)) {
+      /* Noop rotation. */
+      return memxor(dst, src, n);
+    }
+    while (i--) {
+      if (!(k--)) k = n - 1;
+      dst[k] ^= src[i];
+    }
+  } else {
+    unsigned char prev_overflow = src[0]>>(8 - shift);
+    size_t i = n;
+    while (i--) {
+      if (!(k--)) k = n - 1;
+      unsigned char next_overflow = src[i]>>(8 - shift);
+      dst[k] ^= (src[i]<<shift) | prev_overflow;
+      prev_overflow = next_overflow;
+    }
   }
   return dst;
 }
