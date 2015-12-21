@@ -352,6 +352,7 @@ outer:
 
   protected void destroy() {
     catch(close());		// Exceptions don't work inside destructors
+    socket->set_nonblocking();	// Clear all callbacks
     connectfail=0;
   }
 
