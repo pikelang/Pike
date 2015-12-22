@@ -1285,7 +1285,7 @@ PMOD_EXPORT void check_string(struct pike_string *s)
 {
   if(current_do_debug_cycle == last_stralloc_verify)
   {
-    if(debug_findstring(s) !=s)
+    if(debug_find_shared_string(s) != s)
       Pike_fatal("Shared string not shared.\n");
   }else{
 
@@ -1319,7 +1319,7 @@ PMOD_EXPORT void check_string(struct pike_string *s)
       Pike_fatal("Hash value changed?\n");
     }
 
-    if(debug_findstring(s) !=s)
+    if(debug_find_shared_string(s) != s)
       Pike_fatal("Shared string not shared.\n");
 
     if(index_shared_string(s,s->len))

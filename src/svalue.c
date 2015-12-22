@@ -1974,7 +1974,7 @@ void low_thorough_check_short_svalue (const union anything *u, TYPE_T type)
   TYPE_T found_type;
 
   if (type == T_STRING) {
-    if(!debug_findstring(u->string))
+    if(!debug_find_shared_string(u->string))
       Pike_fatal("Shared string not shared!\n");
     return;
   }
@@ -2022,7 +2022,7 @@ static void low_check_short_svalue(const union anything *u, TYPE_T type)
   switch(type)
   {
   case T_STRING:
-    if(!debug_findstring(u->string))
+    if(!debug_find_shared_string(u->string))
       Pike_fatal("Shared string not shared!\n");
     break;
 
