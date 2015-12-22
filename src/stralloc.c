@@ -1390,18 +1390,36 @@ PMOD_EXPORT void verify_shared_strings_tables(void)
     Pike_fatal("Num strings is wrong %d!=%d\n",num,num_strings);
 }
 
-int safe_debug_findstring(const struct pike_string *foo)
+const struct pike_string *debug_find_shared_string(const struct pike_string *s)
 {
   size_t h;
   struct pike_string *p;
 
-  if(!base_table) return 0;
-  h = HMODULO(foo->hval);
+  if(!base_table) return NULL;
+  h = HMODULO(s->hval);
   for(p=base_table[h];p;p=p->next)
   {
-    if(p==foo)
+    if(p==s)
     {
-      return 1;
+      return s;
+    }
+  }
+  return NULL;
+}
+
+int safe_debug_findstring(const struct pike_string *foo)
+{
+  unsigned INT32 e;
+  if(!base_table) return 0;
+  for(e=0;e<htable_size;e++)
+  {
+    struct pike_string *p;
+    for(p=base_table[e];p;p=p->next)
+    {
+      if(p==foo)
+      {
+       return 1;
+      }
     }
   }
   return 0;

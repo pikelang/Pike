@@ -98,10 +98,6 @@ struct string_builder
 #define QUOTE_NO_STRING_CONCAT	1	/* Don't use string concat in output */
 #define QUOTE_BREAK_AT_LF	2	/* Break after linefeed */
 
-#ifdef PIKE_DEBUG
-const struct pike_string *debug_findstring(const struct pike_string *foo);
-#endif
-
 #define free_string(s) do{ \
     struct pike_string *_=(s); \
     debug_malloc_touch(_); \
@@ -347,7 +343,10 @@ PMOD_EXPORT void debug_free_string(struct pike_string *s);
 struct pike_string *add_string_status(int verbose);
 PMOD_EXPORT void check_string(struct pike_string *s);
 PMOD_EXPORT void verify_shared_strings_tables(void);
+const struct pike_string *debug_find_shared_string(const struct pike_string *s);
 int safe_debug_findstring(const struct pike_string *foo);
+const struct pike_string *debug_findstring(const struct pike_string *foo);
+
 PMOD_EXPORT void debug_dump_pike_string(const struct pike_string *s, INT32 max);
 void dump_stralloc_strings(void);
 int low_quick_binary_strcmp(const char *a, ptrdiff_t alen,
