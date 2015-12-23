@@ -231,6 +231,7 @@ class conxion {
   final Stdio.File socket;
   private function(void|mixed:void) connectfail;
   private int towrite;
+  final multiset(function(void|mixed:void)) closecallbacks=(<>);
 
   final Thread.Mutex nostash;
   final Thread.MutexKey started;
@@ -347,12 +348,17 @@ outer:
     PD("%d>Close socket\n",socket->query_fd());
     ret=socket->close();
     sendterminate();
+    foreach(closecallbacks;function(void|mixed:void) closecb;)
+      closecb();
+    closecallbacks=(<>);
     return ret;
   }
 
   protected void destroy() {
-    catch(close());		// Exceptions don't work inside destructors
-    socket->set_nonblocking();	// Clear all callbacks
+    catch {			// Exceptions don't work inside destructors
+      close();
+      socket->set_callbacks();	// Clear all callbacks
+    };
     connectfail=0;
   }
 
@@ -498,6 +504,7 @@ class sql_result {
     _ddescribe=Thread.Condition();
     _ddescribemux=Thread.Mutex();
     closemux=Thread.Mutex();
+    c->closecallbacks+=(<destroy>);
     portalbuffersize=_portalbuffersize;
     alltext = !alltyped;
     _params = params;
@@ -836,7 +843,7 @@ class sql_result {
           if(pgsqlsess->_portalsinflight) {
             pgsqlsess->_waittocommit++;
             PD("Commit waiting for portals to finish\n");
-            PT(pgsqlsess->_readyforcommit->wait(lock));
+            catch(PT(pgsqlsess->_readyforcommit->wait(lock)));
             pgsqlsess->_waittocommit--;
           }
         }
@@ -921,7 +928,7 @@ class sql_result {
         if(!--pgsqlsess->_portalsinflight) {
           if(pgsqlsess->_waittocommit) {
             PD("Signal no portals in flight\n");
-            pgsqlsess->_readyforcommit->signal();
+            catch(pgsqlsess->_readyforcommit->signal());
             lockc=0;
           } else if(!alreadyfilled)
             pgsqlsess->_readyforquerycount++, retval=SYNCSEND;
@@ -969,11 +976,14 @@ class sql_result {
   }
 
   final void _releasesession(void|string statusccomplete) {
+    c->closecallbacks-=(<destroy>);
     if(statusccomplete && !statuscmdcomplete)
       statuscmdcomplete=statusccomplete;
     inflight=0;
-    conxion plugbuffer=c->start(1);
-    plugbuffer->sendcmd(_closeportal(plugbuffer));
+    catch {
+      conxion plugbuffer=c->start(1);
+      plugbuffer->sendcmd(_closeportal(plugbuffer));
+    };
     _state=CLOSED;
     datarows->write(1);				// Signal EOF
     releaseconditions();
