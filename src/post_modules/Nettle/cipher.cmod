@@ -1120,7 +1120,7 @@ PIKECLASS BlockCipher
   INHERIT Nettle_BufferedCipher;
 
   /*! @module CBC
-   *! Implementation of the cipher block chaining mode (CBC).
+   *! Implementation of the Cipher Block Chaining mode (CBC).
    *!
    *! Works as a wrapper for the cipher implemented by overloading
    *! the parent class (@[Cipher]).
@@ -1465,7 +1465,7 @@ PIKECLASS BlockCipher
    */
 
   /*! @module PCBC
-   *! Implementation of the propagating cipher block chaining mode (PCBC).
+   *! Implementation of the Propagating Cipher Block Chaining mode (PCBC).
    *!
    *! This mode is also known as plaintext cipher block chaining (from
    *! Kerberos v4).
@@ -1625,7 +1625,7 @@ PIKECLASS BlockCipher
    */
 
   /*! @module IGE
-   *! Implementation of Infinite Garble Extension (IGE).
+   *! Implementation of the Infinite Garble Extension mode (IGE).
    *!
    *! This is a mode of operation suggested in 1977 by C. Cambell.
    *!
@@ -2023,7 +2023,7 @@ PIKECLASS BlockCipher
    */
 
   /*! @module ABC
-   *! Implementation of Accumulated Block Chaining (ABC).
+   *! Implementation of the Accumulated Block Chaining mode (ABC).
    *!
    *! This is a mode of operation similar to @[IGE], but
    *! where the plaintext is mixed with both initialization
@@ -2428,7 +2428,7 @@ PIKECLASS BlockCipher
    */
 
   /*! @module CFB
-   *! Implementation of Cipher Feed-Back mode (CFB).
+   *! Implementation of the Cipher Feed-Back mode (CFB).
    *!
    *! @seealso
    *!   @[CBC], @[GCM]
@@ -2900,7 +2900,7 @@ PIKECLASS BlockCipher
    */
 
   /*! @module CTR
-   *! Implementation of Counter Mode (CTR).
+   *! Implementation of the Counter mode (CTR).
    *!
    *! This cipher mode works like a stream cipher with
    *! a block size >= 1. This means that the same key
@@ -3293,7 +3293,7 @@ PIKECLASS BlockCipher
    */
 
   /*! @module OFB
-   *! Implementation of Output Feed-Back mode (OFB).
+   *! Implementation of the Output Feed-Back mode (OFB).
    *!
    *! This cipher mode works like a stream cipher with
    *! a block size >= 1. This means that the same key
