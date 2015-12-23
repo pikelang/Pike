@@ -1242,7 +1242,7 @@ private int reconnect(void|int force) {
     Thread.MutexKey lock=_shortmux->lock();
     if(waitforauthready) {
       lock=0;
-      return 0;			// Connect still in progress in other thread
+      return 1;			// Connect still in progress in other thread
     }
     waitforauthready=Thread.Condition();
     lock=0;
@@ -1261,8 +1261,14 @@ private int reconnect(void|int force) {
     PD("Flushing old cache\n");
     foreach(_prepareds;;mapping tp)
       m_delete(tp,"preparedname");
-    if(!_options.reconnect)
-      return 0;
+    if(!_options.reconnect) {
+      string msg=sprintf("Lost connection to database %s:%d",_host,_port);
+      if(force) {
+        lastmessage+=({msg});
+        return 0;
+      } else
+        ERROR(msg+"\n");
+    }
   }
   PD("Actually start to connect\n");
   qportals=Thread.Queue();
