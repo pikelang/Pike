@@ -1236,9 +1236,10 @@ final void _connectfail(void|mixed err) {
     _delayederror=err;
 }
 
-private int reconnect(void|int force) {
+private int reconnect() {
+  int recon=0;
   PD("(Re)connect\n");
-  if(!force) {
+  {
     Thread.MutexKey lock=_shortmux->lock();
     if(waitforauthready) {
       lock=0;
@@ -1249,26 +1250,17 @@ private int reconnect(void|int force) {
   }
   if(c) {
     PD("Close old connection\n");
-    reconnected++;
+    reconnected++;recon=1;
 #ifdef PG_STATS
     prepstmtused=0;
 #endif
-    if(!force)
-      c->sendterminate();
-    else
-      c->close();
+    c->sendterminate();
     c=0;
     PD("Flushing old cache\n");
     foreach(_prepareds;;mapping tp)
       m_delete(tp,"preparedname");
-    if(!_options.reconnect) {
-      string msg=sprintf("Lost connection to database %s:%d",_host,_port);
-      if(force) {
-        lastmessage+=({msg});
-        return 0;
-      } else
-        ERROR(msg+"\n");
-    }
+    if(!_options.reconnect)
+      ERROR("Lost connection to database %s:%d\n",_host,_port);
   }
   PD("Actually start to connect\n");
   qportals=Thread.Queue();
@@ -1276,19 +1268,12 @@ private int reconnect(void|int force) {
   _readyforquerycount=1;
   _waittocommit=0;
   qportals->write(1);
-  if(!(c=getsocket())) {
-    string msg=sprintf("Couldn't connect to database on %s:%d",_host,_port);
-    if(force) {
-      if(!sizeof(lastmessage) || lastmessage[sizeof(lastmessage)-1]!=msg)
-        lastmessage+=({msg});
-      return 0;
-    } else
-      ERROR(msg+"\n");
-  }
+  if(!(c=getsocket()))
+    ERROR("Couldn't connect to database on %s:%d\n",_host,_port);
   _runtimeparameter=([]);
   _unnamedportalmux=Thread.Mutex();
   unnamedstatement=Thread.Mutex();
-  readyforquery_cb=force?reconnect_cb:connect_cb;
+  readyforquery_cb=recon?reconnect_cb:connect_cb;
   _portalsinflight=0;
   return 1;
 }
