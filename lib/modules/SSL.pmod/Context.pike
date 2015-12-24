@@ -724,7 +724,7 @@ Crypto.RSA get_export_rsa_key()
 // also needs to ensure the apprioriate PSK cipher suites are in the
 // preferred_suites array. If the server is only accepting these PSK
 // connections, simply setting the array to a single member is best.
-// The client must only inlcude PSK suites when talking to a servers
+// The client must only include PSK suites when talking to a servers
 // known to support it, or risk getting MITM attacks.
 
 //! A context created for server side PSK use can optionally implement
