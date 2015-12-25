@@ -4649,7 +4649,7 @@ PMOD_EXPORT int reference_inherited_identifier(struct program_state *state,
   struct program *p;
 
 #ifdef PIKE_DEBUG
-  if (name != debug_find_shared_string(name))
+  if (name != debug_findstring(name))
     Pike_fatal("reference_inherited_identifier on nonshared string.\n");
 #endif
 
@@ -5521,7 +5521,7 @@ int define_variable(struct pike_string *name,
   int no_this = 0;
 
 #ifdef PIKE_DEBUG
-  if(name != debug_find_shared_string(name))
+  if(name != debug_findstring(name))
     Pike_fatal("define_variable on nonshared string.\n");
 #endif
 
@@ -5728,7 +5728,7 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
 #endif
 
 #ifdef PIKE_DEBUG
-  if(name != debug_find_shared_string(name))
+  if(name != debug_findstring(name))
     Pike_fatal("define_constant on nonshared string.\n");
   if (c) {
     check_svalue ((struct svalue*)c);

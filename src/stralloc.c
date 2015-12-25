@@ -1285,7 +1285,7 @@ PMOD_EXPORT void check_string(struct pike_string *s)
 {
   if(current_do_debug_cycle == last_stralloc_verify)
   {
-    if(debug_find_shared_string(s) != s)
+    if(debug_findstring(s) != s)
       Pike_fatal("Shared string not shared.\n");
   }else{
 
@@ -1319,7 +1319,7 @@ PMOD_EXPORT void check_string(struct pike_string *s)
       Pike_fatal("Hash value changed?\n");
     }
 
-    if(debug_find_shared_string(s) != s)
+    if(debug_findstring(s) != s)
       Pike_fatal("Shared string not shared.\n");
 
     if(index_shared_string(s,s->len))
@@ -1390,7 +1390,12 @@ PMOD_EXPORT void verify_shared_strings_tables(void)
     Pike_fatal("Num strings is wrong %d!=%d\n",num,num_strings);
 }
 
-const struct pike_string *debug_find_shared_string(const struct pike_string *s)
+/* For once, this is actually a debug function!
+ *
+ * This function is mostly used to check that the argument
+ * is a finished string.
+ */
+const struct pike_string *debug_findstring(const struct pike_string *s)
 {
   size_t h;
   struct pike_string *p;
@@ -1423,12 +1428,6 @@ int safe_debug_findstring(const struct pike_string *foo)
     }
   }
   return 0;
-}
-
-/* for once, this is actually a debug function! */
-const struct pike_string *debug_findstring(const struct pike_string *foo)
-{
-  return safe_debug_findstring(foo) ? foo : 0;
 }
 
 PMOD_EXPORT void debug_dump_pike_string(const struct pike_string *s, INT32 max)

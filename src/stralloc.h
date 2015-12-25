@@ -343,9 +343,8 @@ PMOD_EXPORT void debug_free_string(struct pike_string *s);
 struct pike_string *add_string_status(int verbose);
 PMOD_EXPORT void check_string(struct pike_string *s);
 PMOD_EXPORT void verify_shared_strings_tables(void);
-const struct pike_string *debug_find_shared_string(const struct pike_string *s);
+const struct pike_string *debug_findstring(const struct pike_string *s);
 int safe_debug_findstring(const struct pike_string *foo);
-const struct pike_string *debug_findstring(const struct pike_string *foo);
 
 PMOD_EXPORT void debug_dump_pike_string(const struct pike_string *s, INT32 max);
 void dump_stralloc_strings(void);
