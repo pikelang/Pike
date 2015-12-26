@@ -293,6 +293,8 @@ PMOD_EXPORT extern struct pike_string *empty_pike_string;
 void low_set_index(struct pike_string *s, ptrdiff_t pos, int value);
 #ifdef PIKE_DEBUG
 PMOD_EXPORT struct pike_string *debug_check_size_shift(const struct pike_string *a,enum size_shift shift);
+const struct pike_string *debug_findstring(const struct pike_string *s);
+int safe_debug_findstring(const struct pike_string *foo);
 #endif
 CONVERT(0,1)
 CONVERT(0,2)
@@ -343,8 +345,6 @@ PMOD_EXPORT void debug_free_string(struct pike_string *s);
 struct pike_string *add_string_status(int verbose);
 PMOD_EXPORT void check_string(struct pike_string *s);
 PMOD_EXPORT void verify_shared_strings_tables(void);
-const struct pike_string *debug_findstring(const struct pike_string *s);
-int safe_debug_findstring(const struct pike_string *foo);
 
 PMOD_EXPORT void debug_dump_pike_string(const struct pike_string *s, INT32 max);
 void dump_stralloc_strings(void);
