@@ -279,13 +279,17 @@ PMOD_EXPORT extern struct shared_string_location *all_shared_string_locations;
 #define convert_1_to_1(X,Y,Z) memcpy((X),(Y),(Z)<<1)
 #define convert_2_to_2(X,Y,Z) memcpy((X),(Y),(Z)<<2)
 
-#define compare_0_to_0(X,Y,Z) memcmp((X),(Y),(Z))
-#define compare_1_to_1(X,Y,Z) memcmp((X),(Y),(Z)<<1)
-#define compare_2_to_2(X,Y,Z) memcmp((X),(Y),(Z)<<2)
-
 #define CONVERT(FROM,TO) \
-void PIKE_CONCAT4(convert_,FROM,_to_,TO)(PIKE_CONCAT(p_wchar,TO) *to, const PIKE_CONCAT(p_wchar,FROM) *from, ptrdiff_t len); \
-INT32 PIKE_CONCAT4(compare_,FROM,_to_,TO)(const PIKE_CONCAT(p_wchar,TO) *to, const PIKE_CONCAT(p_wchar,FROM) *from, ptrdiff_t len);
+void PIKE_CONCAT4(convert_,FROM,_to_,TO)(PIKE_CONCAT(p_wchar,TO) *to, const PIKE_CONCAT(p_wchar,FROM) *from, ptrdiff_t len);
+
+CONVERT(0,1)
+CONVERT(0,2)
+CONVERT(1,0)
+CONVERT(1,2)
+CONVERT(2,0)
+CONVERT(2,1)
+
+#undef CONVERT
 
 PMOD_EXPORT extern struct pike_string *empty_pike_string;
 
@@ -296,14 +300,6 @@ PMOD_EXPORT struct pike_string *debug_check_size_shift(const struct pike_string 
 const struct pike_string *debug_findstring(const struct pike_string *s);
 int safe_debug_findstring(const struct pike_string *foo);
 #endif
-CONVERT(0,1)
-CONVERT(0,2)
-CONVERT(1,0)
-CONVERT(1,2)
-CONVERT(2,0)
-CONVERT(2,1)
-
-#undef CONVERT
 
 void generic_memcpy(PCHARP to,
                     const PCHARP from,

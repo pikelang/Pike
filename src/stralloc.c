@@ -315,16 +315,6 @@ PMOD_EXPORT struct pike_string *debug_check_size_shift(const struct pike_string 
 					    ptrdiff_t len)		\
   {									\
     while(--len>=0) *(to++)= (PIKE_CONCAT (p_wchar, TO)) *(from++);	\
-  }									\
-  INT32 PIKE_CONCAT4(compare_,FROM,_to_,TO) (const PIKE_CONCAT(p_wchar,TO) *to,	\
-					     const PIKE_CONCAT(p_wchar,FROM) *from, \
-					     ptrdiff_t len)		\
-  {									\
-    int tmp;								\
-    while(--len>=0)							\
-      if((tmp=*(to++)-*(from++)))					\
-	return tmp;							\
-    return 0;								\
   }
 
 CONVERT(0,1)
