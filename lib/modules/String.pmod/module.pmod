@@ -322,6 +322,7 @@ string int2size( int size )
   if (!(decimal = (size & ~oldmask))) return sprintf("%d %s", val, prefix[no]);
 
   // Convert the decimal to base 10.
+  // NB: no >= 1 since otherwise ~oldmask == ~-1 == 0 and we return above.
   decimal += 1<<[int(6..)](no*10 - 4);	// Rounding.
   decimal *= 5;
   decimal >>= [int(9..)](no*10 - 1);
