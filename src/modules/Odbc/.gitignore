@@ -12,6 +12,7 @@
 /modlist_segment
 /odbc.c
 /odbc_result.c
+/testsuite
 /remake
 /stamp-h
 /stamp-h.in

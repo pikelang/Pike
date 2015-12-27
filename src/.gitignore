@@ -61,6 +61,7 @@ autom4te.cache
 /stamp-h
 /stamp-h.in
 /test-install
+/testsuite
 /treeopt.h
 /whitespace.h
 /y.output

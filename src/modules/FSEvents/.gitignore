@@ -8,6 +8,7 @@
 /propagated_variables
 /stamp-h
 /stamp-h.in
+/testsuite
 /fsevents.c
 /fsevents.cmod.compiled
 /fsevents_config.h.in
