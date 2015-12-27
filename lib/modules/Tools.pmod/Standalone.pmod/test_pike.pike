@@ -448,7 +448,8 @@ class SaveParentPlugin
 
   int(0..1) active(Test t)
   {
-    if( has_value("don't save parent", t->source) ) return 0;
+    if( has_value(t->source, "don't save parent") ) return 0;
+    return 0; // Disabled for now.
     return (t->number/6)&1;
   }
 
@@ -1011,7 +1012,7 @@ int main(int argc, array(string) argv)
         if (pike_compat)
           test->add_plugin( CompatPlugin(pike_compat) );
         test->add_plugin( WidenerPlugin() );
-        //        test->add_plugin( SaveParentPlugin() );
+        test->add_plugin( SaveParentPlugin() );
         test->add_plugin( CRLNPlugin() );
         test->add_plugin( LinePlugin() );
 
