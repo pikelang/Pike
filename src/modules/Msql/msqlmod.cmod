@@ -41,8 +41,6 @@
 #include "pike_types.h"
 #include "interpret.h"
 
-#include "version.h"
-
 #ifdef _REENTRANT
 MUTEX_T pike_msql_mutex STATIC_MUTEX_INIT;
 #define MSQL_LOCK() mt_lock(&pike_msql_mutex)
@@ -935,10 +933,8 @@ PIKE_MODULE_INIT
 {
   INIT;
 
-  /* Versioning information, to be obtained as "Msql.version". Mainly a
-   * convenience for RCS
-   */
-  add_string_constant("version",MSQLMOD_VERSION,0);
+  /* Deprecated */
+  add_string_constant("version","mSQL/1.1.1",0);
 }
 
 PIKE_MODULE_EXIT

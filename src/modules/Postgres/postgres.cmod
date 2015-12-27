@@ -18,8 +18,6 @@
 
 #ifdef HAVE_POSTGRES
 
-#include "version.h"
-
 /* #define PGDEBUG */
 
 /* Pike includes */
@@ -859,7 +857,7 @@ PIKE_MODULE_INIT
 {
   INIT;
 
-  add_string_constant("version",PGSQL_VERSION,0);
+  add_string_constant("version","Postgres/1.0.2",0);
 
   pgresult_init();
 }
