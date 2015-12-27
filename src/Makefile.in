@@ -315,7 +315,6 @@ framework: OCPikeInterpreter.o $(OBJ) modules/linker_options @STATIC_POST_MODULE
 	cp -rf $(SRCDIR)/../lib/* Pike.framework/Versions/7.7/Resources/lib
 	cp master.pike Pike.framework/Versions/7.7/Resources/lib
 	cd Pike.framework && find . -type f -name '*.in' -exec rm -f {} \;
-	cd Pike.framework && find . -type d -name CVS -prune -exec rm -rf {} \;
 
 libpike.so: $(OBJ) modules/linker_options @STATIC_POST_MODULES_LINKOPTS@
 	@echo "Linking libpike.so";\

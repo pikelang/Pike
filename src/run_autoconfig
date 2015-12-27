@@ -114,7 +114,7 @@ OIFS="$IFS"
 IFS=''
 ( find . -follow -type d -print $prune_flag || \
   find . -type d -print $prune_flag
-) | egrep -v '/(CVS)|(RCS)|(test-install)$' | sort | uniq | (
+) | egrep -v '/(test-install)$' | sort | uniq | (
   while read dir; do
 
     IFS="$OIFS"

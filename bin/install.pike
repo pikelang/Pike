@@ -1038,7 +1038,6 @@ void install_dir(string from, string to, int dump)
   mkdirhier(to);
   foreach(get_dir(from),string file)
   {
-    if(file=="CVS") continue;
     if(file=="testsuite.in") continue;
     if(file[..1]==".#") continue;
     if(file[0]=='#' && file[-1]=='#') continue;

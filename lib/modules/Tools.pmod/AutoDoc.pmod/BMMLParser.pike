@@ -825,7 +825,7 @@ void traversedir(string path)
 
   destruct(tmp);
 
-  foreach(get_dir(path) - ({"CVS","RCS",".cvsignore",".bmmlrc"}),file)
+  foreach(get_dir(path) - ({".gitignore",".bmmlrc"}),file)
   {
     string tmp;
     if(file[-1]=='~') continue;

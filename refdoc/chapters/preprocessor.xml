@@ -53,8 +53,8 @@ ANSI/DEC escape sequences as white space. Supported formats are
 possible to do color markup in the actual source file.</p>
 
 <p>The preprocessor will treat seven consecutive &lt; characters
-outside of a string as an CVS conflict error and will return "CVS
-conflict detected."</p>
+outside of a string as an version control conflict error and will
+return "Merge conflict detected."</p>
 
 </section>
 

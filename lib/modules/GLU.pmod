@@ -10,7 +10,7 @@
 //! at some point actually needed to get his work done. If you
 //! need a GLU function that isn't in here, copy the C code from
 //! the GLU library (Mesa was used last time), tweak it so that
-//! it compiles as Pike code and then check it in into the CVS.
+//! it compiles as Pike code and then check it in into git.
 
 import GL;
 

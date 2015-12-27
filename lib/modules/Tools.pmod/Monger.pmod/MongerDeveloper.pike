@@ -428,8 +428,6 @@ string generate_components(string root_directory)
 
   foreach(Filesystem.Traversion(root_directory); string dir; string file)
   {
-    // we skip all CVS directories.
-    if(dir[sizeof(dir)-4..] == "CVS/") continue;
     if(dir != pdir)
     {
       pdir = dir;

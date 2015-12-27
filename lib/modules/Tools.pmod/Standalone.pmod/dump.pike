@@ -178,10 +178,9 @@ do_dump: {
 	if (array(string) dirlist = get_dir (fakeroot (file))) {
 	  if (!quiet) logmsg ("Is a directory (dumping recursively).\n");
 	  foreach (dirlist, string subfile)
-	    if (subfile != "CVS" &&
-		(has_suffix (subfile, ".pike") ||
-		 has_suffix (subfile, ".pmod") ||
-		 Stdio.is_dir (file + "/" + subfile)))
+            if (has_suffix (subfile, ".pike") ||
+                has_suffix (subfile, ".pmod") ||
+                Stdio.is_dir (file + "/" + subfile))
 	      if (!dumpit (combine_path (file, subfile),
 			   combine_path (outfile, subfile)))
 		return 0;
