@@ -8,14 +8,21 @@ test_do( add_constant( "S", String.string2hex ) )
 
 dnl First some tests that the huffman codec works.
 
-define(test_huffman_low, [[
-  test_eq(S(Standards.HPack.huffman_encode([[$1]])), [[$2]])
-  test_eq(Standards.HPack.huffman_decode(H([[$2]])), [[$1]])
+dnl string
+define(test_huffman_simple, [[
   test_eq(Standards.HPack.huffman_decode(Standards.HPack.huffman_encode([[$1]])),[[$1]])
 ]])
 
+dnl string, huffman_hex
+define(test_huffman_low, [[
+  test_eq(S(Standards.HPack.huffman_encode([[$1]])), [[$2 - " " - "\n" - "\t"]])
+  test_eq(Standards.HPack.huffman_decode(H([[$2]])), [[$1]])
+  test_huffman_simple([[$1]])
+]])
+
+dnl text, huffman_hex
 define(test_huffman, [[
-  test_huffman_low([["$1"]], [[#"$2" - " " - "\n" - "\t"]])
+  test_huffman_low([["$1"]], [[#"$2"]])
 ]])
 
 dnl The test vectors from RFC 7541 appendix C:
@@ -55,6 +62,15 @@ dnl encode to more than one byte, so add one of our own.
 dnl This string used to trigger a buffering bug in the encoder.
 test_huffman_low(H("c5206920e56120e4206520f62e"),
 		 "ffffe4a194ffff38d4ffffa542a9fffffa57")
+
+dnl Test that all characters are both encodable and decodeable.
+test_huffman_simple([[(string)enumerate(256)]])
+
+dnl Test that we don't have any strange special cases.
+test_do(add_constant("test_data", Crypto.Random.random_string(8192)))
+test_huffman_simple([[test_data]])
+
+test_do(add_constant("test_data"));
 
 dnl Then some tests of encoding and decoding full HPack.
 
