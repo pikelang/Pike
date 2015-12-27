@@ -296,6 +296,7 @@ test_any([[
 ]], "11")
 
 test_any([[
+  /* don't save parent */
   // Check that parent pointers aren't added unnecessarily [bug 2672].
   class I {};
 
@@ -312,6 +313,7 @@ test_any([[
 ]], 0)
 
 test_any([[
+  /* don't save parent */
   // Check that parent pointers aren't added unnecessarily [bug 2672].
   class I {};
 
@@ -6989,12 +6991,14 @@ test_any([[
   return count_memory_stats (0, o);
 ]], [["i:3,c:0,e:0,v:3,r:0,rnd:1"]])
 test_any([[
+  /* don't save parent */
   class X (void|object a) {};
   X o = X (X (X()));
   o->a->a->a = o->a;
   return count_memory_stats (2, o);
 ]], [["i:3,c:2,e:0,v:7,r:4,rnd:2"]])
 test_any([[
+  /* don't save parent */
   class X (void|object a) {};
   X o = X (X (X()));
   o->a->a->a = o->a;
@@ -7019,6 +7023,7 @@ test_any([[
   return count_memory_stats ((["lookahead": 2, "block_objects": 1]), o);
 ]], [["i:1,c:0,e:0,v:1,r:0,rnd:1"]])
 test_any([[
+  /* don't save parent */
   class X (void|object a) {};
   X o = X (X (X()));
   o->a->a->a = o->a;
@@ -7026,6 +7031,7 @@ test_any([[
   return count_memory_stats (10, o);
 ]], [["i:1,c:0,e:2,v:7,r:4,rnd:1"]])
 test_any([[
+  /* don't save parent */
   class X (void|object a) {};
   X o = X (X (X()));
   o->a->a->a = o->a;
@@ -7033,6 +7039,7 @@ test_any([[
   return count_memory_stats (2, o);
 ]], [["i:1,c:0,e:2,v:7,r:4,rnd:1"]])
 test_any([[
+  /* don't save parent */
   class X (void|object a) {};
   X o = X (X (X()));
   o->a->a->a = o->a;
@@ -7040,6 +7047,7 @@ test_any([[
   return count_memory_stats (2, o);
 ]], [["i:1,c:0,e:2,v:5,r:2,rnd:1"]])
 test_any([[
+  /* don't save parent */
   class X (void|object a, void|object b) {};
   X o = X (X (X (X (X (X ())))));
   o->a->b = o;
@@ -7050,6 +7058,7 @@ test_any([[
   return count_memory_stats (1, o);
 ]], [["i:1,c:0,e:1,v:3,r:1,rnd:1"]])
 test_any([[
+  /* don't save parent */
   class X (void|object a, void|object b) {};
   X o = X (X (X (X (X (X ())))));
   o->a->b = o;
@@ -7060,6 +7069,7 @@ test_any([[
   return count_memory_stats (2, o);
 ]], [["i:6,c:5,e:0,v:19,r:13,rnd:2"]])
 test_any([[
+  /* don't save parent */
   class X (void|object a, void|object b) {};
   X o = X (X (X (X (X (X ())))));
   o->a->b = o;
@@ -7071,6 +7081,7 @@ test_any([[
   return count_memory_stats (2, o);
 ]], [["i:1,c:0,e:5,v:17,r:11,rnd:1"]])
 test_any([[
+  /* don't save parent */
   class X (void|object a, void|object b) {constant pike_cycle_depth = 2;};
   X o = X (X (X (X (X (X ())))));
   o->a->b = o;
@@ -7091,6 +7102,7 @@ test_any([[
   return count_memory_stats (0, o);
 ]], [["i:1,c:0,e:1,v:3,r:1,rnd:1"]])
 test_any([[
+  /* don't save parent */
   class X (void|object a, void|object b) {constant pike_cycle_depth = 0;};
   X o = X (X (X (X (X (X ())))));
   o->a->b = o;
@@ -7111,6 +7123,7 @@ test_any([[
   return count_memory_stats ((["block_pike_cycle_depth": 1]), o);
 ]], [["i:1,c:0,e:0,v:1,r:0,rnd:1"]])
 test_any([[
+  /* don't save parent */
   class X (void|object a, void|object b) {constant pike_cycle_depth = 4;};
   class Y (void|object a) {constant pike_cycle_depth = 0;};
   X o = X (X(), X());
@@ -7120,6 +7133,7 @@ test_any([[
   return count_memory_stats (0, o);
 ]], [["i:5,c:2,e:0,v:8,r:3,rnd:2"]])
 test_any([[
+  /* don't save parent */
   class X (void|object a, void|object b) {constant pike_cycle_depth = 4;};
   class Y (void|object a) {constant pike_cycle_depth = 0;};
   X o = X (X(), X());
@@ -7130,6 +7144,7 @@ test_any([[
   return count_memory_stats (0, o);
 ]], [["i:3,c:2,e:0,v:6,r:3,rnd:2"]])
 test_any([[
+  /* don't save parent */
   class X (void|object a, void|object b) {};
   X o = X (X (X()));
   o->a->a->a = o->a;
@@ -7140,6 +7155,7 @@ test_any([[
   return count_memory_stats (2, o);
 ]], [["i:4,c:2,e:0,v:7,r:3,rnd:2"]])
 test_any([[
+  /* don't save parent */
   class X (void|object a, void|object b) {};
   X o = X (X (X()));
   o->a->a->a = o->a;
@@ -7149,6 +7165,7 @@ test_any([[
   return count_memory_stats (2, o);
 ]], [["i:1,c:0,e:3,v:9,r:5,rnd:1"]])
 test_any([[
+  /* don't save parent */
   class X (void|object a, void|object b) {};
   X o = X (X(), X());
   o->a->b = o->b;
@@ -7157,6 +7174,7 @@ test_any([[
   return count_memory_stats (2, o);
 ]], [["i:4,c:3,e:0,v:8,r:4,rnd:2"]])
 test_any([[
+  /* don't save parent */
   class X (void|object a, void|object b) {};
   X o = X (X(), X());
   o->a->b = o->b;
@@ -7170,6 +7188,7 @@ test_any([[
   return count_memory_stats (1, o);
 ]], [["i:7,c:6,e:0,v:15,r:8,rnd:2"]])
 test_any([[
+  /* don't save parent */
   class X (void|object a, void|object b) {};
   X o = X (X(), X());
   o->a->b = o->b;
@@ -7219,6 +7238,7 @@ test_any([[
   return Pike.count_memory ((["lookahead": 2, "return_count": 1]), r);
 ]], 6)
 test_any([[
+  /* don't save parent */
   class X (void|array|object a, void|array|object b) {};
   array a = ({X (X())});
   object o = a[0];
@@ -7230,6 +7250,7 @@ test_any([[
   return count_memory_stats ((["lookahead": 2, "block_arrays": 1]), a);
 ]], [["i:15,c:10,e:0,v:35,r:20,rnd:6"]])
 test_any([[
+  /* don't save parent */
   class X (void|array|object a, void|array|object b) {};
   array a = ({X (X())});
   object o = a[0];
