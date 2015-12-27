@@ -201,11 +201,13 @@ array(Token|array) group(array(string|Token) tokens,
       case 1: stack->push(ret); ret=({token}); break;
       case 2:
 	if (!sizeof(ret) || !stack->ptr ||
-	    (groupings[(string)ret[0]] != (string)token)) {
+            (groupings[(string)ret[0]] != (string)token)) {
+#if 0
 	  // Mismatch
 	  werror ("%s:%d: Expected %O, got %O\n",
 		  token->file||"-", token->line,
-		  groupings[(string)ret[0]], (string) token);
+                  groupings[(string)ret[0]], (string) token);
+#endif
 	  return ret;
 	}
 	ret=stack->pop()+({ ret + ({token}) });
@@ -213,12 +215,15 @@ array(Token|array) group(array(string|Token) tokens,
   }
   while (sizeof(stack)) {
     Token token = ret[0];
+#if 0
     werror("%s:%d: Missing %O.\n",
 	   token->file||"-", token->line,
-	   groupings[(string)token]);
+           groupings[(string)token]);
+#endif
     ret = stack->pop() +
       ({ ret +
-	 ({ Token(groupings[(string)token], token->line, token->file) }) });
+         ({ Token(groupings[(string)token], !stringp(token) && token->line,
+                  !stringp(token) && token->file) }) });
   }
   return ret;
 }
