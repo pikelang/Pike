@@ -7,7 +7,6 @@
 /make_variables
 /modlist_headers
 /modlist_segment
-/testsuite
 /pgres_config.h
 /pgres_config.h.in
 /pgresult.c
