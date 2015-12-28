@@ -3005,6 +3005,172 @@ static int depend2_p(node *n, node *lval)
 
 static int function_type_max=0;
 
+void check_foreach_type(node *expression, node *lvalues,
+                         struct pike_type **ind_type,
+                         struct pike_type **val_type )
+{
+  struct compilation *c = THIS_COMPILATION;
+
+  if (!expression || pike_types_le(expression->type, void_type_string)) {
+    yyerror("foreach(): Looping over a void expression.");
+  } else {
+    if(lvalues && lvalues->token == ':')
+    {
+      /* Check the iterator type */
+      struct pike_type *iterator_type;
+      struct pike_type *foreach_call_type;
+      MAKE_CONSTANT_TYPE(iterator_type,
+                         tOr5(tArray, tStr, tObj,
+                              tMapping, tMultiset));
+      if (!check_node_type(expression, iterator_type,
+                           "Bad argument 1 to foreach()")) {
+        /* No use checking the index and value types if
+         * the iterator type is bad.
+         */
+        free_type(iterator_type);
+        return;
+      }
+      free_type(iterator_type);
+
+      push_type(T_MIXED);
+      push_type(T_VOID);
+      push_type(T_MANY);
+      push_finished_type(expression->type);
+      push_type(T_FUNCTION);
+
+      foreach_call_type = pop_type();
+
+      if (CAR(lvalues)) {
+        /* Check the index type */
+        struct pike_type *index_fun_type;
+        struct pike_type *index_type;
+        MAKE_CONSTANT_TYPE(index_fun_type,
+                           tOr4(tFunc(tOr(tArray, tStr), tZero),
+                                tFunc(tMap(tSetvar(0, tMix),
+                                           tMix), tVar(0)),
+                                tFunc(tSet(tSetvar(1, tMix)),
+                                      tVar(1)),
+                                tFunc(tObj, tZero)));
+        index_type = check_call(foreach_call_type, index_fun_type, 0);
+        if (!index_type) {
+          /* Should not happen. */
+          yytype_report(REPORT_ERROR,
+                        NULL, 0, NULL,
+                        NULL, 0, NULL,
+                        0, "Bad iterator type for index in foreach().");
+        } else {
+          if( CAR(lvalues)->type->type == PIKE_T_AUTO )
+          {
+            if(ind_type)copy_pike_type(*ind_type,index_type);
+          }
+          else if (!pike_types_le(index_type, CAR(lvalues)->type)) {
+            int level = REPORT_NOTICE;
+            if (!match_types(CAR(lvalues)->type, index_type)) {
+              level = REPORT_ERROR;
+            } else if (c->lex.pragmas & ID_STRICT_TYPES) {
+              level = REPORT_WARNING;
+            }
+            yytype_report(level,
+                          NULL, 0, index_type,
+                          NULL, 0, CAR(lvalues)->type,
+                          0, "Type mismatch for index in foreach().");
+          }
+          free_type(index_type);
+        }
+        free_type(index_fun_type);
+      }
+      if (CDR(lvalues)) {
+        /* Check the value type */
+        struct pike_type *value_fun_type;
+        struct pike_type *value_type;
+        MAKE_CONSTANT_TYPE(value_fun_type,
+                           tOr5(tFunc(tArr(tSetvar(0, tMix)),
+                                      tVar(0)),
+                                tFunc(tStr, tZero),
+                                tFunc(tMap(tMix,tSetvar(1, tMix)),
+                                      tVar(1)),
+                                tFunc(tMultiset, tInt1),
+                                tFunc(tObj, tZero)));
+        value_type = check_call(foreach_call_type, value_fun_type, 0);
+        if (!value_type) {
+          /* Should not happen. */
+          yytype_report(REPORT_ERROR,
+                        NULL, 0, NULL,
+                        NULL, 0, NULL,
+                        0, "Bad iterator type for value in foreach().");
+        } else {
+          if( CDR(lvalues)->type->type == PIKE_T_AUTO )
+          {
+            if(val_type) copy_pike_type(*val_type,value_type);
+          }
+          if (!pike_types_le(value_type, CDR(lvalues)->type)) {
+            int level = REPORT_NOTICE;
+            if (!match_types(CDR(lvalues)->type, value_type)) {
+              level = REPORT_ERROR;
+            } else if (c->lex.pragmas & ID_STRICT_TYPES) {
+              level = REPORT_WARNING;
+            }
+            yytype_report(level,
+                          NULL, 0, value_type,
+                          NULL, 0, CDR(lvalues)->type,
+                          0, "Type mismatch for value in foreach().");
+          }
+          free_type(value_type);
+        }
+        free_type(value_fun_type);
+      }
+      free_type(foreach_call_type);
+    } else {
+      /* Old-style foreach */
+      struct pike_type *array_zero;
+      MAKE_CONSTANT_TYPE(array_zero, tArr(tZero));
+
+      if (!pike_types_le(array_zero, expression->type)) {
+        yytype_report(REPORT_ERROR,
+                      NULL, 0, array_zero,
+                      NULL, 0, expression->type,
+                      0, "Bad argument 1 to foreach().");
+      } else {
+        if ((c->lex.pragmas & ID_STRICT_TYPES) &&
+            !pike_types_le(expression->type, array_type_string)) {
+          yytype_report(REPORT_WARNING,
+                        NULL, 0, expression->type,
+                        NULL, 0, array_type_string,
+                        0,
+                        "Argument 1 to foreach() is not always an array.");
+        }
+
+        if( lvalues->type->type == PIKE_T_AUTO )
+        {
+          if(val_type)
+            copy_pike_type( *val_type, expression->type->car );
+        }
+        else
+        {
+          if (!lvalues) {
+            /* No loop variable. Will be converted to a counted loop
+             * by treeopt. */
+          } else if (pike_types_le(lvalues->type, void_type_string)) {
+            yyerror("Bad argument 2 to foreach().");
+          } else {
+            struct pike_type *array_value_type;
+
+            type_stack_mark();
+            push_finished_type(lvalues->type);
+            push_type(T_ARRAY);
+            array_value_type = pop_unfinished_type();
+
+            check_node_type(expression, array_value_type,
+                            "Argument 1 to foreach() does not match loop variable type.");
+            free_type(array_value_type);
+          }
+        }
+      }
+      free_type(array_zero);
+    }
+  }
+}
+
 static struct pike_string *get_name_of_function(node *n)
 {
   struct pike_string *name = NULL;
@@ -3262,12 +3428,12 @@ void fix_type_field(node *n)
       struct pike_type *t;
       fix_type_field(CAR(n));
       fix_type_field(CDR(n));
-      if( CDR(n)->type == PIKE_T_AUTO )
-      {
-          /* Update to actual type. */
-          free_type( CDR(n)->type );
-          copy_pike_type( CDR(n)->type, CAR(n)->type );
-      }
+      /* if( CDR(n)->type->type == PIKE_T_AUTO ) */
+      /* { */
+      /*     /\* Update to actual type. *\/ */
+      /*     free_type( CDR(n)->type ); */
+      /*     copy_pike_type( CDR(n)->type, CAR(n)->type ); */
+      /* } */
 #if 0
       /* This test isn't sufficient, see below. */
       check_node_type(CAR(n), CDR(n)->type, "Bad type in assignment.");
@@ -3688,147 +3854,9 @@ void fix_type_field(node *n)
       if (!CAAR(n) || pike_types_le(CAAR(n)->type, void_type_string)) {
 	yyerror("foreach(): Looping over a void expression.");
       } else {
-	if(CDAR(n) && CDAR(n)->token == ':')
-	{
-	  /* Check the iterator type */
-	  struct pike_type *iterator_type;
-	  struct pike_type *foreach_call_type;
-	  MAKE_CONSTANT_TYPE(iterator_type,
-			     tOr5(tArray, tStr, tObj,
-				  tMapping, tMultiset));
-	  if (!check_node_type(CAAR(n), iterator_type,
-			       "Bad argument 1 to foreach()")) {
-	    /* No use checking the index and value types if
-	     * the iterator type is bad.
-	     */
-	    free_type(iterator_type);
-	    goto foreach_type_check_done;
-	  }
-	  free_type(iterator_type);
-
-	  push_type(T_MIXED);
-	  push_type(T_VOID);
-	  push_type(T_MANY);
-	  push_finished_type(CAAR(n)->type);
-	  push_type(T_FUNCTION);
-
-	  foreach_call_type = pop_type();
-
-	  if (CADAR(n)) {
-	    /* Check the index type */
-	    struct pike_type *index_fun_type;
-	    struct pike_type *index_type;
-	    MAKE_CONSTANT_TYPE(index_fun_type,
-			       tOr4(tFunc(tOr(tArray, tStr), tZero),
-				    tFunc(tMap(tSetvar(0, tMix),
-					       tMix), tVar(0)),
-				    tFunc(tSet(tSetvar(1, tMix)),
-					  tVar(1)),
-				    tFunc(tObj, tZero)));
-	    index_type = check_call(foreach_call_type, index_fun_type, 0);
-	    if (!index_type) {
-	      /* Should not happen. */
-	      yytype_report(REPORT_ERROR,
-			    NULL, 0, NULL,
-			    NULL, 0, NULL,
-			    0, "Bad iterator type for index in foreach().");
-	    } else {
-	      if (!pike_types_le(index_type, CADAR(n)->type)) {
-		int level = REPORT_NOTICE;
-		if (!match_types(CADAR(n)->type, index_type)) {
-		  level = REPORT_ERROR;
-		} else if (c->lex.pragmas & ID_STRICT_TYPES) {
-		  level = REPORT_WARNING;
-		}
-		yytype_report(level,
-			      NULL, 0, index_type,
-			      NULL, 0, CADAR(n)->type,
-			      0, "Type mismatch for index in foreach().");
-	      }
-	      free_type(index_type);
-	    }
-	    free_type(index_fun_type);
-	  }
-	  if (CDDAR(n)) {
-	    /* Check the value type */
-	    struct pike_type *value_fun_type;
-	    struct pike_type *value_type;
-	    MAKE_CONSTANT_TYPE(value_fun_type,
-			       tOr5(tFunc(tArr(tSetvar(0, tMix)),
-					  tVar(0)),
-				    tFunc(tStr, tZero),
-				    tFunc(tMap(tMix,tSetvar(1, tMix)),
-					  tVar(1)),
-				    tFunc(tMultiset, tInt1),
-				    tFunc(tObj, tZero)));
-	    value_type = check_call(foreach_call_type, value_fun_type, 0);
-	    if (!value_type) {
-	      /* Should not happen. */
-	      yytype_report(REPORT_ERROR,
-			    NULL, 0, NULL,
-			    NULL, 0, NULL,
-			    0, "Bad iterator type for value in foreach().");
-	    } else {
-	      if (!pike_types_le(value_type, CDDAR(n)->type)) {
-		int level = REPORT_NOTICE;
-		if (!match_types(CDDAR(n)->type, value_type)) {
-		  level = REPORT_ERROR;
-		} else if (c->lex.pragmas & ID_STRICT_TYPES) {
-		  level = REPORT_WARNING;
-		}
-		yytype_report(level,
-			      NULL, 0, value_type,
-			      NULL, 0, CDDAR(n)->type,
-			      0, "Type mismatch for value in foreach().");
-	      }
-	      free_type(value_type);
-	    }
-	    free_type(value_fun_type);
-	  }
-	  free_type(foreach_call_type);
-	} else {
-	  /* Old-style foreach */
-	  struct pike_type *array_zero;
-	  MAKE_CONSTANT_TYPE(array_zero, tArr(tZero));
-
-	  if (!pike_types_le(array_zero, CAAR(n)->type)) {
-	    yytype_report(REPORT_ERROR,
-			  NULL, 0, array_zero,
-			  NULL, 0, CAAR(n)->type,
-			  0, "Bad argument 1 to foreach().");
-	  } else {
-	    if ((c->lex.pragmas & ID_STRICT_TYPES) &&
-		!pike_types_le(CAAR(n)->type, array_type_string)) {
-	      yytype_report(REPORT_WARNING,
-			    NULL, 0, CAAR(n)->type,
-			    NULL, 0, array_type_string,
-			    0,
-			    "Argument 1 to foreach() is not always an array.");
-	    }
-
-	    if (!CDAR(n)) {
-	      /* No loop variable. Will be converted to a counted loop
-	       * by treeopt. */
-	    } else if (pike_types_le(CDAR(n)->type, void_type_string)) {
-	      yyerror("Bad argument 2 to foreach().");
-	    } else {
-	      struct pike_type *array_value_type;
-
-	      type_stack_mark();
-	      push_finished_type(CDAR(n)->type);
-	      push_type(T_ARRAY);
-	      array_value_type = pop_unfinished_type();
-
-	      check_node_type(CAAR(n), array_value_type,
-			      "Bad argument 1 to foreach().");
-	      free_type(array_value_type);
-	    }
-	  }
-	  free_type(array_zero);
-	}
+        check_foreach_type( CAAR(n), CDAR(n), NULL, NULL);
       }
     }
-  foreach_type_check_done:
     copy_pike_type(n->type, void_type_string);
     break;
 

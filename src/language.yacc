@@ -4,7 +4,7 @@
 || for more information.
 */
 
-%pure_parser
+%pure-parser
 
 %token TOK_ARROW
 
@@ -910,38 +910,40 @@ def: modifiers optional_attributes type_or_error optional_constant optional_star
       i = ID_FROM_INT(Pike_compiler->new_program, f);
       i->opt_flags = Pike_compiler->compiler_frame->opt_flags;
 
-      if (Pike_compiler->compiler_pass == 2)
+      if (Pike_compiler->compiler_pass == 2 &&
+          Pike_compiler->compiler_frame->current_return_type->type == PIKE_T_AUTO)
       {
-          struct pike_type *t = Pike_compiler->compiler_frame->current_return_type;
-          if( t->type == PIKE_T_AUTO )
-          {
-              if( !t->car )
-                  yyerror("'auto' without return statement is not allowed\n");
-              else
-              {
-                  int e;
-                  struct pike_string *a = describe_type( t->car )->str;
-                  fprintf( stderr, "AUTO: -->%s\n", a);
-                  free_string( a );
-                  /* push_finished_type( t->car );/\* return type.. *\/ */
+        /* Change "auto" return type to actual return type. */
+        push_finished_type(Pike_compiler->compiler_frame->current_return_type->car);
 
-                  /* for(; e>=0; e--) */
-                  /* { */
-                  /*     push_finished_type(Pike_compiler->compiler_frame->variable[e].type); */
-                  /*     push_type(T_FUNCTION); */
-                  /* } */
+        e = $<number>9 + $10 - 1;
+        if(Pike_compiler->varargs &&
+           (!$<number>9 || (Pike_compiler->num_create_args >= 0)))
+        {
+          push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
+          e--;
+          pop_type_stack(T_ARRAY);
+        }else{
+          push_type(T_VOID);
+        }
+        push_type(T_MANY);
+        for(; e>=0; e--)
+        {
+          push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
+          push_type(T_FUNCTION);
+        }
 
-                  /* if ($2) { */
-                  /*     node *n = $2; */
-                  /*     while (n) { */
-                  /*         push_type_attribute(CDR(n)->u.sval.u.string); */
-                  /*         n = CAR(n); */
-                  /*     } */
-                  /* } */
-                  /* free_type( i->type ); */
-                  /* i->type = compiler_pop_type(); */
-              }
+        if (Pike_compiler->current_attributes)
+        {
+          node *n = Pike_compiler->current_attributes;
+          while (n) {
+            push_type_attribute(CDR(n)->u.sval.u.string);
+            n = CAR(n);
           }
+        }
+
+        free_type( i->type );
+        i->type = compiler_pop_type();
       }
 
 #ifdef PIKE_DEBUG
@@ -1787,8 +1789,16 @@ new_name: optional_stars TOK_IDENTIFIER
 new_local_name: optional_stars TOK_IDENTIFIER
   {
     int id;
+    struct pike_type *type;
     push_finished_type($<n>0->u.sval.u.type);
-    id = add_local_name($2->u.sval.u.string, compiler_pop_type(),0);
+    type = compiler_pop_type();
+    id = add_local_name($2->u.sval.u.string, type,0);
+    if( type->type == PIKE_T_AUTO )
+    {
+      /* FIXME: Update type on assign instead! */
+      yyerror("auto only valid when the variable is assigned in definition.");
+    }
+
     if (id >= 0) {
       /* FIXME: Consider using mklocalnode(id, -1). */
       $$=mknode(F_ASSIGN,mkintnode(0),mklocalnode(id,0));
@@ -1802,13 +1812,14 @@ new_local_name: optional_stars TOK_IDENTIFIER
     int id;
     struct pike_type *type;
     push_finished_type($<n>0->u.sval.u.type);
-    id = add_local_name($2->u.sval.u.string, (type=compiler_pop_type()),0);
+    type=compiler_pop_type();
     if( type->type == PIKE_T_AUTO && Pike_compiler->compiler_pass == 2)
     {
         free_type( type );
         fix_type_field( $4 );
         copy_pike_type( type, $4->type );
     }
+    id = add_local_name($2->u.sval.u.string, type,0);
     if (id >= 0) {
       if (!(THIS_COMPILATION->lex.pragmas & ID_STRICT_TYPES)) {
 	/* Only warn about unused initialized variables in strict types mode. */
@@ -3097,15 +3108,73 @@ foreach: TOK_FOREACH
     $<number>$=Pike_compiler->compiler_frame->last_block_level;
     Pike_compiler->compiler_frame->last_block_level=$<number>2;
   }
-  '(' expr0 foreach_lvalues end_cond statement
+  '(' expr0 foreach_lvalues end_cond
+  {
+    /* Fix AUTO type. */
+    struct pike_type *ind=NULL, *val=NULL;
+    if(Pike_compiler->compiler_pass == 2)
+    {
+      fix_type_field( $6 );
+      fix_type_field( $7 );
+      check_foreach_type( $6, $7, &ind, &val );
+      if( $7->token == ':' )
+      {
+        if( CAR($7) && CAR($7)->type->type == PIKE_T_AUTO )
+        {
+          if( CAR($7)->token == F_LOCAL && !CAR($7)->u.integer.b)
+          {
+            copy_pike_type(Pike_compiler->compiler_frame->variable[CAR($7)->u.integer.a].type,
+                           ind);
+          }
+          else
+          {
+            yywarning("Unexpected auto type usage\n");
+          }
+        }
+        if( CDR($7) && CDR($7)->type->type == PIKE_T_AUTO )
+        {
+          if( CDR($7)->token == F_LOCAL && !CDR($7)->u.integer.b)
+          {
+            copy_pike_type(Pike_compiler->compiler_frame->variable[CDR($7)->u.integer.a].type,
+                           val);
+          }
+          else
+          {
+            yywarning("Unexpected auto type usage\n");
+          }
+        }
+      }
+      else
+      {
+        fix_type_field( $7 );
+        if( $7->type->type == PIKE_T_AUTO )
+        {
+          if( $7->token == F_LOCAL && !$7->u.integer.b)
+          {
+            copy_pike_type(Pike_compiler->compiler_frame->variable[$7->u.integer.a].type,
+                           val);
+          }
+          else
+          {
+            yywarning("Unexpected auto type usage\n");
+          }
+        }
+        /* old style foreach. */
+      }
+      if(ind)free_type(ind);
+      if(val)free_type(val);
+      $<number>$=0;
+    }
+  }
+  statement
   {
     if ($7) {
       $$=mknode(F_FOREACH,
 		mknode(F_VAL_LVAL,$6,$7),
-		$9);
+		$10);
     } else {
       /* Error in lvalue */
-      $$=mknode(F_COMMA_EXPR, mkcastnode(void_type_string, $6), $9);
+      $$=mknode(F_COMMA_EXPR, mkcastnode(void_type_string, $6), $10);
     }
     COPY_LINE_NUMBER_INFO($$, $3);
     free_node ($3);

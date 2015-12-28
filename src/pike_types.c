@@ -2248,7 +2248,7 @@ void simple_describe_type(struct pike_type *s)
       case T_VOID: fprintf(stderr, "void"); break;
       case T_ZERO: fprintf(stderr, "zero"); break;
       case T_MIXED: fprintf(stderr, "mixed"); break;
-
+      case PIKE_T_AUTO: fprintf(stderr, "auto"); break;
       default:
 	fprintf(stderr, "Unknown type node: %d, %p:%p",
 	       s->type, s->car, s->cdr);
