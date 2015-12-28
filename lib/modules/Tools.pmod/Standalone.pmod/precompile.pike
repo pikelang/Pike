@@ -1900,7 +1900,7 @@ sprintf("        } else {\n"
 	    ret+=({sprintf("DEFAULT_CMOD_STORAGE struct program *%s=NULL;\n",
 			   program_var)});
 	    ret+=IFDEF(program_var+"_fun_num_used",
-                       ({sprintf("static int %s_fun_num=-1;", program_var)}));
+                       ({sprintf("DEFAULT_CMOD_STORAGE int %s_fun_num=-1;", program_var)}));
 	    ret+=subclass->declarations;
 	    ret+=subclass->code;
 
