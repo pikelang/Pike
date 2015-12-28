@@ -2455,7 +2455,7 @@ PIKECLASS backtrace_frame
    */
   PIKEFUN int(0..1) _is_type(string t)
   {
-    RETURN (t == findstring("array"));
+    RETURN (t == literal_array_string);
   }
 
   static void fill_in_file_and_line()
