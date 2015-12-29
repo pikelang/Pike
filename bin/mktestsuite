@@ -84,6 +84,13 @@ errprint(__file__:__line__: [[
 Argument \$2 to \$1 has ]]len([[\$3]])[[ characters,
 some m4 implementations only allow 4096.
 ]])m4exit(1)]])dnl
+ifelse(index([[\$3]],[[
+....
+]]),-1,,[[dnl
+errprint(__file__:__line__: [[
+Argument \$2 to \$1 contains the "...." sequence, used internally by
+the testsuite.
+]])m4exit(1)]])dnl
 ]])
 
 ifdef([[__gnu__]],
