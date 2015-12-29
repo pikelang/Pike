@@ -70,7 +70,30 @@ array(string) find_testsuites(string dir)
   return ret;
 }
 
-array(Test) read_tests( string fn ) {
+class ScriptTestsuite(string file_name)
+{
+  inherit Testsuite;
+  protected int(1..1) _sizeof() { return 1; }
+  protected this_program `+(mixed steps)
+  {
+    if(steps) file_name = 0;
+    return this;
+  }
+  protected int(0..1) `!() { return !file_name; }
+  int(0..0) next()
+  {
+    file_name = 0;
+    return 0;
+  }
+  int(0..) index() { return 0; }
+  Test value()
+  {
+    return Test(file_name, 1, 1, "RUNCT",
+                sprintf("array a() { return Tools.Testsuite.run_script (({ %q })); }", file_name));
+  }
+}
+
+Testsuite read_tests( string fn ) {
   string tests = Stdio.read_file( fn );
   if(!tests) {
     log_msg("Failed to read test file %O, errno=%d.\n",
@@ -80,26 +103,17 @@ array(Test) read_tests( string fn ) {
 
   string test_type = "legacy";
   sscanf(tests, "%*sTEST:%*[ \t]%s%*[ \t\n]", test_type);
-  if (test_type == "RUN-AS-PIKE-SCRIPT") {
-    // Fake a test that will execute the script
-    array ret =
-      ({ Test(fn, 1, 1, "RUNCT",
-              sprintf("array a() { return Tools.Testsuite.run_script (({ %q })); }", fn))
-      });
-
-    return ret;
-  }
+  if (test_type == "RUN-AS-PIKE-SCRIPT")
+    return ScriptTestsuite(fn);
 
   tests = String.trim_all_whites(tests);
-  if(!sizeof(tests)) return ({});
+  if(!sizeof(tests)) return 0;
 
   if( fn=="testsuite" || has_suffix(fn, "/testsuite") )
-  {
-    return M4Testsuite(tests, fn)->get_array();
-  }
+    return M4Testsuite(tests, fn);
 
   log_msg("Unable to make sense of test file %O.\n", fn);
-  return ({});
+  return 0;
 }
 
 mapping(string:int) pushed_warnings = ([]);
@@ -846,8 +860,8 @@ int main(int argc, array(string) argv)
   testloop:
     foreach(testsuites, string testsuite)
     {
-      array(Test) tests = read_tests( testsuite );
-      if (!sizeof (tests))
+      Testsuite tests = read_tests( testsuite );
+      if (!objectp(tests) || !sizeof(tests))
 	continue;
 
       // FIXME: Show compat mode.
@@ -856,7 +870,8 @@ int main(int argc, array(string) argv)
 		subprocess && ("pid " + getpid())}) * ", ");
       int qmade, qskipped, qmadep, qskipp;
 
-      for(e=start;e<sizeof(tests);e++)
+      tests+=start;
+      foreach(tests; int e; Test test)
       {
 	if (!((e-start) % 10))
 	  report_size();
@@ -876,9 +891,7 @@ int main(int argc, array(string) argv)
 	  _verify_internals();
 	}
 
-        Test test = tests[e];
-
-	// Is there a condition for this test?
+        // Is there a condition for this test?
         if( sizeof(test->conditions) )
         {
           // FIXME: Support more than one condition (current testsuite

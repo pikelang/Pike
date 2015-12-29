@@ -578,9 +578,20 @@ class Test
   }
 }
 
+class Testsuite
+{
+  protected int(0..) _sizeof();
+  protected this_program `+(mixed steps);
+  protected int(0..1) `!();
+  int(0..1) next();
+  int(0..) index();
+  Test value();
+}
+
 //! Represents a "testsuite" file, after m4 processing.
 class M4Testsuite
 {
+  inherit Testsuite;
   protected array(string) tests;
   protected string file_name;
   protected Plugin compat;
@@ -641,10 +652,43 @@ class M4Testsuite
     }
   }
 
-  // Temporary API.
-  array(Test) get_array()
+  protected int(0..) _sizeof()
   {
-    array(Test) ret = map(tests, M4Test);
+    return sizeof(tests);
+  }
+
+  // Iterator API
+
+  protected int position;
+
+  protected int(0..1) `!()
+  {
+    return position >= sizeof(tests);
+  }
+
+  int(0..) next()
+  {
+    position++;
+    return position < sizeof(tests);
+  }
+
+  protected this_program `+(mixed steps)
+  {
+    if(!intp(steps))
+      error("Can only step forward integer number of steps.\n");
+    position += steps;
+    return this;
+  }
+
+  int index()
+  {
+    return position;
+  }
+
+  Test value()
+  {
+    if( `!() ) return UNDEFINED;
+    Test ret = M4Test(tests[position]);
     if(compat)
       ret->add_plugin(compat);
     return ret;
