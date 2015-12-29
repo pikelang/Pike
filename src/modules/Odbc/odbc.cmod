@@ -55,6 +55,8 @@ static int enable_connect_lock = 1;
 static PIKE_MUTEX_T connect_mutex STATIC_MUTEX_INIT;
 #endif
 
+#define DEFAULT_CMOD_STORAGE
+
 /*
  * Functions
  */
@@ -463,7 +465,7 @@ PIKEFUN object big_query(string q)
 
   /* Allocate the statement (result) object */
   ref_push_object(fp->current_object);
-  apply_current(odbc_result_fun_num, 1);
+  apply_current(Odbc_result_program_fun_num, 1);
 
   if (TYPEOF(Pike_sp[-1]) != T_OBJECT) {
     Pike_error("odbc->big_typed_query(): Unexpected return value from "
@@ -528,7 +530,7 @@ PIKEFUN object big_typed_query(string q)
 
   /* Allocate the statement (result) object */
   ref_push_object(fp->current_object);
-  apply_current(odbc_typed_result_fun_num, 1);
+  apply_current(Odbc_typed_result_program_fun_num, 1);
 
   if (TYPEOF(Pike_sp[-1]) != T_OBJECT) {
     Pike_error("odbc->big_typed_query(): Unexpected return value from "
@@ -600,7 +602,7 @@ PIKEFUN object list_tables(string|void pattern)
 
   /* Allocate the statement (result) object */
   ref_push_object(fp->current_object);
-  push_object(clone_object(odbc_result_program, 1));
+  push_object(clone_object(Odbc_result_program, 1));
 
   UNSET_ONERROR(ebuf);
 

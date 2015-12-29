@@ -64,17 +64,13 @@
  * Globals
  */
 
-struct program *odbc_result_program = NULL;
-struct program *odbc_typed_result_program = NULL;
-
-int odbc_result_fun_num = -1;
-int odbc_typed_result_fun_num = -1;
-
 static int scale_numeric_fun_num = -1;
 static int time_factory_fun_num = -1;
 static int timestamp_factory_fun_num = -1;
 static int user_defined_factory_fun_num = -1;
 static int uuid_factory_fun_num = -1;
+
+#define DEFAULT_CMOD_STORAGE
 
 DECLARATIONS;
 
@@ -705,7 +701,7 @@ PIKEFUN void create(object odbc)
     PIKE_ODBC_RES->odbc = NULL;
   }
 
-  if (!(PIKE_ODBC_RES->odbc = get_storage(odbc, odbc_program))) {
+  if (!(PIKE_ODBC_RES->odbc = get_storage(odbc, Odbc_odbc_program))) {
     Pike_error("Bad argument 1 to odbc_result()\n");
   }
   add_ref(PIKE_ODBC_RES->obj = odbc);
@@ -853,7 +849,7 @@ PIKEFUN int num_fields()
 }
 
 /* array(int|mapping(string:mixed)) fetch_fields() */
-PIKEFUN array(int|mapping(string:mixed)) f_fetch_fields()
+PIKEFUN array(int|mapping(string:mixed)) fetch_fields()
 {
   pop_n_elems(args);
 
@@ -941,7 +937,7 @@ PIKEFUN int|array(string|float|int) fetch_row()
 
 #ifdef ODBC_DEBUG
 	fprintf(stderr, "ODBC:fetch_row(): Field %d: "
-		"SQLGetData(X, %d, %d, X, 0, X, X) ==> code: %d, len: %ld.\n",
+		"SQLGetData(X, %d, %d, X, 0, X) ==> code: %d, len: %ld.\n",
 		i + 1,
 		i+1, field_type, code, len);
 #endif /* ODBC_DEBUG */
