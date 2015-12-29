@@ -513,7 +513,7 @@ class Test
       compile_string(src, file, AdjustLine());
   }
 
-  protected array(Plugin) plugins = ({});
+  array(Plugin) plugins = ({});
 
   //! Add a @[Plugin] object to the test, allowing the source code to
   //! be modified.
