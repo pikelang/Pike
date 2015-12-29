@@ -5526,7 +5526,7 @@ void fix_auto_variable_type( int variable, struct pike_type *type )
      * marked 'auto', set it to the given type)
      */
     struct identifier *id=ID_FROM_INT(Pike_compiler->new_program,variable);
-    if( id && id->type->type == PIKE_T_AUTO )
+    if( id )
     {
       free_type(id->type);
       copy_pike_type(id->type, type);

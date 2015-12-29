@@ -1748,9 +1748,10 @@ new_name: optional_stars TOK_IDENTIFIER
 		  $2->u.sval.u.string->str);
 	}
 #endif /* PIKE_DEBUG */
-        if(is_auto_variable_type( $<number>4 ))
+        if(Pike_compiler->compiler_frame->current_type->type == PIKE_T_AUTO)
         {
           // auto variable type needs to be updated.
+          fix_type_field( $5 );
           fix_auto_variable_type( $<number>4, $5->type );
         }
 	free_node($5);
@@ -1758,7 +1759,13 @@ new_name: optional_stars TOK_IDENTIFIER
       }
     }
     if ($5) {
-      if( Pike_compiler->compiler_pass == 2 && is_auto_variable_type( $<number>4 ) )
+      // this is done in both passes to get somewhat better handling
+      // of auto types.
+      //
+      // an example is: auto a  = typeof(b); auto b = (["foo":"bar"]);
+      // if this is only done in the second pass the type of a will be
+      // type(auto), not type(mapping(..))
+      if( Pike_compiler->compiler_frame->current_type->type == PIKE_T_AUTO )
       {
         fix_type_field( $5 );
         fix_auto_variable_type( $<number>4, $5->type );
