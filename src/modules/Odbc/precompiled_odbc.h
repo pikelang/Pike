@@ -131,8 +131,17 @@ struct Odbc_odbc_struct;
 #define PIKE_ODBC_RES	THIS_ODBC_RESULT
 
 /* Flags */
-#define PIKE_ODBC_CONNECTED      1
-#define PIKE_ODBC_OLD_TDS_KLUDGE 2
+#define PIKE_ODBC_CONNECTED      	1
+#define PIKE_ODBC_OLD_TDS_KLUDGE	2
+/* String shift used for wide data. */
+#define PIKE_ODBC_WDATA_SHIFT_SHIFT	2
+#define PIKE_ODBC_WDATA_SHIFT_MASK	12
+/* String shift used for wide labels. */
+#define PIKE_ODBC_WLABEL_SHIFT_SHIFT	4
+#define PIKE_ODBC_WLABEL_SHIFT_MASK	48
+/* String shift used for wide queries. */
+#define PIKE_ODBC_WQUERY_SHIFT_SHIFT	6
+#define PIKE_ODBC_WQUERY_SHIFT_MASK	192
 
 /* http://msdn2.microsoft.com/en-us/library/ms715361.aspx says:
  *

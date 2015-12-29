@@ -41,6 +41,8 @@
 
 #ifdef HAVE_ODBC
 
+/* #define ODBC_DEBUG */
+
 /*
  * Globals
  */
@@ -61,10 +63,45 @@ static PIKE_MUTEX_T connect_mutex STATIC_MUTEX_INIT;
  * Functions
  */
 
-int odbc_driver_is_old_freetds(HDBC odbc_conn)
+static unsigned int odbc_driver_flags(HDBC odbc_conn)
 {
+  unsigned int res = 0;
+
   char buf[128];
   SQLSMALLINT len;
+  SQLHSTMT hstmt = SQL_NULL_HSTMT;
+  RETCODE code;
+  SWORD num_fields = 0;
+  SQLLEN num_rows = 0;
+  const char stmt[] = "SELECT 'bar' AS foo";
+  const p_wchar1 stmt1[] = { 'S', 'E', 'L', 'E', 'C', 'T', ' ', '\'', 'b',
+			     'a', 'r', '\'', ' ', 'A', 'S', ' ', 'f', 'o',
+			     'o', 0, };
+  const p_wchar2 stmt2[] = { 'S', 'E', 'L', 'E', 'C', 'T', ' ', '\'', 'b',
+			     'a', 'r', '\'', ' ', 'A', 'S', ' ', 'f', 'o',
+			     'o', 0, };
+  SWORD name_len = 0;
+  SWORD sql_type;
+  SQLULEN precision;
+  SWORD scale;
+  SWORD nullable = 0;
+  SQLLEN field_len = 0;
+  unsigned int wdata_shift = 0;
+  unsigned int wlabel_shift = 0;
+  unsigned int wquery_shift = 0;
+
+  /* Default to the shifts from the header files. */
+  switch(sizeof(SQLWCHAR)) {
+  default:
+  case 1:
+    break;
+  case 2:
+    wdata_shift = wlabel_shift = wquery_shift = 1;
+    break;
+  case 4:
+    wdata_shift = wlabel_shift = wquery_shift = 2;
+    break;
+  }
 
   if(SQLGetInfo(odbc_conn, SQL_DRIVER_NAME, buf, sizeof(buf), &len) == SQL_SUCCESS) {
     int is_tds = 0;
@@ -80,11 +117,133 @@ int odbc_driver_is_old_freetds(HDBC odbc_conn)
 	fprintf(stderr, "ODBC: detected freetds version: %f\n", version);
 #endif
 	if(version < 0.8 )
-	  return 1;
+	  res |= PIKE_ODBC_OLD_TDS_KLUDGE;
       }
     }
   }
-  return 0;
+
+  code = SQLAllocStmt(odbc_conn, &hstmt);
+  if ((code != SQL_SUCCESS) && (code != SQL_SUCCESS_WITH_INFO)) {
+    /* Out of memory? */
+    /* fprintf(stderr, "AllocStmt: code: %ld\n", (long)code); */
+  } else {
+    do {
+      void *b = buf;
+      /* NB: The above assignment is used to reduce the number of warnings
+       *     from gcc.
+       */
+
+      /*
+       * First determine the width of wide queries.
+       */
+      do {
+	code = SQLExecDirectW(hstmt, (void *)stmt1, (SQLINTEGER)strlen(stmt));
+	if ((code == SQL_SUCCESS) || (code == SQL_SUCCESS_WITH_INFO)) {
+	  wquery_shift = 1;
+	  break;
+	}
+	/* fprintf(stderr, "WQuery [1]: code: %d\n", code); */
+	code = SQLExecDirectW(hstmt, (void *)stmt2, (SQLINTEGER)strlen(stmt));
+	if ((code == SQL_SUCCESS) || (code == SQL_SUCCESS_WITH_INFO)) {
+	  wquery_shift = 2;
+	  break;
+	}
+	/* fprintf(stderr, "WQuery [2]: code: %d\n", code); */
+	wquery_shift = 0;
+	code = SQLExecDirect(hstmt, (void *)stmt, (SQLINTEGER)strlen(stmt));
+	if ((code == SQL_SUCCESS) || (code == SQL_SUCCESS_WITH_INFO)) {
+	  wquery_shift = 0;
+	  break;
+	}
+      } while (0);
+      if ((code != SQL_SUCCESS) && (code != SQL_SUCCESS_WITH_INFO)) {
+	/* fprintf(stderr, "Exec: code: %ld\n", (long)code); */
+	/* Syntax in test query not supported by driver.
+	 * Assume that the defaults are correct.
+	 */
+	break;
+      }
+
+      /*
+       * Then determine the width of lables and data.
+       */
+      code = SQLNumResultCols(hstmt, &num_fields);
+      if ((code != SQL_SUCCESS) && (code != SQL_SUCCESS_WITH_INFO)) {
+	/* fprintf(stderr, "NumResult: code: %ld\n", (long)code); */
+	break;
+      }
+      if (num_fields != 1) {
+	/* fprintf(stderr, "num_fields: %ld\n", (long)num_fields); */
+	break;
+      }
+      code = SQLRowCount(hstmt, &num_rows);
+      if ((code != SQL_SUCCESS) && (code != SQL_SUCCESS_WITH_INFO)) {
+	/* fprintf(stderr, "RowCount: code: %ld\n", (long)code); */
+	break;
+      }
+      if ((num_rows != 1) && (num_rows > 0)) {
+	/* fprintf(stderr, "num_rows: %ld\n", (long)num_rows); */
+	break;
+      }
+      code = SQLDescribeColW(hstmt, 1, b, (SQLSMALLINT)sizeof(buf),
+			     &name_len, &sql_type, &precision,
+			     &scale, &nullable);
+      if ((code != SQL_SUCCESS) && (code != SQL_SUCCESS_WITH_INFO)) {
+	/* fprintf(stderr, "DescribeCol: code: %ld\n", (long)code); */
+	break;
+      }
+      if (name_len != 3) {
+	/* fprintf(stderr, "name_len: %ld\n", (long)name_len); */
+	break;
+      }
+      /* NB: Expected buffer content: "foo"L in some character width. */
+      /* NB: The query shift is usually the same as the label shift. */
+      if (((p_wchar2 *)b)[0] == 'f') {
+	wquery_shift = wlabel_shift = 2;
+      } else if (((p_wchar1 *)b)[0] == 'f') {
+	wquery_shift = wlabel_shift = 1;
+      } else if (((char *)b)[0] == 'f') {
+	wquery_shift = wlabel_shift = 0;
+      }
+      code = SQLFetch(hstmt);
+      if ((code != SQL_SUCCESS) && (code != SQL_SUCCESS_WITH_INFO)) {
+	/* fprintf(stderr, "Fetch: code: %ld\n", (long)code); */
+	break;
+      }
+      code = SQLGetData(hstmt, 1, SQL_C_WCHAR, buf, sizeof(buf), &field_len);
+      if ((code != SQL_SUCCESS) && (code != SQL_SUCCESS_WITH_INFO)) {
+	/* fprintf(stderr, "GetData: code: %ld\n", (long)code); */
+	break;
+      }
+      /* NB: Expected field content: "bar"L in some character width. */
+      /* fprintf(stderr, "field_len: %ld\n", (long)field_len); */
+      switch(field_len) {
+      case 3*4:
+	wdata_shift = 2;
+	break;
+      case 3*2:
+	wdata_shift = 1;
+	break;
+      case 3:
+	wdata_shift = 0;
+	break;
+      default:
+	/* fprintf(stderr, "SQLGetData: Unexpected field_len: %ld\n", */
+	/* 	(long)field_len); */
+	break;
+      }
+    } while(0);
+
+    SQLFreeStmt(hstmt, SQL_DROP);
+  }
+#ifdef ODBC_DEBUG
+  fprintf(stderr, "ODBC: Wide shifts: data: %d, label: %d, query: %d\n",
+	  wdata_shift, wlabel_shift, wquery_shift);
+#endif
+  res |= wdata_shift<<PIKE_ODBC_WDATA_SHIFT_SHIFT;
+  res |= wlabel_shift<<PIKE_ODBC_WLABEL_SHIFT_SHIFT;
+  res |= wquery_shift<<PIKE_ODBC_WQUERY_SHIFT_SHIFT;
+  return res;
 }
 
 /*! @module Odbc
@@ -387,9 +546,7 @@ PIKEFUN void create(string|void server, string|void database,
 #endif
   ODBC_DISALLOW();
   odbc_check_error("odbc->create", "Connect failed", code, NULL, NULL);
-  PIKE_ODBC->flags |= PIKE_ODBC_CONNECTED;
-  if(odbc_driver_is_old_freetds(hdbc))
-    PIKE_ODBC->flags |= PIKE_ODBC_OLD_TDS_KLUDGE;
+  PIKE_ODBC->flags |= PIKE_ODBC_CONNECTED | odbc_driver_flags(hdbc);
 }
 
 PIKEFUN void create_dsn(string connectstring)
