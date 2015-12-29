@@ -70,8 +70,8 @@ array(string) find_testsuites(string dir)
   return ret;
 }
 
-array(string|array(Test)) read_tests( string fn ) {
-  string|array(string) tests = Stdio.read_file( fn );
+array(Test) read_tests( string fn ) {
+  string tests = Stdio.read_file( fn );
   if(!tests) {
     log_msg("Failed to read test file %O, errno=%d.\n",
 	    fn, errno());
@@ -83,15 +83,15 @@ array(string|array(Test)) read_tests( string fn ) {
   if (test_type == "RUN-AS-PIKE-SCRIPT") {
     // Fake a test that will execute the script
     array ret =
-      ({ 0, ({ Test(fn, 1, 1, "RUNCT",
-                    sprintf("array a() { return Tools.Testsuite.run_script (({ %q })); }", fn)) }),
-    });
+      ({ Test(fn, 1, 1, "RUNCT",
+              sprintf("array a() { return Tools.Testsuite.run_script (({ %q })); }", fn))
+      });
 
     return ret;
   }
 
   tests = String.trim_all_whites(tests);
-  if(!sizeof(tests)) return ({ 0, ({}) });
+  if(!sizeof(tests)) return ({});
 
   if( fn=="testsuite" || has_suffix(fn, "/testsuite") )
   {
@@ -99,7 +99,7 @@ array(string|array(Test)) read_tests( string fn ) {
   }
 
   log_msg("Unable to make sense of test file %O.\n", fn);
-  return ({ 0, ({}) });
+  return ({});
 }
 
 mapping(string:int) pushed_warnings = ([]);
@@ -397,17 +397,6 @@ string find_test(string ts)
 //
 // Plugins
 //
-
-class CompatPlugin(string pike_compat)
-{
-  inherit Plugin;
-  string preprocess(string source)
-  {
-    return "#pike " + pike_compat + "\n" +
-      "#pragma no_deprecation_warnings\n" +
-      source;
-  }
-}
 
 class WidenerPlugin
 {
@@ -857,15 +846,13 @@ int main(int argc, array(string) argv)
   testloop:
     foreach(testsuites, string testsuite)
     {
-      array(Test) tests;
-      [string pike_compat, tests] = read_tests( testsuite );
-
+      array(Test) tests = read_tests( testsuite );
       if (!sizeof (tests))
 	continue;
 
-      log_msg("Doing tests in %s%s (%s)\n", testsuite,
-	      pike_compat ? " in " + pike_compat + " compat mode" : "",
-	      ({sizeof(tests) + " tests",
+      // FIXME: Show compat mode.
+      log_msg("Doing tests in %s (%s)\n", testsuite,
+              ({sizeof(tests) + " tests",
 		subprocess && ("pid " + getpid())}) * ", ");
       int qmade, qskipped, qmadep, qskipp;
 
@@ -1001,8 +988,6 @@ int main(int argc, array(string) argv)
 	}
 	if(skip) continue;
 
-        if (pike_compat)
-          test->add_plugin( CompatPlugin(pike_compat) );
         test->add_plugin( WidenerPlugin() );
         test->add_plugin( SaveParentPlugin() );
         test->add_plugin( CRLNPlugin() );

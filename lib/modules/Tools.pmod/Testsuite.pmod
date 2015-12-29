@@ -483,8 +483,9 @@ class Test
   string source;
 
   //!
-  optional void create(string file, int line, int number, string type,
-                       string source, void|array(string) cond)
+  optional protected void create(string file, int line, int number,
+                                 string type, string source,
+                                 void|array(string) cond)
   {
     this::file = file;
     this::line = line;
@@ -563,17 +564,21 @@ class Test
 class M4Testsuite
 {
   protected array(string) tests;
-  protected string pike_compat;
   protected string file_name;
+  protected Plugin compat;
 
   protected void create(string data, string fn)
   {
     file_name = fn;
+    string pike_compat;
+
     if(sscanf (data, "START%s\n%s", pike_compat, data) == 2) {
       if(!has_suffix(data, "END"))
         log_msg("%s: Missing end marker.\n", fn);
+
       pike_compat = String.trim_all_whites(pike_compat);
-      if (pike_compat == "") pike_compat = 0;
+      if( sizeof(pike_compat) )
+        compat = CompatPlugin(pike_compat);
     }
     else
       log_msg("%s: Missing start marker.\n", fn);
@@ -592,7 +597,7 @@ class M4Testsuite
     //! been stripped and the file splitted on "...." tokens. From
     //! this the conditions, file, line, number, type and source will
     //! be parsed.
-    void create(string data)
+    protected void create(string data)
     {
       if( sscanf(data, "COND %s\n%s", string cond, data)==2 )
         conditions += ({ cond });
@@ -619,9 +624,12 @@ class M4Testsuite
   }
 
   // Temporary API.
-  array(string|array(Test)) get_array()
+  array(Test) get_array()
   {
-    return ({pike_compat, map(tests, M4Test)});
+    array(Test) ret = map(tests, M4Test);
+    if(compat)
+      ret->add_plugin(compat);
+    return ret;
   }
 }
 
@@ -631,4 +639,21 @@ class Plugin
   string process_name(string name) { return name; }
   string preprocess(string source) { return source; }
   int(0..1) inspect(Test t, object o) { return 1; }
+}
+
+class CompatPlugin(string pike_compat)
+{
+  inherit Plugin;
+
+  string process_name(string name)
+  {
+    return sprintf("%s (%s compat)", name, pike_compat);
+  }
+
+  string preprocess(string source)
+  {
+    return "#pike " + pike_compat + "\n" +
+      "#pragma no_deprecation_warnings\n" +
+      source;
+  }
 }
