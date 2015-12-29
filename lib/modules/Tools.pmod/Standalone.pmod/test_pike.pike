@@ -529,7 +529,7 @@ class LinePlugin
 int main(int argc, array(string) argv)
 {
   int watchdog_pid, subprocess, failed_cond;
-  int e, verbose, prompt, successes, errors, t, check, asmdebug;
+  int verbose, prompt, successes, errors, t, check, asmdebug;
   int skipped;
   array(string) forked;
   int start, fail, mem;
