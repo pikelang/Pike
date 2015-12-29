@@ -718,9 +718,6 @@ class Plugin
   //! Called by the test to modify the source code. By default just
   //! returns the unmodified source.
   string preprocess(string source) { return source; }
-
-
-  int(0..1) inspect(Test t, object o) { return 1; }
 }
 
 //! A source code plugin for running code in different Pike compat

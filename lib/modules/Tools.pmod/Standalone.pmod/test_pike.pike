@@ -1177,7 +1177,7 @@ int main(int argc, array(string) argv)
           }
 
           foreach(test->plugins;; Plugin plugin)
-            if( !plugin->inspect(test, o) )
+            if( plugin->inspect && !plugin->inspect(test, o) )
               errors++;
 
 	  if(verbose>2)
