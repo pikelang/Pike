@@ -3103,7 +3103,7 @@ void check_foreach_type(node *expression, node *lvalues,
           {
             if(val_type) copy_pike_type(*val_type,value_type);
           }
-          if (!pike_types_le(value_type, CDR(lvalues)->type)) {
+          else if (!pike_types_le(value_type, CDR(lvalues)->type)) {
             int level = REPORT_NOTICE;
             if (!match_types(CDR(lvalues)->type, value_type)) {
               level = REPORT_ERROR;
