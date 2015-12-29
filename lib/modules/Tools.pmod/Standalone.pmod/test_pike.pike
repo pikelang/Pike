@@ -865,7 +865,8 @@ int main(int argc, array(string) argv)
 	continue;
 
       // FIXME: Show compat mode.
-      log_msg("Doing tests in %s (%s)\n", testsuite,
+      log_msg("Doing tests in %s (%s)\n",
+              tests->name ? tests->name() : testsuite,
               ({sizeof(tests) + " tests",
 		subprocess && ("pid " + getpid())}) * ", ");
       int qmade, qskipped, qmadep, qskipp;

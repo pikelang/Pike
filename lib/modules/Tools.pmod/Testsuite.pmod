@@ -586,6 +586,7 @@ class Testsuite
   int(0..1) next();
   int(0..) index();
   Test value();
+  optional string name();
 }
 
 //! Represents a "testsuite" file, after m4 processing.
@@ -613,6 +614,13 @@ class M4Testsuite
       log_msg("%s: Missing start marker.\n", fn);
 
     tests = (data/"\n....\n")[..<1];
+  }
+
+  string name()
+  {
+    if(compat)
+      return sprintf("%s in %s compat mode", file_name, compat->pike_compat);
+    return file_name;
   }
 
   //! Represents a test case from a "testsuite" file, after m4
