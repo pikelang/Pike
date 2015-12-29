@@ -864,7 +864,6 @@ int main(int argc, array(string) argv)
       if (!objectp(tests) || !sizeof(tests))
 	continue;
 
-      // FIXME: Show compat mode.
       log_msg("Doing tests in %s (%s)\n",
               tests->name ? tests->name() : testsuite,
               ({sizeof(tests) + " tests",
