@@ -503,6 +503,9 @@ class Test
     }
   }
 
+  //! Compile the source code @[src] in the context of the file this
+  //! test belongs. Note that no changes in error mode is done and
+  //! compilation errors are not caught.
   program compile(string src)
   {
     return master()->get_inhibit_compile_errors() ?
@@ -510,13 +513,18 @@ class Test
       compile_string(src, file, AdjustLine());
   }
 
-  array(Plugin) plugins = ({});
+  protected array(Plugin) plugins = ({});
+
+  //! Add a @[Plugin] object to the test, allowing the source code to
+  //! be modified.
   void add_plugin(Plugin p)
   {
     if( p->active(this) )
       plugins += ({ p });
   }
 
+  //! Applies all the plugins on the source code contained in this
+  //! test and returns the result.
   string prepare_source()
   {
     string src = source;
@@ -535,9 +543,17 @@ class Test
 #endif
   }
 
+  //! This value will be sent to @[MasterObject.set_inhibit_errors]
+  //! before compilation by @[compile()].
   int(0..1)|object inhibit_errors = 1;
 
   Error.Compilation compilation_error;
+
+  //! Set the error mode according to @[inhibi_errors], applies any
+  //! source code plugins by calling @[prepare_source] and finally
+  //! compiles the result. Any resulting compilation errors will be
+  //! stored in @[compilation_error]. The error mode will be set to
+  //! @expr{0@} after compiltion is done.
   variant program compile()
   {
     program ret;
@@ -551,6 +567,8 @@ class Test
     return ret;
   }
 
+  //! The name of this test, in the form of filename:line:" Test
+  //! "number. The result is then processed by any code plugins.
   string name()
   {
     string n = file + ":" + line + ": Test " + number;
@@ -633,23 +651,42 @@ class M4Testsuite
   }
 }
 
+//! Interface for source code plugins, added to a @[Test] by calling
+//! @[add_plugin].
 class Plugin
 {
+  //! Returns 1 if the plugin is active (i.e. should be called by the
+  //! test), otherwise 0. Defaults to 1.
   int(0..1) active(Test t) { return 1; }
+
+  //! Allows for modifications of the name of the test. By default
+  //! just returns the name unmodified.
   string process_name(string name) { return name; }
+
+  //! Called by the test to modify the source code. By default just
+  //! returns the unmodified source.
   string preprocess(string source) { return source; }
+
+
   int(0..1) inspect(Test t, object o) { return 1; }
 }
 
+//! A source code plugin for running code in different Pike compat
+//! modes. Instantiated with the pike compat version to run in,
+//! e.g. @expr{"7.8"@}.
 class CompatPlugin(string pike_compat)
 {
   inherit Plugin;
 
+  //! Modifies the name by adding the version and "compat" after the
+  //! test name, e.g. "testsuite:1: Test 1 (7.8 compat)".
   string process_name(string name)
   {
     return sprintf("%s (%s compat)", name, pike_compat);
   }
 
+  //! Modifies the source code to add "#pike" and the version at the
+  //! top of the code, followed by "#pragma no_deprecation_warnings".
   string preprocess(string source)
   {
     return "#pike " + pike_compat + "\n" +
