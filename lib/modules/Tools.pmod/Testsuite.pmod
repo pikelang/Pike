@@ -559,6 +559,37 @@ class Test
   }
 }
 
+//! Represents a "testsuite" file, after m4 processing.
+class M4Testsuite
+{
+  protected array(string) tests;
+  protected string pike_compat;
+  protected string file_name;
+
+  protected void create(string data, string fn)
+  {
+    file_name = fn;
+    if(sscanf (data, "START%s\n%s", pike_compat, data) == 2) {
+      if(!has_suffix(data, "END"))
+        log_msg("%s: Missing end marker.\n", fn);
+      else
+        data = data[..<sizeof ("....\nEND")];
+      pike_compat = String.trim_all_whites(pike_compat);
+      if (pike_compat == "") pike_compat = 0;
+    }
+    else
+      log_msg("%s: Missing start marker.\n", fn);
+
+    tests = data/"\n....\n";
+  }
+
+  // Temporary API.
+  array(string|array(Test)) get_array()
+  {
+    return ({pike_compat, map(tests, M4Test, file_name)});
+  }
+}
+
 //! Represents a test case from a "testsuite" file, after m4
 //! processing.
 class M4Test

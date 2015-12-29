@@ -78,8 +78,6 @@ array(string|array(Test)) read_tests( string fn ) {
     exit(EXIT_TEST_NOT_FOUND);
   }
 
-  string pike_compat;
-
   string test_type = "legacy";
   sscanf(tests, "%*sTEST:%*[ \t]%s%*[ \t\n]", test_type);
   if (test_type == "RUN-AS-PIKE-SCRIPT") {
@@ -95,19 +93,13 @@ array(string|array(Test)) read_tests( string fn ) {
   tests = String.trim_all_whites(tests);
   if(!sizeof(tests)) return ({ 0, ({}) });
 
-  if(sscanf (tests, "START%s\n%s", pike_compat, tests) == 2) {
-    if(!has_suffix(tests, "END"))
-      log_msg("%s: Missing end marker.\n", fn);
-    else
-      tests = tests[..<sizeof ("END")];
-    pike_compat = String.trim_whites (pike_compat);
-    if (pike_compat == "") pike_compat = 0;
+  if( fn=="testsuite" || has_suffix(fn, "/testsuite") )
+  {
+    return M4Testsuite(tests, fn)->get_array();
   }
-  else
-    log_msg("%s: Missing start marker.\n", fn);
 
-  tests = tests/"\n....\n";
-  return ({pike_compat, map(tests[..<1], M4Test, fn)});
+  log_msg("Unable to make sense of test file %O.\n", fn);
+  return ({ 0, ({}) });
 }
 
 mapping(string:int) pushed_warnings = ([]);
