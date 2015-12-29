@@ -572,64 +572,56 @@ class M4Testsuite
     if(sscanf (data, "START%s\n%s", pike_compat, data) == 2) {
       if(!has_suffix(data, "END"))
         log_msg("%s: Missing end marker.\n", fn);
-      else
-        data = data[..<sizeof ("....\nEND")];
       pike_compat = String.trim_all_whites(pike_compat);
       if (pike_compat == "") pike_compat = 0;
     }
     else
       log_msg("%s: Missing start marker.\n", fn);
 
-    tests = data/"\n....\n";
+    tests = (data/"\n....\n")[..<1];
+  }
+
+  //! Represents a test case from a "testsuite" file, after m4
+  //! processing.
+  class M4Test
+  {
+    inherit Test;
+
+    //! @param data
+    //! The data from a testsuite file, after start/stop markers have
+    //! been stripped and the file splitted on "...." tokens. From
+    //! this the conditions, file, line, number, type and source will
+    //! be parsed.
+    void create(string data)
+    {
+      if( sscanf(data, "COND %s\n%s", string cond, data)==2 )
+        conditions += ({ cond });
+      if( sscanf(data, "%s:%d: test %d, expected result: %s\n%s",
+                 file, line, number, type, data)!=5 )
+      {
+        sscanf(data, "%s\n", data);
+        error("Illegal format. %O\n", data);
+      }
+      source = data;
+    }
+
+    program compile(string src)
+    {
+      return master()->get_inhibit_compile_errors() ?
+        compile_string(src, file_name) :
+        compile_string(src, file_name, AdjustLine());
+    }
+
+    variant program compile()
+    {
+      return ::compile();
+    }
   }
 
   // Temporary API.
   array(string|array(Test)) get_array()
   {
-    return ({pike_compat, map(tests, M4Test, file_name)});
-  }
-}
-
-//! Represents a test case from a "testsuite" file, after m4
-//! processing.
-class M4Test
-{
-  inherit Test;
-
-  string real_file;
-
-  //! @param data
-  //! The data from a testsuite file, after start/stop markers have
-  //! been stripped and the file splitted on "...." tokens. From this
-  //! the conditions, file, line, number, type and source will be
-  //! parsed.
-  //!
-  //! @param real_file
-  //! The testsuite file, i.e. not the testsuite.in file.
-  void create(string data, string real_file)
-  {
-    this::real_file = real_file;
-    if( sscanf(data, "COND %s\n%s", string cond, data)==2 )
-      conditions += ({ cond });
-    if( sscanf(data, "%s:%d: test %d, expected result: %s\n%s",
-               file, line, number, type, data)!=5 )
-      {
-        sscanf(data, "%s\n", data);
-        error("Illegal format. %O\n", data);
-      }
-    source = data;
-  }
-
-  program compile(string src)
-  {
-    return master()->get_inhibit_compile_errors() ?
-      compile_string(src, real_file) :
-      compile_string(src, real_file, AdjustLine());
-  }
-
-  variant program compile()
-  {
-    return ::compile();
+    return ({pike_compat, map(tests, M4Test)});
   }
 }
 
