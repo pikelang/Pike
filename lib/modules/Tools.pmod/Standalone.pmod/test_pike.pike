@@ -146,7 +146,7 @@ class WarningFlag {
 //
 
 #ifndef WATCHDOG_TIMEOUT
-// 40 minutes should be enough..
+// 40 minutes should be enough...
 #if !constant(_reset_dmalloc)
 #define WATCHDOG_TIMEOUT 60*40
 #else
@@ -190,7 +190,7 @@ void watchdog_new_pid (int pid)
 void watchdog_start_new_test (string current_test, mixed... args)
 // Tells the watchdog that a new test is about to be run. This clears
 // the test output buffer if the watchdog is buffering stdout (i.e. is
-// not running in verbose mode) .
+// not running in verbose mode).
 {
   if (use_watchdog)
     send_watchdog_command ("cur " + current_test, @args);
@@ -459,7 +459,7 @@ class SaveParentPlugin
   }
 }
 
-class CRLNPlugin
+class CRNLPlugin
 {
   inherit Plugin;
 
@@ -1003,7 +1003,7 @@ int main(int argc, array(string) argv)
 
         test->add_plugin( WidenerPlugin() );
         test->add_plugin( SaveParentPlugin() );
-        test->add_plugin( CRLNPlugin() );
+        test->add_plugin( CRNLPlugin() );
         test->add_plugin( LinePlugin() );
 
 	if (prompt) {
