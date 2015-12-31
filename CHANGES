@@ -619,6 +619,19 @@ o VCDiff
   information can be found on http://code.google.com/p/open-vcdiff/
 
 
+Incompatible changes
+--------------------
+
+o Parser.XML.Tree: Fixed handling of namespaced attributes.
+
+  Attribute namespaces starting with "xml" (except for "xmlns") are
+  now handled just like any other attribute namespaces. This means
+  that eg the attribute "xml:lang" will be expanded to
+  "http://www.w3.org/XML/1998/namespacelang" in the mapping returned
+  by get_attributes(), and not kept as "xml:lang" when namespace
+  handling is enabled.
+
+
 Extensions and new functions
 ----------------------------
 
@@ -906,6 +919,10 @@ o pike -x benchmark
   + The results should be more consistent.
 
   + Added options to allow comparison with a previous run.
+
+o pike -x check_http
+
+  This new tool can be used to check http/https connectivity to a host.
 
 o New stand-alone tools added to make it possible to build
   documentation without the Pike build tree
@@ -1383,6 +1400,7 @@ o C89 assumed
 
   The configure tests will not check for functions defined in C89
   anymore.
+
 
 Lots of bug fixes
 -----------------
