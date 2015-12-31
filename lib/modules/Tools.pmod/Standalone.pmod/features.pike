@@ -352,6 +352,9 @@ int main(int num, array(string) args) {
   M(sybase.sybase);
 
   write("\nSystem\n");
+  M(System.FSEvents.EventStream);
+  M(System.Inotify._Instance);
+  M(System.Wnotify.EventPoller);
   F(System.dumpable);
   F(System.endgrent);
   F(System.endpwent);
