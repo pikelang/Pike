@@ -169,7 +169,7 @@ o Added new syntax for literal-string constants
   code in code in code, since there is no way to quote the start/end
   markers.
 
-o Added a shorthand syntax for integer rages: xbit, where x is a
+o Added a shorthand syntax for integer ranges: xbit, where x is a
   number between 1 and 31. This can be used as an example to indicate
   that a string is 8 bits wide only: string(8bit)
 
@@ -1424,7 +1424,7 @@ o Fixed a typo from 2001-05-05 that caused a lot of countries to
 
   Obviously the continent is not that often checked.
 
-o Fixed interresting bug in the constant number parsing for octal
+o Fixed interesting bug in the constant number parsing for octal
   numbers in escapes.
 
   For whatever reason 8:s were accepted for every location except the
