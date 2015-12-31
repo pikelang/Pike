@@ -1023,7 +1023,7 @@ cond_resolv( Nettle.SALSA20 [[
     for(int i; i<8; i++)
       res += o->crypt("\0"*64);
     res = res[0..63] + res[192..255] + res[256..319] + res[448..511];
-    return res);
+    return res;
   ]], [[ H(#"
  4DFA5E481DA23EA09A31022050859936
  DA52FCEE218005164F267CB65F5CFD7F
@@ -1055,7 +1055,7 @@ cond_resolv( Nettle.SALSA20 [[
     for(int i; i<8; i++)
       res += o->crypt("\0"*64);
     res = res[0..63] + res[192..255] + res[256..319] + res[448..511];
-    return res);
+    return res;
   ]], [[ H(#"
  E3BE8FDD8BECA2E3EA8EF9475B29A6E7
  003951E1097A5C38D23B7A5FAD9F6844
