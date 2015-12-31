@@ -593,7 +593,7 @@ class Testsuite
 class M4Testsuite
 {
   inherit Testsuite;
-  protected array(string) tests;
+  protected array tests;
   protected string file_name;
   protected Plugin compat;
 
@@ -702,6 +702,317 @@ class M4Testsuite
     return ret;
   }
 }
+
+class InTestsuite
+{
+  inherit M4Testsuite;
+
+  protected void create(string data, string fn)
+  {
+    file_name = fn;
+    string pike_compat;
+
+    if(sscanf (data, "START_MARKER%s\n%s", pike_compat, data) == 2) {
+      if(!has_suffix(data, "END_MARKER"))
+        log_msg("%s: Missing end marker.\n", fn);
+
+      if( sscanf(pike_compat, "(%s)", pike_compat) )
+        compat = CompatPlugin(pike_compat);
+    }
+    else
+      log_msg("%s: Missing start marker.\n", fn);
+
+    tests = ({});
+    parse(data);
+  }
+
+  protected mapping macros = ([
+    "ignore_warning":"DOTEST(PUSH_WARNING,"
+#"mixed a() { return [[$1]]; })
+$2
+DOTEST(POP_WARNING,"
+#"mixed a() { return [[$1]]; })
+",
+
+    "test_any":"DOTEST(EQ,"
+#"mixed a() { [[$1]]; }
+mixed b() { return [[$2]]; })",
+
+    "test_any_equal":"DOTEST(EQUAL,"
+#"mixed a() { $1; }
+mixed b() { return $2; })",
+
+    "test_eq":"DOTEST(EQ,"
+#"mixed a() { return [[$1]]; }
+mixed b() { return [[$2]]; })",
+
+    "test_equal":"DOTEST(EQUAL,"
+#"mixed a() { return $1; }
+mixed b() { return $2; })",
+
+    "test_do":"DOTEST(RUN,"
+    "mixed a() { $1; })",
+
+    "test_true":"DOTEST(TRUE,"
+    "mixed a() { return $1; })",
+
+    "test_false":"DOTEST(FALSE,"
+    "mixed a() { return $1; })",
+
+    "test_compile":"DOTEST(COMPILE,"
+    "void x() { $1 ; } )",
+
+    "test_compile_any":"DOTEST(COMPILE,"
+    "$1 )",
+
+    "test_compile_error":"DOTEST(COMPILE_ERROR,"
+    "mixed a() { $1;})",
+
+    "test_compile_error_any":"DOTEST(COMPILE_ERROR,"
+    "$1)",
+
+    "test_compile_warning":"DOTEST(COMPILE_WARNING,"
+    "mixed a() { $1;})",
+
+    "test_eval_error":"DOTEST(EVAL_ERROR,"
+    "mixed a() { $1; })",
+
+    "test_define_program":"DOTEST(RUN,"
+#"void a() { add_constant(\"$1\",class c {
+  $2
+});})",
+
+    "test_program":"DOTEST(TRUE,"
+    "$1)",
+
+    "test_program_eq":"DOTEST(EQ,"
+#"$1
+mixed b() {return $2;})",
+
+    "test_program_equal":"DOTEST(EQUAL,"
+#"$1
+mixed b() {return $2;})",
+
+    "test_tests":"DOTEST(RUNCT,"
+    "$1)",
+
+    "cond_begin":#"
+define([[CONDITION]],[[COND $1
+]])",
+
+    "cond_end":#"
+define([[CONDITION]],[[]])
+",
+
+    "cond":#"
+cond_begin([[$1]])
+$2
+cond_end
+",
+
+    "cond_resolv":"cond([[master()->resolv(String.trim_all_whites(\"$1\"))]],[[$2]])",
+    "ifefun":"cond([[all_constants()->$1]],[[$2]])",
+
+    "test_cmp":#"
+test_true($1<$2)
+test_false($1>$2)
+test_true($2>$1)
+test_false($2<$1)
+test_true($1<=$2)
+test_false($1>=$2)
+test_true($2>=$1)
+test_false($2<=$1)
+test_true($2<=$2)
+test_true($1>=$1)",
+
+    "test_cmp3":#"
+test_cmp($1,$2)
+test_cmp($2,$3)
+test_cmp($1,$3)
+
+ test_true(\`<($1,$2,$3))
+test_false(!\`<($1,$2,$3))
+test_false(\`<($1,$3,$2))
+ test_true(!\`<($1,$3,$2))
+test_false(\`<($2,$3,$1))
+test_false(\`<($2,$1,$3))
+test_false(\`<($3,$1,$2))
+test_false(\`<($3,$2,$1))
+test_false(\`<($3,$2,$2,$1))
+
+ test_true(\`<=($1,$2,$3))
+test_false(!\`<=($1,$2,$3))
+test_false(\`<=($1,$3,$2))
+test_false(\`<=($2,$3,$1))
+test_false(\`<=($2,$1,$3))
+ test_true(!\`<=($2,$1,$3))
+test_false(\`<=($3,$1,$2))
+test_false(\`<=($3,$2,$1))
+ test_true(\`<=($1,$1,$2,$2,$3,$3))
+
+test_false(\`>($1,$2,$3))
+test_false(\`>($1,$3,$2))
+test_false(\`>($2,$3,$1))
+test_false(\`>($2,$1,$3))
+test_false(\`>($3,$1,$2))
+ test_true(\`>($3,$2,$1))
+test_false(\`>($3,$2,$2,$1))
+
+test_false(\`>=($1,$2,$3))
+test_false(\`>=($1,$3,$2))
+test_false(\`>=($2,$3,$1))
+test_false(\`>=($2,$1,$3))
+test_false(\`>=($3,$1,$2))
+ test_true(!\`>=($3,$1,$2))
+ test_true(\`>=($3,$2,$1))
+ test_true(\`>=($3,$3,$2,$2,$1,$1))
+test_false(!\`>=($3,$3,$2,$2,$1,$1))
+
+test_equal(min($2,$1,$3), $1)
+test_equal(max($2,$1,$3), $3)
+",
+  ]);
+
+  string expand(string s, array args)
+  {
+    array split = s/"$";
+    foreach( split; int i; string part )
+    {
+      if(!i) continue;
+      if( sscanf(part, "%d%s", int arg, part)==2 )
+      {
+        arg--;
+        if( arg>=0 && arg<sizeof(args) )
+          split[i] = args[arg] + part;
+      }
+      else
+        split[i] = "$"+part;
+    }
+    return split*"";
+  }
+
+  string dequote(string data)
+  {
+    string pre, post;
+    while( sscanf(data, "%s[[%s", pre, post)==2 )
+      data = pre+post;
+    while( sscanf(data, "%s]]%s", pre, post)==2 )
+      data = pre+post;
+    return data;
+  }
+
+  void parse(string data)
+  {
+    int pos;
+
+    array(string) parse_args()
+    {
+      array args = ({});
+      if( data[pos] == '(' )
+      {
+        ADT.Stack pstack = ADT.Stack();
+        pstack->push('(');
+        int start = pos;
+
+        void add_arg()
+        {
+          string arg = data[start+1..pos-1];
+          args += ({ arg });
+        };
+
+        while( sizeof(pstack) && pos<sizeof(data) )
+        {
+          switch(data[++pos])
+          {
+          case '(':
+          case '[': pstack->push(data[pos]); break;
+
+          case ')':
+          case ']':
+            int p = pstack->pop();
+            if( p!=([ ']':'[', ')':'(' ])[data[pos]] )
+              error("Mismatched parenthesis. %O\n", data[start..pos]);
+            if( sizeof(pstack)==0 )
+              add_arg();
+            break;
+
+          case ',':
+            if( sizeof(pstack)==1 )
+            {
+              args += ({ data[start+1..pos-1] });
+              start=pos;
+            }
+          }
+        }
+      }
+      return args;
+    };
+
+    while(1)
+    {
+      while( pos<sizeof(data) &&
+             !( (data[pos]>='A' && data[pos]<='Z') ||
+                (data[pos]>='a' && data[pos]<='z') ))
+        pos++;
+      if( pos>=sizeof(data) ) return;
+      int start = pos;
+      while( pos<sizeof(data) &&
+             ((data[pos]>='0' && data[pos]<='9') ||
+              (data[pos]>='A' && data[pos]<='Z') ||
+              (data[pos]>='a' && data[pos]<='z') ||
+              data[pos]=='_')) pos++;
+      string token = data[start..pos-1];
+      switch(token)
+      {
+      case "dnl":
+        while(data[pos]!='\n' && pos<sizeof(data)) pos++;
+        if( pos>=sizeof(data) ) return;
+        break;
+
+      case "define":
+        array args = parse_args();
+        if(sizeof(args)!=2) error("Need two arguments for define.\n");
+        macros[dequote(args[0])] = args[1];
+        break;
+
+      case "DOTEST":
+        args = parse_args();
+        if(sizeof(args)!=2)
+          error("Need two arguments for DOTEST. %O\n", sizeof(args));
+        string cond = macros->CONDITION;
+        if(cond)
+        {
+          cond = dequote(cond);
+          if( !sscanf(cond, "COND %s", cond) )
+            cond = "";
+          cond = String.trim_all_whites(cond);
+          if( cond=="" )
+            cond = 0;
+        }
+        tests += ({ Test(file_name, 0/*FIXME*/, sizeof(tests)+1,
+                         dequote(args[0]), dequote(args[1]),
+                         ({ cond })) });
+        break;
+
+      default:
+        if( macros[token] )
+          parse( expand(macros[token], parse_args()) );
+        break;
+      }
+    }
+  }
+
+  Test value()
+  {
+    if( `!() ) return UNDEFINED;
+    Test ret = tests[position];
+    if(compat)
+      ret->add_plugin(compat);
+    return ret;
+  }
+
+}
+
 
 //! Interface for source code plugins, added to a @[Test] by calling
 //! @[add_plugin].
