@@ -309,6 +309,9 @@ int main(int num, array(string) args) {
   F(SDL.Music);
   F(SDL.open_audio);	/* Aka SDL_mixer */
 
+  write("\nSQLite\n");
+  M(SQLite.library_version);
+
   write("\nStandards\n");
   M(Standards.JSON.encode);
 
