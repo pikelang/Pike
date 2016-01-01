@@ -884,6 +884,8 @@ test_equal(max($2,$1,$3), $3)
         arg--;
         if( arg>=0 && arg<sizeof(args) )
           split[i] = args[arg] + part;
+        else
+          split[i] = part;
       }
       else
         split[i] = "$"+part;
@@ -916,7 +918,7 @@ test_equal(max($2,$1,$3), $3)
 
         void add_arg()
         {
-          string arg = data[start+1..pos-1];
+          string arg = String.trim_all_whites(data[start+1..pos-1]);
           args += ({ arg });
         };
 
@@ -939,7 +941,7 @@ test_equal(max($2,$1,$3), $3)
           case ',':
             if( sizeof(pstack)==1 )
             {
-              args += ({ data[start+1..pos-1] });
+              add_arg();
               start=pos;
             }
           }
@@ -991,7 +993,7 @@ test_equal(max($2,$1,$3), $3)
         }
         tests += ({ Test(file_name, 0/*FIXME*/, sizeof(tests)+1,
                          dequote(args[0]), dequote(args[1]),
-                         ({ cond })) });
+                         cond && ({ cond })) });
         break;
 
       default:
