@@ -185,6 +185,11 @@ int main(int num, array(string) args) {
 
   write("\nGmp\n");
   M(Gmp.mpz);
+  F(Gmp.mpf);
+  f("Gmp.MPF_IS_IEEE", "Gmp.mpf [IEEE]");
+  F(Gmp.mpq);
+  F(Gmp.mpz);
+
 
 #if 0
   write("\nGnome\n");
