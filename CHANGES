@@ -763,16 +763,16 @@ o Cmod precompiler:
   + Object types on return and argument types are now resolved
     dynamically when needed.
 
-    This means that the typing information is sifnificantly more
+    This means that the typing information is significantly more
     strict.
 
     If you use classes that are not defined in the file (or
     src/program_id.h) they will be resolved when your .so-file is
     loaded.
 
-    Note: Circular dependencies does not work (currently, at least).
+    Note: Circular dependencies do not work (currently, at least).
 
-    Also, the parser still often have problems with types containing
+    Also, the parser still often has problems with types containing
     '.'. You can use object(X.Y) instead of X.Y.
 
 o String.levenshtein_distance()
