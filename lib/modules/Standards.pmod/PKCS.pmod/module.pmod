@@ -11,6 +11,8 @@
 //!   @rfc{4055@}, @rfc{4985@}, @rfc{5208@}, @rfc{5280@}, @rfc{5480@},
 //!   @rfc{5639@}, @rfc{5915@}, @rfc{7292@}
 
+#pike __REAL_VERSION__
+
 import Standards.ASN1.Types;
 
 private object RSA;

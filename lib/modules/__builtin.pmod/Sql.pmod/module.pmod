@@ -1,3 +1,5 @@
+#pike __REAL_VERSION__
+
 //! Wrapper to handle zero.
 //!
 //! @seealso

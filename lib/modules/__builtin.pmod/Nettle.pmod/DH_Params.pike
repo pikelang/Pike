@@ -1,3 +1,5 @@
+#pike __REAL_VERSION__
+
 //! Diffie-Hellman parameters.
 
 #if constant(Nettle.DH_Params)

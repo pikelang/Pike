@@ -1,4 +1,5 @@
 #charset utf-8
+#pike __REAL_VERSION__
 
 constant description = "Check HTTP/HTTPS connectivity to a host.";
 

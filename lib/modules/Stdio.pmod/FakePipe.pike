@@ -1,3 +1,5 @@
+#pike __REAL_VERSION__
+
 //!
 //! This module emulates a bidirectional pipe/socket
 //! without using any actual file descriptors.

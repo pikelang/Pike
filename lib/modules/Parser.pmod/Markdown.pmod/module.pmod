@@ -1,3 +1,4 @@
+#pike __REAL_VERSION__
 #require Regexp.PCRE
 
 //! Markdown module.

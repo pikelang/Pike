@@ -1,3 +1,5 @@
+#pike __REAL_VERSION__
+
 //
 //! DHT implementation for bittorrent
 //! Implemented BEPs*:
