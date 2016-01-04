@@ -45,6 +45,18 @@ o Compatibility for Pike versions before 7.8 is no longer available.
 o GTK1 library is deprecated, so glue code is removed.
 
 
+New modules
+-----------
+
+o ADT.Scheduler
+o ADT.TreeScheduler
+o Filesystem.Zip
+o Stdio.FakePipe
+o Parser.Markdown
+o Crypto.Checksum
+o Protocols.HTTP2
+o Bittorrent.DHT
+
 New features
 ------------
 
