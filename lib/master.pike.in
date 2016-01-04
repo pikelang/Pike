@@ -1731,7 +1731,6 @@ constant master_efuns = ({
   "describe_error",
   "get_backtrace",
   "normalize_path",
-  "bool",
   "true",
   "false",
   "getenv",
@@ -1757,10 +1756,6 @@ string cflags;
 //! Flags suitable for use when linking Pike C modules
 string ldflags; // Not yet used
 
-//! @decl int strlen(string|multiset|array|mapping|object thing)
-//! @appears strlen
-//! Alias for @[sizeof].
-//! @deprecated sizeof
 
 //! @decl int write(string fmt, mixed ... args)
 //! @appears write
@@ -1781,6 +1776,16 @@ protected void create()
       add_constant(e, this[e]);
     else
       error("Function %O is missing from master.pike.\n", e);
+
+
+// This gives the type int(1..1)|zero, which is more close to reality
+// than the enum type (aka int(1..1))
+//
+// doing the add_constant on the typeof directly gives int(1..1)
+// instead, since the same "optimization" of the type is done in that
+// case.
+  typeof(0)|typeof(1) _bool_type;
+  add_constant("bool",typeof(_bool_type));
 
   add_constant("__dirnode", dirnode);
   add_constant("__joinnode", joinnode);
@@ -1837,7 +1842,6 @@ protected void create()
   add_module_path(__embedded_resource_directory + "/" + replace(uname()->machine, " ", "_") + "/modules");
 
 #endif
-
   system_module_path=pike_module_path;
 }
 
