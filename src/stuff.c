@@ -8,6 +8,7 @@
 #include "stuff.h"
 #include "bitvector.h"
 #include "pike_cpulib.h"
+#include "pike_memory.h"
 
 /* Used by is8bitalnum in pike_macros.h. */
 PMOD_EXPORT const char Pike_is8bitalnum_vector[] =
@@ -137,6 +138,13 @@ PMOD_EXPORT void my_srand(INT32 seed)
 {
 #if HAS___BUILTIN_IA32_RDRAND32_STEP
   unsigned int ignore, cpuid_ecx;
+
+  /* NOTE: some versions of valgrind falsely advertise
+   * RDRAND support in cpuid.
+   */
+# if defined(USE_VALGRIND)
+  if (!PIKE_MEM_CHECKER())
+# endif
   if( !use_rdrnd )
   {
     INT32 cpuid[4];
