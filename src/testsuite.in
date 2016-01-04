@@ -680,6 +680,32 @@ test_any([[mapping(string:int) foo;
 	  return sprintf("%O", typeof(rows(foo, bar))); ]],
 	 "array(int)")
 
+// basic auto tests.
+test_any([[
+  class Toplevel {
+  class Foo {
+    auto a = 10;
+    auto b = typeof(a);
+  };
+  string test() {
+     return sprintf("a%Ob%O", typeof(Foo().a),typeof(Foo().b));
+  };
+};
+  return Toplevel()->test();
+]], "aint(10..10)btype(int(10..10))");
+
+test_any([[{
+  class Toplevel {
+    class Foo {
+      auto test(){ return 10;return 20;return 30; };
+    };
+    string test() {
+      return sprintf("%O", typeof(Foo().test));
+    }
+  };
+  return Toplevel()->test()-" ";
+}]], "function(:int(10..10)|int(20..20)|int(30..30))");
+
 test_any([[{
   class Foo
   {
