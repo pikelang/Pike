@@ -1756,10 +1756,6 @@ string cflags;
 //! Flags suitable for use when linking Pike C modules
 string ldflags; // Not yet used
 
-//! @decl int strlen(string|multiset|array|mapping|object thing)
-//! @appears strlen
-//! Alias for @[sizeof].
-//! @deprecated sizeof
 
 //! @decl int write(string fmt, mixed ... args)
 //! @appears write
