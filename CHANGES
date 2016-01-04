@@ -48,7 +48,7 @@ o GTK1 library is deprecated, so glue code is removed.
 New features
 ------------
 
-o Gmp.mpf is now implemented using gmpf is the library is available.
+o Gmp.mpf is now implemented using gmpf if the library is available.
 
 C-level API changes
 -------------------
