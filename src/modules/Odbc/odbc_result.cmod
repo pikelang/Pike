@@ -861,8 +861,11 @@ PIKEFUN int|array(string|float|int) fetch_row()
 {
   SQLHSTMT hstmt = PIKE_ODBC_RES->hstmt;
   int i;
-  unsigned int old_tds_kludge =
-    pike_odbc_get_flags(PIKE_ODBC_RES->odbc) & PIKE_ODBC_OLD_TDS_KLUDGE;
+  unsigned int pike_odbc_flags = pike_odbc_get_flags(PIKE_ODBC_RES->odbc);
+  unsigned int old_tds_kludge = pike_odbc_flags & PIKE_ODBC_OLD_TDS_KLUDGE;
+  unsigned int wdata_shift = (pike_odbc_flags & PIKE_ODBC_WDATA_SHIFT_MASK) >>
+    PIKE_ODBC_WDATA_SHIFT_SHIFT;
+
   RETCODE code;
 
   pop_n_elems(args);
@@ -990,7 +993,7 @@ PIKEFUN int|array(string|float|int) fetch_row()
 	  break;
 	case SQL_C_WCHAR:
 	  /* Adjust for NUL. */
-	  pad = sizeof(SQLWCHAR);
+	  pad = 1 << wdata_shift;
 	  break;
 	}
 
@@ -1007,8 +1010,7 @@ PIKEFUN int|array(string|float|int) fetch_row()
 	    s = begin_shared_string(bytes);
 	    break;
 	  case SQL_C_WCHAR:
-	    s = begin_wide_shared_string(bytes/sizeof(SQLWCHAR),
-					 sizeof(SQLWCHAR)>2?2:1);
+	    s = begin_wide_shared_string(bytes >> wdata_shift, wdata_shift);
 	    break;
 	  }
 
