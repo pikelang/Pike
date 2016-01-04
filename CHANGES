@@ -9,6 +9,29 @@ o Unlimited character constant size.
   There is no longer any limit to the size of character constants,
   e.g. 'acdefghijk' creates the bignum 0x61636465666768696a6b.
 
+o 'auto' type added.
+
+  This is much like a strict typed mixed. The actual type is deduced
+  compile-time.
+
+  The main use case is as variables in foreach when looping over
+  complexly typed values, or as types in macro-defined functions and
+  such.
+
+  auto can be used as return type for a function, it will be the
+  logical or of all the types of the return statements in the
+  function.
+
+o typeof(X) can now be used as a type.
+
+  The main use case is in macros, but it might be useful for other
+  things as well (as an example in a typedef).
+
+  typedef typeof(Val.true)|typeof(Val.false) bool;
+
+  typeof, when used like this, behaves very much like the C++
+  decltype() expression.
+
 Incompatible changes
 --------------------
 
@@ -19,7 +42,13 @@ Removed features and modules
 
 o Compatibility for Pike versions before 7.8 is no longer available.
 
-o GTK1 library is deprected, so glue code is removed.
+o GTK1 library is deprecated, so glue code is removed.
+
+
+New features
+------------
+
+o Gmp.mpf is now implemented using gmpf is the library is available.
 
 C-level API changes
 -------------------
