@@ -1352,6 +1352,12 @@ static ptrdiff_t low_cpp(struct cpp *this,
                   ptr=MKPCHARP_STR(this->buf.s);
                   INC_PCHARP(ptr, tmp);
 
+                  /* Zero terminate the buffer contents here to make sure
+                   * that STRTOL_PCHARP does not read beyond the end of the
+                   * buffer */
+                  string_builder_putchar(&this->buf, 0);
+                  this->buf.s->len--;
+
                   major=STRTOL_PCHARP(ptr, &ptr, 10);
                   if(INDEX_PCHARP(ptr,0) == '.')
                   {
