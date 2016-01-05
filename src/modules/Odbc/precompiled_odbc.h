@@ -162,7 +162,7 @@ struct Odbc_odbc_struct;
 SQLHDBC pike_odbc_get_hdbc(struct Odbc_odbc_struct *odbc);
 void pike_odbc_set_affected_rows(struct Odbc_odbc_struct *odbc, SQLLEN rows);
 unsigned int pike_odbc_get_flags(struct Odbc_odbc_struct *odbc);
-void push_sqlwchar(SQLWCHAR *str, size_t num_bytes);
+void push_sqlwchar(SQLWCHAR *str, size_t len);
 void odbc_error(const char *fun, const char *msg,
 		struct Odbc_odbc_struct *odbc, SQLHSTMT hstmt,
 		RETCODE code, void (*clean)(void *), void *clean_arg);
