@@ -903,7 +903,7 @@ test_equal(max($2,$1,$3), $3)
     return data;
   }
 
-  void parse(string data)
+  string parse(string data)
   {
     int pos;
 
@@ -947,16 +947,23 @@ test_equal(max($2,$1,$3), $3)
           }
         }
       }
+      else
+        return 0;
+
       return args;
     };
 
+    String.Buffer ret = String.Buffer();
     while(1)
     {
       while( pos<sizeof(data) &&
              !( (data[pos]>='A' && data[pos]<='Z') ||
                 (data[pos]>='a' && data[pos]<='z') ))
+      {
+        ret->putchar(data[pos]);
         pos++;
-      if( pos>=sizeof(data) ) return;
+      }
+      if( pos>=sizeof(data) ) return (string)ret;
       int start = pos;
       while( pos<sizeof(data) &&
              ((data[pos]>='0' && data[pos]<='9') ||
@@ -968,13 +975,29 @@ test_equal(max($2,$1,$3), $3)
       {
       case "dnl":
         while(data[pos]!='\n' && pos<sizeof(data)) pos++;
-        if( pos>=sizeof(data) ) return;
+        if( pos>=sizeof(data) ) return (string)ret;
         break;
 
       case "define":
         array args = parse_args();
+        if( !args )
+        {
+          ret->add(token);
+          break;
+        }
         if(sizeof(args)!=2) error("Need two arguments for define.\n");
         macros[dequote(args[0])] = args[1];
+        break;
+
+      case "ifelse":
+        args = parse_args();
+        if(sizeof(args)!=4) error("ifelse only supported with 4 arguments.\n");
+        werror("%O\n%O\n%O\n%O\n", @args);
+        exit(1);
+        if(dequote(args[0])==dequote(args[1]))
+          ret->add(parse(args[2]));
+        else
+          ret->add(parse(args[3]));
         break;
 
       case "DOTEST":
@@ -992,16 +1015,19 @@ test_equal(max($2,$1,$3), $3)
             cond = 0;
         }
         tests += ({ Test(file_name, 0/*FIXME*/, sizeof(tests)+1,
-                         dequote(args[0]), dequote(args[1]),
+                         dequote(parse(args[0])), dequote(parse(args[1])),
                          cond && ({ cond })) });
         break;
 
       default:
         if( macros[token] )
-          parse( expand(macros[token], parse_args()) );
+          ret->add(parse( expand(macros[token], parse_args()) ));
+        else
+          ret->add(token);
         break;
       }
     }
+    return (string)ret;
   }
 
   Test value()
