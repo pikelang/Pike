@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.310 2003/11/14 06:11:38 mast Exp $
+// $Id$
 
 #pike __REAL_VERSION__
 
@@ -3189,6 +3189,8 @@ string describe_function (function f)
 //! @[catch]), in which case the error message also is included in the
 //! description.
 //!
+//! Pass @[linewidth] -1 to disable wrapping of the output.
+//!
 //! @seealso
 //! @[backtrace()], @[describe_error()], @[catch()], @[throw()]
 //!
@@ -3326,7 +3328,7 @@ string describe_backtrace(mixed trace, void|int linewidth)
 	      desc->describe_comma_list(tmp[3..], backtrace_len)+
 	    ")";
 
-	    if(sizeof(pos)+sizeof(data) < linewidth-4)
+	    if((linewidth == -1) || (sizeof(pos)+sizeof(data) < linewidth-4))
 	    {
 	      row=sprintf("%s: %s",pos,data);
 	    }else{
