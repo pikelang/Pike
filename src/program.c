@@ -6678,7 +6678,7 @@ int add_ext_ref(struct program_state *state, struct program *target, int i)
  *   |
  *   +-A---foo
  *
- * External lookup of identifier "foo" in E():
+ * External lookup of identifier "foo" in F():
  *
  * F-+-A---foo		            --- Pike 7.7.33
  *   |
