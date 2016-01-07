@@ -3562,7 +3562,7 @@ expr3: expr4
 optional_block: /* EMPTY */ { $$=0; }
   | '{' line_number_info
   /* FIXME: Use implicit_identifier to make __func__ point to the lambda? */
-  push_compiler_frame0
+  push_compiler_frame1
   {
     debug_malloc_touch(Pike_compiler->compiler_frame->current_return_type);
     if(Pike_compiler->compiler_frame->current_return_type)
