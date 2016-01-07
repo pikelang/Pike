@@ -443,10 +443,8 @@ class Request(function(array(string), Request:void) cb) {
     inherit Protocols.HTTP.Server.Request;
 
     protected void parse_request() {
-	if (!cb || !has_index(request_headers, "sec-websocket-key")) {
-	    ::parse_request();
-	    return;
-	} else {
+        ::parse_request();
+	if (cb && has_index(request_headers, "sec-websocket-key")) {
 	    string proto = request_headers["sec-websocket-protocol"];
 	    array(string) protocols =  proto ? proto / ", " : ({});
             WS_WERR(1, "websocket request: %O\n", protocols);
