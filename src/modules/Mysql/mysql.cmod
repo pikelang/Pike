@@ -605,10 +605,14 @@ static void pike_mysql_reconnect (int reconnect)
     MYSQL_DISALLOW();
 
     if (tmp) {
+      const char *err;
+      err = mysql_error(mysql);
+
       if (strlen(database) < 1024) {
-	Pike_error("Mysql.mysql(): Couldn't select database \"%s\"\n", database);
+	Pike_error("Mysql.mysql(): Couldn't select database \"%s\": %s\n",
+		   database, err);
       } else {
-	Pike_error("Mysql.mysql(): Couldn't select database\n");
+	Pike_error("Mysql.mysql(): Couldn't select database: %s\n", err);
       }
     }
   }
