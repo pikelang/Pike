@@ -435,9 +435,8 @@ static void connection_set_charset (struct pike_string *charset)
   MYSQL_DISALLOW();
   if (res) {
     const char *err;
-    MYSQL_ALLOW();
     err = mysql_error(mysql);
-    MYSQL_DISALLOW();
+
     Pike_error("Setting the charset failed: %s\n", err);
   }
 
@@ -583,9 +582,8 @@ static void pike_mysql_reconnect (int reconnect)
 
   if (!socket) {
     const char *err;
-    MYSQL_ALLOW();
-    err = mysql_error (mysql);
-    MYSQL_DISALLOW();
+    err = mysql_error(mysql);
+
     Pike_error("Mysql.mysql(): Couldn't %s to SQL-server: %s\n",
 	       reconnect ? "reconnect" : "connect", err);
   }
@@ -972,16 +970,8 @@ PIKEFUN int insert_id()
  */
 PIKEFUN string error()
 {
-  MYSQL *mysql;
   const char *error_msg;
-
-  mysql = PIKE_MYSQL->mysql;
-
-  MYSQL_ALLOW();
-
-  error_msg = mysql_error(mysql);
-
-  MYSQL_DISALLOW();
+  error_msg = mysql_error(PIKE_MYSQL->mysql);
 
   pop_n_elems(args);
 
@@ -1068,10 +1058,7 @@ PIKEFUN void select_db(string(1..255) database)
 
   if (tmp) {
     const char *err;
-
-    MYSQL_ALLOW();
     err = mysql_error(mysql);
-    MYSQL_DISALLOW();
 
     Pike_error("Mysql.mysql->select_db(): Couldn't select database \"%s\" (%s)\n",
 	       database->str, err);
@@ -1132,10 +1119,7 @@ static void low_query(INT32 args, char *name, int flags)
 
   if (tmp) {
     const char *err;
-
-    MYSQL_ALLOW();
     err = mysql_error(mysql);
-    MYSQL_DISALLOW();
 
     if (sp[-args].u.string->len <= 512) {
       Pike_error("%s(): Query \"%s\" failed (%s)\n",
@@ -1166,9 +1150,8 @@ static void low_query(INT32 args, char *name, int flags)
 
     if (err) {
       const char *msg;
-      MYSQL_ALLOW();
       msg = mysql_error(mysql);
-      MYSQL_DISALLOW();
+
       Pike_error("%s(): Couldn't create result for query (%s)\n",
 		 name, msg);
     }
@@ -1522,12 +1505,7 @@ PIKEFUN object list_dbs(string(1..255)|void wild)
 
   if (!result) {
     const char *err;
-
-    MYSQL_ALLOW();
-
     err = mysql_error(mysql);
-
-    MYSQL_DISALLOW();
 
     Pike_error("Mysql.mysql->list_dbs(): Cannot list databases: %s\n", err);
   }
@@ -1578,12 +1556,7 @@ PIKEFUN object list_tables(string(1..255)|void wild)
 
   if (!result) {
     const char *err;
-
-    MYSQL_ALLOW();
-
     err =  mysql_error(mysql);
-
-    MYSQL_DISALLOW();
 
     Pike_error("Mysql.mysql->list_tables(): Cannot list tables: %s\n", err);
   }
@@ -1710,12 +1683,7 @@ PIKEFUN array(int|mapping(string:mixed)) list_fields(string(1..255) table,
 
   if (!result) {
     const char *err;
-
-    MYSQL_ALLOW();
-
     err = mysql_error(mysql);
-
-    MYSQL_DISALLOW();
 
     Pike_error("Mysql.mysql->list_fields(): Cannot list fields: %s\n", err);
   }
@@ -1758,12 +1726,7 @@ PIKEFUN object list_processes()
 
   if (!result) {
     const char *err;
-
-    MYSQL_ALLOW();
-
     err = mysql_error(mysql);
-
-    MYSQL_DISALLOW();
 
     Pike_error("Mysql.mysql->list_processes(): Cannot list processes: %s\n", err);
   }
