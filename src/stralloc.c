@@ -1597,7 +1597,7 @@ struct pike_string *realloc_unlinked_string(struct pike_string *a,
     if( a->alloc_type == STRING_ALLOC_BA )
       goto done;
     s = ba_alloc(&string_allocator);
-    memcpy(s,a->str,nbytes);
+    memcpy(s, a->str, MINIMUM(nbytes,obytes));
     free_string_content(a);
     a->alloc_type = STRING_ALLOC_BA;
   }
