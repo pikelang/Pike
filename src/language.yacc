@@ -691,6 +691,13 @@ close_bracket_or_missing: ']'
   }
   ;
 
+/* This variant is used to push the compiler context for functions
+ * with a declared return type, which has been stored in
+ *
+ *   compiler_frame->current_type
+ *
+ * (eg via type_or_error).
+ */
 push_compiler_frame0: /* empty */
   {
     push_compiler_frame(SCOPE_LOCAL);
@@ -2106,6 +2113,9 @@ default: TOK_DEFAULT ':'  { $$=mknode(F_DEFAULT,0,0); }
 
 continue: TOK_CONTINUE optional_label { $$=mknode(F_CONTINUE,$2,0); } ;
 
+/* This variant is used to push the compiler context for
+ * functions without a declared return type (ie lambdas).
+ */
 push_compiler_frame1: /* empty */
   {
     push_compiler_frame(SCOPE_LOCAL);
