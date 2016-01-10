@@ -471,13 +471,14 @@ static void low_write_IEEE_float(char *b, double d, int sz)
     e = maxexp;
   else if(PIKE_ISNAN(d))
   {
-    e = maxexp; f = maxf;
-  } else
+    e = maxexp;
+    f = maxf;
+  }
 #ifdef HAVE_ISZERO
-  if(iszero(d))
+  else if(iszero(d))
     e = 0;
 #endif
-  ; /* Terminate any remaining else */
+
 #ifdef HAVE_SIGNBIT
   if((s = signbit(d)))
     d = fabs(d);
