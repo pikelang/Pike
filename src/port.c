@@ -152,20 +152,6 @@ PMOD_EXPORT int vsnprintf(char *buf, size_t size, const char *fmt, va_list args)
 }
 #endif
 
-#ifndef HAVE_SNPRINTF
-/* Warning: It's possible to trick this with something like
- * snprintf("...%c...", 0). */
-PMOD_EXPORT int snprintf(char *buf, size_t size, const char *fmt, ...)
-{
-  int res;
-  va_list args;
-  va_start (args, fmt);
-  res = vsnprintf (buf, size, fmt, args);
-  va_end (args);
-  return res;
-}
-#endif
-
 #if defined(PIKE_DEBUG) && !defined(HANDLES_UNALIGNED_MEMORY_ACCESS)
 
 PMOD_EXPORT unsigned INT16 EXTRACT_UWORD_(const unsigned char *p)

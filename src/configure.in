@@ -4415,7 +4415,6 @@ AC_CHECK_FUNCS( \
  times \
  tzset \
  _snprintf \
- snprintf \
  vsnprintf \
  wait3 \
  wait4 \
