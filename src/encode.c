@@ -31,6 +31,7 @@
 #include "peep.h"
 #include "pike_compiler.h"
 #include "bitvector.h"
+#include "pike_float.h"
 
 /* #define ENCODE_DEBUG */
 
@@ -651,18 +652,15 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
       {
 	int pike_ftype=Pike_FP_UNKNOWN;
         if(PIKE_ISINF(d))
-	  pike_ftype=Pike_FP_PINF;
-	else
+          pike_ftype=Pike_FP_PINF;
 #ifdef HAVE_ISNAN
-        if(isnan(d))
+        else if(isnan(d))
           pike_ftype=Pike_FP_SNAN;
-        else
 #endif
 #ifdef HAVE_ISZERO
-        if(iszero(d))
+        else if(iszero(d))
           pike_ftype=Pike_FP_PZERO;
 #endif
-        ; /* Terminate any remaining else */
 
 	if(
 #ifdef HAVE_SIGNBIT
