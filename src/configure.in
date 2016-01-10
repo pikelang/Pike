@@ -257,43 +257,6 @@ if test "$pike_cv_prog_icc" = "yes"; then
   ICC=yes
 fi
 
-# This segment is disabled for now.
-if :; then :; else
-AC_MSG_CHECKING([for option to enter C99-mode])
-AC_CACHE_VAL(pike_cv_flag_c99, [
-  ORIG_CPPFLAGS="$CPPFLAGS"
-  for pike_cv_flag_c99 in '' '-std=gnu99' '-std=gnu9x' '-xc99' no; do
-    if test "x$pike_cv_flag_c99" = "xno"; then break; fi
-    # C99 is supported only in XPG6/POSIX.1-2001.
-    pike_cv_flag_c99="$pike_cv_flag_c99 -D_GNU_SOURCE -D_XOPEN_SOURCE=600 -DPOSIX_C_SOURCE=200112"
-    CPPFLAGS="$ORIG_CPPFLAGS $pike_cv_flag_c99"
-    AC_EGREP_CPP([oui], [
-/* Include THE standard header file to check for C99 compliance. */
-#include <stdio.h>
-#if __STDC_VERSION__ - 0 >= 199901
-    oui
-#endif
-    ], [
-      # Ok.
-      break;
-    ])
-  done
-  ORIG_CPPFLAGS="$CPPFLAGS"
-])
-if test "x$pike_cv_flag_c99" = "xno"; then
-  AC_MSG_RESULT(not supported)
-  AC_MSG_CHECKING([for level of XPG support])
-  AC_CACHE_VAL(pike_cv_flag_xpg, [
-    # FIXME: How determine what the max level of XPG support is?
-    :;
-  ])
-  AC_MSG_RESULT([$pike_cv_flag_xpg])
-else
-  AC_MSG_RESULT([${pike_cv_flag_c99:-(none)}])
-  CPPFLAGS="$CPPFLAGS $pike_cv_flag_c99"
-fi
-fi
-
 #############################################################################
 
 if test "x$enable_binary" != "xno"; then
@@ -1679,6 +1642,8 @@ if test "$cflags_is_set" = "no"; then
     else
       :
     fi
+
+    AC_SYS_COMPILER_FLAG(-std=c99, std_c99, CFLAGS)
 
     if test "x$with_gcov" = "xyes"; then
       # Support for gcov
