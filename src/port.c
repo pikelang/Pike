@@ -136,22 +136,6 @@ PMOD_EXPORT int STRCASECMP(const char *a,const char *b)
 }
 #endif
 
-#ifndef HAVE_VSNPRINTF
-/* Warning: It's possible to trick this with something like
- * snprintf("...%c...", 0). */
-PMOD_EXPORT int vsnprintf(char *buf, size_t size, const char *fmt, va_list args)
-{
-  int res;
-  if (!size) {
-    buf = alloca(size=1000);
-  }
-  buf[size - 1] = 0;
-  res = vsprintf (buf, fmt, args);
-  if (buf[size - 1]) Pike_fatal ("Buffer overflow in vsprintf.\n");
-  return res;
-}
-#endif
-
 #if defined(PIKE_DEBUG) && !defined(HANDLES_UNALIGNED_MEMORY_ACCESS)
 
 PMOD_EXPORT unsigned INT16 EXTRACT_UWORD_(const unsigned char *p)

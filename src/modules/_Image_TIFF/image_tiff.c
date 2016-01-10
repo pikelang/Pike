@@ -943,7 +943,7 @@ void my_tiff_warning_handler(const char *UNUSED(module), const char *UNUSED(fmt)
 /* Complies with the TIFFErrorHandler API */
 void my_tiff_error_handler(const char *UNUSED(module), const char *fmt, va_list x)
 {
-  VSNPRINTF(last_tiff_error, TIFF_ERROR_BUF_SIZE-1, fmt, x);
+  vsnprintf(last_tiff_error, TIFF_ERROR_BUF_SIZE-1, fmt, x);
 }
 
 #endif /* HAVE_WORKING_LIBTIFF */

@@ -116,7 +116,6 @@ void GETTIMEOFDAY(struct timeval *t);
 #ifdef HAVE__SNPRINTF
 /* In WIN32 snprintf is known as _snprintf... */
 #define snprintf _snprintf
-#define HAVE_SNPRINTF 1
 #endif
 
 #ifndef HAVE_RINT
@@ -130,11 +129,6 @@ PMOD_EXPORT int STRCASECMP(const char *a,const char *b);
 #else
 #  define STRCASECMP(A,B) strcasecmp(A,B)
 #endif
-
-#ifndef HAVE_VSNPRINTF
-PMOD_EXPORT int vsnprintf(char *buf, size_t size, const char *fmt, va_list args);
-#endif
-#define VSNPRINTF(A,B,C,D) vsnprintf(A,B,C,D)
 
 #ifndef HAVE_SNPRINTF
 PMOD_EXPORT int snprintf(char *buf, size_t size, const char *fmt, ...);
