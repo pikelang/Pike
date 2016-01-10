@@ -950,6 +950,7 @@ test_equal(max($2,$1,$3), $3)
       else
         return 0;
 
+      pos++;
       return args;
     };
 
@@ -992,8 +993,6 @@ test_equal(max($2,$1,$3), $3)
       case "ifelse":
         args = parse_args();
         if(sizeof(args)!=4) error("ifelse only supported with 4 arguments.\n");
-        werror("%O\n%O\n%O\n%O\n", @args);
-        exit(1);
         if(dequote(args[0])==dequote(args[1]))
           ret->add(parse(args[2]));
         else
