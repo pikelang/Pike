@@ -7,10 +7,7 @@
 #define _GNU_SOURCE
 
 #include "bson_config.h"
-
-#if HAVE_STDINT_H
 #include <stdint.h>
-#endif /* HAVE_STDINT_H */
 
 #if HAVE_ARPA_INET_H
 #include <arpa/inet.h>
