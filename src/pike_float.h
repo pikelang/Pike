@@ -49,7 +49,7 @@ static INLINE int PIKE_UNUSED_ATTRIBUTE pike_isnan(double x)
 #elif defined(HAVE_ISFINITE)
 #define PIKE_ISINF(X)   (!isfinite(X))
 #elif defined(HAVE_FINITE)
-#define PIKE_ISINF(X)   (!finite(X))
+#define PIKE_ISINF(X)   (!_finite(X))
 #else
 #define PIKE_ISINF(X)	((X) && ((X)+(X) == (X)))
 #endif /* HAVE_ISINF */

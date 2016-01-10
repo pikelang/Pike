@@ -4442,7 +4442,7 @@ AC_CHECK_FUNCS( \
  isinf \
  isnan \
  iszero \
- finite \
+ _finite \
  signbit \
  nan \
  nice \
