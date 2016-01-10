@@ -633,6 +633,7 @@ block_or_semi: block
   ;
 
 
+/* Full type moved to compiler_frame->current_type. */
 type_or_error: simple_type
   {
     if(Pike_compiler->compiler_frame->current_type)
@@ -1276,8 +1277,12 @@ soft_cast: open_bracket_with_line_info type ']'
     }
     ;
 
+/* Either a basic_type-prefixed expression, or an identifier type.
+ * Value on type stack.
+ */
 type2: type | identifier_type ;
 
+/* Full type expression. Value moved to parser value stack. */
 simple_type: full_type
   {
     struct pike_type *s = compiler_pop_type();
@@ -1291,6 +1296,7 @@ simple_type: full_type
   }
   ;
 
+/* Basic_type-prefixed expression. Value moved to parser value stack. */
 simple_type2: type
   {
     struct pike_type *s = compiler_pop_type();
@@ -1304,6 +1310,7 @@ simple_type2: type
   }
   ;
 
+/* Identifier type. Value moved to parser value stack. */
 simple_identifier_type: identifier_type
   {
     struct pike_type *s = compiler_pop_type();
@@ -1317,16 +1324,25 @@ simple_identifier_type: identifier_type
   }
   ;
 
+/* Full type expression. Value on type stack.
+ * Typically used in contexts where there must be a type,
+ * and expressions are invalid.
+ */
 full_type: full_type '|' type3 { push_type(T_OR); }
   | type3
   ;
 
+/* Basic_type-prefixed expression. Value on type stack.
+ * Typically used in contexts where expressions are valid.
+ */
 type: type '|' type3 { push_type(T_OR); }
   | basic_type
   ;
 
+/* Either a basic_type or an identifier type. Value on type stack. */
 type3: basic_type | identifier_type ;
 
+/* Literal type. Value on type stack. */
 basic_type:
     TOK_FLOAT_ID                      { push_type(T_FLOAT); }
   | TOK_VOID_ID                       { push_type(T_VOID); }
@@ -1380,6 +1396,7 @@ basic_type:
   }
   ;
 
+/* Identifier type. Value on type stack. */
 identifier_type: idents
   {
     if ($1) {
