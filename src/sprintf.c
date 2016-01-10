@@ -467,25 +467,15 @@ static void low_write_IEEE_float(char *b, double d, int sz)
     break;
   }
 #else
-#ifdef HAVE_ISINF
-  if(isinf(d))
+  if(PIKE_ISINF(d))
     e = maxexp;
-  else
-#endif
-  if(PIKE_ISNAN(d)) {
+  else if(PIKE_ISNAN(d))
+  {
     e = maxexp; f = maxf;
   } else
 #ifdef HAVE_ISZERO
   if(iszero(d))
     e = 0;
-  else
-#endif
-#ifdef HAVE_ISFINITE
-  if(!isfinite(d))
-    e = maxexp;
-#elif HAVE_FINITE
-  if(!finite(d))
-    e = maxexp;
 #endif
   ; /* Terminate any remaining else */
 #ifdef HAVE_SIGNBIT

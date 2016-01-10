@@ -259,14 +259,7 @@ PMOD_EXPORT void o_cast_to_int(void)
   case T_FLOAT: {
       FLOAT_TYPE f = sp[-1].u.float_number;
 
-      if (
-#ifdef HAVE_ISINF
-          isinf(f) ||
-#endif
-#ifdef HAVE_ISNAN
-          isnan(f) ||
-#endif
-          0)
+      if ( PIKE_ISINF(f) || PIKE_ISNAN(f) )
         Pike_error("Can't cast infinites or NaN to int.\n");
 
       if (UNLIKELY(f > MAX_INT_TYPE || f < MIN_INT_TYPE)) {

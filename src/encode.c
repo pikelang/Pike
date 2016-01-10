@@ -650,29 +650,19 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 #else
       {
 	int pike_ftype=Pike_FP_UNKNOWN;
-#ifdef HAVE_ISINF
-	if(isinf(d))
+        if(PIKE_ISINF(d))
 	  pike_ftype=Pike_FP_PINF;
 	else
-#endif
 #ifdef HAVE_ISNAN
-	  if(isnan(d)) {
-	    pike_ftype=Pike_FP_SNAN;
-	  } else
+        if(isnan(d))
+          pike_ftype=Pike_FP_SNAN;
+        else
 #endif
 #ifdef HAVE_ISZERO
-	    if(iszero(d))
-	      pike_ftype=Pike_FP_PZERO;
-	    else
+        if(iszero(d))
+          pike_ftype=Pike_FP_PZERO;
 #endif
-#ifdef HAVE_ISFINITE
-	      if(!isfinite(d))
-		pike_ftype=Pike_FP_PINF;
-#elif HAVE_FINITE
-	      if(!finite(d))
-		pike_ftype=Pike_FP_PINF;
-#endif
-	; /* Terminate any remaining else */
+        ; /* Terminate any remaining else */
 
 	if(
 #ifdef HAVE_SIGNBIT
