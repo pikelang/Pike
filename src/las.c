@@ -3723,28 +3723,28 @@ void fix_type_field(node *n)
     else if(Pike_compiler->compiler_frame &&
             Pike_compiler->compiler_frame->current_return_type)
     {
-      if ((Pike_compiler->compiler_frame->current_return_type !=
-	   void_type_string)) {
-          struct pike_type *t = Pike_compiler->compiler_frame->current_return_type;
+      struct pike_type *t = Pike_compiler->compiler_frame->current_return_type;
 
-          if( t->type == PIKE_T_AUTO )
-          {
-              if( t->car )
-              {
-                  /* Not the first one.. */
-                  push_auto_typed_type( or_pike_types( t->car, CAR(n)->type, 0 ) );
-              }
-              else
-              {
-                  /* first one.. */
-                  push_auto_typed_type(  CAR(n)->type );
-              }
-              free_type( t );
-              t = pop_type();
-              Pike_compiler->compiler_frame->current_return_type = t;
-          }
-          else if(CAR(n)->token != F_CONSTANT || !SAFE_IS_ZERO(&CAR(n)->u.sval))
-              check_node_type(CAR(n), t, "Wrong return type.");
+      if( t->type == PIKE_T_AUTO )
+      {
+	if( t->car )
+	{
+	  /* Not the first one.. */
+	  push_auto_typed_type( or_pike_types( t->car, CAR(n)->type, 0 ) );
+	}
+	else
+	{
+	  /* first one.. */
+	  push_auto_typed_type( CAR(n)->type );
+	}
+	free_type( t );
+	t = pop_type();
+	Pike_compiler->compiler_frame->current_return_type = t;
+      } else if ((Pike_compiler->compiler_frame->current_return_type !=
+		  void_type_string) ||
+		 (CAR(n)->token != F_CONSTANT) ||
+		 !SAFE_IS_ZERO(&CAR(n)->u.sval)) {
+	check_node_type(CAR(n), t, "Wrong return type.");
       }
     }
     copy_pike_type(n->type, void_type_string);
