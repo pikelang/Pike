@@ -473,6 +473,14 @@ PMOD_EXPORT void o_cast(struct pike_type *type, INT32 run_time_type)
       struct object *o = sp[-1].u.object;
       int f = FIND_LFUN(o->prog->inherits[SUBTYPEOF(sp[-1])].prog, LFUN_CAST);
       if(f == -1) {
+        if (run_time_type == T_MAPPING) {
+          stack_dup();
+          f_indices(1);
+          stack_swap();
+          f_values(1);
+          f_mkmapping(2);
+          goto emulated_type_ok;
+        }
 	if (run_time_type != T_PROGRAM) {
 	  Pike_error("No cast method in object.\n");
 	}
