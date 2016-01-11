@@ -268,7 +268,6 @@ int yylex(YYSTYPE *yylval);
 %type <number> optional_comma
 %type <number> optional_constant
 %type <number> optional_create_arguments
-%type <number> optional_stars
 
 %type <str> magic_identifiers
 %type <str> magic_identifiers1
@@ -728,7 +727,7 @@ optional_constant: /* empty */
   }
   ;
 
-def: modifiers optional_attributes type_or_error optional_constant optional_stars
+def: modifiers optional_attributes type_or_error optional_constant
      TOK_IDENTIFIER push_compiler_frame0
   '('
   {
@@ -738,7 +737,7 @@ def: modifiers optional_attributes type_or_error optional_constant optional_star
       struct pike_string *create_string = NULL;
       int e;
       MAKE_CONST_STRING(create_string, "create");
-      if ($6->u.sval.u.string == create_string) {
+      if ($5->u.sval.u.string == create_string) {
 	/* Prepend the create arguments. */
 	if (Pike_compiler->num_create_args < 0) {
 	  Pike_compiler->varargs = 1;
@@ -782,9 +781,9 @@ def: modifiers optional_attributes type_or_error optional_constant optional_star
 
     push_finished_type(Pike_compiler->compiler_frame->current_return_type);
 
-    e = $<number>9 + $10 - 1;
+    e = $<number>8 + $9 - 1;
     if(Pike_compiler->varargs &&
-       (!$<number>9 || (Pike_compiler->num_create_args >= 0)))
+       (!$<number>8 || (Pike_compiler->num_create_args >= 0)))
     {
       push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
       e--;
@@ -809,12 +808,12 @@ def: modifiers optional_attributes type_or_error optional_constant optional_star
 
     {
       struct pike_type *s=compiler_pop_type();
-      int i = isidentifier($6->u.sval.u.string);
+      int i = isidentifier($5->u.sval.u.string);
 
       if (Pike_compiler->compiler_pass != 1) {
 	if (i < 0) {
 	  my_yyerror("Identifier %S lost after first pass.",
-		     $6->u.sval.u.string);
+		     $5->u.sval.u.string);
 	}
       }
 
@@ -829,7 +828,7 @@ def: modifiers optional_attributes type_or_error optional_constant optional_star
        * set current_function_number for local functions as well
        */
       Pike_compiler->compiler_frame->current_function_number=
-	define_function($6->u.sval.u.string,
+	define_function($5->u.sval.u.string,
 			$<n>$->u.sval.u.type,
 			$1 & (~ID_EXTERN),
 			IDENTIFIER_PIKE_FUNCTION |
@@ -843,7 +842,7 @@ def: modifiers optional_attributes type_or_error optional_constant optional_star
   block_or_semi
   {
     int e;
-    if($13)
+    if($12)
     {
       int f;
       node *check_args = NULL;
@@ -852,20 +851,20 @@ def: modifiers optional_attributes type_or_error optional_constant optional_star
       int save_line  = c->lex.current_line;
       int num_required_args = 0;
       struct identifier *i;
-      c->lex.current_file = $6->current_file;
-      c->lex.current_line = $6->line_number;
+      c->lex.current_file = $5->current_file;
+      c->lex.current_line = $5->line_number;
 
       if (($1 & ID_EXTERN) && (Pike_compiler->compiler_pass == 1)) {
 	yywarning("Extern declared function definition.");
       }
 
-      for(e=0; e<$<number>9+$10; e++)
+      for(e=0; e<$<number>8+$9; e++)
       {
-	if((e >= $<number>9) &&
+	if((e >= $<number>8) &&
 	   (!Pike_compiler->compiler_frame->variable[e].name ||
 	    !Pike_compiler->compiler_frame->variable[e].name->len))
 	{
-	  my_yyerror("Missing name for argument %d.", e - $<number>9);
+	  my_yyerror("Missing name for argument %d.", e - $<number>8);
 	} else {
 	  if (Pike_compiler->compiler_pass == 2) {
 	      /* FIXME: Should probably use some other flag. */
@@ -891,29 +890,29 @@ def: modifiers optional_attributes type_or_error optional_constant optional_star
 	}
       }
 
-      if ($<number>9) {
+      if ($<number>8) {
 	/* Hook in the initializers for the create arguments. */
-	for (e = $<number>9; e--;) {
-	  $13 = mknode(F_COMMA_EXPR,
+	for (e = $<number>8; e--;) {
+	  $12 = mknode(F_COMMA_EXPR,
 		       mknode(F_POP_VALUE,
 			      mknode(F_ASSIGN, mklocalnode(e, 0),
 				     mkidentifiernode(e)), NULL),
-		       $13);
+		       $12);
 	}
       }
 
       {
-	int l = $13->line_number;
-	struct pike_string *f = $13->current_file;
+	int l = $12->line_number;
+	struct pike_string *f = $12->current_file;
 	if (check_args) {
 	  /* Prepend the arg checking code. */
-	  $13 = mknode(F_COMMA_EXPR, mknode(F_POP_VALUE, check_args, NULL), $13);
+	  $12 = mknode(F_COMMA_EXPR, mknode(F_POP_VALUE, check_args, NULL), $12);
 	}
 	c->lex.current_line = l;
 	c->lex.current_file = f;
       }
 
-      f=dooptcode($6->u.sval.u.string, $13, $<n>12->u.sval.u.type, $1);
+      f=dooptcode($5->u.sval.u.string, $12, $<n>11->u.sval.u.type, $1);
 
       i = ID_FROM_INT(Pike_compiler->new_program, f);
       i->opt_flags = Pike_compiler->compiler_frame->opt_flags;
@@ -924,9 +923,9 @@ def: modifiers optional_attributes type_or_error optional_constant optional_star
         /* Change "auto" return type to actual return type. */
         push_finished_type(Pike_compiler->compiler_frame->current_return_type->car);
 
-        e = $<number>9 + $10 - 1;
+        e = $<number>8 + $9 - 1;
         if(Pike_compiler->varargs &&
-           (!$<number>9 || (Pike_compiler->num_create_args >= 0)))
+           (!$<number>8 || (Pike_compiler->num_create_args >= 0)))
         {
           push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
           e--;
@@ -963,7 +962,7 @@ def: modifiers optional_attributes type_or_error optional_constant optional_star
       if((Pike_compiler->compiler_pass == 1) &&
 	 (f != Pike_compiler->compiler_frame->current_function_number)) {
 	fprintf(stderr, "define_function()/do_opt_code() failed for symbol %s\n",
-		$6->u.sval.u.string->str);
+		$5->u.sval.u.string->str);
 	dump_program_desc(Pike_compiler->new_program);
 	Pike_fatal("define_function screwed up! %d != %d\n",
 	      f, Pike_compiler->compiler_frame->current_function_number);
@@ -981,40 +980,40 @@ def: modifiers optional_attributes type_or_error optional_constant optional_star
           yyerror("'auto' return type not allowed for prototypes\n");
     }
 #ifdef PIKE_DEBUG
-    if (Pike_compiler->compiler_frame != $7) {
+    if (Pike_compiler->compiler_frame != $6) {
       Pike_fatal("Lost track of compiler_frame!\n"
 		 "  Got: %p (Expected: %p) Previous: %p\n",
-		 Pike_compiler->compiler_frame, $7,
+		 Pike_compiler->compiler_frame, $6,
 		 Pike_compiler->compiler_frame->previous);
     }
 #endif
     pop_compiler_frame();
-    free_node($6);
-    free_node($11);
-    free_node($<n>12);
+    free_node($5);
+    free_node($10);
+    free_node($<n>11);
   }
   | modifiers optional_attributes type_or_error
-  optional_constant optional_stars TOK_IDENTIFIER push_compiler_frame0
+  optional_constant TOK_IDENTIFIER push_compiler_frame0
     error
   {
 #ifdef PIKE_DEBUG
-    if (Pike_compiler->compiler_frame != $7) {
+    if (Pike_compiler->compiler_frame != $6) {
       Pike_fatal("Lost track of compiler_frame!\n"
 		 "  Got: %p (Expected: %p) Previous: %p\n",
-		 Pike_compiler->compiler_frame, $7,
+		 Pike_compiler->compiler_frame, $6,
 		 Pike_compiler->compiler_frame->previous);
     }
 #endif
     pop_compiler_frame();
-    free_node($6);
+    free_node($5);
   }
-  | modifiers optional_attributes type_or_error optional_constant optional_stars bad_identifier
+  | modifiers optional_attributes type_or_error optional_constant bad_identifier
   {
     compiler_discard_type();
   }
     '(' arguments ')' block_or_semi
   {
-    if ($11) free_node($11);
+    if ($10) free_node($10);
   }
   | modifiers optional_attributes type_or_error optional_constant name_list ';'
   | inheritance {}
@@ -1252,9 +1251,6 @@ optional_attributes: /* empty */
 	mknode(F_ARG_LIST, Pike_compiler->current_attributes, $2);
     }
   }
-  ;
-
-optional_stars:  /* empty */ { $$=0; }
   ;
 
 cast: open_paren_with_line_info type ')'
@@ -1721,7 +1717,7 @@ name_list: new_name
   | name_list ',' new_name
   ;
 
-new_name: optional_stars TOK_IDENTIFIER
+new_name: TOK_IDENTIFIER
   {
     struct pike_type *type;
     node *n;
@@ -1732,13 +1728,13 @@ new_name: optional_stars TOK_IDENTIFIER
       n = CAR(n);
     }
     type=compiler_pop_type();
-    define_variable($2->u.sval.u.string, type,
+    define_variable($1->u.sval.u.string, type,
 		    Pike_compiler->current_modifiers);
     free_type(type);
-    free_node($2);
+    free_node($1);
   }
-  | optional_stars bad_identifier {}
-  | optional_stars TOK_IDENTIFIER '='
+  | bad_identifier {}
+  | TOK_IDENTIFIER '='
   {
     struct pike_type *type;
     node *n;
@@ -1753,24 +1749,24 @@ new_name: optional_stars TOK_IDENTIFIER
 	(Pike_compiler->compiler_pass == 1)) {
       yywarning("Extern declared variable has initializer.");
     }
-    $<number>$=define_variable($2->u.sval.u.string, type,
+    $<number>$=define_variable($1->u.sval.u.string, type,
 			       Pike_compiler->current_modifiers & (~ID_EXTERN));
     free_type(type);
   }
   expr0
   {
     if ((Pike_compiler->compiler_pass == 2) &&
-	!TEST_COMPAT(7, 8) && ($5) && ($5->token == F_CONSTANT) &&
+	!TEST_COMPAT(7, 8) && ($4) && ($4->token == F_CONSTANT) &&
 	!Pike_compiler->num_parse_error) {
       /* Check if it is zero, in which case we can throw it away.
        *
        * NB: The compat test is due to that this changes the semantics
        *     of calling __INIT() by hand.
        */
-      if ((TYPEOF($5->u.sval) == PIKE_T_INT) && !SUBTYPEOF($5->u.sval) &&
-	  !$5->u.sval.u.integer &&
+      if ((TYPEOF($4->u.sval) == PIKE_T_INT) && !SUBTYPEOF($4->u.sval) &&
+	  !$4->u.sval.u.integer &&
 	  !IDENTIFIER_IS_ALIAS(ID_FROM_INT(Pike_compiler->new_program,
-					   $<number>4)->identifier_flags)) {
+					   $<number>3)->identifier_flags)) {
 	/* NB: Inherited variables get converted into aliases by
 	 *     define_variable, and we need to support clearing
 	 *     of inherited variables.
@@ -1779,20 +1775,20 @@ new_name: optional_stars TOK_IDENTIFIER
 	if (l_flag > 5) {
 	  fprintf(stderr,
 		  "Ignoring initialization to zero for variable %s.\n",
-		  $2->u.sval.u.string->str);
+		  $1->u.sval.u.string->str);
 	}
 #endif /* PIKE_DEBUG */
         if(Pike_compiler->compiler_frame->current_type->type == PIKE_T_AUTO)
         {
           // auto variable type needs to be updated.
-          fix_type_field( $5 );
-          fix_auto_variable_type( $<number>4, $5->type );
+          fix_type_field( $4 );
+          fix_auto_variable_type( $<number>3, $4->type );
         }
-	free_node($5);
-	$5 = NULL;
+	free_node($4);
+	$4 = NULL;
       }
     }
-    if ($5) {
+    if ($4) {
       // this is done in both passes to get somewhat better handling
       // of auto types.
       //
@@ -1801,39 +1797,39 @@ new_name: optional_stars TOK_IDENTIFIER
       // type(auto), not type(mapping(..))
       if( Pike_compiler->compiler_frame->current_type->type == PIKE_T_AUTO )
       {
-        fix_type_field( $5 );
-        fix_auto_variable_type( $<number>4, $5->type );
+        fix_type_field( $4 );
+        fix_auto_variable_type( $<number>3, $4->type );
       }
       Pike_compiler->init_node=mknode(F_COMMA_EXPR,Pike_compiler->init_node,
 		       mkcastnode(void_type_string,
-				  mknode(F_ASSIGN,$5,
-					 mkidentifiernode($<number>4))));
+				  mknode(F_ASSIGN,$4,
+					 mkidentifiernode($<number>3))));
     }
-    free_node($2);
+    free_node($1);
   }
-  | optional_stars TOK_IDENTIFIER '=' error
+  | TOK_IDENTIFIER '=' error
   {
-    free_node($2);
+    free_node($1);
   }
-  | optional_stars TOK_IDENTIFIER '=' TOK_LEX_EOF
+  | TOK_IDENTIFIER '=' TOK_LEX_EOF
   {
     yyerror("Unexpected end of file in variable definition.");
-    free_node($2);
+    free_node($1);
   }
-  | optional_stars bad_identifier '=' expr0
+  | bad_identifier '=' expr0
   {
-    free_node($4);
+    free_node($3);
   }
   ;
 
-
-new_local_name: optional_stars TOK_IDENTIFIER
+/* Type at $0. */
+new_local_name: TOK_IDENTIFIER
   {
     int id;
     struct pike_type *type;
     push_finished_type($<n>0->u.sval.u.type);
     type = compiler_pop_type();
-    id = add_local_name($2->u.sval.u.string, type,0);
+    id = add_local_name($1->u.sval.u.string, type, 0);
     if( type->type == PIKE_T_AUTO )
     {
       /* FIXME: Update type on assign instead! */
@@ -1845,10 +1841,10 @@ new_local_name: optional_stars TOK_IDENTIFIER
       $$=mknode(F_ASSIGN,mkintnode(0),mklocalnode(id,0));
     } else
       $$ = 0;
-    free_node($2);
+    free_node($1);
   }
-  | optional_stars bad_identifier { $$=0; }
-  | optional_stars TOK_IDENTIFIER '=' expr0
+  | bad_identifier { $$=0; }
+  | TOK_IDENTIFIER '=' expr0
   {
     int id;
     struct pike_type *type;
@@ -1857,35 +1853,35 @@ new_local_name: optional_stars TOK_IDENTIFIER
     if( type->type == PIKE_T_AUTO && Pike_compiler->compiler_pass == 2)
     {
         free_type( type );
-        fix_type_field( $4 );
-        copy_pike_type( type, $4->type );
+        fix_type_field( $3 );
+        copy_pike_type( type, $3->type );
     }
-    id = add_local_name($2->u.sval.u.string, type,0);
+    id = add_local_name($1->u.sval.u.string, type, 0);
     if (id >= 0) {
       if (!(THIS_COMPILATION->lex.pragmas & ID_STRICT_TYPES)) {
 	/* Only warn about unused initialized variables in strict types mode. */
 	Pike_compiler->compiler_frame->variable[id].flags |= LOCAL_VAR_IS_USED;
       }
-      $$=mknode(F_ASSIGN,$4,mklocalnode(id,0));
+      $$=mknode(F_ASSIGN,$3,mklocalnode(id,0));
     } else
       $$ = 0;
-    free_node($2);
+    free_node($1);
   }
-  | optional_stars bad_identifier '=' expr0
+  | bad_identifier '=' expr0
   {
-    free_node($4);
+    free_node($3);
     $$=0;
   }
-  | optional_stars TOK_IDENTIFIER '=' error
+  | TOK_IDENTIFIER '=' error
   {
-    free_node($2);
+    free_node($1);
     /* No yyerok here since we aren't done yet. */
     $$=0;
   }
-  | optional_stars TOK_IDENTIFIER '=' TOK_LEX_EOF
+  | TOK_IDENTIFIER '=' TOK_LEX_EOF
   {
     yyerror("Unexpected end of file in local variable definition.");
-    free_node($2);
+    free_node($1);
     /* No yyerok here since we aren't done yet. */
     $$=0;
   }
@@ -2455,7 +2451,7 @@ local_function: TOK_IDENTIFIER push_compiler_frame1 func_args
   }
   ;
 
-local_function2: optional_stars TOK_IDENTIFIER push_compiler_frame1 func_args
+local_function2: TOK_IDENTIFIER push_compiler_frame1 func_args
   {
     struct pike_string *name;
     struct pike_type *type;
@@ -2475,7 +2471,7 @@ local_function2: optional_stars TOK_IDENTIFIER push_compiler_frame1 func_args
     /***/
     push_finished_type(Pike_compiler->compiler_frame->current_return_type);
 
-    e=$4-1;
+    e=$3-1;
     if(Pike_compiler->varargs)
     {
       push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
@@ -2493,7 +2489,7 @@ local_function2: optional_stars TOK_IDENTIFIER push_compiler_frame1 func_args
     type=compiler_pop_type();
     /***/
 
-    name = get_new_name($2->u.sval.u.string);
+    name = get_new_name($1->u.sval.u.string);
 
 #ifdef LAMBDA_DEBUG
     fprintf(stderr, "%d: LAMBDA: %s 0x%08lx 0x%08lx\n",
@@ -2528,27 +2524,27 @@ local_function2: optional_stars TOK_IDENTIFIER push_compiler_frame1 func_args
     }
 
     low_add_local_name(Pike_compiler->compiler_frame->previous,
-		       $2->u.sval.u.string, type, n);
+		       $1->u.sval.u.string, type, n);
     $<number>$=id;
     free_string(name);
   }
   failsafe_block
   {
     int localid;
-    struct identifier *i=ID_FROM_INT(Pike_compiler->new_program, $<number>5);
+    struct identifier *i=ID_FROM_INT(Pike_compiler->new_program, $<number>4);
     struct compilation *c = THIS_COMPILATION;
     struct pike_string *save_file = c->lex.current_file;
     int save_line = c->lex.current_line;
-    c->lex.current_file = $2->current_file;
-    c->lex.current_line = $2->line_number;
+    c->lex.current_file = $1->current_file;
+    c->lex.current_line = $1->line_number;
 
-    debug_malloc_touch($6);
-    $6=mknode(F_COMMA_EXPR,$6,mknode(F_RETURN,mkintnode(0),0));
+    debug_malloc_touch($5);
+    $5=mknode(F_COMMA_EXPR,$5,mknode(F_RETURN,mkintnode(0),0));
 
 
-    debug_malloc_touch($6);
+    debug_malloc_touch($5);
     dooptcode(i->name,
-	      $6,
+	      $5,
 	      i->type,
 	      ID_PROTECTED | ID_PRIVATE | ID_INLINE);
 
@@ -2557,15 +2553,15 @@ local_function2: optional_stars TOK_IDENTIFIER push_compiler_frame1 func_args
     c->lex.current_line = save_line;
     c->lex.current_file = save_file;
 #ifdef PIKE_DEBUG
-    if (Pike_compiler->compiler_frame != $3) {
+    if (Pike_compiler->compiler_frame != $2) {
       Pike_fatal("Lost track of compiler_frame!\n"
 		 "  Got: %p (Expected: %p) Previous: %p\n",
-		 Pike_compiler->compiler_frame, $3,
+		 Pike_compiler->compiler_frame, $2,
 		 Pike_compiler->compiler_frame->previous);
     }
 #endif
     pop_compiler_frame();
-    free_node($2);
+    free_node($1);
 
     /* WARNING: If the local function adds more variables we are screwed */
     /* WARNING2: if add_local_name stops adding local variables at the end,
@@ -2580,29 +2576,29 @@ local_function2: optional_stars TOK_IDENTIFIER push_compiler_frame1 func_args
       if(Pike_compiler->compiler_frame->lexical_scope &
 	 (SCOPE_SCOPE_USED | SCOPE_SCOPED))
       {
-        $$ = mktrampolinenode($<number>5,Pike_compiler->compiler_frame);
+        $$ = mktrampolinenode($<number>4,Pike_compiler->compiler_frame);
       }else{
-        $$ = mkidentifiernode($<number>5);
+        $$ = mkidentifiernode($<number>4);
       }
     }
   }
-  | optional_stars TOK_IDENTIFIER push_compiler_frame1 error
+  | TOK_IDENTIFIER push_compiler_frame1 error
   {
 #ifdef PIKE_DEBUG
-    if (Pike_compiler->compiler_frame != $3) {
+    if (Pike_compiler->compiler_frame != $2) {
       Pike_fatal("Lost track of compiler_frame!\n"
 		 "  Got: %p (Expected: %p) Previous: %p\n",
-		 Pike_compiler->compiler_frame, $3,
+		 Pike_compiler->compiler_frame, $2,
 		 Pike_compiler->compiler_frame->previous);
     }
 #endif
     pop_compiler_frame();
-    free_node($2);
+    free_node($1);
     $$=mkintnode(0);
   }
   ;
 
-create_arg: modifiers type_or_error optional_stars optional_dot_dot_dot TOK_IDENTIFIER
+create_arg: modifiers type_or_error optional_dot_dot_dot TOK_IDENTIFIER
   {
     struct pike_type *type;
     int ref_no;
@@ -2612,7 +2608,7 @@ create_arg: modifiers type_or_error optional_stars optional_dot_dot_dot TOK_IDEN
     }
 
     push_finished_type(Pike_compiler->compiler_frame->current_type);
-    if ($4) {
+    if ($3) {
       push_type(T_ARRAY);
     }
     type=compiler_pop_type();
@@ -2624,16 +2620,16 @@ create_arg: modifiers type_or_error optional_stars optional_dot_dot_dot TOK_IDEN
      *       counter num_create_args is sufficient extra information
      *       to be able to keep track of them.
      */
-    ref_no = define_variable($5->u.sval.u.string, type,
+    ref_no = define_variable($4->u.sval.u.string, type,
 			     Pike_compiler->current_modifiers);
     free_type(type);
 
     if (Pike_compiler->num_create_args != ref_no) {
       my_yyerror("Multiple definitions of create variable %S (%d != %d).",
-		 $5->u.sval.u.string,
+		 $4->u.sval.u.string,
 		 Pike_compiler->num_create_args, ref_no);
     }
-    if ($4) {
+    if ($3) {
       /* Encode varargs marker as negative number of args. */
       Pike_compiler->num_create_args = -(ref_no + 1);
     } else {
@@ -2641,10 +2637,10 @@ create_arg: modifiers type_or_error optional_stars optional_dot_dot_dot TOK_IDEN
     }
 
     /* free_type(type); */
-    free_node($5);
+    free_node($4);
     $$=0;
   }
-  | modifiers type_or_error optional_stars bad_identifier { $$=0; }
+  | modifiers type_or_error bad_identifier { $$=0; }
   ;
 
 create_arguments2: create_arg { $$ = 1; }
