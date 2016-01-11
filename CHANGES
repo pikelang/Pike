@@ -77,3 +77,8 @@ Building and installing
 -----------------------
 
 o GMP 4.1 or later is now required.
+
+o C99 assumed
+
+  The configure tests will not check for functions defined in C99
+  anymore and C99 compiler support is assumed.
