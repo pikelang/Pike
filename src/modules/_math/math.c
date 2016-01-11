@@ -56,15 +56,6 @@
 #define FL1(FN, ARG1) PIKE_CONCAT(FN,f) (ARG1)
 #define FL2(FN, ARG1, ARG2) PIKE_CONCAT(FN,f) (ARG1, ARG2)
 
-#define FA1(FN, ARG1) FN (ARG1)
-#define FA2(FN, ARG1, ARG2) FN (ARG1, ARG2)
-
-#endif
-
-/* FA1 and FA2 are used for FLOAT_ARG_TYPE. */
-#ifndef FA1
-# define FA1(FN, ARG1) FL1 (FN, (ARG1))
-# define FA2(FN, ARG1, ARG2) FL2 (FN, (ARG1), (ARG2))
 #endif
 
 #ifndef NO_MATHERR
@@ -235,12 +226,8 @@ void f_atan2(INT32 args)
  */
 void f_sinh(INT32 args)
 {
-  FLOAT_ARG_TYPE x;
   ARG_CHECK("sinh");
-  x=sp[-1].u.float_number;
-
-  sp[-1].u.float_number =
-    (FLOAT_TYPE) (0.5*(FA1(exp,x)-FA1(exp,-x)));
+  sp[-1].u.float_number = FL1(sinh, sp[-1].u.float_number);
 }
 
 /*! @decl float asinh(int|float f)
@@ -252,12 +239,8 @@ void f_sinh(INT32 args)
  */
 void f_asinh(INT32 args)
 {
-  FLOAT_ARG_TYPE x;
   ARG_CHECK("asinh");
-  x=sp[-1].u.float_number;
-
-  sp[-1].u.float_number =
-    (FLOAT_TYPE) (FA1(log,x+FA1(sqrt,1+x*x)));
+  sp[-1].u.float_number = FL1(asinh, sp[-1].u.float_number);
 }
 
 /*! @decl float cosh(int|float f)
@@ -269,12 +252,8 @@ void f_asinh(INT32 args)
  */
 void f_cosh(INT32 args)
 {
-  FLOAT_ARG_TYPE x;
   ARG_CHECK("cosh");
-  x=sp[-1].u.float_number;
-
-  sp[-1].u.float_number =
-    (FLOAT_TYPE) (0.5*(FA1(exp,x)+FA1(exp,-x)));
+  sp[-1].u.float_number = FL1(cosh, sp[-1].u.float_number);
 }
 
 /*! @decl float acosh(int|float f)
@@ -286,12 +265,8 @@ void f_cosh(INT32 args)
  */
 void f_acosh(INT32 args)
 {
-  FLOAT_ARG_TYPE x;
   ARG_CHECK("acosh");
-  x=sp[-1].u.float_number;
-
-  sp[-1].u.float_number =
-    (FLOAT_TYPE) (2*FA1(log,FA1(sqrt,0.5*(x+1))+FA1(sqrt,0.5*(x-1))));
+  sp[-1].u.float_number = FL1(acosh, sp[-1].u.float_number);
 }
 
 /*! @decl float tanh(int|float f)
@@ -303,12 +278,8 @@ void f_acosh(INT32 args)
  */
 void f_tanh(INT32 args)
 {
-  FLOAT_ARG_TYPE x;
   ARG_CHECK("tanh");
-  x=sp[-1].u.float_number;
-
-  sp[-1].u.float_number =
-    (FLOAT_TYPE) ((FA1(exp,x)-FA1(exp,-x))/(FA1(exp,x)+FA1(exp,-x)));
+  sp[-1].u.float_number = FL1(tanh, sp[-1].u.float_number);
 }
 
 /*! @decl float atanh(int|float f)
@@ -320,12 +291,8 @@ void f_tanh(INT32 args)
  */
 void f_atanh(INT32 args)
 {
-  FLOAT_ARG_TYPE x;
   ARG_CHECK("atanh");
-  x=sp[-1].u.float_number;
-
-  sp[-1].u.float_number =
-    (FLOAT_TYPE) (0.5*(FA1(log,1+x)-FA1(log,1-x)));
+  sp[-1].u.float_number = FL1(atanh, sp[-1].u.float_number);
 }
 
 /*! @decl float sqrt(float f)
@@ -355,7 +322,6 @@ void f_sqrt(INT32 args)
 
   if(TYPEOF(sp[-1]) == T_INT)
   {
-    /* Note: This algorithm is also implemented in src/stuff.c */
     unsigned INT_TYPE n, b, s, y=0;
     unsigned INT_TYPE x=0;
 
