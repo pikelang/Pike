@@ -117,13 +117,13 @@ void free_all_program_blocks(void) {
 /* #define PROGRAM_BUILD_DEBUG */
 
 #ifdef COMPILER_DEBUG
-#define CDFPRINTF(X)	fprintf X
+#define CDFPRINTF(...)	fprintf(stderr, __VA_ARGS__)
 #ifndef PIKE_THREADS
 /* The CDFPRINTF lines wants to print lock_depth, so fake one of those */
 static const int lock_depth = 1;
 #endif
 #else /* !COMPILER_DEBUG */
-#define CDFPRINTF(X)
+#define CDFPRINTF(...)
 #endif /* COMPILER_DEBUG */
 
 /*
@@ -2936,11 +2936,11 @@ void low_start_new_program(struct program *p,
   p->flags &=~ PROGRAM_VIRGIN;
   if(idp) *idp=id;
 
-  CDFPRINTF((stderr, "th(%ld) %p low_start_new_program() %s "
-	     "pass=%d: lock_depth:%d, compilation_depth:%d\n",
-	     (long)th_self(), p, name ? name->str : "-",
-	     Pike_compiler->compiler_pass,
-	     lock_depth, c->compilation_depth));
+  CDFPRINTF("th(%ld) %p low_start_new_program() %s "
+            "pass=%d: lock_depth:%d, compilation_depth:%d\n",
+            (long)th_self(), p, name ? name->str : "-",
+            Pike_compiler->compiler_pass,
+            lock_depth, c->compilation_depth);
 
   init_type_stack();
 
@@ -3164,11 +3164,10 @@ PMOD_EXPORT void debug_start_new_program(INT_TYPE line, const char *file)
     c->lex.current_line = line;
   }
 
-  CDFPRINTF((stderr,
-	     "th(%ld) start_new_program(%ld, %s): "
-	     "lock_depth:%d, compilation_depth:%d\n",
-	     (long)th_self(), (long)line, file,
-	     lock_depth, c->compilation_depth));
+  CDFPRINTF("th(%ld) start_new_program(%ld, %s): "
+            "lock_depth:%d, compilation_depth:%d\n",
+            (long)th_self(), (long)line, file,
+            lock_depth, c->compilation_depth);
 
   low_start_new_program(0,1,0,0,0);
   store_linenumber(line,c->lex.current_file);
@@ -3993,7 +3992,7 @@ struct program *end_first_pass(int finish)
     id_flags = 0;
     opt_flags = 0;
 
-    CDFPRINTF((stderr, "Collecting variants of \"%s\"...\n", name->str));
+    CDFPRINTF("Collecting variants of \"%s\"...\n", name->str);
 
     /* Collect the variants of the function. */
     j = prog->num_identifier_references;
@@ -4113,9 +4112,9 @@ struct program *end_first_pass(int finish)
 
   if(Pike_compiler->num_parse_error > 0)
   {
-    CDFPRINTF((stderr, "th(%ld) %p Compilation errors (%d).\n",
-	       (long)th_self(), Pike_compiler->new_program,
-	       Pike_compiler->num_parse_error));
+    CDFPRINTF("th(%ld) %p Compilation errors (%d).\n",
+              (long)th_self(), Pike_compiler->new_program,
+              Pike_compiler->num_parse_error);
     prog=0;
   }else{
     prog=Pike_compiler->new_program;
@@ -4177,11 +4176,10 @@ struct program *end_first_pass(int finish)
   toss_compilation_resources();
 
 #if 0
-  CDFPRINTF((stderr,
-	     "th(%ld) end_first_pass(): "
-	     "%p compilation_depth:%d, Pike_compiler->compiler_pass:%d\n",
-	     (long)th_self(), prog,
-	     c->compilation_depth, Pike_compiler->compiler_pass));
+  CDFPRINTF("th(%ld) end_first_pass(): "
+            "%p compilation_depth:%d, Pike_compiler->compiler_pass:%d\n",
+            (long)th_self(), prog,
+            c->compilation_depth, Pike_compiler->compiler_pass);
 #endif
 
   if(!Pike_compiler->compiler_frame && (Pike_compiler->compiler_pass==2 || !prog) && c->resolve_cache)
@@ -4200,11 +4198,10 @@ struct program *end_first_pass(int finish)
   exit_type_stack();
 
 
-  CDFPRINTF((stderr,
-	     "th(%ld) %p end_first_pass(%d): "
-	     "lock_depth:%d, compilation_depth:%d\n",
-	     (long)th_self(), prog, finish,
-	     lock_depth, c->compilation_depth));
+  CDFPRINTF("th(%ld) %p end_first_pass(%d): "
+            "lock_depth:%d, compilation_depth:%d\n",
+            (long)th_self(), prog, finish,
+            lock_depth, c->compilation_depth);
 
   c->compilation_depth--;
 
@@ -4776,8 +4773,8 @@ void lower_inherit(struct program *p,
 	  flags,
 	  name?  name->str : "");
 #endif
-  CDFPRINTF((stderr, "th(%ld) %p inherit %p\n",
-	     (long) th_self(), Pike_compiler->new_program, p));
+  CDFPRINTF("th(%ld) %p inherit %p\n",
+            (long) th_self(), Pike_compiler->new_program, p);
 
   if(!p)
   {
@@ -6693,8 +6690,8 @@ PMOD_EXPORT int really_low_find_shared_string_identifier(struct pike_string *nam
   int id, i, depth, last_inh;
 
 #if 0
-  CDFPRINTF((stderr,"th(%ld) %p Trying to find %s flags=%d\n",
-	     (long)th_self(), prog, name->str, flags));
+  CDFPRINTF("th(%ld) %p Trying to find %s flags=%d\n",
+            (long)th_self(), prog, name->str, flags);
 #endif
 
 #ifdef PIKE_DEBUG
@@ -6832,11 +6829,11 @@ int really_low_find_variant_identifier(struct pike_string *name,
 	id = i;
       }
     } else {
-      CDFPRINTF((stderr, "Found %d\n", i));
+      CDFPRINTF("Found %d\n", i);
       return i;
     }
   }
-  CDFPRINTF((stderr, "Found %d\n", id));
+  CDFPRINTF("Found %d\n", id);
   return id;
 }
 
@@ -8428,8 +8425,8 @@ void init_supporter(struct Supporter *s,
 		    supporter_callback *fun,
 		    void *data)
 {
-  CDFPRINTF((stderr, "th(%ld) init_supporter() supporter=%p data=%p.\n",
-	     (long) th_self(), s, data));
+  CDFPRINTF("th(%ld) init_supporter() supporter=%p data=%p.\n",
+            (long) th_self(), s, data);
   verify_supporters();
 #ifdef PIKE_DEBUG
   s->magic = 0x500b0127;
@@ -8466,10 +8463,10 @@ int unlink_current_supporter(struct Supporter *c)
     c->next_dependant = c->depends_on->dependants;
     c->depends_on->dependants=c;
     add_ref(c->self);
-    CDFPRINTF((stderr, "th(%ld) unlink_current_supporter() "
-	       "supporter=%p (prog %p) depends on %p (prog %p).\n",
-	       (long) th_self(), c, c->prog,
-	       c->depends_on, c->depends_on->prog));
+    CDFPRINTF("th(%ld) unlink_current_supporter() "
+              "supporter=%p (prog %p) depends on %p (prog %p).\n",
+              (long) th_self(), c, c->prog,
+              c->depends_on, c->depends_on->prog);
   }
   current_supporter=c->previous;
   verify_supporters();
@@ -8492,13 +8489,13 @@ int call_dependants(struct Supporter *s, int finish)
 {
   int ok = 1;
   struct Supporter *tmp;
-  CDFPRINTF((stderr, "th(%ld) call_dependants() supporter=%p (prog %p) "
-	     "finish=%d.\n", (long) th_self(), s, s->prog, finish));
+  CDFPRINTF("th(%ld) call_dependants() supporter=%p (prog %p) "
+            "finish=%d.\n", (long) th_self(), s, s->prog, finish);
   verify_supporters();
   while((tmp=s->dependants))
   {
-    CDFPRINTF((stderr, "th(%ld) dependant: %p (prog %p) (data:%p).\n",
-	       (long) th_self(), tmp, tmp->prog, tmp->data));
+    CDFPRINTF("th(%ld) dependant: %p (prog %p) (data:%p).\n",
+              (long) th_self(), tmp, tmp->prog, tmp->data);
     s->dependants=tmp->next_dependant;
 #ifdef PIKE_DEBUG
     tmp->next_dependant=0;
@@ -8521,8 +8518,8 @@ int report_compiler_dependency(struct program *p)
     return 0;
   }
 
-  CDFPRINTF((stderr, "th(%ld) compiler dependency on %p from %p\n",
-	     (long)th_self(), p, Pike_compiler->new_program));
+  CDFPRINTF("th(%ld) compiler dependency on %p from %p\n",
+            (long)th_self(), p, Pike_compiler->new_program);
 
   verify_supporters();
   if (Pike_compiler->flags & COMPILATION_FORCE_RESOLVE)
@@ -8539,9 +8536,9 @@ int report_compiler_dependency(struct program *p)
 	if(c->prog == p)
 	{
 	  cc->depends_on=c;
-	  CDFPRINTF ((stderr, "th(%ld) supporter %p (prog %p) "
-		      "now depends on %p (prog %p)\n",
-		      (long) th_self(), cc, cc->prog, c, c->prog));
+          CDFPRINTF("th(%ld) supporter %p (prog %p) "
+                    "now depends on %p (prog %p)\n",
+                    (long) th_self(), cc, cc->prog, c, c->prog);
 	  verify_supporters();
 	  ret++; /* dependency registred */
 	}
@@ -9116,8 +9113,8 @@ static int run_pass1(struct compilation *c)
   run_init(c);
 
 #if 0
-  CDFPRINTF((stderr, "th(%ld) compile() starting compilation_depth=%d\n",
-	     (long)th_self(), c->compilation_depth));
+  CDFPRINTF("th(%ld) compile() starting compilation_depth=%d\n",
+            (long)th_self(), c->compilation_depth);
 #endif
 
   if(c->placeholder && c->placeholder->prog != null_program) {
@@ -9134,11 +9131,10 @@ static int run_pass1(struct compilation *c)
   low_start_new_program(c->target,1,0,0,0);
   c->supporter.prog = Pike_compiler->new_program;
 
-  CDFPRINTF((stderr,
-	     "th(%ld) %p run_pass1() start: "
-	     "lock_depth:%d, compilation_depth:%d\n",
-	     (long)th_self(), Pike_compiler->new_program,
-	     lock_depth, c->compilation_depth));
+  CDFPRINTF("th(%ld) %p run_pass1() start: "
+            "lock_depth:%d, compilation_depth:%d\n",
+            (long)th_self(), Pike_compiler->new_program,
+            lock_depth, c->compilation_depth);
 
   run_init2(c);
 
@@ -9157,8 +9153,8 @@ static int run_pass1(struct compilation *c)
   }
 
 #if 0
-  CDFPRINTF((stderr, "th(%ld) %p compile(): First pass\n",
-	     (long)th_self(), Pike_compiler->new_program));
+  CDFPRINTF("th(%ld) %p compile(): First pass\n",
+            (long)th_self(), Pike_compiler->new_program);
 #endif
 
   do_yyparse();  /* Parse da program */
@@ -9172,9 +9168,9 @@ static int run_pass1(struct compilation *c)
 #endif
   }
 
-  CDFPRINTF((stderr, "th(%ld) %p run_pass1() done for %s\n",
-	     (long)th_self(), Pike_compiler->new_program,
-	     c->lex.current_file->str));
+  CDFPRINTF("th(%ld) %p run_pass1() done for %s\n",
+            (long)th_self(), Pike_compiler->new_program,
+            c->lex.current_file->str);
 
   ret=unlink_current_supporter(& c->supporter);
 
@@ -9223,19 +9219,18 @@ void run_pass2(struct compilation *c)
 
   run_init2(c);
 
-  CDFPRINTF((stderr,
-	     "th(%ld) %p run_pass2() start: "
-	     "lock_depth:%d, compilation_depth:%d\n",
-	     (long)th_self(), Pike_compiler->new_program,
-	     lock_depth, c->compilation_depth));
+  CDFPRINTF("th(%ld) %p run_pass2() start: "
+            "lock_depth:%d, compilation_depth:%d\n",
+            (long)th_self(), Pike_compiler->new_program,
+            lock_depth, c->compilation_depth);
 
   verify_supporters();
 
   do_yyparse();  /* Parse da program */
 
-  CDFPRINTF((stderr, "th(%ld) %p run_pass2() done for %s\n",
-	     (long)th_self(), Pike_compiler->new_program,
-	     c->lex.current_file->str));
+  CDFPRINTF("th(%ld) %p run_pass2() done for %s\n",
+            (long)th_self(), Pike_compiler->new_program,
+            c->lex.current_file->str);
 
   verify_supporters();
 
@@ -9259,11 +9254,10 @@ static void run_cleanup(struct compilation *c, int delayed)
 
   unlock_pike_compiler();
 
-  CDFPRINTF((stderr,
-	     "th(%ld) %p run_cleanup(): "
-	     "lock_depth:%d, compilation_depth:%d\n",
-	     (long)th_self(), c->target,
-	     lock_depth, c->compilation_depth));
+  CDFPRINTF("th(%ld) %p run_cleanup(): "
+            "lock_depth:%d, compilation_depth:%d\n",
+            (long)th_self(), c->target,
+            lock_depth, c->compilation_depth);
   if (!c->p)
   {
     /* fprintf(stderr, "Destructing placeholder.\n"); */
@@ -9292,8 +9286,8 @@ static void run_cleanup(struct compilation *c, int delayed)
        * a previous compile() actually failed, even
        * if we did not know it at the time
        */
-      CDFPRINTF((stderr, "th(%ld) %p unregistering failed delayed compile.\n",
-		 (long) th_self(), p));
+      CDFPRINTF("th(%ld) %p unregistering failed delayed compile.\n",
+                (long) th_self(), p);
       ref_push_program(p);
       /* FIXME: Shouldn't the compilation handler be used here? */
       SAFE_APPLY_MASTER("unregister",1);
@@ -9367,8 +9361,8 @@ static int call_delayed_pass2(struct compilation *cc, int finish)
 
   debug_malloc_touch(cc->p);
 
-  CDFPRINTF((stderr, "th(%ld) %p %s delayed compile.\n",
-	     (long) th_self(), cc->p, finish ? "continuing" : "cleaning up"));
+  CDFPRINTF("th(%ld) %p %s delayed compile.\n",
+            (long) th_self(), cc->p, finish ? "continuing" : "cleaning up");
 
   /* Reenter the delayed compilation. */
   add_ref(cc->supporter.self);
@@ -9391,8 +9385,8 @@ static int call_delayed_pass2(struct compilation *cc, int finish)
     cc->p = NULL;
   }
 
-  CDFPRINTF((stderr, "th(%ld) %p delayed compile %s.\n",
-	     (long) th_self(), cc->target, ok ? "done" : "failed"));
+  CDFPRINTF("th(%ld) %p delayed compile %s.\n",
+            (long) th_self(), cc->target, ok ? "done" : "failed");
 
   verify_supporters();
 
@@ -9405,8 +9399,7 @@ static void compilation_event_handler(int e)
 
   switch (e) {
   case PROG_EVENT_INIT:
-    CDFPRINTF((stderr, "th(%ld) compilation: INIT(%p).\n",
-	       (long) th_self(), c));
+    CDFPRINTF("th(%ld) compilation: INIT(%p).\n", (long) th_self(), c);
     memset(c, 0, sizeof(*c));
     c->supporter.self = Pike_fp->current_object; /* NOTE: Not ref-counted! */
     c->compilation_inherit =
@@ -9421,8 +9414,7 @@ static void compilation_event_handler(int e)
     c->compilation_depth = -1;
     break;
   case PROG_EVENT_EXIT:
-    CDFPRINTF((stderr, "th(%ld) compilation: EXIT(%p).\n",
-	       (long) th_self(), c));
+    CDFPRINTF("th(%ld) compilation: EXIT(%p).\n", (long) th_self(), c);
     toss_buffer(&c->used_modules);
     free_compilation(c);
     break;
@@ -9622,8 +9614,8 @@ static void f_compilation_create(INT32 args)
 
   check_c_stack(65536);
 
-  CDFPRINTF((stderr, "th(%ld) %p compilation create() enter, placeholder=%p\n",
-	     (long) th_self(), atarget, aplaceholder));
+  CDFPRINTF("th(%ld) %p compilation create() enter, placeholder=%p\n",
+            (long) th_self(), atarget, aplaceholder);
 
   debug_malloc_touch(c);
 
@@ -9683,8 +9675,8 @@ static void f_compilation_compile(INT32 args)
 
   check_c_stack(65536);
 
-  CDFPRINTF((stderr, "th(%ld) %p f_compilation_compile() enter, "
-	     "placeholder=%p\n", (long) th_self(), c->target, c->placeholder));
+  CDFPRINTF("th(%ld) %p f_compilation_compile() enter, "
+            "placeholder=%p\n", (long) th_self(), c->target, c->placeholder);
 
   debug_malloc_touch(c);
 
@@ -9732,16 +9724,16 @@ static void f_compilation_compile(INT32 args)
 
   if(delay)
   {
-    CDFPRINTF((stderr, "th(%ld) %p f_compilation_compile() finish later, "
-	       "placeholder=%p.\n",
-	       (long) th_self(), c->target, c->placeholder));
+    CDFPRINTF("th(%ld) %p f_compilation_compile() finish later, "
+              "placeholder=%p.\n",
+              (long) th_self(), c->target, c->placeholder);
     /* finish later */
     verify_supporters();
     /* We're hanging in the supporter. */
     ret = debug_malloc_pass(c->p);
   }else{
-    CDFPRINTF((stderr, "th(%ld) %p f_compilation_compile() finish now.\n",
-	       (long) th_self(), c->target));
+    CDFPRINTF("th(%ld) %p f_compilation_compile() finish now.\n",
+              (long) th_self(), c->target);
     /* finish now */
     run_pass2(c);
     debug_malloc_touch(c);
@@ -9752,15 +9744,15 @@ static void f_compilation_compile(INT32 args)
     debug_malloc_touch(c);
 
     if (!dependants_ok) {
-      CDFPRINTF((stderr, "th(%ld) %p f_compilation_compile() reporting failure "
-		 "since a dependant failed.\n",
-		 (long) th_self(), c->target));
+      CDFPRINTF("th(%ld) %p f_compilation_compile() reporting failure "
+                "since a dependant failed.\n",
+                (long) th_self(), c->target);
       throw_error_object(fast_clone_object(compilation_error_program), 0, 0, 0,
 			 "Compilation failed.\n");
     }
     if(!ret) {
-      CDFPRINTF((stderr, "th(%ld) %p f_compilation_compile() failed.\n",
-		 (long) th_self(), c->target));
+      CDFPRINTF("th(%ld) %p f_compilation_compile() failed.\n",
+                (long) th_self(), c->target);
       throw_error_object(fast_clone_object(compilation_error_program), 0, 0, 0,
 			 "Compilation failed.\n");
     }
@@ -10637,8 +10629,8 @@ struct program *compile(struct pike_string *aprog,
 
   Pike_fatal("Old C-level compile() function called!\n");
 
-  CDFPRINTF((stderr, "th(%ld) %p compile() enter, placeholder=%p\n",
-	     (long) th_self(), atarget, aplaceholder));
+  CDFPRINTF("th(%ld) %p compile() enter, placeholder=%p\n",
+            (long) th_self(), atarget, aplaceholder);
 
   ce = clone_object(compilation_program, 0);
   c = (struct compilation *)ce->storage;
@@ -10696,15 +10688,15 @@ struct program *compile(struct pike_string *aprog,
 
   if(delay)
   {
-    CDFPRINTF((stderr, "th(%ld) %p compile() finish later, placeholder=%p.\n",
-	       (long) th_self(), c->target, c->placeholder));
+    CDFPRINTF("th(%ld) %p compile() finish later, placeholder=%p.\n",
+              (long) th_self(), c->target, c->placeholder);
     /* finish later */
     add_ref(c->p);
     verify_supporters();
     return c->p; /* freed later */
   }else{
-    CDFPRINTF((stderr, "th(%ld) %p compile() finish now\n",
-	       (long) th_self(), c->target));
+    CDFPRINTF("th(%ld) %p compile() finish now\n",
+              (long) th_self(), c->target);
     /* finish now */
     if(c->p) run_pass2(c);
     debug_malloc_touch(c);
@@ -10718,16 +10710,16 @@ struct program *compile(struct pike_string *aprog,
     free_object(ce);
 
     if (!dependants_ok) {
-      CDFPRINTF((stderr, "th(%ld) %p compile() reporting failure "
-		 "since a dependant failed.\n",
-		 (long) th_self(), c->target));
+      CDFPRINTF("th(%ld) %p compile() reporting failure "
+                "since a dependant failed.\n",
+                (long) th_self(), c->target);
       if (ret) free_program(ret);
       throw_error_object(fast_clone_object(compilation_error_program), 0, 0, 0,
 			 "Compilation failed.\n");
     }
     if(!ret) {
-      CDFPRINTF((stderr, "th(%ld) %p compile() failed.\n",
-		 (long) th_self(), c->target));
+      CDFPRINTF("th(%ld) %p compile() failed.\n",
+                (long) th_self(), c->target);
       throw_error_object(fast_clone_object(compilation_error_program), 0, 0, 0,
 			 "Compilation failed.\n");
     }

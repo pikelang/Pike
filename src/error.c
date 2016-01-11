@@ -860,9 +860,9 @@ static void f_error_create(INT32 args)
  */
 
 #ifdef ERROR_DEBUG
-#define DWERROR(X)	fprintf X
+#define DWERROR(...)	fprintf(stderr, __VA_ARGS__)
 #else /* !ERROR_DEBUG */
-#define DWERROR(X)
+#define DWERROR(...)
 #endif /* ERROR_DEBUG */
 
 #define INIT_ERROR(FEL)\
@@ -870,7 +870,7 @@ static void f_error_create(INT32 args)
   struct object *o; \
   va_start(foo,desc); \
   ASSERT_THREAD_SWAPPED_IN(); \
-  DWERROR((stderr, "%s(): Throwing a " #FEL " error\n", func)); \
+  DWERROR("%s(): Throwing a " #FEL " error\n", func); \
   o=fast_clone_object(PIKE_CONCAT(FEL,_error_program))
 
 #define ERROR_DONE(FOO) \
@@ -994,7 +994,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void throw_error_object(
   va_list foo;
   va_start(foo,desc);
   ASSERT_THREAD_SWAPPED_IN();
-  DWERROR((stderr, "%s(): Throwing an error object\n", func));
+  DWERROR("%s(): Throwing an error object\n", func);
   ERROR_DONE(generic);
 }
 
@@ -1039,8 +1039,8 @@ PMOD_EXPORT DECLSPEC(noreturn) void bad_arg_error(
   else
     ERROR_STRUCT(bad_argument,o)->expected_type = NULL;
   ERROR_COPY_SVALUE(bad_argument, got_value);
-  DWERROR((stderr, "%s():Bad arg %d (expected %s)\n",
-	   func, which_argument, expected_type));
+  DWERROR("%s():Bad arg %d (expected %s)\n",
+          func, which_argument, expected_type);
   ERROR_DONE(generic);
 }
 

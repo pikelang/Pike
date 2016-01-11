@@ -67,9 +67,9 @@
 #endif /* PIKE_EXTRA_DEBUG */
 
 #ifdef TRACE_MAIN
-#define TRACE(X)	fprintf X
+#define TRACE(...)	fprintf(stderr, __VA_ARGS__)
 #else /* !TRACE_MAIN */
-#define TRACE(X)
+#define TRACE(...)
 #endif /* TRACE_MAIN */
 
 /*
@@ -187,7 +187,7 @@ static void set_default_master(const char *bin_name)
   }
 #endif
 
-  TRACE((stderr, "Default master at \"%s\"...\n", mp));
+  TRACE("Default master at \"%s\"...\n", mp);
 #undef mp
 }
 
@@ -222,13 +222,13 @@ static void find_lib_dir(int argc, char **argv)
 {
   int e;
 
-  TRACE((stderr, "find_lib_dir...\n"));
+  TRACE("find_lib_dir...\n");
 
   set_default_master(argv[0]);
 
   for(e=1; e<argc; e++)
   {
-    TRACE((stderr, "Parse argument %d:\"%s\"...\n", e, argv[e]));
+    TRACE("Parse argument %d:\"%s\"...\n", e, argv[e]);
 
     if(argv[e][0] != '-') break;
 
@@ -305,7 +305,7 @@ int main(int argc, char **argv)
 #endif
 
 #ifdef HAVE_MALLOPT
-  TRACE((stderr, "Init malloc...\n"));
+  TRACE("Init malloc...\n");
 
   /* The malloc implementation in recent glibc (eg Linux)
    * defaults to using one arena / thread. This means that
@@ -328,7 +328,7 @@ int main(int argc, char **argv)
 #endif
 #endif /* HAVE_MALLOPT */
 
-  TRACE((stderr, "Init master...\n"));
+  TRACE("Init master...\n");
 
   find_lib_dir(argc, argv);
 
@@ -368,13 +368,13 @@ int main(int argc, char **argv)
 
 #endif /* LIBPIKE */
 
-  TRACE((stderr, "init_pike()\n"));
+  TRACE("init_pike()\n");
 
   init_pike(argv, master_file_location);
 
   for(e=1; e<argc; e++)
   {
-    TRACE((stderr, "Parse argument %d:\"%s\"...\n", e, argv[e]));
+    TRACE("Parse argument %d:\"%s\"...\n", e, argv[e]);
 
     if(argv[e][0]=='-')
     {
@@ -668,7 +668,7 @@ int main(int argc, char **argv)
     back.severity=THROW_EXIT;
 
     if ((m = load_pike_master())) {
-      TRACE((stderr, "Call master->_main()...\n"));
+      TRACE("Call master->_main()...\n");
 
       pike_push_argv(argc, argv);
 
@@ -681,7 +681,7 @@ int main(int argc, char **argv)
   }
   UNSETJMP(back);
 
-  TRACE((stderr, "Exit %d...\n", num));
+  TRACE("Exit %d...\n", num);
 
   pike_do_exit(num);
   return num; /* avoid warning */

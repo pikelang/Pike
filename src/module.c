@@ -44,9 +44,9 @@
 #endif
 
 #if defined(TRACE_MAIN) || defined(TRACE_MODULE)
-#define TRACE(X)	fprintf X
+#define TRACE(...)	fprintf(stderr, __VA_ARGS__)
 #else /* !TRACE_MAIN */
-#define TRACE(X)
+#define TRACE(...)
 #endif /* TRACE_MAIN */
 
 static void init_builtin_modules(void)
@@ -65,43 +65,43 @@ static void init_builtin_modules(void)
   dmalloc_accept_leak (&weak_empty_array);
 #endif
 
-  TRACE((stderr, "Init cpp...\n"));
+  TRACE("Init cpp...\n");
   init_cpp();
 
-  TRACE((stderr, "Init memory counter...\n"));
+  TRACE("Init memory counter...\n");
   init_mc();
 
-  TRACE((stderr, "Init backend...\n"));
+  TRACE("Init backend...\n");
   init_backend();
 
-  TRACE((stderr, "Init iterators...\n"));
+  TRACE("Init iterators...\n");
   init_iterators();
 
-  TRACE((stderr, "Init searching...\n"));
+  TRACE("Init searching...\n");
   init_pike_searching();
 
-  TRACE((stderr, "Init error handling...\n"));
+  TRACE("Init error handling...\n");
   init_error();
 
-  TRACE((stderr, "Init threads...\n"));
+  TRACE("Init threads...\n");
   th_init();
 
-  TRACE((stderr, "Init operators...\n"));
+  TRACE("Init operators...\n");
   init_operators();
 
-  TRACE((stderr, "Init builtin...\n"));
+  TRACE("Init builtin...\n");
   init_builtin();
 
-  TRACE((stderr, "Init efuns...\n"));
+  TRACE("Init efuns...\n");
   init_builtin_efuns();
 
-  TRACE((stderr, "Init signal handling...\n"));
+  TRACE("Init signal handling...\n");
   init_signals();
 
-  TRACE((stderr, "Init dynamic loading...\n"));
+  TRACE("Init dynamic loading...\n");
   init_dynamic_load();
 
-  TRACE((stderr, "Init sprintf...\n"));
+  TRACE("Init sprintf...\n");
   init_sprintf();
 }
 
@@ -377,8 +377,8 @@ const struct static_module *find_semidynamic_module(const char *name, int namele
     if (module_list[e].semidynamic &&
 	!strncmp(module_list[e].name, name, namelen) &&
 	!module_list[e].name[namelen]) {
-      TRACE((stderr, "Found semidynamic module #%d: \"%s\"...\n",
-	     e, module_list[e].name));
+      TRACE("Found semidynamic module #%d: \"%s\"...\n",
+            e, module_list[e].name);
       return module_list+e;
     }
   }
@@ -441,8 +441,8 @@ void init_modules(void)
       p = NULL;
       call_handle_error();
     } else {
-      TRACE((stderr, "Initializing static module #%d: \"%s\"...\n",
-	     e, module_list[e].name));
+      TRACE("Initializing static module #%d: \"%s\"...\n",
+            e, module_list[e].name);
       module_list[e].init();
       if (
 #if 0
@@ -522,8 +522,8 @@ void exit_modules(void)
     if(SETJMP(recovery))
       call_handle_error();
     else {
-      TRACE((stderr, "Exiting static module #%d: \"%s\"...\n",
-	     e, module_list[e].name));
+      TRACE("Exiting static module #%d: \"%s\"...\n",
+            e, module_list[e].name);
       module_list[e].exit();
     }
     UNSETJMP(recovery);

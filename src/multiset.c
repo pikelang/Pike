@@ -4182,9 +4182,9 @@ static void debug_merge_fatal (struct multiset *a, struct multiset *b,
 }
 
 #ifdef TEST_MULTISET_VERBOSE
-#define TM_VERBOSE(X)	fprintf X
+#define TM_VERBOSE(...)	fprintf(stderr, __VA_ARGS__)
 #else /* !TEST_MULTISET_VERBOSE */
-#define TM_VERBOSE(X)
+#define TM_VERBOSE(...)
 #endif /* TEST_MULTISET_VERBOSE */
 
 void test_multiset (void)
@@ -4220,7 +4220,7 @@ void test_multiset (void)
       if (!(i % 1000)) fprintf (stderr, "ind %s %d         \r",
 				pass ? "cmp_less" : "internal", i);
 
-      TM_VERBOSE((stderr, "pass:%d, i:%d\n", pass, i));
+      TM_VERBOSE("pass:%d, i:%d\n", pass, i);
 
       l = allocate_multiset (0, 0, pass ? less_efun : NULL);
       stack_dup();
@@ -4228,16 +4228,16 @@ void test_multiset (void)
       f_permute (2);
       arr = sp[-1].u.array;
 
-      TM_VERBOSE((stderr, "insert: "));
+      TM_VERBOSE("insert: ");
       for (j = 0; j < 12; j++) {
-	TM_VERBOSE((stderr, "arr[%d]=%d ", j, arr->item[j].u.integer));
+        TM_VERBOSE("arr[%d]=%d ", j, arr->item[j].u.integer);
 	multiset_insert_2 (l, &arr->item[j]);
 	check_multiset (l, 0);
       }
       if (multiset_sizeof (l) != 9)
 	multiset_fatal (l, "Size is wrong: %d (%d)\n", multiset_sizeof (l), i);
 
-      TM_VERBOSE((stderr, "\nfind 5 "));
+      TM_VERBOSE("\nfind 5 ");
       push_int (5);
       TEST_FIND (find_eq, 5);
       TEST_FIND (find_lt, 4);
@@ -4246,7 +4246,7 @@ void test_multiset (void)
       TEST_FIND (find_ge, 5);
       pop_stack();
 
-      TM_VERBOSE((stderr, "6 "));
+      TM_VERBOSE("6 ");
       push_int (6);
       TEST_NOT_FIND (find_eq);
       TEST_FIND (find_lt, 5);
@@ -4255,7 +4255,7 @@ void test_multiset (void)
       TEST_FIND (find_ge, 7);
       pop_stack();
 
-      TM_VERBOSE((stderr, "0 "));
+      TM_VERBOSE("0 ");
       push_int (0);
       TEST_NOT_FIND (find_eq);
       TEST_NOT_FIND (find_lt);
@@ -4264,7 +4264,7 @@ void test_multiset (void)
       TEST_FIND (find_ge, 1);
       pop_stack();
 
-      TM_VERBOSE((stderr, "1 "));
+      TM_VERBOSE("1 ");
       push_int (1);
       TEST_FIND (find_eq, 1);
       TEST_NOT_FIND (find_lt);
@@ -4273,7 +4273,7 @@ void test_multiset (void)
       TEST_FIND (find_ge, 1);
       pop_stack();
 
-      TM_VERBOSE((stderr, "15 "));
+      TM_VERBOSE("15 ");
       push_int (15);
       TEST_FIND (find_eq, 15);
       TEST_FIND (find_lt, 14);
@@ -4282,7 +4282,7 @@ void test_multiset (void)
       TEST_FIND (find_ge, 15);
       pop_stack();
 
-      TM_VERBOSE((stderr, "17\n"));
+      TM_VERBOSE("17\n");
       push_int (17);
       TEST_NOT_FIND (find_eq);
       TEST_FIND (find_lt, 15);
@@ -4292,9 +4292,9 @@ void test_multiset (void)
       pop_stack();
 
       l2 = l;
-      TM_VERBOSE((stderr, "delete: "));
+      TM_VERBOSE("delete: ");
       for (j = 0, v = 0; j < 12; j++) {
-	TM_VERBOSE((stderr, "arr[%d]=%d ", j, arr->item[j].u.integer));
+        TM_VERBOSE("arr[%d]=%d ", j, arr->item[j].u.integer);
 	v += !!multiset_delete_2 (l2, &arr->item[j], NULL);
 	if (multiset_find_eq (l2, &arr->item[j]) >= 0)
 	  multiset_fatal (l2, "Entry %"PRINTPIKEINT"d not deleted (%d).\n",
@@ -4303,7 +4303,7 @@ void test_multiset (void)
       }
       if (v != 9 || l2->msd->root)
 	multiset_fatal (l2, "Wrong number of entries deleted: %d (%d)\n", v, i);
-      TM_VERBOSE((stderr, "\n"));
+      TM_VERBOSE("\n");
       free_multiset (l);
       pop_stack();
     }

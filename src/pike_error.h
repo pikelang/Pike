@@ -85,9 +85,9 @@ struct pike_frame;
 /* #define ONERROR_DEBUG */
 
 #ifdef ONERROR_DEBUG
-#define OED_FPRINTF(X)	fprintf X
+#define OED_FPRINTF(...)	fprintf(stderr, __VA_ARGS__)
 #else /* !ONERROR_DEBUG */
-#define OED_FPRINTF(X)
+#define OED_FPRINTF(...)
 #endif /* ONERROR_DEBUG */
 
 typedef struct ONERROR
@@ -126,8 +126,8 @@ PMOD_EXPORT extern const char msg_unsetjmp_nosync_1[];
 PMOD_EXPORT extern const char msg_unsetjmp_nosync_2[];
 #define UNSETJMP(X) do{						\
     check_recovery_context();					\
-    OED_FPRINTF((stderr, "unsetjmp(%p) %s:%d\n",		\
-		 &(X),  __FILE__, __LINE__));			\
+    OED_FPRINTF("unsetjmp(%p) %s:%d\n",                         \
+                 &(X),  __FILE__, __LINE__);			\
     if(Pike_interpreter.recoveries != &X) {			\
       if(Pike_interpreter.recoveries)				\
 	Pike_fatal(msg_unsetjmp_nosync_1,			\
@@ -162,8 +162,8 @@ PMOD_EXPORT extern const char msg_unsetjmp_nosync_2[];
 #define SET_ONERROR(X,Y,Z)					\
   do{								\
     check_recovery_context();					\
-    OED_FPRINTF((stderr, "SET_ONERROR(%p, %p, %p) %s:%d\n",	\
-		 &(X), (Y), (void *)(Z), __FILE__, __LINE__));	\
+    OED_FPRINTF("SET_ONERROR(%p, %p, %p) %s:%d\n",              \
+                 &(X), (Y), (void *)(Z), __FILE__, __LINE__);	\
     X.frame_pointer = Pike_interpreter.frame_pointer;		\
     X.func=(error_call)(Y);					\
     DO_IF_DMALLOC( if( X.func == free ) X.func=dmalloc_free);	\
@@ -183,8 +183,8 @@ PMOD_EXPORT extern const char msg_unset_onerr_nosync_1[];
 PMOD_EXPORT extern const char msg_unset_onerr_nosync_2[];
 #define UNSET_ONERROR(X) do {					\
     check_recovery_context();					\
-    OED_FPRINTF((stderr, "UNSET_ONERROR(%p) %s:%d\n",		\
-                 &(X), __FILE__, __LINE__));			\
+    OED_FPRINTF("UNSET_ONERROR(%p) %s:%d\n",                    \
+                 &(X), __FILE__, __LINE__);			\
     if(!Pike_interpreter.recoveries) break;			\
     if(Pike_interpreter.recoveries->onerror != &(X)) {		\
       fprintf(stderr,msg_last_setjmp,				\

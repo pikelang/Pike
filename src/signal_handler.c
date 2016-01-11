@@ -255,9 +255,9 @@
 /* #define PROC_DEBUG */
 
 #ifdef PROC_DEBUG
-#define PROC_FPRINTF(X)	fprintf X
+#define PROC_FPRINTF(...)	fprintf(stderr, __VA_ARGS__)
 #else
-#define PROC_FPRINTF(X)
+#define PROC_FPRINTF(...)
 #endif /* PROC_DEBUG */
 
 #if !defined(__NT__) && !defined(__amigaos__)
@@ -705,9 +705,8 @@ void process_done(pid_t pid, const char *from)
     default:
 #ifdef PROC_DEBUG
       dump_process_history(pid);
-      PROC_FPRINTF((stderr,
-		    "[%d] Process debug: Unknown child %ld in %s! (status=%d)\n",
-		    getpid(), (long)pid,from,process_info[pid]));
+      PROC_FPRINTF("[%d] Process debug: Unknown child %ld in %s! (status=%d)\n",
+                   getpid(), (long)pid,from,process_info[pid]);
 #endif
       break;
   }
@@ -753,8 +752,7 @@ static RETSIGTYPE receive_signal(int signum)
 /* This function is intended to work like signal(), but better :) */
 void my_signal(int sig, sigfunctype fun)
 {
-  PROC_FPRINTF((stderr, "[%d] my_signal(%d, 0x%p)\n",
-		getpid(), sig, (void *)fun));
+  PROC_FPRINTF("[%d] my_signal(%d, 0x%p)\n", getpid(), sig, (void *)fun);
 #ifdef HAVE_SIGACTION
   {
     struct sigaction action;
@@ -922,7 +920,7 @@ static void f_signal(int args)
   int signum;
   sigfunctype func;
 
-  PROC_FPRINTF((stderr, "[%d] f_signal(%d)\n", getpid(), args));
+  PROC_FPRINTF("[%d] f_signal(%d)\n", getpid(), args);
 
   check_signals(0,0,0);
 
@@ -1179,7 +1177,7 @@ static RETSIGTYPE receive_sigchild(int UNUSED(signum))
   WAITSTATUSTYPE status;
   int masked_errno = errno;
 
-  PROC_FPRINTF((stderr, "[%d] receive_sigchild\n", getpid()));
+  PROC_FPRINTF("[%d] receive_sigchild\n", getpid());
 
 #ifdef SIGNAL_ONESHOT
   /* Reregister the signal early, so that we don't
@@ -1203,16 +1201,16 @@ static RETSIGTYPE receive_sigchild(int UNUSED(signum))
     memset(&wd, 0, sizeof(wd));
 #endif
 
-    PROC_FPRINTF((stderr, "[%d] receive_sigchild got pid %d\n",
-		  getpid(), pid));
+    PROC_FPRINTF("[%d] receive_sigchild got pid %d\n",
+                 getpid(), pid);
 
     wd.pid=pid;
     wd.status=status;
     wait_push(wd);
     goto try_reap_again;
   }
-  PROC_FPRINTF((stderr, "[%d] receive_sigchild: No more dead children.\n",
-		getpid()));
+  PROC_FPRINTF("[%d] receive_sigchild: No more dead children.\n",
+               getpid());
   register_signal(SIGCHLD);
 
   SAFE_FIFO_DEBUG_END();
@@ -1307,8 +1305,8 @@ static void report_child(int pid,
 			 const char *from)
 {
   /* FIXME: This won't work if WAITSTATUSTYPE == union wait. */
-  PROC_FPRINTF((stderr, "[%d] report_child(%d, %d, \"%s\")\n",
-		getpid(), (int)pid, *(int *) &status, from));
+  PROC_FPRINTF("[%d] report_child(%d, %d, \"%s\")\n",
+               getpid(), (int)pid, *(int *) &status, from);
 
   if (!WIFSTOPPED(status)) {
     process_done(pid, from);
@@ -1324,8 +1322,8 @@ static void report_child(int pid,
       if(TYPEOF(*s) == T_OBJECT)
       {
 	struct object *o;
-	PROC_FPRINTF((stderr, "[%d] Found pid object for pid %d: %p\n",
-		      getpid(), (int)pid, s->u.object));
+        PROC_FPRINTF("[%d] Found pid object for pid %d: %p\n",
+                     getpid(), (int)pid, s->u.object);
 	if((p=get_storage((o = s->u.object),
                           pid_status_program)))
 	{
@@ -1363,8 +1361,8 @@ static void report_child(int pid,
 	      p->result=-1;
 	    }
 	    p->state = PROCESS_EXITED;
-	    PROC_FPRINTF((stderr, "[%d] Pid %d has exited\n",
-			  getpid(), (int)pid));
+            PROC_FPRINTF("[%d] Pid %d has exited\n",
+                         getpid(), (int)pid);
 	  }
 	}
       }
@@ -1387,8 +1385,8 @@ static void report_child(int pid,
        */
       map_delete(pid_mapping, &key);
     }else{
-      PROC_FPRINTF((stderr,"[%d] report_child on unknown child: %d,%d\n",
-		    getpid(),pid,status));
+      PROC_FPRINTF("[%d] report_child on unknown child: %d,%d\n",
+                   getpid(),pid,status);
     }
   }
 }
@@ -1402,21 +1400,21 @@ static int wait_thread_running = 0;
 
 static void do_da_lock(void)
 {
-  PROC_FPRINTF((stderr, "[%d] fork: getting the lock.\n", getpid()));
+  PROC_FPRINTF("[%d] fork: getting the lock.\n", getpid());
 
   mt_lock(&wait_thread_mutex);
 
-  PROC_FPRINTF((stderr, "[%d] fork: got the lock.\n", getpid()));
+  PROC_FPRINTF("[%d] fork: got the lock.\n", getpid());
 }
 
 static void do_bi_do_da_lock(void)
 {
-  PROC_FPRINTF((stderr, "[%d] wait thread: This is your wakeup call!\n",
-		getpid()));
+  PROC_FPRINTF("[%d] wait thread: This is your wakeup call!\n",
+               getpid());
 
   co_signal(&start_wait_thread);
 
-  PROC_FPRINTF((stderr, "[%d] fork: releasing the lock.\n", getpid()));
+  PROC_FPRINTF("[%d] fork: releasing the lock.\n", getpid());
 
   mt_unlock(&wait_thread_mutex);
 }
@@ -1435,7 +1433,7 @@ static TH_RETURN_TYPE wait_thread(void *UNUSED(data))
     int pid;
     int err;
 
-    PROC_FPRINTF((stderr, "[%d] wait_thread: getting the lock.\n", getpid()));
+    PROC_FPRINTF("[%d] wait_thread: getting the lock.\n", getpid());
 
     mt_lock(&wait_thread_mutex);
     pid=MY_WAIT_ANY(&status, WNOHANG|WUNTRACED);
@@ -1444,15 +1442,14 @@ static TH_RETURN_TYPE wait_thread(void *UNUSED(data))
 
     if(pid < 0 && err == ECHILD)
     {
-      PROC_FPRINTF((stderr, "[%d] wait_thread: sleeping\n", getpid()));
+      PROC_FPRINTF("[%d] wait_thread: sleeping\n", getpid());
 
       co_wait(&start_wait_thread, &wait_thread_mutex);
 
-      PROC_FPRINTF((stderr, "[%d] wait_thread: waking up\n", getpid()));
+      PROC_FPRINTF("[%d] wait_thread: waking up\n", getpid());
     }
 
-    PROC_FPRINTF((stderr, "[%d] wait_thread: releasing the lock.\n",
-		  getpid()));
+    PROC_FPRINTF("[%d] wait_thread: releasing the lock.\n", getpid());
 
     mt_unlock(&wait_thread_mutex);
 
@@ -1462,8 +1459,8 @@ static TH_RETURN_TYPE wait_thread(void *UNUSED(data))
       errno = 0;
       if(pid <= 0) pid=MY_WAIT_ANY(&status, 0|WUNTRACED);
 
-      PROC_FPRINTF((stderr, "[%d] wait thread: pid=%d status=%d errno=%d\n",
-		    getpid(), pid, status, errno));
+      PROC_FPRINTF("[%d] wait thread: pid=%d status=%d errno=%d\n",
+                   getpid(), pid, status, errno);
 
 #ifdef ENODEV
       /* FreeBSD threads are broken, and sometimes
@@ -1502,14 +1499,14 @@ static TH_RETURN_TYPE wait_thread(void *UNUSED(data))
 	  ) {
 #if !defined(_W_SLWTED) && !defined(_W_SEWTED) && !defined(_W_SFWTED)
 
-	PROC_FPRINTF((stderr, "[%d] wait thread: Got signal %d from pid %d\n",
-		      getpid(), WSTOPSIG(status), pid));
+        PROC_FPRINTF("[%d] wait thread: Got signal %d from pid %d\n",
+                     getpid(), WSTOPSIG(status), pid);
 
 	ptrace(PTRACE_CONT, pid, CAST_TO_PTRACE_ADDR(1), WSTOPSIG(status));
 #else /* defined(_W_SLWTED) || defined(_W_SEWTED) || defined(_W_SFWTED) */
 
-	PROC_FPRINTF((stderr, "[%d] wait thread: Got L/E/F status (0x%08x) from pid %d\n",
-		      getpid(), status, pid));
+        PROC_FPRINTF("[%d] wait thread: Got L/E/F status (0x%08x) from pid %d\n",
+                     getpid(), status, pid);
 
 	ptrace(PTRACE_CONT, pid, CAST_TO_PTRACE_ADDR(1), 0);
 #endif /* !defined(_W_SLWTED) && !defined(_W_SEWTED) && !defined(_W_SFWTED) */
@@ -1517,13 +1514,12 @@ static TH_RETURN_TYPE wait_thread(void *UNUSED(data))
       }
 #endif /* HAVE_PTRACE && (SIGPROF || _W_SLWTED || _W_SEWTED || _W_SFWTED) */
 
-      PROC_FPRINTF((stderr, "[%d] wait thread: locking interpreter, pid=%d\n",
-		    getpid(), pid));
+      PROC_FPRINTF("[%d] wait thread: locking interpreter, pid=%d\n",
+                   getpid(), pid);
 
       low_mt_lock_interpreter(); /* Can run even if threads_disabled. */
 
-      PROC_FPRINTF((stderr, "[%d] wait thread: reporting the event!\n",
-		    getpid()));
+      PROC_FPRINTF("[%d] wait thread: reporting the event!\n", getpid());
 
       report_child(pid, status, "wait_thread");
       co_broadcast(& process_status_change);
@@ -1636,8 +1632,7 @@ static void f_pid_status_wait(INT32 args)
     int pid = THIS->pid;
     WAITSTATUSTYPE status;
 
-    PROC_FPRINTF((stderr, "[%d] wait(%d): Waiting for child...\n",
-		  getpid(), pid));
+    PROC_FPRINTF("[%d] wait(%d): Waiting for child...\n", getpid(), pid);
 
     THREADS_ALLOW();
     pid = WAITPID(pid, &status, 0|WUNTRACED);
@@ -1678,8 +1673,7 @@ static void f_pid_status_wait(INT32 args)
 	  THREADS_ALLOW();
 	  while ((!(killret = kill(pid, 0), killerr = errno, killret)) &&
 		 (!wait_for_stopped || (this->state != PROCESS_STOPPED))) {
-	    PROC_FPRINTF((stderr, "[%d] wait(%d): Sleeping...\n",
-			  getpid(), pid));
+            PROC_FPRINTF("[%d] wait(%d): Sleeping...\n", getpid(), pid);
 #ifdef HAVE_POLL
 	    {
 	      struct pollfd pfd[1];
@@ -1705,8 +1699,7 @@ static void f_pid_status_wait(INT32 args)
 	  }
 	}
 	/* The process has died. */
-	PROC_FPRINTF((stderr, "[%d] wait(%d): Process dead.\n",
-		      getpid(), pid));
+        PROC_FPRINTF("[%d] wait(%d): Process dead.\n", getpid(), pid);
 
 	if ((THIS->state == PROCESS_RUNNING) ||
 	    (!wait_for_stopped && THIS->state == PROCESS_STOPPED)) {
@@ -1714,9 +1707,9 @@ static void f_pid_status_wait(INT32 args)
 	   * Try waiting some more, and if that
 	   * doesn't work, let the main loop complain.
 	   */
-	  PROC_FPRINTF((stderr, "[%d] wait(%d): ... but not officially, yet.\n"
-			"[%d] wait(%d): Sleeping some more...\n",
-			getpid(), pid, getpid(), pid));
+          PROC_FPRINTF("[%d] wait(%d): ... but not officially, yet.\n"
+                       "[%d] wait(%d): Sleeping some more...\n",
+                       getpid(), pid, getpid(), pid);
 	  THREADS_ALLOW();
 #ifdef HAVE_POLL
 	  poll(NULL, 0, 100);
@@ -1729,9 +1722,8 @@ static void f_pid_status_wait(INT32 args)
 	   * same process, or if the second sleep above wasn't enough
 	   * for receive_sigchild to put the entry into the wait_data
 	   * fifo. In either case we just loop and try again. */
-	  PROC_FPRINTF((stderr,
-			"[%d] wait(%d): Child isn't reaped yet, looping.\n",
-			getpid(), pid));
+          PROC_FPRINTF("[%d] wait(%d): Child isn't reaped yet, looping.\n",
+                       getpid(), pid);
 	}
 	break;
 #endif /* _REENTRANT || USE_SIGCHILD */
@@ -1937,9 +1929,8 @@ static void f_trace_process_cont(INT32 args)
    * of cont(SIGKILL) unless they get some help...
    */
   if (cont_signal == SIGKILL) {
-    PROC_FPRINTF((stderr,
-		  "[%d] cont(): Continue with SIGKILL for pid %d on FreeBSD\n",
-		  getpid(), THIS->pid));
+    PROC_FPRINTF("[%d] cont(): Continue with SIGKILL for pid %d on FreeBSD\n",
+                 getpid(), THIS->pid);
     if (kill(THIS->pid, SIGKILL) == -1) {
       int err = errno;
       if (err != ESRCH) {
@@ -3081,14 +3072,13 @@ void f_create_process(INT32 args)
     storage.stdout_b = get_amigados_handle(optional, "stdout", 1);
     storage.stderr_b = get_amigados_handle(optional, "stderr", 2);
 
-    PROC_FPRINTF((stderr,
-		  "[%d] SystemTags(\"%s\", SYS_Asynch, TRUE, NP_Input, %p, "
-		  "NP_Output, %p, NP_Error, %p, %s, %p, TAG_END);\n",
-		  getpid(),
-		  storage.cmd_buf.s.str, storage.stdin_b,
-		  storage.stdout_b, storage.stderr_b,
-		  (storage.cwd_lock!=0? "NP_CurrentDir":"TAG_IGNORE"),
-		  storage.cwd_lock));
+    PROC_FPRINTF("[%d] SystemTags(\"%s\", SYS_Asynch, TRUE, NP_Input, %p, "
+                 "NP_Output, %p, NP_Error, %p, %s, %p, TAG_END);\n",
+                 getpid(),
+                 storage.cmd_buf.s.str, storage.stdin_b,
+                 storage.stdout_b, storage.stderr_b,
+                 (storage.cwd_lock!=0? "NP_CurrentDir":"TAG_IGNORE"),
+                 storage.cwd_lock);
 
     if(SystemTags(storage.cmd_buf.s.str, SYS_Asynch, TRUE,
 		  NP_Input, storage.stdin_b, NP_Output, storage.stdout_b,
@@ -3467,8 +3457,8 @@ void f_create_process(INT32 args)
       Pike_error("Failed to create child communication pipe.\n");
     }
 
-    PROC_FPRINTF((stderr,"[%d] control_pipe: %d, %d\n",
-		  getpid(), control_pipe[0], control_pipe[1]));
+    PROC_FPRINTF("[%d] control_pipe: %d, %d\n",
+                 getpid(), control_pipe[0], control_pipe[1]);
 #ifdef USE_WAIT_THREAD
     if (!wait_thread_running) {
       THREAD_T foo;
@@ -3490,8 +3480,8 @@ void f_create_process(INT32 args)
 	;
 
       do {
-	PROC_FPRINTF((stderr,"[%d] Forking... (pid=%d errno=%d)\n",
-		      getpid(), pid, errno));
+        PROC_FPRINTF("[%d] Forking... (pid=%d errno=%d)\n",
+                     getpid(), pid, errno);
 #ifdef HAVE_VFORK
 	pid=vfork();
 #else /* !HAVE_VFORK */
@@ -3504,7 +3494,7 @@ void f_create_process(INT32 args)
 	if (pid == -1) {
 	  errnum = errno;
 	  if (UNLIKELY(errnum == EAGAIN)) {
-	    PROC_FPRINTF((stderr, "[%d] Fork failed with EAGAIN\n", getpid()));
+            PROC_FPRINTF("[%d] Fork failed with EAGAIN\n", getpid());
 	    /* Process table full or similar.
 	     * Try sleeping for a bit.
 	     *
@@ -3522,17 +3512,17 @@ void f_create_process(INT32 args)
 	      continue;
 	    }
 	  } else if (UNLIKELY(errnum == EINTR)) {
-	    PROC_FPRINTF((stderr, "[%d] Fork failed with EINTR\n", getpid()));
+            PROC_FPRINTF("[%d] Fork failed with EINTR\n", getpid());
 	    /* Try again */
 	    continue;
 	  } else {
-	    PROC_FPRINTF((stderr, "[%d] Fork failed with errno:%d\n",
-			  getpid(), errnum));
+            PROC_FPRINTF("[%d] Fork failed with errno:%d\n",
+                         getpid(), errnum);
 	  }
 	}
 #ifdef PROC_DEBUG
 	else if (pid) {
-	  PROC_FPRINTF((stderr, "[%d] Fork ok pid:%d\n", getpid(), pid));
+          PROC_FPRINTF("[%d] Fork ok pid:%d\n", getpid(), pid);
 	} else {
 	  write(2, "Fork ok pid:0\n", 14);
 	}
@@ -3555,9 +3545,9 @@ void f_create_process(INT32 args)
     }
 
     if(pid) {
-      PROC_FPRINTF((stderr, "[%d] th_at_fork_parent()...\n", getpid()));
+      PROC_FPRINTF("[%d] th_at_fork_parent()...\n", getpid());
       th_atfork_parent();
-      PROC_FPRINTF((stderr, "[%d] th_at_fork_parent() done\n", getpid()));
+      PROC_FPRINTF("[%d] th_at_fork_parent() done\n", getpid());
     } else {
 #ifdef PROC_DEBUG
       write(2, "th_at_fork_child()...\n", 22);
@@ -3596,7 +3586,7 @@ void f_create_process(INT32 args)
       int olderrno;
       int cnt = 0;
 
-      PROC_FPRINTF((stderr, "[%d] Parent\n", getpid()));
+      PROC_FPRINTF("[%d] Parent\n", getpid());
 
       process_started(pid);  /* Debug */
       /*
@@ -3637,7 +3627,7 @@ void f_create_process(INT32 args)
 
 #ifndef HAVE_VFORK
       /* The following code won't work with a real vfork(). */
-      PROC_FPRINTF((stderr, "[%d] Parent: Wake up child.\n", getpid()));
+      PROC_FPRINTF("[%d] Parent: Wake up child.\n", getpid());
       while (UNLIKELY(((e = write(control_pipe[0], buf, 1)) < 0)) && UNLIKELY(errno == EINTR))
 	;
       if(e!=1) {
@@ -3650,7 +3640,7 @@ void f_create_process(INT32 args)
       }
 #endif /* !HAVE_VFORK */
 
-      PROC_FPRINTF((stderr, "[%d] Parent: Wait for child...\n", getpid()));
+      PROC_FPRINTF("[%d] Parent: Wait for child...\n", getpid());
       /* Wait for exec or error */
 #if defined(EBADF) && defined(EPIPE)
       /* Attempt to workaround spurious errors from read(2) on FreeBSD. */
@@ -3669,7 +3659,7 @@ void f_create_process(INT32 args)
 
       THREADS_DISALLOW();
 
-      PROC_FPRINTF((stderr, "[%d] Parent: Child init done.\n", getpid()));
+      PROC_FPRINTF("[%d] Parent: Child init done.\n", getpid());
 
       if (!e) {
 	/* OK! */
@@ -3865,16 +3855,14 @@ void f_create_process(INT32 args)
 	if( chroot( mchroot ) )
         {
 	  /* fprintf is not safe if we use vfork. */
-	  PROC_FPRINTF((stderr,
-			"[%d] child: chroot(\"%s\") failed, errno=%d\n",
-			getpid(), chroot, errno));
+          PROC_FPRINTF("[%d] child: chroot(\"%s\") failed, errno=%d\n",
+                       getpid(), chroot, errno);
           PROCERROR(PROCE_CHROOT, 0);
         }
 	if (chdir("/"))
 	{
-	  PROC_FPRINTF((stderr,
-			"[%d] child: chdir(\"/\") failed, errno=%d\n",
-			getpid(), errno));
+          PROC_FPRINTF("[%d] child: chdir(\"/\") failed, errno=%d\n",
+                       getpid(), errno);
 	  PROCERROR(PROCE_CHDIR, 1);
 	}
       }
@@ -3884,8 +3872,8 @@ void f_create_process(INT32 args)
         if( chdir( tmp_cwd ) )
         {
 	  /* fprintf is not safe if we use vfork. */
-	  PROC_FPRINTF((stderr, "[%d] child: chdir(\"%s\") failed, errno=%d\n",
-			getpid(), tmp_cwd, errno));
+          PROC_FPRINTF("[%d] child: chdir(\"%s\") failed, errno=%d\n",
+                       getpid(), tmp_cwd, errno);
           PROCERROR(PROCE_CHDIR, 0);
         }
       }
@@ -4194,10 +4182,9 @@ void f_create_process(INT32 args)
       execvp(storage.argv[0],storage.argv);
 
       /* fprintf is not safe if we use vfork. */
-      PROC_FPRINTF((stderr,
-		    "[%d] Child: execvp(\"%s\", ...) failed\n"
-		    "errno = %d\n",
-		    getpid(), storage.argv[0], errno));
+      PROC_FPRINTF("[%d] Child: execvp(\"%s\", ...) failed\n"
+                   "errno = %d\n",
+                   getpid(), storage.argv[0], errno);
 #ifndef HAVE_BROKEN_F_SETFD
       /* No way to tell about this on broken OS's :-( */
       PROCERROR(PROCE_EXEC, 0);
@@ -4459,8 +4446,7 @@ static void f_kill(INT32 args)
 
   signum = Pike_sp[1-args].u.integer;
 
-  PROC_FPRINTF((stderr, "[%d] kill: pid=%d, signum=%d\n",
-		getpid(), pid, signum));
+  PROC_FPRINTF("[%d] kill: pid=%d, signum=%d\n", getpid(), pid, signum);
 
   THREADS_ALLOW_UID();
   res = !kill(pid, signum);
@@ -4506,8 +4492,7 @@ static void f_pid_status_kill(INT32 args)
 
   get_all_args("kill", args, "%+", &signum);
 
-  PROC_FPRINTF((stderr, "[%d] kill: pid=%d, signum=%d\n",
-		getpid(), pid, signum));
+  PROC_FPRINTF("[%d] kill: pid=%d, signum=%d\n", getpid(), pid, signum);
 
   THREADS_ALLOW_UID();
   res = !kill(pid, signum);
