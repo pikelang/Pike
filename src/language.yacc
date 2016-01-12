@@ -342,7 +342,6 @@ int yylex(YYSTYPE *yylval);
 %type <n> labeled_statement
 %type <n> lambda
 %type <n> local_name_list
-%type <n> local_name_list2
 %type <n> low_idents
 %type <n> safe_lvalue
 %type <n> lvalue
@@ -351,7 +350,6 @@ int yylex(YYSTYPE *yylval);
 %type <n> m_expr_list
 %type <n> m_expr_list2
 %type <n> new_local_name
-%type <n> new_local_name2
 %type <n> normal_label_statement
 %type <n> optional_else_part
 %type <n> optional_label
@@ -1887,37 +1885,6 @@ new_local_name: TOK_IDENTIFIER
   }
   ;
 
-new_local_name2: TOK_IDENTIFIER
-  {
-    int id;
-    add_ref($<n>0->u.sval.u.type);
-    id = add_local_name($1->u.sval.u.string, $<n>0->u.sval.u.type, 0);
-    if (id >= 0) {
-      /* FIXME: Consider using mklocalnode(id, -1). */
-      $$=mknode(F_ASSIGN,mkintnode(0),mklocalnode(id,0));
-    } else
-      $$ = 0;
-    free_node($1);
-  }
-  | bad_identifier { $$=0; }
-  | TOK_IDENTIFIER '=' safe_expr0
-  {
-    int id;
-    add_ref($<n>0->u.sval.u.type);
-    id = add_local_name($1->u.sval.u.string, $<n>0->u.sval.u.type, 0);
-    if (id >= 0) {
-      if (!(THIS_COMPILATION->lex.pragmas & ID_STRICT_TYPES)) {
-	/* Only warn about unused initialized variables in strict types mode. */
-	Pike_compiler->compiler_frame->variable[id].flags |= LOCAL_VAR_IS_USED;
-      }
-      $$=mknode(F_ASSIGN,$3, mklocalnode(id,0));
-    } else
-      $$ = 0;
-    free_node($1);
-  }
-  | bad_identifier '=' safe_expr0 { $$=$3; }
-  ;
-
 line_number_info: /* empty */
   {
     /* Used to hold line-number info */
@@ -1979,12 +1946,6 @@ propagated_type:
 /* Type at $0 */
 local_name_list: new_local_name
   | local_name_list ',' propagated_type new_local_name
-    { $$ = mknode(F_COMMA_EXPR, mkcastnode(void_type_string, $1), $4); }
-  ;
-
-/* Type at $0 */
-local_name_list2: new_local_name2
-  | local_name_list2 ',' propagated_type new_local_name
     { $$ = mknode(F_COMMA_EXPR, mkcastnode(void_type_string, $1), $4); }
   ;
 
@@ -3388,7 +3349,7 @@ safe_comma_expr: comma_expr
 
 comma_expr: comma_expr2
   | simple_type2 local_name_list { $$=$2; free_node($1); }
-  | simple_identifier_type local_name_list2 { $$=$2; free_node($1); }
+  | simple_identifier_type local_name_list { $$=$2; free_node($1); }
   | simple_identifier_type local_function { $$=$2; free_node($1); }
   | simple_type2 local_function2 { $$=$2; free_node($1); }
   ;
