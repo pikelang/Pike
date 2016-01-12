@@ -40,7 +40,6 @@
 #define HAVE_CRYPT 1
 #define HAVE_GETOPT 1
 #define HAVE_ISINF 1
-#define HAVE_RINT 1
 #define HAVE_STRDUP 1
 #define HAVE_RANDOM 1
 #define HAVE_UNSETENV 1

@@ -1631,7 +1631,7 @@ static struct pike_string *realloc_shared_string(struct pike_string *a,
     return realloc_unlinked_string(a, size);
   }else{
     struct pike_string *r=begin_wide_shared_string(size,a->size_shift);
-    MEMCPY(r->str, a->str, a->len<<a->size_shift);
+    memcpy(r->str, a->str, a->len<<a->size_shift);
     r->flags |= a->flags & STRING_CHECKED_MASK;
     r->min = a->min;
     r->max = a->max;

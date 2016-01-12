@@ -3259,7 +3259,7 @@ PIKECLASS Buffer
   INIT
     {
       struct Buffer_struct *str = THIS;
-      MEMSET( str, 0, sizeof( *str ) );
+      memset( str, 0, sizeof( *str ) );
     }
 
   EXIT
@@ -3430,7 +3430,7 @@ PIKECLASS multi_string_replace
 
   INIT
   {
-    MEMSET(&THIS->ctx, 0, sizeof(struct replace_many_context));
+    memset(&THIS->ctx, 0, sizeof(struct replace_many_context));
   }
 
   EXIT
