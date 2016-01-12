@@ -1325,9 +1325,19 @@ class Argument
 
   void create(array x)
     {
-      _name=(string)x[-1];
-      _file=x[-1]->file;
-      _line=x[-1]->line;
+      PC.Token t;
+      if( arrayp(x[-1]) )
+      {
+        // Nameless argument prototype
+        t = x[0];
+      }
+      else
+      {
+        _name=(string)x[-1];
+        t = x[-1];
+      }
+      _file=t->file;
+      _line=t->line;
       _type=PikeType(x[..sizeof(x)-2]);
     }
 
