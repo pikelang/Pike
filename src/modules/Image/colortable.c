@@ -74,8 +74,8 @@
 #define RIGID_DEFAULT_B 16
 
 #define SQ(x) ((x)*(x))
-static INLINE ptrdiff_t sq(ptrdiff_t x) { return x*x; }
-static INLINE int sq_int(int x) { return x*x; }
+static inline ptrdiff_t sq(ptrdiff_t x) { return x*x; }
+static inline int sq_int(int x) { return x*x; }
 
 #ifdef THIS
 #undef THIS /* Needed for NT */
@@ -674,7 +674,7 @@ struct color_hash_entry
   ptrdiff_t no;
 };
 
-static INLINE struct color_hash_entry *insert_in_hash(rgb_group rgb,
+static inline struct color_hash_entry *insert_in_hash(rgb_group rgb,
 						struct color_hash_entry *hash,
 						size_t hashsize)
 {
@@ -699,7 +699,7 @@ static INLINE struct color_hash_entry *insert_in_hash(rgb_group rgb,
    return hash+j;
 }
 
-static INLINE struct color_hash_entry *insert_in_hash_nd(rgb_group rgb,
+static inline struct color_hash_entry *insert_in_hash_nd(rgb_group rgb,
 						struct color_hash_entry *hash,
 						size_t hashsize)
 {
@@ -723,7 +723,7 @@ static INLINE struct color_hash_entry *insert_in_hash_nd(rgb_group rgb,
    return hash+j;
 }
 
-static INLINE struct color_hash_entry *insert_in_hash_mask(rgb_group rgb,
+static inline struct color_hash_entry *insert_in_hash_mask(rgb_group rgb,
     struct color_hash_entry *hash,unsigned long hashsize,rgb_group mask)
 {
    unsigned long j,k;
@@ -750,7 +750,7 @@ static INLINE struct color_hash_entry *insert_in_hash_mask(rgb_group rgb,
    return hash+j;
 }
 
-static INLINE rgb_group get_mask_of_level(int level)
+static inline rgb_group get_mask_of_level(int level)
 {
    static const unsigned char strip_r[24]=
    { 0xff, 0xfe, 0xfe, 0xfe, 0xfc, 0xfc, 0xfc, 0xf8, 0xf8, 0xf8, 0xf0,
@@ -1037,7 +1037,7 @@ static struct nct_flat _img_get_flat_from_bgrz_string(struct pike_string *str)
    return flat;
 }
 
-static INLINE void _find_cube_dist(struct nct_cube cube,rgb_group rgb,
+static inline void _find_cube_dist(struct nct_cube cube,rgb_group rgb,
 				   int *dist,int *no,
 				   rgbl_group sf)
 {
@@ -2955,7 +2955,7 @@ void image_colortable_cubicles(INT32 args)
    ref_push_object(THISOBJ);
 }
 
-static INLINE ptrdiff_t _cub_find_full_add(int **pp, int *i, int *p,
+static inline ptrdiff_t _cub_find_full_add(int **pp, int *i, int *p,
 					   ptrdiff_t n,
 					   struct nct_flat_entry *fe,
 					   int r,int g,int b,
@@ -3058,7 +3058,7 @@ static void _cub_add_cs_full_recur(int **pp,int *i,int *p,
    _cub_add_cs_full_recur(pp,i,p,n,fe, rp+rd2+rd1,gp+gd2+gd1,bp+bd2+bd1, rm1,gm1,bm1, rm2,gm2,bm2, &f,&g,&j,d,sf,accur);
 }
 
-static INLINE void _cub_add_cs(struct neo_colortable *nct,
+static inline void _cub_add_cs(struct neo_colortable *nct,
 			       struct nctlu_cubicle *UNUSED(cub),
 			       int **pp,int *i,int *p,
 			       int ri,int gi,int bi,
@@ -3099,7 +3099,7 @@ static INLINE void _cub_add_cs(struct neo_colortable *nct,
 			     nct->lu.cubicles.accur);
 }
 
-static INLINE void _build_cubicle(struct neo_colortable *nct,
+static inline void _build_cubicle(struct neo_colortable *nct,
 				  int r,int g,int b,
 				  int red,int green,int blue,
 				  struct nctlu_cubicle *cub)

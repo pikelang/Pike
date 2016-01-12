@@ -134,7 +134,7 @@ PMOD_EXPORT int pike_get_rusage(pike_rusage_t rusage_values)
 #include "fd_control.h"
 #endif
 
-static INLINE long get_time_int(timestruc_t * val)
+static inline long get_time_int(timestruc_t * val)
 {
   return val->tv_sec * 1000L + val->tv_nsec / 1000000;
 }

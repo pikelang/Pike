@@ -316,7 +316,7 @@ void odbc_error(const char *fun, const char *msg,
 		struct Odbc_odbc_struct *odbc, SQLHSTMT hstmt,
 		RETCODE code, void (*clean)(void*), void *clean_arg);
 
-static INLINE void odbc_check_error(const char *fun, const char *msg,
+static inline void odbc_check_error(const char *fun, const char *msg,
 				    RETCODE code,
 				    void (*clean)(void *), void *clean_arg)
 {

@@ -37,76 +37,76 @@ extern "C++" {
  *  overflow occured.
  */
 #define GENERIC_OVERFLOW_CHECKS(type)                                                   \
-static INLINE int PIKE_UNUSED_ATTRIBUTE DO_## type ## _NEG_OVERFLOW(type a, type * res) { \
+static inline int PIKE_UNUSED_ATTRIBUTE DO_## type ## _NEG_OVERFLOW(type a, type * res) { \
     if (a == MIN_ ## type) return 1;                                                    \
     *res = -a;                                                                          \
     return 0;                                                                           \
 }                                                                                       \
-static INLINE int PIKE_UNUSED_ATTRIBUTE type ## _NEG_OVERFLOW(type a) {                                       \
+static inline int PIKE_UNUSED_ATTRIBUTE type ## _NEG_OVERFLOW(type a) {                                       \
     return a == MIN_ ## type;                                                           \
 }                                                                                       \
-static INLINE int PIKE_UNUSED_ATTRIBUTE type ## _DIV_OVERFLOW(type a, type b) {                               \
+static inline int PIKE_UNUSED_ATTRIBUTE type ## _DIV_OVERFLOW(type a, type b) {                               \
     return a == MIN_ ## type && b == -1;                                                \
 }                                                                                       \
-static INLINE int PIKE_UNUSED_ATTRIBUTE DO_ ## type ## _DIV_OVERFLOW(type a, type b, type * res) {            \
+static inline int PIKE_UNUSED_ATTRIBUTE DO_ ## type ## _DIV_OVERFLOW(type a, type b, type * res) {            \
     if (a == MIN_ ## type && b == -1) return 1;                                         \
     *res = a/b;                                                                         \
     return 0;                                                                           \
 }                                                                                       \
-static INLINE int PIKE_UNUSED_ATTRIBUTE U ## type ## _MUL_OVERFLOW(unsigned type a, unsigned type b) {        \
+static inline int PIKE_UNUSED_ATTRIBUTE U ## type ## _MUL_OVERFLOW(unsigned type a, unsigned type b) {        \
     unsigned type res;                                                                  \
     return DO_U ## type ## _MUL_OVERFLOW(a, b, &res);                                   \
 }                                                                                       \
-static INLINE int PIKE_UNUSED_ATTRIBUTE U ## type ## _ADD_OVERFLOW(unsigned type a, unsigned type b) {        \
+static inline int PIKE_UNUSED_ATTRIBUTE U ## type ## _ADD_OVERFLOW(unsigned type a, unsigned type b) {        \
     unsigned type res;                                                                  \
     return DO_U ## type ## _ADD_OVERFLOW(a, b, &res);                                   \
 }                                                                                       \
-static INLINE int PIKE_UNUSED_ATTRIBUTE U ## type ## _SUB_OVERFLOW(unsigned type a, unsigned type b) {        \
+static inline int PIKE_UNUSED_ATTRIBUTE U ## type ## _SUB_OVERFLOW(unsigned type a, unsigned type b) {        \
     unsigned type res;                                                                  \
     return DO_U ## type ## _SUB_OVERFLOW(a, b, &res);                                   \
 }                                                                                       \
-static INLINE int PIKE_UNUSED_ATTRIBUTE type ## _MUL_OVERFLOW(type a, type b) {                               \
+static inline int PIKE_UNUSED_ATTRIBUTE type ## _MUL_OVERFLOW(type a, type b) {                               \
     type res;                                                                           \
     return DO_ ## type ## _MUL_OVERFLOW(a, b, &res);                                    \
 }                                                                                       \
-static INLINE int PIKE_UNUSED_ATTRIBUTE type ## _ADD_OVERFLOW(type a, type b) {                               \
+static inline int PIKE_UNUSED_ATTRIBUTE type ## _ADD_OVERFLOW(type a, type b) {                               \
     type res;                                                                           \
     return DO_ ## type ## _ADD_OVERFLOW(a, b, &res);                                    \
 }                                                                                       \
-static INLINE int PIKE_UNUSED_ATTRIBUTE type ## _SUB_OVERFLOW(type a, type b) {                               \
+static inline int PIKE_UNUSED_ATTRIBUTE type ## _SUB_OVERFLOW(type a, type b) {                               \
     type res;                                                                           \
     return DO_ ## type ## _SUB_OVERFLOW(a, b, &res);                                    \
 }                                                                                       \
-static INLINE int PIKE_UNUSED_ATTRIBUTE type ## _MOD_OVERFLOW(type a, type b) {                               \
+static inline int PIKE_UNUSED_ATTRIBUTE type ## _MOD_OVERFLOW(type a, type b) {                               \
     return type ## _DIV_OVERFLOW(a, b);                                                 \
 }                                                                                       \
-static INLINE int PIKE_UNUSED_ATTRIBUTE DO_ ## type ## _MOD_OVERFLOW(type a, type b, type * res) {            \
+static inline int PIKE_UNUSED_ATTRIBUTE DO_ ## type ## _MOD_OVERFLOW(type a, type b, type * res) {            \
     if (type ## _MOD_OVERFLOW(a, b)) {                                                  \
         return 1;                                                                       \
     }                                                                                   \
     *res = a % b;                                                                       \
     return 0;                                                                           \
 }                                                                                       \
-static INLINE int PIKE_UNUSED_ATTRIBUTE type ## _LSH_OVERFLOW(type a, type b) {                               \
+static inline int PIKE_UNUSED_ATTRIBUTE type ## _LSH_OVERFLOW(type a, type b) {                               \
     type size = (type)sizeof(type)*CHAR_BIT;                                            \
     return (b < 0 || b >= size || ((a<<b)>>b)!=a);			\
 }                                                                                       \
- static INLINE int PIKE_UNUSED_ATTRIBUTE type ## _RSH_OVERFLOW(type UNUSED(a), type b) { \
+ static inline int PIKE_UNUSED_ATTRIBUTE type ## _RSH_OVERFLOW(type UNUSED(a), type b) { \
    return b>=(type)sizeof(type)*CHAR_BIT;					\
 }                                                                                       \
-static INLINE int PIKE_UNUSED_ATTRIBUTE DO_ ## type ## _LSH_OVERFLOW(type a, type b, type * res) {            \
+static inline int PIKE_UNUSED_ATTRIBUTE DO_ ## type ## _LSH_OVERFLOW(type a, type b, type * res) {            \
     if (type ## _LSH_OVERFLOW(a, b)) return 1;                                          \
     *res = a << b;                                                                      \
     return 0;                                                                           \
 }                                                                                       \
-static INLINE int PIKE_UNUSED_ATTRIBUTE DO_ ## type ## _RSH_OVERFLOW(type a, type b, type * res) {            \
+static inline int PIKE_UNUSED_ATTRIBUTE DO_ ## type ## _RSH_OVERFLOW(type a, type b, type * res) {            \
     if (type ## _RSH_OVERFLOW(a, b)) return 1;                                          \
     *res = a >> b;                                                                      \
     return 0;                                                                           \
 }
 
 #define _GEN_OF2(type, type2, utype2, size)                                             \
-static INLINE int PIKE_UNUSED_ATTRIBUTE DO_ ## type ## _ADD_OVERFLOW(type a, type b, type * res) {            \
+static inline int PIKE_UNUSED_ATTRIBUTE DO_ ## type ## _ADD_OVERFLOW(type a, type b, type * res) {            \
     type2 tmp;                                                                          \
     tmp = (type2)a + (type2)b;                                                          \
     if (tmp < MIN_ ## type || tmp > MAX_ ## type)                                       \
@@ -114,7 +114,7 @@ static INLINE int PIKE_UNUSED_ATTRIBUTE DO_ ## type ## _ADD_OVERFLOW(type a, typ
     *res = (type)tmp;                                                                   \
     return 0;                                                                           \
 }                                                                                       \
-static INLINE int PIKE_UNUSED_ATTRIBUTE DO_ ## type ## _SUB_OVERFLOW(type a, type b, type * res) {            \
+static inline int PIKE_UNUSED_ATTRIBUTE DO_ ## type ## _SUB_OVERFLOW(type a, type b, type * res) {            \
     type2 tmp;                                                                          \
     tmp = (type2)a - (type2)b;                                                          \
     if (tmp < MIN_ ## type || tmp > MAX_ ## type)                                       \
@@ -122,7 +122,7 @@ static INLINE int PIKE_UNUSED_ATTRIBUTE DO_ ## type ## _SUB_OVERFLOW(type a, typ
     *res = (type)tmp;                                                                   \
     return 0;                                                                           \
 }                                                                                       \
-static INLINE int PIKE_UNUSED_ATTRIBUTE DO_ ## type ## _MUL_OVERFLOW(type a, type b, type * res) {            \
+static inline int PIKE_UNUSED_ATTRIBUTE DO_ ## type ## _MUL_OVERFLOW(type a, type b, type * res) {            \
     type2 tmp;                                                                          \
     tmp = (type2)a * (type2)b;                                                          \
     if (tmp < MIN_ ## type || tmp > MAX_ ## type)                                       \
@@ -130,7 +130,7 @@ static INLINE int PIKE_UNUSED_ATTRIBUTE DO_ ## type ## _MUL_OVERFLOW(type a, typ
     *res = (type)tmp;                                                                   \
     return 0;                                                                           \
 }                                                                                       \
-static INLINE int PIKE_UNUSED_ATTRIBUTE DO_U ## type ## _ADD_OVERFLOW(unsigned type a, unsigned type b,       \
+static inline int PIKE_UNUSED_ATTRIBUTE DO_U ## type ## _ADD_OVERFLOW(unsigned type a, unsigned type b,       \
                                                 unsigned type * res) {                  \
     utype2 tmp;                                                                         \
     tmp = (utype2)a + (utype2)b;                                                        \
@@ -138,7 +138,7 @@ static INLINE int PIKE_UNUSED_ATTRIBUTE DO_U ## type ## _ADD_OVERFLOW(unsigned t
     *res = (unsigned type)tmp;                                                          \
     return 0;                                                                           \
 }                                                                                       \
-static INLINE int PIKE_UNUSED_ATTRIBUTE DO_U ## type ## _MUL_OVERFLOW(unsigned type a, unsigned type b,       \
+static inline int PIKE_UNUSED_ATTRIBUTE DO_U ## type ## _MUL_OVERFLOW(unsigned type a, unsigned type b,       \
                                                 unsigned type * res) {                  \
     utype2 tmp;                                                                         \
     tmp = (utype2)a * (utype2)b;                                                        \
@@ -148,21 +148,21 @@ static INLINE int PIKE_UNUSED_ATTRIBUTE DO_U ## type ## _MUL_OVERFLOW(unsigned t
 }
 
 #define _GEN_OF1(type, size)                                                            \
-static INLINE int PIKE_UNUSED_ATTRIBUTE DO_ ## type ## _ADD_OVERFLOW(type a, type b, type * res) {            \
+static inline int PIKE_UNUSED_ATTRIBUTE DO_ ## type ## _ADD_OVERFLOW(type a, type b, type * res) {            \
     if ((b > 0 && a > MAX_ ## type - b) ||                                              \
         (b < 0 && a < MIN_ ## type - b))                                                \
         return 1;                                                                       \
     *res = a + b;                                                                       \
     return 0;                                                                           \
 }                                                                                       \
-static INLINE int PIKE_UNUSED_ATTRIBUTE DO_ ## type ## _SUB_OVERFLOW(type a, type b, type * res) {            \
+static inline int PIKE_UNUSED_ATTRIBUTE DO_ ## type ## _SUB_OVERFLOW(type a, type b, type * res) {            \
     if ((b > 0 && a < MIN_ ## type + b) ||                                              \
         (b < 0 && a > MAX_ ## type + b))                                                \
         return 1;                                                                       \
     *res = a - b;                                                                       \
     return 0;                                                                           \
 }                                                                                       \
-static INLINE int PIKE_UNUSED_ATTRIBUTE DO_## type ## _MUL_OVERFLOW(type a, type b, type * res) {             \
+static inline int PIKE_UNUSED_ATTRIBUTE DO_## type ## _MUL_OVERFLOW(type a, type b, type * res) {             \
     if (a > 0) {                                                                        \
       if (b > 0) {                                                                      \
         if (a > (MAX_ ## type / b)) {                                                   \
@@ -187,14 +187,14 @@ static INLINE int PIKE_UNUSED_ATTRIBUTE DO_## type ## _MUL_OVERFLOW(type a, type
     *res = a * b;                                                                       \
     return 0;                                                                           \
 }                                                                                       \
-static INLINE int PIKE_UNUSED_ATTRIBUTE DO_U ## type ## _ADD_OVERFLOW(unsigned type a, unsigned type b,       \
+static inline int PIKE_UNUSED_ATTRIBUTE DO_U ## type ## _ADD_OVERFLOW(unsigned type a, unsigned type b,       \
                                                 unsigned type * res) {                  \
     if (a > MAX_U ## type - b)                                                          \
         return 1;                                                                       \
     *res = a + b;                                                                       \
     return 0;                                                                           \
 }                                                                                       \
-static INLINE int PIKE_UNUSED_ATTRIBUTE DO_U ## type ## _MUL_OVERFLOW(unsigned type a, unsigned type b,       \
+static inline int PIKE_UNUSED_ATTRIBUTE DO_U ## type ## _MUL_OVERFLOW(unsigned type a, unsigned type b,       \
                                                 unsigned type * res) {                  \
     unsigned type tmp = 0;                                                              \
     unsigned type bits = size/2;                                                        \
@@ -215,7 +215,7 @@ static INLINE int PIKE_UNUSED_ATTRIBUTE DO_U ## type ## _MUL_OVERFLOW(unsigned t
 }                                                                                       \
 
 #define GEN_USUB_OF(type)                                                               \
-static INLINE int PIKE_UNUSED_ATTRIBUTE DO_U ## type ## _SUB_OVERFLOW(unsigned type a, unsigned type b,       \
+static inline int PIKE_UNUSED_ATTRIBUTE DO_U ## type ## _SUB_OVERFLOW(unsigned type a, unsigned type b,       \
                                                 unsigned type * res) {                  \
     if (b > a)                                                                          \
         return 1;                                                                       \
@@ -234,7 +234,7 @@ static INLINE int PIKE_UNUSED_ATTRIBUTE DO_U ## type ## _SUB_OVERFLOW(unsigned t
 
 #if PIKE_CLANG_BUILTIN(__builtin_uadd_overflow) || __GNUC__ >= 5
 #define DO_CLANG_OF(name, type, builtin)                \
-static INLINE int PIKE_UNUSED_ATTRIBUTE name(type a, type b, type * res) {    \
+static inline int PIKE_UNUSED_ATTRIBUTE name(type a, type b, type * res) {    \
     type tmp;                                           \
     if (builtin(a, b, &tmp)) return 1;                  \
     *res = tmp;                                         \
@@ -294,11 +294,11 @@ GEN_OF2(16, 32, unsigned INT32)
  *     of the correct type as temporaries, and then copying the result.
  */
 #define _GEN_UNOP(OP, type1, TYPE1, type2, name)			\
-  static INLINE int PIKE_UNUSED_ATTRIBUTE name ## _ ## OP ## _OVERFLOW(type2 a) {		\
+  static inline int PIKE_UNUSED_ATTRIBUTE name ## _ ## OP ## _OVERFLOW(type2 a) {		\
     type1 tmp;							        \
       return (DO_## TYPE1 ## _ ## OP ## _OVERFLOW(a, &tmp));		\
   }									\
-  static INLINE int PIKE_UNUSED_ATTRIBUTE DO_ ## name ## _ ## OP ## _OVERFLOW(type2 a,	\
+  static inline int PIKE_UNUSED_ATTRIBUTE DO_ ## name ## _ ## OP ## _OVERFLOW(type2 a,	\
 						        type2 *res) {	\
     type1 tmp;							        \
     if (DO_ ## TYPE1 ## _ ## OP ## _OVERFLOW(a, &tmp)) return 1;	\
@@ -306,11 +306,11 @@ GEN_OF2(16, 32, unsigned INT32)
     return 0;								\
   }
 #define _GEN_BINOP(OP, type1, TYPE1, type2, name)			\
-  static INLINE int PIKE_UNUSED_ATTRIBUTE name ## _ ## OP ## _OVERFLOW(type2 a, type2 b) {	\
+  static inline int PIKE_UNUSED_ATTRIBUTE name ## _ ## OP ## _OVERFLOW(type2 a, type2 b) {	\
     type1 tmp;							        \
     return (DO_ ## TYPE1 ## _ ## OP ## _OVERFLOW(a, b, &tmp));	        \
   }									\
-  static INLINE int PIKE_UNUSED_ATTRIBUTE DO_ ## name ## _ ## OP ## _OVERFLOW(type2 a,	\
+  static inline int PIKE_UNUSED_ATTRIBUTE DO_ ## name ## _ ## OP ## _OVERFLOW(type2 a,	\
                                                         type2 b,	\
                                                         type2 *res) {	\
     type1 tmp;	        						\

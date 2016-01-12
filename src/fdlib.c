@@ -190,7 +190,7 @@ void fd_exit(void)
   mt_destroy(&fd_mutex);
 }
 
-static INLINE time_t convert_filetime_to_time_t(FILETIME *tmp)
+static inline time_t convert_filetime_to_time_t(FILETIME *tmp)
 {
   /* FILETIME is in 100ns since Jan 01, 1601 00:00 UTC.
    *

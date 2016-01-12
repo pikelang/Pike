@@ -319,7 +319,7 @@ static int isBaseChar(INT32 c)
   return 0;
 }
 
-static INLINE int isIdeographic(INT32 c)
+static inline int isIdeographic(INT32 c)
 {
   if(c>=0x4E00 && c<=0x9FA5) return 1;
   if(c==0x3007) return 1;
@@ -327,7 +327,7 @@ static INLINE int isIdeographic(INT32 c)
   return 0;
 }
 
-static INLINE int isLetter(INT32 c)
+static inline int isLetter(INT32 c)
 {
   return isBaseChar(c) || isIdeographic(c);
 }
@@ -473,7 +473,7 @@ static int isCombiningChar(INT32 c)
   return 0;
 }
 
-static INLINE int isDigit(INT32 c)
+static inline int isDigit(INT32 c)
 {
   switch(c>>8)
   {
@@ -551,7 +551,7 @@ static int isExtender(INT32 c)
   return 0;
 }
 
-static INLINE int isSpace(INT32 c)
+static inline int isSpace(INT32 c)
 {
   switch(c)
   {
@@ -564,19 +564,19 @@ static INLINE int isSpace(INT32 c)
   return 0;
 }
 
-static INLINE int isNameChar(INT32 c)
+static inline int isNameChar(INT32 c)
 {
   return isLetter(c) || isDigit(c) ||
     c=='.' || c=='-' || c=='_' ||  c==':' ||
     isCombiningChar(c) || isExtender(c);
 }
 
-static INLINE int isFirstNameChar(INT32 c)
+static inline int isFirstNameChar(INT32 c)
 {
   return isLetter(c) ||  c=='_' || c==':';
 }
 
-static INLINE int isHexChar(INT32 c)
+static inline int isHexChar(INT32 c)
 {
   switch(c)
   {

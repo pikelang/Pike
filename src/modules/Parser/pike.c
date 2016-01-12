@@ -40,14 +40,14 @@
  *!   @[Parser.Pike], @[_C].
  */
 
-INLINE static int m_isidchar( unsigned int x )
+inline static int m_isidchar( unsigned int x )
 {
   if( (x >= 'a' && x <= 'z') || (x>='A' && x<='Z') || x>128 || x == '_')
     return 1;
   return 0;
 }
 
-INLINE static int m_isidchar2( unsigned int x )
+inline static int m_isidchar2( unsigned int x )
 {
   if( (x >= 'a' && x <= 'z') || (x>='A' && x<='Z') || x>128 || x=='_' ||
       (x>='0'&&x<='9')||x=='$')

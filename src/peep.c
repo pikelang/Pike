@@ -795,9 +795,9 @@ INT32 assemble(int store_linenumbers)
 /**** Peephole optimizer ****/
 
 static void do_optimization(int topop, int topush, ...);
-static INLINE int opcode(int offset);
-static INLINE int argument(int offset);
-static INLINE int argument2(int offset);
+static inline int opcode(int offset);
+static inline int argument(int offset);
+static inline int argument2(int offset);
 
 #include "peep_engine.c"
 
@@ -817,7 +817,7 @@ static p_instr *instructions;
 
 /* insopt{0,1,2} push an instruction on instrstack. */
 
-static INLINE p_instr *insopt2(int f, INT32 a, INT32 b,
+static inline p_instr *insopt2(int f, INT32 a, INT32 b,
 			       INT_TYPE cl, struct pike_string *cf)
 {
   p_instr *p;
@@ -844,7 +844,7 @@ static INLINE p_instr *insopt2(int f, INT32 a, INT32 b,
   return p;
 }
 
-static INLINE p_instr *insopt1(int f, INT32 a, INT_TYPE cl,
+static inline p_instr *insopt1(int f, INT32 a, INT_TYPE cl,
 			       struct pike_string *cf)
 {
 #ifdef PIKE_DEBUG
@@ -855,7 +855,7 @@ static INLINE p_instr *insopt1(int f, INT32 a, INT_TYPE cl,
   return insopt2(f,a,0,cl, cf);
 }
 
-static INLINE p_instr *insopt0(int f, INT_TYPE cl, struct pike_string *cf)
+static inline p_instr *insopt0(int f, INT_TYPE cl, struct pike_string *cf)
 {
 #ifdef PIKE_DEBUG
   if(hasarg(f))
@@ -885,13 +885,13 @@ static void debug(void)
 
 
 /* Offset from the end of instrbuf backwards. */
-static INLINE p_instr *instr(int offset)
+static inline p_instr *instr(int offset)
 {
   if (offset >= num_instrs) return NULL;
   return ((p_instr *)low_make_buf_space(0, &instrbuf)) - (offset + 1);
 }
 
-static INLINE int opcode(int offset)
+static inline int opcode(int offset)
 {
   p_instr *a;
   a=instr(offset);
@@ -899,7 +899,7 @@ static INLINE int opcode(int offset)
   return -1;
 }
 
-static INLINE int argument(int offset)
+static inline int argument(int offset)
 {
   p_instr *a;
   a=instr(offset);
@@ -907,7 +907,7 @@ static INLINE int argument(int offset)
   return -1;
 }
 
-static INLINE int argument2(int offset)
+static inline int argument2(int offset)
 {
   p_instr *a;
   a=instr(offset);

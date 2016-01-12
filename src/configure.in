@@ -5126,9 +5126,6 @@ MY_CHECK_HEADERS(gethostname,unistd.h netdb.h winsock.h winsock2.h ws2tcpip.h)
 
 AC_ALLOCA
 
-AC_C_CONST
-AC_C_INLINE
-
 AC_CHECK_FUNCS(ualarm setitimer)
 
 if test "x$ac_cv_func_ualarm" = "xyes"; then

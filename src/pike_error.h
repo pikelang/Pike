@@ -337,11 +337,11 @@ PMOD_EXPORT extern const char msg_out_of_mem[];
 PMOD_EXPORT extern const char msg_out_of_mem_2[];
 
 #if 1
-static INLINE void DECLSPEC(noreturn) out_of_memory_error (
+static inline void DECLSPEC(noreturn) out_of_memory_error (
   const char *func,
   struct svalue *base_sp,  int args,
   size_t amount) ATTRIBUTE((noreturn));
-static INLINE void DECLSPEC(noreturn) out_of_memory_error (
+static inline void DECLSPEC(noreturn) out_of_memory_error (
   const char *func,
   struct svalue *base_sp,  int args,
   size_t amount)

@@ -432,7 +432,7 @@ static int dev_zero = -1;
 #define MAP_ANONYMOUS	0
 #endif
 
-static INLINE void *mexec_do_alloc (void *start, size_t length)
+static inline void *mexec_do_alloc (void *start, size_t length)
 {
   void *blk = mmap(start, length, PROT_EXEC|PROT_READ|PROT_WRITE,
 		   MAP_PRIVATE|MAP_ANONYMOUS, dev_zero, 0);
@@ -453,7 +453,7 @@ static INLINE void *mexec_do_alloc (void *start, size_t length)
  * basic allocation unit instead of the page size. */
 #define MEXEC_ALLOC_CHUNK_SIZE (64 * 1024)
 
-static INLINE void *mexec_do_alloc (void *start, size_t length)
+static inline void *mexec_do_alloc (void *start, size_t length)
 {
   void *blk = VirtualAlloc (start, length, MEM_RESERVE|MEM_COMMIT,
 			    PAGE_EXECUTE_READWRITE);
@@ -1581,7 +1581,7 @@ void check_pad(struct memhdr *mh, int freeok)
 #endif
 
 
-static INLINE unsigned long lhash(struct memhdr *m, LOCATION location)
+static inline unsigned long lhash(struct memhdr *m, LOCATION location)
 {
   unsigned long l;
 #ifdef DMALLOC_USE_HASHBASE

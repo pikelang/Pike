@@ -156,7 +156,7 @@ struct mem_searcher
  * The purpose of this function is to avoid dead store elimination in cases when
  * sensitive data has to be cleared from memory.
  */
-static INLINE void ATTRIBUTE((unused)) * guaranteed_memset(void * p, int c, size_t n) {
+static inline void ATTRIBUTE((unused)) * guaranteed_memset(void * p, int c, size_t n) {
     volatile char * _p = (char *)p;
     while (n--) *_p++ = c;
     return (void *)p;
@@ -164,57 +164,57 @@ static INLINE void ATTRIBUTE((unused)) * guaranteed_memset(void * p, int c, size
 
 #ifdef __x86_64__
 /* it is faster to just do the unaligned operation. */
-static INLINE unsigned INT64 ATTRIBUTE((unused)) get_unaligned64(const void *ptr) {
+static inline unsigned INT64 ATTRIBUTE((unused)) get_unaligned64(const void *ptr) {
   return *(unsigned INT64*)ptr;
 }
 
-static INLINE unsigned INT32 ATTRIBUTE((unused)) get_unaligned32(const void *ptr) {
+static inline unsigned INT32 ATTRIBUTE((unused)) get_unaligned32(const void *ptr) {
   return *(unsigned INT32*)ptr;
 }
 
-static INLINE unsigned INT16 ATTRIBUTE((unused)) get_unaligned16(const void *ptr) {
+static inline unsigned INT16 ATTRIBUTE((unused)) get_unaligned16(const void *ptr) {
   return *(unsigned INT16*)ptr;
 }
 
-static INLINE void ATTRIBUTE((unused)) set_unaligned16(void *ptr,unsigned INT16 val) {
+static inline void ATTRIBUTE((unused)) set_unaligned16(void *ptr,unsigned INT16 val) {
   *(unsigned INT16*)ptr = val;
 }
 
-static INLINE void ATTRIBUTE((unused)) set_unaligned32(void *ptr,unsigned INT32 val) {
+static inline void ATTRIBUTE((unused)) set_unaligned32(void *ptr,unsigned INT32 val) {
   *(unsigned INT32*)ptr = val;
 }
 
-static INLINE void ATTRIBUTE((unused)) set_unaligned64(void *ptr,unsigned INT64 val) {
+static inline void ATTRIBUTE((unused)) set_unaligned64(void *ptr,unsigned INT64 val) {
   *(unsigned INT64*)ptr = val;
 }
 #else
-static INLINE unsigned INT64 ATTRIBUTE((unused)) get_unaligned64(const void * ptr) {
+static inline unsigned INT64 ATTRIBUTE((unused)) get_unaligned64(const void * ptr) {
     unsigned INT64 v;
     memcpy(&v, ptr, 8);
     return v;
 }
 
-static INLINE void ATTRIBUTE((unused)) set_unaligned64(void * ptr, unsigned INT64 v) {
+static inline void ATTRIBUTE((unused)) set_unaligned64(void * ptr, unsigned INT64 v) {
     memcpy(ptr, &v, 8);
 }
 
-static INLINE unsigned INT64 ATTRIBUTE((unused)) get_unaligned32(const void * ptr) {
+static inline unsigned INT64 ATTRIBUTE((unused)) get_unaligned32(const void * ptr) {
     unsigned INT32 v;
     memcpy(&v, ptr, 4);
     return v;
 }
 
-static INLINE void ATTRIBUTE((unused)) set_unaligned32(void * ptr, unsigned INT32 v) {
+static inline void ATTRIBUTE((unused)) set_unaligned32(void * ptr, unsigned INT32 v) {
     memcpy(ptr, &v, 4);
 }
 
-static INLINE unsigned INT16 ATTRIBUTE((unused)) get_unaligned16(const void * ptr) {
+static inline unsigned INT16 ATTRIBUTE((unused)) get_unaligned16(const void * ptr) {
     unsigned INT16 v;
     memcpy(&v, ptr, 2);
     return v;
 }
 
-static INLINE void ATTRIBUTE((unused)) set_unaligned16(void * ptr, unsigned INT16 v) {
+static inline void ATTRIBUTE((unused)) set_unaligned16(void * ptr, unsigned INT16 v) {
     memcpy(ptr, &v, 2);
 }
 #endif

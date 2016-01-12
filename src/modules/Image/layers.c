@@ -458,7 +458,7 @@ struct layer_mode_desc
 	    } while (0)
 
 
-static INLINE void smear_color(rgb_group *d,rgb_group s,int len)
+static inline void smear_color(rgb_group *d,rgb_group s,int len)
 {
    while (len--)
       *(d++)=s;
@@ -468,7 +468,7 @@ static INLINE void smear_color(rgb_group *d,rgb_group s,int len)
 #define MIN3(X,Y,Z) MINIMUM(MINIMUM(X,Y),Z)
 
 /* Pike_sp was renamed to not_sp by hubbe */
-static INLINE void rgb_to_hsv(rgb_group color,
+static inline void rgb_to_hsv(rgb_group color,
 			      double *hp,
 			      double *not_sp,
 			      double *vp)
@@ -501,7 +501,7 @@ static INLINE void rgb_to_hsv(rgb_group color,
    else /*if(b==max)*/ *hp = 4+(r-g)/delta;
 }
 
-static INLINE void hsv_to_rgb(double h,double s,double v,rgb_group *colorp)
+static inline void hsv_to_rgb(double h,double s,double v,rgb_group *colorp)
 {
    if (s==0.0)
    {
@@ -535,7 +535,7 @@ static INLINE void hsv_to_rgb(double h,double s,double v,rgb_group *colorp)
 #undef t
 }
 
-static INLINE int hls_value(double n1, double n2, double hue)
+static inline int hls_value(double n1, double n2, double hue)
 {
    double value;
 
@@ -556,7 +556,7 @@ static INLINE int hls_value(double n1, double n2, double hue)
 }
 
 
-static INLINE void hls_to_rgb(double h,double l,double s,rgb_group *rgb)
+static inline void hls_to_rgb(double h,double l,double s,rgb_group *rgb)
 {
    double m1, m2;
 
@@ -583,7 +583,7 @@ static INLINE void hls_to_rgb(double h,double l,double s,rgb_group *rgb)
    }
 }
 
-static INLINE void rgb_to_hls(rgb_group color,
+static inline void rgb_to_hls(rgb_group color,
 			      double *hue,
 			      double *lightness,
 			      double *saturation)
@@ -1305,7 +1305,7 @@ static void image_layer_tiled(INT32 args)
 **!
 */
 
-static INLINE void try_parameter(char *a,void (*f)(INT32))
+static inline void try_parameter(char *a,void (*f)(INT32))
 {
    stack_dup();
    push_text(a);
@@ -1316,7 +1316,7 @@ static INLINE void try_parameter(char *a,void (*f)(INT32))
    pop_stack();
 }
 
-static INLINE void try_parameter_pair(char *a,char *b,void (*f)(INT32))
+static inline void try_parameter_pair(char *a,char *b,void (*f)(INT32))
 {
    stack_dup();  /* map map */
    stack_dup();  /* map map map */
@@ -2465,7 +2465,7 @@ static void lm_spec_burn_alpha(struct layer *ly,
 
 /*** the add-layer function ***************************/
 
-static INLINE void img_lay_first_line(struct layer *l,
+static inline void img_lay_first_line(struct layer *l,
 				      int xoffs,int xsize,
 				      int y, /* in _this_ layer */
 				      rgb_group *d,rgb_group *da)
@@ -2563,7 +2563,7 @@ static INLINE void img_lay_first_line(struct layer *l,
    }
 }
 
-static INLINE void img_lay_stroke(struct layer *ly,
+static inline void img_lay_stroke(struct layer *ly,
 				  rgb_group *l,
 				  rgb_group *la,
 				  rgb_group *s,
@@ -2631,7 +2631,7 @@ static INLINE void img_lay_stroke(struct layer *ly,
    }
 }
 
-static INLINE void img_lay_line(struct layer *ly,
+static inline void img_lay_line(struct layer *ly,
 				rgb_group *s,rgb_group *sa,
 				int xoffs,int xsize,
 				int y, /* y in ly layer */
@@ -3003,13 +3003,13 @@ void image_lay(INT32 args)
 
 /**  image-object operations  *************************/
 
-static INLINE struct layer *push_new_layer(void)
+static inline struct layer *push_new_layer(void)
 {
    push_object(clone_object(image_layer_program,0));
    return get_storage(Pike_sp[-1].u.object,image_layer_program);
 }
 
-static INLINE struct layer *clone_this_layer(void)
+static inline struct layer *clone_this_layer(void)
 {
    struct layer *l;
    l=push_new_layer();

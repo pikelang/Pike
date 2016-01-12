@@ -225,7 +225,7 @@ static node *optimize_f_aggregate(node *n)
 }
 
 #define MK_HASHMEM(NAME, TYPE)		ATTRIBUTE((const))	\
-  static INLINE size_t NAME(const TYPE *str, ptrdiff_t len, ptrdiff_t maxn) \
+  static inline size_t NAME(const TYPE *str, ptrdiff_t len, ptrdiff_t maxn) \
   {                                                                         \
       size_t ret,c;                                                         \
                                                                             \
@@ -291,7 +291,7 @@ static void f_hash_7_4(INT32 args)
   push_int64(i);
 }
 
-ATTRIBUTE((const)) static INLINE size_t hashstr(const unsigned char *str, ptrdiff_t maxn)
+ATTRIBUTE((const)) static inline size_t hashstr(const unsigned char *str, ptrdiff_t maxn)
 {
   size_t ret,c;
 
@@ -6455,7 +6455,7 @@ struct diff_magic_link_head
 
 static int dmls=0;
 
-static INLINE struct diff_magic_link_pool*
+static inline struct diff_magic_link_pool*
          dml_new_pool(struct diff_magic_link_pool **pools)
 {
    struct diff_magic_link_pool *new;
@@ -6471,7 +6471,7 @@ static INLINE struct diff_magic_link_pool*
    return *pools;
 }
 
-static INLINE struct diff_magic_link*
+static inline struct diff_magic_link*
        dml_new(struct diff_magic_link_pool **pools)
 {
    struct diff_magic_link *new;
@@ -6503,7 +6503,7 @@ static INLINE struct diff_magic_link*
    return NULL;
 }
 
-static INLINE void dml_free_pools(struct diff_magic_link_pool *pools)
+static inline void dml_free_pools(struct diff_magic_link_pool *pools)
 {
    struct diff_magic_link_pool *pool;
 
@@ -6515,7 +6515,7 @@ static INLINE void dml_free_pools(struct diff_magic_link_pool *pools)
    }
 }
 
-static INLINE void dml_delete(struct diff_magic_link_pool *pools,
+static inline void dml_delete(struct diff_magic_link_pool *pools,
 			      struct diff_magic_link *dml)
 {
   struct diff_magic_link *prev;
@@ -6532,7 +6532,7 @@ static INLINE void dml_delete(struct diff_magic_link_pool *pools,
   }
 }
 
-static INLINE int diff_ponder_stack(int x,
+static inline int diff_ponder_stack(int x,
 				    struct diff_magic_link **dml,
 				    int top)
 {
@@ -6551,7 +6551,7 @@ static INLINE int diff_ponder_stack(int x,
    return a;
 }
 
-static INLINE int diff_ponder_array(int x,
+static inline int diff_ponder_array(int x,
 				    struct svalue *arr,
 				    int top)
 {

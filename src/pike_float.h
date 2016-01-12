@@ -33,7 +33,7 @@
 #define PIKE_ISNAN(X)	_isnan(X)
 #else /* !HAVE__ISNAN */
 /* Fallback function */
-static INLINE int PIKE_UNUSED_ATTRIBUTE pike_isnan(double x)
+static inline int PIKE_UNUSED_ATTRIBUTE pike_isnan(double x)
 {
   return ((x == 0.0) == (x < 0.0)) &&
     ((x == 0.0) == (x > 0.0));

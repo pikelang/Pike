@@ -95,7 +95,7 @@ static void chrono(char *x)
 **!	experimental status; may not be exact the same
 **!	output in later versions
 */
-static INLINE int my_abs(int a) { return (a<0)?-a:a; }
+static inline int my_abs(int a) { return (a<0)?-a:a; }
 
 static void _image_orient(struct image *source,
 			  struct object *o[5],

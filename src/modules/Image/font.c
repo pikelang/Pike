@@ -170,7 +170,7 @@ struct font
 
 /***************** init & exit *********************************/
 
-static INLINE void free_font_struct(struct font *font)
+static inline void free_font_struct(struct font *font)
 {
    if (font)
    {
@@ -202,7 +202,7 @@ static void exit_font_struct(struct object *UNUSED(obj))
 
 /***************** internals ***********************************/
 
-static INLINE int char_space(struct font *this, INT32 c)
+static inline int char_space(struct font *this, INT32 c)
 {
   if(c==0x20)
     return DOUBLE_TO_INT((double)(this->height*this->xspacing_scale)/4.5);
@@ -211,13 +211,13 @@ static INLINE int char_space(struct font *this, INT32 c)
   return DOUBLE_TO_INT(this->charinfo[c].spacing*this->xspacing_scale);
 }
 
-static INLINE int char_width(struct font *this, INT32 c)
+static inline int char_width(struct font *this, INT32 c)
 {
   if(c==0x20 || c==0x20+128)  return 0;
   return this->charinfo[c].width;
 }
 
-static INLINE ptrdiff_t my_read(int fd, void *t, size_t towrite)
+static inline ptrdiff_t my_read(int fd, void *t, size_t towrite)
 {
   ptrdiff_t res;
   while((res = fd_read(fd, t, towrite)) < 0)
@@ -235,7 +235,7 @@ static INLINE ptrdiff_t my_read(int fd, void *t, size_t towrite)
   return res;
 }
 
-static INLINE off_t file_size(int fd)
+static inline off_t file_size(int fd)
 {
   PIKE_STAT_T tmp;
   if((!fd_fstat(fd, &tmp)) &&
@@ -244,7 +244,7 @@ static INLINE off_t file_size(int fd)
   return -1;
 }
 
-static INLINE void write_char(struct _char *ci,
+static inline void write_char(struct _char *ci,
 			      rgb_group *pos,
 			      INT32 xsize,
 			      INT32 height)

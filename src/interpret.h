@@ -831,12 +831,12 @@ void really_clean_up_interpret(void);
  * to avoid implicit declaration of mega_apply().
  */
 #ifdef __ECL
-static INLINE void apply_low(struct object *o, ptrdiff_t fun, INT32 args)
+static inline void apply_low(struct object *o, ptrdiff_t fun, INT32 args)
 {
   mega_apply_low(args, (void*)o, fun);
 }
 
-static INLINE void strict_apply_svalue(struct svalue *sval, INT32 args)
+static inline void strict_apply_svalue(struct svalue *sval, INT32 args)
 {
   mega_apply(APPLY_SVALUE_STRICT, args, (void*)sval, 0);
 }

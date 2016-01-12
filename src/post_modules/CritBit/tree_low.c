@@ -96,7 +96,7 @@ static inline cb_node_t node_init() {
     return tree;
 }
 
-CB_STATIC CB_INLINE void cb_get_range(const struct cb_tree * src,
+CB_STATIC inline void cb_get_range(const struct cb_tree * src,
 				      struct cb_tree * dst,
 				      const cb_key a, const cb_key b) {
     const cb_node_t tree = src->root;
@@ -175,7 +175,7 @@ static inline cb_node_t cb_clone_node(const struct cb_tree * UNUSED(tree),
     return nnode;
 }
 
-CB_STATIC CB_INLINE void cb_copy_tree(struct cb_tree * dst,
+CB_STATIC inline void cb_copy_tree(struct cb_tree * dst,
 				      cb_node_t from) {
 
     cb_node_t parent;
@@ -219,13 +219,13 @@ static inline void cb_zap_node(const struct cb_tree * UNUSED(tree),
     CB_NODE_FREE(node);
 }
 
-CB_STATIC CB_INLINE cb_node_t cb_find_first(cb_node_t tree) {
+CB_STATIC inline cb_node_t cb_find_first(cb_node_t tree) {
     while (tree && !CB_HAS_VALUE(tree)) { tree = CB_CHILD(tree, 0); };
 
     return tree;
 }
 
-CB_STATIC CB_INLINE cb_node_t cb_find_last(cb_node_t tree) {
+CB_STATIC inline cb_node_t cb_find_last(cb_node_t tree) {
     while (1) {
 	if (CB_HAS_CHILD(tree, 1)) tree = CB_CHILD(tree, 1);
 	else if (CB_HAS_CHILD(tree, 0)) tree = CB_CHILD(tree, 0);
@@ -234,7 +234,7 @@ CB_STATIC CB_INLINE cb_node_t cb_find_last(cb_node_t tree) {
     return tree;
 }
 
-CB_STATIC CB_INLINE size_t cb_get_depth(cb_node_t node) {
+CB_STATIC inline size_t cb_get_depth(cb_node_t node) {
     size_t a = 0, b = 0, len = 1;
 
     if (CB_HAS_CHILD(node, 0)) {
@@ -248,7 +248,7 @@ CB_STATIC CB_INLINE size_t cb_get_depth(cb_node_t node) {
     return len + MAX(b, a);
 }
 
-CB_STATIC CB_INLINE cb_node_t cb_subtree_prefix(cb_node_t node, cb_key key) {
+CB_STATIC inline cb_node_t cb_subtree_prefix(cb_node_t node, cb_key key) {
     cb_size start = {0,0};
 
     do {
@@ -267,7 +267,7 @@ CB_STATIC CB_INLINE cb_node_t cb_subtree_prefix(cb_node_t node, cb_key key) {
     return NULL;
 }
 
-CB_STATIC CB_INLINE void cb_delete(struct cb_tree * tree,
+CB_STATIC inline void cb_delete(struct cb_tree * tree,
 				   const cb_key key, cb_value * val) {
     cb_node_t node = cb_index(tree->root, key);
 
@@ -331,7 +331,7 @@ PARENT:
     cb_check_node(tree->root);
 }
 
-CB_STATIC CB_INLINE cb_node_t cb_index(const cb_node_t tree, const cb_key key) {
+CB_STATIC inline cb_node_t cb_index(const cb_node_t tree, const cb_key key) {
     cb_node_t node = tree;
     if (tree) cb_check_node(tree);
 
@@ -357,7 +357,7 @@ CB_STATIC CB_INLINE cb_node_t cb_index(const cb_node_t tree, const cb_key key) {
     return NULL;
 }
 
-CB_STATIC CB_INLINE cb_node_t cb_find_next(const cb_node_t tree,
+CB_STATIC inline cb_node_t cb_find_next(const cb_node_t tree,
 					   const cb_key key) {
     cb_size size;
     size_t bit;
@@ -440,13 +440,13 @@ CB_STATIC CB_INLINE cb_node_t cb_find_next(const cb_node_t tree,
     return node;
 }
 
-CB_STATIC CB_INLINE cb_node_t cb_find_ne(const cb_node_t tree, const cb_key key) {
+CB_STATIC inline cb_node_t cb_find_ne(const cb_node_t tree, const cb_key key) {
     cb_node_t ne = cb_index(tree, key);
     if (!ne) ne = cb_find_next(tree, key);
     return ne;
 }
 
-CB_STATIC CB_INLINE cb_node_t cb_get_nth(const cb_node_t tree, size_t n) {
+CB_STATIC inline cb_node_t cb_get_nth(const cb_node_t tree, size_t n) {
     cb_node_t node = tree;
     size_t ln;
 
@@ -473,7 +473,7 @@ CB_STATIC CB_INLINE cb_node_t cb_get_nth(const cb_node_t tree, size_t n) {
     return NULL;
 }
 
-CB_STATIC CB_INLINE cb_node_t cb_find_previous(const cb_node_t tree,
+CB_STATIC inline cb_node_t cb_find_previous(const cb_node_t tree,
 					 const cb_key key) {
     cb_node_t node = cb_index(tree, key);
     if (!node) node = cb_find_next(tree, key);
@@ -484,7 +484,7 @@ CB_STATIC CB_INLINE cb_node_t cb_find_previous(const cb_node_t tree,
     return node;
 }
 
-CB_STATIC CB_INLINE cb_node_t cb_find_le(const cb_node_t tree, const cb_key key) {
+CB_STATIC inline cb_node_t cb_find_le(const cb_node_t tree, const cb_key key) {
     cb_node_t ne = cb_index(tree, key);
     if (!ne) ne = cb_find_previous(tree, key);
     return ne;
@@ -571,7 +571,7 @@ static inline int cb_low_insert(struct cb_tree * tree,
     }
 }
 
-CB_STATIC CB_INLINE void cb_insert(struct cb_tree * tree,
+CB_STATIC inline void cb_insert(struct cb_tree * tree,
 				   const cb_key key,
 				   const cb_value *val) {
 	if (!tree->root) {

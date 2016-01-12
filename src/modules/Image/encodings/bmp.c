@@ -86,7 +86,7 @@ static struct pike_string *colortable_string = NULL;
  * Functions to read/write the file data.
  */
 
-static INLINE void push_ubo_32bit(size_t x)
+static inline void push_ubo_32bit(size_t x)
 {
    char buf[4];
 
@@ -97,7 +97,7 @@ static INLINE void push_ubo_32bit(size_t x)
    push_string(make_shared_binary_string(buf,4));
 }
 
-static INLINE void push_ubo_16bit(unsigned long x)
+static inline void push_ubo_16bit(unsigned long x)
 {
    char buf[2];
    buf[0]=(char)(x);
@@ -105,14 +105,14 @@ static INLINE void push_ubo_16bit(unsigned long x)
    push_string(make_shared_binary_string(buf,2));
 }
 
-static INLINE unsigned long int_from_32bit(unsigned char *data)
+static inline unsigned long int_from_32bit(unsigned char *data)
 {
    /* NB: Avoid sign-extension in implicit cast from int to unsigned long. */
    return (data[0])|(data[1]<<8)|(data[2]<<16)|(((unsigned long)data[3])<<24);
 }
 
 #define int_from_16bit(X) _int_from_16bit((unsigned char*)(X))
-static INLINE unsigned long _int_from_16bit(unsigned char *data)
+static inline unsigned long _int_from_16bit(unsigned char *data)
 {
    return (data[0])|(data[1]<<8);
 

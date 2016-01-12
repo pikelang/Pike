@@ -580,20 +580,20 @@ if(REFCOUNTED_TYPE(T) && (S)->refs && (S)->refs[0] <= 0) {\
   debug_check_type_hint ((SVALS), (NUM), (TYPE_HINT))
 
 #ifdef DEBUG_MALLOC
-static INLINE struct svalue PIKE_UNUSED_ATTRIBUTE *dmalloc_check_svalue(struct svalue *s, char *l)
+static inline struct svalue PIKE_UNUSED_ATTRIBUTE *dmalloc_check_svalue(struct svalue *s, char *l)
 {
   if(s && REFCOUNTED_TYPE(PIKE_TYPEOF(*s)))
     debug_malloc_update_location(s->u.refs,l);
   return s;
 }
 
-static INLINE struct svalue PIKE_UNUSED_ATTRIBUTE *dmalloc_check_svalues(struct svalue *s, size_t num, char *l)
+static inline struct svalue PIKE_UNUSED_ATTRIBUTE *dmalloc_check_svalues(struct svalue *s, size_t num, char *l)
 {
   while (num--) dmalloc_check_svalue (s + num, l);
   return s;
 }
 
-static INLINE union anything PIKE_UNUSED_ATTRIBUTE *dmalloc_check_union(union anything *u,int type, char * l)
+static inline union anything PIKE_UNUSED_ATTRIBUTE *dmalloc_check_union(union anything *u,int type, char * l)
 {
   if(u && REFCOUNTED_TYPE(type))
     debug_malloc_update_location(u->refs,l);
@@ -612,14 +612,14 @@ static INLINE union anything PIKE_UNUSED_ATTRIBUTE *dmalloc_check_union(union an
 #endif	/* !DEBUG_MALLOC */
 
 /* To be used for type checking in macros. */
-static INLINE struct array PIKE_UNUSED_ATTRIBUTE *pass_array (struct array *a) {return a;}
-static INLINE struct mapping PIKE_UNUSED_ATTRIBUTE *pass_mapping (struct mapping *m) {return m;}
-static INLINE struct multiset PIKE_UNUSED_ATTRIBUTE *pass_multiset (struct multiset *l) {return l;}
-static INLINE struct object PIKE_UNUSED_ATTRIBUTE *pass_object (struct object *o) {return o;}
-static INLINE struct program PIKE_UNUSED_ATTRIBUTE *pass_program (struct program *p) {return p;}
-static INLINE struct pike_string PIKE_UNUSED_ATTRIBUTE *pass_string (struct pike_string *s) {return s;}
-static INLINE struct pike_type PIKE_UNUSED_ATTRIBUTE *pass_type (struct pike_type *t) {return t;}
-static INLINE struct callable PIKE_UNUSED_ATTRIBUTE *pass_callable (struct callable *c) {return c;}
+static inline struct array PIKE_UNUSED_ATTRIBUTE *pass_array (struct array *a) {return a;}
+static inline struct mapping PIKE_UNUSED_ATTRIBUTE *pass_mapping (struct mapping *m) {return m;}
+static inline struct multiset PIKE_UNUSED_ATTRIBUTE *pass_multiset (struct multiset *l) {return l;}
+static inline struct object PIKE_UNUSED_ATTRIBUTE *pass_object (struct object *o) {return o;}
+static inline struct program PIKE_UNUSED_ATTRIBUTE *pass_program (struct program *p) {return p;}
+static inline struct pike_string PIKE_UNUSED_ATTRIBUTE *pass_string (struct pike_string *s) {return s;}
+static inline struct pike_type PIKE_UNUSED_ATTRIBUTE *pass_type (struct pike_type *t) {return t;}
+static inline struct callable PIKE_UNUSED_ATTRIBUTE *pass_callable (struct callable *c) {return c;}
 
 #else  /* !PIKE_DEBUG */
 
@@ -889,7 +889,7 @@ int svalues_are_constant(const struct svalue *s,
 			 TYPE_FIELD hint,
 			 struct processing *p);
 
-static INLINE TYPE_FIELD PIKE_UNUSED_ATTRIBUTE BITOF(struct svalue sv) {
+static inline TYPE_FIELD PIKE_UNUSED_ATTRIBUTE BITOF(struct svalue sv) {
     if (PIKE_TYPEOF(sv) >= sizeof(TYPE_FIELD) * 8) {
         return BIT_MIXED | BIT_UNFINISHED;
     }
@@ -912,10 +912,10 @@ static INLINE TYPE_FIELD PIKE_UNUSED_ATTRIBUTE BITOF(struct svalue sv) {
   } while (0)
 
 #ifdef DEBUG_MALLOC
-static INLINE TYPE_FIELD PIKE_UNUSED_ATTRIBUTE dmalloc_gc_mark_svalues (struct svalue *s, size_t num, char *l)
+static inline TYPE_FIELD PIKE_UNUSED_ATTRIBUTE dmalloc_gc_mark_svalues (struct svalue *s, size_t num, char *l)
   {return real_gc_mark_svalues (dmalloc_check_svalues (s, num, l), num);}
 #define gc_mark_svalues(S, NUM) dmalloc_gc_mark_svalues ((S), (NUM), DMALLOC_LOCATION())
-static INLINE TYPE_FIELD PIKE_UNUSED_ATTRIBUTE dmalloc_gc_cycle_check_svalues (struct svalue *s, size_t num, char *l)
+static inline TYPE_FIELD PIKE_UNUSED_ATTRIBUTE dmalloc_gc_cycle_check_svalues (struct svalue *s, size_t num, char *l)
   {return real_gc_cycle_check_svalues (dmalloc_check_svalues (s, num, l), num);}
 #define gc_cycle_check_svalues(S, NUM) dmalloc_gc_cycle_check_svalues ((S), (NUM), DMALLOC_LOCATION())
 #else

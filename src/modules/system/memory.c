@@ -183,7 +183,7 @@ static void memory_create(INT32 args)
  *!	PROT_READ|PROT_WRITE, readable and writable, but if it fails
  *!	it will try once more in PROT_READ only.
  */
-static INLINE off_t file_size(int fd)
+static inline off_t file_size(int fd)
 {
   PIKE_STAT_T tmp;
   if((!fd_fstat(fd, &tmp)) &&

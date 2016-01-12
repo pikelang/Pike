@@ -70,7 +70,7 @@ static struct pike_string *param_zstrategy;
  *!   This module uses zlib.
  */
 
-static INLINE void push_nbo_32bit(size_t x)
+static inline void push_nbo_32bit(size_t x)
 {
    char buf[4];
    buf[0] = (char)(x>>24);
@@ -80,19 +80,19 @@ static INLINE void push_nbo_32bit(size_t x)
    push_string(make_shared_binary_string(buf,4));
 }
 
-static INLINE unsigned long int_from_32bit(const unsigned char *data)
+static inline unsigned long int_from_32bit(const unsigned char *data)
 {
    /* NB: Avoid sign-extension in implicit cast from int to unsigned long. */
    return (((unsigned long)data[0])<<24)|(data[1]<<16)|(data[2]<<8)|(data[3]);
 }
 
 #define int_from_16bit(X) _int_from_16bit((unsigned char*)(X))
-static INLINE unsigned long _int_from_16bit(const unsigned char *data)
+static inline unsigned long _int_from_16bit(const unsigned char *data)
 {
    return (data[0]<<8)|(data[1]);
 }
 
-static INLINE COLORTYPE _png_c16(unsigned long z,int bpp)
+static inline COLORTYPE _png_c16(unsigned long z,int bpp)
 {
    switch (bpp)
    {

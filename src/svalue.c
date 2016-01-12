@@ -408,7 +408,7 @@ PMOD_EXPORT void assign_short_svalue(union anything *to,
   }
 }
 
-static INLINE unsigned INT32 hash_ptr(void * ptr) {
+static inline unsigned INT32 hash_ptr(void * ptr) {
 #if SIZEOF_CHAR_P > 4
   return (unsigned INT32)(PTR_TO_INT(ptr) >> 2);
 #else

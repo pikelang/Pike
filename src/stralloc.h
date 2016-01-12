@@ -121,7 +121,7 @@ struct string_builder
 #ifndef PIKE_DEBUG
 static p_wchar2 generic_extract (const void *str, int size, ptrdiff_t pos) ATTRIBUTE((pure));
 
-static INLINE p_wchar2 PIKE_UNUSED_ATTRIBUTE generic_extract (const void *str, int size, ptrdiff_t pos)
+static inline p_wchar2 PIKE_UNUSED_ATTRIBUTE generic_extract (const void *str, int size, ptrdiff_t pos)
 {
 /* this gives better code than a lot of other versions I have tested.
 
@@ -134,7 +134,7 @@ expanded code for the oldINDEX_CHARP.
   return ((p_wchar2 *)str)[pos];
 }
 
-static INLINE p_wchar2 PIKE_UNUSED_ATTRIBUTE index_shared_string(const struct pike_string *s,  ptrdiff_t pos)
+static inline p_wchar2 PIKE_UNUSED_ATTRIBUTE index_shared_string(const struct pike_string *s,  ptrdiff_t pos)
 {
   return generic_extract(s->str,s->size_shift,pos);
 }
@@ -157,7 +157,7 @@ PMOD_EXPORT p_wchar2 index_shared_string(const struct pike_string *s, ptrdiff_t 
  * a negative integer is implementation defined and
  * not all compilers do arithmetic left shifts.
  */
-static INLINE ptrdiff_t PIKE_UNUSED_ATTRIBUTE SAL(ptrdiff_t a, unsigned int b) {
+static inline ptrdiff_t PIKE_UNUSED_ATTRIBUTE SAL(ptrdiff_t a, unsigned int b) {
     if (a < 0) {
         return -(-a << b);
     } else {
@@ -184,7 +184,7 @@ static INLINE ptrdiff_t PIKE_UNUSED_ATTRIBUTE SAL(ptrdiff_t a, unsigned int b) {
 #define COMPARE_PCHARP(X,CMP,Y) LOW_COMPARE_PCHARP((X),CMP,(Y))
 #endif
 
-static INLINE PCHARP PIKE_UNUSED_ATTRIBUTE MKPCHARP(const void *ptr, enum size_shift shift)
+static inline PCHARP PIKE_UNUSED_ATTRIBUTE MKPCHARP(const void *ptr, enum size_shift shift)
 {
   PCHARP tmp;
   tmp.ptr=(void*)ptr;
@@ -466,14 +466,14 @@ PMOD_EXPORT p_wchar2 *require_wstring2(const struct pike_string *s,
                                        char **to_free);
 /* Prototypes end here */
 
-static INLINE void PIKE_UNUSED_ATTRIBUTE string_builder_binary_strcat(struct string_builder *s,
+static inline void PIKE_UNUSED_ATTRIBUTE string_builder_binary_strcat(struct string_builder *s,
 						const char *str, ptrdiff_t len)
 {
   string_builder_binary_strcat0 (s, (const p_wchar0 *) str, len);
 }
 
 /* Note: Does not work 100% correctly with shift==2 strings. */
-static INLINE int PIKE_UNUSED_ATTRIBUTE string_has_null( struct pike_string *x )
+static inline int PIKE_UNUSED_ATTRIBUTE string_has_null( struct pike_string *x )
 {
     INT32 min;
     if( !x->len ) return 0;

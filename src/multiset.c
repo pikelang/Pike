@@ -58,9 +58,9 @@ DECLSPEC(noreturn) static void debug_multiset_fatal (
 #ifdef PIKE_DEBUG
 
 /* To get good type checking. */
-static INLINE union msnode **msnode_ptr_check (union msnode **x)
+static inline union msnode **msnode_ptr_check (union msnode **x)
   {return x;}
-static INLINE struct msnode_ind *msnode_ind_check (struct msnode_ind *x)
+static inline struct msnode_ind *msnode_ind_check (struct msnode_ind *x)
   {return x;}
 
 static union msnode *low_multiset_find_eq (struct multiset *l, struct svalue *key);

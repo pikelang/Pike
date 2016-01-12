@@ -363,7 +363,7 @@ static void encode_truecolor_generic(int rbits, int rshift, int gbits,
    }
 }
 
-static INLINE void examine_mask(unsigned int x, int *bits,int *shift)
+static inline void examine_mask(unsigned int x, int *bits,int *shift)
 {
    *bits=0;
    *shift=0;

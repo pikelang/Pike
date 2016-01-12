@@ -63,19 +63,19 @@ struct substring_pike_string {
 #define low_do_hash(STR,LEN,SHIFT) low_hashmem( (STR), (LEN)<<(SHIFT), hash_prefix_len<<(SHIFT), hashkey )
 #define do_hash(STR) low_do_hash(STR->str,STR->len,STR->size_shift)
 
-static INLINE int string_is_block_allocated(const struct pike_string * s) {
+static inline int string_is_block_allocated(const struct pike_string * s) {
   return (s->alloc_type == STRING_ALLOC_BA);
 }
 
-static INLINE int PIKE_UNUSED_ATTRIBUTE string_is_malloced(const struct pike_string * s) {
+static inline int PIKE_UNUSED_ATTRIBUTE string_is_malloced(const struct pike_string * s) {
  return (s->alloc_type == STRING_ALLOC_MALLOC);
 }
 
-static INLINE int string_is_static(const struct pike_string * s) {
+static inline int string_is_static(const struct pike_string * s) {
     return s->alloc_type == STRING_ALLOC_STATIC;
 }
 
-static INLINE int string_is_substring(const struct pike_string * s) {
+static inline int string_is_substring(const struct pike_string * s) {
     return s->alloc_type == STRING_ALLOC_SUBSTRING;
 }
 
@@ -84,13 +84,13 @@ static struct pike_string *substring_content_string(const struct pike_string *s)
   return ((struct substring_pike_string*)s)->parent;
 }
 
-static INLINE int string_may_modify(const struct pike_string * s)
+static inline int string_may_modify(const struct pike_string * s)
 {
     return !string_is_static(s) && !string_is_substring(s)
       && s->refs == 1;
 }
 
-static INLINE int string_may_modify_len(const struct pike_string * s)
+static inline int string_may_modify_len(const struct pike_string * s)
 {
     return s->refs == 1;
 }
@@ -240,7 +240,7 @@ PMOD_EXPORT void check_string_range( struct pike_string *str,
   if( max ) *max = s_max;
 }
 
-static INLINE int find_magnitude1(const p_wchar1 *s, ptrdiff_t len)
+static inline int find_magnitude1(const p_wchar1 *s, ptrdiff_t len)
 {
   const p_wchar1 *e=s+len;
   while(s<e)
@@ -249,7 +249,7 @@ static INLINE int find_magnitude1(const p_wchar1 *s, ptrdiff_t len)
   return 0;
 }
 
-static INLINE int find_magnitude2(const p_wchar2 *s, ptrdiff_t len)
+static inline int find_magnitude2(const p_wchar2 *s, ptrdiff_t len)
 {
   const p_wchar2 *e=s+len;
   while(s<e)
@@ -268,7 +268,7 @@ static INLINE int find_magnitude2(const p_wchar2 *s, ptrdiff_t len)
   return 0;
 }
 
-static INLINE enum size_shift min_magnitude(const unsigned c)
+static inline enum size_shift min_magnitude(const unsigned c)
 {
   return LIKELY(c<256) ? 0 : LIKELY(c<65536) ? 1 : 2;
 }

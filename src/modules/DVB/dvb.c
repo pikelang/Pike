@@ -225,7 +225,7 @@ dvb_stream_data *sl_getstream(dvb_data *parent, unsigned int pid) {
 
 static char devname_buf[24];
 
-static INLINE char *mk_devname(int devno, const char *basename) {
+static inline char *mk_devname(int devno, const char *basename) {
   sprintf(devname_buf, "%s%d", basename, devno); /* FIXME: uncorrect for v2.0+ !! */
   return devname_buf;
 }

@@ -562,7 +562,7 @@ MATCH_IS_WIDE(							\
 
 #ifdef NEED_CUSTOM_IEEE
 
-static INLINE FLOAT_TYPE low_parse_IEEE_float(char *b, int sz)
+static inline FLOAT_TYPE low_parse_IEEE_float(char *b, int sz)
 {
   unsigned INT32 f, extra_f;
   int s, e;
@@ -713,7 +713,7 @@ static double extract_double_le(const char * x) {
 
 /* Avoid some warnings about loss of precision */
 #ifdef __ECL
-static INLINE INT32 TO_INT32(ptrdiff_t x)
+static inline INT32 TO_INT32(ptrdiff_t x)
 {
   return (INT32)x;
 }

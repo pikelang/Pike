@@ -91,13 +91,13 @@ struct piece
 static struct block_allocator piece_allocator
     = BA_INIT_PAGES(sizeof(struct piece), 2);
 
-static INLINE struct piece * alloc_piece(void) {
+static inline struct piece * alloc_piece(void) {
     struct piece * p = ba_alloc(&piece_allocator);
     p->next = NULL;
     return p;
 }
 
-static INLINE void really_free_piece(struct piece * p) {
+static inline void really_free_piece(struct piece * p) {
     free_string(p->s);
     ba_free(&piece_allocator, p);
 }
@@ -111,12 +111,12 @@ struct out_piece
 static struct block_allocator out_piece_allocator
     = BA_INIT_PAGES(sizeof(struct out_piece), 2);
 
-static INLINE struct out_piece * alloc_out_piece(void) {
+static inline struct out_piece * alloc_out_piece(void) {
     struct out_piece * p = ba_alloc(&out_piece_allocator);
     p->next = NULL;
     return p;
 }
-static INLINE void really_free_out_piece(struct out_piece * p) {
+static inline void really_free_out_piece(struct out_piece * p) {
     free_svalue(&p->v);
     ba_free(&out_piece_allocator, p);
 }
@@ -143,12 +143,12 @@ struct feed_stack
 
 static struct block_allocator feed_stack_allocator
     = BA_INIT_PAGES(sizeof(struct feed_stack), 1);
-static INLINE struct feed_stack * alloc_feed_stack(void) {
+static inline struct feed_stack * alloc_feed_stack(void) {
     struct feed_stack * p = ba_alloc(&feed_stack_allocator);
     p->local_feed = NULL;
     return p;
 }
-static INLINE void really_free_feed_stack(struct feed_stack * p) {
+static inline void really_free_feed_stack(struct feed_stack * p) {
     while (p->local_feed) {
 	struct piece *f=p->local_feed;
 	p->local_feed=f->next;
@@ -504,7 +504,7 @@ static void debug_print_search_chars (struct parser_html_storage *this)
 
 /****** init & exit *********************************/
 
-static INLINE void reset_stack_head (struct parser_html_storage *this)
+static inline void reset_stack_head (struct parser_html_storage *this)
 {
    this->top.ignore_data=0;
    this->top.parse_tags=this->flags & FLAG_PARSE_TAGS;
@@ -692,7 +692,7 @@ found_start:
   DEBUG ((stderr, "Using precalculated search chars:\n"); \
 	 debug_print_search_chars (this))
 
-static INLINE void init_calc_chars(void)
+static inline void init_calc_chars(void)
 {
   int i;
   for (i = 0; i < 1 << 3; i++)
@@ -705,13 +705,13 @@ static INLINE void init_calc_chars(void)
   tag_fin_string = make_shared_binary_string2 (&TAG_FIN (0), 1);
 }
 
-static INLINE void exit_calc_chars(void)
+static inline void exit_calc_chars(void)
 {
   free_string (tag_end_string);
   free_string (tag_fin_string);
 }
 
-static INLINE struct calc_chars *select_variant (int flags)
+static inline struct calc_chars *select_variant (int flags)
 {
   return char_variants +
     (((flags & (FLAG_STRICT_TAGS|FLAG_XML_TAGS)) == FLAG_STRICT_TAGS ? 1 : 0) |
@@ -1376,7 +1376,7 @@ static void html_quote_tags(INT32 args)
 /* ---------------------------------------- */
 /* helper function to figure out what to do */
 
-static INLINE void recheck_scan(struct parser_html_storage *this,
+static inline void recheck_scan(struct parser_html_storage *this,
 				int *scan_entity)
 {
    if (TYPEOF(this->callback__entity) != T_INT ||
@@ -1473,7 +1473,7 @@ static void put_out_feed_range(struct parser_html_storage *this,
 /* ------------------------ */
 /* push feed range on stack */
 
-static INLINE int low_push_feed_range(struct piece *head,
+static inline int low_push_feed_range(struct piece *head,
 				      ptrdiff_t c_head,
 				      struct piece *tail,
 				      ptrdiff_t c_tail)
@@ -1524,7 +1524,7 @@ static INLINE int low_push_feed_range(struct piece *head,
    return 1;
 }
 
-static INLINE void push_feed_range(struct piece *head,
+static inline void push_feed_range(struct piece *head,
 				   ptrdiff_t c_head,
 				   struct piece *tail,
 				   ptrdiff_t c_tail)
@@ -1545,7 +1545,7 @@ static INLINE void push_feed_range(struct piece *head,
   }									\
 } while (0)
 
-static INLINE int n_pos_forward (struct piece *feed, ptrdiff_t c,
+static inline int n_pos_forward (struct piece *feed, ptrdiff_t c,
 				 struct piece **dest, ptrdiff_t *dp)
 {
   while (feed->s->len <= c) {
@@ -1565,7 +1565,7 @@ static INLINE int n_pos_forward (struct piece *feed, ptrdiff_t c,
 /* ------------------------- */
 /* compare positions in feed */
 
-static INLINE int cmp_feed_pos(struct piece *piece_a, ptrdiff_t pos_a,
+static inline int cmp_feed_pos(struct piece *piece_a, ptrdiff_t pos_a,
 			       struct piece *piece_b, ptrdiff_t pos_b)
 {
   struct piece *a_save = piece_a;
@@ -1588,7 +1588,7 @@ static INLINE int cmp_feed_pos(struct piece *piece_a, ptrdiff_t pos_a,
 /* skip feed range and count lines, etc */
 
 /* count lines, etc */
-static INLINE void skip_piece_range(struct location *loc,
+static inline void skip_piece_range(struct location *loc,
 				    struct piece *p,
 				    ptrdiff_t start,
 				    ptrdiff_t stop)
@@ -2402,7 +2402,7 @@ static int quote_tag_lookup (struct parser_html_storage *this,
   return 1;			/* 1 => no go - *mapqentry still NULL */
 }
 
-static INLINE void low_add_local_feed (struct parser_html_storage *this,
+static inline void low_add_local_feed (struct parser_html_storage *this,
 				       struct piece *feed)
 {
   /* Note: Calling code assumes that this alloc never fails with an
@@ -2420,7 +2420,7 @@ static INLINE void low_add_local_feed (struct parser_html_storage *this,
   this->stack_count++;
 }
 
-static INLINE void add_local_feed (struct parser_html_storage *this,
+static inline void add_local_feed (struct parser_html_storage *this,
 				   struct pike_string *str)
 {
   struct piece *feed = alloc_piece();
@@ -4258,7 +4258,7 @@ static void tag_name(struct parser_html_storage *this,struct piece *feed,
    if (pushed) f_add (2);
 }
 
-static INLINE void tag_push_default_arg(struct svalue *def)
+static inline void tag_push_default_arg(struct svalue *def)
 {
    if (def) push_svalue(def);
    else stack_dup();

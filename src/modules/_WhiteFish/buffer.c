@@ -16,7 +16,7 @@
 #include "blob.h"
 #include "buffer.h"
 
-static INLINE int range( int n, int m )
+static inline int range( int n, int m )
 {
   int o;
   int f;

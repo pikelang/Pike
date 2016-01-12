@@ -82,7 +82,7 @@ static void chrono(char *x)
    (((x)<0||(y)<0||(x)>=THIS->xsize||(y)>=THIS->ysize)? \
     0:(setpixel(x,y),0))
 
-static INLINE int getrgb(struct image *img,
+static inline int getrgb(struct image *img,
 			 INT32 args_start,INT32 args,INT32 max,char *name)
 {
    INT32 i;

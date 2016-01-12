@@ -91,7 +91,7 @@ PMOD_EXPORT struct rb_node_hdr *rb_link_next (struct rb_node_hdr *node);
 
 #ifdef PIKE_DEBUG
 /* To get good type checking. */
-static INLINE struct rb_node_hdr PIKE_UNUSED_ATTRIBUTE *rb_node_check (struct rb_node_hdr *node)
+static inline struct rb_node_hdr PIKE_UNUSED_ATTRIBUTE *rb_node_check (struct rb_node_hdr *node)
   {return node;}
 #else
 #define rb_node_check(node) ((struct rb_node_hdr *) (node))

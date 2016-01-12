@@ -142,7 +142,7 @@ static void vertex_connect(struct vertex *above,
    below->above = d;
 }
 
-static INLINE double line_xmax(struct line_list *v, double yp, double *ydest)
+static inline double line_xmax(struct line_list *v, double yp, double *ydest)
 {
    if (v->dx>0.0)
       if (v->below->y>yp+1.0+1e-10)
@@ -160,7 +160,7 @@ static INLINE double line_xmax(struct line_list *v, double yp, double *ydest)
       return (*ydest=v->below->y),v->below->x;
 }
 
-static INLINE double line_xmin(struct line_list *v, double yp, double *ydest)
+static inline double line_xmin(struct line_list *v, double yp, double *ydest)
 {
    if (v->dx<0.0)
       if (v->below->y>yp+1.0+1e-10)
@@ -332,7 +332,7 @@ static void sub_vertices(struct line_list **first,
    }
 }
 
-static INLINE void polyfill_row_add(double *buf,
+static inline void polyfill_row_add(double *buf,
 				    double xmin, double xmax,
 				    double add)
 {
@@ -355,7 +355,7 @@ static INLINE void polyfill_row_add(double *buf,
    }
 }
 
-static INLINE void polyfill_slant_add(double *buf,
+static inline void polyfill_slant_add(double *buf,
 				      double xmin, double xmax,
 				      double lot,
 				      double y1,
@@ -702,7 +702,7 @@ static void polyfill_some(struct image *img,
    }
 }
 
-static INLINE void polyfill_free(struct vertex *top)
+static inline void polyfill_free(struct vertex *top)
 {
    struct line_list *v,*vn;
    struct vertex *tn;
@@ -719,12 +719,12 @@ static INLINE void polyfill_free(struct vertex *top)
    }
 }
 
-static INLINE struct vertex *polyfill_begin(void)
+static inline struct vertex *polyfill_begin(void)
 {
    return NULL;
 }
 
-static INLINE struct vertex *polyfill_add(struct vertex **top,
+static inline struct vertex *polyfill_add(struct vertex **top,
 					  struct array *a,
 					  int arg,
 					  char* what)

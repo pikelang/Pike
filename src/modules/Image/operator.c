@@ -989,7 +989,7 @@ void image_max(INT32 args)
 **!	as the <ref>grey</ref>() method.
 */
 
-static INLINE void getrgbl(rgbl_group *rgb,INT32 args_start,INT32 args,
+static inline void getrgbl(rgbl_group *rgb,INT32 args_start,INT32 args,
                            char *name)
 {
    INT32 i;

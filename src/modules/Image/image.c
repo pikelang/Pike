@@ -231,7 +231,7 @@ static void exit_image_struct(struct object *UNUSED(obj))
    ((((int)x)<0||((int)y)<0||((int)x)>=(int)THIS->xsize||((int)y)>=(int)THIS->ysize)? \
     0:(setpixel((int)x,(int)y),0))
 
-static INLINE int getrgb(struct image *img,
+static inline int getrgb(struct image *img,
 			 INT32 args_start,INT32 args,INT32 max,char *name)
 {
    INT32 i;
@@ -267,7 +267,7 @@ static INLINE int getrgb(struct image *img,
    }
 }
 
-static INLINE void getrgbl(rgbl_group *rgb,INT32 args_start,INT32 args,char *name)
+static inline void getrgbl(rgbl_group *rgb,INT32 args_start,INT32 args,char *name)
 {
    INT32 i;
    if (args-args_start<3) return;
@@ -279,7 +279,7 @@ static INLINE void getrgbl(rgbl_group *rgb,INT32 args_start,INT32 args,char *nam
    rgb->b=sp[2-args+args_start].u.integer;
 }
 
-static INLINE void img_line(INT32 x1,INT32 y1,INT32 x2,INT32 y2)
+static inline void img_line(INT32 x1,INT32 y1,INT32 x2,INT32 y2)
 {
    INT32 pixelstep,pos;
    if (x1==x2)
@@ -328,7 +328,7 @@ static INLINE void img_line(INT32 x1,INT32 y1,INT32 x2,INT32 y2)
    }
 }
 
-static INLINE rgb_group _pixel_apply_matrix(struct image *img,
+static inline rgb_group _pixel_apply_matrix(struct image *img,
 					    int x,int y,
 					    int width,int height,
 					    rgbd_group *matrix,
@@ -1290,7 +1290,7 @@ static void image_change_color(INT32 args)
 **! see also: copy
 */
 
-static INLINE int try_autocrop_vertical(struct image *this,
+static inline int try_autocrop_vertical(struct image *this,
 					INT32 x,INT32 y,INT32 y2,
 					INT32 rgb_set,rgb_group *rgb)
 {
@@ -1302,7 +1302,7 @@ static INLINE int try_autocrop_vertical(struct image *this,
    return 1;
 }
 
-static INLINE int try_autocrop_horisontal(struct image *this,
+static inline int try_autocrop_horisontal(struct image *this,
 					  INT32 y,INT32 x,INT32 x2,
 					  INT32 rgb_set,rgb_group *rgb)
 {
@@ -1684,7 +1684,7 @@ void image_circle(INT32 args)
    ref_push_object(THISOBJ);
 }
 
-static INLINE int image_color_svalue_rgba(struct svalue *s,
+static inline int image_color_svalue_rgba(struct svalue *s,
 					   rgba_group *d)
 {
    rgb_group rgb;
@@ -1712,7 +1712,7 @@ static INLINE int image_color_svalue_rgba(struct svalue *s,
    return 0;
 }
 
-static INLINE void
+static inline void
    add_to_rgbda_sum_with_factor(rgbda_group *sum,
 				rgba_group rgba,
 				double factor)
@@ -1728,7 +1728,7 @@ static INLINE void
 /*    REVEAL_GLOBAL_VARIABLES(); */
 }
 
-static INLINE void
+static inline void
    add_to_rgbd_sum_with_factor(rgbd_group *sum,
 			       rgba_group rgba,
 			       double factor)
@@ -1782,7 +1782,7 @@ static INLINE void
 **!	</pre>
 **!	Default alpha channel value is 0 (opaque).
 */
-INLINE static void
+inline static void
 image_tuned_box_leftright(const rgba_group left, const rgba_group right,
 			  rgb_group *dest,
 			  const int length, const int maxlength,
@@ -1802,7 +1802,7 @@ image_tuned_box_leftright(const rgba_group left, const rgba_group right,
 
 
 
-INLINE static void
+inline static void
 image_tuned_box_topbottom(const rgba_group left, const rgba_group right,
 			  rgb_group *dest,
 			  const int length, const int xsize,

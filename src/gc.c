@@ -477,7 +477,7 @@ void count_memory_in_ba_mixed_frames(size_t *num, size_t * size) {
   ba_count_all(&ba_mixed_frame_allocator, num, size);
 }
 
-static INLINE struct link_frame *alloc_link_frame()
+static inline struct link_frame *alloc_link_frame()
 {
   struct ba_mixed_frame *f = ba_alloc(&ba_mixed_frame_allocator);
   if (++link_frames > max_link_frames)
@@ -485,20 +485,20 @@ static INLINE struct link_frame *alloc_link_frame()
   return (struct link_frame *) f;
 }
 
-static INLINE struct free_extra_frame *alloc_free_extra_frame()
+static inline struct free_extra_frame *alloc_free_extra_frame()
 {
   struct ba_mixed_frame *f = ba_alloc(&ba_mixed_frame_allocator);
   free_extra_frames++;
   return (struct free_extra_frame *) f;
 }
 
-static INLINE void really_free_link_frame (struct link_frame *f)
+static inline void really_free_link_frame (struct link_frame *f)
 {
   link_frames--;
   ba_free(&ba_mixed_frame_allocator, f);
 }
 
-static INLINE void really_free_free_extra_frame (struct free_extra_frame *f)
+static inline void really_free_free_extra_frame (struct free_extra_frame *f)
 {
   free_extra_frames--;
   ba_free(&ba_mixed_frame_allocator, f);
@@ -1895,7 +1895,7 @@ void debug_gc_touch(void *a)
 
 #ifdef PIKE_DEBUG
 
-static INLINE struct marker *gc_check_debug(void *a, int weak)
+static inline struct marker *gc_check_debug(void *a, int weak)
 {
   struct marker *m;
 
@@ -4585,7 +4585,7 @@ static TYPE_FIELD mc_block_lookahead_default = BIT_PROGRAM|BIT_STRING|BIT_TYPE;
  * blocked because they are acyclic and don't contain refs to anything
  * but strings and other types. */
 
-static INLINE int mc_lookahead_blocked(unsigned INT16 type) {
+static inline int mc_lookahead_blocked(unsigned INT16 type) {
     if (type < sizeof(TYPE_FIELD)*8) {
         return !!(mc_block_lookahead & ((TYPE_FIELD)1 << type));
     }

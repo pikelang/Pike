@@ -20,7 +20,7 @@
 #define DEFAULT_OUTBYTES 16384
 #define STDLZWCODES 8192
 
-static INLINE void lzw_output(struct gif_lzw *lzw,lzwcode_t codeno)
+static inline void lzw_output(struct gif_lzw *lzw,lzwcode_t codeno)
 {
    if (lzw->outpos+4>=lzw->outlen)
    {
@@ -87,7 +87,7 @@ static INLINE void lzw_output(struct gif_lzw *lzw,lzwcode_t codeno)
    }
 }
 
-static INLINE void lzw_add(struct gif_lzw *lzw,int c)
+static inline void lzw_add(struct gif_lzw *lzw,int c)
 {
    lzwcode_t lno,lno2;
    struct gif_lzwc *l;

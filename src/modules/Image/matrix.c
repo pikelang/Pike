@@ -79,7 +79,7 @@ static void chrono(char *x)
    (((x)<0||(y)<0||(x)>=THIS->xsize||(y)>=THIS->ysize)? \
     0:(setpixel(x,y),0))
 
-static INLINE int getrgb(struct image *img,
+static inline int getrgb(struct image *img,
 			 INT32 args_start,INT32 args,char *name)
 {
    INT32 i;
@@ -123,7 +123,7 @@ static INLINE int getrgb(struct image *img,
 #define scale_add_pixel(dest,dx,src,sx,factor) \
    _scale_add_rgb(dest,src,factor)
 
-static INLINE void scale_add_line(double py,double dx,
+static inline void scale_add_line(double py,double dx,
 				  rgbd_group *new,INT32 yn,INT32 newx,
 				  rgb_group *img,INT32 y,INT32 xsize)
 {

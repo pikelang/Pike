@@ -40,7 +40,7 @@ PIKECLASS FloatTree {
 } while(0)
 #define CB_PUSH_KEY(key)	push_float(cb_decode_float((key).str));
 
-static INLINE cb_string CB_STRING_FROM_SVALUE(const struct svalue * v) {
+static inline cb_string CB_STRING_FROM_SVALUE(const struct svalue * v) {
     FLOAT_TYPE f;
 
     if (TYPEOF(*v) == PIKE_T_INT) {

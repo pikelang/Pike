@@ -206,8 +206,8 @@ static ptrdiff_t mmapped, nobjects, nstrings, noutputs;
 static ptrdiff_t ninputs, nbuffers, sbuffers;
 
 void close_and_free_everything(struct object *o,struct pipe *);
-static INLINE void output_finish(struct object *obj);
-static INLINE void output_try_write_some(struct object *obj);
+static inline void output_finish(struct object *obj);
+static inline void output_try_write_some(struct object *obj);
 
 /********** internal ********************************************************/
 
@@ -223,7 +223,7 @@ static void push_callback(ptrdiff_t no)
 }
 
 /* Allocate a new struct input, link it last in the linked list */
-static INLINE struct input *new_input(void)
+static inline struct input *new_input(void)
 {
   struct input *i;
   ninputs++;
@@ -239,7 +239,7 @@ static INLINE struct input *new_input(void)
 }
 
 /* Free an input struct and all that it stands for */
-static INLINE void free_input(struct input *i)
+static inline void free_input(struct input *i)
 {
   debug_malloc_touch(i);
 
@@ -284,7 +284,7 @@ static INLINE void free_input(struct input *i)
 }
 
 /* do the done_callback, then close and free everything */
-static INLINE void pipe_done(void)
+static inline void pipe_done(void)
 {
   if (TYPEOF(THIS->done_callback) != T_INT)
   {
@@ -318,7 +318,7 @@ static void finished_p(void)
  * scheduled for output. Return 1 if we have more bytes in buffers
  * than allowed afterwards.
  */
-static INLINE int append_buffer(struct pike_string *s)
+static inline int append_buffer(struct pike_string *s)
    /* 1=buffer full */
 {
    struct buffer *b;
@@ -432,7 +432,7 @@ static int read_some_data(void)
 /* Let's guess what this function does....
  *
  */
-static INLINE void input_finish(void)
+static inline void input_finish(void)
 {
   struct input *i;
 
@@ -480,7 +480,7 @@ static INLINE void input_finish(void)
 /* This function reads some data from the file cache..
  * Called when we want some data to send.
  */
-static INLINE struct pike_string* gimme_some_data(size_t pos)
+static inline struct pike_string* gimme_some_data(size_t pos)
 {
    struct buffer *b;
    ptrdiff_t len;
@@ -610,7 +610,7 @@ static INLINE struct pike_string* gimme_some_data(size_t pos)
  * Note that the output struct is not freed or unlinked here,
  * that is taken care of later.
  */
-static INLINE void output_finish(struct object *obj)
+static inline void output_finish(struct object *obj)
 {
   struct output *o, *oi;
   struct object *obji;
@@ -663,7 +663,7 @@ static INLINE void output_finish(struct object *obj)
 /*
  * Try to write some data to our precious output
  */
-static INLINE void output_try_write_some(struct object *obj)
+static inline void output_try_write_some(struct object *obj)
 {
   struct output *out;
   struct pike_string *s;

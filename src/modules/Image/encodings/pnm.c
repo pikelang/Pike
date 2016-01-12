@@ -71,7 +71,7 @@ extern struct program *image_program;
 
 /* internal read foo */
 
-static INLINE unsigned char getnext(struct pike_string *s,INT32 *pos)
+static inline unsigned char getnext(struct pike_string *s,INT32 *pos)
 {
    if (*pos>=s->len) return 0;
    if (s->str[(*pos)]=='#')
@@ -79,12 +79,12 @@ static INLINE unsigned char getnext(struct pike_string *s,INT32 *pos)
    return s->str[(*pos)++];
 }
 
-static INLINE void skip_to_eol(struct pike_string *s,INT32 *pos)
+static inline void skip_to_eol(struct pike_string *s,INT32 *pos)
 {
    for (;*pos<s->len && s->str[*pos]!=10;(*pos)++);
 }
 
-static INLINE unsigned char getnext_skip_comment(struct pike_string *s,INT32 *pos)
+static inline unsigned char getnext_skip_comment(struct pike_string *s,INT32 *pos)
 {
    unsigned char c;
    while ((c=getnext(s,pos))=='#')
@@ -92,7 +92,7 @@ static INLINE unsigned char getnext_skip_comment(struct pike_string *s,INT32 *po
    return c;
 }
 
-static INLINE void skipwhite(struct pike_string *s,INT32 *pos)
+static inline void skipwhite(struct pike_string *s,INT32 *pos)
 {
    while (*pos<s->len &&
 	  ( isspace(((unsigned char *)(s->str))[*pos]) ||
@@ -100,7 +100,7 @@ static INLINE void skipwhite(struct pike_string *s,INT32 *pos)
       getnext_skip_comment(s,pos);
 }
 
-static INLINE INT32 getnextnum(struct pike_string *s,INT32 *pos)
+static inline INT32 getnextnum(struct pike_string *s,INT32 *pos)
 {
    INT32 i;
    skipwhite(s,pos);

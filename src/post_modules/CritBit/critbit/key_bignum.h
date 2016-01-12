@@ -17,7 +17,7 @@ typedef mp_limb_t CB_NAME(char);
 #endif
 #define cb_char CB_NAME(char)
 
-static CB_INLINE unsigned INT32 gclz(mp_limb_t a) {
+static inline unsigned INT32 gclz(mp_limb_t a) {
     if (sizeof(mp_limb_t) == 8) {
 	return clz64((unsigned INT64)a);
     } else {
@@ -41,7 +41,7 @@ static CB_INLINE unsigned INT32 gclz(mp_limb_t a) {
 #define CB_KEY_EQ(k1, k2)	( (k1).str == (k2).str || !mpz_cmp(K2G(k1), K2G(k2)) )
 #define CB_KEY_LT(k1, k2)	( (k1).str != (k2).str && mpz_cmp(K2G(k1), K2G(k2)) < 0 )
 
-static CB_INLINE mp_limb_t CB_GET_CHAR(cb_string s, ptrdiff_t n) {
+static inline mp_limb_t CB_GET_CHAR(cb_string s, ptrdiff_t n) {
     MP_INT * i = O2G(s);
 
     n += abs(i->_mp_size);

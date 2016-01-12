@@ -115,7 +115,7 @@ static void chrono(char *x)
 **!	<b>experimental status</b>; may not be exact the same
 **!	output in later versions
 */
-static INLINE int my_abs(int a) { return (a<0)?-a:a; }
+static inline int my_abs(int a) { return (a<0)?-a:a; }
 
 /* phase-image creating functions */
 
@@ -428,7 +428,7 @@ void image_make_ascii(INT32 args)
 
 
 
-static INLINE rgb_group _pixel_apply_max(struct image *img,
+static inline rgb_group _pixel_apply_max(struct image *img,
 					    int x,int y,
 					    int width,int height,
 					    rgbd_group *matrix,

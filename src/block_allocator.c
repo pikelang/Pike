@@ -21,34 +21,34 @@ static void ba_check_ptr(struct block_allocator * a, int page, void * ptr, struc
                          int ln);
 #endif
 
-static INLINE unsigned INT32 ba_block_number(const struct ba_layout * l, const struct ba_page * p,
+static inline unsigned INT32 ba_block_number(const struct ba_layout * l, const struct ba_page * p,
                                              const void * ptr) {
     return ((char*)ptr - (char*)BA_BLOCKN(*l, p, 0)) / l->block_size;
 }
 
-static INLINE void ba_dec_layout(struct ba_layout * l, int i) {
+static inline void ba_dec_layout(struct ba_layout * l, int i) {
     l->blocks >>= i;
     l->offset += l->block_size;
     l->offset >>= i;
     l->offset -= l->block_size;
 }
 
-static INLINE void ba_inc_layout(struct ba_layout * l, int i) {
+static inline void ba_inc_layout(struct ba_layout * l, int i) {
     l->blocks <<= i;
     l->offset += l->block_size;
     l->offset <<= i;
     l->offset -= l->block_size;
 }
 
-static INLINE void ba_double_layout(struct ba_layout * l) {
+static inline void ba_double_layout(struct ba_layout * l) {
     ba_inc_layout(l, 1);
 }
 
-static INLINE void ba_half_layout(struct ba_layout * l) {
+static inline void ba_half_layout(struct ba_layout * l) {
     ba_dec_layout(l, 1);
 }
 
-static INLINE struct ba_layout ba_get_layout(const struct block_allocator * a, int i) {
+static inline struct ba_layout ba_get_layout(const struct block_allocator * a, int i) {
     struct ba_layout l = a->l;
     ba_inc_layout(&l, i);
     return l;
@@ -58,7 +58,7 @@ struct ba_block_header {
     struct ba_block_header * next;
 };
 
-static INLINE void ba_clear_page(struct block_allocator * VALGRINDUSED(a), struct ba_page * p, struct ba_layout * l) {
+static inline void ba_clear_page(struct block_allocator * VALGRINDUSED(a), struct ba_page * p, struct ba_layout * l) {
     p->h.used = 0;
     p->h.flags = BA_FLAG_SORTED;
     p->h.first = BA_BLOCKN(*l, p, 0);
@@ -400,17 +400,17 @@ struct bitvector {
     bv_int_t * v;
 };
 
-static INLINE void bv_set_vector(struct bitvector * bv, void * p) {
+static inline void bv_set_vector(struct bitvector * bv, void * p) {
     bv->v = (bv_int_t*)p;
 }
 
-static INLINE size_t bv_byte_length(struct bitvector * bv) {
+static inline size_t bv_byte_length(struct bitvector * bv) {
     size_t bytes = ((bv->length + 7) / 8);
 
     return PIKE_ALIGNTO(bytes, BV_WIDTH);
 }
 
-static INLINE void bv_set(struct bitvector * bv, size_t n, int value) {
+static inline void bv_set(struct bitvector * bv, size_t n, int value) {
     size_t bit = n % BV_LENGTH;
     size_t c = n / BV_LENGTH;
     bv_int_t * _v = bv->v + c;
@@ -418,7 +418,7 @@ static INLINE void bv_set(struct bitvector * bv, size_t n, int value) {
     else *_v &= ~(BV_ONE << bit);
 }
 
-static INLINE int bv_get(struct bitvector * bv, size_t n) {
+static inline int bv_get(struct bitvector * bv, size_t n) {
     size_t bit = n % BV_LENGTH;
     size_t c = n / BV_LENGTH;
     return !!(bv->v[c] & (BV_ONE << bit));

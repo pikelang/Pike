@@ -9,7 +9,7 @@
  * HCHAR = Haystack character
  */
 
-static INLINE HCHAR *NameNH(MEMCHR)(HCHAR *p, NCHAR c, ptrdiff_t e)
+static inline HCHAR *NameNH(MEMCHR)(HCHAR *p, NCHAR c, ptrdiff_t e)
 {
 #if NSHIFT > HSHIFT
   if(c > (1<<(8*HSHIFT))) return 0;
@@ -18,7 +18,7 @@ static INLINE HCHAR *NameNH(MEMCHR)(HCHAR *p, NCHAR c, ptrdiff_t e)
 }
 
 
-static INLINE int NameNH(MEMCMP)(NCHAR *a, HCHAR *b, ptrdiff_t e)
+static inline int NameNH(MEMCMP)(NCHAR *a, HCHAR *b, ptrdiff_t e)
 {
 #if NSHIFT == HSHIFT
   return memcmp(a, b, sizeof(HCHAR)*e);
@@ -49,7 +49,7 @@ HCHAR *NameNH(memchr_search)(void *data,
 #ifndef DEBUG_CLANG
 static /* works around clang 3.0 compilation/linking error. */
 #endif
-INLINE HCHAR *NameNH(memchr_memcmp)(NCHAR *needle,
+inline HCHAR *NameNH(memchr_memcmp)(NCHAR *needle,
 				    ptrdiff_t needlelen,
 				    HCHAR *haystack,
 				    ptrdiff_t haystacklen)

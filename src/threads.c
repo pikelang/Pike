@@ -420,7 +420,7 @@ static THREAD_T debug_locking_thread;
 #define SET_LOCKING_THREAD (debug_is_locked = 1,			\
 			    debug_locking_thread = th_self())
 #define UNSET_LOCKING_THREAD (debug_is_locked = 0)
-static INLINE void check_interpreter_lock (DLOC_DECL)
+static void check_interpreter_lock (DLOC_DECL)
 {
   if (th_running) {
     THREAD_T self;
@@ -452,7 +452,7 @@ static void f__check_threads_swaps (INT32 UNUSED(args))
 
 #endif
 
-PMOD_EXPORT INLINE void pike_low_lock_interpreter (DLOC_DECL)
+PMOD_EXPORT void pike_low_lock_interpreter (DLOC_DECL)
 {
   /* The double locking here is to ensure that when a thread releases
    * the interpreter lock, a different thread gets it first. Thereby
@@ -468,7 +468,7 @@ PMOD_EXPORT INLINE void pike_low_lock_interpreter (DLOC_DECL)
 		       COMMA_DLOC_ARGS_OPT));
 }
 
-PMOD_EXPORT INLINE void pike_low_wait_interpreter (COND_T *cond COMMA_DLOC_DECL)
+PMOD_EXPORT void pike_low_wait_interpreter (COND_T *cond COMMA_DLOC_DECL)
 {
   USE_DLOC_ARGS();
   THREADS_FPRINTF (1, (stderr,
@@ -487,7 +487,7 @@ PMOD_EXPORT INLINE void pike_low_wait_interpreter (COND_T *cond COMMA_DLOC_DECL)
 		       cond COMMA_DLOC_ARGS_OPT));
 }
 
-PMOD_EXPORT INLINE int pike_low_timedwait_interpreter (COND_T *cond,
+PMOD_EXPORT int pike_low_timedwait_interpreter (COND_T *cond,
 						       long sec, long nsec
 						       COMMA_DLOC_DECL)
 {
@@ -527,13 +527,13 @@ static void threads_disabled_wait (DLOC_DECL)
 		       COMMA_DLOC_ARGS_OPT));
 }
 
-PMOD_EXPORT INLINE void pike_lock_interpreter (DLOC_DECL)
+PMOD_EXPORT void pike_lock_interpreter (DLOC_DECL)
 {
   pike_low_lock_interpreter (DLOC_ARGS_OPT);
   if (threads_disabled) threads_disabled_wait (DLOC_ARGS_OPT);
 }
 
-PMOD_EXPORT INLINE void pike_unlock_interpreter (DLOC_DECL)
+PMOD_EXPORT void pike_unlock_interpreter (DLOC_DECL)
 {
   USE_DLOC_ARGS();
   THREADS_FPRINTF (1, (stderr, "Releasing iplock" DLOC_PF(" @ ",) "\n"
@@ -542,14 +542,14 @@ PMOD_EXPORT INLINE void pike_unlock_interpreter (DLOC_DECL)
   mt_unlock (&interpreter_lock);
 }
 
-PMOD_EXPORT INLINE void pike_wait_interpreter (COND_T *cond COMMA_DLOC_DECL)
+PMOD_EXPORT void pike_wait_interpreter (COND_T *cond COMMA_DLOC_DECL)
 {
   int owner = threads_disabled;
   pike_low_wait_interpreter (cond COMMA_DLOC_ARGS_OPT);
   if (!owner && threads_disabled) threads_disabled_wait (DLOC_ARGS_OPT);
 }
 
-PMOD_EXPORT INLINE int pike_timedwait_interpreter (COND_T *cond,
+PMOD_EXPORT int pike_timedwait_interpreter (COND_T *cond,
 						   long sec, long nsec
 						   COMMA_DLOC_DECL)
 {

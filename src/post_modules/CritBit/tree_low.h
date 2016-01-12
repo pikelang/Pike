@@ -211,23 +211,23 @@ typedef struct cb_tree {
     cb_node_t root;
 } cb_tree;
 
-CB_STATIC CB_INLINE void cb_insert(cb_tree*, const cb_key,
+CB_STATIC inline void cb_insert(cb_tree*, const cb_key,
 				   const cb_value *);
-CB_STATIC CB_INLINE cb_node_t cb_find_next(const cb_node_t, const cb_key);
-CB_STATIC CB_INLINE cb_node_t cb_index(const cb_node_t tree, const cb_key);
-CB_STATIC CB_INLINE void cb_get_range(const struct cb_tree *, struct cb_tree *,
+CB_STATIC inline cb_node_t cb_find_next(const cb_node_t, const cb_key);
+CB_STATIC inline cb_node_t cb_index(const cb_node_t tree, const cb_key);
+CB_STATIC inline void cb_get_range(const struct cb_tree *, struct cb_tree *,
 				      const cb_key, const cb_key);
-CB_STATIC CB_INLINE void cb_copy_tree(struct cb_tree * dst,
+CB_STATIC inline void cb_copy_tree(struct cb_tree * dst,
 				      cb_node_t from);
-CB_STATIC CB_INLINE cb_node_t cb_find_first(cb_node_t tree);
-CB_STATIC CB_INLINE cb_node_t cb_find_last(cb_node_t tree);
-CB_STATIC CB_INLINE size_t cb_get_depth(cb_node_t node);
-CB_STATIC CB_INLINE cb_node_t cb_subtree_prefix(cb_node_t node, cb_key key);
-CB_STATIC CB_INLINE cb_node_t cb_find_le(const cb_node_t tree,
+CB_STATIC inline cb_node_t cb_find_first(cb_node_t tree);
+CB_STATIC inline cb_node_t cb_find_last(cb_node_t tree);
+CB_STATIC inline size_t cb_get_depth(cb_node_t node);
+CB_STATIC inline cb_node_t cb_subtree_prefix(cb_node_t node, cb_key key);
+CB_STATIC inline cb_node_t cb_find_le(const cb_node_t tree,
 					 const cb_key key);
-CB_STATIC CB_INLINE cb_node_t cb_find_previous(const cb_node_t tree,
+CB_STATIC inline cb_node_t cb_find_previous(const cb_node_t tree,
 					       const cb_key key);
-CB_STATIC CB_INLINE cb_node_t cb_get_nth(const cb_node_t tree, size_t n);
-CB_STATIC CB_INLINE cb_node_t cb_find_ne(const cb_node_t tree,
+CB_STATIC inline cb_node_t cb_get_nth(const cb_node_t tree, size_t n);
+CB_STATIC inline cb_node_t cb_find_ne(const cb_node_t tree,
 					 const cb_key key);
-CB_STATIC CB_INLINE void cb_delete(struct cb_tree*, const cb_key, cb_value*);
+CB_STATIC inline void cb_delete(struct cb_tree*, const cb_key, cb_value*);

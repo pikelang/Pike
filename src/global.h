@@ -540,14 +540,6 @@ typedef struct p_wchar_p
 #define DO_IF_INTERNAL_PROFILING(X)
 #endif
 
-#ifndef INLINE
-#if defined(__GNUC__) && !defined(PIKE_DEBUG) && !defined(lint)
-#define INLINE inline
-#else
-#define INLINE
-#endif
-#endif
-
 /* Suppress compiler warnings for unused parameters if possible. The mangling of
    argument name is required to catch when an unused argument later is used without
    removing the annotation. */
@@ -620,7 +612,7 @@ typedef struct p_wchar_p
 
 /* Some functions/macros used to avoid loss of precision warnings. */
 #ifdef __ECL
-static INLINE long PTRDIFF_T_TO_LONG(ptrdiff_t x)
+static inline long PTRDIFF_T_TO_LONG(ptrdiff_t x)
 {
   return (long)x;
 }

@@ -227,7 +227,7 @@ static double noise(double Vx,double Vy,const double *noise_p)
    return sum;
 }
 
-static INLINE double turbulence(double x,double y,int octaves)
+static inline double turbulence(double x,double y,int octaves)
 {
    double t=0;
    double mul=1;

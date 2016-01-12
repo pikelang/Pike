@@ -376,7 +376,7 @@ void matrixX(__sprintf)(INT32 args)
 
 /* --- helpers ---------------------------------------------------- */
 
-static INLINE struct matrixX(_storage)
+static inline struct matrixX(_storage)
       *matrixX(_push_new_)(int xsize,int ysize)
 {
    push_int(xsize);
