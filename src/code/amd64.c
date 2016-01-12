@@ -2845,19 +2845,21 @@ int amd64_ins_f_jump(unsigned int op, int backward_jump)
       /* if not 0, branch */
       /* otherwise, pop */
       amd64_load_sp_reg();
-      mov_mem32_reg( sp_reg, -sizeof(struct svalue), P_REG_RAX );
+      mov_mem32_reg( sp_reg, SVAL(-1).type, P_REG_RAX );
       /* Is it a normal integer? subtype -> 0, type -> PIKE_T_INT */
       cmp_reg32_imm( P_REG_RAX, PIKE_T_INT );
       jne( &label_A );
 
-      /* if it is, is it 0? */
-      mov_mem_reg( sp_reg, -sizeof(struct svalue)+8, P_REG_RAX );
-      test_reg(P_REG_RAX);
-      jz( &label_B ); /* it is. */
+      /* if it is, is it <= 0? */
+      mov_mem_reg( sp_reg, SVAL(-1).value, P_REG_RAX );
+      cmp_reg_imm(P_REG_RAX,0);
+      jle(&label_B); /* it is. */
 
-      add_reg_imm( P_REG_RAX, -1 );
-      mov_reg_mem( P_REG_RAX, sp_reg, -sizeof(struct svalue)+8);
-      mov_imm_reg( 1, P_REG_RAX );
+      /* add_reg_imm( P_REG_RAX, -1 ); */
+      /* mov_reg_mem( P_REG_RAX, sp_reg, -sizeof(struct svalue)+8); */
+      add_mem_imm( sp_reg, SVAL(-1).value, -1 );
+      /* REG_RAX known true, so no need to set it to 1. */
+      /* mov_imm_reg( 1, P_REG_RAX ); */
       /* decremented. Jump -> true. */
 
       /* This is where we would really like to have two instances of
