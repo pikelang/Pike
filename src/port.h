@@ -124,9 +124,6 @@ PMOD_EXPORT int STRCASECMP(const char *a,const char *b);
 #  define STRCASECMP(A,B) strcasecmp(A,B)
 #endif
 
-#ifndef HAVE_SNPRINTF
-PMOD_EXPORT int snprintf(char *buf, size_t size, const char *fmt, ...);
-#endif
 #define SNPRINTF snprintf
 
 /* Compat. */
