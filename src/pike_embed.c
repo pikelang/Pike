@@ -104,10 +104,6 @@ const char *master_file = NULL;
 
 void init_pike(char **argv, const char *file)
 {
-#ifndef HAVE_UNION_INIT
-  svalue_int_one.u.integer = 1;
-#endif
-
   init_pike_memory();
 
   init_rusage();

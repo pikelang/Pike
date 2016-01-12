@@ -89,18 +89,10 @@ union anything
 /* Note: At least multisets overlays the type field and uses the top 4
  * bits in it internally. */
 
-#if !defined(HAVE_UNION_INIT) && !defined(NO_COMBINED_TYPE_SUBTYPE)
-/* We can't use the tu union in this case, since we need to
- * support static initialization of svalues.
- */
-#define NO_COMBINED_TYPE_SUBTYPE
-#endif
-
 /**
  */
 struct svalue
 {
-#ifndef NO_COMBINED_TYPE_SUBTYPE
   union {
     struct {
       unsigned short type; /**< the data type, see PIKE_T_... */
@@ -118,17 +110,6 @@ struct svalue
 #endif
 #endif
   } tu;
-#else /* NO_COMBINED_TYPE_SUBTYPE */
-  /* Syntax-compatible with the above, but only structs,
-   * and thus no combined type_subtype field.
-   */
-  struct {
-    struct {
-      unsigned short type; /**< the data type, see PIKE_T_... */
-      unsigned short subtype; /**< used to store the zero type, among others */
-    } t;
-  } tu;
-#endif /* NO_COMBINED_TYPE_SUBTYPE */
   union anything u; /**< contains the value */
 };
 
@@ -140,17 +121,6 @@ struct svalue
 #define SET_SVAL_TYPE(SVAL, TYPE)	(TYPEOF(SVAL) = (TYPE))
 #define SET_SVAL_SUBTYPE(SVAL, TYPE)	(SUBTYPEOF(SVAL) = (TYPE))
 
-#ifdef NO_COMBINED_TYPE_SUBTYPE
-/* Some compilers have aliasing problems with unions,
- * so skip the optimization of setting both fields
- * with one write with them.
- */
-#define SET_SVAL_TYPE_SUBTYPE(SVAL, TYPE, SUBTYPE)	\
-  ((PIKE_TYPEOF(SVAL) = (TYPE)),				\
-   (PIKE_SUBTYPEOF(SVAL) = (SUBTYPE)))
-/* Used when we don't care if the subtype gets set or not. */
-#define SET_SVAL_TYPE_DC(SVAL, TYPE)	SET_SVAL_TYPE(SVAL, TYPE)
-#else
 #if PIKE_BYTEORDER == 1234
 #define TYPE_SUBTYPE(X,Y) ((unsigned int)(X)|((unsigned int)(Y)<<16))
 #else
@@ -163,7 +133,6 @@ struct svalue
  * just setting the type field.
  */
 #define SET_SVAL_TYPE_DC(SVAL, TYPE)	SET_SVAL_TYPE_SUBTYPE(SVAL, TYPE, 0)
-#endif
 
 #define SET_SVAL(SVAL, TYPE, SUBTYPE, FIELD, EXPR) do { \
     /* Set the type afterwards to avoid a clobbered	\
@@ -452,13 +421,7 @@ struct svalue
 #define FUNCTION_BUILTIN USHRT_MAX
 
 extern PMOD_EXPORT const  struct svalue svalue_undefined, svalue_int_zero;
-#ifdef HAVE_UNION_INIT
 extern PMOD_EXPORT const  struct svalue svalue_int_one;
-#else
-/* If union initializers are unavailable,
-   svalue_int_one needs to be assignable. */
-extern PMOD_EXPORT struct svalue svalue_int_one;
-#endif
 
 #define is_gt(a,b) is_lt(b,a)
 #define is_ge(a,b) is_le(b,a)
@@ -969,14 +932,8 @@ struct ref_dummy
 
 /* The following macro is useful to initialize static svalues. Note
  * that the value isn't always set. */
-#ifdef HAVE_UNION_INIT
 #define SVALUE_INIT(TYPE, SUBTYPE, VAL) {{{TYPE, SUBTYPE}}, {VAL}}
 #define SVALUE_INIT_INT(VAL) {{{T_INT, NUMBER_NUMBER}}, {VAL}}
 #define SVALUE_INIT_FREE {{{PIKE_T_FREE, NUMBER_NUMBER}}, {0}}
-#else
-#define SVALUE_INIT(TYPE, SUBTYPE, VAL) {{{TYPE, SUBTYPE}}}
-#define SVALUE_INIT_INT(VAL) {{{T_INT, NUMBER_NUMBER}}}
-#define SVALUE_INIT_FREE {{{PIKE_T_FREE, NUMBER_NUMBER}}}
-#endif
 
 #endif /* !SVALUE_H */

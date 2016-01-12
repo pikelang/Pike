@@ -203,9 +203,7 @@ static struct multiset_data empty_ind_msd = {
   0, 0, 0,
   BIT_INT,
   0,
-#ifdef HAVE_UNION_INIT
   {{{NULL, NULL, SVALUE_INIT_INT (0)}}}
-#endif
 };
 
 void free_multiset_data (struct multiset_data *msd);

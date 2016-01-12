@@ -354,9 +354,7 @@ static void try_find_name(struct color_struct *this)
    rgb_group d;
    static struct nct_dither dith = {
      NCTD_NONE,NULL,NULL,NULL,NULL,-1,
-#ifdef HAVE_UNION_INIT
      {{NULL,NULL,0.0,0.0,0.0,0.0,0,0}},	/* Only to avoid warnings. */
-#endif
    };
 
    if (!colors)

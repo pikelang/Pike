@@ -6907,66 +6907,6 @@ MY_AC_CHECK_PRINTF_INT_TYPE(INT64,
 			    PRINTINT64,
 			    [%${res}d, %${res}x])
 
-#######################################################################
-
-AC_MSG_CHECKING(if union initialization works)
-AC_CACHE_VAL(pike_cv_have_union_init, [
-  AC_TRY_RUN([
-    struct foo {int a;};
-    struct bar {char b[2];};
-    union anything
-    {
-      struct foo foo;
-      struct bar bar;
-    };
-    struct svalue
-    {
-      unsigned type;
-      unsigned subtype;
-      union anything u;
-    };
-    struct svalue my_svalue = {0, 0, {{4711}}};
-    int main() {
-      return !(my_svalue.u.foo.a == 4711);
-    }
-  ],
-  pike_cv_have_union_init=yes,
-  pike_cv_have_union_init=no,
-  pike_cv_have_union_init=no)
-])
-AC_MSG_RESULT($pike_cv_have_union_init)
-if test "$pike_cv_have_union_init" = yes; then
-  AC_DEFINE(HAVE_UNION_INIT)
-fi
-
-#############################################################################
-
-AC_MSG_CHECKING(if union aliasing works)
-AC_CACHE_VAL(pike_cv_have_working_union_aliasing, [
-  AC_TRY_RUN([
-    struct foo {int a;};
-    struct bar {char b[2];};
-    union anything
-    {
-      struct foo foo;
-      struct bar bar;
-    };
-    int main() {
-      union anything u;
-      u.bar.b[0] = u.bar.b[1] = ~0;
-      u.foo.a = 0;
-      return u.bar.b[0];
-    }
-  ],
-  pike_cv_have_working_union_aliasing=yes,
-  pike_cv_have_working_union_aliasing=no,
-  pike_cv_have_working_union_aliasing=yes)
-])
-AC_MSG_RESULT($pike_cv_have_working_union_aliasing)
-if test "$pike_cv_have_union_init" = no; then
-  AC_DEFINE(NO_COMBINED_TYPE_SUBTYPE)
-fi
-
 #############################################################################
 
 AC_MSG_CHECKING(if port.c works in CONFIGURE_TEST mode)
