@@ -1,23 +1,22 @@
 START_MARKER
-define(MATRIX_EQUAL,[[
-  (max(@map(Array.flatten( (array) (($1)-($2)) ),abs))<1e-5)
-]])
 
 define(MATRIX_CONVOLVE_TEST,[[
 test_any([[
-      Math.Matrix a=]]$1[[;
-      Math.Matrix b=]]$2[[;
-      Math.Matrix r=]]$3[[;
+#define MATRIX_EQUAL(A,B) (max(@map(Array.flatten( (array) ((A)-(B)) ),abs))<1e-5)
+
+      Math.Matrix a=$1;
+      Math.Matrix b=$2;
+      Math.Matrix r=$3;
       Math.Matrix r1=a->convolve(b);
       Math.Matrix r2=b->convolve(a);
-      if (!]]MATRIX_EQUAL(r1,r2)[[)
+      if (!MATRIX_EQUAL(r1,r2))
 	 error("convolving \na=%O,\nb=%O\n"
 	       "gave different results depending on order:\n"
 	       "a->convolve(b):\n%O\n"
 	       "b->convolve(a):\n%O\n"
 	       "expected:\n%O\n",
 	       a,b,r1,r2,r);
-      if (!]]MATRIX_EQUAL(r1,r)[[)
+      if (!MATRIX_EQUAL(r1,r))
 	 error("convolving \n%O,\n%O\n"
 	       "gave erranous result,\n%O,\nexpected\n%O\n",
 	       a,b,r1,r);
