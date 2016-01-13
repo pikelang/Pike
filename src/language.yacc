@@ -369,7 +369,6 @@ int yylex(YYSTYPE *yylval);
 %type <n> low_program_ref
 %type <n> inherit_ref
 %type <n> local_function
-%type <n> local_function2
 %type <n> magic_identifier
 %type <n> simple_identifier
 %type <n> foreach_lvalues
@@ -2412,153 +2411,6 @@ local_function: TOK_IDENTIFIER push_compiler_frame1 func_args
   }
   ;
 
-local_function2: TOK_IDENTIFIER push_compiler_frame1 func_args
-  {
-    struct pike_string *name;
-    struct pike_type *type;
-    int id,e;
-    node *n;
-    struct identifier *i=0;
-
-    /***/
-    debug_malloc_touch(Pike_compiler->compiler_frame->current_return_type);
-
-    push_finished_type($<n>0->u.sval.u.type);
-
-    if(Pike_compiler->compiler_frame->current_return_type)
-      free_type(Pike_compiler->compiler_frame->current_return_type);
-    Pike_compiler->compiler_frame->current_return_type=compiler_pop_type();
-
-    /***/
-    push_finished_type(Pike_compiler->compiler_frame->current_return_type);
-
-    e=$3-1;
-    if(Pike_compiler->varargs)
-    {
-      push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
-      e--;
-      pop_type_stack(T_ARRAY);
-    }else{
-      push_type(T_VOID);
-    }
-    push_type(T_MANY);
-    for(; e>=0; e--) {
-      push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
-      push_type(T_FUNCTION);
-    }
-
-    type=compiler_pop_type();
-    /***/
-
-    name = get_new_name($1->u.sval.u.string);
-
-#ifdef LAMBDA_DEBUG
-    fprintf(stderr, "%d: LAMBDA: %s 0x%08lx 0x%08lx\n",
-	    Pike_compiler->compiler_pass, name->str,
-	    (long)Pike_compiler->new_program->id,
-	    Pike_compiler->local_class_counter-1);
-#endif /* LAMBDA_DEBUG */
-
-    if(Pike_compiler->compiler_pass > 1)
-    {
-      id=isidentifier(name);
-    }else{
-      id=define_function(name,
-			 type,
-			 ID_PROTECTED | ID_PRIVATE | ID_INLINE | ID_USED,
-			 IDENTIFIER_PIKE_FUNCTION|
-			 (Pike_compiler->varargs?IDENTIFIER_VARARGS:0),
-			 0,
-			 OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
-    }
-    Pike_compiler->varargs=0;
-    Pike_compiler->compiler_frame->current_function_number=id;
-
-    n=0;
-    if(Pike_compiler->compiler_pass > 1 &&
-       (i=ID_FROM_INT(Pike_compiler->new_program, id)))
-    {
-      if(i->identifier_flags & IDENTIFIER_SCOPED)
-	n = mktrampolinenode(id, Pike_compiler->compiler_frame->previous);
-      else
-	n = mkidentifiernode(id);
-    }
-
-    low_add_local_name(Pike_compiler->compiler_frame->previous,
-		       $1->u.sval.u.string, type, n);
-    $<number>$=id;
-    free_string(name);
-  }
-  failsafe_block
-  {
-    int localid;
-    struct identifier *i=ID_FROM_INT(Pike_compiler->new_program, $<number>4);
-    struct compilation *c = THIS_COMPILATION;
-    struct pike_string *save_file = c->lex.current_file;
-    int save_line = c->lex.current_line;
-    c->lex.current_file = $1->current_file;
-    c->lex.current_line = $1->line_number;
-
-    debug_malloc_touch($5);
-    $5=mknode(F_COMMA_EXPR,$5,mknode(F_RETURN,mkintnode(0),0));
-
-
-    debug_malloc_touch($5);
-    dooptcode(i->name,
-	      $5,
-	      i->type,
-	      ID_PROTECTED | ID_PRIVATE | ID_INLINE);
-
-    i->opt_flags = Pike_compiler->compiler_frame->opt_flags;
-
-    c->lex.current_line = save_line;
-    c->lex.current_file = save_file;
-#ifdef PIKE_DEBUG
-    if (Pike_compiler->compiler_frame != $2) {
-      Pike_fatal("Lost track of compiler_frame!\n"
-		 "  Got: %p (Expected: %p) Previous: %p\n",
-		 Pike_compiler->compiler_frame, $2,
-		 Pike_compiler->compiler_frame->previous);
-    }
-#endif
-    pop_compiler_frame();
-    free_node($1);
-
-    /* WARNING: If the local function adds more variables we are screwed */
-    /* WARNING2: if add_local_name stops adding local variables at the end,
-     *           this has to be fixed.
-     */
-
-    localid=Pike_compiler->compiler_frame->current_number_of_locals-1;
-    if(Pike_compiler->compiler_frame->variable[localid].def)
-    {
-      $$=copy_node(Pike_compiler->compiler_frame->variable[localid].def);
-    }else{
-      if(Pike_compiler->compiler_frame->lexical_scope &
-	 (SCOPE_SCOPE_USED | SCOPE_SCOPED))
-      {
-        $$ = mktrampolinenode($<number>4,Pike_compiler->compiler_frame);
-      }else{
-        $$ = mkidentifiernode($<number>4);
-      }
-    }
-  }
-  | TOK_IDENTIFIER push_compiler_frame1 error
-  {
-#ifdef PIKE_DEBUG
-    if (Pike_compiler->compiler_frame != $2) {
-      Pike_fatal("Lost track of compiler_frame!\n"
-		 "  Got: %p (Expected: %p) Previous: %p\n",
-		 Pike_compiler->compiler_frame, $2,
-		 Pike_compiler->compiler_frame->previous);
-    }
-#endif
-    pop_compiler_frame();
-    free_node($1);
-    $$=mkintnode(0);
-  }
-  ;
-
 create_arg: modifiers type_or_error optional_dot_dot_dot TOK_IDENTIFIER
   {
     struct pike_type *type;
@@ -3351,7 +3203,7 @@ comma_expr: comma_expr2
   | simple_type2 local_name_list { $$=$2; free_node($1); }
   | simple_identifier_type local_name_list { $$=$2; free_node($1); }
   | simple_identifier_type local_function { $$=$2; free_node($1); }
-  | simple_type2 local_function2 { $$=$2; free_node($1); }
+  | simple_type2 local_function { $$=$2; free_node($1); }
   ;
 
 
