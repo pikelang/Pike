@@ -36,6 +36,7 @@
 #include <ctype.h>
 #include <errno.h>
 #include <math.h>
+#include <fcntl.h>
 
 #ifdef HAVE_ARPA_INET_H
 #include <arpa/inet.h>
@@ -2076,6 +2077,166 @@ PIKEFUN program function_program(program|function func)
   push_int(0);
 }
 
+PIKECLASS RandomInterface
+{
+  CVAR INT64 int_buffer;
+  CVAR int   buffer_bits;
+
+  INIT
+  {
+    THIS->int_buffer = 0;
+    THIS->buffer_bits = 0;
+  }
+
+  PIKEFUN string(8bit) random_string(int(0..))
+    prototype;
+  {}
+
+  static void fill_int_buffer()
+  {
+    push_int(8);
+    apply_current(f_RandomInterface_random_string_fun_num, 1);
+    if( TYPEOF(Pike_sp[-1]) != T_STRING ||
+        Pike_sp[-1].u.string->len != 8 )
+      Pike_error("Illegal return value from random_string.\n");
+    THIS->int_buffer = ((INT64 *)Pike_sp[-1].u.string->str)[0];
+    THIS->buffer_bits = 64;
+    pop_stack();
+  }
+
+  PIKEFUN int(0..) random(int(0..) limit)
+  {
+    if(limit <= 1) RETURN 0;
+    int bits = my_log2(limit-1)+1;
+    int mask = (1<<bits)-1;
+    for(int i=0; i<1000; i++)
+    {
+      if(THIS->buffer_bits < bits)
+        fill_int_buffer();
+      INT_TYPE ret = THIS->int_buffer&mask;
+      THIS->int_buffer >>= bits;
+      THIS->buffer_bits -= bits;
+      if( ret < limit )
+        RETURN ret;
+    }
+    Pike_error("Failed to generate random data.\n");
+  }
+
+  static INT_TYPE read_int(INT_TYPE i)
+  {
+    push_int(i);
+    struct program *p = Pike_fp->current_object->prog;
+    apply_current(find_shared_string_identifier(MK_STRING("random"), p), 1);
+    if( TYPEOF(Pike_sp[-1]) != T_INT )
+      Pike_error("Illegal return value from random.\n");
+
+    INT_TYPE r = Pike_sp[-1].u.integer;
+    pop_stack();
+    return r;
+  }
+
+  PIKEFUN float random(float f)
+  {
+    if(f<=0.0) RETURN 0.0;
+    INT64 value;
+#if SIZEOF_INT_TYPE > 4
+    value = read_int(0xffffffffffffffff);
+#else
+    value = read_int(0xffffffff) << 32 | read_int(0xffffffff);
+#endif
+    RETURN (FLOAT_TYPE)ldexp((double)f * value, -64);
+  }
+
+  PIKEFUN mixed random(array a)
+    rawtype tFunc(tArr(tSetvar(0,tMix)),tVar(0));
+  {
+    if(!a->size)
+      SIMPLE_BAD_ARG_ERROR("random", 1, "array with elements in it");
+    push_svalue(a->item + (read_int(a->size)));
+  }
+
+  PIKEFUN mixed random(multiset m)
+    rawtype tFunc(tSet(tSetvar(1,tMix)),tVar(1));
+  {
+    if(multiset_is_empty (m))
+      SIMPLE_BAD_ARG_ERROR("random", 1, "multiset with elements in it");
+    push_multiset_index (m, multiset_get_nth (m, read_int(multiset_sizeof (m))));
+    sub_msnode_ref (m);
+  }
+
+  PIKEFUN array random(mapping m)
+  {
+    struct keypair *k;
+    int e, count;
+
+    if(!m_sizeof(m))
+      SIMPLE_BAD_ARG_ERROR("random", 1, "mapping with elements in it");
+
+    count = read_int( m_sizeof(m) );
+
+    /* We could optimize this by not iterating over hash buckets we will
+       not pick a member from. */
+
+    NEW_MAPPING_LOOP(m->data)
+      {
+        if(count-- < 1)
+          {
+            push_svalue(&k->ind);
+            push_svalue(&k->val);
+            f_aggregate(2);
+            return;
+          }
+      }
+
+    UNREACHABLE();
+  }
+
+  PIKEFUN mixed random(object o)
+  {
+    int f = low_find_lfun(o->prog, LFUN__RANDOM);
+    if (f < 0)
+      Pike_error("Calling undefined lfun::%s.\n", lfun_names[LFUN__RANDOM]);
+    apply_low(o, f, 0);
+  }
+}
+
+PIKECLASS RandomSystem
+{
+  INHERIT RandomInterface;
+  CVAR int fd;
+
+  INIT
+  {
+    THIS->fd = -1;
+  }
+
+  EXIT
+  {
+    close(THIS->fd);
+  }
+
+  PIKEFUN string random_string(int(0..) len)
+  {
+    if( THIS->fd==-1 )
+    {
+      THIS->fd = open("/dev/urandom", O_RDONLY);
+      if( THIS->fd==-1 )
+        Pike_error("Failed to open /dev/urandom.\n");
+    }
+
+    struct pike_string *ret = begin_shared_string(len);
+    char* str = ret->str;
+    while( len )
+    {
+      int sz = read(THIS->fd, str, len);
+      str += sz;
+      len -= sz;
+    }
+
+    pop_n_elems(args);
+    push_string(end_shared_string(ret));
+  }
+}
 
 /*! @decl mixed random(object o)
  *!   If random is called with an object, @[lfun::random] will be
@@ -2191,6 +2352,7 @@ PIKEFUN array random(mapping m)
       return;
     }
   }
+  UNREACHABLE();
 }
 
 #if defined(HAVE_SETENV) && defined(HAVE_UNSETENV)
