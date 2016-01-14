@@ -29,7 +29,6 @@
 #include "time_stuff.h"
 #include "version.h"
 #include "encode.h"
-#include <math.h>
 #include <ctype.h>
 #include "module_support.h"
 #include "module.h"

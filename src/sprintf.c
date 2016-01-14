@@ -350,7 +350,6 @@
 /*#include "modules/_Stdio/file.h"*/
 extern void f_strerror(INT32 args);
 
-#include <math.h>
 #include <errno.h>
 #define RETURN_SHARED_STRING
 

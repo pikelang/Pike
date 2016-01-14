@@ -63,12 +63,6 @@
 #include <sys/socket.h>
 #endif
 
-#ifdef HAVE_IEEEFP_H
-#include <ieeefp.h>
-#endif /* HAVE_IEEEFP_H */
-
-#include <math.h>
-
 #ifdef PIKE_DEBUG
 #define encode_value2 encode_value2_
 #define decode_value2 decode_value2_

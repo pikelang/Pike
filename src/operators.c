@@ -5,7 +5,6 @@
 */
 
 #include "global.h"
-#include <math.h>
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"

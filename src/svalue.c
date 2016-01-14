@@ -25,7 +25,6 @@
 #include "bignum.h"
 #include "cyclic.h"
 #include "pike_float.h"
-#include <math.h>
 
 #define sp Pike_sp
 
