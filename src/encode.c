@@ -653,10 +653,8 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	int pike_ftype=Pike_FP_UNKNOWN;
         if(PIKE_ISINF(d))
           pike_ftype=Pike_FP_PINF;
-#ifdef HAVE_ISNAN
-        else if(isnan(d))
+        else if(PIKE_ISNAN(d))
           pike_ftype=Pike_FP_SNAN;
-#endif
 #ifdef HAVE_ISZERO
         else if(iszero(d))
           pike_ftype=Pike_FP_PZERO;

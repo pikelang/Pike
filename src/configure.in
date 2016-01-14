@@ -4439,7 +4439,7 @@ AC_CHECK_FUNCS( \
  fpclass \
  fp_class_d \
  isinf \
- isnan \
+ _isnan \
  iszero \
  _finite \
  signbit \
@@ -4659,13 +4659,6 @@ MY_CHECK_FUNCTION(infnan,
   double ninf = infnan(-ERANGE);
   double nan = infnan(EDOM);
   exit(!(isinf(pinf)>0 && isinf(ninf)<0 && isnan(nan)));
-])
-#############################################################################
-MY_CHECK_FUNCTION(_isnan,
-[
-#include <float.h>
-], [
-  exit(_isnan(0.0));
 ])
 #############################################################################
 # isfinite() is a macro on at least OS X and Linux which doesn't play well

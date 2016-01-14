@@ -18,29 +18,12 @@
 
 /* isnan()...
  */
-#ifdef HAVE_ISNAN
-#if defined(HAVE__ISNAN) && defined(__NT__)
-/* On NT only _isnan() has a prototype.
- * isnan() is the standardized name, so use that
- * on all other platforms.
- */
-#define PIKE_ISNAN(X)	_isnan(X)
-#else /* !(HAVE__ISNAN && __NT__) */
-#define PIKE_ISNAN(X)	isnan(X)
-#endif /* HAVE__ISNAN && __NT__ */
-#else /* !HAVE_ISNAN */
 #ifdef HAVE__ISNAN
-#define PIKE_ISNAN(X)	_isnan(X)
-#else /* !HAVE__ISNAN */
-/* Fallback function */
-static inline int PIKE_UNUSED_ATTRIBUTE pike_isnan(double x)
-{
-  return ((x == 0.0) == (x < 0.0)) &&
-    ((x == 0.0) == (x > 0.0));
-}
-#define PIKE_ISNAN(X)	pike_isnan(X)
-#endif /* HAVE__ISNAN */
-#endif /* HAVE_ISNAN */
+#define PIKE_ISNAN(X) _isnan(X)
+#else
+#define PIKE_ISNAN(X) isnan(X)
+#endif
+
 
 /* isinf()...
  */
