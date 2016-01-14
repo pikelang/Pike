@@ -4650,17 +4650,6 @@ fi
 
 
 #############################################################################
-MY_CHECK_FUNCTION(infnan,
-[
-#include <errno.h>
-#include <math.h>
-], [
-  double pinf = infnan(ERANGE);
-  double ninf = infnan(-ERANGE);
-  double nan = infnan(EDOM);
-  exit(!(isinf(pinf)>0 && isinf(ninf)<0 && isnan(nan)));
-])
-#############################################################################
 # isfinite() is a macro on at least OS X and Linux which doesn't play well
 # with AC_CHECK_FUNCS().
 MY_CHECK_FUNCTION(isfinite,
