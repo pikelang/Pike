@@ -568,8 +568,6 @@ static inline FLOAT_TYPE low_parse_IEEE_float(char *b, int sz)
   int s, e;
   unsigned char x[4];
   double r;
-  DECLARE_INF
-  DECLARE_NAN
 
   x[0] = EXTRACT_UCHAR(b);
   x[1] = EXTRACT_UCHAR(b+1);

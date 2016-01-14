@@ -14,21 +14,7 @@
 #include "operators.h"
 #include "bignum.h"
 #include "pike_types.h"
-
-#include <math.h>
-
-#ifdef HAVE_IEEEFP_H
-#include <ieeefp.h>
-#endif
-
-#ifdef HAVE_FP_CLASS_H
-#include <fp_class.h>
-#endif
-
-#ifdef HAVE_FLOATINGPOINT_H
-#include <floatingpoint.h>
-#endif
-
+#include "pike_float.h"
 
 #define sp Pike_sp
 #define TRIM_STACK(X) if(args>(X)) pop_n_elems(args-(X));
@@ -111,7 +97,6 @@ void f_asin(INT32 args)
       (sp[-1].u.float_number <= 1.0)) {
     sp[-1].u.float_number = FL(asin,sp[-1].u.float_number);
   } else {
-    DECLARE_NAN;
     sp[-1].u.float_number = (FLOAT_TYPE) MAKE_NAN();
   }
 }
@@ -145,7 +130,6 @@ void f_acos(INT32 args)
       (sp[-1].u.float_number <= 1.0)) {
     sp[-1].u.float_number = FL(acos,sp[-1].u.float_number);
   } else {
-    DECLARE_NAN;
     sp[-1].u.float_number = (FLOAT_TYPE) MAKE_NAN();
   }
 }

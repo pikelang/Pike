@@ -6,6 +6,8 @@
 
 #include "global.h"
 
+#include <math.h>
+
 #ifdef HAVE_FLOATINGPOINT_H
 #include <floatingpoint.h>
 #endif
@@ -16,17 +18,12 @@
 #include <fp_class.h>
 #endif
 
-/* isnan()...
- */
 #ifdef HAVE__ISNAN
 #define PIKE_ISNAN(X) _isnan(X)
 #else
 #define PIKE_ISNAN(X) isnan(X)
 #endif
 
-
-/* isinf()...
- */
 #ifdef HAVE_ISINF
 #define PIKE_ISINF(X)	isinf(X)
 #elif defined(HAVE_ISFINITE)
@@ -36,6 +33,19 @@
 #else
 #define PIKE_ISINF(X)	((X) && ((X)+(X) == (X)))
 #endif /* HAVE_ISINF */
+
+#ifdef INFINITY
+#define MAKE_INF() INFINITY
+#else
+#define MAKE_INF() (DBL_MAX+DBL_MAX)
+#endif
+
+#ifdef HAVE_NAN
+#define MAKE_NAN() (nan(""))
+#else
+#define MAKE_NAN() (MAKE_INF()-MAKE_INF())
+#endif
+
 
 #ifdef HAVE_ISUNORDERED
 #define PIKE_ISUNORDERED(X,Y) isunordered(X,Y)

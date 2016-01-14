@@ -3160,7 +3160,7 @@ PMOD_EXPORT void string_builder_vsprintf(struct string_builder *s,
 	    } else if (flags & APPEND_POSITIVE) {
 	      string_builder_putchar(s, '+');
 	    }
-	    if ((val+val == val) && (val > 0.0)) {
+            if (PIKE_ISINF(val)) {
 	      /* Infinity */
 	      string_builder_strcat(s, "inf");
 	      break;

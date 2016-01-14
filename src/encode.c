@@ -2529,10 +2529,7 @@ static void decode_value2(struct decode_data *data)
 
       if(!res)
       {
-	DECLARE_INF
-	DECLARE_NAN
-
-	switch(num)
+        switch(num)
 	{
 	  case Pike_FP_SNAN: /* Signal Not A Number */
 	  case Pike_FP_QNAN: /* Quiet Not A Number */
@@ -2540,11 +2537,11 @@ static void decode_value2(struct decode_data *data)
 	    break;
 
 	  case Pike_FP_NINF: /* Negative infinity */
-            push_float((FLOAT_TYPE)MAKE_INF(-1));
+            push_float(-(FLOAT_TYPE)MAKE_INF());
 	    break;
 
 	  case Pike_FP_PINF: /* Positive infinity */
-            push_float((FLOAT_TYPE)MAKE_INF(1));
+            push_float((FLOAT_TYPE)MAKE_INF());
 	    break;
 
 	  case Pike_FP_NZERO: /* Negative Zero */

@@ -8,6 +8,7 @@
 #include "config.h"
 #include "program.h"
 #include "module.h"
+#include "pike_float.h"
 
 #include "math_module.h"
 #include "transforms.h"
@@ -79,9 +80,6 @@ PIKE_MODULE_EXIT
 PIKE_MODULE_INIT
 {
    int i;
-   DECLARE_INF
-   DECLARE_NAN
-
    for (i=0; i<(int)(sizeof(sub)/sizeof(sub[0])); i++)
    {
       struct program *p;
@@ -96,6 +94,6 @@ PIKE_MODULE_INIT
 
    add_float_constant("pi",3.14159265358979323846  ,0);
    add_float_constant("e", 2.7182818284590452354   ,0);
-   add_float_constant("inf", MAKE_INF(1), 0);
+   add_float_constant("inf", MAKE_INF(), 0);
    add_float_constant("nan", MAKE_NAN(), 0);
 }
