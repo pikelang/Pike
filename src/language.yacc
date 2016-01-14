@@ -1824,7 +1824,7 @@ new_local_name: TOK_IDENTIFIER
   {
     int id;
     struct pike_type *type;
-    copy_pike_type(type, push_finished_type($<n>0->u.sval.u.type));
+    copy_pike_type(type, $<n>0->u.sval.u.type);
     id = add_local_name($1->u.sval.u.string, type, 0);
     if( type->type == PIKE_T_AUTO )
     {
@@ -1844,7 +1844,7 @@ new_local_name: TOK_IDENTIFIER
   {
     int id;
     struct pike_type *type;
-    copy_pike_type(type, push_finished_type($<n>0->u.sval.u.type));
+    copy_pike_type(type, $<n>0->u.sval.u.type);
     if( type->type == PIKE_T_AUTO && Pike_compiler->compiler_pass == 2)
     {
         free_type( type );
