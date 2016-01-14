@@ -8845,8 +8845,8 @@ test_equal([[ (mapping)({})]], [[ ([]) ]])
 test_equal([[ ({}) ]], [[ (array)([]) ]])
 test_eval_error([[ mapping m=(mapping)({ ({1,2,3}), ({4,5,6}) }); ]])
 
-test_equal([[ (mapping)class{int i=3;} ]],[[ (["i":3]) ]])
-test_equal([[ (mapping(string:string))class{int i=3;} ]],[[ (["i":"3"]) ]])
+test_equal([[ (mapping)class{int i=3;}() ]],[[ (["i":3]) ]])
+test_equal([[ (mapping(string:string))class{int i=3;}() ]],[[ (["i":"3"]) ]])
 
 test_any([[
   object x = class {
