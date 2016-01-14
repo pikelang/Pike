@@ -13,16 +13,16 @@ array|mapping|multiset|string map(array|mapping|multiset|string|object|program s
 {
   if(objectp(stuff))
   {
-    if( catch { stuff = (array)stuff; } )
-      if( catch { stuff = (mapping)stuff; } )
-        if( catch { stuff = (multiset)stuff; } )
-          if( catch {
-              object o = stuff;
-              stuff = allocate(sizeof(o));
-              for( int i; i<sizeof(stuff); i++ )
-                stuff[i] = o[i];
-            } )
-           error("Bad argument 1 to map. Expected object that works in map.\n");
+    catch {
+      return 7.9::map(stuff, f, @args);
+    };
+    if( catch {
+        object o = stuff;
+        stuff = allocate(sizeof(o));
+        for( int i; i<sizeof(stuff); i++ )
+          stuff[i] = o[i];
+      } )
+      error("Bad argument 1 to map. Expected object that works in map.\n");
   }
   return 7.9::map(stuff, f, @args);
 }
