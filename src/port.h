@@ -253,7 +253,7 @@ long long gethrtime(void);
 #ifdef PORT_DO_WARN
 /* Only warn when compiling port.c; might get here when using
  * --disable-binary. */
-#warning Don´t know how to create Inf on the system!
+#warning Don not know how to create Inf on the system!
 #endif
 #define MAKE_INF(s) ((s)*ldexp(1.0, 1024))
 #endif /* HUGE_VAL */
@@ -270,7 +270,7 @@ long long gethrtime(void);
 #define MAKE_NAN() (NAN)
 #else
 #ifdef PORT_DO_WARN
-#warning Don´t know how to create NaN on this system!
+#warning Do not know how to create NaN on this system!
 #endif
 #define MAKE_NAN() (0.0)
 #endif /* NAN */
