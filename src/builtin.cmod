@@ -2125,8 +2125,7 @@ PIKECLASS RandomInterface
   static INT_TYPE read_int(INT_TYPE i)
   {
     push_int(i);
-    struct program *p = Pike_fp->current_object->prog;
-    apply_current(find_shared_string_identifier(MK_STRING("random"), p), 1);
+    apply_current(f_RandomInterface_random_1_fun_num, 1);
     if( TYPEOF(Pike_sp[-1]) != T_INT )
       Pike_error("Illegal return value from random.\n");
 
