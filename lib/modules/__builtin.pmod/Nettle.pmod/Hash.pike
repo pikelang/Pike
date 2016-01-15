@@ -956,10 +956,27 @@ int(0..1) emsa_pss_verify(string(8bit) message, string(8bit) sign,
 }
 
 //! HMAC-Based One-Time Password as defined by @rfc{4226@}.
-int hotp(string key, int factor, void|int size)
+//!
+//! Can be used to implement the @rfc{6238@} Time-Based One-Time
+//! Password Algorithm by giving the factor
+//! @exp{(time()-T0)/X@}. Specifically for Google Authenticator this
+//! is @expr{Crypto.SHA1.hotp(secret,time()/30)@}, using an 80 bit
+//! secret.
+//!
+//! @param secret
+//!   A shared secret between both parties. Typically the same size as
+//!   the hash output.
+//! @param factor
+//!   A moving factor. Defined in @rfc{4226@} to be a counter
+//!   synchornized between both parties.
+//! @param length
+//!   The maximum number of digits of the one-time password. Defaults
+//!   to 6. Note that the result is usually 0-padded to this length
+//!   for user display purposes.
+int hotp(string secret, int factor, void|int length)
 {
   // 1
-  string hs = HMAC(key)(sprintf("%8c",factor));
+  string hs = HMAC(secret)(sprintf("%8c",factor));
 
   // 2
   int offset = hs[-1] & 0xf;
@@ -968,5 +985,5 @@ int hotp(string key, int factor, void|int size)
   snum &= 0x7fffffff;
 
   // 3
-  return snum % [int]pow(10, size||6);
+  return snum % [int]pow(10, length||6);
 }
