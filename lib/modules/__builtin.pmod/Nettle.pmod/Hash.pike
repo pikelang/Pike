@@ -954,3 +954,19 @@ int(0..1) emsa_pss_verify(string(8bit) message, string(8bit) sign,
   // 14. If H = H', output "consistent." Otherwise, output "inconsistent."
   return h == hash(m);
 }
+
+//! HMAC-Based One-Time Password as defined by @rfc{4226@}.
+int hotp(string key, int factor, void|int size)
+{
+  // 1
+  string hs = HMAC(key)(sprintf("%8c",factor));
+
+  // 2
+  int offset = hs[-1] & 0xf;
+  int snum;
+  sscanf(hs[offset..], "%4c", snum);
+  snum &= 0x7fffffff;
+
+  // 3
+  return snum % [int]pow(10, size||6);
+}
