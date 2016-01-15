@@ -2199,6 +2199,38 @@ PIKECLASS RandomInterface
   }
 }
 
+#ifdef __NT__
+#include <wincrypt.h>
+PIKECLASS RandomSystem
+{
+  INHERIT RandomInterface;
+  CVAR HCRYPTPROV handle;
+
+  INIT
+  {
+    THIS->handle = NULL;
+  }
+
+  PIKEFUN string random_string(int(0..) len)
+  {
+    if(!crypto_handle)
+    {
+      if( !CryptAcquireContext(&THIS->handle, 0, 0, PROV_RSA_FULL,
+                               CRYPT_VERIFYCONTEXT|CRYPT_SILENT) )
+        Pike_error("Failed to set up Crypto Service.\n");
+    }
+
+    struct pike_string *res = begin_shared_string(size);
+    if( !CryptGenRandom(THIS->handle, size, (BYTE*)res->str) )
+    {
+      do_free_unlinked_pike_string (res);
+      Pike_error("Failed to create random data.\n");
+    }
+
+    RETURN end_shared_string(res);
+  }
+}
+#else
 PIKECLASS RandomSystem
 {
   INHERIT RandomInterface;
@@ -2236,6 +2268,7 @@ PIKECLASS RandomSystem
     push_string(end_shared_string(ret));
   }
 }
+#endif
 
 /*! @decl mixed random(object o)
  *!   If random is called with an object, @[lfun::random] will be
