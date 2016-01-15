@@ -282,7 +282,6 @@ int yylex(YYSTYPE *yylval);
 %type <n> soft_cast
 %type <n> simple_type
 %type <n> simple_type2
-%type <n> simple_identifier_type
 %type <n> real_string_constant
 %type <n> real_string_or_identifier
 %type <n> string_constant
@@ -1289,22 +1288,10 @@ simple_type: full_type
   }
   ;
 
-/* Basic_type-prefixed expression. Value moved to parser value stack. */
-simple_type2: type
-  {
-    struct pike_type *s = compiler_pop_type();
-    $$ = mktypenode(s);
-#ifdef PIKE_DEBUG
-    if ($$->u.sval.u.type != s) {
-      Pike_fatal("mktypenode(%p) created node with %p\n", s, $$->u.sval.u.type);
-    }
-#endif /* PIKE_DEBUG */
-    free_type(s);
-  }
-  ;
-
-/* Identifier type. Value moved to parser value stack. */
-simple_identifier_type: identifier_type
+/* Basic_type-prefixed expression or an identifier type.
+ * Value moved to parser value stack.
+ */
+simple_type2: type2
   {
     struct pike_type *s = compiler_pop_type();
     $$ = mktypenode(s);
@@ -3199,8 +3186,6 @@ safe_comma_expr: comma_expr
 
 comma_expr: comma_expr2
   | simple_type2 local_name_list { $$=$2; free_node($1); }
-  | simple_identifier_type local_name_list { $$=$2; free_node($1); }
-  | simple_identifier_type local_function { $$=$2; free_node($1); }
   | simple_type2 local_function { $$=$2; free_node($1); }
   ;
 
