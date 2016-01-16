@@ -376,14 +376,6 @@ int(0..1) handle_certificates(Buffer packet)
   session->peer_certificate_chain = certs;
 
   session->peer_public_key = decoded[-1]->public_key->pkc;
-#if constant(Crypto.ECC.Curve)
-  if (session->peer_public_key->get_curve) {
-    session->curve =
-      ([object(Crypto.ECC.Curve.ECDSA)]session->peer_public_key)->
-      get_curve();
-  }
-#endif
-
   return 1;
 }
 

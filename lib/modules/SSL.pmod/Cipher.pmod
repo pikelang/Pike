@@ -1139,6 +1139,15 @@ class KeyExchangeECDHE
   protected Gmp.mpz secret;
   protected Crypto.ECC.Curve.Point point;
 
+  int(0..1) init_client()
+  {
+    if (!session->peer_public_key->get_curve) return 0;
+    session->curve =
+      ([object(Crypto.ECC.Curve.ECDSA)]session->peer_public_key)->
+      get_curve();
+    return 1;
+  }
+
   Stdio.Buffer server_key_params()
   {
     SSL3_DEBUG_MSG("KE_ECDHE\n");
