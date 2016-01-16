@@ -280,7 +280,6 @@ int yylex(YYSTYPE *yylval);
 %type <n> number_or_maxint
 %type <n> cast
 %type <n> soft_cast
-%type <n> simple_type
 %type <n> simple_type2
 %type <n> real_string_constant
 %type <n> real_string_or_identifier
@@ -628,17 +627,6 @@ block_or_semi: block
   ;
 
 
-/* Full type moved to compiler_frame->current_type. */
-type_or_error: simple_type
-  {
-    if(Pike_compiler->compiler_frame->current_type)
-      free_type(Pike_compiler->compiler_frame->current_type);
-    copy_pike_type(Pike_compiler->compiler_frame->current_type,
-		   $1->u.sval.u.type);
-    free_node($1);
-  }
-  ;
-
 open_paren_with_line_info: '('
   {
     /* Used to hold line-number info */
@@ -692,7 +680,7 @@ close_bracket_or_missing: ']'
  *
  *   compiler_frame->current_type
  *
- * (eg via type_or_error).
+ * (eg via simple_type).
  */
 push_compiler_frame0: /* empty */
   {
@@ -723,7 +711,7 @@ optional_constant: /* empty */
   }
   ;
 
-def: modifiers optional_attributes type_or_error optional_constant
+def: modifiers optional_attributes simple_type optional_constant
      TOK_IDENTIFIER push_compiler_frame0
   '('
   {
@@ -988,7 +976,7 @@ def: modifiers optional_attributes type_or_error optional_constant
     free_node($10);
     free_node($<n>11);
   }
-  | modifiers optional_attributes type_or_error
+  | modifiers optional_attributes simple_type
   optional_constant TOK_IDENTIFIER push_compiler_frame0
     error
   {
@@ -1003,7 +991,7 @@ def: modifiers optional_attributes type_or_error optional_constant
     pop_compiler_frame();
     free_node($5);
   }
-  | modifiers optional_attributes type_or_error optional_constant bad_identifier
+  | modifiers optional_attributes simple_type optional_constant bad_identifier
   {
     compiler_discard_type();
   }
@@ -1011,7 +999,7 @@ def: modifiers optional_attributes type_or_error optional_constant
   {
     if ($10) free_node($10);
   }
-  | modifiers optional_attributes type_or_error optional_constant name_list ';'
+  | modifiers optional_attributes simple_type optional_constant name_list ';'
   | inheritance {}
   | import {}
   | constant {}
@@ -1274,17 +1262,14 @@ soft_cast: open_bracket_with_line_info type ']'
  */
 type2: type | identifier_type ;
 
-/* Full type expression. Value moved to parser value stack. */
+/* Full type expression.
+ * Value moved to compiler_frame->current_type.
+ */
 simple_type: full_type
   {
-    struct pike_type *s = compiler_pop_type();
-    $$ = mktypenode(s);
-#ifdef PIKE_DEBUG
-    if ($$->u.sval.u.type != s) {
-      Pike_fatal("mktypenode(%p) created node with %p\n", s, $$->u.sval.u.type);
-    }
-#endif /* PIKE_DEBUG */
-    free_type(s);
+    if(Pike_compiler->compiler_frame->current_type)
+      free_type(Pike_compiler->compiler_frame->current_type);
+    Pike_compiler->compiler_frame->current_type = compiler_pop_type();
   }
   ;
 
@@ -2396,7 +2381,7 @@ local_function: TOK_IDENTIFIER push_compiler_frame1 func_args
   }
   ;
 
-create_arg: modifiers type_or_error optional_dot_dot_dot TOK_IDENTIFIER
+create_arg: modifiers simple_type optional_dot_dot_dot TOK_IDENTIFIER
   {
     struct pike_type *type;
     int ref_no;
@@ -2438,7 +2423,7 @@ create_arg: modifiers type_or_error optional_dot_dot_dot TOK_IDENTIFIER
     free_node($4);
     $$=0;
   }
-  | modifiers type_or_error bad_identifier { $$=0; }
+  | modifiers simple_type bad_identifier { $$=0; }
   ;
 
 create_arguments2: create_arg { $$ = 1; }
