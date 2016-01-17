@@ -602,8 +602,14 @@ test_do( Image.Image(100,100)->setcolor(255,0,0,128)->
   polyfill( ({20,20, 80,20, 80,80 }) ) )
 
 test_true( img()->random() != img()->random() )
+test_eq( (string)Image.Image(4,4)->random(42),
+String.hex2string("aacb8f50fe20afc5db8d2f676a5e56bd8dc87ac09bc2805b34156d026685411a793213af0518233d7bf0439233d7a6fc") )
+test_do( img()->random(Random.Deterministic(42)->random_string) )
 
-test_do( img()->randomgrey() )
+test_do( img()->randomgrey() != img()->randomgrey() )
+test_eq( (string)Image.Image(4,4)->randomgrey(42),
+String.hex2string("bdbdbd5656565e5e5e6a6a6a6767672f2f2f8d8d8ddbdbdbc5c5c5afafaf202020fefefe5050508f8f8fcbcbcbaaaaaa") )
+test_do( img()->randomgrey(Random.Deterministic(42)->random_string) )
 
 test_eq( img()->write_lsb_rgb("hello")->read_lsb_rgb(), "hello"+"\0"*933 )
 test_eq( img()->write_lsb_grey("hello")->read_lsb_grey(), "hello"+"\0"*308 )
@@ -654,7 +660,9 @@ test_do( img()->skewy(22.8, 100, 75, 26) )
 // sum tests above
 // sumf tests above
 
-// test tests above
+test_eq( (string)Image.Image(4,4)->test(42),
+String.hex2string("f15a00af68556c879b539aac904c946c70ad35a0cd35aebf5000fe4a77e100bafc24cbb2a0b4ff6393e32dc3b929ff67") )
+test_do( img()->test(Random.Deterministic(42)->random) )
 
 test_do( img()->threshold() )
 test_do( img()->threshold(28) )

@@ -22,6 +22,9 @@
 #include "threads.h"
 #include "builtin_functions.h"
 #include "stuff.h"
+#include "mapping.h"
+#include "constants.h"
+#include "operators.h"
 
 #include "image.h"
 
@@ -495,8 +498,10 @@ void image_turbulence(INT32 args)
 /*
 **! method object random()
 **! method object random(int seed)
+**! method object random(function(int:string) random)
 **! method object randomgrey()
-**! method object random(greyint seed)
+**! method object randomgrey(int seed)
+**! method object randomgrey(function(int:string) random)
 **! 	Gives a randomized image;<br>
 **!	<table><tr valign=center>
 **!	<td><illustration> return lena(); </illustration></td>
@@ -522,33 +527,55 @@ void image_turbulence(INT32 args)
 **! see also test, noise
 */
 
+static void select_random_string(INT32 args)
+{
+  if(args>1)
+    Pike_error("Too may arguments.\n");
+  if(!args)
+  {
+    push_svalue(simple_mapping_string_lookup(get_builtin_constants(),
+                                             "random_string"));
+    if(TYPEOF(sp[-1])!=T_FUNCTION)
+      Pike_error("Unable to resolve random function.\n");
+  }
+  else if(TYPEOF(sp[-1])==T_INT)
+  {
+    push_constant_text("Random.Deterministic");
+    SAFE_APPLY_MASTER("resolv_or_error",1);
+    if(TYPEOF(sp[-1])!=T_PROGRAM)
+      Pike_error("Unable to resolve Random.Deterministic program.\n");
+    struct program *o = sp[-1].u.program;
+    stack_swap();
+    push_object(clone_object(o, 1));
+    push_constant_text("random_string");
+    o_index();
+    if(TYPEOF(sp[-1])!=T_FUNCTION)
+      Pike_error("random_string is not a function.\n");
+  }
+  else if(TYPEOF(sp[-1])!=T_FUNCTION)
+  {
+    Pike_error("Expected seed or random function.\n");
+  }
+}
+
 void image_random(INT32 args)
 {
    struct object *o;
    struct image *img;
-   rgb_group *d;
-   INT32 n;
+   INT32 n=THIS->xsize*THIS->ysize*sizeof(COLORTYPE)*3;
+
+   select_random_string(args);
+   push_int( n );
+   apply_svalue(&sp[-2], 1);
+   if(TYPEOF(sp[-1])!=T_STRING)
+     Pike_error("Couldn't generate random string.\n");
 
    push_int(THIS->xsize);
    push_int(THIS->ysize);
    o=clone_object(image_program,2);
    img=get_storage(o,image_program);
-   d=img->img;
-   if (args) f_random_seed(args);
 
-   THREADS_ALLOW();
-
-   n=img->xsize*img->ysize;
-   while (n--)
-   {
-      d->r=(COLORTYPE)my_rand(0xffffffff);
-      d->g=(COLORTYPE)my_rand(0xffffffff);
-      d->b=(COLORTYPE)my_rand(0xffffffff);
-      d++;
-   }
-
-   THREADS_DISALLOW();
-
+   memcpy(img->img, sp[-1].u.string->str, n);
    push_object(o);
 }
 
@@ -556,26 +583,28 @@ void image_randomgrey(INT32 args)
 {
    struct object *o;
    struct image *img;
+   COLORTYPE *colors;
    rgb_group *d;
-   INT32 n;
+   INT32 n=THIS->xsize*THIS->ysize;
+
+   select_random_string(args);
+   push_int( n*sizeof(COLORTYPE) );
+   apply_svalue(&sp[-2], 1);
+   if(TYPEOF(sp[-1])!=T_STRING)
+     Pike_error("Couldn't generate random string. %d\n", TYPEOF(sp[-1]));
 
    push_int(THIS->xsize);
    push_int(THIS->ysize);
    o=clone_object(image_program,2);
    img=get_storage(o,image_program);
    d=img->img;
-   if (args) f_random_seed(args);
 
-   THREADS_ALLOW();
-
-   n=img->xsize*img->ysize;
+   colors = (COLORTYPE*)sp[-1].u.string->str;
    while (n--)
    {
-      d->r=d->g=d->b=(COLORTYPE)my_rand(0xffffffff);
-      d++;
+     d->r=d->g=d->b=colors[n];
+     d++;
    }
-
-   THREADS_DISALLOW();
 
    push_object(o);
 }

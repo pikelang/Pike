@@ -118,6 +118,10 @@
 #include "pike_error.h"
 #include "module_support.h"
 #include "pike_types.h"
+#include "operators.h"
+#include "mapping.h"
+#include "constants.h"
+#include "operators.h"
 
 #include "image.h"
 #include "colortable.h"
@@ -2183,9 +2187,41 @@ static void image_gradients(INT32 args)
    push_object(o);
 }
 
+static void select_random(INT32 args)
+{
+  if(args>1)
+    Pike_error("Too may arguments.\n");
+  if(!args)
+  {
+    push_svalue(simple_mapping_string_lookup(get_builtin_constants(),
+                                             "random"));
+    if(TYPEOF(sp[-1])!=T_FUNCTION)
+      Pike_error("Unable to resolve random function.\n");
+  }
+  else if(TYPEOF(sp[-1])==T_INT)
+  {
+    push_constant_text("Random.Deterministic");
+    SAFE_APPLY_MASTER("resolv_or_error",1);
+    if(TYPEOF(sp[-1])!=T_PROGRAM)
+      Pike_error("Unable to resolve Random.Deterministic program.\n");
+    struct program *o = sp[-1].u.program;
+    stack_swap();
+    push_object(clone_object(o, 1));
+    push_constant_text("random");
+    o_index();
+    if(TYPEOF(sp[-1])!=T_FUNCTION)
+      Pike_error("random_string is not a function.\n");
+  }
+  else if(TYPEOF(sp[-1])!=T_FUNCTION)
+  {
+    Pike_error("Expected seed or random function.\n");
+  }
+}
+
 /*
 **! method object test()
 **! method object test(int seed)
+**! method object test(function(int:string) random)
 **!    	Generates a test image, currently random gradients.
 **!
 **!	<table><tr valign=center>
@@ -2208,20 +2244,21 @@ static void image_gradients(INT32 args)
 static void image_test(INT32 args)
 {
    int i;
-
-   if (args) f_random_seed(args);
+   select_random(args);
+   struct svalue *s = &Pike_sp[-1];
 
    for (i=0; i<5; i++)
    {
-      push_int(THIS->xsize); f_random(1);
-      push_int(THIS->ysize); f_random(1);
-      push_int((i!=0)?255:0); f_random(1);
-      push_int((i!=1)?255:0); if (i!=4) f_random(1);
-      push_int((i!=2)?255:0); if (i!=3) f_random(1);
-      f_aggregate(5);
+     push_int(THIS->xsize); apply_svalue(s, 1);
+     push_int(THIS->ysize); apply_svalue(s, 1);
+     push_int((i!=0)?255:0); apply_svalue(s, 1);
+     push_int((i!=1)?255:0); if (i!=4) apply_svalue(s, 1);
+     push_int((i!=2)?255:0); if (i!=3) apply_svalue(s, 1);
+     f_aggregate(5);
    }
    push_float(2.0);
    image_gradients(6);
+   // Let apply clean the stack.
 }
 
 /*
