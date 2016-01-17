@@ -2104,6 +2104,14 @@ PIKECLASS RandomInterface
     pop_stack();
   }
 
+  /*! @decl int random(int max)
+   *!
+   *!   This function returns a random number in the range
+   *!   @expr{0 .. @[max]-1@}.
+   *!
+   *! @seealso
+   *!   @[Random]
+   */
   PIKEFUN int(0..) random(int limit)
   {
     if(limit <= 1) RETURN 0;
@@ -2135,6 +2143,14 @@ PIKECLASS RandomInterface
     return r;
   }
 
+  /*! @decl float random(float max)
+   *!
+   *!   This function returns a random number in the range
+   *!   @expr{0 .. @[max]-ɛ@}.
+   *!
+   *! @seealso
+   *!   @[Random]
+   */
   PIKEFUN float random(float f)
   {
     if(f<=0.0) RETURN 0.0;
@@ -2146,6 +2162,10 @@ PIKECLASS RandomInterface
 #endif
     RETURN (FLOAT_TYPE)ldexp((double)f * value, -64);
   }
+
+  /*! @decl mixed random(array|multiset x)
+   *!   Returns a random element from @[x].
+   */
 
   PIKEFUN mixed random(array a)
     rawtype tFunc(tArr(tSetvar(0,tMix)),tVar(0));
@@ -2164,6 +2184,9 @@ PIKECLASS RandomInterface
     sub_msnode_ref (m);
   }
 
+  /*! @decl array random(mapping m)
+   *!   Returns a random index-value pair from the mapping.
+   */
   PIKEFUN array random(mapping m)
   {
     struct keypair *k;
@@ -2191,6 +2214,13 @@ PIKECLASS RandomInterface
     UNREACHABLE();
   }
 
+  /*! @decl mixed random(object o)
+   *!   If random is called with an object, @[lfun::random] will be
+   *!   called in the object.
+   *!
+   *! @seealso
+   *!  @[lfun::_random()]
+   */
   PIKEFUN mixed random(object o)
   {
     int f = low_find_lfun(o->prog, LFUN__RANDOM);
@@ -2259,123 +2289,6 @@ PIKECLASS RandomSystem
   }
 }
 #endif
-
-/*! @decl mixed random(object o)
- *!   If random is called with an object, @[lfun::random] will be
- *!   called in the object.
- *!
- *! @seealso
- *!  @[lfun::_random()]
- */
-
-PMOD_EXPORT
-PIKEFUN mixed random(object o)
-  efun;
-  optflags OPT_TRY_OPTIMIZE|OPT_EXTERNAL_DEPEND;
-{
-  int f = low_find_lfun(o->prog, LFUN__RANDOM);
-  if (f < 0) {
-    Pike_error("Calling undefined lfun::%s.\n", lfun_names[LFUN__RANDOM]);
-  }
-  apply_low(o, f, 0);
-  stack_swap();
-  pop_stack();
-}
-
-/*! @decl int random(int max)
- *!
- *!   This function returns a random number in the range @expr{0 .. @[max]-1@}.
- *!
- *! @seealso
- *!   @[random_seed()]
- */
-
-PMOD_EXPORT
-PIKEFUN int random(int i)
-{
-  if(i <= 0) RETURN 0;
-#if SIZEOF_INT_TYPE > 4
-  if(i >> 31)
-    RETURN my_rand64(i);
-#endif
-  RETURN my_rand(i);
-}
-
-/*! @decl float random(float max)
- *!
- *!   This function returns a random number in the range @expr{0 .. @[max]-ɛ@}.
- *!
- *! @seealso
- *!   @[random_seed()]
- */
-
-PMOD_EXPORT
-PIKEFUN float random(float f)
-{
-  if(f<=0.0) RETURN 0.0;
-
-  RETURN (FLOAT_TYPE)ldexp((double)f * my_rand64(0xffffffffffffffff), -64);
-}
-
-/*! @decl mixed random(array|multiset x)
- *!   Returns a random element from @[x].
- */
-
-PMOD_EXPORT
-PIKEFUN mixed random(array a)
-     rawtype tFunc(tArr(tSetvar(0,tMix)),tVar(0));
-{
-  if(!a->size)
-    SIMPLE_BAD_ARG_ERROR("random", 1, "array with elements in it");
-  push_svalue(a->item + (my_rand(a->size)));
-  stack_swap();
-  pop_stack();
-}
-
-PMOD_EXPORT
-PIKEFUN mixed random(multiset m)
-     rawtype tFunc(tSet(tSetvar(1,tMix)),tVar(1));
-{
-  if(multiset_is_empty (m))
-    SIMPLE_BAD_ARG_ERROR("random", 1, "multiset with elements in it");
-  push_multiset_index (m, multiset_get_nth (m, my_rand(multiset_sizeof (m))));
-  sub_msnode_ref (m);
-  stack_swap();
-  pop_stack();
-}
-
-/*! @decl array random(mapping m)
- *!   Returns a random index-value pair from the mapping.
- */
-
-PMOD_EXPORT
-PIKEFUN array random(mapping m)
-{
-  struct keypair *k;
-  int e, count;
-
-  if(!m_sizeof(m))
-    SIMPLE_BAD_ARG_ERROR("random", 1, "mapping with elements in it");
-
-  count = my_rand( m_sizeof(m) );
-
-  /* We could optimize this by not iterating over hash buckets we will
-     not pick a member from. */
-
-  NEW_MAPPING_LOOP(m->data)
-  {
-    if(count-- < 1)
-    {
-      push_svalue(&k->ind);
-      push_svalue(&k->val);
-      f_aggregate(2);
-      stack_swap();
-      pop_stack();
-      return;
-    }
-  }
-  UNREACHABLE();
-}
 
 #if defined(HAVE_SETENV) && defined(HAVE_UNSETENV)
 #define USE_SETENV
