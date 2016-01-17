@@ -211,4 +211,6 @@ cond_resolv([[
 
 test_true( Stdio.File()->set_peek_file_before_read_callback(0) )
 
+test_true( random_seed )
+
 END_MARKER
