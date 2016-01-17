@@ -1141,11 +1141,10 @@ class KeyExchangeECDHE
 
   int(0..1) init_client()
   {
-    if (!session->peer_public_key->get_curve) return 0;
     session->curve =
       ([object(Crypto.ECC.Curve.ECDSA)]session->peer_public_key)->
       get_curve();
-    return 1;
+    return ::init_client();
   }
 
   Stdio.Buffer server_key_params()
