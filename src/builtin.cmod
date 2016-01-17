@@ -2211,8 +2211,10 @@ PIKECLASS RandomSystem
     THIS->handle = NULL;
   }
 
-  PIKEFUN string random_string(int(0..) len)
+  PIKEFUN string(8bit) random_string(int len)
   {
+    if( len<1 )
+      RETURN empty_pike_string;
     if(!crypto_handle)
     {
       if( !CryptAcquireContext(&THIS->handle, 0, 0, PROV_RSA_FULL,
@@ -2246,8 +2248,11 @@ PIKECLASS RandomSystem
     close(THIS->fd);
   }
 
-  PIKEFUN string random_string(int(0..) len)
+  PIKEFUN string(8bit) random_string(int len)
   {
+    if( len<1 )
+      RETURN empty_pike_string;
+
     if( THIS->fd==-1 )
     {
       THIS->fd = open("/dev/urandom", O_RDONLY);
