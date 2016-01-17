@@ -5156,7 +5156,7 @@ test_any([[int e; if(e--) return 0; return e;]],-1)
 
 test_compile_error_any(master()->add_precompiled_program(\"/test\",compile_string(\"int foo() { return 17; }\",\"62\")))
 
-test_any([[function f=random_seed; int t; foreach(allocate(1),t) f(t); return 1;]],1)
+test_any([[function f=time; int t; foreach(allocate(1),t) f(t); return 1;]],1)
 test_compile([[while(0)if(0)continue;else;]])
 test_compile([[do { break; } while (0);]])
 test_program([[int b=1,c; int a() { c=b+2; return c==3; }]])
@@ -11601,9 +11601,6 @@ test_any([[
   for(int i; i<100; i++) x &= ~random_string(16);
   return x;
 ]], "\0"*16)
-
-// - random_seed
-test_do(int p; foreach(({1,2,3,4,5}),p) random_seed(p))
 
 // - random_string
 test_eq( sizeof(random_string(47)), 47 )

@@ -63,9 +63,6 @@ constant makepic = ({
   }
 
   object|string render() {
-    // Make sure we get the same images every time,
-    // even if they have a random component.
-    random_seed(0x6aa6a66a);
 ",
   // Prior to 7.3.11 there were implicit imports of Image
   // and Stdio. cf src/modules/Image/illustration.pike.
@@ -129,9 +126,6 @@ constant makepic = ({
   }
 
   object|string render() {
-    // Make sure we get the same images every time,
-    // even if they have a random component.
-    random_seed(0x6aa6a66a);
 ",
   // Prior to 0.7.3 the Image module classes were all lower-case.
   #"// Pike 0.6 illustration, implicit imports, only Image.image.
@@ -193,9 +187,6 @@ constant makepic = ({
   }
 
   object|string render() {
-    // Make sure we get the same images every time,
-    // even if they have a random component.
-    random_seed(0x6aa6a66a);
 ",
 });
 
@@ -1312,11 +1303,12 @@ array(string) make_illustration(array(string) templates,
     handler = CompilationHandler();
     ip = UNDEFINED;
     err = catch {
+        Random.Interface rnd = Random.Deterministic(0);
+        add_constant("random", rnd->random);
+        add_constant("random_string", rnd->random_string);
+
 	ip = compile_string(code, "-", handler);
-	// Make sure we get the same images every time,
-	// even if they have a random component.
-	random_seed(0x6aa6a66a);
-	object g = ip(name, verbosity, type);
+        object g = ip(name, verbosity, type);
 	return ({ g->make() });
       };
   }
@@ -1402,12 +1394,13 @@ void create(string image_dir, void|.Flags flags)
       object g;
 
       err = catch {
+        Random.Interface rnd = Random.Deterministic(0);
+        add_constant("random", rnd->random);
+        add_constant("random_string", rnd->random_string);
+
 	g = compile_string(execute + c)
 	  (illustration_counter, name);
-	// Make sure we get the same images every time,
-	// even if they have a random component.
-	random_seed(0x6aa6a66a);
-	g->main();
+        g->main();
       };
 
       if(err) {
@@ -1553,9 +1546,6 @@ void create(string image_dir, void|.Flags flags)
   void create(int _img_counter, string _prefix) {
     img_counter = _img_counter;
     prefix = _prefix;
-    // Make sure we get the same images every time,
-    // even if they have a random component.
-    random_seed(0x6aa6a66a);
   }
 
   string illustration(string|Image.Image img, mapping|object extra,
