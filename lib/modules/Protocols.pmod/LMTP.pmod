@@ -146,7 +146,6 @@ class Server {
    void create(array(string) _domains, void|int port, void|string ip, function _cb_mailfrom, function _cb_rcptto, function _cb_data)
    {
      config = Configuration(_domains, _cb_mailfrom, _cb_rcptto, _cb_data);
-     random_seed(getpid() + time());
      if(!port)
        port = 25;
      fdport = Stdio.Port(port, accept_callback, ip);

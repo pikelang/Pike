@@ -87,7 +87,6 @@ void do_remove()
 
 int main()
 {
-  random_seed(0);
   log_status("Creating call outs");
   for(int d=0;d<50;d++)
   {
