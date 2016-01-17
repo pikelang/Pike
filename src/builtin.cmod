@@ -2104,7 +2104,7 @@ PIKECLASS RandomInterface
     pop_stack();
   }
 
-  PIKEFUN int(0..) random(int(0..) limit)
+  PIKEFUN int(0..) random(int limit)
   {
     if(limit <= 1) RETURN 0;
     int bits = my_log2(limit-1)+1;
