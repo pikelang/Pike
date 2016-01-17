@@ -2229,7 +2229,7 @@ PIKECLASS RandomSystem
   }
 }
 #else
-static int random_fd;
+static int random_fd = -1;
 PIKECLASS RandomSystem
 {
   INHERIT RandomInterface;
@@ -6057,7 +6057,6 @@ void init_builtin(void)
   SET_SVAL(gc_destruct_cb, PIKE_T_INT, NUMBER_NUMBER, integer, 0);
   SET_SVAL(gc_done_cb, PIKE_T_INT, NUMBER_NUMBER, integer, 0);
   INIT;
-  random_fd = -1;
 }
 
 void exit_builtin(void)
@@ -6080,5 +6079,9 @@ void exit_builtin(void)
 #ifndef USE_SETENV
   if (env_allocs) free_mapping (env_allocs);
 #endif
+#ifdef __NT__
+  if (crypto_handle) CloseHandle(crypto_handle);
+#else
   if (random_fd!=-1) close(random_fd);
+#endif
 }
