@@ -844,19 +844,13 @@ PMOD_EXPORT void f_random_string(INT32 args)
  *!
  *! @seealso
  *!   @[random()]
+ *!
+ *! @deprecated
+ *!   @[Random.Deterministic]
  */
 PMOD_EXPORT void f_random_seed(INT32 args)
 {
   INT_TYPE i;
-  check_all_args("random_seed",args,BIT_INT | BIT_OBJECT, 0);
-
-  if(TYPEOF(Pike_sp[-args]) == T_INT)
-  {
-    i=Pike_sp[-args].u.integer;
-  }else{
-    i=hash_svalue(Pike_sp-args);
-  }
-  my_srand(i);
   pop_n_elems(args);
 }
 
@@ -9362,7 +9356,7 @@ void init_builtin_efuns(void)
 
   /* function(int:void) */
   ADD_EFUN("random_seed",f_random_seed,
-	   tFunc(tInt,tVoid),OPT_SIDE_EFFECT);
+           tAttr("deprecated",tFunc(tInt,tVoid)),OPT_SIDE_EFFECT);
 
   ADD_EFUN("random_string",f_random_string,
 	   tFunc(tInt,tStr8), OPT_EXTERNAL_DEPEND);
