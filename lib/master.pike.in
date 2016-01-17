@@ -1798,6 +1798,10 @@ protected void create()
   add_constant("get_dir", high_master_get_dir );
   add_constant("file_stat", lambda( string f, int|void d ) { return file_stat(f,d);} );
 
+  object rnd = Builtin.RandomSystem();
+  add_constant("random", rnd->random);
+  add_constant("random_string", rnd->random_string);
+
 #define CO(X)  add_constant(#X,Builtin.__backend->X)
   CO(call_out);
   CO(_do_call_outs);
@@ -3398,8 +3402,7 @@ void _main(array(string(0..255)) orig_argv)
 
       case "execute":
 	main_resolv( "Gmp.bignum" );
-	random_seed((time() ^ (getpid()<<8)));
-	argv = tmp->get_args(argv,1);
+        argv = tmp->get_args(argv,1);
 
 	program prog;
 	mixed compile_err = catch {;
@@ -3480,7 +3483,6 @@ void _main(array(string(0..255)) orig_argv)
   }
 
   main_resolv( "Gmp.bignum" );
-  random_seed(time() ^ (getpid()<<8));
 
   if(sizeof(argv)==1)
   {
