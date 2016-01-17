@@ -2202,15 +2202,10 @@ PIKECLASS RandomInterface
 
 #ifdef __NT__
 #include <wincrypt.h>
+static HCRYPTPROV crypto_handle;
 PIKECLASS RandomSystem
 {
   INHERIT RandomInterface;
-  CVAR HCRYPTPROV handle;
-
-  INIT
-  {
-    THIS->handle = NULL;
-  }
 
   PIKEFUN string(8bit) random_string(int len)
   {
@@ -2218,13 +2213,13 @@ PIKECLASS RandomSystem
       RETURN empty_pike_string;
     if(!crypto_handle)
     {
-      if( !CryptAcquireContext(&THIS->handle, 0, 0, PROV_RSA_FULL,
+      if( !CryptAcquireContext(&crypto_handle, 0, 0, PROV_RSA_FULL,
                                CRYPT_VERIFYCONTEXT|CRYPT_SILENT) )
         Pike_error("Failed to set up Crypto Service.\n");
     }
 
     struct pike_string *res = begin_shared_string(size);
-    if( !CryptGenRandom(THIS->handle, size, (BYTE*)res->str) )
+    if( !CryptGenRandom(crypto_handle, size, (BYTE*)res->str) )
     {
       do_free_unlinked_pike_string (res);
       Pike_error("Failed to create random data.\n");
@@ -2234,30 +2229,20 @@ PIKECLASS RandomSystem
   }
 }
 #else
+static int random_fd;
 PIKECLASS RandomSystem
 {
   INHERIT RandomInterface;
-  CVAR int fd;
-
-  INIT
-  {
-    THIS->fd = -1;
-  }
-
-  EXIT
-  {
-    close(THIS->fd);
-  }
 
   PIKEFUN string(8bit) random_string(int len)
   {
     if( len<1 )
       RETURN empty_pike_string;
 
-    if( THIS->fd==-1 )
+    if( random_fd==-1 )
     {
-      THIS->fd = open("/dev/urandom", O_RDONLY);
-      if( THIS->fd==-1 )
+      random_fd = open("/dev/urandom", O_RDONLY);
+      if( random_fd==-1 )
         Pike_error("Failed to open /dev/urandom.\n");
     }
 
@@ -2265,13 +2250,12 @@ PIKECLASS RandomSystem
     char* str = ret->str;
     while( len )
     {
-      int sz = read(THIS->fd, str, len);
+      int sz = read(random_fd, str, len);
       str += sz;
       len -= sz;
     }
 
-    pop_n_elems(args);
-    push_string(end_shared_string(ret));
+    RETURN end_shared_string(ret);
   }
 }
 #endif
@@ -6073,6 +6057,7 @@ void init_builtin(void)
   SET_SVAL(gc_destruct_cb, PIKE_T_INT, NUMBER_NUMBER, integer, 0);
   SET_SVAL(gc_done_cb, PIKE_T_INT, NUMBER_NUMBER, integer, 0);
   INIT;
+  random_fd = -1;
 }
 
 void exit_builtin(void)
@@ -6095,4 +6080,5 @@ void exit_builtin(void)
 #ifndef USE_SETENV
   if (env_allocs) free_mapping (env_allocs);
 #endif
+  if (random_fd!=-1) close(random_fd);
 }
