@@ -939,6 +939,9 @@ PMOD_EXPORT struct pike_string *end_and_resize_shared_string(struct pike_string 
   if(len > str->len)
     Pike_fatal("Cannot extend string here!\n");
 #endif
+  if (len == str->len) {
+    return end_shared_string(str);
+  }
   tmp = make_shared_binary_pcharp(MKPCHARP_STR(str),len);
   free_string(str);
   return tmp;
