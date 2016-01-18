@@ -569,6 +569,8 @@ void image_random(INT32 args)
    apply_svalue(&sp[-2], 1);
    if(TYPEOF(sp[-1])!=T_STRING)
      Pike_error("Couldn't generate random string.\n");
+   if( sp[-1].u.string->len != n )
+     Pike_error("Wrong size random string generated.\n");
 
    push_int(THIS->xsize);
    push_int(THIS->ysize);
@@ -591,7 +593,9 @@ void image_randomgrey(INT32 args)
    push_int( n*sizeof(COLORTYPE) );
    apply_svalue(&sp[-2], 1);
    if(TYPEOF(sp[-1])!=T_STRING)
-     Pike_error("Couldn't generate random string. %d\n", TYPEOF(sp[-1]));
+     Pike_error("Couldn't generate random string.\n");
+   if( (unsigned)sp[-1].u.string->len != n*sizeof(COLORTYPE) )
+     Pike_error("Wrong size random string generated.\n");
 
    push_int(THIS->xsize);
    push_int(THIS->ysize);

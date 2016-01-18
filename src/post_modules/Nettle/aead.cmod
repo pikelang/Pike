@@ -222,8 +222,14 @@ PIKECLASS AEAD
       APPLY_MASTER("resolv",1);
       if(TYPEOF(Pike_sp[-1]) != T_OBJECT)
 	Pike_error("Failed to resolv Crypto.Random.\n");
+
       push_int(size);
       apply(Pike_sp[-2].u.object, "random_string", 1);
+      if( TYPEOF(Pike_sp[-1])!=T_STRING )
+        Pike_error("Couldn't generate random string.\n");
+      if( Pike_sp[-1].u.string->len != size )
+        Pike_error("Wrong size random string generated.\n");
+
       stack_swap();
       pop_stack();
     }
