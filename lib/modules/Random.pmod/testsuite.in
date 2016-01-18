@@ -1,0 +1,41 @@
+START_MARKER
+
+test_any([[int e,d;for(e=0;e<1000;e++){d=random(10); if(d<0 || d>=10) return 0;} return 1]],1)
+test_eq([[ random( ({11,21,31,41}) ) % 10 ]], 1)
+test_eq([[ random( ({11,21,31,41}) ) % 10 ]], 1)
+test_eq([[ random( ({11,21,31,41}) ) % 10 ]], 1)
+test_eq([[ random( ({11,21,31,41}) ) % 10 ]], 1)
+test_eq([[ random( (<11,21,31,41>) ) % 10 ]], 1)
+test_eq([[ random( (<11,21,31,41>) ) % 10 ]], 1)
+test_eq([[ random( (<11,21,31,41>) ) % 10 ]], 1)
+test_eq([[ random( (<11,21,31,41>) ) % 10 ]], 1)
+test_eq([[ random( (<11,21,31,41>) ) % 10 ]], 1)
+test_eq([[ random( (<11,21,31,41>) ) % 10 ]], 1)
+test_eq([[ `-( @random( ([11:21,31:41]) )) ]], -10)
+test_eq([[ `-( @random( ([11:21,31:41]) )) ]], -10)
+test_eq([[ `-( @random( ([11:21,31:41]) )) ]], -10)
+test_eq([[ `-( @random( ([11:21,31:41]) )) ]], -10)
+test_eval_error([[ return random( ({}) ) ]])
+test_eval_error([[ return random( (<>) ) ]])
+test_eval_error([[ return random( ([]) ) ]])
+test_eq([[ random( class() { int _random() { return 17; }}()) ]], 17)
+test_any([[
+  string x = "\377"*16;
+  for(int i; i<100; i++) x &= random_string(16);
+  return x;
+]], "\0"*16)
+test_any([[
+  string x = "\377"*16;
+  for(int i; i<100; i++) x &= ~random_string(16);
+  return x;
+]], "\0"*16)
+
+test_true([[ random(0x7fffffff)+1 ]])
+test_true([[ random(0x7ffffffff)+1 ]])
+
+test_eq( sizeof(random_string(47)), 47 )
+test_eq( random_string(0), "" )
+test_eval_error( return random_string(-1); )
+
+
+END_MARKER
