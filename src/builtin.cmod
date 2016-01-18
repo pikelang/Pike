@@ -2266,8 +2266,10 @@ PIKECLASS RandomSystem
 
   PIKEFUN string(8bit) random_string(int len)
   {
-    if( len<1 )
+    if( len==0 )
       RETURN empty_pike_string;
+    if( len<0 )
+      Pike_error("Bad argument 1 to random_string(). Expected int(0..).\n");
 
     if( random_fd==-1 )
     {
