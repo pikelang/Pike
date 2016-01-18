@@ -54,8 +54,6 @@ PMOD_EXPORT void f_hash(INT32 args);
 PMOD_EXPORT void f_copy_value(INT32 args);
 PMOD_EXPORT void f_lower_case(INT32 args);
 PMOD_EXPORT void f_upper_case(INT32 args);
-PMOD_EXPORT void f_random_string (INT32 args);
-PMOD_EXPORT void f_random_seed(INT32 args);
 PMOD_EXPORT void f_query_num_arg(INT32 args);
 PMOD_EXPORT void f_search(INT32 args);
 PMOD_EXPORT void f_has_prefix(INT32 args);
@@ -189,7 +187,6 @@ PMOD_EXPORT void f_get_weak_flag(INT32 args);
 PMOD_EXPORT void f_function_name(INT32 args);
 PMOD_EXPORT void f_function_object(INT32 args);
 PMOD_EXPORT void f_function_program(INT32 args);
-PMOD_EXPORT void f_random(INT32 args);
 PMOD_EXPORT void f_backtrace(INT32 args);
 
 struct pike_list_node

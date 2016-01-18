@@ -806,38 +806,6 @@ PMOD_EXPORT void f_upper_case(INT32 args)
   push_string(ret);
 }
 
-/*! @decl string random_string(int len)
- *!
- *!   Returns a string of random characters 0-255 with the length @[len].
- */
-PMOD_EXPORT void f_random_string(INT32 args)
-{
-  struct pike_string *ret;
-  INT_TYPE len, e = 0;
-  unsigned INT64 *str;
-  get_all_args("random_string",args,"%+",&len);
-  ret = begin_shared_string(len);
-
-  /* Note: Assumes pike_string->str is aligned on a 4 byte boundary
-   * (it is, currently)
-   */
-  str = (unsigned INT64 *)ret->str;
-
-  while( (e+=sizeof(INT64)) <= len )
-  {
-    str[0] = my_rand64(0xffffffffffffffff);
-    str++;
-  }
-
-  for(e-=sizeof(INT64);e<len;e++)
-  {
-    ret->str[e] = (char)my_rand(0xffffffff);
-  }
-
-  pop_n_elems(args);
-  push_string(end_shared_string(ret));
-}
-
 /*! @decl void random_seed(int seed)
  *!
  *!   This function sets the initial value for the random generator.
@@ -848,7 +816,7 @@ PMOD_EXPORT void f_random_string(INT32 args)
  *! @deprecated
  *!   @[Random.Deterministic]
  */
-PMOD_EXPORT void f_random_seed(INT32 args)
+static void f_random_seed(INT32 args)
 {
   INT_TYPE i;
   pop_n_elems(args);
@@ -9357,9 +9325,6 @@ void init_builtin_efuns(void)
   /* function(int:void) */
   ADD_EFUN("random_seed",f_random_seed,
            tAttr("deprecated",tFunc(tInt,tVoid)),OPT_SIDE_EFFECT);
-
-  ADD_EFUN("random_string",f_random_string,
-	   tFunc(tInt,tStr8), OPT_EXTERNAL_DEPEND);
 
   ADD_EFUN2("replace", f_replace,
 	    tOr5(tFunc(tStr tStr tStr,tStr),
