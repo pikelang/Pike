@@ -168,6 +168,7 @@ static node *safe_inc_enum(node *n);
 static node *find_versioned_identifier(struct pike_string *identifier,
 				       int major, int minor);
 static int call_handle_import(struct pike_string *s);
+static void update_current_type();
 
 static int inherit_depth;
 static struct program_state *inherit_state = NULL;
@@ -1267,9 +1268,7 @@ type2: type | identifier_type ;
  */
 simple_type: full_type
   {
-    if(Pike_compiler->compiler_frame->current_type)
-      free_type(Pike_compiler->compiler_frame->current_type);
-    Pike_compiler->compiler_frame->current_type = compiler_pop_type();
+    update_current_type();
   }
   ;
 
@@ -4882,6 +4881,14 @@ static int call_handle_import(struct pike_string *s)
     handle_compile_exception ("Error finding module to import");
 
   return 0;
+}
+
+/* Set compiler_frame->current_type from the type stack. */
+static void update_current_type()
+{
+  if(Pike_compiler->compiler_frame->current_type)
+    free_type(Pike_compiler->compiler_frame->current_type);
+  Pike_compiler->compiler_frame->current_type = compiler_pop_type();
 }
 
 void cleanup_compiler(void)
