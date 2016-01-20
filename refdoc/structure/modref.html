@@ -2,9 +2,9 @@
 <html>
   <head>
     <meta content="width=device-width, initial-scale=1" name="viewport">
-    <meta charset="utf8">
+    <meta charset="utf-8">
     <title>Pike Reference Manual - $title$</title>
-    <!-- 83 -->
+    <!-- 174 -->
     <link rel='stylesheet' href='$style$'>
     <script src='$script$'></script>
     $extra_headers$
@@ -13,15 +13,18 @@
     <header>
       <div class="header">
         <div id="version"><strong>$version$</strong></div>
-        <a href="http://pike.lysator.liu.se/">
-          <span>Pike</span>
-        </a>
+        <div id="burger">&#9776;</div><!-- Hamburger icon -->
+        <h1>
+          <a href="http://pike.lysator.liu.se/">
+            <span>Pike programming language</span>
+          </a>
+        </h1>
       </div>
     </header>
     <div id="page">
       <div class="navbar">
         <nav>
-          <div class="inner">
+          <div class="inner" id="navbar">
             $navbar$
           </div>
         </nav>
@@ -46,5 +49,10 @@
     <footer>
       <div id="build-date">Extracted from <strong>$version$</strong> as of <strong>$date$</strong>.</div>
     </footer>
+    $extra_footer$
+    <script>
+      // Tell PikeDoc that next actions are from loaded scripts
+      PikeDoc.isInline = false;
+    </script>
   </body>
 </html>

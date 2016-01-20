@@ -5,14 +5,14 @@
   box-sizing: border-box;
 }
 
-html {
-	font-size: 90%;
-}
+html { font-size: 90%; }
 
 html, body {
 	margin: 0;
 	padding: 0;
 	height: 100%;
+	max-width: 100%;
+	min-width: 100%;
 }
 
 body {
@@ -21,12 +21,78 @@ body {
 	font-family: arial, helvetica, sans-serif;
 	font-size: 1rem;
 	line-height: 1.5;
+	width: 100%;
+}
+
+.traditional {
+	padding: 20px;
+	background: white;
+}
+
+.traditional pre {
+	position: relative;
+	overflow: auto;
+}
+
+.traditional > dl > dd {
+	margin-right: 40px;
+}
+
+/* First H in page */
+.traditional > dl > dt:first-child * {
+	margin-top: 0;
+}
+
+.traditional > dl > dd:last-child {
+	margin-bottom: 40px;
+}
+
+.traditional .header {
+	padding: .6rem 1.5rem;
+	background: #eee;
+}
+
+.traditional h1.header,
+	.traditional h2.header,
+	.traditional h3.header {
+		margin: .8rem 0;
+	}
+
+.traditional h1.header {
+	font-size: 2.6rem;
+}
+	.traditional h1.header .ms {
+		font-size: 2.3rem;
+	}
+
+.traditional h2.header {
+	font-size: 2.2rem;
+	font-weight: normal;
+}
+	.traditional h2.header .ms {
+		font-size: 1.9rem;
+	}
+
+.traditional h3.header {
+	font-size: 1.8rem;
+	font-weight: normal;
+}
+	.traditional h3.header .ms {
+		font-size: 1.5rem;
+	}
+
+.traditional dd {
+	max-width: 100%;
+	overflow: auto;
+}
+.traditional dl dl dt {
+	font-weight: bold;
 }
 
 header {
 	padding: 20px;
-	background: #ddd;
-	border-bottom: 1px solid #ccc;
+	background: #323232;
+	border-bottom: 6px solid #555;
 }
 
 header::after {
@@ -34,14 +100,20 @@ header::after {
 	content: ' ';
 	clear: both;
 }
-
+header h1 { margin: 0; vertical-align: middle; }
 header a {
+	opacity: .7;
 	display: inline-block;
 	width: 160px;
 	height: 28px;
 	margin-bottom: -5px;
-	background: url(images/pike-logo.svg) no-repeat ;
+	background: transparent url(images/pike-logo.png) left center no-repeat;
+	background-image: linear-gradient(transparent, transparent), url(images/pike-logo.svg);
 	background-size: contain;
+	transition: opacity .2s ease-in;
+}
+header a:hover {
+	opacity: 1;
 }
 
 /* Hides the Pike text in the logo */
@@ -131,9 +203,30 @@ em {
 	display: block;
 	margin-bottom: 1px;
 	padding: 5px 10px;
+	overflow: hidden;
+	text-overflow: ellipsis;
 	transition: background .2s ease-in, border-color .2s ease-in;
 }
-
+.navbar .heading {
+	display: block;
+	color: #666;
+	border-bottom: 1px dashed #aaa;
+	margin-bottom: 6px;
+	padding-bottom: 4px;
+	margin-top: 24px;
+	vertical-align: text-top;
+}
+.navbar .heading:before {
+	content: '●';
+	margin-right: 5px;
+	font-size: large;
+	color: #666;
+	vertical-align: top;
+	margin-top: 0px;
+	display: inline-block;
+	line-height: 1;
+	color: #999;
+}
 .navbar div + .head {
 	margin-top: 18px;
 }
@@ -170,6 +263,8 @@ em {
 	padding-bottom: 75px;
 }
 
+.navbar .sidebar a { display: block; }
+
 .content {
 	width: 75%;
 	float: right;
@@ -177,7 +272,7 @@ em {
 }
 
 .contentbox {
-	overflow: auto;
+	overflow: hidden;
 	padding: 0 20px 20px 20px;
 	border-left: 1px solid #ddd;
 	margin-left: -1px;
@@ -245,24 +340,20 @@ ul.multicol {
   -moz-column-gap: 3em;
   column-gap: 3em;
 }
-
 ul.multicol li {
 	margin: 0;
 	padding: 0;
 	position: relative;
 }
-
 ul.multicol a {
 	display: block;
 	position: relative;
 	-webkit-backface-visibility: hidden;
 	transition: transform .2s ease-out;
 }
-
 ul.multicol a:hover {
 	text-decoration: none;
 	font-weight: bold;
-	transform: scale(1.1) translateX(5px);
 	-webkit-backface-visibility: hidden;
 }
 
@@ -281,15 +372,21 @@ hr {
 	height: 1px;
 	background: #ddd;
 	color: #ddd;
-	margin: 30px 0;
+	margin: 25px 0;
 }
 
 h1, h2, h3, h4 {
-	color: #053992
+	color: #323232;
+	line-height: 1;
 }
 
 h1 {
 	font-size: 1.7rem;
+}
+
+/* The first H1 in the contentbox */
+.contentbox article:first-child > h1:first-child {
+	margin-top: 25px;
 }
 
 h2 {
@@ -336,45 +433,36 @@ textarea.small {
 /* Code doc */
 
 .fixme { color: #a00; }
-
-.expr {
-	color: #8E3DD3;
-}
-
-.reference {
-	color: #777;
-}
-	a.reference, a.reference:visited {
-		color: #0087cc;
-	}
-.modifier {
-	color: purple;
-	font-weight: bold;
-}
-.datatype {
-	color: purple;
-	font-weight: bold;
-}
+.expr { color: #8E3DD3; }
+.reference { color: #777; }
+a.reference, a.reference:visited { color: #0087cc; }
+.modifier { color: purple; font-weight: bold; }
+.datatype { color: purple; font-weight: bold; }
 .variable, .constant, .typedef, .inherit, .directive {
 	color: #F000F0;
 	font-weight: bold;
 }
-.parameter, .argument {
-	color: #0087cc;
-	font-size: 1rem;
+.parameter, .argument { color: #0087cc; font-size: 1rem; }
+.method { color: #000066; }
+.key { color: green; }
+
+.head--doc { font-weight: bold; color: #777; }
+.homogen--name { font-size: large; }
+.group--doc { margin-bottom: 0; }
+.group--doc + hr { margin-top: 10px; }
+dd[class^='body--'],
+dd.example,
+dt[class^='head--'] + dd {
+	max-width: 100%;
+	overflow-x: auto;
 }
 
-.method {
-	color: #000066;
-}
-
-.head--doc {
-	font-weight: bold;
-	color: #777;
-}
-
-.homogen--name {
-	font-size: large;
+.inheritance-graph {
+	position: relative;
+	width: 100%;
+	max-width: 100%;
+	overflow-x: auto;
+	padding-left: 40px;
 }
 
 table.box {
@@ -382,15 +470,15 @@ table.box {
 	margin: 6px 0 12px;
 	width: auto;
 	border-collapse: collapse;
-	border: 1px solid #ddd;
+	border: 1px solid #ccc;
 }
 table.box tr {
-	border-bottom: 1px dashed #ccc;
+	border-bottom: 1px dashed #bbb;
 }
 table.box td {
 	vertical-align: top;
 	padding: 10px 12px;
-	border-left: 1px dashed #ccc;
+	border-left: 1px dashed #bbb;
 }
 table.box td *:first-child { margin-top: 0; }
 table.box td *:last-child { margin-bottom: 0; }
@@ -409,6 +497,11 @@ pre code .ns { font-weight: bold; }
 pre code .nested { opacity: .7; transition: opacity .2s ease-in; }
 pre code .nested:hover { opacity: 1; }
 
+#burger {
+	display: none;
+	color: white;
+}
+
 @media screen and (max-width: 1024px) {
 	ul.multicol {
 	  -webkit-column-count: 3;
@@ -418,14 +511,6 @@ pre code .nested:hover { opacity: 1; }
 }
 
 @media screen and (max-width: 800px) {
-	ul.multicol {
-	  -webkit-column-count: 2;
-	  -moz-column-count: 2;
-	  column-count: 2;
-	}
-}
-
-@media screen and (max-width: 600px) {
 	.content {
 		width: 100%;
 		float: none;
@@ -434,7 +519,145 @@ pre code .nested:hover { opacity: 1; }
 		border-left: none;
 		margin-left: 0;
 	}
+	ul.multicol {
+	  -webkit-column-count: 2;
+	  -moz-column-count: 2;
+	  column-count: 2;
+	}
+	#version { display: none; }
+	.navbox .prev, .navbox .next {
+		float: none;
+		display: block;
+		text-align: left;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+	.navbox .next {
+		text-align: right;
+	}
+
+	.inheritance-graph {
+		padding-left: 0px;
+	}
+
+	#burger {
+		display: block;
+		float: right;
+		color: white;
+		padding: 10px 15px;
+		margin-right: -15px;
+		margin-top: -2px;
+		cursor: pointer;
+		border-radius: 2px;
+		opacity: .6;
+		transition: transform .3s ease-in-out;
+	}
+
+	body {
+		padding-top: 65px;
+		transition: padding-top .4s ease-out;
+	}
+	header {
+		padding: 10px 20px;
+		position:fixed;
+		width: 100%;
+		top: 0;
+		left: 0;
+		z-index: 1;
+		transition: padding .3s ease-in;
+	}
+
+	header h1 {
+		display: inline-block;
+		margin-top: 7px;
+	}
+
+	header a {
+		height: 26px;
+		width: 120px;
+		transition: transform .3s ease-in;
+	}
+
+	body.scrolled {
+		padding-top: 46px;
+	}
+
+	body.scrolled header {
+		box-shadow: 0px 1px 5px 0px rgba(0,0,0,.4);
+		padding: 0px 20px;
+	}
+
+	body.scrolled header a {
+		transform: scale(.9);
+	}
+
+	.menu-open {
+		overflow: hidden;
+	}
+
+	.menu-open .navbar {
+		display: block;
+	}
+
+	.menu-open #burger {
+		transform: rotate(90deg);
+	}
+
 	.navbar {
-		display: none;
+		position: fixed;
+		bottom: 0;
+		top: 60px;
+		right: -100%;
+		left: 100%;
+		min-width: 100.3%;
+		z-index: 2;
+		background: #323232;
+		color: #ccc;
+		overflow-y: auto;
+		transition: right .2s ease-out, left .2s ease-in-out;
+	}
+
+	body.scrolled .navbar {
+		top: 40px;
+	}
+
+	.menu-open .navbar {
+		left: 0;
+		right: 0;
+	}
+
+	.navbar .heading {
+		color: #ccc;
+	}
+
+	.navbar .head {
+		background: #424242;
+		border-left-color: #3a3a3a;
+	}
+
+	.navbar a {
+		color: #999;
+	}
+
+	.navbar .selected {
+		color: #ccc;
+	}
+
+	dd[class^='body--'],
+	dd.example,
+	dt[class^='head--'] + dd {
+		margin-left: 0px;
+	}
+}
+
+@media screen and (max-width: 600px) {
+	.traditional {
+		padding: 10px;
+	}
+
+	.traditional dl dd {
+		margin-left: 10px;
+		margin-right: 0px;
 	}
 }

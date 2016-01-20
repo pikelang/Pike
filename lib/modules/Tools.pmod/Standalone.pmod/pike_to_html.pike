@@ -1,10 +1,10 @@
-#pike __REAL_VERSION__
-
 //! Convert Pike code to HTML with syntax highlighting
 //!
 //! @code
 //! pike -x pike_to_html /path/to/file.pike > file.html
 //! @endcode
+
+#pike __REAL_VERSION__
 
 constant description = "Pike code to syntax highlighted HTML converter";
 
@@ -174,18 +174,25 @@ final int(0..1) main(int argc, array(string) argv)
 //! The following css classes will be used:
 //!
 //! @ul
-//!  @item Delimiters:        delim
-//!  @item Reserved words:    lang
-//!  @item Data types:        types
-//!  @item Constants:         const
-//!  @item Modifiers:         mods
-//!  @item Root namespaces:   ns
-//!  @item Strings:           string
-//!  @item Comments:          comment
-//!  @item Macros:            macro
+//!  @item
+//!   Delimiters:        delim
+//!  @item
+//!   Reserved words:    lang
+//!  @item
+//!   Data types:        types
+//!  @item
+//!   Constants:         const
+//!  @item
+//!   Modifiers:         mods
+//!  @item
+//!   Root namespaces:   ns
+//!  @item
+//!   Strings:           string
+//!  @item
+//!   Comments:          comment
+//!  @item
+//!   Macros:            macro
 //! @endul
-//!
-//! @param code
 string convert(string code)
 {
   delims   = ([]);
