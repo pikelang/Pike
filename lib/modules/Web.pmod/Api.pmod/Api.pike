@@ -31,10 +31,13 @@ protected constant DECODE_UTF8 = 0;
 //! is decoded.
 public int(0..1) utf8_decode = DECODE_UTF8;
 
+//! Request timeout in seconds. Only affects async queries.
+public int(0..) http_request_timeout = 0;
+
 //! Typedef for the async callback method signature.
 typedef function(mapping,Protocols.HTTP.Query:void) Callback;
 
-//! Typef for a parameter argument
+//! Typedef for a parameter argument
 typedef mapping|Web.Auth.Params ParamsArg;
 
 //! Authorization object.
@@ -250,6 +253,10 @@ mixed call(string api_method, void|ParamsArg params,
 
   //Request req;
   Protocols.HTTP.Query req = Protocols.HTTP.Query();
+
+  if (http_request_timeout) {
+    req->timeout = http_request_timeout;
+  }
 
 #ifdef SOCIAL_REQUEST_DEBUG
     TRACE("\n> Request: %s %s?%s\n", http_method, api_method, (string) p);
