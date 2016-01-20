@@ -179,7 +179,7 @@ final int(0..1) main(int argc, array(string) argv)
 //!  @item
 //!   Reserved words:    lang
 //!  @item
-//!   Data types:        types
+//!   Data types:        type
 //!  @item
 //!   Constants:         const
 //!  @item

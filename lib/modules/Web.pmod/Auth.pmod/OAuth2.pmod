@@ -64,6 +64,9 @@ class Base
     _scope         = scope || _scope;
   }
 
+  //! Request timeout in seconds. Only affects async queries.
+  int(1..) http_request_timeout = 0;
+
   //! Grant types.
   enum GrantType {
     //!
@@ -517,6 +520,11 @@ class Base
 
     if (async_cb) {
       Protocols.HTTP.Query q = Protocols.HTTP.Query();
+
+      if (http_request_timeout) {
+        q->timeout = http_request_timeout;
+      }
+
       q->set_callbacks(
         lambda (Protocols.HTTP.Query qq, mixed ... args) {
           if (q->status != 200) {
