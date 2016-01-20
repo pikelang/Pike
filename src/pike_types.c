@@ -4861,9 +4861,10 @@ static struct pike_type *debug_low_index_type(struct pike_type *t,
       return t->car;
     }
 
-  case T_MULTISET: /* always int */
-    add_ref(int_type_string);
-    return int_type_string;
+  case T_MULTISET: /* always int(0..1) */
+    type_stack_mark();
+    push_int_type(0, 1);
+    return pop_unfinished_type();
 
   case T_MAPPING:
     add_ref(t = t->cdr);
