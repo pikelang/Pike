@@ -348,7 +348,10 @@ class Process
       };
     // Filter errors about the backend already running.
     if (arrayp(err) && sizeof(err) &&
-	stringp(err[0]) && has_prefix(err[0], "Backend already ")) return;
+	stringp(err[0]) && has_prefix(err[0], "Backend already ")) {
+      sleep(t);
+      return;
+    }
     throw(err);
   }
 
@@ -375,10 +378,11 @@ class Process
   int wait()
   {
     if (process_backend) {
-      do_poll(0.0);
-      while (__status <= 0) {
-	do_poll(3600.0);
-      }
+      float t = 0.0;
+      do {
+	do_poll(t);
+	if (t < 1.0) t += 0.1;
+      } while (__status <= 0);
       return __result;
     }
     return ::wait();
