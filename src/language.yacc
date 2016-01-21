@@ -1320,15 +1320,12 @@ basic_type:
   | TOK_PROGRAM_ID  opt_program_type  { push_type(T_PROGRAM); }
   | TOK_ARRAY_ID    opt_array_type    { push_type(T_ARRAY); }
   | TOK_MULTISET_ID opt_array_type    { push_type(T_MULTISET); }
-  | TOK_TYPEOF '(' expr0 ')' {
-    node *tmp;
-    struct pike_type *t;
-    tmp=mknode(F_COMMA_EXPR, $3, 0);
-    optimize_node(tmp);
-
-    t=(tmp && CAR(tmp) && CAR(tmp)->type ? CAR(tmp)->type : mixed_type_string);
-    push_finished_type(t);
-    free_node(tmp);
+  | typeof
+  {
+    if ($1) {
+      push_finished_type($1->u.sval.u.type);
+    }
+    free_node($1);
   }
   | TOK_ATTRIBUTE_ID '(' string_constant ',' full_type ')'
   {
