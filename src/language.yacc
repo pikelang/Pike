@@ -2386,11 +2386,13 @@ create_arg: modifiers simple_type optional_dot_dot_dot TOK_IDENTIFIER
       yyerror("Can't define more variables after ...");
     }
 
-    push_finished_type(Pike_compiler->compiler_frame->current_type);
     if ($3) {
+      push_finished_type(Pike_compiler->compiler_frame->current_type);
       push_type(T_ARRAY);
+      type = compiler_pop_type();
+    } else {
+      copy_pike_type(type, Pike_compiler->compiler_frame->current_type);
     }
-    type=compiler_pop_type();
 
     /* Add the identifier globally.
      * Note: Since these are the first identifiers (and references)
