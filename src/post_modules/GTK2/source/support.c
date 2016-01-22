@@ -529,9 +529,6 @@ static int pgtk2_push_int_param(const GValue *a) {
     case G_TYPE_INT:
       retval=(LONGEST)g_value_get_int(a);
       break;
-    case G_TYPE_ENUM:
-      retval=(LONGEST)g_value_get_enum(a);
-      break;
     case G_TYPE_FLAGS:
       retval=(LONGEST)g_value_get_flags(a);
       break;
@@ -553,6 +550,14 @@ static int pgtk2_push_int_param(const GValue *a) {
       break;
   }
   push_int64(retval);
+  return PUSHED_VALUE;
+}
+
+static int pgtk2_push_enum_param(const GValue *a) {
+  /* This can't be handled by push_int_param as the type of
+  an enumeration is some subclass of G_TYPE_ENUM, rather than
+  actually being G_TYPE_ENUM exactly. */
+  push_int64((LONGEST)g_value_get_enum(a));
   return PUSHED_VALUE;
 }
 
@@ -659,7 +664,7 @@ static void build_push_callbacks() {
   CB( G_TYPE_INT,              pgtk2_push_int_param );
   CB( G_TYPE_INT64,              pgtk2_push_int_param );
   CB( G_TYPE_UINT64,              pgtk2_push_int_param );
-  CB( G_TYPE_ENUM,             pgtk2_push_int_param );
+  CB( G_TYPE_ENUM,             pgtk2_push_enum_param );
   CB( G_TYPE_FLAGS,            pgtk2_push_int_param );
   CB( G_TYPE_BOOLEAN,          pgtk2_push_int_param );
   CB( G_TYPE_UINT,             pgtk2_push_int_param );
