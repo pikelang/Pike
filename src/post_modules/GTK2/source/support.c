@@ -276,7 +276,7 @@ void push_gobjectclass(void *obj, struct program *def) {
   pgtk2__init_object(o);
 
   /* Extra ref already added in pgtk2__init_object */
-  push_object(o); 
+  push_object(o);
   return;
 }
 
@@ -291,7 +291,7 @@ void push_pgdk2object(void *obj, struct program *def, int owned) {
   call_c_initializers(o);
   ((struct object_wrapper *)o->storage)->obj=obj;
   ((struct object_wrapper *)o->storage)->owned = owned;
-  push_object(o); 
+  push_object(o);
   return;
 }
 
@@ -307,7 +307,7 @@ GObject *get_pg2object(struct object *from, struct program *type) {
 
 void *get_pgdk2object(struct object *from, struct program *type) {
   void *f;
-  if (!from) 
+  if (!from)
     return NULL;
   if (type)
     f=get_storage( from, type );
@@ -391,7 +391,7 @@ struct my_pixel pgtk2_pixel_from_xpixel(unsigned int pix, GdkImage *i) {
   GdkColor * c;
   struct my_pixel res;
   int l;
-  if (!col) 
+  if (!col)
     col=gdk_colormap_get_system();
   *((int  *)&res)=0;
   switch(i->visual->type) {
@@ -459,7 +459,7 @@ gint pgtk2_buttonfuncwrapper(GObject *obj, struct signal_data *d, void *foo) {
 
 void push_gdk_event(GdkEvent *e) {
   if (e) {
-    GdkEvent *f=g_malloc(sizeof(GdkEvent)); 
+    GdkEvent *f=g_malloc(sizeof(GdkEvent));
     if (f==NULL) {
       push_int(0);
       return;
@@ -527,29 +527,29 @@ static int pgtk2_push_int_param(const GValue *a) {
       retval=(LONGEST)g_value_get_uint64(a);
       break;
     case G_TYPE_INT:
-      retval=(LONGEST)g_value_get_int(a); 
+      retval=(LONGEST)g_value_get_int(a);
       break;
     case G_TYPE_ENUM:
-      retval=(LONGEST)g_value_get_enum(a); 
+      retval=(LONGEST)g_value_get_enum(a);
       break;
     case G_TYPE_FLAGS:
-      retval=(LONGEST)g_value_get_flags(a); 
+      retval=(LONGEST)g_value_get_flags(a);
       break;
     case G_TYPE_BOOLEAN:
-      retval=(LONGEST)g_value_get_boolean(a); 
+      retval=(LONGEST)g_value_get_boolean(a);
       break;
     case G_TYPE_LONG:
-      retval=(LONGEST)g_value_get_long(a); 
+      retval=(LONGEST)g_value_get_long(a);
       break;
     case G_TYPE_CHAR:
 #ifdef HAVE_G_VALUE_GET_SCHAR
-      retval=(LONGEST)g_value_get_schar(a); 
+      retval=(LONGEST)g_value_get_schar(a);
 #else
-      retval=(LONGEST)g_value_get_char(a); 
+      retval=(LONGEST)g_value_get_char(a);
 #endif
       break;
     default:
-      retval=(LONGEST)g_value_get_uint(a); 
+      retval=(LONGEST)g_value_get_uint(a);
       break;
   }
   push_int64(retval);
@@ -636,7 +636,7 @@ static void build_push_callbacks() {
   CB(GTK_TYPE_TREE_ITER,	pgtk2_push_object_param);
   CB(GTK_TYPE_TREE_MODEL,	pgtk2_push_object_param);
   CB(PANGO_TYPE_ATTR_LIST,	pgtk2_push_object_param);
-  CB(GTK_TYPE_TREE_PATH,	pgtk2_push_object_param); 
+  CB(GTK_TYPE_TREE_PATH,	pgtk2_push_object_param);
   CB(PANGO_TYPE_FONT_DESCRIPTION,	pgtk2_push_object_param);
   CB(PANGO_TYPE_CONTEXT,	pgtk2_push_object_param);
   CB(PANGO_TYPE_LAYOUT,		pgtk2_push_object_param);
@@ -667,8 +667,8 @@ static void build_push_callbacks() {
   CB( G_TYPE_ULONG,            pgtk2_push_int_param );
   CB( G_TYPE_CHAR,             pgtk2_push_int_param );
 
-  CB( G_TYPE_NONE,    NULL ); 
-  
+  CB( G_TYPE_NONE,    NULL );
+
   CB( G_TYPE_POINTER,  pgtk2_push_pike_object_param );
 
   CB( G_TYPE_PARAM, pgtk2_push_gparamspec_param );
@@ -790,7 +790,7 @@ void pgtk2_free_signal_data(struct signal_data *s, GClosure *gcl) {
 
 void pgtk2_push_gchar(const gchar *s) {
   if (s) {
-    push_text(s); 
+    push_text(s);
     push_int(1);
     f_utf8_to_string(2);
   } else
@@ -923,7 +923,7 @@ void pgtk2_set_property(GObject *g, char *prop, struct svalue *sv) {
   if (!(gps->flags & G_PARAM_WRITABLE))
     Pike_error("This property is not writable.\n");
 /*
-  if (gps->value_type==PANGO_TYPE_STYLE || 
+  if (gps->value_type==PANGO_TYPE_STYLE ||
 	gps->value_type==GTK_TYPE_WRAP_MODE ||
 	gps->value_type==GTK_TYPE_JUSTIFICATION ||
 	gps->value_type==PANGO_TYPE_UNDERLINE ||
@@ -1265,7 +1265,7 @@ void pgtk2_set_gvalue(GValue *gv, GType gt, struct svalue *sv) {
     case G_TYPE_POINTER:
       if (TYPEOF(*sv) == PIKE_T_OBJECT) {
 	g_value_set_pointer(gv,sv->u.object);
- 	add_ref(sv->u.object); 
+ 	add_ref(sv->u.object);
       } else
 	g_value_set_pointer(gv,NULL);
       break;
@@ -1334,7 +1334,7 @@ void pgtk2_marshaller(GClosure *closure,
 		      gpointer marshal_data) {
   typedef void (*pgtk2_marshal_func)(gpointer data1,
 				     gpointer data2,
-				     guint n_params, 
+				     guint n_params,
 				     const GValue *param_values,
 				     GValue *return_value);
   register pgtk2_marshal_func callback;
