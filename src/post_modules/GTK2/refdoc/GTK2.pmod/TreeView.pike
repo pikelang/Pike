@@ -486,7 +486,7 @@ GTK2.TreeView set_reorderable( int reorderable );
 //!
 //!
 
-GTK2.TreeView set_row_separator_func( function(GTK2.TreeModel, GTK2.TreeIter, mixed : int) f, mixed user_data );
+GTK2.TreeView set_row_separator_func( function f, mixed user_data );
 //! Sets the row separator function, which is used to determine whether a
 //! row should be drawn as a separator.  If the row separator function is 0
 //! no separators are drawn.  This is the default value.

@@ -181,12 +181,14 @@ GTK2.Entry set_has_frame( int setting );
 //!
 
 GTK2.Entry set_icon_from_pixbuf( int icon_pos, GTK2.GdkPixbuf b );
-//! Set the icon from the given in-memory image.
+//! Set the icon from the given in-memory image, or 0 to remove the icon at
+//! that position.
 //!
 //!
 
 GTK2.Entry set_icon_from_stock( int icon_pos, string id );
-//! Set the icon using a stock icon.
+//! Set the icon using a stock icon. To remove the icon, use
+//! set_icon_from_pixbuf().
 //!
 //!
 
