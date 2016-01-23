@@ -253,6 +253,11 @@ GTK2.Notebook set_show_tabs( int showtabsp );
 //!
 //!
 
+GTK2.Notebook set_tab_detachable( GTK2.Widget child, int how );
+//! Returns whether the tab contents can be detached.
+//!
+//!
+
 GTK2.Notebook set_tab_label( GTK2.Widget child, GTK2.Widget label );
 //! Changes the tab label for child.
 //!
@@ -273,5 +278,10 @@ GTK2.Notebook set_tab_pos( int pos );
 //! Sets the edge at which the tabs for switching pages in the
 //! notebook are drawn.
 //! One of @[POS_BOTTOM], @[POS_LEFT], @[POS_RIGHT] and @[POS_TOP]
+//!
+//!
+
+GTK2.Notebook set_tab_reorderable( GTK2.Widget child, int how );
+//! Gets whether the tab can be reordered via drag and drop or not.
 //!
 //!
