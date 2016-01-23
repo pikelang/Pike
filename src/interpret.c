@@ -517,8 +517,8 @@ union anything *get_pointer_if_this_type(struct svalue *lval, TYPE_T t)
 
 #ifdef PIKE_DEBUG
 
-inline void pike_trace(int level,char *fmt, ...) ATTRIBUTE((format (printf, 2, 3)));
-inline void pike_trace(int level,char *fmt, ...)
+static inline void pike_trace(int level,char *fmt, ...) ATTRIBUTE((format (printf, 2, 3)));
+static inline void pike_trace(int level,char *fmt, ...)
 {
   if(Pike_interpreter.trace_level > level)
   {
