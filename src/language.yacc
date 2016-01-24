@@ -281,7 +281,6 @@ int yylex(YYSTYPE *yylval);
 %type <n> number_or_maxint
 %type <n> cast
 %type <n> soft_cast
-%type <n> simple_type2
 %type <n> real_string_constant
 %type <n> real_string_or_identifier
 %type <n> string_constant
@@ -353,7 +352,6 @@ int yylex(YYSTYPE *yylval);
 %type <n> optional_else_part
 %type <n> optional_label
 %type <n> propagated_enum_value
-%type <n> propagated_type
 %type <n> return
 %type <n> sscanf
 %type <n> statement
@@ -1273,18 +1271,11 @@ simple_type: full_type
   ;
 
 /* Basic_type-prefixed expression or an identifier type.
- * Value moved to parser value stack.
+ * Value moved to compiler_frame->current_type.
  */
 simple_type2: type2
   {
-    struct pike_type *s = compiler_pop_type();
-    $$ = mktypenode(s);
-#ifdef PIKE_DEBUG
-    if ($$->u.sval.u.type != s) {
-      Pike_fatal("mktypenode(%p) created node with %p\n", s, $$->u.sval.u.type);
-    }
-#endif /* PIKE_DEBUG */
-    free_type(s);
+    update_current_type();
   }
   ;
 
@@ -1787,12 +1778,12 @@ new_name: TOK_IDENTIFIER
   }
   ;
 
-/* Type at $0. */
+/* Type at compiler_frame->current_type. */
 new_local_name: TOK_IDENTIFIER
   {
     int id;
     struct pike_type *type;
-    copy_pike_type(type, $<n>0->u.sval.u.type);
+    copy_pike_type(type, Pike_compiler->compiler_frame->current_type);
     id = add_local_name($1->u.sval.u.string, type, 0);
     if( type->type == PIKE_T_AUTO )
     {
@@ -1808,16 +1799,23 @@ new_local_name: TOK_IDENTIFIER
     free_node($1);
   }
   | bad_identifier { $$=0; }
-  | TOK_IDENTIFIER '=' expr0
+  | TOK_IDENTIFIER '='
+  {
+    push_finished_type(Pike_compiler->compiler_frame->current_type);
+    type_stack_mark();
+  }
+  expr0
   {
     int id;
     struct pike_type *type;
-    copy_pike_type(type, $<n>0->u.sval.u.type);
+    pop_stack_mark();
+    update_current_type();
+    copy_pike_type(type, Pike_compiler->compiler_frame->current_type);
     if( type->type == PIKE_T_AUTO && Pike_compiler->compiler_pass == 2)
     {
         free_type( type );
-        fix_type_field( $3 );
-        copy_pike_type( type, $3->type );
+        fix_type_field( $4 );
+        copy_pike_type( type, $4->type );
     }
     id = add_local_name($1->u.sval.u.string, type, 0);
     if (id >= 0) {
@@ -1825,24 +1823,45 @@ new_local_name: TOK_IDENTIFIER
 	/* Only warn about unused initialized variables in strict types mode. */
 	Pike_compiler->compiler_frame->variable[id].flags |= LOCAL_VAR_IS_USED;
       }
-      $$=mknode(F_ASSIGN,$3,mklocalnode(id,0));
+      $$=mknode(F_ASSIGN,$4,mklocalnode(id,0));
     } else
       $$ = 0;
     free_node($1);
   }
-  | bad_identifier '=' expr0
+  | bad_identifier '='
   {
-    free_node($3);
+    push_finished_type(Pike_compiler->compiler_frame->current_type);
+    type_stack_mark();
+  }
+  expr0
+  {
+    pop_stack_mark();
+    update_current_type();
+    free_node($4);
     $$=0;
   }
-  | TOK_IDENTIFIER '=' error
+  | TOK_IDENTIFIER '='
   {
+    push_finished_type(Pike_compiler->compiler_frame->current_type);
+    type_stack_mark();
+  }
+  error
+  {
+    pop_stack_mark();
+    update_current_type();
     free_node($1);
     /* No yyerok here since we aren't done yet. */
     $$=0;
   }
-  | TOK_IDENTIFIER '=' TOK_LEX_EOF
+  | TOK_IDENTIFIER '='
   {
+    push_finished_type(Pike_compiler->compiler_frame->current_type);
+    type_stack_mark();
+  }
+  TOK_LEX_EOF
+  {
+    pop_stack_mark();
+    update_current_type();
     yyerror("Unexpected end of file in local variable definition.");
     free_node($1);
     /* No yyerok here since we aren't done yet. */
@@ -1901,17 +1920,10 @@ failsafe_block: block
               | TOK_LEX_EOF { yyerror("Unexpected end of file."); $$=0; }
               ;
 
-/* Type at $-2 */
-propagated_type:
-  {
-    $$ = $<n>-2;
-  }
-  ;
-
-/* Type at $0 */
+/* Type at compiler_frame->current_type. */
 local_name_list: new_local_name
-  | local_name_list ',' propagated_type new_local_name
-    { $$ = mknode(F_COMMA_EXPR, mkcastnode(void_type_string, $1), $4); }
+  | local_name_list ',' new_local_name
+    { $$ = mknode(F_COMMA_EXPR, mkcastnode(void_type_string, $1), $3); }
   ;
 
 
@@ -2234,7 +2246,7 @@ lambda: TOK_LAMBDA line_number_info implicit_identifier push_compiler_frame1
   }
   ;
 
-local_function: TOK_IDENTIFIER push_compiler_frame1 func_args
+local_function: TOK_IDENTIFIER push_compiler_frame0 func_args
   {
     struct pike_string *name;
     struct pike_type *type;
@@ -2246,7 +2258,7 @@ local_function: TOK_IDENTIFIER push_compiler_frame1 func_args
     if(Pike_compiler->compiler_frame->current_return_type)
       free_type(Pike_compiler->compiler_frame->current_return_type);
     copy_pike_type(Pike_compiler->compiler_frame->current_return_type,
-		   $<n>0->u.sval.u.type);
+		   Pike_compiler->compiler_frame->current_type);
 
 
     /***/
@@ -3168,8 +3180,8 @@ safe_comma_expr: comma_expr
   ;
 
 comma_expr: comma_expr2
-  | simple_type2 local_name_list { $$=$2; free_node($1); }
-  | simple_type2 local_function { $$=$2; free_node($1); }
+  | simple_type2 local_name_list { $$=$2; }
+  | simple_type2 local_function { $$=$2; }
   ;
 
 
