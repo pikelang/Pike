@@ -371,8 +371,8 @@ int yylex(YYSTYPE *yylval);
 %type <n> foreach_lvalues
 %type <n> foreach_optional_lvalue
 
-%type <ptr> push_compiler_frame0
-%type <ptr> push_compiler_frame1
+%type <ptr> start_function
+%type <ptr> start_lambda
 %%
 
 all: program { YYACCEPT; }
@@ -681,16 +681,16 @@ close_bracket_or_missing: ']'
  *
  * (eg via simple_type).
  */
-push_compiler_frame0: /* empty */
+start_function: /* empty */
   {
     push_compiler_frame(SCOPE_LOCAL);
 
     if(!Pike_compiler->compiler_frame->previous ||
        !Pike_compiler->compiler_frame->previous->current_type)
     {
-      yyerror("Internal compiler error (push_compiler_frame0).");
+      yyerror("Internal compiler error (start_function).");
       copy_pike_type(Pike_compiler->compiler_frame->current_type,
-		mixed_type_string);
+		     mixed_type_string);
     }else{
       copy_pike_type(Pike_compiler->compiler_frame->current_type,
 		Pike_compiler->compiler_frame->previous->current_type);
@@ -711,7 +711,7 @@ optional_constant: /* empty */
   ;
 
 def: modifiers optional_attributes simple_type optional_constant
-     TOK_IDENTIFIER push_compiler_frame0
+     TOK_IDENTIFIER start_function
   '('
   {
     $<number>$ = 0;
@@ -976,7 +976,7 @@ def: modifiers optional_attributes simple_type optional_constant
     free_node($<n>11);
   }
   | modifiers optional_attributes simple_type
-  optional_constant TOK_IDENTIFIER push_compiler_frame0
+  optional_constant TOK_IDENTIFIER start_function
     error
   {
 #ifdef PIKE_DEBUG
@@ -2067,7 +2067,7 @@ continue: TOK_CONTINUE optional_label { $$=mknode(F_CONTINUE,$2,0); } ;
 /* This variant is used to push the compiler context for
  * functions without a declared return type (ie lambdas).
  */
-push_compiler_frame1: /* empty */
+start_lambda: /* empty */
   {
     push_compiler_frame(SCOPE_LOCAL);
 
@@ -2083,7 +2083,7 @@ implicit_identifier: /* empty */
   }
   ;
 
-lambda: TOK_LAMBDA line_number_info implicit_identifier push_compiler_frame1
+lambda: TOK_LAMBDA line_number_info implicit_identifier start_lambda
   {
     debug_malloc_touch(Pike_compiler->compiler_frame->current_return_type);
     if(Pike_compiler->compiler_frame->current_return_type)
@@ -2228,7 +2228,7 @@ lambda: TOK_LAMBDA line_number_info implicit_identifier push_compiler_frame1
 #endif
     pop_compiler_frame();
   }
-  | TOK_LAMBDA line_number_info implicit_identifier push_compiler_frame1 error
+  | TOK_LAMBDA line_number_info implicit_identifier start_lambda error
   {
 #ifdef PIKE_DEBUG
     if (Pike_compiler->compiler_frame != $4) {
@@ -2246,7 +2246,7 @@ lambda: TOK_LAMBDA line_number_info implicit_identifier push_compiler_frame1
   }
   ;
 
-local_function: TOK_IDENTIFIER push_compiler_frame0 func_args
+local_function: TOK_IDENTIFIER start_function func_args
   {
     struct pike_string *name;
     struct pike_type *type;
@@ -2374,7 +2374,7 @@ local_function: TOK_IDENTIFIER push_compiler_frame0 func_args
       }
     }
   }
-  | TOK_IDENTIFIER push_compiler_frame1 error
+  | TOK_IDENTIFIER start_function error
   {
 #ifdef PIKE_DEBUG
     if (Pike_compiler->compiler_frame != $2) {
@@ -3376,7 +3376,7 @@ expr3: expr4
 optional_block: /* EMPTY */ { $$=0; }
   | '{' line_number_info
   /* FIXME: Use implicit_identifier to make __func__ point to the lambda? */
-  push_compiler_frame1
+  start_lambda
   {
     debug_malloc_touch(Pike_compiler->compiler_frame->current_return_type);
     if(Pike_compiler->compiler_frame->current_return_type)
