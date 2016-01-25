@@ -581,7 +581,6 @@ PIKE_MODULE_INIT
 #endif
 
 #ifdef HAVE_CRC32_INTRINSICS
-#define bit_SSE4_2 (1<<20)
   {
     INT32 cpuid[4];
     x86_get_cpuid (1, cpuid);
