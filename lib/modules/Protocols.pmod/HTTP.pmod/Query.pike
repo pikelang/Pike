@@ -347,7 +347,7 @@ protected void async_timeout()
 
 void async_got_host(string server,int port)
 {
-   DBG("async_got_host %s:%d\n", server, port);
+   DBG("async_got_host %s:%d\n", server || "NULL", port);
    if (!server)
    {
       async_failed();
@@ -514,7 +514,7 @@ protected void clean_async_dns()
 void dns_lookup_callback(string name,string ip,function callback,
 			 mixed ...extra)
 {
-  DBG("dns_lookup_callback %s = %s\n", name, ip||"NULL");
+   DBG("dns_lookup_callback %s = %s\n", name, ip||"NULL");
    hostname_cache[name]=ip;
    if (functionp(callback))
       callback(ip,@extra);
