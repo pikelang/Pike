@@ -67,23 +67,14 @@ extern struct mapping *gc_internal_mapping;
 	       ALIGNOF(struct keypair)) )
 
 
-
 #ifndef PIKE_MAPPING_KEYPAIR_LOOP
 #define NEW_MAPPING_LOOP(md) \
   for((e=0) DO_IF_DMALLOC( ?0:(debug_malloc_touch(md)) ) ;e<(md)->hashsize;e++) for(k=(md)->hash[e];k;k=k->next)
-
-/* WARNING: this should not be used */
-#define MAPPING_LOOP(m) \
-  for((e=0) DO_IF_DMALLOC( ?0:(debug_malloc_touch(m),debug_malloc_touch((m)->data))) ;e<(m)->data->hashsize;e++) for(k=(m)->data->hash[e];k;k=k->next)
 
 #else /* PIKE_MAPPING_KEYPAIR_LOOP */
 
 #define NEW_MAPPING_LOOP(md) \
   for(((k = MD_KEYPAIRS(md, (md)->hashsize)), e=0) DO_IF_DMALLOC( ?0:(debug_malloc_touch(md)) ) ; e<(md)->size; e++,k++)
-
-/* WARNING: this should not be used */
-#define MAPPING_LOOP(m) \
-  for(((k = MD_KEYPAIRS((m)->data, (m)->data->hashsize)), e=0) DO_IF_DMALLOC( ?0:(debug_malloc_touch(m),debug_malloc_touch((m)->data)) ) ; e<(m)->data->size; e++,k++)
 
 #endif /* PIKE_MAPPING_KEYPAIR_LOOP */
 
