@@ -3069,6 +3069,55 @@ void f_daemon(INT32 args)
 }
 #endif /* HAVE_DAEMON */
 
+#if HAS___BUILTIN_IA32_RDRAND32_STEP
+
+static unsigned INT64 rand64()
+{
+  unsigned long long rnd;
+  for( int i=0; i<100; i++ )
+  {
+    if( __builtin_ia32_rdrand64_step( &rnd ) )
+      return rnd;
+  }
+  Pike_error("Unable to read random from hardware.\n");
+}
+
+/*! @decl string(8bit) hw_random(int(0..) length)
+ *! Read a specified number of bytes from the hardware random
+ *! generator, if available. This function will not exist if hardware
+ *! random is not available. Currently only supports Intel RDRAND CPU
+ *! instruction.
+ */
+void f_hw_random(INT32 args)
+{
+  INT_TYPE len, e=0;
+  if(args!=1 || TYPEOF(Pike_sp[-1])!=T_INT || (len=Pike_sp[-1].u.integer)<0)
+    SIMPLE_ARG_TYPE_ERROR("hw_random", 1, "int(0..)");
+
+  unsigned INT64 *str;
+  ONERROR err;
+  struct pike_string *ret = begin_shared_string(len);
+  SET_ONERROR(err, do_free_unlinked_pike_string, ret);
+  str = (unsigned INT64 *)ret->str;
+  while( (e+=sizeof(INT64)) <= len )
+  {
+    str[0] = rand64();
+    str++;
+  }
+
+  unsigned INT64 rnd = rand64();
+  for(e-=sizeof(INT64); e<len; e++)
+  {
+    ret->str[e] = rnd&0xff;
+    rnd >>= 8;
+  }
+
+  UNSET_ONERROR(err);
+  pop_stack();
+  push_string(end_shared_string(ret));
+}
+#endif
+
 /*! @endmodule
  */
 
@@ -3425,6 +3474,15 @@ PIKE_MODULE_INIT
   ADD_FUNCTION2("daemon", f_daemon, tFunc(tInt tInt, tInt),
                 0, OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND);
 #endif /* HAVE_DAEMON */
+
+#if HAS___BUILTIN_IA32_RDRAND32_STEP
+  {
+    INT32 cpuid[4];
+    x86_get_cpuid (1, cpuid);
+    if( cpuid[3] & bit_RDRND_2 )
+      ADD_FUNCTION("hw_random", f_hw_random, tFunc(tIntPos,tStr8), 0);
+  }
+#endif
 
 #ifdef __NT__
   {
