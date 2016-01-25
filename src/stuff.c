@@ -105,7 +105,6 @@ unsigned INT32 find_next_power(unsigned INT32 x)
 
 #if HAS___BUILTIN_IA32_RDRAND32_STEP
 static int use_rdrnd;
-#define bit_RDRND_2 (1<<30)
 #endif
 
 /* Bob Jenkins small noncryptographic PRNG */

@@ -7,6 +7,9 @@
 #ifndef PIKE_CPULIB_H
 #define PIKE_CPULIB_H
 
+#define bit_SSE4_2 (1<<20)
+#define bit_RDRND_2 (1<<30)
+
 #if defined (__GNUC__)
 #  if defined (__i386__)
 #    define HAVE_X86_ASM

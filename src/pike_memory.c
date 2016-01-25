@@ -208,8 +208,6 @@ void reorder(char *memory, INT32 nitems, INT32 size,INT32 *order)
         :"=S"(H) :"0"(H), "c"(*(P)))
 #endif
 
-#define bit_SSE4_2 (1<<20)
-
 ATTRIBUTE((const)) static inline int supports_sse42( )
 {
   INT32 cpuid[4];
