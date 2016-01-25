@@ -2104,17 +2104,9 @@ PIKECLASS RandomInterface
     pop_stack();
   }
 
-  /*! @decl int random(int max)
-   *!
-   *!   This function returns a random number in the range
-   *!   @expr{0 .. @[max]-1@}.
-   *!
-   *! @seealso
-   *!   @[Random]
-   */
-  PIKEFUN int(0..) random(int limit)
+  static INT_TYPE read_int(INT_TYPE limit)
   {
-    if(limit <= 1) RETURN 0;
+    if(limit <= 1) return 0;
     int bits = my_log2(limit-1)+1;
     int mask = (1<<bits)-1;
     for(int i=0; i<1000; i++)
@@ -2125,22 +2117,22 @@ PIKECLASS RandomInterface
       THIS->int_buffer >>= bits;
       THIS->buffer_bits -= bits;
       if( ret < limit )
-        RETURN ret;
+        return ret;
     }
     Pike_error("Failed to generate random data.\n");
   }
 
-  static INT_TYPE read_int(INT_TYPE i)
+  /*! @decl int random(int max)
+   *!
+   *!   This function returns a random number in the range
+   *!   @expr{0 .. @[max]-1@}.
+   *!
+   *! @seealso
+   *!   @[Random]
+   */
+  PIKEFUN int(0..) random(int limit)
   {
-    push_int(i);
-    struct program *p = Pike_fp->current_object->prog;
-    apply_current(find_shared_string_identifier(MK_STRING("random"), p), 1);
-    if( TYPEOF(Pike_sp[-1]) != T_INT )
-      Pike_error("Illegal return value from random.\n");
-
-    INT_TYPE r = Pike_sp[-1].u.integer;
-    pop_stack();
-    return r;
+    RETURN read_int(limit);
   }
 
   /*! @decl float random(float max)
