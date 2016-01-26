@@ -111,7 +111,12 @@ o ADT.TreeScheduler
 o Filesystem.Zip
 o Stdio.FakePipe
 o Parser.Markdown
+
 o Crypto.Checksum
+
+  This module collect non-cryptographic checksums. Support for crc32,
+  adler32 and Castagnoli CRC (CRC32C).
+
 o Protocols.HTTP2
 o Bittorrent.DHT
 o MsgPack
