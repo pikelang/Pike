@@ -1995,7 +1995,7 @@ void f_thread_create(INT32 args)
     SIMPLE_TOO_FEW_ARGS_ERROR("create", 1);
   }
   if (!callablep(Pike_sp - args)) {
-    SIMPLE_BAD_ARG_ERROR("create", 1, "function");
+    SIMPLE_ARG_TYPE_ERROR("create", 1, "function");
   }
 
   if (thread_state->status != THREAD_NOT_STARTED) {

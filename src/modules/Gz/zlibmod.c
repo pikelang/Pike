@@ -521,7 +521,7 @@ static void gz_compress(INT32 args)
       // fall through
     }
     default:
-      SIMPLE_BAD_ARG_ERROR("compress", 1, "string|String.Buffer|System.Memory|Stdio.Buffer");
+      SIMPLE_ARG_TYPE_ERROR("compress", 1, "string|String.Buffer|System.Memory|Stdio.Buffer");
   }
   if (data.shift)
     Pike_error("Cannot input wide string to compress\n");
@@ -985,7 +985,7 @@ static void gz_uncompress(INT32 args)
       // fall through
     }
     default:
-      SIMPLE_BAD_ARG_ERROR("uncompress", 1, "string|String.Buffer|System.Memory|Stdio.Buffer");
+      SIMPLE_ARG_TYPE_ERROR("uncompress", 1, "string|String.Buffer|System.Memory|Stdio.Buffer");
   }
   if (data.shift)
     Pike_error("Cannot input wide string to uncompress\n");
@@ -994,7 +994,7 @@ static void gz_uncompress(INT32 args)
     if(TYPEOF(Pike_sp[1-args]) == PIKE_T_INT)
       raw = Pike_sp[1-args].u.integer;
     else
-      SIMPLE_BAD_ARG_ERROR("uncompress", 2, "int");
+      SIMPLE_ARG_TYPE_ERROR("uncompress", 2, "int");
   }
 
   initialize_buf(&buf);

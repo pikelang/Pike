@@ -125,7 +125,7 @@ cmod_DEFINE_EVAL(COPY_NODE, TREE_CLASSIFY(_copy_node))
 	    }
 	  }
 ARG_ERROR:
-	  SIMPLE_BAD_ARG_ERROR("create", 1, "mapping(" cmod_STRFY_EVAL(key_ptype) ":mixed)|array");
+	  SIMPLE_ARG_TYPE_ERROR("create", 1, "mapping(" cmod_STRFY_EVAL(key_ptype) ":mixed)|array");
 	}
     }
 
@@ -337,7 +337,7 @@ DOCEND()
         TREE_T *T;
 
 	if (TYPEOF(*o) != PIKE_T_OBJECT || !(T = GET_TREE_STORAGE(o->u.object))) {
-	    SIMPLE_BAD_ARG_ERROR("`-", 1, "CritBit." cmod_STRFY_EVAL(tree_class));
+	    SIMPLE_ARG_TYPE_ERROR("`-", 1, "CritBit." cmod_STRFY_EVAL(tree_class));
 	}
 
 	node = T->tree.root;
@@ -372,7 +372,7 @@ DOCEND()
         TREE_T *T;
 
 	if (TYPEOF(*o) != PIKE_T_OBJECT || !(T = GET_TREE_STORAGE(o->u.object))) {
-	    SIMPLE_BAD_ARG_ERROR("`+", 1, "inherits(CritBit." cmod_STRFY_EVAL(tree_class) ")");
+	    SIMPLE_ARG_TYPE_ERROR("`+", 1, "inherits(CritBit." cmod_STRFY_EVAL(tree_class) ")");
 	}
 	tree1 = THIS->tree.root;
 	tree2 = T->tree.root;

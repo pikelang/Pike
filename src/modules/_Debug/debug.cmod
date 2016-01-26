@@ -145,8 +145,8 @@ rawtype tOr6(tFunc(tStr,tStr),
   case T_PROGRAM: tmp.u.program=tmp.u.program->next; break;
   case T_STRING:  tmp.u.string=next_pike_string(tmp.u.string); break;
   default:
-    SIMPLE_BAD_ARG_ERROR("next", 1,
-			 "object|array|mapping|multiset|program|string");
+    SIMPLE_ARG_TYPE_ERROR("next", 1,
+                          "object|array|mapping|multiset|program|string");
   }
 
   if(tmp.u.refs)
@@ -193,7 +193,7 @@ rawtype tOr5(tFunc(tObj,tObj),
   case T_MULTISET:tmp.u.multiset=tmp.u.multiset->prev; break;
   case T_PROGRAM: tmp.u.program=tmp.u.program->prev; break;
   default:
-    SIMPLE_BAD_ARG_ERROR("prev", 1, "object|array|mapping|multiset|program");
+    SIMPLE_ARG_TYPE_ERROR("prev", 1, "object|array|mapping|multiset|program");
   }
   if(tmp.u.refs)
     assign_svalue(Pike_sp-1, &tmp);
@@ -214,9 +214,9 @@ PIKEFUN int leak(array|mapping|multiset|object|function|program|string|type val)
   INT32 i;
 
   if(!REFCOUNTED_TYPE(TYPEOF(*val)))
-    SIMPLE_BAD_ARG_ERROR("leak", 1,
-			 "array|mapping|multiset|object|"
-			 "function|program|string|type");
+    SIMPLE_ARG_TYPE_ERROR("leak", 1,
+                          "array|mapping|multiset|object|"
+                          "function|program|string|type");
 
   add_ref(val->u.dummy);
   i = val->u.refs[0];

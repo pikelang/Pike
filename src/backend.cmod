@@ -961,7 +961,7 @@ PIKECLASS Backend
 	 SIMPLE_TOO_FEW_ARGS_ERROR("call_out", 2);
 
        if(TYPEOF(*t) != T_INT && TYPEOF(*t) != T_FLOAT)
-	 SIMPLE_BAD_ARG_ERROR("call_out", 2, "int|float");
+	 SIMPLE_ARG_TYPE_ERROR("call_out", 2, "int|float");
 
        /* Swap, for compatibility */
        tmp = Pike_sp[-args];
@@ -4277,7 +4277,7 @@ else
     }
     else if (sleep_time && TYPEOF(*sleep_time) == T_INT &&
 	     sleep_time->u.integer) {
-      SIMPLE_BAD_ARG_ERROR("`()", 1, "float|int(0..0)");
+      SIMPLE_ARG_TYPE_ERROR("`()", 1, "float|int(0..0)");
     }
     else
       timeout.tv_sec = -1;
@@ -5023,7 +5023,7 @@ PIKECLASS PollBackend
     }
     else if (sleep_time && TYPEOF(*sleep_time) == T_INT &&
 	     sleep_time->u.integer) {
-      SIMPLE_BAD_ARG_ERROR("`()", 1, "float|int(0..0)");
+      SIMPLE_ARG_TYPE_ERROR("`()", 1, "float|int(0..0)");
     }
     else
     {
@@ -5560,7 +5560,7 @@ PIKECLASS SelectBackend
     }
     else if (sleep_time && TYPEOF(*sleep_time) == T_INT &&
 	     sleep_time->u.integer) {
-      SIMPLE_BAD_ARG_ERROR("`()", 1, "float|int(0..0)");
+      SIMPLE_ARG_TYPE_ERROR("`()", 1, "float|int(0..0)");
     }
     else
       timeout.tv_sec = -1;

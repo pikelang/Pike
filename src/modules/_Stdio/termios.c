@@ -261,7 +261,7 @@ void file_tcsetattr(INT32 args)
     if (args>2)
       pop_n_elems(args-2);
     if (TYPEOF(sp[-1]) != T_STRING)
-      SIMPLE_BAD_ARG_ERROR("tcsetattr", 2, "string");
+      SIMPLE_ARG_TYPE_ERROR("tcsetattr", 2, "string");
 
     if (!strcmp(sp[-1].u.string->str,"TCSANOW"))
       optional_actions=TCSANOW;
@@ -276,7 +276,7 @@ void file_tcsetattr(INT32 args)
   }
 
   if (TYPEOF(sp[-1]) != T_MAPPING)
-    SIMPLE_BAD_ARG_ERROR("tcsetattr", 1, "mapping");
+    SIMPLE_ARG_TYPE_ERROR("tcsetattr", 1, "mapping");
 
   /* read attr to edit */
   if (tcgetattr(FD,&ti)) /* error */

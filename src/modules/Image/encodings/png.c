@@ -222,7 +222,7 @@ static void image_png___decode(INT32 args)
    if (args<1)
      SIMPLE_TOO_FEW_ARGS_ERROR("__decode", 1);
    if (TYPEOF(sp[-args]) != T_STRING)
-     SIMPLE_BAD_ARG_ERROR("__decode", 1, "string");
+     SIMPLE_ARG_TYPE_ERROR("__decode", 1, "string");
 
    if (args>1 &&
        (TYPEOF(sp[1-args]) != T_INT ||
@@ -1224,7 +1224,7 @@ static void img_png_decode(INT32 args, int mode)
    if (args>=2)
    {
       if (TYPEOF(sp[1-args-1]) != T_MAPPING)
-	SIMPLE_BAD_ARG_ERROR("_decode", 2, "mapping");
+	SIMPLE_ARG_TYPE_ERROR("_decode", 2, "mapping");
 
       push_svalue(sp+1-args-1);
       ref_push_string(param_palette);
@@ -1268,7 +1268,7 @@ static void img_png_decode(INT32 args, int mode)
 	 PIKE_ERROR("_decode", "Not PNG data.\n", sp ,args);
    }
    else if (TYPEOF(sp[-1]) != T_ARRAY)
-     SIMPLE_BAD_ARG_ERROR("_decode", 1, "string");
+     SIMPLE_ARG_TYPE_ERROR("_decode", 1, "string");
 
    a=sp[-1].u.array;
 
@@ -1624,7 +1624,7 @@ static void image_png_encode(INT32 args)
 
    if (TYPEOF(sp[-args]) != T_OBJECT ||
        !(img=get_storage(sp[-args].u.object,image_program)))
-     SIMPLE_BAD_ARG_ERROR("encode", 1, "Image.Image");
+     SIMPLE_ARG_TYPE_ERROR("encode", 1, "Image.Image");
 
    if (!img->img)
       PIKE_ERROR("encode", "No image.\n", sp, args);
@@ -1634,7 +1634,7 @@ static void image_png_encode(INT32 args)
      struct svalue *s;
 
      if (TYPEOF(sp[1-args]) != T_MAPPING)
-	SIMPLE_BAD_ARG_ERROR("encode", 2, "mapping");
+	SIMPLE_ARG_TYPE_ERROR("encode", 2, "mapping");
 
       /* Attribute alpha */
       s = low_mapping_string_lookup(sp[1-args].u.mapping, param_alpha);

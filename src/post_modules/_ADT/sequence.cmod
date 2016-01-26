@@ -121,7 +121,7 @@ PIKECLASS Sequence
       }
       else
       {
-	SIMPLE_BAD_ARG_ERROR("`+",i+1,"ADT.Sequence");
+	SIMPLE_ARG_TYPE_ERROR("`+",i+1,"ADT.Sequence");
       }
     }
     f_add(args+1);
@@ -157,7 +157,7 @@ PIKECLASS Sequence
       }
       else
       {
-	SIMPLE_BAD_ARG_ERROR("`-",i+1,"ADT.Sequence");
+	SIMPLE_ARG_TYPE_ERROR("`-",i+1,"ADT.Sequence");
       }
     }
     f_minus(args+1);
@@ -192,7 +192,7 @@ PIKECLASS Sequence
     }
     else
     {
-      SIMPLE_BAD_ARG_ERROR("`&",1,"ADT.Sequence");
+      SIMPLE_ARG_TYPE_ERROR("`&",1,"ADT.Sequence");
     }
   }
 
@@ -223,7 +223,7 @@ PIKECLASS Sequence
     }
     else
     {
-      SIMPLE_BAD_ARG_ERROR("`|",1,"ADT.Sequence");
+      SIMPLE_ARG_TYPE_ERROR("`|",1,"ADT.Sequence");
     }
   }
 
@@ -255,7 +255,7 @@ PIKECLASS Sequence
     }
     else
     {
-      SIMPLE_BAD_ARG_ERROR("`^",1,"ADT.Sequence");
+      SIMPLE_ARG_TYPE_ERROR("`^",1,"ADT.Sequence");
     }
   }
 
@@ -364,7 +364,7 @@ PIKECLASS Sequence
     {
       if (TYPEOF(*start) != PIKE_T_INT)
       {
-	SIMPLE_BAD_ARG_ERROR("_search",2,"int");
+	SIMPLE_ARG_TYPE_ERROR("_search",2,"int");
       }
       RETURN array_search(THIS->a, value, start->u.integer);
     }
@@ -585,7 +585,7 @@ PIKECLASS Sequence
 
       if (sequence->prog != Sequence_program)
       {
-        SIMPLE_BAD_ARG_ERROR("create",1,"ADT.Sequence");
+        SIMPLE_ARG_TYPE_ERROR("create",1,"ADT.Sequence");
       }
       else
       {
@@ -837,7 +837,7 @@ PIKECLASS Sequence
       }
       else
       {
-	SIMPLE_BAD_ARG_ERROR("`<",1,"ADT.Sequence.SequenceIterator");
+	SIMPLE_ARG_TYPE_ERROR("`<",1,"ADT.Sequence.SequenceIterator");
       }
     }
 
@@ -863,7 +863,7 @@ PIKECLASS Sequence
       }
       else
       {
-	SIMPLE_BAD_ARG_ERROR("`>",1,"ADT.Sequence.SequenceIterator");
+	SIMPLE_ARG_TYPE_ERROR("`>",1,"ADT.Sequence.SequenceIterator");
       }
     }
 
@@ -889,7 +889,7 @@ PIKECLASS Sequence
       }
       else
       {
-	SIMPLE_BAD_ARG_ERROR("distance",1,"ADT.Sequence.SequenceIterator");
+	SIMPLE_ARG_TYPE_ERROR("distance",1,"ADT.Sequence.SequenceIterator");
       }
     }
 

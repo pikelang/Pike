@@ -153,7 +153,7 @@ PIKECLASS CircularList
       }
       else
       {
-	SIMPLE_BAD_ARG_ERROR("`+",i+1,"ADT.CircularList");
+	SIMPLE_ARG_TYPE_ERROR("`+",i+1,"ADT.CircularList");
       }
     }
 
@@ -371,7 +371,7 @@ PIKECLASS CircularList
     {
       if (TYPEOF(*start) != PIKE_T_INT)
       {
-	SIMPLE_BAD_ARG_ERROR("_search",2,"int");
+	SIMPLE_ARG_TYPE_ERROR("_search",2,"int");
       }
       if(start->u.integer <0 || start->u.integer>=THIS->size) {
 	if (THIS->a->size) {
@@ -889,7 +889,7 @@ PIKECLASS CircularList
 
       if (list->prog != CircularList_program)
       {
-        SIMPLE_BAD_ARG_ERROR("create",1,"ADT.CircularList");
+        SIMPLE_ARG_TYPE_ERROR("create",1,"ADT.CircularList");
       }
       else
       {
@@ -1140,7 +1140,7 @@ PIKECLASS CircularList
       }
       else
       {
-	SIMPLE_BAD_ARG_ERROR("`<",1,"ADT.CircularList.CircularListIterator");
+	SIMPLE_ARG_TYPE_ERROR("`<",1,"ADT.CircularList.CircularListIterator");
       }
     }
 
@@ -1165,7 +1165,7 @@ PIKECLASS CircularList
       }
       else
       {
-	SIMPLE_BAD_ARG_ERROR("`>",1,"ADT.CircularList.CircularListIterator");
+	SIMPLE_ARG_TYPE_ERROR("`>",1,"ADT.CircularList.CircularListIterator");
       }
     }
 
@@ -1190,7 +1190,7 @@ PIKECLASS CircularList
       }
       else
       {
-	SIMPLE_BAD_ARG_ERROR("`-",1,"ADT.CircularList.CircularListIterator");
+	SIMPLE_ARG_TYPE_ERROR("`-",1,"ADT.CircularList.CircularListIterator");
       }
     }
 

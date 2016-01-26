@@ -9609,7 +9609,7 @@ static void f_compilation_create(INT32 args)
 	       &atarget, &aplaceholder);
 
   if (args == 3) {
-    SIMPLE_BAD_ARG_ERROR("create", 4, "int");
+    SIMPLE_ARG_TYPE_ERROR("create", 4, "int");
   }
 
   check_c_stack(65536);

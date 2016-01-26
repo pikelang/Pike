@@ -3199,7 +3199,7 @@ static int low_parse_xml(struct pike_string *end)
 	 */
 	flags++;
 	if (TYPEOF(*flags) != T_INT) {
-	  SIMPLE_BAD_ARG_ERROR("create", 3, "int");
+          SIMPLE_ARG_TYPE_ERROR("create", 3, "int");
 	}
 	if (args < 4) {
 	  wrong_number_of_args_error("create", args, 4);

@@ -111,7 +111,7 @@ static void pdf_open_file(INT32 args)
    int n;
    if (args<1) SIMPLE_TOO_FEW_ARGS_ERROR("open_file",1);
    if (TYPEOF(sp[-args]) != T_STRING || sp[-args].u.string->size_shift)
-      SIMPLE_BAD_ARG_ERROR("open_file",1,"8 bit string");
+      SIMPLE_ARG_TYPE_ERROR("open_file",1,"8 bit string");
    s=sp[-args].u.string->str;
    if (!this->pdf) Pike_error("PDF not initiated\n");
    THREADS_ALLOW();

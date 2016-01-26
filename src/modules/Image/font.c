@@ -533,7 +533,7 @@ void font_write(INT32 args)
    {
       int max;
       if (TYPEOF(sp[j-args]) != T_STRING)
-        SIMPLE_BAD_ARG_ERROR("write",1,"string");
+        SIMPLE_ARG_TYPE_ERROR("write",1,"string");
 
       xsize = max = 1;
       to_write_len = sp[j-args].u.string->len;
@@ -746,7 +746,7 @@ void font_text_extents(INT32 args)
      p_wchar2 *to_write2;
      ptrdiff_t to_write_len;
      if (TYPEOF(sp[j-args]) != T_STRING)
-       SIMPLE_BAD_ARG_ERROR("text_extents",1,"string");
+       SIMPLE_ARG_TYPE_ERROR("text_extents",1,"string");
 
      xsize = max = 1;
      to_write_len = sp[j-args].u.string->len;

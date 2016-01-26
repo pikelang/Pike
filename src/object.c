@@ -2683,7 +2683,7 @@ static void f_magic_index(INT32 args)
     default:
     case 3:
       if (TYPEOF(sp[2-args]) != T_INT)
-	SIMPLE_BAD_ARG_ERROR ("::`->", 2, "void|int");
+	SIMPLE_ARG_TYPE_ERROR ("::`->", 2, "void|int");
       type = sp[2-args].u.integer & 1;
       /* FALL THROUGH */
     case 2:
@@ -2705,12 +2705,12 @@ static void f_magic_index(INT32 args)
 	  Pike_error("::`-> on destructed object.\n");
 	inherit = o->prog->inherits + SUBTYPEOF(sp[1-args]);
       } else {
-	SIMPLE_BAD_ARG_ERROR ("::`->", 2, "void|object|int");
+	SIMPLE_ARG_TYPE_ERROR ("::`->", 2, "void|object|int");
       }
       /* FALL THROUGH */
     case 1:
       if (TYPEOF(sp[-args]) != T_STRING)
-	SIMPLE_BAD_ARG_ERROR ("::`->", 1, "string");
+	SIMPLE_ARG_TYPE_ERROR ("::`->", 1, "string");
       s = sp[-args].u.string;
       break;
     case 0:
@@ -2797,7 +2797,7 @@ static void f_magic_set_index(INT32 args)
     default:
     case 4:
       if (TYPEOF(sp[3-args]) != T_INT)
-	SIMPLE_BAD_ARG_ERROR ("::`->=", 4, "void|int");
+	SIMPLE_ARG_TYPE_ERROR ("::`->=", 4, "void|int");
       type = sp[3-args].u.integer & 1;
       /* FALL THROUGH */
     case 3:
@@ -2819,13 +2819,13 @@ static void f_magic_set_index(INT32 args)
 	  Pike_error("::`->= on destructed object.\n");
 	inherit = o->prog->inherits + SUBTYPEOF(sp[2-args]);
       } else {
-	SIMPLE_BAD_ARG_ERROR ("::`->=", 3, "void|object|int");
+	SIMPLE_ARG_TYPE_ERROR ("::`->=", 3, "void|object|int");
       }
       /* FALL THROUGH */
     case 2:
       val = sp-args+1;
       if (TYPEOF(sp[-args]) != T_STRING)
-	SIMPLE_BAD_ARG_ERROR ("::`->=", 1, "string");
+	SIMPLE_ARG_TYPE_ERROR ("::`->=", 1, "string");
       s = sp[-args].u.string;
       break;
     case 1:
@@ -2904,7 +2904,7 @@ static void f_magic_indices (INT32 args)
     default:
     case 2:
       if (TYPEOF(sp[1-args]) != T_INT)
-	SIMPLE_BAD_ARG_ERROR ("::_indices", 2, "void|int");
+	SIMPLE_ARG_TYPE_ERROR ("::_indices", 2, "void|int");
       type = sp[-args].u.integer;
       /* FALL THROUGH */
     case 1:
@@ -2926,7 +2926,7 @@ static void f_magic_indices (INT32 args)
 	  Pike_error("::_indices on destructed object.\n");
 	inherit = obj->prog->inherits + SUBTYPEOF(sp[2-args]);
       } else {
-	SIMPLE_BAD_ARG_ERROR ("::_indices", 1, "void|object|int");
+	SIMPLE_ARG_TYPE_ERROR ("::_indices", 1, "void|object|int");
       }
       /* FALL THROUGH */
     case 0:
@@ -3014,7 +3014,7 @@ static void f_magic_values (INT32 args)
     default:
     case 2:
       if (TYPEOF(sp[1-args]) != T_INT)
-	SIMPLE_BAD_ARG_ERROR ("::_indices", 2, "void|int");
+	SIMPLE_ARG_TYPE_ERROR ("::_indices", 2, "void|int");
       type = sp[-args].u.integer;
       /* FALL THROUGH */
     case 1:
@@ -3036,7 +3036,7 @@ static void f_magic_values (INT32 args)
 	  Pike_error("::_values on destructed object.\n");
 	inherit = obj->prog->inherits + SUBTYPEOF(sp[2-args]);
       } else {
-	SIMPLE_BAD_ARG_ERROR ("::_values", 1, "void|object|int");
+	SIMPLE_ARG_TYPE_ERROR ("::_values", 1, "void|object|int");
       }
       /* FALL THROUGH */
     case 0:
@@ -3127,7 +3127,7 @@ static void f_magic_types (INT32 args)
     default:
     case 2:
       if (TYPEOF(sp[1-args]) != T_INT)
-	SIMPLE_BAD_ARG_ERROR ("::_types", 2, "void|int");
+	SIMPLE_ARG_TYPE_ERROR ("::_types", 2, "void|int");
       type = sp[-args].u.integer;
       /* FALL THROUGH */
     case 1:
@@ -3149,7 +3149,7 @@ static void f_magic_types (INT32 args)
 	  Pike_error("::_types on destructed object.\n");
 	inherit = obj->prog->inherits + SUBTYPEOF(sp[2-args]);
       } else {
-	SIMPLE_BAD_ARG_ERROR ("::_types", 1, "void|object|int");
+	SIMPLE_ARG_TYPE_ERROR ("::_types", 1, "void|object|int");
       }
       /* FALL THROUGH */
     case 0:

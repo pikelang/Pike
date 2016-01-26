@@ -847,7 +847,7 @@ void image_create_method(INT32 args)
       SIMPLE_TOO_FEW_ARGS_ERROR("create_method",1);
 
    if (TYPEOF(sp[-args]) != T_STRING)
-      SIMPLE_BAD_ARG_ERROR("create_method",1,"string");
+      SIMPLE_ARG_TYPE_ERROR("create_method",1,"string");
 
    MAKE_CONST_STRING(s_grey,"grey");
    MAKE_CONST_STRING(s_rgb,"rgb");
@@ -1895,13 +1895,13 @@ static void image_tuned_box(INT32 args)
      SIMPLE_TOO_FEW_ARGS_ERROR("tuned_box",8);
 
   if (!image_color_svalue_rgba(sp-4,&topleft))
-     SIMPLE_BAD_ARG_ERROR("tuned_box",5,"color");
+     SIMPLE_ARG_TYPE_ERROR("tuned_box",5,"color");
   if (!image_color_svalue_rgba(sp-3,&topright))
-     SIMPLE_BAD_ARG_ERROR("tuned_box",6,"color");
+     SIMPLE_ARG_TYPE_ERROR("tuned_box",6,"color");
   if (!image_color_svalue_rgba(sp-2,&bottomleft))
-     SIMPLE_BAD_ARG_ERROR("tuned_box",7,"color");
+     SIMPLE_ARG_TYPE_ERROR("tuned_box",7,"color");
   if (!image_color_svalue_rgba(sp-1,&bottomright))
-     SIMPLE_BAD_ARG_ERROR("tuned_box",8,"color");
+     SIMPLE_ARG_TYPE_ERROR("tuned_box",8,"color");
 
   if (x1>x2) x1^=x2,x2^=x1,x1^=x2,
 	       sum=topleft,topleft=topright,topright=sum,
@@ -3265,7 +3265,7 @@ void image_select_from(INT32 args)
 
    if (args>=3)
       if (TYPEOF(sp[2-args]) != T_INT)
-        SIMPLE_BAD_ARG_ERROR("select_from",3,"int");
+        SIMPLE_ARG_TYPE_ERROR("select_from",3,"int");
       else
 	 low_limit=MAXIMUM(0,sp[2-args].u.integer);
    else
@@ -4137,10 +4137,10 @@ static void image_apply_curve( INT32 args )
        struct object *o;
 
        if( TYPEOF(sp[-args]) != T_STRING )
-	 SIMPLE_BAD_ARG_ERROR("apply_curve", 1, "string");
+	 SIMPLE_ARG_TYPE_ERROR("apply_curve", 1, "string");
        if( TYPEOF(sp[-args+1]) != T_ARRAY ||
            sp[-args+1].u.array->size != 256 )
-	 SIMPLE_BAD_ARG_ERROR("apply_curve", 2, "256 element array");
+	 SIMPLE_ARG_TYPE_ERROR("apply_curve", 2, "256 element array");
 
        for( j = 0; j<256; j++ )
 	 if( TYPEOF(sp[-args+1].u.array->item[j]) == T_INT )
@@ -4297,21 +4297,21 @@ void image_gamma(INT32 args)
       else if (TYPEOF(sp[-args]) == T_FLOAT)
 	 gammar=gammab=gammag=sp[-args].u.float_number;
       else
-	SIMPLE_BAD_ARG_ERROR("gamma",1,"int|float");
+	SIMPLE_ARG_TYPE_ERROR("gamma",1,"int|float");
    }
    else if (args==3)
    {
       if (TYPEOF(sp[-args]) == T_INT) gammar=(double)sp[-args].u.integer;
       else if (TYPEOF(sp[-args]) == T_FLOAT) gammar=sp[-args].u.float_number;
-      else SIMPLE_BAD_ARG_ERROR("gamma",1,"int|float");
+      else SIMPLE_ARG_TYPE_ERROR("gamma",1,"int|float");
 
       if (TYPEOF(sp[1-args]) == T_INT) gammag=(double)sp[1-args].u.integer;
       else if (TYPEOF(sp[1-args]) == T_FLOAT) gammag=sp[1-args].u.float_number;
-      else SIMPLE_BAD_ARG_ERROR("gamma",2,"int|float");
+      else SIMPLE_ARG_TYPE_ERROR("gamma",2,"int|float");
 
       if (TYPEOF(sp[2-args]) == T_INT) gammab=(double)sp[2-args].u.integer;
       else if (TYPEOF(sp[2-args]) == T_FLOAT) gammab=sp[2-args].u.float_number;
-      else SIMPLE_BAD_ARG_ERROR("gamma",3,"int|float");
+      else SIMPLE_ARG_TYPE_ERROR("gamma",3,"int|float");
    }
    else
       Pike_error("Image.Image->gamma(): illegal number of arguments\n");
@@ -4579,9 +4579,9 @@ static void image__sprintf( INT32 args )
   if (args != 2 )
     SIMPLE_TOO_FEW_ARGS_ERROR("_sprintf",2);
   if (TYPEOF(sp[-args]) != T_INT)
-    SIMPLE_BAD_ARG_ERROR("_sprintf",0,"int");
+    SIMPLE_ARG_TYPE_ERROR("_sprintf",0,"int");
   if (TYPEOF(sp[1-args]) != T_MAPPING)
-    SIMPLE_BAD_ARG_ERROR("_sprintf",1,"mapping");
+    SIMPLE_ARG_TYPE_ERROR("_sprintf",1,"mapping");
 
   x = sp[-2].u.integer;
 
@@ -4639,7 +4639,7 @@ static void image_grey_blur( INT32 args )
     Pike_error("This object is not initialized\n");
 
   if (TYPEOF(sp[-args]) != T_INT)
-    SIMPLE_BAD_ARG_ERROR("grey_blur", 0, "int");
+    SIMPLE_ARG_TYPE_ERROR("grey_blur", 0, "int");
 
   t = sp[-args].u.integer;  /* times */
 
@@ -4714,7 +4714,7 @@ static void image_blur( INT32 args )
     Pike_error("This object is not initialized\n");
 
   if (TYPEOF(sp[-args]) != T_INT)
-    SIMPLE_BAD_ARG_ERROR("blur", 0, "int");
+    SIMPLE_ARG_TYPE_ERROR("blur", 0, "int");
 
   t = sp[-args].u.integer;  /* times */
 

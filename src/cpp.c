@@ -3367,7 +3367,7 @@ void f_cpp(INT32 args)
     else if(TYPEOF(*charset_sv) == T_INT)
       auto_convert = charset_sv->u.integer;
     else {
-      SIMPLE_BAD_ARG_ERROR("cpp", 3, "string|int");
+      SIMPLE_ARG_TYPE_ERROR("cpp", 3, "string|int");
     }
   }
 

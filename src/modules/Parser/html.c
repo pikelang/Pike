@@ -949,10 +949,10 @@ static void html_add_tag(INT32 args)
      if (!a->size ||
 	 (TYPEOF(a->item[0]) != T_FUNCTION && TYPEOF(a->item[0]) != T_OBJECT &&
 	  TYPEOF(a->item[0]) != T_PROGRAM))
-       SIMPLE_BAD_ARG_ERROR("add_tag", 1, "array with function as first element");
+       SIMPLE_ARG_TYPE_ERROR("add_tag", 1, "array with function as first element");
    }
    else if (TYPEOF(sp[1-args]) == T_INT && sp[1-args].u.integer)
-     SIMPLE_BAD_ARG_ERROR("add_tag", 1, "zero, string, array or function");
+     SIMPLE_ARG_TYPE_ERROR("add_tag", 1, "zero, string, array or function");
 
    if (THIS->maptag->refs>1)
    {
@@ -984,10 +984,10 @@ static void html_add_container(INT32 args)
      if (!a->size ||
 	 (TYPEOF(a->item[0]) != T_FUNCTION && TYPEOF(a->item[0]) != T_OBJECT &&
 	  TYPEOF(a->item[0]) != T_PROGRAM))
-       SIMPLE_BAD_ARG_ERROR("add_container", 1, "array with function as first element");
+       SIMPLE_ARG_TYPE_ERROR("add_container", 1, "array with function as first element");
    }
    else if (TYPEOF(sp[1-args]) == T_INT && sp[1-args].u.integer)
-     SIMPLE_BAD_ARG_ERROR("add_tag", 1, "zero, string, array or function");
+     SIMPLE_ARG_TYPE_ERROR("add_tag", 1, "zero, string, array or function");
 
    if (args > 2) {
      pop_n_elems(args-2);
@@ -1024,10 +1024,10 @@ static void html_add_entity(INT32 args)
      if (!a->size ||
 	 (TYPEOF(a->item[0]) != T_FUNCTION && TYPEOF(a->item[0]) != T_OBJECT &&
 	  TYPEOF(a->item[0]) != T_PROGRAM))
-       SIMPLE_BAD_ARG_ERROR("add_entity", 1, "array with function as first element");
+       SIMPLE_ARG_TYPE_ERROR("add_entity", 1, "array with function as first element");
    }
    else if (TYPEOF(sp[1-args]) == T_INT && sp[1-args].u.integer)
-     SIMPLE_BAD_ARG_ERROR("add_tag", 1, "zero, string, array or function");
+     SIMPLE_ARG_TYPE_ERROR("add_tag", 1, "zero, string, array or function");
 
    if (THIS->mapentity->refs>1)
    {
@@ -1061,10 +1061,10 @@ static void html_add_quote_tag(INT32 args)
      if (!a->size ||
 	 (TYPEOF(a->item[0]) != T_FUNCTION && TYPEOF(a->item[0]) != T_OBJECT &&
 	  TYPEOF(a->item[0]) != T_PROGRAM))
-       SIMPLE_BAD_ARG_ERROR("add_quote_tag", 1, "array with function as first element");
+       SIMPLE_ARG_TYPE_ERROR("add_quote_tag", 1, "array with function as first element");
    }
    else if (TYPEOF(sp[1-args]) == T_INT && sp[1-args].u.integer)
-     SIMPLE_BAD_ARG_ERROR("add_tag", 1, "zero, string, array or function");
+     SIMPLE_ARG_TYPE_ERROR("add_tag", 1, "zero, string, array or function");
 
   remove = UNSAFE_IS_ZERO (sp+1-args);
   if (!remove && args < 3)
@@ -3925,7 +3925,7 @@ static void html_feed(INT32 args)
       if (TYPEOF(sp[-args]) == T_STRING)
 	 low_feed(sp[-args].u.string);
       else if (TYPEOF(sp[-args]) != T_INT || sp[-args].u.integer)
-	 SIMPLE_BAD_ARG_ERROR("feed",1,"string");
+	 SIMPLE_ARG_TYPE_ERROR("feed",1,"string");
    }
 
    if (args<2 || TYPEOF(sp[1-args]) != T_INT || sp[1-args].u.integer)
@@ -3955,7 +3955,7 @@ static void html_feed_insert(INT32 args)
       SIMPLE_TOO_FEW_ARGS_ERROR("feed_insert",1);
 
    if (TYPEOF(sp[-args]) != T_STRING)
-      SIMPLE_BAD_ARG_ERROR("feed_insert",1,"string");
+      SIMPLE_ARG_TYPE_ERROR("feed_insert",1,"string");
 
    DEBUG((stderr,"html_feed_insert: "
 	  "pushing string (len=%"PRINTPTRDIFFT"d) on feedstack\n",
@@ -3989,7 +3989,7 @@ static void html_finish(INT32 args)
       if (TYPEOF(sp[-args]) == T_STRING)
 	 low_feed(sp[-args].u.string);
       else if (TYPEOF(sp[-args]) != T_INT || sp[-args].u.integer)
-	 SIMPLE_BAD_ARG_ERROR("finish",1,"string");
+	 SIMPLE_ARG_TYPE_ERROR("finish",1,"string");
    }
    try_feed(1);
    ref_push_object(THISOBJ);
@@ -4012,7 +4012,7 @@ static void html_read(INT32 args)
       if (TYPEOF(sp[-args]) == T_INT && sp[-args].u.integer >= 0)
 	n = MINIMUM (sp[-args].u.integer, n);
       else
-	SIMPLE_BAD_ARG_ERROR ("read", 1, "nonnegative integer");
+	SIMPLE_ARG_TYPE_ERROR ("read", 1, "nonnegative integer");
    }
 
    pop_n_elems(args);
@@ -4944,7 +4944,7 @@ static void html_splice_arg (INT32 args)
      if (TYPEOF(sp[-args]) == T_STRING)
        add_ref (THIS->splice_arg = sp[-args].u.string);
      else if (sp[-args].u.integer)
-       SIMPLE_BAD_ARG_ERROR ("splice_arg", 1, "string or zero");
+       SIMPLE_ARG_TYPE_ERROR ("splice_arg", 1, "string or zero");
      else
        THIS->splice_arg = NULL;
    }
@@ -5237,7 +5237,7 @@ static void html_xml_tag_syntax(INT32 args)
        case 2: THIS->flags |= FLAG_XML_TAGS; break;
        case 3: THIS->flags |= FLAG_XML_TAGS|FLAG_STRICT_TAGS; break;
        default:
-	 SIMPLE_BAD_ARG_ERROR ("xml_tag_syntax", 1, "integer 0..3");
+	 SIMPLE_ARG_TYPE_ERROR ("xml_tag_syntax", 1, "integer 0..3");
      }
      recalculate_argq(THIS);
    }

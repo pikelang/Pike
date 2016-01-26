@@ -358,11 +358,11 @@ PIKECLASS Rect {
   }
 #define CHECK_I16_ARG(fun, n, x)	do {			\
     if ((x) < -32768 || (x) > 32767)				\
-    SIMPLE_BAD_ARG_ERROR((fun), (n), "int(-32768..32767)");	\
+    SIMPLE_ARG_TYPE_ERROR((fun), (n), "int(-32768..32767)");	\
 } while(0)
 #define CHECK_U16_ARG(fun, n, x)	do {			\
     if ((x) < 0 || (x) > 65535)					\
-    SIMPLE_BAD_ARG_ERROR((fun), (n), "int(0..65535)");		\
+    SIMPLE_ARG_TYPE_ERROR((fun), (n), "int(0..65535)");		\
 } while(0)
 
   /*! @decl void create()
@@ -1412,7 +1412,7 @@ PIKECLASS Surface {
     //    }
     if(_flags) {
       if(TYPEOF(*_flags) != PIKE_T_INT) {
-	SIMPLE_BAD_ARG_ERROR("set_image",2,"int|void");
+	SIMPLE_ARG_TYPE_ERROR("set_image",2,"int|void");
       }
       flags = _flags->u.integer;
     }
@@ -1461,7 +1461,7 @@ PIKECLASS Surface {
 
     if(_flags) {
       if(TYPEOF(*_flags) != PIKE_T_INT) {
-	SIMPLE_BAD_ARG_ERROR("set_image",3,"int|void");
+	SIMPLE_ARG_TYPE_ERROR("set_image",3,"int|void");
       }
       flags = _flags->u.integer;
     }
@@ -2933,7 +2933,7 @@ PIKECLASS Music {
       if(TYPEOF(*_loops) == PIKE_T_INT) {
 	loops = _loops->u.integer;
       } else {
-	SIMPLE_BAD_ARG_ERROR("play", 1, "void|int");
+	SIMPLE_ARG_TYPE_ERROR("play", 1, "void|int");
       }
     }
     Mix_PlayMusic(THIS->music, loops);
@@ -2972,7 +2972,7 @@ PIKECLASS Music {
       if(TYPEOF(*_loops) == PIKE_T_INT) {
 	loops = _loops->u.integer;
       } else {
-	SIMPLE_BAD_ARG_ERROR("fade_in", 2, "void|int");
+        SIMPLE_ARG_TYPE_ERROR("fade_in", 2, "void|int");
       }
     }
     Mix_FadeInMusic(THIS->music, loops, ms);

@@ -786,16 +786,16 @@ static void image_color__sprintf(INT32 args)
       SIMPLE_TOO_FEW_ARGS_ERROR("_sprintf",2);
 
    if (TYPEOF(sp[-args]) != T_INT)
-      SIMPLE_BAD_ARG_ERROR("_sprintf",0,"int");
+      SIMPLE_ARG_TYPE_ERROR("_sprintf",0,"int");
    if (TYPEOF(sp[1-args]) != T_MAPPING)
-      SIMPLE_BAD_ARG_ERROR("_sprintf",1,"mapping");
+      SIMPLE_ARG_TYPE_ERROR("_sprintf",1,"mapping");
 
    pop_n_elems(args-2);
 
    push_static_text("precision");
    f_index(2);
    if (TYPEOF(sp[-1]) != T_INT)
-      SIMPLE_BAD_ARG_ERROR("_sprintf",1,"mapping(\"precision\":int)");
+      SIMPLE_ARG_TYPE_ERROR("_sprintf",1,"mapping(\"precision\":int)");
    prec=sp[-1].u.integer;
    x=sp[-2].u.integer;
    pop_n_elems(2);
@@ -1221,7 +1221,7 @@ static void image_color_add(INT32 args)
    rgb_group rgb;
 
    if (!image_color_arg(-args,&rgb))
-      SIMPLE_BAD_ARG_ERROR("`+",1,"Image.Color");
+      SIMPLE_ARG_TYPE_ERROR("`+",1,"Image.Color");
 
    pop_n_elems(args);
    _image_make_rgb_color((int)(THIS->rgb.r+rgb.r),

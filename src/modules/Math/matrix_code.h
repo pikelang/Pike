@@ -80,7 +80,7 @@ static void matrixX(_create)(INT32 args)
       {
 	struct array *a;
 	 if (TYPEOF(Pike_sp[-args].u.array->item[i]) != T_ARRAY)
-	    SIMPLE_BAD_ARG_ERROR(PNAME,1,"array(array)");
+	    SIMPLE_ARG_TYPE_ERROR(PNAME,1,"array(array)");
 	 if (i==0)
 	 {
 	    xs=Pike_sp[-args].u.array->item[i].u.array->size;
@@ -91,8 +91,8 @@ static void matrixX(_create)(INT32 args)
 	 }
 	 else
 	    if (xs!=Pike_sp[-args].u.array->item[i].u.array->size)
-	       SIMPLE_BAD_ARG_ERROR(PNAME,1,
-				    "array of equal sized arrays");
+	       SIMPLE_ARG_TYPE_ERROR(PNAME,1,
+                                     "array of equal sized arrays");
 
 	 a = Pike_sp[-args].u.array->item[i].u.array;
 
@@ -130,8 +130,8 @@ static void matrixX(_create)(INT32 args)
 		}
 		/* FALL_THROUGH */
 	      default:
-		SIMPLE_BAD_ARG_ERROR(PNAME,1,
-				     "array(array(int|float))");
+		SIMPLE_ARG_TYPE_ERROR(PNAME,1,
+                                      "array(array(int|float))");
 	    }
       }
       THIS->xsize=xs;
@@ -143,12 +143,12 @@ static void matrixX(_create)(INT32 args)
       if (args<2)
 	 SIMPLE_TOO_FEW_ARGS_ERROR(PNAME,2);
       if (TYPEOF(Pike_sp[1-args]) != T_INT)
-	 SIMPLE_BAD_ARG_ERROR(PNAME,2,"int");
+	 SIMPLE_ARG_TYPE_ERROR(PNAME,2,"int");
 
       if ((THIS->xsize=xs=Pike_sp[-args].u.integer)<=0)
-	 SIMPLE_BAD_ARG_ERROR(PNAME,1,"int(1..)");
+	 SIMPLE_ARG_TYPE_ERROR(PNAME,1,"int(1..)");
       if ((THIS->ysize=ys=Pike_sp[1-args].u.integer)<=0)
-	 SIMPLE_BAD_ARG_ERROR(PNAME,2,"int(1..)");
+	 SIMPLE_ARG_TYPE_ERROR(PNAME,2,"int(1..)");
 
       THIS->m=m=xcalloc(sizeof(FTYPE),xs*ys);
 
@@ -170,12 +170,12 @@ static void matrixX(_create)(INT32 args)
 	       args=2;
 	    }
 	    else
-	       SIMPLE_BAD_ARG_ERROR(PNAME,3,
-				    "valid matrix mode");
+	       SIMPLE_ARG_TYPE_ERROR(PNAME,3,
+                                     "valid matrix mode");
 	    /* insert other base matrices here */
 	 }
 	 else
-	    SIMPLE_BAD_ARG_ERROR(PNAME,3,"int|float|string");
+	    SIMPLE_ARG_TYPE_ERROR(PNAME,3,"int|float|string");
       }
 
       xs*=ys;
@@ -223,7 +223,7 @@ done_made:
 	     ((mx=get_storage(Pike_sp[-1].u.object,XmatrixY(math_,_program)))))
 	 {
 	    if (mx->xsize*mx->ysize!=3)
-	       SIMPLE_BAD_ARG_ERROR(PNAME,4,"Matrix of size 1x3 or 3x1");
+	       SIMPLE_ARG_TYPE_ERROR(PNAME,4,"Matrix of size 1x3 or 3x1");
 
 	    x = mx->m[0];
 	    y = mx->m[1];
@@ -236,7 +236,7 @@ done_made:
 			 &dummy,&side,&r,&x,&y,&z);
 
 	 if (side<2)
-	    SIMPLE_BAD_ARG_ERROR(PNAME,2,"int(2..)");
+	    SIMPLE_ARG_TYPE_ERROR(PNAME,2,"int(2..)");
 
 	 THIS->xsize=THIS->ysize=side;
 	 THIS->m=m=calloc(side*side, sizeof(FTYPE));
@@ -263,11 +263,11 @@ done_made:
 	 }
       }
       else
-	 SIMPLE_BAD_ARG_ERROR(PNAME,1,
-			      "valid matrix mode (identity or rotate)");
+	 SIMPLE_ARG_TYPE_ERROR(PNAME,1,
+                               "valid matrix mode (identity or rotate)");
    }
    else
-      SIMPLE_BAD_ARG_ERROR(PNAME,1,"array|int");
+      SIMPLE_ARG_TYPE_ERROR(PNAME,1,"array|int");
 }
 
 
@@ -280,7 +280,7 @@ void matrixX(_cast)(INT32 args)
    }
 
    if( !args || TYPEOF(Pike_sp[-1]) != T_STRING )
-     SIMPLE_BAD_ARG_ERROR("cast",1,"string");
+     SIMPLE_ARG_TYPE_ERROR("cast",1,"string");
 
    if( Pike_sp[-1].u.string != literal_array_string )
    {
@@ -497,7 +497,7 @@ static void matrixX(_add)(INT32 args)
 
    if (TYPEOF(Pike_sp[-1]) != T_OBJECT ||
        !((mx=get_storage(Pike_sp[-1].u.object,XmatrixY(math_,_program)))))
-      SIMPLE_BAD_ARG_ERROR("`+",1,"object(Math.Matrix)");
+      SIMPLE_ARG_TYPE_ERROR("`+",1,"object(Math.Matrix)");
 
    if (mx->xsize != THIS->xsize || mx->ysize != THIS->ysize)
       math_error("`+",Pike_sp-args,args,0,
@@ -540,7 +540,7 @@ static void matrixX(_sub)(INT32 args)
 
       if (TYPEOF(Pike_sp[-1]) != T_OBJECT ||
 	  !((mx=get_storage(Pike_sp[-1].u.object,XmatrixY(math_,_program)))))
-	 SIMPLE_BAD_ARG_ERROR("`-",1,"object(Math.Matrix)");
+	 SIMPLE_ARG_TYPE_ERROR("`-",1,"object(Math.Matrix)");
 
       if (mx->xsize != THIS->xsize ||
 	  mx->ysize != THIS->ysize)
@@ -673,7 +673,7 @@ scalar_mult:
 
    if (TYPEOF(Pike_sp[-1]) != T_OBJECT ||
        !((mx=get_storage(Pike_sp[-1].u.object,XmatrixY(math_,_program)))))
-      SIMPLE_BAD_ARG_ERROR("`*",1,"object(Math.Matrix)");
+      SIMPLE_ARG_TYPE_ERROR("`*",1,"object(Math.Matrix)");
 
    if (mx->xsize != THIS->ysize)
       math_error("`*",Pike_sp-args,args,0,
@@ -716,7 +716,7 @@ static void matrixX(_cross)(INT32 args)
 
    if (TYPEOF(Pike_sp[-1]) != T_OBJECT ||
        !((mx=get_storage(Pike_sp[-1].u.object,XmatrixY(math_,_program)))))
-      SIMPLE_BAD_ARG_ERROR("cross",1,"object(Math.Matrix)");
+      SIMPLE_ARG_TYPE_ERROR("cross",1,"object(Math.Matrix)");
 
    if (mx->xsize*mx->ysize != 3 ||
        THIS->ysize*THIS->xsize != 3)
@@ -750,7 +750,7 @@ static void matrixX(_dot)(INT32 args)
 
   if (TYPEOF(Pike_sp[-1]) != T_OBJECT ||
       !((mx=get_storage(Pike_sp[-1].u.object,XmatrixY(math_,_program)))))
-    SIMPLE_BAD_ARG_ERROR("dot_product",1,"object(Math.Matrix)");
+    SIMPLE_ARG_TYPE_ERROR("dot_product",1,"object(Math.Matrix)");
 
   if(!(mx->xsize==THIS->xsize &&
        mx->ysize==THIS->ysize &&
@@ -786,7 +786,7 @@ static void matrixX(_convolve)(INT32 args)
 
    if (TYPEOF(Pike_sp[-args]) != T_OBJECT ||
        !((bmx=get_storage(Pike_sp[-args].u.object,XmatrixY(math_,_program)))))
-      SIMPLE_BAD_ARG_ERROR("convolve",1,"object(Math.Matrix)");
+      SIMPLE_ARG_TYPE_ERROR("convolve",1,"object(Math.Matrix)");
 
    if (bmx->xsize==0 || bmx->ysize==0 ||
        THIS->xsize==0 || THIS->ysize==0)

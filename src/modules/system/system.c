@@ -881,11 +881,11 @@ void f_innetgr(INT32 args)
   for(i = 0; i < args; i++) {
     if (TYPEOF(sp[i-args]) == T_STRING) {
       if (sp[i-args].u.string->size_shift) {
-	SIMPLE_BAD_ARG_ERROR("innetgr", i+1, "string (8bit)");
+	SIMPLE_ARG_TYPE_ERROR("innetgr", i+1, "string (8bit)");
       }
       strs[i] = sp[i-args].u.string->str;
     } else if (sp[i-args].u.integer) {
-      SIMPLE_BAD_ARG_ERROR("innetgr", i+1, "string|void");
+      SIMPLE_ARG_TYPE_ERROR("innetgr", i+1, "string|void");
     }
   }
 
@@ -1087,7 +1087,7 @@ void f_getpgrp(INT32 args)
 
   if (args) {
     if (TYPEOF(sp[-args]) != T_INT) {
-      SIMPLE_BAD_ARG_ERROR("getpgrp", 1, "int");
+      SIMPLE_ARG_TYPE_ERROR("getpgrp", 1, "int");
     }
     pid = sp[-args].u.integer;
   }
@@ -1151,7 +1151,7 @@ void f_getsid(INT32 args)
 {
   int pid = 0;
   if (args >= 1 && TYPEOF(sp[-args]) != T_INT)
-    SIMPLE_BAD_ARG_ERROR("getsid", 1, "int");
+    SIMPLE_ARG_TYPE_ERROR("getsid", 1, "int");
   if (args >= 1)
        pid = sp[-args].u.integer;
   pop_n_elems(args);
@@ -1216,7 +1216,7 @@ void f_dumpable(INT32 args)
     INT_TYPE val;
     get_all_args("dumpable", args, "%i", &val);
     if (val & ~1) {
-      SIMPLE_BAD_ARG_ERROR("dumpable", 1, "int(0..1)");
+      SIMPLE_ARG_TYPE_ERROR("dumpable", 1, "int(0..1)");
     }
     if (prctl(PR_SET_DUMPABLE, val) == -1) {
       int err = errno;
@@ -2447,7 +2447,7 @@ static void f_getrlimit(INT32 args)
    if (args<1)
       SIMPLE_TOO_FEW_ARGS_ERROR("getrlimit",1);
    if (TYPEOF(sp[-args]) != T_STRING)
-      SIMPLE_BAD_ARG_ERROR("getrlimit",1,"string");
+      SIMPLE_ARG_TYPE_ERROR("getrlimit",1,"string");
    res = get_one_limit( Pike_sp[-args].u.string->str, &rl );
    if( res == -2 )
    {
@@ -2537,13 +2537,13 @@ static void f_setrlimit(INT32 args)
    if (args<3)
       SIMPLE_TOO_FEW_ARGS_ERROR("setrlimit",3);
    if (TYPEOF(sp[-args]) != T_STRING)
-      SIMPLE_BAD_ARG_ERROR("setrlimit",1,"string");
+      SIMPLE_ARG_TYPE_ERROR("setrlimit",1,"string");
    if (TYPEOF(sp[1-args]) != T_INT ||
        sp[1-args].u.integer<-1)
-      SIMPLE_BAD_ARG_ERROR("setrlimit",2,"int(-1..)");
+      SIMPLE_ARG_TYPE_ERROR("setrlimit",2,"int(-1..)");
    if (TYPEOF(sp[2-args]) != T_INT ||
        sp[2-args].u.integer<-1)
-      SIMPLE_BAD_ARG_ERROR("setrlimit",3,"int(-1..)");
+      SIMPLE_ARG_TYPE_ERROR("setrlimit",3,"int(-1..)");
 
    switch( set_one_limit( Pike_sp[-args].u.string->str, Pike_sp[1-args].u.integer, Pike_sp[2-args].u.integer ) )
    {
@@ -2619,7 +2619,7 @@ void f_system_setitimer(INT32 args)
    get_all_args("setitimer",args,"%+%F",&what,&interval);
 
    if (interval<0.0)
-      SIMPLE_BAD_ARG_ERROR("setitimer",2,"positive or zero int or float");
+      SIMPLE_ARG_TYPE_ERROR("setitimer",2,"positive or zero int or float");
    else if (interval==0.0)
       res=setitimer( (int)what,NULL,&otimer );
    else

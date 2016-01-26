@@ -1925,7 +1925,7 @@ void low_f_sprintf(INT32 args, struct string_builder *r)
       /* Clean up the stack. */
       pop_stack();
     } else {
-      SIMPLE_BAD_ARG_ERROR("sprintf", 1, "string|object");
+      SIMPLE_ARG_TYPE_ERROR("sprintf", 1, "string|object");
     }
   }
 

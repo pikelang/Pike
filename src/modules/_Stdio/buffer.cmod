@@ -1032,10 +1032,10 @@ PIKECLASS Buffer
 	}
 	SET_SVAL_TYPE_SUBTYPE(*f, PIKE_T_FUNCTION, write_fun_num);
       } else {
-	SIMPLE_BAD_ARG_ERROR("output_to", 1, "object|function");
+	SIMPLE_ARG_TYPE_ERROR("output_to", 1, "object|function");
       }
     } else if (UNLIKELY(TYPEOF(*f) != PIKE_T_FUNCTION)) {
-      SIMPLE_BAD_ARG_ERROR("output_to", 1, "object|function");
+      SIMPLE_ARG_TYPE_ERROR("output_to", 1, "object|function");
     } else {
       write_fun_num = SUBTYPEOF(*f);
     }

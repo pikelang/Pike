@@ -173,7 +173,7 @@ static void f_read( INT32 args )
 
   get_all_args("read", args, "%*%*", &logfun, &file);
   if(TYPEOF(*logfun) != T_FUNCTION)
-    SIMPLE_BAD_ARG_ERROR("read", 1, "function");
+    SIMPLE_ARG_TYPE_ERROR("read", 1, "function");
 
   if(TYPEOF(*file) == T_OBJECT)
   {
@@ -196,7 +196,7 @@ static void f_read( INT32 args )
       Pike_error("Failed to open file for reading (errno=%d).\n",
                  errno);
   } else
-    SIMPLE_BAD_ARG_ERROR("read", 2, "string|Stdio.File");
+    SIMPLE_ARG_TYPE_ERROR("read", 2, "string|Stdio.File");
 
 #ifdef HAVE_LSEEK64
   lseek64(f, offs0, SEEK_SET);

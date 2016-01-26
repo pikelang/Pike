@@ -569,7 +569,7 @@ static void my_glDeleteTextures( INT32 args )
     {
       if( TYPEOF(Pike_sp[i-args]) != PIKE_T_INT ) {
 	free( ls );
-	SIMPLE_BAD_ARG_ERROR("glDeleteTextures", i+1, "int");
+	SIMPLE_ARG_TYPE_ERROR("glDeleteTextures", i+1, "int");
       }
       ls[i] = Pike_sp[i-args].u.integer;
     }
@@ -590,7 +590,7 @@ static void my_glCallLists( INT32 args )
     {
       if( TYPEOF(Pike_sp[i-args]) != PIKE_T_INT ) {
 	free( ls );
-	SIMPLE_BAD_ARG_ERROR("glCallLists", i+1, "int");
+	SIMPLE_ARG_TYPE_ERROR("glCallLists", i+1, "int");
       }
       ls[i] = Pike_sp[i-args].u.integer;
     }

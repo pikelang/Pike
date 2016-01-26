@@ -928,7 +928,7 @@ static void f_signal(int args)
     SIMPLE_TOO_FEW_ARGS_ERROR("signal", 1);
 
   if(TYPEOF(Pike_sp[-args]) != PIKE_T_INT)
-    SIMPLE_BAD_ARG_ERROR("signal", 1, "int");
+    SIMPLE_ARG_TYPE_ERROR("signal", 1, "int");
 
   signum=Pike_sp[-args].u.integer;
   if(signum <0 ||
@@ -1021,7 +1021,7 @@ static void f_signum(int args)
     SIMPLE_TOO_FEW_ARGS_ERROR("signum", 1);
 
   if(TYPEOF(Pike_sp[-args]) != T_STRING)
-    SIMPLE_BAD_ARG_ERROR("signum", 1, "string");
+    SIMPLE_ARG_TYPE_ERROR("signum", 1, "string");
 
   i=signum(Pike_sp[-args].u.string->str);
   pop_n_elems(args);
@@ -1042,7 +1042,7 @@ static void f_signame(int args)
     SIMPLE_TOO_FEW_ARGS_ERROR("signame", 1);
 
   if(TYPEOF(Pike_sp[-args]) != PIKE_T_INT)
-    SIMPLE_BAD_ARG_ERROR("signame", 1, "int");
+    SIMPLE_ARG_TYPE_ERROR("signame", 1, "int");
 
   n=signame(Pike_sp[-args].u.integer);
   pop_n_elems(args);
@@ -2007,7 +2007,7 @@ static void f_proc_reg_index(INT32 args)
   get_all_args("`[]", args, "%+", &regno);
 
   if (regno * sizeof(long) > sizeof(((struct user *)NULL)->regs))
-    SIMPLE_BAD_ARG_ERROR("`[]", 1, "register number");
+    SIMPLE_ARG_TYPE_ERROR("`[]", 1, "register number");
 
   if ((val = ptrace(PTRACE_PEEKUSER, proc->pid,
 		    ((long *)(((struct user *)NULL)->regs)) + regno, 0)) == -1) {
@@ -4438,11 +4438,11 @@ static void f_kill(INT32 args)
     /* FIXME: What about if it's an object? */
 
   default:
-    SIMPLE_BAD_ARG_ERROR("kill", 1, "int");
+    SIMPLE_ARG_TYPE_ERROR("kill", 1, "int");
   }
 
   if(TYPEOF(Pike_sp[1-args]) != PIKE_T_INT)
-    SIMPLE_BAD_ARG_ERROR("kill", 2, "int");
+    SIMPLE_ARG_TYPE_ERROR("kill", 2, "int");
 
   signum = Pike_sp[1-args].u.integer;
 
@@ -4550,11 +4550,11 @@ static void f_kill(INT32 args)
   }
 
   default:
-    SIMPLE_BAD_ARG_ERROR("kill", 1, "int|object");
+    SIMPLE_ARG_TYPE_ERROR("kill", 1, "int|object");
   }
 
   if(TYPEOF(Pike_sp[1-args]) != PIKE_T_INT)
-    SIMPLE_BAD_ARG_ERROR("kill", 2, "int");
+    SIMPLE_ARG_TYPE_ERROR("kill", 2, "int");
 
   switch(Pike_sp[1-args].u.integer)
   {
@@ -4645,7 +4645,7 @@ static void f_alarm(INT32 args)
     SIMPLE_TOO_FEW_ARGS_ERROR("alarm", 1);
 
   if(TYPEOF(Pike_sp[-args]) != PIKE_T_INT)
-    SIMPLE_BAD_ARG_ERROR("alarm", 1, "int");
+    SIMPLE_ARG_TYPE_ERROR("alarm", 1, "int");
 
   seconds=Pike_sp[-args].u.integer;
 
@@ -4689,7 +4689,7 @@ static void f_ualarm(INT32 args)
     SIMPLE_TOO_FEW_ARGS_ERROR("ualarm", 1);
 
   if(TYPEOF(Pike_sp[-args]) != PIKE_T_INT)
-    SIMPLE_BAD_ARG_ERROR("ualarm", 1, "int");
+    SIMPLE_ARG_TYPE_ERROR("ualarm", 1, "int");
 
   useconds=Pike_sp[-args].u.integer;
 

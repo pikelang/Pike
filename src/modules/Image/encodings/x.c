@@ -1151,10 +1151,10 @@ void image_x_encode_bitmap(INT32 args)
 
    if (TYPEOF(sp[-args]) != T_OBJECT ||
        !(img=get_storage(sp[-args].u.object,image_program)))
-      SIMPLE_BAD_ARG_ERROR("encode_bitmap",1,"Image.Image");
+      SIMPLE_ARG_TYPE_ERROR("encode_bitmap",1,"Image.Image");
 
    if (!img->img)
-      SIMPLE_BAD_ARG_ERROR("encode_bitmap",1,"image object with image");
+      SIMPLE_ARG_TYPE_ERROR("encode_bitmap",1,"image object with image");
 
    xs=(img->xsize+7)>>3;
 

@@ -156,13 +156,13 @@ static MUTEX_T stupid_port_lock;
     if (TYPEOF(sp[ARG-1-args]) != T_STRING ||				\
 	sp[ARG-1-args].u.string->size_shift ||				\
         string_has_null(sp[ARG-1-args].u.string))			\
-      SIMPLE_BAD_ARG_ERROR (FUNC, ARG, "string(1..255)");               \
+      SIMPLE_ARG_TYPE_ERROR (FUNC, ARG, "string(1..255)");              \
   } while (0)
 
 #define CHECK_8BIT_STRING(FUNC, ARG) do {				\
     if (TYPEOF(sp[ARG-1-args]) != T_STRING ||				\
 	sp[ARG-1-args].u.string->size_shift)				\
-      SIMPLE_BAD_ARG_ERROR (FUNC, ARG, "string(8bit)");                 \
+      SIMPLE_ARG_TYPE_ERROR (FUNC, ARG, "string(8bit)");                \
   } while (0)
 
 #undef PIKE_MYSQL
@@ -763,7 +763,7 @@ PIKEFUN void create(string(1..255)|void host, string(1..255)|void database,
   if (args >= 5) {
     if (TYPEOF(sp[4-args]) != T_MAPPING){
       if (!UNSAFE_IS_ZERO(sp + 4 - args)) {
-	SIMPLE_BAD_ARG_ERROR ("create", 5, "mapping(string:mixed)");
+	SIMPLE_ARG_TYPE_ERROR ("create", 5, "mapping(string:mixed)");
       }
     } else {
       add_ref(PIKE_MYSQL->options = options);

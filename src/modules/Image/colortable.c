@@ -1157,9 +1157,9 @@ static struct nct_cube _img_get_cube_from_args(INT32 args)
       int c;
 
       if (!image_color_arg(-args,&low))
-	 SIMPLE_BAD_ARG_ERROR("create",1,"color");
+	 SIMPLE_ARG_TYPE_ERROR("create",1,"color");
       if (!image_color_arg(1-args,&high))
-	 SIMPLE_BAD_ARG_ERROR("create",2,"color");
+	 SIMPLE_ARG_TYPE_ERROR("create",2,"color");
       if (TYPEOF(sp[2+ap-args]) != T_INT)
 	 Pike_error("illegal argument(s) %d, %d or %d\n",ap,ap+1,ap+2);
 
@@ -2294,7 +2294,7 @@ static void image_colortable_add(INT32 args)
       if (args>1)
       {
 	 if (TYPEOF(sp[1-args]) != T_INT)
-	    SIMPLE_BAD_ARG_ERROR("add",2,"int");
+	    SIMPLE_ARG_TYPE_ERROR("add",2,"int");
 	 switch (sp[1-args].u.integer)
 	 {
 	    case 0: /* rgb */
@@ -2308,7 +2308,7 @@ static void image_colortable_add(INT32 args)
 		  _img_get_flat_from_bgrz_string(sp[-args].u.string);
 	       break;
 	    default:
-	       SIMPLE_BAD_ARG_ERROR("add",2,"int(0..2)");
+	       SIMPLE_ARG_TYPE_ERROR("add",2,"int(0..2)");
 	 }
       }
       else
@@ -2375,7 +2375,7 @@ void image_colortable_reduce(INT32 args)
 
    if (args)
      if (TYPEOF(sp[-args]) != T_INT)
-	SIMPLE_BAD_ARG_ERROR("reduce",1,"int");
+	SIMPLE_ARG_TYPE_ERROR("reduce",1,"int");
      else
 	 numcolors=sp[-args].u.integer;
    else
@@ -2416,13 +2416,13 @@ void image_colortable_reduce_fs(INT32 args)
 
    if (args) {
      if (TYPEOF(sp[-args]) != T_INT)
-	SIMPLE_BAD_ARG_ERROR("reduce_fs",1,"int");
+	SIMPLE_ARG_TYPE_ERROR("reduce_fs",1,"int");
      else
 	numcolors=sp[-args].u.integer;
    }
 
    if (numcolors<2)
-      SIMPLE_BAD_ARG_ERROR("reduce_fs",1,"int(2..)");
+      SIMPLE_ARG_TYPE_ERROR("reduce_fs",1,"int(2..)");
 
    pop_n_elems(args);
    image_colortable_corners(0);
@@ -2830,9 +2830,9 @@ void image_colortable_rigid(INT32 args)
       colortable_free_lookup_stuff(THIS);
       THIS->lookup_mode=NCT_RIGID;
 
-      if (r<1) SIMPLE_BAD_ARG_ERROR("rigid",1,"int(1..)");
-      if (g<1) SIMPLE_BAD_ARG_ERROR("rigid",2,"int(1..)");
-      if (b<1) SIMPLE_BAD_ARG_ERROR("rigid",3,"int(1..)");
+      if (r<1) SIMPLE_ARG_TYPE_ERROR("rigid",1,"int(1..)");
+      if (g<1) SIMPLE_ARG_TYPE_ERROR("rigid",2,"int(1..)");
+      if (b<1) SIMPLE_ARG_TYPE_ERROR("rigid",3,"int(1..)");
 
       THIS->lu.rigid.r=r;
       THIS->lu.rigid.g=g;
@@ -3626,10 +3626,10 @@ void image_colortable_index_32bit(INT32 args)
       SIMPLE_TOO_FEW_ARGS_ERROR("index",1);
    if (TYPEOF(sp[-args]) != T_OBJECT ||
        ! (src=get_storage(sp[-args].u.object,image_program)))
-      SIMPLE_BAD_ARG_ERROR("index",1,"Image.Image");
+      SIMPLE_ARG_TYPE_ERROR("index",1,"Image.Image");
 
    if (!src->img)
-      SIMPLE_BAD_ARG_ERROR("index",1,"non-empty image object");
+      SIMPLE_ARG_TYPE_ERROR("index",1,"non-empty image object");
 
 #ifdef PIKE_DEBUG
    if (sizeof(unsigned INT32)!=4)
@@ -3644,7 +3644,7 @@ void image_colortable_index_32bit(INT32 args)
 					   src->xsize*src->ysize,src->xsize))
    {
       do_free_unlinked_pike_string (ps);
-      SIMPLE_BAD_ARG_ERROR("index",1,"non-empty image object");
+      SIMPLE_ARG_TYPE_ERROR("index",1,"non-empty image object");
       return;
    }
 
@@ -4430,9 +4430,9 @@ static void image_colortable__sprintf( INT32 args )
   if (args != 2 )
     SIMPLE_TOO_FEW_ARGS_ERROR("_sprintf",2);
   if (TYPEOF(sp[-args]) != T_INT)
-    SIMPLE_BAD_ARG_ERROR("_sprintf",0,"int");
+    SIMPLE_ARG_TYPE_ERROR("_sprintf",0,"int");
   if (TYPEOF(sp[1-args]) != T_MAPPING)
-    SIMPLE_BAD_ARG_ERROR("_sprintf",1,"mapping");
+    SIMPLE_ARG_TYPE_ERROR("_sprintf",1,"mapping");
 
   x = sp[-2].u.integer;
 

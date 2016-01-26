@@ -268,7 +268,7 @@ void image_make_ascii(INT32 args)
   for(i=0; i<4; i++) {
     img[i]=get_storage(objs[i],image_program);
     if(!img[i])
-      SIMPLE_BAD_ARG_ERROR("make_ascii",i+1,"Image.Image");
+      SIMPLE_ARG_TYPE_ERROR("make_ascii",i+1,"Image.Image");
     if(i!=0 &&
        img[0]->xsize!=img[i]->xsize &&
        img[0]->ysize!=img[i]->ysize)

@@ -808,8 +808,8 @@ void image_polyfill(INT32 args)
       if (TYPEOF(sp[-1]) != T_ARRAY)
       {
 	 polyfill_free(v);
-	 SIMPLE_BAD_ARG_ERROR("Image.Image->polyfill", args,
-			      "array(int|float)");
+         SIMPLE_ARG_TYPE_ERROR("Image.Image->polyfill", args,
+                               "array(int|float)");
       }
       if ((v_tmp=polyfill_add(&v, sp[-1].u.array, args,
 			      "Image.Image->polyfill()"))) {

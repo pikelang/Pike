@@ -299,7 +299,7 @@ static void stat_push_compat(INT_TYPE n)
       default:
       {
 	 INT32 args=1;
-	 SIMPLE_BAD_ARG_ERROR("`[]",1,"int(0..6)");
+	 SIMPLE_ARG_TYPE_ERROR("`[]",1,"int(0..6)");
       }
    }
 }
@@ -515,7 +515,7 @@ static void stat_index(INT32 args)
       _stat_index( tmp ? tmp->u.integer : 0 );
     }
     else
-      SIMPLE_BAD_ARG_ERROR("`[]",1,"int(0..6)|string");
+      SIMPLE_ARG_TYPE_ERROR("`[]",1,"int(0..6)|string");
   }
   else if (args>=2) /* range */
   {
@@ -528,11 +528,11 @@ static void stat_index(INT32 args)
 
     if (TYPEOF(sp[-2]) != T_INT &&
         !(TYPEOF(sp[-2]) == T_OBJECT && is_bignum_object (sp[-2].u.object)))
-      SIMPLE_BAD_ARG_ERROR("`[..]",1,"int");
+      SIMPLE_ARG_TYPE_ERROR("`[..]",1,"int");
 
     if (TYPEOF(sp[-1]) != T_INT &&
         !(TYPEOF(sp[-1]) == T_OBJECT && is_bignum_object (sp[-1].u.object)))
-      SIMPLE_BAD_ARG_ERROR("`[..]",2,"int");
+      SIMPLE_ARG_TYPE_ERROR("`[..]",2,"int");
 
     /* make in range 0..6 */
     push_int(6);
@@ -759,10 +759,10 @@ static void stat_index_set (INT32 args)
 
   if (TYPEOF(sp[-2]) == T_INT) {
     if (!got_int_val)
-      SIMPLE_BAD_ARG_ERROR ("`[]=", 2,
-			    "integer when the first argument is an integer");
+      SIMPLE_ARG_TYPE_ERROR ("`[]=", 2,
+                             "integer when the first argument is an integer");
     if (!stat_compat_set (sp[-2].u.integer, int_val))
-      SIMPLE_BAD_ARG_ERROR ("`[]=", 1, "int(0..6)|string");
+      SIMPLE_ARG_TYPE_ERROR ("`[]=", 1, "int(0..6)|string");
   }
   else if (TYPEOF(sp[-2]) == T_STRING) {
     INT_TYPE code;
@@ -780,7 +780,7 @@ static void stat_index_set (INT32 args)
     _stat_index_set( tmp->u.integer, sp-1, got_int_val, int_val);
   }
 
-  else SIMPLE_BAD_ARG_ERROR ("`[]=", 1, "int(0..6)|string");
+  else SIMPLE_ARG_TYPE_ERROR ("`[]=", 1, "int(0..6)|string");
 
   stack_swap();
   pop_stack();
@@ -800,7 +800,7 @@ static void stat_cast(INT32 args)
   if (!args)
     SIMPLE_TOO_FEW_ARGS_ERROR("Stat cast",1);
   if (TYPEOF(sp[-args]) != T_STRING)
-    SIMPLE_BAD_ARG_ERROR("cast",1,"string");
+    SIMPLE_ARG_TYPE_ERROR("cast",1,"string");
 
   type = Pike_sp[-args].u.string;
   pop_stack(); /* type have at least one more reference. */
@@ -830,7 +830,7 @@ static void stat__sprintf(INT32 args)
       SIMPLE_TOO_FEW_ARGS_ERROR("_sprintf",2);
 
    if (TYPEOF(sp[-args]) != T_INT)
-      SIMPLE_BAD_ARG_ERROR("_sprintf",0,"integer");
+      SIMPLE_ARG_TYPE_ERROR("_sprintf",0,"integer");
 
    x=sp[-args].u.integer;
    pop_n_elems(args);
@@ -916,7 +916,7 @@ static void stat_create (INT32 args)
       struct array *a = sp[-1].u.array;
       int i;
       if (a->size != 7)
-	SIMPLE_BAD_ARG_ERROR ("create", 1, "stat array with 7 elements");
+	SIMPLE_ARG_TYPE_ERROR ("create", 1, "stat array with 7 elements");
       for (i = 0; i < 7; i++) {
 	INT64 val;
 	if (TYPEOF(ITEM(a)[i]) == T_INT)
@@ -927,13 +927,13 @@ static void stat_create (INT32 args)
 	    Pike_error ("create: Too big integer in stat array.\n");
 	}
 	else
-	  SIMPLE_BAD_ARG_ERROR ("create", 1, "array(int)");
+	  SIMPLE_ARG_TYPE_ERROR ("create", 1, "array(int)");
 	stat_compat_set (i, val);
       }
     }
 
     else
-      SIMPLE_BAD_ARG_ERROR ("create", 1, "void|Stdio.Stat|array(int)");
+      SIMPLE_ARG_TYPE_ERROR ("create", 1, "void|Stdio.Stat|array(int)");
   }
 
   pop_n_elems (args);

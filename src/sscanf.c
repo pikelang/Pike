@@ -1759,10 +1759,10 @@ void o_sscanf(INT32 args)
   struct svalue *save_sp=sp;
 
   if(TYPEOF(sp[-args]) != T_STRING)
-    SIMPLE_BAD_ARG_ERROR("sscanf", 1, "string");
+    SIMPLE_ARG_TYPE_ERROR("sscanf", 1, "string");
 
   if(TYPEOF(sp[1-args]) != T_STRING)
-    SIMPLE_BAD_ARG_ERROR("sscanf", 2, "string");
+    SIMPLE_ARG_TYPE_ERROR("sscanf", 2, "string");
 
   i = low_sscanf(sp[-args].u.string, sp[1-args].u.string);
 

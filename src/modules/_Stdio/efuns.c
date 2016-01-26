@@ -403,7 +403,7 @@ void f_file_stat(INT32 args)
   if(args<1)
     SIMPLE_TOO_FEW_ARGS_ERROR("file_stat", 1);
   if((TYPEOF(sp[-args]) != T_STRING) || sp[-args].u.string->size_shift)
-    SIMPLE_BAD_ARG_ERROR("file_stat", 1, "string(0..255)");
+    SIMPLE_ARG_TYPE_ERROR("file_stat", 1, "string(0..255)");
 
   str = sp[-args].u.string;
   l = (args>1 && !UNSAFE_IS_ZERO(sp+1-args))?1:0;
@@ -456,7 +456,7 @@ void f_file_truncate(INT32 args)
   if(args < 2)
     SIMPLE_TOO_FEW_ARGS_ERROR("file_truncate", 2);
   if(TYPEOF(sp[-args]) != T_STRING)
-    SIMPLE_BAD_ARG_ERROR("file_truncate", 1, "string");
+    SIMPLE_ARG_TYPE_ERROR("file_truncate", 1, "string");
 
 #if defined (INT64)
 #if defined (HAVE_FTRUNCATE64) || SIZEOF_OFF_T > SIZEOF_INT_TYPE
@@ -468,7 +468,7 @@ void f_file_truncate(INT32 args)
 #endif
 #endif
     if(TYPEOF(sp[1-args]) != T_INT)
-      SIMPLE_BAD_ARG_ERROR("file_truncate", 2, "int");
+      SIMPLE_ARG_TYPE_ERROR("file_truncate", 2, "int");
     else
       len = sp[1-args].u.integer;
 
@@ -686,7 +686,7 @@ void f_filesystem_stat(INT32 args)
   if(args<1)
     SIMPLE_TOO_FEW_ARGS_ERROR("filesystem_stat", 1);
   if(TYPEOF(sp[-args]) != T_STRING)
-    SIMPLE_BAD_ARG_ERROR("filesystem_stat", 1, "string");
+    SIMPLE_ARG_TYPE_ERROR("filesystem_stat", 1, "string");
 
   str = sp[-args].u.string;
 
@@ -816,7 +816,7 @@ void f_rm(INT32 args)
     SIMPLE_TOO_FEW_ARGS_ERROR("rm", 1);
 
   if(TYPEOF(sp[-args]) != T_STRING)
-    SIMPLE_BAD_ARG_ERROR("rm", 1, "string");
+    SIMPLE_ARG_TYPE_ERROR("rm", 1, "string");
 
   str = sp[-args].u.string;
 
@@ -899,7 +899,7 @@ void f_mkdir(INT32 args)
     SIMPLE_TOO_FEW_ARGS_ERROR("mkdir", 1);
 
   if(TYPEOF(sp[-args]) != T_STRING)
-    SIMPLE_BAD_ARG_ERROR("mkdir", 1, "string");
+    SIMPLE_ARG_TYPE_ERROR("mkdir", 1, "string");
 
   mode = 0777;			/* &'ed with ~umask anyway. */
 
@@ -1393,7 +1393,7 @@ void f_cd(INT32 args)
     SIMPLE_TOO_FEW_ARGS_ERROR("cd", 1);
 
   if(TYPEOF(sp[-args]) != T_STRING)
-    SIMPLE_BAD_ARG_ERROR("cd", 1, "string");
+    SIMPLE_ARG_TYPE_ERROR("cd", 1, "string");
 
   str = sp[-args].u.string;
 
@@ -1499,30 +1499,30 @@ void f_exece(INT32 args)
   {
   default:
     if(TYPEOF(sp[2-args]) != T_MAPPING)
-      SIMPLE_BAD_ARG_ERROR("exece", 3, "mapping(string:string)");
+      SIMPLE_ARG_TYPE_ERROR("exece", 3, "mapping(string:string)");
     en=sp[2-args].u.mapping;
     mapping_fix_type_field(en);
 
     if(m_ind_types(en) & ~BIT_STRING)
-      SIMPLE_BAD_ARG_ERROR("exece", 3, "mapping(string:string)");
+      SIMPLE_ARG_TYPE_ERROR("exece", 3, "mapping(string:string)");
     if(m_val_types(en) & ~BIT_STRING)
-      SIMPLE_BAD_ARG_ERROR("exece", 3, "mapping(string:string)");
+      SIMPLE_ARG_TYPE_ERROR("exece", 3, "mapping(string:string)");
 
     /* FALL_THROUGH */
 
   case 2:
     if(TYPEOF(sp[1-args]) != T_ARRAY)
-      SIMPLE_BAD_ARG_ERROR("exece", 2, "array(string)");
+      SIMPLE_ARG_TYPE_ERROR("exece", 2, "array(string)");
 
 
     if(array_fix_type_field(sp[1-args].u.array) & ~BIT_STRING)
-      SIMPLE_BAD_ARG_ERROR("exece", 2, "array(string)");
+      SIMPLE_ARG_TYPE_ERROR("exece", 2, "array(string)");
 
     /* FALL_THROUGH */
 
   case 1:
     if(TYPEOF(sp[0-args]) != T_STRING)
-      SIMPLE_BAD_ARG_ERROR("exece", 1, "string");
+      SIMPLE_ARG_TYPE_ERROR("exece", 1, "string");
     break;
   }
 
@@ -1623,10 +1623,10 @@ void f_mv(INT32 args)
     SIMPLE_TOO_FEW_ARGS_ERROR("mv", 2);
 
   if(TYPEOF(sp[-args]) != T_STRING)
-    SIMPLE_BAD_ARG_ERROR("mv", 1, "string");
+    SIMPLE_ARG_TYPE_ERROR("mv", 1, "string");
 
   if(TYPEOF(sp[-args+1]) != T_STRING)
-    SIMPLE_BAD_ARG_ERROR("mv", 2, "string");
+    SIMPLE_ARG_TYPE_ERROR("mv", 2, "string");
 
   str1 = sp[-args].u.string;
   str2 = sp[1-args].u.string;
@@ -1828,7 +1828,7 @@ void f_strerror(INT32 args)
   if(!args)
     SIMPLE_TOO_FEW_ARGS_ERROR("strerror", 1);
   if(TYPEOF(sp[-args]) != T_INT)
-    SIMPLE_BAD_ARG_ERROR("strerror", 1, "int");
+    SIMPLE_ARG_TYPE_ERROR("strerror", 1, "int");
 
   err = sp[-args].u.integer;
   pop_n_elems(args);

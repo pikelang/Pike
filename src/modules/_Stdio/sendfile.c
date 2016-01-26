@@ -927,7 +927,7 @@ static void sf_create(INT32 args)
     if (!(sval = get_storage(sf.to_file, file_ref_program)) ||
 	(TYPEOF(*sval) != T_OBJECT) ||
 	!(sf.to = get_storage(sval->u.object, file_program))) {
-      SIMPLE_BAD_ARG_ERROR("sendfile", 6, "object(Stdio.File)");
+      SIMPLE_ARG_TYPE_ERROR("sendfile", 6, "object(Stdio.File)");
     }
     add_ref(sval->u.object);
 #ifdef PIKE_DEBUG
@@ -942,7 +942,7 @@ static void sf_create(INT32 args)
   }
   if ((sf.to->flags & FILE_LOCK_FD) ||
       (sf.to->box.fd < 0)) {
-    SIMPLE_BAD_ARG_ERROR("sendfile", 6, "object(Stdio.File)");
+    SIMPLE_ARG_TYPE_ERROR("sendfile", 6, "object(Stdio.File)");
   }
   sf.to_fd = sf.to->box.fd;
 
@@ -963,7 +963,7 @@ static void sf_create(INT32 args)
       if (!(sval = get_storage(sf.from_file, file_ref_program)) ||
 	  (TYPEOF(*sval) != T_OBJECT) ||
 	!(sf.from = get_storage(sval->u.object, file_program))) {
-	SIMPLE_BAD_ARG_ERROR("sendfile", 2, "object(Stdio.File)");
+	SIMPLE_ARG_TYPE_ERROR("sendfile", 2, "object(Stdio.File)");
       }
       add_ref(sval->u.object);
 #ifdef PIKE_DEBUG
@@ -978,7 +978,7 @@ static void sf_create(INT32 args)
     }
     if ((sf.from->flags & FILE_LOCK_FD) ||
 	(sf.from->box.fd < 0)) {
-      SIMPLE_BAD_ARG_ERROR("sendfile", 2, "object(Stdio.File)");
+      SIMPLE_ARG_TYPE_ERROR("sendfile", 2, "object(Stdio.File)");
     }
     sf.from_fd = sf.from->box.fd;
   }
@@ -991,7 +991,7 @@ static void sf_create(INT32 args)
 
     for (i=0; i < a->size; i++) {
       if ((TYPEOF(a->item[i]) != T_STRING) || (a->item[i].u.string->size_shift)) {
-	SIMPLE_BAD_ARG_ERROR("sendfile", 1, "array(string)");
+	SIMPLE_ARG_TYPE_ERROR("sendfile", 1, "array(string)");
       }
     }
     iovcnt = a->size;
@@ -1005,7 +1005,7 @@ static void sf_create(INT32 args)
 
     for (i=0; i < a->size; i++) {
       if ((TYPEOF(a->item[i]) != T_STRING) || (a->item[i].u.string->size_shift)) {
-	SIMPLE_BAD_ARG_ERROR("sendfile", 5, "array(string)");
+	SIMPLE_ARG_TYPE_ERROR("sendfile", 5, "array(string)");
       }
     }
     iovcnt += a->size;

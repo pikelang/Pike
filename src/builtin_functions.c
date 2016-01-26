@@ -271,7 +271,7 @@ static void f_hash_7_4(INT32 args)
     SIMPLE_TOO_FEW_ARGS_ERROR("7.4::hash",1);
 
   if(TYPEOF(Pike_sp[-args]) != T_STRING)
-    SIMPLE_BAD_ARG_ERROR("7.4::hash", 1, "string");
+    SIMPLE_ARG_TYPE_ERROR("7.4::hash", 1, "string");
 
   i = simple_hashmem((unsigned char *)s->str, s->len<<s->size_shift,
 		     100<<s->size_shift);
@@ -279,7 +279,7 @@ static void f_hash_7_4(INT32 args)
   if(args > 1)
   {
     if(TYPEOF(Pike_sp[1-args]) != T_INT)
-      SIMPLE_BAD_ARG_ERROR("7.4::hash",2,"int");
+      SIMPLE_ARG_TYPE_ERROR("7.4::hash",2,"int");
 
     if(!Pike_sp[1-args].u.integer)
       PIKE_ERROR("7.4::hash", "Modulo by zero.\n", Pike_sp, args);
@@ -332,7 +332,7 @@ static void f_hash_7_0( INT32 args )
   if(!args)
     SIMPLE_TOO_FEW_ARGS_ERROR("7.0::hash",1);
   if(TYPEOF(Pike_sp[-args]) != T_STRING)
-    SIMPLE_BAD_ARG_ERROR("7.0::hash", 1, "string");
+    SIMPLE_ARG_TYPE_ERROR("7.0::hash", 1, "string");
 
   if( s->size_shift )
   {
@@ -345,7 +345,7 @@ static void f_hash_7_0( INT32 args )
   if(args > 1)
   {
     if(TYPEOF(Pike_sp[1-args]) != T_INT)
-      SIMPLE_BAD_ARG_ERROR("7.0::hash",2,"int");
+      SIMPLE_ARG_TYPE_ERROR("7.0::hash",2,"int");
 
     if(!Pike_sp[1-args].u.integer)
       PIKE_ERROR("7.0::hash", "Modulo by zero.\n", Pike_sp, args);
@@ -391,7 +391,7 @@ PMOD_EXPORT void f_hash(INT32 args)
     SIMPLE_TOO_FEW_ARGS_ERROR("hash",1);
 
   if(TYPEOF(Pike_sp[-args]) != T_STRING)
-    SIMPLE_BAD_ARG_ERROR("hash", 1, "string");
+    SIMPLE_ARG_TYPE_ERROR("hash", 1, "string");
 
   s = Pike_sp[-args].u.string;
   switch(s->size_shift) {
@@ -409,7 +409,7 @@ PMOD_EXPORT void f_hash(INT32 args)
   if(args > 1)
   {
     if(TYPEOF(Pike_sp[1-args]) != T_INT)
-      SIMPLE_BAD_ARG_ERROR("hash",2,"int");
+      SIMPLE_ARG_TYPE_ERROR("hash",2,"int");
 
     if(Pike_sp[1-args].u.integer <= 0)
       PIKE_ERROR("hash", "Modulo < 1.\n", Pike_sp, args);
@@ -910,7 +910,7 @@ PMOD_EXPORT void f_search(INT32 args)
     if(args > 2)
     {
       if(TYPEOF(Pike_sp[2-args]) != T_INT)
-	SIMPLE_BAD_ARG_ERROR("search", 3, "int");
+	SIMPLE_ARG_TYPE_ERROR("search", 3, "int");
 
       start=Pike_sp[2-args].u.integer;
       if(start<0) {
@@ -988,7 +988,7 @@ PMOD_EXPORT void f_search(INT32 args)
 			      start);
       }
     } else {
-      SIMPLE_BAD_ARG_ERROR("search", 2, "string | int");
+      SIMPLE_ARG_TYPE_ERROR("search", 2, "string | int");
     }
     pop_n_elems(args);
     push_int64(start);
@@ -1000,7 +1000,7 @@ PMOD_EXPORT void f_search(INT32 args)
     if(args > 2)
     {
       if(TYPEOF(Pike_sp[2-args]) != T_INT)
-	SIMPLE_BAD_ARG_ERROR("search", 3, "int");
+	SIMPLE_ARG_TYPE_ERROR("search", 3, "int");
 
       start=Pike_sp[2-args].u.integer;
       if(start<0) {
@@ -1090,7 +1090,7 @@ PMOD_EXPORT void f_search(INT32 args)
     }
     /* FALL_THROUGH */
   default:
-    SIMPLE_BAD_ARG_ERROR("search", 1, "string|array|mapping|object");
+    SIMPLE_ARG_TYPE_ERROR("search", 1, "string|array|mapping|object");
   }
 }
 
@@ -1478,7 +1478,7 @@ PMOD_EXPORT void f_add_constant(INT32 args)
     SIMPLE_TOO_FEW_ARGS_ERROR("add_constant", 1);
 
   if(TYPEOF(Pike_sp[-args]) != T_STRING)
-    SIMPLE_BAD_ARG_ERROR("add_constant", 1, "string");
+    SIMPLE_ARG_TYPE_ERROR("add_constant", 1, "string");
 
   if(args>1)
   {
@@ -1668,7 +1668,7 @@ PMOD_EXPORT void f_string_to_unicode(INT32 args)
       byteorder = 0;
 #endif
     } else {
-      SIMPLE_BAD_ARG_ERROR("string_to_unicode", 2, "int(0..2)|void");
+      SIMPLE_ARG_TYPE_ERROR("string_to_unicode", 2, "int(0..2)|void");
     }
   }
 
@@ -1824,7 +1824,7 @@ PMOD_EXPORT void f_unicode_to_string(INT32 args)
       byteorder = 0;
 #endif
     } else {
-      SIMPLE_BAD_ARG_ERROR("unicode_to_string", 2, "int(0..2)|void");
+      SIMPLE_ARG_TYPE_ERROR("unicode_to_string", 2, "int(0..2)|void");
     }
   }
 
@@ -2874,7 +2874,7 @@ void f_this_object(INT32 args)
 
   if (args) {
     if (TYPEOF(Pike_sp[-args]) != T_INT || Pike_sp[-args].u.integer < 0)
-      SIMPLE_BAD_ARG_ERROR ("this_object", 1, "a non-negative integer");
+      SIMPLE_ARG_TYPE_ERROR ("this_object", 1, "a non-negative integer");
     level = Pike_sp[-args].u.integer;
   }
   else
@@ -3023,7 +3023,7 @@ PMOD_EXPORT void f_exit(INT32 args)
     SIMPLE_TOO_FEW_ARGS_ERROR("exit", 1);
 
   if(TYPEOF(Pike_sp[-args]) != T_INT)
-    SIMPLE_BAD_ARG_ERROR("exit", 1, "int");
+    SIMPLE_ARG_TYPE_ERROR("exit", 1, "int");
 
   if(in_exit) Pike_error("exit already called!\n");
   in_exit=1;
@@ -3232,7 +3232,7 @@ PMOD_EXPORT void f_destruct(INT32 args)
 	pop_n_elems(args);
 	return;
       }
-      SIMPLE_BAD_ARG_ERROR("destruct", 1, "object");
+      SIMPLE_ARG_TYPE_ERROR("destruct", 1, "object");
     }
 
     o=Pike_sp[-args].u.object;
@@ -3333,9 +3333,9 @@ PMOD_EXPORT void f_indices(INT32 args)
     /* FALL THROUGH */
 
   default:
-    SIMPLE_BAD_ARG_ERROR("indices", 1,
-			 "string|array|mapping|"
-			 "multiset|object|program|function");
+    SIMPLE_ARG_TYPE_ERROR("indices", 1,
+                          "string|array|mapping|"
+                          "multiset|object|program|function");
   }
   pop_n_elems(args);
   push_array(a);
@@ -3638,9 +3638,9 @@ PMOD_EXPORT void f_values(INT32 args)
     /* FALL THROUGH */
 
   default:
-    SIMPLE_BAD_ARG_ERROR("values", 1,
-			 "string|array|mapping|multiset|"
-			 "object|program|function");
+    SIMPLE_ARG_TYPE_ERROR("values", 1,
+                          "string|array|mapping|multiset|"
+                          "object|program|function");
   }
   pop_n_elems(args);
   push_array(a);
@@ -3734,9 +3734,9 @@ PMOD_EXPORT void f_types(INT32 args)
     /* FALL THROUGH */
 
   default:
-    SIMPLE_BAD_ARG_ERROR("types", 1,
-			 "string|array|mapping|"
-			 "multiset|object|program|function");
+    SIMPLE_ARG_TYPE_ERROR("types", 1,
+                          "string|array|mapping|"
+                          "multiset|object|program|function");
   }
   pop_n_elems(args);
   push_array(a);
@@ -3983,7 +3983,7 @@ PMOD_EXPORT void f_reverse(INT32 args)
   }
 
   default:
-    SIMPLE_BAD_ARG_ERROR("reverse", 1, "string|int|array");
+    SIMPLE_ARG_TYPE_ERROR("reverse", 1, "string|int|array");
   }
 }
 
@@ -4390,7 +4390,7 @@ PMOD_EXPORT void f_replace(INT32 args)
 	 mapping_fix_type_field(Pike_sp[-1].u.mapping);
 	 if( (m->data->ind_types & ~BIT_STRING) ||
 	     (m->data->val_types & ~BIT_STRING) ) {
-	   SIMPLE_BAD_ARG_ERROR("replace", 2, "mapping(string:string)");
+	   SIMPLE_ARG_TYPE_ERROR("replace", 2, "mapping(string:string)");
 	 }
        }
 
@@ -4429,11 +4429,11 @@ PMOD_EXPORT void f_replace(INT32 args)
     switch(TYPEOF(Pike_sp[1-args]))
     {
     default:
-      SIMPLE_BAD_ARG_ERROR("replace", 2, "string|array");
+      SIMPLE_ARG_TYPE_ERROR("replace", 2, "string|array");
 
     case T_STRING:
       if(TYPEOF(Pike_sp[2-args]) != T_STRING)
-	SIMPLE_BAD_ARG_ERROR("replace", 3, "string");
+	SIMPLE_ARG_TYPE_ERROR("replace", 3, "string");
 
       s=string_replace(Pike_sp[-args].u.string,
 		       Pike_sp[1-args].u.string,
@@ -4446,7 +4446,7 @@ PMOD_EXPORT void f_replace(INT32 args)
 	stack_swap();
 	f_allocate(2);
       } else if(TYPEOF(Pike_sp[2-args]) != T_ARRAY)
-	SIMPLE_BAD_ARG_ERROR("replace", 3, "array|string");
+	SIMPLE_ARG_TYPE_ERROR("replace", 3, "array|string");
 
       s=replace_many(Pike_sp[-args].u.string,
 		     Pike_sp[1-args].u.array,
@@ -4459,7 +4459,7 @@ PMOD_EXPORT void f_replace(INT32 args)
   }
 
   default:
-    SIMPLE_BAD_ARG_ERROR("replace", 1, "array|mapping|string");
+    SIMPLE_ARG_TYPE_ERROR("replace", 1, "array|mapping|string");
   }
 }
 
@@ -4666,7 +4666,7 @@ void f_set_weak_flag(INT32 args)
       multiset_set_flags (s->u.multiset, flags);
       break;
     default:
-      SIMPLE_BAD_ARG_ERROR("set_weak_flag",1,"array|mapping|multiset");
+      SIMPLE_ARG_TYPE_ERROR("set_weak_flag",1,"array|mapping|multiset");
   }
   pop_n_elems(args-1);
 }
@@ -5199,13 +5199,13 @@ PMOD_EXPORT void f_sort(INT32 args)
   if(args < 1)
     SIMPLE_TOO_FEW_ARGS_ERROR("sort", 1);
   if(TYPEOF(Pike_sp[-args]) != T_ARRAY)
-    SIMPLE_BAD_ARG_ERROR("sort", 1, "array");
+    SIMPLE_ARG_TYPE_ERROR("sort", 1, "array");
   a = Pike_sp[-args].u.array;
 
   for(e=1;e<args;e++)
   {
     if(TYPEOF(Pike_sp[e-args]) != T_ARRAY)
-      SIMPLE_BAD_ARG_ERROR("sort", e+1, "array");
+      SIMPLE_ARG_TYPE_ERROR("sort", e+1, "array");
 
     if(Pike_sp[e-args].u.array->size != a->size)
       bad_arg_error("sort", Pike_sp-args, args, e+1, "array", Pike_sp+e-args,
@@ -5991,10 +5991,10 @@ PMOD_EXPORT void f_glob(INT32 args)
       nglobs = ga->size;
       for( i=0; i<nglobs; i++ )
 	  if( TYPEOF(ga->item[i]) != PIKE_T_STRING )
-              SIMPLE_BAD_ARG_ERROR("glob", 1, "string|array(string)");
+              SIMPLE_ARG_TYPE_ERROR("glob", 1, "string|array(string)");
   }
   else
-      SIMPLE_BAD_ARG_ERROR("glob", 1, "string|array(string)");
+      SIMPLE_ARG_TYPE_ERROR("glob", 1, "string|array(string)");
 
 
   switch(TYPEOF(Pike_sp[1-args]))
@@ -6013,7 +6013,7 @@ PMOD_EXPORT void f_glob(INT32 args)
 
     if( (a->type_field & ~BIT_STRING) &&
 	(array_fix_type_field(a) & ~BIT_STRING) )
-      SIMPLE_BAD_ARG_ERROR("glob", 2, "string|array(string)");
+      SIMPLE_ARG_TYPE_ERROR("glob", 2, "string|array(string)");
 
     check_stack(120);
     BEGIN_AGGREGATE_ARRAY (MINIMUM (a->size, 120)) {
@@ -6038,7 +6038,7 @@ PMOD_EXPORT void f_glob(INT32 args)
   }
 
   default:
-    SIMPLE_BAD_ARG_ERROR("glob", 2, "string|array(string)");
+    SIMPLE_ARG_TYPE_ERROR("glob", 2, "string|array(string)");
   }
 }
 
@@ -6071,7 +6071,7 @@ static void f_interleave_array(INT32 args)
 
   if( (arr->type_field & ~BIT_MAPPING) &&
       (array_fix_type_field(arr) & ~BIT_MAPPING) )
-    SIMPLE_BAD_ARG_ERROR("interleave_array", 1, "array(mapping(int:mixed))");
+    SIMPLE_ARG_TYPE_ERROR("interleave_array", 1, "array(mapping(int:mixed))");
 
   /* The order array */
   ref_push_array(arr);
@@ -7555,7 +7555,7 @@ PMOD_EXPORT void f_replace_master(INT32 args)
   if(!args)
     SIMPLE_TOO_FEW_ARGS_ERROR("replace_master", 1);
   if(TYPEOF(Pike_sp[-args]) != T_OBJECT)
-    SIMPLE_BAD_ARG_ERROR("replace_master", 1, "object");
+    SIMPLE_ARG_TYPE_ERROR("replace_master", 1, "object");
   new_master = Pike_sp[-args].u.object;
   if(!new_master->prog)
     bad_arg_error("replace_master", Pike_sp-args, args, 1, "object", Pike_sp-args,
@@ -7817,7 +7817,7 @@ static void f_get_prof_info(INT32 args)
   }
   prog = program_from_svalue(Pike_sp-args);
   if(!prog)
-    SIMPLE_BAD_ARG_ERROR("get_profiling_info", 1, "program");
+    SIMPLE_ARG_TYPE_ERROR("get_profiling_info", 1, "program");
 
   /* ({ num_clones, ([ "fun_name":({ num_calls, total_time, self_time }) ]) })
    */
@@ -7963,7 +7963,7 @@ PMOD_EXPORT void f_splice(INT32 args)
 
   for(i=0;i<args;i++)
     if (TYPEOF(Pike_sp[i-args]) != T_ARRAY)
-      SIMPLE_BAD_ARG_ERROR("splice", i+1, "array");
+      SIMPLE_ARG_TYPE_ERROR("splice", i+1, "array");
     else
       if (Pike_sp[i-args].u.array->size < size)
 	size=Pike_sp[i-args].u.array->size;
@@ -8057,7 +8057,7 @@ PMOD_EXPORT void f_transpose(INT32 args)
     SIMPLE_TOO_FEW_ARGS_ERROR("transpose", 1);
 
   if (TYPEOF(Pike_sp[-args]) != T_ARRAY)
-    SIMPLE_BAD_ARG_ERROR("transpose", 1, "array(array)");
+    SIMPLE_ARG_TYPE_ERROR("transpose", 1, "array(array)");
 
   in=Pike_sp[-args].u.array;
   sizein=in->size;
@@ -8070,7 +8070,7 @@ PMOD_EXPORT void f_transpose(INT32 args)
 
   if( (in->type_field != BIT_ARRAY) &&
       (array_fix_type_field(in) != BIT_ARRAY) )
-    SIMPLE_BAD_ARG_ERROR("transpose", 1, "array(array)");
+    SIMPLE_ARG_TYPE_ERROR("transpose", 1, "array(array)");
 
   sizeininner=in->item->u.array->size;
 
@@ -8303,13 +8303,13 @@ PMOD_EXPORT void f_map(INT32 args)
            }
 	 }
 
-	 SIMPLE_BAD_ARG_ERROR("map",1,
-			      "object that works in map");
+	 SIMPLE_ARG_TYPE_ERROR("map",1,
+                               "object that works in map");
 
       default:
-	 SIMPLE_BAD_ARG_ERROR("map",1,
-			      "array|mapping|program|function|"
-			      "multiset|string|object");
+	 SIMPLE_ARG_TYPE_ERROR("map",1,
+                               "array|mapping|program|function|"
+                               "multiset|string|object");
    }
 
    if (UNSAFE_IS_ZERO (Pike_sp-args+1)) {
@@ -8433,9 +8433,9 @@ PMOD_EXPORT void f_map(INT32 args)
 	 return;
 
       default:
-	 SIMPLE_BAD_ARG_ERROR("map",2,
-			      "function|program|object|"
-			      "string|int(0..0)|multiset");
+	 SIMPLE_ARG_TYPE_ERROR("map",2,
+                               "function|program|object|"
+                               "string|int(0..0)|multiset");
    }
 }
 
@@ -8532,7 +8532,7 @@ PMOD_EXPORT void f_filter(INT32 args)
       case T_ARRAY:
 	 if (args >= 2 && TYPEOF(Pike_sp[1-args]) == T_ARRAY) {
 	   if (Pike_sp[1-args].u.array->size != Pike_sp[-args].u.array->size)
-	     SIMPLE_BAD_ARG_ERROR("filter", 2, "array of same size as the first");
+	     SIMPLE_ARG_TYPE_ERROR("filter", 2, "array of same size as the first");
 	   pop_n_elems(args-2);
 	 }
 	 else {
@@ -8688,13 +8688,13 @@ PMOD_EXPORT void f_filter(INT32 args)
             }
 	 }
 
-	 SIMPLE_BAD_ARG_ERROR("filter",1,
-			      "...|object that can be cast to array, multiset or mapping");
+	 SIMPLE_ARG_TYPE_ERROR("filter",1,
+                               "...|object that can be cast to array, multiset or mapping");
 
       default:
-	 SIMPLE_BAD_ARG_ERROR("filter",1,
-			      "array|mapping|program|function|"
-			      "multiset|string|object");
+	 SIMPLE_ARG_TYPE_ERROR("filter",1,
+                               "array|mapping|program|function|"
+                               "multiset|string|object");
    }
 }
 
@@ -8975,7 +8975,7 @@ PMOD_EXPORT void f_inherit_list(INT32 args)
 
   p=program_from_svalue(arg);
   if(!p)
-    SIMPLE_BAD_ARG_ERROR("inherit_list", 1, "program");
+    SIMPLE_ARG_TYPE_ERROR("inherit_list", 1, "program");
 
   if(TYPEOF(*arg) == T_FUNCTION)
   {

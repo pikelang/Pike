@@ -158,7 +158,7 @@
 		} else {
 		    THIS->step = step->u.integer;
 		    if (THIS->step == 0)
-			SIMPLE_BAD_ARG_ERROR("create", 1, "int(..-1)|int(1..)");
+			SIMPLE_ARG_TYPE_ERROR("create", 1, "int(..-1)|int(1..)");
 		}
 
                 if (stop) {
@@ -168,7 +168,7 @@
                     assign_svalue(stop, Pike_sp-1);
                     pop_stack();
                     if (!((1<<TYPEOF(*stop)) & T_KEY))
-                      SIMPLE_BAD_ARG_ERROR("create", 3, cmod_STRFY_EVAL(key_ptype));
+                      SIMPLE_ARG_TYPE_ERROR("create", 3, cmod_STRFY_EVAL(key_ptype));
                   }
                   THIS->stop = CB_LOW_KEY_FROM_SVALUE(stop);
                   CB_ADD_KEY_REF(THIS->stop);
@@ -182,7 +182,7 @@
                     assign_svalue(start, Pike_sp-1);
                     pop_stack();
                     if (!((1<<TYPEOF(*start)) & T_KEY))
-                      SIMPLE_BAD_ARG_ERROR("create", 2, cmod_STRFY_EVAL(key_ptype));
+                      SIMPLE_ARG_TYPE_ERROR("create", 2, cmod_STRFY_EVAL(key_ptype));
                   }
                   s = CB_LOW_KEY_FROM_SVALUE(start);
 

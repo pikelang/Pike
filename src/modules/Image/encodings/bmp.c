@@ -189,14 +189,14 @@ void img_bmp_encode(INT32 args)
 
    if (TYPEOF(sp[-args]) != T_OBJECT ||
        !(img=get_storage(o=sp[-args].u.object,image_program)))
-      SIMPLE_BAD_ARG_ERROR("encode",1,"Image.Image");
+      SIMPLE_ARG_TYPE_ERROR("encode",1,"Image.Image");
 
    if (args>1) {
       if (TYPEOF(sp[1-args]) == T_OBJECT)
       {
 	 if (!(nct=
 	       get_storage(oc=sp[1-args].u.object,image_colortable_program)))
-	    SIMPLE_BAD_ARG_ERROR("encode",2,"Image.Colortable");
+	    SIMPLE_ARG_TYPE_ERROR("encode",2,"Image.Colortable");
 	 add_ref(oc);
       }
       else if (TYPEOF(sp[1-args]) == T_MAPPING)
@@ -213,7 +213,7 @@ void img_bmp_encode(INT32 args)
 	    if (TYPEOF(*v) != T_OBJECT  ||
 		!(nct=
 		  get_storage(oc=v->u.object,image_colortable_program)))
-	       SIMPLE_BAD_ARG_ERROR("encode",2,"colortable object at index \"colortable\"");
+	       SIMPLE_ARG_TYPE_ERROR("encode",2,"colortable object at index \"colortable\"");
 	    add_ref(oc);
 	 }
       }
@@ -222,7 +222,7 @@ void img_bmp_encode(INT32 args)
 	 bpp=sp[1-args].u.integer;
       }
       else
-	 SIMPLE_BAD_ARG_ERROR("encode",2,"mapping|object|int");
+	 SIMPLE_ARG_TYPE_ERROR("encode",2,"mapping|object|int");
    }
 
    if (bpp==0) {
@@ -565,11 +565,11 @@ void i_img_bmp__decode(INT32 args,int header_only)
       SIMPLE_TOO_FEW_ARGS_ERROR("decode",1);
 
    if (TYPEOF(sp[-args]) != T_STRING || sp[-args].u.string->size_shift)
-      SIMPLE_BAD_ARG_ERROR("decode",1,"string(8bit)");
+      SIMPLE_ARG_TYPE_ERROR("decode",1,"string(8bit)");
 
    if (args>1) {
       if (TYPEOF(sp[1-args]) != T_MAPPING)
-	 SIMPLE_BAD_ARG_ERROR("decode",2,"mapping");
+	 SIMPLE_ARG_TYPE_ERROR("decode",2,"mapping");
       else
       {
 	 struct pike_string *qs;

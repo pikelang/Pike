@@ -74,7 +74,7 @@ DOCEND()
 #define CB_CHECK_KEY(svalue, fun, num)	do {			\
     CB_TRANSFORM_KEY(svalue);					\
     if (!((1<<TYPEOF(*svalue)) & T_KEY))   			\
-	SIMPLE_BAD_ARG_ERROR(fun, (num), STRFY(key_ptype));	\
+        SIMPLE_ARG_TYPE_ERROR(fun, (num), STRFY(key_ptype));	\
 } while(0)
 #undef CB_PUSH_TRANSFORM_KEY
 #define CB_PUSH_TRANSFORM_KEY(key) do {				\

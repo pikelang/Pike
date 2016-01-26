@@ -1809,7 +1809,7 @@ array generate_overload_func_for(array(FuncData) d,
       }
     out+=({
       PC.Token(sprintf("%*n default:\n",indent)),
-	PC.Token(sprintf("%*n  SIMPLE_BAD_ARG_ERROR(%O,%d,%O);\n",
+        PC.Token(sprintf("%*n  SIMPLE_ARG_TYPE_ERROR(%O,%d,%O);\n",
 			 indent,
 			 attributes->errname || name,
 			 best_method+1,

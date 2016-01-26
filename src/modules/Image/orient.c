@@ -165,7 +165,7 @@ void image_orient(INT32 args)
     else if (TYPEOF(sp[-args]) == T_FLOAT)
       mag=sp[-args].u.float_number;
     else {
-      SIMPLE_BAD_ARG_ERROR("orient",1,"int|float");
+      SIMPLE_ARG_TYPE_ERROR("orient",1,"int|float");
       UNREACHABLE(mag=0.0);
     }
   }
@@ -177,7 +177,7 @@ void image_orient(INT32 args)
   if (args>1)
   {
     if (TYPEOF(sp[1-args]) != T_ARRAY)
-      SIMPLE_BAD_ARG_ERROR("orient",2,"array");
+      SIMPLE_ARG_TYPE_ERROR("orient",2,"array");
     if (sp[1-args].u.array->size!=4)
       Pike_error("The array given as argument 2 to orient do not have size 4\n");
     for(i=0; i<4; i++)

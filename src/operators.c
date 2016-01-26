@@ -1522,8 +1522,8 @@ PMOD_EXPORT void f_add(INT32 args)
     {
       case T_PROGRAM:
       case T_FUNCTION:
-	SIMPLE_BAD_ARG_ERROR("`+", 1,
-			     "string|object|int|float|array|mapping|multiset");
+	SIMPLE_ARG_TYPE_ERROR("`+", 1,
+                              "string|object|int|float|array|mapping|multiset");
     }
     bad_arg_error("`+", sp-args, args, 1,
 		  "string|object|int|float|array|mapping|multiset", sp-args,
@@ -2394,7 +2394,7 @@ PMOD_EXPORT void o_subtract(void)
   default:
     {
       int args = 2;
-      SIMPLE_BAD_ARG_ERROR("`-", 1,
+      SIMPLE_ARG_TYPE_ERROR("`-", 1,
 			   "int|float|string|mapping|multiset|array|object");
     }
   }
@@ -2554,7 +2554,7 @@ PMOD_EXPORT void o_and(void)
 	   struct program *p = program_from_svalue(sp - 2);
 	   if (!p) {
 	      int args = 2;
-	      SIMPLE_BAD_ARG_ERROR("`&", 1, "type");
+	      SIMPLE_ARG_TYPE_ERROR("`&", 1, "type");
 	   }
 	   type_stack_mark();
 	   push_object_type(0, p->id);
@@ -2567,7 +2567,7 @@ PMOD_EXPORT void o_and(void)
 	   if (!p)
 	   {
 	      int args = 2;
-	      SIMPLE_BAD_ARG_ERROR("`&", 2, "type");
+	      SIMPLE_ARG_TYPE_ERROR("`&", 2, "type");
 	   }
 	   type_stack_mark();
 	   push_object_type(0, p->id);
@@ -2612,13 +2612,13 @@ PMOD_EXPORT void o_and(void)
 	   default:
 	   {
 	      int args = 2;
-	      SIMPLE_BAD_ARG_ERROR("`&", 2, "mapping");
+	      SIMPLE_ARG_TYPE_ERROR("`&", 2, "mapping");
 	   }
 	}
      else
      {
 	int args = 2;
-	SIMPLE_BAD_ARG_ERROR("`&", 2, get_name_of_type(TYPEOF(sp[-2])));
+	SIMPLE_ARG_TYPE_ERROR("`&", 2, get_name_of_type(TYPEOF(sp[-2])));
      }
   }
 
@@ -2687,7 +2687,7 @@ PMOD_EXPORT void o_and(void)
     p = program_from_svalue(sp - 2);
     if (!p) {
       int args = 2;
-      SIMPLE_BAD_ARG_ERROR("`&", 1, "type");
+      SIMPLE_ARG_TYPE_ERROR("`&", 1, "type");
     }
     type_stack_mark();
     push_object_type(0, p->id);
@@ -2696,7 +2696,7 @@ PMOD_EXPORT void o_and(void)
     p = program_from_svalue(sp - 1);
     if (!p) {
       int args = 2;
-      SIMPLE_BAD_ARG_ERROR("`&", 2, "type");
+      SIMPLE_ARG_TYPE_ERROR("`&", 2, "type");
     }
     type_stack_mark();
     push_object_type(0, p->id);
@@ -2896,7 +2896,7 @@ PMOD_EXPORT void o_or(void)
 	struct program *p = program_from_svalue(sp - 2);
 	if (!p) {
 	  int args = 2;
-	  SIMPLE_BAD_ARG_ERROR("`|", 1, "type");
+	  SIMPLE_ARG_TYPE_ERROR("`|", 1, "type");
 	}
 	type_stack_mark();
 	push_object_type(0, p->id);
@@ -2907,7 +2907,7 @@ PMOD_EXPORT void o_or(void)
 	struct program *p = program_from_svalue(sp - 1);
 	if (!p) {
 	  int args = 2;
-	  SIMPLE_BAD_ARG_ERROR("`|", 2, "type");
+	  SIMPLE_ARG_TYPE_ERROR("`|", 2, "type");
 	}
 	type_stack_mark();
 	push_object_type(0, p->id);
@@ -2916,7 +2916,7 @@ PMOD_EXPORT void o_or(void)
       }
     } else {
       int args = 2;
-      SIMPLE_BAD_ARG_ERROR("`|", 2, get_name_of_type(TYPEOF(sp[-2])));
+      SIMPLE_ARG_TYPE_ERROR("`|", 2, get_name_of_type(TYPEOF(sp[-2])));
     }
   }
 
@@ -3000,7 +3000,7 @@ PMOD_EXPORT void o_or(void)
     p = program_from_svalue(sp - 2);
     if (!p) {
       int args = 2;
-      SIMPLE_BAD_ARG_ERROR("`|", 1, "type");
+      SIMPLE_ARG_TYPE_ERROR("`|", 1, "type");
     }
     type_stack_mark();
     push_object_type(0, p->id);
@@ -3009,7 +3009,7 @@ PMOD_EXPORT void o_or(void)
     p = program_from_svalue(sp - 1);
     if (!p) {
       int args = 2;
-      SIMPLE_BAD_ARG_ERROR("`|", 2, "type");
+      SIMPLE_ARG_TYPE_ERROR("`|", 2, "type");
     }
     type_stack_mark();
     push_object_type(0, p->id);
@@ -3152,7 +3152,7 @@ PMOD_EXPORT void o_xor(void)
 	struct program *p = program_from_svalue(sp - 2);
 	if (!p) {
 	  int args = 2;
-	  SIMPLE_BAD_ARG_ERROR("`^", 1, "type");
+	  SIMPLE_ARG_TYPE_ERROR("`^", 1, "type");
 	}
 	type_stack_mark();
 	push_object_type(0, p->id);
@@ -3163,7 +3163,7 @@ PMOD_EXPORT void o_xor(void)
 	struct program *p = program_from_svalue(sp - 1);
 	if (!p) {
 	  int args = 2;
-	  SIMPLE_BAD_ARG_ERROR("`^", 2, "type");
+	  SIMPLE_ARG_TYPE_ERROR("`^", 2, "type");
 	}
 	type_stack_mark();
 	push_object_type(0, p->id);
@@ -3172,7 +3172,7 @@ PMOD_EXPORT void o_xor(void)
       }
     } else {
       int args = 2;
-      SIMPLE_BAD_ARG_ERROR("`^", 2, get_name_of_type(TYPEOF(sp[-2])));
+      SIMPLE_ARG_TYPE_ERROR("`^", 2, get_name_of_type(TYPEOF(sp[-2])));
     }
   }
 
@@ -3229,7 +3229,7 @@ PMOD_EXPORT void o_xor(void)
     p = program_from_svalue(sp - 1);
     if (!p) {
       int args = 2;
-      SIMPLE_BAD_ARG_ERROR("`^", 2, "type");
+      SIMPLE_ARG_TYPE_ERROR("`^", 2, "type");
     }
     type_stack_mark();
     push_object_type(0, p->id);
@@ -3242,7 +3242,7 @@ PMOD_EXPORT void o_xor(void)
     if (!p) {
       int args = 2;
       stack_swap();
-      SIMPLE_BAD_ARG_ERROR("`^", 1, "type");
+      SIMPLE_ARG_TYPE_ERROR("`^", 1, "type");
     }
     type_stack_mark();
     push_object_type(0, p->id);
@@ -3390,7 +3390,7 @@ PMOD_EXPORT void o_lsh(void)
     goto call_lfun;
 
   if ((TYPEOF(sp[-1]) != T_INT) || (sp[-1].u.integer < 0)) {
-    SIMPLE_BAD_ARG_ERROR("`<<", 2, "int(0..)|object");
+    SIMPLE_ARG_TYPE_ERROR("`<<", 2, "int(0..)|object");
   }
 
   switch(TYPEOF(sp[-2])) {
@@ -3407,8 +3407,8 @@ PMOD_EXPORT void o_lsh(void)
       return;
 
     if(TYPEOF(sp[-2]) != T_INT)
-      SIMPLE_BAD_ARG_ERROR("`<<", 1, "int|float|object");
-    SIMPLE_BAD_ARG_ERROR("`<<", 2, "int(0..)|object");
+      SIMPLE_ARG_TYPE_ERROR("`<<", 1, "int|float|object");
+    SIMPLE_ARG_TYPE_ERROR("`<<", 2, "int(0..)|object");
     break;
 
   case T_FLOAT:
@@ -3417,7 +3417,7 @@ PMOD_EXPORT void o_lsh(void)
     return;
 
   default:
-    SIMPLE_BAD_ARG_ERROR("`<<", 1, "int|float|object");
+    SIMPLE_ARG_TYPE_ERROR("`<<", 1, "int|float|object");
     break;
   }
 
@@ -3481,12 +3481,12 @@ PMOD_EXPORT void o_rsh(void)
     if(call_lfun(LFUN_RSH, LFUN_RRSH))
       return;
     if(TYPEOF(sp[-2]) != T_INT)
-      SIMPLE_BAD_ARG_ERROR("`>>", 1, "int|object");
-    SIMPLE_BAD_ARG_ERROR("`>>", 2, "int(0..)|object");
+      SIMPLE_ARG_TYPE_ERROR("`>>", 1, "int|object");
+    SIMPLE_ARG_TYPE_ERROR("`>>", 2, "int(0..)|object");
   }
 
   if ((TYPEOF(sp[-1]) != T_INT) || (sp[-1].u.integer < 0)) {
-    SIMPLE_BAD_ARG_ERROR("`>>", 2, "int(0..)|object");
+    SIMPLE_ARG_TYPE_ERROR("`>>", 2, "int(0..)|object");
   }
 
   sp--;
@@ -3506,7 +3506,7 @@ PMOD_EXPORT void o_rsh(void)
     sp[-1].u.float_number = ldexp(sp[-1].u.float_number, -sp->u.integer);
     return;
   default:
-    SIMPLE_BAD_ARG_ERROR("`>>", 1, "int|float|object");
+    SIMPLE_ARG_TYPE_ERROR("`>>", 1, "int|float|object");
     break;
   }
 
@@ -3574,7 +3574,7 @@ PMOD_EXPORT void o_multiply(void)
 	struct svalue *pos;
 	INT32 e;
 	if(sp[-1].u.integer < 0)
-	  SIMPLE_BAD_ARG_ERROR("`*", 2, "int(0..)");
+	  SIMPLE_ARG_TYPE_ERROR("`*", 2, "int(0..)");
 	ret=allocate_array(sp[-2].u.array->size * sp[-1].u.integer);
 	pos=ret->item;
 	for(e=0;e<sp[-1].u.integer;e++,pos+=sp[-2].u.array->size)
@@ -3595,7 +3595,7 @@ PMOD_EXPORT void o_multiply(void)
 	struct svalue *pos;
 	ptrdiff_t asize, delta;
 	if(sp[-1].u.float_number < 0)
-	  SIMPLE_BAD_ARG_ERROR("`*", 2, "float(0..)");
+	  SIMPLE_ARG_TYPE_ERROR("`*", 2, "float(0..)");
 
 	src = sp[-2].u.array;
 	delta = src->size;
@@ -3639,7 +3639,7 @@ PMOD_EXPORT void o_multiply(void)
 	ptrdiff_t len, delta;
 
 	if(sp[-1].u.float_number < 0)
-	  SIMPLE_BAD_ARG_ERROR("`*", 2, "float(0..)");
+	  SIMPLE_ARG_TYPE_ERROR("`*", 2, "float(0..)");
 	src = sp[-2].u.string;
 	len = (ptrdiff_t)floor(src->len * sp[-1].u.float_number + 0.5);
 	ret = begin_wide_shared_string(len, src->size_shift);
@@ -3676,7 +3676,7 @@ PMOD_EXPORT void o_multiply(void)
 	INT_TYPE e;
 	ptrdiff_t len;
 	if(sp[-1].u.integer < 0)
-	  SIMPLE_BAD_ARG_ERROR("`*", 2, "int(0..)");
+	  SIMPLE_ARG_TYPE_ERROR("`*", 2, "int(0..)");
 	ret=begin_wide_shared_string(sp[-2].u.string->len * sp[-1].u.integer,
 				     sp[-2].u.string->size_shift);
 	pos=ret->str;

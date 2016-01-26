@@ -1584,17 +1584,17 @@ PIKECLASS string_split_iterator
 	  a = multiset_indices (split_set->u.multiset);
 	  push_array (a);
 	} else {
-	  SIMPLE_BAD_ARG_ERROR("create", 2,
-			       "int|array(int)|multiset(int)");
+	  SIMPLE_ARG_TYPE_ERROR("create", 2,
+                                "int|array(int)|multiset(int)");
 	}
 	if (!a->size) {
-	  SIMPLE_BAD_ARG_ERROR("create", 2,
-			       "int|array(int)|multiset(int)");
+	  SIMPLE_ARG_TYPE_ERROR("create", 2,
+                                "int|array(int)|multiset(int)");
 	}
 	for (i=0; i < a->size; i++) {
 	  if (TYPEOF(a->item[i]) != T_INT) {
-	    SIMPLE_BAD_ARG_ERROR("create", 2,
-				 "int|array(int)|multiset(int)");
+	    SIMPLE_ARG_TYPE_ERROR("create", 2,
+                                  "int|array(int)|multiset(int)");
 	  }
 	}
 	THIS->split_set = (p_wchar2 *)xalloc(a->size * sizeof(p_wchar2));

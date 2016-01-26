@@ -1,3 +1,9 @@
+/* -*- c -*-
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+*/
+
 #include "global.h"
 #include "cyclic.h"
 #include "pike_memory.h"
@@ -779,7 +785,7 @@ PIKEFUN mixed decode_from(object buffer, void|function|object handler) {
     const unsigned char *src;
     size_t len;
 
-    if (!io) SIMPLE_BAD_ARG_ERROR("decode_from", 1, "object(Stdio.Buffer)");
+    if (!io) SIMPLE_ARG_TYPE_ERROR("decode_from", 1, "object(Stdio.Buffer)");
 
     ctx.buffer = buffer;
     ctx.io = io;
@@ -812,7 +818,7 @@ PIKEFUN void encode_to(object to, mixed value, function|object handler) {
     struct mpack_encode_context ctx;
     Buffer *io = io_buffer_from_object(to);
 
-    if (!io) SIMPLE_BAD_ARG_ERROR("encode_to", 1, "object(Stdio.Buffer)");
+    if (!io) SIMPLE_ARG_TYPE_ERROR("encode_to", 1, "object(Stdio.Buffer)");
 
     ctx.buffer = to;
     ctx.io = io;

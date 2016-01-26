@@ -166,7 +166,7 @@ static void memory_create(INT32 args)
 	      TYPEOF(sp[-args+1]) == T_INT && args==2 )
 	memory_shm( args );
       else
-	 SIMPLE_BAD_ARG_ERROR("create",1,"int|string");
+	 SIMPLE_ARG_TYPE_ERROR("create",1,"int|string");
    }
    else
    {
@@ -211,9 +211,9 @@ static void memory_shm( INT32 args )
   if( args < 2 )
     SIMPLE_TOO_FEW_ARGS_ERROR("shmat",2);
   if (TYPEOF(Pike_sp[1-args]) != T_INT )
-    SIMPLE_BAD_ARG_ERROR("shmat",1,"int(0..)");
+    SIMPLE_ARG_TYPE_ERROR("shmat",1,"int(0..)");
   if (TYPEOF(Pike_sp[-args]) != T_INT )
-    SIMPLE_BAD_ARG_ERROR("shmat",0,"int(0..)");
+    SIMPLE_ARG_TYPE_ERROR("shmat",0,"int(0..)");
 
   if( (id = shmget( Pike_sp[0-args].u.integer,
 		    Pike_sp[1-args].u.integer,
@@ -289,7 +289,7 @@ static void memory__mmap(INT32 args,int complain,int private)
    if (args>=2) {
       if (TYPEOF(sp[1-args]) != T_INT ||
 	  sp[1-args].u.integer<0)
-	 SIMPLE_BAD_ARG_ERROR("mmap",2,"int(0..)");
+	 SIMPLE_ARG_TYPE_ERROR("mmap",2,"int(0..)");
       else
 	 offset=sp[1-args].u.integer;
    }
@@ -297,7 +297,7 @@ static void memory__mmap(INT32 args,int complain,int private)
    if (args>=3) {
       if (TYPEOF(sp[2-args]) != T_INT ||
 	  sp[2-args].u.integer<0)
-	 SIMPLE_BAD_ARG_ERROR("mmap",3,"int(0..)");
+	 SIMPLE_ARG_TYPE_ERROR("mmap",3,"int(0..)");
       else
 	 size=sp[2-args].u.integer;
    }
@@ -309,18 +309,18 @@ static void memory__mmap(INT32 args,int complain,int private)
       push_static_text("query_fd");
       f_index(2);
       if (TYPEOF(sp[-1]) == T_INT)
-	 SIMPLE_BAD_ARG_ERROR("mmap",1,
-			      "(string or) Stdio.File (missing query_fd)");
+	 SIMPLE_ARG_TYPE_ERROR("mmap",1,
+                               "(string or) Stdio.File (missing query_fd)");
       f_call_function(1);
       if (TYPEOF(sp[-1]) != T_INT)
-	 SIMPLE_BAD_ARG_ERROR("mmap",1,
-			      "(string or) Stdio.File (weird query_fd)");
+	 SIMPLE_ARG_TYPE_ERROR("mmap",1,
+                               "(string or) Stdio.File (weird query_fd)");
       fd=sp[-1].u.integer;
       sp--;
       if (fd<0) {
 	 if (complain)
-	    SIMPLE_BAD_ARG_ERROR("mmap",1,
-				 "(string or) Stdio.File (file not open)");
+	    SIMPLE_ARG_TYPE_ERROR("mmap",1,
+                                  "(string or) Stdio.File (file not open)");
 	 else
 	    RETURN(0);
       }
@@ -448,7 +448,7 @@ static void memory_allocate(INT32 args)
 
    /* just to be sure */
    if (size<0)
-      SIMPLE_BAD_ARG_ERROR("allocate",1,"int(0..)");
+      SIMPLE_ARG_TYPE_ERROR("allocate",1,"int(0..)");
 
    if (size>1024*1024) /* threshold */
    {

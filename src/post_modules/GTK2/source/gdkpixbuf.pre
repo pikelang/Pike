@@ -417,15 +417,15 @@ int put_pixel(int x, int y, int r, int g, int b)
     w=gdk_pixbuf_get_width(GDK_PIXBUF(THIS->obj));
     h=gdk_pixbuf_get_height(GDK_PIXBUF(THIS->obj));
     if ((x < 0) || (x >= w))
-      SIMPLE_BAD_ARG_ERROR("put_pixel", 1, "int(0..)");
+      SIMPLE_ARG_TYPE_ERROR("put_pixel", 1, "int(0..)");
     if ((y < 0) || (y >= h))
-      SIMPLE_BAD_ARG_ERROR("put_pixel", 2, "int(0..)");
+      SIMPLE_ARG_TYPE_ERROR("put_pixel", 2, "int(0..)");
     if (r & ~255)
-      SIMPLE_BAD_ARG_ERROR("put_pixel", 3, "int(0..255)");
+      SIMPLE_ARG_TYPE_ERROR("put_pixel", 3, "int(0..255)");
     if (g & ~255)
-      SIMPLE_BAD_ARG_ERROR("put_pixel", 4, "int(0..255)");
+      SIMPLE_ARG_TYPE_ERROR("put_pixel", 4, "int(0..255)");
     if (b & ~255)
-      SIMPLE_BAD_ARG_ERROR("put_pixel", 5, "int(0..255)");
+      SIMPLE_ARG_TYPE_ERROR("put_pixel", 5, "int(0..255)");
     rowstride=gdk_pixbuf_get_rowstride(GDK_PIXBUF(THIS->obj));
     p=gdk_pixbuf_get_pixels(GDK_PIXBUF(THIS->obj));
     p1=p+y*rowstride+x*nchan;
@@ -450,11 +450,11 @@ int set_alpha(int x, int y, int setting)
     w=gdk_pixbuf_get_width(GDK_PIXBUF(THIS->obj));
     h=gdk_pixbuf_get_height(GDK_PIXBUF(THIS->obj));
     if ((x < 0) || (x >= w))
-      SIMPLE_BAD_ARG_ERROR("set_alpha", 1, "int(0..)");
+      SIMPLE_ARG_TYPE_ERROR("set_alpha", 1, "int(0..)");
     if ((y < 0) || (y >= h))
-      SIMPLE_BAD_ARG_ERROR("set_alpha", 2, "int(0..)");
+      SIMPLE_ARG_TYPE_ERROR("set_alpha", 2, "int(0..)");
     if (a & ~255)
-      SIMPLE_BAD_ARG_ERROR("set_alpha", 3, "int(0..255)");
+      SIMPLE_ARG_TYPE_ERROR("set_alpha", 3, "int(0..255)");
       
     rowstride=gdk_pixbuf_get_rowstride(GDK_PIXBUF(THIS->obj));
     p=gdk_pixbuf_get_pixels(GDK_PIXBUF(THIS->obj));

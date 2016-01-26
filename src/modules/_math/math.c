@@ -20,7 +20,7 @@
 #define TRIM_STACK(X) if(args>(X)) pop_n_elems(args-(X));
 #define ARG_CHECK(X) if(args<1) SIMPLE_TOO_FEW_ARGS_ERROR(X, 1); \
   if(TYPEOF(sp[-args]) == T_INT) SET_SVAL(sp[-1],T_FLOAT,0,float_number,(FLOAT_TYPE)(sp[-1].u.integer)); \
-  else if(TYPEOF(sp[-args]) != T_FLOAT) SIMPLE_BAD_ARG_ERROR(X, 1, "float"); \
+  else if(TYPEOF(sp[-args]) != T_FLOAT) SIMPLE_ARG_TYPE_ERROR(X, 1, "float"); \
   TRIM_STACK(1)
 
 #ifndef M_PI
@@ -185,9 +185,9 @@ void f_atan2(INT32 args)
     SIMPLE_TOO_FEW_ARGS_ERROR("atan2", 1);
   TRIM_STACK(2);
   if(TYPEOF(sp[-2]) != T_FLOAT)
-    SIMPLE_BAD_ARG_ERROR("atan2", 1, "float");
+    SIMPLE_ARG_TYPE_ERROR("atan2", 1, "float");
   if(TYPEOF(sp[-1]) != T_FLOAT)
-    SIMPLE_BAD_ARG_ERROR("atan2", 2, "float");
+    SIMPLE_ARG_TYPE_ERROR("atan2", 2, "float");
   sp[-2].u.float_number= FL(atan2,sp[-2].u.float_number,sp[-1].u.float_number);
   pop_stack();
 }
@@ -338,7 +338,7 @@ void f_sqrt(INT32 args)
   }
   else
   {
-    SIMPLE_BAD_ARG_ERROR("sqrt", 1, "int|float|object");
+    SIMPLE_ARG_TYPE_ERROR("sqrt", 1, "int|float|object");
   }
 }
 
