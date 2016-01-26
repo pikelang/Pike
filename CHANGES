@@ -35,15 +35,15 @@ o typeof(X) can now be used as a type.
 o Random rewrite
 
   The random functions have been rewritten to ensure security by
-  default. random_string() and random() now gets its data directly
-  from the operating system random generator, e.g. /dev/urandom on
-  unix. This is about half the speed compared with the random_string
-  function in Pike 8.0, but is now as secure as the system random
-  generator.
+  default. random_string() and random() now get their data directly
+  from the operating system random generator, i.e. /dev/urandom on
+  most unixen. This is about half the speed compared with the
+  random_string function in Pike 8.0, but is now as secure as the
+  system random generator.
 
   For consumers of random data that have additional requirements,
   different random generators are exposed in the new module
-  Random. The module have the following generators.
+  Random. The module has the following generators:
 
   - Random.Interface
 
@@ -64,24 +64,24 @@ o Random rewrite
 
   - Random.Deterministic
 
-    This generator cretes the same sequence of random numbers for a
+    This generator creates the same sequence of random numbers for a
     given seed, with good pseudo random properties.
 
   - Random.Hardware
 
-    This generator accesses he hardware random generator, when
+    This generator accesses the hardware random generator, when
     available.
 
   - Random.Fast
 
     This generator takes entropy from the Random.System, but feeds
-    that into a cryptographic pseudo random number generator to be
+    it into a cryptographic pseudo random number generator to be
     able to output data fast. This is not the default random number
-    generator to avoid loading crypto code all the times.
+    generator to avoid loading crypto code all the time.
 
-  Comparing the different generators with eachother gives the
-  following approximate speeds on a Linux system with hardware random
-  support.
+  Comparing the different generators with each other gives the
+  following approximate speeds on a Linux system with hardware
+  random support:
 
     Random.System           1.0
     Pike 8.0 random_string  0.45
