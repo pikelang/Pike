@@ -5211,41 +5211,6 @@ static void file_query_address(INT32 args)
   }
 }
 
-/*! @decl Stdio.File `<<(string data)
- *! @decl Stdio.File `<<(mixed data)
- *!
- *! Write some data to a file.
- *!
- *! If @[data] is not a string, it is casted to string, and then
- *! written to the file.
- *!
- *! @note
- *!   Throws an error if not all data could be written.
- *!
- *! @seealso
- *!   @[write()]
- */
-static void file_lsh(INT32 args)
-{
-  ptrdiff_t len;
-  if(args != 1)
-    SIMPLE_WRONG_NUM_ARGS_ERROR("`<<", 1);
-
-  if(TYPEOF(Pike_sp[-1]) != PIKE_T_STRING)
-  {
-    ref_push_type_value(string_type_string);
-    stack_swap();
-    f_cast();
-  }
-
-  len=Pike_sp[-1].u.string->len;
-  file_write(1);
-  if(len != Pike_sp[-1].u.integer) Pike_error("Stdio.File << failed.\n");
-  pop_stack();
-
-  push_object(this_object());
-}
-
 /*! @decl void create(string filename)
  *! @decl void create(string filename, string mode)
  *! @decl void create(string filename, string mode, int access)
