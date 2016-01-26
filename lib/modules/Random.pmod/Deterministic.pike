@@ -13,5 +13,5 @@ inherit Nettle.Fortuna;
 //! 256 bits, but all seed sizes are allowed.
 protected void create(string(8bit)|int seed)
 {
-  ::reseed((string(8bit))seed);
+  reseed((string(8bit))seed);
 }
