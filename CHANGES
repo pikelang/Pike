@@ -32,6 +32,64 @@ o typeof(X) can now be used as a type.
   typeof, when used like this, behaves very much like the C++
   decltype() expression.
 
+o Random rewrite
+
+  The random functions have been rewritten to ensure security by
+  default. random_string() and random() now gets its data directly
+  from the operating system random generator, e.g. /dev/urandom on
+  unix. This is about half the speed compared with the random_string
+  function in Pike 8.0, but is now as secure as the system random
+  generator.
+
+  For consumers of random data that have additional requirements,
+  different random generators are exposed in the new module
+  Random. The module have the following generators.
+
+  - Random.Interface
+
+    This is not actually a generator, but an interface class that is
+    inherited into all the other generators. It contains code that can
+    turn the output from the random_string method into random numbers
+    with different limits without introducing bias. It also contains
+    code for all the different variants of random() on different
+    types. This is currently not possible to implement in Pike code,
+    as the typing is too complicated and it is not possible to access
+    private/protected _random methods in objects.
+
+  - Random.System
+
+    This generator maps directly on top of the system random
+    generator. This is the default generator used for random() and
+    random_string().
+
+  - Random.Deterministic
+
+    This generator cretes the same sequence of random numbers for a
+    given seed, with good pseudo random properties.
+
+  - Random.Hardware
+
+    This generator accesses he hardware random generator, when
+    available.
+
+  - Random.Fast
+
+    This generator takes entropy from the Random.System, but feeds
+    that into a cryptographic pseudo random number generator to be
+    able to output data fast. This is not the default random number
+    generator to avoid loading crypto code all the times.
+
+  Comparing the different generators with eachother gives the
+  following approximate speeds on a Linux system with hardware random
+  support.
+
+    Random.System           1.0
+    Pike 8.0 random_string  0.45
+    Random.Hardware         0.25
+    Random.Fast             0.20
+    Random.Deterministic    0.20
+
+
 Incompatible changes
 --------------------
 
