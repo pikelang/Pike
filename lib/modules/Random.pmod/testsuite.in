@@ -135,4 +135,12 @@ cond_resolv( Random.Hardware, [[
   ]], 1)
 ]])
 
+test_any([[
+  int sz;
+  Random.Interface r = Random.Fast();
+  for(int i; i<128; i++)
+    sz += sizeof(r->random_string(9001));
+  return sz;
+]], 1152128)
+
 END_MARKER
