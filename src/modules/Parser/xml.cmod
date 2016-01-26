@@ -934,11 +934,8 @@ PIKECLASS Simple
    *!
    *! @[version] can also be zero to enable all error checks.
    */
-  PIKEFUN void compat_allow_errors(string|void version)
+  PIKEFUN void compat_allow_errors(void|string version)
   {
-    if (args < 1)
-      SIMPLE_TOO_FEW_ARGS_ERROR ("compat_allow_errors", 1);
-
     if (!version) {
       THIS->flags &= ~(COMPAT_ALLOW_7_2_ERRORS|COMPAT_ALLOW_7_6_ERRORS);
     } else if (version == MK_STRING("7.2")) {

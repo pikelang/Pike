@@ -1992,7 +1992,7 @@ void f_thread_create(INT32 args)
   int tmp;
 
   if (args < 1) {
-    SIMPLE_TOO_FEW_ARGS_ERROR("create", 1);
+    SIMPLE_WRONG_NUM_ARGS_ERROR("create", 1);
   }
   if (!callablep(Pike_sp - args)) {
     SIMPLE_ARG_TYPE_ERROR("create", 1, "function");
@@ -2075,7 +2075,7 @@ void f_thread_set_concurrency(INT32 args)
   if(args)
     c=Pike_sp[-args].u.integer;
   else
-    SIMPLE_TOO_FEW_ARGS_ERROR("thread_set_concurrency", 1);
+    SIMPLE_WRONG_NUM_ARGS_ERROR("thread_set_concurrency", 1);
   pop_n_elems(args);
   num_lwps=c;
   th_setconcurrency(c);
@@ -3166,7 +3166,7 @@ void f_thread_local_set(INT32 args)
   if(args>1)
     pop_n_elems(args-1);
   else if(args<1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("Thread.Local.set", 1);
+    SIMPLE_WRONG_NUM_ARGS_ERROR("Thread.Local.set", 1);
 
   if(Pike_interpreter.thread_state == NULL)
     Pike_error("Trying to set Thread.Local without thread!\n");

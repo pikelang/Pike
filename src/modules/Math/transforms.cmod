@@ -74,8 +74,8 @@ PIKECLASS FFT
     {
       int i, j;
 
-      if (args<1)
-	SIMPLE_TOO_FEW_ARGS_ERROR("rFFT", 1);
+      if (args!=1)
+        SIMPLE_WRONG_NUM_ARGS_ERROR("rFFT", 1);
 
       if (TYPEOF(Pike_sp[-args]) == PIKE_T_ARRAY)
 	{

@@ -499,7 +499,7 @@ static void _stat_index(INT_TYPE code)
 static void stat_index(INT32 args)
 {
   if( !args )
-    SIMPLE_TOO_FEW_ARGS_ERROR("Stat `[]",1);
+    SIMPLE_WRONG_NUM_ARGS_ERROR("Stat `[]",1);
   else if( args == 1 )
   {
     if (TYPEOF(sp[-1]) == T_INT)
@@ -736,7 +736,7 @@ static void stat_index_set (INT32 args)
   INT64 int_val = 0;
 
   if (args < 2)
-    SIMPLE_TOO_FEW_ARGS_ERROR ("Stat `[]=", 2);
+    SIMPLE_WRONG_NUM_ARGS_ERROR ("Stat `[]=", 2);
 
   if (args > 2) {
     pop_n_elems (args - 2);
@@ -797,8 +797,8 @@ static void stat_cast(INT32 args)
 {
   struct pike_string *type;
 
-  if (!args)
-    SIMPLE_TOO_FEW_ARGS_ERROR("Stat cast",1);
+  if (args!=1)
+    SIMPLE_WRONG_NUM_ARGS_ERROR("Stat cast",1);
   if (TYPEOF(sp[-args]) != T_STRING)
     SIMPLE_ARG_TYPE_ERROR("cast",1,"string");
 
@@ -827,7 +827,7 @@ static void stat__sprintf(INT32 args)
    int x;
 
    if (args<1)
-      SIMPLE_TOO_FEW_ARGS_ERROR("_sprintf",2);
+      SIMPLE_WRONG_NUM_ARGS_ERROR("_sprintf",2);
 
    if (TYPEOF(sp[-args]) != T_INT)
       SIMPLE_ARG_TYPE_ERROR("_sprintf",0,"integer");

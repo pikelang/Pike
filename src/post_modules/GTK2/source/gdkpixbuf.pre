@@ -86,8 +86,6 @@ void create(string|mapping options)
     int bits = 8, width = -2, height = -2, alpha = 0;
     
     get_all_args("create",args,"%m",&m);
-    if (m==NULL)
-      SIMPLE_TOO_FEW_ARGS_ERROR("create",1);
     sv=low_mapping_string_lookup(m,_STR("file"));
     if (sv && TYPEOF(*sv) == PIKE_T_STRING) {
       const char *file;

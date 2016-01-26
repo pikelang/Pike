@@ -1054,7 +1054,7 @@ static void image_layer_set_mode(INT32 args)
 {
    int i;
    if (args!=1)
-      SIMPLE_TOO_FEW_ARGS_ERROR("set_mode",1);
+      SIMPLE_WRONG_NUM_ARGS_ERROR("set_mode",1);
    if (TYPEOF(Pike_sp[-args]) != T_STRING)
       SIMPLE_ARG_TYPE_ERROR("set_mode",1,"string");
 
@@ -1127,7 +1127,7 @@ static void image_layer_descriptions(INT32 args)
 static void image_layer_set_fill(INT32 args)
 {
    if (!args)
-      SIMPLE_TOO_FEW_ARGS_ERROR("set_fill",1);
+      SIMPLE_WRONG_NUM_ARGS_ERROR("set_fill",1);
 
    if (TYPEOF(Pike_sp[-args]) == T_INT && !Pike_sp[-args].u.integer)
       THIS->fill=black;
@@ -1418,7 +1418,7 @@ static void image_layer_cast(INT32 args)
   struct pike_string *type;
 
   if (!args)
-    SIMPLE_TOO_FEW_ARGS_ERROR("cast",1);
+    SIMPLE_WRONG_NUM_ARGS_ERROR("cast",1);
 
   type = Pike_sp[-args].u.string;
   pop_n_elems(args); /* type have at least one more reference. */
@@ -2889,7 +2889,7 @@ void image_lay(INT32 args)
    ONERROR err;
 
    if (!args)
-      SIMPLE_TOO_FEW_ARGS_ERROR("lay",1);
+      SIMPLE_WRONG_NUM_ARGS_ERROR("lay",1);
 
    if (TYPEOF(Pike_sp[-args]) != T_ARRAY)
       SIMPLE_ARG_TYPE_ERROR("lay",1,"array(Image.Layer|mapping)");
@@ -3232,7 +3232,7 @@ static void image_layer__sprintf( INT32 args )
 {
   int x;
   if (args != 2 )
-    SIMPLE_TOO_FEW_ARGS_ERROR("_sprintf",2);
+    SIMPLE_WRONG_NUM_ARGS_ERROR("_sprintf",2);
   if (TYPEOF(Pike_sp[-args]) != T_INT)
     SIMPLE_ARG_TYPE_ERROR("_sprintf",0,"int");
   if (TYPEOF(Pike_sp[1-args]) != T_MAPPING)

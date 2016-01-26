@@ -209,7 +209,7 @@ static void memory_shm( INT32 args )
   MEMORY_FREE(THIS);
 
   if( args < 2 )
-    SIMPLE_TOO_FEW_ARGS_ERROR("shmat",2);
+    SIMPLE_WRONG_NUM_ARGS_ERROR("shmat",2);
   if (TYPEOF(Pike_sp[1-args]) != T_INT )
     SIMPLE_ARG_TYPE_ERROR("shmat",1,"int(0..)");
   if (TYPEOF(Pike_sp[-args]) != T_INT )
@@ -284,7 +284,7 @@ static void memory__mmap(INT32 args,int complain,int private)
    MEMORY_FREE(THIS); /* we expect this even on error */
 
    if (args<1)
-      SIMPLE_TOO_FEW_ARGS_ERROR("mmap",1);
+      SIMPLE_WRONG_NUM_ARGS_ERROR("mmap",1);
 
    if (args>=2) {
       if (TYPEOF(sp[1-args]) != T_INT ||

@@ -2714,7 +2714,7 @@ static void f_magic_index(INT32 args)
       s = sp[-args].u.string;
       break;
     case 0:
-      SIMPLE_TOO_FEW_ARGS_ERROR ("::`->", 1);
+      SIMPLE_WRONG_NUM_ARGS_ERROR ("::`->", 1);
   }
 
   if(!o && !(o = MAGIC_THIS->o))
@@ -2830,7 +2830,7 @@ static void f_magic_set_index(INT32 args)
       break;
     case 1:
     case 0:
-      SIMPLE_TOO_FEW_ARGS_ERROR ("::`->=", 2);
+      SIMPLE_WRONG_NUM_ARGS_ERROR ("::`->=", 2);
   }
 
   if(!o && !(o = MAGIC_THIS->o))

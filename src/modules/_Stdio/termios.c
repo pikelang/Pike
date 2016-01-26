@@ -254,7 +254,7 @@ void file_tcsetattr(INT32 args)
     Pike_error("File not open.\n");
 
   if (!args)
-    SIMPLE_TOO_FEW_ARGS_ERROR("tcsetattr", 1);
+    SIMPLE_WRONG_NUM_ARGS_ERROR("tcsetattr", 1);
 
   if (args>1)
   {

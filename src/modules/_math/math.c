@@ -18,10 +18,9 @@
 
 #define sp Pike_sp
 #define TRIM_STACK(X) if(args>(X)) pop_n_elems(args-(X));
-#define ARG_CHECK(X) if(args<1) SIMPLE_TOO_FEW_ARGS_ERROR(X, 1); \
+#define ARG_CHECK(X) if(args!=1) SIMPLE_WRONG_NUM_ARGS_ERROR(X, 1); \
   if(TYPEOF(sp[-args]) == T_INT) SET_SVAL(sp[-1],T_FLOAT,0,float_number,(FLOAT_TYPE)(sp[-1].u.integer)); \
-  else if(TYPEOF(sp[-args]) != T_FLOAT) SIMPLE_ARG_TYPE_ERROR(X, 1, "float"); \
-  TRIM_STACK(1)
+  else if(TYPEOF(sp[-args]) != T_FLOAT) SIMPLE_ARG_TYPE_ERROR(X, 1, "float");
 
 #ifndef M_PI
 #define M_PI 3.1415926535897932384626433832795080
@@ -181,9 +180,9 @@ void f_atan(INT32 args)
  */
 void f_atan2(INT32 args)
 {
-  if(args<2)
-    SIMPLE_TOO_FEW_ARGS_ERROR("atan2", 1);
-  TRIM_STACK(2);
+  if(args!=2)
+    SIMPLE_WRONG_NUM_ARGS_ERROR("atan2", 2);
+
   if(TYPEOF(sp[-2]) != T_FLOAT)
     SIMPLE_ARG_TYPE_ERROR("atan2", 1, "float");
   if(TYPEOF(sp[-1]) != T_FLOAT)
@@ -291,9 +290,8 @@ void f_atanh(INT32 args)
  */
 void f_sqrt(INT32 args)
 {
-  if(args<1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("sqrt", 1);
-  TRIM_STACK(1);
+  if(args!=1)
+    SIMPLE_WRONG_NUM_ARGS_ERROR("sqrt", 1);
 
   if(TYPEOF(sp[-1]) == T_INT)
   {
@@ -386,9 +384,8 @@ void f_exp(INT32 args)
  */
 void f_pow(INT32 args)
 {
-  if(args < 2)
-    SIMPLE_TOO_FEW_ARGS_ERROR("pow", 2);
-  TRIM_STACK(2);
+  if(args != 2)
+    SIMPLE_WRONG_NUM_ARGS_ERROR("pow", 2);
 
   switch(TYPEOF(Pike_sp[-2]) * 16 + TYPEOF(Pike_sp[-1]))
   {

@@ -44,7 +44,7 @@ mixed cast(string type)
   GdkRectangle *r=(GdkRectangle *)THIS->obj;
 
   if (args!=1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("cast",1);
+    SIMPLE_WRONG_NUM_ARGS_ERROR("cast",1);
 
   type = Pike_sp[-args].u.string;
   pgtk2_pop_n_elems(args);

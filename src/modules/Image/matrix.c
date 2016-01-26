@@ -905,7 +905,7 @@ void image_skewx(INT32 args)
    struct object *o;
 
    if (args<1)
-      SIMPLE_TOO_FEW_ARGS_ERROR("skewx",1);
+      SIMPLE_WRONG_NUM_ARGS_ERROR("skewx",1);
    else if (TYPEOF(sp[-args]) == T_FLOAT)
       diff = THIS->ysize*sp[-args].u.float_number;
    else if (TYPEOF(sp[-args])== T_INT)
@@ -969,7 +969,7 @@ void image_skewy(INT32 args)
    struct object *o;
 
    if (args<1)
-      SIMPLE_TOO_FEW_ARGS_ERROR("skewy",1);
+      SIMPLE_WRONG_NUM_ARGS_ERROR("skewy",1);
    else if (TYPEOF(sp[-args]) == T_FLOAT)
       diff = THIS->xsize*sp[-args].u.float_number;
    else if (TYPEOF(sp[-args]) == T_INT)
@@ -997,7 +997,7 @@ void image_skewx_expand(INT32 args)
    struct object *o;
 
    if (args<1)
-      SIMPLE_TOO_FEW_ARGS_ERROR("skewx_expand",1);
+      SIMPLE_WRONG_NUM_ARGS_ERROR("skewx_expand",1);
    else if (TYPEOF(sp[-args]) == T_FLOAT)
       diff = THIS->ysize*sp[-args].u.float_number;
    else if (TYPEOF(sp[-args]) == T_INT)
@@ -1025,7 +1025,7 @@ void image_skewy_expand(INT32 args)
    struct object *o;
 
    if (args<1)
-      SIMPLE_TOO_FEW_ARGS_ERROR("skewy_expand",1);
+      SIMPLE_WRONG_NUM_ARGS_ERROR("skewy_expand",1);
    else if (TYPEOF(sp[-args]) == T_FLOAT)
       diff = THIS->xsize*sp[-args].u.float_number;
    else if (TYPEOF(sp[-args]) == T_INT)
@@ -1056,7 +1056,7 @@ void img_rotate(INT32 args,int xpn)
    struct image *dest,d0,dest2;
 
    if (args<1)
-      SIMPLE_TOO_FEW_ARGS_ERROR("rotate",1);
+      SIMPLE_WRONG_NUM_ARGS_ERROR("rotate",1);
    else if (TYPEOF(sp[-args]) == T_FLOAT)
       angle = sp[-args].u.float_number;
    else if (TYPEOF(sp[-args]) == T_INT)

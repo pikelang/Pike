@@ -401,7 +401,7 @@ void f_file_stat(INT32 args)
   struct pike_string *str;
 
   if(args<1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("file_stat", 1);
+    SIMPLE_WRONG_NUM_ARGS_ERROR("file_stat", 1);
   if((TYPEOF(sp[-args]) != T_STRING) || sp[-args].u.string->size_shift)
     SIMPLE_ARG_TYPE_ERROR("file_stat", 1, "string(0..255)");
 
@@ -453,8 +453,8 @@ void f_file_truncate(INT32 args)
   struct pike_string *str;
   int res;
 
-  if(args < 2)
-    SIMPLE_TOO_FEW_ARGS_ERROR("file_truncate", 2);
+  if(args != 2)
+    SIMPLE_WRONG_NUM_ARGS_ERROR("file_truncate", 2);
   if(TYPEOF(sp[-args]) != T_STRING)
     SIMPLE_ARG_TYPE_ERROR("file_truncate", 1, "string");
 
@@ -683,8 +683,8 @@ void f_filesystem_stat(INT32 args)
   int i;
   struct pike_string *str;
 
-  if(args<1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("filesystem_stat", 1);
+  if(args!=1)
+    SIMPLE_WRONG_NUM_ARGS_ERROR("filesystem_stat", 1);
   if(TYPEOF(sp[-args]) != T_STRING)
     SIMPLE_ARG_TYPE_ERROR("filesystem_stat", 1, "string");
 
@@ -812,8 +812,8 @@ void f_rm(INT32 args)
 
   destruct_objects_to_destruct();
 
-  if(!args)
-    SIMPLE_TOO_FEW_ARGS_ERROR("rm", 1);
+  if(args!=1)
+    SIMPLE_WRONG_NUM_ARGS_ERROR("rm", 1);
 
   if(TYPEOF(sp[-args]) != T_STRING)
     SIMPLE_ARG_TYPE_ERROR("rm", 1, "string");
@@ -896,7 +896,7 @@ void f_mkdir(INT32 args)
   char *s, *s_dup;
 
   if(!args)
-    SIMPLE_TOO_FEW_ARGS_ERROR("mkdir", 1);
+    SIMPLE_WRONG_NUM_ARGS_ERROR("mkdir", 1);
 
   if(TYPEOF(sp[-args]) != T_STRING)
     SIMPLE_ARG_TYPE_ERROR("mkdir", 1, "string");
@@ -1389,8 +1389,8 @@ void f_cd(INT32 args)
   INT32 i;
   struct pike_string *str;
 
-  if(!args)
-    SIMPLE_TOO_FEW_ARGS_ERROR("cd", 1);
+  if(args!=1)
+    SIMPLE_WRONG_NUM_ARGS_ERROR("cd", 1);
 
   if(TYPEOF(sp[-args]) != T_STRING)
     SIMPLE_ARG_TYPE_ERROR("cd", 1, "string");
@@ -1491,7 +1491,7 @@ void f_exece(INT32 args)
   save_sp=sp-args;
 
   if(args < 2)
-    SIMPLE_TOO_FEW_ARGS_ERROR("exece", 2);
+    SIMPLE_WRONG_NUM_ARGS_ERROR("exece", 2);
 
   e=0;
   en=0;
@@ -1619,8 +1619,8 @@ void f_mv(INT32 args)
   PIKE_STAT_T st;
 #endif
 
-  if(args<2)
-    SIMPLE_TOO_FEW_ARGS_ERROR("mv", 2);
+  if(args!=2)
+    SIMPLE_WRONG_NUM_ARGS_ERROR("mv", 2);
 
   if(TYPEOF(sp[-args]) != T_STRING)
     SIMPLE_ARG_TYPE_ERROR("mv", 1, "string");
@@ -1825,8 +1825,8 @@ void f_strerror(INT32 args)
   char *s;
   int err;
 
-  if(!args)
-    SIMPLE_TOO_FEW_ARGS_ERROR("strerror", 1);
+  if(args!=1)
+    SIMPLE_WRONG_NUM_ARGS_ERROR("strerror", 1);
   if(TYPEOF(sp[-args]) != T_INT)
     SIMPLE_ARG_TYPE_ERROR("strerror", 1, "int");
 

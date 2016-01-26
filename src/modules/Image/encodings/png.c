@@ -220,7 +220,7 @@ static void image_png___decode(INT32 args)
    ONERROR uwp;
 
    if (args<1)
-     SIMPLE_TOO_FEW_ARGS_ERROR("__decode", 1);
+     SIMPLE_WRONG_NUM_ARGS_ERROR("__decode", 1);
    if (TYPEOF(sp[-args]) != T_STRING)
      SIMPLE_ARG_TYPE_ERROR("__decode", 1, "string");
 
@@ -1216,7 +1216,7 @@ static void img_png_decode(INT32 args, int mode)
    ONERROR err;
 
    if (args<1)
-     SIMPLE_TOO_FEW_ARGS_ERROR("_decode", 1);
+     SIMPLE_WRONG_NUM_ARGS_ERROR("_decode", 1);
 
    m=allocate_mapping(10);
    push_mapping(m);
@@ -1620,7 +1620,7 @@ static void image_png_encode(INT32 args)
    char buf[20];
 
    if (!args)
-     SIMPLE_TOO_FEW_ARGS_ERROR("encode", 1);
+     SIMPLE_WRONG_NUM_ARGS_ERROR("encode", 1);
 
    if (TYPEOF(sp[-args]) != T_OBJECT ||
        !(img=get_storage(sp[-args].u.object,image_program)))
@@ -1884,7 +1884,7 @@ static void image_png_decode_header(INT32 args)
 static void image_png_decode(INT32 args)
 {
    if (!args)
-     SIMPLE_TOO_FEW_ARGS_ERROR("decode", 1);
+     SIMPLE_WRONG_NUM_ARGS_ERROR("decode", 1);
 
    img_png_decode(args, MODE_IMAGE_ONLY);
    push_static_text("image");
@@ -1904,7 +1904,7 @@ static void image_png_decode_alpha(INT32 args)
 {
    struct svalue s;
    if (!args)
-     SIMPLE_TOO_FEW_ARGS_ERROR("decode_alpha", 1);
+     SIMPLE_WRONG_NUM_ARGS_ERROR("decode_alpha", 1);
 
    image_png__decode(args);
    assign_svalue_no_free(&s,sp-1);

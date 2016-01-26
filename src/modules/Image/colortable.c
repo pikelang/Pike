@@ -2739,7 +2739,7 @@ void image_colortable_cast(INT32 args)
   struct pike_string *type;
 
   if (!args)
-    SIMPLE_TOO_FEW_ARGS_ERROR("Image.Colortable->cast",1);
+    SIMPLE_WRONG_NUM_ARGS_ERROR("Image.Colortable->cast",1);
 
   type = Pike_sp[-args].u.string;
   pop_n_elems(args); /* type have at least one more reference. */
@@ -3515,7 +3515,7 @@ void image_colortable_map(INT32 args)
    struct object *o;
 
    if (args<1)
-      SIMPLE_TOO_FEW_ARGS_ERROR("map",1);
+      SIMPLE_WRONG_NUM_ARGS_ERROR("map",1);
 
    if (TYPEOF(sp[-args]) == T_STRING)
    {
@@ -3623,7 +3623,7 @@ void image_colortable_index_32bit(INT32 args)
    struct pike_string *ps;
 
    if (args<1)
-      SIMPLE_TOO_FEW_ARGS_ERROR("index",1);
+      SIMPLE_WRONG_NUM_ARGS_ERROR("index",1);
    if (TYPEOF(sp[-args]) != T_OBJECT ||
        ! (src=get_storage(sp[-args].u.object,image_program)))
       SIMPLE_ARG_TYPE_ERROR("index",1,"Image.Image");
@@ -3675,7 +3675,7 @@ void image_colortable_index_32bit(INT32 args)
 void image_colortable_spacefactors(INT32 args)
 {
    if (args<3)
-      SIMPLE_TOO_FEW_ARGS_ERROR("spacefactors",1);
+      SIMPLE_WRONG_NUM_ARGS_ERROR("spacefactors",1);
 
    if (TYPEOF(sp[0-args]) != T_INT ||
        TYPEOF(sp[1-args]) != T_INT ||
@@ -4428,7 +4428,7 @@ static void image_colortable__sprintf( INT32 args )
 {
   int x;
   if (args != 2 )
-    SIMPLE_TOO_FEW_ARGS_ERROR("_sprintf",2);
+    SIMPLE_WRONG_NUM_ARGS_ERROR("_sprintf",2);
   if (TYPEOF(sp[-args]) != T_INT)
     SIMPLE_ARG_TYPE_ERROR("_sprintf",0,"int");
   if (TYPEOF(sp[1-args]) != T_MAPPING)

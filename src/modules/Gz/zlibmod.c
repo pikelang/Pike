@@ -964,7 +964,7 @@ static void gz_uncompress(INT32 args)
   int raw = 0;
 
   if(args<1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("uncompress", 1);
+    SIMPLE_WRONG_NUM_ARGS_ERROR("uncompress", 1);
   switch (TYPEOF(Pike_sp[-args]))
   {
     case PIKE_T_STRING:

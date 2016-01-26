@@ -185,7 +185,7 @@ void img_bmp_encode(INT32 args)
    int rle=0;
 
    if (!args)
-      SIMPLE_TOO_FEW_ARGS_ERROR("encode",1);
+      SIMPLE_WRONG_NUM_ARGS_ERROR("encode",1);
 
    if (TYPEOF(sp[-args]) != T_OBJECT ||
        !(img=get_storage(o=sp[-args].u.object,image_program)))
@@ -562,7 +562,7 @@ void i_img_bmp__decode(INT32 args,int header_only)
    int quality=50; /* for JPEG decoding */
 
    if (args<1)
-      SIMPLE_TOO_FEW_ARGS_ERROR("decode",1);
+      SIMPLE_WRONG_NUM_ARGS_ERROR("decode",1);
 
    if (TYPEOF(sp[-args]) != T_STRING || sp[-args].u.string->size_shift)
       SIMPLE_ARG_TYPE_ERROR("decode",1,"string(8bit)");

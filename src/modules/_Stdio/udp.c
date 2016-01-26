@@ -206,7 +206,7 @@ static void udp_bind(INT32 args)
 #endif /* !SOL_IP && HAVE_GETPROTOBYNAME */
 
   if(args < 1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("bind", 1);
+    SIMPLE_WRONG_NUM_ARGS_ERROR("bind", 1);
 
   if(TYPEOF(Pike_sp[-args]) != PIKE_T_INT &&
      (TYPEOF(Pike_sp[-args]) != PIKE_T_STRING ||
@@ -1044,10 +1044,8 @@ int low_exit_udp()
 static void udp_set_read_callback(INT32 args)
 {
   struct udp_storage *u = THIS;
-  if(args < 1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("set_read_callback", 1);
-  if(args > 1)
-    pop_n_elems(args-1);
+  if(args != 1)
+    SIMPLE_WRONG_NUM_ARGS_ERROR("set_read_callback", 1);
 
   assign_svalue(& u->read_callback, Pike_sp-1);
   if (UNSAFE_IS_ZERO (Pike_sp - 1)) {
@@ -1247,8 +1245,8 @@ static void udp_set_backend (INT32 args)
   struct udp_storage *u = THIS;
   struct Backend_struct *backend;
 
-  if (!args)
-    SIMPLE_TOO_FEW_ARGS_ERROR ("set_backend", 1);
+  if (args!=1)
+    SIMPLE_WRONG_NUM_ARGS_ERROR ("set_backend", 1);
   if (TYPEOF(Pike_sp[-args]) != PIKE_T_OBJECT)
     SIMPLE_ARG_TYPE_ERROR ("set_backend", 1, "Pike.Backend");
   backend = get_storage (Pike_sp[-args].u.object, Backend_program);

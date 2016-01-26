@@ -57,7 +57,7 @@ static void matrixX(_create)(INT32 args)
    FTYPE *m=NULL;
 
    if (!args)
-      SIMPLE_TOO_FEW_ARGS_ERROR(PNAME,1);
+      SIMPLE_WRONG_NUM_ARGS_ERROR(PNAME,1);
 
    if (THIS->m)
       bad_arg_error(PNAME, Pike_sp-args, args, 1, "", Pike_sp-args,
@@ -141,7 +141,7 @@ static void matrixX(_create)(INT32 args)
       FTYPE z = (FTYPE)0.0;
 
       if (args<2)
-	 SIMPLE_TOO_FEW_ARGS_ERROR(PNAME,2);
+	 SIMPLE_WRONG_NUM_ARGS_ERROR(PNAME,2);
       if (TYPEOF(Pike_sp[1-args]) != T_INT)
 	 SIMPLE_ARG_TYPE_ERROR(PNAME,2,"int");
 
@@ -481,7 +481,7 @@ static void matrixX(_add)(INT32 args)
    FTYPE *s1,*s2,*d;
 
    if (args<1)
-      SIMPLE_TOO_FEW_ARGS_ERROR("`+",1);
+      SIMPLE_WRONG_NUM_ARGS_ERROR("`+",1);
 
    if (args>1) /* one add per argument */
    {
@@ -634,7 +634,7 @@ static void matrixX(_mult)(INT32 args)
    FTYPE z;
 
    if (args<1)
-      SIMPLE_TOO_FEW_ARGS_ERROR("`*",1);
+      SIMPLE_WRONG_NUM_ARGS_ERROR("`*",1);
 
    if (args>1) /* one multiply per argument */
    {
@@ -709,10 +709,8 @@ static void matrixX(_cross)(INT32 args)
    struct matrixX(_storage) *dmx;
    FTYPE *a,*b,*d;
 
-   if (args<1)
-      SIMPLE_TOO_FEW_ARGS_ERROR("cross",1);
-
-   pop_n_elems(args-1); /* shouldn't be needed */
+   if (args!=1)
+      SIMPLE_WRONG_NUM_ARGS_ERROR("cross",1);
 
    if (TYPEOF(Pike_sp[-1]) != T_OBJECT ||
        !((mx=get_storage(Pike_sp[-1].u.object,XmatrixY(math_,_program)))))
@@ -743,10 +741,8 @@ static void matrixX(_dot)(INT32 args)
   FTYPE res;
   FTYPE *a,*b;
 
-  if (args<1)
-     SIMPLE_TOO_FEW_ARGS_ERROR("dot_product",1);
-
-  pop_n_elems(args-1);
+  if (args!=1)
+     SIMPLE_WRONG_NUM_ARGS_ERROR("dot_product",1);
 
   if (TYPEOF(Pike_sp[-1]) != T_OBJECT ||
       !((mx=get_storage(Pike_sp[-1].u.object,XmatrixY(math_,_program)))))
@@ -782,7 +778,7 @@ static void matrixX(_convolve)(INT32 args)
    FTYPE *bs,*as,*d;
 
    if (args<1)
-      SIMPLE_TOO_FEW_ARGS_ERROR("convolve",1);
+      SIMPLE_WRONG_NUM_ARGS_ERROR("convolve",1);
 
    if (TYPEOF(Pike_sp[-args]) != T_OBJECT ||
        !((bmx=get_storage(Pike_sp[-args].u.object,XmatrixY(math_,_program)))))

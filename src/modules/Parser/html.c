@@ -1068,7 +1068,7 @@ static void html_add_quote_tag(INT32 args)
 
   remove = UNSAFE_IS_ZERO (sp+1-args);
   if (!remove && args < 3)
-    SIMPLE_TOO_FEW_ARGS_ERROR ("add_quote_tag", 3);
+    SIMPLE_WRONG_NUM_ARGS_ERROR ("add_quote_tag", 3);
 
   if (THIS->mapqtag->refs>1)
   {
@@ -3952,7 +3952,7 @@ static void html_feed(INT32 args)
 static void html_feed_insert(INT32 args)
 {
    if (!args)
-      SIMPLE_TOO_FEW_ARGS_ERROR("feed_insert",1);
+      SIMPLE_WRONG_NUM_ARGS_ERROR("feed_insert",1);
 
    if (TYPEOF(sp[-args]) != T_STRING)
       SIMPLE_ARG_TYPE_ERROR("feed_insert",1,"string");

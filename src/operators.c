@@ -1104,7 +1104,7 @@ PMOD_EXPORT void ID(INT32 args)				\
   switch(args)					\
   {						\
     case 0: case 1:				\
-      SIMPLE_TOO_FEW_ARGS_ERROR(NAME, 2); \
+      SIMPLE_WRONG_NUM_ARGS_ERROR(NAME, 2);     \
     case 2:					\
       i=FUN (sp-2,sp-1);			\
       pop_n_elems(2);				\
@@ -1470,7 +1470,7 @@ PMOD_EXPORT void f_add(INT32 args)
   default:
     if(!args)
     {
-      SIMPLE_TOO_FEW_ARGS_ERROR("`+", 1);
+      SIMPLE_WRONG_NUM_ARGS_ERROR("`+", 1);
     }else{
       if(types & BIT_OBJECT)
       {
@@ -2466,7 +2466,7 @@ PMOD_EXPORT void f_minus(INT32 args)
 {
   switch(args)
   {
-    case 0: SIMPLE_TOO_FEW_ARGS_ERROR("`-", 1);
+    case 0: SIMPLE_WRONG_NUM_ARGS_ERROR("`-", 1);
     case 1: o_negate(); break;
     case 2: o_subtract(); break;
     default:
@@ -2849,7 +2849,7 @@ PMOD_EXPORT void f_and(INT32 args)
 {
   switch(args)
   {
-  case 0: SIMPLE_TOO_FEW_ARGS_ERROR("`&", 1);
+  case 0: SIMPLE_WRONG_NUM_ARGS_ERROR("`&", 1);
   case 1: return;
   case 2: o_and(); return;
   default:
@@ -3104,7 +3104,7 @@ PMOD_EXPORT void f_or(INT32 args)
 {
   switch(args)
   {
-  case 0: SIMPLE_TOO_FEW_ARGS_ERROR("`|", 1);
+  case 0: SIMPLE_WRONG_NUM_ARGS_ERROR("`|", 1);
   case 1: return;
   case 2: o_or(); return;
   default:
@@ -3349,7 +3349,7 @@ PMOD_EXPORT void f_xor(INT32 args)
 {
   switch(args)
   {
-  case 0: SIMPLE_TOO_FEW_ARGS_ERROR("`^", 1);
+  case 0: SIMPLE_WRONG_NUM_ARGS_ERROR("`^", 1);
   case 1: return;
   case 2: o_xor(); return;
   default:
@@ -3453,10 +3453,8 @@ PMOD_EXPORT void o_lsh(void)
  */
 PMOD_EXPORT void f_lsh(INT32 args)
 {
-  if(args != 2) {
-    /* FIXME: Not appropriate if too many args. */
-    SIMPLE_TOO_FEW_ARGS_ERROR("`<<", 2);
-  }
+  if(args != 2)
+    SIMPLE_WRONG_NUM_ARGS_ERROR("`<<", 2);
   o_lsh();
 }
 
@@ -3541,10 +3539,8 @@ PMOD_EXPORT void o_rsh(void)
  */
 PMOD_EXPORT void f_rsh(INT32 args)
 {
-  if(args != 2) {
-    /* FIXME: Not appropriate if too many args. */
-    SIMPLE_TOO_FEW_ARGS_ERROR("`>>", 2);
-  }
+  if(args != 2)
+    SIMPLE_WRONG_NUM_ARGS_ERROR("`>>", 2);
   o_rsh();
 }
 
@@ -3809,7 +3805,7 @@ PMOD_EXPORT void f_multiply(INT32 args)
 {
   switch(args)
   {
-  case 0: SIMPLE_TOO_FEW_ARGS_ERROR("`*", 1);
+  case 0: SIMPLE_WRONG_NUM_ARGS_ERROR("`*", 1);
   case 1: return;
   case 2: o_multiply(); return;
   default:
@@ -4171,7 +4167,7 @@ PMOD_EXPORT void f_divide(INT32 args)
   switch(args)
   {
     case 0:
-    case 1: SIMPLE_TOO_FEW_ARGS_ERROR("`/", 2);
+    case 1: SIMPLE_WRONG_NUM_ARGS_ERROR("`/", 2);
     case 2: o_divide(); break;
     default:
     {
@@ -4387,10 +4383,8 @@ do_lfun_modulo:
  */
 PMOD_EXPORT void f_mod(INT32 args)
 {
-  if(args != 2) {
-    /* FIXME: Not appropriate when too many args. */
-    SIMPLE_TOO_FEW_ARGS_ERROR("`%", 2);
-  }
+  if(args != 2)
+    SIMPLE_WRONG_NUM_ARGS_ERROR("`%", 2);
   o_mod();
 }
 
@@ -4465,10 +4459,8 @@ PMOD_EXPORT void o_not(void)
  */
 PMOD_EXPORT void f_not(INT32 args)
 {
-  if(args != 1) {
-    /* FIXME: Not appropriate with too many args. */
-    SIMPLE_TOO_FEW_ARGS_ERROR("`!", 1);
-  }
+  if(args != 1)
+    SIMPLE_WRONG_NUM_ARGS_ERROR("`!", 1);
   o_not();
 }
 
@@ -4586,10 +4578,8 @@ PMOD_EXPORT void o_compl(void)
  */
 PMOD_EXPORT void f_compl(INT32 args)
 {
-  if(args != 1) {
-    /* FIXME: Not appropriate with too many args. */
-    SIMPLE_TOO_FEW_ARGS_ERROR("`~", 1);
-  }
+  if(args != 1)
+    SIMPLE_WRONG_NUM_ARGS_ERROR("`~", 1);
   o_compl();
 }
 

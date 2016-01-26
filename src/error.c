@@ -814,8 +814,7 @@ static void f_error__is_type(INT32 args)
   struct pike_string *array_string;
   int ret;
   MAKE_CONST_STRING(array_string, "array");
-  if (args < 0) SIMPLE_TOO_FEW_ARGS_ERROR("_is_type", 1);
-  if (args > 1) SIMPLE_WRONG_NUM_ARGS_ERROR("_is_type", 1);
+  if (args!=1) SIMPLE_WRONG_NUM_ARGS_ERROR("_is_type", 1);
   if (TYPEOF(Pike_sp[-args]) != PIKE_T_STRING)
     SIMPLE_ARG_TYPE_ERROR("_is_type", 1, "string");
   ret = Pike_sp[-args].u.string == array_string;

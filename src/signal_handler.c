@@ -925,7 +925,7 @@ static void f_signal(int args)
   check_signals(0,0,0);
 
   if(args < 1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("signal", 1);
+    SIMPLE_WRONG_NUM_ARGS_ERROR("signal", 1);
 
   if(TYPEOF(Pike_sp[-args]) != PIKE_T_INT)
     SIMPLE_ARG_TYPE_ERROR("signal", 1, "int");
@@ -1018,7 +1018,7 @@ static void f_signum(int args)
 {
   int i;
   if(args < 1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("signum", 1);
+    SIMPLE_WRONG_NUM_ARGS_ERROR("signum", 1);
 
   if(TYPEOF(Pike_sp[-args]) != T_STRING)
     SIMPLE_ARG_TYPE_ERROR("signum", 1, "string");
@@ -1039,7 +1039,7 @@ static void f_signame(int args)
 {
   char *n;
   if(args < 1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("signame", 1);
+    SIMPLE_WRONG_NUM_ARGS_ERROR("signame", 1);
 
   if(TYPEOF(Pike_sp[-args]) != PIKE_T_INT)
     SIMPLE_ARG_TYPE_ERROR("signame", 1, "int");
@@ -4427,7 +4427,7 @@ static void f_kill(INT32 args)
   int res, save_errno;
 
   if(args < 2)
-    SIMPLE_TOO_FEW_ARGS_ERROR("kill", 2);
+    SIMPLE_WRONG_NUM_ARGS_ERROR("kill", 2);
 
   switch(TYPEOF(Pike_sp[-args]))
   {
@@ -4520,7 +4520,7 @@ static void f_kill(INT32 args)
   HANDLE tofree = INVALID_HANDLE_VALUE;
 
   if(args < 2)
-    SIMPLE_TOO_FEW_ARGS_ERROR("kill", 2);
+    SIMPLE_WRONG_NUM_ARGS_ERROR("kill", 2);
 
   switch(TYPEOF(Pike_sp[-args]))
   {
@@ -4642,7 +4642,7 @@ static void f_alarm(INT32 args)
   long seconds;
 
   if(args < 1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("alarm", 1);
+    SIMPLE_WRONG_NUM_ARGS_ERROR("alarm", 1);
 
   if(TYPEOF(Pike_sp[-args]) != PIKE_T_INT)
     SIMPLE_ARG_TYPE_ERROR("alarm", 1, "int");
@@ -4686,7 +4686,7 @@ static void f_ualarm(INT32 args)
   long useconds;
 
   if(args < 1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("ualarm", 1);
+    SIMPLE_WRONG_NUM_ARGS_ERROR("ualarm", 1);
 
   if(TYPEOF(Pike_sp[-args]) != PIKE_T_INT)
     SIMPLE_ARG_TYPE_ERROR("ualarm", 1, "int");
@@ -4760,7 +4760,7 @@ static void do_signal_exit(INT32 sig)
 void f_atexit(INT32 args)
 {
   if(args < 1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("atexit", 1);
+    SIMPLE_WRONG_NUM_ARGS_ERROR("atexit", 1);
 
   if(!atexit_functions)
   {

@@ -5556,7 +5556,7 @@ void f_count_memory (INT32 args)
   int collect_stats = 0, return_count = 0;
 
   if (args < 1)
-    SIMPLE_TOO_FEW_ARGS_ERROR ("count_memory", 1);
+    SIMPLE_WRONG_NUM_ARGS_ERROR ("count_memory", 1);
 
   mc_block_lookahead = mc_block_lookahead_default;
   mc_block_pike_cycle_depth = 0;
@@ -6164,12 +6164,8 @@ void f_identify_cycle(INT32 args)
   struct mc_marker *m;
   struct svalue *k;
 
-  if (args < 1) {
-    SIMPLE_TOO_FEW_ARGS_ERROR("identify_loops", 1);
-  }
-
-  if (args > 1) pop_n_elems(args-1);
-  args = 1;
+  if (args != 1)
+    SIMPLE_WRONG_NUM_ARGS_ERROR("identify_loops", 1);
 
   s = Pike_sp - 1;
 

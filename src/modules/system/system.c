@@ -2444,8 +2444,8 @@ static void f_getrlimit(INT32 args)
 {
    struct rlimit rl;
    int res=-1;
-   if (args<1)
-      SIMPLE_TOO_FEW_ARGS_ERROR("getrlimit",1);
+   if (args!=1)
+      SIMPLE_WRONG_NUM_ARGS_ERROR("getrlimit",1);
    if (TYPEOF(sp[-args]) != T_STRING)
       SIMPLE_ARG_TYPE_ERROR("getrlimit",1,"string");
    res = get_one_limit( Pike_sp[-args].u.string->str, &rl );
@@ -2534,8 +2534,8 @@ int set_one_limit( const char *limit, INT64 soft, INT64 hard )
  */
 static void f_setrlimit(INT32 args)
 {
-   if (args<3)
-      SIMPLE_TOO_FEW_ARGS_ERROR("setrlimit",3);
+   if (args!=3)
+      SIMPLE_WRONG_NUM_ARGS_ERROR("setrlimit",3);
    if (TYPEOF(sp[-args]) != T_STRING)
       SIMPLE_ARG_TYPE_ERROR("setrlimit",1,"string");
    if (TYPEOF(sp[1-args]) != T_INT ||

@@ -118,8 +118,8 @@ static void regexp_match(INT32 args)
   int i;
   struct regexp *regexp = THIS->regexp;
 
-  if(args < 1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("match", 1);
+  if(args != 1)
+    SIMPLE_WRONG_NUM_ARGS_ERROR ("match", 1);
 
   if(TYPEOF(Pike_sp[-args]) == T_STRING)
   {

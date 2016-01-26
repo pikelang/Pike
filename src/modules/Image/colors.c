@@ -783,7 +783,7 @@ static void image_color__sprintf(INT32 args)
    int prec,x;
 
    if (args<2)
-      SIMPLE_TOO_FEW_ARGS_ERROR("_sprintf",2);
+      SIMPLE_WRONG_NUM_ARGS_ERROR("_sprintf",2);
 
    if (TYPEOF(sp[-args]) != T_INT)
       SIMPLE_ARG_TYPE_ERROR("_sprintf",0,"int");

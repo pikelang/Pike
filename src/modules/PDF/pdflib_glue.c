@@ -109,7 +109,7 @@ static void pdf_open_file(INT32 args)
    struct pdf_storage *this=THIS;
    char *s;
    int n;
-   if (args<1) SIMPLE_TOO_FEW_ARGS_ERROR("open_file",1);
+   if (args<1) SIMPLE_WRONG_NUM_ARGS_ERROR("open_file",1);
    if (TYPEOF(sp[-args]) != T_STRING || sp[-args].u.string->size_shift)
       SIMPLE_ARG_TYPE_ERROR("open_file",1,"8 bit string");
    s=sp[-args].u.string->str;

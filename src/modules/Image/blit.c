@@ -562,7 +562,7 @@ void image_paste_alpha_color(INT32 args)
    int arg=1;
 
    if (args<1)
-      SIMPLE_TOO_FEW_ARGS_ERROR("image->paste_alpha_color",1);
+      SIMPLE_WRONG_NUM_ARGS_ERROR("image->paste_alpha_color",1);
    if (TYPEOF(sp[-args]) != T_OBJECT
        || !sp[-args].u.object
        || !(mask=get_storage(sp[-args].u.object,image_program)))

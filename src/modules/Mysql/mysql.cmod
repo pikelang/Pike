@@ -1079,15 +1079,6 @@ static void low_query(INT32 args, char *name, int flags)
   int qlen;
   int tmp = -1;
 
-  if (!args) {
-    SIMPLE_TOO_FEW_ARGS_ERROR (name, 1);
-  }
-#ifdef HAVE_MYSQL_REAL_QUERY
-  CHECK_8BIT_STRING (name, 1);
-#else
-  CHECK_8BIT_NONBINARY_STRING (name, 1);
-#endif
-
   query = sp[-args].u.string->str;
   qlen = sp[-args].u.string->len;
 

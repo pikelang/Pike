@@ -256,7 +256,7 @@ static void port_bind(INT32 args)
   do_close(p);
 
   if(args < 1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("bind", 1);
+    SIMPLE_WRONG_NUM_ARGS_ERROR("bind", 1);
 
   if(TYPEOF(Pike_sp[-args]) != PIKE_T_INT &&
      (TYPEOF(Pike_sp[-args]) != PIKE_T_STRING ||
@@ -511,7 +511,7 @@ static void port_create(INT32 args)
       struct port *p = THIS;
 
       if(TYPEOF(Pike_sp[-args]) != PIKE_T_STRING)
-	SIMPLE_TOO_FEW_ARGS_ERROR("create", 1);
+	SIMPLE_WRONG_NUM_ARGS_ERROR("create", 1);
 
       /* FIXME: Check that the argument is "stdin". */
 
@@ -686,8 +686,8 @@ static void port_set_backend (INT32 args)
   struct port *p = THIS;
   struct Backend_struct *backend;
 
-  if (!args)
-    SIMPLE_TOO_FEW_ARGS_ERROR ("set_backend", 1);
+  if (args!=1)
+    SIMPLE_WRONG_NUM_ARGS_ERROR ("set_backend", 1);
   if (TYPEOF(Pike_sp[-args]) != PIKE_T_OBJECT)
     SIMPLE_ARG_TYPE_ERROR ("set_backend", 1, "object(Pike.Backend)");
   backend = get_storage (Pike_sp[-args].u.object, Backend_program);

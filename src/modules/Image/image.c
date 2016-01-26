@@ -597,7 +597,7 @@ void img_read_get_channel(int arg,char *name,INT32 args,
 {
    struct image *img;
    if (arg>args)
-      SIMPLE_TOO_FEW_ARGS_ERROR("create_method",1+arg);
+      SIMPLE_WRONG_NUM_ARGS_ERROR("create_method",1+arg);
    switch (TYPEOF(sp[arg-args-1]))
    {
       case T_INT:
@@ -844,7 +844,7 @@ void image_create_method(INT32 args)
    struct image *img;
 
    if (!args)
-      SIMPLE_TOO_FEW_ARGS_ERROR("create_method",1);
+      SIMPLE_WRONG_NUM_ARGS_ERROR("create_method",1);
 
    if (TYPEOF(sp[-args]) != T_STRING)
       SIMPLE_ARG_TYPE_ERROR("create_method",1,"string");
@@ -1228,7 +1228,7 @@ static void image_change_color(INT32 args)
 
    to=THIS->rgb;
    if (!(arg=getrgb(THIS,0,args,3,"Image.Image->change_color()")))
-      SIMPLE_TOO_FEW_ARGS_ERROR("Image",1);
+      SIMPLE_WRONG_NUM_ARGS_ERROR("Image",1);
    from=THIS->rgb;
    if (getrgb(THIS,arg,args,args,"Image.Image->change_color()"))
       to=THIS->rgb;
@@ -1873,7 +1873,7 @@ static void image_tuned_box(INT32 args)
       TYPEOF(sp[1-args]) != T_INT||
       TYPEOF(sp[2-args]) != T_INT||
       TYPEOF(sp[3-args]) != T_INT)
-     SIMPLE_TOO_FEW_ARGS_ERROR("tuned_box",5);
+     SIMPLE_WRONG_NUM_ARGS_ERROR("tuned_box",5);
 
   if (!THIS->img)
     Pike_error("Called Image.Image object is not initialized\n");;
@@ -1892,7 +1892,7 @@ static void image_tuned_box(INT32 args)
   }
 
   if (args<8)
-     SIMPLE_TOO_FEW_ARGS_ERROR("tuned_box",8);
+     SIMPLE_WRONG_NUM_ARGS_ERROR("tuned_box",8);
 
   if (!image_color_svalue_rgba(sp-4,&topleft))
      SIMPLE_ARG_TYPE_ERROR("tuned_box",5,"color");
@@ -2108,7 +2108,7 @@ static void image_gradients(INT32 args)
    }
 
    if (!first)
-      SIMPLE_TOO_FEW_ARGS_ERROR("Image.Image->gradients",1);
+      SIMPLE_WRONG_NUM_ARGS_ERROR("Image.Image->gradients",1);
 
    THREADS_ALLOW();
 
@@ -3929,7 +3929,7 @@ void image_modify_by_intensity(INT32 args)
    if (!THIS->img)
      Pike_error("Called Image.Image object is not initialized\n");
    if (args<5)
-      SIMPLE_TOO_FEW_ARGS_ERROR("Image.Image->modify_by_intensity()",5);
+      SIMPLE_WRONG_NUM_ARGS_ERROR("Image.Image->modify_by_intensity()",5);
 
    getrgbl(&rgb,0,args,"Image.Image->modify_by_intensity()");
    div=rgb.r+rgb.g+rgb.b;
@@ -4540,7 +4540,7 @@ void image_cast(INT32 args)
   struct pike_string *type;
 
   if (!args)
-    SIMPLE_TOO_FEW_ARGS_ERROR("Image.Image->cast",1);
+    SIMPLE_WRONG_NUM_ARGS_ERROR("Image.Image->cast",1);
   if (!THIS->img)
     Pike_error("Called Image.Image object is not initialized\n");
 
@@ -4577,7 +4577,7 @@ static void image__sprintf( INT32 args )
 {
   int x;
   if (args != 2 )
-    SIMPLE_TOO_FEW_ARGS_ERROR("_sprintf",2);
+    SIMPLE_WRONG_NUM_ARGS_ERROR("_sprintf",2);
   if (TYPEOF(sp[-args]) != T_INT)
     SIMPLE_ARG_TYPE_ERROR("_sprintf",0,"int");
   if (TYPEOF(sp[1-args]) != T_MAPPING)
@@ -4633,7 +4633,7 @@ static void image_grey_blur( INT32 args )
   int ye = THIS->ysize;
   rgb_group *rgb = THIS->img;
   if( args != 1 )
-    SIMPLE_TOO_FEW_ARGS_ERROR("grey_blur",1);
+    SIMPLE_WRONG_NUM_ARGS_ERROR("grey_blur",1);
 
   if( !rgb )
     Pike_error("This object is not initialized\n");
@@ -4708,7 +4708,7 @@ static void image_blur( INT32 args )
   int ye = THIS->ysize;
   rgb_group *rgb = THIS->img;
   if( args != 1 )
-    SIMPLE_TOO_FEW_ARGS_ERROR("blur",1);
+    SIMPLE_WRONG_NUM_ARGS_ERROR("blur",1);
 
   if( !rgb )
     Pike_error("This object is not initialized\n");

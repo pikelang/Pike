@@ -98,7 +98,7 @@ static void f_substring__sprintf( INT32 args )
   struct substring *s = SS(fp->current_object);
 
   if (args != 2 )
-    SIMPLE_TOO_FEW_ARGS_ERROR("_sprintf",2);
+    SIMPLE_WRONG_NUM_ARGS_ERROR("_sprintf",2);
   if (TYPEOF(sp[-2]) != T_INT)
     SIMPLE_ARG_TYPE_ERROR("_sprintf",0,"int");
   if (TYPEOF(sp[-1]) != T_MAPPING)

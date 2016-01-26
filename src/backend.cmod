@@ -958,7 +958,7 @@ PIKECLASS Backend
        struct Backend_CallOut_struct *c;
 
        if(args<2)
-	 SIMPLE_TOO_FEW_ARGS_ERROR("call_out", 2);
+         SIMPLE_WRONG_NUM_ARGS_ERROR("call_out", 2);
 
        if(TYPEOF(*t) != T_INT && TYPEOF(*t) != T_FLOAT)
 	 SIMPLE_ARG_TYPE_ERROR("call_out", 2, "int|float");

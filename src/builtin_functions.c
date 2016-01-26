@@ -104,7 +104,7 @@ PMOD_EXPORT void f_equal(INT32 args)
 {
   int i;
   if(args != 2)
-    SIMPLE_TOO_FEW_ARGS_ERROR("equal", 2);
+    SIMPLE_WRONG_NUM_ARGS_ERROR("equal", 2);
 
   i=is_equal(Pike_sp-2,Pike_sp-1);
   pop_n_elems(args);
@@ -268,7 +268,7 @@ static void f_hash_7_4(INT32 args)
   struct pike_string *s = Pike_sp[-args].u.string;
 
   if(!args)
-    SIMPLE_TOO_FEW_ARGS_ERROR("7.4::hash",1);
+    SIMPLE_WRONG_NUM_ARGS_ERROR("7.4::hash",1);
 
   if(TYPEOF(Pike_sp[-args]) != T_STRING)
     SIMPLE_ARG_TYPE_ERROR("7.4::hash", 1, "string");
@@ -330,7 +330,7 @@ static void f_hash_7_0( INT32 args )
   struct pike_string *s = Pike_sp[-args].u.string;
   unsigned int i;
   if(!args)
-    SIMPLE_TOO_FEW_ARGS_ERROR("7.0::hash",1);
+    SIMPLE_WRONG_NUM_ARGS_ERROR("7.0::hash",1);
   if(TYPEOF(Pike_sp[-args]) != T_STRING)
     SIMPLE_ARG_TYPE_ERROR("7.0::hash", 1, "string");
 
@@ -388,7 +388,7 @@ PMOD_EXPORT void f_hash(INT32 args)
   struct pike_string *s;
 
   if(!args)
-    SIMPLE_TOO_FEW_ARGS_ERROR("hash",1);
+    SIMPLE_WRONG_NUM_ARGS_ERROR("hash",1);
 
   if(TYPEOF(Pike_sp[-args]) != T_STRING)
     SIMPLE_ARG_TYPE_ERROR("hash", 1, "string");
@@ -443,7 +443,7 @@ void f_hash_value(INT32 args)
   unsigned INT32 h;
 
   if(!args)
-    SIMPLE_TOO_FEW_ARGS_ERROR("hash_value",1);
+    SIMPLE_WRONG_NUM_ARGS_ERROR("hash_value",1);
 
   h = hash_svalue (Pike_sp - args);
   pop_n_elems (args);
@@ -467,7 +467,7 @@ void f_hash_value(INT32 args)
 PMOD_EXPORT void f_copy_value(INT32 args)
 {
   if(!args)
-    SIMPLE_TOO_FEW_ARGS_ERROR("copy_value",1);
+    SIMPLE_WRONG_NUM_ARGS_ERROR("copy_value",1);
 
   pop_n_elems(args-1);
   push_undefined();	/* Placeholder */
@@ -898,7 +898,7 @@ PMOD_EXPORT void f_search(INT32 args)
   ptrdiff_t start;
 
   if(args < 2)
-    SIMPLE_TOO_FEW_ARGS_ERROR("search", 2);
+    SIMPLE_WRONG_NUM_ARGS_ERROR("search", 2);
 
   switch(TYPEOF(Pike_sp[-args]))
   {
@@ -1109,8 +1109,8 @@ PMOD_EXPORT void f_has_prefix(INT32 args)
 {
   struct pike_string *a, *b;
 
-  if(args<2)
-    SIMPLE_TOO_FEW_ARGS_ERROR("has_prefix", 2);
+  if(args!=2)
+    SIMPLE_WRONG_NUM_ARGS_ERROR("has_prefix", 2);
   if((TYPEOF(Pike_sp[-args]) != T_STRING) &&
      (TYPEOF(Pike_sp[-args]) != T_OBJECT))
     SIMPLE_ARG_TYPE_ERROR("has_prefix", 1, "string|object");
@@ -1215,8 +1215,8 @@ PMOD_EXPORT void f_has_suffix(INT32 args)
 {
   struct pike_string *a, *b;
 
-  if(args<2)
-    SIMPLE_TOO_FEW_ARGS_ERROR("has_suffix", 2);
+  if(args!=2)
+    SIMPLE_WRONG_NUM_ARGS_ERROR("has_suffix", 2);
   if(TYPEOF(Pike_sp[-args]) != T_STRING)
     SIMPLE_ARG_TYPE_ERROR("has_suffix", 1, "string");
   if(TYPEOF(Pike_sp[1-args]) != T_STRING)
@@ -1302,10 +1302,8 @@ PMOD_EXPORT void f_has_index(INT32 args)
 {
   int t = 0;
 
-  if(args < 2)
-    SIMPLE_TOO_FEW_ARGS_ERROR("has_index", 2);
-  if(args > 2)
-    pop_n_elems(args-2);
+  if(args != 2)
+    SIMPLE_WRONG_NUM_ARGS_ERROR("has_index", 2);
 
   switch(TYPEOF(Pike_sp[-2]))
   {
@@ -1397,10 +1395,8 @@ PMOD_EXPORT void f_has_index(INT32 args)
  */
 PMOD_EXPORT void f_has_value(INT32 args)
 {
-  if(args < 2)
-    SIMPLE_TOO_FEW_ARGS_ERROR("has_value", 2);
-  if(args > 2)
-    pop_n_elems(args-2);
+  if(args != 2)
+    SIMPLE_WRONG_NUM_ARGS_ERROR("has_value", 2);
 
   switch(TYPEOF(Pike_sp[-2]))
   {
@@ -1475,7 +1471,7 @@ PMOD_EXPORT void f_has_value(INT32 args)
 PMOD_EXPORT void f_add_constant(INT32 args)
 {
   if(args<1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("add_constant", 1);
+    SIMPLE_WRONG_NUM_ARGS_ERROR("add_constant", 1);
 
   if(TYPEOF(Pike_sp[-args]) != T_STRING)
     SIMPLE_ARG_TYPE_ERROR("add_constant", 1, "string");
@@ -1557,8 +1553,8 @@ PMOD_EXPORT void f_add_constant(INT32 args)
  */
 PMOD_EXPORT void f_zero_type(INT32 args)
 {
-  if(args < 1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("zero_type",1);
+  if(args != 1)
+    SIMPLE_WRONG_NUM_ARGS_ERROR("zero_type",1);
 
   if(IS_DESTRUCTED(Pike_sp-args))
   {
@@ -2991,8 +2987,8 @@ static int generate_this_object(node *n)
  */
 PMOD_EXPORT void f_throw(INT32 args)
 {
-  if(args < 1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("throw", 1);
+  if(args != 1)
+    SIMPLE_WRONG_NUM_ARGS_ERROR("throw", 1);
   assign_svalue(&throw_value,Pike_sp-args);
   pop_n_elems(args);
   throw_severity=0;
@@ -3020,7 +3016,7 @@ PMOD_EXPORT void f_exit(INT32 args)
   static int in_exit=0;
 
   if(args < 1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("exit", 1);
+    SIMPLE_WRONG_NUM_ARGS_ERROR("exit", 1);
 
   if(TYPEOF(Pike_sp[-args]) != T_INT)
     SIMPLE_ARG_TYPE_ERROR("exit", 1, "int");
@@ -3284,8 +3280,8 @@ PMOD_EXPORT void f_indices(INT32 args)
   ptrdiff_t size;
   struct array *a = NULL;
 
-  if(args < 1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("indices", 1);
+  if(args != 1)
+    SIMPLE_WRONG_NUM_ARGS_ERROR("indices", 1);
 
   switch(TYPEOF(Pike_sp[-args]))
   {
@@ -3591,8 +3587,8 @@ PMOD_EXPORT void f_values(INT32 args)
 {
   ptrdiff_t size;
   struct array *a = NULL;
-  if(args < 1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("values", 1);
+  if(args != 1)
+    SIMPLE_WRONG_NUM_ARGS_ERROR("values", 1);
 
   switch(TYPEOF(Pike_sp[-args]))
   {
@@ -3681,8 +3677,8 @@ PMOD_EXPORT void f_types(INT32 args)
   struct array *a = NULL;
   struct pike_type *default_type = mixed_type_string;
 
-  if(args < 1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("types", 1);
+  if(args != 1)
+    SIMPLE_WRONG_NUM_ARGS_ERROR("types", 1);
 
   switch(TYPEOF(Pike_sp[-args]))
   {
@@ -3753,8 +3749,8 @@ PMOD_EXPORT void f_types(INT32 args)
  */
 PMOD_EXPORT void f_object_program(INT32 args)
 {
-  if(args < 1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("object_program", 1);
+  if(args != 1)
+    SIMPLE_WRONG_NUM_ARGS_ERROR("object_program", 1);
 
   if(TYPEOF(Pike_sp[-args]) == T_OBJECT)
   {
@@ -4401,7 +4397,7 @@ PMOD_EXPORT void f_replace(INT32 args)
 	args++;
      }
      else
-	SIMPLE_TOO_FEW_ARGS_ERROR("replace", 3);
+	SIMPLE_WRONG_NUM_ARGS_ERROR("replace", 3);
   } else if (args > 3) {
     pop_n_elems(args-3);
     args = 3;
@@ -4681,8 +4677,8 @@ void f_set_weak_flag(INT32 args)
  */
 PMOD_EXPORT void f_objectp(INT32 args)
 {
-  if(args<1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("objectp", 1);
+  if(args!=1)
+    SIMPLE_WRONG_NUM_ARGS_ERROR("objectp", 1);
   if(TYPEOF(Pike_sp[-args]) != T_OBJECT || !Pike_sp[-args].u.object->prog
      || is_bignum_object(Pike_sp[-args].u.object))
   {
@@ -4705,8 +4701,8 @@ PMOD_EXPORT void f_objectp(INT32 args)
 PMOD_EXPORT void f_functionp(INT32 args)
 {
   int res = 0;
-  if(args<1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("functionp", 1);
+  if(args!=1)
+    SIMPLE_WRONG_NUM_ARGS_ERROR("functionp", 1);
   if( TYPEOF(Pike_sp[-args]) == T_FUNCTION &&
       (SUBTYPEOF(Pike_sp[-args]) == FUNCTION_BUILTIN ||
        Pike_sp[-args].u.object->prog))
@@ -4783,8 +4779,8 @@ PMOD_EXPORT int callablep(struct svalue *s)
 PMOD_EXPORT void f_callablep(INT32 args)
 {
   int res = 0;
-  if(args<1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("callablep", 1);
+  if(args!=1)
+    SIMPLE_WRONG_NUM_ARGS_ERROR("callablep", 1);
 
   res = callablep(&Pike_sp[-args]);
   pop_n_elems(args);
@@ -4990,8 +4986,8 @@ void f_gc(INT32 args)
   {									\
     int t;								\
     struct program *p;							\
-    if (args<1)								\
-      SIMPLE_TOO_FEW_ARGS_ERROR(NAME, 1);				\
+    if (args!=1)                                                        \
+      SIMPLE_WRONG_NUM_ARGS_ERROR(NAME, 1);				\
     if (TYPEOF(Pike_sp[-args]) == T_OBJECT &&				\
 	(p = Pike_sp[-args].u.object->prog))				\
     {									\
@@ -5021,8 +5017,8 @@ void f_gc(INT32 args)
  */
 PMOD_EXPORT void f_undefinedp(INT32 args)
 {
-  if( args<1 )
-    SIMPLE_TOO_FEW_ARGS_ERROR("undefinedp", 1);
+  if( args!=1 )
+    SIMPLE_WRONG_NUM_ARGS_ERROR("undefinedp", 1);
   f_zero_type(args);
   Pike_sp[-1].u.integer = ( Pike_sp[-1].u.integer == NUMBER_UNDEFINED);
 }
@@ -5037,8 +5033,8 @@ PMOD_EXPORT void f_undefinedp(INT32 args)
  */
 PMOD_EXPORT void f_destructedp(INT32 args)
 {
-  if( args<1 )
-    SIMPLE_TOO_FEW_ARGS_ERROR("destructedp", 1);
+  if( args!=1 )
+    SIMPLE_WRONG_NUM_ARGS_ERROR("destructedp", 1);
   f_zero_type(args);
   Pike_sp[-1].u.integer = ( Pike_sp[-1].u.integer == NUMBER_DESTRUCTED);
 }
@@ -5053,8 +5049,8 @@ PMOD_EXPORT void f_destructedp(INT32 args)
  */
 PMOD_EXPORT void f_programp(INT32 args)
 {
-  if(args<1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("programp", 1);
+  if(args!=1)
+    SIMPLE_WRONG_NUM_ARGS_ERROR("programp", 1);
   switch(TYPEOF(Pike_sp[-args]))
   {
   case T_PROGRAM:
@@ -5197,7 +5193,7 @@ PMOD_EXPORT void f_sort(INT32 args)
   struct array *a;
 
   if(args < 1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("sort", 1);
+    SIMPLE_WRONG_NUM_ARGS_ERROR("sort", 1);
   if(TYPEOF(Pike_sp[-args]) != T_ARRAY)
     SIMPLE_ARG_TYPE_ERROR("sort", 1, "array");
   a = Pike_sp[-args].u.array;
@@ -5730,7 +5726,7 @@ PMOD_EXPORT void f_mktime (INT32 args)
   time_t retval;
 
   if (args<1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("mktime", 1);
+    SIMPLE_WRONG_NUM_ARGS_ERROR("mktime", 1);
 
   if(args == 1)
   {
@@ -5972,12 +5968,8 @@ PMOD_EXPORT void f_glob(INT32 args)
   struct svalue *glob;
   int nglobs;
 
-  if(args < 2)
-    SIMPLE_TOO_FEW_ARGS_ERROR("glob", 2);
-
-  if(args > 2)
-    pop_n_elems(args-2);
-  args=2;
+  if(args != 2)
+    SIMPLE_WRONG_NUM_ARGS_ERROR("glob", 2);
 
   if (TYPEOF(Pike_sp[-args]) == T_STRING)
   {
@@ -7526,7 +7518,7 @@ PMOD_EXPORT void f__typeof(INT32 args)
   struct pike_type *t;
 
   if(!args)
-    SIMPLE_TOO_FEW_ARGS_ERROR("_typeof", 1);
+    SIMPLE_WRONG_NUM_ARGS_ERROR("_typeof", 1);
 
   t = get_type_of_svalue(Pike_sp-args);
 
@@ -7553,7 +7545,7 @@ PMOD_EXPORT void f_replace_master(INT32 args)
   struct object *new_master;
 
   if(!args)
-    SIMPLE_TOO_FEW_ARGS_ERROR("replace_master", 1);
+    SIMPLE_WRONG_NUM_ARGS_ERROR("replace_master", 1);
   if(TYPEOF(Pike_sp[-args]) != T_OBJECT)
     SIMPLE_ARG_TYPE_ERROR("replace_master", 1, "object");
   new_master = Pike_sp[-args].u.object;
@@ -7813,7 +7805,7 @@ static void f_get_prof_info(INT32 args)
   int i;
 
   if (!args) {
-    SIMPLE_TOO_FEW_ARGS_ERROR("get_profiling_info", 1);
+    SIMPLE_WRONG_NUM_ARGS_ERROR("get_profiling_info", 1);
   }
   prog = program_from_svalue(Pike_sp-args);
   if(!prog)
@@ -8053,8 +8045,8 @@ PMOD_EXPORT void f_transpose(INT32 args)
   INT32 j,i;
   TYPE_FIELD type=0;
 
-  if (args<1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("transpose", 1);
+  if (args!=1)
+    SIMPLE_WRONG_NUM_ARGS_ERROR("transpose", 1);
 
   if (TYPEOF(Pike_sp[-args]) != T_ARRAY)
     SIMPLE_ARG_TYPE_ERROR("transpose", 1, "array(array)");
@@ -8181,7 +8173,7 @@ PMOD_EXPORT void f_map(INT32 args)
    TYPE_FIELD types;
 
    if (args<1)
-      SIMPLE_TOO_FEW_ARGS_ERROR("map", 1);
+      SIMPLE_WRONG_NUM_ARGS_ERROR("map", 1);
    else if (args<2)
       { push_int(0); args++; }
 
@@ -8525,7 +8517,7 @@ PMOD_EXPORT void f_filter(INT32 args)
    struct svalue *mysp;
 
    if (args<1)
-      SIMPLE_TOO_FEW_ARGS_ERROR("filter", 1);
+      SIMPLE_WRONG_NUM_ARGS_ERROR("filter", 1);
 
    switch (TYPEOF(Pike_sp[-args]))
    {
@@ -8770,7 +8762,7 @@ void f_enumerate(INT32 args)
    INT_TYPE n;
 
    if (args<1)
-      SIMPLE_TOO_FEW_ARGS_ERROR("enumerate", 1);
+      SIMPLE_WRONG_NUM_ARGS_ERROR("enumerate", 1);
    if (args<2)
    {
       push_int(1);

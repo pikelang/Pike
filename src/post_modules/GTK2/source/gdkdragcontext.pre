@@ -93,7 +93,7 @@ void drag_set_icon_pixmap(GDK2.Pixmap p, GDK2.Bitmap b, int hot_x, int hot_y )
   struct object *p=NULL,*m=NULL;
   int x,y;
   if (args!=4)
-    SIMPLE_TOO_FEW_ARGS_ERROR("drag_set_icon_pixmap", 4);
+    SIMPLE_WRONG_NUM_ARGS_ERROR("drag_set_icon_pixmap", 4);
   if (TYPEOF(Pike_sp[-args]) == PIKE_T_OBJECT)
     p=Pike_sp[-args].u.object;
   if (TYPEOF(Pike_sp[-args+1]) == PIKE_T_OBJECT)

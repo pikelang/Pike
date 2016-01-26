@@ -752,7 +752,7 @@ static void mpzmod__sprintf(INT32 args)
   debug_malloc_touch(THIS_OBJECT);
 
   if(args < 2)
-    SIMPLE_TOO_FEW_ARGS_ERROR("_sprintf", 2);
+    SIMPLE_WRONG_NUM_ARGS_ERROR("_sprintf", 2);
   if(TYPEOF(sp[-args]) != T_INT)
     SIMPLE_ARG_TYPE_ERROR ("_sprintf", 1, "int");
   if(TYPEOF(sp[1-args]) != T_MAPPING)
@@ -1594,19 +1594,19 @@ static void mpzmod_compl(INT32 args)
   PUSH_REDUCED(o);
 }
 
-#define CMPEQU(name,errmsg_name,cmp,default)		\
-static void name(INT32 args)				\
-{							\
-  DECLARE_THIS();                                       \
-  INT32 i;						\
-  MP_INT *arg;						\
-  if(!args) SIMPLE_TOO_FEW_ARGS_ERROR (errmsg_name, 1);	\
-  if (!(arg = get_mpz(sp-args, 0, NULL, 0, 0)))		\
-    default;						\
-  else							\
-    i=mpz_cmp(THIS, arg) cmp 0;				\
-  pop_n_elems(args);					\
-  push_int(i);						\
+#define CMPEQU(name,errmsg_name,cmp,default)              \
+static void name(INT32 args)                              \
+{                                                         \
+  DECLARE_THIS();                                         \
+  INT32 i;                                                \
+  MP_INT *arg;                                            \
+  if(!args) SIMPLE_WRONG_NUM_ARGS_ERROR (errmsg_name, 1); \
+  if (!(arg = get_mpz(sp-args, 0, NULL, 0, 0)))		  \
+    default;                                              \
+  else                                                    \
+    i=mpz_cmp(THIS, arg) cmp 0;                           \
+  pop_n_elems(args);                                      \
+  push_int(i);                                            \
 }
 
 #define RET_UNDEFINED do{pop_n_elems(args);push_undefined();return;}while(0)

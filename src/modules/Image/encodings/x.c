@@ -1147,7 +1147,7 @@ void image_x_encode_bitmap(INT32 args)
    struct image *img = NULL;
 
    if (!args)
-      SIMPLE_TOO_FEW_ARGS_ERROR("encode_bitmap",1);
+      SIMPLE_WRONG_NUM_ARGS_ERROR("encode_bitmap",1);
 
    if (TYPEOF(sp[-args]) != T_OBJECT ||
        !(img=get_storage(sp[-args].u.object,image_program)))
