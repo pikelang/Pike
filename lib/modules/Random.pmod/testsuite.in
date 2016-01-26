@@ -114,4 +114,25 @@ test_eq( String.string2hex(RND->random_string(10)), "983e6a98702d56a70531")
 test_eq( RND->random(10), 5 )
 test_do( add_constant("RND") )
 
+cond_resolv( Random.Hardware, [[
+  test_any([[
+    for(int i=1; i<18; i++)
+    {
+      string x = "\377"*i;
+      for(int j; j<100; j++) x &= random_string(i);
+      if( x != "\0"*i ) return 0;
+    }
+    return 1;
+  ]], 1)
+  test_any([[
+    for(int i=1; i<18; i++)
+    {
+      string x = "\377"*i;
+      for(int j; j<100; j++) x &= ~random_string(i);
+      if( x != "\0"*i ) return 0;
+    }
+    return 1;
+  ]], 1)
+]])
+
 END_MARKER
