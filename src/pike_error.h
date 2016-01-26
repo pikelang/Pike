@@ -308,9 +308,17 @@ void cleanup_error(void);
 
 /* Some useful error macros. */
 
-
-/* This one should be used when the type of the argument is wrong. */
 PMOD_EXPORT extern const char msg_bad_arg[];
+
+/**
+ * Throw an exception that the type of an argument is wrong. ARG, FUNC
+ * and EXPECT will be inserted into "Bad argument %d to %s(). Expected
+ * %s.\n"
+ *
+ * @param FUNC The name of the function, e.g. "create".
+ * @param ARG The number of the argument, e.g. 1 for the first.
+ * @param EXPECT The expected type, e.g. "int(0..1)".
+ */
 #define SIMPLE_ARG_TYPE_ERROR(FUNC, ARG, EXPECT) \
    bad_arg_error(FUNC, Pike_sp-args, args, ARG, EXPECT, Pike_sp+ARG-1-args,\
 		 msg_bad_arg, ARG, FUNC, EXPECT)
@@ -319,14 +327,31 @@ PMOD_EXPORT extern const char msg_bad_arg[];
    bad_arg_error(FUNC, Pike_sp-args, args, ARG, EXPECT, Pike_sp+ARG-1-args,\
 		 msg_bad_arg, ARG, FUNC, EXPECT)
 
-/* This one should be used when there's some problem with the argument
- * other than a bogus type. PROBLEM is a full sentence without a
- * trailing newline. */
 PMOD_EXPORT extern const char msg_bad_arg_2[];
+
+/**
+ * Throw an exception that there is some problem with the argument
+ * other than the wrong type. PROBLEM is a full sentence without a
+ * trailing newline. Together with FUNC and ARG they will be inserted
+ * into "Bad argument %d to %s(). %s\n"
+ *
+ * @param FUNC The name of the function, e.g. "create".
+ * @param ARG The number of the argument, e.g. 1 for the first.
+ * @param PROBLEM Describes the problem with the argument, e.g. "The
+ * number of bytes has to be even."
+ */
 #define SIMPLE_ARG_ERROR(FUNC, ARG, PROBLEM) \
   bad_arg_error (FUNC, Pike_sp-args, args, ARG, NULL, Pike_sp+ARG-1-args, \
 		 msg_bad_arg_2, ARG, FUNC, PROBLEM)
 
+/**
+ * Throw an exception that the number of arguents to the function is
+ * wrong. This macro will use the variable args as the number of given
+ * arguments.
+ *
+ * @param FUNC The name of the function, e.g. "create".
+ * @param ARG The number of expected arguments.
+ */
 #define SIMPLE_WRONG_NUM_ARGS_ERROR(FUNC, ARG) \
   wrong_number_of_args_error (FUNC, args, ARG)
 /* The following is for compatibility. */
