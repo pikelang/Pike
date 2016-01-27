@@ -44,6 +44,9 @@ constant NULL_SHA1 = "0000000000000000000000000000000000000000";
 //!
 //! @returns
 //!   Returns the corresponding @[Process.Process] object.
+//!
+//! @seealso
+//!   @[git()], @[try_git()]
 Process.Process low_git(mapping(string:mixed) options,
 			string git_dir, string command, string ... args)
 {
@@ -68,7 +71,10 @@ Process.Process low_git(mapping(string:mixed) options,
 //!
 //! @returns
 //!   Returns the output on @tt{stdout@} from running the command
-//!   on success, and throws and error on failure.
+//!   on success, and throws an error on failure.
+//!
+//! @seealso
+//!   @[try_git()], @[low_git()]
 string git(string git_dir, string command, string ... args)
 {
   array(string) cmd;
@@ -84,6 +90,37 @@ string git(string git_dir, string command, string ... args)
 	  "%s", cmd*"' '", res->exitcode, res->stderr||"");
   }
   return res->stdout||"";
+}
+
+//! Attempt to run a git command and get its output.
+//!
+//! @param git_dir
+//!   Directory containing the Git repository. May be @expr{UNDEFINED@}
+//!   to specify the Git repository for the current directory.
+//!
+//! @param command
+//!   Git subcommand to execute.
+//!
+//! @param args
+//!   Arguemnts for @[command].
+//!
+//! @returns
+//!   Returns the output on @tt{stdout@} from running the command
+//!   on success, and @expr{0@} (zero) on failure.
+//!
+//! @note
+//!   This is a convenience function, and there is no way to get
+//!   the specific cause for failures other than rerunning the
+//!   command with e.g. @[git()].
+//!
+//! @seealso
+//!   @[git()], @[low_git()]
+string try_git(string git_dir, string command, string ... args)
+{
+  mixed err = catch {
+      return git(git_dir, command, @args);
+    };
+  return 0;
 }
 
 //! Hash algorithm for blobs that is compatible with git.
