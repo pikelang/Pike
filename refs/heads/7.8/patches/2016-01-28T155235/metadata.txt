@@ -1,4 +1,4 @@
-subject: Pike 7.8: Multiple fixes:
+subject: Pike 7.8: Sql, Protocols.HTTP
 from: 9b03469fd9768a024e02b775ac3ba11747c4a8d4
 to: 9ce83b288e6706560649f56efa0382731c96e616
 originator: wellhardh@roxen.com
@@ -10,18 +10,6 @@ Multiple fixes:
   * Sql: Added support for multiple results.
     
     Adds Sql.sql_result()->next_result().
-
-  * Odbc: Added support for the next_result() API.
-
-  * Compiler: Fixed internal compiler error with implicit lambdas.
-    
-    Implicit lambdas do not have a declared return type, so use the
-    push_compiler_frame variant for lambdas.
-    
-    Thanks to Chris Angelico <rosuav@gmail.com> for the report
-    and test case.
-    
-    Fixes [bug 7616]/[LysLysKOM 21578942].
 
   * Protocols.HTTP: do_async_method() no longer resets the timeouts.
     
