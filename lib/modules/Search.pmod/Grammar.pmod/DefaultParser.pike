@@ -335,14 +335,23 @@ protected void parseExpr6(int prefix, TextNode node) {
       if (sizeof(words) > 1)
 	words = filter(words, lambda(string w) { return (w - "*" - "?") == "" ? 0 : 1; });
     
-      if (sizeof(words) == 1)
+      if (sizeof(words) == 1) {
+	//  If auto-globbing has been requested we take a word not using any
+	//  glob characters and wrap it in "*" + word + "*".
+	if (options["auto-glob"] &&
+	    !has_value(words[0], "*") &&
+	    !has_value(words[0], "?")) {
+	  words[0] = "*" + words[0] + "*";
+	}
+	
 	switch (prefix) {
         case '+': node->plusWords += words;  break;
         case '-': node->minusWords += words; break;
         default:  node->words += words;      break;
 	}
-      else if (sizeof(words) > 1) {
-	//  No use of globs at this point so remove them
+      } else if (sizeof(words) > 1) {
+	//  No use of globs at this point so remove them. Auto-globbing isn't
+	//  used in this case either.
 	words = map(words, lambda(string w) { return w - "*" - "?"; } );
 	switch (prefix) {
         case '+': node->plusPhrases += ({ words });  break;
