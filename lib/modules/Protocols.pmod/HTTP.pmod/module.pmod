@@ -428,15 +428,6 @@ void do_async_method(string method,
   string path=url->path;
   if(path=="") path="/";
 
-  if (!con->headers ||
-      lower_case(con->headers["connection"]||"close") == "close") {
-    // Reset the state of con.
-    con->data_timeout = 120;
-    con->timeout = 120;
-    con->con = 0;
-    // con->conthread = 0;
-  }
-
   con->async_request(url->host, url->port,
 		     method+" "+path+(query?("?"+query):"")+" HTTP/1.0",
 		     request_headers, data);
