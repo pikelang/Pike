@@ -293,6 +293,10 @@ array(Search.ResultSet|array(string)) execute(Search.Database.Base db,
               ranking->field_ranking[fieldID] = 1;
             }
 
+	    //  Note that words can become globs automatically if auto-globbing
+	    //  is enabled. If true then this has already happened in the
+	    //  parsing step so we don't need to do anything here.
+
             [array plusWords, array plusWordGlobs] = split_words(q->plusWords);
             [array ordinaryWords, array ordinaryWordGlobs] = split_words(q->words);
             [array minusWords, array minusWordGlobs] = split_words(q->minusWords);
