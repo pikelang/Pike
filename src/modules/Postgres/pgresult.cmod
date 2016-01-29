@@ -35,8 +35,6 @@
  *   moving the check inside the actual sql classes.
  */
 
-#define NO_PIKE_SHORTHAND
-
 #include "global.h"
 #include "pgres_config.h"
 /* Some versions of Postgres define this, and it conflicts with pike_error.h */

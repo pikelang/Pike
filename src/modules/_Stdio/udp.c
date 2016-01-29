@@ -4,7 +4,6 @@
 || for more information.
 */
 
-#define NO_PIKE_SHORTHAND
 #include "global.h"
 
 #include "file_machine.h"

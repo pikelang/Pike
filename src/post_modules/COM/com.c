@@ -9,7 +9,6 @@
  */
 
 #define COM_DEBUG
-#define NO_PIKE_SHORTHAND
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"

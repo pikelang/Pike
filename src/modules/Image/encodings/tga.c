@@ -41,7 +41,6 @@
 **! TGA images were commonly used for screenshots in games, although
 **! since about 2010 most games have started to migrate to PNG images.
 */
-#define NO_PIKE_SHORTHAND
 
 #include "global.h"
 #include "interpret.h"

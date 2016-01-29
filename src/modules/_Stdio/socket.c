@@ -4,8 +4,6 @@
 || for more information.
 */
 
-#define NO_PIKE_SHORTHAND
-
 #include "global.h"
 #include "fdlib.h"
 #include "pike_netlib.h"

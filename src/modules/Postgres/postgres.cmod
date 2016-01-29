@@ -8,8 +8,6 @@
  * Postgres95 and PostgreSQL support for Pike 0.5 and up.
  */
 
-#define NO_PIKE_SHORTHAND
-
 #include "global.h"
 #include "pgres_config.h"
 
