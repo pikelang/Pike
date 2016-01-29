@@ -10734,40 +10734,6 @@ struct program *compile(struct pike_string *aprog,
   }
 }
 
-PMOD_EXPORT int pike_add_function2(const char *name, void (*cfun)(INT32),
-				   const char *type, unsigned flags,
-				   unsigned opt_flags)
-{
-  int ret;
-  struct pike_string *name_tmp;
-  struct pike_type *type_tmp;
-  union idptr tmp;
-
-  name_tmp=make_shared_string(name);
-  type_tmp=parse_type(type);
-
-  if(cfun)
-  {
-    tmp.c_fun=cfun;
-    ret=define_function(name_tmp,
-			type_tmp,
-			flags,
-			IDENTIFIER_C_FUNCTION,
-			&tmp,
-			opt_flags);
-  }else{
-    ret=define_function(name_tmp,
-			type_tmp,
-			flags,
-			IDENTIFIER_C_FUNCTION,
-			0,
-			opt_flags);
-  }
-  free_string(name_tmp);
-  free_type(type_tmp);
-  return ret;
-}
-
 PMOD_EXPORT int low_quick_add_function(struct pike_string * name_tmp,
 				   void (*cfun)(INT32),
 				   const char *type,

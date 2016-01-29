@@ -1018,9 +1018,6 @@ struct program *compile(struct pike_string *aprog,
 			int amajor, int aminor,
 			struct program *atarget,
 			struct object *aplaceholder);
-PMOD_EXPORT int pike_add_function2(const char *name, void (*cfun)(INT32),
-				   const char *type, unsigned flags,
-				   unsigned opt_flags);
 PMOD_EXPORT int low_quick_add_function(struct pike_string *name_tmp,
                                        void (*cfun)(INT32),
                                        const char *type,
