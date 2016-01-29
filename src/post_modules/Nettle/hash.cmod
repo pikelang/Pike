@@ -675,7 +675,10 @@ PIKECLASS Hash
 
 #endif /* SHA512_256_DIGEST_SIZE */
 
-#ifdef HAVE_NETTLE_SHA3_H
+/* NB: SHA3 in Nettle 3.2 and later does not interoperate
+ *     with earlier versions of Nettle.
+ */
+#if defined(HAVE_NETTLE_SHA3_H) && defined(NETTLE_SHA3_FIPS202)
 
 #cmod_define PIKE_NAME SHA3_224
 #cmod_define NETTLE_NAME sha3_224
@@ -701,7 +704,7 @@ PIKECLASS Hash
 #cmod_undef PIKE_NAME
 #cmod_undef NETTLE_NAME
 
-#endif /* HAVE_NETTLE_SHA3_H */
+#endif /* HAVE_NETTLE_SHA3_H && NETTLE_SHA3_FIPS202 */
 
 #ifdef HAVE_NETTLE_RIPEMD160_H
 
