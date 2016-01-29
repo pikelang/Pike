@@ -879,9 +879,6 @@ PMOD_EXPORT int quick_map_variable(const char *name,
 int define_variable(struct pike_string *name,
 		    struct pike_type *type,
 		    INT32 flags);
-PMOD_EXPORT int simple_add_variable(const char *name,
-			const char *type,
-			INT32 flags);
 PMOD_EXPORT int add_constant(struct pike_string *name,
 		 const struct svalue *c,
 		 INT32 flags);

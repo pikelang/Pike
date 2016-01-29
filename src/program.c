@@ -5689,22 +5689,6 @@ int define_variable(struct pike_string *name,
   return n;
 }
 
-PMOD_EXPORT int simple_add_variable(const char *name,
-				    const char *type,
-				    INT32 flags)
-{
-  INT32 ret;
-  struct pike_string *name_s;
-  struct pike_type *type_s;
-  name_s = make_shared_string(name);
-  type_s = parse_type(type);
-
-  ret=define_variable(name_s, type_s, flags);
-  free_string(name_s);
-  free_type(type_s);
-  return ret;
-}
-
 PMOD_EXPORT int add_constant(struct pike_string *name,
 			     const struct svalue *c,
 			     INT32 flags)
