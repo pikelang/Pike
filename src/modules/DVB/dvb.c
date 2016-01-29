@@ -1766,19 +1766,21 @@ PIKE_MODULE_INIT {
   set_init_callback(init_dvb_data);
   set_exit_callback(exit_dvb_data);
 
-    add_function("create", f_create, "function(int|void:void)", 0);
-    add_function("_sprintf", f__sprintf, "function(int,mapping|void:mixed)", 0);
-    add_function("tune", f_zap, "function(int,int,int|string,int,mapping|void:int)", 0);
-  /* add_function("set_pids", f_set_pids, "function(string,mixed:int)", 0); */
-    add_function("get_pids", f_get_pids, "function(:mapping|int)", 0);
-    add_function("analyze_pat", f_parse_pat, "function(:mapping|int)", 0);
-    add_function("analyze_pmt", f_parse_pmt, "function(int,int:array|int)", 0);
+  ADD_FUNCTION("create", f_create, tFunc(tOr(tInt,tVoid),tVoid), 0);
+  ADD_FUNCTION("_sprintf", f__sprintf, tFunc(tInt tOr(tMapping,tVoid), tMix), 0);
+  ADD_FUNCTION("tune", f_zap, tFunc(tInt tInt tOr(tInt,tStr) tInt tOr(tMapping,tVoid), tInt), 0);
+  /* ADD_FUNCTION("set_pids", f_set_pids, "function(string,mixed:int)", 0); */
+  ADD_FUNCTION("get_pids", f_get_pids, tFunc(tVoid,tOr(tMapping,tInt)), 0);
+  ADD_FUNCTION("analyze_pat", f_parse_pat, tFunc(tVoid,tOr(tMapping,tInt)), 0);
+  ADD_FUNCTION("analyze_pmt", f_parse_pmt,
+               tFunc(tInt tInt, tOr(tInt,tArray)), 0);
 
   /* Frontend */
-    add_function("fe_status", f_fe_status, "function(:mapping|int)", 0);
-    add_function("fe_info", f_fe_info, "function(:mapping|int)", 0);
+  ADD_FUNCTION("fe_status", f_fe_status, tFunc(tVoid,tOr(tMapping,tInt)), 0);
+  ADD_FUNCTION("fe_info", f_fe_info, tFunc(tVoid,tOr(tMapping,tInt)), 0);
 
-    add_function("stream", f_stream_attach, "function(int,function|int|void,int|void:object)", 0);
+  ADD_FUNCTION("stream", f_stream_attach,
+               tFunc(tInt tOr3(tFunction,tInt,tVoid) tOr(tInt,tVoid), tObj),0);
 
   dvb_program = end_program();
   add_program_constant("dvb", dvb_program, 0);
@@ -1789,12 +1791,12 @@ PIKE_MODULE_INIT {
   set_init_callback(init_dvb_stream);
   set_exit_callback(exit_dvb_stream);
 
-    add_function("create", f_stream_create, "function(object,int,function|int,int:void)", 0);
-    add_function("destroy", f_stream_detach, "function(void:void)", 0);
-    add_function("read", f_stream_read, "function(int|void:string|int)", 0);
-    add_function("set_buffer", f_stream_set_buffer, "function(int:int)", 0);
-    add_function("info", f_stream_info, "function(int:mapping|int)", 0);
-    add_function("close", f_stream_close, "function(:void)", 0);
+  ADD_FUNCTION("create", f_stream_create, tFunc(tObj tInt tOr(tFunction,tInt) tInt, tVoid), 0);
+  ADD_FUNCTION("destroy", f_stream_detach, tFunc(tVoid,tVoid), 0);
+  ADD_FUNCTION("read", f_stream_read, tFunc(tOr(tInt,tVoid),tOr(tInt,tStr)),0);
+  ADD_FUNCTION("set_buffer", f_stream_set_buffer, tFunc(tInt,tInt), 0);
+  ADD_FUNCTION("info", f_stream_info, tFunc(tInt, tOr(tMapping,tInt)), 0);
+  ADD_FUNCTION("close", f_stream_close, tFunc(tVoid,tVoid), 0);
 
   dvb_stream_program = end_program();
   add_program_constant("Stream", dvb_stream_program, 0);
@@ -1805,11 +1807,11 @@ PIKE_MODULE_INIT {
   set_init_callback(init_dvb_audio);
   set_exit_callback(exit_dvb_audio);
 
-    add_function("create", f_audio_create, "function(int|void:void)", 0);
-    add_function("mute", f_audio_mute, "function(int|void:int)", 0);
-    add_function("status", f_audio_status, "function(:mapping|int)", 0);
-    add_function("ctrl", f_audio_ctrl, "function(int|string:int)", 0);
-    add_function("mixer", f_audio_mixer, "function(int,int|void:int)", 0);
+  ADD_FUNCTION("create", f_audio_create, tFunc(tOr(tInt,tVoid),tVoid), 0);
+  ADD_FUNCTION("mute", f_audio_mute, tFunc(tOr(tInt,tVoid),tInt), 0);
+  ADD_FUNCTION("status", f_audio_status, tFunc(tVoid,tOr(tMapping,tInt)), 0);
+  ADD_FUNCTION("ctrl", f_audio_ctrl, tFunc(tOr(tInt,tStr),tInt), 0);
+  ADD_FUNCTION("mixer", f_audio_mixer, tFunc(tInt tOr(tInt,tVoid),tInt), 0);
 
   end_class("Audio", 0);
 

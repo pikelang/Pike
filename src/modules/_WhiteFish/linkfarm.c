@@ -222,10 +222,9 @@ void init_linkfarm_program(void)
 {
   start_new_program();
   ADD_STORAGE(struct linkfarm);
-  add_function("add",f_linkfarm_add,
-	       "function(string:void)",0 );
-  add_function("memsize", f_linkfarm_memsize, "function(void:int)", 0 );
-  add_function("read", f_linkfarm_read, "function(void:array(string))", 0 );
+  ADD_FUNCTION("add",f_linkfarm_add,tFunc(tStr,tVoid),0);
+  ADD_FUNCTION("memsize", f_linkfarm_memsize, tFunc(tVoid,tInt), 0 );
+  ADD_FUNCTION("read", f_linkfarm_read, tFunc(tVoid,tArr(tStr)), 0 );
   set_init_callback( init_linkfarm_struct );
   set_exit_callback( exit_linkfarm_struct );
   linkfarm_program = end_program( );

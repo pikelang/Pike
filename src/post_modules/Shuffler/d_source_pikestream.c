@@ -198,6 +198,6 @@ void source_pikestream_init( )
 {
   start_new_program();
   ADD_STORAGE( struct callback_prog );
-  add_function("`()", f_got_data, "function(int,string:void)",0);
+  ADD_FUNCTION("`()", f_got_data, tFunc(tInt tStr,tVoid),0);
   callback_program = end_program();
 }

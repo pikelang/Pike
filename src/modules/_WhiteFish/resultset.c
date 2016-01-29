@@ -999,45 +999,42 @@ void init_resultset_program(void)
   start_new_program();
   {
     ADD_STORAGE( struct result_set_p );
-    add_function("cast", f_resultset_cast, "function(string:mixed)", ID_PRIVATE );
-    add_function("create",f_resultset_create,
-		 "function(void|array(int|array(int)):void)",0);
+    ADD_FUNCTION("cast", f_resultset_cast, tFunc( tStr, tMix ), ID_PRIVATE );
+    ADD_FUNCTION("create",f_resultset_create,
+                 tFunc( tOr(tArr(tOr(tInt,tArr(tInt))),tVoid), tVoid ), 0);
 
-    add_function("sort",f_resultset_sort,"function(void:object)",0);
-    add_function("sort_rev",f_resultset_sort_rev,"function(void:object)",0);
-    add_function("sort_docid",f_resultset_sort_docid,
-		 "function(void:object)",0);
+    ADD_FUNCTION("sort",f_resultset_sort,tFunc(tVoid,tObj),0);
+    ADD_FUNCTION("sort_rev",f_resultset_sort_rev,tFunc(tVoid,tObj),0);
+    ADD_FUNCTION("sort_docid",f_resultset_sort_docid,tFunc(tVoid,tObj),0);
 
-    add_function("dup",f_resultset_dup,"function(void:object)",0);
+    ADD_FUNCTION("dup",f_resultset_dup,tFunc(tVoid,tObj),0);
 
-    add_function("slice",f_resultset_slice,
-		 "function(int,int:array(array(int)))",0);
+    ADD_FUNCTION("slice",f_resultset_slice,
+                 tFunc(tInt tInt,tArr(tArr(tInt))),0);
 
-    add_function( "or", f_resultset_or, "function(object:object)", 0 );
-    add_function( "`|", f_resultset_or, "function(object:object)", 0 );
-    add_function( "`+", f_resultset_or, "function(object:object)", 0 );
+    ADD_FUNCTION( "or", f_resultset_or, tFunc(tObj,tObj), 0 );
+    ADD_FUNCTION( "`|", f_resultset_or, tFunc(tObj,tObj), 0 );
+    ADD_FUNCTION( "`+", f_resultset_or, tFunc(tObj,tObj), 0 );
 
-    add_function( "sub", f_resultset_sub, "function(object:object)", 0 );
-    add_function( "`-", f_resultset_sub, "function(object:object)", 0 );
+    ADD_FUNCTION( "sub", f_resultset_sub, tFunc(tObj,tObj), 0 );
+    ADD_FUNCTION( "`-", f_resultset_sub, tFunc(tObj,tObj), 0 );
 
-    add_function( "add_ranking", f_resultset_add_ranking,
-		  "function(object:object)", 0 );
+    ADD_FUNCTION( "add_ranking", f_resultset_add_ranking, tFunc(tObj,tObj), 0);
 
-    add_function( "intersect", f_resultset_intersect,
-		  "function(object:object)", 0 );
-    add_function( "`&", f_resultset_intersect, "function(object:object)", 0 );
+    ADD_FUNCTION( "intersect", f_resultset_intersect, tFunc(tObj,tObj), 0);
+    ADD_FUNCTION( "`&", f_resultset_intersect, tFunc(tObj,tObj), 0 );
 
-    add_function("add", f_resultset_add, "function(int,int:void)", 0 );
-    add_function("add_many", f_resultset_add_many,
-		 "function(array(int),array(int):void)", 0 );
-    add_function("_sizeof",f_resultset__sizeof,"function(void:int)", 0 );
-    add_function("size",f_resultset__sizeof,"function(void:int)", 0 );
+    ADD_FUNCTION("add", f_resultset_add, tFunc(tInt tInt,tVoid), 0 );
+    ADD_FUNCTION("add_many", f_resultset_add_many,
+                 tFunc(tArr(tInt) tArr(tInt),tVoid), 0 );
+    ADD_FUNCTION("_sizeof",f_resultset__sizeof,tFunc(tVoid,tInt), 0 );
+    ADD_FUNCTION("size",f_resultset__sizeof,tFunc(tVoid,tInt), 0 );
 
     /* debug related functions */
-    add_function("memsize",f_resultset_memsize,"function(void:int)", 0 );
-    add_function("overhead",f_resultset_overhead,"function(void:int)", 0 );
-    add_function("test", f_resultset_test, "function(int,int,int:int)", 0 );
-    add_function( "finalize", f_dateset_finalize, "function(void:object)", 0 );
+    ADD_FUNCTION("memsize",f_resultset_memsize,tFunc(tVoid,tInt), 0 );
+    ADD_FUNCTION("overhead",f_resultset_overhead,tFunc(tVoid,tInt), 0 );
+    ADD_FUNCTION("test", f_resultset_test, tFunc(tInt tInt tInt,tInt), 0 );
+    ADD_FUNCTION( "finalize", f_dateset_finalize, tFunc(tVoid,tObj), 0 );
 
     set_init_callback( init_rs );
     set_exit_callback( free_rs );
@@ -1049,10 +1046,11 @@ void init_resultset_program(void)
   {
     struct svalue x;
     SET_SVAL(x, PIKE_T_PROGRAM, 0, program, resultset_program);
-    add_function( "before", f_dateset_before,    "function(int:object)", 0 );
-    add_function( "after", f_dateset_after,     "function(int:object)", 0 );
-    add_function( "between", f_dateset_between, "function(int,int:object)", 0 );
-    add_function( "not_between", f_dateset_not_between, "function(int,int:object)", 0 );
+    ADD_FUNCTION( "before", f_dateset_before,  tFunc(tInt,tObj), 0 );
+    ADD_FUNCTION( "after", f_dateset_after,    tFunc(tInt,tObj), 0 );
+    ADD_FUNCTION( "between", f_dateset_between,tFunc(tInt tInt,tObj), 0 );
+    ADD_FUNCTION( "not_between", f_dateset_not_between,
+                  tFunc(tInt tInt,tObj), 0 );
     do_inherit( &x, 0, NULL );
   }
   dateset_program = end_program( );

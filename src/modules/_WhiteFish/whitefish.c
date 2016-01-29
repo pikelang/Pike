@@ -650,20 +650,17 @@ PIKE_MODULE_INIT
   init_blobs_program();
   init_linkfarm_program();
 
-  add_function( "do_query_or", f_do_query_or,
-		"function(array(string),array(int),array(int),int"
-		",function(string,int,int:string):object)",
-		0 );
+  ADD_FUNCTION( "do_query_or", f_do_query_or,
+                tFunc( tArr(tStr) tArr(tInt) tArr(tInt) tInt
+                       tFunc(tStr tInt tInt, tStr), tObj), 0 );
 
-  add_function( "do_query_and", f_do_query_and,
-		"function(array(string),array(int),array(int),int"
-		",function(string,int,int:string):object)",
-		0 );
+  ADD_FUNCTION( "do_query_and", f_do_query_and,
+                tFunc( tArr(tStr) tArr(tInt) tArr(tInt) tInt
+                       tFunc(tStr tInt tInt, tStr), tObj), 0 );
 
-  add_function( "do_query_phrase", f_do_query_phrase,
-		"function(array(string),array(int)"
-		",function(string,int,int:string):object)",
-		0 );
+  ADD_FUNCTION( "do_query_phrase", f_do_query_phrase,
+                tFunc( tArr(tStr) tArr(tInt) tFunc(tStr tInt tInt, tStr),
+                       tObj ), 0 );
 }
 
 PIKE_MODULE_EXIT

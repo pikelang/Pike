@@ -252,11 +252,10 @@ void init_blobs_program(void)
 {
   start_new_program();
   ADD_STORAGE( struct blobs );
-  add_function("add_words",f_blobs_add_words,
-	       "function(int,array,int:void)",0 );
-  add_function("memsize", f_blobs_memsize, "function(void:int)", 0 );
-  add_function("read", f_blobs_read, "function(void:array(string))", 0);
-  add_function("read_all_sorted", f_blobs_read_all_sorted, "function(void:array(array(string)))", 0);
+  ADD_FUNCTION("add_words",f_blobs_add_words,tFunc(tInt tArray tInt,tVoid),0 );
+  ADD_FUNCTION("memsize", f_blobs_memsize, tFunc(tVoid,tInt), 0 );
+  ADD_FUNCTION("read", f_blobs_read, tFunc(tVoid,tArr(tStr)), 0);
+  ADD_FUNCTION("read_all_sorted", f_blobs_read_all_sorted, tFunc(tVoid,tArr(tArr(tStr))), 0);
   set_init_callback( init_blobs_struct );
   set_exit_callback( exit_blobs_struct );
   blobs_program = end_program( );

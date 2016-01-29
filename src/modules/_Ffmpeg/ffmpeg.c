@@ -587,7 +587,7 @@ static void exit_ffmpeg_data(struct object *obj) {
 
 PIKE_MODULE_INIT {
 
-  add_function("list_codecs", f_list_codecs, "function(:array|int)", 0);
+  ADD_FUNCTION("list_codecs", f_list_codecs, tFunc(tVoid,tOr(tArray,tInt)), 0);
 
 #ifdef LIBAVCODEC_VERSION
   add_string_constant("lib_version", DEFINETOSTR(LIBAVCODEC_VERSION), 0);
@@ -707,12 +707,12 @@ PIKE_MODULE_INIT {
   start_new_program();
   ADD_STORAGE(ffmpeg_data);
 
-  add_function("create", f_create, "function(int, int, int|void, int|void, int|void:void)", 0);
-  add_function("get_codec_info", f_codec_info, "function(:mapping)", 0);
-  add_function("decode", f_decode, "function(string:mapping|int)", 0);
-  add_function("encode", f_encode, "function(string:mapping|int)", 0);
-  add_function("set_codec_param", f_set_codec_param, "function(string,mixed:int)", 0);
-  add_function("get_codec_status", f_get_codec_status, "function(:mapping|int)", 0);
+  ADD_FUNCTION("create", f_create, tFunc(tInt tInt tOr(tInt,tVoid) tOr(tInt,tVoid) tOr(tInt,tVoid), tVoid), 0);
+  ADD_FUNCTION("get_codec_info", f_codec_info, tFunc(tVoid,tMapping), 0);
+  ADD_FUNCTION("decode", f_decode, tFunc(tStr,tOr(tMapping,tInt)), 0);
+  ADD_FUNCTION("encode", f_encode, tFunc(tStr,tOr(tMapping,tInt)), 0);
+  ADD_FUNCTION("set_codec_param", f_set_codec_param, tFunc(tStr tMix,tInt), 0);
+  ADD_FUNCTION("get_codec_status", f_get_codec_status, tFunc(tVoid,tOr(tMapping,tInt)), 0);
 
   set_init_callback(init_ffmpeg_data);
   set_exit_callback(exit_ffmpeg_data);

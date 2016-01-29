@@ -500,16 +500,14 @@ PIKE_MODULE_INIT
   rsvg_init(); /* Initialize librsvg */
 #endif
 
-  add_function( "decode", f_decode,
-		"function(string,mapping|void:object)", 0 );
-  add_function( "_decode", f__decode,
-		"function(string,mapping|void:"
-		"      mapping(string:int|string|object))", 0 );
-  add_function( "decode_layers", f_decode_layers,
-		"function(string,mapping|void:array(object))", 0 );
-  add_function( "decode_header", f_decode_header,
-		"function(string,mapping|void:mapping(string:string|int))",
-		0 );
+  ADD_FUNCTION( "decode", f_decode, tFunc(tStr tOr(tMapping,tVoid), tObj), 0 );
+  ADD_FUNCTION( "_decode", f__decode, tFunc(tStr tOr(tMapping,tVoid),
+                                            tMap(tStr,tOr3(tInt,tStr,tObj))),
+                0 );
+  ADD_FUNCTION( "decode_layers", f_decode_layers,
+                tFunc(tStr tOr(tMapping,tVoid), tArr(tObj)), 0 );
+  ADD_FUNCTION( "decode_header", f_decode_header,
+                tFunc(tStr tOr(tMapping,tVoid),tMap(tStr,tOr(tInt,tStr))), 0);
 #endif
 }
 

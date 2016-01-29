@@ -577,14 +577,13 @@ void init_blob_program(void)
 {
   start_new_program();
   ADD_STORAGE( struct blob_data );
-  add_function( "create", f_blob_create, "function(string|void:void)", 0 );
-  add_function( "merge", f_blob_merge, "function(string:void)", 0 );
-  add_function( "add", f_blob_add, "function(int,int,int:void)",0 );
-  add_function( "remove", f_blob_remove, "function(int:void)",0 );
-  add_function( "remove_list", f_blob_remove_list,
-		"function(array(int):void)",0 );
-  add_function( "data", f_blob__cast, "function(void:string)", 0 );
-  add_function( "memsize", f_blob_memsize, "function(void:int)", 0 );
+  ADD_FUNCTION( "create", f_blob_create, tFunc(tOr(tStr,tVoid),tVoid), 0 );
+  ADD_FUNCTION( "merge", f_blob_merge, tFunc(tStr,tVoid), 0 );
+  ADD_FUNCTION( "add", f_blob_add, tFunc(tInt tInt tInt,tVoid),0 );
+  ADD_FUNCTION( "remove", f_blob_remove, tFunc(tInt,tVoid),0 );
+  ADD_FUNCTION( "remove_list", f_blob_remove_list, tFunc(tArr(tInt),tVoid), 0);
+  ADD_FUNCTION( "data", f_blob__cast, tFunc(tVoid,tStr), 0 );
+  ADD_FUNCTION( "memsize", f_blob_memsize, tFunc(tVoid,tInt), 0 );
   set_init_callback( init_blob_struct );
   set_exit_callback( exit_blob_struct );
   blob_program = end_program( );

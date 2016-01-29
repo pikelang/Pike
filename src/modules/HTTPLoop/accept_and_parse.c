@@ -806,15 +806,15 @@ PIKE_MODULE_INIT
 
   start_new_program();
   ADD_STORAGE(struct args);
-  add_function("create", f_accept_with_http_parse,
-	       "function(object,program,function,mixed,int,int,int:void)", 0);
-  add_function("cache_status", f_cache_status,"function(void:mapping)", 0);
-  add_function("log_as_array",f_aap_log_as_array,"function(void:array(object))",0);
-  add_function("log_as_commonlog_to_file", f_aap_log_as_commonlog_to_file,
-	       "function(object:int)", 0);
+  ADD_FUNCTION("create", f_accept_with_http_parse,
+               tFunc(tObj tPrg(tObj) tFunction tMix tInt tInt tInt, tVoid), 0);
+  ADD_FUNCTION("cache_status", f_cache_status,tFunc(tVoid,tMapping), 0);
+  ADD_FUNCTION("log_as_array",f_aap_log_as_array,tFunc(tVoid,tArr(tObj)),0);
+  ADD_FUNCTION("log_as_commonlog_to_file", f_aap_log_as_commonlog_to_file,
+               tFunc(tObj,tInt), 0);
 
-  add_function("log_size", f_aap_log_size, "function(void:int)", 0);
-  add_function("logp", f_aap_log_exists, "function(void:int)", 0);
+  ADD_FUNCTION("log_size", f_aap_log_size, tFunc(tVoid,tInt), 0);
+  ADD_FUNCTION("logp", f_aap_log_exists, tFunc(tVoid,tInt), 0);
 
   add_program_constant("Loop", accept_loop_program = end_program(), 0);
 
@@ -835,21 +835,22 @@ PIKE_MODULE_INIT
 
   start_new_program();
   ADD_STORAGE(struct c_request_object);
-  add_function("`[]", f_aap_index_op, "function(string:mixed)",0);
-  add_function("`->", f_aap_index_op, "function(string:mixed)",0);
+  ADD_FUNCTION("`[]", f_aap_index_op, tFunc(tStr,tMix),0);
+  ADD_FUNCTION("`->", f_aap_index_op, tFunc(tStr,tMix),0);
 
-/* add_function("`->=", f_index_equal_op, "function(string,mixed:mixed)",0); */
-/* add_function("`[]=", f_index_equal_op, "function(string,mixed:mixed)",0); */
+/* ADD_FUNCTION("`->=", f_index_equal_op, "function(string,mixed:mixed)",0); */
+/* ADD_FUNCTION("`[]=", f_index_equal_op, "function(string,mixed:mixed)",0); */
 
-  add_function("scan_for_query", f_aap_scan_for_query,
-	       "function(string:string)", OPT_TRY_OPTIMIZE);
+  ADD_FUNCTION("scan_for_query", f_aap_scan_for_query,
+               tFunc(tStr,tStr), OPT_TRY_OPTIMIZE);
 
-  add_function("end", f_aap_end, "function(string|void,int|void:void)", 0);
-  add_function("send", f_aap_output, "function(string:void)", 0);
-  add_function("reply", f_aap_reply,
-	       "function(string|void,object|void,int|void:void)", 0);
-  add_function("reply_with_cache", f_aap_reply_with_cache,
-	       "function(string,int:void)", 0);
+  ADD_FUNCTION("end", f_aap_end,
+               tFunc(tOr(tStr,tVoid) tOr(tInt,tVoid),tVoid), 0);
+  ADD_FUNCTION("send", f_aap_output, tFunc(tStr,tVoid), 0);
+  ADD_FUNCTION("reply", f_aap_reply,
+               tFunc(tOr(tStr,tVoid) tOr(tObj,tVoid) tOr(tInt,tVoid),tVoid),0);
+  ADD_FUNCTION("reply_with_cache", f_aap_reply_with_cache,
+               tFunc(tStr tInt,tVoid), 0);
   set_init_callback( aap_init_request_object );
   set_exit_callback( aap_exit_request_object );
   add_program_constant("prog", (c_request_program = end_program()), 0);
