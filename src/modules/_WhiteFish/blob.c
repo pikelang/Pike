@@ -521,7 +521,7 @@ static void f_blob__cast( INT32 args )
     int nh;
 #ifdef PIKE_DEBUG
     if( zipp[i].b->size < 7 )
-      fatal( "Expected at least 7 bytes! (1 hit)\n");
+      Pike_fatal( "Expected at least 7 bytes! (1 hit)\n");
     else
 #endif
     if((nh = zipp[i].b->data[4]) > 1 )

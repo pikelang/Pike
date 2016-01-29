@@ -140,8 +140,8 @@ void gc_mark_stack_external (struct pike_frame *f,
 				     " in malloced locals of trampoline frame on stack");
 	  } else {
 	    if (f->locals > stack_p || (stack_p - f->locals) >= 0x10000) {
-	      fatal("Unreasonable locals: stack:%p locals:%p\n",
-		    stack_p, f->locals);
+              Pike_fatal("Unreasonable locals: stack:%p locals:%p\n",
+                         stack_p, f->locals);
 	    }
 	    gc_mark_external_svalues (f->locals, stack_p - f->locals, " on svalue stack");
 	    stack_p = f->locals;
@@ -2882,8 +2882,8 @@ int apply_low_safe_and_stupid(struct object *o, INT32 offset)
 
 #ifdef PIKE_DEBUG
   if (Pike_fp && (new_frame->locals < Pike_fp->locals)) {
-    fatal("New locals below old locals: %p < %p\n",
-	  new_frame->locals, Pike_fp->locals);
+    Pike_fatal("New locals below old locals: %p < %p\n",
+               new_frame->locals, Pike_fp->locals);
   }
 #endif /* PIKE_DEBUG */
 

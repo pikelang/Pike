@@ -140,8 +140,8 @@
       if (Pike_fp) {
 
 	if (new_frame->locals < Pike_fp->locals) {
-	  fatal("New locals below old locals: %p < %p\n",
-		new_frame->locals, Pike_fp->locals);
+          Pike_fatal("New locals below old locals: %p < %p\n",
+                     new_frame->locals, Pike_fp->locals);
 	}
 
 	if (d_flag > 1) {

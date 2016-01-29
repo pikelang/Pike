@@ -38,7 +38,7 @@ static void wf_buffer_make_space( struct buffer *b, unsigned int n )
 {
 #ifdef PIKE_DEBUG
   if( b->read_only )
-    fatal("Oops\n");
+    Pike_fatal("Oops\n");
 #endif
   if( b->allocated_size-b->size < n )
   {
@@ -142,7 +142,7 @@ void wf_buffer_seek_w( struct buffer *b, unsigned int pos )
 {
 #ifdef PIKE_DEBUG
   if( b->read_only )
-    fatal( "Oops, read_only\n");
+    Pike_fatal( "Oops, read_only\n");
 #endif
   if( pos > b->size )
   {

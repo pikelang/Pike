@@ -1808,7 +1808,7 @@ void gc_mark_enqueue (queue_call call, void *data)
   if(!b || b->used >= GC_QUEUE_ENTRIES)
   {
     b = (struct gc_queue_block *) malloc (sizeof (struct gc_queue_block));
-    if (!b) fatal ("Out of memory in gc.\n");
+    if (!b) Pike_fatal ("Out of memory in gc.\n");
     b->used=0;
     b->next=0;
     if(gc_mark_first)
@@ -2709,7 +2709,7 @@ void gc_cycle_run_queue()
       struct gc_rec_frame *old_stack_top = stack_top;
       gc_cycle_pop();
       if (stack_top == old_stack_top)
-	fatal ("gc_cycle_pop didn't pop the stack.\n");
+        Pike_fatal ("gc_cycle_pop didn't pop the stack.\n");
     }
 #else
     gc_cycle_pop();
@@ -2774,7 +2774,8 @@ static struct gc_rec_frame *rotate_rec_stack (struct gc_rec_frame *beg,
   for (; beg->rf_flags & GC_PREV_STRONG; beg = beg->prev)
     CYCLE_DEBUG_MSG (beg, "> rotate_rec_stack, skipping strong");
 #ifdef PIKE_DEBUG
-  if (beg == &sentinel_frame) fatal ("Strong ref chain ended up off stack.\n");
+  if (beg == &sentinel_frame)
+    Pike_fatal ("Strong ref chain ended up off stack.\n");
 #endif
   CYCLE_DEBUG_MSG (beg, "> rotate_rec_stack, actual beg");
 
@@ -3670,7 +3671,8 @@ size_t do_gc(void *UNUSED(ignored), int explicit_call)
 			  max_rec_frames, free_extra_frames));
 
 #ifdef PIKE_DEBUG
-    if (link_frames) fatal ("Leaked %u link frames.\n", link_frames);
+    if (link_frames)
+      Pike_fatal ("Leaked %u link frames.\n", link_frames);
 #endif
   }
 
@@ -3780,7 +3782,8 @@ size_t do_gc(void *UNUSED(ignored), int explicit_call)
   }
 
 #ifdef PIKE_DEBUG
-  if (free_extra_frames) fatal ("Leaked %u free extra frames.\n", free_extra_frames);
+  if (free_extra_frames)
+    Pike_fatal ("Leaked %u free extra frames.\n", free_extra_frames);
 #endif
 
   GC_VERBOSE_DO(fprintf(stderr, "| free: %"PRINTSIZET"u unreferenced, "
@@ -3892,7 +3895,8 @@ size_t do_gc(void *UNUSED(ignored), int explicit_call)
   }
 
 #ifdef PIKE_DEBUG
-  if (rec_frames) fatal ("Leaked %u rec frames.\n", rec_frames);
+  if (rec_frames)
+    Pike_fatal ("Leaked %u rec frames.\n", rec_frames);
 #endif
 
   GC_VERBOSE_DO(fprintf(stderr, "| kill: %u objects killed, "

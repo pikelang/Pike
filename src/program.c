@@ -4570,8 +4570,8 @@ PMOD_EXPORT int really_low_reference_inherited_identifier(struct program_state *
    */
 #ifdef PIKE_DEBUG
   if (num_id_refs != np->num_identifier_references-1) {
-    fatal("Unexpected number of identifier references: %d != %d\n",
-	  num_id_refs, np->num_identifier_references-1);
+    Pike_fatal("Unexpected number of identifier references: %d != %d\n",
+               num_id_refs, np->num_identifier_references-1);
   }
 #endif /* PIKE_DEBUG */
 

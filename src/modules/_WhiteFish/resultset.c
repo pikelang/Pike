@@ -44,7 +44,7 @@ static struct program *dateset_program;
 struct program *resultset_program;
 struct object *wf_not_resultset( struct object *o )
 {
-  fatal("%p is not a resultset!\n", o );
+  Pike_fatal("%p is not a resultset!\n", o );
   UNREACHABLE(return 0);
 }
 #else
@@ -85,13 +85,13 @@ void wf_resultset_avg_ranking( struct object *o, int ind, int weight )
 {
 #ifdef PIKE_DEBUG
   if( !T(o)->d )
-    fatal("Odd, indeed. Encountered empty resultset\n");
+    Pike_fatal("Odd, indeed. Encountered empty resultset\n");
 #endif
   if( ind < 0 )
     ind = T(o)->d->num_docs-1;
 #ifdef PIKE_DEBUG
   if( ind < 0 || ind > T(o)->d->num_docs-1)
-    fatal( "Indexing resultset with -1\n");
+    Pike_fatal( "Indexing resultset with -1\n");
 #endif
   T(o)->d->hits[ind].ranking=(T(o)->d->hits[ind].ranking>>1)+(weight>>1);
 }
@@ -100,13 +100,13 @@ void wf_resultset_add_ranking( struct object *o, int ind, int weight )
 {
 #ifdef PIKE_DEBUG
   if( !T(o)->d )
-    fatal("Odd, indeed. Encountered empty resultset\n");
+    Pike_fatal("Odd, indeed. Encountered empty resultset\n");
 #endif
   if( ind < 0 )
     ind = T(o)->d->num_docs-1;
 #ifdef PIKE_DEBUG
   if( ind < 0 || ind > T(o)->d->num_docs-1)
-    fatal( "Indexing resultset with -1\n");
+    Pike_fatal( "Indexing resultset with -1\n");
 #endif
   T(o)->d->hits[ind].ranking=(T(o)->d->hits[ind].ranking)+(weight);
 }
