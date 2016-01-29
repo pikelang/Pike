@@ -864,11 +864,6 @@ int low_define_variable(struct pike_string *name,
 			size_t offset,
 			INT32 run_time_type);
 void fix_auto_variable_type( int id, struct pike_type *type );
-PMOD_EXPORT int map_variable(const char *name,
-		 const char *type,
-		 INT32 flags,
-		 size_t offset,
-		 INT32 run_time_type);
 PMOD_EXPORT int quick_map_variable(const char *name,
 		       int name_length,
 		       size_t offset,

@@ -5448,32 +5448,6 @@ int low_define_variable(struct pike_string *name,
   return n;
 }
 
-/* type is a textual type */
-PMOD_EXPORT int map_variable(const char *name,
-		 const char *type,
-		 INT32 flags,
-		 size_t offset,
-		 INT32 run_time_type)
-{
-  int ret;
-  struct pike_string *n;
-  struct pike_type *t;
-
-#ifdef PROGRAM_BUILD_DEBUG
-  struct compilation *c = THIS_COMPILATION;
-  fprintf (stderr, "%.*sdefining variable (pass=%d): %s %s\n",
-	   c->compilation_depth, "",
-	   Pike_compiler->compiler_pass, type, name);
-#endif
-
-  n=make_shared_string(name);
-  t=parse_type(type);
-  ret=low_define_variable(n,t,flags|ID_USED,offset,run_time_type);
-  free_string(n);
-  free_type(t);
-  return ret;
-}
-
 /* type is a serialized tokenized type. */
 PMOD_EXPORT int quick_map_variable(const char *name,
 		       int name_length,
