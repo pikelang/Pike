@@ -1395,7 +1395,7 @@ static void report_child(int pid,
 #ifdef USE_WAIT_THREAD
 static COND_T process_status_change;
 static COND_T start_wait_thread;
-static MUTEX_T wait_thread_mutex;
+static PIKE_MUTEX_T wait_thread_mutex;
 static int wait_thread_running = 0;
 
 static void do_da_lock(void)

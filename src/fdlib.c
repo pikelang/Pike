@@ -25,7 +25,7 @@
 
 #include "threads.h"
 
-static MUTEX_T fd_mutex;
+static PIKE_MUTEX_T fd_mutex;
 
 HANDLE da_handle[FD_SETSIZE];
 int fd_type[FD_SETSIZE];

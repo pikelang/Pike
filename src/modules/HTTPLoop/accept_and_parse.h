@@ -82,7 +82,7 @@ struct filesystem
 
 struct cache
 {
-  MUTEX_T mutex;
+  PIKE_MUTEX_T mutex;
   struct cache *next;
   struct cache_entry *htable[CACHE_HTABLE_SIZE];
   unsigned LONG_LONG size, entries, max_size;
@@ -125,7 +125,7 @@ struct log
   struct log *next;
   struct log_entry *log_head;
   struct log_entry *log_tail;
-  MUTEX_T log_lock;
+  PIKE_MUTEX_T log_lock;
 };
 
 

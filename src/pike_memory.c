@@ -993,7 +993,7 @@ int exit_cleanup_in_progress = 0;
 #include "threads.h"
 
 #ifdef _REENTRANT
-static MUTEX_T debug_malloc_mutex;
+static PIKE_MUTEX_T debug_malloc_mutex;
 #endif
 
 

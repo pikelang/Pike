@@ -40,7 +40,7 @@
 #endif /* HAVE_POLL */
 
 
-static MUTEX_T aap_timeout_mutex;
+static PIKE_MUTEX_T aap_timeout_mutex;
 
 struct timeout
 {

@@ -85,7 +85,7 @@
  * only that. However, if anybody experiences deadlocks, restore this
  * behaviour.
  */
-static MUTEX_T mainlock;
+static PIKE_MUTEX_T mainlock;
 #define SYB_LOCK(X) sybdebug((stderr,"locking %s\n",#X));mt_lock(&(X))
 #define SYB_UNLOCK(X) sybdebug((stderr,"unlocking %s\n",#X));mt_unlock(&(X))
 #define SYB_MT_INIT(X) mt_init(&(X))
@@ -179,7 +179,7 @@ PIKECLASS sybase
   CVAR int numcols; /* the number of columns */
 
 #ifdef _REENTRANT
-  CVAR MUTEX_T lock;
+  CVAR PIKE_MUTEX_T lock;
 #endif
 
   DECLARE_STORAGE;

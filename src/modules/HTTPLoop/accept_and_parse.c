@@ -83,10 +83,10 @@ struct program *accept_loop_program;
 /* there.. */
 
 #define MAXLEN (1024*1024*10)
-static MUTEX_T queue_mutex;
+static PIKE_MUTEX_T queue_mutex;
 static struct args *request, *last;
 
-static MUTEX_T arg_lock;
+static PIKE_MUTEX_T arg_lock;
 static int next_free_arg, num_args;
 static struct args *free_arg_list[100];
 

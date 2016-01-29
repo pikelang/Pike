@@ -44,7 +44,7 @@ typedef struct {
   int numcols; /* the number of columns */
 
 #ifdef _REENTRANT
-  MUTEX_T lock;
+  PIKE_MUTEX_T lock;
 #endif
 
 } pike_sybase_connection;

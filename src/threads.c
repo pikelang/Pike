@@ -171,7 +171,7 @@ PMOD_EXPORT int low_nt_create_thread(unsigned Pike_stack_size,
 #endif
 
 #ifdef SIMULATE_COND_WITH_EVENT
-PMOD_EXPORT int co_wait(COND_T *c, MUTEX_T *m)
+PMOD_EXPORT int co_wait(COND_T *c, PIKE_MUTEX_T *m)
 {
   struct cond_t_queue me;
   event_init(&me.event);
@@ -205,7 +205,7 @@ PMOD_EXPORT int co_wait(COND_T *c, MUTEX_T *m)
   return 0;
 }
 
-PMOD_EXPORT int co_wait_timeout(COND_T *c, MUTEX_T *m, long s, long nanos)
+PMOD_EXPORT int co_wait_timeout(COND_T *c, PIKE_MUTEX_T *m, long s, long nanos)
 {
   struct cond_t_queue me;
   event_init(&me.event);
@@ -390,10 +390,10 @@ static THREAD_T threads_disabled_thread = 0;
 PMOD_EXPORT unsigned long thread_yields = 0;
 #endif
 static int th_running = 0;
-static MUTEX_T interpreter_lock;
-static MUTEX_T interpreter_lock_wanted;
-MUTEX_T thread_table_lock;
-static MUTEX_T interleave_lock;
+static PIKE_MUTEX_T interpreter_lock;
+static PIKE_MUTEX_T interpreter_lock_wanted;
+PIKE_MUTEX_T thread_table_lock;
+static PIKE_MUTEX_T interleave_lock;
 static struct program *mutex_key = 0;
 PMOD_EXPORT struct program *thread_id_prog = 0;
 static struct program *thread_local_prog = 0;
@@ -3220,8 +3220,7 @@ static struct farmer {
 #endif /* HAVE_BROKEN_LINUX_THREAD_EUID */
 } *farmers;
 
-static MUTEX_T rosie;
-
+static PIKE_MUTEX_T rosie;
 
 static int _num_farmers, _num_idle_farmers;
 

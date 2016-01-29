@@ -125,7 +125,7 @@ extern unsigned int mysql_port;
 extern char *mysql_unix_port;
 #endif /* HAVE_MYSQL_UNIX_PORT */
 #ifdef _REENTRANT
-static MUTEX_T stupid_port_lock;
+static PIKE_MUTEX_T stupid_port_lock;
 #define STUPID_PORT_INIT()	mt_init(&stupid_port_lock)
 #define STUPID_PORT_LOCK()	mt_lock(&stupid_port_lock)
 #define STUPID_PORT_UNLOCK()	mt_unlock(&stupid_port_lock)
@@ -143,7 +143,7 @@ static MUTEX_T stupid_port_lock;
 #define MYSQL_LOCK		(&(PIKE_MYSQL->lock))
 #define INIT_MYSQL_LOCK()	mt_init(MYSQL_LOCK)
 #define DESTROY_MYSQL_LOCK()	mt_destroy(MYSQL_LOCK)
-#define MYSQL_ALLOW()		do { MUTEX_T *__l = MYSQL_LOCK; THREADS_ALLOW(); mt_lock(__l);
+#define MYSQL_ALLOW()		do { PIKE_MUTEX_T *__l = MYSQL_LOCK; THREADS_ALLOW(); mt_lock(__l);
 #define MYSQL_DISALLOW()	mt_unlock(__l); THREADS_DISALLOW(); } while(0)
 #else /* !_REENTRANT */
 #define INIT_MYSQL_LOCK()

@@ -722,11 +722,6 @@ PMOD_EXPORT HANDLE CheckValidHandle(HANDLE h);
 #endif
 #endif
 
-#ifndef NO_PIKE_SHORTHAND
-#define MUTEX_T PIKE_MUTEX_T
-#endif
-
-
 /* Initializer macros for static mutex and condition variables */
 #ifdef PTHREAD_MUTEX_INITIALIZER
 #define HAS_STATIC_MUTEX_INIT

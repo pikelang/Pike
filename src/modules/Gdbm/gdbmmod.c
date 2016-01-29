@@ -23,7 +23,7 @@
 #include <gdbm.h>
 
 #ifdef _REENTRANT
-static MUTEX_T gdbm_lock STATIC_MUTEX_INIT;
+static PIKE_MUTEX_T gdbm_lock STATIC_MUTEX_INIT;
 #endif
 
 #define sp Pike_sp
