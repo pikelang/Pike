@@ -1141,10 +1141,6 @@ static inline int PIKE_UNUSED_ATTRIBUTE FIND_LFUN(struct program * p, int lfun) 
   pike_add_function2(NAME, CFUN, TYPE, FLAGS,		\
                      OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND)
 
-#ifndef NO_PIKE_SHORTHAND
-#define add_function pike_add_function
-#endif
-
 #define ADD_INHERIT(PROGRAM, FLAGS) \
   low_inherit((PROGRAM), 0, 0, 0, (FLAGS), 0)
 
