@@ -137,8 +137,9 @@ o The contract for functions is now changed so that a function is no
   as previously.
 
 o Removed add_function, pike_add_function, pike_add_function2,
-  simple_add_variable and map_variable. This removes the remaining
-  few API:s where text types are used.
+  simple_add_variable and map_variable. This removes the remaining few
+  API:s where text types were used. Use ADD_FUNCTION and
+  PIKE_MAP_VARIABLE instead.
 
 Building and installing
 -----------------------
