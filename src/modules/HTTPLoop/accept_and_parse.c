@@ -821,15 +821,15 @@ PIKE_MODULE_INIT
   start_new_program();
 #define OFFSET(X) (offset + OFFSETOF(log_object,X))
   offset=ADD_STORAGE(struct log_object);
-  map_variable("time", "int", 0, OFFSET(time), T_INT);
-  map_variable("sent_bytes", "int", 0, OFFSET(sent_bytes), T_INT);
-  map_variable("reply", "int", 0, OFFSET(reply), T_INT);
-  map_variable("received_bytes", "int", 0, OFFSET(received_bytes), T_INT);
-  map_variable("raw", "string", 0, OFFSET(raw), T_STRING);
-  map_variable("url", "string", 0, OFFSET(url), T_STRING);
-  map_variable("method", "string", 0, OFFSET(method), T_STRING);
-  map_variable("protocol", "string", 0, OFFSET(protocol), T_STRING);
-  map_variable("from", "string", 0, OFFSET(from), T_STRING);
+  PIKE_MAP_VARIABLE("time", OFFSET(time), tInt, T_INT, 0);
+  PIKE_MAP_VARIABLE("sent_bytes", OFFSET(sent_bytes), tInt, T_INT, 0);
+  PIKE_MAP_VARIABLE("reply", OFFSET(reply), tInt, T_INT, 0);
+  PIKE_MAP_VARIABLE("received_bytes", OFFSET(received_bytes), tInt, T_INT, 0);
+  PIKE_MAP_VARIABLE("raw", OFFSET(raw), tStr, T_STRING, 0);
+  PIKE_MAP_VARIABLE("url", OFFSET(url), tStr, T_STRING, 0);
+  PIKE_MAP_VARIABLE("method", OFFSET(method), tStr, T_STRING, 0);
+  PIKE_MAP_VARIABLE("protocol", OFFSET(protocol), tStr, T_STRING, 0);
+  PIKE_MAP_VARIABLE("from", OFFSET(from), tStr, T_STRING, 0);
   add_program_constant("LogEntry", (aap_log_object_program=end_program()), 0);
 
 

@@ -1564,8 +1564,9 @@ void iso2022_init(void)
   ADD_FUNCTION("create", f_create,tFunc(tStr tOr(tStr,tVoid) tOr(tFunc(tStr,tStr),tVoid),tVoid), 0);
   /* function(function(string:string):void) */
   ADD_FUNCTION("set_replacement_callback", f_set_repcb,tFunc(tFunc(tStr,tStr),tVoid), 0);
-  map_variable("_repcb", "function(string:string)", ID_PROTECTED,
-	       OFFSETOF(iso2022enc_stor, repcb), T_MIXED);
+  PIKE_MAP_VARIABLE("_repcb", OFFSETOF(iso2022enc_stor, repcb),
+                    tFunc(tStr,tStr), T_MIXED, ID_PROTECTED);
+
   set_init_callback(init_enc_stor);
   set_exit_callback(exit_enc_stor);
   add_program_constant("ISO2022Enc", iso2022enc_program = end_program(),

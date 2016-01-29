@@ -2441,8 +2441,9 @@ PIKE_MODULE_INIT
   ADD_FUNCTION("create", f_create,tFunc(tOr(tStr,tVoid) tOr(tFunc(tStr,tStr),tVoid),tVoid), 0);
   /* function(function(string:string):void) */
   ADD_FUNCTION("set_replacement_callback", f_set_repcb,tFunc(tFunc(tStr,tStr),tVoid), 0);
-  map_variable("_repcb", "function(string:string)", ID_PROTECTED,
-	       OFFSETOF(std_cs_stor, repcb), T_MIXED);
+  PIKE_MAP_VARIABLE("_repcb", OFFSETOF(std_cs_stor, repcb),
+                    tFunc(tStr,tStr), T_MIXED, ID_PROTECTED);
+
   set_init_callback(init_stor);
   set_exit_callback(exit_stor);
   std_cs_program = end_program();

@@ -2891,14 +2891,14 @@ PIKE_MODULE_INIT
 
     MY_START_CLASS(dbquery); {
       ADD_FUNCTION("create",f_compile_query_create,tFunc(tStr,tVoid),0);
-      map_variable("_type","int",0,offset+OFFSETOF(dbquery,query_type),T_INT);
-      map_variable("_cols","int",0,offset+OFFSETOF(dbquery, cols), T_INT);
-      map_variable("_field_info","array(object)",0,
-		   offset+OFFSETOF(dbquery, field_info),
-		   T_ARRAY);
-      map_variable("output_variables","mapping(string:mixed)",0,
-		   offset+OFFSETOF(dbquery, output_variables),
-		   T_MAPPING);
+      PIKE_MAP_VARIABLE("_type",offset+OFFSETOF(dbquery,query_type),tInt,T_INT,0);
+      PIKE_MAP_VARIABLE("_cols",offset+OFFSETOF(dbquery, cols),tInt,T_INT,0);
+      PIKE_MAP_VARIABLE("_field_info",offset+OFFSETOF(dbquery, field_info),
+                        tArr(tObj), T_ARRAY, 0);
+
+      PIKE_MAP_VARIABLE("output_variables",
+                        offset+OFFSETOF(dbquery, output_variables),
+                        tMap(tStr,tMix), T_MAPPING, 0);
 
 
 /*      ADD_FUNCTION("query_type",f_query_type,tFunc(tNone,tInt),0); */
@@ -2936,11 +2936,11 @@ PIKE_MODULE_INIT
 
 
       MY_START_CLASS(dbresultinfo); {
-	map_variable("name","string",0,offset+OFFSETOF(dbresultinfo, name), T_STRING);
-	map_variable("type","string",0,offset+OFFSETOF(dbresultinfo, type), T_STRING);
-	map_variable("_type","int",0,offset+OFFSETOF(dbresultinfo, real_type), T_INT);
-	map_variable("length","int",0,offset+OFFSETOF(dbresultinfo, length), T_INT);
-	map_variable("decimals","int",0,offset+OFFSETOF(dbresultinfo, decimals), T_INT);
+        PIKE_MAP_VARIABLE("name",offset+OFFSETOF(dbresultinfo, name),tStr,T_STRING,0);
+        PIKE_MAP_VARIABLE("type",offset+OFFSETOF(dbresultinfo, type),tStr,T_STRING,0);
+        PIKE_MAP_VARIABLE("_type",offset+OFFSETOF(dbresultinfo, real_type),tIntT_INT,0);
+        PIKE_MAP_VARIABLE("length",offset+OFFSETOF(dbresultinfo, length),tInt,T_INT,0);
+        PIKE_MAP_VARIABLE("decimals",offset+OFFSETOF(dbresultinfo, decimals),tInt,T_INT,0);
 
 	ADD_FUNCTION("`->=",protect_dbresultinfo,
 		     tFunc(tStr tMix,tVoid), ID_STATIC);
@@ -2992,7 +2992,7 @@ PIKE_MODULE_INIT
 		 ID_PROTECTED);
     ADD_FUNCTION("_sprintf", dbnull_sprintf, tFunc(tInt, tStr), ID_PROTECTED);
     ADD_FUNCTION("`==", dbnull_eq, tFunc(tMix, tInt01), ID_PROTECTED);
-    map_variable("type","mixed",0,offset+OFFSETOF(dbnull, type), T_MIXED);
+    PIKE_MAP_VARIABLE("type",offset+OFFSETOF(dbnull, type),tMix,T_MIXED,0);
   }
   NULL_program=end_program();
   add_program_constant("NULL", NULL_program, 0);

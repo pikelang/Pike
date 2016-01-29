@@ -153,12 +153,12 @@ EXIT
 
 EXTRA
 {
-  map_variable("_odbc", "object", 0,
-	       OFFSETOF(Odbc_result_struct, obj), T_OBJECT);
-  map_variable("_fields", "array(mapping(string:mixed))", 0,
-	       OFFSETOF(Odbc_result_struct, fields), T_ARRAY);
-  map_variable("_null_value", "mixed", 0,
-	       OFFSETOF(Odbc_result_struct, null_value), T_MIXED);
+  PIKE_MAP_VARIABLE("_odbc", OFFSETOF(Odbc_result_struct, obj), tObj,
+                    T_OBJECT, 0);
+  PIKE_MAP_VARIABLE("_fields", OFFSETOF(Odbc_result_struct, fields),
+                    tArr(tMap(tStr,tMix)), T_ARRAY, 0);
+  PIKE_MAP_VARIABLE("_null_value", OFFSETOF(Odbc_result_struct, null_value),
+                    tMix, T_MIXED, 0);
 }
 
 /*
