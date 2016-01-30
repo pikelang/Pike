@@ -73,7 +73,7 @@ int port;
 
 object con;
 string request;
-protected string send_buffer;
+protected Stdio.Buffer send_buffer;
 
 string buf="",headerbuf="";
 int datapos, discarded_bytes, cpos;
@@ -281,20 +281,14 @@ protected void async_reconnect()
 protected void async_write()
 {
    DBG("<- %O\n", send_buffer);
-   int bytes;
-   if ((bytes = con->write(send_buffer)) < sizeof(send_buffer)) {
-     if (bytes < 0) {
-       errno = con->errno();
-       DBG ("-> (write error: %s)\n", strerror (errno));
-     } else {
-       // Note that "bytes" can be 0 here.
-       send_buffer = send_buffer[bytes..];
-       if (sizeof (send_buffer))
-	 return;
-
-       // send_buffer is empty at this point. We'll clear the write
-       // callback below.
+   int bytes = send_buffer->output_to(con);
+   if (sizeof(send_buffer)) {
+     if (bytes >= 0) {
+       return;
      }
+     errno = con->errno();
+     DBG ("-> (write error: %s)\n", strerror (errno));
+     // We'll clear the write callback below.
    }
    con->set_nonblocking(async_read,0,async_close);
 }
@@ -814,7 +808,7 @@ this_program async_request(string server,int port,string query,
       headers=headers_encode(headers);
    }
 
-   send_buffer = request = query+"\r\n"+headers+"\r\n"+(data||"");
+   send_buffer = Stdio.Buffer(request = query+"\r\n"+headers+"\r\n"+(data||""));
 
    errno = ok = protocol = this::headers = status_desc = status =
      discarded_bytes = datapos = 0;
