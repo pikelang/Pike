@@ -5528,13 +5528,13 @@ static void init_file_locking(void)
   START_NEW_PROGRAM_ID (STDIO_FILE_LOCK_KEY);
   off = ADD_STORAGE(struct file_lock_key_storage);
 #ifdef _REENTRANT
-  MAP_VARIABLE("_owner",tObj,0,
-	       off + OFFSETOF(file_lock_key_storage, owner_obj),
-	       PIKE_T_OBJECT);
+  PIKE_MAP_VARIABLE("_owner",
+                    off + OFFSETOF(file_lock_key_storage, owner_obj),
+                    tObj, PIKE_T_OBJECT, 0);
 #endif
-  MAP_VARIABLE("_file",tObj,0,
-	       off + OFFSETOF(file_lock_key_storage, file),
-	       PIKE_T_OBJECT);
+  PIKE_MAP_VARIABLE("_file",
+                    off + OFFSETOF(file_lock_key_storage, file),
+                    tObj, PIKE_T_OBJECT, 0);
   set_init_callback(init_file_lock_key);
   set_exit_callback(exit_file_lock_key);
   file_lock_key_program=end_program();
@@ -6014,18 +6014,23 @@ PIKE_MODULE_INIT
 #define FILE_OBJ tObjImpl_STDIO_FD
 #include "file_functions.h"
 
-  MAP_VARIABLE("_errno", tIntPos, ID_PROTECTED,
-	       OFFSETOF(my_file, my_errno), PIKE_T_INT);
-  MAP_VARIABLE("_read_callback",tMix,0,
-	       OFFSETOF(my_file, event_cbs[PIKE_FD_READ]),PIKE_T_MIXED);
-  MAP_VARIABLE("_write_callback",tMix,0,
-	       OFFSETOF(my_file, event_cbs[PIKE_FD_WRITE]),PIKE_T_MIXED);
-  MAP_VARIABLE("_read_oob_callback",tMix,0,
-	       OFFSETOF(my_file, event_cbs[PIKE_FD_READ_OOB]),PIKE_T_MIXED);
-  MAP_VARIABLE("_write_oob_callback",tMix,0,
-	       OFFSETOF(my_file, event_cbs[PIKE_FD_WRITE_OOB]),PIKE_T_MIXED);
-   MAP_VARIABLE("_fs_event_callback",tMix,0,
-     	       OFFSETOF(my_file, event_cbs[PIKE_FD_FS_EVENT]),PIKE_T_MIXED);
+  PIKE_MAP_VARIABLE("_errno", OFFSETOF(my_file, my_errno),
+                    tIntPos, PIKE_T_INT, ID_PROTECTED);
+  PIKE_MAP_VARIABLE("_read_callback",
+                    OFFSETOF(my_file, event_cbs[PIKE_FD_READ]),
+                    tMix, PIKE_T_MIXED, 0);
+  PIKE_MAP_VARIABLE("_write_callback",
+                    OFFSETOF(my_file, event_cbs[PIKE_FD_WRITE]),
+                    tMix, PIKE_T_MIXED, 0);
+  PIKE_MAP_VARIABLE("_read_oob_callback",
+                    OFFSETOF(my_file, event_cbs[PIKE_FD_READ_OOB]),
+                    tMix, PIKE_T_MIXED, 0);
+  PIKE_MAP_VARIABLE("_write_oob_callback",
+                    OFFSETOF(my_file, event_cbs[PIKE_FD_WRITE_OOB]),
+                    tMix, PIKE_T_MIXED, 0);
+  PIKE_MAP_VARIABLE("_fs_event_callback",
+                    OFFSETOF(my_file, event_cbs[PIKE_FD_FS_EVENT]),
+                    tMix, PIKE_T_MIXED, 0);
 
   fd_fd_factory_fun_num =
     ADD_FUNCTION("fd_factory", fd_fd_factory,
@@ -6077,7 +6082,7 @@ PIKE_MODULE_INIT
 
   START_NEW_PROGRAM_ID (STDIO_FD_REF);
   ADD_STORAGE(struct svalue);
-  MAP_VARIABLE("_fd", tObjIs_STDIO_FD, 0, 0, PIKE_T_MIXED);
+  PIKE_MAP_VARIABLE("_fd", 0, tObjIs_STDIO_FD, PIKE_T_MIXED, 0);
   set_init_callback(file___init_ref);
 
 #define FILE_FUNC(X,Y,Z)			\

@@ -56,8 +56,10 @@
   } while(0);
 
 #define ERR_VAR(TYPE,CTYPE,RUNTYPE,NAME2) \
-  MAP_VARIABLE(#NAME2, CTYPE, 0, \
-	       current_offset + (((char *)&(foo.NAME2))-((char *)&foo)), RUNTYPE);
+  PIKE_MAP_VARIABLE(#NAME2, \
+                    current_offset + (((char *)&(foo.NAME2))-((char *)&foo)),\
+                    CTYPE, RUNTYPE, 0);
+
 #define ERR_CONST(TYPE, NAME, VALUE) \
   PIKE_CONCAT3 (add_, TYPE, _constant) (NAME, VALUE, 0);
 

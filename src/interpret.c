@@ -185,10 +185,6 @@ PMOD_EXPORT int low_init_interpreter(struct Pike_interpreter_struct *interpreter
 #ifdef USE_MMAP_FOR_STACK
   static int fd = -1;
 
-#ifndef MAP_VARIABLE
-#define MAP_VARIABLE 0
-#endif
-
 #ifndef MAP_PRIVATE
 #define MAP_PRIVATE 0
 #endif

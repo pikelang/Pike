@@ -761,10 +761,11 @@ void init_stdio_port(void)
   ptrdiff_t offset;
   START_NEW_PROGRAM_ID (STDIO_PORT);
   offset = ADD_STORAGE(struct port);
-  MAP_VARIABLE("_accept_callback", tMix, 0,
-	       offset + OFFSETOF(port, accept_callback), PIKE_T_MIXED);
-  MAP_VARIABLE("_id", tMix, 0,
-	       offset + OFFSETOF(port, id), PIKE_T_MIXED);
+  PIKE_MAP_VARIABLE("_accept_callback",
+                    offset + OFFSETOF(port, accept_callback),
+                    tMix, PIKE_T_MIXED, 0);
+  PIKE_MAP_VARIABLE("_id",
+                    offset + OFFSETOF(port, id), tMix, PIKE_T_MIXED, 0);
   /* function(int|string,void|mixed,void|string:int) */
   ADD_FUNCTION("bind", port_bind,
 	       tFunc(tOr(tInt,tStr) tOr(tVoid,tMix) tOr(tVoid,tStr) tOr(tVoid,tInt),tInt), 0);

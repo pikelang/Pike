@@ -3221,8 +3221,8 @@ void init_object(void)
   /* ::`->() */
   start_new_program();
   offset=ADD_STORAGE(struct magic_index_struct);
-  MAP_VARIABLE("__obj", tObj, ID_PROTECTED,
-	       offset + OFFSETOF(magic_index_struct, o), T_OBJECT);
+  PIKE_MAP_VARIABLE("__obj", offset + OFFSETOF(magic_index_struct, o),
+                    tObj, T_OBJECT, ID_PROTECTED);
   ADD_FUNCTION("`()", f_magic_index,
 	       tFunc(tStr tOr3(tVoid,tObj,tDeprecated(tInt)) tOr(tVoid,tInt),
 		     tMix), ID_PROTECTED);
@@ -3231,8 +3231,8 @@ void init_object(void)
   /* ::`->=() */
   start_new_program();
   offset=ADD_STORAGE(struct magic_index_struct);
-  MAP_VARIABLE("__obj", tObj, ID_PROTECTED,
-	       offset + OFFSETOF(magic_index_struct, o), T_OBJECT);
+  PIKE_MAP_VARIABLE("__obj", offset + OFFSETOF(magic_index_struct, o),
+                    tObj, T_OBJECT, ID_PROTECTED);
   ADD_FUNCTION("`()", f_magic_set_index,
 	       tFunc(tStr tMix tOr3(tVoid,tObj,tDeprecated(tInt))
 		     tOr(tVoid,tInt), tVoid), ID_PROTECTED);
@@ -3241,8 +3241,8 @@ void init_object(void)
   /* ::_indices() */
   start_new_program();
   offset=ADD_STORAGE(struct magic_index_struct);
-  MAP_VARIABLE("__obj", tObj, ID_PROTECTED,
-	       offset + OFFSETOF(magic_index_struct, o), T_OBJECT);
+  PIKE_MAP_VARIABLE("__obj", offset + OFFSETOF(magic_index_struct, o),
+                    tObj, T_OBJECT, ID_PROTECTED);
   ADD_FUNCTION("`()", f_magic_indices,
 	       tFunc(tOr3(tVoid,tObj,tDeprecated(tInt)) tOr(tVoid,tInt),
 		     tArr(tStr)), ID_PROTECTED);
@@ -3251,8 +3251,8 @@ void init_object(void)
   /* ::_values() */
   start_new_program();
   offset=ADD_STORAGE(struct magic_index_struct);
-  MAP_VARIABLE("__obj", tObj, ID_PROTECTED,
-	       offset + OFFSETOF(magic_index_struct, o), T_OBJECT);
+  PIKE_MAP_VARIABLE("__obj", offset + OFFSETOF(magic_index_struct, o),
+                    tObj, T_OBJECT, ID_PROTECTED);
   ADD_FUNCTION("`()", f_magic_values,
 	       tFunc(tOr3(tVoid,tObj,tDeprecated(tInt)) tOr(tVoid,tInt),
 		     tArray), ID_PROTECTED);
@@ -3261,8 +3261,8 @@ void init_object(void)
   /* ::_types() */
   start_new_program();
   offset=ADD_STORAGE(struct magic_index_struct);
-  MAP_VARIABLE("__obj", tObj, ID_PROTECTED,
-	       offset + OFFSETOF(magic_index_struct, o), T_OBJECT);
+  PIKE_MAP_VARIABLE("__obj", offset + OFFSETOF(magic_index_struct, o),
+                    tObj, T_OBJECT, ID_PROTECTED);
   ADD_FUNCTION("`()", f_magic_types,
 	       tFunc(tOr3(tVoid,tObj,tDeprecated(tInt)) tOr(tVoid,tInt),
 		     tArray), ID_PROTECTED);

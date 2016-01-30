@@ -1110,9 +1110,6 @@ static inline int PIKE_UNUSED_ATTRIBUTE FIND_LFUN(struct program * p, int lfun) 
   quick_map_variable(NAME, CONSTANT_STRLEN(NAME), OFFSET, \
                      TYPE, CONSTANT_STRLEN(TYPE), RTTYPE, FLAGS)
 
-#define MAP_VARIABLE(NAME, TYPE, FLAGS, OFFSET, RTYPE) \
-  PIKE_MAP_VARIABLE(NAME, OFFSET, TYPE, RTYPE, FLAGS)
-
 #define ADD_FUNCTION_DTYPE(NAME,FUN,DTYPE,FLAGS) do {		\
   DTYPE_START;							\
   {DTYPE}							\

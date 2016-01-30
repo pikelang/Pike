@@ -3552,10 +3552,10 @@ PIKECLASS single_string_replace
 
   EXTRA
   {
-    MAP_VARIABLE ("o", tObj, ID_PROTECTED|ID_PRIVATE,
-		  single_string_replace_storage_offset +
-		  OFFSETOF (single_string_replace_struct, mojt.container),
-		  T_OBJECT);
+    PIKE_MAP_VARIABLE ("o",
+                       single_string_replace_storage_offset +
+                       OFFSETOF (single_string_replace_struct, mojt.container),
+                       tObj, T_OBJECT, ID_PROTECTED|ID_PRIVATE);
   }
 
   /*! @decl void create(string|void from, string|void to)

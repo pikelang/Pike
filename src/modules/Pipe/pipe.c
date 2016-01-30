@@ -27,13 +27,6 @@
 
 #include <errno.h>
 
-/* Some <sys/mman.h>'s (eg AIX 5L/ia64) contain a #define of MAP_VARIABLE
- * for use as the opposite of MAP_FIXED.
- *
- * "program.h" above has a conflicting definition of MAP_VARIABLE.
- */
-#undef MAP_VARIABLE
-
 #ifdef HAVE_SYS_MMAN_H
 #include <sys/mman.h>
 #else

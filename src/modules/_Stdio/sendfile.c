@@ -1211,10 +1211,10 @@ void init_stdio_sendfile(void)
 #ifdef _REENTRANT
   START_NEW_PROGRAM_ID (STDIO_SENDFILE);
   ADD_STORAGE(struct pike_sendfile);
-  MAP_VARIABLE("_args", tArray, 0, OFFSETOF(pike_sendfile, args),
-	       T_ARRAY);
-  MAP_VARIABLE("_callback", tFuncV(tInt,tMix,tVoid), 0,
-	       OFFSETOF(pike_sendfile, callback), T_MIXED);
+  PIKE_MAP_VARIABLE("_args", OFFSETOF(pike_sendfile, args),
+                    tArray, T_ARRAY, 0);
+  PIKE_MAP_VARIABLE("_callback", OFFSETOF(pike_sendfile, callback),
+                    tFuncV(tInt,tMix,tVoid), T_MIXED, 0);
 
   /* function(array(string),object,int,int,array(string),object,function(int,mixed...:void),mixed...:void) */
   ADD_FUNCTION("create", sf_create,
