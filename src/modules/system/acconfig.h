@@ -7,7 +7,6 @@
 /*
  * System dependant definitions for the system module for Pike
  *
- * Henrik Grubbström 1997-01-20
  */
 
 #ifndef SYSTEM_MACHINE_H

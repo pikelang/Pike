@@ -1,7 +1,6 @@
 /*
  * Pike embedding API.
  *
- * Henrik Grubbström 2004-12-27
  */
 
 #ifndef PIKE_EMBED_H

@@ -7,7 +7,6 @@
 /*
  * Prototypes for the Pike system-module
  *
- * Henrik Grubbström 1997-01-28
  */
 
 #ifndef PIKE_MODULES_SYSTEM_H

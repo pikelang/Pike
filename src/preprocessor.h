@@ -8,7 +8,6 @@
  * Preprocessor template.
  * Based on cpp.c 1.45
  *
- * 1999-02-27 Henrik Grubbström
  */
 
 

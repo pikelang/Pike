@@ -1,8 +1,7 @@
 #!/bin/sh
 
 cat <<END
-/* File generated on `date`
-by getwhitespace <UnicodeData.txt */
+/* File generated on by getwhitespace <UnicodeData.txt */
 
 #define SPACECASE8							\\
        case ' ':case '\\t':case '\\r':case '\\n':case '\\v':case '\\f':	\\

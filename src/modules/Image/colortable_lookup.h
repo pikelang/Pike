@@ -106,7 +106,7 @@ CHRONO("begin flat/cubicles");
       m=cub->n;
       ci=cub->index;
 
-      mindist=256*256*100; /* max dist is 256²*3 */
+      mindist=256*256*100; /* max dist is 256^2*3 */
 
       while (m--)
       {
@@ -207,7 +207,7 @@ void NCTLU_FLAT_FULL_NAME(rgb_group *s,
 
       lc->src=*s;
 
-      mindist=256*256*100; /* max dist is 256²*3 */
+      mindist=256*256*100; /* max dist is 256^2*3 */
 
       fe=feprim;
       m=mprim;

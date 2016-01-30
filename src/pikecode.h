@@ -6,8 +6,6 @@
 
 /*
  * Generic headerfile for the code-generator.
- *
- * Henrik Grubbstr�m 20010720
  */
 
 #ifndef CODE_PIKECODE_H

@@ -7,7 +7,6 @@
 /*
  * SQL database connectivity for Pike
  *
- * Henrik Grubbström 1996-12-21
  */
 
 #ifndef PRECOMPILED_MYSQL_H

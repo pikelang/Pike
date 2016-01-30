@@ -37,7 +37,7 @@ struct nct_scale
    struct nct_scale *next;
    rgb_group low,high;
    rgbl_group vector; /* high-low */
-   double invsqvector; /* |vector|² */
+   double invsqvector; /* |vector|^2 */
    INT32 realsteps;
    int steps;
    double mqsteps;     /* 1.0/(steps-1) */

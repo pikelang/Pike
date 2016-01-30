@@ -7,7 +7,6 @@
 /*
  * Pike interface to ODBC compliant databases.
  *
- * Henrik Grubbström
  */
 
 #ifndef PIKE_PRECOMPILED_ODBC_H

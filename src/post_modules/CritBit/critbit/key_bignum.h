@@ -46,11 +46,9 @@ static inline mp_limb_t CB_GET_CHAR(cb_string s, ptrdiff_t n) {
 
     n += abs(i->_mp_size);
     if (n > 0) {
-	//fprintf(stderr, ">> %lld %lld\n", n, i->_mp_d[abs(n)]);
-	return i->_mp_d[abs(i->_mp_size)-n];
+        return i->_mp_d[abs(i->_mp_size)-n];
     } else {
-	//fprintf(stderr, "»» %lld %lld\n", n, i->_mp_d[abs(n)]);
-	return 0;
+        return 0;
     }
 }
 
