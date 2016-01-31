@@ -34,39 +34,6 @@
 #define FL(FN, ...) PIKE_CONCAT(FN,f) (__VA_ARGS__)
 #endif
 
-#ifndef NO_MATHERR
-#ifdef HAVE_STRUCT_EXCEPTION
-
-int matherr(struct exception *exc)
-{
-#ifdef HUGE_VAL
-  if (exc) {
-    switch(exc->type) {
-    case OVERFLOW:
-      exc->retval = HUGE_VAL;
-      return 1;	/* No error */
-    case UNDERFLOW:
-      exc->retval = 0.0;
-      return 1; /* No error */
-#ifdef TLOSS
-    case TLOSS:
-      return 1; /* No error */
-#endif /* TLOSS */
-#ifdef PLOSS
-    case PLOSS:
-      return 1; /* No error */
-#endif /* PLOSS */
-    default:
-      return 0; /* Error */
-    }
-  }
-#endif /* HUGE_VAL */
-  return 1;	/* No error */
-}
-
-#endif /* HAVE_STRUCT_EXCEPTION */
-#endif /* !NO_MATHERR */
-
 /*! @decl float sin(int|float f)
  *!
  *! Returns the sine value for @[f].
