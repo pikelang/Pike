@@ -651,9 +651,9 @@ int main(int argc, array(string) argv)
 
         case "auto":
           if(stringp(opt[1]))
-            testsuites+=find_testsuites(opt[1]);
+            testsuites+=sort(find_testsuites(opt[1]));
           else
-            testsuites+=find_testsuites(".");
+            testsuites+=sort(find_testsuites("."));
           break;
 
         case "subprocess":
