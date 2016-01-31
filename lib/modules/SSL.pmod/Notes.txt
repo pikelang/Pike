@@ -96,6 +96,7 @@ The TLS 1.2 Protocol is specified in the following RFCs:
  [ ] Recommendations for TLS and DTLS	RFC 7525
  [/] Session Hash and Extended MS	RFC 7627
  [X] TLS Padding			RFC 7685
+ [ ] Curve25519/Curve448                RFC 7748
 
 The DTLS 1.2 Protocol is specified in the following RFCs:
 
