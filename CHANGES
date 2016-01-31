@@ -14,9 +14,9 @@ o 'auto' type added.
   This is much like a strict typed mixed. The actual type is deduced
   compile-time.
 
-  The main use case is as variables in foreach when looping over
-  complexly typed values, or as types in macro-defined functions and
-  such.
+  Typical use is as the type for variables in foreach when looping over
+  complexly typed values, or as the type in macro-defined functions and
+  similar.
 
   auto can be used as return type for a function, it will be the
   logical or of all the types of the return statements in the
