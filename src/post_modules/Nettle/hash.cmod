@@ -137,7 +137,7 @@ PIKECLASS Hash
     push_string(end_shared_string(out));
   }
 
-  int is_stdio_file(struct object *o)
+  static int is_stdio_file(struct object *o)
   {
     struct program *p = o->prog;
     INT32 i = p->num_inherits;

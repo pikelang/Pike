@@ -431,7 +431,7 @@ PIKEFUN string(0..127) crypt_md5(string(0..255) pw, string(0..255) salt,
 #ifdef HAVE_CRC32_INTRINSICS
 static int supports_sse42 = 0;
 
-ATTRIBUTE((target("sse4")))
+static ATTRIBUTE((target("sse4")))
   unsigned int intel_crc32c(const unsigned int *p, size_t len)
 {
   unsigned int h=0xffffffff;

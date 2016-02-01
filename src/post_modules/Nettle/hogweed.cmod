@@ -338,7 +338,7 @@ program_flags PROGRAM_CLEAR_STORAGE;
 #define SECP521R1 4
 
 #ifndef ecc_point_equal_p
-int ecc_point_equal_p(const struct ecc_point *a, const struct ecc_point *b)
+static int ecc_point_equal_p(const struct ecc_point *a, const struct ecc_point *b)
 {
   return (a->ecc == b->ecc) && !mpn_cmp(a->p, b->p, ecc_size_a(a->ecc));
 }
