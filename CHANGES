@@ -95,6 +95,7 @@ Incompatible changes
 
 o Gz.crc32 now only returns positive results.
 
+
 Removed features and modules
 ----------------------------
 
@@ -121,10 +122,12 @@ o Protocols.HTTP2
 o Bittorrent.DHT
 o MsgPack
 
+
 New features
 ------------
 
 o Gmp.mpf is now implemented using gmpf if the library is available.
+
 
 C-level API changes
 -------------------
@@ -140,6 +143,7 @@ o Removed add_function, pike_add_function, pike_add_function2,
   simple_add_variable, map_variable and MAP_VARIABLE. This removes the
   remaining few API:s where text types were used. Use ADD_FUNCTION and
   PIKE_MAP_VARIABLE instead.
+
 
 Building and installing
 -----------------------
