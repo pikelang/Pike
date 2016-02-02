@@ -13,7 +13,8 @@ private void get_filters()
   filter_fields=(<>);
   foreach(values(search_filter), object filter)
   {
-    foreach(filter->contenttypes || ({ }), string mime)
+    if( !filter->contenttypes ) continue;
+    foreach(filter->contenttypes, string mime)
       filter_mimetypes[mime]=filter;
 
     foreach(filter->fields || ({ }), string field)
@@ -29,7 +30,6 @@ object get_filter(string mime_type)
 {
   if(!filter_mimetypes)
     get_filters();
-  if(!filter_mimetypes[mime_type]) return 0;
   return filter_mimetypes[mime_type];
 }
 
