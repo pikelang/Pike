@@ -1,7 +1,24 @@
 #pike __REAL_VERSION__
 
-//! The MIME content types this class can filter.
+//! @decl array(string) contenttypes
+//! The MIME content types this object can filter.
 constant contenttypes = ({ });
+
+//! @decl optional array(string) fields
+//! The different fields this object can extract from the media. The
+//! list can contain any of the following values.
+//! @string
+//!   @value "body"
+//!   @value "title"
+//!   @value "keywords"
+//!   @value "description"
+//!   @value "robots"
+//!   @value "headline"
+//!   @value "modified"
+//!   @value "author"
+//!   @value "summary"
+//! @endstring
+optional constant fields = ({});
 
 //!
 .Output filter(Standards.URI uri, string|Stdio.File data,
