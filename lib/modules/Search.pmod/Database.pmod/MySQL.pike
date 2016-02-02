@@ -501,13 +501,40 @@ void insert_words(Standards.URI|string uri, void|string language,
 
 array(string) expand_word_glob(string g, void|int max_hits)
 {
-  g = replace( string_to_utf8(g), ({ "*", "?" }), ({ "%", "_" }) );
+  string g_sql = replace(string_to_utf8(g), ({ "*", "?" }), ({ "%", "_" }) );
   Sql.Sql db = get_db();
-  if(max_hits)
-    return map(db->query("select distinct word from word_hit where word like %s limit %d",
-			 g, max_hits)->word,utf8_to_string);
-  else
-    return map(db->query("select distinct word from word_hit where word like %s",g)->word,utf8_to_string);
+  if (max_hits) {
+    //  Sort candidates before capping based on offset of the first non-glob
+    //  substring and then alphabetically. This gives a stable expansion
+    //  where e.g. "*test*" prioritizes "testing" before "latest" and thus
+    //  becomes more intuitive in conjunction with auto-globbing.
+    array(string) non_glob_words = (replace(g, "?", "*") / "*" - ({ "" }));
+    if (sizeof(non_glob_words)) {
+      string first_word_sql = string_to_utf8(non_glob_words[0]);
+      return map(db->query("SELECT DISTINCT word, "
+			   "                LOCATE(%s, word) AS score "
+			   "           FROM word_hit "
+			   "          WHERE word LIKE %s "
+			   "       ORDER BY score ASC, word ASC "
+			   "          LIMIT %d",
+			   first_word_sql, g_sql, max_hits)->word,
+		 utf8_to_string);
+    } else {
+      return map(db->query("SELECT DISTINCT word "
+			   "           FROM word_hit "
+			   "          WHERE word LIKE %s "
+			   "       ORDER BY word ASC "
+			   "          LIMIT %d",
+			   g_sql, max_hits)->word,
+		 utf8_to_string);
+    }
+  } else {
+    return map(db->query("SELECT DISTINCT word "
+			 "           FROM word_hit "
+			 "          WHERE word LIKE %s",
+			 g_sql)->word,
+	       utf8_to_string);
+  }
 }
 
 
