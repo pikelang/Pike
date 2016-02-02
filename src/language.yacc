@@ -322,7 +322,7 @@ int yylex(YYSTYPE *yylval);
 %type <n> default
 %type <n> do
 %type <n> safe_expr0
-%type <n> expr00
+%type <n> splice_expr
 %type <n> expr01
 %type <n> expr1
 %type <n> expr2
@@ -3192,7 +3192,7 @@ comma_expr2: expr0
   }
   ;
 
-expr00: expr0
+splice_expr: expr0
       | '@' expr0 { $$=mknode(F_PUSH_ARRAY,$2,0); };
 
 expr0: expr01
@@ -3247,8 +3247,8 @@ expr_list: { $$=0; }
   ;
 
 
-expr_list2: expr00
-  | expr_list2 ',' expr00 { $$=mknode(F_ARG_LIST,$1,$3); }
+expr_list2: splice_expr
+  | expr_list2 ',' splice_expr { $$=mknode(F_ARG_LIST,$1,$3); }
   ;
 
 m_expr_list: { $$=0; }
