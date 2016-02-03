@@ -538,6 +538,7 @@ THREADS_DISALLOW();
 **!	  "adjusted_cmyk" : make a rgb image from cmyk
 **!                (cyan, magenta, yellow, black) where the colors aren't
 **!                100% pure (C: 009ee0, M: e2007a, Y: ffec00, K: 1a171b).
+**!       "raw"  : make an image from a binary string
 **!
 **!	generate modes; all extra arguments is given to the
 **!	generation function. These has the same name as the method:
@@ -837,7 +838,7 @@ static void image_test(INT32 args);
 
 static struct pike_string *s_grey,*s_rgb,*s_cmyk,*s_adjusted_cmyk,*s_cmy;
 static struct pike_string *s_test,*s_gradients,*s_noise,*s_turbulence,
-  *s_random,*s_randomgrey,*s_tuned_box;
+  *s_random,*s_randomgrey,*s_tuned_box, *s_raw;
 
 static void image_create_method(INT32 args)
 {
@@ -861,6 +862,7 @@ static void image_create_method(INT32 args)
    MAKE_CONST_STRING(s_random,"random");
    MAKE_CONST_STRING(s_randomgrey,"randomgrey");
    MAKE_CONST_STRING(s_tuned_box,"tuned_box");
+   MAKE_CONST_STRING(s_raw,"raw");
 
    if (THIS->xsize<=0 || THIS->ysize<=0)
       Pike_error("create: image size is too small\n");
@@ -920,7 +922,7 @@ static void image_create_method(INT32 args)
       if (args<2) push_int(0);
 
       THIS->img=
-	 xalloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+RGB_VEC_PAD);
+         xalloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+RGB_VEC_PAD);
 
       if (args>2) pop_n_elems(args-2);
       push_int(0); stack_swap();
@@ -929,6 +931,23 @@ static void image_create_method(INT32 args)
       push_int(THIS->ysize-1); stack_swap();
       image_tuned_box(5);
       return;
+   }
+   else if (sp[-args].u.string==s_raw)
+   {
+     if( args!=2 || TYPEOF(sp[1-args])!=T_STRING ||
+         sp[1-args].u.string->size_shift)
+       SIMPLE_ARG_TYPE_ERROR("create",2,"string(8bit)");
+
+     struct pike_string *s = sp[1-args].u.string;
+     int size = sizeof(rgb_group)*THIS->xsize*THIS->ysize;
+     if( s->len > size )
+       SIMPLE_ARG_ERROR("create",2,"String size too large.");
+
+     THIS->img = xalloc(size+RGB_VEC_PAD);
+     char *dst = (char*)THIS->img;
+     memcpy(THIS->img, s->str, s->len);
+     memset(dst+s->len, 0, size - s->len);
+     return;
    }
    else
       Pike_error("create: unknown method\n");
