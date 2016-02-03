@@ -14,12 +14,12 @@
 #define PARSE_FAILED ("HTTP/1.0 500 Internal Server Error\r\nContent-Type: text/html\r\n\r\nRequest parsing failed.\r\n")
 
 #include "global.h"
-/*! @module HTTPLoop
+/*! @module HTTPAccept
  *!
  *! High performance webserver optimized for somewhat static content.
  *!
- *! HTTPLoop is a less capable WWW-server than the
- *! Protocols.HTTP.Server server, but for some applications it can be
+ *! HTTPAccept is a less capable WWW-server than the
+ *! @[Protocols.HTTP.Server] server, but for some applications it can be
  *! preferable. It is significantly more optimized, for most uses, and
  *! can handle a very high number of requests per second on even
  *! low end machines.
@@ -540,7 +540,7 @@ static void finished_p(struct callback *UNUSED(foo), void *UNUSED(b), void *UNUS
  *!                    int cache_size, @
  *!                    bool keep_log, int timeout )
  *!
- *! Create a new HTTPLoop.
+ *! Create a new @[HTTPAccept].
  *!
  *! This will start a new thread that will listen for requests on the
  *! port, parse them and pass on requests, instanced from the
