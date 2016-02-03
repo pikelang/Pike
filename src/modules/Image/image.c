@@ -571,7 +571,7 @@ THREADS_DISALLOW();
 **!	(xsize*ysize)&MAXINT is small enough to allocate.
 */
 
-int image_too_big(INT_TYPE xsize,INT_TYPE ysize)
+static int image_size_check(INT_TYPE xsize,INT_TYPE ysize)
 {
    INT_TYPE a,b,c,d;
 
@@ -592,12 +592,12 @@ int image_too_big(INT_TYPE xsize,INT_TYPE ysize)
    return 0;
 }
 
-void img_read_get_channel(int arg,char *name,INT32 args,
-			  int *m,unsigned char **s,COLORTYPE *c)
+static void img_read_get_channel(int arg,char *name,INT32 args,
+                                 int *m,unsigned char **s,COLORTYPE *c)
 {
    struct image *img;
    if (arg>args)
-      SIMPLE_WRONG_NUM_ARGS_ERROR("create_method",1+arg);
+      SIMPLE_WRONG_NUM_ARGS_ERROR("create",1+arg);
    switch (TYPEOF(sp[arg-args-1]))
    {
       case T_INT:
@@ -607,10 +607,10 @@ void img_read_get_channel(int arg,char *name,INT32 args,
 	 break;
       case T_STRING:
 	 if (sp[arg-args-1].u.string->size_shift)
-	    Pike_error("create_method: argument %d (%s channel): "
+            Pike_error("create: argument %d (%s channel): "
 		  "wide strings are not supported (yet)\n",arg+1,name);
 	 if (sp[arg-args-1].u.string->len!=THIS->xsize*THIS->ysize)
-	    Pike_error("create_method: argument %d (%s channel): "
+            Pike_error("create: argument %d (%s channel): "
 		  "string is %ld characters, expected %ld\n",
 		  arg+1, name,
                   (long)sp[arg-args-1].u.string->len,
@@ -621,13 +621,13 @@ void img_read_get_channel(int arg,char *name,INT32 args,
       case T_OBJECT:
 	 img=get_storage(sp[arg-args-1].u.object,image_program);
 	 if (!img)
-	    Pike_error("create_method: argument %d (%s channel): "
+            Pike_error("create: argument %d (%s channel): "
 		  "not an image object\n",arg+1,name);
 	 if (!img->img)
-	    Pike_error("create_method: argument %d (%s channel): "
+            Pike_error("create: argument %d (%s channel): "
 		  "uninitialized image object\n",arg+1,name);
 	 if (img->xsize!=THIS->xsize || img->ysize!=THIS->ysize)
-	    Pike_error("create_method: argument %d (%s channel): "
+            Pike_error("create: argument %d (%s channel): "
 		  "size is wrong, %"PRINTPIKEINT"dx%"PRINTPIKEINT"d;"
 		       " expected %"PRINTPIKEINT"dx%"PRINTPIKEINT"d\n",
 		  arg+1,name,img->xsize,img->ysize,
@@ -636,12 +636,12 @@ void img_read_get_channel(int arg,char *name,INT32 args,
 	 *m=sizeof(rgb_group);
 	 break;
       default:
-	 Pike_error("create_method: argument %d (%s channel): "
+         Pike_error("create: argument %d (%s channel): "
 	       "illegal type\n",arg+1,name);
    }
 }
 
-void img_read_grey(INT32 args)
+static void img_read_grey(INT32 args)
 {
    int m1;
    COLORTYPE c1;
@@ -658,7 +658,7 @@ void img_read_grey(INT32 args)
    }
 }
 
-void img_read_rgb(INT32 args)
+static void img_read_rgb(INT32 args)
 {
    int m1,m2,m3;
    unsigned char *s1,*s2,*s3;
@@ -710,7 +710,7 @@ void img_read_rgb(INT32 args)
    }
 }
 
-void img_read_cmyk(INT32 args)
+static void img_read_cmyk(INT32 args)
 {
    int m1,m2,m3,m4;
    unsigned char *s1,*s2,*s3,*s4;
@@ -749,7 +749,7 @@ void img_read_cmyk(INT32 args)
 #define CMYK_KR	0x1a
 #define CMYK_KG	0x17
 #define CMYK_KB	0x1b
-void img_read_adjusted_cmyk(INT32 args)
+static void img_read_adjusted_cmyk(INT32 args)
 {
    int m1,m2,m3,m4;
    unsigned char *s1,*s2,*s3,*s4;
@@ -808,7 +808,7 @@ void img_read_adjusted_cmyk(INT32 args)
    }
 }
 
-void img_read_cmy(INT32 args)
+static void img_read_cmy(INT32 args)
 {
    int m1,m2,m3;
    unsigned char *s1,*s2,*s3;
@@ -839,15 +839,15 @@ static struct pike_string *s_grey,*s_rgb,*s_cmyk,*s_adjusted_cmyk,*s_cmy;
 static struct pike_string *s_test,*s_gradients,*s_noise,*s_turbulence,
   *s_random,*s_randomgrey,*s_tuned_box;
 
-void image_create_method(INT32 args)
+static void image_create_method(INT32 args)
 {
    struct image *img;
 
    if (!args)
-      SIMPLE_WRONG_NUM_ARGS_ERROR("create_method",1);
+      SIMPLE_WRONG_NUM_ARGS_ERROR("create",1);
 
    if (TYPEOF(sp[-args]) != T_STRING)
-      SIMPLE_ARG_TYPE_ERROR("create_method",1,"string");
+      SIMPLE_ARG_TYPE_ERROR("create",1,"string");
 
    MAKE_CONST_STRING(s_grey,"grey");
    MAKE_CONST_STRING(s_rgb,"rgb");
@@ -863,7 +863,7 @@ void image_create_method(INT32 args)
    MAKE_CONST_STRING(s_tuned_box,"tuned_box");
 
    if (THIS->xsize<=0 || THIS->ysize<=0)
-      Pike_error("create_method: image size is too small\n");
+      Pike_error("create: image size is too small\n");
 
    if (sp[-args].u.string==s_grey)
    {
@@ -931,7 +931,7 @@ void image_create_method(INT32 args)
       return;
    }
    else
-      Pike_error("create_method: unknown method\n");
+      Pike_error("create: unknown method\n");
 
    /* on stack: "string" image */
    /* want: put that image in this, crap that image */
@@ -961,12 +961,8 @@ void image_create(INT32 args)
 
    THIS->xsize=sp[-args].u.integer;
    THIS->ysize=sp[1-args].u.integer;
-#if 0
-   if (THIS->xsize<0) THIS->xsize=0;
-   if (THIS->ysize<0) THIS->ysize=0;
-#endif
-   if (image_too_big(THIS->xsize,THIS->ysize))
-      Pike_error("Image.Image->create(): image too large (>2Gpixels)\n");
+   if (image_size_check(THIS->xsize,THIS->ysize))
+      Pike_error("create: image too small or large (>2Gpixels)\n");
 
    if (args>2 && TYPEOF(sp[2-args]) == T_STRING &&
        !image_color_svalue(sp+2-args,&(THIS->rgb)))
