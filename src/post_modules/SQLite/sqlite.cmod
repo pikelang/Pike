@@ -343,7 +343,7 @@ PIKECLASS ResObj
     pop_n_elems(args-1);
     f_string_to_utf8(1);
     /* FIXME: Does the following work if THIS->db is already open? */
-    ERR( sqlite3_open(path->str, &THIS->db), THIS->db );
+    ERR( sqlite3_open(Pike_sp[-1].u.string->str, &THIS->db), THIS->db );
   }
 
   /*! @decl array|int query(string query, @
@@ -600,6 +600,7 @@ PIKECLASS ResObj
    */
   PIKEFUN array(string) list_dbs() {
     /* FIXME: This should be possible to support. */
+    /* SELECT name FROM sqlite_master ? */
     Pike_error("This operation is not possible with SQLite.\n");
   }
 
