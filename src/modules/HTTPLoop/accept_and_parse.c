@@ -11,6 +11,12 @@
 #include "config.h"
 /* #define AAP_DEBUG */
 
+#ifdef AAP_DEBUG
+#define DWERROR(...) fprintf(stderr, __VA_ARGS__)
+#else
+#define DWERROR(...)
+#endif
+
 #define PARSE_FAILED ("HTTP/1.0 500 Internal Server Error\r\nContent-Type: text/html\r\n\r\nRequest parsing failed.\r\n")
 
 #include "global.h"
@@ -129,9 +135,7 @@ struct args *new_args(void)
 static void failed(struct args *arg)
 {
   WRITE(arg->fd, PARSE_FAILED, strlen(PARSE_FAILED));
-#ifdef AAP_DEBUG
-  fprintf(stderr, "AAP: Failed\n");
-#endif /* AAP_DEBUG */
+  DWERROR("AAP: Failed\n");
   free_args( arg );
 }
 
@@ -264,9 +268,7 @@ static int parse(struct args *arg)
 	  {
 	    return -1;
 	  }
-#ifdef AAP_DEBUG
-	  fprintf(stderr, "Closing connection...\n");
-#endif /* AAP_DEBUG */
+          DWERROR("Closing connection...\n");
           free_args( arg );
 	  return 0;
 	}
@@ -324,9 +326,7 @@ void aap_handle_connection(struct args *arg)
     ptrdiff_t data_read = fd_read(arg->fd, p, buffer_len-pos);
     if(data_read <= 0)
     {
-#ifdef AAP_DEBUG
-      fprintf(stderr, "AAP: Read error/eof.\n");
-#endif /* AAP_DEBUG */
+      DWERROR("AAP: Read error/eof.\n");
       arg->res.data = buffer;
       free_args( arg );
 #ifdef HAVE_TIMEOUTS

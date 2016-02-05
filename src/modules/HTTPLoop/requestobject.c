@@ -47,7 +47,13 @@
 #include "requestobject.h"
 
 /* Used when Pike_fatal() can't be. */
-#define DWERROR(X)	fd_write(2, X, sizeof(X) - sizeof(""))
+#define FATAL(X)	fd_write(2, X, sizeof(X) - sizeof(""))
+
+#ifdef AAP_DEBUG
+#define DWERROR(...) fprintf(stderr, __VA_ARGS__)
+#else
+#define DWERROR(...)
+#endif
 
 /* All current implementations of sendfile(2) are broken. */
 #ifndef HAVE_BROKEN_SENDFILE
@@ -102,39 +108,6 @@ do { 						   \
   sp--;                                          \
   pop_stack();					   \
 } while(0)
-
-#define AINSERT(MAP,INDEX,VAL)\
-do { 						\
-  push_array(VAL);				\
-  push_string(INDEX);                           \
-  mapping_insert((MAP),sp-1,sp-2);		\
-  sp -= 2;                                      \
-} while(0)
-
-#define OINSERT(MAP,INDEX,VAL)\
-do { 						\
-  push_object(VAL);				\
-  push_string(INDEX);                           \
-  mapping_insert((MAP),sp-1,sp-2);		\
-  sp -= 2;                                      \
-} while(0)
-
-#define MSINSERT(MAP,INDEX,VAL)\
-do { 						\
-  push_multiset(val);				\
-  push_string(INDEX);                           \
-  mapping_insert((MAP),sp-1,sp-2);		\
-  sp -= 2;                                      \
-} while(0)
-
-#define MAINSERT(MAP,INDEX,VAL)\
-do { 						\
-  push_mapping(VAL);				\
-  push_string(INDEX);                           \
-  mapping_insert((MAP),sp-1,sp-2);		\
-  sp -= 2;                                      \
-} while(0)
-
 
 static int dhex(char what)
 {
@@ -582,9 +555,7 @@ static void actually_send(struct send_args *a)
     off_t sent = 0;
     size_t len = a->len;
 
-#ifdef AAP_DEBUG
-    fprintf(stderr, "sendfile... \n");
-#endif
+    DWERROR("sendfile... \n");
 
     if (data) {
       /* Set up the iovec */
@@ -627,7 +598,7 @@ static void actually_send(struct send_args *a)
 	break;
       case EFAULT:	/* Invalid address specified as arg */
 	/* NOTE: Can't use Pike_fatal(), since we're not in a valid Pike context. */
-	DWERROR("FreeBSD-style sendfile() returned EFAULT.\n");
+        FATAL("FreeBSD-style sendfile() returned EFAULT.\n");
 	abort();
 	break;
       case EAGAIN:	/* socket in nonblocking mode, sent is valid */
@@ -671,9 +642,7 @@ static void actually_send(struct send_args *a)
  send_data:
 #endif /* !HAVE_FREEBSD_SENDFILE */
 
-#ifdef AAP_DEBUG
-  fprintf(stderr, "actually_send... \n");
-#endif
+  DWERROR("actually_send... \n");
   if(data)
   {
     memcpy(foo, data+MINIMUM((data_len-4),9), 4);
@@ -683,9 +652,7 @@ static void actually_send(struct send_args *a)
 #define SOL_TCP	IPPROTO_TCP
 #endif
 #if defined(TCP_CORK) && defined(SOL_TCP)
-#ifdef AAP_DEBUG
-    fprintf(stderr, "cork... \n");
-#endif
+    DWERROR("cork... \n");
     {
       int true=1;
       fd_setsockopt( a->to->fd, SOL_TCP, TCP_CORK, &true, sizeof(true) );
@@ -701,9 +668,7 @@ static void actually_send(struct send_args *a)
 #if !defined(HAVE_FREEBSD_SENDFILE) && defined(HAVE_SENDFILE)
   if(a->len)
   {
-#ifdef AAP_DEBUG
-    fprintf(stderr, "pre sendfile... \n");
-#endif
+    DWERROR("pre sendfile... \n");
     if(!first)
     {
       first=1;
@@ -711,17 +676,13 @@ static void actually_send(struct send_args *a)
       if(fail < 0)
         goto end;
       WRITE( a->to->fd, foo, fail );
-      a->len  -= fail;
+      a->len -= fail;
     }
-#ifdef AAP_DEBUG
-    fprintf(stderr, "sendfile... \n");
-#endif
+    DWERROR("sendfile... \n");
     switch(fail = sendfile(a->to->fd, a->from_fd, NULL, a->len ))
     {
      case -ENOSYS:
-#ifdef AAP_DEBUG
-       fprintf(stderr, "syscall does not exist.\n");
-#endif
+       DWERROR("syscall does not exist.\n");
        goto normal;
      default:
        if(fail != a->len)
@@ -736,9 +697,7 @@ static void actually_send(struct send_args *a)
  normal:
 #endif /* HAVE_FREEBSD_SENDFILE || HAVE_SENDFILE */
 
-#ifdef AAP_DEBUG
-  fprintf(stderr, "using normal fallback... \n");
-#endif
+  DWERROR("using normal fallback... \n");
 #ifdef DIRECTIO_ON
   if(a->len > (65536*4))
     directio(a->from_fd, DIRECTIO_ON);
@@ -757,9 +716,7 @@ static void actually_send(struct send_args *a)
   {
     ptrdiff_t nread, written=0;
     nread = fd_read(a->from_fd, a->buffer, MINIMUM(BUFFER,a->len));
-#ifdef AAP_DEBUG
-  fprintf(stderr, "writing %d bytes... \n", nread);
-#endif
+    DWERROR("writing %d bytes... \n", nread);
     if(!first)
     {
       first=1;
@@ -785,9 +742,7 @@ static void actually_send(struct send_args *a)
   }
 
  end:
-#ifdef AAP_DEBUG
-  fprintf(stderr, "all written.. \n");
-#endif
+  DWERROR("all written.. \n");
 #if defined(TCP_CORK) && defined(SOL_TCP)
   {
     int false = 0;
@@ -807,9 +762,7 @@ static void actually_send(struct send_args *a)
     }
     else
     {
-#ifdef AAP_DEBUG
-      fprintf(stderr, "no keep alive, closing fd.. \n");
-#endif
+      DWERROR("no keep alive, closing fd.. \n");
       free_args( arg );
     }
   }

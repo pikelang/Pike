@@ -39,6 +39,11 @@
 #endif /* HAVE_POLL_H */
 #endif /* HAVE_POLL */
 
+#ifdef AAP_DEBUG
+#define DWERROR(...) fprintf(stderr, __VA_ARGS__)
+#else
+#define DWERROR(...)
+#endif
 
 static PIKE_MUTEX_T aap_timeout_mutex;
 
@@ -192,9 +197,7 @@ static void *handle_timeouts(void *UNUSED(ignored))
   /*
    * Now we're dead...
    */
-#ifdef AAP_DEBUG
-  fprintf(stderr, "AAP: handle_timeout() is now dead.\n");
-#endif /* AAP_DEBUG */
+  DWERROR("AAP: handle_timeout() is now dead.\n");
   return(NULL);
 }
 
@@ -202,23 +205,17 @@ static THREAD_T aap_timeout_thread;
 
 void aap_init_timeouts(void)
 {
-#ifdef AAP_DEBUG
-  fprintf(stderr, "AAP: aap_init_timeouts.\n");
-#endif /* AAP_DEBUG */
+  DWERROR("AAP: aap_init_timeouts.\n");
   mt_init(&aap_timeout_mutex);
   co_init (&aap_timeout_thread_is_dead);
   th_create_small(&aap_timeout_thread, handle_timeouts, 0);
-#ifdef AAP_DEBUG
-  fprintf(stderr, "AAP: handle_timeouts started.\n");
-#endif /* AAP_DEBUG */
+  DWERROR("AAP: handle_timeouts started.\n");
 }
 
 void aap_exit_timeouts(void)
 {
   void *res;
-#ifdef AAP_DEBUG
-  fprintf(stderr, "AAP: aap_exit_timeouts.\n");
-#endif /* AAP_DEBUG */
+  DWERROR("AAP: aap_exit_timeouts.\n");
   THREADS_ALLOW();
   mt_lock (&aap_timeout_mutex);
   aap_time_to_die = 1;
@@ -227,9 +224,7 @@ void aap_exit_timeouts(void)
   THREADS_DISALLOW();
   mt_destroy (&aap_timeout_mutex);
   co_destroy (&aap_timeout_thread_is_dead);
-#ifdef AAP_DEBUG
-  fprintf(stderr, "AAP: aap_exit_timeouts done.\n");
-#endif /* AAP_DEBUG */
+  DWERROR("AAP: aap_exit_timeouts done.\n");
 }
 #endif
 #endif

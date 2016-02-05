@@ -31,7 +31,5 @@ STRING(s_pragma,"pragma");
 STRING(s_client,"client");
 STRING(s_referer,"referer");
 STRING(s_since,"since");
-
-
 STRING(s_variables,"variables");
 STRING(s_rest_query,"rest_query");
