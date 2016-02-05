@@ -184,7 +184,7 @@ void f_aap_scan_for_query(INT32 args)
   }
 
  done:
-  TINSERT(THIS->misc_variables, s_not_query, work_area+begin, j-begin+1);
+  TINSERT(THIS->misc_variables, s_not_query, work_area+begin, j-begin);
   free(work_area);
 
   if(i < len)
