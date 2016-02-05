@@ -120,12 +120,12 @@ static int dhex(char what)
 
 void f_aap_scan_for_query(INT32 args)
 {
-  struct pike_string *_s;
   char *s, *work_area;
-  ptrdiff_t len, i,j, begin=0;
+  ptrdiff_t len, i,j;
   int c;
   if(args)
   {
+    struct pike_string *_s;
     get_all_args("scan_for_query", args, "%S", &_s);
     s = (char *)_s->str;
     len = _s->len;
@@ -157,7 +157,7 @@ void f_aap_scan_for_query(INT32 args)
   }
 
  done:
-  TINSERT(THIS->misc_variables, s_not_query, work_area+begin, j-begin);
+  TINSERT(THIS->misc_variables, s_not_query, work_area, j);
   free(work_area);
 
   if(i < len)
