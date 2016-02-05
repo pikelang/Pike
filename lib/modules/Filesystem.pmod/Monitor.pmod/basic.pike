@@ -1064,7 +1064,7 @@ protected class InotifyMonitor
 	}
       }
       wd = -1;
-      if (!dying) {
+      if (!dying && !(flags & MF_AUTO)) {
 	// We now need to be polled...
 	MON_WERR("Registering for polling.\n");
 	monitor_queue->push(this);
