@@ -295,14 +295,15 @@ void aap_handle_connection(struct args *arg)
   else
     p = buffer = malloc(8192);
 
+  if(!buffer)
+  {
+    perror("AAP: Failed to allocate buffer (leftovers)");
+    failed(arg);
+    return;
+  }
+
   if(arg->res.leftovers && arg->res.leftovers_len)
   {
-    if(!buffer)
-    {
-      perror("AAP: Failed to allocate buffer (leftovers)");
-      failed(arg);
-      return;
-    }
     buffer_len = arg->res.leftovers_len;
     memcpy(buffer, arg->res.leftovers, arg->res.leftovers_len);
     pos = arg->res.leftovers_len;
@@ -312,12 +313,6 @@ void aap_handle_connection(struct args *arg)
     p += arg->res.leftovers_len;
   }
 
-  if(!buffer)
-  {
-    perror("AAP: Failed to allocate buffer");
-    failed(arg);
-    return;
-  }
 #ifdef HAVE_TIMEOUTS
   if( arg->timeout )
     timeout = aap_add_timeout_thr(th_self(), arg->timeout);
