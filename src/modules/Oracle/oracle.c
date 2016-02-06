@@ -2938,7 +2938,7 @@ PIKE_MODULE_INIT
       MY_START_CLASS(dbresultinfo); {
         PIKE_MAP_VARIABLE("name",offset+OFFSETOF(dbresultinfo, name),tStr,T_STRING,0);
         PIKE_MAP_VARIABLE("type",offset+OFFSETOF(dbresultinfo, type),tStr,T_STRING,0);
-        PIKE_MAP_VARIABLE("_type",offset+OFFSETOF(dbresultinfo, real_type),tIntT_INT,0);
+        PIKE_MAP_VARIABLE("_type",offset+OFFSETOF(dbresultinfo, real_type),tInt,T_INT,0);
         PIKE_MAP_VARIABLE("length",offset+OFFSETOF(dbresultinfo, length),tInt,T_INT,0);
         PIKE_MAP_VARIABLE("decimals",offset+OFFSETOF(dbresultinfo, decimals),tInt,T_INT,0);
 
