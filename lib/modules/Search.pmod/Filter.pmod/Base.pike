@@ -1,10 +1,10 @@
 #pike __REAL_VERSION__
 
-//! @decl array(string) contenttypes
+//! @decl constant array(string) contenttypes
 //! The MIME content types this object can filter.
 constant contenttypes = ({ });
 
-//! @decl optional array(string) fields
+//! @decl optional constant array(string) fields
 //! The different fields this object can extract from the media. The
 //! list can contain any of the following values.
 //! @string

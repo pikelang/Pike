@@ -959,7 +959,7 @@ int(0..1) emsa_pss_verify(string(8bit) message, string(8bit) sign,
 //!
 //! Can be used to implement the @rfc{6238@} Time-Based One-Time
 //! Password Algorithm by giving the factor
-//! @exp{(time()-T0)/X@}. Specifically for Google Authenticator this
+//! @expr{(time()-T0)/X@}. Specifically for Google Authenticator this
 //! is @expr{Crypto.SHA1.hotp(secret,time()/30)@}, using an 80 bit
 //! secret.
 //!

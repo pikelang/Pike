@@ -1769,12 +1769,11 @@ DHTNode add_node(string|DHTNode n, void|string ip, void|int port) {
 // Tracks announce requests in progress.
 protected multiset(DHTOperation) announces_in_progress = (<>);
 
+// FIXME: Handle the response and allow it to propagate back to the
+// application?
 //
 //! This is the internal announce callback - it is called for each node
 //! that we should send an announcement to.
-//
-// FIXME: Handle the response and allow it to propagate back to the
-// application?
 protected void announce_to(string peer_ip, int peer_port, string token,
 			   string info_hash, int announced_port,
 			   void|int implied_port) {
