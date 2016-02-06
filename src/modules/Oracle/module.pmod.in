@@ -25,7 +25,7 @@ class oracle
       }
       else if(query->output_variables)
       {
-	return Sql.sql_result( ({ query->output_variables }) );
+	return Sql.sql_array_result( ({ query->output_variables }) );
       }
     }
 
