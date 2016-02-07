@@ -401,10 +401,9 @@ PIKEFUN void disassemble(function fun)
 {
   if ((TYPEOF(*fun) != T_FUNCTION) ||
       (SUBTYPEOF(*fun) == FUNCTION_BUILTIN)) {
-    fprintf(stderr,
-	    "Disassembly only supported for functions implemented in Pike.\n");
+    WERR("Disassembly only supported for functions implemented in Pike.\n");
   } else if (!fun->u.object->prog) {
-    fprintf(stderr, "Function in destructed object.\n");
+    WERR("Function in destructed object.\n");
   } else {
     int f = SUBTYPEOF(*fun);
     struct reference *ptr = PTR_FROM_INT(fun->u.object->prog, f);
@@ -421,7 +420,7 @@ PIKEFUN void disassemble(function fun)
 	      PIKE_CONCAT(STR, SHIFT)(tripples);	\
 	    int i=0;					\
 	    while(i < tripples->len) {			\
-	      fprintf(stderr, "@@@ %d: %s, %d, %d\n",	\
+              WERR("@@@ %d: %s, %d, %d\n",              \
 		      i/3,				\
 		      instrs[*str - F_OFFSET].		\
 		      name,				\
@@ -437,7 +436,7 @@ PIKEFUN void disassemble(function fun)
 #undef CASE
       }
     } else {
-      fprintf(stderr, "Prototype.\n");
+      WERR("Prototype.\n");
     }
   }
 }
