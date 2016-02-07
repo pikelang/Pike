@@ -483,6 +483,71 @@ struct inout
 static void free_inout(struct inout *i);
 static void init_inout(struct inout *i);
 
+/****** dblob ******/
+
+struct dblob
+{
+#ifdef PIKE_DEBUG
+  unsigned long magic;
+#endif
+  int is_clob;
+  OCILobLocator *lob;
+  struct dbcon *dbcon;
+};
+
+static void init_dblob_struct(struct object *UNUSED(o))
+{
+#ifdef PIKE_DEBUG
+  ((unsigned long *)(Pike_fp->current_storage))[0]=DBLOB_MAGIC;
+#endif
+}
+
+static void exit_dblob_struct(struct object *UNUSED(o)) {
+  if (THIS_DBLOB->lob) {
+    OCIDescriptorFree(THIS_DBLOB->lob, OCI_DTYPE_LOB);
+    THIS_DBLOB->lob = NULL;
+  }
+}
+
+
+/****** dbdate ******/
+
+struct dbdate
+{
+#ifdef PIKE_DEBUG
+  unsigned long magic;
+#endif
+  OCIDate date;
+};
+
+static void init_dbdate_struct(struct object *UNUSED(o))
+{
+#ifdef PIKE_DEBUG
+  ((unsigned long *)(Pike_fp->current_storage))[0]=DBDATE_MAGIC;
+#endif
+}
+static void exit_dbdate_struct(struct object *UNUSED(o)) {}
+
+
+/****** dbnull ******/
+
+struct dbnull
+{
+#ifdef PIKE_DEBUG
+  unsigned long magic;
+#endif
+  struct svalue type;
+};
+
+static void init_dbnull_struct(struct object *UNUSED(o))
+{
+#ifdef PIKE_DEBUG
+  ((unsigned long *)(Pike_fp->current_storage))[0]=DBNULL_MAGIC;
+#endif
+}
+static void exit_dbnull_struct(struct object *UNUSED(o)) {}
+
+
 /****** connection ******/
 struct dbcon
 {
@@ -687,69 +752,6 @@ static void protect_dbresultinfo(INT32 UNUSED(args))
 {
   Pike_error("You may not change variables in dbresultinfo objects.\n");
 }
-
-/****** dblob ******/
-
-struct dblob
-{
-#ifdef PIKE_DEBUG
-  unsigned long magic;
-#endif
-  int is_clob;
-  OCILobLocator *lob;
-  struct dbcon *dbcon;
-};
-
-static void init_dblob_struct(struct object *UNUSED(o))
-{
-#ifdef PIKE_DEBUG
-  ((unsigned long *)(Pike_fp->current_storage))[0]=DBLOB_MAGIC;
-#endif
-}
-
-static void exit_dblob_struct(struct object *UNUSED(o)) {
-  if (THIS_DBLOB->lob) {
-    OCIDescriptorFree(THIS_DBLOB->lob, OCI_DTYPE_LOB);
-    THIS_DBLOB->lob = NULL;
-  }
-}
-
-
-/****** dbdate ******/
-
-struct dbdate
-{
-#ifdef PIKE_DEBUG
-  unsigned long magic;
-#endif
-  OCIDate date;
-};
-
-static void init_dbdate_struct(struct object *UNUSED(o))
-{
-#ifdef PIKE_DEBUG
-  ((unsigned long *)(Pike_fp->current_storage))[0]=DBDATE_MAGIC;
-#endif
-}
-static void exit_dbdate_struct(struct object *UNUSED(o)) {}
-
-/****** dbnull ******/
-
-struct dbnull
-{
-#ifdef PIKE_DEBUG
-  unsigned long magic;
-#endif
-  struct svalue type;
-};
-
-static void init_dbnull_struct(struct object *UNUSED(o))
-{
-#ifdef PIKE_DEBUG
-  ((unsigned long *)(Pike_fp->current_storage))[0]=DBNULL_MAGIC;
-#endif
-}
-static void exit_dbnull_struct(struct object *UNUSED(o)) {}
 
 /************/
 
@@ -2889,6 +2891,35 @@ PIKE_MODULE_INIT
 
   INIT;
 
+  MY_START_CLASS(dblob); {
+    ADD_FUNCTION("cast", dblob_cast, tFunc(tStr, tMix), ID_PROTECTED);
+    ADD_FUNCTION("_sprintf", dblob_sprintf, tFunc(tInt, tStr), ID_PROTECTED);
+    ADD_FUNCTION("read", dblob_read, tFunc(tVoid, tStr), 0);
+    ADD_FUNCTION("write", dblob_write, tFunc(tStr, tInt), 0);
+  }
+  MY_END_CLASS(LOB);
+
+  MY_START_CLASS(dbdate); {
+    ADD_FUNCTION("create",dbdate_create,tFunc(tOr(tStr,tInt),tVoid),0);
+    ADD_FUNCTION("cast",dbdate_cast,tFunc(tStr, tMix),ID_PRIVATE);
+    ADD_FUNCTION("_sprintf",dbdate_sprintf,tFunc(tInt, tStr),0);
+  }
+  MY_END_CLASS(Date);
+
+  MY_START_CLASS(dbnull); {
+    struct pike_string *null_string = make_shared_string("Null");
+    low_inherit(get_sql_null_prog(), NULL, -1, 0, 0, null_string);
+    free_string(null_string);
+    add_integer_constant("is_oracle_null", 1, 0);
+    ADD_FUNCTION("create", dbnull_create, tFunc(tOr(tStr, tInt), tVoid),
+		 ID_PROTECTED);
+    ADD_FUNCTION("_sprintf", dbnull_sprintf, tFunc(tInt, tStr), ID_PROTECTED);
+    ADD_FUNCTION("`==", dbnull_eq, tFunc(tMix, tInt01), ID_PROTECTED);
+    PIKE_MAP_VARIABLE("type",offset+OFFSETOF(dbnull, type),tMix,T_MIXED,0);
+  }
+  NULL_program=end_program();
+  add_program_constant("NULL", NULL_program, 0);
+
   MY_START_CLASS(dbcon); {
 
     MY_START_CLASS(dbquery); {
@@ -2969,35 +3000,6 @@ PIKE_MODULE_INIT
 
     MY_END_CLASS(oracle);
   }
-
-  MY_START_CLASS(dblob); {
-    ADD_FUNCTION("cast", dblob_cast, tFunc(tStr, tMix), ID_PROTECTED);
-    ADD_FUNCTION("_sprintf", dblob_sprintf, tFunc(tInt, tStr), ID_PROTECTED);
-    ADD_FUNCTION("read", dblob_read, tFunc(tVoid, tStr), 0);
-    ADD_FUNCTION("write", dblob_write, tFunc(tStr, tInt), 0);
-  }
-  MY_END_CLASS(LOB);
-
-  MY_START_CLASS(dbdate); {
-    ADD_FUNCTION("create",dbdate_create,tFunc(tOr(tStr,tInt),tVoid),0);
-    ADD_FUNCTION("cast",dbdate_cast,tFunc(tStr, tMix),ID_PRIVATE);
-    ADD_FUNCTION("_sprintf",dbdate_sprintf,tFunc(tInt, tStr),0);
-  }
-  MY_END_CLASS(Date);
-
-  MY_START_CLASS(dbnull); {
-    struct pike_string *null_string = make_shared_string("Null");
-    low_inherit(get_sql_null_prog(), NULL, -1, 0, 0, null_string);
-    free_string(null_string);
-    add_integer_constant("is_oracle_null", 1, 0);
-    ADD_FUNCTION("create", dbnull_create, tFunc(tOr(tStr, tInt), tVoid),
-		 ID_PROTECTED);
-    ADD_FUNCTION("_sprintf", dbnull_sprintf, tFunc(tInt, tStr), ID_PROTECTED);
-    ADD_FUNCTION("`==", dbnull_eq, tFunc(tMix, tInt01), ID_PROTECTED);
-    PIKE_MAP_VARIABLE("type",offset+OFFSETOF(dbnull, type),tMix,T_MIXED,0);
-  }
-  NULL_program=end_program();
-  add_program_constant("NULL", NULL_program, 0);
 
   /* FIXME: These NULL objects should be derived from push_undefined */
 
