@@ -105,6 +105,7 @@ object part=NoReply("PART","string");
 object names=NoReply("NAMES","string");
 object who=NoReply("WHO","string");
 object kick=NoReply("KICK","string","string","text");
+object cap=NoReply("CAP","string","text");
 
 class mode
 {

@@ -387,6 +387,15 @@ void got_notify(string from,string type,
 	 options->notice_invite(originator,message,@extra);
 	 return;
 
+      case "CAP":
+	 if (message=="ACK")
+	 {
+	     if (!options->capability_notify) break;
+	     options->capability_notify(from, to, extra);
+	     return;
+	 }
+	 break;
+
       default:
 	 werror("got unknown message: %O, %O, %O, %O\n",from,type,to,message);
    }
