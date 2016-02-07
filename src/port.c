@@ -29,7 +29,7 @@
 #include <time.h>
 
 #ifdef sun
-time_t time PROT((time_t *));
+time_t time (time_t *);
 #endif
 
 #if (SIZEOF_LONG == 4) && defined(_LP64)

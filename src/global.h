@@ -630,39 +630,27 @@ struct iovec {
  * pike_cpulib.h. Otherwise we get pesky include loops. */
 /* #include "pike_cpulib.h" */
 
-#ifdef BUFSIZ
-#define PROT_STDIO(x) PROT(x)
-#else
-#define PROT_STDIO(x) ()
-#endif
-
-#ifdef __STDC__
-#define PROT(x) x
-#else
-#define PROT(x) ()
-#endif
-
 #ifdef MALLOC_DECL_MISSING
-void *malloc PROT((int));
-void *realloc PROT((void *,int));
-void free PROT((void *));
-void *calloc PROT((int,int));
+void *malloc (int);
+void *realloc (void *,int);
+void free (void *);
+void *calloc (int,int);
 #endif
 
 #ifdef GETPEERNAME_DECL_MISSING
-int getpeername PROT((int, struct sockaddr *, int *));
+int getpeername (int, struct sockaddr *, int *);
 #endif
 
 #ifdef GETHOSTNAME_DECL_MISSING
-void gethostname PROT((char *,int));
+void gethostname (char *,int);
 #endif
 
 #ifdef POPEN_DECL_MISSING
-FILE *popen PROT((char *,char *));
+FILE *popen (char *,char *);
 #endif
 
 #ifdef GETENV_DECL_MISSING
-char *getenv PROT((char *));
+char *getenv (char *);
 #endif
 
 #ifdef USE_CRYPT_C
