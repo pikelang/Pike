@@ -50,7 +50,6 @@ static libzfs_handle_t *libzfs_handle;
 
 #define sp Pike_sp
 
-/* #define DEBUG_FILE */
 /* #define READDIR_DEBUG */
 
 #ifdef __NT__
@@ -99,9 +98,6 @@ struct array *encode_stat(PIKE_STAT_T *s)
   case S_IFLNK: ITEM(a)[1].u.integer=-3; break;
 #endif
   default:
-#ifdef DEBUG_FILE
-    fprintf(stderr, "encode_stat(): mode:%ld\n", (long)S_IFMT & s->st_mode);
-#endif /* DEBUG_FILE */
     ITEM(a)[1].u.integer=-4;
     break;
   }

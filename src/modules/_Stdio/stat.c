@@ -283,11 +283,7 @@ static void stat_push_compat(INT_TYPE n)
 	    case S_IFDIR: push_int(-2); break;
 	    case S_IFLNK: push_int(-3); break;
 	    default:
-#ifdef DEBUG_FILE
-	       fprintf(stderr, "encode_stat(): mode:%ld\n",
-		       (long)S_IFMT & THIS_STAT->s.st_mode);
-#endif /* DEBUG_FILE */
-	       push_int(-4);
+               push_int(-4);
 	       break;
 	 }
 	 break;
