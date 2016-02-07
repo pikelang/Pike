@@ -485,9 +485,6 @@ typedef struct p_wchar_p
   int shift;
 } PCHARP;
 
-/* Pointless in git. */
-#define RCSID(X)
-
 #ifdef PIKE_DEBUG
 
 #define DO_IF_DEBUG(X) X
