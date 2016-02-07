@@ -113,19 +113,19 @@ struct program * PollDeviceBackend_program;
 #endif
 
 #ifdef POLL_DEBUG
-#define IF_PD(x)	x
 #define PDWERR(...) fprintf(stderr,__VA_ARGS__)
 #define PDUNUSED(x) x
 #else /* !POLL_DEBUG */
-#define IF_PD(x)
 #define PDWERR(...)
 #define PDUNUSED(x) UNUSED(x)
 #endif /* POLL_DEBUG */
 
 #ifdef CALL_OUT_DEBUG
 #define IF_CO(X) X
+#define COWERR(...) fprintf(stderr,__VA_ARGS__)
 #else
 #define IF_CO(X)
+#define COWERR(...)
 #endif
 
 #ifdef PIKE_THREADS
@@ -844,20 +844,20 @@ PIKECLASS Backend
 	struct timeval tmp;
 	ACCURATE_GETTIMEOFDAY(&tmp);
 	my_add_timeval(& new->tv, &tmp);
-	IF_CO (fprintf (stderr, "BACKEND[%d]: Adding call out at %ld.%ld "
-			"(current time is %ld.%ld)\n", me->id,
-			new->tv.tv_sec, new->tv.tv_usec,
-			tmp.tv_sec, tmp.tv_usec));
+        COWERR("BACKEND[%d]: Adding call out at %ld.%ld "
+               "(current time is %ld.%ld)\n", me->id,
+               new->tv.tv_sec, new->tv.tv_usec,
+               tmp.tv_sec, tmp.tv_usec);
       } else
 #endif
       {
 	struct timeval tmp;
 	INACCURATE_GETTIMEOFDAY(&tmp);
 	my_add_timeval(& new->tv, &tmp);
-	IF_CO (fprintf (stderr, "BACKEND[%d]: Adding call out at %ld.%ld "
-			"(current_time is %ld.%ld)\n", me->id,
-			new->tv.tv_sec, new->tv.tv_usec,
-			tmp.tv_sec, tmp.tv_usec));
+        COWERR("BACKEND[%d]: Adding call out at %ld.%ld "
+               "(current_time is %ld.%ld)\n", me->id,
+               new->tv.tv_sec, new->tv.tv_usec,
+               tmp.tv_sec, tmp.tv_usec);
       }
 
       new->args = callable;
@@ -1033,11 +1033,11 @@ PIKECLASS Backend
 
 	 check_destructed(Pike_sp - args);
 	 if(TYPEOF(Pike_sp[-args]) != T_INT)
-	 {
+         {
+           COWERR("[%d]BACKEND[%d]: backend_do_call_outs: "
+                  "calling call out ", THR_NO, me->id);
 	   IF_CO(
-	     fprintf(stderr, "[%d]BACKEND[%d]: backend_do_call_outs: "
-		     "calling call out ", THR_NO, me->id);
-	     print_svalue (stderr, Pike_sp - args);
+             print_svalue (stderr, Pike_sp - args);
 	     fputc ('\n', stderr);
 	   );
 	   call_count++;
@@ -1051,8 +1051,8 @@ PIKECLASS Backend
 	   else
 	     pop_stack();
 	 }else{
-	   IF_CO(fprintf(stderr, "[%d]BACKEND[%d]: backend_do_call_outs: "
-			 "ignoring destructed call out\n", THR_NO, me->id));
+           COWERR("[%d]BACKEND[%d]: backend_do_call_outs: "
+                  "ignoring destructed call out\n", THR_NO, me->id);
 	   pop_n_elems(args);
 	 }
 	 backend_verify_call_outs(me);
@@ -1303,10 +1303,10 @@ PIKECLASS Backend
 	 struct timeval now;
 
 	 INACCURATE_GETTIMEOFDAY(&now);
-	 IF_CO (fprintf (stderr, "BACKEND[%d]: Removing call out at %ld.%ld "
-			 "(current_time is %ld.%ld)\n", me->id,
-			 c->tv.tv_sec, c->tv.tv_usec,
-			 now.tv_sec, now.tv_usec));
+         COWERR("BACKEND[%d]: Removing call out at %ld.%ld "
+                "(current_time is %ld.%ld)\n", me->id,
+                c->tv.tv_sec, c->tv.tv_usec,
+                now.tv_sec, now.tv_usec);
 	 pop_n_elems(args);
 	 push_int(c->tv.tv_sec - now.tv_sec);
 
@@ -2351,9 +2351,8 @@ PIKECLASS Backend
 #ifdef ENOTSOCK
 	  if (errno != ENOTSOCK) {
 #endif
-	    fprintf(stderr,
-		    "Got POLLERR on non-socket fd %d (getsockopt errno=%d)\n",
-		    fd, errno);
+            WERR("Got POLLERR on non-socket fd %d (getsockopt errno=%d)\n",
+                 fd, errno);
 #ifdef ENOTSOCK
 	  } else {
             PDWERR("Got POLLERR on non-socket fd %d\n", fd);
@@ -2499,12 +2498,10 @@ PIKECLASS Backend
 #endif
 
 	if (box->callback == compat_box_dispatcher) {
-#ifdef PIKE_DEBUG
-	  fprintf (stderr, "[%d]BACKEND[%d]: "
-		   "Compat callbacks left at exit for fd %d: 0x%x\n",
-		   THR_NO, me->id, box->fd, box->events);
-#endif
-	  really_free_compat_cb_box ((struct compat_cb_box *) box);
+          DWERR("[%d]BACKEND[%d]: "
+                "Compat callbacks left at exit for fd %d: 0x%x\n",
+                THR_NO, me->id, box->fd, box->events);
+          really_free_compat_cb_box ((struct compat_cb_box *) box);
 	}
 
 	unhook_fd_callback_box(box);
