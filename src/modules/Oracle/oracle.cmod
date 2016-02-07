@@ -2887,6 +2887,8 @@ PIKE_MODULE_INIT
   if(oracle_program)
     Pike_fatal("Oracle module initiated twice!\n");
 
+  INIT;
+
   MY_START_CLASS(dbcon); {
 
     MY_START_CLASS(dbquery); {
@@ -3023,6 +3025,8 @@ PIKE_MODULE_EXIT
 #ifdef ORACLE_DEBUG
   fprintf(stderr,"%s\n",__FUNCTION__);
 #endif
+
+  EXIT;
 
   if(global_error_handle)
   {
