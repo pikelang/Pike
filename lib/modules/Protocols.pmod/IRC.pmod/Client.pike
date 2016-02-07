@@ -46,6 +46,9 @@ mapping channels=([]);
 //!       lost or when a ping isn't answered with a pong within the time
 //!       set by the @tt{ping_timeout@} option. The default behaviour is
 //!       to complain on stderr and self destruct.
+//!     @member program "channel_program"
+//!       An instance of this is created for each channel connected to via
+//!       join_channel() - should be a subclass of Protocols.IRC.Channel.
 //!     @member function(mixed ...:void) "error_notify"
 //!       This function is called when a KILL or ERROR command is recieved
 //!       from the IRC server.
@@ -498,6 +501,17 @@ object cmd=class
 void send_message(string|array to,string msg)
 {
    cmd->privmsg( (arrayp(to)?to*",":to), msg);
+}
+
+void join_channel(string chan)
+{
+   cmd->join(chan);
+   if (options->channel_program)
+   {
+      object ch = options->channel_program();
+      ch->name = lower_case(chan);
+      channels[lower_case(chan)] = ch;
+   }
 }
 
 // ----- persons
