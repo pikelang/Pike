@@ -114,9 +114,11 @@ struct program * PollDeviceBackend_program;
 
 #ifdef POLL_DEBUG
 #define IF_PD(x)	x
+#define PDWERR(...) fprintf(stderr,__VA_ARGS__)
 #define PDUNUSED(x) x
 #else /* !POLL_DEBUG */
 #define IF_PD(x)
+#define PDWERR(...)
 #define PDUNUSED(x) UNUSED(x)
 #endif /* POLL_DEBUG */
 
@@ -1549,9 +1551,9 @@ PIKECLASS Backend
 
        else if (fd < me->fd_boxes_start) {
 	 int old_size = me->fd_boxes_size, shift = me->fd_boxes_size;
-	 struct fd_callback_box **old_boxes = me->fd_boxes;
-	 IF_PD(fprintf(stderr, "me->fd_boxes: %p (%d ==> %d)\n",
-		       me->fd_boxes, me->fd_boxes_start, fd));
+         struct fd_callback_box **old_boxes = me->fd_boxes;
+         PDWERR("me->fd_boxes: %p (%d ==> %d)\n",
+                me->fd_boxes, me->fd_boxes_start, fd);
 	 while (fd < me->fd_boxes_start - shift) shift *= 2;
 	 if (me->fd_boxes_start - shift < 0) shift = me->fd_boxes_start;
 	 me->fd_boxes_start -= shift;
@@ -1674,8 +1676,8 @@ PIKECLASS Backend
      }
 #endif /* __NT__ */
 
-     IF_PD(fprintf(stderr, "update_fd_set(%p, %d, 0x%08x, 0x%08x)\n",
-		   me, fd, old_events, new_events));
+     PDWERR("update_fd_set(%p, %d, 0x%08x, 0x%08x)\n",
+            me, fd, old_events, new_events) ;
 
      if (me->update_fd_set_handler) {
        me->update_fd_set_handler(me, me->handler_data,
@@ -1693,9 +1695,9 @@ PIKECLASS Backend
   {
     struct Backend_struct *me = box->backend;
     int fd = box->fd;
-    IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: hook_fd_callback_box: "
-		  "fd %d, events 0x%x, object %p\n",
-		  THR_NO, me->id, fd, box->events, box->ref_obj));
+    PDWERR("[%d]BACKEND[%d]: hook_fd_callback_box: "
+           "fd %d, events 0x%x, object %p\n",
+           THR_NO, me->id, fd, box->events, box->ref_obj);
 #ifdef PIKE_DEBUG
     if (!me) Pike_fatal ("Backend not set.\n");
 #endif
@@ -1743,16 +1745,14 @@ PIKECLASS Backend
     /* Accept an unhooked box; can happen when we're called from an
      * object exit hook due to being freed by free_object below. */
     if (!box->backend) {
-      IF_PD(fprintf(stderr,
-		    "[%d]BACKEND[unhooked box]: unhook_fd_callback_box: "
-		    "fd %d, object %p\n", THR_NO, box->fd, box->ref_obj));
+      PDWERR("[%d]BACKEND[unhooked box]: unhook_fd_callback_box: "
+             "fd %d, object %p\n", THR_NO, box->fd, box->ref_obj);
       return;
     }
 
     check_box (box, INT_MAX);
-    IF_PD(fprintf(stderr,
-		  "[%d]BACKEND[%d]: unhook_fd_callback_box: fd %d, object %p\n",
-		  THR_NO, box->backend->id, box->fd, box->ref_obj));
+    PDWERR("[%d]BACKEND[%d]: unhook_fd_callback_box: fd %d, object %p\n",
+           THR_NO, box->backend->id, box->fd, box->ref_obj);
 
     if (box->fd >= 0) {
       update_fd_set (box->backend, box->fd, box->events, 0, box->flags);
@@ -1795,10 +1795,10 @@ PIKECLASS Backend
   {
     int old_events = box->events;
     check_box (box, INT_MAX);
-    IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: set_fd_callback_events: "
-		  "fd %d, events from 0x%x to 0x%x, object %p\n",
-		  THR_NO, box->backend->id, box->fd, old_events, events,
-		  box->ref_obj));
+    PDWERR("[%d]BACKEND[%d]: set_fd_callback_events: "
+           "fd %d, events from 0x%x to 0x%x, object %p\n",
+           THR_NO, box->backend->id, box->fd, old_events, events,
+           box->ref_obj);
     if (box->fd >= 0) {
       update_fd_set (box->backend, box->fd, old_events, events, flags);
     }
@@ -1834,9 +1834,9 @@ PIKECLASS Backend
     if (!new) Pike_fatal ("New backend is invalid.\n");
 #endif
 
-    IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: change_backend_for_box: "
-		  "fd %d, new backend %d\n",
-		  THR_NO, old?old->id:-1, box->fd, new->id));
+    PDWERR("[%d]BACKEND[%d]: change_backend_for_box: "
+           "fd %d, new backend %d\n",
+           THR_NO, old?old->id:-1, box->fd, new->id);
 
     if (old != new) {
       if (old) {
@@ -1870,9 +1870,9 @@ PIKECLASS Backend
     if (!box->backend) {
       /* Convenience so that the caller doesn't have to check if the
        * box is hooked in. */
-      IF_PD(fprintf(stderr, "[%d]BACKEND[unhooked box]: change_fd_for_box: "
-		    "fd from %d to %d, obj: %p\n",
-		    THR_NO, old_fd, new_fd, box->ref_obj));
+      PDWERR("[%d]BACKEND[unhooked box]: change_fd_for_box: "
+             "fd from %d to %d, obj: %p\n",
+             THR_NO, old_fd, new_fd, box->ref_obj);
       box->fd = new_fd;
       box->revents = 0;
       box->rflags = 0;
@@ -1896,9 +1896,8 @@ PIKECLASS Backend
 	}
       }
 
-      IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: change_fd_for_box: "
-		    "fd from %d to %d\n",
-		    THR_NO, box->backend->id, old_fd, new_fd));
+      PDWERR("[%d]BACKEND[%d]: change_fd_for_box: fd from %d to %d\n",
+             THR_NO, box->backend->id, old_fd, new_fd);
     }
   }
 
@@ -2249,9 +2248,8 @@ PIKECLASS Backend
       box->next = NULL;
       SET_ONERROR(uwp, do_free_fd_box, box);
 
-      IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: Examining box for fd %d"
-		    " revents:0x%04x\n",
-		    THR_NO, me->id, fd, box->revents));
+      PDWERR("[%d]BACKEND[%d]: Examining box for fd %d revents:0x%04x\n",
+             THR_NO, me->id, fd, box->revents);
 
       if (box->fd < 0) {
 	/* The box is no longer active.
@@ -2272,8 +2270,8 @@ PIKECLASS Backend
        * errno 61 is ECONNREFUSED
        */
       if (box->revents & box->events & PIKE_BIT_FD_READ_OOB) {
-	IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: read_oob_callback(%d, %p)\n",
-		      THR_NO, me->id, fd, box->ref_obj));
+        PDWERR("[%d]BACKEND[%d]: read_oob_callback(%d, %p)\n",
+               THR_NO, me->id, fd, box->ref_obj);
 	errno = 0;
 	if (box->callback (box, PIKE_FD_READ_OOB) == -1) {
 	  CALL_AND_UNSET_ONERROR(uwp);
@@ -2285,8 +2283,8 @@ PIKECLASS Backend
 	/* FIXME: Consider utilizing ACTIVE_POLLSET[i].data in
 	 *        the kqueue case.
 	 */
-	IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: read_callback(%d, %p)\n",
-		      THR_NO, me->id, fd, box->ref_obj));
+        PDWERR("[%d]BACKEND[%d]: read_callback(%d, %p)\n",
+               THR_NO, me->id, fd, box->ref_obj);
 	errno = 0;
 	if (box->callback (box, PIKE_FD_READ) == -1) {
 	  CALL_AND_UNSET_ONERROR(uwp);
@@ -2295,8 +2293,8 @@ PIKECLASS Backend
       }
 
       if (box->revents & box->events & PIKE_BIT_FD_WRITE_OOB) {
-	IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: write_oob_callback(%d, %p)\n",
-		      THR_NO, me->id, fd, box->ref_obj));
+        PDWERR("[%d]BACKEND[%d]: write_oob_callback(%d, %p)\n",
+               THR_NO, me->id, fd, box->ref_obj);
 	errno = 0;
 	if (box->callback (box, PIKE_FD_WRITE_OOB) == -1) {
 	  CALL_AND_UNSET_ONERROR(uwp);
@@ -2308,8 +2306,8 @@ PIKECLASS Backend
 	/* FIXME: Consider utilizing ACTIVE_POLLSET[i].data in
 	 *        the kqueue case.
 	 */
-	IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: write_callback(%d, %p)\n",
-		      THR_NO, me->id, fd, box->ref_obj));
+        PDWERR("[%d]BACKEND[%d]: write_callback(%d, %p)\n",
+               THR_NO, me->id, fd, box->ref_obj);
 	errno = 0;
 	if (box->callback (box, PIKE_FD_WRITE) == -1) {
 	  CALL_AND_UNSET_ONERROR(uwp);
@@ -2322,8 +2320,8 @@ PIKECLASS Backend
 	/* FIXME: Consider utilizing ACTIVE_POLLSET[i].data in
 	 *        the kqueue case.
 	 */
-	IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: fs_event_callback(%d, %p)\n",
-		      THR_NO, me->id, fd, box->ref_obj));
+        PDWERR("[%d]BACKEND[%d]: fs_event_callback(%d, %p)\n",
+               THR_NO, me->id, fd, box->ref_obj);
 	errno = 0;
 	if (box->callback (box, PIKE_FD_FS_EVENT) == -1) {
 	  CALL_AND_UNSET_ONERROR(uwp);
@@ -2341,9 +2339,8 @@ PIKECLASS Backend
 	 * clobbered by the callbacks we might have called
 	 * above. */
 	if (!getsockopt (fd, SOL_SOCKET, SO_ERROR, (void *) &err, &len)) {
-	  IF_PD (fprintf (stderr,
-			  "[%d]BACKEND[%d]: POLLERR on %d, error=%d\n",
-			  THR_NO, me->id, fd, err));
+          PDWERR("[%d]BACKEND[%d]: POLLERR on %d, error=%d\n",
+                 THR_NO, me->id, fd, err);
 	  errno = err;
 	}
 	else {
@@ -2359,7 +2356,7 @@ PIKECLASS Backend
 		    fd, errno);
 #ifdef ENOTSOCK
 	  } else {
-	    IF_PD(fprintf(stderr, "Got POLLERR on non-socket fd %d\n", fd));
+            PDWERR("Got POLLERR on non-socket fd %d\n", fd);
 	  }
 #endif
 #endif /* PIKE_DEBUG */
@@ -2376,9 +2373,8 @@ PIKECLASS Backend
 	set_fd_callback_events(box, box->events & PIKE_BIT_FD_ERROR,
 			       box->flags);
 	if (WANT_EVENT (box, ERROR)) {
-	  IF_PD(fprintf(stderr,
-			"[%d]BACKEND[%d]: error event on fd %d sent to %p\n",
-			THR_NO, me->id, fd, box->ref_obj));
+          PDWERR("[%d]BACKEND[%d]: error event on fd %d sent to %p\n",
+                 THR_NO, me->id, fd, box->ref_obj);
 	  if (box->callback (box, PIKE_FD_ERROR) == -1) {
 	    CALL_AND_UNSET_ONERROR(uwp);
 	    goto backend_round_done;
@@ -2389,17 +2385,15 @@ PIKECLASS Backend
 	 *              but should verify this.
 	 */
 	else if (old_events & PIKE_BIT_FD_READ) {
-	  IF_PD(fprintf(stderr,
-			"[%d]BACKEND[%d]: read_callback(%d, %p) for error %d\n",
-			THR_NO, me->id, fd, box->ref_obj, err));
+          PDWERR("[%d]BACKEND[%d]: read_callback(%d, %p) for error %d\n",
+                 THR_NO, me->id, fd, box->ref_obj, err);
 	  if (box->callback (box, PIKE_FD_READ) == -1) {
 	    CALL_AND_UNSET_ONERROR(uwp);
 	    goto backend_round_done;
 	  }
 	} else if (old_events & PIKE_BIT_FD_WRITE) {
-	  IF_PD(fprintf(stderr,
-			"[%d]BACKEND[%d]: write_callback(%d, %p) for error %d\n",
-			THR_NO, me->id, fd, box->ref_obj, err));
+          PDWERR("[%d]BACKEND[%d]: write_callback(%d, %p) for error %d\n",
+                 THR_NO, me->id, fd, box->ref_obj, err);
 	  if (box->callback (box, PIKE_FD_WRITE) == -1) {
 	    CALL_AND_UNSET_ONERROR(uwp);
 	    goto backend_round_done;
@@ -2421,7 +2415,7 @@ PIKECLASS Backend
 
     me->id = unused_id++;
 
-    IF_PD (fprintf (stderr, "[%d]BACKEND[%d]: init\n", THR_NO, me->id));
+    PDWERR("[%d]BACKEND[%d]: init\n", THR_NO, me->id);
 
 #ifdef _REENTRANT
     me->set_busy = 0;
@@ -2484,7 +2478,7 @@ PIKECLASS Backend
     struct Backend_struct *me=THIS;
     int e;
 
-    IF_PD (fprintf (stderr, "[%d]BACKEND[%d]: exit\n", THR_NO, me->id));
+    PDWERR("[%d]BACKEND[%d]: exit\n", THR_NO, me->id);
 
     free_callback_list(& THIS->backend_callbacks);
 
@@ -2583,21 +2577,18 @@ PIKECLASS Backend
 
     if (me->wakeup_pipe_send_fd < 0) {
       int pipe[2];
-      IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: Creating wakeup pipe...\n",
-		    THR_NO, me->id));
+      PDWERR("[%d]BACKEND[%d]: Creating wakeup pipe...\n", THR_NO, me->id);
       if(pike_make_pipe(pipe) < 0)
 	Pike_error("Couldn't create backend wakeup pipe! errno=%d.\n",errno);
 
       set_nonblocking(pipe[0],1);
       set_nonblocking(pipe[1],1);
-      IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: Initializing wakeup pipe...\n",
-		    THR_NO, me->id));
+      PDWERR("[%d]BACKEND[%d]: Initializing wakeup pipe...\n", THR_NO, me->id);
       change_fd_for_box (&me->wakeup_cb_box, pipe[0]);
       me->wakeup_pipe_send_fd = pipe[1];
 
-      IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: Wakeup pipe is [%d, %d]\n",
-		    THR_NO, me->id,
-		    me->wakeup_pipe_send_fd, THIS->wakeup_cb_box.fd));
+      PDWERR("[%d]BACKEND[%d]: Wakeup pipe is [%d, %d]\n", THR_NO, me->id,
+             me->wakeup_pipe_send_fd, THIS->wakeup_cb_box.fd);
 
       /* Don't keep these on exec! */
       set_close_on_exec(pipe[0], 1);
@@ -2705,8 +2696,7 @@ int POLL_DEVICE_SET_EVENTS(struct Backend_struct *me,
   int e;
   int sz = sizeof(poll_state);
 
-  IF_PD(fprintf(stderr, "POLL_DEVICE_SET_EVENTS(%p, %d, %d, 0x%08x)\n",
-		me, pfd, fd, events));
+  PDWERR("POLL_DEVICE_SET_EVENTS(%p, %d, %d, 0x%08x)\n", me, pfd, fd, events);
 
   /* NOTE: POLLREMOVE must (unfortunately) be a separate request. */
   poll_state[0].fd = fd;
@@ -2728,22 +2718,19 @@ int POLL_DEVICE_SET_EVENTS(struct Backend_struct *me,
   {
     SWAP_OUT_CURRENT_THREAD();
     /* Release the poll set from the backend. */
-    IF_PD(fprintf(stderr, "POLL_DEVICE_SET_EVENTS[%p] grabbing the poll set\n",
-		  me));
+    PDWERR("POLL_DEVICE_SET_EVENTS[%p] grabbing the poll set\n", me);
     while (me->set_busy) {
       co_wait_interpreter(&me->set_change);
     }
     me->set_busy = 1;
-    IF_PD(fprintf(stderr, "POLL_DEVICE_SET_EVENTS[%p] wake up backend\n",
-		  me));
+    PDWERR("POLL_DEVICE_SET_EVENTS[%p] wake up backend\n", me);
     backend_wake_up_backend(me);
     /* The backend is now waiting in wakeup_callback(). */
     SWAP_IN_CURRENT_THREAD();
   }
 #endif /* _REENTRANT */
 
-  IF_PD(fprintf(stderr, "POLL_DEVICE_SET_EVENTS[%p] updating the poll set\n",
-		me));
+  PDWERR("POLL_DEVICE_SET_EVENTS[%p] updating the poll set\n", me);
   while (((e = write(pfd, poll_state, sz)) < 0) && (errno == EINTR))
     ;
 
@@ -2752,8 +2739,7 @@ int POLL_DEVICE_SET_EVENTS(struct Backend_struct *me,
   if(num_threads>1)
   {
     /* Release the backend from wakeup_callback(). */
-    IF_PD(fprintf(stderr, "POLL_DEVICE_SET_EVENTS[%p] releasing the backend\n",
-		  me));
+    PDWERR("POLL_DEVICE_SET_EVENTS[%p] releasing the backend\n", me);
     co_broadcast(&me->set_change);
   }
 #endif /* _REENTRANT */
@@ -2770,8 +2756,7 @@ int POLL_DEVICE_SET_EVENTS(struct Backend_struct *me,
 	       " short write (%d != %d).\n",
 	       fd, e, (int)sizeof(poll_state));
   }
-  IF_PD(fprintf(stderr, "POLL_DEVICE_SET_EVENTS[%p] ==> %d\n",
-		me, e));
+  PDWERR("POLL_DEVICE_SET_EVENTS[%p] ==> %d\n", me, e);
   return e;
 }
 
@@ -2863,15 +2848,14 @@ int POLL_DEVICE_SET_EVENTS(struct Backend_struct *UNUSED(me),
 
     /* The /dev/epoll interface exposes kernel implementation details...
      */
-    IF_PD(fprintf(stderr, "epoll_ctl(%d, EPOLL_CTL_MOD, %d, { 0x%08x, %d })\n",
-		  pfd, fd, events, fd));
+    PDWERR("epoll_ctl(%d, EPOLL_CTL_MOD, %d, { 0x%08x, %d })\n",
+           pfd, fd, events, fd);
     while (((e = epoll_ctl(pfd, EPOLL_CTL_MOD, fd, &ev)) < 0)  &&
 	   (errno == EINTR))
       ;
     if ((e < 0) && (errno == ENOENT)) {
-      IF_PD(fprintf(stderr,
-		    "epoll_ctl(%d, EPOLL_CTL_ADD, %d, { 0x%08x, %d })\n",
-		    pfd, fd, events, fd));
+      PDWERR("epoll_ctl(%d, EPOLL_CTL_ADD, %d, { 0x%08x, %d })\n",
+             pfd, fd, events, fd);
       while (((e = epoll_ctl(pfd, EPOLL_CTL_ADD, fd, &ev)) < 0)  &&
 	     (errno == EINTR))
 	;
@@ -2882,16 +2866,15 @@ int POLL_DEVICE_SET_EVENTS(struct Backend_struct *UNUSED(me),
      * though it isn't used...
      */
     PIKE_MEM_RW (dummy);
-    IF_PD(fprintf(stderr, "epoll_ctl(%d, EPOLL_CTL_DEL, %d, &dummy)\n",
-		  pfd, fd));
+    PDWERR("epoll_ctl(%d, EPOLL_CTL_DEL, %d, &dummy)\n", pfd, fd);
     while (((e = epoll_ctl(pfd, EPOLL_CTL_DEL, fd, &dummy)) < 0) &&
 	   (errno == EINTR))
       ;
     if ((e < 0) && (errno == ENOENT)) return 0;
   }
-  IF_PD(if (e < 0) {
-    fprintf(stderr, "epoll_ctl() failed with errno: %d\n", errno);
-  });
+  if (e < 0) {
+    PDWERR("epoll_ctl() failed with errno: %d\n", errno);
+  }
 
   return e;
 }
@@ -2919,7 +2902,7 @@ struct pb_selectors
 static void pb_MY_FD_SET(struct pb_selectors *me, int fd, int add)
 {
   int i;
-  IF_PD(fprintf(stderr, "BACKEND: MY_FD_SET(%d, 0x%04x)\n", fd, add));
+  PDWERR("BACKEND: MY_FD_SET(%d, 0x%04x)\n", fd, add);
   for(i=0; i<me->num_in_poll; i++)
   {
     if(me->poll_fds[i].fd == fd)
@@ -2951,7 +2934,7 @@ static void pb_MY_FD_SET(struct pb_selectors *me, int fd, int add)
 static void pb_MY_FD_CLR(struct pb_selectors *me, int fd, int sub)
 {
   int i;
-  IF_PD(fprintf(stderr, "BACKEND: POLL_FD_CLR(%d, 0x%04x)\n", fd, sub));
+  PDWERR("BACKEND: POLL_FD_CLR(%d, 0x%04x)\n", fd, sub);
   if(!me->poll_fds) return;
   for(i=0; i<me->num_in_poll; i++)
   {
@@ -2980,14 +2963,12 @@ static void pb_MY_FD_CLR(struct pb_selectors *me, int fd, int sub)
 static void pb_copy_selectors(struct pb_selectors *to,
 			      struct pb_selectors *from)
 {
-  IF_PD(fprintf(stderr, "BACKEND: copy_poll_set() from->num_in_poll=%d\n",
-		from->num_in_poll));
+  PDWERR("BACKEND: copy_poll_set() from->num_in_poll=%d\n", from->num_in_poll);
 
   if (to->poll_fd_size < from->num_in_poll)
   {
-    IF_PD(fprintf(stderr, "BACKEND: copy_poll_set() size %d -> %d\n",
-		  to->poll_fd_size,
-		  from->poll_fd_size));
+    PDWERR("BACKEND: copy_poll_set() size %d -> %d\n",
+           to->poll_fd_size, from->poll_fd_size);
     to->poll_fd_size=from->poll_fd_size;
     if (to->poll_fds) {
       to->poll_fds =
@@ -3321,8 +3302,8 @@ PIKECLASS PollDeviceBackend
       events |= MY_POLLFSEVENT;
     }
 
-    IF_PD(fprintf(stderr, "UPDATE_BLACK_BOX(%d, %d) ==> events: 0x%08x\n",
-		  me->set, fd, events));
+    PDWERR("UPDATE_BLACK_BOX(%d, %d) ==> events: 0x%08x\n",
+           me->set, fd, events);
     POLL_DEVICE_SET_EVENTS(me->backend, me->set, fd, events);
 #elif defined(BACKEND_USES_KQUEUE)
     /* Note: Only used by REOPEN_POLL_DEVICE on a freshly opened kqueue. */
@@ -3335,18 +3316,17 @@ PIKECLASS PollDeviceBackend
 	 * Without setting EV_OOBAND, we won't get any OOB notifications,
 	 * unless there is also in-band data.
 	 */
-	IF_PD(fprintf(stderr, "BACKEND: EV_SET fd:%d, READ, ADD, [OOBAND]\n",
-		      fd));
+        PDWERR("BACKEND: EV_SET fd:%d, READ, ADD, [OOBAND]\n", fd);
 	EV_SET(ev, fd, MY_POLLIN, EV_ADD|EV_OOBAND, 0, 0, 0);
       } else {
-	IF_PD(fprintf(stderr, "BACKEND: EV_SET fd:%d, READ, ADD\n", fd));
+        PDWERR("BACKEND: EV_SET fd:%d, READ, ADD\n", fd);
 	EV_SET(ev, fd, MY_POLLIN, EV_ADD, 0, 0, 0);
       }
       nev++;
     }
     if (wanted_events & PIKE_BIT_FD_WRITE ||
 	wanted_events & PIKE_BIT_FD_WRITE_OOB) {
-      IF_PD(fprintf(stderr, "BACKEND: EV_SET fd:%d, WRITE, ADD\n", fd));
+      PDWERR("BACKEND: EV_SET fd:%d, WRITE, ADD\n", fd);
       EV_SET(ev+nev, fd, MY_POLLOUT, EV_ADD, 0, 0, 0);
       nev++;
     }
@@ -3583,9 +3563,8 @@ PIKECLASS PollDeviceBackend
   {
     int changed_events = old_events ^ new_events;
 
-    IF_PD(fprintf(stderr,
-		  "[%d]BACKEND[%d]: pdb_update_fd_set(.., %d, %d, %d, %d):\n",
-		  THR_NO, me->id, fd, old_events, new_events, flags));
+    PDWERR("[%d]BACKEND[%d]: pdb_update_fd_set(.., %d, %d, %d, %d):\n",
+           THR_NO, me->id, fd, old_events, new_events, flags);
 
 
     if (changed_events) {
@@ -3600,32 +3579,29 @@ PIKECLASS PollDeviceBackend
       if (changed_events & (PIKE_BIT_FD_READ|PIKE_BIT_FD_READ_OOB)) {
 	if (new_events & PIKE_BIT_FD_READ_OOB) {
 	  /* We want OOB even if there's no in-band data. */
-	  IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: fd:%d READ, ADD, [OOBAND]\n",
-			THR_NO, me->id, fd));
+          PDWERR("[%d]BACKEND[%d]: fd:%d READ, ADD, [OOBAND]\n",
+                 THR_NO, me->id, fd);
 	  EV_SET(ev, fd, EVFILT_READ, EV_ADD|EV_OOBAND, 0, 0, 0);
 	  EV_SET(ev+1, fd, EVFILT_READ, EV_ENABLE|EV_OOBAND, 0, 0, 0);
 	  kevent(pdb->set, ev, 2, NULL, 0, NULL);
 	} else if (new_events & PIKE_BIT_FD_READ) {
-	  IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: fd:%d READ, ADD\n",
-			THR_NO, me->id, fd));
+          PDWERR("[%d]BACKEND[%d]: fd:%d READ, ADD\n", THR_NO, me->id, fd);
 	  EV_SET(ev, fd, EVFILT_READ, EV_ADD, 0, 0, 0);
 	  EV_SET(ev+1, fd, EVFILT_READ, EV_ENABLE, 0, 0, 0);
 	  kevent(pdb->set, ev, 2, NULL, 0, NULL);
 	} else {
-	  IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: fd:%d READ, DISABLE\n",
-			THR_NO, me->id, fd));
+          PDWERR("[%d]BACKEND[%d]: fd:%d READ, DISABLE\n", THR_NO, me->id, fd);
 	  pdb_MY_FD_CLR(&pdb->set, fd, MY_POLLIN);
 	}
       }
 
       if (changed_events & (PIKE_BIT_FD_WRITE|PIKE_BIT_FD_WRITE_OOB)) {
 	if (new_events & (PIKE_BIT_FD_WRITE|PIKE_BIT_FD_WRITE_OOB)) {
-	  IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: fd:%d WRITE, ADD\n",
-			THR_NO, me->id, fd));
+          PDWERR("[%d]BACKEND[%d]: fd:%d WRITE, ADD\n", THR_NO, me->id, fd);
 	  pdb_MY_FD_SET(&pdb->set, fd, MY_POLLOUT);
 	} else {
-	  IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: fd:%d WRITE, DISABLE\n",
-			THR_NO, me->id, fd));
+          PDWERR("[%d]BACKEND[%d]: fd:%d WRITE, DISABLE\n",
+                 THR_NO, me->id, fd);
 	  pdb_MY_FD_CLR(&pdb->set, fd, MY_POLLOUT);
 	}
       }
@@ -3863,8 +3839,7 @@ PIKECLASS PollDeviceBackend
 #error Unknown timeout method.
 #endif /* TIMEOUT_IS_* */
 
-      IF_PD(fprintf (stderr, "[%d]BACKEND[%d]: Doing poll on fds:\n",
-		     THR_NO, me->id));
+      PDWERR("[%d]BACKEND[%d]: Doing poll on fds:\n", THR_NO, me->id);
 
       check_threads_etc();
       THREADS_ALLOW();
@@ -3892,7 +3867,7 @@ else
 #endif /* BACKEND_USES_CFRUNLOOP */
       i = PDB_POLL(pdb->set, poll_timeout);
 
-      IF_PD(fprintf(stderr, " => %d (timeout was: %d)\n", i, poll_timeout));
+      PDWERR(" => %d (timeout was: %d)\n", i, poll_timeout);
 
       THREADS_DISALLOW();
       check_threads_etc();
@@ -3969,8 +3944,7 @@ else
 	  struct pollfd fds;
 	  int ret;
 	  /* NOTE: /dev/poll returns POLLNVAL for closed descriptors. */
-	  IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: POLLNVAL on %d\n",
-			THR_NO, me->id, fd));
+          PDWERR("[%d]BACKEND[%d]: POLLNVAL on %d\n", THR_NO, me->id, fd);
 #ifdef PIKE_DEBUG
 #ifdef HAVE_POLL
 	  /* FIXME */
@@ -3996,8 +3970,7 @@ else
 #endif /* PIKE_DEBUG */
 	  if (PDB_CHECK_ERROR_EVENT(poll_fds[i], MY_POLLERR)) {
 	    /* Errors are signalled on the first available callback. */
-	    IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: POLLERR on %d\n",
-			  THR_NO, me->id, fd));
+            PDWERR("[%d]BACKEND[%d]: POLLERR on %d\n", THR_NO, me->id, fd);
 	    box->revents |= PIKE_BIT_FD_ERROR;
 	    /* Note that Linux pipe's signal close in the write-direction
 	     * with POLLERR.
@@ -4013,8 +3986,7 @@ else
 #endif
 	  }
 	  if (PDB_CHECK_ERROR_EVENT(poll_fds[i], MY_POLLHUP)) {
-	    IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: POLLHUP on %d\n",
-			  THR_NO, me->id, fd));
+            PDWERR("[%d]BACKEND[%d]: POLLHUP on %d\n", THR_NO, me->id, fd);
 	    /* Linux signals close in the read-direction of pipes
 	     * and fifos with POLLHUP. */
 	    box->revents |= PIKE_BIT_FD_READ|PIKE_BIT_FD_READ_OOB;
@@ -4027,34 +3999,29 @@ else
 	      && (!EV_OOBAND || PDB_CHECK_ERROR_EVENT(poll_fds[i], EV_OOBAND))
 #endif
 	      ) {
-	    IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: POLLRDBAND on %d\n",
-			  THR_NO, me->id, fd));
+            PDWERR("[%d]BACKEND[%d]: POLLRDBAND on %d\n", THR_NO, me->id, fd);
 	    box->revents |= PIKE_BIT_FD_READ_OOB;
 	    DO_IF_DEBUG(handled = 1);
 	  }
 	  if (PDB_CHECK_EVENT(poll_fds[i], MY_POLLIN)) {
-	    IF_PD(fprintf(stderr,
-			  "[%d]BACKEND[%d]: POLLRDNORM|POLLIN on %d\n",
-			  THR_NO, me->id, fd));
+            PDWERR("[%d]BACKEND[%d]: POLLRDNORM|POLLIN on %d\n",
+                   THR_NO, me->id, fd);
 	    box->revents |= PIKE_BIT_FD_READ;
 	    DO_IF_DEBUG(handled = 1);
 	  }
 	  if (PDB_CHECK_EVENT(poll_fds[i], MY_POLLWRBAND)) {
-	    IF_PD(fprintf(stderr,
-			  "[%d]BACKEND[%d]: POLLWRBAND on %d\n",
-			  THR_NO, me->id, fd));
+            PDWERR("[%d]BACKEND[%d]: POLLWRBAND on %d\n",
+                   THR_NO, me->id, fd);
 	    box->revents |= PIKE_BIT_FD_WRITE_OOB;
 	    DO_IF_DEBUG(handled = 1);
 	  }
 	  if (PDB_CHECK_EVENT(poll_fds[i], MY_POLLOUT)) {
-	    IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: POLLOUT on %d\n",
-			  THR_NO, me->id, fd));
+            PDWERR("[%d]BACKEND[%d]: POLLOUT on %d\n", THR_NO, me->id, fd);
 	    box->revents |= PIKE_BIT_FD_WRITE;
 	    DO_IF_DEBUG(handled = 1);
 	  }
 	  if (PDB_CHECK_EVENT(poll_fds[i], MY_POLLFSEVENT)) {
-	    IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: POLLFSEVENT on %d\n",
-			  THR_NO, me->id, fd));
+            PDWERR("[%d]BACKEND[%d]: POLLFSEVENT on %d\n", THR_NO, me->id, fd);
 	    box->revents |= PIKE_BIT_FD_FS_EVENT;
 	    DO_IF_DEBUG(handled = 1);
 	  }
@@ -4075,27 +4042,24 @@ else
 	     * in case we are out of sync with the poll device.
 	     * Otherwise we risk entering a busy loop.
 	     */
-	    IF_PD(fprintf(stderr,
-			  "[%d]BACKEND[%d]: Backend is out of sync for fd %d\n"
-			  "[%d]BACKEND[%d]: Wanted: 0x%04x Received: 0x%04x\n",
-			  THR_NO, me->id, fd,
-			  THR_NO, me->id, box->events, box->revents));
+            PDWERR("[%d]BACKEND[%d]: Backend is out of sync for fd %d\n"
+                   "[%d]BACKEND[%d]: Wanted: 0x%04x Received: 0x%04x\n",
+                   THR_NO, me->id, fd,
+                   THR_NO, me->id, box->events, box->revents);
 	    pdb_update_fd_set(me, pdb, fd, box->revents|box->events,
 			      box->events, box->flags);
 	  }
 	next_fd:
 	  /* Hook in the box on the fd_list. */
 	  if (!box->next) {
-	    IF_PD(fprintf(stderr,
-			  "[%d]BACKEND[%d]: hooking in box for fd %d\n",
-			  THR_NO, me->id, fd));
+            PDWERR("[%d]BACKEND[%d]: hooking in box for fd %d\n",
+                   THR_NO, me->id, fd);
 	    box->next = fd_list.next;
 	    fd_list.next = box;
 	    if (box->ref_obj) add_ref(box->ref_obj);
 	  } else {
-	    IF_PD(fprintf(stderr,
-			  "[%d]BACKEND[%d]: fd %d already in list.\n",
-			  THR_NO, me->id, fd));
+            PDWERR("[%d]BACKEND[%d]: fd %d already in list.\n",
+                   THR_NO, me->id, fd);
 	  }
 	}
       }
@@ -4405,18 +4369,16 @@ PIKEFUN int enable_external_runloop(int enable)
     struct Backend_struct *me =
       THIS->backend = (struct Backend_struct *)(((char *)THIS) + pdb_offset);
 
-    IF_PD (fprintf (stderr, "[%d]BACKEND[%d]: Registering device backend...\n",
-		    THR_NO, me->id));
+    PDWERR("[%d]BACKEND[%d]: Registering device backend...\n",
+           THR_NO, me->id);
 
     me->update_fd_set_handler = (update_fd_set_handler_fn *) pdb_update_fd_set;
     me->handler_data = THIS;
 
-    IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: Registering backend...\n",
-		  THR_NO, me->id));
+    PDWERR("[%d]BACKEND[%d]: Registering backend...\n", THR_NO, me->id);
     register_pdb_backend(THIS);
 
-    IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: Opening poll device...\n",
-		  THR_NO, me->id));
+    PDWERR("[%d]BACKEND[%d]: Opening poll device...\n", THR_NO, me->id);
     if ((THIS->set = OPEN_POLL_DEVICE(THIS)) < 0) {
       Pike_error("Failed to open poll device (errno:%d)\n", errno);
     }
@@ -4428,8 +4390,7 @@ PIKEFUN int enable_external_runloop(int enable)
   {
     struct Backend_struct *me = THIS->backend;
 
-    IF_PD (fprintf (stderr, "[%d]BACKEND[%d]: Closing poll device...\n",
-		    THR_NO, me->id));
+    PDWERR("[%d]BACKEND[%d]: Closing poll device...\n", THR_NO, me->id);
 
 #ifdef BACKEND_USES_CFRUNLOOP
     if(THIS->external_run)
@@ -4534,9 +4495,8 @@ PIKECLASS PollBackend
   {
     int changed_events = old_events ^ new_events;
 
-    IF_PD(fprintf(stderr,
-		  "[%d]BACKEND[%d]: pb_update_fd_set(.., %d, %d, %d):\n",
-		  THR_NO, me->id, fd, old_events, new_events));
+    PDWERR("[%d]BACKEND[%d]: pb_update_fd_set(.., %d, %d, %d):\n",
+           THR_NO, me->id, fd, old_events, new_events);
 
 
     if (changed_events) {
@@ -4713,8 +4673,7 @@ PIKECLASS PollBackend
 
       pb_copy_selectors(& pb->active_set, &pb->set);
 
-      IF_PD(fprintf (stderr, "[%d]BACKEND[%d]: Doing poll on fds:\n",
-		     THR_NO, me->id));
+      PDWERR("[%d]BACKEND[%d]: Doing poll on fds:\n", THR_NO, me->id);
 #ifdef POLL_DEBUG
       {
 	int i;
@@ -4746,7 +4705,7 @@ PIKECLASS PollBackend
       /* Note: The arguments to MY_POLL may be evaluated multiple times. */
       i = PB_POLL(pb->active_set, poll_timeout);
 
-      IF_PD(fprintf(stderr, " => %d\n", i));
+      PDWERR(" => %d\n", i);
 
       THREADS_DISALLOW();
       check_threads_etc();
@@ -4813,8 +4772,7 @@ PIKECLASS PollBackend
 	  struct pollfd fds;
 	  int ret;
 	  /* NOTE: /dev/poll returns POLLNVAL for closed descriptors. */
-	  IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: POLLNVAL on %d\n",
-			THR_NO, me->id, fd));
+          PDWERR("[%d]BACKEND[%d]: POLLNVAL on %d\n", THR_NO, me->id, fd);
 #ifdef PIKE_DEBUG
 	  /* FIXME */
 
@@ -4845,42 +4803,38 @@ PIKECLASS PollBackend
 #endif /* PIKE_DEBUG */
 	  if (PB_CHECK_ERROR_EVENT(pb->active_set.poll_fds[i], MY_POLLERR)) {
 	    /* Errors are signalled on the first available callback. */
-	    IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: POLLERR on %d\n",
-			  THR_NO, me->id, fd));
+            PDWERR("[%d]BACKEND[%d]: POLLERR on %d\n", THR_NO, me->id, fd);
 	    box->revents |= PIKE_BIT_FD_ERROR;
 	  }
 
 	  if (PB_CHECK_EVENT(pb->active_set.poll_fds[i], MY_POLLRDBAND)) {
-	    IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: POLLRDBAND on %d\n",
-			  THR_NO, me->id, fd));
+            PDWERR("[%d]BACKEND[%d]: POLLRDBAND on %d\n", THR_NO, me->id, fd);
 	    box->revents |= PIKE_BIT_FD_READ_OOB;
 	    DO_IF_DEBUG(handled = 1);
 	  }
 	  if (PB_CHECK_EVENT(pb->active_set.poll_fds[i], MY_POLLIN)) {
-	    IF_PD(fprintf(stderr,
-			  "[%d]BACKEND[%d]: POLLRDNORM|POLLIN on %d\n",
-			  THR_NO, me->id, fd));
+            PDWERR("[%d]BACKEND[%d]: POLLRDNORM|POLLIN on %d\n",
+                   THR_NO, me->id, fd);
 	    box->revents |= PIKE_BIT_FD_READ;
 	    DO_IF_DEBUG(handled = 1);
 	  }
 	  if (PB_CHECK_EVENT(pb->active_set.poll_fds[i], MY_POLLWRBAND) ||
 	      PB_CHECK_ERROR_EVENT(pb->active_set.poll_fds[i], MY_POLLHUP)) {
-	    IF_PD(fprintf(stderr,
-			  "[%d]BACKEND[%d]: POLLWRBAND|POLLHUP on %d\n",
-			  THR_NO, me->id, fd));
+            PDWERR("[%d]BACKEND[%d]: POLLWRBAND|POLLHUP on %d\n",
+                   THR_NO, me->id, fd);
 	    box->revents |= PIKE_BIT_FD_WRITE_OOB;
 	    DO_IF_DEBUG(handled = 1);
 	  }
 	  if (PB_CHECK_EVENT(pb->active_set.poll_fds[i], MY_POLLOUT) ||
 	      PB_CHECK_ERROR_EVENT(pb->active_set.poll_fds[i], MY_POLLHUP)) {
-	    IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: POLLOUT|POLLHUP on %d\n",
-			  THR_NO, me->id, fd));
+            PDWERR("[%d]BACKEND[%d]: POLLOUT|POLLHUP on %d\n",
+                   THR_NO, me->id, fd);
 	    box->revents |= PIKE_BIT_FD_WRITE;
 	    DO_IF_DEBUG(handled = 1);
 	  }
 	  if (PDB_CHECK_EVENT(pb->active_set.poll_fds[i], MY_POLLFSEVENT)) {
-	    IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: POLLFSEVENT on %d\n",
-			  THR_NO, me->id, fd));
+            PDWERR("[%d]BACKEND[%d]: POLLFSEVENT on %d\n",
+                   THR_NO, me->id, fd);
 	    box->rflags = PDB_GET_FLAGS(poll_fds[i]);
 	    box->revents |= PIKE_BIT_FD_FS_EVENT;
 	    DO_IF_DEBUG(handled = 1);
@@ -4899,16 +4853,14 @@ PIKECLASS PollBackend
 	next_fd:
 	  /* Hook in the box on the fd_list. */
 	  if (!box->next) {
-	    IF_PD(fprintf(stderr,
-			  "[%d]BACKEND[%d]: hooking in box for fd %d\n",
-			  THR_NO, me->id, fd));
+            PDWERR("[%d]BACKEND[%d]: hooking in box for fd %d\n",
+                   THR_NO, me->id, fd);
 	    box->next = fd_list.next;
 	    fd_list.next = box;
 	    if (box->ref_obj) add_ref(box->ref_obj);
 	  } else {
-	    IF_PD(fprintf(stderr,
-			  "[%d]BACKEND[%d]: fd %d already in list.\n",
-			  THR_NO, me->id, fd));
+            PDWERR("[%d]BACKEND[%d]: fd %d already in list.\n",
+                   THR_NO, me->id, fd);
 	  }
 	}
       }
@@ -5046,16 +4998,15 @@ PIKECLASS PollBackend
     pb_offset = Pike_compiler->new_program->inherits[1].storage_offset -
       Pike_compiler->new_program->inherits[0].storage_offset;
 
-    IF_PD(fprintf(stderr,
-		  "MY_POLLIN:       0x%04x\n"
-		  "MY_POLLOUT:      0x%04x\n"
-		  "MY_POLLEXCEPT:   0x%04x\n"
-		  "MY_POLLRDBAND:   0x%04x\n"
-		  "MY_POLLWREXCEPT: 0x%04x\n"
-		  "MY_POLLWRBAND:   0x%04x\n",
-		  MY_POLLIN, MY_POLLOUT,
-		  MY_POLLEXCEPT, MY_POLLRDBAND,
-		  MY_POLLWREXCEPT, MY_POLLWRBAND));
+    PDWERR("MY_POLLIN:       0x%04x\n"
+           "MY_POLLOUT:      0x%04x\n"
+           "MY_POLLEXCEPT:   0x%04x\n"
+           "MY_POLLRDBAND:   0x%04x\n"
+           "MY_POLLWREXCEPT: 0x%04x\n"
+           "MY_POLLWRBAND:   0x%04x\n",
+           MY_POLLIN, MY_POLLOUT,
+           MY_POLLEXCEPT, MY_POLLRDBAND,
+           MY_POLLWREXCEPT, MY_POLLWRBAND);
   }
 
   INIT
@@ -5063,8 +5014,7 @@ PIKECLASS PollBackend
     struct Backend_struct *me =
       THIS->backend = (struct Backend_struct *)(((char *)THIS) + pb_offset);
 
-    IF_PD (fprintf (stderr, "[%d]BACKEND[%d]: init generic\n",
-		    THR_NO, me->id));
+    PDWERR("[%d]BACKEND[%d]: init generic\n", THR_NO, me->id);
 
 #ifdef PIKE_DEBUG
     me->debug_handler = (debug_handler_fn *) pb_backend_do_debug;
@@ -5087,8 +5037,7 @@ PIKECLASS PollBackend
     struct Backend_struct *me = THIS->backend;
     int e;
 
-    IF_PD (fprintf (stderr, "[%d]BACKEND[%d]: exit generic backend\n",
-		    THR_NO, me->id));
+    PDWERR("[%d]BACKEND[%d]: exit generic backend\n", THR_NO, me->id);
 
     if (THIS->set.poll_fds) {
       free(THIS->set.poll_fds);
@@ -5140,9 +5089,8 @@ PIKECLASS SelectBackend
   {
     int changed_events = old_events ^ new_events;
 
-    IF_PD(fprintf (stderr,
-		   "[%d]BACKEND[%d]: sb_update_fd_set(.., %d, %d, %d):\n",
-		   THR_NO, me->id, fd, old_events, new_events));
+    PDWERR("[%d]BACKEND[%d]: sb_update_fd_set(.., %d, %d, %d):\n",
+           THR_NO, me->id, fd, old_events, new_events);
 
 
     if (changed_events) {
@@ -5286,8 +5234,7 @@ PIKECLASS SelectBackend
 
       sb_copy_selectors(& sb->active_set, &sb->set);
 
-      IF_PD(fprintf (stderr, "[%d]BACKEND[%d]: Doing poll on fds:\n",
-		     THR_NO, me->id));
+      PDWERR("[%d]BACKEND[%d]: Doing poll on fds:\n", THR_NO, me->id);
 
       check_threads_etc();
       THREADS_ALLOW();
@@ -5295,7 +5242,7 @@ PIKECLASS SelectBackend
       /* Note: The arguments to MY_POLL may be evaluated multiple times. */
       i = SB_SELECT(sb->active_set, poll_timeout);
 
-      IF_PD(fprintf(stderr, " => %d\n", i));
+      PDWERR(" => %d\n", i);
 
       THREADS_DISALLOW();
       check_threads_etc();
@@ -5337,12 +5284,11 @@ PIKECLASS SelectBackend
 	   * systems, then? Should we always check for that? */
 	  int err = 0;
 	  ACCEPT_SIZE_T len = sizeof (err);
-	  IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: exception on %d\n",
-			THR_NO, me->id, i));
+          PDWERR("[%d]BACKEND[%d]: exception on %d\n", THR_NO, me->id, i);
 	  if (!getsockopt (i, SOL_SOCKET, SO_ERROR, (void *)&err, &len) &&
 	      err) {
-	    IF_PD (fprintf (stderr, "[%d]BACKEND[%d]: error on %d, error=%d\n",
-			    THR_NO, me->id, i, err));
+            PDWERR("[%d]BACKEND[%d]: error on %d, error=%d\n",
+                   THR_NO, me->id, i, err);
 	    box->revents |= PIKE_BIT_FD_ERROR;
 	  } else {
 	    box->revents |= PIKE_BIT_FD_READ_OOB;
@@ -5350,14 +5296,12 @@ PIKECLASS SelectBackend
 	}
 
 	if(fd_FD_ISSET(i, sb->active_set.asets + MY_READSET)) {
-	  IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: read on %d\n",
-			THR_NO, me->id, i));
+          PDWERR("[%d]BACKEND[%d]: read on %d\n", THR_NO, me->id, i);
 	  box->revents |= PIKE_BIT_FD_READ;
 	}
 
 	if(fd_FD_ISSET(i, sb->active_set.asets + MY_WRITESET)) {
-	  IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: write on %d\n",
-			THR_NO, me->id, i));
+          PDWERR("[%d]BACKEND[%d]: write on %d\n", THR_NO, me->id, i);
 	  /* OOB can by BSD definition always be written, so if we can
 	   * write normal data it's reasonable to assume OOB can be
 	   * written too without too much risk of being thrown away. */
@@ -5586,8 +5530,7 @@ PIKECLASS SelectBackend
     struct Backend_struct *me =
       THIS->backend = (struct Backend_struct *)(((char *)THIS) + sb_offset);
 
-    IF_PD (fprintf (stderr, "[%d]BACKEND[%d]: init generic\n",
-		    THR_NO, me->id));
+    PDWERR("[%d]BACKEND[%d]: init generic\n", THR_NO, me->id);
 
 #ifdef PIKE_DEBUG
     me->debug_handler = (debug_handler_fn *) sb_backend_do_debug;
@@ -5607,8 +5550,7 @@ PIKECLASS SelectBackend
     gc_trivial;
   {
     struct Backend_struct *me = THIS->backend;
-    IF_PD (fprintf (stderr, "[%d]BACKEND[%d]: exit generic backend\n",
-		    THR_NO, me->id));
+    PDWERR("[%d]BACKEND[%d]: exit generic backend\n", THR_NO, me->id);
   }
 }
 
@@ -5713,8 +5655,8 @@ PMOD_EXPORT void set_backend_for_fd (int fd, struct Backend_struct *new)
 {
   struct Backend_struct *old = get_backend_for_fd (fd);
 
-  IF_PD (fprintf (stderr, "Changing backend from %d to %d for fd %d\n",
-		  old ? old->id : -1, new ? new->id : -1, fd));
+  PDWERR("Changing backend from %d to %d for fd %d\n",
+         old ? old->id : -1, new ? new->id : -1, fd);
 
   if (!old)
     low_set_backend_for_fd (fd, new);
@@ -5774,32 +5716,32 @@ static int compat_box_dispatcher (struct fd_callback_box *box, int event)
   struct compat_cb_box *cbox = (struct compat_cb_box *) box;
   switch (event) {
     case PIKE_FD_READ:
-      IF_PD (fprintf (stderr, "[%d]BACKEND[%d]: compat_box_dispatcher for "
-		      "PIKE_FD_READ to %p %p\n", THR_NO,
-		      cbox->box.backend->id, cbox->read, cbox->read_data));
+      PDWERR("[%d]BACKEND[%d]: compat_box_dispatcher for "
+             "PIKE_FD_READ to %p %p\n", THR_NO,
+             cbox->box.backend->id, cbox->read, cbox->read_data);
       return cbox->read (cbox->box.fd, cbox->read_data);
     case PIKE_FD_WRITE:
-      IF_PD (fprintf (stderr, "[%d]BACKEND[%d]: compat_box_dispatcher for "
-		      "PIKE_FD_WRITE to %p %p\n", THR_NO,
-		      cbox->box.backend->id, cbox->write, cbox->write_data));
+      PDWERR("[%d]BACKEND[%d]: compat_box_dispatcher for "
+             "PIKE_FD_WRITE to %p %p\n", THR_NO,
+             cbox->box.backend->id, cbox->write, cbox->write_data);
       return cbox->write (cbox->box.fd, cbox->write_data);
     case PIKE_FD_READ_OOB:
-      IF_PD (fprintf (stderr, "[%d]BACKEND[%d]: compat_box_dispatcher for "
-		      "PIKE_FD_READ_OOB to %p %p\n", THR_NO,
-		      cbox->box.backend->id, cbox->read_oob,
-		      cbox->read_oob_data));
+      PDWERR("[%d]BACKEND[%d]: compat_box_dispatcher for "
+             "PIKE_FD_READ_OOB to %p %p\n", THR_NO,
+             cbox->box.backend->id, cbox->read_oob,
+             cbox->read_oob_data);
       return cbox->read_oob (cbox->box.fd, cbox->read_oob_data);
     case PIKE_FD_WRITE_OOB:
-      IF_PD (fprintf (stderr, "[%d]BACKEND[%d]: compat_box_dispatcher for "
-		      "PIKE_FD_WRITE_OOB to %p %p\n", THR_NO,
-		      cbox->box.backend->id, cbox->write_oob,
-		      cbox->write_oob_data));
+      PDWERR("[%d]BACKEND[%d]: compat_box_dispatcher for "
+             "PIKE_FD_WRITE_OOB to %p %p\n", THR_NO,
+             cbox->box.backend->id, cbox->write_oob,
+             cbox->write_oob_data);
       return cbox->write_oob (cbox->box.fd, cbox->write_oob_data);
     case PIKE_FD_FS_EVENT:
-      IF_PD (fprintf (stderr, "[%d]BACKEND[%d]: compat_box_dispatcher for "
-		      "PIKE_FD_FS_EVENT to %p %p\n", THR_NO,
-		      cbox->box.backend->id, cbox->fs_event,
-		      cbox->fs_event_data));
+      PDWERR("[%d]BACKEND[%d]: compat_box_dispatcher for "
+             "PIKE_FD_FS_EVENT to %p %p\n", THR_NO,
+             cbox->box.backend->id, cbox->fs_event,
+             cbox->fs_event_data);
       return cbox->fs_event (cbox->box.fd, cbox->fs_event_data);
 #ifdef PIKE_DEBUG
     default:
@@ -5817,9 +5759,8 @@ static int compat_box_dispatcher (struct fd_callback_box *box, int event)
     struct fd_callback_box *box = SAFE_GET_ACTIVE_BOX (b, fd);		\
     struct compat_cb_box *cbox;						\
 									\
-    IF_PD (fprintf (stderr,						\
-		    "[%d]BACKEND[%d]: set_" #CB "_callback (%d, %p, %p)\n", \
-		    THR_NO, b->id, fd, cb, data));			\
+    PDWERR("[%d]BACKEND[%d]: set_" #CB "_callback (%d, %p, %p)\n",      \
+           THR_NO, b->id, fd, cb, data);                                \
 									\
     if (box) {								\
       check_box (box, fd);						\
@@ -5901,9 +5842,8 @@ static int compat_box_dispatcher (struct fd_callback_box *box, int event)
     struct fd_callback_box *box = SAFE_GET_ACTIVE_BOX (b, fd);		\
     struct compat_cb_box *cbox;						\
 									\
-    IF_PD (fprintf (stderr,						\
-		    "[%d]BACKEND[%d]: set_" #CB "_callback (%d, %p, %p)\n", \
-		    THR_NO, b->id, fd, cb, data));			\
+    PDWERR("[%d]BACKEND[%d]: set_" #CB "_callback (%d, %p, %p)\n",      \
+           THR_NO, b->id, fd, cb, data);                                \
 									\
     if (box) {								\
       check_box (box, fd);						\
@@ -6060,10 +6000,10 @@ static struct callback *mem_callback;
 
 void init_backend(void)
 {
-  IF_PD(fprintf(stderr, "BACKEND: Init compat callback boxes...\n"));
-  IF_PD(fprintf(stderr, "BACKEND: INIT...\n"));
+  PDWERR("BACKEND: Init compat callback boxes...\n");
+  PDWERR("BACKEND: INIT...\n");
   INIT;
-  IF_PD(fprintf(stderr, "BACKEND: Creating default backend...\n"));
+  PDWERR("BACKEND: Creating default backend...\n");
   {
     /* Select something suitable. */
 #ifdef OPEN_POLL_DEVICE
