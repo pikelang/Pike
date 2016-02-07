@@ -954,39 +954,23 @@ static ptrdiff_t feed_gb18030(const p_wchar0 *p, ptrdiff_t l,
   /* First decode the linear offset. */
 
   if ((p[0] < 0x81) || (p[0] > 0xfe)) {
-#if 0
-    fprintf(stderr, "Illegal character: 0x%02x (expected 0x81 .. 0xfe)\n",
-	    p[0]);
-#endif /* 0 */
     return 0;
   }
   index = p[0] - 0x81;
 
   if ((p[1] < 0x30) || (p[1] > 0x39)) {
-#if 0
-    fprintf(stderr, "Illegal character: 0x%02x (expected 0x30 .. 0x39)\n",
-	    p[0]);
-#endif /* 0 */
     return 0;
   }
   index *= 10;
   index += p[1] - 0x30;
 
   if ((p[2] < 0x81) || (p[2] > 0xfe)) {
-#if 0
-    fprintf(stderr, "Illegal character: 0x%02x (expected 0x81 .. 0xfe)\n",
-	    p[0]);
-#endif /* 0 */
     return 0;
   }
   index *= 126;
   index += p[2] - 0x81;
 
   if ((p[3] < 0x30) || (p[3] > 0x39)) {
-#if 0
-    fprintf(stderr, "Illegal character: 0x%02x (expected 0x30 .. 0x39)\n",
-	    p[0]);
-#endif /* 0 */
     return 0;
   }
   index *= 10;

@@ -947,7 +947,6 @@ static void ParseCADescriptor (dvb_stream_data *st, unsigned char *data,
       e->ecm_pid = ((data[2] & 0x1f) << 8) | data[3];
       e->next = st->ecminfo;
       st->ecminfo = e;
-/*      printf("Found irdeto\n"); */
       break;
     case NAGRA_CA_SYSTEM:
       e = malloc(sizeof(struct ECMINFO));
@@ -958,7 +957,6 @@ static void ParseCADescriptor (dvb_stream_data *st, unsigned char *data,
       e->ecm_pid = ((data[2] & 0x1f) << 8) | data[3];
       e->next = st->ecminfo;
       st->ecminfo = e;
-/* fprintf(stderr,"Found nagra\n"); */
       break;
   }
 #ifdef DVB_DEBUG

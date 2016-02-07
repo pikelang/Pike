@@ -845,24 +845,8 @@ static int do_inflate(dynamic_buffer *buf,
       THREADS_ALLOW();
       this->gz.next_out=(Bytef *)loc;
       this->gz.avail_out=BUF;
-#if 0
-      fprintf(stderr,"INFLATE[%d]: avail_out=%7d  avail_in=%7d flush=%d\n",
-	      fnord,
-	      this->gz.avail_out,
-	      this->gz.avail_in,
-	      flush);
-      fprintf(stderr,"INFLATE[%d]: mode=%d\n",fnord,
-	      this->gz.state ? *(int *)(this->gz.state) : -1);
-#endif
 
       ret=inflate(& this->gz, flush);
-#if 0
-      fprintf(stderr,"Result [%d]: avail_out=%7d  avail_in=%7d  ret=%d\n",
-	      fnord,
-	      this->gz.avail_out,
-	      this->gz.avail_in,
-	      ret);
-#endif
 
       THREADS_DISALLOW();
       low_make_buf_space(-((ptrdiff_t)this->gz.avail_out), buf);
