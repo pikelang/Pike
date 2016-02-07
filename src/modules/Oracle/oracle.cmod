@@ -818,6 +818,353 @@ OCIError *get_global_error_handle(void)
   return global_error_handle;
 }
 
+/*
+ * dblob
+ */
+
+static void dblob_sprintf(INT32 args)
+{
+  char tmp[100];
+  sprintf(tmp, "Oracle.LOB(%p)", THIS_DBLOB->lob);
+  pop_n_elems(args);
+  push_text(tmp);
+}
+
+static void dblob_read(INT32 args)
+{
+  sword ret;
+  ub4 loblen = ~0;
+  char *bufp = NULL;
+  char *errfunc = NULL;
+  ub4   amtp = 0;
+  int is_clob = THIS_DBLOB->is_clob;
+  struct dbcon *dbcon = THIS_DBLOB->dbcon;
+  ub2 charset = 0;
+
+  if (!THIS_DBLOB->lob) {
+    Pike_error("Attempt to read from an uninitialized LOB.\n");
+  }
+
+  pop_n_elems(args);
+
+  if((ret = OCILobGetLength(dbcon->context, dbcon->error_handle,
+			    THIS_DBLOB->lob, &loblen)) != OCI_SUCCESS) {
+#ifdef ORACLE_DEBUG
+    fprintf(stderr,"OCILobGetLength failed.\n");
+#endif
+    errfunc = "OCILobGetLength";
+  } else {
+    if(loblen) {
+      amtp = loblen;
+#ifdef OCI_UTF16ID
+      if (is_clob) {
+	loblen *= 2;
+	charset = OCI_UTF16ID;
+      }
+#endif
+      /* FIXME: Use begin_shared_string() + end_and_resize_shared_string(). */
+      if((bufp = malloc(loblen))) {
+	if((ret = OCILobRead(dbcon->context,
+			     dbcon->error_handle,
+			     THIS_DBLOB->lob,
+			     &amtp,
+			     1,
+			     (dvoid *) bufp,
+			     loblen,
+			     (dvoid *) NULL,
+			     (sb4 (*)(dvoid *, CONST dvoid *, ub4, ub1)) NULL,
+			     charset,
+			     (ub1) SQLCS_IMPLICIT)) != OCI_SUCCESS) {
+#ifdef ORACLE_DEBUG
+	  fprintf(stderr,"OCILobRead failed\n");
+#endif
+	  errfunc = "OCILobRead";
+	}
+      } else {
+	ret = 1;
+	errfunc = "malloc";
+      }
+    }
+  }
+#ifdef ORACLE_DEBUG
+  fprintf(stderr,"LOB length: %d bytes, is_clob: %d\n",
+	  loblen, is_clob);
+#endif
+  if(!loblen) {
+    push_empty_string();
+  } else {
+    if(ret != OCI_SUCCESS) {
+      if(bufp)
+	free(bufp);
+      ora_error_handler(dbcon->error_handle, ret, errfunc);
+    }
+
+    push_string(make_shared_binary_string(bufp, loblen));
+#ifdef OCI_UTF16ID
+    if(is_clob) {
+      push_int(2);
+      f_unicode_to_string(2);
+    }
+#endif
+    if(bufp)
+      free(bufp);
+  }
+}
+
+static void dblob_cast(INT32 args)
+{
+  char *s;
+
+  get_all_args("Oracle.LOB->cast",args,"%s",&s);
+
+  if(!strcmp(s,"string")) {
+    dblob_read(0);
+    return;
+  }
+
+  Pike_error("Cannot cast Oracle.LOB to %s\n",s);
+}
+
+static void dblob_write(INT32 args)
+{
+  sword ret;
+  char *bufp;
+  char *errfunc = NULL;
+  ub4   amtp = 0;
+  int is_clob = THIS_DBLOB->is_clob;
+  struct dbcon *dbcon = THIS_DBLOB->dbcon;
+  struct pike_string *data;
+
+  if (!THIS_DBLOB->lob) {
+    Pike_error("Attempt to write to an uninitialized LOB.\n");
+  }
+
+  if (args > 1) {
+    pop_n_elems(args - 1);
+    args = 1;
+  }
+
+#ifdef OCI_UTF16ID
+  if (is_clob && args) {
+    push_int(2);
+    f_string_to_unicode(2);
+  }
+#endif
+
+  /* NB: Also handles generating an error on zero arguments. */
+  get_all_args("write", args, "%N", &data);
+
+  /* Number of bytes. */
+  amtp = data->len;
+
+#ifdef OCI_UTF16ID
+  if (is_clob) {
+    /* Number of characters for CLOBs and fixed width character sets. */
+    amtp /= 2;
+  }
+#endif
+
+  ret = OCILobWrite(dbcon->context,
+                    dbcon->error_handle,
+                    THIS_DBLOB->lob,
+                    &amtp,
+                    1, /* offset */
+		    data->str,
+                    data->len, /* buflen */
+                    OCI_ONE_PIECE,
+                    NULL, /* *ctxp */
+                    NULL, /* OCICallbackLobWrite */
+                    0, /* csid */
+                    0 /* csfrm */  );
+
+  if(!IS_SUCCESS(ret))
+    ora_error_handler(dbcon->error_handle, ret, "OCILobWrite");
+
+  ret = OCILobTrim( dbcon->context,
+                    dbcon->error_handle,
+                    THIS_DBLOB->lob,
+                    amtp);
+
+  if(!IS_SUCCESS(ret))
+    ora_error_handler(dbcon->error_handle, ret, "OCILobTrim");
+
+  pop_stack();
+
+  push_int(0);
+}
+
+/*
+ * dbdate
+ */
+
+static void dbdate_create(INT32 args)
+{
+  struct tm *tm;
+  time_t t;
+  sword rc;
+
+  check_all_args("Oracle.Date",args,BIT_INT|BIT_STRING,0);
+  switch(TYPEOF(Pike_sp[-args]))
+  {
+    case T_STRING:
+      rc=OCIDateFromText(get_global_error_handle(),
+			 (oratext *)Pike_sp[-args].u.string->str,
+			 Pike_sp[-args].u.string->len,
+			 0,
+			 0,
+			 0,
+			 0,
+			 & THIS_DBDATE->date);
+      if(rc != OCI_SUCCESS)
+	ora_error_handler(get_global_error_handle(), rc,"OCIDateFromText");
+      break;
+
+    case T_INT:
+      t=Pike_sp[-1].u.integer;
+      tm=localtime(&t);
+      if (!tm) Pike_error ("localtime() failed to convert %ld\n", (long) t);
+      OCIDateSetDate(&THIS_DBDATE->date, tm->tm_year, tm->tm_mon, tm->tm_mday);
+      OCIDateSetTime(&THIS_DBDATE->date, tm->tm_hour, tm->tm_min, tm->tm_sec);
+      break;
+  }
+}
+
+static void dbdate_sprintf(INT32 args)
+{
+  char buffer[200];
+  sword rc;
+  ub4 bsize=200;
+  int mode = 0;
+  if(args>0 && TYPEOF(Pike_sp[-args]) == PIKE_T_INT)
+    mode = Pike_sp[-args].u.integer;
+  if(mode != 'O' && mode != 's') {
+    pop_n_elems(args);
+    push_undefined();
+    return;
+  }
+  rc=OCIDateToText(get_global_error_handle(),
+		   &THIS_DBDATE->date,
+		   0,
+		   0,
+		   0,
+		   0,
+		   &bsize,
+		   (oratext *)buffer);
+
+  if(!IS_SUCCESS(rc)) {
+    if (mode == 'O') {
+      /* Be fault tolerant in debug mode. */
+      pop_n_elems (args);
+      push_undefined();
+      return;
+    }
+    ora_error_handler(get_global_error_handle(), rc,"OCIDateToText");
+  }
+
+  pop_n_elems(args);
+  push_string(make_shared_binary_string(buffer, bsize));
+#ifdef OCI_UTF16ID
+  push_int(2);
+  f_unicode_to_string(2);
+#endif
+}
+
+static void dbdate_cast(INT32 args)
+{
+  struct pike_string *type = Pike_sp[-args].u.string;
+  pop_stack(); /* type have at least one more reference. */
+
+  if(type == literal_int_string)
+  {
+    ub1 hour, min, sec, month,day;
+    sb2 year;
+
+    extern void f_mktime(INT32 args);
+
+    OCIDateGetDate(&THIS_DBDATE->date, &year, &month, &day);
+    OCIDateGetTime(&THIS_DBDATE->date, &hour, &min, &sec);
+
+    push_int(sec);
+    push_int(min);
+    push_int(hour);
+    push_int(day);
+    push_int(month);
+    push_int(year);
+    f_mktime(6);
+  }
+  else if(type == literal_string_string)
+  {
+    push_int('s');
+    dbdate_sprintf(1);
+  }
+  else
+    push_undefined();
+}
+
+/*
+ * dbnull
+ */
+
+static void dbnull_create(INT32 args)
+{
+  if(args<1) Pike_error("Too few arguments to Oracle.NULL->create\n");
+  assign_svalue(& THIS_DBNULL->type, Pike_sp-args);
+}
+
+static void dbnull_sprintf(INT32 args)
+{
+  int mode = 0;
+  if(args>0 && TYPEOF(Pike_sp[-args]) == PIKE_T_INT)
+    mode = Pike_sp[-args].u.integer;
+  pop_n_elems(args);
+  if(mode != 'O') {
+    push_undefined();
+    return;
+  }
+  switch(TYPEOF(THIS_DBNULL->type))
+  {
+    case T_INT: push_static_text("Oracle.NULLint"); break;
+    case T_STRING: push_static_text("Oracle.NULLstring"); break;
+    case T_FLOAT: push_static_text("Oracle.NULLfloat"); break;
+    case T_OBJECT: push_static_text("Oracle.NULLdate"); break;
+
+  }
+
+}
+
+static void dbnull_eq(INT32 args)
+{
+  if(args<1) Pike_error("Too few arguments to Oracle.NULL->`==\n");
+  if(args > 1) pop_n_elems(args-1);
+  args = 1;
+  if (TYPEOF(Pike_sp[-1]) != T_OBJECT) {
+    push_int(0);
+    return;
+  }
+  /* Check if it's an Oracle-NULL. */
+  stack_dup();
+  push_constant_text("is_oracle_null");
+  o_index();
+  if ((TYPEOF(Pike_sp[-1]) != T_INT) || !Pike_sp[-1].u.integer) {
+    /* No - is it the generic Val.null? */
+    pop_stack();
+    push_constant_text("is_val_null");
+    o_index();
+    return;
+  }
+  pop_stack();
+  /* Yes - are the types the same? */
+  ref_push_string(literal_type_string);
+  o_index();
+  push_svalue(&THIS_DBNULL->type);
+  f_eq(2);
+}
+
+
+/*
+ * dbresult
+ */
+
 static void f_num_rows(INT32 args)
 {
   struct dbquery *dbquery = THIS_RESULT_QUERY;
@@ -2502,348 +2849,6 @@ static void f_big_typed_query_create(INT32 args)
       DEBUG_CHECK_THREAD();
   }
 #endif
-}
-
-/*
- * dblob
- */
-
-static void dblob_sprintf(INT32 args)
-{
-  char tmp[100];
-  sprintf(tmp, "Oracle.LOB(%p)", THIS_DBLOB->lob);
-  pop_n_elems(args);
-  push_text(tmp);
-}
-
-static void dblob_read(INT32 args)
-{
-  sword ret;
-  ub4 loblen = ~0;
-  char *bufp = NULL;
-  char *errfunc = NULL;
-  ub4   amtp = 0;
-  int is_clob = THIS_DBLOB->is_clob;
-  struct dbcon *dbcon = THIS_DBLOB->dbcon;
-  ub2 charset = 0;
-
-  if (!THIS_DBLOB->lob) {
-    Pike_error("Attempt to read from an uninitialized LOB.\n");
-  }
-
-  pop_n_elems(args);
-
-  if((ret = OCILobGetLength(dbcon->context, dbcon->error_handle,
-			    THIS_DBLOB->lob, &loblen)) != OCI_SUCCESS) {
-#ifdef ORACLE_DEBUG
-    fprintf(stderr,"OCILobGetLength failed.\n");
-#endif
-    errfunc = "OCILobGetLength";
-  } else {
-    if(loblen) {
-      amtp = loblen;
-#ifdef OCI_UTF16ID
-      if (is_clob) {
-	loblen *= 2;
-	charset = OCI_UTF16ID;
-      }
-#endif
-      /* FIXME: Use begin_shared_string() + end_and_resize_shared_string(). */
-      if((bufp = malloc(loblen))) {
-	if((ret = OCILobRead(dbcon->context,
-			     dbcon->error_handle,
-			     THIS_DBLOB->lob,
-			     &amtp,
-			     1,
-			     (dvoid *) bufp,
-			     loblen,
-			     (dvoid *) NULL,
-			     (sb4 (*)(dvoid *, CONST dvoid *, ub4, ub1)) NULL,
-			     charset,
-			     (ub1) SQLCS_IMPLICIT)) != OCI_SUCCESS) {
-#ifdef ORACLE_DEBUG
-	  fprintf(stderr,"OCILobRead failed\n");
-#endif
-	  errfunc = "OCILobRead";
-	}
-      } else {
-	ret = 1;
-	errfunc = "malloc";
-      }
-    }
-  }
-#ifdef ORACLE_DEBUG
-  fprintf(stderr,"LOB length: %d bytes, is_clob: %d\n",
-	  loblen, is_clob);
-#endif
-  if(!loblen) {
-    push_empty_string();
-  } else {
-    if(ret != OCI_SUCCESS) {
-      if(bufp)
-	free(bufp);
-      ora_error_handler(dbcon->error_handle, ret, errfunc);
-    }
-
-    push_string(make_shared_binary_string(bufp, loblen));
-#ifdef OCI_UTF16ID
-    if(is_clob) {
-      push_int(2);
-      f_unicode_to_string(2);
-    }
-#endif
-    if(bufp)
-      free(bufp);
-  }
-}
-
-static void dblob_cast(INT32 args)
-{
-  char *s;
-
-  get_all_args("Oracle.LOB->cast",args,"%s",&s);
-
-  if(!strcmp(s,"string")) {
-    dblob_read(0);
-    return;
-  }
-
-  Pike_error("Cannot cast Oracle.LOB to %s\n",s);
-}
-
-static void dblob_write(INT32 args)
-{
-  sword ret;
-  char *bufp;
-  char *errfunc = NULL;
-  ub4   amtp = 0;
-  int is_clob = THIS_DBLOB->is_clob;
-  struct dbcon *dbcon = THIS_DBLOB->dbcon;
-  struct pike_string *data;
-
-  if (!THIS_DBLOB->lob) {
-    Pike_error("Attempt to write to an uninitialized LOB.\n");
-  }
-
-  if (args > 1) {
-    pop_n_elems(args - 1);
-    args = 1;
-  }
-
-#ifdef OCI_UTF16ID
-  if (is_clob && args) {
-    push_int(2);
-    f_string_to_unicode(2);
-  }
-#endif
-
-  /* NB: Also handles generating an error on zero arguments. */
-  get_all_args("write", args, "%N", &data);
-
-  /* Number of bytes. */
-  amtp = data->len;
-
-#ifdef OCI_UTF16ID
-  if (is_clob) {
-    /* Number of characters for CLOBs and fixed width character sets. */
-    amtp /= 2;
-  }
-#endif
-
-  ret = OCILobWrite(dbcon->context,
-                    dbcon->error_handle,
-                    THIS_DBLOB->lob,
-                    &amtp,
-                    1, /* offset */
-		    data->str,
-                    data->len, /* buflen */
-                    OCI_ONE_PIECE,
-                    NULL, /* *ctxp */
-                    NULL, /* OCICallbackLobWrite */
-                    0, /* csid */
-                    0 /* csfrm */  );
-
-  if(!IS_SUCCESS(ret))
-    ora_error_handler(dbcon->error_handle, ret, "OCILobWrite");
-
-  ret = OCILobTrim( dbcon->context,
-                    dbcon->error_handle,
-                    THIS_DBLOB->lob,
-                    amtp);
-
-  if(!IS_SUCCESS(ret))
-    ora_error_handler(dbcon->error_handle, ret, "OCILobTrim");
-
-  pop_stack();
-
-  push_int(0);
-}
-
-/*
- * dbdate
- */
-
-static void dbdate_create(INT32 args)
-{
-  struct tm *tm;
-  time_t t;
-  sword rc;
-
-  check_all_args("Oracle.Date",args,BIT_INT|BIT_STRING,0);
-  switch(TYPEOF(Pike_sp[-args]))
-  {
-    case T_STRING:
-      rc=OCIDateFromText(get_global_error_handle(),
-			 (oratext *)Pike_sp[-args].u.string->str,
-			 Pike_sp[-args].u.string->len,
-			 0,
-			 0,
-			 0,
-			 0,
-			 & THIS_DBDATE->date);
-      if(rc != OCI_SUCCESS)
-	ora_error_handler(get_global_error_handle(), rc,"OCIDateFromText");
-      break;
-
-    case T_INT:
-      t=Pike_sp[-1].u.integer;
-      tm=localtime(&t);
-      if (!tm) Pike_error ("localtime() failed to convert %ld\n", (long) t);
-      OCIDateSetDate(&THIS_DBDATE->date, tm->tm_year, tm->tm_mon, tm->tm_mday);
-      OCIDateSetTime(&THIS_DBDATE->date, tm->tm_hour, tm->tm_min, tm->tm_sec);
-      break;
-  }
-}
-
-static void dbdate_sprintf(INT32 args)
-{
-  char buffer[200];
-  sword rc;
-  ub4 bsize=200;
-  int mode = 0;
-  if(args>0 && TYPEOF(Pike_sp[-args]) == PIKE_T_INT)
-    mode = Pike_sp[-args].u.integer;
-  if(mode != 'O' && mode != 's') {
-    pop_n_elems(args);
-    push_undefined();
-    return;
-  }
-  rc=OCIDateToText(get_global_error_handle(),
-		   &THIS_DBDATE->date,
-		   0,
-		   0,
-		   0,
-		   0,
-		   &bsize,
-		   (oratext *)buffer);
-
-  if(!IS_SUCCESS(rc)) {
-    if (mode == 'O') {
-      /* Be fault tolerant in debug mode. */
-      pop_n_elems (args);
-      push_undefined();
-      return;
-    }
-    ora_error_handler(get_global_error_handle(), rc,"OCIDateToText");
-  }
-
-  pop_n_elems(args);
-  push_string(make_shared_binary_string(buffer, bsize));
-#ifdef OCI_UTF16ID
-  push_int(2);
-  f_unicode_to_string(2);
-#endif
-}
-
-static void dbdate_cast(INT32 args)
-{
-  struct pike_string *type = Pike_sp[-args].u.string;
-  pop_stack(); /* type have at least one more reference. */
-
-  if(type == literal_int_string)
-  {
-    ub1 hour, min, sec, month,day;
-    sb2 year;
-
-    extern void f_mktime(INT32 args);
-
-    OCIDateGetDate(&THIS_DBDATE->date, &year, &month, &day);
-    OCIDateGetTime(&THIS_DBDATE->date, &hour, &min, &sec);
-
-    push_int(sec);
-    push_int(min);
-    push_int(hour);
-    push_int(day);
-    push_int(month);
-    push_int(year);
-    f_mktime(6);
-  }
-  else if(type == literal_string_string)
-  {
-    push_int('s');
-    dbdate_sprintf(1);
-  }
-  else
-    push_undefined();
-}
-
-/*
- * dbnull
- */
-
-static void dbnull_create(INT32 args)
-{
-  if(args<1) Pike_error("Too few arguments to Oracle.NULL->create\n");
-  assign_svalue(& THIS_DBNULL->type, Pike_sp-args);
-}
-
-static void dbnull_sprintf(INT32 args)
-{
-  int mode = 0;
-  if(args>0 && TYPEOF(Pike_sp[-args]) == PIKE_T_INT)
-    mode = Pike_sp[-args].u.integer;
-  pop_n_elems(args);
-  if(mode != 'O') {
-    push_undefined();
-    return;
-  }
-  switch(TYPEOF(THIS_DBNULL->type))
-  {
-    case T_INT: push_static_text("Oracle.NULLint"); break;
-    case T_STRING: push_static_text("Oracle.NULLstring"); break;
-    case T_FLOAT: push_static_text("Oracle.NULLfloat"); break;
-    case T_OBJECT: push_static_text("Oracle.NULLdate"); break;
-
-  }
-
-}
-
-static void dbnull_eq(INT32 args)
-{
-  if(args<1) Pike_error("Too few arguments to Oracle.NULL->`==\n");
-  if(args > 1) pop_n_elems(args-1);
-  args = 1;
-  if (TYPEOF(Pike_sp[-1]) != T_OBJECT) {
-    push_int(0);
-    return;
-  }
-  /* Check if it's an Oracle-NULL. */
-  stack_dup();
-  push_constant_text("is_oracle_null");
-  o_index();
-  if ((TYPEOF(Pike_sp[-1]) != T_INT) || !Pike_sp[-1].u.integer) {
-    /* No - is it the generic Val.null? */
-    pop_stack();
-    push_constant_text("is_val_null");
-    o_index();
-    return;
-  }
-  pop_stack();
-  /* Yes - are the types the same? */
-  ref_push_string(literal_type_string);
-  o_index();
-  push_svalue(&THIS_DBNULL->type);
-  f_eq(2);
 }
 
 PIKE_MODULE_INIT
