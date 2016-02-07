@@ -2647,8 +2647,6 @@ PMOD_EXPORT struct array *reverse_array(struct array *a, int start, int end)
     return a;
   }
 
-  /* fprintf(stderr, "R"); */
-
   ret=allocate_array_no_init(a->size,0);
   for(e=0;e<start;e++)
     assign_svalue_no_free(ITEM(ret)+e,ITEM(a)+e);
