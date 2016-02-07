@@ -1791,10 +1791,8 @@ TH_RETURN_TYPE new_thread_func(void *data)
 #endif
 #if defined(HAVE_PRCTL) && defined(PR_SET_DUMPABLE)
     if (current != -1 && prctl(PR_SET_DUMPABLE, current) == -1) {
-#if defined(PIKE_DEBUG)
-      fprintf (stderr, "%s:%d: Unexpected error from prctl(2). errno=%d\n",
-	       __FILE__, __LINE__, errno);
-#endif
+      DWERR("%s:%d: Unexpected error from prctl(2). errno=%d\n",
+            __FILE__, __LINE__, errno);
     }
 #endif
   }

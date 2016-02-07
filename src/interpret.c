@@ -1689,9 +1689,7 @@ static int eval_instruction_low(PIKE_OPCODE_T *pc)
      * prevent gcc from optimizing the labels below too much
      */
 
-#ifdef PIKE_DEBUG
-    fprintf(stderr,"We have reached the end of the world!\n");
-#endif
+    DWERR("We have reached the end of the world!\n");
   }
 
 #ifdef __GNUC__

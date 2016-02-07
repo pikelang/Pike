@@ -1264,10 +1264,8 @@ PIKE_MODULE_INIT
 #ifdef HAVE_LIBTTF
    /* First check that we actually can initialize the FreeType library. */
    if ((errcode = TT_Init_FreeType(&engine))) {
-#ifdef PIKE_DEBUG
-     fprintf(stderr, "TT_Init_FreeType() failed with code 0x%03lx!\n",
-	     (unsigned long)errcode);
-#endif /* PIKE_DEBUG */
+     DWERR("TT_Init_FreeType() failed with code 0x%03lx!\n",
+           (unsigned long)errcode);
      return;
    }
 

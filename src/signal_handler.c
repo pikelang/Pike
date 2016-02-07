@@ -1353,11 +1353,9 @@ static void report_child(int pid,
 #endif
 		p->sig = WTERMSIG(status);
 	      } else {
-#ifdef PIKE_DEBUG
-		fprintf(stderr, "Process %d died of strange cause 0x%08lx.\n",
-			pid, (unsigned long)status);
-#endif
-	      }
+                DWERR("Process %d died of strange cause 0x%08lx.\n",
+                      pid, (unsigned long)status);
+              }
 	      p->result=-1;
 	    }
 	    p->state = PROCESS_EXITED;

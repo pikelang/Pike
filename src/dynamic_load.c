@@ -310,10 +310,8 @@ static void *dlopen(const char *module_name, int how)
   if ((code = NSCreateObjectFileImageFromFile(module_name,
 					      &handle->image)) !=
       NSObjectFileImageSuccess) {
-#ifdef PIKE_DEBUG
-    fprintf(stderr, "NSCreateObjectFileImageFromFile(\"%s\") failed with %d\n",
-	    module_name, code);
-#endif /* PIKE_DEBUG */
+    DWERR("NSCreateObjectFileImageFromFile(\"%s\") failed with %d\n",
+          module_name, code);
     pike_dl_error = "NSCreateObjectFileImageFromFile() failed.";
     dlclose(handle);
     return NULL;

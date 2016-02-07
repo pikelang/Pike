@@ -4375,15 +4375,13 @@ void dump_gc_info(void)
 	  last_garbage_strategy == GARBAGE_MAX_INTERVAL ?
 	  "garbage_max_interval" : "???");
 
-#ifdef PIKE_DEBUG
-  fprintf(stderr,"Max used recursion frames  : %u\n", tot_max_rec_frames);
-  fprintf(stderr,"Max used link frames       : %u\n", tot_max_link_frames);
-  fprintf(stderr,"Max used free extra frames : %u\n", tot_max_free_extra_frames);
-  fprintf(stderr,"Marked live ratio          : %g\n",
-	  (double) tot_mark_live / tot_cycle_checked);
-  fprintf(stderr,"Frame rotation ratio       : %g\n",
-	  (double) tot_frame_rot / tot_cycle_checked);
-#endif
+  DWERR("Max used recursion frames  : %u\n", tot_max_rec_frames);
+  DWERR("Max used link frames       : %u\n", tot_max_link_frames);
+  DWERR("Max used free extra frames : %u\n", tot_max_free_extra_frames);
+  DWERR("Marked live ratio          : %g\n",
+        (double) tot_mark_live / tot_cycle_checked);
+  DWERR("Frame rotation ratio       : %g\n",
+        (double) tot_frame_rot / tot_cycle_checked);
 
   fprintf(stderr,"in_gc                      : %d\n", Pike_in_gc);
 }

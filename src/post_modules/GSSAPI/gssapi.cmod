@@ -2468,12 +2468,10 @@ PIKECLASS Context
       Pike_fp->current_object ?
       get_storage (Pike_fp->current_object, Context_program) : NULL;
     if (!ctx_stor) {
-#ifdef PIKE_DEBUG
-      fprintf (stderr, "Failed to get object storage - are we being called "
-	       "from a Context method?\n"
-	       "Anyway, can't get the context mech - minor status messages "
-	       "might be wrong below.\n");
-#endif
+      DWERR("Failed to get object storage - are we being called "
+            "from a Context method?\n"
+            "Anyway, can't get the context mech - minor status messages "
+            "might be wrong below.\n");
     }
     else if (((struct Context_struct *) ctx_stor)->ctx != GSS_C_NO_CONTEXT) {
       OM_uint32 maj, min;
