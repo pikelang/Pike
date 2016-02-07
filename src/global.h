@@ -502,7 +502,6 @@ typedef struct p_wchar_p
 #define DLOC_DECL		const char *dloc_file, int dloc_line
 #define COMMA_DLOC_DECL		, const char *dloc_file, int dloc_line
 #define DLOC_ARGS		dloc_file, dloc_line
-#define DLOC_PF(PRE, SUF)	PRE "%s:%d" SUF
 #define DLOC_ARGS_OPT		dloc_file, dloc_line
 #define COMMA_DLOC_ARGS_OPT	, dloc_file, dloc_line
 #define USE_DLOC_ARGS()		((void)(DLOC_ARGS_OPT))
@@ -519,7 +518,6 @@ typedef struct p_wchar_p
 #define DLOC_DECL
 #define COMMA_DLOC_DECL
 #define DLOC_ARGS		__FILE__, __LINE__
-#define DLOC_PF(PRE, SUF)
 #define DLOC_ARGS_OPT
 #define COMMA_DLOC_ARGS_OPT
 #define USE_DLOC_ARGS()

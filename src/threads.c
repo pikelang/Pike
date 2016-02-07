@@ -464,14 +464,13 @@ PMOD_EXPORT void pike_low_lock_interpreter (DLOC_DECL)
 
   SET_LOCKING_THREAD;
   USE_DLOC_ARGS();
-  THREADS_FPRINTF (1, "Got iplock" DLOC_PF(" @ ",) "\n", DLOC_ARGS_OPT);
+  THREADS_FPRINTF (1, "Got iplock @ %s:%d\n", DLOC_ARGS_OPT);
 }
 
 PMOD_EXPORT void pike_low_wait_interpreter (COND_T *cond COMMA_DLOC_DECL)
 {
   USE_DLOC_ARGS();
-  THREADS_FPRINTF (1,
-                   "Waiting on cond %p without iplock" DLOC_PF(" @ ",) "\n",
+  THREADS_FPRINTF (1, "Waiting on cond %p without iplock @ %s:%d\n",
                    cond, DLOC_ARGS_OPT);
   UNSET_LOCKING_THREAD;
 
@@ -481,8 +480,7 @@ PMOD_EXPORT void pike_low_wait_interpreter (COND_T *cond COMMA_DLOC_DECL)
   co_wait (cond, &interpreter_lock);
 
   SET_LOCKING_THREAD;
-  THREADS_FPRINTF (1,
-                   "Got signal on cond %p with iplock" DLOC_PF(" @ ",) "\n",
+  THREADS_FPRINTF (1, "Got signal on cond %p with iplock @ %s:%d\n",
                    cond, DLOC_ARGS_OPT);
 }
 
@@ -492,8 +490,7 @@ PMOD_EXPORT int pike_low_timedwait_interpreter (COND_T *cond,
 {
   int res;
   USE_DLOC_ARGS();
-  THREADS_FPRINTF (1,
-                   "Waiting on cond %p without iplock" DLOC_PF(" @ ",) "\n",
+  THREADS_FPRINTF (1, "Waiting on cond %p without iplock @ %s:%d\n",
                    cond, DLOC_ARGS_OPT);
   UNSET_LOCKING_THREAD;
 
@@ -503,8 +500,7 @@ PMOD_EXPORT int pike_low_timedwait_interpreter (COND_T *cond,
   res = co_wait_timeout (cond, &interpreter_lock, sec, nsec);
 
   SET_LOCKING_THREAD;
-  THREADS_FPRINTF (1,
-                   "Got signal on cond %p with iplock" DLOC_PF(" @ ",) "\n",
+  THREADS_FPRINTF (1, "Got signal on cond %p with iplock @ %s:%d\n",
                    cond, DLOC_ARGS_OPT);
   return res;
 }
@@ -514,15 +510,13 @@ static void threads_disabled_wait (DLOC_DECL)
   assert (threads_disabled);
   USE_DLOC_ARGS();
   do {
-    THREADS_FPRINTF (1,
-                     "Waiting on threads_disabled" DLOC_PF(" @ ",) "\n",
+    THREADS_FPRINTF (1, "Waiting on threads_disabled @ %s:%d\n",
                      DLOC_ARGS_OPT);
     UNSET_LOCKING_THREAD;
     co_wait (&threads_disabled_change, &interpreter_lock);
     SET_LOCKING_THREAD;
   } while (threads_disabled);
-  THREADS_FPRINTF (1,
-                   "Continue after threads_disabled" DLOC_PF(" @ ",) "\n",
+  THREADS_FPRINTF (1, "Continue after threads_disabled @ %s:%d\n",
                    DLOC_ARGS_OPT);
 }
 
@@ -535,8 +529,7 @@ PMOD_EXPORT void pike_lock_interpreter (DLOC_DECL)
 PMOD_EXPORT void pike_unlock_interpreter (DLOC_DECL)
 {
   USE_DLOC_ARGS();
-  THREADS_FPRINTF (1, "Releasing iplock" DLOC_PF(" @ ",) "\n",
-                   DLOC_ARGS_OPT);
+  THREADS_FPRINTF (1, "Releasing iplock @ %s:%d\n", DLOC_ARGS_OPT);
   UNSET_LOCKING_THREAD;
   mt_unlock (&interpreter_lock);
 }
@@ -595,7 +588,7 @@ PMOD_EXPORT void pike_swap_out_thread (struct thread_state *ts
 				       COMMA_DLOC_DECL)
 {
   USE_DLOC_ARGS();
-  THREADS_FPRINTF (2, "Swap out %sthread %p" DLOC_PF(" @ ",) "\n",
+  THREADS_FPRINTF (2, "Swap out %sthread %p @ %s:%d\n",
                    ts == Pike_interpreter.thread_state ? "current " : "",
                    ts, DLOC_ARGS_OPT);
 
@@ -619,8 +612,7 @@ PMOD_EXPORT void pike_swap_out_thread (struct thread_state *ts
 PMOD_EXPORT void pike_swap_in_thread (struct thread_state *ts
 				      COMMA_DLOC_DECL)
 {
-  THREADS_FPRINTF (2, "Swap in thread %p" DLOC_PF(" @ ",) "\n",
-                   ts, DLOC_ARGS_OPT);
+  THREADS_FPRINTF (2, "Swap in thread %p @ %s:%d\n", ts, DLOC_ARGS_OPT);
 
 #ifdef PIKE_DEBUG
   if (Pike_interpreter_pointer)
@@ -914,7 +906,7 @@ PMOD_EXPORT void pike_unlock_imutex (IMUTEX_T *im COMMA_DLOC_DECL)
   if (threads_disabled) return;
 
   USE_DLOC_ARGS();
-  THREADS_FPRINTF(0, "Unlocking IMutex %p" DLOC_PF(" @ ",) "\n",
+  THREADS_FPRINTF(0, "Unlocking IMutex %p @ %s:%d\n",
                   im, DLOC_ARGS_OPT);
   mt_unlock(&(im->lock));
 }
