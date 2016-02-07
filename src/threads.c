@@ -74,15 +74,15 @@ PMOD_EXPORT struct Pike_interpreter_struct * pike_get_interpreter_pointer(void)
 #endif
 
 #ifndef VERBOSE_THREADS_DEBUG
-#define THREADS_FPRINTF(LEVEL,FPRINTF_ARGS)
+#define THREADS_FPRINTF(LEVEL,...)
 #else
-#define THREADS_FPRINTF(LEVEL,FPRINTF_ARGS) do {			\
+#define THREADS_FPRINTF(LEVEL,...) do {                                 \
     if ((VERBOSE_THREADS_DEBUG + 0) >= (LEVEL)) {			\
       /* E.g. THREADS_DISALLOW is used in numerous places where the */	\
       /* value in errno must not be clobbered. */			\
       int saved_errno = errno;						\
       fprintf (stderr, "[%"PRINTSIZET"x] ", (size_t) th_self());	\
-      fprintf FPRINTF_ARGS;						\
+      fprintf (stderr, __VA_ARGS__);                                    \
       errno = saved_errno;						\
     }									\
   } while(0)
@@ -464,16 +464,15 @@ PMOD_EXPORT void pike_low_lock_interpreter (DLOC_DECL)
 
   SET_LOCKING_THREAD;
   USE_DLOC_ARGS();
-  THREADS_FPRINTF (1, (stderr, "Got iplock" DLOC_PF(" @ ",) "\n"
-		       COMMA_DLOC_ARGS_OPT));
+  THREADS_FPRINTF (1, "Got iplock" DLOC_PF(" @ ",) "\n", DLOC_ARGS_OPT);
 }
 
 PMOD_EXPORT void pike_low_wait_interpreter (COND_T *cond COMMA_DLOC_DECL)
 {
   USE_DLOC_ARGS();
-  THREADS_FPRINTF (1, (stderr,
-		       "Waiting on cond %p without iplock" DLOC_PF(" @ ",) "\n",
-		       cond COMMA_DLOC_ARGS_OPT));
+  THREADS_FPRINTF (1,
+                   "Waiting on cond %p without iplock" DLOC_PF(" @ ",) "\n",
+                   cond, DLOC_ARGS_OPT);
   UNSET_LOCKING_THREAD;
 
   /* FIXME: Should use interpreter_lock_wanted here as well. The
@@ -482,9 +481,9 @@ PMOD_EXPORT void pike_low_wait_interpreter (COND_T *cond COMMA_DLOC_DECL)
   co_wait (cond, &interpreter_lock);
 
   SET_LOCKING_THREAD;
-  THREADS_FPRINTF (1, (stderr,
-		       "Got signal on cond %p with iplock" DLOC_PF(" @ ",) "\n",
-		       cond COMMA_DLOC_ARGS_OPT));
+  THREADS_FPRINTF (1,
+                   "Got signal on cond %p with iplock" DLOC_PF(" @ ",) "\n",
+                   cond, DLOC_ARGS_OPT);
 }
 
 PMOD_EXPORT int pike_low_timedwait_interpreter (COND_T *cond,
@@ -493,9 +492,9 @@ PMOD_EXPORT int pike_low_timedwait_interpreter (COND_T *cond,
 {
   int res;
   USE_DLOC_ARGS();
-  THREADS_FPRINTF (1, (stderr,
-		       "Waiting on cond %p without iplock" DLOC_PF(" @ ",) "\n",
-		       cond COMMA_DLOC_ARGS_OPT));
+  THREADS_FPRINTF (1,
+                   "Waiting on cond %p without iplock" DLOC_PF(" @ ",) "\n",
+                   cond, DLOC_ARGS_OPT);
   UNSET_LOCKING_THREAD;
 
   /* FIXME: Should use interpreter_lock_wanted here as well. The
@@ -504,9 +503,9 @@ PMOD_EXPORT int pike_low_timedwait_interpreter (COND_T *cond,
   res = co_wait_timeout (cond, &interpreter_lock, sec, nsec);
 
   SET_LOCKING_THREAD;
-  THREADS_FPRINTF (1, (stderr,
-		       "Got signal on cond %p with iplock" DLOC_PF(" @ ",) "\n",
-		       cond COMMA_DLOC_ARGS_OPT));
+  THREADS_FPRINTF (1,
+                   "Got signal on cond %p with iplock" DLOC_PF(" @ ",) "\n",
+                   cond, DLOC_ARGS_OPT);
   return res;
 }
 
@@ -515,16 +514,16 @@ static void threads_disabled_wait (DLOC_DECL)
   assert (threads_disabled);
   USE_DLOC_ARGS();
   do {
-    THREADS_FPRINTF (1, (stderr,
-			 "Waiting on threads_disabled" DLOC_PF(" @ ",) "\n"
-			 COMMA_DLOC_ARGS_OPT));
+    THREADS_FPRINTF (1,
+                     "Waiting on threads_disabled" DLOC_PF(" @ ",) "\n",
+                     DLOC_ARGS_OPT);
     UNSET_LOCKING_THREAD;
     co_wait (&threads_disabled_change, &interpreter_lock);
     SET_LOCKING_THREAD;
   } while (threads_disabled);
-  THREADS_FPRINTF (1, (stderr,
-		       "Continue after threads_disabled" DLOC_PF(" @ ",) "\n"
-		       COMMA_DLOC_ARGS_OPT));
+  THREADS_FPRINTF (1,
+                   "Continue after threads_disabled" DLOC_PF(" @ ",) "\n",
+                   DLOC_ARGS_OPT);
 }
 
 PMOD_EXPORT void pike_lock_interpreter (DLOC_DECL)
@@ -536,8 +535,8 @@ PMOD_EXPORT void pike_lock_interpreter (DLOC_DECL)
 PMOD_EXPORT void pike_unlock_interpreter (DLOC_DECL)
 {
   USE_DLOC_ARGS();
-  THREADS_FPRINTF (1, (stderr, "Releasing iplock" DLOC_PF(" @ ",) "\n"
-		       COMMA_DLOC_ARGS_OPT));
+  THREADS_FPRINTF (1, "Releasing iplock" DLOC_PF(" @ ",) "\n",
+                   DLOC_ARGS_OPT);
   UNSET_LOCKING_THREAD;
   mt_unlock (&interpreter_lock);
 }
@@ -596,10 +595,9 @@ PMOD_EXPORT void pike_swap_out_thread (struct thread_state *ts
 				       COMMA_DLOC_DECL)
 {
   USE_DLOC_ARGS();
-  THREADS_FPRINTF (2, (stderr, "Swap out %sthread %p" DLOC_PF(" @ ",) "\n",
-		       ts == Pike_interpreter.thread_state ? "current " : "",
-		       ts
-		       COMMA_DLOC_ARGS_OPT));
+  THREADS_FPRINTF (2, "Swap out %sthread %p" DLOC_PF(" @ ",) "\n",
+                   ts == Pike_interpreter.thread_state ? "current " : "",
+                   ts, DLOC_ARGS_OPT);
 
 #ifdef PROFILING
   if (!ts->swapped) {
@@ -621,8 +619,8 @@ PMOD_EXPORT void pike_swap_out_thread (struct thread_state *ts
 PMOD_EXPORT void pike_swap_in_thread (struct thread_state *ts
 				      COMMA_DLOC_DECL)
 {
-  THREADS_FPRINTF (2, (stderr, "Swap in thread %p" DLOC_PF(" @ ",) "\n",
-		       ts COMMA_DLOC_ARGS_OPT));
+  THREADS_FPRINTF (2, "Swap in thread %p" DLOC_PF(" @ ",) "\n",
+                   ts, DLOC_ARGS_OPT);
 
 #ifdef PIKE_DEBUG
   if (Pike_interpreter_pointer)
@@ -853,8 +851,7 @@ PMOD_EXPORT void pike_threads_allow_ext (struct thread_state *ts
   if (num_threads > 1 && !threads_disabled) {
     pike_swap_out_thread (ts COMMA_DLOC_ARGS_OPT);
     live_threads++;
-    THREADS_FPRINTF (1, (stderr, "Increased live threads to %d\n",
-			 live_threads));
+    THREADS_FPRINTF (1, "Increased live threads to %d\n", live_threads);
     pike_unlock_interpreter (DLOC_ARGS_OPT);
   }
 
@@ -881,8 +878,7 @@ PMOD_EXPORT void pike_threads_disallow_ext (struct thread_state *ts
   if (ts->swapped) {
     pike_low_lock_interpreter (DLOC_ARGS_OPT);
     live_threads--;
-    THREADS_FPRINTF (1, (stderr, "Decreased live threads to %d\n",
-			 live_threads));
+    THREADS_FPRINTF (1, "Decreased live threads to %d\n", live_threads);
     co_broadcast (&live_threads_change);
     if (threads_disabled) threads_disabled_wait (DLOC_ARGS_OPT);
     pike_swap_in_thread (ts COMMA_DLOC_ARGS_OPT);
@@ -905,11 +901,11 @@ PMOD_EXPORT void pike_lock_imutex (IMUTEX_T *im COMMA_DLOC_DECL)
   /* If threads are disabled, we already hold the lock. */
   if (threads_disabled) return;
 
-  THREADS_FPRINTF(0, (stderr, "Locking IMutex %p...\n", im));
+  THREADS_FPRINTF(0, "Locking IMutex %p...\n", im);
   pike_threads_allow (ts COMMA_DLOC_ARGS_OPT);
   mt_lock(&((im)->lock));
   pike_threads_disallow (ts COMMA_DLOC_ARGS_OPT);
-  THREADS_FPRINTF(1, (stderr, "Locked IMutex %p\n", im));
+  THREADS_FPRINTF(1, "Locked IMutex %p\n", im);
 }
 
 PMOD_EXPORT void pike_unlock_imutex (IMUTEX_T *im COMMA_DLOC_DECL)
@@ -918,8 +914,8 @@ PMOD_EXPORT void pike_unlock_imutex (IMUTEX_T *im COMMA_DLOC_DECL)
   if (threads_disabled) return;
 
   USE_DLOC_ARGS();
-  THREADS_FPRINTF(0, (stderr, "Unlocking IMutex %p" DLOC_PF(" @ ",) "\n",
-		      im COMMA_DLOC_ARGS_OPT));
+  THREADS_FPRINTF(0, "Unlocking IMutex %p" DLOC_PF(" @ ",) "\n",
+                  im, DLOC_ARGS_OPT);
   mt_unlock(&(im->lock));
 }
 
@@ -931,8 +927,7 @@ void low_init_threads_disable(void)
   /* Serious black magic to avoid dead-locks */
 
   if (!threads_disabled) {
-    THREADS_FPRINTF(0,
-		    (stderr, "low_init_threads_disable(): Locking IM's...\n"));
+    THREADS_FPRINTF(0, "low_init_threads_disable(): Locking IM's...\n");
 
     if (Pike_interpreter.thread_state) {
       /* Threads have been enabled. */
@@ -970,8 +965,7 @@ void low_init_threads_disable(void)
       }
     }
 
-    THREADS_FPRINTF(0, (stderr,
-			"low_init_threads_disable(): Disabling threads.\n"));
+    THREADS_FPRINTF(0, "low_init_threads_disable(): Disabling threads.\n");
 
     threads_disabled = 1;
     threads_disabled_start = get_real_time();
@@ -983,8 +977,8 @@ void low_init_threads_disable(void)
   }
 
   THREADS_FPRINTF(0,
-		  (stderr, "low_init_threads_disable(): threads_disabled:%d\n",
-		   threads_disabled));
+                  "low_init_threads_disable(): threads_disabled:%d\n",
+                  threads_disabled);
 }
 
 /*! @decl object(_disable_threads) _disable_threads()
@@ -1018,20 +1012,19 @@ void init_threads_disable(struct object *UNUSED(o))
     SWAP_OUT_CURRENT_THREAD();
     while (live_threads) {
       THREADS_FPRINTF(1,
-		      (stderr,
-		       "_disable_threads(): Waiting for %d threads to finish\n",
-		       live_threads));
+                      "_disable_threads(): Waiting for %d threads to finish\n",
+                      live_threads);
       low_co_wait_interpreter (&live_threads_change);
     }
-    THREADS_FPRINTF(0, (stderr, "_disable_threads(): threads now disabled\n"));
+    THREADS_FPRINTF(0, "_disable_threads(): threads now disabled\n");
     SWAP_IN_CURRENT_THREAD();
   }
 }
 
 void exit_threads_disable(struct object *UNUSED(o))
 {
-  THREADS_FPRINTF(0, (stderr, "exit_threads_disable(): threads_disabled:%d\n",
-		      threads_disabled));
+  THREADS_FPRINTF(0, "exit_threads_disable(): threads_disabled:%d\n",
+                  threads_disabled);
   if(threads_disabled) {
     if(!--threads_disabled) {
       IMUTEX_T *im = (IMUTEX_T *)interleave_list;
@@ -1039,15 +1032,14 @@ void exit_threads_disable(struct object *UNUSED(o))
 
       /* Order shouldn't matter for unlock, so no need to do it backwards. */
       while(im) {
-	THREADS_FPRINTF(0, (stderr,
-			    "exit_threads_disable(): Unlocking IM %p\n", im));
+        THREADS_FPRINTF(0, "exit_threads_disable(): Unlocking IM %p\n", im);
 	mt_unlock(&(im->lock));
 	im = im->next;
       }
 
       mt_unlock(&interleave_lock);
 
-      THREADS_FPRINTF(0, (stderr, "exit_threads_disable(): Wake up!\n"));
+      THREADS_FPRINTF(0, "exit_threads_disable(): Wake up!\n");
       co_broadcast(&threads_disabled_change);
 #ifdef PIKE_DEBUG
       threads_disabled_thread = 0;
@@ -1064,12 +1056,11 @@ void init_interleave_mutex(IMUTEX_T *im)
 {
   mt_init(&(im->lock));
 
-  THREADS_FPRINTF(0, (stderr,
-		      "init_interleave_mutex(): init_threads_disable()\n"));
+  THREADS_FPRINTF(0, "init_interleave_mutex(): init_threads_disable()\n");
 
   init_threads_disable(NULL);
 
-  THREADS_FPRINTF(0, (stderr, "init_interleave_mutex(): Locking IM %p\n", im));
+  THREADS_FPRINTF(0, "init_interleave_mutex(): Locking IM %p\n", im);
 
   /* Lock it so that it can be unlocked by exit_threads_disable() */
   mt_lock(&(im->lock));
@@ -1081,8 +1072,7 @@ void init_interleave_mutex(IMUTEX_T *im)
   interleave_list = im;
   im->prev = NULL;
 
-  THREADS_FPRINTF(0, (stderr,
-		      "init_interleave_mutex(): exit_threads_disable()\n"));
+  THREADS_FPRINTF(0, "init_interleave_mutex(): exit_threads_disable()\n");
 
   exit_threads_disable(NULL);
 }
@@ -1782,8 +1772,8 @@ TH_RETURN_TYPE new_thread_func(void *data)
   struct thread_state *thread_state;
   JMP_BUF back;
 
-  THREADS_FPRINTF(0, (stderr,"new_thread_func(): Thread %p created...\n",
-		      arg.thread_state));
+  THREADS_FPRINTF(0, "new_thread_func(): Thread %p created...\n",
+                  arg.thread_state);
 
 #ifdef HAVE_BROKEN_LINUX_THREAD_EUID
   /* Work-around for Linux's pthreads not propagating the
@@ -1857,8 +1847,8 @@ TH_RETURN_TYPE new_thread_func(void *data)
 
   DEBUG_CHECK_THREAD();
 
-  THREADS_FPRINTF(0, (stderr,"new_thread_func(): Thread %p inited\n",
-		      arg.thread_state));
+  THREADS_FPRINTF(0, "new_thread_func(): Thread %p inited\n",
+                  arg.thread_state);
 
   if(SETJMP(back))
   {
@@ -1909,8 +1899,7 @@ TH_RETURN_TYPE new_thread_func(void *data)
 
   co_broadcast(&thread_state->status_change);
 
-  THREADS_FPRINTF(0, (stderr,"new_thread_func(): Thread %p done\n",
-		      arg.thread_state));
+  THREADS_FPRINTF(0, "new_thread_func(): Thread %p done\n", arg.thread_state);
 
   /* This thread is now officially dead. */
 
@@ -2045,11 +2034,10 @@ void f_thread_create(INT32 args)
      * before we exit the function...
      */
     SWAP_OUT_CURRENT_THREAD();
-    THREADS_FPRINTF(0, (stderr, "f_thread_create %p waiting...\n",
-			thread_state));
+    THREADS_FPRINTF(0, "f_thread_create %p waiting...\n", thread_state);
     while (thread_state->status == THREAD_NOT_STARTED)
       low_co_wait_interpreter (&thread_state->status_change);
-    THREADS_FPRINTF(0, (stderr, "f_thread_create %p continue\n", thread_state));
+    THREADS_FPRINTF(0, "f_thread_create %p continue\n", thread_state);
     SWAP_IN_CURRENT_THREAD();
   } else {
     low_cleanup_interpret(&thread_state->state);
@@ -2057,7 +2045,7 @@ void f_thread_create(INT32 args)
     Pike_error("Failed to create thread (errno = %d).\n", tmp);
   }
 
-  THREADS_FPRINTF(0, (stderr, "f_thread_create %p done\n", thread_state));
+  THREADS_FPRINTF(0, "f_thread_create %p done\n", thread_state);
 }
 
 /*! @endclass
@@ -2282,9 +2270,9 @@ void f_mutex_lock(INT32 args)
       if(m->key && OB2KEY(m->key)->owner == Pike_interpreter.thread_state)
       {
 	THREADS_FPRINTF(0,
-			(stderr, "Recursive LOCK k:%p, m:%p(%p), t:%p\n",
-			 OB2KEY(m->key), m, OB2KEY(m->key)->mut,
-			 Pike_interpreter.thread_state));
+                        "Recursive LOCK k:%p, m:%p(%p), t:%p\n",
+                        OB2KEY(m->key), m, OB2KEY(m->key)->mut,
+                        Pike_interpreter.thread_state);
 
 	if(type==0) Pike_error("Recursive mutex locks!\n");
 
@@ -2313,7 +2301,7 @@ void f_mutex_lock(INT32 args)
     }
     do
     {
-      THREADS_FPRINTF(1, (stderr,"WAITING TO LOCK m:%p\n",m));
+      THREADS_FPRINTF(1, "WAITING TO LOCK m:%p\n", m);
       SWAP_OUT_CURRENT_THREAD();
       co_wait_interpreter(& m->condition);
       SWAP_IN_CURRENT_THREAD();
@@ -2337,9 +2325,9 @@ void f_mutex_lock(INT32 args)
 
   DEBUG_CHECK_THREAD();
 
-  THREADS_FPRINTF(1, (stderr, "LOCK k:%p, m:%p(%p), t:%p\n",
-		      OB2KEY(o), m, OB2KEY(m->key)->mut,
-		      Pike_interpreter.thread_state));
+  THREADS_FPRINTF(1, "LOCK k:%p, m:%p(%p), t:%p\n",
+                  OB2KEY(o), m, OB2KEY(m->key)->mut,
+                  Pike_interpreter.thread_state);
   pop_n_elems(args);
   push_object(o);
 }
@@ -2462,12 +2450,12 @@ void exit_mutex_obj(struct object *UNUSED(o))
   struct mutex_storage *m = THIS_MUTEX;
   struct object *key = m->key;
 
-  THREADS_FPRINTF(1, (stderr, "DESTROYING MUTEX m:%p\n", THIS_MUTEX));
+  THREADS_FPRINTF(1, "DESTROYING MUTEX m:%p\n", THIS_MUTEX);
 
 #ifndef PICKY_MUTEX
   if (key) {
     /* The last key will destroy m->condition in its exit hook. */
-    THREADS_FPRINTF(1, (stderr, "Destructed mutex is in use - delaying cleanup\n"));
+    THREADS_FPRINTF(1, "Destructed mutex is in use - delaying cleanup\n");
   }
   else {
 #ifdef PIKE_DEBUG
@@ -2482,7 +2470,7 @@ void exit_mutex_obj(struct object *UNUSED(o))
     destruct(key); /* Will destroy m->condition if m->num_waiting is zero. */
     if(m->num_waiting)
     {
-      THREADS_FPRINTF(1, (stderr, "Destructed mutex is being waited on.\n"));
+      THREADS_FPRINTF(1, "Destructed mutex is being waited on.\n");
       /* exit_mutex_key_obj has already signalled, but since the
        * waiting threads will throw an error instead of making a new
        * lock we need to double it to a broadcast. The last thread
@@ -2500,7 +2488,7 @@ void exit_mutex_obj_compat_7_4(struct object *UNUSED(o))
   struct mutex_storage *m = THIS_MUTEX;
   struct object *key = m->key;
 
-  THREADS_FPRINTF(1, (stderr, "DESTROYING MUTEX m:%p\n", THIS_MUTEX));
+  THREADS_FPRINTF(1, "DESTROYING MUTEX m:%p\n", THIS_MUTEX);
 
   if(key) {
     m->key=0;
@@ -2535,8 +2523,8 @@ void exit_mutex_obj_compat_7_4(struct object *UNUSED(o))
 #define THIS_KEY ((struct key_storage *)(CURRENT_STORAGE))
 void init_mutex_key_obj(struct object *UNUSED(o))
 {
-  THREADS_FPRINTF(1, (stderr, "KEY k:%p, t:%p\n",
-		      THIS_KEY, Pike_interpreter.thread_state));
+  THREADS_FPRINTF(1, "KEY k:%p, t:%p\n",
+                  THIS_KEY, Pike_interpreter.thread_state);
   THIS_KEY->mut=0;
   THIS_KEY->mutex_obj = NULL;
   THIS_KEY->owner = Pike_interpreter.thread_state;
@@ -2548,9 +2536,9 @@ void init_mutex_key_obj(struct object *UNUSED(o))
 
 void exit_mutex_key_obj(struct object *DEBUGUSED(o))
 {
-  THREADS_FPRINTF(1, (stderr, "UNLOCK k:%p m:(%p) t:%p o:%p\n",
-		      THIS_KEY, THIS_KEY->mut,
-		      Pike_interpreter.thread_state, THIS_KEY->owner));
+  THREADS_FPRINTF(1, "UNLOCK k:%p m:(%p) t:%p o:%p\n",
+                  THIS_KEY, THIS_KEY->mut,
+                  Pike_interpreter.thread_state, THIS_KEY->owner);
   if(THIS_KEY->mut)
   {
     struct mutex_storage *mut = THIS_KEY->mut;
@@ -2897,16 +2885,16 @@ static void f_thread_id_result(INT32 UNUSED(args))
 
   th->waiting++;
 
-  THREADS_FPRINTF(0, (stderr, "Thread->wait(): Waiting for thread_state %p "
-		      "(state:%d).\n", th, th->status));
+  THREADS_FPRINTF(0, "Thread->wait(): Waiting for thread_state %p "
+                  "(state:%d).\n", th, th->status);
   while(th->status < THREAD_EXITED) {
     SWAP_OUT_CURRENT_THREAD();
     co_wait_interpreter(&th->status_change);
     SWAP_IN_CURRENT_THREAD();
     check_threads_etc();
     THREADS_FPRINTF(0,
-		    (stderr, "Thread->wait(): Waiting for thread_state %p "
-		     "(state:%d).\n", th, th->status));
+                    "Thread->wait(): Waiting for thread_state %p "
+                    "(state:%d).\n", th, th->status);
   }
 
   th_status = th->status;
@@ -3343,7 +3331,7 @@ PMOD_EXPORT void th_farm(void (*fun)(void *), void *here)
 
 void low_th_init(void)
 {
-  THREADS_FPRINTF(0, (stderr, "Initializing threads.\n"));
+  THREADS_FPRINTF(0, "Initializing threads.\n");
 
   really_low_th_init();
 
