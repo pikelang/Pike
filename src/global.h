@@ -485,10 +485,13 @@ typedef struct p_wchar_p
   int shift;
 } PCHARP;
 
+#define WERR(...) fprintf(stderr,__VA_ARGS__)
+
 #ifdef PIKE_DEBUG
 
 #define DO_IF_DEBUG(X) X
 #define DO_IF_DEBUG_ELSE(DEBUG, NO_DEBUG) DEBUG
+#define DWERR(...) WERR(__VA_ARGS__)
 
 #undef NDEBUG
 
@@ -508,6 +511,7 @@ typedef struct p_wchar_p
 
 #define DO_IF_DEBUG(X)
 #define DO_IF_DEBUG_ELSE(DEBUG, NO_DEBUG) NO_DEBUG
+#define DWERR(...)
 #define NDEBUG
 
 #define DLOC
