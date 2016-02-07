@@ -51,6 +51,11 @@ static libzfs_handle_t *libzfs_handle;
 #define sp Pike_sp
 
 /* #define READDIR_DEBUG */
+#ifdef READDIR_DEBUG
+#define RDWERR(...) fprintf(stderr,__VA_ARGS__)
+#else
+#define RDWERR(...)
+#endif
 
 #ifdef __NT__
 
@@ -1076,9 +1081,7 @@ void f_get_dir(INT32 args)
     return;
   }
 
-#ifdef READDIR_DEBUG
-  fprintf(stderr, "FindFirstFile(\"%S\")...\n", STR1(sb.s));
-#endif /* READDIR_DEBUG */
+  RDWERR("FindFirstFile(\"%S\")...\n", STR1(sb.s));
 
   dir = FindFirstFileW(STR1(sb.s), &d);
 
@@ -1086,9 +1089,7 @@ void f_get_dir(INT32 args)
 
   if (dir == INVALID_HANDLE_VALUE) {
     int err = GetLastError();
-#ifdef READDIR_DEBUG
-    fprintf(stderr, "  INVALID_HANDLE_VALUE, error %d\n", err);
-#endif /* READDIR_DEBUG */
+    RDWERR("  INVALID_HANDLE_VALUE, error %d\n", err);
 
     pop_n_elems(args);
     if (err == ERROR_FILE_NOT_FOUND) {
@@ -1114,9 +1115,7 @@ void f_get_dir(INT32 args)
     BEGIN_AGGREGATE_ARRAY(10);
 
     do {
-#ifdef READDIR_DEBUG
-      fprintf(stderr, "  \"%S\"\n", d.cFileName);
-#endif /* READDIR_DEBUG */
+      RDWERR("  \"%S\"\n", d.cFileName);
       /* Filter "." and ".." from the list. */
       if(d.cFileName[0]=='.')
       {
@@ -1128,9 +1127,7 @@ void f_get_dir(INT32 args)
     } while(FindNextFileW(dir, &d));
     err = GetLastError();
 
-#ifdef READDIR_DEBUG
-    fprintf(stderr, "  DONE, error %d\n", err);
-#endif /* READDIR_DEBUG */
+    RDWERR("  DONE, error %d\n", err);
 
     FindClose(dir);
 
@@ -1227,18 +1224,14 @@ void low_get_dir(DIR *dir, ptrdiff_t name_max)
 	d = NULL;
 	errno = 0;
 	if ((err = readdir_r(dir, tmp, &d)) || !d) {
-#ifdef READDIR_DEBUG
-	  fprintf(stderr, "POSIX readdir_r() => err %d\n", err);
-	  fprintf(stderr, "POSIX readdir_r(), d= 0x%08x\n", (unsigned int)d);
-#endif /* READDIR_DEBUG */
-	  if (err == -1) {
+          RDWERR("POSIX readdir_r() => err %d\n", err);
+          RDWERR("POSIX readdir_r(), d= 0x%08x\n", (unsigned int)d);
+          if (err == -1) {
 	    /* Solaris readdir_r returns -1, and sets errno. */
 	    err = errno;
 	  }
-#ifdef READDIR_DEBUG
-	  fprintf(stderr, "POSIX readdir_r() => errno %d\n", err);
-#endif /* READDIR_DEBUG */
-	  /* Solaris readdir_r seems to set errno to ENOENT sometimes.
+          RDWERR("POSIX readdir_r() => errno %d\n", err);
+          /* Solaris readdir_r seems to set errno to ENOENT sometimes.
 	   *
 	   * AIX readdir_r seems to set errno to EBADF at end of dir.
 	   */
@@ -1247,9 +1240,7 @@ void low_get_dir(DIR *dir, ptrdiff_t name_max)
 	  }
 	  break;
 	}
-#ifdef READDIR_DEBUG
-	fprintf(stderr, "POSIX readdir_r() => \"%s\"\n", d->d_name);
-#endif /* READDIR_DEBUG */
+        RDWERR("POSIX readdir_r() => \"%s\"\n", d->d_name);
 #else
 #error Unknown readdir_r variant
 #endif
@@ -1272,9 +1263,7 @@ void low_get_dir(DIR *dir, ptrdiff_t name_max)
 	free(tmp);
 	Pike_error("get_dir(): readdir_r() failed: %d\n", err);
       }
-#ifdef READDIR_DEBUG
-      fprintf(stderr, "Pushing %d filenames...\n", num_files);
-#endif /* READDIR_DEBUG */
+      RDWERR("Pushing %d filenames...\n", num_files);
       for(e=0;e<num_files;e++)
       {
 	push_string(make_shared_binary_string(ptrs[e],lens[e]));
@@ -1290,9 +1279,7 @@ void low_get_dir(DIR *dir, ptrdiff_t name_max)
 #else
     for(d=readdir(dir); d; d=readdir(dir))
     {
-#ifdef READDIR_DEBUG
-      fprintf(stderr, "readdir(): %s\n", d->d_name);
-#endif /* READDIR_DEBUG */
+      RDWERR("readdir(): %s\n", d->d_name);
       /* Filter "." and ".." from the list. */
       if(d->d_name[0]=='.')
       {
