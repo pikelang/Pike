@@ -399,8 +399,10 @@ void got_notify(string from,string type,
 	 }
 	 break;
 
+#ifdef IRC_DEBUG
       default:
 	 werror("got unknown message: %O, %O, %O, %O\n",from,type,to,message);
+#endif
    }
 //    werror("got notify: %O, %O, %O, %O\n",from,type,to,message);
    if (options->generic_notify)
