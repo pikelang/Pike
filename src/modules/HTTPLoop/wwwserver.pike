@@ -1,4 +1,4 @@
-import Stdio;
+
 
 constant days = ({ "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" });
 constant months = ({ "Jan", "Feb", "Mar", "Apr", "May", "Jun",
@@ -85,10 +85,10 @@ mixed handle(object o)
 	res += "<b><a href=../>Parent Directory...</a></b>\n\n";
       string file2;
       foreach(sort(get_dir(f)||({})), string file) {
-	int size = file_size(f+file);
+        int size = Stdio.file_size(f+file);
 	int islink;
-#if constant(readlink)
-	catch { readlink(f+file); islink = 1; };
+#if constant(Stdio.readlink)
+        catch { Stdio.readlink(f+file); islink = 1; };
 #endif
 	string ext = (file / ".") [-1];
 	string ctype = (size >= 0 ? MIME.ext_to_media_type(ext) || "text/plain" :
@@ -128,7 +128,7 @@ mixed handle(object o)
 			"Server: Neo-FastSpeed\r\n"
 			"Connection: Keep-Alive\r\n"
 			"\r\n"+
-			read_bytes(f), 20);
+                        Stdio.read_bytes(f), 20);
     destruct(o);
   }
 }
