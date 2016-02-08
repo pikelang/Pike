@@ -991,7 +991,8 @@ protected class InotifyMonitor
       }
     }
 
-    Stdio.Stat st = file_stat (path, 1);
+    // NB: We need to follow symlinks here.
+    Stdio.Stat st = file_stat(path);
     mixed err;
     if (!(flags & MF_AUTO) || (st && st->isdir)) {
       // Note: We only want to add watchers on directories. File
