@@ -992,7 +992,7 @@ protected class InotifyMonitor
 
     Stdio.Stat st = file_stat (path, 1);
     mixed err;
-    if (st && st->isdir) {
+    if (!(flags & MF_AUTO) || (st && st->isdir)) {
       // Note: We only want to add watchers on directories. File
       // notifications will take place on the directory watch
       // descriptors. Expansion of the path to cover notifications
