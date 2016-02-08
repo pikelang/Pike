@@ -943,6 +943,7 @@ protected class InotifyMonitor
 
   protected int wd = -1;
   int `accellerated() { return wd != -1; }
+  protected int(0..) out_of_inotify_space;
 
   protected void file_exists(string path, Stdio.Stat st)
   {
@@ -1016,6 +1017,7 @@ protected class InotifyMonitor
 
 	  if (new_wd != -1) {
 	    MON_WERR("Registered %O with %O ==> %d.\n", path, instance, new_wd);
+	    out_of_inotify_space = 0;
 	    // We shouldn't need to be polled.
 	    if (!initial) {
 	      MON_WERR("Unregistering from polling.\n");
@@ -1030,7 +1032,13 @@ protected class InotifyMonitor
 	    }
 	  }
 	}) {
-	master()->handle_error (err);
+	if (!has_value(lower_case(describe_error(err)), "no space left")) {
+	  master()->handle_error (err);
+	} else if (!(out_of_inotify_space++ % 100)) {
+	  werror("Out of inotify space (%d attempts):\n", out_of_inotify_space);
+	  master()->handle_error (err);
+	  werror("Consider increasing '/proc/sys/fs/inotify/max_user_watches'.\n");
+	}
       }
     }
 
