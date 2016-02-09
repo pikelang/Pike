@@ -13,6 +13,12 @@ class Element (mixed value)
 
   protected int `<(mixed other) { return value < other; }
   protected int `>(mixed other) { return value > other; }
+
+  protected string _sprintf(int c)
+  {
+    if (c != 'O') return "ADT.Heap()->Element()";
+    return sprintf("ADT.Heap()->Element(%O)[%d]", value, pos);
+  }
 }
 
 #define SWAP(X,Y) do{ mixed tmp=values[X]; (values[X]=values[Y])->pos = X; (values[Y]=tmp)->pos = Y; }while(0)
@@ -228,4 +234,15 @@ void remove(mixed value)
     values=values[..num_values+10];
 
   verify_heap();
+}
+
+protected string _sprintf(int c)
+{
+  if (c != 'O') return "ADT.Heap()";
+  int cnt = num_values;
+  Element e = sizeof(values) && values[0];
+  if (cnt) {
+    return sprintf("ADT.Heap(%d elements, top: %O)", cnt, e);
+  }
+  return "ADT.Heap(0 elements)";
 }
