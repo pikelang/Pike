@@ -1490,19 +1490,28 @@ int check(int|void max_wait, int|void max_cnt,
     int cnt;
     int t = time();
     if (sizeof(monitor_queue)) {
-      Monitor m;
-      while ((m = monitor_queue->peek()) && (m->next_poll <= t)) {
-	cnt += check_monitor(m);
-	if (!(--scan_cnt)) {
-	  m = monitor_queue->peek();
-	  break;
-	}
-      }
-      if (m) {
-	ret = m->next_poll - t;
-	if (ret <= 0) ret = 1;
-      } else {
-	scan_cnt--;
+      // NB: peek() can apparently in some circumstances throw errors.
+      //     cf [bug 7644]. The likely cause being that a different
+      //     thread removed the last element during the call. Make
+      //     sure not to propagate the error to the caller.
+      mixed err = catch {
+	  Monitor m;
+	  while ((m = monitor_queue->peek()) && (m->next_poll <= t)) {
+	    cnt += check_monitor(m);
+	    if (!(--scan_cnt)) {
+	      m = monitor_queue->peek();
+	      break;
+	    }
+	  }
+	  if (m) {
+	    ret = m->next_poll - t;
+	    if (ret <= 0) ret = 1;
+	  } else {
+	    scan_cnt--;
+	  }
+	};
+      if (err) {
+	master()->handle_error(err);
       }
     }
     if (cnt || !scan_wait || !scan_cnt) {
