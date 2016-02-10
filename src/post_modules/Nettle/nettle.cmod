@@ -17,7 +17,6 @@
 #include "nettle.h"
 
 #include <nettle/yarrow.h>
-#include <nettle/knuth-lfib.h>
 
 #include <stdio.h>
 #include <stdarg.h>
