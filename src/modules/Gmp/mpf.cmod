@@ -768,7 +768,7 @@ PIKECLASS mpf
   {								\
     struct object *res = NULL;					\
     res = get_mpf_with_prec(mpf_get_prec(THISMPF));		\
-    cmod_CONCAT(mpfr_,SYM)(OBTOMPF(res), THISMPF, MPFR_RNDN);	\
+    cmod_CONCAT(mpfr_,SYM)(OBTOMPF(res), THISMPF, GMP_RNDN);	\
     RETURN res;							\
   }
 
@@ -779,7 +779,7 @@ PIKECLASS mpf
     MP_FLT *a = get_mpf(arg, 1, 0);				\
     res = get_mpf_with_prec(MAXIMUM(mpf_get_prec(THISMPF),	\
 				    mpf_get_prec(a)));		\
-    cmod_CONCAT(mpfr_,SYM)(OBTOMPF(res), THISMPF, a, MPFR_RNDN);\
+    cmod_CONCAT(mpfr_,SYM)(OBTOMPF(res), THISMPF, a, GMP_RNDN);\
     RETURN res;							\
   }
 
@@ -893,7 +893,7 @@ PIKECLASS mpf
   {
     struct object *res = NULL;
     res = get_mpf_with_prec(mpf_get_prec(THISMPF));
-    mpfr_const_pi(OBTOMPF(res), MPFR_RNDN);
+    mpfr_const_pi(OBTOMPF(res), GMP_RNDN);
     RETURN res;
   }
 
@@ -903,7 +903,7 @@ PIKECLASS mpf
   {
     struct object *res = NULL;
     res = get_mpf_with_prec(mpf_get_prec(THISMPF));
-    mpfr_const_log2(OBTOMPF(res), MPFR_RNDN);
+    mpfr_const_log2(OBTOMPF(res), GMP_RNDN);
     RETURN res;
   }
 
@@ -913,7 +913,7 @@ PIKECLASS mpf
   {
     struct object *res = NULL;
     res = get_mpf_with_prec(mpf_get_prec(THISMPF));
-    mpfr_const_euler(OBTOMPF(res), MPFR_RNDN);
+    mpfr_const_euler(OBTOMPF(res), GMP_RNDN);
     RETURN res;
   }
 
@@ -923,7 +923,7 @@ PIKECLASS mpf
   {
     struct object *res = NULL;
     res = get_mpf_with_prec(mpf_get_prec(THISMPF));
-    mpfr_const_catalan(OBTOMPF(res), MPFR_RNDN);
+    mpfr_const_catalan(OBTOMPF(res), GMP_RNDN);
     RETURN res;
   }
 #endif /* USE_MPFR */
