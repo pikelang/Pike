@@ -5,6 +5,7 @@
 */
 
 #include "config.h"
+#include "global.h"
 
 #ifdef HAVE_LIBFT2
 #ifndef HAVE_FT_FT2BUILD
@@ -22,7 +23,6 @@
 #undef TYPEOF
 #endif /* HAVE_LIBFT2 */
 
-#include "global.h"
 #include "module.h"
 #include "pike_error.h"
 #include "pike_macros.h"
