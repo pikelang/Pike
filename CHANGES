@@ -1,6 +1,11 @@
 Changes since Pike 8.0.164
 ----------------------------------------------------------------------
 
+Building and installing
+-----------------------
+
+o Multiple fixes for building on Solaris 11.
+
 
 Pike 8: Changes since Pike 7.8
 ----------------------------------------------------------------------
