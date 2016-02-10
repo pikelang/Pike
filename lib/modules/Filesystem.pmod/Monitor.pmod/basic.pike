@@ -992,9 +992,12 @@ protected class InotifyMonitor
     }
 
     // NB: We need to follow symlinks here.
+    // Currently we only support changing symlinks and symlinks to directories.
+    // FIXME: Handle broken symlinks where the target later shows up and
+    //        symlinks to changing files.
     Stdio.Stat st = file_stat(path);
     mixed err;
-    if (!(flags & MF_AUTO) || (st && st->isdir)) {
+    if (st && (!(flags & MF_AUTO) || st->isdir)) {
       // Note: We only want to add watchers on directories. File
       // notifications will take place on the directory watch
       // descriptors. Expansion of the path to cover notifications
