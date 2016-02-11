@@ -1108,7 +1108,6 @@ PMOD_EXPORT void thread_table_insert(struct thread_state *s)
     else
       Pike_fatal("Forgot to unregister thread!\n");
   }
-/*  fprintf(stderr, "thread_table_insert: %"PRINTSIZET"x\n", (size_t) s->id); */
 #endif
   mt_lock( & thread_table_lock );
   num_pike_threads++;
@@ -1121,7 +1120,6 @@ PMOD_EXPORT void thread_table_insert(struct thread_state *s)
 
 PMOD_EXPORT void thread_table_delete(struct thread_state *s)
 {
-/*  fprintf(stderr, "thread_table_delete: %"PRINTSIZET"x\n", (size_t) s->id); */
   mt_lock( & thread_table_lock );
   num_pike_threads--;
   if(s->hashlink != NULL)
@@ -1134,10 +1132,6 @@ PMOD_EXPORT struct thread_state *thread_state_for_id(THREAD_T tid)
 {
   unsigned INT32 h = thread_table_hash(&tid);
   struct thread_state *s = NULL;
-#if 0
-  if(num_threads>1)
-    fprintf (stderr, "thread_state_for_id: %"PRINTSIZET"x\n", (size_t) tid);
-#endif
 #ifdef PIKE_DEBUG
   if(h>=THREAD_TABLE_SIZE)
     Pike_fatal("thread_table_hash failed miserably!\n");
@@ -1172,11 +1166,6 @@ PMOD_EXPORT struct thread_state *thread_state_for_id(THREAD_T tid)
     }
   }
   mt_unlock( & thread_table_lock );
-#if 0
-  if(num_threads>1 && s)
-    fprintf (stderr, "thread_state_for_id return value: %"PRINTSIZET"x\n",
-	     (size_t) s->id);
-#endif
   return s;
   /* NOTEZ BIEN:  Return value only guaranteed to remain valid as long
      as you have the interpreter lock, unless tid == th_self() */
@@ -1372,14 +1361,6 @@ static void check_threads(struct callback *UNUSED(cb), void *UNUSED(arg), void *
 #ifdef PROFILE_CHECK_THREADS
   static unsigned long calls = 0, yields = 0;
   static unsigned long clock_checks = 0, no_clock_advs = 0;
-#if 0
-  static unsigned long slice_int_n = 0; /* Slice interval length. */
-  static double slice_int_mean = 0.0, slice_int_m2 = 0.0;
-  static unsigned long tsc_int_n = 0; /* Actual tsc interval length. */
-  static double tsc_int_mean = 0.0, tsc_int_m2 = 0.0;
-  static unsigned long tsc_tgt_n = 0; /* Target tsc interval length. */
-  static double tsc_tgt_mean = 0.0, tsc_tgt_m2 = 0.0;
-#endif
   static unsigned long tps = 0, tps_int_n = 0;  /* TSC intervals per slice. */
   static double tps_int_mean = 0.0, tps_int_m2 = 0.0;
   calls++;
@@ -1432,14 +1413,6 @@ static void check_threads(struct callback *UNUSED(cb), void *UNUSED(arg), void *
      }
 
 #ifdef PROFILE_CHECK_THREADS
-#if 0
-     if (prev_tsc) {
-       double delta = tsc_elapsed - tsc_int_mean;
-       tsc_int_n++;
-       tsc_int_mean += delta / tsc_int_n;
-       tsc_int_m2 += delta * (tsc_elapsed - tsc_int_mean);
-     }
-#endif
      clock_checks++;
      tps++;
 #endif
@@ -1495,17 +1468,7 @@ static void check_threads(struct callback *UNUSED(cb), void *UNUSED(arg), void *
 	   }
 	   prev_tsc = tsc_now;
 	   prev_clock = clock_now;
-#if 0
-#ifdef PROFILE_CHECK_THREADS
-	   {
-	     double delta = target_int - tsc_tgt_mean;
-	     tsc_tgt_n++;
-	     tsc_tgt_mean += delta / tsc_tgt_n;
-	     tsc_tgt_m2 += delta * (target_int - tsc_tgt_mean);
-	   }
-#endif
-#endif
-	 }
+         }
 	 else {
 	   /* clock(3) can have pretty low resolution and might not
 	    * have advanced during the tsc interval. Just do another
@@ -1653,38 +1616,14 @@ static void check_threads(struct callback *UNUSED(cb), void *UNUSED(arg), void *
 
     yields++;
 
-#if 0
-#ifdef USE_CLOCK_FOR_SLICES
-    if (thread_start_clock) {
-      double slice_time =
-	(double) (clock() - thread_start_clock) / CLOCKS_PER_SEC;
-      double delta = slice_time - slice_int_mean;
-      slice_int_n++;
-      slice_int_mean += delta / slice_int_n;
-      slice_int_m2 += delta * (slice_time - slice_int_mean);
-    }
-#endif
-#endif
-
     ACCURATE_GETTIMEOFDAY (&now);
     if (now.tv_sec > last_time) {
       fprintf (stderr, "[%d:%f] check_threads: %lu calls, "
 	       "%lu clocks, %lu no advs, %lu yields"
-#if 0
-	       ", slice %.3f:%.1e, tsc int %.2e:%.1e, tsc tgt %.2e:%.1e"
-#endif
-	       ", tps %g:%.1e\n",
+               ", tps %g:%.1e\n",
 	       getpid(), get_real_time() * (1.0 / CPU_TIME_TICKS),
 	       calls, clock_checks, no_clock_advs, yields,
-#if 0
-	       slice_int_mean,
-	       slice_int_n > 1 ? sqrt (slice_int_m2 / (slice_int_n - 1)) : 0.0,
-	       tsc_int_mean,
-	       tsc_int_n > 1 ? sqrt (tsc_int_m2 / (tsc_int_n - 1)) : 0.0,
-	       tsc_tgt_mean,
-	       tsc_tgt_n > 1 ? sqrt (tsc_tgt_m2 / (tsc_tgt_n - 1)) : 0.0,
-#endif
-	       tps_int_mean,
+               tps_int_mean,
 	       tps_int_n > 1 ? sqrt (tps_int_m2 / (tps_int_n - 1)) : 0.0);
       last_time = (unsigned long) now.tv_sec;
       calls = yields = clock_checks = no_clock_advs = 0;
