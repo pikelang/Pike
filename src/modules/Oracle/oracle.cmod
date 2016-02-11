@@ -282,7 +282,7 @@ void *low_check_storage(void *storage, unsigned long magic, char *prog)
 #define THIS_RESULT_QUERY ((struct dbquery *)check_storage(parent_storage(1, compile_query_program),DBQUERY_MAGIC,"dbquery"))
 #define THIS_RESULT ((struct dbresult *)check_storage(CURRENT_STORAGE,DBRESULT_MAGIC,"dbresult"))
 #define THIS_RESULTINFO ((struct dbresultinfo *)check_storage(CURRENT_STORAGE,DBRESINFO_MAGIC,"dbresultinfo"))
-#define THIS_DBLOB ((struct dblob *)check_storage(CURRENT_STORAGE,DBLOB_MAGIC,"dblob"))
+#define THIS_DBLOB ((struct Oracle_LOB_struct *)check_storage(CURRENT_STORAGE,DBLOB_MAGIC,"dblob"))
 #define THIS_DBDATE ((struct dbdate *)check_storage(CURRENT_STORAGE,DBDATE_MAGIC,"dbdate"))
 #define THIS_DBNULL ((struct dbnull *)check_storage(CURRENT_STORAGE,DBNULL_MAGIC,"dbnull"))
 
@@ -290,7 +290,6 @@ static struct program *oracle_program = NULL;
 static struct program *compile_query_program = NULL;
 static struct program *big_typed_query_program = NULL;
 static struct program *dbresultinfo_program = NULL;
-static struct program *LOB_program = NULL;
 static struct program *Date_program = NULL;
 static struct program *NULL_program = NULL;
 
@@ -298,7 +297,6 @@ static int oracle_identifier;
 static int compile_query_identifier;
 static int big_typed_query_identifier;
 static int dbresultinfo_identifier;
-static int LOB_identifier;
 static int Date_identifier;
 
 static struct object *nullstring_object;
@@ -484,33 +482,6 @@ struct inout
 
 static void free_inout(struct inout *i);
 static void init_inout(struct inout *i);
-
-/****** dblob ******/
-
-struct dblob
-{
-#ifdef PIKE_DEBUG
-  unsigned long magic;
-#endif
-  int is_clob;
-  OCILobLocator *lob;
-  struct dbcon *dbcon;
-};
-
-static void init_dblob_struct(struct object *UNUSED(o))
-{
-#ifdef PIKE_DEBUG
-  ((unsigned long *)(Pike_fp->current_storage))[0]=DBLOB_MAGIC;
-#endif
-}
-
-static void exit_dblob_struct(struct object *UNUSED(o)) {
-  if (THIS_DBLOB->lob) {
-    OCIDescriptorFree(THIS_DBLOB->lob, OCI_DTYPE_LOB);
-    THIS_DBLOB->lob = NULL;
-  }
-}
-
 
 /****** dbdate ******/
 
@@ -823,6 +794,39 @@ OCIError *get_global_error_handle(void)
 /*
  * dblob
  */
+PIKECLASS LOB
+{
+#ifdef PIKE_DEBUG
+  CVAR unsigned long magic;
+#endif
+  CVAR int is_clob;
+  CVAR OCILobLocator *lob;
+  CVAR struct dbcon *dbcon;
+
+  DECLARE_STORAGE;
+
+  INIT
+  {
+#ifdef PIKE_DEBUG
+    ((unsigned long *)(Pike_fp->current_storage))[0]=DBLOB_MAGIC;
+#endif
+  }
+
+  EXIT
+  {
+    if (THIS_DBLOB->lob) {
+      OCIDescriptorFree(THIS_DBLOB->lob, OCI_DTYPE_LOB);
+      THIS_DBLOB->lob = NULL;
+    }
+  }
+
+  EXTRA
+  {
+    ADD_FUNCTION("cast", dblob_cast, tFunc(tStr, tMix), ID_PROTECTED);
+    ADD_FUNCTION("_sprintf", dblob_sprintf, tFunc(tInt, tStr), ID_PROTECTED);
+    ADD_FUNCTION("read", dblob_read, tFunc(tVoid, tStr), 0);
+    ADD_FUNCTION("write", dblob_write, tFunc(tStr, tInt), 0);
+  }
 
 static void dblob_sprintf(INT32 args)
 {
@@ -993,6 +997,9 @@ static void dblob_write(INT32 args)
   pop_stack();
 
   push_int(0);
+}
+
+/* END LOB */
 }
 
 /*
@@ -1825,12 +1832,15 @@ static void push_inout_value(struct inout *inout,
 
     case SQLT_CLOB:
     case SQLT_BLOB:
-      push_object(low_clone(LOB_program));
+      /* FIXME: Consider using parent pointers? */
+      push_object(low_clone(Oracle_LOB_program));
       call_c_initializers(Pike_sp[-1].u.object);
-      ((struct dblob *)STORAGE(Pike_sp[-1].u.object))->is_clob =
+      ((struct Oracle_LOB_struct *)STORAGE(Pike_sp[-1].u.object))->is_clob =
 	(inout->ftype == SQLT_CLOB);
-      ((struct dblob *)STORAGE(Pike_sp[-1].u.object))->lob = inout->u.lob;
-      ((struct dblob *)STORAGE(Pike_sp[-1].u.object))->dbcon = dbcon;
+      ((struct Oracle_LOB_struct *)STORAGE(Pike_sp[-1].u.object))->lob =
+	inout->u.lob;
+      ((struct Oracle_LOB_struct *)STORAGE(Pike_sp[-1].u.object))->dbcon =
+	dbcon;
       break;
 
     case SQLT_DATE:
@@ -2898,14 +2908,6 @@ PIKE_MODULE_INIT
 
   INIT;
 
-  MY_START_CLASS(dblob); {
-    ADD_FUNCTION("cast", dblob_cast, tFunc(tStr, tMix), ID_PROTECTED);
-    ADD_FUNCTION("_sprintf", dblob_sprintf, tFunc(tInt, tStr), ID_PROTECTED);
-    ADD_FUNCTION("read", dblob_read, tFunc(tVoid, tStr), 0);
-    ADD_FUNCTION("write", dblob_write, tFunc(tStr, tInt), 0);
-  }
-  MY_END_CLASS(LOB);
-
   MY_START_CLASS(dbdate); {
     ADD_FUNCTION("create",dbdate_create,tFunc(tOr(tStr,tInt),tVoid),0);
     ADD_FUNCTION("cast",dbdate_cast,tFunc(tStr, tMix),ID_PRIVATE);
@@ -3055,7 +3057,6 @@ PIKE_MODULE_EXIT
   FREE_PROG(compile_query_program);
   FREE_PROG(big_typed_query_program);
   FREE_PROG(dbresultinfo_program);
-  FREE_PROG(LOB_program);
   FREE_PROG(Date_program);
   FREE_PROG(NULL_program);
 
