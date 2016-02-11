@@ -268,7 +268,7 @@ PMOD_EXPORT int pike_get_rusage(pike_rusage_t rusage_values)
 
 #else /* HAVE_GETRUSAGE */
 
-#if defined(HAVE_TIMES)
+#ifdef HAVE_TIMES
 
 PMOD_EXPORT int pike_get_rusage(pike_rusage_t rusage_values)
 {
@@ -335,7 +335,7 @@ PMOD_EXPORT cpu_time_t (*get_real_time_res) (void);
 
 /* First see if we can use the POSIX standard interface. */
 
-#if defined (_POSIX_TIMERS)
+#ifdef _POSIX_TIMERS
 #if _POSIX_TIMERS > 0
 
 #if defined (MIGHT_HAVE_POSIX_THREAD_GCT) &&				\
@@ -575,7 +575,7 @@ PMOD_EXPORT cpu_time_t fallback_grt (void)
 #else  /* !__NT__ && !HAVE_WORKING_GETHRVTIME */
 
 #ifdef DEFINE_FALLBACK_GCT
-#if defined (GETRUSAGE_THROUGH_PROCFS)
+#ifdef GETRUSAGE_THROUGH_PROCFS
 
 PMOD_EXPORT const char fallback_gct_impl[] = "/proc/";
 
@@ -656,7 +656,7 @@ PMOD_EXPORT const char fallback_gct_impl[] = "times()";
 PMOD_EXPORT cpu_time_t fallback_gct (void)
 {
   struct tms tms;
-#if defined (PIKE_DEBUG)
+#ifdef PIKE_DEBUG
   if (!pike_clk_tck) Pike_fatal ("Called before init_pike.\n");
 #endif
   if (times (&tms) == (clock_t) -1)

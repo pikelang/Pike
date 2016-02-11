@@ -45,7 +45,7 @@
 #define fd_SEND_FD           64
 
 
-#if defined(HAVE_WINSOCK_H)
+#ifdef HAVE_WINSOCK_H
 
 #define HAVE_FD_FLOCK
 
@@ -59,7 +59,7 @@
  * in reality: almost unlimited actually.
  */
 #define FD_SETSIZE 65536
-#endif
+#endif /* FD_SETSIZE */
 
 #include <winbase.h>
 
@@ -73,7 +73,7 @@ typedef __int64 PIKE_OFF_T;
 typedef struct stat PIKE_STAT_T;
 typedef off_t PIKE_OFF_T;
 #define PRINTPIKEOFFT PRINTOFFT
-#endif
+#endif /* _INTEGRAL_MAX_BITS >= 64 */
 
 #define SOCKFUN1(NAME,T1) PMOD_EXPORT int PIKE_CONCAT(debug_fd_,NAME) (FD,T1);
 #define SOCKFUN2(NAME,T1,T2) PMOD_EXPORT int PIKE_CONCAT(debug_fd_,NAME) (FD,T1,T2);
@@ -213,7 +213,8 @@ typedef struct my_fd_set_s my_fd_set;
 #define fd_check_fd(X) do { if(fd_type[X]>=0) Pike_fatal("FD_SET on closed fd %d (%d) %s:%d.\n",X,da_handle[X],__FILE__,__LINE__); }while(0)
 #else
 #define fd_check_fd(X)
-#endif
+#endif /* PIKE_DEBUG */
+
 #define my_FD_CLR(FD,S) ((S)->bits[(FD)>>3]&=~ (1<<(FD&7)))
 #define my_FD_SET(FD,S) do{ fd_check_fd(FD); ((S)->bits[(FD)>>3]|= (1<<(FD&7))); }while(0)
 #define my_FD_ISSET(FD,S) ((S)->bits[(FD)>>3]&(1<<(FD&7)))
@@ -288,16 +289,17 @@ PMOD_EXPORT void closedir(DIR *dir);
 #if 0
 /* Why not? Want to use this one for _getdrive. /mast */
 #undef HAVE_DIRECT_H
-#endif
+#endif /*0 */
+
 #undef HAVE_NDIR_H
 #undef HAVE_SYS_NDIR_H
 #undef HAVE_DIRENT_H
 
-#endif
+#endif /* EMULATE_DIRECT */
 
 
 
-#else /* HAVE_WINSOCK && !__GNUC__ */
+#else /* HAVE_WINSOCK_H */
 
 
 typedef int FD;
@@ -316,7 +318,7 @@ typedef off_t PIKE_OFF_T;
 #define fd_ACCMODE O_ACCMODE
 #else
 #define fd_ACCMODE (fd_RDONLY|fd_WRONLY|fd_RDWR)
-#endif
+#endif /* O_ACCMODE */
 #define fd_APPEND O_APPEND
 #define fd_CREAT O_CREAT
 #define fd_TRUNC O_TRUNC
@@ -326,7 +328,7 @@ typedef off_t PIKE_OFF_T;
 #define fd_BINARY O_BINARY
 #else
 #define fd_BINARY 0
-#endif
+#endif /* O_BINARY */
 
 #ifdef O_LARGEFILE
 #define fd_LARGEFILE O_LARGEFILE
@@ -373,7 +375,7 @@ typedef off_t PIKE_OFF_T;
 #define fd_connect(fd,X,Z) connect(dmalloc_touch_fd(fd),(X),(Z))
 #ifdef HAVE_INET_NTOP
 #define fd_inet_ntop(af,addr,cp,sz) inet_ntop(af,addr,cp,sz)
-#endif
+#endif /* HAVE_INET_NTOP */
 
 #ifdef HAVE_BROKEN_F_SETFD
 #define fd_dup2(fd,to) (set_close_on_exec(to,0), dmalloc_register_fd(dup2(dmalloc_touch_fd(fd),dmalloc_close_fd(to))))
@@ -404,8 +406,8 @@ typedef off_t PIKE_OFF_T;
 #define fd_LOCK_NB F_TLOCK
 
 #define fd_lockf(fd,mode) lockf(dmalloc_touch_fd(fd),mode,0)
-#endif
-#endif
+#endif /* HAVE_LOCKF */
+#endif /* HAVE_FLOCK */
 
 
 #define fd_shutdown_read 0
@@ -430,11 +432,11 @@ typedef struct my_fd_set_s my_fd_set;
 #define FILE_CAPABILITIES (fd_INTERPROCESSABLE | fd_CAN_NONBLOCK)
 #ifndef __amigaos__
 #define PIPE_CAPABILITIES (fd_INTERPROCESSABLE | fd_BUFFERED | fd_CAN_NONBLOCK)
-#endif
+#endif /* __amigaos__ */
 #define UNIX_SOCKET_CAPABILITIES (fd_INTERPROCESSABLE | fd_BIDIRECTIONAL | fd_CAN_NONBLOCK | fd_SEND_FD)
 #define SOCKET_CAPABILITIES (fd_INTERPROCESSABLE | fd_BIDIRECTIONAL | fd_CAN_NONBLOCK | fd_CAN_SHUTDOWN)
 
-#endif /* Don't HAVE_WINSOCK */
+#endif /* Don't HAVE_WINSOCK_H */
 
 #ifndef SEEK_SET
 #define SEEK_SET 0

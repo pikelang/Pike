@@ -10,7 +10,7 @@
 #include "global.h"
 #include <time.h>
 
-#if defined (_POSIX_TIMERS)
+#ifdef _POSIX_TIMERS
 #if _POSIX_TIMERS > 0
 
 #ifdef _POSIX_THREAD_CPUTIME
@@ -23,7 +23,7 @@
 #    endif
 #    define MIGHT_HAVE_POSIX_THREAD_GCT
 #  endif
-#endif
+#endif /* _POSIX_THREAD_CPUTIME */
 
 #ifdef _POSIX_CPUTIME
 #  if _POSIX_CPUTIME != -1
@@ -32,7 +32,7 @@
 #    endif
 #    define MIGHT_HAVE_POSIX_PROCESS_GCT
 #  endif
-#endif
+#endif /* _POSIX_CPUTIME */
 
 #ifdef _POSIX_MONOTONIC_CLOCK
 #  if _POSIX_MONOTONIC_CLOCK != -1
@@ -41,7 +41,7 @@
 #    endif
 #    define MIGHT_HAVE_POSIX_MONOTONIC_GRT
 #  endif
-#endif
+#endif /* _POSIX_MONOTONIC_CLOCK */
 
 /* The POSIX CLOCK_REALTIME clock is guaranteed to exist if
  * _POSIX_TIMERS exist. */

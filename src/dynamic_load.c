@@ -218,7 +218,7 @@ static int dlinit(void)
 
 #include <dl.h>
 
-#if defined(BIND_VERBOSE)
+#ifdef BIND_VERBOSE
 #define RTLD_NOW	BIND_IMMEDIATE | BIND_VERBOSE
 #else
 #define RTLD_NOW	BIND_IMMEDIATE

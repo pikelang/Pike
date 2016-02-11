@@ -5322,7 +5322,7 @@ if test "$with_machine_code" = "no"; then :; else
   AC_CACHE_VAL(pike_cv_machine_code_arch, [
     pike_cv_machine_code_arch=unknown
     AC_TRY_COMPILE([
-#if defined(__GNUC__)
+#ifdef __GNUC__
 #if !defined(__i386__) && !defined(__i386)
 #error Not ia32 architecture
 #endif
@@ -5337,7 +5337,7 @@ if test "$with_machine_code" = "no"; then :; else
       pike_cv_machine_code_arch=ia32
     ], [])
     AC_TRY_COMPILE([
-#if defined(__GNUC__)
+#ifdef __GNUC__
 #if !defined(__x86_64__) && !defined(__x86_64) && !defined(__amd64) && !defined(__amd64__)
 #error Not amd64 architecture
 #endif
@@ -5353,7 +5353,7 @@ if test "$with_machine_code" = "no"; then :; else
       pike_cv_machine_code_arch=amd64
     ], [])
     AC_TRY_COMPILE([
-#if defined(__GNUC__)
+#ifdef __GNUC__
 #if !defined(sparc) && !defined(__sparc__) && !defined(__sparc)
 #error Not sparc architecture
 #endif
@@ -5364,7 +5364,7 @@ if test "$with_machine_code" = "no"; then :; else
       pike_cv_machine_code_arch=sparc
     ], [])
     AC_TRY_COMPILE([
-#if defined(__GNUC__)
+#ifdef __GNUC__
 #if !defined(__ppc__) && !defined(__powerpc__) && !defined(_POWER)
 #error Not ppc32 architecture
 #endif
@@ -5375,7 +5375,7 @@ if test "$with_machine_code" = "no"; then :; else
       pike_cv_machine_code_arch=ppc32
     ], [])
     AC_TRY_COMPILE([
-#if defined(__GNUC__)
+#ifdef __GNUC__
 #if !defined(__PPC64__) && !defined(__powerpc64__)
 #error Not ppc64 architecture
 #endif

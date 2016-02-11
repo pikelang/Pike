@@ -411,7 +411,7 @@ static volatile IMUTEX_T *interleave_list = NULL;
 
 #define THREADSTATE2OBJ(X) ((X)->thread_obj)
 
-#if defined(PIKE_DEBUG)
+#ifdef PIKE_DEBUG
 
 /* This is a debug wrapper to enable checks that the interpreter lock
  * is held by the current thread. */
@@ -450,7 +450,7 @@ static void f__check_threads_swaps (INT32 UNUSED(args))
 #define SET_LOCKING_THREAD 0
 #define UNSET_LOCKING_THREAD 0
 
-#endif
+#endif /* PIKE_DEBUG */
 
 PMOD_EXPORT void pike_low_lock_interpreter (DLOC_DECL)
 {
@@ -1707,14 +1707,14 @@ TH_RETURN_TYPE new_thread_func(void *data)
    * holding it. */
   low_mt_lock_interpreter();
 
-#if defined(PIKE_DEBUG)
+#ifdef PIKE_DEBUG
   if(d_flag) {
     THREAD_T self = th_self();
     if( !th_equal(arg.thread_state->id, self) )
       Pike_fatal("Current thread is wrong. %lx %lx\n",
 		 (long)arg.thread_state->id, (long)self);
   }
-#endif
+#endif /* PIKE_DEBUG */
 
   arg.thread_state->swapped = 0;
   Pike_interpreter_pointer = &arg.thread_state->state;

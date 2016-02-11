@@ -91,10 +91,10 @@ struct pike_frame
   struct inherit *context;
   char *current_storage;
 
-#if defined(PROFILING)
+#ifdef PROFILING
   cpu_time_t children_base;	/** Accounted time when the frame started. */
   cpu_time_t start_time;	/** Adjusted time when thr frame started. */
-#endif
+#endif /* PROFILING */
 };
 
 #define PIKE_FRAME_RETURN_INTERNAL 1

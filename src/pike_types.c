@@ -8643,10 +8643,10 @@ void init_types(void)
   pike_type_hash_size = PIKE_TYPE_HASH_SIZE;
 
   /* if possible, use mmap with on-demand allocation */
-#if defined(MAP_ANONYMOUS)
+#ifdef MAP_ANONYMOUS
 #ifndef MAP_NORESERVE
 #define MAP_NORESERVE 0
-#endif
+#endif /* MAP_NORESERVE */
   type_stack = mmap( NULL, sizeof(struct pike_type *)*PIKE_TYPE_STACK_SIZE,
 		     PROT_READ|PROT_WRITE, MAP_NORESERVE|MAP_ANONYMOUS|MAP_PRIVATE, -1, 0);
   if( type_stack != MAP_FAILED ) {
@@ -8662,7 +8662,7 @@ void init_types(void)
   } else {
     pike_type_mark_stack = NULL;
   }
-#endif
+#endif /* MAP_ANONYMOUS */
   if( !type_stack )
     type_stack = xalloc(sizeof(struct pike_type *)*PIKE_TYPE_STACK_SIZE);
   if( !pike_type_mark_stack )

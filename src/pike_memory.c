@@ -3239,7 +3239,7 @@ static void cleanup_debug_malloc(void)
 void init_pike_memory (void)
 {
   init_hashmem();
-#if defined (HAVE_GETPAGESIZE)
+#ifdef HAVE_GETPAGESIZE
   page_size = getpagesize();
 #elif defined (HAVE_SYSCONF) && defined (_SC_PAGESIZE)
   page_size = (int) sysconf (_SC_PAGESIZE);
@@ -3254,7 +3254,7 @@ void init_pike_memory (void)
 #else
   /* A reasonable default... */
   page_size = 8192;
-#endif
+#endif /* HAVE_GETPAGESIZE */
 
 #ifdef INIT_DEV_ZERO
   /* Neither MAP_ANONYMOUS nor MAP_ANON.

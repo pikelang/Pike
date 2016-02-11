@@ -257,11 +257,11 @@ struct timeval;
 #define GC2
 #endif
 
-#if defined(i386)
+#ifdef i386
 #ifndef HANDLES_UNALIGNED_MEMORY_ACCESS
 #define HANDLES_UNALIGNED_MEMORY_ACCESS
 #endif
-#endif
+#endif /* i386 */
 
 /* AIX requires this to be the first thing in the file.  */
 #if HAVE_ALLOCA_H
@@ -366,33 +366,33 @@ struct b8_t_s { B4_T x,y; };
 #define B8_T struct b8_t_s
 #endif
 
-#if defined(B8_T)
+#ifdef B8_T
 struct b16_t_s { B8_T x,y; };
 #define B16_T struct b16_t_s
 #endif
 
 /* INT_TYPE stuff */
 #ifndef MAX_INT_TYPE
-# if defined (WITH_SHORT_INT)
+# ifdef WITH_SHORT_INT
 
 #  define MAX_INT_TYPE	SHRT_MAX
 #  define MIN_INT_TYPE	SHRT_MIN
 #  define PRINTPIKEINT	"h"
 #  define INT_ARG_TYPE	int
 
-# elif defined (WITH_INT_INT)
+# elif defined(WITH_INT_INT)
 
 #  define MAX_INT_TYPE	INT_MAX
 #  define MIN_INT_TYPE	INT_MIN
 #  define PRINTPIKEINT	""
 
-# elif defined (WITH_LONG_INT)
+# elif defined(WITH_LONG_INT)
 
 #  define MAX_INT_TYPE	LONG_MAX
 #  define MIN_INT_TYPE	LONG_MIN
 #  define PRINTPIKEINT	"l"
 
-# elif defined (WITH_LONG_LONG_INT)
+# elif defined(WITH_LONG_LONG_INT)
 
 #  ifdef LLONG_MAX
 #   define MAX_INT_TYPE	LLONG_MAX
@@ -421,7 +421,7 @@ struct b16_t_s { B8_T x,y; };
 #endif
 
 /* FLOAT_TYPE stuff */
-#if defined (WITH_LONG_DOUBLE_PRECISION_SVALUE)
+#ifdef WITH_LONG_DOUBLE_PRECISION_SVALUE
 
 #  define PIKEFLOAT_MANT_DIG	LDBL_MANT_DIG
 #  define PIKEFLOAT_DIG		LDBL_DIG
@@ -434,7 +434,7 @@ struct b16_t_s { B8_T x,y; };
 #  define PIKEFLOAT_EPSILON	LDBL_EPSILON
 #  define PRINTPIKEFLOAT	"L"
 
-#elif defined (WITH_DOUBLE_PRECISION_SVALUE)
+#elif defined(WITH_DOUBLE_PRECISION_SVALUE)
 
 #  define PIKEFLOAT_MANT_DIG	DBL_MANT_DIG
 #  define PIKEFLOAT_DIG		DBL_DIG

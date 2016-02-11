@@ -10,8 +10,8 @@
 #define bit_SSE4_2 (1<<20)
 #define bit_RDRND_2 (1<<30)
 
-#if defined (__GNUC__)
-#  if defined (__i386__)
+#ifdef __GNUC__
+#  ifdef __i386__
 #    define HAVE_X86_ASM
 #    define HAVE_IA32_ASM
 #    define GCC_X86_ASM_STYLE
@@ -23,7 +23,7 @@
 #    define GCC_X86_64_ASM_STYLE
 #  endif
 #elif defined (_MSC_VER)
-#  if defined (_M_IX86)
+#  ifdef _M_IX86
 #    define HAVE_X86_ASM
 #    define HAVE_IA32_ASM
 #    define CL_X86_ASM_STYLE

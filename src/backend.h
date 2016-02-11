@@ -52,7 +52,7 @@
  */
 #define BACKEND_OOB_IS_SIMULATED
 
-#if defined(HAVE_CFRUNLOOPRUNINMODE)
+#ifdef HAVE_CFRUNLOOPRUNINMODE
 /* Have kqueue+CFRunLoop variant (Mac OSX, iOS) */
 #define BACKEND_USES_CFRUNLOOP
 #endif /* HAVE_CFRUNLOOPRUNINMODE */

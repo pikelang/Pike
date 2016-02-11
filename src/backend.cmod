@@ -145,7 +145,8 @@ static int compat_box_dispatcher (struct fd_callback_box *box, int event);
  * early in the CMOD.
  */
 static void check_set_timer(struct timeval when);
-#endif
+#endif /* BACKEND_USES_CFRUNLOOP */
+
 /* CALL OUT STUFF */
 
 #ifdef PIKE_DEBUG
@@ -3015,7 +3016,7 @@ static void pb_copy_selectors(struct pb_selectors *to,
 
 #define POLL_EVENT	struct kevent
 
-#if defined(BACKEND_USES_CFRUNLOOP)
+#ifdef BACKEND_USES_CFRUNLOOP
 #define OPEN_POLL_DEVICE(X)	my_kqueue(X)
 #else
 #define OPEN_POLL_DEVICE(X)	kqueue()
@@ -3240,7 +3241,7 @@ PIKECLASS PollDeviceBackend
    * POLL/SELECT fd sets
    */
   CVAR int set;
-#if defined(BACKEND_USES_CFRUNLOOP)
+#ifdef BACKEND_USES_CFRUNLOOP
   CVAR int go_cf;
   CVAR int external_run;
   CVAR CFFileDescriptorRef fdref;
@@ -3340,7 +3341,7 @@ PIKECLASS PollDeviceBackend
   }
 
 
-#if defined(BACKEND_USES_CFRUNLOOP)
+#ifdef BACKEND_USES_CFRUNLOOP
   /* We place these declarations here rather than at the top
    * in order to avoid struct-y unpleasantness
    */
@@ -3480,7 +3481,7 @@ PIKECLASS PollDeviceBackend
 
   }
 
-#if defined(BACKEND_USES_CFRUNLOOP)
+#ifdef BACKEND_USES_CFRUNLOOP
   static void noteEvents(CFFileDescriptorRef fdref,
 			 CFOptionFlags UNUSED(callBackTypes),
 			 void *info)
