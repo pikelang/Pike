@@ -595,11 +595,9 @@ PMOD_EXPORT void pike_swap_out_thread (struct thread_state *ts
 #ifdef PROFILING
   if (!ts->swapped) {
     cpu_time_t now = get_cpu_time();
-#ifdef PROFILING_DEBUG
-    fprintf(stderr, "%p: Swap out at: %" PRINT_CPU_TIME
-	    " unlocked: %" PRINT_CPU_TIME "\n",
-	    ts, now, ts->state.unlocked_time);
-#endif
+    W_PROFILING_DEBUG("%p: Swap out at: %" PRINT_CPU_TIME
+                      " unlocked: %" PRINT_CPU_TIME "\n",
+                      ts, now, ts->state.unlocked_time);
     ts->state.unlocked_time -= now;
   }
 #endif
@@ -626,19 +624,11 @@ PMOD_EXPORT void pike_swap_in_thread (struct thread_state *ts
 #ifdef PROFILING
   if (ts->swapped) {
     cpu_time_t now = get_cpu_time();
-#ifdef PROFILING_DEBUG
-    fprintf(stderr, "%p: Swap in at: %" PRINT_CPU_TIME
-	    " unlocked: %" PRINT_CPU_TIME "\n",
-	    ts, now, ts->state.unlocked_time);
-#endif
-/* This will not work, since Pike_interpreter_pointer is always null here... */
-/* #ifdef PIKE_DEBUG */
-/*     if (now < -Pike_interpreter.unlocked_time) { */
-/*           pike_fatal_dloc("Time at swap in is before time at swap out." */
-/*                           " %" PRINT_CPU_TIME " < %" PRINT_CPU_TIME */
-/*                           "\n", now, -Pike_interpreter.unlocked_time); */
-/*     } */
-/* #endif */
+    W_PROFILING_DEBUG("%p: Swap in at: %" PRINT_CPU_TIME
+                      " unlocked: %" PRINT_CPU_TIME "\n",
+                      ts, now, ts->state.unlocked_time);
+
+    /* Pike_interpreter_pointer is always null here... */
     ts->state.unlocked_time += now;
   }
 #endif

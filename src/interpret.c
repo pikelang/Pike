@@ -2058,12 +2058,11 @@ void *lower_mega_apply( INT32 args, struct object *o, ptrdiff_t fun )
            * put it here until someone needs it. -Hubbe
            */
           new_frame->ident = ref->identifier_offset;
-          DO_IF_PROFILING_DEBUG({
-              fprintf(stderr, "%p{: Push at %" PRINT_CPU_TIME
-                      " %" PRINT_CPU_TIME "\n",
-                      Pike_interpreter.thread_state, new_frame->start_time,
-                      new_frame->children_base);
-            });
+          W_PROFILING_DEBUG("%p{: Push at %" PRINT_CPU_TIME
+                            " %" PRINT_CPU_TIME "\n",
+                            Pike_interpreter.thread_state,
+                            new_frame->start_time,
+                            new_frame->children_base);
 #endif
           new_frame->next = Pike_fp;
           add_ref(new_frame->current_object = o);

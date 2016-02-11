@@ -2868,12 +2868,11 @@ OPCODE1(F_LTOSVAL_CALL_BUILTIN_AND_ASSIGN_POP,
       func = new_frame->context->prog->identifiers + new_frame->ident;	   \
       func->num_calls++;						   \
       func->recur_depth++;						   \
-      DO_IF_PROFILING_DEBUG({						   \
-	  fprintf(stderr, "%p{: Push at %" PRINT_CPU_TIME		   \
-		  " %" PRINT_CPU_TIME "\n",				   \
-		  Pike_interpreter.thread_state, new_frame->start_time,	   \
-		  new_frame->children_base);				   \
-	});								   \
+      W_PROFILING_DEBUG("%p{: Push at %" PRINT_CPU_TIME                    \
+                        " %" PRINT_CPU_TIME "\n",                          \
+                        Pike_interpreter.thread_state,                     \
+                        new_frame->start_time,                             \
+                        new_frame->children_base);                         \
     });									   \
 									   \
   Pike_fp=new_frame;							   \

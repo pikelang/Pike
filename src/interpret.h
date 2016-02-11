@@ -558,14 +558,13 @@ PMOD_EXPORT extern void push_static_text( const char *x );
       /* Time spent in just this frame. */				\
       cpu_time_t self_time;						\
       struct identifier *function;					\
-      DO_IF_PROFILING_DEBUG({						\
-	  fprintf(stderr, "%p}: Pop got %" PRINT_CPU_TIME		\
-		  " (%" PRINT_CPU_TIME ")"				\
-		  " %" PRINT_CPU_TIME " (%" PRINT_CPU_TIME ")\n",	\
-		  Pike_interpreter.thread_state, time_passed,		\
-		  _fp_->start_time, Pike_interpreter.accounted_time,	\
-		  _fp_->children_base);					\
-	});								\
+      W_PROFILING_DEBUG("%p}: Pop got %" PRINT_CPU_TIME                 \
+                        " (%" PRINT_CPU_TIME ")"                        \
+                        " %" PRINT_CPU_TIME " (%" PRINT_CPU_TIME ")\n",	\
+                        Pike_interpreter.thread_state, time_passed,     \
+                        _fp_->start_time,                               \
+                        Pike_interpreter.accounted_time,                \
+                        _fp_->children_base);                           \
       time_passed -= _fp_->start_time;					\
       DO_IF_DEBUG(if (time_passed < 0) {				\
 		    Pike_fatal("Negative time_passed: %" PRINT_CPU_TIME	\

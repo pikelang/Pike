@@ -671,7 +671,7 @@ char *crypt(const char *, const char *);
 #define USE_PIKE_TYPE	2
 
 /* Used in more than one place, better put it here */
-#if defined(PROFILING)
+#ifdef PROFILING
 #define DO_IF_PROFILING(X) X
 #else
 #define DO_IF_PROFILING(X)
@@ -680,9 +680,9 @@ char *crypt(const char *, const char *);
 /* #define PROFILING_DEBUG */
 
 #ifdef PROFILING_DEBUG
-#define DO_IF_PROFILING_DEBUG(X)	X
+#define W_PROFILING_DEBUG(...) WERR(__VA_ARGS__)
 #else /* !PROFILING_DEBUG */
-#define DO_IF_PROFILING_DEBUG(X)
+#define W_PROFILING_DEBIG(...)
 #endif /* PROFILING_DEBUG */
 
 #endif
