@@ -306,6 +306,8 @@ static struct object *nullfloat_object;
 static struct object *nullint_object;
 static struct object *nulldate_object;
 
+DECLARATIONS;
+
 static OCIEnv *oracle_environment=0;
 static OCIEnv *low_get_oracle_environment(void)
 {
