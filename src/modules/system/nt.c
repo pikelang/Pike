@@ -1473,8 +1473,6 @@ void f_NetUserEnum(INT32 args)
   DWORD resume=0;
   NET_API_STATUS ret;
 
-  /*  fprintf(stderr,"before: sp=%p args=%d (base=%p)\n",sp,args,sp-args); */
-
   check_all_args("NetUserEnum",args,BIT_STRING|BIT_INT|BIT_VOID, BIT_INT|BIT_VOID,BIT_INT|BIT_VOID,0);
 
   switch(args)
@@ -1497,8 +1495,6 @@ void f_NetUserEnum(INT32 args)
   }
 
   pop_n_elems(args);
-
-  /*  fprintf(stderr,"now: sp=%p\n",sp); */
 
   ret = ERROR_MORE_DATA;
 
@@ -3688,8 +3684,6 @@ BOOL GenServerContext (BYTE *pIn, DWORD cbIn, BYTE *pOut, DWORD *pcbOut,
 
   *pfDone = !((SEC_I_CONTINUE_NEEDED == ss)
               || (SEC_I_COMPLETE_AND_CONTINUE == ss));
-
-/*   fprintf(stderr, "AcceptSecurityContext result = 0x%08x\n", ss); */
 
   return TRUE;
 
