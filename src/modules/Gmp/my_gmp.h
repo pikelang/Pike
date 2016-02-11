@@ -89,9 +89,7 @@ PMOD_EXPORT extern struct program *bignum_program;
 #define ULONG_BITS (SIZEOF_LONG * CHAR_BIT)
 #define ULONGEST_BITS (SIZEOF_LONGEST * CHAR_BIT)
 #define INT_TYPE_BITS (SIZEOF_INT_TYPE * CHAR_BIT - 1)
-#ifdef INT64
 #define INT64_BITS (SIZEOF_INT64 * CHAR_BIT - 1)
-#endif
 
 #if SIZEOF_INT_TYPE > SIZEOF_LONG
 /* INT_TYPE is too big to feed directly to mpz_set_si etc. */

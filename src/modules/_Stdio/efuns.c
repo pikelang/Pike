@@ -446,11 +446,7 @@ void f_file_stat(INT32 args)
  */
 void f_file_truncate(INT32 args)
 {
-#if defined(INT64)
   INT64 len = 0;
-#else
-  off_t len = 0;
-#endif
   struct pike_string *str;
   int res;
 
@@ -459,14 +455,12 @@ void f_file_truncate(INT32 args)
   if(TYPEOF(sp[-args]) != T_STRING)
     SIMPLE_ARG_TYPE_ERROR("file_truncate", 1, "string");
 
-#if defined (INT64)
 #if defined (HAVE_FTRUNCATE64) || SIZEOF_OFF_T > SIZEOF_INT_TYPE
   if(is_bignum_object_in_svalue(&Pike_sp[1-args])) {
     if (!int64_from_bignum(&len, Pike_sp[1-args].u.object))
       Pike_error ("Bad argument 2 to file_truncate(). Length too large.\n");
   }
   else
-#endif
 #endif
     if(TYPEOF(sp[1-args]) != T_INT)
       SIMPLE_ARG_TYPE_ERROR("file_truncate", 2, "int");
@@ -494,12 +488,8 @@ void f_file_truncate(INT32 args)
     } else {
       LONG high;
       DWORD err;
-#ifdef INT64
       high = (LONG) (len >> 32);
       len &= ((INT64) 1 << 32) - 1;
-#else
-      high = 0;
-#endif
       if (SetFilePointer(h, (LONG) len, &high, FILE_BEGIN) ==
 	  INVALID_SET_FILE_POINTER &&
 	  (err = GetLastError()) != NO_ERROR) {

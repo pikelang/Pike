@@ -72,20 +72,9 @@ extern struct svalue gc_done_cb;
 
 /* #define GC_MARK_DEBUG */
 
-/* If we only have 32 bits we need to make good use of them for the
- * alloc counter since it can get high, but if we have 64 it's best to
- * stay away from unsigned since rotten compilers like MSVC haven't
- * had the energy to implement conversion from that type to floating
- * point. :P */
-#ifdef INT64
 #define ALLOC_COUNT_TYPE INT64
 #define ALLOC_COUNT_TYPE_MAX MAX_INT64
 #define PRINT_ALLOC_COUNT_TYPE PRINTINT64"d"
-#else
-#define ALLOC_COUNT_TYPE unsigned long
-#define ALLOC_COUNT_TYPE_MAX ULONG_MAX
-#define PRINT_ALLOC_COUNT_TYPE "lu"
-#endif
 
 extern int num_objects, got_unlinked_things;
 extern ALLOC_COUNT_TYPE num_allocs, alloc_threshold, saved_alloc_threshold;

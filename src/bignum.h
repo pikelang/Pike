@@ -250,7 +250,6 @@ DO_CLANG_OF(DO_UINT32_MUL_OVERFLOW, unsigned INT32, __builtin_umul_overflow)
 
 GENERIC_OVERFLOW_CHECKS(INT32)
 
-#if defined(INT64)
 # if SIZEOF_LONG == 8
 DO_CLANG_OF(DO_INT64_ADD_OVERFLOW, INT64, __builtin_saddl_overflow)
 DO_CLANG_OF(DO_INT64_SUB_OVERFLOW, INT64, __builtin_ssubl_overflow)
@@ -267,18 +266,15 @@ DO_CLANG_OF(DO_UINT64_SUB_OVERFLOW, UINT64, __builtin_usubll_overflow)
 DO_CLANG_OF(DO_UINT64_MUL_OVERFLOW, UINT64, __builtin_umulll_overflow)
 #endif
 GENERIC_OVERFLOW_CHECKS(INT64)
-#endif
 
 #else /* PIKE_CLANG_BUILTIN(__builtin_uadd_overflow) */
 
 #if defined(INT128) && defined(UINT128)
 GEN_OF2(64, 128, UINT128)
 GEN_OF2(32, 64, UINT64)
-#elif defined(INT64) && defined(UINT64)
+#elif
 GEN_OF1(64)
 GEN_OF2(32, 64, UINT64)
-#else
-GEN_OF1(32)
 #endif
 
 #endif /* PIKE_CLANG_BUILTIN(__builtin_uadd_overflow) */
@@ -357,18 +353,12 @@ PMOD_EXPORT struct object *bignum_from_svalue(struct svalue *s);
 PMOD_EXPORT struct object *create_double_bignum(INT_TYPE low, INT_TYPE high);
 PMOD_EXPORT void convert_svalue_to_bignum(struct svalue *s);
 
-#ifdef INT64
 PMOD_EXPORT void push_int64(INT64 i);
 
 /* Returns nonzero iff conversion is successful. */
 PMOD_EXPORT int int64_from_bignum(INT64 *i, struct object *bignum);
 
 PMOD_EXPORT void reduce_stack_top_bignum(void);
-#else
-#define push_int64(i) push_int((INT_TYPE)(i))
-#define int64_from_bignum(I,BIGNUM)	0
-#define reduce_stack_top_bignum()
-#endif /* INT64 */
 
 #define is_bignum_object(O) ((O)->prog == bignum_program)
 

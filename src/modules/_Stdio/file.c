@@ -2926,7 +2926,7 @@ void file_sync(INT32 args)
 }
 #endif /* HAVE_FSYNC */
 
-#if defined(INT64) && (defined(HAVE_LSEEK64) || defined(__NT__))
+#if (defined(HAVE_LSEEK64) || defined(__NT__))
 #define SEEK64
 #endif
 
@@ -3092,7 +3092,7 @@ static void file_seek(INT32 args)
   push_int64(to);
 }
 
-#if defined(INT64) && (defined(HAVE_LSEEK64) || defined(__NT__))
+#if (defined(HAVE_LSEEK64) || defined(__NT__))
 #define TELL64
 #endif
 
@@ -3142,24 +3142,18 @@ static void file_tell(INT32 args)
  */
 static void file_truncate(INT32 args)
 {
-#if defined(INT64)
   INT64 len = 0;
-#else
-  off_t len = 0;
-#endif
   int res;
 
   if(args!=1)
     SIMPLE_WRONG_NUM_ARGS_ERROR("truncate", 1);
 
-#if defined (INT64)
 #if defined (HAVE_FTRUNCATE64) || SIZEOF_OFF_T > SIZEOF_INT_TYPE
   if(is_bignum_object_in_svalue(&Pike_sp[-args])) {
     if (!int64_from_bignum(&len, Pike_sp[-args].u.object))
       Pike_error ("Bad argument 1 to Stdio.File->truncate(). Length too large.\n");
   }
   else
-#endif
 #endif
     if(TYPEOF(Pike_sp[-args]) != PIKE_T_INT)
       SIMPLE_ARG_TYPE_ERROR("truncate", 1, "int");

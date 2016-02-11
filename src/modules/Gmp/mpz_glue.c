@@ -134,8 +134,6 @@ overflow:
      push_object(reducetmp__);					\
 }while(0)
 
-#ifdef INT64
-
 PMOD_EXPORT void reduce_stack_top_bignum (void)
 {
   struct object *o;
@@ -228,8 +226,6 @@ overflow:
   *i = neg ? MIN_INT64 : MAX_INT64;
   return 0;
 }
-
-#endif /* INT64 */
 
 PMOD_EXPORT void push_ulongest (unsigned LONGEST i)
 {
@@ -2324,11 +2320,9 @@ PIKE_MODULE_INIT
   mpz_setbit (mpz_int_type_min, INT_TYPE_BITS);
   mpz_neg (mpz_int_type_min, mpz_int_type_min);
 
-#ifdef INT64
   mpz_init (mpz_int64_min);
   mpz_setbit (mpz_int64_min, INT64_BITS);
   mpz_neg (mpz_int64_min, mpz_int64_min);
-#endif
 
   pike_init_mpq_module();
   pike_init_mpf_module();
@@ -2352,9 +2346,7 @@ PIKE_MODULE_EXIT
     bignum_program = NULL;
   }
   mpz_clear (mpz_int_type_min);
-#ifdef INT64
   mpz_clear (mpz_int64_min);
-#endif
 }
 
 /*! @endmodule

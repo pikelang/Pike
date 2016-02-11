@@ -464,11 +464,7 @@ struct inout
   union dbunion
   {
     double f;
-#ifdef INT64
     INT64 i;
-#else
-    INT32 i;
-#endif
     char *buf;
     char shortstr[32];
     OCIDate date;
@@ -1850,11 +1846,7 @@ static void push_inout_value(struct inout *inout,
       /* FALL_THROUGH */
     case SQLT_VNU:
     {
-#ifdef INT64
       INT64 integer;
-#else
-      INT32 integer;
-#endif
 
 #if 0
       for(ret=0;ret<22;ret++)

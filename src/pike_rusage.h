@@ -154,21 +154,14 @@ long *low_rusage(void);
  * space, if applicable), or -1 if it couldn't be read. Note that many
  * systems have fairly poor resolution. gettimeofday can therefore be
  * a better choice to measure small time intervals. */
-#ifdef INT64
+
 /* The time is returned in nanoseconds. */
 typedef INT64 cpu_time_t;
 #define LONG_CPU_TIME
 #define CPU_TIME_TICKS_LOW /* per second */ (1000000000L)
 #define CPU_TIME_UNIT "ns"
 #define PRINT_CPU_TIME PRINTINT64 "d"
-#else
-/* The time is returned in milliseconds. (Note that the value will
- * wrap after about 49 days.) */
-typedef unsigned long cpu_time_t;
-#define CPU_TIME_TICKS_LOW /* per second */ 1000
-#define CPU_TIME_UNIT "ms"
-#define PRINT_CPU_TIME "lu"
-#endif
+
 #define CPU_TIME_TICKS /* per second */ ((cpu_time_t)CPU_TIME_TICKS_LOW)
 
 #ifdef GCT_RUNTIME_CHOICE

@@ -37,9 +37,7 @@ extern struct program *math_matrix_program;
 extern struct program *math_smatrix_program;
 extern struct program *math_imatrix_program;
 extern struct program *math_fmatrix_program;
-#ifdef INT64
 extern struct program *math_lmatrix_program;
-#endif /* INT64 */
 
 #define PNAME "Matrix"
 #define FTYPE double
@@ -73,7 +71,6 @@ extern struct program *math_lmatrix_program;
 #undef PTYPE
 #undef PNAME
 
-#ifdef INT64
 #define PNAME "LMatrix"
 #define FTYPE INT64
 #define PTYPE tInt
@@ -89,7 +86,6 @@ extern struct program *math_lmatrix_program;
 #undef FTYPE
 #undef PTYPE
 #undef PNAME
-#endif /* INT64 */
 
 #define PNAME "FMatrix"
 #define FTYPE float

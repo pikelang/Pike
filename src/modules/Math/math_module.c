@@ -22,9 +22,7 @@ struct program *math_matrix_program;
 struct program *math_imatrix_program;
 struct program *math_fmatrix_program;
 struct program *math_smatrix_program;
-#ifdef INT64
 struct program *math_lmatrix_program;
-#endif /* INT64 */
 struct program *math_transforms_program;
 
 static const struct math_class
@@ -35,9 +33,7 @@ static const struct math_class
 } sub[] = {
    {"Matrix",init_math_matrix,&math_matrix_program},
    {"IMatrix",init_math_imatrix,&math_imatrix_program},
-#ifdef INT64
    {"LMatrix",init_math_lmatrix,&math_lmatrix_program},
-#endif /* INT64 */
    {"FMatrix",init_math_fmatrix,&math_fmatrix_program},
    {"SMatrix",init_math_smatrix,&math_smatrix_program},
    {"Transforms",init_math_transforms,&math_transforms_program},

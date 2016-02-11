@@ -1542,26 +1542,16 @@ static void check_threads(struct callback *UNUSED(cb), void *UNUSED(arg), void *
     struct timeval                tv;
     ACCURATE_GETTIMEOFDAY(&tv);
     {
-#ifdef INT64
       static INT64 real_time_last_check = 0;
       INT64 real_time_now = tv.tv_sec * 1000000 + tv.tv_usec;
       if (real_time_now - real_time_last_check < 35000)
 	return;
       real_time_last_check = real_time_now;
-#else
-      static struct timeval real_time_last_check = { 0, 0 };
-      struct timeval diff;
-      timersub(&real_time_now, &real_time_last_check, &diff);
-      if (diff.tv_usec < 35000 && diff.tv_sec == 0)
-	return;
-      real_time_last_check = tv;
-#endif
     }
 
     /* Get user time and test if 50 ms has passed since last check. */
     if (task_info(mach_task_self(), TASK_THREAD_TIMES_INFO,
 		  (task_info_t) &info, &info_size) == 0) {
-#ifdef INT64
       static INT64 last_check = 0;
       INT64 now =
 	info.user_time.seconds * 1000000 +
@@ -1571,21 +1561,6 @@ static void check_threads(struct callback *UNUSED(cb), void *UNUSED(arg), void *
       if (now - last_check < 50000)
 	return;
       last_check = now;
-#else
-      /* Compute difference by converting kernel time_info_t to timeval. */
-      static struct timeval last_check = { 0, 0 };
-      struct timeval user, sys, now;
-      struct timeval diff;
-      user.tv_sec = info.user_time.seconds;
-      user.tv_usec = info.user_time.microseconds;
-      sys.tv_sec = info.system_time.seconds;
-      sys.tv_usec = info.system_time.microseconds;
-      timeradd (&user, &sys, &now);
-      timersub(&now, &last_check, &diff);
-      if (diff.tv_usec < 50000 && diff.tv_sec == 0)
-	return;
-      last_check = now;
-#endif
     }
   }
 #elif defined (USE_CLOCK_FOR_SLICES)

@@ -100,8 +100,6 @@ static inline unsigned INT32 PIKE_UNUSED_ATTRIBUTE bswap32(unsigned INT32 x) {
 #endif
 }
 
-#ifdef INT64
-
 /**
  * Counts the number of leading zeros in a 64-bit unsigned
  * integer. Returns a value between 0 and 64.
@@ -216,7 +214,6 @@ static inline unsigned INT32 PIKE_UNUSED_ATTRIBUTE fls64(unsigned INT64 v) {
 static inline unsigned INT32 PIKE_UNUSED_ATTRIBUTE log2_u64(unsigned INT64 v) {
     return fls64(v) - 1;
 }
-#endif /* INT64 */
 
 /**
  * Rounds the 32-bit integer v up to the nearest binary magnitude. If

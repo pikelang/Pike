@@ -196,25 +196,9 @@ static inline time_t convert_filetime_to_time_t(FILETIME *tmp)
    *
    * Offset to Jan 01, 1970 is thus 0x019db1ded53e8000 * 100ns.
    */
-#ifdef INT64
   return (((INT64) tmp->dwHighDateTime << 32)
 	  + tmp->dwLowDateTime
 	  - 0x019db1ded53e8000) / 10000000;
-#else
-  double t;
-  if (tmp->dwLowDateTime < 0xd53e8000UL) {
-    tmp->dwHighDateTime -= 0x019db1dfUL;	/* Note: Carry! */
-    tmp->dwLowDateTime += 0x2ac18000UL;	/* Note: 2-compl */
-  } else {
-    tmp->dwHighDateTime -= 0x019db1deUL;
-    tmp->dwLowDateTime -= 0xd53e8000UL;
-  }
-  t=tmp->dwHighDateTime * pow(2.0,32.0) + (double)tmp->dwLowDateTime;
-
-  /* 1s == 10000000 * 100ns. */
-  t/=10000000.0;
-  return (long)floor(t);
-#endif
 }
 
 /* The following replaces _stat in MS CRT since it's buggy on ntfs.
@@ -621,14 +605,7 @@ int debug_fd_stat(const char *file, PIKE_STAT_T *buf)
     buf->st_mode |= 0666;	/* Read and write perm for all. */
 
   buf->st_nlink = 1;
-#ifdef INT64
   buf->st_size = ((INT64) findbuf.nFileSizeHigh << 32) + findbuf.nFileSizeLow;
-#else
-  if (findbuf.nFileSizeHigh)
-    buf->st_size = MAXDWORD;
-  else
-    buf->st_size = findbuf.nFileSizeLow;
-#endif
 
   buf->st_uid = buf->st_gid = buf->st_ino = 0; /* unused entries */
   buf->st_rdev = buf->st_dev =
@@ -1199,7 +1176,6 @@ PMOD_EXPORT PIKE_OFF_T debug_fd_lseek(FD fd, PIKE_OFF_T pos, int where)
   mt_unlock(&fd_mutex);
 
   {
-#ifdef INT64
 #ifdef HAVE_SETFILEPOINTEREX
     /* Windows NT based. */
     LARGE_INTEGER li_pos;
@@ -1224,14 +1200,6 @@ PMOD_EXPORT PIKE_OFF_T debug_fd_lseek(FD fd, PIKE_OFF_T pos, int where)
     }
     ret += (INT64) high << 32;
 #endif /* HAVE_SETFILEPOINTEREX */
-#else /* !INT64 */
-    ret = SetFilePointer(h, (LONG)pos, NULL, where);
-    if(ret == INVALID_SET_FILE_POINTER)
-    {
-      set_errno_from_win32_error (GetLastError());
-      return -1;
-    }
-#endif /* INT64 */
   }
 
   return ret;
@@ -1268,12 +1236,8 @@ PMOD_EXPORT int debug_fd_ftruncate(FD fd, PIKE_OFF_T len)
     }
   }
 
-#ifdef INT64
   len_hi = (LONG) (len >> 32);
   len &= ((INT64) 1 << 32) - 1;
-#else
-  len_hi = 0;
-#endif
 
   if (SetFilePointer (h, (LONG) len, &len_hi, FILE_BEGIN) ==
       INVALID_SET_FILE_POINTER &&
@@ -1404,12 +1368,8 @@ PMOD_EXPORT int debug_fd_fstat(FD fd, PIKE_STAT_T *s)
 	      mt_unlock(&fd_mutex);
 	      return -1;
 	    }
-#ifdef INT64
-	    s->st_size += (INT64) high << 32;
-#else
-	    if (high) s->st_size = MAXDWORD;
-#endif
-	  }
+            s->st_size += (INT64) high << 32;
+          }
 	  if(!GetFileTime(da_handle[fd], &c, &a, &m))
 	  {
 	    set_errno_from_win32_error (GetLastError());
