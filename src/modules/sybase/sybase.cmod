@@ -69,10 +69,10 @@
 #define MAX_RESULTS_SIZE 0x7FFFFFFF
 
 #ifdef SYBDEBUG
-#define sybdebug(X) fprintf X
-#define errdebug(err) if(err) sybdebug((stderr,err))
+#define sybdebug(...) fprintf(stderr,__VA_ARGS__)
+#define errdebug(err) if(err) sybdebug(err)
 #else
-#define sybdebug(X)
+#define sybdebug(...)
 #define errdebug(err)
 #endif
 
@@ -86,8 +86,8 @@
  * behaviour.
  */
 static PIKE_MUTEX_T mainlock;
-#define SYB_LOCK(X) sybdebug((stderr,"locking %s\n",#X));mt_lock(&(X))
-#define SYB_UNLOCK(X) sybdebug((stderr,"unlocking %s\n",#X));mt_unlock(&(X))
+#define SYB_LOCK(X) sybdebug("locking %s\n",#X);mt_lock(&(X))
+#define SYB_UNLOCK(X) sybdebug("unlocking %s\n",#X);mt_unlock(&(X))
 #define SYB_MT_INIT(X) mt_init(&(X))
 #define SYB_MT_EXIT(X) mt_destroy(&(X))
 #else
@@ -109,7 +109,7 @@ DECLARATIONS;
 #ifdef SYBDEBUG
 
 /* just a small thing. see f_fetch_row to understand how it's used */
-#define SHOW_STATUS(Y,X) case X:sybdebug((stderr,"\t%s is %s\n",Y,#X));break
+#define SHOW_STATUS(Y,X) case X:sybdebug("\t%s is %s\n",Y,#X);break
 
 static void show_status(CS_RETCODE ret) {
     switch(ret) {
@@ -120,7 +120,7 @@ static void show_status(CS_RETCODE ret) {
       SHOW_STATUS("status",CS_FAIL);
       SHOW_STATUS("status",CS_END_DATA);
     default:
-      sybdebug((stderr,"Unknown status: %d\n",(int)ret));
+      sybdebug("Unknown status: %d\n",(int)ret);
       break;
     }
 }
@@ -139,7 +139,7 @@ static void show_results_type (CS_INT rtype) {
       SHOW_STATUS("type",CS_CMD_SUCCEED);
       SHOW_STATUS("type",CS_CMD_FAIL);
     default:
-      sybdebug((stderr,"Unknown type: %d\n",(int)rtype));
+      sybdebug("Unknown type: %d\n",(int)rtype);
       break;
     }
 }
@@ -208,21 +208,21 @@ static void flush_results_queue(pike_sybase_connection *this) {
   CS_COMMAND *cmd;
 
 
-  sybdebug((stderr,"Flushing the results queue\n"));
+  sybdebug("Flushing the results queue\n");
 #ifdef FLUSH_BY_CANCELING
   ct_cancel(this->connection,NULL,CS_CANCEL_ALL);
 #else
   cmd=this->cmd;
   for (j=0;j<100;j++) { /* safety valve, I don't want to loop forever */
 
-    sybdebug((stderr,"Getting results #%d\n",j));
+    sybdebug("Getting results #%d\n",j);
     ret=ct_results(cmd,&rtype);
     show_status(ret);
     show_results_type(rtype);
 
     switch(ret) {
     case CS_END_RESULTS:
-      sybdebug((stderr,"Finished flushing results\n"));
+      sybdebug("Finished flushing results\n");
       return;
     case CS_FAIL:
       ret=ct_cancel(this->connection,NULL,CS_CANCEL_ALL);
@@ -235,7 +235,7 @@ static void flush_results_queue(pike_sybase_connection *this) {
     case CS_ROW_RESULT:
     case CS_STATUS_RESULT:
     case CS_PARAM_RESULT:
-      sybdebug((stderr,"Unexpected result. Cancel-ing\n"));
+      sybdebug("Unexpected result. Cancel-ing\n");
       ret=ct_cancel(NULL,this->cmd,CS_CANCEL_CURRENT);
       show_status(ret);
       break;
@@ -257,14 +257,14 @@ static int handle_errors (pike_sybase_connection *this) {
   CS_INT num,j, severity;
   CS_RETCODE ret;
 
-  sybdebug((stderr,"Handling errors\n"));
+  sybdebug("Handling errors\n");
   ret=ct_diag(this->connection,CS_STATUS,CS_ALLMSG_TYPE,CS_UNUSED,&num);
   show_status(ret);
   if (FAILED(ret)) {
-    sybdebug((stderr,"Error while retrieving errors number"));
+    sybdebug("Error while retrieving errors number");
     return 1;
   }
-  sybdebug ((stderr, "I have %d messages in queue\n",(int)num));
+  sybdebug ("I have %d messages in queue\n",(int)num);
 
   if (!num) /* no need to go through the moves */
     return 0;
@@ -272,11 +272,11 @@ static int handle_errors (pike_sybase_connection *this) {
   for (j=1;j<=num;j++) {
     ct_diag(this->connection, CS_GET, SQLCA_TYPE, j, &message);
     if (FAILED(ret)) {
-      sybdebug((stderr,"Error while retrieving last message\n"));
+      sybdebug("Error while retrieving last message\n");
       return 1;
     }
-    sybdebug((stderr,"\nMessage %d length: %ld; text:\n%s\n",j,
-             ((int)message.sqlerrm.sqlerrml),message.sqlerrm.sqlerrmc));
+    sybdebug("\nMessage %d length: %ld; text:\n%s\n",j,
+             ((int)message.sqlerrm.sqlerrml),message.sqlerrm.sqlerrmc);
     /* If it's severe enough? */
     severity=CS_SEVERITY(message.sqlcode);
     show_severity(severity);
@@ -300,7 +300,7 @@ INIT
 {
   pike_sybase_connection *this=THIS;
 
-  sybdebug((stderr,"sybase_create()\n"));
+  sybdebug("sybase_create()\n");
   this->context=NULL;
   this->connection=NULL;
   this->cmd=NULL;
@@ -320,37 +320,37 @@ EXIT
   CS_RETCODE ret;
   int j;
 
-  sybdebug((stderr,"sybase_destroy()\n"));
+  sybdebug("sybase_destroy()\n");
   THREADS_ALLOW();
   SYB_LOCK(this->lock);
 
 
   if (this->busy > 0) {
-    sybdebug((stderr,"We're busy while destroying. Trying to cancel\n"));
+    sybdebug("We're busy while destroying. Trying to cancel\n");
     ret=ct_cancel(this->connection,NULL,CS_CANCEL_ALL);
     show_status(ret);
     /* we only have one active command, but what the hell.. */
     if (FAILED(ret)) {
-      sybdebug((stderr,"\tUh oh... failed\n"));
+      sybdebug("\tUh oh... failed\n");
     }
     this->busy--;
-    sybdebug((stderr,"Busy status: %d\n",this->busy));
+    sybdebug("Busy status: %d\n",this->busy);
     /* if we fail, it's useless anyways. Maybe we should Pike_fatal() */
   }
 
   if (this->cmd) {
-    sybdebug((stderr,"this->cmd still active. Dropping\n"));
+    sybdebug("this->cmd still active. Dropping\n");
     ret=ct_cmd_drop(this->cmd);
     show_status(ret);
     if (FAILED(ret)) {
-      sybdebug((stderr,"\tHm... failed\n"));
+      sybdebug("\tHm... failed\n");
     }
     this->cmd=NULL;
     /* if we fail, it's useless anyways. Maybe we should Pike_fatal() */
   }
 
   if (this->results) {
-    sybdebug((stderr,"Freeing results buffers\n"));
+    sybdebug("Freeing results buffers\n");
     for (j=0;j<this->numcols;j++) {
       free(this->results[j]);
     }
@@ -364,17 +364,17 @@ EXIT
   }
 
   if (this->connection) {
-    sybdebug((stderr,"this->connection still active. Closing\n"));
+    sybdebug("this->connection still active. Closing\n");
     ret=ct_close(this->connection,CS_UNUSED);
     show_status(ret);
     if (FAILED(ret)) {
-      sybdebug((stderr,"\tArgh! Failed!\n"));
+      sybdebug("\tArgh! Failed!\n");
     }
-    sybdebug((stderr,"Dropping connection\n"));
+    sybdebug("Dropping connection\n");
     ret=ct_con_drop(this->connection);
     show_status(ret);
     if (FAILED(ret)) {
-      sybdebug((stderr,"Gasp! Failed!\n"));
+      sybdebug("Gasp! Failed!\n");
     }
     this->connection=NULL;
     /* if we fail, it's useless anyways. Maybe we should Pike_fatal() */
@@ -383,16 +383,16 @@ EXIT
   SYB_LOCK(mainlock); /* this is really needed only here */
 
   if (this->context) {
-    sybdebug((stderr,"this->context still active. Exiting\n"));
+    sybdebug("this->context still active. Exiting\n");
     ret = ct_exit(this->context, CS_UNUSED);
     show_status(ret);
     if (FAILED(ret)) {
-      sybdebug((stderr,"\tGosh Batman! We failed!\n"));
+      sybdebug("\tGosh Batman! We failed!\n");
     }
     ret = cs_ctx_drop(this->context);
     show_status(ret);
     if (FAILED(ret)) {
-      sybdebug((stderr,"\tGosh Robin! You're right!\n"));
+      sybdebug("\tGosh Robin! You're right!\n");
     }
     this->context=NULL;
     /* if we fail, it's useless anyways. Maybe we should Pike_fatal() */
@@ -436,7 +436,7 @@ PIKEFUN void connect(string|void hostname_, string|void database_,
   pike_sybase_connection *this=THIS;
 
 
-  sybdebug((stderr,"sybase::connect(args=%d)\n",args));
+  sybdebug("sybase::connect(args=%d)\n",args);
   check_all_args("sybase->connect",args,
                  BIT_STRING|BIT_VOID,BIT_STRING|BIT_VOID,
                  BIT_STRING|BIT_VOID,BIT_STRING|BIT_VOID,
@@ -446,17 +446,17 @@ PIKEFUN void connect(string|void hostname_, string|void database_,
   if (TYPEOF(sp[2-args]) == T_STRING && sp[2-args].u.string->len) { /*username*/
     username=sp[2-args].u.string->str;
     usernamelen=sp[2-args].u.string->len;
-    sybdebug((stderr,"\tgot username: %s\n",username));
+    sybdebug("\tgot username: %s\n",username);
   }
   if (TYPEOF(sp[3-args]) == T_STRING && sp[2-args].u.string->len) { /*password*/
       pass=sp[3-args].u.string->str;
     passlen=sp[3-args].u.string->len;
-    sybdebug((stderr,"\tgot password: %s\n",pass));
+    sybdebug("\tgot password: %s\n",pass);
   }
   if (TYPEOF(sp[-args]) == T_STRING && sp[-args].u.string->len) { /*hostname*/
     hostname=sp[-args].u.string->str;
     hostnamelen=sp[-args].u.string->len;
-    sybdebug((stderr,"\tgot hostname: %s\n",hostname));
+    sybdebug("\tgot hostname: %s\n",hostname);
   }
 
   THREADS_ALLOW();
@@ -469,7 +469,7 @@ PIKEFUN void connect(string|void hostname_, string|void database_,
   }
 
   if (!err) {
-    sybdebug((stderr,"\tallocating context\n"));
+    sybdebug("\tallocating context\n");
     ret=ct_con_alloc(context,&connection); /*sybase says it's thread-safe..*/
     show_status(ret);
     if (FAILED(ret)) {
@@ -492,7 +492,7 @@ PIKEFUN void connect(string|void hostname_, string|void database_,
 
   /* username */
   if (!err && usernamelen) {
-    sybdebug((stderr,"\tsetting username to \"%s\"\n",username));
+    sybdebug("\tsetting username to \"%s\"\n",username);
     ret=ct_con_props(connection,CS_SET,CS_USERNAME,
                      username,usernamelen,NULL);
     show_status(ret);
@@ -504,7 +504,7 @@ PIKEFUN void connect(string|void hostname_, string|void database_,
 
   /* password */
   if (!err && passlen) {
-    sybdebug((stderr,"\tsetting password to \"%s\"\n",pass));
+    sybdebug("\tsetting password to \"%s\"\n",pass);
     ret=ct_con_props(connection,CS_SET,CS_PASSWORD,
                      pass,passlen,NULL);
     show_status(ret);
@@ -517,7 +517,7 @@ PIKEFUN void connect(string|void hostname_, string|void database_,
   /* connect, finally */
   if (!err) {
     if (hostname) {
-      sybdebug((stderr,"\tconnecting to hostname is \"%s\"\n",hostname));
+      sybdebug("\tconnecting to hostname is \"%s\"\n",hostname);
     }
     ret=ct_connect(connection,(CS_CHAR *)hostname, hostnamelen);
     show_status(ret);
@@ -539,7 +539,7 @@ PIKEFUN void connect(string|void hostname_, string|void database_,
     Pike_error(err);
   }
 
-  sybdebug((stderr,"sybase::connect exiting\n"));
+  sybdebug("sybase::connect exiting\n");
 }
 
 /* create (host,database,username,password,port|options) */
@@ -553,7 +553,7 @@ PIKEFUN void create(string|void host_, string|void db_,
   char* err=NULL;
   pike_sybase_connection *this=THIS;
 
-  sybdebug((stderr,"sybase::create(args=%d)\n",args));
+  sybdebug("sybase::create(args=%d)\n",args);
 
   check_all_args("sybase->create",args,
                  BIT_STRING|BIT_VOID,BIT_STRING|BIT_VOID,
@@ -602,7 +602,7 @@ PIKEFUN void create(string|void host_, string|void db_,
   if (args)
     f_connect(args);
 
-  sybdebug((stderr,"sybase::create exiting\n"));
+  sybdebug("sybase::create exiting\n");
 }
 
 /* TODO: should I cancel a pending query instead of throwing errors?
@@ -639,10 +639,10 @@ PIKEFUN object|string big_query(string query_)
   check_all_args("sybase->big_query",args,BIT_STRING,0);
   query=sp[-args].u.string->str;
   querylen=sp[-args].u.string->len;
-  sybdebug((stderr,"query: '%s'\n",query));
+  sybdebug("query: '%s'\n",query);
   /* pop_n_elems(args); Let's try moving it later */
 
-  sybdebug((stderr,"Busy status: %d\n",this->busy));
+  sybdebug("Busy status: %d\n",this->busy);
 
   /* verify that we're not busy handing out results */
   if (this->busy > 0)
@@ -653,12 +653,12 @@ PIKEFUN object|string big_query(string query_)
 
   if (cmd==NULL) {
     /* no sense in alloc-ing everytime */
-    sybdebug((stderr,"Allocating command structure\n"));
+    sybdebug("Allocating command structure\n");
     ret=ct_cmd_alloc(this->connection, &cmd);
     show_status(ret);
 
     if (FAILED(ret)) {
-      sybdebug((stderr,"\tUh oh... problems\n"));
+      sybdebug("\tUh oh... problems\n");
       err="Error allocating command\n";
     }
 
@@ -666,12 +666,12 @@ PIKEFUN object|string big_query(string query_)
   }
 
   if (this->results) {
-    sybdebug((stderr,"Freeing previous results DMA memory\n"));
+    sybdebug("Freeing previous results DMA memory\n");
     for (j=0;j<(this->numcols);j++) {
-      sybdebug((stderr,"Column %d (%p)\n",j,this->results[j]));
+      sybdebug("Column %d (%p)\n",j,this->results[j]);
       free(this->results[j]);
     }
-    sybdebug((stderr,"Freeing main results array\n"));
+    sybdebug("Freeing main results array\n");
     free(this->results);
     free(this->results_lengths);
     free(this->nulls);
@@ -682,33 +682,33 @@ PIKEFUN object|string big_query(string query_)
   }
 
   if (!err) { /* we can't be done yet */
-    sybdebug((stderr,"issung command\n"));
+    sybdebug("issung command\n");
     ret=ct_command(cmd,CS_LANG_CMD,query,querylen,CS_UNUSED);
     show_status(ret);
     if (FAILED(ret)) {
-      sybdebug((stderr,"\tUh oh... something wrong here\n"));
+      sybdebug("\tUh oh... something wrong here\n");
       err="Error while setting command\n";
     }
   }
 
   if (!err) { /* we can't be done yet */
-    sybdebug((stderr,"Sending command\n"));
+    sybdebug("Sending command\n");
     ret=ct_send(cmd);
     show_status(ret);
     this->busy++;
-    sybdebug((stderr,"Busy status: %d\n",this->busy));
+    sybdebug("Busy status: %d\n",this->busy);
     if (FAILED(ret)) {
-      sybdebug((stderr,"\thm... I don't like what I'm seeing\n"));
+      sybdebug("\thm... I don't like what I'm seeing\n");
       err="Error while sending command\n";
     }
   }
 
   if (err) { /* we can't be done yet */
-    sybdebug((stderr,"Problems. Dropping command\n"));
+    sybdebug("Problems. Dropping command\n");
     ct_cmd_drop(cmd);
     this->cmd=NULL;
 /*     this->busy--; */
-/*     sybdebug((stderr,"Busy status: %d\n",this->busy)); */
+/*     sybdebug("Busy status: %d\n",this->busy); */
   }
 
 
@@ -717,7 +717,7 @@ PIKEFUN object|string big_query(string query_)
 
   while (!err && !done) {
     /* okay, let's see what we got */
-    sybdebug((stderr,"Issuing results\n"));
+    sybdebug("Issuing results\n");
     ret=ct_results(cmd,&rtype);
     show_status(ret);
     show_results_type(rtype);
@@ -725,26 +725,26 @@ PIKEFUN object|string big_query(string query_)
     switch(ret) {
     case CS_PENDING:
     case CS_BUSY:
-      sybdebug((stderr,"Got strange stuff\n"));
+      sybdebug("Got strange stuff\n");
       err="Async operations are not supported\n";
       break;
     case CS_END_RESULTS:
-      sybdebug((stderr,"No more results\n"));
+      sybdebug("No more results\n");
 /*       this->busy--; */
-/*       sybdebug((stderr,"Busy status: %d\n",this->busy)); */
+/*       sybdebug("Busy status: %d\n",this->busy); */
       done=1;/* we return 0 from a query. Sounds good.. */
       break;
     case CS_FAIL: /* uh oh, something's terribly wrong */
-      sybdebug((stderr,"Command failed. Canceling\n"));
+      sybdebug("Command failed. Canceling\n");
       ct_cancel(this->connection,NULL,CS_CANCEL_ALL);/* try to cancel result */
 /*       this->busy--; */
-/*       sybdebug((stderr,"Busy status: %d\n",this->busy)); */
+/*       sybdebug("Busy status: %d\n",this->busy); */
       /* we should really check the return code here.. */
       err="Canceled\n";
       flush_results_queue(this);
       break;
     case CS_CANCELED:
-      sybdebug((stderr,"Results canceled\n"));
+      sybdebug("Results canceled\n");
 /*       this->busy--; */
       flush_results_queue(this);
       break;
@@ -762,13 +762,13 @@ PIKEFUN object|string big_query(string query_)
     case CS_ROW_RESULT:
     case CS_CURSOR_RESULT:
     case CS_PARAM_RESULT:
-      sybdebug((stderr,"Got useful results\n"));
+      sybdebug("Got useful results\n");
       /* we're getting rows of data here. Also, I'm skipping a few command
          results, for command which should be pretty safe */
       ct_res_info(cmd,CS_NUMDATA,&numcols,CS_UNUSED,NULL);
       this->numcols=numcols;
-      sybdebug((stderr,"I have %d columns' worth of data\n",numcols));
-      sybdebug((stderr,"Allocating results**\n"));
+      sybdebug("I have %d columns' worth of data\n",numcols);
+      sybdebug("Allocating results**\n");
       /* it looks like xalloc can't be used here. Hubbe? */
       results=calloc(numcols, sizeof(char*));
       results_lengths=calloc(numcols, sizeof(CS_INT));
@@ -790,17 +790,16 @@ PIKEFUN object|string big_query(string query_)
 
       for(j=0;j<numcols;j++) {
         INT32 length=guess_column_length(cmd,j+1);
-        sybdebug((stderr,"beginning work on column %d (index %d)\n",j+1,j));
-        sybdebug((stderr,"Allocating %ld+%d+1 bytes\n",
-                 length,EXTRA_COLUMN_SPACE));
+        sybdebug("beginning work on column %d (index %d)\n",j+1,j);
+        sybdebug("Allocating %ld+%d+1 bytes\n",length,EXTRA_COLUMN_SPACE);
         /* it looks like xalloc can't be used here. Hubbe? */
         results[j]=calloc(length+EXTRA_COLUMN_SPACE+1,
                           sizeof(char));
         if (results[j]==NULL) {
-          sybdebug((stderr,"PANIC! COULDN'T ALLOCATE MEMORY!"));
+          sybdebug("PANIC! COULDN'T ALLOCATE MEMORY!");
         }
 
-        sybdebug((stderr,"Binding column %d\n",j+1));
+        sybdebug("Binding column %d\n",j+1);
         description.maxlength=length+EXTRA_COLUMN_SPACE;
         /* maxlength used to be MAX_RESULTS_SIZE-1. Let's make sure we don't
          * goof*/
@@ -819,7 +818,7 @@ PIKEFUN object|string big_query(string query_)
       done=1;
       break;
     case CS_STATUS_RESULT:
-      sybdebug((stderr,"Got status result. Retrieving\n"));
+      sybdebug("Got status result. Retrieving\n");
       do {
         INT32 length;
         CS_DATAFMT description;
@@ -827,7 +826,7 @@ PIKEFUN object|string big_query(string query_)
 
         length=guess_column_length(cmd,1);
 
-        sybdebug((stderr,"Guessed length of %d\n",length));
+        sybdebug("Guessed length of %d\n",length);
         function_result=calloc(length+EXTRA_COLUMN_SPACE+1,
                                sizeof(char));
 
@@ -840,15 +839,15 @@ PIKEFUN object|string big_query(string query_)
         description.locale=NULL;
 
 
-        sybdebug((stderr,"Binding...\n"));
+        sybdebug("Binding...\n");
         ret=ct_bind(cmd,1,&description,function_result,NULL,NULL);
         /* TODO: use binary strings */
 
         do {
-          sybdebug((stderr,"Fetching\n"));
+          sybdebug("Fetching\n");
           ret=ct_fetch(cmd,CS_UNUSED,CS_UNUSED,CS_UNUSED,&rows_read);
           show_status(ret);
-          sybdebug((stderr,"Got: %s\n",function_result));
+          sybdebug("Got: %s\n",function_result);
         } while (OK(ret));
 
 
@@ -903,7 +902,7 @@ PIKEFUN object|string big_query(string query_)
     }
   }
 
-  sybdebug((stderr,"Busy status: %d\n",this->busy));
+  sybdebug("Busy status: %d\n",this->busy);
 
   SYB_UNLOCK(this->lock);
   THREADS_DISALLOW();
@@ -937,7 +936,7 @@ PIKEFUN object|string big_query(string query_)
   }
   /* extra safety check. Paranoia. */
   if (function_result) {
-    sybdebug((stderr,"Internal error! Function_result!=NULL"));
+    sybdebug("Internal error! Function_result!=NULL");
     free(function_result);
   }
 }
@@ -967,7 +966,7 @@ PIKEFUN array(mixed) fetch_row()
   THREADS_ALLOW();
   SYB_LOCK(this->lock);
 
-  sybdebug((stderr,"Fetching row\n"));
+  sybdebug("Fetching row\n");
   ret=ct_fetch(cmd,CS_UNUSED,CS_UNUSED,CS_UNUSED,&numread);
   show_status(ret);
 
@@ -976,7 +975,7 @@ PIKEFUN array(mixed) fetch_row()
 
   switch(ret) {
   case CS_SUCCEED:
-    sybdebug((stderr,"Got row\n"));
+    sybdebug("Got row\n");
     for(j=0;j<numcols;j++) {
       if (nulls[j] != -1) {
         /* !null */
@@ -990,11 +989,11 @@ PIKEFUN array(mixed) fetch_row()
     f_aggregate(numcols);
     return;
   case CS_END_DATA:
-    sybdebug((stderr,"Got end of data\n"));
+    sybdebug("Got end of data\n");
     flush_results_queue(this);
     push_int(0);
     this->busy--;
-    sybdebug((stderr,"Busy status: %d\n",this->busy));
+    sybdebug("Busy status: %d\n",this->busy);
     return;
   case CS_ROW_FAIL:
     handle_errors(this);
@@ -1004,14 +1003,14 @@ PIKEFUN array(mixed) fetch_row()
     handle_errors(this);
     ct_cancel(this->connection,cmd,CS_CANCEL_ALL);
     this->busy--;
-    sybdebug((stderr,"Busy status: %d\n",this->busy));
+    sybdebug("Busy status: %d\n",this->busy);
     Pike_error("Unrecoverable error while fetching row\n");
     break;
   case CS_CANCELED:
-    sybdebug((stderr,"Canceled\n"));
+    sybdebug("Canceled\n");
     push_int(0);
     this->busy--;
-    sybdebug((stderr,"Busy status: %d\n",this->busy));
+    sybdebug("Busy status: %d\n",this->busy);
     return;
   case CS_PENDING:
   case CS_BUSY:
@@ -1079,7 +1078,7 @@ PIKEFUN int affected_rows()
 }
 
 
-#define desc_type(X,Y) case X: push_static_text(#Y);sybdebug((stderr,"type is %s\n",#Y)); break
+#define desc_type(X,Y) case X: push_static_text(#Y);sybdebug("type is %s\n",#Y); break
 PIKEFUN array(mapping(string:mixed)) fetch_fields()
 {
   pike_sybase_connection *this=THIS;
@@ -1097,7 +1096,7 @@ PIKEFUN array(mapping(string:mixed)) fetch_fields()
   SYB_LOCK(this->lock);
 
   for (j=0;j<numcols;j++) {
-    sybdebug((stderr,"Describing column %d\n",j+1));
+    sybdebug("Describing column %d\n",j+1);
     ret=ct_describe(this->cmd,j+1,&descs[j]);
     show_status(ret);
     if (FAILED(ret)) {
@@ -1114,7 +1113,7 @@ PIKEFUN array(mapping(string:mixed)) fetch_fields()
     desc=&descs[j];
     push_static_text("name");
     push_text(desc->name);
-    sybdebug((stderr,"name is %s\n",desc->name));
+    sybdebug("name is %s\n",desc->name);
     ref_push_string(literal_type_string);
     switch(desc->datatype) {
       desc_type(CS_ILLEGAL_TYPE,illegal);
@@ -1148,56 +1147,56 @@ PIKEFUN array(mapping(string:mixed)) fetch_fields()
     }
     push_static_text("max_length");
     push_int(desc->maxlength);
-    sybdebug((stderr,"max_length is %d\n",desc->maxlength));
+    sybdebug("max_length is %d\n",desc->maxlength);
 
     push_static_text("flags");
     if (!(desc->status & CS_CANBENULL)) {
-      sybdebug((stderr,"Flag: not null\n"));
+      sybdebug("Flag: not null\n");
       push_static_text("not_null");
       nflags++;
     }
     if (desc->status & CS_HIDDEN) {
-      sybdebug((stderr,"Flag: hidden\n"));
+      sybdebug("Flag: hidden\n");
       push_static_text("hidden");
       nflags++;
     }
     if (desc->status & CS_IDENTITY) {
-      sybdebug((stderr,"Flag: identity\n"));
+      sybdebug("Flag: identity\n");
       push_static_text("identity");
       nflags++;
     }
     if (desc->status & CS_KEY) {
-      sybdebug((stderr,"Flag: key\n"));
+      sybdebug("Flag: key\n");
       push_static_text("key");
       nflags++;
     }
     if (desc->status & CS_VERSION_KEY) {
-      sybdebug((stderr,"Flag: version_key\n"));
+      sybdebug("Flag: version_key\n");
       push_static_text("version_key");
       nflags++;
     }
     if (desc->status & CS_TIMESTAMP) {
-      sybdebug((stderr,"Flag: timestamp\n"));
+      sybdebug("Flag: timestamp\n");
       push_static_text("timestamp");
       nflags++;
     }
     if (desc->status & CS_UPDATABLE) {
-      sybdebug((stderr,"Flag: updatable\n"));
+      sybdebug("Flag: updatable\n");
       push_static_text("updatable");
       nflags++;
     }
     if (nflags) {
-      sybdebug((stderr,"Aggregating flags: %d members\n",nflags));
+      sybdebug("Aggregating flags: %d members\n",nflags);
       f_aggregate_multiset(nflags);
     } else {
-      sybdebug((stderr,"No flags"));
+      sybdebug("No flags");
       push_int(0);
     }
 
     f_aggregate_mapping(2*4);
   }
 
-  sybdebug((stderr,"Aggregating columns: %d members\n",numcols));
+  sybdebug("Aggregating columns: %d members\n",numcols);
   f_aggregate(numcols);
 
 }
@@ -1220,7 +1219,7 @@ PIKE_MODULE_EXIT {
 
 PIKE_MODULE_INIT {
 
-  sybdebug((stderr,"sybase driver release " SYBASE_DRIVER_VERSION "\n"));
+  sybdebug("sybase driver release " SYBASE_DRIVER_VERSION "\n");
 
   INIT;
 
