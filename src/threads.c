@@ -578,8 +578,8 @@ PMOD_EXPORT void pike_init_thread_state (struct thread_state *ts)
   prev_tsc = 0;
 #endif
 #ifdef PROFILE_CHECK_THREADS
-  fprintf (stderr, "[%d:%f] pike_init_thread_state: tsc reset\n",
-	   getpid(), get_real_time() * (1.0 / CPU_TIME_TICKS));
+  WERR("[%d:%f] pike_init_thread_state: tsc reset\n",
+       getpid(), get_real_time() * (1.0 / CPU_TIME_TICKS));
 #endif
 #endif
 }
@@ -1318,36 +1318,36 @@ PMOD_EXPORT void debug_list_all_threads(void)
   struct thread_state *s;
   THREAD_T self = th_self();
 
-  fprintf(stderr,"--Listing all threads--\n");
-  fprintf (stderr, "Current thread: %"PRINTSIZET"x\n", (size_t) self);
-  fprintf(stderr,"Current interpreter thread state: %p%s\n",
-	  Pike_interpreter.thread_state,
-	  Pike_interpreter.thread_state == (struct thread_state *) (ptrdiff_t) -1 ?
-	  " (swapped)" : "");
-  fprintf(stderr,"Current thread state according to thread_state_for_id(): %p\n",
-	  thread_state_for_id (self));
-  fprintf(stderr,"Current thread obj: %p\n",
-	  (Pike_interpreter.thread_state &&
-	   Pike_interpreter.thread_state != (struct thread_state *) (ptrdiff_t) -1) ?
-	  Pike_interpreter.thread_state->thread_obj : NULL);
-  fprintf(stderr,"Current thread hash: %d\n",thread_table_hash(&self));
-  fprintf(stderr,"Current stack pointer: %p\n",&self);
+  WERR("--Listing all threads--\n");
+  WERR("Current thread: %"PRINTSIZET"x\n", (size_t) self);
+  WERR("Current interpreter thread state: %p%s\n",
+       Pike_interpreter.thread_state,
+       Pike_interpreter.thread_state == (struct thread_state *) (ptrdiff_t) -1 ?
+       " (swapped)" : "");
+  WERR("Current thread state according to thread_state_for_id(): %p\n",
+       thread_state_for_id (self));
+  WERR("Current thread obj: %p\n",
+       (Pike_interpreter.thread_state &&
+        Pike_interpreter.thread_state != (struct thread_state *) (ptrdiff_t) -1) ?
+       Pike_interpreter.thread_state->thread_obj : NULL);
+  WERR("Current thread hash: %d\n",thread_table_hash(&self));
+  WERR("Current stack pointer: %p\n",&self);
   for(x=0; x<THREAD_TABLE_SIZE; x++)
   {
     for(s=thread_table_chains[x]; s; s=s->hashlink) {
       struct object *o = THREADSTATE2OBJ(s);
-      fprintf(stderr,"ThTab[%d]: state=%p, obj=%p, "
-	      "swapped=%d, sp=%p (%+"PRINTPTRDIFFT"d), fp=%p, stackbase=%p, "
-	      "id=%"PRINTSIZET"x\n",
-	      x, s, o, s->swapped,
-	      s->state.stack_pointer,
-	      s->state.stack_pointer - s->state.evaluator_stack,
-	      s->state.frame_pointer,
-	      s->state.stack_top,
-	      (size_t) s->id);
+      WERR("ThTab[%d]: state=%p, obj=%p, "
+           "swapped=%d, sp=%p (%+"PRINTPTRDIFFT"d), fp=%p, stackbase=%p, "
+           "id=%"PRINTSIZET"x\n",
+           x, s, o, s->swapped,
+           s->state.stack_pointer,
+           s->state.stack_pointer - s->state.evaluator_stack,
+           s->state.frame_pointer,
+           s->state.stack_top,
+           (size_t) s->id);
     }
   }
-  fprintf(stderr,"-----------------------\n");
+  WERR("-----------------------\n");
 }
 #endif
 
@@ -1399,11 +1399,11 @@ static void check_threads(struct callback *UNUSED(cb), void *UNUSED(arg), void *
 	  * the only effect is that we always fall back to
 	  * clock(3). */
 #ifdef PROFILE_CHECK_THREADS
-	 fprintf (stderr, "[%d:%f] TSC backward jump detected "
-		  "(now: %"PRINTINT64"d, prev: %"PRINTINT64"d, "
-		  "target_int: %"PRINTINT64"d) - resetting\n",
-		  getpid(), get_real_time() * (1.0 / CPU_TIME_TICKS),
-		  tsc_now, prev_tsc, target_int);
+         WERR("[%d:%f] TSC backward jump detected "
+              "(now: %"PRINTINT64"d, prev: %"PRINTINT64"d, "
+              "target_int: %"PRINTINT64"d) - resetting\n",
+              getpid(), get_real_time() * (1.0 / CPU_TIME_TICKS),
+              tsc_now, prev_tsc, target_int);
 #endif
 	 target_int = TSC_START_INTERVAL;
 	 prev_tsc = 0;
@@ -1458,10 +1458,10 @@ static void check_threads(struct callback *UNUSED(cb), void *UNUSED(arg), void *
 	     /* The most likely cause for this is high variance in the
 	      * interval lengths due to low clock(3) resolution. */
 #ifdef PROFILE_CHECK_THREADS
-	     fprintf (stderr, "[%d:%f] Capping large TSC interval increase "
-		      "(from %"PRINTINT64"d to %"PRINTINT64"d)\n",
-		      getpid(), get_real_time() * (1.0 / CPU_TIME_TICKS),
-		      target_int, new_target_int);
+             WERR("[%d:%f] Capping large TSC interval increase "
+                  "(from %"PRINTINT64"d to %"PRINTINT64"d)\n",
+                  getpid(), get_real_time() * (1.0 / CPU_TIME_TICKS),
+                  target_int, new_target_int);
 #endif
 	     /* The + 1 is paranoia just in case it has become zero somehow. */
 	     target_int = (target_int << 2) + 1;
@@ -1490,11 +1490,11 @@ static void check_threads(struct callback *UNUSED(cb), void *UNUSED(arg), void *
        }
        else {
 #ifdef PROFILE_CHECK_THREADS
-	 fprintf (stderr, "[%d:%f] Warning: Encountered zero prev_tsc "
-		  "(thread_start_clock: %"PRINTINT64"d, "
-		  "clock_now: %"PRINTINT64"d)\n",
-		  getpid(), get_real_time() * (1.0 / CPU_TIME_TICKS),
-		  (INT64) thread_start_clock, (INT64) clock_now);
+         WERR("[%d:%f] Warning: Encountered zero prev_tsc "
+              "(thread_start_clock: %"PRINTINT64"d, "
+              "clock_now: %"PRINTINT64"d)\n",
+              getpid(), get_real_time() * (1.0 / CPU_TIME_TICKS),
+              (INT64) thread_start_clock, (INT64) clock_now);
 #endif
 	 prev_tsc = tsc_now;
        }
@@ -1618,13 +1618,13 @@ static void check_threads(struct callback *UNUSED(cb), void *UNUSED(arg), void *
 
     ACCURATE_GETTIMEOFDAY (&now);
     if (now.tv_sec > last_time) {
-      fprintf (stderr, "[%d:%f] check_threads: %lu calls, "
-	       "%lu clocks, %lu no advs, %lu yields"
-               ", tps %g:%.1e\n",
-	       getpid(), get_real_time() * (1.0 / CPU_TIME_TICKS),
-	       calls, clock_checks, no_clock_advs, yields,
-               tps_int_mean,
-	       tps_int_n > 1 ? sqrt (tps_int_m2 / (tps_int_n - 1)) : 0.0);
+      WERR("[%d:%f] check_threads: %lu calls, "
+           "%lu clocks, %lu no advs, %lu yields"
+           ", tps %g:%.1e\n",
+           getpid(), get_real_time() * (1.0 / CPU_TIME_TICKS),
+           calls, clock_checks, no_clock_advs, yields,
+           tps_int_mean,
+           tps_int_n > 1 ? sqrt (tps_int_m2 / (tps_int_n - 1)) : 0.0);
       last_time = (unsigned long) now.tv_sec;
       calls = yields = clock_checks = no_clock_advs = 0;
     }
@@ -1707,15 +1707,15 @@ TH_RETURN_TYPE new_thread_func(void *data)
     int current = prctl(PR_GET_DUMPABLE);
 #ifdef PIKE_DEBUG
     if (current == -1)
-      fprintf (stderr, "%s:%d: Unexpected error from prctl(2). errno=%d\n",
-	       __FILE__, __LINE__, errno);
+      WERR("%s:%d: Unexpected error from prctl(2). errno=%d\n",
+           __FILE__, __LINE__, errno);
 #endif
 #endif
 #ifdef HAVE_BROKEN_LINUX_THREAD_EUID
     if( setegid(arg.egid) != 0 || seteuid(arg.euid) != 0 )
     {
-      fprintf (stderr, "%s:%d: Unexpected error from setegid(2). errno=%d\n",
-	       __FILE__, __LINE__, errno);
+      WERR("%s:%d: Unexpected error from setegid(2). errno=%d\n",
+           __FILE__, __LINE__, errno);
     }
 #endif
 #if defined(HAVE_PRCTL) && defined(PR_SET_DUMPABLE)
@@ -3148,8 +3148,8 @@ static TH_RETURN_TYPE farm(void *_a)
 #ifdef HAVE_BROKEN_LINUX_THREAD_EUID
     if( setegid(arg.egid) != 0 || seteuid(arg.euid) != 0 )
     {
-      fprintf (stderr, "%s:%d: Unexpected error from setegid(2). errno=%d\n",
-	       __FILE__, __LINE__, errno);
+      WERR("%s:%d: Unexpected error from setegid(2). errno=%d\n",
+           __FILE__, __LINE__, errno);
     }
 #endif
 #if defined(HAVE_PRCTL) && defined(PR_SET_DUMPABLE)
@@ -3161,10 +3161,7 @@ static TH_RETURN_TYPE farm(void *_a)
 
   do
   {
-/*     if(farmers == me) Pike_fatal("Ouch!\n"); */
-/*     fprintf(stderr, "farm_begin %p\n",me ); */
     me->harvest( me->field );
-/*     fprintf(stderr, "farm_end %p\n", me); */
 
     me->harvest = 0;
     mt_lock( &rosie );
@@ -3178,11 +3175,10 @@ static TH_RETURN_TYPE farm(void *_a)
     }
     me->neighbour = farmers;
     farmers = me;
-/*     fprintf(stderr, "farm_wait %p\n", me); */
+
     while(!me->harvest) co_wait( &me->harvest_moon, &rosie );
     --_num_idle_farmers;
     mt_unlock( &rosie );
-/*     fprintf(stderr, "farm_endwait %p\n", me); */
   } while(1);
   UNREACHABLE(return 0);
 }
@@ -3474,10 +3470,10 @@ void cleanup_all_other_threads (void)
 
 #if 0
   if (num_kills) {
-    fprintf (stderr, "Killed %d thread(s) in exit cleanup",
-	     num_kills - num_pending_interrupts);
+    WERR("Killed %d thread(s) in exit cleanup",
+         num_kills - num_pending_interrupts);
     if (num_pending_interrupts)
-      fprintf (stderr, ", %d more haven't responded", num_pending_interrupts);
+      WERR(", %d more haven't responded", num_pending_interrupts);
     fputs (".\n", stderr);
   }
 #endif
