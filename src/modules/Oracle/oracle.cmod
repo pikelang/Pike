@@ -820,15 +820,8 @@ PIKECLASS LOB
     }
   }
 
-  EXTRA
-  {
-    ADD_FUNCTION("cast", dblob_cast, tFunc(tStr, tMix), ID_PROTECTED);
-    ADD_FUNCTION("_sprintf", dblob_sprintf, tFunc(tInt, tStr), ID_PROTECTED);
-    ADD_FUNCTION("read", dblob_read, tFunc(tVoid, tStr), 0);
-    ADD_FUNCTION("write", dblob_write, tFunc(tStr, tInt), 0);
-  }
-
-static void dblob_sprintf(INT32 args)
+PIKEFUN string _sprintf(int c)
+  flags ID_PROTECTED;
 {
   char tmp[100];
   sprintf(tmp, "Oracle.LOB(%p)", THIS_DBLOB->lob);
@@ -836,7 +829,7 @@ static void dblob_sprintf(INT32 args)
   push_text(tmp);
 }
 
-static void dblob_read(INT32 args)
+PIKEFUN string read()
 {
   sword ret;
   ub4 loblen = ~0;
@@ -917,21 +910,17 @@ static void dblob_read(INT32 args)
   }
 }
 
-static void dblob_cast(INT32 args)
+PIKEFUN mixed cast(string s)
 {
-  char *s;
-
-  get_all_args("Oracle.LOB->cast",args,"%s",&s);
-
-  if(!strcmp(s,"string")) {
-    dblob_read(0);
+  if(!strcmp(s->str, "string")) {
+    apply_current(f_Oracle_LOB_read_fun_num, 0);
     return;
   }
 
-  Pike_error("Cannot cast Oracle.LOB to %s\n",s);
+  Pike_error("Cannot cast Oracle.LOB to %S\n", s);
 }
 
-static void dblob_write(INT32 args)
+PIKEFUN int write(string(8bit) data)
 {
   sword ret;
   char *bufp;
@@ -939,7 +928,6 @@ static void dblob_write(INT32 args)
   ub4   amtp = 0;
   int is_clob = THIS_DBLOB->is_clob;
   struct dbcon *dbcon = THIS_DBLOB->dbcon;
-  struct pike_string *data;
 
   if (!THIS_DBLOB->lob) {
     Pike_error("Attempt to write to an uninitialized LOB.\n");
@@ -956,9 +944,6 @@ static void dblob_write(INT32 args)
     f_string_to_unicode(2);
   }
 #endif
-
-  /* NB: Also handles generating an error on zero arguments. */
-  get_all_args("write", args, "%N", &data);
 
   /* Number of bytes. */
   amtp = data->len;
