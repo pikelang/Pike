@@ -205,10 +205,10 @@ static void exit_font_struct(struct object *UNUSED(obj))
 static inline int char_space(struct font *this, INT32 c)
 {
   if(c==0x20)
-    return DOUBLE_TO_INT((double)(this->height*this->xspacing_scale)/4.5);
+    return (int)((double)(this->height*this->xspacing_scale)/4.5);
   else if(c==0x20+128)
-    return DOUBLE_TO_INT((this->height*this->xspacing_scale)/18);
-  return DOUBLE_TO_INT(this->charinfo[c].spacing*this->xspacing_scale);
+    return (int)((this->height*this->xspacing_scale)/18);
+  return (int)(this->charinfo[c].spacing*this->xspacing_scale);
 }
 
 static inline int char_width(struct font *this, INT32 c)
@@ -587,9 +587,9 @@ void font_write(INT32 args)
    img = ((struct image*)o->storage);
    img->xsize = maxwidth2;
    if(args>1)
-     img->ysize = DOUBLE_TO_INT(this->height+
-				((double)this->height*(double)(args-1)*
-				 (double)this->yspacing_scale)+1);
+     img->ysize = (int)(this->height+
+                        ((double)this->height*(double)(args-1)*
+                         (double)this->yspacing_scale)+1);
    else
      img->ysize = this->height;
    img->rgb.r=img->rgb.g=img->rgb.b=255;
@@ -633,8 +633,8 @@ void font_write(INT32 args)
 	    if(char_width(this,c))
 	      write_char(this->charinfo+c,
 			 (img->img+xsize)+
-			 (img->xsize*DOUBLE_TO_INT(j*this->height*
-						   this->yspacing_scale)),
+                         (img->xsize*(int)(j*this->height*
+                                           this->yspacing_scale)),
 			 img->xsize,
 			 this->height);
 	    xsize += char_space(this, c);
@@ -653,8 +653,8 @@ void font_write(INT32 args)
 	    if(char_width(this,c))
 	      write_char(this->charinfo+c,
 			 (img->img+xsize)+
-			 (img->xsize*DOUBLE_TO_INT(j*this->height*
-						   this->yspacing_scale)),
+                         (img->xsize*(int)(j*this->height*
+                                           this->yspacing_scale)),
 			 img->xsize,
 			 this->height);
 	    xsize += char_space(this, c);
@@ -673,8 +673,8 @@ void font_write(INT32 args)
 	    if(char_width(this,c))
 	      write_char(this->charinfo+c,
 			 (img->img+xsize)+
-			 (img->xsize*DOUBLE_TO_INT(j*this->height*
-						   this->yspacing_scale)),
+                         (img->xsize*(int)(j*this->height*
+                                           this->yspacing_scale)),
 			 img->xsize,
 			 this->height);
 	    xsize += char_space(this, c);

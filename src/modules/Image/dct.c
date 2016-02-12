@@ -201,9 +201,9 @@ void image_dct(INT32 args)
 	 sum.r *= (float)enh;
 	 sum.g *= (float)enh;
 	 sum.b *= (float)enh;
-	 pix->r=testrange((DOUBLE_TO_INT(sum.r+0.5)));
-	 pix->g=testrange((DOUBLE_TO_INT(sum.g+0.5)));
-	 pix->b=testrange((DOUBLE_TO_INT(sum.b+0.5)));
+         pix->r=testrange((int)(sum.r+0.5));
+         pix->g=testrange((int)(sum.g+0.5));
+         pix->b=testrange((int)(sum.b+0.5));
 	 pix++;
       }
 #ifdef DCT_DEBUG

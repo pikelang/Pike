@@ -1163,9 +1163,9 @@ static void image_color_mult(INT32 args)
    FLOAT_TYPE x=0.0;
    get_all_args("`*",args,"%f",&x);
    pop_n_elems(args);
-   _image_make_rgb_color(DOUBLE_TO_INT(THIS->rgb.r*x),
-			 DOUBLE_TO_INT(THIS->rgb.g*x),
-			 DOUBLE_TO_INT(THIS->rgb.b*x));
+   _image_make_rgb_color((int)(THIS->rgb.r*x),
+			 (int)(THIS->rgb.g*x),
+			 (int)(THIS->rgb.b*x));
 }
 
 int image_color_svalue(struct svalue *v,rgb_group *rgb)
@@ -1332,9 +1332,9 @@ static void image_get_color(INT32 args)
 	    push_array_items(sp->u.array);
 	    get_all_args("create",3,"%f%f%f",&h,&s,&v);
 	    pop_n_elems(3);
-	    push_int(DOUBLE_TO_INT(h/360.0*256.0));
-	    push_int(DOUBLE_TO_INT(s/100.0*255.4));
-	    push_int(DOUBLE_TO_INT(v/100.0*255.4));
+	    push_int((int)(h/360.0*256.0));
+	    push_int((int)(s/100.0*255.4));
+	    push_int((int)(v/100.0*255.4));
 	    image_make_hsv_color(3);
 	    return;
 	 }
@@ -1593,8 +1593,8 @@ static void image_make_hsv_color(INT32 args)
    {
       get_all_args("hsv",args,"%f%f%f",&h,&s,&v);
       pop_n_elems(args);
-      if (h<0) h = 360 + h - ((DOUBLE_TO_INT(h)/360)*360);
-      if (h>360.0) h -= ((DOUBLE_TO_INT(h)/360)*360);
+      if (h<0) h = 360 + h - (((int)h/360)*360);
+      if (h>360.0) h -= (((int)h/360)*360);
       h/=60;
    }
 
@@ -1607,7 +1607,7 @@ static void image_make_hsv_color(INT32 args)
 #define p ((FLOAT_TYPE)(v * (1 - s)))
 #define q ((FLOAT_TYPE)(v * (1 - (s * f))))
 #define t ((FLOAT_TYPE)(v * (1 - (s * (1 -f)))))
-      switch(DOUBLE_TO_INT(i))
+      switch((int)i)
       {
          case 6: /* 360 degrees. Same as 0.. */
 	 case 0: r = v;	 g = t;	 b = p;	 break;
@@ -1618,7 +1618,7 @@ static void image_make_hsv_color(INT32 args)
 	 case 5: r = v;	 g = p;	 b = q;	 break;
 	 default: Pike_error("internal error (hue=%d <= hsv[%"PRINTPIKEFLOAT"f,"
 			     "%"PRINTPIKEFLOAT"f,%"PRINTPIKEFLOAT"f])\n",
-			     DOUBLE_TO_INT(i), h, s, v);
+                             (int)i, h, s, v);
       }
    }
 #undef i

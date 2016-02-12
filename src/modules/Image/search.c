@@ -455,12 +455,12 @@ static inline rgb_group _pixel_apply_max(struct image *img,
       for (yp=y-by,j=0; j<height; j++,yp++)
 	 if (xp>=0 && xp<img->xsize && yp>=0 && yp<img->ysize)
 	 {
-	    r = DOUBLE_TO_INT(MAXIMUM(r, matrix[i+j*width].r *
-				      img->img[xp+yp*img->xsize].r));
-	    g = DOUBLE_TO_INT(MAXIMUM(g, matrix[i+j*width].g *
-				      img->img[xp+yp*img->xsize].g));
-	    b = DOUBLE_TO_INT(MAXIMUM(b, matrix[i+j*width].b *
-				      img->img[xp+yp*img->xsize].b));
+            r = (int)MAXIMUM(r, matrix[i+j*width].r *
+                              img->img[xp+yp*img->xsize].r);
+            g = (int)MAXIMUM(g, matrix[i+j*width].g *
+                              img->img[xp+yp*img->xsize].g);
+            b = (int)MAXIMUM(b, matrix[i+j*width].b *
+                              img->img[xp+yp*img->xsize].b);
 #ifdef MATRIX_DEBUG
 	    fprintf(stderr,"%d,%d %d,%d->%d,%d,%d\n",
 		    i,j,xp,yp,
@@ -468,9 +468,9 @@ static inline rgb_group _pixel_apply_max(struct image *img,
 		    img->img[x+i+(y+j)*img->xsize].g,
 		    img->img[x+i+(y+j)*img->xsize].b);
 #endif
-	    sumr = DOUBLE_TO_INT(MAXIMUM(sumr, matrix[i+j*width].r));
-	    sumg = DOUBLE_TO_INT(MAXIMUM(sumg, matrix[i+j*width].g));
-	    sumb = DOUBLE_TO_INT(MAXIMUM(sumb, matrix[i+j*width].b));
+            sumr = (int)MAXIMUM(sumr, matrix[i+j*width].r);
+            sumg = (int)MAXIMUM(sumg, matrix[i+j*width].g);
+            sumb = (int)MAXIMUM(sumb, matrix[i+j*width].b);
 	 }
    if (sumr)
      res.r = DOUBLE_TO_COLORTYPE(testrange(default_rgb.r + r/(sumr * div)));
@@ -566,11 +566,11 @@ j++;
 #ifdef MATRIX_DEBUG
 	 fprintf(stderr,"->%d,%d,%d\n",r/sumr,g/sumg,b/sumb);
 #endif
-	 r = default_rgb.r+DOUBLE_TO_INT(r*qr+0.5);
+	 r = default_rgb.r+(int)(r*qr+0.5);
 	 dp->r = DOUBLE_TO_COLORTYPE(testrange(r));
-	 g = default_rgb.g+DOUBLE_TO_INT(g*qg+0.5);
+	 g = default_rgb.g+(int)(g*qg+0.5);
 	 dp->g = DOUBLE_TO_COLORTYPE(testrange(g));
-	 b = default_rgb.b+DOUBLE_TO_INT(b*qb+0.5);
+	 b = default_rgb.b+(int)(b*qb+0.5);
 	 dp->b = DOUBLE_TO_COLORTYPE(testrange(b));
 	 dp++;
       }

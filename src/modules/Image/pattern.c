@@ -194,8 +194,8 @@ static double noise(double Vx,double Vy,const double *noise_p)
 
    for (n=0; n<3; n++)
    {
-      Ax[n] = DOUBLE_TO_INT(floor(NOISE_PX*FRAC( (fx+n)*NOISE_PHI )));
-      Ay[n] = DOUBLE_TO_INT(floor(NOISE_PY*FRAC( (fy+n)*NOISE_PHI )));
+      Ax[n] = (int)floor(NOISE_PX*FRAC( (fx+n)*NOISE_PHI ));
+      Ay[n] = (int)floor(NOISE_PY*FRAC( (fy+n)*NOISE_PHI ));
    }
 
    f=FRAC(Vx);
@@ -290,10 +290,10 @@ static void init_colorrange(rgb_group *cr,struct svalue *s,char *where)
    *vp=v[0]+1+1.0/(COLORRANGE_LEVELS-1);
    lrgb=*rgbp=rgb[0]; /* back to original color */
 
-   for (k=1,i=DOUBLE_TO_INT(v[0]*(COLORRANGE_LEVELS-1));
+   for (k=1,i=(int)(v[0]*(COLORRANGE_LEVELS-1));
 	k<=s->u.array->size/2; k++)
    {
-      n = DOUBLE_TO_INT(v[k]*COLORRANGE_LEVELS);
+      n = (int)(v[k]*COLORRANGE_LEVELS);
 
       if (n>i)
       {
@@ -332,7 +332,7 @@ static void init_colorrange(rgb_group *cr,struct svalue *s,char *where)
 #define GET_INT_ARG(sp,args,n,def,where) \
    ( (args>n) \
       ? ( (TYPEOF(sp[n-args]) == T_INT) ? sp[n-args].u.integer		\
-	  : ( (TYPEOF(sp[n-args]) == T_FLOAT) ? DOUBLE_TO_INT(sp[n-args].u.float_number) \
+          : ( (TYPEOF(sp[n-args]) == T_FLOAT) ? (int)sp[n-args].u.float_number \
 	      : ( Pike_error("illegal argument(s) to %s\n", where), 0 ) ) ) \
       : def )
 
@@ -395,7 +395,7 @@ void image_noise(INT32 args)
       for (x=THIS->xsize,yp=ydiff; x--; yp+=1.0)
       {
 	 *(d++)=
-	    cr[DOUBLE_TO_INT((noise((double)x*scale,(double)y*scale,noise_p1)
+	    cr[(int)((noise((double)x*scale,(double)y*scale,noise_p1)
 /* 		      +noise((double)(x*0.5+y*0.8660254037844386)*scale, */
 /* 			     (double)(-y*0.5+x*0.8660254037844386)*scale, */
 /* 			     noise_p2) */
@@ -486,7 +486,7 @@ void image_turbulence(INT32 args)
 	 }
 #endif
 	 *(d++)=
-	    cr[DOUBLE_TO_INT(turbulence(xp*scale,yp*scale,octaves)*cscale)
+	    cr[(int)(turbulence(xp*scale,yp*scale,octaves)*cscale)
 	       & (COLORRANGE_LEVELS-1)];
       }
 

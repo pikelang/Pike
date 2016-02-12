@@ -347,14 +347,14 @@ struct layer_mode_desc
 
 
 #define COMBINE_ALPHA_SUM(aS,aL) \
-    CCUT((COLORMAX*DOUBLE_TO_INT(aL))+(COLORMAX-DOUBLE_TO_INT(aL))*(aS))
+    CCUT((COLORMAX*(int)(aL))+(COLORMAX-(int)(aL))*(aS))
 #define COMBINE_ALPHA_SUM_V(aS,aL,V) \
     COMBINE_ALPHA_SUM(aS,(aL)*(V))
 
 #define COMBINE_ALPHA(S,L,aS,aL) \
-    ( (COLORTYPE)((((S)*(DOUBLE_TO_INT(COLORMAX-(aL)))*(aS))+ \
-	           ((L)*(DOUBLE_TO_INT(aL))*COLORMAX))/ \
-    	          (((COLORMAX*DOUBLE_TO_INT(aL))+(COLORMAX-DOUBLE_TO_INT(aL))*(aS))) ) )
+    ( (COLORTYPE)((((S)*((int)(COLORMAX-(aL)))*(aS))+ \
+	           ((L)*((int)(aL))*COLORMAX))/ \
+    	          (((COLORMAX*(int)(aL))+(COLORMAX-(int)(aL))*(aS))) ) )
 
 #define COMBINE_ALPHA_V(S,L,aS,aL,V) \
     COMBINE_ALPHA((S),(L),(aS),((aL)*(V)))
@@ -380,7 +380,7 @@ struct layer_mode_desc
 
 #endif
 
-#define COMBINE(P,A) CCUT((DOUBLE_TO_INT(P))*(A))
+#define COMBINE(P,A) CCUT(((int)(P))*(A))
 #define COMBINE_A(P,A) (DOUBLE_TO_COLORTYPE((P)*(A)))
 #define COMBINE_V(P,V,A) CCUT((V)*(P)*(A))
 
@@ -514,7 +514,7 @@ static inline void hsv_to_rgb(double h,double s,double v,rgb_group *colorp)
 #define q F2C(v * (1 - (s * f)))
 #define t F2C(v * (1 - (s * (1 -f))))
 #define V F2C(v)
-   switch(DOUBLE_TO_INT(i))
+   switch((int)(i))
    {
       case 6:
       case 0: 	colorp->r = V;	colorp->g = t;	colorp->b = p;	 break;
@@ -1605,7 +1605,7 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
 
 #define LM_FUNC lm_divide
 #define L_TRUNC(X) MINIMUM(255,(X))
-#define L_OPER(A,B) MINIMUM( DOUBLE_TO_INT((A)/C2F(1+(int)(B))), COLORMAX)
+#define L_OPER(A,B) MINIMUM( (int)((A)/C2F(1+(int)(B))), COLORMAX)
 #include "layer_oper.h"
 #undef LM_FUNC
 #undef L_TRUNC
@@ -1613,7 +1613,7 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
 
 #define LM_FUNC lm_negdivide
 #define L_TRUNC(X) MINIMUM(255,(X))
-#define L_OPER(A,B) 1.0-MINIMUM( DOUBLE_TO_INT((A)/C2F(1+(int)(B))), COLORMAX)
+#define L_OPER(A,B) 1.0-MINIMUM( (int)((A)/C2F(1+(int)(B))), COLORMAX)
 
 #include "layer_oper.h"
 #undef LM_FUNC
@@ -1640,7 +1640,7 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
 
 #define LM_FUNC lm_invdivide
 #define L_TRUNC(X) MINIMUM(255,(X))
-#define L_OPER(A,B) MINIMUM( DOUBLE_TO_INT((B)/C2F(1+(int)(A))), COLORMAX)
+#define L_OPER(A,B) MINIMUM( (int)((B)/C2F(1+(int)(A))), COLORMAX)
 #include "layer_oper.h"
 #undef LM_FUNC
 #undef L_TRUNC
@@ -1656,7 +1656,7 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
 
 #define LM_FUNC lm_idivide
 #define L_TRUNC(X) MINIMUM(255,(X))
-#define L_OPER(A,B) MINIMUM( DOUBLE_TO_INT((A)/C2F(COLORMAX+1-(int)(B))), COLORMAX)
+#define L_OPER(A,B) MINIMUM( (int)((A)/C2F(COLORMAX+1-(int)(B))), COLORMAX)
 #include "layer_oper.h"
 #undef LM_FUNC
 #undef L_TRUNC
@@ -1672,7 +1672,7 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
 
 #define LM_FUNC lm_invidivide
 #define L_TRUNC(X) MINIMUM(255,(X))
-#define L_OPER(A,B) MINIMUM( DOUBLE_TO_INT((B)/C2F(COLORMAX+1-(int)(A))), COLORMAX)
+#define L_OPER(A,B) MINIMUM( (int)((B)/C2F(COLORMAX+1-(int)(A))), COLORMAX)
 #include "layer_oper.h"
 #undef LM_FUNC
 #undef L_TRUNC
@@ -2195,7 +2195,7 @@ static void lm_dissolve(rgb_group *s,rgb_group *l,rgb_group *d,
    }
    else
    {
-      int v = DOUBLE_TO_INT(COLORMAX*alpha);
+      int v = (int)(COLORMAX*alpha);
       if (!la)  /* no layer alpha => full opaque */
       {
          push_random_string(len);
@@ -2332,9 +2332,9 @@ static void lm_erase(rgb_group *UNUSED(s),rgb_group *UNUSED(l),rgb_group *UNUSED
       else
 	 while (len--)
 	 {
-	    da->r=CCUT(sa->r*DOUBLE_TO_INT(COLORMAX-alpha*la->r));
-	    da->g=CCUT(sa->g*DOUBLE_TO_INT(COLORMAX-alpha*la->g));
-	    da->b=CCUT(sa->b*DOUBLE_TO_INT(COLORMAX-alpha*la->b));
+	    da->r=CCUT(sa->r*(int)(COLORMAX-alpha*la->r));
+	    da->g=CCUT(sa->g*(int)(COLORMAX-alpha*la->g));
+	    da->b=CCUT(sa->b*(int)(COLORMAX-alpha*la->b));
 
 	    la++; sa++; da++;
 	 }

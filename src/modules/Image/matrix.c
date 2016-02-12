@@ -114,7 +114,7 @@ static inline int getrgb(struct image *img,
 /** end internals **/
 
 
-#define decimals(x) ((x)-DOUBLE_TO_INT(x))
+#define decimals(x) ((x)-(int)(x))
 #define testrange(x) MAXIMUM(MINIMUM((x),255),0)
 #define _scale_add_rgb(dest,src,factor) \
    ((dest)->r += (float)((src)->r*(factor)), \
@@ -133,12 +133,12 @@ static inline void scale_add_line(double py,double dx,
    img=img+y*xsize;
    for (x=0,xn=0; x<xsize; img++,x++,xn+=dx)
    {
-      if (DOUBLE_TO_INT(xn) < DOUBLE_TO_INT(xn+dx))
+     if ((int)xn < (int)(xn+dx))
       {
 	 xndxd=py*(1.0-decimals(xn));
 	 if (xndxd)
 	    scale_add_pixel(new,(INT32)xn,img,x,xndxd);
-	 if (dx>=1.0 && (xd = DOUBLE_TO_INT(xn+dx) - DOUBLE_TO_INT(xn))>1)
+         if (dx>=1.0 && (xd = (int)(xn+dx) - (int)xn)>1)
             while (--xd)
 	    {
 	       new++;
@@ -183,23 +183,23 @@ CHRONO("scale begin");
 
    for (y=0,yn=0; y<source->ysize; y++,yn+=dy)
    {
-      if (DOUBLE_TO_INT(yn)<DOUBLE_TO_INT(yn+dy))
+     if ((int)yn<(int)(yn+dy))
       {
 	 if (1.0-decimals(yn))
 	    scale_add_line((1.0-decimals(yn)),dx,
-			   new, DOUBLE_TO_INT(yn), newx,
+                           new, (int)yn, newx,
 			   source->img, y, source->xsize);
-	 if ((yd = DOUBLE_TO_INT(yn+dy) - DOUBLE_TO_INT(yn))>1)
+         if ((yd = (int)(yn+dy) - (int)yn)>1)
             while (--yd)
-   	       scale_add_line(1.0, dx, new, DOUBLE_TO_INT(yn+yd), newx,
+              scale_add_line(1.0, dx, new, (int)(yn+yd), newx,
 			      source->img, y, source->xsize);
 	 if (decimals(yn+dy))
-	    scale_add_line((decimals(yn+dy)), dx, new, DOUBLE_TO_INT(yn+dy),
+           scale_add_line((decimals(yn+dy)), dx, new, (int)(yn+dy),
 			   newx, source->img, y, source->xsize);
       }
       else
-	 scale_add_line(dy, dx, new, DOUBLE_TO_INT(yn), newx,
-			source->img, y, source->xsize);
+        scale_add_line(dy, dx, new, (int)yn, newx,
+                       source->img, y, source->xsize);
    }
 
    dest->img=d=malloc(newx*newy*sizeof(rgb_group)+RGB_VEC_PAD);
@@ -212,9 +212,9 @@ CHRONO("transfer begin");
      y=newx*newy;
      while (y--)
      {
-       d->r = MINIMUM(DOUBLE_TO_INT(s->r+0.5),255);
-       d->g = MINIMUM(DOUBLE_TO_INT(s->g+0.5),255);
-       d->b = MINIMUM(DOUBLE_TO_INT(s->b+0.5),255);
+       d->r = MINIMUM((int)(s->r+0.5),255);
+       d->g = MINIMUM((int)(s->g+0.5),255);
+       d->b = MINIMUM((int)(s->b+0.5),255);
        d++; s++;
      }
 
@@ -370,8 +370,8 @@ void image_scale(INT32 args)
             return;
          }
 	 img_scale(newimg, THIS,
-		   DOUBLE_TO_INT(THIS->xsize*sp[-args].u.float_number),
-		   DOUBLE_TO_INT(THIS->ysize*sp[-args].u.float_number));
+		   (int)(THIS->xsize*sp[-args].u.float_number),
+		   (int)(THIS->ysize*sp[-args].u.float_number));
       }
    }
    else if (args>=2 &&
@@ -396,8 +396,8 @@ void image_scale(INT32 args)
 	    TYPEOF(sp[-args]) == T_FLOAT &&
 	    TYPEOF(sp[1-args]) == T_FLOAT)
       img_scale(newimg, THIS,
-		DOUBLE_TO_INT(THIS->xsize*sp[-args].u.float_number),
-		DOUBLE_TO_INT(THIS->ysize*sp[1-args].u.float_number));
+		(int)(THIS->xsize*sp[-args].u.float_number),
+		(int)(THIS->ysize*sp[1-args].u.float_number));
    else if (args>=2 &&
 	    TYPEOF(sp[-args]) == T_INT &&
 	    TYPEOF(sp[1-args]) == T_INT)
@@ -699,9 +699,9 @@ static void img_skewx(struct image *src,
 
    if (dest->img) free(dest->img);
    if (diff<0)
-      dest->xsize = DOUBLE_TO_INT(ceil(-diff)) + src->xsize, x0 = -diff;
+      dest->xsize = (int)(ceil(-diff)) + src->xsize, x0 = -diff;
    else
-      dest->xsize = DOUBLE_TO_INT(ceil(diff)) + src->xsize, x0=0;
+      dest->xsize = (int)(ceil(diff)) + src->xsize, x0=0;
    dest->ysize=src->ysize;
    len=src->xsize;
 
@@ -726,7 +726,7 @@ static void img_skewx(struct image *src,
       int j;
 
       if (xpn) rgb=*s;
-      for (j = x0i = DOUBLE_TO_INT((x0f = floor(x0))); j--;) *(d++)=rgb;
+      for (j = x0i = (int)((x0f = floor(x0))); j--;) *(d++)=rgb;
       if (!(xm=(x0-x0f)))
       {
 	 for (j=len; j--;) *(d++)=*(s++);
@@ -787,9 +787,9 @@ static void img_skewy(struct image *src,
 
    if (dest->img) free(dest->img);
    if (diff<0)
-      dest->ysize = DOUBLE_TO_INT(ceil(-diff)) + src->ysize, y0 = -diff;
+      dest->ysize = (int)(ceil(-diff)) + src->ysize, y0 = -diff;
    else
-      dest->ysize = DOUBLE_TO_INT(ceil(diff)) + src->ysize, y0 = 0;
+      dest->ysize = (int)(ceil(diff)) + src->ysize, y0 = 0;
    xsz=dest->xsize=src->xsize;
    len=src->ysize;
 
@@ -814,7 +814,7 @@ CHRONO("skewy begin\n");
       int j;
 
       if (xpn) rgb=*s;
-      for (j = y0i = DOUBLE_TO_INT((y0f = floor(y0))); j--;) *d=rgb,d+=xsz;
+      for (j = y0i = (int)((y0f = floor(y0))); j--;) *d=rgb,d+=xsz;
       if (!(ym=(y0-y0f)))
       {
 	 for (j=len; j--;) *d=*s,d+=xsz,s+=xsz;
@@ -1070,8 +1070,8 @@ void img_rotate(INT32 args,int xpn)
 
    dest2.img=d0.img=NULL;
 
-   if (angle<-135) angle-=360*DOUBLE_TO_INT((angle-225)/360);
-   else if (angle>225) angle-=360*DOUBLE_TO_INT((angle+135)/360);
+   if (angle<-135) angle-=360*(int)((angle-225)/360);
+   else if (angle>225) angle-=360*(int)((angle+135)/360);
    if (angle<-45)
    {
       img_ccw(THIS,&dest2);

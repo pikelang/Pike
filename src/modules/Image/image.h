@@ -39,10 +39,6 @@ extern int image_cpuid;
 
 /* Some marcos to avoid loss of precision warnings. */
 #ifdef __ECL
-static inline int DOUBLE_TO_INT(double d)
-{
-  return (int)d;
-}
 static inline char DOUBLE_TO_CHAR(double d)
 {
   return (char)d;
@@ -56,7 +52,6 @@ static inline COLORTYPE FLOAT_TO_COLOR(double X)
   return (COLORTYPE)((X)*((double)COLORMAX+0.4));
 }
 #else /* !__ECL */
-#define DOUBLE_TO_INT(D)	((int)(D))
 #define DOUBLE_TO_CHAR(D)	((char)(D))
 #define DOUBLE_TO_COLORTYPE(D)	((COLORTYPE)(D))
 #define FLOAT_TO_COLOR(X) ((COLORTYPE)((X)*((float)COLORMAX+0.4)))

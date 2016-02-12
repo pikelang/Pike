@@ -145,7 +145,7 @@ extern struct program *image_color_program;
 #define THIS ((struct image *)(Pike_fp->current_storage))
 #define THISOBJ (Pike_fp->current_object)
 
-#define testrange(x) ((COLORTYPE)MAXIMUM(MINIMUM(DOUBLE_TO_INT(x),255),0))
+#define testrange(x) ((COLORTYPE)MAXIMUM(MINIMUM((int)(x),255),0))
 
 #define sq(x) ((x)*(x))
 
@@ -466,9 +466,9 @@ j++;
 #ifdef MATRIX_DEBUG
 	 fprintf(stderr,"->%d,%d,%d\n",r/sumr,g/sumg,b/sumb);
 #endif
-	 r=default_rgb.r+DOUBLE_TO_INT(r*qr+0.5); dp->r=testrange(r);
-	 g=default_rgb.g+DOUBLE_TO_INT(g*qg+0.5); dp->g=testrange(g);
-	 b=default_rgb.b+DOUBLE_TO_INT(b*qb+0.5); dp->b=testrange(b);
+	 r=default_rgb.r+(int)(r*qr+0.5); dp->r=testrange(r);
+	 g=default_rgb.g+(int)(g*qg+0.5); dp->g=testrange(g);
+	 b=default_rgb.b+(int)(b*qb+0.5); dp->b=testrange(b);
 	 dp++;
       }
    }
@@ -2749,7 +2749,7 @@ void image_hsv_to_rgb(INT32 args)
 #define p (v * (1 - sat))
 #define q (v * (1 - (sat * f)))
 #define t (v * (1 - (sat * (1 -f))))
-	switch(DOUBLE_TO_INT(i))
+	switch((int)(i))
 	{
 	   case 6: /* 360 degrees. Same as 0.. */
 	   case 0: r = v; g = t; b = p;	 break;
@@ -2768,7 +2768,7 @@ void image_hsv_to_rgb(INT32 args)
 #undef p
 #undef q
 #undef t
-#define FIX(X) ((X)<0.0?0:(X)>=1.0?255:DOUBLE_TO_INT((X)*255.0))
+#define FIX(X) ((X)<0.0?0:(X)>=1.0?255:(int)((X)*255.0))
      d->r = FIX(r);
      d->g = FIX(g);
      d->b = FIX(b);
@@ -2829,14 +2829,14 @@ void image_rgb_to_hsv(INT32 args)
       v = MAX3(r,g,b);
       delta = v - MIN3(r,g,b);
 
-      if(r==v)      h = DOUBLE_TO_INT(((g-b)/(double)delta)*(255.0/6.0));
-      else if(g==v) h = DOUBLE_TO_INT((2.0+(b-r)/(double)delta)*(255.0/6.0));
-      else h = DOUBLE_TO_INT((4.0+(r-g)/(double)delta)*(255.0/6.0));
+      if(r==v)      h = (int)(((g-b)/(double)delta)*(255.0/6.0));
+      else if(g==v) h = (int)((2.0+(b-r)/(double)delta)*(255.0/6.0));
+      else h = (int)((4.0+(r-g)/(double)delta)*(255.0/6.0));
       if(h<0) h+=255;
 
       /*     printf("hsv={ %d,%d,%d }\n", h, (int)((delta/(float)v)*255), v);*/
-      d->r = DOUBLE_TO_INT(h);
-      d->g = DOUBLE_TO_INT((delta/(double)v)*255.0);
+      d->r = (int)h;
+      d->g = (int)((delta/(double)v)*255.0);
       d->b = v;
       s++; d++;
    }
@@ -3376,8 +3376,8 @@ void image_bitscale( INT32 args )
       newx = oldx * sp[-1].u.integer;
       newy = oldy * sp[-1].u.integer;
     } else if( TYPEOF(sp[-1]) == T_FLOAT ) {
-      newx = DOUBLE_TO_INT(oldx * sp[-1].u.float_number);
-      newy = DOUBLE_TO_INT(oldy * sp[-1].u.float_number);
+      newx = (int)(oldx * sp[-1].u.float_number);
+      newy = (int)(oldy * sp[-1].u.float_number);
     } else
       Pike_error("The scale factor must be an integer less than 2^32, or a float\n");
   } else if( args == 2 ) {
@@ -3387,8 +3387,8 @@ void image_bitscale( INT32 args )
       (newx = sp[-2].u.integer),(newy = sp[-1].u.integer);
     else if( TYPEOF(sp[-2]) == T_FLOAT )
     {
-      newx = DOUBLE_TO_INT(oldx*sp[-2].u.float_number);
-      newy = DOUBLE_TO_INT(oldy*sp[-1].u.float_number);
+      newx = (int)(oldx*sp[-2].u.float_number);
+      newy = (int)(oldy*sp[-1].u.float_number);
 
     } else
       Pike_error( "Wrong type of arguments\n");
@@ -4918,9 +4918,9 @@ void init_image_image(void)
 {
    int i;
    for (i=0; i<CIRCLE_STEPS; i++)
-      circle_sin_table[i]=DOUBLE_TO_INT(4096*sin(((double)i)*2.0*
-						 3.141592653589793/
-						 (double)CIRCLE_STEPS));
+     circle_sin_table[i]=(int)(4096*sin(((double)i)*2.0*
+                                        3.141592653589793/
+                                        (double)CIRCLE_STEPS));
 
    ADD_STORAGE(struct image);
 

@@ -232,16 +232,16 @@ CHRONO("begin hsv...");
 
      int z,w;
 
-     if (my_abs(DOUBLE_TO_INT(h)) > my_abs(DOUBLE_TO_INT(j)))
+     if (my_abs((int)h) > my_abs((int)j))
 	if (h) {
-	  z = -DOUBLE_TO_INT(32*(j/h)+(h>0)*128+64);
-	  w = my_abs(DOUBLE_TO_INT(h));
+          z = -(int)(32*(j/h)+(h>0)*128+64);
+          w = my_abs((int)h);
 	}
 	else z=0,w=0;
      else {
 	if (j) {
-	    z = -DOUBLE_TO_INT(-32*(h/j)+(j>0)*128+128);
-	    w = my_abs(DOUBLE_TO_INT(j));
+          z = -(int)(-32*(h/j)+(j>0)*128+128);
+          w = my_abs((int)j);
 	}
 	else z=0,w=0;
      }
