@@ -208,12 +208,6 @@ PMOD_EXPORT extern const char Pike_check_c_stack_errmsg[];
 #define pop_stack() do{ free_svalue(--Pike_sp); debug_check_stack(); }while(0)
 #define pop_2_elems() do { pop_stack(); pop_stack(); }while(0)
 
-#ifdef __ECL
-#define MAYBE_CAST_TO_LONG(X)	(X)
-#else /* !__ECL */
-#define MAYBE_CAST_TO_LONG(X)	((long)(X))
-#endif /* __ECL */
-
 PMOD_EXPORT extern const char msg_pop_neg[];
 #define pop_n_elems(X)							\
  do {									\
@@ -826,26 +820,11 @@ PMOD_EXPORT void low_cleanup_interpret(struct Pike_interpreter_struct *interpret
 void really_clean_up_interpret(void);
 /* Prototypes end here */
 
-/* These need to be after the prototypes,
- * to avoid implicit declaration of mega_apply().
- */
-#ifdef __ECL
-static inline void apply_low(struct object *o, ptrdiff_t fun, INT32 args)
-{
-  mega_apply_low(args, (void*)o, fun);
-}
-
-static inline void strict_apply_svalue(struct svalue *sval, INT32 args)
-{
-  mega_apply(APPLY_SVALUE_STRICT, args, (void*)sval, 0);
-}
-#else /* !__ECL */
 #define apply_low(O,FUN,ARGS) \
   mega_apply_low((ARGS), (void*)(O),(FUN))
 
 #define strict_apply_svalue(SVAL,ARGS) \
   mega_apply(APPLY_SVALUE, (ARGS), (void*)(SVAL),0)
-#endif /* __ECL */
 
 #define apply_current(FUN, ARGS)			\
   apply_low(Pike_fp->current_object,			\

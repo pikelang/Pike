@@ -708,17 +708,6 @@ static double extract_double_le(const char * x) {
     (SVAL).u.float_number = fun(x);                         \
 } while (0)
 
-
-/* Avoid some warnings about loss of precision */
-#ifdef __ECL
-static inline INT32 TO_INT32(ptrdiff_t x)
-{
-  return (INT32)x;
-}
-#else /* !__ECL */
-#define TO_INT32(x)	((INT32)(x))
-#endif /* __ECL */
-
 static struct pike_string *get_string_slice( void *input, int shift,
                                              ptrdiff_t offset, ptrdiff_t len,
                                              struct pike_string *str )
@@ -891,7 +880,7 @@ static INT32 PIKE_CONCAT4(very_low_sscanf_,INPUT_SHIFT,_,MATCH_SHIFT)(	 \
                          &yes,0);                                        \
 	    if(yes && tmp)						 \
 	    {								 \
-	      f_aggregate(TO_INT32(sp-save_sp));			 \
+              f_aggregate((INT32)(sp-save_sp));                          \
 	      sval.u.array=append_array(sval.u.array,sp-1);		 \
 	      pop_stack();						 \
 	      eye+=tmp;							 \
@@ -1410,7 +1399,7 @@ INPUT_IS_WIDE(								 \
 									 \
 	case 'n':							 \
 	  SET_SVAL(sval, T_INT, NUMBER_NUMBER, integer,			 \
-		   TO_INT32(eye - truncated));				 \
+		   (INT32)(eye - truncated));				 \
 	  break;							 \
 									 \
 	default:							 \
