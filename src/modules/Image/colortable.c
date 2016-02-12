@@ -3332,26 +3332,6 @@ void build_rigid(struct neo_colortable *nct)
 **! see also: cubicles, full
 **/
 
-/* Some functions to avoid warnings about losss of precision. */
-#ifdef __ECL
-static inline unsigned char TO_UCHAR(ptrdiff_t val)
-{
-  return (unsigned char)val;
-}
-static inline unsigned short TO_USHORT(ptrdiff_t val)
-{
-  return (unsigned short)val;
-}
-static inline unsigned INT32 TO_UINT32(ptrdiff_t val)
-{
-  return (unsigned INT32)val;
-}
-#else /* !__ECL */
-#define TO_UCHAR(x)	((unsigned char)x)
-#define TO_USHORT(x)	((unsigned short)x)
-#define TO_UINT32(x)	((unsigned INT32)x)
-#endif /* __ECL */
-
 /* begin instantiating from colortable_lookup.h */
 /* instantiate map functions */
 
@@ -3403,7 +3383,7 @@ static inline unsigned INT32 TO_UINT32(ptrdiff_t val)
 #define NCTLU_CUBE_NAME _img_nct_index_8bit_cube
 #define NCTLU_FLAT_RIGID_NAME _img_nct_index_8bit_flat_rigid
 #define NCTLU_LINE_ARGS (dith,&rowpos,&s,NULL,&d,NULL,NULL,&cd)
-#define NCTLU_RIGID_WRITE (d[0] = TO_UCHAR(feprim[i].no))
+#define NCTLU_RIGID_WRITE (d[0] = (unsigned char)feprim[i].no)
 #define NCTLU_DITHER_RIGID_GOT (feprim[i].color)
 #define NCTLU_SELECT_FUNCTION image_colortable_index_8bit_function
 #define NCTLU_EXECUTE_FUNCTION image_colortable_index_8bit_image
@@ -3451,7 +3431,7 @@ static inline unsigned INT32 TO_UINT32(ptrdiff_t val)
 #define NCTLU_CUBE_NAME _img_nct_index_16bit_cube
 #define NCTLU_FLAT_RIGID_NAME _img_nct_index_16bit_flat_rigid
 #define NCTLU_LINE_ARGS (dith,&rowpos,&s,NULL,NULL,&d,NULL,&cd)
-#define NCTLU_RIGID_WRITE (d[0] = TO_USHORT(feprim[i].no))
+#define NCTLU_RIGID_WRITE (d[0] = (unsigned short)feprim[i].no)
 #define NCTLU_DITHER_RIGID_GOT (feprim[i].color)
 #define NCTLU_SELECT_FUNCTION image_colortable_index_16bit_function
 #define NCTLU_EXECUTE_FUNCTION image_colortable_index_16bit_image
@@ -3499,7 +3479,7 @@ static inline unsigned INT32 TO_UINT32(ptrdiff_t val)
 #define NCTLU_CUBE_NAME _img_nct_index_32bit_cube
 #define NCTLU_FLAT_RIGID_NAME _img_nct_index_32bit_flat_rigid
 #define NCTLU_LINE_ARGS (dith,&rowpos,&s,NULL,NULL,NULL,&d,&cd)
-#define NCTLU_RIGID_WRITE (d[0] = TO_UINT32(feprim[i].no))
+#define NCTLU_RIGID_WRITE (d[0] = (unsigned INT32)feprim[i].no)
 #define NCTLU_DITHER_RIGID_GOT (feprim[i].color)
 #define NCTLU_SELECT_FUNCTION image_colortable_index_32bit_function
 #define NCTLU_EXECUTE_FUNCTION image_colortable_index_32bit_image
@@ -3662,10 +3642,11 @@ void image_colortable_index_32bit(INT32 args)
    if (!src->img)
       SIMPLE_ARG_TYPE_ERROR("index",1,"non-empty image object");
 
+   /* FIXME: Use B4_t instead? */
 #ifdef PIKE_DEBUG
    if (sizeof(unsigned INT32)!=4)
       Pike_fatal("INT32 isn't 32 bits (sizeof is %ld)\n",
-	    (long)TO_UINT32(sizeof(unsigned INT32)));
+                 (long)sizeof(unsigned INT32));
 #endif
 
    ps=begin_wide_shared_string(src->xsize*src->ysize,2);
