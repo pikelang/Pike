@@ -3036,11 +3036,11 @@ static newstate do_try_feed(struct parser_html_storage *this,
 #ifdef PIKE_DEBUG
       if (*feed && feed[0]->s->len < st->c)
 	 Pike_fatal("len (%ld) < st->c (%ld)\n",
-	       PTRDIFF_T_TO_LONG(feed[0]->s->len), PTRDIFF_T_TO_LONG(st->c));
+                    (long)feed[0]->s->len, (long)st->c);
       if (*feed && cmp_feed_pos (*feed, st->c, dst, cdst) > 0)
 	Pike_fatal ("Going backwards from %p:%ld to %p:%ld.\n",
-                    (void *)(*feed), PTRDIFF_T_TO_LONG(st->c),
-                    (void *)dst, PTRDIFF_T_TO_LONG(cdst));
+                    (void *)(*feed), (long)st->c,
+                    (void *)dst, (long)cdst);
 #endif
 
       /* do we need to check data? */
@@ -3099,8 +3099,8 @@ static newstate do_try_feed(struct parser_html_storage *this,
 #ifdef PIKE_DEBUG
       if (*feed != dst || st->c != cdst)
 	Pike_fatal ("Internal position confusion: feed: %p:%ld, dst: %p:%ld.\n",
-                    (void *)(*feed), PTRDIFF_T_TO_LONG(st->c),
-                    (void *)dst, PTRDIFF_T_TO_LONG(cdst));
+                    (void *)(*feed), (long)st->c,
+                    (void *)dst, (long)cdst);
 #endif
 
       ch=index_shared_string(dst->s,cdst);
@@ -3619,8 +3619,8 @@ static newstate do_try_feed(struct parser_html_storage *this,
 	if (!scan_entity) Pike_fatal ("Shouldn't parse entities now.\n");
 	if (*feed != dst || st->c != cdst)
 	  Pike_fatal ("Internal position confusion: feed: %p:%ld, dst: %p:%ld\n",
-                      (void *)(*feed), PTRDIFF_T_TO_LONG(st->c),
-                      (void *)dst, PTRDIFF_T_TO_LONG(cdst));
+                      (void *)(*feed), (long)st->c,
+                      (void *)dst, (long)cdst);
 #endif
 	/* just search for end of entity */
 
@@ -4303,8 +4303,8 @@ new_arg:
 #ifdef PIKE_DEBUG
       if (prev_s && cmp_feed_pos (prev_s, prev_c, s1, c1) >= 0)
 	Pike_fatal ("Not going forward in tag args loop (from %p:%ld to %p:%ld).\n",
-               (void *)prev_s, PTRDIFF_T_TO_LONG(prev_c),
-               (void *)s1, PTRDIFF_T_TO_LONG(c1));
+                    (void *)prev_s, (long)prev_c,
+                    (void *)s1, (long)c1);
       prev_s = s1, prev_c = c1;
 #endif
 

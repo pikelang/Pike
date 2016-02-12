@@ -3777,7 +3777,7 @@ void check_program(struct program *p)
 	  dump_program_tables(p, 0);
 	  Pike_fatal("Variable %s offset is not properly aligned (%ld).\n",
 		     p->identifiers[e].name->str,
-		     PTRDIFF_T_TO_LONG(p->identifiers[e].func.offset));
+                     (long)p->identifiers[e].func.offset);
 	}
       }
     } else {
@@ -4242,7 +4242,7 @@ PMOD_EXPORT size_t low_add_storage(size_t size, size_t alignment,
 #ifdef PIKE_DEBUG
   if(alignment <=0 || (alignment & (alignment-1)) || alignment > 256)
     Pike_fatal("Alignment must be 1,2,4,8,16,32,64,128 or 256 not %ld\n",
-	  PTRDIFF_T_TO_LONG(alignment));
+               (long)alignment);
 #endif
   modulo=( modulo_orig /* +OFFSETOF(object,storage) */ ) % alignment;
 

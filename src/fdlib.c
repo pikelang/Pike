@@ -824,7 +824,7 @@ PMOD_EXPORT FD debug_fd_accept(FD fd, struct sockaddr *addr,
   SOCKET s;
   mt_lock(&fd_mutex);
   FDDEBUG(fprintf(stderr,"Accept on %d (%ld)..\n",
-		  fd, PTRDIFF_T_TO_LONG((ptrdiff_t)da_handle[fd])));
+                  fd, (long)(ptrdiff_t)da_handle[fd]));
   if ((fd < 0) || (fd >= FD_SETSIZE)) {
     mt_unlock(&fd_mutex);
     errno = EBADF;
@@ -861,8 +861,8 @@ PMOD_EXPORT FD debug_fd_accept(FD fd, struct sockaddr *addr,
   da_handle[new_fd] = (HANDLE)s;
 
   FDDEBUG(fprintf(stderr,"Accept on %d (%ld) returned new socket: %d (%ld)\n",
-		  fd, PTRDIFF_T_TO_LONG((ptrdiff_t)da_handle[fd]),
-		  new_fd, PTRDIFF_T_TO_LONG((ptrdiff_t)s)));
+                  fd, (long)(ptrdiff_t)da_handle[fd],
+                  new_fd, (long)(ptrdiff_t)s));
 
   mt_unlock(&fd_mutex);
 
@@ -875,7 +875,7 @@ PMOD_EXPORT int PIKE_CONCAT(debug_fd_,NAME) X1 { \
   SOCKET s; \
   int ret; \
   FDDEBUG(fprintf(stderr, #NAME " on %d (%ld)\n", \
-		  fd, PTRDIFF_T_TO_LONG((ptrdiff_t)da_handle[fd]))); \
+                  fd, (long)(ptrdiff_t)da_handle[fd]));        \
   if ((fd < 0) || (fd >= FD_SETSIZE)) {	\
     errno = EBADF; \
     return -1; \
@@ -930,7 +930,7 @@ PMOD_EXPORT int debug_fd_connect (FD fd, struct sockaddr *a, int len)
   SOCKET ret;
   mt_lock(&fd_mutex);
   FDDEBUG(fprintf(stderr, "connect on %d (%ld)\n",
-		  fd, PTRDIFF_T_TO_LONG((ptrdiff_t)da_handle[fd]));
+                  fd, (long)(ptrdiff_t)da_handle[fd]);
 	  for(ret=0;ret<len;ret++)
 	  fprintf(stderr," %02x",((unsigned char *)a)[ret]);
 	  fprintf(stderr,"\n");
@@ -966,7 +966,7 @@ PMOD_EXPORT int debug_fd_close(FD fd)
   }
   h = da_handle[fd];
   FDDEBUG(fprintf(stderr,"Closing %d (%ld)\n",
-		  fd, PTRDIFF_T_TO_LONG((ptrdiff_t)da_handle[fd])));
+                  fd, (long)(ptrdiff_t)da_handle[fd]));
   type=fd_type[fd];
   mt_unlock(&fd_mutex);
   switch(type)
@@ -976,8 +976,7 @@ PMOD_EXPORT int debug_fd_close(FD fd)
       {
 	set_errno_from_win32_error (GetLastError());
 	FDDEBUG(fprintf(stderr,"Closing %d (%ld) failed with errno=%d\n",
-			fd, PTRDIFF_T_TO_LONG((ptrdiff_t)da_handle[fd]),
-			errno));
+                        fd, (long)(ptrdiff_t)da_handle[fd], errno));
 	return -1;
       }
       break;
@@ -989,8 +988,7 @@ PMOD_EXPORT int debug_fd_close(FD fd)
 	return -1;
       }
   }
-  FDDEBUG(fprintf(stderr,"%d (%ld) closed\n",
-		  fd, PTRDIFF_T_TO_LONG((ptrdiff_t)da_handle[fd])));
+  FDDEBUG(fprintf(stderr,"%d (%ld) closed\n", fd, (ptrdiff_t)da_handle[fd]));
   mt_lock(&fd_mutex);
   if(fd_type[fd]<FD_NO_MORE_FREE)
   {
@@ -1067,8 +1065,8 @@ PMOD_EXPORT ptrdiff_t debug_fd_read(FD fd, void *to, ptrdiff_t len)
 
   mt_lock(&fd_mutex);
   FDDEBUG(fprintf(stderr,"Reading %d bytes from %d (%d) to %lx\n",
-		  len, fd, PTRDIFF_T_TO_LONG((ptrdiff_t)da_handle[fd]),
-		  PTRDIFF_T_TO_LONG((ptrdiff_t)to)));
+                  len, fd, (long)(ptrdiff_t)da_handle[fd],
+                  (long)(ptrdiff_t)to));
   if ((fd < 0) || (fd >= FD_SETSIZE)) {
     mt_unlock(&fd_mutex);
     errno = EBADF;
@@ -1329,7 +1327,7 @@ PMOD_EXPORT int debug_fd_fstat(FD fd, PIKE_STAT_T *s)
 
   mt_lock(&fd_mutex);
   FDDEBUG(fprintf(stderr, "fstat on %d (%ld)\n",
-		  fd, PTRDIFF_T_TO_LONG((ptrdiff_t)da_handle[fd])));
+                  fd, (long)(ptrdiff_t)da_handle[fd]));
   if ((fd < 0) || (fd >= FD_SETSIZE)) {
     mt_unlock(&fd_mutex);
     errno = EBADF;
@@ -1458,7 +1456,7 @@ PMOD_EXPORT int debug_fd_ioctl(FD fd, int cmd, void *data)
 {
   int ret;
   FDDEBUG(fprintf(stderr,"ioctl(%d (%ld,%d,%p)\n",
-		  fd, PTRDIFF_T_TO_LONG((ptrdiff_t)da_handle[fd]), cmd, data));
+                  fd, (long)(ptrdiff_t)da_handle[fd]), cmd, data);
   if ((fd < 0) || (fd >= FD_SETSIZE)) {
     errno = EBADF;
     return -1;
@@ -1512,7 +1510,7 @@ PMOD_EXPORT FD debug_fd_dup(FD from)
   mt_unlock(&fd_mutex);
 
   FDDEBUG(fprintf(stderr,"Dup %d (%ld) to %d (%d)\n",
-		  from, PTRDIFF_T_TO_LONG((ptrdiff_t)da_handle[from]), fd, x));
+                  from, (long)(ptrdiff_t)da_handle[from]), fd, x);
   return fd;
 }
 
@@ -1561,7 +1559,7 @@ PMOD_EXPORT FD debug_fd_dup2(FD from, FD to)
   mt_unlock(&fd_mutex);
 
   FDDEBUG(fprintf(stderr,"Dup2 %d (%d) to %d (%d)\n",
-		  from, PTRDIFF_T_TO_LONG((ptrdiff_t)da_handle[from]), to, x));
+                  from, (long)(ptrdiff_t)da_handle[from], to, x));
 
   return to;
 }

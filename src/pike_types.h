@@ -180,8 +180,7 @@ extern struct pike_type_location *all_pike_type_locations;
 #define init_type_stack() type_stack_mark()
 #define exit_type_stack() do {\
     ptrdiff_t q_q_q_q = pop_stack_mark(); \
-    if(q_q_q_q) Pike_fatal("Type stack out of wack! %ld\n", \
-                      PTRDIFF_T_TO_LONG(q_q_q_q)); \
+    if(q_q_q_q) Pike_fatal("Type stack out of wack! %ld\n", (long)q_q_q_q); \
   } while(0)
 #else
 #define init_type_stack type_stack_mark

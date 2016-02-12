@@ -1050,8 +1050,7 @@ PIKECLASS Simple
 #define PEEK(X)								\
     ( IF_PIKEDEBUG(((X) > THIS->input->len)?				\
 		   (Pike_fatal("PEEK out of bounds (%ld/%ld)\n",	\
-			       PTRDIFF_T_TO_LONG(X),			\
-			       PTRDIFF_T_TO_LONG(THIS->input->len)), 0):) \
+                               (long)(X), (long)THIS->input->len), 0):) \
       INDEX_PCHARP(THIS->input->datap, X) )
 
 #define SAFE_PEEK(X) ((THIS->input && ((X)>=THIS->input->len)) ? 0 : PEEK(X))

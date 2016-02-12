@@ -5856,7 +5856,7 @@ void check_static_file_data(struct callback *UNUSED(a), void *UNUSED(b),
        PIKE_CONCAT(Y,_function_number)>			    \
        file_program->num_identifier_references)		    \
       Pike_fatal(#Y "_function_number is incorrect: %ld\n", \
-                 PTRDIFF_T_TO_LONG(PIKE_CONCAT(Y,_function_number)));
+                 (long)(PIKE_CONCAT(Y,_function_number)));
 #include "file_functions.h"
   }
 }

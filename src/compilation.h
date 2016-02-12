@@ -79,9 +79,9 @@
 #define ZMEMBER(X,Y,Z)
 
 #define STACKMEMBER(X,Y,Z) DO_DEBUG_CODE( \
-    if(Pike_compiler->Y < oLd->Y) \
-      Pike_fatal("Stack " #Y " shrunk %ld steps compilation, currently: %p.\n", \
-            PTRDIFF_T_TO_LONG(oLd->Y - Pike_compiler->Y), Pike_compiler->Y); )
+  if(Pike_compiler->Y < oLd->Y) \
+    Pike_fatal("Stack " #Y " shrunk %ld steps compilation, currently: %p.\n", \
+               (long)(oLd->Y - Pike_compiler->Y), Pike_compiler->Y); )
 
 #define SNAME(X,Y) { \
       struct X *oLd=Pike_compiler->previous;
@@ -116,9 +116,9 @@
 #define ZMEMBER(X,Y,Z)
 
 #define STACKMEMBER(X,Y,Z) DO_DEBUG_CODE( \
-    if(c->Y < oLd->Y) \
-      Pike_fatal("Stack " #Y " shrunk %ld steps compilation, currently: %p.\n", \
-            PTRDIFF_T_TO_LONG(oLd->Y - c->Y), c->Y); )
+  if(c->Y < oLd->Y) \
+    Pike_fatal("Stack " #Y " shrunk %ld steps compilation, currently: %p.\n", \
+               (long)(oLd->Y - c->Y), c->Y); )
 
 #define SNAME(X,Y) { \
     struct X *oLd = c->previous;

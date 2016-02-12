@@ -746,8 +746,7 @@ INT32 assemble(int store_linenumbers)
 #ifdef PIKE_DEBUG
       if(labels[e]==-1)
 	Pike_fatal("Hyperspace error: unknown jump point %ld(%ld) at %d (pc=%x).\n",
-		   PTRDIFF_T_TO_LONG(e), PTRDIFF_T_TO_LONG(max_label),
-		   labels[e], jumps[e]);
+                   (long)e, (long)max_label, labels[e], jumps[e]);
 #endif
 #ifdef INS_F_JUMP
       if(jumps[e] < 0)

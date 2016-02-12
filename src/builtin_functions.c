@@ -1725,12 +1725,12 @@ PMOD_EXPORT void f_string_to_unicode(INT32 args)
 	     */
 	    Pike_error("Illegal character 0x%04x (index %ld) "
                        "is not a Unicode character.",
-                       str2[i], PTRDIFF_T_TO_LONG(i));
+                       str2[i], (long)i);
 	  }
 	  if (str2[i] > 0x10ffff) {
 	    Pike_error("Character 0x%08x (index %ld) "
                        "is out of range (0x00000000..0x0010ffff).",
-                       str2[i], PTRDIFF_T_TO_LONG(i));
+                       str2[i], (long)i);
 	  }
 	  /* Extra wide characters take two UTF16 characters in space.
 	   * ie One UTF16 character extra.
@@ -1761,7 +1761,7 @@ PMOD_EXPORT void f_string_to_unicode(INT32 args)
 #ifdef PIKE_DEBUG
       if (j) {
 	Pike_fatal("string_to_unicode(): Indexing error: len:%ld, j:%ld.\n",
-	      PTRDIFF_T_TO_LONG(len), PTRDIFF_T_TO_LONG(j));
+                   (long)len, (long)j);
       }
 #endif /* PIKE_DEBUG */
       out = end_shared_string(out);

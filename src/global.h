@@ -609,16 +609,6 @@ typedef struct p_wchar_p
 #endif
 #endif
 
-/* Some functions/macros used to avoid loss of precision warnings. */
-#ifdef __ECL
-static inline long PTRDIFF_T_TO_LONG(ptrdiff_t x)
-{
-  return (long)x;
-}
-#else /* !__ECL */
-#define PTRDIFF_T_TO_LONG(x)       ((long)(x))
-#endif /* __ECL */
-
 #ifndef HAVE_STRUCT_IOVEC
 #define HAVE_STRUCT_IOVEC
 struct iovec {
