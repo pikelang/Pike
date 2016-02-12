@@ -953,26 +953,20 @@ INIT
 #endif
 }
 
-EXTRA
-{
-  ADD_FUNCTION("create",dbdate_create,tFunc(tOr(tStr,tInt),tVoid),0);
-  ADD_FUNCTION("cast",dbdate_cast,tFunc(tStr, tMix),ID_PRIVATE);
-  ADD_FUNCTION("_sprintf",dbdate_sprintf,tFunc(tInt, tStr),0);
-}
-
-static void dbdate_create(INT32 args)
+PIKEFUN void create(string|int date)
+  flags ID_PROTECTED;
 {
   struct tm *tm;
   time_t t;
   sword rc;
 
   check_all_args("Oracle.Date",args,BIT_INT|BIT_STRING,0);
-  switch(TYPEOF(Pike_sp[-args]))
+  switch(TYPEOF(*date))
   {
     case T_STRING:
       rc=OCIDateFromText(get_global_error_handle(),
-			 (oratext *)Pike_sp[-args].u.string->str,
-			 Pike_sp[-args].u.string->len,
+			 (oratext *)date->u.string->str,
+			 date->u.string->len,
 			 0,
 			 0,
 			 0,
@@ -983,7 +977,7 @@ static void dbdate_create(INT32 args)
       break;
 
     case T_INT:
-      t=Pike_sp[-1].u.integer;
+      t = date->u.integer;
       tm=localtime(&t);
       if (!tm) Pike_error ("localtime() failed to convert %ld\n", (long) t);
       OCIDateSetDate(&THIS_DBDATE->date, tm->tm_year, tm->tm_mon, tm->tm_mday);
@@ -992,14 +986,13 @@ static void dbdate_create(INT32 args)
   }
 }
 
-static void dbdate_sprintf(INT32 args)
+PIKEFUN string _sprintf(int mode)
+  flags ID_PROTECTED;
 {
   char buffer[200];
   sword rc;
   ub4 bsize=200;
-  int mode = 0;
-  if(args>0 && TYPEOF(Pike_sp[-args]) == PIKE_T_INT)
-    mode = Pike_sp[-args].u.integer;
+
   if(mode != 'O' && mode != 's') {
     pop_n_elems(args);
     push_undefined();
@@ -1032,11 +1025,9 @@ static void dbdate_sprintf(INT32 args)
 #endif
 }
 
-static void dbdate_cast(INT32 args)
+PIKEFUN mixed cast(string type)
+  flags ID_PROTECTED;
 {
-  struct pike_string *type = Pike_sp[-args].u.string;
-  pop_stack(); /* type have at least one more reference. */
-
   if(type == literal_int_string)
   {
     ub1 hour, min, sec, month,day;
@@ -1058,7 +1049,7 @@ static void dbdate_cast(INT32 args)
   else if(type == literal_string_string)
   {
     push_int('s');
-    dbdate_sprintf(1);
+    apply_current(f_Oracle_Date_cq__sprintf_fun_num, 1);
   }
   else
     push_undefined();
