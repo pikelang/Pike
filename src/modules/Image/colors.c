@@ -510,6 +510,8 @@ static void image_color_hsvf(INT32 args)
    f_aggregate(3);
 }
 
+#define FLOAT_TO_COLOR(X) ((COLORTYPE)((X)*((float)COLORMAX+0.4)))
+
 static void image_color_hsv(INT32 args)
 {
    double h,s,v;
