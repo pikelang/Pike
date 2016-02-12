@@ -286,21 +286,19 @@ void *low_check_storage(void *storage, unsigned long magic, char *prog)
 #define THIS_RESULT ((struct dbresult *)check_storage(CURRENT_STORAGE,DBRESULT_MAGIC,"dbresult"))
 #define THIS_RESULTINFO ((struct dbresultinfo *)check_storage(CURRENT_STORAGE,DBRESINFO_MAGIC,"dbresultinfo"))
 #define THIS_DBLOB ((struct Oracle_LOB_struct *)check_storage(CURRENT_STORAGE,DBLOB_MAGIC,"dblob"))
-#define THIS_DBDATE ((struct dbdate *)check_storage(CURRENT_STORAGE,DBDATE_MAGIC,"dbdate"))
+#define THIS_DBDATE ((struct Oracle_Date_struct *)check_storage(CURRENT_STORAGE,DBDATE_MAGIC,"dbdate"))
 #define THIS_DBNULL ((struct dbnull *)check_storage(CURRENT_STORAGE,DBNULL_MAGIC,"dbnull"))
 
 static struct program *oracle_program = NULL;
 static struct program *compile_query_program = NULL;
 static struct program *big_typed_query_program = NULL;
 static struct program *dbresultinfo_program = NULL;
-static struct program *Date_program = NULL;
 static struct program *NULL_program = NULL;
 
 static int oracle_identifier;
 static int compile_query_identifier;
 static int big_typed_query_identifier;
 static int dbresultinfo_identifier;
-static int Date_identifier;
 
 static struct object *nullstring_object;
 static struct object *nullfloat_object;
@@ -481,25 +479,6 @@ struct inout
 
 static void free_inout(struct inout *i);
 static void init_inout(struct inout *i);
-
-/****** dbdate ******/
-
-struct dbdate
-{
-#ifdef PIKE_DEBUG
-  unsigned long magic;
-#endif
-  OCIDate date;
-};
-
-static void init_dbdate_struct(struct object *UNUSED(o))
-{
-#ifdef PIKE_DEBUG
-  ((unsigned long *)(Pike_fp->current_storage))[0]=DBDATE_MAGIC;
-#endif
-}
-static void exit_dbdate_struct(struct object *UNUSED(o)) {}
-
 
 /****** dbnull ******/
 
@@ -960,6 +939,26 @@ PIKEFUN int write(string(8bit) data)
 /*
  * dbdate
  */
+PIKECLASS Date
+{
+#ifdef PIKE_DEBUG
+  CVAR unsigned long magic;
+#endif
+  CVAR OCIDate date;
+
+INIT
+{
+#ifdef PIKE_DEBUG
+  ((unsigned long *)(Pike_fp->current_storage))[0]=DBDATE_MAGIC;
+#endif
+}
+
+EXTRA
+{
+  ADD_FUNCTION("create",dbdate_create,tFunc(tOr(tStr,tInt),tVoid),0);
+  ADD_FUNCTION("cast",dbdate_cast,tFunc(tStr, tMix),ID_PRIVATE);
+  ADD_FUNCTION("_sprintf",dbdate_sprintf,tFunc(tInt, tStr),0);
+}
 
 static void dbdate_create(INT32 args)
 {
@@ -1063,6 +1062,9 @@ static void dbdate_cast(INT32 args)
   }
   else
     push_undefined();
+}
+
+/* END Date */
 }
 
 /*
@@ -1766,9 +1768,10 @@ static void push_inout_value(struct inout *inout,
       fprintf(stderr,"\n");
 #endif
 
-      push_object(low_clone(Date_program));
+      push_object(low_clone(Oracle_Date_program));
       call_c_initializers(Pike_sp[-1].u.object);
-      ((struct dbdate *)STORAGE(Pike_sp[-1].u.object))->date = inout->u.date;
+      ((struct Oracle_Date_struct *)STORAGE(Pike_sp[-1].u.object))->date =
+	inout->u.date;
       break;
 
     case SQLT_NUM:
@@ -2468,10 +2471,10 @@ static void f_big_typed_query_create(INT32 args)
 	switch(TYPEOF(*value))
 	{
 	  case T_OBJECT:
-	    if(value->u.object->prog == Date_program)
+	    if(value->u.object->prog == Oracle_Date_program)
 	    {
 	      bind.bind[bind.bindnum].data.u.date =
-		((struct dbdate *)STORAGE(value->u.object))->date;
+		((struct Oracle_Date_struct *)STORAGE(value->u.object))->date;
 	      addr = &bind.bind[bind.bindnum].data.u.date;
 	      rlen = len = sizeof(bind.bind[bind.bindnum].data.u.date);
 	      fty=SQLT_ODT;
@@ -2754,13 +2757,6 @@ PIKE_MODULE_INIT
 
   INIT;
 
-  MY_START_CLASS(dbdate); {
-    ADD_FUNCTION("create",dbdate_create,tFunc(tOr(tStr,tInt),tVoid),0);
-    ADD_FUNCTION("cast",dbdate_cast,tFunc(tStr, tMix),ID_PRIVATE);
-    ADD_FUNCTION("_sprintf",dbdate_sprintf,tFunc(tInt, tStr),0);
-  }
-  MY_END_CLASS(Date);
-
   MY_START_CLASS(dbnull); {
     struct pike_string *null_string = make_shared_string("Null");
     low_inherit(get_sql_null_prog(), NULL, -1, 0, 0, null_string);
@@ -2867,7 +2863,7 @@ PIKE_MODULE_INIT
   push_float(0.0);
   add_object_constant("NULLfloat",nullfloat_object=clone_object(NULL_program,1),0);
 
-  push_object(low_clone(Date_program));
+  push_object(low_clone(Oracle_Date_program));
   call_c_initializers(Pike_sp[-1].u.object);
   add_object_constant("NULLdate",nulldate_object=clone_object(NULL_program,1),0);
 #ifdef OCI_UTF16ID
@@ -2901,7 +2897,6 @@ PIKE_MODULE_EXIT
   FREE_PROG(compile_query_program);
   FREE_PROG(big_typed_query_program);
   FREE_PROG(dbresultinfo_program);
-  FREE_PROG(Date_program);
   FREE_PROG(NULL_program);
 
   FREE_OBJ(nullstring_object);
