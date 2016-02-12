@@ -503,13 +503,13 @@ CHRONO("image_paste_mask begin");
       {
 	 if (m->r==255) d->r=s->r;
 	 else if (m->r==0) {}
-	 else d->r = DOUBLE_TO_COLORTYPE(((d->r*(255-m->r))+(s->r*m->r))*q);
+	 else d->r = (COLORTYPE)(((d->r*(255-m->r))+(s->r*m->r))*q);
 	 if (m->g==255) d->g=s->g;
 	 else if (m->g==0) {}
-	 else d->g = DOUBLE_TO_COLORTYPE(((d->g*(255-m->g))+(s->g*m->g))*q);
+	 else d->g = (COLORTYPE)(((d->g*(255-m->g))+(s->g*m->g))*q);
 	 if (m->b==255) d->b=s->b;
 	 else if (m->b==0) {}
-	 else d->b = DOUBLE_TO_COLORTYPE(((d->b*(255-m->b))+(s->b*m->b))*q);
+	 else d->b = (COLORTYPE)(((d->b*(255-m->b))+(s->b*m->b))*q);
 	 s++; m++; d++;
       }
       s+=smod; m+=mmod; d+=dmod;
@@ -605,13 +605,13 @@ CHRONO("image_paste_alpha_color begin");
       {
 	 if (m->r==255) d->r=rgb.r;
 	 else if (m->r==0) ;
-	 else d->r = DOUBLE_TO_COLORTYPE(((d->r*(255-m->r))+(rgb.r*m->r))*q);
+	 else d->r = (COLORTYPE)(((d->r*(255-m->r))+(rgb.r*m->r))*q);
 	 if (m->g==255) d->g=rgb.g;
 	 else if (m->g==0) ;
-	 else d->g = DOUBLE_TO_COLORTYPE(((d->g*(255-m->g))+(rgb.g*m->g))*q);
+	 else d->g = (COLORTYPE)(((d->g*(255-m->g))+(rgb.g*m->g))*q);
 	 if (m->b==255) d->b=rgb.b;
 	 else if (m->b==0) ;
-	 else d->b = DOUBLE_TO_COLORTYPE(((d->b*(255-m->b))+(rgb.b*m->b))*q);
+	 else d->b = (COLORTYPE)(((d->b*(255-m->b))+(rgb.b*m->b))*q);
 	 m++; d++;
       }
       m+=mmod; d+=dmod;

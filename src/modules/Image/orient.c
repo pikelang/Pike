@@ -248,7 +248,7 @@ CHRONO("begin hsv...");
 
      d->r=(COLORTYPE)z;
      d->g=255;
-     d->b = MINIMUM(DOUBLE_TO_COLORTYPE(w*mag), 255);
+     d->b = MINIMUM((COLORTYPE)(w*mag), 255);
 
      d++;
      s0++;

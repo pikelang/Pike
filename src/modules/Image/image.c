@@ -2188,9 +2188,9 @@ static void image_gradients(INT32 args)
 
 	 z=1.0/z;
 
-	 d->r=DOUBLE_TO_COLORTYPE(r*z);
-	 d->g=DOUBLE_TO_COLORTYPE(g*z);
-	 d->b=DOUBLE_TO_COLORTYPE(b*z);
+	 d->r=(COLORTYPE)(r*z);
+	 d->g=(COLORTYPE)(g*z);
+	 d->b=(COLORTYPE)(b*z);
 	 d++;
       }
    }

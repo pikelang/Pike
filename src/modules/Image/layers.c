@@ -338,9 +338,9 @@ struct layer_mode_desc
 #define C2F(Z) (qMAX*(Z))
 
 #ifdef CCUT_METHOD_FLOAT
-#define CCUT(Z) (DOUBLE_TO_COLORTYPE(qMAX*Z))
+#define CCUT(Z) ((COLORTYPE)(qMAX*Z))
 #else /* CCUT_METHOD_INT */
-#define CCUT(Z) (DOUBLE_TO_COLORTYPE((Z)/COLORMAX))
+#define CCUT(Z) ((COLORTYPE)((Z)/COLORMAX))
 #endif
 
 #ifdef COMBINE_METHOD_INT
@@ -381,10 +381,10 @@ struct layer_mode_desc
 #endif
 
 #define COMBINE(P,A) CCUT(((int)(P))*(A))
-#define COMBINE_A(P,A) (DOUBLE_TO_COLORTYPE((P)*(A)))
+#define COMBINE_A(P,A) ((COLORTYPE)((P)*(A)))
 #define COMBINE_V(P,V,A) CCUT((V)*(P)*(A))
 
-#define F2C(Z) (DOUBLE_TO_COLORTYPE(COLORMAX*(Z)))
+#define F2C(Z) ((COLORTYPE)(COLORMAX*(Z)))
 
 #define ALPHA_ADD(S,L,D,SA,LA,DA,C)					 \
 	    if (!(LA)->C) (D)->C=(S)->C,(DA)->C=(SA)->C;		 \
@@ -1621,7 +1621,7 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
 #undef L_OPER
 
 #define LM_FUNC lm_modulo
-#define L_TRUNC(X) (DOUBLE_TO_COLORTYPE(X))
+#define L_TRUNC(X) ((COLORTYPE)(X))
 #define L_OPER(A,B) ((A)%((B)?(B):1))
 #include "layer_oper.h"
 #undef LM_FUNC
@@ -1647,7 +1647,7 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
 #undef L_OPER
 
 #define LM_FUNC lm_invmodulo
-#define L_TRUNC(X) (DOUBLE_TO_COLORTYPE(X))
+#define L_TRUNC(X) ((COLORTYPE)(X))
 #define L_OPER(A,B) ((B)%((A)?(A):1))
 #include "layer_oper.h"
 #undef LM_FUNC
@@ -1681,7 +1681,7 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
 #undef L_USE_SA
 
 #define LM_FUNC lm_difference
-#define L_TRUNC(X) (DOUBLE_TO_COLORTYPE(X))
+#define L_TRUNC(X) ((COLORTYPE)(X))
 #define L_OPER(A,B) abs((A)-(B))
 #include "layer_oper.h"
 #undef LM_FUNC
@@ -1689,7 +1689,7 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
 #undef L_OPER
 
 #define LM_FUNC lm_max
-#define L_TRUNC(X) (DOUBLE_TO_COLORTYPE(X))
+#define L_TRUNC(X) ((COLORTYPE)(X))
 #define L_OPER(A,B) MAXIMUM((A),(B))
 #include "layer_oper.h"
 #undef LM_FUNC
@@ -1697,7 +1697,7 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
 #undef L_OPER
 
 #define LM_FUNC lm_min
-#define L_TRUNC(X) (DOUBLE_TO_COLORTYPE(X))
+#define L_TRUNC(X) ((COLORTYPE)(X))
 #define L_OPER(A,B) MINIMUM((A),(B))
 #include "layer_oper.h"
 #undef LM_FUNC
@@ -1705,7 +1705,7 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
 #undef L_OPER
 
 #define LM_FUNC lm_bitwise_and
-#define L_TRUNC(X) (DOUBLE_TO_COLORTYPE(X))
+#define L_TRUNC(X) ((COLORTYPE)(X))
 #define L_OPER(A,B) ((A)&(B))
 #include "layer_oper.h"
 #undef LM_FUNC
@@ -1713,7 +1713,7 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
 #undef L_OPER
 
 #define LM_FUNC lm_bitwise_or
-#define L_TRUNC(X) (DOUBLE_TO_COLORTYPE(X))
+#define L_TRUNC(X) ((COLORTYPE)(X))
 #define L_OPER(A,B) ((A)|(B))
 #include "layer_oper.h"
 #undef LM_FUNC
@@ -1721,7 +1721,7 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
 #undef L_OPER
 
 #define LM_FUNC lm_bitwise_xor
-#define L_TRUNC(X) (DOUBLE_TO_COLORTYPE(X))
+#define L_TRUNC(X) ((COLORTYPE)(X))
 #define L_OPER(A,B) ((A)^(B))
 #include "layer_oper.h"
 #undef LM_FUNC
@@ -1731,7 +1731,7 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
 #undef L_COPY_ALPHA
 
 #define LM_FUNC lm_equal
-#define L_TRUNC(X) (DOUBLE_TO_COLORTYPE(X))
+#define L_TRUNC(X) ((COLORTYPE)(X))
 #define L_OPER(A,B) (((A)==(B))?COLORMAX:0)
 #include "layer_oper.h"
 #undef LM_FUNC
@@ -1739,7 +1739,7 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
 #undef L_OPER
 
 #define LM_FUNC lm_not_equal
-#define L_TRUNC(X) (DOUBLE_TO_COLORTYPE(X))
+#define L_TRUNC(X) ((COLORTYPE)(X))
 #define L_OPER(A,B) (((A)!=(B))?COLORMAX:0)
 #include "layer_oper.h"
 #undef LM_FUNC
@@ -1747,7 +1747,7 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
 #undef L_OPER
 
 #define LM_FUNC lm_less
-#define L_TRUNC(X) (DOUBLE_TO_COLORTYPE(X))
+#define L_TRUNC(X) ((COLORTYPE)(X))
 #define L_OPER(A,B) (((A)>(B))?COLORMAX:0)
 #include "layer_oper.h"
 #undef LM_FUNC
@@ -1755,7 +1755,7 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
 #undef L_OPER
 
 #define LM_FUNC lm_more
-#define L_TRUNC(X) (DOUBLE_TO_COLORTYPE(X))
+#define L_TRUNC(X) ((COLORTYPE)(X))
 #define L_OPER(A,B) (((A)<(B))?COLORMAX:0)
 #include "layer_oper.h"
 #undef LM_FUNC
@@ -1763,7 +1763,7 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
 #undef L_OPER
 
 #define LM_FUNC lm_less_or_equal
-#define L_TRUNC(X) (DOUBLE_TO_COLORTYPE(X))
+#define L_TRUNC(X) ((COLORTYPE)(X))
 #define L_OPER(A,B) (((A)>=(B))?COLORMAX:0)
 #include "layer_oper.h"
 #undef LM_FUNC
@@ -1771,7 +1771,7 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
 #undef L_OPER
 
 #define LM_FUNC lm_more_or_equal
-#define L_TRUNC(X) (DOUBLE_TO_COLORTYPE(X))
+#define L_TRUNC(X) ((COLORTYPE)(X))
 #define L_OPER(A,B) (((A)<=(B))?COLORMAX:0)
 #include "layer_oper.h"
 #undef LM_FUNC
@@ -2326,7 +2326,7 @@ static void lm_erase(rgb_group *UNUSED(s),rgb_group *UNUSED(l),rgb_group *UNUSED
       if (!la) /* full opaque */
       {
 	 rgb_group a;
-	 a.r=a.g=a.b=COLORMAX-DOUBLE_TO_COLORTYPE(alpha*COLORMAX);
+	 a.r=a.g=a.b=COLORMAX-(COLORTYPE)(alpha*COLORMAX);
 	 smear_color(da,a,len);
       }
       else
@@ -2419,19 +2419,19 @@ static void lm_spec_burn_alpha(struct layer *ly,
 	     || !l)
 	 {
 	    *d=*s;
-	    da->r=MINIMUM(sa->r+DOUBLE_TO_COLORTYPE(alpha*la->r),COLORMAX);
-	    da->g=MINIMUM(sa->g+DOUBLE_TO_COLORTYPE(alpha*la->g),COLORMAX);
-	    da->b=MINIMUM(sa->b+DOUBLE_TO_COLORTYPE(alpha*la->b),COLORMAX);
+	    da->r=MINIMUM(sa->r+(COLORTYPE)(alpha*la->r),COLORMAX);
+	    da->g=MINIMUM(sa->g+(COLORTYPE)(alpha*la->g),COLORMAX);
+	    da->b=MINIMUM(sa->b+(COLORTYPE)(alpha*la->b),COLORMAX);
 	 }
 	 else
 	 {
-	    d->r=s->r+DOUBLE_TO_COLORTYPE(alpha*l->r);
-	    d->g=s->g+DOUBLE_TO_COLORTYPE(alpha*l->g);
-	    d->b=s->b+DOUBLE_TO_COLORTYPE(alpha*l->b);
+	    d->r=s->r+(COLORTYPE)(alpha*l->r);
+	    d->g=s->g+(COLORTYPE)(alpha*l->g);
+	    d->b=s->b+(COLORTYPE)(alpha*l->b);
 
-	    da->r=MINIMUM(sa->r+DOUBLE_TO_COLORTYPE(alpha*l->r),COLORMAX);
-	    da->g=MINIMUM(sa->g+DOUBLE_TO_COLORTYPE(alpha*l->g),COLORMAX);
-	    da->b=MINIMUM(sa->b+DOUBLE_TO_COLORTYPE(alpha*l->b),COLORMAX);
+	    da->r=MINIMUM(sa->r+(COLORTYPE)(alpha*l->r),COLORMAX);
+	    da->g=MINIMUM(sa->g+(COLORTYPE)(alpha*l->g),COLORMAX);
+	    da->b=MINIMUM(sa->b+(COLORTYPE)(alpha*l->b),COLORMAX);
 	 }
 	 da++; sa++; la++; s++; d++;
       }

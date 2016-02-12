@@ -305,9 +305,9 @@ static void init_colorrange(rgb_group *cr,struct svalue *s,char *where)
 
 	 for (b=0;i<n && i<COLORRANGE_LEVELS;i++,b++)
 	 {
-	    cr[i&(COLORRANGE_LEVELS-1)].r = DOUBLE_TO_COLORTYPE(lrgb.r+fr*b);
-	    cr[i&(COLORRANGE_LEVELS-1)].g = DOUBLE_TO_COLORTYPE(lrgb.g+fg*b);
-	    cr[i&(COLORRANGE_LEVELS-1)].b = DOUBLE_TO_COLORTYPE(lrgb.b+fb*b);
+	    cr[i&(COLORRANGE_LEVELS-1)].r = (COLORTYPE)(lrgb.r+fr*b);
+	    cr[i&(COLORRANGE_LEVELS-1)].g = (COLORTYPE)(lrgb.g+fg*b);
+	    cr[i&(COLORRANGE_LEVELS-1)].b = (COLORTYPE)(lrgb.b+fb*b);
 	 }
       }
       lrgb=rgb[k];

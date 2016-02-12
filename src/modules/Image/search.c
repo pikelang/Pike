@@ -473,17 +473,17 @@ static inline rgb_group _pixel_apply_max(struct image *img,
             sumb = (int)MAXIMUM(sumb, matrix[i+j*width].b);
 	 }
    if (sumr)
-     res.r = DOUBLE_TO_COLORTYPE(testrange(default_rgb.r + r/(sumr * div)));
+     res.r = (COLORTYPE)testrange(default_rgb.r + r/(sumr * div));
    else
-     res.r = DOUBLE_TO_COLORTYPE(testrange(r * qdiv + default_rgb.r));
+     res.r = (COLORTYPE)testrange(r * qdiv + default_rgb.r);
    if (sumg)
-     res.g = DOUBLE_TO_COLORTYPE(testrange(default_rgb.g + g/(sumg * div)));
+     res.g = (COLORTYPE)testrange(default_rgb.g + g/(sumg * div));
    else
-     res.g = DOUBLE_TO_COLORTYPE(testrange(g * qdiv + default_rgb.g));
+     res.g = (COLORTYPE)testrange(g * qdiv + default_rgb.g);
    if (sumb)
-     res.b = DOUBLE_TO_COLORTYPE(testrange(default_rgb.g + b/(sumb * div)));
+     res.b = (COLORTYPE)testrange(default_rgb.g + b/(sumb * div));
    else
-     res.b = DOUBLE_TO_COLORTYPE(testrange(b * qdiv + default_rgb.b));
+     res.b = (COLORTYPE)testrange(b * qdiv + default_rgb.b);
 #ifdef MATRIX_DEBUG
    fprintf(stderr,"->%d,%d,%d\n",res.r,res.g,res.b);
 #endif
@@ -567,11 +567,11 @@ j++;
 	 fprintf(stderr,"->%d,%d,%d\n",r/sumr,g/sumg,b/sumb);
 #endif
 	 r = default_rgb.r+(int)(r*qr+0.5);
-	 dp->r = DOUBLE_TO_COLORTYPE(testrange(r));
+         dp->r = (COLORTYPE)testrange(r);
 	 g = default_rgb.g+(int)(g*qg+0.5);
-	 dp->g = DOUBLE_TO_COLORTYPE(testrange(g));
+         dp->g = (COLORTYPE)testrange(g);
 	 b = default_rgb.b+(int)(b*qb+0.5);
-	 dp->b = DOUBLE_TO_COLORTYPE(testrange(b));
+         dp->b = (COLORTYPE)testrange(b);
 	 dp++;
       }
    }
