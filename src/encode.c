@@ -4330,7 +4330,7 @@ static void rec_restore_value(char **v, ptrdiff_t *l)
 
   default:
     decode_error(current_decode, NULL, "Unknown type tag %ld:%ld\n",
-	  PTRDIFF_T_TO_LONG(i), PTRDIFF_T_TO_LONG(t));
+                 (long)i, (long)t);
   }
 }
 

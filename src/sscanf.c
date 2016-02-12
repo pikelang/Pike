@@ -1119,7 +1119,7 @@ INPUT_IS_WIDE(								 \
 	  if(field_length == -1) field_length = 4;			 \
 	  if(field_length != 4 && field_length != 8)			 \
 	    Pike_error("Invalid IEEE width %ld in sscanf format string.\n",	 \
-		  PTRDIFF_T_TO_LONG(field_length));			 \
+                       (long)field_length);                             \
 	  if(eye+field_length > input_len)				 \
 	  {								 \
 	    chars_matched[0]=eye;					 \

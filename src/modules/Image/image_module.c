@@ -92,7 +92,7 @@ static struct
 #define IMAGE_CHECK_STACK(X)	do { \
     if (save_sp != sp) { \
       Pike_fatal("%s:%d: %ld droppings on stack! previous init: %s\n", \
-            __FILE__, __LINE__, PTRDIFF_T_TO_LONG(sp - save_sp), X); \
+                 __FILE__, __LINE__, (long)(sp - save_sp), X);         \
     } \
   } while(0)
 #else

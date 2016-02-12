@@ -137,9 +137,9 @@ PMOD_EXPORT extern const char Pike_check_stack_errmsg[];
   if(low_stack_check(X)) \
     ((void (*)(const char *, ...))Pike_error)( \
                Pike_check_stack_errmsg, \
-	       PTRDIFF_T_TO_LONG(Pike_sp - Pike_interpreter.evaluator_stack), \
-	       PTRDIFF_T_TO_LONG(Pike_stack_size), \
-	       PTRDIFF_T_TO_LONG(X)); \
+               (long)(Pike_sp - Pike_interpreter.evaluator_stack),      \
+               (long)Pike_stack_size,                \
+               (long)(X));          \
   }while(0)
 
 PMOD_EXPORT extern const char Pike_check_mark_stack_errmsg[];

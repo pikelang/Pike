@@ -1668,9 +1668,8 @@ cont_2:
         l=4;
         if(fsp->width > 0) l=fsp->width;
 	if(l != 4 && l != 8)
-	  sprintf_error(fs, "Invalid IEEE width %ld.\n",
-			PTRDIFF_T_TO_LONG(l));
-	x=(char *)sa_alloc(&fs->a, l);
+          sprintf_error(fs, "Invalid IEEE width %ld.\n", (long)l);
+        x=(char *)sa_alloc(&fs->a, l);
 	fsp->b=MKPCHARP(x,0);
 	fsp->len=l;
 	GET_FLOAT(tf);

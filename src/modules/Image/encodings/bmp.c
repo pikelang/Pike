@@ -599,7 +599,7 @@ void i_img_bmp__decode(INT32 args,int header_only)
 
 	 if (len<54)
 	    Pike_error("Image.BMP.decode: unexpected EOF in header (at byte %ld)\n",
-		  PTRDIFF_T_TO_LONG(len));
+                       (long)len);
 
 	 push_static_text("xsize");
 	 push_int(xsize=int_from_32bit(s+14+4*1));
