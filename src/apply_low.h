@@ -79,12 +79,10 @@
        * put it here until someone needs it. -Hubbe
        */
       new_frame->ident = ref->identifier_offset;
-      DO_IF_PROFILING_DEBUG({
-	  fprintf(stderr, "%p{: Push at %" PRINT_CPU_TIME
-		  " %" PRINT_CPU_TIME "\n",
-		  Pike_interpreter.thread_state, new_frame->start_time,
-		  new_frame->children_base);
-	});
+      W_PROFILING_DEBUG("%p{: Push at %" PRINT_CPU_TIME
+                        " %" PRINT_CPU_TIME "\n",
+                        Pike_interpreter.thread_state, new_frame->start_time,
+                        new_frame->children_base);
 #endif
       debug_malloc_touch(new_frame);
 
