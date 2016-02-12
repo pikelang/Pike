@@ -212,15 +212,6 @@ void init_pike_runtime(void (*exit_cb)(int))
       if(lim.rlim_cur > 2*1024*1024) lim.rlim_cur=2*1024*1024;
 #endif
 
-#if defined(_AIX) && defined(__ia64)
-      /* getrlimit() on AIX 5L/IA64 Beta 3 reports 32MB by default,
-       * even though the stack is just 8MB.
-       */
-      if (lim.rlim_cur > 8*1024*1024) {
-        lim.rlim_cur = 8*1024*1024;
-      }
-#endif /* _AIX && __ia64 */
-
 #if STACK_DIRECTION < 0
       Pike_interpreter.stack_top -= lim.rlim_cur;
 #else /* STACK_DIRECTION >= 0 */

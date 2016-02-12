@@ -760,9 +760,8 @@ PMOD_EXPORT void pike_threads_allow (struct thread_state *ts COMMA_DLOC_DECL)
     pike_unlock_interpreter (DLOC_ARGS_OPT);
   }
 
-#if defined (PIKE_DEBUG) && !(defined(__ia64) && defined(__xlc__))
+#if defined (PIKE_DEBUG)
   else {
-    /* Disabled in xlc 5.5.0.0/ia64 due to a code generation bug. */
     THREAD_T self = th_self();
     if (threads_disabled && !th_equal(threads_disabled_thread, self))
       pike_fatal_dloc ("Threads allowed from a different thread "
@@ -837,9 +836,8 @@ PMOD_EXPORT void pike_threads_allow_ext (struct thread_state *ts
     pike_unlock_interpreter (DLOC_ARGS_OPT);
   }
 
-#if defined (PIKE_DEBUG) && !(defined(__ia64) && defined(__xlc__))
+#if defined (PIKE_DEBUG)
   else {
-    /* Disabled in xlc 5.5.0.0/ia64 due to a code generation bug. */
     THREAD_T self = th_self();
     if (threads_disabled && !th_equal(threads_disabled_thread, self))
       pike_fatal_dloc ("Threads allowed from a different thread "

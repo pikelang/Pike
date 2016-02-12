@@ -1817,16 +1817,6 @@ if test "$cflags_is_set" = "no"; then
 	;;
      esac
    ;;
-   ia64)
-     case "`uname -p`" in
-       [Ii]tanium*2)
-         AC_SYS_COMPILER_FLAG(-mtune=itanium2,mtune_itanium2,CFLAGS)
-       ;;
-       [Ii]tanium)
-         AC_SYS_COMPILER_FLAG(-mtune=itanium1,mtune_itanium1,CFLAGS)
-       ;;
-     esac
-   ;;
    ppc64)
     case "`uname -p 2>/dev/null`" in
       Cell\ Broadband\ Engine*)
@@ -1840,12 +1830,8 @@ if test "$cflags_is_set" = "no"; then
   DO_IF_OS(AIX,
   [
     # Tell the linker to generate a large toc if needed
-    #
-    # This option is not needed on AIX 5L/ia64.
-    if test "x`uname -p`" = "xia64"; then :; else
-      AC_SYS_COMPILER_FLAG(-bbigtoc,bbigtoc,LDFLAGS)
-      AC_SYS_COMPILER_FLAG([-Wl,-bbigtoc],Wlbbigtoc,LDFLAGS)
-    fi
+    AC_SYS_COMPILER_FLAG(-bbigtoc,bbigtoc,LDFLAGS)
+    AC_SYS_COMPILER_FLAG([-Wl,-bbigtoc],Wlbbigtoc,LDFLAGS)
   ])
 
   DO_IF_OS(Darwin,
@@ -2072,11 +2058,7 @@ if test "$cflags_is_set" = "no"; then
       AC_SYS_COMPILER_FLAG_QSUPPRESS(1506-219, CPPFLAGS)
 
       # Tell the linker to generate a large toc if needed
-      #
-      # This option is not needed on AIX 5L/ia64.
-      if test "x`uname -p`" = "xia64"; then :; else
-        AC_SYS_COMPILER_FLAG(-bbigtoc,bbigtoc,LDFLAGS)
-      fi
+      AC_SYS_COMPILER_FLAG(-bbigtoc,bbigtoc,LDFLAGS)
     ])
 
     # HP-UX
@@ -2140,27 +2122,6 @@ if test "$cflags_is_set" = "no"; then
     DO_IF_OS(Windows_NT,
     [
       case "x$CC" in
-      *rntecl*)
-        # Some options used by ecl (Intel's IA64 compiler).
-
-        # We want threads, and link libc statically.
-        AC_SYS_COMPILER_FLAG(-MT,MT,LDFLAGS)
-
-        # Interprocedural optimizations.
-        # For some reason this seems to cause the error:
-        # dynamic_buffer.obj : error LNK2001: unresolved external symbol "[Entry] ?1memcpy" (.?1memcpy)
-        # AC_SYS_COMPILER_FLAG(-Qip,Qip,OPTIMIZE)
-
-        # More warnings.
-        AC_SYS_COMPILER_FLAG(-W3,W3,WARN)
-
-        if test x$with_rtldebug = xyes ; then
-          # Initialize auto variables to 0xcc.
-  	# (Only if optimizations are turned off with -Od).
-          AC_SYS_COMPILER_FLAG(-GZ,GZ,WARN)
-        fi
-        ;;
-
       *rntcl*)
         if test x$with_debug_crt = xyes; then
   	dynamic_crt_flag=-MDd
@@ -3298,8 +3259,6 @@ if test "x$with_devpoll" = "xno"; then :; else
  */
 #ifdef __i386__
 #define __NR_epoll_create 254
-#elif defined(__ia64__)
-#define __NR_epoll_create 1243
 #elif defined(__x86_64__)
 #define __NR_epoll_create 214
 #else /* cpu types */
