@@ -1080,9 +1080,9 @@ static inline void _find_cube_dist(struct nct_cube cube,rgb_group rgb,
       b.g=((INT32)rgb.g)-s->low.g;
       b.b=((INT32)rgb.b)-s->low.b;
 
-      n = DOUBLE_TO_INT((s->steps*(b.r*s->vector.r+
-				   b.g*s->vector.g+
-				   b.b*s->vector.b))*s->invsqvector);
+      n = (int)((s->steps*(b.r*s->vector.r+
+                           b.g*s->vector.g+
+                           b.b*s->vector.b))*s->invsqvector);
 
       if (n<0) n=0; else if (n>=s->steps) n=s->steps-1;
 
@@ -1688,11 +1688,11 @@ static rgbl_group dither_floyd_steinberg_encode(struct nct_dither *dith,
    if (err->r>255) err->r=255; else if (err->r<-255) err->r=-255;
    if (err->g>255) err->g=255; else if (err->g<-255) err->g=-255;
    if (err->b>255) err->b=255; else if (err->b<-255) err->b=-255;
-   i = DOUBLE_TO_INT((int)s.r-err->r+0.5);
+   i = (int)((int)s.r-err->r+0.5);
    rgb.r=i<0?0:(i>255?255:i);
-   i = DOUBLE_TO_INT((int)s.g-err->g+0.5);
+   i = (int)((int)s.g-err->g+0.5);
    rgb.g=i<0?0:(i>255?255:i);
-   i = DOUBLE_TO_INT((int)s.b-err->b+0.5);
+   i = (int)((int)s.b-err->b+0.5);
    rgb.b=i<0?0:(i>255?255:i);
    return rgb;
 }
@@ -1708,12 +1708,9 @@ static void dither_floyd_steinberg_got(struct nct_dither *dith,
    rgbd_group *er=dith->u.floyd_steinberg.errors;
    rgbd_group err;
 
-   err.r = (float)((DOUBLE_TO_INT(d.r)-DOUBLE_TO_INT(s.r)) +
-                   er[rowpos].r+0.5);
-   err.g = (float)((DOUBLE_TO_INT(d.g)-DOUBLE_TO_INT(s.g)) +
-                   er[rowpos].g+0.5);
-   err.b = (float)((DOUBLE_TO_INT(d.b)-DOUBLE_TO_INT(s.b)) +
-                   er[rowpos].b+0.5);
+   err.r = (float)(((int)d.r-(int)s.r) + er[rowpos].r+0.5);
+   err.g = (float)(((int)d.g-(int)s.g) + er[rowpos].g+0.5);
+   err.b = (float)(((int)d.b-(int)s.b) + er[rowpos].b+0.5);
 
    ner[rowpos].r+=err.r*dith->u.floyd_steinberg.down;
    ner[rowpos].g+=err.g*dith->u.floyd_steinberg.down;
@@ -4040,7 +4037,7 @@ static int *ordered_make_diff(int *errors,int sz,int err)
    if (sz!=1) q = 1.0/(sz-1); else q=1.0;
 
    while (n--)
-      *(d++) = DOUBLE_TO_INT((*(errors++)*q-0.5)*2*err);
+      *(d++) = (int)((*(errors++)*q-0.5)*2*err);
 
    return dest;
 }

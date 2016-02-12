@@ -6,13 +6,6 @@
 
 #include "global.h"
 
-#if 0
-/* Prototypes are needed for these */
-/* Should really exist in math.h. This prototype might conflict with
- * dllimport stuff on Windows. /mast */
-extern double floor(double);
-#endif
-
 #include <math.h>
 
 #include "image_machine.h"
@@ -337,8 +330,8 @@ static inline void polyfill_row_add(double *buf,
 				    double add)
 {
    int i;
-   int xmin_i = DOUBLE_TO_INT(floor(xmin));
-   int xmax_i = DOUBLE_TO_INT(floor(xmax));
+   int xmin_i = (int)floor(xmin);
+   int xmax_i = (int)floor(xmax);
    if (xmax_i<0) return;
    if (xmin_i == xmax_i)
       buf[xmin_i] += (xmax-xmin)*add;
@@ -362,8 +355,8 @@ static inline void polyfill_slant_add(double *buf,
 				      double dy)
 {
    int i;
-   int xmin_i = DOUBLE_TO_INT(floor(xmin));
-   int xmax_i = DOUBLE_TO_INT(floor(xmax));
+   int xmin_i = (int)floor(xmin);
+   int xmax_i = (int)floor(xmax);
 
    if (xmax_i<0) return;
    if (xmin_i == xmax_i) {
@@ -519,7 +512,7 @@ static void polyfill_some(struct image *img,
    /* beat row for row */
 
    if (y+1.0+1e-10<v->y)
-      y = DOUBLE_TO_INT(v->y);
+      y = (int)v->y;
 
    while (y<img->ysize && (to_loose||to_add) )
    {

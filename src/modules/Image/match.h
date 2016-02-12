@@ -173,7 +173,7 @@ THREADS_ALLOW();
       else\
       {\
 	NORMCODE;\
-	tempavr = DOUBLE_TO_INT(((double)tempavr)/(3*needle_size)); \
+	tempavr = (int)(((double)tempavr)/(3*needle_size)); \
 	for(ny=0; ny<nys; ny++) \
 	  for(nx=0; nx<nxs; nx++)  \
 	  { \
@@ -185,7 +185,7 @@ THREADS_ALLOW();
 	    sum+=(MAXIMUM(CERTI1 B1, CERTI1 B1) * PIXEL_VALUE_DISTANCE(b)); \
 	  } \
 	imgi[i+(nys/2)*xs+(nxs/2)].r=\
-          DOUBLE_TO_INT(255.99/(1.0+((((double)scale) * SCALE_MODIFY((double)sum))))); \
+          (int)(255.99/(1.0+((((double)scale) * SCALE_MODIFY((double)sum))))); \
       }\
    }
 

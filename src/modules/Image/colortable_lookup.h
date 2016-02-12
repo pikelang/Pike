@@ -459,19 +459,19 @@ void NCTLU_CUBE_NAME(rgb_group *s,
 	    {
 	       /* what step is closest? project... */
 
-	      i = DOUBLE_TO_INT((sc->steps *
-				 (((int)val.r-(int)sc->low.r)*sc->vector.r +
-				  ((int)val.g-(int)sc->low.g)*sc->vector.g +
-				  ((int)val.b-(int)sc->low.b)*sc->vector.b)) *
-				sc->invsqvector);
+              i = (int)((sc->steps *
+                         (((int)val.r-(int)sc->low.r)*sc->vector.r +
+                          ((int)val.g-(int)sc->low.g)*sc->vector.g +
+                          ((int)val.b-(int)sc->low.b)*sc->vector.b)) *
+                        sc->invsqvector);
 
 	       if (i<0) i=0; else if (i>=sc->steps) i=sc->steps-1;
 	       if (sc->no[i]>=nc)
 	       {
 		  double f= i * sc->mqsteps;
-		  int drgbr = sc->low.r + DOUBLE_TO_INT(sc->vector.r*f);
-		  int drgbg = sc->low.g + DOUBLE_TO_INT(sc->vector.g*f);
-		  int drgbb = sc->low.b + DOUBLE_TO_INT(sc->vector.b*f);
+                  int drgbr = sc->low.r + (int)(sc->vector.r*f);
+                  int drgbg = sc->low.g + (int)(sc->vector.g*f);
+                  int drgbb = sc->low.b + (int)(sc->vector.b*f);
 
 		  int ldist=sf.r*SQ(val.r-drgbr)+
 		     sf.g*SQ(val.g-drgbg)+sf.b*SQ(val.b-drgbb);

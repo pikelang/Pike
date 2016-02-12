@@ -38,7 +38,7 @@ extern struct program *image_program;
 
 #define absdiff(a,b) ((a)<(b)?((b)-(a)):((a)-(b)))
 
-#define testrange(x) (MAXIMUM(MINIMUM(DOUBLE_TO_INT(x),255),0))
+#define testrange(x) (MAXIMUM(MINIMUM((int)(x),255),0))
 
 #define STANDARD_OPERATOR_HEADER(what)					\
    struct object *o;							\
@@ -59,10 +59,10 @@ extern struct program *image_program;
    }									\
    else if (args && TYPEOF(sp[-args]) == T_FLOAT)			\
    {									\
-      rgb.r=DOUBLE_TO_INT(255*sp[-args].u.float_number);		\
-      rgb.g=DOUBLE_TO_INT(255*sp[-args].u.float_number);		\
-      rgb.b=DOUBLE_TO_INT(255*sp[-args].u.float_number);		\
-      oper=NULL;							\
+     rgb.r=(int)(255*sp[-args].u.float_number);                         \
+     rgb.g=(int)(255*sp[-args].u.float_number);                         \
+     rgb.b=(int)(255*sp[-args].u.float_number);                         \
+     oper=NULL;                                                         \
    }									\
    else if (args && (TYPEOF(sp[-args]) == T_ARRAY ||			\
 		     TYPEOF(sp[-args]) == T_OBJECT ||			\
