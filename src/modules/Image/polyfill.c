@@ -652,16 +652,16 @@ static void polyfill_some(struct image *img,
    ((unsigned char)((y*(255L-(alpha))+x*(alpha))/255L))
 
 	  d->r = apply_alpha( d->r,
-			      DOUBLE_TO_COLORTYPE((d->r*(1.0-buf[i]))+
-						  (img->rgb.r*buf[i])),
+			      (COLORTYPE)((d->r*(1.0-buf[i]))+
+                                          (img->rgb.r*buf[i])),
 			      THIS->alpha );
 	  d->g = apply_alpha( d->g,
-			      DOUBLE_TO_COLORTYPE((d->g*(1.0-buf[i]))+
-						  (img->rgb.g*buf[i])),
+			      (COLORTYPE)((d->g*(1.0-buf[i]))+
+                                          (img->rgb.g*buf[i])),
 			      THIS->alpha );
 	  d->b = apply_alpha( d->b,
-			      DOUBLE_TO_COLORTYPE((d->b*(1.0-buf[i]))+
-						  (img->rgb.b*buf[i])),
+                              (COLORTYPE)((d->b*(1.0-buf[i]))+
+                                          (img->rgb.b*buf[i])),
 			      THIS->alpha );
 	  d++;
 	}
@@ -675,9 +675,9 @@ static void polyfill_some(struct image *img,
 #ifdef POLYDEBUG
 	  fprintf(stderr,"%3.2f ",buf[i]);
 #endif
-	  d->r = DOUBLE_TO_COLORTYPE((d->r*(1.0-buf[i]))+(img->rgb.r*buf[i]));
-	  d->g = DOUBLE_TO_COLORTYPE((d->g*(1.0-buf[i]))+(img->rgb.g*buf[i]));
-	  d->b = DOUBLE_TO_COLORTYPE((d->b*(1.0-buf[i]))+(img->rgb.b*buf[i]));
+	  d->r = (COLORTYPE)((d->r*(1.0-buf[i]))+(img->rgb.r*buf[i]));
+	  d->g = (COLORTYPE)((d->g*(1.0-buf[i]))+(img->rgb.g*buf[i]));
+	  d->b = (COLORTYPE)((d->b*(1.0-buf[i]))+(img->rgb.b*buf[i]));
 	  d++;
 	}
 #ifdef POLYDEBUG

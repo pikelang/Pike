@@ -43,17 +43,12 @@ static inline char DOUBLE_TO_CHAR(double d)
 {
   return (char)d;
 }
-static inline COLORTYPE DOUBLE_TO_COLORTYPE(double d)
-{
-  return (COLORTYPE)d;
-}
 static inline COLORTYPE FLOAT_TO_COLOR(double X)
 {
   return (COLORTYPE)((X)*((double)COLORMAX+0.4));
 }
 #else /* !__ECL */
 #define DOUBLE_TO_CHAR(D)	((char)(D))
-#define DOUBLE_TO_COLORTYPE(D)	((COLORTYPE)(D))
 #define FLOAT_TO_COLOR(X) ((COLORTYPE)((X)*((float)COLORMAX+0.4)))
 #endif /* __ECL */
 static inline INT32 PIKE_UNUSED_ATTRIBUTE FLOAT_TO_COLORL(double X)
