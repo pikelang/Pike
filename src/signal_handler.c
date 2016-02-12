@@ -94,12 +94,6 @@
 #endif
 
 #ifdef HAVE_SYS_PTRACE_H
-/* <sys/ptrace.h> on Linux/IA64 includes <asm/current.h>,
- * which contains stuff that some compilers (ecc) don't like...
- */
-#ifndef _ASM_IA64_CURRENT_H
-#define _ASM_IA64_CURRENT_H
-#endif
 #include <sys/ptrace.h>
 #endif
 

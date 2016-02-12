@@ -2788,10 +2788,6 @@ int POLL_DEVICE_SET_EVENTS(struct Backend_struct *me,
 #define __NR_epoll_create 254
 #define __NR_epoll_ctl 255
 #define __NR_epoll_wait 256
-#elif defined(__ia64__)
-#define __NR_epoll_create 1243
-#define __NR_epoll_ctl 1244
-#define __NR_epoll_wait 1245
 #elif defined(__x86_64__)
 #define __NR_epoll_create 214
 #define __NR_epoll_ctl 233

@@ -259,7 +259,6 @@ static void push_regvalue(DWORD type, char* buffer, DWORD len)
 /* Known hkeys.
  *
  * This table is used to avoid passing pointers to the pike level.
- * (On W2k/IA64 HKEY is typedefed to struct HKEY__ *).
  *
  * NOTE: Order must match the values specified with
  * ADD_GLOBAL_INTEGER_CONSTANT() in init_nt_system_calls() below.
@@ -3378,13 +3377,6 @@ static void f_nt_uname(INT32 args)
       }
       break;
 #endif /* PROCESSOR_ARCHITECTURE_ARM */
-
-#ifdef PROCESSOR_ARCHITECTURE_IA64
-    case PROCESSOR_ARCHITECTURE_IA64:
-      machine = "ia64";
-      push_static_text("ia64");
-      break;
-#endif /* PROCESSOR_ARCHITECTURE_IA64 */
 
 #ifdef PROCESSOR_ARCHITECTURE_ALPHA64
     case PROCESSOR_ARCHITECTURE_ALPHA64:
