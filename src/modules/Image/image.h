@@ -37,20 +37,6 @@ extern int image_cpuid;
 #define RGB_TO_RGBL(RGBL,RGB) (((RGBL).r=COLOR_TO_COLORL((RGB).r)),((RGBL).g=COLOR_TO_COLORL((RGB).g)),((RGBL).b=COLOR_TO_COLORL((RGB).b)))
 #define RGBL_TO_RGB(RGB,RGBL) (((RGB).r=COLORL_TO_COLOR((RGBL).r)),((RGB).g=COLORL_TO_COLOR((RGBL).g)),((RGB).b=COLORL_TO_COLOR((RGBL).b)))
 
-/* Some marcos to avoid loss of precision warnings. */
-#ifdef __ECL
-static inline char DOUBLE_TO_CHAR(double d)
-{
-  return (char)d;
-}
-static inline COLORTYPE FLOAT_TO_COLOR(double X)
-{
-  return (COLORTYPE)((X)*((double)COLORMAX+0.4));
-}
-#else /* !__ECL */
-#define DOUBLE_TO_CHAR(D)	((char)(D))
-#define FLOAT_TO_COLOR(X) ((COLORTYPE)((X)*((float)COLORMAX+0.4)))
-#endif /* __ECL */
 static inline INT32 PIKE_UNUSED_ATTRIBUTE FLOAT_TO_COLORL(double X)
 {
   /* stupid floats */
