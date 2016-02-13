@@ -516,6 +516,12 @@ void join_channel(string chan)
    }
 }
 
+void part_channel(string chan)
+{
+   cmd->part(chan);
+   m_delete(channels, lower_case(chan));
+}
+
 // ----- persons
 
 class Person
