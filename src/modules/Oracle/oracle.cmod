@@ -946,6 +946,8 @@ PIKECLASS Date
 #endif
   CVAR OCIDate date;
 
+  DECLARE_STORAGE;
+
 INIT
 {
 #ifdef PIKE_DEBUG
