@@ -287,13 +287,12 @@ void *low_check_storage(void *storage, unsigned long magic, char *prog)
 #define THIS_RESULTINFO ((struct dbresultinfo *)check_storage(CURRENT_STORAGE,DBRESINFO_MAGIC,"dbresultinfo"))
 #define THIS_DBLOB ((struct Oracle_LOB_struct *)check_storage(CURRENT_STORAGE,DBLOB_MAGIC,"dblob"))
 #define THIS_DBDATE ((struct Oracle_Date_struct *)check_storage(CURRENT_STORAGE,DBDATE_MAGIC,"dbdate"))
-#define THIS_DBNULL ((struct dbnull *)check_storage(CURRENT_STORAGE,DBNULL_MAGIC,"dbnull"))
+#define THIS_DBNULL ((struct Oracle_NULL_struct *)check_storage(CURRENT_STORAGE,DBNULL_MAGIC,"dbnull"))
 
 static struct program *oracle_program = NULL;
 static struct program *compile_query_program = NULL;
 static struct program *big_typed_query_program = NULL;
 static struct program *dbresultinfo_program = NULL;
-static struct program *NULL_program = NULL;
 
 static int oracle_identifier;
 static int compile_query_identifier;
@@ -479,25 +478,6 @@ struct inout
 
 static void free_inout(struct inout *i);
 static void init_inout(struct inout *i);
-
-/****** dbnull ******/
-
-struct dbnull
-{
-#ifdef PIKE_DEBUG
-  unsigned long magic;
-#endif
-  struct svalue type;
-};
-
-static void init_dbnull_struct(struct object *UNUSED(o))
-{
-#ifdef PIKE_DEBUG
-  ((unsigned long *)(Pike_fp->current_storage))[0]=DBNULL_MAGIC;
-#endif
-}
-static void exit_dbnull_struct(struct object *UNUSED(o)) {}
-
 
 /****** connection ******/
 struct dbcon
@@ -1063,6 +1043,34 @@ PIKEFUN mixed cast(string type)
 /*
  * dbnull
  */
+PIKECLASS NULL
+{
+#ifdef PIKE_DEBUG
+  CVAR unsigned long magic;
+#endif
+  CVAR struct svalue type;
+
+  DECLARE_STORAGE;
+
+INIT
+{
+#ifdef PIKE_DEBUG
+  ((unsigned long *)(Pike_fp->current_storage))[0]=DBNULL_MAGIC;
+#endif
+}
+
+EXTRA
+{
+  struct pike_string *null_string = make_shared_string("Null");
+  low_inherit(get_sql_null_prog(), NULL, -1, 0, 0, null_string);
+  free_string(null_string);
+  add_integer_constant("is_oracle_null", 1, 0);
+  ADD_FUNCTION("create", dbnull_create, tFunc(tOr(tStr, tInt), tVoid),
+	       ID_PROTECTED);
+  ADD_FUNCTION("_sprintf", dbnull_sprintf, tFunc(tInt, tStr), ID_PROTECTED);
+  ADD_FUNCTION("`==", dbnull_eq, tFunc(tMix, tInt01), ID_PROTECTED);
+  PIKE_MAP_VARIABLE("type",offset+OFFSETOF(Oracle_NULL_struct, type),tMix,T_MIXED,0);
+}
 
 static void dbnull_create(INT32 args)
 {
@@ -1119,6 +1127,8 @@ static void dbnull_eq(INT32 args)
   f_eq(2);
 }
 
+/* END NULL */
+}
 
 /*
  * dbresult
@@ -2473,10 +2483,11 @@ static void f_big_typed_query_create(INT32 args)
 	      fty=SQLT_ODT;
 	      break;
 	    }
-	    if(value->u.object->prog == NULL_program)
+	    if(value->u.object->prog == Oracle_NULL_program)
 	    {
 	      bind.bind[bind.bindnum].indicator=-1;
-	      value=& ((struct dbnull *)STORAGE(value->u.object))->type;
+	      value =
+		&((struct Oracle_NULL_struct *)STORAGE(value->u.object))->type;
 	      goto retry;
 	    }
 	    Pike_error("Bad value type in argument 2 to "
@@ -2750,20 +2761,6 @@ PIKE_MODULE_INIT
 
   INIT;
 
-  MY_START_CLASS(dbnull); {
-    struct pike_string *null_string = make_shared_string("Null");
-    low_inherit(get_sql_null_prog(), NULL, -1, 0, 0, null_string);
-    free_string(null_string);
-    add_integer_constant("is_oracle_null", 1, 0);
-    ADD_FUNCTION("create", dbnull_create, tFunc(tOr(tStr, tInt), tVoid),
-		 ID_PROTECTED);
-    ADD_FUNCTION("_sprintf", dbnull_sprintf, tFunc(tInt, tStr), ID_PROTECTED);
-    ADD_FUNCTION("`==", dbnull_eq, tFunc(tMix, tInt01), ID_PROTECTED);
-    PIKE_MAP_VARIABLE("type",offset+OFFSETOF(dbnull, type),tMix,T_MIXED,0);
-  }
-  NULL_program=end_program();
-  add_program_constant("NULL", NULL_program, 0);
-
   MY_START_CLASS(dbcon); {
 
     MY_START_CLASS(dbquery); {
@@ -2848,17 +2845,21 @@ PIKE_MODULE_INIT
   /* FIXME: These NULL objects should be derived from push_undefined */
 
   push_empty_string();
-  add_object_constant("NULLstring",nullstring_object=clone_object(NULL_program,1),0);
+  add_object_constant("NULLstring", nullstring_object =
+		      clone_object(Oracle_NULL_program, 1), 0);
 
   push_int(0);
-  add_object_constant("NULLint",nullint_object=clone_object(NULL_program,1),0);
+  add_object_constant("NULLint", nullint_object =
+		      clone_object(Oracle_NULL_program, 1), 0);
 
   push_float(0.0);
-  add_object_constant("NULLfloat",nullfloat_object=clone_object(NULL_program,1),0);
+  add_object_constant("NULLfloat", nullfloat_object =
+		      clone_object(Oracle_NULL_program, 1), 0);
 
   push_object(low_clone(Oracle_Date_program));
   call_c_initializers(Pike_sp[-1].u.object);
-  add_object_constant("NULLdate",nulldate_object=clone_object(NULL_program,1),0);
+  add_object_constant("NULLdate", nulldate_object =
+		      clone_object(Oracle_NULL_program, 1), 0);
 #ifdef OCI_UTF16ID
   add_integer_constant("UNICODE_SUPPORTED", 1, 0);
 #endif
@@ -2890,7 +2891,6 @@ PIKE_MODULE_EXIT
   FREE_PROG(compile_query_program);
   FREE_PROG(big_typed_query_program);
   FREE_PROG(dbresultinfo_program);
-  FREE_PROG(NULL_program);
 
   FREE_OBJ(nullstring_object);
   FREE_OBJ(nullint_object);
