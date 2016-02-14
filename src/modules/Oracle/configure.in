@@ -2,7 +2,7 @@
 # Configure script for the oracle module
 #
 
-AC_INIT(oracle.c)
+AC_INIT(oracle.cmod)
 AC_CONFIG_HEADER(config.h)
 
 AC_MODULE_INIT()
