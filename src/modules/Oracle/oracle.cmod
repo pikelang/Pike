@@ -1048,7 +1048,7 @@ PIKECLASS NULL
 #ifdef PIKE_DEBUG
   CVAR unsigned long magic;
 #endif
-  CVAR struct svalue type;
+  PIKEVAR mixed type;
 
   DECLARE_STORAGE;
 
@@ -1069,7 +1069,6 @@ EXTRA
 	       ID_PROTECTED);
   ADD_FUNCTION("_sprintf", dbnull_sprintf, tFunc(tInt, tStr), ID_PROTECTED);
   ADD_FUNCTION("`==", dbnull_eq, tFunc(tMix, tInt01), ID_PROTECTED);
-  PIKE_MAP_VARIABLE("type",offset+OFFSETOF(Oracle_NULL_struct, type),tMix,T_MIXED,0);
 }
 
 static void dbnull_create(INT32 args)
