@@ -1067,8 +1067,9 @@ int renegotiate()
 //!   @[schedule_poll()]
 protected void internal_poll()
 {
-  if (!this || !conn) return;
+  if (!this) return;
   user_cb_co = UNDEFINED;
+  if (!conn) return;
   SSL3_DEBUG_MSG("poll: %s\n", conn->describe_state());
 
   if (conn->state & CONNECTION_failing) {
