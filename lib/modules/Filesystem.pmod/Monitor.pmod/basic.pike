@@ -203,6 +203,7 @@ protected class Monitor(string path,
     if (initial) {
       // We need to be polled...
       MON_WERR("Registering %O for polling.\n", path);
+      mixed key = monitor_mutex->lock();
       monitor_queue->push(this);
     }
   }
@@ -217,6 +218,7 @@ protected class Monitor(string path,
       // We are going away permanently, so remove ourselves from
       // from the monitor_queue.
       MON_WERR("Unregistering %O from polling.\n", path);
+      mixed key = monitor_mutex->lock();
       monitor_queue->remove(this);
     }
   }
@@ -1079,7 +1081,9 @@ protected class InotifyMonitor
       if (!dying && !(flags & MF_AUTO)) {
 	// We now need to be polled...
 	MON_WERR("Registering for polling.\n");
+	mixed key = monitor_mutex->lock();
 	monitor_queue->push(this);
+	key = UNDEFINED;
       }
     }
     ::unregister_path(dying);
@@ -1129,6 +1133,9 @@ protected mapping(string:Monitor) monitors = ([]);
 //! The heap is sorted on @[Monitor()->next_poll].
 protected ADT.Heap monitor_queue = ADT.Heap();
 
+//! Mutex controlling access to @[monitor_queue].
+protected Thread.Mutex monitor_mutex = Thread.Mutex();
+
 //! Create a new monitor.
 //!
 //! @param max_dir_check_interval
@@ -1170,6 +1177,7 @@ protected void destroy()
 //!   to call this function prior to discarding the object.
 void clear()
 {
+  mixed key = monitor_mutex->lock();
   monitors = ([]);
   monitor_queue = ADT.Heap();
 #if HAVE_EVENTSTREAM
@@ -1201,6 +1209,7 @@ protected void update_monitor(Monitor m, Stdio.Stat st)
 protected void release_monitor(Monitor m)
 {
   if (m->accellerated) return;
+  mixed key = monitor_mutex->lock();
   monitor_queue->remove(m);
 }
 
@@ -1209,6 +1218,7 @@ protected void release_monitor(Monitor m)
 protected void adjust_monitor(Monitor m)
 {
   if (m->accellerated) return;
+  mixed key = monitor_mutex->lock();
   monitor_queue->adjust(m);
 }
 
@@ -1563,12 +1573,14 @@ void set_backend(Pike.Backend|void backend)
 #if HAVE_EVENTSTREAM
 #if 0 /* FIXME: The following does NOT work properly. */
   if (eventstream && backend) {
+    mixed key = monitor_mutex->lock();
     foreach(monitors; string path; Monitor m) {
       if (m->accellerated) {
 	m->accellerated = 0;
 	monitor_queue->push(m);
       }
     }
+    key = UNDEFINED;
   }
 #endif
 #elif HAVE_INOTIFY
