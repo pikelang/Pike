@@ -1,6 +1,5 @@
 START_MARKER
 
-
 dnl The point of these tests are just to make a basic validation that
 dnl the cryptography works. We assume that the Nettle library itself
 dnl is good, so no need for full NIST test vectors or similar.
@@ -9,6 +8,8 @@ test_compile_error( H )
 test_compile_error( S )
 test_do( add_constant( "H", String.hex2string ) )
 test_do( add_constant( "S", String.string2hex ) )
+
+test_do( Nettle.version() )
 
 // Hashes
 
