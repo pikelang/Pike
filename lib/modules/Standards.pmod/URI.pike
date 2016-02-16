@@ -56,8 +56,10 @@ protected void parse_authority()
 {
   string host_port = authority;
   // authority   = [ userinfo "@" ] host [ ":" port ]
-  if(sscanf(authority, "%[^@]@%s", string userinfo, host_port) == 2)
-  {
+  array(string) a = authority/"@";
+  if (sizeof(a) > 1) {
+    host_port = a[-1];
+    string userinfo = a[..<1] * "@";
     // userinfo    = *( unreserved / pct-encoded / sub-delims / ":" )
     sscanf(userinfo, "%[^:]:%s", user, password); // user info present
     DEBUG("parse_authority(): user=%O, password=%O", user, password);
