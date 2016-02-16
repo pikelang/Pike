@@ -2093,6 +2093,9 @@ protected int ssl_close_callback (int ignored)
       error ("Got zapped stream in callback.\n");
 #endif
 
+    stream->set_read_callback (0);
+    stream->set_close_callback (0);
+
     // If we've arrived here due to an error, let it override any
     // older errno from an earlier callback.
     if (int new_errno = stream->errno()) {
