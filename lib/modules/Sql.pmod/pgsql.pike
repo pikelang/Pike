@@ -576,7 +576,8 @@ private void preplastmessage(mapping(string:string) msgresponse) {
 
 private void waitauthready() {
   if(waitforauthready) {
-    PD("%d Wait for auth ready %O\n",c?->socket&&c->socket->query_fd(),backtrace()[-2]);
+    PD("%d Wait for auth ready %O\n",
+     c?->socket&&c->socket->query_fd(),backtrace()[-2]);
     Thread.MutexKey lock=_shortmux->lock();
     catch(PT(waitforauthready->wait(lock)));
     lock=0;
