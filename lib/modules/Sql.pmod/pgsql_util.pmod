@@ -207,8 +207,8 @@ class conxiin {
   final int read_cb(mixed id,mixed b) {
     PD("Read callback %O\n",(string)b);
     Thread.MutexKey lock=fillreadmux->lock();
-    if(procmsg)
-      procmsg=0,lock=0,Thread.Thread(id());
+    if(procmsg&&id)
+      procmsg=0,lock=0,Thread.Thread(id);
     else if(fillread)
       didreadcb=1, fillread.signal();
     lock=0;
