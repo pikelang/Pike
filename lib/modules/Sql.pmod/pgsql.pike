@@ -597,10 +597,10 @@ private int datarowdebugcount;
 #endif
 
 final void _processloop(.pgsql_util.conxion ci) {
-  if(c && (!ci || c!=ci))	// If we are switching or dropping connections
-    c->close();			// force a close on the old socket
   if(!this)			// Oops, current object already destructed
     return;
+  if(c && (!ci || c!=ci))	// If we are switching or dropping connections
+    c->close();			// force a close on the old socket
   (c=ci)->socket->set_id(procmessage);
   cancelsecret=0;
   portal=0;
