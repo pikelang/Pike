@@ -1179,9 +1179,12 @@ private void procmessage() {
     }
     break;
   }
+  if(!this) {					 // Already destructed
+    ci->close();				 // So close descriptors only
+    return;
+  }
   PD("Closing database processloop %O\n",err);
-  if(this)
-    _delayederror=err;
+  _delayederror=err;
   for(;objectp(portal);portal=qportals->read())
     if(objectp(portal)) {
 #ifdef PG_DEBUG
@@ -1191,9 +1194,9 @@ private void procmessage() {
     }
   if(!ci->close() && !terminating && _options.reconnect)
     _connectfail();
-  else if(this)
+  else
     destruct(waitforauthready);
-  if(this && err && !stringp(err))
+  if(err && !stringp(err))
     throw(err);
 }
 
