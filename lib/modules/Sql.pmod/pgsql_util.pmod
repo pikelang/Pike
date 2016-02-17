@@ -411,10 +411,12 @@ outer:
     string res=UNDEFINED;
     switch(type) {
       case 'O':
+        int fd=-1;
+        if(socket)
+          catch(fd=socket->query_fd());
         res=predef::sprintf("conxion  fd: %d input queue: %d/%d "
                     "queued portals: %d  output queue: %d/%d\n",
-                    socket&&socket->query_fd(),
-                    sizeof(i),i->_size_object(),
+                    fd,sizeof(i),i->_size_object(),
                     qportals->size(),sizeof(this),_size_object());
         break;
     }
@@ -479,13 +481,15 @@ class sql_result {
     string res=UNDEFINED;
     switch(type) {
       case 'O':
+        int fd=-1;
+        if(c&&c->socket)
+          catch(fd=c->socket->query_fd());
         res=sprintf("sql_result state: %d numrows: %d eof: %d inflight: %d\n"
                     "query: %O\n"
                     "fd: %O portalname: %O  datarows: %d"
                     "  laststatus: %s\n",
                     _state,rowsreceived,eoffound,inflight,
-                    _query,c&&c->socket?->query_fd(),
-                    _portalname,datarowtypes&&sizeof(datarowtypes),
+                    _query,fd,_portalname,datarowtypes&&sizeof(datarowtypes),
                     statuscmdcomplete||(_unnamedstatementkey?"*parsing*":""));
         break;
     }
