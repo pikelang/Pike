@@ -612,17 +612,15 @@ final void _processloop(.pgsql_util.conxion ci) {
     plugbuffer->add_int8(0);
     PD("%O\n",(string)plugbuffer);
     if(catch(ci->start()->add_hstring(plugbuffer,4,4)->sendcmd(SENDOUT))) {
-#ifdef PG_DEBUG
-      if(!_options)
-        PD("_options is zero, %O\n",this);
-#endif
-      if(_options && _options.reconnect)	// FIXME why can _options be 0?
-        _connectfail();
-      else
-        destruct(waitforauthready);
-    } else	      // Do not flush at this point, PostgreSQL 9.4 disapproves
-      procmessage();
-  }
+      if(this)				// Only when not destructed yet
+        if(_options.reconnect)
+          _connectfail();
+        else
+          destruct(waitforauthready);
+      return;
+    }
+  }		      // Do not flush at this point, PostgreSQL 9.4 disapproves
+  procmessage();
 }
 
 private void procmessage() {
@@ -1174,7 +1172,8 @@ private void procmessage() {
     break;
   }
   PD("Closing database processloop %O\n",err);
-  _delayederror=err;
+  if(this)
+    _delayederror=err;
   for(;objectp(portal);portal=qportals->read())
     if(objectp(portal)) {
 #ifdef PG_DEBUG
@@ -1184,9 +1183,9 @@ private void procmessage() {
     }
   if(!ci->close() && !terminating && _options.reconnect)
     _connectfail();
-  else
+  else if(this)
     destruct(waitforauthready);
-  if(err && !stringp(err))
+  if(this && err && !stringp(err))
     throw(err);
 }
 
