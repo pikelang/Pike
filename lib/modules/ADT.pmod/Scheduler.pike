@@ -182,10 +182,6 @@ void remove(Consumer c)
 //!   The same @[Consumer] will be returned until it has either
 //!   consumed some of the resource, been removed or another
 //!   @[Consumer] with lower priority has been added.
-Consumer get()
-{
-  // FIXME: We know about internals in ADT.Heap.
-  if (!num_values)
-    return UNDEFINED;
-  return values[0];
+Consumer get() {
+  return Heap::peek();
 }
