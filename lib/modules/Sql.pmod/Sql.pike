@@ -367,6 +367,11 @@ void create(string|object host, void|string|mapping(string:int|string) db,
   decode_datetime = master_sql->decode_datetime || .sql_util.fallback;
 }
 
+protected void destroy() {
+  if (master_sql)
+    destruct(master_sql);
+}
+
 //! Returns true if the connection seems to be open.
 //!
 //! @note
