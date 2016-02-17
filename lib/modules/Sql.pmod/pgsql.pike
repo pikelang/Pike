@@ -597,6 +597,10 @@ private int datarowdebugcount;
 #endif
 
 final void _processloop(.pgsql_util.conxion ci) {
+  if(c && (!ci || c!=ci))	// If we are switching or dropping connections
+    c->close();			// force a close on the old socket
+  if(!this)			// Oops, current object already destructed
+    return;
   (c=ci)->socket->set_id(procmessage);
   cancelsecret=0;
   portal=0;
@@ -651,6 +655,10 @@ private void procmessage() {
       if(!sizeof(cr)) {				// Preliminary check, fast path
         Thread.MutexKey lock=cr->fillreadmux->lock();
         if(!sizeof(cr)) {			// Check for real
+          if(!cr->fillread) {
+            lock=0;
+            throw(MAGICTERMINATE);	// Force proper termination
+          }
           cr->procmsg=1;
           lock=0;
           return;			// Terminate thread, wait for callback
@@ -1196,8 +1204,9 @@ private void procmessage() {
 //! This function is PostgreSQL-specific, and thus it is not available
 //! through the generic SQL-interface.
 /*semi*/final void close() {
-  catch(cancelquery());
-  catch(c->sendterminate());
+  if(qportals && qportals->size())
+    catch(cancelquery());
+  catch(c->close());
   c=0;
   destruct(waitforauthready);
 }
@@ -1253,7 +1262,7 @@ private int reconnect() {
 #ifdef PG_STATS
     prepstmtused=0;
 #endif
-    c->sendterminate();
+    c->close();
     c=0;
     PD("Flushing old cache\n");
     foreach(_prepareds;;mapping tp)
