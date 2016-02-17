@@ -1267,15 +1267,8 @@ private int reconnect() {
   _readyforquerycount=1;
   _waittocommit=0;
   qportals->write(1);
-  if(!getsocket()) {
-    string msg=sprintf("Couldn't connect to database on %s:%d",_host,_port);
-    if(force) {
-      if(!sizeof(lastmessage) || lastmessage[sizeof(lastmessage)-1]!=msg)
-        lastmessage+=({msg});
-      return 0;
-    } else
-      ERROR(msg+"\n");
-  }
+  if(!(c=getsocket()))
+    ERROR("Couldn't connect to database on %s:%d\n",_host,_port);
   _runtimeparameter=([]);
   _unnamedportalmux=Thread.Mutex();
   unnamedstatement=Thread.Mutex();
