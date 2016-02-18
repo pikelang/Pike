@@ -521,11 +521,12 @@ struct pike_trampoline
 /* Self explanatory, automatically detected */
 #define PROGRAM_HAS_C_METHODS 0x20
 
-/* Objects created from this program are constant and shareable */
+/* Objects created from this program are immutable and shareable. */
 #define PROGRAM_CONSTANT 0x40
 
 /* Objects have pointers to the parent object. Use LOW_PARENT_INFO or
- * PARENT_INFO to extract it. */
+ * PARENT_INFO to extract it.
+ * Note that this is also set by #pragma save_parent. */
 #define PROGRAM_USES_PARENT 0x80
 
 /* Objects should not be destructed even when they only have weak
@@ -542,7 +543,8 @@ struct pike_trampoline
 #define PROGRAM_VIRGIN 0x800
 
 /* Don't allow the program to be inherited or cloned if there's no
- * parent object. Might only be set if PROGRAM_USES_PARENT is. */
+ * parent object. May only be set if PROGRAM_USES_PARENT is.
+ * Set this if the parent pointer is actually used by the program. */
 #define PROGRAM_NEEDS_PARENT 0x1000
 
 /* Program has code to be executed when it's destructed. This causes
