@@ -1182,18 +1182,20 @@ private void procmessage() {
     return;
   }
   PD("Closing database processloop %O\n",err);
-  _delayederror=err;
-  for(;objectp(portal);portal=qportals->read())
-    if(objectp(portal)) {
+  catch {					 // Cater for destruct races
+    _delayederror=err;
+    for(;objectp(portal);portal=qportals->read())
+      if(objectp(portal)) {
 #ifdef PG_DEBUG
-      showportal(0);
+        showportal(0);
 #endif
-      portal->_purgeportal();
-    }
-  if(!ci->close() && !terminating && _options.reconnect)
-    _connectfail();
-  else
-    destruct(waitforauthready);
+        portal->_purgeportal();
+      }
+    if(!ci->close() && !terminating && _options.reconnect)
+      _connectfail();
+    else
+      destruct(waitforauthready);
+  };
   if(err && !stringp(err))
     throw(err);
 }
