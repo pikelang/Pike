@@ -1162,10 +1162,8 @@ private void procmessage() {
     if(err==MAGICTERMINATE) {	// Announce connection termination to server
       ci->start()->add("X\0\0\0\4")->sendcmd(SENDOUT);
       terminating=1;
-      if(!sizeof(ci))
-        break;
-    }
-    if(stringp(err)) {
+      err=0;
+    } else if(stringp(err)) {
       .pgsql_util.sql_result or;
       if(!objectp(or=portal))
         or=this;
