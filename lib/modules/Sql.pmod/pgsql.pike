@@ -628,6 +628,8 @@ final void _processloop(.pgsql_util.conxion ci) {
 }
 
 private void procmessage() {
+  if(!this)			// Oops, current object already destructed
+    return;
   int terminating=0;
   .pgsql_util.conxion ci=c;		// cache value FIXME sensible?
   .pgsql_util.conxiin cr=ci->i;		// cache value FIXME sensible?
