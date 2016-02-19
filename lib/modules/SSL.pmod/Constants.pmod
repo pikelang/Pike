@@ -657,6 +657,8 @@ constant TLS_ecdhe_ecdsa_with_aes_256_ccm	= 0xc0ad;	// RFC 7251
 constant TLS_ecdhe_ecdsa_with_aes_128_ccm_8	= 0xc0ae;	// RFC 7251
 constant TLS_ecdhe_ecdsa_with_aes_256_ccm_8	= 0xc0af;	// RFC 7251
 
+constant TLS_ecdhe_psk_with_aes_128_gcm_sha256	= 0xcafe;	// BoringSSL
+
 constant TLS_ecdhe_rsa_with_chacha20_poly1305_sha256 = 0xcc13;  // draft-agl-tls-chacha20poly1305-02
 constant TLS_ecdhe_ecdsa_with_chacha20_poly1305_sha256 = 0xcc14;// draft-agl-tls-chacha20poly1305-02
 constant TLS_dhe_rsa_with_chacha20_poly1305_sha256   = 0xcc15;  // draft-agl-tls-chacha20poly1305-02
