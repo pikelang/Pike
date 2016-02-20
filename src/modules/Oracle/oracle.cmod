@@ -159,16 +159,6 @@ DEFINE_MUTEX(oracle_serialization_mutex);
     }						\
   } while(0)
 
-#define MY_START_CLASS(STRUCT) \
-  start_new_program(); \
-  offset=ADD_STORAGE(struct STRUCT); \
-  set_init_callback(PIKE_CONCAT3(init_,STRUCT,_struct));\
-  set_exit_callback(PIKE_CONCAT3(exit_,STRUCT,_struct));
-
-#define MY_END_CLASS(NAME) \
-  PIKE_CONCAT(NAME,_program) = end_program(); \
-  PIKE_CONCAT(NAME,_identifier) = add_program_constant(#NAME, PIKE_CONCAT(NAME,_program), 0);
-
 #ifdef ORACLE_DEBUG
 #define LOCK(X) do { \
    fprintf(stderr,"Locking  " #X " ...  from %s:%d\n",__FUNCTION__,__LINE__); \
