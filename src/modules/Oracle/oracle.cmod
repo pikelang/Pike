@@ -281,8 +281,8 @@ void *low_check_storage(void *storage, unsigned long magic, char *prog)
 #define THIS_DBCON ((struct Oracle_oracle_struct *)check_storage(CURRENT_STORAGE,DBCON_MAGIC,"dbcon"))
 #define THIS_QUERY_DBCON ((struct Oracle_oracle_struct *)check_storage(parent_storage(1, Oracle_oracle_program),DBCON_MAGIC,"dbcon"))
 #define THIS_RESULT_DBCON ((struct Oracle_oracle_struct *)check_storage(parent_storage(2, Oracle_oracle_program),DBCON_MAGIC,"dbcon"))
-#define THIS_QUERY ((struct dbquery *)check_storage(CURRENT_STORAGE,DBQUERY_MAGIC,"dbquery"))
-#define THIS_RESULT_QUERY ((struct dbquery *)check_storage(parent_storage(1, compile_query_program),DBQUERY_MAGIC,"dbquery"))
+#define THIS_QUERY ((struct Oracle_oracle_compile_query_struct *)check_storage(CURRENT_STORAGE,DBQUERY_MAGIC,"dbquery"))
+#define THIS_RESULT_QUERY ((struct Oracle_oracle_compile_query_struct *)check_storage(parent_storage(1, compile_query_program),DBQUERY_MAGIC,"dbquery"))
 #define THIS_RESULT ((struct dbresult *)check_storage(CURRENT_STORAGE,DBRESULT_MAGIC,"dbresult"))
 #define THIS_RESULTINFO ((struct dbresultinfo *)check_storage(CURRENT_STORAGE,DBRESINFO_MAGIC,"dbresultinfo"))
 #define THIS_DBLOB ((struct Oracle_oracle_LOB_struct *)check_storage(CURRENT_STORAGE,DBLOB_MAGIC,"dblob"))
@@ -530,43 +530,6 @@ EXIT
 #else
 #define ENVOF(X) get_oracle_environment()
 #endif
-
-/****** query ******/
-
-struct dbquery
-{
-#ifdef PIKE_DEBUG
-  unsigned long magic;
-#endif
-  OCIStmt *statement;
-  INT_TYPE query_type;
-  DEFINE_MUTEX(lock);
-
-  INT_TYPE cols;
-  struct array *field_info;
-  struct mapping *output_variables;
-};
-
-
-void init_dbquery_struct(struct object *UNUSED(o))
-{
-  OWERR("%s\n",__FUNCTION__);
-#ifdef PIKE_DEBUG
-  ((unsigned long *)(Pike_fp->current_storage))[0]=DBQUERY_MAGIC;
-#endif
-  THIS_QUERY->cols=-2;
-  THIS_QUERY->statement=0;
-  mt_init(& THIS_QUERY->lock);
-}
-
-void exit_dbquery_struct(struct object *UNUSED(o))
-{
-  OWERR("%s\n",__FUNCTION__);
-  debug_malloc_touch(THIS_QUERY->statement);
-  OCIHandleFree(THIS_QUERY->statement, OCI_HTYPE_STMT);
-  mt_destroy(& THIS_QUERY->lock);
-}
-
 
 /****** dbresult ******/
 
@@ -1085,15 +1048,60 @@ PIKEFUN int(0..1) `==(mixed other)
 
 EXTRA
 {
-    MY_START_CLASS(dbquery); {
+    ADD_FUNCTION("commit", f_commit,
+                tFunc(tVoid, tVoid), ID_PUBLIC);
+
+    ADD_FUNCTION("create", f_oracle_create,
+		 tFunc(tOr(tStr,tVoid) tOr(tStr,tVoid) tOr(tStr,tVoid)
+		       tOr(tStr,tVoid),tVoid), ID_PUBLIC);
+}
+
+/****** query ******/
+PIKECLASS compile_query
+  program_flags PROGRAM_USES_PARENT|PROGRAM_NEEDS_PARENT;
+{
+#ifdef PIKE_DEBUG
+  CVAR unsigned long magic;
+#endif
+  CVAR OCIStmt *statement;
+  CVAR INT_TYPE query_type;
+  CVAR DEFINE_MUTEX(lock);
+
+  CVAR INT_TYPE cols;
+  CVAR struct array *field_info;
+  CVAR struct mapping *output_variables;
+
+  DECLARE_STORAGE;
+
+INIT
+{
+  OWERR("%s\n",__FUNCTION__);
+#ifdef PIKE_DEBUG
+  ((unsigned long *)(Pike_fp->current_storage))[0]=DBQUERY_MAGIC;
+#endif
+  THIS_QUERY->cols=-2;
+  THIS_QUERY->statement=0;
+  mt_init(& THIS_QUERY->lock);
+}
+
+EXIT
+{
+  OWERR("%s\n",__FUNCTION__);
+  debug_malloc_touch(THIS_QUERY->statement);
+  OCIHandleFree(THIS_QUERY->statement, OCI_HTYPE_STMT);
+  mt_destroy(& THIS_QUERY->lock);
+}
+
+EXTRA
+{
       ADD_FUNCTION("create",f_compile_query_create,tFunc(tStr,tVoid),0);
-      PIKE_MAP_VARIABLE("_type",offset+OFFSETOF(dbquery,query_type),tInt,T_INT,0);
-      PIKE_MAP_VARIABLE("_cols",offset+OFFSETOF(dbquery, cols),tInt,T_INT,0);
-      PIKE_MAP_VARIABLE("_field_info",offset+OFFSETOF(dbquery, field_info),
+      PIKE_MAP_VARIABLE("_type",offset+OFFSETOF(Oracle_oracle_compile_query_struct,query_type),tInt,T_INT,0);
+      PIKE_MAP_VARIABLE("_cols",offset+OFFSETOF(Oracle_oracle_compile_query_struct, cols),tInt,T_INT,0);
+      PIKE_MAP_VARIABLE("_field_info",offset+OFFSETOF(Oracle_oracle_compile_query_struct, field_info),
                         tArr(tObj), T_ARRAY, 0);
 
       PIKE_MAP_VARIABLE("output_variables",
-                        offset+OFFSETOF(dbquery, output_variables),
+                        offset+OFFSETOF(Oracle_oracle_compile_query_struct, output_variables),
                         tMap(tStr,tMix), T_MAPPING, 0);
 
 
@@ -1147,19 +1155,6 @@ EXTRA
 #endif
 	MY_END_CLASS(dbresultinfo);
       }
-
-#ifdef PROGRAM_USES_PARENT
-	Pike_compiler->new_program->flags|=PROGRAM_USES_PARENT|PROGRAM_NEEDS_PARENT;
-#endif
-      MY_END_CLASS(compile_query);
-    }
-
-    ADD_FUNCTION("commit", f_commit,
-                tFunc(tVoid, tVoid), ID_PUBLIC);
-
-    ADD_FUNCTION("create", f_oracle_create,
-		 tFunc(tOr(tStr,tVoid) tOr(tStr,tVoid) tOr(tStr,tVoid)
-		       tOr(tStr,tVoid),tVoid), ID_PUBLIC);
 }
 
 /*
@@ -1202,7 +1197,7 @@ static void exit_dbresult_struct(struct object *UNUSED(o))
 
 static void f_num_rows(INT32 args)
 {
-  struct dbquery *dbquery = THIS_RESULT_QUERY;
+  struct Oracle_oracle_compile_query_struct *dbquery = THIS_RESULT_QUERY;
   struct Oracle_oracle_struct *dbcon = THIS_RESULT_DBCON;
 
   OWERR("%s\n",__FUNCTION__);
@@ -1234,7 +1229,7 @@ static void f_num_rows(INT32 args)
 static void f_num_fields(INT32 args)
 {
   struct dbresult *dbresult = THIS_RESULT;
-  struct dbquery *dbquery = THIS_RESULT_QUERY;
+  struct Oracle_oracle_compile_query_struct *dbquery = THIS_RESULT_QUERY;
   struct Oracle_oracle_struct *dbcon = THIS_RESULT_DBCON;
 
   OWERR("%s\n",__FUNCTION__);
@@ -1406,7 +1401,7 @@ static sb4 define_callback(dvoid *dbresultinfo,
 static void f_fetch_fields(INT32 args)
 {
   struct dbresult *dbresult = THIS_RESULT;
-  struct dbquery *dbquery=THIS_RESULT_QUERY;
+  struct Oracle_oracle_compile_query_struct *dbquery = THIS_RESULT_QUERY;
   struct Oracle_oracle_struct *dbcon = THIS_RESULT_DBCON;
   INT32 i;
   sword rc;
@@ -1959,7 +1954,7 @@ static void free_inout(struct inout *i)
 
 static void f_eof(INT32 args)
 {
-  struct dbquery *dbquery = THIS_RESULT_QUERY;
+  struct Oracle_oracle_compile_query_struct *dbquery = THIS_RESULT_QUERY;
   pop_n_elems(args);
   /* Note: Valid OCI statement types start at 1.
    *       We use 0 to indicate EOF.
@@ -1972,7 +1967,7 @@ static void f_fetch_row(INT32 args)
   int i = 0;
   sword rc;
   struct dbresult *dbresult = THIS_RESULT;
-  struct dbquery *dbquery = THIS_RESULT_QUERY;
+  struct Oracle_oracle_compile_query_struct *dbquery = THIS_RESULT_QUERY;
   struct Oracle_oracle_struct *dbcon = THIS_RESULT_DBCON;
 
   OWERR("%s ..",__FUNCTION__);
@@ -2252,7 +2247,7 @@ static void f_compile_query_create(INT32 args)
 {
   int rc;
   struct pike_string *query;
-  struct dbquery *dbquery=THIS_QUERY;
+  struct Oracle_oracle_compile_query_struct *dbquery = THIS_QUERY;
   struct Oracle_oracle_struct *dbcon = THIS_QUERY_DBCON;
   char *errfunc=0;
 
@@ -2420,7 +2415,7 @@ static void f_big_typed_query_create(INT32 args)
   sword rc;
   struct mapping *bnds=0;
   struct dbresult *dbresult=THIS_RESULT;
-  struct dbquery *dbquery=THIS_RESULT_QUERY;
+  struct Oracle_oracle_compile_query_struct *dbquery = THIS_RESULT_QUERY;
   struct Oracle_oracle_struct *dbcon = THIS_RESULT_DBCON;
   ONERROR err;
   INT32 autocommit=0;
@@ -2784,6 +2779,9 @@ static void f_big_typed_query_create(INT32 args)
       DEBUG_CHECK_THREAD();
   }
 #endif
+}
+
+/* END compile_query */
 }
 
 /* END oracle */
