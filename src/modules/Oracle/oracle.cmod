@@ -278,23 +278,21 @@ void *low_check_storage(void *storage, unsigned long magic, char *prog)
 #define DBLOB_MAGIC	0xdb104711UL
 #define DBDATE_MAGIC	0xdbda4711UL
 #define DBTS_MAGIC	0xdb754711UL
-#define THIS_DBCON ((struct dbcon *)check_storage(CURRENT_STORAGE,DBCON_MAGIC,"dbcon"))
-#define THIS_QUERY_DBCON ((struct dbcon *)check_storage(parent_storage(1, oracle_program),DBCON_MAGIC,"dbcon"))
-#define THIS_RESULT_DBCON ((struct dbcon *)check_storage(parent_storage(2, oracle_program),DBCON_MAGIC,"dbcon"))
+#define THIS_DBCON ((struct Oracle_oracle_struct *)check_storage(CURRENT_STORAGE,DBCON_MAGIC,"dbcon"))
+#define THIS_QUERY_DBCON ((struct Oracle_oracle_struct *)check_storage(parent_storage(1, Oracle_oracle_program),DBCON_MAGIC,"dbcon"))
+#define THIS_RESULT_DBCON ((struct Oracle_oracle_struct *)check_storage(parent_storage(2, Oracle_oracle_program),DBCON_MAGIC,"dbcon"))
 #define THIS_QUERY ((struct dbquery *)check_storage(CURRENT_STORAGE,DBQUERY_MAGIC,"dbquery"))
 #define THIS_RESULT_QUERY ((struct dbquery *)check_storage(parent_storage(1, compile_query_program),DBQUERY_MAGIC,"dbquery"))
 #define THIS_RESULT ((struct dbresult *)check_storage(CURRENT_STORAGE,DBRESULT_MAGIC,"dbresult"))
 #define THIS_RESULTINFO ((struct dbresultinfo *)check_storage(CURRENT_STORAGE,DBRESINFO_MAGIC,"dbresultinfo"))
-#define THIS_DBLOB ((struct Oracle_LOB_struct *)check_storage(CURRENT_STORAGE,DBLOB_MAGIC,"dblob"))
-#define THIS_DBDATE ((struct Oracle_Date_struct *)check_storage(CURRENT_STORAGE,DBDATE_MAGIC,"dbdate"))
-#define THIS_DBNULL ((struct Oracle_NULL_struct *)check_storage(CURRENT_STORAGE,DBNULL_MAGIC,"dbnull"))
+#define THIS_DBLOB ((struct Oracle_oracle_LOB_struct *)check_storage(CURRENT_STORAGE,DBLOB_MAGIC,"dblob"))
+#define THIS_DBDATE ((struct Oracle_oracle_Date_struct *)check_storage(CURRENT_STORAGE,DBDATE_MAGIC,"dbdate"))
+#define THIS_DBNULL ((struct Oracle_oracle_NULL_struct *)check_storage(CURRENT_STORAGE,DBNULL_MAGIC,"dbnull"))
 
-static struct program *oracle_program = NULL;
 static struct program *compile_query_program = NULL;
 static struct program *big_typed_query_program = NULL;
 static struct program *dbresultinfo_program = NULL;
 
-static int oracle_identifier;
 static int compile_query_identifier;
 static int big_typed_query_identifier;
 static int dbresultinfo_identifier;
@@ -480,21 +478,22 @@ static void free_inout(struct inout *i);
 static void init_inout(struct inout *i);
 
 /****** connection ******/
-struct dbcon
+PIKECLASS oracle
 {
 #ifdef PIKE_DEBUG
-  unsigned long magic;
+  CVAR unsigned long magic;
 #endif
-  OCIEnv *env;
-  OCIError *error_handle;
-  OCISvcCtx *context;
+  CVAR OCIEnv *env;
+  CVAR OCIError *error_handle;
+  CVAR OCISvcCtx *context;
 
-  DEFINE_MUTEX(lock);
+  CVAR DEFINE_MUTEX(lock);
 
-  int resultobject_busy;
-};
+  CVAR int resultobject_busy;
 
-static void init_dbcon_struct(struct object *UNUSED(o))
+  DECLARE_STORAGE;
+
+INIT
 {
   OWERR("%s\n",__FUNCTION__);
 #ifdef PIKE_DEBUG
@@ -509,7 +508,7 @@ static void init_dbcon_struct(struct object *UNUSED(o))
   mt_init( & THIS_DBCON->lock );
 }
 
-static void exit_dbcon_struct(struct object *UNUSED(o))
+EXIT
 {
   OWERR("%s\n",__FUNCTION__);
   debug_malloc_touch(THIS_DBCON->context);
@@ -599,7 +598,7 @@ static void exit_dbresult_struct(struct object *UNUSED(o))
   /* Variables are freed automatically */
   if(THIS_RESULT->dbquery_lock && dbquery)
   {
-    struct dbcon *dbcon=THIS_RESULT_DBCON;
+    struct Oracle_oracle_struct *dbcon = THIS_RESULT_DBCON;
     dbcon->resultobject_busy = 0;
     UNLOCK( dbquery->lock );
     if(THIS_RESULT->dbcon_lock && dbcon)
@@ -737,7 +736,7 @@ PIKECLASS LOB
 #endif
   CVAR int is_clob;
   CVAR OCILobLocator *lob;
-  CVAR struct dbcon *dbcon;
+  CVAR struct Oracle_oracle_struct *dbcon;
 
   DECLARE_STORAGE;
 
@@ -773,7 +772,7 @@ PIKEFUN string read()
   char *errfunc = NULL;
   ub4   amtp = 0;
   int is_clob = THIS_DBLOB->is_clob;
-  struct dbcon *dbcon = THIS_DBLOB->dbcon;
+  struct Oracle_oracle_struct *dbcon = THIS_DBLOB->dbcon;
   ub2 charset = 0;
 
   if (!THIS_DBLOB->lob) {
@@ -842,7 +841,7 @@ PIKEFUN string read()
 PIKEFUN mixed cast(string s)
 {
   if(!strcmp(s->str, "string")) {
-    apply_current(f_Oracle_LOB_read_fun_num, 0);
+    apply_current(f_Oracle_oracle_LOB_read_fun_num, 0);
     return;
   }
 
@@ -856,7 +855,7 @@ PIKEFUN int write(string(8bit) data)
   char *errfunc = NULL;
   ub4   amtp = 0;
   int is_clob = THIS_DBLOB->is_clob;
-  struct dbcon *dbcon = THIS_DBLOB->dbcon;
+  struct Oracle_oracle_struct *dbcon = THIS_DBLOB->dbcon;
 
   if (!THIS_DBLOB->lob) {
     Pike_error("Attempt to write to an uninitialized LOB.\n");
@@ -1031,7 +1030,7 @@ PIKEFUN mixed cast(string type)
   else if(type == literal_string_string)
   {
     push_int('s');
-    apply_current(f_Oracle_Date_cq__sprintf_fun_num, 1);
+    apply_current(f_Oracle_oracle_Date_cq__sprintf_fun_num, 1);
   }
   else
     push_undefined();
@@ -1118,6 +1117,85 @@ PIKEFUN int(0..1) `==(mixed other)
 /* END NULL */
 }
 
+EXTRA
+{
+    MY_START_CLASS(dbquery); {
+      ADD_FUNCTION("create",f_compile_query_create,tFunc(tStr,tVoid),0);
+      PIKE_MAP_VARIABLE("_type",offset+OFFSETOF(dbquery,query_type),tInt,T_INT,0);
+      PIKE_MAP_VARIABLE("_cols",offset+OFFSETOF(dbquery, cols),tInt,T_INT,0);
+      PIKE_MAP_VARIABLE("_field_info",offset+OFFSETOF(dbquery, field_info),
+                        tArr(tObj), T_ARRAY, 0);
+
+      PIKE_MAP_VARIABLE("output_variables",
+                        offset+OFFSETOF(dbquery, output_variables),
+                        tMap(tStr,tMix), T_MAPPING, 0);
+
+
+/*      ADD_FUNCTION("query_type",f_query_type,tFunc(tNone,tInt),0); */
+
+      MY_START_CLASS(dbresult); {
+	ADD_FUNCTION("create", f_big_typed_query_create,
+		     tFunc(tOr(tVoid,tMap(tStr,tMix)) tOr(tVoid,tInt)
+			   tOr(tVoid,tObj),tVoid), ID_PUBLIC);
+
+	/* function(:int) */
+	ADD_FUNCTION("num_rows", f_num_rows, tFunc(tNone,tInt), ID_PUBLIC);
+
+	/* function(:int) */
+	ADD_FUNCTION("num_fields", f_num_fields,tFunc(tNone,tInt), ID_PUBLIC);
+
+	/* function(:array(mapping(string:mixed))) */
+	ADD_FUNCTION("fetch_fields",
+		     f_fetch_fields,tFunc(tNone,tArr(tMap(tStr,tMix))),
+		     ID_PUBLIC);
+
+	/* function(:int) */
+	ADD_FUNCTION("eof", f_eof,tFunc(tNone,tInt), ID_PUBLIC);
+
+	/* function(:int|array(string|int)) */
+	ADD_FUNCTION("fetch_row",
+		     f_fetch_row,tFunc(tNone,tOr(tInt,tArr(tOr(tStr,tInt)))),
+		     ID_PUBLIC);
+
+#ifdef PROGRAM_USES_PARENT
+	Pike_compiler->new_program->flags|=PROGRAM_USES_PARENT|PROGRAM_NEEDS_PARENT;
+#endif
+	MY_END_CLASS(big_typed_query);
+	big_typed_query_program->flags|=PROGRAM_DESTRUCT_IMMEDIATE;
+      }
+
+
+      MY_START_CLASS(dbresultinfo); {
+        PIKE_MAP_VARIABLE("name",offset+OFFSETOF(dbresultinfo, name),tStr,T_STRING,0);
+        PIKE_MAP_VARIABLE("type",offset+OFFSETOF(dbresultinfo, type),tStr,T_STRING,0);
+        PIKE_MAP_VARIABLE("_type",offset+OFFSETOF(dbresultinfo, real_type),tInt,T_INT,0);
+        PIKE_MAP_VARIABLE("length",offset+OFFSETOF(dbresultinfo, length),tInt,T_INT,0);
+        PIKE_MAP_VARIABLE("decimals",offset+OFFSETOF(dbresultinfo, decimals),tInt,T_INT,0);
+
+	ADD_FUNCTION("`->=",protect_dbresultinfo,
+		     tFunc(tStr tMix,tVoid), ID_STATIC);
+	ADD_FUNCTION("`[]=",protect_dbresultinfo,
+		     tFunc(tStr tMix,tVoid), ID_STATIC);
+#ifdef ORACLE_DEBUG
+	set_gc_check_callback(gc_dbresultinfo_struct);
+#endif
+	MY_END_CLASS(dbresultinfo);
+      }
+
+#ifdef PROGRAM_USES_PARENT
+	Pike_compiler->new_program->flags|=PROGRAM_USES_PARENT|PROGRAM_NEEDS_PARENT;
+#endif
+      MY_END_CLASS(compile_query);
+    }
+
+    ADD_FUNCTION("commit", f_commit,
+                tFunc(tVoid, tVoid), ID_PUBLIC);
+
+    ADD_FUNCTION("create", f_oracle_create,
+		 tFunc(tOr(tStr,tVoid) tOr(tStr,tVoid) tOr(tStr,tVoid)
+		       tOr(tStr,tVoid),tVoid), ID_PUBLIC);
+}
+
 /*
  * dbresult
  */
@@ -1125,7 +1203,7 @@ PIKEFUN int(0..1) `==(mixed other)
 static void f_num_rows(INT32 args)
 {
   struct dbquery *dbquery = THIS_RESULT_QUERY;
-  struct dbcon *dbcon = THIS_RESULT_DBCON;
+  struct Oracle_oracle_struct *dbcon = THIS_RESULT_DBCON;
 
   OWERR("%s\n",__FUNCTION__);
 
@@ -1157,7 +1235,7 @@ static void f_num_fields(INT32 args)
 {
   struct dbresult *dbresult = THIS_RESULT;
   struct dbquery *dbquery = THIS_RESULT_QUERY;
-  struct dbcon *dbcon = THIS_RESULT_DBCON;
+  struct Oracle_oracle_struct *dbcon = THIS_RESULT_DBCON;
 
   OWERR("%s\n",__FUNCTION__);
 
@@ -1329,7 +1407,7 @@ static void f_fetch_fields(INT32 args)
 {
   struct dbresult *dbresult = THIS_RESULT;
   struct dbquery *dbquery=THIS_RESULT_QUERY;
-  struct dbcon *dbcon=THIS_RESULT_DBCON;
+  struct Oracle_oracle_struct *dbcon = THIS_RESULT_DBCON;
   INT32 i;
   sword rc;
 
@@ -1625,7 +1703,7 @@ static void f_fetch_fields(INT32 args)
 }
 
 static void push_inout_value(struct inout *inout,
-			     struct dbcon *dbcon)
+			     struct Oracle_oracle_struct *dbcon)
 {
   ub4   loblen = 0;
   ub1   *bufp = 0;
@@ -1740,13 +1818,13 @@ static void push_inout_value(struct inout *inout,
     case SQLT_CLOB:
     case SQLT_BLOB:
       /* FIXME: Consider using parent pointers? */
-      push_object(low_clone(Oracle_LOB_program));
+      push_object(low_clone(Oracle_oracle_LOB_program));
       call_c_initializers(Pike_sp[-1].u.object);
-      ((struct Oracle_LOB_struct *)STORAGE(Pike_sp[-1].u.object))->is_clob =
+      ((struct Oracle_oracle_LOB_struct *)STORAGE(Pike_sp[-1].u.object))->is_clob =
 	(inout->ftype == SQLT_CLOB);
-      ((struct Oracle_LOB_struct *)STORAGE(Pike_sp[-1].u.object))->lob =
+      ((struct Oracle_oracle_LOB_struct *)STORAGE(Pike_sp[-1].u.object))->lob =
 	inout->u.lob;
-      ((struct Oracle_LOB_struct *)STORAGE(Pike_sp[-1].u.object))->dbcon =
+      ((struct Oracle_oracle_LOB_struct *)STORAGE(Pike_sp[-1].u.object))->dbcon =
 	dbcon;
       break;
 
@@ -1759,9 +1837,9 @@ static void push_inout_value(struct inout *inout,
       fprintf(stderr,"\n");
 #endif
 
-      push_object(low_clone(Oracle_Date_program));
+      push_object(low_clone(Oracle_oracle_Date_program));
       call_c_initializers(Pike_sp[-1].u.object);
-      ((struct Oracle_Date_struct *)STORAGE(Pike_sp[-1].u.object))->date =
+      ((struct Oracle_oracle_Date_struct *)STORAGE(Pike_sp[-1].u.object))->date =
 	inout->u.date;
       break;
 
@@ -1895,7 +1973,7 @@ static void f_fetch_row(INT32 args)
   sword rc;
   struct dbresult *dbresult = THIS_RESULT;
   struct dbquery *dbquery = THIS_RESULT_QUERY;
-  struct dbcon *dbcon = THIS_RESULT_DBCON;
+  struct Oracle_oracle_struct *dbcon = THIS_RESULT_DBCON;
 
   OWERR("%s ..",__FUNCTION__);
 
@@ -2067,7 +2145,7 @@ static void f_fetch_row(INT32 args)
 static void f_oracle_create(INT32 args)
 {
   char *err=0;
-  struct dbcon *dbcon = THIS_DBCON;
+  struct Oracle_oracle_struct *dbcon = THIS_DBCON;
   struct pike_string *uid, *passwd, *host, *database;
   sword rc;
 
@@ -2164,7 +2242,7 @@ static void f_oracle_create(INT32 args)
 static void f_commit(INT32 UNUSED(args))
 {
   sword ret = 0;
-  struct dbcon *dbcon=THIS_DBCON;
+  struct Oracle_oracle_struct *dbcon = THIS_DBCON;
   ret = OCITransCommit(dbcon->context, dbcon->error_handle, 0); 
   if(ret != OCI_SUCCESS)
     ora_error_handler(dbcon->error_handle, ret, "OCITransCommit");
@@ -2175,7 +2253,7 @@ static void f_compile_query_create(INT32 args)
   int rc;
   struct pike_string *query;
   struct dbquery *dbquery=THIS_QUERY;
-  struct dbcon *dbcon=THIS_QUERY_DBCON;
+  struct Oracle_oracle_struct *dbcon = THIS_QUERY_DBCON;
   char *errfunc=0;
 
   OWERR("%s\n",__FUNCTION__);
@@ -2343,7 +2421,7 @@ static void f_big_typed_query_create(INT32 args)
   struct mapping *bnds=0;
   struct dbresult *dbresult=THIS_RESULT;
   struct dbquery *dbquery=THIS_RESULT_QUERY;
-  struct dbcon *dbcon=THIS_RESULT_DBCON;
+  struct Oracle_oracle_struct *dbcon = THIS_RESULT_DBCON;
   ONERROR err;
   INT32 autocommit=0;
   int i,num;
@@ -2462,20 +2540,20 @@ static void f_big_typed_query_create(INT32 args)
 	switch(TYPEOF(*value))
 	{
 	  case T_OBJECT:
-	    if(value->u.object->prog == Oracle_Date_program)
+	    if(value->u.object->prog == Oracle_oracle_Date_program)
 	    {
 	      bind.bind[bind.bindnum].data.u.date =
-		((struct Oracle_Date_struct *)STORAGE(value->u.object))->date;
+		((struct Oracle_oracle_Date_struct *)STORAGE(value->u.object))->date;
 	      addr = &bind.bind[bind.bindnum].data.u.date;
 	      rlen = len = sizeof(bind.bind[bind.bindnum].data.u.date);
 	      fty=SQLT_ODT;
 	      break;
 	    }
-	    if(value->u.object->prog == Oracle_NULL_program)
+	    if(value->u.object->prog == Oracle_oracle_NULL_program)
 	    {
 	      bind.bind[bind.bindnum].indicator=-1;
 	      value =
-		&((struct Oracle_NULL_struct *)STORAGE(value->u.object))->type;
+		&((struct Oracle_oracle_NULL_struct *)STORAGE(value->u.object))->type;
 	      goto retry;
 	    }
 	    Pike_error("Bad value type in argument 2 to "
@@ -2708,6 +2786,9 @@ static void f_big_typed_query_create(INT32 args)
 #endif
 }
 
+/* END oracle */
+}
+
 PIKE_MODULE_INIT
 {
   long offset=0;
@@ -2744,110 +2825,29 @@ PIKE_MODULE_INIT
     return;
   }
 
-  if(oracle_program)
+  if(Oracle_oracle_program)
     Pike_fatal("Oracle module initiated twice!\n");
 
   INIT;
-
-  MY_START_CLASS(dbcon); {
-
-    MY_START_CLASS(dbquery); {
-      ADD_FUNCTION("create",f_compile_query_create,tFunc(tStr,tVoid),0);
-      PIKE_MAP_VARIABLE("_type",offset+OFFSETOF(dbquery,query_type),tInt,T_INT,0);
-      PIKE_MAP_VARIABLE("_cols",offset+OFFSETOF(dbquery, cols),tInt,T_INT,0);
-      PIKE_MAP_VARIABLE("_field_info",offset+OFFSETOF(dbquery, field_info),
-                        tArr(tObj), T_ARRAY, 0);
-
-      PIKE_MAP_VARIABLE("output_variables",
-                        offset+OFFSETOF(dbquery, output_variables),
-                        tMap(tStr,tMix), T_MAPPING, 0);
-
-
-/*      ADD_FUNCTION("query_type",f_query_type,tFunc(tNone,tInt),0); */
-
-      MY_START_CLASS(dbresult); {
-	ADD_FUNCTION("create", f_big_typed_query_create,
-		     tFunc(tOr(tVoid,tMap(tStr,tMix)) tOr(tVoid,tInt)
-			   tOr(tVoid,tObj),tVoid), ID_PUBLIC);
-
-	/* function(:int) */
-	ADD_FUNCTION("num_rows", f_num_rows, tFunc(tNone,tInt), ID_PUBLIC);
-
-	/* function(:int) */
-	ADD_FUNCTION("num_fields", f_num_fields,tFunc(tNone,tInt), ID_PUBLIC);
-
-	/* function(:array(mapping(string:mixed))) */
-	ADD_FUNCTION("fetch_fields",
-		     f_fetch_fields,tFunc(tNone,tArr(tMap(tStr,tMix))),
-		     ID_PUBLIC);
-
-	/* function(:int) */
-	ADD_FUNCTION("eof", f_eof,tFunc(tNone,tInt), ID_PUBLIC);
-
-	/* function(:int|array(string|int)) */
-	ADD_FUNCTION("fetch_row",
-		     f_fetch_row,tFunc(tNone,tOr(tInt,tArr(tOr(tStr,tInt)))),
-		     ID_PUBLIC);
-
-#ifdef PROGRAM_USES_PARENT
-	Pike_compiler->new_program->flags|=PROGRAM_USES_PARENT|PROGRAM_NEEDS_PARENT;
-#endif
-	MY_END_CLASS(big_typed_query);
-	big_typed_query_program->flags|=PROGRAM_DESTRUCT_IMMEDIATE;
-      }
-
-
-      MY_START_CLASS(dbresultinfo); {
-        PIKE_MAP_VARIABLE("name",offset+OFFSETOF(dbresultinfo, name),tStr,T_STRING,0);
-        PIKE_MAP_VARIABLE("type",offset+OFFSETOF(dbresultinfo, type),tStr,T_STRING,0);
-        PIKE_MAP_VARIABLE("_type",offset+OFFSETOF(dbresultinfo, real_type),tInt,T_INT,0);
-        PIKE_MAP_VARIABLE("length",offset+OFFSETOF(dbresultinfo, length),tInt,T_INT,0);
-        PIKE_MAP_VARIABLE("decimals",offset+OFFSETOF(dbresultinfo, decimals),tInt,T_INT,0);
-
-	ADD_FUNCTION("`->=",protect_dbresultinfo,
-		     tFunc(tStr tMix,tVoid), ID_STATIC);
-	ADD_FUNCTION("`[]=",protect_dbresultinfo,
-		     tFunc(tStr tMix,tVoid), ID_STATIC);
-#ifdef ORACLE_DEBUG
-	set_gc_check_callback(gc_dbresultinfo_struct);
-#endif
-	MY_END_CLASS(dbresultinfo);
-      }
-
-#ifdef PROGRAM_USES_PARENT
-	Pike_compiler->new_program->flags|=PROGRAM_USES_PARENT|PROGRAM_NEEDS_PARENT;
-#endif
-      MY_END_CLASS(compile_query);
-    }
-
-    ADD_FUNCTION("commit", f_commit,
-                tFunc(tVoid, tVoid), ID_PUBLIC);
-
-    ADD_FUNCTION("create", f_oracle_create,
-		 tFunc(tOr(tStr,tVoid) tOr(tStr,tVoid) tOr(tStr,tVoid)
-		       tOr(tStr,tVoid),tVoid), ID_PUBLIC);
-
-    MY_END_CLASS(oracle);
-  }
 
   /* FIXME: These NULL objects should be derived from push_undefined */
 
   push_empty_string();
   add_object_constant("NULLstring", nullstring_object =
-		      clone_object(Oracle_NULL_program, 1), 0);
+		      clone_object(Oracle_oracle_NULL_program, 1), 0);
 
   push_int(0);
   add_object_constant("NULLint", nullint_object =
-		      clone_object(Oracle_NULL_program, 1), 0);
+		      clone_object(Oracle_oracle_NULL_program, 1), 0);
 
   push_float(0.0);
   add_object_constant("NULLfloat", nullfloat_object =
-		      clone_object(Oracle_NULL_program, 1), 0);
+		      clone_object(Oracle_oracle_NULL_program, 1), 0);
 
-  push_object(low_clone(Oracle_Date_program));
+  push_object(low_clone(Oracle_oracle_Date_program));
   call_c_initializers(Pike_sp[-1].u.object);
   add_object_constant("NULLdate", nulldate_object =
-		      clone_object(Oracle_NULL_program, 1), 0);
+		      clone_object(Oracle_oracle_NULL_program, 1), 0);
 #ifdef OCI_UTF16ID
   add_integer_constant("UNICODE_SUPPORTED", 1, 0);
 #endif
@@ -2875,7 +2875,6 @@ PIKE_MODULE_EXIT
 
 #define FREE_PROG(X) if(X) { free_program(X) ; X=NULL; }
 #define FREE_OBJ(X) if(X) { free_object(X) ; X=NULL; }
-  FREE_PROG(oracle_program);
   FREE_PROG(compile_query_program);
   FREE_PROG(big_typed_query_program);
   FREE_PROG(dbresultinfo_program);
