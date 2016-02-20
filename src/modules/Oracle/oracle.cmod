@@ -580,40 +580,6 @@ struct dbresult
 };
 
 
-static void init_dbresult_struct(struct object *UNUSED(o))
-{
-  OWERR("%s\n",__FUNCTION__);
-#ifdef PIKE_DEBUG
-  ((unsigned long *)(Pike_fp->current_storage))[0]=DBRESULT_MAGIC;
-#endif
-  THIS_RESULT->dbcon_lock=0;
-  THIS_RESULT->dbquery_lock=0;
-  THIS_RESULT_DBCON->resultobject_busy = 1;
-}
-
-static void exit_dbresult_struct(struct object *UNUSED(o))
-{
-  struct dbquery *dbquery=THIS_RESULT_QUERY;
-  OWERR("%s\n",__FUNCTION__);
-  /* Variables are freed automatically */
-  if(THIS_RESULT->dbquery_lock && dbquery)
-  {
-    struct Oracle_oracle_struct *dbcon = THIS_RESULT_DBCON;
-    dbcon->resultobject_busy = 0;
-    UNLOCK( dbquery->lock );
-    if(THIS_RESULT->dbcon_lock && dbcon)
-    {
-      UNLOCK( dbcon->lock );
-    }
-  }
-  else
-  {
-    OWERR("exit_dbresult_struct %p %p\n",
-          PARENTOF(THISOBJ),
-          PARENTOF(THISOBJ)?PARENTOF(THISOBJ)->prog:0);
-  }
-}
-
 /****** dbresultinfo ******/
 
 struct dbresultinfo
@@ -1199,6 +1165,40 @@ EXTRA
 /*
  * dbresult
  */
+
+static void init_dbresult_struct(struct object *UNUSED(o))
+{
+  OWERR("%s\n",__FUNCTION__);
+#ifdef PIKE_DEBUG
+  ((unsigned long *)(Pike_fp->current_storage))[0]=DBRESULT_MAGIC;
+#endif
+  THIS_RESULT->dbcon_lock=0;
+  THIS_RESULT->dbquery_lock=0;
+  THIS_RESULT_DBCON->resultobject_busy = 1;
+}
+
+static void exit_dbresult_struct(struct object *UNUSED(o))
+{
+  struct Oracle_oracle_compile_query_struct *dbquery = THIS_RESULT_QUERY;
+  OWERR("%s\n",__FUNCTION__);
+  /* Variables are freed automatically */
+  if(THIS_RESULT->dbquery_lock && dbquery)
+  {
+    struct Oracle_oracle_struct *dbcon = THIS_RESULT_DBCON;
+    dbcon->resultobject_busy = 0;
+    UNLOCK( dbquery->lock );
+    if(THIS_RESULT->dbcon_lock && dbcon)
+    {
+      UNLOCK( dbcon->lock );
+    }
+  }
+  else
+  {
+    OWERR("exit_dbresult_struct %p %p\n",
+          PARENTOF(THISOBJ),
+          PARENTOF(THISOBJ)?PARENTOF(THISOBJ)->prog:0);
+  }
+}
 
 static void f_num_rows(INT32 args)
 {
