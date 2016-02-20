@@ -283,16 +283,14 @@ void *low_check_storage(void *storage, unsigned long magic, char *prog)
 #define THIS_RESULT_DBCON ((struct Oracle_oracle_struct *)check_storage(parent_storage(2, Oracle_oracle_program),DBCON_MAGIC,"dbcon"))
 #define THIS_QUERY ((struct Oracle_oracle_compile_query_struct *)check_storage(CURRENT_STORAGE,DBQUERY_MAGIC,"dbquery"))
 #define THIS_RESULT_QUERY ((struct Oracle_oracle_compile_query_struct *)check_storage(parent_storage(1, Oracle_oracle_compile_query_program),DBQUERY_MAGIC,"dbquery"))
-#define THIS_RESULT ((struct dbresult *)check_storage(CURRENT_STORAGE,DBRESULT_MAGIC,"dbresult"))
+#define THIS_RESULT ((struct Oracle_oracle_compile_query_big_typed_query_struct *)check_storage(CURRENT_STORAGE,DBRESULT_MAGIC,"dbresult"))
 #define THIS_RESULTINFO ((struct dbresultinfo *)check_storage(CURRENT_STORAGE,DBRESINFO_MAGIC,"dbresultinfo"))
 #define THIS_DBLOB ((struct Oracle_oracle_LOB_struct *)check_storage(CURRENT_STORAGE,DBLOB_MAGIC,"dblob"))
 #define THIS_DBDATE ((struct Oracle_oracle_Date_struct *)check_storage(CURRENT_STORAGE,DBDATE_MAGIC,"dbdate"))
 #define THIS_DBNULL ((struct Oracle_oracle_NULL_struct *)check_storage(CURRENT_STORAGE,DBNULL_MAGIC,"dbnull"))
 
-static struct program *big_typed_query_program = NULL;
 static struct program *dbresultinfo_program = NULL;
 
-static int big_typed_query_identifier;
 static int dbresultinfo_identifier;
 
 static struct object *nullstring_object;
@@ -528,18 +526,6 @@ EXIT
 #else
 #define ENVOF(X) get_oracle_environment()
 #endif
-
-/****** dbresult ******/
-
-struct dbresult
-{
-#ifdef PIKE_DEBUG
-  unsigned long magic;
-#endif
-  char dbcon_lock;
-  char dbquery_lock;
-};
-
 
 /****** dbresultinfo ******/
 
@@ -1105,7 +1091,74 @@ EXTRA
 
 /*      ADD_FUNCTION("query_type",f_query_type,tFunc(tNone,tInt),0); */
 
-      MY_START_CLASS(dbresult); {
+      MY_START_CLASS(dbresultinfo); {
+        PIKE_MAP_VARIABLE("name",offset+OFFSETOF(dbresultinfo, name),tStr,T_STRING,0);
+        PIKE_MAP_VARIABLE("type",offset+OFFSETOF(dbresultinfo, type),tStr,T_STRING,0);
+        PIKE_MAP_VARIABLE("_type",offset+OFFSETOF(dbresultinfo, real_type),tInt,T_INT,0);
+        PIKE_MAP_VARIABLE("length",offset+OFFSETOF(dbresultinfo, length),tInt,T_INT,0);
+        PIKE_MAP_VARIABLE("decimals",offset+OFFSETOF(dbresultinfo, decimals),tInt,T_INT,0);
+
+	ADD_FUNCTION("`->=",protect_dbresultinfo,
+		     tFunc(tStr tMix,tVoid), ID_STATIC);
+	ADD_FUNCTION("`[]=",protect_dbresultinfo,
+		     tFunc(tStr tMix,tVoid), ID_STATIC);
+#ifdef ORACLE_DEBUG
+	set_gc_check_callback(gc_dbresultinfo_struct);
+#endif
+	MY_END_CLASS(dbresultinfo);
+      }
+}
+
+/*
+ * dbresult
+ */
+PIKECLASS big_typed_query
+  program_flags PROGRAM_USES_PARENT|PROGRAM_NEEDS_PARENT|PROGRAM_DESTRUCT_IMMEDIATE;
+{
+#ifdef PIKE_DEBUG
+  CVAR unsigned long magic;
+#endif
+  CVAR char dbcon_lock;
+  CVAR char dbquery_lock;
+
+  DECLARE_STORAGE;
+
+INIT
+{
+  OWERR("%s\n",__FUNCTION__);
+#ifdef PIKE_DEBUG
+  ((unsigned long *)(Pike_fp->current_storage))[0]=DBRESULT_MAGIC;
+#endif
+  THIS_RESULT->dbcon_lock=0;
+  THIS_RESULT->dbquery_lock=0;
+  THIS_RESULT_DBCON->resultobject_busy = 1;
+}
+
+EXIT
+{
+  struct Oracle_oracle_compile_query_struct *dbquery = THIS_RESULT_QUERY;
+  OWERR("%s\n",__FUNCTION__);
+  /* Variables are freed automatically */
+  if(THIS_RESULT->dbquery_lock && dbquery)
+  {
+    struct Oracle_oracle_struct *dbcon = THIS_RESULT_DBCON;
+    dbcon->resultobject_busy = 0;
+    UNLOCK( dbquery->lock );
+    if(THIS_RESULT->dbcon_lock && dbcon)
+    {
+      UNLOCK( dbcon->lock );
+    }
+  }
+  else
+  {
+    OWERR("exit_dbresult_struct %p %p\n",
+          PARENTOF(THISOBJ),
+          PARENTOF(THISOBJ)?PARENTOF(THISOBJ)->prog:0);
+  }
+}
+
+EXTRA
+{
 	ADD_FUNCTION("create", f_big_typed_query_create,
 		     tFunc(tOr(tVoid,tMap(tStr,tMix)) tOr(tVoid,tInt)
 			   tOr(tVoid,tObj),tVoid), ID_PUBLIC);
@@ -1128,69 +1181,6 @@ EXTRA
 	ADD_FUNCTION("fetch_row",
 		     f_fetch_row,tFunc(tNone,tOr(tInt,tArr(tOr(tStr,tInt)))),
 		     ID_PUBLIC);
-
-#ifdef PROGRAM_USES_PARENT
-	Pike_compiler->new_program->flags|=PROGRAM_USES_PARENT|PROGRAM_NEEDS_PARENT;
-#endif
-	MY_END_CLASS(big_typed_query);
-	big_typed_query_program->flags|=PROGRAM_DESTRUCT_IMMEDIATE;
-      }
-
-
-      MY_START_CLASS(dbresultinfo); {
-        PIKE_MAP_VARIABLE("name",offset+OFFSETOF(dbresultinfo, name),tStr,T_STRING,0);
-        PIKE_MAP_VARIABLE("type",offset+OFFSETOF(dbresultinfo, type),tStr,T_STRING,0);
-        PIKE_MAP_VARIABLE("_type",offset+OFFSETOF(dbresultinfo, real_type),tInt,T_INT,0);
-        PIKE_MAP_VARIABLE("length",offset+OFFSETOF(dbresultinfo, length),tInt,T_INT,0);
-        PIKE_MAP_VARIABLE("decimals",offset+OFFSETOF(dbresultinfo, decimals),tInt,T_INT,0);
-
-	ADD_FUNCTION("`->=",protect_dbresultinfo,
-		     tFunc(tStr tMix,tVoid), ID_STATIC);
-	ADD_FUNCTION("`[]=",protect_dbresultinfo,
-		     tFunc(tStr tMix,tVoid), ID_STATIC);
-#ifdef ORACLE_DEBUG
-	set_gc_check_callback(gc_dbresultinfo_struct);
-#endif
-	MY_END_CLASS(dbresultinfo);
-      }
-}
-
-/*
- * dbresult
- */
-
-static void init_dbresult_struct(struct object *UNUSED(o))
-{
-  OWERR("%s\n",__FUNCTION__);
-#ifdef PIKE_DEBUG
-  ((unsigned long *)(Pike_fp->current_storage))[0]=DBRESULT_MAGIC;
-#endif
-  THIS_RESULT->dbcon_lock=0;
-  THIS_RESULT->dbquery_lock=0;
-  THIS_RESULT_DBCON->resultobject_busy = 1;
-}
-
-static void exit_dbresult_struct(struct object *UNUSED(o))
-{
-  struct Oracle_oracle_compile_query_struct *dbquery = THIS_RESULT_QUERY;
-  OWERR("%s\n",__FUNCTION__);
-  /* Variables are freed automatically */
-  if(THIS_RESULT->dbquery_lock && dbquery)
-  {
-    struct Oracle_oracle_struct *dbcon = THIS_RESULT_DBCON;
-    dbcon->resultobject_busy = 0;
-    UNLOCK( dbquery->lock );
-    if(THIS_RESULT->dbcon_lock && dbcon)
-    {
-      UNLOCK( dbcon->lock );
-    }
-  }
-  else
-  {
-    OWERR("exit_dbresult_struct %p %p\n",
-          PARENTOF(THISOBJ),
-          PARENTOF(THISOBJ)?PARENTOF(THISOBJ)->prog:0);
-  }
 }
 
 static void f_num_rows(INT32 args)
@@ -1226,7 +1216,7 @@ static void f_num_rows(INT32 args)
 
 static void f_num_fields(INT32 args)
 {
-  struct dbresult *dbresult = THIS_RESULT;
+  struct Oracle_oracle_compile_query_big_typed_query_struct *dbresult = THIS_RESULT;
   struct Oracle_oracle_compile_query_struct *dbquery = THIS_RESULT_QUERY;
   struct Oracle_oracle_struct *dbcon = THIS_RESULT_DBCON;
 
@@ -1398,7 +1388,7 @@ static sb4 define_callback(dvoid *dbresultinfo,
 
 static void f_fetch_fields(INT32 args)
 {
-  struct dbresult *dbresult = THIS_RESULT;
+  struct Oracle_oracle_compile_query_big_typed_query_struct *dbresult = THIS_RESULT;
   struct Oracle_oracle_compile_query_struct *dbquery = THIS_RESULT_QUERY;
   struct Oracle_oracle_struct *dbcon = THIS_RESULT_DBCON;
   INT32 i;
@@ -1964,7 +1954,7 @@ static void f_fetch_row(INT32 args)
 {
   int i = 0;
   sword rc;
-  struct dbresult *dbresult = THIS_RESULT;
+  struct Oracle_oracle_compile_query_big_typed_query_struct *dbresult = THIS_RESULT;
   struct Oracle_oracle_compile_query_struct *dbquery = THIS_RESULT_QUERY;
   struct Oracle_oracle_struct *dbcon = THIS_RESULT_DBCON;
 
@@ -2133,6 +2123,9 @@ static void f_fetch_row(INT32 args)
     }
   }
   f_aggregate(dbquery->cols);
+}
+
+  /* END big_typed_query */
 }
 
 static void f_oracle_create(INT32 args)
@@ -2412,7 +2405,7 @@ static void f_big_typed_query_create(INT32 args)
 {
   sword rc;
   struct mapping *bnds=0;
-  struct dbresult *dbresult=THIS_RESULT;
+  struct Oracle_oracle_compile_query_big_typed_query_struct *dbresult = THIS_RESULT;
   struct Oracle_oracle_compile_query_struct *dbquery = THIS_RESULT_QUERY;
   struct Oracle_oracle_struct *dbcon = THIS_RESULT_DBCON;
   ONERROR err;
@@ -2871,7 +2864,6 @@ PIKE_MODULE_EXIT
 
 #define FREE_PROG(X) if(X) { free_program(X) ; X=NULL; }
 #define FREE_OBJ(X) if(X) { free_object(X) ; X=NULL; }
-  FREE_PROG(big_typed_query_program);
   FREE_PROG(dbresultinfo_program);
 
   FREE_OBJ(nullstring_object);
