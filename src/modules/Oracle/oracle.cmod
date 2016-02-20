@@ -282,18 +282,16 @@ void *low_check_storage(void *storage, unsigned long magic, char *prog)
 #define THIS_QUERY_DBCON ((struct Oracle_oracle_struct *)check_storage(parent_storage(1, Oracle_oracle_program),DBCON_MAGIC,"dbcon"))
 #define THIS_RESULT_DBCON ((struct Oracle_oracle_struct *)check_storage(parent_storage(2, Oracle_oracle_program),DBCON_MAGIC,"dbcon"))
 #define THIS_QUERY ((struct Oracle_oracle_compile_query_struct *)check_storage(CURRENT_STORAGE,DBQUERY_MAGIC,"dbquery"))
-#define THIS_RESULT_QUERY ((struct Oracle_oracle_compile_query_struct *)check_storage(parent_storage(1, compile_query_program),DBQUERY_MAGIC,"dbquery"))
+#define THIS_RESULT_QUERY ((struct Oracle_oracle_compile_query_struct *)check_storage(parent_storage(1, Oracle_oracle_compile_query_program),DBQUERY_MAGIC,"dbquery"))
 #define THIS_RESULT ((struct dbresult *)check_storage(CURRENT_STORAGE,DBRESULT_MAGIC,"dbresult"))
 #define THIS_RESULTINFO ((struct dbresultinfo *)check_storage(CURRENT_STORAGE,DBRESINFO_MAGIC,"dbresultinfo"))
 #define THIS_DBLOB ((struct Oracle_oracle_LOB_struct *)check_storage(CURRENT_STORAGE,DBLOB_MAGIC,"dblob"))
 #define THIS_DBDATE ((struct Oracle_oracle_Date_struct *)check_storage(CURRENT_STORAGE,DBDATE_MAGIC,"dbdate"))
 #define THIS_DBNULL ((struct Oracle_oracle_NULL_struct *)check_storage(CURRENT_STORAGE,DBNULL_MAGIC,"dbnull"))
 
-static struct program *compile_query_program = NULL;
 static struct program *big_typed_query_program = NULL;
 static struct program *dbresultinfo_program = NULL;
 
-static int compile_query_identifier;
 static int big_typed_query_identifier;
 static int dbresultinfo_identifier;
 
@@ -2873,7 +2871,6 @@ PIKE_MODULE_EXIT
 
 #define FREE_PROG(X) if(X) { free_program(X) ; X=NULL; }
 #define FREE_OBJ(X) if(X) { free_object(X) ; X=NULL; }
-  FREE_PROG(compile_query_program);
   FREE_PROG(big_typed_query_program);
   FREE_PROG(dbresultinfo_program);
 
