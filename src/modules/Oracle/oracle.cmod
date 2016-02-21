@@ -1034,11 +1034,11 @@ PIKECLASS dbresultinfo
 #ifdef PIKE_DEBUG
   CVAR unsigned long magic;
 #endif
-  CVAR INT_TYPE length;
-  CVAR INT_TYPE decimals;
+  PIKEVAR int length;
+  PIKEVAR int decimals;
   CVAR INT_TYPE real_type;
-  CVAR struct pike_string *name;
-  CVAR struct pike_string *type;
+  PIKEVAR string name;
+  PIKEVAR string type;
 
   CVAR OCIDefine *define_handle;
 
@@ -1068,11 +1068,7 @@ EXIT
 
 EXTRA
 {
-        PIKE_MAP_VARIABLE("name",offset+OFFSETOF(Oracle_oracle_compile_query_dbresultinfo_struct, name),tStr,T_STRING,0);
-        PIKE_MAP_VARIABLE("type",offset+OFFSETOF(Oracle_oracle_compile_query_dbresultinfo_struct, type),tStr,T_STRING,0);
         PIKE_MAP_VARIABLE("_type",offset+OFFSETOF(Oracle_oracle_compile_query_dbresultinfo_struct, real_type),tInt,T_INT,0);
-        PIKE_MAP_VARIABLE("length",offset+OFFSETOF(Oracle_oracle_compile_query_dbresultinfo_struct, length),tInt,T_INT,0);
-        PIKE_MAP_VARIABLE("decimals",offset+OFFSETOF(Oracle_oracle_compile_query_dbresultinfo_struct, decimals),tInt,T_INT,0);
 
 	ADD_FUNCTION("`->=",protect_dbresultinfo,
 		     tFunc(tStr tMix,tVoid), ID_STATIC);
