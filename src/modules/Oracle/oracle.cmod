@@ -988,7 +988,7 @@ PIKECLASS compile_query
 
   CVAR INT_TYPE cols;
   CVAR struct array *field_info;
-  CVAR struct mapping *output_variables;
+  PIKEVAR mapping(string:mixed) output_variables;
 
   DECLARE_STORAGE;
 
@@ -1018,11 +1018,6 @@ EXTRA
       PIKE_MAP_VARIABLE("_cols",offset+OFFSETOF(Oracle_oracle_compile_query_struct, cols),tInt,T_INT,0);
       PIKE_MAP_VARIABLE("_field_info",offset+OFFSETOF(Oracle_oracle_compile_query_struct, field_info),
                         tArr(tObj), T_ARRAY, 0);
-
-      PIKE_MAP_VARIABLE("output_variables",
-                        offset+OFFSETOF(Oracle_oracle_compile_query_struct, output_variables),
-                        tMap(tStr,tMix), T_MAPPING, 0);
-
 
 /*      ADD_FUNCTION("query_type",f_query_type,tFunc(tNone,tInt),0); */
 
