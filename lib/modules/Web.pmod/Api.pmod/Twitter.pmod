@@ -1,7 +1,8 @@
 #pike __REAL_VERSION__
 
-//! Instantiates the default Twitter API.
-//! See @[Web.Api.Api()] for further information.
+//! Instantiates the default Twitter API.  See
+//! @url{https://dev.twitter.com/rest/public@} for further
+//! information.
 //!
 //! @param client_id
 //!  Your application key/id
@@ -11,6 +12,9 @@
 //!  The redirect URI after an authentication
 //! @param scope
 //!  The application scopes to grant access to
+//!
+//! @seealso
+//!   @[Web.Api.Api]
 protected this_program `()(string client_id, string client_secret,
                            void|string redirect_uri,
                            void|string|array(string)|multiset(string) scope)
