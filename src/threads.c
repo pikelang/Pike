@@ -1535,7 +1535,7 @@ static void check_threads(struct callback *UNUSED(cb), void *UNUSED(arg), void *
 
 #ifdef HAVE_GETHRTIME
   {
-    static union pike_hrtime last_ = 0;
+    static union pike_hrtime last_;
     union pike_hrtime now;
     now.hrt = gethrtime();
     if( now.val-last_.val < 50000000 ) /* 0.05s slice */
