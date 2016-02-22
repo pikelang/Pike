@@ -1356,6 +1356,17 @@ PMOD_EXPORT int count_pike_threads(void)
   return num_pike_threads;
 }
 
+#ifdef HAVE_GETHRTIME
+/* Workaround for old Solaris, which believes that eg GCC
+ * doesn't support long long, which in turn causes hrtime_t
+ * to become a non-scalar type.
+ */
+union pike_hrtime {
+  INT64 val;
+  hrtime_t hrt;
+};
+#endif
+
 static void check_threads(struct callback *UNUSED(cb), void *UNUSED(arg), void *UNUSED(arg2))
 {
 #ifdef PROFILE_CHECK_THREADS
@@ -1524,11 +1535,12 @@ static void check_threads(struct callback *UNUSED(cb), void *UNUSED(arg), void *
 
 #ifdef HAVE_GETHRTIME
   {
-    static hrtime_t last_ = 0;
-    hrtime_t now = gethrtime();
-    if( now-last_ < 50000000 ) /* 0.05s slice */
+    static union pike_hrtime last_ = 0;
+    union pike_hrtime now;
+    now.hrt = gethrtime();
+    if( now.val-last_.val < 50000000 ) /* 0.05s slice */
       return;
-    last_ = now;
+    last_.val = now.val;
   }
 #elif defined(HAVE_MACH_TASK_INFO_H) && defined(TASK_THREAD_TIMES_INFO)
   {
