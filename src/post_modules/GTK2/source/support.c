@@ -589,6 +589,8 @@ static int pgtk2_push_object_param(const GValue *a) {
       push_gdkobject(gp,color,0);
     } else if (G_VALUE_HOLDS(a,g_type_from_name("GtkTreePath"))) {
       push_pgdk2object(gp,pgtk2_tree_path_program,0);
+    } else if (G_VALUE_HOLDS(a,g_type_from_name("GtkTextIter"))) {
+      push_pgdk2object(gp,pgtk2_text_iter_program,0);
     } else if (G_VALUE_HOLDS(a,g_type_from_name("GdkRectangle"))) {
       push_gdkobject(gp,rectangle,0);
     } else if (G_VALUE_HOLDS(a,g_type_from_name("GdkRegion"))) {
