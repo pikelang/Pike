@@ -13,6 +13,6 @@ hpack.o: $(SRCDIR)/hpack.c
 hpack.o: huffman-tab.h
 
 huffman-tab.h: mk_huffman.pike
-	$(RUNPIKE) $< $@
+	$(RUNPIKE) $(SRCDIR)/mk_huffman.pike $@
 
 @dependencies@
