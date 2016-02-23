@@ -3140,31 +3140,26 @@ void check_foreach_type(node *expression, node *lvalues,
                         "Argument 1 to foreach() is not always an array.");
         }
 
-        if( lvalues->type->type == PIKE_T_AUTO )
-        {
+	if (!lvalues) {
+	  /* No loop variable. Will be converted to a counted loop
+	   * by treeopt. */
+        } else if( lvalues->type->type == PIKE_T_AUTO ) {
           if(val_type)
             copy_pike_type( *val_type, expression->type->car );
-        }
-        else
-        {
-          if (!lvalues) {
-            /* No loop variable. Will be converted to a counted loop
-             * by treeopt. */
-          } else if (pike_types_le(lvalues->type, void_type_string)) {
-            yyerror("Bad argument 2 to foreach().");
-          } else {
-            struct pike_type *array_value_type;
+	} else if (pike_types_le(lvalues->type, void_type_string)) {
+	  yyerror("Bad argument 2 to foreach().");
+	} else {
+	  struct pike_type *array_value_type;
 
-            type_stack_mark();
-            push_finished_type(lvalues->type);
-            push_type(T_ARRAY);
-            array_value_type = pop_unfinished_type();
+	  type_stack_mark();
+	  push_finished_type(lvalues->type);
+	  push_type(T_ARRAY);
+	  array_value_type = pop_unfinished_type();
 
-            check_node_type(expression, array_value_type,
-                            "Argument 1 to foreach() does not match loop variable type.");
-            free_type(array_value_type);
-          }
-        }
+	  check_node_type(expression, array_value_type,
+			  "Argument 1 to foreach() does not match loop variable type.");
+	  free_type(array_value_type);
+	}
       }
       free_type(array_zero);
     }
