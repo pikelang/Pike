@@ -533,10 +533,11 @@ static void select_random_string(INT32 args)
     Pike_error("Too may arguments.\n");
   if(!args)
   {
-    push_svalue(simple_mapping_string_lookup(get_builtin_constants(),
-                                             "random_string"));
-    if(TYPEOF(sp[-1])!=T_FUNCTION)
+    struct svalue *random_string =
+      simple_mapping_string_lookup(get_builtin_constants(), "random_string");
+    if(!random_string || (TYPEOF(*random_string) != T_FUNCTION))
       Pike_error("Unable to resolve random function.\n");
+    push_svalue(random_string);
   }
   else if(TYPEOF(sp[-1])==T_INT)
   {

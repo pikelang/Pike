@@ -2047,16 +2047,20 @@ static void mpzmod_random(INT32 args)
 {
   DECLARE_THIS();
   struct object *res = 0;   /* Make gcc happy. */
+  struct svalue *random_string;
   pop_n_elems(args);
   args = 0;
   if(mpz_sgn(THIS) <= 0)
     Pike_error("Random on negative number.\n");
 
   push_object(res=fast_clone_object(THIS_PROGRAM));
-  push_svalue(simple_mapping_string_lookup(get_builtin_constants(),
-                                           "random_string"));
-  if(TYPEOF(sp[-1])!=T_FUNCTION)
+
+  random_string =
+    simple_mapping_string_lookup(get_builtin_constants(), "random_string");
+  if(!random_string || (TYPEOF(*random_string) != T_FUNCTION))
     Pike_error("Unable to resolve random function.\n");
+  push_svalue(random_string);
+
   /* We add four to assure reasonably uniform randomness */
   push_int(mpz_size(THIS)*sizeof(mp_limb_t) + 4);
   apply_svalue(&sp[-2], 1);
