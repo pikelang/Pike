@@ -28,7 +28,7 @@ signal delete_from_cursor;
 signal insert_at_cursor;
 signal move_cursor;
 signal move_focus;
-signal move_viewpoert;
+signal move_viewport;
 signal page_horizontally;
 signal paste_clipboard;
 signal populate_popup;
