@@ -206,7 +206,7 @@ GTK2.Entry set_inner_border( int left, int right, int top, int bottom );
 
 GTK2.Entry set_invisible_char( int ch );
 //! Sets the character to use in place of the actual text when 
-//! set_invisibility() has been called to set text visibility to false.  i.e.
+//! set_visibility() has been called to set text visibility to false.  i.e.
 //! this is the character used in "password" mode to show the user how many
 //! characters have been type.  The default invisible char is an asterisk
 //! ('*').  If you set the invisible char to 0, then the user will get no
