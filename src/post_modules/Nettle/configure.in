@@ -63,7 +63,8 @@ else
     # ripemd160 is available in Nettle 2.3 and later.
     # sha3 and gosthash94 are available in Nettle 2.6 and later.
     # chacha, poly1305 and eax are available in Nettle 3.0 and later.
-    # version.h was added in Nettle 3.1.1.
+    # version.h was added in Nettle 3.1.1, but nettle_version_{major,minor}()
+    # are first available in Nettle 3.2 and later.
     AC_CHECK_HEADERS(nettle/camellia.h \
 		     nettle/gcm.h \
 		     nettle/ripemd160.h \
@@ -84,6 +85,7 @@ else
 		   nettle_chacha_crypt nettle_chacha_poly1305_encrypt \
 		   nettle_poly1305_digest nettle_eax_encrypt \
 		   nettle_dsa_sign nettle_umac128_digest nettle_ecdsa_sign \
+		   nettle_version_major \
 		   )
 
     AC_MSG_CHECKING([for idea.c])
