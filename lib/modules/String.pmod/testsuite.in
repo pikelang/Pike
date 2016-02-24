@@ -273,6 +273,10 @@ test_eq(String.common_prefix(({})), "")
 
 dnl MISSING TEST: fuzzymatch
 
+test_eq(String.levenshtein_distance("a",""), 1)
+test_eq(String.levenshtein_distance("pike","bikes"), 2)
+test_eq(String.levenshtein_distance("p\x1234ke","b\x1234kes"), 2)
+
 test_eq(String.soundex(""),"000")
 test_eq(String.soundex("AI"),"A000")
 test_eq(String.soundex("anna"),"A500")
