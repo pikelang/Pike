@@ -3358,7 +3358,12 @@ void fix_type_field(node *n)
     /* FALL_THROUGH */
   case F_CAST:
     /* Type-field is correct by definition. */
-    copy_pike_type(n->type, old_type);
+    if (old_type) {
+      copy_pike_type(n->type, old_type);
+    } else {
+      yyerror("Cast to invalid type.");
+      copy_pike_type(n->type, mixed_type_string);
+    }
     break;
 
   case F_LAND:
