@@ -4187,8 +4187,10 @@ static void file_set_buffer(INT32 args)
 
   if(FD==-1)
     Pike_error("Stdio.File->set_buffer() on closed file.\n");
-  if(!args)
-    SIMPLE_TOO_FEW_ARGS_ERROR("set_buffer", 1);
+  if(args<1)
+    SIMPLE_WRONG_NUM_ARGS_ERROR("set_buffer", 1);
+  if(args>2)
+    SIMPLE_WRONG_NUM_ARGS_ERROR("set_buffer", 2);
   if(TYPEOF(Pike_sp[-args]) != PIKE_T_INT)
     SIMPLE_BAD_ARG_ERROR("set_buffer", 1, "int");
 
