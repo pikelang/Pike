@@ -228,6 +228,9 @@ class conxion {
 
   private Thread.Queue qportals;
   final Thread.Mutex shortmux;
+  private Thread.Mutex termthread;
+  private Thread.MutexKey termlock;
+
   final Stdio.File socket;
   private function(void|mixed:void) connectfail;
   private int towrite;
@@ -355,12 +358,15 @@ outer:
     foreach(closecallbacks;function(void|mixed:void) closecb;)
       closecb();
     closecallbacks=(<>);
+    termlock=0;
     return ret;
   }
 
   protected void destroy() {
+    termlock=termthread->lock();
     catch(close());		// Exceptions don't work inside destructors
     connectfail=0;
+    termthread->lock(1);
   }
 
   final void connectloop(object pgsqlsess, int nossl) {
@@ -435,6 +441,7 @@ outer:
     i=conxiin();
     shortmux=Thread.Mutex();
     nostash=Thread.Mutex();
+    termthread=Thread.Mutex();
     stashavail=Thread.Condition();
     stashqueue=Thread.Queue();
     stash=Stdio.Buffer();
