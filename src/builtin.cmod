@@ -3430,20 +3430,8 @@ PIKECLASS multi_string_replace
     if (THIS->ctx.v)
       free_replace_many_context(&THIS->ctx);
 
-    switch(args)
-    {
-    case 0:
-      return;
-
-    case 1:
-      if (TYPEOF(*from_arg) != T_MAPPING)
-        Pike_error("Illegal arguments to create().\n");
-      THIS->from = mapping_indices(from_arg->u.mapping);
-      THIS->to = mapping_values(from_arg->u.mapping);
-      break;
-
-    case 2:
-      if (TYPEOF(*from_arg) != T_ARRAY) {
+    if (to_arg) {
+      if (!from_arg || (TYPEOF(*from_arg) != T_ARRAY)) {
 	SIMPLE_ARG_TYPE_ERROR("replace", 1,
                               "array(string)|mapping(string:string)");
       }
@@ -3451,6 +3439,7 @@ PIKECLASS multi_string_replace
 	push_int(from_arg->u.array->size);
 	stack_swap();
 	f_allocate(2);
+	to_arg = Pike_sp - 1;
       }
       if (TYPEOF(*to_arg) != T_ARRAY) {
 	SIMPLE_ARG_TYPE_ERROR("replace", 2, "array(string)|string");
@@ -3460,6 +3449,13 @@ PIKECLASS multi_string_replace
       }
       add_ref(THIS->from = from_arg->u.array);
       add_ref(THIS->to = to_arg->u.array);
+    } else if (from_arg) {
+      if (TYPEOF(*from_arg) != T_MAPPING)
+        Pike_error("Illegal arguments to create().\n");
+      THIS->from = mapping_indices(from_arg->u.mapping);
+      THIS->to = mapping_values(from_arg->u.mapping);
+    } else {
+      return;
     }
 
     if (!THIS->from->size) {
