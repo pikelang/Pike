@@ -63,7 +63,8 @@
 
 final int _fetchlimit=FETCHLIMIT;
 final Thread.Mutex _unnamedportalmux;
-private Thread.Mutex unnamedstatement;
+private Thread.Mutex unnamedstatement,termthread;
+private Thread.MutexKey termlock;
 final int _portalsinflight;
 
 private .pgsql_util.conxion c;
@@ -597,8 +598,6 @@ private int datarowdebugcount;
 #endif
 
 final void _processloop(.pgsql_util.conxion ci) {
-  if(!this)			// Oops, current object already destructed
-    return;
   if(c && (!ci || c!=ci))	// If we are switching or dropping connections
     c->close();			// force a close on the old socket
   (c=ci)->socket->set_id(procmessage);
@@ -616,11 +615,11 @@ final void _processloop(.pgsql_util.conxion ci) {
     plugbuffer->add_int8(0);
     PD("%O\n",(string)plugbuffer);
     if(catch(ci->start()->add_hstring(plugbuffer,4,4)->sendcmd(SENDOUT))) {
-      if(this)				// Only when not destructed yet
-        if(_options.reconnect)
-          _connectfail();
-        else
-          destruct(waitforauthready);
+      if(_options.reconnect)
+        _connectfail();
+      else
+        destruct(waitforauthready);
+      termlock=0;
       return;
     }
   }		      // Do not flush at this point, PostgreSQL 9.4 disapproves
@@ -628,8 +627,6 @@ final void _processloop(.pgsql_util.conxion ci) {
 }
 
 private void procmessage() {
-  if(!this)			// Oops, current object already destructed
-    return;
   int terminating=0;
   .pgsql_util.conxion ci=c;		// cache value FIXME sensible?
   .pgsql_util.conxiin cr=ci->i;		// cache value FIXME sensible?
@@ -1179,25 +1176,20 @@ private void procmessage() {
     }
     break;
   }
-  if(!this) {					 // Already destructed
-    ci->close();				 // So close descriptors only
-    return;
-  }
   PD("Closing database processloop %O\n",err);
-  catch {					 // Cater for destruct races
-    _delayederror=err;
-    for(;objectp(portal);portal=qportals->read())
-      if(objectp(portal)) {
+  _delayederror=err;
+  for(;objectp(portal);portal=qportals->read())
+    if(objectp(portal)) {
 #ifdef PG_DEBUG
-        showportal(0);
+      showportal(0);
 #endif
-        portal->_purgeportal();
-      }
-    if(!ci->close() && !terminating && _options.reconnect)
-      _connectfail();
-    else
-      destruct(waitforauthready);
-  };
+      portal->_purgeportal();
+    }
+  if(!ci->close() && !terminating && _options.reconnect)
+    _connectfail();
+  else
+    destruct(waitforauthready);
+  termlock=0;
   if(err && !stringp(err))
     throw(err);
 }
@@ -1211,14 +1203,16 @@ private void procmessage() {
 /*semi*/final void close() {
   if(qportals && qportals->size())
     catch(cancelquery());
-  catch(c->close());
+  c->close();
   c=0;
   destruct(waitforauthready);
 }
 
 protected void destroy() {
+  termlock=(termthread=Thread.Mutex())->lock();
   catch(close());
   .pgsql_util.unregister_backend();
+  termthread->lock(1);
 }
 
 final void _connectfail(void|mixed err) {
