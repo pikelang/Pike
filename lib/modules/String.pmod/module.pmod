@@ -217,11 +217,10 @@ int levenshtein_distance(string a, string b)
     // Thus lev_0[j] = j for j=0..|b|:
     int(0..2147483647) len = strlen(b);
 
-    if( len == 2147483647 )
+    if( len > 2147483646 )
         error("Too large string.\n");
 
     ++len;
-
     array(int) lev_i = enumerate(len);
     for (int i = 0; i < strlen(a); i++)
     {
@@ -235,7 +234,7 @@ int levenshtein_distance(string a, string b)
         // Use the mathematical formula to fill in the rest of the row:
         for (int j = 0; j < strlen(b); j++)
         {
-            int cost = (a[i] == b[j]) ? 0 : 1;
+            int cost = (a[i] != b[j]);
             lev_i[j + 1] = min(lev_i[j] + 1,
                                lev_p[j + 1] + 1,
                                lev_p[j] + cost);
