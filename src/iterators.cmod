@@ -666,8 +666,9 @@ PIKECLASS multiset_iterator
     {
       struct object *o = low_clone (multiset_iterator_program);
       struct multiset_iterator_struct *copy = OBJ2_MULTISET_ITERATOR (o);
-      if ((copy->l = li->l))
-	add_ref(li->l);
+      if (!(copy->l = li->l))
+	return o;
+      add_ref(copy->l);
       if ((copy->nodepos = li->nodepos) >= 0) add_msnode_ref (copy->l);
       if ((copy->lock_index = li->lock_index)) {
 	add_ref (copy->l->msd);
