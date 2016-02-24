@@ -185,7 +185,8 @@ static unsigned int odbc_driver_flags(HDBC odbc_conn)
 	/* fprintf(stderr, "num_rows: %ld\n", (long)num_rows); */
 	break;
       }
-      code = SQLDescribeColW(hstmt, 1, b, (SQLSMALLINT)sizeof(buf),
+      code = SQLDescribeColW(hstmt, 1, b,
+			     (SQLSMALLINT)(sizeof(buf)/sizeof(p_wchar2)),
 			     &name_len, &sql_type, &precision,
 			     &scale, &nullable);
       if ((code != SQL_SUCCESS) && (code != SQL_SUCCESS_WITH_INFO)) {
