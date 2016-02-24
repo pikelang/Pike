@@ -2822,7 +2822,13 @@ static int lower_or_pike_types(struct pike_type *t1,
     }
   }
   if (!elem_on_stack) {
-    push_finished_type(t);
+    if (t) {
+      push_finished_type(t);
+    } else {
+      push_type(T_ZERO);
+    }
+  } else if (!t) {
+    /* No need to do anything. */
   } else if ((top = peek_type_stack())->type != t->type) {
     if (zero_implied && (top->type == T_ZERO)) {
       Pike_compiler->type_stackp--;
