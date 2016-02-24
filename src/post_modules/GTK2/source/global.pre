@@ -825,6 +825,34 @@ array(int) version()
   f_aggregate(3);
 }
 
+array list_signals()
+//! Enumerates all recognized signals for all types.
+{
+  GSignalQuery sig;
+  guint i, p;
+  pop_n_elems(args);
+  for (i=1;;++i)
+  {
+    g_signal_query(i, &sig);
+    if (sig.signal_id != i) break;
+    ref_push_string(_STR("class"));
+    PGTK_PUSH_GCHAR(g_type_name(sig.itype));
+    ref_push_string(_STR("name"));
+    PGTK_PUSH_GCHAR(sig.signal_name);
+
+    ref_push_string(_STR("params"));
+    for (p=0; p<sig.n_params; ++p)
+      PGTK_PUSH_GCHAR(g_type_name(sig.param_types[0]));
+    f_aggregate(sig.n_params);
+
+    ref_push_string(_STR("return"));
+    PGTK_PUSH_GCHAR(g_type_name(sig.return_type));
+    f_aggregate_mapping(8);
+  }
+  f_aggregate(i-1);
+}
+
+
 %{
 #ifdef DYNAMIC_MODULE
 struct program *image_color_program = NULL;

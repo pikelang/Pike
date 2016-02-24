@@ -4982,6 +4982,11 @@ array gtk_init( array|void argc, int|void no_pgtkrc );
 //!
 //!
 
+array list_signals( );
+//! Enumerates all recognized signals for all types.
+//!
+//!
+
 array list_toplevels( );
 //! Returns a list of all existing toplevel windows.
 //!
