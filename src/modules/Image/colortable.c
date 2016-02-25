@@ -463,8 +463,9 @@ static ptrdiff_t reduce_recurse(struct nct_flat_entry *src,
       diff.r += (sq(src[i].color.r-(INT32)sum.r)/8)*mul;
       diff.g += (sq(src[i].color.g-(INT32)sum.g)/8)*mul;
       diff.b += (sq(src[i].color.b-(INT32)sum.b)/8)*mul;
-      gdiff  += (sq(src[i].color.r*sf.r+src[i].color.g*sf.g+
-		    src[i].color.b*sf.b-g)/8)*mul;
+      gdiff  += (sq(((INT32)src[i].color.r)*sf.r+
+		    ((INT32)src[i].color.g)*sf.g+
+		    ((INT32)src[i].color.b)*sf.b-g)/8)*mul;
       tot+=mul;
    }
 
