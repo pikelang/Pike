@@ -271,7 +271,15 @@ test_eq(String.common_prefix(({ "labyrinth", "diatom" })), "")
 test_eq(String.common_prefix(({ "abc", "abc", "abc" })), "abc")
 test_eq(String.common_prefix(({})), "")
 
-dnl MISSING TEST: fuzzymatch
+test_any_equal([[
+  array words = ({ "buck", "dog", "ducking", "respiration", "1337" });
+  array match = ({});
+  foreach( words, string word )
+    match += ({ String.fuzzymatch("duck", word) });
+  sort(match, words);
+  return words;
+]], ({ "respiration", "1337", "dog", "ducking", "buck" }))
+
 
 test_eq(String.levenshtein_distance("a",""), 1)
 test_eq(String.levenshtein_distance("pike","bikes"), 2)
