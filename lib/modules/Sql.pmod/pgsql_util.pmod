@@ -340,17 +340,17 @@ outer:
 
   final int close() {
     int ret;
-    { Thread.MutexKey lock=i->fillreadmux->lock();
+    if(!termlock && nostash)
+    { termlock=termthread->lock();
+      Thread.MutexKey lock=i->fillreadmux->lock();
       if(i->fillread) {	 // Delayed close() after flushing the output buffer
         i->fillread.signal();
         i->fillread=0;
-        lock=0;
-        PD("%d>Close socket read, flush write\n",socket->query_fd());
-        ret=socket->close("r");
-        i->read_cb(socket->query_id(),0);
-        return ret;
       }
       lock=0;
+      PD("%d>Delayed close, flush write\n",socket->query_fd());
+      i->read_cb(socket->query_id(),0);
+      return ret;
     }
     destruct(nostash);
     PD("%d>Close socket\n",socket->query_fd());
@@ -363,7 +363,6 @@ outer:
   }
 
   protected void destroy() {
-    termlock=termthread->lock();
     catch(close());		// Exceptions don't work inside destructors
     connectfail=0;
     termthread->lock(1);
