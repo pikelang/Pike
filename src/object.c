@@ -118,8 +118,24 @@ PMOD_EXPORT struct object *low_clone(struct program *p)
 {
   struct object *o;
 
-  if(!(p->flags & PROGRAM_PASS_1_DONE))
-    Pike_error("Attempting to clone an unfinished program\n");
+  if(!(p->flags & PROGRAM_PASS_1_DONE)) {
+    /* It might be compiling in a different thread.
+     * Wait for the compiler to finish.
+     * Note that this does not block if we are the compiler thread.
+     */
+    lock_pike_compiler();
+    /* We now have the compiler lock.
+     * Three posibilities:
+     *  * The compiler was busy compiling the program in
+     *    a different thread and has now finished.
+     *  * We are the thread that is compiling the program.
+     *  * The program is a remnant from a failed compilation.
+     */
+    unlock_pike_compiler();
+    if(!(p->flags & PROGRAM_PASS_1_DONE)) {
+      Pike_error("Attempting to clone an unfinished program\n");
+    }
+  }
 
 #ifdef PROFILING
   p->num_clones++;
@@ -344,11 +360,33 @@ PMOD_EXPORT struct object *debug_clone_object(struct program *p, int args)
 {
   ONERROR tmp;
   struct object *o;
+
+  /* NB: The following test is somewhat redundant, since it is
+   *     also performed by low_clone() below. The problem is
+   *     that the PROGRAM_NEEDS_PARENT check inbetween needs
+   *     this check to have been performed before.
+   */
+  if(!(p->flags & PROGRAM_PASS_1_DONE)) {
+    /* It might be compiling in a different thread.
+     * Wait for the compiler to finish.
+     * Note that this does not block if we are the compiler thread.
+     */
+    lock_pike_compiler();
+    /* We now have the compiler lock.
+     * Three posibilities:
+     *  * The compiler was busy compiling the program in
+     *    a different thread and has now finished.
+     *  * We are the thread that is compiling the program.
+     *  * The program is a remnant from a failed compilation.
+     */
+    unlock_pike_compiler();
+    if(!(p->flags & PROGRAM_PASS_1_DONE)) {
+      Pike_error("Attempting to clone an unfinished program\n");
+    }
+  }
+
   if(p->flags & PROGRAM_NEEDS_PARENT)
     Pike_error("Parent lost, cannot clone program.\n");
-
-  if(!(p->flags & PROGRAM_PASS_1_DONE))
-    Pike_error("Attempting to clone an unfinished program\n");
 
   o=low_clone(p);
   if (!args) {
@@ -399,9 +437,6 @@ PMOD_EXPORT struct object *parent_clone_object(struct program *p,
     SET_ONERROR(tmp, do_free_object, o);
     debug_malloc_touch(o);
   }
-
-  if(!(p->flags & PROGRAM_PASS_1_DONE))
-    Pike_error("Attempting to clone an unfinished program\n");
 
   if(p->flags & PROGRAM_USES_PARENT)
   {
