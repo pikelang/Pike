@@ -217,15 +217,7 @@ protected void create(void|string host, void|string database,
 
   if(!_port)
     _port = PGSQL_DEFAULT_PORT;
-
-  // FIXME Looks like a bug in the cloning of an object
-  // If we do not loop here, and this function is called in two threads
-  // simultaneously, *and* the .pgsql_util class has not been instantiated
-  // yet, then Pike can throw an "Attempting to clone an unfinished program"
-  // error.
-
-  while(catch(.pgsql_util.register_backend()))	// Placate race in cloning
-    sleep(0);					// Yield
+  .pgsql_util.register_backend();
   _shortmux=Thread.Mutex();
   reconnect();
 }
