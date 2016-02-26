@@ -486,7 +486,12 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
                            ALERT_unrecognized_name,
                            "Multiple names given.\n");
 
-                session->server_name = server_name->read_hstring(2);
+                string(8bit) host = server_name->read_hstring(2);
+                COND_FATAL( host=="",
+                            ALERT_unrecognized_name,
+                            "Empty server name not allowed.\n" );
+                session->server_name = host;
+
                 break;
               default:
                 // No other NameTypes defined yet.
