@@ -13,6 +13,11 @@
 #include <mpfr.h>
 #include <mpf2mpfr.h>
 #define USE_MPFR
+/* Remap mpz_set_f() to mpfr. */
+#ifdef mpz_set_f
+#undef mpz_set_f
+#endif
+#define mpz_set_f(DST, SRC)	mpfr_get_z(DST, SRC, GMP_RNDD)
 #endif
 
 #ifdef PIKE_GMP_LIMB_BITS_INVALID
