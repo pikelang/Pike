@@ -214,6 +214,7 @@ void remove(mixed value)
 
   value = values[pos];
   values[pos] = values[--num_values];
+  values[pos]->pos = pos;
   values[num_values] = 0;
   value->pos = -1;
   if (pos < num_values) {
