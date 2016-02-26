@@ -1184,6 +1184,9 @@ TLS_ecdhe_ecdsa_with_aes_256_ccm_8 :	({ KE_ecdhe_ecdsa, CIPHER_aes256, HASH_sha2
    TLS_ecdhe_psk_with_camellia_256_cbc_sha384 : ({ KE_ecdhe_psk, CIPHER_camellia256, HASH_sha384, MODE_cbc }),
 #endif /* Crypto.SHA384 */
 #endif /* Crypto.Camellia */
+#if constant(Crypto.AES.GCM)
+   TLS_ecdhe_psk_with_aes_128_gcm_sha256 : ({ KE_ecdhe_psk, CIPHER_aes, HASH_sha256, MODE_gcm }),
+#endif /* Crypto.AES.GCM */
 #endif /* Crypto.ECC.Curve */
 ]);
 
