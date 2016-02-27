@@ -228,8 +228,7 @@ class conxion {
 
   private Thread.Queue qportals;
   final Thread.Mutex shortmux;
-  private Thread.Mutex termthread;
-  private Thread.MutexKey termlock;
+  private int closenext;
 
   final Stdio.File socket;
   private function(void|mixed:void) connectfail;
@@ -339,10 +338,9 @@ outer:
   }
 
   final int close() {
-    int ret;
-    if(!termlock && nostash)
-    { termlock=termthread->lock();
-      Thread.MutexKey lock=i->fillreadmux->lock();
+    int ret=0;
+    if(!closenext && nostash)
+    { Thread.MutexKey lock=i->fillreadmux->lock();
       if(i->fillread) {	 // Delayed close() after flushing the output buffer
         i->fillread.signal();
         i->fillread=0;
@@ -350,22 +348,21 @@ outer:
       lock=0;
       PD("%d>Delayed close, flush write\n",socket->query_fd());
       i->read_cb(socket->query_id(),0);
-      return ret;
+      closenext=1;
+    } else {
+      destruct(nostash);
+      PD("%d>Close socket\n",socket->query_fd());
+      ret=socket->close();
+      foreach(closecallbacks;function(void|mixed:void) closecb;)
+        closecb();
+      closecallbacks=(<>);
     }
-    destruct(nostash);
-    PD("%d>Close socket\n",socket->query_fd());
-    ret=socket->close();
-    foreach(closecallbacks;function(void|mixed:void) closecb;)
-      closecb();
-    closecallbacks=(<>);
-    termlock=0;
     return ret;
   }
 
   protected void destroy() {
     catch(close());		// Exceptions don't work inside destructors
     connectfail=0;
-    termthread->lock(1);
   }
 
   final void connectloop(object pgsqlsess, int nossl) {
@@ -440,7 +437,7 @@ outer:
     i=conxiin();
     shortmux=Thread.Mutex();
     nostash=Thread.Mutex();
-    termthread=Thread.Mutex();
+    closenext = 0;
     stashavail=Thread.Condition();
     stashqueue=Thread.Queue();
     stash=Stdio.Buffer();

@@ -316,7 +316,7 @@ private .pgsql_util.conxion getsocket(void|int nossl) {
   .pgsql_util.conxion lcon=getsocket(1);
   lcon->add_int32(16)->add_int32(PG_PROTOCOL(1234,5678))
    ->add_int32(backendpid)->add(cancelsecret)->sendcmd(FLUSHSEND);
-  lcon->close();
+  lcon=0;
 #ifdef PG_DEBUGMORE
   PD("Closetrace %O\n",backtrace());
 #endif
@@ -598,8 +598,6 @@ private int datarowdebugcount;
 #endif
 
 final void _processloop(.pgsql_util.conxion ci) {
-  if(c && (!ci || c!=ci))	// If we are switching or dropping connections
-    c->close();			// force a close on the old socket
   (c=ci)->socket->set_id(procmessage);
   cancelsecret=0;
   portal=0;
@@ -1185,7 +1183,8 @@ private void procmessage() {
 #endif
       portal->_purgeportal();
     }
-  if(!ci->close() && !terminating && _options.reconnect)
+  c=ci=0;
+  if(!terminating && _options.reconnect)
     _connectfail();
   else
     destruct(waitforauthready);
@@ -1203,16 +1202,16 @@ private void procmessage() {
 /*semi*/final void close() {
   if(qportals && qportals->size())
     catch(cancelquery());
+  termlock=(termthread=Thread.Mutex())->lock();
   c->close();
+  termthread->lock(1);
   c=0;
   destruct(waitforauthready);
 }
 
 protected void destroy() {
-  termlock=(termthread=Thread.Mutex())->lock();
   catch(close());
   .pgsql_util.unregister_backend();
-  termthread->lock(1);
 }
 
 final void _connectfail(void|mixed err) {
@@ -1261,7 +1260,9 @@ private int reconnect() {
 #ifdef PG_STATS
     prepstmtused=0;
 #endif
+    termlock=(termthread=Thread.Mutex())->lock();
     c->close();
+    termthread->lock(1);
     c=0;
     PD("Flushing old cache\n");
     foreach(_prepareds;;mapping tp)
