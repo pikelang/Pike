@@ -1183,7 +1183,6 @@ private void procmessage() {
 #endif
       portal->_purgeportal();
     }
-  c=ci=0;
   if(!terminating && _options.reconnect)
     _connectfail();
   else
