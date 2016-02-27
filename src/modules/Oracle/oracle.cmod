@@ -965,16 +965,6 @@ PIKEFUN int(0..1) `==(mixed other)
 /* END NULL */
 }
 
-EXTRA
-{
-    ADD_FUNCTION("commit", f_commit,
-                tFunc(tVoid, tVoid), ID_PUBLIC);
-
-    ADD_FUNCTION("create", f_oracle_create,
-		 tFunc(tOr(tStr,tVoid) tOr(tStr,tVoid) tOr(tStr,tVoid)
-		       tOr(tStr,tVoid),tVoid), ID_PUBLIC);
-}
-
 /****** query ******/
 PIKECLASS compile_query
   program_flags PROGRAM_USES_PARENT|PROGRAM_NEEDS_PARENT;
@@ -2089,112 +2079,6 @@ PIKEFUN int|array(string|int) fetch_row()
   /* END big_typed_query */
 }
 
-static void f_oracle_create(INT32 args)
-{
-  char *err=0;
-  struct Oracle_oracle_struct *dbcon = THIS_DBCON;
-  struct pike_string *uid, *passwd, *host, *database;
-  sword rc;
-
-  check_all_args("Oracle.oracle->create", args,
-		 BIT_STRING|BIT_INT, BIT_STRING|BIT_INT, BIT_STRING,
-		 BIT_STRING|BIT_VOID|BIT_INT, BIT_MAPPING|BIT_INT|BIT_VOID, 0);
-
-  host = (TYPEOF(Pike_sp[-args]) == T_STRING? Pike_sp[-args].u.string : NULL);
-  database = (TYPEOF(Pike_sp[1-args]) == T_STRING? Pike_sp[1-args].u.string : NULL);
-  uid = (TYPEOF(Pike_sp[2-args]) == T_STRING? Pike_sp[2-args].u.string : NULL);
-  if(args >= 4)
-    passwd = (TYPEOF(Pike_sp[3-args]) == T_STRING? Pike_sp[3-args].u.string : NULL);
-  else
-    passwd = NULL;
-
-#ifdef OCI_UTF16ID
-  ORACLE_UNICODE_ENCODE(host);
-  ORACLE_UNICODE_ENCODE(database);
-  ORACLE_UNICODE_ENCODE(uid);
-  ORACLE_UNICODE_ENCODE(passwd);
-#endif
-
-#ifdef LOCAL_ENV
-  if(!dbcon->env)
-  {
-    OWERR("%s: creating new environment\n",__FUNCTION__);
-    LOCK(dbcon->lock);
-    rc=OCIEnvInit(&dbcon->env, OCI_DEFAULT,0,0);
-    UNLOCK(dbcon->lock);
-    if(rc != OCI_SUCCESS)
-      Pike_error("Failed to initialize oracle environment, err=%d.\n",rc);
-  } else {
-    OWERR("%s: environment exists\n",__FUNCTION__);
-  }
-#endif
-
-  debug_malloc_touch(ENVOF(dbcon));
-
-  THREADS_ALLOW();
-
-  LOCK(dbcon->lock);
-#ifdef SERIALIZE_CONNECT
-  LOCK(oracle_serialization_mutex);
-#endif
-
-  do  {
-    rc=OCIHandleAlloc(ENVOF(dbcon),
-		      (void **)& dbcon->error_handle,
-		      OCI_HTYPE_ERROR,
-		      0,
-		      0);
-    if(rc != OCI_SUCCESS) break;
-
-    OWERR("OCIHandleAlloc -> %p\n",dbcon->error_handle);
-
-#if 0
-    if(OCIHandleAlloc(ENVOF(dbcon),
-		      &THIS_DBCON->srvhp,
-		      OCI_HTYPE_SERVER, 0,0)!=OCI_SUCCESS)
-      Pike_error("Failed to allocate server handle.\n");
-
-    if(OCIHandleAlloc(ENVOF(dbcon),
-		      &THIS_DBCON->srchp,
-		      OCI_HTYPE_SVCCTX, 0,0)!=OCI_SUCCESS)
-      Pike_error("Failed to allocate service context.\n");
-#endif
-
-    rc=OCILogon(ENVOF(dbcon),
-		dbcon->error_handle,
-		&dbcon->context,
-		(oratext *)uid->str, uid->len,
-		(passwd? (oratext *)passwd->str:NULL), (passwd? passwd->len:-1),
-		(host? (oratext *)host->str:NULL), (host? host->len:-1));
-
-  }while(0);
-
-#ifdef SERIALIZE_CONNECT
-  UNLOCK(oracle_serialization_mutex);
-#endif
-  UNLOCK(dbcon->lock);
-
-  THREADS_DISALLOW();
-
-
-  if(rc != OCI_SUCCESS)
-    ora_error_handler(dbcon->error_handle, rc, 0);
-
-  debug_malloc_touch(dbcon->error_handle);
-  debug_malloc_touch(dbcon->context);
-
-  OWERR("oracle.create error_handle -> %p\n", dbcon->error_handle);
-}
-
-static void f_commit(INT32 UNUSED(args))
-{
-  sword ret = 0;
-  struct Oracle_oracle_struct *dbcon = THIS_DBCON;
-  ret = OCITransCommit(dbcon->context, dbcon->error_handle, 0); 
-  if(ret != OCI_SUCCESS)
-    ora_error_handler(dbcon->error_handle, ret, "OCITransCommit");
-}
-
 static void f_compile_query_create(INT32 args)
 {
   int rc;
@@ -2734,6 +2618,101 @@ static void f_big_typed_query_create(INT32 args)
 }
 
 /* END compile_query */
+}
+
+PIKEFUN void create(string|void host, string|void database,
+		    string|void uid, string|void passwd)
+  flags ID_PROTECTED;
+{
+  char *err=0;
+  struct Oracle_oracle_struct *dbcon = THIS_DBCON;
+  sword rc;
+
+#ifdef OCI_UTF16ID
+  ORACLE_UNICODE_ENCODE(host);
+  ORACLE_UNICODE_ENCODE(database);
+  ORACLE_UNICODE_ENCODE(uid);
+  ORACLE_UNICODE_ENCODE(passwd);
+#endif
+
+#ifdef LOCAL_ENV
+  if(!dbcon->env)
+  {
+    OWERR("%s: creating new environment\n",__FUNCTION__);
+    LOCK(dbcon->lock);
+    rc=OCIEnvInit(&dbcon->env, OCI_DEFAULT,0,0);
+    UNLOCK(dbcon->lock);
+    if(rc != OCI_SUCCESS)
+      Pike_error("Failed to initialize oracle environment, err=%d.\n",rc);
+  } else {
+    OWERR("%s: environment exists\n",__FUNCTION__);
+  }
+#endif
+
+  debug_malloc_touch(ENVOF(dbcon));
+
+  THREADS_ALLOW();
+
+  LOCK(dbcon->lock);
+#ifdef SERIALIZE_CONNECT
+  LOCK(oracle_serialization_mutex);
+#endif
+
+  do  {
+    rc=OCIHandleAlloc(ENVOF(dbcon),
+		      (void **)& dbcon->error_handle,
+		      OCI_HTYPE_ERROR,
+		      0,
+		      0);
+    if(rc != OCI_SUCCESS) break;
+
+    OWERR("OCIHandleAlloc -> %p\n",dbcon->error_handle);
+
+#if 0
+    if(OCIHandleAlloc(ENVOF(dbcon),
+		      &THIS_DBCON->srvhp,
+		      OCI_HTYPE_SERVER, 0,0)!=OCI_SUCCESS)
+      Pike_error("Failed to allocate server handle.\n");
+
+    if(OCIHandleAlloc(ENVOF(dbcon),
+		      &THIS_DBCON->srchp,
+		      OCI_HTYPE_SVCCTX, 0,0)!=OCI_SUCCESS)
+      Pike_error("Failed to allocate service context.\n");
+#endif
+
+    rc=OCILogon(ENVOF(dbcon),
+		dbcon->error_handle,
+		&dbcon->context,
+		(oratext *)uid->str, uid->len,
+		(passwd? (oratext *)passwd->str:NULL), (passwd? passwd->len:-1),
+		(host? (oratext *)host->str:NULL), (host? host->len:-1));
+
+  }while(0);
+
+#ifdef SERIALIZE_CONNECT
+  UNLOCK(oracle_serialization_mutex);
+#endif
+  UNLOCK(dbcon->lock);
+
+  THREADS_DISALLOW();
+
+
+  if(rc != OCI_SUCCESS)
+    ora_error_handler(dbcon->error_handle, rc, 0);
+
+  debug_malloc_touch(dbcon->error_handle);
+  debug_malloc_touch(dbcon->context);
+
+  OWERR("oracle.create error_handle -> %p\n", dbcon->error_handle);
+}
+
+PIKEFUN void commit()
+{
+  sword ret = 0;
+  struct Oracle_oracle_struct *dbcon = THIS_DBCON;
+  ret = OCITransCommit(dbcon->context, dbcon->error_handle, 0);
+  if(ret != OCI_SUCCESS)
+    ora_error_handler(dbcon->error_handle, ret, "OCITransCommit");
 }
 
 /* END oracle */
