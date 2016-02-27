@@ -1142,28 +1142,9 @@ EXTRA
 	ADD_FUNCTION("create", f_big_typed_query_create,
 		     tFunc(tOr(tVoid,tMap(tStr,tMix)) tOr(tVoid,tInt)
 			   tOr(tVoid,tObj),tVoid), ID_PUBLIC);
-
-	/* function(:int) */
-	ADD_FUNCTION("num_rows", f_num_rows, tFunc(tNone,tInt), ID_PUBLIC);
-
-	/* function(:int) */
-	ADD_FUNCTION("num_fields", f_num_fields,tFunc(tNone,tInt), ID_PUBLIC);
-
-	/* function(:array(mapping(string:mixed))) */
-	ADD_FUNCTION("fetch_fields",
-		     f_fetch_fields,tFunc(tNone,tArr(tMap(tStr,tMix))),
-		     ID_PUBLIC);
-
-	/* function(:int) */
-	ADD_FUNCTION("eof", f_eof,tFunc(tNone,tInt), ID_PUBLIC);
-
-	/* function(:int|array(string|int)) */
-	ADD_FUNCTION("fetch_row",
-		     f_fetch_row,tFunc(tNone,tOr(tInt,tArr(tOr(tStr,tInt)))),
-		     ID_PUBLIC);
 }
 
-static void f_num_rows(INT32 args)
+PIKEFUN int num_rows()
 {
   struct Oracle_oracle_compile_query_struct *dbquery = THIS_RESULT_QUERY;
   struct Oracle_oracle_struct *dbcon = THIS_RESULT_DBCON;
@@ -1194,7 +1175,7 @@ static void f_num_rows(INT32 args)
   push_int(rows);
 }
 
-static void f_num_fields(INT32 args)
+PIKEFUN int num_fields()
 {
   struct Oracle_oracle_compile_query_big_typed_query_struct *dbresult = THIS_RESULT;
   struct Oracle_oracle_compile_query_struct *dbquery = THIS_RESULT_QUERY;
@@ -1365,8 +1346,7 @@ static sb4 define_callback(dvoid *dbresultinfo,
   return res;
 }
 
-
-static void f_fetch_fields(INT32 args)
+PIKEFUN array(mapping(string:mixed)) fetch_fields()
 {
   struct Oracle_oracle_compile_query_big_typed_query_struct *dbresult = THIS_RESULT;
   struct Oracle_oracle_compile_query_struct *dbquery = THIS_RESULT_QUERY;
@@ -1383,7 +1363,7 @@ static void f_fetch_fields(INT32 args)
     /* Get the number of rows */
     if(dbquery->cols == -2)
     {
-      f_num_fields(0);
+      f_Oracle_oracle_compile_query_big_typed_query_num_fields(0);
       pop_stack();
     }
 
@@ -1920,7 +1900,7 @@ static void free_inout(struct inout *i)
 }
 
 
-static void f_eof(INT32 args)
+PIKEFUN int eof()
 {
   struct Oracle_oracle_compile_query_struct *dbquery = THIS_RESULT_QUERY;
   pop_n_elems(args);
@@ -1930,7 +1910,7 @@ static void f_eof(INT32 args)
   push_int(!dbquery->query_type);
 }
 
-static void f_fetch_row(INT32 args)
+PIKEFUN int|array(string|int) fetch_row()
 {
   int i = 0;
   sword rc;
@@ -1951,7 +1931,7 @@ static void f_fetch_row(INT32 args)
 
   if(!dbquery->field_info)
   {
-    f_fetch_fields(0);
+    f_Oracle_oracle_compile_query_big_typed_query_fetch_fields(0);
     pop_stack();
   }
 
