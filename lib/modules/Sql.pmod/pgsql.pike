@@ -1204,8 +1204,7 @@ private void procmessage() {
   termlock=(termthread=Thread.Mutex())->lock();
   c->close();
   termthread->lock(1);
-  c=0;
-  destruct(waitforauthready);
+  destruct(c);destruct(waitforauthready);
 }
 
 protected void destroy() {
@@ -1262,7 +1261,7 @@ private int reconnect() {
     termlock=(termthread=Thread.Mutex())->lock();
     c->close();
     termthread->lock(1);
-    c=0;
+    destruct(c);
     PD("Flushing old cache\n");
     foreach(_prepareds;;mapping tp)
       m_delete(tp,"preparedname");
