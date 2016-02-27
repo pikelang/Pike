@@ -338,9 +338,9 @@ outer:
   }
 
   final int close() {
-    int ret=0;
-    if(!closenext && nostash)
-    { Thread.MutexKey lock=i->fillreadmux->lock();
+    if(!closenext && nostash) {
+      closenext=1;
+      Thread.MutexKey lock=i->fillreadmux->lock();
       if(i->fillread) {	 // Delayed close() after flushing the output buffer
         i->fillread.signal();
         i->fillread=0;
@@ -348,20 +348,22 @@ outer:
       lock=0;
       PD("%d>Delayed close, flush write\n",socket->query_fd());
       i->read_cb(socket->query_id(),0);
-      closenext=1;
-    } else {
-      destruct(nostash);
-      PD("%d>Close socket\n",socket->query_fd());
-      ret=socket->close();
-      foreach(closecallbacks;function(void|mixed:void) closecb;)
-        closecb();
-      closecallbacks=(<>);
-    }
-    return ret;
+      return 0;
+    } else
+      return -1;
   }
 
   protected void destroy() {
-    catch(close());		// Exceptions don't work inside destructors
+    if(nostash) {
+      catch {
+        destruct(nostash);
+        PD("%d>Close socket\n",socket->query_fd());
+        socket->close();
+        foreach(closecallbacks;function(void|mixed:void) closecb;)
+          closecb();
+        closecallbacks=(<>);
+      };
+    }
     connectfail=0;
   }
 
