@@ -4,6 +4,16 @@ Changes since Pike 8.0.164
 Bug fixes
 ---------
 
+o ADT.Heap
+
+  The Element class lost track of its position when remove() was used.
+
+o Filesystem.Monitor
+
+  * Improved thread safety and robustness
+
+  * Inotify-related fixes.
+
 o pgsql
 
   The new driver in 8.0 suffered from filedescriptor leaks if the
@@ -11,6 +21,35 @@ o pgsql
   Fixes have been applied which eliminate the filedescriptor leak and also
   ensure that the filedescriptors are closed the instant the object
   loses all references.
+
+o programs
+
+  The runtime now attempts to wait for any compilations in progress to
+  complete before complaining about cloning of unfinished programs.
+  This fixes a race-condition when the same program is compiled from
+  different threads.
+
+o Runtime
+
+  Fixed multiple potential NULL-dereferences.
+
+o SSL.File
+
+  Fixed breaking of circular references when the peer terminates
+  the connection.
+
+o Standards.URI
+
+  Support the userinfo field containing '@'.
+
+o Stdio.File
+
+  The second argument to set_buffer() should now work.
+
+o Testsuite
+
+  Updated the SHA3_* testvectors to FIPS 202.
+
 
 Building and installing
 -----------------------
@@ -23,6 +62,9 @@ Pike 8: Changes since Pike 7.8
 
 New language features
 ---------------------
+
+o The compiler now only blocks other threads attempting to use
+  the compiler instead of disabling all other threads.
 
 o Added a way to access the local, and not the overloaded,
   implementation of a symbol.
