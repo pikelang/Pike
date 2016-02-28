@@ -1003,7 +1003,6 @@ EXIT
 
 EXTRA
 {
-      ADD_FUNCTION("create",f_compile_query_create,tFunc(tStr,tVoid),0);
       PIKE_MAP_VARIABLE("_type",offset+OFFSETOF(Oracle_oracle_compile_query_struct,query_type),tInt,T_INT,0);
       PIKE_MAP_VARIABLE("_cols",offset+OFFSETOF(Oracle_oracle_compile_query_struct, cols),tInt,T_INT,0);
       PIKE_MAP_VARIABLE("_field_info",offset+OFFSETOF(Oracle_oracle_compile_query_struct, field_info),
@@ -2079,20 +2078,20 @@ PIKEFUN int|array(string|int) fetch_row()
   /* END big_typed_query */
 }
 
-static void f_compile_query_create(INT32 args)
+PIKEFUN void create(string query)
+  flags ID_PROTECTED;
 {
   int rc;
-  struct pike_string *query;
   struct Oracle_oracle_compile_query_struct *dbquery = THIS_QUERY;
   struct Oracle_oracle_struct *dbcon = THIS_QUERY_DBCON;
   char *errfunc=0;
 
   OWERR("%s\n",__FUNCTION__);
 
-#ifdef OCI_UTF16ID
-  get_all_args("compile_query", args, "%W", &query);
-#else
-  get_all_args("compile_query", args, "%S", &query);
+#ifndef OCI_UTF16ID
+  if (query->size_shift) {
+    SIMPLE_ARG_ERROR("compile_query", 1, "Expected string(8bit).");
+  }
 #endif
 
   OWERR("f_compile_query_create: dbquery: %p\n",dbquery);
