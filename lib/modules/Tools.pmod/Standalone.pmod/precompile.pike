@@ -3336,7 +3336,6 @@ int main(int argc, array(string) argv)
     "#ifdef CMOD_MAP_PROGRAM_IDS_DEFINED\n"
     "static int ___cmod_map_program_ids(int id)\n"
     "{\n"
-    "  int i = 0;\n"
     "  if( (id&0x7f000000) != 0x7f000000 ) return id;\n"
     "  id = id&0x00ffffff;\n"
   });
@@ -3363,6 +3362,7 @@ int main(int argc, array(string) argv)
     });
 
     x += ({
+      "  int i = 0;\n"
       "  while(___cmod_ext_used[i].from ) {\n"
       "   if( ___cmod_ext_used[i].from == id ) return ___cmod_ext_used[i].to;\n"
       "   i++;\n"
