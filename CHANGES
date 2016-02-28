@@ -1,6 +1,17 @@
 Changes since Pike 8.0.164
 ----------------------------------------------------------------------
 
+Bug fixes
+---------
+
+o pgsql
+
+  The new driver in 8.0 suffered from filedescriptor leaks if the
+  database connections were not explicitly close()d.
+  Fixes have been applied which eliminate the filedescriptor leak and also
+  ensure that the filedescriptors are closed the instant the object
+  loses all references.
+
 Building and installing
 -----------------------
 
