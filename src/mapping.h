@@ -164,6 +164,15 @@ PMOD_EXPORT void really_free_mapping_data(struct mapping_data *md);
   */
 PMOD_EXPORT void do_free_mapping(struct mapping *m);
 
+/** Perform a quick gc of the specified weak mapping.
+ *
+ * @param m The weak mapping to be garbage collected.
+ * @return The number of freed elements.
+ *
+ * @see do_gc
+ */
+ptrdiff_t do_gc_weak_mapping(struct mapping *m);
+
 /** Makes a copy of the passed mapping data and returns it to the caller.
   *
   * @param md The mapping structure data member to be copied

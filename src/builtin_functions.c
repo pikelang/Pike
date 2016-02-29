@@ -5037,11 +5037,18 @@ PMOD_EXPORT void f_delay(INT32 args)
    delaysleep(delay, do_abort_on_signal, !do_abort_on_signal && delay<10);
 }
 
-/*! @decl int gc()
+/*! @decl int gc(mapping|void quick)
  *!
  *!   Force garbage collection.
  *!
- *!   This function checks all the memory for cyclic structures such
+ *! @param quick
+ *!   Perform a quick garbage collection on just this value,
+ *!   which must have been made weak by @[set_weak_flag()].
+ *!   All values that only have a single reference from
+ *!   @[quick] will then be freed.
+ *!
+ *!   When @[quick] hasn't been specified or is @[UNDEFINED],
+ *!   this function checks all the memory for cyclic structures such
  *!   as arrays containing themselves and frees them if appropriate.
  *!   It also frees up destructed objects and things with only weak
  *!   references.
@@ -5064,8 +5071,15 @@ PMOD_EXPORT void f_delay(INT32 args)
  */
 void f_gc(INT32 args)
 {
-  pop_n_elems(args);
-  push_int(do_gc(NULL, 1));
+  ptrdiff_t res = 0;
+  if (args && (TYPEOF(Pike_sp[-args]) == PIKE_T_MAPPING)) {
+    res = do_gc_weak_mapping(Pike_sp[-args].u.mapping);
+    pop_n_elems(args);
+  } else {
+    pop_n_elems(args);
+    res = do_gc(NULL, 1);
+  }
+  push_int(res);
 }
 
 #ifdef TYPEP
@@ -10189,11 +10203,11 @@ void init_builtin_efuns(void)
   ADD_EFUN("_size_object",f__size_object,
 	   tFunc(tObj,tInt),OPT_EXTERNAL_DEPEND);
 
-  
-/* function(:int) */
-  ADD_EFUN("gc",f_gc,tFunc(tNone,tInt),OPT_SIDE_EFFECT);
-  
-/* function(:string) */
+
+  /* function(:int) */
+  ADD_EFUN("gc", f_gc, tFunc(tMix, tInt), OPT_SIDE_EFFECT);
+
+  /* function(:string) */
   ADD_EFUN("version", f_version,tFunc(tNone,tStr), OPT_TRY_OPTIMIZE);
 
   /* Note: The last argument to the encode and decode functions is
