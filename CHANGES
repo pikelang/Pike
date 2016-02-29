@@ -1,6 +1,15 @@
 Changes since Pike 8.0.164
 ----------------------------------------------------------------------
 
+New features
+------------
+
+o gc
+
+  It is now possible to run the gc in a quick mode to just cut
+  weak references from a specific container.
+
+
 Bug fixes
 ---------
 
@@ -243,6 +252,12 @@ o Added a shorthand syntax for integer ranges: xbit, where x is a
 
 o 'this::x' is now equivalent to 'this_program::x' -- access the
    identifier x in the current object.
+
+o Weak references to stuff with a single reference are now
+  removed when the container is resized.
+
+  This means that weak references can be cut without having to
+  wait for the full gc to run.
 
 
 New preprocessor features
