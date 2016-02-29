@@ -581,6 +581,65 @@ static struct mapping *rehash(struct mapping *m, int new_size)
   return m;
 }
 
+ptrdiff_t do_gc_weak_mapping(struct mapping *m)
+{
+  struct mapping_data *md = m->data;
+  ptrdiff_t initial_size = md->size;
+  INT32 e;
+
+  if (!(md->flags & MAPPING_WEAK) || (md->refs != 1)) {
+    // Nothing to do.
+    return 0;
+  }
+
+  for (e = 0; e < md->hashsize; e++) {
+    struct keypair **kp = md->hash + e;
+    struct keypair *k;
+    while ((k = *kp)) {
+      switch(md->flags & MAPPING_WEAK) {
+      default:
+	Pike_fatal("Unstable mapping data flags.\n");
+	break;
+      case MAPPING_WEAK_INDICES:
+	if (REFCOUNTED_TYPE(TYPEOF(k->ind)) && (*k->ind.u.refs > 1)) {
+	  kp = &k->next;
+	  continue;
+	}
+	break;
+      case MAPPING_WEAK_VALUES:
+	if (REFCOUNTED_TYPE(TYPEOF(k->val)) && (*k->val.u.refs > 1)) {
+	  kp = &k->next;
+	  continue;
+	}
+	break;
+      case MAPPING_WEAK:
+	/* NB: Compat: Unreferenced counted values are counted
+	 *             as multi-referenced here.
+	 */
+	if ((!REFCOUNTED_TYPE(TYPEOF(k->ind)) || (*k->ind.u.refs > 1)) &&
+	    (!REFCOUNTED_TYPE(TYPEOF(k->val)) || (*k->val.u.refs > 1))) {
+	  kp = &k->next;
+	  continue;
+	}
+	break;
+      }
+      /* Unlink. */
+      *kp = k->next;
+
+      /* Free. */
+      free_svalue(&k->ind);
+      free_svalue(&k->val);
+
+      k->next = md->free_list;
+      md->free_list = k;
+      md->size--;
+
+      /* Note: Do not advance kp here, as it has been done by the unlink. */
+    }
+  }
+  return initial_size - md->size;
+}
+
 /*
  * No need for super efficiency, should not be called very often
  * -Hubbe
