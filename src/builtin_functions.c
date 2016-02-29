@@ -10205,7 +10205,7 @@ void init_builtin_efuns(void)
 
 
   /* function(:int) */
-  ADD_EFUN("gc", f_gc, tFunc(tMix, tInt), OPT_SIDE_EFFECT);
+  ADD_EFUN("gc", f_gc, tFunc(tOr(tMix, tVoid), tInt), OPT_SIDE_EFFECT);
 
   /* function(:string) */
   ADD_EFUN("version", f_version,tFunc(tNone,tStr), OPT_TRY_OPTIMIZE);
