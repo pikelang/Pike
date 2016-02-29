@@ -4953,7 +4953,7 @@ PMOD_EXPORT void f_delay(INT32 args)
  *!   Perform a quick garbage collection on just this value,
  *!   which must have been made weak by @[set_weak_flag()].
  *!   All values that only have a single reference from
- *!   @[quick] will then bee freed.
+ *!   @[quick] will then be freed.
  *!
  *!   When @[quick] hasn't been specified or is @[UNDEFINED],
  *!   this function checks all the memory for cyclic structures such
