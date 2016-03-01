@@ -4945,7 +4945,7 @@ PMOD_EXPORT void f_delay(INT32 args)
    delaysleep(delay, do_abort_on_signal, !do_abort_on_signal && delay<10);
 }
 
-/*! @decl int gc(mapping|void quick)
+/*! @decl int gc(mapping|array|void quick)
  *!
  *!   Force garbage collection.
  *!
@@ -4980,12 +4980,19 @@ PMOD_EXPORT void f_delay(INT32 args)
 void f_gc(INT32 args)
 {
   ptrdiff_t res = 0;
-  if (args && (TYPEOF(Pike_sp[-args]) == PIKE_T_MAPPING)) {
+  switch(args? TYPEOF(Pike_sp[-args]): PIKE_T_MIXED) {
+  case PIKE_T_MAPPING:
     res = do_gc_weak_mapping(Pike_sp[-args].u.mapping);
     pop_n_elems(args);
-  } else {
+    break;
+  case PIKE_T_ARRAY:
+    res = do_gc_weak_array(Pike_sp[-args].u.array);
+    pop_n_elems(args);
+    break;
+  default:
     pop_n_elems(args);
     res = do_gc(NULL, 1);
+    break;
   }
   push_int(res);
 }

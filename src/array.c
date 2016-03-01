@@ -2671,6 +2671,36 @@ void array_replace(struct array *a,
   while((i=fast_array_search(a,from,i+1)) >= 0) array_set_index(a,i,to);
 }
 
+/**
+ * Perform a quick gc of the specified weak array.
+ *
+ * @param a The weak array to be garbage collected.
+ * @return The number of freed elements.
+ *
+ * @see do_gc
+ */
+ptrdiff_t do_gc_weak_array(struct array *a)
+{
+  INT32 e;
+  ptrdiff_t res = 0;
+
+  if (!a->flags & ARRAY_WEAK_FLAG) {
+    return 0;
+  }
+
+  for (e = 0; e < a->size; e++) {
+    struct svalue *s = ITEM(a) + e;
+    if (!REFCOUNTED_TYPE(TYPEOF(*s)) || (*s->u.refs > 1)) {
+      continue;
+    }
+    /* NB: cf svalue.c:ZAP_SVALUE(). */
+    free_svalue(s);
+    SET_SVAL(*s, T_INT, NUMBER_DESTRUCTED, integer, 0);
+    res++;
+  }
+  return res;
+}
+
 #ifdef PIKE_DEBUG
 PMOD_EXPORT void check_array(struct array *a)
 {

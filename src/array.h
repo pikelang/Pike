@@ -191,6 +191,7 @@ PMOD_EXPORT struct array *reverse_array(struct array *a, int start, int end);
 void array_replace(struct array *a,
 		   struct svalue *from,
 		   struct svalue *to);
+ptrdiff_t do_gc_weak_array(struct array *a);
 #ifdef PIKE_DEBUG
 PMOD_EXPORT void check_array(struct array *a);
 void check_all_arrays(void);
