@@ -178,6 +178,23 @@ mixed pop()
 //! Returns the number of elements in the heap.
 int _sizeof() { return num_values; }
 
+//! Returns the @[Element] on top of the heap (which is also the one with
+//! the smallest value in the heap) without removing it.
+//!
+//! @returns
+//!   Returns the smallest @[Element] on the heap if any, and
+//!   @expr{UNDEFINED@} otherwise.
+//!
+//! @seealso
+//!   @[peek()], @[pop()]
+Element low_peek()
+{
+  if (!num_values)
+    return UNDEFINED;
+
+  return values[0];
+}
+
 //! Returns the item on top of the heap (which is also the smallest value
 //! in the heap) without removing it.
 //!
@@ -186,7 +203,7 @@ int _sizeof() { return num_values; }
 //!   @expr{UNDEFINED@} otherwise.
 //!
 //! @seealso
-//!   @[pop()]
+//!   @[low_peek()], @[pop()]
 mixed peek()
 {
   if (!num_values)
