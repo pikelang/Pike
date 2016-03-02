@@ -10,6 +10,8 @@ test_eq(_Roxen.http_decode_string("abc+d%20e%41"), "abc+d eA")
 test_eq(_Roxen.http_decode_string(""), "")
 test_eq(_Roxen.http_decode_string("+"), "+")
 
+test_eq(_Roxen.http_decode_string("%uD83D%uDE02"), "\U0001f602")
+
 // the following inputs are all illegal
 test_eval_error(_Roxen.http_decode_string("%"))
 test_eval_error(_Roxen.http_decode_string("%0"))
@@ -29,6 +31,10 @@ test_eval_error(_Roxen.http_decode_string("%41%u0"))
 test_eval_error(_Roxen.http_decode_string("%41%u00"))
 test_eval_error(_Roxen.http_decode_string("%41%u000"))
 test_eval_error(_Roxen.http_decode_string("%41%u000_"))
+dnl test_eval_error(_Roxen.http_decode_string("%uD83D"))
+dnl test_eval_error(_Roxen.http_decode_string("%uDE02"))
+dnl test_eval_error(_Roxen.http_decode_string("X%uD83DX"))
+dnl test_eval_error(_Roxen.http_decode_string("X%uDE02X"))
 
 test_eq(_Roxen.http_decode_string("%u12345"), "\x1234""5")
 test_eq(_Roxen.http_decode_string("%U12345"), "\x1234""5")

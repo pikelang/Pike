@@ -377,14 +377,18 @@ static p_wchar2 parse_hexchar(p_wchar2 hex)
 static void f_http_decode_string(INT32 args)
 /*! @decl string http_decode_string(string encoded)
  *!
- *! Decodes an http transport-encoded string. Knows about %XX and
- *! %uXXXX syntax. Treats %UXXXX as %uXXXX. It will treat '+' as '+'
- *! and not ' ', so form decoding needs to replace that in a second
- *! step.
+ *! Decodes an http transport-encoded string. Knows about @tt{%XX@} and
+ *! @tt{%uXXXX@} syntax. Treats @tt{%UXXXX@} as @tt{%uXXXX@}. It will
+ *! treat '+' as '+' and not ' ', so form decoding needs to replace that
+ *! in a second step.
+ *!
+ *! It also knows about UTF-16 surrogate pairs when decoding @tt{%UXXXX@}
+ *! sequences.
  */
 {
    int proc = 0;
    int size_shift;
+   int got_surrogates = 0;
    PCHARP foo, end;
    struct string_builder newstr;
 
@@ -457,6 +461,9 @@ static void f_http_decode_string(INT32 args)
          hex = INDEX_PCHARP(foo, 5);
          c |= parse_hexchar(hex);
 	 INC_PCHARP(foo, 5);
+	 if ((c & 0xf800) == 0xd800) {
+	   got_surrogates = 1;
+	 }
        } else {
          p_wchar2 hex = INDEX_PCHARP(foo, 1);
          c = parse_hexchar(hex)<<4;
@@ -469,7 +476,20 @@ static void f_http_decode_string(INT32 args)
    }
 
    pop_n_elems(args);
-   push_string(finish_string_builder(&newstr));
+
+   if (got_surrogates) {
+     /* Convert the result string to a byte string. */
+     newstr.s->size_shift = 0;
+     newstr.known_shift = 0;
+     newstr.s->len <<= 1;
+
+     /* Then run unicode_to_string() in native byte-order. */
+     push_string(finish_string_builder(&newstr));
+     push_int(2);
+     f_unicode_to_string(2);
+   } else {
+     push_string(finish_string_builder(&newstr));
+   }
 }
 
 static void f_html_encode_string( INT32 args )
