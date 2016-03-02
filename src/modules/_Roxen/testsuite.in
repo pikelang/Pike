@@ -10,6 +10,8 @@ test_eq(_Roxen.http_decode_string("abc+d%20e%41"), "abc+d eA")
 test_eq(_Roxen.http_decode_string(""), "")
 test_eq(_Roxen.http_decode_string("+"), "+")
 
+test_eq(_Roxen.http_decode_string("%uD83D%uDE02"), "\U0001f602")
+
 // The following inputs are all illegal, but are allowed
 // for compat reasons.
 test_eq(_Roxen.http_decode_string("%"), "\0")
