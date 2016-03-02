@@ -187,6 +187,23 @@ __deprecated__ mixed top() { return pop(); }
 //! @deprecated lfun::_sizeof
 __deprecated__ int size() { return _sizeof(); }
 
+//! Returns the @[Element] on top of the heap (which is also the one with
+//! the smallest value in the heap) without removing it.
+//!
+//! @returns
+//!   Returns the smallest @[Element] on the heap if any, and
+//!   @expr{UNDEFINED@} otherwise.
+//!
+//! @seealso
+//!   @[peek()], @[pop()]
+Element low_peek()
+{
+  if (!num_values)
+    return UNDEFINED;
+
+  return values[0];
+}
+
 //! Returns the item on top of the heap (which is also the smallest value
 //! in the heap) without removing it.
 //!
@@ -195,7 +212,7 @@ __deprecated__ int size() { return _sizeof(); }
 //!   @expr{UNDEFINED@} otherwise.
 //!
 //! @seealso
-//!   @[pop()]
+//!   @[low_peek()], @[pop()]
 mixed peek()
 {
   if (!num_values)
