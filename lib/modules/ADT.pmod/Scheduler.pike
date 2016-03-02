@@ -80,7 +80,7 @@ class Consumer {
       // Otherwise we'll get an unfair amount of the resource until
       // we reach this point. The element on the top of the heap is
       // representative of the accumulated consumption so far.
-      Consumer c = Heap::peek();
+      Consumer c = Heap::low_peek();
       pri += c->pri - c->quanta/2.0;
     } else if (normalization_offset) {
       pri -= (float)normalization_offset;
@@ -183,5 +183,5 @@ void remove(Consumer c)
 //!   consumed some of the resource, been removed or another
 //!   @[Consumer] with lower priority has been added.
 Consumer get() {
-  return Heap::peek();
+  return Heap::low_peek();
 }
