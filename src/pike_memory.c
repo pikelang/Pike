@@ -910,7 +910,7 @@ void *mexec_realloc (void *ptr, size_t sz)
     *newblk = sz;
     return newblk + 1;
   }
-  return mexec_malloc (sz);
+  return mexec_alloc (sz);
 }
 
 void mexec_free (void *ptr)
