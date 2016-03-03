@@ -43,7 +43,7 @@
 
 #if defined(HAVE_DNS_SD) || defined(HAVE_HOWL)
 
-
+#include <arpa/inet.h>
 
 
 
