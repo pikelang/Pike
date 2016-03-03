@@ -25,7 +25,7 @@ signal prepare;
 gint pgtk2_assistant_callback(gint cur_page, struct signal_data *d) {
   gint res;
   push_svalue(&d->args);
-  apply_svalue(&d->cb,2);
+  safe_apply_svalue(&d->cb, 2, 1);
   res=(gint)Pike_sp[-1].u.integer;
   pop_stack();
   return res;

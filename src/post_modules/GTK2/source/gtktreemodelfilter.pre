@@ -35,7 +35,7 @@ int pgtk2_model_filter_visible_callback(GtkTreeModel *model,
   push_gobject(model);
   push_gobjectclass(iter,pgtk2_tree_iter_program);
   push_svalue(&d->args);
-  apply_svalue(&d->cb,3);
+  safe_apply_svalue(&d->cb, 3, 1);
   res=Pike_sp[-1].u.integer;
   pop_stack();
   return res;

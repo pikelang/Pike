@@ -38,7 +38,7 @@ int pgtk2_accel_group_activate_key_callback(GtkAccelGroup *accel_group,
   push_gobject(acceleratable);
   push_int(accel_key);
   push_int(accel_mods);
-  apply_svalue(&d->cb,5);
+  safe_apply_svalue(&d->cb, 5, 1);
   res=Pike_sp[-1].u.integer;
   pop_stack();
   return res;

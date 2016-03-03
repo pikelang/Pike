@@ -17,7 +17,7 @@ int pgtk2_cell_layout_data_callback(GtkCellLayout *cell_layout,
   push_gobject(tree_model);
   push_pgdk2object(iter,pgtk2_tree_iter_program,0);
   push_svalue(&d->args);
-  apply_svalue(&d->cb,5);
+  safe_apply_svalue(&d->cb, 5, 1);
   res=Pike_sp[-1].u.integer;
   pop_stack();
   return res;
