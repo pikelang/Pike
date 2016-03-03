@@ -272,7 +272,7 @@ PMOD_EXPORT void really_free_mapping_data(struct mapping_data *md)
   struct keypair *k;
   debug_malloc_touch(md);
 
-#ifdef PIKE_DEBUG
+#if defined(PIKE_DEBUG) || defined(USING_WERROR)
   if (md->refs) {
     Pike_fatal("really_free_mapping_data(): md has non-zero refs: %d\n",
 	       md->refs);

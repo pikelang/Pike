@@ -1615,6 +1615,7 @@ if test "$cflags_is_set" = "no"; then
 
   if test "x$enable_werror" = "xyes"; then
     AC_SYS_COMPILER_FLAG(-Werror,error,WARN)
+    AC_SYS_COMPILER_FLAG(-DUSING_WERROR,error_enabled,WARN)
   fi
 
   if test "x${GCC-}" = xyes ; then
