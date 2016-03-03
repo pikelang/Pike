@@ -203,7 +203,7 @@ GdkImage *gdkimage_from_pikeimage(struct object *img, int fast, GObject **pi) {
       Pike_sp[-2]=Pike_sp[0];
       /* on stack: function array */
       PFTIME("Creating colormap obj");
-      apply_svalue(Pike_sp-2,1);
+      safe_apply_svalue(Pike_sp-2, 1, 1);
       /* on stack: function cmap */
       get_all_args("internal",1,"%o",&pike_cmap);
       pike_cmap->refs+=100; /* lets keep this one.. :-) */
@@ -241,7 +241,7 @@ GdkImage *gdkimage_from_pikeimage(struct object *img, int fast, GObject **pi) {
       /* on stack: function img bpp linepad depth cmap*/
       /*             6       5    4  3       2     1 */
       PFTIME("Dithering image");
-      apply_svalue(Pike_sp-6,5);
+      safe_apply_svalue(Pike_sp-6, 5, 1);
       if (TYPEOF(Pike_sp[-1]) != PIKE_T_STRING) {
 	gdk_image_destroy((void *)i);
 	Pike_error("Failed to convert image\n");
@@ -450,7 +450,7 @@ void push_Xpseudo32bitstring(void *f, int nelems) {
 gint pgtk2_buttonfuncwrapper(GObject *obj, struct signal_data *d, void *foo) {
   int res;
   push_svalue(&d->args);
-  apply_svalue(&d->cb, 1);
+  safe_apply_svalue(&d->cb, 1, 1);
   res=Pike_sp[-1].u.integer;
   pop_stack();
   return res;
@@ -783,7 +783,7 @@ void pgtk2_signal_func_wrapper(struct signal_data *d,
     pgtk2_push_gvalue_rt(&(param_values[i]));
   }
   push_svalue(&d->args);
-  apply_svalue(&d->cb,2+n_params);
+  safe_apply_svalue(&d->cb, 2+n_params, 1);
   if (return_value && G_VALUE_TYPE(return_value) != 0 )
       pgtk2_set_value(return_value,&Pike_sp[-1]);
   pop_stack();
@@ -1291,7 +1291,7 @@ int pgtk2_tree_sortable_callback(GtkTreeModel *model, GtkTreeIter *a,
   push_pgdk2object(a,pgtk2_tree_iter_program,0);
   push_pgdk2object(b,pgtk2_tree_iter_program,0);
   push_svalue(&d->args);
-  apply_svalue(&d->cb,4);
+  safe_apply_svalue(&d->cb, 4, 1);
   res=Pike_sp[-1].u.integer;
   pop_stack();
   return res;
@@ -1368,7 +1368,7 @@ int pgtk2_tree_view_row_separator_func(GtkTreeModel *model,
   push_gobject(model);
   push_gobjectclass(iter,pgtk2_tree_iter_program);
   push_svalue(&d->args);
-  apply_svalue(&d->cb,3);
+  safe_apply_svalue(&d->cb, 3, 1);
   res=Pike_sp[-1].u.integer;
   pop_stack();
   return res;
@@ -1384,7 +1384,7 @@ int pgtk2_entry_completion_match_func( GtkEntryCompletion *x,
   push_gobject(x);
   pgtk2_push_gchar( key );
   push_gobjectclass(iter,pgtk2_tree_iter_program);
-  apply_svalue( &d->cb, 3 );
+  safe_apply_svalue( &d->cb, 3, 1 );
   res = Pike_sp[-1].u.integer;
   pop_stack();
   return res;
