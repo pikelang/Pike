@@ -191,6 +191,11 @@ legal: bin/pike
 release_checks: bin/pike
 	bin/pike tools/release_checks.pike
 
+gtkdoc: bin/pike
+	bin/pike src/post_modules/GTK2/build_pgtk.pike --source=src/post_modules/GTK2/source \
+		--destination=src/post_modules/GTK2/refdoc \
+		output/doc-pikeref.pike
+
 # Don't make bin/pike if we're recursing with a $(METATARGET) since we
 # don't want the backquote expression which usually is part of
 # $(BUILDDIR) to be expanded in that script. It's better to evaluate
