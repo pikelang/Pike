@@ -774,6 +774,9 @@ static void call_destroy(struct object *o, enum object_destruct_reason reason)
 
       if (SETJMP (jmp)) {
 	UNSETJMP (jmp);
+	#ifndef gc_destruct_everything
+	/* Work around GCC -Werror bug: if gc_destruct_everything is defined to
+	be 0, this causes a spurious -Wmaybe-uninitialized warning. */
 	if (gc_destruct_everything) {
 	  struct svalue err;
 	  move_svalue (&err, &throw_value);
@@ -792,6 +795,7 @@ static void call_destroy(struct object *o, enum object_destruct_reason reason)
 	  UNSETJMP (jmp);
 	  move_svalue (&throw_value, &err);
 	}
+	#endif
 	call_handle_error();
       }
 
