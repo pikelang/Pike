@@ -1,0 +1,10 @@
+subject: Pike 7.8: SSL: Prefer AEAD suites to CBC suites of double the key length.
+from: 9ce83b288e6706560649f56efa0382731c96e616
+to: fb405e9ea5a3222e2cc7a7342983539cad53d104
+originator: wellhardh@roxen.com
+depends: 2016-01-28T155235
+restart: true
+
+SSL: Prefer AEAD suites to CBC suites of double the key length.
+
+This makes eg AES128/GCM to be preferred to AES256/CBC.
