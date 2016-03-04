@@ -26,6 +26,10 @@ int main(int argc, array(string) argv)
          case "--help":
              exit(0, doc);
          default:
+           string home = combine_path(getcwd(), argv[-1]);
+           if( Stdio.is_dir(home) )
+             cd(home);
+           else
              my_port=(int)argv[-1];
         }
 
