@@ -350,6 +350,7 @@ protected mapping ext2type = ([
 // Other
 
   "c"       : "text/x-c-code",
+  "cmod"    : "text/x-cmod-code",
   "cc"      : "text/x-c++-code",
   "cpp"     : "text/x-c++-code",
   "etx"     : "text/x-setext",
