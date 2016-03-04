@@ -248,8 +248,18 @@ protected int cipher_suite_sort_key(int suite)
   // NB: Currently the hash algorithms are allocated in a suitable order.
   int hash = info[2];
 
+  // Adjust for the cipher mode.
   if (sizeof(info) > 3) {
     hash |= info[3]<<6;
+    if (info[3] == MODE_cbc) {
+      // CBC.
+      keylength >>= 1;
+    }
+  } else {
+    // Old suite; CBC or RC4.
+    // This adjustment is to make some browsers (like eg Chrome)
+    // stop complaining, by preferring AES128/GCM to AES256/CBC.
+    keylength >>= 1;
   }
 
   // NB: As are the cipher ids if you disregard the keylengths.
