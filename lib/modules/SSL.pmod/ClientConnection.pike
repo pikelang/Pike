@@ -405,6 +405,10 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	      session->ecc_point_format = -1;
 	    }
 	    break;
+          case EXTENSION_elliptic_curves:
+            /* This is only supposed to be included in ClientHello, but some
+             * servers send it anyway, and other SSLs ignore it. */
+            break;
 	  case EXTENSION_server_name:
             break;
 
@@ -475,6 +479,8 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	    // fatal alert.
 	    send_packet(alert(ALERT_fatal, ALERT_unsupported_extension,
 			      "Unrequested extension.\n"));
+            SSL3_DEBUG_MSG("Unrequested extension %s.\n",
+                           fmt_constant(extension_type, "EXTENSION"));
 	    return -1;
 	  }
 	}
