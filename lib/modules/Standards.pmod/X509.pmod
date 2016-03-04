@@ -465,6 +465,11 @@ class TBSCertificate
   {
     return low_get_sequence(2);
   }
+  // Attempt to create a presentable string from the issuer DER.
+  string issuer_str()
+  {
+    return dn_str(issuer);
+  }
 
   //!
   void `validity=(Sequence v)
@@ -529,9 +534,13 @@ class TBSCertificate
   // Attempt to create a presentable string from the subject DER.
   string subject_str()
   {
-    Sequence subj = low_get_sequence(4);
+    return dn_str(subject);
+  }
+
+  string dn_str(Sequence dn)
+  {
     mapping ids = ([]);
-    foreach(subj->elements, Compound pair)
+    foreach(dn->elements, Compound pair)
     {
       if(pair->type_name!="SET" || !sizeof(pair)) continue;
       pair = pair[0];
@@ -1846,22 +1855,45 @@ mapping verify_certificate_chain(array(string|.PKCS.Signature.Signed) cert_chain
   // last.
 
   int len = sizeof(cert_chain);
-  array chain_obj = allocate(len);
-  array chain_cert = allocate(len);
+  array chain_obj = ({});
+  array chain_cert = ({});
+  // Ignore certificates that aren't issuers of the leaf certificate.
+  bool ignore_extraneous = true;
 
+  string last_issuer;
   foreach(cert_chain; int idx; string|.PKCS.Signature.Signed c)
   {
-    .PKCS.Signature.Signed cert;
-    if( stringp(c) )
-      cert = .PKCS.Signature.decode_signed(c);
-    TBSCertificate tbs = decode_certificate(c);
-    if(!tbs)
-      FATAL(CERT_INVALID);
+     .PKCS.Signature.Signed cert;
+     cert = .PKCS.Signature.decode_signed(c, x509_types);
+     TBSCertificate tbs = decode_certificate(cert);
+     if(!tbs)
+        FATAL(CERT_INVALID);
 
-    int idx = len-idx-1;
-    chain_cert[idx] = cert;
-    chain_obj[idx] = tbs;
+     string subject = tbs->subject->get_der();
+     if (ignore_extraneous && last_issuer && subject != last_issuer)
+     {
+        // This doesn't look relevant for validating the previous (closer to
+        // the leaf) certificate.
+        DBG("Skipping %q\n", tbs->subject_str());
+        continue;
+     }
+     DBG("Adding %q to chain\n", tbs->subject_str());
+
+     // This is the leaf or is needed to validate the previous certificate.
+     last_issuer = tbs->issuer->get_der();
+     chain_cert = ({ cert }) + chain_cert;
+     chain_obj = ({ tbs }) + chain_obj;
+
+     if (ignore_extraneous && has_index(authorities, last_issuer))
+     {
+        // We've reached a certificate signed by a root we trust, end here.
+        DBG("Ending at %q - signed by root %q\n", tbs->subject_str(), tbs->issuer_str());
+        break;
+     }
   }
+
+  // Update length since we've filtered the certificate chain a bit.
+  len = sizeof(chain_obj);
   m->certificates = chain_obj;
 
   // Chain is now reversed so root is first and leaf is last.
