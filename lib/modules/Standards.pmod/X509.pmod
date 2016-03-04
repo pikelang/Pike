@@ -465,7 +465,9 @@ class TBSCertificate
   {
     return low_get_sequence(2);
   }
-  // Attempt to create a presentable string from the issuer DER.
+
+  //! Return the issuer of the certificate as a human readable string.
+  //! Mainly useful for debug.
   string issuer_str()
   {
     return dn_str(issuer);
@@ -531,12 +533,16 @@ class TBSCertificate
     return low_get_sequence(4);
   }
 
-  // Attempt to create a presentable string from the subject DER.
+  //! Attempt to create a presentable string from the subject DER.
   string subject_str()
   {
     return dn_str(subject);
   }
 
+  //! Try to extract a readable name from @[dn].  This is one of
+  //! commonName, organizationName or organizationUnitName.  The first
+  //! that is found is returned. Suitable for subjects and issuer
+  //! sequences.
   string dn_str(Sequence dn)
   {
     mapping ids = ([]);
@@ -1826,11 +1832,24 @@ mapping(string:array(Verifier))
 //! @param require_trust
 //!   Require that the certificate be traced to an authority, even if
 //!   it is self signed.
+//! @param strict
+//!   By default this function only requires that the certificates are
+//!   in order, it ignores extra certificates we didn't need to verify
+//!   the leaf certificate.
+//!
+//!   If you specify @[strict], this will change, each certificate has
+//!   to be signed by the next in the chain.
+//!
+//!   Some https-servers send extraneous intermediate certificates
+//!   that aren't used to validate the leaf certificate. So strict
+//!   mode will be incompatible with such srevers.
 //! @param options
 //!   @mapping
 //!     @member mapping(Standards.ASN1.Types.Identifier:Crypto.Hash) "verifier_algorithms"
 //!       A mapping of verifier algorithm identifier to hash algorithm
 //!       implementation.
+//!     @member int "strict"
+//!       See @[strict] above.
 //!   @endmapping
 //!
 //! @seealso
@@ -1841,9 +1860,10 @@ mapping(string:array(Verifier))
 mapping verify_certificate_chain(array(string|.PKCS.Signature.Signed) cert_chain,
 				 mapping(string:Verifier|array(Verifier)) authorities,
                                  int|void require_trust,
-                                 mapping(string:mixed)|void options)
+                                 mapping(string:mixed)|bool|void options)
 {
   mapping m = ([ ]);
+  int strict = mappingp(options) ? options->strict : options;
 
 #define ERROR(X) do {                                     \
     DBG("Error " #X "\n");                                \
@@ -1857,8 +1877,6 @@ mapping verify_certificate_chain(array(string|.PKCS.Signature.Signed) cert_chain
   int len = sizeof(cert_chain);
   array chain_obj = ({});
   array chain_cert = ({});
-  // Ignore certificates that aren't issuers of the leaf certificate.
-  bool ignore_extraneous = true;
 
   string last_issuer;
   foreach(cert_chain; int idx; string|.PKCS.Signature.Signed c)
@@ -1870,7 +1888,7 @@ mapping verify_certificate_chain(array(string|.PKCS.Signature.Signed) cert_chain
         FATAL(CERT_INVALID);
 
      string subject = tbs->subject->get_der();
-     if (ignore_extraneous && last_issuer && subject != last_issuer)
+     if (!strict && last_issuer && subject != last_issuer)
      {
         // This doesn't look relevant for validating the previous (closer to
         // the leaf) certificate.
@@ -1884,7 +1902,7 @@ mapping verify_certificate_chain(array(string|.PKCS.Signature.Signed) cert_chain
      chain_cert = ({ cert }) + chain_cert;
      chain_obj = ({ tbs }) + chain_obj;
 
-     if (ignore_extraneous && has_index(authorities, last_issuer))
+     if (!strict && has_index(authorities, last_issuer))
      {
         // We've reached a certificate signed by a root we trust, end here.
         DBG("Ending at %q - signed by root %q\n", tbs->subject_str(), tbs->issuer_str());
