@@ -252,10 +252,15 @@ class BufferSocket {
 	       o->query_fd(), output_buffer);
     if(sizeof(output_buffer))
     {
-      if(out) out->add(output_buffer);
-      output_buffer = "";
+      if(out) {
+	out->add(output_buffer);
+      } else {
+	// Probably a FakeFile...
+	int bytes = o->write(output_buffer);
+	output_buffer = output_buffer[bytes..];
+      }
     }else{
-      if (!sizeof(out)) {
+      if (!out || !sizeof(out)) {
           o->set_write_callback(0);
           o->close("w");
           output_finished++;
@@ -282,8 +287,7 @@ class BufferSocket {
   void create(object|void o)
   {
     ::create(o);
-    if(o)
-      o->set_buffer_mode(Stdio.Buffer(), Stdio.Buffer());
+    Socket::o->set_buffer_mode(Stdio.Buffer(), Stdio.Buffer());
   }
 };
 
