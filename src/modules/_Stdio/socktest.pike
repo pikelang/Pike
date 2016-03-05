@@ -254,13 +254,16 @@ class BufferSocket {
     {
       if(out) {
 	out->add(output_buffer);
+	output_buffer = "";
       } else {
 	// Probably a FakeFile...
 	int bytes = o->write(output_buffer);
+	DEBUG_WERR("Wrote %d bytes.\n", bytes);
 	output_buffer = output_buffer[bytes..];
       }
     }else{
       if (!out || !sizeof(out)) {
+	  DEBUG_WERR("Closing write end.\n");
           o->set_write_callback(0);
           o->close("w");
           output_finished++;
