@@ -278,7 +278,11 @@ class BufferSocket {
     DEBUG_WERR("read_callback[%O]: Got %O\n", o->query_fd(), in);
     if( !sizeof(in) )
       fd_fail("Got empty read callback.\n");
-    input_buffer+=in->read();
+    if (stringp(in)) {
+      input_buffer += in;
+    } else {
+      input_buffer += in->read();
+    }
   }
 
   void read_oob_callback(mixed id, string foo)
@@ -290,7 +294,9 @@ class BufferSocket {
   void create(object|void o)
   {
     ::create(o);
-    Socket::o->set_buffer_mode(Stdio.Buffer(), Stdio.Buffer());
+    if (Socket::o->set_buffer_mode) {
+      Socket::o->set_buffer_mode(Stdio.Buffer(), Stdio.Buffer());
+    }
   }
 };
 
