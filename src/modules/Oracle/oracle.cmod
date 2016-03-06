@@ -1126,13 +1126,6 @@ EXIT
   }
 }
 
-EXTRA
-{
-	ADD_FUNCTION("create", f_big_typed_query_create,
-		     tFunc(tOr(tVoid,tMap(tStr,tMix)) tOr(tVoid,tInt)
-			   tOr(tVoid,tObj),tVoid), ID_PUBLIC);
-}
-
 PIKEFUN int num_rows()
 {
   struct Oracle_oracle_compile_query_struct *dbquery = THIS_RESULT_QUERY;
@@ -2164,26 +2157,21 @@ static void free_bind_block(struct bind_block *bind)
  * FIXME: This function should probably lock the statement
  * handle until it is freed...
  */
-static void f_big_typed_query_create(INT32 args)
+PIKEFUN void create(mapping(string:mixed)|void bnds,
+		    int(0..1)|void autocommit_sval,
+		    object|void new_parent)
+  flags ID_PROTECTED;
 {
   sword rc;
-  struct mapping *bnds=0;
   struct Oracle_oracle_compile_query_big_typed_query_struct *dbresult = THIS_RESULT;
   struct Oracle_oracle_compile_query_struct *dbquery = THIS_RESULT_QUERY;
   struct Oracle_oracle_struct *dbcon = THIS_RESULT_DBCON;
   ONERROR err;
   INT32 autocommit=0;
   int i,num;
-  struct object *new_parent=0;
   struct bind_block bind;
 
   OWERR("%s\n",__FUNCTION__);
-
-  check_all_args("Oracle.oracle.compile_query->big_typed_query", args,
-		 BIT_VOID | BIT_MAPPING | BIT_INT,
-		 BIT_VOID | BIT_INT,
-		 BIT_VOID | BIT_OBJECT,
-		 0);
 
 #ifdef _REENTRANT
   if(d_flag)
@@ -2193,19 +2181,8 @@ static void f_big_typed_query_create(INT32 args)
   }
 #endif
 
-  switch(args)
-  {
-    default:
-      new_parent=Pike_sp[2-args].u.object;
-
-    case 2:
-      autocommit=Pike_sp[1-args].u.integer;
-
-    case 1:
-      if(TYPEOF(Pike_sp[-args]) == T_MAPPING)
-	bnds=Pike_sp[-args].u.mapping;
-
-    case 0: break;
+  if (autocommit_sval) {
+    autocommit = autocommit_sval->u.integer;
   }
 
   bind.bindnum=-1;
