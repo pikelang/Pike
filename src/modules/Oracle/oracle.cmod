@@ -2075,87 +2075,6 @@ PIKEFUN int|array(string|int) fetch_row()
   f_aggregate(dbquery->cols);
 }
 
-  /* END big_typed_query */
-}
-
-PIKEFUN void create(string query)
-  flags ID_PROTECTED;
-{
-  int rc;
-  struct Oracle_oracle_compile_query_struct *dbquery = THIS_QUERY;
-  struct Oracle_oracle_struct *dbcon = THIS_QUERY_DBCON;
-  char *errfunc=0;
-
-  OWERR("%s\n",__FUNCTION__);
-
-#ifndef OCI_UTF16ID
-  if (query->size_shift) {
-    SIMPLE_ARG_ERROR("compile_query", 1, "Expected string(8bit).");
-  }
-#endif
-
-  OWERR("f_compile_query_create: dbquery: %p\n",dbquery);
-  OWERR("         dbcon:   %p\n",dbcon);
-  OWERR("  error_handle: %p\n",dbcon->error_handle);
-  OWERR("resultobject_busy: %d\n", dbcon->resultobject_busy);
-
-  if (dbcon->resultobject_busy)
-  {
-    Pike_error("Oracle connection busy; previous result object "
-	       "still active.\n");
-  }
-
-#ifdef OCI_UTF16ID
-  ORACLE_UNICODE_ENCODE(query);
-#endif
-
-  THREADS_ALLOW();
-  LOCK(dbcon->lock);
-
-  rc=OCIHandleAlloc(ENVOF(dbcon),
-		    (void **)&dbquery->statement,
-		    OCI_HTYPE_STMT,
-		    0,0);
-
-  if(rc == OCI_SUCCESS)
-  {
-    rc=OCIStmtPrepare(dbquery->statement,
-		      dbcon->error_handle,
-		      (oratext *)query->str,
-		      query->len,
-		      OCI_NTV_SYNTAX,
-		      OCI_DEFAULT);
-
-    if(rc == OCI_SUCCESS)
-    {
-      ub2 query_type;
-      rc=OCIAttrGet(dbquery->statement,
-		    OCI_HTYPE_STMT,
-		    &query_type,
-		    0,
-		    OCI_ATTR_STMT_TYPE,
-		    dbcon->error_handle);
-      if(rc == OCI_SUCCESS)
-      {
-        OWERR("     query_type: %d\n",query_type);
-        dbquery->query_type = query_type;
-      }else{
-	errfunc="OCIAttrGet";
-      }
-    }else{
-      errfunc="OCIStmtPrepare";
-    }
-  }else{
-    errfunc="OCIHandleAlloc";
-  }
-
-  THREADS_DISALLOW();
-  UNLOCK(dbcon->lock);
-
-  if(rc != OCI_SUCCESS)
-    ora_error_handler(dbcon->error_handle, rc, 0);
-}
-
 struct bind
 {
   OCIBind *bind;
@@ -2614,6 +2533,87 @@ static void f_big_typed_query_create(INT32 args)
       DEBUG_CHECK_THREAD();
   }
 #endif
+}
+
+  /* END big_typed_query */
+}
+
+PIKEFUN void create(string query)
+  flags ID_PROTECTED;
+{
+  int rc;
+  struct Oracle_oracle_compile_query_struct *dbquery = THIS_QUERY;
+  struct Oracle_oracle_struct *dbcon = THIS_QUERY_DBCON;
+  char *errfunc=0;
+
+  OWERR("%s\n",__FUNCTION__);
+
+#ifndef OCI_UTF16ID
+  if (query->size_shift) {
+    SIMPLE_ARG_ERROR("compile_query", 1, "Expected string(8bit).");
+  }
+#endif
+
+  OWERR("f_compile_query_create: dbquery: %p\n",dbquery);
+  OWERR("         dbcon:   %p\n",dbcon);
+  OWERR("  error_handle: %p\n",dbcon->error_handle);
+  OWERR("resultobject_busy: %d\n", dbcon->resultobject_busy);
+
+  if (dbcon->resultobject_busy)
+  {
+    Pike_error("Oracle connection busy; previous result object "
+	       "still active.\n");
+  }
+
+#ifdef OCI_UTF16ID
+  ORACLE_UNICODE_ENCODE(query);
+#endif
+
+  THREADS_ALLOW();
+  LOCK(dbcon->lock);
+
+  rc=OCIHandleAlloc(ENVOF(dbcon),
+		    (void **)&dbquery->statement,
+		    OCI_HTYPE_STMT,
+		    0,0);
+
+  if(rc == OCI_SUCCESS)
+  {
+    rc=OCIStmtPrepare(dbquery->statement,
+		      dbcon->error_handle,
+		      (oratext *)query->str,
+		      query->len,
+		      OCI_NTV_SYNTAX,
+		      OCI_DEFAULT);
+
+    if(rc == OCI_SUCCESS)
+    {
+      ub2 query_type;
+      rc=OCIAttrGet(dbquery->statement,
+		    OCI_HTYPE_STMT,
+		    &query_type,
+		    0,
+		    OCI_ATTR_STMT_TYPE,
+		    dbcon->error_handle);
+      if(rc == OCI_SUCCESS)
+      {
+        OWERR("     query_type: %d\n",query_type);
+        dbquery->query_type = query_type;
+      }else{
+	errfunc="OCIAttrGet";
+      }
+    }else{
+      errfunc="OCIStmtPrepare";
+    }
+  }else{
+    errfunc="OCIHandleAlloc";
+  }
+
+  THREADS_DISALLOW();
+  UNLOCK(dbcon->lock);
+
+  if(rc != OCI_SUCCESS)
+    ora_error_handler(dbcon->error_handle, rc, 0);
 }
 
 /* END compile_query */
