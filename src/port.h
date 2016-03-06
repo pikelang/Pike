@@ -214,4 +214,8 @@ void _dosmaperr(int x);
 #define PIKE_CLANG_BUILTIN(x)   (0)
 #endif
 
+#ifdef USE_CRYPT_C
+char *crypt(const char *, const char *);
+#endif /* USE_CRYPT_C */
+
 #endif

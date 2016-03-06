@@ -657,10 +657,6 @@ FILE *popen (char *,char *);
 char *getenv (char *);
 #endif
 
-#ifdef USE_CRYPT_C
-char *crypt(const char *, const char *);
-#endif /* USE_CRYPT_C */
-
 /* If this define is present, error() has been renamed to Pike_error() and
  * error.h has been renamed to pike_error.h
  * Expect to see other similar defines in the future. -Hubbe
