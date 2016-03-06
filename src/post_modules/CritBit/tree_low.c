@@ -41,11 +41,11 @@ static inline cb_node_t cb_node_from_string(const struct cb_tree*,
 
 static inline cb_key CB_KEY_FROM_STRING(const cb_string string) {
     cb_key key;
-    /* printf("key from string: %p (%d, %d)\n",
-      string, key.len.chars, key.len.bits); */
     key.str = string;
     key.len.chars = CB_LENGTH(string);
     key.len.bits = 0;
+    /* fprintf(stderr, "key from string: %p (%ld, %ld)\n",
+       string, key.len.chars, key.len.bits); */
     return key;
 }
 
