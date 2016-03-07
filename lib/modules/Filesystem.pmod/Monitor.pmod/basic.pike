@@ -785,33 +785,34 @@ protected class EventStreamMonitor
 
   int(0..1) accellerated;
 
-  protected void file_exists(string path, Stdio.Stat st)
+  protected void do_stable_check()
   {
-    ::file_exists(path, st);
-    if ((last_change != 0x7fffffff) && accellerated) {
+    check();
+    if (last_change != 0x7fffffff) {
       // Not stable yet.
       int t = time(1) - last_change;
       if (t < 0) t = 0;
-      (backend || Pike.DefaultBackend)->
-	call_out(check, (stable_time || global::stable_time) + 1 - t);
+      t = (stable_time || global::stable_time) + 1 - t;
+      if (t <= 0) t = 1;
+      (backend || Pike.DefaultBackend)->call_out(do_stable_check, t);
     }
+  }
+
+  protected void file_exists(string path, Stdio.Stat st)
+  {
+    ::file_exists(path, st);
+    (backend || Pike.DefaultBackend)->call_out(do_stable_check, 0);
   }
 
   protected void file_created(string path, Stdio.Stat st)
   {
-    if (accellerated) {
-      (backend || Pike.DefaultBackend)->
-	call_out(check, (stable_time || global::stable_time) + 1);
-    }
+    (backend || Pike.DefaultBackend)->call_out(do_stable_check, 0);
     ::file_created(path, st);
   }
 
   protected void attr_changed(string path, Stdio.Stat st)
   {
-    if (accellerated) {
-      (backend || Pike.DefaultBackend)->
-	call_out(check, (stable_time || global::stable_time) + 1);
-    }
+    (backend || Pike.DefaultBackend)->call_out(do_stable_check, 0);
     ::attr_changed(path, st);
   }
 
@@ -947,33 +948,34 @@ protected class InotifyMonitor
   int `accellerated() { return wd != -1; }
   protected int(0..) out_of_inotify_space;
 
-  protected void file_exists(string path, Stdio.Stat st)
+  protected void do_stable_check()
   {
-    ::file_exists(path, st);
-    if ((last_change != 0x7fffffff) && (wd != -1)) {
+    check();
+    if (last_change != 0x7fffffff) {
       // Not stable yet.
       int t = time(1) - last_change;
       if (t < 0) t = 0;
-      (backend || Pike.DefaultBackend)->
-	call_out(check, (stable_time || global::stable_time) + 1 - t);
+      t = (stable_time || global::stable_time) + 1 - t;
+      if (t <= 0) t = 1;
+      (backend || Pike.DefaultBackend)->call_out(do_stable_check, t);
     }
+  }
+
+  protected void file_exists(string path, Stdio.Stat st)
+  {
+    ::file_exists(path, st);
+    (backend || Pike.DefaultBackend)->call_out(do_stable_check, 0);
   }
 
   protected void file_created(string path, Stdio.Stat st)
   {
-    if (wd != -1) {
-      (backend || Pike.DefaultBackend)->
-	call_out(check, (stable_time || global::stable_time) + 1);
-    }
+    (backend || Pike.DefaultBackend)->call_out(do_stable_check, 0);
     ::file_created(path, st);
   }
 
   protected void attr_changed(string path, Stdio.Stat st)
   {
-    if (wd != -1) {
-      (backend || Pike.DefaultBackend)->
-	call_out(check, (stable_time || global::stable_time) + 1);
-    }
+    (backend || Pike.DefaultBackend)->call_out(do_stable_check, 0);
     ::attr_changed(path, st);
   }
 
