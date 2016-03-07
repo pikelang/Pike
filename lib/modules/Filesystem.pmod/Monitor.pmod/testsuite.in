@@ -30,6 +30,7 @@ test_do([[
 #endif
       int got_path;
 
+      path = canonic_path(path);
       while (gethrtime() < timeout) {
         Pike.DefaultBackend(0.005);
         if (has_value (stable_data_change_evts(), path)) {
@@ -41,12 +42,46 @@ test_do([[
       return got_path;
     }
 
+    int(0..1) wait_for_delete_event(string path)
+    {
+#if constant(System.FSEvents.EventStream) || constant(System.Inotify)
+      int timeout = gethrtime() + 5000000; // 5 secs
+#else
+      int timeout = gethrtime() + 10000000; // 10 secs.
+#endif
+      int got_path;
+
+      path = canonic_path(path);
+      while (gethrtime() < timeout) {
+        Pike.DefaultBackend(0.005);
+        if (has_value(delete_evts(), path)) {
+          got_path = 1;
+          break;
+        }
+      }
+
+      if (!got_path) {
+        werror("delete events: %O\n", delete_evts());
+      }
+
+      return got_path;
+    }
+
     array(string) stable_data_change_evts()
     {
       return map (evts,
                   lambda(mapping(Event:string) evt)
                   {
                     return evt[EVT_STABLE_DATA_CHANGE];
+                  }) - ({ 0 });
+    }
+
+    array(string) delete_evts()
+    {
+      return map (evts,
+                  lambda(mapping(Event:string) evt)
+                  {
+                    return evt[EVT_FILE_DELETED];
                   }) - ({ 0 });
     }
 
@@ -147,6 +182,14 @@ test_true([[
               Stdio.write_file (test_basedir + "bar/fie/gaz", "12347");
               return test_mon->wait_for_stable_event (test_basedir + "bar/fie/gaz");
             }();
+	    ]])
+
+test_true([[
+	    lambda() {
+	      test_mon->clear_events();
+	      Stdio.recursive_rm(test_basedir);
+	      return test_mon->wait_for_delete_event(test_basedir);
+	    }();
 	    ]])
 
 test_do([[
