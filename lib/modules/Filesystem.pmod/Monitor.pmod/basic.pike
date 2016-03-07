@@ -630,7 +630,7 @@ protected class Monitor(string path,
 	}
 	if (delay) {
 	  // Delay the notification until the submonitors have notified.
-	  st = old_st;
+	  this::st = old_st;
 	  next_poll = time(1);
 	  adjust_monitor(this);
 	} else {
