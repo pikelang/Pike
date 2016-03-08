@@ -212,23 +212,72 @@ PIKECLASS _Instance {
      *!	    Subdirectories are not watched. If you want to watch
      *!	    subdirectories as well, you need to add watches for
      *!	    them individually.
+     *! @note
+     *!     At creation of a watch for a directory simulated
+     *!     @[IN_CREATE]-events with cookie @expr{0x7fffffff@} will
+     *!     be added for the initial contents of the directory.
+     *!     This is to reduce the risk of losing state changes
+     *!     due to races. Note that is is not known whether these
+     *!     paths are in flux or not. Note also that there may
+     *!     be multiple notifications for content that is created
+     *!     at the moment the watch is created.
      *!
      *! @seealso
      *!     @[rm_watch()], @[parse_event()]
      */
     PIKEFUN int add_watch(string file, int mask) {
-	INT32 err;
+	INT32 wd;
 
 	if (file->size_shift)
 	    Pike_error("Widestring filenames are not allowed.\n");
 
-	err = inotify_add_watch(THIS->box.fd, file->str, mask);
+	wd = inotify_add_watch(THIS->box.fd, file->str, mask);
 
-	if (err == -1)
+	if (wd == -1)
 	    Pike_error("inotify_add_watch failed: %s\n",
 		       strerror(errno));
-	else
-	    RETURN err;
+
+	if (mask & IN_CREATE) {
+	  DIR *dir = opendir(file->str);
+	  if (dir) {
+	    struct dirent *dirent;
+	    /* Add any paths already present to the input buffer. */
+	    while ((dirent = readdir(dir))) {
+	      struct inotify_event ev;
+	      int pad = 0;
+
+	      if ((dirent->d_name[0] == '.') &&
+		  (!dirent->d_name[1] ||
+		   ((dirent->d_name[1] == '.') && !dirent->d_name[2]))) {
+		/* Filter "." and ".." */
+		continue;
+	      }
+	      ev.wd = wd;
+	      ev.mask = IN_CREATE;		/* FIXME: Use custom code? */
+	      ev.cookie = (uint32_t)~0x7fffffff;	/* Special marker. */
+	      ev.len = strlen(dirent->d_name) + 1;
+	      if (ev.len & 0x07) {
+		pad = 0x08 - (ev.len & 0x07);
+		ev.len += pad;
+	      }
+
+	      if (dirent->d_type == DT_DIR) {
+		ev.mask |= IN_ISDIR;
+	      }
+	      /* FIXME: Handle DT_UNKNOWN. */
+
+	      string_build_mkspace(&THIS->buf, sizeof(ev) + ev.len, 0);
+	      string_builder_binary_strcat0(&THIS->buf,
+					    (p_wchar0 *)&ev,
+					    sizeof(ev));
+	      string_builder_strcat(&THIS->buf, dirent->d_name);
+	      string_builder_fill(&THIS->buf, pad+1,
+				  MKPCHARP("\0\0\0\0\0\0\0\0", 0), 8, 0);
+	    }
+	    closedir(dir);
+	  }
+	}
+	RETURN wd;
     }
 
 

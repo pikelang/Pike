@@ -1033,11 +1033,6 @@ protected class InotifyMonitor
 	    }
 	    wd = new_wd;
 	    monitors[inotify_cookie(wd)] = this;
-	    if (initial) {
-	      // NB: Inotify seems to not notify on preexisting paths,
-	      //     so we need to strap it along.
-	      check();
-	    }
 	  }
 	}) {
 	if (!has_value(lower_case(describe_error(err)), "no space left")) {
