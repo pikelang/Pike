@@ -67,10 +67,14 @@
 		t = THIS->lastnode;
 	    } else {
                 struct object * tree = TREE_CLASSIFY(_get_iterator_find_parent)();
+                TREE_T *T;
 
                 if (!tree->prog) return 0;
 
+                T = GET_TREE_STORAGE(tree);
+
 		THIS->lastrev = * THIS->revv;
+                THIS->tree = T->tree.root;
 
 		if (THIS->tree) {
 		    t = cb_index(THIS->tree, THIS->lastkey);
