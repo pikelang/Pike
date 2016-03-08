@@ -66,7 +66,10 @@
 	    if (THIS->lastrev == *THIS->revv) {
 		t = THIS->lastnode;
 	    } else {
+                struct object * tree = TREE_CLASSIFY(_get_iterator_find_parent)();
+
 		THIS->lastrev = * THIS->revv;
+                THIS->tree = cmod_OBJ2_TREE(tree)->tree.root;
 
 		if (THIS->tree) {
 		    t = cb_index(THIS->tree, THIS->lastkey);
