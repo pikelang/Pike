@@ -525,7 +525,8 @@ PIKECLASS array_iterator
     if (THIS->a) {
       push_int(THIS->a->size);
     }
-    push_undefined();
+    else
+      push_undefined();
   }
 
   PIKEFUN object `+(int steps)
@@ -659,7 +660,8 @@ PIKECLASS multiset_iterator
     if (THIS->l) {
       push_int(THIS->l->msd->size);
     }
-    push_undefined();
+    else
+      push_undefined();
   }
 
   static struct object *li_copy (struct multiset_iterator_struct *li)
@@ -874,7 +876,8 @@ PIKECLASS string_iterator
     if (THIS->s) {
       push_int(THIS->s->len);
     }
-    push_undefined();
+    else
+      push_undefined();
   }
 
   PIKEFUN object `+(int steps)

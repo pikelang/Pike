@@ -832,6 +832,8 @@ test_equal(Array.common_prefix(({ "labyrinth"/1, "diatom"/1 })), ({}))
 test_equal(Array.common_prefix(({ "abc"/1, "abc"/1, "abc"/1 })), "abc"/1)
 test_equal(Array.common_prefix(({})), ({}))
 
+test_eq( sizeof(Array.Iterator(({1,2,3,4}))), 4 )
+
 dnl - Colors
 
 define(test_rgb,[[
@@ -1167,7 +1169,8 @@ test_eq( Int.swap_long(array_sscanf("\1\2\3\4", "%4c")[0]),
 
 dnl - Mapping
 dnl Mapping.delete
-dnl Mapping.Iterator
+
+test_eq( sizeof(Mapping.Iterator(([1:2,3:4]))), 2 )
 
 test_do([[
   // Test for [bug 5085].
@@ -1178,7 +1181,8 @@ test_do([[
 ]])
 
 dnl - Multiset
-dnl Multiset.Iterator
+
+test_eq( sizeof(Multiset.Iterator((<1,2,3>))), 3 )
 
 dnl - Process
 test_equal([[Process.split_quoted_string("test ")]],[[({"test"})]])
