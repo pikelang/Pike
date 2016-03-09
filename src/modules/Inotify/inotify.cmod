@@ -256,8 +256,8 @@ PIKECLASS _Instance {
 		continue;
 	      }
 	      ev.wd = wd;
-	      ev.mask = IN_CREATE;		/* FIXME: Use custom code? */
-	      ev.cookie = (uint32_t)~0x7fffffff;	/* Special marker. */
+	      ev.mask = IN_CREATE;	/* FIXME: Use custom code? */
+	      ev.cookie = (uint32_t)0x7fffffff;	/* Special marker. */
 	      ev.len = strlen(dirent->d_name) + 1;
 	      if (ev.len & 0x07) {
 		pad = 0x08 - (ev.len & 0x07);
