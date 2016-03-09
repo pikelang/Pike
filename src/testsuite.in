@@ -9129,18 +9129,6 @@ test_any([[
 ]], 0)
 
 test_any([[
-  // Check foreach iterator stepping behavior.
-  array a = indices (allocate (7));
-  Array.Iterator i = get_iterator (a);
-  foreach (i;; int v)
-    if (v > 3) break;
-  foreach (i;; int v)
-    if (v < 5) break;
-  foreach (i;; int v)
-    return v;
-]], 4)
-
-test_any([[
   // Check foreach with negative ranges [bug 7216]/[LysLysKOM 20892964].
   array a = ({ -2, -1, 0, 1, 2 });
   int total;
