@@ -779,6 +779,9 @@ int main(int argc, array(string) argv)
   }
 
 #if constant(System.getrlimit)
+#if SOCK_DEBUG_FDS
+  System.setrlimit("nofile", 256, 256);
+#endif
   array(int) file_limit = System.getrlimit("nofile");
   if (file_limit && (file_limit[0] > 0)) {
     max_fds = file_limit[0];
