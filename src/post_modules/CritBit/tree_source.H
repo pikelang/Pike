@@ -259,10 +259,9 @@ DOCEND()
      *! @returns
      *! 	An array @expr{({ key, value })@}.
      */
-    PIKEFUN array _random() {
+    PIKEFUN array _random(function random_string, function random) {
 	cb_node_t node;
-
-	if (THIS->tree.root) {
+        if (THIS->tree.root) {
 	    node = cb_get_nth(THIS->tree.root,
                               my_rand(THIS->tree.root->size));
 	    if (node) {

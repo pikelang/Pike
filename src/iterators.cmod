@@ -204,14 +204,14 @@ PIKECLASS Iterator
     prototype;
   {}
 
-  /*! @decl optional void _random()
+  /*! @decl optional void _random(function random_string, function random)
    *!
    *! If this function is defined then it sets the iterator to point
    *! to a random item in the accessible set. The random distribution
    *! should be rectangular within that set, and the pseudorandom
    *! sequence provided by @[random] should be used.
    */
-  PIKEFUN void _random()
+  PIKEFUN void _random(function rnd_str, function rnd)
     flags ID_OPTIONAL;
     prototype;
   {}
@@ -401,7 +401,7 @@ PIKECLASS mapping_iterator
     }
 
   /* Hubbe: Should this really be destructive ?? */
-  PIKEFUN object _random()
+  PIKEFUN object _random(function rnd_str, function rnd)
     {
 #ifdef PIKE_MAPPING_KEYPAIR_LOOP
       size_t k = my_rand(THIS->md->size);
@@ -570,7 +570,7 @@ PIKECLASS array_iterator
     }
 
   /* Hubbe: Should this really be destructive ?? */
-  PIKEFUN object _random()
+  PIKEFUN object _random(function rnd_str, function rnd)
     {
       if(THIS->a && THIS->a->size)
         THIS->pos=my_rand(THIS->a->size);
@@ -755,7 +755,7 @@ PIKECLASS multiset_iterator
 
   /* Hubbe: Should this really be destructive ??
    * I let this question stand; I'm only adapting multiset_iterator. /mast */
-  PIKEFUN object _random()
+  PIKEFUN object _random(function rnd_str, function rnd)
     {
       if (!THIS->l) Pike_error ("Iterator not initialized.\n");
       if (THIS->nodepos >= 0) {
@@ -916,7 +916,7 @@ PIKECLASS string_iterator
     }
 
   /* Hubbe: Should this really be destructive ?? */
-  PIKEFUN object _random()
+  PIKEFUN object _random(function rnd_str, function rnd)
     {
       if(THIS->s->len)
         THIS->pos=my_rand(THIS->s->len);

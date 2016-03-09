@@ -388,8 +388,8 @@ class Reverse(object tree) {
 	return tree->nth(sizeof(tree)-n);
     }
 
-    mixed _random() {
-	return random(tree);
+    mixed _random(function rnd_str, function rnd) {
+        return rnd(tree);
     }
 
     int(0..) depth() {
@@ -504,8 +504,8 @@ class MultiTree {
 	return m_delete(tree(idx), idx);
     }
 
-    mixed _random() {
-	int n = random(sizeof(this));
+    mixed _random(function rnd_str, function rnd) {
+        int n = rnd(sizeof(this));
 	return nth(n);
     }
 

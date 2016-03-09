@@ -2218,7 +2218,13 @@ PIKECLASS RandomInterface
     int f = low_find_lfun(o->prog, LFUN__RANDOM);
     if (f < 0)
       Pike_error("Calling undefined lfun::%s.\n", lfun_names[LFUN__RANDOM]);
-    apply_low(o, f, 0);
+    struct object *co = Pike_fp->current_object;
+    ref_push_function(co, f_RandomInterface_random_string_fun_num);
+    /* FIXME: precompiler doesn't generate usable fun_nums for variant
+       symbols. */
+    ref_push_function(co, find_shared_string_identifier(MK_STRING("random"),
+                                                        co->prog));
+    apply_low(o, f, 2);
   }
 }
 

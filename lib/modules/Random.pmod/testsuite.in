@@ -38,7 +38,8 @@ test_eq([[ `-( @random( ([11:21,31:41]) )) ]], -10)
 test_eq([[ `-( @random( ([11:21,31:41]) )) ]], -10)
 
 dnl mixed random(object)
-test_eq([[ random( class() { int _random() { return 17; }}()) ]], 17)
+test_eq([[ random( class() { function _random(function a, function b) { return a; }}() ) ]], random_string)
+test_eq([[ random( class() { function _random(function a, function b) { return b; }}() ) ]], random)
 
 dnl string random_string(int)
 test_eval_error( return random_string(-1); )

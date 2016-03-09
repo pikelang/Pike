@@ -281,7 +281,7 @@ static const char *const raw_lfun_types[] = {
   tFuncV(tObj tZero, tVoid, tVoid),	/* "_serialize", */
   tFuncV(tObj tZero, tVoid, tVoid),	/* "_deserialize", */
   tFuncV(tZero, tVoid, tInt),	/* "_size_object", */
-  tFuncV(tNone, tVoid, tMix),	/* "_random", */
+  tFuncV(tFunction tFunction, tVoid, tMix),	/* "_random", */
 };
 
 /* These two are not true LFUNs! */

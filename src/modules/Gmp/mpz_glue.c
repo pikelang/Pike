@@ -2262,7 +2262,7 @@ static void pike_mp_free (void *ptr, size_t UNUSED(size))
   ADD_FUNCTION("popcount", mpzmod_popcount,tFunc(tVoid,tInt), 0);	\
   ADD_FUNCTION("hamdist", mpzmod_hamdist,tFunc(tMpz_arg,tInt), 0);	\
 									\
-  ADD_FUNCTION("_random",mpzmod_random,tFunc(tNone,tMpz_ret),0);	\
+  ADD_FUNCTION("_random",mpzmod_random,tFunc(tFunction tFunction,tMpz_ret),0); \
   									\
   ADD_FUNCTION("_encode",mpzmod__encode,tFunc(tNone,tStr8),0);		\
   									\
