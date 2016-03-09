@@ -2062,17 +2062,17 @@ static void mpzmod_random(INT32 args)
     Pike_error("_random called with non-function argument.\n");
 
   /* We add four to assure reasonably uniform randomness */
-  push_int(mpz_size(THIS)*sizeof(mp_limb_t) + 4);
+  unsigned bytes = mpz_size(THIS)*sizeof(mp_limb_t) + 4;
+  push_int(bytes);
   apply_svalue(&sp[-2], 1);
   if (TYPEOF(sp[-1]) != T_STRING) {
-    Pike_error("random_string(%ld) returned non string.\n",
-               mpz_size(THIS)*sizeof(mp_limb_t) + 4);
+    Pike_error("random_string(%ld) returned non string.\n", bytes);
   }
-  if ((unsigned)sp[-1].u.string->len != mpz_size(THIS)*sizeof(mp_limb_t) + 4)
+  if ((unsigned)sp[-1].u.string->len != bytes)
      Pike_error("Wrong size random string generated.\n");
   stack_pop_keep_top();
 
-  get_mpz_from_digits(OBTOMPZ(res), sp[-1].u.string, 256);
+  mpz_import(OBTOMPZ(res), bytes, 1, 1, 0, 0, sp[-1].u.string->str);
   pop_stack();
   mpz_fdiv_r(OBTOMPZ(res), OBTOMPZ(res), THIS); /* modulo */
   Pike_sp--;
