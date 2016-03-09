@@ -116,11 +116,11 @@ class Socket {
 	       input_finished, output_finished);
     if(input_finished && output_finished)
     {
-      finish(this_program);
       DEBUG_WERR("Closing fd:%O\n", o->query_fd());
       o->close();
       o->set_blocking();
       destruct(o);
+      finish(this_program);
     }
   }
 
@@ -586,7 +586,12 @@ void finish(program Socket)
 	log_status("Testing uni-directional shutdown on socket");
 	socks=spair(0);
 	num_running=1;
-	socks[1]->set_nonblocking(lambda() {},lambda(){},Function.curry(finish)(Socket));
+	socks[1]->set_id(socks);
+	socks[1]->set_nonblocking(lambda() {},lambda(){},
+				  lambda(array(Stdio.File) socks) {
+				    socks->close();
+				    finish(Socket);
+				  });
 	socks[0]->close("w");
 	keeper=socks;
 	break;
@@ -595,7 +600,12 @@ void finish(program Socket)
 	log_status("Testing uni-directional shutdown on pipe");
 	socks=spair(1);
 	num_running=1;
-	socks[1]->set_nonblocking(lambda() {},lambda(){},Function.curry(finish)(Socket));
+	socks[1]->set_id(socks);
+	socks[1]->set_nonblocking(lambda() {},lambda(){},
+				  lambda(array(Stdio.File) socks) {
+				    socks->close();
+				    finish(Socket);
+				  });
 	socks[0]->close("w");
 	keeper=socks;
 	break;
@@ -604,7 +614,12 @@ void finish(program Socket)
 	log_status("Testing uni-directional shutdown on fake pipe");
 	socks=spair(2);
 	num_running=1;
-	socks[1]->set_nonblocking(lambda() {},lambda(){},Function.curry(finish)(Socket));
+	socks[1]->set_id(socks);
+	socks[1]->set_nonblocking(lambda() {},lambda(){},
+				  lambda(array(Stdio.File) socks) {
+				    socks->close();
+				    finish(Socket);
+				  });
 	socks[0]->close("w");
 	keeper=socks;
 	break;
@@ -618,7 +633,7 @@ void finish(program Socket)
 
       case 15..27:
 	if (max_fds > 64) {
-	  /* These tests require mare than 64 open fds. */
+	  /* These tests require more than 64 open fds. */
 	  tests=(_tests-3)*2;
 	  log_status("Testing "+(tests*2)+" sockets");
 	  for(int e=0;e<tests;e++) stdtest(Socket);
