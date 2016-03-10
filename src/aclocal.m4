@@ -1649,6 +1649,12 @@ AC_DEFUN(PIKE_CHECK_ABI_DIR,
 		# i386: "ei_class:   ELFCLASS32          ei_data:      ELFDATA2LSB" (repeated)
 		# amd64: "ei_class:   ELFCLASS64          ei_data:      ELFDATA2LSB" (repeated)
 		filetype="`POSIXLY_CORRECT=yes elfdump -e $f 2>/dev/null | grep ELFCLASS`"
+	      elif type readelf >/dev/null; then
+		# GNU binutils.
+		# Typical output:
+		# x86: "Class:                             ELF32"
+		# x86_64: "Class:                             ELF64"
+		filetype="`readelf -h $f 2>/dev/null | grep -i class`"
 	      fi
 	      # NB: Avoid matching "32-bit symbol table".
 	      filetype="`echo $filetype | sed -e 's/...bit symbol table//'`"
@@ -1657,6 +1663,12 @@ AC_DEFUN(PIKE_CHECK_ABI_DIR,
 		  abi_64=yes
 		  ;;
 		*ELFCLASS32*)
+		  abi_32=yes
+		  ;;
+		*ELF4*)
+		  abi_64=yes
+		  ;;
+		*ELF32*)
 		  abi_32=yes
 		  ;;
 		*64-bit*)
