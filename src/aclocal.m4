@@ -1610,6 +1610,12 @@ AC_DEFUN(PIKE_CHECK_ABI_DIR,
 	      ;;
 	  esac
 
+	  # NB: /bin/file on Solaris 11 says
+	  #     "current ar archive, 32-bit symbol table"
+	  #     about most archives. We don't want this
+	  #     to be matched in the ABI check below.
+	  filetype="`echo $filetype | sed -e 's/...bit symbol table//'`"
+
 	  case "$filetype" in
             *32-bit*)
   	      abi_32=yes
@@ -1628,6 +1634,44 @@ AC_DEFUN(PIKE_CHECK_ABI_DIR,
 	      ;;
 	    *ppc*)
               abi_32=yes
+	      ;;
+	    *archive*)
+	      # Try looking deeper into the archive.
+	      if type elffile >/dev/null; then
+		# Solaris 11 or later.
+		# Typical output:
+		# i386: "current ar archive, 32-bit symbol table, ELF 32-bit LSB relocatable 80386 Version 1"
+		# amd64: "current ar archive, 32-bit symbol table, ELF 64-bit LSB relocatable AMD64 Version 1"
+	        filetype="`POSIXLY_CORRECT=yes elffile $f 2>/dev/null`"
+	      elif type elfdump >/dev/null; then
+		# Solaris 10 or earlier.
+		# Typical output:
+		# i386: "ei_class:   ELFCLASS32          ei_data:      ELFDATA2LSB" (repeated)
+		# amd64: "ei_class:   ELFCLASS64          ei_data:      ELFDATA2LSB" (repeated)
+		filetype="`POSIXLY_CORRECT=yes elfdump -e $f 2>/dev/null | grep ELFCLASS`"
+	      fi
+	      # NB: Avoid matching "32-bit symbol table".
+	      filetype="`echo $filetype | sed -e 's/...bit symbol table//'`"
+	      case "$filetype" in
+		*ELFCLASS64*)
+		  abi_64=yes
+		  ;;
+		*ELFCLASS32*)
+		  abi_32=yes
+		  ;;
+		*64-bit*)
+		  abi_64=yes
+		  ;;
+		*32-bit*)
+		  abi_32=yes
+		  ;;
+		*64*)
+		  abi_64=yes
+		  ;;
+		*32*)
+		  abi_32=yes
+		  ;;
+	      esac
 	      ;;
 	  esac
 	  case "$filetype" in
