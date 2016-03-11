@@ -792,8 +792,13 @@ void f_filesystem_stat(INT32 args)
  *! @returns
  *!   Returns @expr{0@} (zero) on failure, @expr{1@} otherwise.
  *!
+ *! @note
+ *!   May fail with @[errno()] set to @[EISDIR] or @[ENOTDIR]
+ *!   if the file has changed to a directory during the call
+ *!   or the reverse.
+ *!
  *! @seealso
- *!   @[mkdir()], @[Stdio.recursive_rm()]
+ *!   @[Stdio.File()->unlinkat()], @[mkdir()], @[Stdio.recursive_rm()]
  */
 void f_rm(INT32 args)
 {
