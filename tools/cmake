@@ -1,0 +1,6 @@
+#!/bin/sh
+
+. $NTTOOLS
+
+do_cmd cmake "$@"
+exit $?
