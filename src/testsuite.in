@@ -10876,7 +10876,11 @@ test_any([[
 // - cpp
 
 // - crypt
-test_true(stringp(crypt("hej")))
+test_do(add_constant("random",Random.Deterministic(17)->random))
+test_eq(crypt("hello"),"yWUNYFIhtQEg6")
+test_eq(crypt("hello"),"tB0k4A51tkBFI")
+test_eq(crypt("hello"),"qLKH6pE54iDM.")
+test_do(add_constant("random",Random.System()->random));
 test_true(crypt("hej",crypt("hej")))
 test_true(crypt("hej","Oz5i0K.16qkgA"))
 test_true(crypt("hej","buf8/Z7taE6qs"))

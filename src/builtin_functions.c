@@ -3148,8 +3148,8 @@ PMOD_EXPORT void f_crypt(INT32 args)
 {
   char salt[2];
   char *ret, *pwd, *saltp = NULL;
-  char *choise =
-    "cbhisjKlm4k65p7qrJfLMNQOPxwzyAaBDFgnoWXYCZ0123tvdHueEGISRTUV89./";
+  char *alphabet =
+    "./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
   get_all_args("crypt", args, "%s.%s", &pwd, &saltp);
 
@@ -3162,8 +3162,20 @@ PMOD_EXPORT void f_crypt(INT32 args)
       return;
     }
   } else {
-    salt[0] = choise[my_rand(strlen(choise))];
-    salt[1] = choise[my_rand(strlen(choise))];
+    struct svalue *random =
+      simple_mapping_string_lookup(get_builtin_constants(), "random");
+    if(!random || (TYPEOF(*random) != T_FUNCTION))
+      Pike_error("Unable to resolve random function.\n");
+    push_svalue(random);
+    push_int(4096); /* strlen(alphbet)**2 */
+    apply_svalue(&Pike_sp[-2], 1);
+    if(TYPEOF(Pike_sp[-1])!=T_INT)
+      Pike_error("Couldn't generate random number.\n");
+
+    salt[0] = alphabet[ Pike_sp[-1].u.integer & 0x3f ];
+    salt[1] = alphabet[ (Pike_sp[-1].u.integer>>6) & 0x3f ];
+    pop_n_elems(2);
+
     saltp=salt;
     if (args > 1) {
       pop_n_elems(args-1);
