@@ -322,7 +322,7 @@ PIKECLASS mapping_iterator
     if (THIS->md) {
       push_int(THIS->md->size);
     } else
-      push_undefined();
+      push_int(0);
   }
 
 #ifdef PIKE_MAPPING_KEYPAIR_LOOP
@@ -526,7 +526,7 @@ PIKECLASS array_iterator
       push_int(THIS->a->size);
     }
     else
-      push_undefined();
+      push_int(0);
   }
 
   PIKEFUN object `+(int steps)
@@ -661,7 +661,7 @@ PIKECLASS multiset_iterator
       push_int(THIS->l->msd->size);
     }
     else
-      push_undefined();
+      push_int(0);
   }
 
   static struct object *li_copy (struct multiset_iterator_struct *li)
@@ -877,7 +877,7 @@ PIKECLASS string_iterator
       push_int(THIS->s->len);
     }
     else
-      push_undefined();
+      push_int(0);
   }
 
   PIKEFUN object `+(int steps)
