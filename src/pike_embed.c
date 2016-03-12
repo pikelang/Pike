@@ -37,6 +37,7 @@
 #include "pike_memory.h"
 #include "pike_cpulib.h"
 #include "pike_embed.h"
+#include "stuff.h"
 
 #if defined(__linux__) && defined(HAVE_DLOPEN) && defined(HAVE_DLFCN_H)
 #include <dlfcn.h>
@@ -310,6 +311,8 @@ void init_pike_runtime(void (*exit_cb)(int))
 
   TRACE((stderr, "Init objects...\n"));
   init_object();
+
+  my_srand(0);
 
   if(SETJMP(back))
   {
