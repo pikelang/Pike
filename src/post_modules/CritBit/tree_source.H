@@ -254,17 +254,22 @@ DOCEND()
 	return;
     }
 
-    /*! @decl array _random()
+    /*! @decl array _random(function random_string, function random)
      *! Get a random entry.
      *! @returns
      *! 	An array @expr{({ key, value })@}.
      */
     PIKEFUN array _random(function random_string, function random) {
-	cb_node_t node;
+        cb_node_t node;
+
+        push_int(THIS->tree.root->size);
+        apply_svalue(random, 1);
+        if( TYPEOF(Pike_sp[-1])!=T_INT )
+          Pike_error("Wrong return type from random.\n");
+
         if (THIS->tree.root) {
-	    node = cb_get_nth(THIS->tree.root,
-                              my_rand(THIS->tree.root->size));
-	    if (node) {
+            node = cb_get_nth(THIS->tree.root, Pike_sp[-1].u.integer);
+            if (node) {
 		CB_PUSH_TRANSFORM_KEY(node->key);
 		push_svalue(&node->value);
 		f_aggregate(2);
