@@ -10,6 +10,8 @@
 #include "array.h"
 #include "operators.h"
 #include "threads.h"
+#include "mapping.h"
+#include "constants.h"
 
 /* For this_object() */
 #include "object.h"
@@ -79,6 +81,20 @@ struct pike_aead
   (pike_nettle_crypt_func) name##_decrypt,	\
   (pike_nettle_hash_update_func) name##_update, \
   (pike_nettle_hash_digest_func) name##_digest, \
+}
+
+/* Generates a random string of lenght len using the current
+   random_string() function. */
+static void push_random_string(unsigned len)
+{
+  struct svalue *random =
+    simple_mapping_string_lookup(get_builtin_constants(), "random_string");
+  if(!random || (TYPEOF(*random) != T_FUNCTION))
+    Pike_error("Unable to resolve random function.\n");
+  push_int(len);
+  apply_svalue(random, 1);
+  if(TYPEOF(Pike_sp[-1])!=T_STRING || Pike_sp[-1].u.string->len != len)
+    Pike_error("Couldn't generate random string.\n");
 }
 
 /*! @class AEAD
@@ -215,25 +231,6 @@ PIKECLASS AEAD
 
 #define GET_META()	(((struct Nettle_AEAD_struct *)parent_storage(1, Nettle_AEAD_program))->meta)
 
-    /* Generate a random string of length @[size] on top of the stack. */
-    static void low_make_key(INT32 size)
-    {
-      push_text("Crypto.Random");
-      APPLY_MASTER("resolv",1);
-      if(TYPEOF(Pike_sp[-1]) != T_OBJECT)
-	Pike_error("Failed to resolv Crypto.Random.\n");
-
-      push_int(size);
-      apply(Pike_sp[-2].u.object, "random_string", 1);
-      if( TYPEOF(Pike_sp[-1])!=T_STRING )
-        Pike_error("Couldn't generate random string.\n");
-      if( Pike_sp[-1].u.string->len != size )
-        Pike_error("Wrong size random string generated.\n");
-
-      stack_swap();
-      pop_stack();
-    }
-
     /*! @decl State set_encrypt_key(string(0..255) key)
      *!
      *! Initializes the object for encryption. The @[key] memory will be
@@ -304,7 +301,7 @@ PIKECLASS AEAD
     {
       const struct pike_aead *meta = GET_META();
 
-      low_make_key(meta->key_size);
+      push_random_string(meta->key_size);
 
       stack_dup();
       Pike_sp[-1].u.string->flags |= STRING_CLEAR_ON_EXIT;
