@@ -852,6 +852,16 @@ test_any([[
 ]], 4)
 test_eq( sizeof(Array.Iterator(({1,2,3,4}))), 4 )
 
+test_do(add_constant("random",Random.Deterministic(17)->random))
+test_any_equal([[
+  string r = "";
+  for(int i; i<4; i++)
+    foreach(random(Array.Iterator("12345678"/1));; string v)
+      r += v;
+  return r;
+]], "7883456785678")
+test_do(add_constant("random",Random.System()->random))
+
 dnl - Colors
 
 define(test_rgb,[[
@@ -1198,9 +1208,29 @@ test_do([[
   }
 ]])
 
+test_do(add_constant("random",Random.Deterministic(17)->random))
+test_any_equal([[
+  string r = "";
+  for(int i; i<5; i++)
+    foreach(random(Mapping.Iterator(([1:"1",2:"2",3:"3"])));; string v)
+      r += v;
+  return r;
+]], "233323123")
+test_do(add_constant("random",Random.System()->random))
+
 dnl - Multiset
 
 test_eq( sizeof(Multiset.Iterator((<1,2,3>))), 3 )
+
+test_do(add_constant("random",Random.Deterministic(17)->random))
+test_any_equal([[
+  string r = "";
+  for(int i; i<5; i++)
+    foreach(random(Multiset.Iterator((<2,4,6,8,9>))); int v;)
+      r += v;
+  return r;
+]], "689946894689689")
+test_do(add_constant("random",Random.System()->random))
 
 dnl - Process
 test_equal([[Process.split_quoted_string("test ")]],[[({"test"})]])

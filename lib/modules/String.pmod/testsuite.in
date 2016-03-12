@@ -148,6 +148,18 @@ test_eq(String.normalize_space ("  a  bb   ccc   ddd \n eee f g\n","\xf0000 "),
 
 dnl MISSING TEST: String.Iterator
 
+test_eq(sizeof(String.Iterator("abcdefg")), 7)
+
+test_do(add_constant("random",Random.Deterministic(17)->random))
+test_any_equal([[
+  string r = "";
+  for(int i; i<5; i++)
+    foreach(random(String.Iterator("abcdefg"));; int v)
+      r += sprintf("%c",v);
+  return r;
+]], "gcdefgefgbcdefgfg")
+test_do(add_constant("random",Random.System()->random))
+
 test_any([[
   object it = String.SplitIterator("  foobar gazonk  gurka baz  ", ' ');
   array res = ({});
