@@ -3166,15 +3166,14 @@ PMOD_EXPORT void f_crypt(INT32 args)
       simple_mapping_string_lookup(get_builtin_constants(), "random");
     if(!random || (TYPEOF(*random) != T_FUNCTION))
       Pike_error("Unable to resolve random function.\n");
-    push_svalue(random);
     push_int(4096); /* strlen(alphbet)**2 */
-    apply_svalue(&Pike_sp[-2], 1);
+    apply_svalue(random, 1);
     if(TYPEOF(Pike_sp[-1])!=T_INT)
       Pike_error("Couldn't generate random number.\n");
 
     salt[0] = alphabet[ Pike_sp[-1].u.integer & 0x3f ];
     salt[1] = alphabet[ (Pike_sp[-1].u.integer>>6) & 0x3f ];
-    pop_n_elems(2);
+    pop_stack();
 
     saltp=salt;
     if (args > 1) {
