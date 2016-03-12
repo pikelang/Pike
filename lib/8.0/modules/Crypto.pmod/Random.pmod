@@ -4,5 +4,5 @@ inherit Crypto.Random : pre;
 
 string(8bit) blocking_random_string(int len)
 {
-  return pre::rnd_func(len);
+  return pre::random_string(len);
 }
