@@ -4,12 +4,16 @@
 || for more information.
 */
 
-/*
- * Pike interface to Oracle databases.
- *
- * original design by Marcus Comstedt
- * re-written for Oracle 8.x by Fredrik Hubinette
- *
+/*! @module Oracle
+ *!
+ *! Pike interface to Oracle databases.
+ *!
+ *! @thanks
+ *!   Original design by Marcus Comstedt.
+ *!
+ *!   Re-written for Oracle 8.x and later by Fredrik Hubinette.
+ *!
+ *!   Re-structured into a CMOD by Henrik Grubbström.
  */
 
 /*
@@ -459,7 +463,17 @@ struct inout
 static void free_inout(struct inout *i);
 static void init_inout(struct inout *i);
 
-/****** connection ******/
+/*! @class oracle
+ *!
+ *! Connection to an Oracle database server.
+ *!
+ *! @note
+ *!   You probably don't want to access this class directly, but
+ *!   rather via @[Sql.Sql].
+ *!
+ *! @seealso
+ *!   @[Sql.Sql], @[Sql.oracle]
+ */
 PIKECLASS oracle
 {
 #ifdef PIKE_DEBUG
@@ -574,8 +588,9 @@ OCIError *get_global_error_handle(void)
   return global_error_handle;
 }
 
-  /*
-   * dblob
+  /*! @class LOB
+   *!
+   *! Large OBject.
    */
   PIKECLASS LOB
   {
@@ -759,12 +774,11 @@ OCIError *get_global_error_handle(void)
 
       push_int(0);
     }
-
-    /* END LOB */
   }
+  /*! @endclass LOB
+   */
 
-  /*
-   * dbdate
+  /*! @class Date
    */
   PIKECLASS Date
   {
@@ -883,12 +897,11 @@ OCIError *get_global_error_handle(void)
       else
 	push_undefined();
     }
-
-    /* END Date */
   }
+  /*! @endclass Date
+   */
 
-  /*
-   * dbnull
+  /*! @class NULL
    */
   PIKECLASS NULL
   {
@@ -908,9 +921,13 @@ OCIError *get_global_error_handle(void)
 
     EXTRA
     {
+      /*! @decl inherit Val.Null
+       */
       struct pike_string *null_string = make_shared_string("Null");
       low_inherit(get_sql_null_prog(), NULL, -1, 0, 0, null_string);
       free_string(null_string);
+      /*! @constant is_oracle_null
+       */
       add_integer_constant("is_oracle_null", 1, 0);
     }
 
@@ -961,11 +978,12 @@ OCIError *get_global_error_handle(void)
       push_svalue(&THIS_DBNULL->type);
       f_eq(2);
     }
-
-    /* END NULL */
   }
+  /*! @endclass NULL
+   */
 
-  /****** query ******/
+  /*! @class compile_query
+   */
   PIKECLASS compile_query
     program_flags PROGRAM_USES_PARENT|PROGRAM_NEEDS_PARENT;
   {
@@ -1012,7 +1030,8 @@ OCIError *get_global_error_handle(void)
 
     }
 
-    /****** dbresultinfo ******/
+    /*! @class dbresultinfo
+     */
     PIKECLASS dbresultinfo
     {
 #ifdef PIKE_DEBUG
@@ -1074,12 +1093,11 @@ OCIError *get_global_error_handle(void)
       {
 	Pike_error("You may not change variables in dbresultinfo objects.\n");
       }
-
-      /* END dbresultinfo */
     }
+    /*! @endclass dbresultinfo
+     */
 
-    /*
-     * dbresult
+    /*! @class big_typed_query
      */
     PIKECLASS big_typed_query
       program_flags PROGRAM_USES_PARENT|PROGRAM_NEEDS_PARENT|PROGRAM_DESTRUCT_IMMEDIATE;
@@ -2511,9 +2529,9 @@ OCIError *get_global_error_handle(void)
 	}
 #endif
       }
-
-      /* END big_typed_query */
     }
+    /*! @endclass big_typed_query
+     */
 
     PIKEFUN void create(string query)
       flags ID_PROTECTED;
@@ -2592,9 +2610,9 @@ OCIError *get_global_error_handle(void)
       if(rc != OCI_SUCCESS)
 	ora_error_handler(dbcon->error_handle, rc, 0);
     }
-
-    /* END compile_query */
   }
+  /*! @endclass compile_query
+   */
 
   PIKEFUN void create(string|void host, string|void database,
 		      string|void uid, string|void passwd)
@@ -2690,9 +2708,9 @@ OCIError *get_global_error_handle(void)
     if(ret != OCI_SUCCESS)
       ora_error_handler(dbcon->error_handle, ret, "OCITransCommit");
   }
-
-/* END oracle */
 }
+/*! @endclass oracle
+ */
 
 PIKE_MODULE_INIT
 {
@@ -2788,6 +2806,9 @@ PIKE_MODULE_EXIT
 
   call_atexits();
 }
+
+/*! @endmodule Oracle
+ */
 
 #ifdef DYNAMIC_MODULE
 
