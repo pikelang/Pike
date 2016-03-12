@@ -618,7 +618,7 @@ OCIError *get_global_error_handle(void)
       }
     }
 
-    PIKEFUN string _sprintf(int c)
+    PIKEFUN string _sprintf(int c, mapping o)
       flags ID_PROTECTED;
     {
       char tmp[100];
@@ -822,7 +822,7 @@ OCIError *get_global_error_handle(void)
       }
     }
 
-    PIKEFUN string _sprintf(int mode)
+    PIKEFUN string _sprintf(int mode, mapping m)
       flags ID_PROTECTED;
     {
       char buffer[200];
@@ -930,7 +930,7 @@ OCIError *get_global_error_handle(void)
       assign_svalue(& THIS_DBNULL->type, type);
     }
 
-    PIKEFUN string _sprintf(int mode)
+    PIKEFUN string _sprintf(int mode, mapping o)
       flags ID_PROTECTED;
     {
       if(mode != 'O') {
