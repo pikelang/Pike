@@ -642,8 +642,6 @@ OCIError *get_global_error_handle(void)
 	Pike_error("Attempt to read from an uninitialized LOB.\n");
       }
 
-      pop_n_elems(args);
-
       if((ret = OCILobGetLength(dbcon->context, dbcon->error_handle,
 				THIS_DBLOB->lob, &loblen)) != OCI_SUCCESS) {
 	OWERR("OCILobGetLength failed.\n");
@@ -722,11 +720,6 @@ OCIError *get_global_error_handle(void)
 
       if (!THIS_DBLOB->lob) {
 	Pike_error("Attempt to write to an uninitialized LOB.\n");
-      }
-
-      if (args > 1) {
-	pop_n_elems(args - 1);
-	args = 1;
       }
 
 #ifdef OCI_UTF16ID
@@ -1171,8 +1164,7 @@ OCIError *get_global_error_handle(void)
 	if(rc != OCI_SUCCESS)
 	  ora_error_handler(dbcon->error_handle, rc, "OCIAttrGet");
 
-	pop_n_elems(args);
-	push_int(rows);
+        push_int(rows);
       }
 
       PIKEFUN int num_fields()
@@ -1208,8 +1200,7 @@ OCIError *get_global_error_handle(void)
 
 	  dbquery->cols = columns; /* -1 ? */
 	}
-	pop_n_elems(args);
-	push_int(dbquery->cols);
+        push_int(dbquery->cols);
       }
 
       static sb4 output_callback(struct inout *inout,
@@ -1356,9 +1347,7 @@ OCIError *get_global_error_handle(void)
 
 	OWERR("%s\n",__FUNCTION__);
 
-	pop_n_elems(args);
-
-	if(!dbquery->field_info)
+        if(!dbquery->field_info)
 	{
 	  /* Get the number of rows */
 	  if(dbquery->cols == -2)
@@ -1903,8 +1892,7 @@ OCIError *get_global_error_handle(void)
       PIKEFUN int eof()
       {
 	struct Oracle_oracle_compile_query_struct *dbquery = THIS_RESULT_QUERY;
-	pop_n_elems(args);
-	/* Note: Valid OCI statement types start at 1.
+        /* Note: Valid OCI statement types start at 1.
 	 *       We use 0 to indicate EOF.
 	 */
 	push_int(!dbquery->query_type);
@@ -1920,9 +1908,7 @@ OCIError *get_global_error_handle(void)
 
 	OWERR("%s ..",__FUNCTION__);
 
-	pop_n_elems(args);
-
-	if (!dbquery->query_type) {
+        if (!dbquery->query_type) {
 	  /* EOF already reached. */
 	  OWERR(" EOF already reached.\n", rc);
 	  push_undefined();
