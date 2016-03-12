@@ -701,7 +701,7 @@ OCIError *get_global_error_handle(void)
 
     PIKEFUN mixed cast(string s)
     {
-      if(!strcmp(s->str, "string")) {
+      if(s == literal_string_string) {
 	apply_current(f_Oracle_oracle_LOB_read_fun_num, 0);
 	return;
       }
