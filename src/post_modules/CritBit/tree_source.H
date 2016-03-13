@@ -262,12 +262,12 @@ DOCEND()
     PIKEFUN array _random(function random_string, function random) {
         cb_node_t node;
 
-        push_int(THIS->tree.root->size);
-        apply_svalue(random, 1);
-        if( TYPEOF(Pike_sp[-1])!=T_INT )
-          Pike_error("Wrong return type from random.\n");
-
         if (THIS->tree.root) {
+            push_int(THIS->tree.root->size);
+            apply_svalue(random, 1);
+            if( TYPEOF(Pike_sp[-1])!=T_INT )
+              Pike_error("Wrong return type from random.\n");
+
             node = cb_get_nth(THIS->tree.root, Pike_sp[-1].u.integer);
             if (node) {
 		CB_PUSH_TRANSFORM_KEY(node->key);

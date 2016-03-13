@@ -505,8 +505,9 @@ class MultiTree {
     }
 
     mixed _random(function rnd_str, function rnd) {
-        int n = rnd(sizeof(this));
-	return nth(n);
+        int n = sizeof(this);
+        if (!n) return UNDEFINED;
+	return nth(rnd(n));
     }
 
     int first() {
