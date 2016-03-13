@@ -2207,7 +2207,7 @@ PIKECLASS RandomInterface
   }
 
   /*! @decl mixed random(object o)
-   *!   If random is called with an object, @[lfun::random] will be
+   *!   If random is called with an object, @[lfun::_random] will be
    *!   called in the object.
    *!
    *! @seealso

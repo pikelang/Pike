@@ -1358,13 +1358,21 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *!   @[Debug.size_object()], @[lfun::_sizeof()]
  */
 
-/*! @decl mixed lfun::_random()
+/*! @decl mixed lfun::_random(function(int(0..):string(8bit)) random_string, @
+ *!                           function(mixed:mixed) random)
  *!   Called by @[random()]. Typical use is when the object implements
  *!   a ADT, when a call to this lfun should return a random member of
  *!   the ADT or range implied by the ADT.
  *!
+ *! @param random_string
+ *!   A @[RandomInterface()->random_string] function that returns
+ *!   a string(8bit) of the specified length.
+ *!
+ *! @param random
+ *!   A @[RandomInterface()->random] function.
+ *!
  *! @seealso
- *!   @[predef::random()]
+ *!   @[predef::random()], @[RandomInterface]
  */
 
 /**** END FAKE LFUNS ****/
