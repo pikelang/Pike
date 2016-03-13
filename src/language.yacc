@@ -4794,6 +4794,7 @@ static node *lexical_islocal(struct pike_string *str)
 static node *safe_inc_enum(node *n)
 {
   JMP_BUF recovery;
+  node *ret;
   STACK_LEVEL_START(0);
 
   if (SETJMP(recovery)) {
@@ -4808,9 +4809,9 @@ static node *safe_inc_enum(node *n)
   UNSETJMP(recovery);
   STACK_LEVEL_DONE(1);
   free_node(n);
-  n = mkconstantsvaluenode(Pike_sp-1);
+  ret = mkconstantsvaluenode(Pike_sp-1);
   pop_stack();
-  return n;
+  return ret;
 }
 
 static node *find_versioned_identifier(struct pike_string *identifier,
