@@ -362,8 +362,8 @@ PIKECLASS Cipher
 
     /*! @decl string(0..255) make_key()
      *!
-     *! Generate a key by calling @[Crypto.Random.random_string] and
-     *! initialize this object for encryption with that key.
+     *! Generate a key by calling @[random_string] and initialize this
+     *! object for encryption with that key.
      *!
      *! @returns
      *!   The generated key. The key memory will be cleared before
