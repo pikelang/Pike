@@ -67,7 +67,7 @@ dnl Test that all characters are both encodable and decodeable.
 test_huffman_simple([[(string)enumerate(256)]])
 
 dnl Test that we don't have any strange special cases.
-test_do(add_constant("test_data", Crypto.Random.random_string(8192)))
+test_do(add_constant("test_data", random_string(8192)))
 test_huffman_simple([[test_data]])
 
 test_do(add_constant("test_data"));
