@@ -7,7 +7,7 @@ inherit G.Object;
 //! font-options
 //! float resolution
 
-signal composite_changed;
+signal composited_changed;
 signal size_changed;
 
 void create()
