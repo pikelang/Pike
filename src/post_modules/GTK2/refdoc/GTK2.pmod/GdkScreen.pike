@@ -4,7 +4,7 @@
 //!
 //!
 //!  Signals:
-//! @b{composite_changed@}
+//! @b{composited_changed@}
 //!
 //! @b{size_changed@}
 //!
