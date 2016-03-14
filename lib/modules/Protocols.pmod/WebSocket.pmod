@@ -416,7 +416,7 @@ class Connection {
     void send(Frame frame) {
         if (state != OPEN) error("WebSocket connection is not open: %O.\n", this);
         if (masking && sizeof(frame->data))
-            frame->mask = Crypto.Random.random_string(4);
+            frame->mask = random_string(4);
         WS_WERR(2, "sending %O\n", frame);
         frame->encode(out);
         if (frame->opcode == FRAME_CLOSE) {

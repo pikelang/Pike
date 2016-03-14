@@ -352,7 +352,7 @@ string(7bit) hash(string(8bit) password, string(7bit)|void scheme,
 
   // NB: The salt must be printable.
   string(7bit) salt =
-    MIME.encode_base64(Crypto.Random.random_string(salt_size))[..salt_size-1];
+    MIME.encode_base64(random_string(salt_size))[..salt_size-1];
 
   string(8bit) hash = crypt_hash(password, salt, rounds);
 

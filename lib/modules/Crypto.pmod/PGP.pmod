@@ -57,7 +57,6 @@ protected mapping decode_public_key(string|Stdio.Buffer s) {
     // p, q, g and y
     r->key = Crypto.DSA()->set_public_key(read_number(b), read_number(b),
                                           read_number(b), read_number(b));
-    r->key->random = Crypto.Random.random_string;
   }
     break;
   case 18:

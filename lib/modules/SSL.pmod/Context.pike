@@ -203,8 +203,8 @@ multiset(int) extensions = (<
 //! Used to generate random cookies for the hello-message. If we use
 //! the RSA keyexchange method, and this is a server, this random
 //! number generator is not used for generating the master_secret. By
-//! default set to @[Crypto.Random.random_string].
-function(int(0..):string(8bit)) random = Crypto.Random.random_string;
+//! default set to @[random_string].
+function(int(0..):string(8bit)) random = random_string;
 
 //! Cipher suites we want to support, in order of preference, best
 //! first. By default set to all suites with at least 128 bits cipher

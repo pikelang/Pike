@@ -30,7 +30,7 @@ class State {
   protected Gmp.mpz y; // Public key
   protected Gmp.mpz x; // Private key
 
-  protected function(int(0..):string(8bit)) random = .Random.random_string;
+  protected function(int(0..):string(8bit)) random = random_string;
 
   Gmp.mpz get_p() { return p; } //! Returns the DSA modulo (p).
   Gmp.mpz get_q() { return q; } //! Returns the DSA group order (q).
@@ -39,7 +39,7 @@ class State {
   Gmp.mpz get_x() { return x; } //! Returns the DSA private key (x).
 
   //! Sets the random function, used to generate keys and parameters, to
-  //! the function @[r]. Default is @[Crypto.Random.random_string].
+  //! the function @[r]. Default is @[random_string].
   this_program set_random(function(int(0..):string(8bit)) r)
   {
     random = r;

@@ -1,11 +1,10 @@
 #pike __REAL_VERSION__
-#require constant(Crypto.Random)
 
 import ".";
 
 Raw raw;
 //FIXME: Unknown what this default password is good for. Probably not needed.
-string pass=MIME.encode_base64(Crypto.Random.random_string(6));
+string pass=MIME.encode_base64(random_string(6));
 
 mapping options;
 

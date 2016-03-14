@@ -41,10 +41,8 @@ class State
   //!   @[set_encrypt_key], @[crypt]
   this_program set_decrypt_key(string(8bit) key, void|int force);
 
-  protected function(int:string(8bit)) random_string;
-
-  //! Generate a key by calling @[Crypto.Random.random_string] and
-  //! initialize the object for encryption with that key.
+  //! Generate a key by calling @[random_string] and initialize the
+  //! object for encryption with that key.
   //!
   //! @returns
   //!   The generated key.
@@ -53,10 +51,6 @@ class State
   //!   @[set_encrypt_key]
   string(8bit) make_key()
   {
-    if (!random_string) {
-      object random = [object]master()->resolv("Crypto.Random");
-      random_string = [function(int:string(8bit))]random->random_string;
-    }
     string(8bit) key = random_string(global::key_size());
     set_encrypt_key(key);
     return key;

@@ -32,7 +32,7 @@ protected class LowState {
   protected Gmp.mpz p;
   protected Gmp.mpz q;
 
-  protected function(int(0..):string(8bit)) random = .Random.random_string;
+  protected function(int(0..):string(8bit)) random = random_string;
 
   Gmp.mpz get_n() { return n; } //! Returns the RSA modulo (n).
   Gmp.mpz get_e() { return e; } //! Returns the RSA public exponent (e).
@@ -44,7 +44,7 @@ protected class LowState {
   Gmp.mpz get_q() { return q; } //! Returns the second RSA prime (q), if known.
 
   //! Sets the random function, used to generate keys and parameters, to
-  //! the function @[r]. Default is @[Crypto.Random.random_string].
+  //! the function @[r]. Default is @[random_string].
   this_program set_random(function(int(0..):string(8bit)) r)
   {
     random = r;

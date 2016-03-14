@@ -3,4 +3,4 @@ inherit .Huffman;
 
 constant name="Huffman (binary)";
 
-string(8bit) data = Crypto.Random.random_string(16384);
+string(8bit) data = random_string(16384);
