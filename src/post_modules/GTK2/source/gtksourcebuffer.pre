@@ -20,8 +20,8 @@ add_global {
 //! GTK2.SourceLanguage language
 //! int max-undo-levels
 
-signal can_redo;
-signal can_undo;
+signal redo;
+signal undo;
 signal highlight_updated;
 signal marker_updated;
 
