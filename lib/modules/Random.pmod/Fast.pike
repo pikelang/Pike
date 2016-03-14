@@ -9,15 +9,17 @@
 inherit Builtin.RandomInterface;
 inherit Nettle.Fortuna : Fortuna;
 
+#if constant(Random.Hardware)
+protected .Interface rnd = .Hardware();
+#else
 protected .Interface rnd = .System();
+#endif
+
 protected int counter;
 
 protected void create()
 {
   counter = 0;
-#if constant(Random.Hardware)
-  reseed(.Hardware()->random_string(32));
-#endif
   reseed(rnd->random_string(32));
 }
 
