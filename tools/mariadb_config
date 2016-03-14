@@ -1,0 +1,61 @@
+#/bin/bash
+
+NTBASE="$NTBUILD/vc9/$NT_PROCESSOR_ARCHITECTURE"
+INCLUDES="-I$NTBASE/include/mariadb -I$NTBASE/include/mariadb/mysql"
+LIBS="-L$NTBASE/lib/mariadb -lmariadb"
+VERSION="5.5.1"
+PLUGINDIR="$NTBASE/mariadb/lib/plugin"
+
+if [ "$#" -lt 1 ]; then
+    cat <<EOF
+Fake MariaDB config for use with sprsh.
+Get compiler flags for using the MariaDB Connector/C.
+Usage: $0 [OPTIONS]
+  --cflags        [$INCLUDES]
+  --include       [$INCLUDES]
+  --libs          [$LIBS]
+  --libs_r        [$LIBS]
+  --version       [$VERSION]
+  --port          [3306]
+  --plugindir     [$PLUGINDIR]
+EOF
+    exit 1
+fi
+
+RES=""
+
+while [ "$#" -ge 1 ]; do
+    case "$1" in
+	--cflags)
+	RES="$RES $INCLUDES"
+	;;
+	--include)
+	RES="$RES $INCLUDES"
+	;;
+	--libs)
+	RES="$RES $LIBS"
+	;;
+	--libs_r)
+	RES="$RES $LIBS"
+	;;
+	--version)
+	echo "$VERSION"
+	exit 0
+	;;
+	--port)
+	echo "3306"
+	exit 0
+	;;
+	--plugindir)
+	echo "$PLUGINDIR"
+	exit 0
+	;;
+	*)
+	echo "Unsupported option: $1." >&2
+	exit 1
+	;;
+    esac
+    shift
+done
+
+echo $RES
