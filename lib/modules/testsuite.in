@@ -1212,10 +1212,14 @@ test_do(add_constant("random",Random.Deterministic(17)->random))
 test_any_equal([[
   string r = "";
   for(int i; i<5; i++)
+  {
+    int n;
     foreach(random(Mapping.Iterator(([1:"1",2:"2",3:"3"])));; string v)
-      r += v;
+      n++;
+    r += n;
+  }
   return r;
-]], "233323123")
+]], "21123")
 test_do(add_constant("random",Random.System()->random))
 
 dnl - Multiset
@@ -1226,10 +1230,14 @@ test_do(add_constant("random",Random.Deterministic(17)->random))
 test_any_equal([[
   string r = "";
   for(int i; i<5; i++)
+  {
+    int n;
     foreach(random(Multiset.Iterator((<2,4,6,8,9>))); int v;)
-      r += v;
+      n++;
+    r += n;
+  }
   return r;
-]], "689946894689689")
+]], "31443")
 test_do(add_constant("random",Random.System()->random))
 
 dnl - Process
