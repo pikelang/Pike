@@ -9,13 +9,13 @@
 //!
 //!
 //!  Signals:
-//! @b{can_redo@}
-//!
-//! @b{can_undo@}
-//!
 //! @b{highlight_updated@}
 //!
 //! @b{marker_updated@}
+//!
+//! @b{redo@}
+//!
+//! @b{undo@}
 //!
 
 inherit GTK2.TextBuffer;
