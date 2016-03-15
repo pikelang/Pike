@@ -1228,19 +1228,27 @@ void close()
 //!   @[timed_async_fetch()], @[async_request()], @[set_callbacks()]
 void async_fetch(function callback,mixed ... extra)
 {
-  if (has_index (headers, "content-length") &&
-      sizeof(buf)-datapos>=(int)headers["content-length"])
-  {
-    // FIXME: This is triggered erroneously for chunked transfer!
+  // There is no body in these requests
+  // FIXME: a response to a HEAD request also does not have a body
+  // and the content-length header must be ignored
+  if (status >= 100 && status < 200 || status == 204 || status == 304 || !con) {
     call_out(callback, 0, this_object(), @extra);
     return;
   }
 
-   if (!con)
-   {
-      call_out(callback, 0, this_object(), @extra); // nothing to do, stupid...
-      return;
-   }
+  // the length is given by chunked encoding if the following is trye
+  // see section 4.4 of rfc 2616
+  int(0..1) ignore_length =
+          !(headers->connection == "close" || (protocol == "HTTP/1.0" && !headers->connection)) &&
+          headers["transfer-encoding"] && headers["transfer-encoding"] != "identity";
+
+  if (!ignore_length && has_index(headers, "content-length")) {
+      if (sizeof(buf)-datapos >= (int)headers["content-length"]) {
+        call_out(callback, 0, this_object(), @extra);
+        return;
+      }
+  }
+
    extra_args=extra;
    request_ok=callback;
    cpos = datapos;
