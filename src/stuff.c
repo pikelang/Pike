@@ -188,38 +188,9 @@ static unsigned INT32 low_rand(void)
   return ranval();
 }
 
-static unsigned INT64 low_rand64(void)
-{
-#if HAS___BUILTIN_IA32_RDRAND32_STEP
-  if( use_rdrnd )
-  {
-    unsigned long long rnd;
-    unsigned int cnt = 0;
-    do{
-      /* We blindly trust that _builtin_ia32_rdrand64_step exists when
-         the 32 bit version does. */
-      if( __builtin_ia32_rdrand64_step( &rnd ) )
-        return rnd;
-    } while(cnt++ < 100);
-
-    /* hardware random unit most likely not healthy.
-       Switch to software random. */
-    use_rdrnd = 0;
-  }
-#endif
-  return ((INT64)ranval()<<32) | ranval();
-}
-
 PMOD_EXPORT unsigned INT32 my_rand(unsigned INT32 limit)
 {
   if(limit==0xffffffff)
     return low_rand();
   return low_rand()%limit;
-}
-
-PMOD_EXPORT unsigned INT64 my_rand64(unsigned INT64 limit)
-{
-  if(limit==0xffffffffffffffff)
-    return low_rand64();
-  return low_rand64()%limit;
 }
