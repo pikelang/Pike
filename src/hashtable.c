@@ -7,7 +7,6 @@
 #include "global.h"
 #include "hashtable.h"
 #include "stralloc.h"
-#include "stuff.h"
 #include "pike_error.h"
 
 static size_t gobble(const struct pike_string *s)

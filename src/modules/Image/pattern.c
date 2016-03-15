@@ -21,7 +21,6 @@
 #include "pike_error.h"
 #include "threads.h"
 #include "builtin_functions.h"
-#include "stuff.h"
 #include "mapping.h"
 #include "constants.h"
 #include "operators.h"

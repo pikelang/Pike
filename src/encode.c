@@ -22,7 +22,6 @@
 #include "module_support.h"
 #include "fsort.h"
 #include "threads.h"
-#include "stuff.h"
 #include "version.h"
 #include "bignum.h"
 #include "pikecode.h"

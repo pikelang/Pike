@@ -25,7 +25,6 @@
 #include "constants.h"
 #include "operators.h"
 #include "builtin_functions.h"
-#include "stuff.h"
 #include "mapping.h"
 #include "cyclic.h"
 #include "pike_types.h"

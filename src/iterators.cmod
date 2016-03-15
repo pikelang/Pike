@@ -24,7 +24,6 @@
 #include "program.h"
 #include "operators.h"
 #include "builtin_functions.h"
-#include "stuff.h"
 #include "constants.h"
 
 #define sp Pike_sp

@@ -12,7 +12,6 @@
 #include "pike_memory.h"
 #include "pike_error.h"
 #include "gc.h"
-#include "stuff.h"
 #include "bignum.h"
 #include "interpret.h"
 #include "operators.h"

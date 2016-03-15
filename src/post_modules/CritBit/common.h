@@ -15,7 +15,6 @@
 #include "array.h"
 #include "operators.h"
 #include "builtin_functions.h"
-#include "stuff.h"
 
 #ifndef CB_NODE_ALLOC
 # define CB_NODE_ALLOC()	((cb_node_t)xalloc(sizeof(cb_node)))
