@@ -422,22 +422,20 @@ PIKECLASS mapping_iterator
 #else /* !PIKE_MAPPING_KEYPAIR_LOOP */
       if(THIS->md && THIS->md->hashsize)
       {
-	size_t k;
-	struct keypair *tmp;
-        THIS->bucket=call_random(THIS->md->hashsize);
-	k=0;
-	for(tmp=THIS->md->hash[THIS->bucket];tmp;tmp=tmp->next) k++;
-	tmp=THIS->md->hash[THIS->bucket];
-	if(k)
-	{
-          k = call_random(k);
-	  while(k--) tmp=tmp->next;
-	}
-	THIS->current=tmp;
+        int count = call_random(THIS->md->size);
+        for(int b=0; b<THIS->md->hashsize; b++)
+          for(struct keypair *k=THIS->md->hash[THIS->bucket]; k; k=k->next)
+            if( count-- < 0 )
+            {
+              THIS->bucket = b;
+              THIS->current = k;
+              goto done;
+            }
       }else{
 	THIS->bucket=-1;
 	THIS->current=0;
       }
+    done:
       step_bucket(THIS);
 #endif /* PIKE_MAPPING_KEYPAIR_LOOP */
       REF_RETURN Pike_fp->current_object;

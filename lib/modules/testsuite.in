@@ -1219,7 +1219,7 @@ test_any_equal([[
     r += n;
   }
   return r;
-]], "21123")
+]], "11312")
 test_do(add_constant("random",Random.System()->random))
 
 dnl - Multiset
