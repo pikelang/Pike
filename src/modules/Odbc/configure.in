@@ -69,17 +69,15 @@ EOF
   	  $with_root/usr/odbc/include $with_root/usr/include/odbc \
           $with_root/usr/include $with_root/include/odbc $with_root/include; do
   	if test -d $bardir/.; then
-  	  if ls $bardir/qeodbc.h >/dev/null 2>&1; then
-  	    pike_cv_odbc_include_dir="$bardir $pike_cv_odbc_include_dir"
-  	  else
-  	    if ls $bardir/isql.h >/dev/null 2>&1; then
-  	      pike_cv_odbc_include_dir="$bardir $pike_cv_odbc_include_dir"
-  	    else
-  	      :
-  	    fi
-  	  fi
-  	else
-  	  :
+	  # Try some common ODBC-specific header files.
+	  for header in sqlext.h qeodbc.h isql.h; do
+	    if test -f "$bardir/$header"; then
+	      pike_cv_odbc_include_dir="$bardir $pike_cv_odbc_include_dir"
+	      break;
+	    else
+	      :
+	    fi
+	  done
   	fi
       done
     ])
