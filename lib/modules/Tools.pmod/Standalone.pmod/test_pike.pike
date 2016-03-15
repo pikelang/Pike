@@ -1389,7 +1389,7 @@ int main(int argc, array(string) argv)
 
     if(errors || verbose>1)
     {
-      log_msg("Failed tests: "+errors+".\n");
+      log_msg("Failed tests: "+errors+".        \n");
     }
 
     log_msg("Total tests: %d (%d tests skipped)\n", successes+errors, skipped);
