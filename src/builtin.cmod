@@ -2189,9 +2189,6 @@ PIKECLASS RandomInterface
 
     count = read_int( m_sizeof(m) );
 
-    /* We could optimize this by not iterating over hash buckets we will
-       not pick a member from. */
-
     NEW_MAPPING_LOOP(m->data)
       {
         if(count-- < 1)
