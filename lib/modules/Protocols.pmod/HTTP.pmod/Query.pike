@@ -671,7 +671,7 @@ this_program thread_request(string server, int port, string query,
       headers=mkmapping(Array.map(indices(headers),lower_case),
 			values(headers));
 
-      if (data!="") headers["content-length"]=sizeof(data);
+      if (data) headers["content-length"]=(string)sizeof(data);
 
       headers=headers_encode(headers);
    }
@@ -759,7 +759,7 @@ this_program sync_request(string server, int port, string query,
 	data = string_to_utf8(data);
       }
 
-      http_headers["content-length"] = sizeof( data );
+      http_headers["content-length"] = (string)sizeof( data );
     }
 
     http_headers = headers_encode( http_headers );
@@ -813,7 +813,7 @@ this_program async_request(string server,int port,string query,
       headers=mkmapping(map(indices(headers),lower_case),
 			values(headers));
 
-      if (data) headers["content-length"]=sizeof(data);
+      if (data) headers["content-length"]=(string)sizeof(data);
 
       headers=headers_encode(headers);
    }
