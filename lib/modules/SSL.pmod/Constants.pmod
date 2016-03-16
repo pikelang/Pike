@@ -1284,6 +1284,9 @@ enum NamedGroup {
   GROUP_brainpoolP384r1			= 27,	// RFC 7027
   GROUP_brainpoolP512r1			= 28,	// RFC 7027
 
+  GROUP_ecdh_x25519			= 29,	// Early assignment.
+  GROUP_ecdh_x448			= 30,	// Early assignment.
+
   GROUP_ffdhe2048			= 256,  // draft-ietf-tls-negotiated-ff-dhe-07
   GROUP_ffdhe3072                       = 257,  // draft-ietf-tls-negotiated-ff-dhe-07
   GROUP_ffdhe4096                       = 258,  // draft-ietf-tls-negotiated-ff-dhe-07
