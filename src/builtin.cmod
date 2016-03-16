@@ -2146,12 +2146,12 @@ PIKECLASS RandomInterface
   PIKEFUN float random(float f)
   {
     if(f<=0.0) RETURN 0.0;
-    INT64 value;
-#if SIZEOF_INT_TYPE > 4
-    value = read_int(0xffffffffffffffff);
-#else
-    value = read_int(0xffffffff) << 32 | read_int(0xffffffff);
-#endif
+    unsigned INT64 value;
+    if (THIS->buffer_bits < 64)
+        fill_int_buffer();
+    value = THIS->int_buffer;
+    THIS->buffer_bits = 0;
+
     RETURN (FLOAT_TYPE)ldexp((double)f * value, -64);
   }
 
