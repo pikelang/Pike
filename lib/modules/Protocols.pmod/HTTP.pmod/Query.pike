@@ -861,6 +861,7 @@ string data(int|void max_length)
 #endif
 
    if (buf=="") return ""; // already emptied
+   if (is_empty_response()) return "";
 
    if (headers["transfer-encoding"] &&
        lower_case(headers["transfer-encoding"])=="chunked")
@@ -1222,21 +1223,19 @@ void close()
   }
 }
 
-//! Fetch all data in background.
-//!
-//! @seealso
-//!   @[timed_async_fetch()], @[async_request()], @[set_callbacks()]
-void async_fetch(function callback,mixed ... extra)
-{
-  // There is no body in these requests
+private int(0..1) is_empty_response() {
   // FIXME: a response to a HEAD request also does not have a body
+  return (status >= 100 && status < 200 || status == 204 || status == 304);
+}
+
+private int(0..1) body_is_fetched() {
+  // There is no body in these requests
   // and the content-length header must be ignored
   if (status >= 100 && status < 200 || status == 204 || status == 304 || !con) {
-    call_out(callback, 0, this_object(), @extra);
-    return;
+    return 1;
   }
 
-  // the length is given by chunked encoding if the following is trye
+  // the length is given by chunked encoding if the following is true
   // see section 4.4 of rfc 2616
   int(0..1) ignore_length =
           !(headers->connection == "close" || (protocol == "HTTP/1.0" && !headers->connection)) &&
@@ -1244,9 +1243,22 @@ void async_fetch(function callback,mixed ... extra)
 
   if (!ignore_length && has_index(headers, "content-length")) {
       if (sizeof(buf)-datapos >= (int)headers["content-length"]) {
-        call_out(callback, 0, this_object(), @extra);
-        return;
+        return 1;
       }
+  }
+
+  return 0;
+}
+
+//! Fetch all data in background.
+//!
+//! @seealso
+//!   @[timed_async_fetch()], @[async_request()], @[set_callbacks()]
+void async_fetch(function callback,mixed ... extra)
+{
+  if (body_is_fetched()) {
+    call_out(callback, 0, this, @extra);
+    return;
   }
 
    extra_args=extra;
@@ -1269,18 +1281,8 @@ void async_fetch(function callback,mixed ... extra)
 void timed_async_fetch(function(object, mixed ...:void) ok_callback,
 		       function(object, mixed ...:void) fail_callback,
 		       mixed ... extra) {
-
-  if (has_index (headers, "content-length") &&
-      sizeof(buf)-datapos>=(int)headers["content-length"])
-  {
-    call_out(ok_callback, 0, this_object(), @extra);
-    return;
-  }
-
-  if (!con)
-  {
-    // nothing to do, stupid...
-    call_out(fail_callback, 0, this_object(), @extra);
+  if (body_is_fetched()) {
+    call_out(ok_callback, 0, this, @extra);
     return;
   }
 
