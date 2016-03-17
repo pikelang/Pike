@@ -856,11 +856,13 @@ protected class EventStreamMonitor
 	if((path == p) || has_prefix(path, p + "/")) {
 	  MON_WERR("Path %O already monitored via path %O.\n", path, p);
 	  found = p;
+	  break;
 	}
       }
       if (found) {
 	MON_WERR("Path %O is accellerated via %O.\n", path, found);
 	accellerated = 1;
+	monitors[path] = this;
         check();
 	return;
       }
@@ -876,6 +878,7 @@ protected class EventStreamMonitor
       };
 
     if (!err) {
+      monitors[path] = this;
       check();
       return;
     }
