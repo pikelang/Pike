@@ -1,41 +1,78 @@
 START_MARKER
 
+test_do( add_constant("real_random", random) )
+
 dnl int random(int)
 test_eq(random(-1), 0)
 test_eq(random(0), 0)
 test_eq(random(1), 0)
-test_true([[ random(0x7fffffff)+1 ]])
-test_true([[ random(0x7ffffffff)+1 ]])
-test_any([[int e,d;for(e=0;e<1000;e++){d=random(10); if(d<0 || d>=10) return 0;} return 1]],1)
+test_do( add_constant("random", Random.Deterministic(42)->random) )
+test_eq( random(0x7fffffff), 1351601066)
+test_eq( random(10), 1)
+test_eq( random(10), 4)
+test_eq( random(10), 5)
+test_eq( random(0x7ffffffff), 0)
+test_do( add_constant("random", real_random) )
 
 dnl float random(float)
 test_eq(random(-1.0), 0.0)
 test_eq(random(0.0), 0.0)
-test_any([[int e; float d; for(e=0;e<1000;e++){d=random(10.0); if(d<0.0 || d>=10.0) return 0;} return 1]],1)
+test_do( add_constant("random", Random.Deterministic(42)->random) )
+test_eq(sprintf("%.4f", random(10.0)), "7.7220")
+test_eq(sprintf("%.4f", random(10.0)), "3.9002")
+test_eq(sprintf("%.4f", random(10.0)), "2.9730")
+test_do( add_constant("random", real_random) )
+
 
 dnl mixed random(array)
 test_eval_error(random(({})))
 test_eq( random(({7})), 7 )
-test_eq([[ random( ({11,21,31,41}) ) % 10 ]], 1)
-test_eq([[ random( ({11,21,31,41}) ) % 10 ]], 1)
-test_eq([[ random( ({11,21,31,41}) ) % 10 ]], 1)
-test_eq([[ random( ({11,21,31,41}) ) % 10 ]], 1)
+test_do( add_constant("random", Random.Deterministic(20)->random) )
+test_any([[
+  string res = "";
+  for(int i; i<10; i++)
+    res += random( ({1,2,3,4}) );
+  return res;
+]], "1341312312")
+test_do( add_constant("random", real_random) )
 
 dnl mixed random(multiset)
 test_eval_error(random((<>)))
-test_eq( random(({8})), 8 )
-test_eq([[ random( (<11,21,31,41>) ) % 10 ]], 1)
-test_eq([[ random( (<11,21,31,41>) ) % 10 ]], 1)
-test_eq([[ random( (<11,21,31,41>) ) % 10 ]], 1)
-test_eq([[ random( (<11,21,31,41>) ) % 10 ]], 1)
+test_eq( random((<8>)), 8 )
+test_do( add_constant("random", Random.Deterministic(11)->random) )
+test_any([[
+  mapping lex=([]);
+  string res = "";
+  multiset m = (< "a","b","c","d" >);
+  for(int i; i<10; i++)
+  {
+    string s = random(m);
+    if( !lex[s] )
+      lex[s] = sizeof(lex);
+    res += lex[s];
+  }
+  return res;
+]], "0121234231")
+test_do( add_constant("random", real_random) )
 
 dnl array random(mapping)
 test_eval_error(random(([])))
 test_equal( random(([5:6])), ({5,6}) )
-test_eq([[ `-( @random( ([11:21,31:41]) )) ]], -10)
-test_eq([[ `-( @random( ([11:21,31:41]) )) ]], -10)
-test_eq([[ `-( @random( ([11:21,31:41]) )) ]], -10)
-test_eq([[ `-( @random( ([11:21,31:41]) )) ]], -10)
+test_do( add_constant("random", Random.Deterministic(11)->random) )
+test_any([[
+  mapping lex=([]);
+  string res = "";
+  mapping m = ([ "1":1, "2":2, "3":3, "4":4 ]);
+  for(int i; i<10; i++)
+  {
+    string s = random(m)[0];
+    if( !lex[s] )
+      lex[s] = sizeof(lex);
+    res += lex[s];
+  }
+  return res;
+]], "0121234231")
+test_do( add_constant("random", real_random) )
 
 dnl mixed random(object)
 test_eq([[ random( class() { function _random(function a, function b) { return a; }}() ) ]], random_string)
@@ -55,7 +92,6 @@ test_any([[
   for(int i; i<100; i++) x &= ~random_string(16);
   return x;
 ]], "\0"*16)
-
 
 
 test_do([[
@@ -148,5 +184,7 @@ test_any([[
     sz += sizeof(r->random_string(9001));
   return sz;
 ]], 1152128)
+
+test_do( add_constant("real_random") )
 
 END_MARKER
