@@ -1343,9 +1343,17 @@ PMOD_EXPORT int low_object_index_no_free(struct svalue *to,
       if (i->func.const_info.offset >= 0) {
 	struct svalue *s;
 	s=& PROG_FROM_INT(p,f)->constants[i->func.const_info.offset].sval;
+	/* NB: If the program isn't finished, we can't rely on
+	 *     PROGRAM_USES_PARENT being set, so use the safe
+	 *     option of always using a function pointer in
+	 *     that case.
+	 *     Fixes [bug 7664].
+	 */
 	if(TYPEOF(*s) == T_PROGRAM &&
-	   (s->u.program->flags & PROGRAM_USES_PARENT))
+	   ((s->u.program->flags & (PROGRAM_USES_PARENT|PROGRAM_FINISHED)) !=
+	    PROGRAM_FINISHED))
 	{
+	  /* Don't lose the parent as the program needs it. */
           SET_SVAL(*to, T_FUNCTION, f, object, o);
 	  add_ref(o);
 	}else{
