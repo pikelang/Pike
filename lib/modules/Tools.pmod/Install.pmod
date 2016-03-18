@@ -69,7 +69,7 @@ array(string) features()
 	     "X", "Bz2", "COM", "Fuse", "GTK2", "Gettext", "HTTPAccept",
 	     "Kerberos", "SQLite", "_Image_SVG", "_Regexp_PCRE", "GSSAPI",
 	     "Protocols.DNS_SD", "Gnome2", "MIME", "Standards.JSON",
-	     "VCDiff", "ZXID" }),
+	     "VCDiff", "ZXID", "System.FSEvents", "System.Inotify" }),
 	  string modname)
   {
     catch

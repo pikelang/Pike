@@ -394,6 +394,8 @@ int main(int num, array(string) args) {
   F(System.setpwent);
   F(System.setrlimit);
   F(System.usleep);
+  F(System.FSEvents);
+  F(System.Inotify);
   // System.CPU_TIME_IS_THREAD_LOCAL
   // System.Memory.shmat
   // System.Memory.PAGE_SIZE
