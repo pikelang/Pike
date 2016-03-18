@@ -757,9 +757,8 @@ protected void eventstream_callback(string path, int flags, int event_id)
   MON_WERR("Normalized path: %O\n", path);
 
   int monitor_flags;
-
   if (flags & System.FSEvents.kFSEventStreamEventFlagMustScanSubDirs)
-    monitor_flags &= MF_RECURSE;
+    monitor_flags |= MF_RECURSE;
 
   int found;
   string checkpath = path;
