@@ -1812,12 +1812,15 @@ static void dither_floyd_steinberg_firstline(struct nct_dither *dith,
    int i;
 
    er=dith->u.floyd_steinberg.errors;
+   push_random_string(dith->rowlen*2*3);
+   unsigned INT16 *rnd = (unsigned INT16*)Pike_sp[-1].u.string->str;
    for (i=0; i<dith->rowlen; i++)
    {
-      er[i].r = (float)(my_rand(65536)*(1.0/65536)-0.49999);
-      er[i].g = (float)(my_rand(65536)*(1.0/65536)-0.49999);
-      er[i].b = (float)(my_rand(65536)*(1.0/65536)-0.49999);
+      er[i].r = (float)(rnd[i*3+0]*(1.0/65536)-0.49999);
+      er[i].g = (float)(rnd[i*3+1]*(1.0/65536)-0.49999);
+      er[i].b = (float)(rnd[i*3+2]*(1.0/65536)-0.49999);
    }
+   pop_stack();
 
    er=dith->u.floyd_steinberg.nexterrors;
    for (i=0; i<dith->rowlen; i++) er[i].r=er[i].g=er[i].b=0.0;
