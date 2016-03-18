@@ -919,7 +919,7 @@ OCIError *get_global_error_handle(void)
       struct pike_string *null_string = make_shared_string("Null");
       low_inherit(get_sql_null_prog(), NULL, -1, 0, 0, null_string);
       free_string(null_string);
-      /*! @constant is_oracle_null
+      /*! @decl constant is_oracle_null
        */
       add_integer_constant("is_oracle_null", 1, 0);
     }
