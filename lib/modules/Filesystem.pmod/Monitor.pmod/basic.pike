@@ -671,6 +671,7 @@ protected class Monitor(string path,
 	this::files = files;
 	foreach(files, string file) {
 	  file = canonic_path(Stdio.append_path(path, file));
+	  if (filter_file(file)) continue;
 	  if (monitors[file]) {
 	    // There's already a monitor for the file.
 	    // Assume it has already notified about existance.
@@ -1416,7 +1417,7 @@ int(0..1) is_monitored(string path)
 //!   @[file_deleted()], @[stable_data_change()]
 protected int(0..1) check_monitor(Monitor m, MonitorFlags|void flags)
 {
-  return m->check(flags);
+  return m && m->check(flags);
 }
 
 //! Check all monitors for changes.
