@@ -29,6 +29,7 @@
 #include "stuff.h"
 #include "module_support.h"
 #include "pike_types.h"
+#include "constants.h"
 
 #include "image.h"
 
@@ -2196,6 +2197,20 @@ WARN_TRACE(26)
 
 /* special modes */
 
+/* Generates a random string of lenght len using the current
+   random_string() function. */
+static void push_random_string(unsigned len)
+{
+  struct svalue *random =
+    simple_mapping_string_lookup(get_builtin_constants(), "random_string");
+  if(!random || (TYPEOF(*random) != T_FUNCTION))
+    Pike_error("Unable to resolve random function.\n");
+  push_int(len);
+  apply_svalue(random, 1);
+  if(TYPEOF(Pike_sp[-1])!=T_STRING || Pike_sp[-1].u.string->len != len)
+    Pike_error("Couldn't generate random string.\n");
+}
+
 static void lm_dissolve(rgb_group *s,rgb_group *l,rgb_group *d,
 			rgb_group *sa,rgb_group *la,rgb_group *da,
 			int len,double alpha)
@@ -2216,39 +2231,52 @@ static void lm_dissolve(rgb_group *s,rgb_group *l,rgb_group *d,
 	 smear_color(da,white,len);
       }
       else
+      {
+         push_random_string(len*8);
+         UINT64 *rnd = (UINT64*)Pike_sp[-1].u.string->str;
 	 while (len--)
 	 {
-            if (my_rand(255*255) <
+            if (rnd[len]%(255*255) <
 		(unsigned)(la->r*87 + la->g*127 + la->b*41))
 	       *d=*l,*da=white;
 	    else
 	       *d=*s,*da=*sa;
 	    l++; s++; la++; sa++; da++; d++;
-	 }
+         }
+         pop_stack();
+      }
    }
    else
    {
       int v = DOUBLE_TO_INT(COLORMAX*alpha);
       if (!la)  /* no layer alpha => full opaque */
+      {
+         push_random_string(len);
+         unsigned char *rnd = (unsigned char*)Pike_sp[-1].u.string->str;
 	 while (len--)
 	 {
-            if (my_rand(256) < (unsigned)v)
+            if (rnd[len] < (unsigned)v)
 	       *d=*l,*da=white;
 	    else
 	       *d=*s,*da=*sa;
 	    l++; s++; sa++; da++; d++;
-	 }
+         }
+         pop_stack();
+      }
       else
       {
+         push_random_string(len*8);
+         UINT64 *rnd = (UINT64*)Pike_sp[-1].u.string->str;
 	 while (len--)
 	 {
-            if (my_rand(255*255) <
+            if (rnd[len]%(255*255) <
 		(unsigned)((la->r*87 + la->g*127 + la->b*41)>>8)*v)
 	       *d=*l,*da=white;
 	    else
 	       *d=*s,*da=*sa;
 	    l++; s++; la++; sa++; da++; d++;
-	 }
+         }
+         pop_stack();
       }
    }
 }
