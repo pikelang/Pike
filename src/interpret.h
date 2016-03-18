@@ -333,6 +333,7 @@ PMOD_EXPORT extern const char msg_pop_neg[];
   }while(0)
 
 #define push_empty_string() ref_push_string(empty_pike_string)
+PMOD_EXPORT void push_random_string(unsigned len);
 
 #define push_type_value(S) do{						\
     struct pike_type *_=(S);						\

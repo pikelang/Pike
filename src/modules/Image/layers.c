@@ -2197,20 +2197,6 @@ WARN_TRACE(26)
 
 /* special modes */
 
-/* Generates a random string of lenght len using the current
-   random_string() function. */
-static void push_random_string(unsigned len)
-{
-  struct svalue *random =
-    simple_mapping_string_lookup(get_builtin_constants(), "random_string");
-  if(!random || (TYPEOF(*random) != T_FUNCTION))
-    Pike_error("Unable to resolve random function.\n");
-  push_int(len);
-  apply_svalue(random, 1);
-  if(TYPEOF(Pike_sp[-1])!=T_STRING || Pike_sp[-1].u.string->len != len)
-    Pike_error("Couldn't generate random string.\n");
-}
-
 static void lm_dissolve(rgb_group *s,rgb_group *l,rgb_group *d,
 			rgb_group *sa,rgb_group *la,rgb_group *da,
 			int len,double alpha)
