@@ -620,11 +620,17 @@ protected class Monitor(string path,
 	if (files) {
 	  foreach(files, string file) {
 	    file = canonic_path(Stdio.append_path(path, file));
-	    if (monitors[file]) {
+	    if (Monitor submon = monitors[file]) {
 	      // Adjust next_poll, so that the monitor will be checked soon.
-	      monitors[file]->next_poll = time(1)-1;
-	      adjust_monitor(monitors[file]);
-	      delay = 1;
+	      // Accelerated monitors will never get polled so check them
+	      // right away.
+	      if (submon->accellerated) {
+		submon->check(flags);
+	      } else {
+		submon->next_poll = time(1)-1;
+		adjust_monitor(submon);
+		delay = 1;
+	      }
 	    }
 	  }
 	}
