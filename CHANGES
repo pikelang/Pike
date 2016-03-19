@@ -162,9 +162,10 @@ o Removed add_function, pike_add_function, pike_add_function2,
   remaining few API:s where text types were used. Use ADD_FUNCTION and
   PIKE_MAP_VARIABLE instead.
 
-o Removed my_rand and my_srand are removed. Use the random functions
+o Removed the functions my_rand and my_srand. Use the random functions
   on the stack for _random lfuns, the push_random_string or look up
-  the random function from get_builtin_constants().
+  the random function from get_builtin_constants(). For deterministic
+  pseudo random, create a private Random.Deterministic object.
 
 
 Building and installing
