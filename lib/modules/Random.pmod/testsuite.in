@@ -13,7 +13,7 @@ test_eq( random(10), 4)
 test_eq( random(10), 5)
 test_eq( random(0x7ffffffff), 1923069344)
 test_eq( random(0x7fffffffffffffff), 1675123958)
-test_eq( random(0x7ffffffffffffffff), 37733899843098716456)
+test_eq( random(0x7ffffffffffffffff), 6408060475126008899)
 test_do( add_constant("random", real_random) )
 
 dnl float random(float)
