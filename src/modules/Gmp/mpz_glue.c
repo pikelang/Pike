@@ -2046,20 +2046,17 @@ static void mpzmod_hamdist(INT32 args)
 static void mpzmod_random(INT32 args)
 {
   DECLARE_THIS();
-  struct object *res = 0;   /* Make gcc happy. */
 
   if(mpz_sgn(THIS) <= 0)
     Pike_error("Random on negative number.\n");
 
   /* On stack: random_string, random */
   pop_stack();
-
-  push_object(res=fast_clone_object(THIS_PROGRAM));
-
-  stack_swap();
-
-  if(TYPEOF(sp[-1]) != T_FUNCTION)
+    if(TYPEOF(sp[-1]) != T_FUNCTION)
     Pike_error("_random called with non-function argument.\n");
+  struct object *res=fast_clone_object(THIS_PROGRAM);
+  push_object(res);
+  stack_swap();
 
   /* We add four to assure reasonably uniform randomness */
   unsigned bytes = mpz_size(THIS)*sizeof(mp_limb_t) + 4;
