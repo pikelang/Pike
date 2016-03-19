@@ -29,7 +29,6 @@
 #include "stuff.h"
 #include "module_support.h"
 #include "pike_types.h"
-#include "constants.h"
 
 #include "image.h"
 
