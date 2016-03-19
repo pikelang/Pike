@@ -361,6 +361,10 @@ void debug_free_type(struct pike_type *t)
       debug_free_type_preamble (t);
       goto loop;
 
+    case PIKE_T_AUTO:
+      if (!car)
+	break;
+      /* FALL_THROUGH */
     case T_ARRAY:
     case T_MULTISET:
     case T_NOT:
@@ -638,6 +642,7 @@ static inline struct pike_type *debug_mk_type(unsigned INT32 type,
   case T_TYPE:
   case T_PROGRAM:
   case T_STRING:
+  case PIKE_T_AUTO:
     debug_malloc_pass(car);
     break;
 
@@ -1036,6 +1041,7 @@ void debug_pop_type_stack(unsigned int expected)
   case T_MIXED:
   case T_VOID:
   case T_ZERO:
+  case PIKE_T_AUTO:
   case PIKE_T_UNKNOWN:
   case '0':
   case '1':
