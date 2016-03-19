@@ -126,7 +126,8 @@ struct neo_colortable
       } floyd_steinberg;
       struct nctd_randomcube
       {
-	 int r,g,b;
+         int r,g,b;
+         struct svalue *rnd;
       } randomcube;
       struct nctd_ordered
       {

@@ -39,7 +39,7 @@
 #include "operators.h"
 #include "bignum.h"
 #include "pike_types.h"
-#include "stuff.h"
+#include "constants.h"
 
 #include "image.h"
 #include "colortable.h"
@@ -1842,17 +1842,31 @@ static void dither_floyd_steinberg_firstline(struct nct_dither *dith,
    }
 }
 
+static int randomcube_rnd(struct nct_dither *dith, int limit)
+{
+  push_int(limit);
+  apply_svalue(dith->u.randomcube.rnd, 1);
+  if(TYPEOF(Pike_sp[-1])!=T_INT)
+    Pike_error("Couldn't generate random number.\n");
+  int value = Pike_sp[-1].u.integer;
+  pop_stack();
+  return value;
+}
+
 static rgbl_group dither_randomcube_encode(struct nct_dither *dith,
 					   int UNUSED(rowpos),
 					   rgb_group s)
 {
    rgbl_group rgb;
    int i;
-   i=(int)(s.r-my_rand(dith->u.randomcube.r*2-1)+dith->u.randomcube.r+1);
+   i=(int)(s.r-randomcube_rnd(dith, dith->u.randomcube.r*2-1)+
+           dith->u.randomcube.r+1);
    rgb.r=i<0?0:(i>255?255:i);
-   i=(int)(s.g-my_rand(dith->u.randomcube.g*2-1)+dith->u.randomcube.g+1);
+   i=(int)(s.g-randomcube_rnd(dith, dith->u.randomcube.g*2-1)+
+           dith->u.randomcube.g+1);
    rgb.g=i<0?0:(i>255?255:i);
-   i=(int)(s.b-my_rand(dith->u.randomcube.b*2-1)+dith->u.randomcube.b+1);
+   i=(int)(s.b-randomcube_rnd(dith, dith->u.randomcube.b*2-1)+
+           dith->u.randomcube.b+1);
    rgb.b=i<0?0:(i>255?255:i);
    return rgb;
 }
@@ -1863,7 +1877,7 @@ static rgbl_group dither_randomgrey_encode(struct nct_dither *dith,
 {
    rgbl_group rgb;
    int i;
-   int err = -(int)(my_rand(dith->u.randomcube.r*2-1)+
+   int err = -(int)(randomcube_rnd(dith, dith->u.randomcube.r*2-1)+
 		    dith->u.randomcube.r+1);
    i=(int)(s.r+err);
    rgb.r=i<0?0:(i>255?255:i);
@@ -1986,10 +2000,16 @@ int image_colortable_initiate_dither(struct neo_colortable *nct,
 	 fprintf(stderr, "COLORTABLE image_colortable_initiate_dither: "
 		 "RANDOMCUBE\n");
 #endif /* COLORTABLE_DEBUG */
-	 dith->u.randomcube=THIS->du.randomcube;
-
-	 dith->encode=dither_randomcube_encode;
-
+         dith->u.randomcube=THIS->du.randomcube;
+         dith->encode=dither_randomcube_encode;
+         {
+           struct svalue *rnd =
+             simple_mapping_string_lookup(get_builtin_constants(), "random");
+           if(!rnd || (TYPEOF(*rnd) != T_FUNCTION))
+             Pike_error("Unable to resolve random function.\n");
+           rnd->u.refs++;
+           dith->u.randomcube.rnd = rnd;
+         }
 	 return 1;
 
       case NCTD_RANDOMGREY:
@@ -1997,10 +2017,16 @@ int image_colortable_initiate_dither(struct neo_colortable *nct,
 	 fprintf(stderr, "COLORTABLE image_colortable_initiate_dither: "
 		 "RANDOMGREY\n");
 #endif /* COLORTABLE_DEBUG */
-	 dith->u.randomcube=THIS->du.randomcube;
-
+         dith->u.randomcube=THIS->du.randomcube;
 	 dith->encode=dither_randomgrey_encode;
-
+         {
+           struct svalue *rnd =
+             simple_mapping_string_lookup(get_builtin_constants(), "random");
+           if(!rnd || (TYPEOF(*rnd) != T_FUNCTION))
+             Pike_error("Unable to resolve random function.\n");
+           rnd->u.refs++;
+           dith->u.randomcube.rnd = rnd;
+         }
 	 return 1;
 
       case NCTD_ORDERED:
@@ -2064,6 +2090,7 @@ void image_colortable_free_dither(struct nct_dither *dith)
 	 break;
       case NCTD_RANDOMCUBE:
       case NCTD_RANDOMGREY:
+        dith->u.randomcube.rnd->u.refs--;
 	 break;
       case NCTD_ORDERED:
          free(dith->u.ordered.rdiff);
