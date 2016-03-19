@@ -2209,7 +2209,7 @@ static void select_random(INT32 args)
   if(!args)
   {
     struct svalue *random =
-      simple_mapping_string_lookup(get_builtin_constants(), "random");
+      low_mapping_string_lookup(get_builtin_constants(), s_random);
     if(!random || (TYPEOF(*random) != T_FUNCTION))
       Pike_error("Unable to resolve random function.\n");
     push_svalue(random);
@@ -2223,10 +2223,10 @@ static void select_random(INT32 args)
     struct program *o = sp[-1].u.program;
     stack_swap();
     push_object(clone_object(o, 1));
-    push_constant_text("random");
+    push_string(s_random);
     o_index();
     if(TYPEOF(sp[-1])!=T_FUNCTION)
-      Pike_error("random_string is not a function.\n");
+      Pike_error("random is not a function.\n");
   }
   else if(TYPEOF(sp[-1])!=T_FUNCTION)
   {
