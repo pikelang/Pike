@@ -3069,7 +3069,7 @@ void f_daemon(INT32 args)
 }
 #endif /* HAVE_DAEMON */
 
-#if HAS___BUILTIN_IA32_RDRAND32_STEP
+#if HAS___BUILTIN_IA32_RDRAND64_STEP
 
 static unsigned INT64 rand64()
 {
@@ -3475,7 +3475,7 @@ PIKE_MODULE_INIT
                 0, OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND);
 #endif /* HAVE_DAEMON */
 
-#if HAS___BUILTIN_IA32_RDRAND32_STEP
+#if HAS___BUILTIN_IA32_RDRAND64_STEP
   {
     INT32 cpuid[4];
     x86_get_cpuid (1, cpuid);
