@@ -2058,20 +2058,57 @@ static void mpzmod_random(INT32 args)
   push_object(res);
   stack_swap();
 
-  /* We add four to assure reasonably uniform randomness */
-  unsigned bytes = mpz_size(THIS)*sizeof(mp_limb_t) + 4;
+  unsigned bits = mpz_sizeinbase(THIS, 2);
+  unsigned bytes = ((bits-1)>>3)+1;
+
   push_int(bytes);
   apply_svalue(&sp[-2], 1);
-  if (TYPEOF(sp[-1]) != T_STRING) {
+  if (TYPEOF(sp[-1]) != T_STRING)
     Pike_error("random_string(%ld) returned non string.\n", bytes);
-  }
   if ((unsigned)sp[-1].u.string->len != bytes)
      Pike_error("Wrong size random string generated.\n");
-  stack_pop_keep_top();
 
-  mpz_import(OBTOMPZ(res), bytes, 1, 1, 0, 0, sp[-1].u.string->str);
+  // FIXME: If (bits%8)==0 and THIS is (1<<bits)-1 we can just copy
+  // the full random data without further checks.
+
+  // FIXME: Can we save a copy by either mask the pike string and
+  // import from it, or import the unmasked string and mask it in
+  // mpz object?
+  unsigned char *str = xalloc(bytes);
+  memcpy(str, sp[-1].u.string->str, bytes);
   pop_stack();
-  mpz_fdiv_r(OBTOMPZ(res), OBTOMPZ(res), THIS); /* modulo */
+
+  unsigned char mask = (1<<(bits%8))-1;
+  if(mask) str[0] = mask & str[0];
+
+  for(int i=0; i<1000; i++)
+  {
+    mpz_import(OBTOMPZ(res), bytes, 1, 1, 0, 0, str);
+    if( mpz_cmp(THIS, OBTOMPZ(res))>=0 )
+      goto done;
+
+    // FIXME: We replace the entire string if we are too large. We
+    // could be smarter here, but it's easy to introduce bias by
+    // mistake.
+
+    push_int(bytes);
+    apply_svalue(&sp[-2], 1);
+    // We leak str on error, but we've already proven the random
+    // function to work, so an error at this point is unlikely.
+    if (TYPEOF(sp[-1]) != T_STRING)
+      Pike_error("random_string(%ld) returned non string.\n", bytes);
+    if ((unsigned)sp[-1].u.string->len != bytes)
+      Pike_error("Wrong size random string generated.\n");
+    memcpy(str, sp[-1].u.string->str, bytes);
+    pop_stack();
+    if(mask) str[0] = mask & str[0];
+  }
+  Pike_error("Unable to generate random data.\n");
+
+ done:
+  free(str);
+  pop_stack();
+
   Pike_sp--;
   dmalloc_touch_svalue(Pike_sp);
   PUSH_REDUCED(res);
