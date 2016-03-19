@@ -77,7 +77,7 @@ o Random rewrite
     This generator takes entropy from the Random.System, but feeds
     it into a cryptographic pseudo random number generator to be
     able to output data fast. This is not the default random number
-    generator to avoid loading crypto code all the time.
+    generator to avoid loading crypto code on every startup.
 
   Comparing the different generators with each other gives the
   following approximate speeds on a Linux system with hardware
@@ -88,6 +88,24 @@ o Random rewrite
     Random.Hardware         0.25
     Random.Fast             0.20
     Random.Deterministic    0.20
+
+  Objects implementing the _random lfun now get two arguments, the
+  current random_string() and random() functions. This is convenient
+  for C-level functions that doesn't have to look up functions
+  themselves. Note that it is possible for a user to replace these
+  with non-conforming functions (returning values of the wrong type,
+  strings of the wrong length or shift size, and values outside the
+  given range) or even non-functions.
+
+  All code in Pike that uses random now uses the current random
+  functions (though in some cases fixed at object creation). This
+  allows for repeatable results if the random functions are replaced
+  with a deterministic random generator, such as
+  Random.Deterministic. Example:
+
+    Random.Deterministic rnd = Random.Deterministic( seed );
+    add_constant( "random_string", rnd->random_string );
+    add_constant( "random", rnd->random );
 
 
 Incompatible changes
@@ -143,6 +161,10 @@ o Removed add_function, pike_add_function, pike_add_function2,
   simple_add_variable, map_variable and MAP_VARIABLE. This removes the
   remaining few API:s where text types were used. Use ADD_FUNCTION and
   PIKE_MAP_VARIABLE instead.
+
+o Removed my_rand and my_srand are removed. Use the random functions
+  on the stack for _random lfuns, the push_random_string or look up
+  the random function from get_builtin_constants().
 
 
 Building and installing
