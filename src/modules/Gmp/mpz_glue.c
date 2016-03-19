@@ -2065,7 +2065,8 @@ static void mpzmod_random(INT32 args)
   apply_svalue(&sp[-2], 1);
   if (TYPEOF(sp[-1]) != T_STRING)
     Pike_error("random_string(%ld) returned non string.\n", bytes);
-  if ((unsigned)sp[-1].u.string->len != bytes)
+  if ((unsigned)sp[-1].u.string->len != bytes ||
+      sp[-1].u.string->size_shift != 0)
      Pike_error("Wrong size random string generated.\n");
 
   // FIXME: If (bits%8)==0 and THIS is (1<<bits)-1 we can just copy
@@ -2097,7 +2098,8 @@ static void mpzmod_random(INT32 args)
     // function to work, so an error at this point is unlikely.
     if (TYPEOF(sp[-1]) != T_STRING)
       Pike_error("random_string(%ld) returned non string.\n", bytes);
-    if ((unsigned)sp[-1].u.string->len != bytes)
+    if ((unsigned)sp[-1].u.string->len != bytes ||
+        sp[-1].u.string->size_shift != 0)
       Pike_error("Wrong size random string generated.\n");
     memcpy(str, sp[-1].u.string->str, bytes);
     pop_stack();

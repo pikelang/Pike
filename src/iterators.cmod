@@ -282,6 +282,8 @@ static INT32 call_random(INT32 limit)
   if( TYPEOF(Pike_sp[-1])!=T_INT )
     Pike_error("Wrong return type from random.\n");
   int value = Pike_sp[-1].u.integer;
+  if( value >= limit )
+    Pike_error("random returned value out of bounds.\n");
   pop_stack();
   return value;
 }
