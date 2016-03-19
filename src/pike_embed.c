@@ -312,8 +312,6 @@ void init_pike_runtime(void (*exit_cb)(int))
   TRACE((stderr, "Init objects...\n"));
   init_object();
 
-  my_srand(0);
-
   if(SETJMP(back))
   {
     if(throw_severity == THROW_EXIT)
