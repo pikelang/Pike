@@ -5788,7 +5788,9 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
     }else{
       struct identifier *id;
       id=ID_FROM_INT(Pike_compiler->new_program,n);
-      if(id->func.const_info.offset>=0) {
+      if (IDENTIFIER_IS_ALIAS(id->identifier_flags)) {
+	/* FIXME: We probably ought to do something here... */
+      } else if(id->func.const_info.offset>=0) {
 	/* Update the stored constant. */
 	assign_svalue (&PROG_FROM_INT(Pike_compiler->new_program,n)->
 		       constants[id->func.const_info.offset].sval, c);
