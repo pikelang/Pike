@@ -2041,19 +2041,24 @@ static void mpzmod_hamdist(INT32 args)
   pop_stack();
 }
 
-/*! @decl Gmp.mpz _random()
+/*! @decl Gmp.mpz _random(function(int:string(8bit)) random_string, @
+ *!                       function(mixed:mixed) random)
  */
 static void mpzmod_random(INT32 args)
 {
   DECLARE_THIS();
 
+  /* NB: Nominally we could survive with just one argument too, but... */
+  if (args != 2)
+    SIMPLE_WRONG_NUM_ARGS_ERROR("_random", 2);
   if(mpz_sgn(THIS) <= 0)
-    Pike_error("Random on negative number.\n");
+    Pike_error("Random on zero or negative number.\n");
 
   /* On stack: random_string, random */
   pop_stack();
-    if(TYPEOF(sp[-1]) != T_FUNCTION)
+  if(TYPEOF(sp[-1]) != T_FUNCTION)
     Pike_error("_random called with non-function argument.\n");
+
   struct object *res=fast_clone_object(THIS_PROGRAM);
   push_object(res);
   stack_swap();
@@ -2111,6 +2116,7 @@ static void mpzmod_random(INT32 args)
   free(str);
   pop_stack();
 
+  /* res is now at the top of the stack. Reduce it. */
   Pike_sp--;
   dmalloc_touch_svalue(Pike_sp);
   PUSH_REDUCED(res);
