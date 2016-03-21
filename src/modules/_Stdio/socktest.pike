@@ -544,6 +544,7 @@ mixed keeper;
 void finish(program Socket)
 {
   gc();
+  sleep(0.01);	// Allow eg Solaris some time to recycle closed fds.
   num_running--;
   if(!num_running)
   {
