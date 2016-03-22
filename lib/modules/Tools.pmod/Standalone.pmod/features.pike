@@ -302,7 +302,7 @@ int main(int num, array(string) args) {
   M(_PGsql.PGsql);
 
   write("\nRandom\n");
-  I(Random.Hardware);
+  F(Random.Hardware);
 
   write("\nRegexp\n");
   f("_Regexp_PCRE._pcre", "Regexp.PCRE");
