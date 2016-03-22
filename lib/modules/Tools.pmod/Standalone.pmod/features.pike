@@ -301,6 +301,9 @@ int main(int num, array(string) args) {
   M(Postgres.postgres);
   M(_PGsql.PGsql);
 
+  write("\nRandom\n");
+  I(Random.Hardware);
+
   write("\nRegexp\n");
   f("_Regexp_PCRE._pcre", "Regexp.PCRE");
   f("_Regexp_PCRE.Widestring", "PCRE wide string support");
