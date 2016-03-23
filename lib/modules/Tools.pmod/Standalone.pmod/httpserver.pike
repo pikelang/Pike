@@ -98,7 +98,5 @@ void handle_request(Protocols.HTTP.Server.Request request)
         request->response_and_finish( ([ "data":dirlist(file),
 					 "type":"text/html" ]) );
     else
-        request->response_and_finish( ([ "file":Stdio.File(file),
-					 "type":Protocols.HTTP.Server.
-					 filename_to_type(file) ]) );
+        request->response_and_finish( ([ "file":Stdio.File(file) ]) );
 }
