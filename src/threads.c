@@ -966,12 +966,12 @@ void low_init_threads_disable(void)
 /*! @decl object(_disable_threads) _disable_threads()
  *!
  *! This function first posts a notice to all threads that it is time
- *! to stop. It then waits until all threads actually *have* stopped,
+ *! to halt. It then waits until all threads actually @b{have@} halted,
  *! and then then returns a lock object. All other threads will be
  *! blocked from running until that object has been freed/destroyed.
  *!
  *! It's mainly useful to do things that require a temporary uid/gid
- *! change, since on many OS the effective user and group applies to
+ *! change, since on many OSes the effective user and group apply to
  *! all threads.
  *!
  *! @note
