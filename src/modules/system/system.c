@@ -1837,7 +1837,7 @@ int get_inet_addr(PIKE_SOCKADDR *addr,char *name,char *service, INT_TYPE port,
 {
 #ifdef HAVE_GETADDRINFO
   struct addrinfo hints = { 0, PF_UNSPEC, 0, 0, 0, NULL, NULL, NULL, }, *res;
-  char servnum_buf[200];
+  char servnum_buf[20];
 #endif /* HAVE_GETADDRINFO */
   int err;
   int udp = inet_flags & 1;
@@ -1912,6 +1912,7 @@ int get_inet_addr(PIKE_SOCKADDR *addr,char *name,char *service, INT_TYPE port,
       return addr_len;
     }
   }
+  if (service == servnum_buf) service = NULL;
 #endif /* HAVE_GETADDRINFO */
 
   SOCKADDR_FAMILY(*addr) = AF_INET;
