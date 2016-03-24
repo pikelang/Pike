@@ -324,16 +324,14 @@ INT32 assemble(int store_linenumbers)
 
   labels=xalloc(sizeof(INT32) * 4 * (max_label+2));
   jumps = labels + max_label + 2;
-  uses = jumps + max_label + 2;
-  aliases = uses + max_label + 2;
+  aliases = jumps + max_label + 2;
+  uses = aliases + max_label + 2;
   while(relabel)
   {
     /* First do the relabel pass. */
-    for(e=0;e<=max_label;e++)
-    {
-      labels[e]=jumps[e]= aliases[e] = -1;
-      uses[e]=0;
-    }
+    /* Set labels, jumps and aliases to all -1. */
+    memset(labels, 0xff, ((max_label + 2) * 3) * sizeof(INT32));
+    memset(uses, 0x00, (max_label + 2) * sizeof(INT32));
 
     c=(p_instr *)instrbuf.s.str;
     length=instrbuf.s.len / sizeof(p_instr);
