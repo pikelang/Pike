@@ -555,7 +555,7 @@ PIKEFUN int(0..) crc32c(string(8bit) data)
 #ifdef HAVE_CRC32_INTRINSICS
   if(supports_sse42)
   {
-    RETURN intel_crc32c((const unsigned int *)data->str, data->len);
+    push_int64(intel_crc32c((const unsigned int *)data->str, data->len));
   }
   else
 #endif /* HAVE_CRC32_INTRISINCS */
@@ -563,7 +563,7 @@ PIKEFUN int(0..) crc32c(string(8bit) data)
     unsigned int h=0xffffffff, i=0;
     for(; i<data->len; i++)
       h = (h>>8)^crc[(h^data->str[i])&0xFF];
-    RETURN h ^ 0xffffffff;
+    push_int64(h ^ 0xffffffff);
   }
 }
 
