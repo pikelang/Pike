@@ -2007,7 +2007,7 @@ int image_colortable_initiate_dither(struct neo_colortable *nct,
              simple_mapping_string_lookup(get_builtin_constants(), "random");
            if(!rnd || (TYPEOF(*rnd) != T_FUNCTION))
              Pike_error("Unable to resolve random function.\n");
-           rnd->u.refs++;
+           ++*rnd->u.refs;
            dith->u.randomcube.rnd = rnd;
          }
 	 return 1;
@@ -2024,7 +2024,7 @@ int image_colortable_initiate_dither(struct neo_colortable *nct,
              simple_mapping_string_lookup(get_builtin_constants(), "random");
            if(!rnd || (TYPEOF(*rnd) != T_FUNCTION))
              Pike_error("Unable to resolve random function.\n");
-           rnd->u.refs++;
+           ++*rnd->u.refs;
            dith->u.randomcube.rnd = rnd;
          }
 	 return 1;
@@ -2090,7 +2090,7 @@ void image_colortable_free_dither(struct nct_dither *dith)
 	 break;
       case NCTD_RANDOMCUBE:
       case NCTD_RANDOMGREY:
-        dith->u.randomcube.rnd->u.refs--;
+         --*dith->u.randomcube.rnd->u.refs;
 	 break;
       case NCTD_ORDERED:
          free(dith->u.ordered.rdiff);
