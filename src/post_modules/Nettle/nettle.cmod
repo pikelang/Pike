@@ -10,6 +10,7 @@
 #include "threads.h"
 #include "pike_memory.h"
 #include "pike_cpulib.h"
+#include "bignum.h"
 
 #include "nettle_config.h"
 
