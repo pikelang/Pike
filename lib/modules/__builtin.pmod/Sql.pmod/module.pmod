@@ -1,6 +1,9 @@
 #pike __REAL_VERSION__
 
-//! Wrapper to handle zero.
+//! Generic base classes for the Sql interfaces.
+
+//! Wrapper to handle conversion of zero to NULL in
+//! @[Connection()->handle_extraargs()].
 //!
 //! @seealso
 //!   @[zero]
@@ -23,7 +26,7 @@ protected class ZeroWrapper
   }
 }
 
-//! Instance of @[ZeroWrapper] used by @[handle_extraargs()].
+//! Instance of @[ZeroWrapper] used by @[Connection()->handle_extraargs()].
 ZeroWrapper zero = ZeroWrapper();
 
 protected class NullArg
