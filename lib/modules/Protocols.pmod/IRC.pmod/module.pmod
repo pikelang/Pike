@@ -1,5 +1,31 @@
 #pike __REAL_VERSION__
 
+//! IRC client and connection handling.
+//! 
+//! Start with @ref{Client@} and @ref{Channel@}.
+//!
+//! @example
+//! Protocols.IRC.client irc;
+//! class channel_notif
+//! {
+//!     inherit Protocols.IRC.Channel;
+//!     void not_message(object person,string msg)
+//!     {
+//!         if (msg == "!hello") irc->send_message(name, "Hello, "+person->nick+"!");
+//!     }
+//! }
+//! int main()
+//! {
+//!     irc = Protocols.IRC.Client("irc.freenode.net", ([
+//!         "nick": "DemoBot12345",
+//!         "realname": "Demo IRC bot",
+//!         "channel_program": channel_notif,
+//!     ]));
+//!     irc->join_channel("#bot-test");
+//!     return -1;
+//! }
+
+
 //! Abstract class for a person.
 class Person
 {
