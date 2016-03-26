@@ -6,11 +6,9 @@
 
 #pike __REAL_VERSION__
 
-//! Implements the generic result of the SQL-interface.
-//! Used for return results from SQL.sql->big_query().
-
-//! The actual result.
-mixed master_res;
+//! Base class for results for the SQL-interface.
+//!
+//! Used for return results from SQL.Sql->big_query().
 
 //! This is the number of the current row. The actual semantics
 //! differs between different databases.
@@ -27,7 +25,7 @@ protected string _sprintf(int type, mapping|void flags)
   int f = num_fields();
   catch( int r = num_rows() );
   int e = eof();
-  return type=='O' && master_res &&
+  return type=='O' &&
     sprintf("%O(/* row %d/%s, %d field%s */)",
 	    this_program, index,
 	    (!r || index==r && !e)?"?":(string)num_rows(),
@@ -38,10 +36,7 @@ protected string _sprintf(int type, mapping|void flags)
 int num_rows();
 
 //! Returns the number of fields in the result.
-int num_fields()
-{
-  return master_res->num_fields();
-}
+int num_fields();
 
 //! Returns non-zero if there are no more rows.
 int eof();
@@ -58,7 +53,7 @@ void seek(int skip) {
     error("Cannot seek to negative result indices\n");
   while(skip--) {
     index++;
-    master_res->fetch_row();
+    fetch_row();
   }
 }
 
@@ -83,11 +78,7 @@ int|array(string|int|float) fetch_row();
 //!
 //! @throws
 //!   May throw the same errors as @[Sql.Sql()->big_query()] et al.
-this_program next_result()
-{
-  if (master_res->next_result) return master_res->next_result();
-  return 0;
-}
+this_program next_result();
 
 // --- Iterator API
 
@@ -171,17 +162,13 @@ protected void encode_json(String.Buffer res, mixed msg)
 //! Fetch remaining result as @tt{JSON@}-encoded data.
 string fetch_json_result()
 {
-  if (arrayp(master_res) || !master_res->fetch_json_result) {
-    String.Buffer res = String.Buffer();
-    res->putchar('[');
-    array row;
-    for (int i = 0; row = fetch_row(); i++) {
-      if(i) res->putchar(',');
-      encode_json(res, row);
-    }
-    res->putchar(']');
-    return string_to_utf8(res->get());
+  String.Buffer res = String.Buffer();
+  res->putchar('[');
+  array row;
+  for (int i = 0; row = fetch_row(); i++) {
+    if(i) res->putchar(',');
+    encode_json(res, row);
   }
-  index = num_rows();
-  return master_res->fetch_json_result();
+  res->putchar(']');
+  return string_to_utf8(res->get());
 }
