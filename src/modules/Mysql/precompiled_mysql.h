@@ -56,9 +56,7 @@
 
 /* From result.c */
 
-struct object *make_mysql_result(struct object *mysql,
-				 MYSQL_RES *result,
-				 int flags);
+struct object *make_mysql_result(MYSQL_RES *result, int flags);
 void init_mysql_res_efuns(void);
 void init_mysql_res_programs(void);
 void exit_mysql_res(void);

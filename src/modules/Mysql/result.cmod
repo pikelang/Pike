@@ -355,16 +355,14 @@ PIKEFUN void create(object connection, int|void typed_mode)
   pop_n_elems(args);
 }
 
-struct object *make_mysql_result(struct object *mysql,
-				 MYSQL_RES *result,
-				 int flags)
+struct object *make_mysql_result(MYSQL_RES *result, int flags)
 {
   /* Return the result-object */
   struct Mysql_mysql_result_struct *res;
   struct object *o;
 
   /* Create the object */
-  ref_push_object(mysql);
+  ref_push_object(Pike_fp->current_object);
   if (flags & PIKE_MYSQL_FLAG_TYPED_RESULT) {
     push_int(1);
     o = clone_object(Mysql_mysql_result_program, 2);

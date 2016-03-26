@@ -1151,7 +1151,7 @@ static void low_query(INT32 args, char *name, int flags)
     push_int(0);
   } else {
     /* Return the result-object */
-    push_object(make_mysql_result(Pike_fp->current_object, result, flags));
+    push_object(make_mysql_result(result, flags));
   }
 }
 
@@ -1504,7 +1504,7 @@ PIKEFUN object list_dbs(string(1..255)|void wild)
   pop_n_elems(args);
 
   /* Return the result-object */
-  push_object(make_mysql_result(Pike_fp->current_object, result, 0));
+  push_object(make_mysql_result(result, 0));
 }
 
 /*! @decl object(Mysql.mysql_result) list_tables()
@@ -1555,7 +1555,7 @@ PIKEFUN object list_tables(string(1..255)|void wild)
   pop_n_elems(args);
 
   /* Return the result-object */
-  push_object(make_mysql_result(Pike_fp->current_object, result, 0));
+  push_object(make_mysql_result(result, 0));
 }
 
 /*! @decl array(int|mapping(string:mixed)) list_fields(string table)
@@ -1723,7 +1723,7 @@ PIKEFUN object list_processes()
   }
 
   /* Return the result-object */
-  push_object(make_mysql_result(Pike_fp->current_object, result, 0));
+  push_object(make_mysql_result(result, 0));
 }
 
 /*! @decl int binary_data()
