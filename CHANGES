@@ -114,6 +114,13 @@ Incompatible changes
 o Gz.crc32 now only returns positive results.
 
 
+Deprecated symbols and modules
+------------------------------
+
+o Sql.mysql_result and Sql.mysqls_result have been deprecated.
+  Use Sql.Result instead.
+
+
 Removed features and modules
 ----------------------------
 
