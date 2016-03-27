@@ -62,3 +62,17 @@ string censor_sql_url(string sql_url)
   }
   return sql_url;
 }
+
+//! Base class for a connection to an SQL database.
+class Connection
+{
+  //!
+  inherit __builtin.Sql.Connection;
+}
+
+//! Base class for the result from @[Connection()->big_query()] et al.
+class Result
+{
+  //!
+  inherit __builtin.Sql.Result;
+}
