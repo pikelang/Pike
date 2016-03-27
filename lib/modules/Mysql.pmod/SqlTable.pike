@@ -990,7 +990,7 @@ array conn_select1 (Sql.Sql db_conn, string|array select_expr,
     query += select_expr;
   query += " FROM `" + table + "` " + (table_refs || "");
 
-  Sql.mysql_result res = db_conn->master_sql->big_typed_query (
+  Sql.Result res = db_conn->master_sql->big_typed_query (
     query + " WHERE (" + where + ") " + (rest || ""), bindings);
 
 #ifdef MYSQL_DEBUG
@@ -1074,7 +1074,7 @@ mapping(string:mixed) conn_get (Sql.Sql db_conn, mixed id,
   }
 
   string pk_where = simple_make_pk_where (id);
-  Mysql.mysql_result res =
+  Sql.Result res =
     conn->big_typed_query ("SELECT " + (select_cols * ",") + " "
 			   "FROM `" + table + "` "
 			   "WHERE " + pk_where,
@@ -1130,7 +1130,7 @@ class Result
 //! iterator interface and can therefore be used directly in e.g.
 //! @expr{foreach@}.
 {
-  Sql.mysql_result res;
+  Sql.Result res;
   //! The underlying result object from the db connection.
 
   protected array(string) real_col_names;
