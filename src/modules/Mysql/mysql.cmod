@@ -101,7 +101,7 @@
  *!  use @[Sql.Sql()] with an "mysql://" URL.
  *!
  *! @seealso
- *!  @[Mysql.mysql], @[Mysql.mysql_result], @[Sql.Sql]
+ *!  @[Mysql.mysql], @[Mysql.mysql()->Result], @[Sql.Sql]
  */
 
 /*! @class mysql
@@ -111,7 +111,7 @@
  *! This class enables access to the Mysql database from within Pike.
  *!
  *! @seealso
- *!   @[Mysql.mysql_result], @[Sql.Sql]
+ *!   @[Mysql.mysql()->Result], @[Sql.Sql]
  */
 
 struct program * mysql_error_program = NULL;
@@ -273,6 +273,9 @@ EXTRA
 #ifdef HAVE_MYSQL_FIELD_CHARSETNR
   add_integer_constant ("HAVE_MYSQL_FIELD_CHARSETNR", 1, 0);
 #endif
+
+  /* NB: Nest the Result program in the connection program. */
+  init_mysql_res_programs();
 }
 
   void pike_mysql_set_ssl(struct mapping *options)
@@ -1456,8 +1459,8 @@ PIKEFUN int protocol_info()
   push_int(prot);
 }
 
-/*! @decl object(Mysql.mysql_result) list_dbs()
- *! @decl object(Mysql.mysql_result) list_dbs(string wild)
+/*! @decl object(Mysql.mysql.Result) list_dbs()
+ *! @decl object(Mysql.mysql.Result) list_dbs(string wild)
  *!
  *! List databases
  *!
@@ -1467,7 +1470,7 @@ PIKEFUN int protocol_info()
  *!
  *! @seealso
  *!   @[list_tables()], @[list_fields()], @[list_processes()],
- *!   @[Mysql.mysql_result]
+ *!   @[Mysql.mysql()->Result]
  */
 PIKEFUN object list_dbs(string(1..255)|void wild)
 {
@@ -1507,8 +1510,8 @@ PIKEFUN object list_dbs(string(1..255)|void wild)
   push_object(make_mysql_result(result, 0));
 }
 
-/*! @decl object(Mysql.mysql_result) list_tables()
- *! @decl object(Mysql.mysql_result) list_tables(string wild)
+/*! @decl object(Mysql.mysql.Result) list_tables()
+ *! @decl object(Mysql.mysql.Result) list_tables(string wild)
  *!
  *! List tables in the current database
  *!
@@ -1518,7 +1521,7 @@ PIKEFUN object list_dbs(string(1..255)|void wild)
  *!
  *! @seealso
  *!   @[list_dbs()], @[list_fields()], @[list_processes()],
- *!   @[Mysql.mysql_result]
+ *!   @[Mysql.mysql()->Result]
  */
 PIKEFUN object list_tables(string(1..255)|void wild)
 {
@@ -1630,7 +1633,7 @@ PIKEFUN object list_tables(string(1..255)|void wild)
  *!
  *! @seealso
  *!   @[list_dbs()], @[list_tables()], @[list_processes()],
- *!   @[Mysql.mysql_result.fetch_field()]
+ *!   @[Mysql.mysql()->Result()->fetch_field()]
  */
 PIKEFUN array(int|mapping(string:mixed)) list_fields(string(1..255) table,
 						     string(1..255)|void wild)
@@ -1690,7 +1693,7 @@ PIKEFUN array(int|mapping(string:mixed)) list_fields(string(1..255) table,
   f_aggregate(i);
 }
 
-/*! @decl object(Mysql.mysql_result) list_processes()
+/*! @decl object(Mysql.mysql.Result) list_processes()
  *!
  *! List all processes in the Mysql-server
  *!
@@ -1698,7 +1701,8 @@ PIKEFUN array(int|mapping(string:mixed)) list_fields(string(1..255) table,
  *! Mysql-server.
  *!
  *! @seealso
- *!   @[list_dbs()], @[list_tables()], @[list_fields()], @[Mysql.mysql_result]
+ *!   @[list_dbs()], @[list_tables()], @[list_fields()],
+ *!   @[Mysql.mysql()->Result]
  */
 PIKEFUN object list_processes()
 {
@@ -1869,7 +1873,6 @@ PIKE_MODULE_INIT
 #endif /* HAVE_MYSQL_PORT */
 #endif /* !HAVE_MYSQL_REAL_CONNECT */
 
-  init_mysql_res_programs();
 #else
   HIDE_MODULE();
 #endif /* HAVE_MYSQL */

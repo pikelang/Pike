@@ -106,14 +106,27 @@ static struct svalue mpq_program = SVALUE_INIT_FREE;
  * Functions
  */
 
-PIKECLASS mysql_result
+/*! @module Mysql
+ */
+
+/*! @class mysql
+ */
+
+/*! @class Result
+ *!
+ *! Objects of this class contain the result from Mysql queries.
+ *!
+ *! @seealso
+ *!   @[Mysql.mysql], @[Mysql.mysql->big_query()]
+ */
+PIKECLASS Result
 {
   CVAR struct object *connection;
   CVAR MYSQL_RES	*result;
   CVAR int eof;
   CVAR int typed_mode;
 
-#define PIKE_MYSQL_RES	THIS_MYSQL_MYSQL_RESULT
+#define PIKE_MYSQL_RES	THIS_MYSQL_RESULT
 
 /*
  * State maintenance
@@ -304,17 +317,6 @@ void mysqlmod_parse_field(MYSQL_FIELD *field, int support_default)
   }
 }
 
-/*! @module Mysql
- */
-
-/*! @class mysql_result
- *!
- *! Objects of this class contain the result from Mysql queries.
- *!
- *! @seealso
- *!   @[Mysql.mysql], @[Mysql.mysql->big_query()]
- */
-
 /*
  * Methods
  */
@@ -358,21 +360,20 @@ PIKEFUN void create(object connection, int|void typed_mode)
 struct object *make_mysql_result(MYSQL_RES *result, int flags)
 {
   /* Return the result-object */
-  struct Mysql_mysql_result_struct *res;
+  struct Mysql_Result_struct *res;
   struct object *o;
 
   /* Create the object */
   ref_push_object(Pike_fp->current_object);
   if (flags & PIKE_MYSQL_FLAG_TYPED_RESULT) {
     push_int(1);
-    o = clone_object(Mysql_mysql_result_program, 2);
+    o = clone_object(Mysql_Result_program, 2);
   } else {
-    o = clone_object(Mysql_mysql_result_program, 1);
+    o = clone_object(Mysql_Result_program, 1);
   }
 
   /* Set the result. */
-  if ((!(res = get_storage(o, Mysql_mysql_result_program))) ||
-      res->result) {
+  if ((!(res = get_storage(o, Mysql_Result_program))) || res->result) {
     mysql_free_result(result);
     free_object(o);
     Pike_error("Bad mysql result object!\n");
@@ -915,10 +916,13 @@ next_row:
 }
 
 }
-/*! @endclass
+/*! @endclass Result
  */
 
-/*! @endmodule
+/*! @endclass mysql
+ */
+
+/*! @endmodule Mysql
  */
 
 /*

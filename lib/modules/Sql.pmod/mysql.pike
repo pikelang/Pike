@@ -739,9 +739,9 @@ int decode_datetime (string timestr)
   }									\
   return res;
 
-Mysql.mysql_result big_query (string query,
-			      mapping(string|int:mixed)|void bindings,
-			      void|string charset)
+Result big_query (string query,
+		  mapping(string|int:mixed)|void bindings,
+		  void|string charset)
 //! Sends a query to the server.
 //!
 //! @param query
@@ -766,7 +766,7 @@ Mysql.mysql_result big_query (string query,
 //!   inserts) where you want to avoid the query parsing overhead.
 //!
 //! @returns
-//!   A @[Mysql.mysql_result] object is returned if the query is of a
+//!   A @[Result] object is returned if the query is of a
 //!   kind that returns a result. Zero is returned otherwise.
 //!
 //!   The individual fields are returned as strings except for @tt{NULL@},
@@ -778,14 +778,14 @@ Mysql.mysql_result big_query (string query,
   QUERY_BODY (big_query);
 }
 
-Mysql.mysql_result streaming_query (string query,
-				    mapping(string|int:mixed)|void bindings,
-				    void|string charset)
+Result streaming_query (string query,
+			mapping(string|int:mixed)|void bindings,
+			void|string charset)
 //! Makes a streaming SQL query.
 //!
 //! This function sends the SQL query @[query] to the Mysql-server.
 //! The result of the query is streamed through the returned
-//! @[Mysql.mysql_result] object. Note that the involved database
+//! @[Result] object. Note that the involved database
 //! tables are locked until all the results has been read.
 //!
 //! In all other respects, it behaves like @[big_query].
@@ -796,9 +796,9 @@ Mysql.mysql_result streaming_query (string query,
   QUERY_BODY (streaming_query);
 }
 
-Mysql.mysql_result big_typed_query (string query,
-				    mapping(string|int:mixed)|void bindings,
-				    void|string charset)
+Result big_typed_query (string query,
+			mapping(string|int:mixed)|void bindings,
+			void|string charset)
 //! Makes a typed SQL query.
 //!
 //! This function sends the SQL query @[query] to the MySQL server and
@@ -814,9 +814,9 @@ Mysql.mysql_result big_typed_query (string query,
   QUERY_BODY (big_typed_query);
 }
 
-Mysql.mysql_result streaming_typed_query (string query,
-					  mapping(string|int:mixed)|void bindings,
-					  void|string charset)
+Result streaming_typed_query (string query,
+			      mapping(string|int:mixed)|void bindings,
+			      void|string charset)
 //! Makes a streaming typed SQL query.
 //!
 //! This function acts as the combination of @[streaming_query()]
