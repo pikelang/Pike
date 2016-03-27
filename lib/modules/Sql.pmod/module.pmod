@@ -77,18 +77,18 @@ class Result
   inherit __builtin.Sql.Result;
 }
 
-#pragma no_deprecation_warnings
 //! @class mysql_result
 //! @deprecated Result
 
 //! @endclass
 
-__deprecated__(program(Result)) mysql_result = Result;
+__deprecated__(program(Result)) mysql_result =
+  (__deprecated__(program(Result)))Result;
 
 //! @class mysqls_result
 //! @deprecated Result
 
 //! @endclass
 
-__deprecated__(program(Result)) mysqls_result = Result;
-#pragma deprecation_warnings
+__deprecated__(program(Result)) mysqls_result =
+  (__deprecated__(program(Result)))Result;
