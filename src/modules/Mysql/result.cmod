@@ -120,8 +120,8 @@ static struct svalue mpq_program = SVALUE_INIT_FREE;
  *!   @[Mysql.mysql], @[Mysql.mysql->big_query()]
  */
 PIKECLASS Result
+  program_flags PROGRAM_USES_PARENT|PROGRAM_NEEDS_PARENT;
 {
-  CVAR struct object *connection;
   CVAR MYSQL_RES	*result;
   CVAR int eof;
   CVAR int typed_mode;
@@ -137,10 +137,6 @@ EXIT
   if (PIKE_MYSQL_RES->result) {
     mysql_free_result(PIKE_MYSQL_RES->result);
     PIKE_MYSQL_RES->result = NULL;
-  }
-  if (PIKE_MYSQL_RES->connection) {
-    free_object(PIKE_MYSQL_RES->connection);
-    PIKE_MYSQL_RES->connection = NULL;
   }
 }
 
@@ -321,7 +317,7 @@ void mysqlmod_parse_field(MYSQL_FIELD *field, int support_default)
  * Methods
  */
 
-/*! @decl void create(Mysql.mysql connection)
+/*! @decl void create(int(0..1)|void typed_mode)
  *!
  *! Make a new @[Mysql.mysql_result] object.
  *!
@@ -330,7 +326,7 @@ void mysqlmod_parse_field(MYSQL_FIELD *field, int support_default)
  *!   @[Mysql.mysql->list_tables()], @[Mysql.mysql->list_processes()],
  *!   @[Mysql.mysql]
  */
-PIKEFUN void create(object connection, int|void typed_mode)
+PIKEFUN void create(int|void typed_mode)
   flags ID_PROTECTED;
 {
 #ifdef OLD_SQL_COMPAT
@@ -348,12 +344,6 @@ PIKEFUN void create(object connection, int|void typed_mode)
 
   PIKE_MYSQL_RES->result = NULL;
 
-  if (PIKE_MYSQL_RES->connection) {
-    free_object(PIKE_MYSQL_RES->connection);
-  }
-
-  add_ref(PIKE_MYSQL_RES->connection = connection);
-
   pop_n_elems(args);
 }
 
@@ -364,12 +354,12 @@ struct object *make_mysql_result(MYSQL_RES *result, int flags)
   struct object *o;
 
   /* Create the object */
-  ref_push_object(Pike_fp->current_object);
   if (flags & PIKE_MYSQL_FLAG_TYPED_RESULT) {
     push_int(1);
-    apply_current(Mysql_Result_program_fun_num, 2);
-  } else {
     apply_current(Mysql_Result_program_fun_num, 1);
+  } else {
+    apply_current(Mysql_Result_program_fun_num, 0);
+  }
 
   if (TYPEOF(Pike_sp[-1]) != PIKE_T_OBJECT) {
     Pike_error("Bad mysql result object!\n");
