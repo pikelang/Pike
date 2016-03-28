@@ -367,17 +367,23 @@ struct object *make_mysql_result(MYSQL_RES *result, int flags)
   ref_push_object(Pike_fp->current_object);
   if (flags & PIKE_MYSQL_FLAG_TYPED_RESULT) {
     push_int(1);
-    o = clone_object(Mysql_Result_program, 2);
+    apply_current(Mysql_Result_program_fun_num, 2);
   } else {
-    o = clone_object(Mysql_Result_program, 1);
+    apply_current(Mysql_Result_program_fun_num, 1);
+
+  if (TYPEOF(Pike_sp[-1]) != PIKE_T_OBJECT) {
+    Pike_error("Bad mysql result object!\n");
   }
+
+  o = Pike_sp[-1].u.object;
 
   /* Set the result. */
   if ((!(res = get_storage(o, Mysql_Result_program))) || res->result) {
     mysql_free_result(result);
-    free_object(o);
     Pike_error("Bad mysql result object!\n");
   }
+
+  Pike_sp--;
   res->result = result;
 
   return o;
