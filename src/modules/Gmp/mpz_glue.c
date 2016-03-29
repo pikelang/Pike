@@ -2065,6 +2065,12 @@ static void mpzmod_random(INT32 args)
 
   unsigned bits = mpz_sizeinbase(THIS, 2);
   unsigned bytes = ((bits-1)>>3)+1;
+  unsigned popcount = mpz_popcount(THIS);
+
+  if (((bits & 0x07) == 1) && (popcount == 1)) {
+    /* An even number of bytes of random data. */
+    bytes--;
+  }
 
   push_int(bytes);
   apply_svalue(&sp[-2], 1);
@@ -2074,9 +2080,10 @@ static void mpzmod_random(INT32 args)
       sp[-1].u.string->size_shift != 0)
      Pike_error("Wrong size random string generated.\n");
 
-  // We are asked to simply create @[bytes] of random data.
-  if( (bits%8)==0 && mpz_popcount(THIS)==bits )
-  {
+  if (bits > (bytes<<3)) {
+    /* We've decreased the number of bytes above.
+     * Ie we have the special case of an even number of random bytes.
+     */
     mpz_import(OBTOMPZ(res), bytes, 1, 1, 0, 0, sp[-1].u.string->str);
     pop_stack();
     goto done;
@@ -2090,12 +2097,19 @@ static void mpzmod_random(INT32 args)
   pop_stack();
 
   unsigned char mask = (1<<(bits%8))-1;
+  if (popcount == 1) {
+    /* An even number of bits.
+     * Ie the most significant bit of the masked result
+     * should always be zero, so we can shrink the mask.
+     */
+    mask >>= 1;
+  }
   if(mask) str[0] = mask & str[0];
 
   for(int i=0; i<1000; i++)
   {
     mpz_import(OBTOMPZ(res), bytes, 1, 1, 0, 0, str);
-    if( mpz_cmp(THIS, OBTOMPZ(res))>=0 )
+    if( mpz_cmp(THIS, OBTOMPZ(res)) > 0 )
     {
       free(str);
       goto done;
