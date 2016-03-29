@@ -2074,8 +2074,13 @@ static void mpzmod_random(INT32 args)
       sp[-1].u.string->size_shift != 0)
      Pike_error("Wrong size random string generated.\n");
 
-  // FIXME: If (bits%8)==0 and THIS is (1<<bits)-1 we can just copy
-  // the full random data without further checks.
+  // We are asked to simply create @[bytes] of random data.
+  if( (bits%8)==0 && mpz_popcount(THIS)==bits )
+  {
+    mpz_import(OBTOMPZ(res), bytes, 1, 1, 0, 0, sp[-1].u.string->str);
+    pop_stack();
+    goto done;
+  }
 
   // FIXME: Can we save a copy by either mask the pike string and
   // import from it, or import the unmasked string and mask it in
@@ -2091,7 +2096,10 @@ static void mpzmod_random(INT32 args)
   {
     mpz_import(OBTOMPZ(res), bytes, 1, 1, 0, 0, str);
     if( mpz_cmp(THIS, OBTOMPZ(res))>=0 )
+    {
+      free(str);
       goto done;
+    }
 
     // FIXME: We replace the entire string if we are too large. We
     // could be smarter here, but it's easy to introduce bias by
@@ -2111,9 +2119,9 @@ static void mpzmod_random(INT32 args)
     if(mask) str[0] = mask & str[0];
   }
   Pike_error("Unable to generate random data.\n");
+  free(str);
 
  done:
-  free(str);
   pop_stack();
 
   /* res is now at the top of the stack. Reduce it. */
