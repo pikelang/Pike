@@ -2109,17 +2109,21 @@ static void mpzmod_random(INT32 args)
     apply_svalue(&sp[-2], 1);
     // We leak str on error, but we've already proven the random
     // function to work, so an error at this point is unlikely.
-    if (TYPEOF(sp[-1]) != T_STRING)
+    if (TYPEOF(sp[-1]) != T_STRING) {
+      free(str);
       Pike_error("random_string(%ld) returned non string.\n", bytes);
+    }
     if ((unsigned)sp[-1].u.string->len != bytes ||
-        sp[-1].u.string->size_shift != 0)
+        sp[-1].u.string->size_shift != 0) {
+      free(str);
       Pike_error("Wrong size random string generated.\n");
+    }
     memcpy(str, sp[-1].u.string->str, bytes);
     pop_stack();
     if(mask) str[0] = mask & str[0];
   }
-  Pike_error("Unable to generate random data.\n");
   free(str);
+  Pike_error("Unable to generate random data.\n");
 
  done:
   pop_stack();
