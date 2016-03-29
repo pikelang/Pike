@@ -2112,6 +2112,10 @@ PIKECLASS RandomInterface
     pop_stack();
   }
 
+  /* Generates a number 0<=c<limit from random bits taken from the
+     int_buffer. Follows the NIST SP800-90A method for converting bit
+     sequences into bound numbers, described in section B.5.1.1, and
+     summarized as "throw away attempts that are too large". */
   static INT_TYPE read_int(INT_TYPE limit)
   {
     if(limit <= 1) return 0;
