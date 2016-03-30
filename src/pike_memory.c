@@ -253,9 +253,23 @@ static inline size_t low_hashmem_ia32_crc32( const void *s, size_t len,
     while( len-- )
       CRC32SQ( h, c++ );
     return h;
-  }
-  else
-  {
+  } else if (UNLIKELY(nbytes < 32)) {
+    /* Hash the whole memory area */
+    const unsigned int *e = p + (nbytes>>2);
+    const unsigned char *c = (const unsigned char*)e;
+
+    /* .. all full integers .. */
+    while( p<e ) {
+      CRC32SI(h, p++ );
+    }
+
+    nbytes &= 3;
+
+    /* any remaining bytes. */
+    while( nbytes-- )
+      CRC32SQ( h, c++ );
+    return h;
+  } else {
     const unsigned int *e = p+(nbytes>>2);
 #ifdef PIKE_DEBUG
     /*
