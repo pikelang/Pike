@@ -60,8 +60,8 @@ START_MARKER
   // _random
   test_do( add_constant("real_random", random) )
   test_do( add_constant("random", Random.Deterministic(54321)->random) )
-  test_eval_error(random(Gmp.mpz(-1)))
-  test_eval_error(random(Gmp.mpz(0)))
+  test_eq(random(Gmp.mpz(-1)), 0)
+  test_eq(random(Gmp.mpz(0)), 0)
   test_eq(random(Gmp.mpz(1)), Gmp.mpz(0))
   test_eq(random(Gmp.mpz(17)), Gmp.mpz(3))
   test_eq(random(Gmp.mpz(254)), Gmp.mpz(11))

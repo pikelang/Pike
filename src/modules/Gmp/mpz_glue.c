@@ -2052,7 +2052,10 @@ static void mpzmod_random(INT32 args)
   if (args != 2)
     SIMPLE_WRONG_NUM_ARGS_ERROR("_random", 2);
   if(mpz_sgn(THIS) <= 0)
-    Pike_error("Random on zero or negative number.\n");
+  {
+    push_int(0);
+    return;
+  }
 
   /* On stack: random_string, random */
   pop_stack();
