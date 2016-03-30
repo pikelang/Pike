@@ -673,8 +673,8 @@ esac
 
 # Skip if user does not wish to use smartlink binary.
 if test "x$force_smartlink_script_only" = "x"; then
-# Strip smartlink from $CC
-REALCC="`echo $CC|sed -e 's/.*smartlink //'`"
+# Strip smartlink and arguments from $CC
+REALCC="`echo $CC|sed -e 's/.*smartlink *//' -e 's/ .*//g'`"
 
 
 # FIXME: Add proper tests
@@ -819,8 +819,8 @@ fi # force_smartlink_script_only
 CC="$SMARTLINK $REALCC"
 pike_cv_prog_CC="$CC"
 
-# Strip smartlink from $CXX
-REALCXX="`echo $CXX|sed -e 's/.*smartlink //'`"
+# Strip smartlink and arguments from $CXX
+REALCXX="`echo $CXX|sed -e 's/.*smartlink *//' -e 's/ .*//g'`"
 CXX="$SMARTLINK $REALCXX"
 pike_cv_prog_CXX="$CXX"
 
@@ -830,8 +830,8 @@ AC_SUBST(REALCXX)
 export CC CXX REALCC REALCXX SMARTLINK
 
 AC_MSG_CHECKING([for a fallback compiler])
-# Strip smartlink from $FALLBACK_CC
-FALLBACK_CC="`echo $FALLBACK_CC|sed -e 's/.*smartlink //'`"
+# Strip smartlink and arguments from $FALLBACK_CC
+FALLBACK_CC="`echo $FALLBACK_CC|sed -e 's/.*smartlink *//' -e 's/ .*//g'`"
 if test "x$FALLBACK_CC" = "x"; then
   AC_MSG_RESULT(no)
 else
@@ -8151,7 +8151,7 @@ echo
 
 #############################################################################
 
-export LDFLAGS CFLAGS CPPFLAGS LIBS
+export CC CPP LDFLAGS CFLAGS CPPFLAGS LIBS
 export prefix exec_prefix OTHERFLAGS
 export DEFINES INSTALL
 
