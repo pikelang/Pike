@@ -657,7 +657,7 @@ optional class Farm
   //!
   //! @note
   //!   If any of the functions in @[fun_args] throws
-  //!   and error, all of the accululated results
+  //!   and error, all of the accumulated results
   //!   (if any) will be dropped from the result, and
   //!   the first backtrace be provided.
   //!
