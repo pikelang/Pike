@@ -11,9 +11,16 @@ test_eq( random(0x7fffffff), 1351601066)
 test_eq( random(10), 1)
 test_eq( random(10), 4)
 test_eq( random(10), 5)
+cond(Pike.get_runtime_info()->int_size == 64, [[
 test_eq( random(0x7ffffffff), 1923069344)
 test_eq( random(0x7fffffffffffffff), 1675123958)
 test_eq( random(0x7ffffffffffffffff), 6408060475126008899)
+]])
+cond(Pike.get_runtime_info()->int_size == 32, [[
+test_eq( random(0x7ffffffff), 3047125750)
+test_eq( random(0x7fffffffffffffff), 4060256752354925388)
+test_eq( random(0x7ffffffffffffffff), 120525567616026645578)
+]])
 test_do( add_constant("random", real_random) )
 
 dnl float random(float)
