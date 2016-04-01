@@ -63,7 +63,7 @@
 
 final int _fetchlimit=FETCHLIMIT;
 final Thread.Mutex _unnamedportalmux;
-private Thread.Mutex unnamedstatement,termthread;
+private Thread.Mutex unnamedstatement;
 private Thread.MutexKey termlock;
 final int _portalsinflight;
 
@@ -1201,9 +1201,9 @@ private void procmessage() {
 /*semi*/final void close() {
   if(qportals && qportals->size())
     catch(cancelquery());
-  termlock=(termthread=Thread.Mutex())->lock();
+  termlock=unnamedstatement->lock(1);
   c->close();
-  termthread->lock(1);
+  unnamedstatement->lock(1);
   destruct(c);destruct(waitforauthready);
 }
 
@@ -1258,9 +1258,9 @@ private int reconnect() {
 #ifdef PG_STATS
     prepstmtused=0;
 #endif
-    termlock=(termthread=Thread.Mutex())->lock();
+    termlock=unnamedstatement->lock(1);
     c->close();
-    termthread->lock(1);
+    unnamedstatement->lock(1);
     destruct(c);
     PD("Flushing old cache\n");
     foreach(_prepareds;;mapping tp)
