@@ -1,4 +1,47 @@
-Changes since Pike 8.0.164
+Changes since Pike 8.0.182 (release 2)
+----------------------------------------------------------------------
+
+New features
+------------
+
+o Roxen.http_decode_string() now decodes UTF-16 surrogate pairs.
+
+o Protocols.HTTP.Query now always sends a content-length header.
+
+o Report feature flags for System.FSEvents and System.Inotify.
+
+
+Bug fixes
+---------
+
+o Exceptions thrown in GTK signal handlers no longer cause
+  segfaults.
+
+o The SSL client code now interprets the RFCs more leniently.
+
+o Multiple fixes for the handling of accellerated
+  Filesystem.Monitor monitors, which could sometimes
+  lose notifications.
+
+o Improved handling of response content-length in Protocols.HTTP.Query.
+
+o Fixed case where unfinished programs could lose their parents.
+
+o Fixed "Invalid service"-error from connect() on Fedora Core 4.
+
+
+Building and installing
+-----------------------
+
+o Multiple fixes for building on Solaris.
+
+o Improved scanning for Odbc header files.
+
+o Fixed some issues with --with-abi flags not propagating
+  correctly to the modules.
+
+
+Changes since Pike 8.0.164 (release 1)
 ----------------------------------------------------------------------
 
 New features
