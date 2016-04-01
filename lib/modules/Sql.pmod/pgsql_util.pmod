@@ -356,12 +356,12 @@ outer:
   protected void destroy() {
     if(nostash) {
       catch {
+        while(sizeof(closecallbacks))
+          foreach(closecallbacks;function(void|mixed:void) closecb;)
+            closecb();
         destruct(nostash);
         PD("%d>Close socket\n",socket->query_fd());
         socket->close();
-        foreach(closecallbacks;function(void|mixed:void) closecb;)
-          closecb();
-        closecallbacks=(<>);
       };
     }
     connectfail=0;
@@ -515,7 +515,6 @@ class sql_result {
     _ddescribe=Thread.Condition();
     _ddescribemux=Thread.Mutex();
     closemux=Thread.Mutex();
-    c->closecallbacks+=(<destroy>);
     portalbuffersize=_portalbuffersize;
     alltext = !alltyped;
     _params = params;
@@ -523,6 +522,7 @@ class sql_result {
     _state = PORTALINIT;
     timeout = _timeout;
     gottimeout = _pgsqlsess->cancelquery;
+    c->closecallbacks+=(<destroy>);
   }
 
   //! Returns the command-complete status for this query.
