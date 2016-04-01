@@ -968,7 +968,7 @@ int(0..1) emsa_pss_verify(string(8bit) message, string(8bit) sign,
 //!   the hash output.
 //! @param factor
 //!   A moving factor. Defined in @rfc{4226@} to be a counter
-//!   synchornized between both parties.
+//!   synchronized between both parties.
 //! @param length
 //!   The maximum number of digits of the one-time password. Defaults
 //!   to 6. Note that the result is usually 0-padded to this length
