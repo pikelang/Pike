@@ -434,6 +434,46 @@ string|object compile_query(string q)
   return q;
 }
 
+//! Build a raw SQL query, given the cooked query and the variable bindings
+//! It's meant to be used as an emulation engine for those drivers not
+//! providing such a behaviour directly (i.e. Oracle).
+//! The raw query can contain some variables (identified by prefixing
+//! a colon to a name or a number (i.e. ":var" or  ":2"). They will be
+//! replaced by the corresponding value in the mapping.
+//!
+//! @param query
+//!   The query.
+//!
+//! @param bindings
+//!   Mapping containing the variable bindings. Make sure that
+//!   no confusion is possible in the query. If necessary, change the
+//!   variables' names.
+protected string emulate_bindings(string query,
+				  mapping(string|int:mixed) bindings)
+{
+  array(string)k, v;
+  v = map(values(bindings),
+	  lambda(mixed m) {
+	    if(undefinedp(m))
+	      return "NULL";
+	    if (objectp (m) && m->is_val_null)
+	      // Note: Could need bug compatibility here - in some cases
+	      // we might be passed a null object that can be cast to
+	      // "", and before this it would be. This is an observed
+	      // compat issue in comment #7 in [bug 5900].
+	      return "NULL";
+	    if(multisetp(m))
+	      return sizeof(m) ? indices(m)[0] : "";
+	    return "'"+(intp(m)?(string)m:quote((string)m))+"'";
+	  });
+  // Throws if mapping key is empty string.
+  k = map(indices(bindings),lambda(string s){
+			      return ( (stringp(s)&&s[0]==':') ?
+				       s : ":"+s);
+			    });
+  return replace(query,k,v);
+}
+
 //! Handle @[sprintf]-based quoted arguments
 //!
 //! @param query
