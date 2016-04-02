@@ -49,3 +49,8 @@ int|array(string|int) fetch_row() {
   index++;
   return res;
 }
+
+this_program next_result()
+{
+  return 0;
+}
