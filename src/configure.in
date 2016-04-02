@@ -1764,6 +1764,9 @@ if test "$cflags_is_set" = "no"; then
 	    ])
 	])
     ])
+    # The SSE opcodes are not necessarily enabled on all PIII's.
+    # Cf eg https://bugs.kde.org/show_bug.cgi?id=70655#c8
+    AC_SYS_COMPILER_FLAG(-mno-sse, mno_sse, CFLAGS)
 #    AC_SYS_COMPILER_FLAG(-march=i686,march_i686,CFLAGS)
    ;;
    x86_64)
@@ -1778,6 +1781,10 @@ if test "$cflags_is_set" = "no"; then
 		])
 	    ])
 	])
+	if test "x$with_abi" = "x32"; then
+	  # It seems the SSE opcodes are not necessarily enabled.
+	  AC_SYS_COMPILER_FLAG(-mno-sse, mno_sse, CFLAGS)
+	fi
    ;;
    i86pc)
      # Solaris x86
@@ -1794,6 +1801,10 @@ if test "$cflags_is_set" = "no"; then
 		 ])
 	     ])
 	  ])
+	  if test "x$with_abi" = "x32"; then
+	    # It seems the SSE opcodes are not necessarily enabled.
+	    AC_SYS_COMPILER_FLAG(-mno-sse, mno_sse, CFLAGS)
+	  fi
 #         AC_SYS_COMPILER_FLAG(-march=i686,march_i686,CFLAGS)
 	;;
         *pentium_pro*)
@@ -1806,6 +1817,9 @@ if test "$cflags_is_set" = "no"; then
 	 	])
 	     ])
 	 ])
+	 # The SSE opcodes are not necessarily enabled on all PIII's.
+	 # Cf eg https://bugs.kde.org/show_bug.cgi?id=70655#c8
+	 AC_SYS_COMPILER_FLAG(-mno-sse, mno_sse, CFLAGS)
 #         AC_SYS_COMPILER_FLAG(-march=i686,march_i686,CFLAGS)
 	;;
         *pentium*)
