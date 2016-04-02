@@ -535,6 +535,40 @@ protected array(string|mapping(string|int:mixed))
 //!   Query to send to the SQL-server. This can either be a string with the
 //!   query, or a previously compiled query (see @[compile_query()]).
 //!
+//! @returns
+//!   The result is returned as an @[Sql.sql_result] object in untyped
+//!   mode. This allows for having some more info about the result as
+//!   well as processing the result in a streaming fashion, although the
+//!   result itself wasn't obtained streamingly from the server.
+//!
+//!   Returns @expr{0@} if the query didn't return any result
+//!   (e.g. @tt{INSERT@} or similar).
+//!
+//! @throws
+//!   Throws an exception if the query fails.
+//!
+//! Called by other variants of @[big_query()] after they have processed
+//! their extra arguments.
+//!
+//! This prototype function is the base variant and is intended to be
+//! overloaded by actual drivers.
+//!
+//! @note
+//! Despite the name, this function is not only useful for "big"
+//! queries. It typically has less overhead than @[query] also for
+//! ones that return only a few rows.
+//!
+//! @seealso
+//!   @[query], @[streaming_query]
+int|.Result big_query(object|string q);
+
+//! Send an SQL query synchronously to the SQL-server and return
+//! the results in untyped mode.
+//!
+//! @param q
+//!   Query to send to the SQL-server. This can either be a string with the
+//!   query, or a previously compiled query (see @[compile_query()]).
+//!
 //! @param bindings
 //!   A mapping containing bindings of variables used in the query.
 //!   A variable is identified by a colon (:) followed by a name or number.
@@ -561,14 +595,24 @@ protected array(string|mapping(string|int:mixed))
 //! @throws
 //!   Throws an exception if the query fails.
 //!
-//! Called by @[big_query()] after it has processed any bindings.
+//! Calls the base variant of @[big_query()] after having inserted
+//! the bindings into the query (using @[emulate_bindings()]).
 //!
-//! This prototype function is intended for overriding by drivers.
+//! Drivers that actually support bindings should overload this
+//! variant in addition to the base variant.
+//!
+//! @note
+//! Despite the name, this function is not only useful for "big"
+//! queries. It typically has less overhead than @[query] also for
+//! ones that return only a few rows.
 //!
 //! @seealso
-//!   @[query], @[streaming_query]
-protected int|.Result low_big_query(object|string q,
-				    mapping(string|int:mixed)|void bindings);
+//!   @[query], @[emulate_bindings], @[streaming_query]
+variant int|.Result big_query(object|string q,
+			      mapping(string|int:mixed) bindings)
+{
+  return big_query(emulate_bindings(q, bindings));
+}
 
 //! Send an SQL query synchronously to the SQL-server and return
 //! the results in untyped mode.
@@ -576,32 +620,15 @@ protected int|.Result low_big_query(object|string q,
 //! @param q
 //!   Query to send to the SQL-server. This can either be a string with the
 //!   query, or a previously compiled query (see @[compile_query()]).
+//!
+//! @param extraarg
 //! @param extraargs
-//!   This parameter, if specified, can be in two forms:
-//!
-//!   @ol
-//!     @item
-//!     A mapping containing bindings of variables used in the query.
-//!     A variable is identified by a colon (:) followed by a name or number.
-//!     Each index in the mapping corresponds to one such variable, and the
-//!     value for that index is substituted (quoted) into the query wherever
-//!     the variable is used.
-//!
-//! @code
-//! res = query("SELECT foo FROM bar WHERE gazonk=:baz",
-//!             ([":baz":"value"]));
-//! @endcode
-//!
-//!     Binary values (BLOBs) may need to be placed in multisets.
-//!
-//!     @item
-//!     Arguments as you would use in sprintf. They are automatically
-//!     quoted.
+//!   Arguments as you would use in sprintf. They are automatically
+//!   quoted.
 //!
 //! @code
 //! res = query("select foo from bar where gazonk=%s","value");
 //! @endcode
-//!   @endol
 //!
 //! The result is returned as an @[Sql.sql_result] object in untyped
 //! mode. This allows for having some more info about the result as
@@ -612,7 +639,7 @@ protected int|.Result low_big_query(object|string q,
 //!
 //! The default implementation normalizes @[q] and @[extraargs] to
 //! use the bindings mapping (via @[handle_extraargs()]), and calls
-//! @[low_big_query()].
+//! one of the other variants of @[big_query()] with the result.
 //!
 //! @note
 //! Despite the name, this function is not only useful for "big"
@@ -620,23 +647,12 @@ protected int|.Result low_big_query(object|string q,
 //! ones that return only a few rows.
 //!
 //! @seealso
-//!   @[query], @[low_big_query()], @[streaming_query]
-int|.Result big_query(object|string q, mixed ... extraargs)
+//!   @[query], @[handle_extraargs], @[streaming_query]
+variant int|.Result big_query(object|string q,
+			      string|multiset|int|float|object extraarg,
+			      string|multiset|int|float|object ... extraargs)
 {
-  mapping(string|int:mixed) bindings;
-
-  if (sizeof(extraargs)) {
-    if (mappingp(extraargs[0]))
-      bindings = extraargs[0];
-    else
-      [q, bindings] = handle_extraargs(q, extraargs);
-  }
-
-  if(bindings) {
-    return low_big_query(q, bindings);
-  } else {
-    return low_big_query(q);
-  }
+  return big_query(@handle_extraargs(q, ({ extraarg }) + extraargs));
 }
 
 //! Send an SQL query synchronously to the SQL-server and return
@@ -674,7 +690,7 @@ array(mapping(string:string)) query(object|string q,
 //! Send an SQL query synchronously to the SQL-server and return
 //! the results in typed mode.
 //!
-//! For the arguments, please see the @[query()] function.
+//! For the argument, please see the @[big_query()] function.
 //!
 //! The result is returned as an @[Sql.sql_result] object in typed
 //! mode. This allows for having some more info about the result as
@@ -698,13 +714,43 @@ array(mapping(string:string)) query(object|string q,
 //!
 //! @seealso
 //!   @[query], @[typed_query], @[big_query], @[streaming_query]
-protected int|.Result low_big_typed_query(object|string q,
-					  mapping(string|int:mixed)|void bindings);
+int|.Result big_typed_query(object|string q);
 
 //! Send an SQL query synchronously to the SQL-server and return
 //! the results in typed mode.
 //!
-//! For the arguments, please see the @[query()] function.
+//! For the arguments, please see the @[big_query()] function.
+//!
+//! The result is returned as an @[Sql.sql_result] object in typed
+//! mode. This allows for having some more info about the result as
+//! well as processing the result in a streaming fashion, although the
+//! result itself wasn't obtained streamingly from the server. Returns
+//! @expr{0@} if the query didn't return any result (e.g. @tt{INSERT@}
+//! or similar).
+//!
+//! @note
+//!   Typed mode is not supported by all sql databases. If not
+//!   supported, an error is thrown.
+//!
+//! @note
+//! Despite the name, this function is not only useful for "big"
+//! queries. It typically has less overhead than @[typed_query] also
+//! for ones that return only a few rows.
+//!
+//! Called by @[big_typed_query()] after it has processed any bindings.
+//!
+//! @seealso
+//!   @[query], @[typed_query], @[big_query], @[streaming_query]
+variant int|.Result big_typed_query(object|string q,
+				    mapping(string|int:mixed) bindings)
+{
+  return big_typed_query(emulate_bindings(q, bindings));
+}
+
+//! Send an SQL query synchronously to the SQL-server and return
+//! the results in typed mode.
+//!
+//! For the arguments, please see the @[big_query()] function.
 //!
 //! The result is returned as an @[Sql.sql_result] object in typed
 //! mode. This allows for having some more info about the result as
@@ -724,21 +770,11 @@ protected int|.Result low_big_typed_query(object|string q,
 //!
 //! @seealso
 //!   @[query], @[typed_query], @[big_query], @[streaming_query]
-int|.Result big_typed_query(object|string q, mixed ... extraargs)
+variant int|.Result big_typed_query(object|string q,
+				    string|multiset|int|float|object extraarg,
+				    string|multiset|int|float|object ... extraargs)
 {
-  mapping(string|int:mixed) bindings;
-
-  if (sizeof(extraargs)) {
-    if (mappingp(extraargs[0]))
-      bindings = extraargs[0];
-    else
-      [q, bindings] = handle_extraargs(q, extraargs);
-  }
-
-  if (bindings) {
-    return low_big_typed_query(q, bindings);
-  }
-  return low_big_typed_query(q);
+  return big_typed_query(@handle_extraargs(q, ({ extraarg }) + extraargs));
 }
 
 //! Send an SQL query synchronously to the SQL-server and return
@@ -763,9 +799,9 @@ int|.Result big_typed_query(object|string q, mixed ... extraargs)
 //!   Typed mode is not supported by all sql databases. If not
 //!   supported, an error is thrown.
 //!
-//! Called by @[big_typed_query()] after it has processed any bindings.
-//!
-//! This prototype function is intended for overriding by drivers.
+//! @note
+//!   The default implementation calls @[big_typed_query()]
+//!   and converts its result.
 //!
 //! @seealso
 //!   @[query], @[big_typed_query]
@@ -788,18 +824,46 @@ array(mapping(string:mixed)) typed_query(object|string q, mixed ... extraargs)
 //!
 //! Called by @[streaming_query()] after it has processed any bindings.
 //!
-//! This function is intended for overriding by drivers.
+//! This variant function is intended for overriding by drivers.
 //!
 //! @note
 //!   Streaming operation is not supported by all sql databases.
-//!   The default implentation falls back to calling @[low_big_query()].
+//!   The default implementation falls back to calling @[big_query()].
 //!
 //! @seealso
 //!   @[big_query], @[streaming_typed_query]
-int|.Result low_streaming_query(object|string q,
-				mapping(string|int:mixed)|void bindings)
+int|.Result streaming_query(object|string q)
 {
-  return low_big_query(q, bindings);
+  return big_query(q);
+}
+
+//! Send an SQL query synchronously to the SQL-server and return
+//! the results streaming in untyped mode.
+//!
+//! For the arguments, please see the @[low_big_query()] function.
+//!
+//! The result is returned as a streaming @[Sql.sql_result] object in
+//! untyped mode. This allows for having results larger than the
+//! available memory, and returning some more info about the result.
+//! Returns @expr{0@} if the query didn't return any result (e.g.
+//! INSERT or similar). For the other arguments, they are the same as
+//! for the @[query()] function.
+//!
+//! Called by @[streaming_query()] after it has processed any bindings.
+//!
+//! This variant function is intended for overriding by drivers that
+//! actually implement bindings.
+//!
+//! @note
+//!   Streaming operation is not supported by all sql databases.
+//!   The default implementation falls back to calling @[big_query()].
+//!
+//! @seealso
+//!   @[big_query], @[streaming_typed_query]
+variant int|.Result streaming_query(object|string q,
+				    mapping(string:mixed) bindings)
+{
+  return streaming_query(emulate_bindings(q, bindings));
 }
 
 //! Send an SQL query synchronously to the SQL-server and return
@@ -821,22 +885,11 @@ int|.Result low_streaming_query(object|string q,
 //!
 //! @seealso
 //!   @[big_query], @[streaming_typed_query]
-int|.Result streaming_query(object|string q, mixed ... extraargs)
+variant int|.Result streaming_query(object|string q,
+				    string|multiset|int|float|object extraarg,
+				    string|multiset|int|float|object ... extraargs)
 {
-  mapping(string|int:mixed) bindings;
-
-  if (sizeof(extraargs)) {
-    if(mappingp(extraargs[0]))
-      bindings = extraargs[0];
-    else
-      [q, bindings] = handle_extraargs(q, extraargs);
-  }
-
-  if(bindings) {
-    return low_streaming_query(q, bindings);
-  }
-
-  return low_streaming_query(q);
+  return streaming_query(@handle_extraargs(q, ({ extraarg }) + extraargs));
 }
 
 //! Send an SQL query synchronously to the SQL-server and return
@@ -856,7 +909,32 @@ int|.Result streaming_query(object|string q, mixed ... extraargs)
 //! This function is intended for overriding by drivers.
 //!
 //! @note
-//!   Streaming operation is not supported by all sql databases.
+//!   Neither streaming operation nor typed results are supported
+//!   by all sql databases. The default implentation falls back to
+//!   calling @[big_typed_query()].
+//!
+//! @seealso
+//!   @[streaming_query], @[big_typed_query]
+int|.Result streaming_typed_query(object|string q)
+{
+  return big_typed_query(q);
+}
+
+//! Send an SQL query synchronously to the SQL-server and return
+//! the results streaming in typed mode.
+//!
+//! For the arguments, please see the @[query()] function.
+//!
+//! The result is returned as a streaming @[Sql.sql_result] object in
+//! typed mode. This allows for having results larger than the
+//! available memory, and returning some more info about the result.
+//! Returns @expr{0@} if the query didn't return any result (e.g.
+//! INSERT or similar).
+//!
+//!
+//! Called by @[streaming_query()] after it has processed any bindings.
+//!
+//! This function is intended for overriding by drivers.
 //!
 //! @note
 //!   Neither streaming operation nor typed results are supported
@@ -865,10 +943,10 @@ int|.Result streaming_query(object|string q, mixed ... extraargs)
 //!
 //! @seealso
 //!   @[streaming_query], @[big_typed_query]
-protected int|.Result low_streaming_typed_query(object|string q,
-						mapping(string|int:mixed)|void bindings)
+variant int|.Result streaming_typed_query(object|string q,
+					  mapping(string|int:mixed) bindings)
 {
-  return low_big_typed_query(q, bindings);
+  return streaming_typed_query(emulate_bindings(q, bindings));
 }
 
 //! Send an SQL query synchronously to the SQL-server and return
@@ -889,22 +967,11 @@ protected int|.Result low_streaming_typed_query(object|string q,
 //!
 //! @seealso
 //!   @[streaming_query], @[big_typed_query]
-int|.Result streaming_typed_query(object|string q, mixed ... extraargs)
+variant int|.Result streaming_typed_query(object|string q,
+					  string|multiset|int|float|object extraarg,
+					  string|multiset|int|float|object ... extraargs)
 {
-  mapping(string|int:mixed) bindings;
-
-  if (sizeof(extraargs)) {
-    if(mappingp(extraargs[0]))
-      bindings = extraargs[0];
-    else
-      [q, bindings] = handle_extraargs(q, extraargs);
-  }
-
-  if(bindings) {
-    return low_streaming_typed_query(q, bindings);
-  }
-
-  return low_streaming_typed_query(q);
+  return streaming_typed_query(@handle_extraargs(q, ({ extraarg }) + extraargs));
 }
 
 //! Create a new database.
