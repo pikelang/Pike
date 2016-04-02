@@ -3417,18 +3417,24 @@ int main(int argc, array(string) argv)
   // FIXME: This line is fishy; there is no optfuncs in ParseBlock.
   x=recursive(replace,x,PC.Token("OPTIMIZE",0),tmp->optfuncs);
 
+  array(string) cond_used = ({});
   foreach( check_used; string key; )
   {
-      tmp->declarations += ({
-          "#ifndef CMOD_COND_USED\n"
-          "# define "+key+"_used 1\n"
-          "#else\n"
-      });
-      if( find_identifier( x, key ) )
-          tmp->declarations +=({ "#define "+key+"_used 1\n" });
-      else
-          tmp->declarations += ({ "#undef "+key+"_used\n" });
-      tmp->declarations += ({ "#endif\n" });
+    if( find_identifier( x, key ) )
+      tmp->declarations +=({ "#define "+key+"_used 1\n" });
+    else
+      cond_used += ({ key });
+  }
+  if (sizeof(cond_used)) {
+    tmp->declarations += ({ "#ifndef CMOD_COND_USED\n" });
+    foreach(cond_used, string key) {
+      tmp->declarations += ({ "# define "+key+"_used 1\n" });
+    }
+    tmp->declarations += ({ "#else /* !CMOD_COND_USED */\n" });
+    foreach(cond_used, string key) {
+      tmp->declarations += ({ "# undef "+key+"_used\n" });
+    }
+    tmp->declarations += ({ "#endif /* !CMOD_COND_USED */\n" });
   }
 
   tmp->declarations += global_declarations;
