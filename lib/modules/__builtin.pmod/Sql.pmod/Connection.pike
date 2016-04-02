@@ -482,36 +482,26 @@ protected string emulate_bindings(string query,
 //! @param extraargs
 //!   The arguments following the query.
 //!
-//! @param bindings
-//!   Optional bindings mapping to which additional bindings will be
-//!   added. It's returned as the second element in the return value.
-//!   A new mapping is used if this isn't specified.
-//!
 //! @returns
 //!   Returns an array with two elements:
 //!   @array
 //!     @elem string 0
 //!       The query altered to use bindings-syntax.
 //!     @elem mapping(string|int:mixed) 1
-//!       A bindings mapping. Zero if no bindings were added.
+//!       A bindings mapping. Not present if no bindings were added.
 //!   @endarray
 protected array(string|mapping(string|int:mixed))
-  handle_extraargs(string query, array(mixed) extraargs,
-		   mapping(string|int:mixed)|void bindings)
+  handle_extraargs(string query, array(mixed) extraargs)
 {
-  array(mixed) args=allocate(sizeof(extraargs));
-  if (!bindings) bindings = ([]);
+  array(mixed) args = allocate(sizeof(extraargs));
+  mapping(string:mixed) bindings = ([]);
 
-  int a, new_bindings;
+  int a;
   foreach(extraargs; int j; mixed s) {
     if (stringp(s) || multisetp(s)) {
-      string bind_name;
-      do {
-	bind_name = ":arg"+(a++);
-      } while (has_index(bindings, bind_name));
-      args[j]=bind_name;
+      string bind_name = ":arg"+(a++);
+      args[j] = bind_name;
       bindings[bind_name] = s;
-      new_bindings = 1;
       continue;
     }
     if (intp(s) || floatp(s)) {
@@ -525,7 +515,10 @@ protected array(string|mapping(string|int:mixed))
     ERROR("Wrong type to query argument %d: %O\n", j + 1, s);
   }
 
-  return ({sprintf(query,@args), new_bindings && bindings});
+  query = sprintf(query, @args);
+
+  if (sizeof(bindings)) return ({ query, bindings });
+  return ({ query });
 }
 
 //! Send an SQL query synchronously to the SQL-server and return
