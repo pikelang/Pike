@@ -15,6 +15,11 @@ int num_rows() {
   return master_res->num_rows();
 }
 
+int num_fields()
+{
+  return master_res->num_fields();
+}
+
 int eof() {
   return master_res->eof();
 }
@@ -37,4 +42,10 @@ void seek(int skip) {
 int|array(string|int) fetch_row() {
   index++;
   return master_res->fetch_row();
+}
+
+this_program next_result()
+{
+  if (master_res->next_result) return master_res->next_result();
+  return 0;
 }
