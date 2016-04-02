@@ -2257,6 +2257,9 @@ PMOD_EXPORT void push_random_string(unsigned len)
 #ifdef __NT__
 #include <wincrypt.h>
 static HCRYPTPROV crypto_handle;
+#else
+static int random_fd = -1;
+#endif
 PIKECLASS RandomSystem
 {
   INHERIT RandomInterface;
@@ -2265,6 +2268,8 @@ PIKECLASS RandomSystem
   {
     if( len<1 )
       RETURN empty_pike_string;
+
+#ifdef __NT__
     if(!crypto_handle)
     {
       if( !CryptAcquireContext(&crypto_handle, 0, 0, PROV_RSA_FULL,
@@ -2272,29 +2277,13 @@ PIKECLASS RandomSystem
         Pike_error("Failed to set up Crypto Service.\n");
     }
 
-    struct pike_string *res = begin_shared_string(size);
-    if( !CryptGenRandom(crypto_handle, size, (BYTE*)res->str) )
+    struct pike_string *ret = begin_shared_string(len);
+    if( !CryptGenRandom(crypto_handle, len, (BYTE*)ret->str) )
     {
-      do_free_unlinked_pike_string (res);
+      do_free_unlinked_pike_string (ret);
       Pike_error("Failed to create random data.\n");
     }
-
-    RETURN end_shared_string(res);
-  }
-}
-#else
-static int random_fd = -1;
-PIKECLASS RandomSystem
-{
-  INHERIT RandomInterface;
-
-  PIKEFUN string(8bit) random_string(int len)
-  {
-    if( len==0 )
-      RETURN empty_pike_string;
-    if( len<0 )
-      Pike_error("Bad argument 1 to random_string(). Expected int(0..).\n");
-
+#else /* !__NT__ */
     if( random_fd==-1 )
     {
       random_fd = open("/dev/urandom", O_RDONLY);
@@ -2307,14 +2296,23 @@ PIKECLASS RandomSystem
     while( len )
     {
       int sz = read(random_fd, str, len);
+      if (sz < 0) {
+	free_string(ret);
+
+	/* Attempt to recover on next call. */
+	close(random_fd);
+	random_fd = -1;
+
+	Pike_error("Failed to read %d bytes from /dev/urandom.\n", len);
+      }
       str += sz;
       len -= sz;
     }
+#endif /* !__NT__ */
 
     RETURN end_shared_string(ret);
   }
 }
-#endif
 
 #if defined(HAVE_SETENV) && defined(HAVE_UNSETENV)
 #define USE_SETENV
