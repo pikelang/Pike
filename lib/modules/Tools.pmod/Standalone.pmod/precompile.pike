@@ -209,6 +209,7 @@ void warn(string s, mixed ... args)
   error(s, @args);
 }
 
+array global_declarations=({});
 multiset check_used = (<>);
 
 /* Strings declared with MK_STRING. */
@@ -2016,10 +2017,13 @@ sprintf("        } else {\n"
 	    string define = make_unique_name("class", base, name, "defined");
 
 	    ret+=DEFINE(define);
-	    ret+=({sprintf("DEFAULT_CMOD_STORAGE struct program *%s=NULL;\n",
-			   program_var)});
-	    ret+=IFDEF(program_var+"_fun_num_used",
-                       ({sprintf("DEFAULT_CMOD_STORAGE int %s_fun_num=-1;", program_var)}));
+	    global_declarations +=
+	      ({sprintf("DEFAULT_CMOD_STORAGE struct program *%s=NULL;\n",
+			program_var)});
+	    global_declarations +=
+	      IFDEF(program_var+"_fun_num_used",
+		    ({sprintf("DEFAULT_CMOD_STORAGE int %s_fun_num=-1;",
+			      program_var)}));
 	    ret+=subclass->declarations;
 	    ret+=subclass->code;
 
@@ -2377,9 +2381,9 @@ static struct %s *%s_gdb_dummy_ptr;
 
 	if (!attributes->efun) {
           check_used[func_num] = 1;
-	  ret += ({
+	  global_declarations += ({
             IFDEF(func_num+"_used",
-                  ({ sprintf("DEFAULT_CMOD_STORAGE ptrdiff_t %s = 0;\n",
+                  ({ sprintf("DEFAULT_CMOD_STORAGE ptrdiff_t %s = -1;\n",
                              func_num) }),
                   0)
 	  });
@@ -2882,11 +2886,13 @@ static struct %s *%s_gdb_dummy_ptr;
 	     * somewhere outside of all #ifdefs really!
 	     * -Hubbe
 	     */
+	    global_declarations += ({
+              IFDEF(func_num+"_used",
+                    ({sprintf("DEFAULT_CMOD_STORAGE ptrdiff_t %s = -1;\n", func_num)})),
+	    });
             check_used[func_num] = 1;
 	    ret+=IFDEF(tmp->define, ({
 	      sprintf("#define %s\n",define),
-              IFDEF(func_num+"_used",
-                    ({sprintf("DEFAULT_CMOD_STORAGE ptrdiff_t %s = 0;\n", func_num)})),
 	      sprintf("DEFAULT_CMOD_STORAGE void %s(INT32 args) ",funcname),
 	      "{\n",
 	    })+out+({
@@ -3424,6 +3430,8 @@ int main(int argc, array(string) argv)
           tmp->declarations += ({ "#undef "+key+"_used\n" });
       tmp->declarations += ({ "#endif\n" });
   }
+
+  tmp->declarations += global_declarations;
   tmp->code = x;
   x=recursive(replace,x,PC.Token("DECLARATIONS",0),tmp->declarations);
 
