@@ -622,8 +622,7 @@ PIKEFUN object big_query(string q)
   clean_last_error();
 
   /* Allocate the statement (Result) object */
-  ref_push_object(fp->current_object);
-  apply_current(Odbc_Result_program_fun_num, 1);
+  apply_current(Odbc_Result_program_fun_num, 0);
 
   if (TYPEOF(Pike_sp[-1]) != T_OBJECT) {
     Pike_error("big_query(): Unexpected return value from Result().\n");
@@ -685,8 +684,7 @@ PIKEFUN object big_typed_query(string q)
   clean_last_error();
 
   /* Allocate the statement (result) object */
-  ref_push_object(fp->current_object);
-  apply_current(Odbc_TypedResult_program_fun_num, 1);
+  apply_current(Odbc_TypedResult_program_fun_num, 0);
 
   if (TYPEOF(Pike_sp[-1]) != T_OBJECT) {
     Pike_error("big_typed_query(): Unexpected return value from "
@@ -756,8 +754,7 @@ PIKEFUN object list_tables(string|void pattern)
   clean_last_error();
 
   /* Allocate the statement (result) object */
-  ref_push_object(fp->current_object);
-  push_object(clone_object(Odbc_Result_program, 1));
+  apply_current(Odbc_Result_program_fun_num, 0);
 
   UNSET_ONERROR(ebuf);
 

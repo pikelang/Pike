@@ -73,9 +73,8 @@ DECLARATIONS;
  */
 
 PIKECLASS Result
+  program_flags PROGRAM_USES_PARENT|PROGRAM_NEEDS_PARENT;
 {
-
-  CVAR struct object *obj;
   CVAR struct Odbc_odbc_struct *odbc;
   CVAR SQLHSTMT hstmt;
   CVAR SWORD num_fields;
@@ -100,11 +99,7 @@ static void clean_sql_res(void)
     free_array(PIKE_ODBC_RES->fields);
     PIKE_ODBC_RES->fields = NULL;
   }
-  if (PIKE_ODBC_RES->obj) {
-    free_object(PIKE_ODBC_RES->obj);
-    PIKE_ODBC_RES->obj = NULL;
-    PIKE_ODBC_RES->odbc = NULL;
-  }
+  PIKE_ODBC_RES->odbc = NULL;
   PIKE_ODBC_RES->hstmt = SQL_NULL_HSTMT;
 }
 
@@ -147,8 +142,6 @@ EXIT
 
 EXTRA
 {
-  PIKE_MAP_VARIABLE("_odbc", OFFSETOF(Odbc_Result_struct, obj), tObj,
-                    T_OBJECT, 0);
   PIKE_MAP_VARIABLE("_fields", OFFSETOF(Odbc_Result_struct, fields),
                     tArr(tMap(tStr,tMix)), T_ARRAY, 0);
   PIKE_MAP_VARIABLE("_null_value", OFFSETOF(Odbc_Result_struct, null_value),
@@ -684,21 +677,12 @@ static void odbc_fix_fields(void)
  * Methods
  */
 
-/* void create(object(odbc)) */
-PIKEFUN void create(object odbc)
+/* void create() */
+PIKEFUN void create()
 {
   SQLHSTMT hstmt = SQL_NULL_HSTMT;
 
-  if (PIKE_ODBC_RES->obj) {
-    free_object(PIKE_ODBC_RES->obj);
-    PIKE_ODBC_RES->obj = NULL;
-    PIKE_ODBC_RES->odbc = NULL;
-  }
-
-  if (!(PIKE_ODBC_RES->odbc = get_storage(odbc, Odbc_odbc_program))) {
-    Pike_error("Bad argument 1 to Result()\n");
-  }
-  add_ref(PIKE_ODBC_RES->obj = odbc);
+  PIKE_ODBC_RES->odbc = parent_storage(1, Odbc_odbc_program);
 
   /* It's doubtful if this call really can block, but we play safe. /mast */
   {
