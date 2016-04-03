@@ -59,11 +59,11 @@
  */
 
 extern struct program *Odbc_odbc_program;
-extern struct program *Odbc_result_program;
-extern struct program *Odbc_typed_result_program;
+extern struct program *Odbc_Result_program;
+extern struct program *Odbc_TypedResult_program;
 
-extern int Odbc_result_program_fun_num;
-extern int Odbc_typed_result_program_fun_num;
+extern int Odbc_Result_program_fun_num;
+extern int Odbc_TypedResult_program_fun_num;
 
 /*
  * Typedefs

@@ -621,13 +621,12 @@ PIKEFUN object big_query(string q)
 
   clean_last_error();
 
-  /* Allocate the statement (result) object */
+  /* Allocate the statement (Result) object */
   ref_push_object(fp->current_object);
-  apply_current(Odbc_result_program_fun_num, 1);
+  apply_current(Odbc_Result_program_fun_num, 1);
 
   if (TYPEOF(Pike_sp[-1]) != T_OBJECT) {
-    Pike_error("odbc->big_typed_query(): Unexpected return value from "
-	  "odbc_result().\n");
+    Pike_error("big_query(): Unexpected return value from Result().\n");
   }
 
   UNSET_ONERROR(ebuf);
@@ -641,8 +640,7 @@ PIKEFUN object big_query(string q)
   apply(sp[-2].u.object, "execute", 1);
 
   if (TYPEOF(sp[-1]) != T_INT) {
-    Pike_error("odbc->big_query(): Unexpected return value from "
-	  "odbc_result->execute().\n");
+    Pike_error("big_query(): Unexpected return value from execute().\n");
   }
 
   if (!sp[-1].u.integer) {
@@ -688,11 +686,11 @@ PIKEFUN object big_typed_query(string q)
 
   /* Allocate the statement (result) object */
   ref_push_object(fp->current_object);
-  apply_current(Odbc_typed_result_program_fun_num, 1);
+  apply_current(Odbc_TypedResult_program_fun_num, 1);
 
   if (TYPEOF(Pike_sp[-1]) != T_OBJECT) {
-    Pike_error("odbc->big_typed_query(): Unexpected return value from "
-	  "odbc_typed_result().\n");
+    Pike_error("big_typed_query(): Unexpected return value from "
+	  "TypedResult().\n");
   }
 
   UNSET_ONERROR(ebuf);
@@ -706,8 +704,7 @@ PIKEFUN object big_typed_query(string q)
   apply(sp[-2].u.object, "execute", 1);
 
   if (TYPEOF(sp[-1]) != T_INT) {
-    Pike_error("odbc->big_typed_query(): Unexpected return value from "
-	  "odbc_result->execute().\n");
+    Pike_error("big_typed_query(): Unexpected return value from execute().\n");
   }
 
   if (!sp[-1].u.integer) {
@@ -760,7 +757,7 @@ PIKEFUN object list_tables(string|void pattern)
 
   /* Allocate the statement (result) object */
   ref_push_object(fp->current_object);
-  push_object(clone_object(Odbc_result_program, 1));
+  push_object(clone_object(Odbc_Result_program, 1));
 
   UNSET_ONERROR(ebuf);
 
@@ -777,8 +774,8 @@ PIKEFUN object list_tables(string|void pattern)
   }
 
   if (TYPEOF(sp[-1]) != T_INT) {
-    Pike_error("odbc->list_tables(): Unexpected return value from "
-	       "odbc_result->list_tables().\n");
+    Pike_error("list_tables(): Unexpected return value from "
+	       "Result()->list_tables().\n");
   }
 
   if (!sp[-1].u.integer) {

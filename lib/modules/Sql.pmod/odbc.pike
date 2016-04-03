@@ -29,7 +29,7 @@ int|object big_typed_query(object|string q,
 constant list_dbs = Odbc.list_dbs;
 
 //!
-class typed_result
+class TypedResult
 {
   inherit ::this_program;
 

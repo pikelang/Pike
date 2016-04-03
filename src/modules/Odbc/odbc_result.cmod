@@ -72,7 +72,7 @@ DECLARATIONS;
  * Functions
  */
 
-PIKECLASS result
+PIKECLASS Result
 {
 
   CVAR struct object *obj;
@@ -124,7 +124,7 @@ static inline void odbc_check_error(const char *fun, const char *msg,
 
 INIT
 {
-  memset(PIKE_ODBC_RES, 0, sizeof(struct Odbc_result_struct));
+  memset(PIKE_ODBC_RES, 0, sizeof(struct Odbc_Result_struct));
   PIKE_ODBC_RES->hstmt = SQL_NULL_HSTMT;
   SET_SVAL(PIKE_ODBC_RES->null_value, PIKE_T_INT, NUMBER_UNDEFINED,
 	   integer, 0);
@@ -147,11 +147,11 @@ EXIT
 
 EXTRA
 {
-  PIKE_MAP_VARIABLE("_odbc", OFFSETOF(Odbc_result_struct, obj), tObj,
+  PIKE_MAP_VARIABLE("_odbc", OFFSETOF(Odbc_Result_struct, obj), tObj,
                     T_OBJECT, 0);
-  PIKE_MAP_VARIABLE("_fields", OFFSETOF(Odbc_result_struct, fields),
+  PIKE_MAP_VARIABLE("_fields", OFFSETOF(Odbc_Result_struct, fields),
                     tArr(tMap(tStr,tMix)), T_ARRAY, 0);
-  PIKE_MAP_VARIABLE("_null_value", OFFSETOF(Odbc_result_struct, null_value),
+  PIKE_MAP_VARIABLE("_null_value", OFFSETOF(Odbc_Result_struct, null_value),
                     tMix, T_MIXED, 0);
 }
 
@@ -230,7 +230,7 @@ static void push_numeric(int UNUSED(i))
   if (numeric->scale) {
     push_int(-numeric->scale);
     free_string(data);
-    apply_current(f_Odbc_typed_result_scale_numeric_fun_num, 2);
+    apply_current(f_Odbc_TypedResult_scale_numeric_fun_num, 2);
     return;
   }
   free_string(data);
@@ -252,7 +252,7 @@ static void push_time(int UNUSED(i))
   push_int(time->fraction);	/* ns */
 #endif
   free_string(data);
-  apply_current(f_Odbc_typed_result_time_factory_fun_num, 3);
+  apply_current(f_Odbc_TypedResult_time_factory_fun_num, 3);
 }
 
 static void push_date(int UNUSED(i))
@@ -267,7 +267,7 @@ static void push_date(int UNUSED(i))
   push_int(date->month);
   push_int(date->day);
   free_string(data);
-  apply_current(f_Odbc_typed_result_timestamp_factory_fun_num, 3);
+  apply_current(f_Odbc_TypedResult_timestamp_factory_fun_num, 3);
 }
 
 static void push_timestamp(int UNUSED(i))
@@ -291,19 +291,19 @@ static void push_timestamp(int UNUSED(i))
   push_int(time->timezone_minute);
 #endif
   free_string(data);
-  apply_current(f_Odbc_typed_result_timestamp_factory_fun_num, 7);
+  apply_current(f_Odbc_TypedResult_timestamp_factory_fun_num, 7);
 }
 
 static void push_uuid(int UNUSED(i))
 {
-  apply_current(f_Odbc_typed_result_uuid_factory_fun_num, 1);
+  apply_current(f_Odbc_TypedResult_uuid_factory_fun_num, 1);
 }
 
 static void push_user_defined(int i)
 {
   push_svalue(PIKE_ODBC_RES->fields->item + i);
   push_int(i);
-  apply_current(f_Odbc_typed_result_user_defined_factory_fun_num, 3);
+  apply_current(f_Odbc_TypedResult_user_defined_factory_fun_num, 3);
 }
 
 #ifndef SQL_SS_VARIANT
@@ -696,7 +696,7 @@ PIKEFUN void create(object odbc)
   }
 
   if (!(PIKE_ODBC_RES->odbc = get_storage(odbc, Odbc_odbc_program))) {
-    Pike_error("Bad argument 1 to odbc_result()\n");
+    Pike_error("Bad argument 1 to Result()\n");
   }
   add_ref(PIKE_ODBC_RES->obj = odbc);
 
@@ -707,7 +707,7 @@ PIKEFUN void create(object odbc)
     ODBC_ALLOW();
     code = SQLAllocStmt(hdbc, &hstmt);
     ODBC_DISALLOW();
-    odbc_check_error("odbc_result", "Statement allocation failed",
+    odbc_check_error("Result", "Statement allocation failed",
 		     code, NULL, NULL);
   }
   PIKE_ODBC_RES->hstmt = hstmt;
@@ -764,7 +764,7 @@ PIKEFUN int execute(string(16bit) q)
 #endif
 
   if (err_msg)
-    odbc_error ("odbc_result->execute", err_msg, PIKE_ODBC_RES->odbc, hstmt,
+    odbc_error ("execute", err_msg, PIKE_ODBC_RES->odbc, hstmt,
 		code, NULL, NULL);
   else {
     pike_odbc_set_affected_rows(PIKE_ODBC_RES->odbc,
@@ -810,7 +810,7 @@ PIKEFUN int list_tables(string|void table_name_pattern)
   ODBC_DISALLOW();
 
   if (err_msg)
-    odbc_error ("odbc_result->list_tables", err_msg, PIKE_ODBC_RES->odbc, hstmt,
+    odbc_error ("list_tables", err_msg, PIKE_ODBC_RES->odbc, hstmt,
 		code, NULL, NULL);
   else {
     pike_odbc_set_affected_rows(PIKE_ODBC_RES->odbc,
@@ -1101,7 +1101,7 @@ PIKEFUN object next_result()
     return;
   }
 
-  odbc_check_error("odbc->next_result", "Failed to get next result.",
+  odbc_check_error("next_result", "Failed to get next result.",
 		   code, NULL, NULL);
 
   pop_n_elems(args);
@@ -1122,10 +1122,10 @@ PIKEFUN void seek()
 
 }
 
-PIKECLASS typed_result
+PIKECLASS TypedResult
 {
 
-  INHERIT Odbc_result;
+  INHERIT Odbc_Result;
 
   /* Prototypes for functions implemented in Pike. */
 
