@@ -64,12 +64,6 @@
  * Globals
  */
 
-static int scale_numeric_fun_num = -1;
-static int time_factory_fun_num = -1;
-static int timestamp_factory_fun_num = -1;
-static int user_defined_factory_fun_num = -1;
-static int uuid_factory_fun_num = -1;
-
 #define DEFAULT_CMOD_STORAGE
 
 DECLARATIONS;
@@ -236,7 +230,7 @@ static void push_numeric(int UNUSED(i))
   if (numeric->scale) {
     push_int(-numeric->scale);
     free_string(data);
-    apply_current(scale_numeric_fun_num, 2);
+    apply_current(f_Odbc_typed_result_scale_numeric_fun_num, 2);
     return;
   }
   free_string(data);
@@ -258,7 +252,7 @@ static void push_time(int UNUSED(i))
   push_int(time->fraction);	/* ns */
 #endif
   free_string(data);
-  apply_current(time_factory_fun_num, 3);
+  apply_current(f_Odbc_typed_result_time_factory_fun_num, 3);
 }
 
 static void push_date(int UNUSED(i))
@@ -273,7 +267,7 @@ static void push_date(int UNUSED(i))
   push_int(date->month);
   push_int(date->day);
   free_string(data);
-  apply_current(timestamp_factory_fun_num, 3);
+  apply_current(f_Odbc_typed_result_timestamp_factory_fun_num, 3);
 }
 
 static void push_timestamp(int UNUSED(i))
@@ -297,19 +291,19 @@ static void push_timestamp(int UNUSED(i))
   push_int(time->timezone_minute);
 #endif
   free_string(data);
-  apply_current(timestamp_factory_fun_num, 7);
+  apply_current(f_Odbc_typed_result_timestamp_factory_fun_num, 7);
 }
 
 static void push_uuid(int UNUSED(i))
 {
-  apply_current(uuid_factory_fun_num, 1);
+  apply_current(f_Odbc_typed_result_uuid_factory_fun_num, 1);
 }
 
 static void push_user_defined(int i)
 {
   push_svalue(PIKE_ODBC_RES->fields->item + i);
   push_int(i);
-  apply_current(user_defined_factory_fun_num, 3);
+  apply_current(f_Odbc_typed_result_user_defined_factory_fun_num, 3);
 }
 
 #ifndef SQL_SS_VARIANT
@@ -1133,31 +1127,37 @@ PIKECLASS typed_result
 
   INHERIT Odbc_result;
 
-EXTRA
-{
   /* Prototypes for functions implemented in Pike. */
-  scale_numeric_fun_num =
-    ADD_FUNCTION("scale_numeric", NULL,
-		 tFunc(tInt tInt, tOr(tInt, tObj)),
-		 ID_PUBLIC);
-  time_factory_fun_num =
-    ADD_FUNCTION("time_factory", NULL,
-		 tFunc(tInt tInt tInt tOr(tInt, tVoid), tMix),
-		 ID_PUBLIC);
-  timestamp_factory_fun_num =
-    ADD_FUNCTION("timestamp_factory", NULL,
-		 tFunc(tInt tInt tInt
-		       tOr(tInt, tVoid) tOr(tInt, tVoid)
-		       tOr(tInt, tVoid) tOr(tInt, tVoid)
-		       tOr(tInt, tVoid) tOr(tInt, tVoid), tMix),
-		 ID_PUBLIC);
-  user_defined_factory_fun_num =
-    ADD_FUNCTION("user_defined_factory", NULL,
-		 tFunc(tStr8 tMap(tMix, tMix), tMix),
-		 ID_PUBLIC);
-  uuid_factory_fun_num =
-    ADD_FUNCTION("uuid_factory", NULL, tFunc(tStr8, tObj), ID_PUBLIC);
-}
+
+  PIKEFUN int|object scale_numeric(int mantissa, int scale)
+    prototype;
+  {
+  }
+
+  PIKEFUN mixed time_factory(int hour, int minute, int second, int|void nanos)
+    prototype;
+  {
+  }
+
+  PIKEFUN mixed timestamp_factory(int year, int month, int day,
+				  int|void hour, int|void minute,
+				  int|void second, int|void nanos,
+				  int|void tz_hour, int|void tz_minute)
+    prototype;
+  {
+  }
+
+  PIKEFUN mixed user_defined_factory(string(8bit) raw,
+				     mapping(string:mixed) field_info,
+				     int field_number)
+    prototype;
+  {
+  }
+
+  PIKEFUN object uuid_factory(string(8bit) raw_uuid)
+    prototype;
+  {
+  }
 
 /* int|array(string|float|int|object) fetch_typed_row() */
 PIKEFUN array(string|float|int|object) fetch_row()
