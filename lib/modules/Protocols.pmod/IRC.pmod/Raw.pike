@@ -23,7 +23,7 @@ void create(string|object server,int port,
    else {
        array aserver=gethostbyname(server);
        if (!aserver || !sizeof(aserver[1]))
-	  Error.connection("Failed to lookup host %O",server);
+	  Error.connection(sprintf("Failed to lookup host %O", server), 0); //No errno available
        server=aserver[1][random(sizeof(aserver[1]))];
 
        con=Stdio.File();
