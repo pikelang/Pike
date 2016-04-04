@@ -19,6 +19,12 @@ enum ia32_reg {P_REG_EAX = 0, P_REG_EBX = 3, P_REG_ECX = 1, P_REG_EDX = 2,
 
 #define REG_BITMASK ((1 << P_REG_NONE) - 1)
 
+/* Padding needed to align ESP on a 16-byte boundary after
+ * a function call. This is needed to be able to call
+ * functions that use SSE2 opcodes.
+ */
+#define STACK_PAD	0x0c
+
 /* #define REGISTER_DEBUG */
 
 #ifdef REGISTER_DEBUG
@@ -407,8 +413,8 @@ void ia32_ins_entry(void)
   PUSH_REG(P_REG_EDI);
   PUSH_REG(P_REG_ESI);
   PUSH_REG(P_REG_EBX);
-  /* Funcall arguments (4 * 4 bytes). */
-  ADD_VAL_TO_REG(-0x10, P_REG_ESP);
+  /* Funcall arguments (4 * 4 bytes + padding). */
+  ADD_VAL_TO_REG(-(0x10 + STACK_PAD), P_REG_ESP);
 
 #ifdef REGISTER_DEBUG
   valid_regs = 0;
@@ -926,7 +932,7 @@ void ins_f_byte(unsigned int b)
     CMP_REG_IMM32(P_REG_EAX, -1);
     JNE(0);
     skip = (INT32)PIKE_PC;
-    ADD_VAL_TO_REG(0x10, P_REG_ESP);	/* Funcall arguments (4 * 4 bytes). */
+    ADD_VAL_TO_REG(0x10 + STACK_PAD, P_REG_ESP);	/* Funcall arguments (4 * 4 bytes) + padding. */
     POP_REG(P_REG_EBX);
     POP_REG(P_REG_ESI);
     POP_REG(P_REG_EDI);
