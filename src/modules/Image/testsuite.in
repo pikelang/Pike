@@ -660,8 +660,22 @@ test_do( img()->skewy(22.8, 100, 75, 26) )
 // sum tests above
 // sumf tests above
 
-test_eq( (string)Image.Image(4,4)->test(42),
-String.hex2string("f15a00af68556c879b539aac904c946c70ad35a0cd35aebf5000fe4a77e100bafc24cbb2a0b4ff6393e32dc3b929ff67") )
+test_any([[
+  string i = (string)Image.Image(4,4)->test(42);
+  string expected = String.hex2string("f15a00af68556c879b539aac904c946c70ad35a0cd35aebf5000fe4a77e100bafc24cbb2a0b4ff6393e32dc3b929ff67");
+  if (i == expected) return 0;
+  // The test image is generated with doubles, and my be off by 1
+  // in a few places if the mantissa is small.
+  if (sizeof(i) != sizeof(expected)) return String.string2hex(i);
+  for (int j = 0; j < sizeof(i); j++) {
+    if ((i[j] > expected[j] + 1) || (i[j] < expected[j] - 1)) {
+      return String.string2hex(i);
+    }
+  }
+
+  // All pixels are within the tolerance limits.
+  return 0;
+]], 0)
 test_do( img()->test(Random.Deterministic(42)->random) )
 
 test_do( img()->threshold() )
