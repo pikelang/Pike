@@ -389,10 +389,6 @@ protected class CommandHelp {
 
     case "about hilfe":
       e->print_version();
-      write(#"
-Initial version written by Fredrik Hübinette 1996-2000
-Rewritten by Martin Nilsson 2002
-");
       return;
     }
 
