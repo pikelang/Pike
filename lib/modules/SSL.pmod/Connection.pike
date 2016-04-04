@@ -827,7 +827,8 @@ void send_heartbeat()
   int now = gethrtime();
   hb_msg->add(heartbeat_encode->crypt(sprintf("%8c%8c", now, now)));
   // We pad to an even 64 bytes.
-  hb_msg->add(random_string(64 - sizeof(hb_msg)));
+  int(0..) bytes = [int(0..)]max(0, 64 - sizeof(hb_msg));
+  hb_msg->add(random_string(bytes));
   send_packet(heartbeat_packet(hb_msg));
 }
 
@@ -842,7 +843,7 @@ void handle_heartbeat(string(8bit) s)
 		 fmt_constant(hb_type, "HEARTBEAT_MESSAGE"), hb_len);
 
   string(8bit) payload;
-  int pad_len = 16;
+  int(0..) pad_len = 16;
 
   // RFC 6520 4:
   // If the payload_length of a received HeartbeatMessage is too
