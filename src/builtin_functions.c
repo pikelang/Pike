@@ -8403,6 +8403,11 @@ PMOD_EXPORT void f_map(INT32 args)
 	     }
 	   }
 	 }else{
+           int apply_args = 1 + splice;
+           struct svalue *applied_sval = mysp - 2;
+           struct reuse_frame_context *reuse_ctx =
+             init_frame_reuse_context(applied_sval, apply_args);
+
 	   for (i=0; i<n; i++)
 	   {
 	     push_svalue(ITEM(a)+i);
@@ -8410,15 +8415,14 @@ PMOD_EXPORT void f_map(INT32 args)
 	     {
 	       add_ref_svalue(mysp-1);
 	       push_array_items(mysp[-1].u.array);
-	       apply_svalue(mysp-2,1+splice);
 	     }
-	     else
-	     {
-	       apply_svalue(mysp-2,1);
-	     }
+             apply_svalue_reuse_context(reuse_ctx);
+
 	     stack_pop_to_no_free (ITEM(d) + i);
 	     types |= 1 << TYPEOF(ITEM(d)[i]);
 	   }
+
+           free_frame_reuse_context(reuse_ctx);
 	 }
 	 d->type_field = types;
 	 stack_pop_n_elems_keep_top(3); /* fun arr extra d -> d */

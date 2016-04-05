@@ -2643,6 +2643,47 @@ static void restore_catching_eval_jmpbuf (LOW_JMP_BUF *p)
   Pike_interpreter.catching_eval_jmpbuf = p;
 }
 
+PMOD_EXPORT void mega_apply_reuse_context(enum apply_type type, INT32 args,
+                                          void *arg1, void *arg2,
+                                          struct reuse_frame_context *reuse_ctx)
+{
+  PIKE_OPCODE_T *eval_pc = NULL;
+  struct pike_frame *frame = reuse_ctx->frame;
+
+  if (frame != NULL) {
+    frame->next = Pike_fp;
+    Pike_fp = frame;
+    eval_pc = frame->pc = reuse_ctx->orig_pc;
+  } else {
+    eval_pc = low_mega_apply(type, args, arg1, arg2);
+    reuse_ctx->orig_pc = eval_pc;
+  }
+
+  if(eval_pc)
+  {
+    eval_instruction(eval_pc
+#ifdef ENTRY_PROLOGUE_SIZE
+		     - ENTRY_PROLOGUE_SIZE
+#endif /* ENTRY_PROLOGUE_SIZE */
+		     );
+
+    if (Pike_fp->refs == 1) {
+      frame = Pike_fp;
+      add_ref (frame);
+      frame->flags |= PIKE_FRAME_REUSABLE;
+    } else {
+      if (frame != NULL) {
+        if (!sub_ref (frame))
+          really_free_pike_frame (frame);
+      }
+      frame = NULL;
+    }
+    reuse_ctx->frame = frame;
+
+    low_return();
+  }
+}
+
 PMOD_EXPORT void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 {
   /* Save and clear Pike_interpreter.catching_eval_jmpbuf so that the
@@ -3178,6 +3219,69 @@ PMOD_EXPORT void apply_external(int depth, int fun, INT32 args)
   } else {
     PIKE_ERROR("destructed object", "Apply on parent of destructed object.\n",
 	       Pike_sp, args);
+  }
+}
+
+PMOD_EXPORT struct reuse_frame_context*
+init_frame_reuse_context(struct svalue *s, INT32 args)
+{
+  struct reuse_frame_context *ctx = xalloc(sizeof(struct reuse_frame_context));
+  ctx->saved_jmpbuf = Pike_interpreter.catching_eval_jmpbuf;
+  Pike_interpreter.catching_eval_jmpbuf = NULL;
+  ctx->err = xalloc(sizeof(struct ONERROR));
+  SET_ONERROR ((*ctx->err), restore_catching_eval_jmpbuf, ctx->saved_jmpbuf);
+  ctx->orig_pc = NULL;
+  ctx->frame = NULL;
+  ctx->sval = s;
+  ctx->args = args;
+
+  /* The C stack margin is normally 8 kb, but if we get here during a
+   * lowered margin then don't fail just because of that, unless it's
+   * practically zero. */
+  check_c_stack(Pike_interpreter.c_stack_margin ?
+		Pike_interpreter.c_stack_margin : 100);
+
+  return ctx;
+}
+
+PMOD_EXPORT void free_frame_reuse_context (struct reuse_frame_context *ctx)
+{
+  CALL_AND_UNSET_ONERROR ((*ctx->err));
+  free (ctx->err);
+
+  if (ctx->frame != NULL) {
+    if (!sub_ref (ctx->frame))
+      really_free_pike_frame (ctx->frame);
+  }
+
+  free (ctx);
+}
+
+PMOD_EXPORT void
+apply_svalue_reuse_context(struct reuse_frame_context *reuse_ctx)
+{
+  struct svalue *s = reuse_ctx->sval;
+  INT32 args = reuse_ctx->args;
+
+  if(UNLIKELY(TYPEOF(*s) == T_INT)) {
+    pop_n_elems(args);
+    push_int(0);
+  } else {
+    ptrdiff_t expected_stack = Pike_sp-args+1 - Pike_interpreter.evaluator_stack;
+    mega_apply_reuse_context (APPLY_SVALUE_STRICT, args, (void *)s, 0,
+                              reuse_ctx);
+    if(Pike_sp > (expected_stack + Pike_interpreter.evaluator_stack))
+    {
+      pop_n_elems(Pike_sp-(expected_stack + Pike_interpreter.evaluator_stack));
+    }
+    else if(Pike_sp < (expected_stack + Pike_interpreter.evaluator_stack))
+    {
+      push_int(0);
+    }
+#ifdef PIKE_DEBUG
+    if(Pike_sp < (expected_stack + Pike_interpreter.evaluator_stack))
+      Pike_fatal("Stack underflow!\n");
+#endif
   }
 }
 

@@ -99,7 +99,18 @@ struct pike_frame
 
 #define PIKE_FRAME_RETURN_INTERNAL 1
 #define PIKE_FRAME_RETURN_POP 2
+#define PIKE_FRAME_REUSABLE 4
 #define PIKE_FRAME_MALLOCED_LOCALS 0x8000
+
+struct reuse_frame_context
+{
+  LOW_JMP_BUF *saved_jmpbuf;
+  ONERROR *err;
+  PIKE_OPCODE_T *orig_pc;
+  struct pike_frame *frame;
+  struct svalue *sval;
+  INT32 args;
+};
 
 struct external_variable_context
 {
@@ -520,7 +531,9 @@ PMOD_EXPORT extern void push_static_text( const char *x );
     if(!sub_ref(_fp_))							\
     {									\
       really_free_pike_frame(_fp_);					\
-    }else{								\
+    } else if (_fp_->refs == 1 && _fp_->flags & PIKE_FRAME_REUSABLE) {  \
+      ;                                                                 \
+    } else {                                                            \
       ptrdiff_t num_expendible = _fp_->expendible - _fp_->locals;	\
       DO_IF_DEBUG(							\
 	if( (_fp_->locals + _fp_->num_locals > Pike_sp) ||		\
@@ -790,6 +803,12 @@ void unlink_previous_frame(void);
 int apply_low_safe_and_stupid(struct object *o, INT32 offset);
 
 PMOD_EXPORT struct Pike_interpreter_struct * pike_get_interpreter_pointer();
+
+PMOD_EXPORT void
+mega_apply_reuse_context(enum apply_type type, INT32 args,
+                         void *arg1, void *arg2,
+                         struct reuse_frame_context *reuse_ctx);
+
 PMOD_EXPORT void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2);
 PMOD_EXPORT void mega_apply_low(INT32 args, void *arg1, ptrdiff_t arg2);
 PMOD_EXPORT void f_call_function(INT32 args);
@@ -819,6 +838,15 @@ PMOD_EXPORT void apply(struct object *o, const char *fun, int args);
 PMOD_EXPORT void apply_svalue(struct svalue *s, INT32 args);
 PMOD_EXPORT void safe_apply_svalue (struct svalue *s, INT32 args, int handle_errors);
 PMOD_EXPORT void apply_external(int depth, int fun, INT32 args);
+
+PMOD_EXPORT struct reuse_frame_context*
+init_frame_reuse_context(struct svalue *s, INT32 args);
+
+PMOD_EXPORT void free_frame_reuse_context (struct reuse_frame_context *ctx);
+
+PMOD_EXPORT void
+apply_svalue_reuse_context(struct reuse_frame_context *reuse_ctx);
+
 void slow_check_stack(void);
 PMOD_EXPORT void custom_check_stack(ptrdiff_t amount, const char *fmt, ...)
   ATTRIBUTE((format (printf, 2, 3)));
