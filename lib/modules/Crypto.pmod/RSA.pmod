@@ -186,6 +186,10 @@ protected class LowState {
       if(!(e&1)) error("e needs to be odd.\n");
       if(e<3) error("e is too small.\n");
       if(e->size()>bits) error("e has to be smaller in size than the key.\n");
+      if (e->size() >= 64) {
+	// Make the testsuite happy...
+	error("e: %O is too large.\n", e);
+      }
     }
 
     /* NB: When multiplying two n-bit integers,
