@@ -35,6 +35,9 @@ o Fixed "Invalid service"-error from connect() on Fedora Core 4.
 
 o Fixed next_result() in Sql.sql_array_result.
 
+o Fixed sizeof() in Array.Iterator, Multiset.Iterator and
+  String.Iterator.
+
 
 Building and installing
 -----------------------
