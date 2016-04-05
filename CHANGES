@@ -23,7 +23,7 @@ o Exceptions thrown in GTK signal handlers no longer cause
 
 o The SSL client code now interprets the RFCs more leniently.
 
-o Multiple fixes for the handling of accellerated
+o Multiple fixes for the handling of accelerated
   Filesystem.Monitor monitors, which could sometimes
   lose notifications.
 
