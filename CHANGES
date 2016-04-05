@@ -14,6 +14,10 @@ o Report feature flags for System.FSEvents and System.Inotify.
 Bug fixes
 ---------
 
+o The machine code generator on ia32 now aligns the stack
+  on a 16 byte boundary. This makes it possible to call
+  code that uses SSE2 instructions.
+
 o Exceptions thrown in GTK signal handlers no longer cause
   segfaults.
 
@@ -28,6 +32,8 @@ o Improved handling of response content-length in Protocols.HTTP.Query.
 o Fixed case where unfinished programs could lose their parents.
 
 o Fixed "Invalid service"-error from connect() on Fedora Core 4.
+
+o Fixed next_result() in Sql.sql_array_result.
 
 
 Building and installing
