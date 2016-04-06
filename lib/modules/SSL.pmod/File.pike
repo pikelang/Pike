@@ -1919,8 +1919,10 @@ protected int ssl_read_callback (int ignored, string input)
     if (!conn || (conn->state & CONNECTION_peer_closed)) {
       // Deinstall read side cbs to avoid reading more.
       SSL3_DEBUG_MSG("SSL.File->direct_write: Removing read/close_callback.\n");
-      stream->set_read_callback (0);
-      stream->set_close_callback (0);
+      if(stream) {
+        stream->set_read_callback (0);
+        stream->set_close_callback (0);
+      }
     }
 
     // Now actually do (a bit of) what should be done.
