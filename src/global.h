@@ -64,6 +64,30 @@
 #define NTDDI_VERSION 0x05ffffff
 #endif
 
+#ifdef _MSC_VER
+/* Microsoft C.
+ *
+ * Version table from
+ * http://stackoverflow.com/questions/70013/how-to-detect-if-im-compiling-code-with-visual-studio-2008
+ * MSVC++ 14.0 _MSC_VER == 1900 (Visual Studio 2015)
+ * MSVC++ 12.0 _MSC_VER == 1800 (Visual Studio 2013)
+ * MSVC++ 11.0 _MSC_VER == 1700 (Visual Studio 2012)
+ * MSVC++ 10.0 _MSC_VER == 1600 (Visual Studio 2010)
+ * MSVC++ 9.0  _MSC_VER == 1500 (Visual Studio 2008)
+ * MSVC++ 8.0  _MSC_VER == 1400 (Visual Studio 2005)
+ * MSVC++ 7.1  _MSC_VER == 1310 (Visual Studio 2003)
+ * MSVC++ 7.0  _MSC_VER == 1300
+ * MSVC++ 6.0  _MSC_VER == 1200
+ * MSVC++ 5.0  _MSC_VER == 1100
+ */
+#if _MSC_VER < 1900
+/* VS 2015 or earlier do not have all C99 keywords...
+ * cf https://msdn.microsoft.com/en-us/library/bw1hbe6y.aspx
+ */
+#define inline __inline
+#endif
+#endif
+
 #endif /* __NT__ */
 
 #ifdef __amigaos__
