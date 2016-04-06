@@ -269,6 +269,12 @@ mixed call(string api_method, void|ParamsArg params,
         if (qq->status == 200) {
           cb(handle_response(qq), qq);
         }
+        else if ((< 301, 302 >)[qq->status]) {
+          cb(qq->headers, qq);
+        }
+        else {
+          cb(0, qq);
+        }
       },
       lambda (Protocols.HTTP.Query qq, mixed ... args) {
         cb(0, qq);
@@ -277,7 +283,6 @@ mixed call(string api_method, void|ParamsArg params,
 
     Protocols.HTTP.do_async_method(http_method, api_method, params,
                                    default_headers, req, data);
-
 
     return 0;
   }
