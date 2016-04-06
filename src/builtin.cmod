@@ -4227,6 +4227,7 @@ static void low_automap(int d,
   struct svalue *tmpargs=Pike_sp - args;
   struct array *ret;
   TYPE_FIELD types;
+  struct reuse_frame_context *reuse_ctx;
 
   for(e=0;e<args;e++)
   {
@@ -4253,6 +4254,11 @@ static void low_automap(int d,
   push_array(ret=allocate_array(size));
   types = 0;
 
+  if (d == depth)
+    reuse_ctx = init_frame_reuse_context(fun, args);
+  else
+    reuse_ctx = NULL;
+
   for(x=0;x<size;x++)
   {
     for(e=0;e<args;e++)
@@ -4271,13 +4277,16 @@ static void low_automap(int d,
       }
     }
 
-    if(d == depth)
-      apply_svalue(fun,args);
+    if(reuse_ctx != NULL)
+      apply_svalue_reuse_context (reuse_ctx);
     else
       low_automap(d+1,depth,fun,real_args,args);
     stack_pop_to_no_free (ITEM(ret) + x);
     types |= 1 << TYPEOF(ITEM(ret)[x]);
   }
+
+  free_frame_reuse_context (reuse_ctx);
+
   ret->type_field = types;
   stack_unlink(args);
 }
