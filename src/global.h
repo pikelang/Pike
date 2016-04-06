@@ -80,7 +80,7 @@
  * MSVC++ 6.0  _MSC_VER == 1200
  * MSVC++ 5.0  _MSC_VER == 1100
  */
-#if _MSC_VER < 1900
+#if _MSC_VER <= 1900
 /* VS 2015 or earlier do not have all C99 keywords...
  * cf https://msdn.microsoft.com/en-us/library/bw1hbe6y.aspx
  */
