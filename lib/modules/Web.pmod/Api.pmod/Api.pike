@@ -9,6 +9,8 @@
 //! Look at the code in @[Web.Api.Github], @[Web.Api.Instagram],
 //! @[Web.Api.Linkedin] etc to see some examples of implementations.
 
+// #define SOCIAL_REQUEST_DEBUG
+
 #if defined(SOCIAL_REQUEST_DEBUG) || defined(SOCIAL_REQUEST_DATA_DEBUG)
 # define TRACE(X...) werror("%s:%d: %s",basename(__FILE__),__LINE__,sprintf(X))
 #else
@@ -49,9 +51,15 @@ protected Web.Auth.OAuth2.Client _auth;
 //! Authentication class to use
 protected constant AuthClass = Web.Auth.OAuth2.Client;
 
+//! The HTTP query objects when running async.
+protected mapping(int:array(Protocols.HTTP.Query|Callback))
+  _query_objects = ([]);
+
 protected mapping(string:string) default_headers = ([
   "user-agent" : .USER_AGENT
 ]);
+
+protected int _call_id = 0;
 
 //! Creates a new Api instance
 //!
@@ -251,7 +259,6 @@ mixed call(string api_method, void|ParamsArg params,
     params = (mapping) p;
   }
 
-  //Request req;
   Protocols.HTTP.Query req = Protocols.HTTP.Query();
 
   if (http_request_timeout) {
@@ -264,6 +271,9 @@ mixed call(string api_method, void|ParamsArg params,
 #endif
 
   if (cb) {
+    int myid = ++_call_id;
+    _query_objects[myid] = ({ req, cb });
+
     req->set_callbacks(
       lambda (Protocols.HTTP.Query qq, mixed ... args) {
         if (qq->status == 200) {
@@ -275,9 +285,12 @@ mixed call(string api_method, void|ParamsArg params,
         else {
           cb(0, qq);
         }
+
+        m_delete(_query_objects, myid);
       },
       lambda (Protocols.HTTP.Query qq, mixed ... args) {
         cb(0, qq);
+        m_delete(_query_objects, myid);
       }
     );
 
@@ -290,6 +303,35 @@ mixed call(string api_method, void|ParamsArg params,
   req = Protocols.HTTP.do_method(http_method, api_method, params,
                                  default_headers, req, data);
   return req && handle_response(req);
+}
+
+//! Forcefully close all HTTP connections. This only has effect in
+//! async mode.
+void close_connections()
+{
+  if (!sizeof(_query_objects)) {
+    return;
+  }
+
+  foreach (values(_query_objects), array m) {
+    catch {
+      Protocols.HTTP.Query q = m[0];
+      if (q && q->con && q->con->is_open()) {
+#ifdef SOCIAL_REQUEST_DEBUG
+        werror("%s:%d: Forecefully closing open connection: %O\n",
+               basename(__FILE__),__LINE__,q);
+#endif
+        q->close();
+
+        if (m[1]) {
+          m[1](0, 0);
+        }
+      }
+      destruct(q);
+    };
+  }
+
+  _query_objects = ([]);
 }
 
 private mixed handle_response(Protocols.HTTP.Query req)
@@ -396,8 +438,8 @@ class Method
   //! API method location within the API
   //!
   //! @code
-  //!  https://api.instagram.com/v1/media/search
-  //!  ............................^^^^^^^
+  //! https://api.instagram.com/v1/media/search
+  //! ............................^^^^^^^
   //! @endcode
   protected constant METHOD_PATH = 0;
 
