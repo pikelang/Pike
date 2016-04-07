@@ -476,7 +476,16 @@ array(object) stdtest(program Socket)
       // This is supposed to let go of the socket and consider this
       // socket a success
       sock->input_finished=sock->output_finished=1;
+      num_running++;	// Don't let finish end just yet.
       sock->cleanup();
+      if (attempt++ < 10) {
+	log_msg("Retrying.\n");
+	sleep(0.1);
+	num_running--;
+	sock = Socket();
+	continue;
+      }
+      finish(Socket);
       return 0;
     }
     sleep(1);
@@ -590,7 +599,8 @@ void finish(program Socket)
 	socks[1]->set_id(socks);
 	socks[1]->set_nonblocking(lambda() {},lambda(){},
 				  lambda(array(Stdio.File) socks) {
-				    socks->close();
+				    socks && socks[1]->set_id(UNDEFINED);
+				    socks && socks->close();
 				    finish(Socket);
 				  });
 	socks[0]->close("w");
@@ -604,7 +614,8 @@ void finish(program Socket)
 	socks[1]->set_id(socks);
 	socks[1]->set_nonblocking(lambda() {},lambda(){},
 				  lambda(array(Stdio.File) socks) {
-				    socks->close();
+				    socks && socks[1]->set_id(UNDEFINED);
+				    socks && socks->close();
 				    finish(Socket);
 				  });
 	socks[0]->close("w");
@@ -618,7 +629,8 @@ void finish(program Socket)
 	socks[1]->set_id(socks);
 	socks[1]->set_nonblocking(lambda() {},lambda(){},
 				  lambda(array(Stdio.File) socks) {
-				    socks->close();
+				    socks && socks[1]->set_id(UNDEFINED);
+				    socks && socks->close();
 				    finish(Socket);
 				  });
 	socks[0]->close("w");
