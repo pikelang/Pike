@@ -89,8 +89,9 @@
 /* The isnan() macro was added in VS 2015.
  */
 #define isnan(X)	_isnan(X)
-#endif
-#endif
+#endif /* _MSC_VER <= 1800 */
+#endif /* _MSC_VER <= 1900 */
+#endif /* _MSC_VER */
 
 #endif /* __NT__ */
 
