@@ -4285,7 +4285,8 @@ static void low_automap(int d,
     types |= 1 << TYPEOF(ITEM(ret)[x]);
   }
 
-  free_frame_reuse_context (reuse_ctx);
+  if (reuse_ctx != NULL)
+    free_frame_reuse_context (reuse_ctx);
 
   ret->type_field = types;
   stack_unlink(args);
