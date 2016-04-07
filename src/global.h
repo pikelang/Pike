@@ -85,6 +85,10 @@
  * cf https://msdn.microsoft.com/en-us/library/bw1hbe6y.aspx
  */
 #define inline __inline
+#if _MSC_VER <= 1800
+/* The isnan() macro was added in VS 2015.
+ */
+#define isnan(X)	_isnan(X)
 #endif
 #endif
 
