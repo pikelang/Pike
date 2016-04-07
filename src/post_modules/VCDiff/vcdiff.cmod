@@ -25,13 +25,6 @@
 
 DECLARATIONS
 
-#ifdef __GNUC__
-/* The GCC C++ runtime apparently needs this symbol
- * (which usually is defined in crtbegin*.o).
- */
-void *__dso_handle;
-#endif
-
 /*! @module VCDiff
  *!
  *! Pike glue for the open-vcdiff differential compression library.

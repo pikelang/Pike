@@ -1,6 +1,5 @@
 #ifdef HAVE_VCDIFF
 
-#include <iostream>
 #include <string>
 #include <string.h>
 #include <stdlib.h>
