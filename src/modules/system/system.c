@@ -1831,6 +1831,20 @@ int my_isipv6nr(char *s)
 #endif
 #endif /* !GETSERV_DECLARE */
 
+/* Ensure that the hint flags exist. */
+#ifndef AI_ADDRCONFIG
+#define AI_ADDRCONFIG	0
+#endif
+#ifndef AI_NUMERICHOST
+#define AI_NUMERICHOST	0
+#endif
+#ifndef AI_NUMERICSERV
+#define AI_NUMERICSERV	0
+#endif
+#ifndef AI_V4MAPPED
+#define AI_V4MAPPED	0
+#endif
+
 /* this is also used from modules/_Stdio */
 int get_inet_addr(PIKE_SOCKADDR *addr,char *name,char *service, INT_TYPE port,
                   int inet_flags)
@@ -1852,7 +1866,7 @@ int get_inet_addr(PIKE_SOCKADDR *addr,char *name,char *service, INT_TYPE port,
     hints.ai_flags = AI_PASSIVE;
     /* Avoid creating an IPv6 address for "*". */
     /* For IN6ADDR_ANY, use "::". */
-    hints.ai_family = PF_INET;
+    hints.ai_family = AF_INET;
 #ifdef PF_INET6
   } else if (inet_flags & 2) {
     /* Force IPv6. */
@@ -1863,33 +1877,25 @@ int get_inet_addr(PIKE_SOCKADDR *addr,char *name,char *service, INT_TYPE port,
      * bound to ::FFFF:127.0.0.1 can't connect
      * to the IPv4 address 127.0.0.1.
      */
-    hints.ai_family = PF_INET6;
-#ifdef AI_V4MAPPED
+    hints.ai_family = AF_INET6;
     hints.ai_flags = AI_V4MAPPED;
-#endif
   }
 #endif
-#ifdef AI_NUMERICHOST
-  hints.ai_flags |= AI_NUMERICHOST;
-#endif
+  hints.ai_flags |= AI_NUMERICHOST|AI_ADDRCONFIG;
   hints.ai_protocol = (udp? IPPROTO_UDP:IPPROTO_TCP);
   if (!service && (port > 0) && (port & 0xffff)) {
     /* NB: MacOS X doesn't like the combination of AI_NUMERICSERV and port #0.
      *     cf [bug 7599] and https://bugs.python.org/issue17269 .
      */
-#ifdef AI_NUMERICSERV
     hints.ai_flags |= AI_NUMERICSERV;
-#endif
     sprintf(service = servnum_buf, "%"PRINTPIKEINT"d", port & 0xffff);
   }
 
-  if( (err=getaddrinfo(name, service, &hints, &res)) )
+  if( (err=getaddrinfo(name, service, &hints, &res)) && AI_NUMERICHOST )
   {
     /* Try again without AI_NUMERICHOST. */
-#ifdef AI_NUMERICHOST
     hints.ai_flags &= ~AI_NUMERICHOST;
     err=getaddrinfo(name, service, &hints, &res);
-#endif
   }
   if(!err)
   {
