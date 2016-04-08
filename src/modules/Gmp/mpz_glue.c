@@ -2046,6 +2046,9 @@ static void mpzmod_hamdist(INT32 args)
  */
 static void mpzmod_random(INT32 args)
 {
+  struct object *res;
+  unsigned bits, bytes, popcount;
+  unsigned char *str, mask;
   DECLARE_THIS();
 
   /* NB: Nominally we could survive with just one argument too, but... */
@@ -2062,13 +2065,13 @@ static void mpzmod_random(INT32 args)
   if(TYPEOF(sp[-1]) != T_FUNCTION)
     Pike_error("_random called with non-function argument.\n");
 
-  struct object *res=fast_clone_object(THIS_PROGRAM);
+  res = fast_clone_object(THIS_PROGRAM);
   push_object(res);
   stack_swap();
 
-  unsigned bits = mpz_sizeinbase(THIS, 2);
-  unsigned bytes = ((bits-1)>>3)+1;
-  unsigned popcount = mpz_popcount(THIS);
+  bits = mpz_sizeinbase(THIS, 2);
+  bytes = ((bits-1)>>3)+1;
+  popcount = mpz_popcount(THIS);
 
   if (((bits & 0x07) == 1) && (popcount == 1)) {
     /* An even number of bytes of random data. */
@@ -2095,11 +2098,11 @@ static void mpzmod_random(INT32 args)
   // FIXME: Can we save a copy by either mask the pike string and
   // import from it, or import the unmasked string and mask it in
   // mpz object?
-  unsigned char *str = xalloc(bytes);
+  str = xalloc(bytes);
   memcpy(str, sp[-1].u.string->str, bytes);
   pop_stack();
 
-  unsigned char mask = (1<<(bits%8))-1;
+  mask = (1<<(bits%8))-1;
   if (popcount == 1) {
     /* An even number of bits.
      * Ie the most significant bit of the masked result
