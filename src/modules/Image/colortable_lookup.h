@@ -395,11 +395,8 @@ void NCTLU_CUBE_NAME(rgb_group *s,
 
       while (n--) /* similar to _find_cube_dist() */
       {
-	 struct nct_scale *sc;
-	 int mindist;
-	 int i;
-	 int nc;
-	 struct lookupcache *lc;
+         int mindist;
+         struct lookupcache *lc;
 	 rgbl_group val;
 
 	 if (dither_encode)
@@ -431,7 +428,7 @@ void NCTLU_CUBE_NAME(rgb_group *s,
 	    lc->dest.g=((int)(((val.g*green+hgreen)>>8)*greenf));
 	    lc->dest.b=((int)(((val.b*blue+hblue)>>8)*bluef));
 
-	    lc->index=i=
+            lc->index=
 	       ((val.r*red+hred)>>8)+
 	       (((val.g*green+hgreen)>>8)+
 		((val.b*blue+hblue)>>8)*green)*red;
@@ -446,15 +443,15 @@ void NCTLU_CUBE_NAME(rgb_group *s,
 	 else
 	 {
 	    mindist=10000000;
-	    i=0;
-	 }
+         }
 
 	 if (mindist>=cube->disttrig)
 	 {
-	    /* check scales to get better distance if possible */
+            /* check scales to get better distance if possible */
+            int i;
+            int nc=cube->r*cube->g*cube->b;
+            struct nct_scale *sc=cube->firstscale;
 
-	    nc=cube->r*cube->g*cube->b;
-	    sc=cube->firstscale;
 	    while (sc)
 	    {
 	       /* what step is closest? project... */
@@ -490,8 +487,8 @@ void NCTLU_CUBE_NAME(rgb_group *s,
 	       nc+=sc->realsteps;
 
 	       sc=sc->next;
-	    }
-	 }
+            }
+         }
 done_pixel:
          if (dither_encode)
          {
