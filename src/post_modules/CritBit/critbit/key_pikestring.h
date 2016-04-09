@@ -136,10 +136,10 @@ static inline cb_size cb_prefix_count_widestring(const cb_string s1,
 		    s1->str, s1, s2->str, s2, t.chars, t.bits, r.chars,
 		    r.bits, len.chars, len.bits, start.chars, start.bits);
 	    fprintf(stderr, "here you die: %p, %lu\n", chrptr,
-		    r.bits/(unsigned INT64)zero);
+		    r.bits/(UINT64)zero);
 	    fprintf(stderr, "%p %p %p", zero, n1, n2);
-	    n1 = n2 = (void*)(zero = (unsigned INT64)chrptr ^ (unsigned INT64)n1
-			      ^ (unsigned INT64)n2);
+	    n1 = n2 = (void*)(zero = (UINT64)chrptr ^ (UINT64)n1
+			      ^ (UINT64)n2);
 	    fprintf(stderr, "%p %p %p %p %p %p", zero, n1, n2, rp, (void*)rp,
 		    tp, (void*)tp);
 	}

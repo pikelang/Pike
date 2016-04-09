@@ -146,7 +146,7 @@ PIKECLASS IPv4Tree {
     }
 
     PIKEFUN int umask(int n) {
-	RETURN MASK(unsigned INT64, n);
+        RETURN MASK(UINT64, n);
     }
 
     PIKEFUN int cmp_key(mixed a, mixed b) {

@@ -1993,7 +1993,7 @@ static DECLSPEC(noreturn) void decode_error (
      num=e;						\
   } else {						\
     num = 0;						\
-    while(e-->=0) num = ((unsigned INT64)num<<8)	\
+    while(e-->=0) num = ((UINT64)num<<8)                \
 			    + (GETC()+1);		\
     num += MAX_SMALL - 1;				\
   }							\
@@ -2065,7 +2065,7 @@ static DECLSPEC(noreturn) void decode_error (
    INT32 what, e;				\
    INT64 num;					\
    DECODE("decode_number");			\
-   X=(what & TAG_MASK) | ((unsigned INT64)num<<4);		\
+   X=(what & TAG_MASK) | ((UINT64)num<<4);      \
    EDB(5, fprintf(stderr, "%*s  ==>%ld\n",	\
 		  data->depth, "", (long) X));	\
   }while(0)					\

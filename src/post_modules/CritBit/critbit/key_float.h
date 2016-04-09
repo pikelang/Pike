@@ -5,8 +5,8 @@
 #include "pike_int_types.h"
 
 #if SIZEOF_FLOAT_TYPE == 8
-typedef unsigned INT64 CB_NAME(string);
-typedef unsigned INT64 CB_NAME(char);
+typedef UINT64 CB_NAME(string);
+typedef UINT64 CB_NAME(char);
 #else
 typedef unsigned INT32 CB_NAME(string);
 typedef unsigned INT32 CB_NAME(char);

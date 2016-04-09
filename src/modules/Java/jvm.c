@@ -1711,14 +1711,14 @@ static void *low_make_stub(struct cpu_context *ctx, void *data, int statc,
 #endif
 
 #ifdef SPARCV9
-  *p++ = 0x11000000|(((unsigned INT32)(((unsigned INT64)data)>>32))>>10);
+  *p++ = 0x11000000|(((unsigned INT32)(((UINT64)data)>>32))>>10);
                       /* sethi  %hi(data>>32), %o0   */
-  *p++ = 0x90122000|(((unsigned INT32)(((unsigned INT64)data)>>32))&0x3ff);
+  *p++ = 0x90122000|(((unsigned INT32)(((UINT64)data)>>32))&0x3ff);
                       /* or  %o0, %lo(data>>32), %o0 */
   *p++ = 0x832a3020;  /* sllx %o0, 32, %g1 */
-  *p++ = 0x11000000|(((unsigned INT32)(unsigned INT64)data)>>10);
+  *p++ = 0x11000000|(((unsigned INT32)(UINT64)data)>>10);
                       /* sethi  %hi(data), %o0   */
-  *p++ = 0x90122000|(((unsigned INT32)(unsigned INT64)data)&0x3ff);
+  *p++ = 0x90122000|(((unsigned INT32)(UINT64)data)&0x3ff);
                       /* or  %o0, %lo(data), %o0 */
   *p++ = 0x90020001;  /* add %o0, %g1, %o0 */
 #else
@@ -1746,14 +1746,14 @@ static void *low_make_stub(struct cpu_context *ctx, void *data, int statc,
   }
 
 #ifdef SPARCV9
-  *p++ = 0x19000000|(((unsigned INT32)(((unsigned INT64)(void *)dispatch)>>32))>>10);
+  *p++ = 0x19000000|(((unsigned INT32)(((UINT64)(void *)dispatch)>>32))>>10);
                       /* sethi  %hi(dispatch>>32), %o4   */
-  *p++ = 0x98132000|(((unsigned INT32)(((unsigned INT64)(void *)dispatch)>>32))&0x3ff);
+  *p++ = 0x98132000|(((unsigned INT32)(((UINT64)(void *)dispatch)>>32))&0x3ff);
                       /* or  %o4, %lo(dispatch>>32), %o4 */
   *p++ = 0x832b3020;  /* sllx %o4, 32, %g1 */
-  *p++ = 0x19000000|(((unsigned INT32)(unsigned INT64)(void *)dispatch)>>10);
+  *p++ = 0x19000000|(((unsigned INT32)(UINT64)(void *)dispatch)>>10);
                       /* sethi  %hi(dispatch), %o4   */
-  *p++ = 0x98132000|(((unsigned INT32)(unsigned INT64)(void *)dispatch)&0x3ff);
+  *p++ = 0x98132000|(((unsigned INT32)(UINT64)(void *)dispatch)&0x3ff);
                       /* or  %o4, %lo(dispatch), %o4 */
   *p++ = 0x98030001;  /* add %o4, %g1, %o4 */
 #else

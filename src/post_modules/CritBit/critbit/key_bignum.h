@@ -19,7 +19,7 @@ typedef mp_limb_t CB_NAME(char);
 
 static inline unsigned INT32 gclz(mp_limb_t a) {
     if (sizeof(mp_limb_t) == 8) {
-	return clz64((unsigned INT64)a);
+        return clz64((UINT64)a);
     } else {
 	return clz32((unsigned INT32)a);
     }

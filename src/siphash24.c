@@ -20,7 +20,7 @@
    this software. If not, see <http://creativecommons.org/publicdomain/zero/1.0/>.
 */
 
-#define ROTL(x,b) (unsigned INT64)( ((x) << (b)) | ( (x) >> (64 - (b))) )
+#define ROTL(x,b) (UINT64)( ((x) << (b)) | ( (x) >> (64 - (b))) )
 
 #define U32TO8_LE(p, v)         \
     (p)[0] = (unsigned char)((v)      ); (p)[1] = (unsigned char)((v) >>  8); \
@@ -31,14 +31,14 @@
   U32TO8_LE((p) + 4, (unsigned INT32)((v) >> 32));
 
 #define U8TO64_LE(p) \
-  (((unsigned INT64)((p)[0])      ) | \
-   ((unsigned INT64)((p)[1]) <<  8) | \
-   ((unsigned INT64)((p)[2]) << 16) | \
-   ((unsigned INT64)((p)[3]) << 24) | \
-   ((unsigned INT64)((p)[4]) << 32) | \
-   ((unsigned INT64)((p)[5]) << 40) | \
-   ((unsigned INT64)((p)[6]) << 48) | \
-   ((unsigned INT64)((p)[7]) << 56))
+  (((UINT64)((p)[0])      ) | \
+   ((UINT64)((p)[1]) <<  8) | \
+   ((UINT64)((p)[2]) << 16) | \
+   ((UINT64)((p)[3]) << 24) | \
+   ((UINT64)((p)[4]) << 32) | \
+   ((UINT64)((p)[5]) << 40) | \
+   ((UINT64)((p)[6]) << 48) | \
+   ((UINT64)((p)[7]) << 56))
 
 #define SIPROUND            \
   do {              \
@@ -59,17 +59,17 @@ static size_t low_hashmem_siphash24( const void *s, size_t len, size_t nbytes, s
   unsigned long long inlen = MINIMUM(len, nbytes);
 
   /* "somepseudorandomlygeneratedbytes" */
-  unsigned INT64 v0 = 0x736f6d6570736575ULL;
-  unsigned INT64 v1 = 0x646f72616e646f6dULL;
-  unsigned INT64 v2 = 0x6c7967656e657261ULL;
-  unsigned INT64 v3 = 0x7465646279746573ULL;
-  unsigned INT64 b;
-  unsigned INT64 k0 = (unsigned INT64)key;
-  unsigned INT64 k1 = (unsigned INT64)key;
-  unsigned INT64 m;
-  const unsigned char *end = in + inlen - ( inlen % sizeof( unsigned INT64 ) );
+  UINT64 v0 = 0x736f6d6570736575ULL;
+  UINT64 v1 = 0x646f72616e646f6dULL;
+  UINT64 v2 = 0x6c7967656e657261ULL;
+  UINT64 v3 = 0x7465646279746573ULL;
+  UINT64 b;
+  UINT64 k0 = (UINT64)key;
+  UINT64 k1 = (UINT64)key;
+  UINT64 m;
+  const unsigned char *end = in + inlen - ( inlen % sizeof( UINT64 ) );
   const int left = inlen & 7;
-  b = ( ( unsigned INT64 )inlen ) << 56;
+  b = ( ( UINT64 )inlen ) << 56;
   v3 ^= k1;
   v2 ^= k0;
   v1 ^= k1;
@@ -86,19 +86,19 @@ static size_t low_hashmem_siphash24( const void *s, size_t len, size_t nbytes, s
 
   switch( left )
   {
-  case 7: b |= ( ( unsigned INT64 )in[ 6] )  << 48;
+  case 7: b |= ( ( UINT64 )in[ 6] )  << 48;
 
-  case 6: b |= ( ( unsigned INT64 )in[ 5] )  << 40;
+  case 6: b |= ( ( UINT64 )in[ 5] )  << 40;
 
-  case 5: b |= ( ( unsigned INT64 )in[ 4] )  << 32;
+  case 5: b |= ( ( UINT64 )in[ 4] )  << 32;
 
-  case 4: b |= ( ( unsigned INT64 )in[ 3] )  << 24;
+  case 4: b |= ( ( UINT64 )in[ 3] )  << 24;
 
-  case 3: b |= ( ( unsigned INT64 )in[ 2] )  << 16;
+  case 3: b |= ( ( UINT64 )in[ 2] )  << 16;
 
-  case 2: b |= ( ( unsigned INT64 )in[ 1] )  <<  8;
+  case 2: b |= ( ( UINT64 )in[ 1] )  <<  8;
 
-  case 1: b |= ( ( unsigned INT64 )in[ 0] ); break;
+  case 1: b |= ( ( UINT64 )in[ 0] ); break;
 
   case 0: break;
   }

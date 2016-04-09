@@ -480,7 +480,7 @@ PMOD_EXPORT unsigned INT32 hash_svalue(const struct svalue *s)
 	union {
 	    FLOAT_TYPE f;
 #if SIZEOF_FLOAT_TYPE == 8
-	    unsigned INT64 i;
+            UINT64 i;
 #elif SIZEOF_FLOAT_TYPE == 4
 	    unsigned INT32 i;
 #else

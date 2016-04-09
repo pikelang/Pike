@@ -3078,7 +3078,7 @@ void f_daemon(INT32 args)
 
 #if HAS___BUILTIN_IA32_RDRAND64_STEP
 
-static unsigned INT64 rand64()
+static UINT64 rand64()
 {
   unsigned long long rnd;
   for( int i=0; i<100; i++ )
@@ -3101,18 +3101,18 @@ void f_hw_random(INT32 args)
   if(args!=1 || TYPEOF(Pike_sp[-1])!=T_INT || (len=Pike_sp[-1].u.integer)<0)
     SIMPLE_ARG_TYPE_ERROR("hw_random", 1, "int(0..)");
 
-  unsigned INT64 *str;
+  UINT64 *str;
   ONERROR err;
   struct pike_string *ret = begin_shared_string(len);
   SET_ONERROR(err, do_free_unlinked_pike_string, ret);
-  str = (unsigned INT64 *)ret->str;
+  str = (UINT64 *)ret->str;
   while( (e+=sizeof(INT64)) <= len )
   {
     str[0] = rand64();
     str++;
   }
 
-  unsigned INT64 rnd = rand64();
+  UINT64 rnd = rand64();
   for(e-=sizeof(INT64); e<len; e++)
   {
     ret->str[e] = rnd&0xff;

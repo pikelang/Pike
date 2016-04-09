@@ -2906,7 +2906,7 @@ static LONGEST pike_va_int(VA_LIST_PTR args, int flags)
   case APPEND_WIDTH_LONG|APPEND_SIGNED:
     return va_arg(VA_LIST_DEREF(args), long);
   case APPEND_WIDTH_LONG_LONG:
-    return va_arg(VA_LIST_DEREF(args), unsigned INT64);
+    return va_arg(VA_LIST_DEREF(args), UINT64);
   case APPEND_WIDTH_LONG_LONG|APPEND_SIGNED:
     return va_arg(VA_LIST_DEREF(args), INT64);
   }

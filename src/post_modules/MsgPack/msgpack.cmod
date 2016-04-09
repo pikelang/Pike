@@ -351,7 +351,7 @@ static size_t mpack_low_decode(struct svalue *dst, size_t dst_len,
             /* float64 */
             {
                 double f;
-                unsigned INT64 v;
+                UINT64 v;
                 if (src_len < 8) goto RETURN;
                 v = get_unaligned_be64(src);
                 memcpy(&f, &v, sizeof(f));
@@ -691,7 +691,7 @@ static void mpack_low_encode(const struct mpack_encode_context *ctx,
                 *(dst++) = 0xca;
                 set_unaligned_be32(dst, tmp);
 #else
-                unsigned INT64 tmp;
+                UINT64 tmp;
                 memcpy(&tmp, &value->u.float_number, sizeof(tmp));
                 dst = io_add_space(io, 9, 0);
                 io->len += 9;

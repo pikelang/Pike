@@ -379,11 +379,11 @@ static void ba_check_ptr(struct block_allocator * a, int page, void * ptr, struc
 
 #if SIZEOF_LONG == 8 || SIZEOF_LONG_LONG == 8
 #define BV_LENGTH   64
-#define BV_ONE	    ((unsigned INT64)1)
-#define BV_NIL	    ((unsigned INT64)0)
+#define BV_ONE	    ((UINT64)1)
+#define BV_NIL	    ((UINT64)0)
 #define BV_CLZ	    clz64
 #define BV_CTZ	    ctz64
-typedef unsigned INT64 bv_int_t;
+typedef UINT64 bv_int_t;
 #else
 #define BV_LENGTH   32
 #define BV_ONE	    ((unsigned INT32)1)

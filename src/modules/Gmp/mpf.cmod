@@ -212,7 +212,7 @@ PIKECLASS mpf
       /* from hash_svalue */
       union {
 	  double f;
-	  unsigned INT64 u;
+          UINT64 u;
       } ufloat;
       ufloat.f = mpf_get_d(THISMPF);
       if (ufloat.f == 0.0) {

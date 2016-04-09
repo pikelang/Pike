@@ -3952,7 +3952,7 @@ void ins_f_byte_with_2_args(unsigned int a, INT32 b, INT32 c)
   switch(a) {
   case F_NUMBER64:
     ins_debug_instr_prologue(a-F_OFFSET, b, c);
-    amd64_push_int((((unsigned INT64)b)<<32)|(unsigned INT32)c, 0);
+    amd64_push_int((((UINT64)b)<<32)|(unsigned INT32)c, 0);
     return;
   case F_MARK_AND_EXTERNAL:
     ins_f_byte(F_MARK);

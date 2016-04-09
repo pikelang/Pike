@@ -79,8 +79,8 @@ struct cache
   PIKE_MUTEX_T mutex;
   struct cache *next;
   struct cache_entry *htable[CACHE_HTABLE_SIZE];
-  unsigned INT64 size, entries, max_size;
-  unsigned INT64 hits, misses, stale;
+  UINT64 size, entries, max_size;
+  UINT64 hits, misses, stale;
   size_t num_requests, sent_data, received_data;
   int gone;
 };

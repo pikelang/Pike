@@ -7,8 +7,8 @@
 typedef unsigned INT32 CB_NAME(string);
 typedef unsigned INT32 CB_NAME(char);
 #else
-typedef unsigned INT64 CB_NAME(string);
-typedef unsigned INT64 CB_NAME(char);
+typedef UINT64 CB_NAME(string);
+typedef UINT64 CB_NAME(char);
 #endif
 
 #ifdef cb_char

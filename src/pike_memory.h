@@ -164,8 +164,8 @@ static inline void ATTRIBUTE((unused)) * guaranteed_memset(void * p, int c, size
 
 #ifdef __x86_64__
 /* it is faster to just do the unaligned operation. */
-static inline unsigned INT64 ATTRIBUTE((unused)) get_unaligned64(const void *ptr) {
-  return *(unsigned INT64*)ptr;
+static inline UINT64 ATTRIBUTE((unused)) get_unaligned64(const void *ptr) {
+  return *(UINT64*)ptr;
 }
 
 static inline unsigned INT32 ATTRIBUTE((unused)) get_unaligned32(const void *ptr) {
@@ -184,21 +184,21 @@ static inline void ATTRIBUTE((unused)) set_unaligned32(void *ptr,unsigned INT32 
   *(unsigned INT32*)ptr = val;
 }
 
-static inline void ATTRIBUTE((unused)) set_unaligned64(void *ptr,unsigned INT64 val) {
-  *(unsigned INT64*)ptr = val;
+static inline void ATTRIBUTE((unused)) set_unaligned64(void *ptr,UINT64 val) {
+  *(UINT64*)ptr = val;
 }
 #else
-static inline unsigned INT64 ATTRIBUTE((unused)) get_unaligned64(const void * ptr) {
-    unsigned INT64 v;
+static inline UINT64 ATTRIBUTE((unused)) get_unaligned64(const void * ptr) {
+    UINT64 v;
     memcpy(&v, ptr, 8);
     return v;
 }
 
-static inline void ATTRIBUTE((unused)) set_unaligned64(void * ptr, unsigned INT64 v) {
+static inline void ATTRIBUTE((unused)) set_unaligned64(void * ptr, UINT64 v) {
     memcpy(ptr, &v, 8);
 }
 
-static inline unsigned INT64 ATTRIBUTE((unused)) get_unaligned32(const void * ptr) {
+static inline UINT64 ATTRIBUTE((unused)) get_unaligned32(const void * ptr) {
     unsigned INT32 v;
     memcpy(&v, ptr, 4);
     return v;

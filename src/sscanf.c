@@ -639,7 +639,7 @@ static double extract_double_be(const char * x) {
 #ifdef FLOAT_IS_IEEE_BIG
     memcpy(&f, x, sizeof(f));
 #elif FLOAT_IS_IEEE_LITTLE
-    unsigned INT64 tmp = get_unaligned64(x);
+    UINT64 tmp = get_unaligned64(x);
     tmp = bswap64(tmp);
     memcpy(&f, &tmp, sizeof(f));
 #else
@@ -671,11 +671,11 @@ static double extract_double_le(const char * x) {
 #ifdef FLOAT_IS_IEEE_LITTLE
     memcpy(&f, x, sizeof(f));
 #elif FLOAT_IS_IEEE_BIG
-    unsigned INT64 tmp = get_unaligned64(x);
+    UINT64 tmp = get_unaligned64(x);
     tmp = bswap64(tmp);
     memcpy(&f, &tmp, sizeof(f));
 #else
-    unsigned INT64 tmp = get_unaligned64(x);
+    UINT64 tmp = get_unaligned64(x);
     tmp = bswap64(tmp);
     f = low_parse_IEEE_float((char*)&tmp, sizeof(tmp));
 #endif

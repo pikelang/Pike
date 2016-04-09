@@ -59,7 +59,7 @@ PMOD_EXPORT int mpz_from_svalue(MP_INT *dest, struct svalue *s)
 #else
     INT_TYPE i = s->u.integer;
     int neg = i < 0;
-    unsigned INT64 bits = (unsigned INT64) (neg ? -i : i);
+    UINT64 bits = (UINT64) (neg ? -i : i);
 
     mpz_import(dest, 1, 1, SIZEOF_INT64, 0, 0, &bits);
     if (neg) mpz_neg(dest, dest);
@@ -164,7 +164,7 @@ PMOD_EXPORT void push_int64 (INT64 i)
 #else
     {
       int neg = i < 0;
-      unsigned INT64 bits = (unsigned INT64) (neg ? -i : i);
+      UINT64 bits = (UINT64) (neg ? -i : i);
 
       mpz_import (mpz, 1, 1, SIZEOF_INT64, 0, 0, &bits);
       if (neg) mpz_neg (mpz, mpz);
