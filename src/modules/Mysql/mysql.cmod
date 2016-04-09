@@ -182,6 +182,12 @@ PIKECLASS mysql
 
 #define PIKE_MYSQL	THIS_MYSQL_MYSQL
 
+  DECLARE_STORAGE;
+
+  /* @decl inherit __builtin.Sql.Connection
+   */
+  INHERIT "__builtin.Sql.Connection";
+
   /*
    * Functions
    */
@@ -1158,23 +1164,35 @@ static void low_query(INT32 args, char *name, int flags)
   }
 }
 
+/*! @decl variant Result big_query(string query)
+ */
 PIKEFUN object big_query(string query)
+  flags ID_VARIANT;
 {
   low_query(args, "big_query", PIKE_MYSQL_FLAG_STORE_RESULT);
 }
 
+/*! @decl variant Result streaming_query(string query)
+ */
 PIKEFUN object streaming_query(string query)
+  flags ID_VARIANT;
 {
   low_query(args, "streaming_query", 0);
 }
 
+/*! @decl variant Result big_typed_query(string query)
+ */
 PIKEFUN object big_typed_query(string query)
+  flags ID_VARIANT;
 {
   low_query(args, "big_typed_query",
 	    PIKE_MYSQL_FLAG_STORE_RESULT | PIKE_MYSQL_FLAG_TYPED_RESULT);
 }
 
+/*! @decl variant Result streaming_typed_query(string query)
+ */
 PIKEFUN object streaming_typed_query(string query)
+  flags ID_VARIANT;
 {
   low_query(args, "streaming_typed_query", PIKE_MYSQL_FLAG_TYPED_RESULT);
 }
