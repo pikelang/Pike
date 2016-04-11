@@ -44,7 +44,17 @@ static struct svalue location_string_svalue;
 /*! @module XML
  */
 
+/* Use the precompiler default storage class (ie usually static)
+ * instead of the one imposed by global.h (ie empty).
+ */
+#undef DEFAULT_CMOD_STORAGE
+
 DECLARATIONS
+
+#ifndef DEFAULT_CMOD_STORAGE
+/* Old precompiler that doesn't use DEFAULT_CMOD_STORAGE. */
+#define DEFAULT_CMOD_STORAGE	static
+#endif
 
 #undef CMOD_MAP_PROGRAM_IDS_DEFINED
 
@@ -650,7 +660,7 @@ PIKECLASS Simple
   DECLARE_STORAGE
 
   /* Forward decl. */
-  static int Simple_Context_program_fun_num;
+  DEFAULT_CMOD_STORAGE int Simple_Context_program_fun_num;
 
   struct xmlinput
   {
