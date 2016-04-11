@@ -784,7 +784,11 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
 	      // Not a supported point format.
 	      session->ecc_point_format = -1;
 	    }
-	    break;
+            break;
+          case EXTENSION_elliptic_curves:
+            /* This is only supposed to be included in ClientHello, but some
+             * servers send it anyway, and other SSLs ignore it. */
+            break;
 	  case EXTENSION_server_name:
             break;
 
@@ -860,7 +864,9 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
 	    // If a client receives an extension type in ServerHello
 	    // that it did not request in the associated ClientHello, it
 	    // MUST abort the handshake with an unsupported_extension
-	    // fatal alert.
+            // fatal alert.
+            SSL3_DEBUG_MSG("Unrequested extension %s.\n",
+                           fmt_constant(extension_type, "EXTENSION"));
             COND_FATAL(1, ALERT_unsupported_extension,
                        "Unrequested extension.\n");
 	  }
