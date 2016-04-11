@@ -649,7 +649,7 @@ PIKECLASS Simple
   DECLARE_STORAGE
 
   /* Forward decl. */
-  static int Simple_Context_program_fun_num;
+  DEFAULT_CMOD_STORAGE int Simple_Context_program_fun_num;
 
   struct xmlinput
   {
