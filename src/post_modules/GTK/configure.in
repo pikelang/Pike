@@ -281,6 +281,15 @@ AC_CHECK_HEADERS( signal.h netinet/in.h arpa/inet.h sys/types.h sys/stat.h \
 
 AC_CHECK_FUNCS( gethrtime signal sigaction )
 
+AC_MSG_CHECKING([if static inline works])
+AC_CACHE_VAL(pike_cv_static_inline, [
+  AC_TRY_COMPILE([static inline int foo() { return 1; }],[foo()],
+                 [pike_cv_static_inline=yes], [pike_cv_static_inline=no])])
+AC_MSG_RESULT($pike_cv_static_inline)
+if test "x$pike_cv_static_inline" = "xyes"; then
+  AC_DEFINE(G_INLINE_FUNC, [static inline], [Inline declaration used by glib])
+fi
+
 if test "x$with_GTK" = "xyes" ; then
   
   PIKE_FEATURE_NODEP(GTK.GlArea)
