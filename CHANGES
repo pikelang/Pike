@@ -138,6 +138,10 @@ o Filesystem.Zip
 o Stdio.FakePipe
 o Parser.Markdown
 
+o Concurrent.Future and Concurrent.Promise
+
+  These are used to simplify handling of asynchronous results.
+
 o Crypto.Checksum
 
   This module collect non-cryptographic checksums. Support for crc32,
