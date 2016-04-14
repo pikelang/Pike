@@ -3770,41 +3770,64 @@ PIKECLASS BlockCipher16
   /*! @module KW
    *!
    *! The AES Key Wrapping algorithm from @rfc{3394@}.
+   *!
+   *! This algorithm is intended to be used to encode
+   *! encryption keys which are a multiple of 8 bytes
+   *! and at least 16 bytes long.
+   *!
+   *! @note
+   *!   This mode uses the @[AEAD] APIs, but it does NOT
+   *!   have support for authenticated data.
    */
   PIKEVAR object(Nettle_BufferedCipher) KW;
 
   PIKECLASS _KW
     program_flags PROGRAM_NEEDS_PARENT|PROGRAM_USES_PARENT;
   {
-    /*! @decl inherit BufferedCipher
+    /*! @decl inherit __builtin.Nettle.AEAD
      */
-    INHERIT Nettle_BufferedCipher;
+    INHERIT "__builtin.Nettle.AEAD";
 
+
+    /*! @decl string(8bit) name()
+     *! Returns the name of the base cipher with @expr{".CCM"@} appended.
+     */
     PIKEFUN string(0..255) name()
       optflags OPT_TRY_OPTIMIZE;
     {
-      apply_external(1, Nettle_BlockCipher_Nettle_BufferedCipher_inh_offset +
-		     f_Nettle_Cipher_name_fun_num, args);
-      push_constant_text(".KW");
+      apply_external(1, f_Nettle_Cipher_name_fun_num, args);
+      push_static_text(".KW");
       f_add(2);
     }
 
-    PIKEFUN int(1..) block_size()
+    PIKEFUN int(8..8) digest_size()
     {
-      apply_external(1,  Nettle_BlockCipher_Nettle_BufferedCipher_inh_offset +
-		     f_Nettle_Cipher_block_size_fun_num, args);
+      push_int(8);
+    }
+
+    PIKEFUN int(8..8) block_size()
+    {
+      push_int(8);
     }
 
     PIKEFUN int(1..) key_size()
     {
-      apply_external(1,  Nettle_BlockCipher_Nettle_BufferedCipher_inh_offset +
-		     f_Nettle_Cipher_key_size_fun_num, args);
+      apply_external(1, f_Nettle_Cipher_key_size_fun_num, args);
     }
 
-    PIKEFUN int(0..) iv_size()
+    PIKEFUN int(8..8) iv_size()
     {
-      apply_external(1,  Nettle_BlockCipher_Nettle_BufferedCipher_inh_offset +
-		     f_Nettle_Cipher_block_size_fun_num, args);
+      push_int(8);
+    }
+
+    /*! @decl constant DEFAULT_IV
+     *!
+     *! This is the default initialization vector specified
+     *! by @rfc{3394:2.2.3.1@}.
+     */
+    EXTRA
+    {
+      add_string_constant("DEFAULT_IV", "\246\246\246\246\246\246\246\246", 0);
     }
 
     /*! @class State
@@ -3888,7 +3911,7 @@ PIKECLASS BlockCipher16
 	unsigned block_size;
 	int f;
 
-	apply_current(f_Nettle_BlockCipher_cq__CBC_State_substate_factory_fun_num,
+	apply_current(f_Nettle_BlockCipher16_cq__KW_State_substate_factory_fun_num,
 		      0);
 
 	if (TYPEOF(Pike_sp[-1]) != T_OBJECT) {
@@ -3915,12 +3938,12 @@ PIKECLASS BlockCipher16
 	  Pike_error("Bad block size %d.\n", block_size);
 
 	if(!THIS->iv) {
-	  THIS->iv = begin_shared_string(block_size);
+	  THIS->iv = begin_shared_string(8*2);
 	  THIS->iv->flags |= STRING_CLEAR_ON_EXIT;
 	}
 
 	/* Initialize the iv with the default from RFC 3394 2.2.3.1. */
-	memset(STR0(THIS->iv), 0xa6, block_size);
+	memset(STR0(THIS->iv), 0xa6, 8*2);
 
 	if (THIS->object) free_object(THIS->object);
 	add_ref(THIS->object = o);
@@ -3950,10 +3973,10 @@ PIKECLASS BlockCipher16
 	f_add(3);
       }
 
-      /*! @decl int(1..) block_size()
-       *! Returns the block size of the encapsulated cipher.
+      /*! @decl int(8..8) block_size()
+       *! Returns the block size for this AEAD mode.
        */
-      PIKEFUN int(1..) block_size()
+      PIKEFUN int(8..8) block_size()
 	optflags OPT_TRY_OPTIMIZE;
       {
 	RETURN 8;
@@ -3968,7 +3991,7 @@ PIKECLASS BlockCipher16
 	apply(THIS->object, "key_size", args);
       }
 
-      /*! @decl int(1..) iv_size()
+      /*! @decl int(8..8) iv_size()
        *! Returns the size for the initialization vector
        */
       PIKEFUN int(1..) iv_size()
@@ -4011,6 +4034,12 @@ PIKECLASS BlockCipher16
        *!
        *! Set the initialization vector to @[iv]. The @[iv] memory will be
        *! cleared before released.
+       *!
+       *! The default iv if this function hasn't been called is
+       *! @expr{"\246\246\246\246\246\246\246\246"@} (cf @rfc{3394:2.2.3.1@}.
+       *!
+       *! @seealso
+       *!   @[digest()], @[DEFAULT_IV]
        */
       PIKEFUN object set_iv(string(0..255) iv)
 	optflags OPT_SIDE_EFFECT;
@@ -4019,9 +4048,24 @@ PIKECLASS BlockCipher16
 	iv->flags |= STRING_CLEAR_ON_EXIT;
 	NO_WIDE_STRING(iv);
 	if(iv->len != 8)
-	  Pike_error("Argument incompatible with cipher block size.\n");
+	  Pike_error("Invalid initialization vector size.\n");
 	memcpy(STR0(THIS->iv), STR0(iv), 8);
+	memcpy(STR0(THIS->iv) + 8, STR0(iv), 8);
 	RETURN this_object();
+      }
+
+      /*! @decl this_program update(string(zero) public_data)
+       *!
+       *! @note
+       *!   Authenticated public data is not supported
+       *!   by this mode.
+       */
+      PIKEFUN object update(string(1bit) public_data)
+	rawtype tFunc(tStr0, tObj);
+      {
+	if (public_data->len) {
+	  Pike_error("Public data is not supported with this mode.\n");
+	}
       }
 
       /*! @decl string(0..255) crypt(string(0..255) data)
@@ -4032,12 +4076,6 @@ PIKECLASS BlockCipher16
        *!
        *! Neither the input or output data is not automatically memory
        *! scrubbed, unless @[String.secure] has been called on the data.
-       *!
-       *! @returns
-       *!   Returns @expr{0@} (zero) on decryption failure.
-       *!
-       *! @note
-       *!   This API is NOT stable and may be changed in the future.
        */
       PIKEFUN string(0..255) crypt(string(0..255) data)
       {
@@ -4061,18 +4099,11 @@ PIKECLASS BlockCipher16
 	  Pike_error("Lookup in destructed object.\n");
 	}
 
-	if (THIS->mode) {
-	  /* Decryption. */
-	  if (data->len < 24)
-	    Pike_error("Data too short. At lease 24 bytes required.\n");
+	/* Decryption. */
+	if (data->len < 16)
+	  Pike_error("Data too short. At lease 16 bytes required.\n");
 
-	  result = begin_shared_string(data->len - 8);
-	} else {
-	  /* Encryption. */
-	  if (data->len < 16)
-	    Pike_error("Data too short. At lease 16 bytes required.\n");
-	  result = begin_shared_string(data->len + 8);
-	}
+	result = begin_shared_string(data->len);
 	SET_ONERROR (uwp, do_free_string, result);
 
 	if (THIS->crypt_state && THIS->crypt_state->crypt) {
@@ -4084,11 +4115,11 @@ PIKECLASS BlockCipher16
 	  /* Decryption. */
 	  ptrdiff_t i;
 	  int j, k;
-	  memcpy(buf, data->str, 8);
-	  memcpy(result->str, data->str + 8, data->len - 8);
-	  t.i64 = ((data->len - 8) / 8) * 6;
+	  memcpy(buf, THIS->iv->str, 8);
+	  memcpy(result->str, data->str, data->len);
+	  t.i64 = (data->len / 8) * 6;
 	  for (j = 0; j < 6; j++) {
-	    for (i = data->len - 8; i > 0; ) {
+	    for (i = data->len; i > 0; ) {
 	      i -= 8;
 	      for (k = 0; k < 8; k++) {
 #if PIKE_BYTEORDER == 4321
@@ -4103,21 +4134,17 @@ PIKECLASS BlockCipher16
 	      memcpy(result->str + i, buf + 8, 8);
 	    }
 	  }
-	  if (memcmp(buf, THIS->iv->str, 8)) {
-	    CALL_AND_UNSET_ONERROR(uwp);
-	    push_int(0);
-	    return;
-	  }
+	  memcpy(THIS->iv->str + 8, buf, 8);
 	} else {
 	  ptrdiff_t i;
 	  int j, k;
 	  /* Encryption RFC 3394 2.2.1. */
 	  t.i64 = 0;
 	  memcpy(buf, THIS->iv->str, 8);
-	  memcpy(result->str + 8, data->str, data->len);
+	  memcpy(result->str, data->str, data->len);
 	  for (j = 0; j < 6; j++) {
 	    for (i = 0; i < data->len; i+= 8) {
-	      memcpy(buf + 8, result->str + 8 + i, 8);
+	      memcpy(buf + 8, result->str + i, 8);
 	      func(ctx, 16, buf, buf);
 	      t.i64++;
 	      for (k = 0; k < 8; k++) {
@@ -4127,15 +4154,37 @@ PIKECLASS BlockCipher16
 		buf[k] ^= t.bin[7-k];
 #endif
 	      }
-	      memcpy(result->str + 8 + i, buf + 8, 8);
+	      memcpy(result->str + i, buf + 8, 8);
 	    }
 	  }
-	  memcpy(result->str, buf, 8);
+	  memcpy(THIS->iv->str + 8, buf, 8);
 	}
 
 	pop_n_elems(args);
 	push_string(end_shared_string(result));
 	UNSET_ONERROR(uwp);
+      }
+
+      /*! @decl string(8bit) digest()
+       *!
+       *! Returns the data integrity value.
+       *!
+       *! When decoding this value should be compared to
+       *! the original IV used when encoding.
+       *!
+       *! When encoding the convention is to prepend this
+       *! value to the encoded data returned by @[crypt()].
+       *!
+       *! @note
+       *!   The above convention is the reverse of the convention for
+       *!   most @[AEAD]s (where the digest typically comes last).
+       *!
+       *! @seealso
+       *!   @[set_iv()], @[DEFAULT_IV]
+       */
+      PIKEFUN string(8bit) digest()
+      {
+	push_string(make_shared_binary_string(THIS->iv->str + 8, 8));
       }
     }
     /*! @endclass State
