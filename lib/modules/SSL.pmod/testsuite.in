@@ -411,14 +411,6 @@ test_do([[
     SSL.Constants.SSL_rsa_export_with_rc4_40_md5: TLS_1_0,
     SSL.Constants.SSL_rsa_export_with_rc2_cbc_40_md5: TLS_1_0,
     SSL.Constants.SSL_rsa_export_with_des40_cbc_sha: TLS_1_0,
-    SSL.Constants.TLS_ecdhe_rsa_with_null_sha: TLS_1_0,
-    SSL.Constants.TLS_ecdhe_ecdsa_with_null_sha: TLS_1_0,
-    SSL.Constants.TLS_ecdh_rsa_with_null_sha: TLS_1_0,
-    SSL.Constants.TLS_ecdh_ecdsa_with_null_sha: TLS_1_0,
-    SSL.Constants.TLS_ecdh_anon_with_null_sha: TLS_1_0,
-    SSL.Constants.TLS_rsa_with_null_sha256: TLS_1_0,
-    SSL.Constants.SSL_rsa_with_null_sha: TLS_1_0,
-    SSL.Constants.SSL_rsa_with_null_md5: TLS_1_0,
     SSL.Constants.SSL_null_with_null_null: TLS_1_0,
 
     // Obsoleted in TLS 1.2:
