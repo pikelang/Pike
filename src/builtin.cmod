@@ -4253,6 +4253,15 @@ static void low_automap(int d,
   push_array(ret=allocate_array(size));
   types = 0;
 
+  struct pike_frame *frame;
+
+  if (d == depth) {
+    frame = frame_init();
+    frame_setup_from_svalue(frame, fun);
+  } else {
+    frame = NULL;
+  }
+
   for(x=0;x<size;x++)
   {
     for(e=0;e<args;e++)
@@ -4271,13 +4280,20 @@ static void low_automap(int d,
       }
     }
 
-    if(d == depth)
-      apply_svalue(fun,args);
-    else
+    if(frame != NULL) {
+      frame_prepare (frame, args);
+      frame_execute (frame);
+    } else {
       low_automap(d+1,depth,fun,real_args,args);
+    }
     stack_pop_to_no_free (ITEM(ret) + x);
     types |= 1 << TYPEOF(ITEM(ret)[x]);
   }
+
+  if (frame != NULL) {
+    frame_pop (frame);
+  }
+
   ret->type_field = types;
   stack_unlink(args);
 }
