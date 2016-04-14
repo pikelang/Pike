@@ -229,17 +229,24 @@ int(0..1) is_supported_suite(int suite, int ke_mask, ProtocolVersion version)
     // FIXME: Check hash size >= cert hash size.
   }
 
-  if ((version >= PROTOCOL_TLS_1_1) &&
-      (< CIPHER_null, CIPHER_rc4_40, CIPHER_rc2_40, CIPHER_des40 >)
-      [suite_info[1]]) {
-    // RFC 4346 A.5: Export suites
-    // TLS 1.1 implementations MUST NOT negotiate
-    // these cipher suites in TLS 1.1 mode.
-    // ...
-    // TLS 1.1 clients MUST check that the server
-    // did not choose one of these cipher suites
-    // during the handshake.
-    return 0;
+  if (version >= PROTOCOL_TLS_1_1)
+  {
+    if (suite == SSL_null_with_null_null)
+    {
+      // This suite is not allowed to be negotiated in TLS 1.1.
+      return 0;
+    }
+
+    if ( (< CIPHER_rc4_40, CIPHER_rc2_40, CIPHER_des40 >)[suite_info[1]]) {
+      // RFC 4346 A.5: Export suites
+      // TLS 1.1 implementations MUST NOT negotiate
+      // these cipher suites in TLS 1.1 mode.
+      // ...
+      // TLS 1.1 clients MUST check that the server
+      // did not choose one of these cipher suites
+      // during the handshake.
+      return 0;
+    }
   }
 
   return 1;
