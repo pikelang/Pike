@@ -417,6 +417,26 @@ class PSSState {
 
     string(7bit) name() { return "RSASSA-PSS"; }
 
+    //! Get the JWS algorithm identifier for a hash.
+    //!
+    //! @returns
+    //!   Returns @expr{0@} (zero) on failure.
+    //!
+    //! @seealso
+    //!   @rfc{7518:3.1@}
+    string(7bit) jwa(.Hash hash)
+    {
+      switch(hash->name()) {
+      case "sha256":
+	return "PS256";
+      case "sha384":
+	return "PS384";
+      case "sha512":
+	return "PS512";
+      }
+      return 0;
+    }
+
     optional int(0..) salt_size() { return default_salt_size; }
 
     optional void set_salt_size(int(0..) salt_size)
@@ -602,6 +622,19 @@ class PKCS1_5State
 
   //! Returns the string @expr{"RSA"@}.
   string(8bit) name() { return "RSA"; }
+
+  string(7bit) jwa(.Hash hash)
+  {
+    switch(hash->name()) {
+    case "sha256":
+      return "RS256";
+    case "sha384":
+      return "RS384";
+    case "sha512":
+      return "RS512";
+    }
+    return 0;
+  }
 
   //! Signs the @[message] with a PKCS-1 signature using hash
   //! algorithm @[h]. This is equivalent to

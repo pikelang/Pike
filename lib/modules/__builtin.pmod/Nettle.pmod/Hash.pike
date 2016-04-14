@@ -87,7 +87,7 @@ variant string(8bit) hash(Stdio.File|Stdio.Buffer|String.Buffer|System.Memory so
 //!   @[Crypto.HMAC]
 
 //! @ignore
-private class _HMAC
+protected class _HMAC
 {
 //! @endignore
 
