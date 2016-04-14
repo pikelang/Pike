@@ -175,6 +175,26 @@ class Curve {
 		     (size() + 7)>>3, get_y());
     }
 
+    //! Get the JWS algorithm identifier for a hash.
+    //!
+    //! @returns
+    //!   Returns @expr{0@} (zero) on failure.
+    //!
+    //! @seealso
+    //!   @rfc{7518:3.1@}
+    string(7bit) jwa(.Hash hash)
+    {
+      switch(Curve::name() + ":" + hash->name()) {
+      case "SECP_256R1:sha256":
+	return "ES256";
+      case "SECP_384R1:sha384":
+	return "ES384";
+      case "SECP_521R1:sha512":
+	return "ES512";
+      }
+      return 0;
+    }
+
     //! Signs the @[message] with a PKCS-1 signature using hash algorithm
     //! @[h].
     string(8bit) pkcs_sign(string(8bit) message, .Hash h)

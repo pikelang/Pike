@@ -59,7 +59,7 @@ string hash(string|Stdio.File in, int|void bytes)
 //!   @[Crypto.HMAC]
 
 //! @ignore
-private class _HMAC
+protected class _HMAC
 {
 //! @endignore
 

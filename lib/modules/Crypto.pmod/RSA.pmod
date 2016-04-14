@@ -272,6 +272,19 @@ class State {
 
 #undef Sequence
 
+  string(7bit) jwa(.Hash hash)
+  {
+    switch(hash->name()) {
+    case "sha256":
+      return "RS256";
+    case "sha384":
+      return "RS384";
+    case "sha512":
+      return "RS512";
+    }
+    return 0;
+  }
+
   //! Signs the @[message] with a PKCS-1 signature using hash
   //! algorithm @[h]. This is equivalent to
   //! I2OSP(RSASP1(OS2IP(RSAES-PKCS1-V1_5-ENCODE(message)))) in PKCS#1

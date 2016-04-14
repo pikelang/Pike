@@ -12,3 +12,24 @@ Standards.ASN1.Types.Identifier pkcs_hash_id()
 {
   return Standards.PKCS.Identifiers.sha256_id;
 }
+
+//! @module HMAC
+
+//! @ignore
+protected class _HMAC
+{
+//! @endignore
+
+  inherit ::this_program;
+
+  //! JWS algorithm identifier.
+  //!
+  //! @seealso
+  //!   @rfc{7518:3.1@}
+  constant jwa = "HS256";
+
+//! @ignore
+}
+//! @endignore
+
+//! @endmodule HMAC
