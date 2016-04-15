@@ -3598,6 +3598,10 @@ void frame_execute(const struct pike_frame * frame) {
 
         CALL_AND_UNSET_ONERROR(uwp);
 
+        // NOTE: we need to update the frame, since
+        // tail recursion might have replaced it
+        frame = Pike_fp;
+
         break;
     }
     case FRAME_PARENT_CLONE: {
@@ -3630,25 +3634,6 @@ void frame_execute(const struct pike_frame * frame) {
         Pike_fatal("trying to execute uninitialized frame.\n");
 #endif
     }
-
-#ifdef PIKE_DEBUG
-    frame_check_all(Pike_fp);
-#endif
-
-    if (save_sp+1 > Pike_sp) {
-        //fprintf(stderr, "function did not return.\n");
-        push_int(0);
-    } else {
-        if (save_sp+1 < Pike_sp) {
-            //fprintf(stderr, "function left %d items on the stack\n", (int)(Pike_sp - save_sp - 1));
-            assign_svalue(save_sp,Pike_sp-1);
-            pop_n_elems(Pike_sp-save_sp-1);
-            /* consider using a flag for immediate destruct instead... */
-            low_destruct_objects_to_destruct();
-        }
-    }
-
-    if (type == FRAME_PIKE_FUNCTION) return;
 
 #ifdef PIKE_DEBUG
     frame_check_all(frame);
@@ -3799,7 +3784,11 @@ struct pike_frame * frame_return(struct pike_frame *frame) {
         Pike_mark_sp = frame->save_mark_sp;
     }
     // pop all locals
-    stack_pop_n_elems_keep_top (Pike_sp - save_sp);
+    if (save_sp > Pike_sp) {
+        push_int(0);
+    } else {
+        stack_pop_n_elems_keep_top (Pike_sp - save_sp);
+    }
 
     {
         /* consider using a flag for immediate destruct instead... */
@@ -3846,7 +3835,11 @@ void frame_return_and_unlink(struct pike_frame *frame) {
         really_free_pike_frame(frame);
     }
 
-    stack_pop_n_elems_keep_top (Pike_sp - save_sp);
+    if (save_sp > Pike_sp) {
+        push_int(0);
+    } else {
+        stack_pop_n_elems_keep_top (Pike_sp - save_sp);
+    }
 
 
     {
