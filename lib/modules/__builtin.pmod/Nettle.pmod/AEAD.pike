@@ -10,8 +10,11 @@
 //! Note that no actual AEAD algorithm is implemented
 //! in the base class. They are implemented in classes
 //! that inherit this class.
+//!
+//! @seealso
+//!   @[AE]
 
-inherit __builtin.Nettle.Cipher;
+inherit __builtin.Nettle.AE;
 
 inherit __builtin.Nettle.__Hash;
 
