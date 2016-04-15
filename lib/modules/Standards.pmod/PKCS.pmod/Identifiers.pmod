@@ -185,6 +185,12 @@ Identifier sha224_id = Identifier(2, 16, 840, 1, 101, 3, 4, 2, 4);
 
 Identifier dh_id = Identifier(1, 2, 840, 10046, 2, 1);
 
+// RFC 3394 3:
+Identifier aes_id = Identifier(2, 16, 840, 1, 101, 3, 4, 1);
+Identifier aes128_wrap_id = aes_id->append(5);
+Identifier aes192_wrap_id = aes_id->append(25);
+Identifier aes256_wrap_id = aes_id->append(45);
+
 /* Object Identifiers used in X509 distinguished names */
 
 Identifier at_id = Identifier(2, 5, 4);
