@@ -1148,6 +1148,87 @@ test_any([[
     crypt("0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"));
 ]], "618b81a13bb1b4e2890dd9fe98017197b24e5a154bbf32c3b79734ab96f5fc33ad413014b195a85029ae55b1316dc907c9c41a5997924c75a96f6e79f9a73f7d")
 
+// AE
+
+define(test_generic_ae,[[
+  cond_resolv($1, [[
+    test_any([[
+      object c = $1();
+      object d = $1();
+
+      string key = test_data[$1.key_size()..$1.key_size()*2-1];
+      c->set_encrypt_key(key);
+      d->set_decrypt_key(key);
+
+      string iv = test_data[$1.iv_size()*4..$1.iv_size()*5-1];
+      c->set_iv(iv);
+
+      string cdata = c->crypt(test_data);
+      d->set_iv(c->digest());
+
+      return (d->crypt(cdata) + iv) == (test_data + d->digest());
+    ]], 1)
+  ]])
+]])
+
+dnl aead, key, iv, plaintext, crypted, hash, [trunc]
+define(test_ae, [[
+  cond_resolv($1,[[
+  test_any([[
+    object o = $1();
+    o->set_encrypt_key(H($2));
+    o->set_iv(H($3));
+    return S(o->crypt(H($4))) + "|"+S(o->digest($7));
+    ]], lower_case($5-" "-"\n"+"|"+$6-" "-"\n"))
+  test_any([[
+    object o = $1();
+    o->set_decrypt_key(H($2));
+    o->set_iv(H($6));
+    return S(o->crypt(H($5))) + "|"+S(o->digest($7));
+    ]], lower_case($4-" "-"\n"+"|"+$3-" "-"\n"))
+  ]])
+]])
+
+// AES-KW Testvectors from RFC 3394 4.
+
+test_generic_ae(Crypto.AES.KW)
+test_ae(Crypto.AES.KW,
+	"000102030405060708090A0B0C0D0E0F",
+	"A6A6A6A6A6A6A6A6",
+	"00112233445566778899AABBCCDDEEFF",
+	"AEF34BD8FB5A7B829D3E862371D2CFE5",
+	"1FA68B0A8112B447")
+test_ae(Crypto.AES.KW,
+	"000102030405060708090A0B0C0D0E0F1011121314151617",
+	"A6A6A6A6A6A6A6A6",
+	"00112233445566778899AABBCCDDEEFF",
+	"F92B5B97C050AED2468AB8A17AD84E5D",
+	"96778B25AE6CA435")
+test_ae(Crypto.AES.KW,
+	"000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F",
+	"A6A6A6A6A6A6A6A6",
+	"00112233445566778899AABBCCDDEEFF",
+	"63E9777905818A2A93C8191E7D6E8AE7",
+	"64E8C3F9CE0F5BA2")
+test_ae(Crypto.AES.KW,
+	"000102030405060708090A0B0C0D0E0F1011121314151617",
+	"A6A6A6A6A6A6A6A6",
+	"00112233445566778899AABBCCDDEEFF0001020304050607",
+	"68F24EC260743EDCE1C6C7DDEE725A936BA814915C6762D2",
+	"031D33264E15D332")
+test_ae(Crypto.AES.KW,
+	"000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F",
+	"A6A6A6A6A6A6A6A6",
+	"00112233445566778899AABBCCDDEEFF0001020304050607",
+	"F6E6F4FBE30E71E4769C8B80A32CB8958CD5D17D6B254DA1",
+	"A8F9BC1612C68B3F")
+test_ae(Crypto.AES.KW,
+	"000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F",
+	"A6A6A6A6A6A6A6A6",
+	"00112233445566778899AABBCCDDEEFF000102030405060708090A0B0C0D0E0F",
+	"CBCCB35CFB87F8263F5786E2D80ED326CBC7F0E71A99F43BFB988B9B7A02DD21",
+	"28C9F404C4B810F4")
+
 // AEAD
 
 test_do(add_constant("test_adata", test_data[..116]);)
