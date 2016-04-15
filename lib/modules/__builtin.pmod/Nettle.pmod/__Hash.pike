@@ -8,9 +8,9 @@
 //! that inherit this class.
 
 //! Returns a human readable name for the algorithm.
-string name();
+string(7bit) name();
 
-//! Returns the size of a hash digests.
+//! Returns the size of a hash digest.
 int(0..) digest_size();
 
 //! Returns the internal block size of the hash algorithm.
@@ -42,7 +42,7 @@ class State
   //! Add some more data to hash.
   this_program update(string data);
 
-  //! Generates a digests, and resets the hashing contents.
+  //! Generates a digest, and resets the hashing contents.
   //!
   //! @param length
   //!   If the length argument is provided, the digest is truncated
@@ -58,7 +58,7 @@ class State
     return global::name();
   }
 
-  //! Returns the size of a hash digests.
+  //! Returns the size of a hash digest.
   int(0..) digest_size()
   {
     return global::digest_size();
