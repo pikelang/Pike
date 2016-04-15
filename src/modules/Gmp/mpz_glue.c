@@ -2049,6 +2049,8 @@ static void mpzmod_random(INT32 args)
   struct object *res;
   unsigned bits, bytes, popcount;
   unsigned char *str, mask;
+  ONERROR err;
+  err.func = NULL;
   DECLARE_THIS();
 
   /* NB: Nominally we could survive with just one argument too, but... */
@@ -2101,6 +2103,7 @@ static void mpzmod_random(INT32 args)
   str = xalloc(bytes);
   memcpy(str, sp[-1].u.string->str, bytes);
   pop_stack();
+  SET_ONERROR(err, free, str);
 
   mask = (1<<(bits%8))-1;
   if (popcount == 1) {
@@ -2117,7 +2120,6 @@ static void mpzmod_random(INT32 args)
     mpz_import(OBTOMPZ(res), bytes, 1, 1, 0, 0, str);
     if( mpz_cmp(THIS, OBTOMPZ(res)) > 0 )
     {
-      free(str);
       goto done;
     }
 
@@ -2130,22 +2132,20 @@ static void mpzmod_random(INT32 args)
     // We leak str on error, but we've already proven the random
     // function to work, so an error at this point is unlikely.
     if (TYPEOF(sp[-1]) != T_STRING) {
-      free(str);
       Pike_error("random_string(%ld) returned non string.\n", bytes);
     }
     if ((unsigned)sp[-1].u.string->len != bytes ||
         sp[-1].u.string->size_shift != 0) {
-      free(str);
       Pike_error("Wrong size random string generated.\n");
     }
     memcpy(str, sp[-1].u.string->str, bytes);
     pop_stack();
     if(mask) str[0] = mask & str[0];
   }
-  free(str);
   Pike_error("Unable to generate random data.\n");
 
  done:
+  if( err.func ) CALL_AND_UNSET_ONERROR(err);
   pop_stack();
 
   /* res is now at the top of the stack. Reduce it. */
