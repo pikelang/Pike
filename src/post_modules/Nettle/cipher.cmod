@@ -3784,10 +3784,9 @@ PIKECLASS BlockCipher16
   PIKECLASS _KW
     program_flags PROGRAM_NEEDS_PARENT|PROGRAM_USES_PARENT;
   {
-    /*! @decl inherit __builtin.Nettle.AEAD
+    /*! @decl inherit __builtin.Nettle.AE
      */
-    INHERIT "__builtin.Nettle.AEAD";
-
+    INHERIT "__builtin.Nettle.AE";
 
     /*! @decl string(8bit) name()
      *! Returns the name of the base cipher with @expr{".CCM"@} appended.
@@ -4052,20 +4051,6 @@ PIKECLASS BlockCipher16
 	memcpy(STR0(THIS->iv), STR0(iv), 8);
 	memcpy(STR0(THIS->iv) + 8, STR0(iv), 8);
 	RETURN this_object();
-      }
-
-      /*! @decl this_program update(string(zero) public_data)
-       *!
-       *! @note
-       *!   Authenticated public data is not supported
-       *!   by this mode.
-       */
-      PIKEFUN object update(string(1bit) public_data)
-	rawtype tFunc(tStr0, tObj);
-      {
-	if (public_data->len) {
-	  Pike_error("Public data is not supported with this mode.\n");
-	}
       }
 
       /*! @decl string(0..255) crypt(string(0..255) data)
