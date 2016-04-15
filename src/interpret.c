@@ -2253,15 +2253,7 @@ static void restore_catching_eval_jmpbuf (LOW_JMP_BUF *p)
 
 PMOD_EXPORT void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 {
-  /* Save and clear Pike_interpreter.catching_eval_jmpbuf so that the
-   * following eval_instruction will install a LOW_JMP_BUF of its
-   * own to handle catches. */
-  LOW_JMP_BUF *saved_jmpbuf = Pike_interpreter.catching_eval_jmpbuf;
-  ONERROR uwp, fwp;
   struct pike_frame *frame = frame_init();
-
-  Pike_interpreter.catching_eval_jmpbuf = NULL;
-  SET_ONERROR (uwp, restore_catching_eval_jmpbuf, saved_jmpbuf);
 
   /* The C stack margin is normally 8 kb, but if we get here during a
    * lowered margin then don't fail just because of that, unless it's
@@ -2292,20 +2284,11 @@ PMOD_EXPORT void mega_apply(enum apply_type type, INT32 args, void *arg1, void *
   }
 
   frame_return_and_unlink(Pike_fp);
-
-  CALL_AND_UNSET_ONERROR(uwp);
 }
 
 PMOD_EXPORT void mega_apply_low(INT32 args, void *arg1, ptrdiff_t arg2)
 {
-  /* Save and clear Pike_interpreter.catching_eval_jmpbuf so that the
-   * following eval_instruction will install a LOW_JMP_BUF of its
-   * own to handle catches. */
-  LOW_JMP_BUF *saved_jmpbuf = Pike_interpreter.catching_eval_jmpbuf;
-  ONERROR uwp;
   struct pike_frame *frame = frame_init();
-  Pike_interpreter.catching_eval_jmpbuf = NULL;
-  SET_ONERROR (uwp, restore_catching_eval_jmpbuf, saved_jmpbuf);
 
   /* The C stack margin is normally 8 kb, but if we get here during a
    * lowered margin then don't fail just because of that, unless it's
@@ -2317,8 +2300,6 @@ PMOD_EXPORT void mega_apply_low(INT32 args, void *arg1, ptrdiff_t arg2)
   frame_prepare(frame, args);
   frame_execute(frame);
   frame_return_and_unlink(Pike_fp);
-
-  CALL_AND_UNSET_ONERROR(uwp);
 }
 
 /* Put catch outside of eval_instruction, so the setjmp won't affect
@@ -3598,12 +3579,24 @@ void frame_execute(const struct pike_frame * frame) {
     }
     case FRAME_PIKE_FUNCTION: {
         /* we could use frame->ptr just aswell here. */
+        /* Save and clear Pike_interpreter.catching_eval_jmpbuf so that the
+        * following eval_instruction will install a LOW_JMP_BUF of its
+        * own to handle catches. */
+        LOW_JMP_BUF *saved_jmpbuf = Pike_interpreter.catching_eval_jmpbuf;
+        ONERROR uwp;
+
         PIKE_OPCODE_T *pc = frame->pc;
+
+        Pike_interpreter.catching_eval_jmpbuf = NULL;
+        SET_ONERROR (uwp, restore_catching_eval_jmpbuf, saved_jmpbuf);
+
         eval_instruction(pc
 #ifdef ENTRY_PROLOGUE_SIZE
                          - ENTRY_PROLOGUE_SIZE
 #endif /* ENTRY_PROLOGUE_SIZE */
                         );
+
+        CALL_AND_UNSET_ONERROR(uwp);
 
         break;
     }
