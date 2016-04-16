@@ -68,6 +68,14 @@ START_MARKER
   test_eq(random(Gmp.mpz(255)), Gmp.mpz(213))
   test_eq(random(Gmp.mpz(256)), Gmp.mpz(84))
   test_eq(random(Gmp.mpz(100000)), Gmp.mpz(396))
+  test_do([[
+    Random.Interface r = class {
+      inherit Random.Interface;
+      string(8bit) random_string(int(0..) len) { return "\xff"*len; }
+    }();
+    add_constant("random", r->random);
+  ]])
+  test_eval_error(random(Gmp.mpz(4711)))
   test_do( add_constant("random", real_random) )
   test_do( add_constant("real_random") )
 
