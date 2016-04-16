@@ -2047,10 +2047,10 @@ static void mpzmod_hamdist(INT32 args)
 static void mpzmod_random(INT32 args)
 {
   struct object *res;
-  unsigned bits, bytes, popcount;
-  unsigned char *str, mask;
-  ONERROR err;
-  err.func = NULL;
+  MP_INT *mpz_res;
+  unsigned bits, bytes;
+  mp_limb_t mask;
+  int i;
   DECLARE_THIS();
 
   /* NB: Nominally we could survive with just one argument too, but... */
@@ -2071,81 +2071,88 @@ static void mpzmod_random(INT32 args)
   push_object(res);
   stack_swap();
 
+  /* On stack: res, random_string */
+
+  mpz_res = OBTOMPZ(res);
   bits = mpz_sizeinbase(THIS, 2);
   bytes = ((bits-1)>>3)+1;
-  popcount = mpz_popcount(THIS);
+  mask = (1UL<<(bits & ((sizeof(mp_limb_t)<<3) - 1)))-1;
 
-  if (((bits & 0x07) == 1) && (popcount == 1)) {
-    /* An even number of bytes of random data. */
-    bytes--;
-  }
-
-  push_int(bytes);
-  apply_svalue(&sp[-2], 1);
-  if (TYPEOF(sp[-1]) != T_STRING)
-    Pike_error("random_string(%ld) returned non string.\n", bytes);
-  if ((unsigned)sp[-1].u.string->len != bytes ||
-      sp[-1].u.string->size_shift != 0)
-     Pike_error("Wrong size random string generated.\n");
-
-  if (bits > (bytes<<3)) {
-    /* We've decreased the number of bytes above.
-     * Ie we have the special case of an even number of random bytes.
-     */
-    mpz_import(OBTOMPZ(res), bytes, 1, 1, 0, 0, sp[-1].u.string->str);
-    pop_stack();
-    goto done;
-  }
-
-  // FIXME: Can we save a copy by either mask the pike string and
-  // import from it, or import the unmasked string and mask it in
-  // mpz object?
-  str = xalloc(bytes);
-  memcpy(str, sp[-1].u.string->str, bytes);
-  pop_stack();
-  SET_ONERROR(err, free, str);
-
-  mask = (1<<(bits%8))-1;
-  if (popcount == 1) {
-    /* An even number of bits.
+  if (mpz_popcount(THIS) == 1) {
+    /* The number of bits is a power of 2.
      * Ie the most significant bit of the masked result
      * should always be zero, so we can shrink the mask.
      */
-    mask >>= 1;
-  }
-  if(mask) str[0] = mask & str[0];
-
-  for(int i=0; i<1000; i++)
-  {
-    mpz_import(OBTOMPZ(res), bytes, 1, 1, 0, 0, str);
-    if( mpz_cmp(THIS, OBTOMPZ(res)) > 0 )
-    {
-      goto done;
+    if (!mask) {
+      mask = ~0;
     }
+    mask >>= 1;
+    bits--;
 
+    if (!(bits & 0x07)) {
+      /* One less byte of random data needed. */
+      bytes--;
+    }
+  }
+
+  if (!(bits & 0x07)) {
+    /* Whole number of bytes. No need for masking. */
+    mask = 0;
+  }
+
+  i = 0;
+  do {
     // FIXME: We replace the entire string if we are too large. We
     // could be smarter here, but it's easy to introduce bias by
     // mistake.
 
     push_int(bytes);
     apply_svalue(&sp[-2], 1);
-    // We leak str on error, but we've already proven the random
-    // function to work, so an error at this point is unlikely.
-    if (TYPEOF(sp[-1]) != T_STRING) {
+    if (TYPEOF(sp[-1]) != T_STRING)
       Pike_error("random_string(%ld) returned non string.\n", bytes);
-    }
     if ((unsigned)sp[-1].u.string->len != bytes ||
-        sp[-1].u.string->size_shift != 0) {
+        sp[-1].u.string->size_shift != 0)
       Pike_error("Wrong size random string generated.\n");
-    }
-    memcpy(str, sp[-1].u.string->str, bytes);
+
+    // FIXME: If (bits%8)==0 and THIS is (1<<bits)-1 we can just copy
+    // the full random data without further checks.
+
+    mpz_import(mpz_res, bytes, 1, 1, 0, 0, sp[-1].u.string->str);
     pop_stack();
-    if(mask) str[0] = mask & str[0];
-  }
+
+    if (bits > (bytes<<3)) {
+      /* We've decreased the number of bytes above.
+       * Ie we have the special case of an even number of random bytes.
+       */
+      goto done;
+    }
+
+    if (mask && (mpz_res->_mp_size == THIS->_mp_size)) {
+      /* Apply the mask. */
+      /*
+       * CAVEAT: We're messing with Gmp internals here...
+       */
+      /* NB: res is always positive, so the subtraction is safe. */
+      mpz_res->_mp_d[mpz_res->_mp_size - 1] &= mask;
+      /* Get rid of leading zero limbs. Otherwise gmp will get
+       * sad and zap innocent memory.
+       */
+      while (mpz_res->_mp_size && !mpz_res->_mp_d[mpz_res->_mp_size - 1]) {
+	mpz_res->_mp_size--;
+      }
+    }
+
+    if( mpz_cmp(THIS, mpz_res) > 0 )
+      goto done;
+    /* NB: With a rectangular distribution we have a probability
+     *     of success of at least 50% in the test above, so the
+     *     failure rate is less than 1 in 2^1000.
+     */
+  } while (++i < 1000);
   Pike_error("Unable to generate random data.\n");
 
  done:
-  if( err.func ) CALL_AND_UNSET_ONERROR(err);
+  /* Pop the random_string() function. */
   pop_stack();
 
   /* res is now at the top of the stack. Reduce it. */
