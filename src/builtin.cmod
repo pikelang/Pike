@@ -4283,6 +4283,9 @@ static void low_automap(int d,
     if(frame != NULL) {
       frame_prepare (frame, args);
       frame_execute (frame);
+      /* NOTE: this is due to tail recursion replacing frames */
+      frame = Pike_fp;
+      frame = frame_return(frame);
     } else {
       low_automap(d+1,depth,fun,real_args,args);
     }
