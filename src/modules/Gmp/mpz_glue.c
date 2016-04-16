@@ -2114,9 +2114,6 @@ static void mpzmod_random(INT32 args)
         sp[-1].u.string->size_shift != 0)
       Pike_error("Wrong size random string generated.\n");
 
-    // FIXME: If (bits%8)==0 and THIS is (1<<bits)-1 we can just copy
-    // the full random data without further checks.
-
     mpz_import(mpz_res, bytes, 1, 1, 0, 0, sp[-1].u.string->str);
     pop_stack();
 
