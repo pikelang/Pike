@@ -189,7 +189,7 @@ PMOD_EXPORT int int64_from_bignum (INT64 *i, struct object *bignum)
 #ifdef PIKE_DEBUG
   if ((bignum->prog != bignum_program) &&
       (bignum->prog != mpzmod_program)) {
-    Pike_fatal("cast_to_int(): Not a Gmp.bignum or Gmp.mpz.\n");
+    Pike_fatal("cast(): Not a Gmp.bignum or Gmp.mpz.\n");
   }
 #endif
 
@@ -259,7 +259,7 @@ PMOD_EXPORT int ulongest_from_bignum (unsigned LONGEST *i, struct object *bignum
 #ifdef PIKE_DEBUG
   if ((bignum->prog != bignum_program) &&
       (bignum->prog != mpzmod_program)) {
-    Pike_fatal("cast_to_int(): Not a Gmp.bignum or Gmp.mpz.\n");
+    Pike_fatal("cast(): Not a Gmp.bignum or Gmp.mpz.\n");
   }
 #endif
 
@@ -583,21 +583,6 @@ static void mpzmod_create(INT32 args)
   pop_n_elems(args);
 }
 
-/*! @decl int cast_to_int()
- */
-static void mpzmod_get_int(INT32 args)
-{
-  DECLARE_THIS();
-  pop_n_elems(args);
-  add_ref(THIS_OBJECT);
-  mpzmod_reduce(THIS_OBJECT);
-  if( TYPEOF(Pike_sp[-1]) == T_OBJECT &&
-      Pike_sp[-1].u.object->prog != bignum_program )
-  {
-    push_object(clone_object(bignum_program, 1));
-  }
-}
-
 /*! @decl int __hash()
  *!
  *!   Calculate a hash of the value.
@@ -623,15 +608,6 @@ static void mpzmod___hash(INT32 args)
   else
     push_int(h);
   return;
-}
-
-/*! @decl float cast_to_float()
- */
-static void mpzmod_get_float(INT32 args)
-{
-  DECLARE_THIS();
-  pop_n_elems(args);
-  push_float((FLOAT_TYPE)mpz_get_d(THIS));
 }
 
 struct pike_string *low_get_mpz_digits(MP_INT *mpz, int base)
@@ -694,12 +670,12 @@ struct pike_string *low_get_mpz_digits(MP_INT *mpz, int base)
   return s;
 }
 
-/*! @decl string cast_to_string()
+/*! @decl string encode_json()
+ *  Casts the object to a string.
  */
-static void mpzmod_get_string(INT32 args)
+static void mpzmod_encode_json(INT32 args)
 {
   DECLARE_THIS();
-  /* Also called as encode_json (with some arguments). */
   pop_n_elems(args);
   push_string(low_get_mpz_digits(THIS, 10));
 }
@@ -714,7 +690,7 @@ static void mpzmod_get_string(INT32 args)
  *!   The bases 37 to 62 are not available When compiled with GMP
  *!   earlier than version 5.
  *! @seealso
- *!   @[cast_to_string]
+ *!   @[cast]
  */
 static void mpzmod_digits(INT32 args)
 {
@@ -968,21 +944,28 @@ static void mpzmod_size(INT32 args)
  *!
  *! Cast this mpz object to another type. Allowed types are string,
  *! int and float.
- *!
- *! @seealso
- *!   @[cast_to_int], @[cast_to_float], @[cast_to_string]
  */
 static void mpzmod_cast(INT32 args)
 {
+  DECLARE_THIS();
   struct pike_string *s = sp[-args].u.string;
   if( args ) pop_stack(); /* s have at least one more reference. */
 
   if( s == literal_int_string )
-    mpzmod_get_int(0);
+  {
+    add_ref(THIS_OBJECT);
+    mpzmod_reduce(THIS_OBJECT);
+    if( TYPEOF(Pike_sp[-1]) == T_OBJECT &&
+        Pike_sp[-1].u.object->prog != bignum_program )
+      {
+        push_object(clone_object(bignum_program, 1));
+      }
+    return;
+  }
   else if( s == literal_string_string )
-    mpzmod_get_string(0);
+    push_string(low_get_mpz_digits(THIS, 10));
   else if( s == literal_float_string )
-    mpzmod_get_float(0);
+    push_float((FLOAT_TYPE)mpz_get_d(THIS));
   else
     push_undefined();
 }
@@ -2309,16 +2292,12 @@ static void pike_mp_free (void *ptr, size_t UNUSED(size))
                ID_PROTECTED);                                           \
   									\
   ADD_FUNCTION("digits", mpzmod_digits,tFunc(tOr(tVoid,tInt),tStr8), 0);\
-  ADD_FUNCTION("encode_json", mpzmod_get_string,			\
+  ADD_FUNCTION("encode_json", mpzmod_encode_json,			\
 	       tFunc(tOr(tVoid,tInt) tOr(tVoid,tInt),tStr7), 0);	\
   ADD_FUNCTION("_sprintf", mpzmod__sprintf, tFunc(tInt tMapping,tStr),  \
                ID_PROTECTED);                                           \
   ADD_FUNCTION("_size_object",mpzmod__size_object, tFunc(tVoid,tInt),0);\
   ADD_FUNCTION("size", mpzmod_size,tFunc(tOr(tVoid,tInt),tIntPos), 0);	\
-									\
-  ADD_FUNCTION("cast_to_int",mpzmod_get_int,tDeprecated(tFunc(tNone,tInt)),0);        \
-  ADD_FUNCTION("cast_to_string",mpzmod_get_string,tDeprecated(tFunc(tNone,tStr7)),0); \
-  ADD_FUNCTION("cast_to_float",mpzmod_get_float,tDeprecated(tFunc(tNone,tFlt)),0);    \
 									\
   ADD_FUNCTION("probably_prime_p",mpzmod_probably_prime_p,		\
                tFunc(tOr(tVoid,tIntPos),tInt01),0);                     \
