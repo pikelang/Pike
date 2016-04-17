@@ -54,6 +54,15 @@ protected class LowState {
   //! Returns the string @expr{"RSA"@}.
   string(8bit) name() { return "RSA"; }
 
+  //! Get the JWS algorithm identifier for a hash.
+  //!
+  //! @returns
+  //!   Returns @expr{0@} (zero) on failure.
+  //!
+  //! @seealso
+  //!   @rfc{7518:3.1@}
+  string(7bit) jwa(.Hash hash);
+
   //
   // --- Key methods
   //
@@ -623,6 +632,13 @@ class PKCS1_5State
   //! Returns the string @expr{"RSA"@}.
   string(8bit) name() { return "RSA"; }
 
+  //! Get the JWS algorithm identifier for a hash.
+  //!
+  //! @returns
+  //!   Returns @expr{0@} (zero) on failure.
+  //!
+  //! @seealso
+  //!   @rfc{7518:3.1@}
   string(7bit) jwa(.Hash hash)
   {
     switch(hash->name()) {
