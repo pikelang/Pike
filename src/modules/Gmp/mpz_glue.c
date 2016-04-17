@@ -2075,10 +2075,15 @@ static void mpzmod_random(INT32 args)
     mask >>= 1;
     bits--;
 
+    /* There's also no need to compare the limit, as
+     * all bitpatterns are valid after masking.
+     */
+    fast=1;
+
     if (!(bits & 0x07)) {
       /* One less byte of random data needed. */
       bytes--;
-      fast=1;
+      fast = 2;	/* No need for masking either. */
     }
   }
 
@@ -2104,7 +2109,7 @@ static void mpzmod_random(INT32 args)
     mpz_import(mpz_res, bytes, 1, 1, 0, 0, sp[-1].u.string->str);
     pop_stack();
 
-    if (fast) {
+    if (fast == 2) {
       /* We've decreased the number of bytes above.
        * Ie we have the special case of an even number of random bytes.
        */
@@ -2126,7 +2131,7 @@ static void mpzmod_random(INT32 args)
       }
     }
 
-    if( mpz_cmp(THIS, mpz_res) > 0 )
+    if( fast || mpz_cmp(THIS, mpz_res) > 0 )
       goto done;
     /* NB: With a rectangular distribution we have a probability
      *     of success of at least 50% in the test above, so the
