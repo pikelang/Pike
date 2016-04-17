@@ -87,7 +87,7 @@ import Standards.ASN1.Types;
 #define ASN1_GET_ATTR_NAME(X)		((X)->elements[0]->value)
 #define ASN1_GET_ATTR_VALUES(X)         ((X)->elements[1]->elements->value)
 
-#define ASN1_RESULTCODE(X)		(int)((X)->elements[1]->elements[0]->value->cast_to_int())
+#define ASN1_RESULTCODE(X)		(int)((X)->elements[1]->elements[0]->value)
 #define ASN1_RESULTSTRING(X)		((X)->elements[1]->elements[2]->value)
 #define ASN1_RESULTREFS(X)		((X)->elements[1]->elements[3]->elements)
 
