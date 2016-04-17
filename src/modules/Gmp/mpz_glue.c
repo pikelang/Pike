@@ -699,7 +699,7 @@ struct pike_string *low_get_mpz_digits(MP_INT *mpz, int base)
 static void mpzmod_get_string(INT32 args)
 {
   DECLARE_THIS();
-  /* Also called as json_encode (with some arguments). */
+  /* Also called as encode_json (with some arguments). */
   pop_n_elems(args);
   push_string(low_get_mpz_digits(THIS, 10));
 }
@@ -707,9 +707,12 @@ static void mpzmod_get_string(INT32 args)
 /*! @decl string digits(void|int(2..62)|int(256..256)|int(-256..-256) base)
  *!
  *! Convert this mpz object to a string. If a @[base] is given the
- *! number will be represented in that base. Valid bases are 2-36 and
+ *! number will be represented in that base. Valid bases are 2-62 and
  *! @expr{256@} and @expr{-256@}. The default base is 10.
  *!
+ *! @note
+ *!   The bases 37 to 62 are not available When compiled with GMP
+ *!   earlier than version 5.
  *! @seealso
  *!   @[cast_to_string]
  */
@@ -2050,7 +2053,7 @@ static void mpzmod_random(INT32 args)
   MP_INT *mpz_res;
   unsigned bits, bytes;
   mp_limb_t mask;
-  int i;
+  int i, fast=0;
   DECLARE_THIS();
 
   /* NB: Nominally we could survive with just one argument too, but... */
@@ -2092,6 +2095,7 @@ static void mpzmod_random(INT32 args)
     if (!(bits & 0x07)) {
       /* One less byte of random data needed. */
       bytes--;
+      fast=1;
     }
   }
 
@@ -2117,7 +2121,7 @@ static void mpzmod_random(INT32 args)
     mpz_import(mpz_res, bytes, 1, 1, 0, 0, sp[-1].u.string->str);
     pop_stack();
 
-    if (bits > (bytes<<3)) {
+    if (fast) {
       /* We've decreased the number of bytes above.
        * Ie we have the special case of an even number of random bytes.
        */
