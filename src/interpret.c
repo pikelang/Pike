@@ -1954,6 +1954,7 @@ static void do_trace_frame_call(const struct pike_frame *frame, int args) {
                         obj_name.str);
         }
     case FRAME_CLONE:
+        /* FALL_THROUGH */
     case FRAME_PARENT_CLONE:
         if (UNLIKELY(Pike_interpreter.trace_level)) {
             struct svalue tmp;
