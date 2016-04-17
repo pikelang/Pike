@@ -663,6 +663,9 @@ static void mpzmod_create(INT32 args)
 }
 
 /*! @decl int cast_to_int()
+ *! Casts the object to an integer.
+ *! @deprecated
+ *!   Use @exp{(int)@} instead.
  */
 static void mpzmod_get_int(INT32 args)
 {
@@ -732,6 +735,9 @@ static void mpzmod___hash(INT32 args)
 }
 
 /*! @decl float cast_to_float()
+ *! Casts the object to a float.
+ *! @deprecated
+ *!   Use @expr{(float)@} instead.
  */
 static void mpzmod_get_float(INT32 args)
 {
@@ -793,6 +799,9 @@ struct pike_string *low_get_mpz_digits(MP_INT *mpz, int base)
 }
 
 /*! @decl string cast_to_string()
+ *! Casts the object to a string.
+ *! @deprecated
+ *!   Use @expr{(string)@} instead.
  */
 static void mpzmod_get_string(INT32 args)
 {
