@@ -1953,8 +1953,8 @@ static void do_trace_frame_call(const struct pike_frame *frame, int args) {
                         function->name->str : "[widestring fn name]",
                         obj_name.str);
         }
+        break;
     case FRAME_CLONE:
-        /* FALL_THROUGH */
     case FRAME_PARENT_CLONE:
         if (UNLIKELY(Pike_interpreter.trace_level)) {
             struct svalue tmp;
@@ -3560,6 +3560,7 @@ const char * frame_type_name(enum frame_type type) {
     return "<unknown frame type>";
 }
 
+/* frame_execute will perform the actual function call.  */
 void frame_execute(const struct pike_frame * frame) {
     struct svalue *save_sp = frame->save_sp;
     enum frame_type type = frame->type;
