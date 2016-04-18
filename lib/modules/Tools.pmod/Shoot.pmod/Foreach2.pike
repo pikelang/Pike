@@ -4,9 +4,11 @@ inherit Tools.Shoot.Test;
 constant name="Foreach (arr;local;local)";
 constant dont_dump_program = 1;
 
-array const_array = enumerate(10000000);
+int arr_size = 10000000;
 
-int perform()
+array prepare() { return enumerate(arr_size); }
+
+int perform(array const_array)
 {
     int res;
     foreach( const_array;int ind; int i )
