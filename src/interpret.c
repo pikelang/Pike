@@ -3631,9 +3631,11 @@ void frame_execute(const struct pike_frame * frame) {
     }
     case FRAME_BUILTIN:
         Pike_fatal("Cannot execute builtin frame.\n");
-#ifdef PIKE_DEBUG
     default:
+#ifdef PIKE_DEBUG
         Pike_fatal("trying to execute uninitialized frame.\n");
+#else
+        UNREACHABLE(return);
 #endif
     }
 
