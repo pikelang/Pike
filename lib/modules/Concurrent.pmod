@@ -230,6 +230,18 @@ class Future
     on_failure(apply_flat, p, failure || success, extra);
     return p->future();
   }
+
+  //! Return a @[Future] that will be fulfilled with an
+  //! array of the fulfilled result of this object followed
+  //! by the fulfilled results of @[others].
+  //!
+  //! @seealso
+  //!   @[results()]
+  this_program zip(this_program ... others)
+  {
+    if (!sizeof(others)) return local::this;
+    return results(({ local::this }) + others);
+  }
 }
 
 //! Promise to provide a @[Future] value.
@@ -289,4 +301,153 @@ class Promise
       failure(({ "Promise broken.\n", backtrace() }));
     }
   }
+}
+
+protected class FirstCompleted
+{
+  inherit Promise;
+
+  protected void create(array(Future) futures)
+  {
+    if (!sizeof(futures)) {
+      state = STATE_FULFILLED;
+      return;
+    }
+    futures->on_failure(got_failure);
+    futures->on_success(got_success);
+  }
+
+  protected void got_failure(mixed err)
+  {
+    if (state) return;
+    failure(err);
+  }
+
+  protected void got_success(mixed val)
+  {
+    if (state) return;
+    success(val);
+  }
+}
+
+//! Return a @[Future] that represents the first
+//! of the @[futures] that completes.
+Future first_completed(array(Future) futures)
+{
+  Promise p = FirstCompleted(futures);
+  return p->future();
+}
+
+protected class Results
+{
+  inherit Promise;
+
+  protected void create(array(Future) futures)
+  {
+    if (!sizeof(futures)) {
+      success(({}));
+      return;
+    }
+    futures->on_failure(failure);
+    foreach(futures; int i; Future f) {
+      f->on_success(got_success, i,
+		    allocate(sizeof(futures), UNDEFINED),
+		    allocate(sizeof(futures), STATE_PENDING));
+    }
+  }
+
+  protected void got_success(mixed value, int i,
+			     array(mixed) results, array(State) states)
+  {
+    if (state == STATE_REJECTED) return;
+    results[i] = value;
+    states[i] = STATE_FULFILLED;
+    if (!state) {
+      if (has_value(states, STATE_PENDING)) return;
+    }
+    success(results);
+  }
+}
+
+//! Return a @[Future] that represents the array of all
+//! the completed @[futures].
+Future results(array(Future) futures)
+{
+  Promise p = Results(futures);
+  return p->future();
+}
+
+//! Return a @[Future] that represents the array of mapping @[fun]
+//! over the results of the competed @[futures].
+Future traverse(array(Future) futures,
+		function(mixed, mixed ... : mixed) fun,
+		mixed ... extra)
+{
+  return results(futures->map(fun, @extra));
+}
+
+protected class Fold
+{
+  inherit Promise;
+
+  protected mixed accumulated;
+
+  protected void create(array(Future) futures,
+			mixed initial,
+			function(mixed, mixed, mixed ... : mixed) fun,
+			array(mixed) ctx)
+  {
+    if (!sizeof(futures)) {
+      success(initial);
+      return;
+    }
+    accumulated = initial;
+    futures->on_failure(failure);
+    foreach(futures; int i; Future f) {
+      f->on_success(got_success, i, fun, ctx,
+		    allocate(sizeof(futures), STATE_PENDING));
+    }
+  }
+
+  protected void got_success(mixed val, int i,
+			     function(mixed, mixed, mixed ... : mixed) fun,
+			     array(mixed) ctx,
+			     array(State) states)
+  {
+    if (state || states[i]) return;
+    states[i] = STATE_FULFILLED;
+    mixed err = catch {
+	// FIXME: What if fun triggers a recursive call?
+	accumulated = fun(val, accumulated, @ctx);
+	if (!state) {
+	  if (has_value(states, STATE_PENDING)) return;
+	}
+	success(accumulated);
+	return;
+      };
+    failure(err);
+  }
+}
+
+//! Return a @[Future] that represents the accumulated results of
+//! applying @[fun] to the results of the @[futures] in turn.
+//!
+//! @param initial
+//!   Initial value of the accumulator.
+//!
+//! @param fun
+//!   Function to apply. The first argument is the result of
+//!   one of the @[futures], the second the current accumulated
+//!   value, and any further from @[extra].
+//!
+//! @note
+//!   @[fun] may be called in any order, and will only be called
+//!   once for every @[Future] in @[futures].
+Future fold(array(Future) futures,
+	    mixed initial,
+	    function(mixed, mixed, mixed ... : mixed) fun,
+	    mixed ... extra)
+{
+  Promise p = Fold(futures, initial, fun, extra);
+  return p->future();
 }
