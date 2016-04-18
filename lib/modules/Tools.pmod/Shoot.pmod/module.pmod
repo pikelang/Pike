@@ -31,8 +31,11 @@ void run_sub( Test test, int maximum_seconds, float overhead)
     int norm;
     for (;;nloops++)
     {
+        mixed context = 0;
+        if (test->prepare)
+            context = test->prepare();
         int start_cpu = gethrvtime();
-        testntot += test->perform();
+        testntot += test->perform(context);
         tg += (gethrvtime()-start_cpu) / 1000000.0;
         if (tg >= maximum_seconds) break;
     }
