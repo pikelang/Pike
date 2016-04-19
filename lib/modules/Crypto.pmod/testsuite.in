@@ -603,6 +603,14 @@ dnl Same as above, but one digit to few.
 test_eq( RSA->rsa_unpad(Gmp.mpz(865312297808908525818041211045691652263021981338030239382613559009423092255830129031114825283158618114598683455296519802501297523645834139180728),2), 0 )
 test_do( add_constant("RSA") )
 
+test_eq(Crypto.SHA256.HMAC.jwa, "HS256")
+cond_resolv( Crypto.SHA384, [[
+  test_eq(Crypto.SHA384.HMAC.jwa, "HS384")
+]])
+cond_resolv( Crypto.SHA512, [[
+  test_eq(Crypto.SHA512.HMAC.jwa, "HS512")
+]])
+
 // Sign, Hash, Public key (n, e), Private key (d), JWS
 define(test_jws, [[
   test_do( add_constant("TEST_JWK", $1()) )
