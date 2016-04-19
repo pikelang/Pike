@@ -342,7 +342,7 @@ class State {
     return sprintf("%s.%s", tbs, MIME.encode_base64url(raw));
   }
 
-  //! Verify a JOSE JWS RSASSA-PSS signed value.
+  //! Verify and decode a JOSE JWS RSASSA-PSS signed value.
   //!
   //! @param jws
   //!   A JSON Web Signature as returned by @[jose_sign()].
