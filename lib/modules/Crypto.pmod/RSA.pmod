@@ -606,19 +606,12 @@ class PSSState {
     //! @param message
     //!   Message to sign.
     //!
-    //! @param h
-    //!   Hash algorithm to use.
+    //! @param headers
+    //!   JOSE headers to use. Typically a mapping with a single element
+    //!   @expr{"typ"@}.
     //!
-    //! @param salt
-    //!   Either of
-    //!   @mixed
-    //!     @type int(0..)
-    //!       Use a @[random] salt of this length for the signature.
-    //!     @type zero|void
-    //!       Use a @[random] salt of length @[salt_size()].
-    //!     @type string(8bit)
-    //!       Use this specific salt.
-    //!   @endmixed
+    //! @param h
+    //!   Hash algorithm to use. Currently defaults to @[SHA256].
     //!
     //! @returns
     //!   Returns the signature on success, and @expr{0@} (zero)
@@ -627,9 +620,20 @@ class PSSState {
     //!
     //! @seealso
     //!   @[pkcs_sign()], @[salt_size()], @rfc{7515:3.5@}
-    string(7bit) jose_sign(string(8bit) message, .Hash h,
-			   mapping(string(7bit):string(7bit)|int)|void headers)
+    string(7bit) jose_sign(string(8bit) message,
+			   mapping(string(7bit):string(7bit)|int)|void headers,
+			   .Hash|void h)
     {
+      // FIXME: Consider selecting depending on key size.
+      //        https://www.keylength.com/en/4/ says the
+      //        minimum lengths are:
+      //	Expiry	Modulus		Hash
+      //	2010	1024 bits	160 bits
+      //	2030	2048 bits	224 bits
+      //       >2030	3073 bits	256 bits
+      //      >>2030	7680 bits	384 bits
+      //     >>>2030	15360 bits	512 bits
+      if (!h) h = .SHA256;
       string(7bit) alg = jwa(h);
       if (!alg) return 0;
       headers = headers || ([]);
@@ -775,8 +779,12 @@ class PKCS1_5State
   //! @param message
   //!   Message to sign.
   //!
+  //! @param headers
+  //!   JOSE headers to use. Typically a mapping with a single element
+  //!   @expr{"typ"@}.
+  //!
   //! @param h
-  //!   Hash algorithm to use.
+  //!   Hash algorithm to use. Currently defaults to @[SHA256].
   //!
   //! @returns
   //!   Returns the signature on success, and @expr{0@} (zero)
@@ -785,12 +793,23 @@ class PKCS1_5State
   //!
   //! @seealso
   //!   @[pkcs_verify()], @[salt_size()], @rfc{7515@}
-  string(7bit) jose_sign(string(8bit) message, .Hash h,
-			 mapping(string(7bit):string(7bit)|int)|void headers)
+  string(7bit) jose_sign(string(8bit) message,
+			 mapping(string(7bit):string(7bit)|int)|void headers,
+			 .Hash|void h)
   {
     // NB: Identical to the code in PSSState, but duplication
     //     is necessary to bind to the correct variants of
     //     jwa() and pkcs_sign().
+    // FIXME: Consider selecting depending on key size.
+    //        https://www.keylength.com/en/4/ says the
+    //        minimum lengths are:
+    //		Expiry	Modulus		Hash
+    //		2010	1024 bits	160 bits
+    //		2030	2048 bits	224 bits
+    //	       >2030	3073 bits	256 bits
+    //	      >>2030	7680 bits	384 bits
+    //	     >>>2030	15360 bits	512 bits
+    h = h || .SHA256;
     string(7bit) alg = jwa(h);
     if (!alg) return 0;
     headers = headers || ([]);
