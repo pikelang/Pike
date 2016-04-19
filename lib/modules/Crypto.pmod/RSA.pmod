@@ -313,8 +313,12 @@ class State {
   //! @param message
   //!   Message to sign.
   //!
+  //! @param headers
+  //!   JOSE headers to use. Typically a mapping with a single element
+  //!   @expr{"typ"@}.
+  //!
   //! @param h
-  //!   Hash algorithm to use.
+  //!   Hash algorithm to use. Currently defaults to @[SHA256].
   //!
   //! @returns
   //!   Returns the signature on success, and @expr{0@} (zero)
@@ -323,12 +327,23 @@ class State {
   //!
   //! @seealso
   //!   @[pkcs_verify()], @[salt_size()], @rfc{7515@}
-  string(7bit) jose_sign(string(8bit) message, .Hash h,
-			 mapping(string(7bit):string(7bit)|int)|void headers)
+  string(7bit) jose_sign(string(8bit) message,
+			 mapping(string(7bit):string(7bit)|int)|void headers,
+			 .Hash|void h)
   {
     // NB: Identical to the code in PSSState, but duplication
     //     is necessary to bind to the correct variants of
     //     jwa() and pkcs_sign().
+    // FIXME: Consider selecting depending on key size.
+    //        https://www.keylength.com/en/4/ says the
+    //        minimum lengths are:
+    //		Expiry	Modulus		Hash
+    //		2010	1024 bits	160 bits
+    //		2030	2048 bits	224 bits
+    //	       >2030	3073 bits	256 bits
+    //	      >>2030	7680 bits	384 bits
+    //	     >>>2030	15360 bits	512 bits
+    h = h || .SHA256;
     string(7bit) alg = jwa(h);
     if (!alg) return 0;
     headers = headers || ([]);
