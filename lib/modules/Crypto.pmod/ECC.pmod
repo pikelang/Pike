@@ -244,6 +244,109 @@ class Curve {
 			value);
     }
 
+    //! Signs the @[message] with a JOSE JWS ECDSA signature using hash
+    //! algorithm @[h].
+    //!
+    //! @param message
+    //!   Message to sign.
+    //!
+    //! @param h
+    //!   Hash algorithm to use.
+    //!
+    //! @returns
+    //!   Returns the signature on success, and @expr{0@} (zero)
+    //!   on failure.
+    //!
+    //! @seealso
+    //!   @[pkcs_verify()], @[salt_size()], @rfc{7515@}
+    string(7bit) jose_sign(string(8bit) message, .Hash|void h,
+			   mapping(string(7bit):string(7bit)|int)|void headers)
+    {
+      if (!h) {
+	switch(Curve::name()) {
+	case "SECP_256R1":
+	  h = .SHA256;
+	  break;
+	case "SECP_384R1":
+	  h = .SHA384;
+	  break;
+	case "SECP_521R1":
+	  h = .SHA512;
+	  break;
+	default:
+	  return 0;
+	}
+      }
+      string(7bit) alg = jwa(h);
+      if (!alg) return 0;
+      headers = headers || ([]);
+      headers += ([ "alg": alg ]);
+      string(7bit) tbs =
+	sprintf("%s.%s",
+		MIME.encode_base64url(string_to_utf8(Standards.JSON.encode(headers))),
+		MIME.encode_base64url(message));
+      array(Gmp.mpz) raw = raw_sign(h->hash(tbs));
+      string(8bit) raw_bin = raw->digits(256) * "";
+      return sprintf("%s.%s", tbs, MIME.encode_base64url(raw_bin));
+    }
+
+    //! Verify and decode a JOSE JWS ECDSA signed value.
+    //!
+    //! @param jws
+    //!   A JSON Web Signature as returned by @[jose_sign()].
+    //!
+    //! @returns
+    //!   Returns @expr{0@} (zero) on failure, and an array
+    //!   @array
+    //!     @item mapping(string(7bit):string(7bit)|int) 0
+    //!       The JOSE header.
+    //!     @item string(8bit) 1
+    //!       The signed message.
+    //!   @endarray
+    //!
+    //! @seealso
+    //!   @[pkcs_verify()], @rfc{7515:3.5@}
+    array(mapping(string(7bit):
+		  string(7bit)|int)|string(8bit)) jose_decode(string(7bit) jws)
+    {
+      array(string(7bit)) segments = [array(string(7bit))](jws/".");
+      if (sizeof(segments) != 3) return 0;
+      mapping(string(7bit):string(7bit)|int) headers;
+      catch {
+	headers = [mapping(string(7bit):string(7bit)|int)](mixed)
+	  Standards.JSON.decode(utf8_to_string(MIME.decode_base64url(segments[0])));
+	if (!mappingp(headers)) return 0;
+	.Hash h;
+	switch(headers->alg) {
+#if constant(Nettle.SHA256)
+	case "ES256":
+	  h = .SHA256;
+	  break;
+#endif
+#if constant(Nettle.SHA384)
+	case "ES384":
+	  h = .SHA384;
+	  break;
+#endif
+#if constant(Nettle.SHA512)
+	case "ES512":
+	  h = .SHA512;
+	  break;
+#endif
+	default:
+	  return 0;
+	}
+	string(7bit) tbs = sprintf("%s.%s", segments[0], segments[1]);
+	string(8bit) sign = MIME.decode_base64url(segments[2]);
+	if (raw_verify(h->hash(tbs),
+		       Gmp.mpz(sign[..<sizeof(sign)/2], 256),
+		       Gmp.mpz(sign[sizeof(sign)/2..], 256))) {
+	  return ({ headers, MIME.decode_base64url(segments[1]) });
+	}
+      };
+      return 0;
+    }
+
     //! Returns the PKCS-1 algorithm identifier for ECDSA and the provided
     //! hash algorithm. Only SHA-1 and SHA-2 based hashes are supported
     //! currently.
