@@ -11,29 +11,32 @@ if (!window.console) {
 /*
   Encapsulate so we don't clutter the global scope
 */
-(function(window, document, console) {
+(function(window, document) {
 'use strict';
 
 // The scroll position at which the navbar sticks. This actually gets
 // calculated dynamically upon page load.
 var stickyScrollBreak = 70,
-mobileBreakPoint = 800,
-// The navbar to the left, HTMLElement
-navbar, innerNavbar,
-// Content wrapper, HTMLElement
-content,
-// The height of the navbar
-navbarHeight,
-// The height of the window
-windowHeight,
-// The height of the header
-headerHeight,
-// The heaigh of the footer
-footerHeight,
-// The menu hamburger when in mobile mode
-burger,
-// Optimization®
-objectKeys = Object.keys;
+    // Window width when we go to mobile mode
+    mobileBreakPoint = 800,
+    // The navbar to the left, HTMLElement
+    navbar, innerNavbar,
+    // Content wrapper, HTMLElement
+    content,
+    // The height of the navbar
+    navbarHeight,
+    // The height of the window
+    windowHeight,
+    // The height of the header
+    headerHeight,
+    // The height of the footer
+    footerHeight,
+    // The menu hamburger when in mobile mode
+    burger,
+    // Optimization®
+    objectKeys = Object.keys,
+    // Functions to run when DOM is ready
+    onDOMReadyQueue = [];
 
 // Hide the navbox when on the start page where the prev and next links
 // doesn't lead anywhere
@@ -58,6 +61,8 @@ function hideTopLink() {
 
 // Called when DOM is ready
 function onPageLoad() {
+  var versionElems, dateElems, i, tmp;
+
   maybeHideNavbox();
   navbar       = document.getElementsByClassName('navbar')[0];
   content      = document.getElementsByClassName('content')[0];
@@ -68,11 +73,34 @@ function onPageLoad() {
   innerNavbar  = document.getElementById('navbar');
   burger       = document.getElementById('burger');
 
+  // When the doc is compiled with FLAG_NO_DYNAMIC the version and publish date
+  // will not be written to the pages but inserted with JS. If the VERSION
+  // symbol exists we need to put the version and pubdate in the elements with
+  // attributes data-id="version" and data-id="date".
+  if (PikeDoc.VERSION) {
+    versionElems = document.querySelectorAll('[data-id="version"]');
+    dateElems = document.querySelectorAll('[data-id="date"]');
+
+    for (i = 0; i < versionElems.length; i++) {
+      versionElems[i].innerHTML = PikeDoc.VERSION;
+    }
+
+    for (i = 0; i < dateElems.length; i++) {
+      dateElems[i].innerHTML = PikeDoc.PUBDATE;
+    }
+  }
+  else {
+    tmp = document.querySelector('[data-id="version"]');
+    PikeDoc.VERSION = tmp.textContent;
+    tmp = document.querySelector('[data-id="date"]');
+    PikeDoc.PUBDATE = tmp.textContent;
+  }
+
   stickyScrollBreak = headerHeight;
 }
 
 var iAmSticky;
-// Invoked when DOM is ready
+// Invoked when DOM is ready, and use as callback for onscroll.
 function onPageScroll() {
   // If scrollY is larger than the sticky position ...
   if (window.scrollY > stickyScrollBreak) {
@@ -83,7 +111,7 @@ function onPageScroll() {
     // ... or else set to sticky.
     iAmSticky = true;
     content.style.minHeight = (windowHeight - headerHeight -
-                               footerHeight + 20) + 'px';
+                               footerHeight + 5) + 'px';
     navbar.classList.add('sticky');
   }
   // If scrollY is less than the sticky position ...
@@ -124,16 +152,16 @@ function onBurgerClick() {
 
 function setMobileMode() {
   document.removeEventListener('scroll', onPageScroll);
-  document.addEventListener('scroll', onMobilePageScroll);
+  document.addEventListener('scroll', onMobilePageScroll, false);
   burger.removeEventListener('click', onBurgerClick);
-  burger.addEventListener('click', onBurgerClick);
+  burger.addEventListener('click', onBurgerClick, false);
   navbar.classList.remove('sticky');
   iAmSticky = false;
 }
 
 function setDesktopMode() {
   document.removeEventListener('scroll', onMobilePageScroll);
-  document.addEventListener('scroll', onPageScroll);
+  document.addEventListener('scroll', onPageScroll, false);
   burger.removeEventListener('click', onBurgerClick);
   document.body.classList.remove('menu-open');
 }
@@ -161,15 +189,16 @@ function onWindowResize() {
 // We only care about fairly modern browsers
 if (document.addEventListener) {
   // Fire when the DOM is ready
-  document.addEventListener("DOMContentLoaded", function() {
+  document.addEventListener('DOMContentLoaded', function() {
     onPageLoad();
     cacheFactory.setMenu();
     PikeDoc.domReady(true);
     onWindowResize();
-    window.addEventListener('resize', onWindowResize);
-    document.addEventListener('scroll', iAmMobile ? onMobilePageScroll :
-                                                    onPageScroll);
-  });
+    window.addEventListener('resize', onWindowResize, false);
+    document.addEventListener('scroll', iAmMobile ? onMobilePageScroll
+                                                  : onPageScroll,
+                                        false);
+  }, false);
 }
 
 // During a session each generated menu is cached locally in a sessionStorage
@@ -177,27 +206,63 @@ if (document.addEventListener) {
 var cacheFactory = (function() {
   var cache = window.sessionStorage;
   var m, isChecked = false;
+
   function init() {
-    if (m || PikeDoc.current.link === 'index.html') return true;
-    if (isChecked && !m) return false;
+    if (m || PikeDoc.current.link === 'index.html') {
+      return true;
+    }
+
+    if (isChecked && !m) {
+      return false;
+    }
+
     if (cache) {
       m = cache.getItem(PikeDoc.current.link);
       isChecked = true;
-      return !!m;
+      if (m) {
+        m = JSON.parse(m);
+        return validateDate(m.time);
+      }
+      return false;
     }
+
     isChecked = true;
+
     return false;
+  }
+
+  function validateDate(time) {
+    var t = PikeDoc.PUBDATE;
+    if (!t) {
+      t = new Date();
+      t.setTime(t.getTime() - (3600*1000)*48);
+      return t < new Date(time);
+    }
+
+    return getPubDate() < new Date(time);
+  }
+
+  function getPubDate() {
+    if (PikeDoc.PUBDATE) {
+      return new Date(Date.parse(PikeDoc.PUBDATE));
+    }
+    return new Date();
   }
 
   function store() {
     if (cache) {
-      cache.setItem(PikeDoc.current.link||'root', innerNavbar.innerHTML);
+      var obj = {
+        time: new Date().getTime(),
+        value: innerNavbar.innerHTML
+      };
+
+      cache.setItem(PikeDoc.current.link||'root', JSON.stringify(obj));
     }
   }
 
   function setMenu() {
     if (m) {
-      innerNavbar.innerHTML = m;
+      innerNavbar.innerHTML = m.value;
     }
   }
 
@@ -284,7 +349,7 @@ var helpers = (function() {
   };
 }());
 
-// Main function/ for generating the navigation
+// Main object for generating the navigation
 PikeDoc = (function() {
   var symbols     = [],
       symbolsMap  = {},
@@ -308,6 +373,8 @@ PikeDoc = (function() {
     },
     finish: function() {
       var my = this;
+
+      // window.console.log('### Symbol.finish(', this.name, ')');
 
       objectKeys(this._children).forEach(function(k) {
         my.children = my.children.concat(my._children[k]);
@@ -352,7 +419,7 @@ PikeDoc = (function() {
     }
     var s = new Symbol(name);
     symbols.push(s);
-    //console.log('+ Register symbol: ', name);
+    // console.log('   + Register symbol: ', name);
     symbolsMap[name] = s;
     return s;
   }
@@ -362,6 +429,7 @@ PikeDoc = (function() {
 
   var types = {};
   function finish() {
+    // window.console.log('finish(', endInherits.length, ')');
     if (endInherits.length === 0) {
       var merge = helpers.mergeChildren;
       objectKeys(symbolsMap).forEach(function(k) {
@@ -377,6 +445,7 @@ PikeDoc = (function() {
   }
 
   var jsMap = {};
+  var scriptQueue = 0;
   function loadScript(link, namespace, inherits) {
     if (cacheFactory.hasCache()) {
       return;
@@ -389,27 +458,42 @@ PikeDoc = (function() {
       return;
     }
 
+    // window.console.log('+++ Load:', link);
+
     jsMap[link] = true;
 
     if (inherits) {
       addInherit(inherits);
     }
 
+    scriptQueue += 1;
+
     var s = createElem('script', { src: link });
+    //s.async = false;
     document.head.appendChild(s);
 
     (function(scr, ns) {
       scr.addEventListener('load', function() {
+        scriptQueue -= 1;
+
         if (ns) {
           if (ns === true) { finish(); }
           else { endInherit(ns); }
         }
-      });
+        else {
+          finish();
+        }
+      }, false);
     }(s, namespace));
   }
 
   function domReady() {
     isDomReady = true;
+    onDOMReadyQueue.forEach(function(f) {
+      if (typeof f === 'function') {
+        f();
+      }
+    });
     maybeRenderNavbar();
   }
 
@@ -417,9 +501,10 @@ PikeDoc = (function() {
     if (!nodes || !nodes.length)
       return;
 
+    var curlnk = PikeDoc.current.link;
     var adjlnk = helpers.adjustLink;
-    var c = container;
-    var div = createElem('div', { style: 'margin-left:0.5em' });
+    var c      = container;
+    var div    = createElem('div', { style: 'margin-left:0.5em' });
 
     nodes.forEach(function(n) {
       var name, tnode, tmp;
@@ -430,7 +515,7 @@ PikeDoc = (function() {
         tnode = createElem('b', name);
       }
 
-      if (n.link !== PikeDoc.current.link) {
+      if (n.link !== curlnk) {
         tmp = createElem('a', { href: adjlnk(n.link) });
         tmp.appendChild(tnode);
         tnode = tmp;
@@ -462,10 +547,46 @@ PikeDoc = (function() {
   }
 
   function maybeRenderNavbar() {
-    if (isAllLoaded && isDomReady) {
+    // window.console.log('maybeRenderNavbar(', isAllLoaded, isDomReady, scriptQueue, ')');
+    if (isAllLoaded && isDomReady && scriptQueue === 0) {
       navbar();
     }
   }
+
+  (function() {
+    // If the refdoc lives in pike.lysator.liu.se we add some custom Google
+    // searchability.
+    if (document.location.hostname === 'pike.lysator.liu.se' ||
+        document.location.hostname === 'pike.local') // for dev purposes
+    {
+      onDOMReadyQueue.push(function() {
+        // When this is run on pike.lysator.liu.se the script below will replace
+        // the content of #version with a search field. Since the script below
+        // is loaded async there might be the case where the version is
+        // briefly shown before it's replaced, which will produce an unpleasant
+        // flicker. This hack will minimize that "unpleasantry".
+        var v = document.getElementById('version');
+        if (!v.classList.contains('search')) {
+          v.innerHTML = '';
+        }
+      });
+
+      var s  = document.getElementsByTagName('script')[0];
+      var el = createElem('script', {
+        src: '/assets/js/local/refdoc-search.min.js',
+        async: true
+      });
+
+      s.parentNode.insertBefore(el, s);
+
+      var f = createElem('link', {
+        href: '/assets/img/favicon.png?v=2',
+        rel: 'shortcut icon'
+      });
+
+      document.head.appendChild(f);
+    }
+  }());
 
   return {
     registerSymbol: registerSymbol,
@@ -479,4 +600,4 @@ PikeDoc = (function() {
 
 }());
 
-}(window, document, window.console));
+}(window, document));

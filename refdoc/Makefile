@@ -4,6 +4,11 @@
 # Henrik Grubbström 2001-02-02
 #
 
+# Maybe clean this file from obsolete stuff. I guess the caudium and pelix
+# stuff doesn't apply anymore?
+#
+# Pontus Östlund 2016-01-21
+
 BUILDDIR=
 DESTDIR=
 PIKE=pike
@@ -40,7 +45,7 @@ low_module_modref:
 low_modref:
 	-rm -rf $(DESTDIR)modref
 	@test -d $(DESTDIR)modref || mkdir modref
-	@cp structure/modref.css modref/style.css
+	@cp structure/modref.css $(DESTDIR)modref/style.css
 	@cp structure/modref.js $(DESTDIR)modref/site.js
 	@$(PIKE) presentation/tree-split-autodoc.pike \
 	  $(BUILDDIR)/modref.xml structure/modref.html $(DESTDIR)modref predef

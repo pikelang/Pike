@@ -445,21 +445,21 @@ void nicebox(array rows, String.Buffer ret) {
       }
       else {
         foreach (row[0], string elem) {
-          ret->add("<tr><td><tt>", elem, "</tt></td>",
+          ret->add("<tr><td><code>", elem, "</code></td>",
                    (dim == 2 ? "<td>&nbsp;</td>" : ""), "</tr>\n");
         }
       }
     }
     else if (sizeof(row[0]) == 1) {
-      ret->add("<tr><td><tt>", row[0][0], "</tt></td>",
+      ret->add("<tr><td><code>", row[0][0], "</code></td>",
                "<td>", row[1], "</td></tr>\n");
     }
     else {
-      ret->add("<tr><td><tt>", row[0][0], "</tt></td>",
+      ret->add("<tr><td><code>", row[0][0], "</code></td>",
                "<td rowspan='", (string)sizeof(row[0]), "'>",
                row[1], "</td></tr>\n");
       foreach (row[0][1..], string elem) {
-        ret->add("<tr><td><tt>", elem, "</tt></td></tr>\n");
+        ret->add("<tr><td><code>", elem, "</code></td></tr>\n");
       }
     }
   }
@@ -649,7 +649,7 @@ string parse_text(Node n, void|String.Buffer ret) {
       string ref;
       //ref = c->get_attributes()->resolved;
       if(!ref) ref = parse_text(c);
-      ret->add("<tt>", ref, "</tt>");
+      ret->add("<code>", ref, "</code>");
       break;
 
     case "rfc":
@@ -702,7 +702,7 @@ string parse_text(Node n, void|String.Buffer ret) {
 		  Node nn = n->get_first_element("index");
 		  if (nn) {
 		    res +=
-		      "<tt class='key'>" + parse_text(nn) + "</tt> : ";
+		      "<code class='key'>" + parse_text(nn) + "</code> : ";
 		  }
 		  nn = n->get_first_element("type");
 		  if (nn) {
@@ -726,23 +726,23 @@ string parse_text(Node n, void|String.Buffer ret) {
 		      index += parse_text(n->get_first_element("maxindex"));
 		  }
 		  return parse_type(get_first_element(n->get_first_element("type"))) +
-		    " <font color='green'>" + index + "</font>"; }, "Array" );
+		    " <code class='key'>" + index + "</code>"; }, "Array" );
       break;
 
     case "int":
       build_box(c, ret, "group", "value",
 		lambda(Node n) {
-           return "<tt class='key'>" +
+           return "<code class='key'>" +
                range_type( parse_text(n),
                            n->get_first_element("minvalue"),
                            n->get_first_element("maxvalue"))+
-               "</tt>";
+               "</code>";
 		} );
       break;
 
     case "mixed":
       if(c->get_attributes()->name)
-	ret->add("<tt>", c->get_attributes()->name, "</tt> can have any of the following types:<br />");
+	ret->add("<code>", c->get_attributes()->name, "</code> can have any of the following types:<br />");
       rows = ({});
       foreach(c->get_elements("group"), Node d)
 	rows += ({ ({
@@ -755,19 +755,19 @@ string parse_text(Node n, void|String.Buffer ret) {
     case "string": // Not in XSLT
       build_box(c, ret, "group", "value",
 		lambda(Node n) {
-            return "<tt class='key'>" +
+            return "<code class='key'>" +
                 range_type( parse_text(n),
                             n->get_first_element("min"),
                             n->get_first_element("max")) +
-                "</tt>";
+                "</code>";
 		} );
       break;
 
     case "multiset": // Not in XSLT
       build_box(c, ret, "group", "index",
 		lambda(Node n) {
-		  return "<tt class='key'>" +
-		    parse_text(n->get_first_element("value")) + "</tt>";
+		  return "<code class='key'>" +
+		    parse_text(n->get_first_element("value")) + "</code>";
 		} );
       break;
 
@@ -877,20 +877,24 @@ string parse_doc(Node n, void|int no_text) {
   string ret ="";
 
   Node c = n->get_first_element("text");
-  if(c)
+  if(c) {
     ret += lay->dochead + "Description" + lay->_dochead +
       lay->docbody + parse_text(c) + lay->_docbody;
+  }
+
+#define MAKE_ID(N) ("<span id='p-" + N + "'></span>")
 
   foreach(n->get_elements("group"), Node c) {
     Node header = c->get_first_element();
     string name = header->get_any_name();
     switch(name) {
     case "param":
-      foreach(c->get_elements("param"), Node d)
-	ret += lay->dochead + "Parameter " + lay->parameter +
-	  quote(d->get_attributes()->name || "") +
-	  lay->_parameter + lay->_dochead +
+      foreach(c->get_elements("param"), Node d) {
+        string name = quote(d->get_attributes()->name || "");
+	ret += lay->dochead + MAKE_ID(name) + "Parameter " +
+          lay->parameter + name + lay->_parameter + lay->_dochead +
 	  "<dd></dd>";
+      }
       if (c = c->get_first_element("text")) {
 	ret += lay->docbody + parse_text(c) + lay->_docbody;
       }
@@ -964,19 +968,19 @@ string parse_type(Node n, void|string debug) {
   case "object":
     if(n->count_children()) {
       if (resolve_reference) {
-	ret += "<tt class='object resolved'>" +
+	ret += "<code class='object resolved'>" +
 	  resolve_reference(n->value_of_node(), n->get_attributes()) +
-	  "</tt>";
+	  "</code>";
       } else {
-	ret += "<tt class='object unresolved'>" +
-               n->value_of_node() + "</tt>";
+	ret += "<code class='object unresolved'>" +
+               n->value_of_node() + "</code>";
       }
     } else
-      ret += "<tt class='datatype'>object</tt>";
+      ret += "<code class='datatype'>object</code>";
     break;
 
   case "type":
-    ret += "<tt class='type'>type</tt>";
+    ret += "<code class='type'>type</code>";
     if (n->count_children() && (c = get_first_element(n)) &&
 	(c->get_any_name() != "mixed")) {
       ret += "(" + parse_type(c) + ")";
@@ -984,19 +988,19 @@ string parse_type(Node n, void|string debug) {
     break;
 
   case "multiset":
-    ret += "<tt class='datatype'>multiset</tt>";
+    ret += "<code class='datatype'>multiset</code>";
     c = n->get_first_element("indextype");
     if(c) ret += "(" + parse_type( get_first_element(c) ) + ")";
     break;
 
   case "array":
-    ret += "<tt class='datatype'>array</tt>";
+    ret += "<code class='datatype'>array</code>";
     c = n->get_first_element("valuetype");
     if(c) ret += "(" + parse_type( get_first_element(c) ) + ")";
     break;
 
   case "mapping":
-    ret += "<tt class='datatype'>mapping</tt>";
+    ret += "<code class='datatype'>mapping</code>";
     c = n->get_first_element("indextype");
     d = n->get_first_element("valuetype");
     if(c && d)
@@ -1009,7 +1013,7 @@ string parse_type(Node n, void|string debug) {
     break;
 
   case "function":
-    ret += "<tt class='datatype'>function</tt>";
+    ret += "<code class='datatype'>function</code>";
     array(Node) args = n->get_elements("argtype");
     d = n->get_first_element("returntype");
     // Doing different than the XSL here. Must both
@@ -1019,7 +1023,7 @@ string parse_type(Node n, void|string debug) {
       if(args) ret += map(args->get_children() * ({}), parse_type)*", ";
       ret += ":";
       if(d) ret += parse_type( get_first_element(d) );
-      else ret += "<tt class='datatype void'>void</tt>";
+      else ret += "<code class='datatype void'>void</code>";
       ret += ")";
     }
     break;
@@ -1041,16 +1045,16 @@ string parse_type(Node n, void|string debug) {
 
   case "void": case "program": case "mixed": case "float":
   case "zero":
-    ret += "<tt class='datatype'>" + n->get_any_name() + "</tt>";
+    ret += "<code class='datatype'>" + n->get_any_name() + "</code>";
     break;
 
   case "string":
   case "int":
-      ret += ("<tt class='datatype'>" +
+      ret += ("<code class='datatype'>" +
               range_type( n->get_any_name(),
                           n->get_first_element("min"),
                           n->get_first_element("max")) +
-              "</tt>");
+              "</code>");
     break;
 
   case "attribute":
@@ -1059,13 +1063,13 @@ string parse_type(Node n, void|string debug) {
       parse_type(n->get_first_element("subtype")->get_first_element());
     if (n->get_first_element("prefix")) {
       if (attr == "\"deprecated\"") {
-	ret += "<tt class='deprecated'>__deprecated__</tt> " +
+	ret += "<code class='deprecated'>__deprecated__</code> " +
                subtype;
       } else {
 	ret += sprintf("__attribute__(%s) %s", attr, subtype);
       }
     } else if (attr == "\"deprecated\"") {
-      ret += "<tt class='deprecated'>__deprecated__</tt>(" +
+      ret += "<code class='deprecated'>__deprecated__</code>(" +
              subtype + ")";
     } else {
       ret += sprintf("__attribute__(%s, %s)", attr, subtype);
@@ -1074,31 +1078,31 @@ string parse_type(Node n, void|string debug) {
 
     // Modifiers:
   case "extern": // Not in XSLT
-    ret += "<tt class='modifier'>extern</tt> ";
+    ret += "<code class='modifier'>extern</code> ";
     break;
   case "final": // Not in XSLT
   case "nomask": // Not in XSLT
-    ret += "<tt class='modifier'>final</tt> ";
+    ret += "<code class='modifier'>final</code> ";
     break;
   case "inline": // Not in XSLT
   case "local": // Not in XSLT
-    ret += "<tt class='modifier'>local</tt> ";
+    ret += "<code class='modifier'>local</code> ";
     break;
   case "optional": // Not in XSLT
-    ret += "<tt class='modifier'>optional</tt> ";
+    ret += "<code class='modifier'>optional</code> ";
     break;
   case "private": // Not in XSLT
-    ret += "<tt class='modifier'>private</tt> ";
+    ret += "<code class='modifier'>private</code> ";
     break;
   case "protected": // Not in XSLT
   case "static": // Not in XSLT
-    ret += "<tt class='modifier'>protected</tt> ";
+    ret += "<code class='modifier'>protected</code> ";
     break;
   case "public": // Not in XSLT
     // Ignored.
     break;
   case "variant": // Not in XSLT
-    ret += "<tt class='modifier'>variant</tt> ";
+    ret += "<code class='modifier'>variant</code> ";
     break;
 
   default:
@@ -1290,7 +1294,7 @@ string parse_not_doc(Node n) {
 
       void emit_default_func()
       {
-          ret += "<tt>";
+          ret += "<code>";
           cc = c->get_first_element("modifiers");
           if(cc) ret += map(cc->get_children(), parse_type)*" " + " ";
           ret += parse_type(get_first_element(c->get_first_element("returntype")));
@@ -1299,7 +1303,7 @@ string parse_not_doc(Node n) {
           ret += "<b><span class='method'>" + HTML_ENC(c->get_attributes()->name) + "</span>(</b>";
           ret += parse_not_doc( c->get_first_element("arguments") );
           ret += "<b>)</b>";
-          ret += "</tt>";
+          ret += "</code>";
       };
       if( class_name == "" )
       {
@@ -1308,25 +1312,25 @@ string parse_not_doc(Node n) {
       else switch( string method = c->get_attributes()->name )
       {
         case "_get_iterator":
-          ret += "<tt><span class='class'>"+class_name+"</span> "
+          ret += "<code><span class='class'>"+class_name+"</span> "
                  "<span class='method'>a</span>;<br>\n";
           /* NOTE: We could get index and value types from the
              iterator type here.  Doing so might be somewhat hard,
              however.
           */
-          ret += "foreach( a; index; value ) or<br></tt>";
+          ret += "foreach( a; index; value ) or<br></code>";
           emit_default_func();
           break;
 
         case "pow":
-          ret += "<tt>"+parse_type(get_first_element(c->get_first_element("returntype")));
-          ret += " res = "+method+"([<span class='class'>"+class_name+"</span>]a, b) or <br></tt>";
+          ret += "<code>"+parse_type(get_first_element(c->get_first_element("returntype")));
+          ret += " res = "+method+"([<span class='class'>"+class_name+"</span>]a, b) or <br></code>";
           emit_default_func();
           break;
 
         case "sqrt":
-          ret += "<tt>"+parse_type(get_first_element(c->get_first_element("returntype")));
-          ret += " res = "+method+"([<span class='class'>"+class_name+"</span>]a) or <br></tt>";
+          ret += "<code>"+parse_type(get_first_element(c->get_first_element("returntype")));
+          ret += " res = "+method+"([<span class='class'>"+class_name+"</span>]a) or <br></code>";
           emit_default_func();
           break;
 /*
@@ -1338,11 +1342,11 @@ string parse_not_doc(Node n) {
           break;
 */
 	case "create":
-	  ret += "<tt><span class='object'>" +class_name; // Check for more children
+	  ret += "<code><span class='object'>" +class_name; // Check for more children
 	  ret += "</span> <span class='class'>";
 	  ret += class_name+"</span><b>(</b>";
 	  ret += parse_not_doc( c->get_first_element("arguments") );
-	  ret += "<b>)</b></tt>";
+	  ret += "<b>)</b></code>";
 	  break;
 
         case "__hash":
@@ -1354,54 +1358,54 @@ string parse_not_doc(Node n) {
         case "_indices":
         case "_values":
           /* simple overload type lfuns. */
-          ret += "<tt>";
+          ret += "<code>";
           ret += parse_type(get_first_element(c->get_first_element("returntype")));
           ret += " ";
           ret += "<b><span class='method'>"+method[1..]+"</span>(</b> ";
           ret += "<span class='class'>"+class_name+"</span> <span class='argument'>arg</span>";
-          ret += " <b>)</b></tt>";
+          ret += " <b>)</b></code>";
           break;
 
         case "_m_delete":
         case "_equal":
         case "_search":
-          ret += "<tt>";
+          ret += "<code>";
           ret += parse_type(get_first_element(c->get_first_element("returntype")));
           ret += " <b><span class='method'>"+method[1..];
           ret += "</span>(</b><span class='class'>"+class_name+"</span> "
                  "<span class='argument'>from</span>, ";
           ret += parse_not_doc( c->get_first_element("arguments") );
-          ret += "<b>)</b></tt>";
+          ret += "<b>)</b></code>";
           break;
 
         case "_sprintf":
           //ret += "<tt>";
-          ret += "<tt><span class='datatype'>string</span> ";
+          ret += "<code><span class='datatype'>string</span> ";
           ret += ("<b><span class='method'>sprintf</span>("
                   "</b><span class='datatype'>string</span> "
                   "<span class='constant'>format</span>, ... <span class='class'>"
                   +class_name+"</span> <span class='constant'>"
-                  "arg</span> ... <b>)</b></tt>");
+                  "arg</span> ... <b>)</b></code>");
           break;
 
         case "_decode":
-          ret += "<tt>";
+          ret += "<code>";
           ret += "<span class='class'>"+class_name+"</span> ";
           ret += ("<b><span class='method'>decode_value</span>("
                   "</b><span class='datatype'>string(8bit)</span> "
-                  "<span class='argument'>data</span>)</b></tt>");
+                  "<span class='argument'>data</span>)</b></code>");
           break;
         case "_encode":
-          ret += "<tt>";
+          ret += "<code>";
           ret += "<span class='datatype'>string(8bit)</span> ";
           ret += ("<b><span class='method'>encode_value</span>("
                   "</b><span class='class'>"+class_name+"</span> "
-                  "<span class='argument'>data</span>)</b></tt>");
+                  "<span class='argument'>data</span>)</b></code>");
           break;
 
         case "cast":
           {
-            ret += "<tt>";
+            ret += "<code>";
 
             string base =
               "<b>(</b><span class='datatype'>_@_TYPE_@_</span>"
@@ -1455,7 +1459,7 @@ string parse_not_doc(Node n) {
             if( !sizeof(seen) )
               add_typed("mixed");
 
-            ret += "</tt>";
+            ret += "</code>";
           };
           break;
 
@@ -1464,8 +1468,8 @@ string parse_not_doc(Node n) {
           {
             Node a = c->get_first_element("arguments") ;
             array(Node) args = a->get_elements("argument");
-            mapping repl = (["OBJ":"<tt class='class'>"+
-                                   class_name+"()</tt>"]);
+            mapping repl = (["OBJ":"<code class='class'>"+
+                                   class_name+"()</code>"]);
             /* there are a few cases:  obj OP arg - we do not want types
                RET func(op,ARG) - we do want types.
 
@@ -1474,16 +1478,16 @@ string parse_not_doc(Node n) {
             */
             if( sizeof(args) > 0 )
             {
-              repl->x = "<tt class='class'>"+
-                        args[0]->get_attributes()->name+"</tt>";
+              repl->x = "<code class='class'>"+
+                        args[0]->get_attributes()->name+"</code>";
             }
             if( sizeof(args) > 1 )
             {
-              repl->y = "<tt class='class'>"+
-                        args[1]->get_attributes()->name+"</tt>";
+              repl->y = "<code class='class'>"+
+                        args[1]->get_attributes()->name+"</code>";
             }
 
-            ret += "<tt>";
+            ret += "<code>";
             if( method != "`+=" && method != "`[]=" && method != "`->=")
             {
               ret += parse_type(get_first_element(c->get_first_element("returntype")));
@@ -1491,7 +1495,7 @@ string parse_not_doc(Node n) {
             }
 
             ret += replace(HTML_ENC(pat), repl );
-            ret += "</tt>";
+            ret += "</code>";
             break;
           }
           emit_default_func( );
@@ -1502,13 +1506,17 @@ string parse_not_doc(Node n) {
     case "argument":
       if(argument++) ret += ", ";
       cc = c->get_first_element("value");
-      if(cc) ret += "<tt class='argument'>" + cc->value_of_node() + "</tt>";
+      string arg_name = cc && cc->value_of_node();
+      if (arg_name) {
+        ret += "<code class='argument'>" + arg_name + "</code>";
+      }
       else if( !c->count_children() );
       else if( get_first_element(c)->get_any_name()=="type") {
 	ret += parse_type(get_first_element(get_first_element(c)));
-	if(c->get_attributes()->name)
-	  ret += " <tt class='argument'>" +
-	    c->get_attributes()->name + "</tt>";
+        arg_name = c->get_attributes()->name;
+	if(arg_name) {
+	  ret += " <code class='argument'>" + arg_name + "</code>";
+        }
       }
       else
 	error( "Malformed argument element.\n" + c->html_of_node() + "\n" );
@@ -1516,49 +1524,49 @@ string parse_not_doc(Node n) {
 
     case "variable":
       if(variable++) ret += "<br>\n";
-      ret += "<tt>";
+      ret += "<code>";
       cc = c->get_first_element("modifiers");
       if(cc) ret += map(cc->get_children(), parse_type)*" " + " ";
       if (c->get_first_element("type")) {
 	ret += parse_type(get_first_element(c->get_first_element("type")),
 			  "variable") + " " +
 	  c->get_attributes()->class_path + "<b><span class='variable'>" +
-	  c->get_attributes()->name + "</span></b></tt>";
+	  c->get_attributes()->name + "</span></b></code>";
       } else
 	error("Malformed variable element.\n" + c->html_of_node() + "\n");
       break;
 
     case "constant":
       if(num_const++) ret += "<br>\n";
-      ret += "<tt><tt class='datatype'>";
+      ret += "<code><code class='datatype'>";
       cc = c->get_first_element("modifiers");
       if(cc) ret += map(cc->get_children(), parse_type)*" " + " ";
-      ret += "constant</tt> ";
+      ret += "constant</code> ";
       if (Node type = c->get_first_element ("type"))
 	ret += parse_type (get_first_element (type), "constant") + " ";
       ret += c->get_attributes()->class_path;
-      ret += "<tt class='constant'>" + c->get_attributes()->name + "</tt>";
+      ret += "<code class='constant'>" + c->get_attributes()->name + "</code>";
       cc = c->get_first_element("typevalue");
       if(cc) {
-        ret += " = <tt class='value'>" +
-               parse_type(get_first_element(cc)) + "</tt>";
+        ret += " = <code class='value'>" +
+               parse_type(get_first_element(cc)) + "</code>";
       }
-      ret += "</tt>";
+      ret += "</code>";
       break;
 
     case "typedef":
       if(typedf++) ret += "<br>\n";
-      ret += "<tt><tt class='datatype'>";
+      ret += "<code><code class='datatype'>";
       cc = c->get_first_element("modifiers");
       if(cc) ret += map(cc->get_children(), parse_type)*" " + " ";
-      ret += "typedef</tt> ";
+      ret += "typedef</code> ";
       ret += parse_type(get_first_element(c->get_first_element("type")), "typedef") + " " +
 	c->get_attributes()->class_path +
-        "<tt class='typedef'>" + c->get_attributes()->name + "</tt></tt>";
+        "<code class='typedef'>" + c->get_attributes()->name + "</code></code>";
       break;
 
     case "inherit":
-      ret += "<tt><span class='datatype'>";
+      ret += "<code><span class='datatype'>";
       cc = c->get_first_element("modifiers");
       if(cc) ret += map(cc->get_children(), parse_type)*" " + " ";
       ret += "inherit ";
@@ -1574,7 +1582,7 @@ string parse_not_doc(Node n) {
 	  Parser.encode_html_entities(c->get_attributes()->name) +
 	  "</span>";
       }
-      ret += "</tt>";
+      ret += "</code>";
       break;
 
     // We don't need import information.
@@ -1583,8 +1591,8 @@ string parse_not_doc(Node n) {
 
     case "directive":
       if(cppdir++) ret += "<br>\n";
-      ret += "<tt class='directive'>" + quote(c->get_attributes()->name) +
-	     "</tt>";
+      ret += "<code class='directive'>" + quote(c->get_attributes()->name) +
+	     "</code>";
       break;
 
     default:

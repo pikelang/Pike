@@ -101,7 +101,7 @@ string create_reference(string from, string to, string text,
     xlink_namespace_prefix +
     "href='" +
     "../"*max(sizeof(from/"/") - 2, 0) + map(a, cquote)*"/" + ".html'>" +
-    text + "</a>";
+    String.trim_all_whites(text) + "</a>";
 }
 
 multiset missing = (< "foreach", "catch", "throw", "sscanf", "gauge", "typeof" >);
@@ -441,8 +441,7 @@ class Node
       _reference = _reference[sizeof(default_namespace)+2..];
 
     if(vars->param)
-      return "<tt class='reference param'>" + _reference +
-             "</tt>";
+      return "<code class='reference param'>" + _reference + "</code>";
 
     if (resolved) {
       foreach (resolved, string resolution) {
@@ -455,8 +454,8 @@ class Node
           if (!res_obj && verbosity) {
             werror("Found no page to link to for reference %O (%O)\n",
                    _reference, resolution);
-            return "<tt class='reference nolink'>" + _reference +
-                   "</tt>";
+            return "<code class='reference nolink'>" + _reference +
+                   "</code>";
           }
           // FIXME: Assert that the reference is correct?
           return create_reference(make_filename(),
@@ -469,8 +468,8 @@ class Node
         array(string) tmp = resolution/".";
         if ((sizeof(tmp) > 1) && (res_obj = refs[tmp[..sizeof(tmp)-2]*"."])) {
           if (res_obj == this) {
-            return "<tt class='reference paramref'>" + _reference +
-                   "</tt>";
+            return "<code class='reference paramref'>" + _reference +
+                   "</code>";
           }
           return create_reference(make_filename(),
                                   res_obj->raw_class_path(),
@@ -499,8 +498,8 @@ class Node
       }
       unresolved++;
     }
-    return "<tt class='reference unresolved'>" + _reference +
-           "</tt>";
+    return "<code class='reference unresolved'>" + _reference +
+           "</code>";
   }
 
   string _make_class_path;
@@ -1473,10 +1472,9 @@ int low_main(string doc_file, string template_file, string outdir,
     // Attempt to keep down the number of changed files by
     // using a client-sice include for the version and date.
     string pike_version_js =
-      sprintf("document.write(%q);\n", top->pike_version);
+      sprintf("PikeDoc.VERSION = '%s';\n", top->pike_version);
     string timestamp_js =
-      sprintf("document.write(%q);\n",
-              sprintf("<time pubdate=''>%s</time>", top->timestamp));
+      sprintf("PikeDoc.PUBDATE = '%s';\n", top->timestamp);
     if (exporter) {
       exporter->filemodify(Git.MODE_FILE, outdir + "/pike_version.js");
       exporter->data(pike_version_js);
@@ -1496,13 +1494,17 @@ int low_main(string doc_file, string template_file, string outdir,
     sscanf(top->timestamp, "%d-", year);
 
     template = replace(template,
-                       ([ "$version$":"<script type='text/javascript' src='$dotdot$pike_version.js' ></script><noscript>" + product_name + "</noscript>",
-                          "$date$":"<script type='text/javascript' src='$dotdot$timestamp.js' ></script><noscript>" + year + "</noscript>",
+                       ([ "$version_js$":"<script src='$dotdot$pike_version.js'></script>",
+                          "$date_js$":"<script src='$dotdot$timestamp.js'></script>",
+                          "$version$":"",
+                          "$date$":""
                        ]) );
   } else {
     template = replace(template,
                        ([ "$version$":top->pike_version,
                           "$date$":top->timestamp,
+                          "$version_js$":"",
+                          "$date_js$":""
                        ]) );
   }
 

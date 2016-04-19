@@ -4,18 +4,20 @@
     <meta content="width=device-width, initial-scale=1" name="viewport">
     <meta charset="utf-8">
     <title>Pike Reference Manual - $title$</title>
-    <!-- 174 -->
+    <!-- 178 -->
     <link rel='stylesheet' href='$style$'>
     <script src='$script$'></script>
+    $version_js$
+    $date_js$
     $extra_headers$
   </head>
   <body>
     <header>
       <div class="header">
-        <div id="version"><strong>$version$</strong></div>
+        <div id="version"><strong data-id="version">$version$</strong></div>
         <div id="burger">&#9776;</div><!-- Hamburger icon -->
         <h1>
-          <a href="http://pike.lysator.liu.se/">
+          <a href="http://pike.lysator.liu.se/" class="logo">
             <span>Pike programming language</span>
           </a>
         </h1>
@@ -47,7 +49,7 @@
       </div>
     </div>
     <footer>
-      <div id="build-date">Extracted from <strong>$version$</strong> as of <strong>$date$</strong>.</div>
+      <div id="build-date">Extracted from <strong data-id="version">$version$</strong> as of <strong data-id="date">$date$</strong>.</div>
     </footer>
     $extra_footer$
     <script>

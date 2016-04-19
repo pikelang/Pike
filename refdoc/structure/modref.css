@@ -1,4 +1,3 @@
-
 *, *:after, *:before {
   -webkit-box-sizing: border-box;
   -moz-box-sizing: border-box;
@@ -101,7 +100,7 @@ header::after {
 	clear: both;
 }
 header h1 { margin: 0; vertical-align: middle; }
-header a {
+header a.logo {
 	opacity: .7;
 	display: inline-block;
 	width: 160px;
@@ -112,7 +111,7 @@ header a {
 	background-size: contain;
 	transition: opacity .2s ease-in;
 }
-header a:hover {
+header a.logo:hover {
 	opacity: 1;
 }
 
@@ -299,7 +298,7 @@ em {
 .prev, .next {
 	text-decoration: none;
 	font-family: monospace;
-	font-size: 1.1rem;
+	font-size: 14px;
 }
 
 .prev {
@@ -313,7 +312,7 @@ em {
 .prev span, .next span {
 	display: inline-block;
 	vertical-align: middle;
-	margin-top: -1px;
+	margin-top: -2px;
 }
 
 .prev span {
@@ -362,8 +361,8 @@ pre, code, tt, .monospace, .ms {
 	font-size: .95rem;
 }
 
-svg a, svg tspan, svg .reference {
-	font-size: 1.1rem;
+svg a, svg tspan, svg text, svg .reference {
+	font-size: 1rem;
 	font-family: monospace !important;
 }
 
@@ -442,7 +441,8 @@ a.reference, a.reference:visited { color: #0087cc; }
 	color: #F000F0;
 	font-weight: bold;
 }
-.parameter, .argument { color: #0087cc; font-size: 1rem; }
+.parameter, .argument, .argument a { color: #0087cc; font-size: 1rem; }
+.argument a { text-decoration: none; }
 .method { color: #000066; }
 .key { color: green; }
 
@@ -528,13 +528,13 @@ pre code .nested:hover { opacity: 1; }
 	.navbox .prev, .navbox .next {
 		float: none;
 		display: block;
-		text-align: left;
+		text-align: center;
 		white-space: nowrap;
 		overflow: hidden;
 		text-overflow: ellipsis;
 	}
 	.navbox .next {
-		text-align: right;
+		// text-align: right;
 	}
 
 	.inheritance-graph {
