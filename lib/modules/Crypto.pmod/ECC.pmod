@@ -248,13 +248,17 @@ class Curve {
 	case "SECP_256R1":
 	  h = .SHA256;
 	  break;
-	case "SECP_384R1":
+#if constant(Nettle.SHA384)
+        case "SECP_384R1":
 	  h = .SHA384;
-	  break;
+          break;
+#endif
+#if constant(Nettle.SHA512)
 	case "SECP_521R1":
 	  h = .SHA512;
 	  break;
-	default:
+#endif
+        default:
 	  return 0;
 	}
       }
@@ -299,22 +303,20 @@ class Curve {
 	if (!mappingp(headers)) return 0;
 	.Hash h;
 	switch(headers->alg) {
-#if constant(Nettle.SHA256)
-	case "ES256":
+        case "ES256":
 	  h = .SHA256;
 	  break;
-#endif
 #if constant(Nettle.SHA384)
-	case "ES384":
+        case "ES384":
 	  h = .SHA384;
 	  break;
 #endif
 #if constant(Nettle.SHA512)
-	case "ES512":
+        case "ES512":
 	  h = .SHA512;
-	  break;
+          break;
 #endif
-	default:
+        default:
 	  return 0;
 	}
 	string(7bit) tbs = sprintf("%s.%s", segments[0], segments[1]);
