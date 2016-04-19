@@ -675,11 +675,9 @@ class PSSState {
 	if (!mappingp(headers)) return 0;
 	.Hash h;
 	switch(headers->alg) {
-#if constant(Nettle.SHA256)
-	case "PS256":
+        case "PS256":
 	  h = .SHA256;
 	  break;
-#endif
 #if constant(Nettle.SHA384)
 	case "PS384":
 	  h = .SHA384;
@@ -854,11 +852,9 @@ class PKCS1_5State
       if (!mappingp(headers)) return 0;
       .Hash h;
       switch(headers->alg) {
-#if constant(Nettle.SHA256)
       case "RS256":
 	h = .SHA256;
 	break;
-#endif
 #if constant(Nettle.SHA384)
       case "RS384":
 	h = .SHA384;
