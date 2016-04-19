@@ -307,6 +307,98 @@ class State {
     return raw_verify(s, Gmp.mpz(sign, 256));
   }
 
+  //! Signs the @[message] with a JOSE JWS RSASSA-PSS signature using hash
+  //! algorithm @[h].
+  //!
+  //! @param message
+  //!   Message to sign.
+  //!
+  //! @param h
+  //!   Hash algorithm to use.
+  //!
+  //! @returns
+  //!   Returns the signature on success, and @expr{0@} (zero)
+  //!   on failure (typically that the hash + salt combo is too
+  //!   large for the RSA modulo).
+  //!
+  //! @seealso
+  //!   @[pkcs_verify()], @[salt_size()], @rfc{7515@}
+  string(7bit) jose_sign(string(8bit) message, .Hash h,
+			 mapping(string(7bit):string(7bit)|int)|void headers)
+  {
+    // NB: Identical to the code in PSSState, but duplication
+    //     is necessary to bind to the correct variants of
+    //     jwa() and pkcs_sign().
+    string(7bit) alg = jwa(h);
+    if (!alg) return 0;
+    headers = headers || ([]);
+    headers += ([ "alg": alg ]);
+    string(7bit) tbs =
+      sprintf("%s.%s",
+	      MIME.encode_base64url(string_to_utf8(Standards.JSON.encode(headers))),
+	      MIME.encode_base64url(message));
+    string(8bit) raw = pkcs_sign(tbs, h);
+    if (!raw) return 0;
+    return sprintf("%s.%s", tbs, MIME.encode_base64url(raw));
+  }
+
+  //! Verify a JOSE JWS RSASSA-PSS signed value.
+  //!
+  //! @param jws
+  //!   A JSON Web Signature as returned by @[jose_sign()].
+  //!
+  //! @returns
+  //!   Returns @expr{0@} (zero) on failure, and an array
+  //!   @array
+  //!     @item mapping(string(7bit):string(7bit)|int) 0
+  //!       The JOSE header.
+  //!     @item string(8bit) 1
+  //!       The signed message.
+  //!   @endarray
+  //!
+  //! @seealso
+  //!   @[pkcs_verify()], @rfc{7515:3.5@}
+  array(mapping(string(7bit):
+		string(7bit)|int)|string(8bit)) jose_decode(string(7bit) jws)
+  {
+    // NB: Not quite identical to the code in PSSState, but almost
+    //     as it is necessary to bind to the correct variant of
+    //     pkcs_sign(), and compare with the correct alg values.
+    array(string(7bit)) segments = [array(string(7bit))](jws/".");
+    if (sizeof(segments) != 3) return 0;
+    mapping(string(7bit):string(7bit)|int) headers;
+    catch {
+      headers = [mapping(string(7bit):string(7bit)|int)](mixed)
+	Standards.JSON.decode(utf8_to_string(MIME.decode_base64url(segments[0])));
+      if (!mappingp(headers)) return 0;
+      .Hash h;
+      switch(headers->alg) {
+#if constant(Nettle.SHA256)
+      case "RS256":
+	h = .SHA256;
+	break;
+#endif
+#if constant(Nettle.SHA384)
+      case "RS384":
+	h = .SHA384;
+	break;
+#endif
+#if constant(Nettle.SHA512)
+      case "RS512":
+	h = .SHA512;
+	break;
+#endif
+      default:
+	return 0;
+      }
+      string(7bit) tbs = sprintf("%s.%s", segments[0], segments[1]);
+      if (pkcs_verify(tbs, h, MIME.decode_base64url(segments[2]))) {
+	return ({ headers, MIME.decode_base64url(segments[1]) });
+      }
+    };
+    return 0;
+  }
+
   //
   // --- Encryption/decryption
   //
