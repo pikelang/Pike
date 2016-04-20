@@ -2079,7 +2079,7 @@ PIKEFUN program function_program(program|function func)
 
 PIKECLASS RandomInterface
 {
-  CVAR INT64 int_buffer;
+  CVAR UINT64 int_buffer;
   CVAR int   buffer_bits;
 
   INIT
@@ -2120,7 +2120,7 @@ PIKECLASS RandomInterface
   {
     if(limit <= 1) return 0;
     int bits = my_log2(limit-1)+1;
-    INT64 mask = (1L<<bits)-1;
+    UINT64 mask = (((UINT64)1)<<bits)-1;
     for(int i=0; i<1000; i++)
     {
       if(THIS->buffer_bits < bits)
