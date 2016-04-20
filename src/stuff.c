@@ -75,10 +75,13 @@ const INT32 hashprimes[32] =
    Intrinsic       30,000,000,000,000,000
 */
 
-PMOD_EXPORT int my_log2(size_t x)
+PMOD_EXPORT int my_log2(UINT64 x)
 {
     if( x == 0 ) return 0;
-    return log2_u32(x);
+    if(x & ~((UINT64)0xffffffffUL)) {
+      return 32 + log2_u32((unsigned INT32)(x>>32));
+    }
+    return log2_u32((unsigned INT32)x);
 }
 
 
