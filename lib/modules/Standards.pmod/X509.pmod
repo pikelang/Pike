@@ -1568,6 +1568,7 @@ mapping(string:array(Verifier)) load_authorities(string|array(string)|void root_
 
     "/etc/pki/tls/certs",
     // Redhat Enterprise 6, OpenSSL 1.0.0
+    // Redhat Enterprise 7
     // Redhat Fedora Core 4, OpenSSL 0.9.7
     // Redhat Fedora Core 5 / 6, OpenSSL 0.9.8
 
@@ -1620,23 +1621,28 @@ mapping(string:array(Verifier)) load_authorities(string|array(string)|void root_
   foreach(root_cert_dirs, string dir) {
     if (!Stdio.is_dir(dir)) continue;
 
-    // Try the merged certificate file first.
-    string pem = Stdio.read_bytes(combine_path(dir, "ca-certificates.crt"));
-    if (pem) {
-      Standards.PEM.Messages messages = Standards.PEM.Messages(pem);
-      foreach(messages->fragments, string|Standards.PEM.Message m) {
-	if (!objectp(m) || m->pre!="CERTIFICATE" || !m->body) continue;
-	TBSCertificate tbs = verify_ca_certificate(m->body);
-	if (!tbs) continue;
-        string subj = tbs->subject->get_der();
-        if( !res[subj] || !has_value(res[subj], tbs->public_key ) )
+    int found;
+
+    // Try the merged certificate files first.
+    foreach(({ "ca-certificates.crt", "ca-bundle.crt", "ca-bundle.trust.crt" }),
+	    string fname) {
+      string pem = Stdio.read_bytes(combine_path(dir, fname));
+      if (pem) {
+	Standards.PEM.Messages messages = Standards.PEM.Messages(pem);
+	foreach(messages->fragments, string|Standards.PEM.Message m) {
+	  if (!objectp(m) || m->pre!="CERTIFICATE" || !m->body) continue;
+	  TBSCertificate tbs = verify_ca_certificate(m->body);
+	  if (!tbs) continue;
+	  string subj = tbs->subject->get_der();
+	  if( !res[subj] || !has_value(res[subj], tbs->public_key ) )
             res[subj] += ({ tbs->public_key });
+	}
+	found = 1;
       }
-      continue;
     }
+    if (found) continue;
 
     // Then try the Apple KeyChain files.
-    int found;
     foreach(({ "X509Anchors", "X509Certificates" }), string fname) {
       string keychain = Stdio.read_bytes(combine_path(dir, fname));
       if (keychain) {
@@ -1659,7 +1665,7 @@ mapping(string:array(Verifier)) load_authorities(string|array(string)|void root_
       }
       fname = combine_path(dir, fname);
       if (!Stdio.is_file(fname)) continue;
-      pem = Stdio.read_bytes(fname);
+      string pem = Stdio.read_bytes(fname);
       if (!pem) continue;
       string cert = Standards.PEM.simple_decode(pem);
       if (!cert) continue;
