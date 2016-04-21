@@ -1574,6 +1574,12 @@ mapping(string:array(Verifier)) load_authorities(string|array(string)|void root_
     "/System/Library/OpenSSL/certs",
     // Mac OS X 10.1.2, OpenSSL 0.9.6b
 
+    "/Library/Keychains",
+    // Mac OS X.
+
+    "/System/Library/Keychains",
+    // Mac OS X 11.4.2
+
     "/etc/openssl/certs",
     // NetBSD, OpenSSL 0.9.x
 
@@ -1612,6 +1618,9 @@ mapping(string:array(Verifier)) load_authorities(string|array(string)|void root_
   mapping(string:array(Verifier)) res = ([]);
 
   foreach(root_cert_dirs, string dir) {
+    if (!Stdio.is_dir(dir)) continue;
+
+    // Try the merged certificate file first.
     string pem = Stdio.read_bytes(combine_path(dir, "ca-certificates.crt"));
     if (pem) {
       Standards.PEM.Messages messages = Standards.PEM.Messages(pem);
@@ -1625,6 +1634,24 @@ mapping(string:array(Verifier)) load_authorities(string|array(string)|void root_
       }
       continue;
     }
+
+    // Then try the Apple KeyChain files.
+    int found;
+    foreach(({ "X509Anchors", "X509Certificates" }), string fname) {
+      string keychain = Stdio.read_bytes(combine_path(dir, fname));
+      if (keychain) {
+	Apple.Keychain chain = Apple.Keychain(keychain);
+	foreach(chain->certs, TBSCertificate tbs) {
+	  string subj = tbs->subject->get_der();
+	  if( !res[subj] || !has_value(res[subj], tbs->public_key ) )
+            res[subj] += ({ tbs->public_key });
+	}
+	found = 1;
+      }
+    }
+    if (found) continue;
+
+    // Fall back to trying every file.
     foreach(get_dir(dir) || ({}), string fname) {
       if (has_suffix(fname, ".0")) {
 	// Skip OpenSSL hash files for now (as they are duplicates).
