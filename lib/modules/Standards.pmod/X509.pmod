@@ -1629,6 +1629,7 @@ mapping(string:array(Verifier))
     // Try the merged certificate files first.
     foreach(({ "ca-certificates.crt", "ca-bundle.crt", "ca-bundle.trust.crt" }),
 	    string fname) {
+      string pem = Stdio.read_bytes(combine_path(dir, fname));
       if (pem) {
 	Standards.PEM.Messages messages = Standards.PEM.Messages(pem);
 	foreach(messages->get_certificates(), string m) {
