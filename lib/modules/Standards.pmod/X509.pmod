@@ -11,9 +11,14 @@ import Standards.ASN1.Types;
 
 #ifdef X509_DEBUG
 #define DBG(X ...) werror(X)
-#define NULL(X ...) werror(X) && 0
+#define X509_VALIDATION_DEBUG
 #else
 #define DBG(X ...)
+#endif
+
+#ifdef X509_VALIDATION_DEBUG
+#define NULL(X ...) werror(X) && 0
+#else
 #define NULL(X ...) 0
 #endif
 
@@ -778,8 +783,12 @@ class TBSCertificate
     if( t!='O' ) return UNDEFINED;
     mapping m = cast("mapping");
     catch {
+      m->serial = serial;
       m->issuer = fmt_asn1(m->issuer);
       m->subject = fmt_asn1(m->subject);
+      foreach(extensions; Identifier i; Object o) {
+	m[.PKCS.Identifiers.reverse_ce_ids[i]||i] = fmt_asn1(o);
+      }
     };
     return sprintf("%O(%O)", this_program, m);
   }
