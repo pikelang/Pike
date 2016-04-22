@@ -1,0 +1,5 @@
+Added files:
+  pike/lib/modules/Apple.pmod/Keychain.pike
+Modified files:
+  pike/lib/modules/Standards.pmod/X509.pmod
+  pike/lib/modules/Web.pmod/Api.pmod/Api.pike
