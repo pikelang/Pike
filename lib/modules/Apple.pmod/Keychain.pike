@@ -51,7 +51,7 @@ protected void parse_cert(Stdio.Buffer buf)
    * Offset
    *   0:	INT32		0x05f4	Total length
    *   4:	INT32		0x19	Certificate sequence number.
-   *   8:	INT32		0x1c	Unknown
+   *   8:	INT32		0x1c	Unknown (probably some other certs #)
    *   c:	INT32		0
    *  10:	INT32BE		0x0436	Certificate DER length.
    *  14:	INT32		0
@@ -69,8 +69,9 @@ protected void parse_cert(Stdio.Buffer buf)
    *
    *  3c:	STRING		DER certificate with the length as above.
    *
-   *  43c	HSTRING		Flags?
-   *  440	HSTRING		CN?
+   *  43c	INT32		Unknown, seems to always be the value 0x01.
+   *  440	INT32		Flags? Values seen are 0 and 3.
+   *  444	HSTRING		CN?
    *  45c	HSTRING		CN?
    *  478	HSTRING		DER CN?
    *  -		HSTRING		DER CN?
@@ -83,7 +84,7 @@ protected void parse_cert(Stdio.Buffer buf)
 
   int entry_no = buf->read_int32();
 
-  int unknown = buf->read_int32();
+  int unknown = buf->read_int32();	// Other cert no. Often ~3 larger.
 
   array(int) index = allocate(12);
 
@@ -93,46 +94,77 @@ protected void parse_cert(Stdio.Buffer buf)
 
   WERR("Certificate index: %O\n", index);
 
+  // This is the DER data for the cert.
   string(8bit) der = read_string(buf, index[1]);
 
-  string(8bit) unknown2 = read_string(buf, buf->read_int32());
+  int unknown1 = buf->read_int32();
+  if (unknown1 != 1) {
+    WERR("Certificate #%d has unknown1 != 1: 0x%08x!\n",
+	 entry_no, unknown_one);
+  }
+  int version = buf->read_int32();	// X.509 version?
 
   string(8bit) name = read_string(buf, buf->read_int32());
-  string(8bit) name2 = read_string(buf, buf->read_int32());
 
-  string(8bit) der_cn = read_string(buf, buf->read_int32());
-  string(8bit) der_cn2 = read_string(buf, buf->read_int32());
+  // The alternative name when not identical to name above,
+  // is usually the email adress from the certifivate field
+  // "X509v3 Subject Alternative Name".
+  string(8bit) alternative_name = read_string(buf, buf->read_int32());
 
-  string(8bit) der1 = read_string(buf, buf->read_int32());
+  if (name != alternative_name) {
+    WERR("Cert #%d: Names 1 & 2 differ: %O != %O\n",
+	 entry_no, name, alternative_name);
+  }
 
-  string(8bit) der2 = read_string(buf, buf->read_int32());
+  // Subject (eg CN="Developer ID Certification Authority"...).
+  string(8bit) subject_der = read_string(buf, buf->read_int32());
+
+  // Issued by (eg CN="Apple Root CA"...).
+  // Usually the same as Subject (ie self-signed CA).
+  string(8bit) issuer_der = read_string(buf, buf->read_int32());
+
+  string(8bit) serial_no = read_string(buf, buf->read_int32());
+
+  // This seems to be the certificate field "X509v3 subjectKeyIdentifier".
+  string(8bit) subject_key_identifier = read_string(buf, buf->read_int32());
+
+  // Unknown, often the same as subject_key_identifier.
+  // Possibly the subjectKeyIdentifier of the certificate
+  // at position @[unknown] above.
   string(8bit) der3 = read_string(buf, buf->read_int32());
 
-  WERR("Cert #%d (0x%08x):\n"
-       "Unknown2: %O (flags?)\n"
-       "Name: %O, %O\n"
-       "DER: %O, %O\n"
-       "Unknown: %O\n"
-       "DER: %O, %O\n"
+  WERR("Cert #%d, Other: #%d, X.509 Version: %d\n"
+       "Name: %O\n"
+       "AltName: %O\n"
+       "Subject: %O\n"
+       "Issuer: %O\n"
+       "Serial no: 0x%s\n"
+       "Subject Key Identifier: 0x%s\n"
+       "Unknown Key Identifier: 0x%s\n"
        "%s\n",
        entry_no, unknown,
-       unknown2,
-       name, name2,
-       der_cn, der_cn2,
-       der1,
-       der2, der3,
+       version,
+       name, alternative_name,
+       Standards.ASN1.Decode.secure_der_decode(subject_der),
+       Standards.ASN1.Decode.secure_der_decode(issuer_der),
+       String.string2hex(serial_no),
+       String.string2hex(subject_key_identifier),
+       String.string2hex(der3),
        Standards.PEM.build("CERTIFICATE", der));
 
   Standards.X509.TBSCertificate tbs =
-    Standards.X509->verify_ca_certificate(der);
+    Standards.X509->decode_certificate(der);
+  WERR("TBS: %O\n", tbs);
+
+  // NB: We accept all certificates that decode correctly here.
+  //     It is up to the user to actually validate that they
+  //     are proper for use.
   if (tbs) {
-    WERR("Validated cert #%d: %O\n", entry_no, name);
+    WERR("Decoded cert #%d: %O\n", entry_no, name);
     certs += ({ tbs });
   } else {
-    // FIXME: Change this to a werror when we know why verify_ca_certificate()
-    //        doesn't accept most of the certificates.
-    WERR("Warning: Failed to verify CA certificate %O (cert #%d)\n",
-	 name, entry_no);
+    werror("Warning: Failed to decode certificate %O (cert #%d)\n",
+	   name, entry_no);
   }
 
   if (sizeof(buf)) {
@@ -185,7 +217,7 @@ protected void parse_item(Stdio.Buffer buf)
     }
     WERR("X509 Index: \n"
 	 "%{  %d,\n%}",
-	 type, type, index);
+	 index);
 
     // Then come the certificates.
     // ...
