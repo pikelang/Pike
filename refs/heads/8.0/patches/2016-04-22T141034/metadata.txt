@@ -1,0 +1,37 @@
+subject: Pike 8.0: Multiple fixes:
+from: 97241e9f125fea81d6241058b620af02064f28f2
+to: e08cc45ce41d3b747a2f3f500fd19ab6cc163aff
+originator: wellhardh@roxen.com
+depends: pike/8.0.232
+restart: true
+
+Multiple fixes:
+
+  * release number bumped to 8.0.233 by export.pike
+
+  * Apple.Keychain: Added initial parser of Keychain files.
+    
+    CAVEAT: This is a VERY limited implementation, and is only
+            intended to be used to extract root certificates
+    	from "/Library/Keychains/X509Anchors".
+
+  * Standards.X509: load_authorities() now knows about Apple.Keychain.
+    
+    Improves likelyhood that the SSL root certificates will be found on MacOS X.
+
+  * Standards.X509: load_authorities() now knows about ca-bundle.crt.
+    
+    The certificate bundle file seems to have been split up and had
+    a change of names in RHEL 7.
+    
+    Fixes validation of SSL certificates on RHEL 7.
+
+  * Web.Api.Api: Fixed so that POST actions actually works.
+    
+    It now also tries to detect if a file is being uploaded. This works by looking at the parameter values and if a value contains "filename=..." a multipart message will be created. So in short this would look something like:
+    
+      string file    = "the-file.png";
+      string data    = Stdio.read_file(file);
+      mapping params = ([ "the_file_param" : "filename=" + file ]);
+    
+      api->post("method/endpoint", params, data);
