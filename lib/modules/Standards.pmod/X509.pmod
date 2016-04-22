@@ -1648,19 +1648,33 @@ mapping(string:array(Verifier))
     if (found) continue;
 
     // Then try the Apple KeyChain files.
-    foreach(({ "X509Anchors", "X509Certificates" }), string fname) {
+    foreach(({
+	      // Mostly TLS Root CAs:
+	      "SystemRootCertificates.keychain",
+
+	      // Certificates for certifying identities and email,
+	      // many of which are expired.
+	      "SystemCACertificates.keychain",
+
+	      // Old name for SystemRootCertificates.keychain.
+	      "X509Anchors",
+
+	      // Old name for SystemCACertificates.keychain.
+	      "X509Certificates",
+	    }), string fname) {
       string keychain = Stdio.read_bytes(combine_path(dir, fname));
       if (keychain) {
 	Apple.Keychain chain = Apple.Keychain(keychain);
 	foreach(chain->certs, TBSCertificate tbs) {
+	  if (!verify_ca_certificate(tbs)) continue;
 	  string subj = tbs->subject->get_der();
 	  if( !res[subj] || !has_value(res[subj], tbs->public_key ) )
 	  {
 	    update_expire(tbs);
             res[subj] += ({ tbs->public_key });
 	  }
+	  found = 1;
 	}
-	found = 1;
       }
     }
     if (found) continue;
