@@ -1,4 +1,4 @@
-subject: Pike 8.0: Multiple fixes:
+subject: Pike 8.0: SSL root cert on mac and rhel7, Web.Api
 from: 97241e9f125fea81d6241058b620af02064f28f2
 to: e08cc45ce41d3b747a2f3f500fd19ab6cc163aff
 originator: wellhardh@roxen.com
@@ -7,14 +7,8 @@ restart: true
 
 Multiple fixes:
 
-  * release number bumped to 8.0.233 by export.pike
-
   * Apple.Keychain: Added initial parser of Keychain files.
     
-    CAVEAT: This is a VERY limited implementation, and is only
-            intended to be used to extract root certificates
-    	from "/Library/Keychains/X509Anchors".
-
   * Standards.X509: load_authorities() now knows about Apple.Keychain.
     
     Improves likelyhood that the SSL root certificates will be found on MacOS X.
