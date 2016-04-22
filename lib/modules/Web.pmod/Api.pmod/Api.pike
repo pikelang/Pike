@@ -9,8 +9,6 @@
 //! Look at the code in @[Web.Api.Github], @[Web.Api.Instagram],
 //! @[Web.Api.Linkedin] etc to see some examples of implementations.
 
-// #define SOCIAL_REQUEST_DEBUG
-
 #if defined(SOCIAL_REQUEST_DEBUG) || defined(SOCIAL_REQUEST_DATA_DEBUG)
 # define TRACE(X...) werror("%s:%d: %s",basename(__FILE__),__LINE__,sprintf(X))
 #else
@@ -251,9 +249,20 @@ mixed call(string api_method, void|ParamsArg params,
     }
   }
 
-  if (http_method == "POST") {
-    if (!data) data = (string) p;
-    params = 0;
+  mapping request_headers = copy_value(default_headers);
+  params = (mapping) p;
+
+  if ((< "POST" >)[http_method]) {
+    if (!data) {
+      data = (string) p;
+      params = 0;
+    }
+    else {
+      array(string) parts = make_multipart_message(params, data);
+      request_headers["content-type"] = parts[0];
+      data = parts[1];
+      params = 0;
+    }
   }
   else {
     params = (mapping) p;
@@ -267,7 +276,14 @@ mixed call(string api_method, void|ParamsArg params,
 
 #ifdef SOCIAL_REQUEST_DEBUG
     TRACE("\n> Request: %s %s?%s\n", http_method, api_method, (string) p);
-    if (data) TRACE("> data: %s\n", data);
+    if (data) {
+      if (sizeof(data) > 100) {
+        TRACE("> data: %s\n", data[0..100]);
+      }
+      else {
+        TRACE("> data: %s\n", data);
+      }
+    }
 #endif
 
   if (cb) {
@@ -295,15 +311,79 @@ mixed call(string api_method, void|ParamsArg params,
     );
 
     Protocols.HTTP.do_async_method(http_method, api_method, params,
-                                   default_headers, req, data);
+                                   request_headers, req, data);
 
     return 0;
   }
 
   req = Protocols.HTTP.do_method(http_method, api_method, params,
-                                 default_headers, req, data);
+                                 request_headers, req, data);
+
   return req && handle_response(req);
 }
+
+//! Creates the body of an Upload request
+//!
+//! @param p
+//!  The API request parameters
+//!
+//! @param body
+//!  Data of the document to upload
+//!
+//! @returns
+//!  An array with two indices:
+//!  @ul
+//!   @item
+//!    The value for the main Content-Type header
+//!   @item
+//!    The request body
+//!  @endul
+protected array(string) make_multipart_message(mapping p, string body)
+{
+  string boundary = "----PikeWebApi" +
+                    (string)Standards.UUID.make_version4();
+
+  mapping subh = ([ "Content-Disposition" : "form-data" ]);
+  array(MIME.Message) msgs = ({});
+
+  foreach (p; string k; string v) {
+    MIME.Message m;
+    mapping h = copy_value(subh);
+
+    if (search(v, "filename=") > -1) {
+      string name;
+
+      if (sscanf(v, "%*sfilename=\"%s\"", name) != 2) {
+        if (sscanf(v, "%*sfilename=%s", name) != 2) {
+          error("Unable to resolve filename! Please fix the value "
+                "for the parameter %O\n!", k);
+        }
+      }
+
+      string type = Protocols.HTTP.Server.filename_to_type(name);
+      h["Content-Type"] = type;
+      m = MIME.Message(body, h);
+      m->setdisp_param("filename", name);
+      m->setdisp_param("name", k);
+    }
+    else {
+      m = MIME.Message(v, h);
+      m->setdisp_param("name", k);
+    }
+    msgs += ({ m });
+  }
+
+  mapping mainh = ([ "Content-Type" : "multipart/form-data" ]);
+  MIME.Message main = MIME.Message("", mainh, msgs);
+  main->setboundary(boundary);
+
+  string raw = (string) main;
+  sscanf(raw, "%s\r\n\r\n%s", string header, string cont);
+  sscanf(header, "%*sContent-Type: %s", string hval);
+
+  return ({ hval, cont });
+}
+
 
 //! Forcefully close all HTTP connections. This only has effect in
 //! async mode.
@@ -316,11 +396,10 @@ void close_connections()
   foreach (values(_query_objects), array m) {
     catch {
       Protocols.HTTP.Query q = m[0];
+
       if (q && q->con && q->con->is_open()) {
-#ifdef SOCIAL_REQUEST_DEBUG
-        werror("%s:%d: Forecefully closing open connection: %O\n",
-               basename(__FILE__),__LINE__,q);
-#endif
+        TRACE("Forecefully closing open connection: %O\n", q);
+
         q->close();
 
         if (m[1]) {
@@ -334,7 +413,7 @@ void close_connections()
   _query_objects = ([]);
 }
 
-private mixed handle_response(Protocols.HTTP.Query req)
+protected mixed handle_response(Protocols.HTTP.Query req)
 {
   TRACE("Handle response: %O\n", req);
 
