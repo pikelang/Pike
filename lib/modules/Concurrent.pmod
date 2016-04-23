@@ -239,8 +239,8 @@ class Future
   //!   @[results()]
   this_program zip(this_program ... others)
   {
-    if (!sizeof(others)) return local::this;
-    return results(({ local::this }) + others);
+    if (!sizeof(others)) return this_program::this;
+    return results(({ this_program::this }) + others);
   }
 }
 
