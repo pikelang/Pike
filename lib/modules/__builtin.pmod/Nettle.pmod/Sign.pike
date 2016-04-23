@@ -55,4 +55,55 @@ Sequence pkcs_algorithm_identifier();
 //! Creates a SubjectPublicKeyInfo ASN.1 sequence for the object.
 //! See RFC 5280 section 4.1.2.7.
 Sequence pkcs_public_key();
+
+//! Signs the @[message] with a JOSE JWS signature using hash
+//! algorithm @[h].
+//!
+//! @param message
+//!   Message to sign.
+//!
+//! @param headers
+//!   JOSE headers to use. Typically a mapping with a single element
+//!   @expr{"typ"@}.
+//!
+//! @param h
+//!   Hash algorithm to use. Valid hashes depend on the signature
+//!   algorithm.
+//!
+//! @returns
+//!   Returns the signature on success, and @expr{0@} (zero)
+//!   on failure (typically that either the hash algorithm
+//!   is invalid for this signature algorithm),
+//!
+//! @seealso
+//!   @[jose_decode()], @[pkcs_sign()], @rfc{7515@}
+string(7bit) jose_sign(string(8bit) message,
+		       mapping(string(7bit):string(7bit)|int)|void headers,
+		       .Hash|void h)
+{
+  return 0;
+}
+
+//! Verify and decode a JOSE JWS signed value.
+//!
+//! @param jws
+//!   A JSON Web Signature as returned by @[jose_sign()].
+//!
+//! @returns
+//!   Returns @expr{0@} (zero) on failure, and an array
+//!   @array
+//!     @item mapping(string(7bit):string(7bit)|int) 0
+//!       The JOSE header.
+//!     @item string(8bit) 1
+//!       The signed message.
+//!   @endarray
+//!
+//! @seealso
+//!   @[jose_sign()], @[pkcs_verify()], @rfc{7515@}
+array(mapping(string(7bit):string(7bit)|int)|
+      string(8bit)) jose_decode(string(7bit) jws)
+{
+  return 0;
+}
+
 #undef Sequence
