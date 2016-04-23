@@ -12,9 +12,9 @@ test_eq( random(10), 1)
 test_eq( random(10), 4)
 test_eq( random(10), 5)
 cond(Pike.get_runtime_info()->int_size == 64, [[
-test_eq( random(0x7ffffffff), 1923069344)
-test_eq( random(0x7fffffffffffffff), 1675123958)
-test_eq( random(0x7ffffffffffffffff), 6408060475126008899)
+test_eq( random(0x7ffffffff), 27692873120)
+test_eq( random(0x7fffffffffffffff), 5484257398290798648)
+test_eq( random(0x7ffffffffffffffff), 120525567616026645578)
 ]])
 cond(Pike.get_runtime_info()->int_size == 32, [[
 test_eq( random(0x7ffffffff), 3047125750)
