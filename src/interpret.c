@@ -2199,9 +2199,6 @@ void unlink_previous_frame(void)
   current->save_mark_sp=prev->save_mark_sp;
   current->flags = prev->flags;
 
-  /* Unlink the top frame temporarily. */
-  Pike_interpreter.frame_pointer=prev;
-
 #ifdef PROFILING
   {
     /* We must update the profiling info of the previous frame
@@ -2232,10 +2229,10 @@ void unlink_previous_frame(void)
   Pike_fp = prev->next;
   current->next=Pike_interpreter.frame_pointer;
 
-  frame_unlink(prev);
-
   if (--prev->refs <= 0) {
       really_free_pike_frame(prev);
+  } else {
+      frame_unlink(prev);
   }
 
   /* Hook our frame again. */
