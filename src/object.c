@@ -192,8 +192,7 @@ PMOD_EXPORT void call_prog_event(struct object *o, int event)
 {
   int e;
   struct program *p=o->prog;
-  struct pike_frame *pike_frame=0;
-  int frame_pushed = 0;
+  struct pike_frame *frame=NULL;
 
   /* call event handlers */
   for(e=p->num_inherits-1; e>=0; e--)
@@ -201,26 +200,22 @@ PMOD_EXPORT void call_prog_event(struct object *o, int event)
     struct program *prog = p->inherits[e].prog;
     if(prog->event_handler)
     {
-      if( !frame_pushed )
+      if( !frame )
       {
-        pike_frame = frame_init();
-        frame_setup_builtin(pike_frame, o, p);
-	frame_pushed = 1;
+        frame = frame_init();
+        frame_setup_builtin(frame, o, p);
       }
-      frame_prepare_builtin(pike_frame, p->inherits + e, 0);
+      frame_prepare_builtin(frame, p->inherits + e, 0);
       prog->event_handler(event);
     }
   }
-  if( frame_pushed )
-    frame_pop(pike_frame);
+  if( frame )
+    frame_pop(frame);
 }
 
 PMOD_EXPORT void call_c_initializers(struct object *o)
 {
-  int e;
   struct program *p=o->prog;
-  struct pike_frame *pike_frame=0;
-  int frame_pushed = 0;
 
   /* NOTE: This function is only called for objects straight after
    *       low_clone(), or after an explicit xcalloc(), which implies
