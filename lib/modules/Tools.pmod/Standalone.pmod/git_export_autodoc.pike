@@ -208,6 +208,12 @@ void get_refs(string git_dir, mapping(string:string) refs, int|void is_src)
 	  !has_prefix(ref_name, "refs/notes/source_revs")) continue;
     }
     if (ref_name == "refs/heads/HEAD") continue;
+    if (has_prefix(ref_name, "refs/heads/") &&
+	(sizeof(ref_name/"/") != 3)) {
+      // Avoid issues with rebased branches by only
+      // extracting from the main branches.
+      continue;
+    }
     refs[ref_name] = fields[0];
   }
 }
