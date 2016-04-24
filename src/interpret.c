@@ -3572,6 +3572,8 @@ void frame_execute(const struct pike_frame * frame) {
 #ifdef PIKE_DEBUG
     frame_check_all(frame);
     assert(frame == Pike_fp);
+    assert(frame->type != FRAME_FREE);
+    assert(frame->type != FRAME_BUILTIN);
 #endif
 
     FAST_CHECK_THREADS_ON_CALL();
@@ -3633,14 +3635,8 @@ void frame_execute(const struct pike_frame * frame) {
         o_cast(type, t);
         break;
     }
-    case FRAME_BUILTIN:
-        Pike_fatal("Cannot execute builtin frame.\n");
     default:
-#ifdef PIKE_DEBUG
-        Pike_fatal("trying to execute uninitialized frame.\n");
-#else
         UNREACHABLE(return);
-#endif
     }
 
 #ifdef PIKE_DEBUG
@@ -3761,6 +3757,8 @@ struct pike_frame * frame_return(struct pike_frame *frame) {
 #ifdef PIKE_DEBUG
     frame_check_all(Pike_fp);
     assert (Pike_fp == frame);
+    assert (frame->type != FRAME_FREE);
+    assert (frame->type != FRAME_BUILTIN);
 #endif
 
     if (frame->refs > 1) {
@@ -3769,8 +3767,13 @@ struct pike_frame * frame_return(struct pike_frame *frame) {
 
         new_frame->refs = 1;
 
-        if (new_frame->current_object) add_ref(new_frame->current_object);
-        if (new_frame->current_program) add_ref(new_frame->current_program);
+#ifdef PIKE_DEBUG
+        assert (frame->current_object);
+        assert (frame->current_program);
+#endif
+        if (new_frame->scope) add_ref(new_frame->scope);
+        add_ref(new_frame->current_object);
+        add_ref(new_frame->current_program);
 
         frame->refs --;
 
