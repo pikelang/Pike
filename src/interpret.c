@@ -3405,6 +3405,13 @@ void frame_setup_from_fun(struct pike_frame * frame, struct object *o, unsigned 
         Pike_error("Unknown identifier type.\n");
     }
 
+    /* NOTE: there is no need to call free here, since
+     * these references have been added in the same place
+     */
+    if (frame->current_program)
+        sub_ref(frame->current_program);
+    if (frame->current_object)
+        sub_ref(frame->current_object);
     add_ref(frame->current_program = p);
     add_ref(frame->current_object = o);
     frame->ident = ref->identifier_offset;
