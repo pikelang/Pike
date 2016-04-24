@@ -2833,7 +2833,7 @@ void slow_check_stack(void)
 	f->locals > &(Pike_interpreter.evaluator_stack[Pike_stack_size]))
       Pike_fatal("Local variable pointer points to Finspång.\n");
 
-      if(f->args < 0 || f->args > Pike_stack_size)
+      if(f->args > Pike_stack_size)
 	Pike_fatal("FEL FEL FEL! HELP!! (corrupted pike_frame)\n");
     }
   }
