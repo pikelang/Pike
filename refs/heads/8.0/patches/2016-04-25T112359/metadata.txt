@@ -1,4 +1,4 @@
-subject: Pike 8.0: Multiple fixes:
+subject: Pike 8.0: Standards.X509 root cert fixes
 from: e08cc45ce41d3b747a2f3f500fd19ab6cc163aff
 to: f1e001c80ffb2d4b55434bf388050977c25b132b
 originator: wellhardh@roxen.com
