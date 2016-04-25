@@ -390,6 +390,15 @@ test_compile_any([[
   }
 ]])
 
+test_compile_any([[
+  mixed foo()
+  {
+    array a;
+    array b = a->f("b")?->b;
+    return b;
+  }
+]])
+
 define(test_string_range,[[
     test_any([[
         string s = (string) ({ $1, $1 });

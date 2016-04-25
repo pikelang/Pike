@@ -6764,7 +6764,7 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
   while(array_cnt--) {
     push_type(PIKE_T_ARRAY);
   }
-  res = pop_type();
+  res = pop_unfinished_type();
 
 #ifdef PIKE_DEBUG
   if (l_flag>2) {
