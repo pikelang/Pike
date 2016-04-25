@@ -1,0 +1,31 @@
+subject: Pike 8.0: Multiple fixes:
+from: e08cc45ce41d3b747a2f3f500fd19ab6cc163aff
+to: f1e001c80ffb2d4b55434bf388050977c25b132b
+originator: wellhardh@roxen.com
+depends: 2016-04-22T141034
+restart: true
+
+Multiple fixes:
+
+  * Standards.X509 [MacOS X]: Try a few more keychain files.
+    
+    It seems the files "X509Anchors" and "X509Certificates" are obsolete,
+    and have been replaced by "SystemRootCertificates.keychain" and
+    "SystemCACertificates.keychain".
+    
+    Also makes sure to validate the certificates from Apple.Keychain.
+
+  * Standards.X509: Added X509_VALIDATION_DEBUG.
+    
+    The above macro is intended to be used to debug why certificates
+    fail to validate, without drowning in other debug.
+    
+    Also adds some more stuff to TBSCertificate()->_sprintf().
+
+  * Apple.Keychain: Don't validate the certificates here.
+    
+    Many of the certificates in the default keychain files are
+    expired or unsuitable for use with TLS, but may be useful
+    for other stuff, so leave it to the user to perform validation.
+    
+    Also improves the parser and diagnostics somewhat.
