@@ -1,0 +1,3 @@
+Modified files:
+  pike/lib/modules/Apple.pmod/Keychain.pike
+  pike/lib/modules/Standards.pmod/X509.pmod
