@@ -266,9 +266,9 @@ static int low_count_args(node *n)
   case F_APPLY:
     if(CAR(n)->token == F_CONSTANT &&
        TYPEOF(CAR(n)->u.sval) == T_FUNCTION &&
-       SUBTYPEOF(CAR(n)->u.sval) == FUNCTION_BUILTIN &&
-       n->type == void_type_string)
-      return 0;
+       SUBTYPEOF(CAR(n)->u.sval) == FUNCTION_BUILTIN) {
+      return !pike_types_le(n->type, void_type_string);
+    }
     return 1;
 
   case F_RANGE_FROM_BEG:

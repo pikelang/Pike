@@ -197,6 +197,7 @@ test_any([[
 test_do( add_constant("real_random") )
 
 test_do([[
+#pragma no_deprecation_warnings
 mapping(string:int) states = ([]);
 
   void get_state ()
@@ -209,6 +210,7 @@ mapping(string:int) states = ([]);
   };
 
   get_state();
+#pragma deprecation_warnings
 ]])
 
 END_MARKER

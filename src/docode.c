@@ -1964,9 +1964,7 @@ static int do_docode2(node *n, int flags)
 	      POP_AND_DONT_CLEANUP;
 	    }
 	  }
-	  if(n->type == void_type_string)
-	    return 0;
-	  return 1;
+	  return !pike_types_le(n->type, void_type_string);
 	}else{
 	  if(CAR(n)->u.sval.u.object == Pike_compiler->fake_object)
 	    return do_lfun_call(SUBTYPEOF(CAR(n)->u.sval), CDR(n));
