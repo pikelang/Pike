@@ -196,4 +196,19 @@ test_any([[
 
 test_do( add_constant("real_random") )
 
+test_do([[
+mapping(string:int) states = ([]);
+
+  void get_state ()
+  {
+    // Something in the following code confuses the runtime.
+    random_seed(time(1));
+    int i = random(65535);
+    // The cast complains about casting a mapping.
+    if (states[(string) i]) i = random(65535);
+  };
+
+  get_state();
+]])
+
 END_MARKER
