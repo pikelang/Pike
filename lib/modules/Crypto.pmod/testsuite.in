@@ -417,7 +417,10 @@ cond_resolv( Crypto.$1.name,[[
   ]], Crypto.$1->block_size() )
   test_any([[
     object o=Crypto.$1();
+    function real_random_string = random_string;
+    add_constant("random_string", Random.Deterministic(1234)->random_string);
     string k=o->make_key();
+    add_constant("random_string", real_random_string);
     o=Crypto.$1();
     o->set_encrypt_key(k);
     string c = o->crypt("A"*o->block_size());
