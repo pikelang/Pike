@@ -1964,6 +1964,7 @@ static int do_docode2(node *n, int flags)
 	      POP_AND_DONT_CLEANUP;
 	    }
 	  }
+	  if (!n->type) fix_type_field(n);
 	  return !pike_types_le(n->type, void_type_string);
 	}else{
 	  if(CAR(n)->u.sval.u.object == Pike_compiler->fake_object)

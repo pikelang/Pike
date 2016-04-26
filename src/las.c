@@ -267,6 +267,7 @@ static int low_count_args(node *n)
     if(CAR(n)->token == F_CONSTANT &&
        TYPEOF(CAR(n)->u.sval) == T_FUNCTION &&
        SUBTYPEOF(CAR(n)->u.sval) == FUNCTION_BUILTIN) {
+      if (!n->type) fix_type_field(n);
       return !pike_types_le(n->type, void_type_string);
     }
     return 1;
