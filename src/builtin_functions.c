@@ -8172,6 +8172,10 @@ PMOD_EXPORT void f_transpose(INT32 args)
  *!       @[fun] is used as a function like above, i.e. the
  *!       @[lfun::`()] method in it is called.
  *!
+ *!     @item array
+ *!       Each element of the @[fun] array will be called for each
+ *!       element of @[arr].
+ *!
  *!     @item multiset
  *!     @item mapping
  *!       @[fun] is indexed with each element. The result of that is
