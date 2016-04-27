@@ -1658,4 +1658,11 @@ test_false(([Val.true: 1])[Val.false])
 test_true(([Val.false: 1])[Val.false])
 test_false(([Val.true: 1])[Val.false])
 
+test_any([[
+  function a = lambda(string x) { return x+"a"; };
+  function b = lambda(string x) { return x+"b"; };
+  function q = Function.composite(a, b);
+  return map("123"/1, q)*"-";
+]], "1ba-2ba-3ba")
+
 END_MARKER

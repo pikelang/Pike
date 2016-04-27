@@ -130,3 +130,22 @@ void call_callback(function f,mixed ... args)
 }
 
 private function handle_error = master()->handle_error;
+
+//! Creates a composite function of the provided functions. The
+//! composition function of f() and g(), q(x)=f(g(x)), is created by
+//! @expr{function q = Function.composite(f, g);@}.
+//!
+//! @example
+//! @code
+//!  map(input/",",
+//!      Function.composite(String.trim_all_whites, upper_case));
+//! @endcode
+function composite(function ... f)
+{
+  return lambda(mixed args)
+         {
+           for(int i; i<sizeof(f); i++)
+             args = f[-i-1](args);
+           return args;
+         };
+}
