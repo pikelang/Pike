@@ -13,23 +13,4 @@ Standards.ASN1.Types.Identifier pkcs_hash_id()
   return Standards.PKCS.Identifiers.sha384_id;
 }
 
-//! @module HMAC
-
-//! @ignore
-protected class _HMAC
-{
-//! @endignore
-
-  inherit ::this_program;
-
-  //! JWS algorithm identifier.
-  //!
-  //! @seealso
-  //!   @rfc{7518:3.1@}
-  constant jwa = "HS384";
-
-//! @ignore
-}
-//! @endignore
-
-//! @endmodule HMAC
+protected constant hmac_jwa_id = "HS384";
