@@ -771,7 +771,7 @@ class PKCS1_5State
     return raw_verify(s, Gmp.mpz(sign, 256));
   }
 
-  //! Signs the @[message] with a JOSE JWS RSASSA-PSS signature using hash
+  //! Signs the @[message] with a JOSE JWS RSASSA-PKCS-v1.5 signature using hash
   //! algorithm @[h].
   //!
   //! @param message
@@ -821,7 +821,7 @@ class PKCS1_5State
     return sprintf("%s.%s", tbs, MIME.encode_base64url(raw));
   }
 
-  //! Verify and decode a JOSE JWS RSASSA-PSS signed value.
+  //! Verify and decode a JOSE JWS RSASSA-PKCS-v1.5 signed value.
   //!
   //! @param jws
   //!   A JSON Web Signature as returned by @[jose_sign()].
