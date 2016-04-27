@@ -2935,7 +2935,7 @@ static void insert_current_minor(struct cpp *this,
 
 /*! @decl int(1..) __COUNTER__
  *! This define contains a unique counter (unless it has been expanded
- *! Inte.NATIVE_MAX times) represented as an integer.
+ *! Int.NATIVE_MAX times) represented as an integer.
  *!
  */
 static void insert_current_counter(struct cpp *UNUSED(this),
