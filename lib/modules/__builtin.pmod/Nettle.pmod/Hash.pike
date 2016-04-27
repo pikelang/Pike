@@ -86,12 +86,25 @@ variant string(8bit) hash(Stdio.File|Stdio.Buffer|String.Buffer|System.Memory so
 //! @seealso
 //!   @[Crypto.HMAC]
 
+protected constant hmac_jwa_id = "";
+
 //! @ignore
-protected class _HMAC
+private class _HMAC
 {
 //! @endignore
 
   inherit .MAC;
+
+  //! JWS algorithm identifier.
+  //!
+  //! @seealso
+  //!   @rfc{7518:3.1@}
+  string `jwa()
+  {
+    if( hmac_jwa_id=="" )
+      return 0;
+    return hmac_jwa_id;
+  }
 
   int(0..) digest_size()
   {
