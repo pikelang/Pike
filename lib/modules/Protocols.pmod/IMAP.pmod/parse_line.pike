@@ -1,6 +1,4 @@
-/* parse_line.pike
- *
- */
+//! parse_line.pike
 
 #pike __REAL_VERSION__
 
@@ -31,7 +29,7 @@ int eolp()
 }
 #endif
 
-// Returns -1 on error. All valid numbers ar non-negative.
+// Returns -1 on error. All valid numbers are non-negative.
 int get_number()
 {
   skip_whitespace();
@@ -133,7 +131,7 @@ string|object get_astring()
   }
 }
 
-/* Returns a set object. */
+//! Returns a set object.
 object get_set()
 {
   string atom = get_atom();
@@ -143,13 +141,12 @@ object get_set()
   return .types.imap_set()->init(atom);
 }
 
-/* Parses an object that can be a string, an atom (possibly with
- * options in brackets) or a list.
- *
- * eol can be 0, meaning no end of line or list expected,
- * a positive int, meaning a character (e.g. ')' or ']' that terminates the list,
- * or -1, meaning that the list terminates at end of line.
- */
+//! Parses an object that can be a string, an atom (possibly with
+//! options in brackets) or a list.
+//!
+//! eol can be 0, meaning no end of line or list expected,
+//! a positive int, meaning a character (e.g. ')' or ']' that terminates the list,
+//! or -1, meaning that the list terminates at end of line.
 mapping get_token(int eol, int accept_options)
 {
   skip_whitespace();
@@ -185,7 +182,7 @@ mapping get_token(int eol, int accept_options)
   }
 }
 
-/* Reads a <start.size> suffix */
+//! Reads a <start.size> suffix
 mapping get_range(mapping atom)
 {
   if (!sizeof(buffer) || (buffer[0] != '<'))
@@ -210,9 +207,8 @@ mapping get_range(mapping atom)
   return atom;
 }
 
-/* Get a list of atoms.
- * Primarily intended for use by STORE for the flags argument.
- */
+//! Get a list of atoms.
+//! Primarily intended for use by STORE for the flags argument.
 array(string) get_flag_list()
 {
   skip_whitespace();
@@ -247,15 +243,14 @@ array(string) get_flag_list()
 }
 
 
-/* Parses an object that (recursivly) can contain atoms (possible
- * with options in brackets) or lists. Note that strings are not
- * accepted, as it is a little difficult to wait for the
- * continuation of the request.
- *
- * FIXME: This function is used to read fetch commands. This breaks
- * rfc-2060 compliance, as the names of headers can be represented
- * as string literals. */
-
+//! Parses an object that (recursivly) can contain atoms (possible
+//! with options in brackets) or lists. Note that strings are not
+//! accepted, as it is a little difficult to wait for the
+//! continuation of the request.
+//!
+//! FIXME: This function is used to read fetch commands. This breaks
+//! rfc-2060 compliance, as the names of headers can be represented
+//! as string literals.
 mapping get_simple_list(int max_depth)
 {
   skip_whitespace();
@@ -314,16 +309,15 @@ array do_parse_simple_list(int max_depth, int terminator)
   }
 }
 
-/* Reads an atom, optionally followd by a list enclosed in square
- * brackets. Naturally, the atom itself cannot contain any brackets.
- *
- * Returns a mapping
- *    type : "atom",
- *    atom : name,
- *    raw : name[options]
- *    options : parsed options,
- *    range : ({ start, size })
- */
+//! Reads an atom, optionally followd by a list enclosed in square
+//! brackets. Naturally, the atom itself cannot contain any brackets.
+//!
+//! Returns a mapping
+//!    type : "atom",
+//!    atom : name,
+//!    raw : name[options]
+//!    options : parsed options,
+//!    range : ({ start, size })
 mapping get_atom_options(int max_depth)
 {
   string atom = get_atom(1);

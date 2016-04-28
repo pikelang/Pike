@@ -1,7 +1,6 @@
-/* IMAP.server
- *
- * Handles the server side of the protocol.
- */
+//! IMAP.server
+//!
+//! Handles the server side of the protocol.
 
 #pike __REAL_VERSION__
 

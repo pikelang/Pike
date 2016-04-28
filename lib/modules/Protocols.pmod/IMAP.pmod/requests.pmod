@@ -1,5 +1,4 @@
-/* IMAP.requests
- */
+//! IMAP.requests
 
 #pike __REAL_VERSION__
 

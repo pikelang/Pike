@@ -1,6 +1,4 @@
-/* IMAP.types
- *
- */
+//! IMAP.types
 
 #pike __REAL_VERSION__
 

@@ -1,7 +1,4 @@
-/* parser.pike
- *
- * Continuation based imap parser.
- */
+//! Continuation based imap parser.
 
 #pike __REAL_VERSION__
 
@@ -16,7 +13,7 @@ void create(object l)
 }
 
 /* These functions are all called directly or indirectly by the
- * request enging in imap_server.pike. When a complete value is ready,
+ * request engine in imap_server.pike. When a complete value is ready,
  * they call a continuation function given as an argument. They all
  * return an action mapping, saying what to do next. */
 

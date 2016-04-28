@@ -1,5 +1,4 @@
-/* imap_server.pike
- */
+//! imap_server.pike
 #pike __REAL_VERSION__
 
 constant unauth_commands =
