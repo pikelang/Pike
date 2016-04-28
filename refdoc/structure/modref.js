@@ -206,7 +206,10 @@ if (document.addEventListener) {
 // During a session each generated menu is cached locally in a sessionStorage
 // (if available). This one handles that.
 var cacheFactory = (function() {
-  var cache = window.sessionStorage;
+  // Don't use cache if the page isn't served through a server.
+  // The cache seems buggy as hell when the pages are view directly from
+  // the file system.
+  var cache = document.location.hostname && window.sessionStorage;
   var m, isChecked = false;
 
   function init() {
@@ -214,28 +217,28 @@ var cacheFactory = (function() {
       return true;
     }
 
+    if (!cache) {
+      return false;
+    }
+
     if (isChecked && !m) {
       return false;
     }
 
-    if (cache) {
-      m = cache.getItem(PikeDoc.current.link);
-      isChecked = true;
-      if (m) {
-        m = JSON.parse(m);
-        var ok = validateDate(m.time);
-        if (!ok) {
-          isChecked = false;
-          cache.removeItem(PikeDoc.current.link);
-        }
-        return ok;
-      }
-      return false;
-    }
-
+    m = cache.getItem(PikeDoc.current.link);
     isChecked = true;
 
+    if (m) {
+      m = JSON.parse(m);
+      var ok = validateDate(m.time);
+      if (!ok) {
+        isChecked = false;
+        cache.removeItem(PikeDoc.current.link);
+      }
+      return ok;
+    }
     return false;
+
   }
 
   function validateDate(time) {
