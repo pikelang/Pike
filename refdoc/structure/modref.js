@@ -5,7 +5,7 @@
 var PikeDoc = null;
 
 if (!window.console) {
-  window.console = {log:function(){},error:function(){}};
+  window.console = { log: function(){}, error: function(){} };
 }
 
 /*
@@ -23,6 +23,8 @@ var stickyScrollBreak = 70,
     navbar, innerNavbar,
     // Content wrapper, HTMLElement
     content,
+    // The page footer
+    footer,
     // The height of the navbar
     navbarHeight,
     // The height of the window
@@ -66,7 +68,8 @@ function onPageLoad() {
   maybeHideNavbox();
   navbar       = document.getElementsByClassName('navbar')[0];
   content      = document.getElementsByClassName('content')[0];
-  footerHeight = document.getElementsByTagName('footer')[0].offsetHeight;
+  footer       = document.getElementsByTagName('footer')[0];
+  footerHeight = footer.offsetHeight;
   windowHeight = window.outerHeight;
   headerHeight = document.getElementsByTagName('header')[0].offsetHeight;
   navbarHeight = windowHeight - content.offsetTop - footerHeight;
@@ -110,8 +113,7 @@ function onPageScroll() {
     }
     // ... or else set to sticky.
     iAmSticky = true;
-    content.style.minHeight = (windowHeight - headerHeight -
-                               footerHeight + 5) + 'px';
+    content.style.minHeight = (windowHeight - headerHeight) + 'px';
     navbar.classList.add('sticky');
   }
   // If scrollY is less than the sticky position ...
@@ -221,7 +223,12 @@ var cacheFactory = (function() {
       isChecked = true;
       if (m) {
         m = JSON.parse(m);
-        return validateDate(m.time);
+        var ok = validateDate(m.time);
+        if (!ok) {
+          isChecked = false;
+          cache.removeItem(PikeDoc.current.link);
+        }
+        return ok;
       }
       return false;
     }
@@ -233,9 +240,10 @@ var cacheFactory = (function() {
 
   function validateDate(time) {
     var t = PikeDoc.PUBDATE;
+    // window.console.log('PUBDATE: ', t);
     if (!t) {
       t = new Date();
-      t.setTime(t.getTime() - (3600*1000)*48);
+      t.setTime(t.getTime() - (3600*1000)*24);
       return t < new Date(time);
     }
 
@@ -261,7 +269,7 @@ var cacheFactory = (function() {
   }
 
   function setMenu() {
-    if (m) {
+    if (m && validateDate(m.time)) {
       innerNavbar.innerHTML = m.value;
     }
   }
@@ -446,7 +454,9 @@ PikeDoc = (function() {
 
   var jsMap = {};
   var scriptQueue = 0;
+
   function loadScript(link, namespace, inherits) {
+    // window.console.log('load: ', link);
     if (cacheFactory.hasCache()) {
       return;
     }
@@ -531,6 +541,18 @@ PikeDoc = (function() {
   /* Render the left navigation bar. */
   function navbar() {
     var s = createElem('div', { class: 'sidebar' });
+    // If the cache already has set the menu, then clear it. The cache is
+    // almost certainly run before this method.
+    var old = innerNavbar.querySelectorAll('.sidebar');
+    var i, tmp;
+    if (old.length) {
+      // window.console.log('Clear cached menu and regenerate', old);
+      for (i = 0; i < old.length; i++) {
+        tmp = old[i];
+        tmp.parentNode.removeChild(tmp);
+      }
+    }
+
     innerNavbar.appendChild(s);
 
     lowNavbar(s, 'Modules',    types.module,    '');
@@ -579,8 +601,15 @@ PikeDoc = (function() {
 
       s.parentNode.insertBefore(el, s);
 
+      var el2 = createElem('script', {
+        src: '/assets/js/local/disqus.min.js',
+        async: true
+      });
+
+      s.parentNode.insertBefore(el2, s);
+
       var f = createElem('link', {
-        href: '/assets/img/favicon.png?v=2',
+        href: '/assets/img/favicon.png',
         rel: 'shortcut icon'
       });
 

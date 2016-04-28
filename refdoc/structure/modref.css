@@ -352,7 +352,7 @@ ul.multicol a {
 }
 ul.multicol a:hover {
 	text-decoration: none;
-	font-weight: bold;
+	// font-weight: bold;
 	-webkit-backface-visibility: hidden;
 }
 
