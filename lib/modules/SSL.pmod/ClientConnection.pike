@@ -217,6 +217,11 @@ protected Packet client_hello(string(8bit)|void server_name,
     return buf;
   };
 
+  // NB: WebSphere Application Server 7.0 doesn't like having an
+  //     empty extension last, so don't put any such extensions
+  //     in the list here.
+  //     cf https://bugs.chromium.org/p/chromium/issues/detail?id=363583#c17
+
   if(sizeof(extensions) && (version >= PROTOCOL_TLS_1_0))
     struct->add_hstring(extensions, 2);
 
