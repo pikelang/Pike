@@ -245,8 +245,7 @@ var cacheFactory = (function() {
     var t = PikeDoc.PUBDATE;
     // window.console.log('PUBDATE: ', t);
     if (!t) {
-      t = new Date();
-      t.setTime(t.getTime() - (3600*1000)*24);
+      t.setTime(Date.now() - (3600*1000)*24);
       return t < new Date(time);
     }
 
@@ -263,7 +262,7 @@ var cacheFactory = (function() {
   function store() {
     if (cache) {
       var obj = {
-        time: new Date().getTime(),
+	time: Date.now(),
         value: innerNavbar.innerHTML
       };
 
