@@ -56,8 +56,10 @@ Sequence pkcs_algorithm_identifier();
 //! See RFC 5280 section 4.1.2.7.
 Sequence pkcs_public_key();
 
-//! Signs the @[message] with a JOSE JWS signature using hash
-//! algorithm @[h].
+// JOSE JWS (RFC 7515).
+
+//! Signs the @[message] with a JSON JWS signature using hash
+//! algorithm @[h] and JOSE headers @[headers].
 //!
 //! @param message
 //!   Message to sign.
@@ -68,12 +70,17 @@ Sequence pkcs_public_key();
 //!
 //! @param h
 //!   Hash algorithm to use. Valid hashes depend on the signature
-//!   algorithm.
+//!   algorithm. The default value depends on the signature algorithm.
 //!
 //! @returns
 //!   Returns the signature on success, and @expr{0@} (zero)
 //!   on failure (typically that either the hash algorithm
 //!   is invalid for this signature algorithm),
+//!
+//! @note
+//!   The default implementation returns @expr{0@} for all parameters,
+//!   and can thus serve as a fallback for signature algorithms that
+//!   don't support or aren't supported by JWS (eg @[Crypto.DSA]).
 //!
 //! @seealso
 //!   @[jose_decode()], @[pkcs_sign()], @rfc{7515@}
@@ -97,6 +104,11 @@ string(7bit) jose_sign(string(8bit) message,
 //!     @item string(8bit) 1
 //!       The signed message.
 //!   @endarray
+//!
+//! @note
+//!   The default implementation returns @expr{0@} for all parameters,
+//!   and can thus serve as a fallback for signature algorithms that
+//!   don't support or aren't supported by JWS (eg @[Crypto.DSA]).
 //!
 //! @seealso
 //!   @[jose_sign()], @[pkcs_verify()], @rfc{7515@}
