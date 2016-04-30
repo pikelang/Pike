@@ -245,6 +245,8 @@ var cacheFactory = (function() {
     var t = PikeDoc.PUBDATE;
     // window.console.log('PUBDATE: ', t);
     if (!t) {
+      t = new Date();
+      // Cache for one day
       t.setTime(Date.now() - (3600*1000)*24);
       return t < new Date(time);
     }
