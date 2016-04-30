@@ -39,7 +39,8 @@ low_module_modref:
 	@mkdir $(DESTDIR)modref/images
 	-cp $(BUILDDIR)/doc_build/images/* $(DESTDIR)modref/images
 	@for file in pike-logo.svg pike-logo.png next.gif prev.gif unit.gif \
-          pike_line_left.gif pike_line_middle.gif pike_line_right.gif ; do \
+          pike_line_left.gif pike_line_middle.gif pike_line_right.gif \
+          eye-slash.svg; do \
 	  cp src_images/$$file $(DESTDIR)modref/images/ ; done
 
 low_modref:
@@ -52,7 +53,8 @@ low_modref:
 	@test -d $(DESTDIR)modref/images || mkdir $(DESTDIR)modref/images
 	-cp $(BUILDDIR)/doc_build/images/* $(DESTDIR)modref/images
 	@for file in pike-logo.svg pike-logo.png next.gif prev.gif unit.gif \
-          pike_line_left.gif pike_line_middle.gif pike_line_right.gif ; do \
+          pike_line_left.gif pike_line_middle.gif pike_line_right.gif \
+          eye-slash.svg; do \
 	  cp src_images/$$file $(DESTDIR)modref/images/ ; done
 
 pelix_modref: $(BUILDDIR)/modref.xml structure/pelix_modref.html \

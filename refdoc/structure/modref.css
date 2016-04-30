@@ -262,7 +262,33 @@ em {
 	padding-bottom: 75px;
 }
 
-.navbar .sidebar a { display: block; }
+.navbar .sidebar {
+	opacity: 1;
+	transition: opacity .5s ease-out;
+}
+.navbar .sidebar.init {
+	opacity: 0;
+}
+
+.navbar .sidebar a { display: block; text-decoration: none; }
+
+.sidebar a.mod-protected {
+	color: #999;
+}
+
+.sidebar .mod-protected::before {
+	content: ' ';
+	display: inline-block;
+	opacity: .4;
+	width: 15px;
+	height: 15px;
+	margin-right: 5px;
+	margin-top: -1px;
+	vertical-align: middle;
+	background: url(images/eye-slash.svg) 0 50% no-repeat;
+	background-size: contain;
+	text-decoration: none;
+}
 
 .content {
 	width: 75%;

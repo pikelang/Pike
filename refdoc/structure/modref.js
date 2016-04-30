@@ -1,5 +1,5 @@
 /* jshint undef: true, unused: true */
-/* globals window,document */
+/* globals window, document, requestAnimationFrame */
 /* exported PikeDoc */
 
 var PikeDoc = null;
@@ -262,7 +262,7 @@ var cacheFactory = (function() {
   function store() {
     if (cache) {
       var obj = {
-	time: Date.now(),
+	      time: Date.now(),
         value: innerNavbar.innerHTML
       };
 
@@ -272,7 +272,11 @@ var cacheFactory = (function() {
 
   function setMenu() {
     if (m && validateDate(m.time)) {
+      //window.console.log('Set menu');
       innerNavbar.innerHTML = m.value;
+      requestAnimationFrame(function() {
+        innerNavbar.querySelector('.sidebar').classList.remove('init');
+      });
     }
   }
 
@@ -429,7 +433,7 @@ PikeDoc = (function() {
     }
     var s = new Symbol(name);
     symbols.push(s);
-    // console.log('   + Register symbol: ', name);
+    //window.console.log('   + Register symbol: ', name);
     symbolsMap[name] = s;
     return s;
   }
@@ -458,7 +462,7 @@ PikeDoc = (function() {
   var scriptQueue = 0;
 
   function loadScript(link, namespace, inherits) {
-    // window.console.log('load: ', link);
+    //window.console.log('load: ', link);
     if (cacheFactory.hasCache()) {
       return;
     }
@@ -467,6 +471,7 @@ PikeDoc = (function() {
 
     // Already loaded
     if (jsMap[link]) {
+      //window.console.log('Already loaded: ', link);
       return;
     }
 
@@ -510,8 +515,9 @@ PikeDoc = (function() {
   }
 
   function lowNavbar(container, heading, nodes, suffix) {
-    if (!nodes || !nodes.length)
+    if (!nodes || !nodes.length) {
       return;
+    }
 
     var curlnk = PikeDoc.current.link;
     var adjlnk = helpers.adjustLink;
@@ -533,6 +539,14 @@ PikeDoc = (function() {
         tnode = tmp;
       }
 
+      if (n.modifiers) {
+        n.modifiers.forEach(function(mod) {
+          if (n.name !== 'create') {
+            tnode.classList.add('mod-' + mod);
+          }
+        });
+      }
+
       div.appendChild(tnode);
     });
 
@@ -542,7 +556,7 @@ PikeDoc = (function() {
 
   /* Render the left navigation bar. */
   function navbar() {
-    var s = createElem('div', { class: 'sidebar' });
+    var s = createElem('div', { class: 'sidebar init' });
     // If the cache already has set the menu, then clear it. The cache is
     // almost certainly run before this method.
     var old = innerNavbar.querySelectorAll('.sidebar');
@@ -571,9 +585,12 @@ PikeDoc = (function() {
   }
 
   function maybeRenderNavbar() {
-    // window.console.log('maybeRenderNavbar(', isAllLoaded, isDomReady, scriptQueue, ')');
+    //window.console.log('maybeRenderNavbar(', isAllLoaded, isDomReady, scriptQueue, ')');
     if (isAllLoaded && isDomReady && scriptQueue === 0) {
       navbar();
+      requestAnimationFrame(function() {
+        innerNavbar.querySelector('.sidebar').classList.remove('init');
+      });
     }
   }
 

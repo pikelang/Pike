@@ -122,6 +122,7 @@ class Node
   array(Node) operator_children = ({ });
   array(array(string|Node)) inherits = ({});
   array(Node) children = ({});
+  array(string) modifiers = ({});
 
   Node parent;
 
@@ -131,10 +132,38 @@ class Node
 
   void create(string _type, string _name, string _data, void|Node _parent)
   {
+    //if (_type == "class" && search(_data, "<modifiers>") > -1) {
+    //  werror("\n\n\n----\n%s\n-------\n\n\n", _data);
+    //}
+    if ((< "method", "enum", "variable", "constant" >)[_type]  &&
+        search(_data, "<modifiers>") > -1)
+    {
+      //werror("%s:%s: %s\n", _type, _name, _data);
+      Parser.HTML pp = Parser.HTML();
+      function cb_modifier = lambda (Parser.HTML p, mapping m, string cc) {
+        modifiers += ({ p->tag_name() });
+        return ({ "" });
+      };
+
+      pp->add_containers(([
+        "modifiers": lambda (Parser.HTML p, mapping a, string cc) {
+          pp->clear_containers();
+          pp->add_tags(([
+            "protected" : cb_modifier,
+            "private "  : cb_modifier,
+            "static"    : cb_modifier
+          ]));
+          return cc;
+        }
+      ]));
+      pp->finish(_data);
+    }
+
     if(!_type || !_name) throw( ({ "No type or name\n", backtrace() }) );
     type = _type;
     name = _name;
     parent = _parent;
+
     data = get_parser()->finish( _data )->read();
 
     string path = raw_class_path();
@@ -205,6 +234,7 @@ class Node
 
   protected string parse_node(Parser.HTML p, mapping m, string c) {
     if(!m->name) error("Unnamed %O %O\n", p->tag_name(), m);
+
     this[p->tag_name()+"_children"] +=
       ({ Node( p->tag_name(), m->name, c, this ) });
     return "";
@@ -307,6 +337,7 @@ class Node
       case "inherit":
         string path = raw_class_path();
         if(sizeof(path) && (path[-1] != ':')) path += ".";
+
         if(!m["homogen-name"]) {
           Parser.HTML()->add_tags
             ( ([ "constant":
@@ -325,7 +356,7 @@ class Node
                      string name = Parser.parse_html_entities(m->name);
                      add_ref(path, "inherit", name, "", this, c);
                    }
-                 },
+                 }
             ]) )->finish(c);
         }
         else
@@ -674,7 +705,8 @@ class Node
       map(nodes,
           lambda(Node n) {
             return ([ "name":n->name,
-                      "link":n->make_filename() ]);
+                      "link":n->make_filename(),
+                      "modifiers":sizeof(n->modifiers) && n->modifiers || Val.null ]);
           });
     sort(a->name, a);
     return sprintf(".addChildren('%s', %s)\n", name, encode_json(a));

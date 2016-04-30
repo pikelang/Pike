@@ -99,9 +99,9 @@ string(7bit) jose_sign(string(8bit) message,
 //! @returns
 //!   Returns @expr{0@} (zero) on failure, and an array
 //!   @array
-//!     @item mapping(string(7bit):string(7bit)|int) 0
+//!     @elem mapping(string(7bit):string(7bit)|int) 0
 //!       The JOSE header.
-//!     @item string(8bit) 1
+//!     @elem string(8bit) 1
 //!       The signed message.
 //!   @endarray
 //!
