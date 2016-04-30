@@ -152,7 +152,7 @@ int decode_time(string timestr, int|void date)
 //! Converts a system time value to an appropriately formatted
 //! date-only spec for the database.
 //!
-//! @param t
+//! @param time
 //!   Time to encode.
 //!
 //! The default implementation returns an ISO 9601 date.
