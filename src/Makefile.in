@@ -1217,7 +1217,7 @@ $(SRCDIR)/language.c_src $(SRCDIR)/language.h_src: $(SRCDIR)/language.yacc
 	mv $(SRCDIR)/y.tab.h $(SRCDIR)/language.h_src
 
 $(SRCDIR)/language.c: $(SRCDIR)/language.c_src
-	sed -e 's/YY_COUNT_TYPE/@YY_COUNT_TYPE@/' \
+	@sed -e 's/YY_COUNT_TYPE/@YY_COUNT_TYPE@/' \
 	    -e 's/YY_FROM_CONST/@YY_FROM_CONST@/' \
 	    -e 's/short[ 	]*int[ 	]/\/* short *\/ int /g' \
 	    -e 's/(short[ 	]*int)/(\/* short *\/ int)/g' \
