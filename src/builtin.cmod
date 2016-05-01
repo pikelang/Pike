@@ -2852,9 +2852,9 @@ PIKECLASS backtrace_frame
  *!     @member int "float_size"
  *!       The number of bits in the native floating point type.
  *!       Usually @expr{32@} or @expr{64@}.
- *!     @member int(0..1) "auto_bignum"
- *!       Present if integers larger than the native size are automatically
- *!       converted into bignums.
+ *!     @member int(1..1) "auto_bignum"
+ *!       Integers larger than the native size are now always
+ *!       automatically converted into bignums.
  *!   @endmapping
  */
 PIKEFUN mapping(string:int|string) get_runtime_info()
