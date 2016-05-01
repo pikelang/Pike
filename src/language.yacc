@@ -1302,7 +1302,7 @@ basic_type:
     TOK_FLOAT_ID                      { push_type(T_FLOAT); }
   | TOK_VOID_ID                       { push_type(T_VOID); }
   | TOK_MIXED_ID                      { push_type(T_MIXED); }
-  | TOK_AUTO_ID                       { push_type(PIKE_T_AUTO); }
+  | TOK_AUTO_ID			{ push_type(T_ZERO); push_type(PIKE_T_AUTO); }
   | TOK_STRING_ID   opt_string_width  {}
   | TOK_INT_ID      opt_int_range     {}
   | TOK_MAPPING_ID  opt_mapping_type  {}

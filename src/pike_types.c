@@ -677,8 +677,6 @@ static inline struct pike_type *debug_mk_type(unsigned INT32 type,
   case T_INT:
   case T_OBJECT:
     break;
-  case PIKE_T_AUTO:
-      break;
 
   default:
     Pike_fatal("mk_type(): Unhandled type-node: %d\n", type);
@@ -778,17 +776,6 @@ void debug_push_object_type(int flag, INT32 id)
 void debug_push_object_type_backwards(int flag, INT32 id)
 {
   push_object_type(flag, id);
-}
-
-/* used while compiling to get the actual type of the auto type. */
-void debug_push_auto_typed_type( struct pike_type *aggregate )
-{
-    copy_pike_type( *++Pike_compiler->type_stackp,
-                    mk_type(PIKE_T_AUTO,
-                            (void *)(ptrdiff_t)aggregate,
-                            NULL, 
-                            0 ) );
-
 }
 
 void debug_push_scope_type(int level)
@@ -942,6 +929,7 @@ void debug_push_type(unsigned int type)
   case T_NOT:
   case T_TYPE:
   case T_STRING:
+  case PIKE_T_AUTO:
     /* Make a new type of the top type, and put it in car. */
     *Pike_compiler->type_stackp = mk_type(type,
 					  *Pike_compiler->type_stackp, NULL,
@@ -963,7 +951,6 @@ void debug_push_type(unsigned int type)
   case T_MIXED:
   case T_VOID:
   case T_ZERO:
-  case PIKE_T_AUTO:
   case PIKE_T_UNKNOWN:
     /* Leaf type. */
     *(++Pike_compiler->type_stackp) = mk_type(type, NULL, NULL, 0);
@@ -1027,6 +1014,7 @@ void debug_pop_type_stack(unsigned int expected)
   case T_TYPE:
   case T_PROGRAM:
   case T_STRING:
+  case PIKE_T_AUTO:
     /* car */
     push_finished_type(top->car);
     break;
@@ -1041,7 +1029,6 @@ void debug_pop_type_stack(unsigned int expected)
   case T_MIXED:
   case T_VOID:
   case T_ZERO:
-  case PIKE_T_AUTO:
   case PIKE_T_UNKNOWN:
   case '0':
   case '1':
@@ -2254,7 +2241,14 @@ void simple_describe_type(struct pike_type *s)
       case T_VOID: fprintf(stderr, "void"); break;
       case T_ZERO: fprintf(stderr, "zero"); break;
       case T_MIXED: fprintf(stderr, "mixed"); break;
-      case PIKE_T_AUTO: fprintf(stderr, "auto"); break;
+      case PIKE_T_AUTO:
+	fprintf(stderr, "auto");
+	if (s->car && (s->car->type != T_ZERO)) {
+	  fprintf(stderr, "(");
+	  simple_describe_type(s->car);
+	  fprintf(stderr, ")");
+	}
+	break;
       default:
 	fprintf(stderr, "Unknown type node: %d, %p:%p",
 	       s->type, s->car, s->cdr);
@@ -2549,9 +2543,13 @@ void low_describe_type(struct string_builder *s, struct pike_type *t)
 	string_builder_strcat(s, "mapping");
       }
       break;
-   case PIKE_T_AUTO:
-       my_strcat("auto");
-       break;
+    case PIKE_T_AUTO:
+      if (t->car->type != T_ZERO) {
+	string_builder_sprintf(s, "auto(%T)", t->car);
+      } else {
+	string_builder_strcat(s, "auto");
+      }
+      break;
     default:
       {
 	string_builder_sprintf(s, "unknown code(%d)", t->type);
@@ -9091,6 +9089,7 @@ void gc_check_type (struct pike_type *t)
       case T_TYPE:
       case T_PROGRAM:
       case T_STRING:
+      case PIKE_T_AUTO:
 	debug_gc_check (t->car, " as car in a type");
 	break;
       case T_SCOPE:

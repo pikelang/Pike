@@ -5493,7 +5493,7 @@ PMOD_EXPORT int quick_map_variable(const char *name,
 int is_auto_variable_type( int variable )
 {
     struct identifier *id=ID_FROM_INT(Pike_compiler->new_program,variable);
-    if( id && id->type->type == PIKE_T_AUTO )
+    if( id && id->type && id->type->type == PIKE_T_AUTO )
         return 1;
     return 0;
 }

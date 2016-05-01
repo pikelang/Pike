@@ -3728,16 +3728,17 @@ void fix_type_field(node *n)
 
       if( t->type == PIKE_T_AUTO )
       {
-	if( t->car )
+	if( t->car != zero_type_string )
 	{
 	  /* Not the first one.. */
-	  push_auto_typed_type( or_pike_types( t->car, CAR(n)->type, 0 ) );
+	  push_finished_type( or_pike_types( t->car, CAR(n)->type, 1 ) );
 	}
 	else
 	{
 	  /* first one.. */
-	  push_auto_typed_type( CAR(n)->type );
+	  push_finished_type(CAR(n)->type);
 	}
+	push_type(PIKE_T_AUTO);
 	free_type( t );
 	t = pop_type();
 	Pike_compiler->compiler_frame->current_return_type = t;

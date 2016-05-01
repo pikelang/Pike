@@ -222,7 +222,6 @@ void debug_push_type_name(struct pike_string *name);
 INT32 extract_type_int(char *p);
 void debug_push_unfinished_type(char *s);
 void debug_push_assign_type(int marker);
-void debug_push_auto_typed_type(struct pike_type *type);
 void debug_push_finished_type(struct pike_type *type);
 void debug_push_finished_type_backwards(struct pike_type *type);
 void debug_push_scope_type(int level);
@@ -343,7 +342,6 @@ PMOD_EXPORT void set_program_id_to_id( int (*to)(int) );
 #define push_unfinished_type(S) ERROR
 #define push_assign_type(MARKER) do { debug_push_assign_type(MARKER);debug_malloc_pass(debug_peek_type_stack()); } while(0)
 #define push_finished_type(T) do { debug_push_finished_type((struct pike_type *)debug_malloc_pass(T));debug_malloc_pass(debug_peek_type_stack()); } while(0)
-#define push_auto_typed_type(T) do { debug_push_auto_typed_type((struct pike_type *)debug_malloc_pass(T));debug_malloc_pass(debug_peek_type_stack()); } while(0)
 #define push_finished_type_with_markers(T,M,MS) do { debug_push_finished_type_with_markers((struct pike_type *)debug_malloc_pass(T),M,MS);debug_malloc_pass(debug_peek_type_stack()); } while(0)
 #define push_finished_type_backwards(T) ERROR
 #else
@@ -357,7 +355,6 @@ PMOD_EXPORT void set_program_id_to_id( int (*to)(int) );
 #define push_object_type debug_push_object_type
 #define push_object_type_backwards debug_push_object_type_backwards
 #define push_scope_type debug_push_scope_type
-#define push_auto_typed_type debug_push_auto_typed_type
 #define push_type_attribute debug_push_type_attribute
 #define push_type_name debug_push_type_name
 #define push_unfinished_type debug_push_unfinished_type
