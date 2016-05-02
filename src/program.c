@@ -2040,18 +2040,22 @@ struct node_s *find_inherited_identifier(struct program_state *inherit_state,
   int id;
 
   if (inh < -1) {
-    // Unspecified inherit.
+    /* Unspecified inherit, but not inherit #0. */
     struct node_s *res = NULL;
     struct program *p = inherit_state->new_program;
+    assert(!inherit_depth);
     for (inh = 1; inh < p->num_inherits; inh++) {
-      struct node_s *n;
       if (p->inherits[inh].inherit_level != 1) continue;
-      n = find_inherited_identifier(inherit_state, inherit_depth, inh, ident);
-      if (!n) continue;
+      /* NB: We can't recurse here, as that would resolve the magic
+       *     identifiers multiple times on multiple inherit.
+       */
+      id = low_reference_inherited_identifier(inherit_state, inh, ident,
+					      SEE_PROTECTED);
+      if (id == -1) continue;
       if (res) {
-	res = mknode(F_ARG_LIST, res, n);
+	res = mknode(F_ARG_LIST, res, mkidentifiernode(id));
       } else {
-	res = n;
+	res = mkidentifiernode(id);
       }
     }
     if (res) {
@@ -2065,7 +2069,7 @@ struct node_s *find_inherited_identifier(struct program_state *inherit_state,
       id = low_reference_inherited_identifier(inherit_state, inh, ident,
 					      SEE_PROTECTED);
     } else {
-      /* this_program:: or global:: */
+      /* this_program:: (0) or global:: (-1). */
       id = really_low_find_shared_string_identifier(ident,
 						    inherit_state->new_program,
 						    SEE_PROTECTED|SEE_PRIVATE);
