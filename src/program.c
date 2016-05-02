@@ -2016,6 +2016,72 @@ PMOD_EXPORT struct program *resolve_program(struct pike_string *ident)
   return ret;
 }
 
+/**
+ * Find the identifier named ident in inherit #inh in the lexical scope
+ * given by inherit_state and inherit_depth.
+ *
+ * @param inherit_state
+ *   The program state for the program where the inherit is found.
+ *
+ * @param inherit_depth
+ *   The number of lexical levels from the currently compiling program
+ *   (ie Pike_compiler) to the one in inherit_state.
+ *
+ * @param inh
+ *   >0 Specified inherit.
+ *   =0 this_program:: or this::.
+ *   -1 global::
+ *   -2 ::
+ */
+struct node_s *find_inherited_identifier(struct program_state *inherit_state,
+                                         int inherit_depth, int inh,
+					 struct pike_string *ident)
+{
+  int id;
+
+  if (inh < -1) {
+    // Unspecified inherit.
+    struct node_s *res = NULL;
+    struct program *p = inherit_state->new_program;
+    for (inh = 1; inh < p->num_inherits; inh++) {
+      struct node_s *n;
+      if (p->inherits[inh].inherit_level != 1) continue;
+      n = find_inherited_identifier(inherit_state, inherit_depth, inh, ident);
+      if (!n) continue;
+      if (res) {
+	res = mknode(F_ARG_LIST, res, n);
+      } else {
+	res = n;
+      }
+    }
+    if (res) {
+      if (res->token == F_ARG_LIST) res = mkefuncallnode("aggregate", res);
+      return res;
+    }
+    inh = -1;
+  } else {
+    if (inh > 0) {
+      /* Specified inherit. */
+      id = low_reference_inherited_identifier(inherit_state, inh, ident,
+					      SEE_PROTECTED);
+    } else {
+      /* this_program:: or global:: */
+      id = really_low_find_shared_string_identifier(ident,
+						    inherit_state->new_program,
+						    SEE_PROTECTED|SEE_PRIVATE);
+    }
+
+    if (id != -1) {
+      if (inherit_depth > 0) {
+	return mkexternalnode(inherit_state->new_program, id);
+      }
+      return mkidentifiernode(id);
+    }
+  }
+
+  return program_magic_identifier(inherit_state, inherit_depth, inh, ident, 1);
+}
+
 /*! @decl constant this
  *!
  *! Builtin read only variable that evaluates to the current object.

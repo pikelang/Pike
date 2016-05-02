@@ -786,6 +786,9 @@ node *find_module_identifier(struct pike_string *ident,
 			     int see_inherit);
 node *resolve_identifier(struct pike_string *ident);
 PMOD_EXPORT struct program *resolve_program(struct pike_string *ident);
+node *find_inherited_identifier(struct program_state *inherit_state,
+				int inherit_depth, int inh,
+				struct pike_string *ident);
 node *program_magic_identifier (struct program_state *state,
 				int state_depth, int inherit_num,
 				struct pike_string *ident,
