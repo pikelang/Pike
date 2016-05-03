@@ -4038,27 +4038,9 @@ low_idents: TOK_IDENTIFIER
     if(Pike_compiler->last_identifier) free_string(Pike_compiler->last_identifier);
     copy_shared_string(Pike_compiler->last_identifier, $2->u.sval.u.string);
 
-    if ($1 > 0)
-      id = low_reference_inherited_identifier(inherit_state,
-					      $1,
-					      Pike_compiler->last_identifier,
-					      SEE_PROTECTED);
-    else
-      id = really_low_find_shared_string_identifier(Pike_compiler->last_identifier,
-						    inherit_state->new_program,
-						    SEE_PROTECTED|SEE_PRIVATE);
-
-    if (id != -1) {
-      if (inherit_depth > 0) {
-	$$ = mkexternalnode(inherit_state->new_program, id);
-      } else {
-	$$ = mkidentifiernode(id);
-      }
-    } else if (($$ = program_magic_identifier (inherit_state, inherit_depth, $1,
-					       Pike_compiler->last_identifier, 1))) {
-      /* All done. */
-    }
-    else {
+    $$ = find_inherited_identifier(inherit_state, inherit_depth, $1,
+				   Pike_compiler->last_identifier);
+    if (!$$) {
       if ((Pike_compiler->flags & COMPILATION_FORCE_RESOLVE) ||
 	  (Pike_compiler->compiler_pass == 2)) {
 	if (($1 >= 0) && inherit_state->new_program->inherits[$1].name) {
@@ -4086,31 +4068,14 @@ low_idents: TOK_IDENTIFIER
     if(Pike_compiler->last_identifier) free_string(Pike_compiler->last_identifier);
     copy_shared_string(Pike_compiler->last_identifier, $2->u.sval.u.string);
 
-    $$=0;
-    for(e=1;e<(int)Pike_compiler->new_program->num_inherits;e++)
-    {
-      if(Pike_compiler->new_program->inherits[e].inherit_level!=1) continue;
-      i=low_reference_inherited_identifier(0,e,$2->u.sval.u.string,SEE_PROTECTED);
-      if(i==-1) continue;
-      if($$)
-      {
-	$$=mknode(F_ARG_LIST,$$,mkidentifiernode(i));
-      }else{
-	$$=mkidentifiernode(i);
-      }
-    }
+    $$ = find_inherited_identifier(Pike_compiler, 0, -2,
+				   Pike_compiler->last_identifier);
     if(!$$)
     {
-      if (!($$ = program_magic_identifier (Pike_compiler, 0, -1,
-					   $2->u.sval.u.string, 1)))
-      {
-	if (Pike_compiler->compiler_pass == 2) {
-          my_yyerror("Undefined identifier ::%S.", $2->u.sval.u.string);
-	}
-	$$=mkintnode(0);
+      if (Pike_compiler->compiler_pass == 2) {
+	my_yyerror("Undefined identifier ::%S.", $2->u.sval.u.string);
       }
-    }else{
-      if($$->token==F_ARG_LIST) $$=mkefuncallnode("aggregate",$$);
+      $$=mkintnode(0);
     }
     free_node($2);
   }
