@@ -149,6 +149,13 @@ protected class _HMAC
       return this;
     }
 
+    this_program init(string|void data)
+    {
+      h = 0;
+      if (data) update(data);
+      return this;
+    }
+
     string digest(int|void length)
     {
       string res = hash(okey + h->digest());
