@@ -86,7 +86,7 @@ class State
 	      MIME.encode_base64url(string_to_utf8(Standards.JSON.encode(headers))),
 	      MIME.encode_base64url(message));
     init(tbs);
-    string(8bit) raw = digest();
+    string(8bit) raw = [string(8bit)]digest();
     return sprintf("%s.%s", tbs, MIME.encode_base64url(raw));
   }
 
@@ -122,7 +122,7 @@ class State
       if (headers->alg != alg) return 0;
       string(7bit) tbs = sprintf("%s.%s", segments[0], segments[1]);
       init(tbs);
-      string(8bit) raw = digest();
+      string(8bit) raw = [string(8bit)]digest();
       if (MIME.encode_base64url(raw) == segments[2]) {
 	return ({ headers, MIME.decode_base64url(segments[1]) });
       }
