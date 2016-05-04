@@ -86,6 +86,8 @@ variant string(8bit) hash(Stdio.File|Stdio.Buffer|String.Buffer|System.Memory so
 //! @seealso
 //!   @[Crypto.HMAC]
 
+//! JWS algorithm id (if any) for the HMAC sub-module.
+//! Overloaded by the actual implementations.
 protected constant hmac_jwa_id = "";
 
 //! @ignore
@@ -95,15 +97,13 @@ private class _HMAC
 
   inherit .MAC;
 
-  //! JWS algorithm identifier.
+  //! JWS algorithm identifier (if any, otherwise @expr{0@}).
   //!
   //! @seealso
   //!   @rfc{7518:3.1@}
-  string `jwa()
+  string(7bit) `jwa()
   {
-    if( hmac_jwa_id=="" )
-      return 0;
-    return hmac_jwa_id;
+    return (hmac_jwa_id != "") && [string(7bit)]hmac_jwa_id;
   }
 
   int(0..) digest_size()

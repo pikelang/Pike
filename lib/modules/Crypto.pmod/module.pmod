@@ -37,7 +37,8 @@ class Hash {
   inherit Nettle.Hash;
 }
 
-//! Abstract class for MAC algorithms.
+//! Abstract class for Message Authentication Code (MAC) algorithms.
+//! Contains some tools useful for all MACs.
 class MAC {
   inherit Nettle.MAC;
 }
