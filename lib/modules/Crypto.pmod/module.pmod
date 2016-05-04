@@ -26,6 +26,11 @@
 
 constant HashState = Nettle.Hash.State;
 
+//! Abstract class for AE algorithms.
+class AE {
+  inherit __builtin.Nettle.AE;
+}
+
 //! Abstract class for AEAD algorithms.
 class AEAD {
   inherit Nettle.AEAD;
