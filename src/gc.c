@@ -1652,6 +1652,15 @@ void describe_something(void *a, int t, int indent, int depth, int flags,
 	debug_malloc_dump_references(a,indent+2,depth-1,flags);
 #endif
     }
+#if defined(USE_VALGRIND) && defined(VALGRIND_MONITOR_COMMAND)
+  if (PIKE_MEM_CHECKER()) {
+      char buf[40];
+      snprintf(buf, 40, "v.info location %p", a);
+      fprintf(stderr, "**Valgrind info:\n");
+      VALGRIND_MONITOR_COMMAND(buf);
+  }
+#endif
+
 
   fprintf(stderr,"%*s*******************\n",indent,"");
   d_flag=tmp;
