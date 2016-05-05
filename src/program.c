@@ -2043,8 +2043,8 @@ struct node_s *find_inherited_identifier(struct program_state *inherit_state,
     /* Unspecified inherit, but not inherit #0. */
     struct node_s *res = NULL;
     struct program *p = inherit_state->new_program;
-    assert(!inherit_depth);
     for (inh = 1; inh < p->num_inherits; inh++) {
+      struct node_s *n;
       if (p->inherits[inh].inherit_level != 1) continue;
       /* NB: We can't recurse here, as that would resolve the magic
        *     identifiers multiple times on multiple inherit.
@@ -2052,10 +2052,15 @@ struct node_s *find_inherited_identifier(struct program_state *inherit_state,
       id = low_reference_inherited_identifier(inherit_state, inh, ident,
 					      SEE_PROTECTED);
       if (id == -1) continue;
-      if (res) {
-	res = mknode(F_ARG_LIST, res, mkidentifiernode(id));
+      if (inherit_depth) {
+	n = mkexternalnode(inherit_state->new_program, id);
       } else {
-	res = mkidentifiernode(id);
+	n = mkidentifiernode(id);
+      }
+      if (res) {
+	res = mknode(F_ARG_LIST, res, n);
+      } else {
+	res = n;
       }
     }
     if (res) {
@@ -2189,13 +2194,13 @@ struct node_s *program_magic_identifier (struct program_state *state,
 	}
 
 	/* Find ::name in the parent. */
-	i = reference_inherited_identifier(state->previous, NULL, name);
-	if (i == -1) {
+	n = find_inherited_identifier(state->previous, state_depth+1, -2,
+				      name);
+	if (!n) {
 	  my_yyerror("Failed to find previous inherited definition of %S "
 		     "in parent.", name);
 	  return NULL;
 	}
-	n = mkexternalnode(parent, i);
       } else {
 	n = mkefuncallnode("object_program",
 			   mkthisnode(state->new_program, inherit_num));
