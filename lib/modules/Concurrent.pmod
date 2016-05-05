@@ -348,11 +348,14 @@ protected class Results
       success(({}));
       return;
     }
+
+    array(mixed) results = allocate(sizeof(futures), UNDEFINED);
+    array(State) states  = allocate(sizeof(futures), STATE_PENDING);
+
     futures->on_failure(failure);
+
     foreach(futures; int i; Future f) {
-      f->on_success(got_success, i,
-		    allocate(sizeof(futures), UNDEFINED),
-		    allocate(sizeof(futures), STATE_PENDING));
+      f->on_success(got_success, i, results, states);
     }
   }
 
@@ -363,7 +366,9 @@ protected class Results
     results[i] = value;
     states[i] = STATE_FULFILLED;
     if (!state) {
-      if (has_value(states, STATE_PENDING)) return;
+      if (has_value(states, STATE_PENDING)) {
+        return;
+      }
     }
     success(results);
   }
