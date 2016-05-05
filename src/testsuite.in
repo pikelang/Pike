@@ -12290,6 +12290,29 @@ test_program([[
   int a() {return A()->B()->f();}
 ]])
 
+test_any([[
+  // Test disambiguation order with multiple inherit and ::this_program.
+  class A {
+    class Foo {
+      string foo() { return "A"; }
+    }
+  };
+  class B {
+    class Foo {
+      string foo() { return "B"; }
+    }
+  };
+  class C {
+    inherit A;
+    inherit B;
+    class Foo {
+      // We expect this to inherit B::Foo and not A::Foo.
+      inherit ::this_program;
+    }
+  };
+  return C()->Foo()->foo();
+]], "B")
+
 // Names of inherits
 test_program_eq([[
   // 1: Direct inherit in the current class.
