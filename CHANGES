@@ -10,6 +10,12 @@ o Protocols.HTTP.Query now always sends a content-length header.
 
 o Report feature flags for System.FSEvents and System.Inotify.
 
+o Updated Calendar to use timezonedata from tzdata2016c
+
+o Added module Apple.Keychain that can extract certificates.
+
+o Made Standards.X509 aware of more OS specific ways of retriving certificates.
+
 
 Bug fixes
 ---------
@@ -37,6 +43,12 @@ o Fixed next_result() in Sql.sql_array_result.
 
 o Fixed sizeof() in Array.Iterator, Multiset.Iterator and
   String.Iterator.
+
+
+Testing
+-------
+
+o Reduced the memory requirements of Tools.Shoot (pike -x benchmark)
 
 
 Building and installing
