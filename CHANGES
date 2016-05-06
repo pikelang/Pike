@@ -16,6 +16,11 @@ o Added module Apple.Keychain that can extract certificates.
 
 o Made Standards.X509 aware of more OS specific ways of retriving certificates.
 
+o JOSE (JSON Object Signing and Encryption)
+
+  Some low-level API support has been added to the Crypto and Web
+  modules to support parts of RFC 7515 - 7520.
+
 
 Bug fixes
 ---------
