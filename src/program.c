@@ -2107,10 +2107,25 @@ struct node_s *find_inherited_identifier(struct program_state *inherit_state,
  *!   @[this], @[this_object()]
  */
 
+/*! @decl constant this_function
+ *!
+ *! Builtin constant that evaluates to the current function.
+ *!
+ *! @seealso
+ *!   @[this], @[this_object()]
+ */
+
 /**
  * If the identifier is recognized as one of the magic identifiers,
  * like "this", "this_program" or "`->" when preceded by ::, then a
  * suitable node is returned, NULL otherwise.
+ *
+ * @param state
+ *   Program state containing the inherit (if any), otherwise the
+ *   current program state.
+ *
+ * @param state_depth
+ *   Number of lexical scopes to the inherit state.
  *
  * @param inherit_num
  *   Inherit number in state->new_program that the identifier has been
@@ -2119,12 +2134,26 @@ struct node_s *find_inherited_identifier(struct program_state *inherit_state,
  *   when the identifier has the prefix :: without any preceding identifier
  *   (colon_colon_ref == 1).
  *
+ * @param ident
+ *   Identifier to look up.
+ *
+ * @param colon_colon_ref
+ *   Boolean indicating whether state, state_depth and inherit_num
+ *   should be regarded (1) or not (0).
+ *
  * New in Pike 7.9.5 and later:
  *
  *   If colon_colon_ref is 1 and the selected inherit defines the
  *   `->() lfun, code calling the lfun will be generated as follows:
  *
  *     inh::`->(ident, inh::this, 1)
+ *
+ * New in Pike 8.1.4 and later:
+ *
+ *   The symbol this_function may be prefixed with a selected inherit.
+ *   It will then refer to the symbol with the same name as the
+ *   current function from the selected inherit.
+ *
  */
 struct node_s *program_magic_identifier (struct program_state *state,
 					 int state_depth, int inherit_num,
@@ -2217,6 +2246,11 @@ struct node_s *program_magic_identifier (struct program_state *state,
       if ((i = Pike_compiler->compiler_frame->current_function_number) >= 0) {
 	struct identifier *id;
 	id = ID_FROM_INT(Pike_compiler->new_program, i);
+	if (colon_colon_ref) {
+	  if (inherit_num == -1) inherit_num = -2;
+	  return find_inherited_identifier(state, state_depth, inherit_num,
+					   id->name);
+	}
 	if (id->identifier_flags & IDENTIFIER_SCOPED) {
 	  return mktrampolinenode(i, Pike_compiler->compiler_frame->previous);
 	} else {

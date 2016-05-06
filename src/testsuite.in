@@ -1099,6 +1099,24 @@ test_any_equal([[
        "D", ({ "get_a", "get_b", "get_c", "get_d" }) }))
 
 test_any([[
+  class O {
+    string foo() { return "O"; };
+    class A { string foo() { return "A"; } };
+    class B { string foo() { return "B"; } };
+    class C {
+      inherit A;
+      inherit B;
+      string foo() {
+        return "C" + ::this_function() * ":" +
+               "C" + A::this_function() +
+               "C" + B::this_function() +
+               "C" + O::this_function() + "C"; }
+    };
+  };
+  return O()->C()->foo();
+]], "CA:BCACBCOC")
+
+test_any([[
   // Test that backtraces with prototypes are rendered correctly by
   // describe_backtrace() et al. These backtraces have caused both
   // "Bad offset" and "Identifier reference index out of range".
