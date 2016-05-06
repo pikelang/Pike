@@ -486,6 +486,14 @@ struct inherit
   struct pike_string *name;
 };
 
+/**
+ * Special inherit references.
+ *
+ * These are used by find_inherited_identifier().
+ */
+#define INHERIT_SELF	0	/* Self. */
+#define INHERIT_GLOBAL	-1	/* Self and overrideable. */
+#define INHERIT_ALL	-2	/* All inherits but not self. */
 
 /*
  * Storage struct for a trampoline object

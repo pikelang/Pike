@@ -3829,7 +3829,7 @@ inherit_specifier: string_or_identifier TOK_COLON_COLON
     struct compilation *c = THIS_COMPILATION;
     struct program_state *state = Pike_compiler;
     int depth;
-    int e = -1;
+    int e = INHERIT_ALL;
 
     inherit_state = NULL;
     inherit_depth = 0;
@@ -3880,19 +3880,20 @@ inherit_specifier: string_or_identifier TOK_COLON_COLON
 		       state->parent_identifier)->name ==
 	  $1->u.sval.u.string) {
 	/* Name of surrounding class ==> Done. */
-	e = 0;
+	e = INHERIT_SELF;
 	inherit_state = state;
 	inherit_depth = depth;
 	break;
       }
     }
-    if (e == -1) {
+    if (e < 0) {
       inherit_state = state;
       inherit_depth = depth;
-      if ($1->u.sval.u.string == this_program_string || $1->u.sval.u.string == this_string) {
+      if ($1->u.sval.u.string == this_program_string ||
+	  $1->u.sval.u.string == this_string) {
         inherit_state = Pike_compiler;
         inherit_depth = 0;
-        e = 0;
+        e = INHERIT_SELF;
       }
       else
         my_yyerror("No inherit or surrounding class %S.",
@@ -3907,13 +3908,13 @@ inherit_specifier: string_or_identifier TOK_COLON_COLON
     inherit_state = Pike_compiler;
     for (inherit_depth = 0; inherit_depth < c->compilation_depth;
 	 inherit_depth++, inherit_state = inherit_state->previous) {}
-    $$ = -1;
+    $$ = INHERIT_GLOBAL;
   }
   | inherit_specifier TOK_IDENTIFIER TOK_COLON_COLON
   {
     int e = 0;
     if ($1 < 0) {
-      $1 = 0;
+      $1 = INHERIT_SELF;
     }
 #if 0
     /* FIXME: The inherit modifiers aren't kept. */
@@ -3932,14 +3933,14 @@ inherit_specifier: string_or_identifier TOK_COLON_COLON
       } else {
 	my_yyerror("No such inherit %S.", $2->u.sval.u.string);
       }
-      $$ = -1;
+      $$ = INHERIT_ALL;
     } else {
       /* We know stuff about the inherit structure... */
       $$ = e + $1;
     }
     free_node($2);
   }
-  | inherit_specifier bad_identifier TOK_COLON_COLON { $$ = -1; }
+  | inherit_specifier bad_identifier TOK_COLON_COLON { $$ = INHERIT_ALL; }
   ;
 
 low_idents: TOK_IDENTIFIER
@@ -4063,12 +4064,12 @@ low_idents: TOK_IDENTIFIER
   | inherit_specifier error { $$=0; }
   | TOK_COLON_COLON TOK_IDENTIFIER
   {
-    int e,i;
-
-    if(Pike_compiler->last_identifier) free_string(Pike_compiler->last_identifier);
+    if(Pike_compiler->last_identifier) {
+      free_string(Pike_compiler->last_identifier);
+    }
     copy_shared_string(Pike_compiler->last_identifier, $2->u.sval.u.string);
 
-    $$ = find_inherited_identifier(Pike_compiler, 0, -2,
+    $$ = find_inherited_identifier(Pike_compiler, 0, INHERIT_ALL,
 				   Pike_compiler->last_identifier);
     if(!$$)
     {

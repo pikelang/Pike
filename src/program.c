@@ -2039,7 +2039,7 @@ struct node_s *find_inherited_identifier(struct program_state *inherit_state,
 {
   int id;
 
-  if (inh < -1) {
+  if (inh == INHERIT_ALL) {
     /* Unspecified inherit, but not inherit #0. */
     struct node_s *res = NULL;
     struct program *p = inherit_state->new_program;
@@ -2221,8 +2221,8 @@ struct node_s *program_magic_identifier (struct program_state *state,
       }
 
       /* Find ::name in the parent. */
-      n = find_inherited_identifier(state->previous, state_depth+1, -2,
-				    name);
+      n = find_inherited_identifier(state->previous, state_depth+1,
+				    INHERIT_ALL, name);
       if (!n) {
 	my_yyerror("Failed to find previous inherited definition of %S "
 		   "in parent.", name);
@@ -2245,7 +2245,7 @@ struct node_s *program_magic_identifier (struct program_state *state,
       struct identifier *id;
       id = ID_FROM_INT(Pike_compiler->new_program, i);
       if (colon_colon_ref) {
-	if (inherit_num == -1) inherit_num = -2;
+	if (inherit_num == -1) inherit_num = INHERIT_ALL;
 	return find_inherited_identifier(state, state_depth, inherit_num,
 					 id->name);
       }
