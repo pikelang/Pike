@@ -2165,100 +2165,97 @@ struct node_s *program_magic_identifier (struct program_state *state,
 	   state_depth, inherit_num, ident->str, colon_colon_ref);
 #endif
 
-  /* FIXME: Is this expression always true? */
-  if ((inherit_num == -1) || (inherit_num >= 0)) {
-    if (ident == this_string) {
-      /* Handle this. */
-      return mkthisnode(state->new_program, inherit_num);
-    }
+  if (ident == this_string) {
+    /* Handle this. */
+    return mkthisnode(state->new_program, inherit_num);
+  }
 
-    /* Handle this_program */
-    if (ident == this_program_string) {
-      node *n;
-      if (!state_depth && (inherit_num == -1) && colon_colon_ref &&
-	  !TEST_COMPAT(7,8) &&
-	  state->previous && state->previous->new_program) {
-	/* ::this_program
-	 *
-	 * This refers to the previous definition of the current class
-	 * in its parent, and is typically used with inherit like:
-	 *
-	 *   inherit Foo;
-	 *
-	 *   // Override the Bar inherited from Foo.
-	 *   class Bar {
-	 *     // Bar is based on the implementation from Foo.
-	 *     inherit ::this_program;
-	 *
-	 *     // ...
-	 *   }
-	 */
-	struct program *parent;
-	struct pike_string *name = NULL;
-	int e;
-	int i;
-
-	/* Find the name of the current class. */
-	parent = state->previous->new_program;
-	for (e = parent->num_identifier_references; e--;) {
-	  struct identifier *id = ID_FROM_INT(parent, e);
-	  struct svalue *s;
-	  if (!IDENTIFIER_IS_CONSTANT(id->identifier_flags) ||
-	      (id->func.const_info.offset < 0)) {
-	    continue;
-	  }
-	  s = &PROG_FROM_INT(parent, e)->
-	    constants[id->func.const_info.offset].sval;
-	  if ((TYPEOF(*s) != T_PROGRAM) ||
-	      (s->u.program != state->new_program)) {
-	    continue;
-	  }
-	  /* Found! */
-	  name = id->name;
-	  break;
-	}
-	if (!name) {
-	  yyerror("Failed to find current class in its parent.");
-	  return NULL;
-	}
-
-	/* Find ::name in the parent. */
-	n = find_inherited_identifier(state->previous, state_depth+1, -2,
-				      name);
-	if (!n) {
-	  my_yyerror("Failed to find previous inherited definition of %S "
-		     "in parent.", name);
-	  return NULL;
-	}
-      } else {
-	n = mkefuncallnode("object_program",
-			   mkthisnode(state->new_program, inherit_num));
-      }
-      /* We know this expression is constant. */
-      n->node_info &= ~OPT_NOT_CONST;
-      n->tree_info &= ~OPT_NOT_CONST;
-      return n;
-    }
-
-    /* Handle this_function */
-    if (ident == this_function_string) {
+  /* Handle this_program */
+  if (ident == this_program_string) {
+    node *n;
+    if (!state_depth && (inherit_num == -1) && colon_colon_ref &&
+	!TEST_COMPAT(7,8) &&
+	state->previous && state->previous->new_program) {
+      /* ::this_program
+       *
+       * This refers to the previous definition of the current class
+       * in its parent, and is typically used with inherit like:
+       *
+       *   inherit Foo;
+       *
+       *   // Override the Bar inherited from Foo.
+       *   class Bar {
+       *     // Bar is based on the implementation from Foo.
+       *     inherit ::this_program;
+       *
+       *     // ...
+       *   }
+       */
+      struct program *parent;
+      struct pike_string *name = NULL;
+      int e;
       int i;
-      if ((i = Pike_compiler->compiler_frame->current_function_number) >= 0) {
-	struct identifier *id;
-	id = ID_FROM_INT(Pike_compiler->new_program, i);
-	if (colon_colon_ref) {
-	  if (inherit_num == -1) inherit_num = -2;
-	  return find_inherited_identifier(state, state_depth, inherit_num,
-					   id->name);
+
+      /* Find the name of the current class. */
+      parent = state->previous->new_program;
+      for (e = parent->num_identifier_references; e--;) {
+	struct identifier *id = ID_FROM_INT(parent, e);
+	struct svalue *s;
+	if (!IDENTIFIER_IS_CONSTANT(id->identifier_flags) ||
+	    (id->func.const_info.offset < 0)) {
+	  continue;
 	}
-	if (id->identifier_flags & IDENTIFIER_SCOPED) {
-	  return mktrampolinenode(i, Pike_compiler->compiler_frame->previous);
-	} else {
-	  return mkidentifiernode(i);
+	s = &PROG_FROM_INT(parent, e)->
+	  constants[id->func.const_info.offset].sval;
+	if ((TYPEOF(*s) != T_PROGRAM) ||
+	    (s->u.program != state->new_program)) {
+	  continue;
 	}
-      } else {
-	/* FIXME: Fall back to __INIT? */
+	/* Found! */
+	name = id->name;
+	break;
       }
+      if (!name) {
+	yyerror("Failed to find current class in its parent.");
+	return NULL;
+      }
+
+      /* Find ::name in the parent. */
+      n = find_inherited_identifier(state->previous, state_depth+1, -2,
+				    name);
+      if (!n) {
+	my_yyerror("Failed to find previous inherited definition of %S "
+		   "in parent.", name);
+	return NULL;
+      }
+    } else {
+      n = mkefuncallnode("object_program",
+			 mkthisnode(state->new_program, inherit_num));
+    }
+    /* We know this expression is constant. */
+    n->node_info &= ~OPT_NOT_CONST;
+    n->tree_info &= ~OPT_NOT_CONST;
+    return n;
+  }
+
+  /* Handle this_function */
+  if (ident == this_function_string) {
+    int i;
+    if ((i = Pike_compiler->compiler_frame->current_function_number) >= 0) {
+      struct identifier *id;
+      id = ID_FROM_INT(Pike_compiler->new_program, i);
+      if (colon_colon_ref) {
+	if (inherit_num == -1) inherit_num = -2;
+	return find_inherited_identifier(state, state_depth, inherit_num,
+					 id->name);
+      }
+      if (id->identifier_flags & IDENTIFIER_SCOPED) {
+	return mktrampolinenode(i, Pike_compiler->compiler_frame->previous);
+      } else {
+	return mkidentifiernode(i);
+      }
+    } else {
+      /* FIXME: Fall back to __INIT? */
     }
   }
 
