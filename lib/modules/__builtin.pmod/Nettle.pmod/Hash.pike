@@ -101,7 +101,7 @@ private class _HMAC
   //!
   //! @seealso
   //!   @rfc{7518:3.1@}
-  string(7bit) `jwa()
+  string(7bit) jwa()
   {
     return (hmac_jwa_id != "") && [string(7bit)]hmac_jwa_id;
   }
