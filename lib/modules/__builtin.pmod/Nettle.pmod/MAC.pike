@@ -20,17 +20,17 @@ int(0..) iv_size();
 //! Overloaded by the actual implementations.
 //!
 //! @note
-//!   Never access this value directly. Use @[`jwa()].
+//!   Never access this value directly. Use @[jwa()].
 //!
 //! @seealso
-//!   @[`jwa()]
+//!   @[jwa()]
 protected constant mac_jwa_id = "";
 
 //! JWS algorithm identifier (if any, otherwise @expr{0@}).
 //!
 //! @seealso
 //!   @rfc{7518:3.1@}
-string(7bit) `jwa()
+string(7bit) jwa()
 {
   return (mac_jwa_id != "") && [string(7bit)]mac_jwa_id;
 }
@@ -77,7 +77,7 @@ class State
   string(7bit) jose_sign(string(8bit) message,
 			 mapping(string(7bit):string(7bit)|int)|void headers)
   {
-    string(7bit) alg = jwa;
+    string(7bit) alg = jwa();
     if (!alg) return 0;
     headers = headers || ([]);
     headers += ([ "alg": alg ]);
@@ -110,7 +110,7 @@ class State
   array(mapping(string(7bit):
 		string(7bit)|int)|string(8bit)) jose_decode(string(7bit) jws)
   {
-    string(7bit) alg = jwa;
+    string(7bit) alg = jwa();
     if (!alg) return 0;
     array(string(7bit)) segments = [array(string(7bit))](jws/".");
     if (sizeof(segments) != 3) return 0;
