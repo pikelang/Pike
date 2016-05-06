@@ -27,7 +27,12 @@ o The machine code generator on ia32 now aligns the stack
 o Exceptions thrown in GTK signal handlers no longer cause
   segfaults.
 
-o The SSL client code now interprets the RFCs more leniently.
+o The SSL client code now interprets the RFCs more leniently to
+  address some interoperability issues.
+
+o Fixed bugs in cipher selection that prevented null-ciphers from
+  being negotiated by the SSL server (if allowed by the Context
+  object).
 
 o Multiple fixes for the handling of accelerated
   Filesystem.Monitor monitors, which could sometimes
