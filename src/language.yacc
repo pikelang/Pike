@@ -674,12 +674,19 @@ close_bracket_or_missing: ']'
   }
   ;
 
-/* This variant is used to push the compiler context for functions
- * with a declared return type, which has been stored in
+/* This variant is used to start a new compiler frame for functions
+ * with a declared return type.
+ *
+ * On entry the return type to be is taken from
  *
  *   compiler_frame->current_type
  *
- * (eg via simple_type).
+ * in the current frame (stored there eg via simple_type). This is
+ * then copied to
+ *
+ *   compiler_frame->current_return_type
+ *
+ * for the new frame.
  */
 start_function: /* empty */
   {
@@ -689,11 +696,11 @@ start_function: /* empty */
        !Pike_compiler->compiler_frame->previous->current_type)
     {
       yyerror("Internal compiler error (start_function).");
-      copy_pike_type(Pike_compiler->compiler_frame->current_type,
+      copy_pike_type(Pike_compiler->compiler_frame->current_return_type,
 		     mixed_type_string);
     }else{
-      copy_pike_type(Pike_compiler->compiler_frame->current_type,
-		Pike_compiler->compiler_frame->previous->current_type);
+      copy_pike_type(Pike_compiler->compiler_frame->current_return_type,
+		     Pike_compiler->compiler_frame->previous->current_type);
     }
 
     $$ = Pike_compiler->compiler_frame;
@@ -756,12 +763,6 @@ def: modifiers optional_attributes simple_type optional_constant
     Pike_compiler->compiler_frame->opt_flags = $4;
 
     /* construct the function type */
-    push_finished_type(Pike_compiler->compiler_frame->current_type);
-
-    if(Pike_compiler->compiler_frame->current_return_type)
-      free_type(Pike_compiler->compiler_frame->current_return_type);
-    Pike_compiler->compiler_frame->current_return_type = compiler_pop_type();
-
     push_finished_type(Pike_compiler->compiler_frame->current_return_type);
 
     e = $<number>8 + $9 - 1;
@@ -2071,6 +2072,12 @@ start_lambda: /* empty */
   {
     push_compiler_frame(SCOPE_LOCAL);
 
+    debug_malloc_touch(Pike_compiler->compiler_frame->current_return_type);
+    if(Pike_compiler->compiler_frame->current_return_type)
+      free_type(Pike_compiler->compiler_frame->current_return_type);
+    copy_pike_type(Pike_compiler->compiler_frame->current_return_type,
+		   any_type_string);
+
     $$ = Pike_compiler->compiler_frame;
   }
   ;
@@ -2084,13 +2091,6 @@ implicit_identifier: /* empty */
   ;
 
 lambda: TOK_LAMBDA line_number_info implicit_identifier start_lambda
-  {
-    debug_malloc_touch(Pike_compiler->compiler_frame->current_return_type);
-    if(Pike_compiler->compiler_frame->current_return_type)
-      free_type(Pike_compiler->compiler_frame->current_return_type);
-    copy_pike_type(Pike_compiler->compiler_frame->current_return_type,
-		   any_type_string);
-  }
   func_args
   {
     struct pike_string *name = $3->u.sval.u.string;
@@ -2103,7 +2103,7 @@ lambda: TOK_LAMBDA line_number_info implicit_identifier start_lambda
     if (Pike_compiler->compiler_pass == 1) {
       /* Define a tentative prototype for the lambda. */
       push_finished_type(mixed_type_string);
-      e=$6-1;
+      e=$5-1;
       if($<number>$)
       {
 	push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
@@ -2143,12 +2143,12 @@ lambda: TOK_LAMBDA line_number_info implicit_identifier start_lambda
     c->lex.current_file = $2->current_file;
     c->lex.current_line = $2->line_number;
 
-    debug_malloc_touch($8);
-    $8=mknode(F_COMMA_EXPR,$8,mknode(F_RETURN,mkintnode(0),0));
+    debug_malloc_touch($7);
+    $7=mknode(F_COMMA_EXPR,$7,mknode(F_RETURN,mkintnode(0),0));
     if (Pike_compiler->compiler_pass == 2) {
       /* Doing this in pass 1 might induce too strict checks on types
        * in cases where we got placeholders. */
-      type=find_return_type($8);
+      type=find_return_type($7);
       if (type) {
 	push_finished_type(type);
 	free_type(type);
@@ -2161,8 +2161,8 @@ lambda: TOK_LAMBDA line_number_info implicit_identifier start_lambda
       push_type(T_MIXED);
     }
 
-    e=$6-1;
-    if($<number>7)
+    e=$5-1;
+    if($<number>6)
     {
       push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
       e--;
@@ -2192,7 +2192,7 @@ lambda: TOK_LAMBDA line_number_info implicit_identifier start_lambda
 #endif /* LAMBDA_DEBUG */
 
     f=dooptcode(name,
-		$8,
+		$7,
 		type,
 		ID_PROTECTED | ID_PRIVATE | ID_INLINE | ID_USED);
 
@@ -2253,13 +2253,6 @@ local_function: TOK_IDENTIFIER start_function func_args
     int id,e;
     node *n;
     struct identifier *i=0;
-
-    debug_malloc_touch(Pike_compiler->compiler_frame->current_return_type);
-    if(Pike_compiler->compiler_frame->current_return_type)
-      free_type(Pike_compiler->compiler_frame->current_return_type);
-    copy_pike_type(Pike_compiler->compiler_frame->current_return_type,
-		   Pike_compiler->compiler_frame->current_type);
-
 
     /***/
     push_finished_type(Pike_compiler->compiler_frame->current_return_type);
@@ -3378,12 +3371,6 @@ optional_block: /* EMPTY */ { $$=0; }
   /* FIXME: Use implicit_identifier to make __func__ point to the lambda? */
   start_lambda
   {
-    debug_malloc_touch(Pike_compiler->compiler_frame->current_return_type);
-    if(Pike_compiler->compiler_frame->current_return_type)
-      free_type(Pike_compiler->compiler_frame->current_return_type);
-    copy_pike_type(Pike_compiler->compiler_frame->current_return_type,
-		   any_type_string);
-
     /* block code */
     $<number>1=Pike_compiler->num_used_modules;
     $<number>$=Pike_compiler->compiler_frame->current_number_of_locals;
