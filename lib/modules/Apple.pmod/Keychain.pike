@@ -86,11 +86,7 @@ protected void parse_cert(Stdio.Buffer buf)
 
   int unknown = buf->read_int32();	// Other cert no. Often ~3 larger.
 
-  array(int) index = allocate(12);
-
-  for(int i = 0; i <sizeof(index); i++) {
-    index[i] = buf->read_int32();
-  }
+  array(int) index = buf->read_ints(12, 4);
 
   WERR("Certificate index: %O\n", index);
 
