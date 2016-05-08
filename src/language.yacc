@@ -339,6 +339,7 @@ int yylex(YYSTYPE *yylval);
 %type <n> idents2
 %type <n> labeled_statement
 %type <n> lambda
+%type <n> literal_expr
 %type <n> local_name_list
 %type <n> low_idents
 %type <n> safe_lvalue
@@ -3496,9 +3497,7 @@ implicit_modifiers:
   }
   ;
 
-expr4: string
-  | TOK_NUMBER
-  | TOK_FLOAT { $$=mkfloatnode((FLOAT_TYPE)$1); }
+expr4: literal_expr
   | catch
   | gauge
   | typeof
@@ -3615,37 +3614,6 @@ expr4: string
       }
       free_node ($1);
     }
-  | open_paren_with_line_info '{' expr_list close_brace_or_missing ')'
-    {
-      /* FIXME: May eat lots of stack; cf Standards.FIPS10_4.divisions */
-      $$=mkefuncallnode("aggregate",$3);
-      COPY_LINE_NUMBER_INFO($$, $1);
-      free_node ($1);
-    }
-  | open_paren_with_line_info
-    open_bracket_with_line_info	/* Only to avoid shift/reduce conflicts. */
-    m_expr_list close_bracket_or_missing ')'
-    {
-      /* FIXME: May eat lots of stack; cf Standards.FIPS10_4.divisions */
-      $$=mkefuncallnode("aggregate_mapping",$3);
-      COPY_LINE_NUMBER_INFO($$, $1);
-      free_node ($1);
-      free_node ($2);
-    }
-  | TOK_MULTISET_START line_number_info expr_list TOK_MULTISET_END
-    {
-      /* FIXME: May eat lots of stack; cf Standards.FIPS10_4.divisions */
-      $$=mkefuncallnode("aggregate_multiset",$3);
-      COPY_LINE_NUMBER_INFO($$, $2);
-      free_node ($2);
-    }
-  | TOK_MULTISET_START line_number_info expr_list ')'
-    {
-      yyerror("Missing '>'.");
-      $$=mkefuncallnode("aggregate_multiset",$3);
-      COPY_LINE_NUMBER_INFO($$, $2);
-      free_node ($2);
-    }
   | open_paren_with_line_info error ')' { $$=$1; yyerrok; }
   | open_paren_with_line_info error TOK_LEX_EOF
   {
@@ -3654,18 +3622,6 @@ expr4: string
   }
   | open_paren_with_line_info error ';' { $$=$1; yyerror("Missing ')'."); }
   | open_paren_with_line_info error '}' { $$=$1; yyerror("Missing ')'."); }
-  | TOK_MULTISET_START line_number_info error TOK_MULTISET_END { $$=$2; yyerrok; }
-  | TOK_MULTISET_START line_number_info error ')' {
-    yyerror("Missing '>'.");
-    $$=$2; yyerrok;
-  }
-  | TOK_MULTISET_START line_number_info error TOK_LEX_EOF
-  {
-    $$=$2; yyerror("Missing '>)'.");
-    yyerror("Unexpected end of file.");
-  }
-  | TOK_MULTISET_START line_number_info error ';' { $$=$2; yyerror("Missing '>)'."); }
-  | TOK_MULTISET_START line_number_info error '}' { $$=$2; yyerror("Missing '>)'."); }
   | expr4 TOK_ARROW line_number_info magic_identifier
   {
     $$=mknode(F_ARROW,$1,$4);
@@ -3785,6 +3741,54 @@ idents2: idents
   {
     $$=0;
   }
+  ;
+
+literal_expr: string
+  | TOK_NUMBER
+  | TOK_FLOAT { $$=mkfloatnode((FLOAT_TYPE)$1); }
+  | open_paren_with_line_info '{' expr_list close_brace_or_missing ')'
+    {
+      /* FIXME: May eat lots of stack; cf Standards.FIPS10_4.divisions */
+      $$=mkefuncallnode("aggregate",$3);
+      COPY_LINE_NUMBER_INFO($$, $1);
+      free_node ($1);
+    }
+  | open_paren_with_line_info
+    open_bracket_with_line_info	/* Only to avoid shift/reduce conflicts. */
+    m_expr_list close_bracket_or_missing ')'
+    {
+      /* FIXME: May eat lots of stack; cf Standards.FIPS10_4.divisions */
+      $$=mkefuncallnode("aggregate_mapping",$3);
+      COPY_LINE_NUMBER_INFO($$, $1);
+      free_node ($1);
+      free_node ($2);
+    }
+  | TOK_MULTISET_START line_number_info expr_list TOK_MULTISET_END
+    {
+      /* FIXME: May eat lots of stack; cf Standards.FIPS10_4.divisions */
+      $$=mkefuncallnode("aggregate_multiset",$3);
+      COPY_LINE_NUMBER_INFO($$, $2);
+      free_node ($2);
+    }
+  | TOK_MULTISET_START line_number_info expr_list ')'
+    {
+      yyerror("Missing '>'.");
+      $$=mkefuncallnode("aggregate_multiset",$3);
+      COPY_LINE_NUMBER_INFO($$, $2);
+      free_node ($2);
+    }
+  | TOK_MULTISET_START line_number_info error TOK_MULTISET_END { $$=$2; yyerrok; }
+  | TOK_MULTISET_START line_number_info error ')' {
+    yyerror("Missing '>'.");
+    $$=$2; yyerrok;
+  }
+  | TOK_MULTISET_START line_number_info error TOK_LEX_EOF
+  {
+    $$=$2; yyerror("Missing '>)'.");
+    yyerror("Unexpected end of file.");
+  }
+  | TOK_MULTISET_START line_number_info error ';' { $$=$2; yyerror("Missing '>)'."); }
+  | TOK_MULTISET_START line_number_info error '}' { $$=$2; yyerror("Missing '>)'."); }
   ;
 
 idents: low_idents
