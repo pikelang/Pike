@@ -1778,14 +1778,13 @@ protected void create()
       error("Function %O is missing from master.pike.\n", e);
 
 
-// This gives the type int(1..1)|zero, which is more close to reality
+// This gives the type int(0..1), which is more close to reality
 // than the enum type (aka int(1..1))
 //
 // doing the add_constant on the typeof directly gives int(1..1)
 // instead, since the same "optimization" of the type is done in that
 // case.
-  typeof(0)|typeof(1) _bool_type;
-  add_constant("bool",typeof(_bool_type));
+  add_constant("bool", typeof([int(0..1)](mixed)0));
 
   add_constant("__dirnode", dirnode);
   add_constant("__joinnode", joinnode);
