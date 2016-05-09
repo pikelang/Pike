@@ -36,7 +36,7 @@
 //! });
 //! @endcode
 
-#define HTTP_PROMISE_DEBUG
+//#define HTTP_PROMISE_DEBUG
 
 #ifdef HTTP_PROMISE_DEBUG
 # define TRACE(X...)werror("%s:%d: %s",basename(__FILE__),__LINE__,sprintf(X))

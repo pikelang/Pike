@@ -25,8 +25,6 @@
 //!    return -1;
 //! }
 
-#define HTTP_QUERY_DEBUG
-
 #ifdef HTTP_QUERY_DEBUG
 #define DBG(X ...) werror(X)
 #else
