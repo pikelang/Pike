@@ -329,6 +329,7 @@ int yylex(YYSTYPE *yylval);
 %type <n> expr3 expr0
 %type <n> apply
 %type <n> expr4
+%type <n> expr5
 %type <n> expr_list
 %type <n> expr_list2
 %type <n> for
@@ -3497,7 +3498,18 @@ implicit_modifiers:
   }
   ;
 
-expr4: literal_expr
+expr4: idents2 | expr5
+  | expr5 '.' line_number_info TOK_IDENTIFIER
+  {
+    $$=index_node($1,".",$4->u.sval.u.string);
+    COPY_LINE_NUMBER_INFO($$, $3);
+    free_node ($1);
+    free_node ($3);
+    free_node ($4);
+  }
+  ;
+
+expr5: literal_expr
   | catch
   | gauge
   | typeof
@@ -3505,7 +3517,6 @@ expr4: literal_expr
   | lambda
   | implicit_modifiers class { $$ = $2; }
   | implicit_modifiers enum { $$ = $2; }
-  | idents2
   | apply
   | expr4 open_bracket_with_line_info '*' ']'
   {
@@ -3657,14 +3668,6 @@ expr4: literal_expr
     }
     COPY_LINE_NUMBER_INFO($$, $3);
     free_node ($3);
-  }
-  | expr4 '.' line_number_info TOK_IDENTIFIER
-  {
-    $$=index_node($1,".",$4->u.sval.u.string);
-    COPY_LINE_NUMBER_INFO($$, $3);
-    free_node ($1);
-    free_node ($3);
-    free_node ($4);
   }
   | expr4 TOK_ARROW line_number_info error {$$=$1; free_node ($3);}
   ;
