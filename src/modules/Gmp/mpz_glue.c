@@ -180,7 +180,7 @@ PMOD_EXPORT int int64_from_bignum (INT64 *i, struct object *bignum)
   MP_INT *mpz = OBTOMPZ (bignum);
   int neg = mpz_sgn (mpz) < 0;
 
-  /* Note: Similar code in mpzmod_reduce and gmp_ulongest_from_bignum. */
+  /* Note: Similar code in mpzmod_reduce */
 
   /* Get the index of the highest limb that have bits within the range
    * of the INT64. */
@@ -244,51 +244,6 @@ PMOD_EXPORT void push_ulongest (unsigned LONGEST i)
     mpz_import (mpz, 1, 1, SIZEOF_LONGEST, 0, 0, &i);
 #endif	/* SIZEOF_LONG < SIZEOF_LONGEST */
   }
-}
-
-PMOD_EXPORT int ulongest_from_bignum (unsigned LONGEST *i, struct object *bignum)
-{
-  MP_INT *mpz = OBTOMPZ (bignum);
-
-  /* Note: Similar code in int64_from_bignum. */
-
-  /* Get the index of the highest limb that have bits within the range
-   * of LONGEST. */
-  size_t pos = (ULONGEST_BITS + GMP_NUMB_BITS - 1) / GMP_NUMB_BITS - 1;
-
-#ifdef PIKE_DEBUG
-  if ((bignum->prog != bignum_program) &&
-      (bignum->prog != mpzmod_program)) {
-    Pike_fatal("cast(): Not a Gmp.bignum or Gmp.mpz.\n");
-  }
-#endif
-
-  if (mpz_sgn (mpz) < 0) return 0;
-
-  if (mpz_size (mpz) <= pos + 1) {
-    unsigned LONGEST res;
-#if ULONGEST_BITS == GMP_NUMB_BITS
-    res = mpz_getlimbn (mpz, 0) & GMP_NUMB_MASK;
-#elif ULONGEST_BITS < GMP_NUMB_BITS
-    mp_limb_t val = mpz_getlimbn (mpz, 0) & GMP_NUMB_MASK;
-    res = (unsigned LONGEST) val;
-    if (val != res) return 0;
-#else
-    res = 0;
-    for (;; pos--) {
-      res |= mpz_getlimbn (mpz, pos) & GMP_NUMB_MASK;
-      if (pos == 0) break;
-      if (res >= (unsigned LONGEST) 1 << (ULONGEST_BITS - GMP_NUMB_BITS))
-	return 0;
-      res <<= GMP_NUMB_BITS;
-    }
-#endif
-
-    *i = res;
-    return 1;
-  }
-
-  return 0;
 }
 
 /*! @module Gmp
