@@ -1,5 +1,5 @@
 #pike __REAL_VERSION__
-#require Regexp.PCRE
+#require constant(Regexp.PCRE)
 
 //! Markdown module.
 //!

@@ -271,7 +271,12 @@ mixed call(string api_method, void|ParamsArg params,
   Protocols.HTTP.Query req = Protocols.HTTP.Query();
 
   if (http_request_timeout) {
-    req->timeout = http_request_timeout;
+    if (has_index(req, "maxtime")) {
+      req->maxtime = http_request_timeout;
+    }
+    else {
+      req->timeout = http_request_timeout;
+    }
   }
 
 #ifdef SOCIAL_REQUEST_DEBUG
@@ -291,24 +296,32 @@ mixed call(string api_method, void|ParamsArg params,
     _query_objects[myid] = ({ req, cb });
 
     req->set_callbacks(
-      lambda (Protocols.HTTP.Query qq, mixed ... args) {
+      lambda (Protocols.HTTP.Query qq, int cid) {
         if (qq->status == 200) {
-          cb(handle_response(qq), qq);
+          qq->timed_async_fetch(
+            lambda (Protocols.HTTP.Query qa) {
+              cb(handle_response(qa), qa);
+              m_delete(_query_objects, cid);
+            },
+            lambda (Protocols.HTTP.Query qa) {
+              cb(0, qa);
+              m_delete(_query_objects, cid);
+            });
         }
         else if ((< 301, 302 >)[qq->status]) {
           cb(qq->headers, qq);
+          m_delete(_query_objects, cid);
         }
         else {
           cb(0, qq);
+          m_delete(_query_objects, cid);
         }
-
-        m_delete(_query_objects, myid);
       },
-      lambda (Protocols.HTTP.Query qq, mixed ... args) {
+      lambda (Protocols.HTTP.Query qq, int cid) {
         cb(0, qq);
-        m_delete(_query_objects, myid);
-      }
-    );
+        m_delete(_query_objects, cid);
+      },
+      myid);
 
     Protocols.HTTP.do_async_method(http_method, api_method, params,
                                    request_headers, req, data);

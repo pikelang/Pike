@@ -2,6 +2,7 @@
 
 import Protocols.HTTP;
 
+//! A URL which is either a string a @[Standards.URI] or a @[SessionURL].
 typedef string|Standards.URI|SessionURL URL;
 
 //!	The number of redirects to follow, if any.

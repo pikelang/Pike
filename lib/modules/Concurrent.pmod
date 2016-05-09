@@ -54,7 +54,7 @@ class Future
   }
 
   //! Register a callback that is to be called on fulfillment.
-  void on_success(function(mixed, mixed ... : void) cb, mixed ... extra)
+  this_program on_success(function(mixed, mixed ... : void) cb, mixed ... extra)
   {
     object key = mux->lock();
     success_cb = cb;
@@ -65,10 +65,12 @@ class Future
     if (s == STATE_FULFILLED) {
       call_out(cb, 0, res, @extra);
     }
+
+    return this;
   }
 
   //! Register a callback that is to be called on failure.
-  void on_failure(function(mixed, mixed ... : void) cb, mixed ... extra)
+  this_program on_failure(function(mixed, mixed ... : void) cb, mixed ... extra)
   {
     object key = mux->lock();
     failure_cb = cb;
@@ -79,6 +81,7 @@ class Future
     if (s == STATE_REJECTED) {
       call_out(cb, 0, res, @extra);
     }
+    return this;
   }
 
   //! Apply @[fun] with @[val] followed by the contents of @[ctx],

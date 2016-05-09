@@ -25,6 +25,8 @@
 //!    return -1;
 //! }
 
+#define HTTP_QUERY_DEBUG
+
 #ifdef HTTP_QUERY_DEBUG
 #define DBG(X ...) werror(X)
 #else
@@ -58,11 +60,29 @@ string protocol;
 int status;
 string status_desc;
 
-int data_timeout = 120;	// seconds
+//! @ignore
+// Deprecated, use the same value as in timeout unless explicitly set
+int data_timeout = 0;	// seconds
+//! @endignore
+
+//! @[timeout] is the time to wait in seconds on connection and/or data.
+//! If data is fetched asynchronously the watchdog will be reset every time
+//! data is received. Defaults to @tt{120@} seconds.
+//! @[maxtime] is the time the entire operation is allowed to take, no matter
+//! if the connection and data fetching is successful. This is by default
+//! indefinitely.
+//!
+//! @note
+//!  These values only have effect in asynchroneous calls
 int timeout = 120;	// seconds
+int maxtime;
 
 // internal
 int(0..1) https = 0;
+
+// This is used in async_fetch* and aync_timeout to keep track of when we last
+// got data and if the timeout should abort or be reset
+protected int(0..) timeout_watchdog;
 
 //! Connected host and port.
 //!
@@ -86,6 +106,33 @@ local function request_ok,request_fail;
 array extra_args;
 
 /****** internal stuff *********************************************/
+
+// Callout id if maxtime is set.
+protected array(function) co_maxtime;
+
+#define TOUCH_TIMEOUT_WATCHDOG() (timeout_watchdog = time(1))
+
+#define SET_MAXTIME_CALL_OUT()                                              \
+  do {                                                                      \
+    if (maxtime) {                                                          \
+      DBG("+++ SET_MAXTIME_CALL_OUT()\n");                                  \
+      co_maxtime = call_out(lambda() {                                      \
+        /* Proper timeout status is set in async_timeout if status is 0 */  \
+        status = 0;                                                         \
+        async_timeout(true);                                                \
+      }, maxtime);                                                          \
+    }                                                                       \
+  } while (0)
+
+#define REMOVE_MAXTIME_CALL_OUT()             \
+  do {                                        \
+    if (co_maxtime) {                         \
+      DBG("--- REMOVE_MAXTIME_CALL_OUT()\n"); \
+      remove_call_out(co_maxtime);            \
+      co_maxtime = 0;                         \
+    }                                         \
+    remove_call_out(async_timeout);           \
+  } while (0)
 
 protected int ponder_answer( int|void start_position )
 {
@@ -161,7 +208,7 @@ protected int ponder_answer( int|void start_position )
    // done
    ok=1;
    remove_call_out(async_timeout);
-
+   TOUCH_TIMEOUT_WATCHDOG();
    if (request_ok) request_ok(this,@extra_args);
    return 1;
 }
@@ -302,11 +349,14 @@ protected void async_connected()
 
 protected void low_async_failed(int errno)
 {
-   DBG("** calling failed cb %O\n", request_fail);
+   REMOVE_MAXTIME_CALL_OUT();
+
+   DBG("** calling failed cb %O (%O:%O:%O)\n", request_fail, errno, host, this);
    if (errno)
      this::errno = errno;
    ok=0;
    if (request_fail) request_fail(this,@extra_args);
+
    remove_call_out(async_timeout);
 }
 
@@ -324,8 +374,16 @@ protected void async_failed()
 #endif
 }
 
-protected void async_timeout()
+protected void async_timeout(void|bool force)
 {
+   if (!force && !zero_type(timeout_watchdog)) {
+     int deltat = time(1) - timeout_watchdog;
+     if (deltat >= 0) {
+       call_out(this_function, data_timeout || timeout);
+       return;
+     }
+   }
+
    DBG("** TIMEOUT\n");
    if (!status) {
      status = 504;	// HTTP_GW_TIMEOUT
@@ -377,12 +435,14 @@ void async_got_host(string server,int port)
 
 void async_fetch_read(mixed dummy,string data)
 {
+   TOUCH_TIMEOUT_WATCHDOG();
    DBG("-> %d bytes of data\n",sizeof(data));
    buf+=data;
 
    if (has_index(headers, "content-length") &&
        sizeof(buf)-datapos>=(int)headers["content-length"])
    {
+      REMOVE_MAXTIME_CALL_OUT();
       remove_call_out(async_timeout); // Bug 4773
       con->set_nonblocking(0,0,0);
       request_ok(this, @extra_args);
@@ -394,6 +454,7 @@ void async_fetch_read(mixed dummy,string data)
 // by the server. Except for calling the callback and have ->data() be
 // the messenger...
 void async_fetch_read_chunked(mixed dummy, string data) {
+    TOUCH_TIMEOUT_WATCHDOG();
     int np = -1, f;
     buf+=data;
 OUTER: while (sizeof(buf) > cpos) {
@@ -418,6 +479,7 @@ OUTER: while (sizeof(buf) > cpos) {
 	} while(0);
 	remove_call_out(async_timeout);
 	con->set_nonblocking(0,0,0);
+        REMOVE_MAXTIME_CALL_OUT();
 	request_ok(this, @extra_args);
 	break;
     }
@@ -428,6 +490,7 @@ void async_fetch_close()
    DBG("-> close\n");
    close_connection();
    remove_call_out(async_timeout);
+   REMOVE_MAXTIME_CALL_OUT();
    if (errno) {
      if (request_fail) (request_fail)(this, @extra_args);
    } else {
@@ -781,6 +844,7 @@ this_program sync_request(string server, int port, string query,
 this_program async_request(string server,int port,string query,
 			   void|mapping|string headers,void|string data)
 {
+   SET_MAXTIME_CALL_OUT();
    DBG("async_request %s:%d %q\n", server, port, query);
 
   this::real_host = server;
@@ -1279,7 +1343,7 @@ void timed_async_fetch(function(object, mixed ...:void) ok_callback,
   extra_args = extra;
   request_ok = ok_callback;
   request_fail = fail_callback;
-  call_out(async_timeout, data_timeout);
+  call_out(async_timeout, data_timeout || timeout);
 
   // NB: The timeout is currently not reset on each read, so the whole
   // response has to be read within data_timeout seconds. Is that

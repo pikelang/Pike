@@ -1,5 +1,5 @@
 #pike __REAL_VERSION__
-#require Regexp.PCRE
+#require constant(Regexp.PCRE)
 
 //! This is a port of the Javascript Markdown parser
 //! @url{https://github.com/chjj/marked Marked@}. The only method needed to
@@ -122,7 +122,7 @@ protected string replace1(string subject, string from, string to)
   return subject;
 }
 
-//! HTML encode @tt{<>"'@}. If @[enc] is true @tt{&@} will also be encoded
+//! HTML encode @tt{<>"'@}. If @[enc] is @tt{true@} @tt{&@} will also be encoded
 protected string encode_html(string html, void|bool enc)
 {
   return replace(REGX((!enc ? "&(?!#?\\w+;)" : "&"))->replace(html, "&amp;"),
