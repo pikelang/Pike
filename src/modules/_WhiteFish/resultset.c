@@ -171,7 +171,7 @@ static void f_resultset_create( INT32 args )
     for(i = 0; i< d->size; i++ )
       if( TYPEOF(d->item[i]) == PIKE_T_ARRAY )
       {
-	LONGEST di, ri;
+	INT64 di, ri;
 	struct array *a = d->item[i].u.array;
 	if( a->size < 2 )
 	  continue;
@@ -195,7 +195,7 @@ static void f_resultset_create( INT32 args )
       }
       else
       {
-	LONGEST ri;
+	INT64 ri;
 	if( TYPEOF(d->item[i]) == PIKE_T_OBJECT )
 	{
 	  push_object( d->item[i].u.object );
@@ -955,7 +955,7 @@ static void f_dateset_not_between( INT32 args )
 
 static void f_resultset_add( INT32 args )
 {
-  LONGEST d, h;
+  INT64 d, h;
   get_all_args( "add", args, "%l%l", &d, &h );
   wf_resultset_add( Pike_fp->current_object, d, h );
   pop_n_elems(args);
@@ -971,7 +971,7 @@ static void f_resultset_add_many( INT32 args )
     Pike_error("Expected equally sized arrays\n");
   for( i=0;i<a->size;i++ )
   {
-    LONGEST ri, di;
+    INT64 ri, di;
     if( TYPEOF(a->item[i]) == PIKE_T_OBJECT )
     {
       push_object( a->item[i].u.object );

@@ -227,7 +227,7 @@ overflow:
   return 0;
 }
 
-PMOD_EXPORT void push_ulongest (unsigned LONGEST i)
+PMOD_EXPORT void push_ulongest (UINT64 i)
 {
   if (i <= MAX_INT_TYPE) {
     push_int((INT_TYPE)i);
@@ -238,11 +238,11 @@ PMOD_EXPORT void push_ulongest (unsigned LONGEST i)
     push_object (fast_clone_object (bignum_program));
     mpz = OBTOMPZ (sp[-1].u.object);
 
-#if SIZEOF_LONG >= SIZEOF_LONGEST
+#if SIZEOF_LONG >= SIZEOF_INT64
     mpz_set_ui (mpz, i);
 #else
-    mpz_import (mpz, 1, 1, SIZEOF_LONGEST, 0, 0, &i);
-#endif	/* SIZEOF_LONG < SIZEOF_LONGEST */
+    mpz_import (mpz, 1, 1, SIZEOF_INT64, 0, 0, &i);
+#endif	/* SIZEOF_LONG < SIZEOF_INT64 */
   }
 }
 

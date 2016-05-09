@@ -138,7 +138,7 @@ PMOD_EXPORT void check_all_args(const char *fnname, int args, ... )
  *   %d: int (the c type "int" which may vary from INT_TYPE)
  *   %D: int of float -> int
  *   %+: positive int -> INT_TYPE
- *   %l: int or bignum -> LONGEST
+ *   %l: int or bignum -> INT64
  *   %c: char *				Only narrow (8 bit) strings without NUL.
  *   %C: char *	or NULL			Only narrow (8 bit) strings without NUL.
  *   %n: struct pike_string *           Only narrow (8 bit) strings.
@@ -318,10 +318,10 @@ static int va_get_args_2(struct svalue *s,
 
     case 'l':
       if (TYPEOF(*s) == T_INT) {
-	*cast_arg(ptr, LONGEST *)=s->u.integer;
+        *cast_arg(ptr, INT64 *)=s->u.integer;
 	break;
       } else if (is_bignum_object_in_svalue(s) &&
-		 int64_from_bignum(cast_arg(ptr, LONGEST *), s->u.object) == 1) {
+                 int64_from_bignum(cast_arg(ptr, INT64 *), s->u.object) == 1) {
         break;
       }
       /* FIXME: Error reporting for bignum objects. */

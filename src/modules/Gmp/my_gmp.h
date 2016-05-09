@@ -92,7 +92,6 @@ PMOD_EXPORT extern struct program *bignum_program;
 
 /* Bits excluding the sign bit, if any. */
 #define ULONG_BITS (SIZEOF_LONG * CHAR_BIT)
-#define ULONGEST_BITS (SIZEOF_LONGEST * CHAR_BIT)
 #define INT_TYPE_BITS (SIZEOF_INT_TYPE * CHAR_BIT - 1)
 #define INT64_BITS (SIZEOF_INT64 * CHAR_BIT - 1)
 

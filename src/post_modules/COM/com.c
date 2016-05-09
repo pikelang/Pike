@@ -1175,7 +1175,7 @@ static void f_cobj__sprintf(INT32 args)
 	struct string_builder s;
 	init_string_builder(&s, 0);
 	string_builder_sprintf(&s, "Com.cobj(%llx)",
-			       (LONGEST)(ptrdiff_t)cobj->pIDispatch);
+                               (INT64)(ptrdiff_t)cobj->pIDispatch);
 	push_string(finish_string_builder(&s));
 	stack_pop_n_elems_keep_top(args);
 	return;

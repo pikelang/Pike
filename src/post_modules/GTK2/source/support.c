@@ -515,38 +515,38 @@ static int pgtk2_push_gdk_rectangle_param(const GValue *a) {
 }
 
 static int pgtk2_push_int_param(const GValue *a) {
-  LONGEST retval;
+  INT64 retval;
   switch (G_VALUE_TYPE(a)) {
     case G_TYPE_UINT:
-      retval=(LONGEST)g_value_get_uint(a);
+      retval=(INT64)g_value_get_uint(a);
       break;
     case G_TYPE_INT64:
-      retval=(LONGEST)g_value_get_int64(a);
+      retval=(INT64)g_value_get_int64(a);
       break;
     case G_TYPE_UINT64:
-      retval=(LONGEST)g_value_get_uint64(a);
+      retval=(INT64)g_value_get_uint64(a);
       break;
     case G_TYPE_INT:
-      retval=(LONGEST)g_value_get_int(a);
+      retval=(INT64)g_value_get_int(a);
       break;
     case G_TYPE_FLAGS:
-      retval=(LONGEST)g_value_get_flags(a);
+      retval=(INT64)g_value_get_flags(a);
       break;
     case G_TYPE_BOOLEAN:
-      retval=(LONGEST)g_value_get_boolean(a);
+      retval=(INT64)g_value_get_boolean(a);
       break;
     case G_TYPE_LONG:
-      retval=(LONGEST)g_value_get_long(a);
+      retval=(INT64)g_value_get_long(a);
       break;
     case G_TYPE_CHAR:
 #ifdef HAVE_G_VALUE_GET_SCHAR
-      retval=(LONGEST)g_value_get_schar(a);
+      retval=(INT64)g_value_get_schar(a);
 #else
-      retval=(LONGEST)g_value_get_char(a);
+      retval=(INT64)g_value_get_char(a);
 #endif
       break;
     default:
-      retval=(LONGEST)g_value_get_uint(a);
+      retval=(INT64)g_value_get_uint(a);
       break;
   }
   push_int64(retval);
@@ -557,7 +557,7 @@ static int pgtk2_push_enum_param(const GValue *a) {
   /* This can't be handled by push_int_param as the type of
   an enumeration is some subclass of G_TYPE_ENUM, rather than
   actually being G_TYPE_ENUM exactly. */
-  push_int64((LONGEST)g_value_get_enum(a));
+  push_int64((INT64)g_value_get_enum(a));
   return PUSHED_VALUE;
 }
 
@@ -608,7 +608,7 @@ static int pgtk2_push_object_param(const GValue *a) {
 }
 
 static int pgtk2_push_pike_object_param(const GValue *a) {
-  push_int64((LONGEST)g_value_get_pointer(a));
+  push_int64((INT64)g_value_get_pointer(a));
   return PUSHED_VALUE;
 }
 
@@ -864,16 +864,16 @@ void pgtk2_setup_mixin(struct object *o, struct program *p) {
   ((struct mixin_wrapper *)Pike_fp->current_storage)->offset = offset;
 }
 
-LONGEST pgtk2_get_int(struct svalue *s) {
+INT64 pgtk2_get_int(struct svalue *s) {
   if (TYPEOF(*s) == PIKE_T_INT)
     return s->u.integer;
   if (is_bignum_object_in_svalue(s)) {
-    LONGEST res;
+    INT64 res;
     int64_from_bignum(&res,s->u.object);
     return res;
   }
   if (TYPEOF(*s) == PIKE_T_FLOAT)
-    return (LONGEST)s->u.float_number;
+    return (INT64)s->u.float_number;
   return 0;
 }
 

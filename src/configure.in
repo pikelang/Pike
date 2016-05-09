@@ -3438,7 +3438,7 @@ if test "x$with_long_long_int" = x -a \
 #  if test $ac_cv_sizeof_long_long != 0 -a \
 #	   $ac_cv_sizeof_long_long -le $ac_cv_sizeof_char_p ; then
 #    # This isn't a good idea on architectures where
-#    # sizeof(long int) < sizeof(LONGEST).
+#    # sizeof(long int) < sizeof(INT64).
 #    # This is due to the gmp mpz api's using long int instead of
 #    # mp_limb_{signed_}t.
 #    #with_long_long_int=yes

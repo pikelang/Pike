@@ -1331,7 +1331,7 @@ PIKEFUN string ctime(longest timestamp)
   time_t i;
   char *s;
 
-#if SIZEOF_TIME_T < SIZEOF_LONGEST
+#if SIZEOF_TIME_T < SIZEOF_INT64
   if (timestamp > MAX_TIME_T || timestamp < MIN_TIME_T)
     SIMPLE_ARG_ERROR ("ctime", 1, "Timestamp outside valid range.");
 #endif

@@ -424,7 +424,7 @@ PMOD_EXPORT ptrdiff_t string_builder_quote_string(struct string_builder *buf,
 						  int flags);
 void update_flags_for_add( struct pike_string *a, const struct pike_string *b);
 PMOD_EXPORT void string_builder_append_integer(struct string_builder *s,
-					       LONGEST val,
+                                               INT64 val,
 					       unsigned int base,
 					       int flags,
 					       size_t min_width,

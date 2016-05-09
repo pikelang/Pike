@@ -432,10 +432,10 @@ static void check_interpreter_lock (DLOC_DECL)
   }
 }
 
-static unsigned LONGEST thread_swaps = 0;
-static unsigned LONGEST check_threads_calls = 0;
-static unsigned LONGEST check_threads_yields = 0;
-static unsigned LONGEST check_threads_swaps = 0;
+static unsigned INT64 thread_swaps = 0;
+static unsigned INT64 check_threads_calls = 0;
+static unsigned INT64 check_threads_yields = 0;
+static unsigned INT64 check_threads_swaps = 0;
 static void f__thread_swaps (INT32 UNUSED(args))
   {push_ulongest (thread_swaps);}
 static void f__check_threads_calls (INT32 UNUSED(args))
@@ -1618,7 +1618,7 @@ static void check_threads(struct callback *UNUSED(cb), void *UNUSED(arg), void *
 
   {
 #ifdef PIKE_DEBUG
-    unsigned LONGEST old_thread_swaps = thread_swaps;
+    unsigned INT64 old_thread_swaps = thread_swaps;
 #endif
     pike_thread_yield();
 #ifdef PIKE_DEBUG
@@ -2037,7 +2037,7 @@ static void f_get_thread_quanta(INT32 args)
  */
 static void f_set_thread_quanta(INT32 args)
 {
-  LONGEST ns = 0;
+  INT64 ns = 0;
 
 #ifndef LONG_CPU_TIME_T
   /* Convert to ticks. */

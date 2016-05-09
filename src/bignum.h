@@ -354,7 +354,7 @@ PMOD_EXPORT struct object *create_double_bignum(INT_TYPE low, INT_TYPE high);
 PMOD_EXPORT void convert_svalue_to_bignum(struct svalue *s);
 
 PMOD_EXPORT void push_int64(INT64 i);
-PMOD_EXPORT void push_ulongest(unsigned LONGEST i);
+PMOD_EXPORT void push_ulongest(UINT64 i);
 
 /* Returns nonzero iff conversion is successful. */
 PMOD_EXPORT int int64_from_bignum(INT64 *i, struct object *bignum);

@@ -2750,13 +2750,13 @@ PMOD_EXPORT ptrdiff_t string_builder_quote_string(struct string_builder *buf,
 }
 
 PMOD_EXPORT void string_builder_append_integer(struct string_builder *s,
-					       LONGEST val,
+                                               INT64 val,
 					       unsigned int base,
 					       int flags,
 					       size_t min_width,
 					       size_t precision)
 {
-  unsigned LONGEST tmp;
+  unsigned INT64 tmp;
   size_t len = 1;
   const char *numbers = "0123456789abcdef";
   if ((base < 2) || (base > 16)) {
@@ -2849,7 +2849,7 @@ PMOD_EXPORT void string_builder_append_integer(struct string_builder *s,
     else shift = delta;
 
     /* Calculate actual number of digits and initial shift. */
-    for (; shift < SIZEOF_LONGEST * 8 && tmp >> shift; shift += delta, len++)
+    for (; shift < SIZEOF_INT64 * 8 && tmp >> shift; shift += delta, len++)
       ;
 
     if ((len < min_width) && !(flags & APPEND_LEFT)) {
@@ -2890,7 +2890,7 @@ PMOD_EXPORT void string_builder_append_integer(struct string_builder *s,
 #define VA_LIST_DEREF(X)	(*(X))
 #endif
 
-static LONGEST pike_va_int(VA_LIST_PTR args, int flags)
+static INT64 pike_va_int(VA_LIST_PTR args, int flags)
 {
   switch (flags & (APPEND_WIDTH_MASK|APPEND_SIGNED)) {
   case APPEND_WIDTH_HALF:

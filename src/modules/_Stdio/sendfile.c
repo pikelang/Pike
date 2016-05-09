@@ -569,7 +569,7 @@ void low_do_sendfile(struct pike_sendfile *this)
 	    S_ISREG(st.st_mode)) {
 	  this->len = st.st_size - offset;	/* To end of file */
 	} else {
-	  this->len = MAX_LONGEST;
+	  this->len = MAX_INT64;
 	}
       }
       while (this->len > 0) {
@@ -880,7 +880,7 @@ static void sf_create(INT32 args)
   struct pike_sendfile sf;
   int iovcnt = 0;
   struct svalue *cb = NULL;
-  LONGEST offset, len;
+  INT64 offset, len;
 
   if (THIS->to_file) {
     Pike_error("sendfile->create(): Called a second time!\n");

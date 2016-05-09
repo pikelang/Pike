@@ -582,7 +582,7 @@ PIKECLASS Buffer
 
   static INT_TYPE io_read_number_uc( Buffer *io, size_t len )
   {
-    LONGEST res = 0;
+    INT_TYPE res = 0;
     while( LIKELY(len--) ) {
       res <<= 8;
       res |= io_read_byte_uc(io);
@@ -603,9 +603,9 @@ PIKECLASS Buffer
     return res;
   }
 
-  static LONGEST io_read_number( Buffer *io, size_t len )
+  static INT64 io_read_number( Buffer *io, size_t len )
   {
-    LONGEST res;
+    INT64 res;
     if( !io_avail(io, len) )
       return -1;
     /* ensure only leading 0:s */
@@ -625,7 +625,6 @@ PIKECLASS Buffer
     struct object *o;
     MP_INT *i;
     unsigned char *p;
-    LONGEST res;
 
     if( !io_avail(io,len) ) return NULL;
     o = fast_clone_object(bignum_program);
@@ -1686,7 +1685,7 @@ PIKECLASS Buffer
    */
   PIKEFUN string(0..255) read_hstring( int bytes, void|int offset )
   {
-    LONGEST len;
+    INT64 len;
     Buffer *io = THIS;
     struct pike_string *s;
     ONERROR e;
@@ -1731,7 +1730,7 @@ PIKECLASS Buffer
    */
   PIKEFUN string(0..255) read_cstring(void|int sentinel)
   {
-    LONGEST len;
+    INT64 len;
     Buffer *io = THIS;
     struct pike_string *s;
     ONERROR e;
@@ -1788,7 +1787,7 @@ fail: CALL_AND_UNSET_ONERROR(e);
    */
   PIKEFUN Buffer read_hbuffer( int bytes, int|void copy )
   {
-    LONGEST len;
+    INT64 len;
     int do_copy = 0;
     Buffer *io = THIS;
     ONERROR e;

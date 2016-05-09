@@ -114,10 +114,10 @@ struct pike_sendfile
   struct my_file *from;
   struct my_file *to;
 
-  LONGEST sent;
+  INT64 sent;
 
-  LONGEST offset;
-  LONGEST len;
+  INT64 offset;
+  INT64 len;
 
   struct iovec *hd_iov;
   struct iovec *tr_iov;

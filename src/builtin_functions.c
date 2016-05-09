@@ -5387,12 +5387,12 @@ PMOD_EXPORT void f_gmtime(INT32 args)
   struct tm tm_s;
 #endif
   struct tm *tm;
-  LONGEST tt;
+  INT64 tt;
   time_t t;
 
   get_all_args("gmtime", args, "%l", &tt);
 
-#if SIZEOF_TIME_T < SIZEOF_LONGEST
+#if SIZEOF_TIME_T < SIZEOF_INT64
   if (tt > MAX_TIME_T || tt < MIN_TIME_T)
     SIMPLE_ARG_ERROR ("gmtime", 1, "Timestamp outside valid range.");
 #endif
@@ -5406,7 +5406,7 @@ PMOD_EXPORT void f_gmtime(INT32 args)
   tm = gmtime(&t);
 #endif
   if (!tm) Pike_error ("gmtime() on this system cannot handle "
-		       "the timestamp %"PRINTLONGEST"d.\n", (LONGEST) t);
+                       "the timestamp %"PRINTINT64"d.\n", (INT64) t);
   pop_n_elems(args);
   encode_struct_tm(tm);
 
@@ -5458,12 +5458,12 @@ PMOD_EXPORT void f_gmtime(INT32 args)
 PMOD_EXPORT void f_localtime(INT32 args)
 {
   struct tm *tm;
-  LONGEST tt;
+  INT64 tt;
   time_t t;
 
   get_all_args("localtime", args, "%l", &tt);
 
-#if SIZEOF_TIME_T < SIZEOF_LONGEST
+#if SIZEOF_TIME_T < SIZEOF_INT64
   if (tt > MAX_TIME_T || tt < MIN_TIME_T)
     SIMPLE_ARG_ERROR ("localtime", 1, "Timestamp outside valid range.");
 #endif

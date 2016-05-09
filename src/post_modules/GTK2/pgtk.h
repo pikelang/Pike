@@ -270,12 +270,12 @@ void pgtk2_free_str(gchar *s);
 #define CGSTR0(X) (const gchar*)STR0(X)
 
 /* Somewhat more complex than one could expect. Consider bignums. */
-LONGEST pgtk2_get_int(struct svalue *s);
+INT64 pgtk2_get_int(struct svalue *s);
 int pgtk2_is_int(struct svalue *s);
 
 # define PGTK_ISINT(X)    ((TYPEOF(*(X)) == PIKE_T_INT) || pgtk2_is_int(X))
 # define PGTK_GETINT(X)   pgtk2_get_int(X)
-# define PGTK_PUSH_INT(X) push_int64((LONGEST)(X))
+# define PGTK_PUSH_INT(X) push_int64((INT64)(X))
 
 /* Can convert from int to float, and, if bignum is present, bignum to
  * float.
