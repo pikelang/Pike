@@ -1196,21 +1196,6 @@ void clear()
 #endif
 }
 
-//! Calculate a suitable time for the next poll of this monitor.
-//!
-//! @param m
-//!   Monitor to update.
-//!
-//! @param st
-//!   New stat for the monitor.
-//!
-//! This function is called by @[check_monitor()] to schedule the
-//! next check.
-protected void update_monitor(Monitor m, Stdio.Stat st)
-{
-  m->update(st);
-}
-
 //! Release a single @[Monitor] from monitoring.
 //!
 //! @seealso
