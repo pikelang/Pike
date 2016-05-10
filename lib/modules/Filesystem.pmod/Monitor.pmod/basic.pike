@@ -522,7 +522,9 @@ protected class Monitor(string path,
 	} else if (!m2) {
 	  file_deleted(file);
 	}
-	if (err) throw(err);
+	if (err) {
+	  master()->handle_error(err);
+	}
       }
       if (flags & MF_RECURSE) {
 	// Check the remaining files in the directory soon.
