@@ -228,6 +228,7 @@ protected class Monitor(string path,
 
   void create()
   {
+    MON_WERR("Creating monitor for %O.\n", path);
     Element::create(this);
     register_path(1);
   }
@@ -265,6 +266,7 @@ protected class Monitor(string path,
   //!   callback if the file content also has changed.
   protected void attr_changed(string path, Stdio.Stat st)
   {
+    MON_WERR("attr_changed(%O, %O)\n", path, st);
     if (global::data_changed) {
       call_callback(global::data_changed, path);
     } else {
@@ -291,6 +293,7 @@ protected class Monitor(string path,
   //! path is checked (and only if it exists).
   protected void file_exists(string path, Stdio.Stat st)
   {
+    MON_WERR("file_exists(%O, %O)\n", path, st);
     register_path();
     int t = time(1);
     call_callback(global::file_exists, path, st);
@@ -314,6 +317,7 @@ protected class Monitor(string path,
   //! Called by @[check()] and @[check_monitor()].
   protected void file_created(string path, Stdio.Stat st)
   {
+    MON_WERR("file_created(%O, %O)\n", path, st);
     register_path();
     call_callback(global::file_created, path, st);
   }
@@ -334,6 +338,7 @@ protected class Monitor(string path,
   //! Called by @[check()] and @[check_monitor()].
   protected void file_deleted(string path, Stdio.Stat|void old_st)
   {
+    MON_WERR("file_deleted(%O, %O)\n", path, st);
     unregister_path();
     call_callback(global::file_deleted, path);
   }
@@ -353,6 +358,7 @@ protected class Monitor(string path,
   //! Called by @[check()] and @[check_monitor()].
   protected void stable_data_change(string path, Stdio.Stat st)
   {
+    MON_WERR("stable_data_change(%O, %O)\n", path, st);
     call_callback(global::stable_data_change, path, st);
   }
 
@@ -458,6 +464,8 @@ protected class Monitor(string path,
   protected int(0..1) status_change(Stdio.Stat old_st, Stdio.Stat st,
 				    int orig_flags, int flags)
   {
+    MON_WERR("status_change(%O, %O, 0x%04x, 0x%04x)\n",
+	     old_st, st, orig_flags, flags);
     if (st->isdir) {
       int res = 0;
       array(string) files = get_dir(path) || ({});
@@ -467,6 +475,8 @@ protected class Monitor(string path,
 	new_files -= this::files;
 	deleted_files = this::files - files;
       }
+      MON_WERR("%d files created, %d files deleted.\n",
+	       sizeof(new_files) sizeof(deleted_files));
       this::files = files;
       foreach(new_files, string file) {
 	res = 1;
@@ -703,19 +713,27 @@ protected class Monitor(string path,
 	((st->mtime != old_st->mtime) ||
 	 /* (st->ctime != old_st->ctime) || */
 	 (st->size != old_st->size))) {
+      MON_WERR("Inode changed. New st: %O.\n", st);
       last_change = time(1);
       update(st);
       if (status_change(old_st, st, orig_flags, flags)) return 1;
     } else if (last_change < time(1) - (stable_time || global::stable_time)) {
+      MON_WERR("Inode stable now.\n");
       last_change = 0x7fffffff;
       stable_data_change(path, st);
       return 1;
     } else if (last_change != 0x7fffffff &&
 	       st->isdir && status_change(old_st, st, orig_flags, flags)) {
+      MON_WERR("Directory not stable yet.\n");
       // Directory not stable yet.
       last_change = time(1);
       update(st);
       return 1;
+    } else if (last_change != 0x7fffffff) {
+      MON_WERR("Not stable yet. Age: %d seconds. Path: %O\n",
+	       time(1) - last_change, path);
+    } else {
+      MON_WERR("Inode stable still.\n");
     }
     return 0;
   }
