@@ -489,6 +489,9 @@ protected class Monitor(string path,
 	} else if (!m2) {
 	  file_created(file, file_stat(file, 1));
 	}
+	if (err) {
+	  master()->handle_error(err);
+	}
       }
       foreach(deleted_files, string file) {
 	res = 1;
@@ -941,7 +944,7 @@ protected void inotify_event(int wd, int event, int cookie, string(8bit) path)
 	m->check(0);
       };
     if (err) {
-      master()->handler_error(err);
+      master()->handle_error(err);
     }
   } else {
     MON_WERR("No monitor found for path %O.\n", path);
