@@ -66,6 +66,10 @@ mapping(string:Revision) revisions;
 //! (rcsfile(5), of course, fails to state such irrelevant information).
 array(Revision) trunk = ({});
 
+//! Feature detection constant for the @tt{max_revisions@} argument
+//! to @[create()], @[parse()] and @[parse_delta_sections()].
+constant max_revisions_supported = 1;
+
 protected mapping parse_mapping(array data)
 {
      return (mapping)(data/2);
