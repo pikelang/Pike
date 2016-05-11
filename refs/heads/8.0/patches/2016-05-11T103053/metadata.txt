@@ -1,0 +1,59 @@
+subject: Pike 8.0: Multiple fixes:
+from: f1e001c80ffb2d4b55434bf388050977c25b132b
+to: 5accfdb65986704bd528724834ad2204d139633a
+originator: wellhardh@roxen.com
+depends: 2016-04-25T112359
+restart: true
+
+Multiple fixes:
+
+  * Compiler: Fixed extraneous entries on type mark stack.
+    
+    pop_type() restores the stack mark when done (which often isn't
+    what you want or expect...).
+
+  * Crypto: Added algorithm identifiers from JWA (RFC 7518:3.1).
+    
+    Fixes some of [bug 7671].
+
+  * MIME: Improved types for {en,de}code_base64url().
+
+  * Crypto.RSA: Add some support for JOSE JWS signatures.
+
+  * Documentation [RSA]: Minor doc change for jose_decode().
+
+  * Crypto.RSA: Some API changes for jose_sign().
+    
+    Changed argument order and added defaults for the hash algorithm.
+
+  * Crypto.ECC.Curve.ECDSA: Added support for jose_{sign,decode}().
+
+  * Testsuite [Crypto]: Added some tests of JOSE JWS.
+    
+    Test vectors taken from RFC 7515 A.2.1 and A.3.1.
+
+  * SHA256 is assumed due to Nettle version requirements. SHA384 and SHA512 are not.
+
+  * Test HMAC jwa constants.
+
+  * Web: Added {en,de}code_jwt(). Fixes most of [bug 7671].
+
+  * __builtin.Nettle.Sign: Added JOSE default implementation.
+    
+    Fixes some warnings in SSL.Context.
+    
+    Adds default implementation of jose_{sign,decode}() for signature
+    algorithms that JOSE doesn't support (eg Crypto.DSA).
+
+  * Documentation [Crypto.RSA]: Fixed cut and paste error.
+
+  * Inotify: Simulate events for directory content at watch creation.
+    
+    This reduces the race window for tracking directory content.
+    It also simplifies code that does such tracking.
+    
+    Also updates Filesystem.Monitor.basic accordingly.
+
+  * Inotify: Fixed typo in previous commit.
+
+  * release number bumped to 8.0.234 by export.pike
