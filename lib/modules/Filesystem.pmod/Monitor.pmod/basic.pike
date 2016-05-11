@@ -476,7 +476,7 @@ protected class Monitor(string path,
 	deleted_files = this::files - files;
       }
       MON_WERR("%d files created, %d files deleted.\n",
-	       sizeof(new_files) sizeof(deleted_files));
+	       sizeof(new_files), sizeof(deleted_files));
       this::files = files;
       foreach(new_files, string file) {
 	res = 1;
