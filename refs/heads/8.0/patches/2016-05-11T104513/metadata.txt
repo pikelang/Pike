@@ -1,0 +1,35 @@
+subject: Pike 8.0: Multiple fixes:
+from: 70dd3e9e92fdf773eaacf474d49f5865caa77b5f
+to: 4ffb1cb58812cb049466bca831344b105c30c89f
+originator: wellhardh@roxen.com
+depends: 2016-05-11T104346|pike/8.0.242
+restart: true
+
+Multiple fixes:
+
+  * release number bumped to 8.0.243 by export.pike
+
+  * Parser.RCS: Add optional max_revisions parameter to the API.
+
+  * Parser.RCS: Bugfix in create().
+
+  * Parser.RCS: Added feature detection constant "max_revisions_supported".
+
+  * Filesystem.Monitor: Improved error handling somewhat.
+    
+    Errors were hidden in some cases.
+
+  * Filexyxtem.Monitor: Got rid of update_monitor().
+    
+    The function didn't work, and if it had worked it would've messed
+    with the internal state of monitors and caused stuff to break.
+
+  * Filesystem.Monitor: Improved FILESYSTEM_MONITOR_DEBUG diagnostics.
+
+  * Filesystem.Monitor: Don't propagate all errors.
+    
+    Errors thrown by check() on deletion could cause other deletion
+    notifications to be lost, as the errors were rethrown before
+    the rest of the notifications were handled.
+    
+    Those errors are now instead sent directly to the master.
