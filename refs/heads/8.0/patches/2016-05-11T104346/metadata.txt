@@ -1,4 +1,4 @@
-subject: Pike 8.0: Multiple fixes:
+subject: Pike 8.0: Added support for JWT with symmetric keys
 from: 5accfdb65986704bd528724834ad2204d139633a
 to: 70dd3e9e92fdf773eaacf474d49f5865caa77b5f
 originator: wellhardh@roxen.com
@@ -7,22 +7,10 @@ restart: true
 
 Multiple fixes:
 
-  * release number bumped to 8.0.235 by export.pike
-
-  * cpp: correctly handle unterminated strings in macro arguments
-    
-    Previously, when passing an unterminated string as an argument to a
-    macro with 'stringify'-flag, the code would read past the end of the
-    string. This could result in out of bounds memory access.
-
   * __builtin.Nettle.Hash [HMAC]: Implement init().
     
     The init() function in the HMAC State object now actually works
     as documented.
-
-  * release number bumped to 8.0.236 by export.pike
-
-  * release number bumped to 8.0.237 by export.pike
 
   * Implemented HMAC jwa with a little less code.
 
@@ -44,20 +32,6 @@ Multiple fixes:
 
   * __builtin.Nettle.MAC: Fixed some warnings.
 
-  * More CHANGES.
-
-  * release number bumped to 8.0.238 by export.pike
-
-  * release number bumped to 8.0.239 by export.pike
-
   * Don't pretend jwa is a variable, to be consistent with name(), digest_size() etc.
-
-  * Noted some SSL fixes.
-
-  * CHANGES: Added note about JOSE.
-
-  * release number bumped to 8.0.240 by export.pike
-
-  * release number bumped to 8.0.241 by export.pike
 
   * release number bumped to 8.0.242 by export.pike
