@@ -1,0 +1,8 @@
+subject: Pike 8.0: Filesystem.Monitor: Fixed typo in FILESYSTEM_MONITOR_DEBUG.
+from: 4ffb1cb58812cb049466bca831344b105c30c89f
+to: ee53981a0cca15ff2b74f531f8fed8192d76a584
+originator: wellhardh@roxen.com
+depends: 2016-05-11T104513
+restart: true
+
+Filesystem.Monitor: Fixed typo in FILESYSTEM_MONITOR_DEBUG.
