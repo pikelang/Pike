@@ -1,4 +1,4 @@
-subject: Pike 8.0: Multiple fixes:
+subject: Pike 8.0: Parser.RCS max_revisions, Filesystem.Monitor debug
 from: 70dd3e9e92fdf773eaacf474d49f5865caa77b5f
 to: 4ffb1cb58812cb049466bca831344b105c30c89f
 originator: wellhardh@roxen.com
@@ -6,8 +6,6 @@ depends: 2016-05-11T104346|pike/8.0.242
 restart: true
 
 Multiple fixes:
-
-  * release number bumped to 8.0.243 by export.pike
 
   * Parser.RCS: Add optional max_revisions parameter to the API.
 
@@ -19,7 +17,7 @@ Multiple fixes:
     
     Errors were hidden in some cases.
 
-  * Filexyxtem.Monitor: Got rid of update_monitor().
+  * Filesystem.Monitor: Got rid of update_monitor().
     
     The function didn't work, and if it had worked it would've messed
     with the internal state of monitors and caused stuff to break.
