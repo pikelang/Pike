@@ -1,0 +1,49 @@
+subject: Pike 8.0: Multiple fixes:
+from: 5accfdb65986704bd528724834ad2204d139633a
+to: a60d3c59adee67322e9cad4767ab1fc343393615
+originator: wellhardh@roxen.com
+depends: 2016-05-11T103053|pike/8.0.234
+restart: true
+
+Multiple fixes:
+
+  * release number bumped to 8.0.235 by export.pike
+
+  * cpp: correctly handle unterminated strings in macro arguments
+    
+    Previously, when passing an unterminated string as an argument to a
+    macro with 'stringify'-flag, the code would read past the end of the
+    string. This could result in out of bounds memory access.
+
+  * __builtin.Nettle.Hash [HMAC]: Implement init().
+    
+    The init() function in the HMAC State object now actually works
+    as documented.
+
+  * release number bumped to 8.0.236 by export.pike
+
+  * release number bumped to 8.0.237 by export.pike
+
+  * Implemented HMAC jwa with a little less code.
+
+  * Documentation [__builtin.Nettle.Sign]: Improved JOSE doc.
+
+  * __builtin.Nettle.MAC: Added support for HMAC-based JWS signatures.
+
+  * __builtin.Nettle.Hash [HMAC]: Somewhat stricter type for `jwa().
+    
+    Also adds some documentation.
+
+  * Nettle: Added __builtin.Nettle.AE.
+    
+    This is Authenticated Encryption without Authenticated Data.
+
+  * Crypto.AE: Added class.
+
+  * Crypto.None: Added the plaintext algorithm.
+
+  * __builtin.Nettle.MAC: Fixed some warnings.
+
+  * More CHANGES.
+
+  * release number bumped to 8.0.238 by export.pike
