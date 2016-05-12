@@ -3557,6 +3557,7 @@ expr5: literal_expr
         $$=mknode(F_LAND,
                   mknode(F_ASSIGN, $1, mklocalnode(temporary,0)),
                   mknode(F_INDEX,  mklocalnode(temporary,0), $4));
+	$$ = pop_local_variables(temporary, $$);
       }
       else
       {
@@ -3589,6 +3590,7 @@ expr5: literal_expr
         $$=mknode(F_LAND,
                   mknode(F_ASSIGN, $1, mklocalnode(temporary,0) ),
                   mknode(F_RANGE,  mklocalnode(temporary,0), range) );
+	$$ = pop_local_variables(temporary, $$);
       }
       else
       {
@@ -3652,13 +3654,14 @@ expr5: literal_expr
       fix_type_field( $1 );
       if( $1 && $1->type )
       {
-        $1->type->refs++;
-
+        add_ref($1->type);
         temporary = add_local_name(empty_pike_string, $1->type, 0);
-        Pike_compiler->compiler_frame->variable[temporary].flags |= LOCAL_VAR_IS_USED;
+        Pike_compiler->compiler_frame->variable[temporary].flags |=
+	  LOCAL_VAR_IS_USED;
         $$=mknode(F_LAND,
                   mknode(F_ASSIGN, $1, mklocalnode(temporary,0)),
                   mknode(F_ARROW,  mklocalnode(temporary,0), $4));
+	$$ = pop_local_variables(temporary, $$);
       }
       else
       {
