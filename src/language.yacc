@@ -269,6 +269,8 @@ int yylex(YYSTYPE *yylval);
 %type <number> optional_comma
 %type <number> optional_constant
 %type <number> optional_create_arguments
+%type <number> save_block_level
+%type <number> save_locals
 
 %type <str> magic_identifiers
 %type <str> magic_identifiers1
@@ -2859,28 +2861,33 @@ typedef: modifiers TOK_TYPEDEF full_type simple_identifier ';'
   }
   ;
 
-cond: TOK_IF
+save_locals: /* empty */
   {
-    $<number>$=Pike_compiler->compiler_frame->current_number_of_locals;
+    Pike_compiler->compiler_frame->last_block_level =
+      $$ = Pike_compiler->compiler_frame->current_number_of_locals;
   }
-  line_number_info
+  ;
+
+save_block_level: /* empty */
   {
     /* Trick to store more than one number on compiler stack - Hubbe */
-    $<number>$=Pike_compiler->compiler_frame->last_block_level;
-    Pike_compiler->compiler_frame->last_block_level=$<number>2;
+    $$ = Pike_compiler->compiler_frame->last_block_level;
   }
+  ;
+
+cond: TOK_IF save_block_level save_locals line_number_info
   '(' safe_comma_expr end_cond statement optional_else_part
   {
     $$ = mknode('?', $6,
 		mknode(':',
 		       mkcastnode(void_type_string, $8),
 		       mkcastnode(void_type_string, $9)));
-    COPY_LINE_NUMBER_INFO($$, $3);
+    COPY_LINE_NUMBER_INFO($$, $4);
     $$ = mkcastnode(void_type_string, $$);
-    COPY_LINE_NUMBER_INFO($$, $3);
-    free_node ($3);
-    $$ = pop_local_variables($<number>2, $$);
-    Pike_compiler->compiler_frame->last_block_level=$<number>4;
+    COPY_LINE_NUMBER_INFO($$, $4);
+    free_node($4);
+    $$ = pop_local_variables($3, $$);
+    Pike_compiler->compiler_frame->last_block_level = $2;
   }
   ;
 
@@ -2926,16 +2933,7 @@ foreach_lvalues:  ',' safe_lvalue { $$=$2; }
   { $$=mknode(':',$2,$4); }
   ;
 
-foreach: TOK_FOREACH
-  {
-    $<number>$=Pike_compiler->compiler_frame->current_number_of_locals;
-  }
-  line_number_info
-  {
-    /* Trick to store more than one number on compiler stack - Hubbe */
-    $<number>$=Pike_compiler->compiler_frame->last_block_level;
-    Pike_compiler->compiler_frame->last_block_level=$<number>2;
-  }
+foreach: TOK_FOREACH save_block_level save_locals line_number_info
   '(' expr0 foreach_lvalues end_cond
   {
     /* Fix AUTO type. */
@@ -3004,10 +3002,10 @@ foreach: TOK_FOREACH
       /* Error in lvalue */
       $$=mknode(F_COMMA_EXPR, mkcastnode(void_type_string, $6), $10);
     }
-    COPY_LINE_NUMBER_INFO($$, $3);
-    free_node ($3);
-    $$ = pop_local_variables($<number>2, $$);
-    Pike_compiler->compiler_frame->last_block_level=$<number>4;
+    COPY_LINE_NUMBER_INFO($$, $4);
+    free_node($4);
+    $$ = pop_local_variables($3, $$);
+    Pike_compiler->compiler_frame->last_block_level = $2;
     Pike_compiler->compiler_frame->opt_flags |= OPT_CUSTOM_LABELS;
   }
   ;
@@ -3044,47 +3042,28 @@ expected_semicolon: ';'
   }
   ;
 
-for: TOK_FOR
-  {
-    $<number>$=Pike_compiler->compiler_frame->current_number_of_locals;
-  }
-  line_number_info
-  {
-    /* Trick to store more than one number on compiler stack - Hubbe */
-    $<number>$=Pike_compiler->compiler_frame->last_block_level;
-    Pike_compiler->compiler_frame->last_block_level=$<number>2;
-  }
+for: TOK_FOR save_block_level save_locals line_number_info
   '(' unused expected_semicolon for_expr expected_semicolon unused end_cond
   statement
   {
     $$=mknode(F_COMMA_EXPR, mkcastnode(void_type_string, $6),
 	      mknode(F_FOR,$8,mknode(':',$12,$10)));
-    COPY_LINE_NUMBER_INFO($$, $3);
-    free_node ($3);
-    $$ = pop_local_variables($<number>2, $$);
-    Pike_compiler->compiler_frame->last_block_level=$<number>4;
+    COPY_LINE_NUMBER_INFO($$, $4);
+    free_node($4);
+    $$ = pop_local_variables($3, $$);
+    Pike_compiler->compiler_frame->last_block_level = $2;
     Pike_compiler->compiler_frame->opt_flags |= OPT_CUSTOM_LABELS;
   }
   ;
 
-
-while:  TOK_WHILE
-  {
-    $<number>$=Pike_compiler->compiler_frame->current_number_of_locals;
-  }
-  line_number_info
-  {
-    /* Trick to store more than one number on compiler stack - Hubbe */
-    $<number>$=Pike_compiler->compiler_frame->last_block_level;
-    Pike_compiler->compiler_frame->last_block_level=$<number>2;
-  }
+while: TOK_WHILE save_block_level save_locals line_number_info
   '(' safe_comma_expr end_cond statement
   {
     $$=mknode(F_FOR,$6,mknode(':',$8,NULL));
-    COPY_LINE_NUMBER_INFO($$, $3);
-    free_node ($3);
-    $$ = pop_local_variables($<number>2, $$);
-    Pike_compiler->compiler_frame->last_block_level=$<number>4;
+    COPY_LINE_NUMBER_INFO($$, $4);
+    free_node($4);
+    $$ = pop_local_variables($3, $$);
+    Pike_compiler->compiler_frame->last_block_level = $2;
     Pike_compiler->compiler_frame->opt_flags |= OPT_CUSTOM_LABELS;
   }
   ;
@@ -3093,23 +3072,14 @@ for_expr: /* EMPTY */ { $$=mkintnode(1); }
   | safe_comma_expr
   ;
 
-switch:	TOK_SWITCH
-  {
-    $<number>$=Pike_compiler->compiler_frame->current_number_of_locals;
-  }
-  line_number_info
-  {
-    /* Trick to store more than one number on compiler stack - Hubbe */
-    $<number>$=Pike_compiler->compiler_frame->last_block_level;
-    Pike_compiler->compiler_frame->last_block_level=$<number>2;
-  }
+switch: TOK_SWITCH save_block_level save_locals line_number_info
   '(' safe_comma_expr end_cond statement
   {
     $$=mknode(F_SWITCH,$6,$8);
-    COPY_LINE_NUMBER_INFO($$, $3);
-    free_node ($3);
-    $$ = pop_local_variables($<number>2, $$);
-    Pike_compiler->compiler_frame->last_block_level=$<number>4;
+    COPY_LINE_NUMBER_INFO($$, $4);
+    free_node($4);
+    $$ = pop_local_variables($3, $$);
+    Pike_compiler->compiler_frame->last_block_level = $2;
   }
   ;
 
