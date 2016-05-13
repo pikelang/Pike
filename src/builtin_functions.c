@@ -5826,6 +5826,46 @@ PMOD_EXPORT void f_mktime (INT32 args)
 #endif
 }
 
+#define DOES_MATCH_CLASS(EXTRACT_M,EXTRACT_S,ML)                      \
+  {                                                                   \
+      unsigned against = EXTRACT_S;                                   \
+      int inverted=0,matched=0;                                       \
+      j++;                                                            \
+      i++;                                                            \
+      if(EXTRACT_M == '!' || EXTRACT_M == '^')                        \
+      {                                                               \
+        i++;                                                          \
+        inverted=1;                                                   \
+        matched =1;                                                   \
+      }                                                               \
+      while(i<ML)                                                     \
+      {                                                               \
+        unsigned c = EXTRACT_M;                                       \
+        unsigned e = 0;                                               \
+        if(c==']')                                                    \
+          break;                                                      \
+        i++;                                                          \
+        if( EXTRACT_M == '-' )                                        \
+        {                                                             \
+          i++;                                                        \
+          e = EXTRACT_M;                                              \
+          i++;                                                        \
+        }                                                             \
+        else                                                          \
+          e=c;                                                        \
+                                                                      \
+        if( c <= against && e >= against )                            \
+        {                                                             \
+          if(inverted)                                                \
+            return 0;                                                 \
+          matched=1;                                                  \
+        }                                                             \
+      }                                                               \
+      if (!matched || i>=ML) return 0;                                \
+      break;                                                          \
+  }
+
+
 /* Common case: both strings are 8bit. */
 static int does_match_8_8( const unsigned char *s, int j, int sl,
                           const unsigned char *m, int i, int ml)
@@ -5855,6 +5895,15 @@ static int does_match_8_8( const unsigned char *s, int j, int sl,
           return 1;
       }
       return 0;
+
+
+    case '[':
+      DOES_MATCH_CLASS(m[i],s[j],ml);
+      break;
+
+     case '\\':
+       if (++i==ml) return 0;
+       /* falthrough */
 
      default:
          if(j>=sl || m[i] != s[j] )
@@ -5894,6 +5943,15 @@ static int does_match_16_8( const unsigned short *s, int j, int sl,
       }
       return 0;
 
+
+    case '[':
+      DOES_MATCH_CLASS(m[i],s[j],ml);
+      break;
+
+     case '\\':
+       if (++i==ml) return 0;
+       /* falthrough */
+
      default:
          if(j>=sl || m[i] != s[j] )
              return 0;
@@ -5926,6 +5984,13 @@ static int does_match_x_x(struct pike_string *s,int j,
 
       return 0;
 
+    case '[':
+      DOES_MATCH_CLASS(index_shared_string(m,i),index_shared_string(s,j),m->len);
+      break;
+
+     case '\\':
+       if (++i==m->len) return 0;
+       /* falthrough */
      default:
        if(j>=s->len ||
 	  index_shared_string(m,i)!=index_shared_string(s,j)) return 0;
@@ -5947,7 +6012,7 @@ static int does_match(struct pike_string *s,int j,
     return does_match_x_x( s,j,m,i );
 }
 /*! @decl int(0..1) glob(string glob, string str)
- *! @decl int(0..1) glob(array(string) glob, string str)
+ *! @decl string glob(array(string) glob, string str)
  *! @decl array(string) glob(string glob, array(string) str)
  *! @decl array(string) glob(array(string) glob, array(string) str)
  *!
@@ -5960,8 +6025,10 @@ static int does_match(struct pike_string *s,int j,
  *!      and an asterisk ('*') matches a string of arbitrary length. All
  *!      other characters only match themselves.
  *!    @type array(string)
- *!      the function returns true, or keeps a string, if any of the given
- *!       patterns match
+ *!      the function returns the matching glob if any of the given
+ *!      patterns match. Otherwise 0. If the second argument is an array
+ *!      it will behave as if the first argument is a string (see
+ *!      below)
  *!  @endmixed
  *!
  *! @param str
@@ -5980,16 +6047,16 @@ static int does_match(struct pike_string *s,int j,
  *!   @[sscanf()], @[Regexp]
  */
 
-static int any_does_match( struct svalue *items, int nglobs, struct pike_string *str )
+static struct pike_string *any_does_match( struct svalue *items, int nglobs, struct pike_string *str )
 {
    INT32 i;
    for( i =0; i<nglobs; i++ )
    {
      struct pike_string *str2 = items[i].u.string;
      if( str == str2 )
-       return 1;
+       return str;
      if( does_match(str,0,str2,0) )
-       return 1;
+       return str2;
    }
    return 0;
 }
@@ -5999,6 +6066,7 @@ PMOD_EXPORT void f_glob(INT32 args)
   INT32 i;
   struct array *a;
   struct svalue *glob;
+  struct pike_string *tmp;
   int nglobs;
 
   if(args != 2)
@@ -6025,10 +6093,13 @@ PMOD_EXPORT void f_glob(INT32 args)
   switch(TYPEOF(Pike_sp[1-args]))
   {
   case T_STRING:
-      i = any_does_match(glob,nglobs,Pike_sp[1-args].u.string);
-      pop_n_elems(2);
-      push_int(i);
-   break;
+    tmp = any_does_match(glob,nglobs,Pike_sp[1-args].u.string);
+    if(TYPEOF(Pike_sp[-args]) == PIKE_T_ARRAY && tmp)
+      ref_push_string(tmp);
+    else
+      push_int(!!tmp);
+    stack_pop_n_elems_keep_top(2);
+    break;
 
   case T_ARRAY: {
     INT32 j;
@@ -9287,8 +9358,9 @@ void init_builtin_efuns(void)
 
   /* function(string,string:int(0..1))|function(string,string*:array(string)) */
   ADD_EFUN("glob",f_glob,
-           tOr(tFunc(tOr(tStr,tArr(tStr)) tStr,tInt01),
-               tFunc(tOr(tStr,tArr(tStr)) tSetvar(1,tArr(tStr)),tVar(1))),
+           tOr3(tFunc(tStr tStr,tInt01),
+                tFunc(tArr(tStr) tStr,tStr),
+                tFunc(tOr(tStr,tArr(tStr)) tSetvar(1,tArr(tStr)),tVar(1))),
 	   OPT_TRY_OPTIMIZE);
 
   /* function(string,int|void:int) */

@@ -113,6 +113,25 @@ Incompatible changes
 
 o Gz.crc32 now only returns positive results.
 
+o glob() has changed.
+
+  The main incompatibilities are that [ and \ are now special
+  characters in the pattern, and if you check the return value against
+  1 instead of checking if it's true, and use an array as the first
+  argument you will have to change your code.
+
+  This is in order to extend the glob function to cover what
+  'standard' glob functions do:
+
+  glob() now accepts quotes (\* to match a single *, as an example)
+  and handles ranges ([abc] for a, b or c, [a-z0-9] for a single
+  character between a and z or 0-9
+
+  You can also negate a range using ^ or ! ([^a-zA-Z] as an example).
+
+  When the first argument (the pattern) to glob is an array, glob now
+  returns which pattern in the array matched.
+
 
 Deprecated symbols and modules
 ------------------------------
