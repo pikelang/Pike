@@ -1316,13 +1316,6 @@ basic_type:
   | TOK_PROGRAM_ID  opt_program_type  { push_type(T_PROGRAM); }
   | TOK_ARRAY_ID    opt_array_type    { push_type(T_ARRAY); }
   | TOK_MULTISET_ID opt_array_type    { push_type(T_MULTISET); }
-  | typeof
-  {
-    if ($1) {
-      push_finished_type($1->u.sval.u.type);
-    }
-    free_node($1);
-  }
   | TOK_ATTRIBUTE_ID '(' string_constant ',' full_type ')'
   {
     push_type_attribute($3->u.sval.u.string);
@@ -1449,6 +1442,15 @@ identifier_type: idents
     }
     pop_stack();
     free_node($1);
+  }
+  | typeof
+  {
+    if ($1) {
+      push_finished_type($1->u.sval.u.type);
+      free_node($1);
+    } else {
+      push_finished_type(mixed_type_string);
+    }
   }
   ;
 
