@@ -806,7 +806,7 @@ F_LOR(0, F_LOR(1, 2)):
 F_LOR(0 = F_ASSIGN(*, +[node_is_false($$)]), 2):
   F_COMMA_EXPR($0, $2);
 
-F_LOR(F_COMMA_EXPR(0, 1), 2):
+F_LOR(F_COMMA_EXPR(0, 1[$$->token != F_POP_VALUE]), 2):
   F_COMMA_EXPR($0, F_LOR($1, $2));
 
 F_LOR(0 = F_ASSIGN(*, +[node_is_true($$)]), *):
