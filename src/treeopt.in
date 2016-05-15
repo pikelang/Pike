@@ -856,7 +856,7 @@ F_LAND(0 = F_ASSIGN(*, +[node_is_true($$)]), 2):
 F_LAND(0 = F_ASSIGN(*, +[node_is_false($$)]), *):
   $0;
 
-F_LAND(F_COMMA_EXPR(0, 1), 2):
+F_LAND(F_COMMA_EXPR(0, 1[$$->token != F_POP_VALUE]), 2):
   F_COMMA_EXPR($0, F_LAND($1, $2));
 
 F_LAND(+[node_is_true($$)], 0):
