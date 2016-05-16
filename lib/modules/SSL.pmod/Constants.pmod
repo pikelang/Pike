@@ -1378,6 +1378,7 @@ constant EXTENSION_channel_id                   = 30031;
 constant EXTENSION_channel_id_new               = 30032;
 constant EXTENSION_old_padding                  = 35655;
 constant EXTENSION_renegotiation_info		= 0xff01;	// RFC 5746
+constant EXTENSION_draft_version		= 0xff02;	// https://github.com/tlswg/tls13-spec/wiki/Implementations
 
 constant ECC_CURVES = ([
 #if constant(Crypto.ECC.Curve)
