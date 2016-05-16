@@ -1362,7 +1362,7 @@ node *debug_mksoftcastnode(struct pike_type *type, node *n)
   }
 #endif /* PIKE_DEBUG */
 
-  if (Pike_compiler->compiler_pass == 2) {
+  if (Pike_compiler->compiler_pass == 2 && type->type != PIKE_T_AUTO ) {
     if (type == void_type_string) {
       yywarning("Soft cast to void.");
       return mknode(F_POP_VALUE, n, 0);
@@ -3429,12 +3429,20 @@ void fix_type_field(node *n)
       struct pike_type *t;
       fix_type_field(CAR(n));
       fix_type_field(CDR(n));
-      /* if( CDR(n)->type->type == PIKE_T_AUTO ) */
-      /* { */
-      /*     /\* Update to actual type. *\/ */
-      /*     free_type( CDR(n)->type ); */
-      /*     copy_pike_type( CDR(n)->type, CAR(n)->type ); */
-      /* } */
+      if( CAR(n)->type->type == PIKE_T_AUTO )
+      {
+          /* Update to actual type (assign from soft-cast to auto). */
+          free_type( CAR(n)->type );
+          copy_pike_type( CAR(n)->type, CDR(n)->type );
+
+          /* potential extension: fix general case:
+             auto z;
+             z = 1;
+             z= 10;
+
+             -> typeof(z) == int(1)|int(10)
+          */
+      }
 #if 0
       /* This test isn't sufficient, see below. */
       check_node_type(CAR(n), CDR(n)->type, "Bad type in assignment.");
