@@ -1910,8 +1910,8 @@ too_large:
     if(mpz_sgn(mi)<0)
       SIMPLE_ARG_ERROR ("pow", 1, "Negative exponent.");
     i=mpz_get_si(mi);
-    /* Cut off at 1 MB. */
-    if(mpz_cmp_si(mi, i) || INT_TYPE_MUL_OVERFLOW(size, i) || (size*i>(INT_TYPE)(0x100000/sizeof(mp_limb_t))))
+    /* Cut off at 100 MB. */
+    if(mpz_cmp_si(mi, i) || INT_TYPE_MUL_OVERFLOW(size, i) || (size*i>(INT_TYPE)(0x10000000/sizeof(mp_limb_t))))
     {
        if(mpz_cmp_si(THIS, -1)<0 || mpz_cmp_si(THIS, 1)>0)
 	 SIMPLE_ARG_ERROR ("pow", 1, "Exponent too large.");
