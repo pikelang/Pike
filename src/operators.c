@@ -3778,17 +3778,10 @@ PMOD_EXPORT void f_exponent(INT32 args)
 
     res_is_powf:
       {
-        double r = pow( a, b );
-        if( r != HUGE_VAL )
-        {
-          sp-=2;
-          push_float( r );
-          return;
-        }
+        sp-=2;
+        push_float( pow( a, b ) );
+        return;
       }
-      /* When float overflows, switch to bignums. FIXME: mpf? */
-      /* fallthrough */
-
     default:
       stack_swap();
       convert_stack_top_to_bignum();
