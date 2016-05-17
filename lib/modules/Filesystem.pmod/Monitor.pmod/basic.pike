@@ -212,13 +212,14 @@ protected class Monitor(string path,
   //!
   //! @param dying
   //!   Indicates that the @[Monitor] is being destructed.
+  //!   It is the destruction cause value offset by one.
   protected void unregister_path(int|void dying)
   {
-    if (dying) {
-      // We are going away permanently, so remove ourselves from
-      // from the monitor_queue.
-      MON_WERR("Unregistering %O from polling.\n", path);
+    if (dying == 1) {
+      // We are going away permanently due to explicit destruct(),
+      // so remove ourselves from from the monitor_queue.
       mixed key = monitor_mutex->lock();
+      MON_WERR("Unregistering %O from polling.\n", path);
       monitor_queue->remove(this);
     }
   }
@@ -740,9 +741,11 @@ protected class Monitor(string path,
     return 0;
   }
 
-  protected void destroy()
+  protected void destroy(int cause)
   {
-    unregister_path(1);
+    // NB: Cause #0 == DESTRUCT_EXPLICIT.
+    //     Any other cause and unregistering is irrelevant.
+    unregister_path(1 + cause);
   }
 }
 
