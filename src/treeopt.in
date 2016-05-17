@@ -1695,6 +1695,14 @@ F_MULT_EQ(0 = +, 1):
   $$ = mknode( oper, mksoftcastnode(type,mkopernode( "`*", $0, $1 )), $0 );
 };
 
+F_POW_EQ(0 = +, 1):
+{
+  struct pike_type *type = $0->type;
+  int oper = (($0->tree_info&(OPT_SIDE_EFFECT|OPT_ASSIGNMENT)) ||
+	      depend_p($0, $1)) ? F_ASSIGN_SELF : F_ASSIGN;
+  $$ = mknode( oper, mksoftcastnode(type,mkopernode( "`**", $0, $1 )), $0 );
+};
+
 F_MOD_EQ(0 = +, 1) :
 {
   struct pike_type *type = $0->type;

@@ -349,40 +349,6 @@ void f_exp(INT32 args)
  *! @seealso
  *!   @[exp()], @[log()]
  */
-void f_pow(INT32 args)
-{
-  if(args != 2)
-    SIMPLE_WRONG_NUM_ARGS_ERROR("pow", 2);
-
-  switch(TYPEOF(Pike_sp[-2]) * 16 + TYPEOF(Pike_sp[-1]))
-  {
-    case T_INT * 16 + T_OBJECT:
-    case T_INT * 16 + T_INT:
-    case T_OBJECT * 16 + T_OBJECT:
-    case T_OBJECT * 16 + T_INT:
-    case T_OBJECT * 16 + T_FLOAT:
-      stack_swap();
-      push_constant_text("pow");
-      f_index(2);
-      stack_swap();
-      f_call_function(2);
-      return;
-
-    case T_FLOAT * 16 + T_INT:
-    case T_INT * 16 + T_FLOAT:
-    case T_FLOAT * 16 + T_FLOAT:
-    {
-      FLOAT_TYPE x,y;
-      get_all_args("pow",2,"%F%F",&x,&y);
-      pop_stack();
-      SET_SVAL(sp[-1], T_FLOAT, 0, float_number, FL(pow,x,y));
-      return;
-    }
-
-  default:
-    Pike_error("Invalid argument types to pow.\n");
-  }
-}
 
 /*! @decl float floor(int|float f)
  *!
@@ -651,12 +617,12 @@ PIKE_MODULE_INIT
   ADD_EFUN("exp",f_exp,tFunc(tNUM,tFlt),0);
 
   /* function(float,float:float) */
-  ADD_EFUN("pow",f_pow,
+  ADD_EFUN("pow",f_exponent,
 	   tOr5(tFunc(tFlt tFlt,tFlt),
 		tFunc(tInt tFlt,tFlt),
 		tFunc(tFlt tInt,tFlt),
 		tFunc(tInt tInt,tInt),
-		tFunc(tObj tOr3(tInt,tObj,tFlt),tMix)),0);
+		tFunc(tObj tOr3(tInt,tObj,tFlt),tOr3(tObj,tInt,tFlt))),0);
 
   /* function(int|float:float) */
   ADD_EFUN("floor",f_floor,tFunc(tNUM,tFlt),0);

@@ -1083,6 +1083,11 @@ unknown_directive:
 
     case '*':
       if(GOBBLE('=')) return TOK_MULT_EQ;
+      if(GOBBLE('*'))
+      {
+          if(GOBBLE('=')) return TOK_POW_EQ;
+          return TOK_POW;
+      }
       return '*';
 
     case '%':
@@ -1176,7 +1181,12 @@ unknown_directive:
       {
       case '/': tmp="```/"; break;
       case '%': tmp="```%"; break;
-      case '*': tmp="```*"; break;
+      case '*':
+          if( GOBBLE('*') )
+              tmp="```**";
+          else
+              tmp="```*";
+          break;
       case '&': tmp="```&"; break;
       case '|': tmp="```|"; break;
       case '^': tmp="```^"; break;

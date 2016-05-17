@@ -64,6 +64,7 @@ PMOD_EXPORT void o_rsh(void);
 PMOD_EXPORT void f_rsh(INT32 args);
 PMOD_EXPORT void o_multiply(void);
 PMOD_EXPORT void f_multiply(INT32 args);
+PMOD_EXPORT void f_exponent(INT32 args);
 PMOD_EXPORT void o_divide(void);
 PMOD_EXPORT void f_divide(INT32 args);
 PMOD_EXPORT void o_mod(void);

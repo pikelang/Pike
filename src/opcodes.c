@@ -252,6 +252,7 @@ const struct keyword instr_names[]=
 { "<<=",		F_LSH_EQ,0 NULLADDR },
 { ">>=",		F_RSH_EQ,0 NULLADDR },
 { "^=",			F_XOR_EQ,0 NULLADDR },
+{ "**=",		F_POW_EQ,0 NULLADDR },
 { "arg+=1024",		F_PREFIX_1024,0 NULLADDR },
 { "arg+=256",		F_PREFIX_256,0 NULLADDR },
 { "arg+=256*X",		F_PREFIX_CHARX256,0 NULLADDR },

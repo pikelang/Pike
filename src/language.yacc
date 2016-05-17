@@ -78,6 +78,8 @@
 %token TOK_MULT_EQ
 %token TOK_OBJECT_ID
 %token TOK_OR_EQ
+%token TOK_POW
+%token TOK_POW_EQ
 %token TOK_PRIVATE
 %token TOK_PROGRAM_ID
 %token TOK_PROTECTED
@@ -3203,6 +3205,7 @@ assign: TOK_AND_EQ { $$=F_AND_EQ; }
   | TOK_ADD_EQ { $$=F_ADD_EQ; }
   | TOK_SUB_EQ { $$=F_SUB_EQ; }
   | TOK_MULT_EQ{ $$=F_MULT_EQ; }
+  | TOK_POW_EQ { $$=F_POW_EQ; }
   | TOK_MOD_EQ { $$=F_MOD_EQ; }
   | TOK_DIV_EQ { $$=F_DIV_EQ; }
   ;
@@ -3259,6 +3262,7 @@ expr1: expr2
   | expr1 '+' expr1    { $$=mkopernode("`+",$1,$3); }
   | expr1 '-' expr1    { $$=mkopernode("`-",$1,$3); }
   | expr1 '*' expr1    { $$=mkopernode("`*",$1,$3); }
+  | expr1 TOK_POW expr1 { $$=mkopernode("`**",$1,$3); }
   | expr1 '%' expr1    { $$=mkopernode("`%",$1,$3); }
   | expr1 '/' expr1    { $$=mkopernode("`/",$1,$3); }
   | expr1 TOK_LOR error

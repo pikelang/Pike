@@ -219,6 +219,7 @@ const char *const lfun_names[]  = {
   "_deserialize",
   "_size_object",
   "_random",
+  "pow",
 };
 
 struct pike_string *lfun_strings[NELEM(lfun_names)];
@@ -281,6 +282,7 @@ static const char *const raw_lfun_types[] = {
   tFuncV(tObj tZero, tVoid, tVoid),	/* "_deserialize", */
   tFuncV(tZero, tVoid, tInt),	/* "_size_object", */
   tFuncV(tFunction tFunction, tVoid, tMix),	/* "_random", */
+  tFuncV(tOr3(tInt,tFloat,tObj),tVoid,tOr3(tObj,tInt,tFloat)),	/* "pow", */
 };
 
 /* These two are not true LFUNs! */
@@ -7046,10 +7048,11 @@ PMOD_EXPORT int low_find_lfun(struct program *p, ptrdiff_t lfun)
   unsigned int flags = 0;
   int i;
   struct identifier *id;
+#ifdef PIKE_DEBUG
   if ((size_t)lfun >= NELEM(lfun_strings)) {
     return find_lfun_fatal(p, lfun);
   }
-
+#endif
   lfun_name = lfun_strings[lfun];
 
   i = really_low_find_shared_string_identifier(lfun_name,

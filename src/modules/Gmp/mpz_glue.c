@@ -2279,6 +2279,7 @@ static void pike_mp_free (void *ptr, size_t UNUSED(size))
   ADD_FUNCTION("sqrtrem",mpzmod_sqrtrem,tFunc(tNone,tArr(tMpz_ret)),0); \
   ADD_FUNCTION("powm",mpzmod_powm,tFunc(tMpz_arg tMpz_arg,tMpz_ret),0);	\
   ADD_FUNCTION("pow", mpzmod_pow,tMpz_shift_type, 0);			\
+  ADD_FUNCTION("`**", mpzmod_pow,tMpz_shift_type, 0);			\
 									\
   ADD_FUNCTION("popcount", mpzmod_popcount,tFunc(tVoid,tInt), 0);	\
   ADD_FUNCTION("hamdist", mpzmod_hamdist,tFunc(tMpz_arg,tInt), 0);	\

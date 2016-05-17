@@ -228,6 +228,7 @@ enum Pike_opcodes
   F_MOD_EQ,
   F_MULT_EQ,
   F_OR_EQ,
+  F_POW_EQ,
   F_RSH_EQ,
   F_SUB_EQ,
   F_VAL_LVAL,
