@@ -3747,54 +3747,60 @@ PMOD_EXPORT void o_multiply(void)
 
 
 
+
+/*! @decl object|int|float `**(object|int|float arg1, object|int|float arg2)
+ *!
+ *! Exponentiation. Raise arg1 to the power of arg2.
+ *!
+ */
 PMOD_EXPORT void f_exponent(INT32 args)
 {
-    double a, b;
+  double a, b;
 
-    if(args != 2 )
-        SIMPLE_WRONG_NUM_ARGS_ERROR("`**",2);
+  if(args != 2 )
+    SIMPLE_WRONG_NUM_ARGS_ERROR("`**",2);
 
-    switch( TWO_TYPES(TYPEOF(sp[-2]),  TYPEOF(sp[-1])) )
-    {
-        case TWO_TYPES(T_FLOAT,T_FLOAT):
-            a = sp[-2].u.float_number;
-            b = sp[-1].u.float_number;
-            goto res_is_powf;
+  switch( TWO_TYPES(TYPEOF(sp[-2]),  TYPEOF(sp[-1])) )
+  {
+    case TWO_TYPES(T_FLOAT,T_FLOAT):
+      a = sp[-2].u.float_number;
+      b = sp[-1].u.float_number;
+      goto res_is_powf;
 
-        case TWO_TYPES(T_FLOAT,T_INT):
-            a = sp[-2].u.float_number;
-            b = (double)sp[-1].u.integer;
-            goto res_is_powf;
+    case TWO_TYPES(T_FLOAT,T_INT):
+      a = sp[-2].u.float_number;
+      b = (double)sp[-1].u.integer;
+      goto res_is_powf;
 
-        case TWO_TYPES(T_INT,T_FLOAT):
-            a = (double)sp[-2].u.integer;
-            b = (double)sp[-1].u.float_number;
+    case TWO_TYPES(T_INT,T_FLOAT):
+      a = (double)sp[-2].u.integer;
+      b = (double)sp[-1].u.float_number;
 
-        res_is_powf:
-            {
-                double r = pow( a, b );
-                if( r != HUGE_VAL )
-                {
-                    sp-=2;
-                    push_float( r );
-                    return;
-                }
-            }
-            /* When float overflows, switch to bignums. FIXME: mpf? */
-            /* fallthrough */
+    res_is_powf:
+      {
+        double r = pow( a, b );
+        if( r != HUGE_VAL )
+        {
+          sp-=2;
+          push_float( r );
+          return;
+        }
+      }
+      /* When float overflows, switch to bignums. FIXME: mpf? */
+      /* fallthrough */
 
-        default:
-            stack_swap();
-            convert_stack_top_to_bignum();
-            stack_swap();
-            /* fallthrough again (le slow path).. */
-        case TWO_TYPES(T_OBJECT,T_INT):
-        case TWO_TYPES(T_OBJECT,T_OBJECT):
-            if( !call_lfun( LFUN_POW, LFUN_POW ) )
-                Pike_error("Illegal argument 1 to `**.\n");
-            return;
-    }
+    default:
+      stack_swap();
+      convert_stack_top_to_bignum();
+      stack_swap();
+      /* fallthrough again (this is the slow path).. */
 
+    case TWO_TYPES(T_OBJECT,T_INT):
+    case TWO_TYPES(T_OBJECT,T_OBJECT):
+      if( !call_lfun( LFUN_POW, LFUN_RPOW ) )
+        Pike_error("Illegal argument 1 to `**.\n");
+      return;
+  }
 }
 
 

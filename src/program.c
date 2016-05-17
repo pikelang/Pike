@@ -219,7 +219,9 @@ const char *const lfun_names[]  = {
   "_deserialize",
   "_size_object",
   "_random",
-  "pow",
+
+  "`**",
+  "``**",
 };
 
 struct pike_string *lfun_strings[NELEM(lfun_names)];
@@ -283,6 +285,7 @@ static const char *const raw_lfun_types[] = {
   tFuncV(tZero, tVoid, tInt),	/* "_size_object", */
   tFuncV(tFunction tFunction, tVoid, tMix),	/* "_random", */
   tFuncV(tOr3(tInt,tFloat,tObj),tVoid,tOr3(tObj,tInt,tFloat)),	/* "pow", */
+  tFuncV(tOr3(tInt,tFloat,tObj),tVoid,tOr3(tObj,tInt,tFloat)),	/* "rpow", */
 };
 
 /* These two are not true LFUNs! */
