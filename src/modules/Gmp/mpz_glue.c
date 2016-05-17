@@ -890,9 +890,9 @@ static void mpzmod_size(INT32 args)
   pop_n_elems(args);
 
   if (base == 256 || base == -256)
-    push_int((INT32)((mpz_sizeinbase(THIS, 2) + 7) / 8));
+    push_int((mpz_sizeinbase(THIS, 2) + 7) / 8);
   else
-    push_int((INT32)(mpz_sizeinbase(THIS, base)));
+    push_int(mpz_sizeinbase(THIS, base));
 }
 
 /*! @decl string|int|float cast(string type)
@@ -1721,8 +1721,7 @@ static void mpzmod_lsh(INT32 args)
     mi = get_mpz(sp-1, 1, "`<<", 1, 1);
     if(mpz_sgn(mi)<0)
       SIMPLE_ARG_ERROR ("`<<", 1, "Got negative shift count.");
-    /* Cut off at 1MB ie 0x800000 bits. */
-    if(!mpz_fits_ulong_p(mi) || (mpz_get_ui(THIS) > 0x800000))
+    if(!mpz_fits_ulong_p(mi))
     {
        if(mpz_sgn(THIS))
 	 SIMPLE_ARG_ERROR ("`<<", 1, "Shift count too large.");
@@ -1803,7 +1802,7 @@ static void mpzmod_rlsh(INT32 args)
   mi = get_mpz(sp-1, 1, "``<<", 1, 1);
 
   /* Cut off at 1MB ie 0x800000 bits. */
-  if(!mpz_fits_ulong_p(THIS) || (mpz_get_ui(THIS) > 0x800000)) {
+  if(!mpz_fits_ulong_p(THIS)) {
     if(mpz_sgn(mi))
       Pike_error ("Gmp.mpz->``<<(): Shift count too large.\n");
     else {
