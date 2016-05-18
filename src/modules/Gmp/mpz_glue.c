@@ -1874,6 +1874,55 @@ static void mpzmod_powm(INT32 args)
   PUSH_REDUCED(res);
 }
 
+/*! @decl Gmp.mpz `**(int|float|Gmp.mpz x)
+ *!
+ *! Return x raised to the value of this object. The case when zero is
+ *! raised to zero yields one.
+ *!
+ *! @seealso
+ *!   @[pow]
+ */
+static void mpzmod_rpow(INT32 args)
+{
+  struct object *res;
+  DECLARE_THIS();
+
+  if( TYPEOF(sp[-1]) == PIKE_T_FLOAT )
+  {
+    sp[-1].u.float_number = pow(sp[-1].u.float_number,
+                                mpz_get_d(THIS));
+    return;
+  }
+
+  if( mpz_sgn(THIS) < 0 ) /* integer whatever ** -x -> 0 */
+  {
+    push_int(0);
+    return;
+  }
+
+  if( mpz_sgn(THIS) == 0 )
+  {
+    push_int(1);
+    return;
+  }
+
+  {
+    unsigned long power = mpz_get_ui( THIS );
+    res = fast_clone_object(THIS_PROGRAM);
+    if( TYPEOF(sp[-1]) == PIKE_T_INT )
+    {
+      mpz_ui_pow_ui(OBTOMPZ(res), sp[-1].u.integer, power);
+    }
+    else
+    {
+      MP_INT *mi = get_mpz(sp-1, 1, "rpow", 1, 1);
+      mpz_pow_ui(OBTOMPZ(res), mi, power);
+    }
+  }
+  pop_stack();
+  PUSH_REDUCED(res);
+}
+
 /*! @decl Gmp.mpz pow(int|float|Gmp.mpz x)
  *!
  *! Return this mpz object raised to @[x]. The case when zero is
@@ -1886,58 +1935,34 @@ static void mpzmod_pow(INT32 args)
 {
   DECLARE_THIS();
   struct object *res = NULL;
-  INT_TYPE i;
   MP_INT *mi;
-  INT_TYPE size = (INT_TYPE)mpz_size(THIS);
-
-#define POW_RAM_LIMIT (1024*1024*1024)
+  unsigned long exponent;
 
   if (args != 1)
     SIMPLE_WRONG_NUM_ARGS_ERROR ("pow", 1);
-  if (TYPEOF(sp[-1]) == T_INT) {
-    INT_TYPE e = sp[-1].u.integer;
-    if (e < 0)
-      SIMPLE_ARG_ERROR ("pow", 1, "Negative exponent.");
 
-    if (INT_TYPE_MUL_OVERFLOW(e, size) || size * e > (INT_TYPE)(POW_RAM_LIMIT/sizeof(mp_limb_t))) {
-      if(mpz_cmp_si(THIS, -1)<0 || mpz_cmp_si(THIS, 1)>0)
-	 goto too_large;
+  if (TYPEOF(sp[-1]) == T_INT)
+    exponent = sp[-1].u.integer;
+  else
+  {
+    if( TYPEOF(sp[-1]) == PIKE_T_FLOAT )
+    {
+      sp[-1].u.float_number = pow(mpz_get_d(THIS),sp[-1].u.float_number);
+      return;
     }
-    res = fast_clone_object(THIS_PROGRAM);
-    mpz_pow_ui(OBTOMPZ(res), THIS, sp[-1].u.integer);
-  } else {
-too_large:
+
     mi = get_mpz(sp-1, 1, "pow", 1, 1);
     if(mpz_sgn(mi)<0)
-      SIMPLE_ARG_ERROR ("pow", 1, "Negative exponent.");
-    i=mpz_get_si(mi);
-
-    if(mpz_cmp_si(mi, i) || INT_TYPE_MUL_OVERFLOW(size, i) || (size*i>(INT_TYPE)(POW_RAM_LIMIT/sizeof(mp_limb_t))))
     {
-       if(mpz_cmp_si(THIS, -1)<0 || mpz_cmp_si(THIS, 1)>0)
-	 SIMPLE_ARG_ERROR ("pow", 1, "Exponent too large.");
-       else {
-    /* Special case: these three integers can be raised to any power
-       without overflowing.						 */
-	  res = fast_clone_object(THIS_PROGRAM);
-	  switch(mpz_get_si(THIS)) {
-	     case 0:
-		mpz_set_si(OBTOMPZ(res), 0);
-		break;
-	     case 1:
-		mpz_set_si(OBTOMPZ(res), 1);
-		break;
-	     case -1:
-		mpz_set_si(OBTOMPZ(res), mpz_odd_p(mi)? -1:1);
-		break;
-	  }
-       }
+        pop_n_elems(args);
+        push_int(0);
+        return;
     }
-    else {
-      res = fast_clone_object(THIS_PROGRAM);
-      mpz_pow_ui(OBTOMPZ(res), THIS, i);
-    }
+    exponent=mpz_get_ui(mi);
   }
+
+  res = fast_clone_object(THIS_PROGRAM);
+  mpz_pow_ui(OBTOMPZ(res), THIS, exponent);
   pop_n_elems(args);
   PUSH_REDUCED(res);
 }
@@ -2144,7 +2169,7 @@ static void gmp_fac(INT32 args)
   if (TYPEOF(sp[-1]) != T_INT)
     SIMPLE_ARG_TYPE_ERROR ("fac", 1, "int");
   if (sp[-1].u.integer < 0)
-    SIMPLE_ARG_ERROR ("fac", 1, "Got negative exponent.");
+    SIMPLE_ARG_ERROR ("fac", 1, "Got negative factorial.");
   res = fast_clone_object(mpzmod_program);
   mpz_fac_ui(OBTOMPZ(res), sp[-1].u.integer);
   pop_n_elems(args);
@@ -2281,6 +2306,7 @@ static void pike_mp_free (void *ptr, size_t UNUSED(size))
   ADD_FUNCTION("powm",mpzmod_powm,tFunc(tMpz_arg tMpz_arg,tMpz_ret),0);	\
   ADD_FUNCTION("pow", mpzmod_pow,tMpz_shift_type, 0);			\
   ADD_FUNCTION("`**", mpzmod_pow,tMpz_shift_type, 0);			\
+  ADD_FUNCTION("``**", mpzmod_rpow,tMpz_shift_type, 0);			\
 									\
   ADD_FUNCTION("popcount", mpzmod_popcount,tFunc(tVoid,tInt), 0);	\
   ADD_FUNCTION("hamdist", mpzmod_hamdist,tFunc(tMpz_arg,tInt), 0);	\
