@@ -2167,7 +2167,7 @@ static void gmp_fac(INT32 args)
   if (TYPEOF(sp[-1]) != T_INT)
     SIMPLE_ARG_TYPE_ERROR ("fac", 1, "int");
   if (sp[-1].u.integer < 0)
-    SIMPLE_ARG_ERROR ("fac", 1, "Got negative exponent.");
+    SIMPLE_ARG_ERROR ("fac", 1, "Got negative factorial.");
   res = fast_clone_object(mpzmod_program);
   mpz_fac_ui(OBTOMPZ(res), sp[-1].u.integer);
   pop_n_elems(args);
