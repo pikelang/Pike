@@ -33,6 +33,7 @@
 #define fp Pike_fp
 
 #define DEFAULT_CMOD_STORAGE
+#define CMOD_COND_USED
 
 DECLARATIONS
 
@@ -779,13 +780,12 @@ PIKECLASS mpf
     MP_FLT *a = get_mpf(arg, 1, 0);				\
     res = get_mpf_with_prec(MAXIMUM(mpf_get_prec(THISMPF),	\
 				    mpf_get_prec(a)));		\
-    cmod_CONCAT(mpfr_,SYM)(OBTOMPF(res), THISMPF, a, GMP_RNDN);\
+    cmod_CONCAT(mpfr_,SYM)(OBTOMPF(res), THISMPF, a, GMP_RNDN); \
     RETURN res;							\
   }
 
   /*! @decl mpf pow(int|float|Gmp.mpz|Gmp.mpf exp)
    */
-  BINARY_OP(pow);
 
   /*! @decl mpf sqrt()
    */
@@ -927,6 +927,82 @@ PIKECLASS mpf
     RETURN res;
   }
 #endif /* USE_MPFR */
+
+
+  PIKEFUN mpf pow(mixed arg)
+  {
+    struct object *res = NULL;
+#ifdef USE_MPFR
+    MP_FLT *a = get_mpf(arg, 1, 0);
+    res = get_mpf_with_prec(MAXIMUM(mpf_get_prec(THISMPF),
+				    mpf_get_prec(a)));
+    mpfr_pow(OBTOMPF(res), THISMPF, a, GMP_RNDN);
+#else
+    MP_FLT *a;
+    long  ai;
+    switch( TYPEOF(*arg) )
+    {
+      case PIKE_T_INT:
+        ai = arg->u.integer;
+        break;
+
+      case PIKE_T_FLOAT:
+        if( floor(arg->u.float_number) == arg->u.float_number )
+          ai = (long)arg->u.float_number;
+        else
+          Pike_error("Non-integer exponents are not "
+                     "supported without the mpfr libray\n");
+        break;
+
+      case PIKE_T_OBJECT:
+        if( arg->u.object->prog == mpzmod_program ||
+            arg->u.object->prog == bignum_program )
+        {
+          ai = mpz_get_ui(OBTOMPZ(arg->u.object));
+        }
+        else
+        {
+          Pike_error("Non-integer exponents are not "
+                     "supported without the mpfr libray\n");
+        }
+        /* todo: mpq, mpf */
+
+        /* in the case of mpq we could probably work out
+           the result rather easily here for non-integer
+           exponents as well..
+        */
+        break;
+    }
+    res = get_mpf_with_prec( mpf_get_prec(THISMPF) );
+    a = OBTOMPF(res);
+
+    if( ai < 0 )
+    {
+      mpf_pow_ui( a, THISMPF, -ai );
+      mpf_ui_div( a, 1, a );
+    }
+    else
+      mpf_pow_ui( a, THISMPF, ai );
+#endif
+    RETURN res;
+  }
+
+  PIKEFUN mpf `**(int|float|object arg)
+  {
+      f_mpf_pow(args);
+  }
+
+  PIKEFUN mpf ``**(int|float|object arg)
+  {
+    struct object *res;
+    MP_FLT *a = get_mpf(arg,1,0);
+    res = get_mpf_with_prec(mpf_get_prec(THISMPF));
+    /* a->pow(this); */
+    ref_push_object(Pike_fp->current_object);
+    apply(res, "`**", 1 );
+    free_object(res);
+  }
+
 
   INIT
     {
