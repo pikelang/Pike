@@ -546,6 +546,7 @@ MP_INT *debug_get_mpz(struct svalue *s,
     free_svalue(s);
     s->u.object=o;
     s->type=T_OBJECT;
+    s->subtype=0;
     return OBTOMPZ (o);
   }
   else {
