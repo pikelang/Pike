@@ -3789,9 +3789,22 @@ PMOD_EXPORT void f_exponent(INT32 args)
       /* fallthrough again (this is the slow path).. */
 
     case TWO_TYPES(T_OBJECT,T_INT):
+    case TWO_TYPES(T_OBJECT,T_FLOAT):
     case TWO_TYPES(T_OBJECT,T_OBJECT):
+    case TWO_TYPES(T_INT,T_OBJECT):
+    case TWO_TYPES(T_FLOAT,T_OBJECT):
       if( !call_lfun( LFUN_POW, LFUN_RPOW ) )
-        Pike_error("Illegal argument 1 to `**.\n");
+      {
+        if( TYPEOF(sp[-2]) != PIKE_T_OBJECT )
+        {
+          stack_swap();
+          convert_stack_top_to_bignum();
+          stack_swap();
+          if( call_lfun( LFUN_POW, LFUN_RPOW ) )
+            return;
+        }
+        Pike_error("Illegal argument 1 to `** (object missing implementation of `**).\n");
+      }
       return;
   }
 }
@@ -5929,9 +5942,12 @@ multiset & mapping -> mapping
 	    "function(string,float:string)
   */
   ADD_EFUN2("`**", f_exponent,
-            tOr4(tFunc(tInt tInt,tInt),
+            tOr7(tFunc(tInt tInt,tInt),
                  tFunc(tFloat tFloat, tFloat),
+                 tFunc(tOr(tInt,tFloat) tObj, tOr3(tFloat,tInt,tFloat)),
                  tFunc(tInt tFloat, tFloat),
+                 tFunc(tObj tMix, tOr3(tFloat,tInt,tObj)),
+                 tFunc(tMix tObj, tOr3(tFloat,tInt,tObj)),
                  tFunc(tFloat tInt, tFloat)),
             OPT_TRY_OPTIMIZE,0,0);
 
