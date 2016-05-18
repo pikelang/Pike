@@ -158,7 +158,7 @@ class Future
   }
 
   //! Return a @[Future] that will be fulfilled with either
-  //! the fulfiled result of this @[Future], or the result
+  //! the fulfilled result of this @[Future], or the result
   //! of applying @[fun] with the failed result followed
   //! by @[extra].
   this_program recover(function(mixed, mixed ... : mixed) fun,
@@ -171,7 +171,7 @@ class Future
   }
 
   //! Return a @[Future] that will be fulfilled with either
-  //! the fulfiled result of this @[Future], or the fulfilled result
+  //! the fulfilled result of this @[Future], or the fulfilled result
   //! of applying @[fun] with the failed result followed
   //! by @[extra].
   this_program recover_with(function(mixed, mixed ... : this_program) fun,
