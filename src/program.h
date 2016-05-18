@@ -1081,6 +1081,10 @@ void make_area_executable (char *start, size_t len);
 void make_program_executable(struct program *p);
 /* Prototypes end here */
 
+/**
+ * Look up the given lfun in the given program and returns the
+ * function number it has in the program, or -1 if not found.
+ */
 static inline int PIKE_UNUSED_ATTRIBUTE FIND_LFUN(struct program * p, int lfun) {
 #ifdef PIKE_DEBUG
     dmalloc_touch(struct program*, p);
