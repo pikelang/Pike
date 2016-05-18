@@ -292,6 +292,8 @@ void f_sqrt(INT32 args)
   else if(TYPEOF(sp[-1]) == T_OBJECT)
   {
       int i = FIND_LFUN(sp[-1].u.object->prog,LFUN__SQRT);
+      if( i<0 )
+        error("Object has no _sqrt method.\n");
       apply_low(sp[-1].u.object,i,0);
       stack_swap();
       pop_stack();
