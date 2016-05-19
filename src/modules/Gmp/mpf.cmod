@@ -929,7 +929,7 @@ PIKECLASS mpf
 #endif /* USE_MPFR */
 
 
-  PIKEFUN mpf pow(mixed arg)
+  PIKEFUN mpf pow(int|float|object arg)
   {
     struct object *res = NULL;
 #ifdef USE_MPFR
@@ -972,6 +972,10 @@ PIKECLASS mpf
            exponents as well..
         */
         break;
+
+    default:
+      SIMPLE_ARG_TYPE_ERROR("pow", 1, "int|float|object");
+      break;
     }
     res = get_mpf_with_prec( mpf_get_prec(THISMPF) );
     a = OBTOMPF(res);
