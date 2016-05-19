@@ -90,6 +90,7 @@ constant udp = ([
   "finger":            79,	//    Finger
   "www-http":          80,	//    World Wide Web HTTP
   "http":              80,	//    World Wide Web HTTP
+  "ws":                80,      //    WebSockets
   "hosts2-ns":         81,	//    HOSTS2 Name Server
   "xfer":              82,	//    XFER Utility
   "mit-ml-dev":        83,	//    MIT ML Device
@@ -310,6 +311,7 @@ constant udp = ([
   "decvms-sysmgt":    441,	//    decvms-sysmgt
   "cvc_hostd":        442,	//    cvc_hostd
   "https":            443,	//    https  MCom
+  "wss":              443,      //    Secure WebSocket
   "snpp":             444,	//    Simple Network Paging Protocol
   "microsoft-ds":     445,	//    Microsoft-DS
   "ddm-rdb":          446,	//    DDM-RDB
@@ -770,6 +772,7 @@ constant tcp = ([
   "finger":            79,	//    Finger
   "www-http":          80,	//    World Wide Web HTTP
   "http":              80,	//    World Wide Web HTTP
+  "ws":                80,      //    WebSockets
   "hosts2-ns":         81,	//    HOSTS2 Name Server
   "xfer":              82,	//    XFER Utility
   "mit-ml-dev":        83,	//    MIT ML Device
@@ -993,6 +996,7 @@ constant tcp = ([
   "decvms-sysmgt":    441,	//    decvms-sysmgt
   "cvc_hostd":        442,	//    cvc_hostd
   "https":            443,	//    https  MCom
+  "wss":              443,      //    Secure WebSockets
   "snpp":             444,	//    Simple Network Paging Protocol
   "microsoft-ds":     445,	//    Microsoft-DS
   "ddm-rdb":          446,	//    DDM-RDB
