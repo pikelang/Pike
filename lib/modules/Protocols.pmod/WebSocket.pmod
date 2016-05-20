@@ -457,16 +457,13 @@ class Request(function(array(string), Request:void) cb) {
         Connection ws = Connection(my_fd);
         my_fd = 0;
 
-        array a = allocate(1 + sizeof(heads));
-        int i = 1;
-
-        a[0] = "HTTP/1.1 101 SwitchingProtocols";
+        ws->send_raw("HTTP/1.1 101 SwitchingProtocols\r\n");
 
         foreach (heads; string k; string v) {
-            a[i++] = sprintf("%s: %s", k, v);
+          ws->send_raw(sprintf("%s: %s\r\n", k, v));
         }
 
-        ws->send_raw(a * "\r\n", "\r\n\r\n");
+        ws->send_raw("\r\n");
 
         finish(0);
 
