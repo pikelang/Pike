@@ -14,7 +14,7 @@ mapping(int:mapping(int:string)) fields =
   ([
     1: ([   // ENVELOPE RECORD
       0:   "model version",
-      5:   "destinatino",
+      5:   "destination",
       20:  "file format",
       22:  "file format version",
       30:  "service identifier",
@@ -24,7 +24,7 @@ mapping(int:mapping(int:string)) fields =
       70:  "date sent",
       80:  "time sent",
       90:  "coded character set",
-      100: "uno",
+      100: "uno",			// Unique Name of Object.
       120: "arm Identifier",
       122: "arm Version",
     ]),
@@ -37,8 +37,8 @@ mapping(int:mapping(int:string)) fields =
       8:   "editorial update",
       10:  "urgency",
       12:  "subject reference",
-      15:  "category",
-      20:  "supplemental category",
+      15:  "category",			// Obsoleted by "subject reference".
+      20:  "supplemental category",	// Obsoleted by "subject reference".
       22:  "fixture identifier",
       25:  "keywords",
       26:  "content location code",
