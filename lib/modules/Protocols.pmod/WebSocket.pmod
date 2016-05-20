@@ -134,23 +134,6 @@ Frame parse(Stdio.Buffer buf) {
     return f;
 }
 
-//! Parses WebSocket frames.
-class Parser {
-    //! Unparsed data.
-    Stdio.Buffer buf = Stdio.Buffer();
-
-    //! Add more data to the internal parsing buffer.
-    void feed(string data) {
-        buf->add(data);
-    }
-
-    //! Parses and returns one WebSocket frame from the internal buffer. If
-    //! the buffer does not contain a full frame, @expr{0@} is returned.
-    Frame parse() {
-        return global::parse(buf);
-    }
-}
-
 class Frame {
     //!
     FRAME opcode;
