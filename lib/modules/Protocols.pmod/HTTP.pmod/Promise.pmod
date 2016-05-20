@@ -31,7 +31,7 @@
 //!
 //! all2->on_success(lambda (array(Protocols.HTTP.Promise.Success) ok_resp) {
 //!   werror("All request were successful: %O\n", ok_resp);
-//! })->on_failure(lambda (Protocols.HTTP.Promise.Success failed_resp) {
+//! })->on_failure(lambda (Protocols.HTTP.Promise.Failure failed_resp) {
 //!   werror("The request to %O failed.\n", failed_resp->host);
 //! });
 //! @endcode
@@ -63,6 +63,9 @@ protected int _maxtime;
 //! indefinitley.
 //!
 //! @[t] is the timeout in seconds.
+//!
+//! @seealso
+//!  @[Arguments]
 
 public void set_timeout(int t)
 {
@@ -76,18 +79,13 @@ public void set_maxtime(int t)
 
 
 //! @decl Concurrent.Future get_url(Protocols.HTTP.Session.URL url,    @
-//!                                 void|mapping variables,            @
-//!                                 void|mapping headers)
+//!                                 void|Arguments args)
 //! @decl Concurrent.Future post_url(Protocols.HTTP.Session.URL url,   @
-//!                                  void|string|mapping data,         @
-//!                                  void|mapping headers)
+//!                                  void|Arguments args))
 //! @decl Concurrent.Future put_url(Protocols.HTTP.Session.URL url,    @
-//!                                 void|mapping variables,            @
-//!                                 void|string file,                  @
-//!                                 void|mapping headers)
+//!                                 void|Arguments args)
 //! @decl Concurrent.Future delete_url(Protocols.HTTP.Session.URL url, @
-//!                                    void|mapping variables,         @
-//!                                    void|mapping headers)
+//!                                    void|Arguments args)
 //!
 //! Sends a @tt{GET@}, @tt{POST@}, @tt{PUT@} or @tt{DELETE@} request to @[url]
 //! asynchronously. A @[Concurrent.Future] object is returned on which you
@@ -98,49 +96,59 @@ public void set_maxtime(int t)
 //! For an example of usage see @[Protocols.HTTP.Promise]
 
 public Concurrent.Future get_url(Protocols.HTTP.Session.URL url,
-                                 void|mapping variables,
-                                 void|mapping headers)
+                                 void|Arguments args)
 {
-  return do_method("GET", url, variables, headers);
+  return do_method("GET", url, args);
 }
 
 public Concurrent.Future post_url(Protocols.HTTP.Session.URL url,
-                                  void|string|mapping data,
-                                  void|mapping headers)
+                                  void|Arguments args)
 {
-  return do_method("POST", url, 0, headers, data);
+  return do_method("POST", url, args);
 }
 
 public Concurrent.Future put_url(Protocols.HTTP.Session.URL url,
-                                 void|string|mapping variables,
-                                 void|string file,
-                                 void|mapping headers)
+                                 void|Arguments args)
 {
-  return do_method("PUT", url, variables, headers, file);
+  return do_method("PUT", url, args);
 }
 
 public Concurrent.Future delete_url(Protocols.HTTP.Session.URL url,
-                                    void|mapping variables,
-                                    void|mapping headers,)
+                                    void|Arguments args)
 {
-  return do_method("POST", url, variables, headers);
+  return do_method("POST", url, args);
 }
 
 
 //! Fetch an URL with the @[http_method] method.
 public Concurrent.Future do_method(string http_method,
                                    Protocols.HTTP.Session.URL url,
-                                   void|mapping variables,
-                                   void|mapping headers,
-                                   void|string|mapping data)
+                                   void|Arguments args)
 {
+  if (!args) {
+    args = Arguments();
+  }
+
   Concurrent.Promise p = Concurrent.Promise();
   Session s = Session();
 
-  if (_maxtime) s->maxtime = _maxtime;
-  if (_timeout) s->timeout = _timeout;
+  if (args->maxtime || _maxtime) {
+    s->maxtime = args->maxtime || _maxtime;
+  }
 
-  s->async_do_method_url(http_method, url, variables, data, headers, 0,
+  if (args->timeout || _timeout) {
+    s->timeout = args->timeout || _timeout;
+  }
+
+  if (!args->follow_redirects) {
+    s->follow_redirects = 0;
+  }
+
+  s->async_do_method_url(http_method, url,
+                         args->variables,
+                         args->data,
+                         args->headers,
+                         0, // headers received callback
                          lambda (Result ok) {
                            p->success(ok);
                          },
@@ -149,6 +157,54 @@ public Concurrent.Future do_method(string http_method,
                          },
                          ({}));
   return p->future();
+}
+
+
+//! Class representing the arguments to give to @[get_url()], @[post_url()]
+//! @[put_url()], @[delete_url()] and @[do_method()].
+class Arguments
+{
+  //! Data fetch timeout
+  int timeout;
+
+  //! Request timeout
+  int maxtime;
+
+  //! Additional request headers
+  mapping(string:string) headers;
+
+  //! Query variables
+  mapping(string:mixed) variables;
+
+  //! POST data
+  void|string|mapping data;
+
+  //! Should redirects be followed. Default is @tt{true@}.
+  bool follow_redirects = true;
+
+  //! If @[args] is given the indices that match any of this object's
+  //! members will set those object members to the value of the
+  //! corresponding mapping member.
+  protected void create(void|mapping(string:mixed) args)
+  {
+    if (args) {
+      foreach (args; string key; mixed value) {
+        if (has_index(this, key)) {
+          if ((< "variables", "headers" >)[key]) {
+            // Cast all values to string
+            value = mkmapping(indices(value), map(values(value),
+                                                  lambda (mixed s) {
+                                                    return (string) s;
+                                                  }));
+          }
+          this[key] = value;
+        }
+        else {
+          error("Unknown argument %O!\n", key);
+        }
+      }
+    }
+  }
 }
 
 
@@ -174,6 +230,12 @@ class Result
   public string `host()
   {
     return result->host;
+  }
+
+  //! Returns the requested URL
+  public string `url()
+  {
+    return result->url;
   }
 
   //! The HTTP status of the response, e.g @tt{200@}, @tt{201@}, @tt{404@}
@@ -290,7 +352,8 @@ protected class Session
         "status"      : q->status,
         "status_desc" : q->status_desc,
         "host"        : q->host,
-        "headers"     : copy_value(q->headers)
+        "headers"     : copy_value(q->headers),
+        "url"         : url_requested
       ]);
 
       // clear callbacks for possible garbation of this Request object
@@ -345,7 +408,8 @@ protected class Session
         "status"      : con->status,
         "status_desc" : con->status_desc,
         "headers"     : copy_value(con->headers),
-        "data"        : con->data()
+        "data"        : con->data(),
+        "url"         : url_requested
       ]);
 
       // clear callbacks for possible garbation of this Request object
@@ -366,9 +430,11 @@ protected class Session
 
     protected void create()
     {
-      if (Session::maxtime) {
-        this::maxtime = Session::maxtime;
-      }
+#if constant (this::maxtime)
+        if (Session::maxtime) {
+          this::maxtime = Session::maxtime;
+        }
+#endif
 
       if (Session::timeout) {
         this::timeout = Session::timeout;

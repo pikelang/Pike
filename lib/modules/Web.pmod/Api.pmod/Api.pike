@@ -9,6 +9,8 @@
 //! Look at the code in @[Web.Api.Github], @[Web.Api.Instagram],
 //! @[Web.Api.Linkedin] etc to see some examples of implementations.
 
+//#define SOCIAL_REQUEST_DEBUG
+
 #if defined(SOCIAL_REQUEST_DEBUG) || defined(SOCIAL_REQUEST_DATA_DEBUG)
 # define TRACE(X...) werror("%s:%d: %s",basename(__FILE__),__LINE__,sprintf(X))
 #else
@@ -34,8 +36,13 @@ public int(0..1) utf8_decode = DECODE_UTF8;
 //! Request timeout in seconds. Only affects async queries.
 public int(0..) http_request_timeout = 0;
 
+#if constant (Protocols.HTTP.Promise)
 //! Typedef for the async callback method signature.
-typedef function(mapping,Protocols.HTTP.Query:void) Callback;
+typedef function(mixed,Protocols.HTTP.Query|Protocols.HTTP.Promise.Result:void) Callback;
+#else
+//! Typedef for the async callback method signature.
+typedef function(mixed,Protocols.HTTP.Query:void) Callback;
+#endif
 
 //! Typedef for a parameter argument
 typedef mapping|Web.Auth.Params ParamsArg;
@@ -58,6 +65,8 @@ protected mapping(string:string) default_headers = ([
 ]);
 
 protected int _call_id = 0;
+
+#define IS_BACKEND_THREAD() (this_thread() == master()->backend_thread())
 
 //! Creates a new Api instance
 //!
@@ -268,6 +277,61 @@ mixed call(string api_method, void|ParamsArg params,
     params = (mapping) p;
   }
 
+#if constant (Protocols.HTTP.Promise)
+  // If running in a handler thread (like in Roxen) we do an async call
+  // but wait for the request to finish before returning. In this way we
+  // can abort the request if it takes to long so that the handler thread
+  // can be released.
+  if (cb || !IS_BACKEND_THREAD()) {
+    Thread.Queue queue;
+    mixed retval;
+
+    Protocols.HTTP.Promise.Arguments args;
+    args = Protocols.HTTP.Promise.Arguments(([
+      "maxtime"   : http_request_timeout,
+      "variables" : params,
+      "headers"   : request_headers,
+      "data"      : data
+    ]));
+
+    Concurrent.Future fut;
+    fut = Protocols.HTTP.Promise.do_method(http_method, api_method, args);
+
+    fut->on_success(lambda (Protocols.HTTP.Promise.Result res) {
+      mixed r = handle_response(res);
+
+      if (res->status >= 200 && res->status < 400) {
+        if (cb) cb(r, res);
+        else retval = r;
+      }
+      else {
+        cb && cb(0, res);
+      }
+
+      if (queue) {
+        queue->write("@");
+      }
+    })
+    ->on_failure(lambda (Protocols.HTTP.Promise.Result res) {
+      cb && cb(0, res);
+      if (queue) {
+        queue->write("@");
+      }
+    });
+
+    if (!cb) {
+      queue = Thread.Queue();
+      queue->read();
+      return retval;
+    }
+
+    return 0;
+  }
+
+  TRACE("Have promises but no async call or running on backend thread\n");
+
+#endif /* Protocols.HTTP.Promise */
+
   Protocols.HTTP.Query req = Protocols.HTTP.Query();
 
   if (http_request_timeout) {
@@ -426,22 +490,34 @@ void close_connections()
   _query_objects = ([]);
 }
 
+#if constant (Protocols.HTTP.Promise)
+protected mixed handle_response(Protocols.HTTP.Query|Protocols.HTTP.Promise.Result req)
+#else
 protected mixed handle_response(Protocols.HTTP.Query req)
+#endif
 {
   TRACE("Handle response: %O\n", req);
 
-  if ((< 301, 302 >)[req->status])
+  if ((< 301, 302 >)[req->status]) {
     return req->headers;
+  }
 
-#ifdef SOCIAL_REQUEST_DATA_DEBUG
-    TRACE("Data: [%s]\n\n", req->data()||"(empty)");
+  string d;
+
+#if constant (Protocols.HTTP.Promise)
+  if (stringp(req->data)) {
+    d = req->data;
+  }
+  else {
+    d = req->data();
+  }
+#else
+  d = req->data();
 #endif
 
   if (req->status != 200) {
-    string d = req->data();
-
     TRACE("Bad resp[%d]: %s\n\n%O\n",
-          req->status, req->data(), req->headers);
+          req->status, d, req->headers);
 
     if (has_value(d, "error")) {
       mapping e;
@@ -463,11 +539,11 @@ protected mixed handle_response(Protocols.HTTP.Query req)
   }
 
   if (utf8_decode) {
-    TRACE("Decode UTF8: %s\n", req->data());
-    return Standards.JSON.decode_utf8(unescape_forward_slashes(req->data()));
+    TRACE("Decode UTF8: %s\n", d);
+    return Standards.JSON.decode_utf8(unescape_forward_slashes(d));
   }
 
-  return Standards.JSON.decode(unescape_forward_slashes(req->data()));
+  return Standards.JSON.decode(unescape_forward_slashes(d));
 }
 
 protected string _sprintf(int t)
