@@ -105,6 +105,13 @@ class Request
 
       request_headers->host=url->host;
 
+      if (url->scheme == "http" && url->port != 80) {
+        request_headers->host += ":" + url->port;
+      }
+      else if (url->scheme == "https" && url->port != 443) {
+        request_headers->host += ":" + url->port;
+      }
+
       if (extra_headers)
 	 request_headers|=extra_headers;
 
