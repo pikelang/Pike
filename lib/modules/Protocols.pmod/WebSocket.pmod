@@ -78,14 +78,13 @@ string describe_opcode(FRAME op) {
     return sprintf("0x%x", op);
 }
 
-//! Parses one WebSocket frame. Returns @expr{0@} if the buffer does not contain enough data.
-Frame parse(Stdio.Buffer buf) {
-    if (sizeof(buf) < 2) return 0;
-
-    int opcode, len, hlen;
+//! Parses one WebSocket frame. Throws an error if there isn't enough data in the buffer.
+protected Frame low_parse(Stdio.Buffer buf) {
+    int opcode, len;
     int(0..1) masked;
     string mask, data;
 
+    Stdio.Buffer.RewindKey rewind_key = buf->rewind_on_error();
     opcode = buf->read_int8();
     len = buf->read_int8();
 
@@ -94,36 +93,21 @@ Frame parse(Stdio.Buffer buf) {
 
     if (len == 126) {
         len = buf->read_int16();
-        if (len == -1) {
-            buf->unread(2);
-            return 0;
-        }
-        hlen = 4;
     }  else if (len == 127) {
         len = buf->read_int(8);
-        if (len == -1) {
-            buf->unread(2);
-            return 0;
-        }
-        hlen = 10;
     }
 
     if (masked) {
-        if (sizeof(buf) < 4 + len) {
-            buf->unread(hlen);
-            return 0;
-        }
         mask = buf->read(4);
-    } else if (sizeof(buf) < len) {
-        buf->unread(hlen);
-        return 0;
     }
+
+    data = buf->read(len);
+    rewind_key->release();
 
     Frame f = Frame(opcode & 15);
     f->fin = opcode >> 7;
     f->mask = mask;
 
-    data = buf->read(len);
 
     if (masked) {
         data = MASK(data, mask);
@@ -132,6 +116,21 @@ Frame parse(Stdio.Buffer buf) {
     f->data = data;
 
     return f;
+}
+
+//! Parses one WebSocket frame. Returns @expr{0@} if the buffer does not contain enough data.
+Frame parse(Stdio.Buffer in) {
+    // We wrap the low_parse() method to catch read errors, which are thrown, in one place
+    mixed err = catch {
+        return low_parse(in);
+      };
+
+    if (!objectp(err) || !err->buffer_error) {
+      // This was not a read out-of-bound error
+      throw(err);
+    }
+
+    return UNDEFINED;
 }
 
 class Frame {
@@ -252,7 +251,7 @@ class Connection {
     Stdio.File stream;
 
     Stdio.Buffer out = Stdio.Buffer();
-    Stdio.Buffer in = Stdio.Buffer();
+    Stdio.Buffer in = Stdio.Buffer()->set_error_mode(1); // Throw errors when we attempt to read out-of-bound data
 
     protected mixed id;
 
