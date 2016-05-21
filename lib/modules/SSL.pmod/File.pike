@@ -88,8 +88,8 @@ protected int read_buffer_threshold;	// Max number of bytes to read.
 
 protected mixed callback_id;
 protected function(void|object,void|mixed:int) accept_callback;
-protected function(void|mixed,void|string:int) read_callback;
-protected function(void|mixed:int) write_callback;
+protected Stdio.read_callback_t read_callback;
+protected Stdio.write_callback_t write_callback;
 protected function(void|mixed:int) close_callback;
 
 protected Pike.Backend real_backend;
@@ -100,6 +100,8 @@ protected Pike.Backend local_backend;
 // in blocking mode.
 
 protected int nonblocking_mode;
+
+protected int buffered_mode;
 
 protected int fragment_max_size;
 //! The max amount of data to send in each packet.
@@ -479,6 +481,68 @@ int(1bit) accept(string|void pending_data)
   } LEAVE;
 
   return 1;
+}
+
+//! Toggle the file to Buffer mode.
+//!
+//! In this mode reading and writing will be done via Buffer
+//! objects, in the directions you included buffers.
+//!
+//! @param in
+//!   Input buffer. If this buffer is non-empty, its contents
+//!   will be returned after any already received data.
+//!
+//! @param out
+//!   Output buffer. If this buffer is non-empty, its contents
+//!   will be sent after any data already queued for sending.
+//!
+//! @seealso
+//!   @[query_buffer_mode()]
+void set_buffer_mode( Stdio.Buffer|int(0..0) in,Stdio.Buffer|int(0..0) out )
+{
+  if (!in) {
+    // NB: We always have a user_read_buffer.
+    in = Stdio.Buffer();
+    buffered_mode = 0;
+  } else {
+    buffered_mode = 1;
+  }
+  if (sizeof(user_read_buffer)) {
+    // Behave as if any data in the new buffer was appended
+    // to the old input buffer.
+    in->add(user_read_buffer->read(), in->read());
+  }
+  user_read_buffer = in;
+
+  if (user_write_buffer) {
+    user_write_buffer->__fd_set_output( 0 );
+    if (out && sizeof(user_write_buffer)) {
+      // Behave as if any data in the new output buffer was
+      // appended to the old output buffer.
+      out->add(user_write_buffer->read(), out->read());
+    }
+  }
+  if (user_write_buffer = out)
+    user_write_buffer->__fd_set_output(internal_write);
+}
+
+//! Get the active input and output buffers that have been
+//! set with @[set_buffer_mode()] (if any).
+//!
+//! @returns
+//!   Returns an array with two elements:
+//!   @array
+//!     @elem Stdio.Buffer 0
+//!       The current input buffer.
+//!     @elem Stdio.Buffer 1
+//!       The current output buffer.
+//!   @endarray
+//!
+//! @seealso
+//!   @[set_buffer_mode()]
+array(Stdio.Buffer|int(0..0)) query_buffer_mode()
+{
+  return ({ buffered_mode && user_read_buffer, user_write_buffer });
 }
 
 mixed get_server_name()
@@ -898,7 +962,7 @@ string read (void|int length, void|int(0..1) not_all)
   } LEAVE;
 }
 
-int write (string|array(string) data, mixed... args)
+int write(string|array(string) data, mixed... args)
 //! Write some (unencrypted) data to the connection. Works like
 //! @[Stdio.File.write] except that this function often buffers some data
 //! internally, so there's no guarantee that all the consumed data has
@@ -922,6 +986,50 @@ int write (string|array(string) data, mixed... args)
   if (sizeof (args)) {
     data = ({ sprintf (arrayp (data) ? data * "" : data, @args) });
   } else if (stringp(data)) {
+    data = ({ data });
+  }
+
+  if (user_write_buffer) {
+    user_write_buffer->__fd_set_output(0);
+    if (sizeof(user_write_buffer)) {
+      // The write buffer isn't empty, so try to empty it. */
+      int bytes = user_write_buffer->output_to(internal_write);
+      if (sizeof(user_write_buffer) && (bytes > 0)) {
+	// Not all was written. Probably EWOULDBLOCK.
+	bytes = 0;
+      }
+      if (bytes <= 0) {
+	user_write_buffer->__fd_set_output(internal_write);
+	return bytes;
+      }
+    }
+
+    // NB: Invariant: outbuffer is empty here.
+
+    user_write_buffer->add(data);
+    int bytes = sizeof(user_write_buffer);
+
+    int actual_bytes = user_write_buffer->output_to(internal_write);
+    if (actual_bytes <= 0) {
+      // Write failure. Unwrite the outbuffer.
+      user_write_buffer->clear();
+      return actual_bytes;
+    }
+
+    user_write_buffer->__fd_set_output(internal_write);
+
+    return bytes;
+  }
+
+  return internal_write(data);
+}
+
+protected int internal_write(string|array(string) data)
+{
+  SSL3_DEBUG_MSG("SSL.File->internal_write(%t[%d])\n",
+		 data, sizeof (data));
+
+  if (stringp(data)) {
     data = ({ data });
   }
 
@@ -1095,7 +1203,7 @@ protected void internal_poll()
       local_errno = close_errno;
       SSL3_DEBUG_MSG("poll: Calling close callback %O "
 		     "(error %s)\n", close_callback, strerror (local_errno));
-      close_callback(callback_id);
+      close_callback(callback_id || this);
       return;
     }
   }
@@ -1121,11 +1229,12 @@ protected void internal_poll()
   //
   if (sizeof(user_read_buffer)) {
     if (read_callback) {
-      string received = user_read_buffer->read();
+      string|Stdio.Buffer received =
+	buffered_mode ? user_read_buffer : user_read_buffer->read();
       SSL3_DEBUG_MSG ("call_read_callback: Calling read callback %O "
 		      "with %d bytes\n", read_callback, sizeof (received));
       // Never called if there's an error - no need to propagate errno.
-      read_callback (callback_id, received);
+      read_callback (callback_id || this, received);
       if(this && stream)
         stream->set_read_callback(ssl_read_callback);
     }
@@ -1158,7 +1267,7 @@ protected void internal_poll()
       local_errno = close_errno;
       SSL3_DEBUG_MSG ("ssl_read_callback: Calling close callback %O (error %s)\n",
 		      close_cb, strerror(local_errno));
-      close_cb(callback_id);
+      close_cb(callback_id || this);
       return;
     }
   }
@@ -1175,7 +1284,22 @@ protected void internal_poll()
     local_errno = write_errno;
     SSL3_DEBUG_MSG("poll: Calling write callback %O "
 		   "(error %s)\n", write_callback, strerror (local_errno));
-    write_callback(callback_id);
+    if (user_write_buffer) {
+      if (sizeof(user_write_buffer)) {
+	user_write_buffer->output_to(internal_write);
+      }
+      if (!sizeof(user_write_buffer)) {
+	user_write_buffer->__fd_set_output(0);
+	write_callback(callback_id || this, user_write_buffer);
+	if (!this) return;
+	if (sizeof(user_write_buffer)) {
+	  user_write_buffer->output_to(internal_write);
+	}
+	user_write_buffer->__fd_set_output(internal_write);
+      }
+    } else {
+      write_callback(callback_id || this);
+    }
     return;
   }
 }
@@ -1194,12 +1318,12 @@ protected void schedule_poll()
   }
 }
 
-void set_callbacks (void|function(mixed, string:int) read,
-		    void|function(mixed:int) write,
-		    void|function(mixed:int) close,
-		    void|function(mixed, string:int) read_oob,
-		    void|function(mixed:int) write_oob,
-		    void|function(void|mixed:int) accept)
+void set_callbacks(void|Stdio.read_callback_t read,
+		   void|Stdio.write_callback_t write,
+		   void|function(mixed:int) close,
+		   void|function(mixed, string:int) read_oob,
+		   void|function(mixed:int) write_oob,
+		   void|function(void|mixed:int) accept)
 //! Installs all the specified callbacks at once. Use @[UNDEFINED]
 //! to keep the current setting for a callback.
 //!
@@ -1257,12 +1381,12 @@ array(function(mixed,void|string:int)) query_callbacks()
   });
 }
 
-void set_nonblocking (void|function(void|mixed,void|string:int) read,
-		      void|function(void|mixed:int) write,
-		      void|function(void|mixed:int) close,
-		      void|function(void|mixed:int) read_oob,
-		      void|function(void|mixed:int) write_oob,
-		      void|function(void|mixed:int) accept)
+void set_nonblocking(void|Stdio.read_callback_t read,
+		     void|Stdio.write_callback_t write,
+		     void|function(void|mixed:int) close,
+		     void|function(void|mixed:int) read_oob,
+		     void|function(void|mixed:int) write_oob,
+		     void|function(void|mixed:int) accept)
 //! Set the stream in nonblocking mode, installing the specified
 //! callbacks. The alert callback isn't touched.
 //!
@@ -1499,7 +1623,7 @@ function(void|object,void|mixed:int) query_accept_callback()
   return accept_callback;
 }
 
-void set_read_callback (function(void|mixed,void|string:int) read)
+void set_read_callback(Stdio.read_callback_t read)
 //! Install a function to be called when data is available.
 //!
 //! @seealso
@@ -1516,7 +1640,7 @@ void set_read_callback (function(void|mixed,void|string:int) read)
   } LEAVE;
 }
 
-function(void|mixed,void|string:int) query_read_callback()
+Stdio.read_callback_t query_read_callback()
 //! @returns
 //!   Returns the current read callback.
 //!
@@ -1526,7 +1650,7 @@ function(void|mixed,void|string:int) query_read_callback()
   return read_callback;
 }
 
-void set_write_callback (function(void|mixed:int) write)
+void set_write_callback(Stdio.write_callback_t write)
 //! Install a function to be called when data can be written.
 //!
 //! @seealso
@@ -1543,7 +1667,7 @@ void set_write_callback (function(void|mixed:int) write)
   } LEAVE;
 }
 
-function(void|mixed:int) query_write_callback()
+Stdio.write_callback_t query_write_callback()
 //! @returns
 //!   Returns the current write callback.
 //!

@@ -582,6 +582,145 @@ test_do([[
 
 test_do([[
   import SSL.Constants;
+  string f(SSL.Context server_ctx, SSL.Context client_ctx,
+           string exp_data, int exp_suite, int exp_version,
+	   SSL.Session|void session)
+  {
+    Stdio.File client_con = Stdio.File();
+    Stdio.File server_con =
+      client_con->pipe(Stdio.PROP_NONBLOCK | Stdio.PROP_BIDIRECTIONAL);
+
+    SSL.File server = SSL.File(server_con, server_ctx);
+
+    SSL.File client = SSL.File(client_con, client_ctx);
+
+    if (!client->connect(UNDEFINED, session)) return 0;
+    if (!server->accept()) return 0;
+
+    int state;
+
+    int trigged = 10;
+    int remaining = sizeof(client_msg);
+
+    string fail;
+
+    Stdio.Buffer server_recv_buf = Stdio.Buffer();
+    Stdio.Buffer server_send_buf = Stdio.Buffer();
+    server->set_buffer_mode(server_recv_buf, server_send_buf);
+    void server_send_data() {
+      trigged = 10;
+      if (!sizeof(server_recv_buf)) {
+	server->set_write_callback(UNDEFINED);
+	if (!remaining) {
+	  server->close();
+	  state = 2;
+	}
+      } else {
+        string data = server_recv_buf->read();
+        werror("Server sending %O\n", data);
+        server_send_buf->add(server_recv_buf->read());
+      }
+    };
+    void server_got_data(mixed ignored, Stdio.Buffer data) {
+      trigged = 10;
+      if (!sizeof(server_send_buf)) server->set_write_callback(server_send_data);
+      server_send_buf->add(data->read());
+    };
+    void server_got_close() {
+      trigged = 10;
+    };
+    void server_alert() {
+      trigged = 0;
+      // server->close();
+    };
+
+    void server_check_suite() {
+      if ((server->query_version() != exp_version) ||
+	  (server->query_suite() != exp_suite)) {
+        fail =
+	  sprintf("Unexpected cipher suite (server):\n"
+		  "Got: %s [%s]\n"
+		  "Exp: %s [%s]\n",
+		  fmt_cipher_suite(server->query_suite()),
+		  fmt_version(server->query_version()),
+		  fmt_cipher_suite(exp_suite),
+		  fmt_version(exp_version));
+	return;
+      }
+      server->set_write_callback(sizeof(server_recv_buf) && server_send_data);
+    };
+
+    Stdio.Buffer client_recv_buf = Stdio.Buffer();
+    Stdio.Buffer client_send_buf = Stdio.Buffer(client_msg);
+    client->set_buffer_mode(client_recv_buf, client_send_buf);
+    void client_got_close() {
+      trigged = 10;
+      if (state == 2) state = 3;
+      client->close();
+    };
+    void client_alert() {
+      trigged = 0;
+      // client->close();
+    };
+
+    void client_check_suite() {
+      if ((client->query_version() != exp_version) ||
+	  (client->query_suite() != exp_suite)) {
+        fail =
+	  sprintf("Unexpected cipher suite (client):\n"
+		  "Got: %s [%s]\n"
+		  "Exp: %s [%s]\n",
+		  fmt_cipher_suite(client->query_suite()),
+		  fmt_version(client->query_version()),
+		  fmt_cipher_suite(exp_suite),
+		  fmt_version(exp_version));
+	return;
+      }
+      client->set_write_callback(0);
+    };
+
+    server->set_nonblocking((mixed)server_got_data, (mixed)server_check_suite,
+			    (mixed)server_got_close);
+    server->set_alert_callback(server_alert);
+    client->set_nonblocking(0, client_check_suite, client_got_close);
+    client->set_alert_callback(client_alert);
+
+    // We loop the backend while something happens...
+    while (!fail && trigged--) {
+      mixed err = catch {
+        Pike.DefaultBackend(0.005);
+      };
+      if (err) {
+        state = -1;
+        master()->handle_error(err);
+        break;
+      }
+    }
+
+    string client_res;
+    if (fail) {
+    } else if (!exp_data ||
+        ((client_res = client_recv_buf->read()) == exp_data)) {
+      // if (exp_data) log_status("OK: %s\n", fmt_cipher_suite(exp_suite));
+    } else {
+      fail =
+	sprintf("Unexpected result:\n"
+		"Got: %O\n"
+		"Exp: %O\n",
+		client_res && client_res[..32], exp_data[..32]);
+      exit(1);
+    }
+    client->close();
+    server->close();
+    destruct(client);
+    destruct(server);
+    return fail;
+  };
+  add_constant("low_test_buffered_ssl_connection", f);
+]])
+
+test_do([[
+  import SSL.Constants;
   int f(int client_min, int client_max, int server_min, int server_max,
         string exp_data, object server_ctx, array(int) suites,
         array(CertificatePair)|void client_certs)
@@ -681,6 +820,22 @@ test_do([[
     if (fail) {
       log_ssl_failure(client_min, client_max, server_min, server_max,
 		      "RESUME: " + fail, suites);
+
+      return 0;
+    }
+
+    fail =
+      low_test_buffered_ssl_connection(server_ctx, client_ctx,
+			               exp_data, suites[0], exp_version,
+			               session);
+
+    if (!fail && (sessionid != session->identity)) {
+      fail = "New session.";
+    }
+
+    if (fail) {
+      log_ssl_failure(client_min, client_max, server_min, server_max,
+		      "BUFFERED+RESUME: " + fail, suites);
 
       return 0;
     }
