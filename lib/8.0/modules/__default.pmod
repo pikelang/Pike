@@ -50,6 +50,32 @@ object master()
 //!
 //! @deprecated Debug.next_object
 
+protected int|array(string) _glob(string|array(string) a, string|array(string) b)
+{
+  mapping r = ([
+    "[" : "\\[",
+    "\\" : "\\\\"
+  ]);
+  if( stringp(a) )
+    a = replace(a, r);
+  else
+    a = replace(a[*], r);
+  return 8.1::glob(a,b);
+}
+
+protected int(0..1) glob(string a, string b)
+{
+  return _glob(a,b);
+}
+variant protected int(0..1) glob(array(string) a, string b)
+{
+  return !!_glob(a,b);
+}
+variant protected array(string) glob(array(string)|string a, array(string) b)
+{
+  return _glob(a,b);
+}
+
 protected Mapping.ShadowedMapping compat_all_constants =
   Mapping.ShadowedMapping(predef::all_constants(),
 			  ([
@@ -66,7 +92,8 @@ protected Mapping.ShadowedMapping compat_all_constants =
                             "_prev": Debug.prev,
                             "next_object": Debug.next_object,
 			    "all_constants": all_constants,
-			    "master": master,
+                            "master": master,
+                            "glob" : glob,
 			  ]), 1);
 
 mapping(string:mixed) all_constants()

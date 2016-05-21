@@ -213,4 +213,15 @@ test_true( Stdio.File()->set_peek_file_before_read_callback(0) )
 
 test_true( random_seed )
 
+test_eq( glob( ({ "a*", "b*" }), "bar" ), 1 )
+test_false( glob( "\\**", "*a") )
+test_false( glob( "\\[abc\\]*", "[abc]d") )
+test_false( glob( "[abc]*", "ad") )
+test_true( glob( "\\**", "\\*a") )
+test_true( glob( "\\[abc\\]*", "\\[abc\\]d") )
+test_true( glob( "[abc]*", "[abc]d") )
+
+
+
+
 END_MARKER

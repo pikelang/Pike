@@ -11173,6 +11173,13 @@ test_eval_error([[
   return glob("*", a);
 ]])
 test_equal([[glob("foo", ({}))]], ({}))
+test_false( glob( ({ "a*", "b*" }), "foo" ) )
+test_eq( glob( ({ "a*", "b*" }), "bar" ), "b*" )
+test_false( glob( "\\**", "a*") )
+test_true( glob( "\\**", "*a") )
+test_false( glob( "[abc]*", "[abc]d") )
+test_true( glob( "\\[abc\\]*", "[abc]d") )
+test_true( glob( "[abc]*", "ad") )
 
 // - gmtime
 cond([[all_constants()->localtime && all_constants()->mktime]],[[
