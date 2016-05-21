@@ -248,10 +248,16 @@ class Frame {
 //!
 class Connection {
     //! The actual client connection.
-    Stdio.File stream;
+    Stdio.File|SSL.File stream;
 
     Stdio.Buffer out = Stdio.Buffer();
     Stdio.Buffer in = Stdio.Buffer()->set_error_mode(1); // Throw errors when we attempt to read out-of-bound data
+
+    //! Remote endpoint URI when we are a client
+    protected Standards.URI endpoint;
+
+    //! Extra headers when connecting to a server
+    protected mapping(string:string) extra_headers;
 
     protected mixed id;
 
@@ -289,13 +295,81 @@ class Connection {
         this::id = id;
     }
 
+    //! Constructor for server mode
     protected void create(Stdio.File f) {
         stream = f;
-        f->set_nonblocking(websocket_in, websocket_write, websocket_closed);
+        f->set_nonblocking(websocket_in_bm, websocket_write_bm, websocket_closed);
         f->set_buffer_mode(in, out);
         state = OPEN;
         if (onopen) onopen(id || this);
         WS_WERR(1, "opened\n");
+    }
+
+    //! Constructor for client mode connections
+    protected variant void create() {
+        masking = 1; // Clients must mask data
+        state = CLOSED; // We are closed until we have connected and upgraded the connection;
+    }
+
+    //! Connect to the remote @{endpoint} with optional request
+    //! headers specified in @{headers}. This method will send the
+    //! actual HTTP request to switch protocols to the server and once
+    //! a HTTP 101 response is returned, switch the connection to
+    //! WebSockets and call the @[onopen] callback.
+    int connect(string|Standards.URI endpoint, void|mapping(string:string) extra_headers) {
+        if (stringp(endpoint)) endpoint = Standards.URI(endpoint);
+        this_program::endpoint = endpoint;
+        this_program::extra_headers = extra_headers || ([]);
+
+        if (endpoint->path == "") endpoint->path = "/";
+
+        Stdio.File f = Stdio.File();
+        state = CONNECTING;
+
+        int res = f->connect(endpoint->host, endpoint->port);
+        if (!res) {
+            websocket_closed();
+            return 0;
+        }
+
+        if (endpoint->scheme == "wss") {
+            // If we are connecting a TLS endpoint, so let's turn our
+            // connection into a TLS one.
+            SSL.Context ctx = SSL.Context();
+            stream = SSL.File(f, ctx);
+            object ssl_session = stream->connect(endpoint->host,0);
+            if (!ssl_session) {
+                WS_WERR(1, "Handshake failed\n");
+                websocket_closed();
+                return 0;
+            }
+        } else {
+            stream = f;
+        }
+
+        stream->set_nonblocking(http_read, websocket_write, websocket_closed);
+        mapping headers = ([
+            "Host" : endpoint->host,
+            "Connection" : "Upgrade",
+            "User-Agent" : "Pike/8.0",
+            "Accept": "*/*",
+            "Upgrade" : "websocket",
+            "Sec-WebSocket-Key" : "x4JJHMbDL1EzLkh9GBhXDw==",
+            "Sec-WebSocket-Version": "13",
+        ]);
+
+        foreach(this_program::extra_headers; string idx; string val) {
+            headers[idx] = val;
+        }
+
+        // We use our output buffer to generate the request.
+        out->add("GET ", endpoint->path," HTTP/1.1\r\n");
+        out->add("Host: ", endpoint->host, "\r\n");
+        foreach(headers; string h; string v) {
+            out->add(h, ": ", v, "\r\n");
+        }
+        out->add("\r\n");
+        return res;
     }
 
     // Sorry guys...
@@ -324,13 +398,87 @@ class Connection {
     void send_raw(string(8bit) ... s) {
         WS_WERR(3, "out:\n----\n%s\n----\n", s*"\n----\n");
         out->add(@s);
+        stream->write("");
     }
 
+
+    //! Read HTTP response from remote endpoint and handle connection
+    //! upgrade.
+    protected void http_read(mixed _id, string data) {
+
+        if (state != CONNECTING) {
+          websocket_closed();
+          return;
+        }
+
+        in->add(data);
+
+        array tmp = in->sscanf("%s\r\n\r\n");
+        if (sizeof(tmp)) {
+            // We should now have an HTTP response
+            array(string) lines = tmp[0]/"\r\n";
+            int major, minor;
+            int status;
+            string status_desc;
+
+            if (sscanf(lines[0], "HTTP/%d.%d %d %s", major, minor, status, status_desc) != 4) {
+                websocket_closed();
+                return;
+            }
+
+            switch(status) {
+              case 100..199: break;
+              default:
+                  websocket_closed();
+                  return;
+            }
+
+            // FIXME: Parse headers and make them available to onopen?
+
+            if (endpoint->scheme == "wss") {
+                // This also implies that we can't do buffer mode so
+                // we will have to shuffle data in callbacks.
+                stream->set_nonblocking(websocket_in, websocket_write, websocket_closed);
+            } else {
+                stream->set_nonblocking(websocket_in_bm, websocket_write_bm, websocket_closed);
+                stream->set_buffer_mode(in, out);
+            }
+
+            state = OPEN;
+            if (onopen) onopen(id || this);
+            WS_WERR(1, "opened\n");
+
+            // Is this needed?
+            websocket_in_bm(_id, in);
+        }
+    }
+
+    //! Write callback in non-buffer mode
     protected void websocket_write() {
+        if (sizeof(out)) {
+            int n = out->output_to(stream);
+            if (n < 0) {
+                int e = errno();
+                if (e) {
+                    websocket_closed();
+                }
+            }
+        }
     }
 
-    protected void websocket_in(mixed _id, Stdio.Buffer in) {
+    //! Write callback in buffer mode
+    protected void websocket_write_bm() {
+    }
 
+
+    //! Read callback in non-buffer mode.
+    protected void websocket_in(mixed _id, string data) {
+      in->add(data);
+      websocket_in_bm(_id, in);
+    }
+
+    //! Read callback in buffer mode
+    protected void websocket_in_bm(mixed _id, Stdio.Buffer in) {
         // it would be nicer to set the read callback to zero
         // once a close handshake has been received. however,
         // without a read callback pike does not trigger the
@@ -375,7 +523,7 @@ class Connection {
     }
 
     protected void websocket_closed() {
-        stream->set_nonblocking(0,0,0);
+        stream && stream->set_nonblocking(0,0,0);
         stream = 0;
         // if this is the end of a proper close handshake, this wont do anything
         close_event(0);
@@ -401,6 +549,8 @@ class Connection {
             frame->mask = random_string(4);
         WS_WERR(2, "sending %O\n", frame);
         frame->encode(out);
+        stream->write("");
+
         if (frame->opcode == FRAME_CLOSE) {
             state = CLOSING;
             close_reason = frame->reason;
