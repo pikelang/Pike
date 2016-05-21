@@ -310,7 +310,7 @@ class Connection {
     }
 
     //! Create a WebSocket server out of the given Stdio.File-like object
-    protected variant void create(Stdio.File f) {
+    protected variant void create(Stdio.File|SSL.File f) {
         state = CONNECTING;
         parser = Parser();
         stream = f;
@@ -675,7 +675,7 @@ class SSLPort {
     protected void create(function(Protocols.HTTP.Server.Request:void) http_cb,
                           function(array(string), Request:void)|void ws_cb,
                           void|int portno, void|string interface,
-                          void|string key, void|string|array certificate) {
+                          void|string|Crypto.Sign.State key, void|string|array(string) certificate) {
 
         ::create(http_cb, portno, interface, key, certificate);
 
