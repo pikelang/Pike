@@ -253,6 +253,8 @@ class Connection {
     Stdio.Buffer out = Stdio.Buffer();
     Stdio.Buffer in = Stdio.Buffer()->set_error_mode(1); // Throw errors when we attempt to read out-of-bound data
 
+    protected int buffer_mode = 0;
+
     //! Remote endpoint URI when we are a client
     protected Standards.URI endpoint;
 
@@ -286,7 +288,9 @@ class Connection {
     protected CLOSE_STATUS close_reason;
 
     protected string _sprintf(int type) {
-        return sprintf("%O(%d, %O)", this_program, state, stream);
+        return sprintf("%O(%d, %O, %s, %s)", this_program, state, stream,
+                       endpoint?(string)endpoint:"server",
+                       buffer_mode?"buffer mode": "callback mode only");
     }
 
     //! Set the @expr{id@}. It will be passed as last argument to all
@@ -301,6 +305,7 @@ class Connection {
         if (f->set_buffer_mode) {
             f->set_nonblocking(websocket_in_bm, websocket_write_bm, websocket_closed);
             f->set_buffer_mode(in, out);
+            buffer_mode = 1;
         } else {
             f->set_nonblocking(websocket_in, websocket_write, websocket_closed);
         }
@@ -446,6 +451,7 @@ class Connection {
             } else {
                 stream->set_nonblocking(websocket_in_bm, websocket_write_bm, websocket_closed);
                 stream->set_buffer_mode(in, out);
+                buffer_mode = 1;
             }
 
             state = OPEN;
