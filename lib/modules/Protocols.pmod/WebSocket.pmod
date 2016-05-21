@@ -296,10 +296,14 @@ class Connection {
     }
 
     //! Constructor for server mode
-    protected void create(Stdio.File f) {
+    protected void create(Stdio.File|SSL.File f) {
         stream = f;
-        f->set_nonblocking(websocket_in_bm, websocket_write_bm, websocket_closed);
-        f->set_buffer_mode(in, out);
+        if (f->set_buffer_mode) {
+            f->set_nonblocking(websocket_in_bm, websocket_write_bm, websocket_closed);
+            f->set_buffer_mode(in, out);
+        } else {
+            f->set_nonblocking(websocket_in, websocket_write, websocket_closed);
+        }
         state = OPEN;
         if (onopen) onopen(id || this);
         WS_WERR(1, "opened\n");
