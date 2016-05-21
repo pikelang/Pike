@@ -303,12 +303,11 @@ class Connection {
     protected void create(Stdio.File|SSL.File f) {
         stream = f;
         if (f->set_buffer_mode) {
-            f->set_nonblocking(websocket_in_bm, websocket_write_bm, websocket_closed);
             f->set_buffer_mode(in, out);
             buffer_mode = 1;
-        } else {
-            f->set_nonblocking(websocket_in, websocket_write, websocket_closed);
         }
+        f->set_nonblocking(websocket_in, websocket_write, websocket_closed);
+
         state = OPEN;
         if (onopen) onopen(id || this);
         WS_WERR(1, "opened\n");
@@ -355,6 +354,8 @@ class Connection {
         } else {
             stream = f;
         }
+
+        buffer_mode = 0;
 
         stream->set_nonblocking(http_read, websocket_write, websocket_closed);
         mapping headers = ([
@@ -444,27 +445,25 @@ class Connection {
 
             // FIXME: Parse headers and make them available to onopen?
 
-            if (endpoint->scheme == "wss") {
-                // This also implies that we can't do buffer mode so
-                // we will have to shuffle data in callbacks.
-                stream->set_nonblocking(websocket_in, websocket_write, websocket_closed);
-            } else {
-                stream->set_nonblocking(websocket_in_bm, websocket_write_bm, websocket_closed);
+            if (endpoint->scheme != "wss") {
                 stream->set_buffer_mode(in, out);
                 buffer_mode = 1;
             }
+
+            stream->set_nonblocking(websocket_in, websocket_write, websocket_closed);
 
             state = OPEN;
             if (onopen) onopen(id || this);
             WS_WERR(1, "opened\n");
 
             // Is this needed?
-            websocket_in_bm(_id, in);
+            websocket_in(_id, in);
         }
     }
 
     //! Write callback in non-buffer mode
     protected void websocket_write() {
+        if (buffer_mode) return;
         if (sizeof(out)) {
             int n = out->output_to(stream);
             if (n < 0) {
@@ -476,19 +475,14 @@ class Connection {
         }
     }
 
-    //! Write callback in buffer mode
-    protected void websocket_write_bm() {
-    }
-
-
     //! Read callback in non-buffer mode.
     protected void websocket_in(mixed _id, string data) {
       in->add(data);
-      websocket_in_bm(_id, in);
+      websocket_in(_id, in);
     }
 
     //! Read callback in buffer mode
-    protected void websocket_in_bm(mixed _id, Stdio.Buffer in) {
+    protected variant void websocket_in(mixed _id, Stdio.Buffer in) {
         // it would be nicer to set the read callback to zero
         // once a close handshake has been received. however,
         // without a read callback pike does not trigger the
