@@ -77,7 +77,7 @@ protected .Context context;
 // The context to use.
 
 protected .Connection conn;
-// Always set when stream is. Destructed with destroy() at shutdown
+// Always set when stream is. Destructed with destruct() at shutdown
 // since it contains cyclic references. Noone else gets to it, though.
 
 protected Stdio.Buffer write_buffer;		// Encrypted data to write.
@@ -530,6 +530,8 @@ array(Stdio.Buffer|int(0..0)) query_buffer_mode()
   return ({ buffered_mode && user_read_buffer, user_write_buffer });
 }
 
+//! @returns
+//!   Returns the server name indication value for the connection.
 mixed get_server_name()
 {
   if (!conn) error("No active conection.\n");
