@@ -2599,34 +2599,29 @@ fail: CALL_AND_UNSET_ONERROR(e);
       Pike_error("Not supported\n");
     }
   }
+
+  /*! @endclass RewindKey
+   */
+
+  static struct object* io_create_rewind_key( Buffer *io, int auto_mode )
+  {
+    struct object *o = fast_clone_object( Buffer_RewindKey_program );
+    struct Buffer_RewindKey_struct *s = (void*)o->storage;
+    add_ref(io->this);
+    s->obj = io->this;
+    s->rewind_to = io->offset;
+    s->io = io;
+    s->auto_mode = auto_mode;
+    io->locked_move++;
+    return o;
+  }
+
 }
-
-
-
-static struct object* io_create_rewind_key( Buffer *io, int auto_mode )
-{
-  struct object *o = fast_clone_object( Buffer_RewindKey_program );
-  struct Buffer_RewindKey_struct *s = (void*)o->storage;
-  add_ref(io->this);
-  s->obj = io->this;
-  s->rewind_to = io->offset;
-  s->io = io;
-  s->auto_mode = auto_mode;
-  io->locked_move++;
-  return o;
-}
-
-/*! @endclass
- * RewindKey
- */
-
-/*! @endclass
- * Buffer
+/*! @endclass Buffer
  */
 
 
-/*! @endmodule
- * Stdio
+/*! @endmodule Stdio
  */
 
 
