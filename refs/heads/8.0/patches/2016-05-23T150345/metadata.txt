@@ -1,4 +1,4 @@
-subject: Pike 8.0: Multiple fixes:
+subject: Pike 8.0: Filesystem.Monitor, WebSocket
 from: ee53981a0cca15ff2b74f531f8fed8192d76a584
 to: e67a57cb68523c0f377c285ddc51807513210545
 originator: wellhardh@roxen.com
@@ -7,22 +7,10 @@ restart: true
 
 Multiple fixes:
 
-  * Optimizer: Fixed special case when optimizing logical or.
-
-  * Optimizer: Fixed special case whenn optimizing logical and.
-
-  * Start changelog for release 4
-
   * Filesystem.Monitor: Potential fix for [bug 7684].
     
     Avoid recursive mutex locks from destroy() by only locking
     on explicit destruct().
-
-  * Fix error message.
-
-  * release number bumped to 8.0.244 by export.pike
-
-  * release number bumped to 8.0.245 by export.pike
 
   * Added WebSocket ports to the known port numbers.
 
