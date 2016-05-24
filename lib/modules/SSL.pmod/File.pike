@@ -482,29 +482,37 @@ int(1bit) accept(string|void pending_data)
 //! objects, in the directions you included buffers.
 //!
 //! @param in
-//!   Input buffer.
+//!   Input buffer. If this buffer is non-empty, its contents
+//!   will be returned after any already received data.
 //!
 //! @param out
-//!   Output buffer.
+//!   Output buffer. If this buffer is non-empty, its contents
+//!   will be sent after any data already queued for sending.
 //!
 //! @seealso
 //!  @[get_buffer_mode()]
 void set_buffer_mode( Stdio.Buffer|int(0..0) in,Stdio.Buffer|int(0..0) out )
 {
-  // FIXME: Document the semantics for non-empty buffers above.
   if (!in) {
+    // NB: We always have a user_read_buffer.
     in = Stdio.Buffer();
     buffered_mode = 0;
   } else {
     buffered_mode = 1;
   }
-  in->add(user_read_buffer->read());
+  if (sizeof(user_read_buffer)) {
+    // Behave as if any data in the new buffer was appended
+    // to the old input buffer.
+    in->add(user_read_buffer->read(), in->read());
+  }
   user_read_buffer = in;
 
   if (user_write_buffer) {
     user_write_buffer->__fd_set_output( 0 );
-    if (out) {
-      out->add(user_write_buffer->read());
+    if (out && sizeof(user_write_buffer)) {
+      // Behave as if any data in the new output buffer was
+      // appended to the old output buffer.
+      out->add(user_write_buffer->read(), out->read());
     }
   }
   if (user_write_buffer = out)
