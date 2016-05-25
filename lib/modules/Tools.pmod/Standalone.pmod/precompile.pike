@@ -1179,18 +1179,21 @@ class PikeType
 		if(arrayp(q=tok[1]))
 		{
 		  tmp=q[1..sizeof(q)-2]/({".."});
-		  /* Workaround for buggy Parser.Pike */
-		  if(sizeof(tmp)==1) tmp=q[1..sizeof(q)-2]/({".. "});
-		  if (sizeof(tmp) == 1) {
+		  if(sizeof(tmp)==1)
+                  {
 		    int bits;
 		    /* Support the string(Xbit) syntax too. */
-		    if ((sizeof(q) == 4) && ((string)q[2] == "bit") &&
-			((bits = (int)(string)q[1]) > 0)) {
+		    if (sizeof(q) == 3 && sscanf((string)q[1], "%dbit", bits))
+                    {
 		      low = "0";
 		      high = sprintf("%d", (1 << bits) - 1);
-		    } else {
-		      error("Syntax error in string subtype.\n");
 		    }
+                    else
+                    {
+		      werror("%s:%d: Syntax error: %s is not a valid type.\n",
+                             t->file, t->line, merge(tok));
+                      exit(1);
+                    }
 		  } else {
 		    if(sizeof(tmp[0])) low=(array(string))tmp[0]*"";
 		    if(sizeof(tmp[1])) high=(array(string))tmp[1]*"";
