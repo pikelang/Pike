@@ -197,10 +197,12 @@ class File
   //! objects, in the directions you included buffers.
   //!
   //! @param in
-  //!   Input buffer.
+  //!   Input buffer. If this buffer is non-empty, its contents
+  //!   will be returned after any already received data.
   //!
   //! @param out
-  //!   Output buffer.
+  //!   Output buffer. If this buffer is non-empty, its contents
+  //!   will be sent after any data already queued for sending.
   //!
   //! @note
   //!  Normally you call @[write] to re-trigger the write callback if
@@ -214,10 +216,20 @@ class File
   //!  @[get_buffer_mode()]
   void set_buffer_mode( Stdio.Buffer|int(0..0) in,Stdio.Buffer|int(0..0) out )
   {
-    // FIXME: Document the semantics for non-empty buffers above.
+    if (in && sizeof(inbuffer)) {
+      // Behave as if any data in the new buffer was appended
+      // to the old input buffer.
+      in->add(inbuffer->read(), in->read());
+    }
     inbuffer = in;
-    if (outbuffer)
+    if (outbuffer) {
       outbuffer->__fd_set_output( 0 );
+      if (out && sizeof(outbuffer)) {
+	// Behave as if any data in the new output buffer was
+	// appended to the old output buffer.
+	out->add(outbuffer->read(), out->read());
+      }
+    }
     if( outbuffer = out )
       outbuffer->__fd_set_output( ::write );
   }
