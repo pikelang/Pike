@@ -267,6 +267,14 @@ mapping(string:string) strings = ([
   "_get_iterator":"lfun_strings[LFUN__GET_ITERATOR]",
   "`[..]":"lfun_strings[LFUN_RANGE]",
   "_search":"lfun_strings[LFUN__SEARCH]",
+  "_types":"lfun_strings[LFUN__TYPES]",
+  "_serialize":"lfun_strings[LFUN__SERIALIZE]",
+  "_deserialize":"lfun_strings[LFUN__DESERIALIZE]",
+  "_size_object":"lfun_strings[LFUN__SIZE_OBJECT]",
+  "_random":"lfun_strings[LFUN__RANDOM]",
+  "`**":"lfun_strings[LFUN_POW]",
+  "``**":"lfun_strings[LFUN_RPOW]",
+  "_sqrt":"lfun_strings[LFUN__SQRT]",
 ]);
 int last_str_id = 0;
 array(string) stradd = ({});
