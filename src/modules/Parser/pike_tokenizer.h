@@ -65,12 +65,30 @@ static unsigned int TOKENIZE(struct array **res, CHAR *data, unsigned int len)
 	  if(data[pos]=='-' || data[pos]=='+') pos++;
 	  while(data[pos]>='0' && data[pos]<='9') pos++;
 	}
+	if(data[pos]=='b')
+	{
+	  pos++;
+          if(data[pos]=='i')
+              pos++;
+          if(data[pos]=='t')
+              pos++;
+	}
 	if( pos != len )
 	  pos--;
 	break;
 
       case  '`':
 	if(data[pos+1]=='`') pos++;
+        if(m_isidchar(data[pos+1]))
+        {
+            do {
+                pos++;
+            } while(m_isidchar(data[pos+1]));
+            if(data[pos+1] == '=')
+                pos++;
+            break;
+            // NOTE: Depends on string having null at end.
+        }
 	switch(data[pos+1]) {
 	case '<':
 	case '>':
@@ -94,6 +112,8 @@ static unsigned int TOKENIZE(struct array **res, CHAR *data, unsigned int len)
 	case '/': case '%': case '*': case '&': case '|':
 	case '^': case '+': case '!': case '=': case '~':
 	  pos++;
+          if(data[pos+1] == '*')
+              pos++;
 	  break;
 	}
 	if(data[pos+1]=='=') pos++;
