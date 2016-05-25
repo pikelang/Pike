@@ -20,16 +20,18 @@ string delimiters = ",;:.>-+=()|[]&%#!<>^~*/`{}\\";
 string res_words = "if|else|while|for|foreach|do|return|continue|break|"
                    "switch|case|default|goto|catch|lambda|gauge|inherit|import";
 string type = "enum|float|int|typedef|void|object|class|mapping|string|"
-              "array|multiset|mixed|function|program|bool";
+              "array|multiset|mixed|function|program|bool|auto";
 string modifiers = "public|protected|private|static|constant|local|final|"
-                   "optional|variant";
+                   "optional|variant|inline";
 string constants  = "UNDEFINED|__LINE__|__FILE__|__DIR__|__func__|"
                     "__VERSION__|__MAJOR__|__MINOR__|__BUILD__|"
                     "__REAL_VERSION__|__REAL_MAJOR__|__REAL_MINOR__|"
                     "__REAL_BUILD__|__DATE__|__TIME__|__AUTO_BIGNUM__|__NT__|"
                     "__PIKE__|__amigaos__|true|false|this|this_program";
+string known_macros = "if|ifdef|define|elif|else|endif|pike|require|include";
 
 string namespaces = #"ADT
+Apple
 Arg
 Array
 Audio
@@ -40,6 +42,7 @@ Calendar
 Charset
 Colors
 CommonLog
+Concurrent
 Crypto
 DVB
 Debug
@@ -118,7 +121,7 @@ ZXID
 _Ffmpeg
 __builtin";
 
-protected multiset(string) delims, reserved, types, consts, ns, mods;
+protected multiset(string) delims, reserved, types, consts, ns, mods, macros;
 
 final int(0..1) main(int argc, array(string) argv)
 {
@@ -203,6 +206,8 @@ string convert(string code)
   consts   = (multiset)(constants/"|");
   ns       = (multiset)(namespaces/"\n");
   mods     = (multiset)(modifiers/"|");
+  macros   = (multiset)(known_macros/"|");
+
   return make_html(Parser.Pike.split(code));
 }
 
@@ -212,6 +217,13 @@ string convert(string code)
                                         ">" : "&gt;" ])) + "</span>")
 #define ADD() add(replace(tok, ([ "&" : "&amp;", "<" : "&lt;", ">" : "&gt;" ])))
 
+protected string first_non_white(array(string) s)
+{
+  for (int i; i < sizeof(s); i++) {
+    if (!(< " ", "\t", "\n" >)[s[i]])
+      return s[i];
+  }
+}
 
 protected string make_html(array(string) tokens)
 {
@@ -264,6 +276,12 @@ protected string make_html(array(string) tokens)
             }
             else {
               array(string) ntoks = Parser.Pike.split(tok[1..]);
+
+              if (!macros[first_non_white(ntoks)]) {
+                add("#", make_html(ntoks));
+                break;
+              }
+
               tok = "#" + ntoks[0];
               ADDTAG("macro");
 
@@ -280,7 +298,11 @@ protected string make_html(array(string) tokens)
                 ADDTAG("macro");
               }
               else if (sizeof(ntoks) > 1) {
-                add("<span class='nested'>", make_html(ntoks[1..]), "</span>");
+                tok = "";
+                if (ntoks[-1][-1] == '\n' && tokens[i+1] == "\n") {
+                  ntoks[-1] = ntoks[-1][..<1];
+                }
+                add(make_html(ntoks[1..]));
               }
             }
 
@@ -291,7 +313,9 @@ protected string make_html(array(string) tokens)
             break;
         }
       }
-      else ADD();
+      else {
+        ADD();
+      }
     }
   }
 
