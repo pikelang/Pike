@@ -119,6 +119,12 @@
 #define IN_ADDR_T	unsigned int
 #endif /* HAVE_IN_ADDR_T */
 
+#ifdef SOCK_DEBUG
+#define SOCKWERR(X...)	fprintf(stderr, X)
+#else
+#define SOCKWERR(X...)
+#endif
+
 /*
  * Functions
  */
@@ -1861,7 +1867,7 @@ int get_inet_addr(PIKE_SOCKADDR *addr,char *name,char *service, INT_TYPE port,
     name = NULL;
 
 #ifdef HAVE_GETADDRINFO
-/*   fprintf(stderr, "get_inet_addr(): Trying getaddrinfo\n"); */
+  SOCKWERR("get_inet_addr(): Trying getaddrinfo\n");
   if(!name) {
     hints.ai_flags = AI_PASSIVE;
     /* Avoid creating an IPv6 address for "*". */
@@ -1908,15 +1914,18 @@ int get_inet_addr(PIKE_SOCKADDR *addr,char *name,char *service, INT_TYPE port,
         addr_len = (found = p)->ai_addrlen;
     }
     if(found) {
-/*       fprintf(stderr, "Got %d bytes (family: %d (%d))\n", */
-/* 	      addr_len, found->ai_addr->sa_family, found->ai_family); */
+      SOCKWERR("Got %d bytes (family: %d (%d))\n",
+	       addr_len, found->ai_addr->sa_family, found->ai_family);
       memcpy(addr, found->ai_addr, addr_len);
     }
     freeaddrinfo(res);
     if(addr_len) {
-/*       fprintf(stderr, "family: %d\n", SOCKADDR_FAMILY(*addr)); */
+      SOCKWERR("family: %d\n", SOCKADDR_FAMILY(*addr));
       return addr_len;
     }
+  } else {
+    SOCKWERR("Failed with err: %d: %s, errno %d: %s, flags: %d\n",
+	     err, gai_strerror(err), errno, strerror(errno), hints.ai_flags);
   }
   if (service == servnum_buf) service = NULL;
 #endif /* HAVE_GETADDRINFO */
@@ -1932,7 +1941,7 @@ int get_inet_addr(PIKE_SOCKADDR *addr,char *name,char *service, INT_TYPE port,
 
   if(!name)
   {
-/*     fprintf(stderr, "get_inet_addr(): ANY\n"); */
+    SOCKWERR("get_inet_addr(): ANY\n");
 #ifdef AF_INET6
     if (!(inet_flags & 2))
 #endif
@@ -1943,7 +1952,7 @@ int get_inet_addr(PIKE_SOCKADDR *addr,char *name,char *service, INT_TYPE port,
    */
   else if(my_isipnr(name)) /* I do not entirely trust inet_addr */
   {
-/*     fprintf(stderr, "get_inet_addr(): IP\n"); */
+    SOCKWERR("get_inet_addr(): IP\n");
     if (((IN_ADDR_T)inet_addr(name)) == ((IN_ADDR_T)-1))
       Pike_error("Malformed ip number.\n");
 #ifdef AF_INET6
@@ -1962,7 +1971,7 @@ int get_inet_addr(PIKE_SOCKADDR *addr,char *name,char *service, INT_TYPE port,
   {
 #ifdef GETHOST_DECLARE
     GETHOST_DECLARE;
-/*     fprintf(stderr, "get_inet_addr(): Trying gethostbyname()\n"); */
+    SOCKWERR("get_inet_addr(): Trying gethostbyname()\n");
     CALL_GETHOSTBYNAME(name);
 
     if(!ret) {
@@ -1996,7 +2005,7 @@ int get_inet_addr(PIKE_SOCKADDR *addr,char *name,char *service, INT_TYPE port,
   if(service) {
 #ifdef GETSERV_DECLARE
     GETSERV_DECLARE;
-/*     fprintf(stderr, "get_inet_addr(): Trying getserv()\n"); */
+    SOCKWERR("get_inet_addr(): Trying getserv()\n");
     CALL_GETSERVBYNAME(service, (udp? "udp":"tcp"));
 
     if(!ret) {
@@ -2021,7 +2030,7 @@ int get_inet_addr(PIKE_SOCKADDR *addr,char *name,char *service, INT_TYPE port,
     }
 #endif
   } else if(port > 0) {
-/*     fprintf(stderr, "get_inet_addr(): port()\n"); */
+    SOCKWERR("get_inet_addr(): port()\n");
 #ifdef AF_INET6
     if (SOCKADDR_FAMILY(*addr) == AF_INET6) {
       addr->ipv6.sin6_port = htons((unsigned INT16)port);
@@ -2029,7 +2038,7 @@ int get_inet_addr(PIKE_SOCKADDR *addr,char *name,char *service, INT_TYPE port,
 #endif
       addr->ipv4.sin_port = htons((unsigned INT16)port);
   } else {
-/*     fprintf(stderr, "get_inet_addr(): ANY port()\n"); */
+    SOCKWERR("get_inet_addr(): ANY port()\n");
 #ifdef AF_INET6
     if (SOCKADDR_FAMILY(*addr) == AF_INET6) {
       addr->ipv6.sin6_port = 0;
