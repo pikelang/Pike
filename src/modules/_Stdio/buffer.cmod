@@ -956,7 +956,7 @@ PIKECLASS Buffer
    *!
    *! If @[write_callback] is @expr{0@} (zero) the state is cleared.
    */
-  PIKEFUN void __fd_set_output( int(0..0)|object|function f )
+  PIKEFUN void __fd_set_output( zero|object|function f )
   {
     Buffer *io = THIS;
     if( TYPEOF(*f) == PIKE_T_OBJECT ) {
@@ -1187,9 +1187,9 @@ PIKECLASS Buffer
    *! The supported argument types are:
    *!
    *! @mixed
-   *!  @type string(0..255)
+   *!  @type string(8bit)
    *!   An eight bit string.
-   *!  @type int(0..255)
+   *!  @type int(8bit)
    *!   A single byte
    *!  @type System.Memory
    *!   A chunk of memory. The whole memory area is added.
@@ -1219,7 +1219,7 @@ PIKECLASS Buffer
     ref_push_object(io->this);
   }
 
-  /*! @decl Buffer add_int8( int(0..255) )
+  /*! @decl Buffer add_int8( int(8bit) )
    *! Adds a single byte to the buffer.
    */
   PIKEFUN Buffer add_int8( int i )
@@ -1231,7 +1231,7 @@ PIKECLASS Buffer
     ref_push_object(Pike_fp->current_object);
   }
 
-  /*! @decl Buffer add_int16( int(0..65535) )
+  /*! @decl Buffer add_int16( int(16bit) )
    *!
    *! Add a 16-bit network byte order value to the buffer
    */
@@ -1260,13 +1260,13 @@ PIKECLASS Buffer
     ref_push_object(Pike_fp->current_object);
   }
 
-  /*! @decl Buffer add_hstring( string(0..255) data, int size_size )
+  /*! @decl Buffer add_hstring( string(8bit) data, int size_size )
    *! @decl Buffer add_hstring( Stdio.Buffer data, int size_size )
    *! @decl Buffer add_hstring( System.Memory data, int size_size )
    *! @decl Buffer add_hstring( String.Buffer data, int size_size )
-   *! @decl Buffer add_hstring( int(0..255) data, int size_size )
+   *! @decl Buffer add_hstring( int(8bit) data, int size_size )
    *! @decl Buffer add_hstring( array data, int size_size )
-   *! @decl Buffer add_hstring( int|string(0..255)|Stdio.Buffer|System.Memory|array data, int size_size, int offset )
+   *! @decl Buffer add_hstring( int|string(8bit)|Stdio.Buffer|System.Memory|array data, int size_size, int offset )
    *!
    *! Adds length of data followed by @[data] to the buffer.
    *!
@@ -1284,9 +1284,9 @@ PIKECLASS Buffer
    *! The supported @[data] argument types are
    *!
    *! @mixed
-   *!  @type int(0..255)
+   *!  @type int(8bit)
    *!   An eight bit character.
-   *!  @type string(0..255)
+   *!  @type string(8bit)
    *!   An eight bit string.
    *!  @type System.Memory
    *!   A chunk of memory. The whole memory area is added.
@@ -1390,7 +1390,7 @@ PIKECLASS Buffer
     ref_push_object(Pike_fp->current_object);
   }
 
-  /*! @decl Buffer add_ints( array(int) integers, int(0..255) len )
+  /*! @decl Buffer add_ints( array(int) integers, int(8bit) len )
    *!
    *! Add the integers in the specified array, @[len] bytes per int.
    *! Equivalent to calling @[add_int] for each integer, but faster,
@@ -1471,7 +1471,7 @@ PIKECLASS Buffer
    *!
    *! Return the character at the specified offset.
    */
-  PIKEFUN int(0..255) `[]( int off )
+  PIKEFUN int(8bit) `[]( int off )
     flags ID_PROTECTED;
   {
     Buffer *io = THIS;
@@ -1488,7 +1488,7 @@ PIKECLASS Buffer
    *!
    *! Set the character at the specified offset to @[char].
    */
-  PIKEFUN int(0..255) `[]=( int off, int val )
+  PIKEFUN int(8bit) `[]=( int off, int val )
     flags ID_PROTECTED;
   {
     Buffer *io = THIS;
@@ -1528,7 +1528,7 @@ PIKECLASS Buffer
    *!@note
    *! This only works for buffers whose length is less than 0x7fffffff.
    */
-  PIKEFUN string(0..255) cast(string to)
+  PIKEFUN string(8bit) cast(string to)
     flags ID_PROTECTED;
   {
     if( to != literal_string_string )
@@ -1616,7 +1616,7 @@ PIKECLASS Buffer
     push_object( io_read_buffer( THIS, 0, 0 ) );
   }
 
-  PIKEFUN string(0..255) _sprintf(int o, mapping UNUSED)
+  PIKEFUN string(8bit) _sprintf(int o, mapping UNUSED)
     flags ID_PROTECTED;
   {
     size_t bytes;
@@ -1683,7 +1683,7 @@ PIKECLASS Buffer
    *!
    *! Note that pike string can not be longer than 0x7fffffff bytes (~2Gb).
    */
-  PIKEFUN string(0..255) read_hstring( int bytes, void|int offset )
+  PIKEFUN string(8bit) read_hstring( int bytes, void|int offset )
   {
     INT64 len;
     Buffer *io = THIS;
@@ -1728,7 +1728,7 @@ PIKECLASS Buffer
    *! @param sentinel
    *! A different character can be used as end sentinel of the string.
    */
-  PIKEFUN string(0..255) read_cstring(void|int sentinel)
+  PIKEFUN string(8bit) read_cstring(void|int sentinel)
   {
     INT64 len;
     Buffer *io = THIS;
@@ -1989,7 +1989,7 @@ fail: CALL_AND_UNSET_ONERROR(e);
    *!  buffer->match("%*[ \t\r\n]%[^ \t\r\n]");
    *! @endcode
    */
-  PIKEFUN string(0..255)|int|float|array match( string format )
+  PIKEFUN string(8bit)|int|float|array match( string format )
   {
     INT32 i;
     ptrdiff_t num_used;
@@ -2126,7 +2126,7 @@ fail: CALL_AND_UNSET_ONERROR(e);
    *! @seealso
    *!   @[try_read()]
    */
-  PIKEFUN string(0..255) read( int bytes )
+  PIKEFUN string(8bit) read( int bytes )
   {
     struct pike_string *s;
     Pike_sp--;
@@ -2149,7 +2149,7 @@ fail: CALL_AND_UNSET_ONERROR(e);
    *! @seealso
    *!   @[try_read()]
    */
-  PIKEFUN string(0..255) read()
+  PIKEFUN string(8bit) read()
   {
     push_string( io_read_string(THIS, io_len(THIS)) );
   }
@@ -2169,7 +2169,7 @@ fail: CALL_AND_UNSET_ONERROR(e);
    *! @seealso
    *!   @[read()]
    */
-  PIKEFUN string(0..255) try_read( int bytes )
+  PIKEFUN string(8bit) try_read( int bytes )
   {
     Buffer *this = THIS;
     struct pike_string *s;
@@ -2356,7 +2356,7 @@ fail: CALL_AND_UNSET_ONERROR(e);
     push_string(io_read_string(THIS, io_len(THIS)));
   }
 
-  PIKEFUN void _decode(string(0..255) x)
+  PIKEFUN void _decode(string(8bit) x)
   {
     Buffer *this = THIS;
     if( this->buffer )
