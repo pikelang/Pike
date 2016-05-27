@@ -5659,7 +5659,6 @@ int define_variable(struct pike_string *name,
 {
   int n, run_time_type;
   int no_this = 0;
-
 #ifdef PIKE_DEBUG
   if(name != debug_findstring(name))
     Pike_fatal("define_variable on nonshared string.\n");
@@ -5793,9 +5792,14 @@ int define_variable(struct pike_string *name,
     case T_FUNCTION:
       no_this = 1;
       /* FALL_THROUGH */
-    case T_INT:
     case T_PROGRAM:
       run_time_type = T_MIXED;
+      break;
+    case T_INT:
+      run_time_type = T_MIXED;
+      INT_TYPE amin = CAR_TO_INT(type), amax = CDR_TO_INT(type);
+      if( amin > MIN_INT32 && amax < MAX_INT32 )
+        run_time_type = T_INT;
     }
   }
 
