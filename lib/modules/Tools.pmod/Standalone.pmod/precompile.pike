@@ -1188,6 +1188,12 @@ class PikeType
 		      low = "0";
 		      high = sprintf("%d", (1 << bits) - 1);
 		    }
+		    else if (sizeof(q) == 4 && q[2] == "bit")
+                    {
+		      // Parser.Pike from Pike 8.1.3 or earlier.
+		      low = "0";
+		      high = sprintf("%d", (1 << (int)(string)q[1]) - 1);
+		    }
                     else
                     {
 		      werror("%s:%d: Syntax error: %s is not a valid type.\n",
