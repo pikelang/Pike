@@ -216,7 +216,7 @@ class File
   //!  @[get_buffer_mode()]
   void set_buffer_mode( Stdio.Buffer|int(0..0) in,Stdio.Buffer|int(0..0) out )
   {
-    if (in && sizeof(inbuffer)) {
+    if (in && inbuffer && sizeof(inbuffer)) {
       // Behave as if any data in the new buffer was appended
       // to the old input buffer.
       in->add(inbuffer->read(), in->read());
