@@ -1937,6 +1937,7 @@ static void mpzmod_pow(INT32 args)
   struct object *res = NULL;
   MP_INT *mi;
   unsigned long exponent;
+  size_t size;
 
   if (args != 1)
     SIMPLE_WRONG_NUM_ARGS_ERROR ("pow", 1);
