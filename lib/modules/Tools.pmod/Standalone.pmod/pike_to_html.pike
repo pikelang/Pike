@@ -28,7 +28,8 @@ string constants  = "UNDEFINED|__LINE__|__FILE__|__DIR__|__func__|"
                     "__REAL_VERSION__|__REAL_MAJOR__|__REAL_MINOR__|"
                     "__REAL_BUILD__|__DATE__|__TIME__|__AUTO_BIGNUM__|__NT__|"
                     "__PIKE__|__amigaos__|true|false|this|this_program";
-string known_macros = "if|ifdef|define|elif|else|endif|pike|require|include";
+string known_macros = "if|ifdef|define|elif|else|endif|pike|require|include|"
+                      "pragma";
 
 string namespaces = #"ADT
 Apple
