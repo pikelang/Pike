@@ -319,8 +319,8 @@ class Connection {
         state = CLOSED; // We are closed until we have connected and upgraded the connection;
     }
 
-    //! Connect to the remote @{endpoint} with optional request
-    //! headers specified in @{headers}. This method will send the
+    //! Connect to the remote @[endpoint] with optional request
+    //! headers specified in @[headers]. This method will send the
     //! actual HTTP request to switch protocols to the server and once
     //! a HTTP 101 response is returned, switch the connection to
     //! WebSockets and call the @[onopen] callback.

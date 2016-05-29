@@ -81,7 +81,7 @@ public void set_maxtime(int t)
 //! @decl Concurrent.Future get_url(Protocols.HTTP.Session.URL url,    @
 //!                                 void|Arguments args)
 //! @decl Concurrent.Future post_url(Protocols.HTTP.Session.URL url,   @
-//!                                  void|Arguments args))
+//!                                  void|Arguments args)
 //! @decl Concurrent.Future put_url(Protocols.HTTP.Session.URL url,    @
 //!                                 void|Arguments args)
 //! @decl Concurrent.Future delete_url(Protocols.HTTP.Session.URL url, @
