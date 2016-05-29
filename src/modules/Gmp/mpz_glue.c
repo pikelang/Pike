@@ -1961,6 +1961,14 @@ static void mpzmod_pow(INT32 args)
     exponent=mpz_get_ui(mi);
   }
 
+  /* Cut off at 1GB. */
+  size = mpz_size(THIS);
+  if (INT_TYPE_MUL_OVERFLOW(exponent, size) ||
+      size * exponent > (INT_TYPE)(0x40000000/sizeof(mp_limb_t))) {
+    if(mpz_cmp_si(THIS, -1)<0 || mpz_cmp_si(THIS, 1)>0)
+      SIMPLE_ARG_ERROR ("pow", 1, "Exponent too large.");
+  }
+
   res = fast_clone_object(THIS_PROGRAM);
   mpz_pow_ui(OBTOMPZ(res), THIS, exponent);
   pop_n_elems(args);
