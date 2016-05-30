@@ -69,7 +69,7 @@ static void f_hp_exit( struct object *UNUSED(o) )
 }
 
 static void f_hp_feed( INT32 args )
-/*! @decl array(string|mapping) feed(string data)
+/*! @decl array(string|mapping) feed(string data, void|int lower_case)
  *!
  *! @returns
  *!   @array
@@ -82,7 +82,8 @@ static void f_hp_feed( INT32 args )
  *!   @endarray
  */
 {
-  struct pike_string *str = Pike_sp[-1].u.string;
+  struct pike_string *str = Pike_sp[-args].u.string;
+  int lower_case = 1;
   struct header_buf *hp = THP;
   int str_len;
   int tot_slash_n=hp->slash_n, slash_n = hp->tslash_n, spc = hp->spc;
@@ -92,10 +93,15 @@ static void f_hp_feed( INT32 args )
   ptrdiff_t os=0, i, j, l;
   unsigned char *in;
 
-  if (args != 1)
+  if( !( args == 1 || args == 2 ) )
     Pike_error("Bad number of arguments to feed().\n");
-  if( TYPEOF(Pike_sp[-1]) != PIKE_T_STRING )
+  if( TYPEOF(Pike_sp[-args]) != PIKE_T_STRING )
     Pike_error("Wrong type of argument to feed()\n");
+  if( args == 2 )
+    if( TYPEOF(Pike_sp[-args+1]) == PIKE_T_INT )
+      lower_case = Pike_sp[-args+1].u.integer;
+    else
+      Pike_error("Wrong type of argument to feed()\n");
   if( str->size_shift )
     Pike_error("Wide string headers not supported\n");
   str_len = str->len;
@@ -189,7 +195,10 @@ static void f_hp_feed( INT32 args )
   for(i = 0; i < l; i++)
   {
     if(in[i] > 64 && in[i] < 91)
-      in[i]+=32;	/* lower_case */
+    {
+      if (lower_case)
+         in[i]+=32;       /* lower_case */
+    }
     else if( in[i] == ':' )
     {
       /* FIXME: Does not support white space before the colon. */
@@ -612,7 +621,7 @@ PIKE_MODULE_INIT
   ADD_STORAGE( struct header_buf  );
   set_init_callback( f_hp_init );
   set_exit_callback( f_hp_exit );
-  ADD_FUNCTION( "feed", f_hp_feed, tFunc(tStr,tArr(tOr(tStr,tMapping))), 0 );
+  ADD_FUNCTION( "feed", f_hp_feed, tFunc(tStr tOr(tInt,tVoid),tArr(tOr(tStr,tMapping))), 0 );
   ADD_FUNCTION( "create", f_hp_create, tFunc(tOr(tInt,tVoid),tVoid), ID_PROTECTED );
   end_class( "HeaderParser", 0 );
 }
