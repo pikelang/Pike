@@ -19,6 +19,7 @@ constant lfuns = ([
   "`<<":"OBJ << x",
   "`>>":"OBJ >> x",
   "`*": "OBJ * x",
+  "`**": "OBJ ** x",
   "`/": "OBJ / x",
   "`%": "OBJ % x",
   "`~": "~OBJ",
@@ -43,6 +44,7 @@ constant lfuns = ([
   "``<<":"x << OBJ",
   "``>>":"x >> OBJ",
   "``*":"x * OBJ",
+  "``**":"x ** OBJ",
   "``/":"x / OBJ",
   "``%":"x % OBJ",
 
