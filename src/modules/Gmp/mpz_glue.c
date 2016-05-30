@@ -665,7 +665,7 @@ static void mpzmod_create(INT32 args)
 /*! @decl int cast_to_int()
  *! Casts the object to an integer.
  *! @deprecated
- *!   Use @exp{(int)@} instead.
+ *!   Use @expr{(int)@} instead.
  */
 static void mpzmod_get_int(INT32 args)
 {
