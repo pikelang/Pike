@@ -1201,7 +1201,8 @@ static union msnode *low_multiset_find_eq (struct multiset *l, struct svalue *ke
 
       if (TYPEOF(msd->cmp_less) == T_INT) {
 	struct svalue tmp;
-	if (!(msd->ind_types & (BIT_OBJECT | BIT_FUNCTION))) {
+	if (!((msd->ind_types | (1 << TYPEOF(*key))) &
+	      (BIT_OBJECT | BIT_FUNCTION))) {
 	  /* Can assume an internal order which defines a total order
 	   * for all values. */
 	  LOW_RB_FIND (
