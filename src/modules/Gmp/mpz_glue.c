@@ -81,6 +81,16 @@ PMOD_EXPORT void push_bignum(MP_INT *mpz)
 void mpzmod_reduce(struct object *o)
 {
   MP_INT *mpz = OBTOMPZ (o);
+#if SIZEOF_INT_TYPE == SIZEOF_LONG
+  if( mpz_fits_slong_p( mpz ) )
+  {
+    push_int( mpz_get_si( mpz ) );
+    free_object(o);
+  }
+  else
+    push_object(o);
+  return;
+#else /*int type is not signed long. */
   int neg = mpz_sgn (mpz) < 0;
   INT_TYPE res = 0;
 
@@ -109,13 +119,11 @@ void mpzmod_reduce(struct object *o)
       res <<= GMP_NUMB_BITS;
     }
 #endif
-
     if (neg) res = -res;
     free_object (o);
     push_int (res);
     return;
   }
-
 overflow:
   if (neg && !mpz_cmp (mpz, mpz_int_type_min)) {
     /* No overflow afterall; it's MIN_INT_TYPE, the only valid integer
@@ -125,6 +133,7 @@ overflow:
   }
   else
     push_object (o);
+#endif /* sizeof int_type == sizeof long */
 }
 
 #define PUSH_REDUCED(o) do { struct object *reducetmp__=(o);	\
@@ -173,11 +182,20 @@ PMOD_EXPORT void push_int64 (INT64 i)
   }
 }
 
+#if SIZEOF_INT64 != SIZEOF_LONG || SIZEOF_INT_TYPE != SIZEOF_LONG 
 static mpz_t mpz_int64_min;
+#endif
 
 PMOD_EXPORT int int64_from_bignum (INT64 *i, struct object *bignum)
 {
   MP_INT *mpz = OBTOMPZ (bignum);
+#if SIZEOF_INT64 == SIZEOF_LONG
+  if( !mpz_fits_slong_p( mpz ) )
+    return 0;
+  *i = mpz_get_si( mpz );
+  return 1;
+#else /*int64 is not signed long. */
+
   int neg = mpz_sgn (mpz) < 0;
 
   /* Note: Similar code in mpzmod_reduce */
@@ -224,6 +242,7 @@ overflow:
     return 1;
   }
   *i = neg ? MIN_INT64 : MAX_INT64;
+#endif /*int64 is not signed long. */
   return 0;
 }
 
@@ -1201,16 +1220,13 @@ static void mpzmod_rsub(INT32 args)
 {
   DECLARE_THIS();
   struct object *res = NULL;
-  MP_INT *a;
 
   if(args!=1)
     SIMPLE_WRONG_NUM_ARGS_ERROR ("``-", 1);
 
-  a=get_mpz(sp-1, 1, "``-", 1, 1);
-
   res = fast_clone_object(THIS_PROGRAM);
 
-  mpz_sub(OBTOMPZ(res), a, THIS);
+  mpz_sub(OBTOMPZ(res), get_mpz(sp-1, 1, "``-", 1, 1), THIS);
   pop_n_elems(args);
   PUSH_REDUCED(res);
 }
@@ -2382,10 +2398,11 @@ PIKE_MODULE_INIT
   mpz_setbit (mpz_int_type_min, INT_TYPE_BITS);
   mpz_neg (mpz_int_type_min, mpz_int_type_min);
 
+#if SIZEOF_INT64 != SIZEOF_LONG || SIZEOF_INT_TYPE != SIZEOF_LONG 
   mpz_init (mpz_int64_min);
   mpz_setbit (mpz_int64_min, INT64_BITS);
   mpz_neg (mpz_int64_min, mpz_int64_min);
-
+#endif
   pike_init_mpq_module();
   pike_init_mpf_module();
   pike_init_smpz_module();
@@ -2396,19 +2413,15 @@ PIKE_MODULE_EXIT
   pike_exit_smpz_module();
   pike_exit_mpf_module();
   pike_exit_mpq_module();
-  if(mpzmod_program)
-  {
-    free_program(mpzmod_program);
-    mpzmod_program = NULL;
-  }
 
-  if(bignum_program)
-  {
-    free_program(bignum_program);
-    bignum_program = NULL;
-  }
+  free_program(mpzmod_program);
+  free_program(bignum_program);
+  bignum_program = NULL;
+
   mpz_clear (mpz_int_type_min);
+#if SIZEOF_INT64 != SIZEOF_LONG || SIZEOF_INT_TYPE != SIZEOF_LONG 
   mpz_clear (mpz_int64_min);
+#endif
 }
 
 /*! @endmodule
