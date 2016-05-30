@@ -412,8 +412,7 @@ StringType|IntType parseRange(StringType|IntType s)
       break;
     default:
       s->min = eatLiteral();
-
-      if( (<"bit","bits">)[(tk = peekToken())] )
+      if(sscanf(s->min, "%sbit", s->min) ||  (<"bit","bits">)[(tk = peekToken())] )
       {
         eat(tk);
         eat(")");
