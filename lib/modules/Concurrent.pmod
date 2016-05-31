@@ -266,20 +266,37 @@ class Promise
     return Future::this;
   }
 
-  //! Fulfill the @[Future] value.
-  void success(mixed value)
+  protected void unlocked_success(mixed value)
   {
-    object key = mux->lock();
     if (state < STATE_REJECTED) {
       result = value;
       state = STATE_FULFILLED;
       function cb = success_cb;
       array(mixed) extra = success_ctx;
       cond->broadcast();
-      key = 0;
       if (cb) {
 	call_out(cb, 0, value, @extra);
       }
+    }
+  }
+
+  //! Fulfill the @[Future] value.
+  void success(mixed value)
+  {
+    object key = mux->lock();
+    unlocked_success(value);
+    key = 0;
+  }
+
+  protected void unlocked_failure(mixed value)
+  {
+    state = STATE_REJECTED;
+    result = value;
+    function cb = failure_cb;
+    array(mixed) extra = failure_ctx;
+    cond->broadcast();
+    if (cb) {
+      call_out(cb, 0, value, @extra);
     }
   }
 
@@ -287,15 +304,8 @@ class Promise
   void failure(mixed value)
   {
     object key = mux->lock();
-    state = STATE_REJECTED;
-    result = value;
-    function cb = failure_cb;
-    array(mixed) extra = failure_ctx;
-    cond->broadcast();
+    unlocked_failure(value);
     key = 0;
-    if (cb) {
-      call_out(cb, 0, value, @extra);
-    }
   }
 
   protected void destroy()
