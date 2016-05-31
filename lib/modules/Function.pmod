@@ -296,18 +296,22 @@ object Placeholder = class
     //!
     //! Note that arg0 is the first argument, not arg1
 
-    class Expr(function value)
+    class Expr(function func, void|bool _splice)
     //! Expr(x) returns the result of calling @[x].
-    //! The function will be passed the bind instance and the
-    //! list of arguments, in that order.
+    //! The function will be passed the list of arguments.
+    //!
+    //! If _splice is true, zero or more argument is returned in an array
     //!
     //! Function.Placeholder.arg1 is thus more or less equivalent to
-    //! @code Expr(lambda(Function.bind b, array args ){return args[1];});
-    //! (however, @[Function.Placeholder.rest] would not know about this usage)
+    //! @code Expr(lambda(array args){return args[1];});
     {
         inherit Base;
         protected string _sprintf() {
             return sprintf("Expr(%O)",value);
+        }
+        mixed value( bind x, array args )
+        {
+            return func(args);
         }
     }
 
