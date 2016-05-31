@@ -104,10 +104,12 @@ static void f_hp_feed( INT32 args )
   if( TYPEOF(Pike_sp[-args]) != PIKE_T_STRING )
     Pike_error("Wrong type of argument to feed()\n");
   if( args == 2 )
+  {
     if( TYPEOF(Pike_sp[-args+1]) == PIKE_T_INT )
       lower_case = Pike_sp[-args+1].u.integer;
     else
       Pike_error("Wrong type of argument to feed()\n");
+  }
   if( str->size_shift )
     Pike_error("Wide string headers not supported\n");
   str_len = str->len;
