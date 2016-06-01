@@ -308,6 +308,14 @@ class Promise
     key = 0;
   }
 
+  //! Reject the @[Future] value unless it has already been fulfilled.
+  void maybe_failure(mixed value)
+  {
+    object key = mux->lock();
+    if (!state) return;
+    unlocked_failure(value);
+  }
+
   protected void destroy()
   {
     if (!state) {
