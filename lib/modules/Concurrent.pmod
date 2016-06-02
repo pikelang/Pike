@@ -245,6 +245,17 @@ class Future
     if (!sizeof(others)) return this_program::this;
     return results(({ this_program::this }) + others);
   }
+
+  //! Return a @[Future] that will be failed when @[seconds] seconds has
+  //! passed unless it has already been fullfilled.
+  this_program timeout(int|float seconds)
+  {
+    Promise p = Promise();
+    on_failure(p->failure);
+    on_success(p->success);
+    call_out(p->maybe_failure, seconds, ({ "Timeout.\n", backtrace() }));
+    return p->future();
+  }
 }
 
 //! Promise to provide a @[Future] value.
