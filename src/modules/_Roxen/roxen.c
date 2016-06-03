@@ -69,7 +69,14 @@ static void f_hp_exit( struct object *UNUSED(o) )
 }
 
 static void f_hp_feed( INT32 args )
-/*! @decl array(string|mapping) feed(string data, void|int lower_case)
+/*! @decl array(string|mapping) feed(string data, void|int(0..1) keep_case)
+ *!
+ *! @param data
+ *!   Fragment of data to parse.
+ *!
+ *! @param keep_case
+ *!   By default headers are @[lower_case()]'d in the resulting @tt{Headers@}
+ *!   mapping. If this parameter is @expr{1@} the header names are kept as is.
  *!
  *! @returns
  *!   @array
@@ -83,7 +90,7 @@ static void f_hp_feed( INT32 args )
  */
 {
   struct pike_string *str = Pike_sp[-args].u.string;
-  int lower_case = 1;
+  int keep_case = 0;
   struct header_buf *hp = THP;
   int str_len;
   int tot_slash_n=hp->slash_n, slash_n = hp->tslash_n, spc = hp->spc;
@@ -100,7 +107,7 @@ static void f_hp_feed( INT32 args )
   if( args == 2 )
   {
     if( TYPEOF(Pike_sp[-args+1]) == PIKE_T_INT )
-      lower_case = Pike_sp[-args+1].u.integer;
+      keep_case = Pike_sp[-args+1].u.integer & 1;
     else
       Pike_error("Wrong type of argument to feed()\n");
   }
@@ -196,10 +203,9 @@ static void f_hp_feed( INT32 args )
   /* Parse headers. */
   for(i = 0; i < l; i++)
   {
-    if(in[i] > 64 && in[i] < 91)
+    if(!keep_case && (in[i] > 64 && in[i] < 91))
     {
-      if (lower_case)
-         in[i]+=32;       /* lower_case */
+      in[i]+=32;	/* lower_case */
     }
     else if( in[i] == ':' )
     {
@@ -623,7 +629,8 @@ PIKE_MODULE_INIT
   ADD_STORAGE( struct header_buf  );
   set_init_callback( f_hp_init );
   set_exit_callback( f_hp_exit );
-  ADD_FUNCTION( "feed", f_hp_feed, tFunc(tStr tOr(tInt,tVoid),tArr(tOr(tStr,tMapping))), 0 );
+  ADD_FUNCTION("feed", f_hp_feed,
+	       tFunc(tStr tOr(tInt01,tVoid),tArr(tOr(tStr,tMapping))), 0);
   ADD_FUNCTION( "create", f_hp_create, tFunc(tOr(tInt,tVoid),tVoid), ID_PROTECTED );
   end_class( "HeaderParser", 0 );
 }
