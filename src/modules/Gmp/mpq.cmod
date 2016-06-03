@@ -260,6 +260,129 @@ PIKECLASS mpq
 #define get_mpq debug_get_mpq
 #endif
 
+  PIKEFUN mpq `**(int pow)
+  {
+      struct object *o = fast_clone_object( mpq_program );
+      push_object(o);
+      if( pow >= 0 )
+      {
+          mpz_pow_ui( mpq_numref(OBTOMPQ(o)), mpq_numref(THISMPQ), pow );
+          mpz_pow_ui( mpq_denref(OBTOMPQ(o)), mpq_denref(THISMPQ), pow );
+      }
+      else
+      {
+          mpz_pow_ui( mpq_numref(OBTOMPQ(o)), mpq_denref(THISMPQ), -pow );
+          mpz_pow_ui( mpq_denref(OBTOMPQ(o)), mpq_numref(THISMPQ), -pow );
+      }
+      mpq_canonicalize(OBTOMPQ(o));
+  }
+
+  PIKEFUN float|mpq|int ``**(int|float exponent)
+  {
+      /* does not support expoent being object, `** should have been used in that case. */
+      if( TYPEOF(*exponent) == PIKE_T_FLOAT )
+      {
+          if( (double)(long)exponent->u.float_number == exponent->u.float_number )
+          {
+              TYPEOF(*exponent)=PIKE_T_INT;
+              exponent->u.integer = (long)exponent->u.float_number;
+          }
+      }
+
+      if( TYPEOF(*exponent) == PIKE_T_INT )
+      {
+          // int ** mpq counted as int ** float not int ** int.
+          // promote to mpq or float.
+          get_mpq( Pike_sp-1, 1, "``**", 1, 1 );
+          ref_push_object( Pike_fp->current_object );
+          apply_lfun( Pike_sp[-2].u.object, LFUN_POW, 1 );
+          return;
+      }
+
+      {
+          double x = mpq_get_d(THISMPQ);
+          Pike_sp[-1].u.float_number = pow( Pike_sp[-1].u.float_number, x);
+      }
+  }
+
+
+  PIKEFUN float|mpq `**(float exponent)
+  {
+      if( (double)(int)exponent == exponent )
+      {
+          Pike_sp[-1].u.integer = (INT_TYPE)Pike_sp[-1].u.float_number;
+          TYPEOF(Pike_sp[-1]) = PIKE_T_INT;
+          f_mpq_cq__backtick_2A_2A_1(1);
+          return;
+      }
+      double x = mpq_get_d(THISMPQ);
+      x = pow(x, exponent );
+      if( (double)(long)x == x )
+      {
+          struct object *o = fast_clone_object( mpq_program );
+          push_object(o);
+          mpq_set_si( OBTOMPQ(o), (long)x, 1 );
+      }
+      else
+      {
+          push_float( x );
+      }
+  }
+
+  PIKEFUN mpq `**(object pow)
+  {
+      if(pow->prog == mpq_program )
+      {
+          signed long root;
+          struct object *o;
+          // x ^ (exponent/divisor)
+          // reuse `**...
+          if( !mpz_fits_slong_p( mpq_numref( OBTOMPQ(pow) ) ) )
+          {
+              // Well, bother that. Fall back to float.
+              double exp = mpq_get_d( OBTOMPQ(pow) );
+              push_float( exp );
+              f_mpq_cq__backtick_2A_2A_1(1);
+              return;
+          }
+
+          if( (root = mpz_get_si(mpq_numref(OBTOMPQ(pow)))) != 1 )
+          {
+              push_int( root );
+              f_mpq_cq__backtick_2A_2A_1(1);
+          }
+          else
+          {
+              ref_push_object( o = Pike_fp->current_object );
+          }
+          // now in o (and on stack): Exponented number.
+          o = Pike_sp[-1].u.object;
+
+          // now do x:th root part.
+          root = mpz_get_si(mpq_denref(OBTOMPQ(pow)));
+          if( root != 1 )
+          {
+              if( !(mpz_root(mpq_numref(OBTOMPQ(o)),mpq_numref(OBTOMPQ(o)),root)&&
+                    mpz_root(mpq_denref(OBTOMPQ(o)),mpq_denref(OBTOMPQ(o)),root)) )
+              {
+                  // the result can not be represented exactly.
+                  double exp = mpq_get_d( OBTOMPQ(pow) );
+                  pop_stack();
+                  // free the unused 'o' number.
+                  push_float( exp );
+                  f_mpq_cq__backtick_2A_2A_2(1);
+                  return;
+              }
+          }
+          mpq_canonicalize(OBTOMPQ(o));
+          return;
+      }
+      else if( pow->prog == mpzmod_program || pow->prog == bignum_program )
+      {
+      }
+      Pike_error("Unknown argument type\n");
+  }
+
   /*! @decl protected void create(void|string|int|float|Gmp.mpz|Gmp.mpq x)
    *! @decl protected void create(int numerator, int denominator)
    *! @decl protected void create(string x, int base)
@@ -579,7 +702,7 @@ PIKECLASS mpq
 
 	case 'O':
 	  push_static_text ("Gmp.mpq(");
-	  format_string (THISMPQ, 1);
+	  format_string (THISMPQ, 0);
 	  push_static_text (")");
 	  f_add (3);
 	  return;

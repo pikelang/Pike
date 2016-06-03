@@ -1480,10 +1480,6 @@ static void mpzmod_fac(INT32 args)
  *! @throws
  *!   The @[k] value can't be arbitrarily large. An error is thrown if
  *!   it's too large.
- *!
- *! @note
- *!   This function is currently (Pike 7.8) not available with old
- *!   releases of the gmp libraries.
  */
 static void mpzmod_bin(INT32 args)
 {
@@ -1562,7 +1558,7 @@ static void name(INT32 args)                              \
   push_int(i);                                            \
 }
 
-#define RET_UNDEFINED do{pop_n_elems(args);push_undefined();return;}while(0)
+#define RET_UNDEFINED do{push_undefined();return;}while(0)
 
 /*! @decl int(0..1) `>(mixed with)
  */
@@ -1954,28 +1950,52 @@ static void mpzmod_pow(INT32 args)
   MP_INT *mi;
   unsigned long exponent;
   size_t size;
+  double ep;
 
   if (args != 1)
     SIMPLE_WRONG_NUM_ARGS_ERROR ("pow", 1);
 
   if (TYPEOF(sp[-1]) == T_INT)
-    exponent = sp[-1].u.integer;
-  else
   {
-    if( TYPEOF(sp[-1]) == PIKE_T_FLOAT )
+    if( sp[-1].u.integer < 0 )
     {
-      sp[-1].u.float_number = pow(mpz_get_d(THIS),sp[-1].u.float_number);
-      return;
-    }
-
-    mi = get_mpz(sp-1, 1, "pow", 1, 1);
-    if(mpz_sgn(mi)<0)
-    {
-        pop_n_elems(args);
         push_int(0);
         return;
     }
-    exponent=mpz_get_ui(mi);
+    exponent = sp[-1].u.integer;
+  }
+  else if( TYPEOF(sp[-1]) == PIKE_T_FLOAT )
+  {
+      sp[-1].u.float_number = pow(mpz_get_d(THIS),sp[-1].u.float_number);
+      return;
+  }
+  if( TYPEOF(sp[-1]) == PIKE_T_OBJECT )
+  {
+      double tmp;
+      if( sp[-1].u.object->prog == mpq_program )
+      {
+          // could use rpow in mpq.. But it does not handle mpz objects.
+          tmp = mpq_get_d( (mpq_t*)sp[-1].u.object->storage );
+          push_float( pow(mpz_get_d(THIS),tmp) );
+          return;
+      }
+      else if( sp[-1].u.object->prog == mpf_program )
+      {
+          tmp = mpf_get_d( (mpq_t*)sp[-1].u.object->storage );
+          push_float( pow(mpz_get_d(THIS),tmp) );
+          return;
+      }
+      else
+      {
+          mi = get_mpz(sp-1, 1, "pow", 1, 1);
+          if(mpz_sgn(mi)<0)
+          {
+              pop_n_elems(args);
+              push_int(0);
+              return;
+          }
+          exponent=mpz_get_ui(mi);
+      }
   }
 
   /* Cut off at 1GB. */
