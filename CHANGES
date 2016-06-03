@@ -4,9 +4,32 @@ Changes since Pike 8.0.240 (release 3)
 New features
 ------------
 
+o _Roxen.HeaderParser
+
+  feed() can now be forced not to normalize (ie lower_case)
+  the header names.
+
+o Protocols.WebSocket
+
+  Added client mode.
+
+
 Bug fixes
 ---------
 
+o Documentation
+
+  Fixed some AutoDoc markup typos.
+
+o Fixed assertion failure in multiset handling.
+
+  Indexing of non-empty multisets containing no objects or functions,
+  with an object implementing lfun::`<() et al could cause assertion
+  failures.
+
+o Filesystem.Monitor
+
+  Fixed potential recursive mutex locks on destroy().
 
 
 Changes since Pike 8.0.182 (release 2)
