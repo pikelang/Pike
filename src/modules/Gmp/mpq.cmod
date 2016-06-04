@@ -384,10 +384,11 @@ PIKECLASS mpq
   }
 
   /*! @decl protected void create(void|string|int|float|Gmp.mpz|Gmp.mpq x)
-   *! @decl protected void create(int numerator, int denominator)
+   *! @decl protected void create(int|Gmp.mpz numerator, @
+   *!                             int|Gmp.mpz denominator)
    *! @decl protected void create(string x, int base)
    */
-  PIKEFUN void create(void|string|int|float|object x, void|int base)
+  PIKEFUN void create(void|string|int|float|object x, void|int|object base)
     type function(void|string|int|float|object:void)|function(string,int:void)|function(int,int:void);
     flags ID_PROTECTED;
   {
@@ -398,15 +399,12 @@ PIKECLASS mpq
 	/* or int num / den */
 
 	if (base && x) {
-	  if (TYPEOF(*base) != T_INT)
-	    if(TYPEOF(*base) != T_OBJECT ||
-	     base->u.object->prog != bignum_program ||
-	       TYPEOF(*x) == T_STRING)
-	      SIMPLE_ARG_TYPE_ERROR ("create", 2, "int");
 
 	  switch(TYPEOF(*x))
 	  {
 	  case T_STRING:
+	    if (TYPEOF(*base) != T_INT)
+	      SIMPLE_ARG_TYPE_ERROR ("create", 2, "int");
 	    get_mpq_from_digits(THISMPQ, x->u.string, base->u.integer);
 	    break;
 
@@ -415,12 +413,18 @@ PIKECLASS mpq
 	    break;
 
 	  case T_OBJECT:
-	    if(x->u.object->prog != bignum_program)
+	    if(x->u.object->prog != bignum_program &&
+	       x->u.object->prog != mpzmod_program)
 	      SIMPLE_ARG_TYPE_ERROR ("create", 1, "int|string");
 
 	    /* FALL_THROUGH */
 
 	  case T_INT:
+	    if (TYPEOF(*base) != T_INT &&
+		!(TYPEOF(*base) == T_OBJECT &&
+		  (base->u.object->prog == bignum_program ||
+		   base->u.object->prog == mpzmod_program)))
+	      SIMPLE_ARG_TYPE_ERROR ("create", 2, "int");
 	    mpq_set_num(THISMPQ,get_mpz(x, 1, "create", 1, args));
 	    mpq_set_den(THISMPQ,get_mpz(base, 1, "create", 2, args));
 	    mpq_canonicalize(THISMPQ);
