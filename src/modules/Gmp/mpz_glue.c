@@ -1948,7 +1948,7 @@ static void mpzmod_pow(INT32 args)
   DECLARE_THIS();
   struct object *res = NULL;
   MP_INT *mi;
-  unsigned long exponent;
+  unsigned long exponent = 0;
   size_t size;
   double ep;
 
