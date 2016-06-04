@@ -1801,6 +1801,23 @@ int low_main(string title, string input_file, string|void output_file,
   return 0;
 }
 
+void help(void|string err)
+{
+  string msg = #"pike -x autodoc_to_html [args] <input file> [<output file>]
+--img=<image path>
+--dest=<destination path>
+
+--title=<document title>
+
+--template=<template.html path>
+";
+
+  if( err )
+    exit(1, err+"\n"+msg);
+  write(msg);
+  exit(0);
+}
+
 int main(int num, array args) {
 
   string title, template;
@@ -1842,20 +1859,15 @@ int main(int num, array args) {
       verbosity = Tools.AutoDoc.FLAG_QUIET;
       break;
     case "help":
-      write(#"pike -x autodoc_to_html [args] <input file> [<output file>]
---img=<image path>
---dest=<destination path>
-
---title=<document title>
-
---template=<template.html path>
-");
+      help();
       break;
     }
   args = Getopt.get_args(args)[1..];
 
   if(!sizeof(args))
-    error( "No input file given.\n" );
+  {
+    help( "No input file given.\n" );
+  }
 
   if (template && Stdio.exist(template)) {
     string dir = dirname(template);
