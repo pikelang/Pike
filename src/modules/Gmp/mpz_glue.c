@@ -1975,13 +1975,13 @@ static void mpzmod_pow(INT32 args)
       if( sp[-1].u.object->prog == mpq_program )
       {
           // could use rpow in mpq.. But it does not handle mpz objects.
-          tmp = mpq_get_d( (mpq_t*)sp[-1].u.object->storage );
+          tmp = mpq_get_d( (__mpq_struct*)sp[-1].u.object->storage );
           push_float( pow(mpz_get_d(THIS),tmp) );
           return;
       }
       else if( sp[-1].u.object->prog == mpf_program )
       {
-          tmp = mpf_get_d( (mpq_t*)sp[-1].u.object->storage );
+          tmp = mpf_get_d( (__mpf_struct*)sp[-1].u.object->storage );
           push_float( pow(mpz_get_d(THIS),tmp) );
           return;
       }
