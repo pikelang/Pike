@@ -40,7 +40,7 @@ o ** operator added. It's exponentiation and works with most
   This introduces one incompatible change: Previously the "pow"
   function called a "_pow" function in the first argument if it was an
   object. It has now been changed to also use `** (or, rather, pow()
-  is now implemented using ::`**()
+  is now implemented using predef::`**()).
 
 o Random rewrite
 
