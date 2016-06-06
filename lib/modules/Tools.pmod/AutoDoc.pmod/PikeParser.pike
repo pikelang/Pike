@@ -399,6 +399,7 @@ FunctionType parseFunction() {
 
 StringType|IntType parseRange(StringType|IntType s)
 {
+  string tk;
   if (peekToken() == "(") {
     readToken();
     switch (peekToken()) {
@@ -411,8 +412,10 @@ StringType|IntType parseRange(StringType|IntType s)
       break;
     default:
       s->min = eatLiteral();
-      if(sscanf(s->min, "%sbit", s->min) )
+      if(sscanf(s->min, "%sbit", s->min) ||
+	 (<"bit","bits">)[(tk = peekToken())] )
       {
+        if (tk) eat(tk);
         eat(")");
         s->max = (string)((1<<(int)s->min)-1);
         s->min = "0";
