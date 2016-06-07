@@ -1999,7 +1999,7 @@ PMOD_EXPORT struct pike_string *string_slice(struct pike_string *s,
     /* Note: If substrings are ever anywhere except at the end,
        this might need to change.
     */
-    start += s->str-pr->str;
+    start += (s->str-pr->str)>>s->size_shift;
     s = pr;
   }
 
