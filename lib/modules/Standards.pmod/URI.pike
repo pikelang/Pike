@@ -116,7 +116,7 @@ int `==(mixed something)
         && other->fragment == fragment;
 }
 
-string combine_uri_path(string base, string rel)
+string combine_uri_path(string base, string rel, int(0..1)|void is_abs_path)
 {
   string buf = rel;
   array segments;
@@ -136,7 +136,11 @@ string combine_uri_path(string base, string rel)
     //    copied to the buffer.  In other words, any characters after the
     //    last (right-most) slash character, if any, are excluded.
     segments = base/"/";
-    buf = segments[..<1]*"/"+"/";
+    if ((sizeof(segments) > 1) || is_abs_path) {
+      buf = segments[..<1]*"/"+"/";
+    } else {
+      buf = "";
+    }
 
     // b) The reference's path component is appended to the buffer string.
     buf += rel;
@@ -371,8 +375,10 @@ void reparse_uri(this_program|string|void base_uri)
 
       DEBUG("Combining base path %O with path %O => %O",
 	    this::base_uri->path, path,
-	    combine_uri_path(this::base_uri->path, path));
-      path = combine_uri_path(this::base_uri->path, path);
+	    combine_uri_path(this::base_uri->path, path,
+			     !!this::base_uri->authority));
+      path = combine_uri_path(this::base_uri->path, path,
+			      !!this::base_uri->authority);
 
     }
   }
