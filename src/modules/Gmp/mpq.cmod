@@ -213,14 +213,23 @@ PIKECLASS mpq
 
         if(s->u.object->prog == mpf_program)
         {
-          MP_INT z; // NOTE: Hacky! Must not free "correctly"
+          MP_INT z;
           long exponent;
+#ifndef HAVE_LIBMPFR
+          // Acces mpf internals directly.
+          // NOTE: Hacky! Must not free z "correctly"
+          exponent = OBTOMPF(s->u.object)->_mp_exp*sizeof(mp_limb_t)*8;
           z._mp_alloc = z._mp_size = OBTOMPF(s->u.object)->_mp_size;
           z._mp_d = OBTOMPF(s->u.object)->_mp_d;
-          exponent = OBTOMPF(s->u.object)->_mp_exp*sizeof(mp_limb_t)*8;
+#else
+          exponent = mpfr_get_z_2exp(&z, OBTOMPF(s->u.object) );
+#endif
           mpz_set( mpq_numref(tmp), &z);
           mpz_set_ui(mpq_denref(tmp),1);
-          mpz_mul_2exp(mpq_denref(tmp),mpq_denref(tmp),exponent);
+          if( exponent < 0 )
+              mpz_mul_2exp(mpq_denref(tmp),mpq_denref(tmp),-exponent);
+          else if( exponent > 0 )
+              mpz_mul_2exp(mpq_numref(tmp),mpq_numref(tmp),exponent);
 	  mpq_canonicalize(tmp);
           break;
         }
