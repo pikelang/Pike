@@ -1238,42 +1238,69 @@ static void mpzmod_div(INT32 args)
   DECLARE_THIS();
   INT32 e;
   struct object *res;
-
-  for(e=0;e<args;e++)
-  {
-    if(TYPEOF(sp[e-args]) != T_INT || sp[e-args].u.integer<=0)
-      if (!mpz_sgn(get_mpz(sp+e-args, 1, "`/", e + 1, args)))
-	SIMPLE_DIVISION_BY_ZERO_ERROR ("`/");
-  }
+  double post_div = 1.0;
+  int float_promote = 0;
 
   res = fast_clone_object(THIS_PROGRAM);
   mpz_set(OBTOMPZ(res), THIS);
+
   for(e=0;e<args;e++)
   {
-    if(TYPEOF(sp[e-args]) == T_INT)
-#ifdef BIG_PIKE_INT
+    if((TYPEOF(sp[e-args]) == T_OBJECT) &&
+       (sp[e-args].u.object->prog == mpf_program ||
+        sp[e-args].u.object->prog == mpq_program ))
     {
-       INT_TYPE i=sp[e-args].u.integer;
-       if ( (unsigned long int)i == i)
-       {
-	  mpz_fdiv_q_ui(OBTOMPZ(res), OBTOMPZ(res), i);
-       }
-       else
-       {
-	  MP_INT *tmp=get_mpz(sp+e-args,1,"`/",e,e);
-	  mpz_fdiv_q(OBTOMPZ(res), OBTOMPZ(res), tmp);
-/* will this leak? there is no simple way of poking at the references to tmp */
-       }
+      /* Use rdiv in other object.
+         Then continue div in result.*/
+      push_object( res ); /* Gives ref to rdiv. */
+      apply_lfun( sp[-2].u.object, LFUN_RDIVIDE, 1 );
+      if( e < args-1 )
+        apply_lfun( sp[-1].u.object, LFUN_DIVIDE, args-e-1 );
+      if( post_div )
+        push_float( post_div );
+      o_divide();
+      return;
     }
+    else if(TYPEOF(sp[e-args]) == T_FLOAT )
+    {
+      post_div *= sp[-1].u.float_number;
+      float_promote++;
+      /* FIXME: should do rest of divisions with float as type.*/
+    }
+    else if(TYPEOF(sp[e-args]) != T_INT || sp[e-args].u.integer<=0)
+    {
+      if (!mpz_sgn(get_mpz(sp+e-args, 1, "`/", e + 1, args)))
+        SIMPLE_DIVISION_BY_ZERO_ERROR ("`/");
+      if(TYPEOF(sp[e-args]) == T_INT)
+      {
+#ifdef BIG_PIKE_INT
+        INT_TYPE i=sp[e-args].u.integer;
+        if ( (unsigned long int)i == i)
+        {
+          mpz_fdiv_q_ui(OBTOMPZ(res), OBTOMPZ(res), i);
+        }
+        else
+        {
+          MP_INT *tmp=get_mpz(sp+e-args,1,"`/",e,e);
+          mpz_fdiv_q(OBTOMPZ(res), OBTOMPZ(res), tmp);
+/* will this leak? there is no simple way of poking at the references to tmp */
+        }
 #else
-      mpz_fdiv_q_ui(OBTOMPZ(res), OBTOMPZ(res), sp[e-args].u.integer);
+        mpz_fdiv_q_ui(OBTOMPZ(res), OBTOMPZ(res), sp[e-args].u.integer);
 #endif
-   else
-      mpz_fdiv_q(OBTOMPZ(res), OBTOMPZ(res), OBTOMPZ(sp[e-args].u.object));
+      }
+      else
+        mpz_fdiv_q(OBTOMPZ(res), OBTOMPZ(res), OBTOMPZ(sp[e-args].u.object));
+    }
   }
-
-  pop_n_elems(args);
-  PUSH_REDUCED(res);
+  if( float_promote )
+  {
+    double me = mpz_get_d( OBTOMPZ(res) );
+    push_float( me / post_div );
+    free_object(res);
+  }
+  else
+    PUSH_REDUCED(res);
 }
 
 /*! @decl Gmp.mpz ``/(int|float|Gmp.mpz x)
@@ -1289,6 +1316,13 @@ static void mpzmod_rdiv(INT32 args)
 
   if(!mpz_sgn(THIS))
     SIMPLE_DIVISION_BY_ZERO_ERROR ("``/");
+
+  if( TYPEOF(sp[-1]) == PIKE_T_FLOAT )
+  {
+    sp[-1].u.float_number /= mpz_get_d( THIS  );
+    return;
+  }
+  /* mpq and mpf handled by div in said classes. */
 
   a=get_mpz(sp-1, 1, "``/", 1, 1);
 
@@ -1975,13 +2009,13 @@ static void mpzmod_pow(INT32 args)
       if( sp[-1].u.object->prog == mpq_program )
       {
           // could use rpow in mpq.. But it does not handle mpz objects.
-          tmp = mpq_get_d( (__mpq_struct*)sp[-1].u.object->storage );
+          tmp = mpq_get_d( (MP_RAT*)sp[-1].u.object->storage );
           push_float( pow(mpz_get_d(THIS),tmp) );
           return;
       }
       else if( sp[-1].u.object->prog == mpf_program )
       {
-          tmp = mpf_get_d( (__mpf_struct*)sp[-1].u.object->storage );
+          tmp = mpf_get_d( (MP_FLT*)sp[-1].u.object->storage );
           push_float( pow(mpz_get_d(THIS),tmp) );
           return;
       }
