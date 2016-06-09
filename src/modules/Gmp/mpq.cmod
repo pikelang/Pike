@@ -222,6 +222,7 @@ PIKECLASS mpq
           z._mp_alloc = z._mp_size = OBTOMPF(s->u.object)->_mp_size;
           z._mp_d = OBTOMPF(s->u.object)->_mp_d;
 #else
+          mpz_init(&z);
           exponent = mpfr_get_z_2exp(&z, OBTOMPF(s->u.object) );
 #endif
           mpz_set( mpq_numref(tmp), &z);
@@ -231,6 +232,10 @@ PIKECLASS mpq
           else if( exponent > 0 )
               mpz_mul_2exp(mpq_numref(tmp),mpq_numref(tmp),exponent);
 	  mpq_canonicalize(tmp);
+
+#ifdef HAVE_LIBMPFR
+          mpz_clear(&z);
+#endif
           break;
         }
 
