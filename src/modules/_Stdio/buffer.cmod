@@ -1260,6 +1260,25 @@ PIKECLASS Buffer
     ref_push_object(Pike_fp->current_object);
   }
 
+  /*! @decl Buffer add_int32( Gmp.mpz i )
+   *! Adds a 32 bit network byte order value to the buffer
+   */
+  PIKEFUN Buffer add_int32( object mpz )
+  {
+    INT64 i = 0;
+    Buffer *io = THIS;
+    unsigned char *p = io_add_space(io,4,0);
+    if (!int64_from_bignum(&i, mpz)) {
+      SIMPLE_ARG_TYPE_ERROR("add_int32", 1, "int|Gmp.mpz");
+    }
+    p[0] = i>>24;
+    p[1] = i>>16;
+    p[2] = i>>8;
+    p[3] = i;
+    io->len += 4;
+    ref_push_object(Pike_fp->current_object);
+  }
+
   /*! @decl Buffer add_hstring( string(8bit) data, int size_size )
    *! @decl Buffer add_hstring( Stdio.Buffer data, int size_size )
    *! @decl Buffer add_hstring( System.Memory data, int size_size )
