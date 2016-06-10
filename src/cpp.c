@@ -802,6 +802,20 @@ void cpp_change_compat(struct cpp *this, int major, int minor)
  *!   @[#string]
  */
 
+/*! @directive #(#)
+ *! @directive #[#]
+ *! @directive #{#}
+ *!   If a string literal is opened with @tt{#(@} all subsequent
+ *!   characters until the closing @tt{#)@} will be treated as
+ *!   literals, including newlines, @tt{\@}, @tt{"@} and @tt{'@}.
+ *!
+ *!   There are three different pairs of start/end tokens for this
+ *!   type of literals, #( and #), #[ and #], and #{ and #}.
+ *!
+ *! @example
+ *!   @expr{#["\n\'##]@} is equivalent to @expr{"\"\\n\\'#"@}.
+
+
 /*! @directive #string
  *!   The preprocessor directive @[#string] will load the file in the
  *!   string that follows and insert its contents as a string. This
@@ -3125,12 +3139,6 @@ static void insert_callback_define_no_args(struct cpp *this,
  *!   @[__BUILD__]
  */
 
-
-
-
-
-
-
 /*! @decl constant static_assert
  *!
  *!   This define expands to the symbol @[_Static_assert].
@@ -3157,7 +3165,7 @@ static void insert_callback_define_no_args(struct cpp *this,
  *! When enabled all integers will automatically be converted to
  *! bignums when they get bigger than what can be represented by
  *! an integer, hampering performance slightly instead of crashing
- *! the program.
+ *! the program. This define is always set since Pike 8.0.
  */
 
 /*! @decl constant __NT__
