@@ -134,7 +134,6 @@ will thus cause it to evaluated several times during execution. E.g.
 when called with MSG(random(1000));.</li>
 <li>A backslash (\) at the end of the line can be used to make the
 definition span several lines.</li>
-<li>A hash (#) in front of a macro variable "casts" it to a string.</li>
 <li>It is possible to define macros with a variable list of arguments
 by using the ... syntax.</li>
 <li>Macros are often formulated so that a semicolon after it is
@@ -144,6 +143,7 @@ apropriate, for improved code readability.</li>
 group them together in containment block, such as do { BODY } while(0).
 If you do not, your macro could produce other hard to track down bugs,
 if put as a loop or if body without surrounding curly braces.</li>
+<li>A hash (#) in front of a macro variable "casts" it to a string.</li>
 <li>A double hash (##) in front of a macro variable concatenates it with
 the text before it.</li>
 </ul>
