@@ -814,7 +814,7 @@ void cpp_change_compat(struct cpp *this, int major, int minor)
  *!
  *! @example
  *!   @expr{#["\n\'##]@} is equivalent to @expr{"\"\\n\\'#"@}.
-
+ */
 
 /*! @directive #string
  *!   The preprocessor directive @[#string] will load the file in the
