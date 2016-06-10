@@ -74,8 +74,8 @@ enum frame_type {
 
 struct pike_frame
 {
-  INT32 refs;/* must be first */
-  unsigned INT16 args;			/** Actual number of arguments. */
+  INT32 refs;                   /* must be first */
+  unsigned INT16 args;		/** Actual number of arguments. */
   unsigned INT16 fun;		/** Function number. */
   INT16 num_locals;		/** Number of local variables. */
   INT16 num_args;		/** Number of argument variables. */
@@ -113,7 +113,6 @@ struct pike_frame
    */
   struct svalue *expendible;
   struct svalue **save_mark_sp;
-  struct svalue **mark_sp_base;
   struct inherit *context;
   char *current_storage;
 

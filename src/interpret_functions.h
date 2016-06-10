@@ -2848,7 +2848,7 @@ OPCODE1(F_LTOSVAL_CALL_BUILTIN_AND_ASSIGN_POP,
                                                                            \
   new_frame->args = args;                                                  \
   new_frame->locals=new_frame->save_sp=new_frame->expendible=Pike_sp-args; \
-  new_frame->save_mark_sp = new_frame->mark_sp_base = Pike_mark_sp;	   \
+  new_frame->save_mark_sp = Pike_mark_sp;	   \
   DO_IF_DEBUG(new_frame->num_args=0;new_frame->num_locals=0;);             \
   SET_PROG_COUNTER(addr);						   \
   new_frame->fun=Pike_fp->fun;						   \

@@ -2497,7 +2497,7 @@ int apply_low_safe_and_stupid(struct object *o, INT32 offset)
     ret=1;
   }else{
     int tmp;
-    new_frame->mark_sp_base=new_frame->save_mark_sp=Pike_mark_sp;
+    new_frame->save_mark_sp=Pike_mark_sp;
     tmp=eval_instruction(prog->program + offset);
     Pike_mark_sp=new_frame->save_mark_sp;
 
@@ -3377,7 +3377,7 @@ void frame_setup_from_fun(struct pike_frame * frame, struct object *o, unsigned 
                           "Calling undefined function.\n");
           }
 	pc = context->prog->program + function->func.offset;
-	frame->save_mark_sp=frame->mark_sp_base=Pike_mark_sp;
+	frame->save_mark_sp=Pike_mark_sp;
         frame->ptr = pc
 #ifdef ENTRY_PROLOGUE_SIZE
               + ENTRY_PROLOGUE_SIZE
@@ -3529,7 +3529,6 @@ void frame_prepare(struct pike_frame *frame, int args) {
         break;
     case FRAME_PIKE_FUNCTION:
         frame->save_mark_sp = Pike_mark_sp;
-        frame->mark_sp_base = Pike_mark_sp;
         frame->pc = frame->ptr;
         break;
     case FRAME_CLONE:
