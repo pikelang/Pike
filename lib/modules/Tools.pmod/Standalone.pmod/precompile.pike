@@ -2323,7 +2323,11 @@ static struct %s *%s_gdb_dummy_ptr;
 		proto[p][0]->file||"-",
 		proto[p][0]->line);
 	}
-	string name=(string)proto[p];
+	string name="";
+	do {
+	  name += (string)proto[p];
+	  p++;
+	} while(!arrayp(proto[p]));
 	name_occurances[name]++;
       }
 
