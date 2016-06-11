@@ -356,6 +356,9 @@ PMOD_EXPORT void convert_svalue_to_bignum(struct svalue *s);
 PMOD_EXPORT void push_int64(INT64 i);
 PMOD_EXPORT void push_ulongest(UINT64 i);
 
+/* Returns low 64 bits and nonzero if bignum. */
+PMOD_EXPORT int low_int64_from_bignum(INT64 *i, struct object *bignum);
+
 /* Returns nonzero iff conversion is successful. */
 PMOD_EXPORT int int64_from_bignum(INT64 *i, struct object *bignum);
 

@@ -186,9 +186,53 @@ PMOD_EXPORT void push_int64 (INT64 i)
 static mpz_t mpz_int64_min;
 #endif
 
+/**
+ * Set i to the lowest 64bits of the value and return non-zero on success.
+ *
+ * Similar to int64_from_bignum(), but does not perform any clamping.
+ */
+PMOD_EXPORT int low_int64_from_bignum(INT64 *i, struct object *bignum)
+{
+  INT64 res = 0;
+  MP_INT *mpz = OBTOMPZ(bignum);
+
+  if (!IS_MPZ_OBJ(bignum)) return 0;
+#if GMP_LIMB_BITS >= 64
+  res = (INT64)mpz_getlimbn(mpz, 0);
+#else
+  {
+    size_t pos, bits = 0;
+    for (pos = 0, bits = 0; bits < 64; pos++, bits += GMP_LIMB_BITS) {
+      res |= ((INT64)mpz_getlimbn(mpz, pos)) << bits;
+    }
+  }
+#endif
+  if (mpz_sgn(mpz) < 0) {
+    res = -res;
+  }
+  *i = res;
+  return 1;
+}
+
+/**
+ * Convert a bignum to an INT64.
+ *
+ * Returns nonzero and sets i on success.
+ *
+ * Returns zero on failoure.
+ *
+ * Failure causes include:
+ *
+ *   o bignum not being a Gmp.mpz or Gmp.bignum object.
+ *
+ *   o The value being larger than 64 bits, in which case
+ *     it is clamped to {MAX,MIN}_INT64
+ */
 PMOD_EXPORT int int64_from_bignum (INT64 *i, struct object *bignum)
 {
-  MP_INT *mpz = OBTOMPZ (bignum);
+  MP_INT *mpz = OBTOMPZ(bignum);
+
+  if (!IS_MPZ_OBJ(bignum)) return 0;
 #if SIZEOF_INT64 == SIZEOF_LONG
   if( !mpz_fits_slong_p( mpz ) )
     return 0;
