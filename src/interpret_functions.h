@@ -1513,7 +1513,7 @@ OPCODE0_PTRJUMP(F_CATCH, "catch", I_UPDATE_ALL|I_RETURN, {
     DO_IF_NOT_REAL_DEBUG (
       init_recovery (&new_catch_ctx->recovery, 0);
     );
-    new_catch_ctx->save_expendible = Pike_fp->expendible;
+    new_catch_ctx->save_expendible = frame_get_expendible(Pike_fp);
     JUMP_SET_TO_PC_AT_NEXT (addr);
     new_catch_ctx->continue_reladdr = GET_JUMP()
       /* We need to run the entry prologue... */
@@ -1527,7 +1527,7 @@ OPCODE0_PTRJUMP(F_CATCH, "catch", I_UPDATE_ALL|I_RETURN, {
       });
   }
 
-  Pike_fp->expendible = Pike_fp->locals + Pike_fp->num_locals;
+  frame_set_expendible(Pike_fp, Pike_fp->locals + Pike_fp->num_locals);
 
   /* Need to adjust next_addr by sizeof(INT32) to skip past the jump
    * address to the continue position after the catch block. */
@@ -1594,7 +1594,7 @@ OPCODE0_PTRJUMP(F_CATCH, "catch", I_UPDATE_ALL|I_RETURN, {
 
 	debug_malloc_touch_named (cc, "(3)");
 	UNSETJMP (cc->recovery);
-	Pike_fp->expendible = cc->save_expendible;
+	frame_set_expendible(Pike_fp, cc->save_expendible);
 	move_svalue (Pike_sp++, &throw_value);
 	mark_free_svalue (&throw_value);
 	low_destruct_objects_to_destruct();
@@ -1796,7 +1796,7 @@ OPCODE1_RETURN(F_RETURN_LOCAL,"return local", I_UPDATE_SP|I_UPDATE_FP, {
     if(d_flag>3) do_gc(NULL, 0);
     if(d_flag>4) do_debug();
     );
-  if(Pike_fp->expendible <= Pike_fp->locals + arg1)
+  if(frame_get_expendible(Pike_fp) <= Pike_fp->locals + arg1)
   {
     pop_n_elems(Pike_sp-1 - (Pike_fp->locals + arg1));
     DO_IF_DEBUG(Pike_fp->num_locals = arg1);
@@ -2459,7 +2459,7 @@ OPCODE1_JUMP(F_CALL_OTHER,"call other", I_UPDATE_ALL, {
 	  fun += o->prog->inherits[SUBTYPEOF(*s)].identifier_level;
 	  if((addr = lower_mega_apply(args-1, o, fun)))
 	  {
-	    Pike_fp->save_sp--;
+            frame_inc_save_sp(Pike_fp, -1);
 	    Pike_fp->flags |= PIKE_FRAME_RETURN_INTERNAL;
 	    DO_JUMP_TO(addr);
 	  }
@@ -2517,7 +2517,7 @@ OPCODE1_JUMP(F_CALL_OTHER_AND_POP,"call other & pop", I_UPDATE_ALL, {
 	  fun += o->prog->inherits[SUBTYPEOF(*s)].identifier_level;
 	  if((addr = lower_mega_apply(args-1, o, fun)))
 	  {
-	    Pike_fp->save_sp--;
+            frame_inc_save_sp(Pike_fp, -1);
 	    Pike_fp->flags |=
 	      PIKE_FRAME_RETURN_INTERNAL |
 	      PIKE_FRAME_RETURN_POP;
@@ -2578,7 +2578,7 @@ OPCODE1_RETURN(F_CALL_OTHER_AND_RETURN,"call other & return", I_UPDATE_ALL, {
 	  fun += o->prog->inherits[SUBTYPEOF(*s)].identifier_level;
 	  if((addr = lower_mega_apply(args-1, o, fun)))
 	  {
-	    Pike_fp->save_sp--;
+            frame_inc_save_sp(Pike_fp, -1);
 	    DO_IF_DEBUG(Pike_fp->next->pc=0);
 	    unlink_previous_frame();
 	    DO_JUMP_TO(addr);
@@ -2847,8 +2847,10 @@ OPCODE1(F_LTOSVAL_CALL_BUILTIN_AND_ASSIGN_POP,
   addr += ENTRY_PROLOGUE_SIZE;						   \
                                                                            \
   new_frame->args = args;                                                  \
-  new_frame->locals=new_frame->save_sp=new_frame->expendible=Pike_sp-args; \
-  new_frame->save_mark_sp = Pike_mark_sp;	   \
+  new_frame->locals=Pike_sp-args;                                          \
+  frame_set_expendible(new_frame, Pike_sp-args);                           \
+  frame_set_save_sp(new_frame, Pike_sp-args);                              \
+  new_frame->save_mark_sp = Pike_mark_sp;	                           \
   DO_IF_DEBUG(new_frame->num_args=0;new_frame->num_locals=0;);             \
   SET_PROG_COUNTER(addr);						   \
   new_frame->fun=Pike_fp->fun;						   \
@@ -2858,9 +2860,9 @@ OPCODE1(F_LTOSVAL_CALL_BUILTIN_AND_ASSIGN_POP,
   add_ref(new_frame->current_object = Pike_fp->current_object);		   \
   add_ref(new_frame->current_program = Pike_fp->current_program);	   \
   new_frame->context = Pike_fp->context;				   \
-  new_frame->ptr = Pike_fp->ptr;\
-  new_frame->pc = new_frame->ptr;\
-  new_frame->type = Pike_fp->type;\
+  new_frame->ptr = Pike_fp->ptr;                                           \
+  new_frame->pc = new_frame->ptr;                                          \
+  new_frame->type = Pike_fp->type;                                         \
 									   \
   DO_IF_PROFILING({							   \
       struct identifier *func;						   \
@@ -3084,7 +3086,7 @@ OPCODE2(F_INIT_FRAME, "init_frame", 0, {
   });
 
 OPCODE1(F_PROTECT_STACK, "protect_stack", 0, {
-    Pike_fp->expendible = Pike_fp->locals + arg1;
+    frame_set_expendible(Pike_fp, Pike_fp->locals + arg1);
   });
 
 OPCODE2(F_FILL_STACK, "fill_stack", I_UPDATE_SP, {

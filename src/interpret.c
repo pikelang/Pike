@@ -1100,7 +1100,7 @@ PMOD_EXPORT void dump_backlog(void)
     );                                                                 \
     debug_malloc_touch (cc);                                           \
     UNSETJMP (cc->recovery);                                           \
-    Pike_fp->expendible = cc->save_expendible;                         \
+    frame_set_expendible(Pike_fp, cc->save_expendible);                \
     Pike_interpreter.catch_ctx = cc->prev;                             \
     really_free_catch_context (cc);                                    \
   } while (0)
@@ -1227,7 +1227,7 @@ PIKE_OPCODE_T *inter_return_opcode_F_CATCH(PIKE_OPCODE_T *addr)
 #else
       init_recovery (&new_catch_ctx->recovery, 0);
 #endif
-    new_catch_ctx->save_expendible = Pike_fp->expendible;
+    new_catch_ctx->save_expendible = frame_get_expendible(Pike_fp);
     new_catch_ctx->continue_reladdr = (INT32)get_unaligned32(addr)
       /* We need to run the entry prologue... */
       - ENTRY_PROLOGUE_SIZE;
@@ -1240,7 +1240,7 @@ PIKE_OPCODE_T *inter_return_opcode_F_CATCH(PIKE_OPCODE_T *addr)
       });
   }
 
-  Pike_fp->expendible = Pike_fp->locals + Pike_fp->num_locals;
+  frame_set_expendible(Pike_fp, Pike_fp->locals + Pike_fp->num_locals);
 
   /* Need to adjust next_addr by sizeof(INT32) to skip past the jump
    * address to the continue position after the catch block. */
@@ -1304,7 +1304,7 @@ PIKE_OPCODE_T *inter_return_opcode_F_CATCH(PIKE_OPCODE_T *addr)
 
 	debug_malloc_touch_named (cc, "(3)");
 	UNSETJMP (cc->recovery);
-	Pike_fp->expendible = cc->save_expendible;
+	frame_set_expendible(Pike_fp, cc->save_expendible);
 	move_svalue (Pike_sp++, &throw_value);
 	mark_free_svalue (&throw_value);
 	low_destruct_objects_to_destruct();
@@ -2008,7 +2008,6 @@ PMOD_EXPORT void really_free_pike_frame( struct pike_frame *X )
     X->scope=0;
     X->current_object=0;
     X->flags=0;
-    X->expendible=0;
     X->locals=0;
   );
   X->next = free_pike_frame;
@@ -2112,7 +2111,7 @@ void low_return(void)
 {
   frame_return_and_unlink(Pike_fp);
 #if 0
-  struct svalue *save_sp = Pike_fp->save_sp+1;
+  struct svalue *save_sp = frame_get_save_sp(Pike_fp)+1;
   struct object *o = Pike_fp->current_object;
   int fun = Pike_fp->fun;
 
@@ -2195,7 +2194,7 @@ void unlink_previous_frame(void)
 #endif
   /* Save various fields from the previous frame.
    */
-  current->save_sp=prev->save_sp;
+  frame_set_save_sp(current, frame_get_save_sp(prev));
   current->save_mark_sp=prev->save_mark_sp;
   current->flags = prev->flags;
 
@@ -2265,7 +2264,7 @@ PMOD_EXPORT void mega_apply(enum apply_type type, INT32 args, void *arg1, void *
     frame_setup_from_svalue(frame, Pike_sp-args);
     args--;
     frame_prepare(frame, args);
-    frame->save_sp--;
+    frame_inc_save_sp(frame, -1);
     frame_execute(frame);
     break;
   case APPLY_SVALUE:
@@ -2468,7 +2467,7 @@ int apply_low_safe_and_stupid(struct object *o, INT32 offset)
   add_ref(new_frame->current_program = prog);
   new_frame->context = prog->inherits;
   new_frame->locals = Pike_sp;
-  new_frame->expendible=new_frame->locals;
+  frame_set_expendible(new_frame, new_frame->locals);
   new_frame->args = 0;
   new_frame->num_args=0;
   new_frame->num_locals=0;
@@ -3493,9 +3492,9 @@ void frame_prepare(struct pike_frame *frame, int args) {
     if (UNLIKELY(Pike_interpreter.trace_level || PIKE_FN_START_ENABLED()))
         do_trace_frame_call(frame, args);
 
-    frame->save_sp = save_sp;
-    frame->expendible = save_sp;
     frame->locals = save_sp;
+    frame_set_save_sp(frame, save_sp);
+    frame_set_expendible(frame, save_sp);
     frame->args = args;
 
 #ifdef PROFILING
@@ -3565,7 +3564,7 @@ const char * frame_type_name(enum frame_type type) {
 
 /* frame_execute will perform the actual function call.  */
 void frame_execute(const struct pike_frame * frame) {
-    struct svalue *save_sp = frame->save_sp;
+    struct svalue *save_sp = frame_get_save_sp(frame);
     enum frame_type type = frame->type;
 
 #ifdef PIKE_DEBUG
@@ -3653,13 +3652,13 @@ void frame_execute(const struct pike_frame * frame) {
 }
 
 static void frame_unlink(struct pike_frame *frame) {
-  ptrdiff_t num_expendible = frame->expendible - frame->locals;
+  ptrdiff_t num_expendible = frame_get_expendible(frame) - frame->locals;
 
 #ifdef PIKE_DEBUG
   frame_check_all(frame);
   //assert (Pike_fp == frame);
   if( (frame->locals + frame->num_locals > Pike_sp) ||
-      (Pike_sp < frame->expendible) ||
+      (Pike_sp < frame_get_expendible(frame)) ||
       (num_expendible < 0) || (num_expendible > frame->num_locals))
               Pike_fatal("Stack failure in unlink_frame %p+%d=%p %p %p!\n",
                          frame->locals, frame->num_locals,
@@ -3750,7 +3749,7 @@ static void frame_unlink(struct pike_frame *frame) {
 }
 
 struct pike_frame * frame_return(struct pike_frame *frame) {
-    struct svalue *save_sp = frame->save_sp+1;
+    struct svalue *save_sp = frame_get_save_sp(frame)+1;
     struct pike_frame *new_frame;
 
 #ifdef PIKE_DEBUG
@@ -3786,7 +3785,7 @@ struct pike_frame * frame_return(struct pike_frame *frame) {
     }
 
 #ifdef PIKE_DEBUG
-    new_frame->locals = new_frame->expendible = new_frame->save_sp = NULL;
+    new_frame->locals = = NULL;
     new_frame->args = new_frame->num_args = new_frame->num_locals = 0;
 #endif
 
@@ -3824,7 +3823,7 @@ void frame_pop(struct pike_frame *frame) {
 }
 
 void frame_return_and_unlink(struct pike_frame *frame) {
-    struct svalue *save_sp = frame->save_sp+1;
+    struct svalue *save_sp = frame_get_save_sp(frame)+1;
     struct object *o = frame->current_object;
 
 #ifdef PIKE_DEBUG

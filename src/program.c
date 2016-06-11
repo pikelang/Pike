@@ -10398,9 +10398,9 @@ static void low_enter_compiler(struct object *ce, int inherit)
   }
 #endif /* PIKE_DEBUG */
   new_frame->fun = new_frame->context->identifier_level + PC_COMPILE_FUN_NUM;
-  new_frame->expendible = Pike_sp;
   new_frame->locals = Pike_sp;
-  new_frame->save_sp = Pike_sp;
+  frame_set_expendible(new_frame, Pike_sp);
+  frame_set_save_sp(new_frame, Pike_sp);
   new_frame->save_mark_sp = Pike_mark_sp;
   new_frame->args = 0;
   new_frame->num_args = 0;
@@ -10408,7 +10408,6 @@ static void low_enter_compiler(struct object *ce, int inherit)
   new_frame->pc = 0;
   new_frame->return_addr = 0;
   new_frame->scope = 0;
-  new_frame->save_sp = Pike_sp;
   new_frame->type = FRAME_C_FUNCTION;
   new_frame->ptr = NULL;
   Pike_fp = new_frame;

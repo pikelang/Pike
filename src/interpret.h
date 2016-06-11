@@ -98,6 +98,7 @@ struct pike_frame
  *      Address of type
  */
   void *ptr;
+  /* PIKE_FUNCTION */
   void *pc;
   PIKE_OPCODE_T *return_addr;	/** Address of opcode to continue at after call. */
 
@@ -105,20 +106,22 @@ struct pike_frame
   /** This is <= locals, and this is where the
    * return value should go.
    */
-  struct svalue *save_sp;
+  /* struct svalue *save_sp; */
+  INT16 save_sp_offset;
 
   /**
    * This tells us the current level of svalues on the stack that can
    * be discarded once the current function is done with them
    */
-  struct svalue *expendible;
+  /* struct svalue *expendible; */
+  INT16 expendible_offset;
   struct svalue **save_mark_sp;
   struct inherit *context;
+
+  /* only FRAME_C_FUNCTION && FRAME_BUILTIN */
   char *current_storage;
 
-  /* scope, used only with the trampoline program, will always be
-   * FRAME_C_FUNCTION
-   */
+  /* scope, used only with the trampoline program, will always be FRAME_C_FUNCTION */
   struct pike_frame *scope;
 
 #ifdef PROFILING
@@ -126,6 +129,36 @@ struct pike_frame
   cpu_time_t start_time;	/** Adjusted time when thr frame started. */
 #endif /* PROFILING */
 };
+
+static inline struct svalue *frame_get_save_sp(const struct pike_frame *frame) {
+    return frame->locals + frame->save_sp_offset;
+}
+
+static inline void frame_set_save_sp(struct pike_frame *frame, struct svalue *sv) {
+#ifdef PIKE_DEBUG
+    if (!frame->locals) Pike_fatal("Setting save_sp without locals.\n"); 
+#endif
+    frame->save_sp_offset = sv - frame->locals;
+}
+
+static inline void frame_inc_save_sp(struct pike_frame *frame, ptrdiff_t d) {
+    frame->save_sp_offset += d;
+}
+
+static inline struct svalue *frame_get_expendible(const struct pike_frame *frame) {
+    return frame->locals + frame->expendible_offset;
+}
+
+static inline void frame_set_expendible(struct pike_frame *frame, struct svalue *sv) {
+#ifdef PIKE_DEBUG
+    if (!frame->locals) Pike_fatal("Setting expendible without locals.\n"); 
+#endif
+    frame->expendible_offset = sv - frame->locals;
+}
+
+static inline void frame_inc_expendible(struct pike_frame *frame, ptrdiff_t d) {
+    frame->expendible_offset += d;
+}
 
 #define PIKE_FRAME_RETURN_INTERNAL 1
 #define PIKE_FRAME_RETURN_POP 2
@@ -520,15 +553,15 @@ PMOD_EXPORT extern void push_static_text( const char *x );
     {									\
       really_free_pike_frame(_fp_);					\
     }else{								\
-      ptrdiff_t num_expendible = _fp_->expendible - _fp_->locals;	\
+      ptrdiff_t num_expendible = frame_get_expendible(_fp_) - _fp_->locals;	\
       DO_IF_DEBUG(							\
 	if( (_fp_->locals + _fp_->num_locals > Pike_sp) ||		\
-	    (Pike_sp < _fp_->expendible) ||				\
+	    (Pike_sp < frame_get_expendible(_fp_)) ||				\
 	    (num_expendible < 0) || (num_expendible > _fp_->num_locals)) \
 	  Pike_fatal("Stack failure in POP_PIKE_FRAME %p+%d=%p %p %p!\n", \
 		     _fp_->locals, _fp_->num_locals,			\
 		     _fp_->locals+_fp_->num_locals,			\
-		     Pike_sp,_fp_->expendible));			\
+		     Pike_sp, frame_get_expendible(_fp_)));			\
       debug_malloc_touch(_fp_);						\
       if(num_expendible)						\
       {									\
@@ -982,7 +1015,7 @@ static inline void* low_mega_apply(enum apply_type type, INT32 args, void *arg1,
     frame_setup_from_svalue(frame, Pike_sp-args);
     args--;
     frame_prepare(frame, args);
-    frame->save_sp--;
+    frame_inc_save_sp(frame, -1);
     break;
   case APPLY_SVALUE:
   case APPLY_SVALUE_STRICT:
