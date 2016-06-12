@@ -1311,30 +1311,41 @@ static void mpzmod_div(INT32 args)
       float_promote++;
       /* FIXME: should do rest of divisions with float as type.*/
     }
-    else if(TYPEOF(sp[e-args]) != T_INT || sp[e-args].u.integer<=0)
+    else if(TYPEOF(sp[e-args]) == T_INT)
     {
+      INT_TYPE i = sp[e-args].u.integer;
+      if(!i) {
+	SIMPLE_DIVISION_BY_ZERO_ERROR ("`/");
+      } else {
+	int negate = 0;
+	if (i < 0) {
+	  i = -i;
+	  negate = 1;
+	}
+#ifdef BIG_PIKE_INT
+	if ( (unsigned long int)i == (unsigned INT_TYPE)i)
+	{
+	  mpz_fdiv_q_ui(OBTOMPZ(res), OBTOMPZ(res), (unsigned long int)i);
+	}
+	else
+	{
+	  MP_INT *tmp=get_mpz(sp+e-args,1,"`/",e,e);
+	  mpz_fdiv_q(OBTOMPZ(res), OBTOMPZ(res), tmp);
+	  /* will this leak? there is no simple way of poking at the references to tmp */
+	}
+#else
+	mpz_fdiv_q_ui(OBTOMPZ(res), OBTOMPZ(res), i);
+#endif
+	if (negate) {
+	  mpz_neg(OBTOMPZ(res), OBTOMPZ(res));
+	}
+      }
+    }
+    else {
       if (!mpz_sgn(get_mpz(sp+e-args, 1, "`/", e + 1, args)))
         SIMPLE_DIVISION_BY_ZERO_ERROR ("`/");
-      if(TYPEOF(sp[e-args]) == T_INT)
-      {
-#ifdef BIG_PIKE_INT
-        INT_TYPE i=sp[e-args].u.integer;
-        if ( (unsigned long int)i == i)
-        {
-          mpz_fdiv_q_ui(OBTOMPZ(res), OBTOMPZ(res), i);
-        }
-        else
-        {
-          MP_INT *tmp=get_mpz(sp+e-args,1,"`/",e,e);
-          mpz_fdiv_q(OBTOMPZ(res), OBTOMPZ(res), tmp);
-/* will this leak? there is no simple way of poking at the references to tmp */
-        }
-#else
-        mpz_fdiv_q_ui(OBTOMPZ(res), OBTOMPZ(res), sp[e-args].u.integer);
-#endif
-      }
-      else
-        mpz_fdiv_q(OBTOMPZ(res), OBTOMPZ(res), OBTOMPZ(sp[e-args].u.object));
+
+      mpz_fdiv_q(OBTOMPZ(res), OBTOMPZ(res), OBTOMPZ(sp[e-args].u.object));
     }
   }
   if( float_promote )
