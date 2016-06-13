@@ -126,13 +126,11 @@ static void ib( char x )
   add_to_program( x );
 }
 
-#if 0
 static void iw( short x )
 {
   add_to_program( x>>8 );
   add_to_program( x );
 }
-#endif
 
 static void id( int x )
 {
@@ -630,6 +628,19 @@ static void mov_reg_mem16( enum amd64_reg from_reg, enum amd64_reg to_reg, ptrdi
   rex(0, from_reg, 0, to_reg );
   low_mov_reg_mem( from_reg, to_reg, offset );
 }
+
+static void mov_imm_mem16( short imm, enum amd64_reg to_reg, ptrdiff_t offset )
+{
+    opcode( 0x66 ); /* switch 32/16 */
+
+    /* basically copy of mov_imm_mem32 */
+    rex( 0, 0, 0, to_reg );
+    opcode( 0xc7 ); /* now: mov imm16 -> r/m16 (sign extend)*/
+
+    /* This does not work for rg&7 == 4 or 5. */
+    offset_modrm_sib( offset, 0, to_reg );
+    iw( imm );
+}
 #endif
 
 
@@ -651,8 +662,6 @@ static void mov_imm_mem( long imm, enum amd64_reg to_reg, ptrdiff_t offset )
     mov_reg_mem( P_REG_RAX, to_reg, offset );
   }
 }
-
-
 
 static void mov_imm_mem32( int imm, enum amd64_reg to_reg, ptrdiff_t offset )
 {
