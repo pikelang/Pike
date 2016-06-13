@@ -18,7 +18,7 @@
 struct object
 {
   INT32 refs;
-  size_t flags;
+  unsigned INT32 flags;
   struct program *prog;
   struct object *next;
   struct object *prev;
