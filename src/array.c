@@ -27,12 +27,12 @@
 PMOD_EXPORT struct array empty_array=
 {
   PIKE_CONSTANT_MEMOBJ_INIT(1, PIKE_T_ARRAY), /* Never free */
-  &weak_empty_array,     /* Next */
-  0,			 /* previous */
   0,                     /* Size = 0 */
   0,                     /* malloced Size = 0 */
   0,                     /* no types */
   0,			 /* no flags */
+  &weak_empty_array,     /* Next */
+  0,			 /* previous */
   empty_array.real_item, /* Initialize the item pointer. */
   {SVALUE_INIT_FREE},
 };
@@ -40,9 +40,14 @@ PMOD_EXPORT struct array empty_array=
 /** The empty weak array. */
 PMOD_EXPORT struct array weak_empty_array=
 {
-  PIKE_CONSTANT_MEMOBJ_INIT(1, PIKE_T_ARRAY),
-  0, &empty_array, 0, 0, 0, ARRAY_WEAK_FLAG,
-  weak_empty_array.real_item,
+  PIKE_CONSTANT_MEMOBJ_INIT(1, PIKE_T_ARRAY), /* Never free */
+  0,                     /* Size = 0 */
+  0,                     /* malloced Size = 0 */
+  0,                     /* no types */
+  ARRAY_WEAK_FLAG,	 /* weak */
+  0,                     /* next */
+  &empty_array,		 /* previous */
+  weak_empty_array.real_item, /* Initialize the item pointer. */
   {SVALUE_INIT_FREE},
 };
 

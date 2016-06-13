@@ -23,19 +23,20 @@
 struct array
 {
   INT32 refs;
+  INT32 size;		/**< number of svalues in this array */
+  INT32 malloced_size;	/**< number of svalues that can fit in this array */
+  TYPE_FIELD type_field;/**< A bitfield with one bit for each type of
+         	* data in this array.
+                * Bits can be set that don't exist in the array. type_field is
+                * initialized to BIT_MIXED|BIT_UNFINISHED for newly allocated
+                * arrays so that they can be modified without having to update
+                * this. It should be set accurately when that's done, though.
+                */
+  INT16 flags;          /**< ARRAY_* flags */
 
   struct array *next;	/**< we need to keep track of all arrays */
   struct array *prev;	/**< Another pointer, so we don't have to search
 			 * when freeing arrays */
-  INT32 size;		/**< number of svalues in this array */
-  INT32 malloced_size;	/**< number of svalues that can fit in this array */
-  TYPE_FIELD type_field;/**< A bitfield with one bit for each type of
-			  * data in this array.
-   Bits can be set that don't exist in the array. type_field is
-   * initialized to BIT_MIXED|BIT_UNFINISHED for newly allocated
-   * arrays so that they can be modified without having to update
-   * this. It should be set accurately when that's done, though. */
-  INT16 flags;          /**< ARRAY_* flags */
   struct svalue *item;  /**< the array of svalues */
   struct svalue real_item[1];
 };
