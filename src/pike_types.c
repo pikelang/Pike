@@ -2621,6 +2621,42 @@ TYPE_T compile_type_to_runtime_type(struct pike_type *t)
   }
 }
 
+int get_int_type_range(struct pike_type *t, INT_TYPE *range)
+{
+  int ret = 0;
+ loop:
+  switch(t->type) {
+  case T_INT:
+    {
+      INT_TYPE min = CAR_TO_INT(t);
+      INT_TYPE max = CDR_TO_INT(t);
+      if (range[0] > min) range[0] = min;
+      if (range[1] < max) range[1] = max;
+      return 1;
+    }
+    break;
+  case T_ZERO:
+  case T_VOID:
+    if (range[0] > 0) range[0] = 0;
+    if (range[1] < 0) range[1] = 0;
+    return 1;
+  case T_SCOPE:
+  case T_ASSIGN:
+  case PIKE_T_NAME:
+  case PIKE_T_ATTRIBUTE:
+    t = t->cdr;
+    goto loop;
+  case T_OR:
+  case T_AND:
+    ret = get_int_type_range(t->car, range);
+    t = t->cdr;
+    goto loop;
+  default:
+    break;
+  }
+  return ret;
+}
+
 static void low_or_pike_types(struct pike_type *t1,
 			      struct pike_type *t2,
 			      int zero_implied);

@@ -5785,6 +5785,9 @@ int define_variable(struct pike_string *name,
   } else {
     run_time_type=compile_type_to_runtime_type(type);
 
+    /* FIXME: Shouldn't these special cases be
+     *        in compile_type_to_runtime_type()?
+     */
     switch(run_time_type)
     {
     case T_OBJECT:
@@ -5797,9 +5800,11 @@ int define_variable(struct pike_string *name,
       break;
     case T_INT:
       run_time_type = T_MIXED;
-      INT_TYPE amin = CAR_TO_INT(type), amax = CDR_TO_INT(type);
-      if( amin > MIN_INT32 && amax < MAX_INT32 )
+      INT_TYPE int_range[] = { MAX_INT32, MIN_INT32 };
+      if (get_int_type_range(type, int_range) &&
+	  (int_range[0] > MIN_INT32) && (int_range[1] < MAX_INT32) ) {
         run_time_type = T_INT;
+      }
     }
   }
 
