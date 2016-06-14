@@ -3086,10 +3086,6 @@ PMOD_EXPORT int safe_apply_handler(const char *fun,
 PMOD_EXPORT void apply_lfun(struct object *o, int lfun, int args)
 {
   int fun;
-#ifdef PIKE_DEBUG
-  if(lfun < 0 || lfun >= NUM_LFUNS)
-    Pike_fatal("Apply lfun on illegal value!\n");
-#endif
   if(!o->prog)
     PIKE_ERROR("destructed object", "Apply on destructed object.\n",
 	       Pike_sp, args);
