@@ -1975,9 +1975,9 @@ static void mpzmod_powm(INT32 args)
   PUSH_REDUCED(res);
 }
 
-/*! @decl Gmp.mpz `**(int|float|Gmp.mpz x)
+/*! @decl Gmp.mpz ``**(int|float|Gmp.mpz x)
  *!
- *! Return x raised to the value of this object. The case when zero is
+ *! Return @[x] raised to the value of this object. The case when zero is
  *! raised to zero yields one.
  *!
  *! @seealso
@@ -1985,7 +1985,6 @@ static void mpzmod_powm(INT32 args)
  */
 static void mpzmod_rpow(INT32 args)
 {
-  struct object *res;
   DECLARE_THIS();
 
   if( TYPEOF(sp[-1]) == PIKE_T_FLOAT )
@@ -1995,33 +1994,42 @@ static void mpzmod_rpow(INT32 args)
     return;
   }
 
-  if( mpz_sgn(THIS) < 0 ) /* integer whatever ** -x -> 0 */
-  {
-    push_int(0);
-    return;
-  }
-
   if( mpz_sgn(THIS) == 0 )
   {
     push_int(1);
     return;
   }
 
-  {
-    unsigned long power = mpz_get_ui( THIS );
-    res = fast_clone_object(THIS_PROGRAM);
-    if( TYPEOF(sp[-1]) == PIKE_T_INT )
-    {
-      mpz_ui_pow_ui(OBTOMPZ(res), sp[-1].u.integer, power);
-    }
-    else
-    {
-      MP_INT *mi = get_mpz(sp-1, 1, "rpow", 1, 1);
-      mpz_pow_ui(OBTOMPZ(res), mi, power);
+  /* FIXME: Add a special case for us being == 1.
+   *        in which case we can just return.
+   */
+
+  if (TYPEOF(sp[-1]) == PIKE_T_INT) {
+    INT_TYPE val = sp[-1].u.integer;
+    if (!val || val == 1) {
+      /* Identity. */
+      return;
+    } else if (val == -1) {
+      if (!(mpz_getlimbn(THIS, 0) & 1)) {
+	/* Even. */
+	sp[-1].u.integer = 1;
+      }
+      return;
     }
   }
-  pop_stack();
-  PUSH_REDUCED(res);
+
+  if( mpz_sgn(THIS) < 0 ) /* integer whatever ** -x -> 0 */
+  {
+    push_int(0);
+    return;
+  }
+
+  /* Convert the argument to a bignum. */
+  get_mpz(sp-1, 1, "``**", 1, args);
+  assert(TYPEOF(sp[-1]) == PIKE_T_OBJECT);
+
+  ref_push_object(Pike_fp->current_object);
+  apply_lfun(sp[-2].u.object, LFUN_POW, 1);
 }
 
 /*! @decl Gmp.mpz pow(int|float|Gmp.mpz x)
