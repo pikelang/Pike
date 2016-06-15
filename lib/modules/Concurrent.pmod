@@ -1,8 +1,7 @@
 //! Module for handling multiple concurrent events.
-
-/*
- * Inspired by https://github.com/couchdeveloper/FutureLib
- */
+//!
+//! The @[Future] and @[Promise] API was inspired by
+//! @url{https://github.com/couchdeveloper/FutureLib@}.
 
 protected enum State {
   STATE_PENDING = 0,
@@ -330,7 +329,7 @@ class Promise
   protected void destroy()
   {
     if (!state) {
-      failure(({ "Promise broken.\n", backtrace() }));
+      unlocked_failure(({ "Promise broken.\n", backtrace() }));
     }
   }
 }
