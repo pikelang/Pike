@@ -563,7 +563,8 @@ Stdio.Buffer low_make_response_header(mapping m, Stdio.Buffer res)
       m->type = .filename_to_type(not_query);
 
    if( m->error == 206 )
-      radd("Content-Range: bytes ", m->start,"-",m->stop,"/",m->size);
+      radd("Content-Range: bytes ", m->start,"-",m->stop,"/",
+           has_index(m, "instance_size") ? m->instance_size : "*");
 
    radd("Content-Type: ",m->type);
 
@@ -626,7 +627,7 @@ string get_ip()
 //!   File object, the contents of which will be returned to the client.
 //! @member int "error"
 //!   HTTP error code
-//! @member int "length"
+//! @member int "size"
 //!   length of content returned. If @i{file@} is provided, @i{size@}
 //!   bytes will be returned to client.
 //! @member string "modified"
@@ -641,20 +642,37 @@ string get_ip()
 //! @endmapping
 void response_and_finish(mapping m, function|void _log_cb)
 {
+   string tmp;
    m += ([ ]);
    log_cb = _log_cb;
 
    if( !my_fd )
        return;
 
-   if (request_headers->range && !m->start && undefinedp(m->error))
+   if ((tmp = request_headers->range) && !m->start && undefinedp(m->error))
    {
+      /*
+       * The instance-size is the full size of the resource, while the content-length
+       * of a range response is the length of the actual data returned.
+       */
+      if (!has_index(m, "instance_size")) {
+         if (m->file) {
+            if (!m->stat) m->stat = m->file->stat();
+            if (m->stat) m->instance_size = m->stat->size;
+            else if (has_index(m, "size")) m->instance_size = m->size;
+         } else if (m->data) {
+            m->instance_size = sizeof(m->data);
+         } else if (has_index(m, "size")) m->instance_size = m->size;
+      }
+
       int a,b;
-      if (sscanf(request_headers->range,"bytes%*[ =]%d-%d",a,b)==3)
-	 m->start=a,m->stop=b;
-      else if (sscanf(request_headers->range,"bytes%*[ =]-%d",b)==2)
+      if (sscanf(tmp,"bytes%*[ =]%d-%d",a,b)==3) {
+         m->start=a;
+         m->stop=b;
+      }
+      else if (sscanf(tmp,"bytes%*[ =]-%d",b)==2)
       {
-         if( m->size==-1 || m->size < b )
+         if( !has_index(m, "instance_size") )
          {
 	    m_delete(m,"file");
 	    m->data="";
@@ -662,18 +680,33 @@ void response_and_finish(mapping m, function|void _log_cb)
          }
          else
          {
-            m->start=m->size-b;
+            m->start=max(0, m->instance_size-b);
             m->stop=-1;
          }
       }
-      else if (sscanf(request_headers->range,"bytes%*[ =]%d-",a)==2)
-	 m->start=a,m->stop=-1;
-      else if (has_value(request_headers->range, ","))
+      else if (sscanf(tmp,"bytes%*[ =]%d-",a)==2) {
+         m->start=a;
+         m->stop=-1;
+      }
+      else if (has_value(tmp, ","))
       {
          // Multiple ranges
          m_delete(m,"file");
          m->data="";
          m->error=416;
+      }
+
+      if (has_index(m, "instance_size")) {
+         /* start > instance_size is an invalid request */
+         if (m->start && m->start >= m->instance_size) {
+            m_delete(m,"file");
+            m->data="";
+            m->error=416;
+            m_delete(m,"start");
+            m_delete(m,"stop");
+         } else if (m->stop && m->stop >= m->instance_size) {
+            m->stop = m->instance_size - 1;
+         }
       }
    }
 
@@ -710,9 +743,17 @@ void response_and_finish(mapping m, function|void _log_cb)
       }
    }
 
+   if (m->stop) {
+      if (m->stop != -1) {
+         m->size=1+m->stop-m->start;
+      } else if (m->instance_size) {
+         m->stop = m->instance_size - 1;
+         m->size = m->instance_size - m->start;
+      }
+   }
+
    low_make_response_header(m,send_buf);
 
-   if (m->stop) m->size=1+m->stop-m->start;
    if (m->start) {
       if( m->file )
          m->file->seek(m->start, Stdio.SEEK_CUR);
@@ -740,6 +781,7 @@ void response_and_finish(mapping m, function|void _log_cb)
       send_fd=m->file;
       send_buf->range_error(0);
    }
+
    my_fd->set_nonblocking(send_read,send_write,send_close);
 }
 
