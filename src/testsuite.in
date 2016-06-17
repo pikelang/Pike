@@ -10714,6 +10714,20 @@ test_eq([[combine_path_nt("a:/", "/foo","bar")+combine_path_nt("/foo","bar")]],
 // - combine_path_unix
 test_eq([[combine_path_unix("/","/fo\1111/bar/gazonk/../../")]],"/fo\1111/")
 
+// - append_path_nt
+test_any([[
+  // Bug 7723.
+  int i;
+  for (i = 0; i < 1000; i++) {
+    array(string) a = (array(string))(({""}) + allocate(5, random)(10000));
+    string ret = Stdio.append_path_nt("/", a*"/");
+    if (ret != (a*"/")) {
+      return sprintf("%d: %O != %O\n", i, ret, a*"/");
+    }
+  }
+  return "";
+]], "")
+
 // - compile
 // - compile_file
 
