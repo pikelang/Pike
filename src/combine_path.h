@@ -22,7 +22,7 @@
 
 #ifdef UNIX_COMBINE_PATH
 #define IS_SEP(X) ( (X)=='/' )
-#define IS_ABS(X) (IS_SEP( INDEX_PCHARP((X),0))?1:0)
+#define IS_ABS(X, L) ((((L) > 0) && IS_SEP(INDEX_PCHARP((X),0)))?1:0)
 #define APPEND_PATH append_path_unix
 #define COMBINE_PATH combine_path_unix
 #define CHAR_CURRENT '.'
@@ -34,7 +34,7 @@
 #ifdef NT_COMBINE_PATH
 #define IS_SEP(X) ( (X) == '/' || (X) == '\\' )
 
-static int find_absolute(PCHARP s)
+static int find_absolute(PCHARP s, ptrdiff_t len)
 {
   int c0=INDEX_PCHARP(s,0);
   int c1=c0?INDEX_PCHARP(s,1):0;
@@ -45,10 +45,10 @@ static int find_absolute(PCHARP s)
    * correct. */
   if(((c0 >= 'A' && c0 <= 'Z') ||
       (c0 >= 'a' && c0 <= 'z')) &&
-     c1==':' && IS_SEP(INDEX_PCHARP(s,2)))
+     c1==':' && IS_SEP(INDEX_PCHARP(s,2)) && (len >= 3))
     return 3;
 
-  if(IS_SEP(c0) && IS_SEP(c1))
+  if(IS_SEP(c0) && IS_SEP(c1) && (len >= 2))
   {
     int l;
     for(l=2;INDEX_PCHARP(s,l) && !IS_SEP(INDEX_PCHARP(s,l));l++);
@@ -57,8 +57,8 @@ static int find_absolute(PCHARP s)
 
   return 0;
 }
-#define IS_ABS(X) find_absolute((X))
-#define IS_ROOT(X) ( IS_SEP( INDEX_PCHARP((X),0) )?1:0)
+#define IS_ABS(X, L) find_absolute((X), (L))
+#define IS_ROOT(X, L) ( (((L) > 0) && IS_SEP( INDEX_PCHARP((X),0) ))?1:0)
 
 #define APPEND_PATH append_path_nt
 #define COMBINE_PATH combine_path_nt
@@ -72,18 +72,19 @@ static int find_absolute(PCHARP s)
 #ifdef AMIGAOS_COMBINE_PATH
 #define IS_SEP(X) ( (X)=='/' )
 #define IS_ANY_SEP(X) ( (X) == '/' || (X) == ':' )
-#define IS_ABS(X) find_absolute2((X))
-#define IS_ROOT(X) ( ( INDEX_PCHARP((X),0) == CHAR_ROOT)?1:0)
+#define IS_ABS(X, L) find_absolute2((X), (L))
+#define IS_ROOT(X, L) ( ((L) > 0) && ( INDEX_PCHARP((X),0) == CHAR_ROOT)?1:0)
 #define APPEND_PATH append_path_amigaos
 #define COMBINE_PATH combine_path_amigaos
 #define CHAR_ROOT ':'
 
-static int find_absolute2(PCHARP s)
+static int find_absolute2(PCHARP s, ptrdiff_t len)
 {
   int r=0, p=0;
   int c;
-  while((c=INDEX_PCHARP(s,p))) {
+  while((c=INDEX_PCHARP(s,p)) && (len > 0)) {
     ++p;
+    --len;
     if(c == CHAR_ROOT)
       r = p;
   }
@@ -107,8 +108,8 @@ static void APPEND_PATH(struct string_builder *s,
   /* First, check if path is absolute,
    * if so ignore anything already in 's'
    */
-  abs=IS_ABS(MKPCHARP_STR(s->s));
-  if((tmp=IS_ABS(path)))
+  abs=IS_ABS(MKPCHARP_STR(s->s), s->s->len);
+  if((tmp=IS_ABS(path, len)))
   {
     s->s->len=0;
     s->known_shift=0;
@@ -117,11 +118,11 @@ static void APPEND_PATH(struct string_builder *s,
     abs=tmp;
   }
 #ifdef IS_ROOT
-  else if((tmp=IS_ROOT(path)))
+  else if((tmp=IS_ROOT(path, len)))
   {
     int tmp2;
     s->known_shift=0;
-    if((tmp2=IS_ABS(MKPCHARP_STR(s->s))))
+    if((tmp2=IS_ABS(MKPCHARP_STR(s->s), s->s->len)))
     {
       s->s->len=tmp2;
       abs=tmp2;
@@ -159,10 +160,10 @@ static void APPEND_PATH(struct string_builder *s,
   while(1)
   {
 #if COMBINE_PATH_DEBUG > 1
-    s->s->str[s->s->len]=0;
-    fprintf(stderr, "combine_path(2),   TO: \"%s\"\n", s->s->str);
-    fprintf(stderr, "combine_path(2), FROM (%d): \"%s\"\n",
-	    from, path.ptr+from);
+    /* s->s->str[s->s->len]=0; */
+    fprintf(stderr, "combine_path(2),   TO: \"%s\"[%d]\n", s->s->str, s->s->len);
+    fprintf(stderr, "combine_path(2), FROM (%d): \"%s\"[%d]\n",
+	    from, path.ptr+from, len - from);
 #endif
     if(IS_SEP(LAST_PUSHED()))
     {
@@ -186,10 +187,11 @@ static void APPEND_PATH(struct string_builder *s,
       {
 	int c3;
 #if COMBINE_PATH_DEBUG > 0
-	s->s->str[s->s->len]=0;
-	fprintf(stderr, "combine_path(0),   TO: \"%s\"\n", s->s->str);
-	fprintf(stderr, "combine_path(0), FROM (%d): \"%s\"\n",
-		from, path.ptr+from);
+	/* s->s->str[s->s->len]=0; */
+	fprintf(stderr, "combine_path(0),   TO: \"%s\"[%d]\n",
+		s->s->str, s->s->len);
+	fprintf(stderr, "combine_path(0), FROM (%d): \"%s\"[%d]\n",
+		from, path.ptr+from, len - from);
 #endif
 
 	switch(INDEX_PCHARP(path, from+1))
@@ -224,9 +226,11 @@ static void APPEND_PATH(struct string_builder *s,
 	      s->known_shift=0;
 
 #if COMBINE_PATH_DEBUG > 0
-	      s->s->str[s->s->len]=0;
-	      fprintf(stderr,"combine_path(1),   TO: %s\n",s->s->str);
-	      fprintf(stderr,"combine_path(1), FROM (%d): %s\n",from,path.ptr+from);
+	      /* s->s->str[s->s->len]=0; */
+	      fprintf(stderr,"combine_path(1),   TO: %s[%d]\n",
+		      s->s->str, s->s->len);
+	      fprintf(stderr,"combine_path(1), FROM (%d): %s[%d]\n",
+		      from, path.ptr+from, len-from);
 #endif
 	      continue;
 	    }
@@ -283,9 +287,23 @@ void F_FUNC(COMBINE_PATH)(INT32 args)
   init_string_builder(&ret, 0);
   SET_ONERROR(tmp, free_string_builder, &ret);
 
+#if COMBINE_PATH_DEBUG > 0
+  for(e=0; e < args; e++) {
+    fprintf(stderr, "combine_path(), Arg #%d: \"%s\"[%d bytes]\n",
+	    e, Pike_sp[e-args].u.string->str, Pike_sp[e-args].u.string->len);
+  }
+#endif
+#if COMBINE_PATH_DEBUG > 5
+  fprintf(stderr, "combine_path(),  Empty: \"%s\"[%d bytes]\n",
+	  ret.s->str, ret.s->len);
+  fprintf(stderr, "combine_path(),  Empty+1: \"%s\"\n",
+	  ret.s->str+1);
+#endif
+
   for(e=args-1;e>root;e--)
   {
-    if(IS_ABS(MKPCHARP_STR(Pike_sp[e-args].u.string)))
+    if(IS_ABS(MKPCHARP_STR(Pike_sp[e-args].u.string),
+	      Pike_sp[e-args].u.string->len))
     {
       root=e;
       break;
@@ -297,19 +315,36 @@ void F_FUNC(COMBINE_PATH)(INT32 args)
 	      Pike_sp[root-args].u.string->len);
   root++;
 
+#if COMBINE_PATH_DEBUG > 1
+  fprintf(stderr, "combine_path(),  ret: \"%s\"[%d] (root: %d)\n",
+	  ret.s->str, ret.s->len, root);
+#endif
+
 #ifdef IS_ROOT
   for(e=args-1;e>root;e--)
   {
-    if(IS_ROOT(MKPCHARP_STR(Pike_sp[e-args].u.string)))
+    if (TYPEOF(Pike_sp[e-args]) != T_STRING) continue;
+    if(IS_ROOT(MKPCHARP_STR(Pike_sp[e-args].u.string),
+	       Pike_sp[e-args].u.string->len))
     {
       root=e;
       break;
     }
   }
+#if COMBINE_PATH_DEBUG > 1
+  fprintf(stderr, "combine_path(),  root: %d\n", root);
+#endif
 #endif
 
   while(root<args)
   {
+    if (TYPEOF(Pike_sp[root-args]) != T_STRING) continue;
+#if COMBINE_PATH_DEBUG > 0
+    fprintf(stderr, "combine_path(), Appending \"%s\"[%d] root: %d\n",
+	    Pike_sp[root-args].u.string->str,
+	    Pike_sp[root-args].u.string->len,
+	    root);
+#endif
     APPEND_PATH(&ret,
 		MKPCHARP_STR(Pike_sp[root-args].u.string),
 		Pike_sp[root-args].u.string->len);
@@ -321,7 +356,7 @@ void F_FUNC(COMBINE_PATH)(INT32 args)
 }
 
 
-
+#undef COMBINE_PATH_DEBUG
 #undef UNIX_COMBINE_PATH
 #undef NT_COMBINE_PATH
 #undef AMIGAOS_COMBINE_PATH
