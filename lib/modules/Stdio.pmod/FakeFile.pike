@@ -274,7 +274,7 @@ void set_blocking_keep_callbacks() { }
 //! @seealso
 //!   @[Stdio.File()->set_blocking]
 void set_nonblocking(function rcb, function wcb, function ccb,
-		     function rocb, function wocb) {
+                     void|function rocb, void|function wocb) {
   read_cb = rcb;
   write_cb = wcb;
   close_cb = ccb;
