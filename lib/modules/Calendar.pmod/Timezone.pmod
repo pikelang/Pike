@@ -758,7 +758,7 @@ class Runtime_timezone_compiler
 
    // ---
 
-#define INF_YEAR 2050
+#define INF_YEAR 2100
 #define NUL_YEAR 1850
 
 	 int y1=(int)a[0] || NUL_YEAR;
