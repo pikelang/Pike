@@ -55,65 +55,67 @@ extern struct pike_string *this_string;
 extern struct pike_string *parser_system_string;
 extern struct pike_string *type_check_system_string;
 
-#define LFUN___INIT 0
-#define LFUN_CREATE 1
-#define LFUN_DESTROY 2
-#define LFUN_ADD 3
-#define LFUN_SUBTRACT 4
-#define LFUN_AND 5
-#define LFUN_OR 6
-#define LFUN_XOR 7
-#define LFUN_LSH 8
-#define LFUN_RSH 9
-#define LFUN_MULTIPLY 10
-#define LFUN_DIVIDE 11
-#define LFUN_MOD 12
-#define LFUN_COMPL 13
-#define LFUN_EQ 14
-#define LFUN_LT 15
-#define LFUN_GT 16
-#define LFUN___HASH 17
-#define LFUN_CAST 18
-#define LFUN_NOT 19
-#define LFUN_INDEX 20
-#define LFUN_ASSIGN_INDEX 21
-#define LFUN_ARROW 22
-#define LFUN_ASSIGN_ARROW 23
-#define LFUN__SIZEOF 24
-#define LFUN__INDICES 25
-#define LFUN__VALUES 26
-#define LFUN_CALL 27
-#define LFUN_RADD 28
-#define LFUN_RSUBTRACT 29
-#define LFUN_RAND 30
-#define LFUN_ROR 31
-#define LFUN_RXOR 32
-#define LFUN_RLSH 33
-#define LFUN_RRSH 34
-#define LFUN_RMULTIPLY 35
-#define LFUN_RDIVIDE 36
-#define LFUN_RMOD 37
-#define LFUN_ADD_EQ 38
-#define LFUN__IS_TYPE 39
-#define LFUN__SPRINTF 40
-#define LFUN__EQUAL 41
-#define LFUN__M_DELETE 42
-#define LFUN__GET_ITERATOR 43
-#define LFUN_RANGE 44
+enum LFUN {
+    LFUN___INIT,
+    LFUN_CREATE,
+    LFUN_DESTROY,
+    LFUN_ADD,
+    LFUN_SUBTRACT,
+    LFUN_AND,
+    LFUN_OR,
+    LFUN_XOR,
+    LFUN_LSH,
+    LFUN_RSH,
+    LFUN_MULTIPLY,
+    LFUN_DIVIDE,
+    LFUN_MOD,
+    LFUN_COMPL,
+    LFUN_EQ,
+    LFUN_LT,
+    LFUN_GT,
+    LFUN___HASH,
+    LFUN_CAST,
+    LFUN_NOT,
+    LFUN_INDEX,
+    LFUN_ASSIGN_INDEX,
+    LFUN_ARROW,
+    LFUN_ASSIGN_ARROW,
+    LFUN__SIZEOF,
+    LFUN__INDICES,
+    LFUN__VALUES,
+    LFUN_CALL,
+    LFUN_RADD,
+    LFUN_RSUBTRACT,
+    LFUN_RAND,
+    LFUN_ROR,
+    LFUN_RXOR,
+    LFUN_RLSH,
+    LFUN_RRSH,
+    LFUN_RMULTIPLY,
+    LFUN_RDIVIDE,
+    LFUN_RMOD,
+    LFUN_ADD_EQ,
+    LFUN__IS_TYPE,
+    LFUN__SPRINTF,
+    LFUN__EQUAL,
+    LFUN__M_DELETE,
+    LFUN__GET_ITERATOR,
+    LFUN_RANGE,
 
-#define NUM_LFUNS 45
-
+    NUM_LFUNS,
 /* NOTE: After this point there are only fake lfuns.
  */
-#define LFUN__SEARCH 45
-#define LFUN__TYPES 46
-#define LFUN__SERIALIZE 47
-#define LFUN__DESERIALIZE 48
-#define LFUN__SIZE_OBJECT 49
-#define LFUN__RANDOM 50
-#define LFUN_POW  51
-#define LFUN_RPOW 52
-#define LFUN__SQRT 53
+
+    LFUN__SEARCH = NUM_LFUNS,
+    LFUN__TYPES,
+    LFUN__SERIALIZE,
+    LFUN__DESERIALIZE,
+    LFUN__SIZE_OBJECT,
+    LFUN__RANDOM,
+    LFUN_POW,
+    LFUN_RPOW,
+    LFUN__SQRT,
+};
 
 extern const char *const lfun_names[];
 
@@ -632,6 +634,7 @@ struct program
 
   INT16 flags;          /* PROGRAM_* */
   unsigned INT8 alignment_needed;
+  /* 5 bytes padding.. */
   struct timeval timestamp;
 
   struct program *next;
@@ -938,8 +941,8 @@ int really_low_find_variant_identifier(struct pike_string *name,
 				       struct pike_type *type,
 				       int start_pos,
 				       int flags);
-PMOD_EXPORT int low_find_lfun(struct program *p, ptrdiff_t lfun);
-PMOD_EXPORT int find_lfun_fatal(struct program *p, ptrdiff_t lfun);
+PMOD_EXPORT int low_find_lfun(struct program *p, enum LFUN lfun);
+PMOD_EXPORT int find_lfun_fatal(struct program *p, enum LFUN lfun);
 int lfun_lookup_id(struct pike_string *lfun_name);
 int low_find_shared_string_identifier(struct pike_string *name,
 				      const struct program *prog);
@@ -1085,7 +1088,7 @@ void make_program_executable(struct program *p);
  * Look up the given lfun in the given program and returns the
  * function number it has in the program, or -1 if not found.
  */
-static inline int PIKE_UNUSED_ATTRIBUTE FIND_LFUN(struct program * p, int lfun) {
+static inline int PIKE_UNUSED_ATTRIBUTE FIND_LFUN(struct program * p, enum LFUN lfun) {
 #ifdef PIKE_DEBUG
     dmalloc_touch(struct program*, p);
     if (lfun < 0) return find_lfun_fatal(p, lfun);
