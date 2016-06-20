@@ -3442,6 +3442,9 @@ static void decode_value2(struct decode_data *data)
 		      p->identifier_references[no].identifier_offset !=
 		      p->identifier_references[n].identifier_offset ||
 		      p->identifier_references[no].inherit_offset != 0))) {
+#ifdef PIKE_DEBUG
+		  dump_program_tables(Pike_compiler->new_program, 0);
+#endif
 		  ref_push_program (p);
 		  decode_error(data, Pike_sp - 1,
 			       "Bad function identifier offset for %S:%T: %d != %d\n",
