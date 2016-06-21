@@ -86,18 +86,92 @@ union anything
 #define STRUCT_SVALUE_DECLARED
 #endif
 
-/* Note: At least multisets overlays the type field and uses the top 4
- * bits in it internally. */
+
+/* The native types.
+ *
+ * Note that PIKE_T_INT is zero so that cleared memory
+ * is filled with zeroes.
+ */
+enum PIKE_TYPE {
+    PIKE_T_INT=0,
+    PIKE_T_FLOAT=1,
+
+/* NB: The reference counted types all have bit 4 set. */
+    PIKE_T_ARRAY=8,
+    PIKE_T_MAPPING=9,
+    PIKE_T_MULTISET=10,
+    PIKE_T_OBJECT=11,
+    PIKE_T_FUNCTION=12,
+    PIKE_T_PROGRAM=13,
+    PIKE_T_STRING=14,
+    PIKE_T_TYPE=15,
+
+/* The types above are valid types in svalues.
+ * The following are only used by the internal systems.
+ */
+
+/* NB: 6 & 7 below are selected for easy backward compat with Pike 7.8. */
+    PIKE_T_ZERO= 6,	/**< Can return 0, but nothing else */
+    T_UNFINISHED=7,
+
+/*
+ * NOTE: The following types may show up on the stack, but are NOT
+ *       reference counted there. There they are mainly used for
+ *       lvalues. They MUST NOT have a value that has bit 3 (8) set.
+ */
+
+    T_VOID=       16, /**< Can't return any value. Also used on stack to fill out the second
+ * svalue on an lvalue when it isn't used. */
+
+    T_MANY=       17,
+
+    PIKE_T_INT_UNTYPED= 18, /* Optimization of int type size */
+
+    PIKE_T_GET_SET= 32,	/* Getter setter.
+                         * Only valid in struct identifier */
+
+
+/* Type to put in freed svalues. Only the type field in such svalues
+ * is defined. Freeing a PIKE_T_FREE svalue is allowed and does
+ * nothing. mark_free_svalue() is preferably used to set this type.
+ *
+ * Traditionally T_INT has been used for this without setting a proper
+ * subtype; if T_INT is to be used then the subtype must be set to
+ * NUMBER_NUMBER.
+ *
+ * PIKE_T_FREE svalues are recorded as BIT_INT in type hint fields.
+ */
+    PIKE_T_FREE=19,
+
+/** svalue.u.lval points to an svalue. Primarily used in lvalues on
+ * stack, but can also occur in arrays containing lvalue pairs.
+ */
+    T_SVALUE_PTR=20,
+
+/** svalue.u.identifer is an identifier index in an object. Primarily
+ * used in lvalues on stack, but can also occur in arrays containing
+ * lvalue pairs.
+ */
+    T_OBJ_INDEX=21,
+    T_ARRAY_LVALUE=22,
+
+/* No types above this value should appear on the stack. */
+    PIKE_T_STACK_MAX=	T_ARRAY_LVALUE,
+};
 
 /**
  */
 struct svalue
 {
   union {
+   union {
     struct {
       unsigned short type; /**< the data type, see PIKE_T_... */
       unsigned short subtype; /**< used to store the zero type, among others */
     } t;
+    enum PIKE_TYPE named_type:8;
+   };
+
 #if PIKE_BYTEORDER == 1234
     ptrdiff_t type_subtype;
 #else
@@ -146,88 +220,12 @@ struct svalue
 */
 #define INVALIDATE_SVAL(SVAL) SET_SVAL_TYPE_DC(SVAL, 99) /* an invalid type */
 
-/* The native types.
- *
- * Note that PIKE_T_INT is zero so that cleared memory
- * is filled with zeroes.
- */
-#define PIKE_T_INT 0
-#define PIKE_T_FLOAT 1
-
-/* NB: The reference counted types all have bit 4 set. */
-#define PIKE_T_ARRAY 8
-#define PIKE_T_MAPPING 9
-#define PIKE_T_MULTISET 10
-#define PIKE_T_OBJECT 11
-#define PIKE_T_FUNCTION 12
-#define PIKE_T_PROGRAM 13
-#define PIKE_T_STRING 14
-#define PIKE_T_TYPE 15
-
-
-/* The types above are valid types in svalues.
- * The following are only used by the internal systems.
- */
-
-/* NB: 6 & 7 below are selected for easy backward compat with Pike 7.8. */
-#define PIKE_T_ZERO  6	/**< Can return 0, but nothing else */
-
-
-#define T_UNFINISHED 7
-
-/*
- * NOTE: The following types may show up on the stack, but are NOT
- *       reference counted there. There they are mainly used for
- *       lvalues. They MUST NOT have a value that has bit 3 (8) set.
- */
-
-#define T_VOID       16 /**< Can't return any value. Also used on stack to fill out the second
- * svalue on an lvalue when it isn't used. */
-
-#define T_MANY       17
-
-#define PIKE_T_INT_UNTYPED  18 /* Optimization of int type size */
-
-
-#define PIKE_T_GET_SET 32	/* Getter setter.
-				 * Only valid in struct identifier */
-
-
-/* Type to put in freed svalues. Only the type field in such svalues
- * is defined. Freeing a PIKE_T_FREE svalue is allowed and does
- * nothing. mark_free_svalue() is preferably used to set this type.
- *
- * Traditionally T_INT has been used for this without setting a proper
- * subtype; if T_INT is to be used then the subtype must be set to
- * NUMBER_NUMBER.
- *
- * PIKE_T_FREE svalues are recorded as BIT_INT in type hint fields.
- */
-#define PIKE_T_FREE 19
-
-/** svalue.u.lval points to an svalue. Primarily used in lvalues on
- * stack, but can also occur in arrays containing lvalue pairs.
- */
-#define T_SVALUE_PTR 20
-
-/** svalue.u.identifer is an identifier index in an object. Primarily
- * used in lvalues on stack, but can also occur in arrays containing
- * lvalue pairs.
- */
-#define T_OBJ_INDEX 21
-#define T_ARRAY_LVALUE 22
-
-
-/* No types above this value should appear on the stack. */
-#define PIKE_T_STACK_MAX	T_ARRAY_LVALUE
 
 /*
  * The following types are only used in compile-time types and
  * as markers in struct identifier.
  */
 
-#define PIKE_T_GET_SET 32	/* Getter setter.
-				 * Only valid in struct identifier */
 /* should only be used while compiling */
 
 #define PIKE_T_ATTRIBUTE 238	/* Attribute node. */
@@ -930,10 +928,13 @@ struct ref_dummy
   INT32 refs;
 };
 
-/* The following macro is useful to initialize static svalues. Note
- * that the value isn't always set. */
-#define SVALUE_INIT(TYPE, SUBTYPE, VAL) {{{TYPE, SUBTYPE}}, {VAL}}
-#define SVALUE_INIT_INT(VAL) {{{T_INT, NUMBER_NUMBER}}, {VAL}}
-#define SVALUE_INIT_FREE {{{PIKE_T_FREE, NUMBER_NUMBER}}, {0}}
+/* The following macro is useful to initialize static svalues. . */
+/* assumes sizeof void* >= all initialization arguments. */
+#define SVALUE_INIT(TYPE, SUBTYPE, VAL) {.tu.type_subtype=TYPE_SUBTYPE(TYPE, SUBTYPE),.u.refs=(void*)VAL}
+
+#define SVALUE_INIT_INT(VAL)            {.u.integer=VAL}
+/* depends on t_int and number-number being 0 */
+
+#define SVALUE_INIT_FREE                SVALUE_INIT(PIKE_T_FREE,0,0)
 
 #endif /* !SVALUE_H */
