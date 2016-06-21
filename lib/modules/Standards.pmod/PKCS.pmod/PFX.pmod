@@ -1,10 +1,9 @@
 
 #if 1 // This code is broken. (Missing mac identifier for sha)
 
-/*
- * PKCS #12: Personal Information Exchange Syntax v1.1, @rfc{7292@}
- *
- */
+//!
+//! PKCS #12: Personal Information Exchange Syntax v1.1, @rfc{7292@}.
+//!
 
 import Standards.ASN1.Types;
 
