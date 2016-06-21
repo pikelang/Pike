@@ -1059,7 +1059,7 @@ static void name(INT32 args)						\
 	    SET_SVAL(Pike_sp[-args], T_OBJECT, 0 /* FIXME? */, object,	\
 		     THIS_OBJECT);                                      \
 	    add_ref(THIS_OBJECT);                                       \
-	    args = low_rop(o, fun, e, args);				\
+	    /*args = low_rop(o, fun, e, args);*/                        \
 	    if (args > 1) {						\
 	      f_op(args);						\
 	    }								\

@@ -48,7 +48,6 @@ COMPARISON(f_le,"`<=", is_le)
 COMPARISON(f_gt,"`>" , is_gt)
 COMPARISON(f_ge,"`>=", is_ge)
 
-PMOD_EXPORT INT32 low_rop(struct object *o, int i, INT32 e, INT32 args);
 PMOD_EXPORT void f_add(INT32 args);
 PMOD_EXPORT void o_subtract(void);
 PMOD_EXPORT void f_minus(INT32 args);

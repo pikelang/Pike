@@ -37,15 +37,6 @@
 #define OP_MODULO_BY_ZERO_ERROR(FUNC) \
      math_error(FUNC, sp-2, 2, 0, "Modulo by zero.\n")
 
-/* The destructive multiset merge code is broken.
- * l->msd gets -1 refs.
- *
- * Disable it for now.
- *	/grubba 2008-07-08
- */
-#undef PIKE_MERGE_DESTR_A
-#define PIKE_MERGE_DESTR_A	0
-
     /* This calculation should always give some margin based on the size. */
     /* It utilizes that log10(256) ~= 2.4 < 5/2. */
     /* One extra char for the sign and one for the \0 terminator. */
@@ -54,6 +45,11 @@
     /* Enough to hold a Pike float or int in textform
      */
 #define MAX_NUM_BUF  (MAXIMUM(MAX_INT_SPRINTF_LEN,MAX_FLOAT_SPRINTF_LEN))
+static int has_lfun( enum LFUN lfun, int arg );
+static int call_lfun(enum LFUN left, enum LFUN right);
+static int call_lhs_lfun( enum LFUN lfun, int arg );
+static int float_promote(void);
+
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -217,34 +213,32 @@ PMOD_EXPORT void o_cast_to_int(void)
       pop_stack();
       push_int (0);
     }
+    else
+    {
+      if( sp[-1].u.object->prog == bignum_program )
+        return;
 
-    else {
-      {
-	struct object *o = sp[-1].u.object;
-	struct program *p = o->prog->inherits[SUBTYPEOF(sp[-1])].prog;
-	int f = FIND_LFUN(p, LFUN_CAST);
-	if(f == -1)
-	  Pike_error("No cast method in object.\n");
-	ref_push_string(literal_int_string);
-	apply_low(o, f, 1);
-	stack_pop_keep_top();
-      }
+      ref_push_string(literal_int_string);
+      if(!call_lhs_lfun(LFUN_CAST,2))
+        Pike_error("No cast method in object <2>.\n");
+      stack_pop_keep_top(); /* pop object. */
 
       if(TYPEOF(sp[-1]) != PIKE_T_INT)
       {
-	if(TYPEOF(sp[-1]) == T_OBJECT && sp[-1].u.object->prog)
+	if(TYPEOF(sp[-1]) == T_OBJECT)
 	{
 	  struct object *o = sp[-1].u.object;
-	  int f = FIND_LFUN(o->prog->inherits[SUBTYPEOF(sp[-1])].prog,
-			    LFUN__IS_TYPE);
-	  if( f != -1)
-	  {
-	    ref_push_string(literal_int_string);
-	    apply_low(o, f, 1);
-	    f=!UNSAFE_IS_ZERO(sp-1);
-	    pop_stack();
-	    if(f) return;
-	  }
+          if( o->prog == bignum_program )
+            return;
+          else if( o->prog )
+          {
+            int f = 0;
+            ref_push_string(literal_int_string);
+            if( call_lhs_lfun( LFUN__IS_TYPE,2) )
+              f = !UNSAFE_IS_ZERO(sp-1);
+            pop_stack();
+            if(f) return;
+          }
 	}
 	Pike_error("Cast failed, wanted int, got %s\n",
 		   get_name_of_type(TYPEOF(sp[-1])));
@@ -252,7 +246,6 @@ PMOD_EXPORT void o_cast_to_int(void)
       else if(SUBTYPEOF(sp[-1]) == NUMBER_UNDEFINED)
         Pike_error("Cannot cast this object to int.\n");
     }
-
     break;
 
   case T_FLOAT: {
@@ -260,6 +253,7 @@ PMOD_EXPORT void o_cast_to_int(void)
 
       if ( PIKE_ISINF(f) || PIKE_ISNAN(f) )
         Pike_error("Can't cast infinites or NaN to int.\n");
+      /* should perhaps convert to Int.Inf now that we have them? */
 
       if (UNLIKELY(f > MAX_INT_TYPE || f < MIN_INT_TYPE)) {
         convert_stack_top_to_bignum();
@@ -305,33 +299,21 @@ PMOD_EXPORT void o_cast_to_string(void)
       pop_stack();
       push_constant_text("0");
     } else {
-      {
-	struct object *o = sp[-1].u.object;
-	int f = FIND_LFUN(o->prog->inherits[SUBTYPEOF(sp[-1])].prog, LFUN_CAST);
-	if(f == -1)
-	  Pike_error("No cast method in object.\n");
-	ref_push_string(literal_string_string);
-	apply_low(o, f, 1);
-	stack_pop_keep_top();
-      }
-
+      ref_push_string(literal_string_string);
+      if(!call_lhs_lfun(LFUN_CAST,2))
+        Pike_error("No cast method in object.\n");
+      stack_pop_keep_top();
       if(TYPEOF(sp[-1]) != PIKE_T_STRING)
       {
         if(TYPEOF(sp[-1])==PIKE_T_INT && SUBTYPEOF(sp[-1])==NUMBER_UNDEFINED)
            Pike_error("Cannot cast this object to string.\n");
 	if(TYPEOF(sp[-1]) == T_OBJECT && sp[-1].u.object->prog)
 	{
-	  struct object *o = sp[-1].u.object;
-	  int f = FIND_LFUN(o->prog->inherits[SUBTYPEOF(sp[-1])].prog,
-			    LFUN__IS_TYPE);
-	  if( f != -1)
-	  {
-            ref_push_string(literal_string_string);
-	    apply_low(o, f, 1);
-	    f=!UNSAFE_IS_ZERO(sp-1);
-	    pop_stack();
-	    if(f) return;
-	  }
+          ref_push_string(literal_string_string);
+          if( call_lhs_lfun( LFUN__IS_TYPE,2 ) )
+	    if( !UNSAFE_IS_ZERO(sp-1) )
+              return;
+          pop_stack();
 	}
 	Pike_error("Cast failed, wanted string, got %s\n",
 		   get_name_of_type(TYPEOF(sp[-1])));
@@ -1141,7 +1123,8 @@ PMOD_EXPORT void ID(INT32 args)				\
 PMOD_EXPORT void f_ne(INT32 args)
 {
   f_eq(args);
-  o_not();
+  /* f_eq and friends always returns 1 or 0. */
+  Pike_sp[-1].u.integer = !Pike_sp[-1].u.integer;
 }
 
 /*! @decl int(0..1) `==(mixed arg1, mixed arg2, mixed ... extras)
@@ -1277,108 +1260,177 @@ COMPARISON(f_gt,"`>" , is_gt)
  */
 COMPARISON(f_ge,"`>=",is_ge)
 
-
-#define CALL_OPERATOR(OP, args) do {					\
-    struct object *o_ = sp[-args].u.object;				\
-    int i;								\
-    if(!o_->prog)							\
-      bad_arg_error(lfun_names[OP], sp-args, args, 1, "object", sp-args, \
-		    "Called in destructed object.\n");			\
-    if((i = FIND_LFUN(o_->prog->inherits[SUBTYPEOF(sp[-args])].prog,	\
-		      OP)) == -1)					\
-      bad_arg_error(lfun_names[OP], sp-args, args, 1, "object", sp-args, \
-		    "Operator not in object.\n");			\
-    apply_low(o_, i, args-1);						\
-    stack_pop_keep_top();						\
-  } while (0)
-
-/* Helper function for calling ``-operators.
- *
- * Assumes o is at Pike_sp[e - args].
- *
- * i is the resolved lfun to call.
- *
- * Returns the number of remaining elements on the stack.
- */
-PMOD_EXPORT INT32 low_rop(struct object *o, int i, INT32 e, INT32 args)
+#ifdef OPTIMIZE_ADD
+static void add_strings(INT32 args)
 {
-  if (e == args-1) {
-    /* The object is the last argument. */
-    ONERROR err;
-    Pike_sp--;
-    SET_ONERROR(err, do_free_object, o);
-    apply_low(o, i, e);
-    CALL_AND_UNSET_ONERROR(err);
-    return args - e;
-  } else {
-    /* Rotate the stack, so that the @[e] first elements come last.
-     */
-    struct svalue *tmp;
-    if (e*2 < args) {
-      tmp = xalloc(e*sizeof(struct svalue));
-      memcpy(tmp, Pike_sp-args, e*sizeof(struct svalue));
-      memmove(Pike_sp-args, (Pike_sp-args)+e,
-	      (args-e)*sizeof(struct svalue));
-      memcpy(Pike_sp-e, tmp, e*sizeof(struct svalue));
-    } else {
-      tmp = xalloc((args-e)*sizeof(struct svalue));
-      memcpy(tmp, (Pike_sp-args)+e, (args-e)*sizeof(struct svalue));
-      memmove(Pike_sp-e, Pike_sp-args, e*sizeof(struct svalue));
-      memcpy(Pike_sp-args, tmp, (args-e)*sizeof(struct svalue));
-    }
-    free(tmp);
-    /* Now the stack is:
-     *
-     * -args	object with the lfun.
-     *  ...
-     *  ...	other arguments
-     *  ...
-     *   -e	first argument.
-     *  ...
-     *   -1	last argument before the object.
-     */
-#ifdef PIKE_DEBUG
-    if (TYPEOF(Pike_sp[-args]) != T_OBJECT ||
-	Pike_sp[-args].u.object != o ||
-	!o->prog) {
-      Pike_fatal("low_rop() Lost track of object.\n");
-    }
-#endif /* PIKE_DEBUG */
-    apply_low(o, i, e);
-    args -= e;
-    /* Replace the object with the result. */
-    assign_svalue(Pike_sp-(args+1), Pike_sp-1);
-    pop_stack();
-    return args;
+  struct pike_string *r;
+  PCHARP buf;
+  ptrdiff_t tmp;
+  int max_shift=0;
+  ptrdiff_t size=0,e;
+  int num=0;
+
+  for(e=-args;e<0;e++)
+  {
+    if(sp[e].u.string->len != 0) num++;
+    size += sp[e].u.string->len;
+    if(sp[e].u.string->size_shift > max_shift)
+      max_shift=sp[e].u.string->size_shift;
   }
+
+  if(num == 1)
+  {
+    /* Only one string has length (or none!). Return it. */
+    for(e=-args;e<0;e++)
+    {
+      if( sp[e].u.string->len )
+      {
+        if( e != -args )
+        {
+          r = sp[e].u.string;
+          sp[e].u.string = sp[-args].u.string;
+          sp[-args].u.string = r;
+        }
+      }
+    }
+    pop_n_elems(args-1);
+    return;
+  }
+
+  tmp=sp[-args].u.string->len;
+  r=new_realloc_shared_string(sp[-args].u.string,size,max_shift);
+  mark_free_svalue (sp - args);
+  buf=MKPCHARP_STR_OFF(r,tmp);
+  for(e=-args+1;e<0;e++)
+  {
+    if( sp[e].u.string->len )
+    {
+      update_flags_for_add( r, sp[e].u.string );
+      pike_string_cpy(buf,sp[e].u.string);
+      INC_PCHARP(buf,sp[e].u.string->len);
+      free_string(sp[e].u.string);
+    }
+  }
+  Pike_sp -= args-1;
+  SET_SVAL(sp[-1], T_STRING, 0, string, low_end_shared_string(r));
+}
+#endif
+
+static int pair_add()
+{
+
+  if(TYPEOF(sp[-1]) == PIKE_T_OBJECT ||
+     TYPEOF(sp[-2]) == PIKE_T_OBJECT)
+  {
+    if(TYPEOF(sp[-2]) == PIKE_T_OBJECT &&
+       /* Note: pairwise add always has an extra reference! */
+       sp[-2].u.object->refs == 2 &&
+       call_lhs_lfun(LFUN_ADD_EQ,2))
+      return 1; /* optimized version of +. */
+    if(call_lfun(LFUN_ADD, LFUN_RADD))
+      return 1; /* standard editon */
+  }
+
+
+  if (TYPEOF(sp[-2]) != TYPEOF(sp[-1]))
+  {
+    if(IS_UNDEFINED(sp-2))
+    {
+      stack_swap();
+      pop_stack();
+      return 1;
+    }
+
+    if(IS_UNDEFINED(sp-1))
+    {
+      pop_stack();
+      return 1;
+    }
+
+    /* string + X && X + string -> string */
+    if( TYPEOF(Pike_sp[-2]) == PIKE_T_STRING )
+      o_cast_to_string();
+    else if( TYPEOF(Pike_sp[-1]) == PIKE_T_STRING )
+    {
+      stack_swap();
+      o_cast_to_string();
+      stack_swap();
+    }
+
+    if( TYPEOF(Pike_sp[-2]) == PIKE_T_FLOAT )
+    {
+      if( TYPEOF(Pike_sp[-1]) == PIKE_T_INT )
+      {
+        Pike_sp[-1].u.float_number = Pike_sp[-1].u.integer;
+        TYPEOF(Pike_sp[-1]) = PIKE_T_FLOAT;
+      }
+    }
+
+    if( TYPEOF(Pike_sp[-1]) == PIKE_T_FLOAT )
+    {
+      if( TYPEOF(Pike_sp[-2]) == PIKE_T_INT )
+      {
+        Pike_sp[-2].u.float_number = Pike_sp[-2].u.integer;
+        TYPEOF(Pike_sp[-2]) = PIKE_T_FLOAT;
+      }
+    }
+
+    if (TYPEOF(sp[-2]) != TYPEOF(sp[-1]))
+      return 0;
+  }
+
+  /* types now identical. */
+  switch(TYPEOF(sp[-1]))
+  {
+      /*
+        Note: these cases mainly tend to happen when there is an object
+        in the argument list.  otherwise pairwise addition is not done
+        using this code.
+      */
+    case PIKE_T_INT:
+      {
+        INT_TYPE res;
+        if (DO_INT_TYPE_ADD_OVERFLOW(sp[-2].u.integer, sp[-1].u.integer, &res))
+        {
+          convert_svalue_to_bignum(sp-2);
+          call_lfun(LFUN_ADD,LFUN_RADD);
+          return 1;
+        }
+        sp[-2].u.integer = res;
+        sp--;
+      }
+      return 1;
+    case PIKE_T_FLOAT:
+      sp[-2].u.float_number += sp[-1].u.float_number;
+      sp--;
+      return 1;
+    case PIKE_T_STRING:
+      Pike_sp[-2].u.string = add_and_free_shared_strings(Pike_sp[-2].u.string,
+                                                         Pike_sp[-1].u.string);
+      Pike_sp--;
+      return 1;
+
+    case PIKE_T_ARRAY:
+      push_array( add_arrays(sp-2,2) );
+      stack_swap(); pop_stack();
+      stack_swap(); pop_stack();
+      return 1;
+    case PIKE_T_MAPPING:
+      push_mapping( add_mappings(sp-2,2) );
+      stack_swap(); pop_stack();
+      stack_swap(); pop_stack();
+      return 1;
+    case PIKE_T_MULTISET:
+      push_multiset( add_multisets(sp-2,2) );
+      stack_swap(); pop_stack();
+      stack_swap(); pop_stack();
+      return 1;
+    case PIKE_T_OBJECT:
+      return call_lfun(LFUN_ADD,LFUN_RADD);
+  }
+  return 0;
 }
 
-/* Sift down large (absolute) values on the heap. */
-static void float_heap_sift_down(struct svalue *svalues, int root, int nelems)
-{
-  FLOAT_ARG_TYPE val = svalues[root].u.float_number;
-  FLOAT_ARG_TYPE abs_val = fabs(val);
-  int child;
-
-  while ((child = ((root<<1) +1)) < nelems) {
-    int swap = root;
-    FLOAT_ARG_TYPE s_abs_val;
-    if ((s_abs_val = fabs(svalues[child].u.float_number)) < abs_val) {
-      swap = child;
-    } else {
-      s_abs_val = abs_val;
-    }
-    child++;
-    if ((child < nelems) &&
-	(fabs(svalues[child].u.float_number) < s_abs_val)) {
-      swap = child;
-    }
-    if (swap == root) break;
-    svalues[root] = svalues[swap];
-    root = swap;
-  }
-  svalues[root].u.float_number = val;
-}
 
 /*! @decl mixed `+(mixed arg)
  *! @decl mixed `+(object arg, mixed ... more)
@@ -1456,406 +1508,152 @@ static void float_heap_sift_down(struct svalue *svalues, int root, int nelems)
  */
 PMOD_EXPORT void f_add(INT32 args)
 {
-  INT_TYPE e,size;
-  TYPE_FIELD types;
+  if(!args)
+    SIMPLE_WRONG_NUM_ARGS_ERROR("`+", 1);
 
- tail_recurse:
-  if (args == 1) return;
+  if(args==1)
+    return;
 
-  types=0;
-  for(e=-args;e<0;e++) types |= 1<<TYPEOF(sp[e]);
-
-  switch(types)
   {
-  default:
-    if(!args)
+    struct svalue *s=sp-args;
+    int e;
+    TYPE_FIELD types = 0;
+
+    for(e=-args;e<0;e++) types |= 1<<TYPEOF(sp[e]);
+
+    switch(types)
     {
-      SIMPLE_WRONG_NUM_ARGS_ERROR("`+", 1);
-    }else{
-      if(types & BIT_OBJECT)
-      {
-	struct object *o;
-	struct program *p;
-	int i;
-
-	if(TYPEOF(sp[-args]) == T_OBJECT && sp[-args].u.object->prog)
-	{
-	  /* The first argument is an object. */
-	  o = sp[-args].u.object;
-	  p = o->prog->inherits[SUBTYPEOF(sp[-args])].prog;
-	  if(o->refs==1 &&
-	     (i = FIND_LFUN(p, LFUN_ADD_EQ)) != -1)
-	  {
-	    apply_low(o, i, args-1);
-	    stack_pop_keep_top();
-	    return;
-	  }
-	  if((i = FIND_LFUN(p, LFUN_ADD)) != -1)
-	  {
-	    apply_low(o, i, args-1);
-	    free_svalue(sp-2);
-	    sp[-2]=sp[-1];
-	    sp--;
-	    dmalloc_touch_svalue(sp);
-	    return;
-	  }
-	}
-
-	for(e=1;e<args;e++)
-	{
-	  if(TYPEOF(sp[e-args]) == T_OBJECT &&
-	     (p = (o = sp[e-args].u.object)->prog) &&
-	     (i = FIND_LFUN(p->inherits[SUBTYPEOF(sp[e-args])].prog,
-			    LFUN_RADD)) != -1)
-	  {
-	    /* There's an object with a lfun::``+() at argument @[e]. */
-	    if ((args = low_rop(o, i, e, args)) > 1) {
-	      goto tail_recurse;
-	    }
-	    return;
-	  }
-	}
-      }
-    }
-
-    switch(TYPEOF(sp[-args]))
-    {
-      case T_PROGRAM:
-      case T_FUNCTION:
-	SIMPLE_ARG_TYPE_ERROR("`+", 1,
-                              "string|object|int|float|array|mapping|multiset");
-    }
-    bad_arg_error("`+", sp-args, args, 1,
-		  "string|object|int|float|array|mapping|multiset", sp-args,
-		  "Incompatible types\n");
-    return; /* compiler hint */
-
-  case BIT_STRING:
-  {
-    struct pike_string *r;
-    PCHARP buf;
-    ptrdiff_t tmp;
-    int max_shift=0;
-
-    size=0;
-    for(e=-args;e<0;e++)
-    {
-      size+=sp[e].u.string->len;
-      if(sp[e].u.string->size_shift > max_shift)
-	max_shift=sp[e].u.string->size_shift;
-    }
-
-    if(size == sp[-args].u.string->len)
-    {
-      pop_n_elems(args-1);
-      return;
-    }
-    else if(args == 2 && (size == sp[-1].u.string->len))
-    {
-      stack_swap();
-      pop_stack();
-      return;
-    }
-
-    tmp=sp[-args].u.string->len;
-    r=new_realloc_shared_string(sp[-args].u.string,size,max_shift);
-    mark_free_svalue (sp - args);
-    buf=MKPCHARP_STR_OFF(r,tmp);
-    for(e=-args+1;e<0;e++)
-    {
-      if( sp[e].u.string->len )
-      {
-        update_flags_for_add( r, sp[e].u.string );
-        pike_string_cpy(buf,sp[e].u.string);
-        INC_PCHARP(buf,sp[e].u.string->len);
-      }
-    }
-    SET_SVAL(sp[-args], T_STRING, 0, string, low_end_shared_string(r));
-
-    for(e=-args+1;e<0;e++)
-      free_string(sp[e].u.string);
-
-    sp-=args-1;
-
-    break;
-  }
-
-  case BIT_STRING | BIT_INT:
-  case BIT_STRING | BIT_FLOAT:
-  case BIT_STRING | BIT_FLOAT | BIT_INT:
-  {
-    struct pike_string *r;
-    PCHARP buf;
-    char buffer[MAX_NUM_BUF];
-    int max_shift=0, len;
-
-    if ((TYPEOF(sp[-args]) != T_STRING) && (TYPEOF(sp[1-args]) != T_STRING)) {
-      struct svalue *save_sp = sp;
-      /* We need to perform a normal addition first.
-       */
-      for (e=-args; e < 0; e++) {
-	if (TYPEOF(save_sp[e]) == T_STRING)
-	  break;
-	*(sp++) = save_sp[e];
-	dmalloc_touch_svalue(Pike_sp-1);
-      }
-      /* Perform the addition. */
-      f_add(args+e);
-      dmalloc_touch_svalue(Pike_sp-1);
-      save_sp[--e] = *(--sp);
-#ifdef PIKE_DEBUG
-      if (sp != save_sp) {
-	Pike_fatal("f_add(): Lost track of stack %p != %p\n", sp, save_sp);
-      }
-#endif /* PIKE_DEBUG */
-      /* Perform the rest of the addition. */
-      f_add(-e);
-#ifdef PIKE_DEBUG
-      if (sp != save_sp + 1 + e) {
-	Pike_fatal("f_add(): Lost track of stack (2) %p != %p\n",
-	      sp, save_sp + 1 + e);
-      }
-#endif /* PIKE_DEBUG */
-      /* Adjust the stack. */
-      save_sp[-args] = sp[-1];
-      sp = save_sp + 1 - args;
-      return;
-    } else {
-      e = -args;
-    }
-
-    size=0;
-    for(e=-args;e<0;e++)
-    {
-      switch(TYPEOF(sp[e]))
-      {
-      case T_STRING:
-	size+=sp[e].u.string->len;
-	if(sp[e].u.string->size_shift > max_shift)
-	  max_shift=sp[e].u.string->size_shift;
-	break;
-
-      case T_INT:
-	size += MAX_INT_SPRINTF_LEN;
-	break;
-
-      case T_FLOAT:
-	size += MAX_FLOAT_SPRINTF_LEN;
-	break;
-      }
-    }
-
-    r=begin_wide_shared_string(size,max_shift);
-    buf=MKPCHARP_STR(r);
-    size=0;
-
-    for(e=-args;e<0;e++)
-    {
-      switch(TYPEOF(sp[e]))
-      {
-      case T_STRING:
-	pike_string_cpy(buf,sp[e].u.string);
-	INC_PCHARP(buf,sp[e].u.string->len);
-	break;
-
-      case T_INT:
-	sprintf(buffer,"%"PRINTPIKEINT"d",sp[e].u.integer);
-#ifdef PIKE_DEBUG
-	if (strlen (buffer) > MAX_INT_SPRINTF_LEN)
-	  Pike_fatal ("Formatted integer %s is %"PRINTSIZET"u, "
-		      "longer than assumed max %"PRINTSIZET"u.\n",
-		      buffer, strlen (buffer), MAX_INT_SPRINTF_LEN);
-#endif
-	goto append_buffer;
-
-      case T_FLOAT:
-	sprintf(buffer,"%.*"PRINTPIKEFLOAT"g",
-		PIKEFLOAT_DIG, sp[e].u.float_number);
-	/* See comment for T_FLOAT in o_cast_to_string. */
-	if (!strchr (buffer, '.') && !strchr (buffer, 'e'))
-	  strcat (buffer, ".0");
-#ifdef PIKE_DEBUG
-	if (strlen (buffer) > MAX_FLOAT_SPRINTF_LEN)
-	  Pike_fatal ("Formatted float %s is %"PRINTSIZET"u, "
-		      "longer than assumed max %"PRINTSIZET"u.\n",
-		      buffer, strlen (buffer), MAX_FLOAT_SPRINTF_LEN);
-#endif
-
-      append_buffer:
-        len = strlen(buffer);
-	switch(max_shift)
-	{
-	  case 0:
-	    convert_0_to_0((p_wchar0 *)buf.ptr,buffer,len);
-	    break;
-
-	  case 1:
-	    convert_0_to_1((p_wchar1 *)buf.ptr,(p_wchar0 *)buffer,len);
-	    break;
-
-	  case 2:
-	    convert_0_to_2((p_wchar2 *)buf.ptr,(p_wchar0 *)buffer,len);
-	    break;
-	}
-	INC_PCHARP(buf,len);
-      }
-    }
-    r = realloc_unlinked_string(r, SUBTRACT_PCHARP(buf, MKPCHARP_STR(r)));
-    r = low_end_shared_string(r);
-    pop_n_elems(args);
-    push_string(r);
-    break;
-  }
-
-  case BIT_INT:
-  {
-    int of = 0;
-    size = 0;
-    for(e = -args; e < 0; e++)
-    {
-      if (DO_INT_TYPE_ADD_OVERFLOW(size, sp[e].u.integer, &size))
-      {
-        convert_svalue_to_bignum(sp-args);
-        f_add(args);
+      default:
+      pairwise_add:
+        push_svalue(s);
+        for(e=1;e<args;e++)
+        {
+          push_svalue(s+e);
+          if(!pair_add())
+          {
+            Pike_error("Addition on unsupported types: %s + %s\nm",
+                       get_name_of_type(TYPEOF(sp[-1])),
+                       get_name_of_type(TYPEOF(*s)));
+          }
+        }
+        assign_svalue(s,sp-1);
+        pop_n_elems(sp-s-1);
         return;
-      }
-    }
-    sp-=args;
-    push_int(size);
-    break;
+#ifdef OPTIMIZE_ADD
+      case BIT_STRING:
+        add_strings(args);
+        return;
 
-  }
-  case BIT_FLOAT:
-    if (args > 2) {
-      /* Attempt to minimize the accumulated summation error
-       * by adding the smallest (absolute) values first.
-       *
-       * Large accumulated errors can occur eg when the number
-       * of values to add is of the same order as the largest
-       * number representable by the mantissa alone. ie when
-       * the sum differs by an order of magnitude from a
-       * typical term.
-       */
-      /* Heapify */
-      for(e = args>>1; e--;) {
-	float_heap_sift_down(Pike_sp-args, e, args);
-      }
-      while (args > 2) {
-	/* Pop the smallest element from the heap. */
-	FLOAT_ARG_TYPE top = Pike_sp[-args].u.float_number;
-	Pike_sp[-args] = Pike_sp[-1];
-        Pike_sp--;
-	args--;
-	float_heap_sift_down(Pike_sp-args, 0, args);
+      case BIT_STRING | BIT_INT:
+      case BIT_STRING | BIT_FLOAT:
+      case BIT_STRING | BIT_FLOAT | BIT_INT:
+        if ((TYPEOF(sp[-args]) != T_STRING) && (TYPEOF(sp[1-args]) != T_STRING))
+        {
+          /* Note: Could easily use pairwise add until at first string. */
+          goto pairwise_add;
+        }
+        for(e=-args;e<0;e++)
+          if( TYPEOF(sp[e]) != PIKE_T_STRING )
+          {
+            *Pike_sp = sp[e];   Pike_sp++;
+            o_cast_to_string(); /* free:s old sp[e] */
+            sp[e] = Pike_sp[-1];
+            Pike_sp--;
+          }
+        add_strings(args);
+        return;
 
-	/* And add it to the second smallest. */
-	Pike_sp[-args].u.float_number += top;
-	float_heap_sift_down(Pike_sp-args, 0, args);
-      }
-    }
-    sp[-2].u.float_number += sp[-1].u.float_number;
-    sp--;
-    break;
+      case BIT_INT:
+        {
+          INT_TYPE size = sp[-args].u.integer;
+          for(e = -args+1; e < 0; e++)
+          {
+            if (DO_INT_TYPE_ADD_OVERFLOW(size, sp[e].u.integer, &size))
+            {
+              convert_svalue_to_bignum(sp-args);
+              f_add(args);
+              return;
+            }
+          }
+          sp-=args;
+          push_int(size);
+          return;
+        }
+      case BIT_FLOAT:
+        {
+          double res = Pike_sp[-args].u.float_number;
+          for(e=args-1; e>0; e-- )
+            res += sp[-e].u.float_number;
+          Pike_sp -= args-1;
+          Pike_sp[-1].u.float_number = res;
+        }
+        break;
 
-  case BIT_FLOAT|BIT_INT:
-  {
-    /* For improved precision; partition the values
-     * into floats followed by ints, so that we
-     * can add the integers exactly.
-     */
-    int i = args-1;
-    e = 0;
-    while (e < i) {
-      for(;e < i; i--) {
-	if (TYPEOF(sp[i-args]) == T_FLOAT) break;
-      }
-      for(;e < i; e++) {
-	if (TYPEOF(sp[e-args]) == T_INT) break;
-      }
-      if (e < i) {
-	/* Swap */
-	struct svalue sval = sp[e-args];
-	sp[e-args] = sp[i-args];
-	sp[i-args] = sval;
-      }
-    }
-    if (TYPEOF(sp[e-args]) == T_FLOAT) e++;
-    /* Sum the integers. */
-    if (args - e > 1) {
-      f_add(args-e);
-    }
-    args = e+1;
-    o_cast(float_type_string, PIKE_T_FLOAT);
+      case BIT_FLOAT|BIT_INT:
+        {
+          double res = Pike_sp[-args].u.float_number;
+          for(int i=i;i<args;i++)
+            if (TYPEOF(sp[i-args]) == T_FLOAT)
+              res += Pike_sp[i-args].u.float_number;
+            else
+              res += (double)Pike_sp[i-args].u.integer;
+          Pike_sp-=args;
+          push_float(res);
+          return;
+        }
 
-    /* Now all the values should be floats. */
-    goto tail_recurse;
-  }
 
-#define ADD_WITH_UNDEFINED(TYPE, T_TYPEID, ADD_FUNC, PUSH_FUNC) do {	\
-    int e;								\
-    if (TYPEOF(sp[-args]) == T_INT) {					\
-      if(IS_UNDEFINED(sp-args))						\
-      {									\
-	struct TYPE *x;							\
-									\
-	for(e=1;e<args;e++)						\
-	  if(TYPEOF(sp[e-args]) != T_TYPEID)				\
-	    SIMPLE_ARG_TYPE_ERROR("`+", e+1, #TYPE);			\
-									\
-	x = ADD_FUNC(sp-args+1,args-1);					\
-	pop_n_elems(args);						\
-	PUSH_FUNC(x);							\
-	return;								\
-      }									\
-      									\
-      for(e=1;e<args;e++)						\
-	if (TYPEOF(sp[e-args]) != T_INT)				\
-	  SIMPLE_ARG_TYPE_ERROR("`+", e+1, "int");			\
-    }									\
-									\
-    else {								\
-      for(e=1;e<args;e++)						\
-	if (TYPEOF(sp[e-args]) != T_TYPEID)				\
-	  SIMPLE_ARG_TYPE_ERROR("`+", e+1, #TYPE);			\
-    }									\
-									\
-    DO_IF_DEBUG (Pike_fatal ("Shouldn't be reached.\n"));		\
-    break;								\
-  } while (0)
+#define ADD(TYPE, ADD_FUNC, PUSH_FUNC) do {                           \
+          struct TYPE *x = ADD_FUNC (sp - args, args);                \
+          pop_n_elems (args);                                         \
+          PUSH_FUNC (x);                                              \
+          return;                                                     \
+        } while (0)
 
-#define ADD(TYPE, ADD_FUNC, PUSH_FUNC) do {				\
-    struct TYPE *x = ADD_FUNC (sp - args, args);			\
-    pop_n_elems (args);							\
-    PUSH_FUNC (x);							\
-    return;								\
-  } while (0)
+#define REMOVE_UNDEFINED(TYPE)                                        \
+        do {                                                          \
+          int to = -args, i=-args;                                    \
+          for(; i<0; i++)                                             \
+          {                                                           \
+            if(TYPEOF(Pike_sp[i]) == PIKE_T_INT)                      \
+            {                                                         \
+              if(!IS_UNDEFINED(Pike_sp+i))                            \
+                SIMPLE_ARG_TYPE_ERROR("`+", args+i, #TYPE);           \
+            }                                                         \
+            else if(to!=i)                                            \
+              Pike_sp[to++] = Pike_sp[i];                             \
+          }                                                           \
+          for(int i=to; i<0; i++)                                     \
+            TYPEOF(Pike_sp[i])=PIKE_T_INT;                            \
+          Pike_sp += to;                                              \
+          args += to;                                                 \
+        }while(0);
 
-  case BIT_ARRAY|BIT_INT:
-    ADD_WITH_UNDEFINED (array, T_ARRAY, add_arrays, push_array);
-    break;
+        // 1: removed undefineds..
+      case BIT_ARRAY|BIT_INT:
+        REMOVE_UNDEFINED (array);
+      case BIT_ARRAY:
+        ADD (array, add_arrays, push_array);
+        break;
 
-  case BIT_ARRAY:
-    ADD (array, add_arrays, push_array);
-    break;
 
-  case BIT_MAPPING|BIT_INT:
-    ADD_WITH_UNDEFINED (mapping, T_MAPPING, add_mappings, push_mapping);
-    break;
+      case BIT_MAPPING|BIT_INT:
+        REMOVE_UNDEFINED (mapping);
+      case BIT_MAPPING:
+        ADD (mapping, add_mappings, push_mapping);
+        break;
 
-  case BIT_MAPPING:
-    ADD (mapping, add_mappings, push_mapping);
-    break;
+      case BIT_MULTISET|BIT_INT:
+        REMOVE_UNDEFINED(multiset);
 
-  case BIT_MULTISET|BIT_INT:
-    ADD_WITH_UNDEFINED (multiset, T_MULTISET, add_multisets, push_multiset);
-    break;
-
-  case BIT_MULTISET:
-    ADD (multiset, add_multisets, push_multiset);
-    break;
+      case BIT_MULTISET:
+        ADD (multiset, add_multisets, push_multiset);
+        break;
 
 #undef ADD_WITH_UNDEFINED
 #undef ADD
+#endif
+    }
   }
 }
 
@@ -2209,7 +2007,7 @@ static int float_promote(void)
     SET_SVAL(sp[-1], T_FLOAT, 0, float_number, (FLOAT_TYPE)sp[-1].u.integer);
     return 1;
   }
-
+  /* not needed: done in += etc 
   if(is_bignum_object_in_svalue(sp-2) && TYPEOF(sp[-1]) == T_FLOAT)
   {
     stack_swap();
@@ -2226,11 +2024,32 @@ static int float_promote(void)
     f_cast();
     return 1;
   }
-
+  */
   return 0;
 }
 
-static int call_lfun(int left, int right)
+static int has_lfun( enum LFUN lfun, int arg )
+{
+  struct program *p;
+
+  if(TYPEOF(sp[-arg]) == T_OBJECT && (p = sp[-arg].u.object->prog))
+    return FIND_LFUN(p->inherits[SUBTYPEOF(sp[-arg])].prog, lfun);
+  return -1;
+}
+
+static int call_lhs_lfun( enum LFUN lfun, int arg )
+{
+  int i = has_lfun(lfun,arg);
+
+  if(i != -1)
+  {
+    apply_low(Pike_sp[-arg].u.object, i, arg-1);
+    return 1;
+  }
+  return 0;
+}
+
+static int call_lfun(enum LFUN left, enum LFUN right)
 {
   struct object *o;
   struct program *p;
@@ -2320,8 +2139,10 @@ PMOD_EXPORT void o_subtract(void)
   switch(TYPEOF(sp[-2]))
   {
   case T_OBJECT:
-    CALL_OPERATOR(LFUN_SUBTRACT,2);
-    break;
+    if(!call_lfun(LFUN_SUBTRACT, LFUN_RSUBTRACT))
+        bad_arg_error("`-", sp-2, 2, 2, get_name_of_type(TYPEOF(sp[-2])),
+                      sp-1, "Subtract on objects without subtract operator.\n");
+    return;
 
   case T_ARRAY:
   {
@@ -2347,13 +2168,8 @@ PMOD_EXPORT void o_subtract(void)
   case T_MULTISET:
   {
     struct multiset *l;
-    if (sp[-2].u.multiset->refs == 1) {
-      l=merge_multisets(sp[-2].u.multiset, sp[-1].u.multiset,
-			PIKE_ARRAY_OP_SUB | PIKE_MERGE_DESTR_A);
-    } else {
-      l=merge_multisets(sp[-2].u.multiset, sp[-1].u.multiset,
-			PIKE_ARRAY_OP_SUB);
-    }
+    l=merge_multisets(sp[-2].u.multiset, sp[-1].u.multiset,
+                      PIKE_ARRAY_OP_SUB);
     pop_n_elems(2);
     push_multiset(l);
     return;
@@ -2368,7 +2184,7 @@ PMOD_EXPORT void o_subtract(void)
     if(INT_TYPE_SUB_OVERFLOW(sp[-2].u.integer, sp[-1].u.integer))
     {
       convert_stack_top_to_bignum();
-      f_minus(2);
+      call_lfun(LFUN_SUBTRACT, LFUN_RSUBTRACT);
       return;
     }
     sp--;
@@ -2476,7 +2292,7 @@ PMOD_EXPORT void f_minus(INT32 args)
       struct svalue *s=sp-args;
 
       for(e=-args;e<0;e++) types |= 1<<TYPEOF(sp[e]);
-
+#if 0
       if ((types | BIT_INT | BIT_FLOAT) == (BIT_INT | BIT_FLOAT)) {
 	INT32 carry = 0;
 	if (types == BIT_INT) {
@@ -2506,7 +2322,7 @@ PMOD_EXPORT void f_minus(INT32 args)
 	f_add(args);
 	break;
       }
-
+#endif
       push_svalue(s);
       for(e=1;e<args;e++)
       {
@@ -2540,7 +2356,7 @@ static int generate_minus(node *n)
 
 PMOD_EXPORT void o_and(void)
 {
-  if(TYPEOF(sp[-1]) != TYPEOF(sp[-2]))
+  if(UNLIKELY(TYPEOF(sp[-1]) != TYPEOF(sp[-2])))
   {
      if(call_lfun(LFUN_AND, LFUN_RAND))
 	return;
@@ -2625,7 +2441,7 @@ PMOD_EXPORT void o_and(void)
   switch(TYPEOF(sp[-2]))
   {
   case T_OBJECT:
-    CALL_OPERATOR(LFUN_AND,2);
+    call_lfun(LFUN_AND,LFUN_RAND);
     break;
 
   case T_INT:
@@ -2646,13 +2462,8 @@ PMOD_EXPORT void o_and(void)
   case T_MULTISET:
   {
     struct multiset *l;
-    if (sp[-2].u.multiset->refs == 1) {
-      l=merge_multisets(sp[-2].u.multiset, sp[-1].u.multiset,
-			PIKE_ARRAY_OP_AND | PIKE_MERGE_DESTR_A);
-    } else {
-      l=merge_multisets(sp[-2].u.multiset, sp[-1].u.multiset,
-			PIKE_ARRAY_OP_AND);
-    }
+    l=merge_multisets(sp[-2].u.multiset, sp[-1].u.multiset,
+                      PIKE_ARRAY_OP_AND);
     pop_n_elems(2);
     push_multiset(l);
     return;
@@ -2853,12 +2664,7 @@ PMOD_EXPORT void f_and(INT32 args)
   case 1: return;
   case 2: o_and(); return;
   default:
-    if(TYPEOF(sp[-args]) == T_OBJECT)
-    {
-      CALL_OPERATOR(LFUN_AND, args);
-    }else{
       speedup(args, o_and);
-    }
   }
 }
 
@@ -2923,7 +2729,7 @@ PMOD_EXPORT void o_or(void)
   switch(TYPEOF(sp[-2]))
   {
   case T_OBJECT:
-    CALL_OPERATOR(LFUN_OR,2);
+    call_lfun( LFUN_OR,LFUN_ROR);
     break;
 
   case T_INT:
@@ -2944,13 +2750,8 @@ PMOD_EXPORT void o_or(void)
   case T_MULTISET:
   {
     struct multiset *l;
-    if (sp[-2].u.multiset->refs == 1) {
-      l=merge_multisets(sp[-2].u.multiset, sp[-1].u.multiset,
-			PIKE_ARRAY_OP_OR_LEFT | PIKE_MERGE_DESTR_A);
-    } else {
-      l=merge_multisets(sp[-2].u.multiset, sp[-1].u.multiset,
-			PIKE_ARRAY_OP_OR_LEFT);
-    }
+    l=merge_multisets(sp[-2].u.multiset, sp[-1].u.multiset,
+                      PIKE_ARRAY_OP_OR_LEFT);
     pop_n_elems(2);
     push_multiset(l);
     return;
@@ -3108,12 +2909,7 @@ PMOD_EXPORT void f_or(INT32 args)
   case 1: return;
   case 2: o_or(); return;
   default:
-    if(TYPEOF(sp[-args]) == T_OBJECT)
-    {
-      CALL_OPERATOR(LFUN_OR, args);
-    } else {
       speedup(args, o_or);
-    }
   }
 }
 
@@ -3179,7 +2975,11 @@ PMOD_EXPORT void o_xor(void)
   switch(TYPEOF(sp[-2]))
   {
   case T_OBJECT:
-    CALL_OPERATOR(LFUN_XOR,2);
+    if(!call_lfun(LFUN_XOR,LFUN_RXOR))
+    {
+      int args = 2;
+      SIMPLE_ARG_TYPE_ERROR("`^", 1, "type");
+    }
     break;
 
   case T_INT:
@@ -3200,13 +3000,8 @@ PMOD_EXPORT void o_xor(void)
   case T_MULTISET:
   {
     struct multiset *l;
-    if (sp[-2].u.multiset->refs == 1) {
-      l=merge_multisets(sp[-2].u.multiset, sp[-1].u.multiset,
-			PIKE_ARRAY_OP_XOR | PIKE_MERGE_DESTR_A);
-    } else {
-      l=merge_multisets(sp[-2].u.multiset, sp[-1].u.multiset,
-			PIKE_ARRAY_OP_XOR);
-    }
+    l=merge_multisets(sp[-2].u.multiset, sp[-1].u.multiset,
+                      PIKE_ARRAY_OP_XOR);
     pop_n_elems(2);
     push_multiset(l);
     return;
@@ -3353,12 +3148,7 @@ PMOD_EXPORT void f_xor(INT32 args)
   case 1: return;
   case 2: o_xor(); return;
   default:
-    if(TYPEOF(sp[-args]) == T_OBJECT)
-    {
-      CALL_OPERATOR(LFUN_XOR, args);
-    } else {
-      speedup(args, o_xor);
-    }
+    speedup(args, o_xor);
   }
 }
 
@@ -3875,21 +3665,18 @@ PMOD_EXPORT void f_multiply(INT32 args)
   case 1: return;
   case 2: o_multiply(); return;
   default:
-    if(TYPEOF(sp[-args]) == T_OBJECT)
     {
-      CALL_OPERATOR(LFUN_MULTIPLY, args);
-    } else {
       INT32 i = -args, j = -1;
       /* Reverse the arguments */
       while(i < j) {
-	struct svalue tmp = sp[i];
-	sp[i++] = sp[j];
-	sp[j--] = tmp;
+        struct svalue tmp = sp[i];
+        sp[i++] = sp[j];
+        sp[j--] = tmp;
       }
       while(--args > 0) {
-	/* Restore the order, and multiply */
-	stack_swap();
-	o_multiply();
+        /* Restore the order, and multiply */
+        stack_swap();
+        o_multiply();
       }
     }
   }
@@ -4098,8 +3885,7 @@ PMOD_EXPORT void o_divide(void)
   switch(TYPEOF(sp[-2]))
   {
   case T_OBJECT:
-  do_lfun_division:
-    CALL_OPERATOR(LFUN_DIVIDE,2);
+    call_lfun(LFUN_DIVIDE,LFUN_RDIVIDE);
     break;
 
   case T_STRING:
@@ -4140,7 +3926,8 @@ PMOD_EXPORT void o_divide(void)
       stack_swap();
       convert_stack_top_to_bignum();
       stack_swap();
-      goto do_lfun_division;
+      call_lfun(LFUN_DIVIDE,LFUN_RDIVIDE);
+      return;
     }
     else
       tmp = sp[-2].u.integer/sp[-1].u.integer;
@@ -4326,7 +4113,8 @@ do_lfun_modulo:
   switch(TYPEOF(sp[-2]))
   {
   case T_OBJECT:
-    CALL_OPERATOR(LFUN_MOD,2);
+    if(!call_lfun(LFUN_MOD,LFUN_RMOD))
+       PIKE_ERROR("`%", "Modulo on different types.\n", sp, 2);
     break;
 
   case T_FLOAT:
@@ -4547,7 +4335,8 @@ PMOD_EXPORT void o_compl(void)
   switch(TYPEOF(sp[-1]))
   {
   case T_OBJECT:
-    CALL_OPERATOR(LFUN_COMPL,1);
+    if(!call_lhs_lfun(LFUN_COMPL,1))
+      PIKE_ERROR("`~", "Bad argument.\n", sp, 1);
     break;
 
   case T_INT:
@@ -4667,7 +4456,8 @@ PMOD_EXPORT void o_negate(void)
   {
   case T_OBJECT:
   do_lfun_negate:
-    CALL_OPERATOR(LFUN_SUBTRACT,1);
+    if(!call_lhs_lfun(LFUN_SUBTRACT,1))
+      PIKE_ERROR("`-", "Bad argument.\n", sp, 1);
     break;
 
   case T_FLOAT:
