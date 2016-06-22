@@ -110,6 +110,7 @@ if test x$with_oracle = xyes; then
   	     -f "$pike_cv_oracle_oracle_home/lib/libcommon9.a" -o \
   	     -f "$pike_cv_oracle_oracle_home/lib/libcommon10.a" -o \
 	     -f "$pike_cv_oracle_oracle_home/lib/libcommon11.a" -o \
+	     -f "$pike_cv_oracle_oracle_home/lib/libcommon12.a" -o \
 	     -f "$pike_cv_oracle_oracle_home/lib/libclntsh.so" ; then
 
       echo "$pike_cv_oracle_oracle_home/lib" > conftest
@@ -128,6 +129,7 @@ if test x$with_oracle = xyes; then
 		  -f "$dir/lib/libcommon9.a" -o \
 		  -f "$dir/lib/libcommon10.a" -o \
 		  -f "$dir/lib/libcommon11.a" -o \
+		  -f "$dir/lib/libcommon12.a" -o \
 	          -f "$dir/lib/libclntsh.so"; then
   	    if test x"$pike_cv_oracle_oracle_home" = xno; then
   	      AC_DEFINE_UNQUOTED(ORACLE_HOME, "${dir}")
