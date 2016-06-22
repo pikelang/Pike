@@ -164,13 +164,11 @@ enum PIKE_TYPE {
 struct svalue
 {
   union {
-   union {
     struct {
       unsigned short type; /**< the data type, see PIKE_T_... */
       unsigned short subtype; /**< used to store the zero type, among others */
     } t;
     enum PIKE_TYPE named_type:8;
-   };
 
 #if PIKE_BYTEORDER == 1234
     ptrdiff_t type_subtype;
