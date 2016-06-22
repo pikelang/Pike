@@ -126,11 +126,13 @@ static void ib( char x )
   add_to_program( x );
 }
 
+#if 0
 static void iw( short x )
 {
   add_to_program( x>>8 );
   add_to_program( x );
 }
+#endif
 
 static void id( int x )
 {
