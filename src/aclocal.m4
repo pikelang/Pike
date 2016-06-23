@@ -1640,19 +1640,19 @@ AC_DEFUN(PIKE_CHECK_ABI_DIR,
 	      ;;
 	    *archive*)
 	      # Try looking deeper into the archive.
-	      if type elffile >/dev/null; then
+	      if type elffile 2>/dev/null >/dev/null; then
 		# Solaris 11 or later.
 		# Typical output:
 		# i386: "current ar archive, 32-bit symbol table, ELF 32-bit LSB relocatable 80386 Version 1"
 		# amd64: "current ar archive, 32-bit symbol table, ELF 64-bit LSB relocatable AMD64 Version 1"
 	        filetype="`POSIXLY_CORRECT=yes elffile $f 2>/dev/null`"
-	      elif type elfdump >/dev/null; then
+	      elif type elfdump 2>/dev/null >/dev/null; then
 		# Solaris 10 or earlier.
 		# Typical output:
 		# i386: "ei_class:   ELFCLASS32          ei_data:      ELFDATA2LSB" (repeated)
 		# amd64: "ei_class:   ELFCLASS64          ei_data:      ELFDATA2LSB" (repeated)
 		filetype="`POSIXLY_CORRECT=yes elfdump -e $f 2>/dev/null | grep ELFCLASS`"
-	      elif type readelf >/dev/null; then
+	      elif type readelf 2>/dev/null >/dev/null; then
 		# GNU binutils.
 		# Typical output:
 		# x86: "Class:                             ELF32"
