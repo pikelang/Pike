@@ -28,7 +28,9 @@ lib_searchpath=""
 for a in $with_root/usr/local $with_root/usr $with_root/opt $with_root/usr/lib $HOME; do
   for b in postgres95 postgres pgsql postgresql .; do
     for d in "$a/$b/include" "$a/include/$b"; do
+      echo "Checking directory $d/." >&AC_FD_CC
       if test -d "$d/."; then
+	echo "Found directory $d/." >&AC_FD_CC
 	if test "$b" = "."; then
 	  # Special case to avoid duplicates : $a/./include ~= $a/include/.
 	  include_searchpath="$include_searchpath $a/include"
@@ -39,7 +41,9 @@ for a in $with_root/usr/local $with_root/usr $with_root/opt $with_root/usr/lib $
       fi
     done
     for d in "$a/$b/lib" "$a/lib/$b"; do
+      echo "Checking directory $d/." >&AC_FD_CC
       if test -d "$d/."; then
+	echo "Found directory $d/." >&AC_FD_CC
 	if test "$b" = "."; then
 	  # Special case to avoid duplicates : $a/./lib ~= $a/lib/.
 	  lib_searchpath="$lib_searchpath $a/lib"
