@@ -165,8 +165,11 @@ class Function(Class parent,
     if(!return_type)
       return 0;
     string rt = return_type->pike_type( 1 );
-    if( parent->name != "_global" && has_prefix(rt, "void" ) )
-      rt = parent->pike_type( 1 );
+    if( parent->name != "_global" && has_prefix(rt, "void" ) ) {
+      if ((name != "create") && (name != "destroy")) {
+	rt = parent->pike_type( 1 );
+      }
+    }
     array res =  ({ });
     foreach( arg_types, Type t )
     {
@@ -357,7 +360,7 @@ class Function(Class parent,
       }
       else
       {
-        if( name != "create" )
+        if( (name != "create" ) && (name != "destroy") )
           emit("  RETURN_THIS();\n");
         else
         {
