@@ -27,12 +27,35 @@ include_searchpath=""
 lib_searchpath=""
 for a in $with_root/usr/local $with_root/usr $with_root/opt $with_root/usr/lib $HOME; do
   for b in postgres95 postgres pgsql postgresql .; do
-    include_searchpath="$include_searchpath $a/$b/include $a/include/$b"
-    lib_searchpath="$lib_searchpath $a/$b/lib $a/lib/$b"
+    for d in "$a/$b/include" "$a/include/$b"; do
+      if test -d "$d/."; then
+	if test "$b" = "."; then
+	  # Special case to avoid duplicates : $a/./include ~= $a/include/.
+	  include_searchpath="$include_searchpath $a/include"
+	  break;
+	else
+	  include_searchpath="$include_searchpath $d"
+	fi
+      fi
+    done
+    for d in "$a/$b/lib" "$a/lib/$b"; do
+      if test -d "$d/."; then
+	if test "$b" = "."; then
+	  # Special case to avoid duplicates : $a/./lib ~= $a/lib/.
+	  lib_searchpath="$lib_searchpath $a/lib"
+	  break;
+	else
+	  lib_searchpath="$lib_searchpath $d"
+	fi
+      fi
+    done
   done
 done
 include_searchpath="$pike_postgres_user_include_directory $include_searchpath"
 lib_searchpath="$pike_postgres_user_lib_directory $lib_searchpath"
+
+echo "include searchpath: $include_searchpath" >&AC_FD_CC
+echo "lib searchpath: $lib_searchpath" >&AC_FD_CC
 
 dnl check for dirname and locate, we might need them
 AC_CHECK_PROG(dirname,dirname,yes)
@@ -55,12 +78,14 @@ dnl see if we can find the include files in any of the standard locations
   AC_MSG_CHECKING(for location of the Postgres include files)
   AC_CACHE_VAL(pike_cv_pgres_include_dir, [
     for pike_cv_pgres_include_dir in $include_searchpath no; do
+      echo "Trying $pike_cv_pgres_include_dir/server/catalog/pg_type.h" >&AC_FD_CC
       if test -f $pike_cv_pgres_include_dir/server/catalog/pg_type.h; then
 	break
       fi
     done
     if test x$pike_cv_pgres_include_dir = xno; then
       for pike_cv_pgres_include_dir in $include_searchpath no; do
+	echo "Trying $pike_cv_pgres_include_dir/libpq-fe.h" >&AC_FD_CC
         if test -f $pike_cv_pgres_include_dir/libpq-fe.h; then
 	  break
         fi
