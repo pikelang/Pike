@@ -18,6 +18,17 @@
 #undef mpz_set_f
 #endif
 #define mpz_set_f(DST, SRC)	mpfr_get_z(DST, SRC, GMP_RNDD)
+#if !defined(mpfr_get_z_exp) && (MPRF_VERSION_MAJOR <= 2)
+/* This symbol was renamed in revision 6707 2010-02-22T17:23:27UTC, and
+ * first showed up in release 3.0.0 (revision 6948 2010-06-10T11:17:07UTC).
+ * The backward compat macro was added in revision 6709 2010-02-23T15:54:30UTC,
+ * and should thus be a sufficient test, but the version check is there in
+ * case the backward compat macro may get removed in the future.
+ * cf https://gforge.inria.fr/scm/viewvc.php/mpfr/
+ * NB: Solaris 11.3 still ships with mpfr 2.4.2.
+ */
+#define mpfr_get_z_2exp(Z, MPFR)	mpfr_get_z_exp(Z, MPFR)
+#endif
 #endif
 
 #ifdef PIKE_GMP_LIMB_BITS_INVALID
