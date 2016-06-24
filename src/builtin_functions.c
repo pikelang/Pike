@@ -261,7 +261,7 @@ MK_HASHMEM(simple_hashmem2, p_wchar2)
  *!   This function is byte-order dependant for wide strings.
  *!
  *! @seealso
- *!   @[hash()], @[hash_7_0]
+ *!   @[hash_7_6()], @[hash_7_0]
  */
 static void f_hash_7_4(INT32 args)
 {
@@ -357,8 +357,8 @@ static void f_hash_7_0( INT32 args )
   push_int( i );
 }
 
-/*! @decl int hash(string s)
- *! @decl int hash(string s, int max)
+/*! @decl int hash_7_8(string s)
+ *! @decl int hash_7_8(string s, int max)
  *!
  *!   Return an integer derived from the string @[s]. The same string
  *!   always hashes to the same value, also between processes,
@@ -367,6 +367,18 @@ static void f_hash_7_0( INT32 args )
  *!
  *!   If @[max] is given, the result will be >= 0 and < @[max],
  *!   otherwise the result will be >= 0 and <= 0x7fffffff.
+ *!
+ *! @deprecated
+ *!
+ *!  Use @[hash_value()] for in-process hashing (eg, for implementing
+ *!    @[lfun::_hash()]) or one of the cryptographic hash functions.
+ *!
+ *! @note
+ *!  This function is really bad at hashing strings. Similar string
+ *!  often return similar hash values.
+ *!
+ *!  It is especially bad for url:s, paths and similarly formatted
+ *!  strings.
  *!
  *! @note
  *!   The hash algorithm was changed in Pike 7.5. If you want a hash
@@ -383,7 +395,7 @@ static void f_hash_7_0( INT32 args )
  *! @seealso
  *!   @[hash_7_0()], @[hash_7_4()], @[hash_value]
  */
-PMOD_EXPORT void f_hash(INT32 args)
+PMOD_EXPORT void f_hash_7_8(INT32 args)
 {
   size_t i = 0;
   struct pike_string *s;
@@ -437,7 +449,7 @@ PMOD_EXPORT void f_hash(INT32 args)
  *!   This is the hashing method used by mappings.
  *!
  *! @seealso
- *!   @[hash()], @[lfun::__hash()]
+ *!   @[lfun::__hash()]
  */
 void f_hash_value(INT32 args)
 {
@@ -9364,13 +9376,14 @@ void init_builtin_efuns(void)
 	   OPT_TRY_OPTIMIZE);
 
   /* function(string,int|void:int) */
-  ADD_EFUN("hash",f_hash,tFunc(tStr tOr(tInt,tVoid),tInt),OPT_TRY_OPTIMIZE);
+  ADD_EFUN("hash_7_8", f_hash_7_8,
+	   tAttr("deprecated",tFunc(tStr tOr(tInt,tVoid),tInt)),OPT_TRY_OPTIMIZE);
 
   ADD_EFUN("hash_7_0",f_hash_7_0,
-           tFunc(tStr tOr(tInt,tVoid),tInt),OPT_TRY_OPTIMIZE);
+           tAttr("deprecated",tFunc(tStr tOr(tInt,tVoid),tInt)),OPT_TRY_OPTIMIZE);
 
   ADD_EFUN("hash_7_4",f_hash_7_4,
-           tFunc(tStr tOr(tInt,tVoid),tInt),OPT_TRY_OPTIMIZE);
+           tAttr("deprecated",tFunc(tStr tOr(tInt,tVoid),tInt)),OPT_TRY_OPTIMIZE);
 
   ADD_EFUN("hash_value",f_hash_value,tFunc(tMix,tInt),OPT_TRY_OPTIMIZE);
 
