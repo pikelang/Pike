@@ -53,6 +53,7 @@
 ATTRIBUTE((fastcall))
 #endif
 ATTRIBUTE((hot))
+
 static size_t low_hashmem_siphash24( const void *s, size_t len, size_t nbytes, size_t key )
 {
   const unsigned char * in = (const unsigned char*)s;
@@ -114,4 +115,9 @@ static size_t low_hashmem_siphash24( const void *s, size_t len, size_t nbytes, s
   SIPROUND;
   b = v0 ^ v1 ^ v2  ^ v3;
   return (size_t)b;
+}
+
+size_t hashmem_siphash24( const void *s, size_t len )
+{
+  return low_hashmem_siphash24( s,len,len,0 );
 }

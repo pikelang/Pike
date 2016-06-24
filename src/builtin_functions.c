@@ -433,6 +433,19 @@ PMOD_EXPORT void f_hash_7_8(INT32 args)
   push_int64(i);
 }
 
+static void f_hash( INT32 args )
+{
+  int len = 0;
+  if( TYPEOF(Pike_sp[-args]) != PIKE_T_STRING )
+      PIKE_ERROR("hash","Argument is not a string\n",Pike_sp,args);
+  if( args > 1 )
+    len = Pike_sp[-args+1].u.integer;
+  else
+    len = Pike_sp[-1].u.string->len;
+  push_int( hashmem_siphash24( Pike_sp[-1].u.string->str,
+			       len << Pike_sp[-1].u.string->size_shift));
+}
+
 /*! @decl int hash_value (mixed value)
  *!
  *! Return a hash value for the argument. It's an integer in the
@@ -9381,6 +9394,9 @@ void init_builtin_efuns(void)
 
   ADD_EFUN("hash_7_0",f_hash_7_0,
            tAttr("deprecated",tFunc(tStr tOr(tInt,tVoid),tInt)),OPT_TRY_OPTIMIZE);
+
+  ADD_EFUN("hash",f_hash,
+	   tFunc(tStr tOr(tInt,tVoid),tInt), OPT_TRY_OPTIMIZE);
 
   ADD_EFUN("hash_7_4",f_hash_7_4,
            tAttr("deprecated",tFunc(tStr tOr(tInt,tVoid),tInt)),OPT_TRY_OPTIMIZE);

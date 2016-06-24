@@ -243,6 +243,7 @@ ATTRIBUTE((fastcall))
 #endif
 size_t (*low_hashmem)(const void *, size_t, size_t, size_t);
 #else
+size_t hashmem_siphash24( const void *s, size_t len )
 PMOD_EXPORT size_t low_hashmem(const void *, size_t len, size_t mlen, size_t key) ATTRIBUTE((pure));
 #endif
 PMOD_EXPORT size_t hashmem(const void *, size_t len, size_t mlen) ATTRIBUTE((pure));
