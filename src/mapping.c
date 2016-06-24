@@ -887,7 +887,7 @@ PMOD_EXPORT void low_mapping_insert(struct mapping *m,
 				    const struct svalue *val,
 				    int overwrite)
 {
-  unsigned INT32 h,h2;
+  size_t h,h2;
   struct keypair *k, **prev;
   struct mapping_data *md, *omd;
 
@@ -1007,7 +1007,7 @@ PMOD_EXPORT union anything *mapping_get_item_ptr(struct mapping *m,
 				     const struct svalue *key,
 				     TYPE_T t)
 {
-  unsigned INT32 h, h2;
+  size_t h, h2;
   struct keypair *k, **prev;
   struct mapping_data *md,*omd;
 
@@ -1121,7 +1121,7 @@ PMOD_EXPORT void map_delete_no_free(struct mapping *m,
 			const struct svalue *key,
 			struct svalue *to)
 {
-  unsigned INT32 h,h2;
+  size_t h,h2;
   struct keypair *k, **prev;
   struct mapping_data *md,*omd;
 
@@ -1274,7 +1274,7 @@ PMOD_EXPORT void check_mapping_for_destruct(struct mapping *m)
 PMOD_EXPORT struct svalue *low_mapping_lookup(struct mapping *m,
 					      const struct svalue *key)
 {
-  unsigned INT32 h,h2;
+  size_t h,h2;
   struct keypair *k=0, **prev=0;
   struct mapping_data *md, *omd;
 
@@ -2399,7 +2399,7 @@ PMOD_EXPORT void mapping_search_no_free(struct svalue *to,
 
   if(md->size)
   {
-    unsigned INT32 h2,h=0;
+    size_t h2,h=0;
     struct keypair *k=md->hash[0], **prev;
 
     if(key)
@@ -2561,11 +2561,6 @@ void check_mapping(const struct mapping *m)
 
       check_svalue(& k->ind);
       check_svalue(& k->val);
-
-      /* FIXME add check for k->hval
-       * beware that hash_svalue may be threaded and locking
-       * is required!!
-       */
     }
 
   if(md->size != num)

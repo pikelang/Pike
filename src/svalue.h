@@ -792,7 +792,7 @@ PMOD_EXPORT void assign_short_svalue_no_free(union anything *to,
 PMOD_EXPORT void assign_short_svalue(union anything *to,
 			 const union anything *from,
 			 TYPE_T type);
-PMOD_EXPORT unsigned INT32 hash_svalue(const struct svalue *s);
+PMOD_EXPORT size_t hash_svalue(const struct svalue *s);
 PMOD_EXPORT int complex_svalue_is_true(const struct svalue *s); /* only handles object + function */
 PMOD_EXPORT int svalue_is_true(const struct svalue *s);
 PMOD_EXPORT int safe_svalue_is_true(const struct svalue *s);

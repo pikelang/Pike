@@ -402,17 +402,13 @@ PMOD_EXPORT void assign_short_svalue(union anything *to,
   }
 }
 
-static inline unsigned INT32 hash_ptr(void * ptr) {
-#if SIZEOF_CHAR_P > 4
-  return (unsigned INT32)(PTR_TO_INT(ptr) >> 2);
-#else
-  return (unsigned INT32)(PTR_TO_INT(ptr));
-#endif
+static inline size_t hash_ptr(void * ptr) {
+  return (size_t)(PTR_TO_INT(ptr));
 }
 
-PMOD_EXPORT unsigned INT32 hash_svalue(const struct svalue *s)
+PMOD_EXPORT size_t hash_svalue(const struct svalue *s)
 {
-  unsigned INT32 q;
+  size_t q;
 
   check_svalue_type (s);
   check_refs(s);
@@ -432,11 +428,9 @@ PMOD_EXPORT unsigned INT32 hash_svalue(const struct svalue *s)
 
       if((fun = FIND_LFUN(p->inherits[SUBTYPEOF(*s)].prog, LFUN___HASH)) != -1)
       {
-	STACK_LEVEL_START(0);
 	safe_apply_low2(s->u.object,
 			fun + p->inherits[SUBTYPEOF(*s)].identifier_level,
 			0, "__hash");
-	STACK_LEVEL_CHECK(1);
 	if(TYPEOF(sp[-1]) == T_INT)
 	{
 	  q=sp[-1].u.integer;
@@ -444,7 +438,6 @@ PMOD_EXPORT unsigned INT32 hash_svalue(const struct svalue *s)
 	  q=0;
 	}
 	pop_stack();
-	STACK_LEVEL_DONE(0);
 	/* do not mix the return value of __hash, since this makes using
 	 * hash_value pointless */
 	return q;
@@ -454,29 +447,15 @@ PMOD_EXPORT unsigned INT32 hash_svalue(const struct svalue *s)
   default:
     q = hash_ptr(s->u.ptr);
     break;
-  case T_FUNCTION:
-    if ((SUBTYPEOF(*s) != FUNCTION_BUILTIN) && s->u.object
-        && s->u.object->prog == pike_trampoline_program) {
-
-      struct pike_trampoline *tramp = get_storage(s->u.object, pike_trampoline_program);
-      if (tramp) {
-        q = (unsigned INT32)tramp->func ^ hash_ptr(tramp->frame);
-        break;
-      }
-    }
-    q = hash_ptr(s->u.ptr);
-    break;
-  case T_INT:
-    q=(unsigned INT32) s->u.integer;
-#if SIZEOF_INT_TYPE == 8
-    q^=(unsigned INT32)(s->u.integer >> 32);
-#endif
-    break;
   case T_FLOAT:
     /* this is true for both +0.0 and -0.0 */
     if (s->u.float_number == 0.0) {
 	q = 0;
-    } else {
+	break;
+    }
+#if SIZEOF_FLOAT_TYPE != SIZEOF_INT_TYPE 
+    else 
+    {
 	union {
 	    FLOAT_TYPE f;
 #if SIZEOF_FLOAT_TYPE == 8
@@ -488,11 +467,23 @@ PMOD_EXPORT unsigned INT32 hash_svalue(const struct svalue *s)
 #endif
 	} ufloat;
 	ufloat.f = s->u.float_number;
-	q = (unsigned INT32)ufloat.i;
-#if SIZEOF_FLOAT_TYPE == 8
-	q ^= (unsigned INT32)(ufloat.i >> 32);
-#endif
+	q = (size_t)ufloat.i;
     }
+    break;
+#endif
+  case T_INT:
+    q=(size_t)s->u.integer;
+    break;
+  case T_FUNCTION:
+    if ((SUBTYPEOF(*s) != FUNCTION_BUILTIN) && s->u.object
+        && s->u.object->prog == pike_trampoline_program) {
+      struct pike_trampoline *tramp = get_storage(s->u.object, pike_trampoline_program);
+      if (tramp) {
+        q = (size_t)tramp->func ^ hash_ptr(tramp->frame);
+        break;
+      }
+    }
+    q = hash_ptr(s->u.ptr);
     break;
   }
 
