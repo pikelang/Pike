@@ -11,6 +11,7 @@
 /remake
 /stamp-h
 /stamp-h.in
+/sybase.c
 /sybase_config.h
 /sybase_config.h.in
 /sybase.c
