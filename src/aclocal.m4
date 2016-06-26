@@ -1647,7 +1647,9 @@ AC_DEFUN(PIKE_CHECK_ABI_DIR,
 		# Solaris 10 or earlier.
 		# Typical output:
 		# i386: "ei_class:   ELFCLASS32          ei_data:      ELFDATA2LSB" (repeated)
+		# sparcv7: "ei_class:   ELFCLASS32          ei_data:      ELFDATA2MSB"
 		# amd64: "ei_class:   ELFCLASS64          ei_data:      ELFDATA2LSB" (repeated)
+		# sparc64: "ei_class:   ELFCLASS64          ei_data:      ELFDATA2MSB"
 		filetype="`POSIXLY_CORRECT=yes elfdump -e $f 2>/dev/null | grep ELFCLASS`"
 	      elif type readelf 2>/dev/null >/dev/null; then
 		# GNU binutils.
