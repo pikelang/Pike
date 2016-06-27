@@ -19,7 +19,7 @@
 struct keypair
 {
   struct keypair *next;
-  unsigned INT32 hval;
+  size_t hval;
   struct svalue ind, val;
 };
 
