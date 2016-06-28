@@ -236,6 +236,7 @@ p_wchar2 *MEMCHR2(p_wchar2 *p, p_wchar2 c, ptrdiff_t e)  ATTRIBUTE((pure));
 PMOD_EXPORT void reverse(char *memory, size_t nitems, size_t size);
 PMOD_EXPORT void reorder(char *memory, INT32 nitems, INT32 size,INT32 *order);
 
+size_t hashmem_siphash24( const void *s, size_t len );
 #if (defined(__i386__) || defined(__amd64__)) && defined(__GNUC__)
 extern PMOD_EXPORT
 #ifdef __i386__
@@ -243,7 +244,6 @@ ATTRIBUTE((fastcall))
 #endif
 size_t (*low_hashmem)(const void *, size_t, size_t, size_t);
 #else
-size_t hashmem_siphash24( const void *s, size_t len )
 PMOD_EXPORT size_t low_hashmem(const void *, size_t len, size_t mlen, size_t key) ATTRIBUTE((pure));
 #endif
 PMOD_EXPORT size_t hashmem(const void *, size_t len, size_t mlen) ATTRIBUTE((pure));
