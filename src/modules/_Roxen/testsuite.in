@@ -52,6 +52,14 @@ test_mkhttp( (["a":"1","b":"2"]), ({"a: 1","b: 2"}) )
 test_mkhttp( (["a":"1","b":({"2","3"})]), ({"a: 1","b: 2","b: 3"}) )
 test_mkhttp( (["a":"1","b":({"2","2"})]), ({"a: 1","b: 2","b: 2"}) )
 
+test_eval_error(_Roxen.make_http_headers((["a:1": "1"])))
+test_eval_error(_Roxen.make_http_headers((["a\rb": "1"])))
+test_eval_error(_Roxen.make_http_headers((["a\nb": "1"])))
+test_eval_error(_Roxen.make_http_headers(([" a:1": "1"])))
+test_eval_error(_Roxen.make_http_headers((["a": "1\r"])))
+test_eval_error(_Roxen.make_http_headers((["a": "1\n"])))
+test_eval_error(_Roxen.make_http_headers((["a": ({ "1\r\nb:2", "2\r\nc:2" })))))
+
 define(test_hp,[[
   test_do( add_constant("hp", _Roxen.HeaderParser()) )
   test_equal( hp->feed( $1 ), $2)
