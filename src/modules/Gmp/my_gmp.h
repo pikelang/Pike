@@ -18,7 +18,18 @@
 #undef mpz_set_f
 #endif
 #define mpz_set_f(DST, SRC)	mpfr_get_z(DST, SRC, GMP_RNDD)
-#if !defined(mpfr_get_z_exp) && (MPRF_VERSION_MAJOR <= 2)
+#ifndef MPFR_VERSION_MAJOR
+/* The mpfr version symbols were added in revision 2584 2003-12-19T11:56:42UTC
+ * (version 2.1.0).
+ * NB: Some pre-2.1.0 version of mpfr was bundled with gmp 4.1.4 in
+ *     gmp-devel-4.1.4-6 in RedHat Fedora Core 4.
+ * We guess that the actual mpfr version can't be much older than 2.1.0.
+ */
+#define MPFR_VERSION_MAJOR	2
+#define MPFR_VERSION_MINOR	0
+#define MPFR_VERSION_PATCHLEVEL	0
+#endif
+#if !defined(mpfr_get_z_exp) && (MPFR_VERSION_MAJOR <= 2)
 /* This symbol was renamed in revision 6707 2010-02-22T17:23:27UTC, and
  * first showed up in release 3.0.0 (revision 6948 2010-06-10T11:17:07UTC).
  * The backward compat macro was added in revision 6709 2010-02-23T15:54:30UTC,
