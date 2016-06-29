@@ -11259,14 +11259,24 @@ test_has_value([[ class {}() ]],"foo",0)
 test_has_value([[ (class{array _values(){return({"a","b"});}})() ]],"b",1)
 
 // - hash
-test_eq(hash("foo"),2091538203)
-test_eq(hash("foo",10),3)
-test_eq(hash("bar"),2091518428)
-test_eq(hash("bar",10),8)
-test_eq(hash("b\666arqwerty1234"),1829582221)
-test_eq(hash(""),0)
+test_eq(hash("foo"),246314004)
+test_eq(hash("foo",10),4)
+test_eq(hash("bar"),134531432)
+test_eq(hash("bar",10),2)
+test_eq(hash("b\666arqwerty1234"),312063732)
+test_eq(hash(""),1937178839)
 test_eval_error( return hash("foo",0) )
 test_eval_error( return hash("foo",-1) )
+
+// - hash_7_8
+test_eq(hash_7_8("foo"),2091538203)
+test_eq(hash_7_8("foo",10),3)
+test_eq(hash_7_8("bar"),2091518428)
+test_eq(hash_7_8("bar",10),8)
+test_eq(hash_7_8("b\666arqwerty1234"),1829582221)
+test_eq(hash_7_8(""),0)
+test_eval_error( return hash_7_8("foo",0) )
+test_eval_error( return hash_7_8("foo",-1) )
 
 // - hash_7_4
 define(test_hash_7_4, [[

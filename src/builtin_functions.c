@@ -433,17 +433,61 @@ PMOD_EXPORT void f_hash_7_8(INT32 args)
   push_int64(i);
 }
 
+/*! @decl int hash(string s)
+ *! @decl int hash(string s, int max)
+ *!
+ *!   Return an integer derived from the string @[s]. The same string
+ *!   always hashes to the same value, also between processes,
+ *!   architectures, and Pike versions (see compatibility notes below,
+ *!   though).
+ *!
+ *!   If @[max] is given, the result will be >= 0 and < @[max],
+ *!   otherwise the result will be >= 0 and <= 0x7fffffff.
+ *!
+ *! @note
+ *!   The hash algorithm was changed in Pike 8.1. If you want a hash
+ *!   that is compatible with Pike 8.0 and earlier, use @[hash_7_8()].
+ *!
+ *!   The hash algorithm was also changed in Pike 7.5. If you want a hash
+ *!   that is compatible with Pike 7.4 and earlier, use @[hash_7_4()].
+ *!   The difference with regards to @[hash_8_0()] only affects wide strings.
+ *!
+ *!   The hash algorithm was also changed in Pike 7.1. If you want a hash
+ *!   that is compatible with Pike 7.0 and earlier, use @[hash_7_0()].
+ *!
+ *! @note
+ *!   This hash function differs from the one provided by @[hash_value()],
+ *!   in that @[hash_value()] returns a process specific value.
+ *!
+ *! @seealso
+ *!   @[hash_7_0()], @[hash_7_4()], @[hash_7_8()], @[hash_value]
+ */
 static void f_hash( INT32 args )
 {
-  int len = 0;
+  size_t res;
+  ptrdiff_t len = 0;
+
   if( TYPEOF(Pike_sp[-args]) != PIKE_T_STRING )
       PIKE_ERROR("hash","Argument is not a string\n",Pike_sp,args);
-  if( args > 1 )
-    len = Pike_sp[-args+1].u.integer;
-  else
-    len = Pike_sp[-1].u.string->len;
-  push_int( hashmem_siphash24( Pike_sp[-1].u.string->str,
-			       len << Pike_sp[-1].u.string->size_shift));
+
+  len = Pike_sp[-args].u.string->len;
+
+  res = hashmem_siphash24( Pike_sp[-args].u.string->str,
+			   len << Pike_sp[-args].u.string->size_shift) &
+    0x7fffffff;
+
+  if( args > 1 ) {
+    if(TYPEOF(Pike_sp[1-args]) != T_INT)
+      SIMPLE_ARG_TYPE_ERROR("hash",2,"int");
+
+    if(Pike_sp[1-args].u.integer <= 0)
+      PIKE_ERROR("hash", "Modulo < 1.\n", Pike_sp, args);
+
+    res %= Pike_sp[1-args].u.integer;
+  }
+
+  pop_n_elems(args);
+  push_int(res);
 }
 
 /*! @decl int hash_value (mixed value)
