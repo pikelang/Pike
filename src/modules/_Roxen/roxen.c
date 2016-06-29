@@ -290,6 +290,34 @@ static void f_hp_create( INT32 args )
 /*! @endclass
  */
 
+static int valid_header_name(struct pike_string *s)
+{
+  ptrdiff_t i;
+  if (s->size_shift) return 0;
+  for (i = 0; i < s->len; i++) {
+    int c = s->str[i];
+    if ((c == '\n') || (c == '\r') || (c == '\t') || (c == ' ') || (c == ':')) {
+      // The header formatting should not be broken by strange header names.
+      return 0;
+    }
+  }
+  return 1;
+}
+
+static int valid_header_value(struct pike_string *s)
+{
+  ptrdiff_t i;
+  if (s->size_shift) return 0;
+  for (i = 0; i < s->len; i++) {
+    int c = s->str[i];
+    if ((c == '\n') || (c == '\r')) {
+      // The header formatting should not be broken by strange header values.
+      return 0;
+    }
+  }
+  return 1;
+}
+
 static void f_make_http_headers( INT32 args )
 /*! @decl string @
  *!          make_http_headers(mapping(string:string|array(string)) headers, @
@@ -317,17 +345,18 @@ static void f_make_http_headers( INT32 args )
   /* loop to check len */
   NEW_MAPPING_LOOP( m->data )
   {
-    if( k->ind.type != PIKE_T_STRING || k->ind.u.string->size_shift )
+    if( k->ind.type != PIKE_T_STRING  || !valid_header_name(k->ind.u.string) )
       Pike_error("Wrong argument type to make_http_headers("
             "mapping(string(8bit):string(8bit)|array(string(8bit))) heads)\n");
-    if( k->val.type == PIKE_T_STRING && !k->val.u.string->size_shift )
+    if( k->val.type == PIKE_T_STRING && valid_header_value(k->val.u.string) )
       total_len +=  k->val.u.string->len + 2 + k->ind.u.string->len + 2;
     else if( k->val.type == PIKE_T_ARRAY )
     {
       struct array *a = k->val.u.array;
       ptrdiff_t i, kl = k->ind.u.string->len + 2 ;
       for( i = 0; i<a->size; i++ )
-        if( a->item[i].type != PIKE_T_STRING||a->item[i].u.string->size_shift )
+        if( a->item[i].type != PIKE_T_STRING ||
+	    !valid_header_value(a->item[i].u.string) )
           Pike_error("Wrong argument type to make_http_headers("
                 "mapping(string(8bit):string(8bit)|"
                 "array(string(8bit))) heads)\n");
