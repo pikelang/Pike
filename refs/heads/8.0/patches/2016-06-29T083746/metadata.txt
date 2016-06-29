@@ -1,0 +1,140 @@
+subject: Pike 8.0: Multiple fixes:
+from: e67a57cb68523c0f377c285ddc51807513210545
+to: 8115ec9c5ab50e2d030e708aae9c6d28f4864d94
+originator: wellhardh@roxen.com
+depends: 2016-05-23T150345
+restart: true
+
+Multiple fixes:
+
+  * release number bumped to 8.0.246 by export.pike
+
+  * release number bumped to 8.0.247 by export.pike
+
+  * release number bumped to 8.0.248 by export.pike
+
+  * release number bumped to 8.0.249 by export.pike
+
+  * Runtime [Multisets]: Fixed assertion failure.
+    
+    Lookup with objects with lfun::`<() et al in non-empty multisets
+    containing non-comparable items (not objects or functions) could
+    cause assertion failures.
+
+  * Allow preservation of case in headers in HeaderParser.
+    
+    This is needed when acting as a proxy sine some servers treat headers
+    as case-sensitive.
+
+  * release number bumped to 8.0.250 by export.pike
+
+  * release number bumped to 8.0.251 by export.pike
+
+  * Fixed a warning.
+
+  * Documentation breakage
+    
+    When preparing a new Debian package of 8.0.240, I noticed that some
+    documentation disappeared, apparently due to the following. The error
+    in Nettle.Sign is already corrected but not the others, AFAICT, and
+    I'm guessing that @exp should be @expr. Patch below, which I home
+    someone can apply right away.
+    
+    ERROR: <Invalid error container: Tools.AutoDoc.AutoDocError(SourcePosition(File: /build/pike8.0-8.0.240/src/modules/Gmp/mpz_glue.c, lines: 668..668), "DocParser", "@exp cannot be used like this: @exp{ ... @}")>
+    
+    ERROR: <Invalid error container: Tools.AutoDoc.AutoDocError(SourcePosition(File: /build/pike8.0-8.0.240/lib/modules/__builtin.pmod/Nettle.pmod/Sign.pike, lines: 102..102), "DocParser", "@item is not allowed inside @array (allowed children are: @elem)")>
+    
+    ERROR: <Invalid error container: Tools.AutoDoc.AutoDocError(SourcePosition(File: /build/pike8.0-8.0.240/lib/modules/Crypto.pmod/ECC.pmod, lines: 286..286), "DocParser", "@item is not allowed inside @array (allowed children are: @elem)")>
+    
+    ERROR: <Invalid error container: Tools.AutoDoc.AutoDocError(SourcePosition(File: /build/pike8.0-8.0.240/lib/modules/Crypto.pmod/RSA.pmod, lines: 368..368), "DocParser", "@item is not allowed inside @array (allowed children are: @elem)")>
+
+  * release number bumped to 8.0.252 by export.pike
+
+  * release number bumped to 8.0.253 by export.pike
+
+  * _Roxen.HeaderParser: Inverted meaning of last argument to feed().
+    
+    This makes the default value follow the usual calling conventions
+    where UNDEFINED is equivalent to a left out value.
+
+  * CHANGES: Updated with some changes since Pike 8.0.240 (release 3).
+
+  * release number bumped to 8.0.254 by export.pike
+
+  * release number bumped to 8.0.255 by export.pike
+
+  * release number bumped to 8.0.256 by export.pike
+
+  * release number bumped to 8.0.257 by export.pike
+
+  * Standards.URI: Survive base URI's without authority sections.
+    
+    Fixes "Bad argument 1 to sizeof()." for eg
+    
+      Standards.URI("<foo@example.com>", "mailto:<bar@example.com>");
+
+  * Standards.URI: Avoid triggering the DWIM...
+
+  * Standards.URI: Improved handling of non-paths in combine_uri_path().
+    
+    This avoids prefixing the path with a slash in eg:
+    
+      Standards.URI("<foo@example.com>", "mailto:<bar@example.com>");
+
+  * Testsuite [Standards.URI]: Added some more tests.
+
+  * release number bumped to 8.0.258 by export.pike
+
+  * release number bumped to 8.0.259 by export.pike
+
+  * combine_path: Survive string_builder without NUL-terminations.
+    
+    The string_builder API no longer maintains NUL-termination of the
+    buffer. This caused combine_path_nt() et al to fail intermittently
+    due to reading past the buffer end.
+    
+    Also adds a corresponding test.
+    
+    Fixes [bug 7723].
+
+  * Updated to tzdata2016e.
+
+  * Calendar.Timezone: Increase INF_YEAR from 2050 to 2100.
+    
+    The timezone definitions have started containing years beyond 2050
+    (eg the Egypt rule set has rules up to year 2055).
+    
+    Fixes testsuite failures.
+
+  * release number bumped to 8.0.260 by export.pike
+
+  * release number bumped to 8.0.261 by export.pike
+
+  * Oracle: Support Oracle 12.
+
+  * Build [Postgres]: Improved diagnostics for the path search.
+    
+    Adds a bit of logging to config.log. This should make it easier to
+    find out why it sometimes doesn't find the include files.
+
+  * Build [Configure]: Hide some irrelevant output.
+    
+    Hides the output from type when it fails to find binaries.
+
+  * release number bumped to 8.0.262 by export.pike
+
+  * release number bumped to 8.0.263 by export.pike
+
+  * Build [Postgres]: Some more path search diagnostics improvements.
+
+  * release number bumped to 8.0.264 by export.pike
+
+  * release number bumped to 8.0.265 by export.pike
+
+  * System [NT]: Fixed resolver recursion.
+    
+    Fixes various obscure failures with modules randomly failing to compile.
+
+  * release number bumped to 8.0.266 by export.pike
+
+  * release number bumped to 8.0.267 by export.pike
