@@ -1578,17 +1578,17 @@ PIKECLASS Name
 
 	if (!GSS_ERROR (maj)) {
 	  push_string (make_shared_binary_string (exp.value, exp.length));
-	  f_hash (1);
+	  push_int64(hash_svalue(Pike_sp - 1));
 	  got_hash = 1;
 	}
       } END_GSS_BUFFER (exp);
 
     if (!got_hash) {
-      unsigned INT32 h;
+      size_t h;
 #if SIZEOF_CHAR_P > 4
-      h=(unsigned INT32)(PTR_TO_INT(Pike_fp->current_object) >> 2);
+      h=(size_t)(PTR_TO_INT(Pike_fp->current_object) >> 2);
 #else
-      h=(unsigned INT32)(PTR_TO_INT(Pike_fp->current_object));
+      h=(size_t)(PTR_TO_INT(Pike_fp->current_object));
 #endif
       RETURN h;
     }
