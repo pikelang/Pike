@@ -560,6 +560,7 @@ void finish(program Socket)
     object sock1, sock2;
     array(object) socks;
     int tests;
+    int failed_before = num_failed;
 
     _tests++;
     num_tests++;
@@ -638,19 +639,23 @@ void finish(program Socket)
 	break;
 
       case 6..14:
-	tests=(_tests-3)*2;
+        tests=(17-_tests)*2;
 	log_status("Testing "+(tests*2)+" sockets");
 	for(int e=0;e<tests;e++) stdtest(Socket);
-	stdtest(Socket);
+        stdtest(Socket);
+        if( num_failed == failed_before )
+          _tests = 14;
 	break;
 
       case 15..27:
 	if (max_fds > 64) {
 	  /* These tests require more than 64 open fds. */
-	  tests=(_tests-3)*2;
+          tests=(39-_tests)*2;
 	  log_status("Testing "+(tests*2)+" sockets");
 	  for(int e=0;e<tests;e++) stdtest(Socket);
 	  stdtest(Socket);
+          if( num_failed == failed_before )
+            _tests = 27;
 	  break;
 	}
 	/* Too few available fds; advance to the next set of tests. */
@@ -658,7 +663,7 @@ void finish(program Socket)
 	/* FALL_THROUGH */
 
       case 28..49:
-	tests=_tests-26;
+        tests=51-_tests;
 	log_status("Copying "+((tests/2)*(2<<(tests/2))*11)+" bytes of data on "+(tests&~1)+" "+(tests&1?"pipes":"sockets"));
 	for(int e=0;e<tests/2;e++)
 	{
@@ -679,11 +684,13 @@ void finish(program Socket)
 
 	  sock2->output_buffer=data2;
 	  sock1->expected_data=data2;
-	}
+        }
+        if( num_failed == failed_before )
+          _tests = 49;
 	break;
 
       case 50..55:
-	tests=_tests-48;
+        tests=57-_tests;
 	log_status("Copying "+(tests*(2<<tests)*11)+" bytes of data on "+(tests*2)+" fake pipes");
 	for(int e=0;e<tests;e++)
 	{
@@ -701,6 +708,8 @@ void finish(program Socket)
 	  sock2->output_buffer=data2;
 	  sock1->expected_data=data2;
 	}
+        if( num_failed == failed_before )
+          _tests = 55;
 	break;
 
       case 56: {
