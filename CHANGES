@@ -142,6 +142,10 @@ o glob() has changed.
   When the first argument (the pattern) to glob is an array, glob now
   returns which pattern in the array matched.
 
+o hash() has changed to use siphash. The old hash function is
+  available under the name hash_7_8(). Note that this is not a
+  cryptographic hash function.
+
 
 Deprecated symbols and modules
 ------------------------------
