@@ -14,10 +14,12 @@ constant SCOPE_BASIC = "basic";
 constant SCOPE_COMMENTS = "comments";
 constant SCOPE_RELATIONSHIPS = "relationships";
 constant SCOPE_LIKES = "likes";
+constant SCOPE_PUBLIC_CONTENT = "public_content";
 
 //! Valid Instagram scopes
 protected multiset(string) valid_scopes = (<
-  SCOPE_BASIC, SCOPE_COMMENTS, SCOPE_RELATIONSHIPS, SCOPE_LIKES >);
+  SCOPE_BASIC, SCOPE_COMMENTS, SCOPE_RELATIONSHIPS, SCOPE_LIKES,
+  SCOPE_PUBLIC_CONTENT >);
 
 //! Default scope
 protected string _scope = SCOPE_BASIC;
