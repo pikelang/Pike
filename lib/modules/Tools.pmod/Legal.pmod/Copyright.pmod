@@ -16,7 +16,7 @@ protected mapping(string:array(string)) copyrights = ([
   }),
 
   "Unicode Character Database":
-  ({ "Copyright © 1991-2005 Unicode, Inc." }),
+  ({ "Copyright © 1991-2015 Unicode, Inc." }),
 
   "TrueVision Targa code":
   ({ "Copyright © 1997 Raphael FRANCOIS and Gordon Matzigkeit" }),
