@@ -43,6 +43,7 @@ class Package
   protected string extra_flags;
   protected string extra_license;
   protected string extra_version;
+  protected string extra_platform_test;
 
   protected private mapping(array(string):string) options;
   
@@ -53,7 +54,8 @@ class Package
 			string _extra_advanced_help,
 			string _extra_flags,
 			string _extra_license,
-			string _extra_version)
+			string _extra_version,
+			string _extra_platform_test)
   {
     my_name             = _my_name;
     pike_filename       = _pike_filename;
@@ -63,6 +65,7 @@ class Package
     extra_flags         = _extra_flags;
     extra_license       = _extra_license;
     extra_version       = _extra_version;
+    extra_platform_test = _extra_platform_test;
 
     options =
   ([ ({ "-h", "--help" }):
@@ -130,6 +133,9 @@ class Package
      ({ "-l", "--list" }):
      "echo \"$CONTENTS\"\n"
      "EXIT=yes" ]);
+    if (extra_platform_test) {
+      options[({ "-t", "--test" })] = "EXIT=late";
+    }
   }
   
   protected private array(string) packages = ({});
@@ -188,13 +194,14 @@ class Package
 		    "MY_NAME='"+my_name+"'\n"
 		    "EXTRA_LICENSE="+sh_quote(extra_license)+"\n"
 		    "export EXTRA_LICENSE\n"
+		    "EXIT=no\n"
+		    "EXITCODE=0\n"
+		    // FIXME: Apply proper quotes.
+		    "EXTRA_HELP='"+extra_help+"'\n"
+		    "EXTRA_ADVANCED_HELP='"+extra_advanced_help+"'\n"
 		    // Check all arguments for possible options.
 		    "while [ $# != 0 ]\n"
 		    "do\n"
-		    "  EXIT=no\n"
-		    // FIXME: Apply proper quotes.
-		    "  EXTRA_HELP='"+extra_help+"'\n"
-		    "  EXTRA_ADVANCED_HELP='"+extra_advanced_help+"'\n"
 		    "  case \"$1\" in\n"
 		    +Array.map(sort(indices(options)),
 			       lambda(array(string) flags)
@@ -228,12 +235,26 @@ class Package
 		    // Commence installation.
 		    "mkdir "+unpack_directory+"\n"
 		    "(cd "+unpack_directory+"\n"
-		    " \"$TAR\" xf \"$TARFILE\" $CONTENTS\n"
-		    " eval \"./"+basename(pike_filename)+" "
-	                     "--script \\\"\\`pwd\\`/"+
-		                            basename(install_filename)+"\\\""
-		    " -- $ARGS\")\n"
-		    "rm -rf "+setup_filename+" "+unpack_directory+"\n");
+		    " \"$TAR\" xf \"$TARFILE\" $CONTENTS\n");
+    if (extra_platform_test) {
+      setup +=     ("if ./" + basename(extra_platform_test) + "\n"
+		    "then :; else\n"
+		    "  EXIT=yes\n"
+		    "  EXITCODE=$?\n"
+		    "fi\n");
+    }
+    setup +=       ("if [ $EXIT = no ]\n"
+		    "then\n"
+		    "  eval \"./"+basename(pike_filename)+" "+
+		         ("--script \\\"\\`pwd\\`/"+
+			  basename(install_filename)+"\\\""
+			  " -- $ARGS\"\n") +
+		    "  EXITCODE=$?\n"
+		    "fi\n"
+		    "exit $EXITCODE)\n"
+		    "EXITCODE=$?\n"
+		    "rm -rf "+setup_filename+" "+unpack_directory+"\n"
+		    "exit $EXITCODE\n");
     
     string bootstrap = sprintf("#!/bin/sh\n"
 			       "tar xf \"$0\" %s\n"
@@ -256,6 +277,10 @@ class Package
 			      setup_filename }))->wait();
 
     packages = ({ install_filename, pike_filename }) + packages;
+
+    if (extra_platform_test) {
+      packages = ({ extra_platform_test }) + packages;
+    }
     
     string original_wd = getcwd();
     foreach(packages, string package)
@@ -312,7 +337,8 @@ int main(int argc, array(string) argv)
 	  "  EXTRA_PACKAGE_ADVANCED_HELP\n"
 	  "  EXTRA_PACKAGE_FLAGS\n"
 	  "  EXTRA_PACKAGE_LICENSE\n"
-	  "  EXTRA_PACKAGE_VERSION\n");
+	  "  EXTRA_PACKAGE_VERSION\n"
+	  "  EXTRA_PLATFORM_TEST\n");
     return 1;
   }
   
@@ -321,7 +347,8 @@ int main(int argc, array(string) argv)
 	  getenv("EXTRA_PACKAGE_ADVANCED_HELP") || "",
 	  getenv("EXTRA_PACKAGE_FLAGS") || "",
 	  getenv("EXTRA_PACKAGE_LICENSE") || "",
-	  getenv("EXTRA_PACKAGE_VERSION") || "Package version unknown.")->
+	  getenv("EXTRA_PACKAGE_VERSION") || "Package version unknown.",
+	  getenv("EXTRA_PLATFORM_TEST"))->
     add_packages(@argv[4..])->make(argv[1]);
   
   return 0;
