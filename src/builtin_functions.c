@@ -357,8 +357,8 @@ static void f_hash_7_0( INT32 args )
   push_int( i );
 }
 
-/*! @decl int hash_7_8(string s)
- *! @decl int hash_7_8(string s, int max)
+/*! @decl int hash_8_0(string s)
+ *! @decl int hash_8_0(string s, int max)
  *!
  *!   Return an integer derived from the string @[s]. The same string
  *!   always hashes to the same value, also between processes,
@@ -393,9 +393,9 @@ static void f_hash_7_0( INT32 args )
  *!   in that @[hash_value()] returns a process specific value.
  *!
  *! @seealso
- *!   @[hash_7_0()], @[hash_7_4()], @[hash_value]
+ *!   @[hash()], @[hash_7_0()], @[hash_7_4()], @[hash_value]
  */
-PMOD_EXPORT void f_hash_7_8(INT32 args)
+PMOD_EXPORT void f_hash_8_0(INT32 args)
 {
   size_t i = 0;
   struct pike_string *s;
@@ -422,10 +422,10 @@ PMOD_EXPORT void f_hash_7_8(INT32 args)
   if(args > 1)
   {
     if(TYPEOF(Pike_sp[1-args]) != T_INT)
-      SIMPLE_ARG_TYPE_ERROR("hash",2,"int");
+      SIMPLE_ARG_TYPE_ERROR("hash_8_0",2,"int");
 
     if(Pike_sp[1-args].u.integer <= 0)
-      PIKE_ERROR("hash", "Modulo < 1.\n", Pike_sp, args);
+      PIKE_ERROR("hash_8_0", "Modulo < 1.\n", Pike_sp, args);
 
     i%=(unsigned INT32)Pike_sp[1-args].u.integer;
   }
@@ -446,7 +446,7 @@ PMOD_EXPORT void f_hash_7_8(INT32 args)
  *!
  *! @note
  *!   The hash algorithm was changed in Pike 8.1. If you want a hash
- *!   that is compatible with Pike 8.0 and earlier, use @[hash_7_8()].
+ *!   that is compatible with Pike 8.0 and earlier, use @[hash_8_0()].
  *!
  *!   The hash algorithm was also changed in Pike 7.5. If you want a hash
  *!   that is compatible with Pike 7.4 and earlier, use @[hash_7_4()].
@@ -460,7 +460,7 @@ PMOD_EXPORT void f_hash_7_8(INT32 args)
  *!   in that @[hash_value()] returns a process specific value.
  *!
  *! @seealso
- *!   @[hash_7_0()], @[hash_7_4()], @[hash_7_8()], @[hash_value]
+ *!   @[hash_7_0()], @[hash_7_4()], @[hash_8_0()], @[hash_value]
  */
 static void f_hash( INT32 args )
 {
@@ -9433,19 +9433,22 @@ void init_builtin_efuns(void)
 	   OPT_TRY_OPTIMIZE);
 
   /* function(string,int|void:int) */
-  ADD_EFUN("hash_7_8", f_hash_7_8,
-	   tAttr("deprecated",tFunc(tStr tOr(tInt,tVoid),tInt)),OPT_TRY_OPTIMIZE);
+  ADD_EFUN("hash_8_0", f_hash_8_0,
+	   tAttr("deprecated",tFunc(tStr tOr(tInt1Plus,tVoid),tIntPos)),
+	   OPT_TRY_OPTIMIZE);
 
   ADD_EFUN("hash_7_0",f_hash_7_0,
-           tAttr("deprecated",tFunc(tStr tOr(tInt,tVoid),tInt)),OPT_TRY_OPTIMIZE);
+           tAttr("deprecated",tFunc(tStr tOr(tInt1Plus,tVoid),tIntPos)),
+	   OPT_TRY_OPTIMIZE);
 
   ADD_EFUN("hash",f_hash,
-	   tFunc(tStr tOr(tInt,tVoid),tInt), OPT_TRY_OPTIMIZE);
+	   tFunc(tStr tOr(tInt1Plus,tVoid),tIntPos), OPT_TRY_OPTIMIZE);
 
   ADD_EFUN("hash_7_4",f_hash_7_4,
-           tAttr("deprecated",tFunc(tStr tOr(tInt,tVoid),tInt)),OPT_TRY_OPTIMIZE);
+           tAttr("deprecated",tFunc(tStr tOr(tInt1Plus,tVoid),tIntPos)),
+	   OPT_TRY_OPTIMIZE);
 
-  ADD_EFUN("hash_value",f_hash_value,tFunc(tMix,tInt),OPT_TRY_OPTIMIZE);
+  ADD_EFUN("hash_value",f_hash_value,tFunc(tMix,tIntPos),OPT_TRY_OPTIMIZE);
 
   ADD_EFUN2("indices",f_indices,
 	    tOr3(tFunc(tArray,tArr(tIntPos)),
