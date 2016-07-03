@@ -313,7 +313,7 @@ MACRO void cmp_reg_imm(enum arm32_register a, unsigned char imm, unsigned char r
 }
 
 
-OPCODE_FUN gen_str_reg_imm(enum arm32_register dst, enum arm32_register base, INT32 offset) {
+OPCODE_FUN gen_store_reg_imm(enum arm32_register dst, enum arm32_register base, INT32 offset) {
     unsigned INT32 instr = ARM_COND_AL;
 
     instr = set_dst_reg(instr, dst);
@@ -330,16 +330,16 @@ OPCODE_FUN gen_str_reg_imm(enum arm32_register dst, enum arm32_register base, IN
     return instr;
 }
 
-MACRO void str_reg_imm(enum arm32_register dst, enum arm32_register base, INT32 offset) {
-    add_to_program(gen_str_reg_imm(dst, base, offset));
+MACRO void store_reg_imm(enum arm32_register dst, enum arm32_register base, INT32 offset) {
+    add_to_program(gen_store_reg_imm(dst, base, offset));
 }
 
-OPCODE_FUN gen_ldr_reg_imm(enum arm32_register dst, enum arm32_register base, INT32 offset) {
-    return gen_str_reg_imm(dst, base, offset) | (1<<20);
+OPCODE_FUN gen_load_reg_imm(enum arm32_register dst, enum arm32_register base, INT32 offset) {
+    return gen_store_reg_imm(dst, base, offset) | (1<<20);
 }
 
-MACRO void ldr_reg_imm(enum arm32_register dst, enum arm32_register base, INT32 offset) {
-    add_to_program(gen_ldr_reg_imm(dst, base, offset));
+MACRO void load_reg_imm(enum arm32_register dst, enum arm32_register base, INT32 offset) {
+    add_to_program(gen_load_reg_imm(dst, base, offset));
 }
 
 #define GEN_PROC_OP(name, NAME)                                                                          \
@@ -625,7 +625,7 @@ static void arm32_load_sp_reg(void) {
 
         compiler_state.flags |= FLAG_SP_LOADED;
 
-        ldr_reg_imm(ARM_REG_PIKE_SP, ARM_REG_PIKE_IP, offset);
+        load_reg_imm(ARM_REG_PIKE_SP, ARM_REG_PIKE_IP, offset);
     }
 }
 
@@ -635,7 +635,7 @@ static void arm32_store_sp_reg(void) {
         if (!(compiler_state.flags & FLAG_SP_LOADED)) {
             Pike_fatal("pike sp not loaded into register.\n");
         }
-        str_reg_imm(ARM_REG_PIKE_SP, ARM_REG_PIKE_IP, offset);
+        store_reg_imm(ARM_REG_PIKE_SP, ARM_REG_PIKE_IP, offset);
         compiler_state.flags &= ~FLAG_SP_CHANGED;
     }
 }
@@ -644,7 +644,7 @@ static void arm32_load_fp_reg(void) {
     if (!(compiler_state.flags & FLAG_FP_LOADED)) {
         INT32 offset = OFFSETOF(Pike_interpreter_struct, frame_pointer);
         /* load Pike_interpreter_pointer->frame_pointer into ARM_REG_PIKE_FP */
-        ldr_reg_imm(ARM_REG_PIKE_FP, ARM_REG_PIKE_IP, offset);
+        load_reg_imm(ARM_REG_PIKE_FP, ARM_REG_PIKE_IP, offset);
         compiler_state.flags |= FLAG_FP_LOADED;
     }
 }
@@ -734,7 +734,7 @@ void arm32_update_pc(void) {
     arm32_load_fp_reg();
     v = 4*(PIKE_PC - v + 2);
     sub_reg_imm(tmp, ARM_REG_PC, v, 0);
-    str_reg_imm(tmp, ARM_REG_PIKE_FP, OFFSETOF(pike_frame, pc));
+    store_reg_imm(tmp, ARM_REG_PIKE_FP, OFFSETOF(pike_frame, pc));
     ra_free(tmp);
 }
 
@@ -820,7 +820,7 @@ MACRO void arm32_free_svalue_off(enum arm32_register src, int off, int guarantee
     // TODO: works great, but maybe not for your usecase
     arm32_call_c_function(break_my_arm);
 
-    ldr_reg_imm(reg, src, off);
+    load_reg_imm(reg, src, off);
 
     if (arm32_make_imm(combined, &imm, &rot)) {
         ands_reg_imm(reg, reg, imm, rot);
@@ -831,11 +831,11 @@ MACRO void arm32_free_svalue_off(enum arm32_register src, int off, int guarantee
 
     b_imm(label_dist(&end), ARM_COND_Z);
 
-    ldr_reg_imm(tmp, src, off+OFFSETOF(svalue, u));
+    load_reg_imm(tmp, src, off+OFFSETOF(svalue, u));
 
-    ldr_reg_imm(reg, tmp, OFFSETOF(pike_string, refs));
+    load_reg_imm(reg, tmp, OFFSETOF(pike_string, refs));
     subs_reg_imm(reg, reg, 1, 0);
-    str_reg_imm(reg, tmp, OFFSETOF(pike_string, refs));
+    store_reg_imm(reg, tmp, OFFSETOF(pike_string, refs));
 
     b_imm(label_dist(&end), ARM_COND_NZ);
 
@@ -864,7 +864,7 @@ static void arm32_mark(int offset) {
 
   enum arm32_register tmp = ra_alloc_any();
 
-  ldr_reg_imm(tmp, ARM_REG_PIKE_IP, OFFSETOF(Pike_interpreter_struct, mark_stack_pointer));
+  load_reg_imm(tmp, ARM_REG_PIKE_IP, OFFSETOF(Pike_interpreter_struct, mark_stack_pointer));
 
   if (offset) {
     enum arm32_register tmp2 = ra_alloc_any();
@@ -876,15 +876,15 @@ static void arm32_mark(int offset) {
     } else {
       sub_reg_imm(tmp2, ARM_REG_PIKE_SP, -offset, 0);
     }
-    str_reg_imm(tmp2, tmp, 0);
+    store_reg_imm(tmp2, tmp, 0);
 
     ra_free(tmp2);
   } else {
-    str_reg_imm(ARM_REG_PIKE_SP, tmp, 0);
+    store_reg_imm(ARM_REG_PIKE_SP, tmp, 0);
   }
 
   add_reg_imm(tmp, tmp, sizeof(void*), 0);
-  str_reg_imm(tmp, ARM_REG_PIKE_IP, OFFSETOF(Pike_interpreter_struct, mark_stack_pointer));
+  store_reg_imm(tmp, ARM_REG_PIKE_IP, OFFSETOF(Pike_interpreter_struct, mark_stack_pointer));
 
   ra_free(tmp);
 }
@@ -1009,16 +1009,16 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
       enum arm32_register tmp = ra_alloc_any(), tmp2;
       label_init(&fallback);
       arm32_load_sp_reg();
-      ldr_reg_imm(tmp, ARM_REG_PIKE_SP, -sizeof(struct svalue)+0);
+      load_reg_imm(tmp, ARM_REG_PIKE_SP, -sizeof(struct svalue)+0);
       cmp_reg_imm(tmp, 0, 0);
       b_imm(label_dist(&fallback), ARM_COND_NE);
-      ldr_reg_imm(tmp, ARM_REG_PIKE_SP, -sizeof(struct svalue)+4);
+      load_reg_imm(tmp, ARM_REG_PIKE_SP, -sizeof(struct svalue)+4);
       tmp2 = ra_alloc_any();
       arm32_set_reg(tmp2, b);
       subs_reg_reg(tmp, tmp2, tmp);
       ra_free(tmp2);
       b_imm(label_dist(&fallback), ARM_COND_VS);
-      str_reg_imm(tmp, ARM_REG_PIKE_SP, -sizeof(struct svalue)+4);
+      store_reg_imm(tmp, ARM_REG_PIKE_SP, -sizeof(struct svalue)+4);
       ra_free(tmp);
       b_imm(label_dist(&done), ARM_COND_AL);
       label_generate(&fallback);
@@ -1031,10 +1031,10 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
       enum arm32_register tmp = ra_alloc_any(), tmp2;
       label_init(&fallback);
       arm32_load_sp_reg();
-      ldr_reg_imm(tmp, ARM_REG_PIKE_SP, -sizeof(struct svalue)+0);
+      load_reg_imm(tmp, ARM_REG_PIKE_SP, -sizeof(struct svalue)+0);
       cmp_reg_imm(tmp, 0, 0);
       b_imm(label_dist(&fallback), ARM_COND_NE);
-      ldr_reg_imm(tmp, ARM_REG_PIKE_SP, -sizeof(struct svalue)+4);
+      load_reg_imm(tmp, ARM_REG_PIKE_SP, -sizeof(struct svalue)+4);
       if (arm32_make_imm(b, &imm, &rot)) {
           adds_reg_imm(tmp, tmp, imm, rot);
       } else {
@@ -1044,7 +1044,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
           ra_free(tmp2);
       }
       b_imm(label_dist(&fallback), ARM_COND_VS);
-      str_reg_imm(tmp, ARM_REG_PIKE_SP, -sizeof(struct svalue)+4);
+      store_reg_imm(tmp, ARM_REG_PIKE_SP, -sizeof(struct svalue)+4);
       ra_free(tmp);
       b_imm(label_dist(&done), ARM_COND_AL);
       label_generate(&fallback);
@@ -1137,9 +1137,9 @@ int main(void) {
     ADD_PROLOGUE(registers);
     arm32_call(foo);
     ADD_SET_REG(ARM_REG_R4, (INT32)&a, ARM_REG_R5);
-    ldr_reg_imm(ARM_REG_R3, ARM_REG_R4, 0);
+    load_reg_imm(ARM_REG_R3, ARM_REG_R4, 0);
     ADD_SET_REG(ARM_REG_R4, (INT32)&b, ARM_REG_R5);
-    str_reg_imm(ARM_REG_R3, ARM_REG_R4, 0);
+    store_reg_imm(ARM_REG_R3, ARM_REG_R4, 0);
     ADD_EPILOGUE(registers);
 
     mprotect(fun, 1024*4, PROT_READ | PROT_EXEC);
