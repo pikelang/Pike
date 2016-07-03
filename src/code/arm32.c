@@ -848,6 +848,18 @@ static void low_ins_f_byte(unsigned int b)
       compiler_state.flags |= FLAG_SP_CHANGED;
       arm32_free_svalue(ARM_REG_PIKE_SP, 0);
       return;
+  case F_MARK2:
+      ins_f_byte(F_MARK);
+      ins_f_byte(F_MARK);
+      return;
+  case F_MARK_AND_CONST0:
+      ins_f_byte(F_MARK);
+      ins_f_byte(F_CONST0);
+      return;
+  case F_MARK_AND_CONST1:
+      ins_f_byte(F_MARK);
+      ins_f_byte(F_CONST1);
+      return;
   }
 
   arm_call_c_opcode(b);
@@ -949,6 +961,26 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
       label_generate(&fallback);
       break;
     }
+  case F_MARK_AND_CONST0:
+      ins_f_byte(F_MARK);
+      ins_f_byte(F_CONST0);
+      return;
+  case F_MARK_AND_CONST1:
+      ins_f_byte(F_MARK);
+      ins_f_byte(F_CONST0);
+      return;
+  case F_MARK_AND_STRING:
+      ins_f_byte(F_MARK);
+      ins_f_byte_with_arg(F_STRING, b);
+      return;
+  case F_MARK_AND_GLOBAL:
+      ins_f_byte(F_MARK);
+      ins_f_byte_with_arg(F_GLOBAL, b);
+      return;
+  case F_MARK_AND_LOCAL:
+      ins_f_byte(F_MARK);
+      ins_f_byte_with_arg(F_LOCAL, b);
+      return;
   }
   arm_set_reg(ra_alloc(ARM_REG_R0), b);
   low_ins_f_byte(a);
@@ -961,6 +993,12 @@ void ins_f_byte_with_2_args(unsigned int a,
 			    INT32 b,
 			    INT32 c)
 {
+  switch (a) {
+  case F_MARK_AND_EXTERNAL:
+      ins_f_byte(F_MARK);
+      ins_f_byte_with_2_args(F_EXTERNAL, b, c);
+      return;
+  }
   arm_set_reg(ra_alloc(ARM_REG_R0), b);
   arm_set_reg(ra_alloc(ARM_REG_R1), c);
   low_ins_f_byte(a);
