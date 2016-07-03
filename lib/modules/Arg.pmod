@@ -44,8 +44,9 @@
 
 #pike __REAL_VERSION__
 
+//! This class contains a library of parser for different type of
+//! options.
 class OptLibrary
-//!
 {
 
   //! Base class for parsing an argument. Inherit this class to create
@@ -55,14 +56,15 @@ class OptLibrary
     constant is_opt = 1;
     protected Opt next;
 
-    //! Should return 1 for set options or a string containing the
-    //! value of the option. Returning 0 means the option was not set
-    //! (or matched). To properly chain arguments parsers, return
-    //! @expr{::get_value(argv, env, previous)@} instead of @expr{0@},
-    //! unless you want to explicitly stop the chain and not set this
-    //! option.
+    //! The overloading method should calculate the value of the
+    //! option and return it. Methods processing @[argv] should only
+    //! look at argv[0] and if it matches, set it to 0. Returning 0
+    //! means the option was not set (or matched). To properly chain
+    //! arguments parsers, return @expr{::get_value(argv, env,
+    //! previous)@} instead of @expr{0@}, unless you want to
+    //! explicitly stop the chain and not set this option.
     mixed get_value(array(string) argv, mapping(string:string) env,
-                         int|string previous)
+                    mixed previous)
     {
       if(next) return next->get_value(argv, env, previous);
       return 0;
@@ -130,7 +132,8 @@ class OptLibrary
       opt = _opt;
     }
 
-    mixed get_value(array(string) argv, mapping(string:string) env, mixed previous)
+    mixed get_value(array(string) argv, mapping(string:string) env,
+                    mixed previous)
     {
       if( !sizeof(argv) ) return previous || ::get_value(argv, env, previous);
 
@@ -185,7 +188,8 @@ class OptLibrary
       name = _name;
     }
 
-    mixed get_value(array(string) argv, mapping(string:string) env, mixed previous)
+    mixed get_value(array(string) argv, mapping(string:string) env,
+                    mixed previous)
     {
       if( env[name] ) return env[name];
       return ::get_value(argv, env, previous);
@@ -211,7 +215,8 @@ class OptLibrary
       value = _value;
     }
 
-    string get_value(array(string) argv, mapping(string:string) env, mixed previous)
+    string get_value(array(string) argv, mapping(string:string) env,
+                     mixed previous)
     {
       return value;
     }
@@ -233,7 +238,8 @@ class OptLibrary
   {
     inherit NoOpt;
 
-    mixed get_value(array(string) argv, mapping(string:string) env, mixed previous)
+    mixed get_value(array(string) argv, mapping(string:string) env,
+                    mixed previous)
     {
       if( !sizeof(argv) ) return previous || ::get_value(argv, env, previous);
 
@@ -304,7 +310,8 @@ class OptLibrary
   {
     inherit NoOpt;
 
-    mixed get_value(array(string) argv, mapping(string:string) env, mixed previous)
+    mixed get_value(array(string) argv, mapping(string:string) env,
+                    mixed previous)
     {
       if( !sizeof(argv) ) return previous || ::get_value(argv, env, previous);
 
@@ -471,6 +478,7 @@ class LowOptions
     return 0;
   }
 
+  //!
   protected mixed cast(string to)
   {
     switch( to )
