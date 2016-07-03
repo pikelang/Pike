@@ -800,6 +800,36 @@ static void arm32_free_svalue(enum arm32_register reg, int guaranteed_ref) {
     arm32_free_svalue_off(reg, 0, guaranteed_ref);
 }
 
+static void arm32_mark(int offset) {
+  arm32_load_sp_reg();
+
+  enum arm32_register tmp = ra_alloc_any();
+
+  add_to_program(ldr_reg_imm(tmp, ARM_REG_PIKE_IP, OFFSETOF(Pike_interpreter_struct, mark_stack_pointer)));
+
+  if (offset) {
+    enum arm32_register tmp2 = ra_alloc_any();
+
+    offset *= sizeof(struct svalue);
+
+    if (offset > 0) {
+      add_to_program(add_reg_imm(tmp2, ARM_REG_PIKE_SP, offset, 0));
+    } else {
+      add_to_program(sub_reg_imm(tmp2, ARM_REG_PIKE_SP, -offset, 0));
+    }
+    add_to_program(str_reg_imm(tmp2, tmp, 0));
+
+    ra_free(tmp2);
+  } else {
+    add_to_program(str_reg_imm(ARM_REG_PIKE_SP, tmp, 0));
+  }
+
+  add_to_program(add_reg_imm(tmp, tmp, sizeof(void*), 0));
+  add_to_program(str_reg_imm(tmp, ARM_REG_PIKE_IP, OFFSETOF(Pike_interpreter_struct, mark_stack_pointer)));
+
+  ra_free(tmp);
+}
+
 
 static void low_ins_f_byte(unsigned int b)
 {
@@ -847,6 +877,9 @@ static void low_ins_f_byte(unsigned int b)
       add_to_program(sub_reg_imm(ARM_REG_PIKE_SP, ARM_REG_PIKE_SP, sizeof(struct svalue), 0));
       compiler_state.flags |= FLAG_SP_CHANGED;
       arm32_free_svalue(ARM_REG_PIKE_SP, 0);
+      return;
+  case F_MARK:
+      arm32_mark(0);
       return;
   case F_MARK2:
       ins_f_byte(F_MARK);
