@@ -200,7 +200,7 @@ OPCODE_FUN bl_imm(INT32 dist) {
     return b_imm(dist) | (1<<24);
 }
 
-OPCODE_FUN GEN_REG(enum data_proc_instr op, enum arm_register dst, enum arm_register src) {
+OPCODE_FUN gen_reg(enum data_proc_instr op, enum arm_register dst, enum arm_register src) {
     unsigned INT32 instr = ARM_ADDR_REGISTER | ARM_COND_AL;
 
     instr |= op << 21;
@@ -210,24 +210,24 @@ OPCODE_FUN GEN_REG(enum data_proc_instr op, enum arm_register dst, enum arm_regi
     return instr;
 }
 
-OPCODE_FUN GEN_REG_REG(enum data_proc_instr op, enum arm_register dst,
+OPCODE_FUN gen_reg_reg(enum data_proc_instr op, enum arm_register dst,
                            enum arm_register a, enum arm_register b) {
-    unsigned INT32 instr = GEN_REG(op, dst, a);
+    unsigned INT32 instr = gen_reg(op, dst, a);
 
     instr = set_src1_reg(instr, b);
 
     return instr;
 }
 
-OPCODE_FUN GEN_CMP_REG_REG(enum arm_register a, enum arm_register b) {
-    unsigned INT32 instr = GEN_REG_REG(ARM_PROC_CMP, 0, a, b);
+OPCODE_FUN gen_cmp_reg_reg(enum arm_register a, enum arm_register b) {
+    unsigned INT32 instr = gen_reg_reg(ARM_PROC_CMP, 0, a, b);
 
     instr |= (1<<20);
 
     return instr;
 }
 
-OPCODE_FUN GEN_IMM(enum data_proc_instr op, enum arm_register dst,
+OPCODE_FUN gen_imm(enum data_proc_instr op, enum arm_register dst,
                        unsigned char imm, unsigned char rot) {
     unsigned INT32 instr = ARM_ADDR_IMMEDIATE | ARM_COND_AL;
 
@@ -261,9 +261,9 @@ MACRO int arm32_make_imm(unsigned INT32 v, unsigned char *imm, unsigned char *ro
     return 0;
 }
 
-OPCODE_FUN GEN_REG_IMM(enum data_proc_instr op, enum arm_register dst,
+OPCODE_FUN gen_reg_imm(enum data_proc_instr op, enum arm_register dst,
                        enum arm_register reg, unsigned char imm, unsigned char rot) {
-    unsigned INT32 instr = GEN_IMM(op, dst, imm, rot);
+    unsigned INT32 instr = gen_imm(op, dst, imm, rot);
 
     instr = set_src1_reg(instr, reg);
 
@@ -271,7 +271,7 @@ OPCODE_FUN GEN_REG_IMM(enum data_proc_instr op, enum arm_register dst,
 }
 
 OPCODE_FUN gen_cmp_reg_imm(enum arm_register a, unsigned char imm, unsigned char rot) {
-    unsigned INT32 instr = GEN_REG_IMM(ARM_PROC_CMP, 0, a, imm, rot);
+    unsigned INT32 instr = gen_reg_imm(ARM_PROC_CMP, 0, a, imm, rot);
 
     instr |= (1<<20);
 
@@ -304,11 +304,11 @@ OPCODE_FUN ldr_reg_imm(enum arm_register dst, enum arm_register base, INT32 offs
 ATTRIBUTE((unused))                                                                                      \
 static PIKE_OPCODE_T name ## _reg_imm(enum arm_register dst, enum arm_register reg, unsigned char imm,   \
                                       unsigned char rot) {                                               \
-    return GEN_REG_IMM(ARM_PROC_ ## NAME, dst, reg, imm, rot);                                           \
+    return gen_reg_imm(ARM_PROC_ ## NAME, dst, reg, imm, rot);                                           \
 }                                                                                                        \
 ATTRIBUTE((unused))                                                                                      \
 static PIKE_OPCODE_T name ## _reg_reg(enum arm_register dst, enum arm_register a, enum arm_register b) { \
-    return GEN_REG_REG(ARM_PROC_ ## NAME, dst, a, b);                                                    \
+    return gen_reg_reg(ARM_PROC_ ## NAME, dst, a, b);                                                    \
 }                                                                                                        \
 ATTRIBUTE((unused))                                                                                      \
 static PIKE_OPCODE_T name ## s_reg_imm(enum arm_register dst, enum arm_register reg, unsigned char imm,  \
@@ -327,11 +327,11 @@ GEN_PROC_OP(and, AND)
 
 
 OPCODE_FUN mov_reg(enum arm_register dst, enum arm_register src) {
-    return GEN_REG(ARM_PROC_MOV, dst, src);
+    return gen_reg(ARM_PROC_MOV, dst, src);
 }
 
 OPCODE_FUN mov_imm(enum arm_register dst, unsigned char imm, unsigned char rot) {
-    return GEN_IMM(ARM_PROC_MOV, dst, imm, rot);
+    return gen_imm(ARM_PROC_MOV, dst, imm, rot);
 }
 
 void arm_set_reg(enum arm_register dst, unsigned INT32 v) {
@@ -693,14 +693,14 @@ void arm_ins_exit(void) {
 }
 #endif
 
-static void ADD_REL_COND_JMP(enum arm_register reg, enum arm_register b, enum arm_condition cond, int jmp) {
-    add_to_program(GEN_CMP_REG_REG(reg, b));
+static void add_rel_cond_jmp(enum arm_register reg, enum arm_register b, enum arm_condition cond, int jmp) {
+    add_to_program(gen_cmp_reg_reg(reg, b));
     add_to_program(set_cond(b_imm(jmp-2), cond));
 }
 
 static void arm_ins_maybe_exit(void) {
     arm_set_reg(ARM_REG_R1, -1);
-    ADD_REL_COND_JMP(ARM_REG_R0, ARM_REG_R1, ARM_COND_NE, EPILOGUE_SIZE+1);
+    add_rel_cond_jmp(ARM_REG_R0, ARM_REG_R1, ARM_COND_NE, EPILOGUE_SIZE+1);
     arm_epilogue();
 }
 
@@ -866,7 +866,7 @@ static void low_ins_f_byte(unsigned int b)
       arm_ins_maybe_exit();
 
       if (b == F_RETURN_IF_TRUE) {
-          ADD_REL_COND_JMP(ARM_REG_R0, kludge_reg, ARM_COND_EQ, 2);
+          add_rel_cond_jmp(ARM_REG_R0, kludge_reg, ARM_COND_EQ, 2);
           add_to_program(bx_reg(ARM_REG_R0));
           ra_free(kludge_reg);
           return;
