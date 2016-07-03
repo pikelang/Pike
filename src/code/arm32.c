@@ -25,7 +25,7 @@ void add_to_program(unsigned INT32 op);
 
 #define MACRO  ATTRIBUTE((unused)) static
 
-enum arm_register {
+enum arm32_register {
     ARM_REG_R0,
     ARM_REG_R1,
     ARM_REG_R2,
@@ -56,11 +56,11 @@ enum arm_register {
     ARM_REG_NONE = -1
 };
 
-unsigned INT32 RBIT(enum arm_register reg) {
+unsigned INT32 RBIT(enum arm32_register reg) {
     return 1<<reg; 
 }
 
-enum arm_condition {
+enum arm32_condition {
     ARM_COND_EQ = 0,       /* equal */
     ARM_COND_Z  = 0,       /* zero */
     ARM_COND_NE = 1 << 28, /* not equal */
@@ -80,7 +80,7 @@ enum arm_condition {
     ARM_COND_AL = 14 << 28 /* unconditional */
 };
 
-enum arm_addr_mode {
+enum arm32_addr_mode {
     ARM_ADDR_REGISTER,
     ARM_ADDR_IMMEDIATE = 1<<25,
     ARM_ADDR_LSL_IMM = 0,
@@ -112,21 +112,21 @@ enum data_proc_instr {
 
 #define OPCODE_FUN ATTRIBUTE((unused,warn_unused_result)) static unsigned INT32
 
-void arm_call(void *ptr);
+void arm32_call(void *ptr);
 
 OPCODE_FUN set_status(unsigned INT32 instr) {
     return instr | (1<<19);
 }
 
-OPCODE_FUN set_cond(unsigned INT32 instr, enum arm_condition cond) {
+OPCODE_FUN set_cond(unsigned INT32 instr, enum arm32_condition cond) {
     return (instr&0x0fffffff)|cond;
 }
 
-OPCODE_FUN set_src1_reg(unsigned INT32 instr, enum arm_register r) {
+OPCODE_FUN set_src1_reg(unsigned INT32 instr, enum arm32_register r) {
     return instr | (r << 16);
 }
 
-OPCODE_FUN set_dst_reg(unsigned INT32 instr, enum arm_register r) {
+OPCODE_FUN set_dst_reg(unsigned INT32 instr, enum arm32_register r) {
     unsigned INT32 ret = instr | (r << 12);
     return ret;
 }
@@ -135,12 +135,12 @@ OPCODE_FUN set_src_imm(unsigned INT32 instr, unsigned char imm, unsigned char ro
     return ARM_ADDR_IMMEDIATE | instr | imm | (rot << 8);
 }
 
-OPCODE_FUN set_src_reg(unsigned INT32 instr, enum arm_register r) {
+OPCODE_FUN set_src_reg(unsigned INT32 instr, enum arm32_register r) {
     return instr | ARM_ADDR_REGISTER | r;
 }
 
 
-enum arm_multiple_mode {
+enum arm32_multiple_mode {
 #define MODE(P, U, W)   (((P)<<24) | ((U)<<23) | ((W)<<21))
     ARM_MULT_DB  = MODE(1, 0, 0),
     ARM_MULT_DA  = MODE(0, 0, 0),
@@ -153,7 +153,7 @@ enum arm_multiple_mode {
 #undef MODE
 };
 
-OPCODE_FUN store_multiple(enum arm_register addr, enum arm_multiple_mode mode,
+OPCODE_FUN store_multiple(enum arm32_register addr, enum arm32_multiple_mode mode,
                               unsigned INT32 registers) {
     unsigned INT32 instr = ARM_COND_AL | (1<<27) | registers | mode;
 
@@ -162,14 +162,14 @@ OPCODE_FUN store_multiple(enum arm_register addr, enum arm_multiple_mode mode,
     return instr;
 }
 
-OPCODE_FUN load_multiple(enum arm_register addr, enum arm_multiple_mode mode,
+OPCODE_FUN load_multiple(enum arm32_register addr, enum arm32_multiple_mode mode,
                              unsigned INT32 registers) {
     unsigned INT32 r = store_multiple(addr, mode, registers) | (1<<20);
 
     return r;
 }
 
-OPCODE_FUN bx_reg(enum arm_register to) {
+OPCODE_FUN bx_reg(enum arm32_register to) {
     unsigned INT32 instr = ARM_COND_AL;
     int i;
 
@@ -184,7 +184,7 @@ OPCODE_FUN bx_reg(enum arm_register to) {
     return instr;
 }
 
-OPCODE_FUN blx_reg(enum arm_register to) {
+OPCODE_FUN blx_reg(enum arm32_register to) {
     return bx_reg(to) | (1<<5);
 }
 
@@ -200,7 +200,7 @@ OPCODE_FUN bl_imm(INT32 dist) {
     return b_imm(dist) | (1<<24);
 }
 
-OPCODE_FUN gen_reg(enum data_proc_instr op, enum arm_register dst, enum arm_register src) {
+OPCODE_FUN gen_reg(enum data_proc_instr op, enum arm32_register dst, enum arm32_register src) {
     unsigned INT32 instr = ARM_ADDR_REGISTER | ARM_COND_AL;
 
     instr |= op << 21;
@@ -210,8 +210,8 @@ OPCODE_FUN gen_reg(enum data_proc_instr op, enum arm_register dst, enum arm_regi
     return instr;
 }
 
-OPCODE_FUN gen_reg_reg(enum data_proc_instr op, enum arm_register dst,
-                           enum arm_register a, enum arm_register b) {
+OPCODE_FUN gen_reg_reg(enum data_proc_instr op, enum arm32_register dst,
+                           enum arm32_register a, enum arm32_register b) {
     unsigned INT32 instr = gen_reg(op, dst, a);
 
     instr = set_src1_reg(instr, b);
@@ -219,7 +219,7 @@ OPCODE_FUN gen_reg_reg(enum data_proc_instr op, enum arm_register dst,
     return instr;
 }
 
-OPCODE_FUN gen_cmp_reg_reg(enum arm_register a, enum arm_register b) {
+OPCODE_FUN gen_cmp_reg_reg(enum arm32_register a, enum arm32_register b) {
     unsigned INT32 instr = gen_reg_reg(ARM_PROC_CMP, 0, a, b);
 
     instr |= (1<<20);
@@ -227,7 +227,7 @@ OPCODE_FUN gen_cmp_reg_reg(enum arm_register a, enum arm_register b) {
     return instr;
 }
 
-OPCODE_FUN gen_imm(enum data_proc_instr op, enum arm_register dst,
+OPCODE_FUN gen_imm(enum data_proc_instr op, enum arm32_register dst,
                        unsigned char imm, unsigned char rot) {
     unsigned INT32 instr = ARM_ADDR_IMMEDIATE | ARM_COND_AL;
 
@@ -261,8 +261,8 @@ MACRO int arm32_make_imm(unsigned INT32 v, unsigned char *imm, unsigned char *ro
     return 0;
 }
 
-OPCODE_FUN gen_reg_imm(enum data_proc_instr op, enum arm_register dst,
-                       enum arm_register reg, unsigned char imm, unsigned char rot) {
+OPCODE_FUN gen_reg_imm(enum data_proc_instr op, enum arm32_register dst,
+                       enum arm32_register reg, unsigned char imm, unsigned char rot) {
     unsigned INT32 instr = gen_imm(op, dst, imm, rot);
 
     instr = set_src1_reg(instr, reg);
@@ -270,7 +270,7 @@ OPCODE_FUN gen_reg_imm(enum data_proc_instr op, enum arm_register dst,
     return instr;
 }
 
-OPCODE_FUN gen_cmp_reg_imm(enum arm_register a, unsigned char imm, unsigned char rot) {
+OPCODE_FUN gen_cmp_reg_imm(enum arm32_register a, unsigned char imm, unsigned char rot) {
     unsigned INT32 instr = gen_reg_imm(ARM_PROC_CMP, 0, a, imm, rot);
 
     instr |= (1<<20);
@@ -279,7 +279,7 @@ OPCODE_FUN gen_cmp_reg_imm(enum arm_register a, unsigned char imm, unsigned char
 }
 
 
-OPCODE_FUN str_reg_imm(enum arm_register dst, enum arm_register base, INT32 offset) {
+OPCODE_FUN str_reg_imm(enum arm32_register dst, enum arm32_register base, INT32 offset) {
     unsigned INT32 instr = ARM_COND_AL;
 
     instr = set_dst_reg(instr, dst);
@@ -296,27 +296,27 @@ OPCODE_FUN str_reg_imm(enum arm_register dst, enum arm_register base, INT32 offs
     return instr;
 }
 
-OPCODE_FUN ldr_reg_imm(enum arm_register dst, enum arm_register base, INT32 offset) {
+OPCODE_FUN ldr_reg_imm(enum arm32_register dst, enum arm32_register base, INT32 offset) {
     return str_reg_imm(dst, base, offset) | (1<<20);
 }
 
 #define GEN_PROC_OP(name, NAME)                                                                          \
 ATTRIBUTE((unused))                                                                                      \
-static PIKE_OPCODE_T name ## _reg_imm(enum arm_register dst, enum arm_register reg, unsigned char imm,   \
+static PIKE_OPCODE_T name ## _reg_imm(enum arm32_register dst, enum arm32_register reg, unsigned char imm,   \
                                       unsigned char rot) {                                               \
     return gen_reg_imm(ARM_PROC_ ## NAME, dst, reg, imm, rot);                                           \
 }                                                                                                        \
 ATTRIBUTE((unused))                                                                                      \
-static PIKE_OPCODE_T name ## _reg_reg(enum arm_register dst, enum arm_register a, enum arm_register b) { \
+static PIKE_OPCODE_T name ## _reg_reg(enum arm32_register dst, enum arm32_register a, enum arm32_register b) { \
     return gen_reg_reg(ARM_PROC_ ## NAME, dst, a, b);                                                    \
 }                                                                                                        \
 ATTRIBUTE((unused))                                                                                      \
-static PIKE_OPCODE_T name ## s_reg_imm(enum arm_register dst, enum arm_register reg, unsigned char imm,  \
+static PIKE_OPCODE_T name ## s_reg_imm(enum arm32_register dst, enum arm32_register reg, unsigned char imm,  \
                                       unsigned char rot) {                                               \
     return name ## _reg_imm(dst, reg, imm, rot)|(1<<20);                                                 \
 }                                                                                                        \
 ATTRIBUTE((unused))                                                                                      \
-static PIKE_OPCODE_T name ## s_reg_reg(enum arm_register dst, enum arm_register a, enum arm_register b) {\
+static PIKE_OPCODE_T name ## s_reg_reg(enum arm32_register dst, enum arm32_register a, enum arm32_register b) {\
     return name ## _reg_reg(dst, a, b)|(1<<20);                                                          \
 }
 
@@ -326,15 +326,15 @@ GEN_PROC_OP(or, OR)
 GEN_PROC_OP(and, AND)
 
 
-OPCODE_FUN mov_reg(enum arm_register dst, enum arm_register src) {
+OPCODE_FUN mov_reg(enum arm32_register dst, enum arm32_register src) {
     return gen_reg(ARM_PROC_MOV, dst, src);
 }
 
-OPCODE_FUN mov_imm(enum arm_register dst, unsigned char imm, unsigned char rot) {
+OPCODE_FUN mov_imm(enum arm32_register dst, unsigned char imm, unsigned char rot) {
     return gen_imm(ARM_PROC_MOV, dst, imm, rot);
 }
 
-void arm_set_reg(enum arm_register dst, unsigned INT32 v) {
+void arm32_set_reg(enum arm32_register dst, unsigned INT32 v) {
 
     add_to_program(mov_imm(dst, v, 0));
 
@@ -353,8 +353,8 @@ void arm_set_reg(enum arm_register dst, unsigned INT32 v) {
 
 
 #define SIZEOF_ADD_SET_REG_AT   4
-static void arm_set_reg_at(unsigned INT32 offset, unsigned INT32 v,
-                           enum arm_register dst) {
+static void arm32_set_reg_at(unsigned INT32 offset, unsigned INT32 v,
+                           enum arm32_register dst) {
     upd_pointer(offset++, mov_imm(dst, v, 0));
     upd_pointer(offset++, or_reg_imm(dst, dst, v >> 24, 4));
     upd_pointer(offset++, or_reg_imm(dst, dst, v >> 16, 8));
@@ -465,7 +465,7 @@ MACRO void ra_init(void) {
     compiler_state.push_list = NULL;
 }
 
-MACRO enum arm_register ra_alloc(enum arm_register reg) {
+MACRO enum arm32_register ra_alloc(enum arm32_register reg) {
     unsigned INT32 rbit = RBIT(reg);
 
     if (!(rbit & compiler_state.free))
@@ -477,7 +477,7 @@ MACRO enum arm_register ra_alloc(enum arm_register reg) {
     return reg;
 }
 
-MACRO enum arm_register ra_alloc_persistent(void) {
+MACRO enum arm32_register ra_alloc_persistent(void) {
     unsigned short free = compiler_state.free;
 
     /* we dont want 0-3 */
@@ -489,14 +489,14 @@ MACRO enum arm_register ra_alloc_persistent(void) {
     return ra_alloc(ctz32(free));
 }
 
-MACRO enum arm_register ra_alloc_any(void) {
+MACRO enum arm32_register ra_alloc_any(void) {
     if (!compiler_state.free)
         Pike_fatal("No register left.\n");
 
     return ra_alloc(ctz32(compiler_state.free));
 }
 
-MACRO void ra_free(enum arm_register reg) {
+MACRO void ra_free(enum arm32_register reg) {
     unsigned INT32 rbit = RBIT(reg);
 
     if (rbit & compiler_state.free)
@@ -505,13 +505,13 @@ MACRO void ra_free(enum arm_register reg) {
     compiler_state.free |= rbit;
 }
 
-MACRO int ra_is_dirty(enum arm_register reg) {
+MACRO int ra_is_dirty(enum arm32_register reg) {
     unsigned INT32 rbit = RBIT(reg);
 
     return !!(rbit & compiler_state.dirt);
 }
 
-MACRO int ra_is_free(enum arm_register reg) {
+MACRO int ra_is_free(enum arm32_register reg) {
     unsigned INT32 rbit = RBIT(reg);
 
     return !!(rbit & compiler_state.free);
@@ -530,7 +530,7 @@ MACRO void add_pop(void) {
 }
 
 /* corresponds to ENTRY_PROLOGUE_SIZE */
-MACRO void arm_prologue(void) {
+MACRO void arm32_prologue(void) {
     //add_to_program(mov_reg(ARM_REG_IP, ARM_REG_SP));
     add_push();
     add_to_program(mov_reg(ARM_REG_PIKE_IP, ARM_REG_R0));
@@ -538,28 +538,28 @@ MACRO void arm_prologue(void) {
 }
 
 #define EPILOGUE_SIZE 2
-MACRO void arm_epilogue(void) {
+MACRO void arm32_epilogue(void) {
     add_pop();
     add_to_program(bx_reg(ARM_REG_LR));
 }
 
-void arm_call(void *ptr) {
+void arm32_call(void *ptr) {
     unsigned INT32 v = (char*)ptr - (char*)NULL;
-    enum arm_register tmp = ra_alloc_any();
+    enum arm32_register tmp = ra_alloc_any();
 
     //add_to_program(MOV_REG(ARM_REG_R0, ARM_REG_R2));
-    arm_set_reg(tmp, v);
+    arm32_set_reg(tmp, v);
     add_to_program(blx_reg(tmp));
     ra_free(tmp);
 }
 
 
-void arm_flush_instruction_cache(void *addr, size_t len) {
+void arm32_flush_instruction_cache(void *addr, size_t len) {
     __clear_cache(addr, (char*)addr+len);
 }
 
 #ifdef PIKE_CONCAT
-static void arm_load_sp_reg(void) {
+static void arm32_load_sp_reg(void) {
     if (!(compiler_state.flags & FLAG_SP_LOADED)) {
         INT32 offset = OFFSETOF(Pike_interpreter_struct, stack_pointer);
 
@@ -571,7 +571,7 @@ static void arm_load_sp_reg(void) {
     }
 }
 
-static void arm_store_sp_reg(void) {
+static void arm32_store_sp_reg(void) {
     if (compiler_state.flags & FLAG_SP_CHANGED) {
         INT32 offset = OFFSETOF(Pike_interpreter_struct, stack_pointer);
         if (!(compiler_state.flags & FLAG_SP_LOADED)) {
@@ -583,7 +583,7 @@ static void arm_store_sp_reg(void) {
     }
 }
 
-static void arm_load_fp_reg(void) {
+static void arm32_load_fp_reg(void) {
     if (!(compiler_state.flags & FLAG_FP_LOADED)) {
         INT32 offset = OFFSETOF(Pike_interpreter_struct, frame_pointer);
         /* load Pike_interpreter_pointer->frame_pointer into ARM_REG_PIKE_FP */
@@ -593,7 +593,7 @@ static void arm_load_fp_reg(void) {
 }
 
 static void arm32_change_sp(INT32 offset) {
-    arm_load_sp_reg();
+    arm32_load_sp_reg();
     offset *= sizeof(struct svalue);
     if (offset < 0) {
         offset = -offset;
@@ -604,18 +604,18 @@ static void arm32_change_sp(INT32 offset) {
     compiler_state.flags |= FLAG_SP_CHANGED;
 }
 
-static void arm_flush_dirty_regs(void) {
-    arm_store_sp_reg();
+static void arm32_flush_dirty_regs(void) {
+    arm32_store_sp_reg();
 }
 
-static void arm_push_int(unsigned INT32 value, int subtype) {
+static void arm32_push_int(unsigned INT32 value, int subtype) {
     unsigned INT32 combined = TYPE_SUBTYPE(PIKE_T_INT, subtype);
-    enum arm_register tmp1 = ra_alloc_any(), tmp2 = ra_alloc_any();
+    enum arm32_register tmp1 = ra_alloc_any(), tmp2 = ra_alloc_any();
 
-    arm_load_sp_reg();
+    arm32_load_sp_reg();
 
-    arm_set_reg(tmp1, combined);
-    arm_set_reg(tmp2, value);
+    arm32_set_reg(tmp1, combined);
+    arm32_set_reg(tmp2, value);
 
     add_to_program(store_multiple(ARM_REG_PIKE_SP, ARM_MULT_IAW, RBIT(tmp1)|RBIT(tmp2)));
 
@@ -624,10 +624,10 @@ static void arm_push_int(unsigned INT32 value, int subtype) {
 
     compiler_state.flags |= FLAG_SP_CHANGED;
 
-    arm_flush_dirty_regs();
+    arm32_flush_dirty_regs();
 }
 
-void arm_flush_codegen_state(void) {
+void arm32_flush_codegen_state(void) {
     //fprintf(stderr, "flushing codegen state.\n");
     compiler_state.flags = 0;
 }
@@ -669,39 +669,39 @@ void arm32_end_function(int UNUSED(no_pc)) {
 }
 
 /* Store $pc into Pike_fp->pc */
-void arm_update_pc(void) {
+void arm32_update_pc(void) {
     unsigned INT32 v = PIKE_PC;
     INT32 offset;
-    enum arm_register tmp = ra_alloc_any();
+    enum arm32_register tmp = ra_alloc_any();
 
-    arm_load_fp_reg();
+    arm32_load_fp_reg();
     v = 4*(PIKE_PC - v + 2);
     add_to_program(sub_reg_imm(tmp, ARM_REG_PC, v, 0));
     add_to_program(str_reg_imm(tmp, ARM_REG_PIKE_FP, OFFSETOF(pike_frame, pc)));
     ra_free(tmp);
 }
 
-void arm_ins_entry(void) {
-    arm_prologue();
-    arm_flush_codegen_state();
+void arm32_ins_entry(void) {
+    arm32_prologue();
+    arm32_flush_codegen_state();
 }
 
 #if 0
-void arm_ins_exit(void) {
-    arm_set_reg(ARM_REG_R0, -1);
-    arm_epilogue();
+void arm32_ins_exit(void) {
+    arm32_set_reg(ARM_REG_R0, -1);
+    arm32_epilogue();
 }
 #endif
 
-static void add_rel_cond_jmp(enum arm_register reg, enum arm_register b, enum arm_condition cond, int jmp) {
+static void add_rel_cond_jmp(enum arm32_register reg, enum arm32_register b, enum arm32_condition cond, int jmp) {
     add_to_program(gen_cmp_reg_reg(reg, b));
     add_to_program(set_cond(b_imm(jmp-2), cond));
 }
 
-static void arm_ins_maybe_exit(void) {
-    arm_set_reg(ARM_REG_R1, -1);
+static void arm32_ins_maybe_exit(void) {
+    arm32_set_reg(ARM_REG_R1, -1);
     add_rel_cond_jmp(ARM_REG_R0, ARM_REG_R1, ARM_COND_NE, EPILOGUE_SIZE+1);
-    arm_epilogue();
+    arm32_epilogue();
 }
 
 static void low_ins_call(void *addr) {
@@ -719,17 +719,17 @@ static void low_ins_call(void *addr) {
     }
   }
 
-  arm_call(addr);
+  arm32_call(addr);
 }
 
 static void arm32_call_c_function(void * addr) {
-    arm_store_sp_reg();
+    arm32_store_sp_reg();
     compiler_state.flags &= ~FLAG_SP_LOADED;
     compiler_state.flags &= ~FLAG_FP_LOADED;
-    arm_call(addr);
+    arm32_call(addr);
 }
 
-static void arm_call_c_opcode(unsigned int opcode) {
+static void arm32_call_c_opcode(unsigned int opcode) {
   void *addr = instrs[opcode-F_OFFSET].address;
   int flags = instrs[opcode-F_OFFSET].flags;
 
@@ -747,12 +747,12 @@ static void arm_call_c_opcode(unsigned int opcode) {
 void break_my_arm(void) {
 }
 
-MACRO void arm32_free_svalue_off(enum arm_register src, int off, int guaranteed) {
+MACRO void arm32_free_svalue_off(enum arm32_register src, int off, int guaranteed) {
     unsigned INT32 combined = TYPE_SUBTYPE(MIN_REF_TYPE, 0);
     unsigned char imm, rot;
     struct label end;
-    enum arm_register reg = ra_alloc(ARM_REG_R0);
-    enum arm_register tmp = ra_alloc_any();
+    enum arm32_register reg = ra_alloc(ARM_REG_R0);
+    enum arm32_register tmp = ra_alloc_any();
 
     off *= sizeof(struct svalue);
 
@@ -766,7 +766,7 @@ MACRO void arm32_free_svalue_off(enum arm_register src, int off, int guaranteed)
     if (arm32_make_imm(combined, &imm, &rot)) {
         add_to_program(ands_reg_imm(reg, reg, imm, rot));
     } else {
-        arm_set_reg(tmp, combined);
+        arm32_set_reg(tmp, combined);
         add_to_program(ands_reg_reg(reg, reg, tmp));
     }
 
@@ -796,7 +796,7 @@ MACRO void arm32_free_svalue_off(enum arm_register src, int off, int guaranteed)
 }
 
 
-static void arm32_free_svalue(enum arm_register reg, int guaranteed_ref) {
+static void arm32_free_svalue(enum arm32_register reg, int guaranteed_ref) {
     arm32_free_svalue_off(reg, 0, guaranteed_ref);
 }
 
@@ -815,16 +815,16 @@ static void low_ins_f_byte(unsigned int b)
 
   switch (b) {
   case F_UNDEFINED:
-      arm_push_int(0, NUMBER_UNDEFINED);
+      arm32_push_int(0, NUMBER_UNDEFINED);
       return;
   case F_CONST_1:
-      arm_push_int(-1, NUMBER_NUMBER);
+      arm32_push_int(-1, NUMBER_NUMBER);
       return;
   case F_CONST1:
-      arm_push_int(1, NUMBER_NUMBER);
+      arm32_push_int(1, NUMBER_NUMBER);
       return;
   case F_CONST0:
-      arm_push_int(0, NUMBER_NUMBER);
+      arm32_push_int(0, NUMBER_NUMBER);
       return;
   case F_CATCH:
       {
@@ -843,7 +843,7 @@ static void low_ins_f_byte(unsigned int b)
       }
       break;
   case F_POP_VALUE:
-      arm_load_sp_reg();
+      arm32_load_sp_reg();
       add_to_program(sub_reg_imm(ARM_REG_PIKE_SP, ARM_REG_PIKE_SP, sizeof(struct svalue), 0));
       compiler_state.flags |= FLAG_SP_CHANGED;
       arm32_free_svalue(ARM_REG_PIKE_SP, 0);
@@ -862,12 +862,12 @@ static void low_ins_f_byte(unsigned int b)
       return;
   }
 
-  arm_call_c_opcode(b);
+  arm32_call_c_opcode(b);
 
   if (b == F_CATCH) ra_free(ARM_REG_R0);
 
   if (flags & I_RETURN) {
-      enum arm_register kludge_reg = ARM_REG_NONE;
+      enum arm32_register kludge_reg = ARM_REG_NONE;
 
       if (b == F_RETURN_IF_TRUE) {
           kludge_reg = ra_alloc_persistent();
@@ -875,7 +875,7 @@ static void low_ins_f_byte(unsigned int b)
           add_to_program(sub_reg_imm(kludge_reg, ARM_REG_PC, 4, 0));
       }
     
-      arm_ins_maybe_exit();
+      arm32_ins_maybe_exit();
 
       if (b == F_RETURN_IF_TRUE) {
           add_rel_cond_jmp(ARM_REG_R0, kludge_reg, ARM_COND_EQ, 2);
@@ -889,7 +889,7 @@ static void low_ins_f_byte(unsigned int b)
     add_to_program(bx_reg(ARM_REG_R0));
 
     if (b == F_CATCH) {
-        arm_set_reg_at(rel_addr, 4*(PIKE_PC - rel_addr - 1), ARM_REG_R2);
+        arm32_set_reg_at(rel_addr, 4*(PIKE_PC - rel_addr - 1), ARM_REG_R2);
     }
   }
 }
@@ -906,26 +906,26 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
 
   switch (a) {
   case F_NUMBER:
-      arm_push_int(b, NUMBER_NUMBER);
+      arm32_push_int(b, NUMBER_NUMBER);
       return;
   case F_NEG_NUMBER:
       if (!INT32_NEG_OVERFLOW(b)) {
-        arm_push_int(-b, 0);
+        arm32_push_int(-b, 0);
         return;
       }
       break;
   case F_SUBTRACT_INT:
     {
       struct label fallback;
-      enum arm_register tmp = ra_alloc_any(), tmp2;
+      enum arm32_register tmp = ra_alloc_any(), tmp2;
       label_init(&fallback);
-      arm_load_sp_reg();
+      arm32_load_sp_reg();
       add_to_program(ldr_reg_imm(tmp, ARM_REG_PIKE_SP, -sizeof(struct svalue)+0));
       add_to_program(gen_cmp_reg_imm(tmp, 0, 0));
       add_to_program(set_cond(b_imm(label_dist(&fallback)), ARM_COND_NE));
       add_to_program(ldr_reg_imm(tmp, ARM_REG_PIKE_SP, -sizeof(struct svalue)+4));
       tmp2 = ra_alloc_any();
-      arm_set_reg(tmp2, b);
+      arm32_set_reg(tmp2, b);
       add_to_program(subs_reg_reg(tmp, tmp2, tmp));
       ra_free(tmp2);
       add_to_program(set_cond(b_imm(label_dist(&fallback)), ARM_COND_VS));
@@ -939,9 +939,9 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
     {
       struct label fallback;
       unsigned char imm, rot;
-      enum arm_register tmp = ra_alloc_any(), tmp2;
+      enum arm32_register tmp = ra_alloc_any(), tmp2;
       label_init(&fallback);
-      arm_load_sp_reg();
+      arm32_load_sp_reg();
       add_to_program(ldr_reg_imm(tmp, ARM_REG_PIKE_SP, -sizeof(struct svalue)+0));
       add_to_program(gen_cmp_reg_imm(tmp, 0, 0));
       add_to_program(set_cond(b_imm(label_dist(&fallback)), ARM_COND_NE));
@@ -950,7 +950,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
           add_to_program(adds_reg_imm(tmp, tmp, imm, rot));
       } else {
           tmp2 = ra_alloc_any();
-          arm_set_reg(tmp2, b);
+          arm32_set_reg(tmp2, b);
           add_to_program(adds_reg_reg(tmp, tmp, tmp2));
           ra_free(tmp2);
       }
@@ -982,7 +982,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
       ins_f_byte_with_arg(F_LOCAL, b);
       return;
   }
-  arm_set_reg(ra_alloc(ARM_REG_R0), b);
+  arm32_set_reg(ra_alloc(ARM_REG_R0), b);
   low_ins_f_byte(a);
   ra_free(ARM_REG_R0);
   label_generate(&done);
@@ -999,8 +999,8 @@ void ins_f_byte_with_2_args(unsigned int a,
       ins_f_byte_with_2_args(F_EXTERNAL, b, c);
       return;
   }
-  arm_set_reg(ra_alloc(ARM_REG_R0), b);
-  arm_set_reg(ra_alloc(ARM_REG_R1), c);
+  arm32_set_reg(ra_alloc(ARM_REG_R0), b);
+  arm32_set_reg(ra_alloc(ARM_REG_R1), c);
   low_ins_f_byte(a);
   ra_free(ARM_REG_R0);
   ra_free(ARM_REG_R1);
@@ -1046,7 +1046,7 @@ int main(void) {
 
     printf("fun: %p\n", fun);
     ADD_PROLOGUE(registers);
-    arm_call(foo);
+    arm32_call(foo);
     ADD_SET_REG(ARM_REG_R4, (INT32)&a, ARM_REG_R5);
     add_to_program(ldr_reg_imm(ARM_REG_R3, ARM_REG_R4, 0));
     ADD_SET_REG(ARM_REG_R4, (INT32)&b, ARM_REG_R5);
