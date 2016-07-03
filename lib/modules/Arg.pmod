@@ -21,12 +21,12 @@
 //!
 //! Non-option arguments will be placed in the index Arg.REST
 //!
-//! The second way to use this module is to inherit the LowOptions
-//! class and then start adding supported arguments:
+//! The second way to use this module is to inherit the Options class
+//! and add supported arguments.
 //!
 //! @code
 //! class MyArguments {
-//!    inherit Arg.LowOptions;
+//!    inherit Arg.Options;
 //!    Opt verbose = NoOpt("-v")|NoOpt("--verbose");
 //!    Opt help = MaybeOpt("--help");
 //!    Opt output = HasOpt("--output")|HasOpt("-o");
