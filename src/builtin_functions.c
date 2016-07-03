@@ -44,6 +44,7 @@
 #include "stuff.h"
 #include "pike_compiler.h"
 #include "port.h"
+#include "siphash24.h"
 
 #include <errno.h>
 
@@ -465,16 +466,11 @@ PMOD_EXPORT void f_hash_8_0(INT32 args)
 static void f_hash( INT32 args )
 {
   size_t res;
-  ptrdiff_t len = 0;
 
   if( TYPEOF(Pike_sp[-args]) != PIKE_T_STRING )
       PIKE_ERROR("hash","Argument is not a string\n",Pike_sp,args);
 
-  len = Pike_sp[-args].u.string->len;
-
-  res = hashmem_siphash24( Pike_sp[-args].u.string->str,
-			   len << Pike_sp[-args].u.string->size_shift) &
-    0x7fffffff;
+  res = pike_string_siphash24(Pike_sp[-args].u.string, 0) & 0x7fffffff;
 
   if( args > 1 ) {
     if(TYPEOF(Pike_sp[1-args]) != T_INT)

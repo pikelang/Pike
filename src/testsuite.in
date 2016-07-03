@@ -11265,6 +11265,8 @@ test_eq(hash("bar"),134531432)
 test_eq(hash("bar",10),2)
 test_eq(hash("b\666arqwerty1234"),312063732)
 test_eq(hash(""),1937178839)
+test_eq(hash("\12345678"*10), 1294053961);
+test_eq(hash("\12345"*10), 2138088857);
 test_eval_error( return hash("foo",0) )
 test_eval_error( return hash("foo",-1) )
 
