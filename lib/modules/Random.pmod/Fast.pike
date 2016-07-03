@@ -29,15 +29,17 @@ string(8bit) random_string(int(0..) length)
   /*
     Tested on a Intel(R) Core(TM) i5-4460  CPU @ 3.20GHz
 
-                       Hardware    Fortuna
-    1 byte per call    4.08 MB/s   1.48 MB/s
-    2 bytes per call   4.03 MB/s   1.45 MB/s
-    4 bytes per call   4.00 MB/s   1.47 MB/s
-    8 bytes per call   2.90 MB/s   1.45 MB/s
-    16 bytes per call  2.23 MB/s   1.47 MB/s
-    32 bytes per call  1.52 MB/s   1.28 MB/s
+                       Hardware     Fortuna
+    1 byte per call    4.08 MB/s    1.48 MB/s
+    2 bytes per call   7.89 MB/s    2.92 MB/s
+    4 bytes per call   15.68 MB/s   5.89 MB/s
+    8 bytes per call   22.78 MB/s   11.77 MB/s
+    16 bytes per call  35.75 MB/s   23.37 MB/s
+    32 bytes per call  49.69 MB/s   41.38 MB/s
+    48 bytes per call  54.23 MB/s   53.77 MB/s
+    64 bytes per call  60.86 MB/s   65.52 MB/s
   */
-  if( length<32 )
+  if( length<48 )
     return rnd->random_string(length);
 #endif
   if( counter > (1<<20) )
