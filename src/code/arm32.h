@@ -14,11 +14,11 @@
 #define JUMP_SET_TO_PC_AT_NEXT(PC) \
   ((PC) = PROG_COUNTER + JUMP_EPILOGUE_SIZE)
 
-void arm_flush_codegen_state(void);
-#define FLUSH_CODE_GENERATOR_STATE()	arm_flush_codegen_state()
+void arm32_flush_codegen_state(void);
+#define FLUSH_CODE_GENERATOR_STATE()	arm32_flush_codegen_state()
 
-void arm_flush_instruction_cache(void *addr, size_t len);
-#define FLUSH_INSTRUCTION_CACHE(ADDR,LEN)         arm_flush_instruction_cache(ADDR,LEN)
+void arm32_flush_instruction_cache(void *addr, size_t len);
+#define FLUSH_INSTRUCTION_CACHE(ADDR,LEN)         arm32_flush_instruction_cache(ADDR,LEN)
 
 /* Size of the prologue added by INS_ENTRY() (in PIKE_OPCODE_T's). */
 #define ENTRY_PROLOGUE_SIZE	2
@@ -29,11 +29,11 @@ void arm32_end_function(int no_pc);
 #define START_NEW_FUNCTION arm32_start_function
 #define END_FUNCTION       arm32_end_function
 
-void arm_ins_entry(void);
-#define INS_ENTRY()	arm_ins_entry()
+void arm32_ins_entry(void);
+#define INS_ENTRY()	arm32_ins_entry()
 
-void arm_update_pc(void);
-#define UPDATE_PC()	arm_update_pc()
+void arm32_update_pc(void);
+#define UPDATE_PC()	arm32_update_pc()
 
 #define ins_pointer(PTR)  add_to_program((INT32)(PTR))
 #define read_pointer(OFF) (Pike_compiler->new_program->program[(INT32)(OFF)])
