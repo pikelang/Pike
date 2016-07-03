@@ -113,6 +113,8 @@ enum data_proc_instr {
 #define OPCODE_FUN ATTRIBUTE((unused,warn_unused_result)) static PIKE_OPCODE_T
 
 void arm32_call(void *ptr);
+MACRO enum arm32_register ra_alloc_any(void);
+MACRO void ra_free(enum arm32_register reg);
 
 OPCODE_FUN set_status(unsigned INT32 instr) {
     return instr | (1<<19);
@@ -177,6 +179,22 @@ OPCODE_FUN gen_load_multiple(enum arm32_register addr, enum arm32_multiple_mode 
 MACRO void load_multiple(enum arm32_register addr, enum arm32_multiple_mode mode,
                          unsigned INT32 registers) {
     add_to_program(gen_load_multiple(addr, mode, registers));
+}
+
+OPCODE_FUN gen_mov_wide(enum arm32_register reg, unsigned short imm) {
+    return ARM_COND_AL | (3 << 24) | (imm & 0xfff) | (reg << 12) | ((imm & 0xf000) << 4);
+}
+
+MACRO void mov_wide(enum arm32_register reg, unsigned short imm) {
+    add_to_program(gen_mov_wide(reg, imm));
+}
+
+OPCODE_FUN gen_mov_top(enum arm32_register reg, unsigned short imm) {
+    return gen_mov_wide(reg, imm) | (1<<22);
+}
+
+MACRO void mov_top(enum arm32_register reg, unsigned short imm) {
+    add_to_program(gen_mov_top(reg, imm));
 }
 
 OPCODE_FUN gen_bx_reg(enum arm32_register to) {
@@ -270,7 +288,7 @@ OPCODE_FUN gen_imm(enum data_proc_instr op, enum arm32_register dst,
 
 #define ROTR(v, n)      (((v) >> (n)) | ((v) << (32-(n))))
 
-// returns 1 if v can be represented as a rotated imm, with imm and rot set
+/* returns 1 if v can be represented as a rotated imm, with imm and rot set */
 MACRO int arm32_make_imm(unsigned INT32 v, unsigned char *imm, unsigned char *rot) {
     unsigned INT32 b, n;
 
@@ -290,6 +308,8 @@ MACRO int arm32_make_imm(unsigned INT32 v, unsigned char *imm, unsigned char *ro
 
     return 0;
 }
+
+MACRO void arm32_mov_int(enum arm32_register reg, unsigned INT32 v);
 
 OPCODE_FUN gen_reg_imm(enum data_proc_instr op, enum arm32_register dst,
                        enum arm32_register reg, unsigned char imm, unsigned char rot) {
@@ -373,7 +393,19 @@ MACRO void name ## s_reg_imm(enum arm32_register dst, enum arm32_register reg, u
 }                                                                                                        \
 MACRO void name ## s_reg_reg(enum arm32_register dst, enum arm32_register a, enum arm32_register b) {    \
     add_to_program(gen_ ## name ## s_reg_reg(dst, a, b));                                                \
-}
+}                                                                                                        \
+MACRO void arm32_ ## name ## _reg_int(enum arm32_register dst, enum arm32_register a, unsigned INT32 v) {\
+    unsigned char imm, rot;                                                                              \
+                                                                                                         \
+    if (arm32_make_imm(v, &imm, &rot)) {                                                                 \
+        name ## _reg_imm(dst, a, imm, rot);                                                              \
+    } else {                                                                                             \
+        enum arm32_register tmp = ra_alloc_any();                                                        \
+        arm32_mov_int(tmp, v);                                                                           \
+        name ## _reg_reg(dst, a, tmp);                                                                   \
+        ra_free(tmp);                                                                                    \
+    }                                                                                                    \
+}                                                                                                        \
 
 GEN_PROC_OP(sub, SUB)
 GEN_PROC_OP(add, ADD)
@@ -397,31 +429,22 @@ MACRO void mov_imm(enum arm32_register dst, unsigned char imm, unsigned char rot
     add_to_program(gen_mov_imm(dst, imm, rot));
 }
 
-void arm32_set_reg(enum arm32_register dst, unsigned INT32 v) {
+MACRO void arm32_mov_int(enum arm32_register reg, unsigned INT32 v) {
+    unsigned char imm, rot;
 
-    mov_imm(dst, v, 0);
-
-    if ((v >> 24)&0xff) {
-        or_reg_imm(dst, dst, v >> 24, 4);
-    }
-
-    if ((v >> 16)&0xff) {
-        or_reg_imm(dst, dst, v >> 16, 8);
-    }
-
-    if ((v >> 8)&0xff) {
-        or_reg_imm(dst, dst, v >> 8, 12);
+    if (arm32_make_imm(v, &imm, &rot)) {
+        mov_imm(reg, imm, rot);
+    } else {
+        mov_wide(reg, v);
+        if (v>>16) mov_top(reg, v>>16);
     }
 }
 
-
-#define SIZEOF_ADD_SET_REG_AT   4
-static void arm32_set_reg_at(unsigned INT32 offset, unsigned INT32 v,
+#define SIZEOF_ADD_SET_REG_AT   2
+static void arm32_mov_int_at(unsigned INT32 offset, unsigned INT32 v,
                            enum arm32_register dst) {
-    upd_pointer(offset++, gen_mov_imm(dst, v, 0));
-    upd_pointer(offset++, gen_or_reg_imm(dst, dst, v >> 24, 4));
-    upd_pointer(offset++, gen_or_reg_imm(dst, dst, v >> 16, 8));
-    upd_pointer(offset++, gen_or_reg_imm(dst, dst, v >> 8, 12));
+    upd_pointer(offset++, gen_mov_wide(dst, v));
+    upd_pointer(offset++, gen_mov_top(dst, v>>16));
 }
 
 /*
@@ -608,7 +631,7 @@ void arm32_call(void *ptr) {
     unsigned INT32 v = (char*)ptr - (char*)NULL;
     enum arm32_register tmp = ra_alloc_any();
 
-    arm32_set_reg(tmp, v);
+    arm32_mov_int(tmp, v);
     blx_reg(tmp);
     ra_free(tmp);
 }
@@ -671,8 +694,8 @@ static void arm32_push_int(unsigned INT32 value, int subtype) {
 
     arm32_load_sp_reg();
 
-    arm32_set_reg(tmp1, combined);
-    arm32_set_reg(tmp2, value);
+    arm32_mov_int(tmp1, combined);
+    arm32_mov_int(tmp2, value);
 
     store_multiple(ARM_REG_PIKE_SP, ARM_MULT_IAW, RBIT(tmp1)|RBIT(tmp2));
 
@@ -745,7 +768,7 @@ void arm32_ins_entry(void) {
 
 #if 0
 void arm32_ins_exit(void) {
-    arm32_set_reg(ARM_REG_R0, -1);
+    arm32_mov_int(ARM_REG_R0, -1);
     arm32_epilogue();
 }
 #endif
@@ -756,7 +779,7 @@ static void add_rel_cond_jmp(enum arm32_register reg, enum arm32_register b, enu
 }
 
 static void arm32_ins_maybe_exit(void) {
-    arm32_set_reg(ARM_REG_R1, -1);
+    arm32_mov_int(ARM_REG_R1, -1);
     add_rel_cond_jmp(ARM_REG_R0, ARM_REG_R1, ARM_COND_NE, EPILOGUE_SIZE+1);
     arm32_epilogue();
 }
@@ -825,7 +848,7 @@ MACRO void arm32_free_svalue_off(enum arm32_register src, int off, int guarantee
     if (arm32_make_imm(combined, &imm, &rot)) {
         ands_reg_imm(reg, reg, imm, rot);
     } else {
-        arm32_set_reg(tmp, combined);
+        arm32_mov_int(tmp, combined);
         ands_reg_reg(reg, reg, tmp);
     }
 
@@ -978,7 +1001,7 @@ static void low_ins_f_byte(unsigned int b)
     bx_reg(ARM_REG_R0);
 
     if (b == F_CATCH) {
-        arm32_set_reg_at(rel_addr, 4*(PIKE_PC - rel_addr - 1), ARM_REG_R2);
+        arm32_mov_int_at(rel_addr, 4*(PIKE_PC - rel_addr - 1), ARM_REG_R2);
     }
   }
 }
@@ -1014,7 +1037,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
       b_imm(label_dist(&fallback), ARM_COND_NE);
       load_reg_imm(tmp, ARM_REG_PIKE_SP, -sizeof(struct svalue)+4);
       tmp2 = ra_alloc_any();
-      arm32_set_reg(tmp2, b);
+      arm32_mov_int(tmp2, b);
       subs_reg_reg(tmp, tmp2, tmp);
       ra_free(tmp2);
       b_imm(label_dist(&fallback), ARM_COND_VS);
@@ -1039,7 +1062,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
           adds_reg_imm(tmp, tmp, imm, rot);
       } else {
           tmp2 = ra_alloc_any();
-          arm32_set_reg(tmp2, b);
+          arm32_mov_int(tmp2, b);
           adds_reg_reg(tmp, tmp, tmp2);
           ra_free(tmp2);
       }
@@ -1071,7 +1094,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
       ins_f_byte_with_arg(F_LOCAL, b);
       return;
   }
-  arm32_set_reg(ra_alloc(ARM_REG_R0), b);
+  arm32_mov_int(ra_alloc(ARM_REG_R0), b);
   low_ins_f_byte(a);
   ra_free(ARM_REG_R0);
   label_generate(&done);
@@ -1088,8 +1111,8 @@ void ins_f_byte_with_2_args(unsigned int a,
       ins_f_byte_with_2_args(F_EXTERNAL, b, c);
       return;
   }
-  arm32_set_reg(ra_alloc(ARM_REG_R0), b);
-  arm32_set_reg(ra_alloc(ARM_REG_R1), c);
+  arm32_mov_int(ra_alloc(ARM_REG_R0), b);
+  arm32_mov_int(ra_alloc(ARM_REG_R1), c);
   low_ins_f_byte(a);
   ra_free(ARM_REG_R0);
   ra_free(ARM_REG_R1);
