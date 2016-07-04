@@ -63,9 +63,9 @@ struct pike_frame
 {
   INT32 refs;/* must be first */
   INT32 args;			/** Actual number of arguments. */
-  unsigned INT16 fun;		/** Function number. */
   INT16 num_locals;		/** Number of local variables. */
   INT16 num_args;		/** Number of argument variables. */
+  unsigned INT16 fun;		/** Function number. */
   unsigned INT16 flags;		/** PIKE_FRAME_* */
   INT16 ident;
   struct pike_frame *next;
