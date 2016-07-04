@@ -1,26 +1,26 @@
 #pike __REAL_VERSION__
 #pragma strict_types
 
+constant Bootstring = __builtin.bootstring;
 constant Buffer = __builtin.Buffer;
-
-constant count=__builtin.string_count;
-constant width=__builtin.string_width;
-constant trim_whites = __builtin.string_trim_whites;
-constant normalize_space = __builtin.string_normalize_space;
-constant trim_all_whites = __builtin.string_trim_all_whites;
 constant Iterator = __builtin.string_iterator;
-constant SplitIterator = __builtin.string_split_iterator;
 constant Replace = __builtin.multi_string_replace;
 constant SingleReplace = __builtin.single_string_replace;
-constant Bootstring = __builtin.bootstring;
+constant SplitIterator = __builtin.string_split_iterator;
+
+constant count = __builtin.string_count;
+constant filter_non_unicode = string_filter_non_unicode;
+constant hex2string = __builtin.hex2string;
 constant int2char = int2char;
 constant int2hex = int2hex;
-constant string2hex = __builtin.string2hex;
-constant hex2string = __builtin.hex2string;
+constant normalize_space = __builtin.string_normalize_space;
+constant range = __builtin.string_range;
 constant secure = __builtin.string_secure;
 constant status = __builtin.string_status;
-constant range = __builtin.string_range;
-constant filter_non_unicode = string_filter_non_unicode;
+constant string2hex = __builtin.string2hex;
+constant trim_all_whites = __builtin.string_trim_all_whites;
+constant trim_whites = __builtin.string_trim_whites;
+constant width = __builtin.string_width;
 
 constant __HAVE_SPRINTF_STAR_MAPPING__ = 1;
 constant __HAVE_SPRINTF_NEGATIVE_F__ = 1;
