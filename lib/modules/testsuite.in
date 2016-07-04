@@ -479,6 +479,7 @@ test_equal( o("x -n foo"/" ",([]))->name , "foo" )
 test_equal( (mapping)o("x -dvn foo xor"/" ",([])), ([ "debug":1, "verbose":1, "name":"foo", Arg.REST : ({ "xor" }) ]) )
 test_equal( o(({"x"}),(["VERBOSE":"1"]))->verbose, "1" )
 test_equal( (mapping)o("x --verbose=5"/" ",([])), ([ "name":"Donald", Arg.REST : ({ "--verbose=5" }) ]) )
+test_equal( o("x -v florp"/" ")[Arg.REST], ({ "florp" }) )
 test_equal( o("x -v -v"/" ",([]))->verbose , 2 )
 
 test_do(add_constant("o"))

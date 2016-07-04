@@ -498,12 +498,13 @@ class Options
 {
   inherit LowOptions;
 
-  protected string|int `[](string id)
+  protected mixed `[](mixed id)
   {
+    if( id==REST ) return argv;
     return values[id];
   }
 
-  protected string|int `->(string id)
+  protected mixed `->(string id)
   {
     return values[id];
   }
