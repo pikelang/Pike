@@ -18,7 +18,8 @@ constant range = __builtin.string_range;
 constant secure = __builtin.string_secure;
 constant status = __builtin.string_status;
 constant string2hex = __builtin.string2hex;
-constant trim_all_whites = __builtin.string_trim_all_whites;
+constant trim = __builtin.string_trim;
+/* deprecated */ constant trim_all_whites = __builtin.string_trim;
 constant trim_whites = __builtin.string_trim_whites;
 constant width = __builtin.string_width;
 

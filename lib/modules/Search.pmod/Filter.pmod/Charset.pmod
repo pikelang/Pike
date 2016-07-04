@@ -54,7 +54,7 @@ string decode_http( string data, mapping headers,
   string ct;
   if( (ct = headers["content-type"])
       && sscanf( ct, "%*scharset=%[^;]", ct ) == 2 )
-      return decode_charset( data,  String.trim_all_whites( ct ) );
+      return decode_charset( data,  String.trim( ct ) );
 
   // 2: Find <meta> header in the first Kb of data.
   int done;
@@ -70,7 +70,7 @@ string decode_http( string data, mapping headers,
       if( (ct = m->content||m->data)
 	  && sscanf( ct, "%*scharset=%[^;]", ct ) == 2 )
       {
-	data=decode_charset( data, String.trim_all_whites( ct ));
+        data=decode_charset( data, String.trim( ct ));
 	done=1;
       }
     }

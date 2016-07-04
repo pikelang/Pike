@@ -8,7 +8,7 @@ void main(int n, array args)
   string ver;
   sscanf(file, "%*sVersion %s\n", ver);
   if(!ver) exit(1);
-  ver = String.trim_all_whites(ver);
+  ver = String.trim(ver);
   if(!sizeof(ver)) exit(1);
   write("#define UVERSION %O\n", ver);
 }

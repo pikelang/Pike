@@ -581,7 +581,7 @@ protected string get_encoding(mapping h)
 {
   if (h["content-type"]) {
     sscanf(h["content-type"], "%*scharset=%s", string s);
-    return s && lower_case(String.trim_all_whites(s)) || "";
+    return s && lower_case(String.trim(s)) || "";
   }
 
   return "";

@@ -185,7 +185,7 @@ private function handle_error = master()->handle_error;
 //! @example
 //! @code
 //!  map(input/",",
-//!      Function.composite(String.trim_all_whites, upper_case));
+//!      Function.composite(String.trim, upper_case));
 //! @endcode
 function composite(function ... f)
 {

@@ -442,7 +442,7 @@ protected class DocParserClass {
   }
 
   protected mapping(string : string) sectionArgHandler(string keyword, string arg) {
-    return ([ "title" : String.trim_all_whites (arg) ]);
+    return ([ "title" : String.trim (arg) ]);
   }
 
   protected string typeArgHandler(string keyword, string arg) {
@@ -488,7 +488,7 @@ protected class DocParserClass {
 
   protected string|mapping(string:string) itemArgHandler(string keyword, string arg)
   {
-    arg = String.trim_all_whites(arg);
+    arg = String.trim(arg);
     if (arg == "") return "";
     if (!has_value(arg, "@")) return ([ "name":arg ]);
     return xmlNode(arg);
@@ -695,7 +695,7 @@ protected class DocParserClass {
 	res += closetag(tagstack[0]);
       tagstack = tagstack[1..];
     }
-    res = String.trim_all_whites(res-"<p></p>");
+    res = String.trim(res-"<p></p>");
     if(!sizeof(res)) return "\n";
     return "<p>" + res + "</p>\n";
   }
@@ -988,7 +988,7 @@ protected class DocParserClass {
           if (meta->belongs)
             parseError("@belongs before @directive");
           meta->type = "decl";
-	  string s = String.trim_all_whites(arg);
+          string s = String.trim(arg);
           meta->decls += ({ .PikeObjects.CppDirective(s) });
 	}
 	break;

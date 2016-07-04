@@ -444,7 +444,7 @@ string convert_page(string path, string fname,
 	if (has_prefix(sections[section], "\n"))
 	  sections[section] = sections[section][1..];
 	sscanf(sections[section], "%s\n", section_header);
-	if(!strlen(String.trim_all_whites(section_header)) ||
+        if(!strlen(String.trim(section_header)) ||
 	   upper_case(section_header) != section_header ||
 	   lower_case(section_header) == section_header)
 	{
@@ -461,7 +461,7 @@ string convert_page(string path, string fname,
 	mixed a, b;
 	sscanf(sections[headno],"%s\n%s",type,rest);
 
-	type = type && String.trim_all_whites(type);
+        type = type && String.trim(type);
 
 	switch(type)
 	{
@@ -498,7 +498,7 @@ string convert_page(string path, string fname,
 	    werror("Warning DIRECTIVE section broken!\n");
 
 	  symbol_type = "directive";
-	  part_names = map(part_name/"\n", String.trim_all_whites);
+          part_names = map(part_name/"\n", String.trim);
 
 	  rest = "";
 	  break;

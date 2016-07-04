@@ -1455,7 +1455,7 @@ array(Service) lookup( string name )
         foreach( (Stdio.read_file("/etc/services")||"")/"\n", string l )
         {
             sscanf( l, "%s#", l );
-            l = String.trim_all_whites(l);
+            l = String.trim(l);
             array tk  = replace(l,"\t", " ")/" "-({""});
             if( sizeof( tk ) > 1 && has_value( tk[1],"/") )
                 services[tk[0]] += ({ Service(tk[0],(int)(tk[1]/"/")[0],(tk[1]/"/")[1], tk[2..]*" ") });

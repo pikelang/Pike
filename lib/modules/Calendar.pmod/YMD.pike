@@ -3235,7 +3235,7 @@ TimeofDay dwim_time(string what,void|TimeRange cx)
 #define COLON ":"
 #define SPACED(X) replace(X," ","%*[ ]")
 
-   what = String.trim_all_whites(what);
+   what = String.trim(what);
 
    if (sizeof(what)>22 &&
        (t=http_time(what,cx))) return t;

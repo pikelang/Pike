@@ -445,10 +445,10 @@ protected SimpleNode mergeDoc(SimpleNode orig, SimpleNode new)
   //     and it comes first among the element nodes.
   SimpleNode orig_text = orig->get_first_element("text");
   SimpleNode new_text = new->get_first_element("text");
-  if (new_text && sizeof(String.trim_all_whites(new_text->value_of_node()))) {
+  if (new_text && sizeof(String.trim(new_text->value_of_node()))) {
     if (!orig_text) {
       orig->add_child(new_text);
-    } else if (!sizeof(String.trim_all_whites(orig_text->value_of_node()))) {
+    } else if (!sizeof(String.trim(orig_text->value_of_node()))) {
       orig->replace_child(orig_text, new_text);
     } else {
       orig_text->replace_children(orig_text->get_children() +
@@ -520,7 +520,7 @@ void mergeTrees(SimpleNode dest, SimpleNode source)
       dest_children[name] = node;
     } else if (isDoc(node)) {
       // Strip empty doc nodes.
-      if (sizeof(String.trim_all_whites(node->value_of_node())))
+      if (sizeof(String.trim(node->value_of_node())))
 	dest_has_doc = node;
     } else if (isDocGroup(node)) {
       // Docgroups are special:
@@ -535,7 +535,7 @@ void mergeTrees(SimpleNode dest, SimpleNode source)
     } else if (isModifiers(node)) {
       dest_modifiers = (multiset(string))node->get_elements()->get_any_name();
     } else if (!isText(node) ||
-	       sizeof(String.trim_all_whites(node->value_of_node()))) {
+               sizeof(String.trim(node->value_of_node()))) {
       other_children += ({ node });
     }
   }
@@ -594,7 +594,7 @@ void mergeTrees(SimpleNode dest, SimpleNode source)
 	    dest_groups[name] += ({ node });
 	  }
 	  SimpleNode doc = node->get_first_element("doc");
-	  if (doc && !sizeof(String.trim_all_whites(doc->value_of_node()))) {
+          if (doc && !sizeof(String.trim(doc->value_of_node()))) {
 	    // The doc is NULL.
 	    node->remove_child(doc);
 	  }
@@ -607,12 +607,12 @@ void mergeTrees(SimpleNode dest, SimpleNode source)
         break;
 
       case "doc":
-	if (!sizeof(String.trim_all_whites(node->value_of_node()))) {
+        if (!sizeof(String.trim(node->value_of_node()))) {
 	  // NULL doc.
 	} else if (dest_has_doc) {
 	  if ((node->get_attributes()["placeholder"] == "true") ||
-	      (String.trim_all_whites(node->value_of_node()) ==
-	       String.trim_all_whites(dest_has_doc->value_of_node()))) {
+              (String.trim(node->value_of_node()) ==
+               String.trim(dest_has_doc->value_of_node()))) {
 	    // New doc is placeholder or same as old.
 	  } else if (dest_has_doc->get_attributes()["placeholder"] != "true") {
 	    // werror("Original doc: %O\n", dest_has_doc->value_of_node());
@@ -642,7 +642,7 @@ void mergeTrees(SimpleNode dest, SimpleNode source)
 
       default:
 	if (!isText(node) ||
-	    sizeof(String.trim_all_whites(node->value_of_node()))) {
+            sizeof(String.trim(node->value_of_node()))) {
 	  if (node->get_any_name() != "source-position") {
 	    werror("Got other node: %O\n", node->render_xml());
 	  }

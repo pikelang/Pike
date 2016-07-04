@@ -913,7 +913,7 @@ array(array(string)|array(int)) tokenize(string s, int line) {
       // But convert #pike directives to corresponding imports,
       // so that the resolver can find the correct symbols later.
       if (has_prefix(s, "#pike ") || has_prefix(s, "#pike\t")) {
-	string version = String.trim_all_whites(s[sizeof("#pike ")..]);
+        string version = String.trim(s[sizeof("#pike ")..]);
 	if (version == "__REAL_VERSION__") {
 	  version = "predef";
 	}

@@ -271,7 +271,7 @@ int main(int argc, array(string) argv)
      array(string) comp = ({});
      foreach(metadata->MODULE/",";;string mod)
      {
-       mod = String.trim_all_whites(mod);
+       mod = String.trim(mod);
       write("Uninstalling any previous version of %s...\n", mod);
 
       // we spawn a new pike to do this because Windows prohibits modifying a file if it's already

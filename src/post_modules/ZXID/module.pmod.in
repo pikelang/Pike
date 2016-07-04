@@ -112,7 +112,7 @@ class Configuration
       case 'L':	// Location header.
 	if (!has_prefix(raw_res, "Location:")) break;
 	raw_res =
-	  String.trim_all_whites((raw_res/"\r\n")[0][sizeof("Location:")..]);
+          String.trim((raw_res/"\r\n")[0][sizeof("Location:")..]);
 
 	if (has_prefix(raw_res, "?")) {
 	  // Prefix with the URL.

@@ -101,7 +101,7 @@ string create_reference(string from, string to, string text,
     xlink_namespace_prefix +
     "href='" +
     "../"*max(sizeof(from/"/") - 2, 0) + map(a, cquote)*"/" + ".html'>" +
-    String.trim_all_whites(text) + "</a>";
+    String.trim(text) + "</a>";
 }
 
 multiset missing = (< "foreach", "catch", "throw", "sscanf", "gauge", "typeof" >);

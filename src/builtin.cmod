@@ -1628,7 +1628,7 @@ skip##TYPE:;								\
   RETURN finish_string_builder (&sb);
 }
 
-/*! @decl string trim_all_whites (string s)
+/*! @decl string trim (string s)
  *! @belongs String
  *!
  *! Trim leading and trailing white spaces characters (space, tab,
@@ -1636,8 +1636,8 @@ skip##TYPE:;								\
  *! white spaces defined in Unicode) from the string @[s].
  */
 PMOD_EXPORT
-PIKEFUN string string_trim_all_whites (string s)
-  errname trim_all_whites;
+PIKEFUN string string_trim (string s)
+  errname trim;
   optflags OPT_TRY_OPTIMIZE;
 {
   ptrdiff_t start = 0, end = s->len;

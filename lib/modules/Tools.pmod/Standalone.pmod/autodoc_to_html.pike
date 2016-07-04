@@ -84,7 +84,7 @@ Position position = Position();
 
 string quote(string in) {
   if(in-" "-"\t"=="") return "";
-  if(String.trim_all_whites(in)=="") return "\n";
+  if(String.trim(in)=="") return "\n";
   return Parser.XML.Tree.text_quote(in);
 }
 

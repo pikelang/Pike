@@ -35,7 +35,7 @@ class IP {
 	Stdio.FILE f = Stdio.FILE(file_name, "r");
 
 	while (string line = f->gets()) {
-	    line = String.trim_all_whites(line);
+            line = String.trim(line);
 	    if (!sizeof(line)) continue;
 	    parse_line(line, tree);
 	}

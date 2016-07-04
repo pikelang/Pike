@@ -616,7 +616,7 @@ string doctype(string type,void|string indent)
    };
    string combine_or(string a,string b)
    {
-     b = String.trim_all_whites(b);
+     b = String.trim(b);
      if (b[..3]=="<or>") b=b[4..<5];
      return "<or>"+a+b+"</or>";
    };
@@ -804,9 +804,9 @@ void docdecl(string enttype,
 	     break;
 	   }
 	   if(br==-1 || (in[i]==',' && !br)) {
-	     if(String.trim_all_whites(t)==")")
+             if(String.trim(t)==")")
 	       return res;
-	     if(String.trim_all_whites(t[..<1])=="void" && res=="")
+             if(String.trim(t[..<1])=="void" && res=="")
 		return "<argument/>\n";
 
 	     if(t[-1]==')')
@@ -827,13 +827,13 @@ void docdecl(string enttype,
 	 i++;
 	 for (; i<sizeof(in); i++) {
 	   if(in[i]==')') {
-	     if(!sizeof(String.trim_all_whites(n)))
+             if(!sizeof(String.trim(n)))
 	       throw( ({ "Empty argument name. ("+in+")\n", backtrace() }) );
 	     return res + "<argument name=" + S(n) + "><type>" + t +
 	       "</type></argument>\n";
 	   }
 	   if(in[i]==',') {
-	     if(!sizeof(String.trim_all_whites(n)))
+             if(!sizeof(String.trim(n)))
 		throw( ({ "Empty argument name. ("+in+")\n", backtrace() }) );
 	     res += "<argument name=" + S(n) + "><type>" + t +
 	       "</type></argument>\n";

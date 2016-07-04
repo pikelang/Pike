@@ -1021,7 +1021,7 @@ class Connection {
       if(lower_case(parts[0]) != what)
         return 500;
       string validating_mail;
-      parts[1] = String.trim_all_whites(parts[1]);
+      parts[1] = String.trim(parts[1]);
       if(!sscanf(parts[1], "<%s>", validating_mail))
         sscanf(parts[1], "%s", validating_mail);
 

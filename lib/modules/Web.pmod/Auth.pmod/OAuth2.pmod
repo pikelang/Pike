@@ -322,7 +322,7 @@ class Base
 
     string sp = search(_scope, ",") > -1 ? "," :
                 search(_scope, " ") > -1 ? " " : "";
-    array p = map(_scope/sp, String.trim_all_whites);
+    array p = map(_scope/sp, String.trim);
 
     return has_value(p, scope);
   }
@@ -736,7 +736,7 @@ class Base
     array r = ({});
 
     if (stringp(s))
-      s = map(s/",", String.trim_all_whites);
+      s = map(s/",", String.trim);
 
     if (multisetp(s))
       s = (array) s;

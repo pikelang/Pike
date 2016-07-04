@@ -606,7 +606,7 @@ class M4Testsuite
       if(!has_suffix(data, "END"))
         log_msg("%s: Missing end marker.\n", fn);
 
-      pike_compat = String.trim_all_whites(pike_compat);
+      pike_compat = String.trim(pike_compat);
       if( sizeof(pike_compat) )
         compat = CompatPlugin(pike_compat);
     }
@@ -810,7 +810,7 @@ $2
 cond_end
 ",
 
-    "cond_resolv":"cond([[master()->resolv(String.trim_all_whites(\"$1\"))]],[[$2]])",
+    "cond_resolv":"cond([[master()->resolv(String.trim(\"$1\"))]],[[$2]])",
     "ifefun":"cond([[all_constants()->$1]],[[$2]])",
 
     "test_cmp":#"
@@ -918,7 +918,7 @@ test_equal(max($2,$1,$3), $3)
 
         void add_arg()
         {
-          string arg = String.trim_all_whites(data[start+1..pos-1]);
+          string arg = String.trim(data[start+1..pos-1]);
           args += ({ arg });
         };
 
@@ -1009,7 +1009,7 @@ test_equal(max($2,$1,$3), $3)
           cond = dequote(cond);
           if( !sscanf(cond, "COND %s", cond) )
             cond = "";
-          cond = String.trim_all_whites(cond);
+          cond = String.trim(cond);
           if( cond=="" )
             cond = 0;
         }

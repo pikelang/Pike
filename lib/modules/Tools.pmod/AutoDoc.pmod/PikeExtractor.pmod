@@ -72,7 +72,7 @@ private class Extractor {
       string s = tokens[i];
       int pos = positions[i];
       if (has_prefix(s, DOC_COMMENT)) {
-        s = String.trim_all_whites(s[sizeof(DOC_COMMENT) .. ]);
+        s = String.trim(s[sizeof(DOC_COMMENT) .. ]);
         if (s == "@ignore") {
 	  ignores->push(pos);
 	  continue;

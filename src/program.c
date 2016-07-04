@@ -8357,7 +8357,7 @@ struct pike_string *format_exception_for_error_msg (struct svalue *thrown)
   SAFE_APPLY_MASTER ("describe_error", 1);
 
   if (TYPEOF(sp[-1]) == T_STRING) {
-    f_string_trim_all_whites(1);
+    f_string_trim(1);
     push_constant_text("\n");
     push_constant_text(" ");
     f_replace(3);

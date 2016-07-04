@@ -106,7 +106,7 @@ Testsuite read_tests( string fn ) {
   if (test_type == "RUN-AS-PIKE-SCRIPT")
     return ScriptTestsuite(fn);
 
-  tests = String.trim_all_whites(tests);
+  tests = String.trim(tests);
   if(!sizeof(tests)) return 0;
 
   if( fn=="testsuite" || has_suffix(fn, "/testsuite") )

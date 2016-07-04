@@ -68,7 +68,7 @@ array(array(int)) parse_jisx_file(string path)
   array(array(int)) result = allocate(2, allocate)(94*94, 0xfffd);
   foreach(f->line_iterator(1);;string line) {
     line = (line/"#")[0];
-    array(string) fields = map(line/"\t", String.trim_all_whites) - ({ "" });
+    array(string) fields = map(line/"\t", String.trim) - ({ "" });
     if (sizeof(fields) < 2) continue;
     int plane;
     if (has_prefix(fields[0], "3-")) {

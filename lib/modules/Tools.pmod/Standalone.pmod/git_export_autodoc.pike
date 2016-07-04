@@ -1084,8 +1084,8 @@ int main(int argc, array(string) argv)
     if (src_git) {
       if (catch {
 	  string old_src_git =
-	    String.trim_all_whites(git("config", "--get",
-				       "remotes.origin.url"));
+            String.trim(git("config", "--get",
+                            "remotes.origin.url"));
 	  if (old_src_git != src_git) {
 	    if (verbose) {
 	      werror("Updating source repository URL to %O.\n", src_git);
@@ -1182,8 +1182,8 @@ int main(int argc, array(string) argv)
   // Start with the ref for HEAD.
   string master_ref;
   catch {
-    master_ref = String.trim_all_whites(Git.git(work_git, "symbolic-ref",
-						"refs/remotes/origin/HEAD"));
+    master_ref = String.trim(Git.git(work_git, "symbolic-ref",
+                                     "refs/remotes/origin/HEAD"));
     if (has_prefix(master_ref, "refs/remotes/origin/")) {
       master_ref = "refs/heads/" + master_ref[sizeof("refs/remotes/origin/")..];
     }

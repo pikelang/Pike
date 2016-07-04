@@ -406,7 +406,7 @@ class Signal( string name )
 
 string function_type( string what )
 {
-  return __parse_pike_type( String.trim_all_whites( what ) );
+  return __parse_pike_type( String.trim( what ) );
 }
 
 class Member( string name, Type type, int set,
