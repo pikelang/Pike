@@ -4,7 +4,6 @@
 || for more information.
 */
 
-#ifdef PIKE_CONCAT
 #include "global.h"
 #include "svalue.h"
 #include "operators.h"
@@ -12,16 +11,6 @@
 #include "object.h"
 #include "builtin_functions.h"
 #include "bignum.h"
-#else
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/mman.h>
-#include <sys/types.h>
-#include <signal.h>
-#include <unistd.h>
-#define INT32 int
-void add_to_program(unsigned INT32 op);
-#endif
 
 #define MACRO  ATTRIBUTE((unused)) static
 
@@ -666,7 +655,6 @@ void arm32_flush_instruction_cache(void *addr, size_t len) {
     __builtin___clear_cache(addr, (char*)addr+len);
 }
 
-#ifdef PIKE_CONCAT
 static void arm32_load_sp_reg(void) {
     if (!(compiler_state.flags & FLAG_SP_LOADED)) {
         INT32 offset = OFFSETOF(Pike_interpreter_struct, stack_pointer);
@@ -1140,66 +1128,3 @@ void ins_f_byte_with_2_args(unsigned int a,
   ra_free(ARM_REG_R1);
   return;
 }
-#else
-unsigned INT32 *to;
-
-void add_to_program(unsigned INT32 op) {
-    *(to++) = op;
-    printf("added %08x\n", op);
-}
-
-void foo() {
-    printf("foo was called.\n");
-}
-
-void segv(int signal) {
-    printf("I (%d) been naughty.\n", getpid());
-    pause();
-}
-
-int main(void) {
-    void *fun = mmap (NULL, 1024*4, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-    void (*addr)(void) = fun;
-
-    int a = 23;
-    int b = 0;
-    unsigned INT32 registers = 0;
-    int i;
-    
-    for (i = 3; i <= 11; i++) {
-        registers |= RBIT(i);
-    }
-
-    if (fun == MAP_FAILED) {
-        fprintf(stderr, "MMAP FAIL!\n");
-        return 1;
-    }
-    signal(SIGSEGV, segv);
-
-    to = fun;
-
-    printf("fun: %p\n", fun);
-    ADD_PROLOGUE(registers);
-    arm32_call(foo);
-    ADD_SET_REG(ARM_REG_R4, (INT32)&a, ARM_REG_R5);
-    load_reg_imm(ARM_REG_R3, ARM_REG_R4, 0);
-    ADD_SET_REG(ARM_REG_R4, (INT32)&b, ARM_REG_R5);
-    store_reg_imm(ARM_REG_R3, ARM_REG_R4, 0);
-    ADD_EPILOGUE(registers);
-
-    mprotect(fun, 1024*4, PROT_READ | PROT_EXEC);
-    __builtin___clear_cache(fun, (char*)fun+1024*4);
-
-    addr();
-
-    printf("%d %d\n", a, b);
-
-    munmap(fun, 1024*4);
-
-    return 0;
-}
-
-void bar() {
-}
-
-#endif
