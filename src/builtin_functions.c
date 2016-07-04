@@ -9429,20 +9429,20 @@ void init_builtin_efuns(void)
 	   OPT_TRY_OPTIMIZE);
 
   /* function(string,int|void:int) */
-  ADD_EFUN("hash_8_0", f_hash_8_0,
-	   tAttr("deprecated",tFunc(tStr tOr(tInt1Plus,tVoid),tIntPos)),
+  ADD_EFUN("hash_7_0",f_hash_7_0,
+           tFunc(tStr tOr(tInt1Plus,tVoid),tIntPos),
 	   OPT_TRY_OPTIMIZE);
 
-  ADD_EFUN("hash_7_0",f_hash_7_0,
-           tAttr("deprecated",tFunc(tStr tOr(tInt1Plus,tVoid),tIntPos)),
+  ADD_EFUN("hash_7_4",f_hash_7_4,
+           tFunc(tStr tOr(tInt1Plus,tVoid),tIntPos),
+	   OPT_TRY_OPTIMIZE);
+
+  ADD_EFUN("hash_8_0", f_hash_8_0,
+           tFunc(tStr tOr(tInt1Plus,tVoid),tIntPos),
 	   OPT_TRY_OPTIMIZE);
 
   ADD_EFUN("hash",f_hash,
 	   tFunc(tStr tOr(tInt1Plus,tVoid),tIntPos), OPT_TRY_OPTIMIZE);
-
-  ADD_EFUN("hash_7_4",f_hash_7_4,
-           tAttr("deprecated",tFunc(tStr tOr(tInt1Plus,tVoid),tIntPos)),
-	   OPT_TRY_OPTIMIZE);
 
   ADD_EFUN("hash_value",f_hash_value,tFunc(tMix,tIntPos),OPT_TRY_OPTIMIZE);
 
