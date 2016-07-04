@@ -1120,6 +1120,18 @@ void ins_f_byte_with_2_args(unsigned int a,
       ins_f_byte(F_MARK);
       ins_f_byte_with_2_args(F_EXTERNAL, b, c);
       return;
+  case F_INIT_FRAME: {
+          enum arm32_register tmp = ra_alloc_any();
+          arm32_load_fp_reg();
+          arm32_mov_int(tmp, c|(b<<16));
+
+          assert(OFFSETOF(pike_frame, num_locals) % 4 == 0);
+          assert(OFFSETOF(pike_frame, num_locals) + 2 == OFFSETOF(pike_frame, num_args));
+
+          store_reg_imm(tmp, ARM_REG_PIKE_FP, OFFSETOF(pike_frame, num_locals));
+          ra_free(tmp);
+          return;
+      }
   }
   arm32_mov_int(ra_alloc(ARM_REG_R0), b);
   arm32_mov_int(ra_alloc(ARM_REG_R1), c);
