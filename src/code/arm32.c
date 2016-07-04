@@ -779,13 +779,6 @@ void arm32_ins_entry(void) {
     arm32_flush_codegen_state();
 }
 
-#if 0
-void arm32_ins_exit(void) {
-    arm32_mov_int(ARM_REG_R0, -1);
-    arm32_epilogue();
-}
-#endif
-
 static void add_rel_cond_jmp(enum arm32_register reg, enum arm32_register b, enum arm32_condition cond, int jmp) {
     cmp_reg_reg(reg, b);
     b_imm(jmp-2, cond);
@@ -837,8 +830,7 @@ static void arm32_call_c_opcode(unsigned int opcode) {
   low_ins_call(addr);
 }
 
-void break_my_arm(void) {
-}
+MACRO void break_my_arm(void) { }
 
 MACRO void arm32_free_svalue_off(enum arm32_register src, int off, int guaranteed) {
     unsigned INT32 combined = TYPE_SUBTYPE(MIN_REF_TYPE, 0);
@@ -852,9 +844,6 @@ MACRO void arm32_free_svalue_off(enum arm32_register src, int off, int guarantee
     off *= sizeof(struct svalue);
 
     label_init(&end);
-
-    // TODO: works great, but maybe not for your usecase
-    arm32_call_c_function(break_my_arm);
 
     load_reg_imm(reg, src, off);
 
@@ -1037,7 +1026,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
   case F_SUBTRACT_INT:
     {
       struct label fallback;
-      enum arm32_register tmp = ra_alloc_any(), tmp2;
+      enum arm32_register tmp = ra_alloc_any();
       label_init(&fallback);
       arm32_load_sp_reg();
       load_reg_imm(tmp, ARM_REG_PIKE_SP, -sizeof(struct svalue)+0);
@@ -1056,7 +1045,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
     {
       struct label fallback;
       unsigned char imm, rot;
-      enum arm32_register tmp = ra_alloc_any(), tmp2;
+      enum arm32_register tmp = ra_alloc_any();
       label_init(&fallback);
       arm32_load_sp_reg();
       load_reg_imm(tmp, ARM_REG_PIKE_SP, -sizeof(struct svalue)+0);
