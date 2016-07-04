@@ -137,7 +137,7 @@ OPCODE_FUN set_src_imm(unsigned INT32 instr, unsigned char imm, unsigned char ro
     return ARM_ADDR_IMMEDIATE | instr | imm | (rot << 8);
 }
 
-OPCODE_FUN set_src_reg(unsigned INT32 instr, enum arm32_register r) {
+OPCODE_FUN set_src2_reg(unsigned INT32 instr, enum arm32_register r) {
     return instr | ARM_ADDR_REGISTER | r;
 }
 
@@ -249,16 +249,16 @@ OPCODE_FUN gen_reg(enum data_proc_instr op, enum arm32_register dst, enum arm32_
 
     instr |= op << 21;
     instr = set_dst_reg(instr, dst);
-    instr = set_src_reg(instr, src);
+    instr = set_src2_reg(instr, src);
 
     return instr;
 }
 
 OPCODE_FUN gen_reg_reg(enum data_proc_instr op, enum arm32_register dst,
                            enum arm32_register a, enum arm32_register b) {
-    unsigned INT32 instr = gen_reg(op, dst, a);
+    unsigned INT32 instr = gen_reg(op, dst, b);
 
-    instr = set_src1_reg(instr, b);
+    instr = set_src1_reg(instr, a);
 
     return instr;
 }
@@ -1038,7 +1038,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
       load_reg_imm(tmp, ARM_REG_PIKE_SP, -sizeof(struct svalue)+4);
       tmp2 = ra_alloc_any();
       arm32_mov_int(tmp2, b);
-      subs_reg_reg(tmp, tmp2, tmp);
+      subs_reg_reg(tmp, tmp, tmp2);
       ra_free(tmp2);
       b_imm(label_dist(&fallback), ARM_COND_VS);
       store_reg_imm(tmp, ARM_REG_PIKE_SP, -sizeof(struct svalue)+4);
