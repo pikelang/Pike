@@ -120,6 +120,102 @@ MACRO void arm32_call(void *ptr);
 MACRO enum arm32_register ra_alloc_any(void);
 MACRO void ra_free(enum arm32_register reg);
 
+static unsigned INT32 stats[F_MAX_INSTR - F_OFFSET];
+
+#define OPCODE0(X,Y,F) case X: return #X;
+#define OPCODE1(X,Y,F) case X: return #X;
+#define OPCODE2(X,Y,F) case X: return #X;
+#define OPCODE0_TAIL(X,Y,F) case X: return #X;
+#define OPCODE1_TAIL(X,Y,F) case X: return #X;
+#define OPCODE2_TAIL(X,Y,F) case X: return #X;
+#define OPCODE0_JUMP(X,Y,F) case X: return #X;
+#define OPCODE1_JUMP(X,Y,F) case X: return #X;
+#define OPCODE2_JUMP(X,Y,F) case X: return #X;
+#define OPCODE0_TAILJUMP(X,Y,F) case X: return #X;
+#define OPCODE1_TAILJUMP(X,Y,F) case X: return #X;
+#define OPCODE2_TAILJUMP(X,Y,F) case X: return #X;
+#define OPCODE0_PTRJUMP(X,Y,F) case X: return #X;
+#define OPCODE1_PTRJUMP(X,Y,F) case X: return #X;
+#define OPCODE2_PTRJUMP(X,Y,F) case X: return #X;
+#define OPCODE0_TAILPTRJUMP(X,Y,F) case X: return #X;
+#define OPCODE1_TAILPTRJUMP(X,Y,F) case X: return #X;
+#define OPCODE2_TAILPTRJUMP(X,Y,F) case X: return #X;
+#define OPCODE0_RETURN(X,Y,F) case X: return #X;
+#define OPCODE1_RETURN(X,Y,F) case X: return #X;
+#define OPCODE2_RETURN(X,Y,F) case X: return #X;
+#define OPCODE0_TAILRETURN(X,Y,F) case X: return #X;
+#define OPCODE1_TAILRETURN(X,Y,F) case X: return #X;
+#define OPCODE2_TAILRETURN(X,Y,F) case X: return #X;
+#define OPCODE0_BRANCH(X,Y,F) case X: return #X;
+#define OPCODE1_BRANCH(X,Y,F) case X: return #X;
+#define OPCODE2_BRANCH(X,Y,F) case X: return #X;
+#define OPCODE0_TAILBRANCH(X,Y,F) case X: return #X;
+#define OPCODE1_TAILBRANCH(X,Y,F) case X: return #X;
+#define OPCODE2_TAILBRANCH(X,Y,F) case X: return #X;
+#define OPCODE0_ALIAS(X,Y,F,A) case X: return #X;
+#define OPCODE1_ALIAS(X,Y,F,A) case X: return #X;
+#define OPCODE2_ALIAS(X,Y,F,A) case X: return #X;
+
+const char* get_opcode_name(PIKE_OPCODE_T code) {
+    switch (code+F_OFFSET) {
+#include "interpret_protos.h"
+    default:
+        return "<unknown>";
+    }
+}
+
+#undef OPCODE0
+#undef OPCODE1
+#undef OPCODE2
+#undef OPCODE0_TAIL
+#undef OPCODE1_TAIL
+#undef OPCODE2_TAIL
+#undef OPCODE0_PTRJUMP
+#undef OPCODE1_PTRJUMP
+#undef OPCODE2_PTRJUMP
+#undef OPCODE0_TAILPTRJUMP
+#undef OPCODE1_TAILPTRJUMP
+#undef OPCODE2_TAILPTRJUMP
+#undef OPCODE0_RETURN
+#undef OPCODE1_RETURN
+#undef OPCODE2_RETURN
+#undef OPCODE0_TAILRETURN
+#undef OPCODE1_TAILRETURN
+#undef OPCODE2_TAILRETURN
+#undef OPCODE0_BRANCH
+#undef OPCODE1_BRANCH
+#undef OPCODE2_BRANCH
+#undef OPCODE0_TAILBRANCH
+#undef OPCODE1_TAILBRANCH
+#undef OPCODE2_TAILBRANCH
+#undef OPCODE0_JUMP
+#undef OPCODE1_JUMP
+#undef OPCODE2_JUMP
+#undef OPCODE0_TAILJUMP
+#undef OPCODE1_TAILJUMP
+#undef OPCODE2_TAILJUMP
+#undef OPCODE0_ALIAS
+#undef OPCODE1_ALIAS
+#undef OPCODE2_ALIAS
+
+MACRO void record_opcode(PIKE_OPCODE_T code) {
+    stats[code - F_OFFSET] ++;
+}
+
+ATTRIBUTE((destructor))
+MACRO void write_stats() {
+    int i;
+    FILE* file = fopen("/home/el/opcode.state", "a");
+
+    for (i = 0; i < F_MAX_INSTR - F_OFFSET; i++) {
+        if (!stats[i]) continue;
+
+        fprintf(file, "%s\t%u\n", get_opcode_name(i), stats[i]);
+    }
+
+    fclose(file);
+}
+
 OPCODE_FUN set_status(unsigned INT32 instr) {
     return instr | (1<<19);
 }
@@ -927,6 +1023,8 @@ static void low_ins_f_byte(unsigned int b)
   int flags;
   INT32 rel_addr = rel_addr;
 
+  record_opcode(b);
+
 #ifdef PIKE_DEBUG
   if(b-F_OFFSET>255)
     Pike_error("Instruction too big %d\n",b);
@@ -1023,6 +1121,8 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
   struct label done;
   label_init(&done);
 
+  record_opcode(a);
+
   switch (a) {
   case F_NUMBER:
       arm32_push_int(b, NUMBER_NUMBER);
@@ -1102,6 +1202,7 @@ void ins_f_byte_with_2_args(unsigned int a,
 			    INT32 b,
 			    INT32 c)
 {
+  record_opcode(a);
   switch (a) {
   case F_MARK_AND_EXTERNAL:
       ins_f_byte(F_MARK);
