@@ -276,12 +276,12 @@ class Package
 			      bootstrap,
 			      setup_filename }))->wait();
 
-    packages = ({ install_filename, pike_filename }) + packages;
-
     if (extra_platform_test) {
       packages = ({ extra_platform_test }) + packages;
     }
     
+    packages = ({ install_filename, pike_filename }) + packages;
+
     string original_wd = getcwd();
     foreach(packages, string package)
     {
