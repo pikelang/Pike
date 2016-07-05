@@ -673,6 +673,7 @@ static void arm32_load_sp_reg(void) {
 
 static void arm32_store_sp_reg(void) {
     INT32 offset = OFFSETOF(Pike_interpreter_struct, stack_pointer);
+    assert(compiler_state.flags & FLAG_SP_LOADED);
     store_reg_imm(ARM_REG_PIKE_SP, ARM_REG_PIKE_IP, offset);
 }
 
@@ -685,8 +686,8 @@ static void arm32_load_fp_reg(void) {
     }
 }
 
-MACRO void arm32_change_sp(INT32 offset) {
-    arm32_load_sp_reg();
+MACRO void arm32_change_sp_reg(INT32 offset) {
+    assert(compiler_state.flags & FLAG_SP_LOADED);
     offset *= sizeof(struct svalue);
     if (offset < 0) {
         offset = -offset;
@@ -694,11 +695,25 @@ MACRO void arm32_change_sp(INT32 offset) {
     } else {
         arm32_add_reg_int(ARM_REG_PIKE_SP, ARM_REG_PIKE_SP, offset);
     }
+}
+
+MACRO void arm32_change_sp(INT32 offset) {
+    arm32_load_sp_reg();
+    arm32_change_sp_reg(offset);
     arm32_store_sp_reg();
 }
 
 static void arm32_flush_dirty_regs(void) {
     arm32_store_sp_reg();
+}
+
+MACRO void arm32_call_efun(void (*fun)(int), int args) {
+    arm32_mov_int(ra_alloc(ARM_REG_R0), args);
+    arm32_call(fun);
+    ra_free(ARM_REG_R0);
+    if (args != 1 && compiler_state.flags & FLAG_SP_LOADED) {
+        arm32_change_sp_reg(-(args-1));
+    }
 }
 
 static void arm32_push_int(unsigned INT32 value, int subtype) {
@@ -807,7 +822,6 @@ static void low_ins_call(void *addr) {
 }
 
 static void arm32_call_c_function(void * addr) {
-    arm32_store_sp_reg();
     compiler_state.flags &= ~FLAG_SP_LOADED;
     compiler_state.flags &= ~FLAG_FP_LOADED;
     arm32_call(addr);
