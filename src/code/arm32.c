@@ -114,7 +114,9 @@ enum data_proc_instr {
 
 #define OPCODE_FUN ATTRIBUTE((unused,warn_unused_result)) static PIKE_OPCODE_T
 
-void arm32_call(void *ptr);
+
+MACRO void arm32_flush_dirty_regs(void);
+MACRO void arm32_call(void *ptr);
 MACRO enum arm32_register ra_alloc_any(void);
 MACRO void ra_free(enum arm32_register reg);
 
@@ -641,7 +643,7 @@ MACRO void arm32_epilogue(void) {
     bx_reg(ARM_REG_LR);
 }
 
-void arm32_call(void *ptr) {
+MACRO void arm32_call(void *ptr) {
     unsigned INT32 v = (char*)ptr - (char*)NULL;
     enum arm32_register tmp = ra_alloc_any();
 
@@ -655,24 +657,34 @@ void arm32_flush_instruction_cache(void *addr, size_t len) {
     __builtin___clear_cache(addr, (char*)addr+len);
 }
 
+MACRO void arm32_low_store_sp_reg(void) {
+    INT32 offset = OFFSETOF(Pike_interpreter_struct, stack_pointer);
+    store_reg_imm(ARM_REG_PIKE_SP, ARM_REG_PIKE_IP, offset);
+}
+
+MACRO void arm32_low_load_sp_reg(void) {
+    INT32 offset = OFFSETOF(Pike_interpreter_struct, stack_pointer);
+
+    load_reg_imm(ARM_REG_PIKE_SP, ARM_REG_PIKE_IP, offset);
+}
+
 static void arm32_load_sp_reg(void) {
     if (!(compiler_state.flags & FLAG_SP_LOADED)) {
-        INT32 offset = OFFSETOF(Pike_interpreter_struct, stack_pointer);
+
+        assert(!(compiler_state.flags & FLAG_SP_CHANGED));
 
         compiler_state.flags |= FLAG_SP_LOADED;
 
-        load_reg_imm(ARM_REG_PIKE_SP, ARM_REG_PIKE_IP, offset);
+        arm32_low_load_sp_reg();
     }
 }
 
 static void arm32_store_sp_reg(void) {
     if (compiler_state.flags & FLAG_SP_CHANGED) {
-        INT32 offset = OFFSETOF(Pike_interpreter_struct, stack_pointer);
-        if (!(compiler_state.flags & FLAG_SP_LOADED)) {
-            Pike_fatal("pike sp not loaded into register.\n");
-        }
-        store_reg_imm(ARM_REG_PIKE_SP, ARM_REG_PIKE_IP, offset);
+        assert(compiler_state.flags & FLAG_SP_LOADED);
         compiler_state.flags &= ~FLAG_SP_CHANGED;
+
+        arm32_low_store_sp_reg();
     }
 }
 
