@@ -1,33 +1,5 @@
 /* Module for creating executable installation scripts based on Pike. */
 
-#define ERR(msg) throw(({ "(Install) "+sprintf msg+"\n", backtrace() }))
-
-int mkdirhier(string path, int|void mod)
-{
-  string a = "";
-  int r = 1;
-
-  if(Stdio.is_dir(path))
-    return query_num_arg() == 1 ? 1 : (chmod(path, mod),1);
-  
-  foreach(path/"/", string d)
-  {
-    a += d + "/";
-    if(sizeof(d))
-      if(query_num_arg() == 1)
-	r = mkdir(a);
-      else
-	r = mkdir(a, mod);
-  }
-  
-  return r || (query_num_arg() == 2 && (chmod(path, mod),1));
-}
-
-void rmrf(string ... path)
-{
-  Process.create_process(({ "rm","-rf", @path }))->wait();
-}
-
 string sh_quote(string s)
 {
   return "'"+replace(s, "'", "'\"'\"'")+"'";
@@ -262,14 +234,14 @@ class Package
 			       setup_filename,
 			       setup_filename);
     
-    rmrf("#!", setup_filename);
+    Stdio.recursive_rm("#!/"+setup_filename);
     
     if(!Stdio.write_file(setup_filename, setup))
-      ERR(("Failed to write setup script %O., ", setup_filename));
+      error("Failed to write setup script %O., ", setup_filename);
     chmod(setup_filename, 0755);
 		   
-    if(!mkdirhier(bootstrap, 0755))
-      ERR(("Failed to create bootstrap %O., ", bootstrap));
+    if(!Stdio.mkdirhier(bootstrap, 0755))
+      error("Failed to create bootstrap %O., ", bootstrap);
 
     Process.create_process(({ "tar", "cf",
 			      package_filename,
@@ -316,7 +288,7 @@ class Package
     
     chmod(package_filename, 0755);
 
-    rmrf("#!", setup_filename);
+    Stdio.recursive_rm("#!/"+setup_filename);
   }
 
   Package add_packages(string ... _packages)
