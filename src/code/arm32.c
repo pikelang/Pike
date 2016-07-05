@@ -469,7 +469,6 @@ static void arm32_mov_int_at(unsigned INT32 offset, unsigned INT32 v,
 
 #define FLAG_SP_LOADED  1
 #define FLAG_FP_LOADED  2
-#define FLAG_SP_CHANGED 4
 
 struct location_list_entry {
     unsigned INT32 location;
@@ -657,11 +656,6 @@ void arm32_flush_instruction_cache(void *addr, size_t len) {
     __builtin___clear_cache(addr, (char*)addr+len);
 }
 
-MACRO void arm32_low_store_sp_reg(void) {
-    INT32 offset = OFFSETOF(Pike_interpreter_struct, stack_pointer);
-    store_reg_imm(ARM_REG_PIKE_SP, ARM_REG_PIKE_IP, offset);
-}
-
 MACRO void arm32_low_load_sp_reg(void) {
     INT32 offset = OFFSETOF(Pike_interpreter_struct, stack_pointer);
 
@@ -671,8 +665,6 @@ MACRO void arm32_low_load_sp_reg(void) {
 static void arm32_load_sp_reg(void) {
     if (!(compiler_state.flags & FLAG_SP_LOADED)) {
 
-        assert(!(compiler_state.flags & FLAG_SP_CHANGED));
-
         compiler_state.flags |= FLAG_SP_LOADED;
 
         arm32_low_load_sp_reg();
@@ -680,12 +672,8 @@ static void arm32_load_sp_reg(void) {
 }
 
 static void arm32_store_sp_reg(void) {
-    if (compiler_state.flags & FLAG_SP_CHANGED) {
-        assert(compiler_state.flags & FLAG_SP_LOADED);
-        compiler_state.flags &= ~FLAG_SP_CHANGED;
-
-        arm32_low_store_sp_reg();
-    }
+    INT32 offset = OFFSETOF(Pike_interpreter_struct, stack_pointer);
+    store_reg_imm(ARM_REG_PIKE_SP, ARM_REG_PIKE_IP, offset);
 }
 
 static void arm32_load_fp_reg(void) {
@@ -706,7 +694,7 @@ MACRO void arm32_change_sp(INT32 offset) {
     } else {
         arm32_add_reg_int(ARM_REG_PIKE_SP, ARM_REG_PIKE_SP, offset);
     }
-    compiler_state.flags |= FLAG_SP_CHANGED;
+    arm32_load_sp_reg();
 }
 
 static void arm32_flush_dirty_regs(void) {
@@ -727,9 +715,7 @@ static void arm32_push_int(unsigned INT32 value, int subtype) {
     ra_free(tmp1);
     ra_free(tmp2);
 
-    compiler_state.flags |= FLAG_SP_CHANGED;
-
-    arm32_flush_dirty_regs();
+    arm32_store_sp_reg();
 }
 
 void arm32_flush_codegen_state(void) {
@@ -963,7 +949,7 @@ static void low_ins_f_byte(unsigned int b)
   case F_POP_VALUE:
       arm32_load_sp_reg();
       sub_reg_imm(ARM_REG_PIKE_SP, ARM_REG_PIKE_SP, sizeof(struct svalue), 0);
-      compiler_state.flags |= FLAG_SP_CHANGED;
+      arm32_store_sp_reg();
       arm32_free_svalue(ARM_REG_PIKE_SP, 0);
       return;
   case F_MARK:
