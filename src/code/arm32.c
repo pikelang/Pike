@@ -442,9 +442,11 @@ OPCODE_FUN gen_store_reg_imm(enum arm32_register dst, enum arm32_register base, 
 
     if (offset < 0) {
         instr |= -offset;
+        assert(!((-offset) >> 12));
     } else {
         instr |= (1<<23);
         instr |= offset;
+        assert(!(offset >> 12));
     }
 
     return instr;
