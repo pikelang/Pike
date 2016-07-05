@@ -1079,9 +1079,16 @@ static void low_ins_f_byte(unsigned int b)
       ins_f_byte(F_MARK);
       ins_f_byte(F_CONST1);
       return;
+  case F_MAKE_ITERATOR:
+      arm32_call_efun(f_get_iterator, 1);
+      return;
+  case F_ADD:
+      arm32_call_efun(f_add, 2);
+      return;
   }
 
   arm32_call_c_opcode(b);
+
 
   if (b == F_CATCH) ra_free(ARM_REG_R0);
 
