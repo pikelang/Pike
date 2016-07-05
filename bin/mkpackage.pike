@@ -234,7 +234,8 @@ class Package
 			       setup_filename,
 			       setup_filename);
     
-    Stdio.recursive_rm("#!/"+setup_filename);
+    Stdio.recursive_rm("#!");
+    Stdio.recursive_rm(setup_filename);
     
     if(!Stdio.write_file(setup_filename, setup))
       error("Failed to write setup script %O., ", setup_filename);
@@ -288,7 +289,8 @@ class Package
     
     chmod(package_filename, 0755);
 
-    Stdio.recursive_rm("#!/"+setup_filename);
+    Stdio.recursive_rm("#!");
+    Stdio.recursive_rm(setup_filename);
   }
 
   Package add_packages(string ... _packages)
