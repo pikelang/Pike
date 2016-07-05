@@ -694,7 +694,7 @@ MACRO void arm32_change_sp(INT32 offset) {
     } else {
         arm32_add_reg_int(ARM_REG_PIKE_SP, ARM_REG_PIKE_SP, offset);
     }
-    arm32_load_sp_reg();
+    arm32_store_sp_reg();
 }
 
 static void arm32_flush_dirty_regs(void) {
@@ -947,9 +947,7 @@ static void low_ins_f_byte(unsigned int b)
       }
       break;
   case F_POP_VALUE:
-      arm32_load_sp_reg();
-      sub_reg_imm(ARM_REG_PIKE_SP, ARM_REG_PIKE_SP, sizeof(struct svalue), 0);
-      arm32_store_sp_reg();
+      arm32_change_sp(-1);
       arm32_free_svalue(ARM_REG_PIKE_SP, 0);
       return;
   case F_MARK:
