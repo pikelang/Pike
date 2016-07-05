@@ -1066,7 +1066,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
       return;
   case F_MARK_AND_CONST1:
       ins_f_byte(F_MARK);
-      ins_f_byte(F_CONST0);
+      ins_f_byte(F_CONST1);
       return;
   case F_MARK_AND_STRING:
       ins_f_byte(F_MARK);
