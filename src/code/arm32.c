@@ -865,6 +865,57 @@ static void arm32_push_int(unsigned INT32 value, int subtype) {
     arm32_store_sp_reg();
 }
 
+MACRO void arm32_push_svaluep_off(enum arm32_register src, INT32 offset) {
+    enum arm32_register tmp1 = ra_alloc_any(),
+                        tmp2 = ra_alloc_any();
+
+    unsigned INT32 combined = TYPE_SUBTYPE(MIN_REF_TYPE, 0);
+
+    if (tmp1 > tmp2) {
+        enum arm32_register t = tmp2;
+        tmp2 = tmp1;
+        tmp1 = t;
+    }
+
+    if (1) {
+        assert(sizeof(struct svalue) == 8);
+        arm32_add_reg_int(tmp1, src, offset*sizeof(struct svalue));
+
+        arm32_load_sp_reg();
+
+        load_multiple(tmp1, ARM_MULT_IA, RBIT(tmp1)|RBIT(tmp2));
+        store_multiple(ARM_REG_PIKE_SP, ARM_MULT_IAW, RBIT(tmp1)|RBIT(tmp2));
+
+        arm32_store_sp_reg();
+    } else {
+        arm32_load_sp_reg();
+        load_reg_imm(tmp1, src, offset*sizeof(struct svalue));
+        load_reg_imm(tmp2, src, offset*sizeof(struct svalue)+4);
+        store_reg_imm(tmp1, ARM_REG_PIKE_SP, 0);
+        store_reg_imm(tmp2, ARM_REG_PIKE_SP, 4);
+        arm32_change_sp(1);
+    }
+
+    arm32_ands_reg_int(tmp1, tmp1, combined);
+
+    if (1) {
+        add_to_program(set_cond(gen_load_reg_imm(tmp1, tmp2, 0), ARM_COND_NZ));
+        add_to_program(set_cond(gen_add_reg_imm(tmp1, tmp1, 1, 0), ARM_COND_NZ));
+        add_to_program(set_cond(gen_store_reg_imm(tmp1, tmp2, 0), ARM_COND_NZ));
+    } else {
+        struct label end;
+        label_init(&end);
+        b_imm(label_dist(&end), ARM_COND_Z);
+        load_reg_imm(tmp1, tmp2, 0);
+        add_reg_imm(tmp1, tmp1, 1, 0);
+        store_reg_imm(tmp1, tmp2, 0);
+        label_generate(&end);
+    }
+
+    ra_free(tmp1);
+    ra_free(tmp2);
+}
+
 void arm32_flush_codegen_state(void) {
     //fprintf(stderr, "flushing codegen state.\n");
     compiler_state.flags = 0;
@@ -1292,6 +1343,10 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
   case F_MARK_AND_LOCAL:
       ins_f_byte(F_MARK);
       ins_f_byte_with_arg(F_LOCAL, b);
+      return;
+  case F_LOCAL:
+      arm32_load_locals_reg();
+      arm32_push_svaluep_off(ARM_REG_PIKE_LOCALS, b);
       return;
   }
   arm32_mov_int(ra_alloc(ARM_REG_R0), b);
