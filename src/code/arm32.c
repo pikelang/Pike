@@ -878,8 +878,6 @@ MACRO void arm32_push_svaluep_off(enum arm32_register src, INT32 offset) {
     enum arm32_register tmp1 = ra_alloc_any(),
                         tmp2 = ra_alloc_any();
 
-    unsigned INT32 combined = TYPE_SUBTYPE(MIN_REF_TYPE, 0);
-
     assert(tmp1 < tmp2);
     assert(sizeof(struct svalue) == 8);
 
@@ -897,11 +895,11 @@ MACRO void arm32_push_svaluep_off(enum arm32_register src, INT32 offset) {
 
     arm32_store_sp_reg();
 
-    arm32_ands_reg_int(tmp1, tmp1, combined);
+    arm32_ands_reg_int(tmp1, tmp1, TYPE_SUBTYPE(MIN_REF_TYPE, 0));
 
-    add_to_program(set_cond(gen_load_reg_imm(tmp1, tmp2, 0), ARM_COND_NZ));
+    add_to_program(set_cond(gen_load_reg_imm(tmp1, tmp2, OFFSETOF(pike_string, refs)), ARM_COND_NZ));
     add_to_program(set_cond(gen_add_reg_imm(tmp1, tmp1, 1, 0), ARM_COND_NZ));
-    add_to_program(set_cond(gen_store_reg_imm(tmp1, tmp2, 0), ARM_COND_NZ));
+    add_to_program(set_cond(gen_store_reg_imm(tmp1, tmp2, OFFSETOF(pike_string, refs)), ARM_COND_NZ));
 
     ra_free(tmp1);
     ra_free(tmp2);
