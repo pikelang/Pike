@@ -637,19 +637,27 @@ static void free_push_list(void) {
 
 struct label {
     struct location_list_entry *list;
+    unsigned INT32 loc;
 };
 
 static void label_init(struct label *l) {
     l->list = NULL;
+    l->loc = (unsigned INT32)-1;
 }
 
 MACRO INT32 label_dist(struct label *l) {
+    if (l->loc != (unsigned INT32)-1)
+        return l->loc - PIKE_PC - 2;
     l->list = add_to_list(l->list, PIKE_PC);
     return 0;
 }
 
 MACRO void label_generate(struct label *l) {
     unsigned INT32 loc = PIKE_PC;
+
+    assert(l->loc == (unsigned INT32)-1);
+
+    l->loc = loc;
 
     struct location_list_entry *e = l->list;
 
