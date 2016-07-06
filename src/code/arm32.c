@@ -946,11 +946,11 @@ static void arm32_call_c_opcode(unsigned int opcode) {
   void *addr = instrs[opcode-F_OFFSET].address;
   int flags = instrs[opcode-F_OFFSET].flags;
 
-  if ((flags & I_UPDATE_SP) && (compiler_state.flags & FLAG_SP_LOADED)) {
+  if (flags & I_UPDATE_SP) {
     compiler_state.flags &= ~FLAG_SP_LOADED;
   }
   if (flags & I_UPDATE_M_SP) {}
-  if ((flags & I_UPDATE_FP) && (compiler_state.flags & FLAG_FP_LOADED)) {
+  if (flags & I_UPDATE_FP) {
     compiler_state.flags &= ~FLAG_FP_LOADED;
   }
 
