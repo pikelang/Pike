@@ -122,7 +122,6 @@ MACRO enum arm32_register ra_alloc_any(void);
 MACRO void ra_free(enum arm32_register reg);
 
 MACRO void break_my_arm(void) {
-    fprintf(stderr, "my arm is broken\n");
 }
 
 static unsigned INT32 stats[F_MAX_INSTR - F_OFFSET];
