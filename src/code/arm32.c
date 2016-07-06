@@ -1453,6 +1453,43 @@ void ins_f_byte_with_2_args(PIKE_OPCODE_T opcode, INT32 arg1, INT32 arg2)
           ra_free(tmp);
           return;
       }
+  case F_FILL_STACK:
+      {
+          enum arm32_register reg, treg, vreg;
+          struct label skip, loop;
+          label_init(&skip);
+          label_init(&loop);
+
+          arm32_load_sp_reg();
+          arm32_load_locals_reg();
+
+          reg = ra_alloc_any();
+          treg = ra_alloc_any();
+          vreg = ra_alloc_any();
+
+          assert(treg < vreg);
+
+          arm32_add_reg_int(reg, ARM_REG_PIKE_LOCALS, arg1*sizeof(struct svalue));
+
+          cmp_reg_reg(ARM_REG_PIKE_SP, reg);
+          b_imm(label_dist(&skip), ARM_COND_GE);
+          arm32_mov_int(treg, TYPE_SUBTYPE(PIKE_T_INT, arg2 ? NUMBER_UNDEFINED : NUMBER_NUMBER));
+          arm32_mov_int(vreg, 0);
+
+          label_generate(&loop);
+          store_multiple(ARM_REG_PIKE_SP, ARM_MULT_IAW, RBIT(treg)|RBIT(vreg));
+          cmp_reg_reg(ARM_REG_PIKE_SP, reg);
+          b_imm(label_dist(&loop), ARM_COND_LT);
+
+          arm32_store_sp_reg();
+          label_generate(&skip);
+
+          ra_free(reg);
+          ra_free(treg);
+          ra_free(vreg);
+
+          return;
+      }
   }
   arm32_mov_int(ra_alloc(ARM_REG_R0), arg1);
   arm32_mov_int(ra_alloc(ARM_REG_R1), arg2);
