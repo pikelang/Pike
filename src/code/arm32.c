@@ -698,7 +698,7 @@ MACRO enum arm32_register ra_alloc_persistent(void) {
     free &= 0xfff0;
 
     if (!free)
-        Pike_fatal("No register left.\n");
+        Pike_fatal("No register left: %x\n", compiler_state.free);
 
     return ra_alloc(ctz32(free));
 }
@@ -872,6 +872,38 @@ MACRO void arm32_push_ptr_type(enum arm32_register treg, enum arm32_register vre
     load_reg_imm(treg, vreg, 0);
     arm32_add_reg_int(treg, treg, 1);
     store_reg_imm(treg, vreg, 0);
+}
+
+MACRO void arm32_move_svaluep_nofree(enum arm32_register dst, enum arm32_register from) {
+    enum arm32_register treg = ra_alloc_any(),
+                        vreg = ra_alloc_any();
+
+    assert(treg < vreg);
+
+    load_multiple(from, ARM_MULT_IA, RBIT(treg)|RBIT(vreg));
+    store_multiple(dst, ARM_MULT_IA, RBIT(treg)|RBIT(vreg));
+
+    ra_free(treg);
+    ra_free(vreg);
+}
+
+MACRO void arm32_assign_svaluep_nofree(enum arm32_register dst, enum arm32_register from) {
+    enum arm32_register treg = ra_alloc_any(),
+                        vreg = ra_alloc_any();
+
+    assert(treg < vreg);
+
+    load_multiple(from, ARM_MULT_IA, RBIT(treg)|RBIT(vreg));
+    store_multiple(dst, ARM_MULT_IA, RBIT(treg)|RBIT(vreg));
+
+    arm32_ands_reg_int(treg, treg, TYPE_SUBTYPE(MIN_REF_TYPE, 0));
+
+    add_to_program(set_cond(gen_load_reg_imm(treg, vreg, OFFSETOF(pike_string, refs)), ARM_COND_NZ));
+    add_to_program(set_cond(gen_add_reg_imm(treg, treg, 1, 0), ARM_COND_NZ));
+    add_to_program(set_cond(gen_store_reg_imm(treg, vreg, OFFSETOF(pike_string, refs)), ARM_COND_NZ));
+
+    ra_free(treg);
+    ra_free(vreg);
 }
 
 MACRO void arm32_push_svaluep_off(enum arm32_register src, INT32 offset) {
@@ -1361,6 +1393,25 @@ void ins_f_byte_with_arg(PIKE_OPCODE_T opcode, INT32 arg1)
 
           ra_free(treg);
           ra_free(vreg);
+          return;
+      }
+  case F_ASSIGN_LOCAL_AND_POP:
+      {
+          enum arm32_register tmp;
+          arm32_debug_instr_prologue_1(opcode, arg1);
+          arm32_load_locals_reg();
+
+          tmp = ra_alloc_persistent();
+          arm32_add_reg_int(tmp, ARM_REG_PIKE_LOCALS, arg1 * sizeof(struct svalue));
+
+          arm32_free_svalue_off(tmp, 0, 0);
+
+          arm32_load_sp_reg();
+          arm32_sub_reg_int(ARM_REG_PIKE_SP, ARM_REG_PIKE_SP, sizeof(struct svalue));
+          arm32_store_sp_reg();
+          arm32_move_svaluep_nofree(tmp, ARM_REG_PIKE_SP);
+
+          ra_free(tmp);
           return;
       }
   }
