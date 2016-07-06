@@ -156,7 +156,7 @@ static unsigned INT32 stats[F_MAX_INSTR - F_OFFSET];
 #define OPCODE1_ALIAS(X,Y,F,A) case X: return #X;
 #define OPCODE2_ALIAS(X,Y,F,A) case X: return #X;
 
-const char* get_opcode_name(PIKE_OPCODE_T code) {
+const char* arm_get_opcode_name(PIKE_OPCODE_T code) {
     switch (code+F_OFFSET) {
 #include "interpret_protos.h"
     default:
@@ -210,7 +210,7 @@ MACRO void write_stats() {
     for (i = 0; i < F_MAX_INSTR - F_OFFSET; i++) {
         if (!stats[i]) continue;
 
-        fprintf(file, "%s\t%u\n", get_opcode_name(i), stats[i]);
+        fprintf(file, "%s\t%u\n", arm_get_opcode_name(i), stats[i]);
     }
 
     fclose(file);
@@ -901,7 +901,7 @@ static void arm32_ins_maybe_exit(void) {
     arm32_epilogue();
 }
 
-static void low_ins_call(void *addr) {
+MACRO void arm32_maybe_update_pc() {
   {
     static int last_prog_id=-1;
     static size_t last_num_linenumbers=(size_t)~0;
@@ -915,7 +915,10 @@ static void low_ins_call(void *addr) {
       UPDATE_PC();
     }
   }
+}
 
+static void low_ins_call(void *addr) {
+  arm32_maybe_update_pc();
   arm32_call(addr);
 }
 
@@ -1019,6 +1022,54 @@ static void arm32_mark(int offset) {
   ra_free(tmp);
 }
 
+#ifdef PIKE_DEBUG
+MACRO void arm_green_on(void) {
+    if (Pike_interpreter.trace_level > 2)
+        fprintf(stderr, "\33[032m");
+}
+
+MACRO void arm_green_off(void) {
+    if (Pike_interpreter.trace_level > 2)
+        fprintf(stderr, "\33[0m");
+}
+
+MACRO void arm32_debug_instr_prologue_0(PIKE_INSTR_T instr) {
+  arm32_call(arm_green_on);
+  arm32_maybe_update_pc();
+  arm32_mov_int(ra_alloc(ARM_REG_R0), instr-F_OFFSET);
+  arm32_call(simple_debug_instr_prologue_0);
+  arm32_call(arm_green_off);
+  ra_free(ARM_REG_R0);
+}
+
+MACRO void arm32_debug_instr_prologue_1(PIKE_INSTR_T instr, INT32 arg1) {
+  arm32_call(arm_green_on);
+  arm32_maybe_update_pc();
+  arm32_mov_int(ra_alloc(ARM_REG_R0), instr-F_OFFSET);
+  arm32_mov_int(ra_alloc(ARM_REG_R1), arg1);
+  arm32_call(simple_debug_instr_prologue_1);
+  arm32_call(arm_green_off);
+  ra_free(ARM_REG_R0);
+  ra_free(ARM_REG_R1);
+}
+
+MACRO void arm32_debug_instr_prologue_2(PIKE_INSTR_T instr, INT32 arg1, INT32 arg2) {
+  arm32_call(arm_green_on);
+  arm32_maybe_update_pc();
+  arm32_mov_int(ra_alloc(ARM_REG_R0), instr-F_OFFSET);
+  arm32_mov_int(ra_alloc(ARM_REG_R1), arg1);
+  arm32_mov_int(ra_alloc(ARM_REG_R2), arg2);
+  arm32_call(simple_debug_instr_prologue_2);
+  arm32_call(arm_green_off);
+  ra_free(ARM_REG_R0);
+  ra_free(ARM_REG_R1);
+  ra_free(ARM_REG_R2);
+}
+#else
+#define arm32_debug_instr_prologue_1(a, b)  do {} while(0)
+#define arm32_debug_instr_prologue_2(a, b, c)  do {} while(0)
+#define arm32_debug_instr_prologue_0(a) do { } while(0)
+#endif
 
 static void low_ins_f_byte(unsigned int b)
 {
@@ -1028,23 +1079,26 @@ static void low_ins_f_byte(unsigned int b)
   record_opcode(b);
 
 #ifdef PIKE_DEBUG
-  if(b-F_OFFSET>255)
-    Pike_error("Instruction too big %d\n",b);
+  assert(b-F_OFFSET<=255);
 #endif
 
   flags = instrs[b-F_OFFSET].flags;
 
   switch (b) {
   case F_UNDEFINED:
+      arm32_debug_instr_prologue_0(b);
       arm32_push_int(0, NUMBER_UNDEFINED);
       return;
   case F_CONST_1:
+      arm32_debug_instr_prologue_0(b);
       arm32_push_int(-1, NUMBER_NUMBER);
       return;
   case F_CONST1:
+      arm32_debug_instr_prologue_0(b);
       arm32_push_int(1, NUMBER_NUMBER);
       return;
   case F_CONST0:
+      arm32_debug_instr_prologue_0(b);
       arm32_push_int(0, NUMBER_NUMBER);
       return;
   case F_CATCH:
@@ -1080,9 +1134,11 @@ static void low_ins_f_byte(unsigned int b)
       ins_f_byte(F_CONST1);
       return;
   case F_MAKE_ITERATOR:
+      arm32_debug_instr_prologue_0(b);
       arm32_call_efun(f_get_iterator, 1);
       return;
   case F_ADD:
+      arm32_debug_instr_prologue_0(b);
       arm32_call_efun(f_add, 2);
       return;
   }
@@ -1134,10 +1190,12 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
 
   switch (a) {
   case F_NUMBER:
+      arm32_debug_instr_prologue_1(a, b);
       arm32_push_int(b, NUMBER_NUMBER);
       return;
   case F_NEG_NUMBER:
       if (!INT32_NEG_OVERFLOW(b)) {
+        arm32_debug_instr_prologue_1(a, b);
         arm32_push_int(-b, 0);
         return;
       }
@@ -1145,7 +1203,10 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
   case F_SUBTRACT_INT:
     {
       struct label fallback;
-      enum arm32_register tmp = ra_alloc_any();
+      enum arm32_register tmp;
+      arm32_debug_instr_prologue_1(a, b);
+
+      tmp = ra_alloc_any();
       label_init(&fallback);
       arm32_load_sp_reg();
       load_reg_imm(tmp, ARM_REG_PIKE_SP, -sizeof(struct svalue)+0);
@@ -1164,7 +1225,10 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
     {
       struct label fallback;
       unsigned char imm, rot;
-      enum arm32_register tmp = ra_alloc_any();
+      enum arm32_register tmp;
+      arm32_debug_instr_prologue_1(a, b);
+
+      tmp = ra_alloc_any();
       label_init(&fallback);
       arm32_load_sp_reg();
       load_reg_imm(tmp, ARM_REG_PIKE_SP, -sizeof(struct svalue)+0);
@@ -1218,8 +1282,11 @@ void ins_f_byte_with_2_args(unsigned int a,
       ins_f_byte_with_2_args(F_EXTERNAL, b, c);
       return;
   case F_INIT_FRAME: {
-          enum arm32_register tmp = ra_alloc_any();
+          enum arm32_register tmp;
+          arm32_debug_instr_prologue_2(a, b, c);
           arm32_load_fp_reg();
+
+          tmp = ra_alloc_any();
           arm32_mov_int(tmp, c|(b<<16));
 
           assert(OFFSETOF(pike_frame, num_locals) % 4 == 0);
