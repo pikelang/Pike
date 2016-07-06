@@ -124,6 +124,7 @@ MACRO void ra_free(enum arm32_register reg);
 MACRO void break_my_arm(void) {
 }
 
+#ifdef ARM32_LOW_DEBUG
 static unsigned INT32 stats[F_MAX_INSTR - F_OFFSET];
 
 #define OPCODE0(X,Y,F) case X: return #X;
@@ -202,10 +203,6 @@ const char* arm_get_opcode_name(PIKE_OPCODE_T code) {
 #undef OPCODE1_ALIAS
 #undef OPCODE2_ALIAS
 
-MACRO void record_opcode(PIKE_OPCODE_T code) {
-    stats[code - F_OFFSET] ++;
-}
-
 ATTRIBUTE((destructor))
 MACRO void write_stats() {
     int i;
@@ -218,6 +215,14 @@ MACRO void write_stats() {
     }
 
     fclose(file);
+}
+#endif
+
+MACRO void record_opcode(PIKE_OPCODE_T code) {
+    code = code; /* prevent unused warning */
+#ifdef ARM32_LOW_DEBUG
+    stats[code - F_OFFSET] ++;
+#endif
 }
 
 OPCODE_FUN set_status(unsigned INT32 instr) {
