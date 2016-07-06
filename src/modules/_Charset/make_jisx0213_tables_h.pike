@@ -7,6 +7,11 @@
  * 2011-04-22 Henrik Grubbström
  */
 
+// NB: This script needs to be able to run on an older system pike.
+#if !constant(String.trim)
+#define trim	trim_all_whites
+#endif
+
 // These are the characters added by JIS X0213/AMMENDMENT-1:2004.
 // All of them are in JIS X0213 plane 1.
 constant jis_x0213_amd_1_2004 = ([
