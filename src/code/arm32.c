@@ -581,6 +581,7 @@ static void arm32_mov_int_at(unsigned INT32 offset, unsigned INT32 v,
 
 #define FLAG_SP_LOADED  1
 #define FLAG_FP_LOADED  2
+#define FLAG_LOCALS_LOADED 4
 
 struct location_list_entry {
     unsigned INT32 location;
@@ -795,6 +796,19 @@ static void arm32_load_fp_reg(void) {
         /* load Pike_interpreter_pointer->frame_pointer into ARM_REG_PIKE_FP */
         load_reg_imm(ARM_REG_PIKE_FP, ARM_REG_PIKE_IP, offset);
         compiler_state.flags |= FLAG_FP_LOADED;
+        compiler_state.flags &= ~FLAG_LOCALS_LOADED;
+    }
+}
+
+MACRO void arm32_load_locals_reg(void) {
+    arm32_load_fp_reg();
+
+    if (!(compiler_state.flags & FLAG_LOCALS_LOADED)) {
+        INT32 offset = OFFSETOF(pike_frame, locals);
+
+        load_reg_imm(ARM_REG_PIKE_LOCALS, ARM_REG_PIKE_FP, offset);
+
+        compiler_state.flags |= FLAG_LOCALS_LOADED;
     }
 }
 
@@ -1183,6 +1197,8 @@ static void low_ins_f_byte(unsigned int b)
   if (flags & I_JUMP) {
     /* This is the code that JUMP_EPILOGUE_SIZE compensates for. */
     bx_reg(ARM_REG_R0);
+
+    compiler_state.flags &= ~FLAG_FP_LOADED;
 
     if (b == F_CATCH) {
         arm32_mov_int_at(rel_addr, 4*(PIKE_PC - rel_addr - 1), ARM_REG_R2);
