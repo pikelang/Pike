@@ -38,6 +38,7 @@ enum arm32_register {
     ARM_REG_R5 = 5,
     ARM_REG_R6 = 6,
     ARM_REG_R7 = 7,
+    ARM_REG_PIKE_LOCALS = 7,
 
     ARM_REG_R8 = 8,
     ARM_REG_PIKE_IP = 8,
@@ -667,7 +668,7 @@ MACRO void ra_init(void) {
     /* all register r0 through r10 are unused
      *
      */
-    compiler_state.free = RBIT(0)|RBIT(1)|RBIT(2)|RBIT(3)|RBIT(4)|RBIT(5);
+    compiler_state.free = RBIT(0)|RBIT(1)|RBIT(2)|RBIT(3)|RBIT(4);
     compiler_state.dirt = 0;
     compiler_state.push_addr = -1;
     compiler_state.flags = 0;
@@ -863,12 +864,13 @@ void arm32_end_function(int UNUSED(no_pc)) {
     unsigned INT32 registers, instr;
     struct location_list_entry *e;
 
+    /* NOTE: number of registers always needs to be even */
     registers = RBIT(ARM_REG_PIKE_SP)
                 |RBIT(ARM_REG_PIKE_IP)
                 |RBIT(ARM_REG_PIKE_FP)
+                |RBIT(ARM_REG_PIKE_LOCALS)
                 |RBIT(ARM_REG_LR)
-                |RBIT(4)
-                |RBIT(5);
+                |RBIT(4);
 
     e = compiler_state.pop_list;
 
