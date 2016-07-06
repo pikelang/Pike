@@ -842,7 +842,7 @@ MACRO void arm32_call_efun(void (*fun)(int), int args) {
     }
 }
 
-static void arm32_push_int(unsigned INT32 value, int subtype) {
+MACRO void arm32_push_int(unsigned INT32 value, int subtype) {
     unsigned INT32 combined = TYPE_SUBTYPE(PIKE_T_INT, subtype);
     enum arm32_register tmp1 = ra_alloc_any(), tmp2 = ra_alloc_any();
 
@@ -1127,34 +1127,34 @@ MACRO void arm32_debug_instr_prologue_2(PIKE_INSTR_T instr, INT32 arg1, INT32 ar
 #define arm32_debug_instr_prologue_0(a) do { } while(0)
 #endif
 
-static void low_ins_f_byte(unsigned int b)
+static void low_ins_f_byte(PIKE_OPCODE_T opcode)
 {
   int flags;
   INT32 rel_addr = rel_addr;
 
-  record_opcode(b);
+  record_opcode(opcode);
 
 #ifdef PIKE_DEBUG
-  assert(b-F_OFFSET<=255);
+  assert(opcode-F_OFFSET<=255);
 #endif
 
-  flags = instrs[b-F_OFFSET].flags;
+  flags = instrs[opcode-F_OFFSET].flags;
 
-  switch (b) {
+  switch (opcode) {
   case F_UNDEFINED:
-      arm32_debug_instr_prologue_0(b);
+      arm32_debug_instr_prologue_0(opcode);
       arm32_push_int(0, NUMBER_UNDEFINED);
       return;
   case F_CONST_1:
-      arm32_debug_instr_prologue_0(b);
+      arm32_debug_instr_prologue_0(opcode);
       arm32_push_int(-1, NUMBER_NUMBER);
       return;
   case F_CONST1:
-      arm32_debug_instr_prologue_0(b);
+      arm32_debug_instr_prologue_0(opcode);
       arm32_push_int(1, NUMBER_NUMBER);
       return;
   case F_CONST0:
-      arm32_debug_instr_prologue_0(b);
+      arm32_debug_instr_prologue_0(opcode);
       arm32_push_int(0, NUMBER_NUMBER);
       return;
   case F_CATCH:
@@ -1191,24 +1191,24 @@ static void low_ins_f_byte(unsigned int b)
       ins_f_byte(F_CONST1);
       return;
   case F_MAKE_ITERATOR:
-      arm32_debug_instr_prologue_0(b);
+      arm32_debug_instr_prologue_0(opcode);
       arm32_call_efun(f_get_iterator, 1);
       return;
   case F_ADD:
-      arm32_debug_instr_prologue_0(b);
+      arm32_debug_instr_prologue_0(opcode);
       arm32_call_efun(f_add, 2);
       return;
   }
 
-  arm32_call_c_opcode(b);
+  arm32_call_c_opcode(opcode);
 
 
-  if (b == F_CATCH) ra_free(ARM_REG_R0);
+  if (opcode == F_CATCH) ra_free(ARM_REG_R0);
 
   if (flags & I_RETURN) {
       enum arm32_register kludge_reg = ARM_REG_NONE;
 
-      if (b == F_RETURN_IF_TRUE) {
+      if (opcode == F_RETURN_IF_TRUE) {
           kludge_reg = ra_alloc_persistent();
           /* -4 == 4*(JUMP_EPILOGUE_SIZE - 2) */
           sub_reg_imm(kludge_reg, ARM_REG_PC, 4, 0);
@@ -1216,7 +1216,7 @@ static void low_ins_f_byte(unsigned int b)
     
       arm32_ins_maybe_exit();
 
-      if (b == F_RETURN_IF_TRUE) {
+      if (opcode == F_RETURN_IF_TRUE) {
           arm32_rel_cond_jmp(ARM_REG_R0, kludge_reg, ARM_COND_EQ, 2);
           bx_reg(ARM_REG_R0);
           ra_free(kludge_reg);
@@ -1229,7 +1229,7 @@ static void low_ins_f_byte(unsigned int b)
 
     compiler_state.flags &= ~FLAG_FP_LOADED;
 
-    if (b == F_CATCH) {
+    if (opcode == F_CATCH) {
         arm32_mov_int_at(rel_addr, 4*(PIKE_PC - rel_addr - 1), ARM_REG_R2);
     }
   }
@@ -1240,22 +1240,22 @@ void ins_f_byte(unsigned int opcode)
   low_ins_f_byte(opcode);
 }
 
-void ins_f_byte_with_arg(unsigned int a, INT32 b)
+void ins_f_byte_with_arg(PIKE_OPCODE_T opcode, INT32 arg1)
 {
   struct label done;
   label_init(&done);
 
-  record_opcode(a);
+  record_opcode(opcode);
 
-  switch (a) {
+  switch (opcode) {
   case F_NUMBER:
-      arm32_debug_instr_prologue_1(a, b);
-      arm32_push_int(b, NUMBER_NUMBER);
+      arm32_debug_instr_prologue_1(opcode, arg1);
+      arm32_push_int(arg1, NUMBER_NUMBER);
       return;
   case F_NEG_NUMBER:
-      if (!INT32_NEG_OVERFLOW(b)) {
-        arm32_debug_instr_prologue_1(a, b);
-        arm32_push_int(-b, 0);
+      if (!INT32_NEG_OVERFLOW(arg1)) {
+        arm32_debug_instr_prologue_1(opcode, arg1);
+        arm32_push_int(-arg1, 0);
         return;
       }
       break;
@@ -1263,7 +1263,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
     {
       struct label fallback;
       enum arm32_register tmp;
-      arm32_debug_instr_prologue_1(a, b);
+      arm32_debug_instr_prologue_1(opcode, arg1);
 
       tmp = ra_alloc_any();
       label_init(&fallback);
@@ -1272,7 +1272,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
       cmp_reg_imm(tmp, 0, 0);
       b_imm(label_dist(&fallback), ARM_COND_NE);
       load_reg_imm(tmp, ARM_REG_PIKE_SP, -sizeof(struct svalue)+4);
-      arm32_subs_reg_int(tmp, tmp, b);
+      arm32_subs_reg_int(tmp, tmp, arg1);
       b_imm(label_dist(&fallback), ARM_COND_VS);
       store_reg_imm(tmp, ARM_REG_PIKE_SP, -sizeof(struct svalue)+4);
       ra_free(tmp);
@@ -1285,7 +1285,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
       struct label fallback;
       unsigned char imm, rot;
       enum arm32_register tmp;
-      arm32_debug_instr_prologue_1(a, b);
+      arm32_debug_instr_prologue_1(opcode, arg1);
 
       tmp = ra_alloc_any();
       label_init(&fallback);
@@ -1294,7 +1294,7 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
       cmp_reg_imm(tmp, 0, 0);
       b_imm(label_dist(&fallback), ARM_COND_NE);
       load_reg_imm(tmp, ARM_REG_PIKE_SP, -sizeof(struct svalue)+4);
-      arm32_adds_reg_int(tmp, tmp, b);
+      arm32_adds_reg_int(tmp, tmp, arg1);
       b_imm(label_dist(&fallback), ARM_COND_VS);
       store_reg_imm(tmp, ARM_REG_PIKE_SP, -sizeof(struct svalue)+4);
       ra_free(tmp);
@@ -1312,51 +1312,49 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
       return;
   case F_MARK_AND_STRING:
       ins_f_byte(F_MARK);
-      ins_f_byte_with_arg(F_STRING, b);
+      ins_f_byte_with_arg(F_STRING, arg1);
       return;
   case F_MARK_AND_GLOBAL:
       ins_f_byte(F_MARK);
-      ins_f_byte_with_arg(F_GLOBAL, b);
+      ins_f_byte_with_arg(F_GLOBAL, arg1);
       return;
   case F_MARK_AND_LOCAL:
       ins_f_byte(F_MARK);
-      ins_f_byte_with_arg(F_LOCAL, b);
+      ins_f_byte_with_arg(F_LOCAL, arg1);
       return;
   case F_LOCAL:
-      arm32_debug_instr_prologue_1(a, b);
+      arm32_debug_instr_prologue_1(opcode, arg1);
       arm32_load_locals_reg();
-      arm32_push_svaluep_off(ARM_REG_PIKE_LOCALS, b);
+      arm32_push_svaluep_off(ARM_REG_PIKE_LOCALS, arg1);
       return;
   case F_MARK_AT:
-      arm32_debug_instr_prologue_1(a, b);
+      arm32_debug_instr_prologue_1(opcode, arg1);
       arm32_load_locals_reg();
-      arm32_mark(ARM_REG_PIKE_LOCALS, b);
+      arm32_mark(ARM_REG_PIKE_LOCALS, arg1);
       return;
   }
-  arm32_mov_int(ra_alloc(ARM_REG_R0), b);
-  low_ins_f_byte(a);
+  arm32_mov_int(ra_alloc(ARM_REG_R0), arg1);
+  low_ins_f_byte(opcode);
   ra_free(ARM_REG_R0);
   label_generate(&done);
   return;
 }
 
-void ins_f_byte_with_2_args(unsigned int a,
-			    INT32 b,
-			    INT32 c)
+void ins_f_byte_with_2_args(PIKE_OPCODE_T opcode, INT32 arg1, INT32 arg2)
 {
-  record_opcode(a);
-  switch (a) {
+  record_opcode(opcode);
+  switch (opcode) {
   case F_MARK_AND_EXTERNAL:
       ins_f_byte(F_MARK);
-      ins_f_byte_with_2_args(F_EXTERNAL, b, c);
+      ins_f_byte_with_2_args(F_EXTERNAL, arg1, arg2);
       return;
   case F_INIT_FRAME: {
           enum arm32_register tmp;
-          arm32_debug_instr_prologue_2(a, b, c);
+          arm32_debug_instr_prologue_2(opcode, arg1, arg2);
           arm32_load_fp_reg();
 
           tmp = ra_alloc_any();
-          arm32_mov_int(tmp, c|(b<<16));
+          arm32_mov_int(tmp, arg2|(arg1<<16));
 
           assert(OFFSETOF(pike_frame, num_locals) % 4 == 0);
           assert(OFFSETOF(pike_frame, num_locals) + 2 == OFFSETOF(pike_frame, num_args));
@@ -1366,9 +1364,9 @@ void ins_f_byte_with_2_args(unsigned int a,
           return;
       }
   }
-  arm32_mov_int(ra_alloc(ARM_REG_R0), b);
-  arm32_mov_int(ra_alloc(ARM_REG_R1), c);
-  low_ins_f_byte(a);
+  arm32_mov_int(ra_alloc(ARM_REG_R0), arg1);
+  arm32_mov_int(ra_alloc(ARM_REG_R1), arg2);
+  low_ins_f_byte(opcode);
   ra_free(ARM_REG_R0);
   ra_free(ARM_REG_R1);
   return;
