@@ -861,6 +861,19 @@ MACRO void arm32_push_int(unsigned INT32 value, int subtype) {
     arm32_store_sp_reg();
 }
 
+MACRO void arm32_push_ptr_type(enum arm32_register treg, enum arm32_register vreg) {
+    assert(treg < vreg);
+
+    arm32_load_sp_reg();
+    store_multiple(ARM_REG_PIKE_SP, ARM_MULT_IAW, RBIT(treg)|RBIT(vreg));
+    arm32_store_sp_reg();
+
+    /* add reference */
+    load_reg_imm(treg, vreg, 0);
+    arm32_add_reg_int(treg, treg, 1);
+    store_reg_imm(treg, vreg, 0);
+}
+
 MACRO void arm32_push_svaluep_off(enum arm32_register src, INT32 offset) {
     enum arm32_register tmp1 = ra_alloc_any(),
                         tmp2 = ra_alloc_any();
@@ -1332,6 +1345,26 @@ void ins_f_byte_with_arg(PIKE_OPCODE_T opcode, INT32 arg1)
       arm32_load_locals_reg();
       arm32_mark(ARM_REG_PIKE_LOCALS, arg1);
       return;
+  case F_STRING:
+      {
+          enum arm32_register treg = ra_alloc_any(),
+                              vreg = ra_alloc_any();
+
+          arm32_load_fp_reg();
+
+          load_reg_imm(vreg, ARM_REG_PIKE_FP, OFFSETOF(pike_frame, context));
+          load_reg_imm(vreg, vreg, OFFSETOF(inherit, prog));
+          load_reg_imm(vreg, vreg, OFFSETOF(program, strings));
+          load_reg_imm(vreg, vreg, arg1*sizeof(struct pike_string*));
+
+          arm32_mov_int(treg, TYPE_SUBTYPE(PIKE_T_STRING, 0));
+
+          arm32_push_ptr_type(treg, vreg);
+
+          ra_free(treg);
+          ra_free(vreg);
+          return;
+      }
   }
   arm32_mov_int(ra_alloc(ARM_REG_R0), arg1);
   low_ins_f_byte(opcode);
