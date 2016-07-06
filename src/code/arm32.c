@@ -120,6 +120,10 @@ MACRO void arm32_call(void *ptr);
 MACRO enum arm32_register ra_alloc_any(void);
 MACRO void ra_free(enum arm32_register reg);
 
+MACRO void break_my_arm(void) {
+    fprintf(stderr, "my arm is broken\n");
+}
+
 static unsigned INT32 stats[F_MAX_INSTR - F_OFFSET];
 
 #define OPCODE0(X,Y,F) case X: return #X;
@@ -554,6 +558,15 @@ MACRO void arm32_mov_int(enum arm32_register reg, unsigned INT32 v) {
     }
 }
 
+/*
+ * TODO: work with labels
+ */
+MACRO void arm32_rel_cond_jmp(enum arm32_register reg, enum arm32_register b, enum arm32_condition cond, int jmp) {
+    cmp_reg_reg(reg, b);
+    b_imm(jmp-2, cond);
+}
+
+
 #define SIZEOF_ADD_SET_REG_AT   2
 static void arm32_mov_int_at(unsigned INT32 offset, unsigned INT32 v,
                            enum arm32_register dst) {
@@ -890,14 +903,9 @@ void arm32_ins_entry(void) {
     arm32_flush_codegen_state();
 }
 
-static void add_rel_cond_jmp(enum arm32_register reg, enum arm32_register b, enum arm32_condition cond, int jmp) {
-    cmp_reg_reg(reg, b);
-    b_imm(jmp-2, cond);
-}
-
 static void arm32_ins_maybe_exit(void) {
     arm32_mov_int(ARM_REG_R1, -1);
-    add_rel_cond_jmp(ARM_REG_R0, ARM_REG_R1, ARM_COND_NE, EPILOGUE_SIZE+1);
+    arm32_rel_cond_jmp(ARM_REG_R0, ARM_REG_R1, ARM_COND_NE, EPILOGUE_SIZE+1);
     arm32_epilogue();
 }
 
@@ -942,8 +950,6 @@ static void arm32_call_c_opcode(unsigned int opcode) {
 
   low_ins_call(addr);
 }
-
-MACRO void break_my_arm(void) { }
 
 MACRO void arm32_free_svalue_off(enum arm32_register src, int off, int guaranteed) {
     unsigned INT32 combined = TYPE_SUBTYPE(MIN_REF_TYPE, 0);
@@ -1160,7 +1166,7 @@ static void low_ins_f_byte(unsigned int b)
       arm32_ins_maybe_exit();
 
       if (b == F_RETURN_IF_TRUE) {
-          add_rel_cond_jmp(ARM_REG_R0, kludge_reg, ARM_COND_EQ, 2);
+          arm32_rel_cond_jmp(ARM_REG_R0, kludge_reg, ARM_COND_EQ, 2);
           bx_reg(ARM_REG_R0);
           ra_free(kludge_reg);
           return;
