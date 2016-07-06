@@ -831,6 +831,12 @@ static void arm32_push_int(unsigned INT32 value, int subtype) {
     unsigned INT32 combined = TYPE_SUBTYPE(PIKE_T_INT, subtype);
     enum arm32_register tmp1 = ra_alloc_any(), tmp2 = ra_alloc_any();
 
+    if (tmp1 > tmp2) {
+        enum arm32_register t = tmp2;
+        tmp2 = tmp1;
+        tmp1 = t;
+    }
+
     arm32_load_sp_reg();
 
     arm32_mov_int(tmp1, combined);
