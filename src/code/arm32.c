@@ -1421,6 +1421,23 @@ void ins_f_byte_with_arg(PIKE_OPCODE_T opcode, INT32 arg1)
           ra_free(tmp);
           return;
       }
+  case F_PROTECT_STACK:
+      {
+          arm32_load_fp_reg();
+          arm32_load_locals_reg();
+
+          if (arg1) {
+              enum arm32_register reg = ra_alloc_any();
+
+              arm32_add_reg_int(reg, ARM_REG_PIKE_LOCALS, arg1);
+              store_reg_imm(reg, ARM_REG_PIKE_FP, OFFSETOF(pike_frame, expendible));
+
+              ra_free(reg);
+          } else {
+              store_reg_imm(ARM_REG_PIKE_LOCALS, ARM_REG_PIKE_FP, OFFSETOF(pike_frame, expendible));
+          }
+          return;
+      }
   }
   arm32_mov_int(ra_alloc(ARM_REG_R0), arg1);
   low_ins_f_byte(opcode);
@@ -1489,6 +1506,10 @@ void ins_f_byte_with_2_args(PIKE_OPCODE_T opcode, INT32 arg1, INT32 arg2)
 
           return;
       }
+  case F_2_LOCALS:
+      ins_f_byte_with_arg(F_LOCAL, arg1);
+      ins_f_byte_with_arg(F_LOCAL, arg2);
+      return;
   }
   arm32_mov_int(ra_alloc(ARM_REG_R0), arg1);
   arm32_mov_int(ra_alloc(ARM_REG_R1), arg2);
