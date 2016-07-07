@@ -290,7 +290,8 @@ class Curve {
 		MIME.encode_base64url(string_to_utf8(Standards.JSON.encode(headers))),
 		MIME.encode_base64url(message));
       array(Gmp.mpz) raw = raw_sign(h->hash(tbs));
-      string(8bit) raw_bin = raw->digits(256) * "";
+      int bytes = ((size()+7)>>3);
+      string(8bit) raw_bin = sprintf("%*c%*c", bytes, raw[0], bytes, raw[1]);
       return sprintf("%s.%s", tbs, MIME.encode_base64url(raw_bin));
     }
 
