@@ -1526,8 +1526,41 @@ void ins_f_byte_with_2_args(unsigned int opcode, INT32 arg1, INT32 arg2)
   return;
 }
 
+int arm32_low_ins_f_jump(unsigned int opcode, int backward_jump) {
+    INT32 ret;
+
+    arm32_maybe_update_pc();
+
+    arm32_call_c_opcode(opcode);
+
+    /* Do we need to reload the stack pointer? */
+    arm32_load_sp_reg();
+
+    cmp_reg_imm(ARM_REG_R0, 0, 0);
+
+    if (backward_jump) {
+        struct label skip;
+        label_init(&skip);
+
+        b_imm(label_dist(&skip), ARM_COND_EQ);
+
+        ret = PIKE_PC;
+        b_imm(0, ARM_COND_AL);
+
+        label_generate(&skip);
+    } else {
+        ret = PIKE_PC;
+        b_imm(0, ARM_COND_NE);
+    }
+
+    return ret;
+}
+
 int arm32_ins_f_jump(unsigned int opcode, int backward_jump) {
     INT32 ret;
+
+    if (!(instrs[opcode - F_OFFSET].flags & I_BRANCH))
+        return -1;
 
     switch (opcode) {
     case F_QUICK_BRANCH_WHEN_ZERO:
@@ -1600,14 +1633,42 @@ int arm32_ins_f_jump(unsigned int opcode, int backward_jump) {
             return ret;
         }
     }
-    return -1;
+
+    return arm32_low_ins_f_jump(opcode, backward_jump);
 }
+
 int arm32_ins_f_jump_with_arg(unsigned int opcode, INT32 arg1, int backward_jump) {
-    return -1;
+    int instr;
+
+    if (!(instrs[opcode - F_OFFSET].flags & I_BRANCH))
+        return -1;
+
+    arm32_mov_int(ra_alloc(ARM_REG_R0), arg1);
+
+    instr = arm32_low_ins_f_jump(opcode, backward_jump);
+
+    ra_free(ARM_REG_R0);
+
+    return instr;
 }
+
 int arm32_ins_f_jump_with_2_args(unsigned int opcode, INT32 arg1, INT32 arg2, int backward_jump) {
-    return -1;
+    int instr;
+
+    if (!(instrs[opcode - F_OFFSET].flags & I_BRANCH))
+        return -1;
+
+    arm32_mov_int(ra_alloc(ARM_REG_R0), arg1);
+    arm32_mov_int(ra_alloc(ARM_REG_R1), arg2);
+
+    instr = arm32_low_ins_f_jump(opcode, backward_jump);
+
+    ra_free(ARM_REG_R0);
+    ra_free(ARM_REG_R1);
+
+    return instr;
 }
+
 void arm32_update_f_jump(INT32 offset, INT32 to_offset) {
     PIKE_OPCODE_T instr = read_pointer(offset) & ~0xffffff;
 
@@ -1615,6 +1676,7 @@ void arm32_update_f_jump(INT32 offset, INT32 to_offset) {
 
     upd_pointer(offset, instr);
 }
+
 int arm32_read_f_jump(INT32 offset) {
     int rel_addr = (int)(((unsigned INT32)read_pointer(offset) & 0xffffff) << 8) >> 8;
 
