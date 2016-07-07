@@ -1915,6 +1915,9 @@ class dirnode (string dirname, object|void compilation_handler,
   // allow a module to deny its own existence with `!.
   mixed module;
   mapping(string:mixed) cache=([]);
+
+  // Maps a base name like "Bar" to an ordered array of file paths,
+  // e.g. ({ "/lib/Foo.pmod/Bar.pmod", "/lib/Foo.pmod/Bar.so" }).
   mapping(string:array(string)) file_paths = ([]);
 
 #ifdef __NT__
@@ -1956,9 +1959,7 @@ class dirnode (string dirname, object|void compilation_handler,
     if (has_suffix(fname, ".pmod")) return 3;
     if (has_suffix(fname, ".so")) return 2;
     if (has_suffix(fname, ".pike")) return 1;
-
-    // FIXME: Warn here?
-    return 0;
+    return 0; // We will not reach this.
   }
 
   protected void create()
@@ -1971,8 +1972,8 @@ class dirnode (string dirname, object|void compilation_handler,
     resolv_debug ("dirnode(%O,%O) created with name %O\n", dirname,
                   compilation_handler, name);
     fc[dirname]=this;
-    array(string) files = sort(master_get_dir(dirname)||({}));
     if (!sizeof(dirname)) return;
+    array(string) files = sort(master_get_dir(dirname)||({}));
     array(string) bases = map(files, base_from_filename);
     files = filter(files, bases);
     bases = filter(bases, bases);
@@ -1985,7 +1986,7 @@ class dirnode (string dirname, object|void compilation_handler,
       string base = bases[no];
       if (base == "module") {
 	// We need a module_checker.
-	module = module_checker();
+        module = module_checker();
       }
       array(string) paths = file_paths[base];
       if (!paths) {
@@ -2005,7 +2006,7 @@ class dirnode (string dirname, object|void compilation_handler,
     }
   }
 
-  class module_checker
+  protected class module_checker
   {
     protected int `!()
     {
@@ -2041,7 +2042,7 @@ class dirnode (string dirname, object|void compilation_handler,
 
     protected mixed `[](string index)
       {
-	resolv_debug ("dirnode(%O)->module_checker()[%O] => %O\n",
+        resolv_debug ("dirnode(%O)->module_checker()[%O] => %O\n",
 		      dirname, index, module[?index]);
 	return module[?index];
       }
@@ -2156,7 +2157,6 @@ class dirnode (string dirname, object|void compilation_handler,
     if(module)
     {
       mixed o;
-//      _describe(module);
       if(!undefinedp(o=module[index]))
       {
 	DEC_RESOLV_MSG_DEPTH();
@@ -2227,11 +2227,6 @@ class dirnode (string dirname, object|void compilation_handler,
   protected int(0..1) _cache_full;
   void fill_cache()
   {
-#if 0
-    werror(call_describe_backtrace(({ sprintf("Filling cache in dirnode %O\n",
-					      dirname),
-				      backtrace() })));
-#endif
     if (_cache_full) {
       return;
     }

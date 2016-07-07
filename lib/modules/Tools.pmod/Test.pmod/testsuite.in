@@ -2,6 +2,8 @@ START_MARKER
 
 test_eq(Tools.Test.a, 1)
 test_eq(Tools.Test.b, 2)
+test_eq(Tools.Test.module.a, 1)
+test_eq(Tools.Test.module.b, 2)
 test_eq(Tools.Test["b"], 2)
 test_eq(Tools.Test->b, 0)
 test_equal(sort(indices(Tools.Test)), ({"a","b","module"}));
