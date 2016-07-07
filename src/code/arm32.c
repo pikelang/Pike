@@ -1099,6 +1099,8 @@ MACRO void arm32_free_svalue_off(enum arm32_register src, int off, int guarantee
     ra_free(tmp);
 }
 
+MACRO void arm32_ins_branch_check_threads_etc(int a) {
+}
 
 static void arm32_free_svalue(enum arm32_register reg, int guaranteed_ref) {
     arm32_free_svalue_off(reg, 0, guaranteed_ref);
@@ -1182,7 +1184,7 @@ MACRO void arm32_debug_instr_prologue_2(PIKE_INSTR_T instr, INT32 arg1, INT32 ar
 #define arm32_debug_instr_prologue_0(a) do { } while(0)
 #endif
 
-static void low_ins_f_byte(PIKE_OPCODE_T opcode)
+static void low_ins_f_byte(unsigned int opcode)
 {
   int flags;
   INT32 rel_addr = rel_addr;
@@ -1295,7 +1297,7 @@ void ins_f_byte(unsigned int opcode)
   low_ins_f_byte(opcode);
 }
 
-void ins_f_byte_with_arg(PIKE_OPCODE_T opcode, INT32 arg1)
+void ins_f_byte_with_arg(unsigned int opcode, INT32 arg1)
 {
   struct label done;
   label_init(&done);
@@ -1451,7 +1453,7 @@ void ins_f_byte_with_arg(PIKE_OPCODE_T opcode, INT32 arg1)
   return;
 }
 
-void ins_f_byte_with_2_args(PIKE_OPCODE_T opcode, INT32 arg1, INT32 arg2)
+void ins_f_byte_with_2_args(unsigned int opcode, INT32 arg1, INT32 arg2)
 {
   record_opcode(opcode);
   switch (opcode) {
@@ -1522,4 +1524,99 @@ void ins_f_byte_with_2_args(PIKE_OPCODE_T opcode, INT32 arg1, INT32 arg2)
   ra_free(ARM_REG_R0);
   ra_free(ARM_REG_R1);
   return;
+}
+
+int arm32_ins_f_jump(unsigned int opcode, int backward_jump) {
+    INT32 ret;
+
+    switch (opcode) {
+    case F_QUICK_BRANCH_WHEN_ZERO:
+    case F_QUICK_BRANCH_WHEN_NON_ZERO:
+        {
+            enum arm32_register tmp = ra_alloc_any();
+            arm32_change_sp(-1);
+            load_reg_imm(tmp, ARM_REG_PIKE_SP, 4);
+            cmp_reg_imm(tmp, 0, 0);
+            ret = PIKE_PC;
+            if (opcode == F_QUICK_BRANCH_WHEN_ZERO)
+                b_imm(0, ARM_COND_Z);
+            else
+                b_imm(0, ARM_COND_NZ);
+            ra_free(tmp);
+            return ret;
+        }
+    case F_BRANCH:
+        ret = PIKE_PC;
+        b_imm(0, ARM_COND_AL);
+        return ret;
+
+    case F_BRANCH_WHEN_NE:
+    case F_BRANCH_WHEN_EQ:
+    case F_BRANCH_WHEN_LT:
+    case F_BRANCH_WHEN_LE:
+    case F_BRANCH_WHEN_GT:
+    case F_BRANCH_WHEN_GE:
+        {
+            ra_alloc(ARM_REG_R0);
+            ra_alloc(ARM_REG_R1);
+
+            arm32_load_sp_reg();
+
+            arm32_sub_reg_int(ARM_REG_R0, ARM_REG_PIKE_SP, 2*sizeof(struct svalue));
+            arm32_sub_reg_int(ARM_REG_R1, ARM_REG_PIKE_SP, 1*sizeof(struct svalue));
+
+            switch (opcode) {
+            case F_BRANCH_WHEN_NE:
+                arm32_call(is_eq);
+                cmp_reg_imm(ARM_REG_R0, 0, 0);
+                break;
+            case F_BRANCH_WHEN_EQ:
+                arm32_call(is_eq);
+                cmp_reg_imm(ARM_REG_R0, 1, 0);
+                break;
+            case F_BRANCH_WHEN_LT:
+                arm32_call(is_lt);
+                cmp_reg_imm(ARM_REG_R0, 1, 0);
+                break;
+            case F_BRANCH_WHEN_LE:
+                arm32_call(is_le);
+                cmp_reg_imm(ARM_REG_R0, 1, 0);
+                break;
+            case F_BRANCH_WHEN_GT:
+                arm32_call(is_le);
+                cmp_reg_imm(ARM_REG_R0, 0, 0);
+                break;
+            case F_BRANCH_WHEN_GE:
+                arm32_call(is_lt);
+                cmp_reg_imm(ARM_REG_R0, 0, 0);
+                break;
+            }
+
+            ret = PIKE_PC;
+            b_imm(0, ARM_COND_EQ);
+
+            ra_free(ARM_REG_R0);
+            ra_free(ARM_REG_R1);
+            return ret;
+        }
+    }
+    return -1;
+}
+int arm32_ins_f_jump_with_arg(unsigned int opcode, INT32 arg1, int backward_jump) {
+    return -1;
+}
+int arm32_ins_f_jump_with_2_args(unsigned int opcode, INT32 arg1, INT32 arg2, int backward_jump) {
+    return -1;
+}
+void arm32_update_f_jump(INT32 offset, INT32 to_offset) {
+    PIKE_OPCODE_T instr = read_pointer(offset) & ~0xffffff;
+
+    instr |= (to_offset - offset - 2)&0xffffff;
+
+    upd_pointer(offset, instr);
+}
+int arm32_read_f_jump(INT32 offset) {
+    int rel_addr = (int)(((unsigned INT32)read_pointer(offset) & 0xffffff) << 8) >> 8;
+
+    return rel_addr + offset + 2;
 }

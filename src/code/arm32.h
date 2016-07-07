@@ -47,6 +47,17 @@ void arm32_update_pc(void);
 #define LOW_GET_JUMP()	((INT32)PROG_COUNTER[JUMP_EPILOGUE_SIZE])
 #define LOW_SKIPJUMP()	(SET_PROG_COUNTER(PROG_COUNTER + JUMP_EPILOGUE_SIZE + 1))
 
+#define INS_F_JUMP      arm32_ins_f_jump
+#define INS_F_JUMP_WITH_ARG      arm32_ins_f_jump_with_arg
+#define INS_F_JUMP_WITH_TWO_ARGS      arm32_ins_f_jump_with_2_args
+#define UPDATE_F_JUMP   arm32_update_f_jump
+#define READ_F_JUMP     arm32_read_f_jump
+int arm32_ins_f_jump(unsigned int opcode, int backward_jump);
+int arm32_ins_f_jump_with_arg(unsigned int opcode, INT32 arg1, int backward_jump);
+int arm32_ins_f_jump_with_2_args(unsigned int opcode, INT32 arg1, INT32 arg2, int backward_jump);
+void arm32_update_f_jump(INT32 offset, INT32 to_offset);
+int arm32_read_f_jump(INT32 offset);
+
 void ins_f_byte(unsigned int opcode);
 void ins_f_byte_with_arg(unsigned int a, INT32 b);
 void ins_f_byte_with_2_args(unsigned int a, INT32 c, INT32 b);
