@@ -254,7 +254,12 @@ OPCODE2(F_NUMBER64, "push 64-bit int", I_UPDATE_SP, {
 #endif
 
 OPCODE1(F_NEG_NUMBER, "push -int", I_UPDATE_SP, {
-  push_int(-arg1);
+  if (!INT32_NEG_OVERFLOW(arg1)) {
+    push_int(-arg1);
+  } else {
+    push_int(arg1);
+    o_negate();
+  }
 });
 
 OPCODE1(F_CONSTANT, "constant", I_UPDATE_SP, {
