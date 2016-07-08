@@ -2225,7 +2225,7 @@ class dirnode (string dirname, object|void compilation_handler,
 
   protected mixed `->(string index)
   {
-    if( (< "is_resolv_dirnode", "module", "cache" >)[index] )
+    if( (< "is_resolv_dirnode", "module", "cache", "delete_value" >)[index] )
       return ::`->(index);
     return `[](index);
   }
