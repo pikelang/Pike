@@ -540,6 +540,7 @@ GEN_PROC_OP(sub, SUB)
 GEN_PROC_OP(add, ADD)
 GEN_PROC_OP(or, OR)
 GEN_PROC_OP(and, AND)
+GEN_PROC_OP(xor, XOR)
 
 
 OPCODE_FUN gen_mov_reg(enum arm32_register dst, enum arm32_register src) {
@@ -857,6 +858,40 @@ MACRO void arm32_call_efun(void (*fun)(int), int args) {
     if (args != 1 && compiler_state.flags & FLAG_SP_LOADED) {
         arm32_change_sp_reg(-(args-1));
     }
+}
+
+MACRO void arm32_assign_int_reg(enum arm32_register dst, enum arm32_register value, int subtype) {
+    unsigned INT32 combined = TYPE_SUBTYPE(PIKE_T_INT, subtype);
+    enum arm32_register tmp1 = ra_alloc_any(), tmp2 = ra_alloc_any();
+
+    assert(tmp1 < tmp2);
+
+    arm32_mov_int(tmp1, combined);
+    mov_reg(tmp2, value);
+
+    store_multiple(dst, ARM_MULT_IA, RBIT(tmp1)|RBIT(tmp2));
+
+    ra_free(tmp1);
+    ra_free(tmp2);
+}
+
+MACRO void arm32_push_int_reg(enum arm32_register value, int subtype) {
+    unsigned INT32 combined = TYPE_SUBTYPE(PIKE_T_INT, subtype);
+    enum arm32_register tmp1 = ra_alloc_any(), tmp2 = ra_alloc_any();
+
+    assert(tmp1 < tmp2);
+
+    arm32_load_sp_reg();
+
+    arm32_mov_int(tmp1, combined);
+    mov_reg(tmp2, value);
+
+    store_multiple(ARM_REG_PIKE_SP, ARM_MULT_IAW, RBIT(tmp1)|RBIT(tmp2));
+
+    ra_free(tmp1);
+    ra_free(tmp2);
+
+    arm32_store_sp_reg();
 }
 
 MACRO void arm32_push_int(unsigned INT32 value, int subtype) {
@@ -1283,6 +1318,78 @@ static void low_ins_f_byte(unsigned int opcode)
           arm32_store_sp_reg();
 
           label_generate(&done);
+          ra_free(reg);
+      }
+      return;
+  case F_EQ:
+  case F_NE:
+  case F_GT:
+  case F_GE:
+  case F_LT:
+  case F_LE:
+      {
+          enum arm32_register reg;
+          int (*cmp)(const struct svalue *a, const struct svalue *b);
+          int swap = 0, negate = 0;
+
+          switch (opcode) {
+          case F_EQ:
+              cmp = is_eq;
+              break;
+          case F_NE:
+              cmp = is_eq;
+              negate = 1;
+              break;
+          case F_GT:
+              cmp = is_lt;
+              swap = 1;
+              break;
+          case F_GE:
+              cmp = is_le;
+              swap = 1;
+              break;
+          case F_LT:
+              cmp = is_lt;
+              break;
+          case F_LE:
+              cmp = is_le;
+              break;
+          }
+
+          ra_alloc(ARM_REG_R0);
+          ra_alloc(ARM_REG_R1);
+
+          arm32_load_sp_reg();
+
+          if (swap) {
+              arm32_sub_reg_int(ARM_REG_R1, ARM_REG_PIKE_SP, 2*sizeof(struct svalue));
+              arm32_sub_reg_int(ARM_REG_R0, ARM_REG_PIKE_SP, 1*sizeof(struct svalue));
+          } else {
+              arm32_sub_reg_int(ARM_REG_R0, ARM_REG_PIKE_SP, 2*sizeof(struct svalue));
+              arm32_sub_reg_int(ARM_REG_R1, ARM_REG_PIKE_SP, 1*sizeof(struct svalue));
+          }
+
+          arm32_call(cmp);
+
+          reg = ra_alloc_persistent();
+
+          if (negate) {
+              arm32_xor_reg_int(reg, ARM_REG_R0, 1);
+          } else {
+              mov_reg(reg, ARM_REG_R0);
+          }
+
+          ra_free(ARM_REG_R0);
+          ra_free(ARM_REG_R1);
+
+          arm32_free_svalue_off(ARM_REG_PIKE_SP, -1, 0);
+          arm32_free_svalue_off(ARM_REG_PIKE_SP, -2, 0);
+          /* the order of the free and pop is important, because really_free_svalue should not
+           * use that region of the stack we are trying to free */
+          arm32_sub_reg_int(ARM_REG_PIKE_SP, ARM_REG_PIKE_SP, 2*sizeof(struct svalue));
+
+          arm32_push_int_reg(reg, NUMBER_NUMBER);
+
           ra_free(reg);
       }
       return;
