@@ -125,7 +125,8 @@ MACRO void break_my_arm(void) {
 }
 
 #ifdef ARM32_LOW_DEBUG
-static unsigned INT32 stats[F_MAX_INSTR - F_OFFSET];
+static unsigned INT32 stats_m[F_MAX_INSTR - F_OFFSET];
+static unsigned INT32 stats_b[F_MAX_INSTR - F_OFFSET];
 
 #define OPCODE0(X,Y,F) case X: return #X;
 #define OPCODE1(X,Y,F) case X: return #X;
@@ -209,19 +210,24 @@ MACRO void write_stats() {
     FILE* file = fopen("/home/el/opcode.state", "a");
 
     for (i = 0; i < F_MAX_INSTR - F_OFFSET; i++) {
-        if (!stats[i]) continue;
+        if (!stats_m[i] && !stats_b[i]) continue;
 
-        fprintf(file, "%s\t%u\n", arm_get_opcode_name(i), stats[i]);
+        fprintf(file, "%s\t%u\t%u\n", arm_get_opcode_name(i), stats_b[i], stats_m[i] - stats_b[i]);
     }
 
     fclose(file);
 }
 #endif
 
-MACRO void record_opcode(PIKE_OPCODE_T code) {
+MACRO void record_opcode(PIKE_OPCODE_T code, int bytecode) {
     code = code; /* prevent unused warning */
+    bytecode = bytecode;
 #ifdef ARM32_LOW_DEBUG
-    stats[code - F_OFFSET] ++;
+    if (bytecode) {
+        stats_b[code - F_OFFSET] ++;
+    } else {
+        stats_m[code - F_OFFSET] ++;
+    }
 #endif
 }
 
@@ -1051,6 +1057,8 @@ static void arm32_call_c_opcode(unsigned int opcode) {
   void *addr = instrs[opcode-F_OFFSET].address;
   int flags = instrs[opcode-F_OFFSET].flags;
 
+  record_opcode(opcode, 1);
+
   if (flags & I_UPDATE_SP) {
     compiler_state.flags &= ~FLAG_SP_LOADED;
   }
@@ -1194,8 +1202,6 @@ static void low_ins_f_byte(unsigned int opcode)
   int flags;
   INT32 rel_addr = rel_addr;
 
-  record_opcode(opcode);
-
 #ifdef PIKE_DEBUG
   assert(opcode-F_OFFSET<=255);
 #endif
@@ -1299,6 +1305,8 @@ static void low_ins_f_byte(unsigned int opcode)
 
 void ins_f_byte(unsigned int opcode)
 {
+  record_opcode(opcode, 0);
+
   low_ins_f_byte(opcode);
 }
 
@@ -1307,7 +1315,7 @@ void ins_f_byte_with_arg(unsigned int opcode, INT32 arg1)
   struct label done;
   label_init(&done);
 
-  record_opcode(opcode);
+  record_opcode(opcode, 0);
 
   switch (opcode) {
   case F_NUMBER:
@@ -1460,7 +1468,8 @@ void ins_f_byte_with_arg(unsigned int opcode, INT32 arg1)
 
 void ins_f_byte_with_2_args(unsigned int opcode, INT32 arg1, INT32 arg2)
 {
-  record_opcode(opcode);
+  record_opcode(opcode, 0);
+
   switch (opcode) {
   case F_MARK_AND_EXTERNAL:
       ins_f_byte(F_MARK);
@@ -1567,6 +1576,8 @@ int arm32_ins_f_jump(unsigned int opcode, int backward_jump) {
     if (!(instrs[opcode - F_OFFSET].flags & I_BRANCH))
         return -1;
 
+    record_opcode(opcode, 0);
+
     switch (opcode) {
     case F_QUICK_BRANCH_WHEN_ZERO:
     case F_QUICK_BRANCH_WHEN_NON_ZERO:
@@ -1648,6 +1659,8 @@ int arm32_ins_f_jump_with_arg(unsigned int opcode, INT32 arg1, int backward_jump
     if (!(instrs[opcode - F_OFFSET].flags & I_BRANCH))
         return -1;
 
+    record_opcode(opcode, 0);
+
     arm32_mov_int(ra_alloc(ARM_REG_R0), arg1);
 
     instr = arm32_low_ins_f_jump(opcode, backward_jump);
@@ -1662,6 +1675,8 @@ int arm32_ins_f_jump_with_2_args(unsigned int opcode, INT32 arg1, INT32 arg2, in
 
     if (!(instrs[opcode - F_OFFSET].flags & I_BRANCH))
         return -1;
+
+    record_opcode(opcode, 0);
 
     arm32_mov_int(ra_alloc(ARM_REG_R0), arg1);
     arm32_mov_int(ra_alloc(ARM_REG_R1), arg2);
