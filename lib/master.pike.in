@@ -2225,7 +2225,8 @@ class dirnode (string dirname, object|void compilation_handler,
 
   protected mixed `->(string index)
   {
-    if( (< "is_resolv_dirnode", "module", "cache", "delete_value" >)[index] )
+    if( (< "dirname", "name", "is_resolv_dirnode",
+           "module", "cache", "delete_value" >)[index] )
       return ::`->(index);
     return `[](index);
   }
@@ -2459,8 +2460,9 @@ class joinnode (array(object|mapping) joined_modules,
 
   protected mixed `->(string index)
   {
-    if( (< "is_resolv_joinnode", "cache", "add_path", "rem_path",
-           "delete_value", "_encode", "_decode" >)[index] )
+    if( (< "joined_modules", "fallback_mode", "name", "is_resolv_joinnode",
+           "cache", "add_path", "rem_path", "delete_value", "_encode",
+           "_decode" >)[index] )
       return ::`->(index);
     return `[](index);
   }
