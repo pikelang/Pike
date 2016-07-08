@@ -1626,6 +1626,53 @@ static void low_ins_f_byte(unsigned int opcode)
       arm32_debug_instr_prologue_0(opcode);
       arm32_call_efun(f_add, 2);
       return;
+  case F_ADD_INTS:
+      {
+          struct label end, slow;
+          enum arm32_register reg1, reg2;
+          enum arm32_condition cond;
+
+          label_init(&end);
+          label_init(&slow);
+
+          arm32_debug_instr_prologue_0(opcode);
+
+          reg1 = ra_alloc_any();
+          reg2 = ra_alloc_any();
+
+          arm32_load_sp_reg();
+
+          load_reg_imm(reg1, ARM_REG_PIKE_SP, -2*sizeof(struct svalue));
+          load_reg_imm(reg2, ARM_REG_PIKE_SP, -1*sizeof(struct svalue));
+
+          cond = arm32_ne_types(reg1, reg2, TYPE_SUBTYPE(PIKE_T_INT, NUMBER_NUMBER));
+          b_imm(label_dist(&slow), cond);
+
+          load_reg_imm(reg1, ARM_REG_PIKE_SP, -2*sizeof(struct svalue)+OFFSETOF(svalue, u));
+          load_reg_imm(reg2, ARM_REG_PIKE_SP, -1*sizeof(struct svalue)+OFFSETOF(svalue, u));
+
+          adds_reg_reg(reg1, reg1, reg2);
+
+          add_to_program(
+            set_cond(
+                gen_store_reg_imm(reg1, ARM_REG_PIKE_SP, -2*sizeof(struct svalue)+OFFSETOF(svalue, u)),
+                ARM_COND_VC));
+
+          ra_free(reg1);
+          ra_free(reg2);
+
+          b_imm(label_dist(&end), ARM_COND_VC);
+          label_generate(&slow);
+          ra_alloc(ARM_REG_R0);
+          arm32_mov_int(ARM_REG_R0, 2);
+          arm32_call(f_add);
+          ra_free(ARM_REG_R0);
+          label_generate(&end);
+          arm32_sub_reg_int(ARM_REG_PIKE_SP, ARM_REG_PIKE_SP, sizeof(struct svalue));
+          arm32_store_sp_reg();
+
+          return;
+      }
   }
 
   arm32_call_c_opcode(opcode);
