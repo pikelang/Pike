@@ -215,12 +215,20 @@ PIKECLASS mpq
         {
           MP_INT z;
           long exponent;
-#ifndef HAVE_LIBMPFR
+#ifndef USE_MPFR
           // Acces mpf internals directly.
           // NOTE: Hacky! Must not free z "correctly"
           exponent = OBTOMPF(s->u.object)->_mp_exp*sizeof(mp_limb_t)*8;
-          z._mp_alloc = z._mp_size = OBTOMPF(s->u.object)->_mp_size;
+          z._mp_size = OBTOMPF(s->u.object)->_mp_size;
           z._mp_d = OBTOMPF(s->u.object)->_mp_d;
+
+	  /* NB: For simplicity we assume that we won't have values with more
+	   *     than GMP_NUMB_BITS * 0x7ffffff (typically 8 or 16 GB) bits.
+	   *
+	   * Further: As we don't perform any destructive operations on
+	   *          the z below, the field will probably not be used.
+	   */
+	  z._mp_alloc = abs((INT32)z._mp_size);
 #else
           mpz_init(&z);
           exponent = mpfr_get_z_2exp(&z, OBTOMPF(s->u.object) );
@@ -233,7 +241,7 @@ PIKECLASS mpq
               mpz_mul_2exp(mpq_numref(tmp),mpq_numref(tmp),exponent);
 	  mpq_canonicalize(tmp);
 
-#ifdef HAVE_LIBMPFR
+#ifdef USE_MPFR
           mpz_clear(&z);
 #endif
           break;
