@@ -1182,9 +1182,14 @@ void arm32_ins_entry(void) {
 }
 
 static void arm32_ins_maybe_exit(void) {
-    arm32_mov_int(ARM_REG_R1, -1);
-    arm32_rel_cond_jmp(ARM_REG_R0, ARM_REG_R1, ARM_COND_NE, EPILOGUE_SIZE+1);
+    struct label noreturn;
+
+    label_init(&noreturn);
+
+    adds_reg_imm(ARM_REG_R1, ARM_REG_R0, 1, 0);
+    b_imm(label_dist(&noreturn), ARM_COND_NZ);
     arm32_epilogue();
+    label_generate(&noreturn);
 }
 
 MACRO void arm32_maybe_update_pc() {
