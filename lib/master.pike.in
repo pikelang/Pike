@@ -2174,6 +2174,13 @@ class dirnode (string dirname, object|void compilation_handler,
     return low_ind(index);
   }
 
+  protected mixed `[]=(string index, mixed value)
+  {
+    if(module && has_index(module, index))
+      return module[index]=value,cache[index]=value;
+    error("No such variable (%s) in object.\n", index);
+  }
+
   protected mixed `[](string index)
   {
     mixed ret;
@@ -2400,6 +2407,14 @@ class joinnode (array(object|mapping) joined_modules,
     resolv_debug ("joinnode(%O)->ind(%O) => not found. Trying fallback %O\n",
 		  joined_modules, index, fallback_module);
     return fallback_module[index];
+  }
+
+  protected mixed `[]=(string index, mixed value)
+  {
+    foreach(joined_modules, object|mapping o)
+      if(has_index(o, index))
+        return o[index]=value,cache[index]=value;
+    error("No such variable (%s) in object.\n", index);
   }
 
   protected mixed `[](string index)

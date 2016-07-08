@@ -8,6 +8,11 @@ test_eq(Tools.Test["b"], 2)
 test_eq(Tools.Test->b, 0)
 test_equal(sort(indices(Tools.Test)), ({"a","b","module"}));
 test_eq(sizeof(Tools.Test), 3)
-test_eval_error(Tools.Test["b"]=3)
+test_eq(Tools.Test["b"]=3, 3)
+test_eq(Tools.Test["b"], 3)
+test_eval_error(Tools.Test["c"]=3)
+test_eq(Tools.Test["c"], 0)
+
+test_eq(Tools.Test->is_resolv_joinnode, 1);
 
 END_MARKER
