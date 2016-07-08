@@ -1098,14 +1098,14 @@ MACRO void arm32_free_svalue_off(enum arm32_register src, int off, int guarantee
     b_imm(label_dist(&end), ARM_COND_NZ);
 
     if (off > 0) {
-        add_reg_imm(reg, src, off, 0);
+        arm32_add_reg_int(reg, src, off);
     } else if (off < 0 ) {
-        sub_reg_imm(reg, src, -off, 0);
+        arm32_sub_reg_int(reg, src, -off);
     } else {
         mov_reg(reg, src);
     }
 
-    arm32_call_c_function(really_free_svalue);
+    arm32_call(really_free_svalue);
 
     label_generate(&end);
     ra_free(reg);
