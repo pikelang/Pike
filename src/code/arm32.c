@@ -761,10 +761,9 @@ MACRO void arm32_prologue(void) {
     mov_reg(ARM_REG_PIKE_IP, ARM_REG_R0);
 }
 
-#define EPILOGUE_SIZE 2
+#define EPILOGUE_SIZE 1
 MACRO void arm32_epilogue(void) {
     add_pop();
-    bx_reg(ARM_REG_LR);
 }
 
 MACRO void arm32_call(void *ptr) {
@@ -962,17 +961,16 @@ void arm32_end_function(int UNUSED(no_pc)) {
     unsigned INT32 registers, instr;
     struct location_list_entry *e;
 
-    /* NOTE: number of registers always needs to be even */
+    /* NOTE: always need to push an even number of registers */
     registers = RBIT(ARM_REG_PIKE_SP)
                 |RBIT(ARM_REG_PIKE_IP)
                 |RBIT(ARM_REG_PIKE_FP)
                 |RBIT(ARM_REG_PIKE_LOCALS)
-                |RBIT(ARM_REG_LR)
                 |RBIT(4);
 
     e = compiler_state.pop_list;
 
-    instr = gen_load_multiple(ARM_REG_SP, ARM_MULT_IAW, registers);
+    instr = gen_load_multiple(ARM_REG_SP, ARM_MULT_IAW, registers|RBIT(ARM_REG_PC));
     while (e) {
         upd_pointer(e->location, instr);
         e = e->next;
@@ -980,7 +978,7 @@ void arm32_end_function(int UNUSED(no_pc)) {
 
     e = compiler_state.push_list;
 
-    instr = gen_store_multiple(ARM_REG_SP, ARM_MULT_DBW, registers);
+    instr = gen_store_multiple(ARM_REG_SP, ARM_MULT_DBW, registers|RBIT(ARM_REG_LR));
 
     while (e) {
         upd_pointer(e->location, instr);
