@@ -1918,7 +1918,7 @@ class dirnode (string dirname, object|void compilation_handler,
 
   // Maps a base name like "Bar" to an ordered array of file paths,
   // e.g. ({ "/lib/Foo.pmod/Bar.pmod", "/lib/Foo.pmod/Bar.so" }).
-  mapping(string:array(string)) file_paths = ([]);
+  protected mapping(string:array(string)) file_paths = ([]);
 
 #ifdef __NT__
 #define FIX_CASE(X)	lower_case(X)
@@ -2181,6 +2181,11 @@ class dirnode (string dirname, object|void compilation_handler,
     error("No such variable (%s) in object.\n", index);
   }
 
+  protected mixed `->=(string index, mixed value)
+  {
+    return `[]=(index, value);
+  }
+
   protected mixed `[](string index)
   {
     mixed ret;
@@ -2218,7 +2223,14 @@ class dirnode (string dirname, object|void compilation_handler,
     return ret;
   }
 
-  mixed safe_index(string index)
+  protected mixed `->(string index)
+  {
+    if( (< "is_resolv_dirnode", "module", "cache" >)[index] )
+      return ::`->(index);
+    return `[](index);
+  }
+
+  protected mixed safe_index(string index)
   {
     mixed err;
     resolv_debug ("dirnode(%O):     %O...\n", dirname, index);
@@ -2232,7 +2244,7 @@ class dirnode (string dirname, object|void compilation_handler,
   }
 
   protected int(0..1) _cache_full;
-  void fill_cache()
+  protected void fill_cache()
   {
     if (_cache_full) {
       return;
@@ -2417,6 +2429,11 @@ class joinnode (array(object|mapping) joined_modules,
     error("No such variable (%s) in object.\n", index);
   }
 
+  protected mixed `->=(string index, mixed value)
+  {
+    return `[]=(index, value);
+  }
+
   protected mixed `[](string index)
   {
     mixed ret;
@@ -2440,14 +2457,18 @@ class joinnode (array(object|mapping) joined_modules,
     return ret;
   }
 
+  protected mixed `->(string index)
+  {
+    if( (< "is_resolv_joinnode", "cache", "add_path", "rem_path",
+           "delete_value", "_encode", "_decode" >)[index] )
+      return ::`->(index);
+    return `[](index);
+  }
+
   protected int _cache_full;
 
-  void fill_cache()
+  protected void fill_cache()
   {
-#if 0
-    werror(call_describe_backtrace(({ "Filling cache in joinnode\n",
-				      backtrace() })));
-#endif
     if (_cache_full) {
       return;
     }
