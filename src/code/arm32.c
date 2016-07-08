@@ -1065,6 +1065,56 @@ MACRO void arm32_push_svaluep_off(enum arm32_register src, INT32 offset) {
     ra_free(tmp2);
 }
 
+/* the returned condition will be true if both types are type_subtype */
+MACRO enum arm32_condition arm32_eq_types(enum arm32_register type1, enum arm32_register type2,
+                                          unsigned INT32 type_subtype) {
+    unsigned char imm, rot;
+    int ok = arm32_make_imm(type_subtype, &imm, &rot);
+
+    assert(ok);
+
+    cmp_reg_reg(type1, type2);
+    add_to_program(set_cond(gen_cmp_reg_imm(type1, imm, rot), ARM_COND_EQ));
+
+    return ARM_COND_EQ;
+}
+
+/* the returned condition will be true if unless both types are type_subtype */
+MACRO enum arm32_condition arm32_ne_types(enum arm32_register type1, enum arm32_register type2,
+                                          unsigned INT32 type_subtype) {
+    unsigned char imm, rot;
+    int ok = arm32_make_imm(type_subtype, &imm, &rot);
+
+    assert(ok);
+
+    cmp_reg_reg(type1, type2);
+    add_to_program(set_cond(gen_cmp_reg_imm(type1, imm, rot), ARM_COND_EQ));
+
+    return ARM_COND_NE;
+}
+
+MACRO void arm32_jump_real_cmp(struct label *l, enum arm32_register type1, enum arm32_register type2) {
+    unsigned INT32 mask = BIT_INT|BIT_STRING|BIT_PROGRAM|BIT_MAPPING|BIT_ARRAY|BIT_MULTISET|BIT_TYPE;
+    enum arm32_register reg = ra_alloc_any(),
+                        one = ra_alloc_any(),
+                        mask_reg = ra_alloc_any();
+
+    arm32_mov_int(reg, mask);
+    arm32_mov_int(one, 1);
+
+    lsl_reg_reg(mask_reg, one, type1);
+    ands_reg_reg(mask_reg, reg, mask_reg);
+
+    add_to_program(set_cond(gen_lsl_reg_reg(mask_reg, one, type2), ARM_COND_NZ));
+    add_to_program(set_cond(gen_ands_reg_reg(mask_reg, mask, mask_reg), ARM_COND_NZ));
+
+    b_imm(label_dist(l), ARM_COND_Z);
+
+    ra_free(reg);
+    ra_free(one);
+    ra_free(mask_reg);
+}
+
 void arm32_flush_codegen_state(void) {
     //fprintf(stderr, "flushing codegen state.\n");
     compiler_state.flags = 0;
@@ -1404,38 +1454,112 @@ static void low_ins_f_byte(unsigned int opcode)
   case F_LT:
   case F_LE:
       {
-          enum arm32_register reg;
+          struct label real_cmp, real_pop, end;
+          enum arm32_register reg, type1, type2, tmp;
+          enum arm32_condition cond;
           int (*cmp)(const struct svalue *a, const struct svalue *b);
           int swap = 0, negate = 0;
 
+          label_init(&real_cmp);
+          label_init(&real_pop);
+          label_init(&end);
+
+          type1 = ra_alloc_any();
+          type2 = ra_alloc_any();
+
+          arm32_load_sp_reg();
+
+          load_reg_imm(type1, ARM_REG_PIKE_SP, -2*sizeof(struct svalue));
+          load_reg_imm(type2, ARM_REG_PIKE_SP, -1*sizeof(struct svalue));
+
           switch (opcode) {
+          case F_NE:
+              negate = 1;
+              /* FALL THROUGH */
           case F_EQ:
               cmp = is_eq;
-              break;
-          case F_NE:
-              cmp = is_eq;
-              negate = 1;
+
+              arm32_jump_real_cmp(&real_cmp, type1, type2);
+
+              reg = ra_alloc_persistent();
+              tmp = ra_alloc_any();
+
+              load_reg_imm(tmp, ARM_REG_PIKE_SP, -2*sizeof(struct svalue)+OFFSETOF(svalue, u));
+              load_reg_imm(reg, ARM_REG_PIKE_SP, -1*sizeof(struct svalue)+OFFSETOF(svalue, u));
+
+              /* TODO: make those shorter */
+              if (opcode == F_EQ) {
+                  xors_reg_reg(reg, tmp, reg);
+                  add_to_program(set_cond(gen_mov_imm(reg, 1, 0), ARM_COND_NZ));
+              } else {
+                  xors_reg_reg(reg, tmp, reg);
+                  add_to_program(set_cond(gen_mov_imm(reg, 1, 0), ARM_COND_Z));
+                  add_to_program(set_cond(gen_mov_imm(reg, 0, 0), ARM_COND_NZ));
+              }
+
+              /* jump to real pop, if not both integers */
+              cond = arm32_ne_types(type1, type2, TYPE_SUBTYPE(PIKE_T_INT, NUMBER_NUMBER));
+              b_imm(label_dist(&real_pop), cond);
+
               break;
           case F_GT:
-              cmp = is_lt;
-              swap = 1;
-              break;
           case F_GE:
-              cmp = is_le;
-              swap = 1;
-              break;
-          case F_LT:
-              cmp = is_lt;
-              break;
           case F_LE:
-              cmp = is_le;
+          case F_LT:
+              cond = arm32_ne_types(type1, type2, TYPE_SUBTYPE(PIKE_T_INT, NUMBER_NUMBER));
+              b_imm(label_dist(&real_cmp), cond);
+
+              reg = ra_alloc_persistent();
+              tmp = ra_alloc_any();
+
+              load_reg_imm(tmp, ARM_REG_PIKE_SP, -2*sizeof(struct svalue)+OFFSETOF(svalue, u));
+              load_reg_imm(reg, ARM_REG_PIKE_SP, -1*sizeof(struct svalue)+OFFSETOF(svalue, u));
+
+              cmp_reg_reg(tmp, reg);
+
+              switch (opcode) {
+              case F_GT:
+                  swap = 1;
+                  cmp = is_lt;
+                  add_to_program(set_cond(gen_mov_imm(reg, 1, 0), ARM_COND_GT));
+                  add_to_program(set_cond(gen_mov_imm(reg, 0, 0), ARM_COND_LE));
+                  break;
+              case F_GE:
+                  cmp = is_le;
+                  swap = 1;
+                  add_to_program(set_cond(gen_mov_imm(reg, 1, 0), ARM_COND_GE));
+                  add_to_program(set_cond(gen_mov_imm(reg, 0, 0), ARM_COND_LT));
+                  break;
+              case F_LT:
+                  cmp = is_lt;
+                  add_to_program(set_cond(gen_mov_imm(reg, 1, 0), ARM_COND_LT));
+                  add_to_program(set_cond(gen_mov_imm(reg, 0, 0), ARM_COND_GE));
+                  break;
+              case F_LE:
+                  cmp = is_le;
+                  add_to_program(set_cond(gen_mov_imm(reg, 1, 0), ARM_COND_LE));
+                  add_to_program(set_cond(gen_mov_imm(reg, 0, 0), ARM_COND_GT));
+                  break;
+              }
               break;
           }
 
+          ra_free(type1);
+          ra_free(type2);
+          ra_free(tmp);
+          // SIMPLE POP INT:
+
+          arm32_sub_reg_int(ARM_REG_PIKE_SP, ARM_REG_PIKE_SP, sizeof(struct svalue));
+          store_reg_imm(reg, ARM_REG_PIKE_SP, -1*sizeof(struct svalue)+OFFSETOF(svalue, u));
+
+          arm32_store_sp_reg();
+
+          b_imm(label_dist(&end), ARM_COND_AL);
+          // COMPLEX CMP:
+          label_generate(&real_cmp);
+
           ra_alloc(ARM_REG_R0);
           ra_alloc(ARM_REG_R1);
-
-          arm32_load_sp_reg();
 
           if (swap) {
               arm32_sub_reg_int(ARM_REG_R1, ARM_REG_PIKE_SP, 2*sizeof(struct svalue));
@@ -1447,8 +1571,6 @@ static void low_ins_f_byte(unsigned int opcode)
 
           arm32_call(cmp);
 
-          reg = ra_alloc_persistent();
-
           if (negate) {
               arm32_xor_reg_int(reg, ARM_REG_R0, 1);
           } else {
@@ -1458,6 +1580,9 @@ static void low_ins_f_byte(unsigned int opcode)
           ra_free(ARM_REG_R0);
           ra_free(ARM_REG_R1);
 
+          // COMPLEX POP:
+          label_generate(&real_pop);
+
           arm32_free_svalue_off(ARM_REG_PIKE_SP, -1, 0);
           arm32_free_svalue_off(ARM_REG_PIKE_SP, -2, 0);
           /* the order of the free and pop is important, because really_free_svalue should not
@@ -1465,6 +1590,9 @@ static void low_ins_f_byte(unsigned int opcode)
           arm32_sub_reg_int(ARM_REG_PIKE_SP, ARM_REG_PIKE_SP, 2*sizeof(struct svalue));
 
           arm32_push_int_reg(reg, NUMBER_NUMBER);
+
+          // END:
+          label_generate(&end);
 
           ra_free(reg);
       }
