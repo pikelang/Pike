@@ -74,13 +74,16 @@ enum arm32_condition {
     ARM_COND_PL = 5 << 28,
     ARM_COND_VS = 6 << 28, /* overflow */
     ARM_COND_VC = 7 << 28, /* no overflow */
+    /* unsigned comparison */
     ARM_COND_HI = 8 << 28,
     ARM_COND_LS = 9 << 28,
+    /* signed comparison */
     ARM_COND_GE = 10 << 28,
     ARM_COND_LT = 11 << 28,
     ARM_COND_GT = 12 << 28,
     ARM_COND_LE = 13 << 28,
-    ARM_COND_AL = 14 << 28 /* unconditional */
+    /* unconditional */
+    ARM_COND_AL = 14 << 28
 };
 
 enum arm32_addr_mode {
@@ -1375,18 +1378,18 @@ static void low_ins_f_byte(unsigned int opcode)
           arm32_load_sp_reg();
 
           arm32_pop_mark(reg);
-          cmp_reg_reg(reg, ARM_REG_PIKE_SP);
+          cmp_reg_reg(ARM_REG_PIKE_SP, reg);
           /* jump if pike_sp <= reg */
-          b_imm(label_dist(&done), ARM_COND_GE);
+          b_imm(label_dist(&done), ARM_COND_LS);
 
           label_generate(&loop);
 
           arm32_sub_reg_int(ARM_REG_PIKE_SP, ARM_REG_PIKE_SP, 1*sizeof(struct svalue));
           arm32_free_svalue(ARM_REG_PIKE_SP, 0);
 
-          cmp_reg_reg(reg, ARM_REG_PIKE_SP);
+          cmp_reg_reg(ARM_REG_PIKE_SP, reg);
           /* jump if pike_sp > reg */
-          b_imm(label_dist(&loop), ARM_COND_LT);
+          b_imm(label_dist(&loop), ARM_COND_HI);
 
           arm32_store_sp_reg();
 
@@ -1739,17 +1742,17 @@ void ins_f_byte_with_2_args(unsigned int opcode, INT32 arg1, INT32 arg2)
 
           arm32_add_reg_int(reg, ARM_REG_PIKE_LOCALS, arg1*sizeof(struct svalue));
 
-          cmp_reg_reg(ARM_REG_PIKE_SP, reg);
+          cmp_reg_reg(reg, ARM_REG_PIKE_SP);
           /* jump if pike_sp >= reg */
-          b_imm(label_dist(&skip), ARM_COND_GE);
+          b_imm(label_dist(&skip), ARM_COND_LS);
           arm32_mov_int(treg, TYPE_SUBTYPE(PIKE_T_INT, arg2 ? NUMBER_UNDEFINED : NUMBER_NUMBER));
           arm32_mov_int(vreg, 0);
 
           label_generate(&loop);
           store_multiple(ARM_REG_PIKE_SP, ARM_MULT_IAW, RBIT(treg)|RBIT(vreg));
-          cmp_reg_reg(ARM_REG_PIKE_SP, reg);
+          cmp_reg_reg(reg, ARM_REG_PIKE_SP);
           /* jump if pike_sp < reg */
-          b_imm(label_dist(&loop), ARM_COND_LT);
+          b_imm(label_dist(&loop), ARM_COND_HI);
 
           arm32_store_sp_reg();
           label_generate(&skip);
