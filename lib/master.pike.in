@@ -2432,6 +2432,8 @@ class joinnode (array(object|mapping) joined_modules,
 
   protected mixed `->=(string index, mixed value)
   {
+    if( index=="fallback_module" )
+      return fallback_module=value;
     return `[]=(index, value);
   }
 
@@ -2460,7 +2462,7 @@ class joinnode (array(object|mapping) joined_modules,
 
   protected mixed `->(string index)
   {
-    if( (< "joined_modules", "fallback_mode", "name", "is_resolv_joinnode",
+    if( (< "joined_modules", "fallback_module", "name", "is_resolv_joinnode",
            "cache", "add_path", "rem_path", "delete_value", "_encode",
            "_decode" >)[index] )
       return ::`->(index);
