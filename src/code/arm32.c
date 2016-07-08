@@ -957,6 +957,13 @@ void arm32_start_function(int UNUSED(no_pc)) {
     ra_init();
 }
 
+/*
+ * NOTE:
+ * This function is here because of an initial misunderstanding. We believed that a function would
+ * _always_ exit through one its own exits and that therefore it would be possible to track register
+ * usage. This is unfortunately not the case, so we have to always push and pop the same register,
+ * regardless of whether we are going to use them or not.
+ */
 void arm32_end_function(int UNUSED(no_pc)) {
     unsigned INT32 registers, instr;
     struct location_list_entry *e;
