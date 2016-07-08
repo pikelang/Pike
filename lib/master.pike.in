@@ -2465,6 +2465,11 @@ class joinnode (array(object|mapping) joined_modules,
     return values(cache) - ({ZERO_TYPE});
   }
 
+  protected int(0..) _sizeof()
+  {
+    return sizeof(_values());
+  }
+
   void delete_value (mixed val)
   {
     if (string name = search (cache, val))

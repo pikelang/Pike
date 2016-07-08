@@ -7,7 +7,7 @@ test_eq(Tools.Test.module.b, 2)
 test_eq(Tools.Test["b"], 2)
 test_eq(Tools.Test->b, 0)
 test_equal(sort(indices(Tools.Test)), ({"a","b","module"}));
-test_eq(sizeof(Tools.Test), 12)
+test_eq(sizeof(Tools.Test), 3)
 test_eval_error(Tools.Test["b"]=3)
 
 END_MARKER
