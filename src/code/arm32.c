@@ -113,6 +113,13 @@ enum data_proc_instr {
     ARM_PROC_MVN
 };
 
+enum shift_instr {
+    ARM_SHIFT_LSL,
+    ARM_SHIFT_LSR,
+    ARM_SHIFT_ASR,
+    ARM_SHIFT_ROT
+};
+
 #define OPCODE_FUN ATTRIBUTE((unused,warn_unused_result)) static PIKE_OPCODE_T
 
 
@@ -443,10 +450,37 @@ OPCODE_FUN gen_cmp_reg_imm(enum arm32_register a, unsigned char imm, unsigned ch
     return instr;
 }
 
+OPCODE_FUN gen_shift_reg_reg(enum shift_instr op, enum arm32_register dst,
+                             enum arm32_register a, enum arm32_register b) {
+    unsigned INT32 instr = ARM_COND_AL;
+    instr = set_dst_reg(instr, dst);
+    instr |= 1<<24;
+    instr |= 1<<23;
+    instr |= 1<<21;
+    instr |= 1<<4;
+    instr |= op << 5;
+    instr |= a << 8;
+    instr |= b;
+
+    return instr;
+}
+
+OPCODE_FUN gen_shift_reg_imm(enum shift_instr op, enum arm32_register dst,
+                             enum arm32_register a, unsigned INT32 imm) {
+    unsigned INT32 instr = gen_reg(ARM_PROC_MOV, dst, a);
+
+    assert(imm); /* why don't you use a MOV instead? */
+    assert(!(imm >> 5));
+
+    instr |= op << 5;
+    instr |= imm << 7;
+
+    return instr;
+}
+
 MACRO void cmp_reg_imm(enum arm32_register a, unsigned char imm, unsigned char rot) {
     add_to_program(gen_cmp_reg_imm(a, imm, rot));
 }
-
 
 OPCODE_FUN gen_store_reg_imm(enum arm32_register dst, enum arm32_register base, INT32 offset) {
     unsigned INT32 instr = ARM_COND_AL;
@@ -536,11 +570,50 @@ MACRO void arm32_ ## name ## s_reg_int(enum arm32_register dst, enum arm32_regis
     }                                                                                                    \
 }                                                                                                        \
 
+#define GEN_SHIFT_OP(name, NAME)                                                                         \
+OPCODE_FUN gen_ ## name ## _reg_imm(enum arm32_register dst, enum arm32_register reg,                    \
+                                    unsigned INT32 imm) {                                                \
+    return gen_shift_reg_imm(ARM_SHIFT_ ## NAME, dst, reg, imm);                                         \
+}                                                                                                        \
+OPCODE_FUN gen_ ## name ## _reg_reg(enum arm32_register dst, enum arm32_register a,                      \
+                                    enum arm32_register b) {                                             \
+    return gen_shift_reg_reg(ARM_SHIFT_ ## NAME, dst, a, b);                                             \
+}                                                                                                        \
+OPCODE_FUN gen_ ## name ## s_reg_imm(enum arm32_register dst, enum arm32_register reg,                   \
+                                     unsigned INT32 imm) {                                               \
+    return gen_ ## name ## _reg_imm(dst, reg, imm)|(1<<20);                                              \
+}                                                                                                        \
+OPCODE_FUN gen_ ## name ## s_reg_reg(enum arm32_register dst, enum arm32_register a,                     \
+                                     enum arm32_register b) {                                            \
+    return gen_ ## name ## _reg_reg(dst, a, b)|(1<<20);                                                  \
+}                                                                                                        \
+                                                                                                         \
+MACRO void name ## _reg_imm(enum arm32_register dst, enum arm32_register reg, unsigned char imm) {       \
+    add_to_program(gen_ ## name ## _reg_imm(dst, reg, imm));                                             \
+}                                                                                                        \
+MACRO void name ## _reg_reg(enum arm32_register dst, enum arm32_register a, enum arm32_register b) {     \
+    add_to_program(gen_ ## name ## _reg_reg(dst, a, b));                                                 \
+}                                                                                                        \
+MACRO void name ## s_reg_imm(enum arm32_register dst, enum arm32_register reg, unsigned char imm) {      \
+    add_to_program(gen_ ## name ## s_reg_imm(dst, reg, imm));                                            \
+}                                                                                                        \
+MACRO void name ## s_reg_reg(enum arm32_register dst, enum arm32_register a, enum arm32_register b) {    \
+    add_to_program(gen_ ## name ## s_reg_reg(dst, a, b));                                                \
+}                                                                                                        \
+MACRO void arm32_ ## name ## _reg_int(enum arm32_register dst, enum arm32_register a, unsigned INT32 v) {\
+    name ## _reg_imm(dst, a, v);                                                                         \
+}                                                                                                        \
+MACRO void arm32_ ## name ## s_reg_int(enum arm32_register dst, enum arm32_register a, unsigned INT32 v) {\
+    name ## s_reg_imm(dst, a, v);                                                                        \
+}                                                                                                        \
+
 GEN_PROC_OP(sub, SUB)
 GEN_PROC_OP(add, ADD)
 GEN_PROC_OP(or, OR)
 GEN_PROC_OP(and, AND)
 GEN_PROC_OP(xor, XOR)
+
+GEN_SHIFT_OP(lsl, LSL)
 
 
 OPCODE_FUN gen_mov_reg(enum arm32_register dst, enum arm32_register src) {
