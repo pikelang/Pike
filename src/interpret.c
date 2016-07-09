@@ -2145,7 +2145,7 @@ void *lower_mega_apply( INT32 args, struct object *o, ptrdiff_t fun )
                 do_trace_func_return (1, o, fun);
               goto pop;
             }
-            new_frame->save_mark_sp=new_frame->mark_sp_base=Pike_mark_sp;
+            new_frame->save_mark_sp=Pike_mark_sp;
             new_frame->pc = new_frame->context->prog->program + function->func.offset
 #ifdef ENTRY_PROLOGUE_SIZE
               + ENTRY_PROLOGUE_SIZE
@@ -2890,7 +2890,7 @@ int apply_low_safe_and_stupid(struct object *o, INT32 offset)
     ret=1;
   }else{
     int tmp;
-    new_frame->mark_sp_base=new_frame->save_mark_sp=Pike_mark_sp;
+    new_frame->save_mark_sp=Pike_mark_sp;
     tmp=eval_instruction(prog->program + offset);
     Pike_mark_sp=new_frame->save_mark_sp;
 

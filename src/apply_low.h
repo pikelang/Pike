@@ -291,7 +291,7 @@
 	debug_malloc_touch(Pike_fp);
 	pc=new_frame->context->prog->program + function->func.offset;
 
-	new_frame->save_mark_sp=new_frame->mark_sp_base=Pike_mark_sp;
+	new_frame->save_mark_sp=Pike_mark_sp;
 	new_frame->pc = pc
 #ifdef ENTRY_PROLOGUE_SIZE
 	  + ENTRY_PROLOGUE_SIZE

@@ -85,7 +85,6 @@ struct pike_frame
    */
   struct svalue *expendible;
   struct svalue **save_mark_sp;
-  struct svalue **mark_sp_base;
   struct object *current_object;
   struct program *current_program;	/* program containing the context. */
   struct inherit *context;
