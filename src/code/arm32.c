@@ -60,7 +60,7 @@ enum arm32_register {
 };
 
 unsigned INT32 RBIT(enum arm32_register reg) {
-    return 1<<reg; 
+    return 1<<reg;
 }
 
 enum arm32_condition {
@@ -276,7 +276,8 @@ enum arm32_multiple_mode {
     ARM_MULT_DBW = MODE(1, 0, 1),
     ARM_MULT_DAW = MODE(0, 0, 1),
     ARM_MULT_IBW = MODE(1, 1, 1),
-    ARM_MULT_IAW = MODE(0, 1, 1)
+    ARM_MULT_IAW = MODE(0, 1, 1),
+    ARM_MULT_ALL = MODE(1, 1, 1)
 #undef MODE
 };
 
@@ -285,7 +286,7 @@ OPCODE_FUN gen_store_multiple(enum arm32_register addr, enum arm32_multiple_mode
     unsigned INT32 instr = ARM_COND_AL | (1<<27) | registers | mode;
 
     instr |= addr << 16;
-    
+
     return instr;
 }
 
@@ -472,7 +473,6 @@ OPCODE_FUN gen_shift_reg_imm(enum shift_instr op, enum arm32_register dst,
                              enum arm32_register a, unsigned INT32 imm) {
     unsigned INT32 instr = gen_reg(ARM_PROC_MOV, dst, a);
 
-    assert(imm); /* why don't you use a MOV instead? */
     assert(!(imm >> 5));
 
     instr |= op << 5;
@@ -1328,7 +1328,7 @@ MACRO void arm32_pop_mark(enum arm32_register dst) {
   ra_free(tmp);
 }
 
-#ifdef PIKE_DEBUG
+#ifdef ARM32_PIKE_DEBUG
 MACRO void arm_green_on(void) {
     if (Pike_interpreter.trace_level > 2)
         fprintf(stderr, "\33[032m");
@@ -1382,9 +1382,7 @@ static void low_ins_f_byte(unsigned int opcode)
   int flags;
   INT32 rel_addr = rel_addr;
 
-#ifdef PIKE_DEBUG
   assert(opcode-F_OFFSET<=255);
-#endif
 
   flags = instrs[opcode-F_OFFSET].flags;
 
@@ -1688,7 +1686,7 @@ static void low_ins_f_byte(unsigned int opcode)
           /* -4 == 4*(JUMP_EPILOGUE_SIZE - 2) */
           sub_reg_imm(kludge_reg, ARM_REG_PC, 4, 0);
       }
-    
+
       arm32_ins_maybe_exit();
 
       if (opcode == F_RETURN_IF_TRUE) {
@@ -2117,4 +2115,410 @@ int arm32_read_f_jump(INT32 offset) {
     int rel_addr = (int)(((unsigned INT32)read_pointer(offset) & 0xffffff) << 8) >> 8;
 
     return rel_addr + offset + 2;
+}
+
+#define CASE(X, Y) case ARM_REG_ ## X: return #Y;
+MACRO const char *reg_to_name(enum arm32_register reg) {
+    switch (reg&15) {
+        CASE(R0, r0);
+        CASE(R1, r1);
+        CASE(R2, r2);
+        CASE(R3, r3);
+        CASE(R4, r4);
+        CASE(R5, r5);
+        CASE(R6, r6);
+        CASE(PIKE_LOCALS, pike_locals);
+        CASE(PIKE_IP, pike_ip);
+        CASE(PIKE_SP, pike_sp);
+        CASE(PIKE_FP, pike_fp);
+        CASE(R11, r11);
+        CASE(R12, r12);
+        CASE(R13, $sp);
+        CASE(LR, $lr);
+        CASE(PC, $pc);
+    }
+
+    return "undisclosed location";
+}
+#undef CASE
+
+#define CASE(X, Y) case ARM_MULT_ ## X: *W = ""; return #Y
+#define CASEW(X, Y) case ARM_MULT_ ## X: *W = "!"; return #Y
+MACRO const char *mult_mode_to_name(PIKE_OPCODE_T instr, const char **W) {
+    instr &= (1<<24)|(1<<23)|(1<<21);
+    switch (instr) {
+        CASE(DB, db);
+        CASE(DA, da);
+        CASE(IB, ib);
+        CASE(IA, ia);
+        CASEW(DBW, db);
+        CASEW(DAW, da);
+        CASEW(IBW, ib);
+        CASEW(IAW, ia);
+    }
+
+    return "?";
+}
+#undef CASE
+#undef CASEW
+
+#define CASE(X, Y) case ARM_PROC_ ## X: return #Y
+MACRO const char *proc_to_name(enum data_proc_instr op) {
+    op >>= 21;
+
+    switch (op&0xf) {
+        CASE(AND, and);
+        CASE(XOR, xor);
+        CASE(SUB, sub);
+        CASE(RSB, rsb);
+        CASE(ADD, add);
+        CASE(ADC, adc);
+        CASE(SBC, sbc);
+        CASE(RSC, rsc);
+        CASE(TST, tst);
+        CASE(TEQ, teq);
+        CASE(CMP, cmp);
+        CASE(CMN, cmn);
+        CASE(OR, or);
+        CASE(MOV, mov);
+        CASE(BIC, bic);
+        CASE(MVN, mvn);
+    }
+
+    return "special operation";
+}
+#undef CASE
+
+#define CASE(X, Y) case ARM_COND_ ## X: return #Y
+MACRO const char *cond_to_name(PIKE_OPCODE_T op) {
+    op &= (0xf << 28);
+
+    switch (op) {
+        CASE(EQ, eq);
+        CASE(NE, ne);
+        CASE(CS, cs);
+        CASE(CC, cc);
+        CASE(MI, mi);
+        CASE(PL, pl);
+        CASE(VS, vs);
+        CASE(VC, vc);
+        CASE(HI, hi);
+        CASE(LS, ls);
+        CASE(GE, ge);
+        CASE(LT, lt);
+        CASE(GT, gt);
+        CASE(LE, le);
+    }
+
+    return "";
+}
+#undef CASE
+
+#define CASE(X, Y) case ARM_SHIFT_ ## X: return #Y
+MACRO const char *shift_to_name(PIKE_OPCODE_T op) {
+    op >>= 5;
+
+    switch (op&3) {
+        CASE(LSL, lsl);
+        CASE(LSR, lsr);
+        CASE(ASR, asr);
+        CASE(ROT, rot);
+    }
+
+    return "special shift";
+}
+#undef CASE
+
+MACRO int check_instr(PIKE_OPCODE_T mask, PIKE_OPCODE_T instr, const char **cond, const char **status) {
+    int ret;
+
+    /* unset ARM_COND_AL */
+    if (cond) mask = set_cond(mask, 0);
+
+    if (mask == (instr & mask)) {
+        if (cond) *cond = cond_to_name(instr);
+        if (status) *status = (instr & (1<<20)) ? "s" : "";
+        return 1;
+    }
+
+    return 0;
+}
+
+MACRO char *get_registers(PIKE_OPCODE_T field, char *outbuf /* >= 256 bytes */) {
+    int i, first = 1;
+
+    char *ret = outbuf;
+
+    *outbuf = 0;
+    outbuf += sprintf(outbuf, "{");
+
+    field &= 0xffff;
+
+    for (i = 0; i < 16; i++) {
+        if (RBIT(i) & field) {
+            if (!first)
+                outbuf += sprintf(outbuf, ", ");
+            else
+                first = 0;
+            outbuf += sprintf(outbuf, "%s", reg_to_name(i));
+        }
+    }
+
+    outbuf += sprintf(outbuf, "}");
+
+    return ret;
+}
+
+void dis_done() { fprintf(stderr, "dis_done()\n"); }
+
+char *interpret_location(enum arm32_register reg, int offset) {
+    char *ret;
+
+    int sv_mod = abs(offset) % sizeof(struct svalue);
+    int sv_div = (offset - sv_mod) / (int)sizeof(struct svalue);
+
+    switch (reg) {
+    case ARM_REG_PIKE_IP:
+        if (offset == OFFSETOF(Pike_interpreter_struct, stack_pointer)) {
+            return strdup("Pike_sp");
+        }
+        if (offset == OFFSETOF(Pike_interpreter_struct, mark_stack_pointer)) {
+            return strdup("Pike_mark_sp");
+        }
+        if (offset == OFFSETOF(Pike_interpreter_struct, frame_pointer)) {
+            return strdup("Pike_fp");
+        }
+        break;
+    case ARM_REG_PIKE_FP:
+        if (offset == OFFSETOF(pike_frame, locals)) {
+            return strdup("Pike_fp->locals");
+        }
+        break;
+    case ARM_REG_PIKE_LOCALS:
+        if (!(sv_mod % 4)) {
+            if (-1 == asprintf(&ret, "Pike_fp->locals[%d].%s", sv_div,
+                               !(sv_mod) ? "type" : "value"))
+                return NULL;
+            return ret;
+        } else {
+            return strdup("Pike_fp->locals[MISALIGNED!!!]");
+        }
+        break;
+    case ARM_REG_PIKE_SP:
+        if (!(sv_mod % 4)) {
+            if (-1 == asprintf(&ret, "Pike_sp[%d].%s", sv_div,
+                               !(sv_mod) ? "type" : "value"))
+                return NULL;
+            return ret;
+        } else {
+            return strdup("Pike_sp[MISALIGNED!!!]");
+        }
+        break;
+    default:
+        break;
+    }
+
+    return NULL;
+}
+
+void arm32_disassemble_code(PIKE_OPCODE_T *addr, size_t bytes) {
+    size_t i;
+    size_t opcodes = bytes / sizeof(PIKE_OPCODE_T);
+
+    char **lines = xcalloc(opcodes, sizeof(char*));
+    char **comments = xcalloc(opcodes, sizeof(char*));
+    char *labels = xcalloc(opcodes, sizeof(char));
+    char label = 'A';
+    char reglist[256];
+
+    for (i = 0; i < opcodes; i++) {
+        PIKE_OPCODE_T instr = addr[i];
+        fprintf(stderr, "  %p\t", addr+i);
+
+        /* condition and status flag */
+        const char *C, *S, *W;
+
+#define CHECK(op)    check_instr(gen_ ## op, instr, 0, 0)
+#define CHECK_C(op)    check_instr(gen_ ## op, instr, &C, 0)
+#define CHECK_CS(op)    check_instr(gen_ ## op, instr, &C, &S)
+#define CHECK_S(op)    check_instr(gen_ ## op, instr, 0, &S)
+#define PRINT(fmt, X...)     do {                               \
+    if (-1 == asprintf(lines+i, "  %p:\t" fmt, addr+i,## X))    \
+        Pike_fatal("Failed to disassemble\n");                  \
+} while(0)
+#define COMMENT(fmt, X...)     do {                             \
+    if (-1 == asprintf(comments+i, "%s " fmt,                    \
+                       comments[i] ? comments[i] : "",## X))    \
+        Pike_fatal("Failed to disassemble\n");                  \
+} while(0)
+#define LABEL(pos) (labels[pos] ? labels[pos] : (labels[pos] = label++))
+
+        /* popcount 15 */
+        if (CHECK(bx_reg(0))) {
+            PRINT("bx\t%s", reg_to_name(instr));
+            continue;
+        }
+        /* popcount 6 */
+        if (CHECK_C(mov_top(0, 0))) {
+            unsigned INT32 imm = (instr & 0xfff) | (instr>>4 & 0xf000);
+            if (!(instr & (1<<20))) {
+                PRINT("movt%s\t%s, #%u",
+                        C, reg_to_name(instr>>12), imm);
+                if (imm >= 10) COMMENT("0x%x", imm);
+                continue;
+            }
+        }
+        /* popcount 5 */
+        if (CHECK_C(mov_wide(0, 0))) {
+            unsigned INT32 imm = (instr & 0xfff) | (instr>>4 & 0xf000);
+            if (!(instr & (1<<20))) {
+                PRINT("movw%s\t%s, #%u\t",
+                        C, reg_to_name(instr>>12), imm);
+                if (imm >= 10) COMMENT("0x%x", imm);
+                continue;
+            }
+        }
+        if (CHECK_C(load_multiple(0, 0, 0))) {
+            /* check if its a b_imm */
+            if (!(instr & (1<<25))) {
+                const char *mode = mult_mode_to_name(instr, &W);
+                PRINT("ldm%s%s\t%s%s, %s", mode, C, reg_to_name(instr >> 16), W,
+                      get_registers(instr, reglist));
+                continue;
+            }
+        }
+        /* popcount 4 */
+        if (CHECK_C(store_multiple(0, 0, 0))) {
+            /* check if its a b_imm */
+            if (!(instr & (1<<25))) {
+                const char *mode = mult_mode_to_name(instr, &W);
+                PRINT("stm%s%s\t%s%s, %s", mode, C, reg_to_name(instr >> 16), W,
+                      get_registers(instr, reglist));
+                continue;
+            }
+        }
+        if (CHECK_C(mov_imm(0, 0, 0))) {
+            PRINT("mov imm");
+            continue;
+        }
+        if (CHECK_CS(shift_reg_reg(0, 0, 0, 0))) {
+            PRINT("shift reg reg");
+            continue;
+        }
+        if (CHECK_C(cmp_reg_imm(0, 0, 0))) {
+            unsigned int imm = instr & 0xff;
+            unsigned int rot = (instr>>8) & 0xf;
+            PRINT("cmp%s\t%s, #%u", C, reg_to_name(instr>>16), imm << (2*rot));
+            continue;
+        }
+        /* popcount 3 */
+        if (CHECK_CS(shift_reg_imm(0, 0, 0, 0))) {
+            PIKE_OPCODE_T imm = (instr >> 7) & 0x1f;
+            if (imm) {
+                PRINT("%s%s%s\t%s, %s, #%d", shift_to_name(instr), C, S,
+                      reg_to_name(instr >> 12), reg_to_name(instr >> 16), imm);
+                continue;
+            }
+            /* its a mov */
+        }
+        if (CHECK_CS(mov_reg(0, 0))) {
+            PRINT("mov%s%s\t%s, %s", C, S, reg_to_name(instr >> 12), reg_to_name(instr >> 16));
+            continue;
+        }
+        if (CHECK_C(cmp_reg_reg(0, 0))) {
+            PRINT("cmp%s%s\t%s, %s", C, S,
+                    reg_to_name(instr>>16),
+                    reg_to_name(instr));
+            continue;
+        }
+        if (CHECK_C(load_reg_imm(0, 0, 0)&~(1<<23))) {
+            int offset = instr & 0xfff;
+            if (!(instr & (1 << 23))) offset = -offset;
+            if (offset) {
+                PRINT("ldr%s\t%s, [%s, #%d]", C, reg_to_name(instr >> 12),
+                      reg_to_name(instr >> 16), offset);
+            } else {
+                PRINT("ldr%s\t%s, [%s]", C, reg_to_name(instr >> 12),
+                      reg_to_name(instr >> 16));
+            }
+            char * loc = interpret_location((instr>>16)&0xf, offset);
+            if (loc) {
+                COMMENT("%s", loc);
+                free(loc);
+            }
+            continue;
+        }
+        if (CHECK_C(store_reg_imm(0, 0, 0)&~(1<<23))) {
+            int offset = instr & 0xfff;
+            if (!(instr & (1 << 23))) offset = -offset;
+            if (offset) {
+                PRINT("str%s\t%s, [%s, #%d]", C, reg_to_name(instr >> 12),
+                      reg_to_name(instr >> 16), offset);
+            } else {
+                PRINT("str%s\t%s, [%s]", C, reg_to_name(instr >> 12),
+                      reg_to_name(instr >> 16));
+            }
+            char * loc = interpret_location((instr>>16)&0xf, offset);
+            if (loc) {
+                COMMENT("%s", loc);
+                free(loc);
+            }
+            continue;
+        }
+        /* popcount 2 */
+        if (CHECK_C(b_imm(0))) {
+            int dist = (int)((instr & 0xffffff) << 8) >> 8;
+            PRINT("b%s\t#%d", C, dist+2);
+            COMMENT("=> %c", LABEL(i+dist+2));
+            continue;
+        }
+        /* popcount 1 */
+        if (CHECK_CS(reg_imm(0, 0, 0, 0, 0))) {
+            unsigned int imm = instr & 0xff;
+            unsigned int rot = (instr>>8) & 0xf;
+            PRINT("%s%s%s\t%s, %s, #%u",
+                    proc_to_name(instr), C, S,
+                    reg_to_name(instr>>12),
+                    reg_to_name(instr>>16),
+                    imm << (2*rot));
+            continue;
+        }
+        if (CHECK_CS(reg_reg(0, 0, 0, 0))) {
+            PRINT("%s%s%s\t%s, %s, %s",
+                    proc_to_name(instr), C, S,
+                    reg_to_name(instr>>12),
+                    reg_to_name(instr>>16),
+                    reg_to_name(instr));
+            continue;
+        }
+        PRINT("%x", addr[i]);
+    }
+
+    for (i = 0; i < opcodes; i++) {
+        size_t len;
+
+        if (labels[i])
+            fprintf(stderr, "%c:\n", labels[i]);
+
+        len = fprintf(stderr, "%s", lines[i]);
+
+        if (comments[i]) {
+            unsigned int j, plen = 0;
+
+            for (j = 0; j < len; j++) {
+                if (lines[i][j] == '\t') {
+                    plen += 8 - (plen % 8);
+                } else {
+                    ++plen;
+                }
+            }
+
+            fprintf(stderr, "%*s;%s", plen < 50 ? 50-plen : 0, "", comments[i]);
+            free(comments[i]);
+        }
+        free(lines[i]);
+        fprintf(stderr, "\n");
+    }
+
+    dis_done();
 }
