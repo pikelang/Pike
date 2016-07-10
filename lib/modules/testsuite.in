@@ -462,25 +462,28 @@ class Opt
   Opt verbose = NoOpt("-v")|NoOpt("--verbose")|Env("VERBOSE");
   Opt name = HasOpt("-n")|HasOpt("--name")|Default("Donald");
   Opt debug = MaybeOpt("-d")|MaybeOpt("--debug");
+  Opt i = Int(HasOpt("-i")|Default(42));
 };
 
 add_constant("o",Opt);
 return 1;
 ]], 1)
 
-test_equal( sort(indices(o(({"x"})))) , ({ "debug", "name", "verbose" }) )
-test_equal( (mapping)o(({"x"}),([])) , ([ "name" : "Donald", Arg.REST:({}) ]) )
+test_equal( sort(indices(o(({"x"})))) , ({ "debug", "i", "name", "verbose" }) )
+test_equal( (mapping)o(({"x"}),([])) , ([ "name" : "Donald", "i":42, Arg.REST:({}) ]) )
 test_equal( o(({"x"}),([]))->verbose , 0 )
 test_equal( o(({"x"}),([]))->debug , 0 )
 test_equal( o(({"x"}),([]))->name , "Donald" )
 test_equal( o("x --name=foo"/" ",([]))->name , "foo" )
 test_equal( o("x -n=foo"/" ",([]))->name , "foo" )
 test_equal( o("x -n foo"/" ",([]))->name , "foo" )
-test_equal( (mapping)o("x -dvn foo xor"/" ",([])), ([ "debug":1, "verbose":1, "name":"foo", Arg.REST : ({ "xor" }) ]) )
+test_equal( (mapping)o("x -dvn foo xor"/" ",([])), ([ "debug":1, "verbose":1, "name":"foo", "i":42, Arg.REST : ({ "xor" }) ]) )
 test_equal( o(({"x"}),(["VERBOSE":"1"]))->verbose, "1" )
-test_equal( (mapping)o("x --verbose=5"/" ",([])), ([ "name":"Donald", Arg.REST : ({ "--verbose=5" }) ]) )
+test_equal( (mapping)o("x --verbose=5"/" ",([])), ([ "name":"Donald", "i":42, Arg.REST : ({ "--verbose=5" }) ]) )
 test_equal( o("x -v florp"/" ")[Arg.REST], ({ "florp" }) )
 test_equal( o("x -v -v"/" ",([]))->verbose , 2 )
+test_equal( o("x"/" ")->i, 42 )
+test_equal( o("x -i 7"/" ")->i, 7 )
 
 test_do(add_constant("o"))
 

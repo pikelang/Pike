@@ -112,6 +112,35 @@ class OptLibrary
     }
   }
 
+  //! Wrapper class that converts the option argument to an integer.
+  //! @example
+  //!   Opt foo = Int(HasOpt("--foo")|Default(4711));
+  class Int(Opt opt)
+  {
+    inherit Opt;
+
+    mixed get_value(array(string) argv, mapping(string:string) env,
+                    mixed previous)
+    {
+      return (int)opt->get_value(argv, env, previous);
+    }
+
+    array(string) get_opts()
+    {
+      return opt->get_opts();
+    }
+
+    protected this_program `|(mixed thing)
+    {
+      error("OR:ing Int objects not supported.\n");
+    }
+
+    protected string _sprintf(int t)
+    {
+      return t=='O' && sprintf("%O(%O)", this_program, opt);
+    }
+  }
+
   //! Parses an option without parameter, such as --help, -x or "x"
   //! from -axb.
   //!
@@ -208,14 +237,14 @@ class OptLibrary
   class Default
   {
     inherit Opt;
-    protected string value;
+    protected mixed value;
 
-    protected void create(string _value)
+    protected void create(mixed _value)
     {
       value = _value;
     }
 
-    string get_value(array(string) argv, mapping(string:string) env,
+    mixed  get_value(array(string) argv, mapping(string:string) env,
                      mixed previous)
     {
       return value;
@@ -514,6 +543,7 @@ class Options
                                              mapping(string:string) env)
   {
     if( !sizeof(argv) || argv[0]!="--help" ) return 0;
+    if(!values->help) values->help=1;
 
     string s = index("help_pre");
     if( s )
