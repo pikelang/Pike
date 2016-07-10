@@ -117,11 +117,16 @@ o Random rewrite
     add_constant( "random_string", rnd->random_string );
     add_constant( "random", rnd->random );
 
+o JOSE (JSON Object Signing and Encryption)
+
+  Some low-level API support has been added to the Crypto and Web
+  modules to support parts of RFC 7515 - 7520.
+
 
 Incompatible changes
 --------------------
 
-o Gz.crc32 now only returns positive results.
+o Gz.crc32 and Nettle.crc32c now only return positive results.
 
 o glob() has changed.
 
@@ -179,6 +184,8 @@ o Crypto.Checksum
 
   This module collect non-cryptographic checksums. Support for crc32,
   adler32 and Castagnoli CRC (CRC32C).
+
+  NB: In the future these may be amended to support the Crypto.Hash API.
 
 o Protocols.HTTP2
 o Bittorrent.DHT
