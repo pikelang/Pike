@@ -768,7 +768,7 @@ MACRO void ra_init(void) {
     compiler_state.dirt = 0;
     compiler_state.push_addr = -1;
     compiler_state.flags = 0;
-    // FIXME: not quite the place
+    /* FIXME: not quite the place */
     instrs[F_CATCH - F_OFFSET].address = inter_return_opcode_F_CATCH;
     compiler_state.pop_list = NULL;
     compiler_state.push_list = NULL;
@@ -1116,7 +1116,6 @@ MACRO void arm32_jump_real_cmp(struct label *l, enum arm32_register type1, enum 
 }
 
 void arm32_flush_codegen_state(void) {
-    //fprintf(stderr, "flushing codegen state.\n");
     compiler_state.flags = 0;
 }
 
@@ -1550,7 +1549,7 @@ static void low_ins_f_byte(unsigned int opcode)
           ra_free(type1);
           ra_free(type2);
           ra_free(tmp);
-          // SIMPLE POP INT:
+          /* SIMPLE POP INT: */
 
           arm32_sub_reg_int(ARM_REG_PIKE_SP, ARM_REG_PIKE_SP, sizeof(struct svalue));
           store_reg_imm(reg, ARM_REG_PIKE_SP, -1*sizeof(struct svalue)+OFFSETOF(svalue, u));
@@ -1558,7 +1557,7 @@ static void low_ins_f_byte(unsigned int opcode)
           arm32_store_sp_reg();
 
           b_imm(label_dist(&end), ARM_COND_AL);
-          // COMPLEX CMP:
+          /* COMPLEX CMP: */
           label_generate(&real_cmp);
 
           ra_alloc(ARM_REG_R0);
@@ -1583,7 +1582,7 @@ static void low_ins_f_byte(unsigned int opcode)
           ra_free(ARM_REG_R0);
           ra_free(ARM_REG_R1);
 
-          // COMPLEX POP:
+          /* COMPLEX POP: */
           label_generate(&real_pop);
 
           arm32_free_svalue_off(ARM_REG_PIKE_SP, -1, 0);
@@ -1594,7 +1593,7 @@ static void low_ins_f_byte(unsigned int opcode)
 
           arm32_push_int_reg(reg, NUMBER_NUMBER);
 
-          // END:
+          /* END: */
           label_generate(&end);
 
           ra_free(reg);
