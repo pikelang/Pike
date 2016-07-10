@@ -684,69 +684,56 @@ void report_failed_entries(mapping scope, string path) {
     report_failed_entries(next, path + "." + id);
 }
 
+class Options
+{
+  inherit Arg.Options;
+
+  constant help_pre = "pike -x assemble_autodoc <structure file> <autodoc file>";
+
+  Opt pikever = HasOpt("--pike-version")|Default(version());
+  Opt timestamp = Int(HasOpt("--timestamp")|HasOpt("--time-stamp")|Default(time()));
+  Opt output = HasOpt("-h")|HasOpt("--output")|HasOpt("--out");
+  Opt verbose = NoOpt("-v")|NoOpt("--verbose");
+  Opt quiet = NoOpt("-q")|NoOpt("--quiet");
+  Opt compat = NoOpt("--compat");
+  Opt no_dynamic = NoOpt("--no-dynamic");
+  Opt keep_going = NoOpt("--kep-going");
+}
+
 int(0..1) main(int num, array(string) args)
 {
-  string pike_version = version();
-
-  string outfile;
-  int timestamp = time();
+  Options options = Options(args);
+  if(options->help) exit(1);
 
   int T = time();
-  foreach(Getopt.find_all_options(args, ({
-     ({ "pikever",    Getopt.HAS_ARG, "--pike-version"/"," }),
-     ({ "timestamp",  Getopt.HAS_ARG, "--timestamp,--time-stamp"/"," }),
-     ({ "help",       Getopt.NO_ARG,  "-h,--help"/"," }),
-     ({ "output",     Getopt.HAS_ARG, "-o,--output,--out"/"," }),
-     ({ "verbose",    Getopt.NO_ARG,  "-v,--verbose"/"," }),
-     ({ "quiet",      Getopt.NO_ARG,  "-q,--quiet"/"," }),
-     ({ "compat",     Getopt.NO_ARG,  "--compat" }),
-     ({ "no-dynamic", Getopt.NO_ARG,  "--no-dynamic" }),
-     ({ "keep-going", Getopt.NO_ARG,  "--keep-going" }),
-				  })), array(string) opt) {
-    switch(opt[0]) {
-    case "pikever":
-      pike_version = opt[1];
-      break;
-    case "timestamp":
-      timestamp = (int)opt[1];
-      break;
-    case "help":
-      exit(0, "pike -x assemble_autodoc <structure file> <autodoc file>\n");
-    case "output":
-      if (outfile) exit(1, "Only a single output is supported.\n");
-      outfile = opt[1];
-      break;
-    case "verbose":
-      if (verbose < Tools.AutoDoc.FLAG_DEBUG) {
-	verbose += 1;
-	flags = (flags & ~Tools.AutoDoc.FLAG_VERB_MASK) | verbose;
-      }
-      break;
-    case "quiet":
-      flags &= ~Tools.AutoDoc.FLAG_VERB_MASK;
-      verbose = Tools.AutoDoc.FLAG_QUIET;
-      break;
-    case "keep-going":
-      flags |= Tools.AutoDoc.FLAG_KEEP_GOING;
-      break;
-    case "compat":
-      flags |= Tools.AutoDoc.FLAG_COMPAT;
-      break;
-    }
+
+  if( options->quiet )
+  {
+    options->verbose = Tools.AutoDoc.FLAG_QUIET;
+    flags &= ~Tools.AutoDoc.FLAG_VERB_MASK;
   }
-  args = Getopt.get_args(args);
-  if(sizeof(args)<3)
+  else if( options->verbose )
+    flags = (flags & ~Tools.AutoDoc.FLAG_VERB_MASK) |
+      min(verbose, Tools.AutoDoc.FLAG_DEBUG-1);
+
+  if( options->keep_going )
+    flags |= Tools.AutoDoc.FLAG_KEEP_GOING;
+  if( options->compat )
+    flags |= Tools.AutoDoc.FLAG_COMPAT;
+
+  args = options[Arg.REST];
+  if(sizeof(args)<2)
     exit(1," Too few arguments\n");
 
   if (verbose >= Tools.AutoDoc.FLAG_VERBOSE)
-    werror("Parsing structure file %O.\n", args[1]);
-  Node n = parse_file(args[1]);
+    werror("Parsing structure file %O.\n", args[0]);
+  Node n = parse_file(args[0]);
   n = n->get_first_element("manual");
-  n->get_attributes()->version = pike_version;
-  mapping t = localtime(timestamp);
+  n->get_attributes()->version = options->pikever;
+  mapping t = localtime(options->timestamp);
   n->get_attributes()["time-stamp"] =
     sprintf("%4d-%02d-%02d", t->year+1900, t->mon+1, t->mday);
-  refdocdir = combine_path(args[1], "../..");
+  refdocdir = combine_path(args[0], "../..");
   if (verbose >= Tools.AutoDoc.FLAG_VERBOSE) {
     werror("Refdoc directory: %s\n", refdocdir);
     werror("Executing reference expansion and queueing node insertions.\n");
@@ -769,8 +756,8 @@ int(0..1) main(int num, array(string) args)
   }
 
   if (verbose >= Tools.AutoDoc.FLAG_VERBOSE)
-    werror("Parsing autodoc file %O.\n", args[2]);
-  Node m = parse_file(args[2]);
+    werror("Parsing autodoc file %O.\n", args[1]);
+  Node m = parse_file(args[1]);
   m = m->get_first_element("autodoc");
 
   if (flags & Tools.AutoDoc.FLAG_COMPAT) {
@@ -802,8 +789,8 @@ int(0..1) main(int num, array(string) args)
 
   if (verbose >= Tools.AutoDoc.FLAG_VERBOSE)
     werror("Writing final manual source file.\n");
-  if (outfile) {
-    Stdio.write_file(outfile, (string)root);
+  if (options->output) {
+    Stdio.write_file(options->output, (string)root);
   } else {
     write( (string)root );
   }
