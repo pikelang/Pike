@@ -777,6 +777,8 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
       //        for clients that don't use early_data?
       if( version >= PROTOCOL_TLS_1_3 ) {
 
+	// TLS 1.3 or later.
+
         // TLS 1.3 draft 3 7.4.1:
         //
         // If a TLS 1.3 ClientHello is received with any other value
@@ -857,15 +859,17 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
                    "handshake packets.\n");
 
         return 0;
-      } else {
-        compression_methods =
-          context->preferred_compressors & compression_methods;
-        COND_FATAL(!sizeof(compression_methods),
-                   ALERT_handshake_failure,
-                   "Unsupported compression method.\n");
-
-        session->set_compression_method(compression_methods[0]);
       }
+
+      // TLS 1.2 or earlier.
+
+      compression_methods =
+	context->preferred_compressors & compression_methods;
+      COND_FATAL(!sizeof(compression_methods),
+		 ALERT_handshake_failure,
+		 "Unsupported compression method.\n");
+
+      session->set_compression_method(compression_methods[0]);
 
 #ifdef SSL3_DEBUG
       if (sizeof(session_id))
