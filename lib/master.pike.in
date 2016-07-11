@@ -2226,7 +2226,7 @@ class dirnode (string dirname, object|void compilation_handler,
   protected mixed `->(string index)
   {
     if( (< "dirname", "name", "is_resolv_dirnode",
-           "module", "cache", "delete_value" >)[index] )
+           "module", "delete_value" >)[index] )
       return ::`->(index);
     return `[](index);
   }
@@ -2463,7 +2463,7 @@ class joinnode (array(object|mapping) joined_modules,
   protected mixed `->(string index)
   {
     if( (< "joined_modules", "fallback_module", "name", "is_resolv_joinnode",
-           "cache", "add_path", "rem_path", "delete_value", "_encode",
+           "add_path", "rem_path", "delete_value", "_encode",
            "_decode" >)[index] )
       return ::`->(index);
     return `[](index);
@@ -2995,8 +2995,11 @@ class CompatResolver
       }
     }
 
-    node = joinnode(({ instantiate_static_modules(static_modules),
-		       // Copy relevant stuff from the root module.
+    node = joinnode(({
+                      // Kluge to get _static_modules to work at top level.
+                      ([ "_static_modules" : static_modules ]),
+                      instantiate_static_modules(static_modules),
+                       // Copy relevant stuff from the root module.
 		       @filter(root_module->joined_modules,
 			       lambda(mixed x) {
 				 return objectp(x) && x->is_resolv_dirnode;
@@ -3004,10 +3007,6 @@ class CompatResolver
 		    current_handler,
 		    root_module->fallback_module,
 		    "predef::");
-
-    // FIXME: Is this needed?
-    // Kluge to get _static_modules to work at top level.
-    node->cache->_static_modules = static_modules;
 
     return node;
   }
