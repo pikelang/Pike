@@ -1271,13 +1271,13 @@ static void low_ins_call(void *addr) {
   arm32_call(addr);
 }
 
-static void arm32_call_c_function(void * addr) {
+MACRO void arm32_call_c_function(void * addr) {
     compiler_state.flags &= ~FLAG_SP_LOADED;
     compiler_state.flags &= ~FLAG_FP_LOADED;
     arm32_call(addr);
 }
 
-static void arm32_call_c_opcode(unsigned int opcode) {
+MACRO void arm32_call_c_opcode(unsigned int opcode) {
   void *addr = instrs[opcode-F_OFFSET].address;
   int flags = instrs[opcode-F_OFFSET].flags;
 
@@ -2223,6 +2223,7 @@ MACRO const char *mult_mode_to_name(PIKE_OPCODE_T instr, const char **W) {
         CASEW(IAW, ia);
     }
 
+    *W = "";
     return "?";
 }
 #undef CASE
