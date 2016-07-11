@@ -2946,31 +2946,31 @@ class CompatResolver
 
   //!
   mapping get_default_module()
-    {
-      resolv_debug ("%O->get_default_module()\n", this);
+  {
+    resolv_debug ("%O->get_default_module()\n", this);
 
-      /* This is an ugly kluge to avoid an infinite recursion.
-       * The infinite recursion occurs because this function is
-       * called for every file when the compat_major/minor is set.
-       * This kluge could cause problems with threads if the
-       * compiler was threaded. -Hubbe
-       */
-      int saved_compat_minor=compat_minor;
-      int saved_compat_major=compat_major;
-      compat_minor=-1;
-      compat_major=-1;
+    /* This is an ugly kluge to avoid an infinite recursion.  The
+     * infinite recursion occurs because this function is called for
+     * every file when the compat_major/minor is set.  This kluge
+     * could cause problems with threads if the compiler was
+     * threaded. -Hubbe
+     */
+    int saved_compat_minor=compat_minor;
+    int saved_compat_major=compat_major;
+    compat_minor=-1;
+    compat_major=-1;
 
-      mixed x;
-      mixed err =catch {
+    mixed x;
+    mixed err =catch {
 	if(resolv("__default") && (x=resolv("__default.all_constants")))
 	  x=x();
       };
 
-      compat_major=saved_compat_major;
-      compat_minor=saved_compat_minor;
-      if(err) throw(err);
-      return x;
-    }
+    compat_major=saved_compat_major;
+    compat_minor=saved_compat_minor;
+    if(err) throw(err);
+    return x;
+  }
 
   // _static_modules -- default for global::
   // current_handler->get_default_module()->_static_modules
