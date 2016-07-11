@@ -71,3 +71,6 @@ void ins_f_byte_with_2_args(unsigned int a, INT32 c, INT32 b);
 #define DISASSEMBLE_CODE        arm32_disassemble_code
 
 void arm32_disassemble_code(PIKE_OPCODE_T *addr, size_t bytes);
+
+#define INIT_INTERPRETER_STATE		arm32_init_interpreter_state
+void arm32_init_interpreter_state(void);
