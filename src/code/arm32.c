@@ -307,6 +307,7 @@ MACRO void load_multiple(enum arm32_register addr, enum arm32_multiple_mode mode
     add_to_program(gen_load_multiple(addr, mode, registers));
 }
 
+#ifdef __ARM_ARCH_6T2__
 OPCODE_FUN gen_mov_wide(enum arm32_register reg, unsigned short imm) {
     return ARM_COND_AL | (3 << 24) | (imm & 0xfff) | (reg << 12) | ((imm & 0xf000) << 4);
 }
@@ -322,6 +323,7 @@ OPCODE_FUN gen_mov_top(enum arm32_register reg, unsigned short imm) {
 MACRO void mov_top(enum arm32_register reg, unsigned short imm) {
     add_to_program(gen_mov_top(reg, imm));
 }
+#endif
 
 OPCODE_FUN gen_bx_reg(enum arm32_register to) {
     unsigned INT32 instr = ARM_COND_AL;
@@ -433,6 +435,24 @@ MACRO int arm32_make_imm(unsigned INT32 v, unsigned char *imm, unsigned char *ro
     }
 
     return 0;
+}
+
+MACRO unsigned INT32 arm32_extract_imm(unsigned INT32 v, unsigned char *imm, unsigned char *rot) {
+    unsigned INT32 b, n;
+
+    if (v <= 0xff) {
+        *imm = v;
+        *rot = 0;
+        return 0;
+    }
+
+    b = ctz32(v) / 2;
+    v >>= (b*2);
+
+    *imm = v;
+    *rot = (*rot - b) % 16;
+
+    return v & ~0xff;
 }
 
 MACRO void arm32_mov_int(enum arm32_register reg, unsigned INT32 v);
@@ -608,7 +628,21 @@ MACRO void arm32_ ## name ## _reg_int(enum arm32_register dst, enum arm32_regist
 }                                                                                                        \
 MACRO void arm32_ ## name ## s_reg_int(enum arm32_register dst, enum arm32_register a, unsigned INT32 v) {\
     name ## s_reg_imm(dst, a, v);                                                                        \
-}                                                                                                        \
+}
+
+#define GEN_PROC_OP1(name, NAME)									\
+OPCODE_FUN gen_ ## name ## _reg(enum arm32_register dst, enum arm32_register src) {			\
+    return gen_reg(ARM_PROC_ ## NAME, dst, src);							\
+}													\
+MACRO void name ## _reg(enum arm32_register dst, enum arm32_register src) {				\
+    add_to_program(gen_ ## name ## _reg(dst, src));							\
+}													\
+OPCODE_FUN gen_ ## name ## _imm(enum arm32_register dst, unsigned char imm, unsigned char rot) {	\
+    return gen_imm(ARM_PROC_ ## NAME, dst, imm, rot);							\
+}													\
+MACRO void name ## _imm(enum arm32_register dst, unsigned char imm, unsigned char rot) {		\
+    add_to_program(gen_ ## name ## _imm(dst, imm, rot));						\
+}
 
 GEN_PROC_OP(sub, SUB)
 GEN_PROC_OP(add, ADD)
@@ -618,31 +652,32 @@ GEN_PROC_OP(xor, XOR)
 
 GEN_SHIFT_OP(lsl, LSL)
 
-
-OPCODE_FUN gen_mov_reg(enum arm32_register dst, enum arm32_register src) {
-    return gen_reg(ARM_PROC_MOV, dst, src);
-}
-
-MACRO void mov_reg(enum arm32_register dst, enum arm32_register src) {
-    add_to_program(gen_mov_reg(dst, src));
-}
-
-OPCODE_FUN gen_mov_imm(enum arm32_register dst, unsigned char imm, unsigned char rot) {
-    return gen_imm(ARM_PROC_MOV, dst, imm, rot);
-}
-
-MACRO void mov_imm(enum arm32_register dst, unsigned char imm, unsigned char rot) {
-    add_to_program(gen_mov_imm(dst, imm, rot));
-}
+GEN_PROC_OP1(mov, MOV)
+GEN_PROC_OP1(mvn, MVN)
 
 MACRO void arm32_mov_int(enum arm32_register reg, unsigned INT32 v) {
     unsigned char imm, rot;
 
     if (arm32_make_imm(v, &imm, &rot)) {
         mov_imm(reg, imm, rot);
+    } else if (arm32_make_imm(~v, &imm, &rot)) {
+        mvn_imm(reg, imm, rot);
     } else {
+#ifdef __ARM_ARCH_6T2__
         mov_wide(reg, v);
         if (v>>16) mov_top(reg, v>>16);
+#else
+        rot = 0;
+
+        v = arm32_extract_imm(v, &imm, &rot);
+
+        mov_imm(reg, imm, rot);
+
+        while (v) {
+            v = arm32_extract_imm(v, &imm, &rot);
+            or_reg_imm(reg, reg, imm, rot);
+        }
+#endif
     }
 }
 
@@ -655,12 +690,23 @@ MACRO void arm32_rel_cond_jmp(enum arm32_register reg, enum arm32_register b, en
 }
 
 
+#ifdef __ARM_ARCH_6T2__
 #define SIZEOF_ADD_SET_REG_AT   2
 static void arm32_mov_int_at(unsigned INT32 offset, unsigned INT32 v,
                            enum arm32_register dst) {
     upd_pointer(offset++, gen_mov_wide(dst, v));
     upd_pointer(offset++, gen_mov_top(dst, v>>16));
 }
+#else
+#define SIZEOF_ADD_SET_REG_AT   4
+static void arm32_mov_int_at(unsigned INT32 offset, unsigned INT32 v,
+                           enum arm32_register dst) {
+    upd_pointer(offset++, gen_mov_imm(dst, v, 0));
+    upd_pointer(offset++, gen_or_reg_imm(dst, dst, v>>8, 12));
+    upd_pointer(offset++, gen_or_reg_imm(dst, dst, v>>16, 8));
+    upd_pointer(offset++, gen_or_reg_imm(dst, dst, v>>24, 4));
+}
+#endif
 
 /*
  * "High" level interface
@@ -2358,6 +2404,7 @@ void arm32_disassemble_code(PIKE_OPCODE_T *addr, size_t bytes) {
             continue;
         }
         /* popcount 6 */
+#ifdef __ARM_ARCH_6T2__
         if (CHECK_C(mov_top(0, 0))) {
             unsigned INT32 imm = (instr & 0xfff) | (instr>>4 & 0xf000);
             if (!(instr & (1<<20))) {
@@ -2377,6 +2424,7 @@ void arm32_disassemble_code(PIKE_OPCODE_T *addr, size_t bytes) {
                 continue;
             }
         }
+#endif
         if (CHECK_C(load_multiple(0, 0, 0))) {
             /* check if its a b_imm */
             if (!(instr & (1<<25))) {
