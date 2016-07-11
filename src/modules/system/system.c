@@ -3090,7 +3090,7 @@ void f_daemon(INT32 args)
 static UINT64 rand64()
 {
   unsigned long long rnd;
-  for( int i=0; i<100; i++ )
+  for( int i=0; i<10; i++ )
   {
     if( __builtin_ia32_rdrand64_step( &rnd ) )
       return rnd;
