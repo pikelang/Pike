@@ -3,8 +3,15 @@
 
 //! This class implements a fast and secure random generator. The
 //! generator is a Fortuna PRNG that is fed additional entropy from
-//! the system RNG (and hardware RNG, if available) for every
+//! the system RNG (or hardware RNG, if available) for every
 //! generated megabyte of data.
+//!
+//! If a hardware RNG is present it will be used instead of Fortuna
+//! for random strings shorter than 48 bytes.
+//!
+//! In case of a process fork it is possible that the random
+//! generators will produce identical results for up to one megabyte
+//! of generated data.
 
 inherit Builtin.RandomInterface;
 inherit Nettle.Fortuna : Fortuna;

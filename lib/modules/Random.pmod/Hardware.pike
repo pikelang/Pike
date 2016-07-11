@@ -5,6 +5,9 @@
 //! This class implements a random generator based on the hardware
 //! generator available on some system. Currently only supports Intel
 //! RDRAND CPU extension.
+//!
+//! In case of a process fork the generators in the two processes will
+//! generate independent random values.
 
 inherit Builtin.RandomInterface;
 
