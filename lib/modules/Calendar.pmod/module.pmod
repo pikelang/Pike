@@ -503,35 +503,35 @@ protected mixed `[](string what)
       object Time = master()->resolv("Calendar")["Time"];
       Time->Day = iso_utc->cDay;
       stage--;
+
+      // Timezone dynamically loads ISO_UTC. It is however the only
+      // part of Calendar that uses ISO_UTC.
       object tz=
          master()->resolv("Calendar")["Timezone"]["locale"];
       default_rules->timezone=tz; // destructive!
    }
+
+   // If it isn't magic, use the master resolver.
    if ( !magic[what] || (stage && what!="default_rules")) return UNDEFINED;
+
    switch (what)
    {
       case "Bahai":
          return master()->resolv("Calendar")["Badi"];
       case "ISO_UTC":
-	 if (!iso_utc)
-	    error("ERROR\n");
-	 return iso_utc;
+         return iso_utc;
       case "II":
 	 return 1;
       case "default_rules":
-	 if (!default_rules)
+         if (!default_rules)
 	 {
 	    default_rules=master()->resolv("Calendar")["Ruleset"]();
             default_rules=default_rules->set_language("ISO");
 	 }
-   // load ISO_UTC and set timezone there
-//  	 if (!iso_utc) `[]("ISO_UTC");
-   // timezone will be set on the way out, through boot above
-	 return default_rules;
+         return default_rules;
    }
    if (!defcal)
    {
-      if (!iso_utc) `[]("ISO_UTC");
       stage++;
       defcal=master()->resolv("Calendar")["ISO"];
       stage--;
