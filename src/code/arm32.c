@@ -303,6 +303,14 @@ MACRO void mov_top(enum arm32_register reg, unsigned short imm) {
 }
 #endif
 
+OPCODE_FUN gen_nop() {
+    return ARM_COND_AL |(1<<25)|(1<<24)|(1<<21)|(1<<15)|(1<<14)|(1<<13)|(1<<12);
+}
+
+MACRO void nop() {
+    add_to_program(gen_nop());
+}
+
 OPCODE_FUN gen_bx_reg(enum arm32_register to) {
     unsigned INT32 instr = ARM_COND_AL;
     int i;
@@ -683,21 +691,33 @@ MACRO void arm32_rel_cond_jmp(enum arm32_register reg, enum arm32_register b, en
 }
 
 
+/* This variant of arm32_mov_int will insert the right instructions into
+ * a nop-slide so that the register 'dst' will contains 'v'.
+ */
 #ifdef __ARM_ARCH_6T2__
 #define SIZEOF_ADD_SET_REG_AT   2
 static void arm32_mov_int_at(unsigned INT32 offset, unsigned INT32 v,
                            enum arm32_register dst) {
     upd_pointer(offset++, gen_mov_wide(dst, v));
-    upd_pointer(offset++, gen_mov_top(dst, v>>16));
+    if (v >> 16) upd_pointer(offset++, gen_mov_top(dst, v>>16));
 }
 #else
 #define SIZEOF_ADD_SET_REG_AT   4
 static void arm32_mov_int_at(unsigned INT32 offset, unsigned INT32 v,
                            enum arm32_register dst) {
-    upd_pointer(offset++, gen_mov_imm(dst, v, 0));
-    upd_pointer(offset++, gen_or_reg_imm(dst, dst, v>>8, 12));
-    upd_pointer(offset++, gen_or_reg_imm(dst, dst, v>>16, 8));
-    upd_pointer(offset++, gen_or_reg_imm(dst, dst, v>>24, 4));
+    unsigned char imm, rot = 0;
+    int n = 0;
+
+    v = arm32_extract_imm(v, &imm, &rot);
+    n++;
+
+    upd_pointer(offset++, gen_mov_imm(dst, imm, rot));;
+
+    while (v) {
+        v = arm32_extract_imm(v, &imm, &rot);
+        upd_pointer(offset++, gen_or_reg_imm(dst, dst, imm, rot));
+        n++;
+    }
 }
 #endif
 
@@ -1447,9 +1467,8 @@ static void low_ins_f_byte(unsigned int opcode)
           mov_reg(ra_alloc(ARM_REG_R0), ARM_REG_PC);
 
           rel_addr = PIKE_PC;
-          /* we will move an offset into R8 */
-          for (i = 0; i < SIZEOF_ADD_SET_REG_AT; i++)
-            add_to_program(0);
+          /* we will move an offset into r2 later */
+          for (i = 0; i < SIZEOF_ADD_SET_REG_AT; i++) nop();
 
           add_reg_reg(ARM_REG_R0, ARM_REG_R0, ARM_REG_R2);
       }
@@ -2394,6 +2413,11 @@ void arm32_disassemble_code(PIKE_OPCODE_T *addr, size_t bytes) {
         /* popcount 15 */
         if (CHECK(bx_reg(0))) {
             PRINT("bx\t%s", reg_to_name(instr));
+            continue;
+        }
+        /* popcount 7 */
+        if (CHECK_C(nop())) {
+            PRINT("nop%s", C);
             continue;
         }
         /* popcount 6 */
