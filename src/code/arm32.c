@@ -241,31 +241,9 @@ MACRO void record_opcode(PIKE_OPCODE_T code, int bytecode) {
 #endif
 }
 
-OPCODE_FUN set_status(unsigned INT32 instr) {
-    return instr | (1<<19);
-}
-
 OPCODE_FUN set_cond(unsigned INT32 instr, enum arm32_condition cond) {
     return (instr&0x0fffffff)|cond;
 }
-
-OPCODE_FUN set_src1_reg(unsigned INT32 instr, enum arm32_register r) {
-    return instr | (r << 16);
-}
-
-OPCODE_FUN set_dst_reg(unsigned INT32 instr, enum arm32_register r) {
-    unsigned INT32 ret = instr | (r << 12);
-    return ret;
-}
-
-OPCODE_FUN set_src_imm(unsigned INT32 instr, unsigned char imm, unsigned char rot) {
-    return ARM_ADDR_IMMEDIATE | instr | imm | (rot << 8);
-}
-
-OPCODE_FUN set_src2_reg(unsigned INT32 instr, enum arm32_register r) {
-    return instr | ARM_ADDR_REGISTER | r;
-}
-
 
 enum arm32_multiple_mode {
 #define MODE(P, U, W)   (((P)<<24) | ((U)<<23) | ((W)<<21))
@@ -376,40 +354,31 @@ OPCODE_FUN gen_reg(enum data_proc_instr op, enum arm32_register dst, enum arm32_
     unsigned INT32 instr = ARM_ADDR_REGISTER | ARM_COND_AL;
 
     instr |= op << 21;
-    instr = set_dst_reg(instr, dst);
-    instr = set_src2_reg(instr, src);
+    instr |= dst << 12;
+    instr |= src;
 
     return instr;
 }
 
+/* Data processing instruction with two register operands */
 OPCODE_FUN gen_reg_reg(enum data_proc_instr op, enum arm32_register dst,
-                           enum arm32_register a, enum arm32_register b) {
-    unsigned INT32 instr = gen_reg(op, dst, b);
+                       enum arm32_register a, enum arm32_register b) {
 
-    instr = set_src1_reg(instr, a);
-
-    return instr;
+    return gen_reg(op, dst, b) | (a << 16);
 }
 
-OPCODE_FUN gen_cmp_reg_reg(enum arm32_register a, enum arm32_register b) {
-    unsigned INT32 instr = gen_reg_reg(ARM_PROC_CMP, 0, a, b);
-
-    instr |= (1<<20);
-
-    return instr;
-}
-
-MACRO void cmp_reg_reg(enum arm32_register a, enum arm32_register b) {
-    add_to_program(gen_cmp_reg_reg(a, b));
-}
-
+/* Data processing instruction with immediate */
 OPCODE_FUN gen_imm(enum data_proc_instr op, enum arm32_register dst,
-                       unsigned char imm, unsigned char rot) {
+                   unsigned char imm, unsigned char rot) {
+
     unsigned INT32 instr = ARM_ADDR_IMMEDIATE | ARM_COND_AL;
 
+    assert(!(rot >> 4));
+
     instr |= op << 21;
-    instr = set_dst_reg(instr, dst);
-    instr = set_src_imm(instr, imm, rot);
+    instr |= dst << 12;
+    instr |= imm;
+    instr |= rot << 8;
 
     return instr;
 }
@@ -461,15 +430,7 @@ OPCODE_FUN gen_reg_imm(enum data_proc_instr op, enum arm32_register dst,
                        enum arm32_register reg, unsigned char imm, unsigned char rot) {
     unsigned INT32 instr = gen_imm(op, dst, imm, rot);
 
-    instr = set_src1_reg(instr, reg);
-
-    return instr;
-}
-
-OPCODE_FUN gen_cmp_reg_imm(enum arm32_register a, unsigned char imm, unsigned char rot) {
-    unsigned INT32 instr = gen_reg_imm(ARM_PROC_CMP, 0, a, imm, rot);
-
-    instr |= (1<<20);
+    instr |= reg << 16;
 
     return instr;
 }
@@ -477,7 +438,7 @@ OPCODE_FUN gen_cmp_reg_imm(enum arm32_register a, unsigned char imm, unsigned ch
 OPCODE_FUN gen_shift_reg_reg(enum shift_instr op, enum arm32_register dst,
                              enum arm32_register a, enum arm32_register b) {
     unsigned INT32 instr = ARM_COND_AL;
-    instr = set_dst_reg(instr, dst);
+    instr |= dst << 12;
     instr |= 1<<24;
     instr |= 1<<23;
     instr |= 1<<21;
@@ -501,15 +462,11 @@ OPCODE_FUN gen_shift_reg_imm(enum shift_instr op, enum arm32_register dst,
     return instr;
 }
 
-MACRO void cmp_reg_imm(enum arm32_register a, unsigned char imm, unsigned char rot) {
-    add_to_program(gen_cmp_reg_imm(a, imm, rot));
-}
-
 OPCODE_FUN gen_store_reg_imm(enum arm32_register dst, enum arm32_register base, INT32 offset) {
     unsigned INT32 instr = ARM_COND_AL;
 
-    instr = set_dst_reg(instr, dst);
-    instr = set_src1_reg(instr, base);
+    instr |= dst << 12;
+    instr |= base << 16;
     instr |= (1 << 26) | (1<< 24);
 
     if (offset < 0) {
@@ -644,6 +601,20 @@ MACRO void name ## _imm(enum arm32_register dst, unsigned char imm, unsigned cha
     add_to_program(gen_ ## name ## _imm(dst, imm, rot));						\
 }
 
+#define GEN_PROC_CMP_OP(name, NAME)									\
+OPCODE_FUN gen_ ## name ## _reg_reg(enum arm32_register a, enum arm32_register b) {		        \
+    return (1<<20)|gen_reg_reg(ARM_PROC_ ## NAME, 0, a, b);						\
+}													\
+MACRO void name ## _reg_reg(enum arm32_register dst, enum arm32_register src) {				\
+    add_to_program(gen_ ## name ## _reg_reg(dst, src));							\
+}													\
+OPCODE_FUN gen_ ## name ## _reg_imm(enum arm32_register a, unsigned char imm, unsigned char rot) {      \
+    return (1<<20)|gen_reg_imm(ARM_PROC_ ## NAME, 0, a, imm, rot);					\
+}													\
+MACRO void name ## _reg_imm(enum arm32_register a, unsigned char imm, unsigned char rot) {	        \
+    add_to_program(gen_ ## name ## _reg_imm(a, imm, rot));					        \
+}
+
 GEN_PROC_OP(sub, SUB)
 GEN_PROC_OP(add, ADD)
 GEN_PROC_OP(or, OR)
@@ -654,6 +625,11 @@ GEN_SHIFT_OP(lsl, LSL)
 
 GEN_PROC_OP1(mov, MOV)
 GEN_PROC_OP1(mvn, MVN)
+
+GEN_PROC_CMP_OP(cmp, CMP)
+GEN_PROC_CMP_OP(cmn, CMN)
+GEN_PROC_CMP_OP(tst, TST)
+GEN_PROC_CMP_OP(teq, TEQ)
 
 MACRO void arm32_mov_int(enum arm32_register reg, unsigned INT32 v) {
     unsigned char imm, rot;
@@ -678,6 +654,23 @@ MACRO void arm32_mov_int(enum arm32_register reg, unsigned INT32 v) {
             or_reg_imm(reg, reg, imm, rot);
         }
 #endif
+    }
+}
+
+MACRO void arm32_cmp_int(enum arm32_register reg, unsigned INT32 v) {
+    unsigned char imm, rot;
+
+    if (arm32_make_imm(v, &imm, &rot)) {
+        cmp_reg_imm(reg, imm, rot);
+    } else if (arm32_make_imm(-v, &imm, &rot)) {
+        cmn_reg_imm(reg, imm, rot);
+    } else {
+        enum arm32_register tmp = ra_alloc_any();
+
+        arm32_mov_int(tmp, v);
+        cmp_reg_reg(reg, tmp);
+
+        ra_free(tmp);
     }
 }
 
@@ -1231,8 +1224,8 @@ static void arm32_ins_maybe_exit(void) {
 
     label_init(&noreturn);
 
-    adds_reg_imm(ARM_REG_R1, ARM_REG_R0, 1, 0);
-    b_imm(label_dist(&noreturn), ARM_COND_NZ);
+    arm32_cmp_int(ARM_REG_R0, -1);
+    b_imm(label_dist(&noreturn), ARM_COND_NE);
     arm32_epilogue();
     label_generate(&noreturn);
 }
