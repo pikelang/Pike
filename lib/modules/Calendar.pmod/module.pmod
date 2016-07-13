@@ -23,8 +23,6 @@ array _indices()
   return (array)magic;
 }
 
-#include "localization.h"
-
 //! Time and day system
 //!
 //!@code
@@ -513,11 +511,8 @@ protected mixed `[](string what)
       Time->Day = iso_utc->cDay;
       stage--;
       object tz=
-	 master()->resolv("Calendar")["Timezone"][default_timezone];
-      if (!tz)
-	 error("Failed to make default timezone %O\n",default_timezone);
-      else
-	 default_rules->timezone=tz; // destructive!
+         master()->resolv("Calendar")["Timezone"]["locale"];
+      default_rules->timezone=tz; // destructive!
    }
    if ( !magic[what] || (stage && what!="default_rules")) return UNDEFINED;
    switch (what)
@@ -534,7 +529,7 @@ protected mixed `[](string what)
 	 if (!default_rules)
 	 {
 	    default_rules=master()->resolv("Calendar")["Ruleset"]();
-	    default_rules=default_rules->set_language(default_language);
+            default_rules=default_rules->set_language("ISO");
 	 }
    // load ISO_UTC and set timezone there
 //  	 if (!iso_utc) `[]("ISO_UTC");
@@ -545,7 +540,7 @@ protected mixed `[](string what)
    {
       if (!iso_utc) `[]("ISO_UTC");
       stage++;
-      defcal=master()->resolv("Calendar")[default_calendar];
+      defcal=master()->resolv("Calendar")["ISO"];
       stage--;
    }
    return defcal[what];
