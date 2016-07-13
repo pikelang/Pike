@@ -116,7 +116,6 @@ Alert alert_factory(object con,
   return Alert(level, description, version, message);
 }
 
-
 //
 // --- Cryptography
 //
@@ -912,6 +911,64 @@ Session lookup_session(string id)
     return 0;
 }
 
+//! Decode a session ticket and return the corresponding session
+//! if valid or zero if invalid.
+//!
+//! @note
+//!   The default implementation just calls @[lookup_session()].
+//!
+//!   Override this function (and @[encode_ticket()]) to implement
+//!   server-side state-less session resumption.
+//!
+//! @seealso
+//!   @[encode_ticket()], @[lookup_session()]
+Session decode_ticket(string(8bit) ticket)
+{
+  return lookup_session(ticket);
+}
+
+//! Generate a session ticket for a session.
+//!
+//! @note
+//!   The default implementation just generates a random ticket
+//!   and calls @[record_session()] to store it.
+//!
+//!   Over-ride this function (and @[decode_ticket()]) to implement
+//!   server-side state-less session resumption.
+//!
+//! @returns
+//!   Returns @expr{0@} (zero) on failure (ie cache disabled), and
+//!   an array on success:
+//!   @array
+//!     @elem string(8bit) 0
+//!       Non-empty string with the ticket.
+//!     @elem int
+//!       Lifetime hint for the ticket.
+//!   @endarray
+//!
+//! @seealso
+//!   @[decode_ticket()], @[record_session()], @rfc{4507:3.3@}
+array(string(8bit)|int) encode_ticket(Session session)
+{
+  if (!use_cache) return 0;
+  string(8bit) ticket = session->ticket;
+  if (!sizeof(ticket||"")) {
+    do {
+      ticket = random(32);
+    } while(session_cache[ticket]);
+    // FIXME: Should we update the fields here?
+    //        Consider moving this to the caller.
+    session->ticket = ticket;
+    session->ticket_expiry_time = time(1) + 3600;
+  }
+  string(8bit) orig_id = session->identity;
+  session->identity = ticket;
+  record_session(session);
+  session->identity = orig_id;
+  // FIXME: Calculate the lifetime from the ticket_expiry_time field?
+  return ({ ticket, 3600 });
+}
+
 //! Create a new session.
 Session new_session()
 {
@@ -927,7 +984,7 @@ Session new_session()
 //! Add a session to the cache (if caching is enabled).
 void record_session(Session s)
 {
-  if (use_cache && s->identity)
+  if (use_cache && sizeof(s->identity||""))
   {
     while (sizeof (active_sessions) >= max_sessions) {
       array pair = [array] active_sessions->get();

@@ -108,6 +108,12 @@ Packet server_hello_packet()
     return ADT.struct();
   };
 
+  ext (EXTENSION_session_ticket_tls, tickets_enabled) {
+    // RFC 4507 and RFC 5077.
+    SSL3_DEBUG_MSG("SSL.ServerConnection: Accepting session tickets.\n");
+    return ADT.struct();
+  };
+
   ext (EXTENSION_application_layer_protocol_negotiation, !!application_protocol)
   {
     return ADT.struct()->put_var_string_array(({application_protocol}), 1, 2);
@@ -145,6 +151,17 @@ Packet certificate_request_packet(Context context)
 			   sprintf("%{%2H%}", context->authorities_cache), 2);
     return handshake_packet(HANDSHAKE_certificate_request,
 				 struct->pop_data());
+}
+
+protected Packet new_session_ticket_packet(int lifetime_hint,
+					   string(8bit) ticket)
+{
+  SSL3_DEBUG_MSG("SSL.ServerConnection: New session ticket.\n");
+  ADT.struct struct = ADT.struct();
+  if (lifetime_hint < 0) lifetime_hint = 0;
+  struct->add_int(lifetime_hint, 4);
+  struct->add_hstring(ticket, 2);
+  return handshake_packet(HANDSHAKE_new_session_ticket, struct->pop_data());
 }
 
 //! Renegotiate the connection (server initiated).
@@ -269,7 +286,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
        return -1;
      case HANDSHAKE_client_hello:
       {
-	string id;
+	string(8bit) id;
 	int cipher_len;
 	array(int) cipher_suites;
 	array(int) compression_methods;
@@ -524,6 +541,15 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
               }
               break;
 
+	  case EXTENSION_session_ticket_tls:
+	    SSL3_DEBUG_MSG("SSL.ServerConnection: Got session ticket.\n");
+	    tickets_enabled = 1;
+	    // NB: RFC 4507 and 5077 differ in encoding here.
+	    //     Apparently no implementations actually followed
+	    //     the RFC 4507 encoding.
+	    session->ticket = extension_data->read();
+	    break;
+
 	    case EXTENSION_heartbeat:
 	      {
 		int hb_mode;
@@ -728,18 +754,49 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	  return -1;
 	}
 
+        Session old_session;
+        if (tickets_enabled) {
+          SSL3_DEBUG_MSG("SSL.ServerConnection: Decoding ticket: %O...\n",
+                         session->ticket);
+          old_session = sizeof(session->ticket) &&
+            context->decode_ticket(session->ticket);
+
+          // RFC 4507 3.4:
+          //   If a server is planning on issuing a SessionTicket to a
+          //   client that does not present one, it SHOULD include an
+          //   empty Session ID in the ServerHello. If the server
+          //   includes a non-empty session ID, then it is indicating
+          //   intent to use stateful session resume.
+          //[...]
+          //   If the server accepts the ticket and the Session ID is
+          //   not empty, then it MUST respond with the same Session
+          //   ID present in the ClientHello.
+
+          session->identity = "";
+          if (old_session) {
+            old_session->identity = id;
+          }
+        } else {
 #ifdef SSL3_DEBUG
-	if (sizeof(id))
-	  werror("SSL.ServerConnection: Looking up session %O\n", id);
+          if (sizeof(id))
+            werror("SSL.ServerConnection: Looking up session %O\n", id);
 #endif
-	Session old_session = sizeof(id) && context->lookup_session(id);
-	if (old_session && old_session->reusable_as(session))
+          old_session = sizeof(id) && context->lookup_session(id);
+        }
+        if (old_session && old_session->reusable_as(session))
         {
 	  SSL3_DEBUG_MSG("SSL.ServerConnection: Reusing session %O\n", id);
 
 	  /* Reuse session */
 	  session = old_session;
 	  send_packet(server_hello_packet());
+
+          if (tickets_enabled) {
+            SSL3_DEBUG_MSG("SSL.ServerConnection: Resending ticket.\n");
+            int lifetime_hint = [int](session->ticket_expiration_time - time(1));
+            string(8bit) ticket = session->ticket;
+            send_packet(new_session_ticket_packet(lifetime_hint, ticket));
+          }
 
 	  array(State) res;
 	  mixed err;
@@ -768,7 +825,7 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	    send_packet(heartbleed_packet());
 	  }
 
-	  expect_change_cipher = 1;
+	  expect_change_cipher++;
 	  reuse = 1;
 
 	  handshake_state = STATE_wait_for_finish;
@@ -843,7 +900,22 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 
        if (!reuse)
        {
+         if (tickets_enabled) {
+           array(string(8bit)|int) ticket_info =
+             context->encode_ticket(session);
+           if (ticket_info) {
+             SSL3_DEBUG_MSG("SSL.ServerConnection: Sending ticket %O.\n",
+                            ticket_info);
+             session->ticket = [string(8bit)](ticket_info[0]);
+             session->ticket_expiry_time = [int](ticket_info[1] + time(1));
+             send_packet(new_session_ticket_packet([int](ticket_info[1]),
+                                                   [string(8bit)](ticket_info[0])));
+           }
+         }
 	 send_packet(change_cipher_packet());
+	  // We've already received the CCS from the peer.
+         expect_change_cipher--;
+
 	 if(version == PROTOCOL_SSL_3_0)
 	   send_packet(finished_packet("SRVR"));
 	 else if(version >= PROTOCOL_TLS_1_0)
@@ -855,7 +927,6 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	   send_packet(heartbleed_packet());
 	 }
 
-	 expect_change_cipher = 1;
 	 context->record_session(session); /* Cache this session */
        }
        handshake_state = STATE_wait_for_hello;
@@ -905,7 +976,8 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
       else
       {
 	handshake_state = STATE_wait_for_finish;
-	expect_change_cipher = 1;
+        // We expect a CCS next
+	expect_change_cipher++;
       }
 
       break;
@@ -1005,7 +1077,8 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 
       handshake_messages += raw;
       handshake_state = STATE_wait_for_finish;
-      expect_change_cipher = 1;
+      // We expect a CCS next.
+      expect_change_cipher++;
       break;
     }
     break;

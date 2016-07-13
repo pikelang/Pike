@@ -26,6 +26,14 @@ protected constant Struct = ADT.struct;
 //! Identifies the session to the server
 string(8bit) identity;
 
+//! Alternative identification of the session to the server.
+//! @seealso
+//!   @rfc{4507@}, @rfc{5077@}
+string(8bit) ticket;
+
+//! Expiry time for @[ticket].
+int ticket_expiry_time;
+
 //! Always COMPRESSION_null.
 int compression_algorithm;
 
