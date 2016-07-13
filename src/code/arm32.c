@@ -823,7 +823,7 @@ MACRO void ra_init(void) {
     /* all register r0 through r10 are unused
      *
      */
-    compiler_state.free = RBIT(0)|RBIT(1)|RBIT(2)|RBIT(3)|RBIT(4);
+    compiler_state.free = RBIT(0)|RBIT(1)|RBIT(2)|RBIT(3)|RBIT(4)|RBIT(12);
     compiler_state.dirt = 0;
     compiler_state.push_addr = -1;
     compiler_state.flags = 0;
@@ -848,8 +848,8 @@ MACRO enum arm32_register ra_alloc(enum arm32_register reg) {
 MACRO enum arm32_register ra_alloc_persistent(void) {
     unsigned short free = compiler_state.free;
 
-    /* we dont want 0-3 */
-    free &= 0xfff0;
+    /* we dont want 0-3 or r12 */
+    free &= ~(0xf | RBIT(12));
 
     if (!free)
         Pike_fatal("No register left: %x\n", compiler_state.free);
