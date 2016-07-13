@@ -109,6 +109,12 @@ protected Packet server_hello_packet()
     return Buffer();
   };
 
+  ext (EXTENSION_session_ticket, tickets_enabled) {
+    // RFC 4507 and RFC 5077.
+    SSL3_DEBUG_MSG("SSL.ServerConnection: Accepting session tickets.\n");
+    return Buffer();
+  };
+
   ext (EXTENSION_application_layer_protocol_negotiation, !!application_protocol)
   {
     return Buffer()->add_string_array(({application_protocol}), 1, 2);
@@ -169,6 +175,17 @@ protected Packet certificate_request_packet(Context context)
     struct->add_hstring([string(8bit)]
                         sprintf("%{%2H%}", context->authorities_cache), 2);
     return handshake_packet(HANDSHAKE_certificate_request, struct);
+}
+
+protected Packet new_session_ticket_packet(int lifetime_hint,
+					   string(8bit) ticket)
+{
+  SSL3_DEBUG_MSG("SSL.ServerConnection: New session ticket.\n");
+  Buffer struct = Buffer();
+  if (lifetime_hint < 0) lifetime_hint = 0;
+  struct->add_int(lifetime_hint, 4);
+  struct->add_hstring(ticket, 2);
+  return handshake_packet(HANDSHAKE_new_session_ticket, struct);
 }
 
 //! Renegotiate the connection (server initiated).
@@ -313,7 +330,7 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
       if (type != HANDSHAKE_client_hello)
         COND_FATAL(1, ALERT_unexpected_message, "Expected client_hello.\n");
 
-      string session_id;
+      string(8bit) session_id;
       int cipher_len;
       array(int) cipher_suites;
       array(int) compression_methods;
@@ -556,6 +573,15 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
                        "Invalid NPN extension.\n");
             break;
 
+	  case EXTENSION_session_ticket:
+	    SSL3_DEBUG_MSG("SSL.ServerConnection: Got session ticket.\n");
+	    tickets_enabled = 1;
+	    // NB: RFC 4507 and 5077 differ in encoding here.
+	    //     Apparently no implementations actually followed
+	    //     the RFC 4507 encoding.
+	    session->ticket = extension_data->read();
+	    break;
+
           case EXTENSION_signed_certificate_timestamp:
             COND_FATAL(sizeof(extension_data), ALERT_handshake_failure,
                        "Invalid signed certificate timestamp extension.\n");
@@ -788,17 +814,41 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
                    ALERT_illegal_parameter,
                    "Illegal with compression in TLS 1.3 and later.\n");
 
-        Session old_session = sizeof(session_id) &&
-          context->lookup_session(session_id);
-        if (old_session && old_session->reusable_as(session))
-        {
-          SSL3_DEBUG_MSG("SSL.ServerConnection: Reusing session %O\n",
-                         session_id);
+	Session old_session;
+	if (tickets_enabled) {
+	  SSL3_DEBUG_MSG("SSL.ServerConnection: Decoding ticket: %O...\n",
+			 session->ticket);
+	  old_session = sizeof(session->ticket) &&
+	    context->decode_ticket(session->ticket);
 
-          /* Reuse session */
-          session = old_session;
-          reuse = 1;
-        }
+	  // RFC 4507 3.4:
+	  //   If a server is planning on issuing a SessionTicket to a
+	  //   client that does not present one, it SHOULD include an
+	  //   empty Session ID in the ServerHello. If the server
+	  //   includes a non-empty session ID, then it is indicating
+	  //   intent to use stateful session resume.
+	  //[...]
+	  //   If the server accepts the ticket and the Session ID is
+	  //   not empty, then it MUST respond with the same Session
+	  //   ID present in the ClientHello.
+
+	  session->identity = "";
+	  if (old_session) {
+	    old_session->identity = session_id;
+	  }
+	} else {
+	  old_session = sizeof(session_id) &&
+	    context->lookup_session(session_id);
+	}
+	if (old_session && old_session->reusable_as(session))
+	{
+	  SSL3_DEBUG_MSG("SSL.ServerConnection: Reusing session %O\n",
+			 session_id);
+
+	  /* Reuse session */
+	  session = old_session;
+	  reuse = 1;
+	}
 
         /* TLS 1.3 or later.
          *
@@ -871,12 +921,36 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
 
       session->set_compression_method(compression_methods[0]);
 
+      Session old_session;
+      if (tickets_enabled) {
+	SSL3_DEBUG_MSG("SSL.ServerConnection: Decoding ticket: %O...\n",
+		       session->ticket);
+	old_session = sizeof(session->ticket) &&
+	  context->decode_ticket(session->ticket);
+
+	// RFC 4507 3.4:
+	//   If a server is planning on issuing a SessionTicket to a
+	//   client that does not present one, it SHOULD include an
+	//   empty Session ID in the ServerHello. If the server
+	//   includes a non-empty session ID, then it is indicating
+	//   intent to use stateful session resume.
+	//[...]
+	//   If the server accepts the ticket and the Session ID is
+	//   not empty, then it MUST respond with the same Session
+	//   ID present in the ClientHello.
+
+	session->identity = "";
+	if (old_session) {
+	  old_session->identity = session_id;
+	}
+      } else {
 #ifdef SSL3_DEBUG
-      if (sizeof(session_id))
-        werror("SSL.ServerConnection: Looking up session %O\n", session_id);
+	if (sizeof(session_id))
+	  werror("SSL.ServerConnection: Looking up session %O\n", session_id);
 #endif
-      Session old_session = sizeof(session_id) &&
-        context->lookup_session(session_id);
+	old_session = sizeof(session_id) &&
+	  context->lookup_session(session_id);
+      }
       if (old_session && old_session->reusable_as(session))
       {
         SSL3_DEBUG_MSG("SSL.ServerConnection: Reusing session %O\n",
@@ -885,6 +959,13 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
         /* Reuse session */
         session = old_session;
         send_packet(server_hello_packet());
+
+	if (tickets_enabled) {
+	  SSL3_DEBUG_MSG("SSL.ServerConnection: Resending ticket.\n");
+	  int lifetime_hint = [int](session->ticket_expiration_time - time(1));
+	  string(8bit) ticket = session->ticket;
+	  send_packet(new_session_ticket_packet(lifetime_hint, ticket));
+	}
 
         new_cipher_states();
         send_packet(change_cipher_packet());
@@ -1180,6 +1261,18 @@ int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
       if (!reuse)
       {
 	if (version < PROTOCOL_TLS_1_3) {
+	  if (tickets_enabled) {
+	    array(string(8bit)|int) ticket_info =
+	      context->encode_ticket(session);
+	    if (ticket_info) {
+	      SSL3_DEBUG_MSG("SSL.ServerConnection: Sending ticket %O.\n",
+			     ticket_info);
+	      session->ticket = [string(8bit)](ticket_info[0]);
+	      session->ticket_expiry_time = [int](ticket_info[1] + time(1));
+	      send_packet(new_session_ticket_packet([int](ticket_info[1]),
+						    [string(8bit)](ticket_info[0])));
+	    }
+	  }
 	  send_packet(change_cipher_packet());
 	  // We've already received the CCS from the peer.
 	  expect_change_cipher--;

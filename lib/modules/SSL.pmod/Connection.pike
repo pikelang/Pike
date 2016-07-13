@@ -79,6 +79,8 @@ string(8bit) server_random;
 private constant Packet = .Packet;
 private constant Alert = .Alert;
 
+int(0..3) tickets_enabled = 0;
+
 // RFC 7301 (ALPN) 3.1:
 //   Unlike many other TLS extensions, this extension does not establish
 //   properties of the session, only of the connection.  When session
