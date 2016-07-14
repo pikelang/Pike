@@ -2184,7 +2184,7 @@ unsigned INT32 extract_immediate(PIKE_OPCODE_T instr) {
 
     rot *= 2;
 
-    return (imm << rot) | (imm >> (32-rot));
+    return (imm >> rot) | (imm << (32-rot));
 }
 
 #define CASE(X, Y) case ARM_REG_ ## X: return #Y;
@@ -2340,8 +2340,6 @@ MACRO char *get_registers(PIKE_OPCODE_T field, char *outbuf /* >= 256 bytes */) 
     return ret;
 }
 
-void dis_done() { fprintf(stderr, "dis_done()\n"); }
-
 char *interpret_location(enum arm32_register reg, int offset) {
     char *ret;
 
@@ -2363,6 +2361,9 @@ char *interpret_location(enum arm32_register reg, int offset) {
     case ARM_REG_PIKE_FP:
         if (offset == OFFSETOF(pike_frame, locals)) {
             return strdup("Pike_fp->locals");
+        }
+        if (offset == OFFSETOF(pike_frame, pc)) {
+            return strdup("Pike_fp->pc");
         }
         break;
     case ARM_REG_PIKE_LOCALS:
@@ -2402,9 +2403,10 @@ void arm32_disassemble_code(PIKE_OPCODE_T *addr, size_t bytes) {
     char label = 'A';
     char reglist[256];
 
+    unsigned int imm;
+
     for (i = 0; i < opcodes; i++) {
         PIKE_OPCODE_T instr = addr[i];
-        fprintf(stderr, "  %p\t", addr+i);
 
         /* condition and status flag */
         const char *C, *S, *W;
@@ -2437,7 +2439,7 @@ void arm32_disassemble_code(PIKE_OPCODE_T *addr, size_t bytes) {
         /* popcount 6 */
 #ifdef __ARM_ARCH_6T2__
         if (CHECK_C(mov_top(0, 0))) {
-            unsigned INT32 imm = (instr & 0xfff) | (instr>>4 & 0xf000);
+            imm = (instr & 0xfff) | (instr>>4 & 0xf000);
             if (!(instr & (1<<20))) {
                 PRINT("movt%s\t%s, #%u",
                         C, reg_to_name(instr>>12), imm);
@@ -2447,7 +2449,7 @@ void arm32_disassemble_code(PIKE_OPCODE_T *addr, size_t bytes) {
         }
         /* popcount 5 */
         if (CHECK_C(mov_wide(0, 0))) {
-            unsigned INT32 imm = (instr & 0xfff) | (instr>>4 & 0xf000);
+            imm = (instr & 0xfff) | (instr>>4 & 0xf000);
             if (!(instr & (1<<20))) {
                 PRINT("movw%s\t%s, #%u\t",
                         C, reg_to_name(instr>>12), imm);
@@ -2476,13 +2478,13 @@ void arm32_disassemble_code(PIKE_OPCODE_T *addr, size_t bytes) {
             }
         }
         if (CHECK_C(mov_imm(0, 0, 0))) {
-            PRINT("mov%s %s, %u", C, reg_to_name(instr>>12), extract_immediate(instr));
-            COMMENT("=0x%x", extract_immediate(instr));
+            PRINT("mov%s %s, %u", C, reg_to_name(instr>>12), imm = extract_immediate(instr));
+            COMMENT("=0x%08x", imm);
             continue;
         }
         if (CHECK_C(mvn_imm(0, 0, 0))) {
-            PRINT("mvn%s %s, %u", C, reg_to_name(instr>>12), extract_immediate(instr));
-            COMMENT("=0x%x", ~extract_immediate(instr));
+            PRINT("mvn%s %s, %u", C, reg_to_name(instr>>12), imm = extract_immediate(instr));
+            COMMENT("=0x%08x", ~imm);
             continue;
         }
         if (CHECK_CS(shift_reg_reg(0, 0, 0, 0))) {
@@ -2490,8 +2492,8 @@ void arm32_disassemble_code(PIKE_OPCODE_T *addr, size_t bytes) {
             continue;
         }
         if (CHECK_C(cmp_reg_imm(0, 0, 0))) {
-            PRINT("cmp%s\t%s, #%u", C, reg_to_name(instr>>16), extract_immediate(instr));
-            COMMENT("=0x%x", extract_immediate(instr));
+            PRINT("cmp%s\t%s, #%u", C, reg_to_name(instr>>16), imm = extract_immediate(instr));
+            COMMENT("=0x%08x", imm);
             continue;
         }
         /* popcount 3 */
@@ -2509,9 +2511,9 @@ void arm32_disassemble_code(PIKE_OPCODE_T *addr, size_t bytes) {
             continue;
         }
         if (CHECK_C(cmp_reg_reg(0, 0))) {
-            PRINT("cmp%s%s\t%s, %s", C, S,
-                    reg_to_name(instr>>16),
-                    reg_to_name(instr));
+            PRINT("cmp%s\t%s, %s", C,
+                  reg_to_name(instr>>16),
+                  reg_to_name(instr));
             continue;
         }
         if (CHECK_C(load_reg_imm(0, 0, 0)&~(1<<23))) {
@@ -2541,7 +2543,7 @@ void arm32_disassemble_code(PIKE_OPCODE_T *addr, size_t bytes) {
                 PRINT("str%s\t%s, [%s]", C, reg_to_name(instr >> 12),
                       reg_to_name(instr >> 16));
             }
-            char * loc = interpret_location((instr>>16)&0xf, offset);
+            char *loc = interpret_location((instr>>16)&0xf, offset);
             if (loc) {
                 COMMENT("%s", loc);
                 free(loc);
@@ -2552,7 +2554,8 @@ void arm32_disassemble_code(PIKE_OPCODE_T *addr, size_t bytes) {
         if (CHECK_C(b_imm(0))) {
             int dist = (int)((instr & 0xffffff) << 8) >> 8;
             PRINT("b%s\t#%d", C, dist+2);
-            COMMENT("=> %c", LABEL(i+dist+2));
+            if (i+dist+2 > 0 && i+dist+2 < opcodes)
+                COMMENT("=> %c", LABEL(i+dist+2));
             continue;
         }
         /* popcount 1 */
@@ -2561,7 +2564,9 @@ void arm32_disassemble_code(PIKE_OPCODE_T *addr, size_t bytes) {
                     proc_to_name(instr), C, S,
                     reg_to_name(instr>>12),
                     reg_to_name(instr>>16),
-                    extract_immediate(instr));
+                    imm = extract_immediate(instr));
+            if (imm > 9)
+                COMMENT("=0x%08x", imm);
             continue;
         }
         if (CHECK_CS(reg_reg(0, 0, 0, 0))) {
@@ -2572,8 +2577,7 @@ void arm32_disassemble_code(PIKE_OPCODE_T *addr, size_t bytes) {
                     reg_to_name(instr));
             continue;
         }
-        PRINT("<unknown instruction>");
-        COMMENT("%x", addr[i]);
+        PRINT("<unknown instruction %x>", addr[i]);
     }
 
     for (i = 0; i < opcodes; i++) {
@@ -2602,5 +2606,7 @@ void arm32_disassemble_code(PIKE_OPCODE_T *addr, size_t bytes) {
         fprintf(stderr, "\n");
     }
 
-    dis_done();
+    free(labels);
+    free(lines);
+    free(comments);
 }
