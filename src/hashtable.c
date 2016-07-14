@@ -57,7 +57,7 @@ static void rehash_list_backwards(struct hash_table *h,
 /*
  * create a new, empty hashable
 */
-struct hash_table *create_hash_table(void)
+static struct hash_table *create_hash_table(void)
 {
   struct hash_table *new;
   new=calloc(1, sizeof(struct hash_table)+
@@ -70,7 +70,7 @@ struct hash_table *create_hash_table(void)
 /*
  * rehash - ugh
  */
-struct hash_table *hash_rehash(struct hash_table *h,int size)
+static struct hash_table *hash_rehash(struct hash_table *h,int size)
 {
   struct hash_table *new;
   int e;
@@ -137,20 +137,6 @@ struct hash_table *hash_unlink(struct hash_table *h, struct hash_entry *s)
   Pike_fatal("hash_entry not in hashtable\n");
 #endif
   return h;
-}
-
-void map_hashtable(struct hash_table *h, void (*fun)(struct hash_entry *))
-{
-  INT32 e;
-  struct hash_entry *i, *n;
-  for(e=0;e<=h->mask;e++)
-  {
-    for(i=h->htable[e];i;i=n)
-    {
-      n=i->next;
-      fun(i);
-    }
-  }
 }
 
 void free_hashtable(struct hash_table *h,

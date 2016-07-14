@@ -36,18 +36,14 @@ struct hash_table
  * NB: hash_insert is known to clash with mariadb-connector-c 2.2.
  */
 #define hash_lookup	pike_hash_lookup
-#define hash_rehash	pike_hash_rehash
 #define hash_insert	pike_hash_insert
 #define hash_unlink	pike_hash_unlink
 
 /* Prototypes begin here */
 struct hash_entry *hash_lookup(const struct hash_table *h,
                                const struct pike_string *s);
-struct hash_table *create_hash_table(void);
-struct hash_table *hash_rehash(struct hash_table *h,int size);
 struct hash_table *hash_insert(struct hash_table *h, struct hash_entry *s);
 struct hash_table *hash_unlink(struct hash_table *h, struct hash_entry *s);
-void map_hashtable(struct hash_table *h, void (*fun)(struct hash_entry *));
 void free_hashtable(struct hash_table *h,
 		    void (*free_entry)(struct hash_entry *));
 /* Prototypes end here */
