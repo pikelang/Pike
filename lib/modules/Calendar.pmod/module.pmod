@@ -114,7 +114,7 @@ array _indices()
 //!    julian day numbers?
 //!
 //!A:  Julian day numbers are used as the internal representation
-//!    for the day, and for most other bigger-then-time-of-day calculations.
+//!    for the day, and for most other bigger-than-time-of-day calculations.
 //!
 //!      > Calendar.Day("julian",2454545);
 //!      Result: Day(Wed 19 Mar 2008)
@@ -266,8 +266,7 @@ array _indices()
 //!
 //!A:  Yes.
 //!
-//!    Calendar.Day is really a shortcut to Calendar.ISO.Day;
-//!    this is tuned in the localization.h file.
+//!    Calendar.Day is really a shortcut to Calendar.ISO.Day.
 //!
 //!    There is currently:
 //!
@@ -414,10 +413,7 @@ array _indices()
 //!
 //!A:  According to the ISO 8601 standard, weeks start on mondays.
 //!
-//!    If you don't like it, edit the Calendar.pmod/localization.h
-//!    file to use the Gregorian calendar instead of the ISO.
-//!
-//!    Or use Calendar.Gregorian.Day, etc.
+//!    If you don't like it, use Calendar.Gregorian.Day, etc.
 //!
 //!-------------------------------------------------------------------------
 //!
@@ -450,7 +446,7 @@ array _indices()
 //!
 //!Q:  How accurate are the events information?
 //!
-//!A:  For some regions, very. For most region, not very.
+//!A:  For some regions, very. For most regions, not very.
 //!
 //!    The first reason is lack of information of this kind on
 //!    the web, especially sorted into useful rules (like "the
@@ -463,7 +459,7 @@ array _indices()
 //!    events/regions file and send us <pike@@roxen.com> a patch.
 //!
 //!    Don't send me "the x region is all wrong!" mails without
-//!    telling me how it should look.
+//!    telling me what it should look like.
 //!
 //!-------------------------------------------------------------------------
 //!
@@ -479,9 +475,6 @@ array _indices()
 //!    To make sure the right timezone is used, use the standard
 //!    timezone names. Those aren't "CET" or "PST", but
 //!    "Europe/Amsterdam" or "America/Dawson".
-//!
-//!    You can tune the default timezone by editing
-//!    Calendar.pmod/localization.h.
 //!
 //!    OR this may be in the future and you have a changed DST
 //!    rule and uses an old Pike. Then you can either download
