@@ -8,7 +8,6 @@
 #define ADD_EFUN_H
 
 #include "svalue.h"
-#include "hashtable.h"
 #include "las.h" /* For OPT_SIDE_EFFECT etc. */
 
 typedef int (*docode_fun)(node *n);

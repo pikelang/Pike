@@ -17,7 +17,6 @@
 #include "pike_error.h"
 #include "docode.h"
 #include "interpret.h"
-#include "hashtable.h"
 #include "main.h"
 #include "pike_memory.h"
 #include "gc.h"
