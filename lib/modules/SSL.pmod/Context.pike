@@ -116,6 +116,7 @@ Alert alert_factory(object con,
   return Alert(level, description, version, message);
 }
 
+
 //
 // --- Cryptography
 //

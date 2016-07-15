@@ -9,6 +9,12 @@
 #define SSL3_DEBUG_MSG(X ...)
 #endif
 
+#define COND_FATAL(X,Y,Z) if(X) {          \
+    send_packet(alert(ALERT_fatal, Y, Z)); \
+    return -1;                             \
+  }
+
+
 import ".";
 import Constants;
 inherit Connection;
@@ -149,6 +155,23 @@ Packet client_hello(string(8bit)|void server_name)
     return extension;
   };
 
+  ext (EXTENSION_session_ticket_tls, 1)
+  {
+    ADT.struct extension = ADT.struct();
+    // RFC 4507 and RFC 5077.
+    if (session->ticket_expiry_time < time(1)) {
+      session->ticket = UNDEFINED;
+      session->ticket_expiry_time = 0;
+    }
+    SSL3_DEBUG_MSG("SSL.ClientConnection: Sending ticket %O.\n",
+		   session->ticket);
+    // NB: RFC 4507 and RFC 5077 differ in encoding here.
+    //     Apparently no implementations actually followed
+    //     the RFC 4507 encoding.
+    extension->add_data(session->ticket || "");
+    return extension;
+  };
+
   ext (EXTENSION_application_layer_protocol_negotiation,
        !!(context->advertised_protocols))
   {
@@ -252,6 +275,32 @@ protected void create(Context ctx, string(8bit)|void server_name,
 void send_renegotiate()
 {
   send_packet(client_hello(session->server_name), PRI_application);
+}
+
+protected int(-1..1) got_new_session_ticket(ADT.struct input)
+{
+  COND_FATAL(!tickets_enabled, ALERT_handshake_failure,
+	     "Unexpected session ticket.\n");
+  // Make sure that we only get one ticket.
+  tickets_enabled = 3;
+
+  int lifetime_hint = input->read_int(4);
+  string(8bit) ticket = input->read_hstring(2);
+
+  SSL3_DEBUG_MSG("SSL.ClientConnection: Got ticket %O (%d seconds).\n",
+		 ticket, lifetime_hint);
+
+  COND_FATAL(!sizeof(ticket), ALERT_handshake_failure,
+	     "Empty ticket.\n");
+
+  if (!lifetime_hint) {
+    // Unspecified lifetime. Handle as one hour.
+    lifetime_hint = 3600;
+  }
+
+  session->ticket = ticket;
+  session->ticket_expiry_time = lifetime_hint + time(1);
+  return 0;
 }
 
 //! Do handshake processing. Type is one of HANDSHAKE_*, data is the
@@ -424,6 +473,13 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	    application_protocol = selected_prot;
 	    break;
 
+	  case EXTENSION_session_ticket_tls:
+	    COND_FATAL(sizeof(extension_data), ALERT_handshake_failure,
+		       "Invalid server session ticket extension.\n");
+	    SSL3_DEBUG_MSG("SSL.ClientConnection: Server supports tickets.\n");
+	    tickets_enabled = 1;
+	    break;
+
 	  case EXTENSION_heartbeat:
 	    {
 	      int hb_mode;
@@ -495,18 +551,52 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	return -1;
       }
 
-      if ((id == session->identity) && sizeof(id)) {
-	SSL3_DEBUG_MSG("Resuming session %O.\n", id);
-	array(State) res =
-	  session->new_client_states(this, client_random, server_random,
-				     version);
-	pending_read_state = res[0];
-	pending_write_state = res[1];
+      if (session->ticket && !tickets_enabled) {
+	// The server has stopped supporting session tickets?
+	// Make sure not to compare the server-generated
+	// session id with the one that we may have generated.
+	id = "";
+      }
 
-	handshake_state = STATE_wait_for_finish;
-	expect_change_cipher = 1;
+      // RFC 5746 3.5:
+      // When a ServerHello is received, the client MUST verify that the
+      // "renegotiation_info" extension is present; if it is not, the
+      // client MUST abort the handshake.
+      COND_FATAL(missing_secure_renegotiation, ALERT_handshake_failure,
+                 "Missing secure renegotiation extension.\n");
+
+      if ((id == session->identity) && sizeof(id)) {
+        array(State) new_states;
+
+	SSL3_DEBUG_MSG("Resuming session %O.\n", id);
+
+        new_states = session->new_client_states(this, client_random,
+                                                server_random, version);
+        [pending_read_state, pending_write_state] = new_states;
+
+        send_packet(change_cipher_packet());
+
+	if (tickets_enabled) {
+	  handshake_state = STATE_wait_for_ticket;
+	  // Expect the ticket before the CC.
+	  expect_change_cipher--;
+	} else {
+	  handshake_state = STATE_wait_for_finish;
+	}
 	reuse = 1;
 	break;
+      }
+
+      if ((id == "") && tickets_enabled) {
+	// Generate a session identifier.
+	// NB: We currently do NOT support resumption based on an
+	//     empty session id and a HANDSHAKE_new_session_ticket.
+	//     We thus need a non-empty session id when we use
+	//     this new session for resumption. We don't care much
+	//     about the value (as long as it is non-empty), as
+	//     a compliant server will return either the value we
+	//     provided, or the empty string.
+	id = "RESUMPTION_TICKET";
       }
 
       session->identity = id;
@@ -725,9 +815,29 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	send_packet(heartbleed_packet());
       }
 
-      handshake_state = STATE_wait_for_finish;
-      expect_change_cipher = 1;
+      if (tickets_enabled) {
+	handshake_state = STATE_wait_for_ticket;
+	// Expect the ticket before the CC.
+	expect_change_cipher--;
+      } else {
+	handshake_state = STATE_wait_for_finish;
+      }
       break;
+    }
+    break;
+
+  case STATE_wait_for_ticket:
+    {
+      COND_FATAL(type != HANDSHAKE_new_session_ticket, ALERT_unexpected_message,
+                 "Expected new session ticket\n");
+
+      SSL3_DEBUG_MSG("SSL.ClientConnection: NEW_SESSION_TICKET\n");
+      handshake_messages += raw;
+
+      // Expect CC.
+      expect_change_cipher++;
+      handshake_state = STATE_wait_for_finish;
+      return got_new_session_ticket(input);
     }
     break;
 
@@ -762,8 +872,6 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
       handshake_state = STATE_handshake_finished;
 
       if (reuse) {
-	send_packet(change_cipher_packet());
-
 	handshake_messages += raw; /* Second hash includes this message,
 				    * the first doesn't */
 

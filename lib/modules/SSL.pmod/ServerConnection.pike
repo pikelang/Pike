@@ -825,7 +825,6 @@ int(-1..1) handle_handshake(int type, string(8bit) data, string(8bit) raw)
 	    send_packet(heartbleed_packet());
 	  }
 
-	  expect_change_cipher++;
 	  reuse = 1;
 
 	  handshake_state = STATE_wait_for_finish;

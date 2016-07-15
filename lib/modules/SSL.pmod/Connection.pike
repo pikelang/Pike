@@ -141,6 +141,7 @@ Packet change_cipher_packet()
   Packet packet = Packet(version);
   packet->content_type = PACKET_change_cipher_spec;
   packet->fragment = "\001";
+  expect_change_cipher++;
   return packet;
 }
 
@@ -642,7 +643,7 @@ int handle_change_cipher(int c)
   else
   {
     current_read_state = pending_read_state;
-    expect_change_cipher = 0;
+    expect_change_cipher--;
     return 0;
   }
 }

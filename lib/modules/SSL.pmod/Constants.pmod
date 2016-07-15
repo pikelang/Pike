@@ -39,8 +39,9 @@ constant PACKET_MAX_SIZE = 0x4000;	// 2^14.
 constant STATE_wait_for_hello		= 0;
 constant STATE_wait_for_peer		= 1;
 constant STATE_wait_for_verify		= 2;
-constant STATE_wait_for_finish		= 3;
-constant STATE_handshake_finished	= 4;
+constant STATE_wait_for_ticket		= 3;
+constant STATE_wait_for_finish		= 4;
+constant STATE_handshake_finished	= 5;
 
 //! Connection states.
 //!
