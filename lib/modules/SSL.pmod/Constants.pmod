@@ -45,8 +45,9 @@ constant STATE_wait_for_hello		= 0;
 constant STATE_wait_for_key_share	= 1;
 constant STATE_wait_for_peer		= 2;
 constant STATE_wait_for_verify		= 3;
-constant STATE_wait_for_finish		= 4;
-constant STATE_handshake_finished	= 5;
+constant STATE_wait_for_ticket		= 4;
+constant STATE_wait_for_finish		= 5;
+constant STATE_handshake_finished	= 6;
 
 //! Connection states.
 //!
