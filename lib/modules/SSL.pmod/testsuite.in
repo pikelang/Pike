@@ -331,6 +331,9 @@ test_do([[
 #endif
   });
   add_constant("server_ctx", ctx);
+
+  // Disable use of session tickets.
+  ctx->extensions[EXTENSION_session_ticket] = 0;
 ]])
 
 test_do([[
@@ -446,6 +449,9 @@ test_do([[
 			 fmt_version(cmin), fmt_version(cmax),
 			 fmt_version(smin), fmt_version(smax));
 		 log_msg("Cipher_suite: %s", fmt_cipher_suites(suites));
+		 if (server_ctx->extensions[EXTENSION_session_ticket]) {
+		   log_msg("  (Session tickets enabled)\n");
+		 }
 		 log_msg("%s", failure);
 	       });
 ]])
@@ -1360,6 +1366,80 @@ test_any([[
 ]], 1)
 ]])
 
+dnl Session tickets
+test_do([[
+  // Enable session tickets.
+  server_ctx->extensions[SSL.Constants.EXTENSION_session_ticket] = 1;
+]])
+test_tests([[
+import SSL.Constants;
+array(int) a() {
+#define __NT__
+  int successes;
+  int tests;
+  int skip;
+#ifndef __NT__
+  array(Stdio.File) results = ({});
+#endif
+
+  log_status("Testing session tickets...");
+
+  for (int protocol_version = PROTOCOL_SSL_3_0;
+       protocol_version <= PROTOCOL_TLS_MAX; protocol_version++) {
+
+  string server = fmt_version(protocol_version);
+
+#ifndef __NT__
+  Stdio.File rin = Stdio.File();
+  Stdio.File rout = rin->pipe();
+  if( fork() )
+  {
+    rout->close();
+    results += ({ rin });
+    continue;
+  }
+  rin->close();
+#endif
+
+  string client = fmt_version(protocol_version);
+
+  __signal_watchdog();
+
+  string exp_res = client_msg;
+
+  array(int) suites = ({ SSL_null_with_null_null });
+
+  log_status("%s client against %s", client, server);
+
+  int res = test_ssl_connection(protocol_version, protocol_version,
+				protocol_version, protocol_version, exp_res,
+				server_ctx, suites );
+  successes += res;
+  tests += res || 1;
+
+#ifndef __NT__
+	rout->write(successes+" "+tests+" "+skip );
+        _exit(0);
+#endif
+  } // protocol_version
+#ifndef __NT__
+  foreach( results, Stdio.File rin )
+  {
+    int sa, ta, sk;
+    sscanf( rin->read(), "%d %d %d", sa, ta, sk );
+    successes += sa;
+    tests += ta;
+    skip += sk;
+  }
+#endif
+  return ({ successes, tests-successes, skip });
+}
+]])
+test_do([[
+  // Disable session tickets again.
+  server_ctx->extensions[SSL.Constants.EXTENSION_session_ticket] = 0;
+]])
+
 cond_resolv(Crypto.ECC, [[
 
 dnl --- ECC CURVES TEST ---
@@ -1644,6 +1724,8 @@ test_do([[
   add_constant("TestContext", Context);
   SSL.Context ctx = Context();
   ctx->random = random_string;
+  // Disable use of session tickets.
+  ctx->extensions[EXTENSION_session_ticket] = 0;
   add_constant("server_ctx", ctx);
 ]])
 
