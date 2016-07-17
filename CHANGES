@@ -197,6 +197,8 @@ New features
 
 o Gmp.mpf is now implemented using gmpf if the library is available.
 
+o The SSL module now supports session tickets.
+
 
 C-level API changes
 -------------------
