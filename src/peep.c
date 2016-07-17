@@ -174,7 +174,7 @@ INT32 assemble(int store_linenumbers)
   INT32 *labels, *jumps, *uses, *aliases;
   ptrdiff_t e, length;
   p_instr *c;
-  struct pike_string *tripples = NULL;
+  struct pike_string *triples = NULL;
 #ifdef PIKE_DEBUG
   INT32 max_pointer=-1;
   int synch_depth = 0;
@@ -230,14 +230,14 @@ INT32 assemble(int store_linenumbers)
      *         length, num_linedirectives);
      */
 
-    if (!(tripples = begin_wide_shared_string(3*(length+num_linedirectives),
+    if (!(triples = begin_wide_shared_string(3*(length+num_linedirectives),
 					      2))) {
       Pike_fatal("Failed to allocate wide string of length %d 3*(%d + %d).\n",
 		 3*(length+num_linedirectives), length, num_linedirectives);
     }
     previous_file = NULL;
     previous_line = 0;
-    current_tripple = STR2(tripples);
+    current_tripple = STR2(triples);
     for (e = 0; e < length; e++) {
       if (c[e].file != previous_file) {
 	current_tripple[0] = F_FILENAME;
@@ -267,14 +267,14 @@ INT32 assemble(int store_linenumbers)
       current_tripple += 3;
     }
 #ifdef PIKE_DEBUG
-    if (current_tripple != STR2(tripples) + 3*(length + num_linedirectives)) {
+    if (current_tripple != STR2(triples) + 3*(length + num_linedirectives)) {
       Pike_fatal("Tripple length mismatch %d != %d 3*(%d + %d)\n",
-		 current_tripple - STR2(tripples),
+		 current_tripple - STR2(triples),
 		 3*(length + num_linedirectives),
 		 length, num_linedirectives);
     }
 #endif /* PIKE_DEBUG */
-    tripples = end_shared_string(tripples);
+    triples = end_shared_string(triples);
   }
 
   for(e=0;e<length;e++,c++) {
@@ -477,8 +477,8 @@ INT32 assemble(int store_linenumbers)
 #endif
 
   if (store_linenumbers) {
-    ins_data(store_prog_string(tripples));
-    free_string(tripples);
+    ins_data(store_prog_string(triples));
+    free_string(triples);
   } else {
     ins_data(0);
   }
