@@ -208,7 +208,7 @@ INT32 assemble(int store_linenumbers)
 
   /* No need to do this for constant evaluations. */
   if (store_linenumbers) {
-    p_wchar2 *current_tripple;
+    p_wchar2 *current_triple;
     struct pike_string *previous_file = NULL;
     INT_TYPE previous_line = 0;
     ptrdiff_t num_linedirectives = 0;
@@ -237,39 +237,39 @@ INT32 assemble(int store_linenumbers)
     }
     previous_file = NULL;
     previous_line = 0;
-    current_tripple = STR2(triples);
+    current_triple = STR2(triples);
     for (e = 0; e < length; e++) {
       if (c[e].file != previous_file) {
-	current_tripple[0] = F_FILENAME;
-	current_tripple[1] =
+	current_triple[0] = F_FILENAME;
+	current_triple[1] =
 	  store_prog_string(dmalloc_touch_named(struct pike_string *,
 						c[e].file,
 						"store_prog_string"));
-	current_tripple[2] = 0;
-	current_tripple += 3;
+	current_triple[2] = 0;
+	current_triple += 3;
 	previous_file = dmalloc_touch_named(struct pike_string *,
 					    c[e].file, "prev_file");
       }
       if (c[e].line != previous_line) {
-	current_tripple[0] = F_LINE;
-	current_tripple[1] = c[e].line;
+	current_triple[0] = F_LINE;
+	current_triple[1] = c[e].line;
 #if SIZEOF_INT_TYPE > 4
-	current_tripple[2] = c[e].line>>32;
+	current_triple[2] = c[e].line>>32;
 #else
-        current_tripple[2] = 0;
+        current_triple[2] = 0;
 #endif
-	current_tripple += 3;
+	current_triple += 3;
 	previous_line = c[e].line;
       }
-      current_tripple[0] = c[e].opcode;
-      current_tripple[1] = c[e].arg;
-      current_tripple[2] = c[e].arg2;
-      current_tripple += 3;
+      current_triple[0] = c[e].opcode;
+      current_triple[1] = c[e].arg;
+      current_triple[2] = c[e].arg2;
+      current_triple += 3;
     }
 #ifdef PIKE_DEBUG
-    if (current_tripple != STR2(triples) + 3*(length + num_linedirectives)) {
-      Pike_fatal("Tripple length mismatch %d != %d 3*(%d + %d)\n",
-		 current_tripple - STR2(triples),
+    if (current_triple != STR2(triples) + 3*(length + num_linedirectives)) {
+      Pike_fatal("Triple length mismatch %d != %d 3*(%d + %d)\n",
+		 current_triple - STR2(triples),
 		 3*(length + num_linedirectives),
 		 length, num_linedirectives);
     }
