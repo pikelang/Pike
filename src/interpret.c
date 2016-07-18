@@ -1093,7 +1093,7 @@ PMOD_EXPORT void dump_backlog(void)
     );                                                                 \
     debug_malloc_touch (cc);                                           \
     UNSETJMP (cc->recovery);                                           \
-    Pike_fp->expendible = cc->save_expendible;                         \
+    frame_set_expendible(Pike_fp, cc->save_expendible);                \
     Pike_interpreter.catch_ctx = cc->prev;                             \
     really_free_catch_context (cc);                                    \
   } while (0)
@@ -1220,7 +1220,7 @@ PIKE_OPCODE_T *inter_return_opcode_F_CATCH(PIKE_OPCODE_T *addr)
 #else
       init_recovery (&new_catch_ctx->recovery, 0);
 #endif
-    new_catch_ctx->save_expendible = Pike_fp->expendible;
+    new_catch_ctx->save_expendible = frame_get_expendible(Pike_fp);
     new_catch_ctx->continue_reladdr = (INT32)get_unaligned32(addr)
       /* We need to run the entry prologue... */
       - ENTRY_PROLOGUE_SIZE;
@@ -1233,7 +1233,7 @@ PIKE_OPCODE_T *inter_return_opcode_F_CATCH(PIKE_OPCODE_T *addr)
       });
   }
 
-  Pike_fp->expendible = Pike_fp->locals + Pike_fp->num_locals;
+  Pike_fp->expendible_offset = Pike_fp->num_locals;
 
   /* Need to adjust next_addr by sizeof(INT32) to skip past the jump
    * address to the continue position after the catch block. */
@@ -1297,7 +1297,7 @@ PIKE_OPCODE_T *inter_return_opcode_F_CATCH(PIKE_OPCODE_T *addr)
 
 	debug_malloc_touch_named (cc, "(3)");
 	UNSETJMP (cc->recovery);
-	Pike_fp->expendible = cc->save_expendible;
+	frame_set_expendible(Pike_fp, cc->save_expendible);
 	move_svalue (Pike_sp++, &throw_value);
 	mark_free_svalue (&throw_value);
 	low_destruct_objects_to_destruct();
@@ -1929,7 +1929,7 @@ PMOD_EXPORT void really_free_pike_frame( struct pike_frame *X )
     X->scope=0;
     X->current_object=0;
     X->flags=0;
-    X->expendible=0;
+    X->expendible_offset=0;
     X->locals=0;
   );
   X->next = free_pike_frame;
@@ -2069,9 +2069,10 @@ void *lower_mega_apply( INT32 args, struct object *o, ptrdiff_t fun )
           add_ref(new_frame->current_program = p);
           new_frame->context = context;
           new_frame->fun = (unsigned INT16)fun;
-          new_frame->expendible = new_frame->locals = save_sp;
+          new_frame->locals = save_sp;
           new_frame->args = args;
-          new_frame->save_sp = save_sp;
+          new_frame->save_sp_offset = 0;
+          new_frame->expendible_offset = 0;
 
 #ifdef PIKE_DEBUG
           if (Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_FREE)
@@ -2482,7 +2483,7 @@ void* low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 
 void low_return(void)
 {
-  struct svalue *save_sp = Pike_fp->save_sp+1;
+  struct svalue *save_sp = frame_get_save_sp(Pike_fp)+1;
   struct object *o = Pike_fp->current_object;
   int fun = Pike_fp->fun;
 
@@ -2534,7 +2535,7 @@ void low_return(void)
 
 void low_return_pop(void)
 {
-  struct svalue *save_sp = Pike_fp->save_sp;
+  struct svalue *save_sp = frame_get_save_sp(Pike_fp);
 #if defined (PIKE_USE_MACHINE_CODE) && defined (OPCODE_RETURN_JUMPADDR)
   /* See note above. */
   struct object *o = Pike_fp->current_object;
@@ -2591,7 +2592,7 @@ void unlink_previous_frame(void)
 #endif
   /* Save various fields from the previous frame.
    */
-  current->save_sp=prev->save_sp;
+  frame_set_save_sp(current, frame_get_save_sp(prev));
   current->save_mark_sp=prev->save_mark_sp;
   current->flags = prev->flags;
 
@@ -2865,7 +2866,7 @@ int apply_low_safe_and_stupid(struct object *o, INT32 offset)
   add_ref(new_frame->current_program = prog);
   new_frame->context = prog->inherits;
   new_frame->locals = Pike_sp;
-  new_frame->expendible=new_frame->locals;
+  new_frame->expendible_offset=0;
   new_frame->args = 0;
   new_frame->num_args=0;
   new_frame->num_locals=0;

@@ -119,7 +119,8 @@
 #endif
 
 
-      new_frame->expendible = new_frame->locals = Pike_sp - args;
+      new_frame->locals = Pike_sp - args;
+      new_frame->expendible_offset = 0;
       new_frame->args = args;
       new_frame->pc = 0;
       new_frame->scope=scope;
@@ -129,7 +130,7 @@
 	Pike_fatal("Que? A function cannot be parented by itself!\n");
       }
 #endif
-      new_frame->save_sp=save_sp;
+      frame_set_save_sp(new_frame, save_sp);
 
       add_ref(new_frame->current_object);
       add_ref(new_frame->current_program);

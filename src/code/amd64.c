@@ -126,13 +126,11 @@ static void ib( char x )
   add_to_program( x );
 }
 
-#if 0
 static void iw( short x )
 {
   add_to_program( x>>8 );
   add_to_program( x );
 }
-#endif
 
 static void id( int x )
 {
@@ -630,6 +628,7 @@ static void mov_reg_mem16( enum amd64_reg from_reg, enum amd64_reg to_reg, ptrdi
   rex(0, from_reg, 0, to_reg );
   low_mov_reg_mem( from_reg, to_reg, offset );
 }
+#endif
 
 static void mov_imm_mem16( short imm, enum amd64_reg to_reg, ptrdiff_t offset )
 {
@@ -643,7 +642,6 @@ static void mov_imm_mem16( short imm, enum amd64_reg to_reg, ptrdiff_t offset )
     offset_modrm_sib( offset, 0, to_reg );
     iw( imm );
 }
-#endif
 
 
 
@@ -3856,16 +3854,14 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
     amd64_add_sp( 2 );
     return;
 
+#if 0
+  /* FIXME: this does not currently work correctly, expendible_offset ends up wrong */
   case F_PROTECT_STACK:
     ins_debug_instr_prologue(a-F_OFFSET, b, 0);
     amd64_load_fp_reg();
-    mov_mem_reg(fp_reg, OFFSETOF(pike_frame, locals), ARG1_REG);
-    if (b) {
-      add_reg_imm_reg(ARG1_REG, sizeof(struct svalue) * b, ARG1_REG);
-    }
-    mov_reg_mem(ARG1_REG, fp_reg,
-                              OFFSETOF(pike_frame, expendible));
+    mov_imm_mem16(b, fp_reg, OFFSETOF(pike_frame, expendible_offset));
     return;
+#endif
   case F_MARK_AT:
     ins_debug_instr_prologue(a-F_OFFSET, b, 0);
     amd64_load_fp_reg();

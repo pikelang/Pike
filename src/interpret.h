@@ -62,39 +62,75 @@ struct Pike_interpreter_struct {
 struct pike_frame
 {
   INT32 refs;/* must be first */
-  INT32 args;			/** Actual number of arguments. */
-  INT16 num_locals;		/** Number of local variables. */
-  INT16 num_args;		/** Number of argument variables. */
+
+  /* The folloing fields are only used during setup and teardown */
   unsigned INT16 fun;		/** Function number. */
-  unsigned INT16 flags;		/** PIKE_FRAME_* */
-  INT16 ident;
-  struct pike_frame *next;
-  struct pike_frame *scope;
+  INT16 ident;                  /** Function identifier offset */
+
+  struct pike_frame *next;      /** parent frame */
+  struct pike_frame *scope;     /** scope */
+  struct svalue **save_mark_sp; /** saved mark sp level */
+
   PIKE_OPCODE_T *pc;		/** Address of current opcode. */
-  PIKE_OPCODE_T *return_addr;	/** Address of opcode to continue at after call. */
   struct svalue *locals;	/** Start of local variables. */
+  char *current_storage;        /** == current_object->storage + context->storage_offset */
+  struct object *current_object;
+  struct inherit *context;              /** inherit context */
+  struct program *current_program;	/* program containing the context. */
+  PIKE_OPCODE_T *return_addr;	        /** Address of opcode to continue at after call. */
 
-  /** This is <= locals, and this is where the
-   * return value should go.
-   */
-  struct svalue *save_sp;
-
+  unsigned INT16 flags;		/** PIKE_FRAME_* */
   /**
    * This tells us the current level of svalues on the stack that can
-   * be discarded once the current function is done with them
+   * be discarded once the current function is done with them. It is an offset
+   * from locals and is always positive.
    */
-  struct svalue *expendible;
-  struct svalue **save_mark_sp;
-  struct object *current_object;
-  struct program *current_program;	/* program containing the context. */
-  struct inherit *context;
-  char *current_storage;
+  INT16 expendible_offset;
+  INT16 num_locals;		/** Number of local variables. */
+  INT16 num_args;		/** Number of argument variables. */
+
+  INT32 args;			/** Actual number of arguments passed to the function. */
+  /**
+   * This is an offset from locals and denotes the place where the return value
+   * should go.
+   *
+   * It can be -1 if the function to be called is on the stack.
+   * It can be even more negative in case of recursion when the return value location
+   * get replaced by that of the previous frame.
+   */
+  INT16 save_sp_offset;
 
 #ifdef PROFILING
   cpu_time_t children_base;	/** Accounted time when the frame started. */
   cpu_time_t start_time;	/** Adjusted time when thr frame started. */
 #endif /* PROFILING */
 };
+
+static inline struct svalue *frame_get_save_sp(const struct pike_frame *frame) {
+    return frame->locals + frame->save_sp_offset;
+}
+
+static inline void frame_set_save_sp(struct pike_frame *frame, struct svalue *sv) {
+    ptrdiff_t n = sv - frame->locals;
+#ifdef PIKE_DEBUG
+    if (n < MIN_INT16 || n > MAX_INT16)
+        Pike_error("Save SP offset too large.\n");
+#endif
+    frame->save_sp_offset = n;
+}
+
+static inline struct svalue *frame_get_expendible(const struct pike_frame *frame) {
+    return frame->locals + frame->expendible_offset;
+}
+
+static inline void frame_set_expendible(struct pike_frame *frame, struct svalue *sv) {
+    ptrdiff_t n = sv - frame->locals;
+#ifdef PIKE_DEBUG
+    if (n < MIN_INT16 || n > MAX_INT16)
+        Pike_error("Expendible offset too large.\n");
+#endif
+    frame->expendible_offset = n;
+}
 
 #define PIKE_FRAME_RETURN_INTERNAL 1
 #define PIKE_FRAME_RETURN_POP 2
@@ -514,15 +550,15 @@ PMOD_EXPORT extern void push_static_text( const char *x );
     {									\
       really_free_pike_frame(_fp_);					\
     }else{								\
-      ptrdiff_t num_expendible = _fp_->expendible - _fp_->locals;	\
+      ptrdiff_t num_expendible = _fp_->expendible_offset;               \
       DO_IF_DEBUG(							\
 	if( (_fp_->locals + _fp_->num_locals > Pike_sp) ||		\
-	    (Pike_sp < _fp_->expendible) ||				\
+	    (Pike_sp < _fp_->locals + _fp_->expendible_offset) ||	\
 	    (num_expendible < 0) || (num_expendible > _fp_->num_locals)) \
-	  Pike_fatal("Stack failure in POP_PIKE_FRAME %p+%d=%p %p %p!\n", \
+	  Pike_fatal("Stack failure in POP_PIKE_FRAME %p+%d=%p %p %hd!\n", \
 		     _fp_->locals, _fp_->num_locals,			\
 		     _fp_->locals+_fp_->num_locals,			\
-		     Pike_sp,_fp_->expendible));			\
+		     Pike_sp,_fp_->expendible_offset));		        \
       debug_malloc_touch(_fp_);						\
       if(num_expendible)						\
       {									\
