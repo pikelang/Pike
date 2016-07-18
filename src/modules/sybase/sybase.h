@@ -27,28 +27,6 @@
 
 #define SYBASE_DRIVER_VERSION "9"
 
-typedef struct {
-  CS_CONTEXT *context;
-  CS_CONNECTION *connection;
-  CS_COMMAND *cmd;
-  char busy; /* only one pending command per connection */
-
-  char had_error; /* non-zero if had error */
-  char error[256]; /* The last error string. The size is determined by the */
-                    /* sybase API */
-
-  char **results;
-  CS_INT *results_lengths;
-  CS_SMALLINT *nulls;
-
-  int numcols; /* the number of columns */
-
-#ifdef _REENTRANT
-  PIKE_MUTEX_T lock;
-#endif
-
-} pike_sybase_connection;
-
 
 #endif /* HAVE_SYBASE */
 #endif /* __PIKE_SYBASE_SYBASE_H */
