@@ -71,11 +71,11 @@ The TLS 1.2 Protocol is specified in the following RFCs:
  [X] DES and IDEA for TLS		RFC 5469
  [X] Pre-Shared Keys with GCM		RFC 5487
  [X] ECDHE_PSK Cipher for TLS		RFC 5489
- [ ] Renegotiation Extension		RFC 5746
+ [X] Renegotiation Extension		RFC 5746
  [ ] Authorization Extensions		RFC 5878
  [X] Camellia Cipher for TLS		RFC 5932
  [ ] KeyNote Auth for TLS		RFC 6042
- [ ] TLS Extension Definitions		RFC 6066
+ [/] TLS Extension Definitions		RFC 6066
  [ ] OpenPGP Authentication		RFC 6091
  [ ] ARIA Cipher for TLS		RFC 6209
  [ ] Additional Master Secrets		RFC 6358
