@@ -895,7 +895,28 @@ void udp_read(INT32 args)
  *! 2 for don't route flag.
  *!
  *! @returns
- *! The number of bytes that were actually written.
+ *!   @int
+ *!     @value 0..
+ *!       The number of bytes that were actually written.
+ *!     @value ..-1
+ *!       Failed to send the @[message]. Check @[errno()] for
+ *!       the cause. Common causes are:
+ *!       @int
+ *!         @value System.EMSGSIZE
+ *!           The @[message] is too large to send unfragmented.
+ *!         @value System.EWOULDBLOCK
+ *!           The send buffers are full.
+ *!       @endint
+ *!  @endint
+ *!
+ *! @throws
+ *!   Throws errors on invalid arguments and uninitialized object.
+ *!
+ *! @note
+ *!   Versions of Pike prior to 8.1.5 threw errors also on EMSGSIZE
+ *!   (@expr{"Too big message"@}) and EWOULDBLOCK
+ *!  .(@expr{"Message would block."@}). These versions of Pike also
+ *!   did not update the object errno on this function failing.
  */
 void udp_sendto(INT32 args)
 {
@@ -953,12 +974,9 @@ void udp_sendto(INT32 args)
 
   if(res<0)
   {
+    THIS->my_errno = e;
     switch(e)
     {
-#ifdef EMSGSIZE
-       case EMSGSIZE:
-#endif
-	  Pike_error("Too big message\n");
        case EBADF:
 	  if (THIS->box.backend)
 	    set_fd_callback_events (&THIS->box, 0, 0);
@@ -975,8 +993,6 @@ void udp_sendto(INT32 args)
 	    set_fd_callback_events (&THIS->box, 0, 0);
 	  Pike_error("Not a socket!!!\n");
 #endif
-       case EWOULDBLOCK:
-	  Pike_error("Message would block.\n");
     }
   }
   pop_n_elems(args);
