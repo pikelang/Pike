@@ -1445,6 +1445,15 @@ enum ALPNProtocol {
   ALPN_http_2_reserved	= "h2c",		// RFC 7540
 };
 
+// RFC 5878 2.3.
+// See also RFC 5755.
+enum AuthzDataFormat {
+  ADF_x509_attr_cert = 0,
+  ADF_saml_assertion = 1,
+  ADF_x509_attr_cert_url = 2,
+  ADF_saml_assertion_url = 3,
+};
+
 mapping(string(8bit):array(HashAlgorithm|SignatureAlgorithm))
   pkcs_der_to_sign_alg = ([
   // RSA
