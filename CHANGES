@@ -1,5 +1,5 @@
 Pike 8.1: Changes since Pike 8.0 (scratch area for future release notes)
-----------------------------------------------------------------------
+------------------------------------------------------------------------
 
 New language features
 ---------------------
@@ -150,6 +150,8 @@ o glob() has changed.
 o hash() has been changed to use siphash. The old hash function is
   available under the name hash_8_0(). Note that this is not a
   cryptographic hash function.
+
+o Stdio.UDP()->send() no longer throws errors on EMSGSIZE and EWOULDBLOCK.
 
 
 Deprecated symbols and modules
