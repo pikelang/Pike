@@ -1792,7 +1792,7 @@ static struct node_s *index_modules(struct pike_string *ident,
 				    const int num_used_modules,
 				    struct svalue *modules)
   /* num_used_modules is declared const here to convince the compiler that it is not
-   * modified in between setjmp() and longjmp(). This prevents -Wglobbered warnings.
+   * modified in between setjmp() and longjmp(). This prevents -Wclobbered warnings.
    */
 {
   if(*module_index_cache)
@@ -8418,6 +8418,16 @@ static void do_yyparse(void)
     pop_n_elems(Pike_sp - save_sp);
   }
 }
+
+/*
+ * Supporters.
+ *
+ * Supporters are used to register that a program being compiled depends on
+ * another program that also is being compiled.
+ *
+ * Every program being compiled has a supporter (in the compilation
+ * struct).
+ */
 
 struct Supporter *current_supporter=0;
 
