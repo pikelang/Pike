@@ -1157,13 +1157,13 @@ PMOD_EXPORT void map_delete_no_free(struct mapping *m,
  md_remove_value:
 #ifdef PIKE_DEBUG
   if(md->refs <= 1)
-    Pike_fatal("Too few refs i mapping->data\n");
+    Pike_fatal("Too few refs in mapping->data\n");
   if(m->data != md)
     Pike_fatal("Wrong dataset in mapping_delete!\n");
   if(d_flag>1)  check_mapping(m);
   debug_malloc_touch(m);
 #endif
-  free_mapping_data(md);
+  sub_ref(md);
   PREPARE_FOR_INDEX_CHANGE2();
   /* No need to propagate */
   *prev=k->next;
