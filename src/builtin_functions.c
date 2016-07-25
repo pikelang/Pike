@@ -3192,8 +3192,9 @@ PMOD_EXPORT void f_time(INT32 args)
   push_int(ret.tv_sec);
 }
 
-/*! @decl string(0..127) crypt(string password)
- *! @decl int(0..1) crypt(string typed_password, string crypted_password)
+/*! @decl string(46..122) crypt(string(1..255) password)
+ *! @decl int(0..1) crypt(string(1..255) input_password, @
+ *!                       string(46..122) crypted_password)
  *!
  *!   This function crypts and verifies a short string (only the first
  *!   8 characters are significant).
