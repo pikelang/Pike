@@ -22,6 +22,7 @@
 #  include "constants.h"
 #  include "lex.h"
 #  include "object.h"
+#  include "cyclic.h"
 
 #else /* TESTING */
 
@@ -441,12 +442,13 @@ void f_load_module(INT32 args)
 {
   extern int global_callable_flags;
 
-  void *module;
+  void *module = NULL;
   modfun init, exit;
   struct module_list *new_module;
   struct pike_string *module_name;
 
   ONERROR err;
+  DECLARE_CYCLIC();
 
   module_name = Pike_sp[-args].u.string;
 
@@ -466,12 +468,16 @@ void f_load_module(INT32 args)
       }
   }
 
-  /* Removing RTLD_GLOBAL breaks some PiGTK themes - Hubbe */
-  /* Using RTLD_LAZY is faster, but makes it impossible to
-   * detect linking problems at runtime..
-   */
-  module=dlopen(module_name->str,
-                RTLD_NOW /*|RTLD_GLOBAL*/  );
+  if (!BEGIN_CYCLIC(module_name, 0)) {
+    SET_CYCLIC_RET(1);
+
+    /* Removing RTLD_GLOBAL breaks some PiGTK themes - Hubbe */
+    /* Using RTLD_LAZY is faster, but makes it impossible to
+     * detect linking problems at runtime..
+     */
+    module=dlopen(module_name->str,
+		  RTLD_NOW /*|RTLD_GLOBAL*/  );
+  }
 
   if(!module)
   {
@@ -604,10 +610,12 @@ void f_load_module(INT32 args)
       dynamic_module_list = new_module->next;
       free_string(new_module->name);
       free(new_module);
+      END_CYCLIC();
       Pike_error("Failed to initialize dynamic module \"%S\".\n",
 		 module_name);
     }
   }
+  END_CYCLIC();
 }
 
 #endif /* USE_DYNAMIC_MODULES */
