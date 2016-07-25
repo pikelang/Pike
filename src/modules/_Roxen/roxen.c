@@ -39,6 +39,9 @@
  *! Class for parsing HTTP-requests.
  */
 
+#define FLAG_THROW_ERROR 1
+#define FLAG_KEEP_CASE   2
+
 #define THP ((struct header_buf *)Pike_fp->current_storage)
 struct  header_buf
 {
@@ -90,8 +93,8 @@ static void f_hp_feed( INT32 args )
  */
 {
   struct pike_string *str = Pike_sp[-args].u.string;
-  int keep_case = 0;
   struct header_buf *hp = THP;
+  int keep_case = hp->mode & FLAG_KEEP_CASE;
   int str_len;
   int tot_slash_n=hp->slash_n, slash_n = hp->tslash_n, spc = hp->spc;
   unsigned char *pp,*ep;
@@ -106,8 +109,11 @@ static void f_hp_feed( INT32 args )
     Pike_error("Wrong type of argument to feed()\n");
   if( args == 2 )
   {
+    /* It doesn't make sense to allow each different feed call to
+       handle case sensitivity differently. Deprecate this when we
+       rewrite the HTTP module. */
     if( TYPEOF(Pike_sp[-args+1]) == PIKE_T_INT )
-      keep_case = Pike_sp[-args+1].u.integer & 1;
+      keep_case = Pike_sp[-args+1].u.integer;
     else
       Pike_error("Wrong type of argument to feed()\n");
   }
@@ -262,7 +268,7 @@ static void f_hp_feed( INT32 args )
     }
     else if( in[i]=='\r' || in[i]=='\n' )
     {
-      if( THP->mode == 1 )
+      if( THP->mode & FLAG_THROW_ERROR )
       {
         /* FIXME: Reset stack so that backtrace shows faulty header. */
         Pike_error("Malformed HTTP header.\n");
@@ -276,16 +282,21 @@ static void f_hp_feed( INT32 args )
 }
 
 static void f_hp_create( INT32 args )
-/*! @decl void create(int throw_errors)
+/*! @decl void create(void|int throw_errors, void|int keep_case)
  */
 {
+  INT_TYPE throw_errors = 0;
+  INT_TYPE keep_case = 0;
+  get_all_args("create",args,".%i%i", &throw_errors, &keep_case);
+
   if (THP->headers) {
     free(THP->headers);
     THP->headers = NULL;
   }
 
   THP->mode = 0;
-  get_all_args("create",args,".%i",&THP->mode);
+  if(throw_errors) THP->mode |= FLAG_THROW_ERROR;
+  if(keep_case) THP->mode |= FLAG_KEEP_CASE;
 
   THP->headers = xalloc( 8192 );
   THP->pnt = THP->headers;
@@ -659,7 +670,7 @@ PIKE_MODULE_INIT
   set_exit_callback( f_hp_exit );
   ADD_FUNCTION("feed", f_hp_feed,
 	       tFunc(tStr tOr(tInt01,tVoid),tArr(tOr(tStr,tMapping))), 0);
-  ADD_FUNCTION( "create", f_hp_create, tFunc(tOr(tInt,tVoid),tVoid), ID_PROTECTED );
+  ADD_FUNCTION( "create", f_hp_create, tFunc(tOr(tInt,tVoid) tOr(tInt,tVoid),tVoid), ID_PROTECTED );
   end_class( "HeaderParser", 0 );
 }
 
