@@ -291,7 +291,7 @@ static void f_hp_create( INT32 args )
   }
 
   THP->mode = 0;
-  get_all_args("create",args,".%i",&THP->mode);
+  get_all_args("create",args,".%d",&THP->mode);
 
   THP->headers = xalloc( 8192 );
   THP->pnt = THP->headers;
