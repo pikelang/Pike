@@ -239,6 +239,16 @@ static void init_mapping(struct mapping *m,
 #endif
 }
 
+static struct mapping *allocate_mapping_no_init(int size)
+{
+  struct mapping *m=alloc_mapping();
+  GC_ALLOC(m);
+  m->refs = 0;
+  add_ref(m);	/* For DMALLOC... */
+  DOUBLELINK(first_mapping, m);
+  return m;
+}
+
 /** This function allocates an empty mapping with initial room
  * for 'size' values.
  *
@@ -249,22 +259,10 @@ static void init_mapping(struct mapping *m,
  */
 PMOD_EXPORT struct mapping *debug_allocate_mapping(int size)
 {
-  struct mapping *m;
-
-  m=alloc_mapping();
-
-  GC_ALLOC(m);
-
+  struct mapping *m = allocate_mapping_no_init(size);
   init_mapping(m,size,0);
-
-  m->refs = 0;
-  add_ref(m);	/* For DMALLOC... */
-
-  DOUBLELINK(first_mapping, m);
-
   return m;
 }
-
 
 PMOD_EXPORT void really_free_mapping_data(struct mapping_data *md)
 {
@@ -1557,9 +1555,7 @@ PMOD_EXPORT struct mapping *copy_mapping(struct mapping *m)
     Pike_fatal("Zero refs in mapping->data\n");
 #endif
 
-  n=allocate_mapping(0);
-  debug_malloc_touch(n->data);
-  free_mapping_data(n->data);
+  n=allocate_mapping_no_init(0);
   n->data=m->data;
 #ifdef MAPPING_SIZE_DEBUG
   n->debug_size=n->data->size;
