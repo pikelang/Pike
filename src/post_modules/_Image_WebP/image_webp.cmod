@@ -516,7 +516,8 @@ PIKEFUN string(0..255) encode( object(Image.Image) i,
     else
     {
         a = 0;
-        WebPConfigInit( &config );
+	if( !WebPConfigInit( &config ) )
+	    Pike_error("Failed to initialize config.\n");
     }
 
     if( a )
