@@ -6,7 +6,6 @@
 
 /*
  * Preprocessor template.
- * Based on cpp.c 1.45
  *
  */
 
