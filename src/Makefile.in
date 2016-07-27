@@ -1230,6 +1230,8 @@ $(SRCDIR)/interpret_functions_fixed.h: $(SRCDIR)/interpret_functions.h precompil
 # UnixWare make needs help to find the source file...
 builtin.o: $(SRCDIR)/builtin.c $(SRCDIR)/whitespace.h
 
+cpp.o: $(SRCDIR)/cpp.c
+
 iterators.o: $(SRCDIR)/iterators.c
 
 backend.o: $(SRCDIR)/backend.c

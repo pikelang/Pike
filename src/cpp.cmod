@@ -27,6 +27,8 @@
 
 #include <ctype.h>
 
+#define DEFAULT_CMOD_STORAGE
+
 #define sp Pike_sp
 
 #define CPP_NO_OUTPUT 1		/* Inside false section of #if/#else */
@@ -135,6 +137,8 @@ struct cpp
   struct pike_string *prefix;
   INT_TYPE picky_cpp, keep_comments, dependencies_fail;
 };
+
+DECLARE_STORAGE;
 
 static void cpp_error(struct cpp *this, const char *err) ATTRIBUTE((noinline));
 static void cpp_error_vsprintf (struct cpp *this, const char *fmt,
@@ -3256,23 +3260,29 @@ static void free_cpp(struct cpp *this)
 }
 
 
-void f_cpp(INT32 args)
+PIKEFUN string cpp(string data,
+		   mapping|string|void opts_or_file,
+		   int|string|void charset_sv,
+		   object|void handler,
+		   int|void compat_major_sv,
+		   int|void compat_minor_sv,
+		   int|void picky_cpp_sv)
+     efun;
 {
   struct cpp this;
   struct svalue *save_sp = sp - args;
   struct mapping *predefs = NULL;
 
-  struct pike_string *data, *prefix = NULL;
+  struct pike_string *prefix = NULL;
 
   struct pike_string *current_file = 0;
 
-  struct svalue *charset_sv = 0;
   int auto_convert = 0;
   struct pike_string *charset = NULL;
 
-  struct object *handler = 0;
-
-  int compat_major = 0, compat_minor = 0, picky_cpp = 0;
+  int compat_major = compat_major_sv?compat_major_sv->u.integer:0;
+  int compat_minor = compat_minor_sv?compat_minor_sv->u.integer:0;
+  int picky_cpp = picky_cpp_sv?picky_cpp_sv->u.integer:0;
 
   ONERROR err;
 #ifdef PIKE_DEBUG
@@ -3286,30 +3296,27 @@ void f_cpp(INT32 args)
   this.keep_comments = 0;
   this.dependencies_fail = 0;
 
+  if (opts_or_file) {
+    if (TYPEOF(*opts_or_file) == PIKE_T_MAPPING) {
+      struct svalue *tmp;
+      struct mapping *m = opts_or_file->u.mapping;
+
 #define GET_TYPE(type, name)	((tmp = simple_mapping_string_lookup(m, name)) \
    && (TYPEOF(*(tmp)) == PIKE_T_##type || (Pike_error("Expected type %s,"\
        "got type %s for " name ".", get_name_of_type(PIKE_T_##type), get_name_of_type(TYPEOF(*tmp))), 0)))
 
-  if (args > 1 && TYPEOF(Pike_sp[-args]) == PIKE_T_STRING
-    && TYPEOF(Pike_sp[1-args]) == PIKE_T_MAPPING) {
-    struct svalue *tmp;
-    struct mapping *m = Pike_sp[1-args].u.mapping;
-
-    data = Pike_sp[-args].u.string;
-
-    if (GET_TYPE(STRING, "current_file")) current_file = tmp->u.string;
-    if (GET_TYPE(STRING, "charset")) charset_sv = tmp;
-    if (GET_TYPE(OBJECT, "handler")) handler = tmp->u.object;
-    if (GET_TYPE(INT, "compat_major")) compat_major = tmp->u.integer;
-    if (GET_TYPE(INT, "compat_minor")) compat_minor = tmp->u.integer;
-    if (GET_TYPE(INT, "picky")) picky_cpp = tmp->u.integer;
-    if (GET_TYPE(STRING, "prefix")) prefix = tmp->u.string;
-    if (GET_TYPE(INT, "keep_comments")) this.keep_comments = tmp->u.integer;
+      if (GET_TYPE(STRING, "current_file")) current_file = tmp->u.string;
+      if (GET_TYPE(STRING, "charset")) charset_sv = tmp;
+      if (GET_TYPE(OBJECT, "handler")) handler = tmp->u.object;
+      if (GET_TYPE(INT, "compat_major")) compat_major = tmp->u.integer;
+      if (GET_TYPE(INT, "compat_minor")) compat_minor = tmp->u.integer;
+      if (GET_TYPE(INT, "picky")) picky_cpp = tmp->u.integer;
+      if (GET_TYPE(STRING, "prefix")) prefix = tmp->u.string;
+      if (GET_TYPE(INT, "keep_comments")) this.keep_comments = tmp->u.integer;
 #undef GET_TYPE
-  } else {
-    get_all_args("cpp", args, "%t.%T%*%O%d%d%d%T", &data, &current_file,
-		 &charset_sv, &handler, &compat_major, &compat_minor,
-		 &picky_cpp, &this.prefix);
+    } else if (TYPEOF(*opts_or_file) == PIKE_T_STRING) {
+      current_file = opts_or_file->u.string;
+    }
   }
 
   this.data = data;
@@ -3611,16 +3618,7 @@ void init_cpp()
 
   use_initial_predefs = 1;
 
-/* function(string, mapping|string|void, int|string|void, object|void, int|void, int|void) */
-  ADD_EFUN("cpp", f_cpp, tFunc(tStr tOr(tMapping, tOr(tStr,tVoid))
-			       tOr(tInt,tOr(tStr,tVoid))
-			       tOr(tObj,tVoid)
-			       tOr(tInt,tVoid)
-			       tOr(tInt,tVoid)
-			       tOr(tInt,tVoid)
-			       , tStr),
-	   /* OPT_SIDE_EFFECT since we might instantiate modules etc. */
-	   OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);
+  INIT;
 
   ADD_INT_CONSTANT("__HAVE_CPP_PREFIX_SUPPORT__", 1, 0);
 
@@ -3666,6 +3664,9 @@ void exit_cpp(void)
 {
 #ifdef DO_PIKE_CLEANUP
   struct pike_predef_s *tmp;
+
+  EXIT;
+
   while((tmp=first_predef))
   {
     free(tmp->name);
