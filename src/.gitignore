@@ -17,6 +17,7 @@ autom4te.cache
 /configure
 /conftest.c
 /conftest.h
+/cpp.c
 /dependencies
 /dumpmodule.log
 /hilfe
