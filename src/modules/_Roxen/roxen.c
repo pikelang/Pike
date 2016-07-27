@@ -215,7 +215,9 @@ static void f_hp_feed( INT32 args )
     }
     else if( in[i] == ':' )
     {
-      /* FIXME: Does not support white space before the colon. */
+      /* Does not support white space before the colon. This is in
+         line with RFC 7230 product
+         header-field = field-name ":" OWS field-value OWS */
       /* in[os..i-1] == the header */
       int val_cnt = 0;
       push_string(make_shared_binary_string((char*)in+os,i-os));
@@ -232,6 +234,7 @@ static void f_hp_feed( INT32 args )
 	  if( in[j] == '\n' || in[j]=='\r')
 	    break;
 
+        /* FIXME: Remove header value trailing spaces. */
 	push_string(make_shared_binary_string((char*)in+os,j-os));
 	val_cnt++;
 
