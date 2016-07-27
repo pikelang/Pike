@@ -130,6 +130,11 @@ test_any_equal([[
 ]], [[ ({ "", "GET / HTTP/1.0", ([ "Blaha":"foo", "blaha":"foo"]) }) ]])
 
 test_any_equal([[
+  object hp = _Roxen.HeaderParser(0, 0, 1);
+  return hp->feed( "GET / HTTP/1.0\r\nblaha: foo\r\n bar\r\nx:1\r\n\t2\r\n\r\n" );
+]], [[ ({ "", "GET / HTTP/1.0", ([ "blaha":"foo", "x":"1"]) }) ]])
+
+test_any_equal([[
   object hp = _Roxen.HeaderParser();
   return hp->feed( "GET / HTTP/1.0\r\nA\r\nblaha: foo\r\n\r\n" );
 ]], [[ ({ "", "GET / HTTP/1.0", (["blaha":"foo"]) }) ]])

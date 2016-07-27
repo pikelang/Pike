@@ -41,6 +41,7 @@
 
 #define FLAG_THROW_ERROR 1
 #define FLAG_KEEP_CASE   2
+#define FLAG_NO_FOLD     4
 
 #define THP ((struct header_buf *)Pike_fp->current_storage)
 struct  header_buf
@@ -95,6 +96,7 @@ static void f_hp_feed( INT32 args )
   struct pike_string *str = Pike_sp[-args].u.string;
   struct header_buf *hp = THP;
   int keep_case = hp->mode & FLAG_KEEP_CASE;
+  int fold = !(hp->mode & FLAG_NO_FOLD);
   int str_len;
   int tot_slash_n=hp->tslash_n, slash_n = hp->slash_n, spc = hp->spc;
   unsigned char *pp,*ep;
@@ -242,7 +244,7 @@ static void f_hp_feed( INT32 args )
 	os = j+1;
 	i = j;
 	/* Check for continuation line. */
-      } while ((os < l) && ((in[os] == ' ') || (in[os] == '\t')));
+      } while ((os < l) && fold && ((in[os] == ' ') || (in[os] == '\t')));
 
       if (val_cnt > 1) {
 	/* Join partial header values. */
@@ -290,7 +292,8 @@ static void f_hp_create( INT32 args )
 {
   INT_TYPE throw_errors = 0;
   INT_TYPE keep_case = 0;
-  get_all_args("create",args,".%i%i", &throw_errors, &keep_case);
+  INT_TYPE no_fold = 0;
+  get_all_args("create",args,".%i%i%i", &throw_errors, &keep_case, &no_fold);
 
   if (THP->headers) {
     free(THP->headers);
@@ -300,6 +303,7 @@ static void f_hp_create( INT32 args )
   THP->mode = 0;
   if(throw_errors) THP->mode |= FLAG_THROW_ERROR;
   if(keep_case) THP->mode |= FLAG_KEEP_CASE;
+  if(no_fold) THP->mode |= FLAG_NO_FOLD;
 
   THP->headers = xalloc( 8192 );
   THP->pnt = THP->headers;
@@ -673,7 +677,7 @@ PIKE_MODULE_INIT
   set_exit_callback( f_hp_exit );
   ADD_FUNCTION("feed", f_hp_feed,
 	       tFunc(tStr tOr(tInt01,tVoid),tArr(tOr(tStr,tMapping))), 0);
-  ADD_FUNCTION( "create", f_hp_create, tFunc(tOr(tInt,tVoid) tOr(tInt,tVoid),tVoid), ID_PROTECTED );
+  ADD_FUNCTION( "create", f_hp_create, tFunc(tOr(tInt,tVoid) tOr(tInt,tVoid) tOr(tInt,tVoid),tVoid), ID_PROTECTED );
   end_class( "HeaderParser", 0 );
 }
 
