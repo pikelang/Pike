@@ -3265,17 +3265,9 @@ void f_cpp(INT32 args)
   this.keep_comments = 0;
   this.dependencies_fail = 0;
 
-#define TTS(type)	(((type) == PIKE_T_STRING && "string")	\
-		      || ((type) == PIKE_T_MAPPING && "mapping")\
-		      || ((type) == PIKE_T_ARRAY && "array")	\
-		      || ((type) == PIKE_T_FLOAT && "float")	\
-		      || ((type) == PIKE_T_INT && "int")	\
-		      || ((type) == PIKE_T_OBJECT && "object")	\
-		      || "mixed")
-
 #define GET_TYPE(type, name)	((tmp = simple_mapping_string_lookup(m, name)) \
    && (TYPEOF(*(tmp)) == PIKE_T_##type || (Pike_error("Expected type %s,"\
-       "got type %s for " name ".", TTS(PIKE_T_##type), TTS(TYPEOF(*tmp))), 0)))
+       "got type %s for " name ".", get_name_of_type(PIKE_T_##type), get_name_of_type(TYPEOF(*tmp))), 0)))
 
   if (args > 1 && TYPEOF(Pike_sp[-args]) == PIKE_T_STRING
     && TYPEOF(Pike_sp[1-args]) == PIKE_T_MAPPING) {
@@ -3293,7 +3285,6 @@ void f_cpp(INT32 args)
     if (GET_TYPE(STRING, "prefix")) prefix = tmp->u.string;
     if (GET_TYPE(INT, "keep_comments")) this.keep_comments = tmp->u.integer;
 #undef GET_TYPE
-#undef TTS
   } else {
     get_all_args("cpp", args, "%t.%T%*%O%d%d%d%T", &data, &current_file,
 		 &charset_sv, &handler, &compat_major, &compat_minor,
