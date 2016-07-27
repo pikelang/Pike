@@ -232,6 +232,10 @@ protected void parse_request()
               if(sscanf(protocol, "HTTP/%d.%d", maj, min)==2)
                 protocol = sprintf("HTTP/%d.%d", maj, min);
             }
+            // FIXME: This is explicitly against RFC7230. Instead a
+            // 400 Bad Request response should be given, or if we want
+            // to fix the request-target, a 301 Moved Permanently to
+            // the fixed location.
 	    full_query=v[1..<1]*" ";
 	    break;
 	 }
