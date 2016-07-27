@@ -96,7 +96,7 @@ static void f_hp_feed( INT32 args )
   struct header_buf *hp = THP;
   int keep_case = hp->mode & FLAG_KEEP_CASE;
   int str_len;
-  int tot_slash_n=hp->slash_n, slash_n = hp->tslash_n, spc = hp->spc;
+  int tot_slash_n=hp->tslash_n, slash_n = hp->slash_n, spc = hp->spc;
   unsigned char *pp,*ep;
   struct svalue *tmp;
   struct mapping *headers;
@@ -145,7 +145,7 @@ static void f_hp_feed( INT32 args )
   pop_n_elems( args );
 
   /* FIXME: The below does not support lines terminated with just \r. */
-  for( ep=(hp->pnt+str_len),pp=MAXIMUM(hp->headers,hp->pnt-3);
+  for( ep=(hp->pnt+str_len),pp=MAXIMUM(hp->headers,hp->pnt);
        pp<ep && slash_n<2; pp++ )
     if( *pp == ' ' )
     {
@@ -162,9 +162,9 @@ static void f_hp_feed( INT32 args )
       slash_n=0;
     }
 
-  hp->slash_n = tot_slash_n;
+  hp->slash_n = slash_n;
   hp->spc = spc;
-  hp->tslash_n  = slash_n;
+  hp->tslash_n = tot_slash_n;
   hp->left -= str_len;
   hp->pnt += str_len;
   hp->pnt[0] = 0;
