@@ -128,8 +128,8 @@ static void ib( char x )
 
 static void iw( short x )
 {
-  add_to_program( x>>8 );
   add_to_program( x );
+  add_to_program( x>>8 );
 }
 
 static void id( int x )
@@ -3854,14 +3854,11 @@ void ins_f_byte_with_arg(unsigned int a, INT32 b)
     amd64_add_sp( 2 );
     return;
 
-#if 0
-  /* FIXME: this does not currently work correctly, expendible_offset ends up wrong */
   case F_PROTECT_STACK:
     ins_debug_instr_prologue(a-F_OFFSET, b, 0);
     amd64_load_fp_reg();
     mov_imm_mem16(b, fp_reg, OFFSETOF(pike_frame, expendible_offset));
     return;
-#endif
   case F_MARK_AT:
     ins_debug_instr_prologue(a-F_OFFSET, b, 0);
     amd64_load_fp_reg();
