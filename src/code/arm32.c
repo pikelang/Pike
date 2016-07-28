@@ -501,6 +501,40 @@ MACRO void load_reg_imm(enum arm32_register dst, enum arm32_register base, INT32
     add_to_program(gen_load_reg_imm(dst, base, offset));
 }
 
+OPCODE_FUN gen_storeh_reg_imm(enum arm32_register dst, enum arm32_register base, INT32 offset) {
+    unsigned INT32 instr = ARM_COND_AL;
+
+    instr |= dst << 12;
+    instr |= base << 16;
+    instr |= (1 << 22) | (1<< 24) | (1<<7) | (1<<5) | (1<<4);
+
+    assert(offset < 0xff && offset > -0xff);
+
+    if (offset < 0) {
+        offset =- offset;
+    } else {
+        instr |= (1<<23);
+    }
+
+    instr |= offset & 0xf;
+    instr |= (offset & 0xf0) << 4;
+
+    return instr;
+}
+
+OPCODE_FUN gen_loadh_reg_imm(enum arm32_register dst, enum arm32_register base, INT32 offset) {
+    return gen_storeh_reg_imm(dst, base, offset) | (1<<20);
+}
+
+MACRO void storeh_reg_imm(enum arm32_register dst, enum arm32_register base, INT32 offset) {
+    add_to_program(gen_storeh_reg_imm(dst, base, offset));
+}
+
+MACRO void loadh_reg_imm(enum arm32_register dst, enum arm32_register base, INT32 offset) {
+    add_to_program(gen_loadh_reg_imm(dst, base, offset));
+}
+
+
 #define GEN_PROC_OP(name, NAME)                                                                          \
 OPCODE_FUN gen_ ## name ## _reg_imm(enum arm32_register dst, enum arm32_register reg,                    \
                                     unsigned char imm, unsigned char rot) {                              \
@@ -1919,19 +1953,16 @@ void ins_f_byte_with_arg(unsigned int opcode, INT32 arg1)
       }
   case F_PROTECT_STACK:
       {
+          enum arm32_register reg;
+
+          arm32_debug_instr_prologue_1(opcode, arg1);
+
           arm32_load_fp_reg();
-          arm32_load_locals_reg();
+          reg = ra_alloc_any();
+          arm32_mov_int(reg, arg1);
+          storeh_reg_imm(reg, ARM_REG_PIKE_FP, OFFSETOF(pike_frame, expendible_offset));
 
-          if (arg1) {
-              enum arm32_register reg = ra_alloc_any();
-
-              arm32_add_reg_int(reg, ARM_REG_PIKE_LOCALS, arg1);
-              store_reg_imm(reg, ARM_REG_PIKE_FP, OFFSETOF(pike_frame, expendible));
-
-              ra_free(reg);
-          } else {
-              store_reg_imm(ARM_REG_PIKE_LOCALS, ARM_REG_PIKE_FP, OFFSETOF(pike_frame, expendible));
-          }
+          ra_free(reg);
           return;
       }
   }
