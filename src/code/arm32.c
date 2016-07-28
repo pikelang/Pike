@@ -1965,6 +1965,42 @@ void ins_f_byte_with_arg(unsigned int opcode, INT32 arg1)
           ra_free(reg);
           return;
       }
+  case F_THIS_OBJECT:
+      /* NOTE: we only implement this trivial case and let the others be handled by the opcode fun */
+      if (arg1) break;
+      {
+          enum arm32_register type, value;
+
+          arm32_debug_instr_prologue_1(opcode, arg1);
+
+          arm32_load_fp_reg();
+
+          type = ra_alloc_any();
+          value = ra_alloc_any();
+
+          arm32_mov_int(type, PIKE_T_OBJECT);
+          load_reg_imm(value, ARM_REG_PIKE_FP, OFFSETOF(pike_frame, current_object));
+          arm32_push_ptr_type(type, value);
+
+          ra_free(type);
+          ra_free(value);
+          return;
+      }
+  case F_SIZEOF_LOCAL:
+  case F_SIZEOF_LOCAL_STRING:
+      {
+          ra_alloc(ARM_REG_R0);
+
+          arm32_load_locals_reg();
+
+          arm32_add_reg_int(ARM_REG_R0, ARM_REG_PIKE_LOCALS, arg1*sizeof(struct svalue));
+          arm32_call(pike_sizeof);
+
+          arm32_push_int_reg(ARM_REG_R0, NUMBER_NUMBER);
+
+          ra_free(ARM_REG_R0);
+          return;
+      }
   }
   arm32_mov_int(ra_alloc(ARM_REG_R0), arg1);
   low_ins_f_byte(opcode);
