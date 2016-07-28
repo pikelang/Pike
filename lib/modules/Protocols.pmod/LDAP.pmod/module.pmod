@@ -1686,7 +1686,8 @@ protected void periodic_idle_conns_garb()
 protected mapping(string:array(int|string)) host_lookup = ([]);
 
 object/*(client)*/ get_connection (string ldap_url, void|string binddn,
-				   void|string password, void|int version)
+				   void|string password, void|int version,
+				   void|SSL.Context ctx)
 //! Returns a client connection to the specified LDAP URL. If a bind
 //! DN is specified (either through a @expr{"bindname"@} extension in
 //! @[ldap_url] or, if there isn't one, through @[binddn]) then the
@@ -1699,6 +1700,10 @@ object/*(client)*/ get_connection (string ldap_url, void|string binddn,
 //! default version (currently @expr{3@}) is done with a fallback to
 //! @expr{2@} if that fails. Also, a cached connection for any version
 //! might be returned if @[version] isn't specified.
+//!
+//! @[ctx] may be specified to control SSL/TLS parameters to use
+//! with the @expr{"ldaps"@}-protocol. Note that changing this only
+//! affects new connections.
 //!
 //! As opposed to creating an @[Protocols.LDAP.client] instance
 //! directly, this function can return an already established
@@ -1806,7 +1811,7 @@ object/*(client)*/ get_connection (string ldap_url, void|string binddn,
 	  mixed err = catch {
 	      DWRITE("Attempt #%d: %O.\n", j, ips[i]);
 	      parsed_url->host = ips[i];
-	      conn = Protocols.LDAP["client"](parsed_url);
+	      conn = Protocols.LDAP["client"](parsed_url, ctx);
 	      ips[0] = i;
 	      break;
 	    };
@@ -1825,7 +1830,7 @@ object/*(client)*/ get_connection (string ldap_url, void|string binddn,
   }
 
   if (!conn) {
-    conn = Protocols.LDAP["client"] (parsed_url);
+    conn = Protocols.LDAP["client"] (parsed_url, ctx);
   }
 
   if (!binddn)
