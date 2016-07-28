@@ -1,0 +1,4 @@
+Modified files:
+  pike/lib/modules/Protocols.pmod/LDAP.pmod/module.pmod
+  pike/lib/modules/Tools.pmod/Install.pmod
+  pike/lib/modules/Tools.pmod/Standalone.pmod/features.pike
