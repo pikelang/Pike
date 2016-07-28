@@ -1,0 +1,79 @@
+subject: Pike 7.8: Multiple fixes:
+from: fb405e9ea5a3222e2cc7a7342983539cad53d104
+to: 37bf5331610c5f4df757deb96bd202110de4f2a6
+originator: grubba@grubba.org
+depends: 2016-03-04T115108
+restart: true
+
+Multiple fixes:
+
+  * Tools.*.features: Fixed some feature checks.
+    
+    Adds "Crypto.AES.GCM" and "Crypto.ECC.Curve" to Tools.Install.features.
+    
+    Replaces the check for (the nonexistant) "Crypto.GCM" with "Crypto.AES.GCM"
+    in Tools.Standalone.features.
+
+  * Tools.Install: Accept constant-less programs as existing.
+    
+    Fixes detection of Crypto.ECC.Curve in features().
+
+  * release number bumped to 942 by export.pike
+
+  * release number bumped to 943 by export.pike
+
+  * MIME: Make decode_base64() more robust against broken padding.
+
+  * release number bumped to 944 by export.pike
+
+  * release number bumped to 945 by export.pike
+
+  * Stdio: Survive getaddrinfo() not liking decimal services.
+    
+    Fixes failures like "Invalid service '48008'" on eg FC4 when
+    attempting to connect to a port.
+    
+    Also reduces buffer size from ~30 times needed to just ~3 times.
+
+  * GTK: Define G_INLINE_FUNC as static inline if it works
+    
+    This is a workaround for glib 1.2 being incompatible with newer
+    versions of GCC.  The default definition of G_INLINE_FUNC is "extern
+    inline" if the compiler is GCC.  However, GCC now treats "extern
+    inline" according to the C99 definition, and no longer in the old
+    custom way.  Thus "static inline" needs to be used on all compilers
+    that support it, including GCC.
+    
+    See also: https://bugzilla.gnome.org/show_bug.cgi?id=315437
+
+  * Build [Parser]: Fixed issue with Pike 8.0 precompiler.
+    
+    The symbol Simple_Context_program_fun_num had the wrong storage class
+    due to DEFAULT_CMOD_STORAGE having been set to empty by global.h.
+    
+    Thanks to Marcus Comstedt for the report.
+    
+    Fixes [LysLysKOM 21699014].
+
+  * Build [Parser]: Compilefix for issue with Pike 7.8 precompiler.
+    
+    This is actually pretty ugly, ideas welcome.
+
+  * [Gmp] set correct subtype in debug_get_mpz()
+    
+    Somewhat helpful with not segfaulting...
+
+  * release number bumped to 946 by export.pike
+
+  * release number bumped to 947 by export.pike
+
+  * Roxen: Improved argument checking in make_http_headers().
+    
+    Ensure that the formatted headers are valid.
+    
+    Fixes the entire class of bugs that [bug 7737] represents.
+
+  * Protocols.LDAP: Support passing an SSL.Context to get_connection().
+    
+    Sometimes the default SSL.Context isn't appropriate, so support
+    passing a custom one along to Protocols.LDAP.client().
