@@ -1610,7 +1610,7 @@ void resolv_program(node *n)
   }
 }
 
-node *index_node(node *n, char *node_name, struct pike_string *id)
+node *index_node(node * const n, char *node_name, struct pike_string *id)
 {
   node *ret;
   JMP_BUF tmp;
