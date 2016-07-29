@@ -2309,6 +2309,8 @@ PIKECLASS BlockCipher
 
 	NO_WIDE_STRING(data);
 
+	if (!data->len) return;
+
 	if(data->len % block_size)
 	  Pike_error("Data length not multiple of block size.\n");
 
