@@ -1983,7 +1983,7 @@ void ins_f_byte_with_arg(unsigned int opcode, INT32 arg1)
           type = ra_alloc_any();
           value = ra_alloc_any();
 
-          arm32_mov_int(type, PIKE_T_OBJECT);
+          arm32_mov_int(type, TYPE_SUBTYPE(PIKE_T_OBJECT, 0));
           load_reg_imm(value, ARM_REG_PIKE_FP, OFFSETOF(pike_frame, current_object));
           arm32_push_ptr_type(type, value);
 
