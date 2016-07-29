@@ -1,5 +1,4 @@
 #pike __REAL_VERSION__
-#require constant(Concurrent.Future)
 
 //! This HTTP client module utilses the @[Concurrent.Promise] and
 //! @[Concurrent.Future] classes and only does asynchronous calls.
