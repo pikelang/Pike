@@ -490,11 +490,7 @@ void close_connections()
   _query_objects = ([]);
 }
 
-#if constant (Protocols.HTTP.Promise)
 protected mixed handle_response(Protocols.HTTP.Query|Protocols.HTTP.Promise.Result req)
-#else
-protected mixed handle_response(Protocols.HTTP.Query req)
-#endif
 {
   TRACE("Handle response: %O\n", req);
 
@@ -504,16 +500,12 @@ protected mixed handle_response(Protocols.HTTP.Query req)
 
   string d;
 
-#if constant (Protocols.HTTP.Promise)
   if (stringp(req->data)) {
     d = req->data;
   }
   else {
     d = req->data();
   }
-#else
-  d = req->data();
-#endif
 
   if (req->status != 200) {
     TRACE("Bad resp[%d]: %s\n\n%O\n",
