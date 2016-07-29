@@ -46,10 +46,10 @@
 #define THP ((struct header_buf *)Pike_fp->current_storage)
 struct  header_buf
 {
-  unsigned char *headers;
-  unsigned char *pnt;
-  ptrdiff_t hsize, left;
-  int slash_n, tslash_n, spc;
+  unsigned char *headers;	/* Buffer containing the data so far. */
+  unsigned char *pnt;		/* End of headers. */
+  ptrdiff_t hsize, left;	/* Size of buffer, amount remaining. */
+  int slash_n, tslash_n, spc;	/* Number of nl, consecutive nl, spaces. */
   int mode;
 };
 
@@ -173,14 +173,16 @@ static void f_hp_feed( INT32 args )
 
   if( slash_n != 2 )
   {
-    /* one newline, but less than 2 space,
-     *    --> HTTP/0.9 or broken request
-     */
+    /* No header terminating double newline. */
     if( (spc < 2) && tot_slash_n )
     {
+      /* one newline, but less than 2 space,
+       *    --> HTTP/0.9 or broken request
+       */
       push_empty_string();
       /* This includes (all eventual) \r\n etc. */
-      push_text((char *)hp->headers);
+      push_string(make_shared_binary_string((char *)hp->headers,
+					    hp->hsize - hp->left));
       f_aggregate_mapping( 0 );
       f_aggregate( 3 );
       return;
