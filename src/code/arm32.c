@@ -29,22 +29,27 @@
 
 enum arm32_register {
     ARM_REG_R0,
+    ARM_REG_ARG1 = 0,
+    ARM_REG_RVAL = 0,
     ARM_REG_R1,
+    ARM_REG_ARG2 = 1,
     ARM_REG_R2,
+    ARM_REG_ARG3 = 2,
     ARM_REG_R3,
+    ARM_REG_ARG4 = 3,
 
     /* everything below is calee saved */
-    ARM_REG_R4 = 4,
-    ARM_REG_R5 = 5,
-    ARM_REG_R6 = 6,
-    ARM_REG_R7 = 7,
+    ARM_REG_R4,
+    ARM_REG_R5,
+    ARM_REG_R6,
+    ARM_REG_R7,
     ARM_REG_PIKE_LOCALS = 7,
 
-    ARM_REG_R8 = 8,
+    ARM_REG_R8,
     ARM_REG_PIKE_IP = 8,
-    ARM_REG_R9 = 9,
+    ARM_REG_R9,
     ARM_REG_PIKE_SP = 9,
-    ARM_REG_R10 = 10,
+    ARM_REG_R10,
     ARM_REG_PIKE_FP = 10,
     ARM_REG_R11,
     ARM_REG_FP = 11,
@@ -942,7 +947,7 @@ MACRO void add_pop(void) {
 /* corresponds to ENTRY_PROLOGUE_SIZE */
 MACRO void arm32_prologue(void) {
     add_push();
-    mov_reg(ARM_REG_PIKE_IP, ARM_REG_R0);
+    mov_reg(ARM_REG_PIKE_IP, ARM_REG_ARG1);
 }
 
 #define EPILOGUE_SIZE 1
@@ -1029,9 +1034,9 @@ static void arm32_flush_dirty_regs(void) {
 }
 
 MACRO void arm32_call_efun(void (*fun)(int), int args) {
-    arm32_mov_int(ra_alloc(ARM_REG_R0), args);
+    arm32_mov_int(ra_alloc(ARM_REG_ARG1), args);
     arm32_call(fun);
-    ra_free(ARM_REG_R0);
+    ra_free(ARM_REG_ARG1);
     if (args != 1 && compiler_state.flags & FLAG_SP_LOADED) {
         arm32_change_sp_reg(-(args-1));
     }
@@ -1285,7 +1290,7 @@ static void arm32_ins_maybe_exit(void) {
 
     label_init(&noreturn);
 
-    arm32_cmp_int(ARM_REG_R0, -1);
+    arm32_cmp_int(ARM_REG_RVAL, -1);
     b_imm(label_dist(&noreturn), ARM_COND_NE);
     arm32_epilogue();
     label_generate(&noreturn);
@@ -1339,7 +1344,7 @@ MACRO void arm32_free_svalue_off(enum arm32_register src, int off, int guarantee
     unsigned INT32 combined = TYPE_SUBTYPE(MIN_REF_TYPE, 0);
     unsigned char imm, rot;
     struct label end;
-    enum arm32_register reg = ra_alloc(ARM_REG_R0);
+    enum arm32_register reg = ra_alloc(ARM_REG_ARG1);
     enum arm32_register tmp = ra_alloc_any();
 
     guaranteed = guaranteed;
@@ -1441,34 +1446,34 @@ MACRO void arm_green_off(void) {
 MACRO void arm32_debug_instr_prologue_0(PIKE_INSTR_T instr) {
   arm32_call(arm_green_on);
   arm32_maybe_update_pc();
-  arm32_mov_int(ra_alloc(ARM_REG_R0), instr-F_OFFSET);
+  arm32_mov_int(ra_alloc(ARM_REG_ARG1), instr-F_OFFSET);
   arm32_call(simple_debug_instr_prologue_0);
   arm32_call(arm_green_off);
-  ra_free(ARM_REG_R0);
+  ra_free(ARM_REG_ARG1);
 }
 
 MACRO void arm32_debug_instr_prologue_1(PIKE_INSTR_T instr, INT32 arg1) {
   arm32_call(arm_green_on);
   arm32_maybe_update_pc();
-  arm32_mov_int(ra_alloc(ARM_REG_R0), instr-F_OFFSET);
-  arm32_mov_int(ra_alloc(ARM_REG_R1), arg1);
+  arm32_mov_int(ra_alloc(ARM_REG_ARG1), instr-F_OFFSET);
+  arm32_mov_int(ra_alloc(ARM_REG_ARG2), arg1);
   arm32_call(simple_debug_instr_prologue_1);
   arm32_call(arm_green_off);
-  ra_free(ARM_REG_R0);
-  ra_free(ARM_REG_R1);
+  ra_free(ARM_REG_ARG1);
+  ra_free(ARM_REG_ARG2);
 }
 
 MACRO void arm32_debug_instr_prologue_2(PIKE_INSTR_T instr, INT32 arg1, INT32 arg2) {
   arm32_call(arm_green_on);
   arm32_maybe_update_pc();
-  arm32_mov_int(ra_alloc(ARM_REG_R0), instr-F_OFFSET);
-  arm32_mov_int(ra_alloc(ARM_REG_R1), arg1);
-  arm32_mov_int(ra_alloc(ARM_REG_R2), arg2);
+  arm32_mov_int(ra_alloc(ARM_REG_ARG1), instr-F_OFFSET);
+  arm32_mov_int(ra_alloc(ARM_REG_ARG2), arg1);
+  arm32_mov_int(ra_alloc(ARM_REG_ARG3), arg2);
   arm32_call(simple_debug_instr_prologue_2);
   arm32_call(arm_green_off);
-  ra_free(ARM_REG_R0);
-  ra_free(ARM_REG_R1);
-  ra_free(ARM_REG_R2);
+  ra_free(ARM_REG_ARG1);
+  ra_free(ARM_REG_ARG2);
+  ra_free(ARM_REG_ARG3);
 }
 #else
 #define arm32_debug_instr_prologue_1(a, b)  do {} while(0)
@@ -1659,27 +1664,27 @@ static void low_ins_f_byte(unsigned int opcode)
           /* COMPLEX CMP: */
           label_generate(&real_cmp);
 
-          ra_alloc(ARM_REG_R0);
-          ra_alloc(ARM_REG_R1);
+          ra_alloc(ARM_REG_ARG1);
+          ra_alloc(ARM_REG_ARG2);
 
           if (swap) {
-              arm32_sub_reg_int(ARM_REG_R1, ARM_REG_PIKE_SP, 2*sizeof(struct svalue));
-              arm32_sub_reg_int(ARM_REG_R0, ARM_REG_PIKE_SP, 1*sizeof(struct svalue));
+              arm32_sub_reg_int(ARM_REG_ARG2, ARM_REG_PIKE_SP, 2*sizeof(struct svalue));
+              arm32_sub_reg_int(ARM_REG_ARG1, ARM_REG_PIKE_SP, 1*sizeof(struct svalue));
           } else {
-              arm32_sub_reg_int(ARM_REG_R0, ARM_REG_PIKE_SP, 2*sizeof(struct svalue));
-              arm32_sub_reg_int(ARM_REG_R1, ARM_REG_PIKE_SP, 1*sizeof(struct svalue));
+              arm32_sub_reg_int(ARM_REG_ARG1, ARM_REG_PIKE_SP, 2*sizeof(struct svalue));
+              arm32_sub_reg_int(ARM_REG_ARG2, ARM_REG_PIKE_SP, 1*sizeof(struct svalue));
           }
 
           arm32_call(cmp);
 
           if (negate) {
-              arm32_xor_reg_int(reg, ARM_REG_R0, 1);
+              arm32_xor_reg_int(reg, ARM_REG_RVAL, 1);
           } else {
-              mov_reg(reg, ARM_REG_R0);
+              mov_reg(reg, ARM_REG_RVAL);
           }
 
-          ra_free(ARM_REG_R0);
-          ra_free(ARM_REG_R1);
+          ra_free(ARM_REG_ARG1);
+          ra_free(ARM_REG_ARG2);
 
           /* COMPLEX POP: */
           label_generate(&real_pop);
@@ -1759,10 +1764,10 @@ static void low_ins_f_byte(unsigned int opcode)
 
           b_imm(label_dist(&end), ARM_COND_VC);
           label_generate(&slow);
-          ra_alloc(ARM_REG_R0);
-          arm32_mov_int(ARM_REG_R0, 2);
+          ra_alloc(ARM_REG_ARG1);
+          arm32_mov_int(ARM_REG_ARG1, 2);
           arm32_call(f_add);
-          ra_free(ARM_REG_R0);
+          ra_free(ARM_REG_ARG1);
           label_generate(&end);
           arm32_sub_reg_int(ARM_REG_PIKE_SP, ARM_REG_PIKE_SP, sizeof(struct svalue));
           arm32_store_sp_reg();
@@ -1796,7 +1801,7 @@ static void low_ins_f_byte(unsigned int opcode)
   }
   if (flags & I_JUMP) {
     /* This is the code that JUMP_EPILOGUE_SIZE compensates for. */
-    bx_reg(ARM_REG_R0);
+    bx_reg(ARM_REG_RVAL);
 
     compiler_state.flags &= ~FLAG_FP_LOADED;
 
@@ -1989,22 +1994,22 @@ void ins_f_byte_with_arg(unsigned int opcode, INT32 arg1)
   case F_SIZEOF_LOCAL:
   case F_SIZEOF_LOCAL_STRING:
       {
-          ra_alloc(ARM_REG_R0);
+          ra_alloc(ARM_REG_ARG1);
 
           arm32_load_locals_reg();
 
-          arm32_add_reg_int(ARM_REG_R0, ARM_REG_PIKE_LOCALS, arg1*sizeof(struct svalue));
+          arm32_add_reg_int(ARM_REG_ARG1, ARM_REG_PIKE_LOCALS, arg1*sizeof(struct svalue));
           arm32_call(pike_sizeof);
 
-          arm32_push_int_reg(ARM_REG_R0, NUMBER_NUMBER);
+          arm32_push_int_reg(ARM_REG_RVAL, NUMBER_NUMBER);
 
-          ra_free(ARM_REG_R0);
+          ra_free(ARM_REG_ARG1);
           return;
       }
   }
-  arm32_mov_int(ra_alloc(ARM_REG_R0), arg1);
+  arm32_mov_int(ra_alloc(ARM_REG_ARG1), arg1);
   low_ins_f_byte(opcode);
-  ra_free(ARM_REG_R0);
+  ra_free(ARM_REG_ARG1);
   label_generate(&done);
   return;
 }
@@ -2074,11 +2079,11 @@ void ins_f_byte_with_2_args(unsigned int opcode, INT32 arg1, INT32 arg2)
       ins_f_byte_with_arg(F_LOCAL, arg2);
       return;
   }
-  arm32_mov_int(ra_alloc(ARM_REG_R0), arg1);
-  arm32_mov_int(ra_alloc(ARM_REG_R1), arg2);
+  arm32_mov_int(ra_alloc(ARM_REG_ARG1), arg1);
+  arm32_mov_int(ra_alloc(ARM_REG_ARG2), arg2);
   low_ins_f_byte(opcode);
-  ra_free(ARM_REG_R0);
-  ra_free(ARM_REG_R1);
+  ra_free(ARM_REG_ARG1);
+  ra_free(ARM_REG_ARG2);
   return;
 }
 
@@ -2092,7 +2097,7 @@ int arm32_low_ins_f_jump(unsigned int opcode, int backward_jump) {
     /* Do we need to reload the stack pointer? */
     arm32_load_sp_reg();
 
-    cmp_reg_imm(ARM_REG_R0, 0, 0);
+    cmp_reg_imm(ARM_REG_RVAL, 0, 0);
 
     if (backward_jump) {
         struct label skip;
@@ -2148,46 +2153,46 @@ int arm32_ins_f_jump(unsigned int opcode, int backward_jump) {
     case F_BRANCH_WHEN_GT:
     case F_BRANCH_WHEN_GE:
         {
-            ra_alloc(ARM_REG_R0);
-            ra_alloc(ARM_REG_R1);
+            ra_alloc(ARM_REG_ARG1);
+            ra_alloc(ARM_REG_ARG2);
 
             arm32_load_sp_reg();
 
-            arm32_sub_reg_int(ARM_REG_R0, ARM_REG_PIKE_SP, 2*sizeof(struct svalue));
-            arm32_sub_reg_int(ARM_REG_R1, ARM_REG_PIKE_SP, 1*sizeof(struct svalue));
+            arm32_sub_reg_int(ARM_REG_ARG1, ARM_REG_PIKE_SP, 2*sizeof(struct svalue));
+            arm32_sub_reg_int(ARM_REG_ARG2, ARM_REG_PIKE_SP, 1*sizeof(struct svalue));
 
             switch (opcode) {
             case F_BRANCH_WHEN_NE:
                 arm32_call(is_eq);
-                cmp_reg_imm(ARM_REG_R0, 0, 0);
+                cmp_reg_imm(ARM_REG_RVAL, 0, 0);
                 break;
             case F_BRANCH_WHEN_EQ:
                 arm32_call(is_eq);
-                cmp_reg_imm(ARM_REG_R0, 1, 0);
+                cmp_reg_imm(ARM_REG_RVAL, 1, 0);
                 break;
             case F_BRANCH_WHEN_LT:
                 arm32_call(is_lt);
-                cmp_reg_imm(ARM_REG_R0, 1, 0);
+                cmp_reg_imm(ARM_REG_RVAL, 1, 0);
                 break;
             case F_BRANCH_WHEN_LE:
                 arm32_call(is_le);
-                cmp_reg_imm(ARM_REG_R0, 1, 0);
+                cmp_reg_imm(ARM_REG_RVAL, 1, 0);
                 break;
             case F_BRANCH_WHEN_GT:
                 arm32_call(is_le);
-                cmp_reg_imm(ARM_REG_R0, 0, 0);
+                cmp_reg_imm(ARM_REG_RVAL, 0, 0);
                 break;
             case F_BRANCH_WHEN_GE:
                 arm32_call(is_lt);
-                cmp_reg_imm(ARM_REG_R0, 0, 0);
+                cmp_reg_imm(ARM_REG_RVAL, 0, 0);
                 break;
             }
 
             ret = PIKE_PC;
             b_imm(0, ARM_COND_EQ);
 
-            ra_free(ARM_REG_R0);
-            ra_free(ARM_REG_R1);
+            ra_free(ARM_REG_ARG1);
+            ra_free(ARM_REG_ARG2);
             return ret;
         }
     }
@@ -2203,11 +2208,11 @@ int arm32_ins_f_jump_with_arg(unsigned int opcode, INT32 arg1, int backward_jump
 
     record_opcode(opcode, 0);
 
-    arm32_mov_int(ra_alloc(ARM_REG_R0), arg1);
+    arm32_mov_int(ra_alloc(ARM_REG_ARG1), arg1);
 
     instr = arm32_low_ins_f_jump(opcode, backward_jump);
 
-    ra_free(ARM_REG_R0);
+    ra_free(ARM_REG_ARG1);
 
     return instr;
 }
@@ -2220,13 +2225,13 @@ int arm32_ins_f_jump_with_2_args(unsigned int opcode, INT32 arg1, INT32 arg2, in
 
     record_opcode(opcode, 0);
 
-    arm32_mov_int(ra_alloc(ARM_REG_R0), arg1);
-    arm32_mov_int(ra_alloc(ARM_REG_R1), arg2);
+    arm32_mov_int(ra_alloc(ARM_REG_ARG1), arg1);
+    arm32_mov_int(ra_alloc(ARM_REG_ARG2), arg2);
 
     instr = arm32_low_ins_f_jump(opcode, backward_jump);
 
-    ra_free(ARM_REG_R0);
-    ra_free(ARM_REG_R1);
+    ra_free(ARM_REG_ARG1);
+    ra_free(ARM_REG_ARG2);
 
     return instr;
 }
