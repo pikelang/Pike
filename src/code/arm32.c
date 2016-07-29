@@ -781,7 +781,6 @@ struct compiler_state {
      */
     unsigned INT32 push_addr;
     unsigned INT32 flags;
-    struct location_list_entry *pop_list, *push_list;
 } compiler_state;
 
 
@@ -794,30 +793,12 @@ static struct location_list_entry* add_to_list(struct location_list_entry *list,
     return e;
 }
 
-static void add_to_pop_list(unsigned INT32 location) {
-    compiler_state.pop_list = add_to_list(compiler_state.pop_list, location);
-}
-
-static void add_to_push_list(unsigned INT32 location) {
-    compiler_state.push_list = add_to_list(compiler_state.push_list, location);
-}
-
 static void free_list(struct location_list_entry *list) {
     while (list) {
         struct location_list_entry * next = list->next;
         free(list);
         list = next;
     }
-}
-
-static void free_pop_list(void) {
-    free_list(compiler_state.pop_list);
-    compiler_state.pop_list = NULL;
-}
-
-static void free_push_list(void) {
-    free_list(compiler_state.push_list);
-    compiler_state.push_list = NULL;
 }
 
 struct label {
@@ -876,8 +857,6 @@ MACRO void ra_init(void) {
     compiler_state.dirt = 0;
     compiler_state.push_addr = -1;
     compiler_state.flags = 0;
-    compiler_state.pop_list = NULL;
-    compiler_state.push_list = NULL;
 }
 
 MACRO enum arm32_register ra_alloc(enum arm32_register reg) {
@@ -932,27 +911,22 @@ MACRO int ra_is_free(enum arm32_register reg) {
     return !!(rbit & compiler_state.free);
 }
 
-MACRO void add_push(void) {
-    unsigned INT32 registers;
-
-    add_to_push_list(PIKE_PC);
-    add_to_program(0);
-}
-
-MACRO void add_pop(void) {
-    add_to_pop_list(PIKE_PC);
-    add_to_program(0);
-}
+/* NOTE: this must always be odd, in order that we always push an even number of registers.
+ * This is necessary to keep the stack 8 byte aligned.
+ */
+static const unsigned INT32 pushed_registers =
+                  (1 << ARM_REG_PIKE_SP) | (1 << ARM_REG_PIKE_IP) |
+                  (1 << ARM_REG_PIKE_FP) | (1 << ARM_REG_PIKE_LOCALS) | (1 << 4);
 
 /* corresponds to ENTRY_PROLOGUE_SIZE */
 MACRO void arm32_prologue(void) {
-    add_push();
+    store_multiple(ARM_REG_SP, ARM_MULT_DBW, pushed_registers|RBIT(ARM_REG_LR));
     mov_reg(ARM_REG_PIKE_IP, ARM_REG_ARG1);
 }
 
 #define EPILOGUE_SIZE 1
 MACRO void arm32_epilogue(void) {
-    add_pop();
+    load_multiple(ARM_REG_SP, ARM_MULT_IAW, pushed_registers|RBIT(ARM_REG_PC));
 }
 
 MACRO void arm32_call(void *ptr) {
@@ -1228,43 +1202,7 @@ void arm32_start_function(int UNUSED(no_pc)) {
     ra_init();
 }
 
-/*
- * NOTE:
- * This function is here because of an initial misunderstanding. We believed that a function would
- * _always_ exit through one its own exits and that therefore it would be possible to track register
- * usage. This is unfortunately not the case, so we have to always push and pop the same register,
- * regardless of whether we are going to use them or not.
- */
 void arm32_end_function(int UNUSED(no_pc)) {
-    unsigned INT32 registers, instr;
-    struct location_list_entry *e;
-
-    /* NOTE: always need to push an even number of registers */
-    registers = RBIT(ARM_REG_PIKE_SP)
-                |RBIT(ARM_REG_PIKE_IP)
-                |RBIT(ARM_REG_PIKE_FP)
-                |RBIT(ARM_REG_PIKE_LOCALS)
-                |RBIT(4);
-
-    e = compiler_state.pop_list;
-
-    instr = gen_load_multiple(ARM_REG_SP, ARM_MULT_IAW, registers|RBIT(ARM_REG_PC));
-    while (e) {
-        upd_pointer(e->location, instr);
-        e = e->next;
-    }
-
-    e = compiler_state.push_list;
-
-    instr = gen_store_multiple(ARM_REG_SP, ARM_MULT_DBW, registers|RBIT(ARM_REG_LR));
-
-    while (e) {
-        upd_pointer(e->location, instr);
-        e = e->next;
-    }
-
-    free_pop_list();
-    free_push_list();
 }
 
 /* Store $pc into Pike_fp->pc */
