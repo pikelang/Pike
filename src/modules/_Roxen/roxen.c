@@ -49,7 +49,7 @@ struct  header_buf
   unsigned char *headers;	/* Buffer containing the data so far. */
   unsigned char *pnt;		/* End of headers. */
   ptrdiff_t hsize, left;	/* Size of buffer, amount remaining. */
-  int slash_n, tslash_n, spc;	/* Number of nl, consecutive nl, spaces. */
+  int slash_n, tslash_n, spc;	/* Number of consecutive nl, nl, spaces. */
   int mode;
 };
 
