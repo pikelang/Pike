@@ -492,6 +492,10 @@ INT32 assemble(int store_linenumbers)
   for(e=0;e<length;e++)
   {
 #ifdef PIKE_DEBUG
+# ifdef DISASSEMBLE_CODE
+    size_t opcode_start = PIKE_PC;
+# endif
+
     if (c != (((p_instr *)instrbuf.s.str)+e)) {
       Pike_fatal("Instruction loop deviates. "
 		 "0x%04"PRINTPTRDIFFT"x != 0x%04"PRINTPTRDIFFT"x\n",
@@ -687,6 +691,14 @@ INT32 assemble(int store_linenumbers)
 #endif
       }
     }
+
+#if defined(PIKE_DEBUG) && defined(DISASSEMBLE_CODE)
+    if((lex->pragmas & ID_DISASSEMBLE) && PIKE_PC > opcode_start)
+    {
+        DISASSEMBLE_CODE(Pike_compiler->new_program->program + opcode_start,
+                         (PIKE_PC - opcode_start)*sizeof(PIKE_OPCODE_T));
+    }
+#endif
 
 #ifdef PIKE_DEBUG
     if (instrs[c->opcode - F_OFFSET].flags & I_HASPOINTER) {
