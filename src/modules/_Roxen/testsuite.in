@@ -12,26 +12,29 @@ test_eq(_Roxen.http_decode_string("+"), "+")
 
 test_eq(_Roxen.http_decode_string("%uD83D%uDE02"), "\U0001f602")
 
-// The following inputs are all illegal, but are allowed
-// for compat reasons.
-test_eq(_Roxen.http_decode_string("%"), "\0")
-test_eq(_Roxen.http_decode_string("%0"), "\0")
-test_eq(_Roxen.http_decode_string("%%"), "\0")
-test_eq(_Roxen.http_decode_string("%%%"), "U")
-test_eq(_Roxen.http_decode_string("%41%"), "A\0")
-test_eq(_Roxen.http_decode_string("%41%0"), "A\0")
-test_eq(_Roxen.http_decode_string("%41%%"), "A\0")
-test_eq(_Roxen.http_decode_string("%41%%%"), "AU")
-test_eq(_Roxen.http_decode_string("%u"), "\0")
-test_eq(_Roxen.http_decode_string("%u0"), "\0")
-test_eq(_Roxen.http_decode_string("%u00"), "\0")
-test_eq(_Roxen.http_decode_string("%u000"), "\0")
-test_eq(_Roxen.http_decode_string("%u000_"), "\b")
-test_eq(_Roxen.http_decode_string("%41%u"), "A\0")
-test_eq(_Roxen.http_decode_string("%41%u0"), "A\0")
-test_eq(_Roxen.http_decode_string("%41%u00"), "A\0")
-test_eq(_Roxen.http_decode_string("%41%u000"), "A\0")
-test_eq(_Roxen.http_decode_string("%41%u000_"), "A\b")
+// the following inputs are all illegal
+test_eval_error(_Roxen.http_decode_string("%"))
+test_eval_error(_Roxen.http_decode_string("%0"))
+test_eval_error(_Roxen.http_decode_string("%%"))
+test_eval_error(_Roxen.http_decode_string("%%%"))
+test_eval_error(_Roxen.http_decode_string("%41%"))
+test_eval_error(_Roxen.http_decode_string("%41%0"))
+test_eval_error(_Roxen.http_decode_string("%41%%"))
+test_eval_error(_Roxen.http_decode_string("%41%%%"))
+test_eval_error(_Roxen.http_decode_string("%u"))
+test_eval_error(_Roxen.http_decode_string("%u0"))
+test_eval_error(_Roxen.http_decode_string("%u00"))
+test_eval_error(_Roxen.http_decode_string("%u000"))
+test_eval_error(_Roxen.http_decode_string("%u000_"))
+test_eval_error(_Roxen.http_decode_string("%41%u"))
+test_eval_error(_Roxen.http_decode_string("%41%u0"))
+test_eval_error(_Roxen.http_decode_string("%41%u00"))
+test_eval_error(_Roxen.http_decode_string("%41%u000"))
+test_eval_error(_Roxen.http_decode_string("%41%u000_"))
+dnl test_eval_error(_Roxen.http_decode_string("%uD83D"))
+dnl test_eval_error(_Roxen.http_decode_string("%uDE02"))
+dnl test_eval_error(_Roxen.http_decode_string("X%uD83DX"))
+dnl test_eval_error(_Roxen.http_decode_string("X%uDE02X"))
 
 test_eq(_Roxen.http_decode_string("%u12345"), "\x1234""5")
 test_eq(_Roxen.http_decode_string("%U12345"), "\x1234""5")
@@ -61,18 +64,84 @@ test_eval_error(_Roxen.make_http_headers((["a": "1\n"])))
 test_eval_error(_Roxen.make_http_headers((["a": ({ "1\r\nb:2", "2\r\nc:2" })))))
 
 define(test_hp,[[
-  test_do( add_constant("hp", _Roxen.HeaderParser()) )
-  test_equal( hp->feed( $1 ), $2)
-  test_do( add_constant("hp") )
+  test_any_equal([[
+    object hp = _Roxen.HeaderParser();
+    if( $2[0]=="" )
+    {
+      // Only feed in increments when we are not testing trailing data.
+      Stdio.Buffer data = Stdio.Buffer($1);
+      while( sizeof(data) )
+      {
+	 mixed res = hp->feed(data->read(1));
+	 if(res) return res;
+      }
+      return -1;
+    }
+    return hp->feed( $1 );
+  ]], $2)
+  test_any_equal([[
+    object hp = _Roxen.HeaderParser();
+    if( $2[0]=="" )
+    {
+      // Only feed in increments when we are not testing trailing data.
+      Stdio.Buffer data = Stdio.Buffer($1);
+      while( sizeof(data) )
+      {
+	 string s = data->read(random(3));
+	 if(!s) s = data->read(1);
+	 mixed res = hp->feed(s);
+	 if(res) return res;
+      }
+      return -1;
+    }
+    return hp->feed( $1 );
+  ]], $2)
 ]])
 
-test_hp( "GET / HTTP/1.0\r\nblaha: foo\nbar\r\nzonk: 1\r\n\r\n",
+test_hp( "GET / HTTP/1.0\r\n\r\n",
+({ "", "GET / HTTP/1.0", ([]) }))
+
+test_hp( "GET / HTTP/1.0\r\n\r\nDATA",
+({ "DATA", "GET / HTTP/1.0", ([]) }))
+
+test_hp( "GET / HTTP/1.0\r\nhdr: 1\r\n\r\nDATA",
+({ "DATA", "GET / HTTP/1.0", ([ "hdr":"1"]) }))
+
+test_hp( "GET / HTTP/1.0\r\nBlaha: foo\nbar\r\nzonk: 1\r\n\r\n",
 ({ "", "GET / HTTP/1.0", ([ "blaha":"foo", "zonk":"1" ]) }) )
 
 test_hp( "GET / HTTP/1.0\r\nblaha: foo\r\nzonk: 1\r\n\r\n",
 ({ "", "GET / HTTP/1.0", ([ "blaha":"foo", "zonk":"1" ]) }) )
 
-test_hp( "GET / HTTP/1.0\r\nblaha: foo\n\rblaha: bar\r\n\r\n",
+test_hp( "GET / HTTP/1.0\r\nblaha: foo\n\rBlaha: bar\r\n\r\n",
 ({ "", "GET / HTTP/1.0", ([ "blaha":({ "foo", "bar" }) ]) }) )
+
+test_hp( "GET / HTTP/1.0\r\nblaha: foo\r\n bar\r\nx:1\r\n\t2\r\n\r\n",
+({ "", "GET / HTTP/1.0", ([ "blaha":"foo bar", "x":"1\t2" ]) }) )
+
+test_any_equal([[
+  object hp = _Roxen.HeaderParser(0, 1);
+  return hp->feed( "GET / HTTP/1.0\r\nBlaha: foo\r\nblaha: foo\r\n\r\n" );
+]], [[ ({ "", "GET / HTTP/1.0", ([ "Blaha":"foo", "blaha":"foo"]) }) ]])
+
+test_any_equal([[
+  object hp = _Roxen.HeaderParser(0, 0);
+  return hp->feed( "GET / HTTP/1.0\r\nBlaha: foo\r\nblaha: foo\r\n\r\n", 1 );
+]], [[ ({ "", "GET / HTTP/1.0", ([ "Blaha":"foo", "blaha":"foo"]) }) ]])
+
+test_any_equal([[
+  object hp = _Roxen.HeaderParser(0, 0, 1);
+  return hp->feed( "GET / HTTP/1.0\r\nblaha: foo\r\n bar\r\nx:1\r\n\t2\r\n\r\n" );
+]], [[ ({ "", "GET / HTTP/1.0", ([ "blaha":"foo", "x":"1"]) }) ]])
+
+test_any_equal([[
+  object hp = _Roxen.HeaderParser();
+  return hp->feed( "GET / HTTP/1.0\r\nA\r\nblaha: foo\r\n\r\n" );
+]], [[ ({ "", "GET / HTTP/1.0", (["blaha":"foo"]) }) ]])
+
+test_eval_error([[
+  object hp = _Roxen.HeaderParser(1);
+  return hp->feed( "GET / HTTP/1.0\r\nA\r\nblaha: foo\r\n\r\n" );
+]])
 
 END_MARKER
