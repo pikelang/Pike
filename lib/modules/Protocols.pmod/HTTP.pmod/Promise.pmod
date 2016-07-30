@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-//! This HTTP client module utilses the @[Concurrent.Promise] and
+//! This HTTP client module utilises the @[Concurrent.Promise] and
 //! @[Concurrent.Future] classes and only does asynchronous calls.
 //!
 //! @example
