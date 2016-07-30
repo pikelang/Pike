@@ -130,6 +130,13 @@ enum shift_instr {
 
 #define OPCODE_FUN ATTRIBUTE((unused,warn_unused_result)) static PIKE_OPCODE_T
 
+#define ARM_IF(cond, CODE) do {                                                 \
+    unsigned INT32 start = PIKE_PC, i;                                          \
+    do CODE while(0);                                                           \
+    for (i = start; i < PIKE_PC; i++)                                           \
+        upd_pointer(i, set_cond(read_pointer(i), cond));                        \
+} while(0)
+
 
 MACRO void arm32_flush_dirty_regs(void);
 MACRO void arm32_call(void *ptr);
@@ -721,12 +728,50 @@ MACRO void arm32_cmp_int(enum arm32_register reg, unsigned INT32 v) {
     }
 }
 
+MACRO void arm32_tst_int(enum arm32_register reg, unsigned INT32 v) {
+    unsigned char imm, rot;
+
+    if (arm32_make_imm(v, &imm, &rot)) {
+        tst_reg_imm(reg, imm, rot);
+    } else {
+        enum arm32_register tmp = ra_alloc_any();
+
+        arm32_mov_int(tmp, v);
+        tst_reg_reg(reg, tmp);
+
+        ra_free(tmp);
+    }
+}
+
 /*
  * TODO: work with labels
  */
 MACRO void arm32_rel_cond_jmp(enum arm32_register reg, enum arm32_register b, enum arm32_condition cond, int jmp) {
     cmp_reg_reg(reg, b);
     b_imm(jmp-2, cond);
+}
+
+MACRO void arm32_call_if(enum arm32_condition cond1, void *a,
+                         enum arm32_condition cond2, void *b) {
+    enum arm32_register reg = ra_alloc_any();
+
+    unsigned INT32 v1 = (char*)a - (char*)NULL,
+                   v2 = (char*)b - (char*)NULL;
+
+    if (v1 < v2) {
+        arm32_mov_int(reg, v1);
+        ARM_IF(cond2, {
+            arm32_add_reg_int(reg, reg, v2 - v1);
+        });
+    } else if (v1 > v2) {
+        arm32_mov_int(reg, v2);
+        ARM_IF(cond1, {
+            arm32_add_reg_int(reg, reg, v1 - v2);
+        });
+    }
+
+    blx_reg(reg);
+    ra_free(reg);
 }
 
 
@@ -971,7 +1016,29 @@ static void arm32_load_fp_reg(void) {
         load_reg_imm(ARM_REG_PIKE_FP, ARM_REG_PIKE_IP, offset);
         compiler_state.flags |= FLAG_FP_LOADED;
         compiler_state.flags &= ~FLAG_LOCALS_LOADED;
+    } else {
+        enum arm32_register reg = ra_alloc_any();
+        struct label end;
+
+        label_init(&end);
+
+        load_reg_imm(reg, ARM_REG_PIKE_IP, OFFSETOF(Pike_interpreter_struct, frame_pointer));
+        cmp_reg_reg(reg, ARM_REG_PIKE_FP);
+
+        b_imm(label_dist(&end), ARM_COND_EQ);
+
+        mov_reg(ARM_REG_PIKE_FP, reg);
+
+        arm32_call(break_my_arm);
+
+        label_generate(&end);
+
+        ra_free(reg);
     }
+}
+
+static void arm32_invalidate_fp_reg(void) {
+    compiler_state.flags &= ~FLAG_FP_LOADED;
 }
 
 MACRO void arm32_load_locals_reg(void) {
@@ -1708,10 +1775,55 @@ static void low_ins_f_byte(unsigned int opcode)
 
           return;
       }
+  case F_RETURN:
+  case F_DUMB_RETURN:
+      {
+          enum arm32_register reg;
+          struct label inter_return;
+
+          label_init(&inter_return);
+
+          arm32_load_fp_reg();
+
+          reg = ra_alloc_any();
+
+          loadh_reg_imm(reg, ARM_REG_PIKE_FP, OFFSETOF(pike_frame, flags));
+
+          arm32_tst_int(reg, PIKE_FRAME_RETURN_INTERNAL);
+
+          b_imm(label_dist(&inter_return), ARM_COND_NZ);
+
+          /* return from function */
+          arm32_mov_int(ARM_REG_RVAL, -1);
+          arm32_epilogue();
+
+          /* inter return */
+          label_generate(&inter_return);
+
+          arm32_tst_int(reg, PIKE_FRAME_RETURN_POP);
+
+          arm32_call_if(ARM_COND_NZ, low_return_pop, ARM_COND_Z, low_return);
+
+          /* NOTE: the low_return functions pop one frame */
+          arm32_invalidate_fp_reg();
+          arm32_load_fp_reg();
+
+          load_reg_imm(ARM_REG_PC, ARM_REG_PIKE_FP, OFFSETOF(pike_frame, return_addr));
+
+          ra_free(reg);
+          return;
+      }
+  case F_RETURN_0:
+      ins_f_byte(F_CONST0);
+      ins_f_byte(F_RETURN);
+      return;
+  case F_RETURN_1:
+      ins_f_byte(F_CONST1);
+      ins_f_byte(F_RETURN);
+      return;
   }
 
   arm32_call_c_opcode(opcode);
-
 
   if (opcode == F_CATCH) ra_free(ARM_REG_R0);
 
@@ -1938,6 +2050,16 @@ void ins_f_byte_with_arg(unsigned int opcode, INT32 arg1)
           ra_free(ARM_REG_ARG1);
           return;
       }
+  case F_RETURN_LOCAL:
+      /* FIXME: The C version has a trick:
+         if locals+b < expendibles, pop to there
+         and return.
+
+         This saves a push, and the poping has to be done anyway.
+      */
+      ins_f_byte_with_arg( F_LOCAL, arg1 );
+      ins_f_byte( F_DUMB_RETURN );
+      return;
   }
   arm32_mov_int(ra_alloc(ARM_REG_ARG1), arg1);
   low_ins_f_byte(opcode);
