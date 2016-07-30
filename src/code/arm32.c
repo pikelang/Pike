@@ -1171,11 +1171,13 @@ MACRO void arm32_assign_svaluep_nofree(enum arm32_register dst, enum arm32_regis
     load_multiple(from, ARM_MULT_IA, RBIT(treg)|RBIT(vreg));
     store_multiple(dst, ARM_MULT_IA, RBIT(treg)|RBIT(vreg));
 
-    arm32_ands_reg_int(treg, treg, TYPE_SUBTYPE(MIN_REF_TYPE, 0));
+    arm32_tst_int(treg, TYPE_SUBTYPE(MIN_REF_TYPE, 0));
 
-    add_to_program(set_cond(gen_load_reg_imm(treg, vreg, OFFSETOF(pike_string, refs)), ARM_COND_NZ));
-    add_to_program(set_cond(gen_add_reg_imm(treg, treg, 1, 0), ARM_COND_NZ));
-    add_to_program(set_cond(gen_store_reg_imm(treg, vreg, OFFSETOF(pike_string, refs)), ARM_COND_NZ));
+    ARM_IF(ARM_COND_NZ, {
+        load_reg_imm(treg, vreg, OFFSETOF(pike_string, refs));
+        add_reg_imm(treg, treg, 1, 0);
+        store_reg_imm(treg, vreg, OFFSETOF(pike_string, refs));
+    });
 
     ra_free(treg);
     ra_free(vreg);
@@ -1201,11 +1203,13 @@ MACRO void arm32_push_svaluep_off(enum arm32_register src, INT32 offset) {
 
     arm32_store_sp_reg();
 
-    arm32_ands_reg_int(tmp1, tmp1, TYPE_SUBTYPE(MIN_REF_TYPE, 0));
+    arm32_tst_int(tmp1, TYPE_SUBTYPE(MIN_REF_TYPE, 0));
 
-    add_to_program(set_cond(gen_load_reg_imm(tmp1, tmp2, OFFSETOF(pike_string, refs)), ARM_COND_NZ));
-    add_to_program(set_cond(gen_add_reg_imm(tmp1, tmp1, 1, 0), ARM_COND_NZ));
-    add_to_program(set_cond(gen_store_reg_imm(tmp1, tmp2, OFFSETOF(pike_string, refs)), ARM_COND_NZ));
+    ARM_IF(ARM_COND_NZ, {
+        load_reg_imm(tmp1, tmp2, OFFSETOF(pike_string, refs));
+        add_reg_imm(tmp1, tmp1, 1, 0);
+        store_reg_imm(tmp1, tmp2, OFFSETOF(pike_string, refs));
+    });
 
     ra_free(tmp1);
     ra_free(tmp2);
@@ -1356,7 +1360,7 @@ MACRO void arm32_free_svalue_off(enum arm32_register src, int off, int guarantee
 
     load_reg_imm(reg, src, off);
 
-    arm32_ands_reg_int(reg, reg, combined);
+    arm32_tst_int(reg, combined);
 
     b_imm(label_dist(&end), ARM_COND_Z);
 
