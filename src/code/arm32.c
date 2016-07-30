@@ -1241,18 +1241,12 @@ MACRO void arm32_maybe_update_pc() {
     if(last_prog_id != Pike_compiler->new_program->id ||
        last_num_linenumbers != Pike_compiler->new_program->num_linenumbers)
     {
-      unsigned INT32 tmp = PIKE_PC;
       last_prog_id=Pike_compiler->new_program->id;
       last_num_linenumbers = Pike_compiler->new_program->num_linenumbers;
 
       UPDATE_PC();
     }
   }
-}
-
-static void low_ins_call(void *addr) {
-  arm32_maybe_update_pc();
-  arm32_call(addr);
 }
 
 MACRO void arm32_call_c_function(void * addr) {
@@ -1267,6 +1261,10 @@ MACRO void arm32_call_c_opcode(unsigned int opcode) {
 
   record_opcode(opcode, 1);
 
+  arm32_maybe_update_pc();
+
+  arm32_call(addr);
+
   if (flags & I_UPDATE_SP) {
     compiler_state.flags &= ~FLAG_SP_LOADED;
   }
@@ -1274,8 +1272,6 @@ MACRO void arm32_call_c_opcode(unsigned int opcode) {
   if (flags & I_UPDATE_FP) {
     compiler_state.flags &= ~FLAG_FP_LOADED;
   }
-
-  low_ins_call(addr);
 }
 
 MACRO void arm32_free_svalue_off(enum arm32_register src, int off, int guaranteed) {
@@ -1741,8 +1737,6 @@ static void low_ins_f_byte(unsigned int opcode)
     /* This is the code that JUMP_EPILOGUE_SIZE compensates for. */
     bx_reg(ARM_REG_RVAL);
 
-    compiler_state.flags &= ~FLAG_FP_LOADED;
-
     if (opcode == F_CATCH) {
         arm32_mov_int_at(rel_addr, 4*(PIKE_PC - rel_addr - 1), ARM_REG_R2);
     }
@@ -2028,12 +2022,7 @@ void ins_f_byte_with_2_args(unsigned int opcode, INT32 arg1, INT32 arg2)
 int arm32_low_ins_f_jump(unsigned int opcode, int backward_jump) {
     INT32 ret;
 
-    arm32_maybe_update_pc();
-
     arm32_call_c_opcode(opcode);
-
-    /* Do we need to reload the stack pointer? */
-    arm32_load_sp_reg();
 
     cmp_reg_imm(ARM_REG_RVAL, 0, 0);
 
