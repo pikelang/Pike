@@ -1620,6 +1620,24 @@ class NScopeStack
 	}
 	return 0;
       case "::":
+	if ((sizeof(ref) > 1) && (ref[1] == "this_program")) {
+	  // Handle ::this_program.
+	  NScope this_p;
+	  while (pos--) {
+	    if ((current->type == "class") || (current->type == "module")) {
+	      this_p = current;
+	      current = stack[pos];
+	      break;
+	    }
+	    current = stack[pos];
+	  }
+	  if (this_p) {
+	    ref[1] = splitRef(this_p->name)[-1];
+	  } else {
+	    current = top;
+	    pos = sizeof(stack);
+	  }
+	}
 	while(pos) {
 	  if (current->inherits) {
 	    foreach(current->inherits; ; string|NScope scope) {
