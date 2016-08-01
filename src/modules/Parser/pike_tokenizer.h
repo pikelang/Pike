@@ -83,7 +83,7 @@ static unsigned int TOKENIZE(struct array **res, CHAR *data, unsigned int len)
         {
             do {
                 pos++;
-            } while(m_isidchar(data[pos+1]));
+            } while(m_isidchar2(data[pos+1]));
             if(data[pos+1] == '=')
                 pos++;
             break;
