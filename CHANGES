@@ -1,3 +1,13 @@
+Changes since Pike 8.0.276 (release 4)
+----------------------------------------------------------------------
+
+o _Roxen.HeaderParser
+
+  It is now possible to enable non-normalization on the entire object,
+  and not just on a per call basis. It is also possible to disable
+  support for folded headers, as per IETFs latest specification.
+
+
 Changes since Pike 8.0.240 (release 3)
 ----------------------------------------------------------------------
 
