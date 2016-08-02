@@ -205,9 +205,17 @@ private class Extractor {
       else if (parser->peekToken() == "}")
         // reached the end of the enum { ... }.
         return;
-      else
+      else {
         extractorError("expected doc comment or enum constant, got %O",
                        parser->peekToken());
+	// NB: Only reached in FLAG_KEEP_GOING mode.
+
+	if (parser->peekToken() == "") return;	// EOF.
+
+	// Get rid of the erroneous token.
+	parser->readToken();
+	continue;
+      }
 
       if (doc) {
         .DocParser.Parse parse =
@@ -220,10 +228,8 @@ private class Extractor {
           extractorError("@%s not allowed in doc for enum constant",
                          metadata->type);
         doc->xml = parse->doc("_enumconstant");
-
-        parent->addChild(DocGroup(consts, doc));
       }
-      // ignore constants without any adjacent doc comment...
+      parent->addChild(DocGroup(consts, doc));
     }
   }
 
