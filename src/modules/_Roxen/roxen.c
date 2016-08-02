@@ -293,7 +293,22 @@ static void f_hp_feed( INT32 args )
 }
 
 static void f_hp_create( INT32 args )
-/*! @decl void create(void|int throw_errors, void|int keep_case)
+/*! @decl void create(void|int throw_errors, void|int keep_case, void|int no_fold)
+ *! @param throw_errors
+ *!   If true the parser will throw an error instead of silently
+ *!   trying to recover from broken HTTP headers.
+ *!
+ *! @param keep_case
+ *!   If true the parser will not normalize the case of HTTP headers
+ *!   throughout the lifetime of the parser object (as opposed to the
+ *!   similar argument to @[feed] that only applies for unparsed data
+ *!   fed into the parser up to that point).
+ *!
+ *! @param no_fold
+ *!   If true the parser will not parse folded headers. Instead the
+ *!   first line of the header will be parsed as normal and any
+ *!   subsequent lines ignored (or casue an exception if throw_errors
+ *!   is set).
  */
 {
   INT_TYPE throw_errors = 0;
