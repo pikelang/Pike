@@ -701,6 +701,13 @@ enum CipherSuite_2_0 {
   SSL2_ck_des_192_ede3_cbc_with_md5		= 0x0700c0,
 }
 
+//! Return a descriptive name for a constant value.
+//!
+//! @param c
+//!   Value to format.
+//!
+//! @param prefix
+//!   Constant name prefix. Eg @expr{"CONNECTION"@}.
 string fmt_constant(int c, string prefix)
 {
   if (!has_suffix(prefix, "_")) prefix += "_";
@@ -711,6 +718,10 @@ string fmt_constant(int c, string prefix)
 
 protected mapping(int:string) suite_to_symbol = ([]);
 
+//! Return a descriptive name for a cipher suite.
+//!
+//! @param suite
+//!   Cipher suite to format.
 string fmt_cipher_suite(int suite)
 {
   if (!sizeof(suite_to_symbol)) {
@@ -725,6 +736,10 @@ string fmt_cipher_suite(int suite)
   return suite_to_symbol[suite] = sprintf("unknown(%d)", suite);
 }
 
+//! Pretty-print an array of cipher suites.
+//!
+//! @param s
+//!   Array of cipher suites to format.
 string fmt_cipher_suites(array(int) s)
 {
   String.Buffer b = String.Buffer();
@@ -733,6 +748,10 @@ string fmt_cipher_suites(array(int) s)
   return (string)b;
 }
 
+//! Pretty-print an array of signature pairs.
+//!
+//! @param pairs
+//!   Array of signature pairs to format.
 string fmt_signature_pairs(array(array(int)) pairs)
 {
   String.Buffer b = String.Buffer();
@@ -743,6 +762,10 @@ string fmt_signature_pairs(array(array(int)) pairs)
   return (string)b;
 }
 
+//! Pretty-print a @[ProtocolVersion].
+//!
+//! @param version
+//!   @[ProtocolVersion] to format.
 string fmt_version(ProtocolVersion version)
 {
   if (version <= PROTOCOL_SSL_3_0) {
