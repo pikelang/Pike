@@ -605,6 +605,12 @@ class PikeObject {
   //!
   Documentation squeezedInDoc;
 
+  int containsDoc()
+  {
+    if (squeezedInDoc && squeezedInDoc != EmptyDoc) return 1;
+    return 0;
+  }
+
   protected string standardTags(.Flags|void flags) {
     string s = "";
     if (position)
@@ -814,7 +820,17 @@ class _Class_or_Module {
   //! @returns
   //!   Returns @expr{1@} if there is any documentation
   //!   at all for this entity.
-  int containsDoc() { return documentation != 0 || sizeof(docGroups) > 0; }
+  int containsDoc() {
+    if (documentation && documentation != EmptyDoc) return 1;
+    if (::containsDoc()) return 1;
+    foreach(docGroups, DocGroup dg) {
+      if (dg->documentation && dg->documentation != EmptyDoc) return 1;
+    }
+    foreach(children, _Class_or_Module c) {
+      if (c->containsDoc()) return 1;
+    }
+    return 0;
+  }
 
   //! Adds @[p] to the set of @[inherits].
   void AddInherit(PikeObject p) {
@@ -1089,6 +1105,19 @@ class Enum {
 
   //! Adds @[c] to the set of @[children].
   void addChild(DocGroup c) { children += ({ c }); }
+
+  //! @returns
+  //!   Returns @expr{1@} if there is any documentation
+  //!   at all for this entity.
+  int containsDoc()
+  {
+    if (documentation && documentation != EmptyDoc) return 1;
+    if (::containsDoc()) return 1;
+    foreach(children, DocGroup c) {
+      if (c->documentation && c->documentation != EmptyDoc) return 1;
+    }
+    return 0;
+  }
 
   string xml(.Flags|void flags) {
 
