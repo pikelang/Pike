@@ -425,7 +425,7 @@ private class Extractor {
                   extractorError("doc not allowed on reentrance into '%s %s'",
                                  m->objtype, m->name);
               if (!alreadyChild)
-                c->AddChild(m);
+                c->addChild(m);
               parseClassBody(m, 0, 0, what);
               continue mainloop;
             case "endclass":
@@ -506,13 +506,13 @@ private class Extractor {
           d->documentation = doc;
           d->appears = appears;
           d->belongs = belongs;
-          c->AddChild(d);
+          c->addChild(d);
         }
         else {
           DocGroup d = DocGroup(decls, doc);
           d->appears = appears;
           d->belongs = belongs;
-          c->AddGroup(d);
+          c->addGroup(d);
         }
 
         string context;
@@ -526,7 +526,7 @@ private class Extractor {
 	foreach(decls, PikeObject obj) {
 	  if ((obj->objtype == "inherit") ||
 	      (obj->objtype == "import")) {
-	    c->AddInherit(obj);
+	    c->addInherit(obj);
 	  }
 	}
       }

@@ -133,16 +133,16 @@ protected object makeWrapper(array(string) modules, object|void child)
 	m = .PikeObjects.Module();
 	m->name = n;
 	if (child)
-	  m->AddChild(child);
+	  m->addChild(child);
 	child = m;
       }
       m = .PikeObjects.NameSpace();
       m->name = namespace;
-      m->AddChild(child);
+      m->addChild(child);
       child = m;
     }
     m = .PikeObjects.AutoDoc();
-    m->AddChild(child);
+    m->addChild(child);
     child = m;
   }
   return child;

@@ -833,12 +833,12 @@ class _Class_or_Module {
   }
 
   //! Adds @[p] to the set of @[inherits].
-  void AddInherit(PikeObject p) {
+  void addInherit(PikeObject p) {
     inherits += ({ p });
   }
 
   //! Adds @[c] to the set of @[children].
-  void AddChild(_Class_or_Module c) { children += ({ c }); }
+  void addChild(_Class_or_Module c) { children += ({ c }); }
 
   //! @returns
   //!   Returns the first child with the name @[name] if any.
@@ -864,7 +864,7 @@ class _Class_or_Module {
   }
 
   //! Adds @[d] to the set of @[docGroups].
-  void AddGroup(DocGroup d) {
+  void addGroup(DocGroup d) {
     docGroups += ({ d });
   }
 
@@ -1104,10 +1104,10 @@ class Enum {
   array(DocGroup) children = ({ });
 
   //! Adds @[c] to the set of @[children].
-  void AddChild(DocGroup c) { children += ({ c }); }
+  void addChild(DocGroup c) { children += ({ c }); }
 
   //! Adds @[c] to the set of @[children].
-  void AddGroup(DocGroup c) { children += ({ c }); }
+  void addGroup(DocGroup c) { children += ({ c }); }
 
   //! @returns
   //!   Returns @expr{1@} if there is any documentation
