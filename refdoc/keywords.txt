@@ -151,6 +151,19 @@ Examples:
 
 _______________________________________________________________________________
 
+Keyword:      @endenum
+Description:  Leave the enum scope entered by @enum.
+Arguments:    [name]
+              Where:
+                [name] if present, must be the same as the argument to
+                  @enum.
+Children:
+Groups with:  -
+Examples:
+              /*! @endenum Flags */
+
+_______________________________________________________________________________
+
 Keyword:      @endmodule
 Description:  Leave the module scope entered by @module
 Arguments:    [name]
@@ -176,6 +189,30 @@ Children:     -
 Groups with:  -
 Examples:
               /*! @endnamespace lfun:: */
+
+_______________________________________________________________________________
+
+Keyword:      @enum
+Description:  Declare and enter a new scope for an enum. Only in C
+              mode. Until an @endenum is found, all declarations will
+              be regarded as children of the enum. The only valid
+	      child declarations are declarations of constants.
+
+Arguments:    <name>
+              Where:
+                <name> is a valid Pike identifier. Not the "absolute"
+                  name with dots.
+
+Children:     Documentation for the enum, or empty.
+Groups with:  -
+Examples:
+              /*! @enum Flags
+               *!   Some flags controlling behavior.
+	       */
+	      /*! @decl constant FLAG_FLAG = 1
+	       */
+	      /*! @endenum
+	       */
 
 _______________________________________________________________________________
 

@@ -1104,7 +1104,10 @@ class Enum {
   array(DocGroup) children = ({ });
 
   //! Adds @[c] to the set of @[children].
-  void addChild(DocGroup c) { children += ({ c }); }
+  void AddChild(DocGroup c) { children += ({ c }); }
+
+  //! Adds @[c] to the set of @[children].
+  void AddGroup(DocGroup c) { children += ({ c }); }
 
   //! @returns
   //!   Returns @expr{1@} if there is any documentation

@@ -81,6 +81,7 @@ protected private class Extractor {
       // Namespaces are always located in the root.
       parent = root;
       // FALL_THROUGH
+    case "enum":
     case "class":
     case "module":
       {
@@ -103,6 +104,7 @@ protected private class Extractor {
         }
         else {
           c = (["module":Module,
+		"enum":Enum,
 		"class":Class,
 		"namespace":NameSpace])[meta->type]();
           c->name = meta->name;
@@ -192,9 +194,9 @@ protected private class Extractor {
 
   }
 
-  void parseClassBody(Class|Module|NameSpace c, AutoDoc root) {
+  void parseClassBody(Enum|Class|Module|NameSpace c, AutoDoc root) {
     for(;;) {
-      array(string|Class|Module|DocGroup) a = parseObject(c, root);
+      array(string|Enum|Class|Module|DocGroup) a = parseObject(c, root);
       if (!a)
         return;
       switch ([string]a[0]) {

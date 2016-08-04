@@ -874,6 +874,7 @@ protected class DocParserClass {
       string endkeyword = 0;
       switch (keyword) {
       case "namespace":
+      case "enum":
       case "class":
       case "module":
 	{
@@ -913,6 +914,7 @@ protected class DocParserClass {
 	break;
 
       case "endnamespace":
+      case "endenum":
       case "endclass":
       case "endmodule":
 	{
