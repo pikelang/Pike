@@ -162,6 +162,64 @@ struct program *file_ref_program;
 /*! @module Stdio
  */
 
+/*! @enum FileModeFlags
+ *!
+ *! File mode flags returned by @[Fd()->mode()].
+ */
+
+/*! @decl constant FILE_READ = 0x1000
+ *!   File open for reading.
+ */
+/*! @decl constant FILE_WRITE = 0x2000
+ *!   File open for writing.
+ */
+/*! @decl constant FILE_APPEND = 0x4000
+ *!   File open for appending.
+ */
+/*! @decl constant FILE_CREATE = 0x8000
+ *!   Create a new file if it didn't exist earlier.
+ */
+/*! @decl constant FILE_TRUNC = 0x0100
+ *!   Truncate the file on open.
+ */
+/*! @decl constant FILE_EXCLUSIVE = 0x0200
+ *!   Exclusive access to the file.
+ */
+/*! @decl constant FILE_NONBLOCKING = 0x0400
+ *!   File opened in nonblocking mode.
+ */
+
+/*! @endenum FileModeFlags
+ */
+
+/*! @enum FilePropertyFlags
+ *!
+ *! File properties for use with eg @[Fd()->pipe()],
+ *! and returned by eg @[Fd()->mode()].
+ */
+
+/*! @decl constant PROP_SEND_FD = 0x0040
+ *!   File is capable of sending open file descriptors.
+ */
+/*! @decl constant PROP_BIDIRECTIONAL = 0x0010
+ *!   File supports both sending and receiving.
+ */
+/*! @decl constant PROP_BUFFERED = 0x0008
+ *!   File has internal buffering.
+ */
+/*! @decl constant PROP_SHUTDOWN = 0x0004
+ *!   File supports unidirectional close.
+ */
+/*! @decl constant PROP_NONBLOCK = 0x0002
+ *!   File supports nonblocking operation.
+ */
+/*! @decl constant PROP_IPC = 0x0001
+ *!   File can be used for interprocess communication.
+ */
+
+/*! @endenum FilePropertyFlags
+ */
+
 /*! @class Fd_ref
  *!
  *! Proxy class that contains stub functions
@@ -3659,7 +3717,7 @@ static void file_errno(INT32 args)
   push_int(ERRNO);
 }
 
-/*! @decl int mode()
+/*! @decl FileModeFlags|FilePropertyFlags mode()
  *!
  *! Returns the open mode and capabilities for the file.
  *!
@@ -6106,6 +6164,29 @@ PIKE_MODULE_INIT
    */
   add_integer_constant("XATTR_REPLACE", XATTR_REPLACE, 0 );
 #endif
+
+  /* enum FileModeFlags */
+  type_stack_mark();
+  push_int_type(0, 0xffff);
+  push_type_value(pop_unfinished_type());
+  simple_add_constant("FileModeFlags", Pike_sp-1, 0);
+  pop_stack();
+
+  add_integer_constant("FILE_READ", FILE_READ, 0);
+  add_integer_constant("FILE_WRITE", FILE_WRITE, 0);
+  add_integer_constant("FILE_APPEND", FILE_APPEND, 0);
+  add_integer_constant("FILE_CREATE", FILE_CREATE, 0);
+  add_integer_constant("FILE_TRUNC", FILE_TRUNC, 0);
+  add_integer_constant("FILE_EXCLUSIVE", FILE_EXCLUSIVE, 0);
+  add_integer_constant("FILE_NONBLOCKING", FILE_NONBLOCKING, 0);
+
+  /* enum FilePropertyFlags */
+  type_stack_mark();
+  push_int_type(0, 0xff);
+  push_type_value(pop_unfinished_type());
+  simple_add_constant("FilePropertyFlags", Pike_sp-1, 0);
+  pop_stack();
+
   add_integer_constant("PROP_IPC",fd_INTERPROCESSABLE,0);
   add_integer_constant("PROP_NONBLOCK",fd_CAN_NONBLOCK,0);
   add_integer_constant("PROP_SEND_FD",fd_SEND_FD,0);
