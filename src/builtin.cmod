@@ -2077,6 +2077,8 @@ PIKEFUN program function_program(program|function func)
   push_int(0);
 }
 
+/*! @class RandomInterface
+ */
 PIKECLASS RandomInterface
 {
   CVAR UINT64 int_buffer;
@@ -2088,6 +2090,12 @@ PIKECLASS RandomInterface
     THIS->buffer_bits = 0;
   }
 
+  /*! @decl string(8bit) random_string(int(0..))
+   *!
+   *! Prototype for the randomness generating function.
+   *!
+   *! Override this symbol to implement a useable class.
+   */
   PIKEFUN string(8bit) random_string(int(0..))
     prototype;
   {}
@@ -2236,6 +2244,8 @@ PIKECLASS RandomInterface
     apply_low(o, f, 2);
   }
 }
+/*! @endclass
+ */
 
 /**
  * Generates a random string of length len, using the current
@@ -2260,10 +2270,24 @@ static HCRYPTPROV crypto_handle;
 #else
 static int random_fd = -1;
 #endif
+/*! @class RandomSystem
+ */
 PIKECLASS RandomSystem
 {
+  /*! @decl inherit RandomInterface
+   */
   INHERIT RandomInterface;
 
+  /*! @decl string(8bit) random_string(int(0..) len)
+   *!
+   *! Return a string of random data from the system randomness pool.
+   *!
+   *! On POSIX platforms this reads random data from @tt{/dev/urandom@}
+   *! on other platforms it may use other methods.
+   *!
+   *! @throws
+   *!   May throw errors on unexpected state.
+   */
   PIKEFUN string(8bit) random_string(int(0..) len)
   {
     if( !len )
@@ -2315,6 +2339,8 @@ PIKECLASS RandomSystem
     RETURN end_shared_string(ret);
   }
 }
+/*! @endclass
+ */
 
 #if defined(HAVE_SETENV) && defined(HAVE_UNSETENV)
 #define USE_SETENV
