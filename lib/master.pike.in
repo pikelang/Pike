@@ -3315,24 +3315,6 @@ void _main(array(string(0..255)) orig_argv)
 	debug+=(int)q[i][1];
 	break;
 
-#if constant(_compiler_trace)
-      case "compiler_trace":
-	_compiler_trace(1);
-	break;
-#endif /* constant(_compiler_trace) */
-
-#if constant(_assembler_debug)
-      case "assembler_debug":
-	_assembler_debug((int)q[i][1]);
-	break;
-#endif /* constant(_assembler_debug) */
-
-#if constant(_optimizer_debug)
-      case "optimizer_debug":
-	_optimizer_debug((int)q[i][1]);
-	break;
-#endif /* constant(_optimizer_debug) */
-
       case "trace":
 	trace+=(int)q[i][1];
 	break;
@@ -3493,6 +3475,30 @@ void _main(array(string(0..255)) orig_argv)
 	main_resolv( "Gmp.bignum" );
 	write(cpp(master_read_file(opts[1]),opts[1]));
 	exit(0);
+
+      case "compiler_trace":
+	function(int:void) compiler_trace =
+	  main_resolv("Debug.compiler_trace");
+	if (compiler_trace) {
+	  compiler_trace(1);
+	}
+	break;
+
+      case "assembler_debug":
+	function(int:void) assembler_debug =
+	  main_resolv("Debug.assembler_debug");
+	if (assembler_debug) {
+	  assembler_debug((int)opts[1]);
+	}
+	break;
+
+      case "optimizer_debug":
+	function(int:void) optimizer_debug =
+	  main_resolv("Debug.optimizer_debug");
+	if (optimizer_debug) {
+	  optimizer_debug((int)opts[1]);
+	}
+	break;
       }
     }
 
