@@ -201,8 +201,12 @@ function composite(function ... f)
 //! @module Placeholder
 //!
 //! Placeholder arguments for Function.bind
+
+//! @ignore
 object Placeholder = class
 {
+//! @endignore
+
     class Base
     {
         constant _is_placeholder = true;
@@ -325,7 +329,9 @@ object Placeholder = class
             return _cache[name] = Arg(tmp);
         return ::`[](name);
     };
+//! @ignore
 }();
+//! @endignore
 
-
+//! @endmodule
 
