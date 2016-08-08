@@ -2094,7 +2094,7 @@ PIKECLASS RandomInterface
    *!
    *! Prototype for the randomness generating function.
    *!
-   *! Override this symbol to implement a useable class.
+   *! Override this symbol to implement a usable class.
    */
   PIKEFUN string(8bit) random_string(int(0..))
     prototype;
@@ -2177,6 +2177,9 @@ PIKECLASS RandomInterface
 
   /*! @decl mixed random(array|multiset x)
    *!   Returns a random element from @[x].
+   *!
+   *! @throws
+   *!   Throws an exception if the array or multiset is empty.
    */
 
   PIKEFUN mixed random(array a)
@@ -2198,6 +2201,16 @@ PIKECLASS RandomInterface
 
   /*! @decl array random(mapping m)
    *!   Returns a random index-value pair from the mapping.
+   *!
+   *! @array
+   *!   @elem mixed 0
+   *!     The index of the mapping entry.
+   *!   @elem mixed 1
+   *!     The value f  the mapping entry.
+   *! @endarray
+   *!
+   *! @throws
+   *!   Throws an exception if the mapping is empty.
    */
   PIKEFUN array random(mapping m)
   {
@@ -2226,6 +2239,9 @@ PIKECLASS RandomInterface
   /*! @decl mixed random(object o)
    *!   If random is called with an object, @[lfun::_random] will be
    *!   called in the object.
+   *!
+   *! @throws
+   *!   Throws an exception if the object doesn't have a _radnom method.
    *!
    *! @seealso
    *!  @[lfun::_random()]
