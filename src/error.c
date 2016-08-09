@@ -401,6 +401,14 @@ static int inhibit_errors = 0;
 PMOD_EXPORT void exit_on_error(const void *msg)
 {
   ONERROR tmp;
+
+  if (throw_severity > THROW_ERROR) {
+    /* THROW_THREAD_EXIT or THROW_EXIT or similar.
+     *
+     * Let it continue without complaining.
+     */
+    return;
+  }
   SET_ONERROR(tmp,fatal_on_error,"Fatal in exit_on_error!");
   d_flag=0;
   Pike_interpreter.trace_level = 0;
