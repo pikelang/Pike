@@ -2332,8 +2332,9 @@ void f_mutex_lock(INT32 args)
 #ifdef PICKY_MUTEX
   if (!Pike_fp->current_object->prog) {
     free_object (o);
-    if (!m->num_waiting)
+    if (!m->num_waiting) {
       co_destroy (&m->condition);
+    }
     Pike_error ("Mutex was destructed while waiting for lock.\n");
   }
 #endif
@@ -2497,8 +2498,9 @@ void exit_mutex_obj(struct object *UNUSED(o))
       co_broadcast (&m->condition);
     }
   }
-  else
+  else {
     co_destroy(& m->condition);
+  }
 #endif
 }
 
@@ -2585,8 +2587,9 @@ void exit_mutex_key_obj(struct object *DEBUGUSED(o))
     THIS_KEY->mutex_obj = NULL;
     if (mut->num_waiting)
       co_signal(&mut->condition);
-    else if (mutex_obj && !mutex_obj->prog)
+    else if (mutex_obj && !mutex_obj->prog) {
       co_destroy (&mut->condition);
+    }
     if (mutex_obj)
       free_object(mutex_obj);
   }
@@ -2720,6 +2723,10 @@ void f_cond_wait(INT32 args)
   c->wait_count--;
   SWAP_IN_CURRENT_THREAD();
     
+  if (!mutex_obj->prog) {
+    Pike_error("Mutex was destructed while waiting for cond.\n");
+  }
+
   /* Lock mutex */
   mut->num_waiting++;
   while(mut->key) {
@@ -2733,14 +2740,6 @@ void f_cond_wait(INT32 args)
   OB2KEY(key)->mutex_obj = mutex_obj;
   mut->num_waiting--;
 
-#ifdef PICKY_MUTEX
-  if (!mutex_obj->prog) {
-    if (!mut->num_waiting)
-      co_destroy (&mut->condition);
-    Pike_error ("Mutex was destructed while waiting for lock.\n");
-  }
-#endif
-      
   pop_stack();
   return;
 }
