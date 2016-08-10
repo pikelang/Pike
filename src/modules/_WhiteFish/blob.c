@@ -548,7 +548,7 @@ static void f_blob__cast( INT32 args )
 
   exit_blob_struct(); /* Clear this buffer */
   pop_n_elems( args );
-  push_string( make_shared_binary_string( res->data, res->size ) );
+  push_string( make_shared_binary_string( (char *)res->data, res->size ) );
   wf_buffer_free( res );
 }
 

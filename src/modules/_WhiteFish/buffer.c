@@ -188,7 +188,7 @@ void wf_buffer_set_pike_string( struct buffer *b,
     b->str = data;
     add_ref(data);
     b->size = data->len;
-    b->data = data->str;
+    b->data = STR0(data);
   }
   else
   {
@@ -205,7 +205,7 @@ struct buffer *wf_buffer_new( )
 }
 
 void wf_buffer_append( struct buffer *b,
-		       char *data,
+		       unsigned char *data,
 		       int size )
 {
   wf_buffer_make_space( b, size );

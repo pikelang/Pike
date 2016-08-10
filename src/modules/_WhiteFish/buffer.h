@@ -12,7 +12,7 @@ struct buffer
   unsigned int allocated_size;
   /* The actual allocated size */
 
-  char *data;
+  unsigned char *data;
 
   struct pike_string *str;
   /* Used when read_only==1, to save memory. Data points to str->str,
@@ -99,7 +99,7 @@ void wf_buffer_seek_w( struct buffer *b, unsigned int pos );
  * size of the buffer, the data segment created is zeroed.
  */
   
-void wf_buffer_append( struct buffer *b, char *data, int size );
+void wf_buffer_append( struct buffer *b, unsigned char *data, int size );
 /* Append the specified data to the buffer. 
  * read_only must be 0.
  */
