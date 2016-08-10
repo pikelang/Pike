@@ -1,0 +1,8 @@
+subject: Pike 7.8: SSL: More client certificate fixes.
+from: ed8f6dd0e7ca289701d5eb408694c21e0c95c12a
+to: 829935dcd2b118b685bd50bc6b4f83f7b4acde2a
+originator: grubba@grubba.org
+depends: 2016-08-10T110933
+restart: true
+
+SSL: More client certificate fixes.
