@@ -797,7 +797,10 @@ static void call_destroy(struct object *o, enum object_destruct_reason reason)
 	  UNSETJMP (jmp);
 	  move_svalue (&throw_value, &err);
 	}
-	call_handle_error();
+	if (!SETJMP(jmp)) {
+	  call_handle_error();
+	}
+	UNSETJMP(jmp);
       }
 
       else {
