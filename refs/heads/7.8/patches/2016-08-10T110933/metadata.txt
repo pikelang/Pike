@@ -1,17 +1,8 @@
-subject: Pike 7.8:   * Threads.Condition: Potential fix for double free.
+subject: Pike 7.8: Improved support for TLS client certificates.
 from: 37bf5331610c5f4df757deb96bd202110de4f2a6
 to: ed8f6dd0e7ca289701d5eb408694c21e0c95c12a
 originator: grubba@grubba.org
 depends: 2016-07-28T171731
 restart: true
 
-  * Threads.Condition: Potential fix for double free.
-    
-    In some circumstances there can appear mutex keys that lock
-    mutexes that have already been freed. One potential case
-    creating such mutexkeys is when the mutex has been destructed
-    while being used in a cond wait.
-    
-    Throw an error instead of locking the freed mutex in the above case.
-
-  * Make the Pike SSL code work with APNS push server which uses client certificates.
+Make the Pike SSL code work with APNS push server which uses client certificates.
