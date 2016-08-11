@@ -1325,16 +1325,16 @@ enum NamedGroup {
   GROUP_ecdh_x25519			= 29,	// Early assignment.
   GROUP_ecdh_x448			= 30,	// Early assignment.
 
-  GROUP_ffdhe2048			= 256,  // draft-ietf-tls-negotiated-ff-dhe-07
-  GROUP_ffdhe3072                       = 257,  // draft-ietf-tls-negotiated-ff-dhe-07
-  GROUP_ffdhe4096                       = 258,  // draft-ietf-tls-negotiated-ff-dhe-07
-  GROUP_ffdhe6144                       = 259,  // draft-ietf-tls-negotiated-ff-dhe-07
-  GROUP_ffdhe8192                       = 260,  // draft-ietf-tls-negotiated-ff-dhe-07
+  GROUP_ffdhe2048			= 256,	// RFC 7919
+  GROUP_ffdhe3072			= 257,	// RFC 7919
+  GROUP_ffdhe4096			= 258,	// RFC 7919
+  GROUP_ffdhe6144			= 259,	// RFC 7919
+  GROUP_ffdhe8192			= 260,	// RFC 7919
 
-  GROUP_ffdhe_private0			= 508,	// draft-ietf-tls-negotiated-ff-dhe-07
-  GROUP_ffdhe_private1			= 509,	// draft-ietf-tls-negotiated-ff-dhe-07
-  GROUP_ffdhe_private2			= 510,	// draft-ietf-tls-negotiated-ff-dhe-07
-  GROUP_ffdhe_private3			= 511,	// draft-ietf-tls-negotiated-ff-dhe-07
+  GROUP_ffdhe_private0			= 508,	// RFC 7919
+  GROUP_ffdhe_private1			= 509,	// RFC 7919
+  GROUP_ffdhe_private2			= 510,	// RFC 7919
+  GROUP_ffdhe_private3			= 511,	// RFC 7919
 
   GROUP_arbitrary_explicit_prime_curves	= 0xFF01,
   GROUP_arbitrary_explicit_char2_curves	= 0xFF02,
