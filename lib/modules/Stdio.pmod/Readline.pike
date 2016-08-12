@@ -813,7 +813,7 @@ class InputController
 class DefaultEditKeys
 {
   private multiset word_break_chars =
-    mkmultiset("\t \n\r/*?_-.[]~&;\!#$%^(){}<>\"'`"/"");
+    mkmultiset("\t \n\r/*?_-.[]~&;!#$%^(){}<>\"'`"/"");
   protected object _readline;
 
   //!
