@@ -1071,7 +1071,7 @@ int main(int argc, array(string) argv) {
   write("\n");
 
   // Read, parse and (if necessary) update the sourcefiles
-  object R = Regexp("(\.pike|\.pmod)$");
+  object R = Regexp("(pike|pmod)$");
   foreach(files, string filename)
     if(R->match(filename))
       update_pike_sourcefiles( ({ filename }) );
