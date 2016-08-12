@@ -327,7 +327,18 @@ int parse_esc_seq (WCHAR *buf, p_wchar2 *chr, ptrdiff_t *len)
 	    return longq ? 8 : 7;
 	}
       c = (p_wchar2)n;
+      break;
     }
+  case '\\': case '\'': case '\"':
+    break;
+  default:
+    /* Warn about this as it is commonly due to broken escaping,
+     * and to be forward compatible with adding future new escapes.
+     */
+    if (Pike_compiler->compiler_pass == 1) {
+      yywarning("Redundant backslash-escape: \'\\%c\'.", c);
+    }
+    break;
   }
 
   *len = l;
