@@ -135,7 +135,7 @@ PMOD_EXPORT UINT64 low_hashmem_siphash24_uint16( const unsigned INT16 *in, size_
   const unsigned int mod = (sizeof( UINT64 )/sizeof(unsigned INT16));
   const int left = len % mod;
   const unsigned INT16 *end = in + len - left;
-  b = ( ( UINT64 )len ) << 56;
+  b = ( ( UINT64 )len ) << 57;
   v3 ^= k1;
   v2 ^= k0;
   v1 ^= k1;
@@ -193,7 +193,7 @@ PMOD_EXPORT UINT64 low_hashmem_siphash24_uint32( const unsigned INT32 *in, size_
   const unsigned int mod = (sizeof( UINT64 )/sizeof(unsigned INT32));
   const int left = len % mod;
   const unsigned INT32 *end = in + len - left;
-  b = ( ( UINT64 )len ) << 56;
+  b = ( ( UINT64 )len ) << 58;
   v3 ^= k1;
   v2 ^= k0;
   v1 ^= k1;
