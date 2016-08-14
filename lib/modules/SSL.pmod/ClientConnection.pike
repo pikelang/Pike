@@ -626,13 +626,27 @@ protected int(-1..1) got_new_session_ticket(Buffer input)
   return 0;
 }
 
-//! Do handshake processing. Type is one of HANDSHAKE_*, data is the
-//! contents of the packet, and raw is the raw packet received (needed
-//! for supporting SSLv2 hello messages).
+//! Do handshake processing.
 //!
-//! This function returns 0 if handshake is in progress, 1 if handshake
-//! is finished, and -1 if a fatal error occurred. It uses the
-//! send_packet() function to transmit packets.
+//! @param type
+//!   One of HANDSHAKE_*.
+//! @param input
+//!   The contents of the packet.
+//! @param raw
+//!   The raw packet received (needed for supporting SSLv2 hello messages).
+//!
+//! @returns
+//!   This function returns:
+//!   @int
+//!     @value 0
+//!       If handshaking is in progress.
+//!     @value 1
+//!       If handshaking has completed.
+//!     @value -1
+//!       If a fatal error occurred.
+//!   @endint
+//!
+//!   It uses the @[send_packet()] function to transmit packets.
 int(-1..1) handle_handshake(int type, Buffer input, Stdio.Buffer raw)
 {
 #ifdef SSL3_PROFILING
