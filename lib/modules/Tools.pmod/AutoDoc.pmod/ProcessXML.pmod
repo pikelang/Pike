@@ -973,11 +973,15 @@ protected class ScopeStack {
     if (type == "namespace") {
       namespaceStack += ({ ({ namespace, scopes[name] }) });
       scopes[namespace = name] = ({ Scope(type, name+"::") });
-      if (name = ([ "7.8":"7.7",
-		    "7.6":"7.5",
-		    "7.4":"7.3",
-		    "7.2":"7.1",
-		    "7.0":"0.7" ])[name]) {
+      if (name = ([
+	    "predef":"8.1",
+	    "8.0":"7.9",
+	    "7.8":"7.7",
+	    "7.6":"7.5",
+	    "7.4":"7.3",
+	    "7.2":"7.1",
+	    "7.0":"0.7",
+	  ])[name]) {
 	// Add an alias for development version.
 	scopes[name] = scopes[namespace];
       }
@@ -1663,7 +1667,8 @@ class NScopeStack
 	  "7.3":"7.4",
 	  "7.5":"7.6",
 	  "7.7":"7.8",
-	  "7.9":"predef",
+	  "7.9":"8.0",
+	  "8.1":"predef",
 	])[inh] || inh;
 	while(pos) {
 	  string|NScope scope;
