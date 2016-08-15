@@ -154,6 +154,7 @@ struct object;
 #define PIKE_BYTECODE_AMD64    5
 #define PIKE_BYTECODE_PPC64    6
 #define PIKE_BYTECODE_ARM32    7
+#define PIKE_BYTECODE_ARM64    8
 
 #ifndef PIKE_BYTECODE_METHOD
 #error PIKE_BYTECODE_METHOD not set.
@@ -173,6 +174,8 @@ struct object;
 #define PIKE_OPCODE_T void *
 #define PIKE_INSTR_T void *
 #elif PIKE_BYTECODE_METHOD == PIKE_BYTECODE_ARM32
+#define PIKE_OPCODE_T unsigned INT32
+#elif PIKE_BYTECODE_METHOD == PIKE_BYTECODE_ARM64
 #define PIKE_OPCODE_T unsigned INT32
 #else
 #define PIKE_OPCODE_T unsigned INT8
