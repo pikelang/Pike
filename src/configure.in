@@ -5357,6 +5357,17 @@ if test "$with_machine_code" = "no"; then :; else
     ], [], [
       pike_cv_machine_code_arch=arm32
     ], [])
+    AC_TRY_COMPILE([
+#if defined(__GNUC__)
+#if !defined(__aarch64__)
+#error Not arm64 architecture
+#endif
+#else
+#error Unsupported compiler
+#endif
+    ], [], [
+      pike_cv_machine_code_arch=arm64
+    ], [])
   ])
   AC_MSG_RESULT($pike_cv_machine_code_arch)
   if test "x$pike_cv_machine_code_arch" = xunknown ; then
