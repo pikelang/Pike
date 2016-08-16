@@ -1042,6 +1042,8 @@ MACRO void arm64_call(void *ptr) {
     ra_free(tmp);
 }
 
+MACRO void arm64_ins_branch_check_threads_etc(int a) {
+}
 
 void arm64_flush_instruction_cache(void *addr, size_t len) {
     __builtin___clear_cache(addr, (char*)addr+len);
@@ -1426,7 +1428,7 @@ MACRO void arm64_debug_instr_prologue_2(PIKE_INSTR_T instr, INT32 arg1, INT32 ar
 #define arm64_debug_instr_prologue_0(a) do { } while(0)
 #endif
 
-static void low_ins_f_byte(PIKE_OPCODE_T opcode)
+static void low_ins_f_byte(unsigned int opcode)
 {
   int flags;
   INT32 rel_addr = rel_addr;
@@ -1532,7 +1534,7 @@ void ins_f_byte(unsigned int opcode)
   low_ins_f_byte(opcode);
 }
 
-void ins_f_byte_with_arg(PIKE_OPCODE_T opcode, INT32 arg1)
+void ins_f_byte_with_arg(unsigned int opcode, INT32 arg1)
 {
   struct label done;
   label_init(&done);
@@ -1690,7 +1692,7 @@ void ins_f_byte_with_arg(PIKE_OPCODE_T opcode, INT32 arg1)
   return;
 }
 
-void ins_f_byte_with_2_args(PIKE_OPCODE_T opcode, INT32 arg1, INT32 arg2)
+void ins_f_byte_with_2_args(unsigned int opcode, INT32 arg1, INT32 arg2)
 {
   record_opcode(opcode);
   switch (opcode) {
@@ -1761,4 +1763,120 @@ void ins_f_byte_with_2_args(PIKE_OPCODE_T opcode, INT32 arg1, INT32 arg2)
   ra_free(ARM_REG_R0);
   ra_free(ARM_REG_R1);
   return;
+}
+
+int arm64_ins_f_jump(unsigned int opcode, int backward_jump) {
+    INT32 ret;
+
+    switch (opcode) {
+    case F_QUICK_BRANCH_WHEN_ZERO:
+    case F_QUICK_BRANCH_WHEN_NON_ZERO:
+        {
+            enum arm64_register tmp = ra_alloc_any();
+            arm64_change_sp(-1);
+            load64_reg_imm(tmp, ARM_REG_PIKE_SP, 8);
+            cmp_reg_imm(tmp, 0, 0);
+            ret = PIKE_PC;
+            if (opcode == F_QUICK_BRANCH_WHEN_ZERO)
+                b_imm_cond(0, ARM_COND_Z);
+            else
+                b_imm_cond(0, ARM_COND_NZ);
+            ra_free(tmp);
+            return ret;
+        }
+    case F_BRANCH:
+        ret = PIKE_PC;
+        b_imm(0);
+        return ret;
+
+    case F_BRANCH_WHEN_NE:
+    case F_BRANCH_WHEN_EQ:
+    case F_BRANCH_WHEN_LT:
+    case F_BRANCH_WHEN_LE:
+    case F_BRANCH_WHEN_GT:
+    case F_BRANCH_WHEN_GE:
+        {
+            ra_alloc(ARM_REG_R0);
+            ra_alloc(ARM_REG_R1);
+
+            arm64_load_sp_reg();
+
+            arm64_sub64_reg_int(ARM_REG_R0, ARM_REG_PIKE_SP, 2*sizeof(struct svalue));
+            arm64_sub64_reg_int(ARM_REG_R1, ARM_REG_PIKE_SP, 1*sizeof(struct svalue));
+
+            switch (opcode) {
+            case F_BRANCH_WHEN_NE:
+                arm64_call(is_eq);
+                cmp_reg_imm(ARM_REG_R0, 0, 0);
+                break;
+            case F_BRANCH_WHEN_EQ:
+                arm64_call(is_eq);
+                cmp_reg_imm(ARM_REG_R0, 1, 0);
+                break;
+            case F_BRANCH_WHEN_LT:
+                arm64_call(is_lt);
+                cmp_reg_imm(ARM_REG_R0, 1, 0);
+                break;
+            case F_BRANCH_WHEN_LE:
+                arm64_call(is_le);
+                cmp_reg_imm(ARM_REG_R0, 1, 0);
+                break;
+            case F_BRANCH_WHEN_GT:
+                arm64_call(is_le);
+                cmp_reg_imm(ARM_REG_R0, 0, 0);
+                break;
+            case F_BRANCH_WHEN_GE:
+                arm64_call(is_lt);
+                cmp_reg_imm(ARM_REG_R0, 0, 0);
+                break;
+            }
+
+            ret = PIKE_PC;
+            b_imm_cond(0, ARM_COND_EQ);
+
+            ra_free(ARM_REG_R0);
+            ra_free(ARM_REG_R1);
+            return ret;
+        }
+    }
+    return -1;
+}
+int arm64_ins_f_jump_with_arg(unsigned int opcode, INT32 arg1, int backward_jump) {
+    return -1;
+}
+int arm64_ins_f_jump_with_2_args(unsigned int opcode, INT32 arg1, INT32 arg2, int backward_jump) {
+    return -1;
+}
+void arm64_update_f_jump(INT32 offset, INT32 to_offset) {
+    PIKE_OPCODE_T instr = read_pointer(offset);
+
+    to_offset -= offset;
+    if (!(instr & 0x60000000)) {
+      /* Unconditional branch: 26 bit offset */
+      assert((instr & 0x7c000000) == ARM_INSTR_UNCOND_BRANCH_IMM);
+      instr &= ~0x03ffffff;
+      assert (to_offset >= -0x02000000 && to_offset < 0x02000000);
+      instr |= to_offset & 0x03ffffff;
+    } else {
+      /* Conditional branch: 19 bit offset */
+      assert((instr & 0xff000010) == ARM_INSTR_COND_BRANCH_IMM);
+      instr &= ~0x00ffffe0;
+      assert (to_offset >= -0x00040000 && to_offset < 0x00040000);
+      instr |= (to_offset & 0x0007ffff) << 5;
+    }
+
+    upd_pointer(offset, instr);
+}
+int arm64_read_f_jump(INT32 offset) {
+    PIKE_OPCODE_T instr = read_pointer(offset);
+
+    if (!(instr & 0x60000000)) {
+      /* Unconditional branch: 26 bit offset */
+      assert((instr & 0x7c000000) == ARM_INSTR_UNCOND_BRANCH_IMM);
+      return (((INT32)(instr << 6)) >> 6) + offset;
+    } else {
+      /* Conditional branch: 19 bit offset */
+      assert((instr & 0xff000010) == ARM_INSTR_COND_BRANCH_IMM);
+      return (((INT32)(instr << 8)) >> 13) + offset;
+    }
 }
