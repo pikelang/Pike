@@ -1765,8 +1765,41 @@ void ins_f_byte_with_2_args(unsigned int opcode, INT32 arg1, INT32 arg2)
   return;
 }
 
+int arm64_low_ins_f_jump(unsigned int opcode, int backward_jump) {
+    INT32 ret;
+
+    arm64_maybe_update_pc();
+
+    arm64_call_c_opcode(opcode);
+
+    /* Do we need to reload the stack pointer? */
+    arm64_load_sp_reg();
+
+    cmp_reg_imm(ARM_REG_R0, 0, 0);
+
+    if (backward_jump) {
+        struct label skip;
+        label_init(&skip);
+
+        b_imm_cond(label_dist(&skip), ARM_COND_EQ);
+
+        ret = PIKE_PC;
+        b_imm(0);
+
+        label_generate(&skip);
+    } else {
+        ret = PIKE_PC;
+        b_imm_cond(0, ARM_COND_NE);
+    }
+
+    return ret;
+}
+
 int arm64_ins_f_jump(unsigned int opcode, int backward_jump) {
     INT32 ret;
+
+    if (!(instrs[opcode - F_OFFSET].flags & I_BRANCH))
+        return -1;
 
     switch (opcode) {
     case F_QUICK_BRANCH_WHEN_ZERO:
@@ -1839,14 +1872,42 @@ int arm64_ins_f_jump(unsigned int opcode, int backward_jump) {
             return ret;
         }
     }
-    return -1;
+
+    return arm64_low_ins_f_jump(opcode, backward_jump);
 }
+
 int arm64_ins_f_jump_with_arg(unsigned int opcode, INT32 arg1, int backward_jump) {
-    return -1;
+    int instr;
+
+    if (!(instrs[opcode - F_OFFSET].flags & I_BRANCH))
+        return -1;
+
+    arm64_mov_int(ra_alloc(ARM_REG_R0), (INT64)arg1);
+
+    instr = arm64_low_ins_f_jump(opcode, backward_jump);
+
+    ra_free(ARM_REG_R0);
+
+    return instr;
 }
+
 int arm64_ins_f_jump_with_2_args(unsigned int opcode, INT32 arg1, INT32 arg2, int backward_jump) {
-    return -1;
+    int instr;
+
+    if (!(instrs[opcode - F_OFFSET].flags & I_BRANCH))
+        return -1;
+
+    arm64_mov_int(ra_alloc(ARM_REG_R0), (INT64)arg1);
+    arm64_mov_int(ra_alloc(ARM_REG_R1), (INT64)arg2);
+
+    instr = arm64_low_ins_f_jump(opcode, backward_jump);
+
+    ra_free(ARM_REG_R0);
+    ra_free(ARM_REG_R1);
+
+    return instr;
 }
+
 void arm64_update_f_jump(INT32 offset, INT32 to_offset) {
     PIKE_OPCODE_T instr = read_pointer(offset);
 
@@ -1867,6 +1928,7 @@ void arm64_update_f_jump(INT32 offset, INT32 to_offset) {
 
     upd_pointer(offset, instr);
 }
+
 int arm64_read_f_jump(INT32 offset) {
     PIKE_OPCODE_T instr = read_pointer(offset);
 

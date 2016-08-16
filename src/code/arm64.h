@@ -7,6 +7,7 @@
 #define PIKE_OPCODE_ALIGN	4
 #define OPCODE_RETURN_JUMPADDR
 #define OPCODE_INLINE_RETURN
+#define OPCODE_INLINE_BRANCH
 
 /* FIXME: wtf? */
 #define PROG_COUNTER ((PIKE_OPCODE_T *)__builtin_return_address(0))
