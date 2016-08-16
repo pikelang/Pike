@@ -665,13 +665,13 @@ enum CipherSuite {
   TLS_ecdhe_ecdsa_with_oldchacha20_poly1305_sha256 = 0xcc14,// draft-agl-tls-chacha20poly1305-02
   TLS_dhe_rsa_with_oldchacha20_poly1305_sha256	= 0xcc15,  // draft-agl-tls-chacha20poly1305-02
 
-  TLS_ecdhe_rsa_with_chacha20_poly1305_sha256	= 0xcca8,  // draft-ietf-tls-chacha20-poly1305
-  TLS_ecdhe_ecdsa_with_chacha20_poly1305_sha256	= 0xcca9,  // draft-ietf-tls-chacha20-poly1305
-  TLS_dhe_rsa_with_chacha20_poly1305_sha256	= 0xccaa,  // draft-ietf-tls-chacha20-poly1305
-  TLS_psk_with_chacha20_poly1305_sha256		= 0xccab,  // draft-ietf-tls-chacha20-poly1305
-  TLS_ecdhe_psk_with_chacha20_poly1305_sha256	= 0xccac,  // draft-ietf-tls-chacha20-poly1305
-  TLS_dhe_psk_with_chacha20_poly1305_sha256	= 0xccad,  // draft-ietf-tls-chacha20-poly1305
-  TLS_rsa_psk_with_chacha20_poly1305_sha256	= 0xccae,  // draft-ietf-tls-chacha20-poly1305
+  TLS_ecdhe_rsa_with_chacha20_poly1305_sha256	= 0xcca8,	// RFC 7905
+  TLS_ecdhe_ecdsa_with_chacha20_poly1305_sha256	= 0xcca9,	// RFC 7905
+  TLS_dhe_rsa_with_chacha20_poly1305_sha256	= 0xccaa,	// RFC 7905
+  TLS_psk_with_chacha20_poly1305_sha256		= 0xccab,	// RFC 7905
+  TLS_ecdhe_psk_with_chacha20_poly1305_sha256	= 0xccac,	// RFC 7905
+  TLS_dhe_psk_with_chacha20_poly1305_sha256	= 0xccad,	// RFC 7905
+  TLS_rsa_psk_with_chacha20_poly1305_sha256	= 0xccae,	// RFC 7905
 
 // These were introduced by Netscape while developing SSL 3.1 after
 // feedback from NIST. Eventually the feedback led to TLS 1.0.
