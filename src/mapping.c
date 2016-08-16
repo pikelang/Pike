@@ -239,7 +239,7 @@ static void init_mapping(struct mapping *m,
 #endif
 }
 
-static struct mapping *allocate_mapping_no_init(int size)
+static struct mapping *allocate_mapping_no_init(void)
 {
   struct mapping *m=alloc_mapping();
   GC_ALLOC(m);
@@ -259,7 +259,7 @@ static struct mapping *allocate_mapping_no_init(int size)
  */
 PMOD_EXPORT struct mapping *debug_allocate_mapping(int size)
 {
-  struct mapping *m = allocate_mapping_no_init(size);
+  struct mapping *m = allocate_mapping_no_init();
   init_mapping(m,size,0);
   return m;
 }
@@ -1555,7 +1555,7 @@ PMOD_EXPORT struct mapping *copy_mapping(struct mapping *m)
     Pike_fatal("Zero refs in mapping->data\n");
 #endif
 
-  n=allocate_mapping_no_init(0);
+  n=allocate_mapping_no_init();
   n->data=m->data;
 #ifdef MAPPING_SIZE_DEBUG
   n->debug_size=n->data->size;
