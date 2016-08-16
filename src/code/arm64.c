@@ -395,6 +395,14 @@ MACRO void blr_reg(enum arm64_register to) {
     add_to_program(gen_blr_reg(to));
 }
 
+OPCODE_FUN gen_ret_reg(enum arm64_register to) {
+    return gen_br_reg(to) | (1<<22);
+}
+
+MACRO void ret_reg(enum arm64_register to) {
+    add_to_program(gen_ret_reg(to));
+}
+
 OPCODE_FUN gen_b_imm(INT32 dist) {
     unsigned INT32 instr = ARM_INSTR_UNCOND_BRANCH_IMM;
 
@@ -1030,7 +1038,7 @@ MACRO void arm64_prologue(void) {
 #define EPILOGUE_SIZE 4
 MACRO void arm64_epilogue(void) {
     add_pop();
-    br_reg(ARM_REG_LR);
+    ret_reg(ARM_REG_LR);
 }
 
 MACRO void arm64_call(void *ptr) {
