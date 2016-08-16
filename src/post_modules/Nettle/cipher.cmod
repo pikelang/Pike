@@ -1906,6 +1906,8 @@ PIKECLASS BlockCipher
 	struct pike_string *iv = THIS->iv;
 	int block_size = THIS->block_size;
 
+        if (!data->len) return;
+
 	NO_WIDE_STRING(data);
 
 	if(data->len % block_size)
