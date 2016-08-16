@@ -603,6 +603,38 @@ MACRO void load64_reg_imm(enum arm64_register dst, enum arm64_register base, INT
     add_to_program(gen_load_reg_imm(dst, base, offset, 1));
 }
 
+OPCODE_FUN gen_store_reg_reg(enum arm64_register dst, enum arm64_register base, enum arm64_register index, int s, int sf) {
+    unsigned INT32 instr = ARM_INSTR_LOADSTORE_SINGLE | (sf << 30);
+    instr |= 1<<21;
+    instr |= 1<<11;
+    instr |= 3<<13; /* LSL */
+    instr |= s<<12;
+    instr = set_rt_reg(instr, dst);
+    instr = set_rn_reg(instr, base);
+    instr = set_rm_reg(instr, index);
+    return instr;
+}
+
+MACRO void store32_reg_reg(enum arm64_register dst, enum arm64_register base, enum arm64_register index, int s) {
+    add_to_program(gen_store_reg_reg(dst, base, index, s, 0));
+}
+
+MACRO void store64_reg_reg(enum arm64_register dst, enum arm64_register base, enum arm64_register index, int s) {
+    add_to_program(gen_store_reg_reg(dst, base, index, s, 1));
+}
+
+OPCODE_FUN gen_load_reg_reg(enum arm64_register dst, enum arm64_register base, enum arm64_register index, int s, int sf) {
+    return gen_store_reg_reg(dst, base, index, s, sf) | (1<<22);
+}
+
+MACRO void load32_reg_reg(enum arm64_register dst, enum arm64_register base, enum arm64_register index, int s) {
+    add_to_program(gen_load_reg_reg(dst, base, index, s, 0));
+}
+
+MACRO void load64_reg_reg(enum arm64_register dst, enum arm64_register base, enum arm64_register index, int s) {
+    add_to_program(gen_load_reg_reg(dst, base, index, s, 1));
+}
+
 #define GEN_ARITH_OP(name, NAME)                                                                         \
 OPCODE_FUN gen_ ## name ## _reg_imm(enum arm64_register dst, enum arm64_register reg,                    \
                                     unsigned short imm, unsigned char shift) {                           \
@@ -1599,7 +1631,12 @@ void ins_f_byte_with_arg(PIKE_OPCODE_T opcode, INT32 arg1)
           load64_reg_imm(vreg, ARM_REG_PIKE_FP, OFFSETOF(pike_frame, context));
           load64_reg_imm(vreg, vreg, OFFSETOF(inherit, prog));
           load64_reg_imm(vreg, vreg, OFFSETOF(program, strings));
-	  load64_reg_imm(vreg, vreg, arg1*sizeof(struct pike_string*));
+	  if (arg1 < 4096)
+	      load64_reg_imm(vreg, vreg, arg1*sizeof(struct pike_string*));
+	  else {
+	      arm64_mov_int(treg, arg1*(sizeof(struct pike_string*)/sizeof(INT64)));
+	      load64_reg_reg(vreg, vreg, treg, 1);
+	  }
 
           arm64_mov_int(treg, TYPE_SUBTYPE(PIKE_T_STRING, 0));
 
