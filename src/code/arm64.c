@@ -1665,6 +1665,7 @@ void ins_f_byte_with_arg(unsigned int opcode, INT32 arg1)
           return;
       }
   case F_ASSIGN_LOCAL_AND_POP:
+  case F_ASSIGN_LOCAL:
       {
           enum arm64_register tmp;
           arm64_debug_instr_prologue_1(opcode, arg1);
@@ -1677,8 +1678,14 @@ void ins_f_byte_with_arg(unsigned int opcode, INT32 arg1)
 
           arm64_load_sp_reg();
           arm64_sub64_reg_int(ARM_REG_PIKE_SP, ARM_REG_PIKE_SP, sizeof(struct svalue));
-          arm64_store_sp_reg();
-          arm64_move_svaluep_nofree(tmp, ARM_REG_PIKE_SP);
+
+          if (opcode == F_ASSIGN_LOCAL_AND_POP) {
+              arm64_store_sp_reg();
+              arm64_move_svaluep_nofree(tmp, ARM_REG_PIKE_SP);
+          } else {
+              arm64_assign_svaluep_nofree(tmp, ARM_REG_PIKE_SP);
+              arm64_add64_reg_int(ARM_REG_PIKE_SP, ARM_REG_PIKE_SP, sizeof(struct svalue));
+          }
 
           ra_free(tmp);
           return;
