@@ -1347,14 +1347,14 @@ MACRO void arm64_free_svalue_off(enum arm64_register src, int off, int guarantee
     b_imm_cond(label_dist(&end), ARM_COND_NZ);
 
     if (off > 0) {
-        add64_reg_imm(reg, src, off, 0);
+        arm64_add64_reg_int(reg, src, off);
     } else if (off < 0 ) {
-        sub64_reg_imm(reg, src, -off, 0);
+        arm64_sub64_reg_int(reg, src, -off);
     } else {
         mov_reg(reg, src);
     }
 
-    arm64_call_c_function(really_free_svalue);
+    arm64_call(really_free_svalue);
 
     label_generate(&end);
     ra_free(reg);
