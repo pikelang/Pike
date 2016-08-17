@@ -1411,9 +1411,14 @@ void arm64_ins_entry(void) {
 }
 
 static void arm64_ins_maybe_exit(void) {
-    arm64_mov_int(ARM_REG_R1, -1);
-    arm64_rel_cond_jmp(ARM_REG_R0, ARM_REG_R1, ARM_COND_NE, EPILOGUE_SIZE+1);
+    struct label noreturn;
+
+    label_init(&noreturn);
+
+    adds64_reg_imm(ARM_REG_ZERO, ARM_REG_R0, 1, 0);
+    b_imm_cond(label_dist(&noreturn), ARM_COND_NZ);
     arm64_epilogue();
+    label_generate(&noreturn);
 }
 
 MACRO void arm64_maybe_update_pc() {
