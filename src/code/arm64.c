@@ -138,8 +138,10 @@ ARM_INSTR_ARITH_IMM = 0x11000000,
 ARM_INSTR_LOGIC_IMM = 0x12000000,
 ARM_INSTR_MOVE_WIDE = 0x12800000,
 ARM_INSTR_UNCOND_BRANCH_IMM = 0x14000000,
+ARM_INSTR_COND_SELECT       = 0x1a800000,
 ARM_INSTR_SHIFT_REG         = 0x1ac02000,
 ARM_INSTR_LOADSTORE_PAIR    = 0x28000000,
+ARM_INSTR_COND_COMPARE      = 0x3a400000,
 ARM_INSTR_COND_BRANCH_IMM   = 0x54000000,
 ARM_INSTR_LOADSTORE_SINGLE  = 0xb8000000,
 ARM_INSTR_UNCOND_BRANCH_REG = 0xd6000000,
@@ -482,6 +484,31 @@ MACRO void cmp_reg_reg(enum arm64_register a, enum arm64_register b) {
     add_to_program(set_64bit(gen_cmp_reg_reg(a, b)));
 }
 
+OPCODE_FUN gen_ccmp_reg_reg(enum arm64_register a, enum arm64_register b,
+			    enum arm64_condition cond, unsigned char nzcv)
+{
+    unsigned INT32 instr = ARM_INSTR_COND_COMPARE;
+    instr |= 1<<30; /* CCMP */
+    instr = set_rn_reg(instr, a);
+    instr = set_rm_reg(instr, b);
+    instr |= cond << 12;
+    instr |= nzcv;
+    return instr;
+}
+
+OPCODE_FUN gen_csinc(enum arm64_register dst, enum arm64_register a, enum arm64_register b,
+		     enum arm64_condition cond)
+{
+    unsigned INT32 instr = ARM_INSTR_COND_SELECT;
+    instr |= 1<<10; /* CSINC */
+    instr = set_rt_reg(instr, dst);
+    instr = set_rn_reg(instr, a);
+    instr = set_rm_reg(instr, b);
+    instr |= cond << 12;
+    return instr;
+}
+
+
 /* returns 1 if v can be represented as a shifted imm, with imm and shift set */
 MACRO int arm64_make_arith_imm(unsigned INT64 v, unsigned short *imm, unsigned char *shift) {
     if (!(v & ~0xfff)) {
@@ -586,8 +613,8 @@ OPCODE_FUN gen_shift_reg_reg(enum arm64_shift_mode mode, enum arm64_register dst
     return instr;
 }
 
-MACRO void cmp_reg_imm(enum arm64_register a, unsigned char imm, unsigned char rot) {
-    add_to_program(set_64bit(gen_cmp_reg_imm(a, imm, rot)));
+MACRO void cmp_reg_imm(enum arm64_register a, unsigned short imm, unsigned char shift) {
+    add_to_program(set_64bit(gen_cmp_reg_imm(a, imm, shift)));
 }
 
 OPCODE_FUN gen_store_reg_imm(enum arm64_register dst, enum arm64_register base, INT32 offset, int sf) {
@@ -1301,6 +1328,58 @@ MACRO void arm64_push_svaluep_off(enum arm64_register src, INT32 offset) {
     ra_free(tmp2);
 }
 
+/* the returned condition will be true if both types are type_subtype */
+MACRO enum arm64_condition arm64_eq_types(enum arm64_register type1, enum arm64_register type2,
+                                          unsigned INT32 type_subtype) {
+    unsigned short imm;
+    unsigned char shift;
+    int ok = arm64_make_arith_imm(type_subtype, &imm, &shift);
+
+    assert(ok);
+
+    add_to_program(gen_cmp_reg_imm(type1, imm, shift));
+    add_to_program(gen_ccmp_reg_reg(type1, type2, ARM_COND_EQ, 0));
+
+    return ARM_COND_EQ;
+}
+
+/* the returned condition will be true if unless both types are type_subtype */
+MACRO enum arm64_condition arm64_ne_types(enum arm64_register type1, enum arm64_register type2,
+                                          unsigned INT32 type_subtype) {
+    unsigned short imm;
+    unsigned char shift;
+    int ok = arm64_make_arith_imm(type_subtype, &imm, &shift);
+
+    assert(ok);
+
+    add_to_program(gen_cmp_reg_imm(type1, imm, shift));
+    add_to_program(gen_ccmp_reg_reg(type1, type2, ARM_COND_EQ, 0));
+
+    return ARM_COND_NE;
+}
+
+MACRO void arm64_jump_real_cmp(struct label *l, enum arm64_register type1, enum arm64_register type2) {
+    unsigned INT32 mask = BIT_INT|BIT_STRING|BIT_PROGRAM|BIT_MAPPING|BIT_ARRAY|BIT_MULTISET|BIT_TYPE;
+    enum arm64_register reg = ra_alloc_any(),
+                        one = ra_alloc_any(),
+                        mask_reg = ra_alloc_any();
+
+    arm64_mov_int(reg, mask);
+    arm64_mov_int(one, 1);
+
+    lsl32_reg_reg(mask_reg, one, type1);
+    ands32_reg_reg(mask_reg, reg, mask_reg);
+    b_imm_cond(label_dist(l), ARM_COND_Z);
+
+    lsl32_reg_reg(mask_reg, one, type2);
+    ands32_reg_reg(mask_reg, reg, mask_reg);
+    b_imm_cond(label_dist(l), ARM_COND_Z);
+
+    ra_free(reg);
+    ra_free(one);
+    ra_free(mask_reg);
+}
+
 void arm64_flush_codegen_state(void) {
     //fprintf(stderr, "flushing codegen state.\n");
     compiler_state.flags = 0;
@@ -1595,38 +1674,106 @@ static void low_ins_f_byte(unsigned int opcode)
   case F_LT:
   case F_LE:
       {
-          enum arm64_register reg;
+          struct label real_cmp, real_pop, end;
+          enum arm64_register reg, type1, type2, tmp;
+          enum arm64_condition cond;
           int (*cmp)(const struct svalue *a, const struct svalue *b);
           int swap = 0, negate = 0;
 
+          label_init(&real_cmp);
+          label_init(&real_pop);
+          label_init(&end);
+
+          type1 = ra_alloc_any();
+          type2 = ra_alloc_any();
+
+          arm64_load_sp_reg();
+
+          load32_reg_imm(type1, ARM_REG_PIKE_SP, -2*(INT32)sizeof(struct svalue));
+          load32_reg_imm(type2, ARM_REG_PIKE_SP, -1*(INT32)sizeof(struct svalue));
+
           switch (opcode) {
+          case F_NE:
+              negate = 1;
+              /* FALL THROUGH */
           case F_EQ:
               cmp = is_eq;
-              break;
-          case F_NE:
-              cmp = is_eq;
-              negate = 1;
+
+              arm64_jump_real_cmp(&real_cmp, type1, type2);
+
+              reg = ra_alloc_persistent();
+              tmp = ra_alloc_any();
+
+              load64_reg_imm(tmp, ARM_REG_PIKE_SP, -2*(INT32)sizeof(struct svalue)+(INT32)OFFSETOF(svalue, u));
+              load64_reg_imm(reg, ARM_REG_PIKE_SP, -1*(INT32)sizeof(struct svalue)+(INT32)OFFSETOF(svalue, u));
+
+              /* TODO: make those shorter */
+	      cmp_reg_reg(reg, tmp);
+              if (opcode == F_EQ) {
+		  add_to_program(set_64bit(gen_csinc(reg, ARM_REG_ZERO, ARM_REG_ZERO, ARM_COND_NE)));
+              } else {
+                  add_to_program(set_64bit(gen_csinc(reg, ARM_REG_ZERO, ARM_REG_ZERO, ARM_COND_EQ)));
+              }
+
+              /* jump to real pop, if not both integers */
+              cond = arm64_ne_types(type1, type2, TYPE_SUBTYPE(PIKE_T_INT, NUMBER_NUMBER));
+              b_imm_cond(label_dist(&real_pop), cond);
+
               break;
           case F_GT:
-              cmp = is_lt;
-              swap = 1;
-              break;
           case F_GE:
-              cmp = is_le;
-              swap = 1;
-              break;
-          case F_LT:
-              cmp = is_lt;
-              break;
           case F_LE:
-              cmp = is_le;
+          case F_LT:
+              cond = arm64_ne_types(type1, type2, TYPE_SUBTYPE(PIKE_T_INT, NUMBER_NUMBER));
+              b_imm_cond(label_dist(&real_cmp), cond);
+
+              reg = ra_alloc_persistent();
+              tmp = ra_alloc_any();
+
+              load64_reg_imm(tmp, ARM_REG_PIKE_SP, -2*(INT32)sizeof(struct svalue)+(INT32)OFFSETOF(svalue, u));
+              load64_reg_imm(reg, ARM_REG_PIKE_SP, -1*(INT32)sizeof(struct svalue)+(INT32)OFFSETOF(svalue, u));
+
+              cmp_reg_reg(tmp, reg);
+
+              switch (opcode) {
+              case F_GT:
+                  swap = 1;
+                  cmp = is_lt;
+                  add_to_program(set_64bit(gen_csinc(reg, ARM_REG_ZERO, ARM_REG_ZERO, ARM_COND_LE)));
+                  break;
+              case F_GE:
+                  cmp = is_le;
+                  swap = 1;
+                  add_to_program(set_64bit(gen_csinc(reg, ARM_REG_ZERO, ARM_REG_ZERO, ARM_COND_LT)));
+                  break;
+              case F_LT:
+                  cmp = is_lt;
+                  add_to_program(set_64bit(gen_csinc(reg, ARM_REG_ZERO, ARM_REG_ZERO, ARM_COND_GE)));
+                  break;
+              case F_LE:
+                  cmp = is_le;
+                  add_to_program(set_64bit(gen_csinc(reg, ARM_REG_ZERO, ARM_REG_ZERO, ARM_COND_GT)));
+                  break;
+              }
               break;
           }
 
+          ra_free(type1);
+          ra_free(type2);
+          ra_free(tmp);
+          // SIMPLE POP INT:
+
+          arm64_sub64_reg_int(ARM_REG_PIKE_SP, ARM_REG_PIKE_SP, sizeof(struct svalue));
+          store64_reg_imm(reg, ARM_REG_PIKE_SP, -1*(INT32)sizeof(struct svalue)+(INT32)OFFSETOF(svalue, u));
+
+          arm64_store_sp_reg();
+
+          b_imm(label_dist(&end));
+          // COMPLEX CMP:
+          label_generate(&real_cmp);
+
           ra_alloc(ARM_REG_R0);
           ra_alloc(ARM_REG_R1);
-
-          arm64_load_sp_reg();
 
           if (swap) {
               arm64_sub64_reg_int(ARM_REG_R1, ARM_REG_PIKE_SP, 2*sizeof(struct svalue));
@@ -1638,8 +1785,6 @@ static void low_ins_f_byte(unsigned int opcode)
 
           arm64_call(cmp);
 
-          reg = ra_alloc_persistent();
-
           if (negate) {
               arm64_eor32_reg_int(reg, ARM_REG_R0, 1);
           } else {
@@ -1649,6 +1794,9 @@ static void low_ins_f_byte(unsigned int opcode)
           ra_free(ARM_REG_R0);
           ra_free(ARM_REG_R1);
 
+          // COMPLEX POP:
+          label_generate(&real_pop);
+
           arm64_free_svalue_off(ARM_REG_PIKE_SP, -1, 0);
           arm64_free_svalue_off(ARM_REG_PIKE_SP, -2, 0);
           /* the order of the free and pop is important, because really_free_svalue should not
@@ -1656,6 +1804,9 @@ static void low_ins_f_byte(unsigned int opcode)
           arm64_sub64_reg_int(ARM_REG_PIKE_SP, ARM_REG_PIKE_SP, 2*sizeof(struct svalue));
 
           arm64_push_int_reg(reg, NUMBER_NUMBER);
+
+          // END:
+          label_generate(&end);
 
           ra_free(reg);
       }
