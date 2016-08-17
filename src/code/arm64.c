@@ -1395,6 +1395,20 @@ static void arm64_mark(enum arm64_register base, int offset) {
   ra_free(tmp);
 }
 
+MACRO void arm64_pop_mark(enum arm64_register dst) {
+  enum arm64_register tmp = ra_alloc_any();
+
+  load64_reg_imm(tmp, ARM_REG_PIKE_IP, OFFSETOF(Pike_interpreter_struct, mark_stack_pointer));
+
+  arm64_sub64_reg_int(tmp, tmp, sizeof(void*));
+
+  load64_reg_imm(dst, tmp, 0);
+
+  store64_reg_imm(tmp, ARM_REG_PIKE_IP, OFFSETOF(Pike_interpreter_struct, mark_stack_pointer));
+
+  ra_free(tmp);
+}
+
 #ifdef PIKE_DEBUG
 MACRO void arm_green_on(void) {
     if (Pike_interpreter.trace_level > 2)
@@ -1481,6 +1495,36 @@ static void low_ins_f_byte(unsigned int opcode)
   case F_POP_VALUE:
       arm64_change_sp(-1);
       arm64_free_svalue(ARM_REG_PIKE_SP, 0);
+      return;
+  case F_POP_TO_MARK: /* this opcode sucks noodles, introduce F_POP_TO_LOCAL(num) */
+      {
+          struct label done, loop;
+          enum arm64_register reg = ra_alloc_persistent();
+
+          label_init(&done);
+          label_init(&loop);
+
+          arm64_load_sp_reg();
+
+          arm64_pop_mark(reg);
+          cmp_reg_reg(reg, ARM_REG_PIKE_SP);
+          /* jump if pike_sp <= reg */
+          b_imm_cond(label_dist(&done), ARM_COND_GE);
+
+          label_generate(&loop);
+
+          arm64_sub64_reg_int(ARM_REG_PIKE_SP, ARM_REG_PIKE_SP, 1*sizeof(struct svalue));
+          arm64_free_svalue(ARM_REG_PIKE_SP, 0);
+
+          cmp_reg_reg(reg, ARM_REG_PIKE_SP);
+          /* jump if pike_sp > reg */
+          b_imm_cond(label_dist(&loop), ARM_COND_LT);
+
+          arm64_store_sp_reg();
+
+          label_generate(&done);
+          ra_free(reg);
+      }
       return;
   case F_MARK:
       arm64_load_sp_reg();
@@ -1758,6 +1802,7 @@ void ins_f_byte_with_2_args(unsigned int opcode, INT32 arg1, INT32 arg2)
           arm64_add64_reg_int(reg, ARM_REG_PIKE_LOCALS, (INT64)arg1*sizeof(struct svalue));
 
           cmp_reg_reg(ARM_REG_PIKE_SP, reg);
+          /* jump if pike_sp >= reg */
           b_imm_cond(label_dist(&skip), ARM_COND_GE);
           arm64_mov_int(treg, TYPE_SUBTYPE(PIKE_T_INT, arg2 ? NUMBER_UNDEFINED : NUMBER_NUMBER));
           arm64_mov_int(vreg, 0);
@@ -1765,6 +1810,7 @@ void ins_f_byte_with_2_args(unsigned int opcode, INT32 arg1, INT32 arg2)
           label_generate(&loop);
           store_multiple(ARM_REG_PIKE_SP, ARM_MULT_IAW, RBIT(treg)|RBIT(vreg));
           cmp_reg_reg(ARM_REG_PIKE_SP, reg);
+          /* jump if pike_sp < reg */
           b_imm_cond(label_dist(&loop), ARM_COND_LT);
 
           arm64_store_sp_reg();
