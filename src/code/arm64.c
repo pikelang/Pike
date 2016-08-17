@@ -135,6 +135,7 @@ ARM_INSTR_ARITH_IMM = 0x11000000,
 ARM_INSTR_LOGIC_IMM = 0x12000000,
 ARM_INSTR_MOVE_WIDE = 0x12800000,
 ARM_INSTR_UNCOND_BRANCH_IMM = 0x14000000,
+ARM_INSTR_SHIFT_REG         = 0x1ac02000,
 ARM_INSTR_LOADSTORE_PAIR    = 0x28000000,
 ARM_INSTR_COND_BRANCH_IMM   = 0x54000000,
 ARM_INSTR_LOADSTORE_SINGLE  = 0xb8000000,
@@ -571,10 +572,20 @@ OPCODE_FUN gen_cmp_reg_imm(enum arm64_register a, unsigned short imm, unsigned c
     return gen_arith_reg_imm(ARM_ARITH_SUBS, ARM_REG_ZERO, a, imm, shift);
 }
 
+OPCODE_FUN gen_shift_reg_reg(enum arm64_shift_mode mode, enum arm64_register dst,
+                             enum arm64_register a, enum arm64_register b) {
+    unsigned INT32 instr = ARM_INSTR_SHIFT_REG;
+    instr = set_rt_reg(instr, dst);
+    instr = set_rn_reg(instr, a);
+    instr = set_rm_reg(instr, b);
+    instr |= mode >> 12;
+
+    return instr;
+}
+
 MACRO void cmp_reg_imm(enum arm64_register a, unsigned char imm, unsigned char rot) {
     add_to_program(set_64bit(gen_cmp_reg_imm(a, imm, rot)));
 }
-
 
 OPCODE_FUN gen_store_reg_imm(enum arm64_register dst, enum arm64_register base, INT32 offset, int sf) {
     unsigned INT32 instr = ARM_INSTR_LOADSTORE_SINGLE | (sf << 30);
@@ -749,6 +760,18 @@ MACRO void arm64_ ## name ## 64_reg_int(enum arm64_register dst, enum arm64_regi
     }                                                                                                    \
 }                                                                                                        \
 
+#define GEN_SHIFT_OP(name, NAME)                                                                         \
+OPCODE_FUN gen_ ## name ## _reg_reg(enum arm64_register dst, enum arm64_register a,                      \
+                                    enum arm64_register b) {                                             \
+    return gen_shift_reg_reg(ARM_SHIFT_ ## NAME, dst, a, b);                                             \
+}                                                                                                        \
+                                                                                                         \
+MACRO void name ## 32_reg_reg(enum arm64_register dst, enum arm64_register a, enum arm64_register b) {   \
+    add_to_program(gen_ ## name ## _reg_reg(dst, a, b));                                                 \
+}                                                                                                        \
+MACRO void name ## 64_reg_reg(enum arm64_register dst, enum arm64_register a, enum arm64_register b) {   \
+    add_to_program(set_64bit(gen_ ## name ## _reg_reg(dst, a, b)));                                      \
+}                                                                                                        \
 
 GEN_ARITH_OP(add, ADD)
 GEN_ARITH_OP(adds, ADDS)
@@ -758,6 +781,8 @@ GEN_LOGIC_OP(and, AND)
 GEN_LOGIC_OP(or, OR)
 GEN_LOGIC_OP(eor, EOR)
 GEN_LOGIC_OP(ands, ANDS)
+
+GEN_SHIFT_OP(lsl, LSL)
 
 
 OPCODE_FUN gen_mov_reg(enum arm64_register dst, enum arm64_register src) {
