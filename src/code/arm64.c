@@ -1840,6 +1840,52 @@ static void low_ins_f_byte(unsigned int opcode)
       arm64_debug_instr_prologue_0(opcode);
       arm64_call_efun(f_add, 2);
       return;
+  case F_ADD_INTS:
+      {
+          struct label end, slow;
+          enum arm64_register reg1, reg2;
+          enum arm64_condition cond;
+
+          label_init(&end);
+          label_init(&slow);
+
+          arm64_debug_instr_prologue_0(opcode);
+
+          reg1 = ra_alloc_any();
+          reg2 = ra_alloc_any();
+
+          arm64_load_sp_reg();
+
+          load32_reg_imm(reg1, ARM_REG_PIKE_SP, -2*(INT32)sizeof(struct svalue));
+          load32_reg_imm(reg2, ARM_REG_PIKE_SP, -1*(INT32)sizeof(struct svalue));
+
+          cond = arm64_ne_types(reg1, reg2, TYPE_SUBTYPE(PIKE_T_INT, NUMBER_NUMBER));
+          b_imm_cond(label_dist(&slow), cond);
+
+          load64_reg_imm(reg1, ARM_REG_PIKE_SP, -2*(INT32)sizeof(struct svalue)+(INT32)OFFSETOF(svalue, u));
+          load64_reg_imm(reg2, ARM_REG_PIKE_SP, -1*(INT32)sizeof(struct svalue)+(INT32)OFFSETOF(svalue, u));
+
+          adds64_reg_reg(reg1, reg1, reg2);
+
+	  b_imm_cond(label_dist(&slow), ARM_COND_VS);
+
+	  store64_reg_imm(reg1, ARM_REG_PIKE_SP, -2*(INT32)sizeof(struct svalue)+(INT32)OFFSETOF(svalue, u)),
+
+          ra_free(reg1);
+          ra_free(reg2);
+
+          b_imm(label_dist(&end));
+          label_generate(&slow);
+          ra_alloc(ARM_REG_R0);
+          arm64_mov_int(ARM_REG_R0, 2);
+          arm64_call(f_add);
+          ra_free(ARM_REG_R0);
+          label_generate(&end);
+          arm64_sub64_reg_int(ARM_REG_PIKE_SP, ARM_REG_PIKE_SP, sizeof(struct svalue));
+          arm64_store_sp_reg();
+
+          return;
+      }
   }
 
   arm64_call_c_opcode(opcode);
