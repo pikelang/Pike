@@ -506,13 +506,14 @@ static void f_hash( INT32 args )
  */
 void f_hash_value(INT32 args)
 {
-  unsigned INT32 h;
+  size_t h;
 
   if(!args)
     SIMPLE_WRONG_NUM_ARGS_ERROR("hash_value",1);
 
   h = hash_svalue (Pike_sp - args);
   pop_n_elems (args);
+  /* NB: We assume that INT_TYPE has the same width as size_t. */
   push_int (h);
 }
 
