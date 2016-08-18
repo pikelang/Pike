@@ -6013,11 +6013,6 @@ test_any([[
     return sizeof(m - ([ A() : 1 ]));
 ]], 0)
 
-dnl Sometimes the above two tests fail, which is likely due
-dnl to the value returned by hash_value("foo").
-test_do([[ werror("\n\nhash_value(%O) ==> %O.\n\n",
-		  "foo", hash_value("foo")); ]])
-
 test_equal([[ `+( ([1:2]) )]],[[ ([1:2]) ]])
 test_false( `+( ([1:2]) ) == ([1:2]) )
 test_equal([[ `+( ([1:2]), ([1:2])  )]],[[ ([1:2]) ]])
