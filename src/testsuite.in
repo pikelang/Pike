@@ -6001,8 +6001,10 @@ test_any([[
 	int __hash() { return hash_value("foo"); }
 	int `==(mixed o) { return o == "foo"; }
     };
-    return m[A()];
-]], 1)
+    if( !m[A()] )
+      return (string)hash_value("foo");
+    return 0;
+]], 0)
 
 test_any([[
     mapping m = ([ "foo" : 1 ]);
@@ -6010,7 +6012,9 @@ test_any([[
 	int __hash() { return hash_value("foo"); }
 	int `==(mixed o) { return o == "foo"; }
     };
-    return sizeof(m - ([ A() : 1 ]));
+    if( sizeof(m - ([ A() : 1 ])) )
+      return (string)hash_value("foo");
+    return 0;
 ]], 0)
 
 test_equal([[ `+( ([1:2]) )]],[[ ([1:2]) ]])
