@@ -4130,8 +4130,13 @@ class Describer
       t = 0;
     }
     clipped++;
-    if(maxlen>10)
-      return sprintf("%q+[%d]",m[..maxlen-5],sizeof(m)-(maxlen-5));
+    if(maxlen>10) {
+      int h = (3*maxlen)/4;
+      return sprintf("%q+[%d]+%q",
+		     m[..h-5],
+		     sizeof(m)-(maxlen-8),
+		     m[sizeof(m) - (maxlen - (h + 4))..]);
+    }
 
     return "string["+sizeof(m)+"]";
   }
