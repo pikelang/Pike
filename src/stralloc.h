@@ -16,13 +16,6 @@
 #define STRUCT_PIKE_STRING_DECLARED
 #endif
 
-enum size_shift {
-    eightbit=0,
-    sixteenbit=1,
-    thirtytwobit=2,
-};
-
-
 enum string_type {
     STRING_ALLOC_STATIC   =0,
     STRING_ALLOC_MALLOC   =1,

@@ -500,10 +500,16 @@ typedef unsigned char p_wchar0;
 typedef unsigned INT16 p_wchar1;
 typedef signed INT32 p_wchar2;
 
+enum size_shift {
+    eightbit=0,
+    sixteenbit=1,
+    thirtytwobit=2,
+};
+
 typedef struct p_wchar_p
 {
   void *ptr;
-  int shift;
+  enum size_shift shift;
 } PCHARP;
 
 #define WERR(...) fprintf(stderr,__VA_ARGS__)
