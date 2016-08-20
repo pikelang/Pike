@@ -514,43 +514,61 @@ static struct pike_string *internal_findstring(const char *s,
   return 0; /* not found */
 }
 
-struct pike_string *binary_findstring(const char *foo, ptrdiff_t l)
+/**
+ * Finds an 8-bit string in the shared string table. Returns 0 on failure.
+ * @param str Pointer to the start of the string.
+ * @param len The number of characters in the string.
+ */
+struct pike_string *binary_findstring(const char *str, ptrdiff_t len)
 {
-  return internal_findstring(foo, l, 0, StrHash(foo,l));
+  return internal_findstring(str, len, 0, StrHash(str,len));
 }
 
-struct pike_string *binary_findstring_pcharp(PCHARP foo, ptrdiff_t l)
+/**
+ * Finds a wide string the the shared string table. Returns 0 on
+ * failure. This function does not require the string shift size to be
+ * minimized.
+ * @param str The PCHARP struct containing a pointer and shift size
+ * for the string.
+ * @param shift The size shift of the string.
+ * @param len The length of the string.
+ */
+struct pike_string *binary_findstring_wide(const char *str,
+                                           enum size_shift shift,
+                                           ptrdiff_t len)
 {
-  int in = foo.shift;
+  enum size_shift initial_shift = shift;
   void *tmp = NULL;
   struct pike_string *res;
-  if( !foo.shift )
-    return binary_findstring( (void*)foo.ptr, l );
+  if( !shift )
+    return binary_findstring( str, len );
 
-  if( UNLIKELY(foo.shift == 2) )
-    foo.shift=find_magnitude2( (void*)foo.ptr, l );
-  else if( foo.shift == 1 )
-    foo.shift=find_magnitude1( (void*)foo.ptr, l );
+  if( UNLIKELY(shift == 2) )
+    shift=find_magnitude2( (p_wchar2*)str, len );
+  else if( shift == 1 )
+    shift=find_magnitude1( (p_wchar1*)str, len );
 
-  if( UNLIKELY(foo.shift != in) )
+  if( UNLIKELY(shift != initial_shift) )
   {
-    tmp = malloc( l * (1<<foo.shift) );
-    switch(in)
+    tmp = malloc( len * (1<<shift) );
+    switch(initial_shift)
     {
+      case 0:
+        break;
       case 1:
-	convert_1_to_0( tmp, (void*)foo.ptr, l );
+        convert_1_to_0( tmp, (void*)str, len );
 	break;
       case 2:
-	if( foo.shift == 1 )
-	  convert_2_to_1( tmp, (void*)foo.ptr, l );
+        if( shift == 1 )
+          convert_2_to_1( tmp, (void*)str, len );
 	else
-	  convert_2_to_0( tmp, (void*)foo.ptr, l );
+          convert_2_to_0( tmp, (void*)str, len );
+        break;
     }
-    foo.ptr = tmp;
+    str = tmp;
   }
 
-  res=internal_findstring((void*)foo.ptr, l, foo.shift,
-			  low_do_hash(foo.ptr,l,foo.shift));
+  res=internal_findstring(str, len, shift, low_do_hash(str,len,shift));
 
   if( tmp )
     free( tmp );

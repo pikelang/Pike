@@ -1,4 +1,4 @@
-/*
+/* -*- mode: c; encoding: utf-8; -*-
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
@@ -105,7 +105,6 @@ typedef void (*magic_define_fun)(struct cpp *,
 				 struct define *,
 				 struct define_argument *,
 				 struct string_builder *);
-
 
 struct define
 {
@@ -893,9 +892,9 @@ static void check_defined(struct cpp *this,
 			  struct define_argument *args,
 			  struct string_builder *tmp)
 {
-  struct pike_string *s = NULL;
-  PCHARP x = MKPCHARP(args[0].arg.ptr,args[0].arg.shift);
-  s = binary_findstring_pcharp( x, args[0].len );
+  struct pike_string *s = binary_findstring_wide( args[0].arg.ptr,
+                                                  args[0].arg.shift,
+                                                  args[0].len );
 
   if(s && FIND_DEFINE(s))
     string_builder_binary_strcat(tmp, " 1 ", 3);
