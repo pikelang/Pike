@@ -1382,41 +1382,44 @@ enum UserMappingType {
   UMT_upn_domain_hint = 64,	// RFC 4681
 };
 
-constant EXTENSION_server_name			= 0;		// RFC 6066
-constant EXTENSION_max_fragment_length		= 1;		// RFC 6066
-constant EXTENSION_client_certificate_url	= 2;		// RFC 6066
-constant EXTENSION_trusted_ca_keys		= 3;		// RFC 6066
-constant EXTENSION_truncated_hmac		= 4;		// RFC 6066
-constant EXTENSION_status_request		= 5;		// RFC 6066
-constant EXTENSION_user_mapping                 = 6;            // RFC 4681
-constant EXTENSION_client_authz			= 7;		// RFC 5878
-constant EXTENSION_server_authz			= 8;		// RFC 5878
-constant EXTENSION_cert_type                    = 9;            // RFC 6091
-constant EXTENSION_elliptic_curves              = 10;           // RFC 4492
-constant EXTENSION_ec_point_formats             = 11;           // RFC 4492
-constant EXTENSION_srp                          = 12;           // RFC 5054
-constant EXTENSION_signature_algorithms		= 13;		// RFC 5246
-constant EXTENSION_use_srtp                     = 14;           // RFC 5764
-constant EXTENSION_heartbeat                    = 15;           // RFC 6520
-constant EXTENSION_application_layer_protocol_negotiation = 16; // RFC 7301
-constant EXTENSION_status_request_v2            = 17;           // RFC 6961
-constant EXTENSION_signed_certificate_timestamp = 18;           // RFC 6962
-constant EXTENSION_client_certificate_type      = 19;           // RFC 7250 (Only in registry!)
-constant EXTENSION_server_certificate_type      = 20;           // RFC 7250 (Only in registry!)
-constant EXTENSION_padding                      = 21;           // RFC 7685
-constant EXTENSION_encrypt_then_mac		= 22;		// RFC 7366
-constant EXTENSION_extended_master_secret	= 23;		// RFC 7627
-constant EXTENSION_session_ticket		= 35;		// RFC 4507 / RFC 5077
-constant EXTENSION_extended_random              = 40;           // draft-rescorla-tls-extended-random
-constant EXTENSION_early_data			= 128;		// TBD TLS 1.3 draft
-constant EXTENSION_next_protocol_negotiation	= 13172;	// draft-agl-tls-nextprotoneg
-constant EXTENSION_origin_bound_certificates    = 13175;
-constant EXTENSION_encrypted_client_certificates= 13180;
-constant EXTENSION_channel_id                   = 30031;
-constant EXTENSION_channel_id_new               = 30032;
-constant EXTENSION_old_padding                  = 35655;
-constant EXTENSION_renegotiation_info		= 0xff01;	// RFC 5746
-constant EXTENSION_draft_version		= 0xff02;	// https://github.com/tlswg/tls13-spec/wiki/Implementations
+//! Client Hello extensions.
+enum Extension {
+  EXTENSION_server_name				= 0,	// RFC 6066
+  EXTENSION_max_fragment_length			= 1,	// RFC 6066
+  EXTENSION_client_certificate_url		= 2,	// RFC 6066
+  EXTENSION_trusted_ca_keys			= 3,	// RFC 6066
+  EXTENSION_truncated_hmac			= 4,	// RFC 6066
+  EXTENSION_status_request			= 5,	// RFC 6066
+  EXTENSION_user_mapping			= 6,	// RFC 4681
+  EXTENSION_client_authz			= 7,	// RFC 5878
+  EXTENSION_server_authz			= 8,	// RFC 5878
+  EXTENSION_cert_type				= 9,	// RFC 6091
+  EXTENSION_elliptic_curves			= 10,	// RFC 4492
+  EXTENSION_ec_point_formats			= 11,	// RFC 4492
+  EXTENSION_srp					= 12,	// RFC 5054
+  EXTENSION_signature_algorithms		= 13,	// RFC 5246
+  EXTENSION_use_srtp				= 14,	// RFC 5764
+  EXTENSION_heartbeat				= 15,	// RFC 6520
+  EXTENSION_application_layer_protocol_negotiation = 16,// RFC 7301
+  EXTENSION_status_request_v2			= 17,	// RFC 6961
+  EXTENSION_signed_certificate_timestamp	= 18,	// RFC 6962
+  EXTENSION_client_certificate_type		= 19,	// RFC 7250 (Only in registry!)
+  EXTENSION_server_certificate_type		= 20,	// RFC 7250 (Only in registry!)
+  EXTENSION_padding				= 21,	// RFC 7685
+  EXTENSION_encrypt_then_mac			= 22,	// RFC 7366
+  EXTENSION_extended_master_secret		= 23,	// RFC 7627
+  EXTENSION_session_ticket			= 35,	// RFC 4507 / RFC 5077
+  EXTENSION_extended_random			= 40,	// draft-rescorla-tls-extended-random
+  EXTENSION_early_data				= 128,	// TBD TLS 1.3 draft
+  EXTENSION_next_protocol_negotiation		= 13172,// draft-agl-tls-nextprotoneg
+  EXTENSION_origin_bound_certificates		= 13175,
+  EXTENSION_encrypted_client_certificates	= 13180,
+  EXTENSION_channel_id				= 30031,
+  EXTENSION_channel_id_new			= 30032,
+  EXTENSION_old_padding				= 35655,
+  EXTENSION_renegotiation_info			= 0xff01,// RFC 5746
+  EXTENSION_draft_version			= 0xff02,// https://github.com/tlswg/tls13-spec/wiki/Implementations
+};
 
 constant ECC_CURVES = ([
 #if constant(Crypto.ECC.Curve)
