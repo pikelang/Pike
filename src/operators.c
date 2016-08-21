@@ -6024,7 +6024,7 @@ multiset & mapping -> mapping
 
   /* This one should be removed */
   /* function(mixed,mixed ...:mixed) */
-  ADD_EFUN2("call_function",f_call_function,tFuncV(tMix,tMix,tMix),OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND,0,generate_call_function);
+  ADD_EFUN2("call_function",f_call_function,tAttr("deprecated",tFuncV(tMix,tMix,tMix)),OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND,0,generate_call_function);
 
   /* From the 201x C standard */
   ADD_EFUN2("_Static_assert", NULL,
