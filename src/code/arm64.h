@@ -67,3 +67,9 @@ void ins_f_byte_with_2_args(unsigned int a, INT32 c, INT32 b);
 #define CALL_MACHINE_CODE(PC)   do {                                                    \
     return ((int (*)(struct Pike_interpreter_struct *))(pc)) (Pike_interpreter_pointer);	\
 } while(0)
+
+#ifdef PIKE_DEBUG
+#define DISASSEMBLE_CODE        arm64_disassemble_code
+
+void arm64_disassemble_code(PIKE_OPCODE_T *addr, size_t bytes);
+#endif
