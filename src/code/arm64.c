@@ -982,6 +982,21 @@ MACRO void adr_imm(enum arm64_register dst, INT32 offs)
     add_to_program(gen_adr_imm(dst, offs));
 }
 
+MACRO void arm64_tst_int(enum arm64_register reg, unsigned INT64 v) {
+    unsigned char n, immr, imms;
+
+    if (arm64_make_logic_imm(v, &n, &immr, &imms, 1)) {
+        tst_reg_imm(reg, n, immr, imms);
+    } else {
+        enum arm64_register tmp = ra_alloc_any();
+
+        arm64_mov_int(tmp, v);
+        tst_reg_reg(reg, tmp);
+
+        ra_free(tmp);
+    }
+}
+
 /*
  * TODO: work with labels
  */
@@ -1081,6 +1096,30 @@ MACRO void label_generate(struct label *l) {
     }
 
     free_list(l->list);
+}
+
+MACRO void arm64_call_if(enum arm64_condition cond1, void *a,
+                         enum arm64_condition cond2, void *b) {
+    struct label skip;
+    enum arm64_register reg = ra_alloc_any();
+
+    unsigned INT64 v1 = (char*)a - (char*)NULL,
+                   v2 = (char*)b - (char*)NULL;
+
+    label_init(&skip);
+    if (v1 < v2) {
+        arm64_mov_int(reg, v1);
+	b_imm_cond(label_dist(&skip), cond1);
+	arm64_add64_reg_int(reg, reg, v2 - v1);
+    } else if (v1 > v2) {
+        arm64_mov_int(reg, v2);
+	b_imm_cond(label_dist(&skip), cond2);
+	arm64_add64_reg_int(reg, reg, v1 - v2);
+    }
+    label_generate(&skip);
+
+    blr_reg(reg);
+    ra_free(reg);
 }
 
 void arm64_init_interpreter_state(void) {
@@ -1221,7 +1260,29 @@ static void arm64_load_fp_reg(void) {
         load64_reg_imm(ARM_REG_PIKE_FP, ARM_REG_PIKE_IP, offset);
         compiler_state.flags |= FLAG_FP_LOADED;
         compiler_state.flags &= ~FLAG_LOCALS_LOADED;
+    } else {
+        enum arm64_register reg = ra_alloc_any();
+        struct label end;
+
+        label_init(&end);
+
+        load64_reg_imm(reg, ARM_REG_PIKE_IP, OFFSETOF(Pike_interpreter_struct, frame_pointer));
+        cmp_reg_reg(reg, ARM_REG_PIKE_FP);
+
+        b_imm_cond(label_dist(&end), ARM_COND_EQ);
+
+        mov_reg(ARM_REG_PIKE_FP, reg);
+
+        arm64_call(break_my_arm);
+
+        label_generate(&end);
+
+        ra_free(reg);
     }
+}
+
+static void arm64_invalidate_fp_reg(void) {
+    compiler_state.flags &= ~FLAG_FP_LOADED;
 }
 
 MACRO void arm64_load_locals_reg(void) {
@@ -1953,10 +2014,56 @@ static void low_ins_f_byte(unsigned int opcode)
 
           return;
       }
+  case F_RETURN:
+  case F_DUMB_RETURN:
+      {
+          enum arm64_register reg;
+          struct label inter_return;
+
+          label_init(&inter_return);
+
+          arm64_load_fp_reg();
+
+          reg = ra_alloc_any();
+
+          load16_reg_imm(reg, ARM_REG_PIKE_FP, OFFSETOF(pike_frame, flags));
+
+          arm64_tst_int(reg, PIKE_FRAME_RETURN_INTERNAL);
+
+          b_imm_cond(label_dist(&inter_return), ARM_COND_NZ);
+
+          /* return from function */
+          arm64_mov_int(ARM_REG_RVAL, -1);
+          arm64_epilogue();
+
+          /* inter return */
+          label_generate(&inter_return);
+
+          arm64_tst_int(reg, PIKE_FRAME_RETURN_POP);
+
+          arm64_call_if(ARM_COND_NZ, low_return_pop, ARM_COND_Z, low_return);
+
+          /* NOTE: the low_return functions pop one frame */
+          arm64_invalidate_fp_reg();
+          arm64_load_fp_reg();
+
+          load64_reg_imm(reg, ARM_REG_PIKE_FP, OFFSETOF(pike_frame, return_addr));
+	  ret_reg(reg);
+
+          ra_free(reg);
+          return;
+      }
+  case F_RETURN_0:
+      ins_f_byte(F_CONST0);
+      ins_f_byte(F_RETURN);
+      return;
+  case F_RETURN_1:
+      ins_f_byte(F_CONST1);
+      ins_f_byte(F_RETURN);
+      return;
   }
 
   arm64_call_c_opcode(opcode);
-
 
   if (opcode == F_CATCH) ra_free(ARM_REG_R0);
 
@@ -2185,6 +2292,16 @@ void ins_f_byte_with_arg(unsigned int opcode, INT32 arg1)
           ra_free(ARM_REG_ARG1);
           return;
       }
+  case F_RETURN_LOCAL:
+      /* FIXME: The C version has a trick:
+         if locals+b < expendibles, pop to there
+         and return.
+
+         This saves a push, and the poping has to be done anyway.
+      */
+      ins_f_byte_with_arg( F_LOCAL, arg1 );
+      ins_f_byte( F_DUMB_RETURN );
+      return;
   }
   arm64_mov_int(ra_alloc(ARM_REG_ARG1), arg1);
   low_ins_f_byte(opcode);
