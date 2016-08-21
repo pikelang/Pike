@@ -1697,6 +1697,7 @@ MACRO void arm_green_off(void) {
 }
 
 MACRO void arm64_debug_instr_prologue_0(PIKE_INSTR_T instr) {
+  if (!d_flag) return;
   arm64_call(arm_green_on);
   arm64_maybe_update_pc();
   arm64_mov_int(ra_alloc(ARM_REG_ARG1), instr-F_OFFSET);
@@ -1706,6 +1707,7 @@ MACRO void arm64_debug_instr_prologue_0(PIKE_INSTR_T instr) {
 }
 
 MACRO void arm64_debug_instr_prologue_1(PIKE_INSTR_T instr, INT32 arg1) {
+  if (!d_flag) return;
   arm64_call(arm_green_on);
   arm64_maybe_update_pc();
   arm64_mov_int(ra_alloc(ARM_REG_ARG1), instr-F_OFFSET);
@@ -1717,6 +1719,7 @@ MACRO void arm64_debug_instr_prologue_1(PIKE_INSTR_T instr, INT32 arg1) {
 }
 
 MACRO void arm64_debug_instr_prologue_2(PIKE_INSTR_T instr, INT32 arg1, INT32 arg2) {
+  if (!d_flag) return;
   arm64_call(arm_green_on);
   arm64_maybe_update_pc();
   arm64_mov_int(ra_alloc(ARM_REG_ARG1), instr-F_OFFSET);
@@ -1830,6 +1833,7 @@ static void low_ins_f_byte(unsigned int opcode)
               negate = 1;
               /* FALL THROUGH */
           case F_EQ:
+              arm64_debug_instr_prologue_0(opcode);
               cmp = is_eq;
 
               arm64_jump_real_cmp(&real_cmp, type1, type2);
@@ -1857,6 +1861,7 @@ static void low_ins_f_byte(unsigned int opcode)
           case F_GE:
           case F_LE:
           case F_LT:
+	      arm64_debug_instr_prologue_0(opcode);
               cond = arm64_ne_types(type1, type2, TYPE_SUBTYPE(PIKE_T_INT, NUMBER_NUMBER));
               b_imm_cond(label_dist(&real_cmp), cond);
 
@@ -1945,6 +1950,7 @@ static void low_ins_f_byte(unsigned int opcode)
       }
       return;
   case F_MARK:
+      arm64_debug_instr_prologue_0(opcode);
       arm64_load_sp_reg();
       arm64_mark(ARM_REG_PIKE_SP, 0);
       return;
@@ -2016,6 +2022,7 @@ static void low_ins_f_byte(unsigned int opcode)
       }
   case F_RETURN:
   case F_DUMB_RETURN:
+      arm64_debug_instr_prologue_0(opcode);
       {
           enum arm64_register reg;
           struct label inter_return;
@@ -2192,6 +2199,7 @@ void ins_f_byte_with_arg(unsigned int opcode, INT32 arg1)
       arm64_mark(ARM_REG_PIKE_LOCALS, arg1);
       return;
   case F_STRING:
+      arm64_debug_instr_prologue_1(opcode, arg1);
       {
           enum arm64_register treg = ra_alloc_any(),
                               vreg = ra_alloc_any();
@@ -2280,6 +2288,8 @@ void ins_f_byte_with_arg(unsigned int opcode, INT32 arg1)
   case F_SIZEOF_LOCAL:
   case F_SIZEOF_LOCAL_STRING:
       {
+          arm64_debug_instr_prologue_1(opcode, arg1);
+
           ra_alloc(ARM_REG_ARG1);
 
           arm64_load_locals_reg();
@@ -2337,6 +2347,8 @@ void ins_f_byte_with_2_args(unsigned int opcode, INT32 arg1, INT32 arg2)
           struct label skip, loop;
           label_init(&skip);
           label_init(&loop);
+
+          arm64_debug_instr_prologue_2(opcode, arg1, arg2);
 
           arm64_load_sp_reg();
           arm64_load_locals_reg();
@@ -2421,6 +2433,9 @@ int arm64_ins_f_jump(unsigned int opcode, int backward_jump) {
     case F_QUICK_BRANCH_WHEN_NON_ZERO:
         {
             enum arm64_register tmp = ra_alloc_any();
+
+            arm64_debug_instr_prologue_0(opcode);
+
             arm64_change_sp(-1);
             load64_reg_imm(tmp, ARM_REG_PIKE_SP, 8);
             cmp_reg_imm(tmp, 0, 0);
@@ -2433,6 +2448,7 @@ int arm64_ins_f_jump(unsigned int opcode, int backward_jump) {
             return ret;
         }
     case F_BRANCH:
+        arm64_debug_instr_prologue_0(opcode);
         ret = PIKE_PC;
         b_imm(0);
         return ret;
@@ -2444,6 +2460,7 @@ int arm64_ins_f_jump(unsigned int opcode, int backward_jump) {
     case F_BRANCH_WHEN_GT:
     case F_BRANCH_WHEN_GE:
         {
+            arm64_debug_instr_prologue_0(opcode);
             ra_alloc(ARM_REG_ARG1);
             ra_alloc(ARM_REG_ARG2);
 
