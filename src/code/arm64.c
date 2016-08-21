@@ -1417,7 +1417,7 @@ MACRO void arm64_assign_svaluep_nofree(enum arm64_register dst, enum arm64_regis
     store_multiple(dst, ARM_MULT_IA, RBIT(treg)|RBIT(vreg));
 
     label_init(&end);
-    arm64_ands32_reg_int(treg, treg, TYPE_SUBTYPE(MIN_REF_TYPE, 0));
+    arm64_tst_int(treg, TYPE_SUBTYPE(MIN_REF_TYPE, 0));
     b_imm_cond(label_dist(&end), ARM_COND_Z);
 
     load32_reg_imm(treg, vreg, OFFSETOF(pike_string, refs));
@@ -1451,7 +1451,7 @@ MACRO void arm64_push_svaluep_off(enum arm64_register src, INT32 offset) {
     arm64_store_sp_reg();
 
     label_init(&end);
-    arm64_ands32_reg_int(tmp1, tmp1, TYPE_SUBTYPE(MIN_REF_TYPE, 0));
+    arm64_tst_int(tmp1, TYPE_SUBTYPE(MIN_REF_TYPE, 0));
     b_imm_cond(label_dist(&end), ARM_COND_Z);
 
     load32_reg_imm(tmp1, tmp2, OFFSETOF(pike_string, refs));
@@ -1610,7 +1610,7 @@ MACRO void arm64_free_svalue_off(enum arm64_register src, int off, int guarantee
 
     load32_reg_imm(reg, src, off);
 
-    arm64_ands32_reg_int(reg, reg, combined);
+    arm64_tst_int(reg, combined);
 
     b_imm_cond(label_dist(&end), ARM_COND_Z);
 
