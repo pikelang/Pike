@@ -524,57 +524,6 @@ struct pike_string *binary_findstring(const char *str, ptrdiff_t len)
   return internal_findstring(str, len, 0, StrHash(str,len));
 }
 
-/**
- * Finds a wide string the the shared string table. Returns 0 on
- * failure. This function does not require the string shift size to be
- * minimized.
- * @param str The PCHARP struct containing a pointer and shift size
- * for the string.
- * @param shift The size shift of the string.
- * @param len The length of the string.
- */
-struct pike_string *binary_findstring_wide(const char *str,
-                                           enum size_shift shift,
-                                           ptrdiff_t len)
-{
-  enum size_shift initial_shift = shift;
-  void *tmp = NULL;
-  struct pike_string *res;
-  if( !shift )
-    return binary_findstring( str, len );
-
-  if( UNLIKELY(shift == 2) )
-    shift=find_magnitude2( (p_wchar2*)str, len );
-  else if( shift == 1 )
-    shift=find_magnitude1( (p_wchar1*)str, len );
-
-  if( UNLIKELY(shift != initial_shift) )
-  {
-    tmp = malloc( len * (1<<shift) );
-    switch(initial_shift)
-    {
-      case 0:
-        break;
-      case 1:
-        convert_1_to_0( tmp, (void*)str, len );
-	break;
-      case 2:
-        if( shift == 1 )
-          convert_2_to_1( tmp, (void*)str, len );
-	else
-          convert_2_to_0( tmp, (void*)str, len );
-        break;
-    }
-    str = tmp;
-  }
-
-  res=internal_findstring(str, len, shift, low_do_hash(str,len,shift));
-
-  if( tmp )
-    free( tmp );
-  return res;
-}
-
 struct pike_string *findstring(const char *foo)
 {
   return binary_findstring(foo, strlen(foo));

@@ -274,7 +274,13 @@ static ptrdiff_t low_cpp(struct cpp *this,
             init_string_builder(&tmp, 0);
             if(d->magic)
             {
-              d->magic(this, d, arguments, &tmp);
+              struct pike_string *first_arg = NULL;
+              if(arg)
+                first_arg = make_shared_binary_pcharp(arguments[0].arg,
+                                                      arguments[0].len);
+              d->magic(this, d, first_arg, &tmp);
+              if( first_arg )
+                free_string(first_arg);
             }else{
               string_builder_shared_strcat(&tmp, d->first);
               for(e=0;e<d->num_parts;e++)
@@ -288,7 +294,7 @@ static ptrdiff_t low_cpp(struct cpp *this,
                   continue;
                 }
 
-                a = (arguments[d->parts[e].argument&DEF_ARG_MASK].arg);
+                a = arguments[d->parts[e].argument&DEF_ARG_MASK].arg;
                 l = arguments[d->parts[e].argument&DEF_ARG_MASK].len;
 
                 if (d->parts[e].argument&DEF_ARG_NEED_COMMA

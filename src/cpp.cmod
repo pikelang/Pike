@@ -53,7 +53,6 @@
 #define DEF_ARG_MASK        0x0fffff
 
 struct define_part;
-struct define_argument;
 struct define;
 struct cpp;
 
@@ -98,12 +97,11 @@ struct define_argument {
   ptrdiff_t len;
 };
 
-
 struct cpp;
 struct define;
 typedef void (*magic_define_fun)(struct cpp *,
 				 struct define *,
-				 struct define_argument *,
+                                 struct pike_string *,
 				 struct string_builder *);
 
 struct define
@@ -889,14 +887,10 @@ void cpp_change_compat(struct cpp *this, int major, int minor)
  */
 static void check_defined(struct cpp *this,
 			  struct define *UNUSED(def),
-			  struct define_argument *args,
+                          struct pike_string *arg,
 			  struct string_builder *tmp)
 {
-  struct pike_string *s = binary_findstring_wide( args[0].arg.ptr,
-                                                  args[0].arg.shift,
-                                                  args[0].len );
-
-  if(s && FIND_DEFINE(s))
+  if(arg && FIND_DEFINE(arg))
     string_builder_binary_strcat(tmp, " 1 ", 3);
   else
     string_builder_binary_strcat(tmp, " 0 ", 3);
@@ -2200,15 +2194,15 @@ static ptrdiff_t low_cpp(struct cpp *this,
                          struct pike_string *charset);
 static void insert_callback_define(struct cpp *this,
                                    struct define *def,
-                                   struct define_argument *args,
+                                   struct pike_string *arg,
                                    struct string_builder *tmp);
 static void insert_callback_define_no_args(struct cpp *this,
                                            struct define *def,
-                                           struct define_argument *args,
+                                           struct pike_string *arg,
                                            struct string_builder *tmp);
 static void insert_pragma(struct cpp *this,
 			  struct define *def,
-			  struct define_argument *args,
+                          struct pike_string *arg,
 			  struct string_builder *tmp);
 
 static ptrdiff_t calc1(struct cpp *this, PCHARP data, ptrdiff_t len,
@@ -2840,7 +2834,7 @@ static ptrdiff_t calc(struct cpp *this, PCHARP data, ptrdiff_t len,
  */
 static void insert_current_line(struct cpp *this,
 				struct define *UNUSED(def),
-				struct define_argument *UNUSED(args),
+                                struct pike_string *UNUSED(arg),
 				struct string_builder *tmp)
 {
   string_builder_sprintf(tmp, " %ld ", (long)this->current_line);
@@ -2852,7 +2846,7 @@ static void insert_current_line(struct cpp *this,
  */
 static void insert_current_file_as_string(struct cpp *this,
 					  struct define *UNUSED(def),
-					  struct define_argument *UNUSED(args),
+                                          struct pike_string *UNUSED(arg),
 					  struct string_builder *tmp)
 {
   PUSH_STRING_SHIFT(this->current_file->str, this->current_file->len,
@@ -2865,7 +2859,7 @@ static void insert_current_file_as_string(struct cpp *this,
  */
 static void insert_current_dir_as_string(struct cpp *this,
                                          struct define *UNUSED(def),
-                                         struct define_argument *UNUSED(args),
+                                         struct pike_string *UNUSED(arg),
                                          struct string_builder *tmp)
 {
   ref_push_string(this->current_file);
@@ -2883,7 +2877,7 @@ static void insert_current_dir_as_string(struct cpp *this,
  */
 static void insert_current_time_as_string(struct cpp *UNUSED(this),
 					  struct define *UNUSED(def),
-					  struct define_argument *UNUSED(args),
+                                          struct pike_string *UNUSED(arg),
 					  struct string_builder *tmp)
 {
   /* FIXME: Is this code safe? */
@@ -2902,7 +2896,7 @@ static void insert_current_time_as_string(struct cpp *UNUSED(this),
  */
 static void insert_current_date_as_string(struct cpp *UNUSED(this),
 					  struct define *UNUSED(def),
-					  struct define_argument *UNUSED(args),
+                                          struct pike_string *UNUSED(arg),
 					  struct string_builder *tmp)
 {
   /* FIXME: Is this code safe? */
@@ -2926,7 +2920,7 @@ static void insert_current_date_as_string(struct cpp *UNUSED(this),
  */
 static void insert_current_version(struct cpp *this,
 				   struct define *UNUSED(def),
-				   struct define_argument *UNUSED(args),
+                                   struct pike_string *UNUSED(arg),
 				   struct string_builder *tmp)
 {
   string_builder_sprintf(tmp, " %d.%d ", this->compat_major,
@@ -2944,7 +2938,7 @@ static void insert_current_version(struct cpp *this,
  */
 static void insert_current_minor(struct cpp *this,
 				 struct define *UNUSED(def),
-				 struct define_argument *UNUSED(args),
+                                 struct pike_string *UNUSED(arg),
 				 struct string_builder *tmp)
 {
   string_builder_sprintf(tmp, " %d ", this->compat_minor);
@@ -2957,7 +2951,7 @@ static void insert_current_minor(struct cpp *this,
  */
 static void insert_current_counter(struct cpp *UNUSED(this),
 				 struct define *UNUSED(def),
-				 struct define_argument *UNUSED(args),
+                                 struct pike_string *UNUSED(arg),
 				 struct string_builder *tmp)
 {
   static int counter = 0;
@@ -2975,7 +2969,7 @@ static void insert_current_counter(struct cpp *UNUSED(this),
  */
 static void insert_current_major(struct cpp *this,
 				 struct define *UNUSED(def),
-				 struct define_argument *UNUSED(args),
+                                 struct pike_string *UNUSED(arg),
 				 struct string_builder *tmp)
 {
   string_builder_sprintf(tmp, " %d ", this->compat_major);
@@ -2995,22 +2989,20 @@ static void insert_current_major(struct cpp *this,
  */
 static void insert_pragma(struct cpp *this,
 			  struct define *UNUSED(def),
-			  struct define_argument *args,
+                          struct pike_string *arg,
 			  struct string_builder *tmp)
 {
   int i;
   int in_string = 0;
-  PCHARP arg = args->arg;
-  ptrdiff_t len = args->len;
 
   /* Make some reasonable amount of space. */
-  string_build_mkspace(tmp, len + 20, arg.shift);
+  string_build_mkspace(tmp, arg->len + 20, arg->size_shift);
 
   string_builder_strcat(tmp, "\n#pragma ");
 
   /* Destringize the argument. */
-  for (i = 0; i < len; i++) {
-    p_wchar2 ch = INDEX_PCHARP(arg, i);
+  for (i = 0; i < arg->len; i++) {
+    p_wchar2 ch = index_shared_string(arg, i);
     switch(ch) {
     case '\n': case '\r':
       ch = ' ';
@@ -3025,7 +3017,7 @@ static void insert_pragma(struct cpp *this,
       break;
     case '\\':
       if (in_string) {
-	ch = (++i < len) ? INDEX_PCHARP(arg, i) : '\0';
+        ch = (++i < arg->len) ? index_shared_string(arg, i) : '\0';
 	if ((ch != '\\') && (ch != '\"')) {
 	  cpp_error(this, "Invalid \\-escape in _Pragma().");
 	  break;
@@ -3052,16 +3044,15 @@ static void insert_pragma(struct cpp *this,
 		    this->current_file->size_shift,
 		    tmp);
   string_builder_putchar(tmp, '\n');
-
 }
 
 static void insert_callback_define(struct cpp *this,
                                    struct define *def,
-                                   struct define_argument *args,
+                                   struct pike_string *arg,
                                    struct string_builder *tmp)
 {
   ref_push_string( def->link.s );
-  push_string( make_shared_binary_pcharp( args[0].arg, args[0].len ) );
+  push_string( arg );
   if (safe_apply_handler( "evaluate_define",
 			  this->handler, this->compat_handler, 2, 0 ) &&
       TYPEOF(sp[-1]) == T_STRING ) {
@@ -3072,7 +3063,7 @@ static void insert_callback_define(struct cpp *this,
         if( min < 32 )
         {
             string_builder_sprintf(tmp, "\n#line %ld ", (long)this->current_line);
-            insert_current_file_as_string( this,def,args,tmp);
+            insert_current_file_as_string( this,def,arg,tmp);
             string_builder_putchar(tmp, '\n');
         }
     }
@@ -3082,7 +3073,7 @@ static void insert_callback_define(struct cpp *this,
 
 static void insert_callback_define_no_args(struct cpp *this,
                                            struct define *def,
-                                           struct define_argument *UNUSED(args),
+                                           struct pike_string *UNUSED(arg),
                                            struct string_builder *tmp)
 {
   struct svalue *save_sp = Pike_sp;
