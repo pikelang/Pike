@@ -1413,10 +1413,8 @@ F_FOR(0 = F_APPLY(1 = F_CONSTANT
     if(inc)
     {
       if(oper == F_LE) {
-	static struct pike_string *plus_name;
-	node *fun;
-	if ((!plus_name && !(plus_name = findstring("`+"))) ||
-	    !(fun=find_module_identifier(plus_name, 0))) {
+        node *fun;
+        if ( !(fun=find_module_identifier(plus_name, 0)) ) {
 	  yyerror("Internally used efun undefined: `+");
 	  tmp3 = mkintnode(0);
         } else {
@@ -1432,10 +1430,8 @@ F_FOR(0 = F_APPLY(1 = F_CONSTANT
 	goto next_for_opt;
     }else{
       if(oper == F_GE) {
-	static struct pike_string *minus_name;
-	node *fun;
-	if ((!minus_name && !(minus_name = findstring("`-"))) ||
-	    !(fun=find_module_identifier(minus_name, 0))) {
+        node *fun;
+        if ( !(fun=find_module_identifier(minus_name, 0)) ) {
 	  yyerror("Internally used efun undefined: `-");
 	  tmp3 = mkintnode(0);
         } else {

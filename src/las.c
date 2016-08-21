@@ -4753,6 +4753,8 @@ static void optimize(node *n)
   struct pike_string *save_file =
     dmalloc_touch(struct pike_string *, c->lex.current_file);
   INT_TYPE save_line = c->lex.current_line;
+  struct pike_string *plus_name = lfun_strings[LFUN_ADD];
+  struct pike_string *minus_name = lfun_strings[LFUN_SUBTRACT];
 
   do
   {
