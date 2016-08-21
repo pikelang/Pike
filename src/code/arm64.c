@@ -1260,24 +1260,6 @@ static void arm64_load_fp_reg(void) {
         load64_reg_imm(ARM_REG_PIKE_FP, ARM_REG_PIKE_IP, offset);
         compiler_state.flags |= FLAG_FP_LOADED;
         compiler_state.flags &= ~FLAG_LOCALS_LOADED;
-    } else {
-        enum arm64_register reg = ra_alloc_any();
-        struct label end;
-
-        label_init(&end);
-
-        load64_reg_imm(reg, ARM_REG_PIKE_IP, OFFSETOF(Pike_interpreter_struct, frame_pointer));
-        cmp_reg_reg(reg, ARM_REG_PIKE_FP);
-
-        b_imm_cond(label_dist(&end), ARM_COND_EQ);
-
-        mov_reg(ARM_REG_PIKE_FP, reg);
-
-        arm64_call(break_my_arm);
-
-        label_generate(&end);
-
-        ra_free(reg);
     }
 }
 
@@ -1574,6 +1556,33 @@ MACRO void arm64_call_c_function(void * addr) {
     compiler_state.flags &= ~FLAG_SP_LOADED;
     compiler_state.flags &= ~FLAG_FP_LOADED;
     arm64_call(addr);
+}
+
+/*
+ * Used for calling a C opcode from a slowpath. It makes sure
+ * to restore restore the register state. This means that any cost
+ * of reloading invalidated registers is only paid by the slowpath,
+ * which rarely happens.
+ */
+MACRO void arm64_call_c_opcode_slowpath(unsigned int opcode) {
+  void *addr = instrs[opcode-F_OFFSET].address;
+  int flags = instrs[opcode-F_OFFSET].flags;
+
+  arm64_call(addr);
+
+  unsigned int compiler_flags = compiler_state.flags;
+
+  if (flags & I_UPDATE_SP && compiler_flags & FLAG_SP_LOADED) {
+    compiler_state.flags &= ~FLAG_SP_LOADED;
+    arm64_load_sp_reg();
+  }
+  if (flags & I_UPDATE_M_SP) {}
+  if (flags & I_UPDATE_FP && compiler_flags & FLAG_FP_LOADED) {
+    compiler_state.flags &= ~FLAG_FP_LOADED;
+    arm64_load_fp_reg();
+    if (compiler_flags & FLAG_LOCALS_LOADED)
+      arm64_load_locals_reg();
+  }
 }
 
 MACRO void arm64_call_c_opcode(unsigned int opcode) {
@@ -2111,9 +2120,6 @@ void ins_f_byte(unsigned int opcode)
 
 void ins_f_byte_with_arg(unsigned int opcode, INT32 arg1)
 {
-  struct label done;
-  label_init(&done);
-
   record_opcode(opcode, 0);
 
   switch (opcode) {
@@ -2126,47 +2132,47 @@ void ins_f_byte_with_arg(unsigned int opcode, INT32 arg1)
       arm64_push_int(-(INT64)arg1, 0);
       return;
   case F_SUBTRACT_INT:
-    {
-      struct label fallback;
-      enum arm64_register tmp;
-      arm64_debug_instr_prologue_1(opcode, arg1);
-
-      tmp = ra_alloc_any();
-      label_init(&fallback);
-      arm64_load_sp_reg();
-      load32_reg_imm(tmp, ARM_REG_PIKE_SP, -(INT32)sizeof(struct svalue)+0);
-      cmp_reg_imm(tmp, 0, 0);
-      b_imm_cond(label_dist(&fallback), ARM_COND_NE);
-      load64_reg_imm(tmp, ARM_REG_PIKE_SP, -(INT32)sizeof(struct svalue)+(INT32)OFFSETOF(svalue, u.integer));
-      arm64_subs64_reg_int(tmp, tmp, (INT64)arg1);
-      b_imm_cond(label_dist(&fallback), ARM_COND_VS);
-      store64_reg_imm(tmp, ARM_REG_PIKE_SP, -(INT32)sizeof(struct svalue)+(INT32)OFFSETOF(svalue, u.integer));
-      ra_free(tmp);
-      b_imm(label_dist(&done));
-      label_generate(&fallback);
-      break;
-    }
   case F_ADD_INT:
+    arm64_debug_instr_prologue_1(opcode, arg1);
     {
       struct label fallback;
-      unsigned char imm, rot;
+      struct label done;
       enum arm64_register tmp;
-      arm64_debug_instr_prologue_1(opcode, arg1);
 
-      tmp = ra_alloc_any();
+      label_init(&done);
       label_init(&fallback);
+      tmp = ra_alloc_any();
+
       arm64_load_sp_reg();
+
+      /* check type == INT */
       load32_reg_imm(tmp, ARM_REG_PIKE_SP, -(INT32)sizeof(struct svalue)+0);
-      cmp_reg_imm(tmp, 0, 0);
+      arm64_cmp_int(tmp, TYPE_SUBTYPE(PIKE_T_INT, NUMBER_NUMBER));
       b_imm_cond(label_dist(&fallback), ARM_COND_NE);
+
+      /* load integer value and do operation */
       load64_reg_imm(tmp, ARM_REG_PIKE_SP, -(INT32)sizeof(struct svalue)+(INT32)OFFSETOF(svalue, u.integer));
-      arm64_adds64_reg_int(tmp, tmp, (INT64)arg1);
+
+      if (opcode == F_SUBTRACT_INT) {
+        arm64_subs64_reg_int(tmp, tmp, (INT64)arg1);
+      } else {
+        arm64_adds64_reg_int(tmp, tmp, (INT64)arg1);
+      }
+
+      /* check for overflow */
       b_imm_cond(label_dist(&fallback), ARM_COND_VS);
       store64_reg_imm(tmp, ARM_REG_PIKE_SP, -(INT32)sizeof(struct svalue)+(INT32)OFFSETOF(svalue, u.integer));
       ra_free(tmp);
       b_imm(label_dist(&done));
+
+      /* slowpath, call opcode function */
       label_generate(&fallback);
-      break;
+      arm64_mov_int(ra_alloc(ARM_REG_ARG1), (INT64)arg1);
+      arm64_call_c_opcode_slowpath(opcode);
+      ra_free(ARM_REG_ARG1);
+
+      label_generate(&done);
+      return;
     }
   case F_MARK_AND_CONST0:
       ins_f_byte(F_MARK);
@@ -2316,7 +2322,6 @@ void ins_f_byte_with_arg(unsigned int opcode, INT32 arg1)
   arm64_mov_int(ra_alloc(ARM_REG_ARG1), arg1);
   low_ins_f_byte(opcode);
   ra_free(ARM_REG_ARG1);
-  label_generate(&done);
   return;
 }
 
