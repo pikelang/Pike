@@ -1491,13 +1491,13 @@ static void low_ins_call(void *addr) {
   arm64_call(addr);
 }
 
-static void arm64_call_c_function(void * addr) {
+MACRO void arm64_call_c_function(void * addr) {
     compiler_state.flags &= ~FLAG_SP_LOADED;
     compiler_state.flags &= ~FLAG_FP_LOADED;
     arm64_call(addr);
 }
 
-static void arm64_call_c_opcode(unsigned int opcode) {
+MACRO void arm64_call_c_opcode(unsigned int opcode) {
   void *addr = instrs[opcode-F_OFFSET].address;
   int flags = instrs[opcode-F_OFFSET].flags;
 
