@@ -10534,7 +10534,12 @@ ifefun(_verify_internals,
 // - `!=
 // - `%
 // - `&
+
 // - `()
+test_eq(1,`()(a))
+test_eq(1,`()(lambda(int a){ return a; },1))
+test_eq(1,`()(intp,1))
+
 // - `*
 
 // - `+
@@ -10672,9 +10677,12 @@ test_eq(basetype(lambda(){}),"function")
 test_eq(basetype(typeof(0)),"type")
 
 // - call_function
-test_eq(1,call_function(a))
-test_eq(1,call_function(lambda(int a){ return a; },1))
-test_eq(1,call_function(intp,1))
+test_eq(1,#pragma no_deprecation_warnings
+call_function(a))
+test_eq(1,#pragma no_deprecation_warnings
+call_function(lambda(int a){ return a; },1))
+test_eq(1,#pragma no_deprecation_warnings
+call_function(intp,1))
 
 // - call_out
 // - call_out_info
