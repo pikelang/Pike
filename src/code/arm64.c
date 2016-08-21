@@ -2300,11 +2300,14 @@ void ins_f_byte_with_arg(unsigned int opcode, INT32 arg1)
           arm64_debug_instr_prologue_1(opcode, arg1);
 
           arm64_load_fp_reg();
-          reg = ra_alloc_any();
-          arm64_mov_int(reg, arg1);
-          store16_reg_imm(reg, ARM_REG_PIKE_FP, OFFSETOF(pike_frame, expendible_offset));
-
-	  ra_free(reg);
+	  if (arg1) {
+	      reg = ra_alloc_any();
+	      arm64_mov_int(reg, arg1);
+	      store16_reg_imm(reg, ARM_REG_PIKE_FP, OFFSETOF(pike_frame, expendible_offset));
+	      ra_free(reg);
+	  } else {
+	      store16_reg_imm(ARM_REG_ZERO, ARM_REG_PIKE_FP, OFFSETOF(pike_frame, expendible_offset));
+	  }
           return;
       }
   case F_THIS_OBJECT:
@@ -2376,16 +2379,20 @@ void ins_f_byte_with_2_args(unsigned int opcode, INT32 arg1, INT32 arg2)
           arm64_debug_instr_prologue_2(opcode, arg1, arg2);
           arm64_load_fp_reg();
 
-          tmp = ra_alloc_any();
-          arm64_mov_int(tmp, arg2|(arg1<<16));
+	  if (arg1 || arg2) {
+	      tmp = ra_alloc_any();
+	      arm64_mov_int(tmp, arg2|(arg1<<16));
 
-          store32_reg_imm(tmp, ARM_REG_PIKE_FP, OFFSETOF(pike_frame, num_locals));
-          ra_free(tmp);
+	      store32_reg_imm(tmp, ARM_REG_PIKE_FP, OFFSETOF(pike_frame, num_locals));
+	      ra_free(tmp);
+	  } else {
+	      store32_reg_imm(ARM_REG_ZERO, ARM_REG_PIKE_FP, OFFSETOF(pike_frame, num_locals));
+	  }
           return;
       }
   case F_FILL_STACK:
       {
-          enum arm64_register reg, treg, vreg;
+          enum arm64_register reg, treg;
           struct label skip, loop;
           label_init(&skip);
           label_init(&loop);
@@ -2397,9 +2404,6 @@ void ins_f_byte_with_2_args(unsigned int opcode, INT32 arg1, INT32 arg2)
 
           reg = ra_alloc_any();
           treg = ra_alloc_any();
-          vreg = ra_alloc_any();
-
-          assert(treg < vreg);
 
           arm64_add64_reg_int(reg, ARM_REG_PIKE_LOCALS, (INT64)arg1*sizeof(struct svalue));
 
@@ -2407,10 +2411,9 @@ void ins_f_byte_with_2_args(unsigned int opcode, INT32 arg1, INT32 arg2)
           /* jump if pike_sp >= reg */
           b_imm_cond(label_dist(&skip), ARM_COND_LS);
           arm64_mov_int(treg, TYPE_SUBTYPE(PIKE_T_INT, arg2 ? NUMBER_UNDEFINED : NUMBER_NUMBER));
-          arm64_mov_int(vreg, 0);
 
           label_generate(&loop);
-          store_multiple(ARM_REG_PIKE_SP, ARM_MULT_IAW, RBIT(treg)|RBIT(vreg));
+          store_multiple(ARM_REG_PIKE_SP, ARM_MULT_IAW, RBIT(treg)|RBIT(ARM_REG_ZERO));
           cmp_reg_reg(reg, ARM_REG_PIKE_SP);
           /* jump if pike_sp < reg */
           b_imm_cond(label_dist(&loop), ARM_COND_HI);
@@ -2420,7 +2423,6 @@ void ins_f_byte_with_2_args(unsigned int opcode, INT32 arg1, INT32 arg2)
 
           ra_free(reg);
           ra_free(treg);
-          ra_free(vreg);
 
           return;
       }
