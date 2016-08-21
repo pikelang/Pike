@@ -73,3 +73,6 @@ void ins_f_byte_with_2_args(unsigned int a, INT32 c, INT32 b);
 
 void arm64_disassemble_code(PIKE_OPCODE_T *addr, size_t bytes);
 #endif
+
+#define INIT_INTERPRETER_STATE		arm64_init_interpreter_state
+void arm64_init_interpreter_state(void);
