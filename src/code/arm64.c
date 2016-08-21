@@ -146,6 +146,7 @@ ARM_INSTR_UNCOND_BRANCH_IMM = 0x14000000,
 ARM_INSTR_COND_SELECT       = 0x1a800000,
 ARM_INSTR_SHIFT_REG         = 0x1ac02000,
 ARM_INSTR_LOADSTORE_PAIR    = 0x28000000,
+ARM_INSTR_COMPARE_N_BRANCH  = 0x34000000,
 ARM_INSTR_LOADSTORE_SINGLE  = 0x38000000,
 ARM_INSTR_COND_COMPARE      = 0x3a400000,
 ARM_INSTR_COND_BRANCH_IMM   = 0x54000000,
@@ -527,6 +528,41 @@ OPCODE_FUN gen_csinc(enum arm64_register dst, enum arm64_register a, enum arm64_
     instr = set_rm_reg(instr, b);
     instr |= cond << 12;
     return instr;
+}
+
+OPCODE_FUN gen_cbz(enum arm64_register reg, INT32 dist)
+{
+    unsigned INT32 instr = ARM_INSTR_COMPARE_N_BRANCH;
+
+    instr = set_rt_reg(instr, reg);
+    instr |= (dist & 0x7ffff) << 5;
+
+    return instr;
+}
+
+OPCODE_FUN gen_cbnz(enum arm64_register reg, INT32 dist)
+{
+    return gen_cbz(reg, dist) | (1 << 24);
+}
+
+MACRO void cbz32_imm(enum arm64_register reg, INT32 dist)
+{
+    add_to_program(gen_cbz(reg, dist));
+}
+
+MACRO void cbz64_imm(enum arm64_register reg, INT32 dist)
+{
+    add_to_program(set_64bit(gen_cbz(reg, dist)));
+}
+
+MACRO void cbnz32_imm(enum arm64_register reg, INT32 dist)
+{
+    add_to_program(gen_cbnz(reg, dist));
+}
+
+MACRO void cbnz64_imm(enum arm64_register reg, INT32 dist)
+{
+    add_to_program(set_64bit(gen_cbnz(reg, dist)));
 }
 
 
@@ -1086,7 +1122,8 @@ MACRO void label_generate(struct label *l) {
 	        Pike_fatal("Setting label distance twice in %x\n", instr);
 	    }
 	    upd_pointer(e->location, instr|(loc - e->location));
-	} else if ((instr & 0xfe000000) == ARM_INSTR_COND_BRANCH_IMM) {
+	} else if ((instr & 0xfe000000) == ARM_INSTR_COND_BRANCH_IMM ||
+		   (instr & 0x7e000000) == ARM_INSTR_COMPARE_N_BRANCH) {
 	    if (instr & 0xffffe0) {
 	        Pike_fatal("Setting label distance twice in %x\n", instr);
 	    }
@@ -2402,25 +2439,23 @@ void ins_f_byte_with_2_args(unsigned int opcode, INT32 arg1, INT32 arg2)
 
 int arm64_low_ins_f_jump(unsigned int opcode, int backward_jump) {
     INT32 ret;
+    struct label skip;
 
     arm64_call_c_opcode(opcode);
 
     cmp_reg_imm(ARM_REG_RVAL, 0, 0);
 
+    label_init(&skip);
+
+    b_imm_cond(label_dist(&skip), ARM_COND_EQ);
+
     if (backward_jump) {
-        struct label skip;
-        label_init(&skip);
-
-        b_imm_cond(label_dist(&skip), ARM_COND_EQ);
-
-        ret = PIKE_PC;
-        b_imm(0);
-
-        label_generate(&skip);
-    } else {
-        ret = PIKE_PC;
-        b_imm_cond(0, ARM_COND_NE);
     }
+
+    ret = PIKE_PC;
+    b_imm(0);
+
+    label_generate(&skip);
 
     return ret;
 }
@@ -2438,18 +2473,22 @@ int arm64_ins_f_jump(unsigned int opcode, int backward_jump) {
     case F_QUICK_BRANCH_WHEN_NON_ZERO:
         {
             enum arm64_register tmp = ra_alloc_any();
+	    struct label skip;
 
             arm64_debug_instr_prologue_0(opcode);
 
             arm64_change_sp(-1);
             load64_reg_imm(tmp, ARM_REG_PIKE_SP, 8);
             cmp_reg_imm(tmp, 0, 0);
-            ret = PIKE_PC;
+	    label_init(&skip);
             if (opcode == F_QUICK_BRANCH_WHEN_ZERO)
-                b_imm_cond(0, ARM_COND_Z);
+	        b_imm_cond(label_dist(&skip), ARM_COND_NZ);
             else
-                b_imm_cond(0, ARM_COND_NZ);
+	        b_imm_cond(label_dist(&skip), ARM_COND_Z);
             ra_free(tmp);
+            ret = PIKE_PC;
+	    b_imm(0);
+	    label_generate(&skip);
             return ret;
         }
     case F_BRANCH:
@@ -2465,6 +2504,7 @@ int arm64_ins_f_jump(unsigned int opcode, int backward_jump) {
     case F_BRANCH_WHEN_GT:
     case F_BRANCH_WHEN_GE:
         {
+	    struct label skip;
             arm64_debug_instr_prologue_0(opcode);
             ra_alloc(ARM_REG_ARG1);
             ra_alloc(ARM_REG_ARG2);
@@ -2474,36 +2514,38 @@ int arm64_ins_f_jump(unsigned int opcode, int backward_jump) {
             arm64_sub64_reg_int(ARM_REG_ARG1, ARM_REG_PIKE_SP, 2*sizeof(struct svalue));
             arm64_sub64_reg_int(ARM_REG_ARG2, ARM_REG_PIKE_SP, 1*sizeof(struct svalue));
 
+	    label_init(&skip);
             switch (opcode) {
             case F_BRANCH_WHEN_NE:
                 arm64_call(is_eq);
-                cmp_reg_imm(ARM_REG_RVAL, 0, 0);
+                cbnz32_imm(ARM_REG_RVAL, label_dist(&skip));
                 break;
             case F_BRANCH_WHEN_EQ:
                 arm64_call(is_eq);
-                cmp_reg_imm(ARM_REG_RVAL, 1, 0);
+                cbz32_imm(ARM_REG_RVAL, label_dist(&skip));
                 break;
             case F_BRANCH_WHEN_LT:
                 arm64_call(is_lt);
-                cmp_reg_imm(ARM_REG_RVAL, 1, 0);
+                cbz32_imm(ARM_REG_RVAL, label_dist(&skip));
                 break;
             case F_BRANCH_WHEN_LE:
                 arm64_call(is_le);
-                cmp_reg_imm(ARM_REG_RVAL, 1, 0);
+                cbz32_imm(ARM_REG_RVAL, label_dist(&skip));
                 break;
             case F_BRANCH_WHEN_GT:
                 arm64_call(is_le);
-                cmp_reg_imm(ARM_REG_RVAL, 0, 0);
+                cbnz32_imm(ARM_REG_RVAL, label_dist(&skip));
                 break;
             case F_BRANCH_WHEN_GE:
                 arm64_call(is_lt);
-                cmp_reg_imm(ARM_REG_RVAL, 0, 0);
+                cbnz32_imm(ARM_REG_RVAL, label_dist(&skip));
                 break;
             }
 
             ret = PIKE_PC;
-            b_imm_cond(0, ARM_COND_EQ);
+            b_imm(0);
 
+	    label_generate(&skip);
             ra_free(ARM_REG_ARG1);
             ra_free(ARM_REG_ARG2);
             return ret;
