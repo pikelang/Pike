@@ -726,18 +726,19 @@ MACRO void tst_reg_imm(enum arm64_register a, unsigned char n, unsigned char imm
     add_to_program(set_64bit(gen_tst_reg_imm(a, n, immr, imms)));
 }
 
-OPCODE_FUN gen_store_reg_imm(enum arm64_register dst, enum arm64_register base, INT32 offset, int sz) {
+OPCODE_FUN gen_store_reg_imm(enum arm64_register dst, enum arm64_register base, INT32 offset, int sz, int index) {
     unsigned INT32 instr = ARM_INSTR_LOADSTORE_SINGLE | (sz << 30);
 
     instr = set_rt_reg(instr, dst);
     instr = set_rn_reg(instr, base);
 
-    if (offset >= 0 && !(offset & ((1<<sz)-1))) {
+    if (!index && offset >= 0 && !(offset & ((1<<sz)-1))) {
         offset >>= sz;
 	instr |= (1<<24);
 	instr |= offset << 10;
 	assert(!(offset >> 12));
     } else {
+        instr |= index << 10;
 	instr |= (offset & 0x1ff) << 12;
 	assert((offset & 0x100)?
 	       (offset | 0x1ff) == -1 :
@@ -748,39 +749,55 @@ OPCODE_FUN gen_store_reg_imm(enum arm64_register dst, enum arm64_register base, 
 }
 
 MACRO void store8_reg_imm(enum arm64_register dst, enum arm64_register base, INT32 offset) {
-    add_to_program(gen_store_reg_imm(dst, base, offset, 0));
+    add_to_program(gen_store_reg_imm(dst, base, offset, 0, 0));
 }
 
 MACRO void store16_reg_imm(enum arm64_register dst, enum arm64_register base, INT32 offset) {
-    add_to_program(gen_store_reg_imm(dst, base, offset, 1));
+    add_to_program(gen_store_reg_imm(dst, base, offset, 1, 0));
 }
 
 MACRO void store32_reg_imm(enum arm64_register dst, enum arm64_register base, INT32 offset) {
-    add_to_program(gen_store_reg_imm(dst, base, offset, 2));
+    add_to_program(gen_store_reg_imm(dst, base, offset, 2, 0));
 }
 
 MACRO void store64_reg_imm(enum arm64_register dst, enum arm64_register base, INT32 offset) {
-    add_to_program(gen_store_reg_imm(dst, base, offset, 3));
+    add_to_program(gen_store_reg_imm(dst, base, offset, 3, 0));
 }
 
-OPCODE_FUN gen_load_reg_imm(enum arm64_register dst, enum arm64_register base, INT32 offset, int sz) {
-    return gen_store_reg_imm(dst, base, offset, sz) | (1<<22);
+MACRO void store64_reg_imm_post(enum arm64_register dst, enum arm64_register base, INT32 offset) {
+    add_to_program(gen_store_reg_imm(dst, base, offset, 3, 1));
+}
+
+MACRO void store64_reg_imm_pre(enum arm64_register dst, enum arm64_register base, INT32 offset) {
+    add_to_program(gen_store_reg_imm(dst, base, offset, 3, 3));
+}
+
+OPCODE_FUN gen_load_reg_imm(enum arm64_register dst, enum arm64_register base, INT32 offset, int sz, int index) {
+    return gen_store_reg_imm(dst, base, offset, sz, index) | (1<<22);
 }
 
 MACRO void load8_reg_imm(enum arm64_register dst, enum arm64_register base, INT32 offset) {
-    add_to_program(gen_load_reg_imm(dst, base, offset, 0));
+    add_to_program(gen_load_reg_imm(dst, base, offset, 0, 0));
 }
 
 MACRO void load16_reg_imm(enum arm64_register dst, enum arm64_register base, INT32 offset) {
-    add_to_program(gen_load_reg_imm(dst, base, offset, 1));
+    add_to_program(gen_load_reg_imm(dst, base, offset, 1, 0));
 }
 
 MACRO void load32_reg_imm(enum arm64_register dst, enum arm64_register base, INT32 offset) {
-    add_to_program(gen_load_reg_imm(dst, base, offset, 2));
+    add_to_program(gen_load_reg_imm(dst, base, offset, 2, 0));
 }
 
 MACRO void load64_reg_imm(enum arm64_register dst, enum arm64_register base, INT32 offset) {
-    add_to_program(gen_load_reg_imm(dst, base, offset, 3));
+    add_to_program(gen_load_reg_imm(dst, base, offset, 3, 0));
+}
+
+MACRO void load64_reg_imm_post(enum arm64_register dst, enum arm64_register base, INT32 offset) {
+    add_to_program(gen_load_reg_imm(dst, base, offset, 3, 1));
+}
+
+MACRO void load64_reg_imm_pre(enum arm64_register dst, enum arm64_register base, INT32 offset) {
+    add_to_program(gen_load_reg_imm(dst, base, offset, 3, 3));
 }
 
 OPCODE_FUN gen_store_reg_reg(enum arm64_register dst, enum arm64_register base, enum arm64_register index, int s, int sz) {
@@ -1757,9 +1774,7 @@ MACRO void arm64_pop_mark(enum arm64_register dst) {
 
   load64_reg_imm(tmp, ARM_REG_PIKE_IP, OFFSETOF(Pike_interpreter_struct, mark_stack_pointer));
 
-  arm64_sub64_reg_int(tmp, tmp, sizeof(void*));
-
-  load64_reg_imm(dst, tmp, 0);
+  load64_reg_imm_pre(dst, tmp, -(INT32)sizeof(void*));
 
   store64_reg_imm(tmp, ARM_REG_PIKE_IP, OFFSETOF(Pike_interpreter_struct, mark_stack_pointer));
 
