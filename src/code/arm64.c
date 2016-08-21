@@ -1046,18 +1046,26 @@ MACRO void label_generate(struct label *l) {
     free_list(l->list);
 }
 
+void arm64_init_interpreter_state(void) {
+    assert(sizeof(struct svalue) == 16);
+    assert(OFFSETOF(pike_frame, num_locals) % 4 == 0);
+    assert(OFFSETOF(pike_frame, num_locals) + 2 == OFFSETOF(pike_frame, num_args));
+
+    instrs[F_CATCH - F_OFFSET].address = inter_return_opcode_F_CATCH;
+}
+
 MACRO void ra_init(void) {
-    /* all register r0 through r24 are unused
-     *
-     */
+    /* FIXME: this ought to happen in init_interpreter_state, only, but it is currently overwritten
+     * later */
+    instrs[F_CATCH - F_OFFSET].address = inter_return_opcode_F_CATCH;
+
+    /* all register r0 through r24 are unused */
     compiler_state.free = RBIT(0)|RBIT(1)|RBIT(2)|RBIT(3)|RBIT(4)|RBIT(5)|
       RBIT(6)|RBIT(7)|RBIT(8)|RBIT(9)|RBIT(10)|RBIT(11)|RBIT(12)|RBIT(13)|
       RBIT(14)|RBIT(15)|RBIT(19);
     compiler_state.dirt = 0;
     compiler_state.push_addr = -1;
     compiler_state.flags = 0;
-    /* FIXME: not quite the place */
-    instrs[F_CATCH - F_OFFSET].address = inter_return_opcode_F_CATCH;
 }
 
 MACRO enum arm64_register ra_alloc(enum arm64_register reg) {
@@ -1349,7 +1357,6 @@ MACRO void arm64_push_svaluep_off(enum arm64_register src, INT32 offset) {
                         tmp2 = ra_alloc_any();
 
     assert(tmp1 < tmp2);
-    assert(sizeof(struct svalue) == 16);
 
     if (offset) {
         arm64_add64_reg_int(tmp1, src, offset*sizeof(struct svalue));
@@ -2158,9 +2165,6 @@ void ins_f_byte_with_2_args(unsigned int opcode, INT32 arg1, INT32 arg2)
 
           tmp = ra_alloc_any();
           arm64_mov_int(tmp, arg2|(arg1<<16));
-
-          assert(OFFSETOF(pike_frame, num_locals) % 4 == 0);
-          assert(OFFSETOF(pike_frame, num_locals) + 2 == OFFSETOF(pike_frame, num_args));
 
           store32_reg_imm(tmp, ARM_REG_PIKE_FP, OFFSETOF(pike_frame, num_locals));
           ra_free(tmp);
